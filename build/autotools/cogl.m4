@@ -1,70 +1,11 @@
-dnl ================================================================
-dnl XXX: If you are making a release then you need to check these
-dnl sections:
-dnl » API versions
-dnl   (the pretty numbers that the users see)
-dnl
-dnl » Interface version details for libtool
-dnl   (the shared library versioning information)
-dnl
-dnl » Source code release status
-dnl   (mark the source code as being part of a "snapshot", "release"
-dnl    or from "git")
-dnl ================================================================
-
 AC_DEFUN([AM_COGL],
 [
+  AC_REQUIRE([AC_USE_SYSTEM_EXTENSIONS])
   AC_REQUIRE([AC_CANONICAL_SYSTEM])
   AC_REQUIRE([AC_CANONICAL_HOST])
   AC_REQUIRE([AM_EMSCRIPTEN])
   AC_REQUIRE([AM_CLIB])
-
-  dnl ================================================================
-  dnl API versions (i.e. the pretty numbers that users see)
-  dnl ================================================================
-  m4_define([cogl_major_version], [1])
-  m4_define([cogl_minor_version], [99])
-  m4_define([cogl_micro_version], [1])
-  m4_define([cogl_version], [cogl_major_version.cogl_minor_version.cogl_micro_version])
-
-  dnl ================================================================
-  dnl Interface version details for libtool
-  dnl ================================================================
-  # Note: we don't automatically deduce the libtool version info from
-  # the pretty version number that users sees. This is because we want
-  # to update the pretty version number before making a release since it
-  # can affect the name of our pkg-config file and the naming or
-  # location of other installed files which we want to be able to verify
-  # as correct well before making a release.
-  #
-  # For reference on how the various numbers should be updated at
-  # release time these rules are adapted from the libtool info pages:
-  #
-  #  1. Update the version information only immediately before a public
-  #     release.
-  #
-  #  2. If the library source code has changed at all since the last
-  #     update, then increment REVISION (`C:R:A' becomes `C:r+1:A').
-  #
-  #  3. If any interfaces have been added, removed, or changed since the
-  #     last update, increment CURRENT, and set REVISION to 0.
-  #
-  #  4. If any interfaces have been added since the last public release,
-  #     then increment AGE.
-  #
-  #  5. If any interfaces have been removed since the last public release,
-  #     then set AGE to 0.
-  m4_define([cogl_lt_current], 0)
-  m4_define([cogl_lt_revision], 0)
-  m4_define([cogl_lt_age], 0)
-  # We do also tell libtool the pretty version:
-  m4_define([cogl_lt_release], [cogl_version])
-
-
-  dnl ================================================================
-  dnl Setup autoconf
-  dnl ================================================================
-  AC_GNU_SOURCE
+  AC_REQUIRE([AC_PATH_X])
 
 
   dnl ================================================================
@@ -82,40 +23,15 @@ AC_DEFUN([AM_COGL],
   m4_define([wayland_req_version],        [1.0.0])
   m4_define([wayland_server_req_version], [1.1.90])
 
-  dnl These variables get copied into the generated README
-  AC_SUBST([GDK_PIXBUF_REQ_VERSION], [gdk_pixbuf_req_version])
-  AC_SUBST([CAIRO_REQ_VERSION], [cairo_req_version])
-  AC_SUBST([PANGOCAIRO_REQ_VERSION], [pangocairo_req_version])
-  AC_SUBST([XCOMPOSITE_REQ_VERSION], [xcomposite_req_version])
-  AC_SUBST([XFIXES_REQ_VERSION], [xfixes_req_version])
-  AC_SUBST([GTK_DOC_REQ_VERSION], [gtk_doc_req_version])
-  AC_SUBST([GI_REQ_VERSION], [gi_req_version])
-  AC_SUBST([UPROF_REQ_VERSION], [uprof_req_version])
-  AC_SUBST([WAYLAND_REQ_VERSION], [wayland_req_version])
-  AC_SUBST([WAYLAND_SERVER_REQ_VERSION], [wayland_server_req_version])
-
-  # Save this value here, since automake will set cflags later and we
-  # want to know if the user specified custom cflags or not.
-  cflags_set=${CFLAGS+set}
 
   dnl ================================================================
   dnl Export the API versioning
   dnl ================================================================
-  AC_SUBST([COGL_MAJOR_VERSION],[cogl_major_version])
-  AC_SUBST([COGL_MINOR_VERSION],[cogl_minor_version])
-  AC_SUBST([COGL_MICRO_VERSION],[cogl_micro_version])
-  AC_SUBST([COGL_VERSION],[cogl_version])
-  AC_SUBST([COGL_API_VERSION],[cogl_major_version.0])
-  AC_SUBST([COGL_API_VERSION_AM],[$COGL_MAJOR_VERSION\_0])
-
-
-  dnl ================================================================
-  dnl Export the libtool versioning
-  dnl ================================================================
-  AC_SUBST([COGL_LT_CURRENT], [cogl_lt_current])
-  AC_SUBST([COGL_LT_REVISION], [cogl_lt_revision])
-  AC_SUBST([COGL_LT_AGE], [cogl_lt_age])
-  AC_SUBST([COGL_LT_RELEASE], [cogl_lt_release])
+  AC_SUBST([COGL_MAJOR_VERSION],[2])
+  AC_SUBST([COGL_MINOR_VERSION],[0])
+  AC_SUBST([COGL_MICRO_VERSION],[0])
+  AC_SUBST([COGL_VERSION],[2.0.0])
+  AC_SUBST([COGL_API_VERSION],[2.0])
 
 
   dnl ================================================================
@@ -133,33 +49,11 @@ AC_DEFUN([AM_COGL],
   dnl ================================================================
   dnl See what platform we are building for
   dnl ================================================================
-
-  AM_CONDITIONAL(CROSS_COMPILING, [test x$cross_compiling = xyes])
-  AC_C_BIGENDIAN([ORDER=G_BIG_ENDIAN],[ORDER=G_LITTLE_ENDIAN])
-
-  platform_darwin=no
-  platform_android=no
-  platform_win32=no
-
   AC_CHECK_HEADER([OpenGL/gl.h], [platform_quartz=yes], [platform_quartz=no])
-
-  target_osx=no
-  target_ios=no
 
   dnl ================================================================
   dnl Handle extra configure options
   dnl ================================================================
-
-
-  dnl     ============================================================
-  dnl     Installed tests
-  dnl     ============================================================
-
-  AC_ARG_ENABLE(installed_tests,
-                AS_HELP_STRING([--enable-installed-tests],
-                               [Install test programs (default: no)]),,
-                [enable_installed_tests=no])
-  AM_CONDITIONAL(ENABLE_INSTALLED_TESTS, test x$enable_installed_tests = xyes)
 
 
   dnl     ============================================================
@@ -191,13 +85,6 @@ AC_DEFUN([AM_COGL],
   )
 
   AC_SUBST(COGL_DEBUG_CFLAGS)
-
-  AS_IF([test "x$enable_unit_tests" = "xyes"],
-        [
-          AC_DEFINE([ENABLE_UNIT_TESTS], [1], [Whether to enable building unit tests])
-        ]
-  )
-  AM_CONDITIONAL(COGL_UNIT_TESTS, test "x$enable_unit_tests" = "xyes")
 
   dnl     ============================================================
   dnl     Enable cairo usage for debugging
@@ -237,10 +124,6 @@ AC_DEFUN([AM_COGL],
         [
           COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS COGL_HAS_GLIB_SUPPORT"
           COGL_PKG_REQUIRES="$COGL_PKG_REQUIRES gobject-2.0 gmodule-no-export-2.0"
-        ],
-        [
-          COGL_EXTRA_CFLAGS="$COGL_EXTRA_CFLAGS -I\$(top_srcdir)/clib/src"
-          COGL_EXTRA_CFLAGS="$COGL_EXTRA_CFLAGS -I\$(top_builddir)/clib/src"
         ])
 
 
@@ -361,6 +244,12 @@ AC_DEFUN([AM_COGL],
   enabled_drivers=""
 
   HAVE_GLES2=0
+  AC_ARG_ENABLE(
+    [gles2],
+    [AC_HELP_STRING([--enable-gles2=@<:@no/yes@:>@], [Enable support for OpenGL-ES 2.0 @<:@default=no@:>@])],
+    [],
+    enable_gles2=no
+  )
   AS_IF([test "x$enable_gles2" = "xyes"],
         [
           AS_IF([test "x$platform_win32" = "xyes"],
@@ -404,6 +293,12 @@ AC_DEFUN([AM_COGL],
         ])
 
   HAVE_GL=0
+  AC_ARG_ENABLE(
+    [gl],
+    [AC_HELP_STRING([--enable-gl=@<:@no/yes@:>@], [Enable support for OpenGL @<:@default=yes@:>@])],
+    [],
+    [enable_gl=yes]
+  )
   AS_IF([test "x$enable_gl" = "xyes"],
         [
           enabled_drivers="$enabled_drivers gl"
@@ -478,6 +373,12 @@ AC_DEFUN([AM_COGL],
   dnl         Check window system integration libraries...
   dnl         ========================================================
 
+  AC_ARG_ENABLE(
+    [glx],
+    [AC_HELP_STRING([--enable-glx=@<:@no/yes@:>@], [Enable support GLX @<:@default=auto@:>@])],
+    [],
+    [AS_IF([test "x$ALLOW_GLX" = "xyes"], [enable_glx=yes], [enable_glx=no])]
+  )
   AS_IF([test "x$enable_glx" = "xyes"],
         [
           AS_IF([test "x$ALLOW_GLX" != "xyes"],
@@ -491,6 +392,12 @@ AC_DEFUN([AM_COGL],
         ])
   AM_CONDITIONAL(COGL_SUPPORT_GLX, [test "x$SUPPORT_GLX" = "xyes"])
 
+  AC_ARG_ENABLE(
+    [wgl],
+    [AC_HELP_STRING([--enable-wgl=@<:@no/yes@:>@], [Enable support for WGL @<:@default=auto@:>@])],
+    [],
+    [AS_IF([test "x$ALLOW_WGL" = "xyes"], [enable_wgl=yes], [enable_wgl=no])]
+  )
   AS_IF([test "x$enable_wgl" = "xyes"],
         [
           AS_IF([test "x$ALLOW_WGL" != "xyes"],
@@ -504,6 +411,11 @@ AC_DEFUN([AM_COGL],
         ])
   AM_CONDITIONAL(COGL_SUPPORT_WGL, [test "x$SUPPORT_WGL" = "xyes"])
 
+  AC_ARG_ENABLE(
+    [sdl],
+    [AC_HELP_STRING([--enable-sdl=@<:@no/yes@:>@], [Enable support SDL @<:@default=no@:>@])],
+    [],
+    [enable_sdl=no])
   AS_IF([test "x$enable_sdl" = "xyes"],
         [
           AS_IF([test "x$enable_emscripten" = "xno"],
@@ -562,6 +474,11 @@ AC_DEFUN([AM_COGL],
         [SUPPORT_SDL=no])
   AM_CONDITIONAL(COGL_SUPPORT_SDL, [test "x$SUPPORT_SDL" = "xyes"])
 
+  AC_ARG_ENABLE(
+    [sdl2],
+    [AC_HELP_STRING([--enable-sdl2=@<:@no/yes@:>@], [Enable SDL2 support @<:@default=no@:>@])],
+    [],
+    [enable_sdl2=no])
   AS_IF([test "x$enable_sdl2" = "xyes"],
         [
           PKG_CHECK_MODULES([SDL2],
@@ -583,6 +500,12 @@ AC_DEFUN([AM_COGL],
 
   EGL_PLATFORM_COUNT=0
 
+  AC_ARG_ENABLE(
+    [null-egl-platform],
+    [AC_HELP_STRING([--enable-null-egl-platform=@<:@no/yes@:>@], [Enable support for the NULL egl platform @<:@default=no@:>@])],
+    [],
+    enable_null_egl_platform=no
+  )
   AS_IF([test "x$enable_null_egl_platform" = "xyes"],
         [
           EGL_PLATFORM_COUNT=$((EGL_PLATFORM_COUNT+1))
@@ -594,6 +517,12 @@ AC_DEFUN([AM_COGL],
   AM_CONDITIONAL(COGL_SUPPORT_EGL_PLATFORM_POWERVR_NULL,
                  [test "x$enable_null_egl_platform" = "xyes"])
 
+  AC_ARG_ENABLE(
+    [gdl-egl-platform],
+    [AC_HELP_STRING([--enable-gdl-egl-platform=@<:@no/yes@:>@], [Enable support for the GDL egl platform @<:@default=no@:>@])],
+    [],
+    enable_gdl_egl_platform=no
+  )
   AS_IF([test "x$enable_gdl_egl_platform" = "xyes"],
         [
           EGL_PLATFORM_COUNT=$((EGL_PLATFORM_COUNT+1))
@@ -619,6 +548,12 @@ AC_DEFUN([AM_COGL],
   AM_CONDITIONAL(COGL_SUPPORT_EGL_PLATFORM_GDL,
                  [test "x$enable_gdl_egl_platform" = "xyes"])
 
+  AC_ARG_ENABLE(
+    [wayland-egl-platform],
+    [AC_HELP_STRING([--enable-wayland-egl-platform=@<:@no/yes@:>@], [Enable support for the Wayland egl platform @<:@default=no@:>@])],
+    [],
+    enable_wayland_egl_platform=no
+  )
   AS_IF([test "x$enable_wayland_egl_platform" = "xyes"],
         [
           EGL_PLATFORM_COUNT=$((EGL_PLATFORM_COUNT+1))
@@ -635,7 +570,12 @@ AC_DEFUN([AM_COGL],
   AM_CONDITIONAL(COGL_SUPPORT_EGL_PLATFORM_WAYLAND,
                  [test "x$enable_wayland_egl_platform" = "xyes"])
 
-
+  AC_ARG_ENABLE(
+    [kms-egl-platform],
+    [AC_HELP_STRING([--enable-kms-egl-platform=@<:@no/yes@:>@], [Enable support for the KMS egl platform @<:@default=no@:>@])],
+    [],
+    enable_kms_egl_platform=no
+  )
   AS_IF([test "x$enable_kms_egl_platform" = "xyes"],
         [
           EGL_PLATFORM_COUNT=$((EGL_PLATFORM_COUNT+1))
@@ -663,6 +603,12 @@ AC_DEFUN([AM_COGL],
   AM_CONDITIONAL(COGL_SUPPORT_EGL_PLATFORM_KMS,
                  [test "x$enable_kms_egl_platform" = "xyes"])
 
+  AC_ARG_ENABLE(
+    [wayland-egl-server],
+    [AC_HELP_STRING([--enable-wayland-egl-server=@<:@no/yes@:>@], [Enable server side wayland support @<:@default=no@:>@])],
+    [],
+    enable_wayland_egl_server=no
+  )
   AS_IF([test "x$enable_wayland_egl_server" = "xyes"],
         [
           NEED_EGL=yes
@@ -677,6 +623,12 @@ AC_DEFUN([AM_COGL],
                  [test "x$enable_wayland_egl_server" = "xyes"])
 
   dnl Android EGL platform
+  AC_ARG_ENABLE(
+    [android-egl-platform],
+    [AC_HELP_STRING([--enable-android-egl-platform=@<:@no/yes@:>@], [Enable support for the Android egl platform @<:@default=no@:>@])],
+    [],
+    enable_android_egl_platform=no
+  )
   AS_IF([test "x$enable_android_egl_platform" = "xyes"],
         [
           EGL_PLATFORM_COUNT=$((EGL_PLATFORM_COUNT+1))
@@ -694,6 +646,17 @@ AC_DEFUN([AM_COGL],
 
   dnl This should go last, since it's the default fallback and we need
   dnl to check the value of $EGL_PLATFORM_COUNT here.
+  AC_ARG_ENABLE(
+    [xlib-egl-platform],
+    [AC_HELP_STRING([--enable-xlib-egl-platform=@<:@no/yes@:>@], [Enable support for the Xlib egl platform @<:@default=auto@:>@])],
+    [],
+    AS_IF([test "x$enable_gles2" = "xyes" && \
+           test "x$SUPPORT_SDL_GLES" != "xyes" && \
+           test "x$SUPPORT_SDL_WEBGL" != "xyes" && \
+           test "x$SUPPORT_SDL2" != "xyes" && \
+           test $EGL_PLATFORM_COUNT -eq 0],
+          [enable_xlib_egl_platform=yes], [enable_xlib_egl_platform=no])
+  )
   AS_IF([test "x$enable_xlib_egl_platform" = "xyes"],
         [
           EGL_PLATFORM_COUNT=$((EGL_PLATFORM_COUNT+1))
@@ -817,34 +780,6 @@ AC_DEFUN([AM_COGL],
   )
   AM_CONDITIONAL([BUILD_COGL_GST], [test "x$enable_cogl_gst" = "xyes"])
 
-
-
-  dnl ================================================================
-  dnl Misc program dependencies.
-  dnl ================================================================
-  AC_PROG_INSTALL
-
-  dnl ================================================================
-  dnl GObject-Introspection check
-  dnl ================================================================
-  AS_IF([test "x$enable_glib" = "xyes"],
-    [
-      GOBJECT_INTROSPECTION_CHECK([gi_req_version])
-    ],
-    [
-      enable_introspection="no"
-      AM_CONDITIONAL([HAVE_INTROSPECTION], 0)
-    ]
-  )
-
-  dnl ================================================================
-  dnl Checks for header files.
-  dnl ================================================================
-  AC_PATH_X
-  AC_HEADER_STDC
-  AC_CHECK_HEADERS(fcntl.h limits.h unistd.h)
-
-
   dnl ================================================================
   dnl Checks for library functions.
   dnl ================================================================
@@ -859,13 +794,6 @@ AC_DEFUN([AM_COGL],
 
   dnl 'memmem' is a GNU extension but we have a simple fallback
   AC_CHECK_FUNCS([memmem])
-
-
-  dnl This is used in the cogl-gles2-gears example but it is a GNU extension
-  save_libs="$LIBS"
-  LIBS="$LIBS $LIBM"
-  AC_CHECK_FUNCS([sincos])
-  LIBS="$save_libs"
 
 
   dnl ================================================================
@@ -970,23 +898,14 @@ AC_DEFUN([AM_COGL],
   AC_SUBST(COGL_EXTRA_LDFLAGS)
 
   AC_OUTPUT(
-  deps/cogl/Makefile
-  deps/cogl/build/Makefile
-  deps/cogl/test-fixtures/Makefile
-  deps/cogl/cogl/Makefile
-  deps/cogl/cogl/cogl-defines.h
-  deps/cogl/cogl/cogl-gl-header.h
-  deps/cogl/cogl/cogl-egl-defines.h
-  deps/cogl/cogl-pango/Makefile
-  deps/cogl/cogl-path/Makefile
-  deps/cogl/cogl-gst/Makefile
-  deps/cogl/examples/Makefile
-  deps/cogl/tests/Makefile
-  deps/cogl/tests/config.env
-  deps/cogl/tests/conform/Makefile
-  deps/cogl/tests/unit/Makefile
-  deps/cogl/tests/micro-perf/Makefile
-  deps/cogl/tests/data/Makefile
+  cogl/Makefile
+  cogl/cogl-defines.h
+  cogl/cogl-gl-header.h
+  cogl/cogl-egl-defines.h
+  cogl-pango/Makefile
+  cogl-path/Makefile
+  cogl-gst/Makefile
+  cogl-examples/Makefile
   )
 
   dnl ================================================================
@@ -1022,7 +941,6 @@ AC_DEFUN([AM_COGL],
   echo "        Supported SDL GL APIs: ${SUPPORTED_SDL_GL_APIS}"
   fi
   echo "        Building for emscripten environment: $enable_emscripten"
-  echo "        Build libcogl-gles2 GLES 2.0 frontend api: ${enable_cogl_gles2}"
   echo "        Image backend: ${COGL_IMAGE_BACKEND}"
   echo "        Cogl Pango: ${enable_cogl_pango}"
   echo "        Cogl Gstreamer: ${enable_cogl_gst}"
@@ -1041,8 +959,6 @@ AC_DEFUN([AM_COGL],
   echo ""
   echo " • Extra:"
   echo "        Build API reference: ${enable_gtk_doc}"
-  echo "        Build introspection data: ${enable_introspection}"
-  echo "        Build unit tests: ${enable_unit_tests}"
   echo "        Enable internationalization: ${USE_NLS}"
 
   echo ""

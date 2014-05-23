@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: cogl master\n"
 "Report-Msgid-Bugs-To: http://bugzilla.gnome.org/enter_bug.cgi?"
 "product=clutter\n"
-"POT-Creation-Date: 2012-03-05 23:14+0000\n"
+"POT-Creation-Date: 2014-05-23 21:29+0100\n"
 "PO-Revision-Date: 2011-10-02 11:02+1100\n"
 "Last-Translator: Nguyễn Thái Ngọc Duy <pclouds@gmail.com>\n"
 "Language-Team: Vietnamese <gnomevi-list@lists.sourceforge.net>\n"
@@ -18,320 +18,320 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: cogl/cogl-debug.c:172
+#: cogl/cogl-debug.c:176
 msgid "Supported debug values:"
 msgstr ""
 
-#: cogl/cogl-debug.c:177
+#: cogl/cogl-debug.c:180
 msgid "Special debug values:"
 msgstr ""
 
-#: cogl/cogl-debug.c:179 cogl/cogl-debug.c:181
+#: cogl/cogl-debug.c:182 cogl/cogl-debug.c:184
 msgid "Enables all non-behavioural debug options"
 msgstr ""
 
-#: cogl/cogl-debug.c:225
-msgid "Cogl debugging flags to set"
-msgstr "Bật cờ tìm lỗi Cogl"
+#: cogl/cogl-debug.c:191
+msgid "Additional environment variables:"
+msgstr ""
 
-#: cogl/cogl-debug.c:227
-msgid "Cogl debugging flags to unset"
-msgstr "Tắt cờ tìm lỗi Cogl"
+#: cogl/cogl-debug.c:192
+msgid "Comma-separated list of GL extensions to pretend are disabled"
+msgstr ""
 
-#: cogl/cogl-debug.c:276
-msgid "Cogl Options"
-msgstr "Tuỳ chọn Cogl"
+#: cogl/cogl-debug.c:194
+msgid "Override the GL version that Cogl will assume the driver supports"
+msgstr ""
 
-#: cogl/cogl-debug.c:277
-msgid "Show Cogl options"
-msgstr "Hiện tuỳ chọn Cogl"
-
-#: cogl/cogl-debug-options.h:25 cogl/cogl-debug-options.h:30
-#: cogl/cogl-debug-options.h:35 cogl/cogl-debug-options.h:40
-#: cogl/cogl-debug-options.h:45 cogl/cogl-debug-options.h:50
-#: cogl/cogl-debug-options.h:55 cogl/cogl-debug-options.h:61
-#: cogl/cogl-debug-options.h:66 cogl/cogl-debug-options.h:71
-#: cogl/cogl-debug-options.h:158 cogl/cogl-debug-options.h:163
-#: cogl/cogl-debug-options.h:168 cogl/cogl-debug-options.h:184
+#: cogl/cogl-debug-options.h:32 cogl/cogl-debug-options.h:37
+#: cogl/cogl-debug-options.h:42 cogl/cogl-debug-options.h:47
+#: cogl/cogl-debug-options.h:52 cogl/cogl-debug-options.h:57
+#: cogl/cogl-debug-options.h:62 cogl/cogl-debug-options.h:68
+#: cogl/cogl-debug-options.h:73 cogl/cogl-debug-options.h:78
+#: cogl/cogl-debug-options.h:155 cogl/cogl-debug-options.h:160
+#: cogl/cogl-debug-options.h:165 cogl/cogl-debug-options.h:181
+#: cogl/cogl-debug-options.h:186
 msgid "Cogl Tracing"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:27
+#: cogl/cogl-debug-options.h:34
 msgid "CoglObject references"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:28
+#: cogl/cogl-debug-options.h:35
 msgid "Debug ref counting issues for CoglObjects"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:32
+#: cogl/cogl-debug-options.h:39
 msgid "Trace Texture Slicing"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:33
+#: cogl/cogl-debug-options.h:40
 msgid "debug the creation of texture slices"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:37
+#: cogl/cogl-debug-options.h:44
 msgid "Trace Atlas Textures"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:38
+#: cogl/cogl-debug-options.h:45
 msgid "Debug texture atlas management"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:42
+#: cogl/cogl-debug-options.h:49
 msgid "Trace Blend Strings"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:43
+#: cogl/cogl-debug-options.h:50
 msgid "Debug CoglBlendString parsing"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:47
+#: cogl/cogl-debug-options.h:54
 msgid "Trace Journal"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:48
+#: cogl/cogl-debug-options.h:55
 msgid "View all the geometry passing through the journal"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:52
+#: cogl/cogl-debug-options.h:59
 msgid "Trace Batching"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:53
+#: cogl/cogl-debug-options.h:60
 msgid "Show how geometry is being batched in the journal"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:57
+#: cogl/cogl-debug-options.h:64
 msgid "Trace matrices"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:58
+#: cogl/cogl-debug-options.h:65
 msgid "Trace all matrix manipulation"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:63
+#: cogl/cogl-debug-options.h:70
 msgid "Trace Misc Drawing"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:64
+#: cogl/cogl-debug-options.h:71
 msgid "Trace some misc drawing operations"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:68
+#: cogl/cogl-debug-options.h:75
 msgid "Trace Pango Renderer"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:69
+#: cogl/cogl-debug-options.h:76
 msgid "Trace the Cogl Pango renderer"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:73
+#: cogl/cogl-debug-options.h:80
 msgid "Trace CoglTexturePixmap backend"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:74
+#: cogl/cogl-debug-options.h:81
 msgid "Trace the Cogl texture pixmap backend"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:76 cogl/cogl-debug-options.h:81
+#: cogl/cogl-debug-options.h:83 cogl/cogl-debug-options.h:88
 msgid "Visualize"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:78
+#: cogl/cogl-debug-options.h:85
 msgid "Outline rectangles"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:79
+#: cogl/cogl-debug-options.h:86
 msgid "Add wire outlines for all rectangular geometry"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:83
+#: cogl/cogl-debug-options.h:90
 msgid "Show wireframes"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:84
+#: cogl/cogl-debug-options.h:91
 msgid "Add wire outlines for all geometry"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:86 cogl/cogl-debug-options.h:91
-#: cogl/cogl-debug-options.h:96 cogl/cogl-debug-options.h:101
-#: cogl/cogl-debug-options.h:111 cogl/cogl-debug-options.h:116
-#: cogl/cogl-debug-options.h:122 cogl/cogl-debug-options.h:127
-#: cogl/cogl-debug-options.h:132 cogl/cogl-debug-options.h:137
-#: cogl/cogl-debug-options.h:142 cogl/cogl-debug-options.h:147
-#: cogl/cogl-debug-options.h:153 cogl/cogl-debug-options.h:173
-#: cogl/cogl-debug-options.h:178
+#: cogl/cogl-debug-options.h:93 cogl/cogl-debug-options.h:98
+#: cogl/cogl-debug-options.h:103 cogl/cogl-debug-options.h:108
+#: cogl/cogl-debug-options.h:118 cogl/cogl-debug-options.h:123
+#: cogl/cogl-debug-options.h:129 cogl/cogl-debug-options.h:134
+#: cogl/cogl-debug-options.h:139 cogl/cogl-debug-options.h:144
+#: cogl/cogl-debug-options.h:150 cogl/cogl-debug-options.h:170
+#: cogl/cogl-debug-options.h:175
 msgid "Root Cause"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:88
+#: cogl/cogl-debug-options.h:95
 msgid "Disable Journal batching"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:89
+#: cogl/cogl-debug-options.h:96
 msgid "Disable batching of geometry in the Cogl Journal."
 msgstr ""
 
-#: cogl/cogl-debug-options.h:93
+#: cogl/cogl-debug-options.h:100
 msgid "Disable GL Vertex Buffers"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:94
+#: cogl/cogl-debug-options.h:101
 msgid "Disable use of OpenGL vertex buffer objects"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:98
+#: cogl/cogl-debug-options.h:105
 msgid "Disable GL Pixel Buffers"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:99
+#: cogl/cogl-debug-options.h:106
 msgid "Disable use of OpenGL pixel buffer objects"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:103
+#: cogl/cogl-debug-options.h:110
 msgid "Disable software rect transform"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:104
+#: cogl/cogl-debug-options.h:111
 msgid "Use the GPU to transform rectangular geometry"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:106
+#: cogl/cogl-debug-options.h:113
 msgid "Cogl Specialist"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:108
+#: cogl/cogl-debug-options.h:115
 msgid "Dump atlas images"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:109
+#: cogl/cogl-debug-options.h:116
 msgid "Dump texture atlas changes to an image file"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:113
+#: cogl/cogl-debug-options.h:120
 msgid "Disable texture atlasing"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:114
+#: cogl/cogl-debug-options.h:121
 msgid "Disable use of texture atlasing"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:118
+#: cogl/cogl-debug-options.h:125
 msgid "Disable sharing the texture atlas between text and images"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:119
+#: cogl/cogl-debug-options.h:126
 msgid ""
 "When this is set the glyph cache will always use a separate texture for its "
 "atlas. Otherwise it will try to share the atlas with images."
 msgstr ""
 
-#: cogl/cogl-debug-options.h:124
+#: cogl/cogl-debug-options.h:131
 msgid "Disable texturing"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:125
+#: cogl/cogl-debug-options.h:132
 msgid "Disable texturing any primitives"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:129
-msgid "Disable arbfp"
-msgstr ""
-
-#: cogl/cogl-debug-options.h:130
-msgid "Disable use of ARB fragment programs"
-msgstr ""
-
-#: cogl/cogl-debug-options.h:134
-msgid "Disable fixed"
-msgstr ""
-
-#: cogl/cogl-debug-options.h:135
-msgid "Disable use of the fixed function pipeline backend"
-msgstr ""
-
-#: cogl/cogl-debug-options.h:139
+#: cogl/cogl-debug-options.h:136
 msgid "Disable GLSL"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:140
+#: cogl/cogl-debug-options.h:137
 msgid "Disable use of GLSL"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:144
+#: cogl/cogl-debug-options.h:141
 msgid "Disable blending"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:145
+#: cogl/cogl-debug-options.h:142
 msgid "Disable use of blending"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:149
+#: cogl/cogl-debug-options.h:146
 msgid "Disable non-power-of-two textures"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:150
+#: cogl/cogl-debug-options.h:147
 msgid ""
 "Makes Cogl think that the GL driver doesn't support NPOT textures so that it "
 "will create sliced textures or textures with waste instead."
 msgstr ""
 
-#: cogl/cogl-debug-options.h:155
+#: cogl/cogl-debug-options.h:152
 msgid "Disable software clipping"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:156
+#: cogl/cogl-debug-options.h:153
 msgid "Disables Cogl's attempts to clip some rectangles in software."
 msgstr ""
 
-#: cogl/cogl-debug-options.h:160
+#: cogl/cogl-debug-options.h:157
 msgid "Show source"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:161
-msgid "Show generated ARBfp/GLSL source code"
+#: cogl/cogl-debug-options.h:158
+msgid "Show generated GLSL source code"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:165
+#: cogl/cogl-debug-options.h:162
 msgid "Trace some OpenGL"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:166
+#: cogl/cogl-debug-options.h:163
 msgid "Traces some select OpenGL calls"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:170
+#: cogl/cogl-debug-options.h:167
 msgid "Trace offscreen support"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:171
+#: cogl/cogl-debug-options.h:168
 msgid "Debug offscreen support"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:175
+#: cogl/cogl-debug-options.h:172
 msgid "Disable program caches"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:176
-msgid "Disable fallback caches for arbfp and glsl programs"
+#: cogl/cogl-debug-options.h:173
+msgid "Disable fallback caches for glsl programs"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:180
+#: cogl/cogl-debug-options.h:177
 msgid "Disable read pixel optimization"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:181
+#: cogl/cogl-debug-options.h:178
 msgid ""
 "Disable optimization for reading 1px for simple scenes of opaque rectangles"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:186
+#: cogl/cogl-debug-options.h:183
 msgid "Trace clipping"
 msgstr ""
 
-#: cogl/cogl-debug-options.h:187
+#: cogl/cogl-debug-options.h:184
 msgid "Logs information about how Cogl is implementing clipping"
 msgstr ""
+
+#: cogl/cogl-debug-options.h:188
+msgid "Trace performance concerns"
+msgstr ""
+
+#: cogl/cogl-debug-options.h:189
+msgid "Tries to highlight sub-optimal Cogl usage."
+msgstr ""
+
+#~ msgid "Cogl debugging flags to set"
+#~ msgstr "Bật cờ tìm lỗi Cogl"
+
+#~ msgid "Cogl debugging flags to unset"
+#~ msgstr "Tắt cờ tìm lỗi Cogl"
+
+#~ msgid "Cogl Options"
+#~ msgstr "Tuỳ chọn Cogl"
+
+#~ msgid "Show Cogl options"
+#~ msgstr "Hiện tuỳ chọn Cogl"

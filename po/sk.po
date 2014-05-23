@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: cogl cogl-1.14\n"
 "Report-Msgid-Bugs-To: http://bugzilla.gnome.org/enter_bug.cgi?"
-"product=cogl&keywords=I18N+L10N&component=general\n"
-"POT-Creation-Date: 2013-03-22 19:31+0000\n"
+"product=clutter\n"
+"POT-Creation-Date: 2014-05-23 21:29+0100\n"
 "PO-Revision-Date: 2013-03-24 10:53+0100\n"
 "Last-Translator: Ján Kyselica <kyselica.jan@gmail.com>\n"
 "Language-Team: Slovak <gnome-sk-list@gnome.org>\n"
@@ -19,284 +19,267 @@ msgstr ""
 "Plural-Forms: nplurals=3; plural=(n==1) ? 1 : (n>=2 && n<=4) ? 2 : 0;\n"
 "X-Generator: Poedit 1.5.4\n"
 
-#: ../cogl/cogl-debug.c:174
+#: cogl/cogl-debug.c:176
 msgid "Supported debug values:"
 msgstr "Podporované ladiace hodnoty:"
 
-#: ../cogl/cogl-debug.c:179
+#: cogl/cogl-debug.c:180
 msgid "Special debug values:"
 msgstr "Špeciálne ladiace hodnoty:"
 
 # popis prepínača
-#: ../cogl/cogl-debug.c:181 ../cogl/cogl-debug.c:183
+#: cogl/cogl-debug.c:182 cogl/cogl-debug.c:184
 msgid "Enables all non-behavioural debug options"
 msgstr "Povolí všetky ladiace voľby, ktoré sa netýkajú správania"
 
-#: ../cogl/cogl-debug.c:190
+#: cogl/cogl-debug.c:191
 msgid "Additional environment variables:"
 msgstr "Dodatočné premenné prostredia:"
 
 # popis premennej prostredia
-#: ../cogl/cogl-debug.c:191
+#: cogl/cogl-debug.c:192
 msgid "Comma-separated list of GL extensions to pretend are disabled"
 msgstr ""
 "Čiarkami oddelený zoznam rozšírení GL, pri ktorých sa má predstierať, že sú "
 "zakázané"
 
 # popis premennej prostredia
-#: ../cogl/cogl-debug.c:193
+#: cogl/cogl-debug.c:194
 msgid "Override the GL version that Cogl will assume the driver supports"
 msgstr ""
 "Prepíše na verziu GL, o ktorej Cogl predpokladá, že je podporovaná ovládačom"
 
-#: ../cogl/cogl-debug.c:237
-msgid "Cogl debugging flags to set"
-msgstr "Nastaviť ladiace značky rozhrania Cogl"
-
-#: ../cogl/cogl-debug.c:239
-msgid "Cogl debugging flags to unset"
-msgstr "Zrušiť nastavenie ladiacich značiek rozhrania Cogl"
-
-#: ../cogl/cogl-debug.c:288
-msgid "Cogl Options"
-msgstr "Voľby pre Cogl"
-
-#: ../cogl/cogl-debug.c:289
-msgid "Show Cogl options"
-msgstr "Zobrazí voľby pre Cogl"
-
 # názov skupiny ladiacich hodnôt
-#: ../cogl/cogl-debug-options.h:25 ../cogl/cogl-debug-options.h:30
-#: ../cogl/cogl-debug-options.h:35 ../cogl/cogl-debug-options.h:40
-#: ../cogl/cogl-debug-options.h:45 ../cogl/cogl-debug-options.h:50
-#: ../cogl/cogl-debug-options.h:55 ../cogl/cogl-debug-options.h:61
-#: ../cogl/cogl-debug-options.h:66 ../cogl/cogl-debug-options.h:71
-#: ../cogl/cogl-debug-options.h:158 ../cogl/cogl-debug-options.h:163
-#: ../cogl/cogl-debug-options.h:168 ../cogl/cogl-debug-options.h:184
-#: ../cogl/cogl-debug-options.h:189
+#: cogl/cogl-debug-options.h:32 cogl/cogl-debug-options.h:37
+#: cogl/cogl-debug-options.h:42 cogl/cogl-debug-options.h:47
+#: cogl/cogl-debug-options.h:52 cogl/cogl-debug-options.h:57
+#: cogl/cogl-debug-options.h:62 cogl/cogl-debug-options.h:68
+#: cogl/cogl-debug-options.h:73 cogl/cogl-debug-options.h:78
+#: cogl/cogl-debug-options.h:155 cogl/cogl-debug-options.h:160
+#: cogl/cogl-debug-options.h:165 cogl/cogl-debug-options.h:181
+#: cogl/cogl-debug-options.h:186
 msgid "Cogl Tracing"
 msgstr "Trasovanie rozhrania Cogl"
 
 # formátovaný názov ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:27
+#: cogl/cogl-debug-options.h:34
 msgid "CoglObject references"
 msgstr "Odkazy na CoglObject"
 
 # popis (description) ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:28
+#: cogl/cogl-debug-options.h:35
 msgid "Debug ref counting issues for CoglObjects"
 msgstr "Ladí problémy s počítaním odkazov na CoglObjects"
 
 # formátovaný názov ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:32
+#: cogl/cogl-debug-options.h:39
 msgid "Trace Texture Slicing"
 msgstr "Sledovať delenie textúry"
 
 # PM: prečo je to malým písmenom ked všetky ostatné reťazce sú veľkým, nahlás bug
 # JK: https://bugzilla.gnome.org/show_bug.cgi?id=695237
 # popis (description) ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:33
+#: cogl/cogl-debug-options.h:40
 msgid "debug the creation of texture slices"
 msgstr "ladí tvorbu častí textúry"
 
 # formátovaný názov ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:37
+#: cogl/cogl-debug-options.h:44
 msgid "Trace Atlas Textures"
 msgstr "Sledovať atlas textúr"
 
 # popis (description) ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:38
+#: cogl/cogl-debug-options.h:45
 msgid "Debug texture atlas management"
 msgstr "Ladí správu atlasu textúr"
 
 # PM: skôr zmiešanie, prelnutie - inde si použil miešanie
 # formátovaný názov ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:42
+#: cogl/cogl-debug-options.h:49
 msgid "Trace Blend Strings"
 msgstr "Sledovať miešanie reťazcov"
 
 # PM: je to popis môžeme byť obšírnejší, syntaktickú analýzu
 # popis (description) ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:43
+#: cogl/cogl-debug-options.h:50
 msgid "Debug CoglBlendString parsing"
 msgstr "Ladí syntaktickú analýzu CoglBlendString"
 
 # formátovaný názov ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:47
+#: cogl/cogl-debug-options.h:54
 msgid "Trace Journal"
 msgstr "Sledovať žurnál"
 
 # popis (description) ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:48
+#: cogl/cogl-debug-options.h:55
 msgid "View all the geometry passing through the journal"
 msgstr "Zobrazí všetky geometrické tvary prechádzajúce cez žurnál"
 
 # formátovaný názov ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:52
+#: cogl/cogl-debug-options.h:59
 msgid "Trace Batching"
 msgstr "Sledovať dávkové spracovanie"
 
 # popis (description) ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:53
+#: cogl/cogl-debug-options.h:60
 msgid "Show how geometry is being batched in the journal"
 msgstr "Zobrazí ako sú geometrické tvary dávkovo spracovávané v žurnále"
 
 # formátovaný názov ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:57
+#: cogl/cogl-debug-options.h:64
 msgid "Trace matrices"
 msgstr "Sledovať matice"
 
 # popis (description) ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:58
+#: cogl/cogl-debug-options.h:65
 msgid "Trace all matrix manipulation"
 msgstr "Sleduje celú manipuláciu s maticami"
 
 # formátovaný názov ladiacej hodnoty
 # /* XXX we should replace the "draw" option its very hand wavy... */
-#: ../cogl/cogl-debug-options.h:63
+#: cogl/cogl-debug-options.h:70
 msgid "Trace Misc Drawing"
 msgstr "Sledovať kreslenie rôznymi štýlmi"
 
 # popis (description) ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:64
+#: cogl/cogl-debug-options.h:71
 msgid "Trace some misc drawing operations"
 msgstr "Sleduje niektoré operácie kreslenia rôznymi štýlmi"
 
 # formátovaný názov ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:68
+#: cogl/cogl-debug-options.h:75
 msgid "Trace Pango Renderer"
 msgstr "Sledovať vykreslovanie knižnicou Pango"
 
 # popis (description) ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:69
+#: cogl/cogl-debug-options.h:76
 msgid "Trace the Cogl Pango renderer"
 msgstr "Sleduje vykreslovanie knižnicou Pango v rozhraní Cogl"
 
 # formátovaný názov ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:73
+#: cogl/cogl-debug-options.h:80
 msgid "Trace CoglTexturePixmap backend"
 msgstr "Sledovať obslužný program CoglTexturePixmap"
 
 # popis (description) ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:74
+#: cogl/cogl-debug-options.h:81
 msgid "Trace the Cogl texture pixmap backend"
 msgstr "Sleduje obslužný program pixmapových textúr Cogl"
 
 # názov skupiny ladiacich hodnôt
-#: ../cogl/cogl-debug-options.h:76 ../cogl/cogl-debug-options.h:81
+#: cogl/cogl-debug-options.h:83 cogl/cogl-debug-options.h:88
 msgid "Visualize"
 msgstr "Vizualizácia"
 
 # formátovaný názov ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:78
+#: cogl/cogl-debug-options.h:85
 msgid "Outline rectangles"
 msgstr "Obrysy obdĺžnikov"
 
 # popis (description) ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:79
+#: cogl/cogl-debug-options.h:86
 msgid "Add wire outlines for all rectangular geometry"
 msgstr "Pridá obrysy pre všetky obdĺžnikové tvary"
 
 # PK: wireframe neni oramovanie
 # formátovaný názov ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:83
+#: cogl/cogl-debug-options.h:90
 msgid "Show wireframes"
 msgstr "Zobraziť drôtový model"
 
 # popis (description) ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:84
+#: cogl/cogl-debug-options.h:91
 msgid "Add wire outlines for all geometry"
 msgstr "Pridá drôtový model pre všetky geometrické tvary"
 
-#: ../cogl/cogl-debug-options.h:86 ../cogl/cogl-debug-options.h:91
-#: ../cogl/cogl-debug-options.h:96 ../cogl/cogl-debug-options.h:101
-#: ../cogl/cogl-debug-options.h:111 ../cogl/cogl-debug-options.h:116
-#: ../cogl/cogl-debug-options.h:122 ../cogl/cogl-debug-options.h:127
-#: ../cogl/cogl-debug-options.h:132 ../cogl/cogl-debug-options.h:137
-#: ../cogl/cogl-debug-options.h:142 ../cogl/cogl-debug-options.h:147
-#: ../cogl/cogl-debug-options.h:153 ../cogl/cogl-debug-options.h:173
-#: ../cogl/cogl-debug-options.h:178
+#: cogl/cogl-debug-options.h:93 cogl/cogl-debug-options.h:98
+#: cogl/cogl-debug-options.h:103 cogl/cogl-debug-options.h:108
+#: cogl/cogl-debug-options.h:118 cogl/cogl-debug-options.h:123
+#: cogl/cogl-debug-options.h:129 cogl/cogl-debug-options.h:134
+#: cogl/cogl-debug-options.h:139 cogl/cogl-debug-options.h:144
+#: cogl/cogl-debug-options.h:150 cogl/cogl-debug-options.h:170
+#: cogl/cogl-debug-options.h:175
 msgid "Root Cause"
 msgstr "Základné veci"
 
 # formátovaný názov ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:88
+#: cogl/cogl-debug-options.h:95
 msgid "Disable Journal batching"
 msgstr "Zakázať dávkové spracovanie v žurnále"
 
 # popis (description) ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:89
+#: cogl/cogl-debug-options.h:96
 msgid "Disable batching of geometry in the Cogl Journal."
 msgstr ""
 "Zakáže dávkové spracovanie geometrických tvarov v žurnále rozhrania Cogl."
 
 # formátovaný názov ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:93
+#: cogl/cogl-debug-options.h:100
 msgid "Disable GL Vertex Buffers"
 msgstr "Zakázať vyrovnávacie pamäte pre vrcholy v GL"
 
 # popis (description) ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:94
+#: cogl/cogl-debug-options.h:101
 msgid "Disable use of OpenGL vertex buffer objects"
 msgstr "Zakáže používanie vyrovnávacej pamäte pre vertexy objektov v OpenGL"
 
 # formátovaný názov ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:98
+#: cogl/cogl-debug-options.h:105
 msgid "Disable GL Pixel Buffers"
 msgstr "Zakázať vyrovnávacie pamäte pre pixely v GL"
 
 # popis (description) ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:99
+#: cogl/cogl-debug-options.h:106
 msgid "Disable use of OpenGL pixel buffer objects"
 msgstr "Zakáže používanie vyrovnávacej pamäte pre pixely objektov v OpenGL"
 
 # formátovaný názov ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:103
+#: cogl/cogl-debug-options.h:110
 msgid "Disable software rect transform"
 msgstr "Zakázať softvérovú transformáciu obdĺžnikov"
 
 # popis (description) ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:104
+#: cogl/cogl-debug-options.h:111
 msgid "Use the GPU to transform rectangular geometry"
 msgstr "Použije grafický procesor na transformáciu obdĺžnikových tvarov"
 
 # názov skupiny ladiacich hodnôt
-#: ../cogl/cogl-debug-options.h:106
+#: cogl/cogl-debug-options.h:113
 msgid "Cogl Specialist"
 msgstr "Odborné veci"
 
 # MČ: Uložiť mi evokuje, že som si pripravil nejaké údaje a chcem ich uchovať. Dump má podľa mňa význam „odložiť si nejaký polotovar, ktorý vznikol počas práce programu“, takže by som možno bol za preklad „odložiť“, ale nechám na zváženie.
 # PM: chápem to ako uloženie atlasu vo forme obrázka kvôli ladeniu odložiť sa mi sem nehodí
 # formátovaný názov ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:108
+#: cogl/cogl-debug-options.h:115
 msgid "Dump atlas images"
 msgstr "Uložiť atlas obrázkov"
 
 # popis (description) ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:109
+#: cogl/cogl-debug-options.h:116
 msgid "Dump texture atlas changes to an image file"
 msgstr "Uloží zmeny atlasu textúr do obrázkového súboru"
 
 # formátovaný názov ladiacej hodnotydump
-#: ../cogl/cogl-debug-options.h:113
+#: cogl/cogl-debug-options.h:120
 msgid "Disable texture atlasing"
 msgstr "Zakázať tvorbu atlasu z textúr"
 
 # popis (description) ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:114
+#: cogl/cogl-debug-options.h:121
 msgid "Disable use of texture atlasing"
 msgstr "Zakáže vytváranie atlasu z textúr"
 
 # PK: sharing je zevraj nespisovne, nemam tusenie ako to prelozit inak
 # formátovaný názov ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:118
+#: cogl/cogl-debug-options.h:125
 msgid "Disable sharing the texture atlas between text and images"
 msgstr ""
 "Zakázať spoločné používanie atlasu textúr v texte a zároveň aj v obrázkoch."
 
 # PM: zdá sa mi že originál hovorí niečo iné ako preklad.
 # popis (description) ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:119
+#: cogl/cogl-debug-options.h:126
 msgid ""
 "When this is set the glyph cache will always use a separate texture for its "
 "atlas. Otherwise it will try to share the atlas with images."
@@ -305,64 +288,44 @@ msgstr ""
 "atlasu. V opačnom prípade sa pokúsi zdieľať atlas spolu s obrázkami."
 
 # formátovaný názov ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:124
+#: cogl/cogl-debug-options.h:131
 msgid "Disable texturing"
 msgstr "Zakázať textúrovanie"
 
 # popis (description) ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:125
+#: cogl/cogl-debug-options.h:132
 msgid "Disable texturing any primitives"
 msgstr "Zakáže textúrovanie všetkých jednoduchých tvarov"
 
 # formátovaný názov ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:129
-msgid "Disable arbfp"
-msgstr "Zakázať arbfp"
-
-# popis (description) ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:130
-msgid "Disable use of ARB fragment programs"
-msgstr "Zakáže používanie fragmentovacích programov ARB"
-
-# formátovaný názov ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:134
-msgid "Disable fixed"
-msgstr "Zakázať fixné"
-
-# popis (description) ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:135
-msgid "Disable use of the fixed function pipeline backend"
-msgstr "Zakáže používanie zreťazenia fixných funkcií obslužného programu"
-
-# formátovaný názov ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:139
+#: cogl/cogl-debug-options.h:136
 msgid "Disable GLSL"
 msgstr "Zakázať GLSL"
 
 # popis (description) ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:140
+#: cogl/cogl-debug-options.h:137
 msgid "Disable use of GLSL"
 msgstr "Zakáže používanie GLSL"
 
 # formátovaný názov ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:144
+#: cogl/cogl-debug-options.h:141
 msgid "Disable blending"
 msgstr "Zakázať miešanie"
 
 # popis (description) ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:145
+#: cogl/cogl-debug-options.h:142
 msgid "Disable use of blending"
 msgstr "Zakáže používanie miešania"
 
 # PK: preco nie textury co nejsu mocninou 2
 # formátovaný názov ladiacej hodnoty
 # JK: v nasledujucom retazci je pouzita skratka NPOT, preklad moze byt matuci
-#: ../cogl/cogl-debug-options.h:149
+#: cogl/cogl-debug-options.h:146
 msgid "Disable non-power-of-two textures"
 msgstr "Zakázať textúry, ktoré nie sú mocninou dvojky (NPOT)"
 
 # popis (description) ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:150
+#: cogl/cogl-debug-options.h:147
 msgid ""
 "Makes Cogl think that the GL driver doesn't support NPOT textures so that it "
 "will create sliced textures or textures with waste instead."
@@ -371,62 +334,64 @@ msgstr ""
 "Textúry sa buď rozdelia na časti alebo bude vznikať prázdny priestor."
 
 # formátovaný názov ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:155
+#: cogl/cogl-debug-options.h:152
 msgid "Disable software clipping"
 msgstr "Zakázať softvérové orezávanie"
 
 # popis (description) ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:156
+#: cogl/cogl-debug-options.h:153
 msgid "Disables Cogl's attempts to clip some rectangles in software."
 msgstr "Zakáže pokusy o softvérové orezanie niektorých obdĺžnikových tvarov."
 
 # formátovaný názov ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:160
+#: cogl/cogl-debug-options.h:157
 msgid "Show source"
 msgstr "Zobraziť zdrojový kód"
 
 # popis (description) ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:161
-msgid "Show generated ARBfp/GLSL source code"
+#: cogl/cogl-debug-options.h:158
+#, fuzzy
+msgid "Show generated GLSL source code"
 msgstr "Zobrazí vygenerovaný zdrojový kód ARBfp/GLSL"
 
 # formátovaný názov ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:165
+#: cogl/cogl-debug-options.h:162
 msgid "Trace some OpenGL"
 msgstr "Sledovať OpenGL"
 
 # popis (description) ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:166
+#: cogl/cogl-debug-options.h:163
 msgid "Traces some select OpenGL calls"
 msgstr "Sledovanie volaní vybraných funkcií OpenGL"
 
 # formátovaný názov ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:170
+#: cogl/cogl-debug-options.h:167
 msgid "Trace offscreen support"
 msgstr "Sledovať podporu mimoobrazovkového vykreslovania"
 
 # popis (description) ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:171
+#: cogl/cogl-debug-options.h:168
 msgid "Debug offscreen support"
 msgstr "Ladí podporu mimoobrazovkového vykreslovania"
 
 # formátovaný názov ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:175
+#: cogl/cogl-debug-options.h:172
 msgid "Disable program caches"
 msgstr "Zakázať programom používanie vyrovnávacej pamäte"
 
 # popis (description) ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:176
-msgid "Disable fallback caches for arbfp and glsl programs"
+#: cogl/cogl-debug-options.h:173
+#, fuzzy
+msgid "Disable fallback caches for glsl programs"
 msgstr "Zakáže núdzové vyrovnávacie pamäte pre programy arbfp a glsl"
 
 # formátovaný názov ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:180
+#: cogl/cogl-debug-options.h:177
 msgid "Disable read pixel optimization"
 msgstr "Zakázať optimalizáciu čítania pixelov"
 
 # popis (description) ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:181
+#: cogl/cogl-debug-options.h:178
 msgid ""
 "Disable optimization for reading 1px for simple scenes of opaque rectangles"
 msgstr ""
@@ -434,17 +399,17 @@ msgstr ""
 "po 1 pixeli"
 
 # formátovaný názov ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:186
+#: cogl/cogl-debug-options.h:183
 msgid "Trace clipping"
 msgstr "Sledovať orezávanie"
 
 # popis (description) ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:187
+#: cogl/cogl-debug-options.h:184
 msgid "Logs information about how Cogl is implementing clipping"
 msgstr "Zapisuje informácie o spôsobe akým Cogl implementuje orezávanie"
 
 # formátovaný názov ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:191
+#: cogl/cogl-debug-options.h:188
 msgid "Trace performance concerns"
 msgstr "Sledovať aspekty výkonnosti"
 
@@ -455,6 +420,34 @@ msgstr "Sledovať aspekty výkonnosti"
 # MČ: pokiaľ mám správne informácie, tak slovo „optimálne“ má takú hlúpu vlastnosť, že sa nedá stupňovať a predstavuje najvyšší stupeň. Teda menej optimálne je z tohto pohľadu nezmysel. Takže niečo je optimálne, alebo nie je optimálne. Suboptimálne sa dá teda preložiť ako horšie ako optimálne, ale nie o mnoho. 
 # PM: čiže takmer optimálne
 # popis (description) ladiacej hodnoty
-#: ../cogl/cogl-debug-options.h:192
+#: cogl/cogl-debug-options.h:189
 msgid "Tries to highlight sub-optimal Cogl usage."
 msgstr "Pokúsi sa zvýrazniť takmer optimálne použitie rozhrania Cogl."
+
+#~ msgid "Cogl debugging flags to set"
+#~ msgstr "Nastaviť ladiace značky rozhrania Cogl"
+
+#~ msgid "Cogl debugging flags to unset"
+#~ msgstr "Zrušiť nastavenie ladiacich značiek rozhrania Cogl"
+
+#~ msgid "Cogl Options"
+#~ msgstr "Voľby pre Cogl"
+
+#~ msgid "Show Cogl options"
+#~ msgstr "Zobrazí voľby pre Cogl"
+
+# formátovaný názov ladiacej hodnoty
+#~ msgid "Disable arbfp"
+#~ msgstr "Zakázať arbfp"
+
+# popis (description) ladiacej hodnoty
+#~ msgid "Disable use of ARB fragment programs"
+#~ msgstr "Zakáže používanie fragmentovacích programov ARB"
+
+# formátovaný názov ladiacej hodnoty
+#~ msgid "Disable fixed"
+#~ msgstr "Zakázať fixné"
+
+# popis (description) ladiacej hodnoty
+#~ msgid "Disable use of the fixed function pipeline backend"
+#~ msgstr "Zakáže používanie zreťazenia fixných funkcií obslužného programu"

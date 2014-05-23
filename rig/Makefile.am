@@ -4,10 +4,9 @@ include Makefile.sources
 
 AM_CPPFLAGS = \
 	-I$(top_srcdir) \
+	-I$(top_builddir) \
 	-I$(top_srcdir)/clib/src \
 	-I$(top_builddir)/clib/src \
-	-I$(top_srcdir)/deps/cogl \
-	-I$(top_builddir)/deps/cogl \
 	-I$(top_srcdir)/rut \
 	-I$(top_builddir)/rut \
 	-I$(top_builddir)/rig \
@@ -104,9 +103,10 @@ common_ldadd = \
 	librig.la \
 	-lrig_clang \
 	$(top_builddir)/rut/librut.la \
-	$(top_builddir)/deps/cogl/cogl/libcogl2.la \
-	$(top_builddir)/deps/cogl/cogl-path/libcogl-path.la \
-	$(top_builddir)/deps/cogl/cogl-pango/libcogl-pango2.la \
+	$(top_builddir)/cogl/libcogl2.la \
+	$(top_builddir)/cogl-path/libcogl-path.la \
+	$(top_builddir)/cogl-pango/libcogl-pango2.la \
+	$(top_builddir)/cogl-gst/libcogl-gst.la \
 	$(RIG_DEP_LIBS)
 
 librig_la_LIBS = $(common_ldadd)

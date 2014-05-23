@@ -83,6 +83,7 @@ AC_DEFUN([AM_CLIB],
   AC_SUBST(OS)
   AC_SUBST(PIDTYPE)
 
+  AC_CHECK_HEADERS(fcntl.h limits.h unistd.h)
   AC_CHECK_FUNCS(strlcpy stpcpy strtok_r rewinddir vasprintf)
 
   #

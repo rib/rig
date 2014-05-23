@@ -276,6 +276,13 @@ AS_IF([test "x$enable_unit_tests" = "xyes"],
 AM_CONDITIONAL(UNIT_TESTS, test "x$enable_unit_tests" = "xyes")
 
 
+AC_ARG_ENABLE(installed_tests,
+              AS_HELP_STRING([--enable-installed-tests],
+                             [Install test programs (default: no)]),,
+              [enable_installed_tests=no])
+AM_CONDITIONAL(ENABLE_INSTALLED_TESTS, test x$enable_installed_tests = xyes)
+
+
 AC_ARG_ENABLE(uninstalled-build,
               AC_HELP_STRING([--enable-uninstalled-build],
 			     [Search for files in build directory as well]),
@@ -331,7 +338,7 @@ AS_IF([test "x$have_glib" = "xno"], AC_MSG_ERROR([glib-2.0 is required]))
 RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES freetype2 pangocairo glib-2.0 gio-2.0 libprotobuf-c gdk-pixbuf-2.0 sdl2-rig libuv"
 
 have_gstreamer=no
-PKG_CHECK_EXISTS([gstreamer], [have_gstreamer=yes])
+PKG_CHECK_EXISTS([gstreamer-1.0], [have_gstreamer=yes])
 AC_ARG_ENABLE(
   [gstreamer],
   [AC_HELP_STRING([--enable-gstreamer=@<:@no/yes@:>@],
@@ -342,6 +349,7 @@ AC_ARG_ENABLE(
 AS_IF([test "x$enable_gstreamer" = "xyes"],
       [
        enable_cogl_gst=yes
+       RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES gstreamer-1.0"
        AC_DEFINE([USE_GSTREAMER], [1], [Enable gstreamer integration])
        EXTRA_FEATURES="$EXTRA_FEATURES gstreamer"
       ])
@@ -405,8 +413,6 @@ dnl ================================================================
 enable_glib=yes
 enable_cogl_path=yes
 enable_cogl_pango=yes
-enable_cogl_gst=yes
-enable_gl=yes
 enable_sdl2=yes
 AM_COGL
 
@@ -498,7 +504,7 @@ dnl Dah Da!
 dnl ================================================================
 AC_OUTPUT(
 Makefile
-deps/Makefile
+test-fixtures/Makefile
 clib/Makefile
 clib/src/Makefile
 clib/src/clib-config.h
@@ -508,6 +514,12 @@ data/Info.plist
 rig/Makefile
 rig/rig-defines.h
 tools/Makefile
+tests/Makefile
+tests/config.env
+tests/conform/Makefile
+tests/unit/Makefile
+tests/micro-perf/Makefile
+tests/data/Makefile
 po/Makefile.in
 )
 
@@ -528,4 +540,7 @@ echo "        Refcount debugging: ${enable_refcount_debug}"
 echo "        Compiler flags: ${CFLAGS} ${RIG_EXTRA_CFLAGS}"
 echo "        Preprocessor flags: ${CPPFLAGS} ${RIG_EXTRA_CPPFLAGS}"
 echo "        Linker flags: ${LDFLAGS} ${RIG_EXTRA_LDFLAGS}"
+echo ""
+echo " • Extra:"
+echo "        Build unit tests: ${enable_unit_tests}"
 echo ""

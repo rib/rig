@@ -9,8 +9,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: cogl master\n"
 "Report-Msgid-Bugs-To: http://bugzilla.gnome.org/enter_bug.cgi?"
-"product=cogl&keywords=I18N+L10N&component=general\n"
-"POT-Creation-Date: 2012-09-28 16:20+0000\n"
+"product=clutter\n"
+"POT-Creation-Date: 2014-05-23 21:29+0100\n"
 "PO-Revision-Date: 2012-10-01 20:21+0200\n"
 "Last-Translator: Marek Černocký <marek@manet.cz>\n"
 "Language-Team: Czech <gnome-cs-list@gnome.org>\n"
@@ -20,212 +20,211 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
 
-#: ../cogl/cogl-debug.c:174
+#: cogl/cogl-debug.c:176
 msgid "Supported debug values:"
 msgstr "Podporované ladicí hodnoty:"
 
-#: ../cogl/cogl-debug.c:179
+#: cogl/cogl-debug.c:180
 msgid "Special debug values:"
 msgstr "Speciální ladicí hodnoty:"
 
-#: ../cogl/cogl-debug.c:181 ../cogl/cogl-debug.c:183
+#: cogl/cogl-debug.c:182 cogl/cogl-debug.c:184
 msgid "Enables all non-behavioural debug options"
 msgstr "Zapnout všechny ladicí volby, které se netýkají chování"
 
-#: ../cogl/cogl-debug.c:190
+#: cogl/cogl-debug.c:191
 msgid "Additional environment variables:"
 msgstr "Dodatečné proměnné prostředí:"
 
-#: ../cogl/cogl-debug.c:191
+#: cogl/cogl-debug.c:192
 msgid "Comma-separated list of GL extensions to pretend are disabled"
 msgstr ""
 "Čárkami oddělený seznam rozšíření GL, u kterých se má předstírat, že jsou "
 "vypnutá"
 
-#: ../cogl/cogl-debug.c:193
+#: cogl/cogl-debug.c:194
 msgid "Override the GL version that Cogl will assume the driver supports"
 msgstr ""
 "Verzi GL, o které se Cogl domnívá, že ji podporuje ovladač, přepsat na tuto"
 
-#: ../cogl/cogl-debug-options.h:25 ../cogl/cogl-debug-options.h:30
-#: ../cogl/cogl-debug-options.h:35 ../cogl/cogl-debug-options.h:40
-#: ../cogl/cogl-debug-options.h:45 ../cogl/cogl-debug-options.h:50
-#: ../cogl/cogl-debug-options.h:55 ../cogl/cogl-debug-options.h:61
-#: ../cogl/cogl-debug-options.h:66 ../cogl/cogl-debug-options.h:71
-#: ../cogl/cogl-debug-options.h:158 ../cogl/cogl-debug-options.h:163
-#: ../cogl/cogl-debug-options.h:168 ../cogl/cogl-debug-options.h:184
-#: ../cogl/cogl-debug-options.h:189
+#: cogl/cogl-debug-options.h:32 cogl/cogl-debug-options.h:37
+#: cogl/cogl-debug-options.h:42 cogl/cogl-debug-options.h:47
+#: cogl/cogl-debug-options.h:52 cogl/cogl-debug-options.h:57
+#: cogl/cogl-debug-options.h:62 cogl/cogl-debug-options.h:68
+#: cogl/cogl-debug-options.h:73 cogl/cogl-debug-options.h:78
+#: cogl/cogl-debug-options.h:155 cogl/cogl-debug-options.h:160
+#: cogl/cogl-debug-options.h:165 cogl/cogl-debug-options.h:181
+#: cogl/cogl-debug-options.h:186
 msgid "Cogl Tracing"
 msgstr "Sledování v Cogl"
 
-#: ../cogl/cogl-debug-options.h:27
+#: cogl/cogl-debug-options.h:34
 msgid "CoglObject references"
 msgstr "Odkazy CoglObject"
 
-#: ../cogl/cogl-debug-options.h:28
+#: cogl/cogl-debug-options.h:35
 msgid "Debug ref counting issues for CoglObjects"
 msgstr "Ladit problémy s počítáním odkazů pro CoglObjects"
 
-#: ../cogl/cogl-debug-options.h:32
+#: cogl/cogl-debug-options.h:39
 msgid "Trace Texture Slicing"
 msgstr "Sledovat plátování textur"
 
-#: ../cogl/cogl-debug-options.h:33
+#: cogl/cogl-debug-options.h:40
 msgid "debug the creation of texture slices"
 msgstr "ladit tvorbu texturových plátů"
 
-#: ../cogl/cogl-debug-options.h:37
+#: cogl/cogl-debug-options.h:44
 msgid "Trace Atlas Textures"
 msgstr "Sledovat atlasové textury"
 
-#: ../cogl/cogl-debug-options.h:38
+#: cogl/cogl-debug-options.h:45
 msgid "Debug texture atlas management"
 msgstr "Ladit správu texturového atlasu"
 
-#: ../cogl/cogl-debug-options.h:42
+#: cogl/cogl-debug-options.h:49
 msgid "Trace Blend Strings"
 msgstr "Sledovat mísení řetězců"
 
-#: ../cogl/cogl-debug-options.h:43
+#: cogl/cogl-debug-options.h:50
 msgid "Debug CoglBlendString parsing"
 msgstr "Ladit zpracován CoglBlendString"
 
-#: ../cogl/cogl-debug-options.h:47
+#: cogl/cogl-debug-options.h:54
 msgid "Trace Journal"
 msgstr "Sledovat žurnál"
 
-#: ../cogl/cogl-debug-options.h:48
+#: cogl/cogl-debug-options.h:55
 msgid "View all the geometry passing through the journal"
 msgstr "Zobrazit veškeré geometrické útvary procházející skrze žurnál"
 
-#: ../cogl/cogl-debug-options.h:52
+#: cogl/cogl-debug-options.h:59
 msgid "Trace Batching"
 msgstr "Sledovat dávkové zpracování"
 
-#: ../cogl/cogl-debug-options.h:53
+#: cogl/cogl-debug-options.h:60
 msgid "Show how geometry is being batched in the journal"
 msgstr "Sledovat, jak jsou geometrické útvary zpracovány v žurnálu po dávkách"
 
-#: ../cogl/cogl-debug-options.h:57
+#: cogl/cogl-debug-options.h:64
 msgid "Trace matrices"
 msgstr "Sledovat matice"
 
-#: ../cogl/cogl-debug-options.h:58
+#: cogl/cogl-debug-options.h:65
 msgid "Trace all matrix manipulation"
 msgstr "Sledovat veškerou manipulaci s maticemi"
 
-#: ../cogl/cogl-debug-options.h:63
+#: cogl/cogl-debug-options.h:70
 msgid "Trace Misc Drawing"
 msgstr "Sledovat různá kreslení"
 
-#: ../cogl/cogl-debug-options.h:64
+#: cogl/cogl-debug-options.h:71
 msgid "Trace some misc drawing operations"
 msgstr "Sledovat některé různorodé kreslící operace"
 
-#: ../cogl/cogl-debug-options.h:68
+#: cogl/cogl-debug-options.h:75
 msgid "Trace Pango Renderer"
 msgstr "Sledovat vykreslování Pango"
 
-#: ../cogl/cogl-debug-options.h:69
+#: cogl/cogl-debug-options.h:76
 msgid "Trace the Cogl Pango renderer"
 msgstr "Sledovat vykreslování Cogl Pango"
 
-#: ../cogl/cogl-debug-options.h:73
+#: cogl/cogl-debug-options.h:80
 msgid "Trace CoglTexturePixmap backend"
 msgstr "Sledovat výkonné jádro CoglTexturePixmap"
 
-#: ../cogl/cogl-debug-options.h:74
+#: cogl/cogl-debug-options.h:81
 msgid "Trace the Cogl texture pixmap backend"
 msgstr "Sledovat výkoné jádro pixmapových textur Cogl"
 
-#: ../cogl/cogl-debug-options.h:76 ../cogl/cogl-debug-options.h:81
+#: cogl/cogl-debug-options.h:83 cogl/cogl-debug-options.h:88
 msgid "Visualize"
 msgstr "Vizualizovat"
 
-#: ../cogl/cogl-debug-options.h:78
+#: cogl/cogl-debug-options.h:85
 msgid "Outline rectangles"
 msgstr "Obrysové obdélníky"
 
-#: ../cogl/cogl-debug-options.h:79
+#: cogl/cogl-debug-options.h:86
 msgid "Add wire outlines for all rectangular geometry"
 msgstr "Přidat drátěný obrys ke všem obdélníkům"
 
-#: ../cogl/cogl-debug-options.h:83
+#: cogl/cogl-debug-options.h:90
 msgid "Show wireframes"
 msgstr "Drátěné zobrazení"
 
-#: ../cogl/cogl-debug-options.h:84
+#: cogl/cogl-debug-options.h:91
 msgid "Add wire outlines for all geometry"
 msgstr "Přidat drátěný obrys ke všem útvarům"
 
-#: ../cogl/cogl-debug-options.h:86 ../cogl/cogl-debug-options.h:91
-#: ../cogl/cogl-debug-options.h:96 ../cogl/cogl-debug-options.h:101
-#: ../cogl/cogl-debug-options.h:111 ../cogl/cogl-debug-options.h:116
-#: ../cogl/cogl-debug-options.h:122 ../cogl/cogl-debug-options.h:127
-#: ../cogl/cogl-debug-options.h:132 ../cogl/cogl-debug-options.h:137
-#: ../cogl/cogl-debug-options.h:142 ../cogl/cogl-debug-options.h:147
-#: ../cogl/cogl-debug-options.h:153 ../cogl/cogl-debug-options.h:173
-#: ../cogl/cogl-debug-options.h:178
+#: cogl/cogl-debug-options.h:93 cogl/cogl-debug-options.h:98
+#: cogl/cogl-debug-options.h:103 cogl/cogl-debug-options.h:108
+#: cogl/cogl-debug-options.h:118 cogl/cogl-debug-options.h:123
+#: cogl/cogl-debug-options.h:129 cogl/cogl-debug-options.h:134
+#: cogl/cogl-debug-options.h:139 cogl/cogl-debug-options.h:144
+#: cogl/cogl-debug-options.h:150 cogl/cogl-debug-options.h:170
+#: cogl/cogl-debug-options.h:175
 msgid "Root Cause"
 msgstr "Základní věci"
 
-#: ../cogl/cogl-debug-options.h:88
+#: cogl/cogl-debug-options.h:95
 msgid "Disable Journal batching"
 msgstr "Zakázat dávkové zpracování v žurnálu"
 
-#: ../cogl/cogl-debug-options.h:89
+#: cogl/cogl-debug-options.h:96
 msgid "Disable batching of geometry in the Cogl Journal."
 msgstr "Zakázat dávkové zpracování geometrických útvarů v žurnálu Cogl"
 
-#: ../cogl/cogl-debug-options.h:93
+#: cogl/cogl-debug-options.h:100
 msgid "Disable GL Vertex Buffers"
 msgstr "Vypnout vyrovnávací paměti vertexů GL"
 
-#: ../cogl/cogl-debug-options.h:94
+#: cogl/cogl-debug-options.h:101
 msgid "Disable use of OpenGL vertex buffer objects"
 msgstr "Vypnout používání objektů vyrovnávacích pamětí vertexů GL"
 
-#: ../cogl/cogl-debug-options.h:98
+#: cogl/cogl-debug-options.h:105
 msgid "Disable GL Pixel Buffers"
 msgstr "Vypnout vyrovnávací paměti pixelů GL"
 
-#: ../cogl/cogl-debug-options.h:99
+#: cogl/cogl-debug-options.h:106
 msgid "Disable use of OpenGL pixel buffer objects"
 msgstr "Vypnout používání objektů vyrovnávacích pamětí pixelů GL"
 
-#: ../cogl/cogl-debug-options.h:103
+#: cogl/cogl-debug-options.h:110
 msgid "Disable software rect transform"
 msgstr "Zakázat softwarovou transformaci obdélníků"
 
-#: ../cogl/cogl-debug-options.h:104
+#: cogl/cogl-debug-options.h:111
 msgid "Use the GPU to transform rectangular geometry"
 msgstr "Použít grafický adaptér k transformacím obdélníků"
 
-#: ../cogl/cogl-debug-options.h:106
+#: cogl/cogl-debug-options.h:113
 msgid "Cogl Specialist"
 msgstr "Pro odborníky na Cogl"
 
-#: ../cogl/cogl-debug-options.h:108
+#: cogl/cogl-debug-options.h:115
 msgid "Dump atlas images"
 msgstr "Ukládat obrázky atlasu"
 
-#: ../cogl/cogl-debug-options.h:109
+#: cogl/cogl-debug-options.h:116
 msgid "Dump texture atlas changes to an image file"
 msgstr "Ukládat změny texturového atlasu do obrázkového souboru"
 
-#: ../cogl/cogl-debug-options.h:113
+#: cogl/cogl-debug-options.h:120
 msgid "Disable texture atlasing"
 msgstr "Zakázat atlasování textur"
 
-#: ../cogl/cogl-debug-options.h:114
+#: cogl/cogl-debug-options.h:121
 msgid "Disable use of texture atlasing"
 msgstr "Zakázat tvorbu atlasu z textur"
 
-#: ../cogl/cogl-debug-options.h:118
+#: cogl/cogl-debug-options.h:125
 msgid "Disable sharing the texture atlas between text and images"
 msgstr "Zakázat sdílení texturového atlasu mezi textem a obrázky"
 
-#: ../cogl/cogl-debug-options.h:119
+#: cogl/cogl-debug-options.h:126
 msgid ""
 "When this is set the glyph cache will always use a separate texture for its "
 "atlas. Otherwise it will try to share the atlas with images."
@@ -233,51 +232,35 @@ msgstr ""
 "Pokud je nastaveno, paměť znaků bude vždy používat oddělenou texturu pro "
 "svůj atlas. V opačném případě se bude snažit sdílet atlas s obrázky."
 
-#: ../cogl/cogl-debug-options.h:124
+#: cogl/cogl-debug-options.h:131
 msgid "Disable texturing"
 msgstr "Zakázat potažení texturami"
 
-#: ../cogl/cogl-debug-options.h:125
+#: cogl/cogl-debug-options.h:132
 msgid "Disable texturing any primitives"
 msgstr "Zakázat potažení texturami u všech primitiv"
 
-#: ../cogl/cogl-debug-options.h:129
-msgid "Disable arbfp"
-msgstr "Zakázat arbfp"
-
-#: ../cogl/cogl-debug-options.h:130
-msgid "Disable use of ARB fragment programs"
-msgstr "Zakázat použití fragmentovacích programů ARB"
-
-#: ../cogl/cogl-debug-options.h:134
-msgid "Disable fixed"
-msgstr "Zakázat pevné"
-
-#: ../cogl/cogl-debug-options.h:135
-msgid "Disable use of the fixed function pipeline backend"
-msgstr "Zakázat použití výkonného jádra s rourou pevných funkcí"
-
-#: ../cogl/cogl-debug-options.h:139
+#: cogl/cogl-debug-options.h:136
 msgid "Disable GLSL"
 msgstr "Zakázat GLSL"
 
-#: ../cogl/cogl-debug-options.h:140
+#: cogl/cogl-debug-options.h:137
 msgid "Disable use of GLSL"
 msgstr "Zakázat používaní GLSL"
 
-#: ../cogl/cogl-debug-options.h:144
+#: cogl/cogl-debug-options.h:141
 msgid "Disable blending"
 msgstr "Zakázat mísení"
 
-#: ../cogl/cogl-debug-options.h:145
+#: cogl/cogl-debug-options.h:142
 msgid "Disable use of blending"
 msgstr "Zakázat použití mísení (blending)"
 
-#: ../cogl/cogl-debug-options.h:149
+#: cogl/cogl-debug-options.h:146
 msgid "Disable non-power-of-two textures"
 msgstr "Zakázat textury typu NPOT"
 
-#: ../cogl/cogl-debug-options.h:150
+#: cogl/cogl-debug-options.h:147
 msgid ""
 "Makes Cogl think that the GL driver doesn't support NPOT textures so that it "
 "will create sliced textures or textures with waste instead."
@@ -286,230 +269,182 @@ msgstr ""
 "různými od mocnin dvojky. Textury se buď rozdělí na pláty nebo bude vznikat "
 "prázdný prostor."
 
-#: ../cogl/cogl-debug-options.h:155
+#: cogl/cogl-debug-options.h:152
 msgid "Disable software clipping"
 msgstr "Zakázat softwarové ořezávání"
 
-#: ../cogl/cogl-debug-options.h:156
+#: cogl/cogl-debug-options.h:153
 msgid "Disables Cogl's attempts to clip some rectangles in software."
 msgstr "Zákázat pokusy o softwarový ořez některých obdélníků"
 
-#: ../cogl/cogl-debug-options.h:160
+#: cogl/cogl-debug-options.h:157
 msgid "Show source"
 msgstr "Zobrazit zdrojový kód"
 
-#: ../cogl/cogl-debug-options.h:161
-msgid "Show generated ARBfp/GLSL source code"
+#: cogl/cogl-debug-options.h:158
+#, fuzzy
+msgid "Show generated GLSL source code"
 msgstr "Zobrazit vytvořený zdrojový kód ARBfp/GLSL"
 
-#: ../cogl/cogl-debug-options.h:165
+#: cogl/cogl-debug-options.h:162
 msgid "Trace some OpenGL"
 msgstr "Sledovat něco z OpenGL"
 
-#: ../cogl/cogl-debug-options.h:166
+#: cogl/cogl-debug-options.h:163
 msgid "Traces some select OpenGL calls"
 msgstr "Sledovat některá vybraná volání OpenGL"
 
-#: ../cogl/cogl-debug-options.h:170
+#: cogl/cogl-debug-options.h:167
 msgid "Trace offscreen support"
 msgstr "Sledovat podporu mimoobrazovkového vykreslování"
 
-#: ../cogl/cogl-debug-options.h:171
+#: cogl/cogl-debug-options.h:168
 msgid "Debug offscreen support"
 msgstr "Ladit podporu mimoobrazovkévého vykreslování (offscreen)"
 
-#: ../cogl/cogl-debug-options.h:175
+#: cogl/cogl-debug-options.h:172
 msgid "Disable program caches"
 msgstr "Zakázat mezipaměť programů"
 
-#: ../cogl/cogl-debug-options.h:176
-msgid "Disable fallback caches for arbfp and glsl programs"
+#: cogl/cogl-debug-options.h:173
+#, fuzzy
+msgid "Disable fallback caches for glsl programs"
 msgstr "Zakázat nouzovou mezipaměť pro programy arbfp a glsl"
 
-#: ../cogl/cogl-debug-options.h:180
+#: cogl/cogl-debug-options.h:177
 msgid "Disable read pixel optimization"
 msgstr "Vypnout optimalizaci čtení pixelu"
 
-#: ../cogl/cogl-debug-options.h:181
+#: cogl/cogl-debug-options.h:178
 msgid ""
 "Disable optimization for reading 1px for simple scenes of opaque rectangles"
 msgstr ""
 "Vypnout optimalizaci pro čtení 1 pixelu u jednoduchých scén z neprůhledných "
 "čtyřúhelníků"
 
-#: ../cogl/cogl-debug-options.h:186
+#: cogl/cogl-debug-options.h:183
 msgid "Trace clipping"
 msgstr "Sledovat ořezávání"
 
-#: ../cogl/cogl-debug-options.h:187
+#: cogl/cogl-debug-options.h:184
 msgid "Logs information about how Cogl is implementing clipping"
 msgstr "Zapisovat informace, jak Cogl provádí ořezy"
 
-#: ../cogl/cogl-debug-options.h:191
+#: cogl/cogl-debug-options.h:188
 msgid "Trace performance concerns"
 msgstr "Sledovat výkonostní aspekty"
 
-#: ../cogl/cogl-debug-options.h:192
+#: cogl/cogl-debug-options.h:189
 msgid "Tries to highlight sub-optimal Cogl usage."
 msgstr "Zkusit zdůraznit suboptimální využití Cogl"
 
-#: ../deps/glib/gfileutils.c:542 ../deps/glib/gfileutils.c:630
-#, c-format
-msgid "Could not allocate %lu bytes to read file \"%s\""
-msgstr "Nelze alokovat %lu bajtů pro čtení souboru „%s“"
+#~ msgid "Disable arbfp"
+#~ msgstr "Zakázat arbfp"
 
-#: ../deps/glib/gfileutils.c:557
-#, c-format
-msgid "Error reading file '%s': %s"
-msgstr "Chyba při čtení souboru „%s“: %s"
+#~ msgid "Disable use of ARB fragment programs"
+#~ msgstr "Zakázat použití fragmentovacích programů ARB"
 
-#: ../deps/glib/gfileutils.c:571
-#, c-format
-msgid "File \"%s\" is too large"
-msgstr "Soubor „%s“ je příliš velký"
+#~ msgid "Disable fixed"
+#~ msgstr "Zakázat pevné"
 
-#: ../deps/glib/gfileutils.c:654
-#, c-format
-msgid "Failed to read from file '%s': %s"
-msgstr "Selhalo čtení ze souboru „%s“: %s"
+#~ msgid "Disable use of the fixed function pipeline backend"
+#~ msgstr "Zakázat použití výkonného jádra s rourou pevných funkcí"
 
-#: ../deps/glib/gfileutils.c:705 ../deps/glib/gfileutils.c:792
-#, c-format
-msgid "Failed to open file '%s': %s"
-msgstr "Selhalo otevření souboru „%s“: %s"
+#~ msgid "Could not allocate %lu bytes to read file \"%s\""
+#~ msgstr "Nelze alokovat %lu bajtů pro čtení souboru „%s“"
 
-#: ../deps/glib/gfileutils.c:722
-#, c-format
-msgid "Failed to get attributes of file '%s': fstat() failed: %s"
-msgstr "Selhalo získání vlastností souboru „%s“: selhala funkce fstat(): %s"
+#~ msgid "Error reading file '%s': %s"
+#~ msgstr "Chyba při čtení souboru „%s“: %s"
 
-#: ../deps/glib/gfileutils.c:756
-#, c-format
-msgid "Failed to open file '%s': fdopen() failed: %s"
-msgstr "Selhalo otevření souboru „%s“: selhala funkce fdopen(): %s"
+#~ msgid "File \"%s\" is too large"
+#~ msgstr "Soubor „%s“ je příliš velký"
 
-#: ../deps/glib/gfileutils.c:864
-#, c-format
-msgid "Failed to rename file '%s' to '%s': g_rename() failed: %s"
-msgstr ""
-"Selhalo přejmenování souboru „%s“ na „%s“: selhala funkce g_rename(): %s"
+#~ msgid "Failed to read from file '%s': %s"
+#~ msgstr "Selhalo čtení ze souboru „%s“: %s"
 
-#: ../deps/glib/gfileutils.c:906 ../deps/glib/gfileutils.c:1451
-#, c-format
-msgid "Failed to create file '%s': %s"
-msgstr "Selhalo vytvoření souboru „%s“: %s"
+#~ msgid "Failed to open file '%s': %s"
+#~ msgstr "Selhalo otevření souboru „%s“: %s"
 
-#: ../deps/glib/gfileutils.c:920
-#, c-format
-msgid "Failed to open file '%s' for writing: fdopen() failed: %s"
-msgstr "Selhalo otevření souboru „%s“ pro zápis: selhala funkce fdopen(): %s"
+#~ msgid "Failed to get attributes of file '%s': fstat() failed: %s"
+#~ msgstr "Selhalo získání vlastností souboru „%s“: selhala funkce fstat(): %s"
 
-#: ../deps/glib/gfileutils.c:945
-#, c-format
-msgid "Failed to write file '%s': fwrite() failed: %s"
-msgstr "Selhal zápis souboru „%s“: selhala funkce fwrite(): %s"
+#~ msgid "Failed to open file '%s': fdopen() failed: %s"
+#~ msgstr "Selhalo otevření souboru „%s“: selhala funkce fdopen(): %s"
 
-#: ../deps/glib/gfileutils.c:964
-#, c-format
-msgid "Failed to write file '%s': fflush() failed: %s"
-msgstr "Selhal zápis souboru „%s“: selhala funkce fflush(): %s"
+#~ msgid "Failed to rename file '%s' to '%s': g_rename() failed: %s"
+#~ msgstr ""
+#~ "Selhalo přejmenování souboru „%s“ na „%s“: selhala funkce g_rename(): %s"
 
-#: ../deps/glib/gfileutils.c:1008
-#, c-format
-msgid "Failed to write file '%s': fsync() failed: %s"
-msgstr "Selhal zápis souboru „%s“: selhala funkce fsync(): %s"
+#~ msgid "Failed to create file '%s': %s"
+#~ msgstr "Selhalo vytvoření souboru „%s“: %s"
 
-#: ../deps/glib/gfileutils.c:1032
-#, c-format
-msgid "Failed to close file '%s': fclose() failed: %s"
-msgstr "Selhalo zavření souboru „%s“: selhala funkce fclose(): %s"
+#~ msgid "Failed to open file '%s' for writing: fdopen() failed: %s"
+#~ msgstr ""
+#~ "Selhalo otevření souboru „%s“ pro zápis: selhala funkce fdopen(): %s"
 
-#: ../deps/glib/gfileutils.c:1154
-#, c-format
-msgid "Existing file '%s' could not be removed: g_unlink() failed: %s"
-msgstr ""
-"Existující soubor „%s“ nemohl být odstraněn: selhala funkce g_unlink(): %s"
+#~ msgid "Failed to write file '%s': fwrite() failed: %s"
+#~ msgstr "Selhal zápis souboru „%s“: selhala funkce fwrite(): %s"
 
-#: ../deps/glib/gfileutils.c:1414
-#, c-format
-msgid "Template '%s' invalid, should not contain a '%s'"
-msgstr "Šablona „%s“ je neplatná, neměla by obsahovat „%s“"
+#~ msgid "Failed to write file '%s': fflush() failed: %s"
+#~ msgstr "Selhal zápis souboru „%s“: selhala funkce fflush(): %s"
 
-#: ../deps/glib/gfileutils.c:1427
-#, c-format
-msgid "Template '%s' doesn't contain XXXXXX"
-msgstr "Šablona „%s“ neobsahuje XXXXXX"
+#~ msgid "Failed to write file '%s': fsync() failed: %s"
+#~ msgstr "Selhal zápis souboru „%s“: selhala funkce fsync(): %s"
 
-#: ../deps/glib/gfileutils.c:2009
-#, c-format
-msgid "%.1f KiB"
-msgstr "%.1f KiB"
+#~ msgid "Failed to close file '%s': fclose() failed: %s"
+#~ msgstr "Selhalo zavření souboru „%s“: selhala funkce fclose(): %s"
 
-#: ../deps/glib/gfileutils.c:2012
-#, c-format
-msgid "%.1f MiB"
-msgstr "%.1f MiB"
+#~ msgid "Existing file '%s' could not be removed: g_unlink() failed: %s"
+#~ msgstr ""
+#~ "Existující soubor „%s“ nemohl být odstraněn: selhala funkce g_unlink(): %s"
 
-#: ../deps/glib/gfileutils.c:2015
-#, c-format
-msgid "%.1f GiB"
-msgstr "%.1f GiB"
+#~ msgid "Template '%s' invalid, should not contain a '%s'"
+#~ msgstr "Šablona „%s“ je neplatná, neměla by obsahovat „%s“"
 
-#: ../deps/glib/gfileutils.c:2018
-#, c-format
-msgid "%.1f TiB"
-msgstr "%.1f TiB"
+#~ msgid "Template '%s' doesn't contain XXXXXX"
+#~ msgstr "Šablona „%s“ neobsahuje XXXXXX"
 
-#: ../deps/glib/gfileutils.c:2021
-#, c-format
-msgid "%.1f PiB"
-msgstr "%.1f PiB"
+#~ msgid "%.1f KiB"
+#~ msgstr "%.1f KiB"
 
-#: ../deps/glib/gfileutils.c:2024
-#, c-format
-msgid "%.1f EiB"
-msgstr "%.1f EiB"
+#~ msgid "%.1f MiB"
+#~ msgstr "%.1f MiB"
 
-#: ../deps/glib/gfileutils.c:2037
-#, c-format
-msgid "%.1f kB"
-msgstr "%.1f kB"
+#~ msgid "%.1f GiB"
+#~ msgstr "%.1f GiB"
 
-#: ../deps/glib/gfileutils.c:2040 ../deps/glib/gfileutils.c:2149
-#, c-format
-msgid "%.1f MB"
-msgstr "%.1f MB"
+#~ msgid "%.1f TiB"
+#~ msgstr "%.1f TiB"
 
-#: ../deps/glib/gfileutils.c:2043 ../deps/glib/gfileutils.c:2154
-#, c-format
-msgid "%.1f GB"
-msgstr "%.1f GB"
+#~ msgid "%.1f PiB"
+#~ msgstr "%.1f PiB"
 
-#: ../deps/glib/gfileutils.c:2046 ../deps/glib/gfileutils.c:2159
-#, c-format
-msgid "%.1f TB"
-msgstr "%.1f TB"
+#~ msgid "%.1f EiB"
+#~ msgstr "%.1f EiB"
 
-#: ../deps/glib/gfileutils.c:2049 ../deps/glib/gfileutils.c:2164
-#, c-format
-msgid "%.1f PB"
-msgstr "%.1f PB"
+#~ msgid "%.1f kB"
+#~ msgstr "%.1f kB"
 
-#: ../deps/glib/gfileutils.c:2052 ../deps/glib/gfileutils.c:2169
-#, c-format
-msgid "%.1f EB"
-msgstr "%.1f EB"
+#~ msgid "%.1f MB"
+#~ msgstr "%.1f MB"
 
-#: ../deps/glib/gfileutils.c:2144
-#, c-format
-msgid "%.1f KB"
-msgstr "%.1f kB"
+#~ msgid "%.1f GB"
+#~ msgstr "%.1f GB"
 
-#: ../deps/glib/gfileutils.c:2212
-#, c-format
-msgid "Failed to read the symbolic link '%s': %s"
-msgstr "Selhalo čtení symbolického odkazu „%s“: %s"
+#~ msgid "%.1f TB"
+#~ msgstr "%.1f TB"
 
-#: ../deps/glib/gfileutils.c:2233
-msgid "Symbolic links not supported"
-msgstr "Symbolické odkazy nejsou podporovány"
+#~ msgid "%.1f PB"
+#~ msgstr "%.1f PB"
+
+#~ msgid "%.1f EB"
+#~ msgstr "%.1f EB"
+
+#~ msgid "%.1f KB"
+#~ msgstr "%.1f kB"
+
+#~ msgid "Failed to read the symbolic link '%s': %s"
+#~ msgstr "Selhalo čtení symbolického odkazu „%s“: %s"
+
+#~ msgid "Symbolic links not supported"
+#~ msgstr "Symbolické odkazy nejsou podporovány"
