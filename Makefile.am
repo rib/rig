@@ -1,4 +1,4 @@
-SUBDIRS = deps rut tools data rig po
+SUBDIRS = deps clib rut tools data rig po
 
 ACLOCAL_AMFLAGS = -I build/autotools ${ACLOCAL_FLAGS}
 

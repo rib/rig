@@ -4,8 +4,8 @@ NULL =
 
 AM_CPPFLAGS = \
 	-I$(top_srcdir) \
-	-I$(top_srcdir)/deps/clib/src \
-	-I$(top_builddir)/deps/clib/src \
+	-I$(top_srcdir)/clib/src \
+	-I$(top_builddir)/clib/src \
 	-I$(top_srcdir)/deps/cogl \
 	-I$(top_builddir)/deps/cogl
 
@@ -25,7 +25,7 @@ AM_CFLAGS = $(COGL_DEP_CFLAGS) $(COGL_EXTRA_CFLAGS)
 
 common_ldadd = \
 	$(COGL_DEP_LIBS) \
-	$(top_builddir)/deps/clib/src/libclib.la \
+	$(top_builddir)/clib/src/libclib.la \
 	$(top_builddir)/deps/cogl/cogl/libcogl2.la \
 	$(LIBM)
 

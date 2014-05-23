@@ -4,8 +4,8 @@ noinst_LTLIBRARIES = libtest-fixtures.la
 libtest_fixtures_la_CPPFLAGS = \
 	-I$(top_srcdir) \
 	-I$(top_builddir)/deps/cogl/cogl \
-	-I$(top_srcdir)/deps/clib/src \
-	-I$(top_builddir)/deps/clib/src \
+	-I$(top_srcdir)/clib/src \
+	-I$(top_builddir)/clib/src \
 	-I$(top_srcdir)/deps/cogl \
 	-I$(top_builddir)/deps/cogl \
 	-Wall \

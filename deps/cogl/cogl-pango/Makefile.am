@@ -28,7 +28,7 @@ lib_LTLIBRARIES = libcogl-pango2.la
 
 libcogl_pango2_la_SOURCES = $(source_c) $(source_h) $(source_h_priv)
 libcogl_pango2_la_CFLAGS = $(COGL_DEP_CFLAGS) $(COGL_PANGO_DEP_CFLAGS) $(COGL_EXTRA_CFLAGS) $(MAINTAINER_CFLAGS)
-libcogl_pango2_la_LIBADD = $(top_builddir)/deps/clib/src/libclib.la
+libcogl_pango2_la_LIBADD = $(top_builddir)/clib/src/libclib.la
 libcogl_pango2_la_LIBADD += $(top_builddir)/deps/cogl/cogl/libcogl2.la
 libcogl_pango2_la_LIBADD += $(COGL_DEP_LIBS) $(COGL_PANGO_DEP_LIBS) $(COGL_EXTRA_LDFLAGS)
 libcogl_pango2_la_LDFLAGS = -static
@@ -36,8 +36,8 @@ libcogl_pango2_la_LDFLAGS = -static
 AM_CPPFLAGS = \
 	-DCOGL_COMPILATION \
 	-DG_LOG_DOMAIN=\"CoglPango\" \
-	-I$(top_srcdir)/deps/clib/src \
-	-I$(top_builddir)/deps/clib/src	\
+	-I$(top_srcdir)/clib/src \
+	-I$(top_builddir)/clib/src	\
 	-I$(top_srcdir)/deps/cogl \
 	-I$(top_builddir)/deps/cogl \
 	-I$(top_srcdir)/deps/cogl/cogl \

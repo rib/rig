@@ -499,9 +499,9 @@ dnl ================================================================
 AC_OUTPUT(
 Makefile
 deps/Makefile
-deps/clib/Makefile
-deps/clib/src/Makefile
-deps/clib/src/clib-config.h
+clib/Makefile
+clib/src/Makefile
+clib/src/clib-config.h
 rut/Makefile
 data/Makefile
 data/Info.plist

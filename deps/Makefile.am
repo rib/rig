@@ -1,1 +1,1 @@
-SUBDIRS = clib cogl
+SUBDIRS = cogl

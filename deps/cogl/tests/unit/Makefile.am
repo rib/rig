@@ -58,8 +58,8 @@ BUILT_SOURCES = wrappers
 AM_CPPFLAGS = \
 	-I$(top_srcdir) \
 	-I$(top_srcdir)/test-fixtures \
-	-I$(top_srcdir)/deps/clib/src \
-	-I$(top_builddir)/deps/clib/src	\
+	-I$(top_srcdir)/clib/src \
+	-I$(top_builddir)/clib/src	\
 	-I$(top_srcdir)/deps/cogl \
 	-I$(top_builddir)/deps/cogl \
 	-I$(top_builddir)/cogl
@@ -74,7 +74,7 @@ test_unit_LDADD = \
 	$(COGL_DEP_LIBS) \
 	$(top_builddir)/deps/cogl/cogl/libcogl2.la \
 	$(LIBM)
-test_unit_LDADD += $(top_builddir)/deps/clib/src/libclib.la
+test_unit_LDADD += $(top_builddir)/clib/src/libclib.la
 test_unit_LDFLAGS = -export-dynamic
 
 test: wrappers

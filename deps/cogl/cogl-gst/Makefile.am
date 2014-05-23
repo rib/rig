@@ -20,7 +20,7 @@ lib_LTLIBRARIES = libcogl-gst.la
 
 libcogl_gst_la_SOURCES = $(source_c) $(source_h)
 libcogl_gst_la_CFLAGS = $(COGL_DEP_CFLAGS) $(COGL_GST_DEP_CFLAGS) $(COGL_EXTRA_CFLAGS) $(MAINTAINER_CFLAGS)
-libcogl_gst_la_LIBADD = $(top_builddir)/deps/clib/src/libclib.la
+libcogl_gst_la_LIBADD = $(top_builddir)/clib/src/libclib.la
 libcogl_gst_la_LIBADD += $(top_builddir)/deps/cogl/cogl/libcogl2.la
 libcogl_gst_la_LIBADD += $(COGL_DEP_LIBS) $(COGL_GST_DEP_LIBS) $(COGL_EXTRA_LDFLAGS)
 libcogl_gst_la_LDFLAGS = -static
@@ -28,8 +28,8 @@ libcogl_gst_la_LDFLAGS = -static
 AM_CPPFLAGS = \
 	-DCOGL_COMPILATION \
 	-DG_LOG_DOMAIN=\"CoglGst\" \
-	-I$(top_srcdir)/deps/clib/src \
-	-I$(top_builddir)/deps/clib/src	\
+	-I$(top_srcdir)/clib/src \
+	-I$(top_builddir)/clib/src	\
 	-I$(top_srcdir)/deps/cogl \
 	-I$(top_builddir)/deps/cogl \
 	-I$(top_srcdir)/deps/cogl/cogl \
