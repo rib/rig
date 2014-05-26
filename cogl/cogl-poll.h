@@ -195,6 +195,33 @@ cogl_poll_renderer_dispatch (CoglRenderer *renderer,
                              const CoglPollFD *poll_fds,
                              int n_poll_fds);
 
+/**
+ * cogl_poll_renderer_dispatch_fd:
+ * @renderer: A #CoglRenderer
+ * @fd: One of the file descriptors returned by
+ *      cogl_poll_renderer_get_info()
+ * @events: The events that have been triggered on @fd
+ *
+ * Dispatches any work associated with a specific file descriptor that
+ * was previosly returned by cogl_poll_renderer_get_info(). Depending
+ * on how file descriptors are being integrated into an application
+ * mainloop it may convenient to handle the dispatching of each file
+ * descriptor separately.
+ *
+ * <note>If this api is used to dispatch work for each file descriptor
+ * separately then the application must still call
+ * cogl_poll_renderer_dispatch() for each iteration of the mainloop
+ * with a %NULL poll_fds array, with %0 length so that Cogl can run any
+ * idle work or other work not associated with a file
+ * descriptor.</note>
+ *
+ * Stability: unstable
+ */
+void
+cogl_poll_renderer_dispatch_fd (CoglRenderer *renderer,
+                                int fd,
+                                int events);
+
 COGL_END_DECLS
 
 #endif /* __COGL_POLL_H__ */

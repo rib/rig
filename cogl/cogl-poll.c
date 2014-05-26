@@ -129,6 +129,25 @@ cogl_poll_renderer_dispatch (CoglRenderer *renderer,
     }
 }
 
+void
+cogl_poll_renderer_dispatch_fd (CoglRenderer *renderer,
+                                int fd,
+                                int events)
+{
+  CList *l;
+
+  for (l = renderer->poll_sources; l; l = l->next)
+    {
+      CoglPollSource *source = l->data;
+
+      if (source->fd == fd)
+        {
+          source->dispatch (source->user_data, events);
+          return;
+        }
+    }
+}
+
 static int
 find_pollfd (CoglRenderer *renderer, int fd)
 {
