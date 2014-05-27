@@ -99,6 +99,7 @@ pollfd_events_to_protobuf_events (unsigned ev)
 
 static void
 fd_watch_dispatch_cb (void *user_data,
+                      int fd,
                       int revents)
 {
   DispatchClosure *closure = user_data;
@@ -237,7 +238,7 @@ rig_protobuf_c_dispatch_remove_idle (RigProtobufCDispatchIdle *idle)
     {
       if (l->data == idle)
         {
-          rut_closure_disconnect (closure->rut_closure);
+          rut_poll_shell_remove_idle (dispatch->shell, closure->rut_closure);
           dispatch->dispatch_closures =
             c_list_delete_link (dispatch->dispatch_closures, l);
           c_slice_free (DispatchClosure, closure);

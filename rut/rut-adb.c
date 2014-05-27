@@ -321,7 +321,7 @@ rut_adb_getprop (const char *serial,
 }
 
 static void
-handle_devices_update_cb (void *user_data, int revents)
+handle_devices_update_cb (void *user_data, int fd, int revents)
 {
   RutAdbDeviceTracker *tracker = user_data;
   RutException *catch = NULL;

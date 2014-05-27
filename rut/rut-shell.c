@@ -74,7 +74,6 @@
 #include "rut-nine-slice.h"
 #include "rut-camera.h"
 #include "rut-poll.h"
-#include "rut-glib-source.h"
 
 #if defined (USE_SDL)
 #include "rut-sdl-keysyms.h"
@@ -1580,11 +1579,10 @@ flush_pre_paint_callbacks (RutShell *shell)
 void
 rut_shell_start_redraw (RutShell *shell)
 {
-  c_return_if_fail (shell->redraw_queued == true);
+  c_return_if_fail (shell->paint_idle);
 
-  shell->redraw_queued = false;
-  g_source_destroy (shell->glib_paint_idle);
-  shell->glib_paint_idle = NULL;
+  rut_poll_shell_remove_idle (shell, shell->paint_idle);
+  shell->paint_idle = NULL;
 }
 
 void
@@ -1942,112 +1940,7 @@ rut_shell_handle_sdl_event (RutShell *shell, SDL_Event *sdl_event)
       rut_shell_queue_redraw (shell);
     }
 }
-
-typedef struct _SDLSource
-{
-  GSource source;
-
-  RutShell *shell;
-
-} SDLSource;
-
-static gboolean
-sdl_glib_source_prepare (GSource *source, int *timeout)
-{
-  if (SDL_PollEvent (NULL))
-    return TRUE;
-
-  /* XXX: SDL doesn't give us a portable way of blocking for events
-   * that is compatible with us polling for other file descriptor
-   * events outside of SDL which means we normally resort to busily
-   * polling SDL for events.
-   *
-   * Luckily on Android though we know that events are delivered to
-   * SDL in a separate thread which we can monitor and using a pipe we
-   * are able to wake up our own polling mainloop. This means we can
-   * allow the Glib mainloop to block on Android...
-   *
-   * TODO: On X11 use XConnectionNumber(sdl_info.info.x11.display)
-   * so we can also poll for events on X. One caveat would probably
-   * be that we'd subvert SDL being able to specify a timeout for
-   * polling.
-   */
-#ifdef __ANDROID__
-  *timeout = -1;
-#else
-  *timeout = 8;
 #endif
-
-  return FALSE;
-}
-
-static gboolean
-sdl_glib_source_check (GSource *source)
-{
-  if (SDL_PollEvent (NULL))
-    return TRUE;
-
-  return FALSE;
-}
-
-static gboolean
-sdl_glib_source_dispatch (GSource *source,
-                           GSourceFunc callback,
-                           void *user_data)
-{
-  SDLSource *sdl_source = (SDLSource *) source;
-  SDL_Event event;
-
-  while (SDL_PollEvent (&event))
-    {
-      cogl_sdl_handle_event (sdl_source->shell->rut_ctx->cogl_context,
-                             &event);
-
-      rut_shell_handle_sdl_event (sdl_source->shell, &event);
-    }
-
-  return TRUE;
-}
-
-static GSourceFuncs
-sdl_glib_source_funcs =
-  {
-    sdl_glib_source_prepare,
-    sdl_glib_source_check,
-    sdl_glib_source_dispatch,
-    NULL
-  };
-
-static GSource *
-sdl_glib_source_new (RutShell *shell, int priority)
-{
-  GSource *source = g_source_new (&sdl_glib_source_funcs, sizeof (SDLSource));
-  SDLSource *sdl_source = (SDLSource *)source;
-
-  sdl_source->shell = shell;
-
-  return source;
-}
-
-static GPollFunc rut_sdl_original_poll;
-
-int
-sdl_poll_wrapper (GPollFD *ufds,
-                  guint nfsd,
-                  gint timeout_)
-{
-  cogl_sdl_idle (rut_cogl_context);
-
-  return rut_sdl_original_poll (ufds, nfsd, timeout_);
-}
-#endif
-
-static gboolean
-glib_paint_cb (void *user_data)
-{
-  _rut_shell_paint (user_data);
-  return FALSE;
-}
 
 static void
 destroy_onscreen_cb (void *user_data)
@@ -2087,55 +1980,13 @@ rut_shell_add_onscreen (RutShell *shell,
 void
 rut_shell_main (RutShell *shell)
 {
-  GSource *rut_source;
-
   if (shell->init_cb)
     shell->init_cb (shell, shell->user_data);
 
-  rut_source = rut_glib_shell_source_new (shell, G_PRIORITY_DEFAULT);
-  g_source_attach (rut_source, g_main_context_get_thread_default ());
-
-#ifdef USE_SDL
-  if (!shell->headless)
-    {
-      GSource *sdl_source;
-
-      rut_sdl_original_poll =
-        g_main_context_get_poll_func (g_main_context_default ());
-      g_main_context_set_poll_func (g_main_context_default (),
-                                    sdl_poll_wrapper);
-      sdl_source = sdl_glib_source_new (shell, G_PRIORITY_DEFAULT);
-      g_source_attach (sdl_source, g_main_context_get_thread_default ());
-    }
-#endif
-
-  {
-    GApplication *application = NULL;
-
-    if (!shell->headless)
-      application = g_application_get_default ();
-
-    /* If the application has created a GApplication then we'll run
-     * that instead of running our own mainloop directly */
-
-    if (application)
-      g_application_run (application, 0, NULL);
-    else
-      {
-        shell->main_loop =
-          g_main_loop_new (g_main_context_get_thread_default(), TRUE);
-        g_main_loop_run (shell->main_loop);
-        g_main_loop_unref (shell->main_loop);
-      }
-  }
+  rut_poll_run (shell);
 
   if (shell->fini_cb)
     shell->fini_cb (shell, shell->user_data);
-
-#ifdef USE_SDL
-  g_main_context_set_poll_func (g_main_context_default (),
-                                rut_sdl_original_poll);
-#endif /* USE_SDL */
 }
 
 void
@@ -2276,25 +2127,23 @@ rut_shell_grab_pointer (RutShell *shell,
 #endif
 }
 
-static GSource *
-add_glib_thread_idle (GSourceFunc function,
-                      void *user_data)
+static void
+paint_idle_cb (void *user_data)
 {
-  GSource *source = g_idle_source_new ();
-
-  g_source_set_callback (source, function, user_data, NULL);
-  g_source_attach (source, g_main_context_get_thread_default ());
-
-  return source;
+  _rut_shell_paint (user_data);
 }
 
 void
 rut_shell_queue_redraw_real (RutShell *shell)
 {
-  shell->redraw_queued = true;
-
-  if (!shell->glib_paint_idle)
-    shell->glib_paint_idle = add_glib_thread_idle (glib_paint_cb, shell);
+  if (!shell->paint_idle)
+    {
+      shell->paint_idle =
+        rut_poll_shell_add_idle (shell,
+                                 paint_idle_cb,
+                                 shell,
+                                 NULL); /* destroy notify */
+    }
 }
 
 void
@@ -2447,14 +2296,7 @@ rut_shell_add_frame_callback (RutShell *shell,
 void
 rut_shell_quit (RutShell *shell)
 {
-  GApplication *application = g_application_get_default ();
-
-  /* If the application has created a GApplication then we'll quit
-   * that instead of the mainloop */
-  if (application)
-    g_application_quit (application);
-  else
-    g_main_loop_quit (shell->main_loop);
+  rut_poll_quit (shell);
 }
 
 static void

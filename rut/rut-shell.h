@@ -37,6 +37,10 @@
 #include "SDL_syswm.h"
 #endif
 
+#ifdef USE_UV
+#include <uv.h>
+#endif
+
 #include <cogl/cogl.h>
 
 #include "rut-keysyms.h"
@@ -223,6 +227,14 @@ typedef struct _RutInputQueue
   int n_events;
 } RutInputQueue;
 
+typedef struct _UVSource
+{
+  GSource _base;
+  int fd;
+  void *tag;
+  RutShell *shell;
+} UVSource;
+
 struct _RutShell
 {
   RutObjectBase _base;
@@ -252,9 +264,8 @@ struct _RutShell
   int cogl_poll_fds_age;
 #endif
 
-  CArray *poll_fds;
   int poll_sources_age;
-  CList *poll_sources;
+  RutList poll_sources;
 
   RutList idle_closures;
 
@@ -263,7 +274,22 @@ struct _RutShell
   RutList signal_cb_list;
 #endif
 
+#ifdef USE_GLIB
   GMainLoop *main_loop;
+#endif
+
+#ifdef USE_UV
+  uv_loop_t *uv_loop;
+  uv_idle_t uv_idle;
+  uv_prepare_t cogl_prepare;
+  uv_timer_t cogl_timer;
+  uv_check_t cogl_check;
+#ifdef USE_GLIB
+  UVSource *uv_source;
+#endif
+#endif
+
+  RutClosure *paint_idle;
 
   RutInputQueue *input_queue;
   int input_queue_len;
@@ -300,9 +326,6 @@ struct _RutShell
   GDestroyNotify keyboard_ungrab_cb;
 
   RutObject *clipboard;
-
-  GSource *glib_paint_idle;
-  bool redraw_queued;
 
   void (*queue_redraw_callback) (RutShell *shell,
                                  void *user_data);

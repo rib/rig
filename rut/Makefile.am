@@ -158,8 +158,6 @@ librut_la_SOURCES = \
     rut-camera.c \
     rut-poll.h \
     rut-poll.c \
-    rut-glib-source.h \
-    rut-glib-source.c \
     rut-sdl-keysyms.c \
     rut-sdl-keysyms.h \
     rut-adb.h \

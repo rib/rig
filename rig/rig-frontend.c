@@ -767,6 +767,7 @@ create_simulator_thread (RutShell *shell,
 #ifdef linux
 static void
 handle_simulator_connect_cb (void *user_data,
+                             int fd,
                              int revents)
 {
   RigFrontend *frontend = user_data;
