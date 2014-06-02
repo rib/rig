@@ -33,6 +33,10 @@
 #include <uv.h>
 #endif
 
+#ifdef USE_GLIB
+#include <glib.h>
+#endif
+
 #include <cogl/cogl.h>
 #include <cogl/cogl-sdl.h>
 
@@ -134,7 +138,7 @@ update_cogl_sources (RutShell *shell)
 
   shell->cogl_poll_fds_age = age;
 
-  if (cogl_timeout)
+  if (cogl_timeout >= 0)
     {
       cogl_timeout /= 1000;
       uv_timer_start (&shell->cogl_timer, dummy_timer_cb, cogl_timeout, 0);
@@ -166,6 +170,8 @@ free_source (RutPollSource *source)
 
   if (source->fd > 0)
     uv_poll_stop (&source->uv_poll);
+
+  uv_check_stop (&source->uv_check);
 
   c_slice_free (RutPollSource, source);
 }
@@ -443,7 +449,7 @@ integrate_sdl_events_via_pipe (RutShell *shell)
 static int64_t
 prepare_sdl_busy_wait (void *user_data)
 {
-  return SDL_PollEvent (NULL) ? 0 : 8;
+  return SDL_PollEvent (NULL) ? 0 : 8000;
 }
 
 static void
@@ -472,59 +478,100 @@ integrate_sdl_events_via_busy_wait (RutShell *shell)
 }
 
 #ifdef USE_GLIB
-static gboolean
-prepare_uv_events (GSource *source, gint *timeout)
+typedef struct _UVGlibPoll
 {
-  UVSource *uv_source (UVSource *)source;
-  RutShell *shell = uv_source->shell;
+  RutShell *shell;
+  uv_poll_t poll_handle;
+  int pollfd_index;
+} UVGlibPoll;
 
-  uv_update_time (shell->uv_loop);
+static void
+glib_uv_poll_cb (uv_poll_t *poll, int status, int events)
+{
+  UVGlibPoll *glib_poll = poll->data;
+  RutShell *shell = glib_poll->shell;
+  GPollFD *pollfd =
+    &g_array_index (shell->pollfds, GPollFD, glib_poll->pollfd_index);
 
-  *timeout = uv_backend_timeout (shell->uv_loop);
+  g_warn_if_fail ((events & ~(UV_READABLE|UV_WRITABLE)) == 0);
+
+  pollfd->revents = 0;
+  if (events & UV_READABLE)
+    pollfd->revents |= G_IO_IN;
+  if (events & UV_WRITABLE)
+    pollfd->revents |= G_IO_OUT;
 }
 
-static gboolean
-check_uv_events (GSource *source)
+static void
+glib_uv_prepare_cb (uv_prepare_t *prepare)
 {
-  UVSource *uv_source (UVSource *)source;
-  RutShell *shell = uv_source->shell;
-  GIOCondition events;
+  RutShell *shell = prepare->data;
+  GMainContext *ctx = shell->glib_main_ctx;
+  GPollFD *pollfds;
+  int priority;
+  int timeout;
+  int i;
 
-  if (!uv_backend_timeout (shell->uv_loop))
-    return TRUE;
+  if (g_main_context_prepare (ctx, &priority))
+    g_main_context_dispatch (ctx);
 
-  events = g_source_query_unix_fd (source, ((UVSource *)source)->tag);
+  pollfds = (GPollFD *)shell->pollfds->data;
+  shell->n_pollfds = g_main_context_query (ctx, INT_MIN, &timeout,
+                                           pollfds, shell->pollfds->len);
 
-  return events & G_IO_IN;
+  if (shell->n_pollfds > shell->pollfds->len)
+    {
+      g_array_set_size (shell->pollfds, shell->n_pollfds);
+      g_array_set_size (shell->glib_polls, shell->n_pollfds);
+      g_main_context_query (ctx, INT_MIN, &timeout,
+                            pollfds, shell->pollfds->len);
+    }
+
+  for (i = 0; i < shell->n_pollfds; i++)
+    {
+      int events = 0;
+      UVGlibPoll *glib_poll =
+        &g_array_index (shell->glib_polls, UVGlibPoll, i);
+
+      glib_poll->shell = shell;
+      uv_poll_init (shell->uv_loop, &glib_poll->poll_handle, pollfds[i].fd);
+      glib_poll->pollfd_index = i;
+
+      g_warn_if_fail ((pollfds[i].events & ~(G_IO_IN|G_IO_OUT)) == 0);
+
+      if (pollfds[i].events & G_IO_IN)
+        events |= UV_READABLE;
+      if (pollfds[i].events & G_IO_OUT)
+        events |= UV_READABLE;
+
+      uv_poll_start (&glib_poll->poll_handle, events, glib_uv_poll_cb);
+    }
+
+  if (timeout >= 0)
+    {
+      uv_timer_start (&shell->glib_uv_timer, dummy_timer_cb, timeout, 0);
+      uv_check_start (&shell->glib_uv_timer_check, dummy_timer_check_cb);
+    }
 }
 
-static gboolean
-dispatch_uv_events (GSource *source, GSourceFunc callback, gpointer user_data)
+static void
+glib_uv_check_cb (uv_check_t *check)
 {
-  UVSource *uv_source (UVSource *)source;
-  RutShell *shell = uv_source->shell;
+  RutShell *shell = check->data;
+  int i;
 
-  uv_run (shell->uv_loop, UV_RUN_NOWAIT);
+  g_main_context_check (shell->glib_main_ctx,
+                        INT_MIN,
+                        (GPollFD *)shell->pollfds->data,
+                        shell->n_pollfds);
 
-  return TRUE;
-}
-
-static UVSource *
-add_libuv_gsource (RutShell *shell)
-{
-  GSourceFuncs source_funcs = {
-    .prepare = prepare_uv_events,
-    .check = check_uv_events,
-    .dispatch = dispatch_uv_events,
-  };
-  GSource *source = g_source_new (&source_funcs, sizeof (UVSource));
-  int fd = uv_backend_fd (shell->uv_loop);
-
-  ((UVSource *)source)->shell = shell;
-  ((UVSource *)source)->fd = fd;
-  ((UVSource *)source)->tag = g_source_attach_unix_fd (source, fd, G_IO_IN);
-
-  g_source_attach (source, g_main_context_get_thread_default ());
+  for (i = 0; i < shell->n_pollfds; i++)
+    {
+      UVGlibPoll *glib_poll =
+        &g_array_index (shell->glib_polls, UVGlibPoll, i);
+      uv_poll_stop (&glib_poll->poll_handle);
+    }
+  shell->n_pollfds = 0;
 }
 #endif /* USE_GLIB */
 
@@ -598,7 +645,19 @@ rut_poll_init (RutShell *shell)
 #endif /* USE_UV */
 
 #ifdef USE_GLIB
-  add_libuv_gsource (shell);
+  uv_prepare_init (shell->uv_loop, &shell->glib_uv_prepare);
+  shell->glib_uv_prepare.data = shell;
+
+  uv_check_init (shell->uv_loop, &shell->glib_uv_check);
+  shell->glib_uv_check.data = shell;
+
+  uv_timer_init (shell->uv_loop, &shell->glib_uv_timer);
+  uv_check_init (shell->uv_loop, &shell->glib_uv_timer_check);
+  shell->glib_uv_timer_check.data = &shell->glib_uv_timer;
+
+  shell->n_pollfds = 0;
+  shell->pollfds = g_array_sized_new (false, false, sizeof (GPollFD), 5);
+  shell->glib_polls = g_array_sized_new (false, false, sizeof (UVGlibPoll), 5);
 #endif
 }
 
@@ -606,22 +665,25 @@ void
 rut_poll_run (RutShell *shell)
 {
 #ifdef USE_GLIB
-  GApplication *application = NULL;
+  GMainContext *ctx = g_main_context_get_thread_default ();
 
-  if (!shell->headless)
-    application = g_application_get_default ();
+  if (!ctx)
+    ctx = g_main_context_default ();
 
-  if (application)
-    g_application_run (application, 0, NULL);
-  else
+  if (g_main_context_acquire (ctx))
     {
-      shell->main_loop =
-        g_main_loop_new (g_main_context_get_thread_default(), TRUE);
-
-      g_main_loop_run (shell->main_loop);
-      g_main_loop_unref (shell->main_loop);
+      shell->glib_main_ctx = ctx;
+      uv_prepare_start (&shell->glib_uv_prepare, glib_uv_prepare_cb);
+      uv_check_start (&shell->glib_uv_check, glib_uv_check_cb);
     }
+  else
+    c_warning ("Failed to acquire glib context");
+
+  uv_run (shell->uv_loop, UV_RUN_DEFAULT);
+
+  g_main_context_release (shell->glib_main_ctx);
 #else
+
   uv_run (shell->uv_loop, UV_RUN_DEFAULT);
 #endif
 }
@@ -629,14 +691,5 @@ rut_poll_run (RutShell *shell)
 void
 rut_poll_quit (RutShell *shell)
 {
-#ifdef USE_GLIB
-  GApplication *application = g_application_get_default ();
-
-  if (application)
-    g_application_quit (application);
-  else
-    g_main_loop_quit (shell->main_loop);
-#else
   uv_stop (shell->uv_loop);
-#endif
 }

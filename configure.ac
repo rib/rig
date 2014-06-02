@@ -335,6 +335,7 @@ AM_PATH_GLIB_2_0([glib_req_version],
                  [gobject gthread gmodule-no-export])
 AS_IF([test "x$have_glib" = "xno"], AC_MSG_ERROR([glib-2.0 is required]))
 AM_CONDITIONAL([USE_GLIB], [true])
+AC_DEFINE([USE_GLIB], [1], [Use Glib])
 
 RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES freetype2 pangocairo glib-2.0 gio-2.0 libprotobuf-c gdk-pixbuf-2.0 sdl2-rig libuv"
 

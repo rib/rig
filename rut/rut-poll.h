@@ -81,6 +81,8 @@ typedef enum
 } RutPollFDEvent;
 #endif
 
+typedef struct _UVSource UVSource;
+
 void
 rut_poll_shell_remove_fd (RutShell *shell, int fd);
 

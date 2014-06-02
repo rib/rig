@@ -47,6 +47,7 @@
 #include "rut-object.h"
 #include "rut-types.h"
 #include "rut-closure.h"
+#include "rut-poll.h"
 
 typedef void (*RutShellInitCallback) (RutShell *shell, void *user_data);
 typedef void (*RutShellFiniCallback) (RutShell *shell, void *user_data);
@@ -227,14 +228,6 @@ typedef struct _RutInputQueue
   int n_events;
 } RutInputQueue;
 
-typedef struct _UVSource
-{
-  GSource _base;
-  int fd;
-  void *tag;
-  RutShell *shell;
-} UVSource;
-
 struct _RutShell
 {
   RutObjectBase _base;
@@ -285,7 +278,14 @@ struct _RutShell
   uv_timer_t cogl_timer;
   uv_check_t cogl_check;
 #ifdef USE_GLIB
-  UVSource *uv_source;
+  GMainContext *glib_main_ctx;
+  uv_prepare_t glib_uv_prepare;
+  uv_check_t glib_uv_check;
+  uv_timer_t glib_uv_timer;
+  uv_check_t glib_uv_timer_check;
+  GArray *pollfds;
+  GArray *glib_polls;
+  int n_pollfds;
 #endif
 #endif
 
