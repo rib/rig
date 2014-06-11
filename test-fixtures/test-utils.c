@@ -2,6 +2,13 @@
 
 #include <stdlib.h>
 
+#include <cogl/cogl-defines.h>
+
+#ifdef COGL_HAS_SDL_SUPPORT
+#include <cogl/cogl-sdl.h>
+#include <SDL.h>
+#endif
+
 #include "test-unit.h"
 #include "test-utils.h"
 
@@ -164,12 +171,22 @@ test_utils_init (TestFlags requirement_flags,
 
   g_setenv ("COGL_X11_SYNC", "1", 0);
 
-  test_ctx = cogl_context_new (NULL, &error);
-  if (!test_ctx)
-    g_critical ("Failed to create a CoglContext: %s", error->message);
+  renderer = cogl_renderer_new ();
 
-  display = cogl_context_get_display (test_ctx);
-  renderer = cogl_display_get_renderer (display);
+#ifdef COGL_HAS_SDL_SUPPORT
+  cogl_sdl_renderer_set_event_type (renderer, SDL_USEREVENT);
+#endif
+
+  if (!cogl_renderer_connect (renderer, &error))
+    c_error ("Failed to create a CoglRenderer: %s", error->message);
+
+  display = cogl_display_new (renderer, NULL);
+  if (!cogl_display_setup (display, &error))
+    c_error ("Failed to setup a CoglDisplay: %s", error->message);
+
+  test_ctx = cogl_context_new (display, &error);
+  if (!test_ctx)
+    c_error ("Failed to create a CoglContext: %s", error->message);
 
   missing_requirement = !check_flags (requirement_flags, renderer);
   known_failure = !check_flags (known_failure_flags, renderer);
