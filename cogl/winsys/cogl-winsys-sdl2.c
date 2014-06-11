@@ -384,8 +384,16 @@ _cogl_winsys_context_init (CoglContext *context, CoglError **error)
   context->winsys = c_new0 (CoglContextSdl2, 1);
 
   if (C_UNLIKELY (renderer->sdl_event_type_set == FALSE))
-    c_error ("cogl_sdl_renderer_set_event_type() or cogl_sdl_context_new() "
-             "must be called during initialization");
+    {
+      _cogl_set_error (error, COGL_WINSYS_ERROR,
+                       COGL_WINSYS_ERROR_INIT,
+                       "The SDL2 winsys backend requires "
+                       "cogl_sdl_context_new() to be used to "
+                       "create a context, or "
+                       "cogl_sdl_renderer_set_event_type() to be "
+                       "called before cogl_context_new()");
+      return FALSE;
+    }
 
   if (!_cogl_context_update_features (context, error))
     return FALSE;
