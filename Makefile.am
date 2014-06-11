@@ -1,4 +1,4 @@
-SUBDIRS = clib cogl
+SUBDIRS = clib test-fixtures cogl
 
 if BUILD_COGL_PANGO
 SUBDIRS += cogl-pango
