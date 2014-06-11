@@ -249,7 +249,8 @@ source_prepare_cb (uv_prepare_t *prepare)
 
   if (timeout == 0)
     source->dispatch (source->user_data, source->fd, 0);
-  else if (timeout > 0)
+
+  if (timeout >= 0)
     {
       timeout /= 1000;
       uv_timer_start (&source->uv_timer, dummy_timer_cb,
