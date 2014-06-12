@@ -354,15 +354,6 @@ cogl_pipeline_set_layer_null_texture (CoglPipeline *pipeline,
           return;
         }
       break;
-
-    case COGL_TEXTURE_TYPE_RECTANGLE:
-      if (ctx->default_gl_texture_rect_tex == NULL)
-        {
-          c_warning ("The default rectangle texture was set on a pipeline but "
-                     "rectangle textures are not supported");
-          texture_type = COGL_TEXTURE_TYPE_2D;
-        }
-      break;
     }
 
   _cogl_pipeline_set_layer_texture_type (pipeline, layer_index, texture_type);

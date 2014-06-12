@@ -91,11 +91,6 @@ _cogl_texture_driver_gen (CoglContext *ctx,
                                 GL_LINEAR) );
       break;
 
-    case GL_TEXTURE_RECTANGLE_ARB:
-      /* Texture rectangles already default to GL_LINEAR so nothing
-         needs to be done */
-      break;
-
     default:
       c_assert_not_reached();
     }
@@ -473,10 +468,6 @@ _cogl_texture_driver_size_supported (CoglContext *ctx,
 
   if (gl_target == GL_TEXTURE_2D)
     proxy_target = GL_PROXY_TEXTURE_2D;
-#if HAVE_COGL_GL
-  else if (gl_target == GL_TEXTURE_RECTANGLE_ARB)
-    proxy_target = GL_PROXY_TEXTURE_RECTANGLE_ARB;
-#endif
   else
     /* Unknown target, assume it's not supported */
     return FALSE;
@@ -503,23 +494,6 @@ _cogl_texture_driver_try_setting_gl_border_color
      outside of the texture */
   GE( ctx, glTexParameterfv (gl_target, GL_TEXTURE_BORDER_COLOR,
                              transparent_color) );
-}
-
-static CoglBool
-_cogl_texture_driver_allows_foreign_gl_target (CoglContext *ctx,
-                                               GLenum gl_target)
-{
-  /* GL_ARB_texture_rectangle textures are supported if they are
-     created from foreign because some chipsets have trouble with
-     GL_ARB_texture_non_power_of_two. There is no Cogl call to create
-     them directly to emphasize the fact that they don't work fully
-     (for example, no mipmapping and complicated shader support) */
-
-  /* Allow 2-dimensional or rectangle textures only */
-  if (gl_target != GL_TEXTURE_2D && gl_target != GL_TEXTURE_RECTANGLE_ARB)
-    return FALSE;
-
-  return TRUE;
 }
 
 static CoglPixelFormat
@@ -549,6 +523,5 @@ _cogl_texture_driver_gl =
     _cogl_texture_driver_size_supported,
     _cogl_texture_driver_size_supported_3d,
     _cogl_texture_driver_try_setting_gl_border_color,
-    _cogl_texture_driver_allows_foreign_gl_target,
     _cogl_texture_driver_find_best_gl_get_data_format
   };

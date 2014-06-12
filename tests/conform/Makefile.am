@@ -17,7 +17,6 @@ unported_test_sources = \
 	test-readpixels.c \
 	test-texture-mipmaps.c \
 	test-texture-pixmap-x11.c \
-	test-texture-rectangle.c \
 	test-vertex-buffer-contiguous.c \
 	test-vertex-buffer-interleved.c \
 	test-vertex-buffer-mutability.c \
@@ -57,7 +56,6 @@ test_sources = \
 	test-map-buffer-range.c \
 	test-npot-texture.c \
 	test-alpha-textures.c \
-	test-wrap-rectangle-textures.c \
 	test-texture-get-set-data.c \
 	test-texture-mipmap-get-set.c \
 	test-framebuffer-get-bits.c \

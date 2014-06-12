@@ -61,12 +61,12 @@ COGL_BEGIN_DECLS
  * @short_description: Common interface for manipulating textures
  *
  * Cogl provides several different types of textures such as
- * #CoglTexture2D, #CoglTexture3D, #CoglTextureRectangle,
- * #CoglTexture2DSliced, #CoglAtlasTexture, #CoglSubTexture and
- * #CoglTexturePixmapX11 that each have specific apis for creating
- * and manipulating them, but there are a number of common operations
- * that can be applied to any of these texture types which are handled
- * via this #CoglTexture interface.
+ * #CoglTexture2D, #CoglTexture3D, #CoglTexture2DSliced,
+ * #CoglAtlasTexture, #CoglSubTexture and #CoglTexturePixmapX11 that
+ * each have specific apis for creating and manipulating them, but
+ * there are a number of common operations that can be applied to any
+ * of these texture types which are handled via this #CoglTexture
+ * interface.
  */
 
 #define COGL_TEXTURE_MAX_WASTE  127
@@ -105,7 +105,6 @@ typedef enum {
  * CoglTextureType:
  * @COGL_TEXTURE_TYPE_2D: A #CoglTexture2D
  * @COGL_TEXTURE_TYPE_3D: A #CoglTexture3D
- * @COGL_TEXTURE_TYPE_RECTANGLE: A #CoglTextureRectangle
  *
  * Constants representing the underlying hardware texture type of a
  * #CoglTexture.
@@ -115,8 +114,7 @@ typedef enum {
  */
 typedef enum {
   COGL_TEXTURE_TYPE_2D,
-  COGL_TEXTURE_TYPE_3D,
-  COGL_TEXTURE_TYPE_RECTANGLE
+  COGL_TEXTURE_TYPE_3D
 } CoglTextureType;
 
 uint32_t cogl_texture_error_domain (void);

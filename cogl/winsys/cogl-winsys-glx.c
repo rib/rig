@@ -46,7 +46,6 @@
 #include "cogl-glx-display-private.h"
 #include "cogl-private.h"
 #include "cogl-texture-2d-private.h"
-#include "cogl-texture-rectangle-private.h"
 #include "cogl-pipeline-opengl-private.h"
 #include "cogl-frame-info-private.h"
 #include "cogl-framebuffer-private.h"
@@ -2223,54 +2222,6 @@ get_fbconfig_for_depth (CoglContext *context,
 }
 
 static CoglBool
-should_use_rectangle (CoglContext *context)
-{
-
-  if (context->rectangle_state == COGL_WINSYS_RECTANGLE_STATE_UNKNOWN)
-    {
-      if (cogl_has_feature (context, COGL_FEATURE_ID_TEXTURE_RECTANGLE))
-        {
-          const char *rect_env;
-
-          /* Use the rectangle only if it is available and either:
-
-             the COGL_PIXMAP_TEXTURE_RECTANGLE environment variable is
-             set to 'force'
-
-             *or*
-
-             the env var is set to 'allow' or not set and NPOTs textures
-             are not available */
-
-          context->rectangle_state =
-            cogl_has_feature (context, COGL_FEATURE_ID_TEXTURE_NPOT) ?
-            COGL_WINSYS_RECTANGLE_STATE_DISABLE :
-            COGL_WINSYS_RECTANGLE_STATE_ENABLE;
-
-          if ((rect_env = c_getenv ("COGL_PIXMAP_TEXTURE_RECTANGLE")) ||
-              /* For compatibility, we'll also look at the old Clutter
-                 environment variable */
-              (rect_env = c_getenv ("CLUTTER_PIXMAP_TEXTURE_RECTANGLE")))
-            {
-              if (c_ascii_strcasecmp (rect_env, "force") == 0)
-                context->rectangle_state =
-                  COGL_WINSYS_RECTANGLE_STATE_ENABLE;
-              else if (c_ascii_strcasecmp (rect_env, "disable") == 0)
-                context->rectangle_state =
-                  COGL_WINSYS_RECTANGLE_STATE_DISABLE;
-              else if (c_ascii_strcasecmp (rect_env, "allow"))
-                c_warning ("Unknown value for COGL_PIXMAP_TEXTURE_RECTANGLE, "
-                           "should be 'force' or 'disable'");
-            }
-        }
-      else
-        context->rectangle_state = COGL_WINSYS_RECTANGLE_STATE_DISABLE;
-    }
-
-  return context->rectangle_state == COGL_WINSYS_RECTANGLE_STATE_ENABLE;
-}
-
-static CoglBool
 try_create_glx_pixmap (CoglContext *context,
                        CoglTexturePixmapX11 *tex_pixmap,
                        CoglBool mipmap)
@@ -2305,13 +2256,7 @@ try_create_glx_pixmap (CoglContext *context,
       return FALSE;
     }
 
-  if (should_use_rectangle (context))
-    {
-      target = GLX_TEXTURE_RECTANGLE_EXT;
-      glx_tex_pixmap->can_mipmap = FALSE;
-    }
-  else
-    target = GLX_TEXTURE_2D_EXT;
+  target = GLX_TEXTURE_2D_EXT;
 
   if (!glx_tex_pixmap->can_mipmap)
     mipmap = FALSE;
@@ -2491,49 +2436,24 @@ _cogl_winsys_texture_pixmap_x11_update (CoglTexturePixmapX11 *tex_pixmap,
                         COGL_PIXEL_FORMAT_RGBA_8888_PRE :
                         COGL_PIXEL_FORMAT_RGB_888);
 
-      if (should_use_rectangle (ctx))
-        {
-          glx_tex_pixmap->glx_tex = COGL_TEXTURE (
-            cogl_texture_rectangle_new_with_size (ctx,
-                                                  tex->width,
-                                                  tex->height));
+      glx_tex_pixmap->glx_tex = COGL_TEXTURE (
+        cogl_texture_2d_new_with_size (ctx,
+                                       tex->width,
+                                       tex->height));
 
-          _cogl_texture_set_internal_format (tex, texture_format);
+      _cogl_texture_set_internal_format (tex, texture_format);
 
-          if (cogl_texture_allocate (glx_tex_pixmap->glx_tex, &error))
-            COGL_NOTE (TEXTURE_PIXMAP, "Created a texture rectangle for %p",
-                       tex_pixmap);
-          else
-            {
-              COGL_NOTE (TEXTURE_PIXMAP, "Falling back for %p because a "
-                         "texture rectangle could not be created: %s",
-                         tex_pixmap, error->message);
-              cogl_error_free (error);
-              free_glx_pixmap (ctx, glx_tex_pixmap);
-              return FALSE;
-            }
-        }
+      if (cogl_texture_allocate (glx_tex_pixmap->glx_tex, &error))
+        COGL_NOTE (TEXTURE_PIXMAP, "Created a texture 2d for %p",
+                   tex_pixmap);
       else
         {
-          glx_tex_pixmap->glx_tex = COGL_TEXTURE (
-            cogl_texture_2d_new_with_size (ctx,
-                                           tex->width,
-                                           tex->height));
-
-          _cogl_texture_set_internal_format (tex, texture_format);
-
-          if (cogl_texture_allocate (glx_tex_pixmap->glx_tex, &error))
-            COGL_NOTE (TEXTURE_PIXMAP, "Created a texture 2d for %p",
-                       tex_pixmap);
-          else
-            {
-              COGL_NOTE (TEXTURE_PIXMAP, "Falling back for %p because a "
-                         "texture 2d could not be created: %s",
-                         tex_pixmap, error->message);
-              cogl_error_free (error);
-              free_glx_pixmap (ctx, glx_tex_pixmap);
-              return FALSE;
-            }
+          COGL_NOTE (TEXTURE_PIXMAP, "Falling back for %p because a "
+                     "texture 2d could not be created: %s",
+                     tex_pixmap, error->message);
+          cogl_error_free (error);
+          free_glx_pixmap (ctx, glx_tex_pixmap);
+          return FALSE;
         }
     }
 

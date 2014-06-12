@@ -635,11 +635,7 @@ try_creating_fbo (CoglContext *ctx,
   if (!cogl_texture_get_gl_texture (texture, &tex_gl_handle, &tex_gl_target))
     return FALSE;
 
-  if (tex_gl_target != GL_TEXTURE_2D
-#ifdef HAVE_COGL_GL
-      && tex_gl_target != GL_TEXTURE_RECTANGLE_ARB
-#endif
-      )
+  if (tex_gl_target != GL_TEXTURE_2D)
     return FALSE;
 
   if (config->samples_per_pixel)

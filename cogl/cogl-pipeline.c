@@ -1820,10 +1820,6 @@ fallback_layer_cb (CoglPipelineLayer *layer, void *user_data)
     case COGL_TEXTURE_TYPE_3D:
       texture = COGL_TEXTURE (ctx->default_gl_texture_3d_tex);
       break;
-
-    case COGL_TEXTURE_TYPE_RECTANGLE:
-      texture = COGL_TEXTURE (ctx->default_gl_texture_rect_tex);
-      break;
     }
 
   if (texture == NULL)

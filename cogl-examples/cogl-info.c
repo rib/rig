@@ -39,12 +39,6 @@ struct {
     "COGL_FEATURE_ID_TEXTURE_NPOT_REPEAT features combined."
   },
   {
-    COGL_FEATURE_ID_TEXTURE_RECTANGLE,
-    "Unnormalized coordinate, rectangle textures",
-    "Support for rectangular textures with non-normalized texture "
-    "coordinates."
-  },
-  {
     COGL_FEATURE_ID_TEXTURE_3D,
     "3D texture support",
     "3D texture support"

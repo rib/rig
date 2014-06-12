@@ -181,15 +181,6 @@ struct _CoglTextureDriver
                                    const GLfloat *transparent_color);
 
   /*
-   * It may depend on the driver as to what texture targets may be used when
-   * creating a foreign texture. E.g. OpenGL supports ARB_texture_rectangle
-   * but GLES doesn't
-   */
-  CoglBool
-  (* allows_foreign_gl_target) (CoglContext *ctx,
-                                GLenum gl_target);
-
-  /*
    * The driver may impose constraints on what formats can be used to store
    * texture data read from textures. For example GLES currently only supports
    * RGBA_8888, and so we need to manually convert the data if the final

@@ -118,13 +118,6 @@ _cogl_gl_util_get_texture_target_string (CoglTextureType texture_type,
 
   switch (texture_type)
     {
-#if 0 /* TODO */
-    case COGL_TEXTURE_TYPE_1D:
-      target_string = "1D";
-      tex_coord_swizzle = "s";
-      break;
-#endif
-
     case COGL_TEXTURE_TYPE_2D:
       target_string = "2D";
       tex_coord_swizzle = "st";
@@ -133,11 +126,6 @@ _cogl_gl_util_get_texture_target_string (CoglTextureType texture_type,
     case COGL_TEXTURE_TYPE_3D:
       target_string = "3D";
       tex_coord_swizzle = "stp";
-      break;
-
-    case COGL_TEXTURE_TYPE_RECTANGLE:
-      target_string = "2DRect";
-      tex_coord_swizzle = "st";
       break;
     }
 

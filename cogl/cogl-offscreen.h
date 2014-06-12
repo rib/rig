@@ -66,8 +66,8 @@ typedef struct _CoglOffscreen CoglOffscreen;
  * destroy the offscreen buffer before you can use the @texture again.
  *
  * <note>This api only works with low-level #CoglTexture types such as
- * #CoglTexture2D, #CoglTexture3D and #CoglTextureRectangle, and not
- * with meta-texture types such as #CoglTexture2DSliced.</note>
+ * #CoglTexture2D, #CoglTexture3D and not with meta-texture types such
+ * as #CoglTexture2DSliced.</note>
  *
  * The storage for the framebuffer is actually allocated lazily
  * so this function will never return %NULL to indicate a runtime

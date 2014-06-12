@@ -289,7 +289,6 @@ cogl_is_texture
 #ifdef COGL_HAS_X11
 cogl_is_texture_pixmap_x11
 #endif
-cogl_is_texture_rectangle
 cogl_is_texture_2d
 cogl_is_texture_3d
 
@@ -543,8 +542,6 @@ cogl_texture_pixmap_x11_new
 cogl_texture_pixmap_x11_set_damage_object
 cogl_texture_pixmap_x11_update_area
 #endif
-cogl_texture_rectangle_new_from_bitmap
-cogl_texture_rectangle_new_with_size
 cogl_texture_set_region
 cogl_texture_set_region_from_bitmap
 cogl_texture_2d_new_from_bitmap

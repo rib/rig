@@ -179,8 +179,6 @@ validate_first_layer_cb (CoglPipeline *pipeline,
  *   texture coordinates require repeating,
  * - CoglTexture2DAtlas: if the users given texture coordinates require
  *   repeating,
- * - CoglTextureRectangle: if the users given texture coordinates require
- *   repeating,
  * - CoglTexturePixmap: if the users given texture coordinates require
  *   repeating
  */
@@ -334,9 +332,10 @@ validate_tex_coords_cb (CoglPipeline *pipeline,
   transform_result =
     _cogl_texture_transform_quad_coords_to_gl (texture,
                                                out_tex_coords);
-  /* If the texture has waste or we are using GL_TEXTURE_RECT we
-   * can't handle texture repeating so we can't use the layer if
-   * repeating is required.
+
+  /* If the texture has waste or the gpu only has limited support for
+   * non-power-of-two textures we we can't use the layer if repeating
+   * is required.
    *
    * NB: We already know that no texture matrix is being used if the
    * texture doesn't support hardware repeat.
@@ -349,13 +348,15 @@ validate_tex_coords_cb (CoglPipeline *pipeline,
             {
               static CoglBool warning_seen = FALSE;
               if (!warning_seen)
-                c_warning ("Skipping layers 1..n of your material since "
-                           "the first layer doesn't support hardware "
-                           "repeat (e.g. because of waste or use of "
-                           "GL_TEXTURE_RECTANGLE_ARB) and you supplied "
-                           "texture coordinates outside the range [0,1]."
-                           "Falling back to software repeat assuming "
-                           "layer 0 is the most important one keep");
+                c_warning ("Skipping layers 1..n of your material "
+                           "since the first layer doesn't support "
+                           "hardware repeat (e.g. because of waste "
+                           "or gpu has limited support for "
+                           "non-power-of-two "" textures) and you "
+                           "supplied texture coordinates outside the "
+                           "range [0,1]. Falling back to software "
+                           "repeat assuming layer 0 is the most "
+                           "important one keep");
               warning_seen = TRUE;
             }
 
@@ -372,9 +373,10 @@ validate_tex_coords_cb (CoglPipeline *pipeline,
                        "since you have supplied texture coords "
                        "outside the range [0,1] but the texture "
                        "doesn't support hardware repeat (e.g. "
-                       "because of waste or use of "
-                       "GL_TEXTURE_RECTANGLE_ARB). This isn't "
-                       "supported with multi-texturing.", state->i);
+                       "because of waste or gpu has limited "
+                       "support for non-power-of-two textures). "
+                       "This isn't supported with multi-texturing.",
+                       state->i);
           warning_seen = TRUE;
 
           cogl_pipeline_set_layer_texture (pipeline, layer_index, NULL);
@@ -421,8 +423,6 @@ validate_tex_coords_cb (CoglPipeline *pipeline,
  *   repeating.
  * - CoglTexture{1D,2D,3D}: always.
  * - CoglTexture2DAtlas: assuming the users given texture coordinates don't
- *   require repeating.
- * - CoglTextureRectangle: assuming the users given texture coordinates don't
  *   require repeating.
  * - CoglTexturePixmap: assuming the users given texture coordinates don't
  *   require repeating.
@@ -647,8 +647,8 @@ _cogl_framebuffer_draw_multitextured_rectangles (
 
           /* NB: If _cogl_multitexture_quad_single_primitive fails then it
            * means the user tried to use texture repeat with a texture that
-           * can't be repeated by the GPU (e.g. due to waste or use of
-           * GL_TEXTURE_RECTANGLE_ARB) */
+           * can't be repeated by the GPU (e.g. due to waste or gpu has
+           * limited support for non-power-of-two textures) */
           if (success)
             continue;
         }

@@ -375,15 +375,6 @@ cogl_texture_2d_gl_new_from_foreign
 </SECTION>
 
 <SECTION>
-<FILE>cogl-texture-rectangle</FILE>
-<TITLE>Rectangle textures (non-normalized coordinates)</TITLE>
-CoglTextureRectangle
-cogl_texture_rectangle_new_with_size
-cogl_texture_rectangle_new_from_bitmap
-cogl_is_texture_rectangle
-</SECTION>
-
-<SECTION>
 <FILE>cogl-texture-3d</FILE>
 <TITLE>3D textures</TITLE>
 CoglTexture3D

@@ -607,16 +607,6 @@ _cogl_texture_driver_try_setting_gl_border_color
   /* FAIL! */
 }
 
-static CoglBool
-_cogl_texture_driver_allows_foreign_gl_target (CoglContext *ctx,
-                                               GLenum gl_target)
-{
-  /* Allow 2-dimensional textures only */
-  if (gl_target != GL_TEXTURE_2D)
-    return FALSE;
-  return TRUE;
-}
-
 static CoglPixelFormat
 _cogl_texture_driver_find_best_gl_get_data_format
                                             (CoglContext *context,
@@ -645,6 +635,5 @@ _cogl_texture_driver_gles =
     _cogl_texture_driver_size_supported,
     _cogl_texture_driver_size_supported_3d,
     _cogl_texture_driver_try_setting_gl_border_color,
-    _cogl_texture_driver_allows_foreign_gl_target,
     _cogl_texture_driver_find_best_gl_get_data_format
   };

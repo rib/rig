@@ -42,7 +42,6 @@ cogl_public_h = \
 	cogl-texture-2d-sliced.h      \
 	cogl-texture-2d.h             \
 	cogl-texture-3d.h             \
-	cogl-texture-rectangle.h      \
 	cogl-texture.h 		\
 	cogl-types.h 			\
 	cogl-vector.h 		\
@@ -214,8 +213,6 @@ cogl_sources_c = \
 	cogl-texture-2d.c                     \
 	cogl-texture-2d-sliced.c		\
 	cogl-texture-3d.c                     \
-	cogl-texture-rectangle-private.h      \
-	cogl-texture-rectangle.c              \
 	cogl-rectangle-map.h                  \
 	cogl-rectangle-map.c                  \
 	cogl-atlas-set-private.h              	\

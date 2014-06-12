@@ -34,9 +34,7 @@
  *  Robert Bragg   <robert@linux.intel.com>
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include <config.h>
 
 #include "cogl-util.h"
 #include "cogl-bitmap.h"
@@ -50,7 +48,6 @@
 #include "cogl-texture-2d-private.h"
 #include "cogl-texture-2d-gl.h"
 #include "cogl-texture-3d-private.h"
-#include "cogl-texture-rectangle-private.h"
 #include "cogl-sub-texture-private.h"
 #include "cogl-atlas-texture-private.h"
 #include "cogl-pipeline.h"

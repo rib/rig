@@ -304,9 +304,8 @@ cogl_primitive_new_with_attributes (CoglVerticesMode mode,
  * meta texture types such as #CoglTexture2DSliced or
  * #CoglAtlasTexture so you need to ensure that only low-level
  * textures that can be directly sampled by a GPU such as
- * #CoglTexture2D, #CoglTextureRectangle or #CoglTexture3D are
- * associated with the layers of any pipeline used while drawing a
- * primitive.</note>
+ * #CoglTexture2D or #CoglTexture3D are associated with the layers of
+ * any pipeline used while drawing a primitive.</note>
  *
  * Return value: (transfer full): A newly allocated #CoglPrimitive
  * with a reference of 1. This can be freed using cogl_object_unref().
@@ -357,9 +356,8 @@ cogl_primitive_new_p2 (CoglContext *context,
  * meta texture types such as #CoglTexture2DSliced or
  * #CoglAtlasTexture so you need to ensure that only low-level
  * textures that can be directly sampled by a GPU such as
- * #CoglTexture2D, #CoglTextureRectangle or #CoglTexture3D are
- * associated with the layers of any pipeline used while drawing a
- * primitive.</note>
+ * #CoglTexture2D or #CoglTexture3D are associated with the layers of
+ * any pipeline used while drawing a primitive.</note>
  *
  * Return value: (transfer full): A newly allocated #CoglPrimitive
  * with a reference of 1. This can be freed using cogl_object_unref().
@@ -412,9 +410,8 @@ cogl_primitive_new_p3 (CoglContext *context,
  * meta texture types such as #CoglTexture2DSliced or
  * #CoglAtlasTexture so you need to ensure that only low-level
  * textures that can be directly sampled by a GPU such as
- * #CoglTexture2D, #CoglTextureRectangle or #CoglTexture3D are
- * associated with the layers of any pipeline used while drawing a
- * primitive.</note>
+ * #CoglTexture2D or #CoglTexture3D are associated with the layers of
+ * any pipeline used while drawing a primitive.</note>
  *
  * Return value: (transfer full): A newly allocated #CoglPrimitive
  * with a reference of 1. This can be freed using cogl_object_unref().
@@ -467,9 +464,8 @@ cogl_primitive_new_p2c4 (CoglContext *context,
  * meta texture types such as #CoglTexture2DSliced or
  * #CoglAtlasTexture so you need to ensure that only low-level
  * textures that can be directly sampled by a GPU such as
- * #CoglTexture2D, #CoglTextureRectangle or #CoglTexture3D are
- * associated with the layers of any pipeline used while drawing a
- * primitive.</note>
+ * #CoglTexture2D or #CoglTexture3D are associated with the layers of
+ * any pipeline used while drawing a primitive.</note>
  *
  * Return value: (transfer full): A newly allocated #CoglPrimitive
  * with a reference of 1. This can be freed using cogl_object_unref().
@@ -522,9 +518,8 @@ cogl_primitive_new_p3c4 (CoglContext *context,
  * meta texture types such as #CoglTexture2DSliced or
  * #CoglAtlasTexture so you need to ensure that only low-level
  * textures that can be directly sampled by a GPU such as
- * #CoglTexture2D, #CoglTextureRectangle or #CoglTexture3D are
- * associated with the layers of any pipeline used while drawing a
- * primitive.</note>
+ * #CoglTexture2D or #CoglTexture3D are associated with the layers of
+ * any pipeline used while drawing a primitive.</note>
  *
  * Return value: (transfer full): A newly allocated #CoglPrimitive
  * with a reference of 1. This can be freed using cogl_object_unref().
@@ -577,9 +572,8 @@ cogl_primitive_new_p2t2 (CoglContext *context,
  * meta texture types such as #CoglTexture2DSliced or
  * #CoglAtlasTexture so you need to ensure that only low-level
  * textures that can be directly sampled by a GPU such as
- * #CoglTexture2D, #CoglTextureRectangle or #CoglTexture3D are
- * associated with the layers of any pipeline used while drawing a
- * primitive.</note>
+ * #CoglTexture2D or #CoglTexture3D are associated with the layers of
+ * any pipeline used while drawing a primitive.</note>
  *
  * Return value: (transfer full): A newly allocated #CoglPrimitive
  * with a reference of 1. This can be freed using cogl_object_unref().
@@ -632,9 +626,8 @@ cogl_primitive_new_p3t2 (CoglContext *context,
  * meta texture types such as #CoglTexture2DSliced or
  * #CoglAtlasTexture so you need to ensure that only low-level
  * textures that can be directly sampled by a GPU such as
- * #CoglTexture2D, #CoglTextureRectangle or #CoglTexture3D are
- * associated with the layers of any pipeline used while drawing a
- * primitive.</note>
+ * #CoglTexture2D or #CoglTexture3D are associated with the layers of
+ * any pipeline used while drawing a primitive.</note>
  *
  * Return value: (transfer full): A newly allocated #CoglPrimitive
  * with a reference of 1. This can be freed using cogl_object_unref().
@@ -687,9 +680,8 @@ cogl_primitive_new_p2t2c4 (CoglContext *context,
  * meta texture types such as #CoglTexture2DSliced or
  * #CoglAtlasTexture so you need to ensure that only low-level
  * textures that can be directly sampled by a GPU such as
- * #CoglTexture2D, #CoglTextureRectangle or #CoglTexture3D are
- * associated with the layers of any pipeline used while drawing a
- * primitive.</note>
+ * #CoglTexture2D or #CoglTexture3D are associated with the layers of
+ * any pipeline used while drawing a primitive.</note>
  *
  * Return value: (transfer full): A newly allocated #CoglPrimitive
  * with a reference of 1. This can be freed using cogl_object_unref().
@@ -904,8 +896,8 @@ cogl_primitive_foreach_attribute (CoglPrimitive *primitive,
  * This drawing api doesn't support high-level meta texture types such
  * as #CoglTexture2DSliced so it is the user's responsibility to
  * ensure that only low-level textures that can be directly sampled by
- * a GPU such as #CoglTexture2D, #CoglTextureRectangle or #CoglTexture3D
- * are associated with layers of the given @pipeline.
+ * a GPU such as #CoglTexture2D or #CoglTexture3D are associated with
+ * layers of the given @pipeline.
  *
  * Stability: unstable
  * Since: 1.16

@@ -200,8 +200,6 @@ cogl_is_context (void *object);
  *    by the hardware. This is a equivalent to the
  *    %COGL_FEATURE_ID_TEXTURE_NPOT_BASIC, %COGL_FEATURE_ID_TEXTURE_NPOT_MIPMAP
  *    and %COGL_FEATURE_ID_TEXTURE_NPOT_REPEAT features combined.
- * @COGL_FEATURE_ID_TEXTURE_RECTANGLE: Support for rectangular
- *    textures with non-normalized texture coordinates.
  * @COGL_FEATURE_ID_TEXTURE_RG: Support for
  *    %COGL_TEXTURE_COMPONENTS_RG as the internal components of a
  *    texture.
@@ -245,7 +243,6 @@ typedef enum _CoglFeatureID
   COGL_FEATURE_ID_TEXTURE_NPOT_MIPMAP,
   COGL_FEATURE_ID_TEXTURE_NPOT_REPEAT,
   COGL_FEATURE_ID_TEXTURE_NPOT,
-  COGL_FEATURE_ID_TEXTURE_RECTANGLE,
   COGL_FEATURE_ID_TEXTURE_3D,
   COGL_FEATURE_ID_GLSL,
   COGL_FEATURE_ID_OFFSCREEN,

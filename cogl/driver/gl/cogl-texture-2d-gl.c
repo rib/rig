@@ -331,16 +331,6 @@ allocate_from_gl_foreign (CoglTexture2D *tex_2d,
   GLint gl_compressed = GL_FALSE;
   GLenum gl_int_format = 0;
 
-  if (!ctx->texture_driver->allows_foreign_gl_target (ctx, GL_TEXTURE_2D))
-    {
-      _cogl_set_error (error,
-                       COGL_SYSTEM_ERROR,
-                       COGL_SYSTEM_ERROR_UNSUPPORTED,
-                       "Foreign GL_TEXTURE_2D textures are not "
-                       "supported by your system");
-      return FALSE;
-    }
-
   /* Make sure binding succeeds */
   while ((gl_error = ctx->glGetError ()) != GL_NO_ERROR)
     ;
