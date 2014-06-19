@@ -57,7 +57,7 @@ rut_type_add_trait (RutType *type,
 
   if (id > max_id)
     {
-      type->traits = g_realloc (type->traits,
+      type->traits = c_realloc (type->traits,
                                 sizeof (RutTraitImplementation) * (id + 1));
     }
 
