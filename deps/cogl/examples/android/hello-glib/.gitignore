@@ -1,0 +1,7 @@
+bin
+libs
+obj
+
+default.properties
+local.properties
+proguard.cfg
