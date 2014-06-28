@@ -51,11 +51,11 @@ _cogl_span_iter_update (CoglSpanIter *iter)
       iter->pos >= iter->cover_end)
     {
       /* Intersection undefined */
-      iter->intersects = FALSE;
+      iter->intersects = false;
       return;
     }
 
-  iter->intersects = TRUE;
+  iter->intersects = true;
 
   /* Clip start position to coverage area */
   if (iter->pos < iter->cover_start)
@@ -90,7 +90,7 @@ _cogl_span_iter_begin (CoglSpanIter *iter,
   iter->n_spans = n_spans;
 
   /* We always iterate in a positive direction from the origin. If
-   * iter->flipped == TRUE that means whoever is using this API should
+   * iter->flipped == true that means whoever is using this API should
    * interpreted the current span as extending in the opposite direction. I.e.
    * it extends to the left if iterating the X axis, or up if the Y axis. */
   if (cover_start > cover_end)
@@ -98,10 +98,10 @@ _cogl_span_iter_begin (CoglSpanIter *iter,
       float tmp = cover_start;
       cover_start = cover_end;
       cover_end = tmp;
-      iter->flipped = TRUE;
+      iter->flipped = true;
     }
   else
-    iter->flipped = FALSE;
+    iter->flipped = false;
 
   /* The texture spans cover the normalized texture coordinate space ranging
    * from [0,1] but to help support repeating of sliced textures we allow

@@ -422,7 +422,7 @@ _cogl_atlas_allocate_space (CoglAtlas *atlas,
                                  &new_allocation,
                                  allocation_data);
 
-      return TRUE;
+      return true;
     }
 
   /* If we make it here then we need to reorganize the atlas. First
@@ -489,7 +489,7 @@ _cogl_atlas_allocate_space (CoglAtlas *atlas,
   if (new_map == NULL)
     {
       COGL_NOTE (ATLAS, "%p: Could not fit texture in the atlas", atlas);
-      ret = FALSE;
+      ret = false;
     }
   /* We need to migrate the existing textures into a new texture */
   else if ((new_tex = _cogl_atlas_create_texture
@@ -499,7 +499,7 @@ _cogl_atlas_allocate_space (CoglAtlas *atlas,
     {
       COGL_NOTE (ATLAS, "%p: Could not create a CoglTexture2D", atlas);
       _cogl_rectangle_map_free (new_map);
-      ret = FALSE;
+      ret = false;
     }
   else
     {
@@ -559,7 +559,7 @@ _cogl_atlas_allocate_space (CoglAtlas *atlas,
                  _cogl_rectangle_map_get_n_rectangles (atlas->map),
                  waste);
 
-      ret = TRUE;
+      ret = true;
     }
 
   c_free (data.textures);

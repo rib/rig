@@ -41,7 +41,7 @@ static CoglUserDataKey atlas_private_key;
 static void
 dissociate_atlases (CoglAtlasSet *set)
 {
-  CSList *l;
+  c_slist_t *l;
 
   /* NB: The set doesn't maintain a reference on the atlases since we don't
    * want to keep them alive if they become empty. */
@@ -80,11 +80,11 @@ cogl_atlas_set_new (CoglContext *context)
   set->atlases = NULL;
 
   set->components = COGL_TEXTURE_COMPONENTS_RGBA;
-  set->premultiplied = TRUE;
+  set->premultiplied = true;
   _update_internal_format (set);
 
-  set->clear_enabled = FALSE;
-  set->migration_enabled = TRUE;
+  set->clear_enabled = false;
+  set->migration_enabled = true;
 
   _cogl_list_init (&set->atlas_closures);
 
@@ -188,7 +188,7 @@ cogl_atlas_set_allocate_space (CoglAtlasSet *set,
                                int height,
                                void *allocation_data)
 {
-  CSList *l;
+  c_slist_t *l;
   CoglAtlasFlags flags = 0;
   CoglAtlas *atlas;
 
@@ -262,7 +262,7 @@ cogl_atlas_set_foreach (CoglAtlasSet *atlas_set,
                         CoglAtlasSetForeachCallback callback,
                         void *user_data)
 {
-  CSList *l;
+  c_slist_t *l;
 
   for (l = atlas_set->atlases; l; l = l->next)
     callback (l->data, user_data);

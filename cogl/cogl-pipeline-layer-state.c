@@ -216,7 +216,7 @@ _cogl_pipeline_set_layer_texture_type (CoglPipeline *pipeline,
 
 changed:
 
-  pipeline->dirty_real_blend_enable = TRUE;
+  pipeline->dirty_real_blend_enable = true;
 }
 
 static void
@@ -295,7 +295,7 @@ _cogl_pipeline_set_layer_texture_data (CoglPipeline *pipeline,
 
 changed:
 
-  pipeline->dirty_real_blend_enable = TRUE;
+  pipeline->dirty_real_blend_enable = true;
 }
 
 void
@@ -617,7 +617,7 @@ _cogl_pipeline_layer_get_wrap_mode_s (CoglPipelineLayer *layer)
   CoglPipelineLayer     *authority;
   const CoglSamplerCacheEntry *sampler_state;
 
-  _COGL_RETURN_VAL_IF_FAIL (_cogl_is_pipeline_layer (layer), FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (_cogl_is_pipeline_layer (layer), false);
 
   /* Now find the ancestor of the layer that is the authority for the
    * state we want to change */
@@ -632,7 +632,7 @@ cogl_pipeline_get_layer_wrap_mode_s (CoglPipeline *pipeline, int layer_index)
 {
   CoglPipelineLayer *layer;
 
-  _COGL_RETURN_VAL_IF_FAIL (cogl_is_pipeline (pipeline), FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (cogl_is_pipeline (pipeline), false);
 
   /* Note: this will ensure that the layer exists, creating one if it
    * doesn't already.
@@ -654,7 +654,7 @@ _cogl_pipeline_layer_get_wrap_mode_t (CoglPipelineLayer *layer)
   CoglPipelineLayer     *authority;
   const CoglSamplerCacheEntry *sampler_state;
 
-  _COGL_RETURN_VAL_IF_FAIL (_cogl_is_pipeline_layer (layer), FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (_cogl_is_pipeline_layer (layer), false);
 
   /* Now find the ancestor of the layer that is the authority for the
    * state we want to change */
@@ -669,7 +669,7 @@ cogl_pipeline_get_layer_wrap_mode_t (CoglPipeline *pipeline, int layer_index)
 {
   CoglPipelineLayer *layer;
 
-  _COGL_RETURN_VAL_IF_FAIL (cogl_is_pipeline (pipeline), FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (cogl_is_pipeline (pipeline), false);
 
   /* Note: this will ensure that the layer exists, creating one if it
    * doesn't already.
@@ -700,7 +700,7 @@ cogl_pipeline_get_layer_wrap_mode_p (CoglPipeline *pipeline, int layer_index)
 {
   CoglPipelineLayer *layer;
 
-  _COGL_RETURN_VAL_IF_FAIL (cogl_is_pipeline (pipeline), FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (cogl_is_pipeline (pipeline), false);
 
   /* Note: this will ensure that the layer exists, creating one if it
    * doesn't already.
@@ -740,9 +740,9 @@ cogl_pipeline_set_layer_point_sprite_coords_enabled (CoglPipeline *pipeline,
   CoglPipelineLayer           *new;
   CoglPipelineLayer           *authority;
 
-  _COGL_GET_CONTEXT (ctx, FALSE);
+  _COGL_GET_CONTEXT (ctx, false);
 
-  _COGL_RETURN_VAL_IF_FAIL (cogl_is_pipeline (pipeline), FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (cogl_is_pipeline (pipeline), false);
 
   /* Don't allow point sprite coordinates to be enabled if the driver
      doesn't support it */
@@ -758,14 +758,14 @@ cogl_pipeline_set_layer_point_sprite_coords_enabled (CoglPipeline *pipeline,
         }
       else
         {
-          static bool warning_seen = FALSE;
+          static bool warning_seen = false;
           if (!warning_seen)
             c_warning ("Point sprite texture coordinates are enabled "
                        "for a layer but the GL driver does not support it.");
-          warning_seen = TRUE;
+          warning_seen = true;
         }
 
-      return FALSE;
+      return false;
     }
 
   /* Note: this will ensure that the layer exists, creating one if it
@@ -781,7 +781,7 @@ cogl_pipeline_set_layer_point_sprite_coords_enabled (CoglPipeline *pipeline,
   authority = _cogl_pipeline_layer_get_authority (layer, change);
 
   if (authority->big_state->point_sprite_coords == enable)
-    return TRUE;
+    return true;
 
   new = _cogl_pipeline_layer_pre_change_notify (pipeline, layer, change);
   if (new != layer)
@@ -807,7 +807,7 @@ cogl_pipeline_set_layer_point_sprite_coords_enabled (CoglPipeline *pipeline,
               if (layer->differences == 0)
                 _cogl_pipeline_prune_empty_layer_difference (pipeline,
                                                              layer);
-              return TRUE;
+              return true;
             }
         }
     }
@@ -824,7 +824,7 @@ cogl_pipeline_set_layer_point_sprite_coords_enabled (CoglPipeline *pipeline,
       _cogl_pipeline_layer_prune_redundant_ancestry (layer);
     }
 
-  return TRUE;
+  return true;
 }
 
 bool
@@ -836,7 +836,7 @@ cogl_pipeline_get_layer_point_sprite_coords_enabled (CoglPipeline *pipeline,
   CoglPipelineLayer *layer;
   CoglPipelineLayer *authority;
 
-  _COGL_RETURN_VAL_IF_FAIL (cogl_is_pipeline (pipeline), FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (cogl_is_pipeline (pipeline), false);
 
   /* Note: this will ensure that the layer exists, creating one if it
    * doesn't already.
@@ -962,10 +962,10 @@ _cogl_pipeline_layer_texture_data_equal (CoglPipelineLayer *authority0,
         return (_cogl_pipeline_layer_get_texture_type (authority0) ==
                 _cogl_pipeline_layer_get_texture_type (authority1));
       else
-        return FALSE;
+        return false;
     }
   else if (authority1->texture == NULL)
-    return FALSE;
+    return false;
   else
     {
       GLuint gl_handle0, gl_handle1;
@@ -988,11 +988,11 @@ _cogl_pipeline_layer_combine_state_equal (CoglPipelineLayer *authority0,
 
   if (big_state0->texture_combine_rgb_func !=
       big_state1->texture_combine_rgb_func)
-    return FALSE;
+    return false;
 
   if (big_state0->texture_combine_alpha_func !=
       big_state1->texture_combine_alpha_func)
-    return FALSE;
+    return false;
 
   n_args =
     _cogl_get_n_args_for_combine_func (big_state0->texture_combine_rgb_func);
@@ -1002,7 +1002,7 @@ _cogl_pipeline_layer_combine_state_equal (CoglPipelineLayer *authority0,
            big_state1->texture_combine_rgb_src[i]) ||
           (big_state0->texture_combine_rgb_op[i] !=
            big_state1->texture_combine_rgb_op[i]))
-        return FALSE;
+        return false;
     }
 
   n_args =
@@ -1013,10 +1013,10 @@ _cogl_pipeline_layer_combine_state_equal (CoglPipelineLayer *authority0,
            big_state1->texture_combine_alpha_src[i]) ||
           (big_state0->texture_combine_alpha_op[i] !=
            big_state1->texture_combine_alpha_op[i]))
-        return FALSE;
+        return false;
     }
 
-  return TRUE;
+  return true;
 }
 
 bool
@@ -1025,7 +1025,7 @@ _cogl_pipeline_layer_combine_constant_equal (CoglPipelineLayer *authority0,
 {
   return memcmp (authority0->big_state->texture_combine_constant,
                  authority1->big_state->texture_combine_constant,
-                 sizeof (float) * 4) == 0 ? TRUE : FALSE;
+                 sizeof (float) * 4) == 0 ? true : false;
 }
 
 bool
@@ -1166,9 +1166,9 @@ cogl_pipeline_set_layer_combine (CoglPipeline *pipeline,
   CoglBlendStringStatement *a;
   int count;
 
-  _COGL_GET_CONTEXT (ctx, FALSE);
+  _COGL_GET_CONTEXT (ctx, false);
 
-  _COGL_RETURN_VAL_IF_FAIL (cogl_is_pipeline (pipeline), FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (cogl_is_pipeline (pipeline), false);
 
   /* Note: this will ensure that the layer exists, creating one if it
    * doesn't already.
@@ -1189,7 +1189,7 @@ cogl_pipeline_set_layer_combine (CoglPipeline *pipeline,
                                 statements,
                                 error);
   if (!count)
-    return FALSE;
+    return false;
 
   if (statements[0].mask == COGL_BLEND_STRING_CHANNEL_MASK_RGBA)
     {
@@ -1254,8 +1254,8 @@ cogl_pipeline_set_layer_combine (CoglPipeline *pipeline,
 
 changed:
 
-  pipeline->dirty_real_blend_enable = TRUE;
-  return TRUE;
+  pipeline->dirty_real_blend_enable = true;
+  return true;
 }
 
 void
@@ -1339,7 +1339,7 @@ cogl_pipeline_set_layer_combine_constant (CoglPipeline *pipeline,
 
 changed:
 
-  pipeline->dirty_real_blend_enable = TRUE;
+  pipeline->dirty_real_blend_enable = true;
 }
 
 void
@@ -1606,7 +1606,7 @@ _cogl_pipeline_layer_hash_combine_constant_state (CoglPipelineLayer *authority,
                                                   CoglPipelineHashState *state)
 {
   CoglPipelineLayerBigState *b = authority->big_state;
-  bool need_hash = FALSE;
+  bool need_hash = false;
   int n_args;
   int i;
 
@@ -1623,7 +1623,7 @@ _cogl_pipeline_layer_hash_combine_constant_state (CoglPipelineLayer *authority,
         {
           /* XXX: should we be careful to only hash the alpha
            * component in the COGL_PIPELINE_COMBINE_OP_SRC_ALPHA case? */
-          need_hash = TRUE;
+          need_hash = true;
           goto done;
         }
     }
@@ -1636,7 +1636,7 @@ _cogl_pipeline_layer_hash_combine_constant_state (CoglPipelineLayer *authority,
         {
           /* XXX: should we be careful to only hash the alpha
            * component in the COGL_PIPELINE_COMBINE_OP_SRC_ALPHA case? */
-          need_hash = TRUE;
+          need_hash = true;
           goto done;
         }
     }

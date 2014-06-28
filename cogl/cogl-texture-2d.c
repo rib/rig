@@ -104,10 +104,10 @@ _cogl_texture_2d_create_base (CoglContext *ctx,
   _cogl_texture_init (tex, ctx, width, height, internal_format, loader,
                       &cogl_texture_2d_vtable);
 
-  tex_2d->mipmaps_dirty = TRUE;
-  tex_2d->auto_mipmap = TRUE;
+  tex_2d->mipmaps_dirty = true;
+  tex_2d->auto_mipmap = true;
 
-  tex_2d->is_foreign = FALSE;
+  tex_2d->is_foreign = false;
 
   ctx->driver_vtable->texture_2d_init (tex_2d);
 
@@ -163,7 +163,7 @@ CoglTexture2D *
 cogl_texture_2d_new_from_bitmap (CoglBitmap *bmp)
 {
   return _cogl_texture_2d_new_from_bitmap (bmp,
-                                           FALSE); /* can't convert in place */
+                                           false); /* can't convert in place */
 }
 
 CoglTexture2D *
@@ -181,7 +181,7 @@ cogl_texture_2d_new_from_file (CoglContext *ctx,
     return NULL;
 
   tex_2d = _cogl_texture_2d_new_from_bitmap (bmp,
-                                             TRUE); /* can convert in-place */
+                                             true); /* can convert in-place */
 
   cogl_object_unref (bmp);
 
@@ -452,7 +452,7 @@ _cogl_texture_2d_externally_modified (CoglTexture *texture)
   if (!cogl_is_texture_2d (texture))
     return;
 
-  COGL_TEXTURE_2D (texture)->mipmaps_dirty = TRUE;
+  COGL_TEXTURE_2D (texture)->mipmaps_dirty = true;
 }
 
 void
@@ -482,13 +482,13 @@ _cogl_texture_2d_copy_from_framebuffer (CoglTexture2D *tex_2d,
                                                         dst_y,
                                                         level);
 
-  tex_2d->mipmaps_dirty = TRUE;
+  tex_2d->mipmaps_dirty = true;
 }
 
 static bool
 _cogl_texture_2d_is_sliced (CoglTexture *tex)
 {
-  return FALSE;
+  return false;
 }
 
 static bool
@@ -499,9 +499,9 @@ _cogl_texture_2d_can_hardware_repeat (CoglTexture *tex)
   if (cogl_has_feature (ctx, COGL_FEATURE_ID_TEXTURE_NPOT_REPEAT) ||
       (_cogl_util_is_pot (tex->width) &&
        _cogl_util_is_pot (tex->height)))
-    return TRUE;
+    return true;
   else
-    return FALSE;
+    return false;
 }
 
 static void
@@ -555,10 +555,10 @@ _cogl_texture_2d_get_gl_texture (CoglTexture *tex,
       if (out_gl_handle)
         *out_gl_handle = handle;
 
-      return handle ? TRUE : FALSE;
+      return handle ? true : false;
     }
   else
-    return FALSE;
+    return false;
 }
 
 static void
@@ -574,7 +574,7 @@ _cogl_texture_2d_pre_paint (CoglTexture *tex, CoglTexturePrePaintFlags flags)
 
       ctx->driver_vtable->texture_2d_generate_mipmap (tex_2d);
 
-      tex_2d->mipmaps_dirty = FALSE;
+      tex_2d->mipmaps_dirty = false;
     }
 }
 
@@ -610,12 +610,12 @@ _cogl_texture_2d_set_region (CoglTexture *tex,
                                                         level,
                                                         error))
     {
-      return FALSE;
+      return false;
     }
 
-  tex_2d->mipmaps_dirty = TRUE;
+  tex_2d->mipmaps_dirty = true;
 
-  return TRUE;
+  return true;
 }
 
 static bool
@@ -630,10 +630,10 @@ _cogl_texture_2d_get_data (CoglTexture *tex,
     {
       CoglTexture2D *tex_2d = COGL_TEXTURE_2D (tex);
       ctx->driver_vtable->texture_2d_get_data (tex_2d, format, rowstride, data);
-      return TRUE;
+      return true;
     }
   else
-    return FALSE;
+    return false;
 }
 
 static CoglPixelFormat
@@ -663,7 +663,7 @@ _cogl_texture_2d_get_type (CoglTexture *tex)
 static const CoglTextureVtable
 cogl_texture_2d_vtable =
   {
-    TRUE, /* primitive */
+    true, /* primitive */
     _cogl_texture_2d_allocate,
     _cogl_texture_2d_set_region,
     _cogl_texture_2d_get_data,

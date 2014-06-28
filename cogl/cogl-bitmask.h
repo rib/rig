@@ -47,7 +47,7 @@ COGL_BEGIN_DECLS
  *
  * Internally a CoglBitmask is a pointer. If the least significant bit
  * of the pointer is 1 then the rest of the bits are directly used as
- * part of the bitmask, otherwise it is a pointer to a CArray of
+ * part of the bitmask, otherwise it is a pointer to a c_array_t of
  * unsigned ints. This relies on the fact the c_malloc will return a
  * pointer aligned to at least two bytes (so that the least
  * significant bit of the address is always 0). It also assumes that
@@ -72,7 +72,7 @@ typedef struct _CoglBitmaskImaginaryType *CoglBitmask;
   ((void *) ((((unsigned long) (bits)) << 1UL) | 1UL))
 
 /* Internal helper macro to determine whether this bitmask has a
-   CArray allocated or whether the pointer is just used directly */
+   c_array_t allocated or whether the pointer is just used directly */
 #define _cogl_bitmask_has_array(bitmask) \
   (!(_cogl_bitmask_to_number (bitmask) & 1UL))
 
@@ -142,7 +142,7 @@ void
 _cogl_bitmask_xor_bits (CoglBitmask *dst,
                         const CoglBitmask *src);
 
-/* The foreach function can return FALSE to stop iteration */
+/* The foreach function can return false to stop iteration */
 typedef bool (* CoglBitmaskForeachFunc) (int bit_num, void *user_data);
 
 /*
@@ -171,7 +171,7 @@ _cogl_bitmask_get (const CoglBitmask *bitmask, unsigned int bit_num)
   if (_cogl_bitmask_has_array (bitmask))
     return _cogl_bitmask_get_from_array (bitmask, bit_num);
   else if (bit_num >= COGL_BITMASK_MAX_DIRECT_BITS)
-    return FALSE;
+    return false;
   else
     return !!(_cogl_bitmask_to_bits (bitmask) & (1UL << bit_num));
 }
@@ -232,7 +232,7 @@ static inline void
 _cogl_bitmask_destroy (CoglBitmask *bitmask)
 {
   if (_cogl_bitmask_has_array (bitmask))
-    c_array_free ((CArray *) *bitmask, TRUE);
+    c_array_free ((c_array_t *) *bitmask, true);
 }
 
 /*

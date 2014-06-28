@@ -96,8 +96,8 @@ cogl_offscreen_new_with_texture (CoglTexture *texture);
  * Determines whether the given #CoglObject references an offscreen
  * framebuffer object.
  *
- * Returns: %TRUE if @object is a #CoglOffscreen framebuffer,
- *          %FALSE otherwise
+ * Returns: %true if @object is a #CoglOffscreen framebuffer,
+ *          %false otherwise
  */
 bool
 cogl_is_offscreen (void *object);

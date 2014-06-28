@@ -54,7 +54,7 @@ _cogl_texture_2d_nop_can_create (CoglContext *ctx,
                                  int height,
                                  CoglPixelFormat internal_format)
 {
-  return TRUE;
+  return true;
 }
 
 void
@@ -66,7 +66,7 @@ bool
 _cogl_texture_2d_nop_allocate (CoglTexture *tex,
                                CoglError **error)
 {
-  return TRUE;
+  return true;
 }
 
 void
@@ -120,7 +120,7 @@ _cogl_texture_2d_nop_copy_from_bitmap (CoglTexture2D *tex_2d,
                                        int level,
                                        CoglError **error)
 {
-  return TRUE;
+  return true;
 }
 
 void

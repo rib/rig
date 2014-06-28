@@ -213,7 +213,7 @@ cogl_gst_video_sink_new (CoglContext *ctx);
  * is passed between components that didn't have an opportunity to
  * connect a signal handler this can be useful.
  *
- * Return value: %TRUE if the sink is ready, else %FALSE
+ * Return value: %true if the sink is ready, else %false
  * Since: 1.16
  */
 bool
@@ -329,7 +329,7 @@ cogl_gst_video_sink_set_first_layer (CoglGstVideoSink *sink,
  * cogl_gst_video_sink_get_pipeline() will have a layer with a shader
  * snippet that automatically samples the video. If the application
  * wants to sample the video in a completely custom way using its own
- * shader snippet it can set @default_sample to %FALSE to avoid this
+ * shader snippet it can set @default_sample to %false to avoid this
  * default snippet being added. In that case the application's snippet
  * can call cogl_gst_sample_video0 to sample the texture itself.
  *

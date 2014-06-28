@@ -60,12 +60,12 @@ bool
 _cogl_bitmask_get_from_array (const CoglBitmask *bitmask,
                               unsigned int bit_num)
 {
-  CArray *array = (CArray *) *bitmask;
+  c_array_t *array = (c_array_t *) *bitmask;
 
   /* If the index is off the end of the array then assume the bit is
      not set */
   if (bit_num >= sizeof (unsigned long) * 8 * array->len)
-    return FALSE;
+    return false;
   else
     return !!(c_array_index (array, unsigned long, ARRAY_INDEX (bit_num)) &
               BIT_MASK (bit_num));
@@ -74,12 +74,12 @@ _cogl_bitmask_get_from_array (const CoglBitmask *bitmask,
 static void
 _cogl_bitmask_convert_to_array (CoglBitmask *bitmask)
 {
-  CArray *array;
+  c_array_t *array;
   /* Fetch the old values */
   unsigned long old_values = _cogl_bitmask_to_bits (bitmask);
 
-  array = c_array_new (FALSE, /* not zero-terminated */
-                       TRUE, /* do clear new entries */
+  array = c_array_new (false, /* not zero-terminated */
+                       true, /* do clear new entries */
                        sizeof (unsigned long));
   /* Copy the old values back in */
   c_array_append_val (array, old_values);
@@ -92,7 +92,7 @@ _cogl_bitmask_set_in_array (CoglBitmask *bitmask,
                             unsigned int bit_num,
                             bool value)
 {
-  CArray *array;
+  c_array_t *array;
   unsigned int array_index;
   unsigned long new_value_mask;
 
@@ -100,7 +100,7 @@ _cogl_bitmask_set_in_array (CoglBitmask *bitmask,
   if (!_cogl_bitmask_has_array (bitmask))
     _cogl_bitmask_convert_to_array (bitmask);
 
-  array = (CArray *) *bitmask;
+  array = (c_array_t *) *bitmask;
 
   array_index = ARRAY_INDEX (bit_num);
   /* Grow the array if necessary. This will clear the new data */
@@ -121,14 +121,14 @@ _cogl_bitmask_set_bits (CoglBitmask *dst,
 {
   if (_cogl_bitmask_has_array (src))
     {
-      CArray *src_array, *dst_array;
+      c_array_t *src_array, *dst_array;
       int i;
 
       if (!_cogl_bitmask_has_array (dst))
         _cogl_bitmask_convert_to_array (dst);
 
-      dst_array = (CArray *) *dst;
-      src_array = (CArray *) *src;
+      dst_array = (c_array_t *) *dst;
+      src_array = (c_array_t *) *src;
 
       if (dst_array->len < src_array->len)
         c_array_set_size (dst_array, src_array->len);
@@ -139,9 +139,9 @@ _cogl_bitmask_set_bits (CoglBitmask *dst,
     }
   else if (_cogl_bitmask_has_array (dst))
     {
-      CArray *dst_array;
+      c_array_t *dst_array;
 
-      dst_array = (CArray *) *dst;
+      dst_array = (c_array_t *) *dst;
 
       c_array_index (dst_array, unsigned long, 0) |=
         _cogl_bitmask_to_bits (src);
@@ -156,7 +156,7 @@ _cogl_bitmask_set_range_in_array (CoglBitmask *bitmask,
                                   unsigned int n_bits,
                                   bool value)
 {
-  CArray *array;
+  c_array_t *array;
   unsigned int array_index, bit_index;
 
   if (n_bits == 0)
@@ -166,7 +166,7 @@ _cogl_bitmask_set_range_in_array (CoglBitmask *bitmask,
   if (!_cogl_bitmask_has_array (bitmask))
     _cogl_bitmask_convert_to_array (bitmask);
 
-  array = (CArray *) *bitmask;
+  array = (c_array_t *) *bitmask;
 
   /* Get the array index of the top most value that will be touched */
   array_index = ARRAY_INDEX (n_bits - 1);
@@ -201,14 +201,14 @@ _cogl_bitmask_xor_bits (CoglBitmask *dst,
 {
   if (_cogl_bitmask_has_array (src))
     {
-      CArray *src_array, *dst_array;
+      c_array_t *src_array, *dst_array;
       int i;
 
       if (!_cogl_bitmask_has_array (dst))
         _cogl_bitmask_convert_to_array (dst);
 
-      dst_array = (CArray *) *dst;
-      src_array = (CArray *) *src;
+      dst_array = (c_array_t *) *dst;
+      src_array = (c_array_t *) *src;
 
       if (dst_array->len < src_array->len)
         c_array_set_size (dst_array, src_array->len);
@@ -219,9 +219,9 @@ _cogl_bitmask_xor_bits (CoglBitmask *dst,
     }
   else if (_cogl_bitmask_has_array (dst))
     {
-      CArray *dst_array;
+      c_array_t *dst_array;
 
-      dst_array = (CArray *) *dst;
+      dst_array = (c_array_t *) *dst;
 
       c_array_index (dst_array, unsigned long, 0) ^=
         _cogl_bitmask_to_bits (src);
@@ -234,7 +234,7 @@ _cogl_bitmask_xor_bits (CoglBitmask *dst,
 void
 _cogl_bitmask_clear_all_in_array (CoglBitmask *bitmask)
 {
-  CArray *array = (CArray *) *bitmask;
+  c_array_t *array = (c_array_t *) *bitmask;
 
   memset (array->data, 0, sizeof (unsigned long) * array->len);
 }
@@ -246,7 +246,7 @@ _cogl_bitmask_foreach (const CoglBitmask *bitmask,
 {
   if (_cogl_bitmask_has_array (bitmask))
     {
-      CArray *array = (CArray *) *bitmask;
+      c_array_t *array = (c_array_t *) *bitmask;
       const unsigned long *values = &c_array_index (array, unsigned long, 0);
       int bit_num;
 
@@ -275,7 +275,7 @@ void
 _cogl_bitmask_set_flags_array (const CoglBitmask *bitmask,
                                unsigned long *flags)
 {
-  const CArray *array = (const CArray *) *bitmask;
+  const c_array_t *array = (const c_array_t *) *bitmask;
   int i;
 
   for (i = 0; i < array->len; i++)
@@ -285,7 +285,7 @@ _cogl_bitmask_set_flags_array (const CoglBitmask *bitmask,
 int
 _cogl_bitmask_popcount_in_array (const CoglBitmask *bitmask)
 {
-  const CArray *array = (const CArray *) *bitmask;
+  const c_array_t *array = (const c_array_t *) *bitmask;
   int pop = 0;
   int i;
 
@@ -299,7 +299,7 @@ int
 _cogl_bitmask_popcount_upto_in_array (const CoglBitmask *bitmask,
                                       int upto)
 {
-  const CArray *array = (const CArray *) *bitmask;
+  const c_array_t *array = (const c_array_t *) *bitmask;
 
   if (upto >= array->len * sizeof (unsigned long) * 8)
     return _cogl_bitmask_popcount_in_array (bitmask);
@@ -336,12 +336,12 @@ check_bit (int bit_num, void *user_data)
     if (data->bits[i] == bit_num)
       {
         data->bits[i] = -1;
-        return TRUE;
+        return true;
       }
 
   c_assert_not_reached ();
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -412,17 +412,17 @@ UNIT_TEST (check_bitmask_api,
       _cogl_bitmask_init (&other_bitmask);
 
       if (dummy_bit != -1)
-        _cogl_bitmask_set (&bitmask, dummy_bit, TRUE);
+        _cogl_bitmask_set (&bitmask, dummy_bit, true);
 
       verify_bits (&bitmask, dummy_bit, -1);
 
-      _cogl_bitmask_set (&bitmask, 1, TRUE);
-      _cogl_bitmask_set (&bitmask, 4, TRUE);
-      _cogl_bitmask_set (&bitmask, 5, TRUE);
+      _cogl_bitmask_set (&bitmask, 1, true);
+      _cogl_bitmask_set (&bitmask, 4, true);
+      _cogl_bitmask_set (&bitmask, 5, true);
 
       verify_bits (&bitmask, 1, 4, 5, dummy_bit, -1);
 
-      _cogl_bitmask_set (&bitmask, 4, FALSE);
+      _cogl_bitmask_set (&bitmask, 4, false);
 
       verify_bits (&bitmask, 1, 5, dummy_bit, -1);
 
@@ -431,22 +431,22 @@ UNIT_TEST (check_bitmask_api,
       verify_bits (&bitmask, -1);
 
       if (dummy_bit != -1)
-        _cogl_bitmask_set (&bitmask, dummy_bit, TRUE);
+        _cogl_bitmask_set (&bitmask, dummy_bit, true);
 
       verify_bits (&bitmask, dummy_bit, -1);
 
-      _cogl_bitmask_set (&bitmask, 1, TRUE);
-      _cogl_bitmask_set (&bitmask, 4, TRUE);
-      _cogl_bitmask_set (&bitmask, 5, TRUE);
-      _cogl_bitmask_set (&other_bitmask, 5, TRUE);
-      _cogl_bitmask_set (&other_bitmask, 6, TRUE);
+      _cogl_bitmask_set (&bitmask, 1, true);
+      _cogl_bitmask_set (&bitmask, 4, true);
+      _cogl_bitmask_set (&bitmask, 5, true);
+      _cogl_bitmask_set (&other_bitmask, 5, true);
+      _cogl_bitmask_set (&other_bitmask, 6, true);
 
       _cogl_bitmask_set_bits (&bitmask, &other_bitmask);
 
       verify_bits (&bitmask, 1, 4, 5, 6, dummy_bit, -1);
       verify_bits (&other_bitmask, 5, 6, -1);
 
-      _cogl_bitmask_set (&bitmask, 6, FALSE);
+      _cogl_bitmask_set (&bitmask, 6, false);
 
       verify_bits (&bitmask, 1, 4, 5, dummy_bit, -1);
 
@@ -455,11 +455,11 @@ UNIT_TEST (check_bitmask_api,
       verify_bits (&bitmask, 1, 4, 6, dummy_bit, -1);
       verify_bits (&other_bitmask, 5, 6, -1);
 
-      _cogl_bitmask_set_range (&bitmask, 5, TRUE);
+      _cogl_bitmask_set_range (&bitmask, 5, true);
 
       verify_bits (&bitmask, 0, 1, 2, 3, 4, 6, dummy_bit, -1);
 
-      _cogl_bitmask_set_range (&bitmask, 4, FALSE);
+      _cogl_bitmask_set_range (&bitmask, 4, false);
 
       verify_bits (&bitmask, 4, 6, dummy_bit, -1);
 
@@ -469,19 +469,19 @@ UNIT_TEST (check_bitmask_api,
 
   /* Extra tests for really long bitmasks */
   _cogl_bitmask_init (&bitmask);
-  _cogl_bitmask_set_range (&bitmask, 400, TRUE);
+  _cogl_bitmask_set_range (&bitmask, 400, true);
   _cogl_bitmask_init (&other_bitmask);
-  _cogl_bitmask_set (&other_bitmask, 5, TRUE);
+  _cogl_bitmask_set (&other_bitmask, 5, true);
   _cogl_bitmask_xor_bits (&bitmask, &other_bitmask);
 
   for (i = 0; i < 1024; i++)
     c_assert_cmpint (_cogl_bitmask_get (&bitmask, i),
                      ==,
-                     (i == 5 ? FALSE :
-                      i < 400 ? TRUE :
-                      FALSE));
+                     (i == 5 ? false :
+                      i < 400 ? true :
+                      false));
 
-  _cogl_bitmask_set_range (&other_bitmask, 500, TRUE);
+  _cogl_bitmask_set_range (&other_bitmask, 500, true);
   _cogl_bitmask_set_bits (&bitmask, &other_bitmask);
 
   for (i = 0; i < 1024; i++)

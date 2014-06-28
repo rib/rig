@@ -48,7 +48,7 @@
 
 #else
 
-#define _RealError              UError
+#define _RealError              c_error_t
 #define _real_error_free        c_error_free
 #define _real_error_copy        c_error_copy
 #define _real_error_matches     c_error_matches

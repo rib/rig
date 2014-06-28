@@ -74,7 +74,7 @@ validate_cogl_attribute_name (const char *name,
 {
   name = name + 5; /* skip "cogl_" */
 
-  *normalized = FALSE;
+  *normalized = false;
   *layer_number = 0;
 
   if (strcmp (name, "position_in") == 0)
@@ -82,7 +82,7 @@ validate_cogl_attribute_name (const char *name,
   else if (strcmp (name, "color_in") == 0)
     {
       *name_id = COGL_ATTRIBUTE_NAME_ID_COLOR_ARRAY;
-      *normalized = TRUE;
+      *normalized = true;
     }
   else if (strcmp (name, "tex_coord_in") == 0)
     {
@@ -98,24 +98,24 @@ validate_cogl_attribute_name (const char *name,
 	  c_warning ("Texture coordinate attributes should either be named "
                      "\"cogl_tex_coord_in\" or named with a texture unit index "
                      "like \"cogl_tex_coord2_in\"\n");
-          return FALSE;
+          return false;
 	}
       *name_id = COGL_ATTRIBUTE_NAME_ID_TEXTURE_COORD_ARRAY;
     }
   else if (strcmp (name, "normal_in") == 0)
     {
       *name_id = COGL_ATTRIBUTE_NAME_ID_NORMAL_ARRAY;
-      *normalized = TRUE;
+      *normalized = true;
     }
   else if (strcmp (name, "point_size_in") == 0)
     *name_id = COGL_ATTRIBUTE_NAME_ID_POINT_SIZE_ARRAY;
   else
     {
       c_warning ("Unknown cogl_* attribute name cogl_%s\n", name);
-      return FALSE;
+      return false;
     }
 
-  return TRUE;
+  return true;
 }
 
 CoglAttributeNameState *
@@ -140,7 +140,7 @@ _cogl_attribute_register_attribute_name (CoglContext *context,
   else
     {
       name_state->name_id = COGL_ATTRIBUTE_NAME_ID_CUSTOM_ARRAY;
-      name_state->normalized_default = FALSE;
+      name_state->normalized_default = false;
       name_state->layer_number = 0;
     }
 
@@ -152,7 +152,7 @@ _cogl_attribute_register_attribute_name (CoglContext *context,
 
   if (C_UNLIKELY (context->attribute_name_index_map == NULL))
     context->attribute_name_index_map =
-      c_array_new (FALSE, FALSE, sizeof (void *));
+      c_array_new (false, false, sizeof (void *));
 
   c_array_set_size (context->attribute_name_index_map, name_index + 1);
 
@@ -178,7 +178,7 @@ validate_n_components (const CoglAttributeNameState *name_state,
           c_critical ("glVertexPointer doesn't allow 1 component vertex "
                       "positions so we currently only support \"cogl_vertex\" "
                       "attributes where n_components == 2, 3 or 4");
-          return FALSE;
+          return false;
         }
       break;
     case COGL_ATTRIBUTE_NAME_ID_COLOR_ARRAY:
@@ -187,7 +187,7 @@ validate_n_components (const CoglAttributeNameState *name_state,
           c_critical ("glColorPointer expects 3 or 4 component colors so we "
                       "currently only support \"cogl_color\" attributes where "
                       "n_components == 3 or 4");
-          return FALSE;
+          return false;
         }
       break;
     case COGL_ATTRIBUTE_NAME_ID_TEXTURE_COORD_ARRAY:
@@ -198,7 +198,7 @@ validate_n_components (const CoglAttributeNameState *name_state,
           c_critical ("glNormalPointer expects 3 component normals so we "
                       "currently only support \"cogl_normal\" attributes "
                       "where n_components == 3");
-          return FALSE;
+          return false;
         }
       break;
     case COGL_ATTRIBUTE_NAME_ID_POINT_SIZE_ARRAY:
@@ -206,14 +206,14 @@ validate_n_components (const CoglAttributeNameState *name_state,
         {
           c_critical ("The point size attribute can only have one "
                       "component");
-          return FALSE;
+          return false;
         }
       break;
     case COGL_ATTRIBUTE_NAME_ID_CUSTOM_ARRAY:
-      return TRUE;
+      return true;
     }
 
-  return TRUE;
+  return true;
 }
 
 CoglAttribute *
@@ -228,7 +228,7 @@ cogl_attribute_new (CoglAttributeBuffer *attribute_buffer,
   CoglBuffer *buffer = COGL_BUFFER (attribute_buffer);
   CoglContext *ctx = buffer->context;
 
-  attribute->is_buffered = TRUE;
+  attribute->is_buffered = true;
 
   attribute->name_state =
     c_hash_table_lookup (ctx->attribute_name_states_hash, name);
@@ -257,7 +257,7 @@ cogl_attribute_new (CoglAttributeBuffer *attribute_buffer,
         attribute->name_state->normalized_default;
     }
   else
-    attribute->normalized = FALSE;
+    attribute->normalized = false;
 
   return _cogl_attribute_object_new (attribute);
 
@@ -290,8 +290,8 @@ _cogl_attribute_new_const (CoglContext *context,
   if (!validate_n_components (attribute->name_state, n_components))
     goto error;
 
-  attribute->is_buffered = FALSE;
-  attribute->normalized = FALSE;
+  attribute->is_buffered = false;
+  attribute->normalized = false;
 
   attribute->d.constant.context = cogl_object_ref (context);
 
@@ -333,7 +333,7 @@ cogl_attribute_new_const_1f (CoglContext *context,
                                     name,
                                     1, /* n_components */
                                     1, /* 1 column vector */
-                                    FALSE, /* no transpose */
+                                    false, /* no transpose */
                                     &value);
 }
 
@@ -346,7 +346,7 @@ cogl_attribute_new_const_2fv (CoglContext *context,
                                     name,
                                     2, /* n_components */
                                     1, /* 1 column vector */
-                                    FALSE, /* no transpose */
+                                    false, /* no transpose */
                                     value);
 }
 
@@ -359,7 +359,7 @@ cogl_attribute_new_const_3fv (CoglContext *context,
                                     name,
                                     3, /* n_components */
                                     1, /* 1 column vector */
-                                    FALSE, /* no transpose */
+                                    false, /* no transpose */
                                     value);
 }
 
@@ -372,7 +372,7 @@ cogl_attribute_new_const_4fv (CoglContext *context,
                                     name,
                                     4, /* n_components */
                                     1, /* 1 column vector */
-                                    FALSE, /* no transpose */
+                                    false, /* no transpose */
                                     value);
 }
 
@@ -387,7 +387,7 @@ cogl_attribute_new_const_2f (CoglContext *context,
                                     name,
                                     2, /* n_components */
                                     1, /* 1 column vector */
-                                    FALSE, /* no transpose */
+                                    false, /* no transpose */
                                     vec2);
 }
 
@@ -403,7 +403,7 @@ cogl_attribute_new_const_3f (CoglContext *context,
                                     name,
                                     3, /* n_components */
                                     1, /* 1 column vector */
-                                    FALSE, /* no transpose */
+                                    false, /* no transpose */
                                     vec3);
 }
 
@@ -420,7 +420,7 @@ cogl_attribute_new_const_4f (CoglContext *context,
                                     name,
                                     4, /* n_components */
                                     1, /* 1 column vector */
-                                    FALSE, /* no transpose */
+                                    false, /* no transpose */
                                     vec4);
 }
 
@@ -434,7 +434,7 @@ cogl_attribute_new_const_2x2fv (CoglContext *context,
                                     name,
                                     2, /* n_components */
                                     2, /* 2 column vector */
-                                    FALSE, /* no transpose */
+                                    false, /* no transpose */
                                     matrix2x2);
 }
 
@@ -448,7 +448,7 @@ cogl_attribute_new_const_3x3fv (CoglContext *context,
                                     name,
                                     3, /* n_components */
                                     3, /* 3 column vector */
-                                    FALSE, /* no transpose */
+                                    false, /* no transpose */
                                     matrix3x3);
 }
 
@@ -462,14 +462,14 @@ cogl_attribute_new_const_4x4fv (CoglContext *context,
                                     name,
                                     4, /* n_components */
                                     4, /* 4 column vector */
-                                    FALSE, /* no transpose */
+                                    false, /* no transpose */
                                     matrix4x4);
 }
 
 bool
 cogl_attribute_get_normalized (CoglAttribute *attribute)
 {
-  _COGL_RETURN_VAL_IF_FAIL (cogl_is_attribute (attribute), FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (cogl_is_attribute (attribute), false);
 
   return attribute->normalized;
 }
@@ -477,12 +477,12 @@ cogl_attribute_get_normalized (CoglAttribute *attribute)
 static void
 warn_about_midscene_changes (void)
 {
-  static bool seen = FALSE;
+  static bool seen = false;
   if (!seen)
     {
       c_warning ("Mid-scene modification of attributes has "
                  "undefined results\n");
-      seen = TRUE;
+      seen = true;
     }
 }
 
@@ -566,7 +566,7 @@ validate_layer_cb (CoglPipeline *pipeline,
   CoglTexture *texture =
     cogl_pipeline_get_layer_texture (pipeline, layer_index);
   CoglFlushLayerState *state = user_data;
-  bool status = TRUE;
+  bool status = true;
 
   /* invalid textures will be handled correctly in
    * _cogl_pipeline_flush_layers_gl_state */

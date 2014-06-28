@@ -42,7 +42,7 @@ typedef struct _CoglGLibSource
 
   CoglRenderer *renderer;
 
-  CArray *poll_fds;
+  c_array_t *poll_fds;
   int poll_fds_age;
 
   int64_t expiration_time;
@@ -120,16 +120,16 @@ cogl_glib_source_check (GSource *source)
 
   if (cogl_source->expiration_time >= 0 &&
       g_source_get_time (source) >= cogl_source->expiration_time)
-    return TRUE;
+    return true;
 
   for (i = 0; i < cogl_source->poll_fds->len; i++)
     {
       GPollFD *poll_fd = &c_array_index (cogl_source->poll_fds, GPollFD, i);
       if (poll_fd->revents != 0)
-        return TRUE;
+        return true;
     }
 
-  return FALSE;
+  return false;
 }
 
 static gboolean
@@ -145,7 +145,7 @@ cogl_glib_source_dispatch (GSource *source,
                                poll_fds,
                                cogl_source->poll_fds->len);
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -153,7 +153,7 @@ cogl_glib_source_finalize (GSource *source)
 {
   CoglGLibSource *cogl_source = (CoglGLibSource *) source;
 
-  c_array_free (cogl_source->poll_fds, TRUE);
+  c_array_free (cogl_source->poll_fds, true);
 }
 
 static GSourceFuncs
@@ -177,7 +177,7 @@ cogl_glib_renderer_source_new (CoglRenderer *renderer,
   cogl_source = (CoglGLibSource *) source;
 
   cogl_source->renderer = renderer;
-  cogl_source->poll_fds = c_array_new (FALSE, FALSE, sizeof (GPollFD));
+  cogl_source->poll_fds = c_array_new (false, false, sizeof (GPollFD));
 
   if (priority != G_PRIORITY_DEFAULT)
     g_source_set_priority (source, priority);

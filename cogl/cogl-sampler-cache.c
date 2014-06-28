@@ -54,8 +54,8 @@ struct _CoglSamplerCache
      pointer instead of the whole state and the second is used so that
      only a single GL sampler object will be created for each unique
      GL state. */
-  CHashTable *hash_table_cogl;
-  CHashTable *hash_table_gl;
+  c_hash_table_t *hash_table_cogl;
+  c_hash_table_t *hash_table_gl;
 
   /* This is used for generated fake unique sampler object numbers
      when the sampler object extension is not supported */

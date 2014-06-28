@@ -68,7 +68,7 @@ typedef struct _CoglTextureUnit
   GLuint             gl_texture;
   /* The target of the GL texture object. This is just used so that we
    * can quickly determine the intended target to flush when
-   * dirty_gl_texture == TRUE */
+   * dirty_gl_texture == true */
   GLenum             gl_target;
 
   /* Foreign textures are those not created or deleted by Cogl. If we ever
@@ -87,7 +87,7 @@ typedef struct _CoglTextureUnit
    *
    * XXX: as a further optimization cogl-pipeline.c uses a convention
    * of always using texture unit 1 for these transient bindings so we
-   * can assume this is only ever TRUE for unit 1.
+   * can assume this is only ever true for unit 1.
    */
   bool           dirty_gl_texture;
 
@@ -122,7 +122,7 @@ typedef struct _CoglTextureUnit
   /* Whenever a CoglTexture's internal GL texture storage changes
    * cogl-pipeline.c is notified with a call to
    * _cogl_pipeline_texture_storage_change_notify which inturn sets
-   * this to TRUE for each texture unit that it is currently bound
+   * this to true for each texture unit that it is currently bound
    * too. When we later come to flush some pipeline state then we will
    * always check this to potentially force an update of the texture
    * state even if the pipeline hasn't changed. */

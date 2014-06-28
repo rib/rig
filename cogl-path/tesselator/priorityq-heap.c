@@ -39,11 +39,11 @@
 
 #define INIT_SIZE	32
 
-#ifndef TRUE
-#define TRUE 1
+#ifndef true
+#define true 1
 #endif
-#ifndef FALSE
-#define FALSE 0
+#ifndef false
+#define false 0
 #endif
 
 #ifdef FOR_TRITE_TEST_PROGRAM
@@ -75,7 +75,7 @@ PriorityQ *pqNewPriorityQ( int (*leq)(PQkey key1, PQkey key2) )
      return NULL;
   }
 
-  pq->initialized = FALSE;
+  pq->initialized = false;
   pq->freeList = 0;
   pq->leq = leq;
 
@@ -155,7 +155,7 @@ void pqInit( PriorityQ *pq )
   for( i = pq->size; i >= 1; --i ) {
     FloatDown( pq, i );
   }
-  pq->initialized = TRUE;
+  pq->initialized = true;
 }
 
 /* really __gl_pqHeapInsert */

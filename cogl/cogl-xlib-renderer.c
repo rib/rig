@@ -53,7 +53,7 @@
 #include <string.h>
 
 static char *_cogl_x11_display_name = NULL;
-static CList *_cogl_xlib_renderers = NULL;
+static c_list_t *_cogl_xlib_renderers = NULL;
 
 static void
 destroy_xlib_renderer_data (void *user_data)
@@ -91,7 +91,7 @@ _cogl_xlib_renderer_get_data (CoglRenderer *renderer)
 static void
 register_xlib_renderer (CoglRenderer *renderer)
 {
-  CList *l;
+  c_list_t *l;
 
   for (l = _cogl_xlib_renderers; l; l = l->next)
     if (l->data == renderer)
@@ -109,7 +109,7 @@ unregister_xlib_renderer (CoglRenderer *renderer)
 static CoglRenderer *
 get_renderer_for_xdisplay (Display *xdpy)
 {
-  CList *l;
+  c_list_t *l;
 
   for (l = _cogl_xlib_renderers; l; l = l->next)
     {
@@ -231,10 +231,10 @@ update_outputs (CoglRenderer *renderer,
     _cogl_xlib_renderer_get_data (renderer);
   XRRScreenResources *resources;
   CoglXlibTrapState state;
-  bool error = FALSE;
-  CList *new_outputs = NULL;
-  CList *l, *m;
-  bool changed = FALSE;
+  bool error = false;
+  c_list_t *new_outputs = NULL;
+  c_list_t *l, *m;
+  bool changed = false;
   int i;
 
   xlib_renderer->outputs_update_serial = XNextRequest (xlib_renderer->xdpy);
@@ -256,7 +256,7 @@ update_outputs (CoglRenderer *renderer,
                                   resources, resources->crtcs[i]);
       if (crtc_info == NULL)
         {
-          error = TRUE;
+          error = true;
           goto next;
         }
 
@@ -276,7 +276,7 @@ update_outputs (CoglRenderer *renderer,
                                       crtc_info->outputs[0]);
       if (output_info == NULL)
         {
-          error = TRUE;
+          error = true;
           goto next;
         }
 
@@ -364,7 +364,7 @@ update_outputs (CoglRenderer *renderer,
 
           if (cmp == 0)
             {
-              CList *m_next = m->next;
+              c_list_t *m_next = m->next;
 
               if (!_cogl_output_values_equal (output_l, output_m))
                 {
@@ -373,7 +373,7 @@ update_outputs (CoglRenderer *renderer,
                                                             m_next, output_l);
                   cogl_object_ref (output_l);
 
-                  changed = TRUE;
+                  changed = true;
                 }
 
               l = l->next;
@@ -384,20 +384,20 @@ update_outputs (CoglRenderer *renderer,
               renderer->outputs =
                 c_list_insert_before (renderer->outputs, m, output_l);
               cogl_object_ref (output_l);
-              changed = TRUE;
+              changed = true;
               l = l->next;
             }
           else
             {
-              CList *m_next = m->next;
+              c_list_t *m_next = m->next;
               renderer->outputs = c_list_remove_link (renderer->outputs, m);
-              changed = TRUE;
+              changed = true;
               m = m_next;
             }
         }
     }
 
-  c_list_free_full (new_outputs, (CDestroyNotify)cogl_object_unref);
+  c_list_free_full (new_outputs, (c_destroy_func_t)cogl_object_unref);
   _cogl_xlib_renderer_untrap_errors (renderer, &state);
 
   if (changed)
@@ -468,7 +468,7 @@ randr_filter (XEvent *event,
       (event->xany.type == x11_renderer->randr_base + RRScreenChangeNotify ||
        event->xany.type == x11_renderer->randr_base + RRNotify) &&
       event->xany.serial >= xlib_renderer->outputs_update_serial)
-    update_outputs (renderer, TRUE);
+    update_outputs (renderer, true);
 
   return COGL_FILTER_CONTINUE;
 }
@@ -510,10 +510,10 @@ _cogl_xlib_renderer_connect (CoglRenderer *renderer, CoglError **error)
   int randr_error;
 
   if (!assert_xlib_display (renderer, error))
-    return FALSE;
+    return false;
 
   if (getenv ("COGL_X11_SYNC"))
-    XSynchronize (xlib_renderer->xdpy, TRUE);
+    XSynchronize (xlib_renderer->xdpy, true);
 
   /* Check whether damage events are supported on this display */
   if (!XDamageQueryExtension (xlib_renderer->xdpy,
@@ -544,7 +544,7 @@ _cogl_xlib_renderer_connect (CoglRenderer *renderer, CoglError **error)
                  RRScreenChangeNotifyMask
                  | RRCrtcChangeNotifyMask
                  | RROutputPropertyNotifyMask);
-  update_outputs (renderer, FALSE);
+  update_outputs (renderer, false);
 
   register_xlib_renderer (renderer);
 
@@ -552,7 +552,7 @@ _cogl_xlib_renderer_connect (CoglRenderer *renderer, CoglError **error)
                                  randr_filter,
                                  renderer);
 
-  return TRUE;
+  return true;
 }
 
 void
@@ -561,7 +561,7 @@ _cogl_xlib_renderer_disconnect (CoglRenderer *renderer)
   CoglXlibRenderer *xlib_renderer =
     _cogl_xlib_renderer_get_data (renderer);
 
-  c_list_free_full (renderer->outputs, (CDestroyNotify)cogl_object_unref);
+  c_list_free_full (renderer->outputs, (c_destroy_func_t)cogl_object_unref);
   renderer->outputs = NULL;
 
   if (!renderer->foreign_xdpy && xlib_renderer->xdpy)
@@ -632,7 +632,7 @@ _cogl_xlib_renderer_output_for_rectangle (CoglRenderer *renderer,
 {
   int max_overlap = 0;
   CoglOutput *max_overlapped = NULL;
-  CList *l;
+  c_list_t *l;
   int xa1 = x, xa2 = x + width;
   int ya1 = y, ya2 = y + height;
 

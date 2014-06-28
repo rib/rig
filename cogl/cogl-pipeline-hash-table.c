@@ -47,10 +47,10 @@ typedef struct
   /* Calculating the hash is a little bit expensive for pipelines so
    * we don't want to do it repeatedly for entries that are already in
    * the hash table. Instead we cache the value here and calculate it
-   * outside of the CHashTable. */
+   * outside of the c_hash_table_t. */
   unsigned int hash_value;
 
-  /* CHashTable annoyingly doesn't let us pass a user data pointer to
+  /* c_hash_table_t annoyingly doesn't let us pass a user data pointer to
    * the hash and equal functions so to work around it we have to
    * store the pointer in every hash table entry. We will use this
    * entry as both the key and the value */
@@ -123,7 +123,7 @@ collect_prunable_entries_cb (void *key,
                              void *value,
                              void *user_data)
 {
-  CQueue *entries = user_data;
+  c_queue_t *entries = user_data;
   CoglPipelineCacheEntry *entry = value;
 
   if (entry->usage_count == 0)
@@ -143,11 +143,11 @@ compare_pipeline_age_cb (const void *a,
 static void
 prune_old_pipelines (CoglPipelineHashTable *hash)
 {
-  CQueue entries;
-  CList *l;
+  c_queue_t entries;
+  c_list_t *l;
   int i;
 
-  /* Collect all of the prunable entries into a CQueue */
+  /* Collect all of the prunable entries into a c_queue_t */
   c_queue_init (&entries);
   c_hash_table_foreach (hash->table,
                         collect_prunable_entries_cb,

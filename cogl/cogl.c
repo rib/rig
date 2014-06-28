@@ -61,11 +61,11 @@ _cogl_check_extension (const char *name, char * const *ext)
 {
   while (*ext)
     if (!strcmp (name, *ext))
-      return TRUE;
+      return true;
     else
       ext++;
 
-  return FALSE;
+  return false;
 }
 
 bool
@@ -83,10 +83,10 @@ cogl_has_features (CoglContext *ctx, ...)
   va_start (args, ctx);
   while ((feature = va_arg (args, CoglFeatureID)))
     if (!cogl_has_feature (ctx, feature))
-      return FALSE;
+      return false;
   va_end (args);
 
-  return TRUE;
+  return true;
 }
 
 void
@@ -103,7 +103,7 @@ cogl_foreach_feature (CoglContext *ctx,
 void
 _cogl_flush (CoglContext *ctx)
 {
-  CList *l;
+  c_list_t *l;
 
   for (l = ctx->framebuffers; l; l = l->next)
     _cogl_framebuffer_flush_journal (l->data);
@@ -164,9 +164,9 @@ _cogl_system_error_domain (void)
 void
 _cogl_init (void)
 {
-  static bool initialized = FALSE;
+  static bool initialized = false;
 
-  if (initialized == FALSE)
+  if (initialized == false)
     {
 #ifdef ENABLE_NLS
       bindtextdomain (GETTEXT_PACKAGE, COGL_LOCALEDIR);
@@ -175,7 +175,7 @@ _cogl_init (void)
 
       _cogl_config_read ();
       _cogl_debug_check_environment ();
-      initialized = TRUE;
+      initialized = true;
     }
 }
 

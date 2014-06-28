@@ -124,8 +124,8 @@ cogl_attribute_buffer_new (CoglContext *context,
  *
  * Gets whether the given object references a #CoglAttributeBuffer.
  *
- * Returns: %TRUE if @object references a #CoglAttributeBuffer,
- *   %FALSE otherwise
+ * Returns: %true if @object references a #CoglAttributeBuffer,
+ *   %false otherwise
  *
  * Since: 1.4
  * Stability: Unstable

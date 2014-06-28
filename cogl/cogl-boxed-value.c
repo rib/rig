@@ -45,16 +45,16 @@ _cogl_boxed_value_equal (const CoglBoxedValue *bva,
   const void *pa, *pb;
 
   if (bva->type != bvb->type)
-    return FALSE;
+    return false;
 
   switch (bva->type)
     {
     case COGL_BOXED_NONE:
-      return TRUE;
+      return true;
 
     case COGL_BOXED_INT:
       if (bva->size != bvb->size || bva->count != bvb->count)
-        return FALSE;
+        return false;
 
       if (bva->count == 1)
         {
@@ -71,7 +71,7 @@ _cogl_boxed_value_equal (const CoglBoxedValue *bva,
 
     case COGL_BOXED_FLOAT:
       if (bva->size != bvb->size || bva->count != bvb->count)
-        return FALSE;
+        return false;
 
       if (bva->count == 1)
         {
@@ -89,7 +89,7 @@ _cogl_boxed_value_equal (const CoglBoxedValue *bva,
     case COGL_BOXED_MATRIX:
       if (bva->size != bvb->size ||
           bva->count != bvb->count)
-        return FALSE;
+        return false;
 
       if (bva->count == 1)
         {
@@ -108,7 +108,7 @@ _cogl_boxed_value_equal (const CoglBoxedValue *bva,
 
   c_warn_if_reached ();
 
-  return FALSE;
+  return false;
 }
 
 static void
@@ -119,7 +119,7 @@ _cogl_boxed_value_tranpose (float *dst,
   int y, x;
 
   /* If the value is transposed we'll just transpose it now as it
-   * is copied into the boxed value instead of passing TRUE to
+   * is copied into the boxed value instead of passing true to
    * glUniformMatrix because that is not supported on GLES and it
    * doesn't seem like the GL driver would be able to do anything
    * much smarter than this anyway */
@@ -191,7 +191,7 @@ _cogl_boxed_value_set_1f (CoglBoxedValue *bv,
 {
   _cogl_boxed_value_set_x (bv,
                            1, 1, COGL_BOXED_FLOAT,
-                           sizeof (float), &value, FALSE);
+                           sizeof (float), &value, false);
 }
 
 void
@@ -200,7 +200,7 @@ _cogl_boxed_value_set_1i (CoglBoxedValue *bv,
 {
   _cogl_boxed_value_set_x (bv,
                            1, 1, COGL_BOXED_INT,
-                           sizeof (int), &value, FALSE);
+                           sizeof (int), &value, false);
 }
 
 void
@@ -212,7 +212,7 @@ _cogl_boxed_value_set_float (CoglBoxedValue *bv,
   _cogl_boxed_value_set_x (bv,
                            n_components, count,
                            COGL_BOXED_FLOAT,
-                           sizeof (float) * n_components, value, FALSE);
+                           sizeof (float) * n_components, value, false);
 }
 
 void
@@ -224,7 +224,7 @@ _cogl_boxed_value_set_int (CoglBoxedValue *bv,
   _cogl_boxed_value_set_x (bv,
                            n_components, count,
                            COGL_BOXED_INT,
-                           sizeof (int) * n_components, value, FALSE);
+                           sizeof (int) * n_components, value, false);
 }
 
 void
@@ -360,15 +360,15 @@ _cogl_boxed_value_set_uniform (CoglContext *ctx,
           {
           case 2:
             GE( ctx, glUniformMatrix2fv (location, value->count,
-                                         FALSE, ptr) );
+                                         false, ptr) );
             break;
           case 3:
             GE( ctx, glUniformMatrix3fv (location, value->count,
-                                         FALSE, ptr) );
+                                         false, ptr) );
             break;
           case 4:
             GE( ctx, glUniformMatrix4fv (location, value->count,
-                                         FALSE, ptr) );
+                                         false, ptr) );
             break;
           }
       }

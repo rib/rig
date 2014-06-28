@@ -83,7 +83,7 @@ typedef struct
   GLuint object_id;
 
   /* List of shaders attached to this program */
-  CList *attached_shaders;
+  c_list_t *attached_shaders;
 
   /* Reference count. There can be up to two references. One of these
    * will exist between glCreateProgram and glDeleteShader, the other
@@ -133,7 +133,7 @@ struct _CoglGLES2Context
 
   CoglContext *context;
 
-  /* This is set to FALSE until the first time the GLES2 context is
+  /* This is set to false until the first time the GLES2 context is
    * bound to something. We need to keep track of this so we can set
    * the viewport and scissor the first time it is bound. */
   bool has_been_bound;
@@ -156,8 +156,8 @@ struct _CoglGLES2Context
    * list, we don't really want to expose this outside of the Cogl API
    * so we will assume it is undefined behaviour if an application
    * relies on this. */
-  CHashTable *shader_map;
-  CHashTable *program_map;
+  c_hash_table_t *shader_map;
+  c_hash_table_t *program_map;
 
   /* Currently in use program. We need to keep track of this so that
    * we can keep a reference to the data for the program while it is
@@ -185,11 +185,11 @@ struct _CoglGLES2Context
 
   /* A hash table of CoglGLES2TextureObjects indexed by the texture
    * object ID so that we can track some state */
-  CHashTable *texture_object_map;
+  c_hash_table_t *texture_object_map;
 
   /* Array of CoglGLES2TextureUnits to keep track of state for each
    * texture unit */
-  CArray *texture_units;
+  c_array_t *texture_units;
 
   /* The currently active texture unit indexed from 0 (not from
    * GL_TEXTURE0) */

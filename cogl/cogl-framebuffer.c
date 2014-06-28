@@ -85,7 +85,7 @@ cogl_is_framebuffer (void *object)
   CoglObject *obj = object;
 
   if (obj == NULL)
-    return FALSE;
+    return false;
 
   return (obj->klass == &_cogl_onscreen_class ||
           obj->klass == &_cogl_offscreen_class);
@@ -110,13 +110,13 @@ _cogl_framebuffer_init (CoglFramebuffer *framebuffer,
   framebuffer->viewport_height = height;
   framebuffer->viewport_age = 0;
   framebuffer->viewport_age_for_scissor_workaround = -1;
-  framebuffer->dither_enabled = TRUE;
-  framebuffer->depth_writing_enabled = TRUE;
+  framebuffer->dither_enabled = true;
+  framebuffer->depth_writing_enabled = true;
 
   framebuffer->modelview_stack = cogl_matrix_stack_new (ctx);
   framebuffer->projection_stack = cogl_matrix_stack_new (ctx);
 
-  framebuffer->dirty_bitmasks = TRUE;
+  framebuffer->dirty_bitmasks = true;
 
   framebuffer->color_mask = COGL_COLOR_MASK_ALL;
 
@@ -131,7 +131,7 @@ _cogl_framebuffer_init (CoglFramebuffer *framebuffer,
    * _cogl_journal_try_read_pixel()) until some region of the
    * framebuffer is initialized.
    */
-  framebuffer->clear_clip_dirty = TRUE;
+  framebuffer->clear_clip_dirty = true;
 
   /* XXX: We have to maintain a central list of all framebuffers
    * because at times we need to be able to flush all known journals.
@@ -219,7 +219,7 @@ _cogl_framebuffer_clear_without_flush4f (CoglFramebuffer *framebuffer,
 
   if (!buffers)
     {
-      static bool shown = FALSE;
+      static bool shown = false;
 
       if (!shown)
         {
@@ -238,13 +238,13 @@ _cogl_framebuffer_clear_without_flush4f (CoglFramebuffer *framebuffer,
 void
 _cogl_framebuffer_mark_clear_clip_dirty (CoglFramebuffer *framebuffer)
 {
-  framebuffer->clear_clip_dirty = TRUE;
+  framebuffer->clear_clip_dirty = true;
 }
 
 void
 _cogl_framebuffer_mark_mid_scene (CoglFramebuffer *framebuffer)
 {
-  framebuffer->mid_scene = TRUE;
+  framebuffer->mid_scene = true;
 }
 
 void
@@ -379,7 +379,7 @@ cleared:
        * scenes where the whole frame is in the journal we need to
        * track the cleared color of the framebuffer in case the point
        * read doesn't intersect any of the journal rectangles. */
-      framebuffer->clear_clip_dirty = FALSE;
+      framebuffer->clear_clip_dirty = false;
       framebuffer->clear_color_red = red;
       framebuffer->clear_color_green = green;
       framebuffer->clear_color_blue = blue;
@@ -562,7 +562,7 @@ void
 _cogl_framebuffer_add_dependency (CoglFramebuffer *framebuffer,
                                   CoglFramebuffer *dependency)
 {
-  CList *l;
+  c_list_t *l;
 
   for (l = framebuffer->deps; l; l = l->next)
     {
@@ -581,7 +581,7 @@ _cogl_framebuffer_add_dependency (CoglFramebuffer *framebuffer,
 void
 _cogl_framebuffer_remove_all_dependencies (CoglFramebuffer *framebuffer)
 {
-  CList *l;
+  c_list_t *l;
   for (l = framebuffer->deps; l; l = l->next)
     cogl_object_unref (l->data);
   c_list_free (framebuffer->deps);
@@ -603,7 +603,7 @@ _cogl_framebuffer_flush (CoglFramebuffer *framebuffer)
 void
 _cogl_framebuffer_flush_dependency_journals (CoglFramebuffer *framebuffer)
 {
-  CList *l;
+  c_list_t *l;
   for (l = framebuffer->deps; l; l = l->next)
     _cogl_framebuffer_flush_journal (l->data);
   _cogl_framebuffer_remove_all_dependencies (framebuffer);
@@ -681,7 +681,7 @@ cogl_framebuffer_allocate (CoglFramebuffer *framebuffer,
   CoglContext *ctx = framebuffer->context;
 
   if (framebuffer->allocated)
-    return TRUE;
+    return true;
 
   if (framebuffer->type == COGL_FRAMEBUFFER_TYPE_ONSCREEN)
     {
@@ -691,11 +691,11 @@ cogl_framebuffer_allocate (CoglFramebuffer *framebuffer,
                            COGL_FRAMEBUFFER_ERROR_ALLOCATE,
                            "Can't allocate onscreen framebuffer with a "
                            "texture based depth buffer");
-          return FALSE;
+          return false;
         }
 
       if (!winsys->onscreen_init (onscreen, error))
-        return FALSE;
+        return false;
 
       /* If the winsys doesn't support dirty events then we'll report
        * one on allocation so that if the application only paints in
@@ -713,11 +713,11 @@ cogl_framebuffer_allocate (CoglFramebuffer *framebuffer,
           _cogl_set_error (error, COGL_SYSTEM_ERROR,
                            COGL_SYSTEM_ERROR_UNSUPPORTED,
                            "Offscreen framebuffers not supported by system");
-          return FALSE;
+          return false;
         }
 
       if (!cogl_texture_allocate (offscreen->texture, error))
-        return FALSE;
+        return false;
 
       /* NB: it's only after allocating the texture that we will
        * determine whether a texture needs slicing... */
@@ -727,7 +727,7 @@ cogl_framebuffer_allocate (CoglFramebuffer *framebuffer,
                            COGL_SYSTEM_ERROR_UNSUPPORTED,
                            "Can't create offscreen framebuffer from "
                            "sliced texture");
-          return FALSE;
+          return false;
         }
 
       /* Now that the texture has been allocated we can determine a
@@ -743,12 +743,12 @@ cogl_framebuffer_allocate (CoglFramebuffer *framebuffer,
         _cogl_texture_get_format (offscreen->texture);
 
       if (!ctx->driver_vtable->offscreen_allocate (offscreen, error))
-        return FALSE;
+        return false;
     }
 
-  framebuffer->allocated = TRUE;
+  framebuffer->allocated = true;
 
-  return TRUE;
+  return true;
 }
 
 static unsigned long
@@ -1170,21 +1170,21 @@ _cogl_framebuffer_try_fast_read_pixel (CoglFramebuffer *framebuffer,
   CoglPixelFormat format;
 
   if (C_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_FAST_READ_PIXEL)))
-    return FALSE;
+    return false;
 
   if (source != COGL_READ_PIXELS_COLOR_BUFFER)
-    return FALSE;
+    return false;
 
   format = cogl_bitmap_get_format (bitmap);
 
   if (format != COGL_PIXEL_FORMAT_RGBA_8888_PRE &&
       format != COGL_PIXEL_FORMAT_RGBA_8888)
-    return FALSE;
+    return false;
 
   if (!_cogl_journal_try_read_pixel (framebuffer->journal,
                                      x, y, bitmap,
                                      &found_intersection))
-    return FALSE;
+    return false;
 
   /* If we can't determine the color from the primitives in the
    * journal then see if we can use the last recorded clear color
@@ -1195,12 +1195,12 @@ _cogl_framebuffer_try_fast_read_pixel (CoglFramebuffer *framebuffer,
    * then we can't fallback to the framebuffer's last clear color...
    * */
   if (found_intersection)
-    return TRUE;
+    return true;
 
   /* If the framebuffer has been rendered too since it was last
    * cleared then we can't return the last known clear color. */
   if (framebuffer->clear_clip_dirty)
-    return FALSE;
+    return false;
 
   if (x >= framebuffer->clear_clip_x0 &&
       x < framebuffer->clear_clip_x1 &&
@@ -1213,7 +1213,7 @@ _cogl_framebuffer_try_fast_read_pixel (CoglFramebuffer *framebuffer,
       /* we currently only care about cases where the premultiplied or
        * unpremultipled colors are equivalent... */
       if (framebuffer->clear_color_alpha != 1.0)
-        return FALSE;
+        return false;
 
       pixel = _cogl_bitmap_map (bitmap,
                                 COGL_BUFFER_ACCESS_WRITE,
@@ -1222,7 +1222,7 @@ _cogl_framebuffer_try_fast_read_pixel (CoglFramebuffer *framebuffer,
       if (pixel == NULL)
         {
           cogl_error_free (ignore_error);
-          return FALSE;
+          return false;
         }
 
       pixel[0] = framebuffer->clear_color_red * 255.0;
@@ -1232,10 +1232,10 @@ _cogl_framebuffer_try_fast_read_pixel (CoglFramebuffer *framebuffer,
 
       _cogl_bitmap_unmap (bitmap);
 
-      return TRUE;
+      return true;
     }
 
-  return FALSE;
+  return false;
 }
 
 bool
@@ -1250,11 +1250,11 @@ cogl_framebuffer_read_pixels_into_bitmap (CoglFramebuffer *framebuffer,
   int width;
   int height;
 
-  _COGL_RETURN_VAL_IF_FAIL (source & COGL_READ_PIXELS_COLOR_BUFFER, FALSE);
-  _COGL_RETURN_VAL_IF_FAIL (cogl_is_framebuffer (framebuffer), FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (source & COGL_READ_PIXELS_COLOR_BUFFER, false);
+  _COGL_RETURN_VAL_IF_FAIL (cogl_is_framebuffer (framebuffer), false);
 
   if (!cogl_framebuffer_allocate (framebuffer, error))
-    return FALSE;
+    return false;
 
   width = cogl_bitmap_get_width (bitmap);
   height = cogl_bitmap_get_height (bitmap);
@@ -1271,7 +1271,7 @@ cogl_framebuffer_read_pixels_into_bitmap (CoglFramebuffer *framebuffer,
        */
       if (_cogl_framebuffer_try_fast_read_pixel (framebuffer,
                                                  x, y, source, bitmap))
-        return TRUE;
+        return true;
     }
 
   ctx = cogl_framebuffer_get_context (framebuffer);
@@ -1977,7 +1977,7 @@ remove_layer_cb (CoglPipeline *pipeline,
                  void *user_data)
 {
   cogl_pipeline_remove_layer (pipeline, layer_index);
-  return TRUE;
+  return true;
 }
 
 static void

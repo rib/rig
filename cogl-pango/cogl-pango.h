@@ -124,7 +124,7 @@ cogl_pango_ensure_glyph_cache_for_layout (PangoLayout *layout);
 /**
  * cogl_pango_font_map_set_use_mipmapping:
  * @font_map: a #CoglPangoFontMap
- * @value: %TRUE to enable the use of mipmapping
+ * @value: %true to enable the use of mipmapping
  *
  * Sets whether the renderer for the passed font map should use
  * mipmapping when rendering a #PangoLayout.
@@ -142,7 +142,7 @@ cogl_pango_font_map_set_use_mipmapping (CoglPangoFontMap *font_map,
  * Retrieves whether the #CoglPangoRenderer used by @font_map will use
  * mipmapping when rendering the glyphs.
  *
- * Return value: %TRUE if mipmapping is used, %FALSE otherwise.
+ * Return value: %true if mipmapping is used, %false otherwise.
  *
  * Since: 1.0
  */

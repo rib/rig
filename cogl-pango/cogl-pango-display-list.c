@@ -122,14 +122,14 @@ void
 _cogl_pango_display_list_set_color_override (CoglPangoDisplayList *dl,
                                              const CoglColor *color)
 {
-  dl->color_override = TRUE;
+  dl->color_override = true;
   dl->color = *color;
 }
 
 void
 _cogl_pango_display_list_remove_color_override (CoglPangoDisplayList *dl)
 {
-  dl->color_override = FALSE;
+  dl->color_override = false;
 }
 
 void
@@ -170,7 +170,7 @@ _cogl_pango_display_list_add_texture (CoglPangoDisplayList *dl,
       node->pipeline = NULL;
       node->d.texture.texture = cogl_object_ref (texture);
       node->d.texture.rectangles
-        = g_array_new (FALSE, FALSE, sizeof (CoglPangoDisplayListRectangle));
+        = g_array_new (false, false, sizeof (CoglPangoDisplayListRectangle));
       node->d.texture.primitive = NULL;
 
       _cogl_pango_display_list_append_node (dl, node);
@@ -275,7 +275,7 @@ emit_vertex_buffer_geometry (CoglFramebuffer *fb,
       CoglAttributeBuffer *buffer;
       CoglVertexP2T2 *verts, *v;
       int n_verts;
-      bool allocated = FALSE;
+      bool allocated = false;
       CoglAttribute *attributes[2];
       CoglPrimitive *prim;
       int i;
@@ -295,7 +295,7 @@ emit_vertex_buffer_geometry (CoglFramebuffer *fb,
         {
           cogl_error_free (ignore_error);
           verts = g_new (CoglVertexP2T2, n_verts);
-          allocated = TRUE;
+          allocated = true;
         }
 
       v = verts;
@@ -471,7 +471,7 @@ _cogl_pango_display_list_node_free (CoglPangoDisplayListNode *node)
 {
   if (node->type == COGL_PANGO_DISPLAY_LIST_TEXTURE)
     {
-      g_array_free (node->d.texture.rectangles, TRUE);
+      g_array_free (node->d.texture.rectangles, true);
       if (node->d.texture.texture != NULL)
         cogl_object_unref (node->d.texture.texture);
       if (node->d.texture.primitive != NULL)

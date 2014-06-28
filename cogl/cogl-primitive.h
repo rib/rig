@@ -838,8 +838,8 @@ cogl_primitive_copy (CoglPrimitive *primitive);
  *
  * Gets whether the given object references a #CoglPrimitive.
  *
- * Returns: %TRUE if the @object references a #CoglPrimitive,
- *   %FALSE otherwise
+ * Returns: %true if the @object references a #CoglPrimitive,
+ *   %false otherwise
  *
  * Since: 1.6
  * Stability: Unstable
@@ -856,7 +856,7 @@ cogl_is_primitive (void *object);
  * The callback prototype used with cogl_primitive_foreach_attribute()
  * for iterating all the attributes of a #CoglPrimitive.
  *
- * The function should return TRUE to continue iteration or FALSE to
+ * The function should return true to continue iteration or false to
  * stop.
  *
  * Since: 1.10

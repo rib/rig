@@ -79,8 +79,8 @@ cogl_index_buffer_new (CoglContext *context,
  *
  * Gets whether the given object references a #CoglIndexBuffer.
  *
- * Returns: %TRUE if the @object references a #CoglIndexBuffer,
- *   %FALSE otherwise
+ * Returns: %true if the @object references a #CoglIndexBuffer,
+ *   %false otherwise
  *
  * Since: 1.4
  * Stability: Unstable

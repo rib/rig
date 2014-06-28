@@ -194,7 +194,7 @@ validate_tex_combine_statements (CoglBlendStringStatement *statements,
         }
     }
 
-  return TRUE;
+  return true;
 
 error:
   _cogl_set_error (error,
@@ -208,7 +208,7 @@ error:
       c_debug ("Invalid texture combine string: %s",
                error_string);
     }
-  return FALSE;
+  return false;
 }
 
 static bool
@@ -263,7 +263,7 @@ validate_blend_statements (CoglContext *ctx,
           }
       }
 
-  return TRUE;
+  return true;
 
 error:
   _cogl_set_error (error,
@@ -271,7 +271,7 @@ error:
                    detail,
                    "Invalid blend string: %s",
                    error_string);
-  return FALSE;
+  return false;
 }
 
 static bool
@@ -321,7 +321,7 @@ error:
                error_string);
     }
 
-  return FALSE;
+  return false;
 }
 
 static void
@@ -450,13 +450,13 @@ get_color_src_info (const char *mark,
 static bool
 is_symbol_char (const char c)
 {
-  return (c_ascii_isalpha (c) || c == '_') ? TRUE : FALSE;
+  return (c_ascii_isalpha (c) || c == '_') ? true : false;
 }
 
 static bool
 is_alphanum_char (const char c)
 {
-  return (c_ascii_isalnum (c) || c == '_') ? TRUE : FALSE;
+  return (c_ascii_isalnum (c) || c == '_') ? true : false;
 }
 
 static bool
@@ -472,23 +472,23 @@ parse_argument (const char *string, /* original user string */
   const char *mark = NULL;
   const char *error_string = NULL;
   ParserArgState state = PARSER_ARG_STATE_START;
-  bool parsing_factor = FALSE;
+  bool parsing_factor = false;
   bool implicit_factor_brace;
 
-  arg->source.is_zero = FALSE;
+  arg->source.is_zero = false;
   arg->source.info = NULL;
   arg->source.texture = 0;
-  arg->source.one_minus = FALSE;
+  arg->source.one_minus = false;
   arg->source.mask = statement->mask;
 
-  arg->factor.is_one = FALSE;
-  arg->factor.is_color = FALSE;
-  arg->factor.is_src_alpha_saturate = FALSE;
+  arg->factor.is_one = false;
+  arg->factor.is_color = false;
+  arg->factor.is_src_alpha_saturate = false;
 
-  arg->factor.source.is_zero = FALSE;
+  arg->factor.source.is_zero = false;
   arg->factor.source.info = NULL;
   arg->factor.source.texture = 0;
-  arg->factor.source.one_minus = FALSE;
+  arg->factor.source.one_minus = false;
   arg->factor.source.mask = statement->mask;
 
   do
@@ -509,7 +509,7 @@ parse_argument (const char *string, /* original user string */
             state = PARSER_ARG_STATE_EXPECT_MINUS;
           else if (*p == '0')
             {
-              arg->source.is_zero = TRUE;
+              arg->source.is_zero = true;
               state = PARSER_ARG_STATE_EXPECT_END;
             }
           else
@@ -525,7 +525,7 @@ parse_argument (const char *string, /* original user string */
               error_string = "expected a '-' following the 1";
               goto error;
             }
-          arg->source.one_minus = TRUE;
+          arg->source.one_minus = true;
           state = PARSER_ARG_STATE_EXPECT_COLOR_SRC_NAME;
           continue;
 
@@ -538,7 +538,7 @@ parse_argument (const char *string, /* original user string */
           state = PARSER_ARG_STATE_SCRAPING_COLOR_SRC_NAME;
           mark = p;
           if (parsing_factor)
-            arg->factor.is_color = TRUE;
+            arg->factor.is_color = true;
 
           /* fall through */
         case PARSER_ARG_STATE_SCRAPING_COLOR_SRC_NAME:
@@ -627,7 +627,7 @@ parse_argument (const char *string, /* original user string */
                 {
                   p--; /* compensate for implicit brace and ensure this
                         * char gets considered part of the blend factor */
-                  implicit_factor_brace = TRUE;
+                  implicit_factor_brace = true;
                 }
               else
                 {
@@ -637,8 +637,8 @@ parse_argument (const char *string, /* original user string */
                 }
             }
           else
-            implicit_factor_brace = FALSE;
-          parsing_factor = TRUE;
+            implicit_factor_brace = false;
+          parsing_factor = true;
           state = PARSER_ARG_STATE_EXPECT_FACTOR;
           continue;
 
@@ -647,7 +647,7 @@ parse_argument (const char *string, /* original user string */
             state = PARSER_ARG_STATE_MAYBE_MINUS;
           else if (*p == '0')
             {
-              arg->source.is_zero = TRUE;
+              arg->source.is_zero = true;
               state = PARSER_ARG_STATE_EXPECT_CLOSE_PAREN;
             }
           else
@@ -664,7 +664,7 @@ parse_argument (const char *string, /* original user string */
               if (len >= strlen ("SRC_ALPHA_SATURATE") &&
                   strncmp (mark, "SRC_ALPHA_SATURATE", len) == 0)
                 {
-                  arg->factor.is_src_alpha_saturate = TRUE;
+                  arg->factor.is_src_alpha_saturate = true;
                   state = PARSER_ARG_STATE_EXPECT_CLOSE_PAREN;
                 }
               else
@@ -684,12 +684,12 @@ parse_argument (const char *string, /* original user string */
                                  "a subtraction";
                   goto error;
                 }
-              arg->factor.source.one_minus = TRUE;
+              arg->factor.source.one_minus = true;
               state = PARSER_ARG_STATE_EXPECT_COLOR_SRC_NAME;
             }
           else
             {
-              arg->factor.is_one = TRUE;
+              arg->factor.is_one = true;
               state = PARSER_ARG_STATE_EXPECT_CLOSE_PAREN;
             }
           continue;
@@ -715,7 +715,7 @@ parse_argument (const char *string, /* original user string */
               state = PARSER_ARG_STATE_EXPECT_OPEN_PAREN;
               continue;
             }
-          arg->factor.is_one = TRUE;
+          arg->factor.is_one = true;
           state = PARSER_ARG_STATE_EXPECT_END;
 
           /* fall through */
@@ -727,7 +727,7 @@ parse_argument (const char *string, /* original user string */
             }
 
           *ret_p = p - 1;
-          return TRUE;
+          return true;
         }
     }
   while (p++);
@@ -748,7 +748,7 @@ error:
         c_debug ("Syntax error for argument %d at offset %d: %s",
                  current_arg, offset, error_string);
       }
-    return FALSE;
+    return false;
   }
 }
 
@@ -947,55 +947,55 @@ UNIT_TEST (blend_string_parsing,
     } tests[] = {
         {"  A = MODULATE ( TEXTURE[RGB], PREVIOUS[A], PREVIOUS[A] )  ",
           COGL_BLEND_STRING_CONTEXT_TEXTURE_COMBINE,
-          FALSE, /* to many arguments */
+          false, /* to many arguments */
         },
         {"  A = MODULATE ( TEXTURE[RGB], PREVIOUS[A] )  ",
           COGL_BLEND_STRING_CONTEXT_TEXTURE_COMBINE,
-          FALSE, /* Must specify an RGB blend string too */
+          false, /* Must specify an RGB blend string too */
         },
         {"  RGB = MODULATE ( TEXTURE[RGB], PREVIOUS[A] )  ",
           COGL_BLEND_STRING_CONTEXT_TEXTURE_COMBINE,
-          FALSE, /* Must specify an alpha component blend string too */
+          false, /* Must specify an alpha component blend string too */
         },
         {"  A = MODULATE ( TEXTURE[RGB], PREVIOUS[A] )"
          "RGB = MODULATE ( TEXTURE[RGB], PREVIOUS[A] )  ",
           COGL_BLEND_STRING_CONTEXT_TEXTURE_COMBINE,
-          TRUE,
+          true,
         },
         {"  A = MODULATE ( TEXTURE[RGB], PREVIOUS[A] ) "
          "RGB = MODULATE ( TEXTURE[RGB], PREVIOUS[A] )  ",
           COGL_BLEND_STRING_CONTEXT_TEXTURE_COMBINE,
-          TRUE,
+          true,
         },
         {"A = MODULATE ( TEXTURE[RGB], PREVIOUS[A] )\n "
          "RGB = MODULATE ( TEXTURE[RGB], PREVIOUS[A] )  ",
           COGL_BLEND_STRING_CONTEXT_TEXTURE_COMBINE,
-          TRUE,
+          true,
         },
         {"A=ADD(TEXTURE[A],PREVIOUS[RGB])\n"
          "RGB=MODULATE(TEXTURE[RGB], PREVIOUS[A])",
           COGL_BLEND_STRING_CONTEXT_TEXTURE_COMBINE,
-          TRUE,
+          true,
         },
         {"RGBA = ADD(SRC_COLOR*(SRC_COLOR[A]), DST_COLOR*(1-SRC_COLOR[A]))",
           COGL_BLEND_STRING_CONTEXT_BLENDING,
-          TRUE,
+          true,
         },
         {"RGBA = ADD(SRC_COLOR,\nDST_COLOR*(0))",
           COGL_BLEND_STRING_CONTEXT_BLENDING,
-          TRUE,
+          true,
         },
         {"RGBA = ADD(SRC_COLOR, 0)",
           COGL_BLEND_STRING_CONTEXT_BLENDING,
-          TRUE,
+          true,
         },
         {"RGBA = ADD()",
           COGL_BLEND_STRING_CONTEXT_BLENDING,
-          FALSE, /* missing arguments */
+          false, /* missing arguments */
         },
         {"RGBA = ADD(SRC_COLOR, DST_COLOR)",
           COGL_BLEND_STRING_CONTEXT_BLENDING,
-          TRUE,
+          true,
         },
         {NULL}
   };

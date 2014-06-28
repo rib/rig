@@ -275,7 +275,7 @@ cogl_onscreen_swap_buffers_with_damage (CoglOnscreen *onscreen,
     }
 
   onscreen->frame_counter++;
-  framebuffer->mid_scene = FALSE;
+  framebuffer->mid_scene = false;
 }
 
 void
@@ -331,7 +331,7 @@ cogl_onscreen_swap_region (CoglOnscreen *onscreen,
     }
 
   onscreen->frame_counter++;
-  framebuffer->mid_scene = FALSE;
+  framebuffer->mid_scene = false;
 }
 
 int
@@ -481,7 +481,7 @@ cogl_onscreen_show (CoglOnscreen *onscreen)
 
   winsys = _cogl_framebuffer_get_winsys (framebuffer);
   if (winsys->onscreen_set_visibility)
-    winsys->onscreen_set_visibility (onscreen, TRUE);
+    winsys->onscreen_set_visibility (onscreen, true);
 }
 
 void
@@ -494,7 +494,7 @@ cogl_onscreen_hide (CoglOnscreen *onscreen)
       const CoglWinsysVtable *winsys =
         _cogl_framebuffer_get_winsys (framebuffer);
       if (winsys->onscreen_set_visibility)
-        winsys->onscreen_set_visibility (onscreen, FALSE);
+        winsys->onscreen_set_visibility (onscreen, false);
     }
 }
 

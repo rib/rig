@@ -53,7 +53,7 @@ cogl_poll_renderer_get_info (CoglRenderer *renderer,
                              int *n_poll_fds,
                              int64_t *timeout)
 {
-  CList *l, *next;
+  c_list_t *l, *next;
 
   _COGL_RETURN_VAL_IF_FAIL (cogl_is_renderer (renderer), 0);
   _COGL_RETURN_VAL_IF_FAIL (poll_fds != NULL, 0);
@@ -95,7 +95,7 @@ cogl_poll_renderer_dispatch (CoglRenderer *renderer,
                              const CoglPollFD *poll_fds,
                              int n_poll_fds)
 {
-  CList *l, *next;
+  c_list_t *l, *next;
 
   _COGL_RETURN_IF_FAIL (cogl_is_renderer (renderer));
 
@@ -134,7 +134,7 @@ cogl_poll_renderer_dispatch_fd (CoglRenderer *renderer,
                                 int fd,
                                 int events)
 {
-  CList *l;
+  c_list_t *l;
 
   for (l = renderer->poll_sources; l; l = l->next)
     {
@@ -168,7 +168,7 @@ void
 _cogl_poll_renderer_remove_fd (CoglRenderer *renderer, int fd)
 {
   int i = find_pollfd (renderer, fd);
-  CList *l;
+  c_list_t *l;
 
   if (i < 0)
     return;
@@ -259,7 +259,7 @@ void
 _cogl_poll_renderer_remove_source (CoglRenderer *renderer,
                                    CoglPollSource *source)
 {
-  CList *l;
+  c_list_t *l;
 
   for (l = renderer->poll_sources; l; l = l->next)
     {

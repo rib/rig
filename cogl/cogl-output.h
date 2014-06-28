@@ -112,8 +112,8 @@ typedef enum {
  *
  * Gets whether the given object references a #CoglOutput.
  *
- * Return value: %TRUE if the object references a #CoglOutput
- *   and %FALSE otherwise.
+ * Return value: %true if the object references a #CoglOutput
+ *   and %false otherwise.
  * Since: 1.14
  * Stability: unstable
  */

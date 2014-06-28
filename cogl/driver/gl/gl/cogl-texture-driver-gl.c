@@ -67,7 +67,7 @@ _cogl_texture_driver_gen (CoglContext *ctx,
 
   GE (ctx, glGenTextures (1, &tex));
 
-  _cogl_bind_gl_texture_transient (gl_target, tex, FALSE);
+  _cogl_bind_gl_texture_transient (gl_target, tex, false);
 
   switch (gl_target)
     {
@@ -202,7 +202,7 @@ _cogl_texture_driver_upload_subregion_to_gl (CoglContext *ctx,
   CoglPixelFormat source_format = cogl_bitmap_get_format (source_bmp);
   int bpp = _cogl_pixel_format_get_bytes_per_pixel (source_format);
   GLenum gl_error;
-  bool status = TRUE;
+  bool status = true;
   CoglError *internal_error = NULL;
   int level_width;
   int level_height;
@@ -217,7 +217,7 @@ _cogl_texture_driver_upload_subregion_to_gl (CoglContext *ctx,
   if (internal_error)
     {
       _cogl_propagate_error (error, internal_error);
-      return FALSE;
+      return false;
     }
 
   /* Setup gl alignment to match rowstride and top-left corner */
@@ -288,7 +288,7 @@ _cogl_texture_driver_upload_subregion_to_gl (CoglContext *ctx,
     }
 
   if (_cogl_gl_util_catch_out_of_memory (ctx, error))
-    status = FALSE;
+    status = false;
 
   _cogl_bitmap_gl_unbind (source_bmp);
 
@@ -310,7 +310,7 @@ _cogl_texture_driver_upload_to_gl (CoglContext *ctx,
   CoglPixelFormat source_format = cogl_bitmap_get_format (source_bmp);
   int bpp = _cogl_pixel_format_get_bytes_per_pixel (source_format);
   GLenum gl_error;
-  bool status = TRUE;
+  bool status = true;
   CoglError *internal_error = NULL;
 
   data = _cogl_bitmap_gl_bind (source_bmp,
@@ -324,7 +324,7 @@ _cogl_texture_driver_upload_to_gl (CoglContext *ctx,
   if (internal_error)
     {
       _cogl_propagate_error (error, internal_error);
-      return FALSE;
+      return false;
     }
 
   /* Setup gl alignment to match rowstride and top-left corner */
@@ -348,7 +348,7 @@ _cogl_texture_driver_upload_to_gl (CoglContext *ctx,
                      data);
 
   if (_cogl_gl_util_catch_out_of_memory (ctx, error))
-    status = FALSE;
+    status = false;
 
   _cogl_bitmap_gl_unbind (source_bmp);
 
@@ -372,11 +372,11 @@ _cogl_texture_driver_upload_to_gl_3d (CoglContext *ctx,
   CoglPixelFormat source_format = cogl_bitmap_get_format (source_bmp);
   int bpp = _cogl_pixel_format_get_bytes_per_pixel (source_format);
   GLenum gl_error;
-  bool status = TRUE;
+  bool status = true;
 
   data = _cogl_bitmap_gl_bind (source_bmp, COGL_BUFFER_ACCESS_READ, 0, error);
   if (!data)
-    return FALSE;
+    return false;
 
   /* Setup gl alignment to match rowstride and top-left corner */
   prep_gl_for_pixels_upload_full (ctx,
@@ -403,7 +403,7 @@ _cogl_texture_driver_upload_to_gl_3d (CoglContext *ctx,
                      data);
 
   if (_cogl_gl_util_catch_out_of_memory (ctx, error))
-    status = FALSE;
+    status = false;
 
   _cogl_bitmap_gl_unbind (source_bmp);
 
@@ -422,7 +422,7 @@ _cogl_texture_driver_gl_get_tex_image (CoglContext *ctx,
                           dest_gl_format,
                           dest_gl_type,
                           (GLvoid *)dest));
-  return TRUE;
+  return true;
 }
 
 static bool
@@ -441,7 +441,7 @@ _cogl_texture_driver_size_supported_3d (CoglContext *ctx,
     proxy_target = GL_PROXY_TEXTURE_3D;
   else
     /* Unknown target, assume it's not supported */
-    return FALSE;
+    return false;
 
   /* Proxy texture allows for a quick check for supported size */
   GE( ctx, glTexImage3D (proxy_target, 0, GL_RGBA,
@@ -470,7 +470,7 @@ _cogl_texture_driver_size_supported (CoglContext *ctx,
     proxy_target = GL_PROXY_TEXTURE_2D;
   else
     /* Unknown target, assume it's not supported */
-    return FALSE;
+    return false;
 
   /* Proxy texture allows for a quick check for supported size */
   GE( ctx, glTexImage2D (proxy_target, 0, gl_intformat,

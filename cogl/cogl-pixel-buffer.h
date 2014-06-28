@@ -82,7 +82,7 @@ cogl_pixel_buffer_new (CoglContext *context,
  *
  * Checks whether @object is a pixel buffer.
  *
- * Return value: %TRUE if the @object is a pixel buffer, and %FALSE
+ * Return value: %true if the @object is a pixel buffer, and %false
  *   otherwise
  *
  * Since: 1.2
@@ -107,7 +107,7 @@ cogl_is_pixel_buffer (void *object);
  * right thing for you. For performance reasons, it is recommended for the
  * source data to have the same stride than @array.
  *
- * Return value: %TRUE if the upload succeeded, %FALSE otherwise
+ * Return value: %true if the upload succeeded, %false otherwise
  *
  * Since: 1.2
  * Stability: Unstable

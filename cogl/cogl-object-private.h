@@ -80,7 +80,7 @@ struct _CoglObject
 
   CoglUserDataEntry user_data_entry[
     COGL_OBJECT_N_PRE_ALLOCATED_USER_DATA_ENTRIES];
-  CArray           *user_data_array;
+  c_array_t           *user_data_array;
   int               n_user_data_entries;
 
   unsigned int      ref_count;
@@ -190,7 +190,7 @@ cogl_is_##type_name (void *object)                                      \
   CoglObject *obj = object;                                             \
                                                                         \
   if (object == NULL)                                                   \
-    return FALSE;                                                       \
+    return false;                                                       \
                                                                         \
   return obj->klass == &_cogl_##type_name##_class;                      \
 }
@@ -205,7 +205,7 @@ _cogl_is_##type_name (void *object)                                     \
   CoglObject *obj = object;                                             \
                                                                         \
   if (object == NULL)                                                   \
-    return FALSE;                                                       \
+    return false;                                                       \
                                                                         \
   return obj->klass == &_cogl_##type_name##_class;                      \
 }

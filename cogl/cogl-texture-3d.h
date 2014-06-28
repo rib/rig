@@ -181,8 +181,8 @@ cogl_texture_3d_new_from_bitmap (CoglBitmap *bitmap,
  *
  * Checks whether the given object references a #CoglTexture3D
  *
- * Return value: %TRUE if the passed object represents a 3D texture
- *   and %FALSE otherwise
+ * Return value: %true if the passed object represents a 3D texture
+ *   and %false otherwise
  *
  * Since: 1.4
  * Stability: Unstable

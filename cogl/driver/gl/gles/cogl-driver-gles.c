@@ -63,7 +63,7 @@ _cogl_driver_pixel_format_from_gl_internal (CoglContext *context,
                                             GLenum gl_int_format,
                                             CoglPixelFormat *out_format)
 {
-  return TRUE;
+  return true;
 }
 
 static CoglPixelFormat
@@ -222,10 +222,10 @@ _cogl_get_gl_version (CoglContext *ctx,
 
   /* Get the OpenGL version number */
   if ((version_string = _cogl_context_get_gl_version (ctx)) == NULL)
-    return FALSE;
+    return false;
 
   if (!g_str_has_prefix (version_string, "OpenGL ES "))
-    return FALSE;
+    return false;
 
   return _cogl_gl_util_parse_gl_version (version_string + 10,
                                          major_out,
@@ -248,7 +248,7 @@ _cogl_driver_update_features (CoglContext *context,
   context->glGetString =
     (void *) _cogl_renderer_get_proc_address (context->display->renderer,
                                               "glGetString",
-                                              TRUE);
+                                              true);
 
   gl_extensions = _cogl_context_get_gl_extensions (context);
 
@@ -291,95 +291,95 @@ _cogl_driver_update_features (CoglContext *context,
     {
       /* Note GLES 2 core doesn't support mipmaps for npot textures or
        * repeat modes other than CLAMP_TO_EDGE. */
-      COGL_FLAGS_SET (context->features, COGL_FEATURE_ID_GLSL, TRUE);
-      COGL_FLAGS_SET (context->features, COGL_FEATURE_ID_OFFSCREEN, TRUE);
+      COGL_FLAGS_SET (context->features, COGL_FEATURE_ID_GLSL, true);
+      COGL_FLAGS_SET (context->features, COGL_FEATURE_ID_OFFSCREEN, true);
       COGL_FLAGS_SET (context->features,
-                      COGL_FEATURE_ID_TEXTURE_NPOT_BASIC, TRUE);
-      COGL_FLAGS_SET (context->features, COGL_FEATURE_ID_DEPTH_RANGE, TRUE);
+                      COGL_FEATURE_ID_TEXTURE_NPOT_BASIC, true);
+      COGL_FLAGS_SET (context->features, COGL_FEATURE_ID_DEPTH_RANGE, true);
       COGL_FLAGS_SET (context->features,
-                      COGL_FEATURE_ID_MIRRORED_REPEAT, TRUE);
+                      COGL_FEATURE_ID_MIRRORED_REPEAT, true);
       COGL_FLAGS_SET (context->features,
-                      COGL_FEATURE_ID_PER_VERTEX_POINT_SIZE, TRUE);
+                      COGL_FEATURE_ID_PER_VERTEX_POINT_SIZE, true);
 
       COGL_FLAGS_SET (private_features,
-                      COGL_PRIVATE_FEATURE_BLEND_CONSTANT, TRUE);
+                      COGL_PRIVATE_FEATURE_BLEND_CONSTANT, true);
     }
 
-  COGL_FLAGS_SET (private_features, COGL_PRIVATE_FEATURE_VBOS, TRUE);
-  COGL_FLAGS_SET (private_features, COGL_PRIVATE_FEATURE_ANY_GL, TRUE);
-  COGL_FLAGS_SET (private_features, COGL_PRIVATE_FEATURE_ALPHA_TEXTURES, TRUE);
+  COGL_FLAGS_SET (private_features, COGL_PRIVATE_FEATURE_VBOS, true);
+  COGL_FLAGS_SET (private_features, COGL_PRIVATE_FEATURE_ANY_GL, true);
+  COGL_FLAGS_SET (private_features, COGL_PRIVATE_FEATURE_ALPHA_TEXTURES, true);
 
   /* GLES 2.0 supports point sprites in core */
-  COGL_FLAGS_SET (context->features, COGL_FEATURE_ID_POINT_SPRITE, TRUE);
+  COGL_FLAGS_SET (context->features, COGL_FEATURE_ID_POINT_SPRITE, true);
 
   if (context->glGenRenderbuffers)
-    COGL_FLAGS_SET (context->features, COGL_FEATURE_ID_OFFSCREEN, TRUE);
+    COGL_FLAGS_SET (context->features, COGL_FEATURE_ID_OFFSCREEN, true);
 
   if (context->glBlitFramebuffer)
     COGL_FLAGS_SET (private_features,
-                    COGL_PRIVATE_FEATURE_OFFSCREEN_BLIT, TRUE);
+                    COGL_PRIVATE_FEATURE_OFFSCREEN_BLIT, true);
 
   if (_cogl_check_extension ("GL_OES_element_index_uint", gl_extensions))
     COGL_FLAGS_SET (context->features,
-                    COGL_FEATURE_ID_UNSIGNED_INT_INDICES, TRUE);
+                    COGL_FEATURE_ID_UNSIGNED_INT_INDICES, true);
 
   if (_cogl_check_extension ("GL_OES_depth_texture", gl_extensions))
-    COGL_FLAGS_SET (context->features, COGL_FEATURE_ID_DEPTH_TEXTURE, TRUE);
+    COGL_FLAGS_SET (context->features, COGL_FEATURE_ID_DEPTH_TEXTURE, true);
 
   if (_cogl_check_extension ("GL_OES_texture_npot", gl_extensions))
     {
       COGL_FLAGS_SET (context->features,
-                      COGL_FEATURE_ID_TEXTURE_NPOT, TRUE);
+                      COGL_FEATURE_ID_TEXTURE_NPOT, true);
       COGL_FLAGS_SET (context->features,
-                      COGL_FEATURE_ID_TEXTURE_NPOT_BASIC, TRUE);
+                      COGL_FEATURE_ID_TEXTURE_NPOT_BASIC, true);
       COGL_FLAGS_SET (context->features,
-                      COGL_FEATURE_ID_TEXTURE_NPOT_MIPMAP, TRUE);
+                      COGL_FEATURE_ID_TEXTURE_NPOT_MIPMAP, true);
       COGL_FLAGS_SET (context->features,
-                      COGL_FEATURE_ID_TEXTURE_NPOT_REPEAT, TRUE);
+                      COGL_FEATURE_ID_TEXTURE_NPOT_REPEAT, true);
     }
   else if (_cogl_check_extension ("GL_IMG_texture_npot", gl_extensions))
     {
       COGL_FLAGS_SET (context->features,
-                      COGL_FEATURE_ID_TEXTURE_NPOT_BASIC, TRUE);
+                      COGL_FEATURE_ID_TEXTURE_NPOT_BASIC, true);
       COGL_FLAGS_SET (context->features,
-                      COGL_FEATURE_ID_TEXTURE_NPOT_MIPMAP, TRUE);
+                      COGL_FEATURE_ID_TEXTURE_NPOT_MIPMAP, true);
     }
 
   if (context->glTexImage3D)
-    COGL_FLAGS_SET (context->features, COGL_FEATURE_ID_TEXTURE_3D, TRUE);
+    COGL_FLAGS_SET (context->features, COGL_FEATURE_ID_TEXTURE_3D, true);
 
   if (context->glMapBuffer)
     /* The GL_OES_mapbuffer extension doesn't support mapping for
        read */
     COGL_FLAGS_SET (context->features,
-                    COGL_FEATURE_ID_MAP_BUFFER_FOR_WRITE, TRUE);
+                    COGL_FEATURE_ID_MAP_BUFFER_FOR_WRITE, true);
 
   if (context->glEGLImageTargetTexture2D)
     COGL_FLAGS_SET (private_features,
-                    COGL_PRIVATE_FEATURE_TEXTURE_2D_FROM_EGL_IMAGE, TRUE);
+                    COGL_PRIVATE_FEATURE_TEXTURE_2D_FROM_EGL_IMAGE, true);
 
   if (_cogl_check_extension ("GL_OES_packed_depth_stencil", gl_extensions))
     COGL_FLAGS_SET (private_features,
-                    COGL_PRIVATE_FEATURE_OES_PACKED_DEPTH_STENCIL, TRUE);
+                    COGL_PRIVATE_FEATURE_OES_PACKED_DEPTH_STENCIL, true);
 
   if (_cogl_check_extension ("GL_EXT_texture_format_BGRA8888", gl_extensions))
     COGL_FLAGS_SET (private_features,
-                    COGL_PRIVATE_FEATURE_TEXTURE_FORMAT_BGRA8888, TRUE);
+                    COGL_PRIVATE_FEATURE_TEXTURE_FORMAT_BGRA8888, true);
 
   if (_cogl_check_extension ("GL_EXT_unpack_subimage", gl_extensions))
     COGL_FLAGS_SET (private_features,
-                    COGL_PRIVATE_FEATURE_UNPACK_SUBIMAGE, TRUE);
+                    COGL_PRIVATE_FEATURE_UNPACK_SUBIMAGE, true);
 
   /* A nameless vendor implemented the extension, but got the case wrong
    * per the spec. */
   if (_cogl_check_extension ("GL_OES_EGL_sync", gl_extensions) ||
       _cogl_check_extension ("GL_OES_egl_sync", gl_extensions))
-    COGL_FLAGS_SET (private_features, COGL_PRIVATE_FEATURE_OES_EGL_SYNC, TRUE);
+    COGL_FLAGS_SET (private_features, COGL_PRIVATE_FEATURE_OES_EGL_SYNC, true);
 
   if (_cogl_check_extension ("GL_EXT_texture_rg", gl_extensions))
     COGL_FLAGS_SET (context->features,
                     COGL_FEATURE_ID_TEXTURE_RG,
-                    TRUE);
+                    true);
 
   /* Cache features */
   for (i = 0; i < C_N_ELEMENTS (private_features); i++)
@@ -387,7 +387,7 @@ _cogl_driver_update_features (CoglContext *context,
 
   c_strfreev (gl_extensions);
 
-  return TRUE;
+  return true;
 }
 
 const CoglDriverVtable

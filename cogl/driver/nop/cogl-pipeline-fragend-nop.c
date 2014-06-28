@@ -47,14 +47,14 @@ _cogl_pipeline_fragend_nop_add_layer (CoglPipeline *pipeline,
                                       CoglPipelineLayer *layer,
                                       unsigned long layers_difference)
 {
-  return TRUE;
+  return true;
 }
 
 static bool
 _cogl_pipeline_fragend_nop_end (CoglPipeline *pipeline,
                                 unsigned long pipelines_difference)
 {
-  return TRUE;
+  return true;
 }
 
 const CoglPipelineFragend _cogl_pipeline_nop_fragend =

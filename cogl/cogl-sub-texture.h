@@ -113,8 +113,8 @@ cogl_sub_texture_get_parent (CoglSubTexture *sub_texture);
  *
  * Checks whether @object is a #CoglSubTexture.
  *
- * Return value: %TRUE if the passed @object represents a
- *               #CoglSubTexture and %FALSE otherwise.
+ * Return value: %true if the passed @object represents a
+ *               #CoglSubTexture and %false otherwise.
  *
  * Since: 1.10
  * Stability: unstable

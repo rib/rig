@@ -138,7 +138,7 @@ struct _CoglTextureDriver
 
   /*
    * This driver abstraction is needed because GLES doesn't support
-   * glGetTexImage (). On GLES this currently just returns FALSE which
+   * glGetTexImage (). On GLES this currently just returns false which
    * will lead to a generic fallback path being used that simply
    * renders the texture and reads it back from the framebuffer. (See
    * _cogl_texture_draw_and_read () )

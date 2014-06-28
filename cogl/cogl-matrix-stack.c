@@ -326,7 +326,7 @@ cogl_matrix_stack_push (CoglMatrixStack *stack)
 
   entry = _cogl_matrix_stack_push_operation (stack, COGL_MATRIX_OP_SAVE);
 
-  entry->cache_valid = FALSE;
+  entry->cache_valid = false;
 }
 
 CoglMatrixEntry *
@@ -475,7 +475,7 @@ cogl_matrix_entry_get (CoglMatrixEntry *entry,
                   cogl_matrix_stack_matrices_magazine;
                 save->cache = _cogl_magazine_chunk_alloc (matrices_magazine);
                 cogl_matrix_entry_get (current->parent, save->cache);
-                save->cache_valid = TRUE;
+                save->cache_valid = true;
               }
             *matrix = *save->cache;
             goto initialized;
@@ -689,15 +689,15 @@ cogl_matrix_entry_calculate_translation (CoglMatrixEntry *entry0,
                                          float *y,
                                          float *z)
 {
-  CSList *head0 = NULL;
-  CSList *head1 = NULL;
+  c_slist_t *head0 = NULL;
+  c_slist_t *head1 = NULL;
   CoglMatrixEntry *node0;
   CoglMatrixEntry *node1;
   int len0 = 0;
   int len1 = 0;
   int count;
-  CSList *common_ancestor0;
-  CSList *common_ancestor1;
+  c_slist_t *common_ancestor0;
+  c_slist_t *common_ancestor1;
 
   /* Algorithm:
    *
@@ -717,17 +717,17 @@ cogl_matrix_entry_calculate_translation (CoglMatrixEntry *entry0,
    *    to x, y and z.
    *
    * If we come across any non-translation operations during 3) or 4)
-   * then bail out returning FALSE.
+   * then bail out returning false.
    */
 
   for (node0 = entry0; node0; node0 = node0->parent)
     {
-      CSList *link;
+      c_slist_t *link;
 
       if (node0->op == COGL_MATRIX_OP_SAVE)
         continue;
 
-      link = alloca (sizeof (CSList));
+      link = alloca (sizeof (c_slist_t));
       link->next = head0;
       link->data = node0;
       head0 = link;
@@ -738,12 +738,12 @@ cogl_matrix_entry_calculate_translation (CoglMatrixEntry *entry0,
     }
   for (node1 = entry1; node1; node1 = node1->parent)
     {
-      CSList *link;
+      c_slist_t *link;
 
       if (node1->op == COGL_MATRIX_OP_SAVE)
         continue;
 
-      link = alloca (sizeof (CSList));
+      link = alloca (sizeof (c_slist_t));
       link->next = head1;
       link->data = node1;
       head1 = link;
@@ -754,7 +754,7 @@ cogl_matrix_entry_calculate_translation (CoglMatrixEntry *entry0,
     }
 
   if (head0->data != head1->data)
-    return FALSE;
+    return false;
 
   common_ancestor0 = head0;
   common_ancestor1 = head1;
@@ -782,7 +782,7 @@ cogl_matrix_entry_calculate_translation (CoglMatrixEntry *entry0,
       node0 = head0->data;
 
       if (node0->op != COGL_MATRIX_OP_TRANSLATE)
-        return FALSE;
+        return false;
 
       translate = (CoglMatrixEntryTranslate *)node0;
 
@@ -797,7 +797,7 @@ cogl_matrix_entry_calculate_translation (CoglMatrixEntry *entry0,
       node1 = head1->data;
 
       if (node1->op != COGL_MATRIX_OP_TRANSLATE)
-        return FALSE;
+        return false;
 
       translate = (CoglMatrixEntryTranslate *)node1;
 
@@ -806,13 +806,13 @@ cogl_matrix_entry_calculate_translation (CoglMatrixEntry *entry0,
       *z = *z + translate->z;
     }
 
-  return TRUE;
+  return true;
 }
 
 bool
 cogl_matrix_entry_is_identity (CoglMatrixEntry *entry)
 {
-  return entry ? entry->op == COGL_MATRIX_OP_LOAD_IDENTITY : FALSE;
+  return entry ? entry->op == COGL_MATRIX_OP_LOAD_IDENTITY : false;
 }
 
 bool
@@ -827,15 +827,15 @@ cogl_matrix_entry_equal (CoglMatrixEntry *entry0,
       entry1 = _cogl_matrix_entry_skip_saves (entry1);
 
       if (entry0 == entry1)
-        return TRUE;
+        return true;
 
       if (entry0->op != entry1->op)
-        return FALSE;
+        return false;
 
       switch (entry0->op)
         {
         case COGL_MATRIX_OP_LOAD_IDENTITY:
-          return TRUE;
+          return true;
         case COGL_MATRIX_OP_TRANSLATE:
           {
             CoglMatrixEntryTranslate *translate0 =
@@ -848,7 +848,7 @@ cogl_matrix_entry_equal (CoglMatrixEntry *entry0,
             if (translate0->x != translate1->x ||
                 translate0->y != translate1->y ||
                 translate0->z != translate1->z)
-              return FALSE;
+              return false;
           }
           break;
         case COGL_MATRIX_OP_ROTATE:
@@ -861,7 +861,7 @@ cogl_matrix_entry_equal (CoglMatrixEntry *entry0,
                 rotate0->x != rotate1->x ||
                 rotate0->y != rotate1->y ||
                 rotate0->z != rotate1->z)
-              return FALSE;
+              return false;
           }
           break;
         case COGL_MATRIX_OP_ROTATE_QUATERNION:
@@ -873,7 +873,7 @@ cogl_matrix_entry_equal (CoglMatrixEntry *entry0,
             int i;
             for (i = 0; i < 4; i++)
               if (rotate0->values[i] != rotate1->values[i])
-                return FALSE;
+                return false;
           }
           break;
         case COGL_MATRIX_OP_ROTATE_EULER:
@@ -886,7 +886,7 @@ cogl_matrix_entry_equal (CoglMatrixEntry *entry0,
             if (rotate0->heading != rotate1->heading ||
                 rotate0->pitch != rotate1->pitch ||
                 rotate0->roll != rotate1->roll)
-              return FALSE;
+              return false;
           }
           break;
         case COGL_MATRIX_OP_SCALE:
@@ -896,7 +896,7 @@ cogl_matrix_entry_equal (CoglMatrixEntry *entry0,
             if (scale0->x != scale1->x ||
                 scale0->y != scale1->y ||
                 scale0->z != scale1->z)
-              return FALSE;
+              return false;
           }
           break;
         case COGL_MATRIX_OP_MULTIPLY:
@@ -904,7 +904,7 @@ cogl_matrix_entry_equal (CoglMatrixEntry *entry0,
             CoglMatrixEntryMultiply *mult0 = (CoglMatrixEntryMultiply *)entry0;
             CoglMatrixEntryMultiply *mult1 = (CoglMatrixEntryMultiply *)entry1;
             if (!cogl_matrix_equal (mult0->matrix, mult1->matrix))
-              return FALSE;
+              return false;
           }
           break;
         case COGL_MATRIX_OP_LOAD:
@@ -922,7 +922,7 @@ cogl_matrix_entry_equal (CoglMatrixEntry *entry0,
         }
     }
 
-  return FALSE;
+  return false;
 }
 
 void
@@ -1031,8 +1031,8 @@ void
 _cogl_matrix_entry_cache_init (CoglMatrixEntryCache *cache)
 {
   cache->entry = NULL;
-  cache->flushed_identity = FALSE;
-  cache->flipped = FALSE;
+  cache->flushed_identity = false;
+  cache->flipped = false;
 }
 
 /* NB: This function can report false negatives since it never does a
@@ -1043,19 +1043,19 @@ _cogl_matrix_entry_cache_maybe_update (CoglMatrixEntryCache *cache,
                                        bool flip)
 {
   bool is_identity;
-  bool updated = FALSE;
+  bool updated = false;
 
   if (cache->flipped != flip)
     {
       cache->flipped = flip;
-      updated = TRUE;
+      updated = true;
     }
 
   is_identity = (entry->op == COGL_MATRIX_OP_LOAD_IDENTITY);
   if (cache->flushed_identity != is_identity)
     {
       cache->flushed_identity = is_identity;
-      updated = TRUE;
+      updated = true;
     }
 
   if (cache->entry != entry)

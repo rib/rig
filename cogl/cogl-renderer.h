@@ -91,7 +91,7 @@ typedef struct _CoglRenderer CoglRenderer;
  *
  * Determines if the given @object is a #CoglRenderer
  *
- * Return value: %TRUE if @object is a #CoglRenderer, else %FALSE.
+ * Return value: %true if @object is a #CoglRenderer, else %false.
  * Since: 1.10
  * Stability: unstable
  */
@@ -232,8 +232,8 @@ cogl_renderer_get_n_fragment_texture_units (CoglRenderer *renderer);
  * Tests if a given @onscreen_template can be supported with the given
  * @renderer.
  *
- * Return value: %TRUE if the @onscreen_template can be supported,
- *               else %FALSE.
+ * Return value: %true if the @onscreen_template can be supported,
+ *               else %false.
  * Since: 1.10
  * Stability: unstable
  */
@@ -254,8 +254,8 @@ cogl_renderer_check_onscreen_template (CoglRenderer *renderer,
  * any given constraint criteria can be satisfied and that a
  * usable driver and window system backend can be found.
  *
- * Return value: %TRUE if there was no error while connecting the
- *               given @renderer. %FALSE if there was an error.
+ * Return value: %true if there was no error while connecting the
+ *               given @renderer. %false if there was an error.
  * Since: 1.10
  * Stability: unstable
  */

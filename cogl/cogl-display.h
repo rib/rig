@@ -176,8 +176,8 @@ cogl_display_set_onscreen_template (CoglDisplay *display,
  * with a message.  For simple applications that don't have any
  * fallback options this behaviour may be fine.
  *
- * Return value: Returns %TRUE if there was no error, else it returns
- *               %FALSE and returns an exception via @error.
+ * Return value: Returns %true if there was no error, else it returns
+ *               %false and returns an exception via @error.
  * Since: 1.10
  * Stability: unstable
  */
@@ -207,8 +207,8 @@ cogl_gdl_display_set_plane (CoglDisplay *display,
  *
  * Gets whether the given object references a #CoglDisplay.
  *
- * Return value: %TRUE if the object references a #CoglDisplay
- *   and %FALSE otherwise.
+ * Return value: %true if the object references a #CoglDisplay
+ *   and %false otherwise.
  * Since: 1.10
  * Stability: unstable
  */

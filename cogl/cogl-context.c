@@ -80,28 +80,28 @@ static void
 _cogl_init_feature_overrides (CoglContext *ctx)
 {
   if (C_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_VBOS)))
-    COGL_FLAGS_SET (ctx->private_features, COGL_PRIVATE_FEATURE_VBOS, FALSE);
+    COGL_FLAGS_SET (ctx->private_features, COGL_PRIVATE_FEATURE_VBOS, false);
 
   if (C_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_PBOS)))
-    COGL_FLAGS_SET (ctx->private_features, COGL_PRIVATE_FEATURE_PBOS, FALSE);
+    COGL_FLAGS_SET (ctx->private_features, COGL_PRIVATE_FEATURE_PBOS, false);
 
   if (C_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_GLSL)))
     {
-      COGL_FLAGS_SET (ctx->features, COGL_FEATURE_ID_GLSL, FALSE);
+      COGL_FLAGS_SET (ctx->features, COGL_FEATURE_ID_GLSL, false);
       COGL_FLAGS_SET (ctx->features,
                       COGL_FEATURE_ID_PER_VERTEX_POINT_SIZE,
-                      FALSE);
+                      false);
     }
 
   if (C_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_NPOT_TEXTURES)))
     {
-      COGL_FLAGS_SET (ctx->features, COGL_FEATURE_ID_TEXTURE_NPOT, FALSE);
+      COGL_FLAGS_SET (ctx->features, COGL_FEATURE_ID_TEXTURE_NPOT, false);
       COGL_FLAGS_SET (ctx->features,
-                      COGL_FEATURE_ID_TEXTURE_NPOT_BASIC, FALSE);
+                      COGL_FEATURE_ID_TEXTURE_NPOT_BASIC, false);
       COGL_FLAGS_SET (ctx->features,
-                      COGL_FEATURE_ID_TEXTURE_NPOT_MIPMAP, FALSE);
+                      COGL_FEATURE_ID_TEXTURE_NPOT_MIPMAP, false);
       COGL_FLAGS_SET (ctx->features,
-                      COGL_FEATURE_ID_TEXTURE_NPOT_REPEAT, FALSE);
+                      COGL_FEATURE_ID_TEXTURE_NPOT_REPEAT, false);
     }
 }
 
@@ -229,7 +229,7 @@ cogl_context_new (CoglDisplay *display,
 
 
   context->uniform_names =
-    c_ptr_array_new_with_free_func ((CDestroyNotify) c_free);
+    c_ptr_array_new_with_free_func ((c_destroy_func_t) c_free);
   context->uniform_name_hash = c_hash_table_new (c_str_hash, c_str_equal);
   context->n_uniform_names = 0;
 
@@ -248,9 +248,9 @@ cogl_context_new (CoglDisplay *display,
   if (context->gpu.driver_package == COGL_GPU_INFO_DRIVER_PACKAGE_MESA &&
       context->gpu.architecture == COGL_GPU_INFO_ARCHITECTURE_SANDYBRIDGE &&
       !getenv ("COGL_DISABLE_INTEL_VIEWPORT_SCISSORT_WORKAROUND"))
-    context->needs_viewport_scissor_workaround = TRUE;
+    context->needs_viewport_scissor_workaround = true;
   else
-    context->needs_viewport_scissor_workaround = FALSE;
+    context->needs_viewport_scissor_workaround = false;
 
   context->sampler_cache = _cogl_sampler_cache_new (context);
 
@@ -259,7 +259,7 @@ cogl_context_new (CoglDisplay *display,
   _cogl_pipeline_init_state_hash_functions ();
   _cogl_pipeline_init_layer_state_hash_functions ();
 
-  context->current_clip_stack_valid = FALSE;
+  context->current_clip_stack_valid = false;
   context->current_clip_stack = NULL;
 
   cogl_matrix_init_identity (&context->identity_matrix);
@@ -267,7 +267,7 @@ cogl_context_new (CoglDisplay *display,
   cogl_matrix_scale (&context->y_flip_matrix, 1, -1, 1);
 
   context->texture_units =
-    c_array_new (FALSE, FALSE, sizeof (CoglTextureUnit));
+    c_array_new (false, false, sizeof (CoglTextureUnit));
 
   if (_cogl_has_private_feature (context, COGL_PRIVATE_FEATURE_ANY_GL))
     {
@@ -296,12 +296,12 @@ cogl_context_new (CoglDisplay *display,
   c_queue_init (&context->gles2_context_stack);
 
   context->journal_flush_attributes_array =
-    c_array_new (TRUE, FALSE, sizeof (CoglAttribute *));
+    c_array_new (true, false, sizeof (CoglAttribute *));
   context->journal_clip_bounds = NULL;
 
   context->current_pipeline = NULL;
   context->current_pipeline_changes_since_flush = 0;
-  context->current_pipeline_with_color_attrib = FALSE;
+  context->current_pipeline_with_color_attrib = false;
 
   _cogl_bitmask_init (&context->enabled_custom_attributes);
   _cogl_bitmask_init (&context->enable_custom_attributes_tmp);
@@ -312,14 +312,14 @@ cogl_context_new (CoglDisplay *display,
 
   context->current_gl_program = 0;
 
-  context->current_gl_dither_enabled = TRUE;
+  context->current_gl_dither_enabled = true;
   context->current_gl_color_mask = COGL_COLOR_MASK_ALL;
 
-  context->gl_blend_enable_cache = FALSE;
+  context->gl_blend_enable_cache = false;
 
-  context->depth_test_enabled_cache = FALSE;
+  context->depth_test_enabled_cache = false;
   context->depth_test_function_cache = COGL_DEPTH_TEST_FUNCTION_LESS;
-  context->depth_writing_enabled_cache = TRUE;
+  context->depth_writing_enabled_cache = true;
   context->depth_range_near_cache = 0;
   context->depth_range_far_cache = 1;
 
@@ -383,13 +383,13 @@ cogl_context_new (CoglDisplay *display,
     cogl_error_free (internal_error);
 
   context->buffer_map_fallback_array = c_byte_array_new ();
-  context->buffer_map_fallback_in_use = FALSE;
+  context->buffer_map_fallback_in_use = false;
 
   _cogl_list_init (&context->fences);
 
   context->atlas_set = cogl_atlas_set_new (context);
   cogl_atlas_set_set_components (context->atlas_set, COGL_TEXTURE_COMPONENTS_RGBA);
-  cogl_atlas_set_set_premultiplied (context->atlas_set, FALSE);
+  cogl_atlas_set_set_premultiplied (context->atlas_set, false);
   cogl_atlas_set_add_atlas_callback (context->atlas_set,
                                      _cogl_atlas_texture_atlas_event_handler,
                                      NULL, /* user data */
@@ -422,9 +422,9 @@ _cogl_context_free (CoglContext *context)
   c_warn_if_fail (context->gles2_context_stack.length == 0);
 
   if (context->journal_flush_attributes_array)
-    c_array_free (context->journal_flush_attributes_array, TRUE);
+    c_array_free (context->journal_flush_attributes_array, true);
   if (context->journal_clip_bounds)
-    c_array_free (context->journal_clip_bounds, TRUE);
+    c_array_free (context->journal_clip_bounds, true);
 
   if (context->rectangle_byte_indices)
     cogl_object_unref (context->rectangle_byte_indices);
@@ -461,13 +461,13 @@ _cogl_context_free (CoglContext *context)
 
   _cogl_destroy_texture_units ();
 
-  c_ptr_array_free (context->uniform_names, TRUE);
+  c_ptr_array_free (context->uniform_names, true);
   c_hash_table_destroy (context->uniform_name_hash);
 
   c_hash_table_destroy (context->attribute_name_states_hash);
-  c_array_free (context->attribute_name_index_map, TRUE);
+  c_array_free (context->attribute_name_index_map, true);
 
-  c_byte_array_free (context->buffer_map_fallback_array, TRUE);
+  c_byte_array_free (context->buffer_map_fallback_array, true);
 
   cogl_object_unref (context->display);
 

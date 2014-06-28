@@ -68,7 +68,7 @@ toggle_custom_attribute_enabled_cb (int bit_num, void *user_data)
   else
     GE( context, glDisableVertexAttribArray (bit_num) );
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -114,7 +114,7 @@ setup_generic_buffered_attribute (CoglContext *context,
                                       attribute->d.buffered.stride,
                                       base + attribute->d.buffered.offset) );
   _cogl_bitmask_set (&context->enable_custom_attributes_tmp,
-                     attrib_location, TRUE);
+                     attrib_location, true);
 }
 
 static void
@@ -192,8 +192,8 @@ _cogl_gl_flush_attributes_state (CoglFramebuffer *framebuffer,
 {
   CoglContext *ctx = framebuffer->context;
   int i;
-  bool with_color_attrib = FALSE;
-  bool unknown_color_alpha = FALSE;
+  bool with_color_attrib = false;
+  bool unknown_color_alpha = false;
   CoglPipeline *copy = NULL;
 
   /* Iterate the attributes to see if we have a color attribute which
@@ -206,8 +206,8 @@ _cogl_gl_flush_attributes_state (CoglFramebuffer *framebuffer,
       case COGL_ATTRIBUTE_NAME_ID_COLOR_ARRAY:
         if ((flags & COGL_DRAW_COLOR_ATTRIBUTE_IS_OPAQUE) == 0 &&
             _cogl_attribute_get_n_components (attributes[i]) == 4)
-          unknown_color_alpha = TRUE;
-        with_color_attrib = TRUE;
+          unknown_color_alpha = true;
+        with_color_attrib = true;
         break;
 
       default:

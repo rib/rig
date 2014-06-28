@@ -261,7 +261,7 @@ cogl_bitmap_get_buffer (CoglBitmap *bitmap);
  * Parses an image file enough to extract the width and height
  * of the bitmap.
  *
- * Return value: %TRUE if the image was successfully parsed
+ * Return value: %true if the image was successfully parsed
  *
  * Since: 1.0
  */
@@ -276,8 +276,8 @@ cogl_bitmap_get_size_from_file (const char *filename,
  *
  * Checks whether @object is a #CoglBitmap
  *
- * Return value: %TRUE if the passed @object represents a bitmap,
- *   and %FALSE otherwise
+ * Return value: %true if the passed @object represents a bitmap,
+ *   and %false otherwise
  *
  * Since: 1.0
  */

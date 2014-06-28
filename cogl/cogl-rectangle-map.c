@@ -79,12 +79,12 @@ struct _CoglRectangleMap
 
   unsigned int space_remaining;
 
-  CDestroyNotify value_destroy_func;
+  c_destroy_func_t value_destroy_func;
 
   /* Stack used for walking the structure. This is only used during
      the lifetime of a single function call but it is kept here as an
      optimisation to avoid reallocating it every time it is needed */
-  CArray *stack;
+  c_array_t *stack;
 };
 
 struct _CoglRectangleMapNode
@@ -135,7 +135,7 @@ _cogl_rectangle_map_node_free (CoglRectangleMapNode *node)
 CoglRectangleMap *
 _cogl_rectangle_map_new (unsigned int width,
                          unsigned int height,
-                         CDestroyNotify value_destroy_func)
+                         c_destroy_func_t value_destroy_func)
 {
   CoglRectangleMap *map = c_new (CoglRectangleMap, 1);
   CoglRectangleMapNode *root = _cogl_rectangle_map_node_new ();
@@ -153,13 +153,13 @@ _cogl_rectangle_map_new (unsigned int width,
   map->value_destroy_func = value_destroy_func;
   map->space_remaining = width * height;
 
-  map->stack = c_array_new (FALSE, FALSE, sizeof (CoglRectangleMapStackEntry));
+  map->stack = c_array_new (false, false, sizeof (CoglRectangleMapStackEntry));
 
   return map;
 }
 
 static void
-_cogl_rectangle_map_stack_push (CArray *stack,
+_cogl_rectangle_map_stack_push (c_array_t *stack,
                                 CoglRectangleMapNode *node,
                                 bool next_index)
 {
@@ -175,13 +175,13 @@ _cogl_rectangle_map_stack_push (CArray *stack,
 }
 
 static void
-_cogl_rectangle_map_stack_pop (CArray *stack)
+_cogl_rectangle_map_stack_pop (c_array_t *stack)
 {
   c_array_set_size (stack, stack->len - 1);
 }
 
 static CoglRectangleMapStackEntry *
-_cogl_rectangle_map_stack_get_top (CArray *stack)
+_cogl_rectangle_map_stack_get_top (c_array_t *stack)
 {
   return &c_array_index (stack, CoglRectangleMapStackEntry,
                          stack->len - 1);
@@ -357,16 +357,16 @@ _cogl_rectangle_map_add (CoglRectangleMap *map,
 {
   unsigned int rectangle_size = width * height;
   /* Stack of nodes to search in */
-  CArray *stack = map->stack;
+  c_array_t *stack = map->stack;
   CoglRectangleMapNode *found_node = NULL;
 
   /* Zero-sized rectangles break the algorithm for removing rectangles
      so we'll disallow them */
-  _COGL_RETURN_VAL_IF_FAIL (width > 0 && height > 0, FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (width > 0 && height > 0, false);
 
   /* Start with the root node */
   c_array_set_size (stack, 0);
-  _cogl_rectangle_map_stack_push (stack, map->root, FALSE);
+  _cogl_rectangle_map_stack_push (stack, map->root, false);
 
   /* Depth-first search for an empty node that is big enough */
   while (stack->len > 0)
@@ -473,10 +473,10 @@ _cogl_rectangle_map_add (CoglRectangleMap *map,
         }
 #endif
 
-      return TRUE;
+      return true;
     }
   else
-    return FALSE;
+    return false;
 }
 
 void
@@ -597,7 +597,7 @@ _cogl_rectangle_map_internal_foreach (CoglRectangleMap *map,
                                       void *data)
 {
   /* Stack of nodes to search in */
-  CArray *stack = map->stack;
+  c_array_t *stack = map->stack;
 
   /* Start with the root node */
   c_array_set_size (stack, 0);
@@ -701,7 +701,7 @@ _cogl_rectangle_map_free (CoglRectangleMap *map)
                                         _cogl_rectangle_map_free_cb,
                                         map);
 
-  c_array_free (map->stack, TRUE);
+  c_array_free (map->stack, true);
 
   c_free (map);
 }

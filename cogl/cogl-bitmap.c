@@ -81,7 +81,7 @@ _cogl_bitmap_convert_premult_status (CoglBitmap *bmp,
     /* Try premultiplying using imaging library */
     return _cogl_bitmap_premult (bmp, error);
 
-  return TRUE;
+  return true;
 }
 
 CoglBitmap *
@@ -130,12 +130,12 @@ _cogl_bitmap_copy_subregion (CoglBitmap *src,
   uint8_t *dstdata;
   int bpp;
   int line;
-  bool succeeded = FALSE;
+  bool succeeded = false;
 
   /* Intended only for fast copies when format is equal! */
   _COGL_RETURN_VAL_IF_FAIL ((src->format & ~COGL_PREMULT_BIT) ==
                             (dst->format & ~COGL_PREMULT_BIT),
-                            FALSE);
+                            false);
 
   bpp = _cogl_pixel_format_get_bytes_per_pixel (src->format);
 
@@ -154,7 +154,7 @@ _cogl_bitmap_copy_subregion (CoglBitmap *src,
               dstdata += dst->rowstride;
             }
 
-          succeeded = TRUE;
+          succeeded = true;
 
           _cogl_bitmap_unmap (dst);
         }
@@ -196,8 +196,8 @@ cogl_bitmap_new_for_data (CoglContext *context,
   bmp->height = height;
   bmp->rowstride = rowstride;
   bmp->data = data;
-  bmp->mapped = FALSE;
-  bmp->bound = FALSE;
+  bmp->mapped = false;
+  bmp->bound = false;
   bmp->shared_bmp = NULL;
   bmp->buffer = NULL;
 
@@ -417,7 +417,7 @@ _cogl_bitmap_map (CoglBitmap *bitmap,
 
       if (data)
         {
-          bitmap->mapped = TRUE;
+          bitmap->mapped = true;
 
           return data + GPOINTER_TO_INT (bitmap->data);
         }
@@ -426,7 +426,7 @@ _cogl_bitmap_map (CoglBitmap *bitmap,
     }
   else
     {
-      bitmap->mapped = TRUE;
+      bitmap->mapped = true;
 
       return bitmap->data;
     }
@@ -443,7 +443,7 @@ _cogl_bitmap_unmap (CoglBitmap *bitmap)
     }
 
   c_assert (bitmap->mapped);
-  bitmap->mapped = FALSE;
+  bitmap->mapped = false;
 
   if (bitmap->buffer)
     cogl_buffer_unmap (bitmap->buffer);
@@ -474,7 +474,7 @@ _cogl_bitmap_gl_bind (CoglBitmap *bitmap,
     {
       uint8_t *data = _cogl_bitmap_map (bitmap, access, hints, error);
       if (data)
-        bitmap->bound = TRUE;
+        bitmap->bound = true;
       return data;
     }
 
@@ -502,7 +502,7 @@ _cogl_bitmap_gl_bind (CoglBitmap *bitmap,
       return NULL;
     }
 
-  bitmap->bound = TRUE;
+  bitmap->bound = true;
 
   /* The data pointer actually stores the offset */
   return ptr + GPOINTER_TO_INT (bitmap->data);
@@ -519,7 +519,7 @@ _cogl_bitmap_gl_unbind (CoglBitmap *bitmap)
     }
 
   c_assert (bitmap->bound);
-  bitmap->bound = FALSE;
+  bitmap->bound = false;
 
   /* If the bitmap wasn't created from a pixel array then the
      implementation of unbind is the same as unmap */

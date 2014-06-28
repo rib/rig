@@ -114,7 +114,7 @@ COGL_BEGIN_DECLS
  * program will abort with an error message if there is an error during
  * automatic allocation.</note>
  *
- * Return value: %TRUE if there were no error allocating the framebuffer, else %FALSE.
+ * Return value: %true if there were no error allocating the framebuffer, else %false.
  * Since: 1.8
  * Stability: unstable
  */
@@ -724,11 +724,11 @@ cogl_framebuffer_get_depth_bits (CoglFramebuffer *framebuffer);
  * Returns whether dithering has been requested for the given @framebuffer.
  * See cogl_framebuffer_set_dither_enabled() for more details about dithering.
  *
- * <note>This may return %TRUE even when the underlying @framebuffer
+ * <note>This may return %true even when the underlying @framebuffer
  * display pipeline does not support dithering. This value only represents
  * the user's request for dithering.</note>
  *
- * Return value: %TRUE if dithering has been requested or %FALSE if not.
+ * Return value: %true if dithering has been requested or %false if not.
  * Since: 1.8
  * Stability: unstable
  */
@@ -738,7 +738,7 @@ cogl_framebuffer_get_dither_enabled (CoglFramebuffer *framebuffer);
 /**
  * cogl_framebuffer_set_dither_enabled:
  * @framebuffer: a pointer to a #CoglFramebuffer
- * @dither_enabled: %TRUE to enable dithering or %FALSE to disable
+ * @dither_enabled: %true to enable dithering or %false to disable
  *
  * Enables or disabled dithering if supported by the hardware.
  *
@@ -768,7 +768,7 @@ cogl_framebuffer_set_dither_enabled (CoglFramebuffer *framebuffer,
  * Queries whether depth buffer writing is enabled for @framebuffer. This
  * can be controlled via cogl_framebuffer_set_depth_write_enabled().
  *
- * Return value: %TRUE if depth writing is enabled or %FALSE if not.
+ * Return value: %true if depth writing is enabled or %false if not.
  * Since: 1.18
  * Stability: unstable
  */
@@ -778,7 +778,7 @@ cogl_framebuffer_get_depth_write_enabled (CoglFramebuffer *framebuffer);
 /**
  * cogl_framebuffer_set_depth_write_enabled:
  * @framebuffer: a pointer to a #CoglFramebuffer
- * @depth_write_enabled: %TRUE to enable depth writing or %FALSE to disable
+ * @depth_write_enabled: %true to enable depth writing or %false to disable
  *
  * Enables or disables depth buffer writing when rendering to @framebuffer.
  * If depth writing is enabled for both the framebuffer and the rendering
@@ -844,9 +844,9 @@ cogl_framebuffer_get_color_format (CoglFramebuffer *framebuffer);
 /**
  * cogl_framebuffer_set_depth_texture_enabled:
  * @framebuffer: A #CoglFramebuffer
- * @enabled: TRUE or FALSE
+ * @enabled: true or false
  *
- * If @enabled is #TRUE, the depth buffer used when rendering to @framebuffer
+ * If @enabled is #true, the depth buffer used when rendering to @framebuffer
  * is available as a texture. You can retrieve the texture with
  * cogl_framebuffer_get_depth_texture().
  *
@@ -870,8 +870,8 @@ cogl_framebuffer_set_depth_texture_enabled (CoglFramebuffer *framebuffer,
  * Queries whether texture based depth buffer has been enabled via
  * cogl_framebuffer_set_depth_texture_enabled().
  *
- * Return value: %TRUE if a depth texture has been enabled, else
- *               %FALSE.
+ * Return value: %true if a depth texture has been enabled, else
+ *               %false.
  *
  * Since: 2.0
  */
@@ -883,7 +883,7 @@ cogl_framebuffer_get_depth_texture_enabled (CoglFramebuffer *framebuffer);
  * @framebuffer: A #CoglFramebuffer
  *
  * Retrieves the depth buffer of @framebuffer as a #CoglTexture. You
- * must have called cogl_framebuffer_set_depth_texture(fb, TRUE);
+ * must have called cogl_framebuffer_set_depth_texture(fb, true);
  * before using this function.
  *
  * If the returned texture is subsequently added to a pipeline layer
@@ -1437,7 +1437,7 @@ cogl_framebuffer_finish (CoglFramebuffer *framebuffer);
  * should either specify a format that doesn't use an alpha channel or
  * use one of the formats ending in PRE.
  *
- * Return value: %TRUE if the read succeeded or %FALSE otherwise. The
+ * Return value: %true if the read succeeded or %false otherwise. The
  *  function is only likely to fail if the bitmap points to a pixel
  *  buffer and it could not be mapped.
  * Since: 1.10
@@ -1486,7 +1486,7 @@ cogl_framebuffer_read_pixels_into_bitmap (CoglFramebuffer *framebuffer,
  * cogl_object_unref (bitmap);
  * ]|
  *
- * Return value: %TRUE if the read succeeded or %FALSE otherwise.
+ * Return value: %true if the read succeeded or %false otherwise.
  * Since: 1.10
  * Stability: unstable
  */
@@ -1532,8 +1532,8 @@ typedef enum { /*< prefix=COGL_FRAMEBUFFER_ERROR >*/
  *
  * Gets whether the given object references a #CoglFramebuffer.
  *
- * Return value: %TRUE if the object references a #CoglFramebuffer
- *   and %FALSE otherwise.
+ * Return value: %true if the object references a #CoglFramebuffer
+ *   and %false otherwise.
  * Since: 1.10
  * Stability: unstable
  */

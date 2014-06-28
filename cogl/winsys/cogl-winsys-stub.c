@@ -85,7 +85,7 @@ _cogl_winsys_renderer_connect (CoglRenderer *renderer,
                                CoglError **error)
 {
   renderer->winsys = &_cogl_winsys_stub_dummy_ptr;
-  return TRUE;
+  return true;
 }
 
 static void
@@ -99,7 +99,7 @@ _cogl_winsys_display_setup (CoglDisplay *display,
                             CoglError **error)
 {
   display->winsys = &_cogl_winsys_stub_dummy_ptr;
-  return TRUE;
+  return true;
 }
 
 static bool
@@ -108,11 +108,11 @@ _cogl_winsys_context_init (CoglContext *context, CoglError **error)
   context->winsys = &_cogl_winsys_stub_dummy_ptr;
 
   if (!_cogl_context_update_features (context, error))
-    return FALSE;
+    return false;
 
   memset (context->winsys_features, 0, sizeof (context->winsys_features));
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -125,7 +125,7 @@ static bool
 _cogl_winsys_onscreen_init (CoglOnscreen *onscreen,
                             CoglError **error)
 {
-  return TRUE;
+  return true;
 }
 
 static void
@@ -159,7 +159,7 @@ _cogl_winsys_onscreen_set_visibility (CoglOnscreen *onscreen,
 const CoglWinsysVtable *
 _cogl_winsys_stub_get_vtable (void)
 {
-  static bool vtable_inited = FALSE;
+  static bool vtable_inited = false;
   static CoglWinsysVtable vtable;
 
   /* It would be nice if we could use C99 struct initializers here
@@ -190,7 +190,7 @@ _cogl_winsys_stub_get_vtable (void)
         _cogl_winsys_onscreen_update_swap_throttled;
       vtable.onscreen_set_visibility = _cogl_winsys_onscreen_set_visibility;
 
-      vtable_inited = TRUE;
+      vtable_inited = true;
     }
 
   return &vtable;

@@ -89,7 +89,7 @@ COGL_BEGIN_DECLS
  *
  * my_application_setup (&data);
  *
- * data.redraw_queued = TRUE;
+ * data.redraw_queued = true;
  * while (!data.quit)
  *   {
  *     while (!data.quit)

@@ -281,8 +281,8 @@ cogl_texture_2d_sliced_new_from_bitmap (CoglBitmap *bmp,
  *
  * Gets whether the given object references a #CoglTexture2DSliced.
  *
- * Return value: %TRUE if the object references a #CoglTexture2DSliced
- *   and %FALSE otherwise.
+ * Return value: %true if the object references a #CoglTexture2DSliced
+ *   and %false otherwise.
  * Since: 1.10
  * Stability: unstable
  */

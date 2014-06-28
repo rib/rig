@@ -90,7 +90,7 @@ static int64_t
 _cogl_fence_poll_prepare (void *source)
 {
   CoglContext *context = source;
-  CList *l;
+  c_list_t *l;
 
   /* If there are any pending fences in any of the journals then we
    * need to flush the journal otherwise the fence will never be

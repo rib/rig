@@ -296,19 +296,19 @@ foreach_clamped_region (CoglMetaTexture *meta_texture,
   if (*tx_1 > *tx_2)
     {
       SWAP (*tx_1, *tx_2);
-      clamp_data.s_flipped = TRUE;
+      clamp_data.s_flipped = true;
     }
   else
-    clamp_data.s_flipped = FALSE;
+    clamp_data.s_flipped = false;
 
   /* The same goes for ty_1 and ty_2... */
   if (*ty_1 > *ty_2)
     {
       SWAP (*ty_1, *ty_2);
-      clamp_data.t_flipped = TRUE;
+      clamp_data.t_flipped = true;
     }
   else
-    clamp_data.t_flipped = FALSE;
+    clamp_data.t_flipped = false;
 
   clamp_data.callback = callback;
   clamp_data.user_data = user_data;
@@ -334,7 +334,7 @@ foreach_clamped_region (CoglMetaTexture *meta_texture,
                                                &clamp_data);
           /* Have we handled everything? */
           if (*tx_2 <= 0)
-            return TRUE;
+            return true;
 
           /* clamp tx_1 since we've handled everything with x < 0 */
           *tx_1 = 0;
@@ -356,7 +356,7 @@ foreach_clamped_region (CoglMetaTexture *meta_texture,
                                                &clamp_data);
           /* Have we handled everything? */
           if (*tx_1 >= max_s_coord)
-            return TRUE;
+            return true;
 
           /* clamp tx_2 since we've handled everything with x >
            * max_s_coord */
@@ -386,7 +386,7 @@ foreach_clamped_region (CoglMetaTexture *meta_texture,
                                                &clamp_data);
           /* Have we handled everything? */
           if (*tx_2 <= 0)
-            return TRUE;
+            return true;
 
           /* clamp ty_1 since we've handled everything with y < 0 */
           *ty_1 = 0;
@@ -408,7 +408,7 @@ foreach_clamped_region (CoglMetaTexture *meta_texture,
                                                &clamp_data);
           /* Have we handled everything? */
           if (*ty_1 >= max_t_coord)
-            return TRUE;
+            return true;
 
           /* clamp ty_2 since we've handled everything with y >
            * max_t_coord */
@@ -421,7 +421,7 @@ foreach_clamped_region (CoglMetaTexture *meta_texture,
   if (clamp_data.t_flipped)
     SWAP (*ty_1, *ty_2);
 
-  return FALSE;
+  return false;
 }
 
 typedef struct _NormalizeData

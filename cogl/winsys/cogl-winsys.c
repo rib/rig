@@ -46,7 +46,7 @@ _cogl_winsys_error_domain (void)
 bool
 _cogl_winsys_has_feature (CoglWinsysFeature feature)
 {
-  _COGL_GET_CONTEXT (ctx, FALSE);
+  _COGL_GET_CONTEXT (ctx, false);
 
   return COGL_FLAGS_GET (ctx->winsys_features, feature);
 }

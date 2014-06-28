@@ -140,22 +140,22 @@ _cogl_pipeline_init_default_pipeline (void)
 
   _cogl_pipeline_node_init (COGL_NODE (pipeline));
 
-  pipeline->is_weak = FALSE;
+  pipeline->is_weak = false;
   pipeline->journal_ref_count = 0;
   pipeline->progend = COGL_PIPELINE_PROGEND_UNDEFINED;
   pipeline->differences = COGL_PIPELINE_STATE_ALL_SPARSE;
 
-  pipeline->real_blend_enable = FALSE;
+  pipeline->real_blend_enable = false;
 
   pipeline->blend_enable = COGL_PIPELINE_BLEND_ENABLE_AUTOMATIC;
   pipeline->layer_differences = NULL;
   pipeline->n_layers = 0;
 
   pipeline->big_state = big_state;
-  pipeline->has_big_state = TRUE;
+  pipeline->has_big_state = true;
 
   pipeline->static_breadcrumb = "default pipeline";
-  pipeline->has_static_breadcrumb = TRUE;
+  pipeline->has_static_breadcrumb = true;
 
   pipeline->age = 0;
 
@@ -206,7 +206,7 @@ recursively_free_layer_caches_cb (CoglNode *node,
                                   void *user_data)
 {
   recursively_free_layer_caches (COGL_PIPELINE (node));
-  return TRUE;
+  return true;
 }
 
 /* This recursively frees the layers_cache of a pipeline and all of
@@ -226,7 +226,7 @@ recursively_free_layer_caches (CoglPipeline *pipeline)
   if (C_UNLIKELY (pipeline->layers_cache != pipeline->short_layers_cache))
     c_slice_free1 (sizeof (CoglPipelineLayer *) * pipeline->n_layers,
                    pipeline->layers_cache);
-  pipeline->layers_cache_dirty = TRUE;
+  pipeline->layers_cache_dirty = true;
 
   _cogl_pipeline_node_foreach_child (COGL_NODE (pipeline),
                                      recursively_free_layer_caches_cb,
@@ -325,7 +325,7 @@ _cogl_pipeline_copy (CoglPipeline *src, bool is_weak)
 
   pipeline->differences = 0;
 
-  pipeline->has_big_state = FALSE;
+  pipeline->has_big_state = false;
 
   /* NB: real_blend_enable isn't a sparse property, it's valid for
    * every pipeline node so we have fast access to it. */
@@ -340,11 +340,11 @@ _cogl_pipeline_copy (CoglPipeline *src, bool is_weak)
    * because the value would be cached directly in each pipeline.
    */
 
-  pipeline->layers_cache_dirty = TRUE;
+  pipeline->layers_cache_dirty = true;
 
   pipeline->progend = src->progend;
 
-  pipeline->has_static_breadcrumb = FALSE;
+  pipeline->has_static_breadcrumb = false;
 
   pipeline->age = 0;
 
@@ -362,7 +362,7 @@ _cogl_pipeline_copy (CoglPipeline *src, bool is_weak)
 CoglPipeline *
 cogl_pipeline_copy (CoglPipeline *src)
 {
-  return _cogl_pipeline_copy (src, FALSE);
+  return _cogl_pipeline_copy (src, false);
 }
 
 CoglPipeline *
@@ -373,7 +373,7 @@ _cogl_pipeline_weak_copy (CoglPipeline *pipeline,
   CoglPipeline *copy;
   CoglPipeline *copy_pipeline;
 
-  copy = _cogl_pipeline_copy (pipeline, TRUE);
+  copy = _cogl_pipeline_copy (pipeline, true);
   copy_pipeline = COGL_PIPELINE (copy);
   copy_pipeline->destroy_callback = callback;
   copy_pipeline->destroy_data = user_data;
@@ -409,7 +409,7 @@ destroy_weak_children_cb (CoglNode *node,
       _cogl_pipeline_unparent (COGL_NODE (pipeline));
     }
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -466,7 +466,7 @@ _cogl_pipeline_free (CoglPipeline *pipeline)
 bool
 _cogl_pipeline_get_real_blend_enabled (CoglPipeline *pipeline)
 {
-  _COGL_RETURN_VAL_IF_FAIL (cogl_is_pipeline (pipeline), FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (cogl_is_pipeline (pipeline), false);
 
   return pipeline->real_blend_enable;
 }
@@ -483,7 +483,7 @@ _cogl_pipeline_update_layers_cache (CoglPipeline *pipeline)
       pipeline->n_layers == 0)
     return;
 
-  pipeline->layers_cache_dirty = FALSE;
+  pipeline->layers_cache_dirty = false;
 
   n_layers = pipeline->n_layers;
   if (C_LIKELY (n_layers < C_N_ELEMENTS (pipeline->short_layers_cache)))
@@ -527,7 +527,7 @@ _cogl_pipeline_update_layers_cache (CoglPipeline *pipeline)
        _cogl_pipeline_get_parent (current);
        current = _cogl_pipeline_get_parent (current))
     {
-      CList *l;
+      c_list_t *l;
 
       if (!(current->differences & COGL_PIPELINE_STATE_LAYERS))
         continue;
@@ -569,9 +569,9 @@ _cogl_pipeline_foreach_layer_internal (CoglPipeline *pipeline,
 
   _cogl_pipeline_update_layers_cache (authority);
 
-  for (i = 0, cont = TRUE; i < n_layers && cont == TRUE; i++)
+  for (i = 0, cont = true; i < n_layers && cont == true; i++)
     {
-      _COGL_RETURN_IF_FAIL (authority->layers_cache_dirty == FALSE);
+      _COGL_RETURN_IF_FAIL (authority->layers_cache_dirty == false);
       cont = callback (authority->layers_cache[i], user_data);
     }
 }
@@ -588,7 +588,7 @@ _cogl_pipeline_layer_numbers_equal (CoglPipeline *pipeline0,
   int i;
 
   if (authority1->n_layers != n_layers)
-    return FALSE;
+    return false;
 
   _cogl_pipeline_update_layers_cache (authority0);
   _cogl_pipeline_update_layers_cache (authority1);
@@ -599,10 +599,10 @@ _cogl_pipeline_layer_numbers_equal (CoglPipeline *pipeline0,
       CoglPipelineLayer *layer1 = authority1->layers_cache[i];
 
       if (layer0->index != layer1->index)
-        return FALSE;
+        return false;
     }
 
-  return TRUE;
+  return true;
 }
 
 typedef struct
@@ -617,7 +617,7 @@ append_layer_index_cb (CoglPipelineLayer *layer,
 {
   AppendLayerIndexState *state = user_data;
   state->indices[state->i++] = layer->index;
-  return TRUE;
+  return true;
 }
 
 void
@@ -644,7 +644,7 @@ cogl_pipeline_foreach_layer (CoglPipeline *pipeline,
                                          append_layer_index_cb,
                                          &state);
 
-  for (i = 0, cont = TRUE; i < authority->n_layers && cont; i++)
+  for (i = 0, cont = true; i < authority->n_layers && cont; i++)
     cont = callback (pipeline, state.indices[i], user_data);
 }
 
@@ -654,7 +654,7 @@ layer_has_alpha_cb (CoglPipelineLayer *layer, void *data)
   bool *has_alpha = data;
   *has_alpha = _cogl_pipeline_layer_has_alpha (layer);
 
-  /* return FALSE to stop iterating layers if we find any layer
+  /* return false to stop iterating layers if we find any layer
    * has alpha ...
    *
    * FIXME: actually we should never be bailing out because it's
@@ -665,12 +665,12 @@ layer_has_alpha_cb (CoglPipelineLayer *layer, void *data)
   return !(*has_alpha);
 }
 
-/* NB: If this pipeline returns FALSE that doesn't mean that the
+/* NB: If this pipeline returns false that doesn't mean that the
  * pipeline is definitely opaque, it just means that that the
  * given changes dont imply transparency.
  *
  * If you want to find out of the pipeline is opaque then assuming
- * this returns FALSE for a set of changes then you can follow
+ * this returns false for a set of changes then you can follow
  * up
  */
 static bool
@@ -686,29 +686,29 @@ _cogl_pipeline_change_implies_transparency (CoglPipeline *pipeline,
     changes = COGL_PIPELINE_STATE_AFFECTS_BLENDING;
 
   if (unknown_color_alpha)
-    return TRUE;
+    return true;
 
   if ((override_color && cogl_color_get_alpha_byte (override_color) != 0xff))
-    return TRUE;
+    return true;
 
   if (changes & COGL_PIPELINE_STATE_COLOR)
     {
       CoglColor tmp;
       cogl_pipeline_get_color (pipeline, &tmp);
       if (cogl_color_get_alpha_byte (&tmp) != 0xff)
-        return TRUE;
+        return true;
     }
 
   if (changes & COGL_PIPELINE_STATE_FRAGMENT_SNIPPETS)
     {
       if (_cogl_pipeline_has_non_layer_fragment_snippets (pipeline))
-        return TRUE;
+        return true;
     }
 
   if (changes & COGL_PIPELINE_STATE_VERTEX_SNIPPETS)
     {
       if (_cogl_pipeline_has_non_layer_vertex_snippets (pipeline))
-        return TRUE;
+        return true;
     }
 
   if (changes & COGL_PIPELINE_STATE_LAYERS)
@@ -716,15 +716,15 @@ _cogl_pipeline_change_implies_transparency (CoglPipeline *pipeline,
       /* has_alpha tracks the alpha status of the GL_PREVIOUS layer.
        * To start with that's defined by the pipeline color which
        * must be fully opaque if we got this far. */
-      bool has_alpha = FALSE;
+      bool has_alpha = false;
       _cogl_pipeline_foreach_layer_internal (pipeline,
                                              layer_has_alpha_cb,
                                              &has_alpha);
       if (has_alpha)
-        return TRUE;
+        return true;
     }
 
-  return FALSE;
+  return false;
 }
 
 static bool
@@ -739,7 +739,7 @@ _cogl_pipeline_needs_blending_enabled (CoglPipeline *pipeline,
   CoglPipelineBlendEnable enabled;
 
   if (C_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_BLENDING)))
-    return FALSE;
+    return false;
 
   /* We unconditionally check the _BLEND_ENABLE state first because
    * all the other changes are irrelevent if blend_enable != _AUTOMATIC
@@ -749,7 +749,7 @@ _cogl_pipeline_needs_blending_enabled (CoglPipeline *pipeline,
 
   enabled = enable_authority->blend_enable;
   if (enabled != COGL_PIPELINE_BLEND_ENABLE_AUTOMATIC)
-    return enabled == COGL_PIPELINE_BLEND_ENABLE_ENABLED ? TRUE : FALSE;
+    return enabled == COGL_PIPELINE_BLEND_ENABLE_ENABLED ? true : false;
 
   blend_authority =
     _cogl_pipeline_get_authority (pipeline, COGL_PIPELINE_STATE_BLEND);
@@ -773,7 +773,7 @@ _cogl_pipeline_needs_blending_enabled (CoglPipeline *pipeline,
       blend_state->blend_src_factor_alpha == GL_ONE &&
       blend_state->blend_dst_factor_alpha == GL_ZERO)
     {
-      return FALSE;
+      return false;
     }
 
   /* NB: The default blending equation for Cogl is
@@ -787,15 +787,15 @@ _cogl_pipeline_needs_blending_enabled (CoglPipeline *pipeline,
 
   if (blend_state->blend_equation_rgb != GL_FUNC_ADD ||
       blend_state->blend_equation_alpha != GL_FUNC_ADD)
-    return TRUE;
+    return true;
 
   if (blend_state->blend_src_factor_alpha != GL_ONE ||
       blend_state->blend_dst_factor_alpha != GL_ONE_MINUS_SRC_ALPHA)
-    return TRUE;
+    return true;
 
   if (blend_state->blend_src_factor_rgb != GL_ONE ||
       blend_state->blend_dst_factor_rgb != GL_ONE_MINUS_SRC_ALPHA)
-    return TRUE;
+    return true;
 
   /* Given the above constraints, it's now a case of finding any
    * SRC_ALPHA that != 1 */
@@ -803,7 +803,7 @@ _cogl_pipeline_needs_blending_enabled (CoglPipeline *pipeline,
   if (_cogl_pipeline_change_implies_transparency (pipeline, changes,
                                                   override_color,
                                                   unknown_color_alpha))
-    return TRUE;
+    return true;
 
   /* At this point, considering just the state that has changed it
    * looks like blending isn't needed. If blending was previously
@@ -821,11 +821,11 @@ _cogl_pipeline_needs_blending_enabled (CoglPipeline *pipeline,
       unsigned int other_state =
         COGL_PIPELINE_STATE_AFFECTS_BLENDING & ~changes;
       if (other_state &&
-          _cogl_pipeline_change_implies_transparency (pipeline, other_state, NULL, FALSE))
-        return TRUE;
+          _cogl_pipeline_change_implies_transparency (pipeline, other_state, NULL, false))
+        return true;
     }
 
-  return FALSE;
+  return false;
 }
 
 void
@@ -849,7 +849,7 @@ _cogl_pipeline_copy_differences (CoglPipeline *dest,
 
   if (differences & COGL_PIPELINE_STATE_LAYERS)
     {
-      CList *l;
+      c_list_t *l;
 
       if (dest->differences & COGL_PIPELINE_STATE_LAYERS &&
           dest->layer_differences)
@@ -867,7 +867,7 @@ _cogl_pipeline_copy_differences (CoglPipeline *dest,
            * layer_differences, we have to derive new layers from the
            * originals instead. */
           CoglPipelineLayer *copy = _cogl_pipeline_layer_copy (l->data);
-          _cogl_pipeline_add_layer_difference (dest, copy, FALSE);
+          _cogl_pipeline_add_layer_difference (dest, copy, false);
           cogl_object_unref (copy);
         }
 
@@ -882,7 +882,7 @@ _cogl_pipeline_copy_differences (CoglPipeline *dest,
       if (!dest->has_big_state)
         {
           dest->big_state = c_slice_new (CoglPipelineBigState);
-          dest->has_big_state = TRUE;
+          dest->has_big_state = true;
         }
       big_state = dest->big_state;
     }
@@ -975,7 +975,7 @@ _cogl_pipeline_copy_differences (CoglPipeline *dest,
    */
 check_for_blending_change:
   if (differences & COGL_PIPELINE_STATE_AFFECTS_BLENDING)
-    dest->dirty_real_blend_enable = TRUE;
+    dest->dirty_real_blend_enable = true;
 
   dest->differences |= differences;
 }
@@ -1069,17 +1069,17 @@ check_if_strong_cb (CoglNode *node, void *user_data)
 
   if (!_cogl_pipeline_is_weak (pipeline))
     {
-      *has_strong_child = TRUE;
-      return FALSE;
+      *has_strong_child = true;
+      return false;
     }
 
-  return TRUE;
+  return true;
 }
 
 static bool
 has_strong_children (CoglPipeline *pipeline)
 {
-  bool has_strong_child = FALSE;
+  bool has_strong_child = false;
   _cogl_pipeline_node_foreach_child (COGL_NODE (pipeline),
                                      check_if_strong_cb,
                                      &has_strong_child);
@@ -1090,9 +1090,9 @@ static bool
 _cogl_pipeline_is_weak (CoglPipeline *pipeline)
 {
   if (pipeline->is_weak && !has_strong_children (pipeline))
-    return TRUE;
+    return true;
   else
-    return FALSE;
+    return false;
 }
 
 static bool
@@ -1102,9 +1102,9 @@ reparent_children_cb (CoglNode *node,
   CoglPipeline *pipeline = COGL_PIPELINE (node);
   CoglPipeline *parent = user_data;
 
-  _cogl_pipeline_set_parent (pipeline, parent, TRUE);
+  _cogl_pipeline_set_parent (pipeline, parent, true);
 
-  return TRUE;
+  return true;
 }
 
 void
@@ -1120,7 +1120,7 @@ _cogl_pipeline_pre_change_notify (CoglPipeline     *pipeline,
    * before we can modify it... */
   if (pipeline->journal_ref_count)
     {
-      bool skip_journal_flush = FALSE;
+      bool skip_journal_flush = false;
 
       /* XXX: We don't usually need to flush the journal just due to
        * color changes since pipeline colors are logged in the
@@ -1132,11 +1132,11 @@ _cogl_pipeline_pre_change_notify (CoglPipeline     *pipeline,
             _cogl_pipeline_needs_blending_enabled (pipeline,
                                                    change,
                                                    new_color,
-                                                   FALSE);
-          bool blend_enable = pipeline->real_blend_enable ? TRUE : FALSE;
+                                                   false);
+          bool blend_enable = pipeline->real_blend_enable ? true : false;
 
           if (will_need_blending == blend_enable)
-            skip_journal_flush = TRUE;
+            skip_journal_flush = true;
         }
 
       if (!skip_journal_flush)
@@ -1276,7 +1276,7 @@ _cogl_pipeline_pre_change_notify (CoglPipeline     *pipeline,
       !pipeline->has_big_state)
     {
       pipeline->big_state = c_slice_new (CoglPipelineBigState);
-      pipeline->has_big_state = TRUE;
+      pipeline->has_big_state = true;
     }
 
   /* Note: conceptually we have just been notified that a single
@@ -1426,7 +1426,7 @@ _cogl_pipeline_update_real_blend_enable (CoglPipeline *pipeline,
   CoglPipeline *parent;
   unsigned int differences;
 
-  if (pipeline->dirty_real_blend_enable == FALSE &&
+  if (pipeline->dirty_real_blend_enable == false &&
       pipeline->unknown_color_alpha == unknown_color_alpha)
     return;
 
@@ -1462,7 +1462,7 @@ _cogl_pipeline_update_real_blend_enable (CoglPipeline *pipeline,
   pipeline->real_blend_enable =
     _cogl_pipeline_needs_blending_enabled (pipeline, differences,
                                            NULL, unknown_color_alpha);
-  pipeline->dirty_real_blend_enable = FALSE;
+  pipeline->dirty_real_blend_enable = false;
   pipeline->unknown_color_alpha = unknown_color_alpha;
 }
 
@@ -1481,10 +1481,10 @@ update_prune_layers_info_cb (CoglPipelineLayer *layer, void *user_data)
   if (state->current_pos == state->keep_n)
     {
       state->first_index_to_prune = layer->index;
-      return FALSE;
+      return false;
     }
   state->current_pos++;
-  return TRUE;
+  return true;
 }
 
 void
@@ -1493,8 +1493,8 @@ _cogl_pipeline_prune_to_n_layers (CoglPipeline *pipeline, int n)
   CoglPipeline *authority =
     _cogl_pipeline_get_authority (pipeline, COGL_PIPELINE_STATE_LAYERS);
   CoglPipelinePruneLayersInfo state;
-  CList *l;
-  CList *next;
+  c_list_t *l;
+  c_list_t *next;
 
   if (authority->n_layers <= n)
     return;
@@ -1512,7 +1512,7 @@ _cogl_pipeline_prune_to_n_layers (CoglPipeline *pipeline, int n)
   _cogl_pipeline_pre_change_notify (pipeline,
                                     COGL_PIPELINE_STATE_LAYERS,
                                     NULL,
-                                    FALSE);
+                                    false);
 
   pipeline->differences |= COGL_PIPELINE_STATE_LAYERS;
   pipeline->n_layers = n;
@@ -1525,7 +1525,7 @@ _cogl_pipeline_prune_to_n_layers (CoglPipeline *pipeline, int n)
       next = l->next; /* we're modifying the list we're iterating */
 
       if (layer->index >= state.first_index_to_prune)
-        _cogl_pipeline_remove_layer_difference (pipeline, layer, FALSE);
+        _cogl_pipeline_remove_layer_difference (pipeline, layer, false);
     }
 
   pipeline->differences |= COGL_PIPELINE_STATE_LAYERS;
@@ -1558,7 +1558,7 @@ typedef struct
 
 } CoglPipelineLayerInfo;
 
-/* Returns TRUE once we know there is nothing more to update */
+/* Returns true once we know there is nothing more to update */
 static bool
 update_layer_info (CoglPipelineLayer *layer,
                    CoglPipelineLayerInfo *layer_info)
@@ -1567,7 +1567,7 @@ update_layer_info (CoglPipelineLayer *layer,
     {
       layer_info->layer = layer;
       if (layer_info->ignore_shift_layers_if_found)
-        return TRUE;
+        return true;
     }
   else if (layer->index < layer_info->layer_index)
     {
@@ -1578,10 +1578,10 @@ update_layer_info (CoglPipelineLayer *layer,
     layer_info->layers_to_shift[layer_info->n_layers_to_shift++] =
       layer;
 
-  return FALSE;
+  return false;
 }
 
-/* Returns FALSE to break out of a _foreach_layer () iteration */
+/* Returns false to break out of a _foreach_layer () iteration */
 static bool
 update_layer_info_cb (CoglPipelineLayer *layer,
                       void *user_data)
@@ -1589,9 +1589,9 @@ update_layer_info_cb (CoglPipelineLayer *layer,
   CoglPipelineLayerInfo *layer_info = user_data;
 
   if (update_layer_info (layer, layer_info))
-    return FALSE; /* break */
+    return false; /* break */
   else
-    return TRUE; /* continue */
+    return true; /* continue */
 }
 
 static void
@@ -1664,7 +1664,7 @@ _cogl_pipeline_get_layer_with_flags (CoglPipeline *pipeline,
 
   /* If an exact match is found though we don't need a complete
    * list of layers with indices > layer_index... */
-  layer_info.ignore_shift_layers_if_found = TRUE;
+  layer_info.ignore_shift_layers_if_found = true;
 
   _cogl_pipeline_get_layer_info (authority, &layer_info);
 
@@ -1699,7 +1699,7 @@ _cogl_pipeline_get_layer_with_flags (CoglPipeline *pipeline,
        * anything else with this layer. */
     }
 
-  _cogl_pipeline_add_layer_difference (pipeline, layer, TRUE);
+  _cogl_pipeline_add_layer_difference (pipeline, layer, true);
 
   cogl_object_unref (layer);
 
@@ -1710,8 +1710,8 @@ void
 _cogl_pipeline_prune_empty_layer_difference (CoglPipeline *layers_authority,
                                              CoglPipelineLayer *layer)
 {
-  /* Find the CList link that references the empty layer */
-  CList *link = c_list_find (layers_authority->layer_differences, layer);
+  /* Find the c_list_t link that references the empty layer */
+  c_list_t *link = c_list_find (layers_authority->layer_differences, layer);
   /* No pipeline directly owns the root node layer so this is safe... */
   CoglPipelineLayer *layer_parent = _cogl_pipeline_layer_get_parent (layer);
   CoglPipelineLayerInfo layer_info;
@@ -1756,7 +1756,7 @@ _cogl_pipeline_prune_empty_layer_difference (CoglPipeline *layers_authority,
 
   /* If an exact match is found though we don't need a complete
    * list of layers with indices > layer_index... */
-  layer_info.ignore_shift_layers_if_found = TRUE;
+  layer_info.ignore_shift_layers_if_found = true;
 
   /* We know the default/root pipeline isn't a LAYERS authority so it's
    * safe to use the result of _cogl_pipeline_get_parent (layers_authority)
@@ -1778,7 +1778,7 @@ _cogl_pipeline_prune_empty_layer_difference (CoglPipeline *layers_authority,
    * layer difference. */
   if (layer_info.layer == _cogl_pipeline_layer_get_parent (layer))
     {
-      _cogl_pipeline_remove_layer_difference (layers_authority, layer, FALSE);
+      _cogl_pipeline_remove_layer_difference (layers_authority, layer, false);
       _cogl_pipeline_try_reverting_layers_authority (layers_authority,
                                                      old_layers_authority);
     }
@@ -1804,10 +1804,10 @@ fallback_layer_cb (CoglPipelineLayer *layer, void *user_data)
                        "forced to a fallback texture",
                        0 /* no application private data */);
 
-  _COGL_GET_CONTEXT (ctx, FALSE);
+  _COGL_GET_CONTEXT (ctx, false);
 
   if (!(state->fallback_layers & 1<<state->i))
-    return TRUE;
+    return true;
 
   COGL_COUNTER_INC (_cogl_uprof_context, layer_fallback_counter);
 
@@ -1835,7 +1835,7 @@ fallback_layer_cb (CoglPipelineLayer *layer, void *user_data)
 
   state->i++;
 
-  return TRUE;
+  return true;
 }
 
 typedef struct
@@ -1853,7 +1853,7 @@ override_layer_texture_cb (CoglPipelineLayer *layer, void *user_data)
                                    layer->index,
                                    state->texture);
 
-  return TRUE;
+  return true;
 }
 
 void
@@ -1920,7 +1920,7 @@ _cogl_pipeline_layers_equal (CoglPipeline *authority0,
   int i;
 
   if (authority0->n_layers != authority1->n_layers)
-    return FALSE;
+    return false;
 
   _cogl_pipeline_update_layers_cache (authority0);
   _cogl_pipeline_update_layers_cache (authority1);
@@ -1931,9 +1931,9 @@ _cogl_pipeline_layers_equal (CoglPipeline *authority0,
                                        authority1->layers_cache[i],
                                        differences,
                                        flags))
-        return FALSE;
+        return false;
     }
-  return TRUE;
+  return true;
 }
 
 /* Determine the mask of differences between two pipelines */
@@ -1941,15 +1941,15 @@ unsigned long
 _cogl_pipeline_compare_differences (CoglPipeline *pipeline0,
                                     CoglPipeline *pipeline1)
 {
-  CSList *head0 = NULL;
-  CSList *head1 = NULL;
+  c_slist_t *head0 = NULL;
+  c_slist_t *head1 = NULL;
   CoglPipeline *node0;
   CoglPipeline *node1;
   int len0 = 0;
   int len1 = 0;
   int count;
-  CSList *common_ancestor0;
-  CSList *common_ancestor1;
+  c_slist_t *common_ancestor0;
+  c_slist_t *common_ancestor1;
   unsigned long pipelines_difference = 0;
 
   /* Algorithm:
@@ -1967,7 +1967,7 @@ _cogl_pipeline_compare_differences (CoglPipeline *pipeline0,
 
   for (node0 = pipeline0; node0; node0 = _cogl_pipeline_get_parent (node0))
     {
-      CSList *link = alloca (sizeof (CSList));
+      c_slist_t *link = alloca (sizeof (c_slist_t));
       link->next = head0;
       link->data = node0;
       head0 = link;
@@ -1975,7 +1975,7 @@ _cogl_pipeline_compare_differences (CoglPipeline *pipeline0,
     }
   for (node1 = pipeline1; node1; node1 = _cogl_pipeline_get_parent (node1))
     {
-      CSList *link = alloca (sizeof (CSList));
+      c_slist_t *link = alloca (sizeof (c_slist_t));
       link->next = head1;
       link->data = node1;
       head1 = link;
@@ -2029,7 +2029,7 @@ _cogl_pipeline_resolve_authorities (CoglPipeline *pipeline,
       if (found == 0)
         continue;
 
-      for (i = 0; TRUE; i++)
+      for (i = 0; true; i++)
         {
           unsigned long state = (1L<<i);
 
@@ -2095,14 +2095,14 @@ _cogl_pipeline_equal (CoglPipeline *pipeline0,
 
   if (pipeline0 == pipeline1)
     {
-      ret = TRUE;
+      ret = true;
       goto done;
     }
 
-  ret = FALSE;
+  ret = false;
 
-  _cogl_pipeline_update_real_blend_enable (pipeline0, FALSE);
-  _cogl_pipeline_update_real_blend_enable (pipeline1, FALSE);
+  _cogl_pipeline_update_real_blend_enable (pipeline0, false);
+  _cogl_pipeline_update_real_blend_enable (pipeline1, false);
 
   /* First check non-sparse properties */
 
@@ -2222,7 +2222,7 @@ _cogl_pipeline_equal (CoglPipeline *pipeline0,
     }
   COGL_FLAGS_FOREACH_END;
 
-  ret = TRUE;
+  ret = true;
 done:
   COGL_TIMER_STOP (_cogl_uprof_context, pipeline_equal_timer);
   return ret;
@@ -2264,7 +2264,7 @@ _cogl_pipeline_prune_redundant_ancestry (CoglPipeline *pipeline)
   if (new_parent != _cogl_pipeline_get_parent (pipeline))
     {
       bool is_weak = _cogl_pipeline_is_weak (pipeline);
-      _cogl_pipeline_set_parent (pipeline, new_parent, is_weak ? FALSE : TRUE);
+      _cogl_pipeline_set_parent (pipeline, new_parent, is_weak ? false : true);
     }
 }
 
@@ -2333,7 +2333,7 @@ cogl_pipeline_remove_layer (CoglPipeline *pipeline, int layer_index)
 
   /* Unlike when we query layer info when adding a layer we must
    * always have a complete layers_to_shift list... */
-  layer_info.ignore_shift_layers_if_found = FALSE;
+  layer_info.ignore_shift_layers_if_found = false;
 
   _cogl_pipeline_get_layer_info (authority, &layer_info);
 
@@ -2351,10 +2351,10 @@ cogl_pipeline_remove_layer (CoglPipeline *pipeline, int layer_index)
        * anything else with this layer. */
     }
 
-  _cogl_pipeline_remove_layer_difference (pipeline, layer_info.layer, TRUE);
+  _cogl_pipeline_remove_layer_difference (pipeline, layer_info.layer, true);
   _cogl_pipeline_try_reverting_layers_authority (pipeline, NULL);
 
-  pipeline->dirty_real_blend_enable = TRUE;
+  pipeline->dirty_real_blend_enable = true;
 }
 
 int
@@ -2400,7 +2400,7 @@ void
 _cogl_pipeline_set_static_breadcrumb (CoglPipeline *pipeline,
                                       const char *breadcrumb)
 {
-  pipeline->has_static_breadcrumb = TRUE;
+  pipeline->has_static_breadcrumb = true;
   pipeline->static_breadcrumb = breadcrumb;
 }
 #endif
@@ -2494,7 +2494,7 @@ _cogl_pipeline_hash_layer_cb (CoglPipelineLayer *layer,
         break;
     }
 
-  return TRUE;
+  return true;
 }
 
 void
@@ -2576,7 +2576,7 @@ _cogl_pipeline_hash (CoglPipeline *pipeline,
   state.layer_differences = layer_differences;
   state.flags = flags;
 
-  _cogl_pipeline_update_real_blend_enable (pipeline, FALSE);
+  _cogl_pipeline_update_real_blend_enable (pipeline, false);
 
   /* hash non-sparse state */
 
@@ -2648,7 +2648,7 @@ deep_copy_layer_cb (CoglPipelineLayer *src_layer,
       src_layer = COGL_PIPELINE_LAYER (COGL_NODE (src_layer)->parent);
     }
 
-  return TRUE;
+  return true;
 }
 
 CoglPipeline *
@@ -2663,11 +2663,11 @@ _cogl_pipeline_deep_copy (CoglPipeline *pipeline,
 
   if ((differences & COGL_PIPELINE_STATE_LAYERS))
     {
-      copy_layer_state = TRUE;
+      copy_layer_state = true;
       differences &= ~COGL_PIPELINE_STATE_LAYERS;
     }
   else
-    copy_layer_state = FALSE;
+    copy_layer_state = false;
 
   new = cogl_pipeline_new (ctx);
 
@@ -2718,7 +2718,7 @@ add_layer_to_array_cb (CoglPipelineLayer *layer,
 {
   AddLayersToArrayState *state = user_data;
   state->layers[state->i++] = layer;
-  return TRUE;
+  return true;
 }
 
 /* This tries to find the oldest ancestor whose pipeline and layer

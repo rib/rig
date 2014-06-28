@@ -56,7 +56,7 @@
  * abstract class manually.
  */
 
-static CSList *_cogl_buffer_types;
+static c_slist_t *_cogl_buffer_types;
 
 void
 _cogl_buffer_register_buffer_type (const CoglObjectClass *klass)
@@ -68,16 +68,16 @@ bool
 cogl_is_buffer (void *object)
 {
   const CoglObject *obj = object;
-  CSList *l;
+  c_slist_t *l;
 
   if (object == NULL)
-    return FALSE;
+    return false;
 
   for (l = _cogl_buffer_types; l; l = l->next)
     if (l->data == obj->klass)
-      return TRUE;
+      return true;
 
-  return FALSE;
+  return false;
 }
 
 /*
@@ -110,7 +110,7 @@ malloc_set_data (CoglBuffer *buffer,
                  CoglError **error)
 {
   memcpy (buffer->data + offset, data, size);
-  return TRUE;
+  return true;
 }
 
 void
@@ -121,11 +121,11 @@ _cogl_buffer_initialize (CoglBuffer *buffer,
                          CoglBufferUsageHint usage_hint,
                          CoglBufferUpdateHint update_hint)
 {
-  bool use_malloc = FALSE;
+  bool use_malloc = false;
 
   buffer->context = ctx;
   buffer->flags = COGL_BUFFER_FLAG_NONE;
-  buffer->store_created = FALSE;
+  buffer->store_created = false;
   buffer->size = size;
   buffer->last_target = default_target;
   buffer->usage_hint = usage_hint;
@@ -137,13 +137,13 @@ _cogl_buffer_initialize (CoglBuffer *buffer,
       default_target == COGL_BUFFER_BIND_TARGET_PIXEL_UNPACK)
     {
       if (!_cogl_has_private_feature (ctx, COGL_PRIVATE_FEATURE_PBOS))
-        use_malloc = TRUE;
+        use_malloc = true;
     }
   else if (default_target == COGL_BUFFER_BIND_TARGET_ATTRIBUTE_BUFFER ||
            default_target == COGL_BUFFER_BIND_TARGET_INDEX_BUFFER)
     {
       if (!_cogl_has_private_feature (ctx, COGL_PRIVATE_FEATURE_VBOS))
-        use_malloc = TRUE;
+        use_malloc = true;
     }
 
   if (use_malloc)
@@ -204,7 +204,7 @@ CoglBufferUpdateHint
 cogl_buffer_get_update_hint (CoglBuffer *buffer)
 {
   if (!cogl_is_buffer (buffer))
-    return FALSE;
+    return false;
 
   return buffer->update_hint;
 }
@@ -212,12 +212,12 @@ cogl_buffer_get_update_hint (CoglBuffer *buffer)
 static void
 warn_about_midscene_changes (void)
 {
-  static bool seen = FALSE;
+  static bool seen = false;
   if (!seen)
     {
       c_warning ("Mid-scene modification of buffers has "
                  "undefined results\n");
-      seen = TRUE;
+      seen = true;
     }
 }
 
@@ -285,7 +285,7 @@ _cogl_buffer_map_range_for_fill_or_fallback (CoglBuffer *buffer,
 
   _COGL_RETURN_VAL_IF_FAIL (!ctx->buffer_map_fallback_in_use, NULL);
 
-  ctx->buffer_map_fallback_in_use = TRUE;
+  ctx->buffer_map_fallback_in_use = true;
 
   ret = cogl_buffer_map_range (buffer,
                                offset,
@@ -318,7 +318,7 @@ _cogl_buffer_unmap_for_fill_or_fallback (CoglBuffer *buffer)
 
   _COGL_RETURN_IF_FAIL (ctx->buffer_map_fallback_in_use);
 
-  ctx->buffer_map_fallback_in_use = FALSE;
+  ctx->buffer_map_fallback_in_use = false;
 
   if ((buffer->flags & COGL_BUFFER_FLAG_MAPPED_FALLBACK))
     {
@@ -354,8 +354,8 @@ cogl_buffer_set_data (CoglBuffer *buffer,
                       size_t size,
                       CoglError **error)
 {
-  _COGL_RETURN_VAL_IF_FAIL (cogl_is_buffer (buffer), FALSE);
-  _COGL_RETURN_VAL_IF_FAIL ((offset + size) <= buffer->size, FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (cogl_is_buffer (buffer), false);
+  _COGL_RETURN_VAL_IF_FAIL ((offset + size) <= buffer->size, false);
 
   if (C_UNLIKELY (buffer->immutable_ref))
     warn_about_midscene_changes ();

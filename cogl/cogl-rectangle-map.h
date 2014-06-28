@@ -48,7 +48,7 @@ struct _CoglRectangleMapEntry
 CoglRectangleMap *
 _cogl_rectangle_map_new (unsigned int width,
                          unsigned int height,
-                         CDestroyNotify value_destroy_func);
+                         c_destroy_func_t value_destroy_func);
 
 bool
 _cogl_rectangle_map_add (CoglRectangleMap *map,

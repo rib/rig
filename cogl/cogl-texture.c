@@ -80,7 +80,7 @@ cogl_texture_error_domain (void)
  * abstract class manually.
  */
 
-static CSList *_cogl_texture_types;
+static c_slist_t *_cogl_texture_types;
 
 void
 _cogl_texture_register_texture_type (const CoglObjectClass *klass)
@@ -92,16 +92,16 @@ bool
 cogl_is_texture (void *object)
 {
   CoglObject *obj = (CoglObject *)object;
-  CSList *l;
+  c_slist_t *l;
 
   if (object == NULL)
-    return FALSE;
+    return false;
 
   for (l = _cogl_texture_types; l; l = l->next)
     if (l->data == obj->klass)
-      return TRUE;
+      return true;
 
-  return FALSE;
+  return false;
 }
 
 void
@@ -117,7 +117,7 @@ _cogl_texture_init (CoglTexture *texture,
   texture->max_level = 0;
   texture->width = width;
   texture->height = height;
-  texture->allocated = FALSE;
+  texture->allocated = false;
   texture->vtable = vtable;
   texture->framebuffers = NULL;
 
@@ -138,7 +138,7 @@ _cogl_texture_init (CoglTexture *texture,
    * have to worry about updating the ->components state in
    * _set_premultiplied().
    */
-  texture->premultiplied = TRUE;
+  texture->premultiplied = true;
 }
 
 static void
@@ -193,7 +193,7 @@ _cogl_texture_is_foreign (CoglTexture *texture)
   if (texture->vtable->is_foreign)
     return texture->vtable->is_foreign (texture);
   else
-    return FALSE;
+    return false;
 }
 
 int
@@ -280,10 +280,10 @@ cogl_texture_is_sliced (CoglTexture *texture)
   if (texture->vtable->is_sliced)
     return texture->vtable->is_sliced (texture);
   else
-    return FALSE;
+    return false;
 }
 
-/* If this returns FALSE, that implies _foreach_sub_texture_in_region
+/* If this returns false, that implies _foreach_sub_texture_in_region
  * will be needed to iterate over multiple sub textures for regions whos
  * texture coordinates extend out of the range [0,1]
  */
@@ -295,7 +295,7 @@ _cogl_texture_can_hardware_repeat (CoglTexture *texture)
   if (texture->vtable->can_hardware_repeat)
     return texture->vtable->can_hardware_repeat (texture);
   else
-    return TRUE;
+    return true;
 }
 
 /* NB: You can't use this with textures comprised of multiple sub textures (use
@@ -375,15 +375,15 @@ cogl_texture_set_region_from_bitmap (CoglTexture *texture,
                                      CoglError **error)
 {
   _COGL_RETURN_VAL_IF_FAIL ((cogl_bitmap_get_width (bmp) - src_x)
-                            >= width, FALSE);
+                            >= width, false);
   _COGL_RETURN_VAL_IF_FAIL ((cogl_bitmap_get_height (bmp) - src_y)
-                            >= height, FALSE);
-  _COGL_RETURN_VAL_IF_FAIL (width > 0, FALSE);
-  _COGL_RETURN_VAL_IF_FAIL (height > 0, FALSE);
+                            >= height, false);
+  _COGL_RETURN_VAL_IF_FAIL (width > 0, false);
+  _COGL_RETURN_VAL_IF_FAIL (height > 0, false);
 
   /* Assert that the storage for this texture has been allocated */
   if (!cogl_texture_allocate (texture, error))
-    return FALSE;
+    return false;
 
   /* Note that we don't prepare the bitmap for upload here because
      some backends may be internally using a different format for the
@@ -417,7 +417,7 @@ cogl_texture_set_region (CoglTexture *texture,
   CoglBitmap *source_bmp;
   bool ret;
 
-  _COGL_RETURN_VAL_IF_FAIL (format != COGL_PIXEL_FORMAT_ANY, FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (format != COGL_PIXEL_FORMAT_ANY, false);
 
   /* Rowstride from width if none specified */
   if (rowstride == 0)
@@ -554,7 +554,7 @@ do_texture_draw_and_read (CoglFramebuffer *fb,
                                                COGL_PIXEL_FORMAT_RGBA_8888_PRE,
                                                error);
           if (!rect_bmp)
-            return FALSE;
+            return false;
 
           if (!cogl_framebuffer_read_pixels_into_bitmap
                                                (fb,
@@ -564,7 +564,7 @@ do_texture_draw_and_read (CoglFramebuffer *fb,
                                                 error))
             {
               cogl_object_unref (rect_bmp);
-              return FALSE;
+              return false;
             }
 
           /* Copy to target bitmap */
@@ -577,7 +577,7 @@ do_texture_draw_and_read (CoglFramebuffer *fb,
                                             error))
             {
               cogl_object_unref (rect_bmp);
-              return FALSE;
+              return false;
             }
 
           /* Free temp bitmap */
@@ -585,7 +585,7 @@ do_texture_draw_and_read (CoglFramebuffer *fb,
         }
     }
 
-  return TRUE;
+  return true;
 }
 
 bool
@@ -597,7 +597,7 @@ cogl_texture_draw_and_read_to_bitmap (CoglTexture *texture,
   CoglContext *ctx = framebuffer->context;
   float save_viewport[4];
   float viewport[4];
-  bool status = FALSE;
+  bool status = false;
 
   viewport[0] = 0;
   viewport[1] = 0;
@@ -640,7 +640,7 @@ cogl_texture_draw_and_read_to_bitmap (CoglTexture *texture,
                                  ctx->texture_download_pipeline,
                                  texture, target_bmp, viewport,
                                  error))
-    return FALSE;
+    return false;
 
   /* XXX: As an alleged PowerVR driver bug workaround where the driver
    * is apparently not maintaining the alpha component of some
@@ -727,7 +727,7 @@ cogl_texture_draw_and_read_to_bitmap (CoglTexture *texture,
       cogl_object_unref (alpha_bmp);
     }
 
-  status = TRUE;
+  status = true;
 
 EXIT:
   /* Restore old state */
@@ -762,7 +762,7 @@ get_texture_bits_via_offscreen (CoglTexture *meta_texture,
   CoglPixelFormat real_format;
 
   if (!cogl_has_feature (ctx, COGL_FEATURE_ID_OFFSCREEN))
-    return FALSE;
+    return false;
 
   offscreen = _cogl_offscreen_new_with_texture_full
                                       (sub_texture,
@@ -773,7 +773,7 @@ get_texture_bits_via_offscreen (CoglTexture *meta_texture,
   if (!cogl_framebuffer_allocate (framebuffer, &ignore_error))
     {
       cogl_error_free (ignore_error);
-      return FALSE;
+      return false;
     }
 
   /* Currently the framebuffer's internal format corresponds to the
@@ -823,7 +823,7 @@ get_texture_bits_via_copy (CoglTexture *texture,
 {
   unsigned int full_rowstride;
   uint8_t *full_bits;
-  bool ret = TRUE;
+  bool ret = true;
   int bpp;
   int full_tex_width, full_tex_height;
 
@@ -852,7 +852,7 @@ get_texture_bits_via_copy (CoglTexture *texture,
         }
     }
   else
-    ret = FALSE;
+    ret = false;
 
   c_free (full_bits);
 
@@ -936,7 +936,7 @@ texture_get_cb (CoglTexture *subtexture,
 
   /* No luck, the caller will fall back to the draw-to-backbuffer and
    * read implementation */
-  tg_data->success = FALSE;
+  tg_data->success = false;
 }
 
 int
@@ -1050,7 +1050,7 @@ cogl_texture_get_data (CoglTexture *texture,
       tg_data.orig_height = tex_height;
       tg_data.target_bmp = target_bmp;
       tg_data.error = NULL;
-      tg_data.success = TRUE;
+      tg_data.success = true;
 
       /* If there are any dependent framebuffers on the texture then we
          need to flush their journals so the texture contents will be
@@ -1073,7 +1073,7 @@ cogl_texture_get_data (CoglTexture *texture,
   else
     {
       cogl_error_free (ignore_error);
-      tg_data.success = FALSE;
+      tg_data.success = false;
     }
 
   /* XXX: In some cases this api may fail to read back the texture
@@ -1143,7 +1143,7 @@ _cogl_texture_associate_framebuffer (CoglTexture *texture,
                               _cogl_texture_framebuffer_destroy_cb);
 }
 
-const CList *
+const c_list_t *
 _cogl_texture_get_associated_framebuffers (CoglTexture *texture)
 {
   return texture->framebuffers;
@@ -1152,7 +1152,7 @@ _cogl_texture_get_associated_framebuffers (CoglTexture *texture)
 void
 _cogl_texture_flush_journal_rendering (CoglTexture *texture)
 {
-  CList *l;
+  c_list_t *l;
 
   /* It could be that a referenced texture is part of a framebuffer
    * which has an associated journal that must be flushed before it
@@ -1285,7 +1285,7 @@ _cogl_texture_set_allocated (CoglTexture *texture,
 
   texture->width = width;
   texture->height = height;
-  texture->allocated = TRUE;
+  texture->allocated = true;
 
   _cogl_texture_free_loader (texture);
 }
@@ -1295,7 +1295,7 @@ cogl_texture_allocate (CoglTexture *texture,
                        CoglError **error)
 {
   if (texture->allocated)
-    return TRUE;
+    return true;
 
   if (texture->components == COGL_TEXTURE_COMPONENTS_RG &&
       !cogl_has_feature (texture->context, COGL_FEATURE_ID_TEXTURE_RG))
@@ -1314,7 +1314,7 @@ void
 _cogl_texture_set_internal_format (CoglTexture *texture,
                                    CoglPixelFormat internal_format)
 {
-  texture->premultiplied = FALSE;
+  texture->premultiplied = false;
 
   if (internal_format == COGL_PIXEL_FORMAT_ANY)
     internal_format = COGL_PIXEL_FORMAT_RGBA_8888_PRE;
@@ -1338,7 +1338,7 @@ _cogl_texture_set_internal_format (CoglTexture *texture,
     {
       texture->components = COGL_TEXTURE_COMPONENTS_RGBA;
       if (internal_format & COGL_PREMULT_BIT)
-        texture->premultiplied = TRUE;
+        texture->premultiplied = true;
       return;
     }
   else

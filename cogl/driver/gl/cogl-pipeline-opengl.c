@@ -77,13 +77,13 @@ texture_unit_init (CoglContext *ctx,
   unit->enabled_gl_target = 0;
   unit->gl_texture = 0;
   unit->gl_target = 0;
-  unit->is_foreign = FALSE;
-  unit->dirty_gl_texture = FALSE;
+  unit->is_foreign = false;
+  unit->dirty_gl_texture = false;
   unit->matrix_stack = cogl_matrix_stack_new (ctx);
 
   unit->layer = NULL;
   unit->layer_changes_since_flush = 0;
-  unit->texture_storage_changed = FALSE;
+  unit->texture_storage_changed = false;
 }
 
 static void
@@ -129,7 +129,7 @@ _cogl_destroy_texture_units (void)
         &c_array_index (ctx->texture_units, CoglTextureUnit, i);
       texture_unit_free (unit);
     }
-  c_array_free (ctx->texture_units, TRUE);
+  c_array_free (ctx->texture_units, true);
 }
 
 void
@@ -193,7 +193,7 @@ _cogl_bind_gl_texture_transient (GLenum gl_target,
 
   GE (ctx, glBindTexture (gl_target, gl_texture));
 
-  unit->dirty_gl_texture = TRUE;
+  unit->dirty_gl_texture = true;
   unit->is_foreign = is_foreign;
 }
 
@@ -213,7 +213,7 @@ _cogl_delete_gl_texture (GLuint gl_texture)
         {
           unit->gl_texture = 0;
           unit->gl_target = 0;
-          unit->dirty_gl_texture = FALSE;
+          unit->dirty_gl_texture = false;
         }
     }
 
@@ -239,7 +239,7 @@ _cogl_pipeline_texture_storage_change_notify (CoglTexture *texture)
 
       if (unit->layer &&
           _cogl_pipeline_layer_get_texture (unit->layer) == texture)
-        unit->texture_storage_changed = TRUE;
+        unit->texture_storage_changed = true;
 
       /* NB: the texture may be bound to multiple texture units so
        * we continue to check the rest */
@@ -290,7 +290,7 @@ flush_depth_state (CoglContext *ctx,
 
   if (ctx->depth_test_enabled_cache != depth_state->test_enabled)
     {
-      if (depth_state->test_enabled == TRUE)
+      if (depth_state->test_enabled == true)
         GE (ctx, glEnable (GL_DEPTH_TEST));
       else
         GE (ctx, glDisable (GL_DEPTH_TEST));
@@ -298,7 +298,7 @@ flush_depth_state (CoglContext *ctx,
     }
 
   if (ctx->depth_test_function_cache != depth_state->test_function &&
-      depth_state->test_enabled == TRUE)
+      depth_state->test_enabled == true)
     {
       GE (ctx, glDepthFunc (depth_state->test_function));
       ctx->depth_test_function_cache = depth_state->test_function;
@@ -307,7 +307,7 @@ flush_depth_state (CoglContext *ctx,
   if (ctx->depth_writing_enabled_cache != depth_writing_enabled)
     {
       GE (ctx, glDepthMask (depth_writing_enabled ?
-                            GL_TRUE : GL_FALSE));
+                            GL_TRUE : FALSE));
       ctx->depth_writing_enabled_cache = depth_writing_enabled;
     }
 
@@ -437,15 +437,15 @@ flush_layers_common_gl_state_cb (CoglPipelineLayer *layer, void *user_data)
    */
   if (C_UNLIKELY (unit_index >= get_max_activateable_texture_units (ctx)))
     {
-      static bool shown_warning = FALSE;
+      static bool shown_warning = false;
 
       if (!shown_warning)
         {
           c_warning ("Your hardware does not have enough texture units"
                      "to handle this many texture layers");
-          shown_warning = TRUE;
+          shown_warning = true;
         }
-      return FALSE;
+      return false;
     }
 
   if (layers_difference & COGL_PIPELINE_LAYER_STATE_TEXTURE_DATA)
@@ -499,7 +499,7 @@ flush_layers_common_gl_state_cb (CoglPipelineLayer *layer, void *user_data)
       if (unit->gl_texture != gl_texture || unit->is_foreign)
         {
           if (unit_index == 1)
-            unit->dirty_gl_texture = TRUE;
+            unit->dirty_gl_texture = true;
           else
             GE (ctx, glBindTexture (gl_target, gl_texture));
           unit->gl_texture = gl_texture;
@@ -512,7 +512,7 @@ flush_layers_common_gl_state_cb (CoglPipelineLayer *layer, void *user_data)
        * CoglTexture's underlying GL texture storage has changed since
        * it was flushed to the texture unit. We've just flushed the
        * latest state so we can reset this. */
-      unit->texture_storage_changed = FALSE;
+      unit->texture_storage_changed = false;
     }
 
   if ((layers_difference & COGL_PIPELINE_LAYER_STATE_SAMPLER) &&
@@ -534,7 +534,7 @@ flush_layers_common_gl_state_cb (CoglPipelineLayer *layer, void *user_data)
 
   flush_state->i++;
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -835,7 +835,7 @@ compare_layer_differences_cb (CoglPipelineLayer *layer, void *user_data)
 
   state->i++;
 
-  return TRUE;
+  return true;
 }
 
 typedef struct
@@ -864,14 +864,14 @@ vertend_add_layer_cb (CoglPipelineLayer *layer,
                                     layer,
                                     state->layer_differences[unit_index],
                                     state->framebuffer)))
-    state->added_layer = TRUE;
+    state->added_layer = true;
   else
     {
-      state->error_adding_layer = TRUE;
-      return FALSE;
+      state->error_adding_layer = true;
+      return false;
     }
 
-  return TRUE;
+  return true;
 }
 
 static bool
@@ -888,14 +888,14 @@ fragend_add_layer_cb (CoglPipelineLayer *layer,
   if (C_LIKELY (fragend->add_layer (pipeline,
                                     layer,
                                     state->layer_differences[unit_index])))
-    state->added_layer = TRUE;
+    state->added_layer = true;
   else
     {
-      state->error_adding_layer = TRUE;
-      return FALSE;
+      state->error_adding_layer = true;
+      return false;
     }
 
-  return TRUE;
+  return true;
 }
 
 /*
@@ -1101,8 +1101,8 @@ _cogl_pipeline_flush_gl_state (CoglContext *ctx,
       state.vertend = vertend;
       state.pipeline = pipeline;
       state.layer_differences = layer_differences;
-      state.error_adding_layer = FALSE;
-      state.added_layer = FALSE;
+      state.error_adding_layer = false;
+      state.added_layer = false;
 
       _cogl_pipeline_foreach_layer_internal (pipeline,
                                              vertend_add_layer_cb,
@@ -1221,7 +1221,7 @@ done:
     {
       _cogl_set_active_texture_unit (1);
       GE (ctx, glBindTexture (unit1->gl_target, unit1->gl_texture));
-      unit1->dirty_gl_texture = FALSE;
+      unit1->dirty_gl_texture = false;
     }
 
   COGL_TIMER_STOP (_cogl_uprof_context, pipeline_flush_timer);

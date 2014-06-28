@@ -89,11 +89,11 @@ _cogl_winsys_renderer_connect (CoglRenderer *renderer,
   if (!_cogl_winsys_egl_renderer_connect_common (renderer, error))
     goto error;
 
-  return TRUE;
+  return true;
 
 error:
   _cogl_winsys_renderer_disconnect (renderer);
-  return FALSE;
+  return false;
 }
 
 static bool
@@ -157,13 +157,13 @@ _cogl_winsys_egl_context_created (CoglDisplay *display,
                    EGL_HEIGHT,
                    &android_display->egl_surface_height);
 
-  return TRUE;
+  return true;
 
  fail:
   _cogl_set_error (error, COGL_WINSYS_ERROR,
                COGL_WINSYS_ERROR_CREATE_CONTEXT,
                "%s", error_message);
-  return FALSE;
+  return false;
 }
 
 static bool
@@ -176,7 +176,7 @@ _cogl_winsys_egl_display_setup (CoglDisplay *display,
   android_display = c_slice_new0 (CoglDisplayAndroid);
   egl_display->platform = android_display;
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -204,7 +204,7 @@ _cogl_winsys_egl_onscreen_init (CoglOnscreen *onscreen,
       _cogl_set_error (error, COGL_WINSYS_ERROR,
                    COGL_WINSYS_ERROR_CREATE_ONSCREEN,
                    "EGL platform only supports a single onscreen window");
-      return FALSE;
+      return false;
     }
 
   egl_onscreen->egl_surface = egl_display->egl_surface;
@@ -213,9 +213,9 @@ _cogl_winsys_egl_onscreen_init (CoglOnscreen *onscreen,
                                         android_display->egl_surface_width,
                                         android_display->egl_surface_height);
 
-  android_display->have_onscreen = TRUE;
+  android_display->have_onscreen = true;
 
-  return TRUE;
+  return true;
 }
 
 void
@@ -239,7 +239,7 @@ _cogl_winsys_egl_vtable =
 const CoglWinsysVtable *
 _cogl_winsys_egl_android_get_vtable (void)
 {
-  static bool vtable_inited = FALSE;
+  static bool vtable_inited = false;
   static CoglWinsysVtable vtable;
 
   if (!vtable_inited)
@@ -255,7 +255,7 @@ _cogl_winsys_egl_android_get_vtable (void)
       vtable.renderer_connect = _cogl_winsys_renderer_connect;
       vtable.renderer_disconnect = _cogl_winsys_renderer_disconnect;
 
-      vtable_inited = TRUE;
+      vtable_inited = true;
     }
 
   return &vtable;

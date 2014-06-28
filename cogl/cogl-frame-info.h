@@ -51,8 +51,8 @@ typedef struct _CoglFrameInfo CoglFrameInfo;
  *
  * Gets whether the given object references a #CoglFrameInfo.
  *
- * Return value: %TRUE if the object references a #CoglFrameInfo
- *   and %FALSE otherwise.
+ * Return value: %true if the object references a #CoglFrameInfo
+ *   and %false otherwise.
  * Since: 2.0
  * Stability: unstable
  */

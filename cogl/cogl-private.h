@@ -139,9 +139,9 @@ _cogl_pixel_format_get_bytes_per_pixel (CoglPixelFormat format);
  * to write them to an RGBA_8888 pixel then the bytes can be
  * written sequentially regardless of the endianness.
  *
- * Return value: %TRUE if you need to consider the host CPU
+ * Return value: %true if you need to consider the host CPU
  *               endianness when dealing with the given @format
- *               else %FALSE.
+ *               else %false.
  */
 bool
 _cogl_pixel_format_is_endian_dependant (CoglPixelFormat format);
@@ -150,7 +150,7 @@ _cogl_pixel_format_is_endian_dependant (CoglPixelFormat format);
  * COGL_PIXEL_FORMAT_CAN_HAVE_PREMULT(format):
  * @format: a #CoglPixelFormat
  *
- * Returns TRUE if the pixel format can take a premult bit. This is
+ * Returns true if the pixel format can take a premult bit. This is
  * currently true for all formats that have an alpha channel except
  * COGL_PIXEL_FORMAT_A_8 (because that doesn't have any other
  * components to multiply by the alpha).

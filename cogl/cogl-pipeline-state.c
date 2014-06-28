@@ -91,27 +91,27 @@ _cogl_pipeline_blend_state_equal (CoglPipeline *authority0,
   CoglPipelineBlendState *blend_state0 = &authority0->big_state->blend_state;
   CoglPipelineBlendState *blend_state1 = &authority1->big_state->blend_state;
 
-  _COGL_GET_CONTEXT (ctx, FALSE);
+  _COGL_GET_CONTEXT (ctx, false);
 
   if (blend_state0->blend_equation_rgb != blend_state1->blend_equation_rgb)
-    return FALSE;
+    return false;
 
   if (blend_state0->blend_equation_alpha !=
       blend_state1->blend_equation_alpha)
-    return FALSE;
+    return false;
   if (blend_state0->blend_src_factor_alpha !=
       blend_state1->blend_src_factor_alpha)
-    return FALSE;
+    return false;
   if (blend_state0->blend_dst_factor_alpha !=
       blend_state1->blend_dst_factor_alpha)
-    return FALSE;
+    return false;
 
   if (blend_state0->blend_src_factor_rgb !=
       blend_state1->blend_src_factor_rgb)
-    return FALSE;
+    return false;
   if (blend_state0->blend_dst_factor_rgb !=
       blend_state1->blend_dst_factor_rgb)
-    return FALSE;
+    return false;
 
   if (blend_state0->blend_src_factor_rgb == GL_ONE_MINUS_CONSTANT_COLOR ||
       blend_state0->blend_src_factor_rgb == GL_CONSTANT_COLOR ||
@@ -120,19 +120,19 @@ _cogl_pipeline_blend_state_equal (CoglPipeline *authority0,
     {
       if (!cogl_color_equal (&blend_state0->blend_constant,
                              &blend_state1->blend_constant))
-        return FALSE;
+        return false;
     }
 
-  return TRUE;
+  return true;
 }
 
 bool
 _cogl_pipeline_depth_state_equal (CoglPipeline *authority0,
                                   CoglPipeline *authority1)
 {
-  if (authority0->big_state->depth_state.test_enabled == FALSE &&
-      authority1->big_state->depth_state.test_enabled == FALSE)
-    return TRUE;
+  if (authority0->big_state->depth_state.test_enabled == false &&
+      authority1->big_state->depth_state.test_enabled == false)
+    return true;
   else
     {
       CoglDepthState *s0 = &authority0->big_state->depth_state;
@@ -216,7 +216,7 @@ get_uniforms_cb (int uniform_num, void *user_data)
 
   data->override_count++;
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -260,10 +260,10 @@ _cogl_pipeline_uniforms_state_equal (CoglPipeline *authority0,
   int n_longs;
   int i;
 
-  _COGL_GET_CONTEXT (ctx, FALSE);
+  _COGL_GET_CONTEXT (ctx, false);
 
   if (authority0 == authority1)
-    return TRUE;
+    return true;
 
   values0 = c_alloca (sizeof (const CoglBoxedValue *) * ctx->n_uniform_names);
   values1 = c_alloca (sizeof (const CoglBoxedValue *) * ctx->n_uniform_names);
@@ -286,19 +286,19 @@ _cogl_pipeline_uniforms_state_equal (CoglPipeline *authority0,
       if (value0 == NULL)
         {
           if (value1 != NULL && value1->type != COGL_BOXED_NONE)
-            return FALSE;
+            return false;
         }
       else if (value1 == NULL)
         {
           if (value0 != NULL && value0->type != COGL_BOXED_NONE)
-            return FALSE;
+            return false;
         }
       else if (!_cogl_boxed_value_equal (value0, value1))
-        return FALSE;
+        return false;
     }
   COGL_FLAGS_FOREACH_END;
 
-  return TRUE;
+  return true;
 }
 
 bool
@@ -354,14 +354,14 @@ cogl_pipeline_set_color (CoglPipeline    *pipeline,
    * - If the pipeline isn't currently an authority for the state being
    *   changed, then initialize that state from the current authority.
    */
-  _cogl_pipeline_pre_change_notify (pipeline, state, color, FALSE);
+  _cogl_pipeline_pre_change_notify (pipeline, state, color, false);
 
   pipeline->color = *color;
 
   _cogl_pipeline_update_authority (pipeline, authority, state,
                                    _cogl_pipeline_color_equal);
 
-  pipeline->dirty_real_blend_enable = TRUE;
+  pipeline->dirty_real_blend_enable = true;
 }
 
 void
@@ -393,7 +393,7 @@ _cogl_pipeline_get_blend_enabled (CoglPipeline *pipeline)
 {
   CoglPipeline *authority;
 
-  _COGL_RETURN_VAL_IF_FAIL (cogl_is_pipeline (pipeline), FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (cogl_is_pipeline (pipeline), false);
 
   authority =
     _cogl_pipeline_get_authority (pipeline, COGL_PIPELINE_STATE_BLEND_ENABLE);
@@ -404,7 +404,7 @@ static bool
 _cogl_pipeline_blend_enable_equal (CoglPipeline *authority0,
                                    CoglPipeline *authority1)
 {
-  return authority0->blend_enable == authority1->blend_enable ? TRUE : FALSE;
+  return authority0->blend_enable == authority1->blend_enable ? true : false;
 }
 
 void
@@ -416,7 +416,7 @@ _cogl_pipeline_set_blend_enabled (CoglPipeline *pipeline,
 
   _COGL_RETURN_IF_FAIL (cogl_is_pipeline (pipeline));
   _COGL_RETURN_IF_FAIL (enable > 1 &&
-                        "don't pass TRUE or FALSE to _set_blend_enabled!");
+                        "don't pass true or false to _set_blend_enabled!");
 
   authority = _cogl_pipeline_get_authority (pipeline, state);
 
@@ -428,14 +428,14 @@ _cogl_pipeline_set_blend_enabled (CoglPipeline *pipeline,
    * - If the pipeline isn't currently an authority for the state being
    *   changed, then initialize that state from the current authority.
    */
-  _cogl_pipeline_pre_change_notify (pipeline, state, NULL, FALSE);
+  _cogl_pipeline_pre_change_notify (pipeline, state, NULL, false);
 
   pipeline->blend_enable = enable;
 
   _cogl_pipeline_update_authority (pipeline, authority, state,
                                    _cogl_pipeline_blend_enable_equal);
 
-  pipeline->dirty_real_blend_enable = TRUE;
+  pipeline->dirty_real_blend_enable = true;
 }
 
 static void
@@ -459,7 +459,7 @@ _cogl_pipeline_set_alpha_test_function (CoglPipeline *pipeline,
    * - If the pipeline isn't currently an authority for the state being
    *   changed, then initialize that state from the current authority.
    */
-  _cogl_pipeline_pre_change_notify (pipeline, state, NULL, FALSE);
+  _cogl_pipeline_pre_change_notify (pipeline, state, NULL, false);
 
   alpha_state = &pipeline->big_state->alpha_state;
   alpha_state->alpha_func = alpha_func;
@@ -489,7 +489,7 @@ _cogl_pipeline_set_alpha_test_function_reference (CoglPipeline *pipeline,
    * - If the pipeline isn't currently an authority for the state being
    *   changed, then initialize that state from the current authority.
    */
-  _cogl_pipeline_pre_change_notify (pipeline, state, NULL, FALSE);
+  _cogl_pipeline_pre_change_notify (pipeline, state, NULL, false);
 
   alpha_state = &pipeline->big_state->alpha_state;
   alpha_state->alpha_func_reference = alpha_reference;
@@ -639,9 +639,9 @@ cogl_pipeline_set_blend (CoglPipeline *pipeline,
   int count;
   CoglPipelineBlendState *blend_state;
 
-  _COGL_GET_CONTEXT (ctx, FALSE);
+  _COGL_GET_CONTEXT (ctx, false);
 
-  _COGL_RETURN_VAL_IF_FAIL (cogl_is_pipeline (pipeline), FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (cogl_is_pipeline (pipeline), false);
 
   count = _cogl_blend_string_compile (ctx,
                                       blend_description,
@@ -649,7 +649,7 @@ cogl_pipeline_set_blend (CoglPipeline *pipeline,
                                       statements,
                                       error);
   if (!count)
-    return FALSE;
+    return false;
 
   if (count == 1)
     rgb = a = statements;
@@ -667,7 +667,7 @@ cogl_pipeline_set_blend (CoglPipeline *pipeline,
    * - If the pipeline isn't currently an authority for the state being
    *   changed, then initialize that state from the current authority.
    */
-  _cogl_pipeline_pre_change_notify (pipeline, state, NULL, FALSE);
+  _cogl_pipeline_pre_change_notify (pipeline, state, NULL, false);
 
   blend_state = &pipeline->big_state->blend_state;
 
@@ -703,9 +703,9 @@ cogl_pipeline_set_blend (CoglPipeline *pipeline,
       _cogl_pipeline_prune_redundant_ancestry (pipeline);
     }
 
-  pipeline->dirty_real_blend_enable = TRUE;
+  pipeline->dirty_real_blend_enable = true;
 
-  return TRUE;
+  return true;
 }
 
 void
@@ -736,7 +736,7 @@ cogl_pipeline_set_blend_constant (CoglPipeline *pipeline,
      * - If the pipeline isn't currently an authority for the state being
      *   changed, then initialize that state from the current authority.
      */
-    _cogl_pipeline_pre_change_notify (pipeline, state, NULL, FALSE);
+    _cogl_pipeline_pre_change_notify (pipeline, state, NULL, false);
 
     blend_state = &pipeline->big_state->blend_state;
     blend_state->blend_constant = *constant_color;
@@ -744,7 +744,7 @@ cogl_pipeline_set_blend_constant (CoglPipeline *pipeline,
     _cogl_pipeline_update_authority (pipeline, authority, state,
                                      _cogl_pipeline_blend_state_equal);
 
-    pipeline->dirty_real_blend_enable = TRUE;
+    pipeline->dirty_real_blend_enable = true;
   }
 #endif
 }
@@ -758,10 +758,10 @@ cogl_pipeline_set_depth_state (CoglPipeline *pipeline,
   CoglPipeline *authority;
   CoglDepthState *orig_state;
 
-  _COGL_GET_CONTEXT (ctx, FALSE);
+  _COGL_GET_CONTEXT (ctx, false);
 
-  _COGL_RETURN_VAL_IF_FAIL (cogl_is_pipeline (pipeline), FALSE);
-  _COGL_RETURN_VAL_IF_FAIL (depth_state->magic == COGL_DEPTH_STATE_MAGIC, FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (cogl_is_pipeline (pipeline), false);
+  _COGL_RETURN_VAL_IF_FAIL (depth_state->magic == COGL_DEPTH_STATE_MAGIC, false);
 
   authority = _cogl_pipeline_get_authority (pipeline, state);
 
@@ -771,21 +771,21 @@ cogl_pipeline_set_depth_state (CoglPipeline *pipeline,
       orig_state->test_function == depth_state->test_function &&
       orig_state->range_near == depth_state->range_near &&
       orig_state->range_far == depth_state->range_far)
-    return TRUE;
+    return true;
 
   /* - Flush journal primitives referencing the current state.
    * - Make sure the pipeline has no dependants so it may be modified.
    * - If the pipeline isn't currently an authority for the state being
    *   changed, then initialize that state from the current authority.
    */
-  _cogl_pipeline_pre_change_notify (pipeline, state, NULL, FALSE);
+  _cogl_pipeline_pre_change_notify (pipeline, state, NULL, false);
 
   pipeline->big_state->depth_state = *depth_state;
 
   _cogl_pipeline_update_authority (pipeline, authority, state,
                                    _cogl_pipeline_depth_state_equal);
 
-  return TRUE;
+  return true;
 }
 
 void
@@ -835,7 +835,7 @@ cogl_pipeline_set_color_mask (CoglPipeline *pipeline,
    * - If the pipeline isn't currently an authority for the state being
    *   changed, then initialize that state from the current authority.
    */
-  _cogl_pipeline_pre_change_notify (pipeline, state, NULL, FALSE);
+  _cogl_pipeline_pre_change_notify (pipeline, state, NULL, false);
 
   logic_ops_state = &pipeline->big_state->logic_ops_state;
   logic_ops_state->color_mask = color_mask;
@@ -866,7 +866,7 @@ cogl_pipeline_set_cull_face_mode (CoglPipeline *pipeline,
    * - If the pipeline isn't currently an authority for the state being
    *   changed, then initialize that state from the current authority.
    */
-  _cogl_pipeline_pre_change_notify (pipeline, state, NULL, FALSE);
+  _cogl_pipeline_pre_change_notify (pipeline, state, NULL, false);
 
   pipeline->big_state->cull_face_state.mode = cull_face_mode;
 
@@ -896,7 +896,7 @@ cogl_pipeline_set_front_face_winding (CoglPipeline *pipeline,
    * - If the pipeline isn't currently an authority for the state being
    *   changed, then initialize that state from the current authority.
    */
-  _cogl_pipeline_pre_change_notify (pipeline, state, NULL, FALSE);
+  _cogl_pipeline_pre_change_notify (pipeline, state, NULL, false);
 
   pipeline->big_state->cull_face_state.front_winding = front_winding;
 
@@ -937,7 +937,7 @@ cogl_pipeline_get_point_size (CoglPipeline *pipeline)
 {
   CoglPipeline *authority;
 
-  _COGL_RETURN_VAL_IF_FAIL (cogl_is_pipeline (pipeline), FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (cogl_is_pipeline (pipeline), false);
 
   authority =
     _cogl_pipeline_get_authority (pipeline, COGL_PIPELINE_STATE_POINT_SIZE);
@@ -961,7 +961,7 @@ _cogl_pipeline_set_non_zero_point_size (CoglPipeline *pipeline,
    * - If the pipeline isn't currently an authority for the state being
    *   changed, then initialize that state from the current authority.
    */
-  _cogl_pipeline_pre_change_notify (pipeline, state, NULL, FALSE);
+  _cogl_pipeline_pre_change_notify (pipeline, state, NULL, false);
 
   pipeline->big_state->non_zero_point_size = !!value;
 
@@ -994,7 +994,7 @@ cogl_pipeline_set_point_size (CoglPipeline *pipeline,
    * - If the pipeline isn't currently an authority for the state being
    *   changed, then initialize that state from the current authority.
    */
-  _cogl_pipeline_pre_change_notify (pipeline, state, NULL, FALSE);
+  _cogl_pipeline_pre_change_notify (pipeline, state, NULL, false);
 
   pipeline->big_state->point_size = point_size;
 
@@ -1010,15 +1010,15 @@ cogl_pipeline_set_per_vertex_point_size (CoglPipeline *pipeline,
   CoglPipelineState state = COGL_PIPELINE_STATE_PER_VERTEX_POINT_SIZE;
   CoglPipeline *authority;
 
-  _COGL_GET_CONTEXT (ctx, FALSE);
-  _COGL_RETURN_VAL_IF_FAIL (cogl_is_pipeline (pipeline), FALSE);
+  _COGL_GET_CONTEXT (ctx, false);
+  _COGL_RETURN_VAL_IF_FAIL (cogl_is_pipeline (pipeline), false);
 
   authority = _cogl_pipeline_get_authority (pipeline, state);
 
   enable = !!enable;
 
   if (authority->big_state->per_vertex_point_size == enable)
-    return TRUE;
+    return true;
 
   if (enable && !cogl_has_feature (ctx, COGL_FEATURE_ID_PER_VERTEX_POINT_SIZE))
     {
@@ -1027,7 +1027,7 @@ cogl_pipeline_set_per_vertex_point_size (CoglPipeline *pipeline,
                        COGL_SYSTEM_ERROR_UNSUPPORTED,
                        "Per-vertex point size is not supported");
 
-      return FALSE;
+      return false;
     }
 
   /* - Flush journal primitives referencing the current state.
@@ -1035,14 +1035,14 @@ cogl_pipeline_set_per_vertex_point_size (CoglPipeline *pipeline,
    * - If the pipeline isn't currently an authority for the state being
    *   changed, then initialize that state from the current authority.
    */
-  _cogl_pipeline_pre_change_notify (pipeline, state, NULL, FALSE);
+  _cogl_pipeline_pre_change_notify (pipeline, state, NULL, false);
 
   pipeline->big_state->per_vertex_point_size = enable;
 
   _cogl_pipeline_update_authority (pipeline, authority, state,
                                    _cogl_pipeline_point_size_equal);
 
-  return TRUE;
+  return true;
 }
 
 bool
@@ -1050,7 +1050,7 @@ cogl_pipeline_get_per_vertex_point_size (CoglPipeline *pipeline)
 {
   CoglPipeline *authority;
 
-  _COGL_RETURN_VAL_IF_FAIL (cogl_is_pipeline (pipeline), FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (cogl_is_pipeline (pipeline), false);
 
   authority =
     _cogl_pipeline_get_authority (pipeline,
@@ -1078,7 +1078,7 @@ _cogl_pipeline_override_uniform (CoglPipeline *pipeline,
    * - If the pipeline isn't currently an authority for the state being
    *   changed, then initialize that state from the current authority.
    */
-  _cogl_pipeline_pre_change_notify (pipeline, state, NULL, FALSE);
+  _cogl_pipeline_pre_change_notify (pipeline, state, NULL, false);
 
   uniforms_state = &pipeline->big_state->uniforms_state;
 
@@ -1087,7 +1087,7 @@ _cogl_pipeline_override_uniform (CoglPipeline *pipeline,
   override_index = _cogl_bitmask_popcount_upto (&uniforms_state->override_mask,
                                                 location);
 
-  _cogl_bitmask_set (&uniforms_state->changed_mask, location, TRUE);
+  _cogl_bitmask_set (&uniforms_state->changed_mask, location, true);
 
   /* If this pipeline already has an override for this value then we
      can just use it directly */
@@ -1126,7 +1126,7 @@ _cogl_pipeline_override_uniform (CoglPipeline *pipeline,
 
   _cogl_boxed_value_init (uniforms_state->override_values + override_index);
 
-  _cogl_bitmask_set (&uniforms_state->override_mask, location, TRUE);
+  _cogl_bitmask_set (&uniforms_state->override_mask, location, true);
 
   return uniforms_state->override_values + override_index;
 }
@@ -1213,7 +1213,7 @@ _cogl_pipeline_add_vertex_snippet (CoglPipeline *pipeline,
    * - If the pipeline isn't currently an authority for the state being
    *   changed, then initialize that state from the current authority.
    */
-  _cogl_pipeline_pre_change_notify (pipeline, state, NULL, FALSE);
+  _cogl_pipeline_pre_change_notify (pipeline, state, NULL, false);
 
   _cogl_pipeline_snippet_list_add (&pipeline->big_state->vertex_snippets,
                                    snippet);
@@ -1230,7 +1230,7 @@ _cogl_pipeline_add_fragment_snippet (CoglPipeline *pipeline,
    * - If the pipeline isn't currently an authority for the state being
    *   changed, then initialize that state from the current authority.
    */
-  _cogl_pipeline_pre_change_notify (pipeline, state, NULL, FALSE);
+  _cogl_pipeline_pre_change_notify (pipeline, state, NULL, false);
 
   _cogl_pipeline_snippet_list_add (&pipeline->big_state->fragment_snippets,
                                    snippet);
@@ -1271,20 +1271,20 @@ check_layer_has_vertex_snippet (CoglPipelineLayer *layer,
 
   if (authority->big_state->vertex_snippets.entries)
     {
-      *found_vertex_snippet = TRUE;
-      return FALSE;
+      *found_vertex_snippet = true;
+      return false;
     }
 
-  return TRUE;
+  return true;
 }
 
 bool
 _cogl_pipeline_has_vertex_snippets (CoglPipeline *pipeline)
 {
-  bool found_vertex_snippet = FALSE;
+  bool found_vertex_snippet = false;
 
   if (_cogl_pipeline_has_non_layer_vertex_snippets (pipeline))
-    return TRUE;
+    return true;
 
   _cogl_pipeline_foreach_layer_internal (pipeline,
                                          check_layer_has_vertex_snippet,
@@ -1314,20 +1314,20 @@ check_layer_has_fragment_snippet (CoglPipelineLayer *layer,
 
   if (authority->big_state->fragment_snippets.entries)
     {
-      *found_fragment_snippet = TRUE;
-      return FALSE;
+      *found_fragment_snippet = true;
+      return false;
     }
 
-  return TRUE;
+  return true;
 }
 
 bool
 _cogl_pipeline_has_fragment_snippets (CoglPipeline *pipeline)
 {
-  bool found_fragment_snippet = FALSE;
+  bool found_fragment_snippet = false;
 
   if (_cogl_pipeline_has_non_layer_fragment_snippets (pipeline))
-    return TRUE;
+    return true;
 
   _cogl_pipeline_foreach_layer_internal (pipeline,
                                          check_layer_has_fragment_snippet,
@@ -1524,15 +1524,15 @@ _cogl_pipeline_compare_uniform_differences (unsigned long *differences,
                                             CoglPipeline *pipeline0,
                                             CoglPipeline *pipeline1)
 {
-  CSList *head0 = NULL;
-  CSList *head1 = NULL;
+  c_slist_t *head0 = NULL;
+  c_slist_t *head1 = NULL;
   CoglPipeline *node0;
   CoglPipeline *node1;
   int len0 = 0;
   int len1 = 0;
   int count;
-  CSList *common_ancestor0;
-  CSList *common_ancestor1;
+  c_slist_t *common_ancestor0;
+  c_slist_t *common_ancestor1;
 
   /* This algorithm is copied from
      _cogl_pipeline_compare_differences(). It might be nice to share
@@ -1540,7 +1540,7 @@ _cogl_pipeline_compare_uniform_differences (unsigned long *differences,
 
   for (node0 = pipeline0; node0; node0 = _cogl_pipeline_get_parent (node0))
     {
-      CSList *link = alloca (sizeof (CSList));
+      c_slist_t *link = alloca (sizeof (c_slist_t));
       link->next = head0;
       link->data = node0;
       head0 = link;
@@ -1548,7 +1548,7 @@ _cogl_pipeline_compare_uniform_differences (unsigned long *differences,
     }
   for (node1 = pipeline1; node1; node1 = _cogl_pipeline_get_parent (node1))
     {
-      CSList *link = alloca (sizeof (CSList));
+      c_slist_t *link = alloca (sizeof (c_slist_t));
       link->next = head1;
       link->data = node1;
       head1 = link;

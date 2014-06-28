@@ -90,7 +90,7 @@ struct _CoglOnscreen
   int64_t swap_frame_counter; /* frame counter at last all to
                                * cogl_onscreen_swap_region() or
                                * cogl_onscreen_swap_buffers() */
-  CQueue pending_frame_infos;
+  c_queue_t pending_frame_infos;
 
   void *winsys;
 };

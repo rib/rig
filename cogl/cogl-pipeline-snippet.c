@@ -47,7 +47,7 @@
 void
 _cogl_pipeline_snippet_generate_code (const CoglPipelineSnippetData *data)
 {
-  CList *first_snippet, *l;
+  c_list_t *first_snippet, *l;
   CoglSnippet *snippet;
   int snippet_num = 0;
   int n_snippets = 0;
@@ -198,11 +198,11 @@ _cogl_pipeline_snippet_generate_code (const CoglPipelineSnippetData *data)
 }
 
 void
-_cogl_pipeline_snippet_generate_declarations (CString *declarations_buf,
+_cogl_pipeline_snippet_generate_declarations (c_string_t *declarations_buf,
                                               CoglSnippetHook hook,
                                               CoglPipelineSnippetList *snippets)
 {
-  CList *l;
+  c_list_t *l;
 
   for (l = snippets->entries; l; l = l->next)
     {
@@ -221,7 +221,7 @@ _cogl_pipeline_snippet_generate_declarations (CString *declarations_buf,
 void
 _cogl_pipeline_snippet_list_free (CoglPipelineSnippetList *list)
 {
-  CList *l, *tmp;
+  c_list_t *l, *tmp;
 
   for (l = list->entries; l; l = tmp)
     {
@@ -245,8 +245,8 @@ void
 _cogl_pipeline_snippet_list_copy (CoglPipelineSnippetList *dst,
                                   const CoglPipelineSnippetList *src)
 {
-  CQueue queue = C_QUEUE_INIT;
-  const CList *l;
+  c_queue_t queue = C_QUEUE_INIT;
+  const c_list_t *l;
 
   for (l = src->entries; l; l = l->next)
     c_queue_push_tail (&queue, cogl_object_ref (l->data));
@@ -258,7 +258,7 @@ void
 _cogl_pipeline_snippet_list_hash (CoglPipelineSnippetList *list,
                                   unsigned int *hash)
 {
-  CList *l;
+  c_list_t *l;
 
   for (l = list->entries; l; l = l->next)
     {
@@ -274,13 +274,13 @@ bool
 _cogl_pipeline_snippet_list_equal (CoglPipelineSnippetList *list0,
                                    CoglPipelineSnippetList *list1)
 {
-  CList *l0, *l1;
+  c_list_t *l0, *l1;
 
   for (l0 = list0->entries, l1 = list1->entries;
        l0 && l1;
        l0 = l0->next, l1 = l1->next)
     if (l0->data != l1->data)
-      return FALSE;
+      return false;
 
   return l0 == NULL && l1 == NULL;
 }

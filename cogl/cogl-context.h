@@ -171,8 +171,8 @@ cogl_android_set_native_window (ANativeWindow *window);
  *
  * Gets whether the given object references an existing context object.
  *
- * Return value: %TRUE if the @object references a #CoglContext,
- *   %FALSE otherwise
+ * Return value: %true if the @object references a #CoglContext,
+ *   %false otherwise
  *
  * Since: 1.10
  * Stability: Unstable
@@ -278,7 +278,7 @@ typedef enum _CoglFeatureID
  * means applications have some responsibility to explicitly check
  * that certain features are available before depending on them.
  *
- * Returns: %TRUE if the @feature is currently supported or %FALSE if
+ * Returns: %true if the @feature is currently supported or %false if
  * not.
  *
  * Since: 1.10
@@ -295,10 +295,10 @@ cogl_has_feature (CoglContext *context, CoglFeatureID feature);
  * Checks if a list of features are all currently available.
  *
  * This checks all of the listed features using cogl_has_feature() and
- * returns %TRUE if all the features are available or %FALSE
+ * returns %true if all the features are available or %false
  * otherwise.
  *
- * Return value: %TRUE if all the features are available, %FALSE
+ * Return value: %true if all the features are available, %false
  * otherwise.
  *
  * Since: 1.10

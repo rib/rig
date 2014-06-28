@@ -109,12 +109,12 @@ _cogl_winsys_renderer_connect (CoglRenderer *renderer,
                        COGL_WINSYS_ERROR_INIT,
                        "SDL_Init failed: %s",
                        SDL_GetError ());
-      return FALSE;
+      return false;
     }
 
   renderer->winsys = c_slice_new0 (CoglRendererSdl2);
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -159,7 +159,7 @@ _cogl_winsys_display_setup (CoglDisplay *display,
   const char * (* get_string_func) (GLenum name);
   const char *gl_version;
 
-  _COGL_RETURN_VAL_IF_FAIL (display->winsys == NULL, FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (display->winsys == NULL, false);
 
   sdl_display = c_slice_new0 (CoglDisplaySdl2);
   display->winsys = sdl_display;
@@ -258,11 +258,11 @@ _cogl_winsys_display_setup (CoglDisplay *display,
       c_assert_not_reached ();
     }
 
-  return TRUE;
+  return true;
 
 error:
   _cogl_winsys_display_destroy (display);
-  return FALSE;
+  return false;
 }
 
 static void
@@ -279,7 +279,7 @@ flush_pending_notifications_cb (void *data,
       if (sdl_onscreen->pending_resize_notify)
         {
           _cogl_onscreen_notify_resize (onscreen);
-          sdl_onscreen->pending_resize_notify = FALSE;
+          sdl_onscreen->pending_resize_notify = false;
         }
     }
 }
@@ -342,7 +342,7 @@ sdl_window_event_filter (SDL_WindowEvent *event,
         }
 
       sdl_onscreen = COGL_ONSCREEN (framebuffer)->winsys;
-      sdl_onscreen->pending_resize_notify = TRUE;
+      sdl_onscreen->pending_resize_notify = true;
     }
   else if (event->event == SDL_WINDOWEVENT_EXPOSED)
     {
@@ -383,7 +383,7 @@ _cogl_winsys_context_init (CoglContext *context, CoglError **error)
 
   context->winsys = c_new0 (CoglContextSdl2, 1);
 
-  if (C_UNLIKELY (renderer->sdl_event_type_set == FALSE))
+  if (C_UNLIKELY (renderer->sdl_event_type_set == false))
     {
       _cogl_set_error (error, COGL_WINSYS_ERROR,
                        COGL_WINSYS_ERROR_INIT,
@@ -392,28 +392,28 @@ _cogl_winsys_context_init (CoglContext *context, CoglError **error)
                        "create a context, or "
                        "cogl_sdl_renderer_set_event_type() to be "
                        "called before cogl_context_new()");
-      return FALSE;
+      return false;
     }
 
   if (!_cogl_context_update_features (context, error))
-    return FALSE;
+    return false;
 
   if (SDL_GL_GetSwapInterval () != -1)
     COGL_FLAGS_SET (context->winsys_features,
                     COGL_WINSYS_FEATURE_SWAP_REGION_THROTTLE,
-                    TRUE);
+                    true);
 
   /* We'll manually handle queueing dirty events in response to
    * SDL_WINDOWEVENT_EXPOSED events */
   COGL_FLAGS_SET (context->private_features,
                   COGL_PRIVATE_FEATURE_DIRTY_EVENTS,
-                  TRUE);
+                  true);
 
   _cogl_renderer_add_native_filter (renderer,
                                     (CoglNativeFilterFunc) sdl_event_filter_cb,
                                     context);
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -514,7 +514,7 @@ _cogl_winsys_onscreen_init (CoglOnscreen *onscreen,
                          COGL_WINSYS_ERROR_CREATE_ONSCREEN,
                          "Android platform only supports a single "
                          "onscreen window");
-        return FALSE;
+        return false;
       }
 
     window = sdl_display->dummy_window;
@@ -523,7 +523,7 @@ _cogl_winsys_onscreen_init (CoglOnscreen *onscreen,
 
     _cogl_framebuffer_winsys_update_size (framebuffer, win_width, win_height);
 
-    sdl_display->have_onscreen = TRUE;
+    sdl_display->have_onscreen = true;
   }
 
 #else /* __ANDROID__ */
@@ -548,7 +548,7 @@ _cogl_winsys_onscreen_init (CoglOnscreen *onscreen,
                        COGL_WINSYS_ERROR_CREATE_ONSCREEN,
                        "SDL_CreateWindow failed: %s",
                        SDL_GetError ());
-      return FALSE;
+      return false;
     }
 
 #endif /* __ANDROID__ */
@@ -559,7 +559,7 @@ _cogl_winsys_onscreen_init (CoglOnscreen *onscreen,
   sdl_onscreen = onscreen->winsys;
   sdl_onscreen->window = window;
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -616,7 +616,7 @@ cogl_sdl_onscreen_get_window (CoglOnscreen *onscreen)
 const CoglWinsysVtable *
 _cogl_winsys_sdl_get_vtable (void)
 {
-  static bool vtable_inited = FALSE;
+  static bool vtable_inited = false;
   static CoglWinsysVtable vtable;
 
   /* It would be nice if we could use C99 struct initializers here
@@ -646,7 +646,7 @@ _cogl_winsys_sdl_get_vtable (void)
         _cogl_winsys_onscreen_update_swap_throttled;
       vtable.onscreen_set_visibility = _cogl_winsys_onscreen_set_visibility;
 
-      vtable_inited = TRUE;
+      vtable_inited = true;
     }
 
   return &vtable;

@@ -57,15 +57,15 @@ struct _CoglRenderer
   const CoglTextureDriver *texture_driver;
   const CoglWinsysVtable *winsys_vtable;
   CoglWinsysID winsys_id_override;
-  CList *constraints;
+  c_list_t *constraints;
 
-  CArray *poll_fds;
+  c_array_t *poll_fds;
   int poll_fds_age;
-  CList *poll_sources;
+  c_list_t *poll_sources;
 
   CoglList idle_closures;
 
-  CList *outputs;
+  c_list_t *outputs;
 
 #ifdef COGL_HAS_XLIB_SUPPORT
   Display *foreign_xdpy;
@@ -98,7 +98,7 @@ struct _CoglRenderer
 #endif
 
   /* List of callback functions that will be given every native event */
-  CSList *event_filters;
+  c_slist_t *event_filters;
   void *winsys;
 };
 

@@ -105,7 +105,7 @@ _cogl_pipeline_layer_has_alpha (CoglPipelineLayer *layer)
       big_state->texture_combine_alpha_op[1] !=
       COGL_PIPELINE_COMBINE_OP_SRC_ALPHA)
     {
-      return TRUE;
+      return true;
     }
 
   /* NB: A layer may have a combine mode set on it but not yet
@@ -118,20 +118,20 @@ _cogl_pipeline_layer_has_alpha (CoglPipelineLayer *layer)
   if (tex_authority->texture &&
       _cogl_texture_get_format (tex_authority->texture) & COGL_A_BIT)
     {
-      return TRUE;
+      return true;
     }
 
   /* All bets are off if the layer contains any snippets */
   snippets_authority = _cogl_pipeline_layer_get_authority
     (layer, COGL_PIPELINE_LAYER_STATE_VERTEX_SNIPPETS);
   if (snippets_authority->big_state->vertex_snippets.entries != NULL)
-    return TRUE;
+    return true;
   snippets_authority = _cogl_pipeline_layer_get_authority
     (layer, COGL_PIPELINE_LAYER_STATE_FRAGMENT_SNIPPETS);
   if (snippets_authority->big_state->fragment_snippets.entries != NULL)
-    return TRUE;
+    return true;
 
-  return FALSE;
+  return false;
 }
 
 unsigned int
@@ -165,7 +165,7 @@ _cogl_pipeline_layer_copy_differences (CoglPipelineLayer *dest,
       !dest->has_big_state)
     {
       dest->big_state = c_slice_new (CoglPipelineLayerBigState);
-      dest->has_big_state = TRUE;
+      dest->has_big_state = true;
     }
 
   big_dest = dest->big_state;
@@ -368,7 +368,7 @@ _cogl_pipeline_layer_pre_change_notify (CoglPipeline *required_owner,
   _cogl_pipeline_pre_change_notify (required_owner,
                                     COGL_PIPELINE_STATE_LAYERS,
                                     NULL,
-                                    TRUE);
+                                    true);
 
   /* Unlike pipelines; layers are simply considered immutable once
    * they have dependants - either direct children, or another
@@ -379,8 +379,8 @@ _cogl_pipeline_layer_pre_change_notify (CoglPipeline *required_owner,
     {
       CoglPipelineLayer *new = _cogl_pipeline_layer_copy (layer);
       if (layer->owner == required_owner)
-        _cogl_pipeline_remove_layer_difference (required_owner, layer, FALSE);
-      _cogl_pipeline_add_layer_difference (required_owner, new, FALSE);
+        _cogl_pipeline_remove_layer_difference (required_owner, layer, false);
+      _cogl_pipeline_add_layer_difference (required_owner, new, false);
       cogl_object_unref (new);
       layer = new;
       goto init_layer_state;
@@ -431,7 +431,7 @@ init_layer_state:
       !layer->has_big_state)
     {
       layer->big_state = c_slice_new (CoglPipelineLayerBigState);
-      layer->has_big_state = TRUE;
+      layer->has_big_state = true;
     }
 
   /* Note: conceptually we have just been notified that a single
@@ -473,7 +473,7 @@ _cogl_pipeline_layer_set_parent (CoglPipelineLayer *layer,
   _cogl_pipeline_node_set_parent_real (COGL_NODE (layer),
                                        COGL_NODE (parent),
                                        _cogl_pipeline_layer_unparent,
-                                       TRUE);
+                                       true);
 }
 
 CoglPipelineLayer *
@@ -486,7 +486,7 @@ _cogl_pipeline_layer_copy (CoglPipelineLayer *src)
   layer->owner = NULL;
   layer->index = src->index;
   layer->differences = 0;
-  layer->has_big_state = FALSE;
+  layer->has_big_state = false;
 
   _cogl_pipeline_layer_set_parent (layer, src);
 
@@ -521,15 +521,15 @@ unsigned long
 _cogl_pipeline_layer_compare_differences (CoglPipelineLayer *layer0,
                                           CoglPipelineLayer *layer1)
 {
-  CSList *head0 = NULL;
-  CSList *head1 = NULL;
+  c_slist_t *head0 = NULL;
+  c_slist_t *head1 = NULL;
   CoglPipelineLayer *node0;
   CoglPipelineLayer *node1;
   int len0 = 0;
   int len1 = 0;
   int count;
-  CSList *common_ancestor0;
-  CSList *common_ancestor1;
+  c_slist_t *common_ancestor0;
+  c_slist_t *common_ancestor1;
   unsigned long layers_difference = 0;
 
   /* Algorithm:
@@ -547,7 +547,7 @@ _cogl_pipeline_layer_compare_differences (CoglPipelineLayer *layer0,
 
   for (node0 = layer0; node0; node0 = _cogl_pipeline_layer_get_parent (node0))
     {
-      CSList *link = alloca (sizeof (CSList));
+      c_slist_t *link = alloca (sizeof (c_slist_t));
       link->next = head0;
       link->data = node0;
       head0 = link;
@@ -555,7 +555,7 @@ _cogl_pipeline_layer_compare_differences (CoglPipelineLayer *layer0,
     }
   for (node1 = layer1; node1; node1 = _cogl_pipeline_layer_get_parent (node1))
     {
-      CSList *link = alloca (sizeof (CSList));
+      c_slist_t *link = alloca (sizeof (c_slist_t));
       link->next = head1;
       link->data = node1;
       head1 = link;
@@ -618,7 +618,7 @@ _cogl_pipeline_layer_resolve_authorities (CoglPipelineLayer *layer,
       if (found == 0)
         continue;
 
-      for (i = 0; TRUE; i++)
+      for (i = 0; true; i++)
         {
           unsigned long state = (1L<<i);
 
@@ -648,7 +648,7 @@ _cogl_pipeline_layer_equal (CoglPipelineLayer *layer0,
   CoglPipelineLayer *authorities1[COGL_PIPELINE_LAYER_STATE_SPARSE_COUNT];
 
   if (layer0 == layer1)
-    return TRUE;
+    return true;
 
   layers_difference =
     _cogl_pipeline_layer_compare_differences (layer0, layer1);
@@ -670,7 +670,7 @@ _cogl_pipeline_layer_equal (CoglPipelineLayer *layer0,
       if (!_cogl_pipeline_layer_texture_type_equal (authorities0[state_index],
                                                     authorities1[state_index],
                                                     flags))
-        return FALSE;
+        return false;
     }
 
   if (layers_difference & COGL_PIPELINE_LAYER_STATE_TEXTURE_DATA)
@@ -680,46 +680,46 @@ _cogl_pipeline_layer_equal (CoglPipelineLayer *layer0,
       if (!_cogl_pipeline_layer_texture_data_equal (authorities0[state_index],
                                                     authorities1[state_index],
                                                     flags))
-        return FALSE;
+        return false;
     }
 
   if (layers_difference & COGL_PIPELINE_LAYER_STATE_COMBINE &&
       !layer_state_equal (COGL_PIPELINE_LAYER_STATE_COMBINE_INDEX,
                           authorities0, authorities1,
                           _cogl_pipeline_layer_combine_state_equal))
-    return FALSE;
+    return false;
 
   if (layers_difference & COGL_PIPELINE_LAYER_STATE_COMBINE_CONSTANT &&
       !layer_state_equal (COGL_PIPELINE_LAYER_STATE_COMBINE_CONSTANT_INDEX,
                           authorities0, authorities1,
                           _cogl_pipeline_layer_combine_constant_equal))
-    return FALSE;
+    return false;
 
   if (layers_difference & COGL_PIPELINE_LAYER_STATE_SAMPLER &&
       !layer_state_equal (COGL_PIPELINE_LAYER_STATE_SAMPLER_INDEX,
                           authorities0, authorities1,
                           _cogl_pipeline_layer_sampler_equal))
-    return FALSE;
+    return false;
 
   if (layers_difference & COGL_PIPELINE_LAYER_STATE_POINT_SPRITE_COORDS &&
       !layer_state_equal (COGL_PIPELINE_LAYER_STATE_POINT_SPRITE_COORDS_INDEX,
                           authorities0, authorities1,
                           _cogl_pipeline_layer_point_sprite_coords_equal))
-    return FALSE;
+    return false;
 
   if (layers_difference & COGL_PIPELINE_LAYER_STATE_VERTEX_SNIPPETS &&
       !layer_state_equal (COGL_PIPELINE_LAYER_STATE_VERTEX_SNIPPETS_INDEX,
                           authorities0, authorities1,
                           _cogl_pipeline_layer_vertex_snippets_equal))
-    return FALSE;
+    return false;
 
   if (layers_difference & COGL_PIPELINE_LAYER_STATE_FRAGMENT_SNIPPETS &&
       !layer_state_equal (COGL_PIPELINE_LAYER_STATE_FRAGMENT_SNIPPETS_INDEX,
                           authorities0, authorities1,
                           _cogl_pipeline_layer_fragment_snippets_equal))
-    return FALSE;
+    return false;
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -768,7 +768,7 @@ _cogl_pipeline_init_default_layers (void)
     _cogl_sampler_cache_get_default_entry (ctx->sampler_cache);
 
   layer->big_state = big_state;
-  layer->has_big_state = TRUE;
+  layer->has_big_state = true;
 
   /* Choose the same default combine mode as OpenGL:
    * RGBA = MODULATE(PREVIOUS[RGBA],TEXTURE[RGBA]) */
@@ -793,7 +793,7 @@ _cogl_pipeline_init_default_layers (void)
   big_state->texture_combine_alpha_op[1] =
     COGL_PIPELINE_COMBINE_OP_SRC_ALPHA;
 
-  big_state->point_sprite_coords = FALSE;
+  big_state->point_sprite_coords = false;
 
   ctx->default_layer_0 = _cogl_pipeline_layer_object_new (layer);
 
@@ -870,7 +870,7 @@ _cogl_pipeline_layer_needs_combine_separate
 
   if (big_state->texture_combine_rgb_func !=
       big_state->texture_combine_alpha_func)
-    return TRUE;
+    return true;
 
   n_args = _cogl_get_n_args_for_combine_func (big_state->texture_combine_rgb_func);
 
@@ -878,7 +878,7 @@ _cogl_pipeline_layer_needs_combine_separate
     {
       if (big_state->texture_combine_rgb_src[i] !=
           big_state->texture_combine_alpha_src[i])
-        return TRUE;
+        return true;
 
       /*
        * We can allow some variation of the source operands without
@@ -909,7 +909,7 @@ _cogl_pipeline_layer_needs_combine_separate
             case GL_SRC_ALPHA:
               break;
             default:
-              return FALSE;
+              return false;
             }
           break;
         case GL_ONE_MINUS_SRC_ALPHA:
@@ -919,15 +919,15 @@ _cogl_pipeline_layer_needs_combine_separate
             case GL_ONE_MINUS_SRC_ALPHA:
               break;
             default:
-              return FALSE;
+              return false;
             }
           break;
         default:
-          return FALSE;	/* impossible */
+          return false;	/* impossible */
         }
     }
 
-   return FALSE;
+   return false;
 }
 
 

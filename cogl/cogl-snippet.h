@@ -693,8 +693,8 @@ cogl_snippet_get_hook (CoglSnippet *snippet);
  *
  * Gets whether the given @object references an existing snippet object.
  *
- * Return value: %TRUE if the @object references a #CoglSnippet,
- *   %FALSE otherwise
+ * Return value: %true if the @object references a #CoglSnippet,
+ *   %false otherwise
  *
  * Since: 1.10
  * Stability: Unstable

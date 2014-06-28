@@ -78,10 +78,10 @@ _cogl_snippet_modify (CoglSnippet *snippet)
                  "attached to a pipeline. Any modifications after that point "
                  "will be ignored.");
 
-      return FALSE;
+      return false;
     }
 
-  return TRUE;
+  return true;
 }
 
 void
@@ -171,7 +171,7 @@ cogl_snippet_get_post (CoglSnippet *snippet)
 void
 _cogl_snippet_make_immutable (CoglSnippet *snippet)
 {
-  snippet->immutable = TRUE;
+  snippet->immutable = true;
 }
 
 static void

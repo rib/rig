@@ -39,11 +39,11 @@
 #include "tess.h"
 #include "render.h"
 
-#ifndef TRUE
-#define TRUE 1
+#ifndef true
+#define true 1
 #endif
-#ifndef FALSE
-#define FALSE 0
+#ifndef false
+#define false 0
 #endif
 
 /* This structure remembers the information we need about a primitive
@@ -87,7 +87,7 @@ void __gl_renderMesh( GLUtesselator *tess, GLUmesh *mesh )
   tess->lonelyTriList = NULL;
 
   for( f = mesh->fHead.next; f != &mesh->fHead; f = f->next ) {
-    f->marked = FALSE;
+    f->marked = false;
   }
   for( f = mesh->fHead.next; f != &mesh->fHead; f = f->next ) {
 
@@ -145,11 +145,11 @@ static void RenderMaximumFaceGroup( GLUtesselator *tess, GLUface *fOrig )
  */
 #define Marked(f)	(! (f)->inside || (f)->marked)
 
-#define AddToTrail(f,t)	((f)->trail = (t), (t) = (f), (f)->marked = TRUE)
+#define AddToTrail(f,t)	((f)->trail = (t), (t) = (f), (f)->marked = true)
 
 #define FreeTrail(t)	do { \
 			  while( (t) != NULL ) { \
-			    (t)->marked = FALSE; t = (t)->trail; \
+			    (t)->marked = false; t = (t)->trail; \
 			  } \
 			} while(0) /* absorb trailing semicolon */
 
@@ -262,7 +262,7 @@ static void RenderLonelyTriangles( GLUtesselator *tess, GLUface *f )
     e = f->anEdge;
     do {
       if( tess->flagBoundary ) {
-	/* Set the "edge state" to TRUE just before we output the
+	/* Set the "edge state" to true just before we output the
 	 * first vertex of each edge on the polygon boundary.
 	 */
 	newState = ! e->Rface->inside;
@@ -291,7 +291,7 @@ static void RenderFan( GLUtesselator *tess, GLUhalfEdge *e, long size )
   CALL_VERTEX_OR_VERTEX_DATA( e->Dst->data ); 
 
   while( ! Marked( e->Lface )) {
-    e->Lface->marked = TRUE;
+    e->Lface->marked = true;
     --size;
     e = e->Onext;
     CALL_VERTEX_OR_VERTEX_DATA( e->Dst->data ); 
@@ -313,13 +313,13 @@ static void RenderStrip( GLUtesselator *tess, GLUhalfEdge *e, long size )
   CALL_VERTEX_OR_VERTEX_DATA( e->Dst->data ); 
 
   while( ! Marked( e->Lface )) {
-    e->Lface->marked = TRUE;
+    e->Lface->marked = true;
     --size;
     e = e->Dprev;
     CALL_VERTEX_OR_VERTEX_DATA( e->Org->data ); 
     if( Marked( e->Lface )) break;
 
-    e->Lface->marked = TRUE;
+    e->Lface->marked = true;
     --size;
     e = e->Onext;
     CALL_VERTEX_OR_VERTEX_DATA( e->Dst->data ); 
@@ -361,8 +361,8 @@ void __gl_renderBoundary( GLUtesselator *tess, GLUmesh *mesh )
 
 static int ComputeNormal( GLUtesselator *tess, GLdouble norm[3], int check )
 /*
- * If check==FALSE, we compute the polygon normal and place it in norm[].
- * If check==TRUE, we check that each triangle in the fan from v0 has a
+ * If check==false, we compute the polygon normal and place it in norm[].
+ * If check==true, we check that each triangle in the fan from v0 has a
  * consistent orientation with respect to norm[].  If triangles are
  * consistently oriented CCW, return 1; if CW, return -1; if all triangles
  * are degenerate return 0; otherwise (no consistent orientation) return
@@ -435,7 +435,7 @@ static int ComputeNormal( GLUtesselator *tess, GLdouble norm[3], int check )
  * as a triangle fan.  This handles convex polygons, as well as some
  * non-convex polygons if we get lucky.
  *
- * Returns TRUE if the polygon was successfully rendered.  The rendering
+ * Returns true if the polygon was successfully rendered.  The rendering
  * output is provided as callbacks (see the api).
  */
 GLboolean __gl_renderCache( GLUtesselator *tess )
@@ -448,24 +448,24 @@ GLboolean __gl_renderCache( GLUtesselator *tess )
 
   if( tess->cacheCount < 3 ) {
     /* Degenerate contour -- no output */
-    return TRUE;
+    return true;
   }
 
   norm[0] = tess->normal[0];
   norm[1] = tess->normal[1];
   norm[2] = tess->normal[2];
   if( norm[0] == 0 && norm[1] == 0 && norm[2] == 0 ) {
-    ComputeNormal( tess, norm, FALSE );
+    ComputeNormal( tess, norm, false );
   }
 
-  sign = ComputeNormal( tess, norm, TRUE );
+  sign = ComputeNormal( tess, norm, true );
   if( sign == SIGN_INCONSISTENT ) {
     /* Fan triangles did not have a consistent orientation */
-    return FALSE;
+    return false;
   }
   if( sign == 0 ) {
     /* All triangles were degenerate */
-    return TRUE;
+    return true;
   }
 
   /* Make sure we do the right thing for each winding rule */
@@ -474,13 +474,13 @@ GLboolean __gl_renderCache( GLUtesselator *tess )
   case GLU_TESS_WINDING_NONZERO:
     break;
   case GLU_TESS_WINDING_POSITIVE:
-    if( sign < 0 ) return TRUE;
+    if( sign < 0 ) return true;
     break;
   case GLU_TESS_WINDING_NEGATIVE:
-    if( sign > 0 ) return TRUE;
+    if( sign > 0 ) return true;
     break;
   case GLU_TESS_WINDING_ABS_GEQ_TWO:
-    return TRUE;
+    return true;
   }
 
   CALL_BEGIN_OR_BEGIN_DATA( tess->boundaryOnly ? GL_LINE_LOOP
@@ -498,5 +498,5 @@ GLboolean __gl_renderCache( GLUtesselator *tess )
     }
   }
   CALL_END_OR_END_DATA();
-  return TRUE;
+  return true;
 }

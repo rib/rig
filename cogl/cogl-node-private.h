@@ -58,7 +58,7 @@ struct _CoglNode
   /* List of children */
   CoglList children;
 
-  /* TRUE if the node took a strong reference on its parent. Weak
+  /* true if the node took a strong reference on its parent. Weak
    * pipelines for instance don't take a reference on their parent. */
   bool has_parent_reference;
 };

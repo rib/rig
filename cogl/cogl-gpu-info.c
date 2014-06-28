@@ -92,7 +92,7 @@ _cogl_gpc_info_parse_version_string (const char *version_string,
                                10);
 
       if (errno || part > COGL_VERSION_MAX_COMPONENT_VALUE)
-        return FALSE;
+        return false;
 
       version |= part << ((2 - i) * COGL_VERSION_COMPONENT_BITS);
 
@@ -100,7 +100,7 @@ _cogl_gpc_info_parse_version_string (const char *version_string,
         break;
 
       if (*version_string != '.')
-        return FALSE;
+        return false;
 
       version_string++;
     }
@@ -110,7 +110,7 @@ _cogl_gpc_info_parse_version_string (const char *version_string,
   if (tail)
     *tail = version_string;
 
-  return TRUE;
+  return true;
 }
 
 static bool
@@ -120,20 +120,20 @@ match_phrase (const char *string, const char *phrase)
   int len;
 
   if (part == NULL)
-    return FALSE;
+    return false;
 
   /* The match must either be at the beginning of the string or
      preceded by a space. */
   if (part > string && part[-1] != ' ')
-    return FALSE;
+    return false;
 
   /* Also match must either be at end of string or followed by a
    * space. */
   len = strlen (phrase);
   if (part[len] != '\0' && part[len] != ' ')
-    return FALSE;
+    return false;
 
-  return TRUE;
+  return true;
 }
 
 static bool
@@ -146,62 +146,62 @@ static bool
 check_imagination_technologies_vendor (const CoglGpuInfoStrings *strings)
 {
   if (strcmp (strings->vendor_string, "Imagination Technologies") != 0)
-    return FALSE;
-  return TRUE;
+    return false;
+  return true;
 }
 
 static bool
 check_arm_vendor (const CoglGpuInfoStrings *strings)
 {
   if (strcmp (strings->vendor_string, "ARM") != 0)
-    return FALSE;
-  return TRUE;
+    return false;
+  return true;
 }
 
 static bool
 check_qualcomm_vendor (const CoglGpuInfoStrings *strings)
 {
   if (strcmp (strings->vendor_string, "Qualcomm") != 0)
-    return FALSE;
-  return TRUE;
+    return false;
+  return true;
 }
 
 static bool
 check_nvidia_vendor (const CoglGpuInfoStrings *strings)
 {
   if (strcmp (strings->vendor_string, "NVIDIA") != 0)
-    return FALSE;
+    return false;
 
-  return TRUE;
+  return true;
 }
 
 static bool
 check_ati_vendor (const CoglGpuInfoStrings *strings)
 {
   if (strcmp (strings->vendor_string, "ATI") != 0)
-    return FALSE;
+    return false;
 
-  return TRUE;
+  return true;
 }
 
 static bool
 check_mesa_vendor (const CoglGpuInfoStrings *strings)
 {
   if (strcmp (strings->vendor_string, "Tungsten Graphics, Inc") == 0)
-    return TRUE;
+    return true;
   else if (strcmp (strings->vendor_string, "VMware, Inc.") == 0)
-    return TRUE;
+    return true;
   else if (strcmp (strings->vendor_string, "Mesa Project") == 0)
-    return TRUE;
+    return true;
 
-  return FALSE;
+  return false;
 }
 
 static bool
 check_true (const CoglGpuInfoStrings *strings)
 {
   /* This is a last resort so it always matches */
-  return TRUE;
+  return true;
 }
 
 static bool
@@ -233,18 +233,18 @@ static bool
 check_sgx_architecture (const CoglGpuInfoStrings *strings)
 {
   if (strncmp (strings->renderer_string, "PowerVR SGX", 12) != 0)
-    return FALSE;
+    return false;
 
-  return TRUE;
+  return true;
 }
 
 static bool
 check_mali_architecture (const CoglGpuInfoStrings *strings)
 {
   if (strncmp (strings->renderer_string, "Mali-", 5) != 0)
-    return FALSE;
+    return false;
 
-  return TRUE;
+  return true;
 }
 
 static const CoglGpuInfoArchitectureDescription
@@ -422,13 +422,13 @@ check_mesa_driver_package (const CoglGpuInfoStrings *strings,
                                             2, /* n_components */
                                             &v, /* tail */
                                             NULL /* version_ret */))
-    return FALSE;
+    return false;
 
   /* In mesa this will be followed optionally by "(Core Profile)" and
    * then "Mesa" */
   v = strstr (v, " Mesa ");
   if (!v)
-    return FALSE;
+    return false;
 
   v += 6;
 
@@ -439,27 +439,27 @@ check_mesa_driver_package (const CoglGpuInfoStrings *strings,
                                             2, /* n_components */
                                             &v, /* tail */
                                             version_ret))
-    return FALSE;
+    return false;
 
   /* If it is a development build then we'll just leave the micro
      number as 0 */
   if (c_str_has_prefix (v, "-devel"))
-    return TRUE;
+    return true;
 
   /* Otherwise there should be a micro version number */
   if (*v != '.')
-    return FALSE;
+    return false;
 
   errno = 0;
   micro_part = c_ascii_strtoull (v + 1, NULL /* endptr */, 10 /* base */);
   if (errno || micro_part > COGL_VERSION_MAX_COMPONENT_VALUE)
-    return FALSE;
+    return false;
 
   *version_ret = COGL_VERSION_ENCODE (COGL_VERSION_GET_MAJOR (*version_ret),
                                       COGL_VERSION_GET_MINOR (*version_ret),
                                       micro_part);
 
-  return TRUE;
+  return true;
 }
 
 UNIT_TEST (check_mesa_driver_package_parser,
@@ -488,7 +488,7 @@ check_unknown_driver_package (const CoglGpuInfoStrings *strings,
   *version_out = 0;
 
   /* This is a last resort so it always matches */
-  return TRUE;
+  return true;
 }
 
 static const CoglGpuInfoDriverPackageDescription

@@ -266,7 +266,7 @@ set_damage_object_internal (CoglContext *ctx,
       if (tex_pixmap->damage_owned)
         {
           XDamageDestroy (display, tex_pixmap->damage);
-          tex_pixmap->damage_owned = FALSE;
+          tex_pixmap->damage_owned = false;
         }
     }
 
@@ -325,7 +325,7 @@ cogl_texture_pixmap_x11_new (CoglContext *ctx,
   tex_pixmap->image = NULL;
   tex_pixmap->shm_info.shmid = -1;
   tex_pixmap->tex = NULL;
-  tex_pixmap->damage_owned = FALSE;
+  tex_pixmap->damage_owned = false;
   tex_pixmap->damage = 0;
 
   /* We need a visual to use for shared memory images so we'll query
@@ -355,7 +355,7 @@ cogl_texture_pixmap_x11_new (CoglContext *ctx,
                                   tex_pixmap,
                                   damage,
                                   COGL_TEXTURE_PIXMAP_X11_DAMAGE_BOUNDING_BOX);
-      tex_pixmap->damage_owned = TRUE;
+      tex_pixmap->damage_owned = true;
     }
 
   /* Assume the entire pixmap is damaged to begin with */
@@ -371,7 +371,7 @@ cogl_texture_pixmap_x11_new (CoglContext *ctx,
         winsys->texture_pixmap_x11_create (tex_pixmap);
     }
   else
-    tex_pixmap->use_winsys_texture = FALSE;
+    tex_pixmap->use_winsys_texture = false;
 
   if (!tex_pixmap->use_winsys_texture)
     tex_pixmap->winsys = NULL;
@@ -386,7 +386,7 @@ static bool
 _cogl_texture_pixmap_x11_allocate (CoglTexture *tex,
                                    CoglError **error)
 {
-  return TRUE;
+  return true;
 }
 
 /* Tries to allocate enough shared mem to handle a full size
@@ -718,14 +718,14 @@ _cogl_texture_pixmap_x11_update (CoglTexturePixmapX11 *tex_pixmap,
 
       if (winsys->texture_pixmap_x11_update (tex_pixmap, needs_mipmap))
         {
-          _cogl_texture_pixmap_x11_set_use_winsys_texture (tex_pixmap, TRUE);
+          _cogl_texture_pixmap_x11_set_use_winsys_texture (tex_pixmap, true);
           return;
         }
     }
 
   /* If it didn't work then fallback to using XGetImage. This may be
      temporary */
-  _cogl_texture_pixmap_x11_set_use_winsys_texture (tex_pixmap, FALSE);
+  _cogl_texture_pixmap_x11_set_use_winsys_texture (tex_pixmap, false);
 
   _cogl_texture_pixmap_x11_update_image_texture (tex_pixmap);
 }
@@ -759,7 +759,7 @@ _cogl_texture_pixmap_x11_get_texture (CoglTexturePixmapX11 *tex_pixmap)
       if (tex)
         return tex;
 
-      _cogl_texture_pixmap_x11_update (tex_pixmap, FALSE);
+      _cogl_texture_pixmap_x11_update (tex_pixmap, false);
     }
 
   c_assert_not_reached ();
@@ -785,7 +785,7 @@ _cogl_texture_pixmap_x11_set_region (CoglTexture *tex,
                    COGL_SYSTEM_ERROR,
                    COGL_SYSTEM_ERROR_UNSUPPORTED,
                    "Explicitly setting a region of a TFP texture unsupported");
-  return FALSE;
+  return false;
 }
 
 static bool
@@ -1004,7 +1004,7 @@ _cogl_texture_pixmap_x11_free (CoglTexturePixmapX11 *tex_pixmap)
 static const CoglTextureVtable
 cogl_texture_pixmap_x11_vtable =
   {
-    FALSE, /* not primitive */
+    false, /* not primitive */
     _cogl_texture_pixmap_x11_allocate,
     _cogl_texture_pixmap_x11_set_region,
     _cogl_texture_pixmap_x11_get_data,

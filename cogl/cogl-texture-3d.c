@@ -82,7 +82,7 @@ _cogl_texture_3d_gl_flush_legacy_texobj_wrap_modes (CoglTexture *tex,
     {
       _cogl_bind_gl_texture_transient (GL_TEXTURE_3D,
                                        tex_3d->gl_texture,
-                                       FALSE);
+                                       false);
       GE( ctx, glTexParameteri (GL_TEXTURE_3D,
                                 GL_TEXTURE_WRAP_S,
                                 wrap_mode_s) );
@@ -135,17 +135,17 @@ _cogl_texture_3d_create_base (CoglContext *ctx,
   tex_3d->gl_texture = 0;
 
   tex_3d->depth = depth;
-  tex_3d->mipmaps_dirty = TRUE;
-  tex_3d->auto_mipmap = TRUE;
+  tex_3d->mipmaps_dirty = true;
+  tex_3d->auto_mipmap = true;
 
   /* We default to GL_LINEAR for both filters */
   tex_3d->gl_legacy_texobj_min_filter = GL_LINEAR;
   tex_3d->gl_legacy_texobj_mag_filter = GL_LINEAR;
 
   /* Wrap mode not yet set */
-  tex_3d->gl_legacy_texobj_wrap_mode_s = GL_FALSE;
-  tex_3d->gl_legacy_texobj_wrap_mode_t = GL_FALSE;
-  tex_3d->gl_legacy_texobj_wrap_mode_p = GL_FALSE;
+  tex_3d->gl_legacy_texobj_wrap_mode_s = FALSE;
+  tex_3d->gl_legacy_texobj_wrap_mode_t = FALSE;
+  tex_3d->gl_legacy_texobj_wrap_mode_p = FALSE;
 
   return _cogl_texture_3d_object_new (tex_3d);
 }
@@ -181,7 +181,7 @@ cogl_texture_3d_new_from_bitmap (CoglBitmap *bmp,
   loader->src.bitmap.bitmap = cogl_object_ref (bmp);
   loader->src.bitmap.height = height;
   loader->src.bitmap.depth = depth;
-  loader->src.bitmap.can_convert_in_place = FALSE; /* TODO add api for this */
+  loader->src.bitmap.can_convert_in_place = false; /* TODO add api for this */
 
   return _cogl_texture_3d_create_base (_cogl_bitmap_get_context (bmp),
                                        cogl_bitmap_get_width (bmp),
@@ -301,7 +301,7 @@ _cogl_texture_3d_can_create (CoglContext *ctx,
                        COGL_SYSTEM_ERROR,
                        COGL_SYSTEM_ERROR_UNSUPPORTED,
                        "3D textures are not supported by the GPU");
-      return FALSE;
+      return false;
     }
 
   /* If NPOT textures aren't supported then the size must be a power
@@ -316,7 +316,7 @@ _cogl_texture_3d_can_create (CoglContext *ctx,
                        COGL_SYSTEM_ERROR_UNSUPPORTED,
                        "A non-power-of-two size was requested but this is not "
                        "supported by the GPU");
-      return FALSE;
+      return false;
     }
 
   ctx->driver_vtable->pixel_format_to_gl (ctx,
@@ -338,10 +338,10 @@ _cogl_texture_3d_can_create (CoglContext *ctx,
                        COGL_SYSTEM_ERROR,
                        COGL_SYSTEM_ERROR_UNSUPPORTED,
                        "The requested dimensions are not supported by the GPU");
-      return FALSE;
+      return false;
     }
 
-  return TRUE;
+  return true;
 }
 
 static bool
@@ -370,7 +370,7 @@ allocate_with_size (CoglTexture3D *tex_3d,
                                     depth,
                                     internal_format,
                                     error))
-    return FALSE;
+    return false;
 
   ctx->driver_vtable->pixel_format_to_gl (ctx,
                                           internal_format,
@@ -382,7 +382,7 @@ allocate_with_size (CoglTexture3D *tex_3d,
     ctx->texture_driver->gen (ctx, GL_TEXTURE_3D, internal_format);
   _cogl_bind_gl_texture_transient (GL_TEXTURE_3D,
                                    gl_texture,
-                                   FALSE);
+                                   false);
   /* Clear any GL errors */
   while ((gl_error = ctx->glGetError ()) != GL_NO_ERROR)
     ;
@@ -394,7 +394,7 @@ allocate_with_size (CoglTexture3D *tex_3d,
   if (_cogl_gl_util_catch_out_of_memory (ctx, error))
     {
       GE( ctx, glDeleteTextures (1, &gl_texture) );
-      return FALSE;
+      return false;
     }
 
   tex_3d->gl_texture = gl_texture;
@@ -406,7 +406,7 @@ allocate_with_size (CoglTexture3D *tex_3d,
 
   _cogl_texture_set_allocated (tex, internal_format, width, height);
 
-  return TRUE;
+  return true;
 }
 
 static bool
@@ -435,14 +435,14 @@ allocate_from_bitmap (CoglTexture3D *tex_3d,
                                     bmp_width, height, depth,
                                     internal_format,
                                     error))
-    return FALSE;
+    return false;
 
   upload_bmp = _cogl_bitmap_convert_for_upload (bmp,
                                                 internal_format,
                                                 can_convert_in_place,
                                                 error);
   if (upload_bmp == NULL)
-    return FALSE;
+    return false;
 
   upload_format = cogl_bitmap_get_format (upload_bmp);
 
@@ -491,7 +491,7 @@ allocate_from_bitmap (CoglTexture3D *tex_3d,
   if (!ctx->texture_driver->upload_to_gl_3d (ctx,
                                              GL_TEXTURE_3D,
                                              tex_3d->gl_texture,
-                                             FALSE, /* is_foreign */
+                                             false, /* is_foreign */
                                              height,
                                              depth,
                                              upload_bmp,
@@ -501,7 +501,7 @@ allocate_from_bitmap (CoglTexture3D *tex_3d,
                                              error))
     {
       cogl_object_unref (upload_bmp);
-      return FALSE;
+      return false;
     }
 
   tex_3d->gl_format = gl_intformat;
@@ -515,7 +515,7 @@ allocate_from_bitmap (CoglTexture3D *tex_3d,
   _cogl_texture_set_allocated (tex, internal_format,
                                bmp_width, loader->src.bitmap.height);
 
-  return TRUE;
+  return true;
 }
 
 static bool
@@ -525,7 +525,7 @@ _cogl_texture_3d_allocate (CoglTexture *tex,
   CoglTexture3D *tex_3d = COGL_TEXTURE_3D (tex);
   CoglTextureLoader *loader = tex->loader;
 
-  _COGL_RETURN_VAL_IF_FAIL (loader, FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (loader, false);
 
   switch (loader->src_type)
     {
@@ -537,19 +537,19 @@ _cogl_texture_3d_allocate (CoglTexture *tex,
       break;
     }
 
-  c_return_val_if_reached (FALSE);
+  c_return_val_if_reached (false);
 }
 
 static bool
 _cogl_texture_3d_is_sliced (CoglTexture *tex)
 {
-  return FALSE;
+  return false;
 }
 
 static bool
 _cogl_texture_3d_can_hardware_repeat (CoglTexture *tex)
 {
-  return TRUE;
+  return true;
 }
 
 static void
@@ -568,12 +568,12 @@ _cogl_texture_3d_transform_quad_coords_to_gl (CoglTexture *tex,
   /* The texture coordinates map directly so we don't need to do
      anything other than check for repeats */
 
-  bool need_repeat = FALSE;
+  bool need_repeat = false;
   int i;
 
   for (i = 0; i < 4; i++)
     if (coords[i] < 0.0f || coords[i] > 1.0f)
-      need_repeat = TRUE;
+      need_repeat = true;
 
   return (need_repeat ? COGL_TRANSFORM_HARDWARE_REPEAT
           : COGL_TRANSFORM_NO_REPEAT);
@@ -592,7 +592,7 @@ _cogl_texture_3d_get_gl_texture (CoglTexture *tex,
   if (out_gl_target)
     *out_gl_target = GL_TEXTURE_3D;
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -614,7 +614,7 @@ _cogl_texture_3d_gl_flush_legacy_texobj_filters (CoglTexture *tex,
   /* Apply new filters to the texture */
   _cogl_bind_gl_texture_transient (GL_TEXTURE_3D,
                                    tex_3d->gl_texture,
-                                   FALSE);
+                                   false);
   GE( ctx, glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, mag_filter) );
   GE( ctx, glTexParameteri (GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, min_filter) );
 }
@@ -635,7 +635,7 @@ _cogl_texture_3d_pre_paint (CoglTexture *tex, CoglTexturePrePaintFlags flags)
       if (cogl_has_feature (ctx, COGL_FEATURE_ID_OFFSCREEN))
         _cogl_texture_gl_generate_mipmaps (tex);
 
-      tex_3d->mipmaps_dirty = FALSE;
+      tex_3d->mipmaps_dirty = false;
     }
 }
 
@@ -665,7 +665,7 @@ _cogl_texture_3d_set_region (CoglTexture *tex,
                    "Setting a 2D region on a 3D texture isn't "
                    "currently supported");
 
-  return FALSE;
+  return false;
 }
 
 static int
@@ -703,7 +703,7 @@ _cogl_texture_3d_get_type (CoglTexture *tex)
 static const CoglTextureVtable
 cogl_texture_3d_vtable =
   {
-    TRUE, /* primitive */
+    true, /* primitive */
     _cogl_texture_3d_allocate,
     _cogl_texture_3d_set_region,
     _cogl_texture_3d_get_data,

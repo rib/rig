@@ -257,7 +257,7 @@ _cogl_renderer_free (CoglRenderer *renderer)
                    NULL);
   c_slist_free (renderer->event_filters);
 
-  c_array_free (renderer->poll_fds, TRUE);
+  c_array_free (renderer->poll_fds, true);
 
   c_free (renderer);
 }
@@ -269,23 +269,23 @@ cogl_renderer_new (void)
 
   _cogl_init ();
 
-  renderer->connected = FALSE;
+  renderer->connected = false;
   renderer->event_filters = NULL;
 
-  renderer->poll_fds = c_array_new (FALSE, TRUE, sizeof (CoglPollFD));
+  renderer->poll_fds = c_array_new (false, true, sizeof (CoglPollFD));
 
   _cogl_list_init (&renderer->idle_closures);
 
 #ifdef COGL_HAS_XLIB_SUPPORT
-  renderer->xlib_enable_event_retrieval = TRUE;
+  renderer->xlib_enable_event_retrieval = true;
 #endif
 
 #ifdef COGL_HAS_WIN32_SUPPORT
-  renderer->win32_enable_event_retrieval = TRUE;
+  renderer->win32_enable_event_retrieval = true;
 #endif
 
 #ifdef COGL_HAS_EGL_PLATFORM_WAYLAND_SUPPORT
-  renderer->wayland_enable_event_dispatch = TRUE;
+  renderer->wayland_enable_event_dispatch = true;
 #endif
 
 #ifdef COGL_HAS_EGL_PLATFORM_KMS_SUPPORT
@@ -309,7 +309,7 @@ cogl_xlib_renderer_set_foreign_display (CoglRenderer *renderer,
 
   /* If the application is using a foreign display then we can assume
      it will also do its own event retrieval */
-  cogl_xlib_renderer_set_event_retrieval_enabled (renderer, FALSE);
+  cogl_xlib_renderer_set_event_retrieval_enabled (renderer, false);
 }
 
 Display *
@@ -340,18 +340,18 @@ cogl_renderer_check_onscreen_template (CoglRenderer *renderer,
   CoglDisplay *display;
 
   if (!cogl_renderer_connect (renderer, error))
-    return FALSE;
+    return false;
 
   display = cogl_display_new (renderer, onscreen_template);
   if (!cogl_display_setup (display, error))
     {
       cogl_object_unref (display);
-      return FALSE;
+      return false;
     }
 
   cogl_object_unref (display);
 
-  return TRUE;
+  return true;
 }
 
 typedef bool (*DriverCallback) (CoglDriverDescription *description,
@@ -452,7 +452,7 @@ driver_id_to_name (CoglDriver id)
 
 typedef struct _SatisfyConstraintsState
 {
-  CList *constraints;
+  c_list_t *constraints;
   const CoglDriverDescription *driver_description;
 } SatisfyConstraintsState;
 
@@ -461,7 +461,7 @@ satisfy_constraints (CoglDriverDescription *description,
                      void *user_data)
 {
   SatisfyConstraintsState *state = user_data;
-  CList *l;
+  c_list_t *l;
 
   for (l = state->constraints; l; l = l->next)
     {
@@ -475,12 +475,12 @@ satisfy_constraints (CoglDriverDescription *description,
       /* If the driver doesn't satisfy any constraint then continue
        * to the next driver description */
       if (!(constraint & description->constraints))
-        return TRUE;
+        return true;
     }
 
   state->driver_description = description;
 
-  return FALSE;
+  return false;
 }
 
 static bool
@@ -515,7 +515,7 @@ _cogl_renderer_choose_driver (CoglRenderer *renderer,
                            COGL_RENDERER_ERROR_BAD_CONSTRAINT,
                            "Application driver selection conflicts with driver "
                            "specified in configuration");
-          return FALSE;
+          return false;
         }
 
       driver_override = renderer->driver_override;
@@ -523,14 +523,14 @@ _cogl_renderer_choose_driver (CoglRenderer *renderer,
 
   if (driver_override != COGL_DRIVER_ANY)
     {
-      bool found = FALSE;
+      bool found = false;
       int i;
 
       for (i = 0; i < C_N_ELEMENTS (_cogl_drivers); i++)
         {
           if (_cogl_drivers[i].id == driver_override)
             {
-              found = TRUE;
+              found = true;
               break;
             }
         }
@@ -545,7 +545,7 @@ _cogl_renderer_choose_driver (CoglRenderer *renderer,
                        COGL_RENDERER_ERROR_BAD_CONSTRAINT,
                        "Driver \"%s\" is not available",
                        invalid_override);
-      return FALSE;
+      return false;
     }
 
   state.driver_description = NULL;
@@ -561,7 +561,7 @@ _cogl_renderer_choose_driver (CoglRenderer *renderer,
                        COGL_RENDERER_ERROR,
                        COGL_RENDERER_ERROR_BAD_CONSTRAINT,
                        "No suitable driver found");
-      return FALSE;
+      return false;
     }
 
   desc = state.driver_description;
@@ -573,7 +573,7 @@ _cogl_renderer_choose_driver (CoglRenderer *renderer,
   memset(renderer->private_features, 0, sizeof (renderer->private_features));
   for (i = 0; desc->private_features[i] != -1; i++)
     COGL_FLAGS_SET (renderer->private_features,
-                    desc->private_features[i], TRUE);
+                    desc->private_features[i], true);
 
 #ifndef HAVE_DIRECTLY_LINKED_GL_LIBRARY
 
@@ -589,13 +589,13 @@ _cogl_renderer_choose_driver (CoglRenderer *renderer,
                        COGL_DRIVER_ERROR_FAILED_TO_LOAD_LIBRARY,
                        "Failed to dynamically open the GL library \"%s\"",
                        libgl_name);
-          return FALSE;
+          return false;
         }
     }
 
 #endif /* HAVE_DIRECTLY_LINKED_GL_LIBRARY */
 
-  return TRUE;
+  return true;
 }
 
 /* Final connection API */
@@ -604,25 +604,25 @@ bool
 cogl_renderer_connect (CoglRenderer *renderer, CoglError **error)
 {
   int i;
-  CString *error_message;
-  bool constraints_failed = FALSE;
+  c_string_t *error_message;
+  bool constraints_failed = false;
 
   if (renderer->connected)
-    return TRUE;
+    return true;
 
   /* The driver needs to be chosen before connecting the renderer
      because eglInitialize requires the library containing the GL API
      to be loaded before its called */
   if (!_cogl_renderer_choose_driver (renderer, error))
-    return FALSE;
+    return false;
 
   error_message = c_string_new ("");
   for (i = 0; i < C_N_ELEMENTS (_cogl_winsys_vtable_getters); i++)
     {
       const CoglWinsysVtable *winsys = _cogl_winsys_vtable_getters[i]();
       CoglError *tmp_error = NULL;
-      CList *l;
-      bool skip_due_to_constraints = FALSE;
+      c_list_t *l;
+      bool skip_due_to_constraints = false;
 
       if (renderer->winsys_id_override != COGL_WINSYS_ID_ANY)
         {
@@ -644,13 +644,13 @@ cogl_renderer_connect (CoglRenderer *renderer, CoglError **error)
           CoglRendererConstraint constraint = GPOINTER_TO_UINT (l->data);
           if (!(winsys->constraints & constraint))
             {
-              skip_due_to_constraints = TRUE;
+              skip_due_to_constraints = true;
               break;
             }
         }
       if (skip_due_to_constraints)
         {
-          constraints_failed |= TRUE;
+          constraints_failed |= true;
           continue;
         }
 
@@ -667,9 +667,9 @@ cogl_renderer_connect (CoglRenderer *renderer, CoglError **error)
         }
       else
         {
-          renderer->connected = TRUE;
-          c_string_free (error_message, TRUE);
-          return TRUE;
+          renderer->connected = true;
+          c_string_free (error_message, true);
+          return true;
         }
     }
 
@@ -680,7 +680,7 @@ cogl_renderer_connect (CoglRenderer *renderer, CoglError **error)
           _cogl_set_error (error, COGL_RENDERER_ERROR,
                        COGL_RENDERER_ERROR_BAD_CONSTRAINT,
                        "Failed to connected to any renderer due to constraints");
-          return FALSE;
+          return false;
         }
 
       renderer->winsys_vtable = NULL;
@@ -688,18 +688,18 @@ cogl_renderer_connect (CoglRenderer *renderer, CoglError **error)
                    COGL_WINSYS_ERROR_INIT,
                    "Failed to connected to any renderer: %s",
                    error_message->str);
-      c_string_free (error_message, TRUE);
-      return FALSE;
+      c_string_free (error_message, true);
+      return false;
     }
 
-  return TRUE;
+  return true;
 }
 
 CoglFilterReturn
 _cogl_renderer_handle_native_event (CoglRenderer *renderer,
                                     void *event)
 {
-  CSList *l, *next;
+  c_slist_t *l, *next;
 
   /* Pass the event on to all of the registered filters in turn */
   for (l = renderer->event_filters; l; l = next)
@@ -739,7 +739,7 @@ _cogl_renderer_remove_native_filter (CoglRenderer *renderer,
                                      CoglNativeFilterFunc func,
                                      void *data)
 {
-  CSList *l, *prev = NULL;
+  c_slist_t *l, *prev = NULL;
 
   for (l = renderer->event_filters; l; prev = l, l = l->next)
     {
@@ -839,7 +839,7 @@ cogl_renderer_foreach_output (CoglRenderer *renderer,
                               CoglOutputCallback callback,
                               void *user_data)
 {
-  CList *l;
+  c_list_t *l;
 
   _COGL_RETURN_IF_FAIL (renderer->connected);
   _COGL_RETURN_IF_FAIL (callback != NULL);

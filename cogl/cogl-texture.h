@@ -125,8 +125,8 @@ uint32_t cogl_texture_error_domain (void);
  *
  * Gets whether the given object references a texture object.
  *
- * Return value: %TRUE if the @object references a texture, and
- *   %FALSE otherwise
+ * Return value: %true if the @object references a texture, and
+ *   %false otherwise
  */
 bool
 cogl_is_texture (void *object);
@@ -228,7 +228,7 @@ cogl_texture_get_components (CoglTexture *texture);
  * cogl_texture_set_data() then the data can be uploaded without being
  * converted.
  *
- * By default the @premultipled state is @TRUE.
+ * By default the @premultipled state is @true.
  *
  * Since: 1.18
  */
@@ -244,11 +244,11 @@ cogl_texture_set_premultiplied (CoglTexture *texture,
  * green and blue components for the given @texture as set by
  * cogl_texture_set_premultiplied().
  *
- * By default the pre-multipled state is @TRUE.
+ * By default the pre-multipled state is @true.
  *
- * Return value: %TRUE if red, green and blue components are
+ * Return value: %true if red, green and blue components are
  *               internally stored pre-multiplied by the alpha
- *               value or %FALSE if not.
+ *               value or %false if not.
  * Since: 1.18
  */
 bool
@@ -283,7 +283,7 @@ cogl_texture_get_height (CoglTexture *texture);
  * Queries if a texture is sliced (stored as multiple GPU side tecture
  * objects).
  *
- * Return value: %TRUE if the texture is sliced, %FALSE if the texture
+ * Return value: %true if the texture is sliced, %false if the texture
  *   is stored as a single GPU texture
  */
 bool
@@ -302,7 +302,7 @@ cogl_texture_is_sliced (CoglTexture *texture);
  * If the texture is spliced the data for the first sub texture will be
  * queried.
  *
- * Return value: %TRUE if the handle was successfully retrieved, %FALSE
+ * Return value: %true if the handle was successfully retrieved, %false
  *   if the handle was invalid
  */
 bool
@@ -436,11 +436,11 @@ cogl_texture_draw_and_read_to_bitmap (CoglTexture *texture,
  *
  * <note>Since the storage for a #CoglTexture is allocated lazily then
  * if the given @texture has not previously been allocated then this
- * api can return %FALSE and throw an exceptional @error if there is
+ * api can return %false and throw an exceptional @error if there is
  * not enough memory to allocate storage for @texture.</note>
  *
- * Return value: %TRUE if the subregion upload was successful, and
- *   %FALSE otherwise
+ * Return value: %true if the subregion upload was successful, and
+ *   %false otherwise
  */
 bool
 cogl_texture_set_region (CoglTexture *texture,
@@ -500,11 +500,11 @@ cogl_texture_set_region (CoglTexture *texture,
  *
  * <note>Since the storage for a #CoglTexture is allocated lazily then
  * if the given @texture has not previously been allocated then this
- * api can return %FALSE and throw an exceptional @error if there is
+ * api can return %false and throw an exceptional @error if there is
  * not enough memory to allocate storage for @texture.</note>
  *
- * Return value: %TRUE if the data upload was successful, and
- *               %FALSE otherwise
+ * Return value: %true if the data upload was successful, and
+ *               %false otherwise
  */
 bool
 cogl_texture_set_data (CoglTexture *texture,
@@ -538,8 +538,8 @@ cogl_texture_set_data (CoglTexture *texture,
  * <note>The source region must not extend outside the bounds of the
  * source @bitmap.</note>
  *
- * Return value: %TRUE if the subregion upload was successful, and
- *   %FALSE otherwise
+ * Return value: %true if the subregion upload was successful, and
+ *   %false otherwise
  *
  * Since: 1.8
  * Stability: unstable
@@ -570,8 +570,8 @@ cogl_texture_set_region_from_bitmap (CoglTexture *texture,
  * the texture, or if the texture is attached to a #CoglOffscreen
  * framebuffer and rendered too.</note>
  *
- * Return value: %TRUE if the texture was successfully allocated,
- *               otherwise %FALSE and @error will be updated if it
+ * Return value: %true if the texture was successfully allocated,
+ *               otherwise %false and @error will be updated if it
  *               wasn't %NULL.
  */
 bool

@@ -39,11 +39,11 @@
 #include <math.h>
 #include <assert.h>
 
-#ifndef TRUE
-#define TRUE 1
+#ifndef true
+#define true 1
 #endif
-#ifndef FALSE
-#define FALSE 0
+#ifndef false
+#define false 0
 #endif
 
 #define Dot(u,v)	(u[0]*v[0] + u[1]*v[1] + u[2]*v[2])
@@ -200,20 +200,20 @@ void __gl_projectPolygon( GLUtesselator *tess )
   GLUvertex *v, *vHead = &tess->mesh->vHead;
   GLdouble norm[3];
   GLdouble *sUnit, *tUnit;
-  int i, computedNormal = FALSE;
+  int i, computedNormal = false;
 
   norm[0] = tess->normal[0];
   norm[1] = tess->normal[1];
   norm[2] = tess->normal[2];
   if( norm[0] == 0 && norm[1] == 0 && norm[2] == 0 ) {
     ComputeNormal( tess, norm );
-    computedNormal = TRUE;
+    computedNormal = true;
   }
   sUnit = tess->sUnit;
   tUnit = tess->tUnit;
   i = LongAxis( norm );
 
-#if defined(FOR_TRITE_TEST_PROGRAM) || defined(TRUE_PROJECT)
+#if defined(FOR_TRITE_TEST_PROGRAM) || defined(true_PROJECT)
   /* Choose the initial sUnit vector to be approximately perpendicular
    * to the normal.
    */

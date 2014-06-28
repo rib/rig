@@ -367,10 +367,10 @@ _cogl_sub_texture_set_region (CoglTexture *tex,
 
       _COGL_RETURN_VAL_IF_FAIL (sub_tex->sub_x == 0 &&
                                 cogl_texture_get_width (tex) == full_width,
-                                FALSE);
+                                false);
       _COGL_RETURN_VAL_IF_FAIL (sub_tex->sub_y == 0 &&
                                 cogl_texture_get_height (tex) == full_height,
-                                FALSE);
+                                false);
     }
 
   return cogl_texture_set_region_from_bitmap (sub_tex->full_texture,
@@ -410,7 +410,7 @@ _cogl_sub_texture_get_type (CoglTexture *tex)
 static const CoglTextureVtable
 cogl_sub_texture_vtable =
   {
-    FALSE, /* not primitive */
+    false, /* not primitive */
     _cogl_sub_texture_allocate,
     _cogl_sub_texture_set_region,
     NULL, /* get_data */

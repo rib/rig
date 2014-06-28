@@ -47,7 +47,7 @@ typedef long             GLsizeiptr;
 #define GL_COLOR_BUFFER_BIT               0x00004000
 
 /* Boolean */
-#define GL_FALSE                          0
+#define FALSE                          0
 #define GL_TRUE                           1
 
 /* BeginMode */

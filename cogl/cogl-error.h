@@ -151,8 +151,8 @@ cogl_error_copy (CoglError *error);
  * @domain: The error domain
  * @code: The error code
  *
- * Returns %TRUE if error matches @domain and @code, %FALSE otherwise.
- * In particular, when error is %NULL, FALSE will be returned.
+ * Returns %true if error matches @domain and @code, %false otherwise.
+ * In particular, when error is %NULL, false will be returned.
  *
  * Return value: whether the @error corresponds to the given @domain
  *               and @code.

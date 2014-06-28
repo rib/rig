@@ -116,11 +116,11 @@ _cogl_winsys_renderer_connect (CoglRenderer *renderer,
 
   gdl_close ();
 
-  return TRUE;
+  return true;
 
 error:
   _cogl_winsys_renderer_disconnect (renderer);
-  return FALSE;
+  return false;
 }
 
 static bool
@@ -164,19 +164,19 @@ _cogl_winsys_egl_context_created (CoglDisplay *display,
                    EGL_HEIGHT,
                    &gdl_display->egl_surface_height);
 
-  return TRUE;
+  return true;
 
  fail:
   _cogl_set_error (error, COGL_WINSYS_ERROR,
                COGL_WINSYS_ERROR_CREATE_CONTEXT,
                "%s", error_message);
-  return FALSE;
+  return false;
 }
 
 static bool
 gdl_plane_init (CoglDisplay *display, CoglError **error)
 {
-  bool ret = TRUE;
+  bool ret = true;
   gdl_color_space_t colorSpace = GDL_COLOR_SPACE_RGB;
   gdl_pixel_format_t pixfmt = GDL_PF_ARGB_32;
   gdl_rectangle_t dstRect;
@@ -188,7 +188,7 @@ gdl_plane_init (CoglDisplay *display, CoglError **error)
       _cogl_set_error (error, COGL_WINSYS_ERROR, COGL_WINSYS_ERROR_CREATE_CONTEXT,
                    "No GDL plane specified with "
                    "cogl_gdl_display_set_plane");
-      return FALSE;
+      return false;
     }
 
   rc = gdl_init (NULL);
@@ -196,7 +196,7 @@ gdl_plane_init (CoglDisplay *display, CoglError **error)
     {
       _cogl_set_error (error, COGL_WINSYS_ERROR, COGL_WINSYS_ERROR_CREATE_CONTEXT,
                    "GDL initialize failed. %s", gdl_get_error_string (rc));
-      return FALSE;
+      return false;
     }
 
   rc = gdl_get_display_info (GDL_DISPLAY_ID_0, &display_info);
@@ -206,7 +206,7 @@ gdl_plane_init (CoglDisplay *display, CoglError **error)
                    "GDL failed to get display infomation: %s",
                    gdl_get_error_string (rc));
       gdl_close ();
-      return FALSE;
+      return false;
     }
 
   dstRect.origin.x = 0;
@@ -232,15 +232,15 @@ gdl_plane_init (CoglDisplay *display, CoglError **error)
     rc = gdl_plane_set_uint (GDL_PLANE_NUM_GFX_SURFACES, 3);
 
   if (rc == GDL_SUCCESS)
-    rc = gdl_plane_config_end (GDL_FALSE);
+    rc = gdl_plane_config_end (GDL_false);
   else
-    gdl_plane_config_end (GDL_TRUE);
+    gdl_plane_config_end (GDL_true);
 
   if (rc != GDL_SUCCESS)
     {
       _cogl_set_error (error, COGL_WINSYS_ERROR, COGL_WINSYS_ERROR_CREATE_CONTEXT,
                    "GDL configuration failed: %s.", gdl_get_error_string (rc));
-      ret = FALSE;
+      ret = false;
     }
 
   gdl_close ();
@@ -259,9 +259,9 @@ _cogl_winsys_egl_display_setup (CoglDisplay *display,
   egl_display->platform = gdl_display;
 
   if (!gdl_plane_init (display, error))
-    return FALSE;
+    return false;
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -303,7 +303,7 @@ _cogl_winsys_egl_onscreen_init (CoglOnscreen *onscreen,
       _cogl_set_error (error, COGL_WINSYS_ERROR,
                    COGL_WINSYS_ERROR_CREATE_ONSCREEN,
                    "EGL platform only supports a single onscreen window");
-      return FALSE;
+      return false;
     }
 
   egl_onscreen->egl_surface = egl_display->egl_surface;
@@ -311,9 +311,9 @@ _cogl_winsys_egl_onscreen_init (CoglOnscreen *onscreen,
   _cogl_framebuffer_winsys_update_size (framebuffer,
                                         gdl_display->egl_surface_width,
                                         gdl_display->egl_surface_height);
-  gdl_display->have_onscreen = TRUE;
+  gdl_display->have_onscreen = true;
 
-  return TRUE;
+  return true;
 }
 
 static int
@@ -346,7 +346,7 @@ _cogl_winsys_egl_vtable =
 const CoglWinsysVtable *
 _cogl_winsys_egl_gdl_get_vtable (void)
 {
-  static bool vtable_inited = FALSE;
+  static bool vtable_inited = false;
   static CoglWinsysVtable vtable;
 
   if (!vtable_inited)
@@ -362,7 +362,7 @@ _cogl_winsys_egl_gdl_get_vtable (void)
       vtable.renderer_connect = _cogl_winsys_renderer_connect;
       vtable.renderer_disconnect = _cogl_winsys_renderer_disconnect;
 
-      vtable_inited = TRUE;
+      vtable_inited = true;
     }
 
   return &vtable;

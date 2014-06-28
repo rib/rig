@@ -104,7 +104,7 @@ typedef struct _CoglJournalFlushState
   CoglJournal *journal;
 
   CoglAttributeBuffer *attribute_buffer;
-  CArray *attributes;
+  c_array_t *attributes;
   int current_attribute;
 
   size_t stride;
@@ -133,9 +133,9 @@ _cogl_journal_free (CoglJournal *journal)
   int i;
 
   if (journal->entries)
-    c_array_free (journal->entries, TRUE);
+    c_array_free (journal->entries, true);
   if (journal->vertices)
-    c_array_free (journal->vertices, TRUE);
+    c_array_free (journal->vertices, true);
 
   for (i = 0; i < COGL_JOURNAL_VBO_POOL_SIZE; i++)
     if (journal->vbo_pool[i])
@@ -157,8 +157,8 @@ _cogl_journal_new (CoglFramebuffer *framebuffer)
      the journal is the only thing keeping it alive */
   journal->framebuffer = framebuffer;
 
-  journal->entries = c_array_new (FALSE, FALSE, sizeof (CoglJournalEntry));
-  journal->vertices = c_array_new (FALSE, FALSE, sizeof (float));
+  journal->entries = c_array_new (false, false, sizeof (CoglJournalEntry));
+  journal->vertices = c_array_new (false, false, sizeof (float));
 
   _cogl_list_init (&journal->pending_fences);
 
@@ -459,9 +459,9 @@ compare_entry_pipelines (CoglJournalEntry *entry0, CoglJournalEntry *entry1)
                              ~COGL_PIPELINE_STATE_COLOR),
                             COGL_PIPELINE_LAYER_STATE_ALL,
                             0))
-    return TRUE;
+    return true;
   else
-    return FALSE;
+    return false;
 }
 
 typedef struct _CreateAttributeState
@@ -522,7 +522,7 @@ create_attribute_cb (CoglPipeline *pipeline,
 
   state->current++;
 
-  return TRUE;
+  return true;
 }
 
 /* Since the stride may not reflect the number of texture layers in use
@@ -572,9 +572,9 @@ static bool
 compare_entry_layer_numbers (CoglJournalEntry *entry0, CoglJournalEntry *entry1)
 {
   if (_cogl_pipeline_layer_numbers_equal (entry0->pipeline, entry1->pipeline))
-    return TRUE;
+    return true;
   else
-    return FALSE;
+    return false;
 }
 
 /* At this point we know the stride has changed from the previous batch
@@ -693,9 +693,9 @@ compare_entry_strides (CoglJournalEntry *entry0, CoglJournalEntry *entry1)
   if (entry0->n_layers == entry1->n_layers ||
       (entry0->n_layers <= MIN_LAYER_PADING &&
        entry1->n_layers <= MIN_LAYER_PADING))
-    return TRUE;
+    return true;
   else
-    return FALSE;
+    return false;
 }
 
 /* At this point we know the batch has a unique clip stack */
@@ -784,7 +784,7 @@ can_software_clip_entry (CoglJournalEntry *journal_entry,
        * texture coordinates. */
       if (_cogl_pipeline_has_vertex_snippets (pipeline) ||
           _cogl_pipeline_has_fragment_snippets (pipeline))
-        return FALSE;
+        return false;
     }
 
   /* Now we need to verify that each clip entry's matrix is just a
@@ -804,7 +804,7 @@ can_software_clip_entry (CoglJournalEntry *journal_entry,
       if (!cogl_matrix_entry_calculate_translation (clip_rect->matrix_entry,
                                                      modelview_entry,
                                                      &tx, &ty, &tz))
-        return FALSE;
+        return false;
 
       if (clip_rect->x0 < clip_rect->x1)
         {
@@ -837,7 +837,7 @@ can_software_clip_entry (CoglJournalEntry *journal_entry,
       clip_bounds_out->y_2 <= clip_bounds_out->y_1)
     memset (clip_bounds_out, 0, sizeof (ClipBounds));
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -972,7 +972,7 @@ maybe_software_clip_entries (CoglJournalEntry      *batch_start,
      whether we can clip all of the entries so we don't want to do the
      rest of the dependant calculations until we're sure we can. */
   if (ctx->journal_clip_bounds == NULL)
-    ctx->journal_clip_bounds = c_array_new (FALSE, FALSE, sizeof (ClipBounds));
+    ctx->journal_clip_bounds = c_array_new (false, false, sizeof (ClipBounds));
   c_array_set_size (ctx->journal_clip_bounds, batch_len);
 
   for (entry_num = 0; entry_num < batch_len; entry_num++)
@@ -1076,7 +1076,7 @@ upload_vertices (CoglJournal *journal,
                  const CoglJournalEntry *entries,
                  int n_entries,
                  size_t needed_vbo_len,
-                 CArray *vertices)
+                 c_array_t *vertices)
 {
   CoglAttributeBuffer *attribute_buffer;
   CoglBuffer *buffer;
@@ -1198,7 +1198,7 @@ _cogl_journal_discard (CoglJournal *journal)
   cogl_object_unref (journal->framebuffer);
 }
 
-/* Note: A return value of FALSE doesn't mean 'no' it means
+/* Note: A return value of false doesn't mean 'no' it means
  * 'unknown' */
 bool
 _cogl_journal_all_entries_within_bounds (CoglJournal *journal,
@@ -1217,7 +1217,7 @@ _cogl_journal_all_entries_within_bounds (CoglJournal *journal,
   int i;
 
   if (journal->entries->len == 0)
-    return TRUE;
+    return true;
 
   /* Find the shortest clip_stack ancestry that leaves us in the
    * required bounds */
@@ -1237,7 +1237,7 @@ _cogl_journal_all_entries_within_bounds (CoglJournal *journal,
     }
 
   if (!reference)
-    return FALSE;
+    return false;
 
   /* For the remaining journal entries we will only verify they share
    * 'reference' as an ancestor in their clip stack since that's
@@ -1245,7 +1245,7 @@ _cogl_journal_all_entries_within_bounds (CoglJournal *journal,
    */
   for (i = 1; i < journal->entries->len; i++)
     {
-      bool found_reference = FALSE;
+      bool found_reference = false;
       entry = &c_array_index (journal->entries, CoglJournalEntry, i);
 
       for (clip_entry = entry->clip_stack;
@@ -1254,16 +1254,16 @@ _cogl_journal_all_entries_within_bounds (CoglJournal *journal,
         {
           if (clip_entry == reference)
             {
-              found_reference = TRUE;
+              found_reference = true;
               break;
             }
         }
 
       if (!found_reference)
-        return FALSE;
+        return false;
     }
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -1412,15 +1412,15 @@ add_framebuffer_deps_cb (CoglPipelineLayer *layer, void *user_data)
 {
   CoglFramebuffer *framebuffer = user_data;
   CoglTexture *texture = _cogl_pipeline_layer_get_texture_real (layer);
-  const CList *l;
+  const c_list_t *l;
 
   if (!texture)
-    return TRUE;
+    return true;
 
   for (l = _cogl_texture_get_associated_framebuffers (texture); l; l = l->next)
     _cogl_framebuffer_add_dependency (framebuffer, l->data);
 
-  return TRUE;
+  return true;
 }
 
 void
@@ -1663,11 +1663,11 @@ try_checking_point_hits_entry_after_clipping (CoglFramebuffer *framebuffer,
                                               float y,
                                               bool *hit)
 {
-  bool can_software_clip = TRUE;
-  bool needs_software_clip = FALSE;
+  bool can_software_clip = true;
+  bool needs_software_clip = false;
   CoglClipStack *clip_entry;
 
-  *hit = TRUE;
+  *hit = true;
 
   /* Verify that all of the clip stack entries are simple rectangle
    * clips */
@@ -1680,8 +1680,8 @@ try_checking_point_hits_entry_after_clipping (CoglFramebuffer *framebuffer,
           y < clip_entry->bounds_y0 ||
           y >= clip_entry->bounds_y1)
         {
-          *hit = FALSE;
-          return TRUE;
+          *hit = false;
+          return true;
         }
 
       if (clip_entry->type == COGL_CLIP_STACK_WINDOW_RECT)
@@ -1690,20 +1690,20 @@ try_checking_point_hits_entry_after_clipping (CoglFramebuffer *framebuffer,
            * this case because for our purposes we know this clip
            * can be ignored now, but [can_]sofware_clip_entry() doesn't
            * know this and will bail out. */
-          can_software_clip = FALSE;
+          can_software_clip = false;
         }
       else if (clip_entry->type == COGL_CLIP_STACK_RECT)
         {
           CoglClipStackRect *rect_entry = (CoglClipStackRect *)entry;
 
-          if (rect_entry->can_be_scissor == FALSE)
-            needs_software_clip = TRUE;
-          /* If can_be_scissor is TRUE then we know it's screen
+          if (rect_entry->can_be_scissor == false)
+            needs_software_clip = true;
+          /* If can_be_scissor is true then we know it's screen
            * aligned and the hit test we did above has determined
            * that we are inside this clip. */
         }
       else
-        return FALSE;
+        return false;
     }
 
   if (needs_software_clip)
@@ -1712,20 +1712,20 @@ try_checking_point_hits_entry_after_clipping (CoglFramebuffer *framebuffer,
       float poly[16];
 
       if (!can_software_clip)
-        return FALSE;
+        return false;
 
       if (!can_software_clip_entry (entry, NULL,
                                     entry->clip_stack, &clip_bounds))
-        return FALSE;
+        return false;
 
       software_clip_entry (entry, vertices, &clip_bounds);
       entry_to_screen_polygon (framebuffer, entry, vertices, poly);
 
       *hit = _cogl_util_point_in_screen_poly (x, y, poly, sizeof (float) * 4, 4);
-      return TRUE;
+      return true;
     }
 
-  return TRUE;
+  return true;
 }
 
 bool
@@ -1748,17 +1748,17 @@ _cogl_journal_try_read_pixel (CoglJournal *journal,
    * continue being lots of arbitrary single pixel reads they will end
    * up faster in the end. */
   if (journal->fast_read_pixel_count > 50)
-    return FALSE;
+    return false;
 
   format = cogl_bitmap_get_format (bitmap);
 
   if (format != COGL_PIXEL_FORMAT_RGBA_8888_PRE &&
       format != COGL_PIXEL_FORMAT_RGBA_8888)
-    return FALSE;
+    return false;
 
   ctx = _cogl_bitmap_get_context (bitmap);
 
-  *found_intersection = FALSE;
+  *found_intersection = false;
 
   /* NB: The most recently added journal entry is the last entry, and
    * assuming this is a simple scene only comprised of opaque coloured
@@ -1792,13 +1792,13 @@ _cogl_journal_try_read_pixel (CoglJournal *journal,
                                                              entry,
                                                              vertices,
                                                              x, y, &hit))
-            return FALSE; /* hit couldn't be determined */
+            return false; /* hit couldn't be determined */
 
           if (!hit)
             continue;
         }
 
-      *found_intersection = TRUE;
+      *found_intersection = true;
 
       /* If we find that the rectangle the point of interest
        * intersects has any state more complex than a constant opaque
@@ -1808,13 +1808,13 @@ _cogl_journal_try_read_pixel (CoglJournal *journal,
                                   ~COGL_PIPELINE_STATE_COLOR),
                                  COGL_PIPELINE_LAYER_STATE_ALL,
                                  0))
-        return FALSE;
+        return false;
 
 
       /* we currently only care about cases where the premultiplied or
        * unpremultipled colors are equivalent... */
       if (color[3] != 0xff)
-        return FALSE;
+        return false;
 
       pixel = _cogl_bitmap_map (bitmap,
                                 COGL_BUFFER_ACCESS_WRITE,
@@ -1823,7 +1823,7 @@ _cogl_journal_try_read_pixel (CoglJournal *journal,
       if (pixel == NULL)
         {
           cogl_error_free (ignore_error);
-          return FALSE;
+          return false;
         }
 
       pixel[0] = color[0];
@@ -1838,5 +1838,5 @@ _cogl_journal_try_read_pixel (CoglJournal *journal,
 
 success:
   journal->fast_read_pixel_count++;
-  return TRUE;
+  return true;
 }

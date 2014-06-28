@@ -152,7 +152,7 @@ _cogl_glsl_shader_set_source_with_boilerplate (CoglContext *ctx,
 
   if (C_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_SHOW_SOURCE)))
     {
-      CString *buf = c_string_new (NULL);
+      c_string_t *buf = c_string_new (NULL);
       int i;
 
       c_string_append_printf (buf,
@@ -167,7 +167,7 @@ _cogl_glsl_shader_set_source_with_boilerplate (CoglContext *ctx,
 
       c_message ("%s", buf->str);
 
-      c_string_free (buf, TRUE);
+      c_string_free (buf, true);
     }
 
   GE( ctx, glShaderSource (shader_gl_handle, count,

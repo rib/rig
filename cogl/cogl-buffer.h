@@ -101,7 +101,7 @@ _cogl_buffer_error_domain (void);
  *
  * Checks whether @buffer is a buffer object.
  *
- * Return value: %TRUE if the handle is a CoglBuffer, and %FALSE otherwise
+ * Return value: %true if the handle is a CoglBuffer, and %false otherwise
  *
  * Since: 1.2
  * Stability: unstable
@@ -311,7 +311,7 @@ cogl_buffer_unmap (CoglBuffer *buffer);
  * data is controlled by @offset and @offset + @data should be less than the
  * buffer size.
  *
- * Return value: %TRUE is the operation succeeded, %FALSE otherwise
+ * Return value: %true is the operation succeeded, %false otherwise
  *
  * Since: 1.2
  * Stability: unstable

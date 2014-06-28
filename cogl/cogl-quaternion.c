@@ -320,11 +320,11 @@ cogl_quaternion_equal (const void *v1, const void *v2)
   const CoglQuaternion *a = v1;
   const CoglQuaternion *b = v2;
 
-  _COGL_RETURN_VAL_IF_FAIL (v1 != NULL, FALSE);
-  _COGL_RETURN_VAL_IF_FAIL (v2 != NULL, FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (v1 != NULL, false);
+  _COGL_RETURN_VAL_IF_FAIL (v2 != NULL, false);
 
   if (v1 == v2)
-    return TRUE;
+    return true;
 
   return (a->w == b->w &&
           a->x == b->x &&

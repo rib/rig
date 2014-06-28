@@ -249,8 +249,8 @@ cogl_color_unpremultiply (CoglColor *color)
 bool
 cogl_color_equal (const void *v1, const void *v2)
 {
-  _COGL_RETURN_VAL_IF_FAIL (v1 != NULL, FALSE);
-  _COGL_RETURN_VAL_IF_FAIL (v2 != NULL, FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (v1 != NULL, false);
+  _COGL_RETURN_VAL_IF_FAIL (v2 != NULL, false);
 
   return memcmp (v1, v2, sizeof (CoglColor)) == 0;
 }

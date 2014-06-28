@@ -559,7 +559,7 @@ cogl_matrix_free (CoglMatrix *matrix);
  * #CoglMatrix so that subsequent requests for the inverse transform may
  * avoid costly inversion calculations.</note>
  *
- * Return value: %TRUE if the inverse was successfully calculated or %FALSE
+ * Return value: %true if the inverse was successfully calculated or %false
  *   for degenerate transformations that can't be inverted (in this case the
  *   @inverse matrix will simply be initialized with the identity matrix)
  *
@@ -710,7 +710,7 @@ cogl_matrix_project_points (const CoglMatrix *matrix,
  *
  * Determines if the given matrix is an identity matrix.
  *
- * Returns: %TRUE if @matrix is an identity matrix else %FALSE
+ * Returns: %true if @matrix is an identity matrix else %false
  * Since: 1.8
  */
 bool

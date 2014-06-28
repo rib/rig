@@ -107,7 +107,7 @@ _cogl_path_data_unref (CoglPathData *data)
     {
       _cogl_path_data_clear_vbos (data);
 
-      c_array_free (data->path_nodes, TRUE);
+      c_array_free (data->path_nodes, true);
 
       c_slice_free (CoglPathData, data);
     }
@@ -126,7 +126,7 @@ _cogl_path_modify (CoglPath *path)
       CoglPathData *old_data = path->data;
 
       path->data = c_slice_dup (CoglPathData, old_data);
-      path->data->path_nodes = c_array_new (FALSE, FALSE,
+      path->data->path_nodes = c_array_new (false, false,
                                             sizeof (CoglPathNode));
       c_array_append_vals (path->data->path_nodes,
                            old_data->path_nodes->data,
@@ -209,8 +209,8 @@ _cogl_path_add_node (CoglPath *path,
 
   /* Once the path nodes have been modified then we'll assume it's no
      longer a rectangle. cogl_path_rectangle will set this back to
-     TRUE if this has been called from there */
-  data->is_rectangle = FALSE;
+     true if this has been called from there */
+  data->is_rectangle = false;
 }
 
 void
@@ -298,14 +298,14 @@ _cogl_path_fill_nodes_with_clipped_rectangle (CoglPath *path,
   /* We need at least three stencil bits to combine clips */
   if (_cogl_framebuffer_get_stencil_bits (framebuffer) >= 3)
     {
-      static bool seen_warning = FALSE;
+      static bool seen_warning = false;
 
       if (!seen_warning)
         {
           c_warning ("Paths can not be filled using materials with "
                      "sliced textures unless there is a stencil "
                      "buffer");
-          seen_warning = TRUE;
+          seen_warning = true;
         }
     }
 
@@ -334,7 +334,7 @@ validate_layer_cb (CoglPipelineLayer *layer, void *user_data)
 
   if (texture != NULL && (cogl_texture_is_sliced (texture) ||
                           !_cogl_texture_can_hardware_repeat (texture)))
-    *needs_fallback = TRUE;
+    *needs_fallback = true;
 
   return !*needs_fallback;
 }
@@ -364,7 +364,7 @@ _cogl_path_fill_nodes (CoglPath *path,
     }
   else
     {
-      bool needs_fallback = FALSE;
+      bool needs_fallback = false;
       CoglPrimitive *primitive;
 
       _cogl_pipeline_foreach_layer_internal (pipeline,
@@ -408,7 +408,7 @@ cogl_path_move_to (CoglPath *path,
 
   _COGL_RETURN_IF_FAIL (cogl_is_path (path));
 
-  _cogl_path_add_node (path, TRUE, x, y);
+  _cogl_path_add_node (path, true, x, y);
 
   data = path->data;
 
@@ -443,7 +443,7 @@ cogl_path_line_to (CoglPath *path,
 
   _COGL_RETURN_IF_FAIL (cogl_is_path (path));
 
-  _cogl_path_add_node (path, FALSE, x, y);
+  _cogl_path_add_node (path, false, x, y);
 
   data = path->data;
 
@@ -472,7 +472,7 @@ cogl_path_close (CoglPath *path)
 {
   _COGL_RETURN_IF_FAIL (cogl_is_path (path));
 
-  _cogl_path_add_node (path, FALSE, path->data->path_start.x,
+  _cogl_path_add_node (path, false, path->data->path_start.x,
                        path->data->path_start.y);
 
   path->data->path_pen = path->data->path_start;
@@ -791,7 +791,7 @@ _cogl_path_bezier3_sub (CoglPath *path,
 	  if (cindex == 0)
             return;
 
-	  _cogl_path_add_node (path, FALSE, c->p4.x, c->p4.y);
+	  _cogl_path_add_node (path, false, c->p4.x, c->p4.y);
 
 	  --cindex;
 
@@ -857,7 +857,7 @@ cogl_path_curve_to (CoglPath *path,
   _cogl_path_bezier3_sub (path, &cubic);
 
   /* Add last point */
-  _cogl_path_add_node (path, FALSE, cubic.p4.x, cubic.p4.y);
+  _cogl_path_add_node (path, false, cubic.p4.x, cubic.p4.y);
   path->data->path_pen = cubic.p4;
 }
 
@@ -897,12 +897,12 @@ cogl_path_new (CoglContext *context)
   data->ref_count = 1;
   data->context = context;
   data->fill_rule = COGL_PATH_FILL_RULE_EVEN_ODD;
-  data->path_nodes = c_array_new (FALSE, FALSE, sizeof (CoglPathNode));
+  data->path_nodes = c_array_new (false, false, sizeof (CoglPathNode));
   data->last_path = 0;
   data->fill_attribute_buffer = NULL;
   data->stroke_attribute_buffer = NULL;
   data->fill_primitive = NULL;
-  data->is_rectangle = FALSE;
+  data->is_rectangle = false;
 
   return _cogl_path_object_new (path);
 }
@@ -973,7 +973,7 @@ _cogl_path_bezier2_sub (CoglPath *path,
 	{
 	  /* Add subdivision point (skip last) */
 	  if (qindex == 0) return;
-	  _cogl_path_add_node (path, FALSE, q->p3.x, q->p3.y);
+	  _cogl_path_add_node (path, false, q->p3.x, q->p3.y);
 	  --qindex; continue;
 	}
 
@@ -1020,7 +1020,7 @@ cogl_path_curve2_to (CoglPath *path,
   _cogl_path_bezier2_sub (&quad);
 
   /* Add last point */
-  _cogl_path_add_node (FALSE, quad.p3.x, quad.p3.y);
+  _cogl_path_add_node (false, quad.p3.x, quad.p3.y);
   path->data->path_pen = quad.p3;
 }
 
@@ -1055,11 +1055,11 @@ struct _CoglPathTesselator
   int vertex_number;
   /* Array of CoglPathTesselatorVertex. This needs to grow when the
      combine callback is called */
-  CArray *vertices;
+  c_array_t *vertices;
   /* Array of integers for the indices into the vertices array. Each
      element will either be uint8_t, uint16_t or uint32_t depending on
      the number of vertices */
-  CArray *indices;
+  c_array_t *indices;
   CoglIndicesType indices_type;
   /* Indices used to split fans and strips */
   int index_a, index_b;
@@ -1099,15 +1099,15 @@ _cogl_path_tesselator_allocate_indices_array (CoglPathTesselator *tess)
   switch (tess->indices_type)
     {
     case COGL_INDICES_TYPE_UNSIGNED_BYTE:
-      tess->indices = c_array_new (FALSE, FALSE, sizeof (uint8_t));
+      tess->indices = c_array_new (false, false, sizeof (uint8_t));
       break;
 
     case COGL_INDICES_TYPE_UNSIGNED_SHORT:
-      tess->indices = c_array_new (FALSE, FALSE, sizeof (uint16_t));
+      tess->indices = c_array_new (false, false, sizeof (uint16_t));
       break;
 
     case COGL_INDICES_TYPE_UNSIGNED_INT:
-      tess->indices = c_array_new (FALSE, FALSE, sizeof (uint32_t));
+      tess->indices = c_array_new (false, false, sizeof (uint32_t));
       break;
     }
 }
@@ -1202,7 +1202,7 @@ _cogl_path_tesselator_vertex (void *vertex_data,
 static void
 _cogl_path_tesselator_end (CoglPathTesselator *tess)
 {
-  tess->primitive_type = GL_FALSE;
+  tess->primitive_type = FALSE;
 }
 
 static void
@@ -1245,7 +1245,7 @@ _cogl_path_tesselator_combine (double coords[3],
   if (new_indices_type != tess->indices_type)
     {
       CoglIndicesType old_indices_type = new_indices_type;
-      CArray *old_vertices = tess->indices;
+      c_array_t *old_vertices = tess->indices;
 
       /* Copy the indices to an array of the new type */
       tess->indices_type = new_indices_type;
@@ -1275,7 +1275,7 @@ _cogl_path_tesselator_combine (double coords[3],
           break;
         }
 
-      c_array_free (old_vertices, TRUE);
+      c_array_free (old_vertices, true);
     }
 }
 
@@ -1291,10 +1291,10 @@ _cogl_path_build_fill_attribute_buffer (CoglPath *path)
   if (data->fill_attribute_buffer)
     return;
 
-  tess.primitive_type = FALSE;
+  tess.primitive_type = false;
 
   /* Generate a vertex for each point on the path */
-  tess.vertices = c_array_new (FALSE, FALSE, sizeof (CoglPathTesselatorVertex));
+  tess.vertices = c_array_new (false, false, sizeof (CoglPathTesselatorVertex));
   c_array_set_size (tess.vertices, data->path_nodes->len);
   for (i = 0; i < data->path_nodes->len; i++)
     {
@@ -1376,7 +1376,7 @@ _cogl_path_build_fill_attribute_buffer (CoglPath *path)
                                sizeof (CoglPathTesselatorVertex) *
                                tess.vertices->len,
                                tess.vertices->data);
-  c_array_free (tess.vertices, TRUE);
+  c_array_free (tess.vertices, true);
 
   data->fill_attributes[0] =
     cogl_attribute_new (data->fill_attribute_buffer,
@@ -1398,7 +1398,7 @@ _cogl_path_build_fill_attribute_buffer (CoglPath *path)
                                              tess.indices->data,
                                              tess.indices->len);
   data->fill_vbo_n_indices = tess.indices->len;
-  c_array_free (tess.indices, TRUE);
+  c_array_free (tess.indices, true);
 }
 
 static CoglPrimitive *

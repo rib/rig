@@ -77,8 +77,8 @@ _cogl_config_process (GKeyFile *key_file)
   if (value)
     {
       _cogl_parse_debug_string (value,
-                                TRUE /* enable the flags */,
-                                TRUE /* ignore help option */);
+                                true /* enable the flags */,
+                                true /* ignore help option */);
       g_free (value);
     }
 
@@ -86,8 +86,8 @@ _cogl_config_process (GKeyFile *key_file)
   if (value)
     {
       _cogl_parse_debug_string (value,
-                                FALSE /* disable the flags */,
-                                TRUE /* ignore help option */);
+                                false /* disable the flags */,
+                                true /* ignore help option */);
       g_free (value);
     }
 
@@ -111,7 +111,7 @@ _cogl_config_read (void)
   GKeyFile *key_file = g_key_file_new ();
   const char * const *system_dirs = g_get_system_config_dirs ();
   char *filename;
-  bool status = FALSE;
+  bool status = false;
   int i;
 
   for (i = 0; system_dirs[i]; i++)

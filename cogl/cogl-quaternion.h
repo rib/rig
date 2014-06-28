@@ -287,7 +287,7 @@ cogl_quaternion_init_from_matrix (CoglQuaternion *quaternion,
  * the == operator is at least used so that 0 and -0 are considered
  * equal.
  *
- * Returns: %TRUE if the quaternions are equal else %FALSE.
+ * Returns: %true if the quaternions are equal else %false.
  *
  * Since: 2.0
  */

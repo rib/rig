@@ -40,7 +40,7 @@
 
 typedef struct
 {
-  CList *entries;
+  c_list_t *entries;
 } CoglPipelineSnippetList;
 
 /* Arguments to pass to _cogl_pipeline_snippet_generate_code() */
@@ -69,7 +69,7 @@ typedef struct
      NULL */
   const char *return_variable;
 
-  /* If this is TRUE then it won't allocate a separate variable for
+  /* If this is true then it won't allocate a separate variable for
      the return value. Instead it is expected that the snippet will
      modify one of the argument variables directly and that will be
      returned */
@@ -82,14 +82,14 @@ typedef struct
   const char *argument_declarations;
 
   /* The string to generate the source into */
-  CString *source_buf;
+  c_string_t *source_buf;
 } CoglPipelineSnippetData;
 
 void
 _cogl_pipeline_snippet_generate_code (const CoglPipelineSnippetData *data);
 
 void
-_cogl_pipeline_snippet_generate_declarations (CString *declarations_buf,
+_cogl_pipeline_snippet_generate_declarations (c_string_t *declarations_buf,
                                               CoglSnippetHook hook,
                                               CoglPipelineSnippetList *list);
 

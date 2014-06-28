@@ -152,10 +152,10 @@ recreate_store (CoglBuffer *buffer,
                      gl_enum);
 
   if (_cogl_gl_util_catch_out_of_memory (ctx, error))
-    return FALSE;
+    return false;
 
-  buffer->store_created = TRUE;
-  return TRUE;
+  buffer->store_created = true;
+  return true;
 }
 
 GLenum
@@ -257,7 +257,7 @@ _cogl_buffer_gl_map_range (CoglBuffer *buffer,
            * which is an alternative way to indicate that the buffer
            * contents can be discarded. */
           if ((access & COGL_BUFFER_ACCESS_READ))
-            should_recreate_store = TRUE;
+            should_recreate_store = true;
           else
             gl_access |= GL_MAP_INVALIDATE_BUFFER_BIT;
         }
@@ -357,7 +357,7 @@ _cogl_buffer_gl_set_data (CoglBuffer *buffer,
   GLenum gl_target;
   CoglContext *ctx = buffer->context;
   GLenum gl_error;
-  bool status = TRUE;
+  bool status = true;
   CoglError *internal_error = NULL;
 
   target = buffer->last_target;
@@ -371,7 +371,7 @@ _cogl_buffer_gl_set_data (CoglBuffer *buffer,
   if (internal_error)
     {
       _cogl_propagate_error (error, internal_error);
-      return FALSE;
+      return false;
     }
 
   gl_target = convert_bind_target_to_gl_target (target);
@@ -383,7 +383,7 @@ _cogl_buffer_gl_set_data (CoglBuffer *buffer,
   ctx->glBufferSubData (gl_target, offset, size, data);
 
   if (_cogl_gl_util_catch_out_of_memory (ctx, error))
-    status = FALSE;
+    status = false;
 
   _cogl_buffer_gl_unbind (buffer);
 

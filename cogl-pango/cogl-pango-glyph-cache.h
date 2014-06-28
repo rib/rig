@@ -58,7 +58,7 @@ struct _CoglPangoGlyphCacheValue
   int draw_width;
   int draw_height;
 
-  /* This will be set to TRUE when the glyph atlas is reorganized
+  /* This will be set to true when the glyph atlas is reorganized
      which means the glyph will need to be redrawn */
   bool   dirty;
 };

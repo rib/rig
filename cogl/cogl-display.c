@@ -64,7 +64,7 @@ _cogl_display_free (CoglDisplay *display)
     {
       winsys = _cogl_display_get_winsys (display);
       winsys->display_destroy (display);
-      display->setup = FALSE;
+      display->setup = false;
     }
 
   if (display->renderer)
@@ -100,7 +100,7 @@ cogl_display_new (CoglRenderer *renderer,
   if (!cogl_renderer_connect (display->renderer, &error))
     c_error ("Failed to connect to renderer: %s\n", error->message);
 
-  display->setup = FALSE;
+  display->setup = false;
 
 #ifdef COGL_HAS_EGL_PLATFORM_GDL_SUPPORT
   display->gdl_plane = GDL_PLANE_ID_UPP_C;
@@ -123,7 +123,7 @@ void
 cogl_display_set_onscreen_template (CoglDisplay *display,
                                     CoglOnscreenTemplate *onscreen_template)
 {
-  _COGL_RETURN_IF_FAIL (display->setup == FALSE);
+  _COGL_RETURN_IF_FAIL (display->setup == false);
 
   if (onscreen_template)
     cogl_object_ref (onscreen_template);
@@ -146,15 +146,15 @@ cogl_display_setup (CoglDisplay *display,
   const CoglWinsysVtable *winsys;
 
   if (display->setup)
-    return TRUE;
+    return true;
 
   winsys = _cogl_display_get_winsys (display);
   if (!winsys->display_setup (display, error))
-    return FALSE;
+    return false;
 
-  display->setup = TRUE;
+  display->setup = true;
 
-  return TRUE;
+  return true;
 }
 
 #ifdef COGL_HAS_EGL_PLATFORM_GDL_SUPPORT
@@ -162,7 +162,7 @@ void
 cogl_gdl_display_set_plane (CoglDisplay *display,
                             gdl_plane_id_t plane)
 {
-  _COGL_RETURN_IF_FAIL (display->setup == FALSE);
+  _COGL_RETURN_IF_FAIL (display->setup == false);
 
   display->gdl_plane = plane;
 }
@@ -173,7 +173,7 @@ void
 cogl_wayland_display_set_compositor_display (CoglDisplay *display,
                                              struct wl_display *wayland_display)
 {
-  _COGL_RETURN_IF_FAIL (display->setup == FALSE);
+  _COGL_RETURN_IF_FAIL (display->setup == false);
 
   display->wayland_compositor_display = wayland_display;
 }

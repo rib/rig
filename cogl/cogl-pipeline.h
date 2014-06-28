@@ -104,8 +104,8 @@ cogl_pipeline_copy (CoglPipeline *source);
  *
  * Gets whether the given @object references an existing pipeline object.
  *
- * Return value: %TRUE if the @object references a #CoglPipeline,
- *   %FALSE otherwise
+ * Return value: %true if the @object references a #CoglPipeline,
+ *   %false otherwise
  *
  * Since: 2.0
  * Stability: Unstable

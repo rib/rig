@@ -65,8 +65,8 @@ cogl_vector3_equal (const void *v1, const void *v2)
   float *vector0 = (float *)v1;
   float *vector1 = (float *)v2;
 
-  _COGL_RETURN_VAL_IF_FAIL (v1 != NULL, FALSE);
-  _COGL_RETURN_VAL_IF_FAIL (v2 != NULL, FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (v1 != NULL, false);
+  _COGL_RETURN_VAL_IF_FAIL (v2 != NULL, false);
 
   /* There's no point picking an arbitrary epsilon that's appropriate
    * for comparing the components so we just use == that will at least
@@ -82,15 +82,15 @@ cogl_vector3_equal_with_epsilon (const float *vector0,
                                  const float *vector1,
                                  float epsilon)
 {
-  _COGL_RETURN_VAL_IF_FAIL (vector0 != NULL, FALSE);
-  _COGL_RETURN_VAL_IF_FAIL (vector1 != NULL, FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (vector0 != NULL, false);
+  _COGL_RETURN_VAL_IF_FAIL (vector1 != NULL, false);
 
   if (fabsf (vector0[X] - vector1[X]) < epsilon &&
       fabsf (vector0[Y] - vector1[Y]) < epsilon &&
       fabsf (vector0[Z] - vector1[Z]) < epsilon)
-    return TRUE;
+    return true;
   else
-    return FALSE;
+    return false;
 }
 
 float *
@@ -229,10 +229,10 @@ cogl_vector4_init_zero (float *vector)
 bool
 cogl_vector4_equal (const void *v0, const void *v1)
 {
-  _COGL_RETURN_VAL_IF_FAIL (v1 != NULL, FALSE);
-  _COGL_RETURN_VAL_IF_FAIL (v2 != NULL, FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (v1 != NULL, false);
+  _COGL_RETURN_VAL_IF_FAIL (v2 != NULL, false);
 
-  return memcmp (v1, v2, sizeof (float) * 4) == 0 ? TRUE : FALSE;
+  return memcmp (v1, v2, sizeof (float) * 4) == 0 ? true : false;
 }
 
 float *

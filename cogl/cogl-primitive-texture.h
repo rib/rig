@@ -79,8 +79,8 @@ typedef struct _CoglPrimitiveTexture CoglPrimitiveTexture;
  *
  * Gets whether the given object references a primitive texture object.
  *
- * Return value: %TRUE if the pointer references a primitive texture, and
- *   %FALSE otherwise
+ * Return value: %true if the pointer references a primitive texture, and
+ *   %false otherwise
  * Since: 2.0
  * Stability: unstable
  */

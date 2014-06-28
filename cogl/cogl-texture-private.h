@@ -143,7 +143,7 @@ struct _CoglTextureVtable
 
   bool (* is_foreign) (CoglTexture *tex);
 
-  /* Only needs to be implemented if is_primitive == TRUE */
+  /* Only needs to be implemented if is_primitive == true */
   void (* set_auto_mipmap) (CoglTexture *texture,
                             bool value);
 };
@@ -192,7 +192,7 @@ struct _CoglTexture
   CoglObject _parent;
   CoglContext *context;
   CoglTextureLoader *loader;
-  CList *framebuffers;
+  c_list_t *framebuffers;
   int max_level;
   int width;
   int height;
@@ -327,7 +327,7 @@ void
 _cogl_texture_associate_framebuffer (CoglTexture *texture,
                                      CoglFramebuffer *framebuffer);
 
-const CList *
+const c_list_t *
 _cogl_texture_get_associated_framebuffers (CoglTexture *texture);
 
 void

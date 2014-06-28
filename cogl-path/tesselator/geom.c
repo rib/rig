@@ -39,7 +39,7 @@
 
 int __gl_vertLeq( GLUvertex *u, GLUvertex *v )
 {
-  /* Returns TRUE if u is lexicographically <= v. */
+  /* Returns true if u is lexicographically <= v. */
 
   return VertLeq( u, v );
 }

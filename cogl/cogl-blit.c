@@ -63,7 +63,7 @@ _cogl_blit_texture_render_begin (CoglBlitData *data)
     {
       cogl_error_free (ignore_error);
       cogl_object_unref (fb);
-      return FALSE;
+      return false;
     }
 
   data->dest_fb = fb;
@@ -101,7 +101,7 @@ _cogl_blit_texture_render_begin (CoglBlitData *data)
 
   data->pipeline = pipeline;
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -158,7 +158,7 @@ _cogl_blit_framebuffer_begin (CoglBlitData *data)
   if ((_cogl_texture_get_format (data->src_tex) & ~COGL_A_BIT) !=
       (_cogl_texture_get_format (data->dst_tex) & ~COGL_A_BIT) ||
       !_cogl_has_private_feature (ctx, COGL_PRIVATE_FEATURE_OFFSCREEN_BLIT))
-    return FALSE;
+    return false;
 
   dst_offscreen = _cogl_offscreen_new_with_texture_full
     (data->dst_tex, COGL_OFFSCREEN_DISABLE_DEPTH_AND_STENCIL, 0 /* level */);
@@ -185,7 +185,7 @@ _cogl_blit_framebuffer_begin (CoglBlitData *data)
   data->src_fb = src_fb;
   data->dest_fb = dst_fb;
 
-  return TRUE;
+  return true;
 
 error:
 
@@ -194,7 +194,7 @@ error:
   if (src_offscreen)
     cogl_object_unref (src_offscreen);
 
-  return FALSE;
+  return false;
 }
 
 static void
@@ -229,7 +229,7 @@ _cogl_blit_copy_tex_sub_image_begin (CoglBlitData *data)
 
   /* This will only work if the target texture is a CoglTexture2D */
   if (!cogl_is_texture_2d (data->dst_tex))
-    return FALSE;
+    return false;
 
   offscreen = _cogl_offscreen_new_with_texture_full
     (data->src_tex, COGL_OFFSCREEN_DISABLE_DEPTH_AND_STENCIL, 0 /* level */);
@@ -239,12 +239,12 @@ _cogl_blit_copy_tex_sub_image_begin (CoglBlitData *data)
     {
       cogl_error_free (ignore_error);
       cogl_object_unref (fb);
-      return FALSE;
+      return false;
     }
 
   data->src_fb = fb;
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -281,7 +281,7 @@ _cogl_blit_get_tex_data_begin (CoglBlitData *data)
   cogl_texture_get_data (data->src_tex, data->format,
                          data->src_width * data->bpp, data->image_data);
 
-  return TRUE;
+  return true;
 }
 
 static void

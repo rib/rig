@@ -371,7 +371,7 @@ setup_pipeline_from_cache_entry (CoglGstVideoSink *sink,
                                          cache_entry->default_sample_snippet);
     }
 
-  priv->frame_dirty = TRUE;
+  priv->frame_dirty = true;
 }
 
 CoglPipeline *
@@ -388,7 +388,7 @@ cogl_gst_video_sink_get_pipeline (CoglGstVideoSink *vt)
       priv->pipeline = cogl_pipeline_new (priv->ctx);
       cogl_gst_video_sink_setup_pipeline (vt, priv->pipeline);
       cogl_gst_video_sink_attach_frame (vt, priv->pipeline);
-      priv->frame_dirty = FALSE;
+      priv->frame_dirty = false;
     }
   else if (priv->frame_dirty)
     {
@@ -397,7 +397,7 @@ cogl_gst_video_sink_get_pipeline (CoglGstVideoSink *vt)
       priv->pipeline = pipeline;
 
       cogl_gst_video_sink_attach_frame (vt, pipeline);
-      priv->frame_dirty = FALSE;
+      priv->frame_dirty = false;
     }
 
   return priv->pipeline;
@@ -419,7 +419,7 @@ clear_frame_textures (CoglGstVideoSink *sink)
 
   memset (priv->frame, 0, sizeof (priv->frame));
 
-  priv->frame_dirty = TRUE;
+  priv->frame_dirty = true;
 }
 
 static inline bool
@@ -458,7 +458,7 @@ video_texture_new_from_data (CoglContext *ctx,
     {
       tex = cogl_texture_2d_new_from_bitmap (bitmap);
 
-      cogl_texture_set_premultiplied (tex, FALSE);
+      cogl_texture_set_premultiplied (tex, false);
 
       if (!cogl_texture_allocate (tex, &internal_error))
         {
@@ -477,7 +477,7 @@ video_texture_new_from_data (CoglContext *ctx,
       tex = cogl_texture_2d_sliced_new_from_bitmap (bitmap,
                                                     -1); /* no maximum waste */
 
-      cogl_texture_set_premultiplied (tex, FALSE);
+      cogl_texture_set_premultiplied (tex, false);
 
       cogl_texture_allocate (tex, NULL);
     }
@@ -548,12 +548,12 @@ cogl_gst_rgb24_upload (CoglGstVideoSink *sink,
 
   gst_video_frame_unmap (&frame);
 
-  return TRUE;
+  return true;
 
 map_fail:
   {
     GST_ERROR_OBJECT (sink, "Could not map incoming video frame");
-    return FALSE;
+    return false;
   }
 }
 
@@ -656,12 +656,12 @@ cogl_gst_rgb32_upload (CoglGstVideoSink *sink,
 
   gst_video_frame_unmap (&frame);
 
-  return TRUE;
+  return true;
 
 map_fail:
   {
     GST_ERROR_OBJECT (sink, "Could not map incoming video frame");
-    return FALSE;
+    return false;
   }
 }
 
@@ -723,12 +723,12 @@ cogl_gst_yv12_upload (CoglGstVideoSink *sink,
 
   gst_video_frame_unmap (&frame);
 
-  return TRUE;
+  return true;
 
 map_fail:
   {
     GST_ERROR_OBJECT (sink, "Could not map incoming video frame");
-    return FALSE;
+    return false;
   }
 }
 
@@ -768,12 +768,12 @@ cogl_gst_i420_upload (CoglGstVideoSink *sink,
 
   gst_video_frame_unmap (&frame);
 
-  return TRUE;
+  return true;
 
 map_fail:
   {
     GST_ERROR_OBJECT (sink, "Could not map incoming video frame");
-    return FALSE;
+    return false;
   }
 }
 
@@ -900,12 +900,12 @@ cogl_gst_ayuv_upload (CoglGstVideoSink *sink,
 
   gst_video_frame_unmap (&frame);
 
-  return TRUE;
+  return true;
 
 map_fail:
   {
     GST_ERROR_OBJECT (sink, "Could not map incoming video frame");
-    return FALSE;
+    return false;
   }
 }
 
@@ -993,12 +993,12 @@ cogl_gst_nv12_upload (CoglGstVideoSink *sink,
 
   gst_video_frame_unmap (&frame);
 
-  return TRUE;
+  return true;
 
  map_fail:
   {
     GST_ERROR_OBJECT (sink, "Could not map incoming video frame");
-    return FALSE;
+    return false;
   }
 }
 
@@ -1147,7 +1147,7 @@ cogl_gst_video_sink_parse_caps (GstCaps *caps,
   GstCaps *intersection;
   GstVideoInfo vinfo;
   CoglGstVideoFormat format;
-  bool bgr = FALSE;
+  bool bgr = false;
   CoglGstRenderer *renderer;
 
   intersection = gst_caps_intersect (priv->caps, caps);
@@ -1169,26 +1169,26 @@ cogl_gst_video_sink_parse_caps (GstCaps *caps,
       break;
     case GST_VIDEO_FORMAT_AYUV:
       format = COGL_GST_AYUV;
-      bgr = FALSE;
+      bgr = false;
       break;
     case GST_VIDEO_FORMAT_NV12:
       format = COGL_GST_NV12;
       break;
     case GST_VIDEO_FORMAT_RGB:
       format = COGL_GST_RGB24;
-      bgr = FALSE;
+      bgr = false;
       break;
     case GST_VIDEO_FORMAT_BGR:
       format = COGL_GST_RGB24;
-      bgr = TRUE;
+      bgr = true;
       break;
     case GST_VIDEO_FORMAT_RGBA:
       format = COGL_GST_RGB32;
-      bgr = FALSE;
+      bgr = false;
       break;
     case GST_VIDEO_FORMAT_BGRA:
       format = COGL_GST_RGB32;
-      bgr = TRUE;
+      bgr = true;
       break;
     default:
       goto unhandled_format;
@@ -1211,32 +1211,32 @@ cogl_gst_video_sink_parse_caps (GstCaps *caps,
       priv->renderer = renderer;
     }
 
-  return TRUE;
+  return true;
 
 
 no_intersection:
   {
     GST_WARNING_OBJECT (sink,
         "Incompatible caps, don't intersect with %" GST_PTR_FORMAT, priv->caps);
-    return FALSE;
+    return false;
   }
 
 unknown_format:
   {
     GST_WARNING_OBJECT (sink, "Could not figure format of input caps");
-    return FALSE;
+    return false;
   }
 
 unhandled_format:
   {
     GST_ERROR_OBJECT (sink, "Provided caps aren't supported by cogl-gst");
-    return FALSE;
+    return false;
   }
 
 no_suitable_renderer:
   {
     GST_ERROR_OBJECT (sink, "could not find a suitable renderer");
-    return FALSE;
+    return false;
   }
 }
 
@@ -1250,14 +1250,14 @@ cogl_gst_video_sink_set_caps (GstBaseSink *bsink,
   sink = COGL_GST_VIDEO_SINK (bsink);
   priv = sink->priv;
 
-  if (!cogl_gst_video_sink_parse_caps (caps, sink, FALSE))
-    return FALSE;
+  if (!cogl_gst_video_sink_parse_caps (caps, sink, false))
+    return false;
 
   g_mutex_lock (&priv->source->buffer_lock);
-  priv->source->has_new_caps = TRUE;
+  priv->source->has_new_caps = true;
   g_mutex_unlock (&priv->source->buffer_lock);
 
-  return TRUE;
+  return true;
 }
 
 static gboolean
@@ -1268,7 +1268,7 @@ cogl_gst_source_dispatch (GSource *source,
   CoglGstSource *gst_source= (CoglGstSource*) source;
   CoglGstVideoSinkPrivate *priv = gst_source->sink->priv;
   GstBuffer *buffer;
-  gboolean pipeline_ready = FALSE;
+  gboolean pipeline_ready = false;
 
   g_mutex_lock (&gst_source->buffer_lock);
 
@@ -1278,10 +1278,10 @@ cogl_gst_source_dispatch (GSource *source,
         gst_pad_get_current_caps (GST_BASE_SINK_PAD ((GST_BASE_SINK
                 (gst_source->sink))));
 
-      if (!cogl_gst_video_sink_parse_caps (caps, gst_source->sink, TRUE))
+      if (!cogl_gst_video_sink_parse_caps (caps, gst_source->sink, true))
         goto negotiation_fail;
 
-      gst_source->has_new_caps = FALSE;
+      gst_source->has_new_caps = false;
       priv->free_layer = priv->custom_start + priv->renderer->n_layers;
 
       dirty_default_pipeline (gst_source->sink);
@@ -1290,7 +1290,7 @@ cogl_gst_source_dispatch (GSource *source,
        * the application requests it so we can emit the signal.
        * However we'll actually generate the pipeline lazily only if
        * the application actually asks for it. */
-      pipeline_ready = TRUE;
+      pipeline_ready = true;
     }
 
   buffer = gst_source->buffer;
@@ -1316,7 +1316,7 @@ cogl_gst_source_dispatch (GSource *source,
                  video_sink_signals[NEW_FRAME_SIGNAL], 0,
                  NULL);
 
-  return TRUE;
+  return true;
 
 
 negotiation_fail:
@@ -1326,7 +1326,7 @@ negotiation_fail:
     priv->flow_return = GST_FLOW_NOT_NEGOTIATED;
     g_mutex_unlock (&gst_source->buffer_lock);
 
-    return FALSE;
+    return false;
   }
 
 fail_upload:
@@ -1334,7 +1334,7 @@ fail_upload:
     GST_WARNING_OBJECT (gst_source->sink, "Failed to upload buffer");
     priv->flow_return = GST_FLOW_ERROR;
     gst_buffer_unref (buffer);
-    return FALSE;
+    return false;
   }
 }
 
@@ -1355,7 +1355,7 @@ cogl_gst_source_new (CoglGstVideoSink *sink)
   source = g_source_new (&gst_source_funcs, sizeof (CoglGstSource));
   gst_source = (CoglGstSource *) source;
 
-  g_source_set_can_recurse (source, TRUE);
+  g_source_set_can_recurse (source, true);
   g_source_set_priority (source, COGL_GST_DEFAULT_PRIORITY);
 
   gst_source->sink = sink;
@@ -1374,7 +1374,7 @@ cogl_gst_video_sink_init (CoglGstVideoSink *sink)
                                                    COGL_GST_TYPE_VIDEO_SINK,
                                                    CoglGstVideoSinkPrivate);
   priv->custom_start = 0;
-  priv->default_sample = TRUE;
+  priv->default_sample = true;
 }
 
 static GstFlowReturn
@@ -1452,7 +1452,7 @@ cogl_gst_video_sink_start (GstBaseSink *base_sink)
   priv->source = cogl_gst_source_new (sink);
   g_source_attach ((GSource *) priv->source, NULL);
   priv->flow_return = GST_FLOW_OK;
-  return TRUE;
+  return true;
 }
 
 static void
@@ -1508,7 +1508,7 @@ cogl_gst_video_sink_stop (GstBaseSink *base_sink)
       priv->source = NULL;
     }
 
-  return TRUE;
+  return true;
 }
 
 static void

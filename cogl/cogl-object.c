@@ -87,7 +87,7 @@ _cogl_object_default_unref (void *object)
                   if (entry->destroy)
                     entry->destroy (entry->user_data, obj);
                 }
-              c_array_free (obj->user_data_array, TRUE);
+              c_array_free (obj->user_data_array, true);
             }
         }
 
@@ -183,7 +183,7 @@ _cogl_object_set_user_data (CoglObject *object,
           if (C_UNLIKELY (object->user_data_array == NULL))
             {
               object->user_data_array =
-                c_array_new (FALSE, FALSE, sizeof (CoglUserDataEntry));
+                c_array_new (false, false, sizeof (CoglUserDataEntry));
             }
 
           c_array_set_size (object->user_data_array,
@@ -244,7 +244,7 @@ void
 cogl_debug_object_foreach_type (CoglDebugObjectForeachTypeCallback func,
                                 void *user_data)
 {
-  CHashTableIter iter;
+  c_hash_table_iter_t iter;
   unsigned int *instance_count;
   CoglDebugObjectTypeInfo info;
 

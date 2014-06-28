@@ -124,11 +124,11 @@ cogl_wayland_texture_2d_new_from_buffer (CoglContext *ctx,
  *
  * <note>Since the storage for a #CoglTexture is allocated lazily then
  * if the given @texture has not previously been allocated then this
- * api can return %FALSE and throw an exceptional @error if there is
+ * api can return %false and throw an exceptional @error if there is
  * not enough memory to allocate storage for @texture.</note>
  *
- * Return value: %TRUE if the subregion upload was successful, and
- *   %FALSE otherwise
+ * Return value: %true if the subregion upload was successful, and
+ *   %false otherwise
  * Since: 1.18
  * Stability: unstable
  */

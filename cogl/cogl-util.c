@@ -196,8 +196,8 @@ _cogl_util_pixel_format_from_masks_real (unsigned long r_mask,
       image_format =
         _cogl_util_pixel_format_from_masks_real (b_mask, c_mask, r_mask,
                                                  depth, bpp,
-                                                 FALSE,
-                                                 TRUE,
+                                                 false,
+                                                 true,
                                                  recursion_depth + 1);
       if (image_format)
         return image_format ^ COGL_BGR_BIT;
@@ -214,8 +214,8 @@ _cogl_util_pixel_format_from_masks_real (unsigned long r_mask,
                                                  c_mask >> shift,
                                                  b_mask >> shift,
                                                  depth, bpp,
-                                                 TRUE,
-                                                 FALSE,
+                                                 true,
+                                                 false,
                                                  recursion_depth + 1);
       if (image_format)
         return image_format ^ COGL_AFIRST_BIT;
@@ -234,8 +234,8 @@ _cogl_util_pixel_format_from_masks (unsigned long r_mask,
   CoglPixelFormat image_format =
     _cogl_util_pixel_format_from_masks_real (r_mask, c_mask, b_mask,
                                              depth, bpp,
-                                             TRUE,
-                                             TRUE,
+                                             true,
+                                             true,
                                              0);
 
   if (!image_format)

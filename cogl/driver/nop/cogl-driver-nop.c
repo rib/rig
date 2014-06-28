@@ -52,7 +52,7 @@ _cogl_driver_update_features (CoglContext *ctx,
 
   memset (ctx->private_features, 0, sizeof (ctx->private_features));
 
-  return TRUE;
+  return true;
 }
 
 const CoglDriverVtable

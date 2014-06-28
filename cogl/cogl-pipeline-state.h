@@ -274,9 +274,9 @@ cogl_pipeline_get_alpha_test_reference (CoglPipeline *pipeline);
  * That gives normal alpha-blending when the calculated color for the pipeline
  * is in premultiplied form.
  *
- * Return value: %TRUE if the blend string was successfully parsed, and the
+ * Return value: %true if the blend string was successfully parsed, and the
  *   described blending is supported by the underlying driver/hardware. If
- *   there was an error, %FALSE is returned and @error is set accordingly (if
+ *   there was an error, %false is returned and @error is set accordingly (if
  *   present).
  *
  * Since: 2.0
@@ -361,12 +361,12 @@ cogl_pipeline_get_point_size (CoglPipeline *pipeline);
  *
  * Note that enabling this will only work if the
  * %COGL_FEATURE_ID_PER_VERTEX_POINT_SIZE feature is available. If
- * this is not available then the function will return %FALSE and set
+ * this is not available then the function will return %false and set
  * a #CoglError.
  *
  * Since: 2.0
  * Stability: Unstable
- * Return value: %TRUE if the change suceeded or %FALSE otherwise
+ * Return value: %true if the change suceeded or %false otherwise
  */
 bool
 cogl_pipeline_set_per_vertex_point_size (CoglPipeline *pipeline,
@@ -379,8 +379,8 @@ cogl_pipeline_set_per_vertex_point_size (CoglPipeline *pipeline,
  *
  * Since: 2.0
  * Stability: Unstable
- * Return value: %TRUE if the pipeline has per-vertex point size
- *   enabled or %FALSE otherwise. The per-vertex point size can be
+ * Return value: %true if the pipeline has per-vertex point size
+ *   enabled or %false otherwise. The per-vertex point size can be
  *   enabled with cogl_pipeline_set_per_vertex_point_size().
  */
 bool
@@ -432,7 +432,7 @@ cogl_pipeline_set_color_mask (CoglPipeline *pipeline,
  * Note: Since some platforms do not support the depth range feature
  * it is possible for this function to fail and report an @error.
  *
- * Returns: TRUE if the GPU supports all the given @state else %FALSE
+ * Returns: true if the GPU supports all the given @state else %false
  *          and returns an @error.
  *
  * Since: 2.0
@@ -687,11 +687,11 @@ cogl_pipeline_set_uniform_int (CoglPipeline *pipeline,
  * use 4 for @dimensions and 1 for @count. To set an array of 8
  * mat3 values, you could use 3 for @dimensions and 8 for @count.
  *
- * If @transpose is %FALSE then the matrix is expected to be in
- * column-major order or if it is %TRUE then the matrix is in
+ * If @transpose is %false then the matrix is expected to be in
+ * column-major order or if it is %true then the matrix is in
  * row-major order. You can pass a #CoglMatrix by calling by passing
  * the result of cogl_matrix_get_array() in @value and setting
- * @transpose to %FALSE.
+ * @transpose to %false.
  *
  * Since: 2.0
  * Stability: Unstable

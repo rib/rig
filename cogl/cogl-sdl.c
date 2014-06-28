@@ -39,7 +39,7 @@
 void
 cogl_sdl_renderer_set_event_type (CoglRenderer *renderer, int type)
 {
-  renderer->sdl_event_type_set = TRUE;
+  renderer->sdl_event_type_set = true;
   renderer->sdl_event_type = type;
 }
 

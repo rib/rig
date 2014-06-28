@@ -59,7 +59,7 @@ _cogl_pipeline_node_set_parent_real (CoglNode *node,
    * handling when the parent disposes itself which relies on a
    * consistent link to all weak nodes. Once the node is linked to its
    * parent then we remove the reference at the end if
-   * take_strong_reference == FALSE. */
+   * take_strong_reference == false. */
   cogl_object_ref (parent);
 
   if (node->parent)

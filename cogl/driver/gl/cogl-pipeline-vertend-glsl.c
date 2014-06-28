@@ -59,7 +59,7 @@ typedef struct
   unsigned int ref_count;
 
   GLuint gl_shader;
-  CString *header, *source;
+  c_string_t *header, *source;
 
   CoglPipelineCacheEntry *cache_entry;
 } CoglPipelineShaderState;
@@ -188,7 +188,7 @@ add_layer_declaration_cb (CoglPipelineLayer *layer,
                           target_string,
                           layer->index);
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -283,7 +283,7 @@ _cogl_pipeline_vertend_glsl_start (CoglPipeline *pipeline,
   /* If we make it here then we have a shader_state struct without a gl_shader
      because this is the first time we've encountered it */
 
-  /* We reuse two grow-only CStrings for code-gen. One string
+  /* We reuse two grow-only c_string_ts for code-gen. One string
      contains the uniform and attribute declarations while the
      other contains the main function. We need two strings
      because we need to dynamically declare attributes as the
@@ -333,12 +333,12 @@ _cogl_pipeline_vertend_glsl_add_layer (CoglPipeline *pipeline,
   CoglPipelineSnippetData snippet_data;
   int layer_index = layer->index;
 
-  _COGL_GET_CONTEXT (ctx, FALSE);
+  _COGL_GET_CONTEXT (ctx, false);
 
   shader_state = get_shader_state (pipeline);
 
   if (shader_state->source == NULL)
-    return TRUE;
+    return true;
 
   /* Hook to transform the texture coordinates. By default this just
    * directly uses the texture coordinates.
@@ -364,7 +364,7 @@ _cogl_pipeline_vertend_glsl_add_layer (CoglPipeline *pipeline,
                                                   layer_index);
   snippet_data.return_type = "vec4";
   snippet_data.return_variable = "cogl_tex_coord";
-  snippet_data.return_variable_is_argument = TRUE;
+  snippet_data.return_variable_is_argument = true;
   snippet_data.arguments = "cogl_tex_coord";
   snippet_data.argument_declarations = "vec4 cogl_tex_coord";
   snippet_data.source_buf = shader_state->header;
@@ -382,7 +382,7 @@ _cogl_pipeline_vertend_glsl_add_layer (CoglPipeline *pipeline,
                           layer_index,
                           layer_index);
 
-  return TRUE;
+  return true;
 }
 
 static bool
@@ -391,7 +391,7 @@ _cogl_pipeline_vertend_glsl_end (CoglPipeline *pipeline,
 {
   CoglPipelineShaderState *shader_state;
 
-  _COGL_GET_CONTEXT (ctx, FALSE);
+  _COGL_GET_CONTEXT (ctx, false);
 
   shader_state = get_shader_state (pipeline);
 
@@ -541,7 +541,7 @@ _cogl_pipeline_vertend_glsl_end (CoglPipeline *pipeline,
     }
 #endif /* HAVE_COGL_GL */
 
-  return TRUE;
+  return true;
 }
 
 static void

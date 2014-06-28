@@ -46,7 +46,7 @@ typedef struct
 {
   int parent_id;
   int *node_id_ptr;
-  CString *graph;
+  c_string_t *graph;
   int indent;
 } PrintDebugState;
 
@@ -57,8 +57,8 @@ dump_layer_cb (CoglNode *node, void *user_data)
   PrintDebugState *state = user_data;
   int layer_id = *state->node_id_ptr;
   PrintDebugState state_out;
-  CString *changes_label;
-  bool changes = FALSE;
+  c_string_t *changes_label;
+  bool changes = false;
 
   if (state->parent_id >= 0)
     c_string_append_printf (state->graph, "%*slayer%p -> layer%p;\n",
@@ -87,7 +87,7 @@ dump_layer_cb (CoglNode *node, void *user_data)
 
   if (layer->differences & COGL_PIPELINE_LAYER_STATE_UNIT)
     {
-      changes = TRUE;
+      changes = true;
       c_string_append_printf (changes_label,
                               "\\lunit=%u\\n",
                               layer->unit_index);
@@ -95,7 +95,7 @@ dump_layer_cb (CoglNode *node, void *user_data)
 
   if (layer->differences & COGL_PIPELINE_LAYER_STATE_TEXTURE_DATA)
     {
-      changes = TRUE;
+      changes = true;
       c_string_append_printf (changes_label,
                               "\\ltexture=%p\\n",
                               layer->texture);
@@ -105,7 +105,7 @@ dump_layer_cb (CoglNode *node, void *user_data)
     {
       c_string_append_printf (changes_label, "\"];\n");
       c_string_append (state->graph, changes_label->str);
-      c_string_free (changes_label, TRUE);
+      c_string_free (changes_label, true);
     }
 
   state_out.parent_id = layer_id;
@@ -120,7 +120,7 @@ dump_layer_cb (CoglNode *node, void *user_data)
                                      dump_layer_cb,
                                      &state_out);
 
-  return TRUE;
+  return true;
 }
 
 static bool
@@ -135,7 +135,7 @@ dump_layer_ref_cb (CoglPipelineLayer *layer, void *data)
                           pipeline_id,
                           layer);
 
-  return TRUE;
+  return true;
 }
 
 static bool
@@ -145,9 +145,9 @@ dump_pipeline_cb (CoglNode *node, void *user_data)
   PrintDebugState *state = user_data;
   int pipeline_id = *state->node_id_ptr;
   PrintDebugState state_out;
-  CString *changes_label;
-  bool changes = FALSE;
-  bool layers = FALSE;
+  c_string_t *changes_label;
+  bool changes = false;
+  bool layers = false;
 
   if (state->parent_id >= 0)
     c_string_append_printf (state->graph, "%*spipeline%d -> pipeline%d;\n",
@@ -184,7 +184,7 @@ dump_pipeline_cb (CoglNode *node, void *user_data)
 
   if (pipeline->differences & COGL_PIPELINE_STATE_COLOR)
     {
-      changes = TRUE;
+      changes = true;
       c_string_append_printf (changes_label,
                               "\\lcolor=0x%02X%02X%02X%02X\\n",
                               cogl_color_get_red_byte (&pipeline->color),
@@ -197,7 +197,7 @@ dump_pipeline_cb (CoglNode *node, void *user_data)
     {
       const char *blend_enable_name;
 
-      changes = TRUE;
+      changes = true;
 
       switch (pipeline->blend_enable)
         {
@@ -220,8 +220,8 @@ dump_pipeline_cb (CoglNode *node, void *user_data)
 
   if (pipeline->differences & COGL_PIPELINE_STATE_LAYERS)
     {
-      changes = TRUE;
-      layers = TRUE;
+      changes = true;
+      layers = true;
       c_string_append_printf (changes_label, "\\ln_layers=%d\\n",
                               pipeline->n_layers);
     }
@@ -230,7 +230,7 @@ dump_pipeline_cb (CoglNode *node, void *user_data)
     {
       c_string_append_printf (changes_label, "\"];\n");
       c_string_append (state->graph, changes_label->str);
-      c_string_free (changes_label, TRUE);
+      c_string_free (changes_label, true);
     }
 
   if (layers)
@@ -252,7 +252,7 @@ dump_pipeline_cb (CoglNode *node, void *user_data)
                                      dump_pipeline_cb,
                                      &state_out);
 
-  return TRUE;
+  return true;
 }
 
 /* This function is just here to be called from GDB so we don't really
@@ -264,7 +264,7 @@ _cogl_debug_dump_pipelines_dot_file (const char *filename);
 void
 _cogl_debug_dump_pipelines_dot_file (const char *filename)
 {
-  CString *graph;
+  c_string_t *graph;
   PrintDebugState layer_state;
   PrintDebugState pipeline_state;
   int layer_id = 0;
@@ -297,5 +297,5 @@ _cogl_debug_dump_pipelines_dot_file (const char *filename)
   else
     c_print ("%s", graph->str);
 
-  c_string_free (graph, TRUE);
+  c_string_free (graph, true);
 }

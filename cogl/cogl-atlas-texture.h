@@ -232,8 +232,8 @@ cogl_atlas_texture_new_from_bitmap (CoglBitmap *bmp);
  *
  * Checks whether the given object references a #CoglAtlasTexture
  *
- * Return value: %TRUE if the passed object represents an atlas
- *   texture and %FALSE otherwise
+ * Return value: %true if the passed object represents an atlas
+ *   texture and %false otherwise
  *
  * Since: 1.16
  * Stability: Unstable

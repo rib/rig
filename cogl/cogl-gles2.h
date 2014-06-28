@@ -196,7 +196,7 @@ typedef enum { /*< prefix=COGL_GLES2_CONTEXT_ERROR >*/
  *
  * <note>Before using this api applications can check for OpenGLES 2.0
  * api support by checking for %COGL_FEATURE_ID_GLES2_CONTEXT support
- * with cogl_has_feature(). This function will return %FALSE and
+ * with cogl_has_feature(). This function will return %false and
  * return an %COGL_GLES2_CONTEXT_ERROR_UNSUPPORTED error if the
  * feature isn't available.</note>
  *
@@ -249,11 +249,11 @@ cogl_gles2_context_get_vtable (CoglGLES2Context *gles2_ctx);
  * cogl_pop_gles2_context() calls.
  *
  * If there is a runtime problem with switching over to the given
- * @gles2_ctx then this function will return %FALSE and return
+ * @gles2_ctx then this function will return %false and return
  * an error through @error.
  *
  * Since: 2.0
- * Return value: %TRUE if operation was successfull or %FALSE
+ * Return value: %true if operation was successfull or %false
  *               otherwise and @error will be updated.
  * Stability: unstable
  */
@@ -345,7 +345,7 @@ cogl_gles2_texture_2d_new_from_handle (CoglContext *ctx,
  * also returned.
  *
  * If the #CoglTexture can not be shared with a #CoglGLES2Context then
- * this function will return %FALSE.
+ * this function will return %false.
  *
  * This api does not affect the lifetime of the CoglTexture and you
  * must take care not to reference the returned handle after the
@@ -355,7 +355,7 @@ cogl_gles2_texture_2d_new_from_handle (CoglContext *ctx,
  * from.  The behaviour is undefined if the texture is modified by a
  * GLES2 context.</note>
  *
- * <note>This function will only return %TRUE for low-level
+ * <note>This function will only return %true for low-level
  * #CoglTexture<!-- -->s such as #CoglTexture2D or #CoglTexture3D but
  * not for high level meta textures such as
  * #CoglTexture2DSliced</note>
@@ -364,8 +364,8 @@ cogl_gles2_texture_2d_new_from_handle (CoglContext *ctx,
  * OpenGL ES 2.0 library, the handle is only intended to be used via
  * a #CoglGLES2Vtable or via libcogl-gles2.</note>
  *
- * Return value: %TRUE if a handle and target could be returned
- *               otherwise %FALSE is returned.
+ * Return value: %true if a handle and target could be returned
+ *               otherwise %false is returned.
  * Since: 2.0
  * Stability: unstable
  */
@@ -380,8 +380,8 @@ cogl_gles2_texture_get_handle (CoglTexture *texture,
  *
  * Gets whether the given object references a #CoglGLES2Context.
  *
- * Return value: %TRUE if the object references a #CoglGLES2Context
- *   and %FALSE otherwise.
+ * Return value: %true if the object references a #CoglGLES2Context
+ *   and %false otherwise.
  * Since: 2.0
  * Stability: unstable
  */

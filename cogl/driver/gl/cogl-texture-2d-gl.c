@@ -68,7 +68,7 @@ _cogl_texture_2d_gl_can_create (CoglContext *ctx,
   if (!cogl_has_feature (ctx, COGL_FEATURE_ID_TEXTURE_NPOT_BASIC) &&
       (!_cogl_util_is_pot (width) ||
        !_cogl_util_is_pot (height)))
-    return FALSE;
+    return false;
 
   ctx->driver_vtable->pixel_format_to_gl (ctx,
                                           internal_format,
@@ -84,9 +84,9 @@ _cogl_texture_2d_gl_can_create (CoglContext *ctx,
                                             gl_type,
                                             width,
                                             height))
-    return FALSE;
+    return false;
 
-  return TRUE;
+  return true;
 }
 
 void
@@ -99,8 +99,8 @@ _cogl_texture_2d_gl_init (CoglTexture2D *tex_2d)
   tex_2d->gl_legacy_texobj_mag_filter = GL_LINEAR;
 
   /* Wrap mode not yet set */
-  tex_2d->gl_legacy_texobj_wrap_mode_s = GL_FALSE;
-  tex_2d->gl_legacy_texobj_wrap_mode_t = GL_FALSE;
+  tex_2d->gl_legacy_texobj_wrap_mode_s = FALSE;
+  tex_2d->gl_legacy_texobj_wrap_mode_t = FALSE;
 }
 
 static bool
@@ -131,7 +131,7 @@ allocate_with_size (CoglTexture2D *tex_2d,
                        COGL_TEXTURE_ERROR_SIZE,
                        "Failed to create texture 2d due to size/format"
                        " constraints");
-      return FALSE;
+      return false;
     }
 
   ctx->driver_vtable->pixel_format_to_gl (ctx,
@@ -158,7 +158,7 @@ allocate_with_size (CoglTexture2D *tex_2d,
   if (_cogl_gl_util_catch_out_of_memory (ctx, error))
     {
       GE( ctx, glDeleteTextures (1, &gl_texture) );
-      return FALSE;
+      return false;
     }
 
   tex_2d->gl_texture = gl_texture;
@@ -168,7 +168,7 @@ allocate_with_size (CoglTexture2D *tex_2d,
 
   _cogl_texture_set_allocated (tex, internal_format, width, height);
 
-  return TRUE;
+  return true;
 }
 
 static bool
@@ -200,7 +200,7 @@ allocate_from_bitmap (CoglTexture2D *tex_2d,
                        COGL_TEXTURE_ERROR_SIZE,
                        "Failed to create texture 2d due to size/format"
                        " constraints");
-      return FALSE;
+      return false;
     }
 
   upload_bmp = _cogl_bitmap_convert_for_upload (bmp,
@@ -208,7 +208,7 @@ allocate_from_bitmap (CoglTexture2D *tex_2d,
                                                 can_convert_in_place,
                                                 error);
   if (upload_bmp == NULL)
-    return FALSE;
+    return false;
 
   ctx->driver_vtable->pixel_format_to_gl (ctx,
                                           cogl_bitmap_get_format (upload_bmp),
@@ -255,7 +255,7 @@ allocate_from_bitmap (CoglTexture2D *tex_2d,
   if (!ctx->texture_driver->upload_to_gl (ctx,
                                           GL_TEXTURE_2D,
                                           tex_2d->gl_texture,
-                                          FALSE,
+                                          false,
                                           upload_bmp,
                                           gl_intformat,
                                           gl_format,
@@ -263,7 +263,7 @@ allocate_from_bitmap (CoglTexture2D *tex_2d,
                                           error))
     {
       cogl_object_unref (upload_bmp);
-      return FALSE;
+      return false;
     }
 
   tex_2d->gl_internal_format = gl_intformat;
@@ -274,7 +274,7 @@ allocate_from_bitmap (CoglTexture2D *tex_2d,
 
   _cogl_texture_set_allocated (tex, internal_format, width, height);
 
-  return TRUE;
+  return true;
 }
 
 #if defined (COGL_HAS_EGL_SUPPORT) && defined (EGL_KHR_image_base)
@@ -292,7 +292,7 @@ allocate_from_egl_image (CoglTexture2D *tex_2d,
     ctx->texture_driver->gen (ctx, GL_TEXTURE_2D, internal_format);
   _cogl_bind_gl_texture_transient (GL_TEXTURE_2D,
                                    tex_2d->gl_texture,
-                                   FALSE);
+                                   false);
 
   while ((gl_error = ctx->glGetError ()) != GL_NO_ERROR)
     ;
@@ -305,7 +305,7 @@ allocate_from_egl_image (CoglTexture2D *tex_2d,
                        "Could not create a CoglTexture2D from a given "
                        "EGLImage");
       GE( ctx, glDeleteTextures (1, &tex_2d->gl_texture) );
-      return FALSE;
+      return false;
     }
 
   tex_2d->internal_format = internal_format;
@@ -315,7 +315,7 @@ allocate_from_egl_image (CoglTexture2D *tex_2d,
                                loader->src.egl_image.width,
                                loader->src.egl_image.height);
 
-  return TRUE;
+  return true;
 }
 #endif
 
@@ -328,7 +328,7 @@ allocate_from_gl_foreign (CoglTexture2D *tex_2d,
   CoglContext *ctx = tex->context;
   CoglPixelFormat format = loader->src.gl_foreign.format;
   GLenum gl_error = 0;
-  GLint gl_compressed = GL_FALSE;
+  GLint gl_compressed = FALSE;
   GLenum gl_int_format = 0;
 
   /* Make sure binding succeeds */
@@ -336,14 +336,14 @@ allocate_from_gl_foreign (CoglTexture2D *tex_2d,
     ;
 
   _cogl_bind_gl_texture_transient (GL_TEXTURE_2D,
-                                   loader->src.gl_foreign.gl_handle, TRUE);
+                                   loader->src.gl_foreign.gl_handle, true);
   if (ctx->glGetError () != GL_NO_ERROR)
     {
       _cogl_set_error (error,
                        COGL_SYSTEM_ERROR,
                        COGL_SYSTEM_ERROR_UNSUPPORTED,
                        "Failed to bind foreign GL_TEXTURE_2D texture");
-      return FALSE;
+      return false;
     }
 
   /* Obtain texture parameters
@@ -377,7 +377,7 @@ allocate_from_gl_foreign (CoglTexture2D *tex_2d,
                            COGL_SYSTEM_ERROR,
                            COGL_SYSTEM_ERROR_UNSUPPORTED,
                            "Unsupported internal format for foreign texture");
-          return FALSE;
+          return false;
         }
     }
   else
@@ -399,7 +399,7 @@ allocate_from_gl_foreign (CoglTexture2D *tex_2d,
                        COGL_SYSTEM_ERROR,
                        COGL_SYSTEM_ERROR_UNSUPPORTED,
                        "Compressed foreign textures aren't currently supported");
-      return FALSE;
+      return false;
     }
 
   /* Note: previously this code would query the texture object for
@@ -413,18 +413,18 @@ allocate_from_gl_foreign (CoglTexture2D *tex_2d,
      GL_GENERATE_MIPMAP alone so that it would still work but without
      the dirtiness tracking that Cogl would do. */
 
-  _cogl_texture_2d_set_auto_mipmap (COGL_TEXTURE (tex_2d), FALSE);
+  _cogl_texture_2d_set_auto_mipmap (COGL_TEXTURE (tex_2d), false);
 
   /* Setup bitmap info */
-  tex_2d->is_foreign = TRUE;
-  tex_2d->mipmaps_dirty = TRUE;
+  tex_2d->is_foreign = true;
+  tex_2d->mipmaps_dirty = true;
 
   tex_2d->gl_texture = loader->src.gl_foreign.gl_handle;
   tex_2d->gl_internal_format = gl_int_format;
 
   /* Unknown filter */
-  tex_2d->gl_legacy_texobj_min_filter = GL_FALSE;
-  tex_2d->gl_legacy_texobj_mag_filter = GL_FALSE;
+  tex_2d->gl_legacy_texobj_min_filter = FALSE;
+  tex_2d->gl_legacy_texobj_mag_filter = FALSE;
 
   tex_2d->internal_format = format;
 
@@ -432,7 +432,7 @@ allocate_from_gl_foreign (CoglTexture2D *tex_2d,
                                format,
                                loader->src.gl_foreign.width,
                                loader->src.gl_foreign.height);
-  return TRUE;
+  return true;
 }
 
 bool
@@ -442,7 +442,7 @@ _cogl_texture_2d_gl_allocate (CoglTexture *tex,
   CoglTexture2D *tex_2d = COGL_TEXTURE_2D (tex);
   CoglTextureLoader *loader = tex->loader;
 
-  _COGL_RETURN_VAL_IF_FAIL (loader, FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (loader, false);
 
   switch (loader->src_type)
     {
@@ -454,13 +454,13 @@ _cogl_texture_2d_gl_allocate (CoglTexture *tex,
 #if defined (COGL_HAS_EGL_SUPPORT) && defined (EGL_KHR_image_base)
       return allocate_from_egl_image (tex_2d, loader, error);
 #else
-      c_return_val_if_reached (FALSE);
+      c_return_val_if_reached (false);
 #endif
     case COGL_TEXTURE_SOURCE_TYPE_GL_FOREIGN:
       return allocate_from_gl_foreign (tex_2d, loader, error);
     }
 
-  c_return_val_if_reached (FALSE);
+  c_return_val_if_reached (false);
 }
 
 void
@@ -538,7 +538,7 @@ cogl_texture_2d_gl_new_from_foreign (CoglContext *ctx,
    */
 
   /* Assert it is a valid GL texture object */
-  _COGL_RETURN_VAL_IF_FAIL (ctx->glIsTexture (gl_handle), FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (ctx->glIsTexture (gl_handle), false);
 
   /* Validate width and height */
   _COGL_RETURN_VAL_IF_FAIL (width > 0 && height > 0, NULL);
@@ -618,7 +618,7 @@ _cogl_texture_2d_gl_generate_mipmap (CoglTexture2D *tex_2d)
                                 tex_2d->first_pixel.data) );
       GE( ctx, glTexParameteri (GL_TEXTURE_2D,
                                 GL_GENERATE_MIPMAP,
-                                GL_FALSE) );
+                                FALSE) );
     }
 #endif
 }
@@ -641,15 +641,15 @@ _cogl_texture_2d_gl_copy_from_bitmap (CoglTexture2D *tex_2d,
   CoglPixelFormat upload_format;
   GLenum gl_format;
   GLenum gl_type;
-  bool status = TRUE;
+  bool status = true;
 
   upload_bmp =
     _cogl_bitmap_convert_for_upload (bmp,
                                      _cogl_texture_get_format (tex),
-                                     FALSE, /* can't convert in place */
+                                     false, /* can't convert in place */
                                      error);
   if (upload_bmp == NULL)
-    return FALSE;
+    return false;
 
   upload_format = cogl_bitmap_get_format (upload_bmp);
 
@@ -692,7 +692,7 @@ _cogl_texture_2d_gl_copy_from_bitmap (CoglTexture2D *tex_2d,
 
   status = ctx->texture_driver->upload_subregion_to_gl (ctx,
                                                         tex,
-                                                        FALSE,
+                                                        false,
                                                         src_x, src_y,
                                                         dst_x, dst_y,
                                                         width, height,

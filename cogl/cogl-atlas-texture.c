@@ -420,7 +420,7 @@ _cogl_atlas_texture_set_region_with_border (CoglAtlasTexture *atlas_tex,
                                             dst_y + atlas_tex->allocation.y + 1,
                                             0, /* level 0 */
                                             error))
-    return FALSE;
+    return false;
 
   /* Update the left edge pixels */
   if (dst_x == 0 &&
@@ -432,7 +432,7 @@ _cogl_atlas_texture_set_region_with_border (CoglAtlasTexture *atlas_tex,
                                             dst_y + atlas_tex->allocation.y + 1,
                                             0, /* level 0 */
                                             error))
-    return FALSE;
+    return false;
   /* Update the right edge pixels */
   if (dst_x + dst_width == atlas_tex->allocation.width - 2 &&
       !cogl_texture_set_region_from_bitmap (atlas->texture,
@@ -444,7 +444,7 @@ _cogl_atlas_texture_set_region_with_border (CoglAtlasTexture *atlas_tex,
                                             dst_y + atlas_tex->allocation.y + 1,
                                             0, /* level 0 */
                                             error))
-    return FALSE;
+    return false;
   /* Update the top edge pixels */
   if (dst_y == 0 &&
       !cogl_texture_set_region_from_bitmap (atlas->texture,
@@ -455,7 +455,7 @@ _cogl_atlas_texture_set_region_with_border (CoglAtlasTexture *atlas_tex,
                                             atlas_tex->allocation.y,
                                             0, /* level 0 */
                                             error))
-    return FALSE;
+    return false;
   /* Update the bottom edge pixels */
   if (dst_y + dst_height == atlas_tex->allocation.height - 2 &&
       !cogl_texture_set_region_from_bitmap (atlas->texture,
@@ -467,9 +467,9 @@ _cogl_atlas_texture_set_region_with_border (CoglAtlasTexture *atlas_tex,
                                             atlas_tex->allocation.height - 1,
                                             0, /* level 0 */
                                             error))
-    return FALSE;
+    return false;
 
-  return TRUE;
+  return true;
 }
 
 static CoglBitmap *
@@ -543,11 +543,11 @@ _cogl_atlas_texture_set_region (CoglTexture *tex,
         _cogl_atlas_texture_convert_bitmap_for_upload (atlas_tex,
                                                        bmp,
                                                        atlas_tex->internal_format,
-                                                       FALSE, /* can't convert
+                                                       false, /* can't convert
                                                                  in place */
                                                        error);
       if (!upload_bmp)
-        return FALSE;
+        return false;
 
       /* Upload the data ignoring the premult bit */
       ret = _cogl_atlas_texture_set_region_with_border (atlas_tex,
@@ -711,7 +711,7 @@ allocate_space (CoglAtlasTexture *atlas_tex,
                        COGL_TEXTURE_ERROR,
                        COGL_TEXTURE_ERROR_FORMAT,
                        "Texture format unsuitable for atlasing");
-      return FALSE;
+      return false;
     }
 
   /* If we can't use FBOs then it will be too slow to migrate textures
@@ -723,7 +723,7 @@ allocate_space (CoglAtlasTexture *atlas_tex,
                        COGL_SYSTEM_ERROR_UNSUPPORTED,
                        "Atlasing disabled because migrations "
                        "would be too slow");
-      return FALSE;
+      return false;
     }
 
   /* Add two pixels for the border
@@ -739,12 +739,12 @@ allocate_space (CoglAtlasTexture *atlas_tex,
                        COGL_SYSTEM_ERROR,
                        COGL_SYSTEM_ERROR_NO_MEMORY,
                        "Not enough memory to atlas texture");
-      return FALSE;
+      return false;
     }
 
   atlas_tex->internal_format = internal_format;
 
-  return TRUE;
+  return true;
 }
 
 static bool
@@ -766,10 +766,10 @@ allocate_with_size (CoglAtlasTexture *atlas_tex,
                                    internal_format,
                                    loader->src.sized.width,
                                    loader->src.sized.height);
-      return TRUE;
+      return true;
     }
   else
-    return FALSE;
+    return false;
 }
 
 static bool
@@ -786,7 +786,7 @@ allocate_from_bitmap (CoglAtlasTexture *atlas_tex,
   CoglPixelFormat internal_format;
   CoglBitmap *upload_bmp;
 
-  _COGL_RETURN_VAL_IF_FAIL (atlas_tex->atlas == NULL, FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (atlas_tex->atlas == NULL, false);
 
   internal_format = _cogl_texture_determine_internal_format (tex, bmp_format);
 
@@ -797,7 +797,7 @@ allocate_from_bitmap (CoglAtlasTexture *atlas_tex,
                                                    can_convert_in_place,
                                                    error);
   if (upload_bmp == NULL)
-    return FALSE;
+    return false;
 
   if (!allocate_space (atlas_tex,
                        width,
@@ -806,7 +806,7 @@ allocate_from_bitmap (CoglAtlasTexture *atlas_tex,
                        error))
     {
       cogl_object_unref (upload_bmp);
-      return FALSE;
+      return false;
     }
 
   /* Defer to set_region so that we can share the code for copying the
@@ -823,14 +823,14 @@ allocate_from_bitmap (CoglAtlasTexture *atlas_tex,
     {
       _cogl_atlas_texture_remove_from_atlas (atlas_tex);
       cogl_object_unref (upload_bmp);
-      return FALSE;
+      return false;
     }
 
   cogl_object_unref (upload_bmp);
 
   _cogl_texture_set_allocated (tex, internal_format, width, height);
 
-  return TRUE;
+  return true;
 }
 
 static bool
@@ -840,7 +840,7 @@ _cogl_atlas_texture_allocate (CoglTexture *tex,
   CoglAtlasTexture *atlas_tex = COGL_ATLAS_TEXTURE (tex);
   CoglTextureLoader *loader = tex->loader;
 
-  _COGL_RETURN_VAL_IF_FAIL (loader, FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (loader, false);
 
   switch (loader->src_type)
     {
@@ -852,7 +852,7 @@ _cogl_atlas_texture_allocate (CoglTexture *tex,
       break;
     }
 
-  c_return_val_if_reached (FALSE);
+  c_return_val_if_reached (false);
 }
 
 static CoglAtlasTexture *
@@ -878,7 +878,7 @@ _cogl_atlas_texture_new_from_bitmap (CoglBitmap *bmp,
 CoglAtlasTexture *
 cogl_atlas_texture_new_from_bitmap (CoglBitmap *bmp)
 {
-  return _cogl_atlas_texture_new_from_bitmap (bmp, FALSE);
+  return _cogl_atlas_texture_new_from_bitmap (bmp, false);
 }
 
 CoglAtlasTexture *
@@ -936,7 +936,7 @@ cogl_atlas_texture_new_from_file (CoglContext *ctx,
     return NULL;
 
   atlas_tex = _cogl_atlas_texture_new_from_bitmap (bmp,
-                                                   TRUE); /* convert in-place */
+                                                   true); /* convert in-place */
 
   cogl_object_unref (bmp);
 
@@ -952,7 +952,7 @@ _cogl_atlas_texture_get_type (CoglTexture *tex)
 static const CoglTextureVtable
 cogl_atlas_texture_vtable =
   {
-    FALSE, /* not primitive */
+    false, /* not primitive */
     _cogl_atlas_texture_allocate,
     _cogl_atlas_texture_set_region,
     NULL, /* get_data */

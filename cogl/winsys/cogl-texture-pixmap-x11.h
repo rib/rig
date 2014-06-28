@@ -107,7 +107,7 @@ uint32_t cogl_texture_pixmap_x11_error_domain (void);
  * @error: A #CoglError for exceptions
  *
  * Creates a texture that contains the contents of @pixmap. If
- * @automatic_updates is %TRUE then Cogl will attempt to listen for
+ * @automatic_updates is %true then Cogl will attempt to listen for
  * damage events on the pixmap and automatically update the texture
  * when it changes.
  *
@@ -154,8 +154,8 @@ cogl_texture_pixmap_x11_update_area (CoglTexturePixmapX11 *texture,
  * implemented as zero-copy operation so it implies the updates are
  * working efficiently.
  *
- * Return value: %TRUE if the texture is using an efficient extension
- *   and %FALSE otherwise
+ * Return value: %true if the texture is using an efficient extension
+ *   and %false otherwise
  *
  * Since: 1.4
  * Stability: Unstable
@@ -173,7 +173,7 @@ cogl_texture_pixmap_x11_is_using_tfp_extension (CoglTexturePixmapX11 *texture);
  *
  * Sets the damage object that will be used to track automatic updates
  * to the @texture. Damage tracking can be disabled by passing 0 for
- * @damage. Otherwise this damage will replace the one used if %TRUE
+ * @damage. Otherwise this damage will replace the one used if %true
  * was passed for automatic_updates to cogl_texture_pixmap_x11_new().
  *
  * Note that Cogl will subtract from the damage region as it processes
@@ -194,8 +194,8 @@ cogl_texture_pixmap_x11_set_damage_object (CoglTexturePixmapX11 *texture,
  *
  * Checks whether @object points to a #CoglTexturePixmapX11 instance.
  *
- * Return value: %TRUE if the object is a #CoglTexturePixmapX11, and
- *   %FALSE otherwise
+ * Return value: %true if the object is a #CoglTexturePixmapX11, and
+ *   %false otherwise
  *
  * Since: 1.4
  * Stability: Unstable

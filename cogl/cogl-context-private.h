@@ -107,8 +107,8 @@ struct _CoglContext
   CoglPipelineLayer *default_layer_n;
   CoglPipelineLayer *dummy_layer_dependant;
 
-  CHashTable *attribute_name_states_hash;
-  CArray *attribute_name_index_map;
+  c_hash_table_t *attribute_name_states_hash;
+  c_array_t *attribute_name_index_map;
   int n_attribute_names;
 
   CoglBitmask       enabled_custom_attributes;
@@ -134,13 +134,13 @@ struct _CoglContext
   CoglMatrixEntryCache builtin_flushed_projection;
   CoglMatrixEntryCache builtin_flushed_modelview;
 
-  CArray           *texture_units;
+  c_array_t           *texture_units;
   int               active_texture_unit;
 
   /* Pipelines */
   CoglPipeline     *opaque_color_pipeline; /* to check for simple pipelines */
-  CString          *codegen_header_buffer;
-  CString          *codegen_source_buffer;
+  c_string_t          *codegen_header_buffer;
+  c_string_t          *codegen_source_buffer;
 
   CoglPipelineCache *pipeline_cache;
 
@@ -150,11 +150,11 @@ struct _CoglContext
 
   /* Central list of all framebuffers so all journals can be flushed
    * at any time. */
-  CList            *framebuffers;
+  c_list_t            *framebuffers;
 
   /* Global journal buffers */
-  CArray           *journal_flush_attributes_array;
-  CArray           *journal_clip_bounds;
+  c_array_t           *journal_flush_attributes_array;
+  c_array_t           *journal_clip_bounds;
 
   /* Some simple caching, to minimize state changes... */
   CoglPipeline     *current_pipeline;
@@ -187,9 +187,9 @@ struct _CoglContext
   CoglClosure *onscreen_dispatch_idle;
 
   CoglGLES2Context *current_gles2_context;
-  CQueue gles2_context_stack;
+  c_queue_t gles2_context_stack;
 
-  /* This becomes TRUE the first time the context is bound to an
+  /* This becomes true the first time the context is bound to an
    * onscreen buffer. This is used by cogl-framebuffer-gl to determine
    * when to initialise the glDrawBuffer state */
   bool was_bound_to_onscreen;
@@ -225,9 +225,9 @@ struct _CoglContext
   CoglColorMask current_gl_color_mask;
 
   /* Clipping */
-  /* TRUE if we have a valid clipping stack flushed. In that case
+  /* true if we have a valid clipping stack flushed. In that case
      current_clip_stack will describe what the current state is. If
-     this is FALSE then the current clip stack is completely unknown
+     this is false then the current clip stack is completely unknown
      so it will need to be reflushed. In that case current_clip_stack
      doesn't need to be a valid pointer. We can't just use NULL in
      current_clip_stack to mark a dirty state because NULL is a valid
@@ -244,7 +244,7 @@ struct _CoglContext
   /* This is used as a temporary buffer to fill a CoglBuffer when
      cogl_buffer_map fails and we only want to map to fill it with new
      data */
-  CByteArray       *buffer_map_fallback_array;
+  c_byte_array_t       *buffer_map_fallback_array;
   bool          buffer_map_fallback_in_use;
   size_t            buffer_map_fallback_offset;
 
@@ -259,7 +259,7 @@ struct _CoglContext
 #ifdef COGL_HAS_XLIB_SUPPORT
   int damage_base;
   /* List of callback functions that will be given every Xlib event */
-  CSList *event_filters;
+  c_slist_t *event_filters;
   /* Current top of the XError trap state stack. The actual memory for
      these is expected to be allocated on the stack by the caller */
   CoglXlibTrapState *trap_state;
@@ -274,11 +274,11 @@ struct _CoglContext
      they increase sequentially so that we can use the id as an index
      into a bitfield representing the uniforms that a pipeline
      overrides from its parent. */
-  UPtrArray *uniform_names;
+  c_ptr_array_t *uniform_names;
   /* A hash table to quickly get an index given an existing name. The
      name strings are owned by the uniform_names array. The values are
      the uniform location cast to a pointer. */
-  CHashTable *uniform_name_hash;
+  c_hash_table_t *uniform_name_hash;
   int n_uniform_names;
 
   CoglPollSource *fences_poll_source;
@@ -317,7 +317,7 @@ _cogl_context_get_winsys (CoglContext *context);
  * different GL contexts so it is the winsys backend's responsiblity
  * to know when to re-query the GL extensions. The backend should also
  * check whether the GL context is supported by Cogl. If not it should
- * return FALSE and set @error */
+ * return false and set @error */
 bool
 _cogl_context_update_features (CoglContext *context,
                                CoglError **error);

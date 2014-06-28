@@ -56,8 +56,8 @@ cogl_onscreen_template_new (void)
   CoglOnscreenTemplate *onscreen_template = c_slice_new0 (CoglOnscreenTemplate);
   char *user_config;
 
-  onscreen_template->config.swap_throttled = TRUE;
-  onscreen_template->config.need_stencil = TRUE;
+  onscreen_template->config.swap_throttled = true;
+  onscreen_template->config.need_stencil = true;
   onscreen_template->config.samples_per_pixel = 0;
 
   user_config = getenv ("COGL_POINT_SAMPLES_PER_PIXEL");

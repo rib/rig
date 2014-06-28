@@ -300,10 +300,10 @@ _cogl_bitmap_can_fast_premult (CoglPixelFormat format)
     case COGL_PIXEL_FORMAT_BGRA_8888:
     case COGL_PIXEL_FORMAT_ARGB_8888:
     case COGL_PIXEL_FORMAT_ABGR_8888:
-      return TRUE;
+      return true;
 
     default:
-      return FALSE;
+      return false;
     }
 }
 
@@ -341,7 +341,7 @@ _cogl_bitmap_needs_short_temp_buffer (CoglPixelFormat format)
     case COGL_PIXEL_FORMAT_ABGR_8888_PRE:
     case COGL_PIXEL_FORMAT_RGBA_4444_PRE:
     case COGL_PIXEL_FORMAT_RGBA_5551_PRE:
-      return FALSE;
+      return false;
 
     case COGL_PIXEL_FORMAT_RGBA_1010102:
     case COGL_PIXEL_FORMAT_BGRA_1010102:
@@ -351,7 +351,7 @@ _cogl_bitmap_needs_short_temp_buffer (CoglPixelFormat format)
     case COGL_PIXEL_FORMAT_BGRA_1010102_PRE:
     case COGL_PIXEL_FORMAT_ARGB_2101010_PRE:
     case COGL_PIXEL_FORMAT_ABGR_2101010_PRE:
-      return TRUE;
+      return true;
     }
 
   c_assert_not_reached ();
@@ -383,8 +383,8 @@ _cogl_bitmap_convert_into_bitmap (CoglBitmap *src_bmp,
   width = cogl_bitmap_get_width (src_bmp);
   height = cogl_bitmap_get_height (src_bmp);
 
-  _COGL_RETURN_VAL_IF_FAIL (width == cogl_bitmap_get_width (dst_bmp), FALSE);
-  _COGL_RETURN_VAL_IF_FAIL (height == cogl_bitmap_get_height (dst_bmp), FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (width == cogl_bitmap_get_width (dst_bmp), false);
+  _COGL_RETURN_VAL_IF_FAIL (height == cogl_bitmap_get_height (dst_bmp), false);
 
   need_premult
     = ((src_format & COGL_PREMULT_BIT) != (dst_format & COGL_PREMULT_BIT) &&
@@ -402,28 +402,28 @@ _cogl_bitmap_convert_into_bitmap (CoglBitmap *src_bmp,
                                         0, 0, /* dst_x / dst_y */
                                         width, height,
                                         error))
-        return FALSE;
+        return false;
 
       if (need_premult)
         {
           if ((dst_format & COGL_PREMULT_BIT))
             {
               if (!_cogl_bitmap_premult (dst_bmp, error))
-                return FALSE;
+                return false;
             }
           else
             {
               if (!_cogl_bitmap_unpremult (dst_bmp, error))
-                return FALSE;
+                return false;
             }
         }
 
-      return TRUE;
+      return true;
     }
 
   src_data = _cogl_bitmap_map (src_bmp, COGL_BUFFER_ACCESS_READ, 0, error);
   if (src_data == NULL)
-    return FALSE;
+    return false;
   dst_data = _cogl_bitmap_map (dst_bmp,
                                COGL_BUFFER_ACCESS_WRITE,
                                COGL_BUFFER_MAP_HINT_DISCARD,
@@ -431,7 +431,7 @@ _cogl_bitmap_convert_into_bitmap (CoglBitmap *src_bmp,
   if (dst_data == NULL)
     {
       _cogl_bitmap_unmap (src_bmp);
-      return FALSE;
+      return false;
     }
 
   use_16 = _cogl_bitmap_needs_short_temp_buffer (dst_format);
@@ -481,7 +481,7 @@ _cogl_bitmap_convert_into_bitmap (CoglBitmap *src_bmp,
 
   c_free (tmp_row);
 
-  return TRUE;
+  return true;
 }
 
 CoglBitmap *
@@ -518,10 +518,10 @@ driver_can_convert (CoglContext *ctx,
                     CoglPixelFormat internal_format)
 {
   if (!_cogl_has_private_feature (ctx, COGL_PRIVATE_FEATURE_FORMAT_CONVERSION))
-    return FALSE;
+    return false;
 
   if (src_format == internal_format)
-    return TRUE;
+    return true;
 
   /* If the driver doesn't natively support alpha textures then it
    * won't work correctly to convert to/from component-alpha
@@ -529,16 +529,16 @@ driver_can_convert (CoglContext *ctx,
   if (!_cogl_has_private_feature (ctx, COGL_PRIVATE_FEATURE_ALPHA_TEXTURES) &&
       (src_format == COGL_PIXEL_FORMAT_A_8 ||
        internal_format == COGL_PIXEL_FORMAT_A_8))
-    return FALSE;
+    return false;
 
   /* Same for red-green textures. If red-green textures aren't
    * supported then the internal format should never be RG_88 but we
    * should still be able to convert from an RG source image */
   if (!cogl_has_feature (ctx, COGL_FEATURE_ID_TEXTURE_RG) &&
       src_format == COGL_PIXEL_FORMAT_RG_88)
-    return FALSE;
+    return false;
 
-  return TRUE;
+  return true;
 }
 
 CoglBitmap *
@@ -633,7 +633,7 @@ _cogl_bitmap_unpremult (CoglBitmap *bmp,
                                 COGL_BUFFER_ACCESS_WRITE,
                                 0,
                                 error)) == NULL)
-    return FALSE;
+    return false;
 
   /* If we can't directly unpremult the data inline then we'll
      allocate a temporary row and unpack the data. This assumes if we
@@ -677,7 +677,7 @@ _cogl_bitmap_unpremult (CoglBitmap *bmp,
 
   _cogl_bitmap_set_format (bmp, format & ~COGL_PREMULT_BIT);
 
-  return TRUE;
+  return true;
 }
 
 bool
@@ -701,7 +701,7 @@ _cogl_bitmap_premult (CoglBitmap *bmp,
                                 COGL_BUFFER_ACCESS_WRITE,
                                 0,
                                 error)) == NULL)
-    return FALSE;
+    return false;
 
   /* If we can't directly premult the data inline then we'll allocate
      a temporary row and unpack the data. */
@@ -741,5 +741,5 @@ _cogl_bitmap_premult (CoglBitmap *bmp,
 
   _cogl_bitmap_set_format (bmp, format | COGL_PREMULT_BIT);
 
-  return TRUE;
+  return true;
 }

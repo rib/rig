@@ -282,7 +282,7 @@ _cogl_framebuffer_gl_bind (CoglFramebuffer *framebuffer, GLenum target)
               GE (ctx, glDrawBuffers (C_N_ELEMENTS (buffers), buffers));
             }
 
-          ctx->was_bound_to_onscreen = TRUE;
+          ctx->was_bound_to_onscreen = true;
         }
     }
 }
@@ -476,14 +476,14 @@ attach_depth_texture (CoglContext *ctx,
   return COGL_TEXTURE (depth_texture);
 }
 
-static CList *
+static c_list_t *
 try_creating_renderbuffers (CoglContext *ctx,
                             int width,
                             int height,
                             CoglOffscreenAllocateFlags flags,
                             int n_samples)
 {
-  CList *renderbuffers = NULL;
+  c_list_t *renderbuffers = NULL;
   GLuint gl_depth_stencil_handle;
 
   if (flags & COGL_OFFSCREEN_ALLOCATE_FLAG_DEPTH_STENCIL)
@@ -597,9 +597,9 @@ try_creating_renderbuffers (CoglContext *ctx,
 }
 
 static void
-delete_renderbuffers (CoglContext *ctx, CList *renderbuffers)
+delete_renderbuffers (CoglContext *ctx, c_list_t *renderbuffers)
 {
-  CList *l;
+  c_list_t *l;
 
   for (l = renderbuffers; l; l = l->next)
     {
@@ -633,15 +633,15 @@ try_creating_fbo (CoglContext *ctx,
   int n_samples;
 
   if (!cogl_texture_get_gl_texture (texture, &tex_gl_handle, &tex_gl_target))
-    return FALSE;
+    return false;
 
   if (tex_gl_target != GL_TEXTURE_2D)
-    return FALSE;
+    return false;
 
   if (config->samples_per_pixel)
     {
       if (!ctx->glFramebufferTexture2DMultisampleIMG)
-        return FALSE;
+        return false;
       n_samples = config->samples_per_pixel;
     }
   else
@@ -705,7 +705,7 @@ try_creating_fbo (CoglContext *ctx,
       delete_renderbuffers (ctx, gl_framebuffer->renderbuffers);
       gl_framebuffer->renderbuffers = NULL;
 
-      return FALSE;
+      return false;
     }
 
   /* Update the real number of samples_per_pixel now that we have a
@@ -723,7 +723,7 @@ try_creating_fbo (CoglContext *ctx,
       gl_framebuffer->samples_per_pixel = texture_samples;
     }
 
-  return TRUE;
+  return true;
 }
 
 bool
@@ -761,7 +761,7 @@ _cogl_offscreen_gl_allocate (CoglOffscreen *offscreen,
 
   _COGL_RETURN_VAL_IF_FAIL (offscreen->texture_level <
                             _cogl_texture_get_n_levels (offscreen->texture),
-                            FALSE);
+                            false);
 
   _cogl_texture_get_level_size (offscreen->texture,
                                 offscreen->texture_level,
@@ -781,7 +781,7 @@ _cogl_offscreen_gl_allocate (CoglOffscreen *offscreen,
         {
           cogl_object_unref (offscreen->depth_texture);
           offscreen->depth_texture = NULL;
-          return FALSE;
+          return false;
         }
 
       _cogl_texture_associate_framebuffer (offscreen->depth_texture, fb);
@@ -889,7 +889,7 @@ _cogl_offscreen_gl_allocate (CoglOffscreen *offscreen,
           /* Record that the last set of flags succeeded so that we can
              try that set first next time */
           ctx->last_offscreen_allocate_flags = flags;
-          ctx->have_last_offscreen_allocate_flags = TRUE;
+          ctx->have_last_offscreen_allocate_flags = true;
         }
 
       /* Save the flags we managed to successfully allocate the
@@ -897,14 +897,14 @@ _cogl_offscreen_gl_allocate (CoglOffscreen *offscreen,
        * GLES2 context later */
       offscreen->allocation_flags = flags;
 
-      return TRUE;
+      return true;
     }
   else
     {
       _cogl_set_error (error, COGL_FRAMEBUFFER_ERROR,
                        COGL_FRAMEBUFFER_ERROR_ALLOCATE,
                        "Failed to create an OpenGL framebuffer object");
-      return FALSE;
+      return false;
     }
 }
 
@@ -1057,7 +1057,7 @@ _cogl_framebuffer_init_bits (CoglFramebuffer *framebuffer)
              framebuffer->bits.depth,
              framebuffer->bits.stencil);
 
-  framebuffer->dirty_bitmasks = FALSE;
+  framebuffer->dirty_bitmasks = false;
 }
 
 void
@@ -1237,7 +1237,7 @@ mesa_46631_slow_read_pixels_workaround (CoglFramebuffer *framebuffer,
   if (!res)
     {
       cogl_object_unref (pbo);
-      return FALSE;
+      return false;
     }
 
   /* Copy the pixels back into application's buffer */
@@ -1248,7 +1248,7 @@ mesa_46631_slow_read_pixels_workaround (CoglFramebuffer *framebuffer,
   if (!dst)
     {
       cogl_object_unref (pbo);
-      return FALSE;
+      return false;
     }
 
   src = _cogl_bitmap_map (pbo,
@@ -1281,7 +1281,7 @@ mesa_46631_slow_read_pixels_workaround (CoglFramebuffer *framebuffer,
       _cogl_bitmap_unmap (pbo);
     }
   else
-    res = FALSE;
+    res = false;
 
   _cogl_bitmap_unmap (bitmap);
 
@@ -1308,7 +1308,7 @@ _cogl_framebuffer_gl_read_pixels_into_bitmap (CoglFramebuffer *framebuffer,
   GLenum gl_format;
   GLenum gl_type;
   bool pack_invert_set;
-  int status = FALSE;
+  int status = false;
 
   /* Workaround for cases where its faster to read into a temporary
    * PBO. This is only worth doing if:
@@ -1339,7 +1339,7 @@ _cogl_framebuffer_gl_read_pixels_into_bitmap (CoglFramebuffer *framebuffer,
                                                   source,
                                                   bitmap,
                                                   &ignore_error))
-        return TRUE;
+        return true;
       else
         cogl_error_free (ignore_error);
     }
@@ -1369,11 +1369,11 @@ _cogl_framebuffer_gl_read_pixels_into_bitmap (CoglFramebuffer *framebuffer,
       (source & COGL_READ_PIXELS_NO_FLIP) == 0 &&
       !cogl_is_offscreen (framebuffer))
     {
-      GE (ctx, glPixelStorei (GL_PACK_INVERT_MESA, TRUE));
-      pack_invert_set = TRUE;
+      GE (ctx, glPixelStorei (GL_PACK_INVERT_MESA, true));
+      pack_invert_set = true;
     }
   else
-    pack_invert_set = FALSE;
+    pack_invert_set = false;
 
   /* Under GLES only GL_RGBA with GL_UNSIGNED_BYTE as well as an
      implementation specific format under
@@ -1452,7 +1452,7 @@ _cogl_framebuffer_gl_read_pixels_into_bitmap (CoglFramebuffer *framebuffer,
       CoglBitmap *shared_bmp;
       CoglPixelFormat bmp_format;
       int bpp, rowstride;
-      bool succeeded = FALSE;
+      bool succeeded = false;
       uint8_t *pixels;
       CoglError *internal_error = NULL;
 
@@ -1507,7 +1507,7 @@ _cogl_framebuffer_gl_read_pixels_into_bitmap (CoglFramebuffer *framebuffer,
          in-place. This will do nothing if the premult status is already
          correct. */
       if (_cogl_bitmap_convert_premult_status (shared_bmp, format, error))
-        succeeded = TRUE;
+        succeeded = true;
 
       cogl_object_unref (shared_bmp);
 
@@ -1555,7 +1555,7 @@ _cogl_framebuffer_gl_read_pixels_into_bitmap (CoglFramebuffer *framebuffer,
       _cogl_bitmap_unmap (bitmap);
     }
 
-  status = TRUE;
+  status = true;
 
 EXIT:
 
@@ -1563,7 +1563,7 @@ EXIT:
    * to interfere with other Cogl components so all other code can assume that
    * we leave the pack_invert state off. */
   if (pack_invert_set)
-    GE (ctx, glPixelStorei (GL_PACK_INVERT_MESA, FALSE));
+    GE (ctx, glPixelStorei (GL_PACK_INVERT_MESA, false));
 
   return status;
 }

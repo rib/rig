@@ -48,7 +48,7 @@ bool
 _cogl_offscreen_nop_allocate (CoglOffscreen *offscreen,
                               CoglError **error)
 {
-  return TRUE;
+  return true;
 }
 
 void
@@ -117,5 +117,5 @@ _cogl_framebuffer_nop_read_pixels_into_bitmap (CoglFramebuffer *framebuffer,
                                                CoglBitmap *bitmap,
                                                CoglError **error)
 {
-  return TRUE;
+  return true;
 }

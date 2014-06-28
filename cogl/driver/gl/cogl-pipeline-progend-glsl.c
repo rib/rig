@@ -129,10 +129,10 @@ typedef struct
   /* Array of GL uniform locations indexed by Cogl's uniform
      location. We are careful only to allocated this array if a custom
      uniform is actually set */
-  CArray *uniform_locations;
+  c_array_t *uniform_locations;
 
   /* Array of attribute locations. */
-  CArray *attribute_locations;
+  c_array_t *attribute_locations;
 
   /* The 'flip' uniform is used to flip the geometry upside-down when
      the framebuffer requires it only when there are vertex
@@ -184,7 +184,7 @@ _cogl_pipeline_progend_glsl_get_attrib_location (CoglPipeline *pipeline,
 
   if (C_UNLIKELY (program_state->attribute_locations == NULL))
     program_state->attribute_locations =
-      c_array_new (FALSE, FALSE, sizeof (int));
+      c_array_new (false, false, sizeof (int));
 
   if (C_UNLIKELY (program_state->attribute_locations->len <= name_index))
     {
@@ -218,7 +218,7 @@ clear_attribute_cache (CoglPipelineProgramState *program_state)
 {
   if (program_state->attribute_locations)
     {
-      c_array_free (program_state->attribute_locations, TRUE);
+      c_array_free (program_state->attribute_locations, true);
       program_state->attribute_locations = NULL;
     }
 }
@@ -285,7 +285,7 @@ destroy_program_state (void *user_data,
       c_free (program_state->unit_state);
 
       if (program_state->uniform_locations)
-        c_array_free (program_state->uniform_locations, TRUE);
+        c_array_free (program_state->uniform_locations, true);
 
       c_slice_free (CoglPipelineProgramState, program_state);
     }
@@ -399,7 +399,7 @@ get_uniform_cb (CoglPipeline *pipeline,
 
   state->unit++;
 
-  return TRUE;
+  return true;
 }
 
 static bool
@@ -421,10 +421,10 @@ update_constants_cb (CoglPipeline *pipeline,
                                                  constant);
       GE (ctx, glUniform4fv (unit_state->combine_constant_uniform,
                              1, constant));
-      unit_state->dirty_combine_constant = FALSE;
+      unit_state->dirty_combine_constant = false;
     }
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -473,12 +473,12 @@ flush_uniform_cb (int uniform_num, void *user_data)
 
   if (COGL_FLAGS_GET (data->uniform_differences, uniform_num))
     {
-      CArray *uniform_locations;
+      c_array_t *uniform_locations;
       GLint uniform_location;
 
       if (data->program_state->uniform_locations == NULL)
         data->program_state->uniform_locations =
-          c_array_new (FALSE, FALSE, sizeof (GLint));
+          c_array_new (false, false, sizeof (GLint));
 
       uniform_locations = data->program_state->uniform_locations;
 
@@ -516,7 +516,7 @@ flush_uniform_cb (int uniform_num, void *user_data)
                                        data->values + data->value_index);
 
       data->n_differences--;
-      COGL_FLAGS_SET (data->uniform_differences, uniform_num, FALSE);
+      COGL_FLAGS_SET (data->uniform_differences, uniform_num, false);
     }
 
   data->value_index++;
@@ -619,12 +619,12 @@ _cogl_pipeline_progend_glsl_flush_uniforms (CoglContext *ctx,
 static bool
 _cogl_pipeline_progend_glsl_start (CoglPipeline *pipeline)
 {
-  _COGL_GET_CONTEXT (ctx, FALSE);
+  _COGL_GET_CONTEXT (ctx, false);
 
   if (!cogl_has_feature (ctx, COGL_FEATURE_ID_GLSL))
-    return FALSE;
+    return false;
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -633,7 +633,7 @@ _cogl_pipeline_progend_glsl_end (CoglPipeline *pipeline,
 {
   CoglPipelineProgramState *program_state;
   GLuint gl_program;
-  bool program_changed = FALSE;
+  bool program_changed = false;
   UpdateUniformsState state;
   CoglPipelineCacheEntry *cache_entry = NULL;
 
@@ -713,7 +713,7 @@ _cogl_pipeline_progend_glsl_end (CoglPipeline *pipeline,
 
       link_program (ctx, program_state->program);
 
-      program_changed = TRUE;
+      program_changed = true;
     }
 
   gl_program = program_state->program;
@@ -845,7 +845,7 @@ _cogl_pipeline_progend_glsl_layer_pre_change_notify (
       if (program_state)
         {
           int unit_index = _cogl_pipeline_layer_get_unit_index (layer);
-          program_state->unit_state[unit_index].dirty_combine_constant = TRUE;
+          program_state->unit_state[unit_index].dirty_combine_constant = true;
         }
     }
 }
@@ -890,12 +890,12 @@ _cogl_pipeline_progend_glsl_pre_paint (CoglPipeline *pipeline,
     _cogl_matrix_entry_cache_maybe_update (&program_state->modelview_cache,
                                            modelview_entry,
                                            /* never flip modelview */
-                                           FALSE);
+                                           false);
 
   if (modelview_changed || projection_changed)
     {
       if (program_state->mvp_uniform != -1)
-        need_modelview = need_projection = TRUE;
+        need_modelview = need_projection = true;
       else
         {
           need_projection = (program_state->projection_uniform != -1 &&
@@ -923,13 +923,13 @@ _cogl_pipeline_progend_glsl_pre_paint (CoglPipeline *pipeline,
       if (projection_changed && program_state->projection_uniform != -1)
         GE (ctx, glUniformMatrix4fv (program_state->projection_uniform,
                                      1, /* count */
-                                     FALSE, /* transpose */
+                                     false, /* transpose */
                                      cogl_matrix_get_array (&projection)));
 
       if (modelview_changed && program_state->modelview_uniform != -1)
         GE (ctx, glUniformMatrix4fv (program_state->modelview_uniform,
                                      1, /* count */
-                                     FALSE, /* transpose */
+                                     false, /* transpose */
                                      cogl_matrix_get_array (&modelview)));
 
       if (program_state->mvp_uniform != -1)
@@ -942,7 +942,7 @@ _cogl_pipeline_progend_glsl_pre_paint (CoglPipeline *pipeline,
               GE (ctx,
                   glUniformMatrix4fv (program_state->mvp_uniform,
                                       1, /* count */
-                                      FALSE, /* transpose */
+                                      false, /* transpose */
                                       cogl_matrix_get_array (&projection)));
             }
           else
@@ -955,7 +955,7 @@ _cogl_pipeline_progend_glsl_pre_paint (CoglPipeline *pipeline,
               GE (ctx,
                   glUniformMatrix4fv (program_state->mvp_uniform,
                                       1, /* count */
-                                      FALSE, /* transpose */
+                                      false, /* transpose */
                                       cogl_matrix_get_array (&combined)));
             }
         }

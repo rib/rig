@@ -124,7 +124,7 @@ static void
 detach_shader (CoglGLES2ProgramData *program_data,
                CoglGLES2ShaderData *shader_data)
 {
-  CList *l;
+  c_list_t *l;
 
   for (l = program_data->attached_shaders; l; l = l->next)
     {
@@ -188,9 +188,9 @@ update_current_flip_state (CoglGLES2Context *gles2_ctx)
    * dependent state */
   if (new_flip_state != gles2_ctx->current_flip_state)
     {
-      gles2_ctx->viewport_dirty = TRUE;
-      gles2_ctx->scissor_dirty = TRUE;
-      gles2_ctx->front_face_dirty = TRUE;
+      gles2_ctx->viewport_dirty = true;
+      gles2_ctx->scissor_dirty = true;
+      gles2_ctx->front_face_dirty = true;
       gles2_ctx->current_flip_state = new_flip_state;
     }
 }
@@ -310,7 +310,7 @@ copy_flipped_texture (CoglGLES2Context *gles2_ctx,
   /* We need to force Cogl to rebind the texture because according to
    * the GL spec a shared texture isn't guaranteed to be updated until
    * is rebound */
-  _cogl_get_texture_unit (0)->dirty_gl_texture = TRUE;
+  _cogl_get_texture_unit (0)->dirty_gl_texture = true;
 
   /* Temporarily switch back to the Cogl context */
   winsys->restore_context (ctx);
@@ -689,7 +689,7 @@ gl_create_shader_wrapper (GLenum type)
       data->object_id = id;
       data->type = type;
       data->ref_count = 1;
-      data->deleted = FALSE;
+      data->deleted = false;
 
       c_hash_table_insert (gles2_ctx->shader_map,
                            GINT_TO_POINTER (id),
@@ -709,7 +709,7 @@ gl_delete_shader_wrapper (GLuint shader)
                                           GINT_TO_POINTER (shader))) &&
       !shader_data->deleted)
     {
-      shader_data->deleted = TRUE;
+      shader_data->deleted = true;
       shader_data_unref (gles2_ctx, shader_data);
     }
 
@@ -731,7 +731,7 @@ gl_create_program_wrapper (void)
       data->object_id = id;
       data->attached_shaders = NULL;
       data->ref_count = 1;
-      data->deleted = FALSE;
+      data->deleted = false;
       data->context = gles2_ctx;
       data->flip_vector_location = 0;
       data->flip_vector_state = COGL_GLES2_FLIP_STATE_UNKNOWN;
@@ -754,7 +754,7 @@ gl_delete_program_wrapper (GLuint program)
                                            GINT_TO_POINTER (program))) &&
       !program_data->deleted)
     {
-      program_data->deleted = TRUE;
+      program_data->deleted = true;
       program_data_unref (program_data);
     }
 
@@ -994,7 +994,7 @@ flush_viewport_state (CoglGLES2Context *gles2_ctx)
                                       gles2_ctx->viewport[2],
                                       gles2_ctx->viewport[3]);
 
-      gles2_ctx->viewport_dirty = FALSE;
+      gles2_ctx->viewport_dirty = false;
     }
 }
 
@@ -1019,7 +1019,7 @@ flush_scissor_state (CoglGLES2Context *gles2_ctx)
                                      gles2_ctx->scissor[2],
                                      gles2_ctx->scissor[3]);
 
-      gles2_ctx->scissor_dirty = FALSE;
+      gles2_ctx->scissor_dirty = false;
     }
 }
 
@@ -1042,7 +1042,7 @@ flush_front_face_state (CoglGLES2Context *gles2_ctx)
 
       gles2_ctx->context->glFrontFace (front_face);
 
-      gles2_ctx->front_face_dirty = FALSE;
+      gles2_ctx->front_face_dirty = false;
     }
 }
 
@@ -1173,7 +1173,7 @@ gl_front_face_wrapper (GLenum mode)
   else
     {
       gles2_ctx->front_face = mode;
-      gles2_ctx->front_face_dirty = TRUE;
+      gles2_ctx->front_face_dirty = true;
     }
 }
 
@@ -1195,7 +1195,7 @@ gl_viewport_wrapper (GLint x,
       gles2_ctx->viewport[1] = y;
       gles2_ctx->viewport[2] = width;
       gles2_ctx->viewport[3] = height;
-      gles2_ctx->viewport_dirty = TRUE;
+      gles2_ctx->viewport_dirty = true;
     }
 }
 
@@ -1217,7 +1217,7 @@ gl_scissor_wrapper (GLint x,
       gles2_ctx->scissor[1] = y;
       gles2_ctx->scissor[2] = width;
       gles2_ctx->scissor[3] = height;
-      gles2_ctx->scissor_dirty = TRUE;
+      gles2_ctx->scissor_dirty = true;
     }
 }
 
@@ -1450,7 +1450,7 @@ force_delete_program_object (CoglGLES2Context *context,
   if (!program_data->deleted)
     {
       context->context->glDeleteProgram (program_data->object_id);
-      program_data->deleted = TRUE;
+      program_data->deleted = true;
       program_data_unref (program_data);
     }
 }
@@ -1462,7 +1462,7 @@ force_delete_shader_object (CoglGLES2Context *context,
   if (!shader_data->deleted)
     {
       context->context->glDeleteShader (shader_data->object_id);
-      shader_data->deleted = TRUE;
+      shader_data->deleted = true;
       shader_data_unref (context, shader_data);
     }
 }
@@ -1479,7 +1479,7 @@ _cogl_gles2_context_free (CoglGLES2Context *gles2_context)
 {
   CoglContext *ctx = gles2_context->context;
   const CoglWinsysVtable *winsys;
-  CList *objects, *l;
+  c_list_t *objects, *l;
 
   if (gles2_context->current_program)
     program_data_unref (gles2_context->current_program);
@@ -1512,7 +1512,7 @@ _cogl_gles2_context_free (CoglGLES2Context *gles2_context)
   c_hash_table_destroy (gles2_context->shader_map);
 
   c_hash_table_destroy (gles2_context->texture_object_map);
-  c_array_free (gles2_context->texture_units, TRUE);
+  c_array_free (gles2_context->texture_units, true);
 
   winsys = ctx->display->renderer->winsys_vtable;
   winsys->destroy_gles2_context (gles2_context);
@@ -1589,9 +1589,9 @@ cogl_gles2_context_new (CoglContext *ctx, CoglError **error)
     }
 
   gles2_ctx->current_flip_state = COGL_GLES2_FLIP_STATE_UNKNOWN;
-  gles2_ctx->viewport_dirty = TRUE;
-  gles2_ctx->scissor_dirty = TRUE;
-  gles2_ctx->front_face_dirty = TRUE;
+  gles2_ctx->viewport_dirty = true;
+  gles2_ctx->scissor_dirty = true;
+  gles2_ctx->front_face_dirty = true;
   gles2_ctx->front_face = GL_CCW;
   gles2_ctx->pack_alignment = 4;
 
@@ -1653,21 +1653,21 @@ cogl_gles2_context_new (CoglContext *ctx, CoglError **error)
     c_hash_table_new_full (c_direct_hash,
                            c_direct_equal,
                            NULL, /* key_destroy */
-                           (CDestroyNotify) free_shader_data);
+                           (c_destroy_func_t) free_shader_data);
   gles2_ctx->program_map =
     c_hash_table_new_full (c_direct_hash,
                            c_direct_equal,
                            NULL, /* key_destroy */
-                           (CDestroyNotify) free_program_data);
+                           (c_destroy_func_t) free_program_data);
 
   gles2_ctx->texture_object_map =
     c_hash_table_new_full (c_direct_hash,
                            c_direct_equal,
                            NULL, /* key_destroy */
-                           (CDestroyNotify) free_texture_object_data);
+                           (c_destroy_func_t) free_texture_object_data);
 
-  gles2_ctx->texture_units = c_array_new (FALSE, /* not zero terminated */
-                                          TRUE, /* clear */
+  gles2_ctx->texture_units = c_array_new (false, /* not zero terminated */
+                                          true, /* clear */
                                           sizeof (CoglGLES2TextureUnitData));
   gles2_ctx->current_texture_unit = 0;
   c_array_set_size (gles2_ctx->texture_units, 1);
@@ -1780,7 +1780,7 @@ cogl_push_gles2_context (CoglContext *ctx,
   const CoglWinsysVtable *winsys = ctx->display->renderer->winsys_vtable;
   CoglError *internal_error = NULL;
 
-  _COGL_RETURN_VAL_IF_FAIL (gles2_ctx != NULL, FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (gles2_ctx != NULL, false);
 
   /* The read/write buffers are properties of the gles2 context and we
    * don't currently track the read/write buffers as part of the stack
@@ -1790,7 +1790,7 @@ cogl_push_gles2_context (CoglContext *ctx,
     {
       c_critical ("Pushing the same GLES2 context multiple times isn't "
                   "supported");
-      return FALSE;
+      return false;
     }
 
   if (ctx->gles2_context_stack.length == 0)
@@ -1818,7 +1818,7 @@ cogl_push_gles2_context (CoglContext *ctx,
            * may be referenced and old buffers unreferenced even
            * if the _push fails. */
           if (!gles2_ctx->gles2_read_buffer)
-            return FALSE;
+            return false;
         }
       else
         gles2_ctx->gles2_read_buffer = NULL;
@@ -1842,7 +1842,7 @@ cogl_push_gles2_context (CoglContext *ctx,
            * may be referenced and old buffers unreferenced even
            * if the _push fails. */
           if (!gles2_ctx->gles2_write_buffer)
-            return FALSE;
+            return false;
         }
       else
         gles2_ctx->gles2_write_buffer = NULL;
@@ -1861,7 +1861,7 @@ cogl_push_gles2_context (CoglContext *ctx,
       _cogl_set_error (error, COGL_GLES2_CONTEXT_ERROR,
                    COGL_GLES2_CONTEXT_ERROR_DRIVER,
                    "Driver failed to make GLES2 context current");
-      return FALSE;
+      return false;
     }
 
   c_queue_push_tail (&ctx->gles2_context_stack, gles2_ctx);
@@ -1899,10 +1899,10 @@ cogl_push_gles2_context (CoglContext *ctx,
                                      fb_width, fb_height);
       gles2_ctx->vtable->glScissor (0, 0, /* x/y */
                                     fb_width, fb_height);
-      gles2_ctx->has_been_bound = TRUE;
+      gles2_ctx->has_been_bound = true;
     }
 
-  return TRUE;
+  return true;
 }
 
 CoglGLES2Vtable *

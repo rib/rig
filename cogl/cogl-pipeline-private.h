@@ -195,7 +195,7 @@ typedef struct
 
 typedef enum _CoglPipelineBlendEnable
 {
-  /* XXX: we want to detect users mistakenly using TRUE or FALSE
+  /* XXX: we want to detect users mistakenly using true or false
    * so start the enum at 2. */
   COGL_PIPELINE_BLEND_ENABLE_ENABLED = 2,
   COGL_PIPELINE_BLEND_ENABLE_DISABLED,
@@ -336,7 +336,7 @@ struct _CoglPipeline
    *
    * This is sparse state, ref COGL_PIPELINE_STATE_LAYERS */
   unsigned int     n_layers;
-  CList	          *layer_differences;
+  c_list_t	          *layer_differences;
 
   /* As a basic way to reduce memory usage we divide the pipeline
    * state into two groups; the minimal state modified in 90% of

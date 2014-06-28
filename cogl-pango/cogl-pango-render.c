@@ -216,16 +216,16 @@ _cogl_pango_renderer_constructed (GObject *gobject)
   CoglContext *ctx = renderer->ctx;
 
   renderer->no_mipmap_caches.pipeline_cache =
-    _cogl_pango_pipeline_cache_new (ctx, FALSE);
+    _cogl_pango_pipeline_cache_new (ctx, false);
   renderer->mipmap_caches.pipeline_cache =
-    _cogl_pango_pipeline_cache_new (ctx, TRUE);
+    _cogl_pango_pipeline_cache_new (ctx, true);
 
   renderer->no_mipmap_caches.glyph_cache =
-    cogl_pango_glyph_cache_new (ctx, FALSE);
+    cogl_pango_glyph_cache_new (ctx, false);
   renderer->mipmap_caches.glyph_cache =
-    cogl_pango_glyph_cache_new (ctx, TRUE);
+    cogl_pango_glyph_cache_new (ctx, true);
 
-  _cogl_pango_renderer_set_use_mipmapping (renderer, FALSE);
+  _cogl_pango_renderer_set_use_mipmapping (renderer, false);
 
   if (G_OBJECT_CLASS (_cogl_pango_renderer_parent_class)->constructed)
     G_OBJECT_CLASS (_cogl_pango_renderer_parent_class)->constructed (gobject);
@@ -384,7 +384,7 @@ cogl_pango_show_layout (CoglFramebuffer *fb,
       g_object_set_qdata_full (G_OBJECT (layout),
                                cogl_pango_layout_get_qdata_key (),
                                qdata,
-                               (CDestroyNotify)
+                               (c_destroy_func_t)
                                cogl_pango_render_qdata_destroy);
     }
 
@@ -618,7 +618,7 @@ _cogl_pango_ensure_glyph_cache_for_layout_line_internal (PangoLayoutLine *line)
              other glyphs to be moved so we might as well redraw
              them all later once we know that the position is
              settled */
-          cogl_pango_renderer_get_cached_glyph (renderer, TRUE,
+          cogl_pango_renderer_get_cached_glyph (renderer, true,
                                                 run->item->analysis.font,
                                                 gi->glyph);
         }
@@ -851,7 +851,7 @@ cogl_pango_renderer_draw_glyphs (PangoRenderer    *renderer,
 	  /* Get the texture containing the glyph */
 	  cache_value =
             cogl_pango_renderer_get_cached_glyph (renderer,
-                                                  FALSE,
+                                                  false,
                                                   font,
                                                   gi->glyph);
 

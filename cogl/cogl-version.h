@@ -182,7 +182,7 @@
  * #endif
  * ]|
  *
- * Return value: %TRUE if the Cogl version being compiled against is
+ * Return value: %true if the Cogl version being compiled against is
  *   greater than or equal to the given three part version number.
  * Since: 1.12.0
  */

@@ -64,7 +64,7 @@ cogl_wayland_renderer_set_foreign_display (CoglRenderer *renderer,
  * Sets whether Cogl should handle calling wl_display_dispatch() and
  * wl_display_flush() as part of its main loop integration via
  * cogl_poll_renderer_get_info() and cogl_poll_renderer_dispatch().
- * The default value is %TRUE. When it is enabled the application can
+ * The default value is %true. When it is enabled the application can
  * register listeners for Wayland interfaces and the callbacks will be
  * invoked during cogl_poll_renderer_dispatch(). If the application
  * wants to integrate with its own code that is already handling

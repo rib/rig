@@ -301,11 +301,11 @@ _cogl_winsys_renderer_connect (CoglRenderer *renderer,
                                 dispatch_wayland_display_events,
                                 renderer);
 
-  return TRUE;
+  return true;
 
 error:
   _cogl_winsys_renderer_disconnect (renderer);
-  return FALSE;
+  return false;
 }
 
 static bool
@@ -318,7 +318,7 @@ _cogl_winsys_egl_display_setup (CoglDisplay *display,
   wayland_display = c_slice_new0 (CoglDisplayWayland);
   egl_display->platform = wayland_display;
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -370,14 +370,14 @@ make_dummy_surface (CoglDisplay *display,
       goto fail;
     }
 
-  return TRUE;
+  return true;
 
  fail:
   _cogl_set_error (error, COGL_WINSYS_ERROR,
                    COGL_WINSYS_ERROR_CREATE_CONTEXT,
                    "%s", error_message);
 
-  return FALSE;
+  return false;
 }
 
 static bool
@@ -391,7 +391,7 @@ _cogl_winsys_egl_context_created (CoglDisplay *display,
   if ((egl_renderer->private_features &
        COGL_EGL_WINSYS_FEATURE_SURFACELESS_CONTEXT) == 0 &&
       !make_dummy_surface(display, error))
-    return FALSE;
+    return false;
 
   if (!_cogl_winsys_egl_make_current (display,
                                       egl_display->dummy_surface,
@@ -405,7 +405,7 @@ _cogl_winsys_egl_context_created (CoglDisplay *display,
                        "Unable to eglMakeCurrent with dummy surface");
     }
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -440,13 +440,13 @@ _cogl_winsys_egl_context_init (CoglContext *context,
                                CoglError **error)
 {
   COGL_FLAGS_SET (context->features,
-                  COGL_FEATURE_ID_ONSCREEN_MULTIPLE, TRUE);
+                  COGL_FEATURE_ID_ONSCREEN_MULTIPLE, true);
   COGL_FLAGS_SET (context->winsys_features,
                   COGL_WINSYS_FEATURE_MULTIPLE_ONSCREEN,
-                  TRUE);
+                  true);
   COGL_FLAGS_SET (context->winsys_features,
                   COGL_WINSYS_FEATURE_SYNC_AND_COMPLETE_EVENT,
-                  TRUE);
+                  true);
 
   /* We'll manually handle queueing dirty events when the surface is
    * first shown or when it is resized. Note that this is slightly
@@ -458,9 +458,9 @@ _cogl_winsys_egl_context_init (CoglContext *context,
    * anything to be displayed */
   COGL_FLAGS_SET (context->private_features,
                   COGL_PRIVATE_FEATURE_DIRTY_EVENTS,
-                  TRUE);
+                  true);
 
-  return TRUE;
+  return true;
 }
 
 static bool
@@ -492,7 +492,7 @@ _cogl_winsys_egl_onscreen_init (CoglOnscreen *onscreen,
       _cogl_set_error (error, COGL_WINSYS_ERROR,
                    COGL_WINSYS_ERROR_CREATE_ONSCREEN,
                    "Error while creating wayland surface for CoglOnscreen");
-      return FALSE;
+      return false;
     }
 
   wayland_onscreen->wayland_egl_native_window =
@@ -505,7 +505,7 @@ _cogl_winsys_egl_onscreen_init (CoglOnscreen *onscreen,
                    COGL_WINSYS_ERROR_CREATE_ONSCREEN,
                    "Error while creating wayland egl native window "
                    "for CoglOnscreen");
-      return FALSE;
+      return false;
     }
 
   egl_onscreen->egl_surface =
@@ -520,7 +520,7 @@ _cogl_winsys_egl_onscreen_init (CoglOnscreen *onscreen,
       wl_shell_get_shell_surface (wayland_renderer->wayland_shell,
                                   wayland_onscreen->wayland_surface);
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -594,7 +594,7 @@ flush_pending_resize (CoglOnscreen *onscreen)
 
       wayland_onscreen->pending_dx = 0;
       wayland_onscreen->pending_dy = 0;
-      wayland_onscreen->has_pending = FALSE;
+      wayland_onscreen->has_pending = false;
     }
 }
 
@@ -673,12 +673,12 @@ _cogl_winsys_onscreen_set_visibility (CoglOnscreen *onscreen,
       !wayland_onscreen->shell_surface_type_set)
     {
       wl_shell_surface_set_toplevel (wayland_onscreen->wayland_shell_surface);
-      wayland_onscreen->shell_surface_type_set = TRUE;
+      wayland_onscreen->shell_surface_type_set = true;
       _cogl_onscreen_queue_full_dirty (onscreen);
     }
 
   /* FIXME: We should also do something here to hide the surface when
-   * visilibity == FALSE. It sounds like there are currently ongoing
+   * visilibity == false. It sounds like there are currently ongoing
    * discussions about adding support for hiding surfaces in the
    * Wayland protocol so we might as well wait until then to add that
    * here. */
@@ -788,7 +788,7 @@ cogl_wayland_onscreen_resize (CoglOnscreen *onscreen,
           wayland_onscreen->pending_height = height;
           wayland_onscreen->pending_dx += offset_x;
           wayland_onscreen->pending_dy += offset_y;
-          wayland_onscreen->has_pending = TRUE;
+          wayland_onscreen->has_pending = true;
 
           /* If nothing has been drawn to the framebuffer since the
            * last swap then wl_egl_window_resize will take effect
@@ -819,7 +819,7 @@ _cogl_winsys_egl_vtable =
 const CoglWinsysVtable *
 _cogl_winsys_egl_wayland_get_vtable (void)
 {
-  static bool vtable_inited = FALSE;
+  static bool vtable_inited = false;
   static CoglWinsysVtable vtable;
 
   if (!vtable_inited)
@@ -842,7 +842,7 @@ _cogl_winsys_egl_wayland_get_vtable (void)
       vtable.onscreen_set_visibility =
         _cogl_winsys_onscreen_set_visibility;
 
-      vtable_inited = TRUE;
+      vtable_inited = true;
     }
 
   return &vtable;

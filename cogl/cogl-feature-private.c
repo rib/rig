@@ -77,7 +77,7 @@ _cogl_feature_check (CoglRenderer *renderer,
       (data->gles_availability & gles_availability))
     {
       suffix = "";
-      in_core = TRUE;
+      in_core = true;
     }
   else
     {
@@ -90,7 +90,7 @@ _cogl_feature_check (CoglRenderer *renderer,
            namespace += strlen (namespace) + 1)
         {
           const char *extension;
-          CString *full_extension_name = c_string_new ("");
+          c_string_t *full_extension_name = c_string_new ("");
 
           /* If the namespace part contains a ':' then the suffix for
              the function names is different from the name space */
@@ -120,7 +120,7 @@ _cogl_feature_check (CoglRenderer *renderer,
                 break;
             }
 
-          c_string_free (full_extension_name, TRUE);
+          c_string_free (full_extension_name, true);
 
           /* If we found an extension with this namespace then use it
              as the suffix */
@@ -131,7 +131,7 @@ _cogl_feature_check (CoglRenderer *renderer,
             }
         }
 
-      in_core = FALSE;
+      in_core = false;
     }
 
   /* If we couldn't find anything that provides the functions then
@@ -160,7 +160,7 @@ _cogl_feature_check (CoglRenderer *renderer,
                   data->functions[func_num].pointer_offset) = func;
     }
 
-  return TRUE;
+  return true;
 
   /* If the extension isn't found or one of the functions wasn't found
    * then set all of the functions pointers to NULL so Cogl can safely
@@ -170,7 +170,7 @@ error:
     *(void **) ((uint8_t *) function_table +
                 data->functions[func_num].pointer_offset) = NULL;
 
-  return FALSE;
+  return false;
 }
 
 /* Define a set of arrays containing the functions required from GL

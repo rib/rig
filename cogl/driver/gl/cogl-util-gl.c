@@ -81,12 +81,12 @@ bool
 _cogl_gl_util_catch_out_of_memory (CoglContext *ctx, CoglError **error)
 {
   GLenum gl_error;
-  bool out_of_memory = FALSE;
+  bool out_of_memory = false;
 
   while ((gl_error = ctx->glGetError ()) != GL_NO_ERROR)
     {
       if (gl_error == GL_OUT_OF_MEMORY)
-        out_of_memory = TRUE;
+        out_of_memory = true;
 #ifdef COGL_GL_DEBUG
       else
         {
@@ -103,10 +103,10 @@ _cogl_gl_util_catch_out_of_memory (CoglContext *ctx, CoglError **error)
       _cogl_set_error (error, COGL_SYSTEM_ERROR,
                        COGL_SYSTEM_ERROR_NO_MEMORY,
                        "Out of memory");
-      return TRUE;
+      return true;
     }
 
-  return FALSE;
+  return false;
 }
 
 void
@@ -150,7 +150,7 @@ _cogl_gl_util_parse_gl_version (const char *version_string,
   /* If there were no digits or the major number isn't followed by a
      dot then it is invalid */
   if (major_end == version_string || *major_end != '.')
-    return FALSE;
+    return false;
 
   /* Extract the minor number */
   for (minor_end = major_end + 1; *minor_end >= '0'
@@ -160,10 +160,10 @@ _cogl_gl_util_parse_gl_version (const char *version_string,
      it is invalid */
   if (minor_end == major_end + 1
       || (*minor_end && *minor_end != ' ' && *minor_end != '.'))
-    return FALSE;
+    return false;
 
   *major_out = major;
   *minor_out = minor;
 
-  return TRUE;
+  return true;
 }

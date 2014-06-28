@@ -68,7 +68,7 @@ PriorityQ *pqNewPriorityQ( int (*leq)(PQkey key1, PQkey key2) )
   pq->order = NULL;
   pq->size = 0;
   pq->max = INIT_SIZE;
-  pq->initialized = FALSE;
+  pq->initialized = false;
   pq->leq = leq;
   return pq;
 }
@@ -155,7 +155,7 @@ int pqInit( PriorityQ *pq )
     }
   }
   pq->max = pq->size;
-  pq->initialized = TRUE;
+  pq->initialized = true;
   __gl_pqHeapInit( pq->heap );	/* always succeeds */
 
 #ifndef NDEBUG

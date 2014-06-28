@@ -81,7 +81,7 @@ struct _CoglPathData
 
   CoglPathFillRule     fill_rule;
 
-  CArray              *path_nodes;
+  c_array_t              *path_nodes;
 
   floatVec2            path_start;
   floatVec2            path_pen;
@@ -102,7 +102,7 @@ struct _CoglPathData
   /* This is used as an optimisation for when the path contains a
      single contour specified using cogl2_path_rectangle. Cogl is more
      optimised to handle rectangles than paths so we can detect this
-     case and divert to the journal or a rectangle clip. If it is TRUE
+     case and divert to the journal or a rectangle clip. If it is true
      then the entire path can be described by calling
      _cogl_path_get_bounds */
   bool             is_rectangle;

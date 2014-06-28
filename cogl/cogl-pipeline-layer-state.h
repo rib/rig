@@ -293,9 +293,9 @@ cogl_pipeline_remove_layer (CoglPipeline *pipeline,
  * <note>You can't give a multiplication factor for arguments as you can
  * with blending.</note>
  *
- * Return value: %TRUE if the blend string was successfully parsed, and the
+ * Return value: %true if the blend string was successfully parsed, and the
  *   described texture combining is supported by the underlying driver and
- *   or hardware. On failure, %FALSE is returned and @error is set
+ *   or hardware. On failure, %false is returned and @error is set
  *
  * Since: 2.0
  * Stability: unstable
@@ -411,18 +411,18 @@ cogl_pipeline_get_layer_mag_filter (CoglPipeline *pipeline,
  * @enable: whether to enable point sprite coord generation.
  * @error: A return location for a CoglError, or NULL to ignore errors.
  *
- * When rendering points, if @enable is %TRUE then the texture
+ * When rendering points, if @enable is %true then the texture
  * coordinates for this layer will be replaced with coordinates that
  * vary from 0.0 to 1.0 across the primitive. The top left of the
  * point will have the coordinates 0.0,0.0 and the bottom right will
- * have 1.0,1.0. If @enable is %FALSE then the coordinates will be
+ * have 1.0,1.0. If @enable is %false then the coordinates will be
  * fixed for the entire point.
  *
  * This function will only work if %COGL_FEATURE_ID_POINT_SPRITE is
  * available. If the feature is not available then the function will
- * return %FALSE and set @error.
+ * return %false and set @error.
  *
- * Return value: %TRUE if the function succeeds, %FALSE otherwise.
+ * Return value: %true if the function succeeds, %false otherwise.
  * Since: 2.0
  * Stability: unstable
  */

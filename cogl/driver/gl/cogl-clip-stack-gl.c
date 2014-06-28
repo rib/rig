@@ -137,12 +137,12 @@ add_stencil_clip_silhouette (CoglFramebuffer *framebuffer,
   _cogl_context_set_current_modelview_entry (ctx, modelview_entry);
 
   _cogl_pipeline_flush_gl_state (ctx, ctx->stencil_pipeline,
-                                 framebuffer, FALSE, FALSE);
+                                 framebuffer, false, false);
 
   GE( ctx, glEnable (GL_STENCIL_TEST) );
 
-  GE( ctx, glColorMask (FALSE, FALSE, FALSE, FALSE) );
-  GE( ctx, glDepthMask (FALSE) );
+  GE( ctx, glColorMask (false, false, false, false) );
+  GE( ctx, glDepthMask (false) );
 
   if (merge)
     {
@@ -202,8 +202,8 @@ add_stencil_clip_silhouette (CoglFramebuffer *framebuffer,
     }
 
   GE (ctx, glStencilMask (~(GLuint) 0));
-  GE (ctx, glDepthMask (TRUE));
-  GE (ctx, glColorMask (TRUE, TRUE, TRUE, TRUE));
+  GE (ctx, glDepthMask (true));
+  GE (ctx, glColorMask (true, true, true, true));
 
   GE (ctx, glStencilFunc (GL_EQUAL, 0x1, 0x1));
   GE (ctx, glStencilOp (GL_KEEP, GL_KEEP, GL_KEEP));
@@ -250,7 +250,7 @@ _cogl_clip_stack_gl_flush (CoglClipStack *stack,
                            CoglFramebuffer *framebuffer)
 {
   CoglContext *ctx = framebuffer->context;
-  bool using_stencil_buffer = FALSE;
+  bool using_stencil_buffer = false;
   int scissor_x0;
   int scissor_y0;
   int scissor_x1;
@@ -263,7 +263,7 @@ _cogl_clip_stack_gl_flush (CoglClipStack *stack,
   if (ctx->current_clip_stack_valid)
     {
       if (ctx->current_clip_stack == stack &&
-          (ctx->needs_viewport_scissor_workaround == FALSE ||
+          (ctx->needs_viewport_scissor_workaround == false ||
            (framebuffer->viewport_age ==
             framebuffer->viewport_age_for_scissor_workaround &&
             ctx->viewport_scissor_workaround_framebuffer ==
@@ -273,7 +273,7 @@ _cogl_clip_stack_gl_flush (CoglClipStack *stack,
       _cogl_clip_stack_unref (ctx->current_clip_stack);
     }
 
-  ctx->current_clip_stack_valid = TRUE;
+  ctx->current_clip_stack_valid = true;
   ctx->current_clip_stack = _cogl_clip_stack_ref (stack);
 
   GE( ctx, glDisable (GL_STENCIL_TEST) );
@@ -379,9 +379,9 @@ _cogl_clip_stack_gl_flush (CoglClipStack *stack,
                                           primitive_entry->bounds_x2,
                                           primitive_entry->bounds_y2,
                                           using_stencil_buffer,
-                                          TRUE);
+                                          true);
 
-              using_stencil_buffer = TRUE;
+              using_stencil_buffer = true;
               break;
             }
         case COGL_CLIP_STACK_RECT:
@@ -401,7 +401,7 @@ _cogl_clip_stack_gl_flush (CoglClipStack *stack,
                                               rect->x1,
                                               rect->y1,
                                               !using_stencil_buffer);
-                  using_stencil_buffer = TRUE;
+                  using_stencil_buffer = true;
                 }
               break;
             }

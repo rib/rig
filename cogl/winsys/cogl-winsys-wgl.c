@@ -145,7 +145,7 @@ _cogl_winsys_renderer_get_proc_address (CoglRenderer *renderer,
   /* The documentation for wglGetProcAddress implies that it only
      returns pointers to extension functions so if it fails we'll try
      resolving the symbol directly from the the GL library. We could
-     completely avoid using wglGetProcAddress if in_core is TRUE but
+     completely avoid using wglGetProcAddress if in_core is true but
      on WGL any function that is in GL > 1.1 is considered an
      extension and is not directly exported from opengl32.dll.
      Therefore we currently just assume wglGetProcAddress will return
@@ -182,7 +182,7 @@ static CoglOnscreen *
 find_onscreen_for_hwnd (CoglContext *context, HWND hwnd)
 {
   CoglDisplayWgl *display_wgl = context->display->winsys;
-  CList *l;
+  c_list_t *l;
 
   /* If the hwnd has Cogl's window class then we can lookup the
      onscreen pointer directly by reading the extra window data */
@@ -244,7 +244,7 @@ win32_event_filter_cb (MSG *msg, void *data)
         find_onscreen_for_hwnd (context, msg->hwnd);
       RECT rect;
 
-      if (onscreen && GetUpdateRect (msg->hwnd, &rect, FALSE))
+      if (onscreen && GetUpdateRect (msg->hwnd, &rect, false))
         {
           CoglOnscreenDirtyInfo info;
 
@@ -306,14 +306,14 @@ _cogl_winsys_renderer_connect (CoglRenderer *renderer,
                                   renderer);
     }
 
-  return TRUE;
+  return true;
 }
 
 static LRESULT CALLBACK
 window_proc (HWND hwnd, UINT umsg,
              WPARAM wparam, LPARAM lparam)
 {
-  bool message_handled = FALSE;
+  bool message_handled = false;
   CoglOnscreen *onscreen;
 
   /* It's not clear what the best thing to do with messages sent to
@@ -380,16 +380,16 @@ pixel_format_is_better (const PIXELFORMATDESCRIPTOR *pfa,
   if (pfa->cStencilBits == 0)
     {
       if (pfb->cStencilBits > 0)
-        return TRUE;
+        return true;
     }
   else if (pfb->cStencilBits == 0)
-    return FALSE;
+    return false;
 
   /* Prefer a bigger color buffer */
   if (pfb->cColorBits > pfa->cColorBits)
-    return TRUE;
+    return true;
   else if (pfb->cColorBits < pfa->cColorBits)
-    return FALSE;
+    return false;
 
   /* Prefer a bigger depth buffer */
   return pfb->cDepthBits > pfa->cDepthBits;
@@ -488,10 +488,10 @@ create_window_class (CoglDisplay *display, CoglError **error)
       _cogl_set_error (error, COGL_WINSYS_ERROR,
                        COGL_WINSYS_ERROR_CREATE_CONTEXT,
                        "Unable to register window class");
-      return FALSE;
+      return false;
     }
 
-  return TRUE;
+  return true;
 }
 
 static bool
@@ -499,7 +499,7 @@ create_context (CoglDisplay *display, CoglError **error)
 {
   CoglDisplayWgl *wgl_display = display->winsys;
 
-  _COGL_RETURN_VAL_IF_FAIL (wgl_display->wgl_context == NULL, FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (wgl_display->wgl_context == NULL, false);
 
   /* Cogl assumes that there is always a GL context selected; in order
    * to make sure that a WGL context exists and is made current, we
@@ -524,7 +524,7 @@ create_context (CoglDisplay *display, CoglError **error)
           _cogl_set_error (error, COGL_WINSYS_ERROR,
                        COGL_WINSYS_ERROR_CREATE_CONTEXT,
                        "Unable to create dummy window");
-          return FALSE;
+          return false;
         }
     }
 
@@ -545,7 +545,7 @@ create_context (CoglDisplay *display, CoglError **error)
                        "Unable to find suitable GL pixel format");
           ReleaseDC (wgl_display->dummy_hwnd, wgl_display->dummy_dc);
           wgl_display->dummy_dc = NULL;
-          return FALSE;
+          return false;
         }
     }
 
@@ -558,7 +558,7 @@ create_context (CoglDisplay *display, CoglError **error)
           _cogl_set_error (error, COGL_WINSYS_ERROR,
                        COGL_WINSYS_ERROR_CREATE_CONTEXT,
                        "Unable to create suitable GL context");
-          return FALSE;
+          return false;
         }
     }
 
@@ -567,7 +567,7 @@ create_context (CoglDisplay *display, CoglError **error)
 
   wglMakeCurrent (wgl_display->dummy_dc, wgl_display->wgl_context);
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -603,7 +603,7 @@ _cogl_winsys_display_setup (CoglDisplay *display,
 {
   CoglDisplayWgl *wgl_display;
 
-  _COGL_RETURN_VAL_IF_FAIL (display->winsys == NULL, FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (display->winsys == NULL, false);
 
   wgl_display = c_slice_new0 (CoglDisplayWgl);
   display->winsys = wgl_display;
@@ -614,11 +614,11 @@ _cogl_winsys_display_setup (CoglDisplay *display,
   if (!create_context (display, error))
     goto error;
 
-  return TRUE;
+  return true;
 
 error:
   _cogl_winsys_display_destroy (display);
-  return FALSE;
+  return false;
 }
 
 static const char *
@@ -669,18 +669,18 @@ update_winsys_features (CoglContext *context, CoglError **error)
   const char *wgl_extensions;
   int i;
 
-  _COGL_RETURN_VAL_IF_FAIL (wgl_display->wgl_context, FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (wgl_display->wgl_context, false);
 
   if (!_cogl_context_update_features (context, error))
-    return FALSE;
+    return false;
 
   memset (context->winsys_features, 0, sizeof (context->winsys_features));
 
   COGL_FLAGS_SET (context->features,
-                  COGL_FEATURE_ID_ONSCREEN_MULTIPLE, TRUE);
+                  COGL_FEATURE_ID_ONSCREEN_MULTIPLE, true);
   COGL_FLAGS_SET (context->winsys_features,
                   COGL_WINSYS_FEATURE_MULTIPLE_ONSCREEN,
-                  TRUE);
+                  true);
 
   wgl_extensions = get_wgl_extensions_string (wgl_display->dummy_dc);
 
@@ -701,7 +701,7 @@ update_winsys_features (CoglContext *context, CoglError **error)
             if (winsys_feature_data[i].winsys_feature)
               COGL_FLAGS_SET (context->winsys_features,
                               winsys_feature_data[i].winsys_feature,
-                              TRUE);
+                              true);
           }
 
       c_strfreev (split_extensions);
@@ -711,9 +711,9 @@ update_winsys_features (CoglContext *context, CoglError **error)
    * WM_PAINT messages */
   COGL_FLAGS_SET (context->private_features,
                   COGL_PRIVATE_FEATURE_DIRTY_EVENTS,
-                  TRUE);
+                  true);
 
-  return TRUE;
+  return true;
 }
 
 static bool
@@ -827,7 +827,7 @@ _cogl_winsys_onscreen_init (CoglOnscreen *onscreen,
   int pf;
   HWND hwnd;
 
-  _COGL_RETURN_VAL_IF_FAIL (wgl_display->wgl_context, FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (wgl_display->wgl_context, false);
 
   /* XXX: Note we ignore the user's original width/height when given a
    * foreign window. */
@@ -874,7 +874,7 @@ _cogl_winsys_onscreen_init (CoglOnscreen *onscreen,
           _cogl_set_error (error, COGL_WINSYS_ERROR,
                        COGL_WINSYS_ERROR_CREATE_ONSCREEN,
                        "Unable to create window");
-          return FALSE;
+          return false;
         }
 
       /* Store a pointer back to the onscreen in the window extra data
@@ -902,10 +902,10 @@ _cogl_winsys_onscreen_init (CoglOnscreen *onscreen,
 
       _cogl_winsys_onscreen_deinit (onscreen);
 
-      return FALSE;
+      return false;
     }
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -952,7 +952,7 @@ _cogl_winsys_onscreen_set_visibility (CoglOnscreen *onscreen,
 const CoglWinsysVtable *
 _cogl_winsys_wgl_get_vtable (void)
 {
-  static bool vtable_inited = FALSE;
+  static bool vtable_inited = false;
   static CoglWinsysVtable vtable;
 
   /* It would be nice if we could use C99 struct initializers here
@@ -983,7 +983,7 @@ _cogl_winsys_wgl_get_vtable (void)
       vtable.onscreen_set_visibility = _cogl_winsys_onscreen_set_visibility;
       vtable.onscreen_win32_get_window = _cogl_winsys_onscreen_win32_get_window;
 
-      vtable_inited = TRUE;
+      vtable_inited = true;
     }
 
   return &vtable;

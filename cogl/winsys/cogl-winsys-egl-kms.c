@@ -86,8 +86,8 @@ typedef struct _CoglOutputKMS
 
 typedef struct _CoglDisplayKMS
 {
-  CList *outputs;
-  CList *crtcs;
+  c_list_t *outputs;
+  c_list_t *crtcs;
 
   int width, height;
   bool pending_set_crtc;
@@ -147,7 +147,7 @@ flush_pending_swap_notify_cb (void *data,
 
           _cogl_onscreen_notify_frame_sync (onscreen, info);
           _cogl_onscreen_notify_complete (onscreen, info);
-          kms_onscreen->pending_swap_notify = FALSE;
+          kms_onscreen->pending_swap_notify = false;
 
           cogl_object_unref (info);
         }
@@ -229,7 +229,7 @@ page_flip_handler (int fd,
                                           NULL);
         }
 
-      kms_onscreen->pending_swap_notify = TRUE;
+      kms_onscreen->pending_swap_notify = true;
 
       free_current_bo (onscreen);
 
@@ -300,7 +300,7 @@ _cogl_winsys_renderer_connect (CoglRenderer *renderer,
           _cogl_set_error (error, COGL_WINSYS_ERROR,
                            COGL_WINSYS_ERROR_INIT,
                            "Couldn't open %s", device_name);
-          return FALSE;
+          return false;
         }
     }
 
@@ -332,7 +332,7 @@ _cogl_winsys_renderer_connect (CoglRenderer *renderer,
                               dispatch_kms_events,
                               renderer);
 
-  return TRUE;
+  return true;
 
 egl_terminate:
   eglTerminate (egl_renderer->edpy);
@@ -344,7 +344,7 @@ close_fd:
 
   _cogl_winsys_renderer_disconnect (renderer);
 
-  return FALSE;
+  return false;
 }
 
 static bool
@@ -355,8 +355,8 @@ is_connector_excluded (int id,
   int i;
   for (i = 0; i < n_excluded_connectors; i++)
     if (excluded_connectors[i] == id)
-      return TRUE;
-  return FALSE;
+      return true;
+  return false;
 }
 
 static drmModeConnector *
@@ -405,11 +405,11 @@ find_mirror_modes (drmModeModeInfo *modes0,
             {
               *mode0_out = *mode0;
               *mode1_out = *mode1;
-              return TRUE;
+              return true;
             }
         }
     }
-  return FALSE;
+  return false;
 }
 
 static drmModeModeInfo builtin_1024x768 =
@@ -498,14 +498,14 @@ find_output (int _index,
     {
       const char *name = getenv (mode_env_name);
       int i;
-      bool found = FALSE;
+      bool found = false;
       drmModeModeInfo mode;
 
       for (i = 0; i < n_modes; i++)
         {
           if (strcmp (modes[i].name, name) == 0)
             {
-              found = TRUE;
+              found = true;
               break;
             }
         }
@@ -539,7 +539,7 @@ setup_crtc_modes (CoglDisplay *display, int fb_id)
   CoglDisplayKMS *kms_display = egl_display->platform;
   CoglRendererEGL *egl_renderer = display->renderer->winsys;
   CoglRendererKMS *kms_renderer = egl_renderer->platform;
-  CList *l;
+  c_list_t *l;
 
   for (l = kms_display->crtcs; l; l = l->next)
     {
@@ -562,7 +562,7 @@ flip_all_crtcs (CoglDisplay *display, CoglFlipKMS *flip, int fb_id)
   CoglDisplayKMS *kms_display = egl_display->platform;
   CoglRendererEGL *egl_renderer = display->renderer->winsys;
   CoglRendererKMS *kms_renderer = egl_renderer->platform;
-  CList *l;
+  c_list_t *l;
 
   for (l = kms_display->crtcs; l; l = l->next)
     {
@@ -628,7 +628,7 @@ _cogl_winsys_egl_display_setup (CoglDisplay *display,
       _cogl_set_error (error, COGL_WINSYS_ERROR,
                    COGL_WINSYS_ERROR_INIT,
                    "drmModeGetResources failed");
-      return FALSE;
+      return false;
     }
 
   output0 = find_output (0,
@@ -639,12 +639,12 @@ _cogl_winsys_egl_display_setup (CoglDisplay *display,
                          error);
   kms_display->outputs = c_list_append (kms_display->outputs, output0);
   if (!output0)
-    return FALSE;
+    return false;
 
   if (getenv ("COGL_KMS_MIRROR"))
-    mirror = TRUE;
+    mirror = true;
   else
-    mirror = FALSE;
+    mirror = false;
 
   if (mirror)
     {
@@ -656,7 +656,7 @@ _cogl_winsys_egl_display_setup (CoglDisplay *display,
                              1, /* n excluded connectors */
                              error);
       if (!output1)
-        return FALSE;
+        return false;
 
       kms_display->outputs = c_list_append (kms_display->outputs, output1);
 
@@ -668,7 +668,7 @@ _cogl_winsys_egl_display_setup (CoglDisplay *display,
           _cogl_set_error (error, COGL_WINSYS_ERROR,
                        COGL_WINSYS_ERROR_INIT,
                        "Failed to find matching modes for mirroring");
-          return FALSE;
+          return false;
         }
     }
   else
@@ -705,9 +705,9 @@ _cogl_winsys_egl_display_setup (CoglDisplay *display,
 
   /* We defer setting the crtc modes until the first swap_buffers request of a
    * CoglOnscreen framebuffer. */
-  kms_display->pending_set_crtc = TRUE;
+  kms_display->pending_set_crtc = true;
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -747,14 +747,14 @@ _cogl_winsys_egl_display_destroy (CoglDisplay *display)
   CoglRenderer *renderer = display->renderer;
   CoglRendererEGL *egl_renderer = renderer->winsys;
   CoglRendererKMS *kms_renderer = egl_renderer->platform;
-  CList *l;
+  c_list_t *l;
 
   for (l = kms_display->outputs; l; l = l->next)
     output_free (kms_renderer->fd, l->data);
   c_list_free (kms_display->outputs);
   kms_display->outputs = NULL;
 
-  c_list_free_full (kms_display->crtcs, (CDestroyNotify) crtc_free);
+  c_list_free_full (kms_display->crtcs, (c_destroy_func_t) crtc_free);
 
   c_slice_free (CoglDisplayKMS, egl_display->platform);
 }
@@ -782,7 +782,7 @@ _cogl_winsys_egl_context_created (CoglDisplay *display,
           _cogl_set_error (error, COGL_WINSYS_ERROR,
                            COGL_WINSYS_ERROR_CREATE_CONTEXT,
                            "Failed to create dummy GBM surface");
-          return FALSE;
+          return false;
         }
 
       egl_display->dummy_surface =
@@ -796,7 +796,7 @@ _cogl_winsys_egl_context_created (CoglDisplay *display,
           _cogl_set_error (error, COGL_WINSYS_ERROR,
                            COGL_WINSYS_ERROR_CREATE_CONTEXT,
                            "Failed to create dummy EGL surface");
-          return FALSE;
+          return false;
         }
     }
 
@@ -808,10 +808,10 @@ _cogl_winsys_egl_context_created (CoglDisplay *display,
       _cogl_set_error (error, COGL_WINSYS_ERROR,
                    COGL_WINSYS_ERROR_CREATE_CONTEXT,
                    "Failed to make context current");
-      return FALSE;
+      return false;
     }
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -892,7 +892,7 @@ _cogl_winsys_onscreen_swap_buffers_with_damage (CoglOnscreen *onscreen,
   if (kms_display->pending_set_crtc)
     {
       setup_crtc_modes (context->display, kms_onscreen->next_fb_id);
-      kms_display->pending_set_crtc = FALSE;
+      kms_display->pending_set_crtc = false;
     }
 
   flip = c_slice_new0 (CoglFlipKMS);
@@ -923,9 +923,9 @@ _cogl_winsys_egl_context_init (CoglContext *context,
 {
   COGL_FLAGS_SET (context->winsys_features,
                   COGL_WINSYS_FEATURE_SYNC_AND_COMPLETE_EVENT,
-                  TRUE);
+                  true);
 
-  return TRUE;
+  return true;
 }
 
 static bool
@@ -943,14 +943,14 @@ _cogl_winsys_onscreen_init (CoglOnscreen *onscreen,
   CoglOnscreenEGL *egl_onscreen;
   CoglOnscreenKMS *kms_onscreen;
 
-  _COGL_RETURN_VAL_IF_FAIL (egl_display->egl_context, FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (egl_display->egl_context, false);
 
   if (kms_display->onscreen)
     {
       _cogl_set_error (error, COGL_WINSYS_ERROR,
                        COGL_WINSYS_ERROR_CREATE_ONSCREEN,
                        "Cannot have multiple onscreens in the KMS platform");
-      return FALSE;
+      return false;
     }
 
   kms_display->onscreen = onscreen;
@@ -974,7 +974,7 @@ _cogl_winsys_onscreen_init (CoglOnscreen *onscreen,
       _cogl_set_error (error, COGL_WINSYS_ERROR,
                    COGL_WINSYS_ERROR_CREATE_ONSCREEN,
                    "Failed to allocate surface");
-      return FALSE;
+      return false;
     }
 
   egl_onscreen->egl_surface =
@@ -987,14 +987,14 @@ _cogl_winsys_onscreen_init (CoglOnscreen *onscreen,
       _cogl_set_error (error, COGL_WINSYS_ERROR,
                    COGL_WINSYS_ERROR_CREATE_ONSCREEN,
                    "Failed to allocate surface");
-      return FALSE;
+      return false;
     }
 
   _cogl_framebuffer_winsys_update_size (framebuffer,
                                         kms_display->width,
                                         kms_display->height);
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -1054,7 +1054,7 @@ _cogl_winsys_egl_vtable =
 const CoglWinsysVtable *
 _cogl_winsys_egl_kms_get_vtable (void)
 {
-  static bool vtable_inited = FALSE;
+  static bool vtable_inited = false;
   static CoglWinsysVtable vtable;
 
   if (!vtable_inited)
@@ -1079,7 +1079,7 @@ _cogl_winsys_egl_kms_get_vtable (void)
       vtable.onscreen_swap_buffers_with_damage =
         _cogl_winsys_onscreen_swap_buffers_with_damage;
 
-      vtable_inited = TRUE;
+      vtable_inited = true;
     }
 
   return &vtable;
@@ -1118,7 +1118,7 @@ cogl_kms_display_queue_modes_reset (CoglDisplay *display)
     {
       CoglDisplayEGL *egl_display = display->winsys;
       CoglDisplayKMS *kms_display = egl_display->platform;
-      kms_display->pending_set_crtc = TRUE;
+      kms_display->pending_set_crtc = true;
     }
 }
 
@@ -1135,7 +1135,7 @@ cogl_kms_display_set_layout (CoglDisplay *display,
   CoglRenderer *renderer = display->renderer;
   CoglRendererEGL *egl_renderer = renderer->winsys;
   CoglRendererKMS *kms_renderer = egl_renderer->platform;
-  CList *crtc_list;
+  c_list_t *crtc_list;
   int i;
 
   if ((width != kms_display->width ||
@@ -1160,7 +1160,7 @@ cogl_kms_display_set_layout (CoglDisplay *display,
           _cogl_set_error (error, COGL_WINSYS_ERROR,
                            COGL_WINSYS_ERROR_CREATE_ONSCREEN,
                            "Failed to allocate new surface");
-          return FALSE;
+          return false;
         }
 
       new_egl_surface =
@@ -1174,7 +1174,7 @@ cogl_kms_display_set_layout (CoglDisplay *display,
                            COGL_WINSYS_ERROR_CREATE_ONSCREEN,
                            "Failed to allocate new surface");
           gbm_surface_destroy (new_surface);
-          return FALSE;
+          return false;
         }
 
       eglDestroySurface (egl_renderer->edpy, egl_onscreen->egl_surface);
@@ -1189,7 +1189,7 @@ cogl_kms_display_set_layout (CoglDisplay *display,
   kms_display->width = width;
   kms_display->height = height;
 
-  c_list_free_full (kms_display->crtcs, (CDestroyNotify) crtc_free);
+  c_list_free_full (kms_display->crtcs, (c_destroy_func_t) crtc_free);
 
   crtc_list = NULL;
   for (i = 0; i < n_crtcs; i++)
@@ -1199,7 +1199,7 @@ cogl_kms_display_set_layout (CoglDisplay *display,
   crtc_list = c_list_reverse (crtc_list);
   kms_display->crtcs = crtc_list;
 
-  kms_display->pending_set_crtc = TRUE;
+  kms_display->pending_set_crtc = true;
 
-  return TRUE;
+  return true;
 }

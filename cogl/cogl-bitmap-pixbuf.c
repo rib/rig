@@ -57,7 +57,7 @@ _cogl_bitmap_get_size_from_file (const char *filename,
   if (height)
     *height = 0;
 
-  return TRUE;
+  return true;
 }
 
 /* the error does not contain the filename as the caller already has it */
@@ -181,12 +181,12 @@ _cogl_bitmap_get_size_from_file (const char *filename,
                                  int        *width,
                                  int        *height)
 {
-  _COGL_RETURN_VAL_IF_FAIL (filename != NULL, FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (filename != NULL, false);
 
   if (gdk_pixbuf_get_file_info (filename, width, height) != NULL)
-    return TRUE;
+    return true;
 
-  return FALSE;
+  return false;
 }
 
 CoglBitmap *
@@ -212,7 +212,7 @@ _cogl_bitmap_from_file (CoglContext *ctx,
   if (pixbuf == NULL)
     {
       _cogl_propagate_gerror (error, glib_error);
-      return FALSE;
+      return false;
     }
 
   /* Get pixbuf properties */
@@ -246,7 +246,7 @@ _cogl_bitmap_from_file (CoglContext *ctx,
     default:
       /* Ouch, spec changed! */
       g_object_unref (pixbuf);
-      return FALSE;
+      return false;
     }
 
   /* We just use the data directly from the pixbuf so that we don't
@@ -284,7 +284,7 @@ _cogl_bitmap_get_size_from_file (const char *filename,
   if (height)
     *height = 0;
 
-  return TRUE;
+  return true;
 }
 
 /* stb_image.c supports an STBI_grey_alpha format which we don't have

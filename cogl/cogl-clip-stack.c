@@ -220,7 +220,7 @@ _cogl_clip_stack_push_rectangle (CoglClipStack *stack,
       rect[2] != rect[4] ||
       rect[7] != rect[5])
     {
-      entry->can_be_scissor = FALSE;
+      entry->can_be_scissor = false;
 
       _cogl_clip_stack_entry_set_bounds ((CoglClipStack *) entry,
                                          rect);
@@ -246,7 +246,7 @@ _cogl_clip_stack_push_rectangle (CoglClipStack *stack,
       base_entry->bounds_y0 = COGL_UTIL_NEARBYINT (y_1);
       base_entry->bounds_x1 = COGL_UTIL_NEARBYINT (x_2);
       base_entry->bounds_y1 = COGL_UTIL_NEARBYINT (y_2);
-      entry->can_be_scissor = TRUE;
+      entry->can_be_scissor = true;
     }
 
   return (CoglClipStack *) entry;

@@ -102,7 +102,7 @@ _cogl_winsys_renderer_connect (CoglRenderer *renderer,
                        COGL_WINSYS_ERROR_INIT,
                        "The SDL winsys with emscripten only supports "
                        "the GLES2 driver");
-      return FALSE;
+      return false;
     }
 #elif !defined (COGL_HAS_SDL_GLES_SUPPORT)
   if (renderer->driver != COGL_DRIVER_GL)
@@ -110,7 +110,7 @@ _cogl_winsys_renderer_connect (CoglRenderer *renderer,
       _cogl_set_error (error, COGL_WINSYS_ERROR,
                    COGL_WINSYS_ERROR_INIT,
                    "The SDL winsys only supports the GL driver");
-      return FALSE;
+      return false;
     }
 #endif
 
@@ -120,12 +120,12 @@ _cogl_winsys_renderer_connect (CoglRenderer *renderer,
                    COGL_WINSYS_ERROR_INIT,
                    "SDL_Init failed: %s",
                    SDL_GetError ());
-      return FALSE;
+      return false;
     }
 
   renderer->winsys = c_slice_new0 (CoglRendererSdl);
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -164,7 +164,7 @@ _cogl_winsys_display_setup (CoglDisplay *display,
 {
   CoglDisplaySdl *sdl_display;
 
-  _COGL_RETURN_VAL_IF_FAIL (display->winsys == NULL, FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (display->winsys == NULL, false);
 
   sdl_display = c_slice_new0 (CoglDisplaySdl);
   display->winsys = sdl_display;
@@ -217,11 +217,11 @@ _cogl_winsys_display_setup (CoglDisplay *display,
       goto error;
     }
 
-  return TRUE;
+  return true;
 
 error:
   _cogl_winsys_display_destroy (display);
-  return FALSE;
+  return false;
 }
 
 static void
@@ -303,7 +303,7 @@ _cogl_winsys_context_init (CoglContext *context, CoglError **error)
 {
   CoglRenderer *renderer = context->display->renderer;
 
-  if (C_UNLIKELY (renderer->sdl_event_type_set == FALSE))
+  if (C_UNLIKELY (renderer->sdl_event_type_set == false))
     c_error ("cogl_sdl_renderer_set_event_type() or cogl_sdl_context_new() "
              "must be called during initialization");
 
@@ -315,7 +315,7 @@ _cogl_winsys_context_init (CoglContext *context, CoglError **error)
    * SDL_VIDEOEXPOSE events */
   COGL_FLAGS_SET (context->private_features,
                   COGL_PRIVATE_FEATURE_DIRTY_EVENTS,
-                  TRUE);
+                  true);
 
   return _cogl_context_update_features (context, error);
 }
@@ -348,7 +348,7 @@ _cogl_winsys_onscreen_init (CoglOnscreen *onscreen,
   CoglContext *context = framebuffer->context;
   CoglDisplay *display = context->display;
   CoglDisplaySdl *sdl_display = display->winsys;
-  bool flags_changed = FALSE;
+  bool flags_changed = false;
   int width, height;
 
   if (sdl_display->onscreen)
@@ -356,7 +356,7 @@ _cogl_winsys_onscreen_init (CoglOnscreen *onscreen,
       _cogl_set_error (error, COGL_WINSYS_ERROR,
                    COGL_WINSYS_ERROR_CREATE_ONSCREEN,
                    "SDL winsys only supports a single onscreen window");
-      return FALSE;
+      return false;
     }
 
   width = cogl_framebuffer_get_width (framebuffer);
@@ -365,7 +365,7 @@ _cogl_winsys_onscreen_init (CoglOnscreen *onscreen,
   if (cogl_onscreen_get_resizable (onscreen))
     {
       sdl_display->video_mode_flags |= SDL_RESIZABLE;
-      flags_changed = TRUE;
+      flags_changed = true;
     }
 
   /* Try to update the video size using the onscreen size */
@@ -383,7 +383,7 @@ _cogl_winsys_onscreen_init (CoglOnscreen *onscreen,
                        COGL_WINSYS_ERROR_CREATE_ONSCREEN,
                        "SDL_SetVideoMode failed: %s",
                        SDL_GetError ());
-          return FALSE;
+          return false;
         }
     }
 
@@ -393,7 +393,7 @@ _cogl_winsys_onscreen_init (CoglOnscreen *onscreen,
 
   sdl_display->onscreen = onscreen;
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -443,7 +443,7 @@ _cogl_winsys_onscreen_set_resizable (CoglOnscreen *onscreen,
 const CoglWinsysVtable *
 _cogl_winsys_sdl_get_vtable (void)
 {
-  static bool vtable_inited = FALSE;
+  static bool vtable_inited = false;
   static CoglWinsysVtable vtable;
 
   /* It would be nice if we could use C99 struct initializers here
@@ -474,7 +474,7 @@ _cogl_winsys_sdl_get_vtable (void)
       vtable.onscreen_set_visibility = _cogl_winsys_onscreen_set_visibility;
       vtable.onscreen_set_resizable = _cogl_winsys_onscreen_set_resizable;
 
-      vtable_inited = TRUE;
+      vtable_inited = true;
     }
 
   return &vtable;

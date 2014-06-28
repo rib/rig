@@ -168,7 +168,7 @@ validate_first_layer_cb (CoglPipeline *pipeline,
                                            layer_index, clamp_to_edge);
     }
 
-  return FALSE;
+  return false;
 }
 
 /* This path doesn't currently support multitexturing but is used for
@@ -231,13 +231,13 @@ _cogl_texture_quad_multiple_primitives (CoglFramebuffer *framebuffer,
 #define X1 2
 #define Y1 3
 
-  tex_virtual_flipped_x = (tx_1 > tx_2) ? TRUE : FALSE;
-  tex_virtual_flipped_y = (ty_1 > ty_2) ? TRUE : FALSE;
+  tex_virtual_flipped_x = (tx_1 > tx_2) ? true : false;
+  tex_virtual_flipped_y = (ty_1 > ty_2) ? true : false;
   state.tex_virtual_origin_x = tex_virtual_flipped_x ? tx_2 : tx_1;
   state.tex_virtual_origin_y = tex_virtual_flipped_y ? ty_2 : ty_1;
 
-  quad_flipped_x = (position[X0] > position[X1]) ? TRUE : FALSE;
-  quad_flipped_y = (position[Y0] > position[Y1]) ? TRUE : FALSE;
+  quad_flipped_x = (position[X0] > position[X1]) ? true : false;
+  quad_flipped_y = (position[Y0] > position[Y1]) ? true : false;
   state.quad_origin_x = quad_flipped_x ? position[X1] : position[X0];
   state.quad_origin_y = quad_flipped_y ? position[Y1] : position[Y0];
 
@@ -325,7 +325,7 @@ validate_tex_coords_cb (CoglPipeline *pipeline,
 
   /* NB: NULL textures are handled by _cogl_pipeline_flush_gl_state */
   if (!texture)
-    return TRUE;
+    return true;
 
   /* Convert the texture coordinates to GL.
    */
@@ -346,7 +346,7 @@ validate_tex_coords_cb (CoglPipeline *pipeline,
         {
           if (state->n_layers > 1)
             {
-              static bool warning_seen = FALSE;
+              static bool warning_seen = false;
               if (!warning_seen)
                 c_warning ("Skipping layers 1..n of your material "
                            "since the first layer doesn't support "
@@ -357,17 +357,17 @@ validate_tex_coords_cb (CoglPipeline *pipeline,
                            "range [0,1]. Falling back to software "
                            "repeat assuming layer 0 is the most "
                            "important one keep");
-              warning_seen = TRUE;
+              warning_seen = true;
             }
 
           if (state->override_pipeline)
             cogl_object_unref (state->override_pipeline);
-          state->needs_multiple_primitives = TRUE;
-          return FALSE;
+          state->needs_multiple_primitives = true;
+          return false;
         }
       else
         {
-          static bool warning_seen = FALSE;
+          static bool warning_seen = false;
           if (!warning_seen)
             c_warning ("Skipping layer %d of your material "
                        "since you have supplied texture coords "
@@ -377,7 +377,7 @@ validate_tex_coords_cb (CoglPipeline *pipeline,
                        "support for non-power-of-two textures). "
                        "This isn't supported with multi-texturing.",
                        state->i);
-          warning_seen = TRUE;
+          warning_seen = true;
 
           cogl_pipeline_set_layer_texture (pipeline, layer_index, NULL);
         }
@@ -410,12 +410,12 @@ validate_tex_coords_cb (CoglPipeline *pipeline,
         }
     }
 
-  return TRUE;
+  return true;
 }
 
 /* This path supports multitexturing but only when each of the layers is
  * handled with a single GL texture. Also if repeating is necessary then
- * _cogl_texture_can_hardware_repeat() must return TRUE.
+ * _cogl_texture_can_hardware_repeat() must return true.
  * This includes layers made from:
  *
  * - CoglTexture2DSliced: if only comprised of a single slice with optional
@@ -444,14 +444,14 @@ _cogl_multitexture_quad_single_primitive (CoglFramebuffer *framebuffer,
   state.user_tex_coords_len = user_tex_coords_len;
   state.final_tex_coords = final_tex_coords;
   state.override_pipeline = NULL;
-  state.needs_multiple_primitives = FALSE;
+  state.needs_multiple_primitives = false;
 
   cogl_pipeline_foreach_layer (pipeline,
                                validate_tex_coords_cb,
                                &state);
 
   if (state.needs_multiple_primitives)
-    return FALSE;
+    return false;
 
   if (state.override_pipeline)
     pipeline = state.override_pipeline;
@@ -467,7 +467,7 @@ _cogl_multitexture_quad_single_primitive (CoglFramebuffer *framebuffer,
   if (state.override_pipeline)
     cogl_object_unref (state.override_pipeline);
 
-  return TRUE;
+  return true;
 }
 
 typedef struct _ValidateLayerState
@@ -536,7 +536,7 @@ _cogl_rectangles_validate_layer_cb (CoglPipeline *pipeline,
   /* NULL textures are handled by
    * _cogl_pipeline_flush_gl_state */
   if (texture == NULL)
-    return TRUE;
+    return true;
 
   if (state->i == 0)
     state->first_layer = layer_index;
@@ -556,7 +556,7 @@ _cogl_rectangles_validate_layer_cb (CoglPipeline *pipeline,
         {
           if (cogl_pipeline_get_n_layers (pipeline) > 1)
             {
-              static bool warning_seen = FALSE;
+              static bool warning_seen = false;
 
               if (!state->override_source)
                 state->override_source = cogl_pipeline_copy (pipeline);
@@ -568,33 +568,33 @@ _cogl_rectangles_validate_layer_cb (CoglPipeline *pipeline,
                            "support any multi-texturing with sliced "
                            "textures but assume layer 0 is the most "
                            "important to keep");
-              warning_seen = TRUE;
+              warning_seen = true;
             }
 
-          state->all_use_sliced_quad_fallback = TRUE;
+          state->all_use_sliced_quad_fallback = true;
 
-          return FALSE;
+          return false;
         }
       else
         {
-          static bool warning_seen = FALSE;
+          static bool warning_seen = false;
           CoglTexture2D *tex_2d;
 
           if (!warning_seen)
             c_warning ("Skipping layer %d of your pipeline consisting of "
                        "a sliced texture (unsuported for multi texturing)",
                        state->i);
-          warning_seen = TRUE;
+          warning_seen = true;
 
           /* Note: currently only 2D textures can be sliced. */
           tex_2d = state->ctx->default_gl_texture_2d_tex;
           cogl_pipeline_set_layer_texture (pipeline, layer_index,
                                            COGL_TEXTURE (tex_2d));
-          return TRUE;
+          return true;
         }
     }
 
-  return TRUE;
+  return true;
 }
 
 void
@@ -618,7 +618,7 @@ _cogl_framebuffer_draw_multitextured_rectangles (
   state.i = -1;
   state.first_layer = 0;
   state.override_source = NULL;
-  state.all_use_sliced_quad_fallback = FALSE;
+  state.all_use_sliced_quad_fallback = false;
   cogl_pipeline_foreach_layer (pipeline,
                                _cogl_rectangles_validate_layer_cb,
                                &state);

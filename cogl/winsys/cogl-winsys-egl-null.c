@@ -76,11 +76,11 @@ _cogl_winsys_renderer_connect (CoglRenderer *renderer,
   if (!_cogl_winsys_egl_renderer_connect_common (renderer, error))
     goto error;
 
-  return TRUE;
+  return true;
 
 error:
   _cogl_winsys_renderer_disconnect (renderer);
-  return FALSE;
+  return false;
 }
 
 static bool
@@ -123,13 +123,13 @@ _cogl_winsys_egl_context_created (CoglDisplay *display,
                    EGL_HEIGHT,
                    &null_display->egl_surface_height);
 
-  return TRUE;
+  return true;
 
  fail:
   _cogl_set_error (error, COGL_WINSYS_ERROR,
                COGL_WINSYS_ERROR_CREATE_CONTEXT,
                "%s", error_message);
-  return FALSE;
+  return false;
 }
 
 static bool
@@ -142,7 +142,7 @@ _cogl_winsys_egl_display_setup (CoglDisplay *display,
   null_display = c_slice_new0 (CoglDisplayNull);
   egl_display->platform = null_display;
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -184,7 +184,7 @@ _cogl_winsys_egl_onscreen_init (CoglOnscreen *onscreen,
       _cogl_set_error (error, COGL_WINSYS_ERROR,
                    COGL_WINSYS_ERROR_CREATE_ONSCREEN,
                    "EGL platform only supports a single onscreen window");
-      return FALSE;
+      return false;
     }
 
   egl_onscreen->egl_surface = egl_display->egl_surface;
@@ -192,9 +192,9 @@ _cogl_winsys_egl_onscreen_init (CoglOnscreen *onscreen,
   _cogl_framebuffer_winsys_update_size (framebuffer,
                                         null_display->egl_surface_width,
                                         null_display->egl_surface_height);
-  null_display->have_onscreen = TRUE;
+  null_display->have_onscreen = true;
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -206,7 +206,7 @@ _cogl_winsys_egl_onscreen_deinit (CoglOnscreen *onscreen)
   CoglDisplayEGL *egl_display = display->winsys;
   CoglDisplayNull *null_display = egl_display->platform;
 
-  null_display->have_onscreen = FALSE;
+  null_display->have_onscreen = false;
 }
 
 static const CoglWinsysEGLVtable
@@ -223,7 +223,7 @@ _cogl_winsys_egl_vtable =
 const CoglWinsysVtable *
 _cogl_winsys_egl_null_get_vtable (void)
 {
-  static bool vtable_inited = FALSE;
+  static bool vtable_inited = false;
   static CoglWinsysVtable vtable;
 
   if (!vtable_inited)
@@ -239,7 +239,7 @@ _cogl_winsys_egl_null_get_vtable (void)
       vtable.renderer_connect = _cogl_winsys_renderer_connect;
       vtable.renderer_disconnect = _cogl_winsys_renderer_disconnect;
 
-      vtable_inited = TRUE;
+      vtable_inited = true;
     }
 
   return &vtable;

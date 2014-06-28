@@ -151,9 +151,9 @@ cogl_xlib_renderer_set_foreign_display (CoglRenderer *renderer,
  * @enable: The new value
  *
  * Sets whether Cogl should automatically retrieve events from the X
- * display. This defaults to %TRUE unless
+ * display. This defaults to %true unless
  * cogl_xlib_renderer_set_foreign_display() is called. It can be set
- * to %FALSE if the application wants to handle its own event
+ * to %false if the application wants to handle its own event
  * retrieval. Note that Cogl still needs to see all of the X events to
  * function properly so the application should call
  * cogl_xlib_renderer_handle_event() for each event if it disables

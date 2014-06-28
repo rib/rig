@@ -105,7 +105,7 @@ cogl_win32_renderer_remove_filter (CoglRenderer *renderer,
  * @enable: The new value
  *
  * Sets whether Cogl should automatically retrieve messages from
- * Windows. It defaults to %TRUE. It can be set to %FALSE if the
+ * Windows. It defaults to %true. It can be set to %false if the
  * application wants to handle its own message retrieval. Note that
  * Cogl still needs to see all of the messages to function properly so
  * the application should call cogl_win32_renderer_handle_event() for

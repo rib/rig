@@ -35,7 +35,7 @@
 static bool
 _cogl_pipeline_progend_nop_start (CoglPipeline *pipeline)
 {
-  return TRUE;
+  return true;
 }
 
 static void

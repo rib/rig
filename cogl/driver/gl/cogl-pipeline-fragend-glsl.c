@@ -91,7 +91,7 @@ typedef struct
   int ref_count;
 
   GLuint gl_shader;
-  CString *header, *source;
+  c_string_t *header, *source;
   UnitState *unit_state;
 
   /* List of layers that we haven't generated code for yet. These are
@@ -216,17 +216,17 @@ static bool
 has_replace_hook (CoglPipelineLayer *layer,
                   CoglSnippetHook hook)
 {
-  CList *l;
+  c_list_t *l;
 
   for (l = get_layer_fragment_snippets (layer)->entries; l; l = l->next)
     {
       CoglSnippet *snippet = l->data;
 
       if (snippet->hook == hook && snippet->replace)
-        return TRUE;
+        return true;
     }
 
-  return FALSE;
+  return false;
 }
 
 static bool
@@ -250,7 +250,7 @@ add_layer_declaration_cb (CoglPipelineLayer *layer,
                           target_string,
                           layer->index);
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -357,7 +357,7 @@ _cogl_pipeline_fragend_glsl_start (CoglPipeline *pipeline,
      without a gl_shader because this is the first time we've
      encountered it. */
 
-  /* We reuse two grow-only CStrings for code-gen. One string
+  /* We reuse two grow-only c_string_ts for code-gen. One string
      contains the uniform and attribute declarations while the
      other contains the main function. We need two strings
      because we need to dynamically declare attributes as the
@@ -378,8 +378,8 @@ _cogl_pipeline_fragend_glsl_start (CoglPipeline *pipeline,
 
   for (i = 0; i < n_layers; i++)
     {
-      shader_state->unit_state[i].sampled = FALSE;
-      shader_state->unit_state[i].combine_constant_used = FALSE;
+      shader_state->unit_state[i].sampled = false;
+      shader_state->unit_state[i].combine_constant_used = false;
     }
 }
 
@@ -415,7 +415,7 @@ ensure_texture_lookup_generated (CoglPipelineShaderState *shader_state,
                                            &target_string,
                                            &tex_coord_swizzle);
 
-  shader_state->unit_state[unit_index].sampled = TRUE;
+  shader_state->unit_state[unit_index].sampled = true;
 
   c_string_append_printf (shader_state->header,
                           "vec4 cogl_texel%i;\n",
@@ -509,7 +509,7 @@ add_arg (CoglPipelineShaderState *shader_state,
          CoglPipelineCombineOp operand,
          const char *swizzle)
 {
-  CString *shader_source = shader_state->header;
+  c_string_t *shader_source = shader_state->header;
   char alpha_swizzle[5] = "aaaa";
 
   c_string_append_c (shader_source, '(');
@@ -568,12 +568,12 @@ add_arg (CoglPipelineShaderState *shader_state,
 
         if (other_layer == NULL)
           {
-            static bool warning_seen = FALSE;
+            static bool warning_seen = false;
             if (!warning_seen)
               {
                 c_warning ("The application is trying to use a texture "
                            "combine with a layer number that does not exist");
-                warning_seen = TRUE;
+                warning_seen = true;
               }
             c_string_append_printf (shader_source,
                                     "vec4 (1.0, 1.0, 1.0, 1.0).%s",
@@ -614,7 +614,7 @@ ensure_arg_generated (CoglPipeline *pipeline,
             c_string_append_printf (shader_state->header,
                                     "uniform vec4 _cogl_layer_constant_%i;\n",
                                     layer->index);
-            shader_state->unit_state[unit_index].combine_constant_used = TRUE;
+            shader_state->unit_state[unit_index].combine_constant_used = true;
           }
       }
       break;
@@ -671,7 +671,7 @@ append_masked_combine (CoglPipeline *pipeline,
                        CoglPipelineCombineOp *op)
 {
   CoglPipelineShaderState *shader_state = get_shader_state (pipeline);
-  CString *shader_source = shader_state->header;
+  c_string_t *shader_source = shader_state->header;
 
   c_string_append_printf (shader_state->header,
                           "  cogl_layer.%s = ",
@@ -911,7 +911,7 @@ _cogl_pipeline_fragend_glsl_add_layer (CoglPipeline *pipeline,
   LayerData *layer_data;
 
   if (!shader_state->source)
-    return TRUE;
+    return true;
 
   /* Store the layers in reverse order */
   layer_data = c_slice_new (LayerData);
@@ -930,7 +930,7 @@ _cogl_pipeline_fragend_glsl_add_layer (CoglPipeline *pipeline,
 
   _cogl_list_insert (&shader_state->layers, &layer_data->link);
 
-  return TRUE;
+  return true;
 }
 
 /* GLES2 and GL3 don't have alpha testing so we need to implement it
@@ -1006,7 +1006,7 @@ _cogl_pipeline_fragend_glsl_end (CoglPipeline *pipeline,
 {
   CoglPipelineShaderState *shader_state = get_shader_state (pipeline);
 
-  _COGL_GET_CONTEXT (ctx, FALSE);
+  _COGL_GET_CONTEXT (ctx, false);
 
   if (shader_state->source)
     {
@@ -1107,7 +1107,7 @@ _cogl_pipeline_fragend_glsl_end (CoglPipeline *pipeline,
       shader_state->gl_shader = shader;
     }
 
-  return TRUE;
+  return true;
 }
 
 static void

@@ -125,7 +125,7 @@ struct _CoglDriverVtable
   void
   (* texture_2d_free) (CoglTexture2D *tex_2d);
 
-  /* Returns TRUE if the driver can support creating a 2D texture with
+  /* Returns true if the driver can support creating a 2D texture with
    * the given geometry and specified internal format.
    */
   bool

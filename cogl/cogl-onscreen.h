@@ -682,8 +682,8 @@ cogl_onscreen_set_resizable (CoglOnscreen *onscreen,
  * as non resizable, but it is not guaranteed that this is always
  * possible for all window systems.
  *
- * <note>If cogl_onscreen_set_resizable(@onscreen, %TRUE) has been
- * previously called then this function will return %TRUE, but it's
+ * <note>If cogl_onscreen_set_resizable(@onscreen, %true) has been
+ * previously called then this function will return %true, but it's
  * possible that the current windowing system being used does not
  * support window resizing (consider fullscreen windows on a phone or
  * a TV). This function is not aware of whether resizing is truly
@@ -909,8 +909,8 @@ cogl_onscreen_remove_dirty_callback (CoglOnscreen *onscreen,
  *
  * Gets whether the given object references a #CoglOnscreen.
  *
- * Return value: %TRUE if the object references a #CoglOnscreen
- *   and %FALSE otherwise.
+ * Return value: %true if the object references a #CoglOnscreen
+ *   and %false otherwise.
  * Since: 1.10
  * Stability: unstable
  */

@@ -138,8 +138,8 @@ cogl_get_rectangle_indices (CoglContext *context, int n_rectangles);
  *
  * Gets whether the given object references a #CoglIndices.
  *
- * Return value: %TRUE if the object references a #CoglIndices
- *   and %FALSE otherwise.
+ * Return value: %true if the object references a #CoglIndices
+ *   and %false otherwise.
  * Since: 1.10
  * Stability: unstable
  */

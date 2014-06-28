@@ -44,7 +44,7 @@
 /* NB: Only these options get enabled if COGL_DEBUG=all is
  * used since they don't affect the behaviour of Cogl they
  * simply print out verbose information */
-static const CDebugKey cogl_log_debug_keys[] = {
+static const c_debug_key_t cogl_log_debug_keys[] = {
   { "object", COGL_DEBUG_OBJECT },
   { "slicing", COGL_DEBUG_SLICING },
   { "atlas", COGL_DEBUG_ATLAS },
@@ -66,7 +66,7 @@ static const CDebugKey cogl_log_debug_keys[] = {
 static const int n_cogl_log_debug_keys =
   C_N_ELEMENTS (cogl_log_debug_keys);
 
-static const CDebugKey cogl_behavioural_debug_keys[] = {
+static const c_debug_key_t cogl_behavioural_debug_keys[] = {
   { "rectangles", COGL_DEBUG_RECTANGLES },
   { "disable-batching", COGL_DEBUG_DISABLE_BATCHING },
   { "disable-vbos", COGL_DEBUG_DISABLE_VBOS },
@@ -88,17 +88,17 @@ static const int n_cogl_behavioural_debug_keys =
   C_N_ELEMENTS (cogl_behavioural_debug_keys);
 
 unsigned long _cogl_debug_flags[COGL_DEBUG_N_LONGS];
-CHashTable *_cogl_debug_instances;
+c_hash_table_t *_cogl_debug_instances;
 
 static void
 _cogl_parse_debug_string_for_keys (const char *value,
                                    bool enable,
-                                   const CDebugKey *keys,
+                                   const c_debug_key_t *keys,
                                    unsigned int nkeys)
 {
   int long_num, key_num;
 
-  /* c_parse_debug_string expects the value field in CDebugKey to be a
+  /* c_parse_debug_string expects the value field in c_debug_key_t to be a
      mask in a guint but the flags is stored in an array of multiple
      longs so we need to build a separate array for each possible
      guint */
@@ -111,7 +111,7 @@ _cogl_parse_debug_string_for_keys (const char *value,
            int_num < sizeof (unsigned long) / sizeof (unsigned int);
            int_num++)
         {
-          CDebugKey keys_for_int[sizeof (unsigned int) * 8];
+          c_debug_key_t keys_for_int[sizeof (unsigned int) * 8];
           int nkeys_for_int = 0;
 
           for (key_num = 0; key_num < nkeys; key_num++)
@@ -217,8 +217,8 @@ _cogl_debug_check_environment (void)
   if (env_string != NULL)
     {
       _cogl_parse_debug_string (env_string,
-                                TRUE /* enable the flags */,
-                                FALSE /* don't ignore help */);
+                                true /* enable the flags */,
+                                false /* don't ignore help */);
       env_string = NULL;
     }
 
@@ -226,8 +226,8 @@ _cogl_debug_check_environment (void)
   if (env_string != NULL)
     {
       _cogl_parse_debug_string (env_string,
-                                FALSE /* disable the flags */,
-                                FALSE /* don't ignore help */);
+                                false /* disable the flags */,
+                                false /* don't ignore help */);
       env_string = NULL;
     }
 }

@@ -206,12 +206,12 @@ _cogl_winsys_egl_renderer_connect_common (CoglRenderer *renderer,
       _cogl_set_error (error, COGL_WINSYS_ERROR,
                    COGL_WINSYS_ERROR_INIT,
                    "Couldn't initialize EGL");
-      return FALSE;
+      return false;
     }
 
   check_egl_extensions (renderer);
 
-  return TRUE;
+  return true;
 }
 
 static bool
@@ -343,7 +343,7 @@ try_create_context (CoglDisplay *display,
   EGLint cfg_attribs[MAX_EGL_CONFIG_ATTRIBS];
   const char *error_message;
 
-  _COGL_RETURN_VAL_IF_FAIL (egl_display->egl_context == NULL, TRUE);
+  _COGL_RETURN_VAL_IF_FAIL (egl_display->egl_context == NULL, true);
 
   if (renderer->driver == COGL_DRIVER_GL ||
       renderer->driver == COGL_DRIVER_GL3)
@@ -409,9 +409,9 @@ try_create_context (CoglDisplay *display,
 
   if (egl_renderer->platform_vtable->context_created &&
       !egl_renderer->platform_vtable->context_created (display, error))
-    return FALSE;
+    return false;
 
-  return TRUE;
+  return true;
 
 fail:
   _cogl_set_error (error, COGL_WINSYS_ERROR,
@@ -420,7 +420,7 @@ fail:
 
   cleanup_context (display);
 
-  return FALSE;
+  return false;
 }
 
 static void
@@ -448,7 +448,7 @@ _cogl_winsys_display_setup (CoglDisplay *display,
   CoglRenderer *renderer = display->renderer;
   CoglRendererEGL *egl_renderer = renderer->winsys;
 
-  _COGL_RETURN_VAL_IF_FAIL (display->winsys == NULL, FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (display->winsys == NULL, false);
 
   egl_display = c_slice_new0 (CoglDisplayEGL);
   display->winsys = egl_display;
@@ -472,13 +472,13 @@ _cogl_winsys_display_setup (CoglDisplay *display,
   if (!try_create_context (display, error))
     goto error;
 
-  egl_display->found_egl_config = TRUE;
+  egl_display->found_egl_config = true;
 
-  return TRUE;
+  return true;
 
 error:
   _cogl_winsys_display_destroy (display);
-  return FALSE;
+  return false;
 }
 
 static bool
@@ -490,31 +490,31 @@ _cogl_winsys_context_init (CoglContext *context, CoglError **error)
 
   context->winsys = c_new0 (CoglContextEGL, 1);
 
-  _COGL_RETURN_VAL_IF_FAIL (egl_display->egl_context, FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (egl_display->egl_context, false);
 
   memset (context->winsys_features, 0, sizeof (context->winsys_features));
 
   check_egl_extensions (renderer);
 
   if (!_cogl_context_update_features (context, error))
-    return FALSE;
+    return false;
 
   if (egl_renderer->private_features & COGL_EGL_WINSYS_FEATURE_SWAP_REGION)
     {
       COGL_FLAGS_SET (context->winsys_features,
-                      COGL_WINSYS_FEATURE_SWAP_REGION, TRUE);
+                      COGL_WINSYS_FEATURE_SWAP_REGION, true);
       COGL_FLAGS_SET (context->winsys_features,
-                      COGL_WINSYS_FEATURE_SWAP_REGION_THROTTLE, TRUE);
+                      COGL_WINSYS_FEATURE_SWAP_REGION_THROTTLE, true);
     }
 
   if ((egl_renderer->private_features & COGL_EGL_WINSYS_FEATURE_FENCE_SYNC) &&
       _cogl_has_private_feature (context, COGL_PRIVATE_FEATURE_OES_EGL_SYNC))
-    COGL_FLAGS_SET (context->features, COGL_FEATURE_ID_FENCE, TRUE);
+    COGL_FLAGS_SET (context->features, COGL_FEATURE_ID_FENCE, true);
 
   if (egl_renderer->private_features & COGL_EGL_WINSYS_FEATURE_BUFFER_AGE)
     COGL_FLAGS_SET (context->winsys_features,
                     COGL_WINSYS_FEATURE_BUFFER_AGE,
-                    TRUE);
+                    true);
 
   /* NB: We currently only support creating standalone GLES2 contexts
    * for offscreen rendering and so we need a dummy (non-visible)
@@ -522,13 +522,13 @@ _cogl_winsys_context_init (CoglContext *context, CoglError **error)
   if (egl_display->dummy_surface != EGL_NO_SURFACE &&
       context->driver == COGL_DRIVER_GLES2)
     COGL_FLAGS_SET (context->features,
-                    COGL_FEATURE_ID_GLES2_CONTEXT, TRUE);
+                    COGL_FEATURE_ID_GLES2_CONTEXT, true);
 
   if (egl_renderer->platform_vtable->context_init &&
       !egl_renderer->platform_vtable->context_init (context, error))
-    return FALSE;
+    return false;
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -606,7 +606,7 @@ _cogl_winsys_onscreen_init (CoglOnscreen *onscreen,
   EGLint config_count = 0;
   EGLBoolean status;
 
-  _COGL_RETURN_VAL_IF_FAIL (egl_display->egl_context, FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (egl_display->egl_context, false);
 
   egl_attributes_from_framebuffer_config (display,
                                           &framebuffer->config,
@@ -621,7 +621,7 @@ _cogl_winsys_onscreen_init (CoglOnscreen *onscreen,
       _cogl_set_error (error, COGL_WINSYS_ERROR,
                    COGL_WINSYS_ERROR_CREATE_ONSCREEN,
                    "Failed to find a suitable EGL configuration");
-      return FALSE;
+      return false;
     }
 
   /* Update the real number of samples_per_pixel now that we have
@@ -632,7 +632,7 @@ _cogl_winsys_onscreen_init (CoglOnscreen *onscreen,
       status = eglGetConfigAttrib (egl_renderer->edpy,
                                    egl_config,
                                    EGL_SAMPLES, &samples);
-      c_return_val_if_fail (status == EGL_TRUE, TRUE);
+      c_return_val_if_fail (status == EGL_TRUE, true);
       framebuffer->samples_per_pixel = samples;
     }
 
@@ -644,10 +644,10 @@ _cogl_winsys_onscreen_init (CoglOnscreen *onscreen,
                                                      error))
     {
       c_slice_free (CoglOnscreenEGL, onscreen->winsys);
-      return FALSE;
+      return false;
     }
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -680,7 +680,7 @@ _cogl_winsys_onscreen_deinit (CoglOnscreen *onscreen)
         }
 
       if (eglDestroySurface (egl_renderer->edpy, egl_onscreen->egl_surface)
-          == EGL_FALSE)
+          == EFALSE)
         c_warning ("Failed to destroy EGL surface");
       egl_onscreen->egl_surface = EGL_NO_SURFACE;
     }
@@ -791,7 +791,7 @@ _cogl_winsys_onscreen_swap_region (CoglOnscreen *onscreen,
   if (egl_renderer->pf_eglSwapBuffersRegion (egl_renderer->edpy,
                                              egl_onscreen->egl_surface,
                                              n_rectangles,
-                                             rectangles) == EGL_FALSE)
+                                             rectangles) == EFALSE)
     c_warning ("Error reported by eglSwapBuffersRegion");
 }
 
@@ -832,7 +832,7 @@ _cogl_winsys_onscreen_swap_buffers_with_damage (CoglOnscreen *onscreen,
       if (egl_renderer->pf_eglSwapBuffersWithDamage (egl_renderer->edpy,
                                                      egl_onscreen->egl_surface,
                                                      flipped,
-                                                     n_rectangles) == EGL_FALSE)
+                                                     n_rectangles) == EFALSE)
         c_warning ("Error reported by eglSwapBuffersWithDamage");
     }
   else
@@ -896,10 +896,10 @@ _cogl_winsys_set_gles2_context (CoglGLES2Context *gles2_ctx, CoglError **error)
                    COGL_WINSYS_ERROR,
                    COGL_WINSYS_ERROR_MAKE_CURRENT,
                    "Failed to make gles2 context current");
-      return FALSE;
+      return false;
     }
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -1060,7 +1060,7 @@ _cogl_egl_query_wayland_buffer (CoglContext *ctx,
 {
   CoglRendererEGL *egl_renderer = ctx->display->renderer->winsys;
 
-  _COGL_RETURN_VAL_IF_FAIL (egl_renderer->pf_eglQueryWaylandBuffer, FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (egl_renderer->pf_eglQueryWaylandBuffer, false);
 
   return egl_renderer->pf_eglQueryWaylandBuffer (egl_renderer->edpy,
                                                  buffer,

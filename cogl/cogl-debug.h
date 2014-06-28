@@ -77,7 +77,7 @@ typedef enum {
   COGL_DEBUG_N_FLAGS
 } CoglDebugFlags;
 
-extern CHashTable *_cogl_debug_instances;
+extern c_hash_table_t *_cogl_debug_instances;
 #define COGL_DEBUG_N_LONGS COGL_FLAGS_N_LONGS_FOR_SIZE (COGL_DEBUG_N_FLAGS)
 
 /* _cogl_debug_flags currently needs to exported outside of the shared
@@ -89,10 +89,10 @@ COGL_EXPORT extern unsigned long _cogl_debug_flags[COGL_DEBUG_N_LONGS];
   COGL_FLAGS_GET (_cogl_debug_flags, flag)
 
 #define COGL_DEBUG_SET_FLAG(flag) \
-  COGL_FLAGS_SET (_cogl_debug_flags, flag, TRUE)
+  COGL_FLAGS_SET (_cogl_debug_flags, flag, true)
 
 #define COGL_DEBUG_CLEAR_FLAG(flag) \
-  COGL_FLAGS_SET (_cogl_debug_flags, flag, FALSE)
+  COGL_FLAGS_SET (_cogl_debug_flags, flag, false)
 
 #ifdef __GNUC__
 #define COGL_NOTE(type,x,a...)                      C_STMT_START {            \

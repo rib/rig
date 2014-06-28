@@ -77,7 +77,7 @@ typedef struct _CoglTexturePixmapEGL
 static CoglOnscreen *
 find_onscreen_for_xid (CoglContext *context, uint32_t xid)
 {
-  CList *l;
+  c_list_t *l;
 
   for (l = context->framebuffers; l; l = l->next)
     {
@@ -111,7 +111,7 @@ flush_pending_resize_notifications_cb (void *data,
       if (egl_onscreen->pending_resize_notify)
         {
           _cogl_onscreen_notify_resize (onscreen);
-          egl_onscreen->pending_resize_notify = FALSE;
+          egl_onscreen->pending_resize_notify = false;
         }
     }
 }
@@ -164,7 +164,7 @@ notify_resize (CoglContext *context,
                                       NULL);
     }
 
-  egl_onscreen->pending_resize_notify = TRUE;
+  egl_onscreen->pending_resize_notify = true;
 }
 
 static CoglFilterReturn
@@ -283,11 +283,11 @@ _cogl_winsys_renderer_connect (CoglRenderer *renderer,
   if (!_cogl_winsys_egl_renderer_connect_common (renderer, error))
     goto error;
 
-  return TRUE;
+  return true;
 
 error:
   _cogl_winsys_renderer_disconnect (renderer);
-  return FALSE;
+  return false;
 }
 
 static bool
@@ -300,7 +300,7 @@ _cogl_winsys_egl_display_setup (CoglDisplay *display,
   xlib_display = c_slice_new0 (CoglDisplayXlib);
   egl_display->platform = xlib_display;
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -320,18 +320,18 @@ _cogl_winsys_egl_context_init (CoglContext *context,
                                  context);
 
   COGL_FLAGS_SET (context->features,
-                  COGL_FEATURE_ID_ONSCREEN_MULTIPLE, TRUE);
+                  COGL_FEATURE_ID_ONSCREEN_MULTIPLE, true);
   COGL_FLAGS_SET (context->winsys_features,
                   COGL_WINSYS_FEATURE_MULTIPLE_ONSCREEN,
-                  TRUE);
+                  true);
 
   /* We'll manually handle queueing dirty events in response to
    * Expose events from X */
   COGL_FLAGS_SET (context->private_features,
                   COGL_PRIVATE_FEATURE_DIRTY_EVENTS,
-                  TRUE);
+                  true);
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -391,7 +391,7 @@ _cogl_winsys_egl_onscreen_init (CoglOnscreen *onscreen,
                        "Unable to query geometry of foreign "
                        "xid 0x%08lX: %s",
                        xwin, message);
-          return FALSE;
+          return false;
         }
 
       _cogl_framebuffer_winsys_update_size (framebuffer,
@@ -425,7 +425,7 @@ _cogl_winsys_egl_onscreen_init (CoglOnscreen *onscreen,
                        COGL_WINSYS_ERROR_CREATE_ONSCREEN,
                        "Unable to retrieve the X11 visual of context's "
                        "fbconfig");
-          return FALSE;
+          return false;
         }
 
       /* window attributes */
@@ -467,7 +467,7 @@ _cogl_winsys_egl_onscreen_init (CoglOnscreen *onscreen,
                        COGL_WINSYS_ERROR_CREATE_ONSCREEN,
                        "X error while creating Window for CoglOnscreen: %s",
                        message);
-          return FALSE;
+          return false;
         }
     }
 
@@ -475,7 +475,7 @@ _cogl_winsys_egl_onscreen_init (CoglOnscreen *onscreen,
   egl_onscreen->platform = xlib_onscreen;
 
   xlib_onscreen->xwin = xwin;
-  xlib_onscreen->is_foreign_xwin = onscreen->foreign_xid ? TRUE : FALSE;
+  xlib_onscreen->is_foreign_xwin = onscreen->foreign_xid ? true : false;
 
   egl_onscreen->egl_surface =
     eglCreateWindowSurface (egl_renderer->edpy,
@@ -483,7 +483,7 @@ _cogl_winsys_egl_onscreen_init (CoglOnscreen *onscreen,
                             (NativeWindowType) xlib_onscreen->xwin,
                             NULL);
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -654,13 +654,13 @@ _cogl_winsys_egl_context_created (CoglDisplay *display,
       goto fail;
     }
 
-  return TRUE;
+  return true;
 
 fail:
   _cogl_set_error (error, COGL_WINSYS_ERROR,
                COGL_WINSYS_ERROR_CREATE_CONTEXT,
                "%s", error_message);
-  return FALSE;
+  return false;
 }
 
 static void
@@ -694,7 +694,7 @@ _cogl_winsys_xlib_get_visual_info (void)
 
   _COGL_GET_CONTEXT (ctx, NULL);
 
-  _COGL_RETURN_VAL_IF_FAIL (ctx->display->winsys, FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (ctx->display->winsys, false);
 
   egl_display = ctx->display->winsys;
 
@@ -724,7 +724,7 @@ _cogl_winsys_texture_pixmap_x11_create (CoglTexturePixmapX11 *tex_pixmap)
       (ctx, COGL_PRIVATE_FEATURE_TEXTURE_2D_FROM_EGL_IMAGE))
     {
       tex_pixmap->winsys = NULL;
-      return FALSE;
+      return false;
     }
 
   egl_tex_pixmap = c_new0 (CoglTexturePixmapEGL, 1);
@@ -737,7 +737,7 @@ _cogl_winsys_texture_pixmap_x11_create (CoglTexturePixmapX11 *tex_pixmap)
   if (egl_tex_pixmap->image == EGL_NO_IMAGE_KHR)
     {
       c_free (egl_tex_pixmap);
-      return FALSE;
+      return false;
     }
 
   texture_format = (tex_pixmap->depth >= 32 ?
@@ -754,7 +754,7 @@ _cogl_winsys_texture_pixmap_x11_create (CoglTexturePixmapX11 *tex_pixmap)
 
   tex_pixmap->winsys = egl_tex_pixmap;
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -786,9 +786,9 @@ _cogl_winsys_texture_pixmap_x11_update (CoglTexturePixmapX11 *tex_pixmap,
                                         bool needs_mipmap)
 {
   if (needs_mipmap)
-    return FALSE;
+    return false;
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -822,7 +822,7 @@ _cogl_winsys_egl_vtable =
 const CoglWinsysVtable *
 _cogl_winsys_egl_xlib_get_vtable (void)
 {
-  static bool vtable_inited = FALSE;
+  static bool vtable_inited = false;
   static CoglWinsysVtable vtable;
 
   if (!vtable_inited)
@@ -866,7 +866,7 @@ _cogl_winsys_egl_xlib_get_vtable (void)
         _cogl_winsys_texture_pixmap_x11_get_texture;
 #endif /* EGL_KHR_image_pixmap) */
 
-      vtable_inited = TRUE;
+      vtable_inited = true;
     }
 
   return &vtable;

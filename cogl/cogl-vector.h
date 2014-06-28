@@ -82,7 +82,7 @@ cogl_vector3_init_zero (float *vector);
  * @v1: The first 3 component vector you want to compare
  * @v2: The second 3 component vector you want to compare
  *
- * Compares the components of two vectors and returns TRUE if they are
+ * Compares the components of two vectors and returns true if they are
  * the same.
  *
  * The comparison of the components is done with the '==' operator
@@ -91,7 +91,7 @@ cogl_vector3_init_zero (float *vector);
  * essentially identical except for some minor precision error
  * differences due to the way they have been manipulated.
  *
- * Returns: TRUE if the vectors are equal else FALSE.
+ * Returns: true if the vectors are equal else false.
  *
  * Since: 1.4
  * Stability: Unstable
@@ -107,7 +107,7 @@ cogl_vector3_equal (const void *v1, const void *v2);
  *           considered equal
  *
  * Compares the components of two vectors using the given epsilon and
- * returns TRUE if they are the same, using an internal epsilon for
+ * returns true if they are the same, using an internal epsilon for
  * comparing the floats.
  *
  * Each component is compared against the epsilon value in this way:
@@ -115,7 +115,7 @@ cogl_vector3_equal (const void *v1, const void *v2);
  *   if (fabsf (vector0->x - vector1->x) < epsilon)
  * ]|
  *
- * Returns: TRUE if the vectors are equal else FALSE.
+ * Returns: true if the vectors are equal else false.
  *
  * Since: 1.4
  * Stability: Unstable

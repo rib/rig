@@ -41,9 +41,9 @@
 #define memFree    c_free
 #define memInit(x) 1
 
-/* tess.c defines TRUE and FALSE itself unconditionally so we need to
+/* tess.c defines true and false itself unconditionally so we need to
    undefine it from the ulib headers */
-#undef TRUE
-#undef FALSE
+#undef true
+#undef false
 
 #endif /* __MEMALLOC_H__ */

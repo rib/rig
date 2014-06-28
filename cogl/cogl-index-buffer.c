@@ -98,7 +98,7 @@ cogl_index_buffer_set_data (CoglIndexBuffer *indices,
                             void *user_indices,
                             int n_indices)
 {
-  CList *l;
+  c_list_t *l;
 
   for (l = indices->ranges; l; l = l->next)
     {

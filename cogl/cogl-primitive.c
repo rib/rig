@@ -398,12 +398,12 @@ _cogl_primitive_free (CoglPrimitive *primitive)
 static void
 warn_about_midscene_changes (void)
 {
-  static bool seen = FALSE;
+  static bool seen = false;
   if (!seen)
     {
       c_warning ("Mid-scene modification of primitives has "
                  "undefined results\n");
-      seen = TRUE;
+      seen = true;
     }
 }
 

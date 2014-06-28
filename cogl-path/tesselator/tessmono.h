@@ -58,7 +58,7 @@
  * polygon have a winding number of "value", and regions outside
  * have a winding number of 0.
  *
- * If keepOnlyBoundary is TRUE, it also deletes all edges which do not
+ * If keepOnlyBoundary is true, it also deletes all edges which do not
  * separate an interior region from an exterior one.
  */
 

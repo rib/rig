@@ -382,7 +382,7 @@ cogl_attribute_new_const_4fv (CoglContext *context,
  * attribute mat2 name;
  * |]
  *
- * If @transpose is %TRUE then all matrix components are rotated
+ * If @transpose is %true then all matrix components are rotated
  * around the diagonal of the matrix such that the first column
  * becomes the first row and the second column becomes the second row.
  *
@@ -416,7 +416,7 @@ cogl_attribute_new_const_2x2fv (CoglContext *context,
  * attribute mat3 name;
  * |]
  *
- * If @transpose is %TRUE then all matrix components are rotated
+ * If @transpose is %true then all matrix components are rotated
  * around the diagonal of the matrix such that the first column
  * becomes the first row and the second column becomes the second row
  * etc.
@@ -451,7 +451,7 @@ cogl_attribute_new_const_3x3fv (CoglContext *context,
  * attribute mat4 name;
  * |]
  *
- * If @transpose is %TRUE then all matrix components are rotated
+ * If @transpose is %true then all matrix components are rotated
  * around the diagonal of the matrix such that the first column
  * becomes the first row and the second column becomes the second row
  * etc.
@@ -471,14 +471,14 @@ cogl_attribute_new_const_4x4fv (CoglContext *context,
  * @normalized: The new value for the normalized property.
  *
  * Sets whether fixed point attribute types are mapped to the range
- * 0→1. For example when this property is TRUE and a
+ * 0→1. For example when this property is true and a
  * %COGL_ATTRIBUTE_TYPE_UNSIGNED_BYTE type is used then the value 255
  * will be mapped to 1.0.
  *
  * The default value of this property depends on the name of the
  * attribute. For the builtin properties cogl_color_in and
- * cogl_normal_in it will default to TRUE and for all other names it
- * will default to FALSE.
+ * cogl_normal_in it will default to true and for all other names it
+ * will default to false.
  *
  * Stability: unstable
  * Since: 1.10
@@ -533,8 +533,8 @@ cogl_attribute_set_buffer (CoglAttribute *attribute,
  *
  * Gets whether the given object references a #CoglAttribute.
  *
- * Return value: %TRUE if the @object references a #CoglAttribute,
- *   %FALSE otherwise
+ * Return value: %true if the @object references a #CoglAttribute,
+ *   %false otherwise
  */
 bool
 cogl_is_attribute (void *object);

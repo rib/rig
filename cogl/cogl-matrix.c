@@ -444,7 +444,7 @@ cogl_matrix_init_identity (CoglMatrix *matrix)
  * @mat pointer to a CoglMatrix structure. The matrix inverse will be
  * stored in the CoglMatrix::inv attribute.
  *
- * Returns: %TRUE for success, %FALSE for failure (\p singular matrix).
+ * Returns: %true for success, %false for failure (\p singular matrix).
  *
  * \author
  * Code contributed by Jacques Leroy jle@star.be
@@ -489,7 +489,7 @@ invert_matrix_general (CoglMatrix *matrix,
   if (fabsf (r1[0]) > fabsf (r0[0]))
     SWAP_ROWS (r1, r0);
   if (0.0 == r0[0])
-    return FALSE;
+    return false;
 
   /* eliminate first variable     */
   m1 = r1[0]/r0[0]; m2 = r2[0]/r0[0]; m3 = r3[0]/r0[0];
@@ -511,7 +511,7 @@ invert_matrix_general (CoglMatrix *matrix,
   if (fabsf (r2[1]) > fabsf (r1[1]))
     SWAP_ROWS (r2, r1);
   if (0.0 == r1[1])
-    return FALSE;
+    return false;
 
   /* eliminate second variable */
   m2 = r2[1] / r1[1]; m3 = r3[1] / r1[1];
@@ -526,7 +526,7 @@ invert_matrix_general (CoglMatrix *matrix,
   if (fabsf (r3[2]) > fabsf (r2[2]))
     SWAP_ROWS (r3, r2);
   if (0.0 == r2[2])
-    return FALSE;
+    return false;
 
   /* eliminate third variable */
   m3 = r3[2] / r2[2];
@@ -536,7 +536,7 @@ invert_matrix_general (CoglMatrix *matrix,
 
   /* last check */
   if (0.0 == r3[3])
-    return FALSE;
+    return false;
 
   s = 1.0f / r3[3];             /* now back substitute row 3 */
   r3[4] *= s; r3[5] *= s; r3[6] *= s; r3[7] *= s;
@@ -576,7 +576,7 @@ invert_matrix_general (CoglMatrix *matrix,
 
   inverse->flags = (MAT_FLAG_GENERAL | MAT_DIRTY_ALL);
 
-  return TRUE;
+  return true;
 }
 #undef SWAP_ROWS
 
@@ -586,7 +586,7 @@ invert_matrix_general (CoglMatrix *matrix,
  * @mat pointer to a CoglMatrix structure. The matrix inverse will be
  * stored in the CoglMatrix::inv attribute.
  *
- * Returns: %TRUE for success, %FALSE for failure (\p singular matrix).
+ * Returns: %true for success, %false for failure (\p singular matrix).
  *
  * \author Adapted from graphics gems II.
  *
@@ -629,7 +629,7 @@ invert_matrix_3d_general (CoglMatrix *matrix,
   det = pos + neg;
 
   if (det*det < 1e-25)
-    return FALSE;
+    return false;
 
   det = 1.0f / det;
   MAT (out,0,0) =
@@ -664,7 +664,7 @@ invert_matrix_3d_general (CoglMatrix *matrix,
 
   inverse->flags = (MAT_FLAG_GENERAL | MAT_DIRTY_ALL);
 
-  return TRUE;
+  return true;
 }
 
 /*
@@ -673,7 +673,7 @@ invert_matrix_3d_general (CoglMatrix *matrix,
  * @mat pointer to a CoglMatrix structure. The matrix inverse will be
  * stored in the CoglMatrix::inv attribute.
  *
- * Returns: %TRUE for success, %FALSE for failure (\p singular matrix).
+ * Returns: %true for success, %false for failure (\p singular matrix).
  *
  * If the matrix is not an angle preserving matrix then calls
  * invert_matrix_3d_general for the actual calculation. Otherwise calculates
@@ -699,7 +699,7 @@ invert_matrix_3d (CoglMatrix *matrix,
                      MAT (in, 0, 2) * MAT (in, 0, 2));
 
       if (scale == 0.0)
-        return FALSE;
+        return false;
 
       scale = 1.0f / scale;
 
@@ -734,7 +734,7 @@ invert_matrix_3d (CoglMatrix *matrix,
       MAT (out, 0, 3) = - MAT (in, 0, 3);
       MAT (out, 1, 3) = - MAT (in, 1, 3);
       MAT (out, 2, 3) = - MAT (in, 2, 3);
-      return TRUE;
+      return true;
     }
 
   if (matrix->flags & MAT_FLAG_TRANSLATION)
@@ -755,7 +755,7 @@ invert_matrix_3d (CoglMatrix *matrix,
 
   inverse->flags = (MAT_FLAG_GENERAL | MAT_DIRTY_ALL);
 
-  return TRUE;
+  return true;
 }
 
 /*
@@ -764,7 +764,7 @@ invert_matrix_3d (CoglMatrix *matrix,
  * @mat pointer to a CoglMatrix structure. The matrix inverse will be
  * stored in the CoglMatrix::inv attribute.
  *
- * Returns: always %TRUE.
+ * Returns: always %true.
  *
  * Simply copies identity into CoglMatrix::inv.
  */
@@ -773,7 +773,7 @@ invert_matrix_identity (CoglMatrix *matrix,
                         CoglMatrix *inverse)
 {
   _cogl_matrix_init_identity (inverse);
-  return TRUE;
+  return true;
 }
 
 /*
@@ -782,7 +782,7 @@ invert_matrix_identity (CoglMatrix *matrix,
  * @mat pointer to a CoglMatrix structure. The matrix inverse will be
  * stored in the CoglMatrix::inv attribute.
  *
- * Returns: %TRUE for success, %FALSE for failure (\p singular matrix).
+ * Returns: %true for success, %false for failure (\p singular matrix).
  *
  * Calculates the
  */
@@ -794,7 +794,7 @@ invert_matrix_3d_no_rotation (CoglMatrix *matrix,
   float *out = (float *)inverse;
 
   if (MAT (in,0,0) == 0 || MAT (in,1,1) == 0 || MAT (in,2,2) == 0)
-    return FALSE;
+    return false;
 
   memcpy (out, identity, 16 * sizeof (float));
   MAT (out,0,0) = 1.0f / MAT (in,0,0);
@@ -810,7 +810,7 @@ invert_matrix_3d_no_rotation (CoglMatrix *matrix,
 
   inverse->flags = (MAT_FLAG_GENERAL | MAT_DIRTY_ALL);
 
-  return TRUE;
+  return true;
 }
 
 /*
@@ -819,7 +819,7 @@ invert_matrix_3d_no_rotation (CoglMatrix *matrix,
  * @mat pointer to a CoglMatrix structure. The matrix inverse will be
  * stored in the CoglMatrix::inv attribute.
  *
- * Returns: %TRUE for success, %FALSE for failure (\p singular matrix).
+ * Returns: %true for success, %false for failure (\p singular matrix).
  *
  * Calculates the inverse matrix by applying the inverse scaling and
  * translation to the identity matrix.
@@ -832,7 +832,7 @@ invert_matrix_2d_no_rotation (CoglMatrix *matrix,
   float *out = (float *)inverse;
 
   if (MAT (in, 0, 0) == 0 || MAT (in, 1, 1) == 0)
-    return FALSE;
+    return false;
 
   memcpy (out, identity, 16 * sizeof (float));
   MAT (out, 0, 0) = 1.0f / MAT (in, 0, 0);
@@ -846,7 +846,7 @@ invert_matrix_2d_no_rotation (CoglMatrix *matrix,
 
   inverse->flags = (MAT_FLAG_GENERAL | MAT_DIRTY_ALL);
 
-  return TRUE;
+  return true;
 }
 
 #if 0
@@ -858,7 +858,7 @@ invert_matrix_perspective (CoglMatrix *matrix)
   float *out = matrix->inv;
 
   if (MAT (in,2,3) == 0)
-    return FALSE;
+    return false;
 
   memcpy( out, identity, 16 * sizeof(float) );
 
@@ -874,7 +874,7 @@ invert_matrix_perspective (CoglMatrix *matrix)
   MAT (out,3,2) = 1.0f / MAT (in,2,3);
   MAT (out,3,3) = MAT (in,2,2) * MAT (out,3,2);
 
-  return TRUE;
+  return true;
 }
 #endif
 
@@ -1133,7 +1133,7 @@ _cogl_matrix_update_type_and_flags (CoglMatrix *matrix)
  * @mat pointer to a CoglMatrix structure. The matrix inverse will be
  * stored in the CoglMatrix::inv attribute.
  *
- * Returns: %TRUE for success, %FALSE for failure (\p singular matrix).
+ * Returns: %true for success, %false for failure (\p singular matrix).
  *
  * Calls the matrix inversion function in inv_mat_tab corresponding to the
  * given matrix type.  In case of failure, updates the MAT_FLAG_SINGULAR flag,
@@ -1155,9 +1155,9 @@ _cogl_matrix_get_inverse (CoglMatrix *matrix,
     }
 
   if (matrix->flags & MAT_FLAG_SINGULAR)
-    return FALSE;
+    return false;
   else
-    return TRUE;
+    return true;
 }
 
 bool
@@ -1189,7 +1189,7 @@ _cogl_matrix_rotate (CoglMatrix *matrix,
   c = cosf (angle * DEG2RAD);
 
   memcpy (m, identity, 16 * sizeof (float));
-  optimized = FALSE;
+  optimized = false;
 
 #define M(row,col)  m[col*4+row]
 
@@ -1199,7 +1199,7 @@ _cogl_matrix_rotate (CoglMatrix *matrix,
         {
           if (z != 0.0f)
             {
-              optimized = TRUE;
+              optimized = true;
               /* rotate only around z-axis */
               M (0,0) = c;
               M (1,1) = c;
@@ -1217,7 +1217,7 @@ _cogl_matrix_rotate (CoglMatrix *matrix,
         }
       else if (z == 0.0f)
         {
-          optimized = TRUE;
+          optimized = true;
           /* rotate only around y-axis */
           M (0,0) = c;
           M (2,2) = c;
@@ -1237,7 +1237,7 @@ _cogl_matrix_rotate (CoglMatrix *matrix,
     {
       if (z == 0.0f)
         {
-          optimized = TRUE;
+          optimized = true;
           /* rotate only around x-axis */
           M (1,1) = c;
           M (2,2) = c;
@@ -1657,21 +1657,21 @@ _cogl_matrix_has_rotation (const CoglMatrix *matrix)
                        MAT_FLAG_ROTATION |
                        MAT_FLAG_GENERAL_3D |
                        MAT_FLAG_PERSPECTIVE))
-    return TRUE;
+    return true;
   else
-    return FALSE;
+    return false;
 }
 
 static bool
 _cogl_matrix_is_general_scale (const CoglMatrix *matrix)
 {
-  return (matrix->flags & MAT_FLAG_GENERAL_SCALE) ? TRUE : FALSE;
+  return (matrix->flags & MAT_FLAG_GENERAL_SCALE) ? true : false;
 }
 
 static bool
 _cogl_matrix_is_dirty (const CoglMatrix *matrix)
 {
-  return (matrix->flags & MAT_DIRTY_ALL) ? TRUE : FALSE;
+  return (matrix->flags & MAT_DIRTY_ALL) ? true : false;
 }
 #endif
 
@@ -1906,8 +1906,8 @@ cogl_matrix_equal (const void *v1, const void *v2)
   const CoglMatrix *a = v1;
   const CoglMatrix *b = v2;
 
-  _COGL_RETURN_VAL_IF_FAIL (v1 != NULL, FALSE);
-  _COGL_RETURN_VAL_IF_FAIL (v2 != NULL, FALSE);
+  _COGL_RETURN_VAL_IF_FAIL (v1 != NULL, false);
+  _COGL_RETURN_VAL_IF_FAIL (v2 != NULL, false);
 
   /* We want to avoid having a fuzzy _equal() function (e.g. that uses
    * an arbitrary epsilon value) since this function noteably conforms
@@ -1940,9 +1940,9 @@ cogl_matrix_equal (const void *v1, const void *v2)
       a->wy == b->wy &&
       a->wz == b->wz &&
       a->ww == b->ww)
-    return TRUE;
+    return true;
   else
-    return FALSE;
+    return false;
 }
 
 CoglMatrix *
@@ -2184,7 +2184,7 @@ cogl_matrix_is_identity (const CoglMatrix *matrix)
 {
   if (!(matrix->flags & MAT_DIRTY_TYPE) &&
       matrix->type == COGL_MATRIX_TYPE_IDENTITY)
-    return TRUE;
+    return true;
   else
     return memcmp (matrix, identity, sizeof (float) * 16) == 0;
 }

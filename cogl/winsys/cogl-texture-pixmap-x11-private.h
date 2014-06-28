@@ -76,7 +76,7 @@ struct _CoglTexturePixmapX11
 
   void *winsys;
 
-  /* During the pre_paint method, this will be set to TRUE if we
+  /* During the pre_paint method, this will be set to true if we
      should use the winsys texture, otherwise we will use the regular
      texture */
   bool use_winsys_texture;

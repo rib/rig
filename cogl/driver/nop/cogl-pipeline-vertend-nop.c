@@ -52,14 +52,14 @@ _cogl_pipeline_vertend_nop_add_layer (CoglPipeline *pipeline,
                                       unsigned long layers_difference,
                                       CoglFramebuffer *framebuffer)
 {
-  return TRUE;
+  return true;
 }
 
 static bool
 _cogl_pipeline_vertend_nop_end (CoglPipeline *pipeline,
                                 unsigned long pipelines_difference)
 {
-  return TRUE;
+  return true;
 }
 
 const CoglPipelineVertend _cogl_pipeline_nop_vertend =

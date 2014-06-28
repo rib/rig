@@ -97,8 +97,8 @@ cogl_onscreen_template_set_swap_throttled (
  * @has_alpha: Whether an alpha channel is required
  *
  * Requests that any future #CoglOnscreen framebuffers derived from
- * this template should have an alpha channel if @has_alpha is %TRUE.
- * If @has_alpha is FALSE then future framebuffers derived from this
+ * this template should have an alpha channel if @has_alpha is %true.
+ * If @has_alpha is false then future framebuffers derived from this
  * template aren't required to have an alpha channel, although Cogl
  * may choose to ignore this and allocate a redundant alpha channel.
  *
@@ -117,8 +117,8 @@ cogl_onscreen_template_set_has_alpha (CoglOnscreenTemplate *onscreen_template,
  *
  * Gets whether the given object references a #CoglOnscreenTemplate.
  *
- * Return value: %TRUE if the object references a #CoglOnscreenTemplate
- *   and %FALSE otherwise.
+ * Return value: %true if the object references a #CoglOnscreenTemplate
+ *   and %false otherwise.
  * Since: 1.10
  * Stability: unstable
  */

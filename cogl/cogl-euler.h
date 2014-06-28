@@ -204,13 +204,13 @@ cogl_euler_init_from_quaternion (CoglEuler *euler,
  * @v2: The second euler angle to compare
  *
  * Compares the two given euler angles @v1 and @v1 and it they are
- * equal returns %TRUE else %FALSE.
+ * equal returns %true else %false.
  *
  * <note>This function only checks that all three components rotations
  * are numerically equal, it does not consider that some rotations
  * can be represented with different component rotations</note>
  *
- * Returns: %TRUE if @v1 and @v2 are equal else %FALSE.
+ * Returns: %true if @v1 and @v2 are equal else %false.
  * Since: 2.0
  */
 bool

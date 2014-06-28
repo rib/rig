@@ -98,8 +98,8 @@ cogl_path_copy (CoglPath *path);
  *
  * Gets whether the given object references an existing path object.
  *
- * Return value: %TRUE if the object references a #CoglPath,
- *   %FALSE otherwise.
+ * Return value: %true if the object references a #CoglPath,
+ *   %false otherwise.
  *
  * Since: 2.0
  */

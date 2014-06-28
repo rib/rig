@@ -129,7 +129,7 @@ atlas_reorganize_cb (CoglAtlas *atlas, void *user_data)
 {
   CoglPangoGlyphCache *cache = user_data;
 
-  g_hook_list_invoke (&cache->reorganize_callbacks, FALSE);
+  g_hook_list_invoke (&cache->reorganize_callbacks, false);
 }
 
 static void
@@ -162,7 +162,7 @@ allocate_glyph_cb (CoglAtlas *atlas,
   value->ty_pixel = allocation->y;
 
   /* The glyph has changed position so it will need to be redrawn */
-  value->dirty = TRUE;
+  value->dirty = true;
 }
 
 static void
@@ -224,8 +224,8 @@ cogl_pango_glyph_cache_new (CoglContext *ctx,
   cache->hash_table = g_hash_table_new_full
     (cogl_pango_glyph_cache_hash_func,
      cogl_pango_glyph_cache_equal_func,
-     (CDestroyNotify) cogl_pango_glyph_cache_key_free,
-     (CDestroyNotify) cogl_pango_glyph_cache_value_free);
+     (c_destroy_func_t) cogl_pango_glyph_cache_key_free,
+     (c_destroy_func_t) cogl_pango_glyph_cache_value_free);
 
   _cogl_list_init (&cache->atlas_closures);
 
@@ -234,8 +234,8 @@ cogl_pango_glyph_cache_new (CoglContext *ctx,
   cogl_atlas_set_set_components (cache->atlas_set,
                                  COGL_TEXTURE_COMPONENTS_A);
 
-  cogl_atlas_set_set_migration_enabled (cache->atlas_set, FALSE);
-  cogl_atlas_set_set_clear_enabled (cache->atlas_set, TRUE);
+  cogl_atlas_set_set_migration_enabled (cache->atlas_set, false);
+  cogl_atlas_set_set_clear_enabled (cache->atlas_set, true);
 
   /* We want to be notified when new atlases are added to our local
    * atlas set so they can be monitored for being re-arranged... */
@@ -258,7 +258,7 @@ cogl_pango_glyph_cache_new (CoglContext *ctx,
 
   g_hook_list_init (&cache->reorganize_callbacks, sizeof (GHook));
 
-  cache->has_dirty_glyphs = FALSE;
+  cache->has_dirty_glyphs = false;
 
   cache->use_mipmapping = use_mipmapping;
 
@@ -268,7 +268,7 @@ cogl_pango_glyph_cache_new (CoglContext *ctx,
 void
 cogl_pango_glyph_cache_clear (CoglPangoGlyphCache *cache)
 {
-  cache->has_dirty_glyphs = FALSE;
+  cache->has_dirty_glyphs = false;
 
   g_hash_table_remove_all (cache->hash_table);
 }
@@ -307,12 +307,12 @@ cogl_pango_glyph_cache_add_to_global_atlas (CoglPangoGlyphCache *cache,
   CoglError *ignore_error = NULL;
 
   if (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_SHARED_ATLAS))
-    return FALSE;
+    return false;
 
   /* If the cache is using mipmapping then we can't use the global
      atlas because it would just get migrated back out */
   if (cache->use_mipmapping)
-    return FALSE;
+    return false;
 
   texture = cogl_atlas_texture_new_with_size (cache->ctx,
                                               value->draw_width,
@@ -320,7 +320,7 @@ cogl_pango_glyph_cache_add_to_global_atlas (CoglPangoGlyphCache *cache,
   if (!cogl_texture_allocate (COGL_TEXTURE (texture), &ignore_error))
     {
       cogl_error_free (ignore_error);
-      return FALSE;
+      return false;
     }
 
   value->texture = COGL_TEXTURE (texture);
@@ -331,7 +331,7 @@ cogl_pango_glyph_cache_add_to_global_atlas (CoglPangoGlyphCache *cache,
   value->tx_pixel = 0;
   value->ty_pixel = 0;
 
-  return TRUE;
+  return true;
 }
 
 static bool
@@ -350,9 +350,9 @@ cogl_pango_glyph_cache_add_to_local_atlas (CoglPangoGlyphCache *cache,
                                          value->draw_height + 2,
                                          value);
   if (!atlas)
-    return FALSE;
+    return false;
 
-  return TRUE;
+  return true;
 }
 
 CoglPangoGlyphCacheValue *
@@ -388,7 +388,7 @@ cogl_pango_glyph_cache_lookup (CoglPangoGlyphCache *cache,
       /* If the glyph is zero-sized then we don't need to reserve any
          space for it and we can just avoid painting anything */
       if (ink_rect.width < 1 || ink_rect.height < 1)
-        value->dirty = FALSE;
+        value->dirty = false;
       else
         {
           /* Try adding the glyph to the global atlas set... */
@@ -406,8 +406,8 @@ cogl_pango_glyph_cache_lookup (CoglPangoGlyphCache *cache,
               return NULL;
             }
 
-          value->dirty = TRUE;
-          cache->has_dirty_glyphs = TRUE;
+          value->dirty = true;
+          cache->has_dirty_glyphs = true;
         }
 
       key = g_slice_new (CoglPangoGlyphCacheKey);
@@ -433,7 +433,7 @@ _cogl_pango_glyph_cache_set_dirty_glyphs_cb (void *key_ptr,
     {
       func (key->font, key->glyph, value);
 
-      value->dirty = FALSE;
+      value->dirty = false;
     }
 }
 
@@ -450,7 +450,7 @@ _cogl_pango_glyph_cache_set_dirty_glyphs (CoglPangoGlyphCache *cache,
                         _cogl_pango_glyph_cache_set_dirty_glyphs_cb,
                         func);
 
-  cache->has_dirty_glyphs = FALSE;
+  cache->has_dirty_glyphs = false;
 }
 
 void
@@ -470,7 +470,7 @@ _cogl_pango_glyph_cache_remove_reorganize_callback (CoglPangoGlyphCache *cache,
                                                     void *user_data)
 {
   GHook *hook = g_hook_find_func_data (&cache->reorganize_callbacks,
-                                       FALSE,
+                                       false,
                                        func,
                                        user_data);
 
