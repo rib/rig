@@ -35,24 +35,24 @@
 #include <sys/time.h>
 
 void
-c_get_current_time (CTimeVal *result)
+c_get_current_time(c_timeval_t *result)
 {
-	struct timeval tv;
+    struct timeval tv;
 
-	c_return_if_fail (result != NULL);
-	gettimeofday (&tv, NULL);
-	result->tv_sec = tv.tv_sec;
-	result->tv_usec = tv.tv_usec;
+    c_return_if_fail(result != NULL);
+    gettimeofday(&tv, NULL);
+    result->tv_sec = tv.tv_sec;
+    result->tv_usec = tv.tv_usec;
 }
 
 void
-c_usleep (unsigned long microseconds)
+c_usleep(unsigned long microseconds)
 {
-	struct timespec req, rem;
+    struct timespec req, rem;
 
-	req.tv_sec = microseconds / 1000000;
-	req.tv_nsec = (microseconds % 1000000) * 1000;
-	
-	while (nanosleep (&req, &rem) == -1 && errno == EINTR)
-		req = rem;
+    req.tv_sec = microseconds / 1000000;
+    req.tv_nsec = (microseconds % 1000000) * 1000;
+
+    while (nanosleep(&req, &rem) == -1 && errno == EINTR)
+        req = rem;
 }

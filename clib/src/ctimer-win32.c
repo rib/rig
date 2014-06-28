@@ -31,67 +31,65 @@
 #include <clib.h>
 #include <windows.h>
 
-struct _UTimer {
-	uint64_t start;
-	uint64_t stop;
+struct _c_timer_t {
+    uint64_t start;
+    uint64_t stop;
 };
 
-UTimer *c_timer_new (void)
+c_timer_t *
+c_timer_new(void)
 {
-	UTimer *timer;
+    c_timer_t *timer;
 
-	timer = c_new0 (UTimer, 1);
-	c_timer_start (timer);
-	return timer;
+    timer = c_new0(c_timer_t, 1);
+    c_timer_start(timer);
+    return timer;
 }
 
 void
-c_timer_destroy (UTimer *timer)
+c_timer_destroy(c_timer_t *timer)
 {
-	c_return_if_fail (timer != NULL);
-	c_free (timer);
+    c_return_if_fail(timer != NULL);
+    c_free(timer);
 }
 
 void
-c_timer_start (UTimer *timer)
+c_timer_start(c_timer_t *timer)
 {
-	c_return_if_fail (timer != NULL);
+    c_return_if_fail(timer != NULL);
 
-	QueryPerformanceCounter ((LARGE_INTEGER*)&timer->start);
+    QueryPerformanceCounter((LARGE_INTEGER *)&timer->start);
 }
 
 void
-c_timer_stop (UTimer *timer)
+c_timer_stop(c_timer_t *timer)
 {
-	c_return_if_fail (timer != NULL);
+    c_return_if_fail(timer != NULL);
 
-	QueryPerformanceCounter ((LARGE_INTEGER*)&timer->stop);
+    QueryPerformanceCounter((LARGE_INTEGER *)&timer->stop);
 }
 
 double
-c_timer_elapsed (UTimer *timer, unsigned long *microseconds)
+c_timer_elapsed(c_timer_t *timer, unsigned long *microseconds)
 {
-	static uint64_t freq = 0;
-	uint64_t delta, stop;
+    static uint64_t freq = 0;
+    uint64_t delta, stop;
 
-	if (freq == 0) {
-		if (!QueryPerformanceFrequency ((LARGE_INTEGER *)&freq))
-			freq = 1;
-	}
+    if (freq == 0) {
+        if (!QueryPerformanceFrequency((LARGE_INTEGER *)&freq))
+            freq = 1;
+    }
 
-	if (timer->stop == 0) {
-		QueryPerformanceCounter ((LARGE_INTEGER*)&stop);
-	}
-	else {
-		stop = timer->stop;
-	}
+    if (timer->stop == 0) {
+        QueryPerformanceCounter((LARGE_INTEGER *)&stop);
+    } else {
+        stop = timer->stop;
+    }
 
-	delta = stop - timer->start;
+    delta = stop - timer->start;
 
-	if (microseconds)
-		*microseconds = (unsigned long) (delta * (1000000.0 / freq));
+    if (microseconds)
+        *microseconds = (unsigned long)(delta * (1000000.0 / freq));
 
-	return (double) delta / (double) freq;
+    return (double)delta / (double)freq;
 }
-
-

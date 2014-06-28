@@ -32,96 +32,96 @@
 #include <string.h>
 #include <clib.h>
 
-UError *
-c_error_new (UQuark domain, int code, const char *format, ...)
+c_error_t *
+c_error_new(c_quark_t domain, int code, const char *format, ...)
 {
-	va_list args;
-	UError *err = c_new (UError, 1);
-	
-	err->domain = domain;
-	err->code = code;
+    va_list args;
+    c_error_t *err = c_new(c_error_t, 1);
 
-	va_start (args, format);
-	if (vasprintf (&err->message, format, args) == -1)
-		err->message = c_strdup_printf ("internal: invalid format string %s", format); 
-	va_end (args);
+    err->domain = domain;
+    err->code = code;
 
-	return err;
+    va_start(args, format);
+    if (vasprintf(&err->message, format, args) == -1)
+        err->message =
+            c_strdup_printf("internal: invalid format string %s", format);
+    va_end(args);
+
+    return err;
 }
 
-UError *
-c_error_new_valist (UQuark domain, int code, const char *format, va_list ap)
+c_error_t *
+c_error_new_valist(c_quark_t domain, int code, const char *format, va_list ap)
 {
-	UError *err = c_new (UError, 1);
-	
-	err->domain = domain;
-	err->code = code;
+    c_error_t *err = c_new(c_error_t, 1);
 
-        err->message = c_strdup_vprintf (format, ap);
+    err->domain = domain;
+    err->code = code;
 
-	return err;
-}
+    err->message = c_strdup_vprintf(format, ap);
 
-void
-c_clear_error (UError **error)
-{
-	if (error && *error) {
-		c_error_free (*error);
-		*error = NULL;
-	}
+    return err;
 }
 
 void
-c_error_free (UError *error)
+c_clear_error(c_error_t **error)
 {
-	c_return_if_fail (error != NULL);
-	
-	c_free (error->message);
-	c_free (error);
-}
-
-void
-c_set_error (UError **err, UQuark domain, int code, const char *format, ...)
-{
-	va_list args;
-
-	if (err) {
-		va_start (args, format);
-		*err = c_error_new_valist (domain, code, format, args);
-		va_end (args);
-	}
-}
-
-void
-c_propagate_error (UError **dest, UError *src)
-{
-	if (dest == NULL) {
-		if (src)
-			c_error_free (src);
-	} else {
-		*dest = src;
-	}
-}
-
-UError *
-c_error_copy (const UError *error)
-{
-	UError *copy = c_new (UError, 1);
-        copy->domain = error->domain;
-        copy->code = error->code;
-        copy->message = c_strdup (error->message);
-        return copy;
-}
-
-cboolean
-c_error_matches (const UError *error, UQuark domain, int code)
-{
-  if (error)
-    {
-      if (error->domain == domain && error->code == code)
-        return TRUE;
-      return FALSE;
+    if (error && *error) {
+        c_error_free(*error);
+        *error = NULL;
     }
-  else
-    return FALSE;
+}
+
+void
+c_error_free(c_error_t *error)
+{
+    c_return_if_fail(error != NULL);
+
+    c_free(error->message);
+    c_free(error);
+}
+
+void
+c_set_error(
+    c_error_t **err, c_quark_t domain, int code, const char *format, ...)
+{
+    va_list args;
+
+    if (err) {
+        va_start(args, format);
+        *err = c_error_new_valist(domain, code, format, args);
+        va_end(args);
+    }
+}
+
+void
+c_propagate_error(c_error_t **dest, c_error_t *src)
+{
+    if (dest == NULL) {
+        if (src)
+            c_error_free(src);
+    } else {
+        *dest = src;
+    }
+}
+
+c_error_t *
+c_error_copy(const c_error_t *error)
+{
+    c_error_t *copy = c_new(c_error_t, 1);
+    copy->domain = error->domain;
+    copy->code = error->code;
+    copy->message = c_strdup(error->message);
+    return copy;
+}
+
+bool
+c_error_matches(const c_error_t *error, c_quark_t domain, int code)
+{
+    if (error) {
+        if (error->domain == domain && error->code == code)
+            return true;
+        return false;
+    } else
+        return false;
 }

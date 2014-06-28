@@ -31,69 +31,68 @@
 #include <clib.h>
 #include <sys/time.h>
 
-struct _UTimer {
-	struct timeval start;
-	struct timeval stop;
+struct _c_timer_t {
+    struct timeval start;
+    struct timeval stop;
 };
 
-UTimer *c_timer_new (void)
+c_timer_t *
+c_timer_new(void)
 {
-	UTimer *timer;
+    c_timer_t *timer;
 
-	timer = c_new0 (UTimer, 1);
-	c_timer_start (timer);
-	return timer;
+    timer = c_new0(c_timer_t, 1);
+    c_timer_start(timer);
+    return timer;
 }
 
 void
-c_timer_destroy (UTimer *timer)
+c_timer_destroy(c_timer_t *timer)
 {
-	c_return_if_fail (timer != NULL);
-	c_free (timer);
+    c_return_if_fail(timer != NULL);
+    c_free(timer);
 }
 
 void
-c_timer_start (UTimer *timer)
+c_timer_start(c_timer_t *timer)
 {
-	c_return_if_fail (timer != NULL);
-	gettimeofday (&timer->start, NULL);
-	memset (&timer->stop, 0, sizeof (struct timeval));
+    c_return_if_fail(timer != NULL);
+    gettimeofday(&timer->start, NULL);
+    memset(&timer->stop, 0, sizeof(struct timeval));
 }
 
 void
-c_timer_stop (UTimer *timer)
+c_timer_stop(c_timer_t *timer)
 {
-	c_return_if_fail (timer != NULL);
-	gettimeofday (&timer->stop, NULL);
+    c_return_if_fail(timer != NULL);
+    gettimeofday(&timer->stop, NULL);
 }
 
 double
-c_timer_elapsed (UTimer *timer, unsigned long *microseconds)
+c_timer_elapsed(c_timer_t *timer, unsigned long *microseconds)
 {
-	struct timeval tv;
-	unsigned long seconds;
-	long usec;
-	double result;
+    struct timeval tv;
+    unsigned long seconds;
+    long usec;
+    double result;
 
-	c_return_val_if_fail (timer != NULL, 0.0);
+    c_return_val_if_fail(timer != NULL, 0.0);
 
-	if (timer->stop.tv_sec == 0 && timer->stop.tv_usec == 0) {
-		gettimeofday (&tv, NULL);
-	} else {
-		tv = timer->stop;
-	}
+    if (timer->stop.tv_sec == 0 && timer->stop.tv_usec == 0) {
+        gettimeofday(&tv, NULL);
+    } else {
+        tv = timer->stop;
+    }
 
-	usec = (tv.tv_usec) - (timer->start.tv_usec);
-	seconds = tv.tv_sec - timer->start.tv_sec;
-	if (microseconds) {
-		if (usec < 0) {
-			usec += 1000000;
-			seconds--;
-		}
-		*microseconds = usec;
-	}
-	result = seconds * 1000000 + usec;
-	return (result / 1000000);
+    usec = (tv.tv_usec) - (timer->start.tv_usec);
+    seconds = tv.tv_sec - timer->start.tv_sec;
+    if (microseconds) {
+        if (usec < 0) {
+            usec += 1000000;
+            seconds--;
+        }
+        *microseconds = usec;
+    }
+    result = seconds * 1000000 + usec;
+    return (result / 1000000);
 }
-
-

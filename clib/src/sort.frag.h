@@ -11,10 +11,10 @@
  * distribute, sublicense, and/or sell copies of the Software, and to
  * permit persons to whom the Software is furnished to do so, subject to
  * the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -42,58 +42,62 @@ typedef list_node *digit;
  *   = ceiling (log2 (maximum number of list nodes))
  *   = ceiling (log2 (maximum possible memory size/size of each list node))
  *   = number of bits in 'size_t' - floor (log2 (sizeof digit))
- * Also, each list in sort_info is at least 2 nodes long: we can reduce the depth by 1
+ * Also, each list in sort_info is at least 2 nodes long: we can reduce the
+ * depth by 1
  */
-#define FLOOR_LOG2(x) (((x)>=2) + ((x)>=4) + ((x)>=8) + ((x)>=16) + ((x)>=32) + ((x)>=64) + ((x)>=128))
-#define MAX_RANKS ((sizeof (size_t) * 8) - FLOOR_LOG2(sizeof (list_node)) - 1)
+#define FLOOR_LOG2(x)                                                          \
+    (((x) >= 2) + ((x) >= 4) + ((x) >= 8) + ((x) >= 16) + ((x) >= 32) +        \
+     ((x) >= 64) + ((x) >= 128))
+#define MAX_RANKS ((sizeof(size_t) * 8) - FLOOR_LOG2(sizeof(list_node)) - 1)
 
-struct sort_info
-{
-	int min_rank, n_ranks;
-	CCompareFunc func;
+struct sort_info {
+    int min_rank, n_ranks;
+    c_compare_func_t func;
 
-	/* Invariant: ranks[i] == NULL || length(ranks[i]) >= 2**(i+1) */
-	list_node *ranks [MAX_RANKS]; /* ~ 128 bytes on 32bit, ~ 512 bytes on 64bit */
+    /* Invariant: ranks[i] == NULL || length(ranks[i]) >= 2**(i+1) */
+    list_node *ranks[MAX_RANKS]; /* ~ 128 bytes on 32bit, ~ 512 bytes on 64bit
+                                  */
 };
 
 static inline void
-init_sort_info (struct sort_info *si, CCompareFunc func)
+init_sort_info(struct sort_info *si, c_compare_func_t func)
 {
-	si->min_rank = si->n_ranks = 0;
-	si->func = func;
-	/* we don't need to initialize si->ranks, since we never lookup past si->n_ranks.  */
+    si->min_rank = si->n_ranks = 0;
+    si->func = func;
+    /* we don't need to initialize si->ranks, since we never lookup past
+     * si->n_ranks.  */
 }
 
 static inline list_node *
-merge_lists (list_node *first, list_node *second, CCompareFunc func)
+merge_lists(list_node *first, list_node *second, c_compare_func_t func)
 {
-	/* merge the two lists */
-	list_node *list = NULL;
-	list_node **pos = &list;
-	while (first && second) {
-		if (func (first->data, second->data) > 0) {
-			*pos = second;
-			second = second->next;
-		} else {
-			*pos = first;
-			first = first->next;
-		}
-		pos = &((*pos)->next);
-	}
-	*pos = first ? first : second;
-	return list;
+    /* merge the two lists */
+    list_node *list = NULL;
+    list_node **pos = &list;
+    while (first && second) {
+        if (func(first->data, second->data) > 0) {
+            *pos = second;
+            second = second->next;
+        } else {
+            *pos = first;
+            first = first->next;
+        }
+        pos = &((*pos)->next);
+    }
+    *pos = first ? first : second;
+    return list;
 }
 
 /* Pre-condition: upto <= si->n_ranks, list == NULL || length(list) == 1 */
 static inline list_node *
-sweep_up (struct sort_info *si, list_node *list, int upto)
+sweep_up(struct sort_info *si, list_node *list, int upto)
 {
-	int i;
-	for (i = si->min_rank; i < upto; ++i) {
-		list = merge_lists (si->ranks [i], list, si->func);
-		si->ranks [i] = NULL;
-	}
-	return list;
+    int i;
+    for (i = si->min_rank; i < upto; ++i) {
+        list = merge_lists(si->ranks[i], list, si->func);
+        si->ranks[i] = NULL;
+    }
+    return list;
 }
 
 /*
@@ -120,35 +124,38 @@ sweep_up (struct sort_info *si, list_node *list, int upto)
 #define stringify2(x) #x
 #define stringify(x) stringify2(x)
 
-/* Pre-condition: 2**(rank+1) <= length(list) < 2**(rank+2) (therefore: length(list) >= 2) */
+/* Pre-condition: 2**(rank+1) <= length(list) < 2**(rank+2) (therefore:
+ * length(list) >= 2) */
 static inline void
-insert_list (struct sort_info *si, list_node* list, int rank)
+insert_list(struct sort_info *si, list_node *list, int rank)
 {
-	int i;
+    int i;
 
-	if (rank > si->n_ranks) {
-		if (rank > MAX_RANKS) {
-			c_warning ("Rank '%d' should not exceed " stringify (MAX_RANKS), rank);
-			rank = MAX_RANKS;
-		}
-		list = merge_lists (sweep_up (si, NULL, si->n_ranks), list, si->func);
-		for (i = si->n_ranks; i < rank; ++i)
-			si->ranks [i] = NULL;
-	} else {
-		if (rank)
-			list = merge_lists (sweep_up (si, NULL, rank), list, si->func);
-		for (i = rank; i < si->n_ranks && si->ranks [i]; ++i) {
-			list = merge_lists (si->ranks [i], list, si->func);
-			si->ranks [i] = NULL;
-		}
-	}
+    if (rank > si->n_ranks) {
+        if (rank > MAX_RANKS) {
+            c_warning("Rank '%d' should not exceed " stringify(MAX_RANKS),
+                      rank);
+            rank = MAX_RANKS;
+        }
+        list = merge_lists(sweep_up(si, NULL, si->n_ranks), list, si->func);
+        for (i = si->n_ranks; i < rank; ++i)
+            si->ranks[i] = NULL;
+    } else {
+        if (rank)
+            list = merge_lists(sweep_up(si, NULL, rank), list, si->func);
+        for (i = rank; i < si->n_ranks && si->ranks[i]; ++i) {
+            list = merge_lists(si->ranks[i], list, si->func);
+            si->ranks[i] = NULL;
+        }
+    }
 
-	if (i == MAX_RANKS) /* Will _never_ happen: so we can just devolve into quadratic ;-) */
-		--i;
-	if (i >= si->n_ranks)
-		si->n_ranks = i + 1;
-	si->min_rank = i;
-	si->ranks [i] = list;
+    if (i == MAX_RANKS) /* Will _never_ happen: so we can just devolve into
+                           quadratic ;-) */
+        --i;
+    if (i >= si->n_ranks)
+        si->n_ranks = i + 1;
+    si->min_rank = i;
+    si->ranks[i] = list;
 }
 
 #undef stringify2
@@ -158,27 +165,27 @@ insert_list (struct sort_info *si, list_node* list, int rank)
 
 /* A non-recursive mergesort */
 static inline digit
-do_sort (list_node* list, CCompareFunc func)
+do_sort(list_node *list, c_compare_func_t func)
 {
-	struct sort_info si;
+    struct sort_info si;
 
-	init_sort_info (&si, func);
+    init_sort_info(&si, func);
 
-	while (list && list->next) {
-		list_node* next = list->next;
-		list_node* tail = next->next;
+    while (list && list->next) {
+        list_node *next = list->next;
+        list_node *tail = next->next;
 
-		if (func (list->data, next->data) > 0) {
-			next->next = list;
-			next = list;
-			list = list->next;
-		}
-		next->next = NULL;
+        if (func(list->data, next->data) > 0) {
+            next->next = list;
+            next = list;
+            list = list->next;
+        }
+        next->next = NULL;
 
-		insert_list (&si, list, 0);
+        insert_list(&si, list, 0);
 
-		list = tail;
-	}
+        list = tail;
+    }
 
-	return sweep_up (&si, list, si.n_ranks);
+    return sweep_up(&si, list, si.n_ranks);
 }

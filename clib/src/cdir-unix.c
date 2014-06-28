@@ -37,115 +37,115 @@
 #include <unistd.h>
 #include <dirent.h>
 
-struct _UDir {
-	DIR *dir;
+struct _c_dir_t {
+    DIR *dir;
 #ifndef HAVE_REWINDDIR
-	char *path;
+    char *path;
 #endif
 };
 
-UDir *
-c_dir_open (const char *path, unsigned int flags, UError **error)
+c_dir_t *
+c_dir_open(const char *path, unsigned int flags, c_error_t **error)
 {
-	UDir *dir;
+    c_dir_t *dir;
 
-	c_return_val_if_fail (path != NULL, NULL);
-	c_return_val_if_fail (error == NULL || *error == NULL, NULL);
+    c_return_val_if_fail(path != NULL, NULL);
+    c_return_val_if_fail(error == NULL || *error == NULL, NULL);
 
-	(void) flags; /* this is not used */
-	dir = c_new (UDir, 1);
-	dir->dir = opendir (path);
-	if (dir->dir == NULL) {
-		if (error) {
-			int err = errno;
-			*error = c_error_new (C_FILE_ERROR,
-                                              c_file_error_from_errno (err),
-                                              c_strerror (err));
-		}
-		c_free (dir);
-		return NULL;
-	}
+    (void)flags; /* this is not used */
+    dir = c_new(c_dir_t, 1);
+    dir->dir = opendir(path);
+    if (dir->dir == NULL) {
+        if (error) {
+            int err = errno;
+            *error = c_error_new(
+                C_FILE_ERROR, c_file_error_from_errno(err), c_strerror(err));
+        }
+        c_free(dir);
+        return NULL;
+    }
 #ifndef HAVE_REWINDDIR
-	dir->path = c_strdup (path);
+    dir->path = c_strdup(path);
 #endif
-	return dir;
+    return dir;
 }
 
 const char *
-c_dir_read_name (UDir *dir)
+c_dir_read_name(c_dir_t *dir)
 {
-	struct dirent *entry;
+    struct dirent *entry;
 
-	c_return_val_if_fail (dir != NULL && dir->dir != NULL, NULL);
-	do {
-		entry = readdir (dir->dir);
-		if (entry == NULL)
-			return NULL;
-	} while ((strcmp (entry->d_name, ".") == 0) || (strcmp (entry->d_name, "..") == 0));
+    c_return_val_if_fail(dir != NULL && dir->dir != NULL, NULL);
+    do {
+        entry = readdir(dir->dir);
+        if (entry == NULL)
+            return NULL;
+    } while ((strcmp(entry->d_name, ".") == 0) ||
+             (strcmp(entry->d_name, "..") == 0));
 
-	return entry->d_name;
+    return entry->d_name;
 }
 
 void
-c_dir_rewind (UDir *dir)
+c_dir_rewind(c_dir_t *dir)
 {
-	c_return_if_fail (dir != NULL && dir->dir != NULL);
+    c_return_if_fail(dir != NULL && dir->dir != NULL);
 #ifndef HAVE_REWINDDIR
-	closedir (dir->dir);
-	dir->dir = opendir (dir->path);
+    closedir(dir->dir);
+    dir->dir = opendir(dir->path);
 #else
-	rewinddir (dir->dir);
+    rewinddir(dir->dir);
 #endif
 }
 
 void
-c_dir_close (UDir *dir)
+c_dir_close(c_dir_t *dir)
 {
-	c_return_if_fail (dir != NULL && dir->dir != 0);
-	closedir (dir->dir);
+    c_return_if_fail(dir != NULL && dir->dir != 0);
+    closedir(dir->dir);
 #ifndef HAVE_REWINDDIR
-	c_free (dir->path);
+    c_free(dir->path);
 #endif
-	dir->dir = NULL;
-	c_free (dir);
+    dir->dir = NULL;
+    c_free(dir);
 }
 
 int
-c_mkdir_with_parents (const char *pathname, int mode)
+c_mkdir_with_parents(const char *pathname, int mode)
 {
-	char *path, *d;
-	int rv;
-	
-	if (!pathname || *pathname == '\0') {
-		errno = EINVAL;
-		return -1;
-	}
-	
-	d = path = c_strdup (pathname);
-	if (*d == '/')
-		d++;
-	
-	while (TRUE) {
-		if (*d == '/' || *d == '\0') {
-		  char orig = *d;
-		  *d = '\0';
-		  rv = mkdir (path, mode);
-		  if (rv == -1 && errno != EEXIST) {
-		  	c_free (path);
-			return -1;
-		  }
+    char *path, *d;
+    int rv;
 
-		  *d++ = orig;
-		  while (orig == '/' && *d == '/')
-		  	d++;
-		  if (orig == '\0')
-		  	break;
-		} else {
-			d++;
-		}
-	}
-	
-	c_free (path);
-	
-	return 0;
+    if (!pathname || *pathname == '\0') {
+        errno = EINVAL;
+        return -1;
+    }
+
+    d = path = c_strdup(pathname);
+    if (*d == '/')
+        d++;
+
+    while (true) {
+        if (*d == '/' || *d == '\0') {
+            char orig = *d;
+            *d = '\0';
+            rv = mkdir(path, mode);
+            if (rv == -1 && errno != EEXIST) {
+                c_free(path);
+                return -1;
+            }
+
+            *d++ = orig;
+            while (orig == '/' && *d == '/')
+                d++;
+            if (orig == '\0')
+                break;
+        } else {
+            d++;
+        }
+    }
+
+    c_free(path);
+
+    return 0;
 }

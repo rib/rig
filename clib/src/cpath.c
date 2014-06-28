@@ -31,7 +31,7 @@
 #include <errno.h>
 
 #ifdef C_OS_WIN32
-#include <direct.h> 
+#include <direct.h>
 #endif
 
 #ifdef HAVE_UNISTD_H
@@ -39,124 +39,124 @@
 #endif
 
 char *
-c_build_path (const char *separator, const char *first_element, ...)
+c_build_path(const char *separator, const char *first_element, ...)
 {
-	const char *elem, *next, *endptr;
-	cboolean trimmed;
-	CString *path;
-	va_list args;
-	size_t slen;
-	
-	c_return_val_if_fail (separator != NULL, NULL);
-	
-	path = c_string_sized_new (48);
-	slen = strlen (separator);
-	
-	va_start (args, first_element);
-	for (elem = first_element; elem != NULL; elem = next) {
-		/* trim any trailing separators from @elem */
-		endptr = elem + strlen (elem);
-		trimmed = FALSE;
-		
-		while (endptr >= elem + slen) {
-			if (strncmp (endptr - slen, separator, slen) != 0)
-				break;
-			
-			endptr -= slen;
-			trimmed = TRUE;
-		}
-		
-		/* append elem, not including any trailing separators */
-		if (endptr > elem)
-			c_string_append_len (path, elem, endptr - elem);
-		
-		/* get the next element */
-		do {
-			if (!(next = va_arg (args, char *)))
-				break;
-			
-			/* remove leading separators */
-			while (!strncmp (next, separator, slen))
-				next += slen;
-		} while (*next == '\0');
-		
-		if (next || trimmed)
-			c_string_append_len (path, separator, slen);
-	}
-	va_end (args);
-	
-	return c_string_free (path, FALSE);
+    const char *elem, *next, *endptr;
+    bool trimmed;
+    c_string_t *path;
+    va_list args;
+    size_t slen;
+
+    c_return_val_if_fail(separator != NULL, NULL);
+
+    path = c_string_sized_new(48);
+    slen = strlen(separator);
+
+    va_start(args, first_element);
+    for (elem = first_element; elem != NULL; elem = next) {
+        /* trim any trailing separators from @elem */
+        endptr = elem + strlen(elem);
+        trimmed = false;
+
+        while (endptr >= elem + slen) {
+            if (strncmp(endptr - slen, separator, slen) != 0)
+                break;
+
+            endptr -= slen;
+            trimmed = true;
+        }
+
+        /* append elem, not including any trailing separators */
+        if (endptr > elem)
+            c_string_append_len(path, elem, endptr - elem);
+
+        /* get the next element */
+        do {
+            if (!(next = va_arg(args, char *)))
+                break;
+
+            /* remove leading separators */
+            while (!strncmp(next, separator, slen))
+                next += slen;
+        } while (*next == '\0');
+
+        if (next || trimmed)
+            c_string_append_len(path, separator, slen);
+    }
+    va_end(args);
+
+    return c_string_free(path, false);
 }
 
-static char*
-strrchr_seperator (const char* filename)
+static char *
+strrchr_seperator(const char *filename)
 {
 #ifdef C_OS_WIN32
-	char *p2;
+    char *p2;
 #endif
-	char *p;
+    char *p;
 
-	p = strrchr (filename, C_DIR_SEPARATOR);
+    p = strrchr(filename, C_DIR_SEPARATOR);
 #ifdef C_OS_WIN32
-	p2 = strrchr (filename, '/');
-	if (p2 > p)
-		p = p2;
+    p2 = strrchr(filename, '/');
+    if (p2 > p)
+        p = p2;
 #endif
 
-	return p;
+    return p;
 }
 
 char *
-c_path_get_dirname (const char *filename)
+c_path_get_dirname(const char *filename)
 {
-	char *p, *r;
-	size_t count;
-	c_return_val_if_fail (filename != NULL, NULL);
+    char *p, *r;
+    size_t count;
+    c_return_val_if_fail(filename != NULL, NULL);
 
-	p = strrchr_seperator (filename);
-	if (p == NULL)
-		return c_strdup (".");
-	if (p == filename)
-		return c_strdup ("/");
-	count = p - filename;
-	r = c_malloc (count + 1);
-	strncpy (r, filename, count);
-	r [count] = 0;
+    p = strrchr_seperator(filename);
+    if (p == NULL)
+        return c_strdup(".");
+    if (p == filename)
+        return c_strdup("/");
+    count = p - filename;
+    r = c_malloc(count + 1);
+    strncpy(r, filename, count);
+    r[count] = 0;
 
-	return r;
+    return r;
 }
 
 char *
-c_path_get_basename (const char *filename)
+c_path_get_basename(const char *filename)
 {
-	char *r;
-	c_return_val_if_fail (filename != NULL, NULL);
+    char *r;
+    c_return_val_if_fail(filename != NULL, NULL);
 
-	/* Empty filename -> . */
-	if (!*filename)
-		return c_strdup (".");
+    /* Empty filename -> . */
+    if (!*filename)
+        return c_strdup(".");
 
-	/* No separator -> filename */
-	r = strrchr_seperator (filename);
-	if (r == NULL)
-		return c_strdup (filename);
+    /* No separator -> filename */
+    r = strrchr_seperator(filename);
+    if (r == NULL)
+        return c_strdup(filename);
 
-	/* Trailing slash, remove component */
-	if (r [1] == 0){
-		char *copy = c_strdup (filename);
-		copy [r-filename] = 0;
-		r = strrchr_seperator (copy);
+    /* Trailing slash, remove component */
+    if (r[1] == 0) {
+        char *copy = c_strdup(filename);
+        copy[r - filename] = 0;
+        r = strrchr_seperator(copy);
 
-		if (r == NULL){
-			c_free (copy);			
-			return c_strdup ("/");
-		}
-		r = c_strdup (&r[1]);
-		c_free (copy);
-		return r;
-	}
+        if (r == NULL) {
+            c_free(copy);
+            return c_strdup("/");
+        }
+        r = c_strdup(&r[1]);
+        c_free(copy);
+        return r;
+    }
 
-	return c_strdup (&r[1]);
+    return c_strdup(&r[1]);
 }
 
 #ifndef HAVE_STRTOK_R
@@ -165,132 +165,136 @@ c_path_get_basename (const char *filename)
 char *
 strtok_r(char *s, const char *delim, char **last)
 {
-	char *spanp;
-	int c, sc;
-	char *tok;
-	
-	if (s == NULL && (s = *last) == NULL)
-		return NULL;
-	
-	/*
-	 * Skip (span) leading delimiters (s += strspn(s, delim), sort of).
-	 */
+    char *spanp;
+    int c, sc;
+    char *tok;
+
+    if (s == NULL && (s = *last) == NULL)
+        return NULL;
+
+/*
+ * Skip (span) leading delimiters (s += strspn(s, delim), sort of).
+ */
 cont:
-	c = *s++;
-	for (spanp = (char *)delim; (sc = *spanp++) != 0; ){
-		if (c == sc)
-			goto cont;
-	}
+    c = *s++;
+    for (spanp = (char *)delim; (sc = *spanp++) != 0; ) {
+        if (c == sc)
+            goto cont;
+    }
 
-	if (c == 0){         /* no non-delimiter characters */
-		*last = NULL;
-		return NULL;
-	}
-	tok = s - 1;
+    if (c == 0) { /* no non-delimiter characters */
+        *last = NULL;
+        return NULL;
+    }
+    tok = s - 1;
 
-	/*
-	 * Scan token (scan for delimiters: s += strcspn(s, delim), sort of).
-	 * Note that delim must have one NUL; we stop if we see that, too.
-	 */
-	for (;;){
-		c = *s++;
-		spanp = (char *)delim;
-		do {
-			if ((sc = *spanp++) == c) {
-				if (c == 0)
-					s = NULL;
-				else {
-					char *w = s - 1;
-					*w = '\0';
-				}
-				*last = s;
-				return tok;
-			}
-		}
-		while (sc != 0);
-	}
-	/* NOTREACHED */
+    /*
+     * Scan token (scan for delimiters: s += strcspn(s, delim), sort of).
+     * Note that delim must have one NUL; we stop if we see that, too.
+     */
+    for (;; ) {
+        c = *s++;
+        spanp = (char *)delim;
+        do {
+            if ((sc = *spanp++) == c) {
+                if (c == 0)
+                    s = NULL;
+                else {
+                    char *w = s - 1;
+                    *w = '\0';
+                }
+                *last = s;
+                return tok;
+            }
+        } while (sc != 0);
+    }
+    /* NOTREACHED */
 }
 #endif
 
 char *
-c_find_program_in_path (const char *program)
+c_find_program_in_path(const char *program)
 {
-	char *p;
-	char *x, *l;
-	char *curdir = NULL;
-	char *save = NULL;
+    char *p;
+    char *x, *l;
+    char *curdir = NULL;
+    char *save = NULL;
 #ifdef C_OS_WIN32
-	char *program_exe;
-	char *suffix_list[5] = {".exe",".cmd",".bat",".com",NULL};
-	int listx;
-	cboolean hasSuffix;
+    char *program_exe;
+    char *suffix_list[5] = { ".exe", ".cmd", ".bat", ".com", NULL };
+    int listx;
+    bool hasSuffix;
 #endif
 
-	c_return_val_if_fail (program != NULL, NULL);
-	x = p = c_strdup (c_getenv ("PATH"));
+    c_return_val_if_fail(program != NULL, NULL);
+    x = p = c_strdup(c_getenv("PATH"));
 
-	if (x == NULL || *x == '\0') {
-		curdir = c_get_current_dir ();
-		x = curdir;
-	}
-
-#ifdef C_OS_WIN32
-	/* see if program already has a suffix */
-	listx = 0;
-	hasSuffix = FALSE;
-	while (!hasSuffix && suffix_list[listx]) {
-		hasSuffix = c_str_has_suffix(program,suffix_list[listx++]);
-	}
-#endif
-
-	while ((l = strtok_r (x, C_SEARCHPATH_SEPARATOR_S, &save)) != NULL){
-		char *probe_path; 
-		
-		x = NULL;
-		probe_path = c_build_path (C_DIR_SEPARATOR_S, l, program, NULL);
-		if (access (probe_path, X_OK) == 0){ /* FIXME: on windows this is just a read permissions test */
-			c_free (curdir);
-			c_free (p);
-			return probe_path;
-		}
-		c_free (probe_path);
+    if (x == NULL || *x == '\0') {
+        curdir = c_get_current_dir();
+        x = curdir;
+    }
 
 #ifdef C_OS_WIN32
-		/* check for program with a suffix attached */
-		if (!hasSuffix) {
-			listx = 0;
-			while (suffix_list[listx]) {
-				program_exe = c_strjoin(NULL,program,suffix_list[listx],NULL);
-				probe_path = c_build_path (C_DIR_SEPARATOR_S, l, program_exe, NULL);
-				if (access (probe_path, X_OK) == 0){ /* FIXME: on windows this is just a read permissions test */
-					c_free (curdir);
-					c_free (p);
-					c_free (program_exe);
-					return probe_path;
-				}
-				listx++;
-				c_free (probe_path);
-				c_free (program_exe);
-			}
-		}
+    /* see if program already has a suffix */
+    listx = 0;
+    hasSuffix = false;
+    while (!hasSuffix && suffix_list[listx]) {
+        hasSuffix = c_str_has_suffix(program, suffix_list[listx++]);
+    }
 #endif
-	}
-	c_free (curdir);
-	c_free (p);
-	return NULL;
+
+    while ((l = strtok_r(x, C_SEARCHPATH_SEPARATOR_S, &save)) != NULL) {
+        char *probe_path;
+
+        x = NULL;
+        probe_path = c_build_path(C_DIR_SEPARATOR_S, l, program, NULL);
+        if (access(probe_path, X_OK) ==
+            0) { /* FIXME: on windows this is just a read permissions test */
+            c_free(curdir);
+            c_free(p);
+            return probe_path;
+        }
+        c_free(probe_path);
+
+#ifdef C_OS_WIN32
+        /* check for program with a suffix attached */
+        if (!hasSuffix) {
+            listx = 0;
+            while (suffix_list[listx]) {
+                program_exe =
+                    c_strjoin(NULL, program, suffix_list[listx], NULL);
+                probe_path =
+                    c_build_path(C_DIR_SEPARATOR_S, l, program_exe, NULL);
+                if (access(probe_path, X_OK) == 0) { /* FIXME: on windows this
+                                                        is just a read
+                                                        permissions test */
+                    c_free(curdir);
+                    c_free(p);
+                    c_free(program_exe);
+                    return probe_path;
+                }
+                listx++;
+                c_free(probe_path);
+                c_free(program_exe);
+            }
+        }
+#endif
+    }
+    c_free(curdir);
+    c_free(p);
+    return NULL;
 }
 
 static char *name;
 
 void
-c_set_prgname (const char *prgname)
+c_set_prgname(const char *prgname)
 {
-	name = c_strdup (prgname);
+    name = c_strdup(prgname);
 }
 
 char *
-c_get_prgname (void)
+c_get_prgname(void)
 {
-	return name;
+    return name;
 }

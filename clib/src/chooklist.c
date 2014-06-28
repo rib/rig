@@ -31,94 +31,84 @@
 #include <clib.h>
 
 void
-c_hook_list_init (CHookList *hook_list,
-                  unsigned int hook_size)
+c_hook_list_init(c_hook_list_t *hook_list, unsigned int hook_size)
 {
-  hook_list->hooks = NULL;
+    hook_list->hooks = NULL;
 }
 
 void
-c_hook_list_invoke (CHookList *hook_list,
-                    cboolean may_recurse)
+c_hook_list_invoke(c_hook_list_t *hook_list, bool may_recurse)
 {
-  CHook *h;
+    c_hook_t *h;
 
-  if (may_recurse)
-    {
-      for (h = hook_list->hooks; h; h = h->next)
-        {
-          CHookFunc func = h->func;
-          func (h->data);
+    if (may_recurse) {
+        for (h = hook_list->hooks; h; h = h->next) {
+            c_hook_func_t func = h->func;
+            func(h->data);
         }
-    }
-  else
-    {
-      for (h = hook_list->hooks; h && !h->in_call; h = h->next)
-        {
-          CHookFunc func = h->func;
-          h->in_call = TRUE;
-          func (h->data);
-          h->in_call = FALSE;
+    } else {
+        for (h = hook_list->hooks; h && !h->in_call; h = h->next) {
+            c_hook_func_t func = h->func;
+            h->in_call = true;
+            func(h->data);
+            h->in_call = false;
         }
     }
 }
 
 void
-c_hook_list_clear (CHookList *hook_list)
+c_hook_list_clear(c_hook_list_t *hook_list)
 {
-  while (hook_list->hooks)
-    c_hook_destroy_link (hook_list, hook_list->hooks);
+    while (hook_list->hooks)
+        c_hook_destroy_link(hook_list, hook_list->hooks);
 }
 
-CHook *
-c_hook_alloc (CHookList *hook_list)
+c_hook_t *
+c_hook_alloc(c_hook_list_t *hook_list)
 {
-  return c_new (CHook, 1);
+    return c_new(c_hook_t, 1);
 }
 
-CHook *
-c_hook_find_func_data (CHookList *hook_list,
-                       cboolean need_valids,
-                       void * func,
-                       void * data)
+c_hook_t *
+c_hook_find_func_data(c_hook_list_t *hook_list,
+                      bool need_valids,
+                      void *func,
+                      void *data)
 {
-  CHook *h;
+    c_hook_t *h;
 
-  for (h = hook_list->hooks; h; h = h->next)
-    {
-      if (h->func == func && h->data == data)
-        return h;
+    for (h = hook_list->hooks; h; h = h->next) {
+        if (h->func == func && h->data == data)
+            return h;
     }
 
-  return NULL;
+    return NULL;
 }
 
 void
-c_hook_destroy_link (CHookList *hook_list,
-                     CHook *hook)
+c_hook_destroy_link(c_hook_list_t *hook_list, c_hook_t *hook)
 {
-  if (hook_list->hooks == hook)
-    hook_list->hooks = hook->next;
+    if (hook_list->hooks == hook)
+        hook_list->hooks = hook->next;
 
-  if (hook->next)
-    hook->next->prev = hook->prev;
-  if (hook->prev)
-    hook->prev->next = hook->next;
+    if (hook->next)
+        hook->next->prev = hook->prev;
+    if (hook->prev)
+        hook->prev->next = hook->next;
 
-  c_free (hook);
+    c_free(hook);
 }
 
 void
-c_hook_prepend (CHookList *hook_list,
-                CHook *hook)
+c_hook_prepend(c_hook_list_t *hook_list, c_hook_t *hook)
 {
-  CHook *prev = hook_list->hooks ? hook_list->hooks->prev : NULL;
-  CHook *next = hook_list->hooks;
+    c_hook_t *prev = hook_list->hooks ? hook_list->hooks->prev : NULL;
+    c_hook_t *next = hook_list->hooks;
 
-  hook->prev = prev;
-  hook->next = next;
-  if (prev)
-    prev->next = hook;
-  if (next)
-    next->prev = hook;
+    hook->prev = prev;
+    hook->next = next;
+    if (prev)
+        prev->next = hook;
+    if (next)
+        next->prev = hook;
 }

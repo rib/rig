@@ -32,262 +32,266 @@
 #include <stdio.h>
 #include <clib.h>
 
-#define UROW_IF_NECESSARY(s,l) { \
-	if(s->len + l >= s->allocated_len) { \
-		s->allocated_len = (s->allocated_len + l + 16) * 2; \
-		s->str = c_realloc(s->str, s->allocated_len); \
-	} \
+#define UROW_IF_NECESSARY(s, l)                                                \
+    {                                                                          \
+        if (s->len + l >= s->allocated_len) {                                  \
+            s->allocated_len = (s->allocated_len + l + 16) * 2;                \
+            s->str = c_realloc(s->str, s->allocated_len);                      \
+        }                                                                      \
+    }
+
+c_string_t *
+c_string_new_len(const char *init, c_ssize_t len)
+{
+    c_string_t *ret = c_new(c_string_t, 1);
+
+    if (init == NULL)
+        ret->len = 0;
+    else
+        ret->len = len < 0 ? strlen(init) : len;
+    ret->allocated_len = MAX(ret->len + 1, 16);
+    ret->str = c_malloc(ret->allocated_len);
+    if (init)
+        memcpy(ret->str, init, ret->len);
+    ret->str[ret->len] = 0;
+
+    return ret;
 }
 
-CString *
-c_string_new_len (const char *init, ussize len)
+c_string_t *
+c_string_new(const char *init)
 {
-	CString *ret = c_new (CString, 1);
-
-	if (init == NULL)
-		ret->len = 0;
-	else
-		ret->len = len < 0 ? strlen(init) : len;
-	ret->allocated_len = MAX(ret->len + 1, 16);
-	ret->str = c_malloc(ret->allocated_len);
-	if (init)
-		memcpy(ret->str, init, ret->len);
-	ret->str[ret->len] = 0;
-
-	return ret;
+    return c_string_new_len(init, -1);
 }
 
-CString *
-c_string_new (const char *init)
+c_string_t *
+c_string_sized_new(size_t default_size)
 {
-	return c_string_new_len(init, -1);
-}
+    c_string_t *ret = c_new(c_string_t, 1);
 
-CString *
-c_string_sized_new (size_t default_size)
-{
-	CString *ret = c_new (CString, 1);
+    ret->str = c_malloc(default_size);
+    ret->str[0] = 0;
+    ret->len = 0;
+    ret->allocated_len = default_size;
 
-	ret->str = c_malloc (default_size);
-	ret->str [0] = 0;
-	ret->len = 0;
-	ret->allocated_len = default_size;
-
-	return ret;
+    return ret;
 }
 
 char *
-c_string_free (CString *string, cboolean free_segment)
+c_string_free(c_string_t *string, bool free_segment)
 {
-	char *data;
-	
-	c_return_val_if_fail (string != NULL, NULL);
+    char *data;
 
-	data = string->str;
-	c_free(string);
-	
-	if(!free_segment) {
-		return data;
-	}
+    c_return_val_if_fail(string != NULL, NULL);
 
-	c_free(data);
-	return NULL;
+    data = string->str;
+    c_free(string);
+
+    if (!free_segment) {
+        return data;
+    }
+
+    c_free(data);
+    return NULL;
 }
 
-CString *
-c_string_assign (CString *string, const char *val)
+c_string_t *
+c_string_assign(c_string_t *string, const char *val)
 {
-	c_return_val_if_fail(string != NULL, NULL);
-	c_return_val_if_fail(val != NULL, string);
-	
-        if (string->str == val)
-          return string;
+    c_return_val_if_fail(string != NULL, NULL);
+    c_return_val_if_fail(val != NULL, string);
 
-        c_string_truncate (string, 0);
-        c_string_append (string, val);
+    if (string->str == val)
         return string;
+
+    c_string_truncate(string, 0);
+    c_string_append(string, val);
+    return string;
 }
 
-CString *
-c_string_append_len (CString *string, const char *val, ussize len)
+c_string_t *
+c_string_append_len(c_string_t *string, const char *val, c_ssize_t len)
 {
-	c_return_val_if_fail(string != NULL, NULL);
-	c_return_val_if_fail(val != NULL, string);
+    c_return_val_if_fail(string != NULL, NULL);
+    c_return_val_if_fail(val != NULL, string);
 
-	if(len < 0) {
-		len = strlen(val);
-	}
+    if (len < 0) {
+        len = strlen(val);
+    }
 
-	UROW_IF_NECESSARY(string, len);
-	memcpy(string->str + string->len, val, len);
-	string->len += len;
-	string->str[string->len] = 0;
+    UROW_IF_NECESSARY(string, len);
+    memcpy(string->str + string->len, val, len);
+    string->len += len;
+    string->str[string->len] = 0;
 
-	return string;
+    return string;
 }
 
-CString *
-c_string_append (CString *string, const char *val)
+c_string_t *
+c_string_append(c_string_t *string, const char *val)
 {
-	c_return_val_if_fail(string != NULL, NULL);
-	c_return_val_if_fail(val != NULL, string);
+    c_return_val_if_fail(string != NULL, NULL);
+    c_return_val_if_fail(val != NULL, string);
 
-	return c_string_append_len(string, val, -1);
+    return c_string_append_len(string, val, -1);
 }
 
-CString *
-c_string_append_c (CString *string, char c)
+c_string_t *
+c_string_append_c(c_string_t *string, char c)
 {
-	c_return_val_if_fail(string != NULL, NULL);
+    c_return_val_if_fail(string != NULL, NULL);
 
-	UROW_IF_NECESSARY(string, 1);
-	
-	string->str[string->len] = c;
-	string->str[string->len + 1] = 0;
-	string->len++;
+    UROW_IF_NECESSARY(string, 1);
 
-	return string;
+    string->str[string->len] = c;
+    string->str[string->len + 1] = 0;
+    string->len++;
+
+    return string;
 }
 
-CString *
-c_string_append_unichar (CString *string, cunichar c)
+c_string_t *
+c_string_append_unichar(c_string_t *string, c_codepoint_t c)
 {
-	char utf8[6];
-	int len;
-	
-	c_return_val_if_fail (string != NULL, NULL);
-	
-	if ((len = c_unichar_to_utf8 (c, utf8)) <= 0)
-		return string;
-	
-	return c_string_append_len (string, utf8, len);
+    char utf8[6];
+    int len;
+
+    c_return_val_if_fail(string != NULL, NULL);
+
+    if ((len = c_codepoint_to_utf8(c, utf8)) <= 0)
+        return string;
+
+    return c_string_append_len(string, utf8, len);
 }
 
-CString *
-c_string_prepend (CString *string, const char *val)
+c_string_t *
+c_string_prepend(c_string_t *string, const char *val)
 {
-	ussize len;
-	
-	c_return_val_if_fail (string != NULL, string);
-	c_return_val_if_fail (val != NULL, string);
+    c_ssize_t len;
 
-	len = strlen (val);
-	
-	UROW_IF_NECESSARY(string, len);	
-	memmove(string->str + len, string->str, string->len + 1);
-	memcpy(string->str, val, len);
+    c_return_val_if_fail(string != NULL, string);
+    c_return_val_if_fail(val != NULL, string);
 
-	return string;
+    len = strlen(val);
+
+    UROW_IF_NECESSARY(string, len);
+    memmove(string->str + len, string->str, string->len + 1);
+    memcpy(string->str, val, len);
+
+    return string;
 }
 
-CString *
-c_string_insert (CString *string, ussize pos, const char *val)
+c_string_t *
+c_string_insert(c_string_t *string, c_ssize_t pos, const char *val)
 {
-	ussize len;
-	
-	c_return_val_if_fail (string != NULL, string);
-	c_return_val_if_fail (val != NULL, string);
-	c_return_val_if_fail (pos <= string->len, string);
+    c_ssize_t len;
 
-	len = strlen (val);
-	
-	UROW_IF_NECESSARY(string, len);	
-	memmove(string->str + pos + len, string->str + pos, string->len - pos - len + 1);
-	memcpy(string->str + pos, val, len);
+    c_return_val_if_fail(string != NULL, string);
+    c_return_val_if_fail(val != NULL, string);
+    c_return_val_if_fail(pos <= string->len, string);
 
-	return string;
-}
+    len = strlen(val);
 
-void
-c_string_append_printf (CString *string, const char *format, ...)
-{
-	char *ret;
-	va_list args;
-	
-	c_return_if_fail (string != NULL);
-	c_return_if_fail (format != NULL);
+    UROW_IF_NECESSARY(string, len);
+    memmove(string->str + pos + len,
+            string->str + pos,
+            string->len - pos - len + 1);
+    memcpy(string->str + pos, val, len);
 
-	va_start (args, format);
-	ret = c_strdup_vprintf (format, args);
-	va_end (args);
-	c_string_append (string, ret);
-
-	c_free (ret);
+    return string;
 }
 
 void
-c_string_append_vprintf (CString *string, const char *format, va_list args)
+c_string_append_printf(c_string_t *string, const char *format, ...)
 {
-	char *ret;
+    char *ret;
+    va_list args;
 
-	c_return_if_fail (string != NULL);
-	c_return_if_fail (format != NULL);
+    c_return_if_fail(string != NULL);
+    c_return_if_fail(format != NULL);
 
-	ret = c_strdup_vprintf (format, args);
-	c_string_append (string, ret);
-	c_free (ret);
+    va_start(args, format);
+    ret = c_strdup_vprintf(format, args);
+    va_end(args);
+    c_string_append(string, ret);
+
+    c_free(ret);
 }
 
 void
-c_string_printf (CString *string, const char *format, ...)
+c_string_append_vprintf(c_string_t *string, const char *format, va_list args)
 {
-	va_list args;
-	
-	c_return_if_fail (string != NULL);
-	c_return_if_fail (format != NULL);
+    char *ret;
 
-	c_free (string->str);
-	
-	va_start (args, format);
-	string->str = c_strdup_vprintf (format, args);
-	va_end (args);
+    c_return_if_fail(string != NULL);
+    c_return_if_fail(format != NULL);
 
-	string->len = strlen (string->str);
-	string->allocated_len = string->len+1;
+    ret = c_strdup_vprintf(format, args);
+    c_string_append(string, ret);
+    c_free(ret);
 }
 
-CString *
-c_string_truncate (CString *string, size_t len)
+void
+c_string_printf(c_string_t *string, const char *format, ...)
 {
-	c_return_val_if_fail (string != NULL, string);
+    va_list args;
 
-	/* Silent return */
-	if (len >= string->len)
-		return string;
-	
-	string->len = len;
-	string->str[len] = 0;
-	return string;
+    c_return_if_fail(string != NULL);
+    c_return_if_fail(format != NULL);
+
+    c_free(string->str);
+
+    va_start(args, format);
+    string->str = c_strdup_vprintf(format, args);
+    va_end(args);
+
+    string->len = strlen(string->str);
+    string->allocated_len = string->len + 1;
 }
 
-CString *
-c_string_set_size (CString *string, size_t len)
+c_string_t *
+c_string_truncate(c_string_t *string, size_t len)
 {
-	c_return_val_if_fail (string != NULL, string);
+    c_return_val_if_fail(string != NULL, string);
 
-	UROW_IF_NECESSARY(string, len);
-	
-	string->len = len;
-	string->str[len] = 0;
-	return string;
+    /* Silent return */
+    if (len >= string->len)
+        return string;
+
+    string->len = len;
+    string->str[len] = 0;
+    return string;
 }
 
-CString *
-c_string_erase (CString *string, ussize pos, ussize len)
+c_string_t *
+c_string_set_size(c_string_t *string, size_t len)
 {
-	c_return_val_if_fail (string != NULL, string);
+    c_return_val_if_fail(string != NULL, string);
 
-	/* Silent return */
-	if (pos >= string->len)
-		return string;
+    UROW_IF_NECESSARY(string, len);
 
-	if (len == -1 || (pos + len) >= string->len) {
-		string->str[pos] = 0;
-	}
-	else {
-		memmove (string->str + pos, string->str + pos + len, string->len - (pos + len) + 1);
-		string->len -= len;
-	}
+    string->len = len;
+    string->str[len] = 0;
+    return string;
+}
 
-	return string;
+c_string_t *
+c_string_erase(c_string_t *string, c_ssize_t pos, c_ssize_t len)
+{
+    c_return_val_if_fail(string != NULL, string);
+
+    /* Silent return */
+    if (pos >= string->len)
+        return string;
+
+    if (len == -1 || (pos + len) >= string->len) {
+        string->str[pos] = 0;
+    } else {
+        memmove(string->str + pos,
+                string->str + pos + len,
+                string->len - (pos + len) + 1);
+        string->len -= len;
+    }
+
+    return string;
 }

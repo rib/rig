@@ -36,71 +36,71 @@
 #endif
 #include <errno.h>
 
-UQuark
-c_file_error_quark (void)
+c_quark_t
+c_file_error_quark(void)
 {
-	return c_quark_from_static_string ("g-file-error-quark");
+    return c_quark_from_static_string("g-file-error-quark");
 }
 
 UFileError
-c_file_error_from_errno (int err_no)
+c_file_error_from_errno(int err_no)
 {
-	switch (err_no) {
-	case EEXIST:
-		return C_FILE_ERROR_EXIST;
-	case EISDIR:
-		return C_FILE_ERROR_ISDIR;
-	case EACCES:
-		return C_FILE_ERROR_ACCES;
-	case ENAMETOOLONG:
-		return C_FILE_ERROR_NAMETOOLONG;
-	case ENOENT:
-		return C_FILE_ERROR_NOENT;
-	case ENOTDIR:
-		return C_FILE_ERROR_NOTDIR;
-	case ENXIO:
-		return C_FILE_ERROR_NXIO;
-	case ENODEV:
-		return C_FILE_ERROR_NODEV;
-	case EROFS:
-		return C_FILE_ERROR_ROFS;
+    switch (err_no) {
+    case EEXIST:
+        return C_FILE_ERROR_EXIST;
+    case EISDIR:
+        return C_FILE_ERROR_ISDIR;
+    case EACCES:
+        return C_FILE_ERROR_ACCES;
+    case ENAMETOOLONG:
+        return C_FILE_ERROR_NAMETOOLONG;
+    case ENOENT:
+        return C_FILE_ERROR_NOENT;
+    case ENOTDIR:
+        return C_FILE_ERROR_NOTDIR;
+    case ENXIO:
+        return C_FILE_ERROR_NXIO;
+    case ENODEV:
+        return C_FILE_ERROR_NODEV;
+    case EROFS:
+        return C_FILE_ERROR_ROFS;
 #ifdef ETXTBSY
-	case ETXTBSY:
-		return C_FILE_ERROR_TXTBSY;
+    case ETXTBSY:
+        return C_FILE_ERROR_TXTBSY;
 #endif
-	case EFAULT:
-		return C_FILE_ERROR_FAULT;
+    case EFAULT:
+        return C_FILE_ERROR_FAULT;
 #ifdef ELOOP
-	case ELOOP:
-		return C_FILE_ERROR_LOOP;
+    case ELOOP:
+        return C_FILE_ERROR_LOOP;
 #endif
-	case ENOSPC:
-		return C_FILE_ERROR_NOSPC;
-	case ENOMEM:
-		return C_FILE_ERROR_NOMEM;
-	case EMFILE:
-		return C_FILE_ERROR_MFILE;
-	case ENFILE:
-		return C_FILE_ERROR_NFILE;
-	case EBADF:
-		return C_FILE_ERROR_BADF;
-	case EINVAL:
-		return C_FILE_ERROR_INVAL;
-	case EPIPE:
-		return C_FILE_ERROR_PIPE;
-	case EAGAIN:
-		return C_FILE_ERROR_AGAIN;
-	case EINTR:
-		return C_FILE_ERROR_INTR;
-	case EIO:
-		return C_FILE_ERROR_IO;
-	case EPERM:
-		return C_FILE_ERROR_PERM;
-	case ENOSYS:
-		return C_FILE_ERROR_NOSYS;
-	default:
-		return C_FILE_ERROR_FAILED;
-	}
+    case ENOSPC:
+        return C_FILE_ERROR_NOSPC;
+    case ENOMEM:
+        return C_FILE_ERROR_NOMEM;
+    case EMFILE:
+        return C_FILE_ERROR_MFILE;
+    case ENFILE:
+        return C_FILE_ERROR_NFILE;
+    case EBADF:
+        return C_FILE_ERROR_BADF;
+    case EINVAL:
+        return C_FILE_ERROR_INVAL;
+    case EPIPE:
+        return C_FILE_ERROR_PIPE;
+    case EAGAIN:
+        return C_FILE_ERROR_AGAIN;
+    case EINTR:
+        return C_FILE_ERROR_INTR;
+    case EIO:
+        return C_FILE_ERROR_IO;
+    case EPERM:
+        return C_FILE_ERROR_PERM;
+    case ENOSYS:
+        return C_FILE_ERROR_NOSYS;
+    default:
+        return C_FILE_ERROR_FAILED;
+    }
 }
 
 #ifdef C_OS_WIN32
@@ -109,47 +109,62 @@ c_file_error_from_errno (int err_no)
 #define TMP_FILE_FORMAT "%.*s.%s~"
 #endif
 
-cboolean
-c_file_set_contents (const char *filename, const char *contents, ussize length, UError **err)
+bool
+c_file_set_contents(const char *filename,
+                    const char *contents,
+                    c_ssize_t length,
+                    c_error_t **err)
 {
-	const char *name;
-	char *path;
-	FILE *fp;
-	
-	if (!(name = strrchr (filename, C_DIR_SEPARATOR)))
-		name = filename;
-	else
-		name++;
-	
-	path = c_strdup_printf (TMP_FILE_FORMAT, name - filename, filename, name);
-	if (!(fp = fopen (path, "wb"))) {
-		c_set_error (err, C_FILE_ERROR, c_file_error_from_errno (errno), "%s", c_strerror (errno));
-		c_free (path);
-		return FALSE;
-	}
-	
-	if (length < 0)
-		length = strlen (contents);
-	
-	if (fwrite (contents, 1, length, fp) < length) {
-		c_set_error (err, C_FILE_ERROR, c_file_error_from_errno (ferror (fp)), "%s", c_strerror (ferror (fp)));
-		c_unlink (path);
-		c_free (path);
-		fclose (fp);
-		
-		return FALSE;
-	}
-	
-	fclose (fp);
-	
-	if (c_rename (path, filename) != 0) {
-		c_set_error (err, C_FILE_ERROR, c_file_error_from_errno (errno), "%s", c_strerror (errno));
-		c_unlink (path);
-		c_free (path);
-		return FALSE;
-	}
-	
-	c_free (path);
-	
-	return TRUE;
+    const char *name;
+    char *path;
+    FILE *fp;
+
+    if (!(name = strrchr(filename, C_DIR_SEPARATOR)))
+        name = filename;
+    else
+        name++;
+
+    path = c_strdup_printf(TMP_FILE_FORMAT, name - filename, filename, name);
+    if (!(fp = fopen(path, "wb"))) {
+        c_set_error(err,
+                    C_FILE_ERROR,
+                    c_file_error_from_errno(errno),
+                    "%s",
+                    c_strerror(errno));
+        c_free(path);
+        return false;
+    }
+
+    if (length < 0)
+        length = strlen(contents);
+
+    if (fwrite(contents, 1, length, fp) < length) {
+        c_set_error(err,
+                    C_FILE_ERROR,
+                    c_file_error_from_errno(ferror(fp)),
+                    "%s",
+                    c_strerror(ferror(fp)));
+        c_unlink(path);
+        c_free(path);
+        fclose(fp);
+
+        return false;
+    }
+
+    fclose(fp);
+
+    if (c_rename(path, filename) != 0) {
+        c_set_error(err,
+                    C_FILE_ERROR,
+                    c_file_error_from_errno(errno),
+                    "%s",
+                    c_strerror(errno));
+        c_unlink(path);
+        c_free(path);
+        return false;
+    }
+
+    c_free(path);
+
+    return true;
 }

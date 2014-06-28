@@ -26,37 +26,34 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-
 #include <config.h>
 
 #include <stdlib.h>
 #include <clib.h>
 
-CByteArray *
-c_byte_array_new ()
+c_byte_array_t *
+c_byte_array_new()
 {
-	return (CByteArray *) c_array_new (FALSE, TRUE, 1);
+    return (c_byte_array_t *)c_array_new(false, true, 1);
 }
 
-uint8_t*
-c_byte_array_free (CByteArray *array,
-                   cboolean free_segment)
+uint8_t *
+c_byte_array_free(c_byte_array_t *array, bool free_segment)
 {
-	return (uint8_t*) c_array_free ((CArray *)array, free_segment);
+    return (uint8_t *)c_array_free((c_array_t *)array, free_segment);
 }
 
-CByteArray *
-c_byte_array_append (CByteArray *array,
-		     const uint8_t *data,
-		     unsigned int len)
+c_byte_array_t *
+c_byte_array_append(c_byte_array_t *array,
+                    const uint8_t *data,
+                    unsigned int len)
 {
-	return (CByteArray *)c_array_append_vals ((CArray *)array, data, len);
+    return (c_byte_array_t *)c_array_append_vals((c_array_t *)array, data, len);
 }
 
-CByteArray *
-c_byte_array_set_size (CByteArray *array,
-                       unsigned int len)
+c_byte_array_t *
+c_byte_array_set_size(c_byte_array_t *array, unsigned int len)
 {
-	c_array_set_size ((CArray*)array, len);
-        return array;
+    c_array_set_size((c_array_t *)array, len);
+    return array;
 }

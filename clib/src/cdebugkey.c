@@ -31,41 +31,38 @@
 #include <clib.h>
 
 unsigned int
-c_parse_debug_string (const char *string,
-                      const CDebugKey *keys,
-                      unsigned int nkeys)
+c_parse_debug_string(const char *string,
+                     const c_debug_key_t *keys,
+                     unsigned int nkeys)
 {
-  char **strv = c_strsplit_set (string, ":;, \t", 0);
-  cboolean needs_invert = FALSE;
-  unsigned int value = 0;
-  int i;
+    char **strv = c_strsplit_set(string, ":;, \t", 0);
+    bool needs_invert = false;
+    unsigned int value = 0;
+    int i;
 
-  if (strcasecmp (string, "help") == 0)
-    {
-      c_printerr ("Supported debug keys:\n");
-      for (i = 0; strv[i]; i++)
-        {
-          c_printerr ("  %s:\n", keys[i].key);
+    if (strcasecmp(string, "help") == 0) {
+        c_printerr("Supported debug keys:\n");
+        for (i = 0; strv[i]; i++) {
+            c_printerr("  %s:\n", keys[i].key);
         }
-      c_printerr ("  all\n");
-      c_printerr ("  help\n");
+        c_printerr("  all\n");
+        c_printerr("  help\n");
     }
 
-  for (i = 0; strv[i]; i++)
-    {
-      int j;
+    for (i = 0; strv[i]; i++) {
+        int j;
 
-      for (j = 0; j < nkeys; j++)
-        if (strcasecmp (keys[j].key, strv[i]) == 0)
-          value |= keys[j].value;
-        else if (strcasecmp (keys[j].key, "all") == 0)
-          needs_invert = TRUE;
+        for (j = 0; j < nkeys; j++)
+            if (strcasecmp(keys[j].key, strv[i]) == 0)
+                value |= keys[j].value;
+            else if (strcasecmp(keys[j].key, "all") == 0)
+                needs_invert = true;
     }
 
-  if (needs_invert)
-    value = value ^ (~0);
+    if (needs_invert)
+        value = value ^ (~0);
 
-  c_strfreev (strv);
+    c_strfreev(strv);
 
-  return value;
+    return value;
 }

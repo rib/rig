@@ -39,37 +39,36 @@
 #include <unistd.h>
 #endif
 
-
 const char *
 c_getenv(const char *variable)
 {
-	return getenv(variable);
+    return getenv(variable);
 }
 
-cboolean
-c_setenv(const char *variable, const char *value, cboolean overwrite)
+bool
+c_setenv(const char *variable, const char *value, bool overwrite)
 {
-	return setenv(variable, value, overwrite) == 0;
+    return setenv(variable, value, overwrite) == 0;
 }
 
 void
 c_unsetenv(const char *variable)
 {
-	unsetenv(variable);
+    unsetenv(variable);
 }
 
-char*
+char *
 c_win32_getlocale(void)
 {
-	return NULL;
+    return NULL;
 }
 
-cboolean
-c_path_is_absolute (const char *filename)
+bool
+c_path_is_absolute(const char *filename)
 {
-	c_return_val_if_fail (filename != NULL, FALSE);
+    c_return_val_if_fail(filename != NULL, false);
 
-	return (*filename == '/');
+    return (*filename == '/');
 }
 
 static pthread_mutex_t pw_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -77,52 +76,52 @@ static const char *home_dir;
 static const char *user_name;
 
 static void
-get_pw_data (void)
+get_pw_data(void)
 {
 #ifdef HAVE_UETPWUID_R
-	struct passwd pw;
-	struct passwd *result;
-	char buf [4096];
+    struct passwd pw;
+    struct passwd *result;
+    char buf[4096];
 #endif
 
-	if (user_name != NULL)
-		return;
+    if (user_name != NULL)
+        return;
 
-	pthread_mutex_lock (&pw_lock);
-	if (user_name != NULL) {
-		pthread_mutex_unlock (&pw_lock);
-		return;
-	}
+    pthread_mutex_lock(&pw_lock);
+    if (user_name != NULL) {
+        pthread_mutex_unlock(&pw_lock);
+        return;
+    }
 #ifdef HAVE_UETPWUID_R
-	if (getpwuid_r (getuid (), &pw, buf, 4096, &result) == 0) {
-		home_dir = c_strdup (pw.pw_dir);
-		user_name = c_strdup (pw.pw_name);
-	}
+    if (getpwuid_r(getuid(), &pw, buf, 4096, &result) == 0) {
+        home_dir = c_strdup(pw.pw_dir);
+        user_name = c_strdup(pw.pw_name);
+    }
 #endif
-	if (home_dir == NULL)
-		home_dir = c_getenv ("HOME");
+    if (home_dir == NULL)
+        home_dir = c_getenv("HOME");
 
-	if (user_name == NULL) {
-		user_name = c_getenv ("USER");
-		if (user_name == NULL)
-			user_name = "somebody";
-	}
-	pthread_mutex_unlock (&pw_lock);
+    if (user_name == NULL) {
+        user_name = c_getenv("USER");
+        if (user_name == NULL)
+            user_name = "somebody";
+    }
+    pthread_mutex_unlock(&pw_lock);
 }
 
 /* Uive preference to /etc/passwd than HOME */
 const char *
-c_get_home_dir (void)
+c_get_home_dir(void)
 {
-	get_pw_data ();
-	return home_dir;
+    get_pw_data();
+    return home_dir;
 }
 
 const char *
-c_get_user_name (void)
+c_get_user_name(void)
 {
-	get_pw_data ();
-	return user_name;
+    get_pw_data();
+    return user_name;
 }
 
 static const char *tmp_dir;
@@ -130,23 +129,22 @@ static const char *tmp_dir;
 static pthread_mutex_t tmp_lock = PTHREAD_MUTEX_INITIALIZER;
 
 const char *
-c_get_tmp_dir (void)
+c_get_tmp_dir(void)
 {
-	if (tmp_dir == NULL){
-		pthread_mutex_lock (&tmp_lock);
-		if (tmp_dir == NULL){
-			tmp_dir = c_getenv ("TMPDIR");
-			if (tmp_dir == NULL){
-				tmp_dir = c_getenv ("TMP");
-				if (tmp_dir == NULL){
-					tmp_dir = c_getenv ("TEMP");
-					if (tmp_dir == NULL)
-						tmp_dir = "/tmp";
-				}
-			}
-		}
-		pthread_mutex_unlock (&tmp_lock);
-	}
-	return tmp_dir;
+    if (tmp_dir == NULL) {
+        pthread_mutex_lock(&tmp_lock);
+        if (tmp_dir == NULL) {
+            tmp_dir = c_getenv("TMPDIR");
+            if (tmp_dir == NULL) {
+                tmp_dir = c_getenv("TMP");
+                if (tmp_dir == NULL) {
+                    tmp_dir = c_getenv("TEMP");
+                    if (tmp_dir == NULL)
+                        tmp_dir = "/tmp";
+                }
+            }
+        }
+        pthread_mutex_unlock(&tmp_lock);
+    }
+    return tmp_dir;
 }
-

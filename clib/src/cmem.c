@@ -2,7 +2,7 @@
  * gmem.c: memory utility functions
  *
  * Author:
- * 	Gonzalo Paniagua Javier (gonzalo@novell.com)
+ *      Gonzalo Paniagua Javier (gonzalo@novell.com)
  *
  * (C) 2006 Novell, Inc.
  *
@@ -33,76 +33,79 @@
 #include <clib.h>
 
 void
-c_free (void *ptr)
+c_free(void *ptr)
 {
-	if (ptr != NULL)
-		free (ptr);
+    if (ptr != NULL)
+        free(ptr);
 }
 
 void *
-c_memdup (const void * mem, unsigned int byte_size)
+c_memdup(const void *mem, unsigned int byte_size)
 {
-	void * ptr;
+    void *ptr;
 
-	if (mem == NULL)
-		return NULL;
+    if (mem == NULL)
+        return NULL;
 
-	ptr = c_malloc (byte_size);
-	if (ptr != NULL)
-		memcpy (ptr, mem, byte_size);
+    ptr = c_malloc(byte_size);
+    if (ptr != NULL)
+        memcpy(ptr, mem, byte_size);
 
-	return ptr;
+    return ptr;
 }
 
-void * c_realloc (void * obj, size_t size)
+void *
+c_realloc(void *obj, size_t size)
 {
-	void * ptr;
-	if (!size) {
-		c_free (obj);
-		return 0;
-	}
-	ptr = realloc (obj, size);
-	if (ptr)
-		return ptr;
-	c_error ("Could not allocate %i bytes", size);
+    void *ptr;
+    if (!size) {
+        c_free(obj);
+        return 0;
+    }
+    ptr = realloc(obj, size);
+    if (ptr)
+        return ptr;
+    c_error("Could not allocate %i bytes", size);
 }
 
-void * 
-c_malloc (size_t x) 
-{ 
-	void * ptr;
-	if (!x)
-		return 0;
-	ptr = malloc (x);
-	if (ptr) 
-		return ptr;
-	c_error ("Could not allocate %i bytes", x);
-}
-
-void * c_malloc0 (size_t x) 
-{ 
-	void * ptr; 
-	if (!x) 
-		return 0; 
-	ptr = calloc(1,x); 
-	if (ptr) 
-		return ptr; 
-	c_error ("Could not allocate %i bytes", x);
-}
-
-void * c_try_malloc (size_t x) 
+void *
+c_malloc(size_t x)
 {
-	if (x)
-		return malloc (x);
-	return 0;
+    void *ptr;
+    if (!x)
+        return 0;
+    ptr = malloc(x);
+    if (ptr)
+        return ptr;
+    c_error("Could not allocate %i bytes", x);
 }
 
+void *
+c_malloc0(size_t x)
+{
+    void *ptr;
+    if (!x)
+        return 0;
+    ptr = calloc(1, x);
+    if (ptr)
+        return ptr;
+    c_error("Could not allocate %i bytes", x);
+}
 
-void * c_try_realloc (void * obj, size_t size)
-{ 
-	if (!size) {
-		c_free (obj);
-		return 0;
-	} 
-	return realloc (obj, size);
+void *
+c_try_malloc(size_t x)
+{
+    if (x)
+        return malloc(x);
+    return 0;
+}
+
+void *
+c_try_realloc(void *obj, size_t size)
+{
+    if (!size) {
+        c_free(obj);
+        return 0;
+    }
+    return realloc(obj, size);
 }

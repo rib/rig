@@ -12,10 +12,10 @@
  * distribute, sublicense, and/or sell copies of the Software, and to
  * permit persons to whom the Software is furnished to do so, subject to
  * the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -32,328 +32,328 @@
 #include <stdio.h>
 #include <clib.h>
 
-CList*
-c_list_alloc ()
+c_list_t *
+c_list_alloc()
 {
-	return c_new0 (CList, 1);
+    return c_new0(c_list_t, 1);
 }
 
-static inline CList*
-new_node (CList *prev, void * data, CList *next)
+static inline c_list_t *
+new_node(c_list_t *prev, void *data, c_list_t *next)
 {
-	CList *node = c_list_alloc ();
-	node->data = data;
-	node->prev = prev;
-	node->next = next;
-	if (prev)
-		prev->next = node;
-	if (next)
-		next->prev = node;
-	return node;
+    c_list_t *node = c_list_alloc();
+    node->data = data;
+    node->prev = prev;
+    node->next = next;
+    if (prev)
+        prev->next = node;
+    if (next)
+        next->prev = node;
+    return node;
 }
 
-static inline CList*
-disconnect_node (CList *node)
+static inline c_list_t *
+disconnect_node(c_list_t *node)
 {
-	if (node->next)
-		node->next->prev = node->prev;
-	if (node->prev)
-		node->prev->next = node->next;
-	return node;
+    if (node->next)
+        node->next->prev = node->prev;
+    if (node->prev)
+        node->prev->next = node->next;
+    return node;
 }
 
-CList *
-c_list_prepend (CList *list, void * data)
+c_list_t *
+c_list_prepend(c_list_t *list, void *data)
 {
-	return new_node (list ? list->prev : NULL, data, list);
-}
-
-void
-c_list_free_1 (CList *list)
-{
-	c_free (list);
+    return new_node(list ? list->prev : NULL, data, list);
 }
 
 void
-c_list_free (CList *list)
+c_list_free_1(c_list_t *list)
 {
-	while (list){
-		CList *next = list->next;
-		c_list_free_1 (list);
-		list = next;
-	}
+    c_free(list);
 }
 
 void
-c_list_free_full (CList *list, CDestroyNotify free_func)
+c_list_free(c_list_t *list)
 {
-	while (list){
-		CList *next = list->next;
-                free_func (list->data);
-		c_list_free_1 (list);
-		list = next;
-	}
+    while (list) {
+        c_list_t *next = list->next;
+        c_list_free_1(list);
+        list = next;
+    }
 }
 
-CList*
-c_list_append (CList *list, void * data)
+void
+c_list_free_full(c_list_t *list, c_destroy_func_t free_func)
 {
-	CList *node = new_node (c_list_last (list), data, NULL);
-	return list ? list : node;
+    while (list) {
+        c_list_t *next = list->next;
+        free_func(list->data);
+        c_list_free_1(list);
+        list = next;
+    }
 }
 
-CList *
-c_list_concat (CList *list1, CList *list2)
+c_list_t *
+c_list_append(c_list_t *list, void *data)
 {
-	if (list1 && list2) {
-		list2->prev = c_list_last (list1);
-		list2->prev->next = list2;
-	}
-	return list1 ? list1 : list2;
+    c_list_t *node = new_node(c_list_last(list), data, NULL);
+    return list ? list : node;
+}
+
+c_list_t *
+c_list_concat(c_list_t *list1, c_list_t *list2)
+{
+    if (list1 && list2) {
+        list2->prev = c_list_last(list1);
+        list2->prev->next = list2;
+    }
+    return list1 ? list1 : list2;
 }
 
 unsigned int
-c_list_length (CList *list)
+c_list_length(c_list_t *list)
 {
-	unsigned int length = 0;
+    unsigned int length = 0;
 
-	while (list) {
-		length ++;
-		list = list->next;
-	}
+    while (list) {
+        length++;
+        list = list->next;
+    }
 
-	return length;
+    return length;
 }
 
-CList*
-c_list_remove (CList *list, const void * data)
+c_list_t *
+c_list_remove(c_list_t *list, const void *data)
 {
-	CList *current = c_list_find (list, data);
-	if (!current)
-		return list;
+    c_list_t *current = c_list_find(list, data);
+    if (!current)
+        return list;
 
-	if (current == list)
-		list = list->next;
-	c_list_free_1 (disconnect_node (current));
+    if (current == list)
+        list = list->next;
+    c_list_free_1(disconnect_node(current));
 
-	return list;
+    return list;
 }
 
-CList*
-c_list_remove_all (CList *list, const void * data)
+c_list_t *
+c_list_remove_all(c_list_t *list, const void *data)
 {
-	CList *current = c_list_find (list, data);
+    c_list_t *current = c_list_find(list, data);
 
-	if (!current)
-		return list;
+    if (!current)
+        return list;
 
-	while (current) {
-		if (current == list)
-			list = list->next;
-		c_list_free_1 (disconnect_node (current));
+    while (current) {
+        if (current == list)
+            list = list->next;
+        c_list_free_1(disconnect_node(current));
 
-		current = c_list_find (list, data);
-	}
+        current = c_list_find(list, data);
+    }
 
-	return list;
+    return list;
 }
 
-CList*
-c_list_remove_link (CList *list, CList *link)
+c_list_t *
+c_list_remove_link(c_list_t *list, c_list_t *link)
 {
-	if (list == link)
-		list = list->next;
+    if (list == link)
+        list = list->next;
 
-	disconnect_node (link);
-	link->next = NULL;
-	link->prev = NULL;
+    disconnect_node(link);
+    link->next = NULL;
+    link->prev = NULL;
 
-	return list;
+    return list;
 }
 
-CList*
-c_list_delete_link (CList *list, CList *link)
+c_list_t *
+c_list_delete_link(c_list_t *list, c_list_t *link)
 {
-	list = c_list_remove_link (list, link);
-	c_list_free_1 (link);
+    list = c_list_remove_link(list, link);
+    c_list_free_1(link);
 
-	return list;
+    return list;
 }
 
-CList*
-c_list_find (CList *list, const void * data)
+c_list_t *
+c_list_find(c_list_t *list, const void *data)
 {
-	while (list){
-		if (list->data == data)
-			return list;
+    while (list) {
+        if (list->data == data)
+            return list;
 
-		list = list->next;
-	}
+        list = list->next;
+    }
 
-	return NULL;
+    return NULL;
 }
 
-CList*
-c_list_find_custom (CList *list, const void * data, CCompareFunc func)
+c_list_t *
+c_list_find_custom(c_list_t *list, const void *data, c_compare_func_t func)
 {
-	if (!func)
-		return NULL;
-	
-	while (list) {
-		if (func (list->data, data) == 0)
-			return list;
-		
-		list = list->next;
-	}
-	
-	return NULL;
+    if (!func)
+        return NULL;
+
+    while (list) {
+        if (func(list->data, data) == 0)
+            return list;
+
+        list = list->next;
+    }
+
+    return NULL;
 }
 
-CList*
-c_list_reverse (CList *list)
+c_list_t *
+c_list_reverse(c_list_t *list)
 {
-	CList *reverse = NULL;
+    c_list_t *reverse = NULL;
 
-	while (list) {
-		reverse = list;
-		list = reverse->next;
+    while (list) {
+        reverse = list;
+        list = reverse->next;
 
-		reverse->next = reverse->prev;
-		reverse->prev = list;
-	}
+        reverse->next = reverse->prev;
+        reverse->prev = list;
+    }
 
-	return reverse;
+    return reverse;
 }
 
-CList*
-c_list_first (CList *list)
+c_list_t *
+c_list_first(c_list_t *list)
 {
-	if (!list)
-		return NULL;
+    if (!list)
+        return NULL;
 
-	while (list->prev)
-		list = list->prev;
+    while (list->prev)
+        list = list->prev;
 
-	return list;
+    return list;
 }
 
-CList*
-c_list_last (CList *list)
+c_list_t *
+c_list_last(c_list_t *list)
 {
-	if (!list)
-		return NULL;
+    if (!list)
+        return NULL;
 
-	while (list->next)
-		list = list->next;
+    while (list->next)
+        list = list->next;
 
-	return list;
+    return list;
 }
 
-CList*
-c_list_insert_sorted (CList *list, void * data, CCompareFunc func)
+c_list_t *
+c_list_insert_sorted(c_list_t *list, void *data, c_compare_func_t func)
 {
-	CList *prev = NULL;
-	CList *current;
-	CList *node;
+    c_list_t *prev = NULL;
+    c_list_t *current;
+    c_list_t *node;
 
-	if (!func)
-		return list;
+    if (!func)
+        return list;
 
-	/* Invariant: !prev || func (prev->data, data) <= 0) */
-	for (current = list; current; current = current->next) {
-		if (func (current->data, data) > 0)
-			break;
-		prev = current;
-	}
+    /* Invariant: !prev || func (prev->data, data) <= 0) */
+    for (current = list; current; current = current->next) {
+        if (func(current->data, data) > 0)
+            break;
+        prev = current;
+    }
 
-	node = new_node (prev, data, current);
-	return list == current ? node : list;
+    node = new_node(prev, data, current);
+    return list == current ? node : list;
 }
 
-CList*
-c_list_insert_before (CList *list, CList *sibling, void * data)
+c_list_t *
+c_list_insert_before(c_list_t *list, c_list_t *sibling, void *data)
 {
-	if (sibling) {
-		CList *node = new_node (sibling->prev, data, sibling);
-		return list == sibling ? node : list;
-	}
-	return c_list_append (list, data);
+    if (sibling) {
+        c_list_t *node = new_node(sibling->prev, data, sibling);
+        return list == sibling ? node : list;
+    }
+    return c_list_append(list, data);
 }
 
 void
-c_list_foreach (CList *list, CFunc func, void * user_data)
+c_list_foreach(c_list_t *list, c_iter_func_t func, void *user_data)
 {
-	while (list){
-		(*func) (list->data, user_data);
-		list = list->next;
-	}
+    while (list) {
+        (*func)(list->data, user_data);
+        list = list->next;
+    }
 }
 
 int
-c_list_index (CList *list, const void * data)
+c_list_index(c_list_t *list, const void *data)
 {
-	int index = 0;
+    int index = 0;
 
-	while (list){
-		if (list->data == data)
-			return index;
+    while (list) {
+        if (list->data == data)
+            return index;
 
-		index ++;
-		list = list->next;
-	}
+        index++;
+        list = list->next;
+    }
 
-	return -1;
+    return -1;
 }
 
-CList*
-c_list_nth (CList *list, unsigned int n)
+c_list_t *
+c_list_nth(c_list_t *list, unsigned int n)
 {
-	for (; list; list = list->next) {
-		if (n == 0)
-			break;
-		n--;
-	}
-	return list;
+    for (; list; list = list->next) {
+        if (n == 0)
+            break;
+        n--;
+    }
+    return list;
 }
 
 void *
-c_list_nth_data (CList *list, unsigned int n)
+c_list_nth_data(c_list_t *list, unsigned int n)
 {
-	CList *node = c_list_nth (list, n);
-	return node ? node->data : NULL;
+    c_list_t *node = c_list_nth(list, n);
+    return node ? node->data : NULL;
 }
 
-CList*
-c_list_copy (CList *list)
+c_list_t *
+c_list_copy(c_list_t *list)
 {
-	CList *copy = NULL;
+    c_list_t *copy = NULL;
 
-	if (list) {
-		CList *tmp = new_node (NULL, list->data, NULL);
-		copy = tmp;
+    if (list) {
+        c_list_t *tmp = new_node(NULL, list->data, NULL);
+        copy = tmp;
 
-		for (list = list->next; list; list = list->next)
-			tmp = new_node (tmp, list->data, NULL);
-	}
+        for (list = list->next; list; list = list->next)
+            tmp = new_node(tmp, list->data, NULL);
+    }
 
-	return copy;
+    return copy;
 }
 
-typedef CList list_node;
+typedef c_list_t list_node;
 #include "sort.frag.h"
 
-CList*
-c_list_sort (CList *list, CCompareFunc func)
+c_list_t *
+c_list_sort(c_list_t *list, c_compare_func_t func)
 {
-	CList *current;
-	if (!list || !list->next)
-		return list;
-	list = do_sort (list, func);
+    c_list_t *current;
+    if (!list || !list->next)
+        return list;
+    list = do_sort(list, func);
 
-	/* Fixup: do_sort doesn't update 'prev' pointers */
-	list->prev = NULL;
-	for (current = list; current->next; current = current->next)
-		current->next->prev = current;
+    /* Fixup: do_sort doesn't update 'prev' pointers */
+    list->prev = NULL;
+    for (current = list; current->next; current = current->next)
+        current->next->prev = current;
 
-	return list;
+    return list;
 }
