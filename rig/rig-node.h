@@ -119,7 +119,7 @@ rig_node_object_lerp (RigNode *a,
                       float t,
                       RutObject **value);
 
-CoglBool
+bool
 rig_node_box (RutPropertyType type,
               RigNode *node,
               RutBoxed *value);

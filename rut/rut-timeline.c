@@ -56,8 +56,8 @@ struct _RutTimeline
 
   double offset;
   int direction;
-  CoglBool loop_enabled;
-  CoglBool running;
+  bool loop_enabled;
+  bool running;
   double elapsed;
 
   RutIntrospectableProps introspectable;
@@ -262,8 +262,8 @@ _rut_timeline_normalize (RutTimeline *timeline,
 static double
 _rut_timeline_validate_elapsed (RutTimeline *timeline,
                                 double elapsed,
-                                CoglBool *should_stop,
-                                CoglBool *should_restart_with_offset)
+                                bool *should_stop,
+                                bool *should_restart_with_offset)
 {
   *should_stop = FALSE;
   *should_restart_with_offset = FALSE;
@@ -304,8 +304,8 @@ rut_timeline_set_elapsed (RutObject *obj,
 {
   RutTimeline *timeline = obj;
 
-  CoglBool should_stop;
-  CoglBool should_restart_with_offset;
+  bool should_stop;
+  bool should_restart_with_offset;
 
   elapsed = _rut_timeline_validate_elapsed (timeline, elapsed,
                                             &should_stop,
@@ -400,8 +400,8 @@ void
 _rut_timeline_update (RutTimeline *timeline)
 {
   double elapsed;
-  CoglBool should_stop;
-  CoglBool should_restart_with_offset;
+  bool should_stop;
+  bool should_restart_with_offset;
 
   if (!timeline->running)
     return;

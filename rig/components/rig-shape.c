@@ -186,7 +186,7 @@ mesh_new_p2t2t2 (CoglVerticesMode mode,
 
 static RigShapeModel *
 shape_model_new (RutContext *ctx,
-                 CoglBool shaped,
+                 bool shaped,
                  float width,
                  float height)
 {

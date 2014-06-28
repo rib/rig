@@ -53,7 +53,7 @@ typedef enum _RutMeshPlyError
 typedef struct _RutPLYProperty
 {
   const char *name;
-  CoglBool invert;
+  bool invert;
 } RutPLYProperty;
 
 typedef struct _RutPLYAttribute
@@ -73,7 +73,7 @@ typedef struct _RutPLYAttribute
   /* If TRUE and the minimum number of component properties for this
    * attribute aren't found then the loader will exit with an error
    */
-  CoglBool required;
+  bool required;
 
   /* If the minimum number of properties for this attribute aren't
    * found then if this is > 0 the loader will create padded space for
@@ -84,7 +84,7 @@ typedef struct _RutPLYAttribute
 
   /* For integer type attributes this determines if the values should
    * be interpreted as normalized values in the range [0,1] */
-  CoglBool normalized;
+  bool normalized;
 
 } RutPLYAttribute;
 

@@ -267,7 +267,7 @@ rig_node_object_lerp (RigNode *a,
     *value = b->boxed.d.object_val;
 }
 
-CoglBool
+bool
 rig_node_box (RutPropertyType type,
               RigNode *node,
               RutBoxed *value)

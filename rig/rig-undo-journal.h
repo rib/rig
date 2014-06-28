@@ -109,7 +109,7 @@ typedef struct _UndoRedoSetControlled
   RigController *controller;
   RutObject *object;
   RutProperty *property;
-  CoglBool value;
+  bool value;
 } UndoRedoSetControlled;
 
 typedef struct _UndoRedoSetControlMethod
@@ -160,7 +160,7 @@ typedef struct _UndoRedo
   RutList list_node;
 
   UndoRedoOp op;
-  CoglBool mergable;
+  bool mergable;
   union
     {
       UndoRedoSetProperty set_property;
@@ -236,7 +236,7 @@ rig_undo_journal_set_controller_constant (RigUndoJournal *journal,
 
 void
 rig_undo_journal_set_controller_path_node_value (RigUndoJournal *journal,
-                                                 CoglBool mergable,
+                                                 bool mergable,
                                                  RigController *controller,
                                                  float t,
                                                  const RutBoxed *value,

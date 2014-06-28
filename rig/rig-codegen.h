@@ -56,7 +56,7 @@ typedef struct _GSList GSList;
 #define c_return_if_fail(X)
 #define c_return_val_if_fail(X, Y)
 
-typedef int CoglBool;
+typedef int bool;
 
 typedef struct _CoglColor
 {

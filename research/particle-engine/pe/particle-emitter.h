@@ -39,7 +39,7 @@ struct particle_emitter {
 	 * Controls whether the particle emitter is active. If false, no new
 	 * particles are created.
 	 */
-	CoglBool active;
+	bool active;
 
 	/*
 	 * The maximum number of particles that can exist at any given moment in

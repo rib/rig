@@ -168,7 +168,7 @@ rut_flow_layout_get_packing (RutFlowLayout *flow);
  */
 void
 rut_flow_layout_set_homogeneous (RutFlowLayout *flow,
-                                 CoglBool homogeneous);
+                                 bool homogeneous);
 
 /**
  * rut_flow_layout_get_homogeneous:
@@ -178,7 +178,7 @@ rut_flow_layout_set_homogeneous (RutFlowLayout *flow,
  *
  * Return value: %TRUE if the #RutFlowLayout is homogeneous
  */
-CoglBool
+bool
 rut_flow_layout_get_homogeneous (RutFlowLayout *flow);
 
 /**

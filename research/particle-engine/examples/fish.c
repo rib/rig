@@ -18,7 +18,7 @@ struct demo {
 
 	GTimer *timer;
 
-	CoglBool swap_ready;
+	bool swap_ready;
 	GMainLoop *main_loop;
 };
 

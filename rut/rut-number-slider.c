@@ -119,12 +119,12 @@ typedef struct _EditState
 
   /* This is set to true after we get a motion event with the down
    * action regardless of where was clicked */
-  CoglBool button_down;
+  bool button_down;
   /* This is set to TRUE if cursor has moved more than a couple of
    * pixels since the button was pressed. Once this happens the press
    * is no longer considered a click but is instead interpreted as a
    * drag to change the value */
-  CoglBool button_drag;
+  bool button_drag;
   /* Where within the widget the cursor was when the button was
    * originally pressed */
   float button_x, button_y;

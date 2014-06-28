@@ -30,7 +30,7 @@
 
 struct particle {
 	/* Whether the particle is active or not. */
-	CoglBool active;
+	bool active;
 
 	/* Particle velocity */
 	float velocity[3];

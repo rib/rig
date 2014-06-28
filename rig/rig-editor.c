@@ -1046,7 +1046,7 @@ add_matching_controller (RigController *controller,
   c_free (controller_label);
 }
 
-static CoglBool
+static bool
 asset_matches_search (RigEngine *engine,
                       RigAsset *asset,
                       const char *search)
@@ -1086,7 +1086,7 @@ asset_matches_search (RigEngine *engine,
   for (i = 0; tags[i]; i++)
     {
       const CList *l;
-      CoglBool found = FALSE;
+      bool found = FALSE;
 
       for (l = inferred_tags; l; l = l->next)
         {
@@ -1114,7 +1114,7 @@ rig_search_with_text (RigEngine *engine, const char *user_search)
   RigEditor *editor = engine->editor;
   CList *l;
   int i;
-  CoglBool found = FALSE;
+  bool found = FALSE;
   SearchState state;
   char *search;
 

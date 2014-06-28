@@ -790,7 +790,7 @@ static RigNode *
 find_unselected_neighbour (RigControllerView *view,
                            RutList *head,
                            RigNode *node,
-                           CoglBool direction)
+                           bool direction)
 {
   while (TRUE)
     {
@@ -2240,7 +2240,7 @@ rig_controller_view_unselect_node (RigControllerView *view,
   if (prop_view->has_selected_nodes)
     {
       RigControllerViewSelectedNode *selected_node, *tmp;
-      CoglBool has_nodes = FALSE;
+      bool has_nodes = FALSE;
 
       rut_list_for_each_safe (selected_node,
                               tmp,
@@ -2735,7 +2735,7 @@ static void
 rig_controller_view_update_dots_buffer (RigControllerView *view)
 {
   RigControllerObjectView *object;
-  CoglBool buffer_is_mapped;
+  bool buffer_is_mapped;
   RigControllerViewDotVertex *buffer_data;
   RigControllerViewDotData dot_data;
   size_t map_size = sizeof (RigControllerViewDotVertex) * view->n_dots;
@@ -3163,7 +3163,7 @@ _rig_controller_view_init_type (void)
 }
 
 #if 0
-static CoglBool
+static bool
 rig_controller_view_select_node (RigControllerView *view,
                                  RigControllerPropertyView *prop_view,
                                  RigNode *node)
@@ -3467,7 +3467,7 @@ rig_controller_view_find_node_in_path (RigControllerView *view,
   return NULL;
 }
 
-static CoglBool
+static bool
 rig_controller_view_find_node (RigControllerView *view,
                                RutInputEvent *event,
                                RigControllerPropertyView **prop_view_out,

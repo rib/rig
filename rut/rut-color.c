@@ -275,7 +275,7 @@ parse_hsla (CoglColor *color,
   return TRUE;
 }
 
-gboolean
+bool
 rut_color_init_from_string (RutContext *ctx,
                             CoglColor *color,
                             const char *str)

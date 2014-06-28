@@ -339,7 +339,7 @@ struct _RutShell
    * pre-paint was queued. This assumes that the depths won't change
    * will the queue is being flushed */
   RutList pre_paint_callbacks;
-  CoglBool flushing_pre_paints;
+  bool flushing_pre_paints;
 
   RutList start_paint_callbacks;
   RutList post_paint_callbacks;
@@ -651,7 +651,7 @@ rut_motion_event_get_y (RutInputEvent *event);
  *   %TRUE otherwise. The coordinate can't be unprojected if the
  *   transform for the graphable object object does not have an inverse.
  */
-CoglBool
+bool
 rut_motion_event_unproject (RutInputEvent *event,
                             RutObject *graphable,
                             float *x,

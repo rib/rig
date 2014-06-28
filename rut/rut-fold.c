@@ -266,7 +266,7 @@ rut_fold_set_header_child (RutFold *fold, RutObject *child)
 }
 
 void
-rut_fold_set_folded (RutFold *fold, CoglBool folded)
+rut_fold_set_folded (RutFold *fold, bool folded)
 {
   if (fold->folded == folded || fold->child == NULL)
     return;

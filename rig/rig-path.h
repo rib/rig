@@ -132,12 +132,12 @@ rig_path_insert_color (RigPath *path,
                        float t,
                        const CoglColor *value);
 
-CoglBool
+bool
 rig_path_lerp_property (RigPath *path,
                         RutProperty *property,
                         float t);
 
-CoglBool
+bool
 rig_path_get_boxed (RigPath *path,
                     float t,
                     RutBoxed *value);

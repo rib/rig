@@ -29,7 +29,7 @@ struct demo {
 	gdouble spin_rate;
 	gdouble angle_between_emitters;
 
-	CoglBool swap_ready;
+	bool swap_ready;
 	GMainLoop *main_loop;
 };
 

@@ -66,7 +66,7 @@ typedef struct _RutBoxed
       int integer_val;
       int enum_val;
       uint32_t uint32_val;
-      CoglBool boolean_val;
+      bool boolean_val;
       char *text_val;
       CoglQuaternion quaternion_val;
       float vec3_val[3];

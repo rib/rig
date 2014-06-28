@@ -195,7 +195,7 @@ rig_path_find_control_points2 (RigPath *path,
 /* Finds 2 points either side of the given t using the direction to resolve
  * which points to choose if t corresponds to a specific node. */
 #if 0
-static CoglBool
+static bool
 path_find_control_points4 (RigPath *path,
                            float t,
                            int direction,
@@ -634,7 +634,7 @@ rig_path_insert_object (RigPath *path,
     }
 }
 
-CoglBool
+bool
 rig_path_lerp_property (RigPath *path,
                         RutProperty *property,
                         float t)
@@ -762,7 +762,7 @@ rig_path_lerp_property (RigPath *path,
   return TRUE;
 }
 
-CoglBool
+bool
 rig_path_get_boxed (RigPath *path,
                     float t,
                     RutBoxed *value)

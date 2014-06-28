@@ -76,15 +76,15 @@ struct _RutUIViewport
   RutClosure *sync_widget_preferred_size_closure;
   RutList preferred_size_cb_list;
 
-  CoglBool x_pannable;
-  CoglBool y_pannable;
+  bool x_pannable;
+  bool y_pannable;
 
   RutTransform *scroll_bar_x_transform;
   RutScrollBar *scroll_bar_x;
-  CoglBool scroll_bar_x_visible;
+  bool scroll_bar_x_visible;
   RutTransform *scroll_bar_y_transform;
   RutScrollBar *scroll_bar_y;
-  CoglBool scroll_bar_y_visible;
+  bool scroll_bar_y_visible;
 
   RutTransform *doc_transform;
 
@@ -556,7 +556,7 @@ allocate_cb (RutObject *graphable,
               void *user_data)
 {
   RutUIViewport *ui_viewport = RUT_UI_VIEWPORT (graphable);
-  CoglBool need_scroll_bar_x, need_scroll_bar_y;
+  bool need_scroll_bar_x, need_scroll_bar_y;
   float x_scroll_bar_thickness, y_scroll_bar_thickness;
   float viewport_width = ui_viewport->width;
   float viewport_height = ui_viewport->height;

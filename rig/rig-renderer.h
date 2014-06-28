@@ -61,7 +61,7 @@ CArray *
 rig_journal_new (void);
 
 void
-rig_camera_update_view (RigEngine *engine, RigEntity *camera, CoglBool shadow_pass);
+rig_camera_update_view (RigEngine *engine, RigEntity *camera, bool shadow_pass);
 
 void
 rig_paint_camera_entity (RigEntity *view_camera,

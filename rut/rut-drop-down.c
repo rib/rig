@@ -93,10 +93,10 @@ struct _RutDropDown
 
   /* This is set to TRUE whenever the primary mouse button is clicked
    * on the widget and we have the grab */
-  CoglBool button_down;
+  bool button_down;
   /* This is set to TRUE when button_down is TRUE and the pointer is
    * within the button */
-  CoglBool highlighted;
+  bool highlighted;
 
   gboolean selector_shown;
   int selector_x;
@@ -717,7 +717,7 @@ rut_drop_down_input_cb (RutInputEvent *event,
                         void *user_data)
 {
   RutDropDown *drop = user_data;
-  CoglBool highlighted;
+  bool highlighted;
   float x, y;
 
   if (rut_input_event_get_type (event) != RUT_INPUT_EVENT_TYPE_MOTION)

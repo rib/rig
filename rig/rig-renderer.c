@@ -1175,7 +1175,7 @@ get_entity_color_pipeline (RigEngine *engine,
                            RigMaterial *material,
                            RigImageSource **sources,
                            GetPipelineFlags flags,
-                           CoglBool blended)
+                           bool blended)
 {
   RigRendererPriv *priv = entity->renderer_priv;
   CoglDepthState depth_state;
@@ -1889,7 +1889,7 @@ rig_renderer_flush_journal (RigRenderer *renderer,
 }
 
 void
-rig_camera_update_view (RigEngine *engine, RigEntity *camera, CoglBool shadow_pass)
+rig_camera_update_view (RigEngine *engine, RigEntity *camera, bool shadow_pass)
 {
   RutObject *camera_component =
     rig_entity_get_component (camera, RUT_COMPONENT_TYPE_CAMERA);

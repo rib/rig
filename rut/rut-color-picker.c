@@ -65,10 +65,10 @@ struct _RutColorPicker
   RutIntrospectableProps introspectable;
   RutProperty properties[RUT_COLOR_PICKER_N_PROPS];
 
-  CoglBool hs_pipeline_dirty;
+  bool hs_pipeline_dirty;
   CoglPipeline *hs_pipeline;
 
-  CoglBool v_pipeline_dirty;
+  bool v_pipeline_dirty;
   CoglPipeline *v_pipeline;
 
   int width, height;

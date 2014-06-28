@@ -65,7 +65,7 @@ new_activated (GSimpleAction *action,
 {
 }
 
-static CoglBool
+static bool
 get_xwindow_from_onscreen (CoglOnscreen *onscreen,
                            Window *xwindow)
 {

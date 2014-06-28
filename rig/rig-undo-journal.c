@@ -277,7 +277,7 @@ revert_recent_controller_path_change (RigUndoJournal *journal,
 
 void
 rig_undo_journal_set_controller_path_node_value (RigUndoJournal *journal,
-                                                 CoglBool mergable,
+                                                 bool mergable,
                                                  RigController *controller,
                                                  float t,
                                                  const RutBoxed *value,

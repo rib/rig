@@ -59,7 +59,7 @@ typedef struct _RutFold
 
   RutInputRegion *input_region;
 
-  CoglBool folded;
+  bool folded;
 
   RutObject *child;
   RutObject *header_child;
@@ -81,7 +81,7 @@ void
 rut_fold_set_header_child (RutFold *fold, RutObject *child);
 
 void
-rut_fold_set_folded (RutFold *fold, CoglBool folded);
+rut_fold_set_folded (RutFold *fold, bool folded);
 
 void
 rut_fold_set_folder_color (RutFold *fold, const CoglColor *color);

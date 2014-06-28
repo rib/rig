@@ -44,7 +44,7 @@ typedef struct _BufferedFile
 {
   ProtobufCBuffer base;
   FILE *fp;
-  CoglBool error;
+  bool error;
 } BufferedFile;
 
 static void

@@ -102,7 +102,7 @@ typedef struct
   /* This is used to record whether anything set a cursor while
    * handling a mouse motion event. If nothing sets one then the shell
    * will put the cursor back to the default pointer. */
-  CoglBool cursor_set;
+  bool cursor_set;
 
 #if defined(USE_SDL)
   SDL_SysWMinfo sdl_info;
@@ -682,7 +682,7 @@ rut_motion_event_get_y (RutInputEvent *event)
   return y;
 }
 
-CoglBool
+bool
 rut_motion_event_unproject (RutInputEvent *event,
                             RutObject *graphable,
                             float *x,

@@ -45,7 +45,7 @@ typedef struct _LoaderAttribute
   size_t offset;
   size_t size;
   int n_components;
-  CoglBool padding;
+  bool padding;
 
   RutAttribute *rut_attribute;
 
@@ -71,7 +71,7 @@ typedef struct _Loader
   RutBuffer *vertex_buffer;
 
   uint8_t *current_vertex_pos;
-  CoglBool read_property;
+  bool read_property;
 
   unsigned int first_vertex, last_vertex;
   CArray *faces;
@@ -286,7 +286,7 @@ find_property (p_ply_element element, const char *property_name)
   return NULL;
 }
 
-static CoglBool
+static bool
 init_indices_array (Loader *loader,
                     int n_vertices,
                     GError **error)

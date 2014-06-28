@@ -28,7 +28,7 @@ struct demo {
 
 	gdouble snow_rate;
 
-	CoglBool swap_ready;
+	bool swap_ready;
 	GMainLoop *main_loop;
 };
 

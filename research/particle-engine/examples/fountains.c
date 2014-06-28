@@ -17,7 +17,7 @@ struct demo {
 
 	guint timeout_id;
 
-	CoglBool swap_ready;
+	bool swap_ready;
 	GMainLoop *main_loop;
 };
 

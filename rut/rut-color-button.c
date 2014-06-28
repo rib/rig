@@ -64,8 +64,8 @@ struct _RutColorButton
 
   CoglColor color;
 
-  CoglBool have_button_grab;
-  CoglBool depressed;
+  bool have_button_grab;
+  bool depressed;
 
   RutTransform *picker_transform;
   RutColorPicker *picker;
@@ -75,7 +75,7 @@ struct _RutColorButton
   CoglPipeline *light_edge_pipeline;
   CoglPipeline *padding_pipeline;
 
-  CoglBool color_pipeline_dirty;
+  bool color_pipeline_dirty;
   CoglPipeline *color_pipeline;
 
   RutInputRegion *input_region;
@@ -545,7 +545,7 @@ button_grab_input_cb (RutInputEvent *event,
 {
   RutColorButton *button = user_data;
   RutObject *camera = rut_input_event_get_camera (event);
-  CoglBool depressed;
+  bool depressed;
   float x, y;
 
   if (rut_input_event_get_type (event) != RUT_INPUT_EVENT_TYPE_MOTION)

@@ -48,7 +48,7 @@ rut_toggle_new_with_icons (RutContext *ctx,
                            const char *label);
 
 typedef void (*RutToggleCallback) (RutToggle *toggle,
-                                   CoglBool value,
+                                   bool value,
                                    void *user_data);
 
 RutClosure *
