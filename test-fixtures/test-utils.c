@@ -15,12 +15,12 @@
 #define FB_WIDTH 512
 #define FB_HEIGHT 512
 
-static CoglBool cogl_test_is_verbose;
+static bool cogl_test_is_verbose;
 
 CoglContext *test_ctx;
 CoglFramebuffer *test_fb;
 
-static CoglBool
+static bool
 check_flags (TestFlags flags,
              CoglRenderer *renderer)
 {
@@ -99,11 +99,11 @@ check_flags (TestFlags flags,
   return TRUE;
 }
 
-CoglBool
+bool
 is_boolean_env_set (const char *variable)
 {
   char *val = getenv (variable);
-  CoglBool ret;
+  bool ret;
 
   if (!val)
     return FALSE;
@@ -135,8 +135,8 @@ test_utils_init (TestFlags requirement_flags,
   CoglOnscreen *onscreen = NULL;
   CoglDisplay *display;
   CoglRenderer *renderer;
-  CoglBool missing_requirement;
-  CoglBool known_failure;
+  bool missing_requirement;
+  bool known_failure;
 
   if (counter != 0)
     g_critical ("We don't support running more than one test at a time\n"
@@ -227,7 +227,7 @@ test_utils_fini (void)
     cogl_object_unref (test_ctx);
 }
 
-static CoglBool
+static bool
 compare_component (int a, int b)
 {
   return ABS (a - b) <= 1;
@@ -358,7 +358,7 @@ test_utils_create_color_texture (CoglContext *context,
   return COGL_TEXTURE (tex_2d);
 }
 
-CoglBool
+bool
 cogl_test_verbose (void)
 {
   return cogl_test_is_verbose;
@@ -441,7 +441,7 @@ test_utils_texture_new_with_size (CoglContext *ctx,
 CoglTexture *
 test_utils_texture_new_from_bitmap (CoglBitmap *bitmap,
                                     TestUtilsTextureFlags flags,
-                                    CoglBool premultiplied)
+                                    bool premultiplied)
 {
   CoglAtlasTexture *atlas_tex;
   CoglTexture *tex;

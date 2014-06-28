@@ -9,7 +9,7 @@
 #define FRAMEBUFFER_WIDTH 800
 #define FRAMEBUFFER_HEIGHT 600
 
-CoglBool run_all = FALSE;
+bool run_all = FALSE;
 
 typedef struct _Data
 {
@@ -102,7 +102,7 @@ test_rectangles (Data *data)
   cogl_framebuffer_pop_clip (data->fb);
 }
 
-static CoglBool
+static bool
 paint_cb (void *user_data)
 {
   Data *data = user_data;

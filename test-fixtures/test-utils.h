@@ -151,7 +151,7 @@ test_utils_texture_new_from_data (CoglContext *ctx,
 CoglTexture *
 test_utils_texture_new_from_bitmap (CoglBitmap *bitmap,
                                     TestUtilsTextureFlags flags,
-                                    CoglBool premultiplied);
+                                    bool premultiplied);
 
 /*
  * test_utils_check_pixel:
@@ -268,7 +268,7 @@ test_utils_create_color_texture (CoglContext *context,
  *
  * Queries if the user asked for verbose output or not.
  */
-CoglBool
+bool
 cogl_test_verbose (void);
 
 /* test_util_is_pot:
@@ -276,7 +276,7 @@ cogl_test_verbose (void);
  *
  * Returns whether the given integer is a power of two
  */
-static inline CoglBool
+static inline bool
 test_utils_is_pot (unsigned int number)
 {
   /* Make sure there is only one bit set */

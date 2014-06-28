@@ -25,15 +25,15 @@ typedef struct
 {
   uint32_t               color;
   float                 depth;
-  CoglBool              test_enable;
+  bool              test_enable;
   CoglDepthTestFunction test_function;
-  CoglBool              write_enable;
-  CoglBool              fb_write_enable;
+  bool              write_enable;
+  bool              fb_write_enable;
   float                 range_near;
   float                 range_far;
 } TestDepthState;
 
-static CoglBool
+static bool
 draw_rectangle (TestState *state,
                 int x,
                 int y,
@@ -88,7 +88,7 @@ test_depth (TestState *state,
             TestDepthState *rect2_state,
             uint32_t expected_result)
 {
-  CoglBool missing_feature = FALSE;
+  bool missing_feature = FALSE;
 
   if (rect0_state)
     missing_feature |= !draw_rectangle (state, x, y, rect0_state);
