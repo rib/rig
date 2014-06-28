@@ -67,10 +67,10 @@ typedef struct _RutPLYAttribute
    * before we consider loading the attribute.
    *
    * If less properties are found the attribute will be skipped
-   * unless required == TRUE. */
+   * unless required == true. */
   int min_components;
 
-  /* If TRUE and the minimum number of component properties for this
+  /* If true and the minimum number of component properties for this
    * attribute aren't found then the loader will exit with an error
    */
   bool required;

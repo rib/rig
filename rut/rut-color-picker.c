@@ -370,7 +370,7 @@ ensure_hs_pipeline (RutColorPicker *picker)
   cogl_object_unref (texture);
   cogl_object_unref (bitmap);
 
-  picker->hs_pipeline_dirty = FALSE;
+  picker->hs_pipeline_dirty = false;
 }
 
 static void
@@ -434,7 +434,7 @@ ensure_v_pipeline (RutColorPicker *picker)
   cogl_object_unref (texture);
   cogl_object_unref (bitmap);
 
-  picker->v_pipeline_dirty = FALSE;
+  picker->v_pipeline_dirty = false;
 }
 
 static void
@@ -661,7 +661,7 @@ set_value (RutColorPicker *picker,
 {
   if (picker->value != value)
     {
-      picker->hs_pipeline_dirty = TRUE;
+      picker->hs_pipeline_dirty = true;
       picker->value = value;
     }
 }
@@ -674,7 +674,7 @@ set_hue_saturation (RutColorPicker *picker,
   if (picker->hue != hue ||
       picker->saturation != saturation)
     {
-      picker->v_pipeline_dirty = TRUE;
+      picker->v_pipeline_dirty = true;
       picker->hue = hue;
       picker->saturation = saturation;
     }
@@ -852,10 +852,10 @@ rut_color_picker_new (RutContext *context)
 
 
   picker->hs_pipeline = create_hs_pipeline (context->cogl_context);
-  picker->hs_pipeline_dirty = TRUE;
+  picker->hs_pipeline_dirty = true;
 
   picker->v_pipeline = cogl_pipeline_copy (picker->hs_pipeline);
-  picker->v_pipeline_dirty = TRUE;
+  picker->v_pipeline_dirty = true;
 
   create_dot_pipeline (picker);
 

@@ -51,7 +51,7 @@ typedef struct
 {
   bool enabled;
   GHashTable *hash;
-  CList *owners;
+  c_list_t *owners;
   int backtrace_level;
 } RutRefcountDebugState;
 
@@ -233,7 +233,7 @@ readlink_alloc (const char *linkname)
 {
   int buf_size = 32;
 
-  while (TRUE)
+  while (true)
     {
       char *buf = c_malloc (buf_size);
       int got = readlink (linkname, buf, buf_size - 1);
@@ -268,7 +268,7 @@ resolve_addresses_addr2line (GHashTable *hash_table,
   int exit_status;
   int extra_args = G_N_ELEMENTS (base_args);
   int address_args = extra_args + 1;
-  bool ret = TRUE;
+  bool ret = true;
   int i;
 
   argv = g_alloca (sizeof (char *) *
@@ -277,7 +277,7 @@ resolve_addresses_addr2line (GHashTable *hash_table,
 
   argv[extra_args] = readlink_alloc ("/proc/self/exe");
   if (argv[extra_args] == NULL)
-    ret = FALSE;
+    ret = false;
   else
     {
       for (i = 0; i < n_addresses; i++)
@@ -312,7 +312,7 @@ resolve_addresses_addr2line (GHashTable *hash_table,
           g_strfreev (lines);
         }
       else
-        ret = FALSE;
+        ret = false;
 
       for (i = 0; i < n_addresses; i++)
         c_free (argv[i + address_args]);
@@ -340,7 +340,7 @@ resolve_addresses_backtrace (GHashTable *hash_table,
 
   free (symbols);
 
-  return TRUE;
+  return true;
 }
 
 static void

@@ -555,7 +555,7 @@ rut_matrix_stack_orthographic (RutMatrixStack *stack,
  * Gets the inverse transform of the current matrix and uses it to
  * initialize a new #CoglMatrix.
  *
- * Return value: %TRUE if the inverse was successfully calculated or %FALSE
+ * Return value: %true if the inverse was successfully calculated or %false
  *   for degenerate transformations that can't be inverted (in this case the
  *   @inverse matrix will simply be initialized with the identity matrix)
  */
@@ -672,11 +672,11 @@ rut_matrix_stack_set (RutMatrixStack *stack,
  * the translation are.
  *
  * If the difference between the two translations involves anything
- * other than a translation then the function returns %FALSE.
+ * other than a translation then the function returns %false.
  *
- * Return value: %TRUE if the only difference between the transform of
+ * Return value: %true if the only difference between the transform of
  *                @entry0 and the transform of @entry1 is a translation,
- *                otherwise %FALSE.
+ *                otherwise %false.
  */
 bool
 rut_matrix_entry_calculate_translation (RutMatrixEntry *entry0,
@@ -692,12 +692,12 @@ rut_matrix_entry_calculate_translation (RutMatrixEntry *entry0,
  * Determines whether @entry is known to represent an identity
  * transform.
  *
- * If this returns %TRUE then the entry is definitely the identity
- * matrix. If it returns %FALSE it may or may not be the identity
+ * If this returns %true then the entry is definitely the identity
+ * matrix. If it returns %false it may or may not be the identity
  * matrix but no expensive comparison is performed to verify it.
  *
- * Return value: %TRUE if @entry is definitely an identity transform,
- *               otherwise %FALSE.
+ * Return value: %true if @entry is definitely an identity transform,
+ *               otherwise %false.
  */
 bool
 rut_matrix_entry_is_identity (RutMatrixEntry *entry);
@@ -708,14 +708,14 @@ rut_matrix_entry_is_identity (RutMatrixEntry *entry);
  * @entry1: A second #RutMatrixEntry to compare
  *
  * Compares two arbitrary #RutMatrixEntry transforms for equality
- * returning %TRUE if they are equal or %FALSE otherwise.
+ * returning %true if they are equal or %false otherwise.
  *
  * <note>In many cases it is unnecessary to use this api and instead
  * direct pointer comparisons of entries are good enough and much
  * cheaper too.</note>
  *
- * Return value: %TRUE if @entry0 represents the same transform as
- *               @entry1, otherwise %FALSE.
+ * Return value: %true if @entry0 represents the same transform as
+ *               @entry1, otherwise %false.
  */
 bool
 rut_matrix_entry_equal (RutMatrixEntry *entry0,

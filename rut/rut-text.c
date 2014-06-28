@@ -43,7 +43,7 @@
 /* This is only defined since GLib 2.31.0. The documentation says that
  * it is available since 2.28 but that is a lie. */
 #ifndef G_SOURCE_REMOVE
-#define G_SOURCE_REMOVE FALSE
+#define G_SOURCE_REMOVE false
 #endif
 
 #define RUT_NOTE(type,...)         G_STMT_START { } G_STMT_END
@@ -206,7 +206,7 @@ static RutPropertySpec _rut_text_prop_specs[] = {
     .nick = "Selectable",
     .blurb = "Whether the text is selectable",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .default_value = { .boolean = TRUE }
+    .default_value = { .boolean = true }
   },
 
   /**
@@ -222,7 +222,7 @@ static RutPropertySpec _rut_text_prop_specs[] = {
     .nick = "Activatable",
     .blurb = "Whether pressing return causes the activate signal to be emitted",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .default_value = { .boolean = TRUE }
+    .default_value = { .boolean = true }
   },
 
   /**
@@ -230,7 +230,7 @@ static RutPropertySpec _rut_text_prop_specs[] = {
    *
    * Whether the input cursor is visible or not, it will only be visible
    * if both #RutText:cursor-visible and #RutText:editable are
-   * set to %TRUE.
+   * set to %true.
    */
   {
     .name = "cursor-visible",
@@ -240,7 +240,7 @@ static RutPropertySpec _rut_text_prop_specs[] = {
     .nick = "Cursor Visible",
     .blurb = "Whether the input cursor is visible",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .default_value = { .boolean = TRUE }
+    .default_value = { .boolean = true }
   },
 
   /**
@@ -262,7 +262,7 @@ static RutPropertySpec _rut_text_prop_specs[] = {
   /**
    * RutText:cursor-color-set:
    *
-   * Will be set to %TRUE if #RutText:cursor-color has been set.
+   * Will be set to %true if #RutText:cursor-color has been set.
    */
   {
     .name = "cursor-color-set",
@@ -347,7 +347,7 @@ static RutPropertySpec _rut_text_prop_specs[] = {
   /**
    * RutText:selection-color-set:
    *
-   * Will be set to %TRUE if #RutText:selection-color has been set.
+   * Will be set to %true if #RutText:selection-color has been set.
    */
   {
     .name = "selection-color-set",
@@ -383,8 +383,8 @@ static RutPropertySpec _rut_text_prop_specs[] = {
    * pango_layout_set_markup() in the Pango documentation.
    *
    * <note>It is not possible to round-trip this property between
-   * %TRUE and %FALSE. Once a string with markup has been set on
-   * a #RutText actor with :use-markup set to %TRUE, the markup
+   * %true and %false. Once a string with markup has been set on
+   * a #RutText actor with :use-markup set to %true, the markup
    * is stripped from the string.</note>
    */
   {
@@ -417,7 +417,7 @@ static RutPropertySpec _rut_text_prop_specs[] = {
   /**
    * RutText:line-wrap-mode:
    *
-   * If #RutText:line-wrap is set to %TRUE, this property will
+   * If #RutText:line-wrap is set to %true, this property will
    * control how the text is wrapped.
    */
   {
@@ -525,7 +525,7 @@ static RutPropertySpec _rut_text_prop_specs[] = {
    * property as a side-effect.
    *
    * The #RutText:single-line-mode property is used only if the
-   * #RutText:editable property is set to %TRUE.
+   * #RutText:editable property is set to %true.
    */
   {
     .name = "single-line-mode",
@@ -556,7 +556,7 @@ static RutPropertySpec _rut_text_prop_specs[] = {
   /**
    * RutText:selected-text-color-set:
    *
-   * Will be set to %TRUE if #RutText:selected-text-color has been set.
+   * Will be set to %true if #RutText:selected-text-color has been set.
    */
   {
     .name = "selected-text-color-set",
@@ -565,7 +565,7 @@ static RutPropertySpec _rut_text_prop_specs[] = {
     .blurb = "Whether the selected text color has been set",
     .flags = RUT_PROPERTY_FLAG_READABLE,
     .getter.boolean_type = rut_text_get_selected_text_color_set,
-    .default_value = { .boolean = TRUE }
+    .default_value = { .boolean = true }
   },
 
   /**
@@ -695,7 +695,7 @@ rut_text_get_display_text (RutText *text)
   buffer = get_buffer (text);
   text_str = rut_text_buffer_get_text (buffer);
 
-  /* simple short-circuit to avoid going through CString
+  /* simple short-circuit to avoid going through c_string_t
    * with an empty text and a password char set
    */
   if (text_str[0] == '\0')
@@ -705,7 +705,7 @@ rut_text_get_display_text (RutText *text)
     return c_strdup (text_str);
   else
     {
-      CString *str;
+      c_string_t *str;
       uint32_t invisible_char;
       char buf[7];
       int char_len, i;
@@ -738,7 +738,7 @@ rut_text_get_display_text (RutText *text)
             c_string_append_len (str, buf, char_len);
         }
 
-      return c_string_free (str, FALSE);
+      return c_string_free (str, false);
     }
 }
 
@@ -804,7 +804,7 @@ rut_text_ensure_hint_text_layout (RutText *text)
 
   layout = pango_layout_new (text->ctx->pango_context);
   pango_layout_set_font_description (layout, text->font_desc);
-  pango_layout_set_single_paragraph_mode (layout, TRUE);
+  pango_layout_set_single_paragraph_mode (layout, true);
   pango_layout_set_text (layout, text->hint_text, -1);
 
   text->hint_text_layout = layout;
@@ -838,7 +838,7 @@ rut_text_create_layout_no_cache (RutText  *text,
 
   if (text->editable && text->preedit_set)
     {
-      CString *tmp = c_string_new (contents);
+      c_string_t *tmp = c_string_new (contents);
       PangoAttrList *tmp_attrs = pango_attr_list_new ();
       int cursor_index;
 
@@ -860,7 +860,7 @@ rut_text_create_layout_no_cache (RutText  *text,
           pango_layout_set_attributes (layout, tmp_attrs);
         }
 
-      c_string_free (tmp, TRUE);
+      c_string_free (tmp, true);
       pango_attr_list_unref (tmp_attrs);
     }
   else
@@ -1009,7 +1009,7 @@ rut_text_create_layout (RutText *text,
 {
 
   LayoutCache *oldest_cache = text->cached_layouts;
-  bool found_free_cache = FALSE;
+  bool found_free_cache = false;
   int width = -1;
   int height = -1;
   PangoEllipsizeMode ellipsize = PANGO_ELLIPSIZE_NONE;
@@ -1095,7 +1095,7 @@ rut_text_create_layout (RutText *text,
       if (text->cached_layouts[i].layout == NULL)
 	{
 	  /* Always prefer free cache spaces */
-	  found_free_cache = TRUE;
+	  found_free_cache = true;
 	  oldest_cache = text->cached_layouts + i;
 	}
       else
@@ -1229,7 +1229,7 @@ rut_text_position_to_coords (RutText *text,
     n_chars += text->preedit_n_chars;
 
   if (position < -1 || position > n_chars)
-    return FALSE;
+    return false;
 
   if (text->password_char != 0)
     password_char_bytes = g_unichar_to_utf8 (text->password_char, NULL);
@@ -1254,7 +1254,7 @@ rut_text_position_to_coords (RutText *text,
   else
     {
       char *text_str = rut_text_get_display_text (text);
-      CString *tmp = c_string_new (text_str);
+      c_string_t *tmp = c_string_new (text_str);
       int cursor_index;
 
       cursor_index = offset_to_bytes (text_str, text->position);
@@ -1268,7 +1268,7 @@ rut_text_position_to_coords (RutText *text,
         index_ = position * password_char_bytes;
 
       c_free (text_str);
-      c_string_free (tmp, TRUE);
+      c_string_free (tmp, true);
     }
 
   pango_layout_get_cursor_pos (rut_text_get_layout (text),
@@ -1290,7 +1290,7 @@ rut_text_position_to_coords (RutText *text,
   if (line_height)
     *line_height = (float) rect.height / 1024.0f;
 
-  return TRUE;
+  return true;
 }
 
 static inline void
@@ -1352,13 +1352,13 @@ rut_text_delete_selection (RutText *text)
 
   n_chars = rut_text_buffer_get_length (get_buffer (text));
   if (n_chars == 0)
-    return TRUE;
+    return true;
 
   start_index = text->position == -1 ? n_chars : text->position;
   end_index = text->selection_bound == -1 ? n_chars : text->selection_bound;
 
   if (end_index == start_index)
-    return FALSE;
+    return false;
 
   if (end_index < start_index)
     {
@@ -1384,7 +1384,7 @@ rut_text_delete_selection (RutText *text)
     rut_property_dirty (&text->ctx->property_ctx,
                         &text->properties[RUT_TEXT_PROP_SELECTION_BOUND]);
 
-  return TRUE;
+  return true;
 }
 
 /*
@@ -1787,7 +1787,7 @@ rut_text_move_line_start (RutText *text,
 
   layout_line = pango_layout_get_line_readonly (layout, line_no);
   if (!layout_line)
-    return FALSE;
+    return false;
 
   pango_layout_line_x_to_index (layout_line, 0, &index_, NULL);
 
@@ -1822,7 +1822,7 @@ rut_text_move_line_end (RutText *text,
 
   layout_line = pango_layout_get_line_readonly (layout, line_no);
   if (!layout_line)
-    return FALSE;
+    return false;
 
   pango_layout_line_x_to_index (layout_line, G_MAXINT, &index_, &trailing);
   index_ += trailing;
@@ -1898,7 +1898,7 @@ rut_text_real_move_left (RutText *text,
   if (!(text->selectable && (modifiers & RUT_MODIFIER_SHIFT_ON)))
     rut_text_clear_selection (text);
 
-  return TRUE;
+  return true;
 }
 
 
@@ -1930,7 +1930,7 @@ rut_text_real_move_right (RutText *text,
   if (!(text->selectable && (modifiers & RUT_MODIFIER_SHIFT_ON)))
     rut_text_clear_selection (text);
 
-  return TRUE;
+  return true;
 }
 
 static bool
@@ -1960,14 +1960,14 @@ rut_text_real_move_up (RutText *text,
 
   line_no -= 1;
   if (line_no < 0)
-    return FALSE;
+    return false;
 
   if (text->x_pos != -1)
     x = text->x_pos;
 
   layout_line = pango_layout_get_line_readonly (layout, line_no);
   if (!layout_line)
-    return FALSE;
+    return false;
 
   pango_layout_line_x_to_index (layout_line, x, &index_, &trailing);
 
@@ -1981,7 +1981,7 @@ rut_text_real_move_up (RutText *text,
   if (!(text->selectable && (modifiers & RUT_MODIFIER_SHIFT_ON)))
     rut_text_clear_selection (text);
 
-  return TRUE;
+  return true;
 }
 
 static bool
@@ -2014,7 +2014,7 @@ rut_text_real_move_down (RutText *text,
 
   layout_line = pango_layout_get_line_readonly (layout, line_no + 1);
   if (!layout_line)
-    return FALSE;
+    return false;
 
   pango_layout_line_x_to_index (layout_line, x, &index_, &trailing);
 
@@ -2028,7 +2028,7 @@ rut_text_real_move_down (RutText *text,
   if (!(text->selectable && (modifiers & RUT_MODIFIER_SHIFT_ON)))
     rut_text_clear_selection (text);
 
-  return TRUE;
+  return true;
 }
 
 static bool
@@ -2044,7 +2044,7 @@ rut_text_real_line_start (RutText *text,
   if (!(text->selectable && (modifiers & RUT_MODIFIER_SHIFT_ON)))
     rut_text_clear_selection (text);
 
-  return TRUE;
+  return true;
 }
 
 static bool
@@ -2060,7 +2060,7 @@ rut_text_real_line_end (RutText *text,
   if (!(text->selectable && (modifiers & RUT_MODIFIER_SHIFT_ON)))
     rut_text_clear_selection (text);
 
-  return TRUE;
+  return true;
 }
 
 static bool
@@ -2071,12 +2071,12 @@ rut_text_real_select_all (RutText *text,
   unsigned int n_chars;
 
   if (! (modifiers & RUT_MODIFIER_CTRL_ON))
-    return FALSE;
+    return false;
 
   n_chars = rut_text_buffer_get_length (get_buffer (text));
   rut_text_set_positions (text, 0, n_chars);
 
-  return TRUE;
+  return true;
 }
 
 static bool
@@ -2087,7 +2087,7 @@ rut_text_real_del_next (RutText *text,
   int len;
 
   if (rut_text_delete_selection (text))
-    return TRUE;
+    return true;
 
   pos = text->position;
   len = rut_text_buffer_get_length (get_buffer (text));
@@ -2095,7 +2095,7 @@ rut_text_real_del_next (RutText *text,
   if (len && pos != -1 && pos < len)
     rut_text_delete_text (text, pos, pos + 1);
 
-  return TRUE;
+  return true;
 }
 
 static bool
@@ -2128,7 +2128,7 @@ rut_text_real_del_word_next (RutText *text,
         }
     }
 
-  return TRUE;
+  return true;
 }
 
 static bool
@@ -2139,7 +2139,7 @@ rut_text_real_del_prev (RutText *text,
   int len;
 
   if (rut_text_delete_selection (text))
-    return TRUE;
+    return true;
 
   pos = text->position;
   len = rut_text_buffer_get_length (get_buffer (text));
@@ -2160,7 +2160,7 @@ rut_text_real_del_prev (RutText *text,
         }
     }
 
-  return TRUE;
+  return true;
 }
 
 static bool
@@ -2204,7 +2204,7 @@ rut_text_real_del_word_prev (RutText *text,
         }
     }
 
-  return TRUE;
+  return true;
 }
 
 static bool
@@ -2274,7 +2274,7 @@ rut_text_motion_grab (RutInputEvent *event,
       rut_shell_ungrab_input (text->ctx->shell,
                               rut_text_motion_grab,
                               user_data);
-      text->in_select_drag = FALSE;
+      text->in_select_drag = false;
       return RUT_INPUT_EVENT_STATUS_HANDLED;
     }
 
@@ -2286,7 +2286,7 @@ rut_text_remove_password_hint (void *data)
 {
   RutText *text = data;
 
-  text->password_hint_visible = FALSE;
+  text->password_hint_visible = false;
   text->password_hint_id = 0;
 
   rut_text_dirty_cache (data);
@@ -2299,7 +2299,7 @@ static RutInputEventStatus
 rut_text_button_press (RutText *text,
                        RutInputEvent *event)
 {
-  //bool res = FALSE;
+  //bool res = false;
   float x, y;
   int index_;
   CoglMatrix transform;
@@ -2389,7 +2389,7 @@ rut_text_button_press (RutText *text,
     }
 
   /* grab the pointer */
-  text->in_select_drag = TRUE;
+  text->in_select_drag = true;
   rut_shell_grab_input (text->ctx->shell,
                         camera,
                         rut_text_motion_grab,
@@ -2408,7 +2408,7 @@ rut_text_input_cb (RutInputEvent *event,
       rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN)
     return rut_text_button_press (text, event);
   else if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_DROP &&
-           rut_text_get_editable (text) == TRUE)
+           rut_text_get_editable (text) == true)
     {
       RutObject *data = rut_drop_event_get_data (event);
 
@@ -2432,7 +2432,7 @@ rut_text_handle_key_event (RutText *text,
 {
   //RutBindingPool *pool;
   //bool res;
-  bool handled = FALSE;
+  bool handled = false;
 
   if (rut_key_event_get_action (event) != RUT_KEY_EVENT_ACTION_DOWN)
     return RUT_INPUT_EVENT_STATUS_HANDLED;
@@ -2452,7 +2452,7 @@ rut_text_handle_key_event (RutText *text,
    * the Unicode value and not the key symbol
    */
   if (event->keyval == 0 && (event->flags & RUT_EVENT_FLAG_SYNTHETIC))
-    res = FALSE;
+    res = false;
   else
     res = rut_binding_pool_activate (pool, event->keyval,
                                      event->modifier_state,
@@ -2518,7 +2518,7 @@ rut_text_handle_key_event (RutText *text,
       break;
     case RUT_KEY_Escape:
       rut_text_ungrab_key_focus (text);
-      handled = TRUE;
+      handled = true;
       break;
     }
 
@@ -2572,7 +2572,7 @@ rut_text_handle_text_event (RutText *text,
           if (text->password_hint_id != 0)
             g_source_remove (text->password_hint_id);
 
-          text->password_hint_visible = TRUE;
+          text->password_hint_visible = true;
           text->password_hint_id =
             g_timeout_add (text->password_hint_timeout,
                            rut_text_remove_password_hint,
@@ -2609,7 +2609,7 @@ rut_text_grab_key_focus (RutText *text)
 {
   if (!text->has_focus)
     {
-      text->has_focus = TRUE;
+      text->has_focus = true;
 
       /* Note: we don't use rut_shell_grab_key_focus here becase we also want
        * to grab mouse input that might otherwise slopily to move focus to other
@@ -2631,7 +2631,7 @@ rut_text_ungrab_key_focus (RutText *text)
       rut_shell_ungrab_input (text->ctx->shell,
                               rut_text_key_press,
                               text);
-      text->has_focus = FALSE;
+      text->has_focus = false;
       rut_shell_queue_redraw (text->ctx->shell);
     }
 }
@@ -2651,8 +2651,8 @@ rut_text_paint (RutObject *object,
   CoglColor color = { 0, };
   float real_opacity;
   int text_x = text->text_x;
-  bool clip_set = FALSE;
-  //bool bg_color_set = FALSE;
+  bool clip_set = false;
+  //bool bg_color_set = false;
   unsigned int n_chars;
   float width, height;
 
@@ -2748,7 +2748,7 @@ rut_text_paint (RutObject *object,
                                             height);
                                             //(alloc.x2 - alloc.x1),
                                             //(alloc.y2 - alloc.y1));
-      clip_set = TRUE;
+      clip_set = true;
 
       //actor_width = (alloc.x2 - alloc.x1)
       actor_width = width - 2 * TEXT_PADDING;
@@ -2801,7 +2801,7 @@ rut_text_paint (RutObject *object,
                                                 //alloc.y2 - alloc.y1);
                                                 width,
                                                 height);
-          clip_set = TRUE;
+          clip_set = true;
         }
 
       text_x = 0;
@@ -3237,13 +3237,13 @@ rut_text_new_full (RutContext *ctx,
   text->ctx = ctx;
 
   text->alignment = PANGO_ALIGN_LEFT;
-  text->wrap = FALSE;
+  text->wrap = false;
   text->wrap_mode = PANGO_WRAP_WORD;
   text->ellipsize = PANGO_ELLIPSIZE_NONE;
-  text->use_underline = FALSE;
-  text->use_markup = FALSE;
-  text->justify = FALSE;
-  text->activatable = TRUE;
+  text->use_underline = false;
+  text->use_markup = false;
+  text->justify = false;
+  text->activatable = true;
   text->pick_mesh = pick_mesh;
 
   for (i = 0; i < N_CACHED_LAYOUTS; i++)
@@ -3271,21 +3271,21 @@ rut_text_new_full (RutContext *ctx,
   text->font_name = font_name ? c_strdup (font_name) :
     rut_settings_get_font_name (text->ctx->settings); /* font_name is allocated */
   text->font_desc = pango_font_description_from_string (text->font_name);
-  text->is_default_font = TRUE;
+  text->is_default_font = true;
 
   text->position = -1;
   text->selection_bound = -1;
 
   text->x_pos = -1;
-  text->cursor_visible = TRUE;
-  text->editable = FALSE;
-  text->selectable = TRUE;
+  text->cursor_visible = true;
+  text->editable = false;
+  text->selectable = true;
   text->single_line_mode = true;
 
-  text->selection_color_set = FALSE;
-  text->cursor_color_set = FALSE;
-  text->selected_text_color_set = TRUE;
-  text->preedit_set = FALSE;
+  text->selection_color_set = false;
+  text->cursor_color_set = false;
+  text->selected_text_color_set = true;
+  text->preedit_set = false;
 
   text->password_char = 0;
   text->show_password_hint = password_hint_time > 0;
@@ -3624,12 +3624,12 @@ rut_text_activate (RutText *text)
       rut_closure_list_invoke (&text->activate_cb_list,
                                RutTextActivateCallback,
                                text);
-      return TRUE;
+      return true;
     }
 
   rut_text_ungrab_key_focus (text);
 
-  return FALSE;
+  return false;
 }
 
 void
@@ -3666,10 +3666,10 @@ rut_text_set_cursor_color (RutObject *obj,
   if (color)
     {
       text->cursor_color = *color;
-      text->cursor_color_set = TRUE;
+      text->cursor_color_set = true;
     }
   else
-    text->cursor_color_set = FALSE;
+    text->cursor_color_set = false;
 
   rut_shell_queue_redraw (text->ctx->shell);
 
@@ -3795,10 +3795,10 @@ rut_text_set_selection_color (RutObject *obj,
   if (color)
     {
       text->selection_color = *color;
-      text->selection_color_set = TRUE;
+      text->selection_color_set = true;
     }
   else
-    text->selection_color_set = FALSE;
+    text->selection_color_set = false;
 
   rut_shell_queue_redraw (text->ctx->shell);
 
@@ -3843,10 +3843,10 @@ rut_text_set_selected_text_color (RutObject *obj,
   if (color)
     {
       text->selected_text_color = *color;
-      text->selected_text_color_set = TRUE;
+      text->selected_text_color_set = true;
     }
   else
-    text->selected_text_color_set = FALSE;
+    text->selected_text_color_set = false;
 
   rut_shell_queue_redraw (text->ctx->shell);
 
@@ -3929,10 +3929,10 @@ rut_text_set_font_name (RutObject *obj,
           default_font_name = c_strdup ("Sans 12");
         }
 
-      is_default_font = TRUE;
+      is_default_font = true;
     }
   else
-    is_default_font = FALSE;
+    is_default_font = false;
 
   if (c_strcmp0 (text->font_name, font_name) == 0)
     goto out;
@@ -4013,7 +4013,7 @@ rut_text_set_text (RutObject *obj,
         return;
     }
 
-  rut_text_set_use_markup_internal (text, FALSE);
+  rut_text_set_use_markup_internal (text, false);
   rut_text_buffer_set_text (get_buffer (text), text_str);
 }
 
@@ -4047,7 +4047,7 @@ void
 rut_text_set_markup (RutText *text,
                          const char *markup)
 {
-  rut_text_set_use_markup_internal (text, TRUE);
+  rut_text_set_use_markup_internal (text, true);
   if (markup != NULL && *markup != '\0')
     rut_text_set_markup_internal (text, markup);
   else
@@ -4399,14 +4399,14 @@ void
 rut_text_insert_unichar (RutText *text,
                          uint32_t wc)
 {
-  CString *new;
+  c_string_t *new;
 
   new = c_string_new ("");
   c_string_append_unichar (new, wc);
 
   rut_text_buffer_insert_text (get_buffer (text), text->position, new->str, 1);
 
-  c_string_free (new, TRUE);
+  c_string_free (new, true);
 }
 
 void
@@ -4475,7 +4475,7 @@ rut_text_set_single_line_mode (RutObject *obj,
 
       if (text->single_line_mode)
         {
-          text->activatable = TRUE;
+          text->activatable = true;
 
           rut_property_dirty (&text->ctx->property_ctx,
                               &text->properties[RUT_TEXT_PROP_ACTIVATABLE]);
@@ -4516,7 +4516,7 @@ rut_text_set_preedit_string (RutText *text,
   text->preedit_cursor_pos = 0;
 
   if (preedit_str == NULL || *preedit_str == '\0')
-    text->preedit_set = FALSE;
+    text->preedit_set = false;
   else
     {
       text->preedit_str = c_strdup (preedit_str);
@@ -4532,7 +4532,7 @@ rut_text_set_preedit_string (RutText *text,
       text->preedit_cursor_pos =
         CLAMP (cursor_pos, 0, text->preedit_n_chars);
 
-      text->preedit_set = TRUE;
+      text->preedit_set = true;
     }
 
   rut_text_dirty_cache (text);

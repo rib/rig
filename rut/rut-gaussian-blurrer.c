@@ -66,7 +66,7 @@ create_1d_gaussian_blur_pipeline (RutContext *ctx, int n_taps)
   static GHashTable *pipeline_cache = NULL;
   CoglPipeline *pipeline;
   CoglSnippet *snippet;
-  CString *shader;
+  c_string_t *shader;
   CoglDepthState depth_state;
   int i;
 
@@ -134,7 +134,7 @@ create_1d_gaussian_blur_pipeline (RutContext *ctx, int n_taps)
 
   cogl_snippet_set_replace (snippet, shader->str);
 
-  c_string_free (shader, TRUE);
+  c_string_free (shader, true);
 
   cogl_pipeline_add_layer_snippet (pipeline, 0, snippet);
 
@@ -143,8 +143,8 @@ create_1d_gaussian_blur_pipeline (RutContext *ctx, int n_taps)
   cogl_pipeline_set_blend (pipeline, "RGBA=ADD(SRC_COLOR, 0)", NULL);
 
   cogl_depth_state_init (&depth_state);
-  cogl_depth_state_set_write_enabled (&depth_state, FALSE);
-  cogl_depth_state_set_test_enabled (&depth_state, FALSE);
+  cogl_depth_state_set_write_enabled (&depth_state, false);
+  cogl_depth_state_set_test_enabled (&depth_state, false);
   cogl_pipeline_set_depth_state (pipeline, &depth_state, NULL);
 
   g_hash_table_insert (pipeline_cache, GINT_TO_POINTER (n_taps), pipeline);

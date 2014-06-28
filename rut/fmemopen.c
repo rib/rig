@@ -155,12 +155,12 @@ fmemopen (void *buf, size_t size, const char *mode)
   if (buf)
     {
       cookie->buffer = buf;
-      cookie->user_buffer = TRUE;
+      cookie->user_buffer = true;
     }
   else
     {
       cookie->buffer = c_malloc (size);
-      cookie->user_buffer = FALSE;
+      cookie->user_buffer = false;
       cookie->buffer[0] = '\0';
     }
 

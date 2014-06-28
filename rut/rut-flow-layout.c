@@ -549,7 +549,7 @@ reflow (RutFlowLayout *flow,
   else
     *length_p = 0;
 
-  flow->needs_reflow = FALSE;
+  flow->needs_reflow = false;
   flow->last_flow_line_length = state.line_length;
 }
 
@@ -749,7 +749,7 @@ rut_flow_layout_new (RutContext *ctx,
   flow->min_child_width = flow->min_child_height = 0;
   flow->max_child_width = flow->max_child_height = -1;
 
-  flow->needs_reflow = TRUE;
+  flow->needs_reflow = true;
   queue_allocation (flow);
 
   return flow;
@@ -758,7 +758,7 @@ rut_flow_layout_new (RutContext *ctx,
 static void
 preferred_size_changed (RutFlowLayout *flow)
 {
-  flow->needs_reflow = TRUE;
+  flow->needs_reflow = true;
 
   rut_closure_list_invoke (&flow->preferred_size_cb_list,
                            RutSizablePreferredSizeCallback,

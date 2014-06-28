@@ -232,7 +232,7 @@ rut_mesh_new_from_buffer_p3c4 (CoglVerticesMode mode,
                                      offsetof (CoglVertexP3C4, r),
                                      4,
                                      RUT_ATTRIBUTE_TYPE_UNSIGNED_BYTE);
-  attributes[1]->normalized = TRUE;
+  attributes[1]->normalized = true;
 
   mesh->attributes = attributes;
   mesh->n_attributes = n_attributes;
@@ -358,12 +358,12 @@ collect_attribute_state (RutMesh *mesh,
         }
 
       if (j == mesh->n_attributes)
-        return FALSE;
+        return false;
 
       attribute_name = va_arg (ap, const char *);
     }
 
-  return TRUE;
+  return true;
 }
 
 void
@@ -394,7 +394,7 @@ rut_mesh_foreach_vertex (RutMesh *mesh,
 
   c_return_if_fail (ready);
 
-  foreach_vertex (mesh, callback, user_data, FALSE,
+  foreach_vertex (mesh, callback, user_data, false,
                   bases, strides, n_attributes);
 }
 
@@ -426,7 +426,7 @@ rut_mesh_foreach_index (RutMesh *mesh,
 
   c_return_if_fail (ready);
 
-  foreach_vertex (mesh, callback, user_data, TRUE,
+  foreach_vertex (mesh, callback, user_data, true,
                   bases, strides, n_attributes);
 }
 
@@ -569,7 +569,7 @@ rut_mesh_foreach_triangle (RutMesh *mesh,
       tri_i[1] = move_to_i (i++, &state, tri_v[1]);
       tri_i[2] = move_to_i (i++, &state, tri_v[2]);
 
-      while (TRUE)
+      while (true)
         {
           if (!callback (tri_v[0], tri_v[1], tri_v[2],
                          tri_i[0], tri_i[1], tri_i[2], user_data))
@@ -608,7 +608,7 @@ rut_mesh_foreach_triangle (RutMesh *mesh,
       tri_i[1] = move_to (i++, n_attributes, bases, strides, tri_v[1]);
       tri_i[2] = move_to (i++, n_attributes, bases, strides, tri_v[2]);
 
-      while (TRUE)
+      while (true)
         {
           if (!callback (tri_v[0], tri_v[1], tri_v[2],
                          tri_i[0], tri_i[1], tri_i[2], user_data))

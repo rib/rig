@@ -77,7 +77,7 @@ rut_input_region_set_circle (RutInputRegion *region,
 
 /* XXX: Note: the plan is to remove this api at some point
  *
- * If HUD mode is TRUE then the region isn't transformed by the
+ * If HUD mode is true then the region isn't transformed by the
  * camera's view transform so the region is in window coordinates.
  */
 void

@@ -92,7 +92,7 @@ static RutPropertySpec _rut_box_layout_prop_specs[] = {
     .nick = "Homogeneous",
     .blurb = "Pack children with the same size",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .default_value = { .boolean = FALSE }
+    .default_value = { .boolean = false }
   },
 
   {
@@ -165,7 +165,7 @@ allocate_cb (RutObject *graphable,
     case RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT:
     case RUT_BOX_LAYOUT_PACKING_RIGHT_TO_LEFT:
       size = box->width - (n_children - 1) * box->spacing;
-      horizontal = TRUE;
+      horizontal = true;
       child_y = 0;
       child_height = box->height;
       if (rut_get_text_direction (box->ctx) == RUT_TEXT_DIRECTION_RIGHT_TO_LEFT)
@@ -179,7 +179,7 @@ allocate_cb (RutObject *graphable,
     case RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM:
     case RUT_BOX_LAYOUT_PACKING_BOTTOM_TO_TOP:
       size = box->height - (n_children - 1) * box->spacing;
-      horizontal = FALSE;
+      horizontal = false;
       child_x = 0;
       child_width = box->width;
       break;

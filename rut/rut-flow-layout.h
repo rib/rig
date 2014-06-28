@@ -56,8 +56,8 @@ G_BEGIN_DECLS
  *   the amount of columns and rows;</para></listitem>
  *   <listitem><para>each line (either column or row) in reflowing will
  *   have the size of the biggest cell on that line; if the
- *   #RutFlowLayout:homogeneous property is set to %FALSE the actor
- *   will be allocated within that area, and if set to %TRUE instead the
+ *   #RutFlowLayout:homogeneous property is set to %false the actor
+ *   will be allocated within that area, and if set to %true instead the
  *   actor will be given exactly that area;</para></listitem>
  *   <listitem><para>the size of the columns or rows can be controlled
  *   for both minimum and maximum; the spacing can also be controlled
@@ -176,7 +176,7 @@ rut_flow_layout_set_homogeneous (RutFlowLayout *flow,
  *
  * Retrieves whether the @flow is homogeneous
  *
- * Return value: %TRUE if the #RutFlowLayout is homogeneous
+ * Return value: %true if the #RutFlowLayout is homogeneous
  */
 bool
 rut_flow_layout_get_homogeneous (RutFlowLayout *flow);

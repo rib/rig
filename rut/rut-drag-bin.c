@@ -202,7 +202,7 @@ start_drag (RutDragBin *bin)
 
   rut_shell_start_drag (bin->ctx->shell, bin->payload);
   rut_shell_queue_redraw (bin->ctx->shell);
-  bin->in_drag = TRUE;
+  bin->in_drag = true;
 }
 
 static void
@@ -216,7 +216,7 @@ cancel_drag (RutDragBin *bin)
 
   rut_shell_cancel_drag (bin->ctx->shell);
   rut_shell_queue_redraw (bin->ctx->shell);
-  bin->in_drag = FALSE;
+  bin->in_drag = false;
 }
 
 typedef struct _DragState
@@ -326,7 +326,7 @@ rut_drag_bin_new (RutContext *ctx)
 
   rut_graphable_init (bin);
 
-  bin->in_drag = FALSE;
+  bin->in_drag = false;
 
   bin->stack = rut_stack_new (ctx, 1, 1);
   rut_graphable_add_child (bin, bin->stack);
@@ -362,7 +362,7 @@ rut_drag_bin_set_child (RutDragBin *bin,
                         RutObject *child_widget)
 {
   c_return_if_fail (rut_object_get_type (bin) == &rut_drag_bin_type);
-  c_return_if_fail (bin->in_drag == FALSE);
+  c_return_if_fail (bin->in_drag == false);
 
   if (bin->child == child_widget)
     return;

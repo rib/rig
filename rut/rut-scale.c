@@ -70,7 +70,7 @@ _rut_scale_free (void *object)
       rut_object_unref (label->transform);
     }
 
-  c_array_free (scale->labels, TRUE);
+  c_array_free (scale->labels, true);
 
   rut_graphable_remove_child (scale->select_transform);
   rut_object_unref (scale->select_transform);
@@ -555,7 +555,7 @@ static RutPropertySpec _rut_scale_prop_specs[] = {
     .data_offset = offsetof (RutScale, length),
     .setter.float_type = rut_scale_set_length,
     .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .animatable = TRUE
+    .animatable = true
   },
   {
     .name = "user_scale",
@@ -564,7 +564,7 @@ static RutPropertySpec _rut_scale_prop_specs[] = {
     .data_offset = offsetof (RutScale, user_scale),
     .setter.float_type = _rut_scale_set_user_scale,
     .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .animatable = TRUE
+    .animatable = true
   },
   {
     .name = "offset",
@@ -573,7 +573,7 @@ static RutPropertySpec _rut_scale_prop_specs[] = {
     .data_offset = offsetof (RutScale, start_offset),
     .setter.float_type = rut_scale_set_offset,
     .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .animatable = TRUE
+    .animatable = true
   },
   {
     .name = "focus",
@@ -582,7 +582,7 @@ static RutPropertySpec _rut_scale_prop_specs[] = {
     .data_offset = offsetof (RutScale, focus_offset),
     .setter.float_type = rut_scale_set_focus,
     .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .animatable = TRUE
+    .animatable = true
   },
   {
     .name = "pixel_scale",
@@ -590,7 +590,7 @@ static RutPropertySpec _rut_scale_prop_specs[] = {
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutScale, pixel_scale),
     .flags = RUT_PROPERTY_FLAG_READABLE,
-    .animatable = TRUE
+    .animatable = true
   },
   { NULL }
 };
@@ -835,7 +835,7 @@ rut_scale_new (RutContext *ctx,
   scale->pixel_scale = 1;
   scale->initial_view = true;
 
-  scale->labels = c_array_new (FALSE, FALSE, sizeof (Label));
+  scale->labels = c_array_new (false, false, sizeof (Label));
 
   scale->bg = rut_rectangle_new4f (ctx, 1, 1, 0.8, 0.8, 0.8, 1);
   rut_graphable_add_child (scale, scale->bg);

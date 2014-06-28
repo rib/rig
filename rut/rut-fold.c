@@ -151,11 +151,11 @@ rut_fold_new (RutContext *ctx,
 
   header_hbox =
     rut_box_layout_new (ctx, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
-  rut_box_layout_add (fold->vbox, FALSE, header_hbox);
+  rut_box_layout_add (fold->vbox, false, header_hbox);
   rut_object_unref (header_hbox);
 
   left_header_stack = rut_stack_new (ctx, 0, 0);
-  rut_box_layout_add (header_hbox, TRUE, left_header_stack);
+  rut_box_layout_add (header_hbox, true, left_header_stack);
   rut_object_unref (left_header_stack);
 
   left_header_hbox =
@@ -167,7 +167,7 @@ rut_fold_new (RutContext *ctx,
   rut_bin_set_x_position (fold_icon_align, RUT_BIN_POSITION_BEGIN);
   rut_bin_set_y_position (fold_icon_align, RUT_BIN_POSITION_CENTER);
   rut_bin_set_right_padding (fold_icon_align, 10);
-  rut_box_layout_add (left_header_hbox, FALSE, fold_icon_align);
+  rut_box_layout_add (left_header_hbox, false, fold_icon_align);
   rut_object_unref (fold_icon_align);
 
   texture = rut_load_texture_from_data_file (ctx, "tri-fold-up.png", NULL);
@@ -197,7 +197,7 @@ rut_fold_new (RutContext *ctx,
 
   label_bin = rut_bin_new (ctx);
   rut_bin_set_y_position (label_bin, RUT_BIN_POSITION_CENTER);
-  rut_box_layout_add (left_header_hbox, FALSE, label_bin);
+  rut_box_layout_add (left_header_hbox, false, label_bin);
   rut_object_unref (label_bin);
 
   fold->label = rut_text_new_with_text (ctx, NULL, label);
@@ -206,7 +206,7 @@ rut_fold_new (RutContext *ctx,
 
   fold->header_hbox_right =
     rut_box_layout_new (ctx, RUT_BOX_LAYOUT_PACKING_RIGHT_TO_LEFT);
-  rut_box_layout_add (header_hbox, TRUE, fold->header_hbox_right);
+  rut_box_layout_add (header_hbox, true, fold->header_hbox_right);
   rut_object_unref (fold->header_hbox_right);
 
   cogl_color_init_from_4f (&black, 0, 0, 0, 1);
@@ -222,7 +222,7 @@ rut_fold_new (RutContext *ctx,
   rut_stack_add (left_header_stack, fold->input_region);
   rut_object_unref (fold->input_region);
 
-  fold->folded = FALSE;
+  fold->folded = false;
 
   return fold;
 }
@@ -244,7 +244,7 @@ rut_fold_set_child (RutFold *fold, RutObject *child)
 
   fold->child = child;
   if (child && !fold->folded)
-    rut_box_layout_add (fold->vbox, TRUE, child);
+    rut_box_layout_add (fold->vbox, true, child);
 }
 
 void
@@ -262,7 +262,7 @@ rut_fold_set_header_child (RutFold *fold, RutObject *child)
     }
 
   fold->header_child = child;
-  rut_box_layout_add (fold->header_hbox_right, TRUE, child);
+  rut_box_layout_add (fold->header_hbox_right, true, child);
 }
 
 void
@@ -281,7 +281,7 @@ rut_fold_set_folded (RutFold *fold, bool folded)
     {
       rut_fixed_remove_child (fold->fold_icon_shim, fold->fold_up_icon);
       rut_fixed_add_child (fold->fold_icon_shim, fold->fold_down_icon);
-      rut_box_layout_add (fold->vbox, TRUE, fold->child);
+      rut_box_layout_add (fold->vbox, true, fold->child);
     }
 
   fold->folded = folded;

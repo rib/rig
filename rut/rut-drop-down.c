@@ -91,10 +91,10 @@ struct _RutDropDown
   RutIntrospectableProps introspectable;
   RutProperty properties[RUT_DROP_DOWN_N_PROPS];
 
-  /* This is set to TRUE whenever the primary mouse button is clicked
+  /* This is set to true whenever the primary mouse button is clicked
    * on the widget and we have the grab */
   bool button_down;
-  /* This is set to TRUE when button_down is TRUE and the pointer is
+  /* This is set to true when button_down is true and the pointer is
    * within the button */
   bool highlighted;
 
@@ -706,7 +706,7 @@ rut_drop_down_handle_click (RutDropDown *drop,
                         rut_drop_down_selector_grab_cb,
                         drop);
 
-  drop->selector_shown = TRUE;
+  drop->selector_shown = true;
   drop->selector_value = -1;
 
   rut_shell_queue_redraw (drop->context->shell);
@@ -728,7 +728,7 @@ rut_drop_down_input_cb (RutInputEvent *event,
 
   if ((rut_motion_event_get_button_state (event) & RUT_BUTTON_STATE_1) == 0)
     {
-      drop->button_down = FALSE;
+      drop->button_down = false;
       rut_shell_ungrab_input (drop->context->shell,
                               rut_drop_down_input_cb,
                               user_data);
@@ -738,7 +738,7 @@ rut_drop_down_input_cb (RutInputEvent *event,
       if (drop->highlighted)
         rut_drop_down_handle_click (drop, event);
 
-      highlighted = FALSE;
+      highlighted = false;
     }
   else
     {
@@ -774,8 +774,8 @@ rut_drop_down_input_region_cb (RutInputRegion *region,
       (rut_motion_event_get_button_state (event) & RUT_BUTTON_STATE_1) &&
       (camera = rut_input_event_get_camera (event)))
     {
-      drop->button_down = TRUE;
-      drop->highlighted = TRUE;
+      drop->button_down = true;
+      drop->highlighted = true;
 
       rut_shell_grab_input (drop->context->shell,
                             camera,
@@ -796,7 +796,7 @@ rut_drop_down_hide_selector (RutDropDown *drop)
   if (drop->selector_shown)
     {
       cogl_object_unref (drop->selector_outline_path);
-      drop->selector_shown = FALSE;
+      drop->selector_shown = false;
       rut_shell_queue_redraw (drop->context->shell);
 
       rut_shell_ungrab_input (drop->context->shell,

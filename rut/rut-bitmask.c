@@ -70,7 +70,7 @@ bool
 _rut_bitmask_get_from_array (const RutBitmask *bitmask,
                              unsigned int bit_num)
 {
-  CArray *array = (CArray *) *bitmask;
+  c_array_t *array = (c_array_t *) *bitmask;
 
   /* If the index is off the end of the array then assume the bit is
      not set */
@@ -84,7 +84,7 @@ _rut_bitmask_get_from_array (const RutBitmask *bitmask,
 static void
 _rut_bitmask_convert_to_array (RutBitmask *bitmask)
 {
-  CArray *array;
+  c_array_t *array;
   /* Fetch the old values */
   unsigned long old_values = _rut_bitmask_to_bits (bitmask);
 
@@ -102,7 +102,7 @@ _rut_bitmask_set_in_array (RutBitmask *bitmask,
                            unsigned int bit_num,
                            bool value)
 {
-  CArray *array;
+  c_array_t *array;
   unsigned int array_index;
   unsigned long new_value_mask;
 
@@ -110,7 +110,7 @@ _rut_bitmask_set_in_array (RutBitmask *bitmask,
   if (!_rut_bitmask_has_array (bitmask))
     _rut_bitmask_convert_to_array (bitmask);
 
-  array = (CArray *) *bitmask;
+  array = (c_array_t *) *bitmask;
 
   array_index = ARRAY_INDEX (bit_num);
   /* Grow the array if necessary. This will clear the new data */
@@ -131,14 +131,14 @@ _rut_bitmask_set_bits (RutBitmask *dst,
 {
   if (_rut_bitmask_has_array (src))
     {
-      CArray *src_array, *dst_array;
+      c_array_t *src_array, *dst_array;
       int i;
 
       if (!_rut_bitmask_has_array (dst))
         _rut_bitmask_convert_to_array (dst);
 
-      dst_array = (CArray *) *dst;
-      src_array = (CArray *) *src;
+      dst_array = (c_array_t *) *dst;
+      src_array = (c_array_t *) *src;
 
       if (dst_array->len < src_array->len)
         c_array_set_size (dst_array, src_array->len);
@@ -149,9 +149,9 @@ _rut_bitmask_set_bits (RutBitmask *dst,
     }
   else if (_rut_bitmask_has_array (dst))
     {
-      CArray *dst_array;
+      c_array_t *dst_array;
 
-      dst_array = (CArray *) *dst;
+      dst_array = (c_array_t *) *dst;
 
       c_array_index (dst_array, unsigned long, 0) |=
         _rut_bitmask_to_bits (src);
@@ -166,7 +166,7 @@ _rut_bitmask_set_range_in_array (RutBitmask *bitmask,
                                  unsigned int n_bits,
                                  bool value)
 {
-  CArray *array;
+  c_array_t *array;
   unsigned int array_index, bit_index;
 
   if (n_bits == 0)
@@ -176,7 +176,7 @@ _rut_bitmask_set_range_in_array (RutBitmask *bitmask,
   if (!_rut_bitmask_has_array (bitmask))
     _rut_bitmask_convert_to_array (bitmask);
 
-  array = (CArray *) *bitmask;
+  array = (c_array_t *) *bitmask;
 
   /* Get the array index of the top most value that will be touched */
   array_index = ARRAY_INDEX (n_bits - 1);
@@ -211,14 +211,14 @@ _rut_bitmask_xor_bits (RutBitmask *dst,
 {
   if (_rut_bitmask_has_array (src))
     {
-      CArray *src_array, *dst_array;
+      c_array_t *src_array, *dst_array;
       int i;
 
       if (!_rut_bitmask_has_array (dst))
         _rut_bitmask_convert_to_array (dst);
 
-      dst_array = (CArray *) *dst;
-      src_array = (CArray *) *src;
+      dst_array = (c_array_t *) *dst;
+      src_array = (c_array_t *) *src;
 
       if (dst_array->len < src_array->len)
         c_array_set_size (dst_array, src_array->len);
@@ -229,9 +229,9 @@ _rut_bitmask_xor_bits (RutBitmask *dst,
     }
   else if (_rut_bitmask_has_array (dst))
     {
-      CArray *dst_array;
+      c_array_t *dst_array;
 
-      dst_array = (CArray *) *dst;
+      dst_array = (c_array_t *) *dst;
 
       c_array_index (dst_array, unsigned long, 0) ^=
         _rut_bitmask_to_bits (src);
@@ -244,7 +244,7 @@ _rut_bitmask_xor_bits (RutBitmask *dst,
 void
 _rut_bitmask_clear_all_in_array (RutBitmask *bitmask)
 {
-  CArray *array = (CArray *) *bitmask;
+  c_array_t *array = (c_array_t *) *bitmask;
 
   memset (array->data, 0, sizeof (unsigned long) * array->len);
 }
@@ -256,7 +256,7 @@ _rut_bitmask_foreach (const RutBitmask *bitmask,
 {
   if (_rut_bitmask_has_array (bitmask))
     {
-      CArray *array = (CArray *) *bitmask;
+      c_array_t *array = (c_array_t *) *bitmask;
       const unsigned long *values = &c_array_index (array, unsigned long, 0);
       int bit_num;
 
@@ -314,7 +314,7 @@ void
 _rut_bitmask_set_flags_array (const RutBitmask *bitmask,
                               unsigned long *flags)
 {
-  const CArray *array = (const CArray *) *bitmask;
+  const c_array_t *array = (const c_array_t *) *bitmask;
   int i;
 
   for (i = 0; i < array->len; i++)
@@ -324,7 +324,7 @@ _rut_bitmask_set_flags_array (const RutBitmask *bitmask,
 int
 _rut_bitmask_popcount_in_array (const RutBitmask *bitmask)
 {
-  const CArray *array = (const CArray *) *bitmask;
+  const c_array_t *array = (const c_array_t *) *bitmask;
   int pop = 0;
   int i;
 
@@ -338,7 +338,7 @@ int
 _rut_bitmask_popcount_upto_in_array (const RutBitmask *bitmask,
                                      int upto)
 {
-  const CArray *array = (const CArray *) *bitmask;
+  const c_array_t *array = (const c_array_t *) *bitmask;
 
   if (upto >= array->len * sizeof (unsigned long) * 8)
     return _rut_bitmask_popcount_in_array (bitmask);

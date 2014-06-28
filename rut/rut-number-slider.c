@@ -120,7 +120,7 @@ typedef struct _EditState
   /* This is set to true after we get a motion event with the down
    * action regardless of where was clicked */
   bool button_down;
-  /* This is set to TRUE if cursor has moved more than a couple of
+  /* This is set to true if cursor has moved more than a couple of
    * pixels since the button was pressed. Once this happens the press
    * is no longer considered a click but is instead interpreted as a
    * drag to change the value */
@@ -275,7 +275,7 @@ rut_number_slider_grab_input_cb (RutInputEvent *event,
    * intepret it as a click when the button is released */
   if (fabsf (x - state->button_x) >= 1.0f ||
       fabsf (y - state->button_y) >= 1.0f)
-    state->button_drag = TRUE;
+    state->button_drag = true;
 
   /* Update the value based on the position if we're in a drag */
   if (state->button_drag)
@@ -285,7 +285,7 @@ rut_number_slider_grab_input_cb (RutInputEvent *event,
 
   if ((rut_motion_event_get_button_state (event) & RUT_BUTTON_STATE_1) == 0)
     {
-      state->button_down = FALSE;
+      state->button_down = false;
 
       /* If we weren't dragging then this must have been an attempt to
        * click somewhere on the widget */
@@ -315,8 +315,8 @@ rut_number_slider_input_region_cb (RutInputRegion *region,
 
       state->slider = slider;
       state->camera = rut_input_event_get_camera (event);
-      state->button_down = TRUE;
-      state->button_drag = FALSE;
+      state->button_down = true;
+      state->button_drag = false;
       state->button_value = slider->value;
       state->button_x = rut_motion_event_get_x (event);
       state->button_y = rut_motion_event_get_y (event);

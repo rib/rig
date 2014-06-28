@@ -261,13 +261,13 @@ static char *
 read_until_eof (int fd, RutException **e)
 {
   char buffer[4096];
-  CString *data = c_string_new ("");
+  c_string_t *data = c_string_new ("");
 
   do {
       int len = sizeof (buffer);
       if (!rut_os_read (fd, buffer, &len, e))
         {
-          c_string_free (data, TRUE);
+          c_string_free (data, true);
           return NULL;
         }
       c_string_append_len (data, buffer, len);
@@ -275,7 +275,7 @@ read_until_eof (int fd, RutException **e)
         break;
   } while (1);
 
-  return c_string_free (data, FALSE);
+  return c_string_free (data, false);
 }
 
 char *

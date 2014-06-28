@@ -48,7 +48,7 @@ G_BEGIN_DECLS
  *
  * Internally a RutBitmask is a pointer. If the least significant bit
  * of the pointer is 1 then the rest of the bits are directly used as
- * part of the bitmask, otherwise it is a pointer to a CArray of
+ * part of the bitmask, otherwise it is a pointer to a c_array_t of
  * unsigned ints. This relies on the fact the c_malloc will return a
  * pointer aligned to at least two bytes (so that the least
  * significant bit of the address is always 0). It also assumes that
@@ -73,7 +73,7 @@ typedef struct _RutBitmaskImaginaryType *RutBitmask;
   ((RutBitmask) ((((unsigned long) (bits)) << 1UL) | 1UL))
 
 /* Internal helper macro to determine whether this bitmask has a
-   CArray allocated or whether the pointer is just used directly */
+   c_array_t allocated or whether the pointer is just used directly */
 #define _rut_bitmask_has_array(bitmask) \
   (!(_rut_bitmask_to_number (bitmask) & 1UL))
 
@@ -250,7 +250,7 @@ static inline void
 _rut_bitmask_destroy (RutBitmask *bitmask)
 {
   if (_rut_bitmask_has_array (bitmask))
-    c_array_free ((CArray *) *bitmask, true);
+    c_array_free ((c_array_t *) *bitmask, true);
 }
 
 /*

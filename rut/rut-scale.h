@@ -81,7 +81,7 @@ typedef struct _RutScale
 
   RutInputRegion *input_region;
 
-  CArray *labels;
+  c_array_t *labels;
   int n_visible_labels;
 
   bool initial_view;

@@ -313,7 +313,7 @@ rut_matrix_stack_push (RutMatrixStack *stack)
 
   entry = _rut_matrix_stack_push_operation (stack, RUT_MATRIX_OP_SAVE);
 
-  entry->cache_valid = FALSE;
+  entry->cache_valid = false;
 }
 
 RutMatrixEntry *
@@ -462,7 +462,7 @@ rut_matrix_entry_get (RutMatrixEntry *entry,
                   rut_matrix_stack_matrices_magazine;
                 save->cache = rut_magazine_chunk_alloc (matrices_magazine);
                 rut_matrix_entry_get (current->parent, save->cache);
-                save->cache_valid = TRUE;
+                save->cache_valid = true;
               }
             *matrix = *save->cache;
             goto initialized;
@@ -719,7 +719,7 @@ rut_matrix_entry_calculate_translation (RutMatrixEntry *entry0,
    *    to x, y and z.
    *
    * If we come across any non-translation operations during 3) or 4)
-   * then bail out returning FALSE.
+   * then bail out returning false.
    */
 
   for (node0 = entry0; node0; node0 = node0->parent)
@@ -756,7 +756,7 @@ rut_matrix_entry_calculate_translation (RutMatrixEntry *entry0,
     }
 
   if (head0->data != head1->data)
-    return FALSE;
+    return false;
 
   common_ancestor0 = head0;
   common_ancestor1 = head1;
@@ -784,7 +784,7 @@ rut_matrix_entry_calculate_translation (RutMatrixEntry *entry0,
       node0 = head0->data;
 
       if (node0->op != RUT_MATRIX_OP_TRANSLATE)
-        return FALSE;
+        return false;
 
       translate = (RutMatrixEntryTranslate *)node0;
 
@@ -799,7 +799,7 @@ rut_matrix_entry_calculate_translation (RutMatrixEntry *entry0,
       node1 = head1->data;
 
       if (node1->op != RUT_MATRIX_OP_TRANSLATE)
-        return FALSE;
+        return false;
 
       translate = (RutMatrixEntryTranslate *)node1;
 
@@ -808,13 +808,13 @@ rut_matrix_entry_calculate_translation (RutMatrixEntry *entry0,
       *z = *z + translate->z;
     }
 
-  return TRUE;
+  return true;
 }
 
 bool
 rut_matrix_entry_is_identity (RutMatrixEntry *entry)
 {
-  return entry ? entry->op == RUT_MATRIX_OP_LOAD_IDENTITY : FALSE;
+  return entry ? entry->op == RUT_MATRIX_OP_LOAD_IDENTITY : false;
 }
 
 bool
@@ -829,15 +829,15 @@ rut_matrix_entry_equal (RutMatrixEntry *entry0,
       entry1 = _rut_matrix_entry_skip_saves (entry1);
 
       if (entry0 == entry1)
-        return TRUE;
+        return true;
 
       if (entry0->op != entry1->op)
-        return FALSE;
+        return false;
 
       switch (entry0->op)
         {
         case RUT_MATRIX_OP_LOAD_IDENTITY:
-          return TRUE;
+          return true;
         case RUT_MATRIX_OP_TRANSLATE:
           {
             RutMatrixEntryTranslate *translate0 =
@@ -850,7 +850,7 @@ rut_matrix_entry_equal (RutMatrixEntry *entry0,
             if (translate0->x != translate1->x ||
                 translate0->y != translate1->y ||
                 translate0->z != translate1->z)
-              return FALSE;
+              return false;
           }
           break;
         case RUT_MATRIX_OP_ROTATE:
@@ -863,7 +863,7 @@ rut_matrix_entry_equal (RutMatrixEntry *entry0,
                 rotate0->x != rotate1->x ||
                 rotate0->y != rotate1->y ||
                 rotate0->z != rotate1->z)
-              return FALSE;
+              return false;
           }
           break;
         case RUT_MATRIX_OP_ROTATE_QUATERNION:
@@ -875,7 +875,7 @@ rut_matrix_entry_equal (RutMatrixEntry *entry0,
             int i;
             for (i = 0; i < 4; i++)
               if (rotate0->values[i] != rotate1->values[i])
-                return FALSE;
+                return false;
           }
           break;
         case RUT_MATRIX_OP_ROTATE_EULER:
@@ -888,7 +888,7 @@ rut_matrix_entry_equal (RutMatrixEntry *entry0,
             if (rotate0->heading != rotate1->heading ||
                 rotate0->pitch != rotate1->pitch ||
                 rotate0->roll != rotate1->roll)
-              return FALSE;
+              return false;
           }
           break;
         case RUT_MATRIX_OP_SCALE:
@@ -898,7 +898,7 @@ rut_matrix_entry_equal (RutMatrixEntry *entry0,
             if (scale0->x != scale1->x ||
                 scale0->y != scale1->y ||
                 scale0->z != scale1->z)
-              return FALSE;
+              return false;
           }
           break;
         case RUT_MATRIX_OP_MULTIPLY:
@@ -906,7 +906,7 @@ rut_matrix_entry_equal (RutMatrixEntry *entry0,
             RutMatrixEntryMultiply *mult0 = (RutMatrixEntryMultiply *)entry0;
             RutMatrixEntryMultiply *mult1 = (RutMatrixEntryMultiply *)entry1;
             if (!cogl_matrix_equal (mult0->matrix, mult1->matrix))
-              return FALSE;
+              return false;
           }
           break;
         case RUT_MATRIX_OP_LOAD:
@@ -924,7 +924,7 @@ rut_matrix_entry_equal (RutMatrixEntry *entry0,
         }
     }
 
-  return FALSE;
+  return false;
 }
 
 void
@@ -1035,8 +1035,8 @@ void
 _rut_matrix_entry_cache_init (RutMatrixEntryCache *cache)
 {
   cache->entry = NULL;
-  cache->flushed_identity = FALSE;
-  cache->flipped = FALSE;
+  cache->flushed_identity = false;
+  cache->flipped = false;
 }
 
 /* NB: This function can report false negatives since it never does a
@@ -1047,19 +1047,19 @@ _rut_matrix_entry_cache_maybe_update (RutMatrixEntryCache *cache,
                                       bool flip)
 {
   bool is_identity;
-  bool updated = FALSE;
+  bool updated = false;
 
   if (cache->flipped != flip)
     {
       cache->flipped = flip;
-      updated = TRUE;
+      updated = true;
     }
 
   is_identity = (entry->op == RUT_MATRIX_OP_LOAD_IDENTITY);
   if (cache->flushed_identity != is_identity)
     {
       cache->flushed_identity = is_identity;
-      updated = TRUE;
+      updated = true;
     }
 
   if (cache->entry != entry)

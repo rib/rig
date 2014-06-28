@@ -404,7 +404,7 @@ _rut_toggle_grab_input_cb (RutInputEvent *event,
 
               rut_shell_queue_redraw (toggle->ctx->shell);
 
-              toggle->tentative_set = FALSE;
+              toggle->tentative_set = false;
             }
 
           return RUT_INPUT_EVENT_STATUS_HANDLED;
@@ -418,9 +418,9 @@ _rut_toggle_grab_input_cb (RutInputEvent *event,
                                  state->camera,
                                  NULL, /* pre-computed modelview */
                                  x, y))
-           toggle->tentative_set = TRUE;
+           toggle->tentative_set = true;
          else
-           toggle->tentative_set = FALSE;
+           toggle->tentative_set = false;
 
           rut_shell_queue_redraw (toggle->ctx->shell);
 
@@ -455,7 +455,7 @@ _rut_toggle_input_cb (RutInputRegion *region,
                             _rut_toggle_grab_input_cb,
                             state);
 
-      toggle->tentative_set = TRUE;
+      toggle->tentative_set = true;
 
       rut_shell_queue_redraw (toggle->ctx->shell);
 
@@ -556,8 +556,8 @@ rut_toggle_new_with_icons (RutContext *ctx,
 
   toggle->ctx = ctx;
 
-  toggle->state = TRUE;
-  toggle->enabled = TRUE;
+  toggle->state = true;
+  toggle->enabled = true;
 
   if (selected_icon)
     {

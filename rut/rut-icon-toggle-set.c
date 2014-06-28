@@ -285,7 +285,7 @@ rut_icon_toggle_set_add (RutIconToggleSet *toggle_set,
   toggle_state->value = value;
   rut_list_insert (&toggle_set->toggles_list, &toggle_state->list_node);
 
-  rut_box_layout_add (toggle_set->layout, FALSE, toggle);
+  rut_box_layout_add (toggle_set->layout, false, toggle);
 }
 
 void

@@ -735,8 +735,8 @@ rut_ui_viewport_new (RutContext *ctx,
 
   rut_list_init (&ui_viewport->preferred_size_cb_list);
 
-  ui_viewport->x_pannable = TRUE;
-  ui_viewport->y_pannable = TRUE;
+  ui_viewport->x_pannable = true;
+  ui_viewport->y_pannable = true;
 
   ui_viewport->scroll_bar_x_transform = rut_transform_new (ctx);
   ui_viewport->scroll_bar_x = rut_scroll_bar_new (ctx,

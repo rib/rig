@@ -155,7 +155,7 @@ rut_timeline_new (RutContext *ctx,
   timeline->gtimer = g_timer_new ();
   timeline->offset = 0;
   timeline->direction = 1;
-  timeline->running = TRUE;
+  timeline->running = true;
 
   timeline->elapsed = 0;
 
@@ -265,20 +265,20 @@ _rut_timeline_validate_elapsed (RutTimeline *timeline,
                                 bool *should_stop,
                                 bool *should_restart_with_offset)
 {
-  *should_stop = FALSE;
-  *should_restart_with_offset = FALSE;
+  *should_stop = false;
+  *should_restart_with_offset = false;
 
   if (elapsed > timeline->length)
     {
       if (timeline->loop_enabled)
         {
           elapsed = _rut_timeline_normalize (timeline, elapsed);
-          *should_restart_with_offset = TRUE;
+          *should_restart_with_offset = true;
         }
       else
         {
           elapsed = timeline->length;
-          *should_stop = TRUE;
+          *should_stop = true;
         }
     }
   else if (elapsed < 0)
@@ -286,12 +286,12 @@ _rut_timeline_validate_elapsed (RutTimeline *timeline,
       if (timeline->loop_enabled)
         {
           elapsed = _rut_timeline_normalize (timeline, elapsed);
-          *should_restart_with_offset = TRUE;
+          *should_restart_with_offset = true;
         }
       else
         {
           elapsed = 0;
-          *should_stop = TRUE;
+          *should_stop = true;
         }
     }
 

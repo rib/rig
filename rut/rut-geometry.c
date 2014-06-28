@@ -295,7 +295,7 @@ rut_create_create_grid (RutContext *ctx,
                         float x_space,
                         float y_space)
 {
-  CArray *lines = c_array_new (FALSE, FALSE, sizeof (CoglVertexP2));
+  c_array_t *lines = c_array_new (false, false, sizeof (CoglVertexP2));
   float x, y;
   int n_lines = 0;
 

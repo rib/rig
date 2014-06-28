@@ -244,7 +244,7 @@ rut_util_intersect_triangle (float v0[3], float v1[3], float v2[3],
   det = dot (edge1, pvec);
 
   if (det > -EPSILON && det < EPSILON)
-    return FALSE;
+    return false;
 
   inv_det = 1.0f / det;
 
@@ -254,7 +254,7 @@ rut_util_intersect_triangle (float v0[3], float v1[3], float v2[3],
   /* calculate U and test bounds */
   *u = dot (tvec, pvec) * inv_det;
   if (*u < 0.f || *u > 1.f)
-    return FALSE;
+    return false;
 
   /* prepare to test V */
   cross (qvec, tvec, edge1);
@@ -262,12 +262,12 @@ rut_util_intersect_triangle (float v0[3], float v1[3], float v2[3],
   /* calculate V and test bounds */
   *v = dot (ray_direction, qvec) * inv_det;
   if (*v < 0.f || *u + *v > 1.f)
-    return FALSE;
+    return false;
 
   /* calculate t, ray intersects triangle */
   *t = dot (edge2, qvec) * inv_det;
 
-  return TRUE;
+  return true;
 }
 
 typedef struct _IntersectState
@@ -306,13 +306,13 @@ intersect_triangle_cb (void **attributes_v0,
   if (hit && t > 0 && t < state->min_t)
     {
       state->min_t = t;
-      state->found = TRUE;
+      state->found = true;
       state->hit_index = state->index;
     }
 
   state->index++;
 
-  return TRUE;
+  return true;
 }
 
 bool
@@ -327,7 +327,7 @@ rut_util_intersect_mesh (RutMesh *mesh,
   state.ray_origin = ray_origin;
   state.ray_direction = ray_direction;
   state.min_t = G_MAXFLOAT;
-  state.found = FALSE;
+  state.found = false;
   state.index = 0;
 
   rut_mesh_foreach_triangle (mesh,
@@ -344,10 +344,10 @@ rut_util_intersect_mesh (RutMesh *mesh,
       if (index)
         *index = state.hit_index;
 
-      return TRUE;
+      return true;
     }
 
-  return FALSE;
+  return false;
 }
 
 unsigned int
@@ -437,17 +437,17 @@ rut_util_draw_jittered_primitive3f (CoglFramebuffer *fb,
 }
 
 bool
-rut_util_find_tag (const CList *tags,
+rut_util_find_tag (const c_list_t *tags,
                    const char *tag)
 {
-  const CList *l;
+  const c_list_t *l;
 
   for (l = tags; l; l = l->next)
     {
       if (strcmp (tag, l->data) == 0)
-        return TRUE;
+        return true;
     }
-  return FALSE;
+  return false;
 }
 
 /* Pulled from gtksizerequest.c from Gtk+ */
@@ -542,21 +542,21 @@ rut_util_is_boolean_env_set (const char *variable)
   bool ret;
 
   if (!val)
-    return FALSE;
+    return false;
 
   if (g_ascii_strcasecmp (val, "1") == 0 ||
       g_ascii_strcasecmp (val, "on") == 0 ||
       g_ascii_strcasecmp (val, "true") == 0)
-    ret = TRUE;
+    ret = true;
   else if (g_ascii_strcasecmp (val, "0") == 0 ||
            g_ascii_strcasecmp (val, "off") == 0 ||
            g_ascii_strcasecmp (val, "false") == 0)
-    ret = FALSE;
+    ret = false;
   else
     {
       g_critical ("Spurious boolean environment variable value (%s=%s)",
                   variable, val);
-      ret = TRUE;
+      ret = true;
     }
 
   return ret;

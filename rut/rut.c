@@ -85,13 +85,13 @@ typedef struct _SettingsChangedCallbackState
 
 struct _RutSettings
 {
-  CList *changed_callbacks;
+  c_list_t *changed_callbacks;
 };
 
 static void
 _rut_settings_free (RutSettings *settings)
 {
-  CList *l;
+  c_list_t *l;
 
   for (l = settings->changed_callbacks; l; l = l->next)
     c_slice_free (SettingsChangedCallbackState, l->data);
@@ -110,7 +110,7 @@ rut_settings_add_changed_callback (RutSettings *settings,
                                    GDestroyNotify destroy_notify,
                                    void *user_data)
 {
-  CList *l;
+  c_list_t *l;
   SettingsChangedCallbackState *state;
 
   for (l = settings->changed_callbacks; l; l = l->next)
@@ -138,7 +138,7 @@ void
 rut_settings_remove_changed_callback (RutSettings *settings,
                                       RutSettingsChangedCallback callback)
 {
-  CList *l;
+  c_list_t *l;
 
   for (l = settings->changed_callbacks; l; l = l->next)
     {
@@ -373,7 +373,7 @@ rut_context_new (RutShell *shell)
       context->pango_font_map =
         COGL_PANGO_FONT_MAP (cogl_pango_font_map_new (context->cogl_context));
 
-      cogl_pango_font_map_set_use_mipmapping (context->pango_font_map, TRUE);
+      cogl_pango_font_map_set_use_mipmapping (context->pango_font_map, true);
 
       context->pango_context =
         pango_font_map_create_context (PANGO_FONT_MAP (context->pango_font_map));

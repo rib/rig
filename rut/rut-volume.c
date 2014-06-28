@@ -46,11 +46,11 @@ rut_volume_new (void)
 
   memset (volume->vertices, 0, 8 * sizeof (RutVector3));
 
-  volume->is_static = FALSE;
-  volume->is_empty = TRUE;
-  volume->is_axis_aligned = TRUE;
-  volume->is_complete = TRUE;
-  volume->is_2d = TRUE;
+  volume->is_static = false;
+  volume->is_empty = true;
+  volume->is_axis_aligned = true;
+  volume->is_complete = true;
+  volume->is_2d = true;
 
   return volume;
 }
@@ -76,11 +76,11 @@ rut_volume_init (RutVolume *volume)
 {
   memset (volume->vertices, 0, 8 * sizeof (RutVector3));
 
-  volume->is_static = TRUE;
-  volume->is_empty = TRUE;
-  volume->is_axis_aligned = TRUE;
-  volume->is_complete = TRUE;
-  volume->is_2d = TRUE;
+  volume->is_static = true;
+  volume->is_empty = true;
+  volume->is_axis_aligned = true;
+  volume->is_complete = true;
+  volume->is_2d = true;
 }
 
 void
@@ -90,7 +90,7 @@ _rut_volume_copy_static (const RutVolume *src_volume, RutVolume *dst_volume)
   c_return_if_fail (src_volume != NULL && dst_volume != NULL);
 
   memcpy (dst_volume, src_volume, sizeof (RutVolume));
-  dst_volume->is_static = TRUE;
+  dst_volume->is_static = true;
 }
 
 RutVolume *
@@ -101,7 +101,7 @@ rut_volume_copy (const RutVolume *volume)
   c_return_val_if_fail (volume != NULL, NULL);
 
   copy = c_slice_dup (RutVolume, volume);
-  copy->is_static = FALSE;
+  copy->is_static = false;
 
   return copy;
 }
@@ -147,7 +147,7 @@ rut_volume_set_origin (RutVolume *volume, const RutVector3 *origin)
       volume->vertices[key_vertices[i]].z += dz;
     }
 
-  volume->is_complete = FALSE;
+  volume->is_complete = false;
 }
 
 void
@@ -165,9 +165,9 @@ _rut_volume_update_is_empty (RutVolume *volume)
   if (volume->vertices[0].x == volume->vertices[1].x &&
       volume->vertices[0].y == volume->vertices[3].y &&
       volume->vertices[0].z == volume->vertices[4].z)
-    volume->is_empty = TRUE;
+    volume->is_empty = true;
   else
-    volume->is_empty = FALSE;
+    volume->is_empty = false;
 }
 
 void
@@ -195,7 +195,7 @@ rut_volume_set_width (RutVolume *volume, float width)
   /* volume->vertices[5].x = right_xpos; NB: updated lazily */
   /* volume->vertices[6].x = right_xpos; NB: updated lazily */
 
-  volume->is_complete = FALSE;
+  volume->is_complete = false;
 
   _rut_volume_update_is_empty (volume);
 }
@@ -246,7 +246,7 @@ rut_volume_set_height (RutVolume *volume,
   volume->vertices[3].y = height_ypos;
   /* volume->vertices[6].y = height_ypos; NB: updated lazily */
   /* volume->vertices[7].y = height_ypos; NB: updated lazily */
-  volume->is_complete = FALSE;
+  volume->is_complete = false;
 
   _rut_volume_update_is_empty (volume);
 }
@@ -298,8 +298,8 @@ rut_volume_set_depth (RutVolume *volume,
   /* volume->vertices[6].z = depth_zpos; NB: updated lazily */
   /* volume->vertices[7].z = depth_zpos; NB: updated lazily */
 
-  volume->is_complete = FALSE;
-  volume->is_2d = depth ? FALSE : TRUE;
+  volume->is_complete = false;
+  volume->is_2d = depth ? false : true;
   _rut_volume_update_is_empty (volume);
 }
 
@@ -426,19 +426,19 @@ rut_volume_union (RutVolume *volume,
     }
 
   if (volume->vertices[4].z == volume->vertices[0].z)
-    volume->is_2d = TRUE;
+    volume->is_2d = true;
   else
-    volume->is_2d = FALSE;
+    volume->is_2d = false;
 
 done:
-  volume->is_empty = FALSE;
-  volume->is_complete = FALSE;
+  volume->is_empty = false;
+  volume->is_complete = false;
 }
 
 /* The paint_volume setters only update vertices 0, 1, 3 and
  * 4 since the others can be drived from them.
  *
- * This will set volume->completed = TRUE;
+ * This will set volume->completed = true;
  */
 void
 _rut_volume_complete (RutVolume *volume)
@@ -484,7 +484,7 @@ _rut_volume_complete (RutVolume *volume)
       volume->vertices[7].z = volume->vertices[4].z + dz_t2b;
     }
 
-  volume->is_complete = TRUE;
+  volume->is_complete = true;
 }
 
 /*
@@ -594,7 +594,7 @@ _rut_volume_project (RutVolume *volume,
                                      (float *)volume->vertices,
                                      transform_count);
 
-  volume->is_axis_aligned = FALSE;
+  volume->is_axis_aligned = false;
 }
 
 void
@@ -634,7 +634,7 @@ _rut_volume_transform (RutVolume *volume,
                                 volume->vertices,
                                 transform_count);
 
-  volume->is_axis_aligned = FALSE;
+  volume->is_axis_aligned = false;
 }
 
 
@@ -663,7 +663,7 @@ rut_volume_axis_align (RutVolume *volume)
                 volume->vertices[0].y == volume->vertices[3].y &&
                 volume->vertices[0].z == volume->vertices[4].y))
     {
-      volume->is_axis_aligned = TRUE;
+      volume->is_axis_aligned = true;
       return;
     }
 
@@ -708,13 +708,13 @@ rut_volume_axis_align (RutVolume *volume)
   volume->vertices[4].y = origin.y;
   volume->vertices[4].z = max_z;
 
-  volume->is_complete = FALSE;
-  volume->is_axis_aligned = TRUE;
+  volume->is_complete = false;
+  volume->is_axis_aligned = true;
 
   if (volume->vertices[4].z == volume->vertices[0].z)
-    volume->is_2d = TRUE;
+    volume->is_2d = true;
   else
-    volume->is_2d = FALSE;
+    volume->is_2d = false;
 }
 
 RutCullResult
@@ -723,7 +723,7 @@ rut_volume_cull (RutVolume *volume,
 {
   int vertex_count;
   RutVector3 *vertices = volume->vertices;
-  gboolean partial = FALSE;
+  gboolean partial = false;
   int i;
   int j;
 
@@ -732,7 +732,7 @@ rut_volume_cull (RutVolume *volume,
 
   /* We expect the volume to already be transformed into eye coordinates
    */
-  c_return_val_if_fail (volume->is_complete == TRUE, RUT_CULL_RESULT_IN);
+  c_return_val_if_fail (volume->is_complete == true, RUT_CULL_RESULT_IN);
 
   /* Most actors are 2D so we only have to transform the front 4
    * vertices of the volume... */
@@ -766,7 +766,7 @@ rut_volume_cull (RutVolume *volume,
       if (out == vertex_count)
         return RUT_CULL_RESULT_OUT;
       else if (out != 0)
-        partial = TRUE;
+        partial = true;
     }
 
   if (partial)

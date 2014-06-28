@@ -84,7 +84,7 @@ parse_rgba (CoglColor *color,
   skip_whitespace (&str);
 
   if (*str != '(')
-    return FALSE;
+    return false;
 
   str += 1;
 
@@ -92,7 +92,7 @@ parse_rgba (CoglColor *color,
   parse_rgb_value (str, &red, &str);
   skip_whitespace (&str);
   if (*str != ',')
-    return FALSE;
+    return false;
 
   str += 1;
 
@@ -100,7 +100,7 @@ parse_rgba (CoglColor *color,
   parse_rgb_value (str, &green, &str);
   skip_whitespace (&str);
   if (*str != ',')
-    return FALSE;
+    return false;
 
   str += 1;
 
@@ -115,7 +115,7 @@ parse_rgba (CoglColor *color,
   if (has_alpha)
     {
       if (*str != ',')
-        return FALSE;
+        return false;
 
       str += 1;
 
@@ -128,11 +128,11 @@ parse_rgba (CoglColor *color,
 
   skip_whitespace (&str);
   if (*str != ')')
-    return FALSE;
+    return false;
 
   cogl_color_init_from_4f (color, red, green, blue, alpha);
 
-  return TRUE;
+  return true;
 }
 
 void
@@ -200,7 +200,7 @@ parse_hsla (CoglColor *color,
   skip_whitespace (&str);
 
   if (*str != '(')
-    return FALSE;
+    return false;
 
   str += 1;
 
@@ -212,7 +212,7 @@ parse_hsla (CoglColor *color,
   number = g_ascii_strtod (str, &str);
   skip_whitespace (&str);
   if (*str != ',')
-    return FALSE;
+    return false;
 
   h = number;
 
@@ -223,14 +223,14 @@ parse_hsla (CoglColor *color,
   number = g_ascii_strtod (str, &str);
   skip_whitespace (&str);
   if (*str != '%')
-    return FALSE;
+    return false;
 
   str += 1;
 
   s = CLAMP (number / 100.0, 0.0, 1.0);
   skip_whitespace (&str);
   if (*str != ',')
-    return FALSE;
+    return false;
 
   str += 1;
 
@@ -239,7 +239,7 @@ parse_hsla (CoglColor *color,
   number = g_ascii_strtod (str, &str);
   skip_whitespace (&str);
   if (*str != '%')
-    return FALSE;
+    return false;
 
   str += 1;
 
@@ -253,7 +253,7 @@ parse_hsla (CoglColor *color,
   if (has_alpha)
     {
       if (*str != ',')
-        return FALSE;
+        return false;
 
       str += 1;
 
@@ -267,12 +267,12 @@ parse_hsla (CoglColor *color,
 
   skip_whitespace (&str);
   if (*str != ')')
-    return FALSE;
+    return false;
 
   rut_color_init_from_hls (color, h, l, s);
   color->alpha = a;
 
-  return TRUE;
+  return true;
 }
 
 bool
@@ -282,8 +282,8 @@ rut_color_init_from_string (RutContext *ctx,
 {
   void *color_index_ptr;
 
-  c_return_val_if_fail (color != NULL, FALSE);
-  c_return_val_if_fail (str != NULL, FALSE);
+  c_return_val_if_fail (color != NULL, false);
+  c_return_val_if_fail (str != NULL, false);
 
   if (strncmp (str, "rgb", 3) == 0)
     {
@@ -291,9 +291,9 @@ rut_color_init_from_string (RutContext *ctx,
       gboolean res;
 
       if (strncmp (str, "rgba", 4) == 0)
-        res = parse_rgba (color, s + 4, TRUE);
+        res = parse_rgba (color, s + 4, true);
       else
-        res = parse_rgba (color, s + 3, FALSE);
+        res = parse_rgba (color, s + 3, false);
 
       return res;
     }
@@ -304,9 +304,9 @@ rut_color_init_from_string (RutContext *ctx,
       gboolean res;
 
       if (strncmp (str, "hsla", 4) == 0)
-        res = parse_hsla (color, s + 4, TRUE);
+        res = parse_hsla (color, s + 4, true);
       else
-        res = parse_hsla (color, s + 3, FALSE);
+        res = parse_hsla (color, s + 3, false);
 
       return res;
     }
@@ -335,7 +335,7 @@ rut_color_init_from_string (RutContext *ctx,
 
               cogl_color_init_from_4ub (color, red, green, blue, alpha);
 
-              return TRUE;
+              return true;
 
             case 6: /* #rrggbb */
               red   = (result >> 16) & 0xff;
@@ -346,7 +346,7 @@ rut_color_init_from_string (RutContext *ctx,
 
               cogl_color_init_from_4ub (color, red, green, blue, alpha);
 
-              return TRUE;
+              return true;
 
             case 4: /* #rgba */
               red   = ((result >> 12) & 0xf);
@@ -361,7 +361,7 @@ rut_color_init_from_string (RutContext *ctx,
 
               cogl_color_init_from_4ub (color, red, green, blue, alpha);
 
-              return TRUE;
+              return true;
 
             case 3: /* #rgb */
               red   = ((result >>  8) & 0xf);
@@ -376,10 +376,10 @@ rut_color_init_from_string (RutContext *ctx,
 
               cogl_color_init_from_4ub (color, red, green, blue, alpha);
 
-              return TRUE;
+              return true;
 
             default:
-              return FALSE;
+              return false;
             }
         }
     }
@@ -416,10 +416,10 @@ rut_color_init_from_string (RutContext *ctx,
                                color_entries[color_index].green,
                                color_entries[color_index].blue,
                                255);
-      return TRUE;
+      return true;
     }
 
-  return FALSE;
+  return false;
 }
 
 void

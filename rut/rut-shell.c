@@ -172,7 +172,7 @@ rut_shell_remove_input_camera (RutShell *shell,
                                RutObject *camera,
                                RutObject *scenegraph)
 {
-  CList *l;
+  c_list_t *l;
 
   for (l = shell->input_cameras; l; l = l->next)
     {
@@ -192,7 +192,7 @@ rut_shell_remove_input_camera (RutShell *shell,
 static void
 _rut_shell_remove_all_input_cameras (RutShell *shell)
 {
-  CList *l;
+  c_list_t *l;
 
   for (l = shell->input_cameras; l; l = l->next)
     input_camera_free (l->data);
@@ -695,7 +695,7 @@ rut_motion_event_unproject (RutInputEvent *event,
   rut_graphable_get_modelview (graphable, camera, &transform);
 
   if (!cogl_matrix_get_inverse (&transform, &inverse_transform))
-    return FALSE;
+    return false;
 
   *x = rut_motion_event_get_x (event);
   *y = rut_motion_event_get_y (event);
@@ -706,7 +706,7 @@ rut_motion_event_unproject (RutInputEvent *event,
                               x,
                               y);
 
-  return TRUE;
+  return true;
 }
 
 RutObject *
@@ -841,7 +841,7 @@ _rut_shell_get_scenegraph_event_target (RutShell *shell,
 {
   RutObject *picked_object = NULL;
   RutObject *picked_camera = NULL;
-  CList *l;
+  c_list_t *l;
 
   /* Key events by default go to the object that has key focus. If
    * there is no object with key focus then we will let them go to
@@ -935,7 +935,7 @@ RutInputEventStatus
 rut_shell_dispatch_input_event (RutShell *shell, RutInputEvent *event)
 {
   RutInputEventStatus status = RUT_INPUT_EVENT_STATUS_UNHANDLED;
-  CList *l;
+  c_list_t *l;
   RutClosure *c, *tmp;
   RutObject *target;
   RutShellGrab *grab;
@@ -958,7 +958,7 @@ rut_shell_dispatch_input_event (RutShell *shell, RutInputEvent *event)
       /* Keep track of whether any handlers set a cursor in response to
        * the motion event */
       if (shell_onscreen)
-        shell_onscreen->cursor_set = FALSE;
+        shell_onscreen->cursor_set = false;
 
       if (shell->drag_payload)
         {
@@ -1015,8 +1015,8 @@ rut_shell_dispatch_input_event (RutShell *shell, RutInputEvent *event)
     {
       InputCamera *input_camera = l->data;
       RutObject *camera = input_camera->camera;
-      CList *input_regions = rut_camera_get_input_regions (camera);
-      CList *l2;
+      c_list_t *input_regions = rut_camera_get_input_regions (camera);
+      c_list_t *l2;
 
       event->camera = camera;
       event->input_transform = rut_camera_get_input_transform (camera);
@@ -1170,7 +1170,7 @@ rut_shell_new (bool headless,
   rut_list_init (&shell->pre_paint_callbacks);
   rut_list_init (&shell->start_paint_callbacks);
   rut_list_init (&shell->post_paint_callbacks);
-  shell->flushing_pre_paints = FALSE;
+  shell->flushing_pre_paints = false;
 
 
   rut_list_init (&shell->frame_infos);
@@ -1262,13 +1262,13 @@ dispatch_signal_source (GSource *source,
     if (ret != sizeof (sig))
       {
         if (ret == 0)
-          return TRUE;
+          return true;
         else if (ret < 0 && errno == EINTR)
           continue;
         else
           {
             c_warning ("Error reading signal fd: %s", strerror (errno));
-            return FALSE;
+            return false;
           }
       }
 
@@ -1280,7 +1280,7 @@ dispatch_signal_source (GSource *source,
                              sig);
   } while (1);
 
-  return TRUE;
+  return true;
 }
 #endif
 
@@ -1476,7 +1476,7 @@ rut_shell_set_cursor (RutShell *shell,
       shell_onscreen->current_cursor = cursor;
     }
 
-  shell_onscreen->cursor_set = TRUE;
+  shell_onscreen->cursor_set = true;
 }
 
 void
@@ -1556,7 +1556,7 @@ flush_pre_paint_callbacks (RutShell *shell)
 
   /* Mark that we're in the middle of flushing so that subsequent adds
    * will keep the list sorted by depth */
-  shell->flushing_pre_paints = TRUE;
+  shell->flushing_pre_paints = true;
 
   while (!rut_list_empty (&shell->pre_paint_callbacks))
     {
@@ -1572,7 +1572,7 @@ flush_pre_paint_callbacks (RutShell *shell)
       c_slice_free (RutShellPrePaintEntry, entry);
     }
 
-  shell->flushing_pre_paints = FALSE;
+  shell->flushing_pre_paints = false;
 }
 
 
@@ -2363,9 +2363,9 @@ static bool
 _rut_text_blob_has (RutObject *object, RutMimableType type)
 {
   if (type == RUT_MIMABLE_TYPE_TEXT)
-    return TRUE;
+    return true;
 
-  return FALSE;
+  return false;
 }
 
 static void *

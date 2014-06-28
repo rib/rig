@@ -253,7 +253,7 @@ struct _RutShell
   int event_pipe_write;
   bool wake_queued;
 
-  CArray *cogl_poll_fds;
+  c_array_t *cogl_poll_fds;
   int cogl_poll_fds_age;
 #endif
 
@@ -302,7 +302,7 @@ struct _RutShell
   void *user_data;
 
   RutList input_cb_list;
-  CList *input_cameras;
+  c_list_t *input_cameras;
 
   /* Used to handle input events in window coordinates */
   RutObject *window_camera;
@@ -332,7 +332,7 @@ struct _RutShell
   void *queue_redraw_data;
 
   /* Queue of callbacks to be invoked before painting. If
-   * ‘flushing_pre_paints‘ is TRUE then this will be maintained in
+   * ‘flushing_pre_paints‘ is true then this will be maintained in
    * sorted order. Otherwise it is kept in no particular order and it
    * will be sorted once prepaint flushing starts. That way it doesn't
    * need to keep track of hierarchy changes that occur after the
@@ -647,8 +647,8 @@ rut_motion_event_get_y (RutInputEvent *event);
  * Unprojects the position of the motion event so that it will be
  * relative to the coordinate space of the given graphable object.
  *
- * Return value: %FALSE if the coordinate can't be unprojected or
- *   %TRUE otherwise. The coordinate can't be unprojected if the
+ * Return value: %false if the coordinate can't be unprojected or
+ *   %true otherwise. The coordinate can't be unprojected if the
  *   transform for the graphable object object does not have an inverse.
  */
 bool

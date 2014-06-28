@@ -373,7 +373,7 @@ rut_icon_button_new (RutContext *ctx,
   rut_object_unref (button->layout);
 
   button->bin = rut_bin_new (ctx);
-  rut_box_layout_add (button->layout, TRUE, button->bin);
+  rut_box_layout_add (button->layout, true, button->bin);
   rut_object_unref (button->bin);
 
   button->label_position = label_position;
@@ -388,7 +388,7 @@ rut_icon_button_new (RutContext *ctx,
       rut_bin_set_child (bin, button->label);
       rut_object_unref (button->label);
 
-      rut_box_layout_add (button->layout, FALSE, bin);
+      rut_box_layout_add (button->layout, false, bin);
       rut_object_unref (bin);
 
       update_layout (button);

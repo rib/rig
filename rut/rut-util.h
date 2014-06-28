@@ -143,7 +143,7 @@ rut_util_draw_jittered_primitive3f (CoglFramebuffer *fb,
                                     float blue);
 
 bool
-rut_util_find_tag (const CList *tags,
+rut_util_find_tag (const c_list_t *tags,
                    const char *tag);
 
 bool

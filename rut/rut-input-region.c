@@ -201,9 +201,9 @@ _rut_input_region_pick (RutObject *inputable,
         c_print ("x=%f y=%f\n", x, y);
 #endif
         if (rut_util_point_in_screen_poly (x, y, poly, sizeof (float) * 4, 4))
-          return TRUE;
+          return true;
         else
-          return FALSE;
+          return false;
       }
     case RUT_INPUT_SHAPE_TYPE_CIRCLE:
       {
@@ -228,14 +228,14 @@ _rut_input_region_pick (RutObject *inputable,
         c2 = a * a + b * b;
 
         if (c2 < circle->r_squared)
-          return TRUE;
+          return true;
         else
-          return FALSE;
+          return false;
       }
     }
 
   c_warn_if_reached ();
-  return FALSE;
+  return false;
 }
 
 static RutInputEventStatus

@@ -297,7 +297,7 @@ typedef void (* RutTextActivateCallback) (RutText *text,
  *
  * The ::activate signal is emitted each time the actor is 'activated'
  * by the user, normally by pressing the 'Enter' key. The signal is
- * emitted only if #RutText:activatable is set to %TRUE.
+ * emitted only if #RutText:activatable is set to %true.
  */
 RutClosure *
 rut_text_add_activate_callback (RutText *text,
@@ -491,8 +491,8 @@ rut_text_get_text (RutObject *text);
  *
  * Sets the contents of a #RutText actor.
  *
- * If the #RutText:use-markup property was set to %TRUE it
- * will be reset to %FALSE as a side effect. If you want to
+ * If the #RutText:use-markup property was set to %true it
+ * will be reset to %false as a side effect. If you want to
  * maintain the #RutText:use-markup you should use the
  * rut_text_set_markup() function instead
  */
@@ -544,7 +544,7 @@ rut_text_set_hint_text (RutObject *text,
  * |[
  *   /&ast; the order is important &ast;/
  *   rut_text_set_text (actor, markup);
- *   rut_text_set_use_markup (actor, TRUE);
+ *   rut_text_set_use_markup (actor, true);
  * ]|
  */
 void
@@ -685,7 +685,7 @@ rut_text_set_line_wrap (RutObject *text,
  *
  * Retrieves the value set using rut_text_set_line_wrap().
  *
- * Return value: %TRUE if the #RutText actor should wrap
+ * Return value: %true if the #RutText actor should wrap
  *   its contents
  */
 bool
@@ -760,7 +760,7 @@ rut_text_get_attributes (RutText *text);
 /**
  * rut_text_set_use_markup:
  * @text: a #RutText
- * @setting: %TRUE if the text should be parsed for markup.
+ * @setting: %true if the text should be parsed for markup.
  *
  * Sets whether the contents of the #RutText actor contains markup
  * in <link linkend="PangoMarkupFormat">Pango's text markup language</link>.
@@ -781,7 +781,7 @@ rut_text_set_use_markup (RutObject *text,
  * Retrieves whether the contents of the #RutText actor should be
  * parsed for the Pango text markup.
  *
- * Return value: %TRUE if the contents will be parsed for markup
+ * Return value: %true if the contents will be parsed for markup
  */
 bool
 rut_text_get_use_markup (RutObject *text);
@@ -834,7 +834,7 @@ rut_text_set_justify (RutObject *text,
  * Retrieves whether the #RutText actor should justify its contents
  * on both margins.
  *
- * Return value: %TRUE if the text should be justified
+ * Return value: %true if the text should be justified
  */
 bool
 rut_text_get_justify (RutObject *text);
@@ -942,7 +942,7 @@ rut_text_set_editable (RutObject *text,
  *
  * Retrieves whether a #RutText is editable or not.
  *
- * Return value: %TRUE if the actor is editable
+ * Return value: %true if the actor is editable
  */
 bool
 rut_text_get_editable (RutObject *text);
@@ -971,7 +971,7 @@ rut_text_set_activatable (RutObject *text,
  *
  * Retrieves whether a #RutText is activatable or not.
  *
- * Return value: %TRUE if the actor is activatable
+ * Return value: %true if the actor is activatable
  */
 bool
 rut_text_get_activatable (RutObject *text);
@@ -1026,7 +1026,7 @@ rut_text_set_cursor_visible (RutObject *text,
  *
  * Retrieves whether the cursor of a #RutText actor is visible.
  *
- * Return value: %TRUE if the cursor is visible
+ * Return value: %true if the cursor is visible
  */
 bool
 rut_text_get_cursor_visible (RutObject *text);
@@ -1070,7 +1070,7 @@ rut_text_get_cursor_color_set (RutObject *text);
  *
  * Sets the size of the cursor of a #RutText. The cursor
  * will only be visible if the #RutText:cursor-visible property
- * is set to %TRUE.
+ * is set to %true.
  */
 void
 rut_text_set_cursor_size (RutObject *text,
@@ -1107,7 +1107,7 @@ rut_text_set_selectable (RutObject *text,
  *
  * Retrieves whether a #RutText is selectable or not.
  *
- * Return value: %TRUE if the actor is selectable
+ * Return value: %true if the actor is selectable
  */
 bool
 rut_text_get_selectable (RutObject *text);
@@ -1207,8 +1207,8 @@ rut_text_get_selection_color_set (RutObject *text);
  *
  * This function is only useful in subclasses of #RutText
  *
- * Return value: %TRUE if text was deleted or if the text actor
- *   is empty, and %FALSE otherwise
+ * Return value: %true if text was deleted or if the text actor
+ *   is empty, and %false otherwise
  */
 bool
 rut_text_delete_selection (RutText *text);
@@ -1297,7 +1297,7 @@ rut_text_set_single_line_mode (RutObject *text,
  *
  * Retrieves whether the #RutText actor is in single line mode.
  *
- * Return value: %TRUE if the #RutText actor is in single line mode
+ * Return value: %true if the #RutText actor is in single line mode
  */
 bool
 rut_text_get_single_line_mode (RutObject *text);
@@ -1345,8 +1345,8 @@ rut_text_get_selected_text_color_set (RutObject *text);
  * signal handlers before the default signal handler for the
  * #RutText is invoked.
  *
- * Return value: %TRUE if the ::activate signal has been emitted,
- *   and %FALSE otherwise
+ * Return value: %true if the ::activate signal has been emitted,
+ *   and %false otherwise
  */
 bool
 rut_text_activate (RutText *text);
@@ -1376,7 +1376,7 @@ rut_text_coords_to_position (RutText *text,
  *
  * Retrieves the coordinates of the given @position.
  *
- * Return value: %TRUE if the conversion was successful
+ * Return value: %true if the conversion was successful
  */
 bool
 rut_text_position_to_coords (RutText *text,

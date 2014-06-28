@@ -77,14 +77,14 @@ struct _RutVolume
    * ->get_paint_volume method will be empty. */
   unsigned int is_empty:1;
 
-  /* TRUE when we've updated the values we calculate lazily */
+  /* true when we've updated the values we calculate lazily */
   unsigned int is_complete:1;
 
-  /* TRUE if vertices 4-7 can be ignored. (Only valid if complete is
-   * TRUE) */
+  /* true if vertices 4-7 can be ignored. (Only valid if complete is
+   * true) */
   unsigned int is_2d:1;
 
-  /* Set to TRUE initialy but cleared if the paint volume is
+  /* Set to true initialy but cleared if the paint volume is
    * transfomed by a matrix. */
   unsigned int is_axis_aligned:1;
 
@@ -93,7 +93,7 @@ struct _RutVolume
    * considered whenever we implement code that manipulates
    * Volumes...
    *
-   * Firstly if ->is_empty == TRUE then the values for ->is_complete
+   * Firstly if ->is_empty == true then the values for ->is_complete
    * and ->is_2d are undefined, so you should typically check
    * ->is_empty as the first priority.
    *

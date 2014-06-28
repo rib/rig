@@ -76,7 +76,7 @@ typedef struct _RutCameraProps
   RutGraphableProps graphable;
 
   CoglMatrix input_transform;
-  CList *input_regions;
+  c_list_t *input_regions;
 
   unsigned int orthographic:1;
   unsigned int in_frame:1;
@@ -166,7 +166,7 @@ typedef struct _RutCameraVTable
   void (*remove_input_region) (RutObject *camera,
                                RutInputRegion *region);
 
-  CList *(*get_input_regions) (RutObject *camera);
+  c_list_t *(*get_input_regions) (RutObject *camera);
 
   bool (*transform_window_coordinate) (RutObject *camera,
                                            float *x,
@@ -331,7 +331,7 @@ void
 rut_camera_remove_input_region (RutObject *camera,
                                 RutInputRegion *region);
 
-CList *
+c_list_t *
 rut_camera_get_input_regions (RutObject *object);
 
 bool

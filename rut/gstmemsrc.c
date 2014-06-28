@@ -32,6 +32,7 @@
 #include <gst/gst.h>
 #include "gstmemsrc.h"
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -165,14 +166,14 @@ gst_mem_src_set_memory (GstMemSrc * src, void * memory)
   GST_OBJECT_UNLOCK (src);
 
   if (src->memory == memory)
-    return TRUE;
+    return true;
 
   src->memory = memory;
   GST_INFO ("memory : %p", src->memory);
 
   g_object_notify (G_OBJECT (src), "memory");
 
-  return TRUE;
+  return true;
 
   /* ERROR */
 wrong_state:
@@ -180,7 +181,7 @@ wrong_state:
     g_warning ("Changing the `memory' property on memsrc while not in "
                "the 'null' or 'ready' state is not supported");
     GST_OBJECT_UNLOCK (src);
-    return FALSE;
+    return false;
   }
 }
 
@@ -197,14 +198,14 @@ gst_mem_src_set_size (GstMemSrc * src, guint64 size)
   GST_OBJECT_UNLOCK (src);
 
   if (src->size == size)
-    return TRUE;
+    return true;
 
   src->size = size;
   GST_INFO ("size : %" G_GUINT64_FORMAT, src->size);
 
   g_object_notify (G_OBJECT (src), "size");
 
-  return TRUE;
+  return true;
 
   /* ERROR */
 wrong_state:
@@ -212,7 +213,7 @@ wrong_state:
     g_warning ("Changing the `size' property on memsrc while not in "
                "the 'null' or 'ready' state is not supported");
     GST_OBJECT_UNLOCK (src);
-    return FALSE;
+    return false;
   }
 }
 
@@ -224,11 +225,11 @@ gst_mem_src_get_size (GstBaseSrc * basesrc, guint64 * size)
   src = GST_MEM_SRC (basesrc);
 
   if (!src->size)
-    return FALSE;
+    return false;
 
   *size = src->size;
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -311,7 +312,7 @@ gst_mem_src_create (GstPushSrc * psrc, GstBuffer ** outbuf)
 static gboolean
 gst_mem_src_is_seekable (GstBaseSrc * basesrc)
 {
-  return TRUE;
+  return true;
 }
 
 static gboolean
@@ -324,14 +325,14 @@ gst_mem_src_do_seek (GstBaseSrc * bsrc, GstSegment * segment)
 
   /* No need to seek to the current position */
   if (offset == src->offset)
-    return TRUE;
+    return true;
 
   segment->position = segment->start;
   segment->time = segment->start;
 
   src->offset = offset;
 
-  return TRUE;
+  return true;
 }
 
 /* open the file, necessary to go to READY state */
@@ -345,22 +346,22 @@ gst_mem_src_start (GstBaseSrc * basesrc)
 
   src->offset = 0;
 
-  gst_base_src_set_dynamic_size (basesrc, TRUE);
+  gst_base_src_set_dynamic_size (basesrc, true);
 
-  return TRUE;
+  return true;
 
   /* ERROR */
 no_memory:
   GST_ELEMENT_ERROR (src, RESOURCE, NOT_FOUND,
                      (_("No memory pointer with a given size has been "
                         "specified for reading.")), (NULL));
-  return FALSE;
+  return false;
 }
 
 static gboolean
 gst_mem_src_stop (GstBaseSrc * basesrc)
 {
-  return TRUE;
+  return true;
 }
 
 /*** GSTURIHANDLER INTERFACE *************************************************/
@@ -402,7 +403,7 @@ gst_mem_src_uri_set_uri (GstURIHandler * handler, const gchar * uri,
   protocol = gst_uri_get_protocol (uri);
   if (strcmp (protocol, "mem") != 0) {
     g_free (protocol);
-    return FALSE;
+    return false;
   }
   g_free (protocol);
 
@@ -413,16 +414,16 @@ gst_mem_src_uri_set_uri (GstURIHandler * handler, const gchar * uri,
      */
     gst_mem_src_set_memory (src, NULL);
     gst_mem_src_set_size (src, 0);
-    return TRUE;
+    return true;
   }
 
   if (sscanf (uri, "mem://%p:%lu", &memory, &size) != 2)
-    return FALSE;
+    return false;
 
   gst_mem_src_set_memory (src, memory);
   gst_mem_src_set_size (src, size);
 
-  return TRUE;
+  return true;
 }
 
 static void

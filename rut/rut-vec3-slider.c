@@ -178,14 +178,14 @@ rut_vec3_slider_new (RutContext *context)
       RutText *text;
 
       slider->components[i].slider = rut_number_slider_new (context);
-      rut_box_layout_add (slider->hbox, FALSE,
+      rut_box_layout_add (slider->hbox, false,
                           slider->components[i].slider);
       rut_object_unref (slider->components[i].slider);
 
       if (i != 2)
         {
           text = rut_text_new_with_text (context, NULL, ", ");
-          rut_box_layout_add (slider->hbox, FALSE, text);
+          rut_box_layout_add (slider->hbox, false, text);
           rut_object_unref (text);
         }
 
@@ -257,14 +257,14 @@ rut_vec3_slider_set_value (RutObject *obj,
    * Note: If we change property notifications be deferred to the
    * mainloop then this mechanism will become redundant
    */
-  slider->in_set_value = TRUE;
+  slider->in_set_value = true;
   for (i = 0; i < 3; i++)
     {
       RutVec3SliderComponent *component = slider->components + i;
       rut_number_slider_set_value (component->slider, value[i]);
     }
 
-  slider->in_set_value = FALSE;
+  slider->in_set_value = false;
 
   rut_property_dirty (&slider->context->property_ctx,
                       &slider->properties[RUT_VEC3_SLIDER_PROP_VALUE]);

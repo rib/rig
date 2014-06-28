@@ -366,7 +366,7 @@ rut_entry_new (RutContext *ctx)
   rut_object_unref (entry->background);
 
   entry->text = rut_text_new (ctx);
-  rut_text_set_editable (entry->text, TRUE);
+  rut_text_set_editable (entry->text, true);
 
   entry->text_transform = rut_transform_new (ctx);
   rut_graphable_add_child (entry->text_transform, entry->text);

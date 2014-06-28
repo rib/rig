@@ -87,25 +87,25 @@ typedef struct _RutRectangleCmd
 typedef struct _RutDisplayList
 {
   /* PRIVATE */
-  CList *head;
-  CList *tail;
+  c_list_t *head;
+  c_list_t *tail;
 } RutDisplayList;
 
 void
 rut_display_list_unsplice (RutDisplayList *list);
 
 void
-rut_display_list_splice (CList *after, RutDisplayList *sub_list);
+rut_display_list_splice (c_list_t *after, RutDisplayList *sub_list);
 
 void
 rut_display_list_append (RutDisplayList *list, void *data);
 
-CList *
-rut_display_list_insert_before (CList *sibling,
+c_list_t *
+rut_display_list_insert_before (c_list_t *sibling,
                                  void *data);
 
 void
-rut_display_list_delete_link (CList *link);
+rut_display_list_delete_link (c_list_t *link);
 
 void
 rut_display_list_init (RutDisplayList *list);

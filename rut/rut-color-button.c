@@ -566,7 +566,7 @@ button_grab_input_cb (RutInputEvent *event,
       if (depressed)
         {
           show_picker (button, camera);
-          depressed = FALSE;
+          depressed = false;
         }
     }
 
@@ -587,7 +587,7 @@ ungrab (RutColorButton *button)
       rut_shell_ungrab_input (button->context->shell,
                               button_grab_input_cb,
                               button);
-      button->have_button_grab = FALSE;
+      button->have_button_grab = false;
     }
 }
 
@@ -606,8 +606,8 @@ button_input_region_cb (RutInputRegion *region,
       (rut_motion_event_get_button_state (event) & RUT_BUTTON_STATE_1) &&
       (camera = rut_input_event_get_camera (event)))
     {
-      button->have_button_grab = TRUE;
-      button->depressed = TRUE;
+      button->have_button_grab = true;
+      button->depressed = true;
 
       rut_shell_grab_input (button->context->shell,
                             camera,
@@ -672,7 +672,7 @@ rut_color_button_set_color (RutObject *obj,
     {
       button->color = *color;
 
-      button->color_pipeline_dirty = TRUE;
+      button->color_pipeline_dirty = true;
 
       rut_property_dirty (&button->context->property_ctx,
                           &button->properties[RUT_COLOR_BUTTON_PROP_COLOR]);

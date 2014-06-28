@@ -74,7 +74,7 @@ typedef struct _Loader
   bool read_property;
 
   unsigned int first_vertex, last_vertex;
-  CArray *faces;
+  c_array_t *faces;
   CoglIndicesType indices_type;
 
 } Loader;
@@ -155,7 +155,7 @@ rut_mesh_ply_loader_vertex_read_cb (p_ply_argument argument)
       *((float *)pos) = value;
     }
 
-  loader->read_property = TRUE;
+  loader->read_property = true;
 
   return 1;
 }
@@ -294,18 +294,18 @@ init_indices_array (Loader *loader,
   if (n_vertices <= 0x100)
     {
       loader->indices_type = COGL_INDICES_TYPE_UNSIGNED_BYTE;
-      loader->faces = c_array_new (FALSE, FALSE, sizeof (uint8_t));
+      loader->faces = c_array_new (false, false, sizeof (uint8_t));
     }
   else if (n_vertices <= 0x10000)
     {
       loader->indices_type = COGL_INDICES_TYPE_UNSIGNED_SHORT;
-      loader->faces = c_array_new (FALSE, FALSE, sizeof (uint16_t));
+      loader->faces = c_array_new (false, false, sizeof (uint16_t));
     }
   else if (cogl_has_feature (loader->ctx->cogl_context,
                              COGL_FEATURE_ID_UNSIGNED_INT_INDICES))
     {
       loader->indices_type = COGL_INDICES_TYPE_UNSIGNED_INT;
-      loader->faces = c_array_new (FALSE, FALSE, sizeof (uint32_t));
+      loader->faces = c_array_new (false, false, sizeof (uint32_t));
     }
   else
     {
@@ -313,10 +313,10 @@ init_indices_array (Loader *loader,
                    RUT_MESH_PLY_ERROR_UNSUPPORTED,
                    "The PLY file requires unsigned int indices "
                    "but this is not supported by the driver");
-      return FALSE;
+      return false;
     }
 
-  return TRUE;
+  return true;
 }
 
 static RutMesh *
@@ -437,7 +437,7 @@ _rut_mesh_new_from_p_ply (RutContext *ctx,
       if (load_status[i] == RUT_PLY_ATTRIBUTE_STATUS_PADDED)
         {
           loader_attribute->type = attribute->pad_type;
-          loader_attribute->padding = TRUE;
+          loader_attribute->padding = true;
         }
       else
         {
@@ -452,7 +452,7 @@ _rut_mesh_new_from_p_ply (RutContext *ctx,
 
           loader_attribute->type =
             get_attribute_type_for_ply_type (ply_attribute_type);
-          loader_attribute->padding = FALSE;
+          loader_attribute->padding = false;
 
           for (j = 0; j < n_components; j++)
             {
@@ -592,7 +592,7 @@ EXIT:
       rut_object_unref (rut_attributes[i]);
 
   if (loader->faces)
-    c_array_free (loader->faces, TRUE);
+    c_array_free (loader->faces, true);
 
   return mesh;
 }
