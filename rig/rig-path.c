@@ -105,7 +105,7 @@ rig_path_find_control_points2 (RigPath *path,
   RigNode *pos;
 
   if (G_UNLIKELY (rut_list_empty (&path->nodes)))
-    return FALSE;
+    return false;
 
   if (G_UNLIKELY (path->pos == NULL))
     path->pos = rut_container_of (path->nodes.next, path->pos, list_node);
@@ -129,7 +129,7 @@ rig_path_find_control_points2 (RigPath *path,
             {
               *n0 = *n1 = path->pos =
                 rut_container_of (path->nodes.next, path->pos, list_node);
-              return TRUE;
+              return true;
             }
           pos = tmp;
         }
@@ -141,7 +141,7 @@ rig_path_find_control_points2 (RigPath *path,
             {
               *n0 = *n1 = path->pos =
                 rut_container_of (path->nodes.prev, path->pos, list_node);
-              return TRUE;
+              return true;
             }
           pos = rut_container_of (tmp->list_node.prev, pos, list_node);
         }
@@ -162,7 +162,7 @@ rig_path_find_control_points2 (RigPath *path,
             {
               *n0 = *n1 = path->pos =
                 rut_container_of (path->nodes.next, path->pos, list_node);
-              return TRUE;
+              return true;
             }
           pos = rut_container_of (tmp->list_node.next, pos, list_node);
         }
@@ -175,7 +175,7 @@ rig_path_find_control_points2 (RigPath *path,
             {
               *n0 = *n1 = path->pos =
                 rut_container_of (path->nodes.prev, path->pos, list_node);
-              return TRUE;
+              return true;
             }
           pos = tmp;
         }
@@ -189,7 +189,7 @@ rig_path_find_control_points2 (RigPath *path,
 
   path->pos = pos;
 
-  return TRUE;
+  return true;
 }
 
 /* Finds 2 points either side of the given t using the direction to resolve
@@ -204,15 +204,15 @@ path_find_control_points4 (RigPath *path,
                            RigNode **n2,
                            RigNode **n3)
 {
-  CList *l1, *l2;
+  c_list_t *l1, *l2;
 
   if (!path_find_control_links2 (path, t, direction, &l1, &l2))
-    return FALSE;
+    return false;
 
   if (direction > 0)
     {
       if (l1->prev == NULL || l2->next == NULL)
-        return FALSE;
+        return false;
 
       *n0 = l1->prev->engine;
       *n3 = l2->next->engine;
@@ -220,7 +220,7 @@ path_find_control_points4 (RigPath *path,
   else
     {
       if (l1->next == NULL || l2->prev == NULL)
-        return FALSE;
+        return false;
 
       *n0 = l1->next->engine;
       *n3 = l2->prev->engine;
@@ -229,7 +229,7 @@ path_find_control_points4 (RigPath *path,
   *n1 = l1->engine;
   *n2 = l2->engine;
 
-  return TRUE;
+  return true;
 }
 #endif
 
@@ -641,12 +641,12 @@ rig_path_lerp_property (RigPath *path,
 {
   RigNode *n0, *n1;
 
-  c_return_val_if_fail (property->spec->type == path->type, FALSE);
+  c_return_val_if_fail (property->spec->type == path->type, false);
 
   if (!rig_path_find_control_points2 (path, t,
                                       RIG_PATH_DIRECTION_FORWARDS,
                                       &n0, &n1))
-    return FALSE;
+    return false;
 
   switch (path->type)
     {
@@ -759,7 +759,7 @@ rig_path_lerp_property (RigPath *path,
       break;
     }
 
-  return TRUE;
+  return true;
 }
 
 bool
@@ -772,7 +772,7 @@ rig_path_get_boxed (RigPath *path,
   node = rig_path_find_node (path, t);
 
   if (node == NULL)
-    return FALSE;
+    return false;
 
   return rig_node_box (path->type, node, value);
 }

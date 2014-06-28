@@ -123,7 +123,7 @@ code_generate_pre_cb (RutObject *object,
                       void *user_data)
 {
   RigCodeNode *node = object;
-  CString *code = user_data;
+  c_string_t *code = user_data;
 
   if (node->pre)
     c_string_append (code, node->pre);
@@ -137,7 +137,7 @@ code_generate_post_cb (RutObject *object,
                        void *user_data)
 {
   RigCodeNode *node = object;
-  CString *code = user_data;
+  c_string_t *code = user_data;
 
   if (node->post)
     c_string_append (code, node->post);
@@ -362,13 +362,13 @@ void
 _rig_code_fini (RigEngine *engine)
 {
 #ifdef RIG_EDITOR_ENABLED
-  c_string_free (engine->code_string, TRUE);
+  c_string_free (engine->code_string, true);
   engine->code_string = NULL;
 
-  c_string_free (engine->codegen_string0, TRUE);
+  c_string_free (engine->codegen_string0, true);
   engine->codegen_string0 = NULL;
 
-  c_string_free (engine->codegen_string1, TRUE);
+  c_string_free (engine->codegen_string1, true);
   engine->codegen_string1 = NULL;
 
   if (engine->code_dso_filename)

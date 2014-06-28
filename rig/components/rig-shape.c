@@ -69,7 +69,7 @@ static RutPropertySpec _rig_shape_prop_specs[] = {
     .getter.asset_type = rig_shape_get_shape_mask,
     .setter.asset_type = rig_shape_set_shape_mask,
     .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .animatable = FALSE
+    .animatable = false
   },
 
   { NULL }

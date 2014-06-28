@@ -149,7 +149,7 @@
 	_gsk_cur_list = _gsk_a;						\
 									\
 	/* merge _gsk_cur_list up the stack */				\
-	for (_gsk_i = 0; TRUE; _gsk_i++)				\
+	for (_gsk_i = 0; true; _gsk_i++)				\
 	  {								\
 	    /* expanding the stack is marked unlikely,         */	\
 	    /* since in the case it matters (where the number  */	\

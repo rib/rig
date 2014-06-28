@@ -48,7 +48,7 @@ static RutPropertySpec _rig_pointalism_grid_prop_specs[] = {
     .flags = RUT_PROPERTY_FLAG_READWRITE |
       RUT_PROPERTY_FLAG_VALIDATE,
     .validation = { .float_range = { 0, 100 }},
-    .animatable = TRUE
+    .animatable = true
   },
   {
     .name = "pointalism-z",
@@ -59,7 +59,7 @@ static RutPropertySpec _rig_pointalism_grid_prop_specs[] = {
     .flags = RUT_PROPERTY_FLAG_READWRITE |
       RUT_PROPERTY_FLAG_VALIDATE,
     .validation = { .float_range = { 0, 100 }},
-    .animatable = TRUE
+    .animatable = true
   },
   {
     .name = "pointalism-lighter",
@@ -68,7 +68,7 @@ static RutPropertySpec _rig_pointalism_grid_prop_specs[] = {
     .getter.boolean_type = rig_pointalism_grid_get_lighter,
     .setter.boolean_type = rig_pointalism_grid_set_lighter,
     .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .animatable = TRUE
+    .animatable = true
   },
   {
     .name = "pointalism-cell-size",
@@ -78,7 +78,7 @@ static RutPropertySpec _rig_pointalism_grid_prop_specs[] = {
     .setter.float_type = rig_pointalism_grid_set_cell_size,
     .flags = RUT_PROPERTY_FLAG_READWRITE | RUT_PROPERTY_FLAG_VALIDATE,
     .validation = { .float_range = { 1, 100 }},
-    .animatable = TRUE
+    .animatable = true
   },
   { NULL }
 };
@@ -462,7 +462,7 @@ rig_pointalism_grid_new (RutContext *ctx, float size)
 
   grid->pointalism_scale = 1;
   grid->pointalism_z = 1;
-  grid->pointalism_lighter = TRUE;
+  grid->pointalism_lighter = true;
   grid->cell_size = size;
 
   /* We just specify an arbitrary size initially and expect this to be

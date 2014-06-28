@@ -63,7 +63,7 @@ struct _RigBinding
   RigCodeNode *function_node;
   RigCodeNode *expression_node;
 
-  CList *dependencies;
+  c_list_t *dependencies;
 
   unsigned int active: 1;
 };
@@ -95,7 +95,7 @@ static Dependency *
 find_dependency (RigBinding *binding,
                  RutProperty *property)
 {
-  CList *l;
+  c_list_t *l;
 
   for (l = binding->dependencies; l; l = l->next)
     {
@@ -219,7 +219,7 @@ codegen_function_node (RigBinding *binding)
   const char *out_var_decl_pre;
   const char *out_var_decl_post;
   const char *out_var_get_pre;
-  CList *l;
+  c_list_t *l;
   int i;
 
   get_property_codegen_info (binding->property,
@@ -293,7 +293,7 @@ rig_binding_activate (RigBinding *binding)
   RutProperty **dependencies;
   RutBindingCallback callback;
   int n_dependencies;
-  CList *l;
+  c_list_t *l;
   int i;
 
   c_return_if_fail (!binding->active);
@@ -513,7 +513,7 @@ rig_binding_foreach_dependency (RigBinding *binding,
                                                   void *user_data),
                                 void *user_data)
 {
-  CList *l;
+  c_list_t *l;
 
   for (l = binding->dependencies; l; l = l->next)
     callback (binding, l->data, user_data);

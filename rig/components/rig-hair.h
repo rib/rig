@@ -62,8 +62,8 @@ struct _RigHair
   CoglTexture *circle;
   CoglTexture *fin_texture;
   float *shell_positions;
-  CArray *shell_textures;
-  CArray *particles;
+  c_array_t *shell_textures;
+  c_array_t *particles;
 
   float length;
   int n_shells;

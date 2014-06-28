@@ -317,7 +317,7 @@ create_widget_for_property (RutContext *context,
         RutEntry *entry = rut_entry_new (context);
         RutText *text = rut_entry_get_text (entry);
 
-        rut_text_set_single_line_mode (text, TRUE);
+        rut_text_set_single_line_mode (text, true);
         *control_prop = rut_introspectable_lookup_property (text, "text");
         *label_text = name;
 
@@ -447,7 +447,7 @@ add_control (RigPropInspector *inspector,
         rut_text_new_with_text (inspector->context,
                                 NULL, /* font_name */
                                 label_text);
-      rut_text_set_selectable (label, FALSE);
+      rut_text_set_selectable (label, false);
       rut_box_layout_add (inspector->widget_hbox, false, label);
       rut_object_unref (label);
     }
@@ -575,7 +575,7 @@ rig_prop_inspector_reload_property (RigPropInspector *inspector)
     {
       bool old_reloading = inspector->reloading_property;
 
-      inspector->reloading_property = TRUE;
+      inspector->reloading_property = true;
 
       if (inspector->widget_prop)
         {
@@ -604,7 +604,7 @@ rig_prop_inspector_set_controlled (RigPropInspector *inspector,
     {
       bool old_reloading = inspector->reloading_property;
 
-      inspector->reloading_property = TRUE;
+      inspector->reloading_property = true;
 
       rut_icon_toggle_set_state (inspector->controlled_toggle,
                                  controlled);

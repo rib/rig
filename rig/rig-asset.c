@@ -84,7 +84,7 @@ struct _RigAsset
 
   bool is_video;
 
-  CList *inferred_tags;
+  c_list_t *inferred_tags;
 
   RutList thumbnail_cb_list;
 };
@@ -134,9 +134,9 @@ static bool
 _rig_asset_has (RutObject *mimable, RutMimableType type)
 {
   if (type == RUT_MIMABLE_TYPE_OBJECT)
-    return TRUE;
+    return true;
   else
-    return FALSE;
+    return false;
 }
 
 static void *
@@ -237,7 +237,7 @@ static RutPLYAttribute ply_attributes[] =
       { "alpha" }
     },
     .n_properties = 4,
-    .normalized = TRUE,
+    .normalized = true,
     .min_components = 3,
   }
 };
@@ -315,10 +315,10 @@ video_thumbnailer_seek (GstBus *bus,
 
       gst_element_get_state (generator->bin, NULL, 0,
                               0.2 * GST_SECOND);
-      generator->seek_done = TRUE;
+      generator->seek_done = true;
     }
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -330,7 +330,7 @@ generate_video_thumbnail (RigAsset *asset)
   char *uri;
   GstBus *bus;
 
-  generator->seek_done = FALSE;
+  generator->seek_done = false;
   generator->ctx = ctx->cogl_context;
   generator->video = asset;
   generator->sink = cogl_gst_video_sink_new (ctx->cogl_context);
@@ -497,7 +497,7 @@ generate_mesh_thumbnail (RigAsset *asset)
   cogl_pipeline_set_uniform_float (pipeline, location, 4, 1, mat_spec);
 
   cogl_depth_state_init (&depth_state);
-  cogl_depth_state_set_test_enabled (&depth_state, TRUE);
+  cogl_depth_state_set_test_enabled (&depth_state, true);
   cogl_pipeline_set_depth_state (pipeline, &depth_state, NULL);
 
   primitive = rut_mesh_create_primitive (ctx, mesh);
@@ -549,7 +549,7 @@ generate_mesh_thumbnail (RigAsset *asset)
 static RigAsset *
 rig_asset_new_full (RutContext *ctx,
                     const char *path,
-                    const CList *inferred_tags,
+                    const c_list_t *inferred_tags,
                     RigAssetType type)
 {
   RigAsset *asset =
@@ -717,7 +717,7 @@ bitmap_new_from_pixbuf (CoglContext *ctx,
     default:
       /* Ouch, spec changed! */
       g_object_unref (pixbuf);
-      return FALSE;
+      return false;
     }
 
   /* We just use the data directly from the pixbuf so that we don't
@@ -835,7 +835,7 @@ rig_asset_new_from_file (RigEngine *engine,
   GFile *assets_dir = g_file_new_for_path (engine->ctx->assets_location);
   GFile *dir = g_file_get_parent (asset_file);
   char *path = g_file_get_relative_path (assets_dir, asset_file);
-  CList *inferred_tags = NULL;
+  c_list_t *inferred_tags = NULL;
   RigAsset *asset = NULL;
 
   inferred_tags = rut_infer_asset_tags (engine->ctx, info, asset_file);
@@ -1036,7 +1036,7 @@ rig_asset_new_builtin (RutContext *ctx,
 RigAsset *
 rig_asset_new_texture (RutContext *ctx,
                        const char *path,
-                       const CList *inferred_tags)
+                       const c_list_t *inferred_tags)
 {
   return rig_asset_new_full (ctx, path, inferred_tags, RIG_ASSET_TYPE_TEXTURE);
 }
@@ -1046,7 +1046,7 @@ rig_asset_new_texture (RutContext *ctx,
 RigAsset *
 rig_asset_new_normal_map (RutContext *ctx,
                           const char *path,
-                          const CList *inferred_tags)
+                          const c_list_t *inferred_tags)
 {
   return rig_asset_new_full (ctx, path, inferred_tags,
                              RIG_ASSET_TYPE_NORMAL_MAP);
@@ -1057,7 +1057,7 @@ rig_asset_new_normal_map (RutContext *ctx,
 RigAsset *
 rig_asset_new_alpha_mask (RutContext *ctx,
                           const char *path,
-                          const CList *inferred_tags)
+                          const c_list_t *inferred_tags)
 {
   return rig_asset_new_full (ctx, path, inferred_tags,
                              RIG_ASSET_TYPE_ALPHA_MASK);
@@ -1066,7 +1066,7 @@ rig_asset_new_alpha_mask (RutContext *ctx,
 RigAsset *
 rig_asset_new_ply_model (RutContext *ctx,
                          const char *path,
-                         const CList *inferred_tags)
+                         const c_list_t *inferred_tags)
 {
   return rig_asset_new_full (ctx, path, inferred_tags,
                              RIG_ASSET_TYPE_MESH);
@@ -1075,7 +1075,7 @@ rig_asset_new_ply_model (RutContext *ctx,
 RigAsset *
 rig_asset_new_font (RutContext *ctx,
                     const char *path,
-                    const CList *inferred_tags)
+                    const c_list_t *inferred_tags)
 {
   return rig_asset_new_full (ctx, path, inferred_tags,
                              RIG_ASSET_TYPE_FONT);
@@ -1140,11 +1140,11 @@ rig_asset_get_image_size (RigAsset *asset,
     }
 }
 
-static CList *
-copy_tags (const CList *tags)
+static c_list_t *
+copy_tags (const c_list_t *tags)
 {
-  const CList *l;
-  CList *copy = NULL;
+  const c_list_t *l;
+  c_list_t *copy = NULL;
   for (l = tags; l; l = l->next)
     {
       const char *tag = g_intern_string (l->data);
@@ -1155,13 +1155,13 @@ copy_tags (const CList *tags)
 
 void
 rig_asset_set_inferred_tags (RigAsset *asset,
-                             const CList *inferred_tags)
+                             const c_list_t *inferred_tags)
 {
   asset->inferred_tags = c_list_concat (asset->inferred_tags,
                                         copy_tags (inferred_tags));
 }
 
-const CList *
+const c_list_t *
 rig_asset_get_inferred_tags (RigAsset *asset)
 {
   return asset->inferred_tags;
@@ -1170,12 +1170,12 @@ rig_asset_get_inferred_tags (RigAsset *asset)
 bool
 rig_asset_has_tag (RigAsset *asset, const char *tag)
 {
-  CList *l;
+  c_list_t *l;
 
   for (l = asset->inferred_tags; l; l = l->next)
     if (strcmp (tag, l->data) == 0)
-      return TRUE;
-  return FALSE;
+      return true;
+  return false;
 }
 
 static const char *
@@ -1196,29 +1196,29 @@ rut_file_info_is_asset (GFileInfo *info, const char *name)
       if (strncmp (mime_type, "image/", 6) == 0)
         {
           c_free (mime_type);
-          return TRUE;
+          return true;
         }
       else if (strncmp (mime_type, "video/", 6) == 0)
         {
           c_free (mime_type);
-          return TRUE;
+          return true;
         }
       else if (strcmp (mime_type, "application/x-font-ttf") == 0)
         {
           c_free (mime_type);
-          return TRUE;
+          return true;
         }
       c_free (mime_type);
     }
 
   ext = get_extension (name);
   if (ext && strcmp (ext, "ply") == 0)
-    return TRUE;
+    return true;
 
-  return FALSE;
+  return false;
 }
 
-CList *
+c_list_t *
 rut_infer_asset_tags (RutContext *ctx, GFileInfo *info, GFile *asset_file)
 {
   GFile *assets_dir = g_file_new_for_path (ctx->assets_location);
@@ -1227,7 +1227,7 @@ rut_infer_asset_tags (RutContext *ctx, GFileInfo *info, GFile *asset_file)
   const char *content_type = g_file_info_get_content_type (info);
   char *mime_type = g_content_type_get_mime_type (content_type);
   const char *ext;
-  CList *inferred_tags = NULL;
+  c_list_t *inferred_tags = NULL;
 
   while (dir && !g_file_equal (assets_dir, dir))
     {
@@ -1317,7 +1317,7 @@ rig_asset_add_inferred_tag (RigAsset *asset,
 bool
 rig_asset_needs_thumbnail (RigAsset *asset)
 {
-  return asset->is_video ? TRUE : FALSE;
+  return asset->is_video ? true : false;
 }
 
 RutClosure *

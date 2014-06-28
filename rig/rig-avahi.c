@@ -335,7 +335,7 @@ resolve_callback(AvahiServiceResolver *resolver,
     {
       char a[AVAHI_ADDRESS_STR_MAX], *t;
       RigSlaveAddress *slave_address;
-      CList *l;
+      c_list_t *l;
 
       g_message ("Service '%s' of type '%s' in domain '%s':\n",
                  name, type, domain);
@@ -391,7 +391,7 @@ browse_callback (AvahiServiceBrowser *browser,
 {
   RigEngine *engine = user_data;
   AvahiClient *client = avahi_service_browser_get_client (browser);
-  CList *l;
+  c_list_t *l;
 
   switch (event)
     {

@@ -62,7 +62,7 @@ typedef struct _RigEntitesSelection
 {
   RutObjectBase _base;
   RigEngine *engine;
-  CList *objects;
+  c_list_t *objects;
   RutList selection_events_cb_list;
 } RigObjectsSelection;
 
@@ -149,15 +149,15 @@ struct _RigEngine
   /* XXX: Move to RigEditor */
 #ifdef RIG_EDITOR_ENABLED
   RutText *search_text;
-  CList *required_search_tags;
+  c_list_t *required_search_tags;
 
   RutList tool_changed_cb_list;
 
-  CString *codegen_string0;
-  CString *codegen_string1;
+  c_string_t *codegen_string0;
+  c_string_t *codegen_string1;
   int next_code_id;
 
-  CString *code_string;
+  c_string_t *code_string;
   char *code_dso_filename;
   bool need_recompile;
 #endif
@@ -168,7 +168,7 @@ struct _RigEngine
   RutObject *renderer;
 
   /* XXX: Move to RigEditor */
-  CList *undo_journal_stack;
+  c_list_t *undo_journal_stack;
   RigUndoJournal *undo_journal;
 
   /* shadow mapping */
@@ -220,7 +220,7 @@ struct _RigEngine
   RutBin *inspector_bin;
   RutBoxLayout *inspector_box_layout;
   RutObject *inspector;
-  CList *all_inspectors;
+  c_list_t *all_inspectors;
 
   /* XXX: Move to RigEditor */
   RigControllerView *controller_view;
@@ -293,9 +293,9 @@ struct _RigEngine
   AvahiServiceBrowser *avahi_browser;
 #endif
 
-  CList *slave_addresses;
+  c_list_t *slave_addresses;
 
-  CList *slave_masters;
+  c_list_t *slave_masters;
 
   RigUI *edit_mode_ui;
   RigUI *play_mode_ui;

@@ -77,7 +77,7 @@ struct _RigBindingView
   RutText *code_view;
 
   RutProperty *preview_dependency_prop;
-  CList *dependencies;
+  c_list_t *dependencies;
 
 };
 
@@ -133,7 +133,7 @@ static void
 remove_dependency (RigBindingView *binding_view,
                    RutProperty *property)
 {
-  CList *l;
+  c_list_t *l;
 
   for (l = binding_view->dependencies; l; l = l->next)
     {

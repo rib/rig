@@ -43,7 +43,7 @@ static RutPropertySpec _rig_material_prop_specs[] = {
     .nick = "Visible",
     .blurb = "Whether the material is visible or not",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .animatable = TRUE
+    .animatable = true
   },
   {
     .name = "cast_shadow",
@@ -53,7 +53,7 @@ static RutPropertySpec _rig_material_prop_specs[] = {
     .nick = "Cast Shadow",
     .blurb = "Whether the material casts shadows or not",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .animatable = TRUE
+    .animatable = true
   },
   {
     .name = "receive_shadow",
@@ -63,7 +63,7 @@ static RutPropertySpec _rig_material_prop_specs[] = {
     .nick = "Receive Shadow",
     .blurb = "Whether the material receives shadows or not",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .animatable = TRUE
+    .animatable = true
   },
   {
     .name = "color_source",
@@ -73,7 +73,7 @@ static RutPropertySpec _rig_material_prop_specs[] = {
     .getter.asset_type = rig_material_get_color_source_asset,
     .setter.asset_type = rig_material_set_color_source_asset,
     .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .animatable = FALSE
+    .animatable = false
   },
   {
     .name = "normal_map",
@@ -83,7 +83,7 @@ static RutPropertySpec _rig_material_prop_specs[] = {
     .getter.asset_type = rig_material_get_normal_map_asset,
     .setter.asset_type = rig_material_set_normal_map_asset,
     .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .animatable = FALSE
+    .animatable = false
   },
   {
     .name = "alpha_mask",
@@ -93,7 +93,7 @@ static RutPropertySpec _rig_material_prop_specs[] = {
     .getter.asset_type = rig_material_get_alpha_mask_asset,
     .setter.asset_type = rig_material_set_alpha_mask_asset,
     .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .animatable = FALSE
+    .animatable = false
   },
   {
     .name = "ambient",
@@ -102,7 +102,7 @@ static RutPropertySpec _rig_material_prop_specs[] = {
     .getter.color_type = rig_material_get_ambient,
     .setter.color_type = rig_material_set_ambient,
     .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .animatable = TRUE
+    .animatable = true
   },
   {
     .name = "diffuse",
@@ -111,7 +111,7 @@ static RutPropertySpec _rig_material_prop_specs[] = {
     .getter.color_type = rig_material_get_diffuse,
     .setter.color_type = rig_material_set_diffuse,
     .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .animatable = TRUE
+    .animatable = true
   },
   {
     .name = "specular",
@@ -120,7 +120,7 @@ static RutPropertySpec _rig_material_prop_specs[] = {
     .getter.color_type = rig_material_get_specular,
     .setter.color_type = rig_material_set_specular,
     .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .animatable = TRUE
+    .animatable = true
   },
   {
     .name = "shininess",
@@ -131,7 +131,7 @@ static RutPropertySpec _rig_material_prop_specs[] = {
     .flags = RUT_PROPERTY_FLAG_READWRITE |
       RUT_PROPERTY_FLAG_VALIDATE,
     .validation = { .float_range = { 0, 1000 }},
-    .animatable = TRUE
+    .animatable = true
   },
   {
     .name = "alpha-mask-threshold",
@@ -142,7 +142,7 @@ static RutPropertySpec _rig_material_prop_specs[] = {
     .flags = RUT_PROPERTY_FLAG_READWRITE |
       RUT_PROPERTY_FLAG_VALIDATE,
     .validation = { .float_range = { 0, 1 }},
-    .animatable = TRUE
+    .animatable = true
   },
   { 0 }
 };
@@ -240,8 +240,8 @@ rig_material_new (RutContext *ctx,
 
   material->component.type = RUT_COMPONENT_TYPE_MATERIAL;
 
-  material->visible = TRUE;
-  material->receive_shadow = TRUE;
+  material->visible = true;
+  material->receive_shadow = true;
 
   cogl_color_init_from_4f (&material->ambient, 0.23, 0.23, 0.23, 1);
   cogl_color_init_from_4f (&material->diffuse, 0.75, 0.75, 0.75, 1);

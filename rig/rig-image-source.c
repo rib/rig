@@ -170,7 +170,7 @@ _rig_image_source_video_loop (GstBus *bus,
       default:
         break;
     }
-  return TRUE;
+  return true;
 }
 
 static void
@@ -250,7 +250,7 @@ pipeline_ready_cb (gpointer instance,
 {
   RigImageSource *source = (RigImageSource*) user_data;
 
-  source->is_video = TRUE;
+  source->is_video = true;
 
   rut_closure_list_invoke (&source->ready_cb_list,
                            RigImageSourceReadyCallback,
@@ -278,7 +278,7 @@ rig_image_source_new (RigEngine *engine,
                                               _rig_image_source_init_type);
 
   source->engine = engine;
-  source->default_sample = TRUE;
+  source->default_sample = true;
 
   rut_list_init (&source->changed_cb_list);
   rut_list_init (&source->ready_cb_list);
@@ -396,7 +396,7 @@ rig_image_source_setup_pipeline (RigImageSource *source,
       CoglGstVideoSink *sink = rig_image_source_get_sink (source);
 
       cogl_gst_video_sink_set_first_layer (sink, source->first_layer);
-      cogl_gst_video_sink_set_default_sample (sink, TRUE);
+      cogl_gst_video_sink_set_default_sample (sink, true);
       cogl_gst_video_sink_setup_pipeline (sink, pipeline);
 
       vertex_snippet = wrappers->video_source_vertex_wrapper;

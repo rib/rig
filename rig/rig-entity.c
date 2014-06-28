@@ -51,7 +51,7 @@ static RutPropertySpec _rig_entity_prop_specs[] = {
     .nick = "Position",
     .blurb = "The entity's position",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .animatable = TRUE
+    .animatable = true
   },
   {
     .name = "rotation",
@@ -61,7 +61,7 @@ static RutPropertySpec _rig_entity_prop_specs[] = {
     .nick = "Rotation",
     .blurb = "The entity's rotation",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .animatable = TRUE
+    .animatable = true
   },
   {
     .name = "scale",
@@ -71,7 +71,7 @@ static RutPropertySpec _rig_entity_prop_specs[] = {
     .nick = "Scale",
     .blurb = "The entity's uniform scale factor",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .animatable = TRUE
+    .animatable = true
   },
 
   { 0 }
@@ -88,7 +88,7 @@ _rig_entity_free (void *object)
     rig_entity_remove_component (entity,
                                  g_ptr_array_index (entity->components, 0));
 
-  g_ptr_array_free (entity->components, TRUE);
+  g_ptr_array_free (entity->components, true);
 
   rut_graphable_destroy (entity);
 
@@ -325,7 +325,7 @@ rig_entity_set_position (RutObject *obj,
   entity->position[0] = position[0];
   entity->position[1] = position[1];
   entity->position[2] = position[2];
-  entity->dirty = TRUE;
+  entity->dirty = true;
 
   rut_property_dirty (&entity->ctx->property_ctx,
                       &entity->properties[RUT_ENTITY_PROP_POSITION]);
@@ -431,7 +431,7 @@ rig_entity_set_rotation (RutObject *obj,
       return;
 
   entity->rotation = *rotation;
-  entity->dirty = TRUE;
+  entity->dirty = true;
 
   rut_property_dirty (&entity->ctx->property_ctx,
                       &entity->properties[RUT_ENTITY_PROP_ROTATION]);
@@ -515,7 +515,7 @@ rig_entity_set_scale (RutObject *obj,
     return;
 
   entity->scale = scale;
-  entity->dirty = TRUE;
+  entity->dirty = true;
 
   rut_property_dirty (&entity->ctx->property_ctx,
                       &entity->properties[RUT_ENTITY_PROP_SCALE]);
@@ -559,7 +559,7 @@ rig_entity_get_transform (RutObject *self)
   cogl_matrix_scale (&entity->transform,
                      entity->scale, entity->scale, entity->scale);
 
-  entity->dirty = FALSE;
+  entity->dirty = false;
 
   return &entity->transform;
 }
@@ -585,7 +585,7 @@ rig_entity_rotate_x_axis (RigEntity *entity,
   cogl_quaternion_multiply (&entity->rotation, &entity->rotation,
                             &x_rotation);
 
-  entity->dirty = TRUE;
+  entity->dirty = true;
 
   rut_property_dirty (&entity->ctx->property_ctx,
                       &entity->properties[RUT_ENTITY_PROP_ROTATION]);
@@ -601,7 +601,7 @@ rig_entity_rotate_y_axis (RigEntity *entity,
   cogl_quaternion_multiply (&entity->rotation, &entity->rotation,
                             &y_rotation);
 
-  entity->dirty = TRUE;
+  entity->dirty = true;
 
   rut_property_dirty (&entity->ctx->property_ctx,
                       &entity->properties[RUT_ENTITY_PROP_ROTATION]);
@@ -617,7 +617,7 @@ rig_entity_rotate_z_axis (RigEntity *entity,
   cogl_quaternion_multiply (&entity->rotation, &entity->rotation,
                             &z_rotation);
 
-  entity->dirty = TRUE;
+  entity->dirty = true;
 
   rut_property_dirty (&entity->ctx->property_ctx,
                       &entity->properties[RUT_ENTITY_PROP_ROTATION]);
@@ -689,7 +689,7 @@ rig_entity_copy (RigEntity *entity)
   copy->rotation = entity->rotation;
   copy->scale = entity->scale;
   copy->transform = entity->transform;
-  copy->dirty = FALSE;
+  copy->dirty = false;
 
   copy_components = g_ptr_array_sized_new (entity_components->len);
   copy->components = copy_components;

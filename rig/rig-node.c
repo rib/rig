@@ -277,77 +277,77 @@ rig_node_box (RutPropertyType type,
     case RUT_PROPERTY_TYPE_FLOAT:
       value->type = RUT_PROPERTY_TYPE_FLOAT;
       value->d.float_val = node->boxed.d.float_val;
-      return TRUE;
+      return true;
 
     case RUT_PROPERTY_TYPE_DOUBLE:
       value->type = RUT_PROPERTY_TYPE_DOUBLE;
       value->d.double_val = node->boxed.d.double_val;
-      return TRUE;
+      return true;
 
     case RUT_PROPERTY_TYPE_INTEGER:
       value->type = RUT_PROPERTY_TYPE_INTEGER;
       value->d.integer_val = node->boxed.d.integer_val;
-      return TRUE;
+      return true;
 
     case RUT_PROPERTY_TYPE_UINT32:
       value->type = RUT_PROPERTY_TYPE_UINT32;
       value->d.uint32_val = node->boxed.d.uint32_val;
-      return TRUE;
+      return true;
 
     case RUT_PROPERTY_TYPE_VEC3:
       value->type = RUT_PROPERTY_TYPE_VEC3;
       memcpy (value->d.vec3_val, node->boxed.d.vec3_val, sizeof (float) * 3);
-      return TRUE;
+      return true;
 
     case RUT_PROPERTY_TYPE_VEC4:
       value->type = RUT_PROPERTY_TYPE_VEC4;
       memcpy (value->d.vec4_val, node->boxed.d.vec4_val, sizeof (float) * 4);
-      return TRUE;
+      return true;
 
     case RUT_PROPERTY_TYPE_COLOR:
       value->type = RUT_PROPERTY_TYPE_COLOR;
       value->d.color_val = node->boxed.d.color_val;
-      return TRUE;
+      return true;
 
     case RUT_PROPERTY_TYPE_QUATERNION:
       value->type = RUT_PROPERTY_TYPE_QUATERNION;
       value->d.quaternion_val = node->boxed.d.quaternion_val;
-      return TRUE;
+      return true;
 
     case RUT_PROPERTY_TYPE_ENUM:
       value->type = RUT_PROPERTY_TYPE_ENUM;
       value->d.enum_val = node->boxed.d.enum_val;
-      return TRUE;
+      return true;
 
     case RUT_PROPERTY_TYPE_BOOLEAN:
       value->type = RUT_PROPERTY_TYPE_BOOLEAN;
       value->d.boolean_val = node->boxed.d.boolean_val;
-      return TRUE;
+      return true;
 
     case RUT_PROPERTY_TYPE_TEXT:
       value->type = RUT_PROPERTY_TYPE_TEXT;
       value->d.text_val = c_strdup (node->boxed.d.text_val);
-      return TRUE;
+      return true;
 
     case RUT_PROPERTY_TYPE_ASSET:
       value->type = RUT_PROPERTY_TYPE_ASSET;
       value->d.asset_val = rut_object_ref (node->boxed.d.asset_val);
-      return TRUE;
+      return true;
 
     case RUT_PROPERTY_TYPE_OBJECT:
       value->type = RUT_PROPERTY_TYPE_OBJECT;
       value->d.object_val = rut_object_ref (node->boxed.d.object_val);
-      return TRUE;
+      return true;
 
     case RUT_PROPERTY_TYPE_POINTER:
       value->type = RUT_PROPERTY_TYPE_OBJECT;
       value->d.pointer_val = node->boxed.d.pointer_val;
-      return TRUE;
+      return true;
     }
 
   c_warn_if_reached ();
 
-  return FALSE;
+  return false;
 }
 
 void

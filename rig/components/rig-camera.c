@@ -138,9 +138,9 @@ rig_camera_set_clear (RutObject *object,
 {
   RigCamera *camera = object;
   if (clear)
-    camera->props.clear_fb = TRUE;
+    camera->props.clear_fb = true;
   else
-    camera->props.clear_fb = FALSE;
+    camera->props.clear_fb = false;
 }
 
 CoglFramebuffer *
@@ -407,9 +407,9 @@ rig_camera_set_projection_mode (RutObject *object,
   bool orthographic;
 
   if (projection == RUT_PROJECTION_ORTHOGRAPHIC)
-    orthographic = TRUE;
+    orthographic = true;
   else
-    orthographic = FALSE;
+    orthographic = false;
 
   if (orthographic != camera->props.orthographic)
     {
@@ -554,7 +554,7 @@ rig_camera_remove_input_region (RutObject *object,
                                 RutInputRegion *region)
 {
   RigCamera *camera = object;
-  CList *link = c_list_find (camera->props.input_regions, region);
+  c_list_t *link = c_list_find (camera->props.input_regions, region);
   if (link)
     {
       rut_object_unref (region);
@@ -574,9 +574,9 @@ rig_camera_transform_window_coordinate (RutObject *object,
   *y -= viewport[1];
 
   if (*x < 0 || *x >= viewport[2] || *y < 0 || *y >= viewport[3])
-    return FALSE;
+    return false;
   else
-    return TRUE;
+    return true;
 }
 
 void
@@ -648,7 +648,7 @@ _rig_camera_flush_transforms (RigCamera *camera)
 
   /* While a camera is in a suspended state then we don't expect to
    * _flush() and use that camera before it is restored. */
-  c_return_if_fail (camera->props.suspended == FALSE);
+  c_return_if_fail (camera->props.suspended == false);
 
   state = cogl_object_get_user_data (fb, &fb_camera_key);
   if (!state)
@@ -684,7 +684,7 @@ _rig_camera_flush_transforms (RigCamera *camera)
   state->transform_age = camera->props.transform_age;
 
 done:
-  camera->props.in_frame = TRUE;
+  camera->props.in_frame = true;
 }
 
 void
@@ -710,10 +710,10 @@ void
 rig_camera_end_frame (RutObject *object)
 {
   RigCamera *camera = object;
-  if (G_UNLIKELY (camera->props.in_frame != TRUE))
+  if (G_UNLIKELY (camera->props.in_frame != true))
     c_warning ("Un-balanced rig_camera_flush/end frame calls. "
                "_end before _flush");
-  camera->props.in_frame = FALSE;
+  camera->props.in_frame = false;
 }
 
 void
@@ -773,9 +773,9 @@ rig_camera_suspend (RutObject *object)
   CameraFlushState *state;
 
   /* There's not point suspending a frame that hasn't been flushed */
-  c_return_if_fail (camera->props.in_frame == TRUE);
+  c_return_if_fail (camera->props.in_frame == true);
 
-  c_return_if_fail (camera->props.suspended == FALSE);
+  c_return_if_fail (camera->props.suspended == false);
 
   state = cogl_object_get_user_data (camera->props.fb, &fb_camera_key);
 
@@ -794,8 +794,8 @@ rig_camera_suspend (RutObject *object)
    * matrix stack... */
   cogl_framebuffer_push_matrix (camera->props.fb);
 
-  camera->props.suspended = TRUE;
-  camera->props.in_frame = FALSE;
+  camera->props.suspended = true;
+  camera->props.in_frame = false;
 }
 
 void
@@ -805,8 +805,8 @@ rig_camera_resume (RutObject *object)
   CameraFlushState *state;
   CoglFramebuffer *fb = camera->props.fb;
 
-  c_return_if_fail (camera->props.in_frame == FALSE);
-  c_return_if_fail (camera->props.suspended == TRUE);
+  c_return_if_fail (camera->props.in_frame == false);
+  c_return_if_fail (camera->props.suspended == true);
 
   /* While a camera is in a suspended state we don't expect the camera
    * to be touched so its transforms shouldn't have changed... */
@@ -837,8 +837,8 @@ rig_camera_resume (RutObject *object)
   state->transform_age = camera->props.transform_age;
 
 done:
-  camera->props.in_frame = TRUE;
-  camera->props.suspended = FALSE;
+  camera->props.in_frame = true;
+  camera->props.suspended = false;
 }
 
 void
@@ -1024,7 +1024,7 @@ static RutPropertySpec _rig_camera_prop_specs[] = {
     .flags = RUT_PROPERTY_FLAG_READWRITE |
       RUT_PROPERTY_FLAG_VALIDATE,
     .validation = { .int_range = { .min = 1, .max = 135}},
-    .animatable = TRUE
+    .animatable = true
   },
   {
     .name = "near",
@@ -1033,7 +1033,7 @@ static RutPropertySpec _rig_camera_prop_specs[] = {
     .getter.float_type = rig_camera_get_near_plane,
     .setter.float_type = rig_camera_set_near_plane,
     .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .animatable = TRUE
+    .animatable = true
   },
   {
     .name = "far",
@@ -1042,7 +1042,7 @@ static RutPropertySpec _rig_camera_prop_specs[] = {
     .getter.float_type = rig_camera_get_far_plane,
     .setter.float_type = rig_camera_set_far_plane,
     .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .animatable = TRUE
+    .animatable = true
   },
   {
     .name = "zoom",
@@ -1059,7 +1059,7 @@ static RutPropertySpec _rig_camera_prop_specs[] = {
     .getter.color_type = rig_camera_get_background_color,
     .setter.color_type = rig_camera_set_background_color,
     .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .animatable = TRUE
+    .animatable = true
   },
   {
     .name = "focal_distance",
@@ -1068,7 +1068,7 @@ static RutPropertySpec _rig_camera_prop_specs[] = {
     .setter.float_type = rig_camera_set_focal_distance,
     .data_offset = offsetof (RigCamera, props.focal_distance),
     .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .animatable = TRUE
+    .animatable = true
   },
   {
     .name = "depth_of_field",
@@ -1077,7 +1077,7 @@ static RutPropertySpec _rig_camera_prop_specs[] = {
     .setter.float_type = rig_camera_set_depth_of_field,
     .data_offset = offsetof (RigCamera, props.depth_of_field),
     .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .animatable = TRUE
+    .animatable = true
   },
 
   /* FIXME: Figure out how to expose the orthographic coordinates as
@@ -1173,11 +1173,11 @@ rig_camera_new (RigEngine *engine,
   camera->component.type = RUT_COMPONENT_TYPE_CAMERA;
 
   rig_camera_set_background_color4f (camera, 0, 0, 0, 1);
-  camera->props.clear_fb = TRUE;
+  camera->props.clear_fb = true;
 
   //rut_graphable_init (camera);
 
-  camera->props.orthographic = TRUE;
+  camera->props.orthographic = true;
   camera->props.x1 = 0;
   camera->props.y1 = 0;
   camera->props.x2 = width;

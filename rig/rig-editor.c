@@ -72,7 +72,7 @@ struct _RigEditor
   RigFrontend *frontend;
   RigEngine *engine;
 
-  CList *assets;
+  c_list_t *assets;
 
   char *ui_filename;
 
@@ -107,8 +107,8 @@ struct _RigEditor
   RigAsset *pointalism_grid_builtin_asset;
   RigAsset *hair_builtin_asset;
   RigAsset *button_input_builtin_asset;
-  CList *result_input_closures;
-  CList *asset_enumerators;
+  c_list_t *result_input_closures;
+  c_list_t *asset_enumerators;
 
   RutAdbDeviceTracker *adb_tracker;
   int next_forward_port;
@@ -367,7 +367,7 @@ typedef struct _ResultInputClosure
 void
 rig_editor_free_result_input_closures (RigEditor *editor)
 {
-  CList *l;
+  c_list_t *l;
 
   for (l = editor->result_input_closures; l; l = l->next)
     c_slice_free (ResultInputClosure, l->data);
@@ -776,7 +776,7 @@ add_results_flow (RutContext *ctx,
   rut_color_init_from_uint32 (&color, 0xffffffff);
   rut_text_set_color (text, &color);
 
-  rut_box_layout_add (vbox, FALSE, label_bin);
+  rut_box_layout_add (vbox, false, label_bin);
   rut_object_unref (label_bin);
 
   rut_flow_layout_set_x_padding (flow, 5);
@@ -787,7 +787,7 @@ add_results_flow (RutContext *ctx,
   rut_bin_set_child (flow_bin, flow);
   rut_object_unref (flow);
 
-  rut_box_layout_add (vbox, TRUE, flow_bin);
+  rut_box_layout_add (vbox, true, flow_bin);
   rut_object_unref (flow_bin);
 
   return flow;
@@ -865,7 +865,7 @@ add_search_result (RigEngine *engine,
       image = rut_image_new (engine->ctx, texture);
       cogl_object_unref (texture);
 
-      rut_box_layout_add (vbox, FALSE, image);
+      rut_box_layout_add (vbox, false, image);
       rut_object_unref (image);
 
       text = rut_text_new_with_text (engine->ctx, NULL, entity->label);
@@ -894,7 +894,7 @@ add_search_result (RigEngine *engine,
       rut_object_unref (image);
 
       text = rut_text_new_with_text (engine->ctx, NULL, controller->label);
-      rut_box_layout_add (vbox, FALSE, text);
+      rut_box_layout_add (vbox, false, text);
       rut_object_unref (text);
     }
 
@@ -1051,9 +1051,9 @@ asset_matches_search (RigEngine *engine,
                       RigAsset *asset,
                       const char *search)
 {
-  CList *l;
+  c_list_t *l;
   bool found = false;
-  const CList *inferred_tags;
+  const c_list_t *inferred_tags;
   char **tags;
   const char *path;
   int i;
@@ -1068,10 +1068,10 @@ asset_matches_search (RigEngine *engine,
     }
 
   if (engine->required_search_tags && found == false)
-    return FALSE;
+    return false;
 
   if (!search)
-    return TRUE;
+    return true;
 
   inferred_tags = rig_asset_get_inferred_tags (asset);
   tags = g_strsplit_set (search, " \t", 0);
@@ -1080,19 +1080,19 @@ asset_matches_search (RigEngine *engine,
   if (path)
     {
       if (strstr (path, search))
-        return TRUE;
+        return true;
     }
 
   for (i = 0; tags[i]; i++)
     {
-      const CList *l;
-      bool found = FALSE;
+      const c_list_t *l;
+      bool found = false;
 
       for (l = inferred_tags; l; l = l->next)
         {
           if (strcmp (tags[i], l->data) == 0)
             {
-              found = TRUE;
+              found = true;
               break;
             }
         }
@@ -1100,21 +1100,21 @@ asset_matches_search (RigEngine *engine,
       if (!found)
         {
           g_strfreev (tags);
-          return FALSE;
+          return false;
         }
     }
 
   g_strfreev (tags);
-  return TRUE;
+  return true;
 }
 
 static bool
 rig_search_with_text (RigEngine *engine, const char *user_search)
 {
   RigEditor *editor = engine->editor;
-  CList *l;
+  c_list_t *l;
   int i;
-  bool found = FALSE;
+  bool found = false;
   SearchState state;
   char *search;
 
@@ -1139,13 +1139,13 @@ rig_search_with_text (RigEngine *engine, const char *user_search)
       if (!asset_matches_search (engine, asset, search))
         continue;
 
-      found = TRUE;
+      found = true;
       add_search_result (engine, asset);
     }
 
   state.engine = engine;
   state.search = search;
-  state.found = FALSE;
+  state.found = false;
 
   if (!engine->required_search_tags ||
       rut_util_find_tag (engine->required_search_tags, "entity"))
@@ -1176,7 +1176,7 @@ rig_search_with_text (RigEngine *engine, const char *user_search)
        * are no results from the search so we
        * always claim that something was found...
        */
-      return TRUE;
+      return true;
     }
 }
 
@@ -1206,7 +1206,7 @@ add_asset (RigEngine *engine, GFileInfo *info, GFile *asset_file)
   RigEditor *editor = engine->editor;
   GFile *assets_dir = g_file_new_for_path (engine->ctx->assets_location);
   char *path = g_file_get_relative_path (assets_dir, asset_file);
-  CList *l;
+  c_list_t *l;
   RigAsset *asset = NULL;
   RutException *catch = NULL;
 
@@ -1234,10 +1234,10 @@ add_asset (RigEngine *engine, GFileInfo *info, GFile *asset_file)
 }
 
 #if 0
-static CList *
-copy_tags (CList *tags)
+static c_list_t *
+copy_tags (c_list_t *tags)
 {
-  CList *l, *copy = NULL;
+  c_list_t *l, *copy = NULL;
   for (l = tags; l; l = l->next)
     {
       char *tag = g_intern_string (l->data);
@@ -1287,7 +1287,7 @@ typedef struct _AssetEnumeratorState
   GFile *directory;
   GFileEnumerator *enumerator;
   GCancellable *cancellable;
-  CList *tags;
+  c_list_t *tags;
 } AssetEnumeratorState;
 
 static void
@@ -1312,8 +1312,8 @@ assets_found_cb (GObject *source_object,
                  gpointer user_data)
 {
   AssetEnumeratorState *state = user_data;
-  CList *infos;
-  CList *l;
+  c_list_t *infos;
+  c_list_t *l;
 
   infos = g_file_enumerator_next_files_finish (state->enumerator,
                                                res,
@@ -1523,7 +1523,7 @@ static RutPLYAttribute ply_attributes[] =
       { "alpha" }
     },
     .n_properties = 4,
-    .normalized = TRUE,
+    .normalized = true,
     .min_components = 3,
   }
 };
@@ -1550,7 +1550,7 @@ add_light_handle (RigEngine *engine, RigUI *ui)
   if (mesh)
     {
       RigModel *model = rig_model_new_from_asset_mesh (engine->ctx, mesh,
-                                                       FALSE, FALSE);
+                                                       false, false);
       RigMaterial *material = rig_material_new (engine->ctx, NULL);
 
       engine->light_handle = rig_entity_new (engine->ctx);
@@ -1621,7 +1621,7 @@ add_play_camera_handle (RigEngine *engine, RigUI *ui)
       rig_entity_add_component (engine->play_camera_handle,
                                 material);
       rig_material_set_receive_shadow (material, false);
-      rig_material_set_cast_shadow (material, FALSE);
+      rig_material_set_cast_shadow (material, false);
       rut_graphable_add_child (engine->play_camera,
                                engine->play_camera_handle);
 
@@ -1718,7 +1718,7 @@ connect_pressed_cb (RutIconButton *button,
                     void *user_data)
 {
   RigEngine *engine = user_data;
-  CList *l;
+  c_list_t *l;
 
   for (l = engine->slave_addresses; l; l = l->next)
     rig_connect_to_slave (engine, l->data);
@@ -1740,7 +1740,7 @@ create_top_bar (RigEngine *engine)
   RigNineSlice *gradient =
     load_gradient_image (engine->ctx, "top-bar-gradient.png");
 
-  rut_box_layout_add (engine->top_vbox, FALSE, top_bar_stack);
+  rut_box_layout_add (engine->top_vbox, false, top_bar_stack);
 
   rut_stack_add (top_bar_stack, gradient);
   rut_object_unref (gradient);
@@ -1749,13 +1749,13 @@ create_top_bar (RigEngine *engine)
     rut_box_layout_new (engine->ctx, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
   engine->top_bar_hbox_ltr =
     rut_box_layout_new (engine->ctx, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
-  rut_box_layout_add (engine->top_bar_hbox, TRUE, engine->top_bar_hbox_ltr);
+  rut_box_layout_add (engine->top_bar_hbox, true, engine->top_bar_hbox_ltr);
 
   engine->top_bar_hbox_rtl =
     rut_box_layout_new (engine->ctx, RUT_BOX_LAYOUT_PACKING_RIGHT_TO_LEFT);
-  rut_box_layout_add (engine->top_bar_hbox, TRUE, engine->top_bar_hbox_rtl);
+  rut_box_layout_add (engine->top_bar_hbox, true, engine->top_bar_hbox_rtl);
 
-  rut_box_layout_add (engine->top_bar_hbox_rtl, FALSE, icon);
+  rut_box_layout_add (engine->top_bar_hbox_rtl, false, icon);
 
   rut_stack_add (top_bar_stack, engine->top_bar_hbox);
 
@@ -1763,7 +1763,7 @@ create_top_bar (RigEngine *engine)
                                          connect_pressed_cb,
                                          engine,
                                          NULL); /* destroy callback */
-  rut_box_layout_add (engine->top_bar_hbox_ltr, FALSE, connect_button);
+  rut_box_layout_add (engine->top_bar_hbox_ltr, false, connect_button);
   rut_object_unref (connect_button);
 }
 static void
@@ -1826,21 +1826,21 @@ create_camera_view (RigEngine *engine)
   rut_bin_set_bottom_padding (bottom_shim, 10);
 
   rut_bin_set_child (bin, hbox);
-  rut_box_layout_add (hbox, FALSE, left_stack);
+  rut_box_layout_add (hbox, false, left_stack);
 
   rut_stack_add (left_stack, left_shim);
   rut_stack_add (left_stack, left_drop);
 
-  rut_box_layout_add (hbox, TRUE, vbox);
-  rut_box_layout_add (vbox, TRUE, engine->main_camera_view);
-  rut_box_layout_add (vbox, FALSE, bottom_stack);
+  rut_box_layout_add (hbox, true, vbox);
+  rut_box_layout_add (vbox, true, engine->main_camera_view);
+  rut_box_layout_add (vbox, false, bottom_stack);
 
   rut_stack_add (bottom_stack, bottom_shim);
   rut_stack_add (bottom_stack, bottom_drop);
 
   rut_bin_set_top_padding (bin, 5);
 
-  rut_box_layout_add (engine->asset_panel_hbox, TRUE, stack);
+  rut_box_layout_add (engine->asset_panel_hbox, true, stack);
 
   rut_object_unref (bottom_shim);
   rut_object_unref (bottom_stack);
@@ -1906,7 +1906,7 @@ create_toolbar (RigEngine *engine)
   rut_bin_set_right_padding (bin, 5);
   rut_bin_set_top_padding (bin, 5);
 
-  rut_box_layout_add (engine->toolbar_vbox, FALSE, icon);
+  rut_box_layout_add (engine->toolbar_vbox, false, icon);
 
   pointer_toggle = rut_icon_toggle_new (engine->ctx,
                                         "pointer-white.png",
@@ -1935,7 +1935,7 @@ create_toolbar (RigEngine *engine)
 
   rut_stack_add (stack, bin);
 
-  rut_box_layout_add (engine->top_hbox, FALSE, stack);
+  rut_box_layout_add (engine->top_hbox, false, stack);
 }
 
 static void
@@ -1972,15 +1972,15 @@ create_properties_bar (RigEngine *engine)
   rut_stack_add (stack1, properties_vp);
   rut_object_unref (properties_vp);
 
-  rut_ui_viewport_set_x_pannable (properties_vp, FALSE);
-  rut_ui_viewport_set_y_pannable (properties_vp, TRUE);
+  rut_ui_viewport_set_x_pannable (properties_vp, false);
+  rut_ui_viewport_set_y_pannable (properties_vp, true);
 
   engine->inspector_bin = rut_bin_new (engine->ctx);
   rut_ui_viewport_add (engine->properties_vp, engine->inspector_bin);
 
   rut_ui_viewport_set_sync_widget (properties_vp, engine->inspector_bin);
 
-  rut_box_layout_add (engine->properties_hbox, FALSE, stack0);
+  rut_box_layout_add (engine->properties_hbox, false, stack0);
   rut_object_unref (stack0);
 }
 
@@ -2060,35 +2060,35 @@ create_asset_selectors (RigEngine *engine,
                                  "geometry-white.png",
                                  "geometry.png",
                                  "geometry");
-  rut_box_layout_add (hbox, FALSE, toggle);
+  rut_box_layout_add (hbox, false, toggle);
   rut_object_unref (toggle);
 
   toggle = create_search_toggle (engine,
                                  "image-white.png",
                                  "image.png",
                                  "image");
-  rut_box_layout_add (hbox, FALSE, toggle);
+  rut_box_layout_add (hbox, false, toggle);
   rut_object_unref (toggle);
 
   toggle = create_search_toggle (engine,
                                  "video-white.png",
                                  "video.png",
                                  "video");
-  rut_box_layout_add (hbox, FALSE, toggle);
+  rut_box_layout_add (hbox, false, toggle);
   rut_object_unref (toggle);
 
   toggle = create_search_toggle (engine,
                                  "entity-white.png",
                                  "entity.png",
                                  "entity");
-  rut_box_layout_add (hbox, FALSE, toggle);
+  rut_box_layout_add (hbox, false, toggle);
   rut_object_unref (toggle);
 
   toggle = create_search_toggle (engine,
                                  "logic-white.png",
                                  "logic.png",
                                  "logic");
-  rut_box_layout_add (hbox, FALSE, toggle);
+  rut_box_layout_add (hbox, false, toggle);
   rut_object_unref (toggle);
 
   rut_stack_add (icons_stack, hbox);
@@ -2120,7 +2120,7 @@ create_assets_view (RigEngine *engine)
 
   text = rut_entry_get_text (entry);
   engine->search_text = text;
-  rut_text_set_single_line_mode (text, TRUE);
+  rut_text_set_single_line_mode (text, true);
   rut_text_set_hint_text (text, "Search...");
 
   search_icon = rut_icon_new (engine->ctx, "magnifying-glass.png");
@@ -2141,7 +2141,7 @@ create_assets_view (RigEngine *engine)
   rut_bin_set_bottom_padding (search_bin, 2);
   rut_object_unref (search_bin);
 
-  rut_box_layout_add (vbox, FALSE, search_stack);
+  rut_box_layout_add (vbox, false, search_stack);
   rut_object_unref (search_stack);
 
   bg = rut_rectangle_new4f (engine->ctx, 0, 0, 0.57, 0.57, 0.57, 1);
@@ -2150,10 +2150,10 @@ create_assets_view (RigEngine *engine)
 
   create_asset_selectors (engine, icons_stack);
 
-  rut_box_layout_add (vbox, FALSE, icons_stack);
+  rut_box_layout_add (vbox, false, icons_stack);
   rut_object_unref (icons_stack);
 
-  rut_box_layout_add (vbox, TRUE, stack);
+  rut_box_layout_add (vbox, true, stack);
   rut_object_unref (stack);
 
   rut_stack_add (stack, gradient);
@@ -2172,9 +2172,9 @@ create_assets_view (RigEngine *engine)
   rut_ui_viewport_add (editor->search_vp, editor->search_results_fold);
   rut_ui_viewport_set_sync_widget (editor->search_vp, editor->search_results_fold);
 
-  rut_ui_viewport_set_x_pannable (editor->search_vp, FALSE);
+  rut_ui_viewport_set_x_pannable (editor->search_vp, false);
 
-  rut_box_layout_add (engine->asset_panel_hbox, FALSE, vbox);
+  rut_box_layout_add (engine->asset_panel_hbox, false, vbox);
   rut_object_unref (vbox);
 }
 
@@ -2344,7 +2344,7 @@ create_ui (RigEditor *editor)
 
   rig_split_view_set_child0 (engine->splits[0], engine->asset_panel_hbox);
 
-  rut_box_layout_add (engine->properties_hbox, TRUE, engine->splits[0]);
+  rut_box_layout_add (engine->properties_hbox, true, engine->splits[0]);
   create_properties_bar (engine);
 
   rig_split_view_set_split_fraction (engine->splits[0], 0.75);
@@ -2358,9 +2358,9 @@ create_ui (RigEditor *editor)
    * in the box-layout allocate code. */
   engine->top_hbox = rut_box_layout_new (engine->ctx,
                                          RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
-  rut_box_layout_add (engine->top_vbox, TRUE, engine->top_hbox);
+  rut_box_layout_add (engine->top_vbox, true, engine->top_hbox);
 
-  rut_box_layout_add (engine->top_hbox, TRUE, engine->properties_hbox);
+  rut_box_layout_add (engine->top_hbox, true, engine->properties_hbox);
   create_toolbar (engine);
 
   rut_stack_add (engine->top_stack, engine->top_vbox);
@@ -2401,7 +2401,7 @@ handle_edit_operations (RigEditor *editor,
 {
   RigEngine *engine = editor->engine;
   Rig__UIEdit *play_edits;
-  CList *l;
+  c_list_t *l;
 
   if (!editor->edit_ops->len)
     return;
@@ -2728,7 +2728,7 @@ adb_devices_cb (const char **serials,
   RigEngine *engine = editor->engine;
   RutException *catch = NULL;
   int i;
-  CList *l, *next;
+  c_list_t *l, *next;
 
   for (l = engine->slave_addresses; l; l = next)
     {
@@ -2982,13 +2982,13 @@ init_property_controlled_state_cb (RutProperty *property,
         rig_controller_find_prop_data_for_property (controller, property);
 
       if (prop_data)
-        rig_inspector_set_property_controlled (data->inspector, property, TRUE);
+        rig_inspector_set_property_controlled (data->inspector, property, true);
     }
 }
 
 static RigInspector *
 create_inspector (RigEngine *engine,
-                  CList *objects)
+                  c_list_t *objects)
 {
   RutObject *reference_object = objects->data;
   RigInspector *inspector =
@@ -3016,7 +3016,7 @@ create_inspector (RigEngine *engine,
 typedef struct _DeleteButtonState
 {
   RigEngine *engine;
-  CList *components;
+  c_list_t *components;
 } DeleteButtonState;
 
 static void
@@ -3032,7 +3032,7 @@ static void
 delete_button_click_cb (RutIconButton *button, void *user_data)
 {
   DeleteButtonState *state = user_data;
-  CList *l;
+  c_list_t *l;
 
   for (l = state->components; l; l = l->next)
     {
@@ -3045,7 +3045,7 @@ delete_button_click_cb (RutIconButton *button, void *user_data)
 
 static void
 create_components_inspector (RigEngine *engine,
-                             CList *components)
+                             c_list_t *components)
 {
   RutComponent *reference_component = components->data;
   RigInspector *inspector = create_inspector (engine, components);
@@ -3091,7 +3091,7 @@ create_components_inspector (RigEngine *engine,
   rut_bin_set_child (button_bin, delete_button);
   rut_object_unref (delete_button);
 
-  rut_box_layout_add (engine->inspector_box_layout, FALSE, fold);
+  rut_box_layout_add (engine->inspector_box_layout, false, fold);
   rut_object_unref (fold);
 
   engine->all_inspectors =
@@ -3120,7 +3120,7 @@ find_component (RigEntity *entity,
 typedef struct _MatchAndListState
 {
   RigEngine *engine;
-  CList *entities;
+  c_list_t *entities;
 } MatchAndListState;
 
 static bool
@@ -3132,8 +3132,8 @@ match_and_create_components_inspector_cb (RutObject *reference_component,
     rut_object_get_properties (reference_component,
                                RUT_TRAIT_ID_COMPONENTABLE);
   RutComponentType type = component_props->type;
-  CList *l;
-  CList *components = NULL;
+  c_list_t *l;
+  c_list_t *components = NULL;
 
   for (l = state->entities; l; l = l->next)
     {
@@ -3169,7 +3169,7 @@ EXIT:
 void
 rig_editor_update_inspector (RigEngine *engine)
 {
-  CList *objects = engine->objects_selection->objects;
+  c_list_t *objects = engine->objects_selection->objects;
 
   /* This will drop the last reference to any current
    * engine->inspector_box_layout and also any indirect references
@@ -3192,7 +3192,7 @@ rig_editor_update_inspector (RigEngine *engine)
 
       engine->inspector = create_inspector (engine, objects);
 
-      rut_box_layout_add (engine->inspector_box_layout, FALSE, engine->inspector);
+      rut_box_layout_add (engine->inspector_box_layout, false, engine->inspector);
       engine->all_inspectors =
         c_list_prepend (engine->all_inspectors, engine->inspector);
 
@@ -3214,7 +3214,7 @@ rig_reload_inspector_property (RigEngine *engine,
 {
   if (engine->inspector)
     {
-      CList *l;
+      c_list_t *l;
 
       for (l = engine->all_inspectors; l; l = l->next)
         rig_inspector_reload_property (l->data, property);
@@ -3247,7 +3247,7 @@ _rig_objects_selection_copy (RutObject *object)
 {
   RigObjectsSelection *selection = object;
   RigObjectsSelection *copy = _rig_objects_selection_new (selection->engine);
-  CList *l;
+  c_list_t *l;
 
   for (l = selection->objects; l; l = l->next)
     {
@@ -3287,7 +3287,7 @@ _rig_objects_selection_delete (RutObject *object)
 
       if (selection == engine->objects_selection)
         {
-          CList *l, *next;
+          c_list_t *l, *next;
           int len = c_list_length (selection->objects);
 
           for (l = selection->objects; l; l = next)
@@ -3421,7 +3421,7 @@ rig_select_object (RigEngine *engine,
     {
     case RUT_SELECT_ACTION_REPLACE:
       {
-        CList *old = selection->objects;
+        c_list_t *old = selection->objects;
 
         selection->objects = NULL;
 
@@ -3444,7 +3444,7 @@ rig_select_object (RigEngine *engine,
       }
     case RUT_SELECT_ACTION_TOGGLE:
       {
-        CList *link = c_list_find (selection->objects, object);
+        c_list_t *link = c_list_find (selection->objects, object);
 
         if (link)
           {

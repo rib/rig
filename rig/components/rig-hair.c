@@ -47,7 +47,7 @@ static RutPropertySpec _rig_hair_prop_specs[] = {
     .flags = RUT_PROPERTY_FLAG_READWRITE |
       RUT_PROPERTY_FLAG_VALIDATE,
     .validation = { .float_range = { 0, 1000 }},
-    .animatable = TRUE
+    .animatable = true
   },
   {
     .name = "hair-detail",
@@ -504,9 +504,9 @@ _rig_hair_free (void *object)
       CoglTexture *texture = c_array_index (hair->shell_textures, CoglTexture *, i);
       cogl_object_unref (texture);
     }
-  c_array_free (hair->shell_textures, TRUE);
+  c_array_free (hair->shell_textures, true);
 
-  c_array_free (hair->particles, TRUE);
+  c_array_free (hair->particles, true);
 
   rut_introspectable_destroy (hair);
 
@@ -574,9 +574,9 @@ rig_hair_new (RutContext *ctx)
   hair->n_textures = 0;
   hair->density = 20000;
   hair->thickness = 0.05;
-  hair->shell_textures = c_array_new (FALSE, FALSE, sizeof (CoglTexture *));
+  hair->shell_textures = c_array_new (false, false, sizeof (CoglTexture *));
   hair->fin_texture = NULL;
-  hair->particles = c_array_new (FALSE, FALSE, sizeof (HairParticle));
+  hair->particles = c_array_new (false, false, sizeof (HairParticle));
   hair->shell_positions = NULL;
 
   if (!ctx->headless)
@@ -590,9 +590,9 @@ rig_hair_new (RutContext *ctx)
   rut_introspectable_init (hair, _rig_hair_prop_specs,
                            hair->properties);
 
-  hair->dirty_hair_positions = TRUE;
-  hair->dirty_shell_textures = TRUE;
-  hair->dirty_fin_texture = TRUE;
+  hair->dirty_hair_positions = true;
+  hair->dirty_shell_textures = true;
+  hair->dirty_fin_texture = true;
 
   return hair;
 }
@@ -603,7 +603,7 @@ rig_hair_update_state (RigHair *hair)
   if (hair->dirty_shell_textures)
     {
       _rig_hair_generate_shell_textures (hair);
-      hair->dirty_shell_textures = FALSE;
+      hair->dirty_shell_textures = false;
     }
 
   if (hair->dirty_fin_texture)
@@ -611,13 +611,13 @@ rig_hair_update_state (RigHair *hair)
       if (hair->fin_texture)
         cogl_object_unref (hair->fin_texture);
       hair->fin_texture = _rig_hair_get_fin_texture (hair);
-      hair->dirty_fin_texture = FALSE;
+      hair->dirty_fin_texture = false;
     }
 
   if (hair->dirty_hair_positions)
     {
       _rig_hair_generate_hair_positions (hair);
-      hair->dirty_hair_positions = FALSE;
+      hair->dirty_hair_positions = false;
     }
 }
 
@@ -648,7 +648,7 @@ rig_hair_set_length (RutObject *obj,
   entity = hair->component.entity;
   ctx = rig_entity_get_context (entity);
 
-  hair->dirty_hair_positions = TRUE;
+  hair->dirty_hair_positions = true;
 
   rut_property_dirty (&ctx->property_ctx,
                      &hair->properties[RIG_HAIR_PROP_LENGTH]);
@@ -681,8 +681,8 @@ rig_hair_set_n_shells (RutObject *obj,
   entity = hair->component.entity;
   ctx = rig_entity_get_context (entity);
 
-  hair->dirty_hair_positions = TRUE;
-  hair->dirty_shell_textures = TRUE;
+  hair->dirty_hair_positions = true;
+  hair->dirty_shell_textures = true;
 
   rut_property_dirty (&ctx->property_ctx,
                       &hair->properties[RIG_HAIR_PROP_DETAIL]);
@@ -708,8 +708,8 @@ rig_hair_set_density (RutObject *obj,
 
   hair->density = density;
 
-  hair->dirty_shell_textures = TRUE;
-  hair->dirty_fin_texture = TRUE;
+  hair->dirty_shell_textures = true;
+  hair->dirty_fin_texture = true;
 
   entity = hair->component.entity;
   ctx = rig_entity_get_context (entity);
@@ -741,8 +741,8 @@ rig_hair_set_thickness (RutObject *obj,
 
   hair->thickness = thickness;
 
-  hair->dirty_shell_textures = TRUE;
-  hair->dirty_fin_texture = TRUE;
+  hair->dirty_shell_textures = true;
+  hair->dirty_fin_texture = true;
 
   entity = hair->component.entity;
   ctx = rig_entity_get_context (entity);

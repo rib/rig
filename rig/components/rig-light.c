@@ -40,7 +40,7 @@ _rig_light_prop_specs[] = {
     .data_offset = offsetof (RigLight, ambient),
     .setter.color_type = rig_light_set_ambient,
     .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .animatable = TRUE
+    .animatable = true
   },
   {
     .name = "diffuse",
@@ -49,7 +49,7 @@ _rig_light_prop_specs[] = {
     .data_offset = offsetof (RigLight, diffuse),
     .setter.color_type = rig_light_set_diffuse,
     .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .animatable = TRUE
+    .animatable = true
   },
   {
     .name = "specular",
@@ -58,7 +58,7 @@ _rig_light_prop_specs[] = {
     .data_offset = offsetof (RigLight, specular),
     .setter.color_type = rig_light_set_specular,
     .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .animatable = TRUE
+    .animatable = true
   },
   { 0 }
 };

@@ -80,25 +80,25 @@ get_xwindow_from_onscreen (CoglOnscreen *onscreen,
     SDL_Window *sdl_window = cogl_sdl_onscreen_get_window (onscreen);
 
     if (!SDL_GetWindowWMInfo (sdl_window, &parent_window_info))
-      return FALSE;
+      return false;
   }
 #else /* SDL_MAJOR_VERSION */
   {
     if (!SDL_GetWMInfo (&parent_window_info))
-      return FALSE;
+      return false;
   }
 #endif /* SDL_MAJOR_VERSION */
 
   if (parent_window_info.subsystem != SDL_SYSWM_X11)
-    return FALSE;
+    return false;
 
   *xwindow = parent_window_info.info.x11.window;
 
-  return TRUE;
+  return true;
 
 #else /* USE_SDL */
 
-  return FALSE;
+  return false;
 
 #endif /* USE_SDL */
 }

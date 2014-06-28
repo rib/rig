@@ -295,7 +295,7 @@ handle_simulator_test_response (const Rig__TestResult *result,
 
 typedef struct _LoadState
 {
-  CList *required_assets;
+  c_list_t *required_assets;
 } LoadState;
 
 bool
@@ -892,7 +892,7 @@ rig_frontend_post_init_engine (RigFrontend *frontend,
     {
       engine->onscreen = cogl_onscreen_new (engine->ctx->cogl_context,
                                             1000, 700);
-      cogl_onscreen_set_resizable (engine->onscreen, TRUE);
+      cogl_onscreen_set_resizable (engine->onscreen, true);
     }
   else
 #endif

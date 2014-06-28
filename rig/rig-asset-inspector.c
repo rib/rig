@@ -76,7 +76,7 @@ static RutPropertySpec _rig_asset_inspector_prop_specs[] = {
     .getter.object_type = rig_asset_inspector_get_asset,
     .setter.object_type = rig_asset_inspector_set_asset,
     .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .animatable = FALSE
+    .animatable = false
   },
 
   { NULL }
@@ -104,7 +104,7 @@ _rig_asset_inspector_free (void *object)
 {
   RigAssetInspector *asset_inspector = object;
 
-  _rig_asset_inspector_set_selected (asset_inspector, FALSE);
+  _rig_asset_inspector_set_selected (asset_inspector, false);
   rut_object_unref (asset_inspector->highlight);
   asset_inspector->highlight = NULL;
 
@@ -203,7 +203,7 @@ input_cb (RutInputRegion *region,
   if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION &&
       rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_UP)
     {
-      _rig_asset_inspector_set_selected (asset_inspector, TRUE);
+      _rig_asset_inspector_set_selected (asset_inspector, true);
       rut_shell_set_selection (asset_inspector->ctx->shell, asset_inspector);
       return RUT_INPUT_EVENT_STATUS_HANDLED;
     }
@@ -234,7 +234,7 @@ input_cb (RutInputRegion *region,
           RigAsset *asset = payload;
           bool save_selected = asset_inspector->selected;
 
-          _rig_asset_inspector_set_selected (asset_inspector, FALSE);
+          _rig_asset_inspector_set_selected (asset_inspector, false);
 
           asset_inspector->drop_preview =
             rut_nine_slice_new (asset_inspector->ctx,
@@ -351,7 +351,7 @@ rig_asset_inspector_set_asset (RutObject *object, RutObject *asset_object)
   if (asset_inspector->asset == asset)
     return;
 
-  _rig_asset_inspector_set_selected (asset_inspector, FALSE);
+  _rig_asset_inspector_set_selected (asset_inspector, false);
 
   if (asset_inspector->asset)
     {

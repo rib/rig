@@ -64,7 +64,7 @@ typedef struct _Polygon
 
 typedef struct _TexturePatch
 {
-  CList *polygons;
+  c_list_t *polygons;
   Polygon *root;
   float tangent_angle;
   float width;
@@ -73,7 +73,7 @@ typedef struct _TexturePatch
 
 struct _RigModelPrivate
 {
-  CList *texture_patches;
+  c_list_t *texture_patches;
   Polygon *fin_polygons;
   Vertex *fin_vertices;
   Polygon *polygons;
@@ -675,7 +675,7 @@ generate_missing_properties (void **attribute_data_v0,
   calculate_tangents (vert_p0, vert_p1, vert_p2, tex_coord0, tex_coord1,
                       tex_coord2, vert_t0, vert_t1, vert_t2);
 
-  return TRUE;
+  return true;
 }
 
 static bool
@@ -700,7 +700,7 @@ generate_polygons_for_patching (void **attribute_data_v0,
   Polygon *polygon = &model->priv->polygons[model->priv->n_polygons];
 
   polygon->id = model->priv->n_polygons;
-  polygon->uncovered = TRUE;
+  polygon->uncovered = true;
 
   for (i = 0; i < 3; i++)
     {
@@ -763,7 +763,7 @@ generate_polygons_for_patching (void **attribute_data_v0,
   model->priv->n_polygons++;
   model->priv->n_vertices += 3;
 
-  return TRUE;
+  return true;
 }
 
 static bool
@@ -798,7 +798,7 @@ copy_tangents_to_polygons (void **attribute_data_v0,
 
   model->priv->n_polygons++;
 
-  return TRUE;
+  return true;
 }
 
 static bool
@@ -814,7 +814,7 @@ measure_mesh_x_cb (void **attribute_data,
   if (pos[0] > model->max_x)
     model->max_x = pos[0];
 
-  return TRUE;
+  return true;
 }
 
 static bool
@@ -832,7 +832,7 @@ measure_mesh_xy_cb (void **attribute_data,
   if (pos[1] > model->max_y)
     model->max_y = pos[1];
 
-  return TRUE;
+  return true;
 }
 
 static bool
@@ -850,7 +850,7 @@ measure_mesh_xyz_cb (void **attribute_data,
   if (pos[2] > model->max_z)
     model->max_z = pos[2];
 
-  return TRUE;
+  return true;
 }
 
 /* Gets the angle between 2 vectors relative to a rotation axis (usually their
@@ -1029,7 +1029,7 @@ static void
 extrude_new_vertex (Polygon *parent, Polygon *child)
 {
   float distance[3];
-  bool found_first_set = FALSE;
+  bool found_first_set = false;
   int shared_vertices[2][2];
   int i, j;
 
@@ -1043,7 +1043,7 @@ extrude_new_vertex (Polygon *parent, Polygon *child)
                 {
                   shared_vertices[0][0] = i;
                   shared_vertices[0][1] = j;
-                  found_first_set = TRUE;
+                  found_first_set = true;
                 }
               else
                 {
@@ -1088,7 +1088,7 @@ extract_texture_coordinates (TexturePatch* patch, Polygon *polygon)
       new_s[i] = (polygon->flat_vertices[i].pos[0] - x_min) / (x_max - x_min);
       new_t[i] = (polygon->flat_vertices[i].pos[1] - y_min) / (y_max - x_min);
       if (new_s[i] > 1.0 || new_t[i] > 1.0 || new_s[i] < 0.0 || new_t[i] < 0.0)
-        return FALSE;
+        return false;
     }
 
   for (i = 0; i < 3; i++)
@@ -1097,7 +1097,7 @@ extract_texture_coordinates (TexturePatch* patch, Polygon *polygon)
       polygon->vertices[i]->t1 = new_t[i];
     }
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -1109,7 +1109,7 @@ grow_texture_patch (RigModel *model, TexturePatch *patch)
   int i;
 
   for (i = 0; i < priv->n_polygons; i++)
-    visited[i] = FALSE;
+    visited[i] = false;
 
   rut_queue_push_tail (stack, patch->root);
 
@@ -1120,7 +1120,7 @@ grow_texture_patch (RigModel *model, TexturePatch *patch)
       if (visited[parent->id])
         continue;
 
-      visited[parent->id] = TRUE;
+      visited[parent->id] = true;
 
       for (i = 0; i < priv->n_polygons; i++)
         {
@@ -1138,7 +1138,7 @@ grow_texture_patch (RigModel *model, TexturePatch *patch)
                 {
                   patch->polygons = c_list_prepend (patch->polygons, child);
                   rut_queue_push_tail (stack, child);
-                  child->uncovered = FALSE;
+                  child->uncovered = false;
                 }
             }
         }
@@ -1175,7 +1175,7 @@ create_texture_patch (RigModel *model)
   position_polygon_at_2D_origin (root);
 
   extract_texture_coordinates (patch, root);
-  patch->root->uncovered = FALSE;
+  patch->root->uncovered = false;
 
   patch->polygons = c_list_prepend (patch->polygons, root);
   grow_texture_patch (model, patch);
@@ -1283,7 +1283,7 @@ static RutMesh *
 create_patched_mesh_from_model (RutObject *object)
 {
   RigModel *model = object;
-  CList *iter;
+  c_list_t *iter;
 
   if (model->patched_mesh)
     return model->patched_mesh;
@@ -1516,7 +1516,7 @@ rig_model_new_for_hair (RigModel *base)
       model->primitive = NULL;
     }
 
-  model->is_hair_model = TRUE;
+  model->is_hair_model = true;
   model->patched_mesh = NULL;
   model->fin_mesh = NULL;
 

@@ -66,18 +66,18 @@ struct _RigPBSerializer
   void *object_to_id_data;
 
   bool only_asset_ids;
-  CList *required_assets;
+  c_list_t *required_assets;
 
   bool skip_image_data;
 
   int n_pb_entities;
-  CList *pb_entities;
+  c_list_t *pb_entities;
 
   int n_pb_components;
-  CList *pb_components;
+  c_list_t *pb_components;
 
   int n_pb_properties;
-  CList *pb_properties;
+  c_list_t *pb_properties;
 
   int n_properties;
   void **properties_out;
@@ -260,10 +260,10 @@ struct _RigPBUnSerializer
   RigPBUnSerializerAssetCallback unserialize_asset_callback;
   void *unserialize_asset_data;
 
-  CList *assets;
-  CList *entities;
+  c_list_t *assets;
+  c_list_t *entities;
   RigEntity *light;
-  CList *controllers;
+  c_list_t *controllers;
 
   GHashTable *id_to_object_map;
 };

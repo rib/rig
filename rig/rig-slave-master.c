@@ -74,7 +74,7 @@ destroy_slave_master (RigSlaveMaster *master)
   rut_object_unref (master->rpc_client);
   master->rpc_client = NULL;
 
-  master->connected = FALSE;
+  master->connected = false;
 
   engine->slave_masters = c_list_remove (engine->slave_masters, master);
 

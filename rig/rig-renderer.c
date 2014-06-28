@@ -51,7 +51,7 @@ struct _RigRenderer
 {
   RutObjectBase _base;
 
-  CArray *journal;
+  c_array_t *journal;
 };
 
 typedef enum _CacheSlot
@@ -133,7 +133,7 @@ _rig_renderer_free (void *object)
 {
   RigRenderer *renderer = object;
 
-  c_array_free (renderer->journal, TRUE);
+  c_array_free (renderer->journal, true);
   renderer->journal = NULL;
 
   rut_object_free (RigRenderer, object);
@@ -316,13 +316,13 @@ rig_renderer_new (RigEngine *engine)
                                              _rig_renderer_init_type);
 
 
-  renderer->journal = c_array_new (FALSE, FALSE, sizeof (RigJournalEntry));
+  renderer->journal = c_array_new (false, false, sizeof (RigJournalEntry));
 
   return renderer;
 }
 
 static void
-rig_journal_log (CArray *journal,
+rig_journal_log (c_array_t *journal,
                  RigPaintContext *paint_ctx,
                  RigEntity *entity,
                  const CoglMatrix *matrix)
@@ -437,7 +437,7 @@ init_dof_pipeline_template (RigEngine *engine)
   cogl_pipeline_set_blend (pipeline, "RGBA=ADD(SRC_COLOR, 0)", NULL);
 
   cogl_depth_state_init (&depth_state);
-  cogl_depth_state_set_test_enabled (&depth_state, TRUE);
+  cogl_depth_state_set_test_enabled (&depth_state, true);
   cogl_pipeline_set_depth_state (pipeline, &depth_state, NULL);
 
   snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX,
@@ -1107,7 +1107,7 @@ get_entity_mask_pipeline (RigEngine *engine,
           if (sources[SOURCE_TYPE_COLOR])
             {
               rig_image_source_set_first_layer (sources[SOURCE_TYPE_COLOR], 1);
-              rig_image_source_set_default_sample (sources[SOURCE_TYPE_COLOR], FALSE);
+              rig_image_source_set_default_sample (sources[SOURCE_TYPE_COLOR], false);
               rig_image_source_setup_pipeline (sources[SOURCE_TYPE_COLOR], pipeline);
               cogl_pipeline_add_snippet (pipeline,
                                          engine->pointalism_vertex_snippet);
@@ -1116,7 +1116,7 @@ get_entity_mask_pipeline (RigEngine *engine,
           if (sources[SOURCE_TYPE_ALPHA_MASK])
             {
               rig_image_source_set_first_layer (sources[SOURCE_TYPE_ALPHA_MASK], 4);
-              rig_image_source_set_default_sample (sources[SOURCE_TYPE_COLOR], FALSE);
+              rig_image_source_set_default_sample (sources[SOURCE_TYPE_COLOR], false);
               rig_image_source_setup_pipeline (sources[SOURCE_TYPE_COLOR], pipeline);
               cogl_pipeline_add_snippet (pipeline, engine->alpha_mask_snippet);
             }
@@ -1229,10 +1229,10 @@ get_entity_color_pipeline (RigEngine *engine,
 
   /* enable depth testing */
   cogl_depth_state_init (&depth_state);
-  cogl_depth_state_set_test_enabled (&depth_state, TRUE);
+  cogl_depth_state_set_test_enabled (&depth_state, true);
 
   if (blended)
-    cogl_depth_state_set_write_enabled (&depth_state, FALSE);
+    cogl_depth_state_set_write_enabled (&depth_state, false);
 
   cogl_pipeline_set_depth_state (pipeline, &depth_state, NULL);
 
@@ -1448,13 +1448,13 @@ FOUND:
     cogl_pipeline_set_uniform_matrix (pipeline,
                                       location,
                                       4, 1,
-                                      FALSE,
+                                      false,
                                       light_matrix);
     if (hair)
       cogl_pipeline_set_uniform_matrix (fin_pipeline,
                                         location,
                                         4, 1,
-                                        FALSE,
+                                        false,
                                         light_matrix);
 
     for (i = 0; i < 3; i++)
@@ -1571,7 +1571,7 @@ get_entity_pipeline (RigEngine *engine,
 
       rig_image_source_set_first_layer (sources[SOURCE_TYPE_ALPHA_MASK], 4);
       rig_image_source_set_default_sample (sources[SOURCE_TYPE_ALPHA_MASK],
-                                           FALSE);
+                                           false);
     }
 
   asset = material->normal_map_asset;
@@ -1592,15 +1592,15 @@ get_entity_pipeline (RigEngine *engine,
 
       rig_image_source_set_first_layer (sources[SOURCE_TYPE_NORMAL_MAP], 7);
       rig_image_source_set_default_sample (sources[SOURCE_TYPE_NORMAL_MAP],
-                                           FALSE);
+                                           false);
     }
 
   if (pass == RIG_PASS_COLOR_UNBLENDED)
     return get_entity_color_pipeline (engine, entity,
-                                      geometry, material, sources, flags, FALSE);
+                                      geometry, material, sources, flags, false);
   else if (pass == RIG_PASS_COLOR_BLENDED)
     return get_entity_color_pipeline (engine, entity,
-                                      geometry, material, sources, flags, TRUE);
+                                      geometry, material, sources, flags, true);
   else if (pass == RIG_PASS_DOF_DEPTH || pass == RIG_PASS_SHADOW)
     return get_entity_mask_pipeline (engine, entity,
                                      geometry, material, sources, flags);
@@ -1657,7 +1657,7 @@ static void
 rig_renderer_flush_journal (RigRenderer *renderer,
                             RigPaintContext *paint_ctx)
 {
-  CArray *journal = renderer->journal;
+  c_array_t *journal = renderer->journal;
   RutPaintContext *rut_paint_ctx = &paint_ctx->_parent;
   RutObject *camera = rut_paint_ctx->camera;
   CoglFramebuffer *fb = rut_camera_get_framebuffer (camera);
@@ -1783,7 +1783,7 @@ rig_renderer_flush_journal (RigRenderer *renderer,
                                             location,
                                             3, /* dimensions */
                                             1, /* count */
-                                            FALSE, /* don't transpose again */
+                                            false, /* don't transpose again */
                                             normal_matrix);
 
           if (fin_pipeline)
@@ -1797,7 +1797,7 @@ rig_renderer_flush_journal (RigRenderer *renderer,
                                             location,
                                             3, /* dimensions */
                                             1, /* count */
-                                            FALSE, /* don't transpose again */
+                                            false, /* don't transpose again */
                                             normal_matrix);
 
               cogl_pipeline_set_layer_texture (fin_pipeline, 11,
@@ -1933,7 +1933,7 @@ draw_entity_camera_frustum (RigEngine *engine,
 
   /* enable depth testing */
   cogl_depth_state_init (&depth_state);
-  cogl_depth_state_set_test_enabled (&depth_state, TRUE);
+  cogl_depth_state_set_test_enabled (&depth_state, true);
   cogl_pipeline_set_depth_state (pipeline, &depth_state, NULL);
 
   rut_util_draw_jittered_primitive3f (fb, primitive, 0.8, 0.6, 0.1);

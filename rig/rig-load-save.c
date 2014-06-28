@@ -58,7 +58,7 @@ append_to_file (ProtobufCBuffer *buffer,
     return;
 
   if (fwrite (engine, len, 1, buffered_file->fp) != 1)
-    buffered_file->error = TRUE;
+    buffered_file->error = true;
 }
 
 void
@@ -73,7 +73,7 @@ rig_save (RigEngine *engine, const char *path)
   BufferedFile buffered_file = {
     { append_to_file },
     NULL, /* file pointer */
-    FALSE
+    false
   };
 
   rig_filename = c_strdup (path);
@@ -127,7 +127,7 @@ rig_load (RigEngine *engine, const char *file)
   uint8_t *contents;
   size_t len;
   GError *error = NULL;
-  gboolean needs_munmap = FALSE;
+  gboolean needs_munmap = false;
   RigPBUnSerializer *unserializer;
   Rig__UI *pb_ui;
   RigUI *ui;
@@ -162,7 +162,7 @@ rig_load (RigEngine *engine, const char *file)
       (contents = mmap (NULL, sb.st_size, PROT_READ, MAP_PRIVATE, fd, 0)))
     {
       len = sb.st_size;
-      needs_munmap = TRUE;
+      needs_munmap = true;
     }
   else if (!g_file_get_contents (file,
                                  (gchar **)&contents,

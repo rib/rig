@@ -126,7 +126,7 @@ struct _RigControllerObjectView
 
   RutProperty *label_property;
 
-  CList *properties;
+  c_list_t *properties;
 
   RigControllerPropertyView *selected_property;
 
@@ -192,7 +192,7 @@ typedef struct _NodeGroup
   RigNodesSelection *selection;
   const RutPropertySpec *prop_spec;
   RigPath *path;
-  CList *nodes;
+  c_list_t *nodes;
 } NodeGroup;
 
 typedef struct _NodeMapping
@@ -206,7 +206,7 @@ struct _RigNodesSelection
   RutObjectBase _base;
 
   RigControllerView *view;
-  CList *node_groups;
+  c_list_t *node_groups;
 
   /* Nodes aren't directly connected to markers since Nodes
    * aren't expected to have any associated UI at runtime
@@ -256,7 +256,7 @@ struct _RigControllerView
   int total_width;
   int total_height;
 
-  CList *object_views;
+  c_list_t *object_views;
 
   RigNodesSelection *nodes_selection;
 
@@ -335,7 +335,7 @@ _rig_node_marker_init_type (void)
 static void
 destroy_node_group (NodeGroup *node_group)
 {
-  CList *l;
+  c_list_t *l;
 
   if (node_group->nodes)
     {
@@ -379,7 +379,7 @@ unselect_node (RigNodesSelection *selection,
 {
   NodeMapping *mapping = g_hash_table_lookup (selection->node_map, node);
   NodeGroup *node_group;
-  CList *l;
+  c_list_t *l;
 
   if (!mapping)
     return false;
@@ -415,12 +415,12 @@ static void
 _rig_nodes_selection_cancel (RutObject *object)
 {
   RigNodesSelection *selection = object;
-  CList *l, *next;
+  c_list_t *l, *next;
 
   for (l = selection->node_groups; l; l = next)
     {
       NodeGroup *node_group = l->data;
-      CList *l2, *next2;
+      c_list_t *l2, *next2;
 
       next = l->next;
 
@@ -438,7 +438,7 @@ static void
 select_marker_node (RigNodesSelection *selection,
                     RigNodeMarker *marker)
 {
-  CList *l;
+  c_list_t *l;
   NodeGroup *node_group;
   NodeMapping *mapping;
 
@@ -535,12 +535,12 @@ _rig_nodes_selection_foreach_node (RigNodesSelection *selection,
                                    RigNodeSelectionCallback callback,
                                    void *user_data)
 {
-  CList *l, *next;
+  c_list_t *l, *next;
 
   for (l = selection->node_groups; l; l = next)
     {
       NodeGroup *node_group = l->data;
-      CList *l2, *next2;
+      c_list_t *l2, *next2;
 
       next = l->next;
 
@@ -792,7 +792,7 @@ find_unselected_neighbour (RigControllerView *view,
                            RigNode *node,
                            bool direction)
 {
-  while (TRUE)
+  while (true)
     {
       RutList *next_link;
       RigNode *next_node;
@@ -991,13 +991,13 @@ _rig_nodes_selection_copy (RutObject *object)
 {
   RigNodesSelection *selection = object;
   RigNodesSelection *copy = _rig_nodes_selection_new (selection->view);
-  CList *l;
+  c_list_t *l;
 
   for (l = selection->node_groups; l; l = l->next)
     {
       NodeGroup *node_group = l->data;
       NodeGroup *new_node_group = c_slice_new0 (NodeGroup);
-      CList *l2;
+      c_list_t *l2;
 
       new_node_group->prop_spec = node_group->prop_spec;
 
@@ -1034,7 +1034,7 @@ _rig_nodes_selection_delete (RutObject *object)
 
   if (selection == view->nodes_selection)
     {
-      CList *l, *next;
+      c_list_t *l, *next;
       int len = c_list_length (selection->node_groups);
       RigController *controller = view->controller;
       RigEngine *engine = view->engine;
@@ -1047,7 +1047,7 @@ _rig_nodes_selection_delete (RutObject *object)
         {
           NodeGroup *node_group = l->data;
           int n_nodes = c_list_length (node_group->nodes);
-          CList *l2, *next2;
+          c_list_t *l2, *next2;
 
           next = l->next;
 
@@ -1763,7 +1763,7 @@ float
 calculate_column_width (RigControllerView *view, int column_index)
 {
   float column_width = 0;
-  CList *l, *l2;
+  c_list_t *l, *l2;
 
   for (l = view->object_views; l; l = l->next)
     {
@@ -2172,7 +2172,7 @@ method_drop_down_change_cb (RutProperty *value, void *user_data)
 
       rut_property_box (property, &property_value);
 
-      rig_controller_view_edit_property (view, FALSE, /* mergable */
+      rig_controller_view_edit_property (view, false, /* mergable */
                                          property, &property_value);
 
       rut_boxed_destroy (&property_value);
@@ -2240,7 +2240,7 @@ rig_controller_view_unselect_node (RigControllerView *view,
   if (prop_view->has_selected_nodes)
     {
       RigControllerViewSelectedNode *selected_node, *tmp;
-      bool has_nodes = FALSE;
+      bool has_nodes = false;
 
       rut_list_for_each_safe (selected_node,
                               tmp,
@@ -2253,13 +2253,13 @@ rig_controller_view_unselect_node (RigControllerView *view,
                 {
                   rut_list_remove (&selected_node->list_node);
                   c_slice_free (RigControllerViewSelectedNode, selected_node);
-                  view->dots_dirty = TRUE;
+                  view->dots_dirty = true;
                   /* we don't want to break here because we want to
                    * continue searching so that we can update the
                    * has_nodes value */
                 }
               else
-                has_nodes = TRUE;
+                has_nodes = true;
             }
         }
 
@@ -2346,7 +2346,7 @@ compare_properties_cb (RigControllerPropertyView *prop_view_a,
 static void
 _rig_controller_object_view_sort_properties (RigControllerObjectView *object_view)
 {
-  CList *l;
+  c_list_t *l;
 
   object_view->properties =
     c_list_sort (object_view->properties, (GCompareFunc)compare_properties_cb);
@@ -2355,7 +2355,7 @@ _rig_controller_object_view_sort_properties (RigControllerObjectView *object_vie
     rut_box_layout_remove (object_view->properties_vbox, l->data);
 
   for (l = object_view->properties; l; l = l->next)
-    rut_box_layout_add (object_view->properties_vbox, FALSE, l->data);
+    rut_box_layout_add (object_view->properties_vbox, false, l->data);
 }
 
 static void
@@ -2365,7 +2365,7 @@ _rig_controller_object_view_add_property (RigControllerObjectView *object_view,
   object_view->properties =
     c_list_prepend (object_view->properties, prop_view);
 
-  rut_box_layout_add (object_view->properties_vbox, FALSE, prop_view);
+  rut_box_layout_add (object_view->properties_vbox, false, prop_view);
 
   _rig_controller_object_view_sort_properties (object_view);
 }
@@ -2374,7 +2374,7 @@ static void
 _rig_controller_object_view_free (void *object)
 {
   RigControllerObjectView *object_view = object;
-  CList *l, *next;
+  c_list_t *l, *next;
 
   for (l = object_view->properties; l; l = next)
     {
@@ -2461,7 +2461,7 @@ compare_objects_cb (RigControllerObjectView *object_a,
 static void
 _rig_controller_view_sort_objects (RigControllerView *view)
 {
-  CList *l;
+  c_list_t *l;
 
   view->object_views =
     c_list_sort (view->object_views, (GCompareFunc)compare_objects_cb);
@@ -2470,7 +2470,7 @@ _rig_controller_view_sort_objects (RigControllerView *view)
     rut_box_layout_remove (view->properties_vbox, l->data);
 
   for (l = view->object_views; l; l = l->next)
-    rut_box_layout_add (view->properties_vbox, FALSE, l->data);
+    rut_box_layout_add (view->properties_vbox, false, l->data);
 }
 
 static void
@@ -2526,7 +2526,7 @@ rig_controller_object_view_new (RigControllerView *view,
   eye_toggle = rut_icon_toggle_new (view->context,
                                     "eye-white.png",
                                     "eye.png");
-  rut_box_layout_add (hbox, FALSE, eye_toggle);
+  rut_box_layout_add (hbox, false, eye_toggle);
   rut_object_unref (eye_toggle);
 #endif
 
@@ -2579,20 +2579,20 @@ rig_controller_view_clear_selected_nodes (RigControllerView *view)
 
   rut_list_for_each_safe (selected_node, t, &view->selected_nodes, list_node)
     {
-      selected_node->prop_view->has_selected_nodes = FALSE;
+      selected_node->prop_view->has_selected_nodes = false;
       c_slice_free (RigControllerViewSelectedNode, selected_node);
     }
 
   rut_list_init (&view->selected_nodes);
 
-  view->dots_dirty = TRUE;
+  view->dots_dirty = true;
 }
 #endif
 
 static void
 rig_controller_view_clear_object_views (RigControllerView *view)
 {
-  CList *l, *next;
+  c_list_t *l, *next;
 
   for (l = view->object_views; l; l = next)
     {
@@ -2754,11 +2754,11 @@ rig_controller_view_update_dots_buffer (RigControllerView *view)
   if (buffer_data == NULL)
     {
       buffer_data = c_malloc (map_size);
-      buffer_is_mapped = FALSE;
+      buffer_is_mapped = false;
       cogl_error_free (ignore_error);
     }
   else
-    buffer_is_mapped = TRUE;
+    buffer_is_mapped = true;
 
   dot_data.view = view;
   dot_data.v = buffer_data;
@@ -2880,7 +2880,7 @@ _rig_controller_view_paint (RutObject *object,
 
       rig_controller_view_update_dots_buffer (view);
 
-      view->dots_dirty = FALSE;
+      view->dots_dirty = false;
     }
 
   /* The transform is set up so that 0→1 along the x-axis extends
@@ -3177,7 +3177,7 @@ rig_controller_view_select_node (RigControllerView *view,
         {
           if (selected_node->prop_view == prop_view &&
               selected_node->node == node)
-            return TRUE;
+            return true;
         }
     }
 
@@ -3185,12 +3185,12 @@ rig_controller_view_select_node (RigControllerView *view,
   selected_node->prop_view = prop_view;
   selected_node->node = node;
 
-  prop_view->has_selected_nodes = TRUE;
-  view->dots_dirty = TRUE;
+  prop_view->has_selected_nodes = true;
+  view->dots_dirty = true;
 
   rut_list_insert (view->selected_nodes.prev, &selected_node->list_node);
 
-  return FALSE;
+  return false;
 }
 #endif
 
@@ -3202,7 +3202,7 @@ rig_controller_view_property_added (RigControllerView *view,
   RigControllerObjectView *object_view;
   RigControllerPropertyView *prop_view;
   RutObject *object;
-  CList *l;
+  c_list_t *l;
 
   object = property->object;
 
@@ -3228,7 +3228,7 @@ rig_controller_view_property_added (RigControllerView *view,
   object_view = rig_controller_object_view_new (view, object);
   view->object_views = c_list_prepend (view->object_views, object_view);
 
-  rut_box_layout_add (view->properties_vbox, FALSE, object_view);
+  rut_box_layout_add (view->properties_vbox, false, object_view);
 
   _rig_controller_view_sort_objects (view);
 
@@ -3244,7 +3244,7 @@ rig_controller_view_find_property (RigControllerView *view,
                                    RutProperty *property)
 {
   RutObject *object = property->object;
-  CList *l, *l2;
+  c_list_t *l, *l2;
 
   /* If the property belongs to a component then it is grouped by
    * component's entity instead */
@@ -3350,7 +3350,7 @@ rig_controller_view_create_dots_pipeline (RigControllerView *view)
         {
           if (!cogl_pipeline_set_layer_point_sprite_coords_enabled (pipeline,
                                                                     0,
-                                                                    TRUE,
+                                                                    true,
                                                                     &error))
             {
               c_warning ("Error enabling point sprite coords: %s",
@@ -3482,13 +3482,13 @@ rig_controller_view_find_node (RigControllerView *view,
   if (!rut_motion_event_unproject (event, view, &x, &y))
     {
       g_error ("Failed to get inverse transform");
-      return FALSE;
+      return false;
     }
 
   progress = (x - view->nodes_x) / view->nodes_width;
 
   if (progress < 0.0f || progress > 1.0f)
-    return FALSE;
+    return false;
 
   rut_list_for_each (object_view, &view->object_views, list_node)
     {
@@ -3515,17 +3515,17 @@ rig_controller_view_find_node (RigControllerView *view,
                 {
                   *node_out = node;
                   *prop_view_out = prop_view;
-                  return TRUE;
+                  return true;
                 }
 
-              return FALSE;
+              return false;
             }
 
           row_num++;
         }
     }
 
-  return FALSE;
+  return false;
 }
 
 static void
@@ -3544,7 +3544,7 @@ rig_controller_view_handle_select_event (RigControllerView *view,
 
       /* If shift is down then we actually want to toggle the node. If
        * the node is already selected then trying to select it again
-       * will return TRUE so we know to remove it. If shift wasn't
+       * will return true so we know to remove it. If shift wasn't
        * down then it definitely won't be selected because we'll have
        * just cleared the selection above so it doesn't matter if we
        * toggle it */
@@ -3863,7 +3863,7 @@ rig_controller_view_delete_selected_nodes (RigControllerView *view)
         }
 
       if (journal != view->undo_journal)
-        rig_undo_journal_log_subjournal (view->undo_journal, journal, FALSE);
+        rig_undo_journal_log_subjournal (view->undo_journal, journal, false);
     }
 }
 #endif
@@ -4085,7 +4085,7 @@ on_controller_add_button_click_cb (RutIconButton *button, void *user_data)
   for (i = 0; true; i++)
     {
       bool clash = false;
-      CList *l;
+      c_list_t *l;
 
       name = c_strdup_printf ("Controller %i", i);
 
@@ -4199,7 +4199,7 @@ rig_controller_view_new (RigEngine *engine,
   rut_object_unref (view->vbox);
 
   top_stack = rut_stack_new (engine->ctx, 0, 0);
-  rut_box_layout_add (view->vbox, FALSE, top_stack);
+  rut_box_layout_add (view->vbox, false, top_stack);
   rut_object_unref (top_stack);
 
   bg = rut_rectangle_new4f (engine->ctx, 0, 0, 0.65, 0.65, 0.65, 1);
@@ -4251,12 +4251,12 @@ rig_controller_view_new (RigEngine *engine,
 
   view->header_hbox = rut_box_layout_new (engine->ctx,
                                           RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
-  rut_box_layout_add (view->vbox, FALSE, view->header_hbox);
+  rut_box_layout_add (view->vbox, false, view->header_hbox);
   rut_object_unref (view->header_hbox);
 
   view->properties_label_shim = rut_shim_new (engine->ctx, 1, 1);
   rut_shim_set_shim_axis (view->properties_label_shim, RUT_SHIM_AXIS_X);
-  rut_box_layout_add (view->header_hbox, FALSE, view->properties_label_shim);
+  rut_box_layout_add (view->header_hbox, false, view->properties_label_shim);
   rut_object_unref (view->properties_label_shim);
 
   label = rut_text_new_with_text (engine->ctx, NULL, "Properties");
@@ -4264,7 +4264,7 @@ rig_controller_view_new (RigEngine *engine,
   rut_object_unref (label);
 
   view->scale = rut_scale_new (engine->ctx, 0, 10);
-  rut_box_layout_add (view->header_hbox, TRUE, view->scale);
+  rut_box_layout_add (view->header_hbox, true, view->scale);
 
   rut_scale_add_select_callback (view->scale,
                                  on_scale_select_cb,
@@ -4272,7 +4272,7 @@ rig_controller_view_new (RigEngine *engine,
                                  NULL); /* destroy notify */
 
   stack = rut_stack_new (engine->ctx, 0, 0);
-  rut_box_layout_add (view->vbox, TRUE, stack);
+  rut_box_layout_add (view->vbox, true, stack);
   rut_object_unref (stack);
 
   bg = rut_rectangle_new4f (engine->ctx, 0, 0, 0.52, 0.52, 0.52, 1);
@@ -4280,7 +4280,7 @@ rig_controller_view_new (RigEngine *engine,
   rut_object_unref (bg);
 
   view->properties_vp = rut_ui_viewport_new (engine->ctx, 0, 0);
-  rut_ui_viewport_set_x_pannable (view->properties_vp, FALSE);
+  rut_ui_viewport_set_x_pannable (view->properties_vp, false);
   rut_stack_add (stack, view->properties_vp);
   rut_object_unref (view->properties_vp);
 
@@ -4307,7 +4307,7 @@ rig_controller_view_update_controller_list (RigControllerView *view)
   RigEngine *engine = view->engine;
   int n_controllers;
   RutDropDownValue *controller_values;
-  CList *l;
+  c_list_t *l;
   int i;
 
   n_controllers = c_list_length (engine->edit_mode_ui->controllers);
@@ -4331,7 +4331,7 @@ _rig_controller_view_foreach_node (RigControllerView *view,
                                    RigControllerViewNodeCallback callback,
                                    void *user_data)
 {
-  CList *l, *l2;
+  c_list_t *l, *l2;
 
   for (l = view->object_views; l; l = l->next)
     {

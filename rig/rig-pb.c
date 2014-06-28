@@ -145,7 +145,7 @@ pb_path_new (RigPBSerializer *serializer, RigPath *path)
 
       pb_path->nodes[i] = pb_node;
 
-      pb_node->has_t = TRUE;
+      pb_node->has_t = true;
       pb_node->t = node->t;
 
       pb_node->value = rig_pb_new (serializer,
@@ -156,13 +156,13 @@ pb_path_new (RigPBSerializer *serializer, RigPath *path)
         {
         case RUT_PROPERTY_TYPE_FLOAT:
             {
-              pb_node->value->has_float_value = TRUE;
+              pb_node->value->has_float_value = true;
               pb_node->value->float_value = node->boxed.d.float_val;
               break;
             }
         case RUT_PROPERTY_TYPE_DOUBLE:
             {
-              pb_node->value->has_double_value = TRUE;
+              pb_node->value->has_double_value = true;
               pb_node->value->double_value = node->boxed.d.double_val;
               break;
             }
@@ -199,14 +199,14 @@ pb_path_new (RigPBSerializer *serializer, RigPath *path)
             }
         case RUT_PROPERTY_TYPE_INTEGER:
             {
-              pb_node->value->has_integer_value = TRUE;
+              pb_node->value->has_integer_value = true;
               pb_node->value->integer_value = node->boxed.d.integer_val;
               continue;
               break;
             }
         case RUT_PROPERTY_TYPE_UINT32:
             {
-              pb_node->value->has_uint32_value = TRUE;
+              pb_node->value->has_uint32_value = true;
               pb_node->value->uint32_value = node->boxed.d.uint32_val;
               break;
             }
@@ -237,27 +237,27 @@ rig_pb_property_value_init (RigPBSerializer *serializer,
   switch (value->type)
     {
     case RUT_PROPERTY_TYPE_FLOAT:
-      pb_value->has_float_value = TRUE;
+      pb_value->has_float_value = true;
       pb_value->float_value = value->d.float_val;
       break;
 
     case RUT_PROPERTY_TYPE_DOUBLE:
-      pb_value->has_double_value = TRUE;
+      pb_value->has_double_value = true;
       pb_value->double_value = value->d.double_val;
       break;
 
     case RUT_PROPERTY_TYPE_INTEGER:
-      pb_value->has_integer_value = TRUE;
+      pb_value->has_integer_value = true;
       pb_value->integer_value = value->d.integer_val;
       break;
 
     case RUT_PROPERTY_TYPE_UINT32:
-      pb_value->has_uint32_value = TRUE;
+      pb_value->has_uint32_value = true;
       pb_value->uint32_value = value->d.uint32_val;
       break;
 
     case RUT_PROPERTY_TYPE_BOOLEAN:
-      pb_value->has_boolean_value = TRUE;
+      pb_value->has_boolean_value = true;
       pb_value->boolean_value = value->d.boolean_val;
       break;
 
@@ -292,7 +292,7 @@ rig_pb_property_value_init (RigPBSerializer *serializer,
     case RUT_PROPERTY_TYPE_ENUM:
       /* XXX: this should possibly save the string names rather than
        * the integer value? */
-      pb_value->has_enum_value = TRUE;
+      pb_value->has_enum_value = true;
       pb_value->enum_value = value->d.enum_val;
       break;
 
@@ -398,7 +398,7 @@ pb_boxed_new (RigPBSerializer *serializer,
     rig_pb_new (serializer, Rig__Boxed, rig__boxed__init);
 
   pb_boxed->name = (char *)name;
-  pb_boxed->has_type = TRUE;
+  pb_boxed->has_type = true;
   pb_boxed->type = rut_property_type_to_pb_type (boxed->type);
   pb_boxed->value = pb_property_value_new (serializer, boxed);
 
@@ -681,7 +681,7 @@ rig_pb_serialize_entity (RigPBSerializer *serializer,
   const char *label;
   Rig__Vec3 *position;
   float scale;
-  CList *l;
+  c_list_t *l;
   int i;
 
   pb_entity->has_id = true;
@@ -716,7 +716,7 @@ rig_pb_serialize_entity (RigPBSerializer *serializer,
   scale = rig_entity_get_scale (entity);
   if (scale != 1)
     {
-      pb_entity->has_scale = TRUE;
+      pb_entity->has_scale = true;
       pb_entity->scale = scale;
     }
 
@@ -835,7 +835,7 @@ serialize_controller_property_cb (RigControllerPropData *prop_data,
 
   pb_property->name = (char *)prop_data->property->spec->name;
 
-  pb_property->has_method = TRUE;
+  pb_property->has_method = true;
   switch (prop_data->method)
     {
     case RIG_CONTROLLER_METHOD_CONSTANT:
@@ -1399,7 +1399,7 @@ rig_pb_serialize_controller (RigPBSerializer *serializer,
 {
   Rig__Controller *pb_controller =
     rig_pb_new (serializer, Rig__Controller, rig__controller__init);
-  CList *l;
+  c_list_t *l;
   int i;
 
   pb_controller->has_id = true;
@@ -1437,7 +1437,7 @@ rig_pb_serialize_ui (RigPBSerializer *serializer,
                      bool play_mode,
                      RigUI *ui)
 {
-  CList *l;
+  c_list_t *l;
   int i;
   Rig__UI *pb_ui;
 
@@ -3227,7 +3227,7 @@ rig_pb_unserialize_ui (RigPBUnSerializer *unserializer,
 {
   RigUI *ui = rig_ui_new (unserializer->engine);
   RigEngine *engine = unserializer->engine;
-  CList *l;
+  c_list_t *l;
 
   unserialize_assets (unserializer,
                       pb_ui->n_assets,

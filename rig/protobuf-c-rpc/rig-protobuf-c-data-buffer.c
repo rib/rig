@@ -32,10 +32,10 @@
 #include <stdlib.h>
 #include "rig-protobuf-c-data-buffer.h"
 
-#undef TRUE
-#define TRUE 1
-#undef FALSE
-#define FALSE 0
+#undef true
+#define true 1
+#undef false
+#define false 0
 
 #define PROTOBUF_C_FRAGMENT_DATA_SIZE        4096
 #define PROTOBUF_C_FRAGMENT_DATA(frag)     ((uint8_t*)(((ProtobufCDataBufferFragment*)(frag))+1))
@@ -1009,19 +1009,19 @@ fragment_n_str(ProtobufCDataBufferFragment   *frag,
       if (memcmp (string,
                   rig_protobuf_c_data_buffer_fragment_start (frag) + frag_index,
                   test_len) != 0)
-        return FALSE;
+        return false;
 
       len -= test_len;
       string += test_len;
 
       if (len <= 0)
-        return TRUE;
+        return true;
       frag_index += test_len;
       if (frag_index >= frag->buf_length)
         {
           frag = frag->next;
           if (frag == NULL)
-            return FALSE;
+            return false;
         }
     }
 }

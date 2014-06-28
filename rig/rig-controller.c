@@ -50,7 +50,7 @@ static RutPropertySpec _rig_controller_prop_specs[] = {
     .getter.boolean_type = rig_controller_get_active,
     .setter.boolean_type = rig_controller_set_active,
     .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .animatable = TRUE
+    .animatable = true
   },
   { /* This property supersedes the "active" property and is used by
        the editor to suspend controllers in edit-mode without the
@@ -64,7 +64,7 @@ static RutPropertySpec _rig_controller_prop_specs[] = {
     .getter.boolean_type = rig_controller_get_suspended,
     .setter.boolean_type = rig_controller_set_suspended,
     .flags = 0, /* PRIVATE */
-    .animatable = FALSE
+    .animatable = false
   },
   {
     .name = "auto_deactivate",
@@ -74,7 +74,7 @@ static RutPropertySpec _rig_controller_prop_specs[] = {
     .getter.boolean_type = rig_controller_get_auto_deactivate,
     .setter.boolean_type = rig_controller_set_auto_deactivate,
     .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .animatable = TRUE
+    .animatable = true
   },
   {
     .name = "loop",
@@ -84,7 +84,7 @@ static RutPropertySpec _rig_controller_prop_specs[] = {
     .getter.boolean_type = rig_controller_get_loop,
     .setter.boolean_type = rig_controller_set_loop,
     .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .animatable = TRUE
+    .animatable = true
   },
   {
     .name = "running",
@@ -94,7 +94,7 @@ static RutPropertySpec _rig_controller_prop_specs[] = {
     .getter.boolean_type = rig_controller_get_running,
     .setter.boolean_type = rig_controller_set_running,
     .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .animatable = TRUE
+    .animatable = true
   },
   {
     .name = "length",
@@ -113,7 +113,7 @@ static RutPropertySpec _rig_controller_prop_specs[] = {
     .getter.double_type = rig_controller_get_elapsed,
     .setter.double_type = rig_controller_set_elapsed,
     .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .animatable = TRUE
+    .animatable = true
   },
   {
     .name = "progress",
@@ -123,7 +123,7 @@ static RutPropertySpec _rig_controller_prop_specs[] = {
     .getter.double_type = rig_controller_get_progress,
     .setter.double_type = rig_controller_set_progress,
     .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .animatable = TRUE
+    .animatable = true
   },
   { 0 }
 };

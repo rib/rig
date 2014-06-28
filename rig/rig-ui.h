@@ -51,10 +51,10 @@ struct _RigUI
 
   RigEngine *engine;
 
-  CList *assets;
+  c_list_t *assets;
 
   RutObject *scene;
-  CList *controllers;
+  c_list_t *controllers;
 
   RigEntity *light;
   RigEntity *play_camera;
@@ -63,7 +63,7 @@ struct _RigUI
   uint8_t *dso_data;
   int dso_len;
 
-  CList *suspended_controllers;
+  c_list_t *suspended_controllers;
   bool suspended;
 };
 

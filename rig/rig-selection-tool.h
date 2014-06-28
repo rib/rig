@@ -52,7 +52,7 @@ typedef struct _RigSelectionTool
   bool active;
   RutClosure *objects_selection_closure;
 
-  CList *selected_entities;
+  c_list_t *selected_entities;
 
   CoglPipeline *default_pipeline;
 

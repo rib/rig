@@ -454,7 +454,7 @@ ensure_shadow_map (RigEngine *engine)
 
   /* retrieve the depth texture */
   cogl_framebuffer_set_depth_texture_enabled (engine->shadow_fb,
-                                              TRUE);
+                                              true);
 
   g_warn_if_fail (engine->shadow_map == NULL);
 

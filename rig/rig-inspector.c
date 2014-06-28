@@ -60,7 +60,7 @@ struct _RigInspector
   RutObjectBase _base;
 
   RutContext *context;
-  CList *objects;
+  c_list_t *objects;
 
   RutGraphableProps graphable;
 
@@ -136,7 +136,7 @@ property_changed_cb (RutProperty *primary_target_prop,
 {
   RigInspectorPropertyData *prop_data = user_data;
   RigInspector *inspector = prop_data->inspector;
-  CList *l;
+  c_list_t *l;
   bool mergable;
 
   c_return_if_fail (primary_target_prop == prop_data->target_prop);
@@ -177,7 +177,7 @@ controlled_changed_cb (RutProperty *primary_property,
 {
   RigInspectorPropertyData *prop_data = user_data;
   RigInspector *inspector = prop_data->inspector;
-  CList *l;
+  c_list_t *l;
 
   c_return_if_fail (primary_property == prop_data->target_prop);
 
@@ -199,7 +199,7 @@ static void
 get_all_properties_cb (RutProperty *prop,
                        void *user_data)
 {
-  CArray *array = user_data;
+  c_array_t *array = user_data;
   RigInspectorPropertyData *prop_data;
 
   c_array_set_size (array, array->len + 1);
@@ -213,11 +213,11 @@ static void
 create_property_controls (RigInspector *inspector)
 {
   RutObject *reference_object = inspector->objects->data;
-  CArray *props;
+  c_array_t *props;
   int i;
 
-  props = c_array_new (FALSE, /* not zero terminated */
-                       FALSE, /* don't clear */
+  props = c_array_new (false, /* not zero terminated */
+                       false, /* don't clear */
                        sizeof (RigInspectorPropertyData));
 
   if (rut_object_is (reference_object, RUT_TRAIT_ID_INTROSPECTABLE))
@@ -228,7 +228,7 @@ create_property_controls (RigInspector *inspector)
   inspector->n_props = props->len;
 
   inspector->prop_data = ((RigInspectorPropertyData *)
-                          c_array_free (props, FALSE));
+                          c_array_free (props, false));
 
   for (i = 0; i < inspector->n_props; i++)
     {
@@ -239,7 +239,7 @@ create_property_controls (RigInspector *inspector)
       prop_data->inspector = inspector;
 
       prop_data->stack = rut_stack_new (inspector->context, 1, 1);
-      rut_box_layout_add (inspector->vbox, FALSE, prop_data->stack);
+      rut_box_layout_add (inspector->vbox, false, prop_data->stack);
       rut_object_unref (prop_data->stack);
 
       prop_data->drag_bin = rut_drag_bin_new (inspector->context);
@@ -271,7 +271,7 @@ create_property_controls (RigInspector *inspector)
 
 RigInspector *
 rig_inspector_new (RutContext *context,
-                   CList *objects,
+                   c_list_t *objects,
                    RigInspectorCallback user_property_changed_cb,
                    RigInspectorControlledCallback user_controlled_changed_cb,
                    void *user_data)

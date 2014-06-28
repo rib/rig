@@ -53,7 +53,7 @@ typedef void
 
 RigInspector *
 rig_inspector_new (RutContext *ctx,
-                   CList *objects,
+                   c_list_t *objects,
                    RigInspectorCallback property_changed_cb,
                    RigInspectorControlledCallback controlled_changed_cb,
                    void *user_data);

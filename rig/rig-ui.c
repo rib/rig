@@ -41,7 +41,7 @@ static void
 _rig_ui_free (void *object)
 {
   RigUI *ui = object;
-  CList *l;
+  c_list_t *l;
 
   for (l = ui->suspended_controllers; l; l = l->next)
     rut_object_unref (l->data);
@@ -95,7 +95,7 @@ void
 rig_ui_reap (RigUI *ui)
 {
   RigEngine *engine = ui->engine;
-  CList *l;
+  c_list_t *l;
 
   rut_graphable_traverse (ui->scene,
                           RUT_TRAVERSE_DEPTH_FIRST,
@@ -242,7 +242,7 @@ rig_ui_prepare (RigUI *ui)
   RigEngine *engine = ui->engine;
   RigController *controller;
   RutObject *light_camera;
-  CList *l;
+  c_list_t *l;
 
   if (!ui->scene)
     ui->scene = rut_graph_new (engine->ctx);
@@ -371,7 +371,7 @@ rig_ui_prepare (RigUI *ui)
 void
 rig_ui_suspend (RigUI *ui)
 {
-  CList *l;
+  c_list_t *l;
 
   if (ui->suspended)
     return;
@@ -397,7 +397,7 @@ rig_ui_suspend (RigUI *ui)
 void
 rig_ui_resume (RigUI *ui)
 {
-  CList *l;
+  c_list_t *l;
 
   if (!ui->suspended)
     return;
@@ -451,7 +451,7 @@ print_entity_cb (RutObject *object,
 void
 rig_ui_print (RigUI *ui)
 {
-  CList *l;
+  c_list_t *l;
 
   c_print ("Scenegraph:\n");
   rut_graphable_traverse (ui->scene,

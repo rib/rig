@@ -69,7 +69,7 @@ typedef struct _DispatchClosure
 void
 rig_protobuf_c_dispatch_free (RigProtobufCDispatch *dispatch)
 {
-  CList *l;
+  c_list_t *l;
 
   for (l = dispatch->dispatch_closures; l; l = l->next)
     {
@@ -158,7 +158,7 @@ void
 rig_protobuf_c_dispatch_fd_closed (RigProtobufCDispatch *dispatch,
                                    ProtobufC_FD fd)
 {
-  CList *l;
+  c_list_t *l;
 
   c_return_if_fail (fd != -1);
 
@@ -232,7 +232,7 @@ rig_protobuf_c_dispatch_remove_idle (RigProtobufCDispatchIdle *idle)
 {
   DispatchClosure *closure = (DispatchClosure *)idle;
   RigProtobufCDispatch *dispatch = closure->dispatch;
-  CList *l;
+  c_list_t *l;
 
   for (l = dispatch->dispatch_closures; l; l = l->next)
     {

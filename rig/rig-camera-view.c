@@ -83,7 +83,7 @@ struct _EntityTranslateGrabClosure
 struct _EntitiesTranslateGrabClosure
 {
   RigCameraView *view;
-  CList *entity_closures;
+  c_list_t *entity_closures;
 };
 
 static void
@@ -141,21 +141,21 @@ paint_overlays (RigCameraView *view,
 {
   RigEngine *engine = view->engine;
   CoglFramebuffer *fb = rut_camera_get_framebuffer (paint_ctx->camera);
-  bool need_camera_flush = FALSE;
-  bool draw_pick_ray = FALSE;
-  bool draw_tools = FALSE;
+  bool need_camera_flush = false;
+  bool draw_pick_ray = false;
+  bool draw_tools = false;
   RutObject *suspended_camera = paint_ctx->camera;
 
   if (view->debug_pick_ray && view->picking_ray)
     {
-      draw_pick_ray = TRUE;
-      need_camera_flush = TRUE;
+      draw_pick_ray = true;
+      need_camera_flush = true;
     }
 
   if (!view->play_mode)
     {
-      draw_tools = TRUE;
-      need_camera_flush = TRUE;
+      draw_tools = true;
+      need_camera_flush = true;
     }
 
   if (need_camera_flush)
@@ -297,7 +297,7 @@ update_camera_viewport (RigCameraView *view,
 
       view->last_viewport_x = x;
       view->last_viewport_y = y;
-      view->dirty_viewport_size = FALSE;
+      view->dirty_viewport_size = false;
     }
 }
 
@@ -312,7 +312,7 @@ _rut_camera_view_paint (RutObject *object,
   CoglFramebuffer *fb = rut_camera_get_framebuffer (paint_ctx->camera);
   RigEntity *camera;
   RutObject *camera_component;
-  bool need_play_camera_reset = FALSE;
+  bool need_play_camera_reset = false;
   RigUI *ui;
 
   if (view->ui == NULL)
@@ -336,7 +336,7 @@ _rut_camera_view_paint (RutObject *object,
 
       camera = view->play_dummy_entity;
       camera_component = view->play_camera_component;
-      need_play_camera_reset = TRUE;
+      need_play_camera_reset = true;
     }
 
   rut_camera_set_framebuffer (camera_component, fb);
@@ -353,12 +353,12 @@ _rut_camera_view_paint (RutObject *object,
   rut_camera_suspend (suspended_camera);
 
   rig_paint_ctx->pass = RIG_PASS_SHADOW;
-  rig_camera_update_view (engine, ui->light, TRUE);
+  rig_camera_update_view (engine, ui->light, true);
   rig_paint_camera_entity (ui->light, rig_paint_ctx, NULL);
 
   update_camera_viewport (view, paint_ctx->camera, camera_component);
 
-  rig_camera_update_view (engine, camera, FALSE);
+  rig_camera_update_view (engine, camera, false);
 
   if (view->enable_dof)
     {
@@ -660,13 +660,13 @@ allocate_cb (RutObject *graphable,
 
       if (view->entities_translate_grab_closure)
         {
-          CList *l;
+          c_list_t *l;
 
           update_camera_viewport (view,
                                   engine->camera_2d,
                                   view->view_camera_component);
 
-          rig_camera_update_view (engine, view->view_camera, FALSE);
+          rig_camera_update_view (engine, view->view_camera, false);
 
           for (l = view->entities_translate_grab_closure->entity_closures;
                l; l = l->next)
@@ -699,7 +699,7 @@ rig_camera_view_set_size (void *object,
   view->width = width;
   view->height = height;
 
-  view->dirty_viewport_size = TRUE;
+  view->dirty_viewport_size = true;
 
   if (engine->frontend)
     {
@@ -850,7 +850,7 @@ entity_translate_done_cb (RigEntity *entity,
       boxed_position.d.vec3_val[2] = start[2] + rel[2];
 
       rig_controller_view_edit_property (engine->controller_view,
-                                         FALSE, /* mergable */
+                                         false, /* mergable */
                                          position_prop,
                                          &boxed_position);
 
@@ -915,7 +915,7 @@ handle_entity_translate_grab_motion (RutInputEvent *event,
     }
   else if (rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_MOVE)
     {
-      closure->moved = TRUE;
+      closure->moved = true;
 
       closure->entity_translate_cb (entity,
                                     closure->entity_grab_pos,
@@ -932,7 +932,7 @@ entities_translate_grab_input_cb (RutInputEvent *event,
   if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
     {
       EntitiesTranslateGrabClosure *closure = user_data;
-      CList *l;
+      c_list_t *l;
 
       for (l = closure->entity_closures; l; l = l->next)
         handle_entity_translate_grab_motion (event, l->data);
@@ -1137,7 +1137,7 @@ translate_grab_entity (RigCameraView *view,
   closure->entity = entity;
   closure->entity_translate_cb = translate_cb;
   closure->entity_translate_done_cb = done_cb;
-  closure->moved = FALSE;
+  closure->moved = false;
   closure->user_data = user_data;
 
   update_grab_closure_vectors (closure);
@@ -1147,7 +1147,7 @@ translate_grab_entity (RigCameraView *view,
 
 static bool
 translate_grab_entities (RigCameraView *view,
-                         CList *entities,
+                         c_list_t *entities,
                          float grab_x,
                          float grab_y,
                          EntityTranslateCallback translate_cb,
@@ -1156,10 +1156,10 @@ translate_grab_entities (RigCameraView *view,
 {
   RutObject *camera = view->view_camera_component;
   EntitiesTranslateGrabClosure *closure;
-  CList *l;
+  c_list_t *l;
 
   if (view->entities_translate_grab_closure)
-    return FALSE;
+    return false;
 
   closure = c_slice_new (EntitiesTranslateGrabClosure);
   closure->view = view;
@@ -1183,7 +1183,7 @@ translate_grab_entities (RigCameraView *view,
   if (!closure->entity_closures)
     {
       c_slice_free (EntitiesTranslateGrabClosure, closure);
-      return FALSE;
+      return false;
     }
 
   rut_shell_grab_input (view->engine->ctx->shell,
@@ -1193,7 +1193,7 @@ translate_grab_entities (RigCameraView *view,
 
   view->entities_translate_grab_closure = closure;
 
-  return TRUE;
+  return true;
 }
 
 #if 0
@@ -1395,7 +1395,7 @@ entitygraph_pre_pick_cb (RutObject *object,
       rut_matrix_stack_get (pick_ctx->matrix_stack, &transform);
 
       transform_ray (&transform,
-                     TRUE, /* inverse of the transform */
+                     true, /* inverse of the transform */
                      transformed_ray_origin,
                      transformed_ray_direction);
 
@@ -1524,7 +1524,7 @@ move_entity_to_camera (RigCameraView *view,
 
 
       rig_controller_view_edit_property (engine->controller_view,
-                                         FALSE, /* mergable */
+                                         false, /* mergable */
                                          position_prop,
                                          &boxed_position);
     }
@@ -1539,7 +1539,7 @@ move_entity_to_camera (RigCameraView *view,
   boxed_rotation.d.quaternion_val = camera_rotation;
 
   rig_controller_view_edit_property (engine->controller_view,
-                                     FALSE, /* mergable */
+                                     false, /* mergable */
                                      rotation_property,
                                      &boxed_rotation);
 
@@ -1686,7 +1686,7 @@ input_cb (RutInputEvent *event,
         }
 
       update_camera_viewport (view, engine->camera_2d, camera_component);
-      rig_camera_update_view (engine, camera, FALSE);
+      rig_camera_update_view (engine, camera, false);
 
       state = rut_motion_event_get_button_state (event);
 
@@ -1840,7 +1840,7 @@ input_cb (RutInputEvent *event,
 
           //print_quaternion (&view->saved_rotation, "Saved Quaternion");
           //print_quaternion (&view->arcball.q_drag, "Arcball Initial Quaternion");
-          //engine->button_down = TRUE;
+          //engine->button_down = true;
 
           engine->grab_x = x;
           engine->grab_y = y;
@@ -1852,7 +1852,7 @@ input_cb (RutInputEvent *event,
                state == RUT_BUTTON_STATE_2 &&
                modifiers & RUT_MODIFIER_SHIFT_ON)
         {
-          CList link;
+          c_list_t link;
           link.data = view->view_camera_to_origin;
           link.next = NULL;
 
@@ -1997,7 +1997,7 @@ input_cb (RutInputEvent *event,
                    RUT_MODIFIER_CTRL_ON) &&
                   engine->objects_selection->objects)
                 {
-                  CList *l;
+                  c_list_t *l;
                   for (l = engine->objects_selection->objects; l; l = l->next)
                     move_entity_to_camera (view, l->data);
                 }
@@ -2020,7 +2020,7 @@ input_cb (RutInputEvent *event,
               if (n_entities)
                 {
                   RigEntity *parent = (RigEntity *)view->ui->scene;
-                  CList *l;
+                  c_list_t *l;
 
                   for (l = selection->objects; l; l = l->next)
                     {
@@ -2305,7 +2305,7 @@ rig_camera_view_new (RigEngine *engine)
                                                 -1, /* ortho/vp width */
                                                 -1, /* ortho/vp height */
                                                 NULL);
-  rut_camera_set_clear (view->view_camera_component, FALSE);
+  rut_camera_set_clear (view->view_camera_component, false);
   rig_entity_add_component (view->view_camera, view->view_camera_component);
 
   init_device_transforms (ctx, &view->play_device_transforms);

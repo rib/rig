@@ -56,7 +56,7 @@ struct _EntityState
 
   RutObject *sizeable;
 
-  CList *control_points;
+  c_list_t *control_points;
 };
 
 typedef struct _GrabState
@@ -272,7 +272,7 @@ create_sizeable_control_points (EntityState *entity_state)
 static void
 entity_state_destroy (EntityState *entity_state)
 {
-  CList *l;
+  c_list_t *l;
 
   for (l = entity_state->control_points; l; l = l->next)
     {
@@ -318,7 +318,7 @@ objects_selection_event_cb (RigObjectsSelection *selection,
 {
   RigSelectionTool *tool = user_data;
   EntityState *entity_state;
-  CList *l;
+  c_list_t *l;
 
   if (!tool->active && event == RIG_OBJECTS_SELECTION_ADD_EVENT)
     return;
@@ -398,7 +398,7 @@ rig_selection_tool_set_active (RigSelectionTool *tool,
                                bool active)
 {
   RigObjectsSelection *selection = tool->view->engine->objects_selection;
-  CList *l;
+  c_list_t *l;
 
   if (tool->active == active)
     return;
@@ -462,7 +462,7 @@ map_window_coords_to_overlay_coord (RutObject *camera, /* 2d ui camera */
   rut_graphable_get_modelview (overlay, camera, &transform);
 
   if (!cogl_matrix_get_inverse (&transform, &inverse_transform))
-    return FALSE;
+    return false;
 
   rut_camera_unproject_coord (camera,
                               &transform,
@@ -471,7 +471,7 @@ map_window_coords_to_overlay_coord (RutObject *camera, /* 2d ui camera */
                               x,
                               y);
 
-  return TRUE;
+  return true;
 }
 
 /* Scale from OpenGL normalized device coordinates (ranging from -1 to 1)
@@ -489,7 +489,7 @@ update_control_point_positions (RigSelectionTool *tool,
                                 RutObject *paint_camera) /* 2d ui camera */
 {
   RutObject *camera = tool->camera_component;
-  CList *l;
+  c_list_t *l;
 
   for (l = tool->selected_entities; l; l = l->next)
     {
@@ -498,7 +498,7 @@ update_control_point_positions (RigSelectionTool *tool,
       const CoglMatrix *projection;
       float screen_space[4], x, y;
       const float *viewport;
-      CList *l2;
+      c_list_t *l2;
 
       get_modelview_matrix (tool->camera,
                             entity_state->entity,
@@ -586,7 +586,7 @@ rig_selection_tool_add_event_callback (RigSelectionTool *tool,
 void
 rig_selection_tool_destroy (RigSelectionTool *tool)
 {
-  CList *l;
+  c_list_t *l;
 
   rut_closure_list_disconnect_all (&tool->selection_event_cb_list);
 

@@ -358,7 +358,7 @@ rig_undo_journal_remove_controller_path_node (RigUndoJournal *journal,
   add_remove = &undo_redo->d.path_add_remove;
 
   undo_redo->op = UNDO_REDO_PATH_REMOVE_OP;
-  undo_redo->mergable = FALSE;
+  undo_redo->mergable = false;
   add_remove->controller = rut_object_ref (controller);
   add_remove->object = rut_object_ref (property->object);
   add_remove->property = property;
@@ -379,7 +379,7 @@ rig_undo_journal_set_controlled (RigUndoJournal *journal,
 
   undo_redo = c_slice_new (UndoRedo);
   undo_redo->op = UNDO_REDO_SET_CONTROLLED_OP;
-  undo_redo->mergable = FALSE;
+  undo_redo->mergable = false;
 
   set_controlled = &undo_redo->d.set_controlled;
 
@@ -406,7 +406,7 @@ rig_undo_journal_set_control_method (RigUndoJournal *journal,
 
   undo_redo = c_slice_new (UndoRedo);
   undo_redo->op = UNDO_REDO_SET_CONTROL_METHOD_OP;
-  undo_redo->mergable = FALSE;
+  undo_redo->mergable = false;
 
   set_control_method = &undo_redo->d.set_control_method;
 
@@ -485,7 +485,7 @@ rig_undo_journal_add_entity (RigUndoJournal *journal,
 
   undo_redo = c_slice_new (UndoRedo);
   undo_redo->op = UNDO_REDO_ADD_ENTITY_OP;
-  undo_redo->mergable = FALSE;
+  undo_redo->mergable = false;
 
   add_entity = &undo_redo->d.add_delete_entity;
 
@@ -525,7 +525,7 @@ rig_undo_journal_delete_entity (RigUndoJournal *journal,
 
   undo_redo = c_slice_new (UndoRedo);
   undo_redo->op = UNDO_REDO_DELETE_ENTITY_OP;
-  undo_redo->mergable = FALSE;
+  undo_redo->mergable = false;
 
   delete_entity = &undo_redo->d.add_delete_entity;
 
@@ -548,7 +548,7 @@ rig_undo_journal_add_component (RigUndoJournal *journal,
 
   undo_redo = c_slice_new (UndoRedo);
   undo_redo->op = UNDO_REDO_ADD_COMPONENT_OP;
-  undo_redo->mergable = FALSE;
+  undo_redo->mergable = false;
 
   add_component = &undo_redo->d.add_delete_component;
 
@@ -575,7 +575,7 @@ rig_undo_journal_delete_component (RigUndoJournal *journal,
 
   undo_redo = c_slice_new (UndoRedo);
   undo_redo->op = UNDO_REDO_DELETE_COMPONENT_OP;
-  undo_redo->mergable = FALSE;
+  undo_redo->mergable = false;
 
   delete_component = &undo_redo->d.add_delete_component;
 
@@ -645,7 +645,7 @@ rig_undo_journal_log_subjournal (RigUndoJournal *journal,
 
   undo_redo = c_slice_new (UndoRedo);
   undo_redo->op = UNDO_REDO_SUBJOURNAL_OP;
-  undo_redo->mergable = FALSE;
+  undo_redo->mergable = false;
 
   undo_redo->d.subjournal = subjournal;
 
@@ -712,7 +712,7 @@ undo_redo_set_property_invert (UndoRedo *undo_redo_src)
     &undo_redo_inverse->d.set_property;
 
   undo_redo_inverse->op = undo_redo_src->op;
-  undo_redo_inverse->mergable = FALSE;
+  undo_redo_inverse->mergable = false;
 
   inverse->object = rut_object_ref (src->object);
   inverse->property = src->property;
@@ -756,7 +756,7 @@ undo_redo_set_controller_const_invert (UndoRedo *undo_redo_src)
     &undo_redo_inverse->d.set_controller_const;
 
   undo_redo_inverse->op = undo_redo_src->op;
-  undo_redo_inverse->mergable = FALSE;
+  undo_redo_inverse->mergable = false;
 
   inverse->controller = rut_object_ref (src->controller);
   inverse->object = rut_object_ref (src->object);
@@ -1105,7 +1105,7 @@ save_controller_properties (RigEngine *engine,
                             RutList *controller_properties)
 {
   CopyControllerPropertiesData copy_properties_data;
-  CList *l;
+  c_list_t *l;
 
   rut_list_init (controller_properties);
 
@@ -1666,7 +1666,7 @@ rig_undo_journal_insert (RigUndoJournal *journal,
   bool apply;
 
   c_return_if_fail (undo_redo != NULL);
-  c_return_if_fail (journal->inserting == FALSE);
+  c_return_if_fail (journal->inserting == false);
 
   if (engine->play_mode)
     {

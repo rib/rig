@@ -46,7 +46,7 @@ rotation_tool_grab_cb (RutInputEvent *event,
   if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_KEY &&
       rut_key_event_get_keysym (event) == RUT_KEY_Escape)
     {
-      tool->button_down = FALSE;
+      tool->button_down = false;
 
       rut_shell_ungrab_input (tool->view->context->shell,
                               rotation_tool_grab_cb,
@@ -113,7 +113,7 @@ rotation_tool_grab_cb (RutInputEvent *event,
                 status = RUT_INPUT_EVENT_STATUS_HANDLED;
                 event_type = RIG_ROTATION_TOOL_RELEASE;
 
-                tool->button_down = FALSE;
+                tool->button_down = false;
 
                 rut_shell_ungrab_input (tool->ctx->shell,
                                         rotation_tool_grab_cb,
@@ -177,7 +177,7 @@ on_rotation_tool_clicked (RutInputRegion *region,
 
       rut_arcball_mouse_down (&tool->arcball, x, y);
 
-      tool->button_down = TRUE;
+      tool->button_down = true;
 
       status = RUT_INPUT_EVENT_STATUS_HANDLED;
     }
@@ -264,7 +264,7 @@ tool_event_cb (RigRotationTool *tool,
         value.d.quaternion_val = *new_rotation;
 
         rig_controller_view_edit_property (engine->controller_view,
-                                           FALSE, /* mergable */
+                                           false, /* mergable */
                                            rotation_prop, &value);
       }
       break;
@@ -303,7 +303,7 @@ rig_rotation_tool_new (RigCameraView *view)
 
   tool->rotation_circle =
     rut_input_region_new_circle (0, 0, 0, on_rotation_tool_clicked, tool);
-  rut_input_region_set_hud_mode (tool->rotation_circle, TRUE);
+  rut_input_region_set_hud_mode (tool->rotation_circle, true);
 
   rig_rotation_tool_add_event_callback (tool,
                                         tool_event_cb,
