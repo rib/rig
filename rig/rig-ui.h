@@ -38,6 +38,7 @@ typedef struct _RigUI RigUI;
 #include "rut-object.h"
 #include "rig-engine.h"
 #include "rig-entity.h"
+#include "rig-controller.h"
 
 /* This structure encapsulates all the dynamic state for a UI
  *
