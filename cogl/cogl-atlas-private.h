@@ -64,7 +64,7 @@ _cogl_atlas_new (CoglContext *context,
                  CoglPixelFormat internal_format,
                  CoglAtlasFlags flags);
 
-CoglBool
+bool
 _cogl_atlas_allocate_space (CoglAtlas *atlas,
                             int width,
                             int height,

@@ -246,7 +246,7 @@ cogl_color_unpremultiply (CoglColor *color)
     }
 }
 
-CoglBool
+bool
 cogl_color_equal (const void *v1, const void *v2)
 {
   _COGL_RETURN_VAL_IF_FAIL (v1 != NULL, FALSE);

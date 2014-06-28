@@ -135,7 +135,7 @@ typedef struct _CoglGstSource
   CoglGstVideoSink *sink;
   GMutex buffer_lock;
   GstBuffer *buffer;
-  CoglBool has_new_caps;
+  bool has_new_caps;
 } CoglGstSource;
 
 typedef void (CoglGstRendererPaint) (CoglGstVideoSink *);
@@ -150,8 +150,8 @@ typedef struct _CoglGstRenderer
   int n_layers;
   void (*setup_pipeline) (CoglGstVideoSink *sink,
                           CoglPipeline *pipeline);
-  CoglBool (*upload) (CoglGstVideoSink *sink,
-                      GstBuffer *buffer);
+  bool (*upload) (CoglGstVideoSink *sink,
+                  GstBuffer *buffer);
 } CoglGstRenderer;
 
 struct _CoglGstVideoSinkPrivate
@@ -159,9 +159,9 @@ struct _CoglGstVideoSinkPrivate
   CoglContext *ctx;
   CoglPipeline *pipeline;
   CoglTexture *frame[3];
-  CoglBool frame_dirty;
+  bool frame_dirty;
   CoglGstVideoFormat format;
-  CoglBool bgr;
+  bool bgr;
   CoglGstSource *source;
   GSList *renderers;
   GstCaps *caps;
@@ -169,7 +169,7 @@ struct _CoglGstVideoSinkPrivate
   GstFlowReturn flow_return;
   int custom_start;
   int free_layer;
-  CoglBool default_sample;
+  bool default_sample;
   GstVideoInfo info;
 };
 
@@ -205,7 +205,7 @@ cogl_gst_video_sink_attach_frame (CoglGstVideoSink *sink,
                                        priv->frame[i]);
 }
 
-static CoglBool
+static gboolean
 cogl_gst_source_prepare (GSource *source,
                          int *timeout)
 {
@@ -216,7 +216,7 @@ cogl_gst_source_prepare (GSource *source,
   return gst_source->buffer != NULL;
 }
 
-static CoglBool
+static gboolean
 cogl_gst_source_check (GSource *source)
 {
   CoglGstSource *gst_source = (CoglGstSource *) source;
@@ -263,7 +263,7 @@ cogl_gst_video_sink_set_first_layer (CoglGstVideoSink *sink,
 
 void
 cogl_gst_video_sink_set_default_sample (CoglGstVideoSink *sink,
-                                        CoglBool default_sample)
+                                        bool default_sample)
 {
   g_return_if_fail (COGL_GST_IS_VIDEO_SINK (sink));
 
@@ -422,7 +422,7 @@ clear_frame_textures (CoglGstVideoSink *sink)
   priv->frame_dirty = TRUE;
 }
 
-static inline CoglBool
+static inline bool
 is_pot (unsigned int number)
 {
   /* Make sure there is only one bit set */
@@ -522,7 +522,7 @@ cogl_gst_rgb24_setup_pipeline (CoglGstVideoSink *sink,
   setup_pipeline_from_cache_entry (sink, pipeline, NULL, 1);
 }
 
-static CoglBool
+static bool
 cogl_gst_rgb24_upload (CoglGstVideoSink *sink,
                        GstBuffer *buffer)
 {
@@ -630,7 +630,7 @@ cogl_gst_rgb32_setup_pipeline (CoglGstVideoSink *sink,
   g_free(layer_combine);
 }
 
-static CoglBool
+static bool
 cogl_gst_rgb32_upload (CoglGstVideoSink *sink,
                        GstBuffer *buffer)
 {
@@ -687,7 +687,7 @@ static CoglGstRenderer rgb32_renderer =
   cogl_gst_rgb32_upload,
 };
 
-static CoglBool
+static bool
 cogl_gst_yv12_upload (CoglGstVideoSink *sink,
                       GstBuffer *buffer)
 {
@@ -732,7 +732,7 @@ map_fail:
   }
 }
 
-static CoglBool
+static bool
 cogl_gst_i420_upload (CoglGstVideoSink *sink,
                       GstBuffer *buffer)
 {
@@ -879,7 +879,7 @@ cogl_gst_ayuv_glsl_setup_pipeline (CoglGstVideoSink *sink,
   setup_pipeline_from_cache_entry (sink, pipeline, entry, 1);
 }
 
-static CoglBool
+static bool
 cogl_gst_ayuv_upload (CoglGstVideoSink *sink,
                       GstBuffer *buffer)
 {
@@ -963,7 +963,7 @@ cogl_gst_nv12_glsl_setup_pipeline (CoglGstVideoSink *sink,
   setup_pipeline_from_cache_entry (sink, pipeline, entry, 2);
 }
 
-static CoglBool
+static bool
 cogl_gst_nv12_upload (CoglGstVideoSink *sink,
                       GstBuffer *buffer)
 {
@@ -1138,16 +1138,16 @@ cogl_gst_video_sink_get_caps (GstBaseSink *bsink,
     return gst_caps_ref (sink->priv->caps);
 }
 
-static CoglBool
+static bool
 cogl_gst_video_sink_parse_caps (GstCaps *caps,
                                 CoglGstVideoSink *sink,
-                                CoglBool save)
+                                bool save)
 {
   CoglGstVideoSinkPrivate *priv = sink->priv;
   GstCaps *intersection;
   GstVideoInfo vinfo;
   CoglGstVideoFormat format;
-  CoglBool bgr = FALSE;
+  bool bgr = FALSE;
   CoglGstRenderer *renderer;
 
   intersection = gst_caps_intersect (priv->caps, caps);
@@ -1240,7 +1240,7 @@ no_suitable_renderer:
   }
 }
 
-static CoglBool
+static gboolean
 cogl_gst_video_sink_set_caps (GstBaseSink *bsink,
                               GstCaps *caps)
 {
@@ -1260,7 +1260,7 @@ cogl_gst_video_sink_set_caps (GstBaseSink *bsink,
   return TRUE;
 }
 
-static CoglBool
+static gboolean
 cogl_gst_source_dispatch (GSource *source,
                           GSourceFunc callback,
                           void *user_data)
@@ -1443,7 +1443,7 @@ cogl_gst_video_sink_finalize (GObject *object)
   G_OBJECT_CLASS (cogl_gst_video_sink_parent_class)->finalize (object);
 }
 
-static CoglBool
+static gboolean
 cogl_gst_video_sink_start (GstBaseSink *base_sink)
 {
   CoglGstVideoSink *sink = COGL_GST_VIDEO_SINK (base_sink);
@@ -1494,7 +1494,7 @@ cogl_gst_video_sink_get_property (GObject *object,
   }
 }
 
-static CoglBool
+static gboolean
 cogl_gst_video_sink_stop (GstBaseSink *base_sink)
 {
   CoglGstVideoSink *sink = COGL_GST_VIDEO_SINK (base_sink);
@@ -1708,7 +1708,7 @@ cogl_gst_video_sink_get_natural_height (CoglGstVideoSink *vt)
   return height;
 }
 
-CoglBool
+bool
 cogl_gst_video_sink_is_ready (CoglGstVideoSink *sink)
 {
   return !!sink->priv->renderer;

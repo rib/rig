@@ -58,7 +58,7 @@
 #define GL_RG8 0x822B
 #endif
 
-static CoglBool
+static bool
 _cogl_driver_pixel_format_from_gl_internal (CoglContext *context,
                                             GLenum gl_int_format,
                                             CoglPixelFormat *out_format)
@@ -213,7 +213,7 @@ _cogl_driver_pixel_format_to_gl (CoglContext *context,
   return required_format;
 }
 
-static CoglBool
+static bool
 _cogl_get_gl_version (CoglContext *ctx,
                       int *major_out,
                       int *minor_out)
@@ -232,7 +232,7 @@ _cogl_get_gl_version (CoglContext *ctx,
                                          minor_out);
 }
 
-static CoglBool
+static bool
 _cogl_driver_update_features (CoglContext *context,
                               CoglError **error)
 {

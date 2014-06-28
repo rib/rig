@@ -225,16 +225,16 @@ static CoglSubpixelOrder subpixel_map[6][6] = {
 
 static void
 update_outputs (CoglRenderer *renderer,
-                CoglBool notify)
+                bool notify)
 {
   CoglXlibRenderer *xlib_renderer =
     _cogl_xlib_renderer_get_data (renderer);
   XRRScreenResources *resources;
   CoglXlibTrapState state;
-  CoglBool error = FALSE;
+  bool error = FALSE;
   CList *new_outputs = NULL;
   CList *l, *m;
-  CoglBool changed = FALSE;
+  bool changed = FALSE;
   int i;
 
   xlib_renderer->outputs_update_serial = XNextRequest (xlib_renderer->xdpy);
@@ -499,7 +499,7 @@ dispatch_xlib_events (void *user_data, int revents)
       }
 }
 
-CoglBool
+bool
 _cogl_xlib_renderer_connect (CoglRenderer *renderer, CoglError **error)
 {
   CoglXlibRenderer *xlib_renderer =

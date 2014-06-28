@@ -117,7 +117,7 @@ typedef enum {
  * Since: 1.14
  * Stability: unstable
  */
-CoglBool
+bool
 cogl_is_output (void *object);
 
 /**

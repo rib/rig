@@ -37,9 +37,9 @@ typedef struct _CoglGLXCachedConfig
 {
   /* This will be -1 if there is no cached config in this slot */
   int depth;
-  CoglBool found;
+  bool found;
   GLXFBConfig fb_config;
-  CoglBool can_mipmap;
+  bool can_mipmap;
 } CoglGLXCachedConfig;
 
 #define COGL_GLX_N_CACHED_CONFIGS 3
@@ -48,8 +48,8 @@ typedef struct _CoglGLXDisplay
 {
   CoglGLXCachedConfig glx_cached_configs[COGL_GLX_N_CACHED_CONFIGS];
 
-  CoglBool found_fbconfig;
-  CoglBool fbconfig_has_rgba_visual;
+  bool found_fbconfig;
+  bool fbconfig_has_rgba_visual;
   GLXFBConfig fbconfig;
 
   /* Single context for all wins */

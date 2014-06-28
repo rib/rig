@@ -84,7 +84,7 @@ struct _CoglFeatureData
   const CoglFeatureFunction *functions;
 };
 
-CoglBool
+bool
 _cogl_feature_check (CoglRenderer *renderer,
                      const char *driver_prefix,
                      const CoglFeatureData *data,

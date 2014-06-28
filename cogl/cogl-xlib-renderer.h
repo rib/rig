@@ -164,7 +164,7 @@ cogl_xlib_renderer_set_foreign_display (CoglRenderer *renderer,
  */
 void
 cogl_xlib_renderer_set_event_retrieval_enabled (CoglRenderer *renderer,
-                                                CoglBool enable);
+                                                bool enable);
 
 Display *
 cogl_xlib_renderer_get_display (CoglRenderer *renderer);

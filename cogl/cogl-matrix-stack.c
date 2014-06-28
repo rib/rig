@@ -424,7 +424,7 @@ cogl_matrix_stack_pop (CoglMatrixStack *stack)
   stack->last_entry = new_top;
 }
 
-CoglBool
+bool
 cogl_matrix_stack_get_inverse (CoglMatrixStack *stack,
                                 CoglMatrix *inverse)
 {
@@ -682,7 +682,7 @@ _cogl_matrix_entry_skip_saves (CoglMatrixEntry *entry)
   return entry;
 }
 
-CoglBool
+bool
 cogl_matrix_entry_calculate_translation (CoglMatrixEntry *entry0,
                                          CoglMatrixEntry *entry1,
                                          float *x,
@@ -809,13 +809,13 @@ cogl_matrix_entry_calculate_translation (CoglMatrixEntry *entry0,
   return TRUE;
 }
 
-CoglBool
+bool
 cogl_matrix_entry_is_identity (CoglMatrixEntry *entry)
 {
   return entry ? entry->op == COGL_MATRIX_OP_LOAD_IDENTITY : FALSE;
 }
 
-CoglBool
+bool
 cogl_matrix_entry_equal (CoglMatrixEntry *entry0,
                          CoglMatrixEntry *entry1)
 {
@@ -1037,13 +1037,13 @@ _cogl_matrix_entry_cache_init (CoglMatrixEntryCache *cache)
 
 /* NB: This function can report false negatives since it never does a
  * deep comparison of the stack matrices. */
-CoglBool
+bool
 _cogl_matrix_entry_cache_maybe_update (CoglMatrixEntryCache *cache,
                                        CoglMatrixEntry *entry,
-                                       CoglBool flip)
+                                       bool flip)
 {
-  CoglBool is_identity;
-  CoglBool updated = FALSE;
+  bool is_identity;
+  bool updated = FALSE;
 
   if (cache->flipped != flip)
     {

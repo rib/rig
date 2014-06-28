@@ -68,7 +68,7 @@ cogl_error_copy (CoglError *error)
   return (CoglError *)_real_error_copy ((_RealError *)error);
 }
 
-CoglBool
+bool
 cogl_error_matches (CoglError *error,
                     uint32_t domain,
                     int code)

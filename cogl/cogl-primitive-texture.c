@@ -37,7 +37,7 @@
 #include "cogl-primitive-texture.h"
 #include "cogl-texture-private.h"
 
-CoglBool
+bool
 cogl_is_primitive_texture (void *object)
 {
   return (cogl_is_texture (object) &&
@@ -46,7 +46,7 @@ cogl_is_primitive_texture (void *object)
 
 void
 cogl_primitive_texture_set_auto_mipmap (CoglPrimitiveTexture *primitive_texture,
-                                        CoglBool value)
+                                        bool value)
 {
   CoglTexture *texture;
 

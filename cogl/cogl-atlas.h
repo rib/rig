@@ -108,7 +108,7 @@ void
 cogl_atlas_remove_post_reorganize_callback (CoglAtlas *atlas,
                                             CoglAtlasReorganizeClosure *closure);
 
-CoglBool
+bool
 cogl_is_atlas (void *object);
 
 #endif /* _COGL_ATLAS_H_ */

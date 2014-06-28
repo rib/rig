@@ -111,7 +111,7 @@ _cogl_texture_3d_free (CoglTexture3D *tex_3d)
 
 static void
 _cogl_texture_3d_set_auto_mipmap (CoglTexture *tex,
-                                  CoglBool value)
+                                  bool value)
 {
   CoglTexture3D *tex_3d = COGL_TEXTURE_3D (tex);
 
@@ -283,7 +283,7 @@ cogl_texture_3d_new_from_data (CoglContext *context,
   return ret;
 }
 
-static CoglBool
+static bool
 _cogl_texture_3d_can_create (CoglContext *ctx,
                              int width,
                              int height,
@@ -344,7 +344,7 @@ _cogl_texture_3d_can_create (CoglContext *ctx,
   return TRUE;
 }
 
-static CoglBool
+static bool
 allocate_with_size (CoglTexture3D *tex_3d,
                     CoglTextureLoader *loader,
                     CoglError **error)
@@ -409,7 +409,7 @@ allocate_with_size (CoglTexture3D *tex_3d,
   return TRUE;
 }
 
-static CoglBool
+static bool
 allocate_from_bitmap (CoglTexture3D *tex_3d,
                       CoglTextureLoader *loader,
                       CoglError **error)
@@ -422,7 +422,7 @@ allocate_from_bitmap (CoglTexture3D *tex_3d,
   int height = loader->src.bitmap.height;
   int depth = loader->src.bitmap.depth;
   CoglPixelFormat bmp_format = cogl_bitmap_get_format (bmp);
-  CoglBool can_convert_in_place = loader->src.bitmap.can_convert_in_place;
+  bool can_convert_in_place = loader->src.bitmap.can_convert_in_place;
   CoglBitmap *upload_bmp;
   CoglPixelFormat upload_format;
   GLenum gl_intformat;
@@ -518,7 +518,7 @@ allocate_from_bitmap (CoglTexture3D *tex_3d,
   return TRUE;
 }
 
-static CoglBool
+static bool
 _cogl_texture_3d_allocate (CoglTexture *tex,
                            CoglError **error)
 {
@@ -540,13 +540,13 @@ _cogl_texture_3d_allocate (CoglTexture *tex,
   c_return_val_if_reached (FALSE);
 }
 
-static CoglBool
+static bool
 _cogl_texture_3d_is_sliced (CoglTexture *tex)
 {
   return FALSE;
 }
 
-static CoglBool
+static bool
 _cogl_texture_3d_can_hardware_repeat (CoglTexture *tex)
 {
   return TRUE;
@@ -568,7 +568,7 @@ _cogl_texture_3d_transform_quad_coords_to_gl (CoglTexture *tex,
   /* The texture coordinates map directly so we don't need to do
      anything other than check for repeats */
 
-  CoglBool need_repeat = FALSE;
+  bool need_repeat = FALSE;
   int i;
 
   for (i = 0; i < 4; i++)
@@ -579,7 +579,7 @@ _cogl_texture_3d_transform_quad_coords_to_gl (CoglTexture *tex,
           : COGL_TRANSFORM_NO_REPEAT);
 }
 
-static CoglBool
+static bool
 _cogl_texture_3d_get_gl_texture (CoglTexture *tex,
                                  GLuint *out_gl_handle,
                                  GLenum *out_gl_target)
@@ -645,7 +645,7 @@ _cogl_texture_3d_ensure_non_quad_rendering (CoglTexture *tex)
   /* Nothing needs to be done */
 }
 
-static CoglBool
+static bool
 _cogl_texture_3d_set_region (CoglTexture *tex,
                              int src_x,
                              int src_y,

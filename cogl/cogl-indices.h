@@ -143,7 +143,7 @@ cogl_get_rectangle_indices (CoglContext *context, int n_rectangles);
  * Since: 1.10
  * Stability: unstable
  */
-CoglBool
+bool
 cogl_is_indices (void *object);
 
 COGL_END_DECLS

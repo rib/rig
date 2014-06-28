@@ -120,7 +120,7 @@ typedef struct _CoglJournalFlushState
 typedef void (*CoglJournalBatchCallback) (CoglJournalEntry *start,
                                           int n_entries,
                                           void *data);
-typedef CoglBool (*CoglJournalBatchTest) (CoglJournalEntry *entry0,
+typedef bool (*CoglJournalBatchTest) (CoglJournalEntry *entry0,
                                           CoglJournalEntry *entry1);
 
 static void _cogl_journal_free (CoglJournal *journal);
@@ -403,7 +403,7 @@ _cogl_journal_flush_modelview_and_entries (CoglJournalEntry *batch_start,
   COGL_TIMER_STOP (_cogl_uprof_context, time_flush_modelview_and_entries);
 }
 
-static CoglBool
+static bool
 compare_entry_modelviews (CoglJournalEntry *entry0,
                           CoglJournalEntry *entry1)
 {
@@ -448,7 +448,7 @@ _cogl_journal_flush_pipeline_and_entries (CoglJournalEntry *batch_start,
   COGL_TIMER_STOP (_cogl_uprof_context, time_flush_pipeline_entries);
 }
 
-static CoglBool
+static bool
 compare_entry_pipelines (CoglJournalEntry *entry0, CoglJournalEntry *entry1)
 {
   /* batch rectangles using compatible pipelines */
@@ -470,7 +470,7 @@ typedef struct _CreateAttributeState
   CoglJournalFlushState *flush_state;
 } CreateAttributeState;
 
-static CoglBool
+static bool
 create_attribute_cb (CoglPipeline *pipeline,
                      int layer_number,
                      void *user_data)
@@ -568,7 +568,7 @@ _cogl_journal_flush_texcoord_vbo_offsets_and_entries (
   COGL_TIMER_STOP (_cogl_uprof_context, time_flush_texcoord_pipeline_entries);
 }
 
-static CoglBool
+static bool
 compare_entry_layer_numbers (CoglJournalEntry *entry0, CoglJournalEntry *entry1)
 {
   if (_cogl_pipeline_layer_numbers_equal (entry0->pipeline, entry1->pipeline))
@@ -682,7 +682,7 @@ _cogl_journal_flush_vbo_offsets_and_entries (CoglJournalEntry *batch_start,
                    time_flush_vbo_texcoord_pipeline_entries);
 }
 
-static CoglBool
+static bool
 compare_entry_strides (CoglJournalEntry *entry0, CoglJournalEntry *entry1)
 {
   /* Currently the only thing that affects the stride for our vertex arrays
@@ -762,7 +762,7 @@ typedef struct
   float x_2, y_2;
 } ClipBounds;
 
-static CoglBool
+static bool
 can_software_clip_entry (CoglJournalEntry *journal_entry,
                          CoglJournalEntry *prev_journal_entry,
                          CoglClipStack *clip_stack,
@@ -1029,7 +1029,7 @@ _cogl_journal_maybe_software_clip_entries (CoglJournalEntry *batch_start,
                    time_check_software_clip);
 }
 
-static CoglBool
+static bool
 compare_entry_clip_stacks (CoglJournalEntry *entry0, CoglJournalEntry *entry1)
 {
   return entry0->clip_stack == entry1->clip_stack;
@@ -1200,7 +1200,7 @@ _cogl_journal_discard (CoglJournal *journal)
 
 /* Note: A return value of FALSE doesn't mean 'no' it means
  * 'unknown' */
-CoglBool
+bool
 _cogl_journal_all_entries_within_bounds (CoglJournal *journal,
                                          float clip_x0,
                                          float clip_y0,
@@ -1245,7 +1245,7 @@ _cogl_journal_all_entries_within_bounds (CoglJournal *journal,
    */
   for (i = 1; i < journal->entries->len; i++)
     {
-      CoglBool found_reference = FALSE;
+      bool found_reference = FALSE;
       entry = &c_array_index (journal->entries, CoglJournalEntry, i);
 
       for (clip_entry = entry->clip_stack;
@@ -1407,7 +1407,7 @@ _cogl_journal_flush (CoglJournal *journal)
   COGL_TIMER_STOP (_cogl_uprof_context, flush_timer);
 }
 
-static CoglBool
+static bool
 add_framebuffer_deps_cb (CoglPipelineLayer *layer, void *user_data)
 {
   CoglFramebuffer *framebuffer = user_data;
@@ -1655,16 +1655,16 @@ entry_to_screen_polygon (CoglFramebuffer *framebuffer,
 #undef VIEWPORT_TRANSFORM_Y
 }
 
-static CoglBool
+static bool
 try_checking_point_hits_entry_after_clipping (CoglFramebuffer *framebuffer,
                                               CoglJournalEntry *entry,
                                               float *vertices,
                                               float x,
                                               float y,
-                                              CoglBool *hit)
+                                              bool *hit)
 {
-  CoglBool can_software_clip = TRUE;
-  CoglBool needs_software_clip = FALSE;
+  bool can_software_clip = TRUE;
+  bool needs_software_clip = FALSE;
   CoglClipStack *clip_entry;
 
   *hit = TRUE;
@@ -1728,12 +1728,12 @@ try_checking_point_hits_entry_after_clipping (CoglFramebuffer *framebuffer,
   return TRUE;
 }
 
-CoglBool
+bool
 _cogl_journal_try_read_pixel (CoglJournal *journal,
                               int x,
                               int y,
                               CoglBitmap *bitmap,
-                              CoglBool *found_intersection)
+                              bool *found_intersection)
 {
   CoglContext *ctx;
   CoglPixelFormat format;
@@ -1786,7 +1786,7 @@ _cogl_journal_try_read_pixel (CoglJournal *journal,
 
       if (entry->clip_stack)
         {
-          CoglBool hit;
+          bool hit;
 
           if (!try_checking_point_hits_entry_after_clipping (framebuffer,
                                                              entry,

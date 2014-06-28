@@ -455,7 +455,7 @@ cogl_onscreen_remove_frame_callback (CoglOnscreen *onscreen,
 
 void
 cogl_onscreen_set_swap_throttled (CoglOnscreen *onscreen,
-                                  CoglBool throttled)
+                                  bool throttled)
 {
   CoglFramebuffer *framebuffer = COGL_FRAMEBUFFER (onscreen);
   framebuffer->config.swap_throttled = throttled;
@@ -541,7 +541,7 @@ _cogl_framebuffer_winsys_update_size (CoglFramebuffer *framebuffer,
 
 void
 cogl_onscreen_set_resizable (CoglOnscreen *onscreen,
-                             CoglBool resizable)
+                             bool resizable)
 {
   CoglFramebuffer *framebuffer;
   const CoglWinsysVtable *winsys;
@@ -561,7 +561,7 @@ cogl_onscreen_set_resizable (CoglOnscreen *onscreen,
     }
 }
 
-CoglBool
+bool
 cogl_onscreen_get_resizable (CoglOnscreen *onscreen)
 {
   return onscreen->resizable;

@@ -56,7 +56,7 @@
 #include "cogl-private.h"
 #include "cogl-offscreen.h"
 
-CoglBool
+bool
 _cogl_check_extension (const char *name, char * const *ext)
 {
   while (*ext)
@@ -68,13 +68,13 @@ _cogl_check_extension (const char *name, char * const *ext)
   return FALSE;
 }
 
-CoglBool
+bool
 cogl_has_feature (CoglContext *ctx, CoglFeatureID feature)
 {
   return COGL_FLAGS_GET (ctx->features, feature);
 }
 
-CoglBool
+bool
 cogl_has_features (CoglContext *ctx, ...)
 {
   va_list args;
@@ -164,7 +164,7 @@ _cogl_system_error_domain (void)
 void
 _cogl_init (void)
 {
-  static CoglBool initialized = FALSE;
+  static bool initialized = FALSE;
 
   if (initialized == FALSE)
     {
@@ -185,7 +185,7 @@ _cogl_pixel_format_get_bytes_per_pixel (CoglPixelFormat format)
   return format & COGL_PIXEL_FORMAT_BPP_MASK;
 }
 
-CoglBool
+bool
 _cogl_pixel_format_is_endian_dependant (CoglPixelFormat format)
 {
   return !(format & COGL_BITWISE_BIT);

@@ -61,7 +61,7 @@ struct _CoglAtlasTexture
   CoglTexture          *sub_texture;
 };
 
-CoglBool
+bool
 _cogl_is_atlas_texture (void *object);
 
 void

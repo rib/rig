@@ -386,7 +386,7 @@ _cogl_atlas_compare_size_cb (const void *a,
   return a_size < b_size ? 1 : a_size > b_size ? -1 : 0;
 }
 
-CoglBool
+bool
 _cogl_atlas_allocate_space (CoglAtlas *atlas,
                             int width,
                             int height,
@@ -396,7 +396,7 @@ _cogl_atlas_allocate_space (CoglAtlas *atlas,
   CoglRectangleMap *new_map;
   CoglTexture2D *new_tex;
   int map_width, map_height;
-  CoglBool ret;
+  bool ret;
   CoglAtlasAllocation new_allocation;
 
   /* Check if we can fit the rectangle into the existing map */

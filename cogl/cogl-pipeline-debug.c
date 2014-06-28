@@ -50,7 +50,7 @@ typedef struct
   int indent;
 } PrintDebugState;
 
-static CoglBool
+static bool
 dump_layer_cb (CoglNode *node, void *user_data)
 {
   CoglPipelineLayer *layer = COGL_PIPELINE_LAYER (node);
@@ -58,7 +58,7 @@ dump_layer_cb (CoglNode *node, void *user_data)
   int layer_id = *state->node_id_ptr;
   PrintDebugState state_out;
   CString *changes_label;
-  CoglBool changes = FALSE;
+  bool changes = FALSE;
 
   if (state->parent_id >= 0)
     c_string_append_printf (state->graph, "%*slayer%p -> layer%p;\n",
@@ -123,7 +123,7 @@ dump_layer_cb (CoglNode *node, void *user_data)
   return TRUE;
 }
 
-static CoglBool
+static bool
 dump_layer_ref_cb (CoglPipelineLayer *layer, void *data)
 {
   PrintDebugState *state = data;
@@ -138,7 +138,7 @@ dump_layer_ref_cb (CoglPipelineLayer *layer, void *data)
   return TRUE;
 }
 
-static CoglBool
+static bool
 dump_pipeline_cb (CoglNode *node, void *user_data)
 {
   CoglPipeline *pipeline = COGL_PIPELINE (node);
@@ -146,8 +146,8 @@ dump_pipeline_cb (CoglNode *node, void *user_data)
   int pipeline_id = *state->node_id_ptr;
   PrintDebugState state_out;
   CString *changes_label;
-  CoglBool changes = FALSE;
-  CoglBool layers = FALSE;
+  bool changes = FALSE;
+  bool layers = FALSE;
 
   if (state->parent_id >= 0)
     c_string_append_printf (state->graph, "%*spipeline%d -> pipeline%d;\n",

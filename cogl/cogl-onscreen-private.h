@@ -77,11 +77,11 @@ struct _CoglOnscreen
   struct wl_surface *foreign_surface;
 #endif
 
-  CoglBool swap_throttled;
+  bool swap_throttled;
 
   CoglList frame_closures;
 
-  CoglBool resizable;
+  bool resizable;
   CoglList resize_closures;
 
   CoglList dirty_closures;

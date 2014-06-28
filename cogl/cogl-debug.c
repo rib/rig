@@ -92,7 +92,7 @@ CHashTable *_cogl_debug_instances;
 
 static void
 _cogl_parse_debug_string_for_keys (const char *value,
-                                   CoglBool enable,
+                                   bool enable,
                                    const CDebugKey *keys,
                                    unsigned int nkeys)
 {
@@ -150,8 +150,8 @@ _cogl_parse_debug_string_for_keys (const char *value,
 
 void
 _cogl_parse_debug_string (const char *value,
-                          CoglBool enable,
-                          CoglBool ignore_help)
+                          bool enable,
+                          bool ignore_help)
 {
   if (ignore_help && strcmp (value, "help") == 0)
     return;

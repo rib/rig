@@ -421,11 +421,11 @@ typedef struct _CoglPipelineFragend
   void (*start) (CoglPipeline *pipeline,
                  int n_layers,
                  unsigned long pipelines_difference);
-  CoglBool (*add_layer) (CoglPipeline *pipeline,
+  bool (*add_layer) (CoglPipeline *pipeline,
                          CoglPipelineLayer *layer,
                          unsigned long layers_difference);
-  CoglBool (*passthrough) (CoglPipeline *pipeline);
-  CoglBool (*end) (CoglPipeline *pipeline,
+  bool (*passthrough) (CoglPipeline *pipeline);
+  bool (*end) (CoglPipeline *pipeline,
                    unsigned long pipelines_difference);
 
   void (*pipeline_pre_change_notify) (CoglPipeline *pipeline,
@@ -442,11 +442,11 @@ typedef struct _CoglPipelineVertend
   void (*start) (CoglPipeline *pipeline,
                  int n_layers,
                  unsigned long pipelines_difference);
-  CoglBool (*add_layer) (CoglPipeline *pipeline,
+  bool (*add_layer) (CoglPipeline *pipeline,
                          CoglPipelineLayer *layer,
                          unsigned long layers_difference,
                          CoglFramebuffer *framebuffer);
-  CoglBool (*end) (CoglPipeline *pipeline,
+  bool (*end) (CoglPipeline *pipeline,
                    unsigned long pipelines_difference);
 
   void (*pipeline_pre_change_notify) (CoglPipeline *pipeline,
@@ -461,7 +461,7 @@ typedef struct
 {
   int vertend;
   int fragend;
-  CoglBool (*start) (CoglPipeline *pipeline);
+  bool (*start) (CoglPipeline *pipeline);
   void (*end) (CoglPipeline *pipeline,
                unsigned long pipelines_difference);
   void (*pipeline_pre_change_notify) (CoglPipeline *pipeline,
@@ -509,7 +509,7 @@ _cogl_pipeline_get_authority (CoglPipeline *pipeline,
   return authority;
 }
 
-typedef CoglBool (*CoglPipelineStateComparitor) (CoglPipeline *authority0,
+typedef bool (*CoglPipelineStateComparitor) (CoglPipeline *authority0,
                                                  CoglPipeline *authority1);
 
 void
@@ -522,14 +522,14 @@ void
 _cogl_pipeline_pre_change_notify (CoglPipeline     *pipeline,
                                   CoglPipelineState change,
                                   const CoglColor  *new_color,
-                                  CoglBool          from_layer_change);
+                                  bool          from_layer_change);
 
 void
 _cogl_pipeline_prune_redundant_ancestry (CoglPipeline *pipeline);
 
 void
 _cogl_pipeline_update_real_blend_enable (CoglPipeline *pipeline,
-                                         CoglBool unknown_color_alpha);
+                                         bool unknown_color_alpha);
 
 typedef enum
 {
@@ -544,7 +544,7 @@ _cogl_pipeline_get_layer_with_flags (CoglPipeline *pipeline,
 #define _cogl_pipeline_get_layer(p, l) \
   _cogl_pipeline_get_layer_with_flags (p, l, 0)
 
-CoglBool
+bool
 _cogl_is_pipeline_layer (void *object);
 
 void
@@ -562,7 +562,7 @@ _cogl_pipeline_prune_empty_layer_difference (CoglPipeline *layers_authority,
  * able to fill your geometry according to a given Cogl pipeline.
  */
 
-CoglBool
+bool
 _cogl_pipeline_get_real_blend_enabled (CoglPipeline *pipeline);
 
 /*
@@ -753,7 +753,7 @@ unsigned long
 _cogl_pipeline_compare_differences (CoglPipeline *pipeline0,
                                     CoglPipeline *pipeline1);
 
-CoglBool
+bool
 _cogl_pipeline_equal (CoglPipeline *pipeline0,
                       CoglPipeline *pipeline1,
                       unsigned int differences,
@@ -813,12 +813,12 @@ _cogl_pipeline_get_authority (CoglPipeline *pipeline,
 void
 _cogl_pipeline_add_layer_difference (CoglPipeline *pipeline,
                                      CoglPipelineLayer *layer,
-                                     CoglBool inc_n_layers);
+                                     bool inc_n_layers);
 
 void
 _cogl_pipeline_remove_layer_difference (CoglPipeline *pipeline,
                                         CoglPipelineLayer *layer,
-                                        CoglBool dec_n_layers);
+                                        bool dec_n_layers);
 
 CoglPipeline *
 _cogl_pipeline_find_equivalent_parent (CoglPipeline *pipeline,
@@ -838,7 +838,7 @@ _cogl_pipeline_prune_to_n_layers (CoglPipeline *pipeline, int n);
  * API to support the deprecate cogl_pipeline_layer_xyz functions...
  */
 
-typedef CoglBool (*CoglPipelineInternalLayerCallback) (CoglPipelineLayer *layer,
+typedef bool (*CoglPipelineInternalLayerCallback) (CoglPipelineLayer *layer,
                                                        void *user_data);
 
 void
@@ -846,11 +846,11 @@ _cogl_pipeline_foreach_layer_internal (CoglPipeline *pipeline,
                                        CoglPipelineInternalLayerCallback callback,
                                        void *user_data);
 
-CoglBool
+bool
 _cogl_pipeline_layer_numbers_equal (CoglPipeline *pipeline0,
                                     CoglPipeline *pipeline1);
 
-CoglBool
+bool
 _cogl_pipeline_need_texture_combine_separate
                                     (CoglPipelineLayer *combine_authority);
 

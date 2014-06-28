@@ -95,7 +95,7 @@ typedef struct _CoglRenderer CoglRenderer;
  * Since: 1.10
  * Stability: unstable
  */
-CoglBool
+bool
 cogl_is_renderer (void *object);
 
 /**
@@ -237,7 +237,7 @@ cogl_renderer_get_n_fragment_texture_units (CoglRenderer *renderer);
  * Since: 1.10
  * Stability: unstable
  */
-CoglBool
+bool
 cogl_renderer_check_onscreen_template (CoglRenderer *renderer,
                                        CoglOnscreenTemplate *onscreen_template,
                                        CoglError **error);
@@ -259,7 +259,7 @@ cogl_renderer_check_onscreen_template (CoglRenderer *renderer,
  * Since: 1.10
  * Stability: unstable
  */
-CoglBool
+bool
 cogl_renderer_connect (CoglRenderer *renderer, CoglError **error);
 
 /**

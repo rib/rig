@@ -56,11 +56,11 @@ typedef struct _ForeachChangedBitState
   CoglPipeline *pipeline;
 } ForeachChangedBitState;
 
-static CoglBool
+static bool
 toggle_custom_attribute_enabled_cb (int bit_num, void *user_data)
 {
   ForeachChangedBitState *state = user_data;
-  CoglBool enabled = _cogl_bitmask_get (state->new_bits, bit_num);
+  bool enabled = _cogl_bitmask_get (state->new_bits, bit_num);
   CoglContext *context = state->context;
 
   if (enabled)
@@ -192,8 +192,8 @@ _cogl_gl_flush_attributes_state (CoglFramebuffer *framebuffer,
 {
   CoglContext *ctx = framebuffer->context;
   int i;
-  CoglBool with_color_attrib = FALSE;
-  CoglBool unknown_color_alpha = FALSE;
+  bool with_color_attrib = FALSE;
+  bool unknown_color_alpha = FALSE;
   CoglPipeline *copy = NULL;
 
   /* Iterate the attributes to see if we have a color attribute which

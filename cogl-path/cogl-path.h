@@ -103,7 +103,7 @@ cogl_path_copy (CoglPath *path);
  *
  * Since: 2.0
  */
-CoglBool
+bool
 cogl_is_path (void *object);
 
 /**

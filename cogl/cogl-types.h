@@ -36,6 +36,7 @@
 #define __COGL_TYPES_H__
 
 #include <stdint.h>
+#include <stdbool.h>
 #include <stddef.h>
 
 #include <cogl/cogl-defines.h>
@@ -57,44 +58,6 @@ COGL_BEGIN_DECLS
  *
  * General types used by various Cogl functions.
 */
-
-/**
- * CoglBool:
- *
- * A boolean data type used throughout the Cogl C api. This should be
- * used in conjunction with the %TRUE and %FALSE macro defines for
- * setting and testing boolean values.
- *
- * Since: 2.0
- * Stability: stable
- */
-typedef int CoglBool;
-
-/**
- * TRUE:
- *
- * A constant to be used with #CoglBool types to indicate a boolean in
- * the "true" state.
- *
- * Since: 2.0
- * Stability: stable
- */
-#ifndef TRUE
-#define TRUE 1
-#endif
-
-/**
- * FALSE:
- *
- * A constant to be used with #CoglBool types to indicate a boolean in
- * the "false" state.
- *
- * Since: 2.0
- * Stability: stable
- */
-#ifndef FALSE
-#define FALSE 0
-#endif
 
 #if __GNUC__ >= 4
 #define COGL_GNUC_NULL_TERMINATED __attribute__((__sentinel__))

@@ -49,7 +49,7 @@ typedef struct _CoglPangoDisplayListRectangle CoglPangoDisplayListRectangle;
 
 struct _CoglPangoDisplayList
 {
-  CoglBool                color_override;
+  bool                color_override;
   CoglColor               color;
   GSList                 *nodes;
   GSList                 *last_node;
@@ -67,7 +67,7 @@ struct _CoglPangoDisplayListNode
 {
   CoglPangoDisplayListNodeType type;
 
-  CoglBool color_override;
+  bool color_override;
   CoglColor color;
 
   CoglPipeline *pipeline;
@@ -275,7 +275,7 @@ emit_vertex_buffer_geometry (CoglFramebuffer *fb,
       CoglAttributeBuffer *buffer;
       CoglVertexP2T2 *verts, *v;
       int n_verts;
-      CoglBool allocated = FALSE;
+      bool allocated = FALSE;
       CoglAttribute *attributes[2];
       CoglPrimitive *prim;
       int i;

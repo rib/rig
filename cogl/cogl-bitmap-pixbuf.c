@@ -46,7 +46,7 @@
 
 #ifdef USE_QUARTZ
 
-CoglBool
+bool
 _cogl_bitmap_get_size_from_file (const char *filename,
                                  int        *width,
                                  int        *height)
@@ -176,7 +176,7 @@ _cogl_bitmap_from_file (CoglContext *ctx,
 
 #elif defined(USE_GDKPIXBUF)
 
-CoglBool
+bool
 _cogl_bitmap_get_size_from_file (const char *filename,
                                  int        *width,
                                  int        *height)
@@ -196,7 +196,7 @@ _cogl_bitmap_from_file (CoglContext *ctx,
 {
   static CoglUserDataKey pixbuf_key;
   GdkPixbuf *pixbuf;
-  CoglBool has_alpha;
+  bool has_alpha;
   GdkColorspace color_space;
   CoglPixelFormat pixel_format;
   int width;
@@ -273,7 +273,7 @@ _cogl_bitmap_from_file (CoglContext *ctx,
 
 #include "stb_image.c"
 
-CoglBool
+bool
 _cogl_bitmap_get_size_from_file (const char *filename,
                                  int        *width,
                                  int        *height)

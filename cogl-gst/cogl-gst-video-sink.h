@@ -216,7 +216,7 @@ cogl_gst_video_sink_new (CoglContext *ctx);
  * Return value: %TRUE if the sink is ready, else %FALSE
  * Since: 1.16
  */
-CoglBool
+bool
 cogl_gst_video_sink_is_ready (CoglGstVideoSink *sink);
 
 /**
@@ -337,7 +337,7 @@ cogl_gst_video_sink_set_first_layer (CoglGstVideoSink *sink,
  */
 void
 cogl_gst_video_sink_set_default_sample (CoglGstVideoSink *sink,
-                                        CoglBool default_sample);
+                                        bool default_sample);
 
 /**
  * cogl_gst_video_sink_setup_pipeline:

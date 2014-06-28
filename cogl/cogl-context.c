@@ -506,7 +506,7 @@ cogl_egl_context_get_egl_display (CoglContext *context)
 }
 #endif
 
-CoglBool
+bool
 _cogl_context_update_features (CoglContext *context,
                                CoglError **error)
 {

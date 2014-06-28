@@ -46,14 +46,14 @@ static const CoglWinsysEGLVtable _cogl_winsys_egl_vtable;
 
 typedef struct _CoglRendererGDL
 {
-  CoglBool gdl_initialized;
+  bool gdl_initialized;
 } CoglRendererGDL;
 
 typedef struct _CoglDisplayGDL
 {
   int egl_surface_width;
   int egl_surface_height;
-  CoglBool have_onscreen;
+  bool have_onscreen;
 } CoglDisplayGDL;
 
 static void
@@ -70,7 +70,7 @@ _cogl_winsys_renderer_disconnect (CoglRenderer *renderer)
   c_slice_free (CoglRendererEGL, egl_renderer);
 }
 
-static CoglBool
+static bool
 _cogl_winsys_renderer_connect (CoglRenderer *renderer,
                                CoglError **error)
 {
@@ -123,7 +123,7 @@ error:
   return FALSE;
 }
 
-static CoglBool
+static bool
 _cogl_winsys_egl_context_created (CoglDisplay *display,
                                   CoglError **error)
 {
@@ -173,10 +173,10 @@ _cogl_winsys_egl_context_created (CoglDisplay *display,
   return FALSE;
 }
 
-static CoglBool
+static bool
 gdl_plane_init (CoglDisplay *display, CoglError **error)
 {
-  CoglBool ret = TRUE;
+  bool ret = TRUE;
   gdl_color_space_t colorSpace = GDL_COLOR_SPACE_RGB;
   gdl_pixel_format_t pixfmt = GDL_PF_ARGB_32;
   gdl_rectangle_t dstRect;
@@ -248,7 +248,7 @@ gdl_plane_init (CoglDisplay *display, CoglError **error)
   return ret;
 }
 
-static CoglBool
+static bool
 _cogl_winsys_egl_display_setup (CoglDisplay *display,
                                 CoglError **error)
 {
@@ -286,7 +286,7 @@ _cogl_winsys_egl_cleanup_context (CoglDisplay *display)
     }
 }
 
-static CoglBool
+static bool
 _cogl_winsys_egl_onscreen_init (CoglOnscreen *onscreen,
                                 EGLConfig egl_config,
                                 CoglError **error)
@@ -346,7 +346,7 @@ _cogl_winsys_egl_vtable =
 const CoglWinsysVtable *
 _cogl_winsys_egl_gdl_get_vtable (void)
 {
-  static CoglBool vtable_inited = FALSE;
+  static bool vtable_inited = FALSE;
   static CoglWinsysVtable vtable;
 
   if (!vtable_inited)

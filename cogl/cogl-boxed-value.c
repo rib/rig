@@ -38,7 +38,7 @@
 #include "cogl-context-private.h"
 #include "cogl-util-gl-private.h"
 
-CoglBool
+bool
 _cogl_boxed_value_equal (const CoglBoxedValue *bva,
                          const CoglBoxedValue *bvb)
 {
@@ -136,7 +136,7 @@ _cogl_boxed_value_set_x (CoglBoxedValue *bv,
                          CoglBoxedType type,
                          size_t value_size,
                          const void *value,
-                         CoglBool transpose)
+                         bool transpose)
 {
   if (count == 1)
     {
@@ -231,7 +231,7 @@ void
 _cogl_boxed_value_set_matrix (CoglBoxedValue *bv,
                               int dimensions,
                               int count,
-                              CoglBool transpose,
+                              bool transpose,
                               const float *value)
 {
   _cogl_boxed_value_set_x (bv,

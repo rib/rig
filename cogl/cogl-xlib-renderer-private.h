@@ -61,7 +61,7 @@ typedef struct _CoglXlibRenderer
   unsigned long outputs_update_serial;
 } CoglXlibRenderer;
 
-CoglBool
+bool
 _cogl_xlib_renderer_connect (CoglRenderer *renderer, CoglError **error);
 
 void

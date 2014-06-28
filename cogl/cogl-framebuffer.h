@@ -118,7 +118,7 @@ COGL_BEGIN_DECLS
  * Since: 1.8
  * Stability: unstable
  */
-CoglBool
+bool
 cogl_framebuffer_allocate (CoglFramebuffer *framebuffer,
                            CoglError **error);
 
@@ -732,7 +732,7 @@ cogl_framebuffer_get_depth_bits (CoglFramebuffer *framebuffer);
  * Since: 1.8
  * Stability: unstable
  */
-CoglBool
+bool
 cogl_framebuffer_get_dither_enabled (CoglFramebuffer *framebuffer);
 
 /**
@@ -759,7 +759,7 @@ cogl_framebuffer_get_dither_enabled (CoglFramebuffer *framebuffer);
  */
 void
 cogl_framebuffer_set_dither_enabled (CoglFramebuffer *framebuffer,
-                                     CoglBool dither_enabled);
+                                     bool dither_enabled);
 
 /**
  * cogl_framebuffer_get_depth_write_enabled:
@@ -772,7 +772,7 @@ cogl_framebuffer_set_dither_enabled (CoglFramebuffer *framebuffer,
  * Since: 1.18
  * Stability: unstable
  */
-CoglBool
+bool
 cogl_framebuffer_get_depth_write_enabled (CoglFramebuffer *framebuffer);
 
 /**
@@ -792,7 +792,7 @@ cogl_framebuffer_get_depth_write_enabled (CoglFramebuffer *framebuffer);
  */
 void
 cogl_framebuffer_set_depth_write_enabled (CoglFramebuffer *framebuffer,
-                                          CoglBool depth_write_enabled);
+                                          bool depth_write_enabled);
 
 /**
  * cogl_framebuffer_get_color_mask:
@@ -861,7 +861,7 @@ cogl_framebuffer_get_color_format (CoglFramebuffer *framebuffer);
  */
 void
 cogl_framebuffer_set_depth_texture_enabled (CoglFramebuffer *framebuffer,
-                                            CoglBool enabled);
+                                            bool enabled);
 
 /**
  * cogl_framebuffer_get_depth_texture_enabled:
@@ -875,7 +875,7 @@ cogl_framebuffer_set_depth_texture_enabled (CoglFramebuffer *framebuffer,
  *
  * Since: 2.0
  */
-CoglBool
+bool
 cogl_framebuffer_get_depth_texture_enabled (CoglFramebuffer *framebuffer);
 
 /**
@@ -1443,7 +1443,7 @@ cogl_framebuffer_finish (CoglFramebuffer *framebuffer);
  * Since: 1.10
  * Stability: unstable
  */
-CoglBool
+bool
 cogl_framebuffer_read_pixels_into_bitmap (CoglFramebuffer *framebuffer,
                                           int x,
                                           int y,
@@ -1490,7 +1490,7 @@ cogl_framebuffer_read_pixels_into_bitmap (CoglFramebuffer *framebuffer,
  * Since: 1.10
  * Stability: unstable
  */
-CoglBool
+bool
 cogl_framebuffer_read_pixels (CoglFramebuffer *framebuffer,
                               int x,
                               int y,
@@ -1537,7 +1537,7 @@ typedef enum { /*< prefix=COGL_FRAMEBUFFER_ERROR >*/
  * Since: 1.10
  * Stability: unstable
  */
-CoglBool
+bool
 cogl_is_framebuffer (void *object);
 
 COGL_END_DECLS

@@ -12,7 +12,7 @@
 
 UProfContext *_cogl_uprof_context;
 
-static CoglBool
+static bool
 debug_option_getter (void *user_data)
 {
   unsigned int shift = GPOINTER_TO_UINT (user_data);
@@ -20,7 +20,7 @@ debug_option_getter (void *user_data)
 }
 
 static void
-debug_option_setter (CoglBool value, void *user_data)
+debug_option_setter (bool value, void *user_data)
 {
   unsigned int shift = GPOINTER_TO_UINT (user_data);
 

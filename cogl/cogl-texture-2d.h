@@ -71,7 +71,7 @@ typedef struct _CoglTexture2D CoglTexture2D;
  * Return value: %TRUE if the object references a #CoglTexture2D,
  *   %FALSE otherwise
  */
-CoglBool
+bool
 cogl_is_texture_2d (void *object);
 
 /**

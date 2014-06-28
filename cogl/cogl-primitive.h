@@ -844,7 +844,7 @@ cogl_primitive_copy (CoglPrimitive *primitive);
  * Since: 1.6
  * Stability: Unstable
  */
-CoglBool
+bool
 cogl_is_primitive (void *object);
 
 /**
@@ -862,7 +862,7 @@ cogl_is_primitive (void *object);
  * Since: 1.10
  * Stability: Unstable
  */
-typedef CoglBool (* CoglPrimitiveAttributeCallback) (CoglPrimitive *primitive,
+typedef bool (* CoglPrimitiveAttributeCallback) (CoglPrimitive *primitive,
                                                      CoglAttribute *attribute,
                                                      void *user_data);
 

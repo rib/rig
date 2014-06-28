@@ -165,7 +165,7 @@ _cogl_blend_string_split_rgba_statement (CoglBlendStringStatement *statement,
     }
 }
 
-static CoglBool
+static bool
 validate_tex_combine_statements (CoglBlendStringStatement *statements,
                                  int n_statements,
                                  CoglError **error)
@@ -211,7 +211,7 @@ error:
   return FALSE;
 }
 
-static CoglBool
+static bool
 validate_blend_statements (CoglContext *ctx,
                            CoglBlendStringStatement *statements,
                            int n_statements,
@@ -274,7 +274,7 @@ error:
   return FALSE;
 }
 
-static CoglBool
+static bool
 validate_statements_for_context (CoglContext *ctx,
                                  CoglBlendStringStatement *statements,
                                  int n_statements,
@@ -447,19 +447,19 @@ get_color_src_info (const char *mark,
   return NULL;
 }
 
-static CoglBool
+static bool
 is_symbol_char (const char c)
 {
   return (c_ascii_isalpha (c) || c == '_') ? TRUE : FALSE;
 }
 
-static CoglBool
+static bool
 is_alphanum_char (const char c)
 {
   return (c_ascii_isalnum (c) || c == '_') ? TRUE : FALSE;
 }
 
-static CoglBool
+static bool
 parse_argument (const char *string, /* original user string */
                 const char **ret_p, /* start of argument IN:OUT */
                 const CoglBlendStringStatement *statement,
@@ -472,8 +472,8 @@ parse_argument (const char *string, /* original user string */
   const char *mark = NULL;
   const char *error_string = NULL;
   ParserArgState state = PARSER_ARG_STATE_START;
-  CoglBool parsing_factor = FALSE;
-  CoglBool implicit_factor_brace;
+  bool parsing_factor = FALSE;
+  bool implicit_factor_brace;
 
   arg->source.is_zero = FALSE;
   arg->source.info = NULL;
@@ -752,7 +752,7 @@ error:
   }
 }
 
-int
+bool
 _cogl_blend_string_compile (CoglContext *ctx,
                             const char *string,
                             CoglBlendStringContext context,
@@ -943,7 +943,7 @@ UNIT_TEST (blend_string_parsing,
     {
       const char *string;
       CoglBlendStringContext context;
-      CoglBool should_pass;
+      bool should_pass;
     } tests[] = {
         {"  A = MODULATE ( TEXTURE[RGB], PREVIOUS[A], PREVIOUS[A] )  ",
           COGL_BLEND_STRING_CONTEXT_TEXTURE_COMBINE,

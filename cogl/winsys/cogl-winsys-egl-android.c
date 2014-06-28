@@ -50,7 +50,7 @@ typedef struct _CoglDisplayAndroid
 {
   int egl_surface_width;
   int egl_surface_height;
-  CoglBool have_onscreen;
+  bool have_onscreen;
 } CoglDisplayAndroid;
 
 static ANativeWindow *android_native_window;
@@ -73,7 +73,7 @@ _cogl_winsys_renderer_disconnect (CoglRenderer *renderer)
   c_slice_free (CoglRendererEGL, egl_renderer);
 }
 
-static CoglBool
+static bool
 _cogl_winsys_renderer_connect (CoglRenderer *renderer,
                                CoglError **error)
 {
@@ -96,7 +96,7 @@ error:
   return FALSE;
 }
 
-static CoglBool
+static bool
 _cogl_winsys_egl_context_created (CoglDisplay *display,
                                   CoglError **error)
 {
@@ -166,7 +166,7 @@ _cogl_winsys_egl_context_created (CoglDisplay *display,
   return FALSE;
 }
 
-static CoglBool
+static bool
 _cogl_winsys_egl_display_setup (CoglDisplay *display,
                                 CoglError **error)
 {
@@ -187,7 +187,7 @@ _cogl_winsys_egl_display_destroy (CoglDisplay *display)
   c_slice_free (CoglDisplayAndroid, egl_display->platform);
 }
 
-static CoglBool
+static bool
 _cogl_winsys_egl_onscreen_init (CoglOnscreen *onscreen,
                                 EGLConfig egl_config,
                                 CoglError **error)
@@ -239,7 +239,7 @@ _cogl_winsys_egl_vtable =
 const CoglWinsysVtable *
 _cogl_winsys_egl_android_get_vtable (void)
 {
-  static CoglBool vtable_inited = FALSE;
+  static bool vtable_inited = FALSE;
   static CoglWinsysVtable vtable;
 
   if (!vtable_inited)

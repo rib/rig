@@ -117,7 +117,7 @@ struct _CoglRectangleMapStackEntry
   CoglRectangleMapNode *node;
   /* Index of next branch of this node to explore. Basically either 0
      to go left or 1 to go right */
-  CoglBool next_index;
+  bool next_index;
 };
 
 static CoglRectangleMapNode *
@@ -161,7 +161,7 @@ _cogl_rectangle_map_new (unsigned int width,
 static void
 _cogl_rectangle_map_stack_push (CArray *stack,
                                 CoglRectangleMapNode *node,
-                                CoglBool next_index)
+                                bool next_index)
 {
   CoglRectangleMapStackEntry *new_entry;
 
@@ -348,7 +348,7 @@ _cogl_rectangle_map_verify (CoglRectangleMap *map)
 
 #endif /* COGL_ENABLE_DEBUG */
 
-CoglBool
+bool
 _cogl_rectangle_map_add (CoglRectangleMap *map,
                          unsigned int width,
                          unsigned int height,

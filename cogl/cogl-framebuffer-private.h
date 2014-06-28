@@ -56,11 +56,11 @@ typedef enum _CoglFramebufferType {
 
 typedef struct
 {
-  CoglBool has_alpha;
-  CoglBool need_stencil;
+  bool has_alpha;
+  bool need_stencil;
   int samples_per_pixel;
-  CoglBool swap_throttled;
-  CoglBool depth_texture_enabled;
+  bool swap_throttled;
+  bool depth_texture_enabled;
 } CoglFramebufferConfig;
 
 /* Flags to pass to _cogl_offscreen_new_with_texture_full */
@@ -138,7 +138,7 @@ struct _CoglFramebuffer
   /* Format of the pixels in the framebuffer (including the expected
      premult state) */
   CoglPixelFormat     internal_format;
-  CoglBool            allocated;
+  bool            allocated;
 
   CoglMatrixStack    *modelview_stack;
   CoglMatrixStack    *projection_stack;
@@ -151,8 +151,8 @@ struct _CoglFramebuffer
 
   CoglClipStack      *clip_stack;
 
-  CoglBool            dither_enabled;
-  CoglBool            depth_writing_enabled;
+  bool            dither_enabled;
+  bool            depth_writing_enabled;
   CoglColorMask       color_mask;
 
   /* We journal the textured rectangles we want to submit to OpenGL so
@@ -178,14 +178,14 @@ struct _CoglFramebuffer
   int                 clear_clip_y0;
   int                 clear_clip_x1;
   int                 clear_clip_y1;
-  CoglBool            clear_clip_dirty;
+  bool            clear_clip_dirty;
 
   /* Whether something has been drawn to the buffer since the last
    * swap buffers or swap region. */
-  CoglBool            mid_scene;
+  bool            mid_scene;
 
   /* driver specific */
-  CoglBool            dirty_bitmasks;
+  bool            dirty_bitmasks;
   CoglFramebufferBits bits;
 
   int                 samples_per_pixel;
@@ -444,7 +444,7 @@ _cogl_framebuffer_draw_indexed_attributes (CoglFramebuffer *framebuffer,
                                            int n_attributes,
                                            CoglDrawFlags flags);
 
-gboolean
+bool
 _cogl_framebuffer_try_creating_gl_fbo (CoglContext *ctx,
                                        CoglTexture *texture,
                                        int texture_level,

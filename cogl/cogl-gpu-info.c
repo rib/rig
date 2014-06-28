@@ -53,7 +53,7 @@ typedef struct CoglGpuInfoArchitectureDescription
   CoglGpuInfoArchitecture architecture;
   const char *name;
   CoglGpuInfoArchitectureFlag flags;
-  CoglBool (* check_function) (const CoglGpuInfoStrings *strings);
+  bool (* check_function) (const CoglGpuInfoStrings *strings);
 
 } CoglGpuInfoArchitectureDescription;
 
@@ -61,7 +61,7 @@ typedef struct
 {
   CoglGpuInfoVendor vendor;
   const char *name;
-  CoglBool (* check_function) (const CoglGpuInfoStrings *strings);
+  bool (* check_function) (const CoglGpuInfoStrings *strings);
   const CoglGpuInfoArchitectureDescription *architectures;
 
 } CoglGpuInfoVendorDescription;
@@ -70,11 +70,11 @@ typedef struct
 {
   CoglGpuInfoDriverPackage driver_package;
   const char *name;
-  CoglBool (* check_function) (const CoglGpuInfoStrings *strings,
+  bool (* check_function) (const CoglGpuInfoStrings *strings,
                                int *version_out);
 } CoglGpuInfoDriverPackageDescription;
 
-static CoglBool
+static bool
 _cogl_gpc_info_parse_version_string (const char *version_string,
                                      int n_components,
                                      const char **tail,
@@ -113,7 +113,7 @@ _cogl_gpc_info_parse_version_string (const char *version_string,
   return TRUE;
 }
 
-static CoglBool
+static bool
 match_phrase (const char *string, const char *phrase)
 {
   const char *part = strstr (string, phrase);
@@ -136,13 +136,13 @@ match_phrase (const char *string, const char *phrase)
   return TRUE;
 }
 
-static CoglBool
+static bool
 check_intel_vendor (const CoglGpuInfoStrings *strings)
 {
   return match_phrase (strings->renderer_string, "Intel(R)");
 }
 
-static CoglBool
+static bool
 check_imagination_technologies_vendor (const CoglGpuInfoStrings *strings)
 {
   if (strcmp (strings->vendor_string, "Imagination Technologies") != 0)
@@ -150,7 +150,7 @@ check_imagination_technologies_vendor (const CoglGpuInfoStrings *strings)
   return TRUE;
 }
 
-static CoglBool
+static bool
 check_arm_vendor (const CoglGpuInfoStrings *strings)
 {
   if (strcmp (strings->vendor_string, "ARM") != 0)
@@ -158,7 +158,7 @@ check_arm_vendor (const CoglGpuInfoStrings *strings)
   return TRUE;
 }
 
-static CoglBool
+static bool
 check_qualcomm_vendor (const CoglGpuInfoStrings *strings)
 {
   if (strcmp (strings->vendor_string, "Qualcomm") != 0)
@@ -166,7 +166,7 @@ check_qualcomm_vendor (const CoglGpuInfoStrings *strings)
   return TRUE;
 }
 
-static CoglBool
+static bool
 check_nvidia_vendor (const CoglGpuInfoStrings *strings)
 {
   if (strcmp (strings->vendor_string, "NVIDIA") != 0)
@@ -175,7 +175,7 @@ check_nvidia_vendor (const CoglGpuInfoStrings *strings)
   return TRUE;
 }
 
-static CoglBool
+static bool
 check_ati_vendor (const CoglGpuInfoStrings *strings)
 {
   if (strcmp (strings->vendor_string, "ATI") != 0)
@@ -184,7 +184,7 @@ check_ati_vendor (const CoglGpuInfoStrings *strings)
   return TRUE;
 }
 
-static CoglBool
+static bool
 check_mesa_vendor (const CoglGpuInfoStrings *strings)
 {
   if (strcmp (strings->vendor_string, "Tungsten Graphics, Inc") == 0)
@@ -197,39 +197,39 @@ check_mesa_vendor (const CoglGpuInfoStrings *strings)
   return FALSE;
 }
 
-static CoglBool
+static bool
 check_true (const CoglGpuInfoStrings *strings)
 {
   /* This is a last resort so it always matches */
   return TRUE;
 }
 
-static CoglBool
+static bool
 check_sandybridge_architecture (const CoglGpuInfoStrings *strings)
 {
   return match_phrase (strings->renderer_string, "Sandybridge");
 }
 
-static CoglBool
+static bool
 check_llvmpipe_architecture (const CoglGpuInfoStrings *strings)
 {
   return match_phrase (strings->renderer_string, "llvmpipe");
 }
 
-static CoglBool
+static bool
 check_softpipe_architecture (const CoglGpuInfoStrings *strings)
 {
   return match_phrase (strings->renderer_string, "softpipe");
 }
 
-static CoglBool
+static bool
 check_swrast_architecture (const CoglGpuInfoStrings *strings)
 {
   return match_phrase (strings->renderer_string, "software rasterizer") ||
     match_phrase (strings->renderer_string, "Software Rasterizer");
 }
 
-static CoglBool
+static bool
 check_sgx_architecture (const CoglGpuInfoStrings *strings)
 {
   if (strncmp (strings->renderer_string, "PowerVR SGX", 12) != 0)
@@ -238,7 +238,7 @@ check_sgx_architecture (const CoglGpuInfoStrings *strings)
   return TRUE;
 }
 
-static CoglBool
+static bool
 check_mali_architecture (const CoglGpuInfoStrings *strings)
 {
   if (strncmp (strings->renderer_string, "Mali-", 5) != 0)
@@ -409,7 +409,7 @@ _cogl_gpc_info_vendors[] =
     }
   };
 
-static CoglBool
+static bool
 check_mesa_driver_package (const CoglGpuInfoStrings *strings,
                            int *version_ret)
 {
@@ -481,7 +481,7 @@ UNIT_TEST (check_mesa_driver_package_parser,
     }
 }
 
-static CoglBool
+static bool
 check_unknown_driver_package (const CoglGpuInfoStrings *strings,
                               int *version_out)
 {

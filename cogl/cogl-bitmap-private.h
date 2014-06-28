@@ -55,8 +55,8 @@ struct _CoglBitmap
 
   uint8_t *data;
 
-  CoglBool mapped;
-  CoglBool bound;
+  bool mapped;
+  bool bound;
 
   /* If this is non-null then 'data' is ignored and instead it is
      fetched from this shared bitmap. */
@@ -113,10 +113,10 @@ _cogl_bitmap_convert (CoglBitmap *bmp,
 CoglBitmap *
 _cogl_bitmap_convert_for_upload (CoglBitmap *src_bmp,
                                  CoglPixelFormat internal_format,
-                                 CoglBool can_convert_in_place,
+                                 bool can_convert_in_place,
                                  CoglError **error);
 
-CoglBool
+bool
 _cogl_bitmap_convert_into_bitmap (CoglBitmap *src_bmp,
                                   CoglBitmap *dst_bmp,
                                   CoglError **error);
@@ -134,20 +134,20 @@ _cogl_android_bitmap_new_from_asset (CoglContext *ctx,
                                      CoglError **error);
 #endif
 
-CoglBool
+bool
 _cogl_bitmap_unpremult (CoglBitmap *dst_bmp,
                         CoglError **error);
 
-CoglBool
+bool
 _cogl_bitmap_premult (CoglBitmap *dst_bmp,
                       CoglError **error);
 
-CoglBool
+bool
 _cogl_bitmap_convert_premult_status (CoglBitmap *bmp,
                                      CoglPixelFormat dst_format,
                                      CoglError **error);
 
-CoglBool
+bool
 _cogl_bitmap_copy_subregion (CoglBitmap *src,
 			     CoglBitmap *dst,
 			     int src_x,
@@ -163,7 +163,7 @@ CoglBitmap *
 _cogl_bitmap_copy (CoglBitmap *src_bmp,
                    CoglError **error);
 
-CoglBool
+bool
 _cogl_bitmap_get_size_from_file (const char *filename,
                                  int        *width,
                                  int        *height);

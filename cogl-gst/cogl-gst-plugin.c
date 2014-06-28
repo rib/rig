@@ -37,7 +37,7 @@
 
 #define PACKAGE "CoglGst"
 
-static CoglBool
+static gboolean
 _plugin_init (GstPlugin *coglgstvideosink)
 {
   return gst_element_register (coglgstvideosink,

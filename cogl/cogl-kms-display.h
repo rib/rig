@@ -89,7 +89,7 @@ typedef struct {
  *
  * Stability: unstable
  */
-CoglBool
+bool
 cogl_kms_display_set_layout (CoglDisplay *display,
                              int width,
                              int height,

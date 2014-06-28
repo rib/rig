@@ -184,7 +184,7 @@ _cogl_##type_name##_object_new (Cogl##TypeName *new_obj)                \
                                                                         \
 COGL_OBJECT_COMMON_DEFINE_WITH_CODE(TypeName, type_name, code)          \
                                                                         \
-CoglBool                                                                \
+bool                                                                \
 cogl_is_##type_name (void *object)                                      \
 {                                                                       \
   CoglObject *obj = object;                                             \
@@ -199,7 +199,7 @@ cogl_is_##type_name (void *object)                                      \
                                                                         \
 COGL_OBJECT_COMMON_DEFINE_WITH_CODE(TypeName, type_name, code)          \
                                                                         \
-CoglBool                                                                \
+bool                                                                \
 _cogl_is_##type_name (void *object)                                     \
 {                                                                       \
   CoglObject *obj = object;                                             \

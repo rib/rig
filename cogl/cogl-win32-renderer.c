@@ -63,7 +63,7 @@ cogl_win32_renderer_remove_filter (CoglRenderer *renderer,
 
 void
 cogl_win32_renderer_set_event_retrieval_enabled (CoglRenderer *renderer,
-                                                 CoglBool enable)
+                                                 bool enable)
 {
   _COGL_RETURN_IF_FAIL (cogl_is_renderer (renderer));
   /* NB: Renderers are considered immutable once connected */

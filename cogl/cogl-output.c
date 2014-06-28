@@ -59,7 +59,7 @@ _cogl_output_free (CoglOutput *output)
   c_slice_free (CoglOutput, output);
 }
 
-CoglBool
+bool
 _cogl_output_values_equal (CoglOutput *output,
                            CoglOutput *other)
 {

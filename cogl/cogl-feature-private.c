@@ -40,7 +40,7 @@
 #include "cogl-renderer-private.h"
 #include "cogl-private.h"
 
-CoglBool
+bool
 _cogl_feature_check (CoglRenderer *renderer,
                      const char *driver_prefix,
                      const CoglFeatureData *data,
@@ -54,7 +54,7 @@ _cogl_feature_check (CoglRenderer *renderer,
   const char *suffix = NULL;
   int func_num;
   CoglExtGlesAvailability gles_availability;
-  CoglBool in_core;
+  bool in_core;
 
   if (driver == COGL_DRIVER_GLES2)
     {

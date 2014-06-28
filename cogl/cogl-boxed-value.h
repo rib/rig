@@ -64,7 +64,7 @@ typedef struct _CoglBoxedValue
     _bv->count = 1;                             \
   } C_STMT_END
 
-CoglBool
+bool
 _cogl_boxed_value_equal (const CoglBoxedValue *bva,
                          const CoglBoxedValue *bvb);
 
@@ -92,7 +92,7 @@ void
 _cogl_boxed_value_set_matrix (CoglBoxedValue *bv,
                               int dimensions,
                               int count,
-                              CoglBool transpose,
+                              bool transpose,
                               const float *value);
 
 /*

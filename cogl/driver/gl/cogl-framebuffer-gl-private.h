@@ -34,7 +34,7 @@
 #ifndef __COGL_FRAMEBUFFER_GL_PRIVATE_H__
 #define __COGL_FRAMEBUFFER_GL_PRIVATE_H__
 
-CoglBool
+bool
 _cogl_offscreen_gl_allocate (CoglOffscreen *offscreen,
                              CoglError **error);
 
@@ -89,7 +89,7 @@ _cogl_framebuffer_gl_draw_indexed_attributes (CoglFramebuffer *framebuffer,
                                               int n_attributes,
                                               CoglDrawFlags flags);
 
-CoglBool
+bool
 _cogl_framebuffer_gl_read_pixels_into_bitmap (CoglFramebuffer *framebuffer,
                                               int x,
                                               int y,

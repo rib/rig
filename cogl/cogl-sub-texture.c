@@ -231,12 +231,12 @@ cogl_sub_texture_new (CoglContext *ctx,
   return _cogl_sub_texture_object_new (sub_tex);
 }
 
-static CoglBool
+static bool
 _cogl_sub_texture_allocate (CoglTexture *tex,
                             CoglError **error)
 {
   CoglSubTexture *sub_tex = COGL_SUB_TEXTURE (tex);
-  CoglBool status = cogl_texture_allocate (sub_tex->full_texture, error);
+  bool status = cogl_texture_allocate (sub_tex->full_texture, error);
 
   _cogl_texture_set_allocated (tex,
                                _cogl_texture_get_format (sub_tex->full_texture),
@@ -251,7 +251,7 @@ cogl_sub_texture_get_parent (CoglSubTexture *sub_texture)
   return sub_texture->next_texture;
 }
 
-static CoglBool
+static bool
 _cogl_sub_texture_is_sliced (CoglTexture *tex)
 {
   CoglSubTexture *sub_tex = COGL_SUB_TEXTURE (tex);
@@ -259,7 +259,7 @@ _cogl_sub_texture_is_sliced (CoglTexture *tex)
   return cogl_texture_is_sliced (sub_tex->full_texture);
 }
 
-static CoglBool
+static bool
 _cogl_sub_texture_can_hardware_repeat (CoglTexture *tex)
 {
   CoglSubTexture *sub_tex = COGL_SUB_TEXTURE (tex);
@@ -309,7 +309,7 @@ _cogl_sub_texture_transform_quad_coords_to_gl (CoglTexture *tex,
                                                     coords);
 }
 
-static CoglBool
+static bool
 _cogl_sub_texture_get_gl_texture (CoglTexture *tex,
                                   GLuint *out_gl_handle,
                                   GLenum *out_gl_target)
@@ -346,7 +346,7 @@ _cogl_sub_texture_ensure_non_quad_rendering (CoglTexture *tex)
 {
 }
 
-static CoglBool
+static bool
 _cogl_sub_texture_set_region (CoglTexture *tex,
                               int src_x,
                               int src_y,

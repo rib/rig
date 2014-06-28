@@ -42,7 +42,7 @@ _cogl_pipeline_fragend_nop_start (CoglPipeline *pipeline,
 {
 }
 
-static CoglBool
+static bool
 _cogl_pipeline_fragend_nop_add_layer (CoglPipeline *pipeline,
                                       CoglPipelineLayer *layer,
                                       unsigned long layers_difference)
@@ -50,7 +50,7 @@ _cogl_pipeline_fragend_nop_add_layer (CoglPipeline *pipeline,
   return TRUE;
 }
 
-static CoglBool
+static bool
 _cogl_pipeline_fragend_nop_end (CoglPipeline *pipeline,
                                 unsigned long pipelines_difference)
 {

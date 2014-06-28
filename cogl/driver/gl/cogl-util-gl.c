@@ -77,11 +77,11 @@ _cogl_gl_error_to_string (GLenum error_code)
 }
 #endif /* COGL_GL_DEBUG */
 
-CoglBool
+bool
 _cogl_gl_util_catch_out_of_memory (CoglContext *ctx, CoglError **error)
 {
   GLenum gl_error;
-  CoglBool out_of_memory = FALSE;
+  bool out_of_memory = FALSE;
 
   while ((gl_error = ctx->glGetError ()) != GL_NO_ERROR)
     {
@@ -135,7 +135,7 @@ _cogl_gl_util_get_texture_target_string (CoglTextureType texture_type,
     *swizzle_out = tex_coord_swizzle;
 }
 
-CoglBool
+bool
 _cogl_gl_util_parse_gl_version (const char *version_string,
                                 int *major_out,
                                 int *minor_out)

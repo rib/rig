@@ -57,7 +57,7 @@ struct _CoglBufferVtable
 
   void (* unmap) (CoglBuffer *buffer);
 
-  CoglBool (* set_data) (CoglBuffer *buffer,
+  bool (* set_data) (CoglBuffer *buffer,
                          unsigned int offset,
                          const void *data,
                          unsigned int size,

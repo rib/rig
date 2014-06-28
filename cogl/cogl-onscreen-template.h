@@ -89,7 +89,7 @@ cogl_onscreen_template_set_samples_per_pixel (
 void
 cogl_onscreen_template_set_swap_throttled (
                                           CoglOnscreenTemplate *onscreen_template,
-                                          CoglBool throttled);
+                                          bool throttled);
 
 /**
  * cogl_onscreen_template_set_has_alpha:
@@ -109,7 +109,7 @@ cogl_onscreen_template_set_swap_throttled (
  */
 void
 cogl_onscreen_template_set_has_alpha (CoglOnscreenTemplate *onscreen_template,
-                                      CoglBool has_alpha);
+                                      bool has_alpha);
 
 /**
  * cogl_is_onscreen_template:
@@ -122,7 +122,7 @@ cogl_onscreen_template_set_has_alpha (CoglOnscreenTemplate *onscreen_template,
  * Since: 1.10
  * Stability: unstable
  */
-CoglBool
+bool
 cogl_is_onscreen_template (void *object);
 
 COGL_END_DECLS

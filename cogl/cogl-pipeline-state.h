@@ -282,7 +282,7 @@ cogl_pipeline_get_alpha_test_reference (CoglPipeline *pipeline);
  * Since: 2.0
  * Stability: Unstable
  */
-CoglBool
+bool
 cogl_pipeline_set_blend (CoglPipeline *pipeline,
                          const char   *blend_string,
                          CoglError      **error);
@@ -368,9 +368,9 @@ cogl_pipeline_get_point_size (CoglPipeline *pipeline);
  * Stability: Unstable
  * Return value: %TRUE if the change suceeded or %FALSE otherwise
  */
-CoglBool
+bool
 cogl_pipeline_set_per_vertex_point_size (CoglPipeline *pipeline,
-                                         CoglBool enable,
+                                         bool enable,
                                          CoglError **error);
 
 /**
@@ -383,7 +383,7 @@ cogl_pipeline_set_per_vertex_point_size (CoglPipeline *pipeline,
  *   enabled or %FALSE otherwise. The per-vertex point size can be
  *   enabled with cogl_pipeline_set_per_vertex_point_size().
  */
-CoglBool
+bool
 cogl_pipeline_get_per_vertex_point_size (CoglPipeline *pipeline);
 
 /**
@@ -438,7 +438,7 @@ cogl_pipeline_set_color_mask (CoglPipeline *pipeline,
  * Since: 2.0
  * Stability: Unstable
  */
-CoglBool
+bool
 cogl_pipeline_set_depth_state (CoglPipeline *pipeline,
                                const CoglDepthState *state,
                                CoglError **error);
@@ -701,7 +701,7 @@ cogl_pipeline_set_uniform_matrix (CoglPipeline *pipeline,
                                   int uniform_location,
                                   int dimensions,
                                   int count,
-                                  CoglBool transpose,
+                                  bool transpose,
                                   const float *value);
 
 /**

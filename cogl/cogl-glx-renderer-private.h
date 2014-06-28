@@ -43,7 +43,7 @@ typedef struct _CoglGLXRenderer
   int glx_error_base;
   int glx_event_base;
 
-  CoglBool is_direct;
+  bool is_direct;
 
   /* Vblank stuff */
   int dri_fd;

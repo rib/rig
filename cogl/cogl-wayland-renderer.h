@@ -76,7 +76,7 @@ cogl_wayland_renderer_set_foreign_display (CoglRenderer *renderer,
  */
 void
 cogl_wayland_renderer_set_event_dispatch_enabled (CoglRenderer *renderer,
-                                                  CoglBool enable);
+                                                  bool enable);
 
 /**
  * cogl_wayland_renderer_get_display:

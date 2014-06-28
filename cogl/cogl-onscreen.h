@@ -292,7 +292,7 @@ cogl_android_onscreen_update_size (CoglOnscreen *onscreen,
  */
 void
 cogl_onscreen_set_swap_throttled (CoglOnscreen *onscreen,
-                                  CoglBool throttled);
+                                  bool throttled);
 
 /**
  * cogl_onscreen_show:
@@ -669,7 +669,7 @@ cogl_onscreen_remove_frame_callback (CoglOnscreen *onscreen,
  */
 void
 cogl_onscreen_set_resizable (CoglOnscreen *onscreen,
-                             CoglBool resizable);
+                             bool resizable);
 
 /**
  * cogl_onscreen_get_resizable:
@@ -694,7 +694,7 @@ cogl_onscreen_set_resizable (CoglOnscreen *onscreen,
  *               resizable or not.
  * Since: 2.0
  */
-CoglBool
+bool
 cogl_onscreen_get_resizable (CoglOnscreen *onscreen);
 
 /**
@@ -914,7 +914,7 @@ cogl_onscreen_remove_dirty_callback (CoglOnscreen *onscreen,
  * Since: 1.10
  * Stability: unstable
  */
-CoglBool
+bool
 cogl_is_onscreen (void *object);
 
 /**

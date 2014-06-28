@@ -139,7 +139,7 @@ cogl_display_set_onscreen_template (CoglDisplay *display,
     display->onscreen_template = cogl_onscreen_template_new ();
 }
 
-CoglBool
+bool
 cogl_display_setup (CoglDisplay *display,
                     CoglError **error)
 {

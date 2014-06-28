@@ -142,7 +142,7 @@ get_error_string (void)
 static CoglFuncPtr
 _cogl_winsys_renderer_get_proc_address (CoglRenderer *renderer,
                                         const char *name,
-                                        CoglBool in_core)
+                                        bool in_core)
 {
   void *ptr = NULL;
 
@@ -193,7 +193,7 @@ check_egl_extensions (CoglRenderer *renderer)
   c_strfreev (split_extensions);
 }
 
-CoglBool
+bool
 _cogl_winsys_egl_renderer_connect_common (CoglRenderer *renderer,
                                           CoglError **error)
 {
@@ -214,7 +214,7 @@ _cogl_winsys_egl_renderer_connect_common (CoglRenderer *renderer,
   return TRUE;
 }
 
-static CoglBool
+static bool
 _cogl_winsys_renderer_connect (CoglRenderer *renderer,
                                CoglError **error)
 {
@@ -328,7 +328,7 @@ cleanup_context (CoglDisplay *display)
     egl_renderer->platform_vtable->cleanup_context (display);
 }
 
-static CoglBool
+static bool
 try_create_context (CoglDisplay *display,
                     CoglError **error)
 {
@@ -440,7 +440,7 @@ _cogl_winsys_display_destroy (CoglDisplay *display)
   display->winsys = NULL;
 }
 
-static CoglBool
+static bool
 _cogl_winsys_display_setup (CoglDisplay *display,
                             CoglError **error)
 {
@@ -481,7 +481,7 @@ error:
   return FALSE;
 }
 
-static CoglBool
+static bool
 _cogl_winsys_context_init (CoglContext *context, CoglError **error)
 {
   CoglRenderer *renderer = context->display->renderer;
@@ -591,7 +591,7 @@ _cogl_winsys_destroy_gles2_context (CoglGLES2Context *gles2_ctx)
   eglDestroyContext (egl_renderer->edpy, egl_context);
 }
 
-static CoglBool
+static bool
 _cogl_winsys_onscreen_init (CoglOnscreen *onscreen,
                             CoglError **error)
 {
@@ -692,7 +692,7 @@ _cogl_winsys_onscreen_deinit (CoglOnscreen *onscreen)
   onscreen->winsys = NULL;
 }
 
-static CoglBool
+static bool
 bind_onscreen_with_context (CoglOnscreen *onscreen,
                             EGLContext egl_context)
 {
@@ -700,7 +700,7 @@ bind_onscreen_with_context (CoglOnscreen *onscreen,
   CoglContext *context = fb->context;
   CoglOnscreenEGL *egl_onscreen = onscreen->winsys;
 
-  CoglBool status = _cogl_winsys_egl_make_current (context->display,
+  bool status = _cogl_winsys_egl_make_current (context->display,
                                                    egl_onscreen->egl_surface,
                                                    egl_onscreen->egl_surface,
                                                    egl_context);
@@ -718,7 +718,7 @@ bind_onscreen_with_context (CoglOnscreen *onscreen,
   return status;
 }
 
-static CoglBool
+static bool
 bind_onscreen (CoglOnscreen *onscreen)
 {
   CoglFramebuffer *fb = COGL_FRAMEBUFFER (onscreen);
@@ -872,12 +872,12 @@ _cogl_winsys_save_context (CoglContext *ctx)
   egl_context->saved_read_surface = egl_display->current_read_surface;
 }
 
-static CoglBool
+static bool
 _cogl_winsys_set_gles2_context (CoglGLES2Context *gles2_ctx, CoglError **error)
 {
   CoglContext *ctx = gles2_ctx->context;
   CoglDisplayEGL *egl_display = ctx->display->winsys;
-  CoglBool status;
+  bool status;
 
   if (gles2_ctx->write_buffer &&
       cogl_is_onscreen (gles2_ctx->write_buffer))
@@ -931,7 +931,7 @@ _cogl_winsys_fence_add (CoglContext *context)
   return ret;
 }
 
-static CoglBool
+static bool
 _cogl_winsys_fence_is_complete (CoglContext *context, void *fence)
 {
   CoglRendererEGL *renderer = context->display->renderer->winsys;
@@ -1052,7 +1052,7 @@ _cogl_egl_destroy_image (CoglContext *ctx,
 #endif
 
 #ifdef EGL_WL_bind_wayland_display
-CoglBool
+bool
 _cogl_egl_query_wayland_buffer (CoglContext *ctx,
                                 struct wl_resource *buffer,
                                 int attribute,

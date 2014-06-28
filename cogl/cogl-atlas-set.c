@@ -109,7 +109,7 @@ cogl_atlas_set_get_components (CoglAtlasSet *set)
 
 void
 cogl_atlas_set_set_premultiplied (CoglAtlasSet *set,
-                                  CoglBool premultiplied)
+                                  bool premultiplied)
 {
   c_return_if_fail (set->atlases == NULL);
 
@@ -117,7 +117,7 @@ cogl_atlas_set_set_premultiplied (CoglAtlasSet *set,
   _update_internal_format (set);
 }
 
-CoglBool
+bool
 cogl_atlas_set_get_premultiplied (CoglAtlasSet *set)
 {
   return set->premultiplied;
@@ -125,30 +125,30 @@ cogl_atlas_set_get_premultiplied (CoglAtlasSet *set)
 
 void
 cogl_atlas_set_set_clear_enabled (CoglAtlasSet *set,
-                                  CoglBool clear_enabled)
+                                  bool clear_enabled)
 {
   _COGL_RETURN_IF_FAIL (set->atlases == NULL);
 
   set->clear_enabled = clear_enabled;
 }
 
-CoglBool
+bool
 cogl_atlas_set_get_clear_enabled (CoglAtlasSet *set,
-                                  CoglBool clear_enabled)
+                                  bool clear_enabled)
 {
   return set->clear_enabled;
 }
 
 void
 cogl_atlas_set_set_migration_enabled (CoglAtlasSet *set,
-                                      CoglBool migration_enabled)
+                                      bool migration_enabled)
 {
   _COGL_RETURN_IF_FAIL (set->atlases == NULL);
 
   set->migration_enabled = migration_enabled;
 }
 
-CoglBool
+bool
 cogl_atlas_set_get_migration_enabled (CoglAtlasSet *set)
 {
   return set->migration_enabled;

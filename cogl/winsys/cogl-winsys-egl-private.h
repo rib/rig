@@ -60,26 +60,26 @@ struct wl_resource;
 
 typedef struct _CoglWinsysEGLVtable
 {
-  CoglBool
+  bool
   (* display_setup) (CoglDisplay *display,
                      CoglError **error);
   void
   (* display_destroy) (CoglDisplay *display);
 
-  CoglBool
+  bool
   (* context_created) (CoglDisplay *display,
                        CoglError **error);
 
   void
   (* cleanup_context) (CoglDisplay *display);
 
-  CoglBool
+  bool
   (* context_init) (CoglContext *context, CoglError **error);
 
   void
   (* context_deinit) (CoglContext *context);
 
-  CoglBool
+  bool
   (* onscreen_init) (CoglOnscreen *onscreen,
                      EGLConfig config,
                      CoglError **error);
@@ -141,7 +141,7 @@ typedef struct _CoglDisplayEGL
   EGLSurface egl_surface;
 
   EGLConfig egl_config;
-  CoglBool found_egl_config;
+  bool found_egl_config;
 
   EGLSurface current_read_surface;
   EGLSurface current_draw_surface;
@@ -161,7 +161,7 @@ typedef struct _CoglOnscreenEGL
 {
   EGLSurface egl_surface;
 
-  CoglBool pending_resize_notify;
+  bool pending_resize_notify;
 
   /* Platform specific data */
   void *platform;
@@ -189,14 +189,14 @@ _cogl_egl_destroy_image (CoglContext *ctx,
 #endif
 
 #ifdef EGL_WL_bind_wayland_display
-CoglBool
+bool
 _cogl_egl_query_wayland_buffer (CoglContext *ctx,
                                 struct wl_resource *buffer,
                                 int attribute,
                                 int *value);
 #endif
 
-CoglBool
+bool
 _cogl_winsys_egl_renderer_connect_common (CoglRenderer *renderer,
                                           CoglError **error);
 

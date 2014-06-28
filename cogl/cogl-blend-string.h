@@ -77,18 +77,18 @@ typedef struct _CoglBlendStringColorSourceInfo
 
 typedef struct _CoglBlendStringColorSource
 {
-  CoglBool is_zero;
+  bool is_zero;
   const CoglBlendStringColorSourceInfo *info;
   int texture; /* for the TEXTURE_N color source */
-  CoglBool one_minus;
+  bool one_minus;
   CoglBlendStringChannelMask mask;
 } CoglBlendStringColorSource;
 
 typedef struct _CoglBlendStringFactor
 {
-  CoglBool is_one;
-  CoglBool is_src_alpha_saturate;
-  CoglBool is_color;
+  bool is_one;
+  bool is_src_alpha_saturate;
+  bool is_color;
   CoglBlendStringColorSource source;
 } CoglBlendStringFactor;
 
@@ -129,7 +129,7 @@ typedef struct _CoglBlendStringStatement
 } CoglBlendStringStatement;
 
 
-CoglBool
+bool
 _cogl_blend_string_compile (CoglContext *ctx,
                             const char *string,
                             CoglBlendStringContext context,

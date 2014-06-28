@@ -167,7 +167,7 @@ _cogl_set_active_texture_unit (int unit_index)
 void
 _cogl_bind_gl_texture_transient (GLenum gl_target,
                                  GLuint gl_texture,
-                                 CoglBool is_foreign)
+                                 bool is_foreign)
 {
   CoglTextureUnit *unit;
 
@@ -268,7 +268,7 @@ _cogl_gl_use_program (CoglContext *ctx, GLuint gl_program)
 
 #if defined(HAVE_COGL_GLES2) || defined(HAVE_COGL_GL)
 
-static CoglBool
+static bool
 blend_factor_uses_constant (GLenum blend_factor)
 {
   return (blend_factor == GL_CONSTANT_COLOR ||
@@ -283,7 +283,7 @@ static void
 flush_depth_state (CoglContext *ctx,
                    CoglDepthState *depth_state)
 {
-  CoglBool depth_writing_enabled = depth_state->write_enabled;
+  bool depth_writing_enabled = depth_state->write_enabled;
 
   if (ctx->current_draw_buffer)
     depth_writing_enabled &= ctx->current_draw_buffer->depth_writing_enabled;
@@ -422,7 +422,7 @@ typedef struct
   unsigned long *layer_differences;
 } CoglPipelineFlushLayerState;
 
-static CoglBool
+static bool
 flush_layers_common_gl_state_cb (CoglPipelineLayer *layer, void *user_data)
 {
   CoglPipelineFlushLayerState *flush_state = user_data;
@@ -437,7 +437,7 @@ flush_layers_common_gl_state_cb (CoglPipelineLayer *layer, void *user_data)
    */
   if (C_UNLIKELY (unit_index >= get_max_activateable_texture_units (ctx)))
     {
-      static CoglBool shown_warning = FALSE;
+      static bool shown_warning = FALSE;
 
       if (!shown_warning)
         {
@@ -542,7 +542,7 @@ _cogl_pipeline_flush_common_gl_state (CoglContext *ctx,
                                       CoglPipeline *pipeline,
                                       unsigned long pipelines_difference,
                                       unsigned long *layer_differences,
-                                      CoglBool with_color_attrib)
+                                      bool with_color_attrib)
 {
   CoglPipelineFlushLayerState state;
 
@@ -632,7 +632,7 @@ _cogl_pipeline_flush_common_gl_state (CoglContext *ctx,
         GE( ctx, glDisable (GL_CULL_FACE) );
       else
         {
-          CoglBool invert_winding;
+          bool invert_winding;
 
           GE( ctx, glEnable (GL_CULL_FACE) );
 
@@ -804,7 +804,7 @@ typedef struct
   unsigned long *layer_differences;
 } CoglPipelineCompareLayersState;
 
-static CoglBool
+static bool
 compare_layer_differences_cb (CoglPipelineLayer *layer, void *user_data)
 {
   CoglPipelineCompareLayersState *state = user_data;
@@ -845,11 +845,11 @@ typedef struct
   const CoglPipelineFragend *fragend;
   CoglPipeline *pipeline;
   unsigned long *layer_differences;
-  CoglBool error_adding_layer;
-  CoglBool added_layer;
+  bool error_adding_layer;
+  bool added_layer;
 } CoglPipelineAddLayerState;
 
-static CoglBool
+static bool
 vertend_add_layer_cb (CoglPipelineLayer *layer,
                       void *user_data)
 {
@@ -874,7 +874,7 @@ vertend_add_layer_cb (CoglPipelineLayer *layer,
   return TRUE;
 }
 
-static CoglBool
+static bool
 fragend_add_layer_cb (CoglPipelineLayer *layer,
                       void *user_data)
 {
@@ -952,8 +952,8 @@ void
 _cogl_pipeline_flush_gl_state (CoglContext *ctx,
                                CoglPipeline *pipeline,
                                CoglFramebuffer *framebuffer,
-                               CoglBool with_color_attrib,
-                               CoglBool unknown_color_alpha)
+                               bool with_color_attrib,
+                               bool unknown_color_alpha)
 {
   CoglPipeline *current_pipeline = ctx->current_pipeline;
   unsigned long pipelines_difference;
@@ -996,7 +996,7 @@ _cogl_pipeline_flush_gl_state (CoglContext *ctx,
           if (pipelines_difference & COGL_PIPELINE_STATE_AFFECTS_BLENDING ||
               pipeline->unknown_color_alpha != unknown_color_alpha)
             {
-              CoglBool save_real_blend_enable = pipeline->real_blend_enable;
+              bool save_real_blend_enable = pipeline->real_blend_enable;
 
               _cogl_pipeline_update_real_blend_enable (pipeline,
                                                        unknown_color_alpha);

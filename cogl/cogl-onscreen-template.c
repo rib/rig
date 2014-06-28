@@ -83,14 +83,14 @@ cogl_onscreen_template_set_samples_per_pixel (
 void
 cogl_onscreen_template_set_swap_throttled (
                                           CoglOnscreenTemplate *onscreen_template,
-                                          CoglBool throttled)
+                                          bool throttled)
 {
   onscreen_template->config.swap_throttled = throttled;
 }
 
 void
 cogl_onscreen_template_set_has_alpha (CoglOnscreenTemplate *onscreen_template,
-                                      CoglBool has_alpha)
+                                      bool has_alpha)
 {
   onscreen_template->config.has_alpha = has_alpha;
 }

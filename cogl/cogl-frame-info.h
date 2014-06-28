@@ -56,7 +56,7 @@ typedef struct _CoglFrameInfo CoglFrameInfo;
  * Since: 2.0
  * Stability: unstable
  */
-CoglBool
+bool
 cogl_is_frame_info (void *object);
 
 /**

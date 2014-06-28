@@ -61,13 +61,13 @@ typedef struct _CoglDisplaySdl2
 {
   SDL_Window *dummy_window;
   SDL_GLContext *context;
-  CoglBool have_onscreen;
+  bool have_onscreen;
 } CoglDisplaySdl2;
 
 typedef struct _CoglOnscreenSdl2
 {
   SDL_Window *window;
-  CoglBool pending_resize_notify;
+  bool pending_resize_notify;
 } CoglOnscreenSdl2;
 
 /* The key used to store a pointer to the CoglOnscreen in an
@@ -77,7 +77,7 @@ typedef struct _CoglOnscreenSdl2
 static CoglFuncPtr
 _cogl_winsys_renderer_get_proc_address (CoglRenderer *renderer,
                                         const char *name,
-                                        CoglBool in_core)
+                                        bool in_core)
 {
   /* XXX: It's not totally clear whether it's safe to call this for
    * core functions. From the code it looks like the implementations
@@ -99,7 +99,7 @@ _cogl_winsys_renderer_disconnect (CoglRenderer *renderer)
   c_slice_free (CoglRendererSdl2, renderer->winsys);
 }
 
-static CoglBool
+static bool
 _cogl_winsys_renderer_connect (CoglRenderer *renderer,
                                CoglError **error)
 {
@@ -151,7 +151,7 @@ set_gl_attribs_from_framebuffer_config (CoglFramebufferConfig *config)
                        config->has_alpha ? 1 : 0);
 }
 
-static CoglBool
+static bool
 _cogl_winsys_display_setup (CoglDisplay *display,
                             CoglError **error)
 {
@@ -376,7 +376,7 @@ sdl_event_filter_cb (SDL_Event *event, void *data)
     }
 }
 
-static CoglBool
+static bool
 _cogl_winsys_context_init (CoglContext *context, CoglError **error)
 {
   CoglRenderer *renderer = context->display->renderer;
@@ -492,7 +492,7 @@ _cogl_winsys_onscreen_deinit (CoglOnscreen *onscreen)
   onscreen->winsys = NULL;
 }
 
-static CoglBool
+static bool
 _cogl_winsys_onscreen_init (CoglOnscreen *onscreen,
                             CoglError **error)
 {
@@ -588,7 +588,7 @@ _cogl_winsys_onscreen_update_swap_throttled (CoglOnscreen *onscreen)
 
 static void
 _cogl_winsys_onscreen_set_visibility (CoglOnscreen *onscreen,
-                                      CoglBool visibility)
+                                      bool visibility)
 {
   CoglOnscreenSdl2 *sdl_onscreen = onscreen->winsys;
 
@@ -616,7 +616,7 @@ cogl_sdl_onscreen_get_window (CoglOnscreen *onscreen)
 const CoglWinsysVtable *
 _cogl_winsys_sdl_get_vtable (void)
 {
-  static CoglBool vtable_inited = FALSE;
+  static bool vtable_inited = FALSE;
   static CoglWinsysVtable vtable;
 
   /* It would be nice if we could use C99 struct initializers here

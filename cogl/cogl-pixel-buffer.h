@@ -88,7 +88,7 @@ cogl_pixel_buffer_new (CoglContext *context,
  * Since: 1.2
  * Stability: Unstable
  */
-CoglBool
+bool
 cogl_is_pixel_buffer (void *object);
 
 #if 0
@@ -112,7 +112,7 @@ cogl_is_pixel_buffer (void *object);
  * Since: 1.2
  * Stability: Unstable
  */
-CoglBool
+bool
 cogl_pixel_buffer_set_region (CoglPixelBuffer *buffer,
                               uint8_t *data,
                               unsigned int src_width,

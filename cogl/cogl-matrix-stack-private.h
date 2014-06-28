@@ -137,7 +137,7 @@ typedef struct _CoglMatrixEntrySave
   CoglMatrixEntry _parent_data;
 
   CoglMatrix *cache;
-  CoglBool cache_valid;
+  bool cache_valid;
 
 } CoglMatrixEntrySave;
 
@@ -166,8 +166,8 @@ struct _CoglMatrixStack
 typedef struct _CoglMatrixEntryCache
 {
   CoglMatrixEntry *entry;
-  CoglBool flushed_identity;
-  CoglBool flipped;
+  bool flushed_identity;
+  bool flipped;
 } CoglMatrixEntryCache;
 
 void
@@ -176,10 +176,10 @@ _cogl_matrix_entry_identity_init (CoglMatrixEntry *entry);
 void
 _cogl_matrix_entry_cache_init (CoglMatrixEntryCache *cache);
 
-CoglBool
+bool
 _cogl_matrix_entry_cache_maybe_update (CoglMatrixEntryCache *cache,
                                        CoglMatrixEntry *entry,
-                                       CoglBool flip);
+                                       bool flip);
 
 void
 _cogl_matrix_entry_cache_destroy (CoglMatrixEntryCache *cache);

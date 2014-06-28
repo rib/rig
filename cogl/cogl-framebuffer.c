@@ -79,7 +79,7 @@ cogl_framebuffer_error_domain (void)
   return c_quark_from_static_string ("cogl-framebuffer-error-quark");
 }
 
-CoglBool
+bool
 cogl_is_framebuffer (void *object)
 {
   CoglObject *obj = object;
@@ -219,7 +219,7 @@ _cogl_framebuffer_clear_without_flush4f (CoglFramebuffer *framebuffer,
 
   if (!buffers)
     {
-      static CoglBool shown = FALSE;
+      static bool shown = FALSE;
 
       if (!shown)
         {
@@ -672,7 +672,7 @@ _cogl_offscreen_free (CoglOffscreen *offscreen)
   c_free (offscreen);
 }
 
-CoglBool
+bool
 cogl_framebuffer_allocate (CoglFramebuffer *framebuffer,
                            CoglError **error)
 {
@@ -1016,7 +1016,7 @@ cogl_framebuffer_set_color_mask (CoglFramebuffer *framebuffer,
       COGL_FRAMEBUFFER_STATE_COLOR_MASK;
 }
 
-CoglBool
+bool
 cogl_framebuffer_get_depth_write_enabled (CoglFramebuffer *framebuffer)
 {
   return framebuffer->depth_writing_enabled;
@@ -1024,7 +1024,7 @@ cogl_framebuffer_get_depth_write_enabled (CoglFramebuffer *framebuffer)
 
 void
 cogl_framebuffer_set_depth_write_enabled (CoglFramebuffer *framebuffer,
-                                          CoglBool depth_write_enabled)
+                                          bool depth_write_enabled)
 {
   if (framebuffer->depth_writing_enabled == depth_write_enabled)
     return;
@@ -1039,7 +1039,7 @@ cogl_framebuffer_set_depth_write_enabled (CoglFramebuffer *framebuffer,
       COGL_FRAMEBUFFER_STATE_DEPTH_WRITE;
 }
 
-CoglBool
+bool
 cogl_framebuffer_get_dither_enabled (CoglFramebuffer *framebuffer)
 {
   return framebuffer->dither_enabled;
@@ -1047,7 +1047,7 @@ cogl_framebuffer_get_dither_enabled (CoglFramebuffer *framebuffer)
 
 void
 cogl_framebuffer_set_dither_enabled (CoglFramebuffer *framebuffer,
-                                     CoglBool dither_enabled)
+                                     bool dither_enabled)
 {
   if (framebuffer->dither_enabled == dither_enabled)
     return;
@@ -1063,14 +1063,14 @@ cogl_framebuffer_set_dither_enabled (CoglFramebuffer *framebuffer,
 
 void
 cogl_framebuffer_set_depth_texture_enabled (CoglFramebuffer *framebuffer,
-                                            CoglBool enabled)
+                                            bool enabled)
 {
   _COGL_RETURN_IF_FAIL (!framebuffer->allocated);
 
   framebuffer->config.depth_texture_enabled = enabled;
 }
 
-CoglBool
+bool
 cogl_framebuffer_get_depth_texture_enabled (CoglFramebuffer *framebuffer)
 {
   return framebuffer->config.depth_texture_enabled;
@@ -1159,14 +1159,14 @@ cogl_framebuffer_get_context (CoglFramebuffer *framebuffer)
   return framebuffer->context;
 }
 
-static CoglBool
+static bool
 _cogl_framebuffer_try_fast_read_pixel (CoglFramebuffer *framebuffer,
                                        int x,
                                        int y,
                                        CoglReadPixelsFlags source,
                                        CoglBitmap *bitmap)
 {
-  CoglBool found_intersection;
+  bool found_intersection;
   CoglPixelFormat format;
 
   if (C_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_FAST_READ_PIXEL)))
@@ -1238,7 +1238,7 @@ _cogl_framebuffer_try_fast_read_pixel (CoglFramebuffer *framebuffer,
   return FALSE;
 }
 
-CoglBool
+bool
 cogl_framebuffer_read_pixels_into_bitmap (CoglFramebuffer *framebuffer,
                                           int x,
                                           int y,
@@ -1288,7 +1288,7 @@ cogl_framebuffer_read_pixels_into_bitmap (CoglFramebuffer *framebuffer,
                                                                   error);
 }
 
-CoglBool
+bool
 cogl_framebuffer_read_pixels (CoglFramebuffer *framebuffer,
                               int x,
                               int y,
@@ -1299,7 +1299,7 @@ cogl_framebuffer_read_pixels (CoglFramebuffer *framebuffer,
 {
   int bpp = _cogl_pixel_format_get_bytes_per_pixel (format);
   CoglBitmap *bitmap;
-  CoglBool ret;
+  bool ret;
 
   bitmap = cogl_bitmap_new_for_data (framebuffer->context,
                                      width, height,
@@ -1971,7 +1971,7 @@ get_wire_line_indices (CoglContext *ctx,
   return ret;
 }
 
-static CoglBool
+static bool
 remove_layer_cb (CoglPipeline *pipeline,
                  int layer_index,
                  void *user_data)

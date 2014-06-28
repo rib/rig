@@ -64,7 +64,7 @@ _cogl_buffer_register_buffer_type (const CoglObjectClass *klass)
   _cogl_buffer_types = c_slist_prepend (_cogl_buffer_types, (void *) klass);
 }
 
-CoglBool
+bool
 cogl_is_buffer (void *object)
 {
   const CoglObject *obj = object;
@@ -102,7 +102,7 @@ malloc_unmap (CoglBuffer *buffer)
   buffer->flags &= ~COGL_BUFFER_FLAG_MAPPED;
 }
 
-static CoglBool
+static bool
 malloc_set_data (CoglBuffer *buffer,
                  unsigned int offset,
                  const void *data,
@@ -121,7 +121,7 @@ _cogl_buffer_initialize (CoglBuffer *buffer,
                          CoglBufferUsageHint usage_hint,
                          CoglBufferUpdateHint update_hint)
 {
-  CoglBool use_malloc = FALSE;
+  bool use_malloc = FALSE;
 
   buffer->context = ctx;
   buffer->flags = COGL_BUFFER_FLAG_NONE;
@@ -212,7 +212,7 @@ cogl_buffer_get_update_hint (CoglBuffer *buffer)
 static void
 warn_about_midscene_changes (void)
 {
-  static CoglBool seen = FALSE;
+  static bool seen = FALSE;
   if (!seen)
     {
       c_warning ("Mid-scene modification of buffers has "
@@ -347,7 +347,7 @@ _cogl_buffer_unmap_for_fill_or_fallback (CoglBuffer *buffer)
     cogl_buffer_unmap (buffer);
 }
 
-CoglBool
+bool
 cogl_buffer_set_data (CoglBuffer *buffer,
                       size_t offset,
                       const void *data,

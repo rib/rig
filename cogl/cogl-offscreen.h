@@ -99,7 +99,7 @@ cogl_offscreen_new_with_texture (CoglTexture *texture);
  * Returns: %TRUE if @object is a #CoglOffscreen framebuffer,
  *          %FALSE otherwise
  */
-CoglBool
+bool
 cogl_is_offscreen (void *object);
 
 COGL_END_DECLS

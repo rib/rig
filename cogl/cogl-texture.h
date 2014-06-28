@@ -128,7 +128,7 @@ uint32_t cogl_texture_error_domain (void);
  * Return value: %TRUE if the @object references a texture, and
  *   %FALSE otherwise
  */
-CoglBool
+bool
 cogl_is_texture (void *object);
 
 /**
@@ -234,7 +234,7 @@ cogl_texture_get_components (CoglTexture *texture);
  */
 void
 cogl_texture_set_premultiplied (CoglTexture *texture,
-                                CoglBool premultiplied);
+                                bool premultiplied);
 
 /**
  * cogl_texture_get_premultiplied:
@@ -251,7 +251,7 @@ cogl_texture_set_premultiplied (CoglTexture *texture,
  *               value or %FALSE if not.
  * Since: 1.18
  */
-CoglBool
+bool
 cogl_texture_get_premultiplied (CoglTexture *texture);
 
 /**
@@ -286,7 +286,7 @@ cogl_texture_get_height (CoglTexture *texture);
  * Return value: %TRUE if the texture is sliced, %FALSE if the texture
  *   is stored as a single GPU texture
  */
-CoglBool
+bool
 cogl_texture_is_sliced (CoglTexture *texture);
 
 /**
@@ -305,7 +305,7 @@ cogl_texture_is_sliced (CoglTexture *texture);
  * Return value: %TRUE if the handle was successfully retrieved, %FALSE
  *   if the handle was invalid
  */
-CoglBool
+bool
 cogl_texture_get_gl_texture (CoglTexture *texture,
                              unsigned int *out_gl_handle,
                              unsigned int *out_gl_target);
@@ -363,7 +363,7 @@ cogl_texture_get_data (CoglTexture *texture,
  *
  * Stability: unstable
  */
-CoglBool
+bool
 cogl_texture_draw_and_read_to_bitmap (CoglTexture *texture,
                                       CoglFramebuffer *framebuffer,
                                       CoglBitmap *target_bmp,
@@ -442,7 +442,7 @@ cogl_texture_draw_and_read_to_bitmap (CoglTexture *texture,
  * Return value: %TRUE if the subregion upload was successful, and
  *   %FALSE otherwise
  */
-CoglBool
+bool
 cogl_texture_set_region (CoglTexture *texture,
                          int width,
                          int height,
@@ -506,7 +506,7 @@ cogl_texture_set_region (CoglTexture *texture,
  * Return value: %TRUE if the data upload was successful, and
  *               %FALSE otherwise
  */
-CoglBool
+bool
 cogl_texture_set_data (CoglTexture *texture,
                        CoglPixelFormat format,
                        int rowstride,
@@ -544,7 +544,7 @@ cogl_texture_set_data (CoglTexture *texture,
  * Since: 1.8
  * Stability: unstable
  */
-CoglBool
+bool
 cogl_texture_set_region_from_bitmap (CoglTexture *texture,
                                      int src_x,
                                      int src_y,
@@ -574,7 +574,7 @@ cogl_texture_set_region_from_bitmap (CoglTexture *texture,
  *               otherwise %FALSE and @error will be updated if it
  *               wasn't %NULL.
  */
-CoglBool
+bool
 cogl_texture_allocate (CoglTexture *texture,
                        CoglError **error);
 

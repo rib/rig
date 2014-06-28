@@ -61,7 +61,7 @@ typedef struct _CoglDisplaySdl
 static CoglFuncPtr
 _cogl_winsys_renderer_get_proc_address (CoglRenderer *renderer,
                                         const char *name,
-                                        CoglBool in_core)
+                                        bool in_core)
 {
   CoglFuncPtr ptr;
 
@@ -91,7 +91,7 @@ _cogl_winsys_renderer_disconnect (CoglRenderer *renderer)
   c_slice_free (CoglRendererSdl, renderer->winsys);
 }
 
-static CoglBool
+static bool
 _cogl_winsys_renderer_connect (CoglRenderer *renderer,
                                CoglError **error)
 {
@@ -158,7 +158,7 @@ set_gl_attribs_from_framebuffer_config (CoglFramebufferConfig *config)
                        config->has_alpha ? 1 : 0);
 }
 
-static CoglBool
+static bool
 _cogl_winsys_display_setup (CoglDisplay *display,
                             CoglError **error)
 {
@@ -298,7 +298,7 @@ sdl_event_filter_cb (SDL_Event *event, void *data)
   return COGL_FILTER_CONTINUE;
 }
 
-static CoglBool
+static bool
 _cogl_winsys_context_init (CoglContext *context, CoglError **error)
 {
   CoglRenderer *renderer = context->display->renderer;
@@ -340,7 +340,7 @@ _cogl_winsys_onscreen_deinit (CoglOnscreen *onscreen)
   sdl_display->onscreen = NULL;
 }
 
-static CoglBool
+static bool
 _cogl_winsys_onscreen_init (CoglOnscreen *onscreen,
                             CoglError **error)
 {
@@ -348,7 +348,7 @@ _cogl_winsys_onscreen_init (CoglOnscreen *onscreen,
   CoglContext *context = framebuffer->context;
   CoglDisplay *display = context->display;
   CoglDisplaySdl *sdl_display = display->winsys;
-  CoglBool flags_changed = FALSE;
+  bool flags_changed = FALSE;
   int width, height;
 
   if (sdl_display->onscreen)
@@ -412,14 +412,14 @@ _cogl_winsys_onscreen_update_swap_throttled (CoglOnscreen *onscreen)
 
 static void
 _cogl_winsys_onscreen_set_visibility (CoglOnscreen *onscreen,
-                                      CoglBool visibility)
+                                      bool visibility)
 {
   /* SDL doesn't appear to provide a way to set this */
 }
 
 static void
 _cogl_winsys_onscreen_set_resizable (CoglOnscreen *onscreen,
-                                     CoglBool resizable)
+                                     bool resizable)
 {
   CoglFramebuffer *framebuffer = COGL_FRAMEBUFFER (onscreen);
   CoglContext *context = framebuffer->context;
@@ -443,7 +443,7 @@ _cogl_winsys_onscreen_set_resizable (CoglOnscreen *onscreen,
 const CoglWinsysVtable *
 _cogl_winsys_sdl_get_vtable (void)
 {
-  static CoglBool vtable_inited = FALSE;
+  static bool vtable_inited = FALSE;
   static CoglWinsysVtable vtable;
 
   /* It would be nice if we could use C99 struct initializers here

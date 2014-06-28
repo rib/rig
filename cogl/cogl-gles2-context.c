@@ -138,7 +138,7 @@ detach_shader (CoglGLES2ProgramData *program_data,
     }
 }
 
-static CoglBool
+static bool
 is_symbol_character (char ch)
 {
   return c_ascii_isalnum (ch) || ch == '_';
@@ -1770,7 +1770,7 @@ _cogl_gles2_offscreen_allocate (CoglOffscreen *offscreen,
   return gles2_offscreen;
 }
 
-CoglBool
+bool
 cogl_push_gles2_context (CoglContext *ctx,
                          CoglGLES2Context *gles2_ctx,
                          CoglFramebuffer *read_buffer,
@@ -1950,7 +1950,7 @@ cogl_gles2_texture_2d_new_from_handle (CoglContext *ctx,
                                               format);
 }
 
-CoglBool
+bool
 cogl_gles2_texture_get_handle (CoglTexture *texture,
                                unsigned int *handle,
                                unsigned int *target)

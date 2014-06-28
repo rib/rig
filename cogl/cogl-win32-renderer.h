@@ -116,7 +116,7 @@ cogl_win32_renderer_remove_filter (CoglRenderer *renderer,
  */
 void
 cogl_win32_renderer_set_event_retrieval_enabled (CoglRenderer *renderer,
-                                                 CoglBool enable);
+                                                 bool enable);
 
 COGL_END_DECLS
 

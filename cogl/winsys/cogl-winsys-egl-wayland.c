@@ -81,9 +81,9 @@ typedef struct _CoglOnscreenWayland
   int pending_height;
   int pending_dx;
   int pending_dy;
-  CoglBool has_pending;
+  bool has_pending;
 
-  CoglBool shell_surface_type_set;
+  bool shell_surface_type_set;
 
   CoglList frame_callbacks;
 } CoglOnscreenWayland;
@@ -228,7 +228,7 @@ dispatch_wayland_display_events (void *user_data, int revents)
   _cogl_poll_renderer_remove_fd (renderer, wayland_renderer->fd);
 }
 
-static CoglBool
+static bool
 _cogl_winsys_renderer_connect (CoglRenderer *renderer,
                                CoglError **error)
 {
@@ -308,7 +308,7 @@ error:
   return FALSE;
 }
 
-static CoglBool
+static bool
 _cogl_winsys_egl_display_setup (CoglDisplay *display,
                                 CoglError **error)
 {
@@ -329,7 +329,7 @@ _cogl_winsys_egl_display_destroy (CoglDisplay *display)
   c_slice_free (CoglDisplayWayland, egl_display->platform);
 }
 
-static CoglBool
+static bool
 make_dummy_surface (CoglDisplay *display,
                     CoglError **error)
 {
@@ -380,7 +380,7 @@ make_dummy_surface (CoglDisplay *display,
   return FALSE;
 }
 
-static CoglBool
+static bool
 _cogl_winsys_egl_context_created (CoglDisplay *display,
                                   CoglError **error)
 {
@@ -435,7 +435,7 @@ _cogl_winsys_egl_cleanup_context (CoglDisplay *display)
     }
 }
 
-static CoglBool
+static bool
 _cogl_winsys_egl_context_init (CoglContext *context,
                                CoglError **error)
 {
@@ -463,7 +463,7 @@ _cogl_winsys_egl_context_init (CoglContext *context,
   return TRUE;
 }
 
-static CoglBool
+static bool
 _cogl_winsys_egl_onscreen_init (CoglOnscreen *onscreen,
                                 EGLConfig egl_config,
                                 CoglError **error)
@@ -659,7 +659,7 @@ _cogl_winsys_onscreen_swap_buffers_with_damage (CoglOnscreen *onscreen,
 
 static void
 _cogl_winsys_onscreen_set_visibility (CoglOnscreen *onscreen,
-                                      CoglBool visibility)
+                                      bool visibility)
 {
   CoglOnscreenEGL *egl_onscreen = onscreen->winsys;
   CoglOnscreenWayland *wayland_onscreen = egl_onscreen->platform;
@@ -698,7 +698,7 @@ cogl_wayland_renderer_set_foreign_display (CoglRenderer *renderer,
 
 void
 cogl_wayland_renderer_set_event_dispatch_enabled (CoglRenderer *renderer,
-                                                  CoglBool enable)
+                                                  bool enable)
 {
   _COGL_RETURN_IF_FAIL (cogl_is_renderer (renderer));
   /* NB: Renderers are considered immutable once connected */
@@ -819,7 +819,7 @@ _cogl_winsys_egl_vtable =
 const CoglWinsysVtable *
 _cogl_winsys_egl_wayland_get_vtable (void)
 {
-  static CoglBool vtable_inited = FALSE;
+  static bool vtable_inited = FALSE;
   static CoglWinsysVtable vtable;
 
   if (!vtable_inited)

@@ -314,7 +314,7 @@ cogl_quaternion_init_from_matrix (CoglQuaternion *quaternion,
     }
 }
 
-CoglBool
+bool
 cogl_quaternion_equal (const void *v1, const void *v2)
 {
   const CoglQuaternion *a = v1;

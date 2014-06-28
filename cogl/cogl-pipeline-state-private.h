@@ -51,70 +51,70 @@ _cogl_pipeline_get_colorubv (CoglPipeline *pipeline,
   color[3] = cogl_color->alpha * 255;
 }
 
-CoglBool
+bool
 _cogl_pipeline_has_vertex_snippets (CoglPipeline *pipeline);
 
-CoglBool
+bool
 _cogl_pipeline_has_fragment_snippets (CoglPipeline *pipeline);
 
-CoglBool
+bool
 _cogl_pipeline_has_non_layer_vertex_snippets (CoglPipeline *pipeline);
 
-CoglBool
+bool
 _cogl_pipeline_has_non_layer_fragment_snippets (CoglPipeline *pipeline);
 
-CoglBool
+bool
 _cogl_pipeline_color_equal (CoglPipeline *authority0,
                             CoglPipeline *authority1);
 
-CoglBool
+bool
 _cogl_pipeline_alpha_func_state_equal (CoglPipeline *authority0,
                                        CoglPipeline *authority1);
 
-CoglBool
+bool
 _cogl_pipeline_alpha_func_reference_state_equal (CoglPipeline *authority0,
                                                  CoglPipeline *authority1);
 
-CoglBool
+bool
 _cogl_pipeline_blend_state_equal (CoglPipeline *authority0,
                                   CoglPipeline *authority1);
 
-CoglBool
+bool
 _cogl_pipeline_depth_state_equal (CoglPipeline *authority0,
                                   CoglPipeline *authority1);
 
-CoglBool
+bool
 _cogl_pipeline_non_zero_point_size_equal (CoglPipeline *authority0,
                                           CoglPipeline *authority1);
 
-CoglBool
+bool
 _cogl_pipeline_point_size_equal (CoglPipeline *authority0,
                                  CoglPipeline *authority1);
-CoglBool
+bool
 _cogl_pipeline_per_vertex_point_size_equal (CoglPipeline *authority0,
                                             CoglPipeline *authority1);
 
-CoglBool
+bool
 _cogl_pipeline_logic_ops_state_equal (CoglPipeline *authority0,
                                       CoglPipeline *authority1);
 
-CoglBool
+bool
 _cogl_pipeline_user_shader_equal (CoglPipeline *authority0,
                                   CoglPipeline *authority1);
 
-CoglBool
+bool
 _cogl_pipeline_cull_face_state_equal (CoglPipeline *authority0,
                                       CoglPipeline *authority1);
 
-CoglBool
+bool
 _cogl_pipeline_uniforms_state_equal (CoglPipeline *authority0,
                                      CoglPipeline *authority1);
 
-CoglBool
+bool
 _cogl_pipeline_vertex_snippets_state_equal (CoglPipeline *authority0,
                                             CoglPipeline *authority1);
 
-CoglBool
+bool
 _cogl_pipeline_fragment_snippets_state_equal (CoglPipeline *authority0,
                                               CoglPipeline *authority1);
 

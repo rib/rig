@@ -157,7 +157,7 @@ cogl_error_copy (CoglError *error);
  * Return value: whether the @error corresponds to the given @domain
  *               and @code.
  */
-CoglBool
+bool
 cogl_error_matches (CoglError *error,
                     uint32_t domain,
                     int code);

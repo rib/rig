@@ -119,7 +119,7 @@ uint32_t cogl_texture_pixmap_x11_error_domain (void);
 CoglTexturePixmapX11 *
 cogl_texture_pixmap_x11_new (CoglContext *context,
                              uint32_t pixmap,
-                             CoglBool automatic_updates,
+                             bool automatic_updates,
                              CoglError **error);
 
 /**
@@ -160,7 +160,7 @@ cogl_texture_pixmap_x11_update_area (CoglTexturePixmapX11 *texture,
  * Since: 1.4
  * Stability: Unstable
  */
-CoglBool
+bool
 cogl_texture_pixmap_x11_is_using_tfp_extension (CoglTexturePixmapX11 *texture);
 
 /**
@@ -200,7 +200,7 @@ cogl_texture_pixmap_x11_set_damage_object (CoglTexturePixmapX11 *texture,
  * Since: 1.4
  * Stability: Unstable
  */
-CoglBool
+bool
 cogl_is_texture_pixmap_x11 (void *object);
 
 COGL_END_DECLS

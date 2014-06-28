@@ -32,7 +32,7 @@
 #include "cogl-pipeline-private.h"
 #include "cogl-framebuffer-private.h"
 
-static CoglBool
+static bool
 _cogl_pipeline_progend_nop_start (CoglPipeline *pipeline)
 {
   return TRUE;

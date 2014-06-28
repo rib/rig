@@ -71,7 +71,7 @@ struct _CoglTexturePixmapX11
 
   Damage damage;
   CoglTexturePixmapX11ReportLevel damage_report_level;
-  CoglBool damage_owned;
+  bool damage_owned;
   CoglDamageRectangle damage_rect;
 
   void *winsys;
@@ -79,7 +79,7 @@ struct _CoglTexturePixmapX11
   /* During the pre_paint method, this will be set to TRUE if we
      should use the winsys texture, otherwise we will use the regular
      texture */
-  CoglBool use_winsys_texture;
+  bool use_winsys_texture;
 };
 
 #endif /* __COGL_TEXTURE_PIXMAP_X11_PRIVATE_H */

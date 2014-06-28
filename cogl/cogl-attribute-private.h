@@ -55,7 +55,7 @@ typedef struct _CoglAttributeNameState
   char *name;
   CoglAttributeNameID name_id;
   int name_index;
-  CoglBool normalized_default;
+  bool normalized_default;
   int layer_number;
 } CoglAttributeNameState;
 
@@ -64,9 +64,9 @@ struct _CoglAttribute
   CoglObject _parent;
 
   const CoglAttributeNameState *name_state;
-  CoglBool normalized;
+  bool normalized;
 
-  CoglBool is_buffered;
+  bool is_buffered;
 
   union {
     struct {

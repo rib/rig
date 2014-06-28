@@ -393,7 +393,7 @@ CoglAttribute *
 cogl_attribute_new_const_2x2fv (CoglContext *context,
                                 const char *name,
                                 const float *matrix2x2,
-                                CoglBool transpose);
+                                bool transpose);
 
 /**
  * cogl_attribute_new_const_3x3fv:
@@ -428,7 +428,7 @@ CoglAttribute *
 cogl_attribute_new_const_3x3fv (CoglContext *context,
                                 const char *name,
                                 const float *matrix3x3,
-                                CoglBool transpose);
+                                bool transpose);
 
 /**
  * cogl_attribute_new_const_4x4fv:
@@ -463,7 +463,7 @@ CoglAttribute *
 cogl_attribute_new_const_4x4fv (CoglContext *context,
                                 const char *name,
                                 const float *matrix4x4,
-                                CoglBool transpose);
+                                bool transpose);
 
 /**
  * cogl_attribute_set_normalized:
@@ -485,7 +485,7 @@ cogl_attribute_new_const_4x4fv (CoglContext *context,
  */
 void
 cogl_attribute_set_normalized (CoglAttribute *attribute,
-                               CoglBool normalized);
+                               bool normalized);
 
 /**
  * cogl_attribute_get_normalized:
@@ -497,7 +497,7 @@ cogl_attribute_set_normalized (CoglAttribute *attribute,
  * Stability: unstable
  * Since: 1.10
  */
-CoglBool
+bool
 cogl_attribute_get_normalized (CoglAttribute *attribute);
 
 /**
@@ -536,7 +536,7 @@ cogl_attribute_set_buffer (CoglAttribute *attribute,
  * Return value: %TRUE if the @object references a #CoglAttribute,
  *   %FALSE otherwise
  */
-CoglBool
+bool
 cogl_is_attribute (void *object);
 
 COGL_END_DECLS

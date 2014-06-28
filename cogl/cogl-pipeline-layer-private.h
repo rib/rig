@@ -181,7 +181,7 @@ typedef struct
   CoglPipelineSnippetList vertex_snippets;
   CoglPipelineSnippetList fragment_snippets;
 
-  CoglBool point_sprite_coords;
+  bool point_sprite_coords;
 } CoglPipelineLayerBigState;
 
 struct _CoglPipelineLayer
@@ -253,7 +253,7 @@ struct _CoglPipelineLayer
 
 };
 
-typedef CoglBool
+typedef bool
 (*CoglPipelineLayerStateComparitor) (CoglPipelineLayer *authority0,
                                      CoglPipelineLayer *authority1);
 
@@ -277,7 +277,7 @@ _cogl_pipeline_layer_resolve_authorities (CoglPipelineLayer *layer,
                                           unsigned long differences,
                                           CoglPipelineLayer **authorities);
 
-CoglBool
+bool
 _cogl_pipeline_layer_equal (CoglPipelineLayer *layer0,
                             CoglPipelineLayer *layer1,
                             unsigned long differences_mask,
@@ -291,7 +291,7 @@ _cogl_pipeline_layer_pre_change_notify (CoglPipeline *required_owner,
 void
 _cogl_pipeline_layer_prune_redundant_ancestry (CoglPipelineLayer *layer);
 
-CoglBool
+bool
 _cogl_pipeline_layer_has_alpha (CoglPipelineLayer *layer);
 
 /*
@@ -372,7 +372,7 @@ _cogl_pipeline_layer_get_texture (CoglPipelineLayer *layer);
 int
 _cogl_pipeline_layer_get_unit_index (CoglPipelineLayer *layer);
 
-CoglBool
+bool
 _cogl_pipeline_layer_needs_combine_separate
                                        (CoglPipelineLayer *combine_authority);
 

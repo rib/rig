@@ -65,11 +65,11 @@ struct _CoglPangoGlyphCache
   /* True if some of the glyphs are dirty. This is used as an
      optimization in _cogl_pango_glyph_cache_set_dirty_glyphs to avoid
      iterating the hash table if we know none of them are dirty */
-  CoglBool has_dirty_glyphs;
+  bool has_dirty_glyphs;
 
   /* Whether mipmapping is being used for this cache. This only
      affects whether we decide to put the glyph in the global atlas */
-  CoglBool use_mipmapping;
+  bool use_mipmapping;
 };
 
 struct _CoglPangoGlyphCacheKey
@@ -109,7 +109,7 @@ cogl_pango_glyph_cache_hash_func (const void *key)
   return GPOINTER_TO_UINT (cache_key->font) ^ cache_key->glyph;
 }
 
-static CoglBool
+static gboolean
 cogl_pango_glyph_cache_equal_func (const void *a, const void *b)
 {
   const CoglPangoGlyphCacheKey *key_a
@@ -211,7 +211,7 @@ add_global_atlas_cb (CoglAtlas *atlas,
 
 CoglPangoGlyphCache *
 cogl_pango_glyph_cache_new (CoglContext *ctx,
-                            CoglBool use_mipmapping)
+                            bool use_mipmapping)
 {
   CoglPangoGlyphCache *cache;
 
@@ -297,7 +297,7 @@ cogl_pango_glyph_cache_free (CoglPangoGlyphCache *cache)
   g_free (cache);
 }
 
-static CoglBool
+static bool
 cogl_pango_glyph_cache_add_to_global_atlas (CoglPangoGlyphCache *cache,
                                             PangoFont *font,
                                             PangoGlyph glyph,
@@ -334,7 +334,7 @@ cogl_pango_glyph_cache_add_to_global_atlas (CoglPangoGlyphCache *cache,
   return TRUE;
 }
 
-static CoglBool
+static bool
 cogl_pango_glyph_cache_add_to_local_atlas (CoglPangoGlyphCache *cache,
                                            PangoFont *font,
                                            PangoGlyph glyph,
@@ -357,7 +357,7 @@ cogl_pango_glyph_cache_add_to_local_atlas (CoglPangoGlyphCache *cache,
 
 CoglPangoGlyphCacheValue *
 cogl_pango_glyph_cache_lookup (CoglPangoGlyphCache *cache,
-                               CoglBool             create,
+                               bool             create,
                                PangoFont           *font,
                                PangoGlyph           glyph)
 {

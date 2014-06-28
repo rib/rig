@@ -213,7 +213,7 @@ cogl_euler_init_from_quaternion (CoglEuler *euler,
  * Returns: %TRUE if @v1 and @v2 are equal else %FALSE.
  * Since: 2.0
  */
-CoglBool
+bool
 cogl_euler_equal (const void *v1, const void *v2);
 
 /**

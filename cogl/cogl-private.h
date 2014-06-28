@@ -92,7 +92,7 @@ _cogl_transform_point (const CoglMatrix *matrix_mv,
                        float *x,
                        float *y);
 
-CoglBool
+bool
 _cogl_check_extension (const char *name, char * const *ext);
 
 void
@@ -143,7 +143,7 @@ _cogl_pixel_format_get_bytes_per_pixel (CoglPixelFormat format);
  *               endianness when dealing with the given @format
  *               else %FALSE.
  */
-CoglBool
+bool
 _cogl_pixel_format_is_endian_dependant (CoglPixelFormat format);
 
 /*

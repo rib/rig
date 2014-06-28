@@ -181,7 +181,7 @@ cogl_display_set_onscreen_template (CoglDisplay *display,
  * Since: 1.10
  * Stability: unstable
  */
-CoglBool
+bool
 cogl_display_setup (CoglDisplay *display,
                     CoglError **error);
 
@@ -212,7 +212,7 @@ cogl_gdl_display_set_plane (CoglDisplay *display,
  * Since: 1.10
  * Stability: unstable
  */
-CoglBool
+bool
 cogl_is_display (void *object);
 
 COGL_END_DECLS

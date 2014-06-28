@@ -291,7 +291,7 @@ _cogl_bitmap_premult_unpacked_span_16 (uint16_t *data,
     }
 }
 
-static CoglBool
+static bool
 _cogl_bitmap_can_fast_premult (CoglPixelFormat format)
 {
   switch (format & ~COGL_PREMULT_BIT)
@@ -307,7 +307,7 @@ _cogl_bitmap_can_fast_premult (CoglPixelFormat format)
     }
 }
 
-static CoglBool
+static bool
 _cogl_bitmap_needs_short_temp_buffer (CoglPixelFormat format)
 {
   /* If the format is using more than 8 bits per component then we'll
@@ -357,7 +357,7 @@ _cogl_bitmap_needs_short_temp_buffer (CoglPixelFormat format)
   c_assert_not_reached ();
 }
 
-CoglBool
+bool
 _cogl_bitmap_convert_into_bitmap (CoglBitmap *src_bmp,
                                   CoglBitmap *dst_bmp,
                                   CoglError **error)
@@ -373,8 +373,8 @@ _cogl_bitmap_convert_into_bitmap (CoglBitmap *src_bmp,
   int width, height;
   CoglPixelFormat src_format;
   CoglPixelFormat dst_format;
-  CoglBool use_16;
-  CoglBool need_premult;
+  bool use_16;
+  bool need_premult;
 
   src_format = cogl_bitmap_get_format (src_bmp);
   src_rowstride = cogl_bitmap_get_rowstride (src_bmp);
@@ -512,7 +512,7 @@ _cogl_bitmap_convert (CoglBitmap *src_bmp,
   return dst_bmp;
 }
 
-static CoglBool
+static bool
 driver_can_convert (CoglContext *ctx,
                     CoglPixelFormat src_format,
                     CoglPixelFormat internal_format)
@@ -544,7 +544,7 @@ driver_can_convert (CoglContext *ctx,
 CoglBitmap *
 _cogl_bitmap_convert_for_upload (CoglBitmap *src_bmp,
                                  CoglPixelFormat internal_format,
-                                 CoglBool can_convert_in_place,
+                                 bool can_convert_in_place,
                                  CoglError **error)
 {
   CoglContext *ctx = _cogl_bitmap_get_context (src_bmp);
@@ -612,7 +612,7 @@ _cogl_bitmap_convert_for_upload (CoglBitmap *src_bmp,
   return dst_bmp;
 }
 
-CoglBool
+bool
 _cogl_bitmap_unpremult (CoglBitmap *bmp,
                         CoglError **error)
 {
@@ -680,7 +680,7 @@ _cogl_bitmap_unpremult (CoglBitmap *bmp,
   return TRUE;
 }
 
-CoglBool
+bool
 _cogl_bitmap_premult (CoglBitmap *bmp,
                       CoglError **error)
 {

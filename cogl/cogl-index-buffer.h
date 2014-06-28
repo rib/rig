@@ -85,7 +85,7 @@ cogl_index_buffer_new (CoglContext *context,
  * Since: 1.4
  * Stability: Unstable
  */
-CoglBool
+bool
 cogl_is_index_buffer (void *object);
 
 COGL_END_DECLS
