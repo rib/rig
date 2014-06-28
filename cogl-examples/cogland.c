@@ -53,7 +53,7 @@ typedef struct
   CoglandBufferReference buffer_ref;
   CoglTexture2D *texture;
 
-  CoglBool has_shell_surface;
+  bool has_shell_surface;
 
   struct wl_signal destroy_signal;
 
@@ -61,7 +61,7 @@ typedef struct
   struct
   {
     /* wl_surface.attach */
-    CoglBool newly_attached;
+    bool newly_attached;
     CoglandBuffer *buffer;
     struct wl_listener buffer_destroy_listener;
     int32_t sx;
@@ -135,7 +135,7 @@ struct _CoglandCompositor
   unsigned int redraw_idle;
 };
 
-static CoglBool option_multiple_outputs = FALSE;
+static bool option_multiple_outputs = FALSE;
 
 static GOptionEntry
 options[] =
@@ -147,12 +147,12 @@ options[] =
     { NULL, 0, 0, 0, NULL, NULL, NULL }
   };
 
-static CoglBool
+static bool
 process_arguments (int *argc, char ***argv,
                    GError **error)
 {
   GOptionContext *context;
-  CoglBool ret;
+  bool ret;
   GOptionGroup *group;
 
   group = g_option_group_new (NULL, /* name */
@@ -190,7 +190,7 @@ region_init (CoglandRegion *region)
   memset (region, 0, sizeof (*region));
 }
 
-static CoglBool
+static bool
 region_is_empty (const CoglandRegion *region)
 {
   return region->x1 == region->x2 || region->y1 == region->y2;
@@ -233,7 +233,7 @@ region_subtract (CoglandRegion *region,
   /* FIXME */
 }
 
-static CoglBool
+static bool
 wayland_event_source_prepare (GSource *base, int *timeout)
 {
   WaylandEventSource *source = (WaylandEventSource *)base;
@@ -245,7 +245,7 @@ wayland_event_source_prepare (GSource *base, int *timeout)
   return FALSE;
 }
 
-static CoglBool
+static bool
 wayland_event_source_check (GSource *base)
 {
   WaylandEventSource *source = (WaylandEventSource *)base;
@@ -253,7 +253,7 @@ wayland_event_source_check (GSource *base)
   return source->pfd.revents;
 }
 
-static CoglBool
+static bool
 wayland_event_source_dispatch (GSource *base,
                                 GSourceFunc callback,
                                 void *data)
@@ -376,7 +376,7 @@ typedef struct _CoglandFrameCallback
   struct wl_resource *resource;
 } CoglandFrameCallback;
 
-static CoglBool
+static bool
 paint_cb (void *user_data)
 {
   CoglandCompositor *compositor = user_data;
@@ -1084,7 +1084,7 @@ bind_shell (struct wl_client *client,
 
 static CoglContext *
 create_cogl_context (CoglandCompositor *compositor,
-                     CoglBool use_egl_constraint,
+                     bool use_egl_constraint,
                      CoglError **error)
 {
   CoglRenderer *renderer = renderer = cogl_renderer_new ();

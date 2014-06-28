@@ -10,8 +10,8 @@ typedef struct _Data
     CoglPipeline *pipeline;
 
     unsigned int redraw_idle;
-    CoglBool is_dirty;
-    CoglBool draw_ready;
+    bool is_dirty;
+    bool draw_ready;
 } Data;
 
 static gboolean

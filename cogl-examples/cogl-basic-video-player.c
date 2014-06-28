@@ -219,7 +219,7 @@ _set_up_pipeline (gpointer instance,
   g_signal_connect (data->sink, "new-frame", G_CALLBACK (_new_frame_cb), data);
 }
 
-static CoglBool
+static bool
 is_uri (const char *str)
 {
   const char *p = str;
@@ -266,7 +266,7 @@ find_cogl_gst_video_sink (GstElement *element)
 }
 
 
-static CoglBool
+static bool
 make_pipeline_for_uri (CoglContext *ctx,
                        const char *uri,
                        GstElement **pipeline_out,

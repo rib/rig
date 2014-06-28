@@ -25,7 +25,7 @@ typedef struct _Data
 
   GTimer *timer;
 
-  CoglBool swap_ready;
+  bool swap_ready;
 
 } Data;
 
