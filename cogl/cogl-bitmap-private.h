@@ -81,7 +81,6 @@ struct _cg_bitmap_t {
  *
  * Return value: a #cg_pixel_buffer_t representing the newly created array
  *
- * Since: 1.10
  * Stability: Unstable
  */
 cg_bitmap_t *_cg_bitmap_new_with_malloc_buffer(cg_context_t *context,

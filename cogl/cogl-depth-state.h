@@ -48,7 +48,6 @@ CG_BEGIN_DECLS
 /**
  * cg_depth_state_t:
  *
- * Since: 2.0
  */
 typedef struct {
     /*< private >*/
@@ -81,7 +80,6 @@ typedef struct {
  * You should never pass an un initialized #cg_depth_state_t structure
  * to cg_pipeline_set_depth_state().
  *
- * Since: 2.0
  * Stability: Unstable
  */
 void cg_depth_state_init(cg_depth_state_t *state);
@@ -108,7 +106,6 @@ void cg_depth_state_init(cg_depth_state_t *state);
  * to then set the state on a #cg_pipeline_t using
  * cg_pipeline_set_depth_state()
  *
- * Since: 2.0
  * Stability: Unstable
  */
 void cg_depth_state_set_test_enabled(cg_depth_state_t *state, bool enable);
@@ -121,7 +118,6 @@ void cg_depth_state_set_test_enabled(cg_depth_state_t *state, bool enable);
  * cg_depth_state_set_test_enabled().
  *
  * Returns: The pipeline's current depth test enabled state.
- * Since: 2.0
  * Stability: Unstable
  */
 bool cg_depth_state_get_test_enabled(cg_depth_state_t *state);
@@ -143,7 +139,6 @@ bool cg_depth_state_get_test_enabled(cg_depth_state_t *state);
  * to then set the state on a #cg_pipeline_t using
  * cg_pipeline_set_depth_state()
  *
- * Since: 2.0
  * Stability: Unstable
  */
 void cg_depth_state_set_write_enabled(cg_depth_state_t *state, bool enable);
@@ -156,7 +151,6 @@ void cg_depth_state_set_write_enabled(cg_depth_state_t *state, bool enable);
  * cg_depth_state_set_write_enabled().
  *
  * Returns: The current depth writing enable state
- * Since: 2.0
  * Stability: Unstable
  */
 bool cg_depth_state_get_write_enabled(cg_depth_state_t *state);
@@ -176,7 +170,6 @@ bool cg_depth_state_get_write_enabled(cg_depth_state_t *state);
  * to then set the state on a #cg_pipeline_t using
  * cg_pipeline_set_depth_state()
  *
- * Since: 2.0
  * Stability: Unstable
  */
 void cg_depth_state_set_test_function(cg_depth_state_t *state,
@@ -190,7 +183,6 @@ void cg_depth_state_set_test_function(cg_depth_state_t *state,
  * cg_depth_state_set_test_enabled().
  *
  * Returns: The current depth test enable state.
- * Since: 2.0
  * Stability: Unstable
  */
 cg_depth_test_function_t
@@ -231,7 +223,6 @@ cg_depth_state_get_test_function(cg_depth_state_t *state);
  * to then set the state on a #cg_pipeline_t using
  * cg_pipeline_set_depth_state().
  *
- * Since: 2.0
  * Stability: Unstable
  */
 void cg_depth_state_set_range(cg_depth_state_t *state,
@@ -248,7 +239,6 @@ void cg_depth_state_set_range(cg_depth_state_t *state,
  * before writing to the depth buffer. This corresponds to the range
  * set with cg_depth_state_set_range().
  *
- * Since: 2.0
  * Stability: Unstable
  */
 void cg_depth_state_get_range(cg_depth_state_t *state,

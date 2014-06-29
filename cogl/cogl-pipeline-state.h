@@ -55,7 +55,6 @@ CG_BEGIN_DECLS
  *
  * The default value is (1.0, 1.0, 1.0, 1.0)
  *
- * Since: 2.0
  * Stability: Unstable
  */
 void cg_pipeline_set_color(cg_pipeline_t *pipeline, const cg_color_t *color);
@@ -72,7 +71,6 @@ void cg_pipeline_set_color(cg_pipeline_t *pipeline, const cg_color_t *color);
  *
  * The default value is (0xff, 0xff, 0xff, 0xff)
  *
- * Since: 2.0
  * Stability: Unstable
  */
 void cg_pipeline_set_color4ub(cg_pipeline_t *pipeline,
@@ -93,7 +91,6 @@ void cg_pipeline_set_color4ub(cg_pipeline_t *pipeline,
  *
  * The default value is (1.0, 1.0, 1.0, 1.0)
  *
- * Since: 2.0
  * Stability: Unstable
  */
 void cg_pipeline_set_color4f(
@@ -106,7 +103,6 @@ void cg_pipeline_set_color4f(
  *
  * Retrieves the current pipeline color.
  *
- * Since: 2.0
  * Stability: Unstable
  */
 void cg_pipeline_get_color(cg_pipeline_t *pipeline, cg_color_t *color);
@@ -161,7 +157,6 @@ typedef enum {
  *
  * The default is %CG_PIPELINE_ALPHA_FUNC_ALWAYS
  *
- * Since: 2.0
  * Stability: Unstable
  */
 void cg_pipeline_set_alpha_test_function(cg_pipeline_t *pipeline,
@@ -174,7 +169,6 @@ void cg_pipeline_set_alpha_test_function(cg_pipeline_t *pipeline,
  *
  * Return value: The alpha test function of @pipeline.
  *
- * Since: 2.0
  * Stability: Unstable
  */
 cg_pipeline_alpha_func_t
@@ -186,7 +180,6 @@ cg_pipeline_get_alpha_test_function(cg_pipeline_t *pipeline);
  *
  * Return value: The alpha test reference value of @pipeline.
  *
- * Since: 2.0
  * Stability: Unstable
  */
 float cg_pipeline_get_alpha_test_reference(cg_pipeline_t *pipeline);
@@ -275,7 +268,6 @@ float cg_pipeline_get_alpha_test_reference(cg_pipeline_t *pipeline);
  *   there was an error, %false is returned and @error is set accordingly (if
  *   present).
  *
- * Since: 2.0
  * Stability: Unstable
  */
 bool cg_pipeline_set_blend(cg_pipeline_t *pipeline,
@@ -290,7 +282,6 @@ bool cg_pipeline_set_blend(cg_pipeline_t *pipeline,
  * When blending is setup to reference a CONSTANT blend factor then
  * blending will depend on the constant set with this function.
  *
- * Since: 2.0
  * Stability: Unstable
  */
 void cg_pipeline_set_blend_constant(cg_pipeline_t *pipeline,
@@ -314,7 +305,6 @@ void cg_pipeline_set_blend_constant(cg_pipeline_t *pipeline,
  * if an application wants to draw points it must make sure to use a
  * pipeline that has an explicit point size set on it.
  *
- * Since: 2.0
  * Stability: Unstable
  */
 void cg_pipeline_set_point_size(cg_pipeline_t *pipeline, float point_size);
@@ -328,7 +318,6 @@ void cg_pipeline_set_point_size(cg_pipeline_t *pipeline, float point_size);
  *
  * Return value: the point size of the @pipeline.
  *
- * Since: 2.0
  * Stability: Unstable
  */
 float cg_pipeline_get_point_size(cg_pipeline_t *pipeline);
@@ -355,7 +344,6 @@ float cg_pipeline_get_point_size(cg_pipeline_t *pipeline);
  * this is not available then the function will return %false and set
  * a #cg_error_t.
  *
- * Since: 2.0
  * Stability: Unstable
  * Return value: %true if the change suceeded or %false otherwise
  */
@@ -367,7 +355,6 @@ bool cg_pipeline_set_per_vertex_point_size(cg_pipeline_t *pipeline,
  * cg_pipeline_get_per_vertex_point_size:
  * @pipeline: a #cg_pipeline_t pointer
  *
- * Since: 2.0
  * Stability: Unstable
  * Return value: %true if the pipeline has per-vertex point size
  *   enabled or %false otherwise. The per-vertex point size can be
@@ -384,7 +371,6 @@ bool cg_pipeline_get_per_vertex_point_size(cg_pipeline_t *pipeline);
  * corresponding color would be written.
  *
  * Returns: A #cg_color_mask_t
- * Since: 1.8
  * Stability: unstable
  */
 cg_color_mask_t cg_pipeline_get_color_mask(cg_pipeline_t *pipeline);
@@ -399,7 +385,6 @@ cg_color_mask_t cg_pipeline_get_color_mask(cg_pipeline_t *pipeline);
  * current framebuffer. If a bit is set in @color_mask that means that
  * color will be written.
  *
- * Since: 1.8
  * Stability: unstable
  */
 void cg_pipeline_set_color_mask(cg_pipeline_t *pipeline,
@@ -422,7 +407,6 @@ void cg_pipeline_set_color_mask(cg_pipeline_t *pipeline,
  * Returns: true if the GPU supports all the given @state else %false
  *          and returns an @error.
  *
- * Since: 2.0
  * Stability: Unstable
  */
 bool cg_pipeline_set_depth_state(cg_pipeline_t *pipeline,
@@ -437,7 +421,6 @@ bool cg_pipeline_set_depth_state(cg_pipeline_t *pipeline,
  * Retrieves the current depth state configuration for the given
  * @pipeline as previously set using cg_pipeline_set_depth_state().
  *
- * Since: 2.0
  * Stability: Unstable
  */
 void cg_pipeline_get_depth_state(cg_pipeline_t *pipeline,
@@ -480,7 +463,6 @@ typedef enum {
  * cg_pipeline_set_front_face_winding().
  *
  * Status: Unstable
- * Since: 2.0
  */
 void
 cg_pipeline_set_cull_face_mode(cg_pipeline_t *pipeline,
@@ -493,7 +475,6 @@ cg_pipeline_set_cull_face_mode(cg_pipeline_t *pipeline,
  * cg_pipeline_set_cull_face_mode().
  *
  * Status: Unstable
- * Since: 2.0
  */
 cg_pipeline_cull_face_mode_t
 cg_pipeline_get_cull_face_mode(cg_pipeline_t *pipeline);
@@ -512,7 +493,6 @@ cg_pipeline_get_cull_face_mode(cg_pipeline_t *pipeline);
  * %CG_WINDING_COUNTER_CLOCKWISE.
  *
  * Status: Unstable
- * Since: 2.0
  */
 void cg_pipeline_set_front_face_winding(cg_pipeline_t *pipeline,
                                         cg_winding_t front_winding);
@@ -532,7 +512,6 @@ void cg_pipeline_set_front_face_winding(cg_pipeline_t *pipeline,
  * Returns: The @pipeline front face winding
  *
  * Status: Unstable
- * Since: 2.0
  */
 cg_winding_t cg_pipeline_get_front_face_winding(cg_pipeline_t *pipeline);
 
@@ -553,7 +532,6 @@ cg_winding_t cg_pipeline_get_front_face_winding(cg_pipeline_t *pipeline);
  * float. It can also be used to set a single member of a float array
  * uniform.
  *
- * Since: 2.0
  * Stability: Unstable
  */
 void cg_pipeline_set_uniform_1f(cg_pipeline_t *pipeline,
@@ -577,7 +555,6 @@ void cg_pipeline_set_uniform_1f(cg_pipeline_t *pipeline,
  * int. It can also be used to set a single member of a int array
  * uniform or a sampler uniform.
  *
- * Since: 2.0
  * Stability: Unstable
  */
 void cg_pipeline_set_uniform_1i(cg_pipeline_t *pipeline,
@@ -605,7 +582,6 @@ void cg_pipeline_set_uniform_1i(cg_pipeline_t *pipeline,
  * @count. To set an array of 8 float values, you could use 1 for
  * @n_components and 8 for @count.
  *
- * Since: 2.0
  * Stability: Unstable
  */
 void cg_pipeline_set_uniform_float(cg_pipeline_t *pipeline,
@@ -635,7 +611,6 @@ void cg_pipeline_set_uniform_float(cg_pipeline_t *pipeline,
  * @count. To set an array of 8 int values, you could use 1 for
  * @n_components and 8 for @count.
  *
- * Since: 2.0
  * Stability: Unstable
  */
 void cg_pipeline_set_uniform_int(cg_pipeline_t *pipeline,
@@ -671,7 +646,6 @@ void cg_pipeline_set_uniform_int(cg_pipeline_t *pipeline,
  * the result of cg_matrix_get_array() in @value and setting
  * @transpose to %false.
  *
- * Since: 2.0
  * Stability: Unstable
  */
 void cg_pipeline_set_uniform_matrix(cg_pipeline_t *pipeline,
@@ -691,7 +665,6 @@ void cg_pipeline_set_uniform_matrix(cg_pipeline_t *pipeline,
  * @snippet. Note that some hook points are specific to a layer and
  * must be added with cg_pipeline_add_layer_snippet() instead.
  *
- * Since: 1.10
  * Stability: Unstable
  */
 void cg_pipeline_add_snippet(cg_pipeline_t *pipeline, cg_snippet_t *snippet);

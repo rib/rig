@@ -65,7 +65,6 @@ CG_BEGIN_DECLS
  * Return value: a new #GSource
  *
  * Stability: unstable
- * Since: 1.10
  */
 GSource *cg_glib_source_new(cg_context_t *context, int priority);
 
@@ -84,7 +83,6 @@ GSource *cg_glib_source_new(cg_context_t *context, int priority);
  * Return value: a new #GSource
  *
  * Stability: unstable
- * Since: 1.16
  */
 GSource *cg_glib_renderer_source_new(cg_renderer_t *renderer, int priority);
 

@@ -35,7 +35,6 @@
  * #cg_color_t is a simple structure holding the definition of a color such
  * that it can be efficiently used by GL
  *
- * Since: 1.0
  */
 
 #if !defined(__CG_H_INSIDE__) && !defined(CG_COMPILATION)
@@ -59,7 +58,6 @@ CG_BEGIN_DECLS
  *
  * Sets the values of the passed channels into a #cg_color_t.
  *
- * Since: 1.4
  */
 void cg_color_init_from_4ub(
     cg_color_t *color, uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha);
@@ -74,7 +72,6 @@ void cg_color_init_from_4ub(
  *
  * Sets the values of the passed channels into a #cg_color_t
  *
- * Since: 1.4
  */
 void cg_color_init_from_4f(
     cg_color_t *color, float red, float green, float blue, float alpha);
@@ -86,7 +83,6 @@ void cg_color_init_from_4f(
  *
  * Sets the values of the passed channels into a #cg_color_t
  *
- * Since: 1.4
  */
 void cg_color_init_from_4fv(cg_color_t *color, const float *color_array);
 
@@ -99,7 +95,6 @@ void cg_color_init_from_4fv(cg_color_t *color, const float *color_array);
  *
  * Return value: the red channel of the passed color
  *
- * Since: 1.0
  */
 uint8_t cg_color_get_red_byte(const cg_color_t *color);
 
@@ -112,7 +107,6 @@ uint8_t cg_color_get_red_byte(const cg_color_t *color);
  *
  * Return value: the green channel of the passed color
  *
- * Since: 1.0
  */
 uint8_t cg_color_get_green_byte(const cg_color_t *color);
 
@@ -125,7 +119,6 @@ uint8_t cg_color_get_green_byte(const cg_color_t *color);
  *
  * Return value: the blue channel of the passed color
  *
- * Since: 1.0
  */
 uint8_t cg_color_get_blue_byte(const cg_color_t *color);
 
@@ -138,7 +131,6 @@ uint8_t cg_color_get_blue_byte(const cg_color_t *color);
  *
  * Return value: the alpha channel of the passed color
  *
- * Since: 1.0
  */
 uint8_t cg_color_get_alpha_byte(const cg_color_t *color);
 
@@ -149,7 +141,6 @@ uint8_t cg_color_get_alpha_byte(const cg_color_t *color);
  *
  * Sets the red channel of @color to @red.
  *
- * Since: 1.4
  */
 void cg_color_set_red_byte(cg_color_t *color, uint8_t red);
 
@@ -160,7 +151,6 @@ void cg_color_set_red_byte(cg_color_t *color, uint8_t red);
  *
  * Sets the green channel of @color to @green.
  *
- * Since: 1.4
  */
 void cg_color_set_green_byte(cg_color_t *color, uint8_t green);
 
@@ -171,7 +161,6 @@ void cg_color_set_green_byte(cg_color_t *color, uint8_t green);
  *
  * Sets the blue channel of @color to @blue.
  *
- * Since: 1.4
  */
 void cg_color_set_blue_byte(cg_color_t *color, uint8_t blue);
 
@@ -182,7 +171,6 @@ void cg_color_set_blue_byte(cg_color_t *color, uint8_t blue);
  *
  * Sets the alpha channel of @color to @alpha.
  *
- * Since: 1.4
  */
 void cg_color_set_alpha_byte(cg_color_t *color, uint8_t alpha);
 
@@ -194,7 +182,6 @@ void cg_color_set_alpha_byte(cg_color_t *color, uint8_t alpha);
  * example, semi-transparent red is (1.0, 0, 0, 0.5) when non-premultiplied
  * and (0.5, 0, 0, 0.5) when premultiplied.
  *
- * Since: 1.0
  */
 void cg_color_premultiply(cg_color_t *color);
 
@@ -206,7 +193,6 @@ void cg_color_premultiply(cg_color_t *color);
  * example, semi-transparent red is (0.5, 0, 0, 0.5) when premultiplied
  * and (1.0, 0, 0, 0.5) when non-premultiplied.
  *
- * Since: 1.4
  */
 void cg_color_unpremultiply(cg_color_t *color);
 
@@ -222,7 +208,6 @@ void cg_color_unpremultiply(cg_color_t *color);
  *
  * Return value: %true if the two colors are the same.
  *
- * Since: 1.0
  */
 bool cg_color_equal(const void *v1, const void *v2);
 
@@ -235,7 +220,6 @@ bool cg_color_equal(const void *v1, const void *v2);
  * Return value: a newly-allocated #cg_color_t. Use cg_color_free()
  *   to free the allocate resources
  *
- * Since: 1.0
  */
 cg_color_t *cg_color_copy(const cg_color_t *color);
 
@@ -245,7 +229,6 @@ cg_color_t *cg_color_copy(const cg_color_t *color);
  *
  * Frees the resources allocated by cg_color_copy().
  *
- * Since: 1.0
  */
 void cg_color_free(cg_color_t *color);
 
@@ -261,7 +244,6 @@ void cg_color_free(cg_color_t *color);
  * The @hue value is in the 0 .. 360 range. The @luminance and
  * @saturation values are in the 0 .. 1 range.
  *
- * Since: 1.16
  */
 void cg_color_to_hsl(const cg_color_t *color,
                      float *hue,
@@ -278,7 +260,6 @@ void cg_color_to_hsl(const cg_color_t *color,
  * Converts a color expressed in HLS (hue, luminance and saturation)
  * values into a #cg_color_t.
  *
- * Since: 1.16
  */
 void cg_color_init_from_hsl(cg_color_t *color,
                             float hue,

@@ -81,7 +81,6 @@ typedef struct _cg_primitive_texture_t cg_primitive_texture_t;
  *
  * Return value: %true if the pointer references a primitive texture, and
  *   %false otherwise
- * Since: 2.0
  * Stability: unstable
  */
 bool cg_is_primitive_texture(void *object);
@@ -98,7 +97,6 @@ bool cg_is_primitive_texture(void *object);
  * disable this if it wants to upload its own data for the other
  * levels. By default auto mipmapping is enabled.
  *
- * Since: 2.0
  * Stability: unstable
  */
 void

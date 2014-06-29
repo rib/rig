@@ -95,7 +95,6 @@ typedef struct _cg_atlas_texture_t cg_atlas_texture_t;
  * for more details.</note>
  *
  * Returns: (transfer full): A new #cg_atlas_texture_t object.
- * Since: 1.16
  * Stability: unstable
  */
 cg_atlas_texture_t *
@@ -131,7 +130,6 @@ cg_atlas_texture_new_with_size(cg_context_t *ctx, int width, int height);
  *
  * Return value: (transfer full): A new #cg_atlas_texture_t object or
  *          %NULL on failure and @error will be updated.
- * Since: 1.16
  * Stability: unstable
  */
 cg_atlas_texture_t *cg_atlas_texture_new_from_file(cg_context_t *ctx,
@@ -175,7 +173,6 @@ cg_atlas_texture_t *cg_atlas_texture_new_from_file(cg_context_t *ctx,
  *
  * Return value: (transfer full): A new #cg_atlas_texture_t object or
  *          %NULL on failure and @error will be updated.
- * Since: 1.16
  * Stability: unstable
  */
 cg_atlas_texture_t *cg_atlas_texture_new_from_data(cg_context_t *ctx,
@@ -214,7 +211,6 @@ cg_atlas_texture_t *cg_atlas_texture_new_from_data(cg_context_t *ctx,
  * for more details.</note>
  *
  * Returns: (transfer full): A new #cg_atlas_texture_t object.
- * Since: 1.16
  * Stability: unstable
  */
 cg_atlas_texture_t *cg_atlas_texture_new_from_bitmap(cg_bitmap_t *bmp);
@@ -228,7 +224,6 @@ cg_atlas_texture_t *cg_atlas_texture_new_from_bitmap(cg_bitmap_t *bmp);
  * Return value: %true if the passed object represents an atlas
  *   texture and %false otherwise
  *
- * Since: 1.16
  * Stability: Unstable
  */
 bool cg_is_atlas_texture(void *object);

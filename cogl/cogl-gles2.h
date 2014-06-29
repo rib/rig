@@ -99,7 +99,6 @@ CG_BEGIN_DECLS
  * Applications can check for OpenGLES 2.0 api support by checking for
  * %CG_FEATURE_ID_GLES2_CONTEXT support with cg_has_feature().
  *
- * Since: 1.12
  * Stability: unstable
  */
 
@@ -110,7 +109,6 @@ CG_BEGIN_DECLS
  * OpenGLES 2.0 state. This is comparable to an EGLContext for those
  * who have used OpenGLES 2.0 with EGL before.
  *
- * Since: 1.12
  * Stability: unstable
  */
 typedef struct _cg_gles2_context_t cg_gles2_context_t;
@@ -122,7 +120,6 @@ typedef struct _cg_gles2_context_t cg_gles2_context_t;
  * api must be accessed this way and not by directly calling
  * symbols of any system OpenGLES 2.0 api.
  *
- * Since: 1.12
  * Stability: unstable
  */
 typedef struct _cg_gles2_vtable_t cg_gles2_vtable_t;
@@ -155,7 +152,6 @@ uint32_t _cg_gles2_context_error_domain(void);
  * An error domain for runtime exceptions relating to the
  * cg_gles2_context api.
  *
- * Since: 2.0
  * Stability: unstable
  */
 #define CG_GLES2_CONTEXT_ERROR (_cg_gles2_context_error_domain())
@@ -199,7 +195,6 @@ typedef enum { /*< prefix=CG_GLES2_CONTEXT_ERROR >*/
  * return an %CG_GLES2_CONTEXT_ERROR_UNSUPPORTED error if the
  * feature isn't available.</note>
  *
- * Since: 2.0
  * Return value: A newly allocated #cg_gles2_context_t or %NULL if there
  *               was an error and @error will be updated in that case.
  * Stability: unstable
@@ -217,7 +212,6 @@ cg_gles2_context_t *cg_gles2_context_new(cg_context_t *ctx, cg_error_t **error);
  * <note>You should not try to directly link to and use the symbols
  * provided by any system OpenGLES 2.0 driver.</note>
  *
- * Since: 2.0
  * Return value: A pointer to a #cg_gles2_vtable_t providing pointers
  *               to functions for the full OpenGLES 2.0 api.
  * Stability: unstable
@@ -250,7 +244,6 @@ cg_gles2_context_get_vtable(cg_gles2_context_t *gles2_ctx);
  * @gles2_ctx then this function will return %false and return
  * an error through @error.
  *
- * Since: 2.0
  * Return value: %true if operation was successfull or %false
  *               otherwise and @error will be updated.
  * Stability: unstable
@@ -274,7 +267,6 @@ bool cg_push_gles2_context(cg_context_t *ctx,
  * are not balenced with the number of corresponding calls to
  * cg_push_gles2_context().
  *
- * Since: 2.0
  * Stability: unstable
  */
 void cg_pop_gles2_context(cg_context_t *ctx);
@@ -288,7 +280,6 @@ void cg_pop_gles2_context(cg_context_t *ctx);
  *
  * Return value: The #cg_gles2_vtable_t for the currently pushed
  *               #cg_gles2_context_t or %NULL if none has been pushed.
- * Since: 2.0
  * Stability: unstable
  */
 cg_gles2_vtable_t *cg_gles2_get_current_vtable(void);
@@ -317,7 +308,6 @@ cg_gles2_vtable_t *cg_gles2_get_current_vtable(void);
  * handles created directly using the system's native libGLESv2
  * api.</note>
  *
- * Since: 2.0
  * Stability: unstable
  */
 cg_texture_2d_t *
@@ -361,7 +351,6 @@ cg_gles2_texture_2d_new_from_handle(cg_context_t *ctx,
  *
  * Return value: %true if a handle and target could be returned
  *               otherwise %false is returned.
- * Since: 2.0
  * Stability: unstable
  */
 bool cg_gles2_texture_get_handle(cg_texture_t *texture,
@@ -376,7 +365,6 @@ bool cg_gles2_texture_get_handle(cg_texture_t *texture,
  *
  * Return value: %true if the object references a #cg_gles2_context_t
  *   and %false otherwise.
- * Since: 2.0
  * Stability: unstable
  */
 bool cg_is_gles2_context(void *object);

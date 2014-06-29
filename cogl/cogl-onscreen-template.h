@@ -65,7 +65,6 @@ cg_onscreen_template_t *cg_onscreen_template_new(void);
  * cg_framebuffer_resolve_samples_region() apis with single-sample
  * rendering.</note>
  *
- * Since: 1.10
  * Stability: unstable
  */
 void cg_onscreen_template_set_samples_per_pixel(
@@ -80,7 +79,6 @@ void cg_onscreen_template_set_samples_per_pixel(
  * template should enable or disable swap throttling according to the given
  * @throttled argument.
  *
- * Since: 1.10
  * Stability: unstable
  */
 void cg_onscreen_template_set_swap_throttled(
@@ -99,7 +97,6 @@ void cg_onscreen_template_set_swap_throttled(
  *
  * By default a template does not request an alpha component.
  *
- * Since: 1.16
  * Stability: unstable
  */
 void
@@ -114,7 +111,6 @@ cg_onscreen_template_set_has_alpha(cg_onscreen_template_t *onscreen_template,
  *
  * Return value: %true if the object references a #cg_onscreen_template_t
  *   and %false otherwise.
- * Since: 1.10
  * Stability: unstable
  */
 bool cg_is_onscreen_template(void *object);

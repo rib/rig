@@ -102,7 +102,6 @@ uint32_t _cg_buffer_error_domain(void);
  *
  * Return value: %true if the handle is a cg_buffer_t, and %false otherwise
  *
- * Since: 1.2
  * Stability: unstable
  */
 bool cg_is_buffer(void *object);
@@ -115,7 +114,6 @@ bool cg_is_buffer(void *object);
  *
  * Return value: the size of the buffer in bytes
  *
- * Since: 1.2
  * Stability: unstable
  */
 unsigned int cg_buffer_get_size(cg_buffer_t *buffer);
@@ -130,7 +128,6 @@ unsigned int cg_buffer_get_size(cg_buffer_t *buffer);
  * The update hint on a buffer allows the user to give some detail on how often
  * the buffer data is going to be updated.
  *
- * Since: 1.2
  * Stability: unstable
  */
 typedef enum { /*< prefix=CG_BUFFER_UPDATE_HINT >*/
@@ -148,7 +145,6 @@ typedef enum { /*< prefix=CG_BUFFER_UPDATE_HINT >*/
  * description
  * of the available hints.
  *
- * Since: 1.2
  * Stability: unstable
  */
 void cg_buffer_set_update_hint(cg_buffer_t *buffer,
@@ -162,7 +158,6 @@ void cg_buffer_set_update_hint(cg_buffer_t *buffer,
  *
  * Return value: the #cg_buffer_update_hint_t currently used by the buffer
  *
- * Since: 1.2
  * Stability: unstable
  */
 cg_buffer_update_hint_t cg_buffer_get_update_hint(cg_buffer_t *buffer);
@@ -176,7 +171,6 @@ cg_buffer_update_hint_t cg_buffer_get_update_hint(cg_buffer_t *buffer);
  *
  * The access hints for cg_buffer_set_update_hint()
  *
- * Since: 1.2
  * Stability: unstable
  */
 typedef enum { /*< prefix=CG_BUFFER_ACCESS >*/
@@ -200,7 +194,6 @@ typedef enum { /*< prefix=CG_BUFFER_ACCESS >*/
  * Hints to Cogl about how you are planning to modify the data once it
  * is mapped.
  *
- * Since: 1.4
  * Stability: unstable
  */
 typedef enum { /*< prefix=CG_BUFFER_MAP_HINT >*/
@@ -234,7 +227,6 @@ typedef enum { /*< prefix=CG_BUFFER_MAP_HINT >*/
  * Return value: (transfer none): A pointer to the mapped memory or
  *        %NULL is the call fails
  *
- * Since: 1.2
  * Stability: unstable
  */
 void *cg_buffer_map(cg_buffer_t *buffer,
@@ -271,7 +263,6 @@ void *cg_buffer_map(cg_buffer_t *buffer,
  * Return value: (transfer none): A pointer to the mapped memory or
  *        %NULL is the call fails
  *
- * Since: 2.0
  * Stability: unstable
  */
 void *cg_buffer_map_range(cg_buffer_t *buffer,
@@ -287,7 +278,6 @@ void *cg_buffer_map_range(cg_buffer_t *buffer,
  *
  * Unmaps a buffer previously mapped by cg_buffer_map().
  *
- * Since: 1.2
  * Stability: unstable
  */
 void cg_buffer_unmap(cg_buffer_t *buffer);
@@ -306,7 +296,6 @@ void cg_buffer_unmap(cg_buffer_t *buffer);
  *
  * Return value: %true is the operation succeeded, %false otherwise
  *
- * Since: 1.2
  * Stability: unstable
  */
 bool cg_buffer_set_data(cg_buffer_t *buffer,

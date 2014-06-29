@@ -632,7 +632,6 @@ typedef struct _cg_snippet_t cg_snippet_t;
  *  </glossentry>
  * </glosslist>
  *
- * Since: 1.10
  * Stability: Unstable
  */
 typedef enum {
@@ -667,7 +666,6 @@ typedef enum {
  *
  * Return value: a pointer to a new #cg_snippet_t
  *
- * Since: 1.10
  * Stability: Unstable
  */
 cg_snippet_t *cg_snippet_new(cg_snippet_hook_t hook,
@@ -680,7 +678,6 @@ cg_snippet_t *cg_snippet_new(cg_snippet_hook_t hook,
  *
  * Return value: the hook that was set when cg_snippet_new() was
  *   called.
- * Since: 1.10
  * Stability: Unstable
  */
 cg_snippet_hook_t cg_snippet_get_hook(cg_snippet_t *snippet);
@@ -694,7 +691,6 @@ cg_snippet_hook_t cg_snippet_get_hook(cg_snippet_t *snippet);
  * Return value: %true if the @object references a #cg_snippet_t,
  *   %false otherwise
  *
- * Since: 1.10
  * Stability: Unstable
  */
 bool cg_is_snippet(void *object);
@@ -714,7 +710,6 @@ bool cg_is_snippet(void *object);
  * to its first pipeline. After that the snippet should be considered
  * immutable.
  *
- * Since: 1.10
  * Stability: Unstable
  */
 void cg_snippet_set_declarations(cg_snippet_t *snippet,
@@ -727,7 +722,6 @@ void cg_snippet_set_declarations(cg_snippet_t *snippet,
  * Return value: the source string that was set with
  *   cg_snippet_set_declarations() or %NULL if none was set.
  *
- * Since: 1.10
  * Stability: Unstable
  */
 const char *cg_snippet_get_declarations(cg_snippet_t *snippet);
@@ -746,7 +740,6 @@ const char *cg_snippet_get_declarations(cg_snippet_t *snippet);
  * to its first pipeline. After that the snippet should be considered
  * immutable.
  *
- * Since: 1.10
  * Stability: Unstable
  */
 void cg_snippet_set_pre(cg_snippet_t *snippet, const char *pre);
@@ -758,7 +751,6 @@ void cg_snippet_set_pre(cg_snippet_t *snippet, const char *pre);
  * Return value: the source string that was set with
  *   cg_snippet_set_pre() or %NULL if none was set.
  *
- * Since: 1.10
  * Stability: Unstable
  */
 const char *cg_snippet_get_pre(cg_snippet_t *snippet);
@@ -777,7 +769,6 @@ const char *cg_snippet_get_pre(cg_snippet_t *snippet);
  * to its first pipeline. After that the snippet should be considered
  * immutable.
  *
- * Since: 1.10
  * Stability: Unstable
  */
 void cg_snippet_set_replace(cg_snippet_t *snippet, const char *replace);
@@ -789,7 +780,6 @@ void cg_snippet_set_replace(cg_snippet_t *snippet, const char *replace);
  * Return value: the source string that was set with
  *   cg_snippet_set_replace() or %NULL if none was set.
  *
- * Since: 1.10
  * Stability: Unstable
  */
 const char *cg_snippet_get_replace(cg_snippet_t *snippet);
@@ -808,7 +798,6 @@ const char *cg_snippet_get_replace(cg_snippet_t *snippet);
  * to its first pipeline. After that the snippet should be considered
  * immutable.
  *
- * Since: 1.10
  * Stability: Unstable
  */
 void cg_snippet_set_post(cg_snippet_t *snippet, const char *post);
@@ -820,7 +809,6 @@ void cg_snippet_set_post(cg_snippet_t *snippet, const char *post);
  * Return value: the source string that was set with
  *   cg_snippet_set_post() or %NULL if none was set.
  *
- * Since: 1.10
  * Stability: Unstable
  */
 const char *cg_snippet_get_post(cg_snippet_t *snippet);

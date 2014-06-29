@@ -72,7 +72,6 @@ CG_BEGIN_DECLS
  * Return value: (transfer full): a #cg_bitmap_t to the new loaded
  *               image data, or %NULL if loading the image failed.
  *
- * Since: 1.0
  */
 cg_bitmap_t *cg_bitmap_new_from_file(cg_context_t *context,
                                      const char *filename,
@@ -91,7 +90,6 @@ cg_bitmap_t *cg_bitmap_new_from_file(cg_context_t *context,
  * Return value: (transfer full): A newly allocated #cg_bitmap_t
  *               holding the image data of the specified asset.
  *
- * Since: 2.0
  */
 cg_bitmap_t *cg_android_bitmap_new_from_asset(cg_context_t *context,
                                               AAssetManager *manager,
@@ -116,7 +114,6 @@ cg_bitmap_t *cg_android_bitmap_new_from_asset(cg_context_t *context,
  * Return value: (transfer full): a #cg_bitmap_t encapsulating the given
  *@buffer.
  *
- * Since: 1.8
  * Stability: unstable
  */
 cg_bitmap_t *cg_bitmap_new_from_buffer(cg_buffer_t *buffer,
@@ -152,7 +149,6 @@ cg_bitmap_t *cg_bitmap_new_from_buffer(cg_buffer_t *buffer,
  * Return value: (transfer full): a #cg_pixel_buffer_t representing the
  *               newly created array or %NULL on failure
  *
- * Since: 1.10
  * Stability: Unstable
  */
 cg_bitmap_t *cg_bitmap_new_with_size(cg_context_t *context,
@@ -177,7 +173,6 @@ cg_bitmap_t *cg_bitmap_new_with_size(cg_context_t *context,
  * into an application buffer with the specified rowstride.
  *
  * Return value: (transfer full): A new #cg_bitmap_t.
- * Since: 1.10
  * Stability: unstable
  */
 cg_bitmap_t *cg_bitmap_new_for_data(cg_context_t *context,
@@ -192,7 +187,6 @@ cg_bitmap_t *cg_bitmap_new_for_data(cg_context_t *context,
  * @bitmap: A #cg_bitmap_t
  *
  * Return value: the #cg_pixel_format_t that the data for the bitmap is in.
- * Since: 1.10
  * Stability: unstable
  */
 cg_pixel_format_t cg_bitmap_get_format(cg_bitmap_t *bitmap);
@@ -202,7 +196,6 @@ cg_pixel_format_t cg_bitmap_get_format(cg_bitmap_t *bitmap);
  * @bitmap: A #cg_bitmap_t
  *
  * Return value: the width of the bitmap
- * Since: 1.10
  * Stability: unstable
  */
 int cg_bitmap_get_width(cg_bitmap_t *bitmap);
@@ -212,7 +205,6 @@ int cg_bitmap_get_width(cg_bitmap_t *bitmap);
  * @bitmap: A #cg_bitmap_t
  *
  * Return value: the height of the bitmap
- * Since: 1.10
  * Stability: unstable
  */
 int cg_bitmap_get_height(cg_bitmap_t *bitmap);
@@ -224,7 +216,6 @@ int cg_bitmap_get_height(cg_bitmap_t *bitmap);
  * Return value: the rowstride of the bitmap. This is the number of
  *   bytes between the address of start of one row to the address of the
  *   next row in the image.
- * Since: 1.10
  * Stability: unstable
  */
 int cg_bitmap_get_rowstride(cg_bitmap_t *bitmap);
@@ -238,7 +229,6 @@ int cg_bitmap_get_rowstride(cg_bitmap_t *bitmap);
  *   cg_bitmap_new_from_file() then it will not actually be using a
  *   pixel buffer and this function will return %NULL.
  * Stability: unstable
- * Since: 1.10
  */
 cg_pixel_buffer_t *cg_bitmap_get_buffer(cg_bitmap_t *bitmap);
 
@@ -253,7 +243,6 @@ cg_pixel_buffer_t *cg_bitmap_get_buffer(cg_bitmap_t *bitmap);
  *
  * Return value: %true if the image was successfully parsed
  *
- * Since: 1.0
  */
 bool
 cg_bitmap_get_size_from_file(const char *filename, int *width, int *height);
@@ -267,7 +256,6 @@ cg_bitmap_get_size_from_file(const char *filename, int *width, int *height);
  * Return value: %true if the passed @object represents a bitmap,
  *   and %false otherwise
  *
- * Since: 1.0
  */
 bool cg_is_bitmap(void *object);
 
@@ -276,7 +264,6 @@ bool cg_is_bitmap(void *object);
  *
  * #cg_error_t domain for bitmap errors.
  *
- * Since: 1.4
  */
 #define CG_BITMAP_ERROR (cg_bitmap_error_domain())
 
@@ -293,7 +280,6 @@ bool cg_is_bitmap(void *object);
  * example, if GdkPixbuf is used then errors #GdkPixbufError<!-- -->s
  * will be used directly.
  *
- * Since: 1.4
  */
 typedef enum {
     CG_BITMAP_ERROR_FAILED,

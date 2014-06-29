@@ -47,7 +47,6 @@ CG_BEGIN_DECLS
  * to the kms driver. If -1 (the default), then Cogl will
  * open its own FD by trying to open "/dev/dri/card0".
  *
- * Since: 1.18
  * Stability: unstable
  */
 void cg_kms_renderer_set_kms_fd(cg_renderer_t *renderer, int fd);

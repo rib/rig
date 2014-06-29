@@ -54,7 +54,6 @@
  * unused but in the future may be used to pass extra information
  * about the fence completion.
  *
- * Since: 2.0
  * Stability: Unstable
  */
 typedef struct _cg_fence_t cg_fence_t;
@@ -70,7 +69,6 @@ typedef struct _cg_fence_t cg_fence_t;
  * cg_framebuffer_add_fence_callback() for notification of GPU
  * command completion.
  *
- * Since: 2.0
  * Stability: Unstable
  */
 typedef void (*cg_fence_callback_t)(cg_fence_t *fence, void *user_data);
@@ -81,7 +79,6 @@ typedef void (*cg_fence_callback_t)(cg_fence_t *fence, void *user_data);
  * An opaque type representing one future callback to be made when the
  * GPU command stream has passed a certain point.
  *
- * Since: 2.0
  * Stability: Unstable
  */
 typedef struct _cg_fence_closure_t cg_fence_closure_t;
@@ -93,7 +90,6 @@ typedef struct _cg_fence_closure_t cg_fence_closure_t;
  * Returns the user_data submitted to cg_framebuffer_add_fence() which
  * returned a given #cg_fence_closure_t.
  *
- * Since: 2.0
  * Stability: Unstable
  */
 void *cg_fence_closure_get_user_data(cg_fence_closure_t *closure);
@@ -113,7 +109,6 @@ void *cg_fence_closure_get_user_data(cg_fence_closure_t *closure);
  * need to free the closure; it will be freed automatically when the
  * callback is called, or cancelled.
  *
- * Since: 2.0
  * Stability: Unstable
  */
 cg_fence_closure_t *
@@ -131,7 +126,6 @@ cg_framebuffer_add_fence_callback(cg_framebuffer_t *framebuffer,
  * cg_framebuffer_add_fence_callback(); the callback will not be
  * called.
  *
- * Since: 2.0
  * Stability: Unstable
  */
 void cg_framebuffer_cancel_fence_callback(cg_framebuffer_t *framebuffer,

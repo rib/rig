@@ -81,7 +81,6 @@ typedef struct _cg_texture_3d_t cg_texture_3d_t;
  *
  * Returns: (transfer full): A new #cg_texture_3d_t object with no storage yet
  * allocated.
- * Since: 1.10
  * Stability: Unstable
  */
 cg_texture_3d_t *cg_texture_3d_new_with_size(cg_context_t *context,
@@ -122,7 +121,6 @@ cg_texture_3d_t *cg_texture_3d_new_with_size(cg_context_t *context,
  * Return value: (transfer full): the newly created #cg_texture_3d_t or
  *               %NULL if there was an error and an exception will be
  *               returned through @error.
- * Since: 1.10
  * Stability: Unstable
  */
 cg_texture_3d_t *cg_texture_3d_new_from_data(cg_context_t *context,
@@ -166,7 +164,6 @@ cg_texture_3d_t *cg_texture_3d_new_from_data(cg_context_t *context,
  * GPU.</note>
  *
  * Return value: (transfer full): a newly created #cg_texture_3d_t
- * Since: 2.0
  * Stability: unstable
  */
 cg_texture_3d_t *
@@ -181,7 +178,6 @@ cg_texture_3d_new_from_bitmap(cg_bitmap_t *bitmap, int height, int depth);
  * Return value: %true if the passed object represents a 3D texture
  *   and %false otherwise
  *
- * Since: 1.4
  * Stability: Unstable
  */
 bool cg_is_texture_3d(void *object);

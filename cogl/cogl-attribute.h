@@ -141,7 +141,6 @@ CG_BEGIN_DECLS
  *          describing the layout for a list of attribute values
  *          stored in @array.
  *
- * Since: 1.4
  * Stability: Unstable
  */
 /* XXX: look for a precedent to see if the stride/offset args should
@@ -469,7 +468,6 @@ cg_attribute_t *cg_attribute_new_const_4x4fv(cg_context_t *context,
  * will default to false.
  *
  * Stability: unstable
- * Since: 1.10
  */
 void cg_attribute_set_normalized(cg_attribute_t *attribute, bool normalized);
 
@@ -481,7 +479,6 @@ void cg_attribute_set_normalized(cg_attribute_t *attribute, bool normalized);
  * cg_attribute_set_normalized().
  *
  * Stability: unstable
- * Since: 1.10
  */
 bool cg_attribute_get_normalized(cg_attribute_t *attribute);
 
@@ -493,7 +490,6 @@ bool cg_attribute_get_normalized(cg_attribute_t *attribute);
  *        set with cg_attribute_set_buffer() or cg_attribute_new().
  *
  * Stability: unstable
- * Since: 1.10
  */
 cg_attribute_buffer_t *cg_attribute_get_buffer(cg_attribute_t *attribute);
 
@@ -505,7 +501,6 @@ cg_attribute_buffer_t *cg_attribute_get_buffer(cg_attribute_t *attribute);
  * Sets a new #cg_attribute_buffer_t for the attribute.
  *
  * Stability: unstable
- * Since: 1.10
  */
 void cg_attribute_set_buffer(cg_attribute_t *attribute,
                              cg_attribute_buffer_t *attribute_buffer);

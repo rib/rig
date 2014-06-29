@@ -65,7 +65,6 @@ CG_BEGIN_DECLS
  * A convenience vertex definition that can be used with
  * cg_primitive_new_p2().
  *
- * Since: 1.6
  * Stability: Unstable
  */
 typedef struct {
@@ -81,7 +80,6 @@ typedef struct {
  * A convenience vertex definition that can be used with
  * cg_primitive_new_p3().
  *
- * Since: 1.6
  * Stability: Unstable
  */
 typedef struct {
@@ -100,7 +98,6 @@ typedef struct {
  * A convenience vertex definition that can be used with
  * cg_primitive_new_p2c4().
  *
- * Since: 1.6
  * Stability: Unstable
  */
 typedef struct {
@@ -121,7 +118,6 @@ typedef struct {
  * A convenience vertex definition that can be used with
  * cg_primitive_new_p3c4().
  *
- * Since: 1.6
  * Stability: Unstable
  */
 typedef struct {
@@ -139,7 +135,6 @@ typedef struct {
  * A convenience vertex definition that can be used with
  * cg_primitive_new_p2t2().
  *
- * Since: 1.6
  * Stability: Unstable
  */
 typedef struct {
@@ -158,7 +153,6 @@ typedef struct {
  * A convenience vertex definition that can be used with
  * cg_primitive_new_p3t2().
  *
- * Since: 1.6
  * Stability: Unstable
  */
 typedef struct {
@@ -180,7 +174,6 @@ typedef struct {
  * A convenience vertex definition that can be used with
  * cg_primitive_new_p3t2c4().
  *
- * Since: 1.6
  * Stability: Unstable
  */
 typedef struct {
@@ -204,7 +197,6 @@ typedef struct {
  * A convenience vertex definition that can be used with
  * cg_primitive_new_p3t2c4().
  *
- * Since: 1.6
  * Stability: Unstable
  */
 typedef struct {
@@ -230,7 +222,6 @@ typedef struct {
  *
  * Return value: (transfer full): A newly allocated #cg_primitive_t object
  *
- * Since: 1.6
  * Stability: Unstable
  */
 cg_primitive_t *cg_primitive_new(cg_vertices_mode_t mode, int n_vertices, ...);
@@ -253,7 +244,6 @@ cg_primitive_t *cg_primitive_new(cg_vertices_mode_t mode, int n_vertices, ...);
  *
  * Return value: (transfer full): A newly allocated #cg_primitive_t object
  *
- * Since: 1.6
  * Stability: Unstable
  */
 cg_primitive_t *cg_primitive_new_with_attributes(cg_vertices_mode_t mode,
@@ -305,7 +295,6 @@ cg_primitive_t *cg_primitive_new_with_attributes(cg_vertices_mode_t mode,
  * Return value: (transfer full): A newly allocated #cg_primitive_t
  * with a reference of 1. This can be freed using cg_object_unref().
  *
- * Since: 1.6
  * Stability: Unstable
  */
 cg_primitive_t *cg_primitive_new_p2(cg_context_t *context,
@@ -356,7 +345,6 @@ cg_primitive_t *cg_primitive_new_p2(cg_context_t *context,
  * Return value: (transfer full): A newly allocated #cg_primitive_t
  * with a reference of 1. This can be freed using cg_object_unref().
  *
- * Since: 1.6
  * Stability: Unstable
  */
 cg_primitive_t *cg_primitive_new_p3(cg_context_t *context,
@@ -409,7 +397,6 @@ cg_primitive_t *cg_primitive_new_p3(cg_context_t *context,
  * Return value: (transfer full): A newly allocated #cg_primitive_t
  * with a reference of 1. This can be freed using cg_object_unref().
  *
- * Since: 1.6
  * Stability: Unstable
  */
 cg_primitive_t *cg_primitive_new_p2c4(cg_context_t *context,
@@ -462,7 +449,6 @@ cg_primitive_t *cg_primitive_new_p2c4(cg_context_t *context,
  * Return value: (transfer full): A newly allocated #cg_primitive_t
  * with a reference of 1. This can be freed using cg_object_unref().
  *
- * Since: 1.6
  * Stability: Unstable
  */
 cg_primitive_t *cg_primitive_new_p3c4(cg_context_t *context,
@@ -515,7 +501,6 @@ cg_primitive_t *cg_primitive_new_p3c4(cg_context_t *context,
  * Return value: (transfer full): A newly allocated #cg_primitive_t
  * with a reference of 1. This can be freed using cg_object_unref().
  *
- * Since: 1.6
  * Stability: Unstable
  */
 cg_primitive_t *cg_primitive_new_p2t2(cg_context_t *context,
@@ -568,7 +553,6 @@ cg_primitive_t *cg_primitive_new_p2t2(cg_context_t *context,
  * Return value: (transfer full): A newly allocated #cg_primitive_t
  * with a reference of 1. This can be freed using cg_object_unref().
  *
- * Since: 1.6
  * Stability: Unstable
  */
 cg_primitive_t *cg_primitive_new_p3t2(cg_context_t *context,
@@ -621,7 +605,6 @@ cg_primitive_t *cg_primitive_new_p3t2(cg_context_t *context,
  * Return value: (transfer full): A newly allocated #cg_primitive_t
  * with a reference of 1. This can be freed using cg_object_unref().
  *
- * Since: 1.6
  * Stability: Unstable
  */
 cg_primitive_t *cg_primitive_new_p2t2c4(cg_context_t *context,
@@ -674,7 +657,6 @@ cg_primitive_t *cg_primitive_new_p2t2c4(cg_context_t *context,
  * Return value: (transfer full): A newly allocated #cg_primitive_t
  * with a reference of 1. This can be freed using cg_object_unref().
  *
- * Since: 1.6
  * Stability: Unstable
  */
 cg_primitive_t *cg_primitive_new_p3t2c4(cg_context_t *context,
@@ -704,7 +686,6 @@ void cg_primitive_set_first_vertex(cg_primitive_t *primitive, int first_vertex);
  *
  * Returns: The number of vertices to read when drawing.
  *
- * Since: 1.8
  * Stability: unstable
  */
 int cg_primitive_get_n_vertices(cg_primitive_t *primitive);
@@ -724,7 +705,6 @@ int cg_primitive_get_n_vertices(cg_primitive_t *primitive);
  * terms of data - associated with the primitive it's just the number
  * of vertices to read and draw.</note>
  *
- * Since: 1.8
  * Stability: unstable
  */
 void cg_primitive_set_n_vertices(cg_primitive_t *primitive, int n_vertices);
@@ -741,7 +721,6 @@ void cg_primitive_set_mode(cg_primitive_t *primitive, cg_vertices_mode_t mode);
  *
  * Replaces all the attributes of the given #cg_primitive_t object.
  *
- * Since: 1.6
  * Stability: Unstable
  */
 void cg_primitive_set_attributes(cg_primitive_t *primitive,
@@ -773,7 +752,6 @@ void cg_primitive_set_attributes(cg_primitive_t *primitive,
  * also affects drawing with indices by defining the first entry of the
  * indices to start drawing from.</note>
  *
- * Since: 1.10
  * Stability: unstable
  */
 void cg_primitive_set_indices(cg_primitive_t *primitive,
@@ -787,7 +765,6 @@ void cg_primitive_set_indices(cg_primitive_t *primitive,
  * Return value: (transfer none): the indices that were set with
  * cg_primitive_set_indices() or %NULL if no indices were set.
  *
- * Since: 1.10
  * Stability: unstable
  */
 cg_indices_t *cg_primitive_get_indices(cg_primitive_t *primitive);
@@ -801,7 +778,6 @@ cg_indices_t *cg_primitive_get_indices(cg_primitive_t *primitive);
  * attribute buffers as the original primitive.
  *
  * Return value: (transfer full): the new primitive
- * Since: 1.10
  * Stability: unstable
  */
 cg_primitive_t *cg_primitive_copy(cg_primitive_t *primitive);
@@ -815,7 +791,6 @@ cg_primitive_t *cg_primitive_copy(cg_primitive_t *primitive);
  * Returns: %true if the @object references a #cg_primitive_t,
  *   %false otherwise
  *
- * Since: 1.6
  * Stability: Unstable
  */
 bool cg_is_primitive(void *object);
@@ -832,7 +807,6 @@ bool cg_is_primitive(void *object);
  * The function should return true to continue iteration or false to
  * stop.
  *
- * Since: 1.10
  * Stability: Unstable
  */
 typedef bool (*cg_primitive_attribute_callback_t)(cg_primitive_t *primitive,
@@ -849,7 +823,6 @@ typedef bool (*cg_primitive_attribute_callback_t)(cg_primitive_t *primitive,
  *
  * Iterates all the attributes of the given #cg_primitive_t.
  *
- * Since: 1.10
  * Stability: Unstable
  */
 void cg_primitive_foreach_attribute(cg_primitive_t *primitive,
@@ -872,7 +845,6 @@ void cg_primitive_foreach_attribute(cg_primitive_t *primitive,
  * layers of the given @pipeline.
  *
  * Stability: unstable
- * Since: 1.16
  */
 void cg_primitive_draw(cg_primitive_t *primitive,
                        cg_framebuffer_t *framebuffer,

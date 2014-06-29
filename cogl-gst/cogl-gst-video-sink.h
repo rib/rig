@@ -82,7 +82,6 @@
  * containing a pre-multiplied RGBA color of the pixel within the
  * video.
  *
- * Since: 1.16
  */
 
 G_BEGIN_DECLS
@@ -116,7 +115,6 @@ typedef struct _CgGstVideoSinkPrivate CgGstVideoSinkPrivate;
  * The #CgGstVideoSink structure contains only private data and
  * should be accessed using the provided API.
  *
- * Since: 1.16
  */
 struct _CgGstVideoSink {
     /*< private >*/
@@ -129,7 +127,6 @@ struct _CgGstVideoSink {
  * @new_frame: handler for the #CgGstVideoSink::new-frame signal
  * @pipeline_ready: handler for the #CgGstVideoSink::pipeline-ready signal
  *
- * Since: 1.16
  */
 
 /**
@@ -143,7 +140,6 @@ struct _CgGstVideoSink {
  * application is using a custom pipeline it can alternatively call
  * cg_gst_video_sink_attach_frame() to attach the textures.
  *
- * Since: 1.16
  */
 
 /**
@@ -163,7 +159,6 @@ struct _CgGstVideoSink {
  * will only be emitted after the pipeline is ready so the application
  * could also create its pipeline in the handler for that.
  *
- * Since: 1.16
  */
 
 struct _CgGstVideoSinkClass {
@@ -188,7 +183,6 @@ GType cg_gst_video_sink_get_type(void) G_GNUC_CONST;
  * with the given context.
  *
  * Return value: (transfer full): a new #CgGstVideoSink
- * Since: 1.16
  */
 CgGstVideoSink *cg_gst_video_sink_new(cg_context_t *ctx);
 
@@ -207,7 +201,6 @@ CgGstVideoSink *cg_gst_video_sink_new(cg_context_t *ctx);
  * connect a signal handler this can be useful.
  *
  * Return value: %true if the sink is ready, else %false
- * Since: 1.16
  */
 bool cg_gst_video_sink_is_ready(CgGstVideoSink *sink);
 
@@ -230,7 +223,6 @@ bool cg_gst_video_sink_is_ready(CgGstVideoSink *sink);
  *
  * Return value: (transfer none): the pipeline for rendering the
  *   current frame
- * Since: 1.16
  */
 cg_pipeline_t *cg_gst_video_sink_get_pipeline(CgGstVideoSink *vt);
 
@@ -244,7 +236,6 @@ cg_pipeline_t *cg_gst_video_sink_get_pipeline(CgGstVideoSink *vt);
  * sink was constructed via gst_element_factory_make() instead of
  * cg_gst_video_sink_new().
  *
- * Since: 1.16
  */
 void cg_gst_video_sink_set_context(CgGstVideoSink *vt, cg_context_t *ctx);
 
@@ -262,7 +253,6 @@ void cg_gst_video_sink_set_context(CgGstVideoSink *vt, cg_context_t *ctx);
  *
  * Return value: the index of the next available layer after the
  *   sink's internal layers.
- * Since: 1.16
  */
 int cg_gst_video_sink_get_free_layer(CgGstVideoSink *sink);
 
@@ -279,7 +269,6 @@ int cg_gst_video_sink_get_free_layer(CgGstVideoSink *sink);
  * would then make a copy of its template pipeline and call this to
  * set the textures.
  *
- * Since: 1.16
  */
 void cg_gst_video_sink_attach_frame(CgGstVideoSink *sink, cg_pipeline_t *pln);
 
@@ -299,7 +288,6 @@ void cg_gst_video_sink_attach_frame(CgGstVideoSink *sink, cg_pipeline_t *pln);
  * change. For example, if @first_layer is three then the function
  * will be cg_gst_sample_video3.
  *
- * Since: 1.16
  */
 void cg_gst_video_sink_set_first_layer(CgGstVideoSink *sink, int first_layer);
 
@@ -317,7 +305,6 @@ void cg_gst_video_sink_set_first_layer(CgGstVideoSink *sink, int first_layer);
  * default snippet being added. In that case the application's snippet
  * can call cg_gst_sample_video0 to sample the texture itself.
  *
- * Since: 1.16
  */
 void cg_gst_video_sink_set_default_sample(CgGstVideoSink *sink,
                                           bool default_sample);
@@ -336,7 +323,6 @@ void cg_gst_video_sink_set_default_sample(CgGstVideoSink *sink,
  * Note: it is considered an error to call this function before the
  * #CgGstVideoSink::pipeline-ready signal is emitted.
  *
- * Since: 1.16
  */
 void cg_gst_video_sink_setup_pipeline(CgGstVideoSink *sink,
                                       cg_pipeline_t *pipeline);
@@ -354,7 +340,6 @@ void cg_gst_video_sink_setup_pipeline(CgGstVideoSink *sink,
  *
  * Return value: a width-for-height aspect ratio
  *
- * Since: 1.16
  * Stability: unstable
  */
 float cg_gst_video_sink_get_aspect(CgGstVideoSink *sink);
@@ -369,7 +354,6 @@ float cg_gst_video_sink_get_aspect(CgGstVideoSink *sink);
  *
  * Return value: An output width for the given output @height.
  *
- * Since: 1.16
  * Stability: unstable
  */
 float cg_gst_video_sink_get_width_for_height(CgGstVideoSink *sink,
@@ -385,7 +369,6 @@ float cg_gst_video_sink_get_width_for_height(CgGstVideoSink *sink,
  *
  * Return value: An output height for the given output @width.
  *
- * Since: 1.16
  * Stability: unstable
  */
 float cg_gst_video_sink_get_height_for_width(CgGstVideoSink *sink, float width);
@@ -407,7 +390,6 @@ float cg_gst_video_sink_get_height_for_width(CgGstVideoSink *sink, float width);
  * <note>This natural size is calculated assuming that the video will
  * be displayed on square pixels.</note>
  *
- * Since: 1.18
  * Stability: unstable
  */
 void cg_gst_video_sink_get_natural_size(CgGstVideoSink *sink,
@@ -431,7 +413,6 @@ void cg_gst_video_sink_get_natural_size(CgGstVideoSink *sink,
  *
  * Return value: The video's natural width
  *
- * Since: 1.18
  * Stability: unstable
  */
 float cg_gst_video_sink_get_natural_width(CgGstVideoSink *sink);
@@ -453,7 +434,6 @@ float cg_gst_video_sink_get_natural_width(CgGstVideoSink *sink);
  *
  * Return value: The video's natural height
  *
- * Since: 1.18
  * Stability: unstable
  */
 float cg_gst_video_sink_get_natural_height(CgGstVideoSink *sink);
@@ -488,7 +468,6 @@ typedef struct _CgGstRectangle {
  * using this api to position a video inside a fixed screen space and
  * filling the remaining space with black borders.
  *
- * Since: 1.16
  * Stability: unstable
  */
 void cg_gst_video_sink_fit_size(CgGstVideoSink *sink,

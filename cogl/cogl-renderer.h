@@ -90,7 +90,6 @@ typedef struct _cg_renderer_t cg_renderer_t;
  * Determines if the given @object is a #cg_renderer_t
  *
  * Return value: %true if @object is a #cg_renderer_t, else %false.
- * Since: 1.10
  * Stability: unstable
  */
 bool cg_is_renderer(void *object);
@@ -133,7 +132,6 @@ bool cg_is_renderer(void *object);
  *
  * Return value: (transfer full): A newly created #cg_renderer_t.
  *
- * Since: 1.10
  * Stability: unstable
  */
 cg_renderer_t *cg_renderer_new(void);
@@ -210,7 +208,6 @@ cg_winsys_id_t cg_renderer_get_winsys_id(cg_renderer_t *renderer);
  *
  * Returns: the number of texture image units.
  *
- * Since: 1.8
  * Stability: Unstable
  */
 int cg_renderer_get_n_fragment_texture_units(cg_renderer_t *renderer);
@@ -226,7 +223,6 @@ int cg_renderer_get_n_fragment_texture_units(cg_renderer_t *renderer);
  *
  * Return value: %true if the @onscreen_template can be supported,
  *               else %false.
- * Since: 1.10
  * Stability: unstable
  */
 bool
@@ -248,7 +244,6 @@ cg_renderer_check_onscreen_template(cg_renderer_t *renderer,
  *
  * Return value: %true if there was no error while connecting the
  *               given @renderer. %false if there was an error.
- * Since: 1.10
  * Stability: unstable
  */
 bool cg_renderer_connect(cg_renderer_t *renderer, cg_error_t **error);
@@ -276,7 +271,6 @@ bool cg_renderer_connect(cg_renderer_t *renderer, cg_error_t **error);
  * Applications should ideally minimize how many of these constraints
  * they depend on to ensure maximum portability.
  *
- * Since: 1.10
  * Stability: unstable
  */
 typedef enum {
@@ -296,7 +290,6 @@ typedef enum {
  * Applications should ideally minimize how many of these constraints they
  * depend on to ensure maximum portability.
  *
- * Since: 1.10
  * Stability: unstable
  */
 void cg_renderer_add_constraint(cg_renderer_t *renderer,
@@ -312,7 +305,6 @@ void cg_renderer_add_constraint(cg_renderer_t *renderer,
  * Applications should ideally minimize how many of these constraints they
  * depend on to ensure maximum portability.
  *
- * Since: 1.10
  * Stability: unstable
  */
 void cg_renderer_remove_constraint(cg_renderer_t *renderer,
@@ -330,7 +322,6 @@ void cg_renderer_remove_constraint(cg_renderer_t *renderer,
  * Identifiers for underlying hardware drivers that may be used by
  * Cogl for rendering.
  *
- * Since: 1.10
  * Stability: unstable
  */
 typedef enum {
@@ -356,7 +347,6 @@ typedef enum {
  *
  * This may only be called on an un-connected #cg_renderer_t.
  *
- * Since: 1.10
  * Stability: unstable
  */
 void cg_renderer_set_driver(cg_renderer_t *renderer, cg_driver_t driver);
@@ -369,7 +359,6 @@ void cg_renderer_set_driver(cg_renderer_t *renderer, cg_driver_t driver);
  *
  * This may only be called on a connected #cg_renderer_t.
  *
- * Since: 1.10
  * Stability: unstable
  */
 cg_driver_t cg_renderer_get_driver(cg_renderer_t *renderer);
@@ -384,7 +373,6 @@ cg_driver_t cg_renderer_get_driver(cg_renderer_t *renderer);
  * cg_renderer_foreach_output() for iterating display outputs for a
  * given renderer.
  *
- * Since: 1.14
  * Stability: Unstable
  */
 typedef void (*cg_output_callback_t)(cg_output_t *output, void *user_data);
@@ -400,7 +388,6 @@ typedef void (*cg_output_callback_t)(cg_output_t *output, void *user_data);
  * passes a corresponding #cg_output_t pointer to the given @callback
  * for each one, along with the given @user_data.
  *
- * Since: 1.14
  * Stability: Unstable
  */
 void cg_renderer_foreach_output(cg_renderer_t *renderer,

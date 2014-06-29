@@ -64,7 +64,6 @@ CG_BEGIN_DECLS
  *
  * Returns: (transfer full): A newly allocated #cg_texture_2d_t
  *
- * Since: 2.0
  */
 cg_texture_2d_t *cg_texture_2d_gl_new_from_foreign(cg_context_t *ctx,
                                                    unsigned int gl_handle,

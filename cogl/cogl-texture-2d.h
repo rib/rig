@@ -101,7 +101,6 @@ bool cg_is_texture_2d(void *object);
  * Returns: (transfer full): A new #cg_texture_2d_t object with no storage yet
  * allocated.
  *
- * Since: 2.0
  */
 cg_texture_2d_t *
 cg_texture_2d_new_with_size(cg_context_t *ctx, int width, int height);
@@ -134,7 +133,6 @@ cg_texture_2d_new_with_size(cg_context_t *ctx, int width, int height);
  * failure
  *               and @error will be updated.
  *
- * Since: 1.16
  */
 cg_texture_2d_t *cg_texture_2d_new_from_file(cg_context_t *ctx,
                                              const char *filename,
@@ -176,7 +174,6 @@ cg_texture_2d_t *cg_texture_2d_new_from_file(cg_context_t *ctx,
  *          non-power-of-two size that the hardware doesn't support)
  *          it will return %NULL and set @error.
  *
- * Since: 2.0
  */
 cg_texture_2d_t *cg_texture_2d_new_from_data(cg_context_t *ctx,
                                              int width,
@@ -211,7 +208,6 @@ cg_texture_2d_t *cg_texture_2d_new_from_data(cg_context_t *ctx,
  *
  * Returns: (transfer full): A newly allocated #cg_texture_2d_t
  *
- * Since: 2.0
  * Stability: unstable
  */
 cg_texture_2d_t *cg_texture_2d_new_from_bitmap(cg_bitmap_t *bitmap);

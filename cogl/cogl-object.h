@@ -92,7 +92,6 @@ void cg_object_unref(void *object);
  * }
  * ]|
  *
- * Since: 1.4
  */
 typedef struct {
     int unused;
@@ -108,7 +107,6 @@ typedef struct {
  * cg_object_set_user_data() is called with NULL user_data for the
  * same key.
  *
- * Since: 1.4
  */
 #ifdef CG_HAS_GTYPE_SUPPORT
 typedef GDestroyNotify cg_user_data_destroy_callback_t;
@@ -125,7 +123,6 @@ typedef void (*cg_user_data_destroy_callback_t)(void *user_data);
  * This struct is used to pass information to the callback when
  * cg_debug_object_foreach_type() is called.
  *
- * Since: 1.8
  * Stability: unstable
  */
 typedef struct {
@@ -139,7 +136,6 @@ typedef struct {
  *
  * A callback function to use for cg_debug_object_foreach_type().
  *
- * Since: 1.8
  * Stability: unstable
  */
 typedef void (*CoglDebugObjectForeachTypeCallback)(
@@ -160,7 +156,6 @@ typedef void (*CoglDebugObjectForeachTypeCallback)(
  * later remove the association call cg_object_set_user_data() with
  * the same @key but NULL for the @user_data.
  *
- * Since: 1.4
  */
 void cg_object_set_user_data(cg_object_t *object,
                              cg_user_data_key_t *key,
@@ -181,7 +176,6 @@ void cg_object_set_user_data(cg_object_t *object,
  *   with @object using the given @key; or %NULL if no associated
  *   data is found.
  *
- * Since: 1.4
  */
 void *cg_object_get_user_data(cg_object_t *object, cg_user_data_key_t *key);
 
@@ -195,7 +189,6 @@ void *cg_object_get_user_data(cg_object_t *object, cg_user_data_key_t *key);
  * intended to be used solely for debugging purposes to track down
  * issues with objects leaking.
  *
- * Since: 1.8
  * Stability: unstable
  */
 void cg_debug_object_foreach_type(CoglDebugObjectForeachTypeCallback func,
@@ -209,7 +202,6 @@ void cg_debug_object_foreach_type(CoglDebugObjectForeachTypeCallback func,
  * intended to be used solely for debugging purposes to track down
  * issues with objects leaking.
  *
- * Since: 1.8
  * Stability: unstable
  */
 void cg_debug_object_print_instances(void);

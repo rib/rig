@@ -485,7 +485,6 @@ void _cg_framebuffer_flush(cg_framebuffer_t *framebuffer);
  *
  * Return value: the number of bits
  *
- * Since: 2.0
  * Stability: unstable
  */
 int _cg_framebuffer_get_stencil_bits(cg_framebuffer_t *framebuffer);

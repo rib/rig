@@ -60,7 +60,6 @@ typedef struct _cg_onscreen_t cg_onscreen_t;
  *
  * Return value: (transfer full): A newly instantiated #cg_onscreen_t
  * framebuffer
- * Since: 1.8
  * Stability: unstable
  */
 cg_onscreen_t *cg_onscreen_new(cg_context_t *context, int width, int height);
@@ -118,7 +117,6 @@ typedef void (*cg_onscreen_x11_mask_callback_t)(cg_onscreen_t *onscreen,
  * }
  * }]
  *
- * Since: 2.0
  * Stability: Unstable
  */
 void
@@ -141,7 +139,6 @@ cg_x11_onscreen_set_foreign_window_xid(cg_onscreen_t *onscreen,
  * It's undefined what this function does if called when not using an x11 based
  * renderer.
  *
- * Since: 1.10
  * Stability: unstable
  */
 uint32_t cg_x11_onscreen_get_window_xid(cg_onscreen_t *onscreen);
@@ -163,7 +160,6 @@ uint32_t cg_x11_onscreen_get_visual_xid(cg_onscreen_t *onscreen);
  * function can be called before @onscreen has been allocated to set a
  * foreign XID for your existing X window.
  *
- * Since: 1.10
  * Stability: unstable
  */
 void cg_win32_onscreen_set_foreign_window(cg_onscreen_t *onscreen, HWND hwnd);
@@ -176,7 +172,6 @@ void cg_win32_onscreen_set_foreign_window(cg_onscreen_t *onscreen, HWND hwnd);
  * framebuffer.  If cg_win32_onscreen_set_foreign_window() has been used then
  * it will return the same handle set with that API.
  *
- * Since: 1.10
  * Stability: unstable
  */
 HWND cg_win32_onscreen_get_window(cg_onscreen_t *onscreen);
@@ -199,7 +194,6 @@ cg_wayland_onscreen_get_shell_surface(cg_onscreen_t *onscreen);
  *
  * This function must be called before @onscreen is allocated.
  *
- * Since: 1.16
  * Stability: unstable
  */
 void cg_wayland_onscreen_set_foreign_surface(cg_onscreen_t *onscreen,
@@ -237,7 +231,6 @@ void cg_wayland_onscreen_set_foreign_surface(cg_onscreen_t *onscreen,
  * offsets accumulate instead of being replaced. The @width and
  * @height values superseed the old values.
  *
- * Since: 1.10
  * Stability: unstable
  */
 void cg_wayland_onscreen_resize(
@@ -257,7 +250,6 @@ void cg_wayland_onscreen_resize(
  * into these events directly the application needs to inform Cogl
  * when the framebuffer size has changed.
  *
- * Since: 1.12
  * Stability: unstable
  */
 void
@@ -274,7 +266,6 @@ cg_android_onscreen_update_size(cg_onscreen_t *onscreen, int width, int height);
  * displays vblank period or perhaps some other mechanism in a composited
  * environment.
  *
- * Since: 1.8
  * Stability: unstable
  */
 void cg_onscreen_set_swap_throttled(cg_onscreen_t *onscreen, bool throttled);
@@ -304,7 +295,6 @@ void cg_onscreen_set_swap_throttled(cg_onscreen_t *onscreen, bool throttled);
  * that it's acceptable to alternatively use native APIs to show and
  * hide windows without confusing Cogl.</note>
  *
- * Since: 2.0
  * Stability: Unstable
  */
 void cg_onscreen_show(cg_onscreen_t *onscreen);
@@ -328,7 +318,6 @@ void cg_onscreen_show(cg_onscreen_t *onscreen);
  * that it's acceptable to alternatively use native APIs to show and
  * hide windows without confusing Cogl.</note>
  *
- * Since: 2.0
  * Stability: Unstable
  */
 void cg_onscreen_hide(cg_onscreen_t *onscreen);
@@ -351,7 +340,6 @@ void cg_onscreen_hide(cg_onscreen_t *onscreen);
  * perform incremental updates to older buffers instead of having to
  * render a full buffer for every frame.</note>
  *
- * Since: 1.10
  * Stability: unstable
  */
 void cg_onscreen_swap_buffers(cg_onscreen_t *onscreen);
@@ -397,7 +385,6 @@ void cg_onscreen_swap_buffers(cg_onscreen_t *onscreen);
  * Return value: The age of the buffer contents or 0 when the buffer
  *               contents are undefined.
  *
- * Since: 1.14
  * Stability: stable
  */
 int cg_onscreen_get_buffer_age(cg_onscreen_t *onscreen);
@@ -447,7 +434,6 @@ int cg_onscreen_get_buffer_age(cg_onscreen_t *onscreen);
  * the cg_onscreen_get_buffer_age() api so that your application can
  * perform incremental rendering based on old back buffers.</note>
  *
- * Since: 1.16
  * Stability: unstable
  */
 void cg_onscreen_swap_buffers_with_damage(cg_onscreen_t *onscreen,
@@ -471,7 +457,6 @@ void cg_onscreen_swap_buffers_with_damage(cg_onscreen_t *onscreen,
  * start a new frame that incrementally builds on the contents of the previous
  * frame.
  *
- * Since: 1.10
  * Stability: unstable
  */
 void cg_onscreen_swap_region(cg_onscreen_t *onscreen,
@@ -506,7 +491,6 @@ void cg_onscreen_swap_region(cg_onscreen_t *onscreen,
  * so applications should avoid needing to collect all statistics for
  * a particular frame before they can start a new frame.</note>
  *
- * Since: 1.14
  * Stability: unstable
  */
 typedef enum _cg_frame_event_t {
@@ -531,7 +515,6 @@ typedef enum _cg_frame_event_t {
  * cg_onscreen_add_frame_callback() for more details about what
  * events can be notified.
  *
- * Since: 1.14
  * Stability: unstable
  */
 typedef void (*cg_frame_callback_t)(cg_onscreen_t *onscreen,
@@ -547,7 +530,6 @@ typedef void (*cg_frame_callback_t)(cg_onscreen_t *onscreen,
  * cg_onscreen_add_frame_callback() and it allows you to remove a
  * callback later using cg_onscreen_remove_frame_callback().
  *
- * Since: 1.14
  * Stability: unstable
  */
 typedef struct _cg_closure_t CoglFrameClosure;
@@ -586,7 +568,6 @@ typedef struct _cg_closure_t CoglFrameClosure;
  *
  * Return value: a #CoglFrameClosure pointer that can be used to
  *               remove the callback and associated @user_data later.
- * Since: 1.14
  * Stability: unstable
  */
 CoglFrameClosure *
@@ -608,7 +589,6 @@ cg_onscreen_add_frame_callback(cg_onscreen_t *onscreen,
  * cg_onscreen_add_frame_callback() to destroy the user data then
  * this will get called.
  *
- * Since: 1.14
  * Stability: unstable
  */
 void cg_onscreen_remove_frame_callback(cg_onscreen_t *onscreen,
@@ -641,7 +621,6 @@ void cg_onscreen_remove_frame_callback(cg_onscreen_t *onscreen,
  * resize handler using cg_onscreen_add_resize_callback() so that it
  * can track when the viewport has been changed automatically.</note>
  *
- * Since: 2.0
  */
 void cg_onscreen_set_resizable(cg_onscreen_t *onscreen, bool resizable);
 
@@ -666,7 +645,6 @@ void cg_onscreen_set_resizable(cg_onscreen_t *onscreen, bool resizable);
  *
  * Return value: Returns whether @onscreen has been marked as
  *               resizable or not.
- * Since: 2.0
  */
 bool cg_onscreen_get_resizable(cg_onscreen_t *onscreen);
 
@@ -692,7 +670,6 @@ bool cg_onscreen_get_resizable(cg_onscreen_t *onscreen);
  * occur while an application might have arbitrary locks held for
  * example.</note>
  *
- * Since: 2.0
  */
 typedef void (*cg_onscreen_resize_callback_t)(cg_onscreen_t *onscreen,
                                               int width,
@@ -708,7 +685,6 @@ typedef void (*cg_onscreen_resize_callback_t)(cg_onscreen_t *onscreen,
  * to remove a callback later using
  * cg_onscreen_remove_resize_callback().
  *
- * Since: 2.0
  * Stability: unstable
  */
 typedef struct _cg_closure_t cg_onscreen_resize_closure_t;
@@ -743,7 +719,6 @@ typedef struct _cg_closure_t cg_onscreen_resize_closure_t;
  *
  * Return value: a #cg_onscreen_resize_closure_t pointer that can be used to
  *               remove the callback and associated @user_data later.
- * Since: 2.0
  */
 cg_onscreen_resize_closure_t *
 cg_onscreen_add_resize_callback(cg_onscreen_t *onscreen,
@@ -759,7 +734,6 @@ cg_onscreen_add_resize_callback(cg_onscreen_t *onscreen,
  * Removes a resize @callback and @user_data pair that were previously
  * associated with @onscreen via cg_onscreen_add_resize_callback().
  *
- * Since: 2.0
  */
 void cg_onscreen_remove_resize_callback(cg_onscreen_t *onscreen,
                                         cg_onscreen_resize_closure_t *closure);
@@ -775,7 +749,6 @@ void cg_onscreen_remove_resize_callback(cg_onscreen_t *onscreen,
  * cg_onscreen_add_dirty_callback(). The members describe a
  * rectangle within the onscreen buffer that should be redrawn.
  *
- * Since: 1.16
  * Stability: unstable
  */
 typedef struct _cg_onscreen_dirty_info_t cg_onscreen_dirty_info_t;
@@ -798,7 +771,6 @@ struct _cg_onscreen_dirty_info_t {
  * system determines that a region of the onscreen window has been
  * lost and the application should redraw it.
  *
- * Since: 1.16
  * Stability: unstable
  */
 typedef void (*cg_onscreen_dirty_callback_t)(
@@ -814,7 +786,6 @@ typedef void (*cg_onscreen_dirty_callback_t)(
  * cg_onscreen_add_dirty_callback() and it allows you to remove a
  * callback later using cg_onscreen_remove_dirty_callback().
  *
- * Since: 1.16
  * Stability: unstable
  */
 typedef struct _cg_closure_t cg_onscreen_dirty_closure_t;
@@ -846,7 +817,6 @@ typedef struct _cg_closure_t cg_onscreen_dirty_closure_t;
  *
  * Return value: a #cg_onscreen_dirty_closure_t pointer that can be used to
  *               remove the callback and associated @user_data later.
- * Since: 1.16
  * Stability: unstable
  */
 cg_onscreen_dirty_closure_t *
@@ -868,7 +838,6 @@ cg_onscreen_add_dirty_callback(cg_onscreen_t *onscreen,
  * cg_onscreen_add_dirty_callback() to destroy the user data then
  * this will also get called.
  *
- * Since: 1.16
  * Stability: unstable
  */
 void cg_onscreen_remove_dirty_callback(cg_onscreen_t *onscreen,
@@ -882,7 +851,6 @@ void cg_onscreen_remove_dirty_callback(cg_onscreen_t *onscreen,
  *
  * Return value: %true if the object references a #cg_onscreen_t
  *   and %false otherwise.
- * Since: 1.10
  * Stability: unstable
  */
 bool cg_is_onscreen(void *object);
@@ -896,7 +864,6 @@ bool cg_is_onscreen(void *object);
  * is called.
  *
  * Return value: the current frame counter value
- * Since: 1.14
  * Stability: unstable
  */
 int64_t cg_onscreen_get_frame_counter(cg_onscreen_t *onscreen);

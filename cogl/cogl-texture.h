@@ -76,7 +76,6 @@ CG_BEGIN_DECLS
  *
  * #cg_error_t domain for texture errors.
  *
- * Since: 1.8
  * Stability: Unstable
  */
 #define CG_TEXTURE_ERROR (cg_texture_error_domain())
@@ -90,7 +89,6 @@ CG_BEGIN_DECLS
  *
  * Error codes that can be thrown when allocating textures.
  *
- * Since: 1.8
  * Stability: Unstable
  */
 typedef enum {
@@ -109,7 +107,6 @@ typedef enum {
  * #cg_texture_t.
  *
  * Stability: unstable
- * Since: 1.10
  */
 typedef enum {
     CG_TEXTURE_TYPE_2D,
@@ -141,7 +138,6 @@ bool cg_is_texture(void *object);
  *
  * See cg_texture_set_components().
  *
- * Since: 1.18
  */
 typedef enum _cg_texture_components_t {
     CG_TEXTURE_COMPONENTS_A = 1,
@@ -175,7 +171,6 @@ typedef enum _cg_texture_components_t {
  * an image format as long as %CG_TEXTURE_COMPONENTS_RG isn't used
  * as the texture's components.
  *
- * Since: 1.18
  */
 void cg_texture_set_components(cg_texture_t *texture,
                                cg_texture_components_t components);
@@ -192,7 +187,6 @@ void cg_texture_set_components(cg_texture_t *texture,
  * a %cg_bitmap_t or a data pointer default to the same components as
  * the pixel format of the data.
  *
- * Since: 1.18
  */
 cg_texture_components_t cg_texture_get_components(cg_texture_t *texture);
 
@@ -225,7 +219,6 @@ cg_texture_components_t cg_texture_get_components(cg_texture_t *texture);
  *
  * By default the @premultipled state is @true.
  *
- * Since: 1.18
  */
 void cg_texture_set_premultiplied(cg_texture_t *texture, bool premultiplied);
 
@@ -242,7 +235,6 @@ void cg_texture_set_premultiplied(cg_texture_t *texture, bool premultiplied);
  * Return value: %true if red, green and blue components are
  *               internally stored pre-multiplied by the alpha
  *               value or %false if not.
- * Since: 1.18
  */
 bool cg_texture_get_premultiplied(cg_texture_t *texture);
 
@@ -525,7 +517,6 @@ bool cg_texture_set_data(cg_texture_t *texture,
  * Return value: %true if the subregion upload was successful, and
  *   %false otherwise
  *
- * Since: 1.8
  * Stability: unstable
  */
 bool cg_texture_set_region_from_bitmap(cg_texture_t *texture,

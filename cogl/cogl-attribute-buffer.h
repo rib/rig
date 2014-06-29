@@ -111,7 +111,6 @@ cg_attribute_buffer_t *cg_attribute_buffer_new_with_size(cg_context_t *context,
  * Return value: (transfer full): A newly allocated #cg_attribute_buffer_t
  *(never %NULL)
  *
- * Since: 1.4
  * Stability: Unstable
  */
 cg_attribute_buffer_t *
@@ -126,7 +125,6 @@ cg_attribute_buffer_new(cg_context_t *context, size_t bytes, const void *data);
  * Returns: %true if @object references a #cg_attribute_buffer_t,
  *   %false otherwise
  *
- * Since: 1.4
  * Stability: Unstable
  */
 bool cg_is_attribute_buffer(void *object);

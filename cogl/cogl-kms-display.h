@@ -54,7 +54,6 @@ CG_BEGIN_DECLS
  * cg_display_setup() or implicitily setup by having created a
  * context using the @display</note>
  *
- * Since: 2.0
  * Stability: unstable
  */
 void cg_kms_display_queue_modes_reset(cg_display_t *display);

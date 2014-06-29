@@ -109,7 +109,6 @@ typedef struct _cg_texture_2d_sliced_t cg_texture_2d_sliced_t;
  * storage
  *          allocated yet.
  *
- * Since: 1.10
  * Stability: unstable
  */
 cg_texture_2d_sliced_t *cg_texture_2d_sliced_new_with_size(cg_context_t *ctx,
@@ -157,7 +156,6 @@ cg_texture_2d_sliced_t *cg_texture_2d_sliced_new_with_size(cg_context_t *ctx,
  * Return value: (transfer full): A newly created #cg_texture_2d_sliced_t
  *               or %NULL on failure and @error will be updated.
  *
- * Since: 1.16
  */
 cg_texture_2d_sliced_t *cg_texture_2d_sliced_new_from_file(cg_context_t *ctx,
                                                            const char *filename,
@@ -217,7 +215,6 @@ cg_texture_2d_sliced_t *cg_texture_2d_sliced_new_from_file(cg_context_t *ctx,
  * Return value: (transfer full): A newly created #cg_texture_2d_sliced_t
  *               or %NULL on failure and @error will be updated.
  *
- * Since: 1.16
  */
 cg_texture_2d_sliced_t *
 cg_texture_2d_sliced_new_from_data(cg_context_t *ctx,
@@ -268,7 +265,6 @@ cg_texture_2d_sliced_new_from_data(cg_context_t *ctx,
  * Return value: (transfer full): A newly created #cg_texture_2d_sliced_t
  *               or %NULL on failure and @error will be updated.
  *
- * Since: 1.16
  */
 cg_texture_2d_sliced_t *cg_texture_2d_sliced_new_from_bitmap(cg_bitmap_t *bmp,
                                                              int max_waste);
@@ -281,7 +277,6 @@ cg_texture_2d_sliced_t *cg_texture_2d_sliced_new_from_bitmap(cg_bitmap_t *bmp,
  *
  * Return value: %true if the object references a #cg_texture_2d_sliced_t
  *   and %false otherwise.
- * Since: 1.10
  * Stability: unstable
  */
 bool cg_is_texture_2d_sliced(void *object);

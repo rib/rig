@@ -104,7 +104,6 @@ CG_BEGIN_DECLS
  * for any state objects that are allocated.
  *
  * Return value: (transfer full): A newly allocated #cg_context_t
- * Since: 1.8
  * Stability: unstable
  */
 cg_context_t *cg_context_new(cg_display_t *display, cg_error_t **error);
@@ -121,7 +120,6 @@ cg_context_t *cg_context_new(cg_display_t *display, cg_error_t **error);
  *
  * Return value: (transfer none): The #cg_display_t associated with the
  *               given @context.
- * Since: 1.8
  * Stability: unstable
  */
 cg_display_t *cg_context_get_display(cg_context_t *context);
@@ -139,7 +137,6 @@ cg_display_t *cg_context_get_display(cg_context_t *context);
  *
  * Return value: (transfer none): The #cg_renderer_t associated with the
  *               given @context.
- * Since: 1.16
  * Stability: unstable
  */
 cg_renderer_t *cg_context_get_renderer(cg_context_t *context);
@@ -154,7 +151,6 @@ cg_renderer_t *cg_context_get_renderer(cg_context_t *context);
  * this API must be used before creating a #cg_renderer_t, #cg_display_t
  * and #cg_context_t.
  *
- * Since: 1.8
  * Stability: unstable
  */
 void cg_android_set_native_window(ANativeWindow *window);
@@ -169,7 +165,6 @@ void cg_android_set_native_window(ANativeWindow *window);
  * Return value: %true if the @object references a #cg_context_t,
  *   %false otherwise
  *
- * Since: 1.10
  * Stability: Unstable
  */
 bool cg_is_context(void *object);
@@ -229,7 +224,6 @@ bool cg_is_context(void *object);
  * by Cogl. Applications that depend on any of these features should explicitly
  * check for them using cg_has_feature() or cg_has_features().
  *
- * Since: 1.10
  */
 typedef enum _cg_feature_id_t {
     CG_FEATURE_ID_TEXTURE_NPOT_BASIC = 1,
@@ -273,7 +267,6 @@ typedef enum _cg_feature_id_t {
  * Returns: %true if the @feature is currently supported or %false if
  * not.
  *
- * Since: 1.10
  * Stability: unstable
  */
 bool cg_has_feature(cg_context_t *context, cg_feature_id_t feature);
@@ -292,7 +285,6 @@ bool cg_has_feature(cg_context_t *context, cg_feature_id_t feature);
  * Return value: %true if all the features are available, %false
  * otherwise.
  *
- * Since: 1.10
  * Stability: unstable
  */
 bool cg_has_features(cg_context_t *context, ...);
@@ -305,7 +297,6 @@ bool cg_has_features(cg_context_t *context, ...);
  * A callback used with cg_foreach_feature() for enumerating all
  * context level features supported by Cogl.
  *
- * Since: 0.10
  * Stability: unstable
  */
 typedef void (*cg_feature_callback_t)(cg_feature_id_t feature, void *user_data);
@@ -320,7 +311,6 @@ typedef void (*cg_feature_callback_t)(cg_feature_id_t feature, void *user_data);
  * Iterates through all the context level features currently supported
  * for a given @context and for each feature @callback is called.
  *
- * Since: 1.10
  * Stability: unstable
  */
 void cg_foreach_feature(cg_context_t *context,
@@ -344,7 +334,6 @@ void cg_foreach_feature(cg_context_t *context,
  * Return value: the time value for the Cogl clock, in nanoseconds
  *  from an arbitrary point in time, or 0 if Cogl doesn't have an
  *  active internal clock.
- * Since: 1.14
  * Stability: unstable
  */
 int64_t cg_get_clock_time(cg_context_t *context);

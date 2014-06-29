@@ -79,7 +79,6 @@ typedef struct _cg_sub_texture_t cg_sub_texture_t;
  * Return value: (transfer full): A newly allocated #cg_sub_texture_t
  *          representing a sub-region of @parent_texture.
  *
- * Since: 1.10
  * Stability: unstable
  */
 cg_sub_texture_t *cg_sub_texture_new(cg_context_t *ctx,
@@ -99,7 +98,6 @@ cg_sub_texture_t *cg_sub_texture_new(cg_context_t *ctx,
  *
  * Return value: (transfer none): The parent texture that @sub_texture
  *               derives its content from.
- * Since: 1.10
  * Stability: unstable
  */
 cg_texture_t *cg_sub_texture_get_parent(cg_sub_texture_t *sub_texture);
@@ -113,7 +111,6 @@ cg_texture_t *cg_sub_texture_get_parent(cg_sub_texture_t *sub_texture);
  * Return value: %true if the passed @object represents a
  *               #cg_sub_texture_t and %false otherwise.
  *
- * Since: 1.10
  * Stability: unstable
  */
 bool cg_is_sub_texture(void *object);

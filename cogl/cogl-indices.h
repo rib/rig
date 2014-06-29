@@ -132,7 +132,6 @@ cg_indices_t *cg_get_rectangle_indices(cg_context_t *context, int n_rectangles);
  *
  * Return value: %true if the object references a #cg_indices_t
  *   and %false otherwise.
- * Since: 1.10
  * Stability: unstable
  */
 bool cg_is_indices(void *object);

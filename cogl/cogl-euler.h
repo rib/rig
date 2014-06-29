@@ -143,7 +143,6 @@ CG_BEGIN_DECLS
  * You may also want to look at cg_quaternion_init_from_euler() if
  * you want to do interpolation between 3d rotations.
  *
- * Since: 2.0
  */
 struct _cg_euler_t {
     /*< public > */
@@ -164,7 +163,6 @@ CG_STRUCT_SIZE_ASSERT(cg_euler_t, 12);
  * around the x axis, then @y_angle degrees around the y_axis and
  * @z_angle degrees around the z axis.
  *
- * Since: 2.0
  */
 void cg_euler_init(cg_euler_t *euler, float heading, float pitch, float roll);
 
@@ -203,7 +201,6 @@ void cg_euler_init_from_quaternion(cg_euler_t *euler,
  * can be represented with different component rotations</note>
  *
  * Returns: %true if @v1 and @v2 are equal else %false.
- * Since: 2.0
  */
 bool cg_euler_equal(const void *v1, const void *v2);
 
@@ -216,7 +213,6 @@ bool cg_euler_equal(const void *v1, const void *v2);
  * cg_euler_free().
  *
  * Returns: A newly allocated #cg_euler_t
- * Since: 2.0
  */
 cg_euler_t *cg_euler_copy(const cg_euler_t *src);
 
@@ -227,7 +223,6 @@ cg_euler_t *cg_euler_copy(const cg_euler_t *src);
  * Frees a #cg_euler_t that was previously allocated using
  * cg_euler_copy().
  *
- * Since: 2.0
  */
 void cg_euler_free(cg_euler_t *euler);
 

@@ -69,7 +69,6 @@ typedef struct _cg_path_t cg_path_t;
  * Return value: A pointer to a newly allocated #cg_path_t, which can
  * be freed using cg_object_unref().
  *
- * Since: 2.0
  */
 cg_path_t *cg_path_new(cg_context_t *context);
 
@@ -86,7 +85,6 @@ cg_path_t *cg_path_new(cg_context_t *context);
  *
  * Return value: a copy of the path in @path.
  *
- * Since: 2.0
  */
 cg_path_t *cg_path_copy(cg_path_t *path);
 
@@ -99,7 +97,6 @@ cg_path_t *cg_path_copy(cg_path_t *path);
  * Return value: %true if the object references a #cg_path_t,
  *   %false otherwise.
  *
- * Since: 2.0
  */
 bool cg_is_path(void *object);
 
@@ -112,7 +109,6 @@ bool cg_is_path(void *object);
  * Moves the pen to the given location. If there is an existing path
  * this will start a new disjoint subpath.
  *
- * Since: 2.0
  */
 void cg_path_move_to(cg_path_t *path, float x, float y);
 
@@ -126,7 +122,6 @@ void cg_path_move_to(cg_path_t *path, float x, float y);
  * location. If there is an existing path this will start a new
  * disjoint subpath.
  *
- * Since: 2.0
  */
 void cg_path_rel_move_to(cg_path_t *path, float x, float y);
 
@@ -139,7 +134,6 @@ void cg_path_rel_move_to(cg_path_t *path, float x, float y);
  * Adds a straight line segment to the current path that ends at the
  * given coordinates.
  *
- * Since: 2.0
  */
 void cg_path_line_to(cg_path_t *path, float x, float y);
 
@@ -152,7 +146,6 @@ void cg_path_line_to(cg_path_t *path, float x, float y);
  * Adds a straight line segment to the current path that ends at the
  * given coordinates relative to the current pen location.
  *
- * Since: 2.0
  */
 void cg_path_rel_line_to(cg_path_t *path, float x, float y);
 
@@ -177,7 +170,6 @@ void cg_path_rel_line_to(cg_path_t *path, float x, float y);
  * @angle_2 (so if @angle_2 is less than @angle_1 it will decrease,
  * otherwise it will increase).
  *
- * Since: 2.0
  */
 void cg_path_arc(cg_path_t *path,
                  float center_x,
@@ -201,7 +193,6 @@ void cg_path_arc(cg_path_t *path,
  * second, third and fourth control points and using current pen location
  * as the first control point.
  *
- * Since: 2.0
  */
 void cg_path_curve_to(cg_path_t *path,
                       float x_1,
@@ -226,7 +217,6 @@ void cg_path_curve_to(cg_path_t *path,
  * as the first control point. The given coordinates are relative to the
  * current pen location.
  *
- * Since: 2.0
  */
 void cg_path_rel_curve_to(cg_path_t *path,
                           float x_1,
@@ -243,7 +233,6 @@ void cg_path_rel_curve_to(cg_path_t *path,
  * Closes the path being constructed by adding a straight line segment
  * to it that ends at the first vertex of the path.
  *
- * Since: 2.0
  */
 void cg_path_close(cg_path_t *path);
 
@@ -259,7 +248,6 @@ void cg_path_close(cg_path_t *path);
  * coordinates. If there is an existing path this will start a new
  * disjoint sub-path.
  *
- * Since: 2.0
  */
 void cg_path_line(cg_path_t *path, float x_1, float y_1, float x_2, float y_2);
 
@@ -282,7 +270,6 @@ void cg_path_line(cg_path_t *path, float x_1, float y_1, float x_2, float y_2);
  * fashion for the rest of the vertices. (num_points - 1) segments will
  * be constructed.
  *
- * Since: 2.0
  */
 void cg_path_polyline(cg_path_t *path, const float *coords, int num_points);
 
@@ -301,7 +288,6 @@ void cg_path_polyline(cg_path_t *path, const float *coords, int num_points);
  * represents the Y coordinate of the first vertex, continuing in the same
  * fashion for the rest of the vertices.
  *
- * Since: 2.0
  */
 void cg_path_polygon(cg_path_t *path, const float *coords, int num_points);
 
@@ -316,7 +302,6 @@ void cg_path_polygon(cg_path_t *path, const float *coords, int num_points);
  * Constructs a rectangular shape at the given coordinates. If there
  * is an existing path this will start a new disjoint sub-path.
  *
- * Since: 2.0
  */
 void
 cg_path_rectangle(cg_path_t *path, float x_1, float y_1, float x_2, float y_2);
@@ -332,7 +317,6 @@ cg_path_rectangle(cg_path_t *path, float x_1, float y_1, float x_2, float y_2);
  * Constructs an ellipse shape. If there is an existing path this will
  * start a new disjoint sub-path.
  *
- * Since: 2.0
  */
 void cg_path_ellipse(cg_path_t *path,
                      float center_x,
@@ -354,7 +338,6 @@ void cg_path_ellipse(cg_path_t *path,
  * Constructs a rectangular shape with rounded corners. If there is an
  * existing path this will start a new disjoint sub-path.
  *
- * Since: 2.0
  */
 void cg_path_round_rectangle(cg_path_t *path,
                              float x_1,
@@ -396,7 +379,6 @@ void cg_path_round_rectangle(cg_path_t *path,
  *   <graphic fileref="fill-rule-even-odd.png" format="PNG"/>
  * </figure>
  *
- * Since: 1.4
  */
 typedef enum {
     CG_PATH_FILL_RULE_NON_ZERO,
@@ -412,7 +394,6 @@ typedef enum {
  * affect how the path is filled when cg_framebuffer_fill_path() is
  * later called.
  *
- * Since: 2.0
  */
 void cg_path_set_fill_rule(cg_path_t *path, cg_path_fill_rule_t fill_rule);
 
@@ -424,7 +405,6 @@ void cg_path_set_fill_rule(cg_path_t *path, cg_path_fill_rule_t fill_rule);
  *
  * Return value: the fill rule that is used for the current path.
  *
- * Since: 2.0
  */
 cg_path_fill_rule_t cg_path_get_fill_rule(cg_path_t *path);
 
@@ -445,7 +425,6 @@ cg_path_fill_rule_t cg_path_get_fill_rule(cg_path_t *path);
  * the %CG_TEXTURE_NO_SLICING flag when loading any texture you will
  * use while filling a path.</note>
  *
- * Since: 2.0
  */
 void cg_path_fill(cg_path_t *path,
                   cg_framebuffer_t *framebuffer,
@@ -466,7 +445,6 @@ void cg_path_fill(cg_path_t *path,
  * line will have a width of 1 pixel regardless of the current
  * transformation matrix.</note>
  *
- * Since: 2.0
  */
 void cg_path_stroke(cg_path_t *path,
                     cg_framebuffer_t *framebuffer,
@@ -482,7 +460,6 @@ void cg_path_stroke(cg_path_t *path,
  * clipping area. To restore the previous clipping area, call
  * cg_framebuffer_pop_clip().
  *
- * Since: 1.0
  * Stability: unstable
  */
 void cg_framebuffer_push_path_clip(cg_framebuffer_t *framebuffer,

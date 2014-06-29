@@ -75,7 +75,6 @@ typedef PangoCairoFontMap CgPangoFontMap;
  *
  * Return value: (transfer full): the newly created #PangoFontMap
  *
- * Since: 2.0
  */
 PangoFontMap *cg_pango_font_map_new(cg_context_t *context);
 
@@ -90,7 +89,6 @@ PangoFontMap *cg_pango_font_map_new(cg_context_t *context);
  * The default value is %96, meaning that a 10 point font will be 13
  * units high. (10 * 96. / 72. = 13.3).
  *
- * Since: 2.0
  */
 void cg_pango_font_map_set_resolution(CgPangoFontMap *font_map, double dpi);
 
@@ -100,7 +98,6 @@ void cg_pango_font_map_set_resolution(CgPangoFontMap *font_map, double dpi);
  *
  * Clears the glyph cache for @font_map.
  *
- * Since: 1.0
  */
 void cg_pango_font_map_clear_glyph_cache(CgPangoFontMap *font_map);
 
@@ -114,7 +111,6 @@ void cg_pango_font_map_clear_glyph_cache(CgPangoFontMap *font_map);
  * This api should be used to avoid mid-scene modifications of
  * glyph-cache textures which can lead to undefined rendering results.
  *
- * Since: 1.0
  */
 void cg_pango_ensure_glyph_cache_for_layout(PangoLayout *layout);
 
@@ -126,7 +122,6 @@ void cg_pango_ensure_glyph_cache_for_layout(PangoLayout *layout);
  * Sets whether the renderer for the passed font map should use
  * mipmapping when rendering a #PangoLayout.
  *
- * Since: 1.0
  */
 void cg_pango_font_map_set_use_mipmapping(CgPangoFontMap *font_map, bool value);
 
@@ -139,7 +134,6 @@ void cg_pango_font_map_set_use_mipmapping(CgPangoFontMap *font_map, bool value);
  *
  * Return value: %true if mipmapping is used, %false otherwise.
  *
- * Since: 1.0
  */
 bool cg_pango_font_map_get_use_mipmapping(CgPangoFontMap *font_map);
 
@@ -155,7 +149,6 @@ bool cg_pango_font_map_get_use_mipmapping(CgPangoFontMap *font_map);
  * @y) within the @framebuffer<!-- -->'s current model-view coordinate
  * space.
  *
- * Since: 2.0
  */
 void cg_pango_show_layout(cg_framebuffer_t *framebuffer,
                           PangoLayout *layout,
@@ -175,7 +168,6 @@ void cg_pango_show_layout(cg_framebuffer_t *framebuffer,
  * @y) within the @framebuffer<!-- -->'s current model-view coordinate
  * space.
  *
- * Since: 2.0
  */
 void cg_pango_show_layout_line(cg_framebuffer_t *framebuffer,
                                PangoLayoutLine *line,

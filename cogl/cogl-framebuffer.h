@@ -116,7 +116,6 @@ CG_BEGIN_DECLS
  *
  * Return value: %true if there were no error allocating the framebuffer, else
  *%false.
- * Since: 1.8
  * Stability: unstable
  */
 bool cg_framebuffer_allocate(cg_framebuffer_t *framebuffer, cg_error_t **error);
@@ -128,7 +127,6 @@ bool cg_framebuffer_allocate(cg_framebuffer_t *framebuffer, cg_error_t **error);
  * Queries the current width of the given @framebuffer.
  *
  * Return value: The width of @framebuffer.
- * Since: 1.8
  * Stability: unstable
  */
 int cg_framebuffer_get_width(cg_framebuffer_t *framebuffer);
@@ -140,7 +138,6 @@ int cg_framebuffer_get_width(cg_framebuffer_t *framebuffer);
  * Queries the current height of the given @framebuffer.
  *
  * Return value: The height of @framebuffer.
- * Since: 1.8
  * Stability: unstable
  */
 int cg_framebuffer_get_height(cg_framebuffer_t *framebuffer);
@@ -171,7 +168,6 @@ int cg_framebuffer_get_height(cg_framebuffer_t *framebuffer);
  * drivers only allow the use of integer values. In the future floating
  * point values will be exposed via a checkable feature.</note>
  *
- * Since: 1.8
  * Stability: unstable
  */
 void cg_framebuffer_set_viewport(
@@ -186,7 +182,6 @@ void cg_framebuffer_set_viewport(
  * or the default value which is 0.
  *
  * Return value: The x coordinate of the viewport origin.
- * Since: 1.8
  * Stability: unstable
  */
 float cg_framebuffer_get_viewport_x(cg_framebuffer_t *framebuffer);
@@ -200,7 +195,6 @@ float cg_framebuffer_get_viewport_x(cg_framebuffer_t *framebuffer);
  * or the default value which is 0.
  *
  * Return value: The y coordinate of the viewport origin.
- * Since: 1.8
  * Stability: unstable
  */
 float cg_framebuffer_get_viewport_y(cg_framebuffer_t *framebuffer);
@@ -213,7 +207,6 @@ float cg_framebuffer_get_viewport_y(cg_framebuffer_t *framebuffer);
  * or the default value which is the width of the framebuffer.
  *
  * Return value: The width of the viewport.
- * Since: 1.8
  * Stability: unstable
  */
 float cg_framebuffer_get_viewport_width(cg_framebuffer_t *framebuffer);
@@ -226,7 +219,6 @@ float cg_framebuffer_get_viewport_width(cg_framebuffer_t *framebuffer);
  * or the default value which is the height of the framebuffer.
  *
  * Return value: The height of the viewport.
- * Since: 1.8
  * Stability: unstable
  */
 float cg_framebuffer_get_viewport_height(cg_framebuffer_t *framebuffer);
@@ -243,7 +235,6 @@ float cg_framebuffer_get_viewport_height(cg_framebuffer_t *framebuffer);
  * framebuffer_width and framebuffer_height.  The values are written into the
  * given @viewport array.
  *
- * Since: 1.8
  * Stability: unstable
  */
 void cg_framebuffer_get_viewport4fv(cg_framebuffer_t *framebuffer,
@@ -256,7 +247,6 @@ void cg_framebuffer_get_viewport4fv(cg_framebuffer_t *framebuffer,
  * Copies the current model-view matrix onto the matrix stack. The matrix
  * can later be restored with cg_framebuffer_pop_matrix().
  *
- * Since: 1.10
  */
 void cg_framebuffer_push_matrix(cg_framebuffer_t *framebuffer);
 
@@ -266,7 +256,6 @@ void cg_framebuffer_push_matrix(cg_framebuffer_t *framebuffer);
  *
  * Restores the model-view matrix on the top of the matrix stack.
  *
- * Since: 1.10
  */
 void cg_framebuffer_pop_matrix(cg_framebuffer_t *framebuffer);
 
@@ -276,7 +265,6 @@ void cg_framebuffer_pop_matrix(cg_framebuffer_t *framebuffer);
  *
  * Resets the current model-view matrix to the identity matrix.
  *
- * Since: 1.10
  * Stability: unstable
  */
 void cg_framebuffer_identity_matrix(cg_framebuffer_t *framebuffer);
@@ -291,7 +279,6 @@ void cg_framebuffer_identity_matrix(cg_framebuffer_t *framebuffer);
  * Multiplies the current model-view matrix by one that scales the x,
  * y and z axes by the given values.
  *
- * Since: 1.10
  * Stability: unstable
  */
 void
@@ -307,7 +294,6 @@ cg_framebuffer_scale(cg_framebuffer_t *framebuffer, float x, float y, float z);
  * Multiplies the current model-view matrix by one that translates the
  * model along all three axes according to the given values.
  *
- * Since: 1.10
  * Stability: unstable
  */
 void cg_framebuffer_translate(cg_framebuffer_t *framebuffer,
@@ -329,7 +315,6 @@ void cg_framebuffer_translate(cg_framebuffer_t *framebuffer,
  * by 10 degrees about the axis-vector (0, 0, 1) causes a small
  * counter-clockwise rotation.
  *
- * Since: 1.10
  * Stability: unstable
  */
 void cg_framebuffer_rotate(
@@ -343,7 +328,6 @@ void cg_framebuffer_rotate(
  * Multiplies the current model-view matrix by one that rotates
  * according to the rotation described by @quaternion.
  *
- * Since: 2.0
  * Stability: unstable
  */
 void cg_framebuffer_rotate_quaternion(cg_framebuffer_t *framebuffer,
@@ -357,7 +341,6 @@ void cg_framebuffer_rotate_quaternion(cg_framebuffer_t *framebuffer,
  * Multiplies the current model-view matrix by one that rotates
  * according to the rotation described by @euler.
  *
- * Since: 2.0
  * Stability: unstable
  */
 void cg_framebuffer_rotate_euler(cg_framebuffer_t *framebuffer,
@@ -370,7 +353,6 @@ void cg_framebuffer_rotate_euler(cg_framebuffer_t *framebuffer,
  *
  * Multiplies the current model-view matrix by the given matrix.
  *
- * Since: 1.10
  * Stability: unstable
  */
 void cg_framebuffer_transform(cg_framebuffer_t *framebuffer,
@@ -383,7 +365,6 @@ void cg_framebuffer_transform(cg_framebuffer_t *framebuffer,
  *
  * Stores the current model-view matrix in @matrix.
  *
- * Since: 1.10
  * Stability: unstable
  */
 void cg_framebuffer_get_modelview_matrix(cg_framebuffer_t *framebuffer,
@@ -396,7 +377,6 @@ void cg_framebuffer_get_modelview_matrix(cg_framebuffer_t *framebuffer,
  *
  * Sets @matrix as the new model-view matrix.
  *
- * Since: 1.10
  * Stability: unstable
  */
 void cg_framebuffer_set_modelview_matrix(cg_framebuffer_t *framebuffer,
@@ -419,7 +399,6 @@ void cg_framebuffer_set_modelview_matrix(cg_framebuffer_t *framebuffer,
  * since there wont be enough precision to identify the depth of
  * objects near to each other.</note>
  *
- * Since: 1.10
  * Stability: unstable
  */
 void cg_framebuffer_perspective(cg_framebuffer_t *framebuffer,
@@ -446,7 +425,6 @@ void cg_framebuffer_perspective(cg_framebuffer_t *framebuffer,
  * for a given viewing frustum defined by 4 side clip planes that
  * all cross through the origin and 2 near and far clip planes.
  *
- * Since: 1.10
  * Stability: unstable
  */
 void cg_framebuffer_frustum(cg_framebuffer_t *framebuffer,
@@ -474,7 +452,6 @@ void cg_framebuffer_frustum(cg_framebuffer_t *framebuffer,
  * Replaces the current projection matrix with an orthographic projection
  * matrix.
  *
- * Since: 1.10
  * Stability: unstable
  */
 void cg_framebuffer_orthographic(cg_framebuffer_t *framebuffer,
@@ -492,7 +469,6 @@ void cg_framebuffer_orthographic(cg_framebuffer_t *framebuffer,
  *
  * Stores the current projection matrix in @matrix.
  *
- * Since: 1.10
  * Stability: unstable
  */
 void cg_framebuffer_get_projection_matrix(cg_framebuffer_t *framebuffer,
@@ -505,7 +481,6 @@ void cg_framebuffer_get_projection_matrix(cg_framebuffer_t *framebuffer,
  *
  * Sets @matrix as the new projection matrix.
  *
- * Since: 1.10
  * Stability: unstable
  */
 void cg_framebuffer_set_projection_matrix(cg_framebuffer_t *framebuffer,
@@ -528,7 +503,6 @@ void cg_framebuffer_set_projection_matrix(cg_framebuffer_t *framebuffer,
  * The rectangle is intersected with the current clip region. To undo
  * the effect of this function, call cg_framebuffer_pop_clip().
  *
- * Since: 1.10
  * Stability: unstable
  */
 void cg_framebuffer_push_scissor_clip(
@@ -551,7 +525,6 @@ void cg_framebuffer_push_scissor_clip(
  * The rectangle is intersected with the current clip region. To undo
  * the effect of this function, call cg_framebuffer_pop_clip().
  *
- * Since: 1.10
  * Stability: unstable
  */
 void cg_framebuffer_push_rectangle_clip(
@@ -583,7 +556,6 @@ void cg_framebuffer_push_rectangle_clip(
  * restore the previous clipping area, call
  * cg_framebuffer_pop_clip().
  *
- * Since: 1.10
  * Stability: unstable
  */
 void cg_framebuffer_push_primitive_clip(cg_framebuffer_t *framebuffer,
@@ -601,7 +573,6 @@ void cg_framebuffer_push_primitive_clip(cg_framebuffer_t *framebuffer,
  * cg_framebuffer_push_scissor_clip(), cg_framebuffer_push_rectangle_clip()
  * cg_framebuffer_push_path_clip(), or cg_framebuffer_push_primitive_clip().
  *
- * Since: 1.10
  * Stability: unstable
  */
 void cg_framebuffer_pop_clip(cg_framebuffer_t *framebuffer);
@@ -614,7 +585,6 @@ void cg_framebuffer_pop_clip(cg_framebuffer_t *framebuffer);
  *
  * Return value: the number of bits
  *
- * Since: 1.8
  * Stability: unstable
  */
 int cg_framebuffer_get_red_bits(cg_framebuffer_t *framebuffer);
@@ -627,7 +597,6 @@ int cg_framebuffer_get_red_bits(cg_framebuffer_t *framebuffer);
  *
  * Return value: the number of bits
  *
- * Since: 1.8
  * Stability: unstable
  */
 int cg_framebuffer_get_green_bits(cg_framebuffer_t *framebuffer);
@@ -640,7 +609,6 @@ int cg_framebuffer_get_green_bits(cg_framebuffer_t *framebuffer);
  *
  * Return value: the number of bits
  *
- * Since: 1.8
  * Stability: unstable
  */
 int cg_framebuffer_get_blue_bits(cg_framebuffer_t *framebuffer);
@@ -653,7 +621,6 @@ int cg_framebuffer_get_blue_bits(cg_framebuffer_t *framebuffer);
  *
  * Return value: the number of bits
  *
- * Since: 1.8
  * Stability: unstable
  */
 int cg_framebuffer_get_alpha_bits(cg_framebuffer_t *framebuffer);
@@ -666,7 +633,6 @@ int cg_framebuffer_get_alpha_bits(cg_framebuffer_t *framebuffer);
  *
  * Return value: the number of bits
  *
- * Since: 2.0
  * Stability: unstable
  */
 int cg_framebuffer_get_depth_bits(cg_framebuffer_t *framebuffer);
@@ -683,7 +649,6 @@ int cg_framebuffer_get_depth_bits(cg_framebuffer_t *framebuffer);
  * the user's request for dithering.</note>
  *
  * Return value: %true if dithering has been requested or %false if not.
- * Since: 1.8
  * Stability: unstable
  */
 bool cg_framebuffer_get_dither_enabled(cg_framebuffer_t *framebuffer);
@@ -707,7 +672,6 @@ bool cg_framebuffer_get_dither_enabled(cg_framebuffer_t *framebuffer);
  *
  * Dithering is enabled by default.
  *
- * Since: 1.8
  * Stability: unstable
  */
 void cg_framebuffer_set_dither_enabled(cg_framebuffer_t *framebuffer,
@@ -721,7 +685,6 @@ void cg_framebuffer_set_dither_enabled(cg_framebuffer_t *framebuffer,
  * can be controlled via cg_framebuffer_set_depth_write_enabled().
  *
  * Return value: %true if depth writing is enabled or %false if not.
- * Since: 1.18
  * Stability: unstable
  */
 bool cg_framebuffer_get_depth_write_enabled(cg_framebuffer_t *framebuffer);
@@ -738,7 +701,6 @@ bool cg_framebuffer_get_depth_write_enabled(cg_framebuffer_t *framebuffer);
  *
  * Depth buffer writing is enabled by default.
  *
- * Since: 1.18
  * Stability: unstable
  */
 void cg_framebuffer_set_depth_write_enabled(cg_framebuffer_t *framebuffer,
@@ -753,7 +715,6 @@ void cg_framebuffer_set_depth_write_enabled(cg_framebuffer_t *framebuffer,
  * corresponding color would be written.
  *
  * Returns: A #cg_color_mask_t
- * Since: 1.8
  * Stability: unstable
  */
 cg_color_mask_t cg_framebuffer_get_color_mask(cg_framebuffer_t *framebuffer);
@@ -768,7 +729,6 @@ cg_color_mask_t cg_framebuffer_get_color_mask(cg_framebuffer_t *framebuffer);
  * given @framebuffer. If a bit is set in @color_mask that means that
  * color will be written.
  *
- * Since: 1.8
  * Stability: unstable
  */
 void cg_framebuffer_set_color_mask(cg_framebuffer_t *framebuffer,
@@ -783,7 +743,6 @@ void cg_framebuffer_set_color_mask(cg_framebuffer_t *framebuffer,
  * cg_offscreen_new_with_texture() this will correspond to the format
  * of the texture.
  *
- * Since: 1.8
  * Stability: unstable
  */
 cg_pixel_format_t
@@ -805,7 +764,6 @@ cg_framebuffer_get_color_format(cg_framebuffer_t *framebuffer);
  * allocated as the creation of the depth texture is done at allocation time.
  * </note>
  *
- * Since: 2.0
  */
 void cg_framebuffer_set_depth_texture_enabled(cg_framebuffer_t *framebuffer,
                                               bool enabled);
@@ -820,7 +778,6 @@ void cg_framebuffer_set_depth_texture_enabled(cg_framebuffer_t *framebuffer,
  * Return value: %true if a depth texture has been enabled, else
  *               %false.
  *
- * Since: 2.0
  */
 bool cg_framebuffer_get_depth_texture_enabled(cg_framebuffer_t *framebuffer);
 
@@ -847,7 +804,6 @@ bool cg_framebuffer_get_depth_texture_enabled(cg_framebuffer_t *framebuffer);
  *
  * Returns: (transfer none): the depth texture
  *
- * Since: 2.0
  */
 cg_texture_t *cg_framebuffer_get_depth_texture(cg_framebuffer_t *framebuffer);
 
@@ -889,7 +845,6 @@ cg_texture_t *cg_framebuffer_get_depth_texture(cg_framebuffer_t *framebuffer);
  * framebuffer has changed this can lead to redundant work being
  * done.</note>
  *
- * Since: 1.8
  * Stability: unstable
  */
 void cg_framebuffer_set_samples_per_pixel(cg_framebuffer_t *framebuffer,
@@ -916,7 +871,6 @@ void cg_framebuffer_set_samples_per_pixel(cg_framebuffer_t *framebuffer,
  *          rasterizing geometry or 0 if single-sample rendering
  *          has been chosen.
  *
- * Since: 1.10
  * Stability: unstable
  */
 int cg_framebuffer_get_samples_per_pixel(cg_framebuffer_t *framebuffer);
@@ -946,7 +900,6 @@ int cg_framebuffer_get_samples_per_pixel(cg_framebuffer_t *framebuffer);
  * should consider using cg_framebuffer_resolve_samples_region()
  * instead to avoid resolving redundant pixels.
  *
- * Since: 1.8
  * Stability: unstable
  */
 void cg_framebuffer_resolve_samples(cg_framebuffer_t *framebuffer);
@@ -981,7 +934,6 @@ void cg_framebuffer_resolve_samples(cg_framebuffer_t *framebuffer);
  * and if you have rendered to a larger region then it's possible that
  * other samples may be implicitly resolved.
  *
- * Since: 1.8
  * Stability: unstable
  */
 void cg_framebuffer_resolve_samples_region(
@@ -997,7 +949,6 @@ void cg_framebuffer_resolve_samples_region(
  *
  * Return value: (transfer none): The #cg_context_t that the given
  *               @framebuffer was instantiated within.
- * Since: 1.8
  * Stability: unstable
  */
 cg_context_t *cg_framebuffer_get_context(cg_framebuffer_t *framebuffer);
@@ -1013,7 +964,6 @@ cg_context_t *cg_framebuffer_get_context(cg_framebuffer_t *framebuffer);
  * Clears all the auxiliary buffers identified in the @buffers mask, and if
  * that includes the color buffer then the specified @color is used.
  *
- * Since: 1.8
  * Stability: unstable
  */
 void cg_framebuffer_clear(cg_framebuffer_t *framebuffer,
@@ -1037,7 +987,6 @@ void cg_framebuffer_clear(cg_framebuffer_t *framebuffer,
  * Clears all the auxiliary buffers identified in the @buffers mask, and if
  * that includes the color buffer then the specified @color is used.
  *
- * Since: 1.8
  * Stability: unstable
  */
 void cg_framebuffer_clear4f(cg_framebuffer_t *framebuffer,
@@ -1068,7 +1017,6 @@ void cg_framebuffer_clear4f(cg_framebuffer_t *framebuffer,
  * it then you can use
  * cg_framebuffer_draw_textured_rectangle().</note>
  *
- * Since: 1.10
  * Stability: unstable
  */
 void cg_framebuffer_draw_rectangle(cg_framebuffer_t *framebuffer,
@@ -1118,7 +1066,6 @@ void cg_framebuffer_draw_rectangle(cg_framebuffer_t *framebuffer,
  * bottom right. To map an entire texture across the rectangle pass
  * in @s_1=0, @t_1=0, @s_2=1, @t_2=1.
  *
- * Since: 1.10
  * Stability: unstable
  */
 void cg_framebuffer_draw_textured_rectangle(cg_framebuffer_t *framebuffer,
@@ -1188,7 +1135,6 @@ void cg_framebuffer_draw_textured_rectangle(cg_framebuffer_t *framebuffer,
  * than there are layers in the current source material then default
  * texture coordinates (0.0, 0.0, 1.0, 1.0) are generated.
  *
- * Since: 1.10
  * Stability: unstable
  */
 void cg_framebuffer_draw_multitextured_rectangle(cg_framebuffer_t *framebuffer,
@@ -1231,7 +1177,6 @@ void cg_framebuffer_draw_multitextured_rectangle(cg_framebuffer_t *framebuffer,
  * rectangles if all of the rectangles will be drawn together with the
  * same @pipeline state.
  *
- * Since: 1.10
  * Stability: unstable
  */
 void cg_framebuffer_draw_rectangles(cg_framebuffer_t *framebuffer,
@@ -1284,7 +1229,6 @@ void cg_framebuffer_draw_rectangles(cg_framebuffer_t *framebuffer,
  * in tex_coords[0]=0, tex_coords[1]=0, tex_coords[2]=1,
  * tex_coords[3]=1.
  *
- * Since: 1.10
  * Stability: unstable
  */
 void cg_framebuffer_draw_textured_rectangles(cg_framebuffer_t *framebuffer,
@@ -1318,7 +1262,6 @@ void cg_framebuffer_draw_textured_rectangles(cg_framebuffer_t *framebuffer,
  * a #cg_offscreen_t framebuffer since they are single-buffered.
  *
  *
- * Since: 1.8
  * Stability: unstable
  */
 void cg_framebuffer_discard_buffers(cg_framebuffer_t *framebuffer,
@@ -1339,7 +1282,6 @@ void cg_framebuffer_discard_buffers(cg_framebuffer_t *framebuffer,
  * takes to queue rendering commands.
  *
  * Stability: unstable
- * Since: 1.10
  */
 void cg_framebuffer_finish(cg_framebuffer_t *framebuffer);
 
@@ -1367,7 +1309,6 @@ void cg_framebuffer_finish(cg_framebuffer_t *framebuffer);
  * Return value: %true if the read succeeded or %false otherwise. The
  *  function is only likely to fail if the bitmap points to a pixel
  *  buffer and it could not be mapped.
- * Since: 1.10
  * Stability: unstable
  */
 bool cg_framebuffer_read_pixels_into_bitmap(cg_framebuffer_t *framebuffer,
@@ -1413,7 +1354,6 @@ bool cg_framebuffer_read_pixels_into_bitmap(cg_framebuffer_t *framebuffer,
  * ]|
  *
  * Return value: %true if the read succeeded or %false otherwise.
- * Since: 1.10
  * Stability: unstable
  */
 bool cg_framebuffer_read_pixels(cg_framebuffer_t *framebuffer,
@@ -1432,7 +1372,6 @@ bool cg_framebuffer_read_pixels(cg_framebuffer_t *framebuffer,
  *
  * Return value: (transfer none): The current #cg_framebuffer_t
  * Stability: unstable
- * Since: 1.8
  */
 cg_framebuffer_t *cg_get_draw_framebuffer(void);
 
@@ -1457,7 +1396,6 @@ typedef enum { /*< prefix=CG_FRAMEBUFFER_ERROR >*/
  *
  * Return value: %true if the object references a #cg_framebuffer_t
  *   and %false otherwise.
- * Since: 1.10
  * Stability: unstable
  */
 bool cg_is_framebuffer(void *object);

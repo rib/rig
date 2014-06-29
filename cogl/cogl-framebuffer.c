@@ -401,10 +401,10 @@ cg_framebuffer_clear(cg_framebuffer_t *framebuffer,
 {
     cg_framebuffer_clear4f(framebuffer,
                            buffers,
-                           cg_color_get_red_float(color),
-                           cg_color_get_green_float(color),
-                           cg_color_get_blue_float(color),
-                           cg_color_get_alpha_float(color));
+                           color->red,
+                           color->green,
+                           color->blue,
+                           color->alpha);
 }
 
 /* We will lazily allocate framebuffers if necessary when querying

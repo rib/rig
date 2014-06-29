@@ -154,7 +154,6 @@ CG_STRUCT_SIZE_ASSERT(cg_quaternion_t, 16);
  * Returns: A normalized, unit quaternion representing an orientation
  * rotated @angle degrees around the axis vector (@x, @y, @z)
  *
- * Since: 2.0
  */
 void cg_quaternion_init(
     cg_quaternion_t *quaternion, float angle, float x, float y, float z);
@@ -172,7 +171,6 @@ void cg_quaternion_init(
  * Returns: A normalized, unit quaternion representing an orientation
  * rotated @angle degrees around the given @axis vector.
  *
- * Since: 2.0
  */
 void cg_quaternion_init_from_angle_vector(cg_quaternion_t *quaternion,
                                           float angle,
@@ -189,7 +187,6 @@ void cg_quaternion_init_from_angle_vector(cg_quaternion_t *quaternion,
  * You might also want to consider using
  * cg_get_static_identity_quaternion().
  *
- * Since: 2.0
  */
 void cg_quaternion_init_identity(cg_quaternion_t *quaternion);
 
@@ -201,7 +198,6 @@ void cg_quaternion_init_identity(cg_quaternion_t *quaternion);
  * Initializes a [w (x, y,z)] quaternion directly from an array of 4
  * floats: [w,x,y,z].
  *
- * Since: 2.0
  */
 void cg_quaternion_init_from_array(cg_quaternion_t *quaternion,
                                    const float *array);
@@ -213,7 +209,6 @@ void cg_quaternion_init_from_array(cg_quaternion_t *quaternion,
  *
  * XXX: check which direction this rotates
  *
- * Since: 2.0
  */
 void cg_quaternion_init_from_x_rotation(cg_quaternion_t *quaternion,
                                         float angle);
@@ -224,7 +219,6 @@ void cg_quaternion_init_from_x_rotation(cg_quaternion_t *quaternion,
  * @angle: The angle to rotate around the y axis
  *
  *
- * Since: 2.0
  */
 void cg_quaternion_init_from_y_rotation(cg_quaternion_t *quaternion,
                                         float angle);
@@ -235,7 +229,6 @@ void cg_quaternion_init_from_y_rotation(cg_quaternion_t *quaternion,
  * @angle: The angle to rotate around the z axis
  *
  *
- * Since: 2.0
  */
 void cg_quaternion_init_from_z_rotation(cg_quaternion_t *quaternion,
                                         float angle);
@@ -245,7 +238,6 @@ void cg_quaternion_init_from_z_rotation(cg_quaternion_t *quaternion,
  * @quaternion: A #cg_quaternion_t
  * @euler: A #cg_euler_t with which to initialize the quaternion
  *
- * Since: 2.0
  */
 void cg_quaternion_init_from_euler(cg_quaternion_t *quaternion,
                                    const cg_euler_t *euler);
@@ -257,7 +249,6 @@ void cg_quaternion_init_from_euler(cg_quaternion_t *quaternion,
  *
  * Initializes a quaternion from a rotation matrix.
  *
- * Since: 1.10
  * Stability: unstable
  */
 void cg_quaternion_init_from_matrix(cg_quaternion_t *quaternion,
@@ -277,7 +268,6 @@ void cg_quaternion_init_from_matrix(cg_quaternion_t *quaternion,
  *
  * Returns: %true if the quaternions are equal else %false.
  *
- * Since: 2.0
  */
 bool cg_quaternion_equal(const void *v1, const void *v2);
 
@@ -291,7 +281,6 @@ bool cg_quaternion_equal(const void *v1, const void *v2);
  * Returns: A newly allocated #cg_quaternion_t which should be freed
  * using cg_quaternion_free()
  *
- * Since: 2.0
  */
 cg_quaternion_t *cg_quaternion_copy(const cg_quaternion_t *src);
 
@@ -302,7 +291,6 @@ cg_quaternion_t *cg_quaternion_copy(const cg_quaternion_t *src);
  * Frees a #cg_quaternion_t that was previously allocated via
  * cg_quaternion_copy().
  *
- * Since: 2.0
  */
 void cg_quaternion_free(cg_quaternion_t *quaternion);
 
@@ -311,7 +299,6 @@ void cg_quaternion_free(cg_quaternion_t *quaternion);
  * @quaternion: A #cg_quaternion_t
  *
  *
- * Since: 2.0
  */
 float cg_quaternion_get_rotation_angle(const cg_quaternion_t *quaternion);
 
@@ -320,7 +307,6 @@ float cg_quaternion_get_rotation_angle(const cg_quaternion_t *quaternion);
  * @quaternion: A #cg_quaternion_t
  * @vector3: (out): an allocated 3-float array
  *
- * Since: 2.0
  */
 void cg_quaternion_get_rotation_axis(const cg_quaternion_t *quaternion,
                                      float *vector3);
@@ -330,7 +316,6 @@ void cg_quaternion_get_rotation_axis(const cg_quaternion_t *quaternion,
  * @quaternion: A #cg_quaternion_t
  *
  *
- * Since: 2.0
  */
 void cg_quaternion_normalize(cg_quaternion_t *quaternion);
 
@@ -339,7 +324,6 @@ void cg_quaternion_normalize(cg_quaternion_t *quaternion);
  * @a: A #cg_quaternion_t
  * @b: A #cg_quaternion_t
  *
- * Since: 2.0
  */
 float cg_quaternion_dot_product(const cg_quaternion_t *a,
                                 const cg_quaternion_t *b);
@@ -349,7 +333,6 @@ float cg_quaternion_dot_product(const cg_quaternion_t *a,
  * @quaternion: A #cg_quaternion_t
  *
  *
- * Since: 2.0
  */
 void cg_quaternion_invert(cg_quaternion_t *quaternion);
 
@@ -368,7 +351,6 @@ void cg_quaternion_invert(cg_quaternion_t *quaternion);
  * <note>It is possible to multiply the @a quaternion in-place, so
  * @result can be equal to @a but can't be equal to @b.</note>
  *
- * Since: 2.0
  */
 void cg_quaternion_multiply(cg_quaternion_t *result,
                             const cg_quaternion_t *left,
@@ -380,7 +362,6 @@ void cg_quaternion_multiply(cg_quaternion_t *result,
  * @exponent: the exponent
  *
  *
- * Since: 2.0
  */
 void cg_quaternion_pow(cg_quaternion_t *quaternion, float exponent);
 
@@ -465,7 +446,6 @@ void cg_quaternion_nlerp(cg_quaternion_t *result,
  * quaternion @a and @b.
  *
  *
- * Since: 2.0
  */
 void cg_quaternion_squad(cg_quaternion_t *result,
                          const cg_quaternion_t *prev,
@@ -485,7 +465,6 @@ void cg_quaternion_squad(cg_quaternion_t *result,
  *
  * Returns: A pointer to an identity quaternion
  *
- * Since: 2.0
  */
 const cg_quaternion_t *cg_get_static_identity_quaternion(void);
 
@@ -496,7 +475,6 @@ const cg_quaternion_t *cg_get_static_identity_quaternion(void);
  *          rotation of 180 degrees around a degenerate axis:
  *          [0 (0, 0, 0)]
  *
- * Since: 2.0
  */
 const cg_quaternion_t *cg_get_static_zero_quaternion(void);
 

@@ -54,7 +54,6 @@ CG_BEGIN_DECLS
  * is not using EGL.
  *
  * Return value: The internally setup EGLDisplay handle.
- * Since: 1.8
  * Stability: unstable
  */
 EGLDisplay cg_egl_context_get_egl_display(cg_context_t *context);

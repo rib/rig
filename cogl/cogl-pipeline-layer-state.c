@@ -1201,10 +1201,10 @@ cg_pipeline_set_layer_combine_constant(cg_pipeline_t *pipeline,
      * state we want to change */
     authority = _cg_pipeline_layer_get_authority(layer, state);
 
-    color_as_floats[0] = cg_color_get_red_float(constant_color);
-    color_as_floats[1] = cg_color_get_green_float(constant_color);
-    color_as_floats[2] = cg_color_get_blue_float(constant_color);
-    color_as_floats[3] = cg_color_get_alpha_float(constant_color);
+    color_as_floats[0] = constant_color->red;
+    color_as_floats[1] = constant_color->green;
+    color_as_floats[2] = constant_color->blue;
+    color_as_floats[3] = constant_color->alpha;
 
     if (memcmp(authority->big_state->texture_combine_constant,
                color_as_floats,

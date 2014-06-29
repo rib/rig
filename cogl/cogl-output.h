@@ -94,7 +94,6 @@ typedef struct _cg_output_t cg_output_t;
  * to create image content with higher resolution than the
  * pixel grid.
  *
- * Since: 1.14
  * Stability: unstable
  */
 typedef enum {
@@ -114,7 +113,6 @@ typedef enum {
  *
  * Return value: %true if the object references a #cg_output_t
  *   and %false otherwise.
- * Since: 1.14
  * Stability: unstable
  */
 bool cg_is_output(void *object);
@@ -128,7 +126,6 @@ bool cg_is_output(void *object);
  *
  * Return value: the X position of the output as a pixel offset
  *  from the left side of the screen coordinate space
- * Since: 1.14
  * Stability: unstable
  */
 int cg_output_get_x(cg_output_t *output);
@@ -142,7 +139,6 @@ int cg_output_get_x(cg_output_t *output);
  *
  * Return value: the Y position of the output as a pixel offset
  *  from the top side of the screen coordinate space
- * Since: 1.14
  * Stability: unstable
  */
 int cg_output_get_y(cg_output_t *output);
@@ -154,7 +150,6 @@ int cg_output_get_y(cg_output_t *output);
  * Gets the width of the output in pixels.
  *
  * Return value: the width of the output in pixels
- * Since: 1.14
  * Stability: unstable
  */
 int cg_output_get_width(cg_output_t *output);
@@ -166,7 +161,6 @@ int cg_output_get_width(cg_output_t *output);
  * Gets the height of the output in pixels.
  *
  * Return value: the height of the output in pixels
- * Since: 1.14
  * Stability: unstable
  */
 int cg_output_get_height(cg_output_t *output);
@@ -182,7 +176,6 @@ int cg_output_get_height(cg_output_t *output);
  *
  * Return value: the height of the output in millimeters. A value
  *  of 0 indicates the width is unknown
- * Since: 1.14
  * Stability: unstable
  */
 int cg_output_get_mm_width(cg_output_t *output);
@@ -198,7 +191,6 @@ int cg_output_get_mm_width(cg_output_t *output);
  *
  * Return value: the height of the output in millimeters. A value
  *  of 0 indicates that the height is unknown
- * Since: 1.14
  * Stability: unstable
  */
 int cg_output_get_mm_height(cg_output_t *output);
@@ -212,7 +204,6 @@ int cg_output_get_mm_height(cg_output_t *output);
  * components.
  *
  * Return value: the order of subpixel components for the output device
- * Since: 1.14
  * Stability: unstable
  */
 cg_subpixel_order_t cg_output_get_subpixel_order(cg_output_t *output);
@@ -226,7 +217,6 @@ cg_subpixel_order_t cg_output_get_subpixel_order(cg_output_t *output);
  *
  * Return value: the refresh rate of the output device. A value of zero
  *  indicates that the refresh rate is unknown.
- * Since: 1.14
  * Stability: unstable
  */
 float cg_output_get_refresh_rate(cg_output_t *output);

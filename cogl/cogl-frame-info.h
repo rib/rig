@@ -53,7 +53,6 @@ typedef struct _cg_frame_info_t cg_frame_info_t;
  *
  * Return value: %true if the object references a #cg_frame_info_t
  *   and %false otherwise.
- * Since: 2.0
  * Stability: unstable
  */
 bool cg_is_frame_info(void *object);
@@ -66,7 +65,6 @@ bool cg_is_frame_info(void *object);
  * to this frame.
  *
  * Return value: The frame counter value
- * Since: 1.14
  * Stability: unstable
  */
 int64_t cg_frame_info_get_frame_counter(cg_frame_info_t *info);
@@ -90,7 +88,6 @@ int64_t cg_frame_info_get_frame_counter(cg_frame_info_t *info);
  * incorrectly report non-monotonic timestamps.</note>
  *
  * Return value: the presentation time for the frame
- * Since: 1.14
  * Stability: unstable
  */
 int64_t cg_frame_info_get_presentation_time(cg_frame_info_t *info);
@@ -109,7 +106,6 @@ int64_t cg_frame_info_get_presentation_time(cg_frame_info_t *info);
  * cg_output_get_refresh_rate().</note>
  *
  * Return value: the refresh rate in Hertz
- * Since: 1.14
  * Stability: unstable
  */
 float cg_frame_info_get_refresh_rate(cg_frame_info_t *info);
@@ -122,7 +118,6 @@ float cg_frame_info_get_refresh_rate(cg_frame_info_t *info);
  *
  * Return value: (transfer none): The #cg_output_t that the frame was
  *        presented to, or %NULL if this could not be determined.
- * Since: 1.14
  * Stability: unstable
  */
 cg_output_t *cg_frame_info_get_output(cg_frame_info_t *info);

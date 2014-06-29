@@ -58,7 +58,6 @@ CG_BEGIN_DECLS
  * then be manipulated with the cg_vector convenience APIs. Vectors
  * can also be used in places where a "point" is often desired.
  *
- * Since: 1.4
  * Stability: Unstable
  */
 void cg_vector3_init(float *vector, float x, float y, float z);
@@ -70,7 +69,6 @@ void cg_vector3_init(float *vector, float x, float y, float z);
  * Initializes a 3 component, single precision float vector with zero
  * for each component.
  *
- * Since: 1.4
  * Stability: Unstable
  */
 void cg_vector3_init_zero(float *vector);
@@ -91,7 +89,6 @@ void cg_vector3_init_zero(float *vector);
  *
  * Returns: true if the vectors are equal else false.
  *
- * Since: 1.4
  * Stability: Unstable
  */
 bool cg_vector3_equal(const void *v1, const void *v2);
@@ -114,7 +111,6 @@ bool cg_vector3_equal(const void *v1, const void *v2);
  *
  * Returns: true if the vectors are equal else false.
  *
- * Since: 1.4
  * Stability: Unstable
  */
 bool cg_vector3_equal_with_epsilon(const float *vector0,
@@ -132,7 +128,6 @@ bool cg_vector3_equal_with_epsilon(const float *vector0,
  *
  * Returns: A newly allocated 3 component float vector
  *
- * Since: 1.4
  * Stability: Unstable
  */
 float *cg_vector3_copy(const float *vector);
@@ -144,7 +139,6 @@ float *cg_vector3_copy(const float *vector);
  * Frees a 3 component vector that was previously allocated with
  * cg_vector3_copy()
  *
- * Since: 1.4
  * Stability: Unstable
  */
 void cg_vector3_free(float *vector);
@@ -155,7 +149,6 @@ void cg_vector3_free(float *vector);
  *
  * Inverts/negates all the components of the given @vector.
  *
- * Since: 1.4
  * Stability: Unstable
  */
 void cg_vector3_invert(float *vector);
@@ -169,7 +162,6 @@ void cg_vector3_invert(float *vector);
  * Adds each of the corresponding components in vectors @a and @b
  * storing the results in @result.
  *
- * Since: 1.4
  * Stability: Unstable
  */
 void cg_vector3_add(float *result, const float *a, const float *b);
@@ -183,7 +175,6 @@ void cg_vector3_add(float *result, const float *a, const float *b);
  * Subtracts each of the corresponding components in vector @b from
  * @a storing the results in @result.
  *
- * Since: 1.4
  * Stability: Unstable
  */
 void cg_vector3_subtract(float *result, const float *a, const float *b);
@@ -195,7 +186,6 @@ void cg_vector3_subtract(float *result, const float *a, const float *b);
  *
  * Multiplies each of the @vector components by the given scalar.
  *
- * Since: 1.4
  * Stability: Unstable
  */
 void cg_vector3_multiply_scalar(float *vector, float scalar);
@@ -207,7 +197,6 @@ void cg_vector3_multiply_scalar(float *vector, float scalar);
  *
  * Divides each of the @vector components by the given scalar.
  *
- * Since: 1.4
  * Stability: Unstable
  */
 void cg_vector3_divide_scalar(float *vector, float scalar);
@@ -223,7 +212,6 @@ void cg_vector3_divide_scalar(float *vector, float scalar);
  * try to divide components by 0 (its norm) and will leave the vector
  * untouched.</note>
  *
- * Since: 1.4
  * Stability: Unstable
  */
 void cg_vector3_normalize(float *vector);
@@ -236,7 +224,6 @@ void cg_vector3_normalize(float *vector);
  *
  * Returns: The magnitude of @vector.
  *
- * Since: 1.4
  * Stability: Unstable
  */
 float cg_vector3_magnitude(const float *vector);
@@ -265,7 +252,6 @@ float cg_vector3_magnitude(const float *vector);
  *
  * Returns: The cross product between two vectors @u and @v.
  *
- * Since: 1.4
  * Stability: Unstable
  */
 void cg_vector3_cross_product(float *result, const float *u, const float *v);
@@ -305,7 +291,6 @@ void cg_vector3_cross_product(float *result, const float *u, const float *v);
  *
  * Returns: The dot product of two vectors.
  *
- * Since: 1.4
  * Stability: Unstable
  */
 float cg_vector3_dot_product(const float *a, const float *b);
@@ -321,7 +306,6 @@ float cg_vector3_dot_product(const float *a, const float *b);
  * Returns: The distance between two points given as 3 component
  *          vectors.
  *
- * Since: 1.4
  * Stability: Unstable
  */
 float cg_vector3_distance(const float *a, const float *b);

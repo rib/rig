@@ -153,7 +153,6 @@ void cg_xlib_renderer_set_foreign_display(cg_renderer_t *renderer,
  * cg_xlib_renderer_handle_event() for each event if it disables
  * automatic event retrieval.
  *
- * Since: 1.10
  * Stability: unstable
  */
 void cg_xlib_renderer_set_event_retrieval_enabled(cg_renderer_t *renderer,

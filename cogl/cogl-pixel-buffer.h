@@ -67,7 +67,6 @@ CG_BEGIN_DECLS
  *
  * Return value: (transfer full): a newly allocated #cg_pixel_buffer_t
  *
- * Since: 1.10
  * Stability: unstable
  */
 cg_pixel_buffer_t *cg_pixel_buffer_new(cg_context_t *context,
@@ -84,7 +83,6 @@ cg_pixel_buffer_t *cg_pixel_buffer_new(cg_context_t *context,
  * Return value: %true if the @object is a pixel buffer, and %false
  *   otherwise
  *
- * Since: 1.2
  * Stability: Unstable
  */
 bool cg_is_pixel_buffer(void *object);
@@ -107,7 +105,6 @@ bool cg_is_pixel_buffer(void *object);
  *
  * Return value: %true if the upload succeeded, %false otherwise
  *
- * Since: 1.2
  * Stability: Unstable
  */
 bool

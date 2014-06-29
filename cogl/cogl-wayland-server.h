@@ -63,7 +63,6 @@ CG_BEGIN_DECLS
  * enables Cogl to register private wayland extensions required to
  * pass buffers between the clients and compositor.
  *
- * Since: 1.10
  * Stability: unstable
  */
 void
@@ -93,7 +92,6 @@ cg_wayland_display_set_compositor_display(cg_display_t *display,
  *          an unsupported format) it will return %NULL and set
  *          @error.
  *
- * Since: 1.10
  * Stability: unstable
  */
 cg_texture_2d_t *cg_wayland_texture_2d_new_from_buffer(
@@ -127,7 +125,6 @@ cg_texture_2d_t *cg_wayland_texture_2d_new_from_buffer(
  *
  * Return value: %true if the subregion upload was successful, and
  *   %false otherwise
- * Since: 1.18
  * Stability: unstable
  */
 bool

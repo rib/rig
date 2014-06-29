@@ -149,7 +149,6 @@ CG_BEGIN_DECLS
  * to manually create a #cg_renderer_t and call
  * cg_sdl_renderer_set_event_type().</note>
  *
- * Since: 2.0
  * Stability: unstable
  */
 cg_context_t *cg_sdl_context_new(int type, cg_error_t **error);
@@ -172,7 +171,6 @@ cg_context_t *cg_sdl_context_new(int type, cg_error_t **error);
  * #cg_renderer_t and #cg_display_t objects during
  * initialization.</note>
  *
- * Since: 2.0
  * Stability: unstable
  */
 void cg_sdl_renderer_set_event_type(cg_renderer_t *renderer, int type);
@@ -186,7 +184,6 @@ void cg_sdl_renderer_set_event_type(cg_renderer_t *renderer, int type);
  * cg_sdl_context_new or by using
  * cg_sdl_renderer_set_event_type().
  *
- * Since: 2.0
  * Stability: unstable
  */
 int cg_sdl_renderer_get_event_type(cg_renderer_t *renderer);
@@ -200,7 +197,6 @@ int cg_sdl_renderer_get_event_type(cg_renderer_t *renderer);
  * callbacks in response to the given SDL @event. This function must
  * be called for every SDL event.
  *
- * Since: 2.0
  * Stability: unstable
  */
 void cg_sdl_handle_event(cg_context_t *context, SDL_Event *event);
@@ -213,7 +209,6 @@ void cg_sdl_handle_event(cg_context_t *context, SDL_Event *event);
  * SDL_WaitEvent(). Cogl may use this to run low priority book keeping
  * tasks.
  *
- * Since: 2.0
  * Stability: unstable
  */
 void cg_sdl_idle(cg_context_t *context);
@@ -226,7 +221,6 @@ void cg_sdl_idle(cg_context_t *context);
  *
  * Returns: the underlying SDL_Window associated with an onscreen framebuffer.
  *
- * Since: 2.0
  * Stability: unstable
  */
 SDL_Window *cg_sdl_onscreen_get_window(cg_onscreen_t *onscreen);

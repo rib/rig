@@ -71,7 +71,6 @@ CG_BEGIN_DECLS
  * corresponding defines for the poll function call on Unix so they
  * may be directly passed to poll.
  *
- * Since: 1.10
  * Stability: unstable
  */
 typedef enum {
@@ -99,7 +98,6 @@ typedef enum {
  * Note that cg_poll_fd_t is deliberately exactly the same as struct
  * pollfd on Unix so that it can simply be cast when calling poll.
  *
- * Since: 1.10
  * Stability: unstable
  */
 typedef struct {
@@ -159,7 +157,6 @@ typedef struct {
  *               when the timeout changes.
  *
  * Stability: unstable
- * Since: 1.16
  */
 int cg_poll_renderer_get_info(cg_renderer_t *renderer,
                               cg_poll_fd_t **poll_fds,
@@ -186,7 +183,6 @@ int cg_poll_renderer_get_info(cg_renderer_t *renderer,
  * cg_get_renderer().</note>
  *
  * Stability: unstable
- * Since: 1.16
  */
 void cg_poll_renderer_dispatch(cg_renderer_t *renderer,
                                const cg_poll_fd_t *poll_fds,

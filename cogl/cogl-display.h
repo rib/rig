@@ -109,7 +109,6 @@ typedef struct _cg_display_t cg_display_t;
  *
  * Return value: (transfer full): A newly allocated #cg_display_t
  *               object in a mutable configuration mode.
- * Since: 1.10
  * Stability: unstable
  */
 cg_display_t *cg_display_new(cg_renderer_t *renderer,
@@ -123,7 +122,6 @@ cg_display_t *cg_display_new(cg_renderer_t *renderer,
  *
  * Return value: (transfer none): The associated #cg_renderer_t
  *
- * Since: 1.10
  * Stability: unstable
  */
 cg_renderer_t *cg_display_get_renderer(cg_display_t *display);
@@ -141,7 +139,6 @@ cg_renderer_t *cg_display_get_renderer(cg_display_t *display);
  * allocated. If Cogl knows how an application wants to allocate onscreen
  * framebuffers then it can try to make sure to setup the display accordingly.
  *
- * Since: 1.16
  * Stability: unstable
  */
 void
@@ -176,7 +173,6 @@ cg_display_set_onscreen_template(cg_display_t *display,
  *
  * Return value: Returns %true if there was no error, else it returns
  *               %false and returns an exception via @error.
- * Since: 1.10
  * Stability: unstable
  */
 bool cg_display_setup(cg_display_t *display, cg_error_t **error);
@@ -189,7 +185,6 @@ bool cg_display_setup(cg_display_t *display, cg_error_t **error);
  *
  * Request that Cogl output to a specific GDL overlay @plane.
  *
- * Since: 1.10
  * Stability: unstable
  */
 void cg_gdl_display_set_plane(cg_display_t *display, gdl_plane_id_t plane);
@@ -203,7 +198,6 @@ void cg_gdl_display_set_plane(cg_display_t *display, gdl_plane_id_t plane);
  *
  * Return value: %true if the object references a #cg_display_t
  *   and %false otherwise.
- * Since: 1.10
  * Stability: unstable
  */
 bool cg_is_display(void *object);

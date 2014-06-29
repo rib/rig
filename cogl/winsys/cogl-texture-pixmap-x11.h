@@ -78,7 +78,6 @@ typedef enum {
  *
  * #cg_error_t domain for texture-pixmap-x11 errors.
  *
- * Since: 1.10
  */
 #define CG_TEXTURE_PIXMAP_X11_ERROR (cg_texture_pixmap_x11_error_domain())
 
@@ -89,7 +88,6 @@ typedef enum {
  * Error codes that can be thrown when performing texture-pixmap-x11
  * operations.
  *
- * Since: 1.10
  */
 typedef enum {
     CG_TEXTURE_PIXMAP_X11_ERROR_X11,
@@ -112,7 +110,6 @@ uint32_t cg_texture_pixmap_x11_error_domain(void);
  *
  * Return value: a new #cg_texture_pixmap_x11_t instance
  *
- * Since: 1.10
  * Stability: Unstable
  */
 cg_texture_pixmap_x11_t *cg_texture_pixmap_x11_new(cg_context_t *context,
@@ -132,7 +129,6 @@ cg_texture_pixmap_x11_t *cg_texture_pixmap_x11_new(cg_context_t *context,
  * the contents of the pixmap that was given to
  * cg_texture_pixmap_x11_new().
  *
- * Since: 1.4
  * Stability: Unstable
  */
 void cg_texture_pixmap_x11_update_area(
@@ -151,7 +147,6 @@ void cg_texture_pixmap_x11_update_area(
  * Return value: %true if the texture is using an efficient extension
  *   and %false otherwise
  *
- * Since: 1.4
  * Stability: Unstable
  */
 bool
@@ -173,7 +168,6 @@ cg_texture_pixmap_x11_is_using_tfp_extension(cg_texture_pixmap_x11_t *texture);
  * Note that Cogl will subtract from the damage region as it processes
  * damage events.
  *
- * Since: 1.4
  * Stability: Unstable
  */
 void cg_texture_pixmap_x11_set_damage_object(
@@ -190,7 +184,6 @@ void cg_texture_pixmap_x11_set_damage_object(
  * Return value: %true if the object is a #cg_texture_pixmap_x11_t, and
  *   %false otherwise
  *
- * Since: 1.4
  * Stability: Unstable
  */
 bool cg_is_texture_pixmap_x11(void *object);

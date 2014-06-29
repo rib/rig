@@ -144,7 +144,6 @@ void cg_matrix_init_identity(cg_matrix_t *matrix);
  *   .wx=0; .wy=0; .wz=0; .ww=1;
  * ]|
  *
- * Since: 2.0
  */
 void
 cg_matrix_init_translation(cg_matrix_t *matrix, float tx, float ty, float tz);
@@ -187,7 +186,6 @@ cg_matrix_rotate(cg_matrix_t *matrix, float angle, float x, float y, float z);
  * Multiplies @matrix with a rotation transformation described by the
  * given #cg_quaternion_t.
  *
- * Since: 2.0
  */
 void cg_matrix_rotate_quaternion(cg_matrix_t *matrix,
                                  const cg_quaternion_t *quaternion);
@@ -200,7 +198,6 @@ void cg_matrix_rotate_quaternion(cg_matrix_t *matrix,
  * Multiplies @matrix with a rotation transformation described by the
  * given #cg_euler_t.
  *
- * Since: 2.0
  */
 void cg_matrix_rotate_euler(cg_matrix_t *matrix, const cg_euler_t *euler);
 
@@ -268,7 +265,6 @@ void cg_matrix_scale(cg_matrix_t *matrix, float sx, float sy, float sz);
  * <note>Almost always when you use this function it should be the first
  * transform applied to a new modelview transform</note>
  *
- * Since: 1.8
  * Stability: unstable
  */
 void cg_matrix_look_at(cg_matrix_t *matrix,
@@ -341,7 +337,6 @@ void cg_matrix_perspective(
  *
  * Multiplies @matrix by a parallel projection matrix.
  *
- * Since: 1.10
  * Stability: unstable
  */
 void cg_matrix_orthographic(cg_matrix_t *matrix,
@@ -379,7 +374,6 @@ void cg_matrix_orthographic(cg_matrix_t *matrix,
  * create a 2D coordinate system within a 3D perspective projected
  * view frustum.
  *
- * Since: 1.8
  * Stability: unstable
  */
 void cg_matrix_view_2d_in_frustum(cg_matrix_t *matrix,
@@ -417,7 +411,6 @@ void cg_matrix_view_2d_in_frustum(cg_matrix_t *matrix,
  * create a 2D coordinate system within a 3D perspective projected
  * view frustum.
  *
- * Since: 1.8
  * Stability: unstable
  */
 void cg_matrix_view_2d_in_perspective(cg_matrix_t *matrix,
@@ -476,7 +469,6 @@ void cg_matrix_init_from_euler(cg_matrix_t *matrix, const cg_euler_t *euler);
  * annotations associated with them and may potentially have a cached
  * inverse matrix these are not considered in the comparison.
  *
- * Since: 1.4
  */
 bool cg_matrix_equal(const void *v1, const void *v2);
 
@@ -490,7 +482,6 @@ bool cg_matrix_equal(const void *v1, const void *v2);
  * Return value: (transfer full): A newly allocated #cg_matrix_t which
  * should be freed using cg_matrix_free()
  *
- * Since: 1.6
  */
 cg_matrix_t *cg_matrix_copy(const cg_matrix_t *matrix);
 
@@ -501,7 +492,6 @@ cg_matrix_t *cg_matrix_copy(const cg_matrix_t *matrix);
  * Frees a #cg_matrix_t that was previously allocated via a call to
  * cg_matrix_copy().
  *
- * Since: 1.6
  */
 void cg_matrix_free(cg_matrix_t *matrix);
 
@@ -523,7 +513,6 @@ void cg_matrix_free(cg_matrix_t *matrix);
  *   for degenerate transformations that can't be inverted (in this case the
  *   @inverse matrix will simply be initialized with the identity matrix)
  *
- * Since: 1.2
  */
 bool cg_matrix_get_inverse(const cg_matrix_t *matrix, cg_matrix_t *inverse);
 
@@ -663,7 +652,6 @@ void cg_matrix_project_points(const cg_matrix_t *matrix,
  * Determines if the given matrix is an identity matrix.
  *
  * Returns: %true if @matrix is an identity matrix else %false
- * Since: 1.8
  */
 bool cg_matrix_is_identity(const cg_matrix_t *matrix);
 
@@ -674,7 +662,6 @@ bool cg_matrix_is_identity(const cg_matrix_t *matrix);
  * Replaces @matrix with its transpose. Ie, every element (i,j) in the
  * new matrix is taken from element (j,i) in the old matrix.
  *
- * Since: 1.10
  */
 void cg_matrix_transpose(cg_matrix_t *matrix);
 
@@ -684,7 +671,6 @@ void cg_matrix_transpose(cg_matrix_t *matrix);
  *
  * Prints the contents of a #cg_matrix_t to stdout.
  *
- * Since: 2.0
  */
 void cg_debug_matrix_print(const cg_matrix_t *matrix);
 

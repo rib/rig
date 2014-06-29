@@ -105,7 +105,6 @@ typedef enum {
  * artifacts around the edges when the pixels from the other side are
  * merged in if the wrap mode is set to repeat.
  *
- * Since: 2.0
  */
 /* GL_ALWAYS is just used here as a value that is known not to clash
  * with any valid GL wrap modes
@@ -145,7 +144,6 @@ typedef enum {
  * <note>In the future, we may define other types of pipeline layers, such
  * as purely GLSL based layers.</note>
  *
- * Since: 2.0
  * Stability: unstable
  */
 void cg_pipeline_set_layer_texture(cg_pipeline_t *pipeline,
@@ -170,7 +168,6 @@ void cg_pipeline_set_layer_texture(cg_pipeline_t *pipeline,
  * specify the texture type so that any pipeline copies can share the
  * internal texture type state for efficiency.
  *
- * Since: 1.10
  * Stability: unstable
  */
 void cg_pipeline_set_layer_null_texture(cg_pipeline_t *pipeline,
@@ -185,7 +182,6 @@ void cg_pipeline_set_layer_null_texture(cg_pipeline_t *pipeline,
  * Return value: the texture that was set for the given layer of the
  *   pipeline or %NULL if no texture was set.
  * Stability: unstable
- * Since: 1.10
  */
 cg_texture_t *cg_pipeline_get_layer_texture(cg_pipeline_t *pipeline,
                                             int layer_index);
@@ -196,7 +192,6 @@ cg_texture_t *cg_pipeline_get_layer_texture(cg_pipeline_t *pipeline,
  * @layer_index: Specifies the layer you want to remove
  *
  * This function removes a layer from your pipeline
- * Since: 1.10
  * Stability: unstable
  */
 void cg_pipeline_remove_layer(cg_pipeline_t *pipeline, int layer_index);
@@ -293,7 +288,6 @@ void cg_pipeline_remove_layer(cg_pipeline_t *pipeline, int layer_index);
  *   described texture combining is supported by the underlying driver and
  *   or hardware. On failure, %false is returned and @error is set
  *
- * Since: 2.0
  * Stability: unstable
  */
 bool cg_pipeline_set_layer_combine(cg_pipeline_t *pipeline,
@@ -311,7 +305,6 @@ bool cg_pipeline_set_layer_combine(cg_pipeline_t *pipeline,
  * When you are using the 'CONSTANT' color source in a layer combine
  * description then you can use this function to define its value.
  *
- * Since: 2.0
  * Stability: unstable
  */
 void cg_pipeline_set_layer_combine_constant(cg_pipeline_t *pipeline,
@@ -326,7 +319,6 @@ void cg_pipeline_set_layer_combine_constant(cg_pipeline_t *pipeline,
  *
  * Return value: the number of layers
  *
- * Since: 2.0
  * Stability: unstable
  */
 int cg_pipeline_get_n_layers(cg_pipeline_t *pipeline);
@@ -346,7 +338,6 @@ int cg_pipeline_get_n_layers(cg_pipeline_t *pipeline);
  * magnification filters since magnification doesn't ever need to
  * reference values stored in the mipmap chain.</note>
  *
- * Since: 1.10
  * Stability: unstable
  */
 void cg_pipeline_set_layer_filters(cg_pipeline_t *pipeline,
@@ -368,7 +359,6 @@ void cg_pipeline_set_layer_filters(cg_pipeline_t *pipeline,
  *
  * Return value: The minification #cg_pipeline_filter_t for the
  *               specified layer.
- * Since: 1.10
  * Stability: unstable
  */
 cg_pipeline_filter_t cg_pipeline_get_layer_min_filter(cg_pipeline_t *pipeline,
@@ -388,7 +378,6 @@ cg_pipeline_filter_t cg_pipeline_get_layer_min_filter(cg_pipeline_t *pipeline,
  *
  * Return value: The magnification #cg_pipeline_filter_t for the
  *               specified layer.
- * Since: 1.10
  * Stability: unstable
  */
 cg_pipeline_filter_t cg_pipeline_get_layer_mag_filter(cg_pipeline_t *pipeline,
@@ -413,7 +402,6 @@ cg_pipeline_filter_t cg_pipeline_get_layer_mag_filter(cg_pipeline_t *pipeline,
  * return %false and set @error.
  *
  * Return value: %true if the function succeeds, %false otherwise.
- * Since: 2.0
  * Stability: unstable
  */
 bool cg_pipeline_set_layer_point_sprite_coords_enabled(cg_pipeline_t *pipeline,
@@ -432,7 +420,6 @@ bool cg_pipeline_set_layer_point_sprite_coords_enabled(cg_pipeline_t *pipeline,
  * Return value: whether the texture coordinates will be replaced with
  * point sprite coordinates.
  *
- * Since: 2.0
  * Stability: unstable
  */
 bool cg_pipeline_get_layer_point_sprite_coords_enabled(cg_pipeline_t *pipeline,
@@ -449,7 +436,6 @@ bool cg_pipeline_get_layer_point_sprite_coords_enabled(cg_pipeline_t *pipeline,
  * Return value: the wrap mode for the 's' coordinate of texture lookups on
  * this layer.
  *
- * Since: 1.6
  * Stability: unstable
  */
 cg_pipeline_wrap_mode_t
@@ -463,7 +449,6 @@ cg_pipeline_get_layer_wrap_mode_s(cg_pipeline_t *pipeline, int layer_index);
  *
  * Sets the wrap mode for the 's' coordinate of texture lookups on this layer.
  *
- * Since: 2.0
  * Stability: unstable
  */
 void cg_pipeline_set_layer_wrap_mode_s(cg_pipeline_t *pipeline,
@@ -481,7 +466,6 @@ void cg_pipeline_set_layer_wrap_mode_s(cg_pipeline_t *pipeline,
  * Return value: the wrap mode for the 't' coordinate of texture lookups on
  * this layer.
  *
- * Since: 1.6
  * Stability: unstable
  */
 cg_pipeline_wrap_mode_t
@@ -495,7 +479,6 @@ cg_pipeline_get_layer_wrap_mode_t(cg_pipeline_t *pipeline, int layer_index);
  *
  * Sets the wrap mode for the 't' coordinate of texture lookups on this layer.
  *
- * Since: 2.0
  * Stability: unstable
  */
 void cg_pipeline_set_layer_wrap_mode_t(cg_pipeline_t *pipeline,
@@ -513,7 +496,6 @@ void cg_pipeline_set_layer_wrap_mode_t(cg_pipeline_t *pipeline,
  * Return value: the wrap mode for the 'p' coordinate of texture lookups on
  * this layer.
  *
- * Since: 1.6
  * Stability: unstable
  */
 cg_pipeline_wrap_mode_t
@@ -528,7 +510,6 @@ cg_pipeline_get_layer_wrap_mode_p(cg_pipeline_t *pipeline, int layer_index);
  * Sets the wrap mode for the 'p' coordinate of texture lookups on
  * this layer. 'p' is the third coordinate.
  *
- * Since: 2.0
  * Stability: unstable
  */
 void cg_pipeline_set_layer_wrap_mode_p(cg_pipeline_t *pipeline,
@@ -547,7 +528,6 @@ void cg_pipeline_set_layer_wrap_mode_p(cg_pipeline_t *pipeline,
  * cg_pipeline_set_layer_wrap_mode_t() and
  * cg_pipeline_set_layer_wrap_mode_p() separately.
  *
- * Since: 2.0
  * Stability: unstable
  */
 void cg_pipeline_set_layer_wrap_mode(cg_pipeline_t *pipeline,
@@ -566,7 +546,6 @@ void cg_pipeline_set_layer_wrap_mode(cg_pipeline_t *pipeline,
  * cg_snippet_new(). Note that some hooks can't be used with a layer
  * and need to be added with cg_pipeline_add_snippet() instead.
  *
- * Since: 1.10
  * Stability: Unstable
  */
 void cg_pipeline_add_layer_snippet(cg_pipeline_t *pipeline,

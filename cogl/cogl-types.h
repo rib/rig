@@ -279,7 +279,6 @@ typedef struct _cg_color_t cg_color_t;
  * would be in 1-5. Therefore the order in memory depends on the
  * endianness of the system.
  *
- * Since: 0.8
  */
 typedef enum { /*< prefix=CG_PIXEL_FORMAT >*/
     CG_PIXEL_FORMAT_ANY = 0,
@@ -338,7 +337,6 @@ typedef enum { /*< prefix=CG_PIXEL_FORMAT >*/
  *
  * Target flags for FBOs.
  *
- * Since: 0.8
  */
 typedef enum {
     CG_WINDOW_BUFFER = (1 << 1),
@@ -354,7 +352,6 @@ typedef enum {
  *
  * A structure for holding a single color definition.
  *
- * Since: 1.0
  */
 struct _cg_color_t {
     float red;
@@ -369,7 +366,6 @@ CG_STRUCT_SIZE_ASSERT(cg_color_t, 16);
  *
  * #cg_error_t domain for blend string parser errors
  *
- * Since: 1.0
  */
 #define CG_BLEND_STRING_ERROR (cg_blend_string_error_domain())
 
@@ -383,7 +379,6 @@ CG_STRUCT_SIZE_ASSERT(cg_color_t, 16);
  *
  * Error enumeration for the blend strings parser
  *
- * Since: 1.0
  */
 typedef enum { /*< prefix=CG_BLEND_STRING_ERROR >*/
     CG_BLEND_STRING_ERROR_PARSE_ERROR,
@@ -423,7 +418,6 @@ uint32_t cg_blend_string_error_domain(void);
  * Currently this is only used by Cogl API marked as experimental so
  * this enum should also be considered experimental.
  *
- * Since: 1.4
  * Stability: unstable
  */
 typedef enum { /*< prefix=CG_ERROR >*/
@@ -445,7 +439,6 @@ uint32_t _cg_system_error_domain(void);
  *
  * Data types for the components of a vertex attribute.
  *
- * Since: 1.0
  */
 typedef enum {
     CG_ATTRIBUTE_TYPE_BYTE = 0x1400,
@@ -495,7 +488,6 @@ typedef enum {
  *
  * Different ways of interpreting vertices when drawing.
  *
- * Since: 1.0
  */
 typedef enum {
     CG_VERTICES_MODE_POINTS = 0x0000,
@@ -660,7 +652,6 @@ typedef enum {
  *
  * Types of auxiliary buffers
  *
- * Since: 1.0
  */
 typedef enum {
     CG_BUFFER_BIT_COLOR = 1 << 0,
@@ -674,7 +665,6 @@ typedef enum {
  *
  * Flags for cg_framebuffer_read_pixels_into_bitmap()
  *
- * Since: 1.0
  */
 typedef enum { /*< prefix=CG_READ_PIXELS >*/
     CG_READ_PIXELS_COLOR_BUFFER = 1L << 0

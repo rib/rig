@@ -126,7 +126,6 @@ typedef struct _cg_meta_texture_t cg_meta_texture_t;
  * retrieve details of all the low-level #cg_texture_t<!-- -->s that
  * make up a given #cg_meta_texture_t.
  *
- * Since: 1.10
  * Stability: unstable
  */
 typedef void (*cg_meta_texture_callback_t)(cg_texture_t *sub_texture,
@@ -176,7 +175,6 @@ typedef void (*cg_meta_texture_callback_t)(cg_texture_t *sub_texture,
  * of the @meta_texture, @callback is called specifying how the
  * low-level texture maps to the original region.
  *
- * Since: 1.10
  * Stability: unstable
  */
 void cg_meta_texture_foreach_in_region(cg_meta_texture_t *meta_texture,

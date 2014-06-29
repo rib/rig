@@ -66,7 +66,6 @@ typedef struct _cg_index_buffer_t cg_index_buffer_t;
  *
  * Return value: (transfer full): A newly allocated #cg_index_buffer_t
  *
- * Since: 1.4
  * Stability: Unstable
  */
 cg_index_buffer_t *cg_index_buffer_new(cg_context_t *context, size_t bytes);
@@ -80,7 +79,6 @@ cg_index_buffer_t *cg_index_buffer_new(cg_context_t *context, size_t bytes);
  * Returns: %true if the @object references a #cg_index_buffer_t,
  *   %false otherwise
  *
- * Since: 1.4
  * Stability: Unstable
  */
 bool cg_is_index_buffer(void *object);

@@ -71,7 +71,6 @@ CG_BEGIN_DECLS
  *
  * Return value: a pointer to a new #cg_pipeline_t
  *
- * Since: 2.0
  * Stability: Unstable
  */
 cg_pipeline_t *cg_pipeline_new(cg_context_t *context);
@@ -91,7 +90,6 @@ cg_pipeline_t *cg_pipeline_new(cg_context_t *context);
  *
  * Returns: a pointer to the newly allocated #cg_pipeline_t
  *
- * Since: 2.0
  * Stability: Unstable
  */
 cg_pipeline_t *cg_pipeline_copy(cg_pipeline_t *source);
@@ -105,7 +103,6 @@ cg_pipeline_t *cg_pipeline_copy(cg_pipeline_t *source);
  * Return value: %true if the @object references a #cg_pipeline_t,
  *   %false otherwise
  *
- * Since: 2.0
  * Stability: Unstable
  */
 bool cg_is_pipeline(void *object);
@@ -119,7 +116,6 @@ bool cg_is_pipeline(void *object);
  * The callback prototype used with cg_pipeline_foreach_layer() for
  * iterating all the layers of a @pipeline.
  *
- * Since: 2.0
  * Stability: Unstable
  */
 typedef bool (*cg_pipeline_layer_callback_t)(cg_pipeline_t *pipeline,
@@ -136,7 +132,6 @@ typedef bool (*cg_pipeline_layer_callback_t)(cg_pipeline_t *pipeline,
  *
  * Iterates all the layer indices of the given @pipeline.
  *
- * Since: 2.0
  * Stability: Unstable
  */
 void cg_pipeline_foreach_layer(cg_pipeline_t *pipeline,
@@ -160,7 +155,6 @@ void cg_pipeline_foreach_layer(cg_pipeline_t *pipeline,
  *
  * Return value: A integer representing the location of the given uniform.
  *
- * Since: 2.0
  * Stability: Unstable
  */
 int cg_pipeline_get_uniform_location(cg_pipeline_t *pipeline,

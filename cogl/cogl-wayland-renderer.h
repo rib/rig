@@ -49,7 +49,6 @@ CG_BEGIN_DECLS
  * to work with instead of leaving Cogl to automatically connect to a
  * wayland compositor.
  *
- * Since: 1.8
  * Stability: unstable
  */
 void cg_wayland_renderer_set_foreign_display(cg_renderer_t *renderer,
@@ -70,7 +69,6 @@ void cg_wayland_renderer_set_foreign_display(cg_renderer_t *renderer,
  * reading from the Wayland display socket, it should disable this to
  * avoid having competing code read from the socket.
  *
- * Since: 1.16
  * Stability: unstable
  */
 void cg_wayland_renderer_set_event_dispatch_enabled(cg_renderer_t *renderer,
@@ -92,7 +90,6 @@ void cg_wayland_renderer_set_event_dispatch_enabled(cg_renderer_t *renderer,
  *          or %NULL if the renderer hasn't yet been connected and no
  *          foreign display has been specified.
  *
- * Since: 1.8
  * Stability: unstable
  */
 struct wl_display *cg_wayland_renderer_get_display(cg_renderer_t *renderer);

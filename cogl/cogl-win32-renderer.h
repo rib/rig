@@ -107,7 +107,6 @@ void cg_win32_renderer_remove_filter(cg_renderer_t *renderer,
  * the application should call cg_win32_renderer_handle_event() for
  * each message if it disables automatic event retrieval.
  *
- * Since: 1.16
  * Stability: unstable
  */
 void cg_win32_renderer_set_event_retrieval_enabled(cg_renderer_t *renderer,
