@@ -11,9 +11,9 @@ libtest_fixtures_la_CPPFLAGS = \
 	$(NULL)
 
 libtest_fixtures_la_CPPFLAGS += \
-	-DCOGL_DISABLE_DEPRECATED \
+	-DCG_DISABLE_DEPRECATED \
 	-DTESTS_DATADIR=\""$(top_srcdir)/tests/data"\" \
-	-DCOGL_COMPILATION
+	-DCG_COMPILATION
 
 libtest_fixtures_la_CFLAGS = -g3 -O0 $(COGL_DEP_CFLAGS) $(COGL_EXTRA_CFLAGS)
 
