@@ -74,8 +74,8 @@ struct _RutToggle
   /* FIXME: we don't need a separate tick for every toggle! */
   PangoLayout *tick;
 
-  CoglTexture *selected_icon;
-  CoglTexture *unselected_icon;
+  cg_texture_t *selected_icon;
+  cg_texture_t *unselected_icon;
 
   PangoLayout *label;
   int label_width;
@@ -86,13 +86,13 @@ struct _RutToggle
 
   /* FIXME: we should be able to share these pipelines
    * between different toggle boxes. */
-  CoglPipeline *pipeline_border;
-  CoglPipeline *pipeline_box;
-  CoglPipeline *pipeline_selected_icon;
-  CoglPipeline *pipeline_unselected_icon;
+  cg_pipeline_t *pipeline_border;
+  cg_pipeline_t *pipeline_box;
+  cg_pipeline_t *pipeline_selected_icon;
+  cg_pipeline_t *pipeline_unselected_icon;
 
-  CoglColor text_color;
-  CoglColor tick_color;
+  cg_color_t text_color;
+  cg_color_t tick_color;
 
   RutInputRegion *input_region;
 
@@ -146,20 +146,20 @@ _rut_toggle_free (void *object)
 
   if (toggle->selected_icon)
     {
-      cogl_object_unref (toggle->selected_icon);
-      cogl_object_unref (toggle->pipeline_selected_icon);
+      cg_object_unref (toggle->selected_icon);
+      cg_object_unref (toggle->pipeline_selected_icon);
     }
   if (toggle->unselected_icon)
     {
-      cogl_object_unref (toggle->unselected_icon);
-      cogl_object_unref (toggle->pipeline_unselected_icon);
+      cg_object_unref (toggle->unselected_icon);
+      cg_object_unref (toggle->pipeline_unselected_icon);
     }
   if (toggle->tick)
     g_object_unref (toggle->tick);
   g_object_unref (toggle->label);
 
-  cogl_object_unref (toggle->pipeline_border);
-  cogl_object_unref (toggle->pipeline_box);
+  cg_object_unref (toggle->pipeline_border);
+  cg_object_unref (toggle->pipeline_box);
 
   rut_introspectable_destroy (toggle);
   rut_graphable_destroy (toggle);
@@ -173,13 +173,13 @@ _rut_toggle_paint (RutObject *object,
 {
   RutToggle *toggle = object;
   RutObject *camera = paint_ctx->camera;
-  CoglFramebuffer *fb = rut_camera_get_framebuffer (camera);
+  cg_framebuffer_t *fb = rut_camera_get_framebuffer (camera);
   int icon_width;
 
   if (toggle->selected_icon)
     {
-      CoglTexture *icon;
-      CoglPipeline *pipeline;
+      cg_texture_t *icon;
+      cg_pipeline_t *pipeline;
       int icon_y;
       int icon_height;
 
@@ -195,11 +195,11 @@ _rut_toggle_paint (RutObject *object,
         }
 
       icon_y = (toggle->label_height / 2.0) -
-        (cogl_texture_get_height (icon) / 2.0);
-      icon_width = cogl_texture_get_width (icon);
-      icon_height = cogl_texture_get_height (icon);
+        (cg_texture_get_height (icon) / 2.0);
+      icon_width = cg_texture_get_width (icon);
+      icon_height = cg_texture_get_height (icon);
 
-      cogl_framebuffer_draw_rectangle (fb,
+      cg_framebuffer_draw_rectangle (fb,
                                        pipeline,
                                        0, icon_y,
                                        icon_width,
@@ -212,20 +212,20 @@ _rut_toggle_paint (RutObject *object,
       int box_y = (toggle->label_height / 2.0) - (RUT_TOGGLE_BOX_WIDTH / 2.0);
 
 
-      cogl_framebuffer_draw_rectangle (fb,
+      cg_framebuffer_draw_rectangle (fb,
                                        toggle->pipeline_border,
                                        0, box_y,
                                        RUT_TOGGLE_BOX_WIDTH,
                                        box_y + RUT_TOGGLE_BOX_WIDTH);
 
-      cogl_framebuffer_draw_rectangle (fb,
+      cg_framebuffer_draw_rectangle (fb,
                                        toggle->pipeline_box,
                                        1, box_y + 1,
                                        RUT_TOGGLE_BOX_WIDTH - 2,
                                        box_y + RUT_TOGGLE_BOX_WIDTH - 2);
 
       if (toggle->state || toggle->tentative_set)
-        cogl_pango_show_layout (rut_camera_get_framebuffer (camera),
+        cg_pango_show_layout (rut_camera_get_framebuffer (camera),
                                 toggle->tick,
                                 0, 0,
                                 &toggle->tick_color);
@@ -233,7 +233,7 @@ _rut_toggle_paint (RutObject *object,
       icon_width = RUT_TOGGLE_BOX_WIDTH;
     }
 
-  cogl_pango_show_layout (rut_camera_get_framebuffer (camera),
+  cg_pango_show_layout (rut_camera_get_framebuffer (camera),
                           toggle->label,
                           icon_width + RUT_TOGGLE_BOX_RIGHT_PAD, 0,
                           &toggle->text_color);
@@ -281,7 +281,7 @@ _rut_toggle_get_preferred_width (RutObject *object,
   if (toggle->selected_icon)
     {
       width = logical_rect.width +
-        cogl_texture_get_width (toggle->selected_icon) +
+        cg_texture_get_width (toggle->selected_icon) +
         right_pad;
     }
   else
@@ -307,7 +307,7 @@ _rut_toggle_get_preferred_height (RutObject *object,
 
   if (toggle->selected_icon)
     height = MAX (logical_rect.height,
-                  cogl_texture_get_height (toggle->selected_icon));
+                  cg_texture_get_height (toggle->selected_icon));
   else
     height = MAX (logical_rect.height, RUT_TOGGLE_BOX_WIDTH);
 
@@ -509,22 +509,22 @@ _rut_toggle_update_colours (RutToggle *toggle)
   box = colors[toggle->enabled][toggle->state][1];
   text = colors[toggle->enabled][toggle->state][2];
 
-  cogl_pipeline_set_color4f (toggle->pipeline_border,
+  cg_pipeline_set_color4f (toggle->pipeline_border,
                              RUT_UINT32_RED_AS_FLOAT (border),
                              RUT_UINT32_GREEN_AS_FLOAT (border),
                              RUT_UINT32_BLUE_AS_FLOAT (border),
                              RUT_UINT32_ALPHA_AS_FLOAT (border));
-  cogl_pipeline_set_color4f (toggle->pipeline_box,
+  cg_pipeline_set_color4f (toggle->pipeline_box,
                              RUT_UINT32_RED_AS_FLOAT (box),
                              RUT_UINT32_GREEN_AS_FLOAT (box),
                              RUT_UINT32_BLUE_AS_FLOAT (box),
                              RUT_UINT32_ALPHA_AS_FLOAT (box));
-  cogl_color_init_from_4f (&toggle->text_color,
+  cg_color_init_from_4f (&toggle->text_color,
                            RUT_UINT32_RED_AS_FLOAT (text),
                            RUT_UINT32_GREEN_AS_FLOAT (text),
                            RUT_UINT32_BLUE_AS_FLOAT (text),
                            RUT_UINT32_ALPHA_AS_FLOAT (text));
-  cogl_color_init_from_4f (&toggle->tick_color,
+  cg_color_init_from_4f (&toggle->tick_color,
                            RUT_UINT32_RED_AS_FLOAT (text),
                            RUT_UINT32_GREEN_AS_FLOAT (text),
                            RUT_UINT32_BLUE_AS_FLOAT (text),
@@ -566,11 +566,11 @@ rut_toggle_new_with_icons (RutContext *ctx,
         toggle->unselected_icon = rut_load_texture (ctx, unselected_icon, NULL);
       if (toggle->unselected_icon)
         {
-          toggle->pipeline_selected_icon = cogl_pipeline_new (ctx->cogl_context);
-          cogl_pipeline_set_layer_texture (toggle->pipeline_selected_icon, 0,
+          toggle->pipeline_selected_icon = cg_pipeline_new (ctx->cg_context);
+          cg_pipeline_set_layer_texture (toggle->pipeline_selected_icon, 0,
                                            toggle->selected_icon);
-          toggle->pipeline_unselected_icon = cogl_pipeline_copy (toggle->pipeline_selected_icon);
-          cogl_pipeline_set_layer_texture (toggle->pipeline_unselected_icon, 0,
+          toggle->pipeline_unselected_icon = cg_pipeline_copy (toggle->pipeline_selected_icon);
+          cg_pipeline_set_layer_texture (toggle->pipeline_unselected_icon, 0,
                                            toggle->unselected_icon);
         }
       else
@@ -579,7 +579,7 @@ rut_toggle_new_with_icons (RutContext *ctx,
                      selected_icon, unselected_icon);
           if (toggle->selected_icon)
             {
-              cogl_object_unref (toggle->selected_icon);
+              cg_object_unref (toggle->selected_icon);
               toggle->selected_icon = NULL;
             }
         }
@@ -609,8 +609,8 @@ rut_toggle_new_with_icons (RutContext *ctx,
   toggle->width = toggle->label_width + RUT_TOGGLE_BOX_RIGHT_PAD + RUT_TOGGLE_BOX_WIDTH;
   toggle->height = toggle->label_height + RUT_TOGGLE_LABEL_VPAD;
 
-  toggle->pipeline_border = cogl_pipeline_new (ctx->cogl_context);
-  toggle->pipeline_box = cogl_pipeline_new (ctx->cogl_context);
+  toggle->pipeline_border = cg_pipeline_new (ctx->cg_context);
+  toggle->pipeline_box = cg_pipeline_new (ctx->cg_context);
 
   _rut_toggle_update_colours (toggle);
 
@@ -704,7 +704,7 @@ rut_toggle_get_tick (RutObject *obj)
 
 void
 rut_toggle_set_tick_color (RutObject *obj,
-                           const CoglColor *color)
+                           const cg_color_t *color)
 {
   RutToggle *toggle = obj;
 
@@ -712,7 +712,7 @@ rut_toggle_set_tick_color (RutObject *obj,
   rut_shell_queue_redraw (toggle->ctx->shell);
 }
 
-const CoglColor *
+const cg_color_t *
 rut_toggle_get_tick_color (RutObject *obj)
 {
   RutToggle *toggle = obj;

@@ -215,11 +215,11 @@ rut_volume_union (RutVolume *volume,
 
 void
 rut_volume_transform (RutVolume *pv,
-                      const CoglMatrix *matrix);
+                      const cg_matrix_t *matrix);
 void
 rut_volume_project (RutVolume *pv,
-                    const CoglMatrix *modelview,
-                    const CoglMatrix *projection,
+                    const cg_matrix_t *modelview,
+                    const cg_matrix_t *projection,
                     const float *viewport);
 
 void

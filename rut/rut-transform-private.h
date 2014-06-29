@@ -40,7 +40,7 @@ struct _RutTransform
 
   RutGraphableProps graphable;
 
-  CoglMatrix matrix;
+  cg_matrix_t matrix;
 };
 
 #endif /* _RUT_TRANSFORM_PRIVATE_H_ */

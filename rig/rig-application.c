@@ -66,7 +66,7 @@ new_activated (GSimpleAction *action,
 }
 
 static bool
-get_xwindow_from_onscreen (CoglOnscreen *onscreen,
+get_xwindow_from_onscreen (cg_onscreen_t *onscreen,
                            Window *xwindow)
 {
 #ifdef USE_SDL
@@ -77,7 +77,7 @@ get_xwindow_from_onscreen (CoglOnscreen *onscreen,
 
 #if (SDL_MAJOR_VERSION >= 2)
   {
-    SDL_Window *sdl_window = cogl_sdl_onscreen_get_window (onscreen);
+    SDL_Window *sdl_window = cg_sdl_onscreen_get_window (onscreen);
 
     if (!SDL_GetWindowWMInfo (sdl_window, &parent_window_info))
       return false;
@@ -105,7 +105,7 @@ get_xwindow_from_onscreen (CoglOnscreen *onscreen,
 
 static void
 dialog_realized_cb (GtkWidget *dialog,
-                    CoglOnscreen *onscreen)
+                    cg_onscreen_t *onscreen)
 {
   GdkWindow *dialog_window = gtk_widget_get_window (dialog);
   Window xwindow;
@@ -197,7 +197,7 @@ rig_application_activate (GApplication *application)
 }
 
 static void
-set_window_property (CoglOnscreen *onscreen,
+set_window_property (cg_onscreen_t *onscreen,
                      const char *name,
                      const char *value)
 {
@@ -230,16 +230,16 @@ destroy_onscreen_cb (void *user_data)
 
 void
 rig_application_add_onscreen (RigApplication *app,
-                              CoglOnscreen *onscreen)
+                              cg_onscreen_t *onscreen)
 {
   RigApplicationPrivate *priv = app->priv;
-  static CoglUserDataKey data_key;
+  static cg_user_data_key_t data_key;
   const char *value;
 
   /* The GApplication will be held while there are onscreens in a
    * similar way to how GTK works */
   g_application_hold (G_APPLICATION (app));
-  cogl_object_set_user_data (COGL_OBJECT (onscreen),
+  cg_object_set_user_data (CG_OBJECT (onscreen),
                              &data_key,
                              app,
                              destroy_onscreen_cb);

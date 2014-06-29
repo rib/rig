@@ -54,7 +54,7 @@ typedef struct _RigSelectionTool
 
   c_list_t *selected_entities;
 
-  CoglPipeline *default_pipeline;
+  cg_pipeline_t *default_pipeline;
 
   RutList selection_event_cb_list;
 } RigSelectionTool;
@@ -69,8 +69,8 @@ typedef enum
 typedef void
 (* RigSelectionToolEventCallback) (RigSelectionTool *tool,
                                    RigSelectionToolEventType type,
-                                   const CoglQuaternion *start_selection,
-                                   const CoglQuaternion *new_selection,
+                                   const cg_quaternion_t *start_selection,
+                                   const cg_quaternion_t *new_selection,
                                    void *user_data);
 
 RigSelectionTool *

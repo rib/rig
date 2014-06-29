@@ -54,7 +54,7 @@ rut_camera_set_background_color4f (RutObject *object,
 
 void
 rut_camera_set_background_color (RutObject *object,
-                                 const CoglColor *color)
+                                 const cg_color_t *color)
 {
   RutCameraVTable *vtable =
     rut_object_get_vtable (object, RUT_TRAIT_ID_CAMERA);
@@ -62,7 +62,7 @@ rut_camera_set_background_color (RutObject *object,
   vtable->set_background_color (object, color);
 }
 
-const CoglColor *
+const cg_color_t *
 rut_camera_get_background_color (RutObject *object)
 {
   RutCameraProps *camera =
@@ -81,7 +81,7 @@ rut_camera_set_clear (RutObject *object,
   vtable->set_clear (object, clear);
 }
 
-CoglFramebuffer *
+cg_framebuffer_t *
 rut_camera_get_framebuffer (RutObject *object)
 {
   RutCameraProps *camera =
@@ -92,7 +92,7 @@ rut_camera_get_framebuffer (RutObject *object)
 
 void
 rut_camera_set_framebuffer (RutObject *object,
-                            CoglFramebuffer *framebuffer)
+                            cg_framebuffer_t *framebuffer)
 {
   RutCameraVTable *vtable =
     rut_object_get_vtable (object, RUT_TRAIT_ID_CAMERA);
@@ -162,7 +162,7 @@ rut_camera_get_viewport (RutObject *object)
   return camera->viewport;
 }
 
-const CoglMatrix *
+const cg_matrix_t *
 rut_camera_get_projection (RutObject *object)
 {
   RutCameraVTable *vtable =
@@ -276,7 +276,7 @@ rut_camera_get_orthographic_coordinates (RutObject *object,
   *y2 = camera->y2;
 }
 
-const CoglMatrix *
+const cg_matrix_t *
 rut_camera_get_inverse_projection (RutObject *object)
 {
   RutCameraVTable *vtable =
@@ -287,7 +287,7 @@ rut_camera_get_inverse_projection (RutObject *object)
 
 void
 rut_camera_set_view_transform (RutObject *object,
-                               const CoglMatrix *view)
+                               const cg_matrix_t *view)
 {
   RutCameraVTable *vtable =
     rut_object_get_vtable (object, RUT_TRAIT_ID_CAMERA);
@@ -295,7 +295,7 @@ rut_camera_set_view_transform (RutObject *object,
   vtable->set_view_transform (object, view);
 }
 
-const CoglMatrix *
+const cg_matrix_t *
 rut_camera_get_view_transform (RutObject *object)
 {
   RutCameraProps *camera =
@@ -304,7 +304,7 @@ rut_camera_get_view_transform (RutObject *object)
   return &camera->view;
 }
 
-const CoglMatrix *
+const cg_matrix_t *
 rut_camera_get_inverse_view_transform (RutObject *object)
 {
   RutCameraVTable *vtable =
@@ -313,7 +313,7 @@ rut_camera_get_inverse_view_transform (RutObject *object)
   return vtable->get_inverse_view_transform (object);
 }
 
-const CoglMatrix *
+const cg_matrix_t *
 rut_camera_get_input_transform (RutObject *object)
 {
   RutCameraProps *camera =
@@ -324,7 +324,7 @@ rut_camera_get_input_transform (RutObject *object)
 
 void
 rut_camera_set_input_transform (RutObject *object,
-                                const CoglMatrix *input_transform)
+                                const cg_matrix_t *input_transform)
 {
   RutCameraVTable *vtable =
     rut_object_get_vtable (object, RUT_TRAIT_ID_CAMERA);
@@ -409,8 +409,8 @@ rut_camera_transform_window_coordinate (RutObject *object,
 
 void
 rut_camera_unproject_coord (RutObject *object,
-                            const CoglMatrix *modelview,
-                            const CoglMatrix *inverse_modelview,
+                            const cg_matrix_t *modelview,
+                            const cg_matrix_t *inverse_modelview,
                             float object_coord_z,
                             float *x,
                             float *y)
@@ -425,7 +425,7 @@ rut_camera_unproject_coord (RutObject *object,
                            x, y);
 }
 
-CoglPrimitive *
+cg_primitive_t *
 rut_camera_create_frustum_primitive (RutObject *object)
 {
   RutCameraVTable *vtable =

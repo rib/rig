@@ -63,6 +63,6 @@ RigCamera *
 rig_camera_new (RigEngine *engine,
                 float width,
                 float height,
-                CoglFramebuffer *framebuffer); /* may be NULL */
+                cg_framebuffer_t *framebuffer); /* may be NULL */
 
 #endif /* __RIG_CAMERA_H__ */

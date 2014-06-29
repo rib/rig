@@ -36,7 +36,7 @@
 #include "rut-camera.h"
 #include "rut-refcount-debug.h"
 
-const CoglMatrix *
+const cg_matrix_t *
 rut_transformable_get_matrix (RutObject *object)
 {
   RutTransformableVTable *transformable =
@@ -161,7 +161,7 @@ rut_sizable_add_preferred_size_callback (RutObject *object,
                                                  destroy_cb);
 }
 
-CoglPrimitive *
+cg_primitive_t *
 rut_primable_get_primitive (RutObject *object)
 {
   RutPrimableVTable *primable =

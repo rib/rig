@@ -43,7 +43,7 @@ typedef struct
   float x, y, z, w;
 } RutVertex4;
 
-static CoglUserDataKey fb_camera_key;
+static cg_user_data_key_t fb_camera_key;
 
 struct _RigCamera
 {
@@ -107,7 +107,7 @@ rig_camera_set_background_color4f (RutObject *object,
                                    float alpha)
 {
   RigCamera *camera = object;
-  cogl_color_init_from_4f (&camera->props.bg_color,
+  cg_color_init_from_4f (&camera->props.bg_color,
                            red, green, blue, alpha);
   rut_property_dirty (&camera->engine->ctx->property_ctx,
                       &camera->properties[RIG_CAMERA_PROP_BG_COLOR]);
@@ -115,7 +115,7 @@ rig_camera_set_background_color4f (RutObject *object,
 
 void
 rig_camera_set_background_color (RutObject *obj,
-                                 const CoglColor *color)
+                                 const cg_color_t *color)
 {
   RigCamera *camera = obj;
 
@@ -124,7 +124,7 @@ rig_camera_set_background_color (RutObject *obj,
                       &camera->properties[RIG_CAMERA_PROP_BG_COLOR]);
 }
 
-const CoglColor *
+const cg_color_t *
 rig_camera_get_background_color (RutObject *obj)
 {
   RigCamera *camera = obj;
@@ -143,7 +143,7 @@ rig_camera_set_clear (RutObject *object,
     camera->props.clear_fb = false;
 }
 
-CoglFramebuffer *
+cg_framebuffer_t *
 rig_camera_get_framebuffer (RutObject *object)
 {
   RigCamera *camera = object;
@@ -152,16 +152,16 @@ rig_camera_get_framebuffer (RutObject *object)
 
 void
 rig_camera_set_framebuffer (RutObject *object,
-                            CoglFramebuffer *framebuffer)
+                            cg_framebuffer_t *framebuffer)
 {
   RigCamera *camera = object;
   if (camera->props.fb == framebuffer)
     return;
 
   if (camera->props.fb)
-    cogl_object_unref (camera->props.fb);
+    cg_object_unref (camera->props.fb);
 
-  camera->props.fb = cogl_object_ref (framebuffer);
+  camera->props.fb = cg_object_ref (framebuffer);
 }
 
 static void
@@ -278,13 +278,13 @@ rig_camera_get_viewport (RutObject *object)
   return camera->props.viewport;
 }
 
-const CoglMatrix *
+const cg_matrix_t *
 rig_camera_get_projection (RutObject *object)
 {
   RigCamera *camera = object;
   if (G_UNLIKELY (camera->props.projection_cache_age != camera->props.projection_age))
     {
-      cogl_matrix_init_identity (&camera->props.projection);
+      cg_matrix_init_identity (&camera->props.projection);
 
       if (camera->props.orthographic)
         {
@@ -311,7 +311,7 @@ rig_camera_get_projection (RutObject *object)
               y2 = camera->props.y2;
             }
 
-          cogl_matrix_orthographic (&camera->props.projection,
+          cg_matrix_orthographic (&camera->props.projection,
                                     x1, y1, x2, y2,
                                     camera->props.near,
                                     camera->props.far);
@@ -471,18 +471,18 @@ rig_camera_set_orthographic_coordinates (RutObject *object,
     camera->props.projection_age++;
 }
 
-const CoglMatrix *
+const cg_matrix_t *
 rig_camera_get_inverse_projection (RutObject *object)
 {
   RigCamera *camera = object;
-  const CoglMatrix *projection;
+  const cg_matrix_t *projection;
 
   if (camera->props.inverse_projection_age == camera->props.projection_age)
     return &camera->props.inverse_projection;
 
   projection = rig_camera_get_projection (camera);
 
-  if (!cogl_matrix_get_inverse (projection,
+  if (!cg_matrix_get_inverse (projection,
                                 &camera->props.inverse_projection))
     return NULL;
 
@@ -492,7 +492,7 @@ rig_camera_get_inverse_projection (RutObject *object)
 
 void
 rig_camera_set_view_transform (RutObject *object,
-                               const CoglMatrix *view)
+                               const cg_matrix_t *view)
 {
   RigCamera *camera = object;
   camera->props.view = *view;
@@ -503,25 +503,25 @@ rig_camera_set_view_transform (RutObject *object,
   /* XXX: we have no way to assert that we are at the bottom of the
    * matrix stack at this point, so this might do bad things...
    */
-  //cogl_framebuffer_set_modelview_matrix (camera->props.fb,
+  //cg_framebuffer_set_modelview_matrix (camera->props.fb,
   //                                       &camera->props.view);
 }
 
-const CoglMatrix *
+const cg_matrix_t *
 rig_camera_get_view_transform (RutObject *object)
 {
   RigCamera *camera = object;
   return &camera->props.view;
 }
 
-const CoglMatrix *
+const cg_matrix_t *
 rig_camera_get_inverse_view_transform (RutObject *object)
 {
   RigCamera *camera = object;
   if (camera->props.inverse_view_age == camera->props.view_age)
     return &camera->props.inverse_view;
 
-  if (!cogl_matrix_get_inverse (&camera->props.view,
+  if (!cg_matrix_get_inverse (&camera->props.view,
                                 &camera->props.inverse_view))
     return NULL;
 
@@ -531,7 +531,7 @@ rig_camera_get_inverse_view_transform (RutObject *object)
 
 void
 rig_camera_set_input_transform (RutObject *object,
-                                const CoglMatrix *input_transform)
+                                const cg_matrix_t *input_transform)
 {
   RigCamera *camera = object;
   camera->props.input_transform = *input_transform;
@@ -581,15 +581,15 @@ rig_camera_transform_window_coordinate (RutObject *object,
 
 void
 rig_camera_unproject_coord (RutObject *object,
-                            const CoglMatrix *modelview,
-                            const CoglMatrix *inverse_modelview,
+                            const cg_matrix_t *modelview,
+                            const cg_matrix_t *inverse_modelview,
                             float object_coord_z,
                             float *x,
                             float *y)
 {
   RigCamera *camera = object;
-  const CoglMatrix *projection = rig_camera_get_projection (camera);
-  const CoglMatrix *inverse_projection =
+  const cg_matrix_t *projection = rig_camera_get_projection (camera);
+  const cg_matrix_t *inverse_projection =
     rig_camera_get_inverse_projection (camera);
   //float z;
   float ndc_x, ndc_y, ndc_z, ndc_w;
@@ -601,7 +601,7 @@ rig_camera_unproject_coord (RutObject *object,
     //float x = 0, y = 0, z = 0, w = 1;
     float z = 0, w = 1;
     float tmp_x, tmp_y, tmp_z;
-    const CoglMatrix *m = modelview;
+    const cg_matrix_t *m = modelview;
 
     tmp_x = m->xw;
     tmp_y = m->yw;
@@ -620,7 +620,7 @@ rig_camera_unproject_coord (RutObject *object,
 
   /* Undo the Projection, putting us in Eye Coords. */
   ndc_w = 1;
-  cogl_matrix_transform_point (inverse_projection,
+  cg_matrix_transform_point (inverse_projection,
                                &ndc_x, &ndc_y, &ndc_z, &ndc_w);
   eye_x = ndc_x / ndc_w;
   eye_y = ndc_y / ndc_w;
@@ -628,7 +628,7 @@ rig_camera_unproject_coord (RutObject *object,
   eye_w = 1;
 
   /* Undo the Modelview transform, putting us in Object Coords */
-  cogl_matrix_transform_point (inverse_modelview,
+  cg_matrix_transform_point (inverse_modelview,
                                &eye_x,
                                &eye_y,
                                &eye_z,
@@ -642,19 +642,19 @@ rig_camera_unproject_coord (RutObject *object,
 static void
 _rig_camera_flush_transforms (RigCamera *camera)
 {
-  const CoglMatrix *projection;
-  CoglFramebuffer *fb = camera->props.fb;
+  const cg_matrix_t *projection;
+  cg_framebuffer_t *fb = camera->props.fb;
   CameraFlushState *state;
 
   /* While a camera is in a suspended state then we don't expect to
    * _flush() and use that camera before it is restored. */
   c_return_if_fail (camera->props.suspended == false);
 
-  state = cogl_object_get_user_data (fb, &fb_camera_key);
+  state = cg_object_get_user_data (fb, &fb_camera_key);
   if (!state)
     {
       state = c_slice_new (CameraFlushState);
-      cogl_object_set_user_data (fb,
+      cg_object_set_user_data (fb,
                                  &fb_camera_key,
                                  state,
                                  free_camera_flush_state);
@@ -669,16 +669,16 @@ _rig_camera_flush_transforms (RigCamera *camera)
                  "repeat _flush() calls before _end()");
     }
 
-  cogl_framebuffer_set_viewport (fb,
+  cg_framebuffer_set_viewport (fb,
                                  camera->props.viewport[0],
                                  camera->props.viewport[1],
                                  camera->props.viewport[2],
                                  camera->props.viewport[3]);
 
   projection = rig_camera_get_projection (camera);
-  cogl_framebuffer_set_projection_matrix (fb, projection);
+  cg_framebuffer_set_projection_matrix (fb, projection);
 
-  cogl_framebuffer_set_modelview_matrix (fb, &camera->props.view);
+  cg_framebuffer_set_modelview_matrix (fb, &camera->props.view);
 
   state->current_camera = camera;
   state->transform_age = camera->props.transform_age;
@@ -695,14 +695,14 @@ rig_camera_flush (RutObject *object)
 
   if (camera->props.clear_fb)
     {
-      cogl_framebuffer_clear4f (camera->props.fb,
-                                COGL_BUFFER_BIT_COLOR |
-                                COGL_BUFFER_BIT_DEPTH |
-                                COGL_BUFFER_BIT_STENCIL,
-                                cogl_color_get_red_float (&camera->props.bg_color),
-                                cogl_color_get_green_float (&camera->props.bg_color),
-                                cogl_color_get_blue_float (&camera->props.bg_color),
-                                cogl_color_get_alpha_float (&camera->props.bg_color));
+      cg_framebuffer_clear4f (camera->props.fb,
+                                CG_BUFFER_BIT_COLOR |
+                                CG_BUFFER_BIT_DEPTH |
+                                CG_BUFFER_BIT_STENCIL,
+                                cg_color_get_red_float (&camera->props.bg_color),
+                                cg_color_get_green_float (&camera->props.bg_color),
+                                cg_color_get_blue_float (&camera->props.bg_color),
+                                cg_color_get_alpha_float (&camera->props.bg_color));
     }
 }
 
@@ -777,7 +777,7 @@ rig_camera_suspend (RutObject *object)
 
   c_return_if_fail (camera->props.suspended == false);
 
-  state = cogl_object_get_user_data (camera->props.fb, &fb_camera_key);
+  state = cg_object_get_user_data (camera->props.fb, &fb_camera_key);
 
   /* We only expect to be saving a camera that has been flushed */
   c_return_if_fail (state != NULL);
@@ -792,7 +792,7 @@ rig_camera_suspend (RutObject *object)
    * projection and viewport transforms. The easiest way for us to
    * handle restoring the modelview is to use the framebuffer's
    * matrix stack... */
-  cogl_framebuffer_push_matrix (camera->props.fb);
+  cg_framebuffer_push_matrix (camera->props.fb);
 
   camera->props.suspended = true;
   camera->props.in_frame = false;
@@ -803,7 +803,7 @@ rig_camera_resume (RutObject *object)
 {
   RigCamera *camera = object;
   CameraFlushState *state;
-  CoglFramebuffer *fb = camera->props.fb;
+  cg_framebuffer_t *fb = camera->props.fb;
 
   c_return_if_fail (camera->props.in_frame == false);
   c_return_if_fail (camera->props.suspended == true);
@@ -812,26 +812,26 @@ rig_camera_resume (RutObject *object)
    * to be touched so its transforms shouldn't have changed... */
   c_return_if_fail (camera->props.at_suspend_transform_age == camera->props.transform_age);
 
-  state = cogl_object_get_user_data (fb, &fb_camera_key);
+  state = cg_object_get_user_data (fb, &fb_camera_key);
 
   /* We only expect to be restoring a camera that has been flushed
    * before */
   c_return_if_fail (state != NULL);
 
-  cogl_framebuffer_pop_matrix (fb);
+  cg_framebuffer_pop_matrix (fb);
 
   /* If the save turned out to be redundant then we have nothing
    * else to restore... */
   if (state->current_camera == camera)
     goto done;
 
-  cogl_framebuffer_set_viewport (fb,
+  cg_framebuffer_set_viewport (fb,
                                  camera->props.viewport[0],
                                  camera->props.viewport[1],
                                  camera->props.viewport[2],
                                  camera->props.viewport[3]);
 
-  cogl_framebuffer_set_projection_matrix (fb, &camera->props.projection);
+  cg_framebuffer_set_projection_matrix (fb, &camera->props.projection);
 
   state->current_camera = camera;
   state->transform_age = camera->props.transform_age;
@@ -876,11 +876,11 @@ rig_camera_get_context (RutObject *object)
   return camera->engine->ctx;
 }
 
-CoglPrimitive *
+cg_primitive_t *
 rig_camera_create_frustum_primitive (RutObject *object)
 {
   RigCamera *camera = object;
-  CoglContext *cogl_context = camera->engine->ctx->cogl_context;
+  cg_context_t *cg_context = camera->engine->ctx->cg_context;
   RutVertex4 vertices[8] = {
     /* near plane in projection space */
     {-1, -1, -1, 1, },
@@ -893,11 +893,11 @@ rig_camera_create_frustum_primitive (RutObject *object)
     { 1,  1, 1, 1, },
     {-1,  1, 1, 1, }
   };
-  const CoglMatrix *projection_inv;
-  CoglAttributeBuffer *attribute_buffer;
-  CoglAttribute *attributes[1];
-  CoglPrimitive *primitive;
-  CoglIndices *indices;
+  const cg_matrix_t *projection_inv;
+  cg_attribute_buffer_t *attribute_buffer;
+  cg_attribute_t *attributes[1];
+  cg_primitive_t *primitive;
+  cg_indices_t *indices;
   unsigned char indices_data[24] = {
       0,1, 1,2, 2,3, 3,0,
       4,5, 5,6, 6,7, 7,4,
@@ -909,7 +909,7 @@ rig_camera_create_frustum_primitive (RutObject *object)
 
   for (i = 0; i < 8; i++)
     {
-      cogl_matrix_transform_point (projection_inv,
+      cg_matrix_transform_point (projection_inv,
                                    &vertices[i].x,
                                    &vertices[i].y,
                                    &vertices[i].z,
@@ -920,30 +920,30 @@ rig_camera_create_frustum_primitive (RutObject *object)
       vertices[i].w /= 1.0f;
     }
 
-  attribute_buffer = cogl_attribute_buffer_new (cogl_context,
+  attribute_buffer = cg_attribute_buffer_new (cg_context,
                                                 8 * sizeof (RutVertex4),
                                                 vertices);
 
-  attributes[0] = cogl_attribute_new (attribute_buffer,
-                                      "cogl_position_in",
+  attributes[0] = cg_attribute_new (attribute_buffer,
+                                      "cg_position_in",
                                       sizeof (RutVertex4),
                                       offsetof (RutVertex4, x),
                                       3,
-                                      COGL_ATTRIBUTE_TYPE_FLOAT);
+                                      CG_ATTRIBUTE_TYPE_FLOAT);
 
-  indices = cogl_indices_new (cogl_context,
-                              COGL_INDICES_TYPE_UNSIGNED_BYTE,
+  indices = cg_indices_new (cg_context,
+                              CG_INDICES_TYPE_UNSIGNED_BYTE,
                               indices_data,
                               G_N_ELEMENTS (indices_data));
 
-  primitive = cogl_primitive_new_with_attributes (COGL_VERTICES_MODE_LINES,
+  primitive = cg_primitive_new_with_attributes (CG_VERTICES_MODE_LINES,
                                                   8, attributes, 1);
 
-  cogl_primitive_set_indices (primitive, indices, G_N_ELEMENTS(indices_data));
+  cg_primitive_set_indices (primitive, indices, G_N_ELEMENTS(indices_data));
 
-  cogl_object_unref (attribute_buffer);
-  cogl_object_unref (attributes[0]);
-  cogl_object_unref (indices);
+  cg_object_unref (attribute_buffer);
+  cg_object_unref (attributes[0]);
+  cg_object_unref (indices);
 
   return primitive;
 }
@@ -962,7 +962,7 @@ _rig_camera_free (void *object)
 #endif
 
   if (camera->props.fb)
-    cogl_object_unref (camera->props.fb);
+    cg_object_unref (camera->props.fb);
 
   while (camera->props.input_regions)
     rig_camera_remove_input_region (camera, camera->props.input_regions->data);
@@ -1159,7 +1159,7 @@ RigCamera *
 rig_camera_new (RigEngine *engine,
                 float width,
                 float height,
-                CoglFramebuffer *framebuffer)
+                cg_framebuffer_t *framebuffer)
 {
   RigCamera *camera =
     rut_object_alloc0 (RigCamera, &rig_camera_type, _rig_camera_init_type);
@@ -1197,18 +1197,18 @@ rig_camera_new (RigEngine *engine,
   camera->props.projection_cache_age = -1;
   camera->props.inverse_projection_age = -1;
 
-  cogl_matrix_init_identity (&camera->props.view);
+  cg_matrix_init_identity (&camera->props.view);
   camera->props.inverse_view_age = -1;
 
   camera->props.transform_age = 0;
 
-  cogl_matrix_init_identity (&camera->props.input_transform);
+  cg_matrix_init_identity (&camera->props.input_transform);
 
   if (framebuffer)
     {
-      int width = cogl_framebuffer_get_width (framebuffer);
-      int height = cogl_framebuffer_get_height (framebuffer);
-      camera->props.fb = cogl_object_ref (framebuffer);
+      int width = cg_framebuffer_get_width (framebuffer);
+      int height = cg_framebuffer_get_height (framebuffer);
+      camera->props.fb = cg_object_ref (framebuffer);
       camera->props.viewport[2] = width;
       camera->props.viewport[3] = height;
       camera->props.x2 = width;

@@ -43,7 +43,7 @@ typedef struct _RutPaintableProps
 typedef struct _RutQueuedPaint
 {
   RutList list_node;
-  CoglMatrix modelview;
+  cg_matrix_t modelview;
   RutObject *paintable;
 } RutQueuedPaint;
 

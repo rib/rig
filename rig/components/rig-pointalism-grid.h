@@ -86,7 +86,7 @@ _rig_pointalism_grid_init_type (void);
 RigPointalismGrid *
 rig_pointalism_grid_new (RutContext *ctx, float size);
 
-CoglPrimitive *
+cg_primitive_t *
 rig_pointalism_grid_get_primitive (RutObject *object);
 
 RutMesh *

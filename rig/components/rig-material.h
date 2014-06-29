@@ -60,9 +60,9 @@ struct _RigMaterial
   RigAsset *normal_map_asset;
   RigAsset *alpha_mask_asset;
 
-  CoglColor ambient;
-  CoglColor diffuse;
-  CoglColor specular;
+  cg_color_t ambient;
+  cg_color_t diffuse;
+  cg_color_t specular;
   float shininess;
 
   float alpha_mask_threshold;
@@ -108,23 +108,23 @@ rig_material_get_alpha_mask_asset (RutObject *material);
 
 void
 rig_material_set_ambient (RutObject *material,
-                          const CoglColor *color);
+                          const cg_color_t *color);
 
-const CoglColor *
+const cg_color_t *
 rig_material_get_ambient (RutObject *material);
 
 void
 rig_material_set_diffuse (RutObject *material,
-                          const CoglColor *color);
+                          const cg_color_t *color);
 
-const CoglColor *
+const cg_color_t *
 rig_material_get_diffuse (RutObject *material);
 
 void
 rig_material_set_specular (RutObject *material,
-                           const CoglColor *color);
+                           const cg_color_t *color);
 
-const CoglColor *
+const cg_color_t *
 rig_material_get_specular (RutObject *material);
 
 void
@@ -143,7 +143,7 @@ rig_material_set_alpha_mask_threshold (RutObject *material,
 
 void
 rig_material_flush_uniforms (RigMaterial *material,
-                             CoglPipeline *pipeline);
+                             cg_pipeline_t *pipeline);
 
 void
 rig_material_flush_uniforms_ignore_age (RigMaterial *material);

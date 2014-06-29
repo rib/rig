@@ -66,22 +66,22 @@ struct _RutColorPicker
   RutProperty properties[RUT_COLOR_PICKER_N_PROPS];
 
   bool hs_pipeline_dirty;
-  CoglPipeline *hs_pipeline;
+  cg_pipeline_t *hs_pipeline;
 
   bool v_pipeline_dirty;
-  CoglPipeline *v_pipeline;
+  cg_pipeline_t *v_pipeline;
 
   int width, height;
 
   int dot_width, dot_height;
-  CoglPipeline *dot_pipeline;
+  cg_pipeline_t *dot_pipeline;
 
-  CoglPipeline *bg_pipeline;
+  cg_pipeline_t *bg_pipeline;
 
   RutColorPickerGrab grab;
   RutInputRegion *input_region;
 
-  CoglColor color;
+  cg_color_t color;
   /* The current component values of the HSV colour */
   float hue, saturation, value;
 
@@ -142,10 +142,10 @@ _rut_color_picker_free (void *object)
 
   ungrab (picker);
 
-  cogl_object_unref (picker->hs_pipeline);
-  cogl_object_unref (picker->v_pipeline);
-  cogl_object_unref (picker->dot_pipeline);
-  cogl_object_unref (picker->bg_pipeline);
+  cg_object_unref (picker->hs_pipeline);
+  cg_object_unref (picker->v_pipeline);
+  cg_object_unref (picker->dot_pipeline);
+  cg_object_unref (picker->bg_pipeline);
 
   rut_graphable_remove_child (picker->input_region);
   rut_object_unref (picker->input_region);
@@ -280,10 +280,10 @@ rgb_to_hsv (const float rgb[3],
 static void
 ensure_hs_pipeline (RutColorPicker *picker)
 {
-  CoglBitmap *bitmap;
-  CoglPixelBuffer *buffer;
-  CoglPipeline *pipeline;
-  CoglTexture2D *texture;
+  cg_bitmap_t *bitmap;
+  cg_pixel_buffer_t *buffer;
+  cg_pipeline_t *pipeline;
+  cg_texture_2d_t *texture;
   int rowstride;
   uint8_t *data, *p;
   int x, y;
@@ -291,16 +291,16 @@ ensure_hs_pipeline (RutColorPicker *picker)
   if (!picker->hs_pipeline_dirty)
     return;
 
-  bitmap = cogl_bitmap_new_with_size (picker->context->cogl_context,
+  bitmap = cg_bitmap_new_with_size (picker->context->cg_context,
                                       RUT_COLOR_PICKER_HS_SIZE,
                                       RUT_COLOR_PICKER_HS_SIZE,
-                                      COGL_PIXEL_FORMAT_RGBA_8888_PRE);
-  rowstride = cogl_bitmap_get_rowstride (bitmap);
-  buffer = cogl_bitmap_get_buffer (bitmap);
+                                      CG_PIXEL_FORMAT_RGBA_8888_PRE);
+  rowstride = cg_bitmap_get_rowstride (bitmap);
+  buffer = cg_bitmap_get_buffer (bitmap);
 
-  data = cogl_buffer_map (buffer,
-                          COGL_BUFFER_ACCESS_WRITE,
-                          COGL_BUFFER_MAP_HINT_DISCARD,
+  data = cg_buffer_map (buffer,
+                          CG_BUFFER_ACCESS_WRITE,
+                          CG_BUFFER_MAP_HINT_DISCARD,
                           NULL);
 
   p = data;
@@ -356,19 +356,19 @@ ensure_hs_pipeline (RutColorPicker *picker)
       p += rowstride - RUT_COLOR_PICKER_HS_SIZE * 4;
     }
 
-  cogl_buffer_unmap (buffer);
+  cg_buffer_unmap (buffer);
 
-  texture = cogl_texture_2d_new_from_bitmap (bitmap);
+  texture = cg_texture_2d_new_from_bitmap (bitmap);
 
-  pipeline = cogl_pipeline_copy (picker->hs_pipeline);
-  cogl_pipeline_set_layer_texture (pipeline,
+  pipeline = cg_pipeline_copy (picker->hs_pipeline);
+  cg_pipeline_set_layer_texture (pipeline,
                                    0, /* layer */
                                    texture);
-  cogl_object_unref (picker->hs_pipeline);
+  cg_object_unref (picker->hs_pipeline);
   picker->hs_pipeline = pipeline;
 
-  cogl_object_unref (texture);
-  cogl_object_unref (bitmap);
+  cg_object_unref (texture);
+  cg_object_unref (bitmap);
 
   picker->hs_pipeline_dirty = false;
 }
@@ -376,10 +376,10 @@ ensure_hs_pipeline (RutColorPicker *picker)
 static void
 ensure_v_pipeline (RutColorPicker *picker)
 {
-  CoglBitmap *bitmap;
-  CoglPixelBuffer *buffer;
-  CoglPipeline *pipeline;
-  CoglTexture2D *texture;
+  cg_bitmap_t *bitmap;
+  cg_pixel_buffer_t *buffer;
+  cg_pipeline_t *pipeline;
+  cg_texture_2d_t *texture;
   int rowstride;
   uint8_t *data, *p;
   float hsv[3];
@@ -388,16 +388,16 @@ ensure_v_pipeline (RutColorPicker *picker)
   if (!picker->v_pipeline_dirty)
     return;
 
-  bitmap = cogl_bitmap_new_with_size (picker->context->cogl_context,
+  bitmap = cg_bitmap_new_with_size (picker->context->cg_context,
                                       1, /* width */
                                       RUT_COLOR_PICKER_V_HEIGHT,
-                                      COGL_PIXEL_FORMAT_RGB_888);
-  rowstride = cogl_bitmap_get_rowstride (bitmap);
-  buffer = cogl_bitmap_get_buffer (bitmap);
+                                      CG_PIXEL_FORMAT_RGB_888);
+  rowstride = cg_bitmap_get_rowstride (bitmap);
+  buffer = cg_bitmap_get_buffer (bitmap);
 
-  data = cogl_buffer_map (buffer,
-                          COGL_BUFFER_ACCESS_WRITE,
-                          COGL_BUFFER_MAP_HINT_DISCARD,
+  data = cg_buffer_map (buffer,
+                          CG_BUFFER_ACCESS_WRITE,
+                          CG_BUFFER_MAP_HINT_DISCARD,
                           NULL);
 
   p = data;
@@ -420,30 +420,30 @@ ensure_v_pipeline (RutColorPicker *picker)
       p += rowstride;
     }
 
-  cogl_buffer_unmap (buffer);
+  cg_buffer_unmap (buffer);
 
-  texture = cogl_texture_2d_new_from_bitmap (bitmap);
+  texture = cg_texture_2d_new_from_bitmap (bitmap);
 
-  pipeline = cogl_pipeline_copy (picker->v_pipeline);
-  cogl_pipeline_set_layer_texture (pipeline,
+  pipeline = cg_pipeline_copy (picker->v_pipeline);
+  cg_pipeline_set_layer_texture (pipeline,
                                    0, /* layer */
                                    texture);
-  cogl_object_unref (picker->v_pipeline);
+  cg_object_unref (picker->v_pipeline);
   picker->v_pipeline = pipeline;
 
-  cogl_object_unref (texture);
-  cogl_object_unref (bitmap);
+  cg_object_unref (texture);
+  cg_object_unref (bitmap);
 
   picker->v_pipeline_dirty = false;
 }
 
 static void
 draw_dot (RutColorPicker *picker,
-          CoglFramebuffer *fb,
+          cg_framebuffer_t *fb,
           float x,
           float y)
 {
-  cogl_framebuffer_draw_rectangle (fb,
+  cg_framebuffer_draw_rectangle (fb,
                                    picker->dot_pipeline,
                                    x - picker->dot_width / 2.0f,
                                    y - picker->dot_height / 2.0f,
@@ -457,9 +457,9 @@ _rut_color_picker_paint (RutObject *object,
 {
   RutColorPicker *picker = (RutColorPicker *) object;
   RutObject *camera = paint_ctx->camera;
-  CoglFramebuffer *fb = rut_camera_get_framebuffer (camera);
+  cg_framebuffer_t *fb = rut_camera_get_framebuffer (camera);
 
-  cogl_framebuffer_draw_rectangle (fb,
+  cg_framebuffer_draw_rectangle (fb,
                                    picker->bg_pipeline,
                                    0.0f, 0.0f,
                                    picker->width,
@@ -468,7 +468,7 @@ _rut_color_picker_paint (RutObject *object,
   ensure_hs_pipeline (picker);
   ensure_v_pipeline (picker);
 
-  cogl_framebuffer_draw_rectangle (fb,
+  cg_framebuffer_draw_rectangle (fb,
                                    picker->hs_pipeline,
                                    RUT_COLOR_PICKER_HS_X,
                                    RUT_COLOR_PICKER_HS_Y,
@@ -476,7 +476,7 @@ _rut_color_picker_paint (RutObject *object,
                                    RUT_COLOR_PICKER_HS_SIZE,
                                    RUT_COLOR_PICKER_HS_Y +
                                    RUT_COLOR_PICKER_HS_SIZE);
-  cogl_framebuffer_draw_rectangle (fb,
+  cg_framebuffer_draw_rectangle (fb,
                                    picker->v_pipeline,
                                    RUT_COLOR_PICKER_V_X,
                                    RUT_COLOR_PICKER_V_Y,
@@ -594,21 +594,21 @@ _rut_color_picker_init_type (void)
 #undef TYPE
 }
 
-static CoglPipeline *
-create_hs_pipeline (CoglContext *context)
+static cg_pipeline_t *
+create_hs_pipeline (cg_context_t *context)
 {
-  CoglPipeline *pipeline;
+  cg_pipeline_t *pipeline;
 
-  pipeline = cogl_pipeline_new (context);
+  pipeline = cg_pipeline_new (context);
 
-  cogl_pipeline_set_layer_null_texture (pipeline, 0, COGL_TEXTURE_TYPE_2D);
-  cogl_pipeline_set_layer_filters (pipeline,
+  cg_pipeline_set_layer_null_texture (pipeline, 0, CG_TEXTURE_TYPE_2D);
+  cg_pipeline_set_layer_filters (pipeline,
                                    0, /* layer */
-                                   COGL_PIPELINE_FILTER_NEAREST,
-                                   COGL_PIPELINE_FILTER_NEAREST);
-  cogl_pipeline_set_layer_wrap_mode (pipeline,
+                                   CG_PIPELINE_FILTER_NEAREST,
+                                   CG_PIPELINE_FILTER_NEAREST);
+  cg_pipeline_set_layer_wrap_mode (pipeline,
                                      0, /* layer */
-                                     COGL_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE);
+                                     CG_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE);
 
   return pipeline;
 }
@@ -616,10 +616,10 @@ create_hs_pipeline (CoglContext *context)
 static void
 create_dot_pipeline (RutColorPicker *picker)
 {
-  CoglTexture *texture;
+  cg_texture_t *texture;
   GError *error = NULL;
 
-  picker->dot_pipeline = cogl_pipeline_new (picker->context->cogl_context);
+  picker->dot_pipeline = cg_pipeline_new (picker->context->cg_context);
 
   texture = rut_load_texture_from_data_file (picker->context,
                                              "color-picker-dot.png",
@@ -632,25 +632,25 @@ create_dot_pipeline (RutColorPicker *picker)
     }
   else
     {
-      picker->dot_width = cogl_texture_get_width (texture);
-      picker->dot_height = cogl_texture_get_height (texture);
+      picker->dot_width = cg_texture_get_width (texture);
+      picker->dot_height = cg_texture_get_height (texture);
 
-      cogl_pipeline_set_layer_texture (picker->dot_pipeline,
+      cg_pipeline_set_layer_texture (picker->dot_pipeline,
                                        0, /* layer */
                                        texture);
 
-      cogl_object_unref (texture);
+      cg_object_unref (texture);
     }
 }
 
-static CoglPipeline *
-create_bg_pipeline (CoglContext *context)
+static cg_pipeline_t *
+create_bg_pipeline (cg_context_t *context)
 {
-  CoglPipeline *pipeline;
+  cg_pipeline_t *pipeline;
 
-  pipeline = cogl_pipeline_new (context);
+  pipeline = cg_pipeline_new (context);
 
-  cogl_pipeline_set_color4ub (pipeline, 0, 0, 0, 200);
+  cg_pipeline_set_color4ub (pipeline, 0, 0, 0, 200);
 
   return pipeline;
 }
@@ -848,18 +848,18 @@ rut_color_picker_new (RutContext *context)
 
   picker->context = rut_object_ref (context);
 
-  cogl_color_init_from_4ub (&picker->color, 0, 0, 0, 255);
+  cg_color_init_from_4ub (&picker->color, 0, 0, 0, 255);
 
 
-  picker->hs_pipeline = create_hs_pipeline (context->cogl_context);
+  picker->hs_pipeline = create_hs_pipeline (context->cg_context);
   picker->hs_pipeline_dirty = true;
 
-  picker->v_pipeline = cogl_pipeline_copy (picker->hs_pipeline);
+  picker->v_pipeline = cg_pipeline_copy (picker->hs_pipeline);
   picker->v_pipeline_dirty = true;
 
   create_dot_pipeline (picker);
 
-  picker->bg_pipeline = create_bg_pipeline (context->cogl_context);
+  picker->bg_pipeline = create_bg_pipeline (context->cg_context);
 
   rut_paintable_init (picker);
   rut_graphable_init (picker);
@@ -892,11 +892,11 @@ rut_color_picker_new (RutContext *context)
 
 void
 rut_color_picker_set_color (RutObject *obj,
-                            const CoglColor *color)
+                            const cg_color_t *color)
 {
   RutColorPicker *picker = obj;
 
-  if (memcmp (&picker->color, color, sizeof (CoglColor)))
+  if (memcmp (&picker->color, color, sizeof (cg_color_t)))
     {
       float hsv[3];
 
@@ -914,7 +914,7 @@ rut_color_picker_set_color (RutObject *obj,
     }
 }
 
-const CoglColor *
+const cg_color_t *
 rut_color_picker_get_color (RutColorPicker *picker)
 {
   return &picker->color;

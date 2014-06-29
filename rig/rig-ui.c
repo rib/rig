@@ -251,7 +251,7 @@ rig_ui_prepare (RigUI *ui)
     {
       RigLight *light;
       float vector3[3];
-      CoglColor color;
+      cg_color_t color;
 
       ui->light = rig_entity_new (engine->ctx);
       rig_entity_set_label (ui->light, "light");
@@ -265,11 +265,11 @@ rig_ui_prepare (RigUI *ui)
       rig_entity_rotate_y_axis (ui->light, -20);
 
       light = rig_light_new (engine->ctx);
-      cogl_color_init_from_4f (&color, .2f, .2f, .2f, 1.f);
+      cg_color_init_from_4f (&color, .2f, .2f, .2f, 1.f);
       rig_light_set_ambient (light, &color);
-      cogl_color_init_from_4f (&color, .6f, .6f, .6f, 1.f);
+      cg_color_init_from_4f (&color, .6f, .6f, .6f, 1.f);
       rig_light_set_diffuse (light, &color);
-      cogl_color_init_from_4f (&color, .4f, .4f, .4f, 1.f);
+      cg_color_init_from_4f (&color, .4f, .4f, .4f, 1.f);
       rig_light_set_specular (light, &color);
 
       rig_entity_add_component (ui->light, light);
@@ -299,9 +299,9 @@ rig_ui_prepare (RigUI *ui)
 
   if (engine->frontend)
     {
-      CoglFramebuffer *fb = engine->shadow_fb;
-      int width = cogl_framebuffer_get_width (fb);
-      int height = cogl_framebuffer_get_height (fb);
+      cg_framebuffer_t *fb = engine->shadow_fb;
+      int width = cg_framebuffer_get_width (fb);
+      int height = cg_framebuffer_get_height (fb);
       rut_camera_set_framebuffer (light_camera, fb);
       rut_camera_set_viewport (light_camera, 0, 0, width, height);
     }

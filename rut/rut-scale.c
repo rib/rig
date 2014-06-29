@@ -79,7 +79,7 @@ _rut_scale_free (void *object)
 
   rut_introspectable_destroy (scale);
 
-  cogl_object_unref (scale->pipeline);
+  cg_object_unref (scale->pipeline);
 
   rut_object_free (RutScale, object);
 }
@@ -301,9 +301,9 @@ _rut_scale_paint (RutObject *object,
           scale->start_offset * to_pixel;
         if (x0 >= 0 && x0 < scale->width)
           {
-            CoglFramebuffer *fb =
+            cg_framebuffer_t *fb =
               rut_camera_get_framebuffer (paint_ctx->camera);
-            cogl_framebuffer_draw_rectangle (fb,
+            cg_framebuffer_draw_rectangle (fb,
                                              scale->pipeline,
                                              x0, 0,
                                              x0 + 1, scale->height);
@@ -599,8 +599,8 @@ typedef struct _GrabState
 {
   RutObject *camera;
   RutScale *scale;
-  CoglMatrix transform;
-  CoglMatrix inverse_transform;
+  cg_matrix_t transform;
+  cg_matrix_t inverse_transform;
   bool is_pan;
   bool is_select;
   float grab_offset;
@@ -731,7 +731,7 @@ _rut_scale_input_cb (RutInputRegion *region,
      rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN)
     {
       GrabState *state = c_slice_new0 (GrabState);
-      const CoglMatrix *view;
+      const cg_matrix_t *view;
       float x = rut_motion_event_get_x (event);
       float y = rut_motion_event_get_y (event);
 
@@ -740,7 +740,7 @@ _rut_scale_input_cb (RutInputRegion *region,
       view = rut_camera_get_view_transform (state->camera);
       state->transform = *view;
       rut_graphable_apply_transform (scale, &state->transform);
-      if (!cogl_matrix_get_inverse (&state->transform,
+      if (!cg_matrix_get_inverse (&state->transform,
                                     &state->inverse_transform))
         {
           c_warning ("Failed to calculate inverse of widget transform\n");
@@ -847,8 +847,8 @@ rut_scale_new (RutContext *ctx,
   rut_graphable_add_child (scale->select_transform, scale->select_rect);
   rut_object_unref (scale->select_rect);
 
-  scale->pipeline = cogl_pipeline_new (ctx->cogl_context);
-  cogl_pipeline_set_color4f (scale->pipeline, 1, 0, 0, 1);
+  scale->pipeline = cg_pipeline_new (ctx->cg_context);
+  cg_pipeline_set_color4f (scale->pipeline, 1, 0, 0, 1);
 
   scale->input_region =
     rut_input_region_new_rectangle (0, 0, 1, 1,

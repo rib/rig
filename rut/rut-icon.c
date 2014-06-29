@@ -153,7 +153,7 @@ rut_icon_new (RutContext *ctx,
 {
   RutIcon *icon =
     rut_object_alloc0 (RutIcon, &rut_icon_type, _rut_icon_init_type);
-  CoglTexture *texture;
+  cg_texture_t *texture;
   GError *error = NULL;
 
   icon->context = rut_object_ref (ctx);

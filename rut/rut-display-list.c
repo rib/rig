@@ -287,7 +287,7 @@ rut_display_list_destroy (RutDisplayList *list)
 
 void
 rut_display_list_paint (RutDisplayList *display_list,
-                        CoglFramebuffer *fb)
+                        cg_framebuffer_t *fb)
 {
   c_list_t *l;
 
@@ -303,22 +303,22 @@ rut_display_list_paint (RutDisplayList *display_list,
         case RUT_CMD_TYPE_NOP:
           continue;
         case RUT_CMD_TYPE_TRANSFORM_PUSH:
-          cogl_framebuffer_push_matrix (fb);
+          cg_framebuffer_push_matrix (fb);
           break;
         case RUT_CMD_TYPE_TRANSFORM_POP:
-          cogl_framebuffer_pop_matrix (fb);
+          cg_framebuffer_pop_matrix (fb);
           break;
         case RUT_CMD_TYPE_TRANSFORM:
           {
             RutTransformCmd *transform_cmd = RUT_TRANSFORM_CMD (cmd);
-            cogl_framebuffer_transform (fb,
+            cg_framebuffer_transform (fb,
                                         &transform_cmd->matrix);
             break;
           }
         case RUT_CMD_TYPE_PRIMITIVE:
           {
             RutPrimitiveCmd *prim_cmd = RUT_PRIMITIVE_CMD (cmd);
-            cogl_primitive_draw (prim_cmd->primitive,
+            cg_primitive_draw (prim_cmd->primitive,
                                  fb,
                                  prim_cmd->pipeline);
             break;
@@ -326,7 +326,7 @@ rut_display_list_paint (RutDisplayList *display_list,
         case RUT_CMD_TYPE_TEXT:
           {
             RutTextCmd *text_cmd = RUT_TEXT_CMD (cmd);
-            cogl_pango_show_layout (fb,
+            cg_pango_show_layout (fb,
                                     text_cmd->layout,
                                     text_cmd->x, text_cmd->y,
                                     &text_cmd->color);
@@ -335,7 +335,7 @@ rut_display_list_paint (RutDisplayList *display_list,
         case RUT_CMD_TYPE_RECTANGLE:
           {
             RutRectangleCmd *rect_cmd = RUT_RECTANGLE_CMD (cmd);
-            cogl_framebuffer_draw_rectangle (fb,
+            cg_framebuffer_draw_rectangle (fb,
                                              rect_cmd->pipeline,
                                              0,
                                              0,

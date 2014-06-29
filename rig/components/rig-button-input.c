@@ -284,8 +284,8 @@ typedef struct _ButtonGrabState
 {
   RutObject *camera;
   RigButtonInput *button_input;
-  CoglMatrix transform;
-  CoglMatrix inverse_transform;
+  cg_matrix_t transform;
+  cg_matrix_t inverse_transform;
 } ButtonGrabState;
 
 static RutInputEventStatus
@@ -357,7 +357,7 @@ _rig_button_input_handle_event (RutObject *inputable,
     {
       RutShell *shell = button_input->ctx->shell;
       ButtonGrabState *state = c_slice_new (ButtonGrabState);
-      const CoglMatrix *view;
+      const cg_matrix_t *view;
 
       state->button_input = button_input;
       state->camera = rut_input_event_get_camera (event);
@@ -366,7 +366,7 @@ _rig_button_input_handle_event (RutObject *inputable,
 
 #if 0
       rut_graphable_apply_transform (button, &state->transform);
-      if (!cogl_matrix_get_inverse (&state->transform,
+      if (!cg_matrix_get_inverse (&state->transform,
                                     &state->inverse_transform))
         {
           c_warning ("Failed to calculate inverse of button transform\n");

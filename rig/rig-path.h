@@ -110,7 +110,7 @@ rig_path_insert_float (RigPath *path,
 void
 rig_path_insert_quaternion (RigPath *path,
                             float t,
-                            const CoglQuaternion *value);
+                            const cg_quaternion_t *value);
 
 void
 rig_path_insert_double (RigPath *path,
@@ -130,7 +130,7 @@ rig_path_insert_uint32 (RigPath *path,
 void
 rig_path_insert_color (RigPath *path,
                        float t,
-                       const CoglColor *value);
+                       const cg_color_t *value);
 
 bool
 rig_path_lerp_property (RigPath *path,

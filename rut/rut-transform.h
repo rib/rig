@@ -55,7 +55,7 @@ rut_transform_rotate (RutTransform *transform,
 
 void
 rut_transform_quaternion_rotate (RutTransform *transform,
-                                 const CoglQuaternion *quaternion);
+                                 const cg_quaternion_t *quaternion);
 
 void
 rut_transform_scale (RutTransform *transform,
@@ -65,12 +65,12 @@ rut_transform_scale (RutTransform *transform,
 
 void
 rut_transform_transform (RutTransform *transform,
-                         const CoglMatrix *matrix);
+                         const cg_matrix_t *matrix);
 
 void
 rut_transform_init_identity (RutTransform *transform);
 
-const CoglMatrix *
+const cg_matrix_t *
 rut_transform_get_matrix (RutObject *self);
 
 

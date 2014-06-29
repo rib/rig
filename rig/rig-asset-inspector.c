@@ -271,23 +271,23 @@ input_cb (RutInputRegion *region,
 static RutNineSlice *
 create_highlight_nine_slice (RutContext *ctx)
 {
-  CoglTexture *texture =
+  cg_texture_t *texture =
     rut_load_texture_from_data_file (ctx, "highlight.png", NULL);
-  int width = cogl_texture_get_width (texture);
-  int height = cogl_texture_get_height (texture);
+  int width = cg_texture_get_width (texture);
+  int height = cg_texture_get_height (texture);
   RutNineSlice *highlight;
-  CoglPipeline *pipeline;
+  cg_pipeline_t *pipeline;
 
   highlight = rut_nine_slice_new (ctx,
                                   texture,
                                   15, 15, 15, 15,
                                   width,
                                   height);
-  cogl_object_unref (texture);
+  cg_object_unref (texture);
 
   pipeline = rut_nine_slice_get_pipeline (highlight);
 
-  cogl_pipeline_set_color4f (pipeline, 1, 1, 0, 1);
+  cg_pipeline_set_color4f (pipeline, 1, 1, 0, 1);
 
   return highlight;
 }
@@ -346,7 +346,7 @@ rig_asset_inspector_set_asset (RutObject *object, RutObject *asset_object)
   RigAssetInspector *asset_inspector = object;
   bool save_selected = asset_inspector->selected;
   RigAsset *asset = asset_object;
-  CoglTexture *texture;
+  cg_texture_t *texture;
 
   if (asset_inspector->asset == asset)
     return;

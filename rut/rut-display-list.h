@@ -54,15 +54,15 @@ typedef struct _RutCmd
 typedef struct _RutTransformCmd
 {
   RutCmd _parent;
-  CoglMatrix matrix;
+  cg_matrix_t matrix;
 } RutTransformCmd;
 #define RUT_TRANSFORM_CMD(X) ((RutTransformCmd *)X)
 
 typedef struct _RutPrimitiveCmd
 {
   RutCmd _parent;
-  CoglPipeline *pipeline;
-  CoglPrimitive *primitive;
+  cg_pipeline_t *pipeline;
+  cg_primitive_t *primitive;
 } RutPrimitiveCmd;
 #define RUT_PRIMITIVE_CMD(X) ((RutPrimitiveCmd *)X)
 
@@ -70,7 +70,7 @@ typedef struct _RutTextCmd
 {
   RutCmd _parent;
   PangoLayout *layout;
-  CoglColor color;
+  cg_color_t color;
   int x;
   int y;
 } RutTextCmd;
@@ -79,7 +79,7 @@ typedef struct _RutTextCmd
 typedef struct _RutRectangleCmd
 {
   RutCmd _parent;
-  CoglPipeline *pipeline;
+  cg_pipeline_t *pipeline;
   float width, height;
 } RutRectangleCmd;
 #define RUT_RECTANGLE_CMD(X) ((RutRectangleCmd *)X)
@@ -115,6 +115,6 @@ rut_display_list_destroy (RutDisplayList *list);
 
 void
 rut_display_list_paint (RutDisplayList *display_list,
-                        CoglFramebuffer *fb);
+                        cg_framebuffer_t *fb);
 
 #endif /* _RUT_DISPLAY_LIST_H_ */

@@ -84,30 +84,30 @@ struct _RutContext
 
   RutMatrixEntry identity_entry;
 
-  CoglContext *cogl_context;
+  cg_context_t *cg_context;
 
   FcConfig *fc_config;
   FT_Library ft_library;
 
-  CoglMatrix identity_matrix;
+  cg_matrix_t identity_matrix;
 
   char *assets_location;
 
   GHashTable *texture_cache;
 
-  CoglIndices *nine_slice_indices;
+  cg_indices_t *nine_slice_indices;
 
-  CoglTexture *circle_texture;
+  cg_texture_t *circle_texture;
 
   GHashTable *colors_hash;
 
-  CoglPangoFontMap *pango_font_map;
+  CgPangoFontMap *pango_font_map;
   PangoContext *pango_context;
   PangoFontDescription *pango_font_desc;
 
   RutPropertyContext property_ctx;
 
-  CoglPipeline *single_texture_2d_template;
+  cg_pipeline_t *single_texture_2d_template;
 
   GSList *timelines;
 };
@@ -146,10 +146,10 @@ rut_settings_get_password_hint_time (RutSettings *settings);
 char *
 rut_settings_get_font_name (RutSettings *settings);
 
-CoglTexture *
-rut_load_texture (RutContext *ctx, const char *filename, CoglError **error);
+cg_texture_t *
+rut_load_texture (RutContext *ctx, const char *filename, cg_error_t **error);
 
-CoglTexture *
+cg_texture_t *
 rut_load_texture_from_data_file (RutContext *ctx,
                                  const char *filename,
                                  GError **error);
@@ -157,8 +157,8 @@ rut_load_texture_from_data_file (RutContext *ctx,
 char *
 rut_find_data_file (const char *base_filename);
 
-CoglTexture *
-_rut_load_texture (RutContext *ctx, const char *filename, CoglError **error);
+cg_texture_t *
+_rut_load_texture (RutContext *ctx, const char *filename, cg_error_t **error);
 
 void
 rut_init_tls_state (void);

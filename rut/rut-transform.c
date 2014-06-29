@@ -87,7 +87,7 @@ rut_transform_new (RutContext *ctx)
 
   rut_graphable_init (transform);
 
-  cogl_matrix_init_identity (&transform->matrix);
+  cg_matrix_init_identity (&transform->matrix);
 
   return transform;
 }
@@ -98,16 +98,16 @@ rut_transform_translate (RutTransform *transform,
                          float y,
                          float z)
 {
-  cogl_matrix_translate (&transform->matrix, x, y, z);
+  cg_matrix_translate (&transform->matrix, x, y, z);
 }
 
 void
 rut_transform_quaternion_rotate (RutTransform *transform,
-                                 const CoglQuaternion *quaternion)
+                                 const cg_quaternion_t *quaternion)
 {
-  CoglMatrix rotation;
-  cogl_matrix_init_from_quaternion (&rotation, quaternion);
-  cogl_matrix_multiply (&transform->matrix, &transform->matrix, &rotation);
+  cg_matrix_t rotation;
+  cg_matrix_init_from_quaternion (&rotation, quaternion);
+  cg_matrix_multiply (&transform->matrix, &transform->matrix, &rotation);
 }
 
 void
@@ -117,7 +117,7 @@ rut_transform_rotate (RutTransform *transform,
                       float y,
                       float z)
 {
-  cogl_matrix_rotate (&transform->matrix, angle, x, y, z);
+  cg_matrix_rotate (&transform->matrix, angle, x, y, z);
 }
 void
 rut_transform_scale (RutTransform *transform,
@@ -125,23 +125,23 @@ rut_transform_scale (RutTransform *transform,
                      float y,
                      float z)
 {
-  cogl_matrix_scale (&transform->matrix, x, y, z);
+  cg_matrix_scale (&transform->matrix, x, y, z);
 }
 
 void
 rut_transform_transform (RutTransform *transform,
-                         const CoglMatrix *matrix)
+                         const cg_matrix_t *matrix)
 {
-  cogl_matrix_multiply (&transform->matrix, &transform->matrix, matrix);
+  cg_matrix_multiply (&transform->matrix, &transform->matrix, matrix);
 }
 
 void
 rut_transform_init_identity (RutTransform *transform)
 {
-  cogl_matrix_init_identity (&transform->matrix);
+  cg_matrix_init_identity (&transform->matrix);
 }
 
-const CoglMatrix *
+const cg_matrix_t *
 rut_transform_get_matrix (RutObject *self)
 {
   RutTransform *transform = self;

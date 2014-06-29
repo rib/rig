@@ -44,7 +44,7 @@ rut_arcball_init (RutArcball *ball,
   ball->center[1] = center_y;
   ball->radius = radius;
 
-  cogl_quaternion_init_identity (&ball->q_drag);
+  cg_quaternion_init_identity (&ball->q_drag);
 }
 
 void
@@ -95,9 +95,9 @@ rut_arcball_mouse_motion (RutArcball *ball,
   rut_arcball_mouse_to_sphere (ball, ball->down[0], ball->down[1], v0);
   rut_arcball_mouse_to_sphere (ball, x, y, v1);
 
-  drag_quat[0] = cogl_vector3_dot_product (v0, v1);
+  drag_quat[0] = cg_vector3_dot_product (v0, v1);
   cross = drag_quat + 1;
-  cogl_vector3_cross_product (cross, v0, v1);
+  cg_vector3_cross_product (cross, v0, v1);
 
-  cogl_quaternion_init_from_array (&ball->q_drag, drag_quat);
+  cg_quaternion_init_from_array (&ball->q_drag, drag_quat);
 }

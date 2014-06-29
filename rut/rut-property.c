@@ -866,11 +866,11 @@ rut_boxed_to_string (const RutBoxed *boxed,
       return c_strdup_printf ("%s", boxed->d.text_val);
     case RUT_PROPERTY_TYPE_QUATERNION:
       {
-        const CoglQuaternion *quaternion = &boxed->d.quaternion_val;
+        const cg_quaternion_t *quaternion = &boxed->d.quaternion_val;
         float axis[3], angle;
 
-        cogl_quaternion_get_rotation_axis (quaternion, axis);
-        angle = cogl_quaternion_get_rotation_angle (quaternion);
+        cg_quaternion_get_rotation_axis (quaternion, axis);
+        angle = cg_quaternion_get_rotation_angle (quaternion);
 
         return c_strdup_printf ("axis: (%.2f,%.2f,%.2f) angle: %.2f\n",
                                 axis[0], axis[1], axis[2], angle);

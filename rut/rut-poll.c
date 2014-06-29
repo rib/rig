@@ -84,66 +84,66 @@ dummy_timer_check_cb (uv_check_t *check)
 
 #ifndef RIG_SIMULATOR_ONLY
 static void
-on_cogl_event_cb (void *user_data,
+on_cg_event_cb (void *user_data,
                   int fd,
                   int revents)
 {
   RutShell *shell = user_data;
-  CoglRenderer *renderer =
-    cogl_context_get_renderer (shell->rut_ctx->cogl_context);
+  cg_renderer_t *renderer =
+    cg_context_get_renderer (shell->rut_ctx->cg_context);
 
-  cogl_poll_renderer_dispatch_fd (renderer,
+  cg_poll_renderer_dispatch_fd (renderer,
                                   fd,
                                   revents);
 }
 
 static void
-update_cogl_sources (RutShell *shell)
+update_cg_sources (RutShell *shell)
 {
-  CoglRenderer *renderer =
-    cogl_context_get_renderer (shell->rut_ctx->cogl_context);
-  CoglPollFD *poll_fds;
+  cg_renderer_t *renderer =
+    cg_context_get_renderer (shell->rut_ctx->cg_context);
+  cg_poll_fd_t *poll_fds;
   int n_poll_fds;
-  int64_t cogl_timeout;
+  int64_t cg_timeout;
   int age;
 
-  age = cogl_poll_renderer_get_info (renderer,
+  age = cg_poll_renderer_get_info (renderer,
                                      &poll_fds,
                                      &n_poll_fds,
-                                     &cogl_timeout);
+                                     &cg_timeout);
 
-  if (age != shell->cogl_poll_fds_age)
+  if (age != shell->cg_poll_fds_age)
     {
       int i;
 
       /* Remove any existing Cogl fds before adding the new ones */
-      for (i = 0; i < shell->cogl_poll_fds->len; i++)
+      for (i = 0; i < shell->cg_poll_fds->len; i++)
         {
-          CoglPollFD *poll_fd = &c_array_index (shell->cogl_poll_fds, CoglPollFD, i);
+          cg_poll_fd_t *poll_fd = &c_array_index (shell->cg_poll_fds, cg_poll_fd_t, i);
           rut_poll_shell_remove_fd (shell, poll_fd->fd);
         }
 
       for (i = 0; i < n_poll_fds; i++)
         {
-          CoglPollFD *poll_fd = &poll_fds[i];
+          cg_poll_fd_t *poll_fd = &poll_fds[i];
           rut_poll_shell_add_fd (shell,
                                  poll_fd->fd,
                                  poll_fd->events, /* assume equivalent */
                                  NULL, /* prepare */
-                                 on_cogl_event_cb, /* dispatch */
+                                 on_cg_event_cb, /* dispatch */
                                  shell);
-          c_array_append_val (shell->cogl_poll_fds, poll_fd);
+          c_array_append_val (shell->cg_poll_fds, poll_fd);
         }
     }
 
-  shell->cogl_poll_fds_age = age;
+  shell->cg_poll_fds_age = age;
 
-  if (cogl_timeout >= 0)
+  if (cg_timeout >= 0)
     {
-      cogl_timeout /= 1000;
-      uv_timer_start (&shell->cogl_timer, dummy_timer_cb, cogl_timeout, 0);
-      shell->cogl_check.data = &shell->cogl_timer;
-      uv_check_start (&shell->cogl_check, dummy_timer_check_cb);
+      cg_timeout /= 1000;
+      uv_timer_start (&shell->cg_timer, dummy_timer_cb, cg_timeout, 0);
+      shell->cg_check.data = &shell->cg_timer;
+      uv_check_start (&shell->cg_check, dummy_timer_check_cb);
     }
 }
 #endif /* RIG_SIMULATOR_ONLY */
@@ -406,7 +406,7 @@ dispatch_sdl_pipe_events (void *user_data,
 
   while (SDL_PollEvent (&event))
     {
-      cogl_sdl_handle_event (shell->rut_ctx->cogl_context,
+      cg_sdl_handle_event (shell->rut_ctx->cg_context,
                              &event);
 
       rut_shell_handle_sdl_event (shell, &event);
@@ -463,7 +463,7 @@ dispatch_sdl_busy_wait (void *user_data,
 
   while (SDL_PollEvent (&event))
     {
-      cogl_sdl_handle_event (shell->rut_ctx->cogl_context, &event);
+      cg_sdl_handle_event (shell->rut_ctx->cg_context, &event);
 
       rut_shell_handle_sdl_event (shell, &event);
     }
@@ -577,27 +577,27 @@ glib_uv_check_cb (uv_check_t *check)
 #endif /* USE_GLIB */
 
 static void
-cogl_prepare_cb (uv_prepare_t *prepare)
+cg_prepare_cb (uv_prepare_t *prepare)
 {
   RutShell *shell = prepare->data;
-  CoglRenderer *renderer =
-    cogl_context_get_renderer (shell->rut_ctx->cogl_context);
+  cg_renderer_t *renderer =
+    cg_context_get_renderer (shell->rut_ctx->cg_context);
 
-  cogl_poll_renderer_dispatch (renderer, NULL, 0);
+  cg_poll_renderer_dispatch (renderer, NULL, 0);
 
-  update_cogl_sources (shell);
+  update_cg_sources (shell);
 }
 
 static void
-integrate_cogl_events (RutShell *shell)
+integrate_cg_events (RutShell *shell)
 {
-  uv_timer_init (shell->uv_loop, &shell->cogl_timer);
+  uv_timer_init (shell->uv_loop, &shell->cg_timer);
 
-  uv_prepare_init (shell->uv_loop, &shell->cogl_prepare);
-  shell->cogl_prepare.data = shell;
-  uv_prepare_start (&shell->cogl_prepare, cogl_prepare_cb);
+  uv_prepare_init (shell->uv_loop, &shell->cg_prepare);
+  shell->cg_prepare.data = shell;
+  uv_prepare_start (&shell->cg_prepare, cg_prepare_cb);
 
-  uv_check_init (shell->uv_loop, &shell->cogl_check);
+  uv_check_init (shell->uv_loop, &shell->cg_check);
 }
 
 void
@@ -640,7 +640,7 @@ rut_poll_init (RutShell *shell)
       integrate_sdl_events_via_busy_wait (shell);
 #endif
 
-      integrate_cogl_events (shell);
+      integrate_cg_events (shell);
 #endif /* RIG_SIMULATOR_ONLY */
     }
 #endif /* USE_UV */

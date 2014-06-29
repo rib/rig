@@ -72,10 +72,10 @@ rotation_tool_grab_cb (RutInputEvent *event,
     case RUT_MOTION_EVENT_ACTION_MOVE:
     case RUT_MOTION_EVENT_ACTION_UP:
       {
-        CoglQuaternion camera_rotation;
-        CoglQuaternion new_rotation;
+        cg_quaternion_t camera_rotation;
+        cg_quaternion_t new_rotation;
         RigEntity *parent;
-        CoglQuaternion parent_inverse;
+        cg_quaternion_t parent_inverse;
         RigEntity *entity = tool->selected_entity;
         float x = rut_motion_event_get_x (event);
         float y = rut_motion_event_get_y (event);
@@ -83,7 +83,7 @@ rotation_tool_grab_cb (RutInputEvent *event,
 
         rut_arcball_mouse_motion (&tool->arcball, x, y);
 
-        cogl_quaternion_multiply (&camera_rotation,
+        cg_quaternion_multiply (&camera_rotation,
                                   &tool->arcball.q_drag,
                                   &tool->start_view_rotations);
 
@@ -99,9 +99,9 @@ rotation_tool_grab_cb (RutInputEvent *event,
         rig_entity_get_view_rotations (parent,
                                        tool->camera,
                                        &parent_inverse);
-        cogl_quaternion_invert (&parent_inverse);
+        cg_quaternion_invert (&parent_inverse);
 
-        cogl_quaternion_multiply (&new_rotation,
+        cg_quaternion_multiply (&new_rotation,
                                   &parent_inverse,
                                   &camera_rotation);
 
@@ -173,7 +173,7 @@ on_rotation_tool_clicked (RutInputRegion *region,
 
       tool->start_rotation = *rig_entity_get_rotation (entity);
 
-      cogl_quaternion_init_identity (&tool->arcball.q_drag);
+      cg_quaternion_init_identity (&tool->arcball.q_drag);
 
       rut_arcball_mouse_down (&tool->arcball, x, y);
 
@@ -227,8 +227,8 @@ objects_selection_event_cb (RigObjectsSelection *selection,
 static void
 tool_event_cb (RigRotationTool *tool,
                RigRotationToolEventType type,
-               const CoglQuaternion *start_rotation,
-               const CoglQuaternion *new_rotation,
+               const cg_quaternion_t *start_rotation,
+               const cg_quaternion_t *new_rotation,
                void *user_data)
 {
   RigEngine *engine = tool->view->engine;
@@ -292,7 +292,7 @@ rig_rotation_tool_new (RigCameraView *view)
   rut_list_init (&tool->rotation_event_cb_list);
 
   /* pipeline to draw the tool */
-  tool->default_pipeline = cogl_pipeline_new (ctx->cogl_context);
+  tool->default_pipeline = cg_pipeline_new (ctx->cg_context);
 
   /* rotation tool */
   tool->rotation_tool = rut_create_rotation_tool_primitive (ctx, 64);
@@ -344,13 +344,13 @@ rig_rotation_tool_set_active (RigRotationTool *tool,
 static void
 get_modelview_matrix (RigEntity  *camera,
                       RigEntity  *entity,
-                      CoglMatrix *modelview)
+                      cg_matrix_t *modelview)
 {
   RutObject *camera_component =
     rig_entity_get_component (camera, RUT_COMPONENT_TYPE_CAMERA);
   *modelview = *rut_camera_get_view_transform (camera_component);
 
-  cogl_matrix_multiply (modelview,
+  cg_matrix_multiply (modelview,
                         modelview,
                         rig_entity_get_transform (entity));
 }
@@ -369,8 +369,8 @@ void
 update_position (RigRotationTool *tool)
 {
   RutObject *camera = tool->camera_component;
-  CoglMatrix transform;
-  const CoglMatrix *projection;
+  cg_matrix_t transform;
+  const cg_matrix_t *projection;
   float scale_thingy[4], screen_space[4], x, y;
   const float *viewport;
 
@@ -381,7 +381,7 @@ update_position (RigRotationTool *tool)
 
   tool->position[0] = tool->position[1] = tool->position[2] = 0.f;
 
-  cogl_matrix_transform_points (&transform,
+  cg_matrix_transform_points (&transform,
                                 3, /* num components for input */
                                 sizeof (float) * 3, /* input stride */
                                 tool->position,
@@ -395,7 +395,7 @@ update_position (RigRotationTool *tool)
   scale_thingy[1] = 0.f;
   scale_thingy[2] = tool->position[2];
 
-  cogl_matrix_project_points (projection,
+  cg_matrix_project_points (projection,
                               3, /* num components for input */
                               sizeof (float) * 3, /* input stride */
                               scale_thingy,
@@ -411,7 +411,7 @@ update_position (RigRotationTool *tool)
   screen_space[0] = tool->position[0];
   screen_space[1] = tool->position[1];
   screen_space[2] = tool->position[2];
-  cogl_matrix_project_points (projection,
+  cg_matrix_project_points (projection,
                               3, /* num components for input */
                               sizeof (float) * 3, /* input stride */
                               screen_space,
@@ -443,22 +443,22 @@ get_scale_for_length (RigRotationTool *tool, float length)
 static void
 get_rotation (RigEntity *camera,
               RigEntity *entity,
-              CoglMatrix *rotation)
+              cg_matrix_t *rotation)
 {
-  CoglQuaternion q;
+  cg_quaternion_t q;
 
   rig_entity_get_view_rotations (entity, camera, &q);
-  cogl_matrix_init_from_quaternion (rotation, &q);
+  cg_matrix_init_from_quaternion (rotation, &q);
 }
 
 void
 rig_rotation_tool_draw (RigRotationTool *tool,
-                        CoglFramebuffer *fb)
+                        cg_framebuffer_t *fb)
 {
-  CoglMatrix rotation;
+  cg_matrix_t rotation;
   float scale, aspect_ratio;
-  CoglMatrix saved_projection;
-  CoglMatrix projection;
+  cg_matrix_t saved_projection;
+  cg_matrix_t projection;
   float fov;
   float near;
   float zoom;
@@ -477,13 +477,13 @@ rig_rotation_tool_draw (RigRotationTool *tool,
 
   /* we change the projection matrix to clip at -position[2] to clip the
    * half sphere that is away from the camera */
-  vp_width = cogl_framebuffer_get_viewport_width (fb);
-  vp_height = cogl_framebuffer_get_viewport_height (fb);
+  vp_width = cg_framebuffer_get_viewport_width (fb);
+  vp_height = cg_framebuffer_get_viewport_height (fb);
   aspect_ratio = vp_width / vp_height;
 
-  cogl_framebuffer_get_projection_matrix (fb, &saved_projection);
+  cg_framebuffer_get_projection_matrix (fb, &saved_projection);
 
-  cogl_matrix_init_identity (&projection);
+  cg_matrix_init_identity (&projection);
   fov = rut_camera_get_field_of_view (tool->camera_component);
   near = rut_camera_get_near_plane (tool->camera_component);
   zoom = rut_camera_get_zoom (tool->camera_component);
@@ -493,14 +493,14 @@ rig_rotation_tool_draw (RigRotationTool *tool,
                                       near,
                                       -tool->position[2], /* far */
                                       zoom);
-  cogl_framebuffer_set_projection_matrix (fb, &projection);
+  cg_framebuffer_set_projection_matrix (fb, &projection);
 
   scale = get_scale_for_length (tool, 128 / vp_width);
 
   /* draw the tool */
-  cogl_framebuffer_push_matrix (fb);
-  cogl_framebuffer_identity_matrix (fb);
-  cogl_framebuffer_translate (fb,
+  cg_framebuffer_push_matrix (fb);
+  cg_framebuffer_identity_matrix (fb);
+  cg_framebuffer_translate (fb,
                               tool->position[0],
                               tool->position[1],
                               tool->position[2]);
@@ -512,23 +512,23 @@ rig_rotation_tool_draw (RigRotationTool *tool,
    *
    * Note: this means the examples won't look right for now.
    */
-  cogl_framebuffer_scale (fb, scale, -scale, scale);
-  cogl_framebuffer_push_matrix (fb);
-  cogl_framebuffer_transform (fb, &rotation);
-  cogl_primitive_draw (tool->rotation_tool,
+  cg_framebuffer_scale (fb, scale, -scale, scale);
+  cg_framebuffer_push_matrix (fb);
+  cg_framebuffer_transform (fb, &rotation);
+  cg_primitive_draw (tool->rotation_tool,
                        fb,
                        tool->default_pipeline);
-  cogl_framebuffer_pop_matrix (fb);
-  cogl_primitive_draw (tool->rotation_tool_handle,
+  cg_framebuffer_pop_matrix (fb);
+  cg_primitive_draw (tool->rotation_tool_handle,
                        fb,
                        tool->default_pipeline);
-  cogl_framebuffer_scale (fb, 1.1, 1.1, 1.1);
-  cogl_primitive_draw (tool->rotation_tool_handle,
+  cg_framebuffer_scale (fb, 1.1, 1.1, 1.1);
+  cg_primitive_draw (tool->rotation_tool_handle,
                        fb,
                        tool->default_pipeline);
-  cogl_framebuffer_pop_matrix (fb);
+  cg_framebuffer_pop_matrix (fb);
 
-  cogl_framebuffer_set_projection_matrix (fb, &saved_projection);
+  cg_framebuffer_set_projection_matrix (fb, &saved_projection);
 }
 
 RutClosure *
@@ -548,9 +548,9 @@ rig_rotation_tool_destroy (RigRotationTool *tool)
 {
   rut_closure_list_disconnect_all (&tool->rotation_event_cb_list);
 
-  cogl_object_unref (tool->default_pipeline);
-  cogl_object_unref (tool->rotation_tool);
-  cogl_object_unref (tool->rotation_tool_handle);
+  cg_object_unref (tool->default_pipeline);
+  cg_object_unref (tool->rotation_tool);
+  cg_object_unref (tool->rotation_tool_handle);
   rut_object_unref (tool->rotation_circle);
 
   if (tool->button_down)

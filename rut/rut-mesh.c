@@ -129,7 +129,7 @@ _rut_mesh_init_type (void)
 }
 
 RutMesh *
-rut_mesh_new (CoglVerticesMode mode,
+rut_mesh_new (cg_vertices_mode_t mode,
               int n_vertices,
               RutAttribute **attributes,
               int n_attributes)
@@ -147,7 +147,7 @@ rut_mesh_new (CoglVerticesMode mode,
 }
 
 RutMesh *
-rut_mesh_new_from_buffer_p3 (CoglVerticesMode mode,
+rut_mesh_new_from_buffer_p3 (cg_vertices_mode_t mode,
                              int n_vertices,
                              RutBuffer *buffer)
 {
@@ -158,9 +158,9 @@ rut_mesh_new_from_buffer_p3 (CoglVerticesMode mode,
 
 
   attributes[0] = rut_attribute_new (buffer,
-                                     "cogl_position_in",
-                                     sizeof (CoglVertexP3),
-                                     offsetof (CoglVertexP3, x),
+                                     "cg_position_in",
+                                     sizeof (cg_vertex_p3_t),
+                                     offsetof (cg_vertex_p3_t, x),
                                      3,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
 
@@ -178,7 +178,7 @@ typedef struct _VertexP3N3
 } VertexP3N3;
 
 RutMesh *
-rut_mesh_new_from_buffer_p3n3 (CoglVerticesMode mode,
+rut_mesh_new_from_buffer_p3n3 (cg_vertices_mode_t mode,
                                int n_vertices,
                                RutBuffer *buffer)
 {
@@ -189,13 +189,13 @@ rut_mesh_new_from_buffer_p3n3 (CoglVerticesMode mode,
 
 
   attributes[0] = rut_attribute_new (buffer,
-                                     "cogl_position_in",
+                                     "cg_position_in",
                                      sizeof (VertexP3N3),
                                      0,
                                      3,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
   attributes[1] = rut_attribute_new (buffer,
-                                     "cogl_normal_in",
+                                     "cg_normal_in",
                                      sizeof (VertexP3N3),
                                      offsetof (VertexP3N3, nx),
                                      3,
@@ -210,7 +210,7 @@ rut_mesh_new_from_buffer_p3n3 (CoglVerticesMode mode,
 }
 
 RutMesh *
-rut_mesh_new_from_buffer_p3c4 (CoglVerticesMode mode,
+rut_mesh_new_from_buffer_p3c4 (cg_vertices_mode_t mode,
                                int n_vertices,
                                RutBuffer *buffer)
 {
@@ -221,15 +221,15 @@ rut_mesh_new_from_buffer_p3c4 (CoglVerticesMode mode,
 
 
   attributes[0] = rut_attribute_new (buffer,
-                                     "cogl_position_in",
-                                     sizeof (CoglVertexP3C4),
-                                     offsetof (CoglVertexP3C4, x),
+                                     "cg_position_in",
+                                     sizeof (cg_vertex_p3c4_t),
+                                     offsetof (cg_vertex_p3c4_t, x),
                                      3,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
   attributes[1] = rut_attribute_new (buffer,
-                                     "cogl_color_in",
-                                     sizeof (CoglVertexP3C4),
-                                     offsetof (CoglVertexP3C4, r),
+                                     "cg_color_in",
+                                     sizeof (cg_vertex_p3c4_t),
+                                     offsetof (cg_vertex_p3c4_t, r),
                                      4,
                                      RUT_ATTRIBUTE_TYPE_UNSIGNED_BYTE);
   attributes[1]->normalized = true;
@@ -244,7 +244,7 @@ rut_mesh_new_from_buffer_p3c4 (CoglVerticesMode mode,
 
 void
 rut_mesh_set_indices (RutMesh *mesh,
-                      CoglIndicesType type,
+                      cg_indices_type_t type,
                       RutBuffer *buffer,
                       int n_indices)
 {
@@ -287,7 +287,7 @@ foreach_vertex (RutMesh *mesh,
   if (mesh->indices_buffer && !ignore_indices)
     {
       void *indices_data = mesh->indices_buffer->data;
-      CoglIndicesType indices_type = mesh->indices_type;
+      cg_indices_type_t indices_type = mesh->indices_type;
       void **data;
       int i;
       int v;
@@ -300,13 +300,13 @@ foreach_vertex (RutMesh *mesh,
 
           switch (indices_type)
             {
-            case COGL_INDICES_TYPE_UNSIGNED_BYTE:
+            case CG_INDICES_TYPE_UNSIGNED_BYTE:
               v = ((uint8_t *)indices_data)[i];
               break;
-            case COGL_INDICES_TYPE_UNSIGNED_SHORT:
+            case CG_INDICES_TYPE_UNSIGNED_SHORT:
               v = ((uint16_t *)indices_data)[i];
               break;
-            case COGL_INDICES_TYPE_UNSIGNED_INT:
+            case CG_INDICES_TYPE_UNSIGNED_INT:
               v = ((uint32_t *)indices_data)[i];
               break;
             }
@@ -436,7 +436,7 @@ typedef struct _IndexState
   uint8_t **bases;
   int *strides;
   int stride;
-  CoglIndicesType indices_type;
+  cg_indices_type_t indices_type;
   void *indices;
 } IndexState;
 
@@ -450,13 +450,13 @@ move_to_i (int index,
 
   switch (state->indices_type)
     {
-    case COGL_INDICES_TYPE_UNSIGNED_BYTE:
+    case CG_INDICES_TYPE_UNSIGNED_BYTE:
       v = ((uint8_t *)state->indices)[index];
       break;
-    case COGL_INDICES_TYPE_UNSIGNED_SHORT:
+    case CG_INDICES_TYPE_UNSIGNED_SHORT:
       v = ((uint16_t *)state->indices)[index];
       break;
-    case COGL_INDICES_TYPE_UNSIGNED_INT:
+    case CG_INDICES_TYPE_UNSIGNED_INT:
       v = ((uint32_t *)state->indices)[index];
       break;
     }
@@ -501,9 +501,9 @@ rut_mesh_foreach_triangle (RutMesh *mesh,
 
   switch (mesh->mode)
     {
-    case COGL_VERTICES_MODE_LINES:
-    case COGL_VERTICES_MODE_LINE_STRIP:
-    case COGL_VERTICES_MODE_LINE_LOOP:
+    case CG_VERTICES_MODE_LINES:
+    case CG_VERTICES_MODE_LINE_STRIP:
+    case CG_VERTICES_MODE_LINE_LOOP:
       return;
     default:
       break;
@@ -550,13 +550,13 @@ rut_mesh_foreach_triangle (RutMesh *mesh,
 
   /* Make sure we don't overrun the vertices if we don't have a
    * multiple of three vertices in triangle list mode */
-  if (mesh->mode == COGL_VERTICES_MODE_TRIANGLES)
+  if (mesh->mode == CG_VERTICES_MODE_TRIANGLES)
     n_vertices -= 2;
 
   if (mesh->indices_buffer)
     {
       IndexState state;
-      CoglVerticesMode mode = mesh->mode;
+      cg_vertices_mode_t mode = mesh->mode;
       int i = 0;
 
       state.n_attributes = n_attributes;
@@ -580,16 +580,16 @@ rut_mesh_foreach_triangle (RutMesh *mesh,
 
           switch (mode)
             {
-            case COGL_VERTICES_MODE_TRIANGLES:
+            case CG_VERTICES_MODE_TRIANGLES:
               tri_i[0] = move_to_i (i++, &state, tri_v[0]);
               tri_i[1] = move_to_i (i++, &state, tri_v[1]);
               tri_i[2] = move_to_i (i++, &state, tri_v[2]);
               break;
-            case COGL_VERTICES_MODE_TRIANGLE_FAN:
+            case CG_VERTICES_MODE_TRIANGLE_FAN:
               SWAP_TRIANGLE_VERTICES (1, 2);
               tri_i[2] = move_to_i (i++, &state, tri_v[2]);
               break;
-            case COGL_VERTICES_MODE_TRIANGLE_STRIP:
+            case CG_VERTICES_MODE_TRIANGLE_STRIP:
               SWAP_TRIANGLE_VERTICES (0, 1);
               SWAP_TRIANGLE_VERTICES (1, 2);
               tri_i[2] = move_to_i (i++, &state, tri_v[2]);
@@ -601,7 +601,7 @@ rut_mesh_foreach_triangle (RutMesh *mesh,
     }
   else
     {
-      CoglVerticesMode mode = mesh->mode;
+      cg_vertices_mode_t mode = mesh->mode;
       int i = 0;
 
       tri_i[0] = move_to (i++, n_attributes, bases, strides, tri_v[0]);
@@ -619,16 +619,16 @@ rut_mesh_foreach_triangle (RutMesh *mesh,
 
           switch (mode)
             {
-            case COGL_VERTICES_MODE_TRIANGLES:
+            case CG_VERTICES_MODE_TRIANGLES:
               tri_i[0] = move_to (i++, n_attributes, bases, strides, tri_v[0]);
               tri_i[1] = move_to (i++, n_attributes, bases, strides, tri_v[1]);
               tri_i[2] = move_to (i++, n_attributes, bases, strides, tri_v[2]);
               break;
-            case COGL_VERTICES_MODE_TRIANGLE_FAN:
+            case CG_VERTICES_MODE_TRIANGLE_FAN:
               SWAP_TRIANGLE_VERTICES (1, 2);
               tri_i[2] = move_to (i++, n_attributes, bases, strides, tri_v[2]);
               break;
-            case COGL_VERTICES_MODE_TRIANGLE_STRIP:
+            case CG_VERTICES_MODE_TRIANGLE_STRIP:
               SWAP_TRIANGLE_VERTICES (0, 1);
               SWAP_TRIANGLE_VERTICES (1, 2);
               tri_i[2] = move_to (i++, n_attributes, bases, strides, tri_v[2]);
@@ -641,37 +641,37 @@ rut_mesh_foreach_triangle (RutMesh *mesh,
 #undef SWAP_TRIANGLE_VERTICES
 }
 
-static CoglAttributeType
-get_cogl_attribute_type (RutAttributeType type)
+static cg_attribute_type_t
+get_cg_attribute_type (RutAttributeType type)
 {
   switch (type)
     {
     case RUT_ATTRIBUTE_TYPE_BYTE:
-      return COGL_ATTRIBUTE_TYPE_BYTE;
+      return CG_ATTRIBUTE_TYPE_BYTE;
     case RUT_ATTRIBUTE_TYPE_UNSIGNED_BYTE:
-      return COGL_ATTRIBUTE_TYPE_UNSIGNED_BYTE;
+      return CG_ATTRIBUTE_TYPE_UNSIGNED_BYTE;
     case RUT_ATTRIBUTE_TYPE_SHORT:
-      return COGL_ATTRIBUTE_TYPE_SHORT;
+      return CG_ATTRIBUTE_TYPE_SHORT;
     case RUT_ATTRIBUTE_TYPE_UNSIGNED_SHORT:
-      return COGL_ATTRIBUTE_TYPE_UNSIGNED_SHORT;
+      return CG_ATTRIBUTE_TYPE_UNSIGNED_SHORT;
     case RUT_ATTRIBUTE_TYPE_FLOAT:
-      return COGL_ATTRIBUTE_TYPE_FLOAT;
+      return CG_ATTRIBUTE_TYPE_FLOAT;
     }
 
   c_warn_if_reached ();
   return 0;
 }
 
-CoglPrimitive *
+cg_primitive_t *
 rut_mesh_create_primitive (RutContext *ctx,
                            RutMesh *mesh)
 {
   RutBuffer **buffers;
   int n_buffers = 0;
-  CoglAttributeBuffer **attribute_buffers;
-  CoglAttributeBuffer **attribute_buffers_map;
-  CoglAttribute **attributes;
-  CoglPrimitive *primitive;
+  cg_attribute_buffer_t **attribute_buffers;
+  cg_attribute_buffer_t **attribute_buffers_map;
+  cg_attribute_t **attributes;
+  cg_primitive_t *primitive;
   int i;
 
   buffers = g_alloca (sizeof (void *) * mesh->n_attributes);
@@ -696,7 +696,7 @@ rut_mesh_create_primitive (RutContext *ctx,
       else
         {
           attribute_buffers[n_buffers] =
-            cogl_attribute_buffer_new (ctx->cogl_context,
+            cg_attribute_buffer_new (ctx->cg_context,
                                        mesh->attributes[i]->buffer->size,
                                        mesh->attributes[i]->buffer->data);
 
@@ -708,10 +708,10 @@ rut_mesh_create_primitive (RutContext *ctx,
   attributes = g_alloca (sizeof (void *) * mesh->n_attributes);
   for (i = 0; i < mesh->n_attributes; i++)
     {
-      CoglAttributeType type =
-        get_cogl_attribute_type (mesh->attributes[i]->type);
+      cg_attribute_type_t type =
+        get_cg_attribute_type (mesh->attributes[i]->type);
 
-      attributes[i] = cogl_attribute_new (attribute_buffers_map[i],
+      attributes[i] = cg_attribute_new (attribute_buffers_map[i],
                                           mesh->attributes[i]->name,
                                           mesh->attributes[i]->stride,
                                           mesh->attributes[i]->offset,
@@ -719,28 +719,28 @@ rut_mesh_create_primitive (RutContext *ctx,
                                           type);
 
       if (mesh->attributes[i]->normalized)
-        cogl_attribute_set_normalized (attributes[i], true);
+        cg_attribute_set_normalized (attributes[i], true);
     }
 
   for (i = 0; i < n_buffers; i++)
-    cogl_object_unref (attribute_buffers[i]);
+    cg_object_unref (attribute_buffers[i]);
 
-  primitive = cogl_primitive_new_with_attributes (mesh->mode,
+  primitive = cg_primitive_new_with_attributes (mesh->mode,
                                                   mesh->n_vertices,
                                                   attributes,
                                                   mesh->n_attributes);
 
   for (i = 0; i < mesh->n_attributes; i++)
-    cogl_object_unref (attributes[i]);
+    cg_object_unref (attributes[i]);
 
   if (mesh->indices_buffer)
     {
-      CoglIndices *indices = cogl_indices_new (ctx->cogl_context,
+      cg_indices_t *indices = cg_indices_new (ctx->cg_context,
                                                mesh->indices_type,
                                                mesh->indices_buffer->data,
                                                mesh->n_indices);
-      cogl_primitive_set_indices (primitive, indices, mesh->n_indices);
-      cogl_object_unref (indices);
+      cg_primitive_set_indices (primitive, indices, mesh->n_indices);
+      cg_object_unref (indices);
     }
 
   return primitive;

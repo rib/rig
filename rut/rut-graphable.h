@@ -135,16 +135,16 @@ rut_graphable_get_root (RutObject *child);
 
 void
 rut_graphable_apply_transform (RutObject *graphable,
-                               CoglMatrix *transform);
+                               cg_matrix_t *transform);
 
 void
 rut_graphable_get_transform (RutObject *graphable,
-                             CoglMatrix *transform);
+                             cg_matrix_t *transform);
 
 void
 rut_graphable_get_modelview (RutObject *graphable,
                              RutObject *camera,
-                             CoglMatrix *transform);
+                             cg_matrix_t *transform);
 
 void
 rut_graphable_fully_transform_point (RutObject *graphable,

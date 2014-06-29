@@ -39,7 +39,7 @@ extern RutType rig_nine_slice_type;
 
 RigNineSlice *
 rig_nine_slice_new (RutContext *ctx,
-                    CoglTexture *texture,
+                    cg_texture_t *texture,
                     float top,
                     float right,
                     float bottom,
@@ -62,17 +62,17 @@ rig_nine_slice_set_image_size (RutObject *self,
                                int width,
                                int height);
 
-CoglTexture *
+cg_texture_t *
 rig_nine_slice_get_texture (RigNineSlice *nine_slice);
 
 void
 rig_nine_slice_set_texture (RigNineSlice *nine_slice,
-                            CoglTexture *texture);
+                            cg_texture_t *texture);
 
-CoglPipeline *
+cg_pipeline_t *
 rig_nine_slice_get_pipeline (RigNineSlice *nine_slice);
 
-CoglPrimitive *
+cg_primitive_t *
 rig_nine_slice_get_primitive (RutObject *object);
 
 RutMesh *

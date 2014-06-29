@@ -43,11 +43,11 @@
  * transforms of objects, texture transforms, and projective
  * transforms.
  *
- * The #CoglMatrix api provides a good way to manipulate individual
+ * The #cg_matrix_t api provides a good way to manipulate individual
  * matrices representing a single transformation but if you need to
  * track many-many such transformations for many objects that are
  * organized in a scenegraph for example then using a separate
- * #CoglMatrix for each object may not be the most efficient way.
+ * #cg_matrix_t for each object may not be the most efficient way.
  *
  * A #RutMatrixStack enables applications to track lots of
  * transformations that are related to each other in some kind of
@@ -60,7 +60,7 @@
  * transformation. The #RutMatrixStack API is suited to tracking lots
  * of transformations that fit this kind of model.
  *
- * Compared to using the #CoglMatrix api directly to track many
+ * Compared to using the #cg_matrix_t api directly to track many
  * related transforms, these can be some advantages to using a
  * #RutMatrixStack:
  * <itemizedlist>
@@ -73,14 +73,14 @@
  * </itemizedlist>
  *
  * For reference (to give an idea of when a #RutMatrixStack can
- * provide a space saving) a #CoglMatrix can be expected to take 72
+ * provide a space saving) a #cg_matrix_t can be expected to take 72
  * bytes whereas a single #RutMatrixEntry in a #RutMatrixStack is
  * currently around 32 bytes on a 32bit CPU or 36 bytes on a 64bit
  * CPU. An entry is needed for each individual operation applied to
  * the stack (such as rotate, scale, translate) so if most of your
  * leaf node transformations only need one or two simple operations
  * relative to their parent then a matrix stack will likely take less
- * space than having a #CoglMatrix for each node.
+ * space than having a #cg_matrix_t for each node.
  *
  * Even without any space saving though the ability to perform fast
  * comparisons and avoid redundant arithmetic (especially sine and
@@ -163,7 +163,7 @@ extern RutType rut_matrix_stack_type;
  */
 typedef struct _RutMatrixEntry RutMatrixEntry;
 
-typedef enum _CoglMatrixOp
+typedef enum _cg_matrix_op_t
 {
   RUT_MATRIX_OP_LOAD_IDENTITY,
   RUT_MATRIX_OP_TRANSLATE,
@@ -174,12 +174,12 @@ typedef enum _CoglMatrixOp
   RUT_MATRIX_OP_MULTIPLY,
   RUT_MATRIX_OP_LOAD,
   RUT_MATRIX_OP_SAVE,
-} CoglMatrixOp;
+} cg_matrix_op_t;
 
 struct _RutMatrixEntry
 {
   RutMatrixEntry *parent;
-  CoglMatrixOp op;
+  cg_matrix_op_t op;
   unsigned int ref_count;
 
 #ifdef RUT_DEBUG_ENABLED
@@ -213,7 +213,7 @@ typedef struct _RutMatrixEntryRotateEuler
 {
   RutMatrixEntry _parent_data;
 
-  /* This doesn't store an actual CoglEuler in order to avoid the
+  /* This doesn't store an actual cg_euler_t in order to avoid the
    * padding */
   float heading;
   float pitch;
@@ -224,7 +224,7 @@ typedef struct _RutMatrixEntryRotateQuaternion
 {
   RutMatrixEntry _parent_data;
 
-  /* This doesn't store an actual CoglQuaternion in order to avoid the
+  /* This doesn't store an actual cg_quaternion_t in order to avoid the
    * padding */
   float values[4];
 } RutMatrixEntryRotateQuaternion;
@@ -243,7 +243,7 @@ typedef struct _RutMatrixEntryMultiply
 {
   RutMatrixEntry _parent_data;
 
-  CoglMatrix *matrix;
+  cg_matrix_t *matrix;
 
 } RutMatrixEntryMultiply;
 
@@ -251,7 +251,7 @@ typedef struct _RutMatrixEntryLoad
 {
   RutMatrixEntry _parent_data;
 
-  CoglMatrix *matrix;
+  cg_matrix_t *matrix;
 
 } RutMatrixEntryLoad;
 
@@ -259,7 +259,7 @@ typedef struct _RutMatrixEntrySave
 {
   RutMatrixEntry _parent_data;
 
-  CoglMatrix *cache;
+  cg_matrix_t *cache;
   bool cache_valid;
 
 } RutMatrixEntrySave;
@@ -300,7 +300,7 @@ typedef enum {
   RUT_MATRIX_MODELVIEW,
   RUT_MATRIX_PROJECTION,
   RUT_MATRIX_TEXTURE
-} CoglMatrixMode;
+} cg_matrix_tMode;
 
 void
 _rut_matrix_entry_cache_init (RutMatrixEntryCache *cache);
@@ -439,26 +439,26 @@ rut_matrix_stack_rotate (RutMatrixStack *stack,
 /**
  * rut_matrix_stack_rotate_quaternion:
  * @stack: A #RutMatrixStack
- * @quaternion: A #CoglQuaternion
+ * @quaternion: A #cg_quaternion_t
  *
  * Multiplies the current matrix by one that rotates according to the
  * rotation described by @quaternion.
  */
 void
 rut_matrix_stack_rotate_quaternion (RutMatrixStack *stack,
-                                    const CoglQuaternion *quaternion);
+                                    const cg_quaternion_t *quaternion);
 
 /**
  * rut_matrix_stack_rotate_euler:
  * @stack: A #RutMatrixStack
- * @euler: A #CoglEuler
+ * @euler: A #cg_euler_t
  *
  * Multiplies the current matrix by one that rotates according to the
  * rotation described by @euler.
  */
 void
 rut_matrix_stack_rotate_euler (RutMatrixStack *stack,
-                               const CoglEuler *euler);
+                               const cg_euler_t *euler);
 
 /**
  * rut_matrix_stack_multiply:
@@ -469,7 +469,7 @@ rut_matrix_stack_rotate_euler (RutMatrixStack *stack,
  */
 void
 rut_matrix_stack_multiply (RutMatrixStack *stack,
-                           const CoglMatrix *matrix);
+                           const cg_matrix_t *matrix);
 
 /**
  * rut_matrix_stack_frustum:
@@ -553,7 +553,7 @@ rut_matrix_stack_orthographic (RutMatrixStack *stack,
  * @inverse: (out): The destination for a 4x4 inverse transformation matrix
  *
  * Gets the inverse transform of the current matrix and uses it to
- * initialize a new #CoglMatrix.
+ * initialize a new #cg_matrix_t.
  *
  * Return value: %true if the inverse was successfully calculated or %false
  *   for degenerate transformations that can't be inverted (in this case the
@@ -561,7 +561,7 @@ rut_matrix_stack_orthographic (RutMatrixStack *stack,
  */
 bool
 rut_matrix_stack_get_inverse (RutMatrixStack *stack,
-                              CoglMatrix *inverse);
+                              cg_matrix_t *inverse);
 
 /**
  * rut_matrix_stack_get_entry:
@@ -589,13 +589,13 @@ rut_matrix_stack_get_entry (RutMatrixStack *stack);
  * @stack: A #RutMatrixStack
  * @matrix: (out): The potential destination for the current matrix
  *
- * Resolves the current @stack transform into a #CoglMatrix by
+ * Resolves the current @stack transform into a #cg_matrix_t by
  * combining the operations that have been applied to build up the
  * current transform.
  *
  * There are two possible ways that this function may return its
  * result depending on whether the stack is able to directly point
- * to an internal #CoglMatrix or whether the result needs to be
+ * to an internal #cg_matrix_t or whether the result needs to be
  * composed of multiple operations.
  *
  * If an internal matrix contains the required result then this
@@ -610,9 +610,9 @@ rut_matrix_stack_get_entry (RutMatrixStack *stack);
  *               and in that case @matrix will be initialized with
  *               the value of the current transform.
  */
-CoglMatrix *
+cg_matrix_t *
 rut_matrix_stack_get (RutMatrixStack *stack,
-                      CoglMatrix *matrix);
+                      cg_matrix_t *matrix);
 
 /**
  * rut_matrix_entry_get:
@@ -620,13 +620,13 @@ rut_matrix_stack_get (RutMatrixStack *stack,
  * @matrix: (out): The potential destination for the transform as
  *                 a matrix
  *
- * Resolves the current @entry transform into a #CoglMatrix by
+ * Resolves the current @entry transform into a #cg_matrix_t by
  * combining the sequence of operations that have been applied to
  * build up the current transform.
  *
  * There are two possible ways that this function may return its
  * result depending on whether it's possible to directly point
- * to an internal #CoglMatrix or whether the result needs to be
+ * to an internal #cg_matrix_t or whether the result needs to be
  * composed of multiple operations.
  *
  * If an internal matrix contains the required result then this
@@ -637,18 +637,18 @@ rut_matrix_stack_get (RutMatrixStack *stack,
  * <note>@matrix will be left untouched if a direct pointer is
  * returned.</note>
  *
- * Return value: A direct pointer to a #CoglMatrix transform or %NULL
+ * Return value: A direct pointer to a #cg_matrix_t transform or %NULL
  *               and in that case @matrix will be initialized with
  *               the effective transform represented by @entry.
  */
-CoglMatrix *
+cg_matrix_t *
 rut_matrix_entry_get (RutMatrixEntry *entry,
-                      CoglMatrix *matrix);
+                      cg_matrix_t *matrix);
 
 /**
  * rut_matrix_stack_set:
  * @stack: A #RutMatrixStack
- * @matrix: A #CoglMatrix replace the current matrix value with
+ * @matrix: A #cg_matrix_t replace the current matrix value with
  *
  * Replaces the current @stack matrix value with the value of @matrix.
  * This effectively discards any other operations that were applied
@@ -657,7 +657,7 @@ rut_matrix_entry_get (RutMatrixEntry *entry,
  */
 void
 rut_matrix_stack_set (RutMatrixStack *stack,
-                      const CoglMatrix *matrix);
+                      const cg_matrix_t *matrix);
 
 /**
  * rut_matrix_entry_calculate_translation:

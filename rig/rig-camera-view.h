@@ -70,8 +70,8 @@ struct _RigCameraView
   bool play_mode;
 
   /* picking ray */
-  CoglPipeline *picking_ray_color;
-  CoglPrimitive *picking_ray;
+  cg_pipeline_t *picking_ray_color;
+  cg_primitive_t *picking_ray;
   bool debug_pick_ray;
 
   RutMatrixStack *matrix_stack;
@@ -81,7 +81,7 @@ struct _RigCameraView
 
   float width, height;
 
-  CoglPipeline *bg_pipeline;
+  cg_pipeline_t *bg_pipeline;
 
   float origin[3];
   //float saved_origin[3];
@@ -116,7 +116,7 @@ struct _RigCameraView
   bool enable_dof;
 
   RutArcball arcball;
-  CoglQuaternion saved_rotation;
+  cg_quaternion_t saved_rotation;
 
   RigEntity *view_camera;
   RutObject *view_camera_component;

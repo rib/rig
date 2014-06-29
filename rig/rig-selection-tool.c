@@ -167,7 +167,7 @@ static void
 create_dummy_control_points (EntityState *entity_state)
 {
   RigSelectionTool *tool = entity_state->tool;
-  CoglTexture *tex = rut_load_texture_from_data_file (tool->ctx, "dot.png", NULL);
+  cg_texture_t *tex = rut_load_texture_from_data_file (tool->ctx, "dot.png", NULL);
   ControlPoint *point;
 
   point = c_slice_new0 (ControlPoint);
@@ -217,7 +217,7 @@ create_dummy_control_points (EntityState *entity_state)
   entity_state->control_points =
     c_list_prepend (entity_state->control_points, point);
 
-  cogl_object_unref (tex);
+  cg_object_unref (tex);
 }
 
 static void
@@ -227,7 +227,7 @@ create_box_control (EntityState *entity_state,
                     float z)
 {
   RigSelectionTool *tool = entity_state->tool;
-  CoglTexture *tex = rut_load_texture_from_data_file (tool->ctx, "dot.png", NULL);
+  cg_texture_t *tex = rut_load_texture_from_data_file (tool->ctx, "dot.png", NULL);
   ControlPoint *point;
 
   point = c_slice_new0 (ControlPoint);
@@ -253,7 +253,7 @@ create_box_control (EntityState *entity_state,
   entity_state->control_points =
     c_list_prepend (entity_state->control_points, point);
 
-  cogl_object_unref (tex);
+  cg_object_unref (tex);
 }
 
 static void
@@ -388,7 +388,7 @@ rig_selection_tool_new (RigCameraView *view,
   rut_list_init (&tool->selection_event_cb_list);
 
   /* pipeline to draw the tool */
-  tool->default_pipeline = cogl_pipeline_new (ctx->cogl_context);
+  tool->default_pipeline = cg_pipeline_new (ctx->cg_context);
 
   return tool;
 }
@@ -439,13 +439,13 @@ rig_selection_tool_set_active (RigSelectionTool *tool,
 static void
 get_modelview_matrix (RigEntity  *camera,
                       RigEntity  *entity,
-                      CoglMatrix *modelview)
+                      cg_matrix_t *modelview)
 {
   RutObject *camera_component =
     rig_entity_get_component (camera, RUT_COMPONENT_TYPE_CAMERA);
   *modelview = *rut_camera_get_view_transform (camera_component);
 
-  cogl_matrix_multiply (modelview,
+  cg_matrix_multiply (modelview,
                         modelview,
                         rig_entity_get_transform (entity));
 }
@@ -456,12 +456,12 @@ map_window_coords_to_overlay_coord (RutObject *camera, /* 2d ui camera */
                                     float *x,
                                     float *y)
 {
-  CoglMatrix transform;
-  CoglMatrix inverse_transform;
+  cg_matrix_t transform;
+  cg_matrix_t inverse_transform;
 
   rut_graphable_get_modelview (overlay, camera, &transform);
 
-  if (!cogl_matrix_get_inverse (&transform, &inverse_transform))
+  if (!cg_matrix_get_inverse (&transform, &inverse_transform))
     return false;
 
   rut_camera_unproject_coord (camera,
@@ -494,8 +494,8 @@ update_control_point_positions (RigSelectionTool *tool,
   for (l = tool->selected_entities; l; l = l->next)
     {
       EntityState *entity_state = l->data;
-      CoglMatrix transform;
-      const CoglMatrix *projection;
+      cg_matrix_t transform;
+      const cg_matrix_t *projection;
       float screen_space[4], x, y;
       const float *viewport;
       c_list_t *l2;
@@ -516,7 +516,7 @@ update_control_point_positions (RigSelectionTool *tool,
           point->position[1] = point->y;
           point->position[2] = point->z;
 
-          cogl_matrix_transform_points (&transform,
+          cg_matrix_transform_points (&transform,
                                         3, /* num components for input */
                                         sizeof (float) * 3, /* input stride */
                                         point->position,
@@ -530,7 +530,7 @@ update_control_point_positions (RigSelectionTool *tool,
           screen_space[0] = point->position[0];
           screen_space[1] = point->position[1];
           screen_space[2] = point->position[2];
-          cogl_matrix_project_points (projection,
+          cg_matrix_project_points (projection,
                                       3, /* num components for input */
                                       sizeof (float) * 3, /* input stride */
                                       screen_space,
@@ -590,7 +590,7 @@ rig_selection_tool_destroy (RigSelectionTool *tool)
 
   rut_closure_list_disconnect_all (&tool->selection_event_cb_list);
 
-  cogl_object_unref (tool->default_pipeline);
+  cg_object_unref (tool->default_pipeline);
 
   for (l = tool->selected_entities; l; l = l->next)
     entity_state_destroy (l->data);

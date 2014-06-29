@@ -264,7 +264,7 @@ rig_path_print (RigPath *path)
 
         case RUT_PROPERTY_TYPE_QUATERNION:
           {
-            const CoglQuaternion *q = &node->boxed.d.quaternion_val;
+            const cg_quaternion_t *q = &node->boxed.d.quaternion_val;
             c_print (" t = %f [%f (%f, %f, %f)]\n",
                      node->t,
                      q->w, q->x, q->y, q->z);
@@ -431,7 +431,7 @@ rig_path_insert_vec4 (RigPath *path,
 void
 rig_path_insert_quaternion (RigPath *path,
                             float t,
-                            const CoglQuaternion *value)
+                            const cg_quaternion_t *value)
 {
   RigNode *node = rig_path_find_node (path, t);
 
@@ -511,7 +511,7 @@ rig_path_insert_uint32 (RigPath *path,
 void
 rig_path_insert_color (RigPath *path,
                        float t,
-                       const CoglColor *value)
+                       const cg_color_t *value)
 {
   RigNode *node = rig_path_find_node (path, t);
 
@@ -698,14 +698,14 @@ rig_path_lerp_property (RigPath *path,
       }
     case RUT_PROPERTY_TYPE_COLOR:
       {
-        CoglColor value;
+        cg_color_t value;
         rig_node_color_lerp (n0, n1, t, &value);
         rut_property_set_color (&path->ctx->property_ctx, property, &value);
         break;
       }
     case RUT_PROPERTY_TYPE_QUATERNION:
       {
-        CoglQuaternion value;
+        cg_quaternion_t value;
         rig_node_quaternion_lerp (n0, n1, t, &value);
         rut_property_set_quaternion (&path->ctx->property_ctx,
                                      property, &value);

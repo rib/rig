@@ -39,7 +39,7 @@ struct _RigDiamondSlice
 {
   RutObjectBase _base;
 
-  CoglMatrix rotate_matrix;
+  cg_matrix_t rotate_matrix;
 
   float size;
 
@@ -90,12 +90,12 @@ rig_diamond_get_size (RigDiamond *diamond);
 void
 rig_diamond_set_size (RutObject *object, float size);
 
-CoglPrimitive *
+cg_primitive_t *
 rig_diamond_get_primitive (RutObject *object);
 
 void
 rig_diamond_apply_mask (RigDiamond *diamond,
-                        CoglPipeline *pipeline);
+                        cg_pipeline_t *pipeline);
 
 RutMesh *
 rig_diamond_get_pick_mesh (RutObject *self);

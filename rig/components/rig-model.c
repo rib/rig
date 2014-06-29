@@ -91,7 +91,7 @@ static float flat_normal[3] = { 0, 0, 1 };
 static RigModel *
 _rig_model_new (RutContext *ctx);
 
-CoglPrimitive *
+cg_primitive_t *
 rig_model_get_primitive (RutObject *object)
 {
   RigModel *model = object;
@@ -108,7 +108,7 @@ rig_model_get_primitive (RutObject *object)
   return model->primitive;
 }
 
-CoglPrimitive *
+cg_primitive_t *
 rig_model_get_fin_primitive (RutObject *object)
 {
   RigModel *model = object;
@@ -130,7 +130,7 @@ _rig_model_free (void *object)
 #endif
 
   if (model->primitive)
-    cogl_object_unref (model->primitive);
+    cg_object_unref (model->primitive);
 
   if (model->mesh)
     rut_object_unref (model->mesh);
@@ -144,7 +144,7 @@ _rig_model_free (void *object)
 
   if (model->fin_mesh)
     {
-      cogl_object_unref (model->fin_primitive);
+      cg_object_unref (model->fin_primitive);
       c_free (model->priv->fin_polygons);
       c_free (model->priv->fin_vertices);
       rut_object_unref (model->fin_mesh);
@@ -177,7 +177,7 @@ _rig_model_copy (RutObject *object)
   copy->builtin_tex_coords = model->builtin_tex_coords;
 
   if (model->primitive)
-    copy->primitive = cogl_object_ref (model->primitive);
+    copy->primitive = cg_object_ref (model->primitive);
 
   if (model->is_hair_model)
     {
@@ -185,7 +185,7 @@ _rig_model_copy (RutObject *object)
       copy->patched_mesh = rut_object_ref (model->patched_mesh);
       copy->fin_mesh = rut_object_ref (model->fin_mesh);
       if (copy->fin_primitive)
-        copy->fin_primitive = cogl_object_ref (model->fin_primitive);
+        copy->fin_primitive = cg_object_ref (model->fin_primitive);
       copy->default_hair_length = model->default_hair_length;
     }
 
@@ -1212,14 +1212,14 @@ create_renderer_mesh_from_vertices (Vertex *vertices,
     }
 
   attributes[0] = rut_attribute_new (vertex_buffer,
-                                     "cogl_position_in",
+                                     "cg_position_in",
                                      sizeof (Vertex),
                                      offsetof (Vertex, pos),
                                      3,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
 
   attributes[1] = rut_attribute_new (vertex_buffer,
-                                     "cogl_tex_coord0_in",
+                                     "cg_tex_coord0_in",
                                      sizeof (Vertex),
                                      offsetof (Vertex, s0),
                                      2,
@@ -1227,35 +1227,35 @@ create_renderer_mesh_from_vertices (Vertex *vertices,
 
 #warning "TODO: audit why we have all of these texture coordinate attributes..."
   attributes[2] = rut_attribute_new (vertex_buffer,
-                                     "cogl_tex_coord1_in",
+                                     "cg_tex_coord1_in",
                                      sizeof (Vertex),
                                      offsetof (Vertex, s0),
                                      2,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
 
   attributes[3] = rut_attribute_new (vertex_buffer,
-                                     "cogl_tex_coord4_in",
+                                     "cg_tex_coord4_in",
                                      sizeof (Vertex),
                                      offsetof (Vertex, s0),
                                      2,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
 
   attributes[4] = rut_attribute_new (vertex_buffer,
-                                     "cogl_tex_coord7_in",
+                                     "cg_tex_coord7_in",
                                      sizeof (Vertex),
                                      offsetof (Vertex, s0),
                                      2,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
 
   attributes[5] = rut_attribute_new (vertex_buffer,
-                                     "cogl_tex_coord11_in",
+                                     "cg_tex_coord11_in",
                                      sizeof (Vertex),
                                      offsetof (Vertex, s1),
                                      2,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
 
   attributes[6] = rut_attribute_new (vertex_buffer,
-                                     "cogl_normal_in",
+                                     "cg_normal_in",
                                      sizeof (Vertex),
                                      offsetof (Vertex, normal),
                                      3,
@@ -1268,11 +1268,11 @@ create_renderer_mesh_from_vertices (Vertex *vertices,
                                      3,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
 
-  mesh = rut_mesh_new (COGL_VERTICES_MODE_TRIANGLES, n_vertices, attributes, 8);
+  mesh = rut_mesh_new (CG_VERTICES_MODE_TRIANGLES, n_vertices, attributes, 8);
 
   if (indices)
     {
-      rut_mesh_set_indices (mesh, COGL_INDICES_TYPE_UNSIGNED_INT, index_buffer,
+      rut_mesh_set_indices (mesh, CG_INDICES_TYPE_UNSIGNED_INT, index_buffer,
                             n_indices);
     }
 
@@ -1371,15 +1371,15 @@ rig_model_new_from_asset_mesh (RutContext *ctx,
    */
 #ifdef RIG_ENABLE_DEBUG
   c_return_val_if_fail (rut_mesh_find_attribute (model->mesh,
-                                                 "cogl_normal_in"),
+                                                 "cg_normal_in"),
                         NULL);
 
   c_return_val_if_fail (rut_mesh_find_attribute (model->mesh,
-                                                 "cogl_tex_coord0_in"),
+                                                 "cg_tex_coord0_in"),
                         NULL);
 #endif
 
-  attribute = rut_mesh_find_attribute (model->mesh, "cogl_position_in");
+  attribute = rut_mesh_find_attribute (model->mesh, "cg_position_in");
 
   model->min_x = G_MAXFLOAT;
   model->max_x = -G_MAXFLOAT;
@@ -1408,18 +1408,18 @@ rig_model_new_from_asset_mesh (RutContext *ctx,
   rut_mesh_foreach_vertex (model->mesh,
                            measure_callback,
                            model,
-                           "cogl_position_in",
-                           "cogl_normal_in",
+                           "cg_position_in",
+                           "cg_normal_in",
                            "tangent_in",
                            NULL);
 
   rut_mesh_foreach_triangle (model->mesh,
                              generate_missing_properties,
                              model,
-                             "cogl_position_in",
-                             "cogl_normal_in",
+                             "cg_position_in",
+                             "cg_normal_in",
                              "tangent_in",
-                             "cogl_tex_coord0_in",
+                             "cg_tex_coord0_in",
                              NULL);
 
   /* When rendering we expect that every model has a specific set of
@@ -1436,7 +1436,7 @@ rig_model_new_from_asset_mesh (RutContext *ctx,
   for (i = 0; i < mesh->n_attributes; i++)
     {
       RutAttribute *attribute = model->mesh->attributes[i];
-      if (strcmp (attribute->name, "cogl_tex_coord0_in") == 0)
+      if (strcmp (attribute->name, "cg_tex_coord0_in") == 0)
         tex_attrib = attribute;
 
       attributes[i] = model->mesh->attributes[i];
@@ -1445,28 +1445,28 @@ rig_model_new_from_asset_mesh (RutContext *ctx,
   c_return_val_if_fail (tex_attrib != NULL, NULL);
 
   attributes[i++] = rut_attribute_new (tex_attrib->buffer,
-                                       "cogl_tex_coord1_in",
+                                       "cg_tex_coord1_in",
                                        tex_attrib->stride,
                                        tex_attrib->offset,
                                        2,
                                        RUT_ATTRIBUTE_TYPE_FLOAT);
 
   attributes[i++] = rut_attribute_new (tex_attrib->buffer,
-                                       "cogl_tex_coord4_in",
+                                       "cg_tex_coord4_in",
                                        tex_attrib->stride,
                                        tex_attrib->offset,
                                        2,
                                        RUT_ATTRIBUTE_TYPE_FLOAT);
 
   attributes[i++] = rut_attribute_new (tex_attrib->buffer,
-                                       "cogl_tex_coord7_in",
+                                       "cg_tex_coord7_in",
                                        tex_attrib->stride,
                                        tex_attrib->offset,
                                        2,
                                        RUT_ATTRIBUTE_TYPE_FLOAT);
 
   attributes[i++] = rut_attribute_new (tex_attrib->buffer,
-                                       "cogl_tex_coord11_in",
+                                       "cg_tex_coord11_in",
                                        tex_attrib->stride,
                                        tex_attrib->offset,
                                        2,
@@ -1512,7 +1512,7 @@ rig_model_new_for_hair (RigModel *base)
 
   if (model->primitive)
     {
-      cogl_object_unref (model->primitive);
+      cg_object_unref (model->primitive);
       model->primitive = NULL;
     }
 
@@ -1542,10 +1542,10 @@ rig_model_new_for_hair (RigModel *base)
   rut_mesh_foreach_triangle (model->mesh,
                              generate_polygons_for_patching,
                              model,
-                             "cogl_position_in",
-                             "cogl_normal_in",
+                             "cg_position_in",
+                             "cg_normal_in",
                              "tangent_in",
-                             "cogl_tex_coord0_in",
+                             "cg_tex_coord0_in",
                              NULL);
 
   /* TODO: we can fold this into generate_polygons_for_patching */
@@ -1553,7 +1553,7 @@ rig_model_new_for_hair (RigModel *base)
   rut_mesh_foreach_triangle (model->mesh,
                              copy_tangents_to_polygons,
                              model,
-                             "cogl_normal_in",
+                             "cg_normal_in",
                              "tangent_in",
                              NULL);
 

@@ -160,8 +160,8 @@ typedef struct _IconToggleGrabState
 {
   RutObject *camera;
   RutIconToggle *toggle;
-  CoglMatrix transform;
-  CoglMatrix inverse_transform;
+  cg_matrix_t transform;
+  cg_matrix_t inverse_transform;
 } IconToggleGrabState;
 
 static void
@@ -263,14 +263,14 @@ _rut_icon_toggle_input_cb (RutInputRegion *region,
     {
       RutShell *shell = toggle->ctx->shell;
       IconToggleGrabState *state = c_slice_new (IconToggleGrabState);
-      const CoglMatrix *view;
+      const cg_matrix_t *view;
 
       state->toggle = toggle;
       state->camera = rut_input_event_get_camera (event);
       view = rut_camera_get_view_transform (state->camera);
       state->transform = *view;
       rut_graphable_apply_transform (toggle, &state->transform);
-      if (!cogl_matrix_get_inverse (&state->transform,
+      if (!cg_matrix_get_inverse (&state->transform,
                                     &state->inverse_transform))
         {
           c_warning ("Failed to calculate inverse of toggle transform\n");

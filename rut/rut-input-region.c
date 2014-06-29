@@ -124,8 +124,8 @@ poly_init_from_rectangle (float *poly,
  */
 static void
 rect_to_screen_polygon (RutInputShapeRectange *rectangle,
-                        const CoglMatrix *modelview,
-                        const CoglMatrix *projection,
+                        const cg_matrix_t *modelview,
+                        const cg_matrix_t *projection,
                         const float *viewport,
                         float *poly)
 {
@@ -141,15 +141,15 @@ rect_to_screen_polygon (RutInputShapeRectange *rectangle,
 static bool
 _rut_input_region_pick (RutObject *inputable,
                         RutObject *camera,
-                        const CoglMatrix *graphable_modelview,
+                        const cg_matrix_t *graphable_modelview,
                         float x,
                         float y)
 {
   RutInputRegion *region = inputable;
-  CoglMatrix matrix;
-  const CoglMatrix *modelview = NULL;
+  cg_matrix_t matrix;
+  const cg_matrix_t *modelview = NULL;
   float poly[16];
-  const CoglMatrix *view = rut_camera_get_view_transform (camera);
+  const cg_matrix_t *view = rut_camera_get_view_transform (camera);
 
   /* XXX: if we get rid of hud mode we can also avoid needing
    * a pointer to a RutContext */
@@ -177,7 +177,7 @@ _rut_input_region_pick (RutObject *inputable,
       {
         if (!region->hud_mode)
           {
-            const CoglMatrix *projection =
+            const cg_matrix_t *projection =
               rut_camera_get_projection (camera);
             const float *viewport =
               rut_camera_get_viewport (camera);
@@ -220,7 +220,7 @@ _rut_input_region_pick (RutObject *inputable,
          * center point is transformed but the raius of the circle stays
          * constant. */
 
-        cogl_matrix_transform_point (modelview,
+        cg_matrix_transform_point (modelview,
                                      &center_x, &center_y, &z, &w);
 
         a = x - center_x;

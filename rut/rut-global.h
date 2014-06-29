@@ -37,7 +37,7 @@
 
 G_BEGIN_DECLS
 
-extern CoglContext *rut_cogl_context;
+extern cg_context_t *rut_cg_context;
 
 G_END_DECLS
 

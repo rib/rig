@@ -48,11 +48,11 @@ RigImageSource *
 rig_image_source_new (RigEngine *engine,
                       RigAsset *asset);
 
-CoglTexture *
+cg_texture_t *
 rig_image_source_get_texture (RigImageSource *source);
 
 #ifdef USE_GSTREAMER
-CoglGstVideoSink *
+CgGstVideoSink *
 rig_image_source_get_sink (RigImageSource *source);
 #endif
 
@@ -87,11 +87,11 @@ rig_image_source_set_default_sample (RigImageSource *source,
 
 void
 rig_image_source_setup_pipeline (RigImageSource *source,
-                                 CoglPipeline *pipeline);
+                                 cg_pipeline_t *pipeline);
 
 void
 rig_image_source_attach_frame (RigImageSource *source,
-                               CoglPipeline *pipeline);
+                               cg_pipeline_t *pipeline);
 
 void
 _rig_init_image_source_wrappers_cache (RigEngine *engine);

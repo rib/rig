@@ -66,17 +66,17 @@ struct _RutButton
   float width;
   float height;
 
-  CoglTexture *normal_texture;
-  CoglTexture *hover_texture;
-  CoglTexture *active_texture;
-  CoglTexture *disabled_texture;
+  cg_texture_t *normal_texture;
+  cg_texture_t *hover_texture;
+  cg_texture_t *active_texture;
+  cg_texture_t *disabled_texture;
 
   RutNineSlice *background_normal;
   RutNineSlice *background_hover;
   RutNineSlice *background_active;
   RutNineSlice *background_disabled;
 
-  CoglColor text_color;
+  cg_color_t text_color;
 
   RutInputRegion *input_region;
 
@@ -126,25 +126,25 @@ _rut_button_free (void *object)
 
   if (button->normal_texture)
     {
-      cogl_object_unref (button->normal_texture);
+      cg_object_unref (button->normal_texture);
       button->normal_texture = NULL;
     }
 
   if (button->hover_texture)
     {
-      cogl_object_unref (button->hover_texture);
+      cg_object_unref (button->hover_texture);
       button->hover_texture = NULL;
     }
 
   if (button->active_texture)
     {
-      cogl_object_unref (button->active_texture);
+      cg_object_unref (button->active_texture);
       button->active_texture = NULL;
     }
 
   if (button->disabled_texture)
     {
-      cogl_object_unref (button->disabled_texture);
+      cg_object_unref (button->disabled_texture);
       button->disabled_texture = NULL;
     }
 
@@ -287,8 +287,8 @@ typedef struct _ButtonGrabState
 {
   RutObject *camera;
   RutButton *button;
-  CoglMatrix transform;
-  CoglMatrix inverse_transform;
+  cg_matrix_t transform;
+  cg_matrix_t inverse_transform;
 } ButtonGrabState;
 
 static RutInputEventStatus
@@ -357,14 +357,14 @@ _rut_button_input_cb (RutInputRegion *region,
     {
       RutShell *shell = button->ctx->shell;
       ButtonGrabState *state = c_slice_new (ButtonGrabState);
-      const CoglMatrix *view;
+      const cg_matrix_t *view;
 
       state->button = button;
       state->camera = rut_input_event_get_camera (event);
       view = rut_camera_get_view_transform (state->camera);
       state->transform = *view;
       rut_graphable_apply_transform (button, &state->transform);
-      if (!cogl_matrix_get_inverse (&state->transform,
+      if (!cg_matrix_get_inverse (&state->transform,
                                     &state->inverse_transform))
         {
           c_warning ("Failed to calculate inverse of button transform\n");
@@ -525,7 +525,7 @@ rut_button_new (RutContext *ctx,
   button->width = text_width + BUTTON_HPAD;
   button->height = text_height + BUTTON_VPAD;
 
-  cogl_color_init_from_4f (&button->text_color, 0, 0, 0, 1);
+  cg_color_init_from_4f (&button->text_color, 0, 0, 0, 1);
 
   button->input_region =
     rut_input_region_new_rectangle (0, 0, button->width, button->height,

@@ -48,7 +48,7 @@ struct _RutRectangle
   RutGraphableProps graphable;
   RutPaintableProps paintable;
 
-  CoglPipeline *pipeline;
+  cg_pipeline_t *pipeline;
 
 };
 
@@ -57,7 +57,7 @@ _rut_rectangle_free (void *object)
 {
   RutRectangle *rectangle = object;
 
-  cogl_object_unref (rectangle->pipeline);
+  cg_object_unref (rectangle->pipeline);
 
   rut_graphable_destroy (rectangle);
 
@@ -71,7 +71,7 @@ _rut_rectangle_paint (RutObject *object,
   RutRectangle *rectangle = object;
   RutObject *camera = paint_ctx->camera;
 
-  cogl_framebuffer_draw_rectangle (rut_camera_get_framebuffer (camera),
+  cg_framebuffer_draw_rectangle (rut_camera_get_framebuffer (camera),
                                    rectangle->pipeline,
                                    0, 0,
                                    rectangle->width,
@@ -142,8 +142,8 @@ rut_rectangle_new4f (RutContext *ctx,
   rectangle->width = width;
   rectangle->height = height;
 
-  rectangle->pipeline = cogl_pipeline_new (ctx->cogl_context);
-  cogl_pipeline_set_color4f (rectangle->pipeline,
+  rectangle->pipeline = cg_pipeline_new (ctx->cg_context);
+  cg_pipeline_set_color4f (rectangle->pipeline,
                              red, green, blue, alpha);
 
   return rectangle;

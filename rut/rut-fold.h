@@ -84,10 +84,10 @@ void
 rut_fold_set_folded (RutFold *fold, bool folded);
 
 void
-rut_fold_set_folder_color (RutFold *fold, const CoglColor *color);
+rut_fold_set_folder_color (RutFold *fold, const cg_color_t *color);
 
 void
-rut_fold_set_label_color (RutFold *fold, const CoglColor *color);
+rut_fold_set_label_color (RutFold *fold, const cg_color_t *color);
 
 void
 rut_fold_set_label (RutObject *object, const char *label);

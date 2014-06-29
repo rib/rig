@@ -69,7 +69,7 @@ struct _RigModel
   float min_z;
   float max_z;
 
-  CoglPrimitive *primitive;
+  cg_primitive_t *primitive;
 
   bool builtin_normals;
   bool builtin_tex_coords;
@@ -80,7 +80,7 @@ struct _RigModel
   RigModelPrivate *priv;
   RutMesh *patched_mesh;
   RutMesh *fin_mesh;
-  CoglPrimitive *fin_primitive;
+  cg_primitive_t *fin_primitive;
   float default_hair_length;
 };
 
@@ -114,10 +114,10 @@ rig_model_get_mesh (RutObject *self);
 RigAsset *
 rig_model_get_asset (RigModel *model);
 
-CoglPrimitive *
+cg_primitive_t *
 rig_model_get_primitive (RutObject *object);
 
-CoglPrimitive *
+cg_primitive_t *
 rig_model_get_fin_primitive (RutObject *object);
 
 float

@@ -96,7 +96,7 @@ typedef struct
 {
   RutList link;
 
-  CoglOnscreen *onscreen;
+  cg_onscreen_t *onscreen;
 
   RutCursor current_cursor;
   /* This is used to record whether anything set a cursor while
@@ -212,7 +212,7 @@ rut_input_event_get_type (RutInputEvent *event)
   return event->type;
 }
 
-CoglOnscreen *
+cg_onscreen_t *
 rut_input_event_get_onscreen (RutInputEvent *event)
 {
   RutShell *shell = event->shell;
@@ -263,7 +263,7 @@ rut_input_event_get_onscreen (RutInputEvent *event)
     rut_list_for_each (shell_onscreen, &shell->onscreens, link)
       {
         SDL_Window *sdl_window =
-          cogl_sdl_onscreen_get_window (shell_onscreen->onscreen);
+          cg_sdl_onscreen_get_window (shell_onscreen->onscreen);
 
         if (SDL_GetWindowID (sdl_window) == window_id)
           return shell_onscreen->onscreen;
@@ -607,7 +607,7 @@ rut_motion_event_get_transformed_xy (RutInputEvent *event,
                                      float *x,
                                      float *y)
 {
-  const CoglMatrix *transform = event->input_transform;
+  const cg_matrix_t *transform = event->input_transform;
   RutShell *shell = event->shell;
 
   if (shell->headless)
@@ -688,13 +688,13 @@ rut_motion_event_unproject (RutInputEvent *event,
                             float *x,
                             float *y)
 {
-  CoglMatrix transform;
-  CoglMatrix inverse_transform;
+  cg_matrix_t transform;
+  cg_matrix_t inverse_transform;
   RutObject *camera = rut_input_event_get_camera (event);
 
   rut_graphable_get_modelview (graphable, camera, &transform);
 
-  if (!cogl_matrix_get_inverse (&transform, &inverse_transform))
+  if (!cg_matrix_get_inverse (&transform, &inverse_transform))
     return false;
 
   *x = rut_motion_event_get_x (event);
@@ -767,8 +767,8 @@ rect_to_screen_polygon (float x0,
                         float y0,
                         float x1,
                         float y1,
-                        const CoglMatrix *modelview,
-                        const CoglMatrix *projection,
+                        const cg_matrix_t *modelview,
+                        const cg_matrix_t *projection,
                         const float *viewport,
                         float *poly)
 {
@@ -800,11 +800,11 @@ camera_pre_pick_region_cb (RutObject *object,
     {
       RutUIViewport *ui_viewport = object;
       RutObject *camera = state->camera;
-      const CoglMatrix *view = rut_camera_get_view_transform (camera);
-      const CoglMatrix *projection = rut_camera_get_projection (camera);
+      const cg_matrix_t *view = rut_camera_get_view_transform (camera);
+      const cg_matrix_t *projection = rut_camera_get_projection (camera);
       const float *viewport = rut_camera_get_viewport (camera);
       RutObject *parent = rut_graphable_get_parent (object);
-      CoglMatrix transform;
+      cg_matrix_t transform;
       float poly[16];
 
       transform = *view;
@@ -920,7 +920,7 @@ cancel_current_drop_offer_taker (RutShell *shell)
 
 static RutShellOnscreen *
 get_shell_onscreen (RutShell *shell,
-                    CoglOnscreen *onscreen)
+                    cg_onscreen_t *onscreen)
 {
   RutShellOnscreen *shell_onscreen;
 
@@ -939,7 +939,7 @@ rut_shell_dispatch_input_event (RutShell *shell, RutInputEvent *event)
   RutClosure *c, *tmp;
   RutObject *target;
   RutShellGrab *grab;
-  CoglOnscreen *onscreen = NULL;
+  cg_onscreen_t *onscreen = NULL;
   RutShellOnscreen *shell_onscreen = NULL;
 
   onscreen = rut_input_event_get_onscreen (event);
@@ -1427,7 +1427,7 @@ rut_shell_ungrab_key_focus (RutShell *shell)
 
 void
 rut_shell_set_cursor (RutShell *shell,
-                      CoglOnscreen *onscreen,
+                      cg_onscreen_t *onscreen,
                       RutCursor cursor)
 {
   RutShellOnscreen *shell_onscreen;
@@ -1481,11 +1481,11 @@ rut_shell_set_cursor (RutShell *shell,
 
 void
 rut_shell_set_title (RutShell *shell,
-                     CoglOnscreen *onscreen,
+                     cg_onscreen_t *onscreen,
                      const char *title)
 {
 #if defined(USE_SDL)
-  SDL_Window *window = cogl_sdl_onscreen_get_window (onscreen);
+  SDL_Window *window = cg_sdl_onscreen_get_window (onscreen);
   SDL_SetWindowTitle (window, title);
 #endif /* USE_SDL */
 }
@@ -1952,13 +1952,13 @@ destroy_onscreen_cb (void *user_data)
 
 void
 rut_shell_add_onscreen (RutShell *shell,
-                        CoglOnscreen *onscreen)
+                        cg_onscreen_t *onscreen)
 {
   RutShellOnscreen *shell_onscreen = c_slice_new0 (RutShellOnscreen);
-  static CoglUserDataKey data_key;
+  static cg_user_data_key_t data_key;
 
   shell_onscreen->onscreen = onscreen;
-  cogl_object_set_user_data (COGL_OBJECT (onscreen),
+  cg_object_set_user_data (CG_OBJECT (onscreen),
                              &data_key,
                              shell_onscreen,
                              destroy_onscreen_cb);
@@ -1967,7 +1967,7 @@ rut_shell_add_onscreen (RutShell *shell,
 #ifdef USE_SDL
   {
     SDL_Window *sdl_window =
-      cogl_sdl_onscreen_get_window (shell_onscreen->onscreen);
+      cg_sdl_onscreen_get_window (shell_onscreen->onscreen);
 
     SDL_VERSION (&shell_onscreen->sdl_info.version);
     SDL_GetWindowWMInfo(sdl_window, &shell_onscreen->sdl_info);

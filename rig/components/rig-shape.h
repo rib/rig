@@ -39,7 +39,7 @@ struct _RigShapeModel
   RutObjectBase _base;
 
   /* TODO: Allow this to be an asset */
-  CoglTexture *shape_texture;
+  cg_texture_t *shape_texture;
 
   RutMesh *mesh;
 
@@ -94,7 +94,7 @@ rig_shape_new (RutContext *ctx,
                int width,
                int height);
 
-CoglPrimitive *
+cg_primitive_t *
 rig_shape_get_primitive (RutObject *object);
 
 /* TODO: Perhaps add a RUT_TRAIT_ID_GEOMETRY_COMPONENTABLE
@@ -102,7 +102,7 @@ rig_shape_get_primitive (RutObject *object);
  * generalize rig_diamond_apply_mask() and
  * rig_shape_get_shape_texture()
  */
-CoglTexture *
+cg_texture_t *
 rig_shape_get_shape_texture (RigShape *shape);
 
 RutMesh *

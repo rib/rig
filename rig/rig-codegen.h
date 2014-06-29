@@ -58,14 +58,14 @@ typedef struct _GSList GSList;
 
 typedef int bool;
 
-typedef struct _CoglColor
+typedef struct _cg_color_t
 {
   float r, g, b, a;
-} CoglColor;
+} cg_color_t;
 
-typedef struct _CoglQuaternion
+typedef struct _cg_quaternion_t
 {
   float w, x, y, z;
-} CoglQuaternion;
+} cg_quaternion_t;
 
 #endif /* __RIG_CODEGEN_H__ */

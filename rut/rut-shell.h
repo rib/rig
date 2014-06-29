@@ -129,7 +129,7 @@ typedef struct _RutInputEvent
   RutInputEventType type;
   RutShell *shell;
   RutObject *camera;
-  const CoglMatrix *input_transform;
+  const cg_matrix_t *input_transform;
 
   void *native;
 
@@ -253,8 +253,8 @@ struct _RutShell
   int event_pipe_write;
   bool wake_queued;
 
-  c_array_t *cogl_poll_fds;
-  int cogl_poll_fds_age;
+  c_array_t *cg_poll_fds;
+  int cg_poll_fds_age;
 #endif
 
   int poll_sources_age;
@@ -274,9 +274,9 @@ struct _RutShell
 #ifdef USE_UV
   uv_loop_t *uv_loop;
   uv_idle_t uv_idle;
-  uv_prepare_t cogl_prepare;
-  uv_timer_t cogl_timer;
-  uv_check_t cogl_check;
+  uv_prepare_t cg_prepare;
+  uv_timer_t cg_timer;
+  uv_check_t cg_check;
 #ifdef USE_GLIB
   GMainContext *glib_main_ctx;
   uv_prepare_t glib_uv_prepare;
@@ -368,7 +368,7 @@ typedef struct _RutInputTransformAny
 typedef struct _RutInputTransformMatrix
 {
   RutInputTransformType type;
-  CoglMatrix *matrix;
+  cg_matrix_t *matrix;
 } RutInputTransformMatrix;
 
 typedef struct _RutInputTransformGraphable
@@ -395,7 +395,7 @@ bool
 rut_shell_get_headless (RutShell *shell);
 
 /* XXX: Basically just a hack for now to effectively relate input events to
- * a CoglFramebuffer and so we have a way to consistently associate a
+ * a cg_framebuffer_t and so we have a way to consistently associate a
  * camera with all input events.
  *
  * The camera should provide an orthographic projection into input device
@@ -606,7 +606,7 @@ rut_input_event_get_type (RutInputEvent *event);
  * Return value: the onscreen window that this event was generated for
  *   or %NULL if the event does not correspond to a window.
  */
-CoglOnscreen *
+cg_onscreen_t *
 rut_input_event_get_onscreen (RutInputEvent *event);
 
 RutKeyEventAction
@@ -759,14 +759,14 @@ rut_shell_remove_pre_paint_callback (RutShell *shell,
 /**
  * rut_shell_add_onscreen:
  * @shell: The #RutShell
- * @onscreen: A #CoglOnscreen
+ * @onscreen: A #cg_onscreen_t
  *
  * This should be called for everything onscreen that is going to be
  * used by the shell so that Rut can keep track of them.
  */
 void
 rut_shell_add_onscreen (RutShell *shell,
-                        CoglOnscreen *onscreen);
+                        cg_onscreen_t *onscreen);
 
 /**
  * rut_shell_set_cursor:
@@ -783,12 +783,12 @@ rut_shell_add_onscreen (RutShell *shell,
  */
 void
 rut_shell_set_cursor (RutShell *shell,
-                      CoglOnscreen *onscreen,
+                      cg_onscreen_t *onscreen,
                       RutCursor cursor);
 
 void
 rut_shell_set_title (RutShell *shell,
-                     CoglOnscreen *onscreen,
+                     cg_onscreen_t *onscreen,
                      const char *title);
 
 /**

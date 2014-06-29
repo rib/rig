@@ -283,12 +283,12 @@ rut_ui_viewport_add_preferred_size_callback (void *object,
 static bool
 _rut_ui_viewport_pick (RutObject *inputable,
                        RutObject *camera,
-                       const CoglMatrix *modelview,
+                       const cg_matrix_t *modelview,
                        float x,
                        float y)
 {
   RutUIViewport *ui_viewport = inputable;
-  CoglMatrix matrix;
+  cg_matrix_t matrix;
 
   if (!modelview)
     {
@@ -948,7 +948,7 @@ rut_ui_viewport_get_doc_scale_y (RutUIViewport *ui_viewport)
   return ui_viewport->doc_scale_y;
 }
 
-const CoglMatrix *
+const cg_matrix_t *
 rut_ui_viewport_get_doc_matrix (RutUIViewport *ui_viewport)
 {
   return rut_transform_get_matrix (ui_viewport->doc_transform);
@@ -1047,7 +1047,7 @@ rut_ui_viewport_set_sync_widget (RutObject *obj,
 
 void
 rut_ui_viewport_set_scroll_bar_color (RutUIViewport *ui_viewport,
-                                      const CoglColor *color)
+                                      const cg_color_t *color)
 {
   rut_scroll_bar_set_color (ui_viewport->scroll_bar_x, color);
   rut_scroll_bar_set_color (ui_viewport->scroll_bar_y, color);

@@ -133,7 +133,7 @@ rig_asset_get_path (RigAsset *asset);
 RutContext *
 rig_asset_get_context (RigAsset *asset);
 
-CoglTexture *
+cg_texture_t *
 rig_asset_get_texture (RigAsset *asset);
 
 RutMesh *

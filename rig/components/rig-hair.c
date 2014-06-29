@@ -285,12 +285,12 @@ calculate_updated_particle (HairParticle *updated_particle,
   return true;
 }
 
-static CoglTexture *
+static cg_texture_t *
 _rig_hair_get_fin_texture (RigHair *hair)
 {
-  CoglOffscreen *offscreen;
-  CoglPipeline *pipeline;
-  CoglTexture *fin_texture;
+  cg_offscreen_t *offscreen;
+  cg_pipeline_t *pipeline;
+  cg_texture_t *fin_texture;
   float current_y = -1;
   float geometric_y = -0.995;
   float geo_y_iter = 0.01;
@@ -298,15 +298,15 @@ _rig_hair_get_fin_texture (RigHair *hair)
   float y_iter = 0.01;
   int i;
 
-  fin_texture = (CoglTexture*)
-    cogl_texture_2d_new_with_size (hair->ctx->cogl_context, 1000, 1000);
+  fin_texture = (cg_texture_t*)
+    cg_texture_2d_new_with_size (hair->ctx->cg_context, 1000, 1000);
 
-  pipeline = cogl_pipeline_new (hair->ctx->cogl_context);
+  pipeline = cg_pipeline_new (hair->ctx->cg_context);
 
-  offscreen = cogl_offscreen_new_with_texture (fin_texture);
+  offscreen = cg_offscreen_new_with_texture (fin_texture);
 
-  cogl_framebuffer_clear4f (offscreen,
-                            COGL_BUFFER_BIT_COLOR, 0, 0, 0, 0);
+  cg_framebuffer_clear4f (offscreen,
+                            CG_BUFFER_BIT_COLOR, 0, 0, 0, 0);
 
   while (current_y <= 1.f)
     {
@@ -324,13 +324,13 @@ _rig_hair_get_fin_texture (RigHair *hair)
               float x = _get_interpolated_value (-1, 1, 0, 1,
                                                  updated_particle.position[0]);
 
-              cogl_pipeline_set_color4f (pipeline,
+              cg_pipeline_set_color4f (pipeline,
                                          updated_particle.color[0],
                                          updated_particle.color[1],
                                          updated_particle.color[2],
                                          updated_particle.color[3]);
 
-              cogl_framebuffer_draw_rectangle (
+              cg_framebuffer_draw_rectangle (
                 offscreen, pipeline,
                 x - updated_particle.diameter / 2,
                 geometric_y - geo_y_iter,
@@ -343,37 +343,37 @@ _rig_hair_get_fin_texture (RigHair *hair)
       geometric_y += geo_y_iter;
     }
 
-  cogl_object_unref (offscreen);
-  cogl_object_unref (pipeline);
+  cg_object_unref (offscreen);
+  cg_object_unref (pipeline);
 
   return fin_texture;
 }
 
 static void
 _rig_hair_draw_shell_texture (RigHair *hair,
-                              CoglTexture *shell_texture,
+                              cg_texture_t *shell_texture,
                               int position)
 {
-  CoglOffscreen *offscreen;
-  CoglPipeline *pipeline;
+  cg_offscreen_t *offscreen;
+  cg_pipeline_t *pipeline;
   int i;
 
-  pipeline = cogl_pipeline_new (hair->ctx->cogl_context);
+  pipeline = cg_pipeline_new (hair->ctx->cg_context);
 
-  offscreen = cogl_offscreen_new_with_texture (shell_texture);
+  offscreen = cg_offscreen_new_with_texture (shell_texture);
 
-  cogl_framebuffer_clear4f (offscreen,
-                            COGL_BUFFER_BIT_COLOR, 0, 0, 0, 0);
+  cg_framebuffer_clear4f (offscreen,
+                            CG_BUFFER_BIT_COLOR, 0, 0, 0, 0);
 
   if (position == 0)
     {
-      cogl_pipeline_set_color4f (pipeline, 0.75, 0.75, 0.75, 1.0);
-      cogl_framebuffer_draw_rectangle (offscreen, pipeline,
+      cg_pipeline_set_color4f (pipeline, 0.75, 0.75, 0.75, 1.0);
+      cg_framebuffer_draw_rectangle (offscreen, pipeline,
                                        -1, -1, 1, 1);
       return;
     }
 
-  cogl_pipeline_set_layer_texture (pipeline, 0, hair->circle);
+  cg_pipeline_set_layer_texture (pipeline, 0, hair->circle);
 
   for (i = 0; i < hair->density; i++)
     {
@@ -389,13 +389,13 @@ _rig_hair_draw_shell_texture (RigHair *hair,
                                       particle,
                                       current_y))
         {
-          cogl_pipeline_set_color4f (pipeline,
+          cg_pipeline_set_color4f (pipeline,
                                      updated_particle.color[0],
                                      updated_particle.color[1],
                                      updated_particle.color[2],
                                      updated_particle.color[3]);
 
-          cogl_framebuffer_draw_rectangle (
+          cg_framebuffer_draw_rectangle (
             offscreen, pipeline,
             updated_particle.position[0] - (updated_particle.diameter / 2.0),
             updated_particle.position[2] - (updated_particle.diameter / 2.0),
@@ -404,8 +404,8 @@ _rig_hair_draw_shell_texture (RigHair *hair,
         }
     }
 
-  cogl_object_unref (offscreen);
-  cogl_object_unref (pipeline);
+  cg_object_unref (offscreen);
+  cg_object_unref (pipeline);
 }
 
 static void
@@ -438,18 +438,18 @@ _rig_hair_generate_shell_textures (RigHair *hair)
 
       for (i = num_textures; i < hair->n_shells; i++)
         {
-          CoglTexture **textures = (void *)hair->shell_textures->data;
-          textures[i] = (CoglTexture *)
-            cogl_texture_2d_new_with_size (hair->ctx->cogl_context, 256, 256);
+          cg_texture_t **textures = (void *)hair->shell_textures->data;
+          textures[i] = (cg_texture_t *)
+            cg_texture_2d_new_with_size (hair->ctx->cg_context, 256, 256);
         }
     }
   else if (hair->n_shells < num_textures)
     {
       for (i = hair->n_shells; i < num_textures; i++)
         {
-          CoglTexture *texture =
-            c_array_index (hair->shell_textures, CoglTexture *, i);
-          cogl_object_unref (texture);
+          cg_texture_t *texture =
+            c_array_index (hair->shell_textures, cg_texture_t *, i);
+          cg_object_unref (texture);
         }
 
       c_array_set_size (hair->shell_textures, hair->n_shells);
@@ -457,8 +457,8 @@ _rig_hair_generate_shell_textures (RigHair *hair)
 
   for (i = 0; i < hair->n_shells; i++)
     {
-      CoglTexture *texture =
-        c_array_index (hair->shell_textures, CoglTexture *, i);
+      cg_texture_t *texture =
+        c_array_index (hair->shell_textures, cg_texture_t *, i);
       _rig_hair_draw_shell_texture (hair, texture, i);
     }
 
@@ -501,8 +501,8 @@ _rig_hair_free (void *object)
 
   for (i = 0; i < hair->n_shells; i++)
     {
-      CoglTexture *texture = c_array_index (hair->shell_textures, CoglTexture *, i);
-      cogl_object_unref (texture);
+      cg_texture_t *texture = c_array_index (hair->shell_textures, cg_texture_t *, i);
+      cg_object_unref (texture);
     }
   c_array_free (hair->shell_textures, true);
 
@@ -511,8 +511,8 @@ _rig_hair_free (void *object)
   rut_introspectable_destroy (hair);
 
   if (hair->fin_texture)
-    cogl_object_unref (hair->fin_texture);
-  cogl_object_unref (hair->circle);
+    cg_object_unref (hair->fin_texture);
+  cg_object_unref (hair->circle);
   c_free (hair->shell_positions);
   rut_object_free (RigHair, hair);
 }
@@ -574,15 +574,15 @@ rig_hair_new (RutContext *ctx)
   hair->n_textures = 0;
   hair->density = 20000;
   hair->thickness = 0.05;
-  hair->shell_textures = c_array_new (false, false, sizeof (CoglTexture *));
+  hair->shell_textures = c_array_new (false, false, sizeof (cg_texture_t *));
   hair->fin_texture = NULL;
   hair->particles = c_array_new (false, false, sizeof (HairParticle));
   hair->shell_positions = NULL;
 
   if (!ctx->headless)
     {
-      hair->circle = (CoglTexture*)
-        cogl_texture_2d_new_from_file (hair->ctx->cogl_context,
+      hair->circle = (cg_texture_t*)
+        cg_texture_2d_new_from_file (hair->ctx->cg_context,
                                        rut_find_data_file ("circle1.png"),
                                        NULL);
     }
@@ -609,7 +609,7 @@ rig_hair_update_state (RigHair *hair)
   if (hair->dirty_fin_texture)
     {
       if (hair->fin_texture)
-        cogl_object_unref (hair->fin_texture);
+        cg_object_unref (hair->fin_texture);
       hair->fin_texture = _rig_hair_get_fin_texture (hair);
       hair->dirty_fin_texture = false;
     }
@@ -761,7 +761,7 @@ rig_hair_get_shell_position (RutObject *obj,
 
 void
 rig_hair_set_uniform_location (RutObject *obj,
-                               CoglPipeline *pln,
+                               cg_pipeline_t *pln,
                                int uniform)
 {
   RigHair *hair = obj;
@@ -775,14 +775,14 @@ rig_hair_set_uniform_location (RutObject *obj,
   else if (uniform == RIG_HAIR_LENGTH)
     uniform_name = "length";
 
-  location = cogl_pipeline_get_uniform_location (pln, uniform_name);
+  location = cg_pipeline_get_uniform_location (pln, uniform_name);
 
   hair->uniform_locations[uniform] = location;
 }
 
 void
 rig_hair_set_uniform_float_value (RutObject *obj,
-                                  CoglPipeline *pln,
+                                  cg_pipeline_t *pln,
                                   int uniform,
                                   float value)
 {
@@ -791,6 +791,6 @@ rig_hair_set_uniform_float_value (RutObject *obj,
 
   location = hair->uniform_locations[uniform];
 
-  cogl_pipeline_set_uniform_1f (pln, location, value);
+  cg_pipeline_set_uniform_1f (pln, location, value);
 }
 

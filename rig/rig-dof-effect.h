@@ -48,15 +48,15 @@ rig_dof_effect_set_framebuffer_size (RigDepthOfField *dof,
                                      int width,
                                      int height);
 
-CoglFramebuffer *
+cg_framebuffer_t *
 rig_dof_effect_get_depth_pass_fb (RigDepthOfField *dof);
 
-CoglFramebuffer *
+cg_framebuffer_t *
 rig_dof_effect_get_color_pass_fb (RigDepthOfField *dof);
 
 void
 rig_dof_effect_draw_rectangle (RigDepthOfField *dof,
-                               CoglFramebuffer *fb,
+                               cg_framebuffer_t *fb,
                                float x1,
                                float y1,
                                float x2,

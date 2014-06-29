@@ -240,8 +240,8 @@ rut_slider_new (RutContext *ctx,
 {
   RutSlider *slider =
     rut_object_alloc0 (RutSlider, &rut_slider_type, _rut_slider_init_type);
-  CoglTexture *bg_texture;
-  CoglTexture *handle_texture;
+  cg_texture_t *bg_texture;
+  cg_texture_t *handle_texture;
   GError *error = NULL;
   //PangoRectangle label_size;
   float width;

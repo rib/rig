@@ -66,7 +66,7 @@ struct _RutImage
   RutIntrospectableProps introspectable;
   RutProperty properties[RUT_IMAGE_N_PROPS];
 
-  CoglPipeline *pipeline;
+  cg_pipeline_t *pipeline;
 
 
   RutImageDrawMode draw_mode;
@@ -129,7 +129,7 @@ _rut_image_free (void *object)
 
   rut_graphable_destroy (image);
 
-  cogl_object_unref (image->pipeline);
+  cg_object_unref (image->pipeline);
 
   rut_object_free (RutImage, image);
 }
@@ -139,12 +139,12 @@ _rut_image_paint (RutObject *object,
                   RutPaintContext *paint_ctx)
 {
   RutImage *image = object;
-  CoglFramebuffer *fb = rut_camera_get_framebuffer (paint_ctx->camera);
+  cg_framebuffer_t *fb = rut_camera_get_framebuffer (paint_ctx->camera);
 
   switch (image->draw_mode)
     {
     case RUT_IMAGE_DRAW_MODE_1_TO_1:
-      cogl_framebuffer_draw_rectangle (fb,
+      cg_framebuffer_draw_rectangle (fb,
                                        image->pipeline,
                                        0.0f, 0.0f,
                                        image->tex_width,
@@ -152,7 +152,7 @@ _rut_image_paint (RutObject *object,
       break;
 
     case RUT_IMAGE_DRAW_MODE_SCALE:
-      cogl_framebuffer_draw_rectangle (fb,
+      cg_framebuffer_draw_rectangle (fb,
                                        image->pipeline,
                                        0.0f, 0.0f,
                                        image->width,
@@ -160,7 +160,7 @@ _rut_image_paint (RutObject *object,
       break;
 
     case RUT_IMAGE_DRAW_MODE_REPEAT:
-      cogl_framebuffer_draw_textured_rectangle (fb,
+      cg_framebuffer_draw_textured_rectangle (fb,
                                                 image->pipeline,
                                                 0.0f, 0.0f,
                                                 image->width,
@@ -173,7 +173,7 @@ _rut_image_paint (RutObject *object,
       break;
 
     case RUT_IMAGE_DRAW_MODE_SCALE_WITH_ASPECT_RATIO:
-      cogl_framebuffer_draw_rectangle (fb,
+      cg_framebuffer_draw_rectangle (fb,
                                        image->pipeline,
                                        image->fit_x1,
                                        image->fit_y1,
@@ -416,7 +416,7 @@ _rut_image_init_type (void)
 
 RutImage *
 rut_image_new (RutContext *ctx,
-               CoglTexture *texture)
+               cg_texture_t *texture)
 {
   RutImage *image = rut_object_alloc0 (RutImage,
                                        &rut_image_type,
@@ -426,13 +426,13 @@ rut_image_new (RutContext *ctx,
 
   rut_list_init (&image->preferred_size_cb_list);
 
-  image->pipeline = cogl_pipeline_new (ctx->cogl_context);
-  cogl_pipeline_set_layer_texture (image->pipeline,
+  image->pipeline = cg_pipeline_new (ctx->cg_context);
+  cg_pipeline_set_layer_texture (image->pipeline,
                                    0, /* layer_num */
                                    texture);
 
-  image->tex_width = cogl_texture_get_width (texture);
-  image->tex_height = cogl_texture_get_height (texture);
+  image->tex_width = cg_texture_get_width (texture);
+  image->tex_height = cg_texture_get_height (texture);
 
   rut_paintable_init (image);
   rut_graphable_init (image);
@@ -462,8 +462,8 @@ rut_image_set_draw_mode (RutImage *image,
 {
   if (draw_mode != image->draw_mode)
     {
-      CoglPipelineWrapMode wrap_mode;
-      CoglPipelineFilter min_filter, mag_filter;
+      cg_pipeline_wrap_mode_t wrap_mode;
+      cg_pipeline_filter_t min_filter, mag_filter;
 
       if (draw_mode == RUT_IMAGE_DRAW_MODE_1_TO_1 ||
           image->draw_mode == RUT_IMAGE_DRAW_MODE_1_TO_1)
@@ -475,23 +475,23 @@ rut_image_set_draw_mode (RutImage *image,
         {
         case RUT_IMAGE_DRAW_MODE_1_TO_1:
         case RUT_IMAGE_DRAW_MODE_REPEAT:
-          wrap_mode = COGL_PIPELINE_WRAP_MODE_REPEAT;
-          min_filter = COGL_PIPELINE_FILTER_NEAREST;
-          mag_filter = COGL_PIPELINE_FILTER_NEAREST;
+          wrap_mode = CG_PIPELINE_WRAP_MODE_REPEAT;
+          min_filter = CG_PIPELINE_FILTER_NEAREST;
+          mag_filter = CG_PIPELINE_FILTER_NEAREST;
           break;
 
         case RUT_IMAGE_DRAW_MODE_SCALE:
         case RUT_IMAGE_DRAW_MODE_SCALE_WITH_ASPECT_RATIO:
-          wrap_mode = COGL_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE;
-          min_filter = COGL_PIPELINE_FILTER_LINEAR_MIPMAP_NEAREST;
-          mag_filter = COGL_PIPELINE_FILTER_LINEAR;
+          wrap_mode = CG_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE;
+          min_filter = CG_PIPELINE_FILTER_LINEAR_MIPMAP_NEAREST;
+          mag_filter = CG_PIPELINE_FILTER_LINEAR;
           break;
         }
 
-      cogl_pipeline_set_layer_wrap_mode (image->pipeline,
+      cg_pipeline_set_layer_wrap_mode (image->pipeline,
                                          0, /* layer_num */
                                          wrap_mode);
-      cogl_pipeline_set_layer_filters (image->pipeline,
+      cg_pipeline_set_layer_filters (image->pipeline,
                                        0, /* layer_num */
                                        min_filter,
                                        mag_filter);

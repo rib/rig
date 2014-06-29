@@ -61,8 +61,8 @@ struct _RutNineSlice
    * a nine-slice as a traditional widget. When using a nine-slice as
    * a component then this will be NULL and the texture will be
    * defined by a material component. */
-  CoglTexture *texture;
-  CoglPipeline *pipeline;
+  cg_texture_t *texture;
+  cg_pipeline_t *pipeline;
 
   /* Since ::texture is optional so we track the width/height
    * separately */
@@ -151,7 +151,7 @@ typedef struct _VertexP2T2T2
 } VertexP2T2T2;
 
 static RutMesh *
-mesh_new_p2t2t2 (CoglVerticesMode mode,
+mesh_new_p2t2t2 (cg_vertices_mode_t mode,
                  int n_vertices,
                  VertexP2T2T2 *vertices)
 {
@@ -167,42 +167,42 @@ mesh_new_p2t2t2 (CoglVerticesMode mode,
           sizeof (_rut_nine_slice_indices_data));
 
   attributes[0] = rut_attribute_new (vertex_buffer,
-                                     "cogl_position_in",
+                                     "cg_position_in",
                                      sizeof (VertexP2T2T2),
                                      offsetof (VertexP2T2T2, x),
                                      2,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
 
   attributes[1] = rut_attribute_new (vertex_buffer,
-                                     "cogl_tex_coord0_in",
+                                     "cg_tex_coord0_in",
                                      sizeof (VertexP2T2T2),
                                      offsetof (VertexP2T2T2, s0),
                                      2,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
 
   attributes[2] = rut_attribute_new (vertex_buffer,
-                                     "cogl_tex_coord1_in",
+                                     "cg_tex_coord1_in",
                                      sizeof (VertexP2T2T2),
                                      offsetof (VertexP2T2T2, s1),
                                      2,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
 
   attributes[3] = rut_attribute_new (vertex_buffer,
-                                     "cogl_tex_coord4_in",
+                                     "cg_tex_coord4_in",
                                      sizeof (VertexP2T2T2),
                                      offsetof (VertexP2T2T2, s1),
                                      2,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
 
   attributes[4] = rut_attribute_new (vertex_buffer,
-                                     "cogl_tex_coord7_in",
+                                     "cg_tex_coord7_in",
                                      sizeof (VertexP2T2T2),
                                      offsetof (VertexP2T2T2, s1),
                                      2,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
 
   attributes[5] = rut_attribute_new (vertex_buffer,
-                                     "cogl_tex_coord11_in",
+                                     "cg_tex_coord11_in",
                                      sizeof (VertexP2T2T2),
                                      offsetof (VertexP2T2T2, s1),
                                      2,
@@ -210,7 +210,7 @@ mesh_new_p2t2t2 (CoglVerticesMode mode,
 
 
   attributes[6] = rut_attribute_new (vertex_buffer,
-                                     "cogl_normal_in",
+                                     "cg_normal_in",
                                      sizeof (VertexP2T2T2),
                                      offsetof (VertexP2T2T2, Nx),
                                      3,
@@ -225,7 +225,7 @@ mesh_new_p2t2t2 (CoglVerticesMode mode,
 
   mesh = rut_mesh_new (mode, n_vertices, attributes, 8);
   rut_mesh_set_indices (mesh,
-                        COGL_INDICES_TYPE_UNSIGNED_BYTE,
+                        CG_INDICES_TYPE_UNSIGNED_BYTE,
                         index_buffer,
                         sizeof (_rut_nine_slice_indices_data) /
                         sizeof (_rut_nine_slice_indices_data[0]));
@@ -322,7 +322,7 @@ create_mesh (RutNineSlice *nine_slice)
       vertices[i].Tz = 0;
     }
 
-  nine_slice->mesh = mesh_new_p2t2t2 (COGL_VERTICES_MODE_TRIANGLES,
+  nine_slice->mesh = mesh_new_p2t2t2 (CG_VERTICES_MODE_TRIANGLES,
                                       n_vertices,
                                       vertices);
 }
@@ -345,10 +345,10 @@ _rut_nine_slice_free (void *object)
   rut_closure_list_disconnect_all (&nine_slice->updated_cb_list);
 
   if (nine_slice->texture)
-    cogl_object_unref (nine_slice->texture);
+    cg_object_unref (nine_slice->texture);
 
   if (nine_slice->pipeline)
-    cogl_object_unref (nine_slice->pipeline);
+    cg_object_unref (nine_slice->pipeline);
 
   free_mesh (nine_slice);
 
@@ -365,7 +365,7 @@ _rut_nine_slice_paint (RutObject *object,
 {
   RutNineSlice *nine_slice = object;
   RutObject *camera = paint_ctx->camera;
-  CoglFramebuffer *fb = rut_camera_get_framebuffer (camera);
+  cg_framebuffer_t *fb = rut_camera_get_framebuffer (camera);
 
   float left = nine_slice->left;
   float right = nine_slice->right;
@@ -375,7 +375,7 @@ _rut_nine_slice_paint (RutObject *object,
   /* simple stretch */
   if (left == 0 && right == 0 && top == 0 && bottom == 0)
     {
-      cogl_framebuffer_draw_rectangle (fb,
+      cg_framebuffer_draw_rectangle (fb,
                                        nine_slice->pipeline,
                                        0, 0,
                                        nine_slice->width,
@@ -385,9 +385,9 @@ _rut_nine_slice_paint (RutObject *object,
     {
       float width = nine_slice->width;
       float height = nine_slice->height;
-      CoglTexture *texture = nine_slice->texture;
-      float tex_width = cogl_texture_get_width (texture);
-      float tex_height = cogl_texture_get_height (texture);
+      cg_texture_t *texture = nine_slice->texture;
+      float tex_width = cg_texture_get_width (texture);
+      float tex_height = cg_texture_get_height (texture);
 
       /* s0,t0,s1,t1 define the texture coordinates for the center
        * rectangle... */
@@ -465,7 +465,7 @@ _rut_nine_slice_paint (RutObject *object,
             1.0, 1.0
           };
 
-          cogl_framebuffer_draw_textured_rectangles (fb,
+          cg_framebuffer_draw_textured_rectangles (fb,
                                                      nine_slice->pipeline,
                                                      rectangles,
                                                      9);
@@ -547,7 +547,7 @@ _rut_nine_slice_init_type (void)
 
 RutNineSlice *
 rut_nine_slice_new (RutContext *ctx,
-                    CoglTexture *texture,
+                    cg_texture_t *texture,
                     float top,
                     float right,
                     float bottom,
@@ -591,7 +591,7 @@ rut_nine_slice_new (RutContext *ctx,
   return nine_slice;
 }
 
-CoglTexture *
+cg_texture_t *
 rut_nine_slice_get_texture (RutNineSlice *nine_slice)
 {
   return nine_slice->texture;
@@ -599,7 +599,7 @@ rut_nine_slice_get_texture (RutNineSlice *nine_slice)
 
 void
 rut_nine_slice_set_texture (RutNineSlice *nine_slice,
-                            CoglTexture *texture)
+                            cg_texture_t *texture)
 {
   if (nine_slice->texture == texture)
     return;
@@ -607,20 +607,20 @@ rut_nine_slice_set_texture (RutNineSlice *nine_slice,
   free_mesh (nine_slice);
 
   if (nine_slice->texture)
-    cogl_object_unref (nine_slice->texture);
+    cg_object_unref (nine_slice->texture);
   if (nine_slice->pipeline)
-    cogl_object_unref (nine_slice->pipeline);
+    cg_object_unref (nine_slice->pipeline);
 
   nine_slice->pipeline =
-    cogl_pipeline_copy (nine_slice->ctx->single_texture_2d_template);
+    cg_pipeline_copy (nine_slice->ctx->single_texture_2d_template);
 
   if (texture)
     {
-      nine_slice->tex_width = cogl_texture_get_width (texture);
-      nine_slice->tex_height = cogl_texture_get_height (texture);
+      nine_slice->tex_width = cg_texture_get_width (texture);
+      nine_slice->tex_height = cg_texture_get_height (texture);
 
-      nine_slice->texture = cogl_object_ref (texture);
-      cogl_pipeline_set_layer_texture (nine_slice->pipeline, 0, texture);
+      nine_slice->texture = cg_object_ref (texture);
+      cg_pipeline_set_layer_texture (nine_slice->pipeline, 0, texture);
     }
   else
     {
@@ -686,13 +686,13 @@ rut_nine_slice_get_size (RutObject *self,
   *height = nine_slice->height;
 }
 
-CoglPipeline *
+cg_pipeline_t *
 rut_nine_slice_get_pipeline (RutNineSlice *nine_slice)
 {
   return nine_slice->pipeline;
 }
 
-CoglPrimitive *
+cg_primitive_t *
 rut_nine_slice_get_primitive (RutObject *object)
 {
   RutNineSlice *nine_slice = object;

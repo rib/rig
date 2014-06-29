@@ -59,8 +59,8 @@ struct _RigHair
 
   RutComponentableProps component;
   RutContext *ctx;
-  CoglTexture *circle;
-  CoglTexture *fin_texture;
+  cg_texture_t *circle;
+  cg_texture_t *fin_texture;
   float *shell_positions;
   c_array_t *shell_textures;
   c_array_t *particles;
@@ -123,12 +123,12 @@ rig_hair_get_shell_position (RutObject *obj,
 
 void
 rig_hair_set_uniform_location (RutObject *obj,
-                               CoglPipeline *pln,
+                               cg_pipeline_t *pln,
                                int uniform);
 
 void
 rig_hair_set_uniform_float_value (RutObject *obj,
-                                  CoglPipeline *pln,
+                                  cg_pipeline_t *pln,
                                   int uniform,
                                   float value);
 

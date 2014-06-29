@@ -92,9 +92,9 @@ rut_toggle_get_tick (RutObject *toggle);
  */
 void
 rut_toggle_set_tick_color (RutObject *toggle,
-                           const CoglColor *color);
+                           const cg_color_t *color);
 
-const CoglColor *
+const cg_color_t *
 rut_toggle_get_tick_color (RutObject *toggle);
 
 #endif /* _RUT_TOGGLE_H_ */

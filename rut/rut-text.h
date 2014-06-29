@@ -154,7 +154,7 @@ struct _RutText
   char *hint_text;
   PangoLayout *hint_text_layout;
 
-  CoglColor text_color;
+  cg_color_t text_color;
 
   LayoutCache cached_layouts[N_CACHED_LAYOUTS];
   unsigned int cache_age;
@@ -196,15 +196,15 @@ struct _RutText
 
   /* Where to draw the cursor */
   RutRectangleInt cursor_pos;
-  CoglColor cursor_color;
+  cg_color_t cursor_color;
   unsigned int cursor_size;
 
   unsigned int preedit_cursor_pos;
   int preedit_n_chars;
 
-  CoglColor selection_color;
+  cg_color_t selection_color;
 
-  CoglColor selected_text_color;
+  cg_color_t selected_text_color;
 
   uint32_t password_char;
 
@@ -554,7 +554,7 @@ rut_text_set_markup (RutText *text,
 /**
  * rut_text_set_color:
  * @text: a #RutText
- * @color: a #CoglColor
+ * @color: a #cg_color_t
  *
  * Sets the color of the contents of a #RutText actor.
  *
@@ -565,7 +565,7 @@ rut_text_set_markup (RutText *text,
  */
 void
 rut_text_set_color (RutObject *text,
-                    const CoglColor *color);
+                    const cg_color_t *color);
 
 void
 rut_text_set_color_u32 (RutText *text,
@@ -574,11 +574,11 @@ rut_text_set_color_u32 (RutText *text,
 /**
  * rut_text_get_color:
  * @text: a #RutText
- * @color: (out caller-allocates): return location for a #CoglColor
+ * @color: (out caller-allocates): return location for a #cg_color_t
  *
  * Retrieves the text color as set by rut_text_set_color().
  */
-const CoglColor *
+const cg_color_t *
 rut_text_get_color (RutObject *text);
 
 /**
@@ -1043,7 +1043,7 @@ rut_text_get_cursor_visible (RutObject *text);
  */
 void
 rut_text_set_cursor_color (RutObject *text,
-                           const CoglColor *color);
+                           const cg_color_t *color);
 
 void
 rut_text_set_cursor_color_u32 (RutText *text,
@@ -1052,11 +1052,11 @@ rut_text_set_cursor_color_u32 (RutText *text,
 /**
  * rut_text_get_cursor_color:
  * @text: a #RutText
- * @color: (out): return location for a #CoglColor
+ * @color: (out): return location for a #cg_color_t
  *
  * Retrieves the color of the cursor of a #RutText actor.
  */
-const CoglColor *
+const cg_color_t *
 rut_text_get_cursor_color (RutObject *text);
 
 bool
@@ -1180,7 +1180,7 @@ rut_text_get_selection (RutText *text);
  */
 void
 rut_text_set_selection_color (RutObject *text,
-                              const CoglColor *color);
+                              const cg_color_t *color);
 
 void
 rut_text_set_selection_color_u32 (RutText *text,
@@ -1189,11 +1189,11 @@ rut_text_set_selection_color_u32 (RutText *text,
 /**
  * rut_text_get_selection_color:
  * @text: a #RutText
- * @color: (out caller-allocates): return location for a #CoglColor
+ * @color: (out caller-allocates): return location for a #cg_color_t
  *
  * Retrieves the color of the selection of a #RutText actor.
  */
-const CoglColor *
+const cg_color_t *
 rut_text_get_selection_color (RutObject *text);
 
 bool
@@ -1314,7 +1314,7 @@ rut_text_get_single_line_mode (RutObject *text);
  */
 void
 rut_text_set_selected_text_color (RutObject *text,
-                                  const CoglColor *color);
+                                  const cg_color_t *color);
 
 void
 rut_text_set_selected_text_color_u32 (RutText *text,
@@ -1323,11 +1323,11 @@ rut_text_set_selected_text_color_u32 (RutText *text,
 /**
  * rut_text_get_selected_text_color:
  * @text: a #RutText
- * @color: (out caller-allocates): return location for a #CoglColor
+ * @color: (out caller-allocates): return location for a #cg_color_t
  *
  * Retrieves the color of selected text of a #RutText actor.
  */
-const CoglColor *
+const cg_color_t *
 rut_text_get_selected_text_color (RutObject *text);
 
 bool

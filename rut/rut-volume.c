@@ -558,8 +558,8 @@ _rut_volume_get_bounding_box (RutVolume *volume,
 
 void
 _rut_volume_project (RutVolume *volume,
-                     const CoglMatrix *modelview,
-                     const CoglMatrix *projection,
+                     const cg_matrix_t *modelview,
+                     const cg_matrix_t *projection,
                      const float *viewport)
 {
   int transform_count;
@@ -599,7 +599,7 @@ _rut_volume_project (RutVolume *volume,
 
 void
 _rut_volume_transform (RutVolume *volume,
-                       const CoglMatrix *matrix)
+                       const cg_matrix_t *matrix)
 {
   int transform_count;
 
@@ -607,7 +607,7 @@ _rut_volume_transform (RutVolume *volume,
     {
       float w = 1;
       /* Just transform the origin */
-      cogl_matrix_transform_point (matrix,
+      cg_matrix_transform_point (matrix,
                                    &volume->vertices[0].x,
                                    &volume->vertices[0].y,
                                    &volume->vertices[0].z,
@@ -626,7 +626,7 @@ _rut_volume_transform (RutVolume *volume,
   else
     transform_count = 8;
 
-  cogl_matrix_transform_points (matrix,
+  cg_matrix_transform_points (matrix,
                                 3,
                                 sizeof (RutVector3),
                                 volume->vertices,
@@ -778,8 +778,8 @@ rut_volume_cull (RutVolume *volume,
 void
 _rut_volume_get_stable_bounding_int_rectangle (RutVolume *volume,
                                                float *viewport,
-                                               const CoglMatrix *projection,
-                                               const CoglMatrix *modelview,
+                                               const cg_matrix_t *projection,
+                                               const cg_matrix_t *modelview,
                                                RutBox *box)
 {
   RutVolume projected_volume;

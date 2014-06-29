@@ -844,7 +844,7 @@ map_id_cb (uint64_t simulator_id, void *user_data)
 }
 
 static void
-on_onscreen_resize (CoglOnscreen *onscreen,
+on_onscreen_resize (cg_onscreen_t *onscreen,
                     int width,
                     int height,
                     void *user_data)
@@ -862,9 +862,9 @@ rig_frontend_post_init_engine (RigFrontend *frontend,
                                const char *ui_filename)
 {
   RigEngine *engine = frontend->engine;
-  CoglFramebuffer *fb;
+  cg_framebuffer_t *fb;
 
-  engine->default_pipeline = cogl_pipeline_new (engine->ctx->cogl_context);
+  engine->default_pipeline = cg_pipeline_new (engine->ctx->cg_context);
 
   engine->circle_node_attribute =
     rut_create_circle_fan_p2 (engine->ctx, 20, &engine->circle_node_n_verts);
@@ -890,26 +890,26 @@ rig_frontend_post_init_engine (RigFrontend *frontend,
 #ifdef RIG_EDITOR_ENABLED
   if (engine->frontend_id == RIG_FRONTEND_ID_EDITOR)
     {
-      engine->onscreen = cogl_onscreen_new (engine->ctx->cogl_context,
+      engine->onscreen = cg_onscreen_new (engine->ctx->cg_context,
                                             1000, 700);
-      cogl_onscreen_set_resizable (engine->onscreen, true);
+      cg_onscreen_set_resizable (engine->onscreen, true);
     }
   else
 #endif
-    engine->onscreen = cogl_onscreen_new (engine->ctx->cogl_context,
+    engine->onscreen = cg_onscreen_new (engine->ctx->cg_context,
                                           engine->device_width / 2,
                                           engine->device_height / 2);
 
-  cogl_onscreen_add_resize_callback (engine->onscreen,
+  cg_onscreen_add_resize_callback (engine->onscreen,
                                      on_onscreen_resize,
                                      engine,
                                      NULL);
 
-  cogl_framebuffer_allocate (engine->onscreen, NULL);
+  cg_framebuffer_allocate (engine->onscreen, NULL);
 
   fb = engine->onscreen;
-  engine->window_width = cogl_framebuffer_get_width (fb);
-  engine->window_height = cogl_framebuffer_get_height (fb);
+  engine->window_width = cg_framebuffer_get_width (fb);
+  engine->window_height = cg_framebuffer_get_height (fb);
 
   /* FIXME: avoid poking into engine->frontend here... */
   engine->frontend->has_resized = true;
@@ -949,7 +949,7 @@ rig_frontend_post_init_engine (RigFrontend *frontend,
                        engine->onscreen,
                        "Rig " C_STRINGIFY (RIG_VERSION));
 
-  cogl_onscreen_show (engine->onscreen);
+  cg_onscreen_show (engine->onscreen);
 
   rig_engine_allocate (engine);
 }

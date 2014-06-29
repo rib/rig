@@ -484,7 +484,7 @@ apply_asset_input_with_entity (RigEngine *engine,
       if (asset == editor->text_builtin_asset)
         {
           RutText *text;
-          CoglColor color;
+          cg_color_t color;
           RigHair *hair;
 
           hair = rig_entity_get_component (entity,
@@ -502,7 +502,7 @@ apply_asset_input_with_entity (RigEngine *engine,
             rig_undo_journal_delete_component (engine->undo_journal, geom);
 
           text = rut_text_new_with_text (engine->ctx, "Sans 60px", "text");
-          cogl_color_init_from_4f (&color, 1, 1, 1, 1);
+          cg_color_init_from_4f (&color, 1, 1, 1, 1);
           rut_text_set_color (text, &color);
           rig_undo_journal_add_component (engine->undo_journal, entity, text);
           rut_object_unref (text);
@@ -763,7 +763,7 @@ add_results_flow (RutContext *ctx,
   RutFlowLayout *flow =
     rut_flow_layout_new (ctx, RUT_FLOW_LAYOUT_PACKING_LEFT_TO_RIGHT);
   RutText *text = rut_text_new_with_text (ctx, "Bold Sans 15px", label);
-  CoglColor color;
+  cg_color_t color;
   RutBin *label_bin = rut_bin_new (ctx);
   RutBin *flow_bin = rut_bin_new (ctx);
 
@@ -801,7 +801,7 @@ add_search_result (RigEngine *engine,
   ResultInputClosure *closure;
   RutStack *stack;
   RutBin *bin;
-  CoglTexture *texture;
+  cg_texture_t *texture;
   RutInputRegion *region;
   RutDragBin *drag_bin;
 
@@ -863,7 +863,7 @@ add_search_result (RigEngine *engine,
       texture = rut_load_texture_from_data_file (engine->ctx,
                                                  "transparency-grid.png", NULL);
       image = rut_image_new (engine->ctx, texture);
-      cogl_object_unref (texture);
+      cg_object_unref (texture);
 
       rut_box_layout_add (vbox, false, image);
       rut_object_unref (image);
@@ -888,7 +888,7 @@ add_search_result (RigEngine *engine,
       texture = rut_load_texture_from_data_file (engine->ctx,
                                                  "transparency-grid.png", NULL);
       image = rut_image_new (engine->ctx, texture);
-      cogl_object_unref (texture);
+      cg_object_unref (texture);
 
       rut_box_layout_add (vbox, false, image);
       rut_object_unref (image);
@@ -1469,7 +1469,7 @@ load_asset_list (RigEditor *editor)
 static RutPLYAttribute ply_attributes[] =
 {
   {
-    .name = "cogl_position_in",
+    .name = "cg_position_in",
     .properties = {
       { "x" },
       { "y" },
@@ -1479,7 +1479,7 @@ static RutPLYAttribute ply_attributes[] =
     .min_components = 1,
   },
   {
-    .name = "cogl_normal_in",
+    .name = "cg_normal_in",
     .properties = {
       { "nx" },
       { "ny" },
@@ -1491,7 +1491,7 @@ static RutPLYAttribute ply_attributes[] =
     .pad_type = RUT_ATTRIBUTE_TYPE_FLOAT,
   },
   {
-    .name = "cogl_tex_coord0_in",
+    .name = "cg_tex_coord0_in",
     .properties = {
       { "s" },
       { "t" },
@@ -1515,7 +1515,7 @@ static RutPLYAttribute ply_attributes[] =
     .pad_type = RUT_ATTRIBUTE_TYPE_FLOAT,
   },
   {
-    .name = "cogl_color_in",
+    .name = "cg_color_in",
     .properties = {
       { "red" },
       { "green" },
@@ -1695,7 +1695,7 @@ load_gradient_image (RutContext *ctx,
                      const char *filename)
 {
   GError *error = NULL;
-  CoglTexture *gradient =
+  cg_texture_t *gradient =
     rut_load_texture_from_data_file (ctx,
                                      filename,
                                      &error);
@@ -1773,8 +1773,8 @@ create_camera_view (RigEngine *engine)
   RutBin *bin = rut_bin_new (engine->ctx);
   RigNineSlice *gradient =
     load_gradient_image (engine->ctx, "document-bg-gradient.png");
-  CoglTexture *left_drop_shadow;
-  CoglTexture *bottom_drop_shadow;
+  cg_texture_t *left_drop_shadow;
+  cg_texture_t *bottom_drop_shadow;
   RutBoxLayout *hbox = rut_box_layout_new (engine->ctx,
                                            RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
   RutBoxLayout *vbox = rut_box_layout_new (engine->ctx,
@@ -1850,8 +1850,8 @@ create_camera_view (RigEngine *engine)
   rut_object_unref (left_stack);
   rut_object_unref (left_drop);
 
-  cogl_object_unref (bottom_drop_shadow);
-  cogl_object_unref (left_drop_shadow);
+  cg_object_unref (bottom_drop_shadow);
+  cg_object_unref (left_drop_shadow);
 
   rut_object_unref (vbox);
   rut_object_unref (hbox);
@@ -2110,7 +2110,7 @@ create_assets_view (RigEngine *engine)
   RutEntry *entry;
   RutText *text;
   RutIcon *search_icon;
-  CoglColor color;
+  cg_color_t color;
 
   bg = rut_rectangle_new4f (engine->ctx, 0, 0, 0.2, 0.2, 0.2, 1);
   rut_stack_add (search_stack, bg);
@@ -2259,7 +2259,7 @@ static void
 init_resize_handle (RigEngine *engine)
 {
 #ifdef __APPLE__
-  CoglTexture *resize_handle_texture;
+  cg_texture_t *resize_handle_texture;
   GError *error = NULL;
 
   resize_handle_texture =
@@ -2285,7 +2285,7 @@ init_resize_handle (RigEngine *engine)
 
       rut_object_unref (engine->resize_handle_transform);
       rut_object_unref (resize_handle);
-      cogl_object_unref (resize_handle_texture);
+      cg_object_unref (resize_handle_texture);
     }
 
 #endif /* __APPLE__ */
@@ -2295,7 +2295,7 @@ static RutImage *
 load_transparency_grid (RutContext *ctx)
 {
   GError *error = NULL;
-  CoglTexture *texture =
+  cg_texture_t *texture =
     rut_load_texture_from_data_file (ctx, "transparency-grid.png", &error);
   RutImage *ret;
 
@@ -2312,7 +2312,7 @@ load_transparency_grid (RutContext *ctx)
       rut_image_set_draw_mode (ret, RUT_IMAGE_DRAW_MODE_REPEAT);
       rut_sizable_set_size (ret, 1000000.0f, 1000000.0f);
 
-      cogl_object_unref (texture);
+      cg_object_unref (texture);
     }
 
   return ret;
@@ -2592,38 +2592,38 @@ _rig_editor_init_type (void)
 static void
 create_debug_gradient (RigEngine *engine)
 {
-  CoglVertexP2C4 quad[] = {
+  cg_vertex_p2c4_t quad[] = {
         { 0, 0, 0xff, 0x00, 0x00, 0xff },
         { 0, 200, 0x00, 0xff, 0x00, 0xff },
         { 200, 200, 0x00, 0x00, 0xff, 0xff },
         { 200, 0, 0xff, 0xff, 0xff, 0xff }
   };
-  CoglOffscreen *offscreen;
-  CoglPrimitive *prim =
-    cogl_primitive_new_p2c4 (engine->ctx->cogl_context,
-                             COGL_VERTICES_MODE_TRIANGLE_FAN, 4, quad);
-  CoglPipeline *pipeline = cogl_pipeline_new (engine->ctx->cogl_context);
+  cg_offscreen_t *offscreen;
+  cg_primitive_t *prim =
+    cg_primitive_new_p2c4 (engine->ctx->cg_context,
+                             CG_VERTICES_MODE_TRIANGLE_FAN, 4, quad);
+  cg_pipeline_t *pipeline = cg_pipeline_new (engine->ctx->cg_context);
 
   engine->gradient =
-    cogl_texture_2d_new_with_size (engine->ctx->cogl_context, 200, 200);
+    cg_texture_2d_new_with_size (engine->ctx->cg_context, 200, 200);
 
-  offscreen = cogl_offscreen_new_with_texture (engine->gradient);
+  offscreen = cg_offscreen_new_with_texture (engine->gradient);
 
-  cogl_framebuffer_orthographic (offscreen,
+  cg_framebuffer_orthographic (offscreen,
                                  0, 0,
                                  200,
                                  200,
                                  -1,
                                  100);
-  cogl_framebuffer_clear4f (offscreen,
-                            COGL_BUFFER_BIT_COLOR | COGL_BUFFER_BIT_DEPTH,
+  cg_framebuffer_clear4f (offscreen,
+                            CG_BUFFER_BIT_COLOR | CG_BUFFER_BIT_DEPTH,
                             0, 0, 0, 1);
-  cogl_primitive_draw (prim,
+  cg_primitive_draw (prim,
                        offscreen,
                        pipeline);
 
-  cogl_object_unref (prim);
-  cogl_object_unref (offscreen);
+  cg_object_unref (prim);
+  cg_object_unref (offscreen);
 }
 
 static void

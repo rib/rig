@@ -60,7 +60,7 @@ rut_input_region_new_circle (float x,
 
 void
 rut_input_region_set_transform (RutInputRegion *region,
-                                CoglMatrix *matrix);
+                                cg_matrix_t *matrix);
 
 void
 rut_input_region_set_rectangle (RutInputRegion *region,

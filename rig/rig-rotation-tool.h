@@ -51,14 +51,14 @@ typedef struct _RigRotationTool
 
   RigEntity *selected_entity;
 
-  CoglPipeline *default_pipeline;
-  CoglPrimitive *rotation_tool;
-  CoglPrimitive *rotation_tool_handle;
+  cg_pipeline_t *default_pipeline;
+  cg_primitive_t *rotation_tool;
+  cg_primitive_t *rotation_tool_handle;
 
   RutInputRegion *rotation_circle;
   RutArcball arcball;
-  CoglQuaternion start_rotation;
-  CoglQuaternion start_view_rotations;
+  cg_quaternion_t start_rotation;
+  cg_quaternion_t start_view_rotations;
   bool button_down;
   float position[3];    /* transformed position of the selected entity */
   float screen_pos[2];
@@ -77,8 +77,8 @@ typedef enum
 typedef void
 (* RigRotationToolEventCallback) (RigRotationTool *tool,
                                   RigRotationToolEventType type,
-                                  const CoglQuaternion *start_rotation,
-                                  const CoglQuaternion *new_rotation,
+                                  const cg_quaternion_t *start_rotation,
+                                  const cg_quaternion_t *new_rotation,
                                   void *user_data);
 
 RigRotationTool *
@@ -96,7 +96,7 @@ rig_rotation_tool_add_event_callback (RigRotationTool *tool,
 
 void
 rig_rotation_tool_draw (RigRotationTool *tool,
-                        CoglFramebuffer *fb);
+                        cg_framebuffer_t *fb);
 
 void
 rig_rotation_tool_destroy (RigRotationTool *tool);

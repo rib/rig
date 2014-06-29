@@ -80,7 +80,7 @@ _rig_shape_model_free (void *object)
 {
   RigShapeModel *shape_model = object;
 
-  cogl_object_unref (shape_model->shape_texture);
+  cg_object_unref (shape_model->shape_texture);
   rut_object_unref (shape_model->pick_mesh);
   rut_object_unref (shape_model->shape_mesh);
 
@@ -112,7 +112,7 @@ typedef struct _VertexP2T2T2
 } VertexP2T2T2;
 
 static RutMesh *
-mesh_new_p2t2t2 (CoglVerticesMode mode,
+mesh_new_p2t2t2 (cg_vertices_mode_t mode,
                  int n_vertices,
                  const VertexP2T2T2 *data)
 {
@@ -124,49 +124,49 @@ mesh_new_p2t2t2 (CoglVerticesMode mode,
   memcpy (vertex_buffer->data, data, sizeof (VertexP2T2T2) * n_vertices);
 
   attributes[0] = rut_attribute_new (vertex_buffer,
-                                     "cogl_position_in",
+                                     "cg_position_in",
                                      sizeof (VertexP2T2T2),
                                      offsetof (VertexP2T2T2, x),
                                      2,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
 
   attributes[1] = rut_attribute_new (vertex_buffer,
-                                     "cogl_tex_coord0_in",
+                                     "cg_tex_coord0_in",
                                      sizeof (VertexP2T2T2),
                                      offsetof (VertexP2T2T2, s0),
                                      2,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
 
   attributes[2] = rut_attribute_new (vertex_buffer,
-                                     "cogl_tex_coord1_in",
+                                     "cg_tex_coord1_in",
                                      sizeof (VertexP2T2T2),
                                      offsetof (VertexP2T2T2, s1),
                                      2,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
 
   attributes[3] = rut_attribute_new (vertex_buffer,
-                                     "cogl_tex_coord4_in",
+                                     "cg_tex_coord4_in",
                                      sizeof (VertexP2T2T2),
                                      offsetof (VertexP2T2T2, s1),
                                      2,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
 
   attributes[4] = rut_attribute_new (vertex_buffer,
-                                     "cogl_tex_coord7_in",
+                                     "cg_tex_coord7_in",
                                      sizeof (VertexP2T2T2),
                                      offsetof (VertexP2T2T2, s1),
                                      2,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
 
   attributes[5] = rut_attribute_new (vertex_buffer,
-                                     "cogl_tex_coord11_in",
+                                     "cg_tex_coord11_in",
                                      sizeof (VertexP2T2T2),
                                      offsetof (VertexP2T2T2, s1),
                                      2,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
 
   attributes[6] = rut_attribute_new (vertex_buffer,
-                                     "cogl_normal_in",
+                                     "cg_normal_in",
                                      sizeof (VertexP2T2T2),
                                      offsetof (VertexP2T2T2, Nx),
                                      3,
@@ -192,12 +192,12 @@ shape_model_new (RutContext *ctx,
 {
   RigShapeModel *shape_model =
     rut_object_alloc0 (RigShapeModel, &rig_shape_model_type, _rig_shape_model_init_type);
-  RutBuffer *buffer = rut_buffer_new (sizeof (CoglVertexP3) * 6);
-  RutMesh *pick_mesh = rut_mesh_new_from_buffer_p3 (COGL_VERTICES_MODE_TRIANGLES,
+  RutBuffer *buffer = rut_buffer_new (sizeof (cg_vertex_p3_t) * 6);
+  RutMesh *pick_mesh = rut_mesh_new_from_buffer_p3 (CG_VERTICES_MODE_TRIANGLES,
                                                     6,
                                                     buffer);
-  CoglVertexP3 *pick_vertices = (CoglVertexP3 *)buffer->data;
-  CoglMatrix matrix;
+  cg_vertex_p3_t *pick_vertices = (cg_vertex_p3_t *)buffer->data;
+  cg_matrix_t matrix;
   float tex_aspect;
   float size_x;
   float size_y;
@@ -248,7 +248,7 @@ shape_model_new (RutContext *ctx,
           {  half_geom_size_x, -half_geom_size_y, 1, 0, 1, 0 },
         };
 
-      cogl_matrix_init_identity (&matrix);
+      cg_matrix_init_identity (&matrix);
       tex_aspect = (float)width / (float)height;
 
       if (shaped)
@@ -274,8 +274,8 @@ shape_model_new (RutContext *ctx,
           s0 = 0.5 - (s_scale / 2.0);
           t0 = 0.5 - (t_scale / 2.0);
 
-          cogl_matrix_translate (&matrix, s0, t0, 0);
-          cogl_matrix_scale (&matrix, s_scale, t_scale, 1);
+          cg_matrix_translate (&matrix, s0, t0, 0);
+          cg_matrix_scale (&matrix, s_scale, t_scale, 1);
         }
 
       n_vertices = sizeof (vertices) / sizeof (VertexP2T2T2);
@@ -283,7 +283,7 @@ shape_model_new (RutContext *ctx,
         {
           float z = 0, w = 1;
 
-          cogl_matrix_transform_point (&matrix,
+          cg_matrix_transform_point (&matrix,
                                        &vertices[i].s1,
                                        &vertices[i].t1,
                                        &z,
@@ -298,11 +298,11 @@ shape_model_new (RutContext *ctx,
         }
 
       shape_model->shape_mesh =
-        mesh_new_p2t2t2 (COGL_VERTICES_MODE_TRIANGLES, n_vertices, vertices);
+        mesh_new_p2t2t2 (CG_VERTICES_MODE_TRIANGLES, n_vertices, vertices);
     }
 
   if (!ctx->headless)
-    shape_model->shape_texture = cogl_object_ref (ctx->circle_texture);
+    shape_model->shape_texture = cg_object_ref (ctx->circle_texture);
 
   pick_vertices[0].x = -half_size_x;
   pick_vertices[0].y = -half_size_y;
@@ -457,18 +457,18 @@ rig_shape_get_model (RigShape *shape)
   return shape->model;
 }
 
-CoglPrimitive *
+cg_primitive_t *
 rig_shape_get_primitive (RutObject *object)
 {
   RigShape *shape = object;
   RigShapeModel *model = rig_shape_get_model (shape);
-  CoglPrimitive *primitive = rut_mesh_create_primitive (shape->ctx,
+  cg_primitive_t *primitive = rut_mesh_create_primitive (shape->ctx,
                                                         model->shape_mesh);
 
   return primitive;
 }
 
-CoglTexture *
+cg_texture_t *
 rig_shape_get_shape_texture (RigShape *shape)
 {
   RigShapeModel *model = rig_shape_get_model (shape);

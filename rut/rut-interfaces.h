@@ -42,10 +42,10 @@ G_BEGIN_DECLS
 
 typedef struct RutTransformableVTable
 {
-  const CoglMatrix *(*get_matrix) (RutObject *object);
+  const cg_matrix_t *(*get_matrix) (RutObject *object);
 } RutTransformableVTable;
 
-const CoglMatrix *
+const cg_matrix_t *
 rut_transformable_get_matrix (RutObject *object);
 
 typedef void
@@ -140,10 +140,10 @@ rut_sizable_add_preferred_size_callback (RutObject *object,
  */
 typedef struct _RutPrimableVTable
 {
-  CoglPrimitive *(*get_primitive)(void *object);
+  cg_primitive_t *(*get_primitive)(void *object);
 } RutPrimableVTable;
 
-CoglPrimitive *
+cg_primitive_t *
 rut_primable_get_primitive (RutObject *object);
 
 

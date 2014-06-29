@@ -111,31 +111,31 @@ struct _RigEngine
   RutObject *camera_2d;
   RutObject *root;
 
-  CoglMatrix identity;
+  cg_matrix_t identity;
 
   /* TODO: Move to RigFrontend */
-  CoglTexture *gradient;
+  cg_texture_t *gradient;
 
   /* TODO: Move to RigFrontend */
   GHashTable *image_source_wrappers;
 
   /* TODO: Move to RigFrontend */
-  CoglPipeline *shadow_color_tex;
-  CoglPipeline *shadow_map_tex;
+  cg_pipeline_t *shadow_color_tex;
+  cg_pipeline_t *shadow_map_tex;
 
-  CoglPipeline *default_pipeline;
+  cg_pipeline_t *default_pipeline;
 
   /* TODO: Move to RigFrontend */
-  CoglPipeline *dof_pipeline_template;
-  CoglPipeline *dof_pipeline;
-  CoglPipeline *dof_diamond_pipeline;
-  CoglPipeline *dof_unshaped_pipeline;
+  cg_pipeline_t *dof_pipeline_template;
+  cg_pipeline_t *dof_pipeline;
+  cg_pipeline_t *dof_diamond_pipeline;
+  cg_pipeline_t *dof_unshaped_pipeline;
 
   RutShell *shell;
   RutContext *ctx;
 
   /* TODO: Move to RigFrontend */
-  CoglOnscreen *onscreen;
+  cg_onscreen_t *onscreen;
 
   RigPBSerializer *ops_serializer;
   RutMemoryStack *frame_stack;
@@ -172,9 +172,9 @@ struct _RigEngine
   RigUndoJournal *undo_journal;
 
   /* shadow mapping */
-  CoglOffscreen *shadow_fb;
-  CoglTexture2D *shadow_color;
-  CoglTexture *shadow_map;
+  cg_offscreen_t *shadow_fb;
+  cg_texture_2d_t *shadow_color;
+  cg_texture_t *shadow_map;
 
   RutStack *top_stack;
   RigCameraView *main_camera_view;
@@ -201,8 +201,8 @@ struct _RigEngine
   //RutTransform *bottom_bar_transform;
   //RutTransform *screen_area_transform;
 
-  CoglPrimitive *grid_prim;
-  CoglAttribute *circle_node_attribute;
+  cg_primitive_t *grid_prim;
+  cg_attribute_t *circle_node_attribute;
   int circle_node_n_verts;
 
   float window_width;
@@ -225,7 +225,7 @@ struct _RigEngine
   /* XXX: Move to RigEditor */
   RigControllerView *controller_view;
 
-  CoglMatrix main_view;
+  cg_matrix_t main_view;
   float z_2d;
 
   /* XXX: Move to RigEditor */
@@ -252,29 +252,29 @@ struct _RigEngine
   RigOSXData *osx_data;
 #endif
 
-  CoglSnippet *alpha_mask_snippet;
-  CoglSnippet *alpha_mask_video_snippet;
-  CoglSnippet *lighting_vertex_snippet;
-  CoglSnippet *normal_map_vertex_snippet;
-  CoglSnippet *shadow_mapping_vertex_snippet;
-  CoglSnippet *blended_discard_snippet;
-  CoglSnippet *unblended_discard_snippet;
-  CoglSnippet *premultiply_snippet;
-  CoglSnippet *unpremultiply_snippet;
-  CoglSnippet *normal_map_fragment_snippet;
-  CoglSnippet *normal_map_video_snippet;
-  CoglSnippet *material_lighting_snippet;
-  CoglSnippet *simple_lighting_snippet;
-  CoglSnippet *shadow_mapping_fragment_snippet;
-  CoglSnippet *pointalism_vertex_snippet;
-  CoglSnippet *pointalism_video_snippet;
-  CoglSnippet *pointalism_halo_snippet;
-  CoglSnippet *pointalism_opaque_snippet;
-  CoglSnippet *cache_position_snippet;
-  CoglSnippet *hair_simple_snippet;
-  CoglSnippet *hair_material_snippet;
-  CoglSnippet *hair_vertex_snippet;
-  CoglSnippet *hair_fin_snippet;
+  cg_snippet_t *alpha_mask_snippet;
+  cg_snippet_t *alpha_mask_video_snippet;
+  cg_snippet_t *lighting_vertex_snippet;
+  cg_snippet_t *normal_map_vertex_snippet;
+  cg_snippet_t *shadow_mapping_vertex_snippet;
+  cg_snippet_t *blended_discard_snippet;
+  cg_snippet_t *unblended_discard_snippet;
+  cg_snippet_t *premultiply_snippet;
+  cg_snippet_t *unpremultiply_snippet;
+  cg_snippet_t *normal_map_fragment_snippet;
+  cg_snippet_t *normal_map_video_snippet;
+  cg_snippet_t *material_lighting_snippet;
+  cg_snippet_t *simple_lighting_snippet;
+  cg_snippet_t *shadow_mapping_fragment_snippet;
+  cg_snippet_t *pointalism_vertex_snippet;
+  cg_snippet_t *pointalism_video_snippet;
+  cg_snippet_t *pointalism_halo_snippet;
+  cg_snippet_t *pointalism_opaque_snippet;
+  cg_snippet_t *cache_position_snippet;
+  cg_snippet_t *hair_simple_snippet;
+  cg_snippet_t *hair_material_snippet;
+  cg_snippet_t *hair_vertex_snippet;
+  cg_snippet_t *hair_fin_snippet;
 
   /* TODO: The frontend, editor and simulator should be accessed as
    * traits of the engine.

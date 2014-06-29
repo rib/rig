@@ -75,6 +75,6 @@ rut_icon_button_set_disabled (RutIconButton *button,
 
 void
 rut_icon_button_set_label_color (RutIconButton *button,
-                                 const CoglColor *color);
+                                 const cg_color_t *color);
 
 #endif /* __RUT_ICON_BUTTON_H__ */

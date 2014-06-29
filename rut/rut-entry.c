@@ -124,10 +124,10 @@ _rut_entry_free (void *object)
 }
 
 #if 0
-static CoglPrimitive *
+static cg_primitive_t *
 create_entry_prim (RutEntry *entry)
 {
-  CoglVertexP2C4 lines[] =
+  cg_vertex_p2c4_t lines[] =
     {
       {0, 0, 0x80, 0x80, 0x80, 0x80},
       {0, entry->height, 0x80, 0x80, 0x80, 0x80},
@@ -142,8 +142,8 @@ create_entry_prim (RutEntry *entry)
       {0, 0, 0x80, 0x80, 0x80, 0x80},
     };
 
-  return cogl_primitive_new_p2c4 (entry->ctx->cogl_context,
-                                  COGL_VERTICES_MODE_LINES,
+  return cg_primitive_new_p2c4 (entry->ctx->cg_context,
+                                  CG_VERTICES_MODE_LINES,
                                   8,
                                   lines);
 }
@@ -341,7 +341,7 @@ rut_entry_new (RutContext *ctx)
   RutEntry *entry =
     rut_object_alloc0 (RutEntry, &rut_entry_type, _rut_entry_init_type);
   float width, height;
-  CoglTexture *bg_texture;
+  cg_texture_t *bg_texture;
 
 
   entry->ctx = rut_object_ref (ctx);
@@ -361,7 +361,7 @@ rut_entry_new (RutContext *ctx)
                                           bg_texture,
                                           7, 7, 7, 7,
                                           0, 0);
-  cogl_object_unref (bg_texture);
+  cg_object_unref (bg_texture);
   rut_graphable_add_child (entry, entry->background);
   rut_object_unref (entry->background);
 

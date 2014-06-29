@@ -1182,7 +1182,7 @@ rut_text_create_layout (RutText *text,
   oldest_cache->layout =
     rut_text_create_layout_no_cache (text, width, height, ellipsize);
 
-  cogl_pango_ensure_glyph_cache_for_layout (oldest_cache->layout);
+  cg_pango_ensure_glyph_cache_for_layout (oldest_cache->layout);
 
   /* Mark the 'time' this cache was created and advance the time */
   oldest_cache->age = text->cache_age++;
@@ -1609,7 +1609,7 @@ add_selection_rectangle_to_path (RutText           *text,
                                  const RutBox *box,
                                  void *user_data)
 {
-  cogl_path_rectangle (user_data, box->x1, box->y1, box->x2, box->y2);
+  cg_path_rectangle (user_data, box->x1, box->y1, box->x2, box->y2);
 }
 
 static float
@@ -1624,7 +1624,7 @@ selection_paint (RutText *text,
                  RutPaintContext *paint_ctx)
 {
   RutObject *camera = paint_ctx->camera;
-  CoglFramebuffer *fb = rut_camera_get_framebuffer (camera);
+  cg_framebuffer_t *fb = rut_camera_get_framebuffer (camera);
   float paint_opacity = rut_text_get_paint_opacity (text);
 
   if (!text->has_focus)
@@ -1632,14 +1632,14 @@ selection_paint (RutText *text,
 
   if (text->editable && text->cursor_visible)
     {
-      const CoglColor *color;
+      const cg_color_t *color;
       int position;
 
       position = text->position;
 
       if (position == text->selection_bound)
         {
-          CoglPipeline *pipeline = cogl_pipeline_new (text->ctx->cogl_context);
+          cg_pipeline_t *pipeline = cg_pipeline_new (text->ctx->cg_context);
 
           /* No selection, just draw the cursor */
           if (text->cursor_color_set)
@@ -1647,13 +1647,13 @@ selection_paint (RutText *text,
           else
             color = &text->text_color;
 
-          cogl_pipeline_set_color4f (pipeline,
+          cg_pipeline_set_color4f (pipeline,
                                      color->red,
                                      color->green,
                                      color->blue,
                                      paint_opacity * color->alpha);
 
-          cogl_framebuffer_draw_rectangle (fb,
+          cg_framebuffer_draw_rectangle (fb,
                                            pipeline,
                                            text->cursor_pos.x,
                                            text->cursor_pos.y,
@@ -1664,9 +1664,9 @@ selection_paint (RutText *text,
         {
           /* Paint selection background first */
           PangoLayout *layout = rut_text_get_layout (text);
-          CoglPath *selection_path = cogl_path_new (text->ctx->cogl_context);
-          CoglColor cogl_color = { 0, };
-          CoglPipeline *pipeline = cogl_pipeline_new (text->ctx->cogl_context);
+          cg_path_t *selection_path = cg_path_new (text->ctx->cg_context);
+          cg_color_t cg_color = { 0, };
+          cg_pipeline_t *pipeline = cg_pipeline_new (text->ctx->cg_context);
 
           /* Paint selection background */
           if (text->selection_color_set)
@@ -1676,7 +1676,7 @@ selection_paint (RutText *text,
           else
             color = &text->text_color;
 
-          cogl_pipeline_set_color4f (pipeline,
+          cg_pipeline_set_color4f (pipeline,
                                      color->red,
                                      color->green,
                                      color->blue,
@@ -1686,28 +1686,28 @@ selection_paint (RutText *text,
                                                 add_selection_rectangle_to_path,
                                                 selection_path);
 
-          cogl_path_fill (selection_path, fb, pipeline);
+          cg_path_fill (selection_path, fb, pipeline);
 
           /* Paint selected text */
-          cogl_framebuffer_push_path_clip (fb,
+          cg_framebuffer_push_path_clip (fb,
                                            selection_path);
-          cogl_object_unref (selection_path);
-          cogl_object_unref (pipeline);
+          cg_object_unref (selection_path);
+          cg_object_unref (pipeline);
 
           if (text->selected_text_color_set)
             color = &text->selected_text_color;
           else
             color = &text->text_color;
 
-          cogl_color_init_from_4f (&cogl_color,
+          cg_color_init_from_4f (&cg_color,
                                    color->red,
                                    color->green,
                                    color->blue,
                                    paint_opacity * color->alpha);
 
-          cogl_pango_show_layout (fb, layout, text->text_x, 0, &cogl_color);
+          cg_pango_show_layout (fb, layout, text->text_x, 0, &cg_color);
 
-          cogl_framebuffer_pop_clip (fb);
+          cg_framebuffer_pop_clip (fb);
         }
     }
 }
@@ -2223,8 +2223,8 @@ rut_text_motion_grab (RutInputEvent *event,
   float x, y;
   int index_, offset;
   const char *text_str;
-  CoglMatrix transform;
-  CoglMatrix inverse_transform;
+  cg_matrix_t transform;
+  cg_matrix_t inverse_transform;
 
   c_return_val_if_fail (text->in_select_drag, RUT_INPUT_EVENT_STATUS_UNHANDLED);
 
@@ -2234,12 +2234,12 @@ rut_text_motion_grab (RutInputEvent *event,
   c_print ("Grab\n");
   if (rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_MOVE)
     {
-      const CoglMatrix *view = rut_camera_get_view_transform (camera);
+      const cg_matrix_t *view = rut_camera_get_view_transform (camera);
 
       transform = *view;
       rut_graphable_apply_transform (text, &transform);
 
-      if (!cogl_matrix_get_inverse (&transform,
+      if (!cg_matrix_get_inverse (&transform,
                                     &inverse_transform))
         {
           c_print ("Failed to get inverse\n");
@@ -2302,8 +2302,8 @@ rut_text_button_press (RutText *text,
   //bool res = false;
   float x, y;
   int index_;
-  CoglMatrix transform;
-  CoglMatrix inverse_transform;
+  cg_matrix_t transform;
+  cg_matrix_t inverse_transform;
   RutObject *camera;
 
   c_print ("RutText Button Press!\n");
@@ -2345,7 +2345,7 @@ rut_text_button_press (RutText *text,
     }
 
   rut_graphable_get_modelview (text, camera, &transform);
-  if (cogl_matrix_get_inverse (&transform,
+  if (cg_matrix_get_inverse (&transform,
                                &inverse_transform))
     {
       int offset;
@@ -2645,10 +2645,10 @@ rut_text_paint (RutObject *object,
 {
   RutText *text = object;
   RutObject *camera = paint_ctx->camera;
-  CoglFramebuffer *fb = rut_camera_get_framebuffer (camera);
+  cg_framebuffer_t *fb = rut_camera_get_framebuffer (camera);
   PangoLayout *layout;
   //RutBox alloc;
-  CoglColor color = { 0, };
+  cg_color_t color = { 0, };
   float real_opacity;
   int text_x = text->text_x;
   bool clip_set = false;
@@ -2672,17 +2672,17 @@ rut_text_paint (RutObject *object,
   g_object_get (text, "background-color-set", &bg_color_set, NULL);
   if (bg_color_set)
     {
-      CoglColor bg_color;
+      cg_color_t bg_color;
 
       rut_actor_get_background_color (text, &bg_color);
       bg_color.alpha = rut_text_get_paint_opacity (text)
                      * bg_color.alpha;
 
-      cogl_set_source_color4ub (bg_color.red,
+      cg_set_source_color4ub (bg_color.red,
                                 bg_color.green,
                                 bg_color.blue,
                                 bg_color.alpha);
-      cogl_rectangle (0, 0, alloc.x2 - alloc.x1, alloc.y2 - alloc.y1);
+      cg_rectangle (0, 0, alloc.x2 - alloc.x1, alloc.y2 - alloc.y1);
     }
 #endif
 
@@ -2742,7 +2742,7 @@ rut_text_paint (RutObject *object,
 
       pango_layout_get_extents (layout, NULL, &logical_rect);
 
-      cogl_framebuffer_push_rectangle_clip (fb,
+      cg_framebuffer_push_rectangle_clip (fb,
                                             0, 0,
                                             width,
                                             height);
@@ -2795,7 +2795,7 @@ rut_text_paint (RutObject *object,
       if (logical_rect.width > width ||
           logical_rect.height > height)
         {
-          cogl_framebuffer_push_rectangle_clip (fb,
+          cg_framebuffer_push_rectangle_clip (fb,
                                                 0, 0,
                                                 //alloc.x2 - alloc.x1,
                                                 //alloc.y2 - alloc.y1);
@@ -2818,17 +2818,17 @@ rut_text_paint (RutObject *object,
   real_opacity = rut_text_get_paint_opacity (text)
                * text->text_color.alpha;
 
-  cogl_color_init_from_4f (&color,
+  cg_color_init_from_4f (&color,
                            text->text_color.red,
                            text->text_color.green,
                            text->text_color.blue,
                            real_opacity);
-  cogl_pango_show_layout (fb, layout, text_x, text->text_y, &color);
+  cg_pango_show_layout (fb, layout, text_x, text->text_y, &color);
 
   selection_paint (text, paint_ctx);
 
   if (clip_set)
-    cogl_framebuffer_pop_clip (fb);
+    cg_framebuffer_pop_clip (fb);
 }
 
 static void
@@ -2984,7 +2984,7 @@ _rut_text_set_size (RutObject *object,
                     float height)
 {
   RutText *text = object;
-  CoglVertexP3 *pick_vertices;
+  cg_vertex_p3_t *pick_vertices;
 
   if (text->width == width && text->height == height)
     return;
@@ -3010,7 +3010,7 @@ _rut_text_set_size (RutObject *object,
                                     width,
                                     height);
 
-  pick_vertices = (CoglVertexP3 *)text->pick_mesh->attributes[0]->buffer->data;
+  pick_vertices = (cg_vertex_p3_t *)text->pick_mesh->attributes[0]->buffer->data;
   pick_vertices[0].x = 0;
   pick_vertices[0].y = 0;
   pick_vertices[1].x = 0;
@@ -3211,9 +3211,9 @@ rut_text_new_full (RutContext *ctx,
 {
   RutText *text =
     rut_object_alloc0 (RutText, &rut_text_type, _rut_text_init_type);
-  RutBuffer *mesh_buffer = rut_buffer_new (sizeof (CoglVertexP3) * 6);
+  RutBuffer *mesh_buffer = rut_buffer_new (sizeof (cg_vertex_p3_t) * 6);
   RutMesh *pick_mesh =
-    rut_mesh_new_from_buffer_p3 (COGL_VERTICES_MODE_TRIANGLES, 6, mesh_buffer);
+    rut_mesh_new_from_buffer_p3 (CG_VERTICES_MODE_TRIANGLES, 6, mesh_buffer);
   int i, password_hint_time;
 
   rut_object_unref (mesh_buffer);
@@ -3659,7 +3659,7 @@ rut_text_get_cursor_visible (RutObject *obj)
 
 void
 rut_text_set_cursor_color (RutObject *obj,
-                           const CoglColor *color)
+                           const cg_color_t *color)
 {
   RutText *text = obj;
 
@@ -3683,13 +3683,13 @@ void
 rut_text_set_cursor_color_u32 (RutText *text,
                                uint32_t u32)
 {
-  CoglColor color;
+  cg_color_t color;
 
   rut_color_init_from_uint32 (&color, u32);
   rut_text_set_cursor_color (text, &color);
 }
 
-const CoglColor *
+const cg_color_t *
 rut_text_get_cursor_color (RutObject *obj)
 {
   RutText *text = obj;
@@ -3788,7 +3788,7 @@ rut_text_get_selection_bound (RutObject *obj)
 
 void
 rut_text_set_selection_color (RutObject *obj,
-                              const CoglColor *color)
+                              const cg_color_t *color)
 {
   RutText *text = obj;
 
@@ -3812,13 +3812,13 @@ void
 rut_text_set_selection_color_u32 (RutText *text,
                                   uint32_t u32)
 {
-  CoglColor color;
+  cg_color_t color;
 
   rut_color_init_from_uint32 (&color, u32);
   rut_text_set_selection_color (text, &color);
 }
 
-const CoglColor *
+const cg_color_t *
 rut_text_get_selection_color (RutObject *obj)
 {
   RutText *text = obj;
@@ -3836,7 +3836,7 @@ rut_text_get_selection_color_set (RutObject *obj)
 
 void
 rut_text_set_selected_text_color (RutObject *obj,
-                                  const CoglColor *color)
+                                  const cg_color_t *color)
 {
   RutText *text = obj;
 
@@ -3860,13 +3860,13 @@ void
 rut_text_set_selected_text_color_u32 (RutText *text,
                                       uint32_t u32)
 {
-  CoglColor color;
+  cg_color_t color;
 
   rut_color_init_from_uint32 (&color, u32);
   rut_text_set_selected_text_color (text, &color);
 }
 
-const CoglColor *
+const cg_color_t *
 rut_text_get_selected_text_color (RutObject *obj)
 {
   RutText *text = obj;
@@ -4069,7 +4069,7 @@ rut_text_get_layout (RutText *text)
 
 void
 rut_text_set_color (RutObject *obj,
-                    const CoglColor *color)
+                    const cg_color_t *color)
 {
   RutText *text = obj;
 
@@ -4087,13 +4087,13 @@ void
 rut_text_set_color_u32 (RutText *text,
                         uint32_t u32)
 {
-  CoglColor color;
+  cg_color_t color;
 
   rut_color_init_from_uint32 (&color, u32);
   rut_text_set_color (text, &color);
 }
 
-const CoglColor *
+const cg_color_t *
 rut_text_get_color (RutObject *obj)
 {
   RutText *text = obj;

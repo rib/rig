@@ -270,8 +270,8 @@ rig_entity_new (RutContext *ctx)
 
   entity->scale = 1.0f;
 
-  cogl_quaternion_init_identity (&entity->rotation);
-  cogl_matrix_init_identity (&entity->transform);
+  cg_quaternion_init_identity (&entity->rotation);
+  cg_matrix_init_identity (&entity->transform);
   entity->components = g_ptr_array_new ();
 
   rut_graphable_init (entity);
@@ -401,19 +401,19 @@ void
 rig_entity_get_transformed_position (RigEntity *entity,
                                      float position[3])
 {
-  CoglMatrix transform;
+  cg_matrix_t transform;
   float w = 1;
 
   rut_graphable_get_transform (entity, &transform);
 
-  cogl_matrix_transform_point (&transform,
+  cg_matrix_transform_point (&transform,
                                &position[0],
                                &position[1],
                                &position[2],
                                &w);
 }
 
-const CoglQuaternion *
+const cg_quaternion_t *
 rig_entity_get_rotation (RutObject *obj)
 {
   RigEntity *entity = obj;
@@ -423,7 +423,7 @@ rig_entity_get_rotation (RutObject *obj)
 
 void
 rig_entity_set_rotation (RutObject *obj,
-                         const CoglQuaternion *rotation)
+                         const cg_quaternion_t *rotation)
 {
   RigEntity *entity = obj;
 
@@ -439,7 +439,7 @@ rig_entity_set_rotation (RutObject *obj,
 
 void
 rig_entity_apply_rotations (RutObject *entity,
-                            CoglQuaternion *rotations)
+                            cg_quaternion_t *rotations)
 {
   int depth = 0;
   RutObject **entity_nodes;
@@ -473,26 +473,26 @@ rig_entity_apply_rotations (RutObject *entity,
 
   for (i--; i >= 0; i--)
     {
-      const CoglQuaternion *rotation = rig_entity_get_rotation (entity_nodes[i]);
-      cogl_quaternion_multiply (rotations, rotations, rotation);
+      const cg_quaternion_t *rotation = rig_entity_get_rotation (entity_nodes[i]);
+      cg_quaternion_multiply (rotations, rotations, rotation);
     }
 }
 
 void
 rig_entity_get_rotations (RutObject *entity,
-                          CoglQuaternion *rotation)
+                          cg_quaternion_t *rotation)
 {
-  cogl_quaternion_init_identity (rotation);
+  cg_quaternion_init_identity (rotation);
   rig_entity_apply_rotations (entity, rotation);
 }
 
 void
 rig_entity_get_view_rotations (RutObject *entity,
                                RutObject *camera_entity,
-                               CoglQuaternion *rotation)
+                               cg_quaternion_t *rotation)
 {
   rig_entity_get_rotations (camera_entity, rotation);
-  cogl_quaternion_invert (rotation);
+  cg_quaternion_invert (rotation);
 
   rig_entity_apply_rotations (entity, rotation);
 }
@@ -541,22 +541,22 @@ rig_entity_get_scales (RutObject *entity)
   return scales;
 }
 
-const CoglMatrix *
+const cg_matrix_t *
 rig_entity_get_transform (RutObject *self)
 {
   RigEntity *entity = self;
-  CoglMatrix rotation;
+  cg_matrix_t rotation;
 
   if (!entity->dirty)
     return &entity->transform;
 
-  cogl_matrix_init_translation (&entity->transform,
+  cg_matrix_init_translation (&entity->transform,
                                 entity->position[0],
                                 entity->position[1],
                                 entity->position[2]);
-  cogl_matrix_init_from_quaternion (&rotation, &entity->rotation);
-  cogl_matrix_multiply (&entity->transform, &entity->transform, &rotation);
-  cogl_matrix_scale (&entity->transform,
+  cg_matrix_init_from_quaternion (&rotation, &entity->rotation);
+  cg_matrix_multiply (&entity->transform, &entity->transform, &rotation);
+  cg_matrix_scale (&entity->transform,
                      entity->scale, entity->scale, entity->scale);
 
   entity->dirty = false;
@@ -579,10 +579,10 @@ void
 rig_entity_rotate_x_axis (RigEntity *entity,
                           float x_angle)
 {
-  CoglQuaternion x_rotation;
+  cg_quaternion_t x_rotation;
 
-  cogl_quaternion_init_from_x_rotation (&x_rotation, x_angle);
-  cogl_quaternion_multiply (&entity->rotation, &entity->rotation,
+  cg_quaternion_init_from_x_rotation (&x_rotation, x_angle);
+  cg_quaternion_multiply (&entity->rotation, &entity->rotation,
                             &x_rotation);
 
   entity->dirty = true;
@@ -595,10 +595,10 @@ void
 rig_entity_rotate_y_axis (RigEntity *entity,
                           float y_angle)
 {
-  CoglQuaternion y_rotation;
+  cg_quaternion_t y_rotation;
 
-  cogl_quaternion_init_from_y_rotation (&y_rotation, y_angle);
-  cogl_quaternion_multiply (&entity->rotation, &entity->rotation,
+  cg_quaternion_init_from_y_rotation (&y_rotation, y_angle);
+  cg_quaternion_multiply (&entity->rotation, &entity->rotation,
                             &y_rotation);
 
   entity->dirty = true;
@@ -611,10 +611,10 @@ void
 rig_entity_rotate_z_axis (RigEntity *entity,
                           float z_angle)
 {
-  CoglQuaternion z_rotation;
+  cg_quaternion_t z_rotation;
 
-  cogl_quaternion_init_from_z_rotation (&z_rotation, z_angle);
-  cogl_quaternion_multiply (&entity->rotation, &entity->rotation,
+  cg_quaternion_init_from_z_rotation (&z_rotation, z_angle);
+  cg_quaternion_multiply (&entity->rotation, &entity->rotation,
                             &z_rotation);
 
   entity->dirty = true;

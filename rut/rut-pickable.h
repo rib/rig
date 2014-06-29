@@ -35,7 +35,7 @@
 
 typedef bool (*RutPickablePick) (RutObject *pickable,
                                  RutObject *camera,
-                                 const CoglMatrix *graphable_modelview,
+                                 const cg_matrix_t *graphable_modelview,
                                  float x,
                                  float y);
 
@@ -47,7 +47,7 @@ typedef struct _RutPickableVTable
 static inline bool
 rut_pickable_pick (RutObject *pickable,
                    RutObject *camera,
-                   const CoglMatrix *graphable_modelview,
+                   const cg_matrix_t *graphable_modelview,
                    float x,
                    float y)
 {

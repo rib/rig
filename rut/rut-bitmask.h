@@ -29,8 +29,8 @@
  *   Neil Roberts <neil@linux.intel.com>
  */
 
-#ifndef __COGL_BITMASK_H
-#define __COGL_BITMASK_H
+#ifndef __CG_BITMASK_H
+#define __CG_BITMASK_H
 
 #include <clib.h>
 
@@ -78,7 +78,7 @@ typedef struct _RutBitmaskImaginaryType *RutBitmask;
   (!(_rut_bitmask_to_number (bitmask) & 1UL))
 
 /* Number of bits we can use before needing to allocate an array */
-#define COGL_BITMASK_MAX_DIRECT_BITS (sizeof (unsigned long) * 8 - 1)
+#define CG_BITMASK_MAX_DIRECT_BITS (sizeof (unsigned long) * 8 - 1)
 
 /*
  * _rut_bitmask_init:
@@ -125,7 +125,7 @@ _rut_bitmask_popcount_upto_in_array (const RutBitmask *bitmask,
                                      int upto);
 
 /*
- * cogl_bitmask_set_bits:
+ * cg_bitmask_set_bits:
  * @dst: The bitmask to modify
  * @src: The bitmask to copy bits from
  *
@@ -137,7 +137,7 @@ _rut_bitmask_set_bits (RutBitmask *dst,
                        const RutBitmask *src);
 
 /*
- * cogl_bitmask_xor_bits:
+ * cg_bitmask_xor_bits:
  * @dst: The bitmask to modify
  * @src: The bitmask to copy bits from
  *
@@ -152,7 +152,7 @@ _rut_bitmask_xor_bits (RutBitmask *dst,
 typedef bool (* RutBitmaskForeachFunc) (int bit_num, void *user_data);
 
 /*
- * cogl_bitmask_foreach:
+ * cg_bitmask_foreach:
  * @bitmask: A pointer to a bitmask
  * @func: A callback function
  * @user_data: A pointer to pass to the callback
@@ -188,7 +188,7 @@ _rut_bitmask_get (const RutBitmask *bitmask, unsigned int bit_num)
 {
   if (_rut_bitmask_has_array (bitmask))
     return _rut_bitmask_get_from_array (bitmask, bit_num);
-  else if (bit_num >= COGL_BITMASK_MAX_DIRECT_BITS)
+  else if (bit_num >= CG_BITMASK_MAX_DIRECT_BITS)
     return false;
   else
     return !!(_rut_bitmask_to_bits (bitmask) & (1UL << bit_num));
@@ -206,7 +206,7 @@ static inline void
 _rut_bitmask_set (RutBitmask *bitmask, unsigned int bit_num, bool value)
 {
   if (_rut_bitmask_has_array (bitmask) ||
-      bit_num >= COGL_BITMASK_MAX_DIRECT_BITS)
+      bit_num >= CG_BITMASK_MAX_DIRECT_BITS)
     _rut_bitmask_set_in_array (bitmask, bit_num, value);
   else if (value)
     *bitmask = _rut_bitmask_from_bits (_rut_bitmask_to_bits (bitmask) |
@@ -230,7 +230,7 @@ _rut_bitmask_set_range (RutBitmask *bitmask,
                         bool value)
 {
   if (_rut_bitmask_has_array (bitmask) ||
-      n_bits > COGL_BITMASK_MAX_DIRECT_BITS)
+      n_bits > CG_BITMASK_MAX_DIRECT_BITS)
     _rut_bitmask_set_range_in_array (bitmask, n_bits, value);
   else if (value)
     *bitmask = _rut_bitmask_from_bits (_rut_bitmask_to_bits (bitmask) |
@@ -318,7 +318,7 @@ _rut_bitmask_popcount_upto (const RutBitmask *bitmask,
 {
   if (_rut_bitmask_has_array (bitmask))
     return _rut_bitmask_popcount_upto_in_array (bitmask, upto);
-  else if (upto >= COGL_BITMASK_MAX_DIRECT_BITS)
+  else if (upto >= CG_BITMASK_MAX_DIRECT_BITS)
     return __builtin_popcountl (_rut_bitmask_to_bits (bitmask));
   else
     return __builtin_popcountl (_rut_bitmask_to_bits (bitmask) &
@@ -327,4 +327,4 @@ _rut_bitmask_popcount_upto (const RutBitmask *bitmask,
 
 G_END_DECLS
 
-#endif /* __COGL_BITMASK_H */
+#endif /* __CG_BITMASK_H */

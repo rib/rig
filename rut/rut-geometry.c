@@ -38,7 +38,7 @@
 #include "rut-geometry.h"
 #include "rut-interfaces.h"
 
-CoglAttribute *
+cg_attribute_t *
 rut_create_circle_fan_p2 (RutContext *ctx,
                           int subdivisions,
                           int *n_verts_ret)
@@ -49,8 +49,8 @@ rut_create_circle_fan_p2 (RutContext *ctx,
   } *verts;
   size_t buffer_size = sizeof (struct CircleVert) * n_verts;
   int i;
-  CoglAttributeBuffer *attribute_buffer;
-  CoglAttribute *attribute;
+  cg_attribute_buffer_t *attribute_buffer;
+  cg_attribute_t *attribute;
   float angle_division = 2.0f * (float)G_PI * (1.0f/(float)subdivisions);
 
   verts = alloca (buffer_size);
@@ -69,26 +69,26 @@ rut_create_circle_fan_p2 (RutContext *ctx,
   *n_verts_ret = n_verts;
 
   attribute_buffer =
-    cogl_attribute_buffer_new (ctx->cogl_context, buffer_size, verts);
+    cg_attribute_buffer_new (ctx->cg_context, buffer_size, verts);
 
-  attribute = cogl_attribute_new (attribute_buffer,
-                                  "cogl_position_in",
+  attribute = cg_attribute_new (attribute_buffer,
+                                  "cg_position_in",
                                   sizeof (struct CircleVert),
                                   offsetof (struct CircleVert, x),
                                   2,
-                                  COGL_ATTRIBUTE_TYPE_FLOAT);
+                                  CG_ATTRIBUTE_TYPE_FLOAT);
   return attribute;
 }
 
-CoglPrimitive *
+cg_primitive_t *
 rut_create_circle_fan_primitive (RutContext *ctx,
                                  int subdivisions)
 {
   int n_verts;
-  CoglAttribute *attribute =
+  cg_attribute_t *attribute =
     rut_create_circle_fan_p2 (ctx, subdivisions, &n_verts);
 
-  return cogl_primitive_new_with_attributes (COGL_VERTICES_MODE_TRIANGLE_FAN,
+  return cg_primitive_new_with_attributes (CG_VERTICES_MODE_TRIANGLE_FAN,
                                              n_verts,
                                              &attribute, 1);
 }
@@ -96,16 +96,16 @@ rut_create_circle_fan_primitive (RutContext *ctx,
 RutMesh *
 rut_create_circle_outline_mesh (uint8_t n_vertices)
 {
-  RutBuffer *buffer = rut_buffer_new (n_vertices * sizeof (CoglVertexP3C4));
+  RutBuffer *buffer = rut_buffer_new (n_vertices * sizeof (cg_vertex_p3c4_t));
   RutMesh *mesh;
 
-  rut_tesselate_circle_with_line_indices ((CoglVertexP3C4 *)buffer->data,
+  rut_tesselate_circle_with_line_indices ((cg_vertex_p3c4_t *)buffer->data,
                                           n_vertices,
                                           NULL, /* no indices required */
                                           0,
                                           RUT_AXIS_Z, 255, 255, 255);
 
-  mesh = rut_mesh_new_from_buffer_p3c4 (COGL_VERTICES_MODE_LINE_LOOP,
+  mesh = rut_mesh_new_from_buffer_p3c4 (CG_VERTICES_MODE_LINE_LOOP,
                                         n_vertices, buffer);
 
   rut_object_unref (buffer);
@@ -113,52 +113,52 @@ rut_create_circle_outline_mesh (uint8_t n_vertices)
   return mesh;
 }
 
-CoglPrimitive *
+cg_primitive_t *
 rut_create_circle_outline_primitive (RutContext *ctx,
                                      uint8_t n_vertices)
 {
   RutMesh *mesh = rut_create_circle_outline_mesh (n_vertices);
-  CoglPrimitive *primitive = rut_mesh_create_primitive (ctx, mesh);
+  cg_primitive_t *primitive = rut_mesh_create_primitive (ctx, mesh);
   rut_object_unref (mesh);
   return primitive;
 }
 
-CoglTexture *
+cg_texture_t *
 rut_create_circle_texture (RutContext *ctx,
                            int radius_texels,
                            int padding_texels)
 {
-  CoglPrimitive *circle;
-  CoglTexture2D *tex2d;
-  CoglOffscreen *offscreen;
-  CoglFramebuffer *fb;
-  CoglPipeline *white_pipeline;
+  cg_primitive_t *circle;
+  cg_texture_2d_t *tex2d;
+  cg_offscreen_t *offscreen;
+  cg_framebuffer_t *fb;
+  cg_pipeline_t *white_pipeline;
   int half_size = radius_texels + padding_texels;
   int size = half_size * 2;
 
-  tex2d = cogl_texture_2d_new_with_size (ctx->cogl_context,
+  tex2d = cg_texture_2d_new_with_size (ctx->cg_context,
                                          size, size);
-  offscreen = cogl_offscreen_new_with_texture (tex2d);
+  offscreen = cg_offscreen_new_with_texture (tex2d);
   fb = offscreen;
 
   circle = rut_create_circle_fan_primitive (ctx, 360);
 
-  cogl_framebuffer_clear4f (fb, COGL_BUFFER_BIT_COLOR, 0, 0, 0, 0);
+  cg_framebuffer_clear4f (fb, CG_BUFFER_BIT_COLOR, 0, 0, 0, 0);
 
-  cogl_framebuffer_identity_matrix (fb);
-  cogl_framebuffer_orthographic (fb, 0, 0, size, size, -1, 100);
+  cg_framebuffer_identity_matrix (fb);
+  cg_framebuffer_orthographic (fb, 0, 0, size, size, -1, 100);
 
-  cogl_framebuffer_translate (fb, half_size, half_size, 0);
-  cogl_framebuffer_scale (fb, radius_texels, radius_texels, 1);
+  cg_framebuffer_translate (fb, half_size, half_size, 0);
+  cg_framebuffer_scale (fb, radius_texels, radius_texels, 1);
 
-  white_pipeline = cogl_pipeline_new (ctx->cogl_context);
-  cogl_pipeline_set_color4f (white_pipeline, 1, 1, 1, 1);
+  white_pipeline = cg_pipeline_new (ctx->cg_context);
+  cg_pipeline_set_color4f (white_pipeline, 1, 1, 1, 1);
 
-  cogl_primitive_draw (circle, fb, white_pipeline);
+  cg_primitive_draw (circle, fb, white_pipeline);
 
-  cogl_object_unref (white_pipeline);
-  cogl_object_unref (circle);
-  cogl_object_unref (offscreen);
+  cg_object_unref (white_pipeline);
+  cg_object_unref (circle);
+  cg_object_unref (offscreen);
 
   return tex2d;
 }
@@ -168,7 +168,7 @@ rut_create_circle_texture (RutContext *ctx,
  * @axis: the axis around which the circle is centered
  */
 void
-rut_tesselate_circle_with_line_indices (CoglVertexP3C4 *buffer,
+rut_tesselate_circle_with_line_indices (cg_vertex_p3c4_t *buffer,
                                         uint8_t n_vertices,
                                         uint8_t *indices_data,
                                         int indices_base,
@@ -178,7 +178,7 @@ rut_tesselate_circle_with_line_indices (CoglVertexP3C4 *buffer,
                                         uint8_t b)
 {
   float angle, increment;
-  CoglVertexP3C4 *vertex;
+  cg_vertex_p3c4_t *vertex;
   uint8_t i;
 
   increment = 2 * G_PI / n_vertices;
@@ -235,40 +235,40 @@ rut_create_rotation_tool_mesh (uint8_t n_vertices)
 
   g_assert (n_vertices < 255 / 3);
 
-  vertex_buffer_size = n_vertices * sizeof (CoglVertexP3C4) * 3;
+  vertex_buffer_size = n_vertices * sizeof (cg_vertex_p3c4_t) * 3;
   buffer = rut_buffer_new (vertex_buffer_size);
 
   indices_buffer = rut_buffer_new (n_vertices * 2 * 3);
   indices_data = indices_buffer->data;
 
-  rut_tesselate_circle_with_line_indices ((CoglVertexP3C4 *)buffer->data,
+  rut_tesselate_circle_with_line_indices ((cg_vertex_p3c4_t *)buffer->data,
                                           n_vertices,
                                           indices_data,
                                           0,
                                           RUT_AXIS_X, 255, 0, 0);
 
-  rut_tesselate_circle_with_line_indices ((CoglVertexP3C4 *)buffer->data +
+  rut_tesselate_circle_with_line_indices ((cg_vertex_p3c4_t *)buffer->data +
                                             n_vertices,
                                           n_vertices,
                                           indices_data,
                                           n_vertices,
                                           RUT_AXIS_Y, 0, 255, 0);
 
-  rut_tesselate_circle_with_line_indices ((CoglVertexP3C4 *)buffer->data +
+  rut_tesselate_circle_with_line_indices ((cg_vertex_p3c4_t *)buffer->data +
                                             2 * n_vertices,
                                           n_vertices,
                                           indices_data,
                                           n_vertices * 2,
                                           RUT_AXIS_Z, 0, 0, 255);
 
-  mesh = rut_mesh_new_from_buffer_p3c4 (COGL_VERTICES_MODE_LINES,
+  mesh = rut_mesh_new_from_buffer_p3c4 (CG_VERTICES_MODE_LINES,
                                         n_vertices * 3,
                                         buffer);
 
   rut_object_unref (buffer);
 
   rut_mesh_set_indices (mesh,
-                        COGL_INDICES_TYPE_UNSIGNED_BYTE,
+                        CG_INDICES_TYPE_UNSIGNED_BYTE,
                         indices_buffer,
                         n_vertices * 2 * 3);
 
@@ -277,31 +277,31 @@ rut_create_rotation_tool_mesh (uint8_t n_vertices)
   return mesh;
 }
 
-CoglPrimitive *
+cg_primitive_t *
 rut_create_rotation_tool_primitive (RutContext *ctx,
                                     uint8_t n_vertices)
 {
   RutMesh *mesh = rut_create_rotation_tool_mesh (n_vertices);
-  CoglPrimitive *primitive = rut_mesh_create_primitive (ctx, mesh);
+  cg_primitive_t *primitive = rut_mesh_create_primitive (ctx, mesh);
   rut_object_unref (mesh);
 
   return primitive;
 }
 
-CoglPrimitive *
+cg_primitive_t *
 rut_create_create_grid (RutContext *ctx,
                         float width,
                         float height,
                         float x_space,
                         float y_space)
 {
-  c_array_t *lines = c_array_new (false, false, sizeof (CoglVertexP2));
+  c_array_t *lines = c_array_new (false, false, sizeof (cg_vertex_p2_t));
   float x, y;
   int n_lines = 0;
 
   for (x = 0; x < width; x += x_space)
     {
-      CoglVertexP2 p[2] = {
+      cg_vertex_p2_t p[2] = {
         { .x = x, .y = 0 },
         { .x = x, .y = height }
       };
@@ -311,7 +311,7 @@ rut_create_create_grid (RutContext *ctx,
 
   for (y = 0; y < height; y += y_space)
     {
-      CoglVertexP2 p[2] = {
+      cg_vertex_p2_t p[2] = {
         { .x = 0, .y = y },
         { .x = width, .y = y }
       };
@@ -319,8 +319,8 @@ rut_create_create_grid (RutContext *ctx,
       n_lines++;
     }
 
-  return cogl_primitive_new_p2 (ctx->cogl_context,
-                                COGL_VERTICES_MODE_LINES,
+  return cg_primitive_new_p2 (ctx->cg_context,
+                                CG_VERTICES_MODE_LINES,
                                 n_lines * 2,
-                                (CoglVertexP2 *)lines->data);
+                                (cg_vertex_p2_t *)lines->data);
 }

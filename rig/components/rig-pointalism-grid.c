@@ -97,7 +97,7 @@ typedef struct _GridVertex
 } GridVertex;
 
 static RutMesh *
-mesh_new_grid (CoglVerticesMode mode,
+mesh_new_grid (cg_vertices_mode_t mode,
                int n_vertices,
                int n_indices,
                GridVertex *vertices,
@@ -115,49 +115,49 @@ mesh_new_grid (CoglVerticesMode mode,
   memcpy (index_buffer->data, indices, sizeof (unsigned int) * n_indices);
 
   attributes[0] = rut_attribute_new (vertex_buffer,
-                                     "cogl_position_in",
+                                     "cg_position_in",
                                      sizeof (GridVertex),
                                      offsetof (GridVertex, x0),
                                      2,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
 
   attributes[1] = rut_attribute_new (vertex_buffer,
-                                     "cogl_tex_coord0_in",
+                                     "cg_tex_coord0_in",
                                      sizeof (GridVertex),
                                      offsetof (GridVertex, s0),
                                      2,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
 
   attributes[2] = rut_attribute_new (vertex_buffer,
-                                     "cogl_tex_coord1_in",
+                                     "cg_tex_coord1_in",
                                      sizeof (GridVertex),
                                      offsetof (GridVertex, s3),
                                      2,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
 
   attributes[3] = rut_attribute_new (vertex_buffer,
-                                     "cogl_tex_coord4_in",
+                                     "cg_tex_coord4_in",
                                      sizeof (GridVertex),
                                      offsetof (GridVertex, s3),
                                      2,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
 
   attributes[4] = rut_attribute_new (vertex_buffer,
-                                     "cogl_tex_coord7_in",
+                                     "cg_tex_coord7_in",
                                      sizeof (GridVertex),
                                      offsetof (GridVertex, s3),
                                      2,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
 
   attributes[5] = rut_attribute_new (vertex_buffer,
-                                     "cogl_tex_coord11_in",
+                                     "cg_tex_coord11_in",
                                      sizeof (GridVertex),
                                      offsetof (GridVertex, s0),
                                      2,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
 
   attributes[6] = rut_attribute_new (vertex_buffer,
-                                     "cogl_normal_in",
+                                     "cg_normal_in",
                                      sizeof (GridVertex),
                                      offsetof (GridVertex, nx),
                                      3,
@@ -186,7 +186,7 @@ mesh_new_grid (CoglVerticesMode mode,
 
   mesh = rut_mesh_new (mode, n_vertices, attributes, 10);
   rut_mesh_set_indices (mesh,
-                        COGL_INDICES_TYPE_UNSIGNED_INT,
+                        CG_INDICES_TYPE_UNSIGNED_INT,
                         index_buffer,
                         n_indices);
 
@@ -212,7 +212,7 @@ create_meshes (RigPointalismGrid *grid)
   GridVertex *vertices = c_new (GridVertex, (columns * rows) * 4);
   unsigned int *indices = c_new (unsigned int, (columns * rows) * 6);
   RutBuffer *pick_mesh_buffer;
-  CoglVertexP3 *pick_vertices;
+  cg_vertex_p3_t *pick_vertices;
   float half_tex_width;
   float half_tex_height;
 
@@ -320,15 +320,15 @@ create_meshes (RigPointalismGrid *grid)
     start_y += size;
   }
 
-  grid->mesh = mesh_new_grid (COGL_VERTICES_MODE_TRIANGLES,
+  grid->mesh = mesh_new_grid (CG_VERTICES_MODE_TRIANGLES,
                               (columns * rows) * 4,
                               (columns * rows) * 6,
                               vertices, indices);
-  pick_mesh_buffer = rut_buffer_new (sizeof (CoglVertexP3) * 6);
+  pick_mesh_buffer = rut_buffer_new (sizeof (cg_vertex_p3_t) * 6);
   grid->pick_mesh =
-    rut_mesh_new_from_buffer_p3 (COGL_VERTICES_MODE_TRIANGLES,
+    rut_mesh_new_from_buffer_p3 (CG_VERTICES_MODE_TRIANGLES,
                                  6, pick_mesh_buffer);
-  pick_vertices = (CoglVertexP3 *)pick_mesh_buffer->data;
+  pick_vertices = (cg_vertex_p3_t *)pick_mesh_buffer->data;
 
   half_tex_width = tex_width / 2.0f;
   half_tex_height = tex_height / 2.0f;
@@ -476,7 +476,7 @@ rig_pointalism_grid_new (RutContext *ctx, float size)
   return grid;
 }
 
-CoglPrimitive *
+cg_primitive_t *
 rig_pointalism_grid_get_primitive (RutObject *object)
 {
   RigPointalismGrid *grid = object;

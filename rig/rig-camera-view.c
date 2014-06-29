@@ -140,7 +140,7 @@ paint_overlays (RigCameraView *view,
                 RutPaintContext *paint_ctx)
 {
   RigEngine *engine = view->engine;
-  CoglFramebuffer *fb = rut_camera_get_framebuffer (paint_ctx->camera);
+  cg_framebuffer_t *fb = rut_camera_get_framebuffer (paint_ctx->camera);
   bool need_camera_flush = false;
   bool draw_pick_ray = false;
   bool draw_tools = false;
@@ -168,10 +168,10 @@ paint_overlays (RigCameraView *view,
 
   /* Use this to visualize the depth-of-field alpha buffer... */
 #if 0
-  CoglPipeline *pipeline = cogl_pipeline_new (engine->ctx->cogl_context);
-  cogl_pipeline_set_layer_texture (pipeline, 0, view->dof.depth_pass);
-  cogl_pipeline_set_blend (pipeline, "RGBA=ADD(SRC_COLOR, 0)", NULL);
-  cogl_framebuffer_draw_rectangle (fb,
+  cg_pipeline_t *pipeline = cg_pipeline_new (engine->ctx->cg_context);
+  cg_pipeline_set_layer_texture (pipeline, 0, view->dof.depth_pass);
+  cg_pipeline_set_blend (pipeline, "RGBA=ADD(SRC_COLOR, 0)", NULL);
+  cg_framebuffer_draw_rectangle (fb,
                                    pipeline,
                                    0, 0,
                                    200, 200);
@@ -179,11 +179,11 @@ paint_overlays (RigCameraView *view,
 
   /* Use this to visualize the shadow_map */
 #if 0
-  CoglPipeline *pipeline = cogl_pipeline_new (engine->ctx->cogl_context);
-  cogl_pipeline_set_layer_texture (pipeline, 0, engine->shadow_map);
-  //cogl_pipeline_set_layer_texture (pipeline, 0, engine->shadow_color);
-  cogl_pipeline_set_blend (pipeline, "RGBA=ADD(SRC_COLOR, 0)", NULL);
-  cogl_framebuffer_draw_rectangle (fb,
+  cg_pipeline_t *pipeline = cg_pipeline_new (engine->ctx->cg_context);
+  cg_pipeline_set_layer_texture (pipeline, 0, engine->shadow_map);
+  //cg_pipeline_set_layer_texture (pipeline, 0, engine->shadow_color);
+  cg_pipeline_set_blend (pipeline, "RGBA=ADD(SRC_COLOR, 0)", NULL);
+  cg_framebuffer_draw_rectangle (fb,
                                    pipeline,
                                    0, 0,
                                    200, 200);
@@ -191,7 +191,7 @@ paint_overlays (RigCameraView *view,
 
   if (draw_pick_ray)
     {
-      cogl_primitive_draw (view->picking_ray,
+      cg_primitive_draw (view->picking_ray,
                            fb,
                            view->picking_ray_color);
     }
@@ -309,7 +309,7 @@ _rut_camera_view_paint (RutObject *object,
   RigEngine *engine = view->engine;
   RutObject *suspended_camera = paint_ctx->camera;
   RigPaintContext *rig_paint_ctx = (RigPaintContext *)paint_ctx;
-  CoglFramebuffer *fb = rut_camera_get_framebuffer (paint_ctx->camera);
+  cg_framebuffer_t *fb = rut_camera_get_framebuffer (paint_ctx->camera);
   RigEntity *camera;
   RutObject *camera_component;
   bool need_play_camera_reset = false;
@@ -343,7 +343,7 @@ _rut_camera_view_paint (RutObject *object,
   if (engine->frontend &&
       engine->frontend_id == RIG_FRONTEND_ID_EDITOR)
     {
-      cogl_framebuffer_draw_rectangle (fb,
+      cg_framebuffer_draw_rectangle (fb,
                                        view->bg_pipeline,
                                        0, 0,
                                        view->width,
@@ -367,8 +367,8 @@ _rut_camera_view_paint (RutObject *object,
       int height = viewport[3];
       int save_viewport_x = viewport[0];
       int save_viewport_y = viewport[1];
-      CoglFramebuffer *pass_fb;
-      const CoglColor *bg_color;
+      cg_framebuffer_t *pass_fb;
+      const cg_color_t *bg_color;
 
       rig_dof_effect_set_framebuffer_size (view->dof, width, height);
 
@@ -377,8 +377,8 @@ _rut_camera_view_paint (RutObject *object,
       rut_camera_set_viewport (camera_component, 0, 0, width, height);
 
       rut_camera_flush (camera_component);
-      cogl_framebuffer_clear4f (pass_fb,
-                                COGL_BUFFER_BIT_COLOR|COGL_BUFFER_BIT_DEPTH,
+      cg_framebuffer_clear4f (pass_fb,
+                                CG_BUFFER_BIT_COLOR|CG_BUFFER_BIT_DEPTH,
                                 1, 1, 1, 1);
       rut_camera_end_frame (camera_component);
 
@@ -390,8 +390,8 @@ _rut_camera_view_paint (RutObject *object,
 
       rut_camera_flush (camera_component);
       bg_color = rut_camera_get_background_color (camera_component);
-      cogl_framebuffer_clear4f (pass_fb,
-                                COGL_BUFFER_BIT_COLOR|COGL_BUFFER_BIT_DEPTH,
+      cg_framebuffer_clear4f (pass_fb,
+                                CG_BUFFER_BIT_COLOR|CG_BUFFER_BIT_DEPTH,
                                 bg_color->red,
                                 bg_color->green,
                                 bg_color->blue,
@@ -436,7 +436,7 @@ _rut_camera_view_paint (RutObject *object,
 }
 
 static void
-matrix_view_2d_in_frustum (CoglMatrix *matrix,
+matrix_view_2d_in_frustum (cg_matrix_t *matrix,
                            float left,
                            float right,
                            float bottom,
@@ -459,16 +459,16 @@ matrix_view_2d_in_frustum (CoglMatrix *matrix,
   float width_scale = width_2d_start / width_2d;
   float height_scale = height_2d_start / height_2d;
 
-  //cogl_matrix_translate (matrix,
+  //cg_matrix_translate (matrix,
   //                       left_2d_plane, top_2d_plane, -z_2d);
-  cogl_matrix_translate (matrix,
+  cg_matrix_translate (matrix,
                          left_2d_plane, top_2d_plane, 0);
 
-  cogl_matrix_scale (matrix, width_scale, -height_scale, width_scale);
+  cg_matrix_scale (matrix, width_scale, -height_scale, width_scale);
 }
 
 static void
-matrix_view_2d_in_perspective (CoglMatrix *matrix,
+matrix_view_2d_in_perspective (cg_matrix_t *matrix,
                                float fov_y,
                                float aspect,
                                float z_near,
@@ -510,7 +510,7 @@ get_entity_transform_for_2d_view (float fov_y,
                                   float *dx,
                                   float *dy,
                                   float *dz,
-                                  CoglQuaternion *rotation,
+                                  cg_quaternion_t *rotation,
                                   float *scale)
 {
   float top = z_near * tan (fov_y * G_PI / 360.0);
@@ -532,7 +532,7 @@ get_entity_transform_for_2d_view (float fov_y,
    * cross-section geometry. */
   *scale = width_2d_start / width_2d;
 
-  cogl_quaternion_init_from_z_rotation (rotation, 180);
+  cg_quaternion_init_from_z_rotation (rotation, 180);
 }
 
 static void
@@ -544,13 +544,13 @@ update_view_and_projection (RigCameraView *view)
   float z_near = 10; /* distance to near clipping plane */
   float z_far = 100; /* distance to far clipping plane */
   float x = 0, y = 0, z_2d = 30, w = 1;
-  CoglMatrix inverse;
+  cg_matrix_t inverse;
   float dx, dy, dz, scale;
-  CoglQuaternion rotation;
+  cg_quaternion_t rotation;
 
   engine->z_2d = z_2d; /* position to 2d plane */
 
-  cogl_matrix_init_identity (&engine->main_view);
+  cg_matrix_init_identity (&engine->main_view);
   matrix_view_2d_in_perspective (&engine->main_view,
                                  fovy, aspect, z_near, engine->z_2d,
                                  view->width,
@@ -565,9 +565,9 @@ update_view_and_projection (RigCameraView *view)
   /* Handle the z_2d translation by changing the length of the
    * camera's armature.
    */
-  cogl_matrix_get_inverse (&engine->main_view,
+  cg_matrix_get_inverse (&engine->main_view,
                            &inverse);
-  cogl_matrix_transform_point (&inverse,
+  cg_matrix_transform_point (&inverse,
                                &x, &y, &z_2d, &w);
 
   view->view_camera_z = z_2d / view->device_scale;
@@ -961,14 +961,14 @@ entities_translate_grab_input_cb (RutInputEvent *event,
 
 static void
 unproject_window_coord (RutObject *camera,
-                        const CoglMatrix *modelview,
-                        const CoglMatrix *inverse_modelview,
+                        const cg_matrix_t *modelview,
+                        const cg_matrix_t *inverse_modelview,
                         float object_coord_z,
                         float *x,
                         float *y)
 {
-  const CoglMatrix *projection = rut_camera_get_projection (camera);
-  const CoglMatrix *inverse_projection =
+  const cg_matrix_t *projection = rut_camera_get_projection (camera);
+  const cg_matrix_t *inverse_projection =
     rut_camera_get_inverse_projection (camera);
   //float z;
   float ndc_x, ndc_y, ndc_z, ndc_w;
@@ -978,7 +978,7 @@ unproject_window_coord (RutObject *camera,
   /* Convert object coord z into NDC z */
   {
     float tmp_x, tmp_y, tmp_z;
-    const CoglMatrix *m = modelview;
+    const cg_matrix_t *m = modelview;
     float z, w;
 
     tmp_x = m->xz * object_coord_z + m->xw;
@@ -998,7 +998,7 @@ unproject_window_coord (RutObject *camera,
 
   /* Undo the Projection, putting us in Eye Coords. */
   ndc_w = 1;
-  cogl_matrix_transform_point (inverse_projection,
+  cg_matrix_transform_point (inverse_projection,
                                &ndc_x, &ndc_y, &ndc_z, &ndc_w);
   eye_x = ndc_x / ndc_w;
   eye_y = ndc_y / ndc_w;
@@ -1006,7 +1006,7 @@ unproject_window_coord (RutObject *camera,
   eye_w = 1;
 
   /* Undo the Modelview transform, putting us in Object Coords */
-  cogl_matrix_transform_point (inverse_modelview,
+  cg_matrix_transform_point (inverse_modelview,
                                &eye_x,
                                &eye_y,
                                &eye_z,
@@ -1024,8 +1024,8 @@ update_grab_closure_vectors (EntityTranslateGrabClosure *closure)
   RigCameraView *view = closure->view;
   RutObject *camera = view->view_camera_component;
   RigEngine *engine = view->engine;
-  CoglMatrix parent_transform;
-  CoglMatrix inverse_transform;
+  cg_matrix_t parent_transform;
+  cg_matrix_t inverse_transform;
   float origin[3] = {0, 0, 0};
   float unit_x[3] = {1, 0, 0};
   float unit_y[3] = {0, 1, 0};
@@ -1036,7 +1036,7 @@ update_grab_closure_vectors (EntityTranslateGrabClosure *closure)
 
   rut_graphable_get_modelview (parent, camera, &parent_transform);
 
-  if (!cogl_matrix_get_inverse (&parent_transform, &inverse_transform))
+  if (!cg_matrix_get_inverse (&parent_transform, &inverse_transform))
     {
       memset (closure->x_vec, 0, sizeof (float) * 3);
       memset (closure->y_vec, 0, sizeof (float) * 3);
@@ -1049,7 +1049,7 @@ update_grab_closure_vectors (EntityTranslateGrabClosure *closure)
   entity_y = 0;
   entity_z = 0;
   w = 1;
-  cogl_matrix_transform_point (&parent_transform,
+  cg_matrix_transform_point (&parent_transform,
                                &entity_x, &entity_y, &entity_z, &w);
 
   //c_print ("Entity origin in eye coords: %f %f %f\n", entity_x, entity_y, entity_z);
@@ -1081,13 +1081,13 @@ update_grab_closure_vectors (EntityTranslateGrabClosure *closure)
    * coordinates and convert into input mapping vectors */
 
   w = 1;
-  cogl_matrix_transform_point (&inverse_transform,
+  cg_matrix_transform_point (&inverse_transform,
                                &origin[0], &origin[1], &origin[2], &w);
   w = 1;
-  cogl_matrix_transform_point (&inverse_transform,
+  cg_matrix_transform_point (&inverse_transform,
                                &unit_x[0], &unit_x[1], &unit_x[2], &w);
   w = 1;
-  cogl_matrix_transform_point (&inverse_transform,
+  cg_matrix_transform_point (&inverse_transform,
                                &unit_y[0], &unit_y[1], &unit_y[2], &w);
 
 
@@ -1198,23 +1198,23 @@ translate_grab_entities (RigCameraView *view,
 
 #if 0
 static void
-print_quaternion (const CoglQuaternion *q,
+print_quaternion (const cg_quaternion_t *q,
                   const char *label)
 {
-  float angle = cogl_quaternion_get_rotation_angle (q);
+  float angle = cg_quaternion_get_rotation_angle (q);
   float axis[3];
-  cogl_quaternion_get_rotation_axis (q, axis);
+  cg_quaternion_get_rotation_axis (q, axis);
   c_print ("%s: [%f (%f, %f, %f)]\n", label, angle, axis[0], axis[1], axis[2]);
 }
 #endif
 
-static CoglPrimitive *
+static cg_primitive_t *
 create_line_primitive (RigEngine *engine, float a[3], float b[3])
 {
-  CoglVertexP3 data[2];
-  CoglAttributeBuffer *attribute_buffer;
-  CoglAttribute *attributes[1];
-  CoglPrimitive *primitive;
+  cg_vertex_p3_t data[2];
+  cg_attribute_buffer_t *attribute_buffer;
+  cg_attribute_t *attributes[1];
+  cg_primitive_t *primitive;
 
   data[0].x = a[0];
   data[0].y = a[1];
@@ -1223,33 +1223,33 @@ create_line_primitive (RigEngine *engine, float a[3], float b[3])
   data[1].y = b[1];
   data[1].z = b[2];
 
-  attribute_buffer = cogl_attribute_buffer_new (engine->ctx->cogl_context,
-                                                2 * sizeof (CoglVertexP3),
+  attribute_buffer = cg_attribute_buffer_new (engine->ctx->cg_context,
+                                                2 * sizeof (cg_vertex_p3_t),
                                                 data);
 
-  attributes[0] = cogl_attribute_new (attribute_buffer,
-                                      "cogl_position_in",
-                                      sizeof (CoglVertexP3),
-                                      offsetof (CoglVertexP3, x),
+  attributes[0] = cg_attribute_new (attribute_buffer,
+                                      "cg_position_in",
+                                      sizeof (cg_vertex_p3_t),
+                                      offsetof (cg_vertex_p3_t, x),
                                       3,
-                                      COGL_ATTRIBUTE_TYPE_FLOAT);
+                                      CG_ATTRIBUTE_TYPE_FLOAT);
 
-  primitive = cogl_primitive_new_with_attributes (COGL_VERTICES_MODE_LINES,
+  primitive = cg_primitive_new_with_attributes (CG_VERTICES_MODE_LINES,
                                                   2, attributes, 1);
 
-  cogl_object_unref (attribute_buffer);
-  cogl_object_unref (attributes[0]);
+  cg_object_unref (attribute_buffer);
+  cg_object_unref (attributes[0]);
 
   return primitive;
 }
 
-static CoglPrimitive *
+static cg_primitive_t *
 create_picking_ray (RigEngine *engine,
                     float ray_position[3],
                     float ray_direction[3],
                     float length)
 {
-  CoglPrimitive *line;
+  cg_primitive_t *line;
   float points[6];
 
   points[0] = ray_position[0];
@@ -1266,21 +1266,21 @@ create_picking_ray (RigEngine *engine,
 #endif /* RIG_EDITOR_ENABLED */
 
 static void
-transform_ray (CoglMatrix *transform,
+transform_ray (cg_matrix_t *transform,
                bool        inverse_transform,
                float       ray_origin[3],
                float       ray_direction[3])
 {
-  CoglMatrix inverse, normal_matrix, *m;
+  cg_matrix_t inverse, normal_matrix, *m;
 
   m = transform;
   if (inverse_transform)
     {
-      cogl_matrix_get_inverse (transform, &inverse);
+      cg_matrix_get_inverse (transform, &inverse);
       m = &inverse;
     }
 
-  cogl_matrix_transform_points (m,
+  cg_matrix_transform_points (m,
                                 3, /* num components for input */
                                 sizeof (float) * 3, /* input stride */
                                 ray_origin,
@@ -1288,8 +1288,8 @@ transform_ray (CoglMatrix *transform,
                                 ray_origin,
                                 1 /* n_points */);
 
-  cogl_matrix_get_inverse (m, &normal_matrix);
-  cogl_matrix_transpose (&normal_matrix);
+  cg_matrix_get_inverse (m, &normal_matrix);
+  cg_matrix_transpose (&normal_matrix);
 
   rut_util_transform_normal (&normal_matrix,
                              &ray_direction[0],
@@ -1321,7 +1321,7 @@ entitygraph_pre_pick_cb (RutObject *object,
 
   if (rut_object_is (object, RUT_TRAIT_ID_TRANSFORMABLE))
     {
-      const CoglMatrix *matrix = rut_transformable_get_matrix (object);
+      const cg_matrix_t *matrix = rut_transformable_get_matrix (object);
       rut_matrix_stack_push (pick_ctx->matrix_stack);
       rut_matrix_stack_multiply (pick_ctx->matrix_stack, matrix);
     }
@@ -1337,7 +1337,7 @@ entitygraph_pre_pick_cb (RutObject *object,
       bool hit;
       float transformed_ray_origin[3];
       float transformed_ray_direction[3];
-      CoglMatrix transform;
+      cg_matrix_t transform;
       RutObject *input;
 
       input = rig_entity_get_component (entity, RUT_COMPONENT_TYPE_INPUT);
@@ -1419,7 +1419,7 @@ entitygraph_pre_pick_cb (RutObject *object,
 
       if (hit)
         {
-          const CoglMatrix *view =
+          const cg_matrix_t *view =
             rut_camera_get_view_transform (pick_ctx->view_camera);
           float w = 1;
 
@@ -1435,12 +1435,12 @@ entitygraph_pre_pick_cb (RutObject *object,
           transformed_ray_direction[1] += transformed_ray_origin[1];
           transformed_ray_direction[2] += transformed_ray_origin[2];
 
-          cogl_matrix_transform_point (&transform,
+          cg_matrix_transform_point (&transform,
                                        &transformed_ray_direction[0],
                                        &transformed_ray_direction[1],
                                        &transformed_ray_direction[2],
                                        &w);
-          cogl_matrix_transform_point (view,
+          cg_matrix_transform_point (view,
                                        &transformed_ray_direction[0],
                                        &transformed_ray_direction[1],
                                        &transformed_ray_direction[2],
@@ -1481,9 +1481,9 @@ move_entity_to_camera (RigCameraView *view,
   RigEngine *engine = view->engine;
   RigUndoJournal *sub_journal;
   float camera_position[3];
-  CoglMatrix parent_transform;
-  CoglMatrix inverse_parent_transform;
-  CoglQuaternion camera_rotation;
+  cg_matrix_t parent_transform;
+  cg_matrix_t inverse_parent_transform;
+  cg_quaternion_t camera_rotation;
   RutProperty *rotation_property =
     rut_introspectable_lookup_property (entity, "rotation");
   RutBoxed boxed_rotation;
@@ -1496,7 +1496,7 @@ move_entity_to_camera (RigCameraView *view,
 
   /* Get the transform of the parent of the entity so we can calculate
    * a position relative to the parent */
-  cogl_matrix_init_identity (&parent_transform);
+  cg_matrix_init_identity (&parent_transform);
   parent = rut_graphable_get_parent (entity);
   if (parent)
     rut_graphable_apply_transform (parent, &parent_transform);
@@ -1504,12 +1504,12 @@ move_entity_to_camera (RigCameraView *view,
   /* Transform the camera position by the inverse of the entity's
    * parent transform so that we will have a position in the
    * coordinate space of the entity */
-  if (cogl_matrix_get_inverse (&parent_transform, &inverse_parent_transform))
+  if (cg_matrix_get_inverse (&parent_transform, &inverse_parent_transform))
     {
       RutProperty *position_prop = &entity->properties[RUT_ENTITY_PROP_POSITION];
       RutBoxed boxed_position;
 
-      cogl_matrix_transform_points (&inverse_parent_transform,
+      cg_matrix_transform_points (&inverse_parent_transform,
                                     3, /* n_components */
                                     sizeof (float) * 3, /* stride_in */
                                     camera_position, /* points_in */
@@ -1591,7 +1591,7 @@ static void
 initialize_navigation_camera (RigCameraView *view)
 {
   RigEngine *engine = view->engine;
-  CoglQuaternion no_rotation;
+  cg_quaternion_t no_rotation;
 
   view->origin[0] = engine->device_width / 2;
   view->origin[1] = engine->device_height / 2;
@@ -1602,7 +1602,7 @@ initialize_navigation_camera (RigCameraView *view)
                             view->origin[1],
                             view->origin[2]);
 
-  cogl_quaternion_init_identity (&no_rotation);
+  cg_quaternion_init_identity (&no_rotation);
   rig_entity_set_rotation (view->view_camera_rotate, &no_rotation);
 
   rut_camera_set_zoom (view->view_camera_component, 1);
@@ -1656,10 +1656,10 @@ input_cb (RutInputEvent *event,
       RutButtonState state;
       float ray_position[3], ray_direction[3], screen_pos[2];
       const float *viewport;
-      const CoglMatrix *inverse_projection;
-      //CoglMatrix *camera_transform;
-      const CoglMatrix *camera_view;
-      CoglMatrix camera_transform;
+      const cg_matrix_t *inverse_projection;
+      //cg_matrix_t *camera_transform;
+      const cg_matrix_t *camera_view;
+      cg_matrix_t camera_transform;
       RutObject *picked_entity;
       RigEntity *camera;
       RutObject *camera_component;
@@ -1695,16 +1695,16 @@ input_cb (RutInputEvent *event,
         rut_camera_get_inverse_projection (camera_component);
 
       //c_print ("Camera inverse projection: %p\n", engine->simulator);
-      //cogl_debug_matrix_print (inverse_projection);
+      //cg_debug_matrix_print (inverse_projection);
 
 #if 0
       camera_transform = rig_entity_get_transform (camera);
 #else
       camera_view = rut_camera_get_view_transform (camera_component);
-      cogl_matrix_get_inverse (camera_view, &camera_transform);
+      cg_matrix_get_inverse (camera_view, &camera_transform);
 #endif
       //c_print ("Camera transform:\n");
-      //cogl_debug_matrix_print (&camera_transform);
+      //cg_debug_matrix_print (&camera_transform);
 
       screen_pos[0] = x;
       screen_pos[1] = y;
@@ -1736,14 +1736,14 @@ input_cb (RutInputEvent *event,
           float len;
 
           if (view->picking_ray)
-            cogl_object_unref (view->picking_ray);
+            cg_object_unref (view->picking_ray);
 
           /* FIXME: This is a hack, we should intersect the ray with
            * the far plane to decide how long the debug primitive
            * should be */
-          cogl_matrix_transform_point (&camera_transform,
+          cg_matrix_transform_point (&camera_transform,
                                        &x1, &y1, &z1, &w1);
-          cogl_matrix_transform_point (&camera_transform,
+          cg_matrix_transform_point (&camera_transform,
                                        &x2, &y2, &z2, &w2);
           len = z2 - z1;
 
@@ -1832,7 +1832,7 @@ input_cb (RutInputEvent *event,
           //view->saved_rotation = *rig_entity_get_rotation (view->view_camera);
           view->saved_rotation = *rig_entity_get_rotation (view->view_camera_rotate);
 
-          cogl_quaternion_init_identity (&view->arcball.q_drag);
+          cg_quaternion_init_identity (&view->arcball.q_drag);
 
           //rut_arcball_mouse_down (&view->arcball, engine->width - x, y);
           rut_arcball_mouse_down (&view->arcball, view->width - x, view->height - y);
@@ -1886,9 +1886,9 @@ input_cb (RutInputEvent *event,
           x_vec[2] = origin[2] - unit_x[2];
 
             {
-              CoglMatrix transform;
+              cg_matrix_t transform;
               rut_graphable_get_transform (view->view_camera, &transform);
-              cogl_debug_matrix_print (&transform);
+              cg_debug_matrix_print (&transform);
             }
           c_print (" =========================== x_vec = %f, %f, %f\n",
                    x_vec[0], x_vec[1], x_vec[2]);
@@ -1927,7 +1927,7 @@ input_cb (RutInputEvent *event,
                state == RUT_BUTTON_STATE_2 &&
                ((modifiers & RUT_MODIFIER_SHIFT_ON) == 0))
         {
-          CoglQuaternion new_rotation;
+          cg_quaternion_t new_rotation;
 
           //if (!engine->button_down)
           //  break;
@@ -1941,7 +1941,7 @@ input_cb (RutInputEvent *event,
                    x, y);
 #endif
 
-          cogl_quaternion_multiply (&new_rotation,
+          cg_quaternion_multiply (&new_rotation,
                                     &view->saved_rotation,
                                     &view->arcball.q_drag);
 
@@ -2260,10 +2260,10 @@ rig_camera_view_new (RigEngine *engine)
   if (engine->frontend)
     {
       /* picking ray */
-      view->picking_ray_color = cogl_pipeline_new (engine->ctx->cogl_context);
-      cogl_pipeline_set_color4f (view->picking_ray_color, 1.0, 0.0, 0.0, 1.0);
+      view->picking_ray_color = cg_pipeline_new (engine->ctx->cg_context);
+      cg_pipeline_set_color4f (view->picking_ray_color, 1.0, 0.0, 0.0, 1.0);
 
-      view->bg_pipeline = cogl_pipeline_new (ctx->cogl_context);
+      view->bg_pipeline = cg_pipeline_new (ctx->cg_context);
     }
 
   view->matrix_stack = rut_matrix_stack_new (ctx);

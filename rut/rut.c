@@ -53,13 +53,13 @@ typedef struct _RutTextureCacheEntry
 {
   RutContext *ctx;
   GQuark filename_quark;
-  CoglTexture *texture;
+  cg_texture_t *texture;
 } RutTextureCacheEntry;
 #define RUT_TEXTURE_CACHE_ENTRY(X) ((RutTextureCacheEntry *)X)
 
-CoglContext *rut_cogl_context;
+cg_context_t *rut_cg_context;
 
-static CoglUserDataKey texture_cache_key;
+static cg_user_data_key_t texture_cache_key;
 
 uint8_t _rut_nine_slice_indices_data[] = {
     0,4,5,   0,5,1,  1,5,6,   1,6,2,   2,6,7,    2,7,3,
@@ -180,13 +180,13 @@ _rut_context_free (void *object)
 
   g_hash_table_destroy (ctx->texture_cache);
 
-  if (rut_cogl_context == ctx->cogl_context)
+  if (rut_cg_context == ctx->cg_context)
     {
-      cogl_object_unref (rut_cogl_context);
-      rut_cogl_context = NULL;
+      cg_object_unref (rut_cg_context);
+      rut_cg_context = NULL;
     }
 
-  cogl_object_unref (ctx->cogl_context);
+  cg_object_unref (ctx->cg_context);
 
   _rut_settings_free (ctx->settings);
 
@@ -242,20 +242,20 @@ rut_find_data_file (const char *base_filename)
   return NULL;
 }
 
-CoglTexture *
-rut_load_texture (RutContext *ctx, const char *filename, CoglError **error)
+cg_texture_t *
+rut_load_texture (RutContext *ctx, const char *filename, cg_error_t **error)
 {
   GQuark filename_quark = g_quark_from_string (filename);
   RutTextureCacheEntry *entry =
     g_hash_table_lookup (ctx->texture_cache,
                          GUINT_TO_POINTER (filename_quark));
-  CoglTexture *texture;
+  cg_texture_t *texture;
 
   if (entry)
-    return cogl_object_ref (entry->texture);
+    return cg_object_ref (entry->texture);
 
-  texture = (CoglTexture*)
-    cogl_texture_2d_new_from_file (ctx->cogl_context, filename, error);
+  texture = (cg_texture_t*)
+    cg_texture_2d_new_from_file (ctx->cg_context, filename, error);
   if (!texture)
     return NULL;
 
@@ -268,7 +268,7 @@ rut_load_texture (RutContext *ctx, const char *filename, CoglError **error)
   entry->texture = texture;
 
   /* Track when the texture is freed... */
-  cogl_object_set_user_data (texture,
+  cg_object_set_user_data (texture,
                              &texture_cache_key,
                              entry,
                              texture_destroyed_cb);
@@ -280,13 +280,13 @@ rut_load_texture (RutContext *ctx, const char *filename, CoglError **error)
   return texture;
 }
 
-CoglTexture *
+cg_texture_t *
 rut_load_texture_from_data_file (RutContext *ctx,
                                  const char *filename,
                                  GError **error)
 {
   char *full_path = rut_find_data_file (filename);
-  CoglTexture *tex;
+  cg_texture_t *tex;
 
   if (full_path == NULL)
     {
@@ -297,10 +297,10 @@ rut_load_texture_from_data_file (RutContext *ctx,
       return NULL;
     }
 
-#ifndef COGL_HAS_GLIB_SUPPORT
-#warning "Rig relies on Cogl being built with glib support, assuming CoglError == GError"
+#ifndef CG_HAS_GLIB_SUPPORT
+#warning "Rig relies on Cogl being built with glib support, assuming cg_error_t == GError"
 #endif
-  tex = rut_load_texture (ctx, full_path, (CoglError **) error);
+  tex = rut_load_texture (ctx, full_path, (cg_error_t **) error);
 
   c_free (full_path);
 
@@ -311,7 +311,7 @@ RutContext *
 rut_context_new (RutShell *shell)
 {
   RutContext *context;
-  CoglError *error = NULL;
+  cg_error_t *error = NULL;
 
   c_return_val_if_fail (shell != NULL, NULL);
 
@@ -331,11 +331,11 @@ rut_context_new (RutShell *shell)
   if (!context->headless)
     {
 #ifdef USE_SDL
-      context->cogl_context = cogl_sdl_context_new (SDL_USEREVENT, &error);
+      context->cg_context = cg_sdl_context_new (SDL_USEREVENT, &error);
 #else
-      context->cogl_context = cogl_context_new (NULL, &error);
+      context->cg_context = cg_context_new (NULL, &error);
 #endif
-      if (!context->cogl_context)
+      if (!context->cg_context)
         {
           c_warning ("Failed to create Cogl Context: %s", error->message);
           c_free (context);
@@ -343,8 +343,8 @@ rut_context_new (RutShell *shell)
         }
 
       /* We set up the first created RutContext as a global default context */
-      if (rut_cogl_context == NULL)
-        rut_cogl_context = cogl_object_ref (context->cogl_context);
+      if (rut_cg_context == NULL)
+        rut_cg_context = cg_object_ref (context->cg_context);
 
       context->texture_cache =
         g_hash_table_new_full (g_direct_hash, g_direct_equal,
@@ -352,28 +352,28 @@ rut_context_new (RutShell *shell)
                                _rut_texture_cache_entry_destroy_cb);
 
       context->nine_slice_indices =
-        cogl_indices_new (context->cogl_context,
-                          COGL_INDICES_TYPE_UNSIGNED_BYTE,
+        cg_indices_new (context->cg_context,
+                          CG_INDICES_TYPE_UNSIGNED_BYTE,
                           _rut_nine_slice_indices_data,
                           sizeof (_rut_nine_slice_indices_data) /
                           sizeof (_rut_nine_slice_indices_data[0]));
 
       context->single_texture_2d_template =
-        cogl_pipeline_new (context->cogl_context);
-      cogl_pipeline_set_layer_null_texture (context->single_texture_2d_template,
-                                            0, COGL_TEXTURE_TYPE_2D);
+        cg_pipeline_new (context->cg_context);
+      cg_pipeline_set_layer_null_texture (context->single_texture_2d_template,
+                                            0, CG_TEXTURE_TYPE_2D);
 
       context->circle_texture =
         rut_create_circle_texture (context,
                                    CIRCLE_TEX_RADIUS /* radius */,
                                    CIRCLE_TEX_PADDING /* padding */);
 
-      cogl_matrix_init_identity (&context->identity_matrix);
+      cg_matrix_init_identity (&context->identity_matrix);
 
       context->pango_font_map =
-        COGL_PANGO_FONT_MAP (cogl_pango_font_map_new (context->cogl_context));
+        CG_PANGO_FONT_MAP (cg_pango_font_map_new (context->cg_context));
 
-      cogl_pango_font_map_set_use_mipmapping (context->pango_font_map, true);
+      cg_pango_font_map_set_use_mipmapping (context->pango_font_map, true);
 
       context->pango_context =
         pango_font_map_create_context (PANGO_FONT_MAP (context->pango_font_map));

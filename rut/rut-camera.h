@@ -39,7 +39,7 @@
 
 typedef struct _RutCameraProps
 {
-  CoglColor bg_color;
+  cg_color_t bg_color;
   bool clear_fb;
 
   float viewport[4];
@@ -55,27 +55,27 @@ typedef struct _RutCameraProps
   float focal_distance;
   float depth_of_field;
 
-  CoglMatrix projection;
+  cg_matrix_t projection;
   unsigned int projection_age;
   unsigned int projection_cache_age;
 
-  CoglMatrix inverse_projection;
+  cg_matrix_t inverse_projection;
   unsigned int inverse_projection_age;
 
-  CoglMatrix view;
+  cg_matrix_t view;
   unsigned int view_age;
 
-  CoglMatrix inverse_view;
+  cg_matrix_t inverse_view;
   unsigned int inverse_view_age;
 
   unsigned int transform_age;
   unsigned int at_suspend_transform_age;
 
-  CoglFramebuffer *fb;
+  cg_framebuffer_t *fb;
 
   RutGraphableProps graphable;
 
-  CoglMatrix input_transform;
+  cg_matrix_t input_transform;
   c_list_t *input_regions;
 
   unsigned int orthographic:1;
@@ -94,13 +94,13 @@ typedef struct _RutCameraVTable
                                   float alpha);
 
   void (*set_background_color) (RutObject *camera,
-                                const CoglColor *color);
+                                const cg_color_t *color);
 
   void (*set_clear) (RutObject *camera,
                      bool clear);
 
   void (*set_framebuffer) (RutObject *camera,
-                           CoglFramebuffer *framebuffer);
+                           cg_framebuffer_t *framebuffer);
 
   void (*set_viewport) (RutObject *camera,
                         float x,
@@ -120,7 +120,7 @@ typedef struct _RutCameraVTable
   void (*set_viewport_height) (RutObject *camera,
                                float height);
 
-  const CoglMatrix * (*get_projection) (RutObject *camera);
+  const cg_matrix_t * (*get_projection) (RutObject *camera);
 
   void (*set_near_plane) (RutObject *camera,
                           float near);
@@ -142,15 +142,15 @@ typedef struct _RutCameraVTable
                                         float x2,
                                         float y2);
 
-  const CoglMatrix * (*get_inverse_projection) (RutObject *camera);
+  const cg_matrix_t * (*get_inverse_projection) (RutObject *camera);
 
   void (*set_view_transform) (RutObject *camera,
-                              const CoglMatrix *view);
+                              const cg_matrix_t *view);
 
-  const CoglMatrix * (*get_inverse_view_transform) (RutObject *camera);
+  const cg_matrix_t * (*get_inverse_view_transform) (RutObject *camera);
 
   void (*set_input_transform) (RutObject *camera,
-                               const CoglMatrix *input_transform);
+                               const cg_matrix_t *input_transform);
 
   void (*flush) (RutObject *camera);
 
@@ -173,13 +173,13 @@ typedef struct _RutCameraVTable
                                            float *y);
 
   void (*unproject_coord) (RutObject *camera,
-                           const CoglMatrix *modelview,
-                           const CoglMatrix *inverse_modelview,
+                           const cg_matrix_t *modelview,
+                           const cg_matrix_t *inverse_modelview,
                            float object_coord_z,
                            float *x,
                            float *y);
 
-  CoglPrimitive * (*create_frustum_primitive) (RutObject *camera);
+  cg_primitive_t * (*create_frustum_primitive) (RutObject *camera);
 
   void (*set_focal_distance) (RutObject *camera,
                               float focal_distance);
@@ -205,21 +205,21 @@ rut_camera_set_background_color4f (RutObject *camera,
 
 void
 rut_camera_set_background_color (RutObject *camera,
-                                 const CoglColor *color);
+                                 const cg_color_t *color);
 
-const CoglColor *
+const cg_color_t *
 rut_camera_get_background_color (RutObject *camera);
 
 void
 rut_camera_set_clear (RutObject *camera,
                       bool clear);
 
-CoglFramebuffer *
+cg_framebuffer_t *
 rut_camera_get_framebuffer (RutObject *camera);
 
 void
 rut_camera_set_framebuffer (RutObject *camera,
-                            CoglFramebuffer *framebuffer);
+                            cg_framebuffer_t *framebuffer);
 
 void
 rut_camera_set_viewport (RutObject *camera,
@@ -247,7 +247,7 @@ rut_camera_set_viewport_height (RutObject *camera,
 const float *
 rut_camera_get_viewport (RutObject *camera);
 
-const CoglMatrix *
+const cg_matrix_t *
 rut_camera_get_projection (RutObject *camera);
 
 void
@@ -291,25 +291,25 @@ rut_camera_get_orthographic_coordinates (RutObject *camera,
                                          float *y1,
                                          float *x2,
                                          float *y2);
-const CoglMatrix *
+const cg_matrix_t *
 rut_camera_get_inverse_projection (RutObject *camera);
 
 void
 rut_camera_set_view_transform (RutObject *camera,
-                               const CoglMatrix *view);
+                               const cg_matrix_t *view);
 
-const CoglMatrix *
+const cg_matrix_t *
 rut_camera_get_view_transform (RutObject *camera);
 
-const CoglMatrix *
+const cg_matrix_t *
 rut_camera_get_inverse_view_transform (RutObject *camera);
 
-const CoglMatrix *
+const cg_matrix_t *
 rut_camera_get_input_transform (RutObject *object);
 
 void
 rut_camera_set_input_transform (RutObject *camera,
-                                const CoglMatrix *input_transform);
+                                const cg_matrix_t *input_transform);
 
 void
 rut_camera_flush (RutObject *camera);
@@ -341,13 +341,13 @@ rut_camera_transform_window_coordinate (RutObject *camera,
 
 void
 rut_camera_unproject_coord (RutObject *camera,
-                            const CoglMatrix *modelview,
-                            const CoglMatrix *inverse_modelview,
+                            const cg_matrix_t *modelview,
+                            const cg_matrix_t *inverse_modelview,
                             float object_coord_z,
                             float *x,
                             float *y);
 
-CoglPrimitive *
+cg_primitive_t *
 rut_camera_create_frustum_primitive (RutObject *camera);
 
 void

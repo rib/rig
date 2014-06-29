@@ -41,9 +41,9 @@ rut_color_button_new (RutContext *ctx);
 
 void
 rut_color_button_set_color (RutObject *picker,
-                            const CoglColor *color);
+                            const cg_color_t *color);
 
-const CoglColor *
+const cg_color_t *
 rut_color_button_get_color (RutColorButton *picker);
 
 #endif /* _RUT_COLOR_BUTTON_H_ */

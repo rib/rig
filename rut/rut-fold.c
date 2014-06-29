@@ -135,8 +135,8 @@ rut_fold_new (RutContext *ctx,
   RutBoxLayout *left_header_hbox;
   RutBin *label_bin;
   RutBin *fold_icon_align;
-  CoglTexture *texture;
-  CoglColor black;
+  cg_texture_t *texture;
+  cg_color_t black;
 
   fold->context = ctx;
 
@@ -173,20 +173,20 @@ rut_fold_new (RutContext *ctx,
   texture = rut_load_texture_from_data_file (ctx, "tri-fold-up.png", NULL);
   fold->fold_up_icon = rut_nine_slice_new (ctx, texture,
                                            0, 0, 0, 0,
-                                           cogl_texture_get_width (texture),
-                                           cogl_texture_get_height (texture));
-  cogl_object_unref (texture);
+                                           cg_texture_get_width (texture),
+                                           cg_texture_get_height (texture));
+  cg_object_unref (texture);
 
   texture = rut_load_texture_from_data_file (ctx, "tri-fold-down.png", NULL);
   fold->fold_down_icon = rut_nine_slice_new (ctx, texture,
                                              0, 0, 0, 0,
-                                             cogl_texture_get_width (texture),
-                                             cogl_texture_get_height (texture));
-  cogl_object_unref (texture);
+                                             cg_texture_get_width (texture),
+                                             cg_texture_get_height (texture));
+  cg_object_unref (texture);
 
   fold->fold_icon_shim = rut_fixed_new (ctx,
-                                        cogl_texture_get_width (texture),
-                                        cogl_texture_get_height (texture));
+                                        cg_texture_get_width (texture),
+                                        cg_texture_get_height (texture));
   rut_bin_set_child (fold_icon_align, fold->fold_icon_shim);
   rut_object_unref (fold->fold_icon_shim);
 
@@ -209,7 +209,7 @@ rut_fold_new (RutContext *ctx,
   rut_box_layout_add (header_hbox, true, fold->header_hbox_right);
   rut_object_unref (fold->header_hbox_right);
 
-  cogl_color_init_from_4f (&black, 0, 0, 0, 1);
+  cg_color_init_from_4f (&black, 0, 0, 0, 1);
   rut_fold_set_folder_color (fold, &black);
   rut_fold_set_label_color (fold, &black);
 
@@ -290,18 +290,18 @@ rut_fold_set_folded (RutFold *fold, bool folded)
 }
 
 void
-rut_fold_set_folder_color (RutFold *fold, const CoglColor *color)
+rut_fold_set_folder_color (RutFold *fold, const cg_color_t *color)
 {
-  CoglPipeline *pipeline;
+  cg_pipeline_t *pipeline;
 
   pipeline = rut_nine_slice_get_pipeline (fold->fold_up_icon);
-  cogl_pipeline_set_color (pipeline, color);
+  cg_pipeline_set_color (pipeline, color);
   pipeline = rut_nine_slice_get_pipeline (fold->fold_down_icon);
-  cogl_pipeline_set_color (pipeline, color);
+  cg_pipeline_set_color (pipeline, color);
 }
 
 void
-rut_fold_set_label_color (RutFold *fold, const CoglColor *color)
+rut_fold_set_label_color (RutFold *fold, const cg_color_t *color)
 {
   rut_text_set_color (fold->label, color);
 }

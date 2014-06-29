@@ -97,7 +97,7 @@ struct _RutMesh
   RutObjectBase _base;
 
 
-  CoglVerticesMode mode;
+  cg_vertices_mode_t mode;
   RutAttribute **attributes;
   int n_attributes;
 
@@ -108,7 +108,7 @@ struct _RutMesh
   int n_vertices;
 
   /* optional */
-  CoglIndicesType indices_type;
+  cg_indices_type_t indices_type;
   int n_indices;
   RutBuffer *indices_buffer;
 };
@@ -138,23 +138,23 @@ void
 _rut_mesh_init_type (void);
 
 RutMesh *
-rut_mesh_new (CoglVerticesMode mode,
+rut_mesh_new (cg_vertices_mode_t mode,
               int n_vertices,
               RutAttribute **attributes,
               int n_attributes);
 
 RutMesh *
-rut_mesh_new_from_buffer_p3 (CoglVerticesMode mode,
+rut_mesh_new_from_buffer_p3 (cg_vertices_mode_t mode,
                              int n_vertices,
                              RutBuffer *buffer);
 
 RutMesh *
-rut_mesh_new_from_buffer_p3n3 (CoglVerticesMode mode,
+rut_mesh_new_from_buffer_p3n3 (cg_vertices_mode_t mode,
                                int n_vertices,
                                RutBuffer *buffer);
 
 RutMesh *
-rut_mesh_new_from_buffer_p3c4 (CoglVerticesMode mode,
+rut_mesh_new_from_buffer_p3c4 (cg_vertices_mode_t mode,
                                int n_vertices,
                                RutBuffer *buffer);
 
@@ -165,7 +165,7 @@ rut_mesh_set_attributes (RutMesh *mesh,
 
 void
 rut_mesh_set_indices (RutMesh *mesh,
-                      CoglIndicesType type,
+                      cg_indices_type_t type,
                       RutBuffer *buffer,
                       int n_indices);
 
@@ -173,7 +173,7 @@ rut_mesh_set_indices (RutMesh *mesh,
 RutMesh *
 rut_mesh_copy (RutMesh *mesh);
 
-CoglPrimitive *
+cg_primitive_t *
 rut_mesh_create_primitive (RutContext *ctx,
                            RutMesh *mesh);
 

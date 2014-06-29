@@ -51,14 +51,14 @@ typedef struct _Vertex4
 } Vertex4;
 
 void
-rut_util_fully_transform_vertices (const CoglMatrix *modelview,
-                                    const CoglMatrix *projection,
+rut_util_fully_transform_vertices (const cg_matrix_t *modelview,
+                                    const cg_matrix_t *projection,
                                     const float *viewport,
                                     const float *vertices3_in,
                                     float *vertices3_out,
                                     int n_vertices)
 {
-  CoglMatrix modelview_projection;
+  cg_matrix_t modelview_projection;
   Vertex4 *vertices_tmp;
   int i;
 
@@ -67,10 +67,10 @@ rut_util_fully_transform_vertices (const CoglMatrix *modelview,
   if (n_vertices >= 4)
     {
       /* XXX: we should find a way to cache this per actor */
-      cogl_matrix_multiply (&modelview_projection,
+      cg_matrix_multiply (&modelview_projection,
                             projection,
                             modelview);
-      cogl_matrix_project_points (&modelview_projection,
+      cg_matrix_project_points (&modelview_projection,
                                   3,
                                   sizeof (float) * 3,
                                   vertices3_in,
@@ -80,7 +80,7 @@ rut_util_fully_transform_vertices (const CoglMatrix *modelview,
     }
   else
     {
-      cogl_matrix_transform_points (modelview,
+      cg_matrix_transform_points (modelview,
                                     3,
                                     sizeof (float) * 3,
                                     vertices3_in,
@@ -88,7 +88,7 @@ rut_util_fully_transform_vertices (const CoglMatrix *modelview,
                                     vertices_tmp,
                                     n_vertices);
 
-      cogl_matrix_project_points (projection,
+      cg_matrix_project_points (projection,
                                   3,
                                   sizeof (Vertex4),
                                   vertices_tmp,
@@ -111,12 +111,12 @@ rut_util_fully_transform_vertices (const CoglMatrix *modelview,
 
 void
 rut_util_print_quaternion (const char           *prefix,
-                           const CoglQuaternion *quaternion)
+                           const cg_quaternion_t *quaternion)
 {
   float axis[3], angle;
 
-  cogl_quaternion_get_rotation_axis (quaternion, axis);
-  angle = cogl_quaternion_get_rotation_angle (quaternion);
+  cg_quaternion_get_rotation_axis (quaternion, axis);
+  angle = cg_quaternion_get_rotation_angle (quaternion);
 
   c_print ("%saxis: (%.2f,%.2f,%.2f) angle: %.2f\n", prefix, axis[0],
            axis[1], axis[2], angle);
@@ -124,13 +124,13 @@ rut_util_print_quaternion (const char           *prefix,
 
 void
 rut_util_create_pick_ray (const float       viewport[4],
-                          const CoglMatrix *inverse_projection,
-                          const CoglMatrix *camera_transform,
+                          const cg_matrix_t *inverse_projection,
+                          const cg_matrix_t *camera_transform,
                           float             viewport_pos[2],
                           float             ray_position[3],  /* out */
                           float             ray_direction[3]) /* out */
 {
-  CoglMatrix inverse_transform;
+  cg_matrix_t inverse_transform;
   float ndc_x, ndc_y;
   float projected_points[6], unprojected_points[8];
 
@@ -148,7 +148,7 @@ rut_util_create_pick_ray (const float       viewport[4],
   /* The main drawing code is doing P x C¯¹ (P is the Projection matrix
    * and C is the Camera transform. To inverse that transformation we need
    * to apply C x P¯¹ to the points */
-  cogl_matrix_multiply (&inverse_transform,
+  cg_matrix_multiply (&inverse_transform,
                         camera_transform, inverse_projection);
 
   /* unproject the point at both the near plane and the far plane */
@@ -158,7 +158,7 @@ rut_util_create_pick_ray (const float       viewport[4],
   projected_points[3] = ndc_x;
   projected_points[4] = ndc_y;
   projected_points[5] = 1.0f;
-  cogl_matrix_project_points (&inverse_transform,
+  cg_matrix_project_points (&inverse_transform,
                               3, /* num components for input */
                               sizeof (float) * 3, /* input stride */
                               projected_points,
@@ -180,11 +180,11 @@ rut_util_create_pick_ray (const float       viewport[4],
   ray_direction[1] = unprojected_points[5] - unprojected_points[1];
   ray_direction[2] = unprojected_points[6] - unprojected_points[2];
 
-  cogl_vector3_normalize (ray_direction);
+  cg_vector3_normalize (ray_direction);
 }
 
 void
-rut_util_transform_normal (const CoglMatrix *matrix,
+rut_util_transform_normal (const cg_matrix_t *matrix,
                            float            *x,
                            float            *y,
                            float            *z)
@@ -333,7 +333,7 @@ rut_util_intersect_mesh (RutMesh *mesh,
   rut_mesh_foreach_triangle (mesh,
                              intersect_triangle_cb,
                              &state,
-                             "cogl_position_in",
+                             "cg_position_in",
                              NULL);
 
   if (state.found)
@@ -387,53 +387,53 @@ static const float jitter_offsets[32] =
  * since we jitter the modelview not the projection.
  */
 void
-rut_util_draw_jittered_primitive3f (CoglFramebuffer *fb,
-                                    CoglPrimitive *prim,
+rut_util_draw_jittered_primitive3f (cg_framebuffer_t *fb,
+                                    cg_primitive_t *prim,
                                     float red,
                                     float green,
                                     float blue)
 {
-  CoglContext *cogl_ctx = cogl_framebuffer_get_context (fb);
-  CoglPipeline *pipeline = cogl_pipeline_new (cogl_ctx);
+  cg_context_t *cg_ctx = cg_framebuffer_get_context (fb);
+  cg_pipeline_t *pipeline = cg_pipeline_new (cg_ctx);
   float viewport[4];
-  CoglMatrix projection;
+  cg_matrix_t projection;
   float pixel_dx, pixel_dy;
   int i;
 
 
-  cogl_pipeline_set_color4f (pipeline,
+  cg_pipeline_set_color4f (pipeline,
                              red / 16.0f,
                              green / 16.0f,
                              blue / 16.0f,
                              1.0f / 16.0f);
 
-  cogl_framebuffer_get_viewport4fv (fb, viewport);
-  cogl_framebuffer_get_projection_matrix (fb, &projection);
+  cg_framebuffer_get_viewport4fv (fb, viewport);
+  cg_framebuffer_get_projection_matrix (fb, &projection);
 
   pixel_dx = 2.0 / viewport[2];
   pixel_dy = 2.0 / viewport[3];
 
   for (i = 0; i < 16; i++)
     {
-      CoglMatrix tmp = projection;
-      CoglMatrix jitter;
-      CoglMatrix jittered_projection;
+      cg_matrix_t tmp = projection;
+      cg_matrix_t jitter;
+      cg_matrix_t jittered_projection;
 
       const float *offset = jitter_offsets + 2 * i;
 
-      cogl_matrix_init_identity (&jitter);
-      cogl_matrix_translate (&jitter,
+      cg_matrix_init_identity (&jitter);
+      cg_matrix_translate (&jitter,
                              offset[0] * pixel_dx,
                              offset[1] * pixel_dy,
                              0);
-      cogl_matrix_multiply (&jittered_projection, &jitter, &tmp);
-      cogl_framebuffer_set_projection_matrix (fb, &jittered_projection);
-      cogl_primitive_draw (prim, fb, pipeline);
+      cg_matrix_multiply (&jittered_projection, &jitter, &tmp);
+      cg_framebuffer_set_projection_matrix (fb, &jittered_projection);
+      cg_primitive_draw (prim, fb, pipeline);
     }
 
-  cogl_framebuffer_set_projection_matrix (fb, &projection);
+  cg_framebuffer_set_projection_matrix (fb, &projection);
 
-  cogl_object_unref (pipeline);
+  cg_object_unref (pipeline);
 }
 
 bool
@@ -563,7 +563,7 @@ rut_util_is_boolean_env_set (const char *variable)
 }
 
 void
-rut_util_matrix_scaled_perspective (CoglMatrix *matrix,
+rut_util_matrix_scaled_perspective (cg_matrix_t *matrix,
                                     float fov_y,
                                     float aspect,
                                     float z_near,
@@ -573,7 +573,7 @@ rut_util_matrix_scaled_perspective (CoglMatrix *matrix,
   float ymax = z_near * tanf (fov_y * G_PI / 360.0);
   float inverse_scale = 1.0 / scale;
 
-  cogl_matrix_frustum (matrix,
+  cg_matrix_frustum (matrix,
                        -ymax * aspect * inverse_scale,/* left */
                        ymax * aspect * inverse_scale, /* right */
                        -ymax * inverse_scale, /* bottom */
@@ -584,15 +584,15 @@ rut_util_matrix_scaled_perspective (CoglMatrix *matrix,
 
 /* XXX: The vertices must be 4 components: [x, y, z, w] */
 void
-rut_util_fully_transform_points (const CoglMatrix *modelview,
-                                 const CoglMatrix *projection,
+rut_util_fully_transform_points (const cg_matrix_t *modelview,
+                                 const cg_matrix_t *projection,
                                  const float *viewport,
                                  float *verts,
                                  int n_verts)
 {
   int i;
 
-  cogl_matrix_transform_points (modelview,
+  cg_matrix_transform_points (modelview,
                                 2, /* n_components */
                                 sizeof (float) * 4, /* stride_in */
                                 verts, /* points_in */
@@ -601,7 +601,7 @@ rut_util_fully_transform_points (const CoglMatrix *modelview,
                                 verts, /* points_out */
                                 4 /* n_points */);
 
-  cogl_matrix_project_points (projection,
+  cg_matrix_project_points (projection,
                               3, /* n_components */
                               sizeof (float) * 4, /* stride_in */
                               verts, /* points_in */

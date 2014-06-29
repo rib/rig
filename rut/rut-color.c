@@ -75,7 +75,7 @@ parse_rgb_value (char *str,
 }
 
 static gboolean
-parse_rgba (CoglColor *color,
+parse_rgba (cg_color_t *color,
             char *str,
             gboolean has_alpha)
 {
@@ -130,13 +130,13 @@ parse_rgba (CoglColor *color,
   if (*str != ')')
     return false;
 
-  cogl_color_init_from_4f (color, red, green, blue, alpha);
+  cg_color_init_from_4f (color, red, green, blue, alpha);
 
   return true;
 }
 
 void
-rut_color_init_from_hls (CoglColor *color,
+rut_color_init_from_hls (cg_color_t *color,
                          float hue,
                          float luminance,
                          float saturation)
@@ -150,7 +150,7 @@ rut_color_init_from_hls (CoglColor *color,
 
   if (saturation == 0)
     {
-      cogl_color_init_from_4f (color, luminance, luminance, luminance, 1.0);
+      cg_color_init_from_4f (color, luminance, luminance, luminance, 1.0);
       return;
     }
 
@@ -190,7 +190,7 @@ rut_color_init_from_hls (CoglColor *color,
 }
 
 static gboolean
-parse_hsla (CoglColor *color,
+parse_hsla (cg_color_t *color,
             char *str,
             gboolean has_alpha)
 {
@@ -277,7 +277,7 @@ parse_hsla (CoglColor *color,
 
 bool
 rut_color_init_from_string (RutContext *ctx,
-                            CoglColor *color,
+                            cg_color_t *color,
                             const char *str)
 {
   void *color_index_ptr;
@@ -333,7 +333,7 @@ rut_color_init_from_string (RutContext *ctx,
 
               alpha = result & 0xff;
 
-              cogl_color_init_from_4ub (color, red, green, blue, alpha);
+              cg_color_init_from_4ub (color, red, green, blue, alpha);
 
               return true;
 
@@ -344,7 +344,7 @@ rut_color_init_from_string (RutContext *ctx,
 
               alpha = 0xff;
 
-              cogl_color_init_from_4ub (color, red, green, blue, alpha);
+              cg_color_init_from_4ub (color, red, green, blue, alpha);
 
               return true;
 
@@ -359,7 +359,7 @@ rut_color_init_from_string (RutContext *ctx,
               blue  = (blue  << 4) | blue;
               alpha = (alpha << 4) | alpha;
 
-              cogl_color_init_from_4ub (color, red, green, blue, alpha);
+              cg_color_init_from_4ub (color, red, green, blue, alpha);
 
               return true;
 
@@ -374,7 +374,7 @@ rut_color_init_from_string (RutContext *ctx,
 
               alpha = 0xff;
 
-              cogl_color_init_from_4ub (color, red, green, blue, alpha);
+              cg_color_init_from_4ub (color, red, green, blue, alpha);
 
               return true;
 
@@ -411,7 +411,7 @@ rut_color_init_from_string (RutContext *ctx,
        * when retrieving the value back the indices stored are all offset by
        * one. */
       int color_index = GPOINTER_TO_INT (color_index_ptr) - 1;
-      cogl_color_init_from_4ub (color,
+      cg_color_init_from_4ub (color,
                                color_entries[color_index].red,
                                color_entries[color_index].green,
                                color_entries[color_index].blue,
@@ -423,7 +423,7 @@ rut_color_init_from_string (RutContext *ctx,
 }
 
 void
-rut_color_init_from_uint32 (CoglColor *color, uint32_t value)
+rut_color_init_from_uint32 (cg_color_t *color, uint32_t value)
 {
   color->red = RUT_UINT32_RED_AS_FLOAT (value);
   color->green = RUT_UINT32_GREEN_AS_FLOAT (value);
@@ -432,9 +432,9 @@ rut_color_init_from_uint32 (CoglColor *color, uint32_t value)
 }
 
 void
-rut_color_add (const CoglColor *a,
-               const CoglColor *b,
-               CoglColor *result)
+rut_color_add (const cg_color_t *a,
+               const cg_color_t *b,
+               cg_color_t *result)
 {
   c_return_if_fail (a != NULL);
   c_return_if_fail (b != NULL);
@@ -448,9 +448,9 @@ rut_color_add (const CoglColor *a,
 }
 
 void
-rut_color_subtract (const CoglColor *a,
-                    const CoglColor *b,
-                    CoglColor *result)
+rut_color_subtract (const cg_color_t *a,
+                    const cg_color_t *b,
+                    cg_color_t *result)
 {
   c_return_if_fail (a != NULL);
   c_return_if_fail (b != NULL);
@@ -464,22 +464,22 @@ rut_color_subtract (const CoglColor *a,
 }
 
 void
-rut_color_lighten (const CoglColor *color,
-                   CoglColor *result)
+rut_color_lighten (const cg_color_t *color,
+                   cg_color_t *result)
 {
   rut_color_shade (color, 1.3, result);
 }
 
 void
-rut_color_darken (const CoglColor *color,
-                  CoglColor *result)
+rut_color_darken (const cg_color_t *color,
+                  cg_color_t *result)
 {
   rut_color_shade (color, 0.7, result);
 }
 
 /**
  * rut_color_to_hls:
- * @color: a #CoglColor
+ * @color: a #cg_color_t
  * @hue: (out): return location for the hue value or %NULL
  * @luminance: (out): return location for the luminance value or %NULL
  * @saturation: (out): return location for the saturation value or %NULL
@@ -490,7 +490,7 @@ rut_color_darken (const CoglColor *color,
  * @saturation values are in the 0 .. 1 range.
  */
 void
-rut_color_to_hls (const CoglColor *color,
+rut_color_to_hls (const cg_color_t *color,
                   float *hue,
                   float *luminance,
                   float *saturation)
@@ -567,9 +567,9 @@ rut_color_to_hls (const CoglColor *color,
 }
 
 void
-rut_color_shade (const CoglColor *color,
+rut_color_shade (const cg_color_t *color,
                  float factor,
-                 CoglColor *result)
+                 cg_color_t *result)
 {
   float h, l, s;
 
@@ -596,7 +596,7 @@ rut_color_shade (const CoglColor *color,
 }
 
 gchar *
-rut_color_to_string (const CoglColor *color)
+rut_color_to_string (const cg_color_t *color)
 {
   c_return_val_if_fail (color != NULL, NULL);
 
@@ -608,10 +608,10 @@ rut_color_to_string (const CoglColor *color)
 }
 
 void
-rut_color_interpolate (const CoglColor *initial,
-                       const CoglColor *final,
+rut_color_interpolate (const cg_color_t *initial,
+                       const cg_color_t *final,
                        float progress,
-                       CoglColor *result)
+                       cg_color_t *result)
 {
   c_return_if_fail (initial != NULL);
   c_return_if_fail (final != NULL);

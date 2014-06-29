@@ -32,29 +32,29 @@
 #include <rut-types.h>
 #include <rut-mesh.h>
 
-CoglAttribute *
+cg_attribute_t *
 rut_create_circle_fan_p2 (RutContext *ctx,
                           int subdivisions,
                           int *n_verts);
 
-CoglPrimitive *
+cg_primitive_t *
 rut_create_circle_fan_primitive (RutContext *ctx,
                                  int subdivisions);
 
 RutMesh *
 rut_create_circle_outline_mesh (uint8_t n_vertices);
 
-CoglPrimitive *
+cg_primitive_t *
 rut_create_circle_outline_primitive (RutContext *ctx,
                                      uint8_t n_vertices);
 
-CoglTexture *
+cg_texture_t *
 rut_create_circle_texture (RutContext *ctx,
                            int radius_texels,
                            int padding_texels);
 
 void
-rut_tesselate_circle_with_line_indices (CoglVertexP3C4 *buffer,
+rut_tesselate_circle_with_line_indices (cg_vertex_p3c4_t *buffer,
                                         uint8_t n_vertices,
                                         uint8_t *indices_data,
                                         int indices_base,
@@ -66,11 +66,11 @@ rut_tesselate_circle_with_line_indices (CoglVertexP3C4 *buffer,
 RutMesh *
 rut_create_rotation_tool_mesh (uint8_t n_vertices);
 
-CoglPrimitive *
+cg_primitive_t *
 rut_create_rotation_tool_primitive (RutContext *ctx,
                                     uint8_t n_vertices);
 
-CoglPrimitive *
+cg_primitive_t *
 rut_create_create_grid (RutContext *ctx,
                         float width,
                         float height,

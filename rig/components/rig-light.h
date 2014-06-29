@@ -46,9 +46,9 @@ struct _RigLight
 {
   RutObjectBase _base;
   RutComponentableProps component;
-  CoglColor ambient;
-  CoglColor diffuse;
-  CoglColor specular;
+  cg_color_t ambient;
+  cg_color_t diffuse;
+  cg_color_t specular;
 
   RutContext *context;
 
@@ -64,31 +64,31 @@ rig_light_free (RigLight *light);
 
 void
 rig_light_set_ambient (RutObject *light,
-                       const CoglColor *ambient);
+                       const cg_color_t *ambient);
 
-const CoglColor *
+const cg_color_t *
 rig_light_get_ambient (RutObject *light);
 
 void
 rig_light_set_diffuse (RutObject *light,
-                       const CoglColor *diffuse);
+                       const cg_color_t *diffuse);
 
-const CoglColor *
+const cg_color_t *
 rig_light_get_diffuse (RigLight *light);
 
 void
 rig_light_set_specular (RutObject *light,
-                        const CoglColor *specular);
+                        const cg_color_t *specular);
 
-const CoglColor *
+const cg_color_t *
 rig_light_get_specular (RigLight *light);
 
 void
 rig_light_add_pipeline (RigLight *light,
-                        CoglPipeline *pipeline);
+                        cg_pipeline_t *pipeline);
 
 void
 rig_light_set_uniforms (RigLight *light,
-                        CoglPipeline *pipeline);
+                        cg_pipeline_t *pipeline);
 
 #endif /* __RIG_LIGHT_H__ */

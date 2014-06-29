@@ -110,12 +110,12 @@ _rut_drag_bin_set_size (RutObject *object, float width, float height)
 static bool
 _rut_drag_bin_pick (RutObject *inputable,
                     RutObject *camera,
-                    const CoglMatrix *modelview,
+                    const cg_matrix_t *modelview,
                     float x,
                     float y)
 {
   RutDragBin *bin = inputable;
-  CoglMatrix matrix;
+  cg_matrix_t matrix;
 
   if (!modelview)
     {
@@ -261,7 +261,7 @@ _rut_drag_bin_grab_input_cb (RutInputEvent *event,
 
           if (dist > 20)
             {
-              CoglMatrix transform;
+              cg_matrix_t transform;
 
               start_drag (bin);
 

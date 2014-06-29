@@ -243,9 +243,9 @@ rig_material_new (RutContext *ctx,
   material->visible = true;
   material->receive_shadow = true;
 
-  cogl_color_init_from_4f (&material->ambient, 0.23, 0.23, 0.23, 1);
-  cogl_color_init_from_4f (&material->diffuse, 0.75, 0.75, 0.75, 1);
-  cogl_color_init_from_4f (&material->specular, 0.64, 0.64, 0.64, 1);
+  cg_color_init_from_4f (&material->ambient, 0.23, 0.23, 0.23, 1);
+  cg_color_init_from_4f (&material->diffuse, 0.75, 0.75, 0.75, 1);
+  cg_color_init_from_4f (&material->specular, 0.64, 0.64, 0.64, 1);
 
   material->shininess = 100;
 
@@ -376,7 +376,7 @@ rig_material_get_alpha_mask_asset (RutObject *object)
 
 void
 rig_material_set_ambient (RutObject *obj,
-                          const CoglColor *color)
+                          const cg_color_t *color)
 {
   RigMaterial *material = obj;
   RigEntity *entity;
@@ -391,7 +391,7 @@ rig_material_set_ambient (RutObject *obj,
                       &material->properties[RIG_MATERIAL_PROP_AMBIENT]);
 }
 
-const CoglColor *
+const cg_color_t *
 rig_material_get_ambient (RutObject *obj)
 {
   RigMaterial *material = obj;
@@ -401,7 +401,7 @@ rig_material_get_ambient (RutObject *obj)
 
 void
 rig_material_set_diffuse (RutObject *obj,
-                          const CoglColor *color)
+                          const cg_color_t *color)
 {
   RigMaterial *material = obj;
   RigEntity *entity;
@@ -416,7 +416,7 @@ rig_material_set_diffuse (RutObject *obj,
                       &material->properties[RIG_MATERIAL_PROP_DIFFUSE]);
 }
 
-const CoglColor *
+const cg_color_t *
 rig_material_get_diffuse (RutObject *obj)
 {
   RigMaterial *material = obj;
@@ -426,7 +426,7 @@ rig_material_get_diffuse (RutObject *obj)
 
 void
 rig_material_set_specular (RutObject *obj,
-                           const CoglColor *color)
+                           const cg_color_t *color)
 {
   RigMaterial *material = obj;
   RigEntity *entity;
@@ -441,7 +441,7 @@ rig_material_set_specular (RutObject *obj,
                       &material->properties[RIG_MATERIAL_PROP_SPECULAR]);
 }
 
-const CoglColor *
+const cg_color_t *
 rig_material_get_specular (RutObject *obj)
 {
   RigMaterial *material = obj;
@@ -503,7 +503,7 @@ rig_material_set_alpha_mask_threshold (RutObject *obj,
 
 void
 rig_material_flush_uniforms (RigMaterial *material,
-                             CoglPipeline *pipeline)
+                             cg_pipeline_t *pipeline)
 {
   int location;
   RutObject *geo;
@@ -512,31 +512,31 @@ rig_material_flush_uniforms (RigMaterial *material,
   //if (material->uniforms_age == material->uniforms_flush_age)
   //  return;
 
-  location = cogl_pipeline_get_uniform_location (pipeline, "material_ambient");
-  cogl_pipeline_set_uniform_float (pipeline,
+  location = cg_pipeline_get_uniform_location (pipeline, "material_ambient");
+  cg_pipeline_set_uniform_float (pipeline,
                                    location,
                                    4, 1,
                                    (float *)&material->ambient);
 
-  location = cogl_pipeline_get_uniform_location (pipeline, "material_diffuse");
-  cogl_pipeline_set_uniform_float (pipeline,
+  location = cg_pipeline_get_uniform_location (pipeline, "material_diffuse");
+  cg_pipeline_set_uniform_float (pipeline,
                                    location,
                                    4, 1,
                                    (float *)&material->diffuse);
 
-  location = cogl_pipeline_get_uniform_location (pipeline, "material_specular");
-  cogl_pipeline_set_uniform_float (pipeline,
+  location = cg_pipeline_get_uniform_location (pipeline, "material_specular");
+  cg_pipeline_set_uniform_float (pipeline,
                                    location,
                                    4, 1,
                                    (float *)&material->specular);
 
-  location = cogl_pipeline_get_uniform_location (pipeline,
+  location = cg_pipeline_get_uniform_location (pipeline,
                                                  "material_shininess");
-  cogl_pipeline_set_uniform_1f (pipeline, location, material->shininess);
+  cg_pipeline_set_uniform_1f (pipeline, location, material->shininess);
 
-  location = cogl_pipeline_get_uniform_location (pipeline,
+  location = cg_pipeline_get_uniform_location (pipeline,
                                                  "material_alpha_threshold");
-  cogl_pipeline_set_uniform_1f (pipeline, location, material->alpha_mask_threshold);
+  cg_pipeline_set_uniform_1f (pipeline, location, material->alpha_mask_threshold);
 
   geo = rig_entity_get_component (entity, RUT_COMPONENT_TYPE_GEOMETRY);
 
@@ -547,18 +547,18 @@ rig_material_flush_uniforms (RigMaterial *material,
       scale = rig_pointalism_grid_get_scale (geo);
       z = rig_pointalism_grid_get_z (geo);
 
-      location = cogl_pipeline_get_uniform_location (pipeline,
+      location = cg_pipeline_get_uniform_location (pipeline,
                                                      "scale_factor");
-      cogl_pipeline_set_uniform_1f (pipeline, location, scale);
+      cg_pipeline_set_uniform_1f (pipeline, location, scale);
 
-      location = cogl_pipeline_get_uniform_location (pipeline, "z_trans");
-      cogl_pipeline_set_uniform_1f (pipeline, location, z);
+      location = cg_pipeline_get_uniform_location (pipeline, "z_trans");
+      cg_pipeline_set_uniform_1f (pipeline, location, z);
 
-      location = cogl_pipeline_get_uniform_location (pipeline, "anti_scale");
+      location = cg_pipeline_get_uniform_location (pipeline, "anti_scale");
       if (rig_pointalism_grid_get_lighter (geo))
-        cogl_pipeline_set_uniform_1i (pipeline, location, 1);
+        cg_pipeline_set_uniform_1i (pipeline, location, 1);
       else
-        cogl_pipeline_set_uniform_1i (pipeline, location, 0);
+        cg_pipeline_set_uniform_1i (pipeline, location, 0);
     }
 
   material->uniforms_flush_age = material->uniforms_age;

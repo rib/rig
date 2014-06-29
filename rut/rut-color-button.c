@@ -62,7 +62,7 @@ struct _RutColorButton
 
   int width, height;
 
-  CoglColor color;
+  cg_color_t color;
 
   bool have_button_grab;
   bool depressed;
@@ -71,12 +71,12 @@ struct _RutColorButton
   RutColorPicker *picker;
   RutInputRegion *picker_input_region;
 
-  CoglPipeline *dark_edge_pipeline;
-  CoglPipeline *light_edge_pipeline;
-  CoglPipeline *padding_pipeline;
+  cg_pipeline_t *dark_edge_pipeline;
+  cg_pipeline_t *light_edge_pipeline;
+  cg_pipeline_t *padding_pipeline;
 
   bool color_pipeline_dirty;
-  CoglPipeline *color_pipeline;
+  cg_pipeline_t *color_pipeline;
 
   RutInputRegion *input_region;
 
@@ -116,10 +116,10 @@ _rut_color_button_free (void *object)
   ungrab (button);
   remove_picker (button);
 
-  cogl_object_unref (button->dark_edge_pipeline);
-  cogl_object_unref (button->light_edge_pipeline);
-  cogl_object_unref (button->padding_pipeline);
-  cogl_object_unref (button->color_pipeline);
+  cg_object_unref (button->dark_edge_pipeline);
+  cg_object_unref (button->light_edge_pipeline);
+  cg_object_unref (button->padding_pipeline);
+  cg_object_unref (button->color_pipeline);
 
   rut_graphable_remove_child (button->input_region);
   rut_object_unref (button->input_region);
@@ -138,17 +138,17 @@ _rut_color_button_paint (RutObject *object,
 {
   RutColorButton *button = (RutColorButton *) object;
   RutObject *camera = paint_ctx->camera;
-  CoglFramebuffer *fb = rut_camera_get_framebuffer (camera);
-  CoglPipeline *tl_pipeline;
-  CoglPipeline *br_pipeline;
+  cg_framebuffer_t *fb = rut_camera_get_framebuffer (camera);
+  cg_pipeline_t *tl_pipeline;
+  cg_pipeline_t *br_pipeline;
   float x1, y1, x2, y2;
 
   if (button->color_pipeline_dirty)
     {
-      CoglPipeline *pipeline = cogl_pipeline_copy (button->color_pipeline);
+      cg_pipeline_t *pipeline = cg_pipeline_copy (button->color_pipeline);
 
-      cogl_pipeline_set_color (pipeline, &button->color);
-      cogl_object_unref (button->color_pipeline);
+      cg_pipeline_set_color (pipeline, &button->color);
+      cg_object_unref (button->color_pipeline);
       button->color_pipeline = pipeline;
     }
 
@@ -164,26 +164,26 @@ _rut_color_button_paint (RutObject *object,
     }
 
   /* Top edge */
-  cogl_framebuffer_draw_rectangle (fb,
+  cg_framebuffer_draw_rectangle (fb,
                                    tl_pipeline,
                                    0.0f, 0.0f,
                                    button->width,
                                    RUT_COLOR_BUTTON_EDGE_SIZE);
   /* Left edge */
-  cogl_framebuffer_draw_rectangle (fb,
+  cg_framebuffer_draw_rectangle (fb,
                                    tl_pipeline,
                                    0.0f, RUT_COLOR_BUTTON_EDGE_SIZE,
                                    RUT_COLOR_BUTTON_EDGE_SIZE,
                                    button->height);
   /* Bottom edge */
-  cogl_framebuffer_draw_rectangle (fb,
+  cg_framebuffer_draw_rectangle (fb,
                                    br_pipeline,
                                    RUT_COLOR_BUTTON_EDGE_SIZE,
                                    button->height - RUT_COLOR_BUTTON_EDGE_SIZE,
                                    button->width,
                                    button->height);
   /* Right edge */
-  cogl_framebuffer_draw_rectangle (fb,
+  cg_framebuffer_draw_rectangle (fb,
                                    br_pipeline,
                                    button->width - RUT_COLOR_BUTTON_EDGE_SIZE,
                                    RUT_COLOR_BUTTON_EDGE_SIZE,
@@ -231,14 +231,14 @@ _rut_color_button_paint (RutObject *object,
         y2
       };
 
-    cogl_framebuffer_draw_rectangles (fb,
+    cg_framebuffer_draw_rectangles (fb,
                                       button->padding_pipeline,
                                       padding_rects,
                                       4 /* n_rects */);
   }
 
   /* Center color rectangle */
-  cogl_framebuffer_draw_rectangle (fb,
+  cg_framebuffer_draw_rectangle (fb,
                                    button->color_pipeline,
                                    x1, y1, x2, y2);
 }
@@ -342,13 +342,13 @@ _rut_color_button_init_type (void)
 #undef TYPE
 }
 
-static CoglPipeline *
-create_color_pipeline (CoglContext *context,
+static cg_pipeline_t *
+create_color_pipeline (cg_context_t *context,
                        uint32_t color)
 {
-  CoglPipeline *pipeline = cogl_pipeline_new (context);
+  cg_pipeline_t *pipeline = cg_pipeline_new (context);
 
-  cogl_pipeline_set_color4ub (pipeline,
+  cg_pipeline_set_color4ub (pipeline,
                               color >> 24,
                               (color >> 16) & 0xff,
                               (color >> 8) & 0xff,
@@ -443,7 +443,7 @@ show_picker (RutColorButton *button,
   RutObject *root, *parent;
   RutProperty *picker_color_prop;
   float picker_width, picker_height;
-  CoglMatrix model_transform;
+  cg_matrix_t model_transform;
   float button_points[3 * 2];
   float x1, y1, x2, y2;
   float picker_x, picker_y;
@@ -494,7 +494,7 @@ show_picker (RutColorButton *button,
   button_points[3] = button->width;
   button_points[4] = button->height;
   button_points[5] = 0.0f;
-  cogl_matrix_transform_points (&model_transform,
+  cg_matrix_transform_points (&model_transform,
                                 2, /* n_components */
                                 sizeof (float) * 3, /* stride_in */
                                 button_points, /* points_in */
@@ -630,17 +630,17 @@ rut_color_button_new (RutContext *context)
 
   button->context = rut_object_ref (context);
 
-  cogl_color_init_from_4ub (&button->color, 0, 0, 0, 255);
+  cg_color_init_from_4ub (&button->color, 0, 0, 0, 255);
 
 
   button->dark_edge_pipeline =
-    create_color_pipeline (context->cogl_context, 0x000000ff);
+    create_color_pipeline (context->cg_context, 0x000000ff);
   button->light_edge_pipeline =
-    create_color_pipeline (context->cogl_context, 0xdadadaff);
+    create_color_pipeline (context->cg_context, 0xdadadaff);
   button->padding_pipeline =
-    create_color_pipeline (context->cogl_context, 0x919191ff);
+    create_color_pipeline (context->cg_context, 0x919191ff);
   button->color_pipeline =
-    create_color_pipeline (context->cogl_context, 0x000000ff);
+    create_color_pipeline (context->cg_context, 0x000000ff);
 
   rut_paintable_init (button);
   rut_graphable_init (button);
@@ -664,11 +664,11 @@ rut_color_button_new (RutContext *context)
 
 void
 rut_color_button_set_color (RutObject *obj,
-                            const CoglColor *color)
+                            const cg_color_t *color)
 {
   RutColorButton *button = obj;
 
-  if (memcmp (&button->color, color, sizeof (CoglColor)))
+  if (memcmp (&button->color, color, sizeof (cg_color_t)))
     {
       button->color = *color;
 
@@ -681,7 +681,7 @@ rut_color_button_set_color (RutObject *obj,
     }
 }
 
-const CoglColor *
+const cg_color_t *
 rut_color_button_get_color (RutColorButton *button)
 {
   return &button->color;

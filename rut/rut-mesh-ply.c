@@ -75,7 +75,7 @@ typedef struct _Loader
 
   unsigned int first_vertex, last_vertex;
   c_array_t *faces;
-  CoglIndicesType indices_type;
+  cg_indices_type_t indices_type;
 
 } Loader;
 
@@ -165,19 +165,19 @@ rut_mesh_ply_loader_add_face_index (Loader *loader, unsigned int index)
 {
   switch (loader->indices_type)
     {
-    case COGL_INDICES_TYPE_UNSIGNED_BYTE:
+    case CG_INDICES_TYPE_UNSIGNED_BYTE:
       {
         uint8_t value = index;
         c_array_append_val (loader->faces, value);
       }
       break;
-    case COGL_INDICES_TYPE_UNSIGNED_SHORT:
+    case CG_INDICES_TYPE_UNSIGNED_SHORT:
       {
         uint16_t value = index;
         c_array_append_val (loader->faces, value);
       }
       break;
-    case COGL_INDICES_TYPE_UNSIGNED_INT:
+    case CG_INDICES_TYPE_UNSIGNED_INT:
       {
         uint32_t value = index;
         c_array_append_val (loader->faces, value);
@@ -293,18 +293,18 @@ init_indices_array (Loader *loader,
 {
   if (n_vertices <= 0x100)
     {
-      loader->indices_type = COGL_INDICES_TYPE_UNSIGNED_BYTE;
+      loader->indices_type = CG_INDICES_TYPE_UNSIGNED_BYTE;
       loader->faces = c_array_new (false, false, sizeof (uint8_t));
     }
   else if (n_vertices <= 0x10000)
     {
-      loader->indices_type = COGL_INDICES_TYPE_UNSIGNED_SHORT;
+      loader->indices_type = CG_INDICES_TYPE_UNSIGNED_SHORT;
       loader->faces = c_array_new (false, false, sizeof (uint16_t));
     }
-  else if (cogl_has_feature (loader->ctx->cogl_context,
-                             COGL_FEATURE_ID_UNSIGNED_INT_INDICES))
+  else if (cg_has_feature (loader->ctx->cg_context,
+                             CG_FEATURE_ID_UNSIGNED_INT_INDICES))
     {
-      loader->indices_type = COGL_INDICES_TYPE_UNSIGNED_INT;
+      loader->indices_type = CG_INDICES_TYPE_UNSIGNED_INT;
       loader->faces = c_array_new (false, false, sizeof (uint32_t));
     }
   else
@@ -563,7 +563,7 @@ _rut_mesh_new_from_p_ply (RutContext *ctx,
       goto EXIT;
     }
 
-  mesh = rut_mesh_new (COGL_VERTICES_MODE_TRIANGLES,
+  mesh = rut_mesh_new (CG_VERTICES_MODE_TRIANGLES,
                        n_vertices,
                        rut_attributes,
                        n_loader_attributes);

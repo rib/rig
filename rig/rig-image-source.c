@@ -36,10 +36,10 @@ struct _RigImageSource
 
   RigEngine *engine;
 
-  CoglTexture *texture;
+  cg_texture_t *texture;
 
 #ifdef USE_GSTREAMER
-  CoglGstVideoSink *sink;
+  CgGstVideoSink *sink;
   GstElement *pipeline;
   GstElement *bin;
 #endif
@@ -55,11 +55,11 @@ struct _RigImageSource
 
 typedef struct _ImageSourceWrappers
 {
-  CoglSnippet *image_source_vertex_wrapper;
-  CoglSnippet *image_source_fragment_wrapper;
+  cg_snippet_t *image_source_vertex_wrapper;
+  cg_snippet_t *image_source_fragment_wrapper;
 
-  CoglSnippet *video_source_vertex_wrapper;
-  CoglSnippet *video_source_fragment_wrapper;
+  cg_snippet_t *video_source_vertex_wrapper;
+  cg_snippet_t *video_source_fragment_wrapper;
 } ImageSourceWrappers;
 
 static void
@@ -68,14 +68,14 @@ destroy_source_wrapper (gpointer data)
   ImageSourceWrappers *wrapper = data;
 
   if (wrapper->image_source_vertex_wrapper)
-    cogl_object_unref (wrapper->image_source_vertex_wrapper);
+    cg_object_unref (wrapper->image_source_vertex_wrapper);
   if (wrapper->image_source_vertex_wrapper)
-    cogl_object_unref (wrapper->image_source_vertex_wrapper);
+    cg_object_unref (wrapper->image_source_vertex_wrapper);
 
   if (wrapper->video_source_vertex_wrapper)
-    cogl_object_unref (wrapper->video_source_vertex_wrapper);
+    cg_object_unref (wrapper->video_source_vertex_wrapper);
   if (wrapper->video_source_fragment_wrapper)
-    cogl_object_unref (wrapper->video_source_fragment_wrapper);
+    cg_object_unref (wrapper->video_source_fragment_wrapper);
 
   c_slice_free (ImageSourceWrappers, wrapper);
 }
@@ -110,39 +110,39 @@ get_image_source_wrappers (RigEngine *engine, int layer_index)
   wrappers = c_slice_new0 (ImageSourceWrappers);
 
   /* XXX: Note: we use texture2D() instead of the
-   * cogl_texture_lookup%i wrapper because the _GLOBALS hook comes
+   * cg_texture_lookup%i wrapper because the _GLOBALS hook comes
    * before the _lookup functions are emitted by Cogl */
   wrapper = c_strdup_printf ("vec4\n"
                              "rig_image_source_sample%d (vec2 UV)\n"
                              "{\n"
                              "#if __VERSION__ >= 130\n"
-                             "  return texture (cogl_sampler%d, UV);\n"
+                             "  return texture (cg_sampler%d, UV);\n"
                              "#else\n"
-                             "  return texture2D (cogl_sampler%d, UV);\n"
+                             "  return texture2D (cg_sampler%d, UV);\n"
                              "#endif\n"
                              "}\n",
                              layer_index,
                              layer_index);
 
   wrappers->image_source_vertex_wrapper =
-    cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX_GLOBALS, wrapper, NULL);
+    cg_snippet_new (CG_SNIPPET_HOOK_VERTEX_GLOBALS, wrapper, NULL);
   wrappers->image_source_fragment_wrapper =
-    cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT_GLOBALS, wrapper, NULL);
+    cg_snippet_new (CG_SNIPPET_HOOK_FRAGMENT_GLOBALS, wrapper, NULL);
 
   c_free (wrapper);
 
   wrapper = c_strdup_printf ("vec4\n"
                              "rig_image_source_sample%d (vec2 UV)\n"
                              "{\n"
-                             "  return cogl_gst_sample_video%d (UV);\n"
+                             "  return cg_gst_sample_video%d (UV);\n"
                              "}\n",
                              layer_index,
                              layer_index);
 
   wrappers->video_source_vertex_wrapper =
-    cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX_GLOBALS, wrapper, NULL);
+    cg_snippet_new (CG_SNIPPET_HOOK_VERTEX_GLOBALS, wrapper, NULL);
   wrappers->video_source_fragment_wrapper =
-    cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT_GLOBALS, wrapper, NULL);
+    cg_snippet_new (CG_SNIPPET_HOOK_FRAGMENT_GLOBALS, wrapper, NULL);
 
   c_free (wrapper);
 
@@ -196,7 +196,7 @@ _rig_image_source_video_play (RigImageSource *source,
 
   _rig_image_source_video_stop (source);
 
-  source->sink = cogl_gst_video_sink_new (engine->ctx->cogl_context);
+  source->sink = cg_gst_video_sink_new (engine->ctx->cg_context);
   source->pipeline = gst_pipeline_new ("renderer");
   source->bin = gst_element_factory_make ("playbin", NULL);
 
@@ -322,14 +322,14 @@ rig_image_source_add_ready_callback (RigImageSource *source,
                                  destroy_cb);
 }
 
-CoglTexture*
+cg_texture_t*
 rig_image_source_get_texture (RigImageSource *source)
 {
   return source->texture;
 }
 
 #ifdef USE_GSTREAMER
-CoglGstVideoSink*
+CgGstVideoSink*
 rig_image_source_get_sink (RigImageSource *source)
 {
   return source->sink;
@@ -370,21 +370,21 @@ rig_image_source_set_default_sample (RigImageSource *source,
 
 void
 rig_image_source_setup_pipeline (RigImageSource *source,
-                                 CoglPipeline *pipeline)
+                                 cg_pipeline_t *pipeline)
 {
-  CoglSnippet *vertex_snippet;
-  CoglSnippet *fragment_snippet;
+  cg_snippet_t *vertex_snippet;
+  cg_snippet_t *fragment_snippet;
   ImageSourceWrappers *wrappers =
     get_image_source_wrappers (source->engine, source->first_layer);
 
   if (!rig_image_source_get_is_video (source))
     {
-      CoglTexture *texture = rig_image_source_get_texture (source);
+      cg_texture_t *texture = rig_image_source_get_texture (source);
 
-      cogl_pipeline_set_layer_texture (pipeline, source->first_layer, texture);
+      cg_pipeline_set_layer_texture (pipeline, source->first_layer, texture);
 
       if (!source->default_sample)
-        cogl_pipeline_set_layer_combine (pipeline, source->first_layer,
+        cg_pipeline_set_layer_combine (pipeline, source->first_layer,
                                          "RGBA=REPLACE(PREVIOUS)", NULL);
 
       vertex_snippet = wrappers->image_source_vertex_wrapper;
@@ -393,11 +393,11 @@ rig_image_source_setup_pipeline (RigImageSource *source,
   else
     {
 #ifdef USE_GSTREAMER
-      CoglGstVideoSink *sink = rig_image_source_get_sink (source);
+      CgGstVideoSink *sink = rig_image_source_get_sink (source);
 
-      cogl_gst_video_sink_set_first_layer (sink, source->first_layer);
-      cogl_gst_video_sink_set_default_sample (sink, true);
-      cogl_gst_video_sink_setup_pipeline (sink, pipeline);
+      cg_gst_video_sink_set_first_layer (sink, source->first_layer);
+      cg_gst_video_sink_set_default_sample (sink, true);
+      cg_gst_video_sink_setup_pipeline (sink, pipeline);
 
       vertex_snippet = wrappers->video_source_vertex_wrapper;
       fragment_snippet = wrappers->video_source_fragment_wrapper;
@@ -406,13 +406,13 @@ rig_image_source_setup_pipeline (RigImageSource *source,
 #endif
     }
 
-  cogl_pipeline_add_snippet (pipeline, vertex_snippet);
-  cogl_pipeline_add_snippet (pipeline, fragment_snippet);
+  cg_pipeline_add_snippet (pipeline, vertex_snippet);
+  cg_pipeline_add_snippet (pipeline, fragment_snippet);
 }
 
 void
 rig_image_source_attach_frame (RigImageSource *source,
-                               CoglPipeline *pipeline)
+                               cg_pipeline_t *pipeline)
 {
   /* NB: For non-video sources we always attach the texture
    * during rig_image_source_setup_pipeline() so we don't
@@ -422,7 +422,7 @@ rig_image_source_attach_frame (RigImageSource *source,
   if (rig_image_source_get_is_video (source))
     {
 #ifdef USE_GSTREAMER
-      cogl_gst_video_sink_attach_frame (
+      cg_gst_video_sink_attach_frame (
         rig_image_source_get_sink (source), pipeline);
 #else
       g_error ("FIXME: missing video support for this platform");
@@ -438,15 +438,15 @@ rig_image_source_get_natural_size (RigImageSource *source,
   if (rig_image_source_get_is_video (source))
     {
 #ifdef USE_GSTREAMER
-      cogl_gst_video_sink_get_natural_size (source->sink, width, height);
+      cg_gst_video_sink_get_natural_size (source->sink, width, height);
 #else
       g_error ("FIXME: missing video support for this platform");
 #endif
     }
   else
     {
-      CoglTexture *texture = rig_image_source_get_texture (source);
-      *width = cogl_texture_get_width (texture);
-      *height = cogl_texture_get_height (texture);
+      cg_texture_t *texture = rig_image_source_get_texture (source);
+      *width = cg_texture_get_width (texture);
+      *height = cg_texture_get_height (texture);
     }
 }

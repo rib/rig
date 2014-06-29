@@ -73,7 +73,7 @@ typedef struct _RutScale
   float current_range;
   float current_first_label;
 
-  CoglPipeline *pipeline;
+  cg_pipeline_t *pipeline;
   RutRectangle *bg;
 
   RutTransform *select_transform;

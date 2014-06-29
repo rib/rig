@@ -38,7 +38,7 @@ typedef struct
 {
   float center[2], down[2];
   float radius;
-  CoglQuaternion q_drag;
+  cg_quaternion_t q_drag;
 
 } RutArcball;
 

@@ -70,8 +70,8 @@
 #endif /* RUT_HAS_GLIB_SUPPORT */
 
 void
-rut_util_fully_transform_vertices (const CoglMatrix *modelview,
-                                    const CoglMatrix *projection,
+rut_util_fully_transform_vertices (const cg_matrix_t *modelview,
+                                    const cg_matrix_t *projection,
                                     const float *viewport,
                                     const float *vertices3_in,
                                     float *vertices3_out,
@@ -79,18 +79,18 @@ rut_util_fully_transform_vertices (const CoglMatrix *modelview,
 
 void
 rut_util_create_pick_ray (const float       viewport[4],
-                          const CoglMatrix *inverse_projection,
-                          const CoglMatrix *camera_transform,
+                          const cg_matrix_t *inverse_projection,
+                          const cg_matrix_t *camera_transform,
                           float             screen_pos[2],
                           float             ray_position[3],    /* out */
                           float             ray_direction[3]);  /* out */
 
 void
 rut_util_print_quaternion (const char           *prefix,
-                           const CoglQuaternion *quaternion);
+                           const cg_quaternion_t *quaternion);
 
 void
-rut_util_transform_normal (const CoglMatrix *matrix,
+rut_util_transform_normal (const cg_matrix_t *matrix,
                            float            *x,
                            float            *y,
                            float            *z);
@@ -136,8 +136,8 @@ unsigned int
 rut_util_one_at_a_time_mix (unsigned int hash);
 
 void
-rut_util_draw_jittered_primitive3f (CoglFramebuffer *fb,
-                                    CoglPrimitive *prim,
+rut_util_draw_jittered_primitive3f (cg_framebuffer_t *fb,
+                                    cg_primitive_t *prim,
                                     float red,
                                     float green,
                                     float blue);
@@ -182,7 +182,7 @@ bool
 rut_util_is_boolean_env_set (const char *variable);
 
 void
-rut_util_matrix_scaled_perspective (CoglMatrix *matrix,
+rut_util_matrix_scaled_perspective (cg_matrix_t *matrix,
                                     float fov_y,
                                     float aspect,
                                     float z_near,
@@ -246,8 +246,8 @@ rut_util_point_in_screen_poly (float point_x,
 }
 
 void
-rut_util_fully_transform_points (const CoglMatrix *modelview,
-                                 const CoglMatrix *projection,
+rut_util_fully_transform_points (const cg_matrix_t *modelview,
+                                 const cg_matrix_t *projection,
                                  const float *viewport,
                                  float *verts,
                                  int n_verts);

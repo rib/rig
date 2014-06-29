@@ -80,7 +80,7 @@ rig_application_new (RigEngine *engine);
 
 void
 rig_application_add_onscreen (RigApplication *app,
-                              CoglOnscreen *onscreen);
+                              cg_onscreen_t *onscreen);
 
 G_END_DECLS
 

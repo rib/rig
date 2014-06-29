@@ -70,8 +70,8 @@ struct _RutDropDown
   RutGraphableProps graphable;
   RutPaintableProps paintable;
 
-  CoglPipeline *bg_pipeline;
-  CoglPipeline *highlighted_bg_pipeline;
+  cg_pipeline_t *bg_pipeline;
+  cg_pipeline_t *highlighted_bg_pipeline;
 
   int width, height;
 
@@ -104,17 +104,17 @@ struct _RutDropDown
   int selector_width;
   int selector_height;
   int selector_value;
-  CoglPath *selector_outline_path;
-  CoglPipeline *selector_outline_pipeline;
+  cg_path_t *selector_outline_path;
+  cg_pipeline_t *selector_outline_pipeline;
 };
 
-/* Some of the pipelines are cached and attached to the CoglContext so
- * that multiple drop downs created using the same CoglContext will
+/* Some of the pipelines are cached and attached to the cg_context_t so
+ * that multiple drop downs created using the same cg_context_t will
  * use the same pipelines */
 typedef struct
 {
-  CoglPipeline *bg_pipeline;
-  CoglPipeline *highlighted_bg_pipeline;
+  cg_pipeline_t *bg_pipeline;
+  cg_pipeline_t *highlighted_bg_pipeline;
 } RutDropDownContextData;
 
 RutType rut_drop_down_type;
@@ -138,15 +138,15 @@ _rut_drop_down_prop_specs[] =
 static RutDropDownContextData *
 rut_drop_down_get_context_data (RutContext *context)
 {
-  static CoglUserDataKey context_data_key;
+  static cg_user_data_key_t context_data_key;
   RutDropDownContextData *context_data =
-    cogl_object_get_user_data (COGL_OBJECT (context->cogl_context),
+    cg_object_get_user_data (CG_OBJECT (context->cg_context),
                                &context_data_key);
 
   if (context_data == NULL)
     {
       context_data = c_new0 (RutDropDownContextData, 1);
-      cogl_object_set_user_data (COGL_OBJECT (context->cogl_context),
+      cg_object_set_user_data (CG_OBJECT (context->cg_context),
                                  &context_data_key,
                                  context_data,
                                  c_free);
@@ -155,7 +155,7 @@ rut_drop_down_get_context_data (RutContext *context)
   return context_data;
 }
 
-static CoglPipeline *
+static cg_pipeline_t *
 rut_drop_down_create_bg_pipeline (RutContext *context)
 {
   RutDropDownContextData *context_data =
@@ -164,12 +164,12 @@ rut_drop_down_create_bg_pipeline (RutContext *context)
   /* The pipeline is cached so that if multiple drop downs are created
    * they will share a reference to the same pipeline */
   if (context_data->bg_pipeline)
-    return cogl_object_ref (context_data->bg_pipeline);
+    return cg_object_ref (context_data->bg_pipeline);
   else
     {
-      CoglPipeline *pipeline = cogl_pipeline_new (context->cogl_context);
-      static CoglUserDataKey bg_pipeline_destroy_key;
-      CoglTexture *bg_texture;
+      cg_pipeline_t *pipeline = cg_pipeline_new (context->cg_context);
+      static cg_user_data_key_t bg_pipeline_destroy_key;
+      cg_texture_t *bg_texture;
       GError *error = NULL;
 
       bg_texture = rut_load_texture_from_data_file (context,
@@ -177,17 +177,17 @@ rut_drop_down_create_bg_pipeline (RutContext *context)
                                                     &error);
       if (bg_texture)
         {
-          const CoglPipelineWrapMode wrap_mode =
-            COGL_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE;
+          const cg_pipeline_wrap_mode_t wrap_mode =
+            CG_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE;
 
-          cogl_pipeline_set_layer_texture (pipeline, 0, bg_texture);
-          cogl_pipeline_set_layer_wrap_mode (pipeline,
+          cg_pipeline_set_layer_texture (pipeline, 0, bg_texture);
+          cg_pipeline_set_layer_wrap_mode (pipeline,
                                              0, /* layer_index */
                                              wrap_mode);
-          cogl_pipeline_set_layer_filters (pipeline,
+          cg_pipeline_set_layer_filters (pipeline,
                                            0, /* layer_index */
-                                           COGL_PIPELINE_FILTER_NEAREST,
-                                           COGL_PIPELINE_FILTER_NEAREST);
+                                           CG_PIPELINE_FILTER_NEAREST,
+                                           CG_PIPELINE_FILTER_NEAREST);
         }
       else
         {
@@ -199,10 +199,10 @@ rut_drop_down_create_bg_pipeline (RutContext *context)
       /* When the last drop down is destroyed the pipeline will be
        * destroyed and we'll set context->bg_pipeline to NULL so that
        * it will be recreated for the next drop down */
-      cogl_object_set_user_data (COGL_OBJECT (pipeline),
+      cg_object_set_user_data (CG_OBJECT (pipeline),
                                  &bg_pipeline_destroy_key,
                                  &context_data->bg_pipeline,
-                                 (CoglUserDataDestroyCallback)
+                                 (cg_user_data_destroy_callback_t)
                                  g_nullify_pointer);
 
       context_data->bg_pipeline = pipeline;
@@ -211,7 +211,7 @@ rut_drop_down_create_bg_pipeline (RutContext *context)
     }
 }
 
-static CoglPipeline *
+static cg_pipeline_t *
 rut_drop_down_create_highlighted_bg_pipeline (RutContext *context)
 {
   RutDropDownContextData *context_data =
@@ -220,15 +220,15 @@ rut_drop_down_create_highlighted_bg_pipeline (RutContext *context)
   /* The pipeline is cached so that if multiple drop downs are created
    * they will share a reference to the same pipeline */
   if (context_data->highlighted_bg_pipeline)
-    return cogl_object_ref (context_data->highlighted_bg_pipeline);
+    return cg_object_ref (context_data->highlighted_bg_pipeline);
   else
     {
-      CoglPipeline *bg_pipeline =
+      cg_pipeline_t *bg_pipeline =
         rut_drop_down_create_bg_pipeline (context);
-      CoglPipeline *pipeline = cogl_pipeline_copy (bg_pipeline);
-      static CoglUserDataKey pipeline_destroy_key;
+      cg_pipeline_t *pipeline = cg_pipeline_copy (bg_pipeline);
+      static cg_user_data_key_t pipeline_destroy_key;
 
-      cogl_object_unref (bg_pipeline);
+      cg_object_unref (bg_pipeline);
 
       /* Invert the colours of the texture so that there is some
        * obvious feedback when the button is pressed. */
@@ -237,7 +237,7 @@ rut_drop_down_create_highlighted_bg_pipeline (RutContext *context)
        * alpha-alpha×colour. The texture is already premultiplied so
        * the colour values are already alpha×colour and we just need
        * to subtract it from the alpha value. */
-      cogl_pipeline_set_layer_combine (pipeline,
+      cg_pipeline_set_layer_combine (pipeline,
                                        1, /* layer_number */
                                        "RGB = SUBTRACT(PREVIOUS[A], PREVIOUS)"
                                        "A = REPLACE(PREVIOUS[A])",
@@ -246,10 +246,10 @@ rut_drop_down_create_highlighted_bg_pipeline (RutContext *context)
       /* When the last drop down is destroyed the pipeline will be
        * destroyed and we'll set context->highlighted_bg_pipeline to NULL
        * so that it will be recreated for the next drop down */
-      cogl_object_set_user_data (COGL_OBJECT (pipeline),
+      cg_object_set_user_data (CG_OBJECT (pipeline),
                                  &pipeline_destroy_key,
                                  &context_data->highlighted_bg_pipeline,
-                                 (CoglUserDataDestroyCallback)
+                                 (cg_user_data_destroy_callback_t)
                                  g_nullify_pointer);
 
       context_data->highlighted_bg_pipeline = pipeline;
@@ -294,8 +294,8 @@ _rut_drop_down_free (void *object)
   RutDropDown *drop = object;
 
   rut_object_unref (drop->context);
-  cogl_object_unref (drop->bg_pipeline);
-  cogl_object_unref (drop->highlighted_bg_pipeline);
+  cg_object_unref (drop->bg_pipeline);
+  cg_object_unref (drop->highlighted_bg_pipeline);
 
   rut_drop_down_free_values (drop);
 
@@ -314,7 +314,7 @@ _rut_drop_down_free (void *object)
 
   rut_drop_down_hide_selector (drop);
   if (drop->selector_outline_pipeline)
-    cogl_object_unref (drop->selector_outline_pipeline);
+    cg_object_unref (drop->selector_outline_pipeline);
 
   rut_object_free (RutDropDown, drop);
 }
@@ -362,7 +362,7 @@ rut_drop_down_ensure_layouts (RutDropDown *drop)
                                           &layout->ink_rect,
                                           &layout->logical_rect);
 
-          cogl_pango_ensure_glyph_cache_for_layout (layout->layout);
+          cg_pango_ensure_glyph_cache_for_layout (layout->layout);
         }
     }
 }
@@ -372,10 +372,10 @@ rut_drop_down_paint_selector (RutDropDown *drop,
                               RutPaintContext *paint_ctx)
 {
   RutObject *camera = paint_ctx->camera;
-  CoglFramebuffer *fb = rut_camera_get_framebuffer (camera);
+  cg_framebuffer_t *fb = rut_camera_get_framebuffer (camera);
   int i, y_pos = drop->selector_y + 3;
 
-  cogl_framebuffer_draw_textured_rectangle (fb,
+  cg_framebuffer_draw_textured_rectangle (fb,
                                             drop->bg_pipeline,
                                             drop->selector_x,
                                             drop->selector_y,
@@ -388,7 +388,7 @@ rut_drop_down_paint_selector (RutDropDown *drop,
                                                rectangle */
                                             0.5f, 0.5f, 0.5f, 0.5f);
 
-  cogl_path_stroke (drop->selector_outline_path,
+  cg_path_stroke (drop->selector_outline_path,
                     fb,
                     drop->selector_outline_pipeline);
 
@@ -400,13 +400,13 @@ rut_drop_down_paint_selector (RutDropDown *drop,
       int x_pos = (drop->selector_x +
                    drop->selector_width / 2 -
                    layout->logical_rect.width / 2);
-      CoglColor font_color;
+      cg_color_t font_color;
 
       if (i == drop->selector_value)
         {
-          CoglPipeline *pipeline = drop->highlighted_bg_pipeline;
+          cg_pipeline_t *pipeline = drop->highlighted_bg_pipeline;
 
-          cogl_framebuffer_draw_textured_rectangle (fb,
+          cg_framebuffer_draw_textured_rectangle (fb,
                                                     pipeline,
                                                     drop->selector_x,
                                                     y_pos,
@@ -418,12 +418,12 @@ rut_drop_down_paint_selector (RutDropDown *drop,
                                                        bg texture to entire
                                                        rectangle */
                                                     0.5f, 0.5f, 0.5f, 0.5f);
-          cogl_color_init_from_4ub (&font_color, 255, 255, 255, 255);
+          cg_color_init_from_4ub (&font_color, 255, 255, 255, 255);
         }
       else
-        cogl_color_init_from_4ub (&font_color, 0, 0, 0, 255);
+        cg_color_init_from_4ub (&font_color, 0, 0, 0, 255);
 
-      cogl_pango_show_layout (fb,
+      cg_pango_show_layout (fb,
                               layout->layout,
                               x_pos, y_pos,
                               &font_color);
@@ -437,10 +437,10 @@ rut_drop_down_paint_button (RutDropDown *drop,
                             RutPaintContext *paint_ctx)
 {
   RutObject *camera = paint_ctx->camera;
-  CoglFramebuffer *fb = rut_camera_get_framebuffer (camera);
+  cg_framebuffer_t *fb = rut_camera_get_framebuffer (camera);
   RutDropDownRectangle coords[7];
   int translation = drop->width - RUT_DROP_DOWN_EDGE_WIDTH;
-  CoglColor font_color;
+  cg_color_t font_color;
   RutDropDownLayout *layout;
   int i;
 
@@ -503,7 +503,7 @@ rut_drop_down_paint_button (RutDropDown *drop,
       out->t2 = in->t2;
     }
 
-  cogl_framebuffer_draw_textured_rectangles (fb,
+  cg_framebuffer_draw_textured_rectangles (fb,
                                              drop->highlighted ?
                                              drop->highlighted_bg_pipeline :
                                              drop->bg_pipeline,
@@ -512,12 +512,12 @@ rut_drop_down_paint_button (RutDropDown *drop,
 
   rut_drop_down_ensure_layouts (drop);
 
-  cogl_color_init_from_4ub (&font_color, 0, 0, 0, 255);
+  cg_color_init_from_4ub (&font_color, 0, 0, 0, 255);
 
   if (drop->n_values)
     {
       layout = drop->layouts + drop->value_index;
-      cogl_pango_show_layout (fb,
+      cg_pango_show_layout (fb,
                               layout->layout,
                               drop->width / 2 -
                               layout->logical_rect.width / 2,
@@ -632,8 +632,8 @@ static void
 rut_drop_down_handle_click (RutDropDown *drop,
                             RutInputEvent *event)
 {
-  CoglMatrix modelview;
-  const CoglMatrix *projection;
+  cg_matrix_t modelview;
+  const cg_matrix_t *projection;
   RutObject *camera = rut_input_event_get_camera (event);
   float top_point[4];
   int i;
@@ -665,14 +665,14 @@ rut_drop_down_handle_click (RutDropDown *drop,
   projection = rut_camera_get_projection (camera);
   top_point[0] = drop->selector_x;
   top_point[1] = drop->selector_height + drop->height;
-  cogl_matrix_transform_points (&modelview,
+  cg_matrix_transform_points (&modelview,
                                 2, /* n_components */
                                 sizeof (float) * 4, /* stride_in */
                                 top_point, /* points_in */
                                 sizeof (float) * 4, /* stride_out */
                                 top_point, /* points_out */
                                 1 /* n_points */);
-  cogl_matrix_project_points (projection,
+  cg_matrix_project_points (projection,
                               3, /* n_components */
                               sizeof (float) * 4, /* stride_in */
                               top_point, /* points_in */
@@ -689,13 +689,13 @@ rut_drop_down_handle_click (RutDropDown *drop,
   if (drop->selector_outline_pipeline == NULL)
     {
       drop->selector_outline_pipeline =
-        cogl_pipeline_new (drop->context->cogl_context);
-      cogl_pipeline_set_color4ub (drop->selector_outline_pipeline,
+        cg_pipeline_new (drop->context->cg_context);
+      cg_pipeline_set_color4ub (drop->selector_outline_pipeline,
                                   0, 0, 0, 255);
     }
 
-  drop->selector_outline_path = cogl_path_new (drop->context->cogl_context);
-  cogl_path_rectangle (drop->selector_outline_path,
+  drop->selector_outline_path = cg_path_new (drop->context->cg_context);
+  cg_path_rectangle (drop->selector_outline_path,
                        drop->selector_x,
                        drop->selector_y,
                        drop->selector_x + drop->selector_width,
@@ -795,7 +795,7 @@ rut_drop_down_hide_selector (RutDropDown *drop)
 {
   if (drop->selector_shown)
     {
-      cogl_object_unref (drop->selector_outline_path);
+      cg_object_unref (drop->selector_outline_path);
       drop->selector_shown = false;
       rut_shell_queue_redraw (drop->context->shell);
 

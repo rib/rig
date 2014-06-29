@@ -38,9 +38,9 @@
 typedef struct
 {
   RigEngine *engine;
-  CoglPipeline *pipeline;
-  CoglTexture *dest;
-  CoglFramebuffer *fb;
+  cg_pipeline_t *pipeline;
+  cg_texture_t *dest;
+  cg_framebuffer_t *fb;
   RutObject *camera;
 } RigDownsampler;
 
@@ -50,9 +50,9 @@ rig_downsampler_new (RigEngine *engine);
 void
 rig_downsampler_free (RigDownsampler *downsampler);
 
-CoglTexture *
+cg_texture_t *
 rig_downsampler_downsample (RigDownsampler *downsampler,
-                            CoglTexture *source,
+                            cg_texture_t *source,
                             int scale_factor_x,
                             int scale_factor_y);
 

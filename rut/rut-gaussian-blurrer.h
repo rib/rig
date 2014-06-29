@@ -40,16 +40,16 @@ typedef struct _RutGaussianBlurrer
   int n_taps;
 
   int width, height;
-  CoglTextureComponents components;
+  cg_texture_components_t components;
 
-  CoglFramebuffer *x_pass_fb;
-  CoglTexture *x_pass;
-  CoglPipeline *x_pass_pipeline;
+  cg_framebuffer_t *x_pass_fb;
+  cg_texture_t *x_pass;
+  cg_pipeline_t *x_pass_pipeline;
 
-  CoglFramebuffer *y_pass_fb;
-  CoglTexture *y_pass;
-  CoglTexture *destination;
-  CoglPipeline *y_pass_pipeline;
+  cg_framebuffer_t *y_pass_fb;
+  cg_texture_t *y_pass;
+  cg_texture_t *destination;
+  cg_pipeline_t *y_pass_pipeline;
 } RutGaussianBlurrer;
 
 RutGaussianBlurrer *
@@ -58,8 +58,8 @@ rut_gaussian_blurrer_new (RutContext *ctx, int n_taps);
 void
 rut_gaussian_blurrer_free (RutGaussianBlurrer *blurrer);
 
-CoglTexture *
+cg_texture_t *
 rut_gaussian_blurrer_blur (RutGaussianBlurrer *blurrer,
-                           CoglTexture *source);
+                           cg_texture_t *source);
 
 #endif /* __RUT_GAUSSIAN_BLURRER_H__ */

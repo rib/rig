@@ -168,8 +168,8 @@ typedef struct _IconButtonGrabState
 {
   RutObject *camera;
   RutIconButton *button;
-  CoglMatrix transform;
-  CoglMatrix inverse_transform;
+  cg_matrix_t transform;
+  cg_matrix_t inverse_transform;
 } IconButtonGrabState;
 
 static void
@@ -286,14 +286,14 @@ _rut_icon_button_input_cb (RutInputRegion *region,
     {
       RutShell *shell = button->ctx->shell;
       IconButtonGrabState *state = c_slice_new (IconButtonGrabState);
-      const CoglMatrix *view;
+      const cg_matrix_t *view;
 
       state->button = button;
       state->camera = rut_input_event_get_camera (event);
       view = rut_camera_get_view_transform (state->camera);
       state->transform = *view;
       rut_graphable_apply_transform (button, &state->transform);
-      if (!cogl_matrix_get_inverse (&state->transform,
+      if (!cg_matrix_get_inverse (&state->transform,
                                     &state->inverse_transform))
         {
           c_warning ("Failed to calculate inverse of button transform\n");
@@ -478,7 +478,7 @@ rut_icon_button_set_disabled (RutIconButton *button,
 
 void
 rut_icon_button_set_label_color (RutIconButton *button,
-                                 const CoglColor *color)
+                                 const cg_color_t *color)
 {
   if (button->label)
     rut_text_set_color (button->label, color);

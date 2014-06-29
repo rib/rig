@@ -184,9 +184,9 @@ get_property_codegen_info (RutProperty *property,
     /* FIXME: we don't want to expose the Cogl api... */
     case RUT_PROPERTY_TYPE_QUATERNION:
       *type_name = "quaternion";
-      *var_decl_pre = "CoglQuaternion ";
+      *var_decl_pre = "cg_quaternion_t ";
       *var_decl_post = "";
-      *get_val_pre = "const CoglQuaternion *";
+      *get_val_pre = "const cg_quaternion_t *";
       break;
     case RUT_PROPERTY_TYPE_VEC3:
       *type_name = "vec3";
@@ -202,9 +202,9 @@ get_property_codegen_info (RutProperty *property,
       break;
     case RUT_PROPERTY_TYPE_COLOR:
       *type_name = "color";
-      *var_decl_pre = "CoglColor ";
+      *var_decl_pre = "cg_color_t ";
       *var_decl_post = "";
-      *get_val_pre = "const CoglColor *";
+      *get_val_pre = "const cg_color_t *";
       break;
     }
 }

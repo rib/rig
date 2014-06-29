@@ -76,7 +76,7 @@ struct _RigAsset
   uint8_t *data;
   size_t data_len;
 
-  CoglTexture *texture;
+  cg_texture_t *texture;
 
   RutMesh *mesh;
   bool has_tex_coords;
@@ -104,7 +104,7 @@ _rig_asset_free (void *object)
   RigAsset *asset = object;
 
   if (asset->texture)
-    cogl_object_unref (asset->texture);
+    cg_object_unref (asset->texture);
 
   if (asset->path)
     c_free (asset->path);
@@ -183,7 +183,7 @@ _rig_asset_init_type (void)
 static RutPLYAttribute ply_attributes[] =
 {
   {
-    .name = "cogl_position_in",
+    .name = "cg_position_in",
     .properties = {
       { "x" },
       { "y" },
@@ -193,7 +193,7 @@ static RutPLYAttribute ply_attributes[] =
     .min_components = 1,
   },
   {
-    .name = "cogl_normal_in",
+    .name = "cg_normal_in",
     .properties = {
       { "nx" },
       { "ny" },
@@ -205,7 +205,7 @@ static RutPLYAttribute ply_attributes[] =
     .pad_type = RUT_ATTRIBUTE_TYPE_FLOAT,
   },
   {
-    .name = "cogl_tex_coord0_in",
+    .name = "cg_tex_coord0_in",
     .properties = {
       { "s" },
       { "t" },
@@ -229,7 +229,7 @@ static RutPLYAttribute ply_attributes[] =
     .pad_type = RUT_ATTRIBUTE_TYPE_FLOAT,
   },
   {
-    .name = "cogl_color_in",
+    .name = "cg_color_in",
     .properties = {
       { "red" },
       { "green" },
@@ -246,12 +246,12 @@ static RutPLYAttribute ply_attributes[] =
 
 typedef struct _RigThumbnailGenerator
 {
-  CoglContext *ctx;
-  CoglPipeline *cogl_pipeline;
+  cg_context_t *ctx;
+  cg_pipeline_t *cg_pipeline;
   RigAsset *video;
   GstElement *pipeline;
   GstElement *bin;
-  CoglGstVideoSink *sink;
+  CgGstVideoSink *sink;
   bool seek_done;
 }RigThumbnailGenerator;
 
@@ -259,35 +259,35 @@ static void
 video_thumbnailer_grab (void *instance, void *user_data)
 {
   RigThumbnailGenerator *generator = user_data;
-  CoglOffscreen *offscreen;
-  CoglFramebuffer *fbo;
+  cg_offscreen_t *offscreen;
+  cg_framebuffer_t *fbo;
   int tex_width;
   int tex_height;
 
-  generator->cogl_pipeline = cogl_gst_video_sink_get_pipeline (generator->sink);
+  generator->cg_pipeline = cg_gst_video_sink_get_pipeline (generator->sink);
 
   tex_height = 200;
-  tex_width = cogl_gst_video_sink_get_width_for_height (generator->sink,
+  tex_width = cg_gst_video_sink_get_width_for_height (generator->sink,
                                                         tex_height);
 
   if (generator->video->texture)
-    cogl_object_unref (generator->video->texture);
+    cg_object_unref (generator->video->texture);
 
   generator->video->texture =
-    cogl_texture_2d_new_with_size (generator->ctx,
+    cg_texture_2d_new_with_size (generator->ctx,
                                    tex_width,
                                    tex_height);
 
-  offscreen = cogl_offscreen_new_with_texture (generator->video->texture);
+  offscreen = cg_offscreen_new_with_texture (generator->video->texture);
   fbo = offscreen;
 
-  cogl_framebuffer_clear4f (fbo, COGL_BUFFER_BIT_COLOR, 0, 0, 0, 0);
-  cogl_framebuffer_orthographic (fbo, 0, 0, tex_width, tex_height, 1, -1);
-  cogl_framebuffer_draw_textured_rectangle (fbo, generator->cogl_pipeline,
+  cg_framebuffer_clear4f (fbo, CG_BUFFER_BIT_COLOR, 0, 0, 0, 0);
+  cg_framebuffer_orthographic (fbo, 0, 0, tex_width, tex_height, 1, -1);
+  cg_framebuffer_draw_textured_rectangle (fbo, generator->cg_pipeline,
                                             0, 0, tex_width, tex_height,
                                             0, 0, 1, 1);
 
-  cogl_object_unref (offscreen);
+  cg_object_unref (offscreen);
   gst_element_set_state (generator->pipeline, GST_STATE_NULL);
   g_object_unref (generator->sink);
 
@@ -331,9 +331,9 @@ generate_video_thumbnail (RigAsset *asset)
   GstBus *bus;
 
   generator->seek_done = false;
-  generator->ctx = ctx->cogl_context;
+  generator->ctx = ctx->cg_context;
   generator->video = asset;
-  generator->sink = cogl_gst_video_sink_new (ctx->cogl_context);
+  generator->sink = cg_gst_video_sink_new (ctx->cg_context);
   generator->pipeline = gst_pipeline_new ("thumbnailer");
   generator->bin = gst_element_factory_make ("playbin", NULL);
 
@@ -359,20 +359,20 @@ generate_video_thumbnail (RigAsset *asset)
 
 #endif /* USE_GSTREAMER */
 
-static CoglTexture *
+static cg_texture_t *
 generate_mesh_thumbnail (RigAsset *asset)
 {
   RutContext *ctx = asset->ctx;
   RigModel *model = rig_model_new_from_asset (ctx, asset);
   RutMesh *mesh;
-  CoglTexture *thumbnail;
-  CoglOffscreen *offscreen;
-  CoglFramebuffer *frame_buffer;
-  CoglPipeline *pipeline;
-  CoglPrimitive *primitive;
-  CoglSnippet *snippet;
-  CoglDepthState depth_state;
-  CoglMatrix view;
+  cg_texture_t *thumbnail;
+  cg_offscreen_t *offscreen;
+  cg_framebuffer_t *frame_buffer;
+  cg_pipeline_t *pipeline;
+  cg_primitive_t *primitive;
+  cg_snippet_t *snippet;
+  cg_depth_state_t depth_state;
+  cg_matrix_t view;
   int tex_width = 800;
   int tex_height = 800;
   float fovy = 60;
@@ -404,27 +404,27 @@ generate_mesh_thumbnail (RigAsset *asset)
   mesh = rig_model_get_mesh (model);
 
   thumbnail =
-    cogl_texture_2d_new_with_size (ctx->cogl_context,
+    cg_texture_2d_new_with_size (ctx->cg_context,
                                    tex_width,
                                    tex_height);
 
-  offscreen = cogl_offscreen_new_with_texture (thumbnail);
+  offscreen = cg_offscreen_new_with_texture (thumbnail);
   frame_buffer = offscreen;
 
-  cogl_framebuffer_perspective (frame_buffer, fovy, aspect, z_near, z_far);
-  cogl_matrix_init_identity (&view);
-  cogl_matrix_view_2d_in_perspective (&view, fovy, aspect, z_near, z_2d,
+  cg_framebuffer_perspective (frame_buffer, fovy, aspect, z_near, z_far);
+  cg_matrix_init_identity (&view);
+  cg_matrix_view_2d_in_perspective (&view, fovy, aspect, z_near, z_2d,
                                       tex_width, tex_height);
-  cogl_framebuffer_set_modelview_matrix (frame_buffer, &view);
+  cg_framebuffer_set_modelview_matrix (frame_buffer, &view);
 
-  pipeline = cogl_pipeline_new (ctx->cogl_context);
+  pipeline = cg_pipeline_new (ctx->cg_context);
 
-  snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX,
+  snippet = cg_snippet_new (CG_SNIPPET_HOOK_VERTEX,
            "in vec3 tangent_in;\n"
-           "in vec2 cogl_tex_coord0_in;\n"
-           "in vec2 cogl_tex_coord1_in;\n"
-           "in vec2 cogl_tex_coord2_in;\n"
-           "in vec2 cogl_tex_coord5_in;\n"
+           "in vec2 cg_tex_coord0_in;\n"
+           "in vec2 cg_tex_coord1_in;\n"
+           "in vec2 cg_tex_coord2_in;\n"
+           "in vec2 cg_tex_coord5_in;\n"
            "uniform vec3 light_pos;\n"
            "uniform vec4 light_amb;\n"
            "uniform vec4 light_diff;\n"
@@ -435,19 +435,19 @@ generate_mesh_thumbnail (RigAsset *asset)
            "out vec3 trans_light;\n"
            "out vec3 eye;\n"
            "out vec3 normal;\n",
-           "normal = vec3 (normalize (cogl_modelview_matrix * \
-                                      vec4 (cogl_normal_in.x, cogl_normal_in.y,\
-                                      cogl_normal_in.z, 1.0)));\n"
-           "eye = -vec3 (cogl_modelview_matrix * cogl_position_in);\n"
-           "trans_light = vec3 (normalize (cogl_modelview_matrix *\
+           "normal = vec3 (normalize (cg_modelview_matrix * \
+                                      vec4 (cg_normal_in.x, cg_normal_in.y,\
+                                      cg_normal_in.z, 1.0)));\n"
+           "eye = -vec3 (cg_modelview_matrix * cg_position_in);\n"
+           "trans_light = vec3 (normalize (cg_modelview_matrix *\
                                            vec4 (light_pos.x, light_pos.y,\
                                            light_pos.z, 1.0)));\n"
            );
 
-  cogl_pipeline_add_snippet (pipeline, snippet);
-  cogl_object_unref (snippet);
+  cg_pipeline_add_snippet (pipeline, snippet);
+  cg_object_unref (snippet);
 
-  snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
+  snippet = cg_snippet_new (CG_SNIPPET_HOOK_FRAGMENT,
                               "uniform vec3 light_pos;\n"
                               "uniform vec4 light_amb;\n"
                               "uniform vec4 light_diff;\n"
@@ -475,30 +475,30 @@ generate_mesh_thumbnail (RigAsset *asset)
                                                         1000.0);\n"
                               "final_color += spec * spec_factor;\n"
                               "}\n"
-                              "cogl_color_out = final_color;\n"
+                              "cg_color_out = final_color;\n"
                               );
 
-  cogl_pipeline_add_snippet (pipeline, snippet);
-  cogl_object_unref (snippet);
+  cg_pipeline_add_snippet (pipeline, snippet);
+  cg_object_unref (snippet);
 
-  location = cogl_pipeline_get_uniform_location (pipeline, "light_pos");
-  cogl_pipeline_set_uniform_float (pipeline, location, 3, 1, light_pos);
-  location = cogl_pipeline_get_uniform_location (pipeline, "light_amb");
-  cogl_pipeline_set_uniform_float (pipeline, location, 4, 1, light_amb);
-  location = cogl_pipeline_get_uniform_location (pipeline, "light_diff");
-  cogl_pipeline_set_uniform_float (pipeline, location, 4, 1, light_diff);
-  location = cogl_pipeline_get_uniform_location (pipeline, "light_spec");
-  cogl_pipeline_set_uniform_float (pipeline, location, 4, 1, light_spec);
-  location = cogl_pipeline_get_uniform_location (pipeline, "mat_amb");
-  cogl_pipeline_set_uniform_float (pipeline, location, 4, 1, mat_amb);
-  location = cogl_pipeline_get_uniform_location (pipeline, "mat_diff");
-  cogl_pipeline_set_uniform_float (pipeline, location, 4, 1, mat_diff);
-  location = cogl_pipeline_get_uniform_location (pipeline, "mat_spec");
-  cogl_pipeline_set_uniform_float (pipeline, location, 4, 1, mat_spec);
+  location = cg_pipeline_get_uniform_location (pipeline, "light_pos");
+  cg_pipeline_set_uniform_float (pipeline, location, 3, 1, light_pos);
+  location = cg_pipeline_get_uniform_location (pipeline, "light_amb");
+  cg_pipeline_set_uniform_float (pipeline, location, 4, 1, light_amb);
+  location = cg_pipeline_get_uniform_location (pipeline, "light_diff");
+  cg_pipeline_set_uniform_float (pipeline, location, 4, 1, light_diff);
+  location = cg_pipeline_get_uniform_location (pipeline, "light_spec");
+  cg_pipeline_set_uniform_float (pipeline, location, 4, 1, light_spec);
+  location = cg_pipeline_get_uniform_location (pipeline, "mat_amb");
+  cg_pipeline_set_uniform_float (pipeline, location, 4, 1, mat_amb);
+  location = cg_pipeline_get_uniform_location (pipeline, "mat_diff");
+  cg_pipeline_set_uniform_float (pipeline, location, 4, 1, mat_diff);
+  location = cg_pipeline_get_uniform_location (pipeline, "mat_spec");
+  cg_pipeline_set_uniform_float (pipeline, location, 4, 1, mat_spec);
 
-  cogl_depth_state_init (&depth_state);
-  cogl_depth_state_set_test_enabled (&depth_state, true);
-  cogl_pipeline_set_depth_state (pipeline, &depth_state, NULL);
+  cg_depth_state_init (&depth_state);
+  cg_depth_state_set_test_enabled (&depth_state, true);
+  cg_pipeline_set_depth_state (pipeline, &depth_state, NULL);
 
   primitive = rut_mesh_create_primitive (ctx, mesh);
 
@@ -525,21 +525,21 @@ generate_mesh_thumbnail (RigAsset *asset)
   else if (model->min_z > 0)
     translate_z = model->min_z - (-1 * (length * 0.5));
 
-  cogl_framebuffer_clear4f (frame_buffer,
-                            COGL_BUFFER_BIT_COLOR|COGL_BUFFER_BIT_DEPTH,
+  cg_framebuffer_clear4f (frame_buffer,
+                            CG_BUFFER_BIT_COLOR|CG_BUFFER_BIT_DEPTH,
                             0, 0, 0, 0);
 
-  cogl_framebuffer_translate (frame_buffer, tex_width / 2.0, tex_height / 2.0,
+  cg_framebuffer_translate (frame_buffer, tex_width / 2.0, tex_height / 2.0,
                               0);
-  cogl_framebuffer_push_matrix (frame_buffer);
-  cogl_framebuffer_translate (frame_buffer, translate_x, translate_y, translate_z);
-  cogl_framebuffer_scale (frame_buffer, scale_facor, scale_facor, scale_facor);
-  cogl_primitive_draw (primitive, frame_buffer, pipeline);
-  cogl_framebuffer_pop_matrix (frame_buffer);
+  cg_framebuffer_push_matrix (frame_buffer);
+  cg_framebuffer_translate (frame_buffer, translate_x, translate_y, translate_z);
+  cg_framebuffer_scale (frame_buffer, scale_facor, scale_facor, scale_facor);
+  cg_primitive_draw (primitive, frame_buffer, pipeline);
+  cg_framebuffer_pop_matrix (frame_buffer);
 
-  cogl_object_unref (primitive);
-  cogl_object_unref (pipeline);
-  cogl_object_unref (frame_buffer);
+  cg_object_unref (primitive);
+  cg_object_unref (pipeline);
+  cg_object_unref (frame_buffer);
 
   rut_object_unref (model);
 
@@ -587,7 +587,7 @@ rig_asset_new_full (RutContext *ctx,
     case RIG_ASSET_TYPE_NORMAL_MAP:
     case RIG_ASSET_TYPE_ALPHA_MASK:
       {
-        CoglError *error = NULL;
+        cg_error_t *error = NULL;
 
         if (!asset->is_video)
           asset->texture = rut_load_texture (ctx, real_path, &error);
@@ -600,7 +600,7 @@ rig_asset_new_full (RutContext *ctx,
           {
             rut_object_free (RigAsset, asset);
             c_warning ("Failed to load asset texture: %s", error->message);
-            cogl_error_free (error);
+            cg_error_free (error);
             asset = NULL;
             goto DONE;
           }
@@ -644,7 +644,7 @@ rig_asset_new_full (RutContext *ctx,
       }
     case RIG_ASSET_TYPE_FONT:
       {
-        CoglError *error = NULL;
+        cg_error_t *error = NULL;
         asset->texture =
           rut_load_texture (ctx, rut_find_data_file ("fonts.png"), &error);
         if (!asset->texture)
@@ -652,7 +652,7 @@ rig_asset_new_full (RutContext *ctx,
             rut_object_free (RigAsset, asset);
             asset = NULL;
             c_warning ("Failed to load font icon: %s", error->message);
-            cogl_error_free (error);
+            cg_error_free (error);
             goto DONE;
           }
 
@@ -672,19 +672,19 @@ DONE:
   return asset;
 }
 
-static CoglBitmap *
-bitmap_new_from_pixbuf (CoglContext *ctx,
+static cg_bitmap_t *
+bitmap_new_from_pixbuf (cg_context_t *ctx,
                         GdkPixbuf *pixbuf)
 {
   bool has_alpha;
   GdkColorspace color_space;
-  CoglPixelFormat pixel_format;
+  cg_pixel_format_t pixel_format;
   int width;
   int height;
   int rowstride;
   int bits_per_sample;
   int n_channels;
-  CoglBitmap *bmp;
+  cg_bitmap_t *bmp;
 
   /* Get pixbuf properties */
   has_alpha       = gdk_pixbuf_get_has_alpha (pixbuf);
@@ -710,8 +710,8 @@ bitmap_new_from_pixbuf (CoglContext *ctx,
     case GDK_COLORSPACE_RGB:
       /* The only format supported by GdkPixbuf so far */
       pixel_format = has_alpha ?
-	COGL_PIXEL_FORMAT_RGBA_8888 :
-	COGL_PIXEL_FORMAT_RGB_888;
+	CG_PIXEL_FORMAT_RGBA_8888 :
+	CG_PIXEL_FORMAT_RGB_888;
       break;
 
     default:
@@ -723,7 +723,7 @@ bitmap_new_from_pixbuf (CoglContext *ctx,
   /* We just use the data directly from the pixbuf so that we don't
    * have to copy to a seperate buffer.
    */
-  bmp = cogl_bitmap_new_for_data (ctx,
+  bmp = cg_bitmap_new_for_data (ctx,
                                   width,
                                   height,
                                   pixel_format,
@@ -764,8 +764,8 @@ rig_asset_new_from_image_data (RutContext *ctx,
       GError *error = NULL;
       GdkPixbuf *pixbuf =
         gdk_pixbuf_new_from_stream (istream, NULL, &error);
-      CoglBitmap *bitmap;
-      CoglError *cogl_error = NULL;
+      cg_bitmap_t *bitmap;
+      cg_error_t *cg_error = NULL;
       bool allocated;
 
       if (!pixbuf)
@@ -781,25 +781,25 @@ rig_asset_new_from_image_data (RutContext *ctx,
 
       g_object_unref (istream);
 
-      bitmap = bitmap_new_from_pixbuf (ctx->cogl_context, pixbuf);
+      bitmap = bitmap_new_from_pixbuf (ctx->cg_context, pixbuf);
 
-      asset->texture = cogl_texture_2d_new_from_bitmap (bitmap);
+      asset->texture = cg_texture_2d_new_from_bitmap (bitmap);
 
       /* Allocate now so we can simply free the data
        * TODO: allow asynchronous upload. */
-      allocated = cogl_texture_allocate (asset->texture, &cogl_error);
+      allocated = cg_texture_allocate (asset->texture, &cg_error);
 
-      cogl_object_unref (bitmap);
+      cg_object_unref (bitmap);
       g_object_unref (pixbuf);
 
       if (!allocated)
         {
-          cogl_object_unref (asset->texture);
+          cg_object_unref (asset->texture);
           rut_throw (e,
                      RUT_IO_EXCEPTION,
                      RUT_IO_EXCEPTION_IO,
-                     "Failed to load Cogl texture: %s", cogl_error->message);
-          cogl_error_free (cogl_error);
+                     "Failed to load Cogl texture: %s", cg_error->message);
+          cg_error_free (cg_error);
           return NULL;
         }
     }
@@ -1001,16 +1001,16 @@ rig_asset_new_from_mesh (RutContext *ctx,
 
   for (i = 0; i < mesh->n_attributes; i++)
     {
-      if (strcmp (mesh->attributes[i]->name, "cogl_normal_in") == 0)
+      if (strcmp (mesh->attributes[i]->name, "cg_normal_in") == 0)
         asset->has_normals = true;
-      else if (strcmp (mesh->attributes[i]->name, "cogl_tex_coord0_in") == 0)
+      else if (strcmp (mesh->attributes[i]->name, "cg_tex_coord0_in") == 0)
         asset->has_tex_coords = true;
     }
 
   /* XXX: for ply mesh handling the needs_normals/tex_coords refers
    * to needing to initialize these attributes, since we guarantee
-   * that the mesh itself will always have cogl_normal_in and
-   * cogl_tex_coord0_in attributes.
+   * that the mesh itself will always have cg_normal_in and
+   * cg_tex_coord0_in attributes.
    */
 #warning "fixme: not consistent with ply mesh handling where we guarantee at least padded normals/tex_coords"
 
@@ -1100,7 +1100,7 @@ rig_asset_get_context (RigAsset *asset)
   return asset->ctx;
 }
 
-CoglTexture *
+cg_texture_t *
 rig_asset_get_texture (RigAsset *asset)
 {
   return asset->texture;
@@ -1131,12 +1131,12 @@ rig_asset_get_image_size (RigAsset *asset,
     }
   else
     {
-      CoglTexture *texture = rig_asset_get_texture (asset);
+      cg_texture_t *texture = rig_asset_get_texture (asset);
 
       c_return_if_fail (texture);
 
-      *width = cogl_texture_get_width (texture);
-      *height = cogl_texture_get_height (texture);
+      *width = cg_texture_get_width (texture);
+      *height = cg_texture_get_height (texture);
     }
 }
 

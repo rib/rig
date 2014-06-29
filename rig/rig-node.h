@@ -57,7 +57,7 @@ void
 rig_node_quaternion_lerp (RigNode *a,
                           RigNode *b,
                           float t,
-                          CoglQuaternion *value);
+                          cg_quaternion_t *value);
 
 void
 rig_node_double_lerp (RigNode *a,
@@ -87,7 +87,7 @@ void
 rig_node_color_lerp (RigNode *a,
                      RigNode *b,
                      float t,
-                     CoglColor *value);
+                     cg_color_t *value);
 
 void
 rig_node_enum_lerp (RigNode *a,
@@ -146,10 +146,10 @@ RigNode *
 rig_node_new_for_uint32 (float t, uint32_t value);
 
 RigNode *
-rig_node_new_for_quaternion (float t, const CoglQuaternion *value);
+rig_node_new_for_quaternion (float t, const cg_quaternion_t *value);
 
 RigNode *
-rig_node_new_for_color (float t, const CoglColor *value);
+rig_node_new_for_color (float t, const cg_color_t *value);
 
 RigNode *
 rig_node_new_for_boolean (float t, bool value);

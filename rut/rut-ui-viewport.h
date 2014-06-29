@@ -89,7 +89,7 @@ rut_ui_viewport_get_doc_scale_x (RutUIViewport *ui_viewport);
 float
 rut_ui_viewport_get_doc_scale_y (RutUIViewport *ui_viewport);
 
-const CoglMatrix *
+const cg_matrix_t *
 rut_ui_viewport_get_doc_matrix (RutUIViewport *ui_viewport);
 
 void
@@ -129,6 +129,6 @@ rut_ui_viewport_set_sync_widget (RutObject *ui_viewport,
 
 void
 rut_ui_viewport_set_scroll_bar_color (RutUIViewport *ui_viewport,
-                                      const CoglColor *color);
+                                      const cg_color_t *color);
 
 #endif /* _RUT_UI_VIEWPORT_H_ */

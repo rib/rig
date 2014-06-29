@@ -40,7 +40,7 @@ static RutMagazine *rut_matrix_stack_matrices_magazine;
 
 /* XXX: Note: this leaves entry->parent uninitialized! */
 static RutMatrixEntry *
-_rut_matrix_entry_new (CoglMatrixOp operation)
+_rut_matrix_entry_new (cg_matrix_op_t operation)
 {
   RutMatrixEntry *entry =
     rut_magazine_chunk_alloc (rut_matrix_stack_magazine);
@@ -78,7 +78,7 @@ _rut_matrix_stack_push_entry (RutMatrixStack *stack,
 
 static void *
 _rut_matrix_stack_push_operation (RutMatrixStack *stack,
-                                   CoglMatrixOp operation)
+                                   cg_matrix_op_t operation)
 {
   RutMatrixEntry *entry = _rut_matrix_entry_new (operation);
 
@@ -89,7 +89,7 @@ _rut_matrix_stack_push_operation (RutMatrixStack *stack,
 
 static void *
 _rut_matrix_stack_push_replacement_entry (RutMatrixStack *stack,
-                                          CoglMatrixOp operation)
+                                          cg_matrix_op_t operation)
 {
   RutMatrixEntry *old_top = stack->last_entry;
   RutMatrixEntry *new_top;
@@ -166,7 +166,7 @@ rut_matrix_stack_rotate (RutMatrixStack *stack,
 
 void
 rut_matrix_stack_rotate_quaternion (RutMatrixStack *stack,
-                                     const CoglQuaternion *quaternion)
+                                     const cg_quaternion_t *quaternion)
 {
   RutMatrixEntryRotateQuaternion *entry;
 
@@ -181,7 +181,7 @@ rut_matrix_stack_rotate_quaternion (RutMatrixStack *stack,
 
 void
 rut_matrix_stack_rotate_euler (RutMatrixStack *stack,
-                                 const CoglEuler *euler)
+                                 const cg_euler_t *euler)
 {
   RutMatrixEntryRotateEuler *entry;
 
@@ -210,7 +210,7 @@ rut_matrix_stack_scale (RutMatrixStack *stack,
 
 void
 rut_matrix_stack_multiply (RutMatrixStack *stack,
-                            const CoglMatrix *matrix)
+                            const cg_matrix_t *matrix)
 {
   RutMatrixEntryMultiply *entry;
 
@@ -219,12 +219,12 @@ rut_matrix_stack_multiply (RutMatrixStack *stack,
   entry->matrix =
     rut_magazine_chunk_alloc (rut_matrix_stack_matrices_magazine);
 
-  cogl_matrix_init_from_array (entry->matrix, (float *)matrix);
+  cg_matrix_init_from_array (entry->matrix, (float *)matrix);
 }
 
 void
 rut_matrix_stack_set (RutMatrixStack *stack,
-                       const CoglMatrix *matrix)
+                       const cg_matrix_t *matrix)
 {
   RutMatrixEntryLoad *entry;
 
@@ -235,7 +235,7 @@ rut_matrix_stack_set (RutMatrixStack *stack,
   entry->matrix =
     rut_magazine_chunk_alloc (rut_matrix_stack_matrices_magazine);
 
-  cogl_matrix_init_from_array (entry->matrix, (float *)matrix);
+  cg_matrix_init_from_array (entry->matrix, (float *)matrix);
 }
 
 void
@@ -256,8 +256,8 @@ rut_matrix_stack_frustum (RutMatrixStack *stack,
   entry->matrix =
     rut_magazine_chunk_alloc (rut_matrix_stack_matrices_magazine);
 
-  cogl_matrix_init_identity (entry->matrix);
-  cogl_matrix_frustum (entry->matrix,
+  cg_matrix_init_identity (entry->matrix);
+  cg_matrix_frustum (entry->matrix,
                        left, right, bottom, top,
                        z_near, z_far);
 }
@@ -278,8 +278,8 @@ rut_matrix_stack_perspective (RutMatrixStack *stack,
   entry->matrix =
     rut_magazine_chunk_alloc (rut_matrix_stack_matrices_magazine);
 
-  cogl_matrix_init_identity (entry->matrix);
-  cogl_matrix_perspective (entry->matrix,
+  cg_matrix_init_identity (entry->matrix);
+  cg_matrix_perspective (entry->matrix,
                           fov_y, aspect, z_near, z_far);
 }
 
@@ -301,8 +301,8 @@ rut_matrix_stack_orthographic (RutMatrixStack *stack,
   entry->matrix =
     rut_magazine_chunk_alloc (rut_matrix_stack_matrices_magazine);
 
-  cogl_matrix_init_identity (entry->matrix);
-  cogl_matrix_orthographic (entry->matrix,
+  cg_matrix_init_identity (entry->matrix);
+  cg_matrix_orthographic (entry->matrix,
                            x_1, y_1, x_2, y_2, near, far);
 }
 
@@ -413,15 +413,15 @@ rut_matrix_stack_pop (RutMatrixStack *stack)
 
 bool
 rut_matrix_stack_get_inverse (RutMatrixStack *stack,
-                              CoglMatrix *inverse)
+                              cg_matrix_t *inverse)
 {
-  CoglMatrix matrix;
-  CoglMatrix *internal = rut_matrix_stack_get (stack, &matrix);
+  cg_matrix_t matrix;
+  cg_matrix_t *internal = rut_matrix_stack_get (stack, &matrix);
 
   if (internal)
-    return cogl_matrix_get_inverse (internal, inverse);
+    return cg_matrix_get_inverse (internal, inverse);
   else
-    return cogl_matrix_get_inverse (&matrix, inverse);
+    return cg_matrix_get_inverse (&matrix, inverse);
 }
 
 /* In addition to writing the stack matrix into the give @matrix
@@ -429,9 +429,9 @@ rut_matrix_stack_get_inverse (RutMatrixStack *stack,
  * to a matrix too so if we are querying the inverse matrix we
  * should query from the return matrix so that the result can
  * be cached within the stack. */
-CoglMatrix *
+cg_matrix_t *
 rut_matrix_entry_get (RutMatrixEntry *entry,
-                      CoglMatrix *matrix)
+                      cg_matrix_t *matrix)
 {
   int depth;
   RutMatrixEntry *current;
@@ -445,7 +445,7 @@ rut_matrix_entry_get (RutMatrixEntry *entry,
       switch (current->op)
         {
         case RUT_MATRIX_OP_LOAD_IDENTITY:
-          cogl_matrix_init_identity (matrix);
+          cg_matrix_init_identity (matrix);
           goto initialized;
         case RUT_MATRIX_OP_LOAD:
           {
@@ -542,7 +542,7 @@ initialized:
             {
               RutMatrixEntryTranslate *translate =
                 (RutMatrixEntryTranslate *)children[i];
-              cogl_matrix_translate (matrix,
+              cg_matrix_translate (matrix,
                                     translate->x,
                                     translate->y,
                                     translate->z);
@@ -552,7 +552,7 @@ initialized:
             {
               RutMatrixEntryRotate *rotate=
                 (RutMatrixEntryRotate *)children[i];
-              cogl_matrix_rotate (matrix,
+              cg_matrix_rotate (matrix,
                                  rotate->angle,
                                  rotate->x,
                                  rotate->y,
@@ -563,12 +563,12 @@ initialized:
             {
               RutMatrixEntryRotateEuler *rotate =
                 (RutMatrixEntryRotateEuler *)children[i];
-              CoglEuler euler;
-              cogl_euler_init (&euler,
+              cg_euler_t euler;
+              cg_euler_init (&euler,
                                rotate->heading,
                                rotate->pitch,
                                rotate->roll);
-              cogl_matrix_rotate_euler (matrix,
+              cg_matrix_rotate_euler (matrix,
                                        &euler);
               continue;
             }
@@ -576,16 +576,16 @@ initialized:
             {
               RutMatrixEntryRotateQuaternion *rotate =
                 (RutMatrixEntryRotateQuaternion *)children[i];
-              CoglQuaternion quaternion;
-              cogl_quaternion_init_from_array (&quaternion, rotate->values);
-              cogl_matrix_rotate_quaternion (matrix, &quaternion);
+              cg_quaternion_t quaternion;
+              cg_quaternion_init_from_array (&quaternion, rotate->values);
+              cg_matrix_rotate_quaternion (matrix, &quaternion);
               continue;
             }
         case RUT_MATRIX_OP_SCALE:
             {
               RutMatrixEntryScale *scale =
                 (RutMatrixEntryScale *)children[i];
-              cogl_matrix_scale (matrix,
+              cg_matrix_scale (matrix,
                                 scale->x,
                                 scale->y,
                                 scale->z);
@@ -595,7 +595,7 @@ initialized:
             {
               RutMatrixEntryMultiply *multiply =
                 (RutMatrixEntryMultiply *)children[i];
-              cogl_matrix_multiply (matrix, matrix, multiply->matrix);
+              cg_matrix_multiply (matrix, matrix, multiply->matrix);
               continue;
             }
 
@@ -621,9 +621,9 @@ rut_matrix_stack_get_entry (RutMatrixStack *stack)
  * to a matrix too so if we are querying the inverse matrix we
  * should query from the return matrix so that the result can
  * be cached within the stack. */
-CoglMatrix *
+cg_matrix_t *
 rut_matrix_stack_get (RutMatrixStack *stack,
-                      CoglMatrix *matrix)
+                      cg_matrix_t *matrix)
 {
   return rut_matrix_entry_get (stack->last_entry, matrix);
 }
@@ -660,7 +660,7 @@ rut_matrix_stack_new (RutContext *ctx)
       rut_matrix_stack_magazine =
         rut_magazine_new (sizeof (RutMatrixEntryFull), 20);
       rut_matrix_stack_matrices_magazine =
-        rut_magazine_new (sizeof (CoglMatrix), 20);
+        rut_magazine_new (sizeof (cg_matrix_t), 20);
     }
 
   stack->context = ctx;
@@ -905,7 +905,7 @@ rut_matrix_entry_equal (RutMatrixEntry *entry0,
           {
             RutMatrixEntryMultiply *mult0 = (RutMatrixEntryMultiply *)entry0;
             RutMatrixEntryMultiply *mult1 = (RutMatrixEntryMultiply *)entry1;
-            if (!cogl_matrix_equal (mult0->matrix, mult1->matrix))
+            if (!cg_matrix_equal (mult0->matrix, mult1->matrix))
               return false;
           }
           break;
@@ -916,7 +916,7 @@ rut_matrix_entry_equal (RutMatrixEntry *entry0,
             /* There's no need to check any further since an
              * _OP_LOAD makes all the ancestors redundant as far as
              * the final matrix value is concerned. */
-            return cogl_matrix_equal (load0->matrix, load1->matrix);
+            return cg_matrix_equal (load0->matrix, load1->matrix);
           }
         case RUT_MATRIX_OP_SAVE:
           /* We skip over saves above so we shouldn't see save entries */
@@ -1013,16 +1013,16 @@ rut_debug_matrix_entry_print (RutMatrixEntry *entry)
           {
             RutMatrixEntryMultiply *mult = (RutMatrixEntryMultiply *)entry;
             c_print ("  MULT:\n");
-            cogl_debug_matrix_print (mult->matrix);
-            //_cogl_matrix_prefix_print ("    ", mult->matrix);
+            cg_debug_matrix_print (mult->matrix);
+            //_cg_matrix_prefix_print ("    ", mult->matrix);
             continue;
           }
         case RUT_MATRIX_OP_LOAD:
           {
             RutMatrixEntryLoad *load = (RutMatrixEntryLoad *)entry;
             c_print ("  LOAD:\n");
-            cogl_debug_matrix_print (load->matrix);
-            //_cogl_matrix_prefix_print ("    ", load->matrix);
+            cg_debug_matrix_print (load->matrix);
+            //_cg_matrix_prefix_print ("    ", load->matrix);
             continue;
           }
         case RUT_MATRIX_OP_SAVE:

@@ -56,14 +56,14 @@ struct _RutScrollBar
 
   RutContext *ctx;
 
-  CoglColor color;
+  cg_color_t color;
 
   int thickness;
 
   float trough_range;
 
-  CoglPipeline *rounded_pipeline;
-  CoglPipeline *rect_pipeline;
+  cg_pipeline_t *rounded_pipeline;
+  cg_pipeline_t *rect_pipeline;
   float handle_len;
   float handle_pos;
 
@@ -134,33 +134,33 @@ static void
 _rut_scroll_bar_paint (RutObject *object, RutPaintContext *paint_ctx)
 {
   RutScrollBar *scroll_bar = RUT_SCROLL_BAR (object);
-  CoglFramebuffer *fb = rut_camera_get_framebuffer (paint_ctx->camera);
+  cg_framebuffer_t *fb = rut_camera_get_framebuffer (paint_ctx->camera);
 
-  cogl_framebuffer_push_matrix (fb);
+  cg_framebuffer_push_matrix (fb);
 
   if (scroll_bar->axis == RUT_AXIS_X)
     {
-      cogl_framebuffer_translate (fb,
+      cg_framebuffer_translate (fb,
                                   scroll_bar->handle_pos, 0, 0);
     }
   else
     {
-      cogl_framebuffer_translate (fb, 0,
+      cg_framebuffer_translate (fb, 0,
                                   scroll_bar->handle_pos, 0);
-      cogl_framebuffer_draw_rectangle (fb,
+      cg_framebuffer_draw_rectangle (fb,
                                        scroll_bar->rounded_pipeline,
                                        0, 0,
                                        HANDLE_THICKNESS,
                                        HANDLE_THICKNESS);
 
-      cogl_framebuffer_draw_rectangle (fb,
+      cg_framebuffer_draw_rectangle (fb,
                                        scroll_bar->rounded_pipeline,
                                        0,
                                        scroll_bar->handle_len - HANDLE_THICKNESS,
                                        HANDLE_THICKNESS,
                                        scroll_bar->handle_len);
 
-      cogl_framebuffer_draw_textured_rectangle (fb,
+      cg_framebuffer_draw_textured_rectangle (fb,
                                                 scroll_bar->rounded_pipeline,
                                                 0,
                                                 HANDLE_THICKNESS / 2,
@@ -169,7 +169,7 @@ _rut_scroll_bar_paint (RutObject *object, RutPaintContext *paint_ctx)
                                                 0, 0.5, 1, 0.5);
     }
 
-  cogl_framebuffer_pop_matrix (fb);
+  cg_framebuffer_pop_matrix (fb);
 }
 
 RutType rut_scroll_bar_type;
@@ -390,12 +390,12 @@ rut_scroll_bar_new (RutContext *ctx,
 
   scroll_bar->thickness = THICKNESS;
 
-  scroll_bar->rect_pipeline = cogl_pipeline_new (ctx->cogl_context);
-  cogl_pipeline_set_color (scroll_bar->rect_pipeline,
+  scroll_bar->rect_pipeline = cg_pipeline_new (ctx->cg_context);
+  cg_pipeline_set_color (scroll_bar->rect_pipeline,
                            &scroll_bar->color);
 
-  scroll_bar->rounded_pipeline = cogl_pipeline_copy (scroll_bar->rect_pipeline);
-  cogl_pipeline_set_layer_texture (scroll_bar->rounded_pipeline,
+  scroll_bar->rounded_pipeline = cg_pipeline_copy (scroll_bar->rect_pipeline);
+  cg_pipeline_set_layer_texture (scroll_bar->rounded_pipeline,
                                    0,
                                    ctx->circle_texture);
 
@@ -525,7 +525,7 @@ rut_scroll_bar_get_thickness (RutScrollBar *scroll_bar)
 
 void
 rut_scroll_bar_set_color (RutScrollBar *scroll_bar,
-                          const CoglColor *color)
+                          const cg_color_t *color)
 {
   scroll_bar->color = *color;
 }

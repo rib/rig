@@ -68,10 +68,10 @@ typedef struct _RutBoxed
       uint32_t uint32_val;
       bool boolean_val;
       char *text_val;
-      CoglQuaternion quaternion_val;
+      cg_quaternion_t quaternion_val;
       float vec3_val[3];
       float vec4_val[4];
-      CoglColor color_val;
+      cg_color_t color_val;
       RutObject *object_val;
       RutObject *asset_val;
       void *pointer_val;
@@ -187,8 +187,8 @@ typedef struct _RutPropertySpec
     uint32_t (* uint32_type) (void *object);
     bool (* boolean_type) (void *object);
     const char *(* text_type) (void *object);
-    const CoglQuaternion *(* quaternion_type) (void *object);
-    const CoglColor *(* color_type) (void *object);
+    const cg_quaternion_t *(* quaternion_type) (void *object);
+    const cg_color_t *(* color_type) (void *object);
     const float *(* vec3_type) (void *object);
     const float *(* vec4_type) (void *object);
     void *(* object_type) (void *object);
@@ -208,9 +208,9 @@ typedef struct _RutPropertySpec
     void (* boolean_type) (void *object, bool value);
     void (* text_type) (void *object, const char *value);
     void (* quaternion_type) (void *object,
-                              const CoglQuaternion *quaternion);
+                              const cg_quaternion_t *quaternion);
     void (* color_type) (void *object,
-                         const CoglColor *color);
+                         const cg_color_t *color);
     void (* vec3_type) (void *object, const float value[3]);
     void (* vec4_type) (void *object, const float value[4]);
     void (* object_type) (void *object, void *value);

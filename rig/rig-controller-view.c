@@ -248,8 +248,8 @@ struct _RigControllerView
   float box_x1, box_x2;
   int box_y1, box_y2;
 
-  CoglPipeline *box_pipeline;
-  CoglPath *box_path;
+  cg_pipeline_t *box_pipeline;
+  cg_path_t *box_path;
 
   int nodes_x;
   int nodes_width;
@@ -260,10 +260,10 @@ struct _RigControllerView
 
   RigNodesSelection *nodes_selection;
 
-  CoglPipeline *separator_pipeline;
+  cg_pipeline_t *separator_pipeline;
   int separator_width;
 
-  CoglPipeline *path_bg_pipeline;
+  cg_pipeline_t *path_bg_pipeline;
   int nodes_grid_width;
   int nodes_grid_height;
 
@@ -354,7 +354,7 @@ static void
 _rig_node_marker_set_selected (RigNodeMarker *marker,
                                bool selected)
 {
-  CoglPipeline *pipeline;
+  cg_pipeline_t *pipeline;
 
   if (marker->selected == selected)
     return;
@@ -362,12 +362,12 @@ _rig_node_marker_set_selected (RigNodeMarker *marker,
   if (selected)
     {
       pipeline = rut_nine_slice_get_pipeline (marker->rect);
-      cogl_pipeline_set_color4f (pipeline, 1, 1, 0, 1);
+      cg_pipeline_set_color4f (pipeline, 1, 1, 0, 1);
     }
   else
     {
       pipeline = rut_nine_slice_get_pipeline (marker->rect);
-      cogl_pipeline_set_color4f (pipeline, 1, 1, 1, 1);
+      cg_pipeline_set_color4f (pipeline, 1, 1, 1, 1);
     }
 
   marker->selected = selected;
@@ -522,8 +522,8 @@ typedef struct _MarkerGrabState
   float max_drag_offset;
 
   RutObject *camera;
-  CoglMatrix transform;
-  CoglMatrix inverse_transform;
+  cg_matrix_t transform;
+  cg_matrix_t inverse_transform;
 } MarkerGrabState;
 
 typedef void (*RigNodeSelectionCallback) (RigNode *node,
@@ -902,7 +902,7 @@ marker_input_cb (RutInputRegion *region,
       state->camera = rut_input_event_get_camera (event);
       state->transform = *rut_camera_get_view_transform (state->camera);
       rut_graphable_apply_transform (marker->path_view, &state->transform);
-      if (!cogl_matrix_get_inverse (&state->transform,
+      if (!cg_matrix_get_inverse (&state->transform,
                                     &state->inverse_transform))
         {
           c_warning ("Failed to calculate inverse of path_view transform\n");
@@ -960,7 +960,7 @@ _rig_node_marker_new (RigPathView *path_view,
   RigNodeMarker *marker =
     rut_object_alloc0 (RigNodeMarker, &rig_node_marker_type, _rig_node_marker_init_type);
   RutContext *ctx = path_view->prop_view->object->view->context;
-  CoglTexture *tex;
+  cg_texture_t *tex;
 
 
 
@@ -1157,7 +1157,7 @@ _rig_nodes_selection_new (RigControllerView *view)
   return selection;
 }
 
-typedef CoglVertexP2C4 RigControllerViewDotVertex;
+typedef cg_vertex_p2c4_t RigControllerViewDotVertex;
 
 static void
 rig_controller_view_property_removed (RigControllerView *view,
@@ -1295,7 +1295,7 @@ _rig_path_view_preferred_size_changed (RigPathView *path_view)
 
 static void
 draw_timeline_background (RigPathView *path_view,
-                          CoglFramebuffer *fb)
+                          cg_framebuffer_t *fb)
 {
   RigControllerView *view = path_view->prop_view->object->view;
   float width;
@@ -1309,7 +1309,7 @@ draw_timeline_background (RigPathView *path_view,
        view->nodes_grid_height != tex_height) &&
       view->path_bg_pipeline)
     {
-      cogl_object_unref (view->path_bg_pipeline);
+      cg_object_unref (view->path_bg_pipeline);
       view->path_bg_pipeline = NULL;
     }
 #endif
@@ -1319,25 +1319,25 @@ draw_timeline_background (RigPathView *path_view,
       int tex_height = 4;
       int half_width = tex_width / 2;
       int quater_width = half_width / 2;
-      CoglPipeline *pipeline;
+      cg_pipeline_t *pipeline;
       int rowstride;
       int y;
-      CoglBitmap *bitmap;
-      CoglPixelBuffer *buffer;
-      CoglTexture *texture;
+      cg_bitmap_t *bitmap;
+      cg_pixel_buffer_t *buffer;
+      cg_texture_t *texture;
       uint8_t *tex_data;
 
-      pipeline = cogl_pipeline_new (view->context->cogl_context);
+      pipeline = cg_pipeline_new (view->context->cg_context);
 
-      bitmap = cogl_bitmap_new_with_size (view->context->cogl_context,
+      bitmap = cg_bitmap_new_with_size (view->context->cg_context,
                                           tex_width, tex_height,
-                                          COGL_PIXEL_FORMAT_RGB_888);
-      buffer = cogl_bitmap_get_buffer (bitmap);
+                                          CG_PIXEL_FORMAT_RGB_888);
+      buffer = cg_bitmap_get_buffer (bitmap);
 
-      rowstride = cogl_bitmap_get_rowstride (bitmap);
-      tex_data = cogl_buffer_map (buffer,
-                                  COGL_BUFFER_ACCESS_WRITE,
-                                  COGL_BUFFER_MAP_HINT_DISCARD,
+      rowstride = cg_bitmap_get_rowstride (bitmap);
+      tex_data = cg_buffer_map (buffer,
+                                  CG_BUFFER_ACCESS_WRITE,
+                                  CG_BUFFER_MAP_HINT_DISCARD,
                                   NULL);
 
       memset (tex_data, 0xff, rowstride * tex_height);
@@ -1353,25 +1353,25 @@ draw_timeline_background (RigPathView *path_view,
         }
       //memset (tex_data + rowstride * (tex_height - 1), 0x74, tex_width * 3);
 
-      cogl_buffer_unmap (buffer);
+      cg_buffer_unmap (buffer);
 
-      texture = cogl_texture_2d_new_from_bitmap (bitmap);
+      texture = cg_texture_2d_new_from_bitmap (bitmap);
 
-      cogl_pipeline_set_layer_texture (pipeline,
+      cg_pipeline_set_layer_texture (pipeline,
                                        0, /* layer_num */
                                        texture);
-      cogl_pipeline_set_layer_filters
+      cg_pipeline_set_layer_filters
         (pipeline,
          0, /* layer_num */
-         COGL_PIPELINE_FILTER_LINEAR_MIPMAP_NEAREST,
-         COGL_PIPELINE_FILTER_LINEAR);
-      cogl_pipeline_set_layer_wrap_mode
+         CG_PIPELINE_FILTER_LINEAR_MIPMAP_NEAREST,
+         CG_PIPELINE_FILTER_LINEAR);
+      cg_pipeline_set_layer_wrap_mode
         (pipeline,
          0, /* layer_num */
-         COGL_PIPELINE_WRAP_MODE_REPEAT);
+         CG_PIPELINE_WRAP_MODE_REPEAT);
 
-      cogl_object_unref (bitmap);
-      cogl_object_unref (texture);
+      cg_object_unref (bitmap);
+      cg_object_unref (texture);
 
       view->nodes_grid_width = tex_width;
       view->nodes_grid_height = tex_height;
@@ -1381,7 +1381,7 @@ draw_timeline_background (RigPathView *path_view,
 
   width = path_view->width;
 
-  cogl_framebuffer_draw_textured_rectangle (fb,
+  cg_framebuffer_draw_textured_rectangle (fb,
                                             view->path_bg_pipeline,
                                             0,
                                             0,
@@ -1398,7 +1398,7 @@ _rig_path_view_paint (RutObject *object,
                       RutPaintContext *paint_ctx)
 {
   RigPathView *path_view = object;
-  CoglFramebuffer *fb = rut_camera_get_framebuffer (paint_ctx->camera);
+  cg_framebuffer_t *fb = rut_camera_get_framebuffer (paint_ctx->camera);
 
   draw_timeline_background (path_view, fb);
 }
@@ -1553,8 +1553,8 @@ typedef struct _PathViewGrabState
   RigPathView *path_view;
 
   RutObject *camera;
-  CoglMatrix transform;
-  CoglMatrix inverse_transform;
+  cg_matrix_t transform;
+  cg_matrix_t inverse_transform;
 } PathViewGrabState;
 
 static RutInputEventStatus
@@ -1619,7 +1619,7 @@ path_view_input_region_cb (RutInputRegion *region,
       state->camera = rut_input_event_get_camera (event);
       state->transform = *rut_camera_get_view_transform (state->camera);
       rut_graphable_apply_transform (path_view, &state->transform);
-      if (!cogl_matrix_get_inverse (&state->transform,
+      if (!cg_matrix_get_inverse (&state->transform,
                                     &state->inverse_transform))
         {
           c_warning ("Failed to calculate inverse of path_view transform\n");
@@ -2615,13 +2615,13 @@ _rig_controller_view_free (void *object)
   //rig_controller_view_ungrab_input (view);
 
   if (view->separator_pipeline)
-    cogl_object_unref (view->separator_pipeline);
+    cg_object_unref (view->separator_pipeline);
   if (view->path_bg_pipeline)
-    cogl_object_unref (view->path_bg_pipeline);
+    cg_object_unref (view->path_bg_pipeline);
   if (view->box_pipeline)
-    cogl_object_unref (view->box_pipeline);
+    cg_object_unref (view->box_pipeline);
   if (view->box_path)
-    cogl_object_unref (view->box_path);
+    cg_object_unref (view->box_path);
 
   rut_object_unref (view->nodes_selection);
 
@@ -2637,43 +2637,43 @@ _rig_controller_view_free (void *object)
 }
 
 #if 0
-static CoglAttributeBuffer *
+static cg_attribute_buffer_t *
 rig_controller_view_create_dots_buffer (RigControllerView *view)
 {
   size_t size = MAX (8, view->n_dots) * sizeof (RigControllerViewDotVertex);
 
-  return cogl_attribute_buffer_new_with_size (view->context->cogl_context,
+  return cg_attribute_buffer_new_with_size (view->context->cg_context,
                                               size);
 }
 #endif
 
 #if 0
-static CoglPrimitive *
+static cg_primitive_t *
 rig_controller_view_create_dots_primitive (RigControllerView *view)
 {
-  CoglAttribute *attributes[2];
-  CoglPrimitive *prim;
+  cg_attribute_t *attributes[2];
+  cg_primitive_t *prim;
 
-  attributes[0] = cogl_attribute_new (view->dots_buffer,
-                                      "cogl_position_in",
+  attributes[0] = cg_attribute_new (view->dots_buffer,
+                                      "cg_position_in",
                                       sizeof (RigControllerViewDotVertex),
                                       offsetof (RigControllerViewDotVertex, x),
                                       2, /* n_components */
-                                      COGL_ATTRIBUTE_TYPE_FLOAT);
-  attributes[1] = cogl_attribute_new (view->dots_buffer,
-                                      "cogl_color_in",
+                                      CG_ATTRIBUTE_TYPE_FLOAT);
+  attributes[1] = cg_attribute_new (view->dots_buffer,
+                                      "cg_color_in",
                                       sizeof (RigControllerViewDotVertex),
                                       offsetof (RigControllerViewDotVertex, r),
                                       4, /* n_components */
-                                      COGL_ATTRIBUTE_TYPE_UNSIGNED_BYTE);
+                                      CG_ATTRIBUTE_TYPE_UNSIGNED_BYTE);
 
-  prim = cogl_primitive_new_with_attributes (COGL_VERTICES_MODE_POINTS,
+  prim = cg_primitive_new_with_attributes (CG_VERTICES_MODE_POINTS,
                                              view->n_dots,
                                              attributes,
                                              2 /* n_attributes */);
 
-  cogl_object_unref (attributes[0]);
-  cogl_object_unref (attributes[1]);
+  cg_object_unref (attributes[0]);
+  cg_object_unref (attributes[1]);
 
   return prim;
 }
@@ -2739,23 +2739,23 @@ rig_controller_view_update_dots_buffer (RigControllerView *view)
   RigControllerViewDotVertex *buffer_data;
   RigControllerViewDotData dot_data;
   size_t map_size = sizeof (RigControllerViewDotVertex) * view->n_dots;
-  CoglError *ignore_error = NULL;
+  cg_error_t *ignore_error = NULL;
 
   if (view->n_dots == 0)
     return;
 
-  buffer_data = cogl_buffer_map_range (view->dots_buffer,
+  buffer_data = cg_buffer_map_range (view->dots_buffer,
                                        0, /* offset */
                                        map_size,
-                                       COGL_BUFFER_ACCESS_WRITE,
-                                       COGL_BUFFER_MAP_HINT_DISCARD,
+                                       CG_BUFFER_ACCESS_WRITE,
+                                       CG_BUFFER_MAP_HINT_DISCARD,
                                        &ignore_error);
 
   if (buffer_data == NULL)
     {
       buffer_data = c_malloc (map_size);
       buffer_is_mapped = false;
-      cogl_error_free (ignore_error);
+      cg_error_free (ignore_error);
     }
   else
     buffer_is_mapped = true;
@@ -2797,10 +2797,10 @@ rig_controller_view_update_dots_buffer (RigControllerView *view)
     }
 
   if (buffer_is_mapped)
-    cogl_buffer_unmap (view->dots_buffer);
+    cg_buffer_unmap (view->dots_buffer);
   else
     {
-      cogl_buffer_set_data (view->dots_buffer,
+      cg_buffer_set_data (view->dots_buffer,
                             0, /* offset */
                             buffer_data,
                             map_size,
@@ -2813,25 +2813,25 @@ rig_controller_view_update_dots_buffer (RigControllerView *view)
 #if 0
 static void
 rig_controller_view_draw_box (RigControllerView *view,
-                              CoglFramebuffer *fb)
+                              cg_framebuffer_t *fb)
 {
   if (view->box_pipeline == NULL)
     {
-      view->box_pipeline = cogl_pipeline_new (view->context->cogl_context);
-      cogl_pipeline_set_color4ub (view->box_pipeline, 0, 0, 0, 255);
+      view->box_pipeline = cg_pipeline_new (view->context->cg_context);
+      cg_pipeline_set_color4ub (view->box_pipeline, 0, 0, 0, 255);
     }
 
   if (view->box_path == NULL)
     {
-      view->box_path = cogl_path_new (view->context->cogl_context);
-      cogl_path_rectangle (view->box_path,
+      view->box_path = cg_path_new (view->context->cg_context);
+      cg_path_rectangle (view->box_path,
                            view->nodes_x + view->box_x1 * view->nodes_width,
                            view->box_y1 * view->row_height,
                            view->nodes_x + view->box_x2 * view->nodes_width,
                            view->box_y2 * view->row_height);
     }
 
-  cogl_path_stroke (view->box_path, fb, view->box_pipeline);
+  cg_path_stroke (view->box_path, fb, view->box_pipeline);
 }
 #endif
 
@@ -2841,10 +2841,10 @@ _rig_controller_view_paint (RutObject *object,
                             RutPaintContext *paint_ctx)
 {
   RigControllerView *view = object;
-  CoglFramebuffer *fb = rut_camera_get_framebuffer (paint_ctx->camera);
+  cg_framebuffer_t *fb = rut_camera_get_framebuffer (paint_ctx->camera);
 
   if (view->separator_pipeline)
-    cogl_framebuffer_draw_rectangle (fb,
+    cg_framebuffer_draw_rectangle (fb,
                                      view->separator_pipeline,
                                      view->nodes_x -
                                      view->separator_width,
@@ -2861,13 +2861,13 @@ _rig_controller_view_paint (RutObject *object,
       else
         {
           int old_n_vertices =
-            (cogl_buffer_get_size (view->dots_buffer) /
+            (cg_buffer_get_size (view->dots_buffer) /
              sizeof (RigControllerViewDotVertex));
 
           if (old_n_vertices < view->n_dots)
             {
-              cogl_object_unref (view->dots_buffer);
-              cogl_object_unref (view->dots_primitive);
+              cg_object_unref (view->dots_buffer);
+              cg_object_unref (view->dots_primitive);
               view->dots_primitive = NULL;
               view->dots_buffer = rig_controller_view_create_dots_buffer (view);
             }
@@ -2876,7 +2876,7 @@ _rig_controller_view_paint (RutObject *object,
       if (view->dots_primitive == NULL)
         view->dots_primitive = rig_controller_view_create_dots_primitive (view);
       else
-        cogl_primitive_set_n_vertices (view->dots_primitive, view->n_dots);
+        cg_primitive_set_n_vertices (view->dots_primitive, view->n_dots);
 
       rig_controller_view_update_dots_buffer (view);
 
@@ -2891,7 +2891,7 @@ _rig_controller_view_paint (RutObject *object,
    * drawn as points which are always sized in framebuffer pixels
    * regardless of the transformation */
 
-  cogl_framebuffer_push_rectangle_clip (fb,
+  cg_framebuffer_push_rectangle_clip (fb,
                                         view->nodes_x,
                                         0.0f,
                                         view->nodes_x + view->nodes_width,
@@ -2899,22 +2899,22 @@ _rig_controller_view_paint (RutObject *object,
 
   if (view->n_dots > 0)
     {
-      cogl_framebuffer_push_matrix (fb);
+      cg_framebuffer_push_matrix (fb);
 
-      cogl_framebuffer_translate (fb,
+      cg_framebuffer_translate (fb,
                                   view->nodes_x,
                                   view->row_height * 0.5f,
                                   0.0f);
-      cogl_framebuffer_scale (fb,
+      cg_framebuffer_scale (fb,
                               view->nodes_width,
                               view->row_height,
                               1.0f);
 
-      cogl_primitive_draw (view->dots_primitive,
+      cg_primitive_draw (view->dots_primitive,
                            fb,
                            view->dots_pipeline);
 
-      cogl_framebuffer_pop_matrix (fb);
+      cg_framebuffer_pop_matrix (fb);
     }
 
   {
@@ -2923,7 +2923,7 @@ _rig_controller_view_paint (RutObject *object,
       rut_timeline_get_progress (view->timeline) *
       view->nodes_width;
 
-    cogl_framebuffer_draw_rectangle (fb,
+    cg_framebuffer_draw_rectangle (fb,
                                      view->progress_pipeline,
                                      progress_x -
                                      RIG_CONTROLLER_VIEW_PROGRESS_WIDTH / 2.0f,
@@ -2936,7 +2936,7 @@ _rig_controller_view_paint (RutObject *object,
   if (view->grab_state == RIG_CONTROLLER_VIEW_GRAB_STATE_DRAW_BOX)
     rig_controller_view_draw_box (view, fb);
 
-  cogl_framebuffer_pop_clip (fb);
+  cg_framebuffer_pop_clip (fb);
 }
 #endif
 
@@ -3306,13 +3306,13 @@ rig_controller_view_property_removed (RigControllerView *view,
 }
 
 #if 0
-static CoglPipeline *
+static cg_pipeline_t *
 rig_controller_view_create_dots_pipeline (RigControllerView *view)
 {
-  CoglPipeline *pipeline = cogl_pipeline_new (view->context->cogl_context);
+  cg_pipeline_t *pipeline = cg_pipeline_new (view->context->cg_context);
   char *dot_filename;
-  CoglBitmap *bitmap;
-  CoglError *error = NULL;
+  cg_bitmap_t *bitmap;
+  cg_error_t *error = NULL;
 
   dot_filename = rut_find_data_file ("dot.png");
 
@@ -3323,7 +3323,7 @@ rig_controller_view_create_dots_pipeline (RigControllerView *view)
     }
   else
     {
-      bitmap = cogl_bitmap_new_from_file (view->context->cogl_context,
+      bitmap = cg_bitmap_new_from_file (view->context->cg_context,
                                           dot_filename,
                                           &error);
       c_free (dot_filename);
@@ -3332,52 +3332,52 @@ rig_controller_view_create_dots_pipeline (RigControllerView *view)
   if (bitmap == NULL)
     {
       c_warning ("Error loading dot.png: %s", error->message);
-      cogl_error_free (error);
+      cg_error_free (error);
     }
   else
     {
-      CoglTexture2D *texture =
-        cogl_texture_2d_new_from_bitmap (bitmap,
-                                         COGL_PIXEL_FORMAT_ANY,
+      cg_texture_2d_t *texture =
+        cg_texture_2d_new_from_bitmap (bitmap,
+                                         CG_PIXEL_FORMAT_ANY,
                                          &error);
 
       if (texture == NULL)
         {
           c_warning ("Error loading dot.png: %s", error->message);
-          cogl_error_free (error);
+          cg_error_free (error);
         }
       else
         {
-          if (!cogl_pipeline_set_layer_point_sprite_coords_enabled (pipeline,
+          if (!cg_pipeline_set_layer_point_sprite_coords_enabled (pipeline,
                                                                     0,
                                                                     true,
                                                                     &error))
             {
               c_warning ("Error enabling point sprite coords: %s",
                          error->message);
-              cogl_error_free (error);
-              cogl_pipeline_remove_layer (pipeline, 0);
+              cg_error_free (error);
+              cg_pipeline_remove_layer (pipeline, 0);
             }
           else
             {
-              cogl_pipeline_set_layer_texture (pipeline,
+              cg_pipeline_set_layer_texture (pipeline,
                                                0, /* layer_num */
                                                texture);
-              cogl_pipeline_set_layer_filters
+              cg_pipeline_set_layer_filters
                 (pipeline,
                  0, /* layer_num */
-                 COGL_PIPELINE_FILTER_LINEAR_MIPMAP_NEAREST,
-                 COGL_PIPELINE_FILTER_LINEAR);
-              cogl_pipeline_set_layer_wrap_mode
+                 CG_PIPELINE_FILTER_LINEAR_MIPMAP_NEAREST,
+                 CG_PIPELINE_FILTER_LINEAR);
+              cg_pipeline_set_layer_wrap_mode
                 (pipeline,
                  0, /* layer_num */
-                 COGL_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE);
+                 CG_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE);
             }
 
-          cogl_object_unref (texture);
+          cg_object_unref (texture);
         }
 
-      cogl_object_unref (bitmap);
+      cg_object_unref (bitmap);
     }
 
   return pipeline;
@@ -3388,7 +3388,7 @@ static void
 rig_controller_view_create_separator_pipeline (RigControllerView *view)
 {
   GError *error = NULL;
-  CoglTexture *texture;
+  cg_texture_t *texture;
 
   texture = rut_load_texture_from_data_file (view->context,
                                              "controller-view-separator.png",
@@ -3396,25 +3396,25 @@ rig_controller_view_create_separator_pipeline (RigControllerView *view)
 
   if (texture)
     {
-      CoglPipeline *pipeline = cogl_pipeline_new (view->context->cogl_context);
+      cg_pipeline_t *pipeline = cg_pipeline_new (view->context->cg_context);
 
       view->separator_pipeline = pipeline;
-      view->separator_width = cogl_texture_get_width (texture);
+      view->separator_width = cg_texture_get_width (texture);
 
-      cogl_pipeline_set_layer_texture (pipeline,
+      cg_pipeline_set_layer_texture (pipeline,
                                        0, /* layer_num */
                                        texture);
-      cogl_pipeline_set_layer_filters
+      cg_pipeline_set_layer_filters
         (pipeline,
          0, /* layer_num */
-         COGL_PIPELINE_FILTER_LINEAR_MIPMAP_NEAREST,
-         COGL_PIPELINE_FILTER_LINEAR);
-      cogl_pipeline_set_layer_wrap_mode
+         CG_PIPELINE_FILTER_LINEAR_MIPMAP_NEAREST,
+         CG_PIPELINE_FILTER_LINEAR);
+      cg_pipeline_set_layer_wrap_mode
         (pipeline,
          0, /* layer_num */
-         COGL_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE);
+         CG_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE);
 
-      cogl_object_unref (texture);
+      cg_object_unref (texture);
     }
   else
     {
@@ -3695,7 +3695,7 @@ rig_controller_view_update_box (RigControllerView *view,
 
   if (view->box_path)
     {
-      cogl_object_unref (view->box_path);
+      cg_object_unref (view->box_path);
       view->box_path = NULL;
     }
 

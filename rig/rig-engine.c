@@ -110,7 +110,7 @@ scenegraph_pre_paint_cb (RutObject *object,
 {
   RutPaintContext *rut_paint_ctx = user_data;
   RutObject *camera = rut_paint_ctx->camera;
-  CoglFramebuffer *fb = rut_camera_get_framebuffer (camera);
+  cg_framebuffer_t *fb = rut_camera_get_framebuffer (camera);
 
 #if 0
   if (rut_object_get_type (object) == &rut_camera_type)
@@ -131,7 +131,7 @@ scenegraph_pre_paint_cb (RutObject *object,
                rut_ui_viewport_get_width (ui_viewport),
                rut_ui_viewport_get_height (ui_viewport));
 #endif
-      cogl_framebuffer_push_rectangle_clip (fb,
+      cg_framebuffer_push_rectangle_clip (fb,
                                             0, 0,
                                             rut_ui_viewport_get_width (ui_viewport),
                                             rut_ui_viewport_get_height (ui_viewport));
@@ -140,10 +140,10 @@ scenegraph_pre_paint_cb (RutObject *object,
   if (rut_object_is (object, RUT_TRAIT_ID_TRANSFORMABLE))
     {
       //c_print ("%*sTransformable = %p\n", depth, "", object);
-      const CoglMatrix *matrix = rut_transformable_get_matrix (object);
-      //cogl_debug_matrix_print (matrix);
-      cogl_framebuffer_push_matrix (fb);
-      cogl_framebuffer_transform (fb, matrix);
+      const cg_matrix_t *matrix = rut_transformable_get_matrix (object);
+      //cg_debug_matrix_print (matrix);
+      cg_framebuffer_push_matrix (fb);
+      cg_framebuffer_transform (fb, matrix);
     }
 
   if (rut_object_is (object, RUT_TRAIT_ID_PAINTABLE))
@@ -168,7 +168,7 @@ scenegraph_post_paint_cb (RutObject *object,
                           void *user_data)
 {
   RutPaintContext *rut_paint_ctx = user_data;
-  CoglFramebuffer *fb = rut_camera_get_framebuffer (rut_paint_ctx->camera);
+  cg_framebuffer_t *fb = rut_camera_get_framebuffer (rut_paint_ctx->camera);
 
 #if 0
   if (rut_object_get_type (object) == &rut_camera_type)
@@ -181,12 +181,12 @@ scenegraph_post_paint_cb (RutObject *object,
 
   if (rut_object_get_type (object) == &rut_ui_viewport_type)
     {
-      cogl_framebuffer_pop_clip (fb);
+      cg_framebuffer_pop_clip (fb);
     }
 
   if (rut_object_is (object, RUT_TRAIT_ID_TRANSFORMABLE))
     {
-      cogl_framebuffer_pop_matrix (fb);
+      cg_framebuffer_pop_matrix (fb);
     }
 
   return RUT_TRAVERSE_VISIT_CONTINUE;
@@ -195,15 +195,15 @@ scenegraph_post_paint_cb (RutObject *object,
 void
 rig_engine_paint (RigEngine *engine)
 {
-  CoglFramebuffer *fb = engine->onscreen;
+  cg_framebuffer_t *fb = engine->onscreen;
   RigPaintContext paint_ctx;
   RutPaintContext *rut_paint_ctx = &paint_ctx._parent;
 
   rut_camera_set_framebuffer (engine->camera_2d, fb);
 
 #warning "FIXME: avoid clear overdraw between engine_paint and camera_view_paint"
-  cogl_framebuffer_clear4f (fb,
-                            COGL_BUFFER_BIT_COLOR|COGL_BUFFER_BIT_DEPTH,
+  cg_framebuffer_clear4f (fb,
+                            CG_BUFFER_BIT_COLOR|CG_BUFFER_BIT_DEPTH,
                             0.9, 0.9, 0.9, 1);
 
   paint_ctx.engine = engine;
@@ -219,7 +219,7 @@ rig_engine_paint (RigEngine *engine)
                                rut_paint_ctx);
   rut_camera_end_frame (engine->camera_2d);
 
-  cogl_onscreen_swap_buffers (COGL_ONSCREEN (fb));
+  cg_onscreen_swap_buffers (CG_ONSCREEN (fb));
 }
 
 static void
@@ -356,7 +356,7 @@ rig_engine_set_edit_mode_ui (RigEngine *engine,
 
       if (engine->grid_prim)
         {
-          cogl_object_unref (engine->grid_prim);
+          cg_object_unref (engine->grid_prim);
           engine->grid_prim = NULL;
         }
     }
@@ -415,7 +415,7 @@ rig_engine_set_onscreen_size (RigEngine *engine,
 #ifdef USE_SDL
   /* FIXME: This should probably be rut_shell api instead */
   {
-    SDL_Window *sdl_window = cogl_sdl_onscreen_get_window (engine->onscreen);
+    SDL_Window *sdl_window = cg_sdl_onscreen_get_window (engine->onscreen);
     SDL_SetWindowSize (sdl_window, width, height);
   }
 #else
@@ -426,7 +426,7 @@ rig_engine_set_onscreen_size (RigEngine *engine,
 static void
 ensure_shadow_map (RigEngine *engine)
 {
-  CoglTexture2D *color_buffer;
+  cg_texture_2d_t *color_buffer;
   //RigUI *ui = engine->edit_mode_ui ?
   //  engine->edit_mode_ui : engine->play_mode_ui;
 
@@ -438,7 +438,7 @@ ensure_shadow_map (RigEngine *engine)
 
   g_warn_if_fail (engine->shadow_color == NULL);
 
-  color_buffer = cogl_texture_2d_new_with_size (engine->ctx->cogl_context,
+  color_buffer = cg_texture_2d_new_with_size (engine->ctx->cg_context,
                                                 engine->device_width * 2,
                                                 engine->device_height * 2);
 
@@ -448,18 +448,18 @@ ensure_shadow_map (RigEngine *engine)
 
   /* XXX: Right now there's no way to avoid allocating a color buffer. */
   engine->shadow_fb =
-    cogl_offscreen_new_with_texture (color_buffer);
+    cg_offscreen_new_with_texture (color_buffer);
   if (engine->shadow_fb == NULL)
     g_critical ("could not create offscreen buffer");
 
   /* retrieve the depth texture */
-  cogl_framebuffer_set_depth_texture_enabled (engine->shadow_fb,
+  cg_framebuffer_set_depth_texture_enabled (engine->shadow_fb,
                                               true);
 
   g_warn_if_fail (engine->shadow_map == NULL);
 
   engine->shadow_map =
-    cogl_framebuffer_get_depth_texture (engine->shadow_fb);
+    cg_framebuffer_get_depth_texture (engine->shadow_fb);
 }
 
 static void
@@ -467,17 +467,17 @@ free_shadow_map (RigEngine *engine)
 {
   if (engine->shadow_map)
     {
-      cogl_object_unref (engine->shadow_map);
+      cg_object_unref (engine->shadow_map);
       engine->shadow_map = NULL;
     }
   if (engine->shadow_fb)
     {
-      cogl_object_unref (engine->shadow_fb);
+      cg_object_unref (engine->shadow_fb);
       engine->shadow_fb = NULL;
     }
   if (engine->shadow_color)
     {
-      cogl_object_unref (engine->shadow_color);
+      cg_object_unref (engine->shadow_color);
       engine->shadow_color = NULL;
     }
 }
@@ -515,13 +515,13 @@ _rig_engine_free (void *object)
 
       rig_renderer_fini (engine);
 
-      cogl_object_unref (engine->circle_node_attribute);
+      cg_object_unref (engine->circle_node_attribute);
 
       free_shadow_map (engine);
 
-      cogl_object_unref (engine->onscreen);
+      cg_object_unref (engine->onscreen);
 
-      cogl_object_unref (engine->default_pipeline);
+      cg_object_unref (engine->default_pipeline);
 
       _rig_destroy_image_source_wrappers (engine);
 
@@ -687,7 +687,7 @@ _rig_engine_new_full (RutShell *shell,
       engine->simulator = simulator;
     }
 
-  cogl_matrix_init_identity (&engine->identity);
+  cg_matrix_init_identity (&engine->identity);
 
   rut_introspectable_init (engine,
                            _rig_engine_prop_specs,

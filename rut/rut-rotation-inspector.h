@@ -43,7 +43,7 @@ rut_rotation_inspector_new (RutContext *ctx);
 
 void
 rut_rotation_inspector_set_value (RutObject *slider,
-                                  const CoglQuaternion *value);
+                                  const cg_quaternion_t *value);
 
 void
 rut_rotation_inspector_set_step (RutRotationInspector *slider,

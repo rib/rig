@@ -64,7 +64,7 @@ _rig_light_prop_specs[] = {
 };
 
 static float *
-get_color_array (CoglColor *color)
+get_color_array (cg_color_t *color)
 {
   static float array[4];
 
@@ -78,7 +78,7 @@ get_color_array (CoglColor *color)
 
 void
 rig_light_set_uniforms (RigLight *light,
-                        CoglPipeline *pipeline)
+                        cg_pipeline_t *pipeline)
 {
   RutComponentableProps *component =
     rut_object_get_properties (light, RUT_TRAIT_ID_COMPONENTABLE);
@@ -89,33 +89,33 @@ rig_light_set_uniforms (RigLight *light,
 
   rig_entity_get_transformed_position (entity, origin);
   rig_entity_get_transformed_position (entity, norm_direction);
-  cogl_vector3_subtract (norm_direction, norm_direction, origin);
-  cogl_vector3_normalize (norm_direction);
+  cg_vector3_subtract (norm_direction, norm_direction, origin);
+  cg_vector3_normalize (norm_direction);
 
-  location = cogl_pipeline_get_uniform_location (pipeline,
+  location = cg_pipeline_get_uniform_location (pipeline,
                                                  "light0_direction_norm");
-  cogl_pipeline_set_uniform_float (pipeline,
+  cg_pipeline_set_uniform_float (pipeline,
                                    location,
                                    3, 1,
                                    norm_direction);
 
-  location = cogl_pipeline_get_uniform_location (pipeline,
+  location = cg_pipeline_get_uniform_location (pipeline,
                                                  "light0_ambient");
-  cogl_pipeline_set_uniform_float (pipeline,
+  cg_pipeline_set_uniform_float (pipeline,
                                    location,
                                    4, 1,
                                    get_color_array (&light->ambient));
 
-  location = cogl_pipeline_get_uniform_location (pipeline,
+  location = cg_pipeline_get_uniform_location (pipeline,
                                                  "light0_diffuse");
-  cogl_pipeline_set_uniform_float (pipeline,
+  cg_pipeline_set_uniform_float (pipeline,
                                    location,
                                    4, 1,
                                    get_color_array (&light->diffuse));
 
-  location = cogl_pipeline_get_uniform_location (pipeline,
+  location = cg_pipeline_get_uniform_location (pipeline,
                                                  "light0_specular");
-  cogl_pipeline_set_uniform_float (pipeline,
+  cg_pipeline_set_uniform_float (pipeline,
                                    location,
                                    4, 1,
                                    get_color_array (&light->specular));
@@ -191,9 +191,9 @@ rig_light_new (RutContext *context)
                            _rig_light_prop_specs,
                            light->properties);
 
-  cogl_color_init_from_4f (&light->ambient, 1.0, 1.0, 1.0, 1.0);
-  cogl_color_init_from_4f (&light->diffuse, 1.0, 1.0, 1.0, 1.0);
-  cogl_color_init_from_4f (&light->specular, 1.0, 1.0, 1.0, 1.0);
+  cg_color_init_from_4f (&light->ambient, 1.0, 1.0, 1.0, 1.0);
+  cg_color_init_from_4f (&light->diffuse, 1.0, 1.0, 1.0, 1.0);
+  cg_color_init_from_4f (&light->specular, 1.0, 1.0, 1.0, 1.0);
 
   return light;
 }
@@ -210,7 +210,7 @@ rig_light_free (RigLight *light)
 
 void
 rig_light_set_ambient (RutObject *obj,
-                       const CoglColor *ambient)
+                       const cg_color_t *ambient)
 {
   RigLight *light = obj;
 
@@ -220,7 +220,7 @@ rig_light_set_ambient (RutObject *obj,
                       &light->properties[RIG_LIGHT_PROP_AMBIENT]);
 }
 
-const CoglColor *
+const cg_color_t *
 rig_light_get_ambient (RutObject *obj)
 {
   RigLight *light = obj;
@@ -230,7 +230,7 @@ rig_light_get_ambient (RutObject *obj)
 
 void
 rig_light_set_diffuse (RutObject *obj,
-                       const CoglColor *diffuse)
+                       const cg_color_t *diffuse)
 {
   RigLight *light = obj;
 
@@ -240,7 +240,7 @@ rig_light_set_diffuse (RutObject *obj,
                       &light->properties[RIG_LIGHT_PROP_DIFFUSE]);
 }
 
-const CoglColor *
+const cg_color_t *
 rig_light_get_diffuse (RigLight *light)
 {
   return &light->diffuse;
@@ -248,7 +248,7 @@ rig_light_get_diffuse (RigLight *light)
 
 void
 rig_light_set_specular (RutObject *obj,
-                        const CoglColor *specular)
+                        const cg_color_t *specular)
 {
   RigLight *light = obj;
 
@@ -258,7 +258,7 @@ rig_light_set_specular (RutObject *obj,
                       &light->properties[RIG_LIGHT_PROP_SPECULAR]);
 }
 
-const CoglColor *
+const cg_color_t *
 rig_light_get_specular (RigLight *light)
 {
   return &light->specular;

@@ -59,28 +59,28 @@ rig_pb_strdup (RigPBSerializer *serializer,
 }
 
 static Rig__Color *
-pb_color_new (RigPBSerializer *serializer, const CoglColor *color)
+pb_color_new (RigPBSerializer *serializer, const cg_color_t *color)
 {
   Rig__Color *pb_color = rig_pb_new (serializer, Rig__Color, rig__color__init);
   pb_color->hex = rut_memory_stack_alloc (serializer->stack, 10); /* #rrggbbaa */
   snprintf (pb_color->hex, 10, "#%02x%02x%02x%02x",
-            cogl_color_get_red_byte (color),
-            cogl_color_get_green_byte (color),
-            cogl_color_get_blue_byte (color),
-            cogl_color_get_alpha_byte (color));
+            cg_color_get_red_byte (color),
+            cg_color_get_green_byte (color),
+            cg_color_get_blue_byte (color),
+            cg_color_get_alpha_byte (color));
 
   return pb_color;
 }
 
 static Rig__Rotation *
-pb_rotation_new (RigPBSerializer *serializer, const CoglQuaternion *quaternion)
+pb_rotation_new (RigPBSerializer *serializer, const cg_quaternion_t *quaternion)
 {
   Rig__Rotation *pb_rotation =
     rig_pb_new (serializer, Rig__Rotation, rig__rotation__init);
-  float angle = cogl_quaternion_get_rotation_angle (quaternion);
+  float angle = cg_quaternion_get_rotation_angle (quaternion);
   float axis[3];
 
-  cogl_quaternion_get_rotation_axis (quaternion, axis);
+  cg_quaternion_get_rotation_axis (quaternion, axis);
 
   pb_rotation->angle = angle;
   pb_rotation->x = axis[0];
@@ -545,7 +545,7 @@ rig_pb_serialize_component (RigPBSerializer *serializer,
   else if (type == &rut_text_type)
     {
       RutText *text = (RutText *)component;
-      const CoglColor *color;
+      const cg_color_t *color;
       Rig__Entity__Component__Text *pb_text;
 
       pb_component->type = RIG__ENTITY__COMPONENT__TYPE__TEXT;
@@ -677,7 +677,7 @@ rig_pb_serialize_entity (RigPBSerializer *serializer,
 {
   Rig__Entity *pb_entity =
     rig_pb_new (serializer, Rig__Entity, rig__entity__init);
-  const CoglQuaternion *q;
+  const cg_quaternion_t *q;
   const char *label;
   Rig__Vec3 *position;
   float scale;
@@ -1222,25 +1222,25 @@ serialize_mesh_asset (RigPBSerializer *serializer, RigAsset *asset)
   pb_mesh->has_mode = true;
   switch (mesh->mode)
     {
-    case COGL_VERTICES_MODE_POINTS:
+    case CG_VERTICES_MODE_POINTS:
       pb_mesh->mode = RIG__MESH__MODE__POINTS;
       break;
-    case COGL_VERTICES_MODE_LINES:
+    case CG_VERTICES_MODE_LINES:
       pb_mesh->mode = RIG__MESH__MODE__LINES;
       break;
-    case COGL_VERTICES_MODE_LINE_LOOP:
+    case CG_VERTICES_MODE_LINE_LOOP:
       pb_mesh->mode = RIG__MESH__MODE__LINE_LOOP;
       break;
-    case COGL_VERTICES_MODE_LINE_STRIP:
+    case CG_VERTICES_MODE_LINE_STRIP:
       pb_mesh->mode = RIG__MESH__MODE__LINE_STRIP;
       break;
-    case COGL_VERTICES_MODE_TRIANGLES:
+    case CG_VERTICES_MODE_TRIANGLES:
       pb_mesh->mode = RIG__MESH__MODE__TRIANGLES;
       break;
-    case COGL_VERTICES_MODE_TRIANGLE_STRIP:
+    case CG_VERTICES_MODE_TRIANGLE_STRIP:
       pb_mesh->mode = RIG__MESH__MODE__TRIANGLE_STRIP;
       break;
-    case COGL_VERTICES_MODE_TRIANGLE_FAN:
+    case CG_VERTICES_MODE_TRIANGLE_FAN:
       pb_mesh->mode = RIG__MESH__MODE__TRIANGLE_FAN;
       break;
     }
@@ -1259,13 +1259,13 @@ serialize_mesh_asset (RigPBSerializer *serializer, RigAsset *asset)
       pb_mesh->has_indices_type = true;
       switch (mesh->indices_type)
         {
-        case COGL_INDICES_TYPE_UNSIGNED_BYTE:
+        case CG_INDICES_TYPE_UNSIGNED_BYTE:
           pb_mesh->indices_type = RIG__MESH__INDICES_TYPE__UNSIGNED_BYTE;
           break;
-        case COGL_INDICES_TYPE_UNSIGNED_SHORT:
+        case CG_INDICES_TYPE_UNSIGNED_SHORT:
           pb_mesh->indices_type = RIG__MESH__INDICES_TYPE__UNSIGNED_SHORT;
           break;
-        case COGL_INDICES_TYPE_UNSIGNED_INT:
+        case CG_INDICES_TYPE_UNSIGNED_INT:
           pb_mesh->indices_type = RIG__MESH__INDICES_TYPE__UNSIGNED_INT;
           break;
         }
@@ -1679,29 +1679,29 @@ rig_pb_serialize_ops_queue (RigPBSerializer *serializer,
 
 static void
 pb_init_color (RutContext *ctx,
-               CoglColor *color,
+               cg_color_t *color,
                Rig__Color *pb_color)
 {
   if (pb_color && pb_color->hex)
     rut_color_init_from_string (ctx, color, pb_color->hex);
   else
-    cogl_color_init_from_4f (color, 0, 0, 0, 1);
+    cg_color_init_from_4f (color, 0, 0, 0, 1);
 }
 
 static void
-pb_init_quaternion (CoglQuaternion *quaternion,
+pb_init_quaternion (cg_quaternion_t *quaternion,
                     Rig__Rotation *pb_rotation)
 {
   if (pb_rotation)
     {
-      cogl_quaternion_init (quaternion,
+      cg_quaternion_init (quaternion,
                             pb_rotation->angle,
                             pb_rotation->x,
                             pb_rotation->y,
                             pb_rotation->z);
     }
   else
-    cogl_quaternion_init (quaternion, 0, 1, 0, 0);
+    cg_quaternion_init (quaternion, 0, 1, 0, 0);
 }
 
 static void
@@ -2051,9 +2051,9 @@ rig_pb_unserialize_component (RigPBUnSerializer *unserializer,
         /* XXX: This is only for backwards compatibility... */
         if (pb_light)
           {
-            CoglColor ambient;
-            CoglColor diffuse;
-            CoglColor specular;
+            cg_color_t ambient;
+            cg_color_t diffuse;
+            cg_color_t specular;
 
             pb_init_color (unserializer->engine->ctx,
                            &ambient, pb_light->ambient);
@@ -2087,9 +2087,9 @@ rig_pb_unserialize_component (RigPBUnSerializer *unserializer,
         Rig__Entity__Component__Material *pb_material =
           pb_component->material;
         RigMaterial *material;
-        CoglColor ambient;
-        CoglColor diffuse;
-        CoglColor specular;
+        cg_color_t ambient;
+        cg_color_t diffuse;
+        cg_color_t specular;
         RigAsset *asset;
 
         material = rig_material_new (unserializer->engine->ctx, NULL);
@@ -2222,7 +2222,7 @@ rig_pb_unserialize_component (RigPBUnSerializer *unserializer,
 
         if (pb_text->color)
           {
-            CoglColor color;
+            cg_color_t color;
             pb_init_color (unserializer->engine->ctx, &color, pb_text->color);
             rut_text_set_color (text, &color);
           }
@@ -2298,7 +2298,7 @@ rig_pb_unserialize_component (RigPBUnSerializer *unserializer,
 
         if (pb_camera->background)
           {
-            CoglColor color;
+            cg_color_t color;
             pb_init_color (unserializer->engine->ctx,
                            &color, pb_camera->background);
             rut_camera_set_background_color (camera, &color);
@@ -2654,7 +2654,7 @@ rig_pb_unserialize_entity (RigPBUnSerializer *unserializer,
     }
   if (pb_entity->rotation)
     {
-      CoglQuaternion q;
+      cg_quaternion_t q;
 
       pb_init_quaternion (&q, pb_entity->rotation);
 
@@ -2812,14 +2812,14 @@ unserialize_path_nodes (RigPBUnSerializer *unserializer,
           }
         case RUT_PROPERTY_TYPE_COLOR:
           {
-            CoglColor color;
+            cg_color_t color;
             pb_init_color (unserializer->engine->ctx, &color, pb_value->color_value);
             rig_path_insert_color (path, t, &color);
             break;
           }
         case RUT_PROPERTY_TYPE_QUATERNION:
           {
-            CoglQuaternion quaternion;
+            cg_quaternion_t quaternion;
             pb_init_quaternion (&quaternion, pb_value->quaternion_value);
             rig_path_insert_quaternion (path, t, &quaternion);
             break;
@@ -3300,7 +3300,7 @@ rig_pb_unserialize_mesh (RigPBUnSerializer *unserializer,
   int n_buffers = 0;
   RutAttribute *attributes[pb_mesh->n_attributes];
   int n_attributes = 0;
-  CoglVerticesMode mode;
+  cg_vertices_mode_t mode;
   RutMesh *mesh = NULL;
 
   for (i = 0; i < pb_mesh->n_buffers; i++)
@@ -3388,25 +3388,25 @@ rig_pb_unserialize_mesh (RigPBUnSerializer *unserializer,
   switch (pb_mesh->mode)
     {
     case RIG__MESH__MODE__POINTS:
-      mode = COGL_VERTICES_MODE_POINTS;
+      mode = CG_VERTICES_MODE_POINTS;
       break;
     case RIG__MESH__MODE__LINES:
-      mode = COGL_VERTICES_MODE_LINES;
+      mode = CG_VERTICES_MODE_LINES;
       break;
     case RIG__MESH__MODE__LINE_LOOP:
-      mode = COGL_VERTICES_MODE_LINE_LOOP;
+      mode = CG_VERTICES_MODE_LINE_LOOP;
       break;
     case RIG__MESH__MODE__LINE_STRIP:
-      mode = COGL_VERTICES_MODE_LINE_STRIP;
+      mode = CG_VERTICES_MODE_LINE_STRIP;
       break;
     case RIG__MESH__MODE__TRIANGLES:
-      mode = COGL_VERTICES_MODE_TRIANGLES;
+      mode = CG_VERTICES_MODE_TRIANGLES;
       break;
     case RIG__MESH__MODE__TRIANGLE_STRIP:
-      mode = COGL_VERTICES_MODE_TRIANGLE_STRIP;
+      mode = CG_VERTICES_MODE_TRIANGLE_STRIP;
       break;
     case RIG__MESH__MODE__TRIANGLE_FAN:
-      mode = COGL_VERTICES_MODE_TRIANGLE_FAN;
+      mode = CG_VERTICES_MODE_TRIANGLE_FAN;
       break;
     }
 
@@ -3418,7 +3418,7 @@ rig_pb_unserialize_mesh (RigPBUnSerializer *unserializer,
   if (pb_mesh->has_indices_buffer_id)
     {
       RutBuffer *buffer;
-      CoglIndicesType indices_type;
+      cg_indices_type_t indices_type;
       int j;
 
       for (j = 0; j < pb_mesh->n_buffers; j++)
@@ -3441,13 +3441,13 @@ rig_pb_unserialize_mesh (RigPBUnSerializer *unserializer,
       switch (pb_mesh->indices_type)
         {
         case RIG__MESH__INDICES_TYPE__UNSIGNED_BYTE:
-          indices_type = COGL_INDICES_TYPE_UNSIGNED_BYTE;
+          indices_type = CG_INDICES_TYPE_UNSIGNED_BYTE;
           break;
         case RIG__MESH__INDICES_TYPE__UNSIGNED_SHORT:
-          indices_type = COGL_INDICES_TYPE_UNSIGNED_SHORT;
+          indices_type = CG_INDICES_TYPE_UNSIGNED_SHORT;
           break;
         case RIG__MESH__INDICES_TYPE__UNSIGNED_INT:
-          indices_type = COGL_INDICES_TYPE_UNSIGNED_INT;
+          indices_type = CG_INDICES_TYPE_UNSIGNED_INT;
           break;
         }
 

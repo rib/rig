@@ -94,9 +94,9 @@ struct _RigEntity
 
   /* private fields */
   float position[3];
-  CoglQuaternion rotation;
+  cg_quaternion_t rotation;
   float scale;                          /* uniform scaling only */
-  CoglMatrix transform;
+  cg_matrix_t transform;
 
   GPtrArray *components;
 
@@ -159,25 +159,25 @@ void
 rig_entity_get_transformed_position (RigEntity *entity,
                                      float position[3]);
 
-const CoglQuaternion *
+const cg_quaternion_t *
 rig_entity_get_rotation (RutObject *entity);
 
 void
 rig_entity_set_rotation (RutObject *entity,
-                         const CoglQuaternion *rotation);
+                         const cg_quaternion_t *rotation);
 
 void
 rig_entity_apply_rotations (RutObject *entity,
-                            CoglQuaternion *rotations);
+                            cg_quaternion_t *rotations);
 
 void
 rig_entity_get_rotations (RutObject *entity,
-                          CoglQuaternion *rotation);
+                          cg_quaternion_t *rotation);
 
 void
 rig_entity_get_view_rotations (RutObject *entity,
                                RutObject *camera_entity,
-                               CoglQuaternion *rotation);
+                               cg_quaternion_t *rotation);
 
 float
 rig_entity_get_scale (RutObject *entity);
@@ -189,7 +189,7 @@ rig_entity_set_scale (RutObject *entity,
 float
 rig_entity_get_scales (RutObject *entity);
 
-const CoglMatrix *
+const cg_matrix_t *
 rig_entity_get_transform (RutObject *self);
 
 void

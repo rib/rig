@@ -52,7 +52,7 @@ typedef enum
 
 RutImage *
 rut_image_new (RutContext *ctx,
-               CoglTexture *texture);
+               cg_texture_t *texture);
 
 void
 rut_image_set_draw_mode (RutImage *image,

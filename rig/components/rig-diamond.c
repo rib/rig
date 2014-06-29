@@ -86,7 +86,7 @@ typedef struct _VertexP2T2T2
 } VertexP2T2T2;
 
 static RutMesh *
-mesh_new_p2t2t2 (CoglVerticesMode mode,
+mesh_new_p2t2t2 (cg_vertices_mode_t mode,
                  int n_vertices,
                  VertexP2T2T2 *vertices)
 {
@@ -102,42 +102,42 @@ mesh_new_p2t2t2 (CoglVerticesMode mode,
           sizeof (_rut_nine_slice_indices_data));
 
   attributes[0] = rut_attribute_new (vertex_buffer,
-                                     "cogl_position_in",
+                                     "cg_position_in",
                                      sizeof (VertexP2T2T2),
                                      offsetof (VertexP2T2T2, x),
                                      2,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
 
   attributes[1] = rut_attribute_new (vertex_buffer,
-                                     "cogl_tex_coord0_in",
+                                     "cg_tex_coord0_in",
                                      sizeof (VertexP2T2T2),
                                      offsetof (VertexP2T2T2, s0),
                                      2,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
 
   attributes[2] = rut_attribute_new (vertex_buffer,
-                                     "cogl_tex_coord1_in",
+                                     "cg_tex_coord1_in",
                                      sizeof (VertexP2T2T2),
                                      offsetof (VertexP2T2T2, s1),
                                      2,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
 
   attributes[3] = rut_attribute_new (vertex_buffer,
-                                     "cogl_tex_coord4_in",
+                                     "cg_tex_coord4_in",
                                      sizeof (VertexP2T2T2),
                                      offsetof (VertexP2T2T2, s1),
                                      2,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
 
   attributes[4] = rut_attribute_new (vertex_buffer,
-                                     "cogl_tex_coord7_in",
+                                     "cg_tex_coord7_in",
                                      sizeof (VertexP2T2T2),
                                      offsetof (VertexP2T2T2, s1),
                                      2,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
 
   attributes[5] = rut_attribute_new (vertex_buffer,
-                                     "cogl_tex_coord11_in",
+                                     "cg_tex_coord11_in",
                                      sizeof (VertexP2T2T2),
                                      offsetof (VertexP2T2T2, s1),
                                      2,
@@ -145,7 +145,7 @@ mesh_new_p2t2t2 (CoglVerticesMode mode,
 
 
   attributes[6] = rut_attribute_new (vertex_buffer,
-                                     "cogl_normal_in",
+                                     "cg_normal_in",
                                      sizeof (VertexP2T2T2),
                                      offsetof (VertexP2T2T2, Nx),
                                      3,
@@ -160,7 +160,7 @@ mesh_new_p2t2t2 (CoglVerticesMode mode,
 
   mesh = rut_mesh_new (mode, n_vertices, attributes, 8);
   rut_mesh_set_indices (mesh,
-                        COGL_INDICES_TYPE_UNSIGNED_BYTE,
+                        CG_INDICES_TYPE_UNSIGNED_BYTE,
                         index_buffer,
                         sizeof (_rut_nine_slice_indices_data) /
                         sizeof (_rut_nine_slice_indices_data[0]));
@@ -178,10 +178,10 @@ diamond_slice_new (float size,
   float width = size;
   float height = size;
 #define DIAMOND_SLICE_CORNER_RADIUS 20
-  CoglMatrix matrix;
+  cg_matrix_t matrix;
   float tex_aspect;
   RutBuffer *pick_mesh_buffer;
-  CoglVertexP3 *pick_vertices;
+  cg_vertex_p3_t *pick_vertices;
 
   diamond_slice->size = size;
 
@@ -244,16 +244,16 @@ diamond_slice_new (float size,
           { width, height, 1, 1, width, height},
         };
 
-      cogl_matrix_init_identity (&diamond_slice->rotate_matrix);
-      cogl_matrix_rotate (&diamond_slice->rotate_matrix, 45, 0, 0, 1);
-      cogl_matrix_translate (&diamond_slice->rotate_matrix, - width / 2.0, - height / 2.0, 0);
+      cg_matrix_init_identity (&diamond_slice->rotate_matrix);
+      cg_matrix_rotate (&diamond_slice->rotate_matrix, 45, 0, 0, 1);
+      cg_matrix_translate (&diamond_slice->rotate_matrix, - width / 2.0, - height / 2.0, 0);
 
       n_vertices = sizeof (vertices) / sizeof (VertexP2T2T2);
       for (i = 0; i < n_vertices; i++)
         {
           float z = 0, w = 1;
 
-          cogl_matrix_transform_point (&diamond_slice->rotate_matrix,
+          cg_matrix_transform_point (&diamond_slice->rotate_matrix,
                                        &vertices[i].x,
                                        &vertices[i].y,
                                        &z,
@@ -268,7 +268,7 @@ diamond_slice_new (float size,
           vertices[i].Tz = 0;
         }
 
-      cogl_matrix_init_identity (&matrix);
+      cg_matrix_init_identity (&matrix);
 
       {
         float s_scale = 1.0, t_scale = 1.0;
@@ -291,12 +291,12 @@ diamond_slice_new (float size,
         s0 = 0.5 - (s_scale / 2.0);
         t0 = 0.5 - (t_scale / 2.0);
 
-        cogl_matrix_translate (&matrix, s0, t0, 0);
-        cogl_matrix_scale (&matrix, s_scale / width, t_scale / height, 1);
+        cg_matrix_translate (&matrix, s0, t0, 0);
+        cg_matrix_scale (&matrix, s_scale / width, t_scale / height, 1);
 
-        cogl_matrix_translate (&matrix, width / 2.0, height / 2.0, 1);
-        cogl_matrix_rotate (&matrix, 45, 0, 0, 1);
-        cogl_matrix_translate (&matrix, -width / 2.0, -height / 2.0, 1);
+        cg_matrix_translate (&matrix, width / 2.0, height / 2.0, 1);
+        cg_matrix_rotate (&matrix, 45, 0, 0, 1);
+        cg_matrix_translate (&matrix, -width / 2.0, -height / 2.0, 1);
       }
 
       n_vertices = sizeof (vertices) / sizeof (VertexP2T2T2);
@@ -304,24 +304,24 @@ diamond_slice_new (float size,
         {
           float z = 0, w = 1;
 
-          cogl_matrix_transform_point (&matrix,
+          cg_matrix_transform_point (&matrix,
                                        &vertices[i].s1,
                                        &vertices[i].t1,
                                        &z,
                                        &w);
         }
 
-      diamond_slice->mesh = mesh_new_p2t2t2 (COGL_VERTICES_MODE_TRIANGLES,
+      diamond_slice->mesh = mesh_new_p2t2t2 (CG_VERTICES_MODE_TRIANGLES,
                                              n_vertices, vertices);
 
     }
 
-  pick_mesh_buffer = rut_buffer_new (sizeof (CoglVertexP3) * 6);
+  pick_mesh_buffer = rut_buffer_new (sizeof (cg_vertex_p3_t) * 6);
   diamond_slice->pick_mesh =
-    rut_mesh_new_from_buffer_p3 (COGL_VERTICES_MODE_TRIANGLES,
+    rut_mesh_new_from_buffer_p3 (CG_VERTICES_MODE_TRIANGLES,
                                  6,
                                  pick_mesh_buffer);
-  pick_vertices = (CoglVertexP3 *)pick_mesh_buffer->data;
+  pick_vertices = (cg_vertex_p3_t *)pick_mesh_buffer->data;
 
   pick_vertices[0].x = 0;
   pick_vertices[0].y = 0;
@@ -334,11 +334,11 @@ diamond_slice_new (float size,
   pick_vertices[5].x = size;
   pick_vertices[5].y = 0;
 
-  cogl_matrix_transform_points (&diamond_slice->rotate_matrix,
+  cg_matrix_transform_points (&diamond_slice->rotate_matrix,
                                 2,
-                                sizeof (CoglVertexP3),
+                                sizeof (cg_vertex_p3_t),
                                 pick_vertices,
-                                sizeof (CoglVertexP3),
+                                sizeof (cg_vertex_p3_t),
                                 pick_vertices,
                                 6);
 
@@ -502,7 +502,7 @@ rig_diamond_set_size (RutObject *object, float size)
                            diamond);
 }
 
-CoglPrimitive *
+cg_primitive_t *
 rig_diamond_get_primitive (RutObject *object)
 {
   RigDiamond *diamond = object;
@@ -518,10 +518,10 @@ rig_diamond_get_primitive (RutObject *object)
 
 void
 rig_diamond_apply_mask (RigDiamond *diamond,
-                        CoglPipeline *pipeline)
+                        cg_pipeline_t *pipeline)
 {
   RutContext *ctx = diamond->ctx;
-  cogl_pipeline_set_layer_texture (pipeline,
+  cg_pipeline_set_layer_texture (pipeline,
                                    0,
                                    ctx->circle_texture);
 }
