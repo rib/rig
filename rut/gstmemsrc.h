@@ -1,4 +1,4 @@
-/* GStreamer
+/* Gstream_ter
  * Copyright (C) 2013 Intel Corporation.
  *
  * gstmemsrc.h:
@@ -29,17 +29,16 @@
 
 G_BEGIN_DECLS
 
-#define GST_TYPE_MEM_SRC \
-  (gst_mem_src_get_type())
-#define GST_MEM_SRC(obj) \
-  (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_MEM_SRC,GstMemSrc))
-#define GST_MEM_SRC_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_CAST((klass),GST_TYPE_MEM_SRC,GstMemSrcClass))
-#define GST_IS_MEM_SRC(obj) \
-  (G_TYPE_CHECK_INSTANCE_TYPE((obj),GST_TYPE_MEM_SRC))
-#define GST_IS_MEM_SRC_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_MEM_SRC))
-#define GST_MEM_SRC_CAST(obj) ((GstMemSrc*) obj)
+#define GST_TYPE_MEM_SRC (gst_mem_src_get_type())
+#define GST_MEM_SRC(obj)                                                       \
+    (G_TYPE_CHECK_INSTANCE_CAST((obj), GST_TYPE_MEM_SRC, GstMemSrc))
+#define GST_MEM_SRC_CLASS(klass)                                               \
+    (G_TYPE_CHECK_CLASS_CAST((klass), GST_TYPE_MEM_SRC, GstMemSrcClass))
+#define GST_IS_MEM_SRC(obj)                                                    \
+    (G_TYPE_CHECK_INSTANCE_TYPE((obj), GST_TYPE_MEM_SRC))
+#define GST_IS_MEM_SRC_CLASS(klass)                                            \
+    (G_TYPE_CHECK_CLASS_TYPE((klass), GST_TYPE_MEM_SRC))
+#define GST_MEM_SRC_CAST(obj) ((GstMemSrc *)obj)
 
 typedef struct _GstMemSrc GstMemSrc;
 typedef struct _GstMemSrcClass GstMemSrcClass;
@@ -50,21 +49,21 @@ typedef struct _GstMemSrcClass GstMemSrcClass;
  * Opaque #GstMemSrc structure.
  */
 struct _GstMemSrc {
-  GstPushSrc element;
+    GstPushSrc element;
 
-  /*< private >*/
-  gchar *uri;
+    /*< private >*/
+    gchar *uri;
 
-  void *memory;
-  guint64 size;
-  guint64 offset;
+    void *memory;
+    guint64 size;
+    guint64 offset;
 };
 
 struct _GstMemSrcClass {
-  GstPushSrcClass parent_class;
+    GstPushSrcClass parent_class;
 };
 
-G_GNUC_INTERNAL GType gst_mem_src_get_type (void);
+G_GNUC_INTERNAL GType gst_mem_src_get_type(void);
 
 G_END_DECLS
 

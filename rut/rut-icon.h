@@ -31,14 +31,12 @@
 
 #include "rut-property.h"
 
-extern RutType rut_icon_type;
+extern rut_type_t rut_icon_type;
 
-typedef struct _RutIcon RutIcon;
+typedef struct _rut_icon_t rut_icon_t;
 
-#define RUT_ICON(x) ((RutIcon *) x)
+#define RUT_ICON(x) ((rut_icon_t *)x)
 
-RutIcon *
-rut_icon_new (RutContext *ctx,
-              const char *filename);
+rut_icon_t *rut_icon_new(rut_context_t *ctx, const char *filename);
 
 #endif /* _RUT_ICON_H_ */

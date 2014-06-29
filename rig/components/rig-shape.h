@@ -31,119 +31,96 @@
 
 #include "rig-entity.h"
 
-typedef struct _RigShapeModel RigShapeModel;
-extern RutType _rig_shape_model_type;
+typedef struct _rig_shape_model_t rig_shape_model_t;
+extern rut_type_t _rig_shape_model_type;
 
-struct _RigShapeModel
-{
-  RutObjectBase _base;
+struct _rig_shape_model_t {
+    rut_object_base_t _base;
 
-  /* TODO: Allow this to be an asset */
-  cg_texture_t *shape_texture;
+    /* TODO: Allow this to be an asset */
+    cg_texture_t *shape_texture;
 
-  RutMesh *mesh;
+    rut_mesh_t *mesh;
 
-  /* TODO: optionally copy the shape texture into a cpu cached buffer
-   * and pick by sampling into that instead of using geometry. */
-  RutMesh *pick_mesh;
-  RutMesh *shape_mesh;
+    /* TODO: optionally copy the shape texture into a cpu cached buffer
+     * and pick by sampling into that instead of using geometry. */
+    rut_mesh_t *pick_mesh;
+    rut_mesh_t *shape_mesh;
 };
 
-void
-_rig_shape_model_init_type (void);
+void _rig_shape_model_init_type(void);
 
-typedef struct _RigShape RigShape;
-extern RutType rig_shape_type;
+typedef struct _rig_shape_t rig_shape_t;
+extern rut_type_t rig_shape_type;
 
 enum {
-  RIG_SHAPE_PROP_SHAPED,
-  RIG_SHAPE_PROP_WIDTH,
-  RIG_SHAPE_PROP_HEIGHT,
-  RIG_SHAPE_PROP_SHAPE_ASSET,
-  RIG_SHAPE_N_PROPS
+    RIG_SHAPE_PROP_SHAPED,
+    RIG_SHAPE_PROP_WIDTH,
+    RIG_SHAPE_PROP_HEIGHT,
+    RIG_SHAPE_PROP_SHAPE_ASSET,
+    RIG_SHAPE_N_PROPS
 };
 
-struct _RigShape
-{
-  RutObjectBase _base;
+struct _rig_shape_t {
+    rut_object_base_t _base;
 
-  RutComponentableProps component;
+    rut_componentable_props_t component;
 
-  RutContext *ctx;
+    rut_context_t *ctx;
 
-  float width;
-  float height;
-  bool shaped;
+    float width;
+    float height;
+    bool shaped;
 
-  RigShapeModel *model;
+    rig_shape_model_t *model;
 
-  RigAsset *shape_asset;
+    rig_asset_t *shape_asset;
 
-  RutList reshaped_cb_list;
+    rut_list_t reshaped_cb_list;
 
-  RutIntrospectableProps introspectable;
-  RutProperty properties[RIG_SHAPE_N_PROPS];
+    rut_introspectable_props_t introspectable;
+    rut_property_t properties[RIG_SHAPE_N_PROPS];
 };
 
-void
-_rig_shape_init_type (void);
+void _rig_shape_init_type(void);
 
-RigShape *
-rig_shape_new (RutContext *ctx,
-               bool shaped,
-               int width,
-               int height);
+rig_shape_t *
+rig_shape_new(rut_context_t *ctx, bool shaped, int width, int height);
 
-cg_primitive_t *
-rig_shape_get_primitive (RutObject *object);
+cg_primitive_t *rig_shape_get_primitive(rut_object_t *object);
 
 /* TODO: Perhaps add a RUT_TRAIT_ID_GEOMETRY_COMPONENTABLE
  * interface with a ->get_shape_texture() methos so we can
  * generalize rig_diamond_apply_mask() and
  * rig_shape_get_shape_texture()
  */
-cg_texture_t *
-rig_shape_get_shape_texture (RigShape *shape);
+cg_texture_t *rig_shape_get_shape_texture(rig_shape_t *shape);
 
-RutMesh *
-rig_shape_get_pick_mesh (RutObject *self);
+rut_mesh_t *rig_shape_get_pick_mesh(rut_object_t *self);
 
-void
-rig_shape_set_shaped (RutObject *shape,
-                      bool shaped);
+void rig_shape_set_shaped(rut_object_t *shape, bool shaped);
 
-bool
-rig_shape_get_shaped (RutObject *shape);
+bool rig_shape_get_shaped(rut_object_t *shape);
 
-typedef void (*RigShapeReShapedCallback) (RigShape *shape,
-                                          void *user_data);
+typedef void (*rig_shape_re_shaped_callback_t)(rig_shape_t *shape,
+                                               void *user_data);
 
-RutClosure *
-rig_shape_add_reshaped_callback (RigShape *shape,
-                                 RigShapeReShapedCallback callback,
-                                 void *user_data,
-                                 RutClosureDestroyCallback destroy_cb);
+rut_closure_t *
+rig_shape_add_reshaped_callback(rig_shape_t *shape,
+                                rig_shape_re_shaped_callback_t callback,
+                                void *user_data,
+                                rut_closure_destroy_callback_t destroy_cb);
 
-void
-rig_shape_set_width (RutObject *obj, float width);
+void rig_shape_set_width(rut_object_t *obj, float width);
 
-void
-rig_shape_set_height (RutObject *obj, float height);
+void rig_shape_set_height(rut_object_t *obj, float height);
 
-void
-rig_shape_set_size (RutObject *self,
-                    float width,
-                    float height);
+void rig_shape_set_size(rut_object_t *self, float width, float height);
 
-void
-rig_shape_get_size (RutObject *self,
-                    float *width,
-                    float *height);
+void rig_shape_get_size(rut_object_t *self, float *width, float *height);
 
-void
-rig_shape_set_shape_mask (RutObject *object, RigAsset *asset);
+void rig_shape_set_shape_mask(rut_object_t *object, rig_asset_t *asset);
 
-RigAsset *
-rig_shape_get_shape_mask (RutObject *object);
+rig_asset_t *rig_shape_get_shape_mask(rut_object_t *object);
 
 #endif /* __RIG_SHAPE_H__ */

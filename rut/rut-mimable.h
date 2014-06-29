@@ -32,23 +32,19 @@
 #include <stdbool.h>
 #include "rut-object.h"
 
-typedef enum _RutMimableType
-{
-  RUT_MIMABLE_TYPE_TEXT,
-  RUT_MIMABLE_TYPE_OBJECT
-} RutMimableType;
+typedef enum _rut_mimable_type_t {
+    RUT_MIMABLE_TYPE_TEXT,
+    RUT_MIMABLE_TYPE_OBJECT
+} rut_mimable_type_t;
 
-typedef struct _RutMimableVTable
-{
-  RutObject *(*copy) (RutObject *mimable);
-  bool (*has) (RutObject *mimable, RutMimableType type);
-  void *(*get) (RutObject *mimable, RutMimableType type);
-} RutMimableVTable;
+typedef struct _rut_mimable_vtable_t {
+    rut_object_t *(*copy)(rut_object_t *mimable);
+    bool (*has)(rut_object_t *mimable, rut_mimable_type_t type);
+    void *(*get)(rut_object_t *mimable, rut_mimable_type_t type);
+} rut_mimable_vtable_t;
 
-char *
-rut_mimable_get_text (RutObject *object);
+char *rut_mimable_get_text(rut_object_t *object);
 
-bool
-rut_mimable_has_text (RutObject *object);
+bool rut_mimable_has_text(rut_object_t *object);
 
 #endif /* _RUT_MIMABLE_H_ */

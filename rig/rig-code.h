@@ -30,57 +30,44 @@
 #ifndef __RIG_CODE_H__
 #define __RIG_CODE_H__
 
-typedef struct _RigCodeNode RigCodeNode;
+typedef struct _rig_code_node_t rig_code_node_t;
 
 #include "rig-engine.h"
 
 G_BEGIN_DECLS
 
-void
-_rig_code_init (RigEngine *engine);
+void _rig_code_init(rig_engine_t *engine);
 
-void
-_rig_code_fini (RigEngine *engine);
+void _rig_code_fini(rig_engine_t *engine);
 
-RigCodeNode *
-rig_code_node_new (RigEngine *engine,
-                   const char *pre,
-                   const char *post);
+rig_code_node_t *
+rig_code_node_new(rig_engine_t *engine, const char *pre, const char *post);
 
-void
-rig_code_node_set_pre (RigCodeNode *node,
-                       const char *pre);
+void rig_code_node_set_pre(rig_code_node_t *node, const char *pre);
 
-void
-rig_code_node_set_post (RigCodeNode *node,
-                        const char *post);
+void rig_code_node_set_post(rig_code_node_t *node, const char *post);
 
-typedef void (*RigCodeNodeLinkCallback) (RigCodeNode *node, void *user_data);
+typedef void (*rig_code_node_link_callback_t)(rig_code_node_t *node,
+                                              void *user_data);
 
-RutClosure *
-rig_code_node_add_link_callback (RigCodeNode *node,
-                                 RigCodeNodeLinkCallback callback,
-                                 void *user_data,
-                                 RutClosureDestroyCallback destroy);
+rut_closure_t *
+rig_code_node_add_link_callback(rig_code_node_t *node,
+                                rig_code_node_link_callback_t callback,
+                                void *user_data,
+                                rut_closure_destroy_callback_t destroy);
 
-void
-rig_code_node_add_child (RigCodeNode *node,
-                         RigCodeNode *child);
+void rig_code_node_add_child(rig_code_node_t *node, rig_code_node_t *child);
 
-void
-rig_code_node_remove_child (RigCodeNode *child);
+void rig_code_node_remove_child(rig_code_node_t *child);
 
 /* A callback for whenever a particular node has been relinked and
  * reloaded so we can e.g. re-query symbol addresses.
  */
-void
-rig_code_node_add_reload_callback (RigCodeNode *node);
+void rig_code_node_add_reload_callback(rig_code_node_t *node);
 
-void *
-rig_code_resolve_symbol (RigEngine *engine, const char *name);
+void *rig_code_resolve_symbol(rig_engine_t *engine, const char *name);
 
-void
-rig_code_update_dso (RigEngine *engine, uint8_t *data, int len);
+void rig_code_update_dso(rig_engine_t *engine, uint8_t *data, int len);
 
 G_END_DECLS
 

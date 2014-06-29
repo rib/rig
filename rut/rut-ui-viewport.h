@@ -34,77 +34,57 @@
 
 #include "rut-type.h"
 
-typedef struct _RutUIViewport RutUIViewport;
-#define RUT_UI_VIEWPORT(X) ((RutUIViewport *)X)
+typedef struct _rut_ui_viewport_t rut_ui_viewport_t;
+#define RUT_UI_VIEWPORT(X) ((rut_ui_viewport_t *)X)
 
-extern RutType rut_ui_viewport_type;
+extern rut_type_t rut_ui_viewport_type;
 
-RutUIViewport *
-rut_ui_viewport_new (RutContext *ctx,
-                     float width,
-                     float height);
+rut_ui_viewport_t *
+rut_ui_viewport_new(rut_context_t *ctx, float width, float height);
 
-void
-rut_ui_viewport_add (RutUIViewport *ui_viewport,
-                     RutObject *child);
+void rut_ui_viewport_add(rut_ui_viewport_t *ui_viewport, rut_object_t *child);
 
-void
-rut_ui_viewport_get_size (RutUIViewport *ui_viewport,
-                          float *width,
-                          float *height);
+void rut_ui_viewport_get_size(rut_ui_viewport_t *ui_viewport,
+                              float *width,
+                              float *height);
 
-void
-rut_ui_viewport_set_doc_x (RutObject *ui_viewport, float doc_x);
+void rut_ui_viewport_set_doc_x(rut_object_t *ui_viewport, float doc_x);
 
-void
-rut_ui_viewport_set_doc_y (RutObject *ui_viewport, float doc_y);
+void rut_ui_viewport_set_doc_y(rut_object_t *ui_viewport, float doc_y);
 
-void
-rut_ui_viewport_set_doc_width (RutObject *ui_viewport, float doc_width);
+void rut_ui_viewport_set_doc_width(rut_object_t *ui_viewport, float doc_width);
 
-void
-rut_ui_viewport_set_doc_height (RutObject *ui_viewport, float doc_height);
+void rut_ui_viewport_set_doc_height(rut_object_t *ui_viewport,
+                                    float doc_height);
 
-void
-rut_ui_viewport_set_doc_scale_x (RutUIViewport *ui_viewport, float doc_scale_x);
+void rut_ui_viewport_set_doc_scale_x(rut_ui_viewport_t *ui_viewport,
+                                     float doc_scale_x);
 
-void
-rut_ui_viewport_set_doc_scale_y (RutUIViewport *ui_viewport, float doc_scale_y);
+void rut_ui_viewport_set_doc_scale_y(rut_ui_viewport_t *ui_viewport,
+                                     float doc_scale_y);
 
-float
-rut_ui_viewport_get_width (RutUIViewport *ui_viewport);
+float rut_ui_viewport_get_width(rut_ui_viewport_t *ui_viewport);
 
-float
-rut_ui_viewport_get_height (RutUIViewport *ui_viewport);
+float rut_ui_viewport_get_height(rut_ui_viewport_t *ui_viewport);
 
-float
-rut_ui_viewport_get_doc_x (RutObject *ui_viewport);
+float rut_ui_viewport_get_doc_x(rut_object_t *ui_viewport);
 
-float
-rut_ui_viewport_get_doc_y (RutObject *ui_viewport);
+float rut_ui_viewport_get_doc_y(rut_object_t *ui_viewport);
 
-float
-rut_ui_viewport_get_doc_scale_x (RutUIViewport *ui_viewport);
+float rut_ui_viewport_get_doc_scale_x(rut_ui_viewport_t *ui_viewport);
 
-float
-rut_ui_viewport_get_doc_scale_y (RutUIViewport *ui_viewport);
+float rut_ui_viewport_get_doc_scale_y(rut_ui_viewport_t *ui_viewport);
 
 const cg_matrix_t *
-rut_ui_viewport_get_doc_matrix (RutUIViewport *ui_viewport);
+rut_ui_viewport_get_doc_matrix(rut_ui_viewport_t *ui_viewport);
 
-void
-rut_ui_viewport_set_x_pannable (RutObject *ui_viewport,
-                                bool pannable);
+void rut_ui_viewport_set_x_pannable(rut_object_t *ui_viewport, bool pannable);
 
-bool
-rut_ui_viewport_get_x_pannable (RutObject *ui_viewport);
+bool rut_ui_viewport_get_x_pannable(rut_object_t *ui_viewport);
 
-void
-rut_ui_viewport_set_y_pannable (RutObject *ui_viewport,
-                                bool pannable);
+void rut_ui_viewport_set_y_pannable(rut_object_t *ui_viewport, bool pannable);
 
-bool
-rut_ui_viewport_get_y_pannable (RutObject *ui_viewport);
+bool rut_ui_viewport_get_y_pannable(rut_object_t *ui_viewport);
 
 /**
  * rut_ui_viewport_set_sync_widget:
@@ -123,12 +103,10 @@ rut_ui_viewport_get_y_pannable (RutObject *ui_viewport);
  *
  * The sync widget should typically be a child of the doc.
  */
-void
-rut_ui_viewport_set_sync_widget (RutObject *ui_viewport,
-                                 RutObject *widget);
+void rut_ui_viewport_set_sync_widget(rut_object_t *ui_viewport,
+                                     rut_object_t *widget);
 
-void
-rut_ui_viewport_set_scroll_bar_color (RutUIViewport *ui_viewport,
-                                      const cg_color_t *color);
+void rut_ui_viewport_set_scroll_bar_color(rut_ui_viewport_t *ui_viewport,
+                                          const cg_color_t *color);
 
 #endif /* _RUT_UI_VIEWPORT_H_ */

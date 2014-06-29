@@ -46,355 +46,329 @@
 #include "rut-nine-slice.h"
 #include "rut-camera.h"
 
-struct _RutDragBin
-{
-  RutObjectBase _base;
+struct _rut_drag_bin_t {
+    rut_object_base_t _base;
 
-  RutContext *ctx;
+    rut_context_t *ctx;
 
+    rut_object_t *child;
+    rut_object_t *payload;
 
-  RutObject *child;
-  RutObject *payload;
+    rut_stack_t *stack;
+    // rut_input_region_t *input_region;
+    rut_bin_t *bin;
+    rut_rectangle_t *drag_overlay;
 
-  RutStack *stack;
-  //RutInputRegion *input_region;
-  RutBin *bin;
-  RutRectangle *drag_overlay;
+    rut_transform_t *transform;
+    rut_nine_slice_t *drag_icon;
 
-  RutTransform *transform;
-  RutNineSlice *drag_icon;
+    bool in_drag;
 
-  bool in_drag;
+    rut_graphable_props_t graphable;
 
-  RutGraphableProps graphable;
-
-  RutInputRegion *input_region;
+    rut_input_region_t *input_region;
 };
 
-RutType rut_drag_bin_type;
+rut_type_t rut_drag_bin_type;
 
 static void
-_rut_drag_bin_free (void *object)
+_rut_drag_bin_free(void *object)
 {
-  RutDragBin *bin = object;
+    rut_drag_bin_t *bin = object;
 
-  rut_drag_bin_set_child (bin, NULL);
-  rut_object_unref (bin->payload);
+    rut_drag_bin_set_child(bin, NULL);
+    rut_object_unref(bin->payload);
 
-  if (!bin->in_drag)
-    {
-      rut_object_unref (bin->drag_overlay);
-      rut_object_unref (bin->transform);
+    if (!bin->in_drag) {
+        rut_object_unref(bin->drag_overlay);
+        rut_object_unref(bin->transform);
     }
 
-  rut_shell_remove_pre_paint_callback_by_graphable (bin->ctx->shell, bin);
+    rut_shell_remove_pre_paint_callback_by_graphable(bin->ctx->shell, bin);
 
-  rut_graphable_destroy (bin);
+    rut_graphable_destroy(bin);
 
-  rut_object_unref (bin->input_region);
+    rut_object_unref(bin->input_region);
 
-  rut_object_free (RutDragBin, bin);
+    rut_object_free(rut_drag_bin_t, bin);
 }
 
 #if 1
 static void
-_rut_drag_bin_set_size (RutObject *object, float width, float height)
+_rut_drag_bin_set_size(rut_object_t *object, float width, float height)
 {
-  RutDragBin *bin = object;
+    rut_drag_bin_t *bin = object;
 
-  rut_sizable_set_size (bin->input_region, width, height);
-  rut_composite_sizable_set_size (bin, width, height);
+    rut_sizable_set_size(bin->input_region, width, height);
+    rut_composite_sizable_set_size(bin, width, height);
 }
 #endif
 
 static bool
-_rut_drag_bin_pick (RutObject *inputable,
-                    RutObject *camera,
-                    const cg_matrix_t *modelview,
-                    float x,
-                    float y)
+_rut_drag_bin_pick(rut_object_t *inputable,
+                   rut_object_t *camera,
+                   const cg_matrix_t *modelview,
+                   float x,
+                   float y)
 {
-  RutDragBin *bin = inputable;
-  cg_matrix_t matrix;
+    rut_drag_bin_t *bin = inputable;
+    cg_matrix_t matrix;
 
-  if (!modelview)
-    {
-      matrix = *rut_camera_get_view_transform (camera);
-      rut_graphable_apply_transform (inputable, &matrix);
-      modelview = &matrix;
+    if (!modelview) {
+        matrix = *rut_camera_get_view_transform(camera);
+        rut_graphable_apply_transform(inputable, &matrix);
+        modelview = &matrix;
     }
 
-  return rut_pickable_pick (bin->input_region,
-                             camera, modelview, x, y);
+    return rut_pickable_pick(bin->input_region, camera, modelview, x, y);
 }
 
-static RutInputEventStatus
-_rut_drag_bin_handle_event (RutObject *inputable,
-                            RutInputEvent *event)
+static rut_input_event_status_t
+_rut_drag_bin_handle_event(rut_object_t *inputable, rut_input_event_t *event)
 {
-  RutDragBin *bin = inputable;
-  return rut_inputable_handle_event (bin->input_region, event);
+    rut_drag_bin_t *bin = inputable;
+    return rut_inputable_handle_event(bin->input_region, event);
 }
 
 static void
-_rut_drag_bin_init_type (void)
+_rut_drag_bin_init_type(void)
 {
-  static RutGraphableVTable graphable_vtable = {
-      NULL, /* child removed */
-      NULL, /* child addded */
-      NULL /* parent changed */
-  };
-  static RutSizableVTable sizable_vtable = {
-      _rut_drag_bin_set_size,
-      //rut_composite_sizable_set_size,
-      rut_composite_sizable_get_size,
-      rut_composite_sizable_get_preferred_width,
-      rut_composite_sizable_get_preferred_height,
-      rut_composite_sizable_add_preferred_size_callback
-  };
-  static RutPickableVTable pickable_vtable = {
-      _rut_drag_bin_pick,
-  };
-  static RutInputableVTable inputable_vtable = {
-      _rut_drag_bin_handle_event
-  };
+    static rut_graphable_vtable_t graphable_vtable = { NULL, /* child removed */
+                                                       NULL, /* child addded */
+                                                       NULL /* parent changed */
+    };
+    static rut_sizable_vtable_t sizable_vtable = {
+        _rut_drag_bin_set_size,
+        // rut_composite_sizable_set_size,
+        rut_composite_sizable_get_size,
+        rut_composite_sizable_get_preferred_width,
+        rut_composite_sizable_get_preferred_height,
+        rut_composite_sizable_add_preferred_size_callback
+    };
+    static rut_pickable_vtable_t pickable_vtable = { _rut_drag_bin_pick, };
+    static rut_inputable_vtable_t inputable_vtable = {
+        _rut_drag_bin_handle_event
+    };
 
-  RutType *type = &rut_drag_bin_type;
-#define TYPE RutDragBin
+    rut_type_t *type = &rut_drag_bin_type;
+#define TYPE rut_drag_bin_t
 
-  rut_type_init (&rut_drag_bin_type, C_STRINGIFY (TYPE), _rut_drag_bin_free);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_GRAPHABLE,
-                      offsetof (RutDragBin, graphable),
-                      &graphable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_SIZABLE,
-                      0, /* no implied properties */
-                      &sizable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_COMPOSITE_SIZABLE,
-                      offsetof (TYPE, stack),
-                      NULL); /* no vtable */
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_PICKABLE,
-                      0, /* no implied properties */
-                      &pickable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_INPUTABLE,
-                      0, /* no implied properties */
-                      &inputable_vtable);
+    rut_type_init(&rut_drag_bin_type, C_STRINGIFY(TYPE), _rut_drag_bin_free);
+    rut_type_add_trait(type,
+                       RUT_TRAIT_ID_GRAPHABLE,
+                       offsetof(rut_drag_bin_t, graphable),
+                       &graphable_vtable);
+    rut_type_add_trait(type,
+                       RUT_TRAIT_ID_SIZABLE,
+                       0, /* no implied properties */
+                       &sizable_vtable);
+    rut_type_add_trait(type,
+                       RUT_TRAIT_ID_COMPOSITE_SIZABLE,
+                       offsetof(TYPE, stack),
+                       NULL); /* no vtable */
+    rut_type_add_trait(type,
+                       RUT_TRAIT_ID_PICKABLE,
+                       0, /* no implied properties */
+                       &pickable_vtable);
+    rut_type_add_trait(type,
+                       RUT_TRAIT_ID_INPUTABLE,
+                       0, /* no implied properties */
+                       &inputable_vtable);
 
 #undef TYPE
 }
 
 static void
-start_drag (RutDragBin *bin)
+start_drag(rut_drag_bin_t *bin)
 {
-  RutObject *root;
+    rut_object_t *root;
 
-  if (bin->in_drag)
-    return;
+    if (bin->in_drag)
+        return;
 
-  rut_stack_add (bin->stack, bin->drag_overlay);
+    rut_stack_add(bin->stack, bin->drag_overlay);
 
-  root = rut_graphable_get_root (bin);
-  rut_stack_add (root, bin->transform);
+    root = rut_graphable_get_root(bin);
+    rut_stack_add(root, bin->transform);
 
-  rut_shell_start_drag (bin->ctx->shell, bin->payload);
-  rut_shell_queue_redraw (bin->ctx->shell);
-  bin->in_drag = true;
+    rut_shell_start_drag(bin->ctx->shell, bin->payload);
+    rut_shell_queue_redraw(bin->ctx->shell);
+    bin->in_drag = true;
 }
 
 static void
-cancel_drag (RutDragBin *bin)
+cancel_drag(rut_drag_bin_t *bin)
 {
-  if (!bin->in_drag)
-    return;
+    if (!bin->in_drag)
+        return;
 
-  rut_graphable_remove_child (bin->drag_overlay);
-  rut_graphable_remove_child (bin->transform);
+    rut_graphable_remove_child(bin->drag_overlay);
+    rut_graphable_remove_child(bin->transform);
 
-  rut_shell_cancel_drag (bin->ctx->shell);
-  rut_shell_queue_redraw (bin->ctx->shell);
-  bin->in_drag = false;
+    rut_shell_cancel_drag(bin->ctx->shell);
+    rut_shell_queue_redraw(bin->ctx->shell);
+    bin->in_drag = false;
 }
 
-typedef struct _DragState
+typedef struct _drag_state_t {
+    rut_object_t *camera;
+    rut_drag_bin_t *bin;
+    float press_x;
+    float press_y;
+} drag_state_t;
+
+static rut_input_event_status_t
+_rut_drag_bin_grab_input_cb(rut_input_event_t *event, void *user_data)
 {
-  RutObject *camera;
-  RutDragBin *bin;
-  float press_x;
-  float press_y;
-} DragState;
+    drag_state_t *state = user_data;
+    rut_drag_bin_t *bin = state->bin;
 
-static RutInputEventStatus
-_rut_drag_bin_grab_input_cb (RutInputEvent *event,
-                             void *user_data)
-{
-  DragState *state = user_data;
-  RutDragBin *bin = state->bin;
+    if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_MOTION) {
+        if (rut_motion_event_get_action(event) == RUT_MOTION_EVENT_ACTION_UP) {
+            rut_shell_ungrab_input(
+                bin->ctx->shell, _rut_drag_bin_grab_input_cb, state);
 
-  if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
-    {
-      if (rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_UP)
-        {
-          rut_shell_ungrab_input (bin->ctx->shell,
-                                  _rut_drag_bin_grab_input_cb,
-                                  state);
+            c_slice_free(drag_state_t, state);
 
-          c_slice_free (DragState, state);
+            if (bin->in_drag) {
+                rut_shell_drop(bin->ctx->shell);
+                cancel_drag(bin);
+                return RUT_INPUT_EVENT_STATUS_HANDLED;
+            } else
+                return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+        } else if (rut_motion_event_get_action(event) ==
+                   RUT_MOTION_EVENT_ACTION_MOVE) {
+            float dx = rut_motion_event_get_x(event) - state->press_x;
+            float dy = rut_motion_event_get_y(event) - state->press_y;
+            float dist = sqrtf(dx * dx + dy * dy);
 
-          if (bin->in_drag)
-            {
-              rut_shell_drop (bin->ctx->shell);
-              cancel_drag (bin);
-              return RUT_INPUT_EVENT_STATUS_HANDLED;
-            }
-          else
-            return RUT_INPUT_EVENT_STATUS_UNHANDLED;
-        }
-      else if (rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_MOVE)
-        {
-          float dx = rut_motion_event_get_x (event) - state->press_x;
-          float dy = rut_motion_event_get_y (event) - state->press_y;
-          float dist = sqrtf (dx * dx + dy * dy);
+            if (dist > 20) {
+                cg_matrix_t transform;
 
-          if (dist > 20)
-            {
-              cg_matrix_t transform;
+                start_drag(bin);
 
-              start_drag (bin);
+                rut_graphable_get_transform(bin, &transform);
 
-              rut_graphable_get_transform (bin, &transform);
+                rut_transform_init_identity(bin->transform);
+                rut_transform_transform(bin->transform, &transform);
 
-              rut_transform_init_identity (bin->transform);
-              rut_transform_transform (bin->transform, &transform);
+                rut_transform_translate(bin->transform, dx, dy, 0);
+            } else
+                cancel_drag(bin);
 
-              rut_transform_translate (bin->transform, dx, dy, 0);
-            }
-          else
-            cancel_drag (bin);
+            rut_shell_queue_redraw(bin->ctx->shell);
 
-          rut_shell_queue_redraw (bin->ctx->shell);
-
-          return RUT_INPUT_EVENT_STATUS_HANDLED;
+            return RUT_INPUT_EVENT_STATUS_HANDLED;
         }
     }
 
-  return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+    return RUT_INPUT_EVENT_STATUS_UNHANDLED;
 }
 
-static RutInputEventStatus
-_rut_drag_bin_input_cb (RutInputRegion *region,
-                        RutInputEvent *event,
-                        void *user_data)
+static rut_input_event_status_t
+_rut_drag_bin_input_cb(
+    rut_input_region_t *region, rut_input_event_t *event, void *user_data)
 {
-  RutDragBin *bin = user_data;
+    rut_drag_bin_t *bin = user_data;
 
-  if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
-    {
-      if (rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN &&
-          rut_motion_event_get_button_state (event) == RUT_BUTTON_STATE_1)
-        {
-          DragState *state = c_slice_new (DragState);
+    if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_MOTION) {
+        if (rut_motion_event_get_action(event) ==
+            RUT_MOTION_EVENT_ACTION_DOWN &&
+            rut_motion_event_get_button_state(event) == RUT_BUTTON_STATE_1) {
+            drag_state_t *state = c_slice_new(drag_state_t);
 
-          state->bin = bin;
-          state->camera = rut_input_event_get_camera (event);
-          state->press_x = rut_motion_event_get_x (event);
-          state->press_y = rut_motion_event_get_y (event);
+            state->bin = bin;
+            state->camera = rut_input_event_get_camera(event);
+            state->press_x = rut_motion_event_get_x(event);
+            state->press_y = rut_motion_event_get_y(event);
 
-          rut_shell_grab_input (bin->ctx->shell,
-                                rut_input_event_get_camera (event),
-                                _rut_drag_bin_grab_input_cb,
-                                state);
+            rut_shell_grab_input(bin->ctx->shell,
+                                 rut_input_event_get_camera(event),
+                                 _rut_drag_bin_grab_input_cb,
+                                 state);
 
-          return RUT_INPUT_EVENT_STATUS_HANDLED;
+            return RUT_INPUT_EVENT_STATUS_HANDLED;
         }
     }
 
-  return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+    return RUT_INPUT_EVENT_STATUS_UNHANDLED;
 }
 
-RutDragBin *
-rut_drag_bin_new (RutContext *ctx)
+rut_drag_bin_t *
+rut_drag_bin_new(rut_context_t *ctx)
 {
-  RutDragBin *bin = rut_object_alloc0 (RutDragBin,
-                                       &rut_drag_bin_type,
-                                       _rut_drag_bin_init_type);
+    rut_drag_bin_t *bin = rut_object_alloc0(
+        rut_drag_bin_t, &rut_drag_bin_type, _rut_drag_bin_init_type);
 
-  bin->ctx = ctx;
+    bin->ctx = ctx;
 
-  rut_graphable_init (bin);
+    rut_graphable_init(bin);
 
-  bin->in_drag = false;
+    bin->in_drag = false;
 
-  bin->stack = rut_stack_new (ctx, 1, 1);
-  rut_graphable_add_child (bin, bin->stack);
-  rut_object_unref (bin->stack);
+    bin->stack = rut_stack_new(ctx, 1, 1);
+    rut_graphable_add_child(bin, bin->stack);
+    rut_object_unref(bin->stack);
 
-  bin->input_region =
-    rut_input_region_new_rectangle (0, 0, 1, 1,
-                                    _rut_drag_bin_input_cb,
-                                    bin);
+    bin->input_region =
+        rut_input_region_new_rectangle(0, 0, 1, 1, _rut_drag_bin_input_cb, bin);
 
-  bin->bin = rut_bin_new (ctx);
-  rut_stack_add (bin->stack, bin->bin);
-  rut_object_unref (bin->bin);
+    bin->bin = rut_bin_new(ctx);
+    rut_stack_add(bin->stack, bin->bin);
+    rut_object_unref(bin->bin);
 
-  bin->drag_overlay = rut_rectangle_new4f (ctx, 1, 1, 0.5, 0.5, 0.5, 0.5);
+    bin->drag_overlay = rut_rectangle_new4f(ctx, 1, 1, 0.5, 0.5, 0.5, 0.5);
 
-  bin->transform = rut_transform_new (ctx);
-  bin->drag_icon =
-    rut_nine_slice_new (ctx,
-                        rut_load_texture_from_data_file (ctx,
-                                                         "transparency-grid.png",
-                                                         NULL),
-                        0, 0, 0, 0,
-                        100, 100);
-  rut_graphable_add_child (bin->transform, bin->drag_icon);
-  rut_object_unref (bin->drag_icon);
+    bin->transform = rut_transform_new(ctx);
+    bin->drag_icon = rut_nine_slice_new(
+        ctx,
+        rut_load_texture_from_data_file(ctx, "transparency-grid.png", NULL),
+        0,
+        0,
+        0,
+        0,
+        100,
+        100);
+    rut_graphable_add_child(bin->transform, bin->drag_icon);
+    rut_object_unref(bin->drag_icon);
 
-  return bin;
+    return bin;
 }
 
 void
-rut_drag_bin_set_child (RutDragBin *bin,
-                        RutObject *child_widget)
+rut_drag_bin_set_child(rut_drag_bin_t *bin, rut_object_t *child_widget)
 {
-  c_return_if_fail (rut_object_get_type (bin) == &rut_drag_bin_type);
-  c_return_if_fail (bin->in_drag == false);
+    c_return_if_fail(rut_object_get_type(bin) == &rut_drag_bin_type);
+    c_return_if_fail(bin->in_drag == false);
 
-  if (bin->child == child_widget)
-    return;
+    if (bin->child == child_widget)
+        return;
 
-  if (bin->child)
-    {
-      rut_graphable_remove_child (bin->child);
-      rut_object_unref (bin->child);
+    if (bin->child) {
+        rut_graphable_remove_child(bin->child);
+        rut_object_unref(bin->child);
     }
 
-  bin->child = child_widget;
+    bin->child = child_widget;
 
-  if (child_widget)
-    {
-      rut_bin_set_child (bin->bin, child_widget);
-      rut_object_ref (child_widget);
+    if (child_widget) {
+        rut_bin_set_child(bin->bin, child_widget);
+        rut_object_ref(child_widget);
     }
 
-  rut_shell_queue_redraw (bin->ctx->shell);
+    rut_shell_queue_redraw(bin->ctx->shell);
 }
 
 void
-rut_drag_bin_set_payload (RutDragBin *bin,
-                          RutObject *payload)
+rut_drag_bin_set_payload(rut_drag_bin_t *bin, rut_object_t *payload)
 {
-  if (bin->payload == payload)
-    return;
+    if (bin->payload == payload)
+        return;
 
-  if (bin->payload)
-    rut_object_unref (bin->payload);
+    if (bin->payload)
+        rut_object_unref(bin->payload);
 
-  bin->payload = payload;
-  if (payload)
-    rut_object_ref (payload);
+    bin->payload = payload;
+    if (payload)
+        rut_object_ref(payload);
 }

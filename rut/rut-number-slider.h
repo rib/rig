@@ -32,40 +32,29 @@
 #include "rut-object.h"
 #include "rut-context.h"
 
-extern RutType rut_number_slider_type;
-typedef struct _RutNumberSlider RutNumberSlider;
+extern rut_type_t rut_number_slider_type;
+typedef struct _rut_number_slider_t rut_number_slider_t;
 
-RutNumberSlider *
-rut_number_slider_new (RutContext *ctx);
+rut_number_slider_t *rut_number_slider_new(rut_context_t *ctx);
 
-void
-rut_number_slider_set_markup_label (RutNumberSlider *slider,
-                                    const char *markup);
+void rut_number_slider_set_markup_label(rut_number_slider_t *slider,
+                                        const char *markup);
 
-void
-rut_number_slider_set_min_value (RutNumberSlider *slider,
-                                 float min_value);
+void rut_number_slider_set_min_value(rut_number_slider_t *slider,
+                                     float min_value);
 
-void
-rut_number_slider_set_max_value (RutNumberSlider *slider,
-                                 float max_value);
+void rut_number_slider_set_max_value(rut_number_slider_t *slider,
+                                     float max_value);
 
-void
-rut_number_slider_set_value (RutObject *slider,
-                             float value);
+void rut_number_slider_set_value(rut_object_t *slider, float value);
 
-float
-rut_number_slider_get_value (RutNumberSlider *slider);
+float rut_number_slider_get_value(rut_number_slider_t *slider);
 
-void
-rut_number_slider_set_step (RutNumberSlider *slider,
-                            float step);
+void rut_number_slider_set_step(rut_number_slider_t *slider, float step);
 
-void
-rut_number_slider_set_decimal_places (RutNumberSlider *slider,
-                                      int decimal_places);
+void rut_number_slider_set_decimal_places(rut_number_slider_t *slider,
+                                          int decimal_places);
 
-int
-rut_number_slider_get_decimal_places (RutNumberSlider *slider);
+int rut_number_slider_get_decimal_places(rut_number_slider_t *slider);
 
 #endif /* _RUT_NUMBER_SLIDER_H_ */

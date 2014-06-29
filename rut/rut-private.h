@@ -31,5 +31,4 @@
 
 #include <clib.h>
 
-
 #endif /* _RUT_PRIVATE_H_ */

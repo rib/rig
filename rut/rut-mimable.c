@@ -31,22 +31,22 @@
 #include "rut-mimable.h"
 
 bool
-rut_mimable_has_text (RutObject *object)
+rut_mimable_has_text(rut_object_t *object)
 {
-  RutMimableVTable *mimable =
-    rut_object_get_vtable (object, RUT_TRAIT_ID_MIMABLE);
+    rut_mimable_vtable_t *mimable =
+        rut_object_get_vtable(object, RUT_TRAIT_ID_MIMABLE);
 
-  return mimable->has (object, RUT_MIMABLE_TYPE_TEXT);
+    return mimable->has(object, RUT_MIMABLE_TYPE_TEXT);
 }
 
 char *
-rut_mimable_get_text (RutObject *object)
+rut_mimable_get_text(rut_object_t *object)
 {
-  RutMimableVTable *mimable =
-    rut_object_get_vtable (object, RUT_TRAIT_ID_MIMABLE);
+    rut_mimable_vtable_t *mimable =
+        rut_object_get_vtable(object, RUT_TRAIT_ID_MIMABLE);
 
-  if (!mimable->has (object, RUT_MIMABLE_TYPE_TEXT))
-    return NULL;
+    if (!mimable->has(object, RUT_MIMABLE_TYPE_TEXT))
+        return NULL;
 
-  return mimable->get (object, RUT_MIMABLE_TYPE_TEXT);
+    return mimable->get(object, RUT_MIMABLE_TYPE_TEXT);
 }

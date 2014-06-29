@@ -37,88 +37,82 @@
 
 G_BEGIN_DECLS
 
-#define RUT_MESH_PLY_ERROR rut_mesh_ply_error_quark ()
+#define RUT_MESH_PLY_ERROR rut_mesh_ply_error_quark()
 
-typedef enum _RutMeshPlyError
-{
-  RUT_MESH_PLY_ERROR_IO,
-  RUT_MESH_PLY_ERROR_UNKNOWN,
-  RUT_MESH_PLY_ERROR_MISSING_PROPERTY,
-  RUT_MESH_PLY_ERROR_INVALID,
-  RUT_MESH_PLY_ERROR_UNSUPPORTED
-} RutMeshPlyError;
+typedef enum _rut_mesh_ply_error_t {
+    RUT_MESH_PLY_ERROR_IO,
+    RUT_MESH_PLY_ERROR_UNKNOWN,
+    RUT_MESH_PLY_ERROR_MISSING_PROPERTY,
+    RUT_MESH_PLY_ERROR_INVALID,
+    RUT_MESH_PLY_ERROR_UNSUPPORTED
+} rut_mesh_ply_error_t;
 
 #define RUT_PLY_MAX_ATTRIBUTE_PROPERTIES 4
 
-typedef struct _RutPLYProperty
-{
-  const char *name;
-  bool invert;
-} RutPLYProperty;
+typedef struct _rut_ply_property_t {
+    const char *name;
+    bool invert;
+} rut_ply_property_t;
 
-typedef struct _RutPLYAttribute
-{
-  const char *name;
+typedef struct _rut_ply_attribute_t {
+    const char *name;
 
-  RutPLYProperty properties[RUT_PLY_MAX_ATTRIBUTE_PROPERTIES];
-  int n_properties;
+    rut_ply_property_t properties[RUT_PLY_MAX_ATTRIBUTE_PROPERTIES];
+    int n_properties;
 
-  /* The minimum number of component properties that must be found
-   * before we consider loading the attribute.
-   *
-   * If less properties are found the attribute will be skipped
-   * unless required == true. */
-  int min_components;
+    /* The minimum number of component properties that must be found
+     * before we consider loading the attribute.
+     *
+     * If less properties are found the attribute will be skipped
+     * unless required == true. */
+    int min_components;
 
-  /* If true and the minimum number of component properties for this
-   * attribute aren't found then the loader will exit with an error
-   */
-  bool required;
+    /* If true and the minimum number of component properties for this
+     * attribute aren't found then the loader will exit with an error
+     */
+    bool required;
 
-  /* If the minimum number of properties for this attribute aren't
-   * found then if this is > 0 the loader will create padded space for
-   * the attribute with room for this many components of this type...
-   */
-  int pad_n_components;
-  RutAttributeType pad_type;
+    /* If the minimum number of properties for this attribute aren't
+     * found then if this is > 0 the loader will create padded space for
+     * the attribute with room for this many components of this type...
+     */
+    int pad_n_components;
+    rut_attribute_type_t pad_type;
 
-  /* For integer type attributes this determines if the values should
-   * be interpreted as normalized values in the range [0,1] */
-  bool normalized;
+    /* For integer type attributes this determines if the values should
+     * be interpreted as normalized values in the range [0,1] */
+    bool normalized;
 
-} RutPLYAttribute;
+} rut_ply_attribute_t;
 
-typedef enum _RutPLYAttributeStatus
-{
-  /* The corresponding properties weren't found in the PLY file */
-  RUT_PLY_ATTRIBUTE_STATUS_MISSING,
-  /* The corresponding properties for this attribute were found
-   * and loaded into the returned mesh */
-  RUT_PLY_ATTRIBUTE_STATUS_LOADED,
-  /* The corresponding properties weren't found in the PLY file
-   * but the attribute was still added to mesh with uninitialized
-   * padding space */
-  RUT_PLY_ATTRIBUTE_STATUS_PADDED
-} RutPLYAttributeStatus;
+typedef enum _rut_ply_attribute_status_t {
+    /* The corresponding properties weren't found in the PLY file */
+    RUT_PLY_ATTRIBUTE_STATUS_MISSING,
+    /* The corresponding properties for this attribute were found
+     * and loaded into the returned mesh */
+    RUT_PLY_ATTRIBUTE_STATUS_LOADED,
+    /* The corresponding properties weren't found in the PLY file
+     * but the attribute was still added to mesh with uninitialized
+     * padding space */
+    RUT_PLY_ATTRIBUTE_STATUS_PADDED
+} rut_ply_attribute_status_t;
 
-RutMesh *
-rut_mesh_new_from_ply (RutContext *ctx,
-                       const char *filename,
-                       RutPLYAttribute *attributes,
-                       int n_attributes,
-                       RutPLYAttributeStatus *attribute_status_out,
-                       GError **error);
+rut_mesh_t *
+rut_mesh_new_from_ply(rut_context_t *ctx,
+                      const char *filename,
+                      rut_ply_attribute_t *attributes,
+                      int n_attributes,
+                      rut_ply_attribute_status_t *attribute_status_out,
+                      GError **error);
 
-RutMesh *
-rut_mesh_new_from_ply_data (RutContext *ctx,
-                            const uint8_t *data,
-                            size_t len,
-                            RutPLYAttribute *attributes,
-                            int n_attributes,
-                            RutPLYAttributeStatus *load_status,
-                            GError **error);
+rut_mesh_t *rut_mesh_new_from_ply_data(rut_context_t *ctx,
+                                       const uint8_t *data,
+                                       size_t len,
+                                       rut_ply_attribute_t *attributes,
+                                       int n_attributes,
+                                       rut_ply_attribute_status_t *load_status,
+                                       GError **error);
 
 G_END_DECLS
 
 #endif /* _RUT_MESH_PLY_ */
-

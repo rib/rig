@@ -34,54 +34,51 @@
 #include "rut-interfaces.h"
 #include "rut-graph.h"
 
-struct _RutGraph
-{
-  RutObjectBase _base;
+struct _rut_graph_t {
+    rut_object_base_t _base;
 
-  RutGraphableProps graphable;
+    rut_graphable_props_t graphable;
 };
 
 static void
-_rut_graph_free (void *object)
+_rut_graph_free(void *object)
 {
-  RutGraph *graph = object;
+    rut_graph_t *graph = object;
 
-  rut_graphable_destroy (graph);
+    rut_graphable_destroy(graph);
 
-  rut_object_free (RutGraph, object);
+    rut_object_free(rut_graph_t, object);
 }
 
-RutType rut_graph_type;
+rut_type_t rut_graph_type;
 
 static void
-_rut_graph_init_type (void)
+_rut_graph_init_type(void)
 {
-  static RutGraphableVTable graphable_vtable = {
-      NULL, /* child remove */
-      NULL, /* child add */
-      NULL /* parent changed */
-  };
+    static rut_graphable_vtable_t graphable_vtable = { NULL, /* child remove */
+                                                       NULL, /* child add */
+                                                       NULL /* parent changed */
+    };
 
-  RutType *type = &rut_graph_type;
-#define TYPE RutGraph
+    rut_type_t *type = &rut_graph_type;
+#define TYPE rut_graph_t
 
-  rut_type_init (type, C_STRINGIFY (TYPE), _rut_graph_free);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_GRAPHABLE,
-                      offsetof (TYPE, graphable),
-                      &graphable_vtable);
+    rut_type_init(type, C_STRINGIFY(TYPE), _rut_graph_free);
+    rut_type_add_trait(type,
+                       RUT_TRAIT_ID_GRAPHABLE,
+                       offsetof(TYPE, graphable),
+                       &graphable_vtable);
 
 #undef TYPE
 }
 
-RutGraph *
-rut_graph_new (RutContext *ctx)
+rut_graph_t *
+rut_graph_new(rut_context_t *ctx)
 {
-  RutGraph *graph = rut_object_alloc (RutGraph, &rut_graph_type,
-                                      _rut_graph_init_type);
+    rut_graph_t *graph =
+        rut_object_alloc(rut_graph_t, &rut_graph_type, _rut_graph_init_type);
 
+    rut_graphable_init(graph);
 
-  rut_graphable_init (graph);
-
-  return graph;
+    return graph;
 }

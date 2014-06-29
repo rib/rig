@@ -29,85 +29,79 @@ G_BEGIN_DECLS
 
 /**
  * SECTION:rut-text-buffer
- * @title: RutTextBuffer
- * @short_description: Text buffer for RutText
+ * @title: rut_text_buffer_t
+ * @short_description: Text buffer for rut_text_t
  *
- * The #RutTextBuffer class contains the actual text displayed in a
- * #RutText widget.
+ * The #rut_text_buffer_t class contains the actual text displayed in a
+ * #rut_text_t widget.
  *
- * A single #RutTextBuffer object can be shared by multiple #RutText
+ * A single #rut_text_buffer_t object can be shared by multiple #rut_text_t
  * widgets which will then share the same text content, but not the cursor
  * position, visibility attributes, icon etc.
  *
- * #RutTextBuffer may be derived from. Such a derived class might allow
+ * #rut_text_buffer_t may be derived from. Such a derived class might allow
  * text to be stored in an alternate location, such as non-pageable memory,
  * useful in the case of important passwords. Or a derived class could
  * integrate with an application's concept of undo/redo.
  *
  */
 
+#define RUT_TEXT_BUFFER_MAX_SIZE G_MAXUSHORT
 
-#define RUT_TEXT_BUFFER_MAX_SIZE        G_MAXUSHORT
-
-typedef struct _RutTextBuffer RutTextBuffer;
-#define RUT_TEXT_BUFFER(x) ((RutTextBuffer *) x)
-extern RutType rut_text_buffer_type;
+typedef struct _rut_text_buffer_t rut_text_buffer_t;
+#define RUT_TEXT_BUFFER(x) ((rut_text_buffer_t *)x)
+extern rut_type_t rut_text_buffer_type;
 
 /* PRIVATE */
-void
-_rut_text_buffer_init_type (void);
+void _rut_text_buffer_init_type(void);
 
 /**
  * rut_text_buffer_new:
  *
- * Create a new RutTextBuffer object.
+ * Create a new rut_text_buffer_t object.
  *
- * Return value: A new RutTextBuffer object.
+ * Return value: A new rut_text_buffer_t object.
  *
  */
-RutTextBuffer *
-rut_text_buffer_new (RutContext *ctx);
+rut_text_buffer_t *rut_text_buffer_new(rut_context_t *ctx);
 
 /**
  * rut_text_buffer_new_with_text:
  * @text: (allow-none): initial buffer text
  * @text_len: initial buffer text length, or -1 for null-terminated.
  *
- * Create a new RutTextBuffer object with some text.
+ * Create a new rut_text_buffer_t object with some text.
  *
- * Return value: A new RutTextBuffer object.
+ * Return value: A new rut_text_buffer_t object.
  */
-RutTextBuffer *
-rut_text_buffer_new_with_text (RutContext *ctx,
-                               const char *text,
-                               int text_len);
+rut_text_buffer_t *rut_text_buffer_new_with_text(rut_context_t *ctx,
+                                                 const char *text,
+                                                 int text_len);
 
 /**
  * rut_text_buffer_get_bytes:
- * @buffer: a #RutTextBuffer
+ * @buffer: a #rut_text_buffer_t
  *
  * Retrieves the length in bytes of the buffer.
  * See rut_text_buffer_get_length().
  *
  * Return value: The byte length of the buffer.
  */
-int
-rut_text_buffer_get_bytes (RutTextBuffer *buffer);
+int rut_text_buffer_get_bytes(rut_text_buffer_t *buffer);
 
 /**
  * rut_text_buffer_get_length:
- * @buffer: a #RutTextBuffer
+ * @buffer: a #rut_text_buffer_t
  *
  * Retrieves the length in characters of the buffer.
  *
  * Return value: The number of characters in the buffer.
  */
-int
-rut_text_buffer_get_length (RutTextBuffer *buffer);
+int rut_text_buffer_get_length(rut_text_buffer_t *buffer);
 
 /**
  * rut_text_buffer_get_text:
- * @buffer: a #RutTextBuffer
+ * @buffer: a #rut_text_buffer_t
  *
  * Retrieves the contents of the buffer.
  *
@@ -119,12 +113,11 @@ rut_text_buffer_get_length (RutTextBuffer *buffer);
  *      storage in the buffer and must not be freed, modified or
  *      stored.
  */
-const char *
-rut_text_buffer_get_text (RutObject *buffer);
+const char *rut_text_buffer_get_text(rut_object_t *buffer);
 
 /**
  * rut_text_buffer_set_text:
- * @buffer: a #RutTextBuffer
+ * @buffer: a #rut_text_buffer_t
  * @chars: the new text
  *
  * Sets the text in the buffer to the null-terminated string in @chars.
@@ -132,13 +125,11 @@ rut_text_buffer_get_text (RutObject *buffer);
  * This is roughly equivalent to calling rut_text_buffer_delete_text()
  * and rut_text_buffer_insert_text().
  */
-void
-rut_text_buffer_set_text (RutObject *buffer,
-                          const char *chars);
+void rut_text_buffer_set_text(rut_object_t *buffer, const char *chars);
 
 /**
  * rut_text_buffer_set_text_with_length:
- * @buffer: a #RutTextBuffer
+ * @buffer: a #rut_text_buffer_t
  * @chars: the new text
  * @n_chars: the number of characters in @text, or -1
  *
@@ -149,14 +140,13 @@ rut_text_buffer_set_text (RutObject *buffer,
  *
  * Note that @n_chars is in characters, not in bytes.
  */
-void
-rut_text_buffer_set_text_with_length (RutTextBuffer *buffer,
-                                      const char *chars,
-                                      int n_chars);
+void rut_text_buffer_set_text_with_length(rut_text_buffer_t *buffer,
+                                          const char *chars,
+                                          int n_chars);
 
 /**
  * rut_text_buffer_set_max_length:
- * @buffer: a #RutTextBuffer
+ * @buffer: a #rut_text_buffer_t
  * @max_length: the maximum length of the entry buffer, or 0 for no maximum.
  *   (other than the maximum length of entries.) The value passed in will
  *   be clamped to the range [ 0, %RUT_TEXT_BUFFER_MAX_SIZE ].
@@ -165,26 +155,23 @@ rut_text_buffer_set_text_with_length (RutTextBuffer *buffer,
  * the current contents are longer than the given length, then they
  * will be truncated to fit.
  */
-void
-rut_text_buffer_set_max_length (RutObject *buffer,
-                                int max_length);
+void rut_text_buffer_set_max_length(rut_object_t *buffer, int max_length);
 
 /**
  * rut_text_buffer_get_max_length:
- * @buffer: a #RutTextBuffer
+ * @buffer: a #rut_text_buffer_t
  *
  * Retrieves the maximum allowed length of the text in
  * @buffer. See rut_text_buffer_set_max_length().
  *
  * Return value: the maximum allowed number of characters
- *               in #RutTextBuffer, or 0 if there is no maximum.
+ *               in #rut_text_buffer_t, or 0 if there is no maximum.
  */
-int
-rut_text_buffer_get_max_length (RutTextBuffer *buffer);
+int rut_text_buffer_get_max_length(rut_text_buffer_t *buffer);
 
 /**
  * rut_text_buffer_insert_text:
- * @buffer: a #RutTextBuffer
+ * @buffer: a #rut_text_buffer_t
  * @position: the position at which to insert text.
  * @chars: the text to insert into the buffer.
  * @n_chars: the length of the text in characters, or -1
@@ -201,15 +188,14 @@ rut_text_buffer_get_max_length (RutTextBuffer *buffer);
  *
  * Returns: The number of characters actually inserted.
  */
-int
-rut_text_buffer_insert_text (RutTextBuffer *buffer,
-                             int position,
-                             const char *chars,
-                             int n_chars);
+int rut_text_buffer_insert_text(rut_text_buffer_t *buffer,
+                                int position,
+                                const char *chars,
+                                int n_chars);
 
 /**
  * rut_text_buffer_delete_text:
- * @buffer: a #RutTextBuffer
+ * @buffer: a #rut_text_buffer_t
  * @position: position at which to delete text
  * @n_chars: number of characters to delete
  *
@@ -224,33 +210,32 @@ rut_text_buffer_insert_text (RutTextBuffer *buffer,
  *
  * Returns: The number of characters deleted.
  */
-int
-rut_text_buffer_delete_text (RutTextBuffer *buffer,
-                             int position,
-                             int n_chars);
+int rut_text_buffer_delete_text(rut_text_buffer_t *buffer,
+                                int position,
+                                int n_chars);
 
-typedef void (*RutTextBufferInsertCallback) (RutTextBuffer *buffer,
-                                             int position,
-                                             const char *chars,
-                                             int n_chars,
-                                             void *user_data);
+typedef void (*rut_text_buffer_insert_callback_t)(rut_text_buffer_t *buffer,
+                                                  int position,
+                                                  const char *chars,
+                                                  int n_chars,
+                                                  void *user_data);
 
-RutClosure *
-rut_text_buffer_add_insert_text_callback (RutTextBuffer *buffer,
-                                          RutTextBufferInsertCallback callback,
-                                          void *user_data,
-                                          RutClosureDestroyCallback destroy_cb);
+rut_closure_t *rut_text_buffer_add_insert_text_callback(
+    rut_text_buffer_t *buffer,
+    rut_text_buffer_insert_callback_t callback,
+    void *user_data,
+    rut_closure_destroy_callback_t destroy_cb);
 
-typedef void (*RutTextBufferDeleteCallback) (RutTextBuffer *buffer,
-                                             int position,
-                                             int n_chars,
-                                             void *user_data);
+typedef void (*rut_text_buffer_delete_callback_t)(rut_text_buffer_t *buffer,
+                                                  int position,
+                                                  int n_chars,
+                                                  void *user_data);
 
-RutClosure *
-rut_text_buffer_add_delete_text_callback (RutTextBuffer *buffer,
-                                          RutTextBufferDeleteCallback callback,
-                                          void *user_data,
-                                          RutClosureDestroyCallback destroy_cb);
+rut_closure_t *rut_text_buffer_add_delete_text_callback(
+    rut_text_buffer_t *buffer,
+    rut_text_buffer_delete_callback_t callback,
+    void *user_data,
+    rut_closure_destroy_callback_t destroy_cb);
 
 G_END_DECLS
 

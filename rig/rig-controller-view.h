@@ -31,46 +31,38 @@
 
 #include <rut.h>
 
-typedef struct _RigControllerView RigControllerView;
+typedef struct _rig_controller_view_t rig_controller_view_t;
 
 #include "rig-controller.h"
 #include "rig-undo-journal.h"
 
-extern RutType rig_controller_view_type;
+extern rut_type_t rig_controller_view_type;
 
-RigControllerView *
-rig_controller_view_new (RigEngine *engine,
-                         RigUndoJournal *undo_journal);
+rig_controller_view_t *
+rig_controller_view_new(rig_engine_t *engine, rig_undo_journal_t *undo_journal);
 
-void
-rig_controller_view_update_controller_list (RigControllerView *view);
+void rig_controller_view_update_controller_list(rig_controller_view_t *view);
 
-typedef void (*RigControllerViewControllerChangedCallback)
-    (RigControllerView *view,
-     RigController *controller,
-     void *user_data);
+typedef void (*rig_controller_view_controller_changed_callback_t)(
+    rig_controller_view_t *view, rig_controller_t *controller, void *user_data);
 
-RutClosure *
-rig_controller_view_add_controller_changed_callback (
-                              RigControllerView *view,
-                              RigControllerViewControllerChangedCallback callback,
-                              void *user_data,
-                              RutClosureDestroyCallback destroy_cb);
+rut_closure_t *rig_controller_view_add_controller_changed_callback(
+    rig_controller_view_t *view,
+    rig_controller_view_controller_changed_callback_t callback,
+    void *user_data,
+    rut_closure_destroy_callback_t destroy_cb);
 
-RigController *
-rig_controller_view_get_controller (RigControllerView *view);
+rig_controller_t *
+rig_controller_view_get_controller(rig_controller_view_t *view);
 
-void
-rig_controller_view_set_controller (RigControllerView *view,
-                                    RigController *controller);
+void rig_controller_view_set_controller(rig_controller_view_t *view,
+                                        rig_controller_t *controller);
 
-double
-rig_controller_view_get_focus (RigControllerView *view);
+double rig_controller_view_get_focus(rig_controller_view_t *view);
 
-void
-rig_controller_view_edit_property (RigControllerView *view,
-                                   bool mergable,
-                                   RutProperty *property,
-                                   RutBoxed *boxed_value);
+void rig_controller_view_edit_property(rig_controller_view_t *view,
+                                       bool mergable,
+                                       rut_property_t *property,
+                                       rut_boxed_t *boxed_value);
 
 #endif /* _RIG_CONTROLLER_VIEW_H_ */

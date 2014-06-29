@@ -31,18 +31,14 @@
 
 #include "rut-object.h"
 
-extern RutType rut_color_picker_type;
+extern rut_type_t rut_color_picker_type;
 
-typedef struct _RutColorPicker RutColorPicker;
+typedef struct _rut_color_picker_t rut_color_picker_t;
 
-RutColorPicker *
-rut_color_picker_new (RutContext *ctx);
+rut_color_picker_t *rut_color_picker_new(rut_context_t *ctx);
 
-void
-rut_color_picker_set_color (RutObject *picker,
-                            const cg_color_t *color);
+void rut_color_picker_set_color(rut_object_t *picker, const cg_color_t *color);
 
-const cg_color_t *
-rut_color_picker_get_color (RutColorPicker *picker);
+const cg_color_t *rut_color_picker_get_color(rut_color_picker_t *picker);
 
 #endif /* _RUT_COLOR_PICKER_H_ */

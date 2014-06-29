@@ -35,67 +35,56 @@
 
 #include "rut-nine-slice.h"
 
-extern RutType rut_fold_type;
-
+extern rut_type_t rut_fold_type;
 
 enum {
-  RUT_FOLD_PROP_LABEL,
-  RUT_FOLD_N_PROPS
+    RUT_FOLD_PROP_LABEL,
+    RUT_FOLD_N_PROPS
 };
 
-typedef struct _RutFold
-{
-  RutObjectBase _base;
+typedef struct _rut_fold_t {
+    rut_object_base_t _base;
 
-  RutContext *context;
+    rut_context_t *context;
 
-  RutBoxLayout *vbox;
-  RutBoxLayout *header_hbox_right;
+    rut_box_layout_t *vbox;
+    rut_box_layout_t *header_hbox_right;
 
-  RutText *label;
-  RutFixed *fold_icon_shim;
-  RutNineSlice *fold_up_icon;
-  RutNineSlice *fold_down_icon;
+    rut_text_t *label;
+    rut_fixed_t *fold_icon_shim;
+    rut_nine_slice_t *fold_up_icon;
+    rut_nine_slice_t *fold_down_icon;
 
-  RutInputRegion *input_region;
+    rut_input_region_t *input_region;
 
-  bool folded;
+    bool folded;
 
-  RutObject *child;
-  RutObject *header_child;
+    rut_object_t *child;
+    rut_object_t *header_child;
 
-  RutGraphableProps graphable;
+    rut_graphable_props_t graphable;
 
-  RutIntrospectableProps introspectable;
-  RutProperty properties[RUT_FOLD_N_PROPS];
+    rut_introspectable_props_t introspectable;
+    rut_property_t properties[RUT_FOLD_N_PROPS];
 
-} RutFold;
+} rut_fold_t;
 
-RutFold *
-rut_fold_new (RutContext *ctx, const char *label);
+rut_fold_t *rut_fold_new(rut_context_t *ctx, const char *label);
 
-void
-rut_fold_set_child (RutFold *fold, RutObject *child);
+void rut_fold_set_child(rut_fold_t *fold, rut_object_t *child);
 
-void
-rut_fold_set_header_child (RutFold *fold, RutObject *child);
+void rut_fold_set_header_child(rut_fold_t *fold, rut_object_t *child);
 
-void
-rut_fold_set_folded (RutFold *fold, bool folded);
+void rut_fold_set_folded(rut_fold_t *fold, bool folded);
 
-void
-rut_fold_set_folder_color (RutFold *fold, const cg_color_t *color);
+void rut_fold_set_folder_color(rut_fold_t *fold, const cg_color_t *color);
 
-void
-rut_fold_set_label_color (RutFold *fold, const cg_color_t *color);
+void rut_fold_set_label_color(rut_fold_t *fold, const cg_color_t *color);
 
-void
-rut_fold_set_label (RutObject *object, const char *label);
+void rut_fold_set_label(rut_object_t *object, const char *label);
 
-const char *
-rut_fold_get_label (RutObject *object);
+const char *rut_fold_get_label(rut_object_t *object);
 
-void
-rut_fold_set_font_name (RutFold *fold, const char *font);
+void rut_fold_set_font_name(rut_fold_t *fold, const char *font);
 
 #endif /* _RUT_FOLD_H_ */

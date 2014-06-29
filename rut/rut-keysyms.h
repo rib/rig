@@ -27,7 +27,6 @@
  * SOFTWARE.
  */
 
-
 /*
  * File auto-generated from script at:
  *  http://git.clutter-project.org/clutter/plain/clutter/clutter-keysyms-update.pl

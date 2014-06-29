@@ -50,38 +50,33 @@ G_BEGIN_DECLS
    typedef enum { FEATURE_A, FEATURE_B, FEATURE_C, N_FEATURES } Features;
 
    unsigned long feature_flags[RUT_FLAGS_N_LONGS_FOR_SIZE (N_FEATURES)];
-*/
+ */
 
-#define RUT_FLAGS_N_LONGS_FOR_SIZE(size)       \
-  (((size) +                                    \
-    (sizeof (unsigned long) * 8 - 1))           \
-   / (sizeof (unsigned long) * 8))
+#define RUT_FLAGS_N_LONGS_FOR_SIZE(size)                                       \
+    (((size) + (sizeof(unsigned long) * 8 - 1)) / (sizeof(unsigned long) * 8))
 
 /* @flag is expected to be constant so these should result in a
    constant expression. This means that setting a flag is equivalent
    to just setting in a bit in a global variable at a known
    location */
-#define RUT_FLAGS_GET_INDEX(flag)              \
-  ((flag) / (sizeof (unsigned long) * 8))
-#define RUT_FLAGS_GET_MASK(flag)               \
-  (1UL << ((unsigned long) (flag) &             \
-           (sizeof (unsigned long) * 8 - 1)))
+#define RUT_FLAGS_GET_INDEX(flag) ((flag) / (sizeof(unsigned long) * 8))
+#define RUT_FLAGS_GET_MASK(flag)                                               \
+    (1UL << ((unsigned long)(flag) & (sizeof(unsigned long) * 8 - 1)))
 
-#define RUT_FLAGS_GET(array, flag)             \
-  (!!((array)[RUT_FLAGS_GET_INDEX (flag)] &    \
-      RUT_FLAGS_GET_MASK (flag)))
+#define RUT_FLAGS_GET(array, flag)                                             \
+    (!!((array)[RUT_FLAGS_GET_INDEX(flag)] & RUT_FLAGS_GET_MASK(flag)))
 
 /* The expectation here is that @value will be constant so the if
    statement will be optimised out */
-#define RUT_FLAGS_SET(array, flag, value)      \
-  G_STMT_START {                                \
-    if (value)                                  \
-      ((array)[RUT_FLAGS_GET_INDEX (flag)] |=  \
-       RUT_FLAGS_GET_MASK (flag));             \
-    else                                        \
-      ((array)[RUT_FLAGS_GET_INDEX (flag)] &=  \
-       ~RUT_FLAGS_GET_MASK (flag));            \
-  } G_STMT_END
+#define RUT_FLAGS_SET(array, flag, value)                                      \
+    G_STMT_START                                                               \
+    {                                                                          \
+        if (value)                                                             \
+            ((array)[RUT_FLAGS_GET_INDEX(flag)] |= RUT_FLAGS_GET_MASK(flag));  \
+        else                                                                   \
+            ((array)[RUT_FLAGS_GET_INDEX(flag)] &= ~RUT_FLAGS_GET_MASK(flag)); \
+    }                                                                          \
+    G_STMT_END
 
 /* Macros to help iterate an array of flags. It should be used like
  * this:
@@ -96,33 +91,34 @@ G_BEGIN_DECLS
  *   }
  * RUT_FLAGS_FOREACH_END;
  */
-#define RUT_FLAGS_FOREACH_START(array, n_longs, bit)   \
-  G_STMT_START {                                        \
-  const unsigned long *_p = (array);                    \
-  int _n_longs = (n_longs);                             \
-  int _i;                                               \
-                                                        \
-  for (_i = 0; _i < _n_longs; _i++)                     \
-    {                                                   \
-      unsigned long _mask = *(_p++);                    \
-                                                        \
-      (bit) = _i * sizeof (unsigned long) * 8 - 1;      \
-                                                        \
-      while (_mask)                                     \
-        {                                               \
-          int _next_bit = __builtin_ffsl (_mask);       \
-          (bit) += _next_bit;                           \
-          /* This odd two-part shift is to avoid */     \
-          /* shifting by sizeof (long)*8 which has */   \
-          /* undefined results according to the */      \
-          /* C spec (and seems to be a no-op in */      \
-          /* practice) */                               \
-          _mask = (_mask >> (_next_bit - 1)) >> 1;      \
+#define RUT_FLAGS_FOREACH_START(array, n_longs, bit)                           \
+    G_STMT_START                                                               \
+    {                                                                          \
+        const unsigned long *_p = (array);                                     \
+        int _n_longs = (n_longs);                                              \
+        int _i;                                                                \
+                                                                               \
+        for (_i = 0; _i < _n_longs; _i++) {                                    \
+            unsigned long _mask = *(_p++);                                     \
+                                                                               \
+            (bit) = _i * sizeof(unsigned long) * 8 - 1;                        \
+                                                                               \
+            while (_mask) {                                                    \
+                int _next_bit = __builtin_ffsl(_mask);                         \
+                (bit) += _next_bit;                                            \
+                /* This odd two-part shift is to avoid */                      \
+                /* shifting by sizeof (long)*8 which has */                    \
+                /* undefined results according to the */                       \
+                /* C spec (and seems to be a no-op in */                       \
+                /* practice) */                                                \
+                _mask = (_mask >> (_next_bit - 1)) >> 1;
 
-#define RUT_FLAGS_FOREACH_END \
-  } } } G_STMT_END
+#define RUT_FLAGS_FOREACH_END                                                  \
+    }                                                                          \
+    }                                                                          \
+    }                                                                          \
+    G_STMT_END
 
-G_END_DECLS
+    G_END_DECLS
 
 #endif /* __RUT_FLAGS_H */
-

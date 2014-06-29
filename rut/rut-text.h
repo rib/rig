@@ -41,70 +41,66 @@ G_BEGIN_DECLS
  * SECTION:rut-text
  * @short_description: An actor for displaying and editing text
  *
- * #RutText is an actor that displays custom text using Pango
+ * #rut_text_t is an actor that displays custom text using Pango
  * as the text rendering engine.
  *
- * #RutText also allows inline editing of the text if the
+ * #rut_text_t also allows inline editing of the text if the
  * actor is set editable using rut_text_set_editable().
  *
  * Selection using keyboard or pointers can be enabled using
  * rut_text_set_selectable().
  */
 
+typedef struct _rut_text_t rut_text_t;
+extern rut_type_t rut_text_type;
 
-typedef struct _RutText RutText;
-extern RutType rut_text_type;
+typedef struct _layout_cache_t {
+    /* Cached layout. Pango internally caches the computed extents
+     * when they are requested so there is no need to cache that as
+     * well
+     */
+    PangoLayout *layout;
 
-typedef struct _LayoutCache
-{
-  /* Cached layout. Pango internally caches the computed extents
-   * when they are requested so there is no need to cache that as
-   * well
-   */
-  PangoLayout *layout;
+    /* A number representing the age of this cache (so that when a
+     * new layout is needed the last used cache is replaced)
+     */
+    unsigned int age;
+} layout_cache_t;
 
-  /* A number representing the age of this cache (so that when a
-   * new layout is needed the last used cache is replaced)
-   */
-  unsigned int age;
-} LayoutCache;
-
-enum
-{
-  RUT_TEXT_PROP_BUFFER,
-  RUT_TEXT_PROP_FONT_NAME,
-  RUT_TEXT_PROP_FONT_DESCRIPTION,
-  RUT_TEXT_PROP_TEXT,
-  RUT_TEXT_PROP_HINT_TEXT,
-  RUT_TEXT_PROP_COLOR,
-  RUT_TEXT_PROP_USE_MARKUP,
-  RUT_TEXT_PROP_ATTRIBUTES,
-  RUT_TEXT_PROP_LINE_ALIGNMENT,
-  RUT_TEXT_PROP_LINE_WRAP,
-  RUT_TEXT_PROP_LINE_WRAP_MODE,
-  RUT_TEXT_PROP_JUSTIFY,
-  RUT_TEXT_PROP_ELLIPSIZE,
-  RUT_TEXT_PROP_POSITION,
-  RUT_TEXT_PROP_SELECTION_BOUND,
-  RUT_TEXT_PROP_SELECTION_COLOR,
-  RUT_TEXT_PROP_SELECTION_COLOR_SET,
-  RUT_TEXT_PROP_CURSOR_VISIBLE,
-  RUT_TEXT_PROP_CURSOR_COLOR,
-  RUT_TEXT_PROP_CURSOR_COLOR_SET,
-  RUT_TEXT_PROP_CURSOR_SIZE,
-  RUT_TEXT_PROP_EDITABLE,
-  RUT_TEXT_PROP_SELECTABLE,
-  RUT_TEXT_PROP_ACTIVATABLE,
-  RUT_TEXT_PROP_PASSWORD_CHAR,
-  RUT_TEXT_PROP_MAX_LENGTH,
-  RUT_TEXT_PROP_SINGLE_LINE_MODE,
-  RUT_TEXT_PROP_SELECTED_TEXT_COLOR,
-  RUT_TEXT_PROP_SELECTED_TEXT_COLOR_SET,
-  RUT_TEXT_PROP_DIRECTION,
-  RUT_TEXT_PROP_WIDTH,
-  RUT_TEXT_PROP_HEIGHT,
-
-  RUT_TEXT_N_PROPS
+enum {
+    RUT_TEXT_PROP_BUFFER,
+    RUT_TEXT_PROP_FONT_NAME,
+    RUT_TEXT_PROP_FONT_DESCRIPTION,
+    RUT_TEXT_PROP_TEXT,
+    RUT_TEXT_PROP_HINT_TEXT,
+    RUT_TEXT_PROP_COLOR,
+    RUT_TEXT_PROP_USE_MARKUP,
+    RUT_TEXT_PROP_ATTRIBUTES,
+    RUT_TEXT_PROP_LINE_ALIGNMENT,
+    RUT_TEXT_PROP_LINE_WRAP,
+    RUT_TEXT_PROP_LINE_WRAP_MODE,
+    RUT_TEXT_PROP_JUSTIFY,
+    RUT_TEXT_PROP_ELLIPSIZE,
+    RUT_TEXT_PROP_POSITION,
+    RUT_TEXT_PROP_SELECTION_BOUND,
+    RUT_TEXT_PROP_SELECTION_COLOR,
+    RUT_TEXT_PROP_SELECTION_COLOR_SET,
+    RUT_TEXT_PROP_CURSOR_VISIBLE,
+    RUT_TEXT_PROP_CURSOR_COLOR,
+    RUT_TEXT_PROP_CURSOR_COLOR_SET,
+    RUT_TEXT_PROP_CURSOR_SIZE,
+    RUT_TEXT_PROP_EDITABLE,
+    RUT_TEXT_PROP_SELECTABLE,
+    RUT_TEXT_PROP_ACTIVATABLE,
+    RUT_TEXT_PROP_PASSWORD_CHAR,
+    RUT_TEXT_PROP_MAX_LENGTH,
+    RUT_TEXT_PROP_SINGLE_LINE_MODE,
+    RUT_TEXT_PROP_SELECTED_TEXT_COLOR,
+    RUT_TEXT_PROP_SELECTED_TEXT_COLOR_SET,
+    RUT_TEXT_PROP_DIRECTION,
+    RUT_TEXT_PROP_WIDTH,
+    RUT_TEXT_PROP_HEIGHT,
+    RUT_TEXT_N_PROPS
 };
 
 /* We need at least three cached layouts to run the allocation without
@@ -117,222 +113,211 @@ enum
  * since we might get multiple queries from layout managers doing a
  * double-pass allocations, like tabular ones, we should use 6 slots
  */
-#define N_CACHED_LAYOUTS        6
+#define N_CACHED_LAYOUTS 6
 
-struct _RutText
-{
-  RutObjectBase _base;
+struct _rut_text_t {
+    rut_object_base_t _base;
 
-  RutContext *ctx;
+    rut_context_t *ctx;
 
-  float width;
-  float height;
-  //RutBox allocation;
+    float width;
+    float height;
+    // rut_box_t allocation;
 
-  RutGraphableProps graphable;
-  RutPaintableProps paintable;
+    rut_graphable_props_t graphable;
+    rut_paintable_props_t paintable;
 
-  RutTextDirection direction;
+    rut_text_direction_t direction;
 
-  RutInputRegion *input_region;
-  RutMesh *pick_mesh;
+    rut_input_region_t *input_region;
+    rut_mesh_t *pick_mesh;
 
-  RutList preferred_size_cb_list;
+    rut_list_t preferred_size_cb_list;
 
-  RutIntrospectableProps introspectable;
-  RutProperty properties[RUT_TEXT_N_PROPS];
+    rut_introspectable_props_t introspectable;
+    rut_property_t properties[RUT_TEXT_N_PROPS];
 
-  PangoFontDescription *font_desc;
+    PangoFontDescription *font_desc;
 
-  /* the displayed text */
-  RutTextBuffer *buffer;
+    /* the displayed text */
+    rut_text_buffer_t *buffer;
 
-  char *font_name;
+    char *font_name;
 
-  char *preedit_str;
+    char *preedit_str;
 
-  char *hint_text;
-  PangoLayout *hint_text_layout;
+    char *hint_text;
+    PangoLayout *hint_text_layout;
 
-  cg_color_t text_color;
+    cg_color_t text_color;
 
-  LayoutCache cached_layouts[N_CACHED_LAYOUTS];
-  unsigned int cache_age;
+    layout_cache_t cached_layouts[N_CACHED_LAYOUTS];
+    unsigned int cache_age;
 
-  /* These are the attributes set by the attributes property */
-  PangoAttrList *attrs;
-  /* These are the attributes derived from the text when the
-     use-markup property is set */
-  PangoAttrList *markup_attrs;
-  /* This is the combination of the above two lists. It is set to NULL
-     whenever either of them changes and then regenerated by merging
-     the two lists whenever a layout is needed */
-  PangoAttrList *effective_attrs;
-  /* These are the attributes for the preedit string. These are merged
-     with the effective attributes into a temporary list before
-     creating a layout */
-  PangoAttrList *preedit_attrs;
+    /* These are the attributes set by the attributes property */
+    PangoAttrList *attrs;
+    /* These are the attributes derived from the text when the
+       use-markup property is set */
+    PangoAttrList *markup_attrs;
+    /* This is the combination of the above two lists. It is set to NULL
+       whenever either of them changes and then regenerated by merging
+       the two lists whenever a layout is needed */
+    PangoAttrList *effective_attrs;
+    /* These are the attributes for the preedit string. These are merged
+       with the effective attributes into a temporary list before
+       creating a layout */
+    PangoAttrList *preedit_attrs;
 
-  /* current cursor position */
-  int position;
+    /* current cursor position */
+    int position;
 
-  /* current 'other end of selection' position */
-  int selection_bound;
+    /* current 'other end of selection' position */
+    int selection_bound;
 
-  /* the x position in the PangoLayout, used to
-   * avoid drifting when repeatedly moving up|down
-   */
-  int x_pos;
+    /* the x position in the PangoLayout, used to
+     * avoid drifting when repeatedly moving up|down
+     */
+    int x_pos;
 
-  /* the x position of the PangoLayout when in
-   * single line mode, to scroll the contents of the
-   * text actor
-   */
-  int text_x;
+    /* the x position of the PangoLayout when in
+     * single line mode, to scroll the contents of the
+     * text actor
+     */
+    int text_x;
 
-  /* the y position of the PangoLayout, fixed to 0 by
-   * default for now */
-  int text_y;
+    /* the y position of the PangoLayout, fixed to 0 by
+     * default for now */
+    int text_y;
 
-  /* Where to draw the cursor */
-  RutRectangleInt cursor_pos;
-  cg_color_t cursor_color;
-  unsigned int cursor_size;
+    /* Where to draw the cursor */
+    rut_rectangle_int_t cursor_pos;
+    cg_color_t cursor_color;
+    unsigned int cursor_size;
 
-  unsigned int preedit_cursor_pos;
-  int preedit_n_chars;
+    unsigned int preedit_cursor_pos;
+    int preedit_n_chars;
 
-  cg_color_t selection_color;
+    cg_color_t selection_color;
 
-  cg_color_t selected_text_color;
+    cg_color_t selected_text_color;
 
-  uint32_t password_char;
+    uint32_t password_char;
 
-  unsigned int password_hint_id;
-  unsigned int password_hint_timeout;
+    unsigned int password_hint_id;
+    unsigned int password_hint_timeout;
 
-  RutList delete_text_cb_list;
-  RutList insert_text_cb_list;
-  RutList activate_cb_list;
-  RutList cursor_event_cb_list;
-  RutList text_changed_cb_list;
-  RutList text_deleted_cb_list;
-  RutList text_inserted_cb_list;
+    rut_list_t delete_text_cb_list;
+    rut_list_t insert_text_cb_list;
+    rut_list_t activate_cb_list;
+    rut_list_t cursor_event_cb_list;
+    rut_list_t text_changed_cb_list;
+    rut_list_t text_deleted_cb_list;
+    rut_list_t text_inserted_cb_list;
 
-  RutClosure *buffer_insert_text_closure;
-  RutClosure *buffer_delete_text_closure;
+    rut_closure_t *buffer_insert_text_closure;
+    rut_closure_t *buffer_delete_text_closure;
 
-  /* bitfields */
-  unsigned int alignment               : 2;
-  unsigned int wrap                    : 1;
-  unsigned int use_underline           : 1;
-  unsigned int use_markup              : 1;
-  unsigned int ellipsize               : 3;
-  unsigned int single_line_mode        : 1;
-  unsigned int wrap_mode               : 3;
-  unsigned int justify                 : 1;
-  unsigned int editable                : 1;
-  unsigned int cursor_visible          : 1;
-  unsigned int activatable             : 1;
-  unsigned int selectable              : 1;
-  unsigned int selection_color_set     : 1;
-  unsigned int in_select_drag          : 1;
-  unsigned int cursor_color_set        : 1;
-  unsigned int preedit_set             : 1;
-  unsigned int is_default_font         : 1;
-  unsigned int has_focus               : 1;
-  unsigned int selected_text_color_set : 1;
-  unsigned int show_password_hint      : 1;
-  unsigned int password_hint_visible   : 1;
+    /* bitfields */
+    unsigned int alignment : 2;
+    unsigned int wrap : 1;
+    unsigned int use_underline : 1;
+    unsigned int use_markup : 1;
+    unsigned int ellipsize : 3;
+    unsigned int single_line_mode : 1;
+    unsigned int wrap_mode : 3;
+    unsigned int justify : 1;
+    unsigned int editable : 1;
+    unsigned int cursor_visible : 1;
+    unsigned int activatable : 1;
+    unsigned int selectable : 1;
+    unsigned int selection_color_set : 1;
+    unsigned int in_select_drag : 1;
+    unsigned int cursor_color_set : 1;
+    unsigned int preedit_set : 1;
+    unsigned int is_default_font : 1;
+    unsigned int has_focus : 1;
+    unsigned int selected_text_color_set : 1;
+    unsigned int show_password_hint : 1;
+    unsigned int password_hint_visible : 1;
 };
 
+rut_context_t *rut_text_get_context(rut_text_t *text);
 
-RutContext *
-rut_text_get_context (RutText *text);
+rut_text_direction_t rut_text_get_direction(rut_text_t *text);
 
-RutTextDirection
-rut_text_get_direction (RutText *text);
+void rut_text_set_direction(rut_text_t *text, rut_text_direction_t direction);
 
-void
-rut_text_set_direction (RutText *text,
-                        RutTextDirection direction);
-
-void
-_rut_text_init_type (void);
+void _rut_text_init_type(void);
 
 #if 0
 void
-rut_text_allocate (RutText *text,
-                   const RutBox *box);
+rut_text_allocate (rut_text_t *text,
+                   const rut_box_t *box);
 
 void
-rut_text_get_allocation_box (RutText *text,
-                             RutBox *box);
+rut_text_get_allocation_box (rut_text_t *text,
+                             rut_box_t *box);
 #endif
 
-bool
-rut_text_has_overlaps (RutText *text);
+bool rut_text_has_overlaps(rut_text_t *text);
 
-typedef void (* RutTextChangedCallback) (RutText *text,
-                                         void *user_data);
+typedef void (*rut_text_changed_callback_t)(rut_text_t *text, void *user_data);
 
 /**
- * RutText::text-changed:
- * @text: the #RutText that emitted the signal
+ * rut_text_t::text-changed:
+ * @text: the #rut_text_t that emitted the signal
  *
  * The ::text-changed signal is emitted after @actor's text changes
  */
-RutClosure *
-rut_text_add_text_changed_callback (RutText *text,
-                                    RutTextChangedCallback callback,
-                                    void *user_data,
-                                    RutClosureDestroyCallback destroy_cb);
+rut_closure_t *
+rut_text_add_text_changed_callback(rut_text_t *text,
+                                   rut_text_changed_callback_t callback,
+                                   void *user_data,
+                                   rut_closure_destroy_callback_t destroy_cb);
 
-typedef void (* RutTextActivateCallback) (RutText *text,
-                                          void *user_data);
+typedef void (*rut_text_activate_callback_t)(rut_text_t *text, void *user_data);
 
 /**
- * RutText::activate
- * @text: the #RutText that emitted the signal
+ * rut_text_t::activate
+ * @text: the #rut_text_t that emitted the signal
  *
  * The ::activate signal is emitted each time the actor is 'activated'
  * by the user, normally by pressing the 'Enter' key. The signal is
- * emitted only if #RutText:activatable is set to %true.
+ * emitted only if #rut_text_t:activatable is set to %true.
  */
-RutClosure *
-rut_text_add_activate_callback (RutText *text,
-                                RutTextActivateCallback callback,
-                                void *user_data,
-                                RutClosureDestroyCallback destroy_cb);
+rut_closure_t *
+rut_text_add_activate_callback(rut_text_t *text,
+                               rut_text_activate_callback_t callback,
+                               void *user_data,
+                               rut_closure_destroy_callback_t destroy_cb);
 
-typedef void (* RutTextCursorEventCallback) (RutText *text,
-                                             const RutRectangleInt *rectangle,
-                                             void *user_data);
+typedef void (*rut_text_cursor_event_callback_t)(
+    rut_text_t *text, const rut_rectangle_int_t *rectangle, void *user_data);
 /**
- * RutText::cursor-event:
- * @text: the #RutText that emitted the signal
+ * rut_text_t::cursor-event:
+ * @text: the #rut_text_t that emitted the signal
  * @rectangle: the coordinates of the cursor
  *
  * The ::cursor-event signal is emitted whenever the cursor position
- * changes inside a #RutText actor. Inside @rectangle it is stored
+ * changes inside a #rut_text_t actor. Inside @rectangle it is stored
  * the current position and size of the cursor, relative to the actor
  * ittext.
  */
-RutClosure *
-rut_text_add_cursor_event_callback (RutText *text,
-                                    RutTextCursorEventCallback callback,
-                                    void *user_data,
-                                    RutClosureDestroyCallback destroy_cb);
+rut_closure_t *
+rut_text_add_cursor_event_callback(rut_text_t *text,
+                                   rut_text_cursor_event_callback_t callback,
+                                   void *user_data,
+                                   rut_closure_destroy_callback_t destroy_cb);
 
-typedef void (* RutTextInsertedCallback) (RutText *text,
-                                          const char *text_str,
-                                          int new_text_length,
-                                          int *position,
-                                          void *user_data);
+typedef void (*rut_text_inserted_callback_t)(rut_text_t *text,
+                                             const char *text_str,
+                                             int new_text_length,
+                                             int *position,
+                                             void *user_data);
 
 /**
- * RutText::insert-text:
- * @text: the #RutText that emitted the signal
+ * rut_text_t::insert-text:
+ * @text: the #rut_text_t that emitted the signal
  * @new_text: the new text to insert
  * @new_text_length: the length of the new text, in bytes, or -1 if
  *     new_text is nul-terminated
@@ -344,50 +329,49 @@ typedef void (* RutTextInsertedCallback) (RutText *text,
  * This signal is emitted when text is inserted into the actor by
  * the user. It is emitted before @text text changes.
  */
-RutClosure *
-rut_text_add_text_inserted_callback (RutText *text,
-                                     RutTextInsertedCallback callback,
-                                     void *user_data,
-                                     RutClosureDestroyCallback destroy_cb);
+rut_closure_t *
+rut_text_add_text_inserted_callback(rut_text_t *text,
+                                    rut_text_inserted_callback_t callback,
+                                    void *user_data,
+                                    rut_closure_destroy_callback_t destroy_cb);
 
-typedef void (* RutTextDeletedCallback) (RutText *text,
-                                         int start_pos,
-                                         int end_pos,
-                                         void *user_data);
+typedef void (*rut_text_deleted_callback_t)(rut_text_t *text,
+                                            int start_pos,
+                                            int end_pos,
+                                            void *user_data);
 
 /**
- * RutText::delete-text:
- * @text: the #RutText that emitted the signal
+ * rut_text_t::delete-text:
+ * @text: the #rut_text_t that emitted the signal
  * @start_pos: the starting position
  * @end_pos: the end position
  *
  * This signal is emitted when text is deleted from the actor by
  * the user. It is emitted before @text text changes.
  */
-RutClosure *
-rut_text_add_text_deleted_callback (RutText *text,
-                                    RutTextDeletedCallback callback,
-                                    void *user_data,
-                                    RutClosureDestroyCallback destroy_cb);
+rut_closure_t *
+rut_text_add_text_deleted_callback(rut_text_t *text,
+                                   rut_text_deleted_callback_t callback,
+                                   void *user_data,
+                                   rut_closure_destroy_callback_t destroy_cb);
 
 /**
  * rut_text_new:
  *
- * Creates a new #RutText actor. This actor can be used to
+ * Creates a new #rut_text_t actor. This actor can be used to
  * display and edit text.
  *
- * Return value: the newly created #RutText actor
+ * Return value: the newly created #rut_text_t actor
  */
-RutText *
-rut_text_new (RutContext *ctx);
+rut_text_t *rut_text_new(rut_context_t *ctx);
 
 /**
  * rut_text_new_full:
  * @font_name: a string with a font description
  * @text: the contents of the actor
- * @buffer: The #RutTextBuffer to use for the text
+ * @buffer: The #rut_text_buffer_t to use for the text
  *
- * Creates a new #RutText actor, using @font_name as the font
+ * Creates a new #rut_text_t actor, using @font_name as the font
  * description; @text will be used to set the contents of the actor;
  * and @color will be used as the color to render @text.
  *
@@ -395,73 +379,67 @@ rut_text_new (RutContext *ctx);
  * rut_text_set_font_name(), rut_text_set_text() and
  * rut_text_set_color().
  *
- * Return value: the newly created #RutText actor
+ * Return value: the newly created #rut_text_t actor
  */
-RutText *
-rut_text_new_full (RutContext *ctx,
-                   const char *font_name,
-                   const char *text,
-                   RutTextBuffer *buffer);
+rut_text_t *rut_text_new_full(rut_context_t *ctx,
+                              const char *font_name,
+                              const char *text,
+                              rut_text_buffer_t *buffer);
 
 /**
  * rut_text_new_with_text:
  * @font_name: (allow-none): a string with a font description
  * @text: the contents of the actor
  *
- * Creates a new #RutText actor, using @font_name as the font
+ * Creates a new #rut_text_t actor, using @font_name as the font
  * description; @text will be used to set the contents of the actor.
  *
  * This function is equivalent to calling rut_text_new(),
  * rut_text_set_font_name(), and rut_text_set_text().
  *
- * Return value: the newly created #RutText actor
+ * Return value: the newly created #rut_text_t actor
  */
-RutText *
-rut_text_new_with_text (RutContext *ctx,
-                        const char *font_name,
-                        const char *text);
+rut_text_t *rut_text_new_with_text(rut_context_t *ctx,
+                                   const char *font_name,
+                                   const char *text);
 
 /**
  * rut_text_new_with_buffer:
- * @buffer: The buffer to use for the new #RutText.
+ * @buffer: The buffer to use for the new #rut_text_t.
  *
  * Creates a new entry with the specified text buffer.
  *
- * Return value: a new #RutText
+ * Return value: a new #rut_text_t
  */
-RutText *
-rut_text_new_with_buffer (RutContext *ctx,
-                          RutTextBuffer *buffer);
+rut_text_t *rut_text_new_with_buffer(rut_context_t *ctx,
+                                     rut_text_buffer_t *buffer);
 
 /**
  * rut_text_get_buffer:
- * @text: a #RutText
+ * @text: a #rut_text_t
  *
- * Get the #RutTextBuffer object which holds the text for
+ * Get the #rut_text_buffer_t object which holds the text for
  * this widget.
  *
- * Returns: (transfer none): A #RutTextBuffer object.
+ * Returns: (transfer none): A #rut_text_buffer_t object.
  */
-RutObject *
-rut_text_get_buffer (RutObject *text);
+rut_object_t *rut_text_get_buffer(rut_object_t *text);
 
 /**
  * rut_text_set_buffer:
- * @text: a #RutText
- * @buffer: a #RutTextBuffer
+ * @text: a #rut_text_t
+ * @buffer: a #rut_text_buffer_t
  *
- * Set the #RutTextBuffer object which holds the text for
+ * Set the #rut_text_buffer_t object which holds the text for
  * this widget.
  */
-void
-rut_text_set_buffer (RutObject *text,
-                     RutObject *buffer);
+void rut_text_set_buffer(rut_object_t *text, rut_object_t *buffer);
 
 /**
  * rut_text_get_text:
- * @text: a #RutText
+ * @text: a #rut_text_t
  *
- * Retrieves a pointer to the current contents of a #RutText
+ * Retrieves a pointer to the current contents of a #rut_text_t
  * actor.
  *
  * If you need a copy of the contents for manipulating, either
@@ -473,70 +451,64 @@ rut_text_set_buffer (RutObject *text,
  *
  * Which will return a newly allocated string.
  *
- * If the #RutText actor is empty, this function will return
+ * If the #rut_text_t actor is empty, this function will return
  * an empty string, and not %NULL.
  *
  * Return value: (transfer none): the contents of the actor. The returned
- *   string is owned by the #RutText actor and should never be modified
+ *   string is owned by the #rut_text_t actor and should never be modified
  *   or freed
  */
-const char *
-rut_text_get_text (RutObject *text);
+const char *rut_text_get_text(rut_object_t *text);
 
 /**
  * rut_text_set_text:
- * @text: a #RutText
+ * @text: a #rut_text_t
  * @text_str: (allow-none): the text to set. Passing %NULL is the same
  *   as passing "" (the empty string)
  *
- * Sets the contents of a #RutText actor.
+ * Sets the contents of a #rut_text_t actor.
  *
- * If the #RutText:use-markup property was set to %true it
+ * If the #rut_text_t:use-markup property was set to %true it
  * will be reset to %false as a side effect. If you want to
- * maintain the #RutText:use-markup you should use the
+ * maintain the #rut_text_t:use-markup you should use the
  * rut_text_set_markup() function instead
  */
-void
-rut_text_set_text (RutObject *text,
-                   const char *text_str);
+void rut_text_set_text(rut_object_t *text, const char *text_str);
 
 /**
  * rut_text_get_hint_text:
- * @text: a #RutText
+ * @text: a #rut_text_t
  *
  * Retrieves the hint text that will be displayed in the entry box
  * when the text is empty and the entry does not have keyboard focus.
  *
  * Return value: (transfer none): the hint text. The returned
- *   string is owned by the #RutText actor and should never be modified
+ *   string is owned by the #rut_text_t actor and should never be modified
  *   or freed
  */
-const char *
-rut_text_get_hint_text (RutObject *text);
+const char *rut_text_get_hint_text(rut_object_t *text);
 
 /**
  * rut_text_set_hint_text:
- * @text: a #RutText
+ * @text: a #rut_text_t
  * @hint_str: (allow-none): the text to set. Passing %NULL is the same
  *   as passing "" (the empty string)
  *
- * Sets the hint text of a #RutText actor.
+ * Sets the hint text of a #rut_text_t actor.
  *
  * The hint text is shown when the entry box is empty and it does not
  * have a keyboard focus. It can be used to give a hint to the user
  * about what should be typed in the box.
  */
-void
-rut_text_set_hint_text (RutObject *text,
-                        const char *hint_str);
+void rut_text_set_hint_text(rut_object_t *text, const char *hint_str);
 
 /**
  * rut_text_set_markup:
- * @text: a #RutText
+ * @text: a #rut_text_t
  * @markup: (allow-none): a string containing Pango markup.
  *   Passing %NULL is the same as passing "" (the empty string)
  *
- * Sets @markup as the contents of a #RutText.
+ * Sets @markup as the contents of a #rut_text_t.
  *
  * This is a convenience function for setting a string containing
  * Pango markup, and it is logically equivalent to:
@@ -547,46 +519,39 @@ rut_text_set_hint_text (RutObject *text,
  *   rut_text_set_use_markup (actor, true);
  * ]|
  */
-void
-rut_text_set_markup (RutText *text,
-                     const char  *markup);
+void rut_text_set_markup(rut_text_t *text, const char *markup);
 
 /**
  * rut_text_set_color:
- * @text: a #RutText
+ * @text: a #rut_text_t
  * @color: a #cg_color_t
  *
- * Sets the color of the contents of a #RutText actor.
+ * Sets the color of the contents of a #rut_text_t actor.
  *
- * The overall opacity of the #RutText actor will be the
+ * The overall opacity of the #rut_text_t actor will be the
  * result of the alpha value of @color and the composited
  * opacity of the actor ittext on the scenegraph, as returned
  * by rut_actor_get_paint_opacity().
  */
-void
-rut_text_set_color (RutObject *text,
-                    const cg_color_t *color);
+void rut_text_set_color(rut_object_t *text, const cg_color_t *color);
 
-void
-rut_text_set_color_u32 (RutText *text,
-                        uint32_t u32);
+void rut_text_set_color_u32(rut_text_t *text, uint32_t u32);
 
 /**
  * rut_text_get_color:
- * @text: a #RutText
+ * @text: a #rut_text_t
  * @color: (out caller-allocates): return location for a #cg_color_t
  *
  * Retrieves the text color as set by rut_text_set_color().
  */
-const cg_color_t *
-rut_text_get_color (RutObject *text);
+const cg_color_t *rut_text_get_color(rut_object_t *text);
 
 /**
  * rut_text_set_font_name:
- * @text: a #RutText
+ * @text: a #rut_text_t
  * @font_name: (allow-none): a font name, or %NULL to set the default font name
  *
- * Sets the font used by a #RutText. The @font_name string
+ * Sets the font used by a #rut_text_t. The @font_name string
  * must either be %NULL, which means that the font name from the
  * default #RutBackend will be used; or be something that can
  * be parsed by the pango_font_description_from_string() function,
@@ -598,316 +563,281 @@ rut_text_get_color (RutObject *text);
  *   rut_text_set_font_name (text, "Helvetica 10");
  * ]|
  */
-void
-rut_text_set_font_name (RutObject *text,
-                        const char *font_name);
+void rut_text_set_font_name(rut_object_t *text, const char *font_name);
 
 /**
  * rut_text_get_font_name:
- * @text: a #RutText
+ * @text: a #rut_text_t
  *
  * Retrieves the font name as set by rut_text_set_font_name().
  *
  * Return value: a string containing the font name. The returned
- *   string is owned by the #RutText actor and should not be
+ *   string is owned by the #rut_text_t actor and should not be
  *   modified or freed
  */
-const char *
-rut_text_get_font_name (RutObject *text);
+const char *rut_text_get_font_name(rut_object_t *text);
 
 /**
  * rut_text_set_font_description:
- * @text: a #RutText
+ * @text: a #rut_text_t
  * @font_desc: a #PangoFontDescription
  *
- * Sets @font_desc as the font description for a #RutText
+ * Sets @font_desc as the font description for a #rut_text_t
  *
- * The #PangoFontDescription is copied by the #RutText actor
+ * The #PangoFontDescription is copied by the #rut_text_t actor
  * so you can safely call pango_font_description_free() on it after
  * calling this function.
  */
-void
-rut_text_set_font_description (RutText *text,
-                               PangoFontDescription *font_desc);
+void rut_text_set_font_description(rut_text_t *text,
+                                   PangoFontDescription *font_desc);
 
 /**
  * rut_text_get_font_description:
- * @text: a #RutText
+ * @text: a #rut_text_t
  *
  * Retrieves the #PangoFontDescription used by @text
  *
  * Return value: a #PangoFontDescription. The returned value is owned
- *   by the #RutText actor and it should not be modified or freed
+ *   by the #rut_text_t actor and it should not be modified or freed
  */
-PangoFontDescription *
-rut_text_get_font_description (RutText *text);
+PangoFontDescription *rut_text_get_font_description(rut_text_t *text);
 
 /**
  * rut_text_set_ellipsize:
- * @text: a #RutText
+ * @text: a #rut_text_t
  * @mode: a #PangoEllipsizeMode
  *
  * Sets the mode used to ellipsize (add an ellipsis: "...") to the
  * text if there is not enough space to render the entire contents
- * of a #RutText actor
+ * of a #rut_text_t actor
  */
-void
-rut_text_set_ellipsize (RutText *text,
-                        PangoEllipsizeMode mode);
+void rut_text_set_ellipsize(rut_text_t *text, PangoEllipsizeMode mode);
 
 /**
  * rut_text_get_ellipsize:
- * @text: a #RutText
+ * @text: a #rut_text_t
  *
- * Returns the ellipsizing position of a #RutText actor, as
+ * Returns the ellipsizing position of a #rut_text_t actor, as
  * set by rut_text_set_ellipsize().
  *
  * Return value: #PangoEllipsizeMode
  */
-PangoEllipsizeMode
-rut_text_get_ellipsize (RutText *text);
+PangoEllipsizeMode rut_text_get_ellipsize(rut_text_t *text);
 
 /**
  * rut_text_set_line_wrap:
- * @text: a #RutText
+ * @text: a #rut_text_t
  * @line_wrap: whether the contents should wrap
  *
- * Sets whether the contents of a #RutText actor should wrap,
+ * Sets whether the contents of a #rut_text_t actor should wrap,
  * if they don't fit the size assigned to the actor.
  */
-void
-rut_text_set_line_wrap (RutObject *text,
-                        bool line_wrap);
+void rut_text_set_line_wrap(rut_object_t *text, bool line_wrap);
 
 /**
  * rut_text_get_line_wrap:
- * @text: a #RutText
+ * @text: a #rut_text_t
  *
  * Retrieves the value set using rut_text_set_line_wrap().
  *
- * Return value: %true if the #RutText actor should wrap
+ * Return value: %true if the #rut_text_t actor should wrap
  *   its contents
  */
-bool
-rut_text_get_line_wrap (RutObject *text);
+bool rut_text_get_line_wrap(rut_object_t *text);
 
 /**
  * rut_text_set_line_wrap_mode:
- * @text: a #RutText
+ * @text: a #rut_text_t
  * @wrap_mode: the line wrapping mode
  *
  * If line wrapping is enabled (see rut_text_set_line_wrap()) this
  * function controls how the line wrapping is performed. The default is
  * %PANGO_WRAP_WORD which means wrap on word boundaries.
  */
-void
-rut_text_set_line_wrap_mode (RutText *text,
-                             PangoWrapMode wrap_mode);
+void rut_text_set_line_wrap_mode(rut_text_t *text, PangoWrapMode wrap_mode);
 
 /**
  * rut_text_get_line_wrap_mode:
- * @text: a #RutText
+ * @text: a #rut_text_t
  *
- * Retrieves the line wrap mode used by the #RutText actor.
+ * Retrieves the line wrap mode used by the #rut_text_t actor.
  *
  * See rut_text_set_line_wrap_mode ().
  *
- * Return value: the wrap mode used by the #RutText
+ * Return value: the wrap mode used by the #rut_text_t
  */
-PangoWrapMode
-rut_text_get_line_wrap_mode (RutText *text);
+PangoWrapMode rut_text_get_line_wrap_mode(rut_text_t *text);
 
 /**
  * rut_text_get_layout:
- * @text: a #RutText
+ * @text: a #rut_text_t
  *
- * Retrieves the current #PangoLayout used by a #RutText actor.
+ * Retrieves the current #PangoLayout used by a #rut_text_t actor.
  *
- * Return value: (transfer none): a #PangoLayout. The returned object is owned by
- *   the #RutText actor and should not be modified or freed
+ * Return value: (transfer none): a #PangoLayout. The returned object is owned
+ * by
+ *   the #rut_text_t actor and should not be modified or freed
  */
-PangoLayout *
-rut_text_get_layout (RutText *text);
+PangoLayout *rut_text_get_layout(rut_text_t *text);
 
 /**
  * rut_text_set_attributes:
- * @text: a #RutText
+ * @text: a #rut_text_t
  * @attrs: a #PangoAttrList or %NULL to unset the attributes
  *
  * Sets the attributes list that are going to be applied to the
- * #RutText contents.
+ * #rut_text_t contents.
  *
- * The #RutText actor will take a reference on the #PangoAttrList
+ * The #rut_text_t actor will take a reference on the #PangoAttrList
  * passed to this function.
  */
-void
-rut_text_set_attributes (RutText *text,
-                         PangoAttrList *attrs);
+void rut_text_set_attributes(rut_text_t *text, PangoAttrList *attrs);
 
 /**
  * rut_text_get_attributes:
- * @text: a #RutText
+ * @text: a #rut_text_t
  *
- * Gets the attribute list that was set on the #RutText actor
+ * Gets the attribute list that was set on the #rut_text_t actor
  * rut_text_set_attributes(), if any.
  *
- * Return value: (transfer none): the attribute list, or %NULL if none was set. The
- *  returned value is owned by the #RutText and should not be unreferenced.
+ * Return value: (transfer none): the attribute list, or %NULL if none was set.
+ * The
+ *  returned value is owned by the #rut_text_t and should not be unreferenced.
  */
-PangoAttrList *
-rut_text_get_attributes (RutText *text);
+PangoAttrList *rut_text_get_attributes(rut_text_t *text);
 
 /**
  * rut_text_set_use_markup:
- * @text: a #RutText
+ * @text: a #rut_text_t
  * @setting: %true if the text should be parsed for markup.
  *
- * Sets whether the contents of the #RutText actor contains markup
+ * Sets whether the contents of the #rut_text_t actor contains markup
  * in <link linkend="PangoMarkupFormat">Pango's text markup language</link>.
  *
- * Setting #RutText:use-markup on an editable #RutText will
+ * Setting #rut_text_t:use-markup on an editable #rut_text_t will
  * not have any effect except hiding the markup.
  *
- * See also #RutText:use-markup.
+ * See also #rut_text_t:use-markup.
  */
-void
-rut_text_set_use_markup (RutObject *text,
-                         bool setting);
+void rut_text_set_use_markup(rut_object_t *text, bool setting);
 
 /**
  * rut_text_get_use_markup:
- * @text: a #RutText
+ * @text: a #rut_text_t
  *
- * Retrieves whether the contents of the #RutText actor should be
+ * Retrieves whether the contents of the #rut_text_t actor should be
  * parsed for the Pango text markup.
  *
  * Return value: %true if the contents will be parsed for markup
  */
-bool
-rut_text_get_use_markup (RutObject *text);
+bool rut_text_get_use_markup(rut_object_t *text);
 
 /**
  * rut_text_set_line_alignment:
- * @text: a #RutText
+ * @text: a #rut_text_t
  * @alignment: A #PangoAlignment
  *
  * Sets the way that the lines of a wrapped label are aligned with
  * respect to each other. This does not affect the overall alignment
  * of the label within its allocated or specified width.
  *
- * To align a #RutText actor you should add it to a container
+ * To align a #rut_text_t actor you should add it to a container
  * that supports alignment, or use the anchor point.
  */
-void
-rut_text_set_line_alignment (RutText *text,
-                             PangoAlignment alignment);
+void rut_text_set_line_alignment(rut_text_t *text, PangoAlignment alignment);
 
 /**
  * rut_text_get_line_alignment:
- * @text: a #RutText
+ * @text: a #rut_text_t
  *
- * Retrieves the alignment of a #RutText, as set by
+ * Retrieves the alignment of a #rut_text_t, as set by
  * rut_text_set_line_alignment().
  *
  * Return value: a #PangoAlignment
  */
-PangoAlignment
-rut_text_get_line_alignment (RutText *text);
+PangoAlignment rut_text_get_line_alignment(rut_text_t *text);
 
 /**
  * rut_text_set_justify:
- * @text: a #RutText
+ * @text: a #rut_text_t
  * @justify: whether the text should be justified
  *
- * Sets whether the text of the #RutText actor should be justified
+ * Sets whether the text of the #rut_text_t actor should be justified
  * on both margins. This setting is ignored if Rut is compiled
  * against Pango &lt; 1.18.
  */
-void
-rut_text_set_justify (RutObject *text,
-                      bool justify);
+void rut_text_set_justify(rut_object_t *text, bool justify);
 
 /**
  * rut_text_get_justify:
- * @text: a #RutText
+ * @text: a #rut_text_t
  *
- * Retrieves whether the #RutText actor should justify its contents
+ * Retrieves whether the #rut_text_t actor should justify its contents
  * on both margins.
  *
  * Return value: %true if the text should be justified
  */
-bool
-rut_text_get_justify (RutObject *text);
+bool rut_text_get_justify(rut_object_t *text);
 
 /**
  * rut_text_insert_unichar:
- * @text: a #RutText
+ * @text: a #rut_text_t
  * @wc: a Unicode character
  *
  * Inserts @wc at the current cursor position of a
- * #RutText actor.
+ * #rut_text_t actor.
  */
-void
-rut_text_insert_unichar (RutText *text,
-                         uint32_t wc);
+void rut_text_insert_unichar(rut_text_t *text, uint32_t wc);
 
 /**
  * rut_text_delete_chars:
- * @text: a #RutText
+ * @text: a #rut_text_t
  * @n_chars: the number of characters to delete
  *
- * Deletes @n_chars inside a #RutText actor, starting from the
+ * Deletes @n_chars inside a #rut_text_t actor, starting from the
  * current cursor position.
  *
  * Somewhat awkwardly, the cursor position is decremented by the same
  * number of characters you've deleted.
  */
-void
-rut_text_delete_chars (RutText *text,
-                       unsigned int n_chars);
+void rut_text_delete_chars(rut_text_t *text, unsigned int n_chars);
 
 /**
  * rut_text_insert_text:
- * @text: a #RutText
+ * @text: a #rut_text_t
  * @text: the text to be inserted
  * @position: the position of the insertion, or -1
  *
  * Inserts @text into a #RutActor at the given position.
  *
  * If @position is a negative number, the text will be appended
- * at the end of the current contents of the #RutText.
+ * at the end of the current contents of the #rut_text_t.
  *
  * The position is expressed in characters, not in bytes.
  */
-void
-rut_text_insert_text (RutText *text,
-                      const char *text_str,
-                      int position);
+void rut_text_insert_text(rut_text_t *text, const char *text_str, int position);
 
 /**
  * rut_text_delete_text:
- * @text: a #RutText
+ * @text: a #rut_text_t
  * @start_pos: starting position
  * @end_pos: ending position
  *
- * Deletes the text inside a #RutText actor between @start_pos
+ * Deletes the text inside a #rut_text_t actor between @start_pos
  * and @end_pos.
  *
  * The starting and ending positions are expressed in characters,
  * not in bytes.
  */
-void
-rut_text_delete_text (RutText *text,
-                      int start_pos,
-                      int end_pos);
+void rut_text_delete_text(rut_text_t *text, int start_pos, int end_pos);
 
 /**
  * rut_text_get_chars:
- * @text: a #RutText
+ * @text: a #rut_text_t
  * @start_pos: start of text, in characters
  * @end_pos: end of text, in characters
  *
- * Retrieves the contents of the #RutText actor between
+ * Retrieves the contents of the #rut_text_t actor between
  * @start_pos and @end_pos, but not including @end_pos.
  *
  * The positions are specified in characters, not in bytes.
@@ -916,96 +846,84 @@ rut_text_delete_text (RutText *text,
  *   the text actor between the specified positions. Use c_free()
  *   to free the resources when done
  */
-char *
-rut_text_get_chars (RutText *text,
-                    int start_pos,
-                    int end_pos);
+char *rut_text_get_chars(rut_text_t *text, int start_pos, int end_pos);
 
 /**
  * rut_text_set_editable:
- * @text: a #RutText
- * @editable: whether the #RutText should be editable
+ * @text: a #rut_text_t
+ * @editable: whether the #rut_text_t should be editable
  *
- * Sets whether the #RutText actor should be editable.
+ * Sets whether the #rut_text_t actor should be editable.
  *
- * An editable #RutText with key focus set using
+ * An editable #rut_text_t with key focus set using
  * rut_actor_grab_key_focus() or rut_stage_set_key_focus()
  * will receive key events and will update its contents accordingly.
  */
-void
-rut_text_set_editable (RutObject *text,
-                       bool editable);
+void rut_text_set_editable(rut_object_t *text, bool editable);
 
 /**
  * rut_text_get_editable:
- * @text: a #RutText
+ * @text: a #rut_text_t
  *
- * Retrieves whether a #RutText is editable or not.
+ * Retrieves whether a #rut_text_t is editable or not.
  *
  * Return value: %true if the actor is editable
  */
-bool
-rut_text_get_editable (RutObject *text);
+bool rut_text_get_editable(rut_object_t *text);
 
 /**
  * rut_text_set_activatable:
- * @text: a #RutText
- * @activatable: whether the #RutText actor should be activatable
+ * @text: a #rut_text_t
+ * @activatable: whether the #rut_text_t actor should be activatable
  *
- * Sets whether a #RutText actor should be activatable.
+ * Sets whether a #rut_text_t actor should be activatable.
  *
- * An activatable #RutText actor will emit the #RutText::activate
+ * An activatable #rut_text_t actor will emit the #rut_text_t::activate
  * signal whenever the 'Enter' (or 'Return') key is pressed; if it is not
  * activatable, a new line will be appended to the current content.
  *
- * An activatable #RutText must also be set as editable using
+ * An activatable #rut_text_t must also be set as editable using
  * rut_text_set_editable().
  */
-void
-rut_text_set_activatable (RutObject *text,
-                          bool activatable);
+void rut_text_set_activatable(rut_object_t *text, bool activatable);
 
 /**
  * rut_text_get_activatable:
- * @text: a #RutText
+ * @text: a #rut_text_t
  *
- * Retrieves whether a #RutText is activatable or not.
+ * Retrieves whether a #rut_text_t is activatable or not.
  *
  * Return value: %true if the actor is activatable
  */
-bool
-rut_text_get_activatable (RutObject *text);
+bool rut_text_get_activatable(rut_object_t *text);
 
 /**
  * rut_text_get_cursor_position:
- * @text: a #RutText
+ * @text: a #rut_text_t
  *
  * Retrieves the cursor position.
  *
  * Return value: the cursor position, in characters
  */
-int
-rut_text_get_cursor_position (RutObject *text);
+int rut_text_get_cursor_position(rut_object_t *text);
 
 /**
  * rut_text_set_cursor_position:
- * @text: a #RutText
+ * @text: a #rut_text_t
  * @position: the new cursor position, in characters
  *
- * Sets the cursor of a #RutText actor at @position.
+ * Sets the cursor of a #rut_text_t actor at @position.
  *
  * The position is expressed in characters, not in bytes.
  */
-void
-rut_text_set_cursor_position (RutObject *text,
-                              int position);
+void rut_text_set_cursor_position(rut_object_t *text, int position);
 
 /**
  * rut_text_set_cursor_visible:
- * @text: a #RutText
+ * @text: a #rut_text_t
  * @cursor_visible: whether the cursor should be visible
  *
- * Sets whether the cursor of a #RutText actor should be
+ * Sets whether the cursor of a #rut_text_t actor should be
  * visible or not.
  *
  * The color of the cursor will be the same as the text color
@@ -1016,105 +934,90 @@ rut_text_set_cursor_position (RutObject *text,
  * The position of the cursor can be changed programmatically using
  * rut_text_set_cursor_position().
  */
-void
-rut_text_set_cursor_visible (RutObject *text,
-                             bool cursor_visible);
+void rut_text_set_cursor_visible(rut_object_t *text, bool cursor_visible);
 
 /**
  * rut_text_get_cursor_visible:
- * @text: a #RutText
+ * @text: a #rut_text_t
  *
- * Retrieves whether the cursor of a #RutText actor is visible.
+ * Retrieves whether the cursor of a #rut_text_t actor is visible.
  *
  * Return value: %true if the cursor is visible
  */
-bool
-rut_text_get_cursor_visible (RutObject *text);
+bool rut_text_get_cursor_visible(rut_object_t *text);
 
 /**
  * rut_text_set_cursor_color:
- * @text: a #RutText
+ * @text: a #rut_text_t
  * @color: the color of the cursor, or %NULL to unset it
  *
- * Sets the color of the cursor of a #RutText actor.
+ * Sets the color of the cursor of a #rut_text_t actor.
  *
  * If @color is %NULL, the cursor color will be the same as the
  * text color.
  */
-void
-rut_text_set_cursor_color (RutObject *text,
-                           const cg_color_t *color);
+void rut_text_set_cursor_color(rut_object_t *text, const cg_color_t *color);
 
-void
-rut_text_set_cursor_color_u32 (RutText *text,
-                               uint32_t u32);
+void rut_text_set_cursor_color_u32(rut_text_t *text, uint32_t u32);
 
 /**
  * rut_text_get_cursor_color:
- * @text: a #RutText
+ * @text: a #rut_text_t
  * @color: (out): return location for a #cg_color_t
  *
- * Retrieves the color of the cursor of a #RutText actor.
+ * Retrieves the color of the cursor of a #rut_text_t actor.
  */
-const cg_color_t *
-rut_text_get_cursor_color (RutObject *text);
+const cg_color_t *rut_text_get_cursor_color(rut_object_t *text);
 
-bool
-rut_text_get_cursor_color_set (RutObject *text);
+bool rut_text_get_cursor_color_set(rut_object_t *text);
 
 /**
  * rut_text_set_cursor_size:
- * @text: a #RutText
+ * @text: a #rut_text_t
  * @size: the size of the cursor, in pixels, or -1 to use the
  *   default value
  *
- * Sets the size of the cursor of a #RutText. The cursor
- * will only be visible if the #RutText:cursor-visible property
+ * Sets the size of the cursor of a #rut_text_t. The cursor
+ * will only be visible if the #rut_text_t:cursor-visible property
  * is set to %true.
  */
-void
-rut_text_set_cursor_size (RutObject *text,
-                          int size);
+void rut_text_set_cursor_size(rut_object_t *text, int size);
 
 /**
  * rut_text_get_cursor_size:
- * @text: a #RutText
+ * @text: a #rut_text_t
  *
- * Retrieves the size of the cursor of a #RutText actor.
+ * Retrieves the size of the cursor of a #rut_text_t actor.
  *
  * Return value: the size of the cursor, in pixels
  */
-int
-rut_text_get_cursor_size (RutObject *text);
+int rut_text_get_cursor_size(rut_object_t *text);
 
 /**
  * rut_text_set_selectable:
- * @text: a #RutText
- * @selectable: whether the #RutText actor should be selectable
+ * @text: a #rut_text_t
+ * @selectable: whether the #rut_text_t actor should be selectable
  *
- * Sets whether a #RutText actor should be selectable.
+ * Sets whether a #rut_text_t actor should be selectable.
  *
- * A selectable #RutText will allow selecting its contents using
+ * A selectable #rut_text_t will allow selecting its contents using
  * the pointer or the keyboard.
  */
-void
-rut_text_set_selectable (RutObject *text,
-                         bool selectable);
+void rut_text_set_selectable(rut_object_t *text, bool selectable);
 
 /**
  * rut_text_get_selectable:
- * @text: a #RutText
+ * @text: a #rut_text_t
  *
- * Retrieves whether a #RutText is selectable or not.
+ * Retrieves whether a #rut_text_t is selectable or not.
  *
  * Return value: %true if the actor is selectable
  */
-bool
-rut_text_get_selectable (RutObject *text);
+bool rut_text_get_selectable(rut_object_t *text);
 
 /**
  * rut_text_set_selection_bound:
- * @text: a #RutText
+ * @text: a #rut_text_t
  * @selection_bound: the position of the end of the selection, in characters
  *
  * Sets the other end of the selection, starting from the current
@@ -1122,25 +1025,22 @@ rut_text_get_selectable (RutObject *text);
  *
  * If @selection_bound is -1, the selection unset.
  */
-void
-rut_text_set_selection_bound (RutObject *text,
-                              int selection_bound);
+void rut_text_set_selection_bound(rut_object_t *text, int selection_bound);
 
 /**
  * rut_text_get_selection_bound:
- * @text: a #RutText
+ * @text: a #rut_text_t
  *
- * Retrieves the other end of the selection of a #RutText actor,
+ * Retrieves the other end of the selection of a #rut_text_t actor,
  * in characters from the current cursor position.
  *
  * Return value: the position of the other end of the selection
  */
-int
-rut_text_get_selection_bound (RutObject *text);
+int rut_text_get_selection_bound(rut_object_t *text);
 
 /**
  * rut_text_set_selection:
- * @text: a #RutText
+ * @text: a #rut_text_t
  * @start_pos: start of the selection, in characters
  * @end_pos: end of the selection, in characters
  *
@@ -1149,14 +1049,11 @@ rut_text_get_selection_bound (RutObject *text);
  * This function changes the position of the cursor to match
  * @start_pos and the selection bound to match @end_pos.
  */
-void
-rut_text_set_selection (RutText *text,
-                        int start_pos,
-                        int end_pos);
+void rut_text_set_selection(rut_text_t *text, int start_pos, int end_pos);
 
 /**
  * rut_text_get_selection:
- * @text: a #RutText
+ * @text: a #rut_text_t
  *
  * Retrieves the currently selected text.
  *
@@ -1164,73 +1061,63 @@ rut_text_set_selection (RutText *text,
  *   selected text, or %NULL. Use c_free() to free the returned
  *   string.
  */
-char *
-rut_text_get_selection (RutText *text);
+char *rut_text_get_selection(rut_text_t *text);
 
 /**
  * rut_text_set_selection_color:
- * @text: a #RutText
+ * @text: a #rut_text_t
  * @color: the color of the selection, or %NULL to unset it
  *
- * Sets the color of the selection of a #RutText actor.
+ * Sets the color of the selection of a #rut_text_t actor.
  *
  * If @color is %NULL, the selection color will be the same as the
  * cursor color, or if no cursor color is set either then it will be
  * the same as the text color.
  */
-void
-rut_text_set_selection_color (RutObject *text,
-                              const cg_color_t *color);
+void rut_text_set_selection_color(rut_object_t *text, const cg_color_t *color);
 
-void
-rut_text_set_selection_color_u32 (RutText *text,
-                                  uint32_t u32);
+void rut_text_set_selection_color_u32(rut_text_t *text, uint32_t u32);
 
 /**
  * rut_text_get_selection_color:
- * @text: a #RutText
+ * @text: a #rut_text_t
  * @color: (out caller-allocates): return location for a #cg_color_t
  *
- * Retrieves the color of the selection of a #RutText actor.
+ * Retrieves the color of the selection of a #rut_text_t actor.
  */
-const cg_color_t *
-rut_text_get_selection_color (RutObject *text);
+const cg_color_t *rut_text_get_selection_color(rut_object_t *text);
 
-bool
-rut_text_get_selection_color_set (RutObject *text);
+bool rut_text_get_selection_color_set(rut_object_t *text);
 
 /**
  * rut_text_delete_selection:
- * @text: a #RutText
+ * @text: a #rut_text_t
  *
  * Deletes the currently selected text
  *
- * This function is only useful in subclasses of #RutText
+ * This function is only useful in subclasses of #rut_text_t
  *
  * Return value: %true if text was deleted or if the text actor
  *   is empty, and %false otherwise
  */
-bool
-rut_text_delete_selection (RutText *text);
+bool rut_text_delete_selection(rut_text_t *text);
 
 /**
  * rut_text_set_password_char:
- * @text: a #RutText
+ * @text: a #rut_text_t
  * @wc: a Unicode character, or 0 to unset the password character
  *
  * Sets the character to use in place of the actual text in a
  * password text actor.
  *
  * If @wc is 0 the text will be displayed as it is entered in the
- * #RutText actor.
+ * #rut_text_t actor.
  */
-void
-rut_text_set_password_char (RutObject *text,
-                            uint32_t wc);
+void rut_text_set_password_char(rut_object_t *text, uint32_t wc);
 
 /**
  * rut_text_get_password_char:
- * @text: a #RutText
+ * @text: a #rut_text_t
  *
  * Retrieves the character to use in place of the actual text
  * as set by rut_text_set_password_char().
@@ -1238,12 +1125,11 @@ rut_text_set_password_char (RutObject *text,
  * Return value: a Unicode character or 0 if the password
  *   character is not set
  */
-uint32_t
-rut_text_get_password_char (RutObject *text);
+uint32_t rut_text_get_password_char(rut_object_t *text);
 
 /**
  * rut_text_set_max_length:
- * @text: a #RutText
+ * @text: a #rut_text_t
  * @max: the maximum number of characters allowed in the text actor; 0
  *   to disable or -1 to set the length of the current string
  *
@@ -1251,13 +1137,11 @@ rut_text_get_password_char (RutObject *text);
  * current contents are longer than the given length, then they will be
  * truncated to fit.
  */
-void
-rut_text_set_max_length (RutObject *text,
-                         int max);
+void rut_text_set_max_length(rut_object_t *text, int max);
 
 /**
  * rut_text_get_max_length:
- * @text: a #RutText
+ * @text: a #rut_text_t
  *
  * Gets the maximum length of text that can be set into a text actor.
  *
@@ -1265,16 +1149,15 @@ rut_text_set_max_length (RutObject *text,
  *
  * Return value: the maximum number of characters.
  */
-int
-rut_text_get_max_length (RutObject *text);
+int rut_text_get_max_length(rut_object_t *text);
 
 /**
  * rut_text_set_single_line_mode:
- * @text: a #RutText
+ * @text: a #rut_text_t
  * @single_line: whether to enable single line mode
  *
- * Sets whether a #RutText actor should be in single line mode
- * or not. Only editable #RutText<!-- -->s can be in single line
+ * Sets whether a #rut_text_t actor should be in single line mode
+ * or not. Only editable #rut_text_t<!-- -->s can be in single line
  * mode.
  *
  * A text actor in single line mode will not wrap text and will clip
@@ -1282,78 +1165,69 @@ rut_text_get_max_length (RutObject *text);
  * text actor will scroll to display the end of the text if its length
  * is bigger than the allocated width.
  *
- * When setting the single line mode the #RutText:activatable
+ * When setting the single line mode the #rut_text_t:activatable
  * property is also set as a side effect. Instead of entering a new
- * line character, the text actor will emit the #RutText::activate
+ * line character, the text actor will emit the #rut_text_t::activate
  * signal.
  */
-void
-rut_text_set_single_line_mode (RutObject *text,
-                               bool single_line);
+void rut_text_set_single_line_mode(rut_object_t *text, bool single_line);
 
 /**
  * rut_text_get_single_line_mode:
- * @text: a #RutText
+ * @text: a #rut_text_t
  *
- * Retrieves whether the #RutText actor is in single line mode.
+ * Retrieves whether the #rut_text_t actor is in single line mode.
  *
- * Return value: %true if the #RutText actor is in single line mode
+ * Return value: %true if the #rut_text_t actor is in single line mode
  */
-bool
-rut_text_get_single_line_mode (RutObject *text);
+bool rut_text_get_single_line_mode(rut_object_t *text);
 
 /**
  * rut_text_set_selected_text_color:
- * @text: a #RutText
+ * @text: a #rut_text_t
  * @color: the selected text color, or %NULL to unset it
  *
- * Sets the selected text color of a #RutText actor.
+ * Sets the selected text color of a #rut_text_t actor.
  *
  * If @color is %NULL, the selected text color will be the same as the
  * selection color, which then falls back to cursor, and then text color.
  */
-void
-rut_text_set_selected_text_color (RutObject *text,
-                                  const cg_color_t *color);
+void rut_text_set_selected_text_color(rut_object_t *text,
+                                      const cg_color_t *color);
 
-void
-rut_text_set_selected_text_color_u32 (RutText *text,
-                                      uint32_t u32);
+void rut_text_set_selected_text_color_u32(rut_text_t *text, uint32_t u32);
 
 /**
  * rut_text_get_selected_text_color:
- * @text: a #RutText
+ * @text: a #rut_text_t
  * @color: (out caller-allocates): return location for a #cg_color_t
  *
- * Retrieves the color of selected text of a #RutText actor.
+ * Retrieves the color of selected text of a #rut_text_t actor.
  */
-const cg_color_t *
-rut_text_get_selected_text_color (RutObject *text);
+const cg_color_t *rut_text_get_selected_text_color(rut_object_t *text);
 
-bool
-rut_text_get_selected_text_color_set (RutObject *text);
+bool rut_text_get_selected_text_color_set(rut_object_t *text);
 
 /**
  * rut_text_activate:
- * @text: a #RutText
+ * @text: a #rut_text_t
  *
- * Emits the #RutText::activate signal, if @text has been set
+ * Emits the #rut_text_t::activate signal, if @text has been set
  * as activatable using rut_text_set_activatable().
  *
  * This function can be used to emit the ::activate signal inside
  * a #RutActor::captured-event or #RutActor::key-press-event
  * signal handlers before the default signal handler for the
- * #RutText is invoked.
+ * #rut_text_t is invoked.
  *
  * Return value: %true if the ::activate signal has been emitted,
  *   and %false otherwise
  */
-bool
-rut_text_activate (RutText *text);
+bool rut_text_activate(rut_text_t *text);
 
 /**
  * rut_text_coords_to_position:
- * @text: a #RutText
+ * @text: a #rut_text_t
  * @x: the X coordinate, relative to the actor
  * @y: the Y coordinate, relative to the actor
  *
@@ -1361,14 +1235,11 @@ rut_text_activate (RutText *text);
  *
  * Return: the position of the character
  */
-int
-rut_text_coords_to_position (RutText *text,
-                             float x,
-                             float y);
+int rut_text_coords_to_position(rut_text_t *text, float x, float y);
 
 /**
  * rut_text_position_to_coords:
- * @text: a #RutText
+ * @text: a #rut_text_t
  * @position: position in characters
  * @x: (out): return location for the X coordinate, or %NULL
  * @y: (out): return location for the Y coordinate, or %NULL
@@ -1378,70 +1249,57 @@ rut_text_coords_to_position (RutText *text,
  *
  * Return value: %true if the conversion was successful
  */
-bool
-rut_text_position_to_coords (RutText *text,
-                             int position,
-                             float *x,
-                             float *y,
-                             float *line_height);
+bool rut_text_position_to_coords(
+    rut_text_t *text, int position, float *x, float *y, float *line_height);
 
 /**
  * rut_text_set_preedit_string:
- * @text: a #RutText
+ * @text: a #rut_text_t
  * @preedit_str: (allow-none): the pre-edit string, or %NULL to unset it
  * @preedit_attrs: (allow-none): the pre-edit string attributes
  * @cursor_pos: the cursor position for the pre-edit string
  *
  * Sets, or unsets, the pre-edit string. This function is useful
  * for input methods to display a string (with eventual specific
- * Pango attributes) before it is entered inside the #RutText
+ * Pango attributes) before it is entered inside the #rut_text_t
  * buffer.
  *
- * The preedit string and attributes are ignored if the #RutText
+ * The preedit string and attributes are ignored if the #rut_text_t
  * actor is not editable.
  *
  * This function should not be used by applications
  */
-void
-rut_text_set_preedit_string (RutText *text,
-                             const char *preedit_str,
-                             PangoAttrList *preedit_attrs,
-                             unsigned int cursor_pos);
+void rut_text_set_preedit_string(rut_text_t *text,
+                                 const char *preedit_str,
+                                 PangoAttrList *preedit_attrs,
+                                 unsigned int cursor_pos);
 
 /**
  * rut_text_get_layout_offsets:
- * @text: a #RutText
+ * @text: a #rut_text_t
  * @x: (out): location to store X offset of layout, or %NULL
  * @y: (out): location to store Y offset of layout, or %NULL
  *
- * Obtains the coordinates where the #RutText will draw the #PangoLayout
+ * Obtains the coordinates where the #rut_text_t will draw the #PangoLayout
  * representing the text.
  */
-void
-rut_text_get_layout_offsets (RutText *text,
-                             int *x,
-                             int *y);
+void rut_text_get_layout_offsets(rut_text_t *text, int *x, int *y);
 
 /**
  * rut_text_grab_key_focus:
- * @text: a #RutText
+ * @text: a #rut_text_t
  *
  * Causes @text to try to grab the key focus.
  */
-void
-rut_text_grab_key_focus (RutText *text);
+void rut_text_grab_key_focus(rut_text_t *text);
 
-void
-rut_text_ungrab_key_focus (RutText *text);
+void rut_text_ungrab_key_focus(rut_text_t *text);
 
-void
-rut_text_set_width (RutObject *text, float width);
+void rut_text_set_width(rut_object_t *text, float width);
 
-void
-rut_text_set_height (RutObject *text, float height);
+void rut_text_set_height(rut_object_t *text, float height);
 
-RutMesh *
-rut_text_get_pick_mesh (RutObject *text);
+rut_mesh_t *rut_text_get_pick_mesh(rut_object_t *text);
 
 G_END_DECLS
 

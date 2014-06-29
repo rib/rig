@@ -41,72 +41,73 @@
  * glibc it is defined as a function call so this macro could end up
  * faster anyway. We can't just add 0.5f because it will break for
  * negative numbers. */
-#define RUT_UTIL_NEARBYINT(x) ((int) ((x) < 0.0f ? (x) - 0.5f : (x) + 0.5f))
+#define RUT_UTIL_NEARBYINT(x) ((int)((x) < 0.0f ? (x) - 0.5f : (x) + 0.5f))
 
 #ifdef RUT_HAS_GLIB_SUPPORT
 #define _RUT_RETURN_IF_FAIL(EXPR) c_return_if_fail(EXPR)
 #define _RUT_RETURN_VAL_IF_FAIL(EXPR, VAL) c_return_val_if_fail(EXPR, VAL)
 #else
-#define _RUT_RETURN_IF_FAIL(EXPR) do {                             \
-   if (!(EXPR))                                                     \
-     {                                                              \
-       fprintf (stderr, "file %s: line %d: assertion `%s' failed",  \
-                __FILE__,                                           \
-                __LINE__,                                           \
-                #EXPR);                                             \
-       return;                                                      \
-     };                                                             \
-  } while(0)
-#define _RUT_RETURN_VAL_IF_FAIL(EXPR, VAL) do {                            \
-   if (!(EXPR))                                                     \
-     {                                                              \
-       fprintf (stderr, "file %s: line %d: assertion `%s' failed",  \
-                __FILE__,                                           \
-                __LINE__,                                           \
-                #EXPR);                                             \
-       return (VAL);                                                \
-     };                                                             \
-  } while(0)
+#define _RUT_RETURN_IF_FAIL(EXPR)                                              \
+    do {                                                                       \
+        if (!(EXPR)) {                                                         \
+            fprintf(stderr,                                                    \
+                    "file %s: line %d: assertion `%s' failed",                 \
+                    __FILE__,                                                  \
+                    __LINE__,                                                  \
+                    #EXPR);                                                    \
+            return;                                                            \
+        };                                                                     \
+    } while (0)
+#define _RUT_RETURN_VAL_IF_FAIL(EXPR, VAL)                                     \
+    do {                                                                       \
+        if (!(EXPR)) {                                                         \
+            fprintf(stderr,                                                    \
+                    "file %s: line %d: assertion `%s' failed",                 \
+                    __FILE__,                                                  \
+                    __LINE__,                                                  \
+                    #EXPR);                                                    \
+            return (VAL);                                                      \
+        };                                                                     \
+    } while (0)
 #endif /* RUT_HAS_GLIB_SUPPORT */
 
-void
-rut_util_fully_transform_vertices (const cg_matrix_t *modelview,
-                                    const cg_matrix_t *projection,
-                                    const float *viewport,
-                                    const float *vertices3_in,
-                                    float *vertices3_out,
-                                    int n_vertices);
+void rut_util_fully_transform_vertices(const cg_matrix_t *modelview,
+                                       const cg_matrix_t *projection,
+                                       const float *viewport,
+                                       const float *vertices3_in,
+                                       float *vertices3_out,
+                                       int n_vertices);
 
-void
-rut_util_create_pick_ray (const float       viewport[4],
-                          const cg_matrix_t *inverse_projection,
-                          const cg_matrix_t *camera_transform,
-                          float             screen_pos[2],
-                          float             ray_position[3],    /* out */
-                          float             ray_direction[3]);  /* out */
+void rut_util_create_pick_ray(const float viewport[4],
+                              const cg_matrix_t *inverse_projection,
+                              const cg_matrix_t *camera_transform,
+                              float screen_pos[2],
+                              float ray_position[3], /* out */
+                              float ray_direction[3]); /* out */
 
-void
-rut_util_print_quaternion (const char           *prefix,
-                           const cg_quaternion_t *quaternion);
+void rut_util_print_quaternion(const char *prefix,
+                               const cg_quaternion_t *quaternion);
 
-void
-rut_util_transform_normal (const cg_matrix_t *matrix,
-                           float            *x,
-                           float            *y,
-                           float            *z);
+void rut_util_transform_normal(const cg_matrix_t *matrix,
+                               float *x,
+                               float *y,
+                               float *z);
 
-bool
-rut_util_intersect_triangle (float v0[3], float v1[3], float v2[3],
-                             float ray_origin[3], float ray_direction[3],
-                             float *u, float *v, float *t);
-bool
-rut_util_intersect_model (const void       *vertices,
-                          int               n_points,
-                          size_t            stride,
-                          float             ray_origin[3],
-                          float             ray_direction[3],
-                          int              *index,
-                          float            *t_out);
+bool rut_util_intersect_triangle(float v0[3],
+                                 float v1[3],
+                                 float v2[3],
+                                 float ray_origin[3],
+                                 float ray_direction[3],
+                                 float *u,
+                                 float *v,
+                                 float *t);
+bool rut_util_intersect_model(const void *vertices,
+                              int n_points,
+                              size_t stride,
+                              float ray_origin[3],
+                              float ray_direction[3],
+                              int *index,
+                              float *t_out);
 
 /* Split Bob Jenkins' One-at-a-Time hash
  *
@@ -115,43 +116,35 @@ rut_util_intersect_model (const void       *vertices,
  * more incremental fashion.
  */
 static inline unsigned int
-rut_util_one_at_a_time_hash (unsigned int hash,
-                             const void *key,
-                             size_t bytes)
+rut_util_one_at_a_time_hash(unsigned int hash, const void *key, size_t bytes)
 {
-  const unsigned char *p = key;
-  int i;
+    const unsigned char *p = key;
+    int i;
 
-  for (i = 0; i < bytes; i++)
-    {
-      hash += p[i];
-      hash += (hash << 10);
-      hash ^= (hash >> 6);
+    for (i = 0; i < bytes; i++) {
+        hash += p[i];
+        hash += (hash << 10);
+        hash ^= (hash >> 6);
     }
 
-  return hash;
+    return hash;
 }
 
-unsigned int
-rut_util_one_at_a_time_mix (unsigned int hash);
+unsigned int rut_util_one_at_a_time_mix(unsigned int hash);
 
-void
-rut_util_draw_jittered_primitive3f (cg_framebuffer_t *fb,
-                                    cg_primitive_t *prim,
-                                    float red,
-                                    float green,
-                                    float blue);
+void rut_util_draw_jittered_primitive3f(cg_framebuffer_t *fb,
+                                        cg_primitive_t *prim,
+                                        float red,
+                                        float green,
+                                        float blue);
 
-bool
-rut_util_find_tag (const c_list_t *tags,
-                   const char *tag);
+bool rut_util_find_tag(const c_list_t *tags, const char *tag);
 
-bool
-rut_util_intersect_mesh (RutMesh *mesh,
-                         float ray_origin[3],
-                         float ray_direction[3],
-                         int *index,
-                         float *t_out);
+bool rut_util_intersect_mesh(rut_mesh_t *mesh,
+                             float ray_origin[3],
+                             float ray_direction[3],
+                             int *index,
+                             float *t_out);
 
 /**
  * @extra_space: Extra space to redistribute among children after
@@ -173,21 +166,18 @@ rut_util_intersect_mesh (RutMesh *mesh,
  *
  * Pulled from gtksizerequest.c from Gtk+
  */
-int
-rut_util_distribute_natural_allocation (int extra_space,
-                                        unsigned int n_requested_sizes,
-                                        RutPreferredSize *sizes);
+int rut_util_distribute_natural_allocation(int extra_space,
+                                           unsigned int n_requested_sizes,
+                                           rut_preferred_size_t *sizes);
 
-bool
-rut_util_is_boolean_env_set (const char *variable);
+bool rut_util_is_boolean_env_set(const char *variable);
 
-void
-rut_util_matrix_scaled_perspective (cg_matrix_t *matrix,
-                                    float fov_y,
-                                    float aspect,
-                                    float z_near,
-                                    float z_far,
-                                    float scale);
+void rut_util_matrix_scaled_perspective(cg_matrix_t *matrix,
+                                        float fov_y,
+                                        float aspect,
+                                        float z_near,
+                                        float z_far,
+                                        float scale);
 
 /* We've made a notable change to the original algorithm referenced
  * above to make sure we have reliable results for screen aligned
@@ -214,49 +204,44 @@ rut_util_matrix_scaled_perspective (cg_matrix_t *matrix,
  * vertices which should eradicate most noise due to in-precision.
  */
 static inline int
-rut_util_point_in_screen_poly (float point_x,
-                               float point_y,
-                               void *vertices,
-                               size_t stride,
-                               int n_vertices)
+rut_util_point_in_screen_poly(
+    float point_x, float point_y, void *vertices, size_t stride, int n_vertices)
 {
-  int i, j, c = 0;
+    int i, j, c = 0;
 
-  for (i = 0, j = n_vertices - 1; i < n_vertices; j = i++)
-    {
-      float vert_xi = *(float *)((uint8_t *)vertices + i * stride);
-      float vert_xj = *(float *)((uint8_t *)vertices + j * stride);
-      float vert_yi = *(float *)((uint8_t *)vertices + i * stride +
-                                 sizeof (float));
-      float vert_yj = *(float *)((uint8_t *)vertices + j * stride +
-                                 sizeof (float));
+    for (i = 0, j = n_vertices - 1; i < n_vertices; j = i++) {
+        float vert_xi = *(float *)((uint8_t *)vertices + i * stride);
+        float vert_xj = *(float *)((uint8_t *)vertices + j * stride);
+        float vert_yi =
+            *(float *)((uint8_t *)vertices + i * stride + sizeof(float));
+        float vert_yj =
+            *(float *)((uint8_t *)vertices + j * stride + sizeof(float));
 
-      vert_xi = RUT_UTIL_NEARBYINT (vert_xi);
-      vert_xj = RUT_UTIL_NEARBYINT (vert_xj);
-      vert_yi = RUT_UTIL_NEARBYINT (vert_yi);
-      vert_yj = RUT_UTIL_NEARBYINT (vert_yj);
+        vert_xi = RUT_UTIL_NEARBYINT(vert_xi);
+        vert_xj = RUT_UTIL_NEARBYINT(vert_xj);
+        vert_yi = RUT_UTIL_NEARBYINT(vert_yi);
+        vert_yj = RUT_UTIL_NEARBYINT(vert_yj);
 
-      if (((vert_yi > point_y) != (vert_yj > point_y)) &&
-           (point_x < (vert_xj - vert_xi) * (point_y - vert_yi) /
-            (vert_yj - vert_yi) + vert_xi) )
-         c = !c;
+        if (((vert_yi > point_y) != (vert_yj > point_y)) &&
+            (point_x <
+             (vert_xj - vert_xi) * (point_y - vert_yi) / (vert_yj - vert_yi) +
+             vert_xi))
+            c = !c;
     }
 
-  return c;
+    return c;
 }
 
-void
-rut_util_fully_transform_points (const cg_matrix_t *modelview,
-                                 const cg_matrix_t *projection,
-                                 const float *viewport,
-                                 float *verts,
-                                 int n_verts);
-
+void rut_util_fully_transform_points(const cg_matrix_t *modelview,
+                                     const cg_matrix_t *projection,
+                                     const float *viewport,
+                                     float *verts,
+                                     int n_verts);
 
 #if defined(HAVE_ALIGNOF)
-#define RUT_UTIL_ALIGNOF(x) (alignof (x))
+#define RUT_UTIL_ALIGNOF(x) (alignof(x))
 #elif defined(HAVE_ALIGNOF_UNDERSCORE)
-#define RUT_UTIL_ALIGNOF(x) (__alignof__ (x))
+#define RUT_UTIL_ALIGNOF(x) (__alignof__(x))
 #else
 #warning No alignof operator found for this compiler
 #define RUT_UTIL_ALIGNOF(x) 8

@@ -33,22 +33,20 @@
 
 #include "rut-object.h"
 
-typedef RutInputEventStatus (*RutInputableCallback) (RutObject *inputable,
-                                                     RutInputEvent *event);
+typedef rut_input_event_status_t (*rut_inputable_callback_t)(
+    rut_object_t *inputable, rut_input_event_t *event);
 
-typedef struct _RutInputableVTable
+typedef struct _rut_inputable_vtable_t {
+    rut_inputable_callback_t handle_event;
+} rut_inputable_vtable_t;
+
+static inline rut_input_event_status_t
+rut_inputable_handle_event(rut_object_t *inputable, rut_input_event_t *event)
 {
-  RutInputableCallback handle_event;
-} RutInputableVTable;
+    rut_inputable_vtable_t *vtable =
+        rut_object_get_vtable(inputable, RUT_TRAIT_ID_INPUTABLE);
 
-static inline RutInputEventStatus
-rut_inputable_handle_event (RutObject *inputable,
-                            RutInputEvent *event)
-{
-  RutInputableVTable *vtable =
-    rut_object_get_vtable (inputable, RUT_TRAIT_ID_INPUTABLE);
-
-  return vtable->handle_event (inputable, event);
+    return vtable->handle_event(inputable, event);
 }
 
 #endif /* __RUT_INPUTABLE_H__ */

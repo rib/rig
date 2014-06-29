@@ -29,13 +29,10 @@
 #ifndef _RIG_AVAHI_H_
 #define _RIG_AVAHI_H_
 
-void
-rig_avahi_register_service (RigEngine *engine);
+void rig_avahi_register_service(rig_engine_t *engine);
 
-void
-rig_avahi_unregister_service (RigEngine *engine);
+void rig_avahi_unregister_service(rig_engine_t *engine);
 
-void
-rig_avahi_run_browser (RigEngine *engine);
+void rig_avahi_run_browser(rig_engine_t *engine);
 
 #endif /* _RIG_AVAHI_H_ */

@@ -27,17 +27,17 @@
 #define RUT_LIST_H
 
 /**
- * RutList - linked list
+ * rut_list_t - linked list
  *
- * The list head is of "RutList" type, and must be initialized
+ * The list head is of "rut_list_t" type, and must be initialized
  * using rut_list_init().  All entries in the list must be of the same
- * type.  The item type must have a "RutList" member. This
+ * type.  The item type must have a "rut_list_t" member. This
  * member will be initialized by rut_list_insert(). There is no need to
  * call rut_list_init() on the individual item. To query if the list is
  * empty in O(1), use rut_list_empty().
  *
- * Let's call the list reference "RutList foo_list", the item type as
- * "item_t", and the item member as "RutList link". The following code
+ * Let's call the list reference "rut_list_t foo_list", the item type as
+ * "item_t", and the item member as "rut_list_t link". The following code
  *
  * The following code will initialize a list:
  *
@@ -56,68 +56,58 @@
  *      }
  */
 
-typedef struct _RutList RutList;
+typedef struct _rut_list_t rut_list_t;
 
-struct _RutList
-{
-  RutList *prev;
-  RutList *next;
+struct _rut_list_t {
+    rut_list_t *prev;
+    rut_list_t *next;
 };
 
-void
-rut_list_init (RutList *list);
+void rut_list_init(rut_list_t *list);
 
-void
-rut_list_insert (RutList *list,
-                 RutList *elm);
+void rut_list_insert(rut_list_t *list, rut_list_t *elm);
 
-void
-rut_list_remove (RutList *elm);
+void rut_list_remove(rut_list_t *elm);
 
-int
-rut_list_length (RutList *list);
+int rut_list_length(rut_list_t *list);
 
-int
-rut_list_empty (RutList *list);
+int rut_list_empty(rut_list_t *list);
 
-void
-rut_list_insert_list (RutList *list,
-                      RutList *other);
+void rut_list_insert_list(rut_list_t *list, rut_list_t *other);
 
 #ifdef __GNUC__
-#define rut_container_of(ptr, sample, member)                           \
-  (__typeof__(sample))((char *)(ptr)    -                               \
-                       ((char *)&(sample)->member - (char *)(sample)))
+#define rut_container_of(ptr, sample, member)                                  \
+    (__typeof__(sample))((char *)(ptr) -                                       \
+                         ((char *)&(sample)->member - (char *)(sample)))
 #else
-#define rut_container_of(ptr, sample, member)                   \
-  (void *)((char *)(ptr)        -                               \
-           ((char *)&(sample)->member - (char *)(sample)))
+#define rut_container_of(ptr, sample, member)                                  \
+    (void *)((char *)(ptr) - ((char *)&(sample)->member - (char *)(sample)))
 #endif
 
-#define rut_list_for_each(pos, head, member)                            \
-  for (pos = 0, pos = rut_container_of((head)->next, pos, member);      \
-       &pos->member != (head);                                          \
-       pos = rut_container_of(pos->member.next, pos, member))
+#define rut_list_for_each(pos, head, member)                                   \
+    for (pos = 0, pos = rut_container_of((head)->next, pos, member);           \
+         &pos->member != (head);                                               \
+         pos = rut_container_of(pos->member.next, pos, member))
 
-#define rut_list_for_each_safe(pos, tmp, head, member)                  \
-  for (pos = 0, tmp = 0,                                                \
-         pos = rut_container_of((head)->next, pos, member),             \
-         tmp = rut_container_of((pos)->member.next, tmp, member);       \
-       &pos->member != (head);                                          \
-       pos = tmp,                                                       \
-         tmp = rut_container_of(pos->member.next, tmp, member))
+#define rut_list_for_each_safe(pos, tmp, head, member)                         \
+    for (pos = 0,                                                              \
+         tmp = 0,                                                               \
+         pos = rut_container_of((head)->next, pos, member),                     \
+         tmp = rut_container_of((pos)->member.next, tmp, member);               \
+         &pos->member != (head);                                               \
+         pos = tmp, tmp = rut_container_of(pos->member.next, tmp, member))
 
-#define rut_list_for_each_reverse(pos, head, member)                    \
-  for (pos = 0, pos = rut_container_of((head)->prev, pos, member);      \
-       &pos->member != (head);                                          \
-       pos = rut_container_of(pos->member.prev, pos, member))
+#define rut_list_for_each_reverse(pos, head, member)                           \
+    for (pos = 0, pos = rut_container_of((head)->prev, pos, member);           \
+         &pos->member != (head);                                               \
+         pos = rut_container_of(pos->member.prev, pos, member))
 
-#define rut_list_for_each_reverse_safe(pos, tmp, head, member)          \
-  for (pos = 0, tmp = 0,                                                \
-         pos = rut_container_of((head)->prev, pos, member),             \
-         tmp = rut_container_of((pos)->member.prev, tmp, member);       \
-       &pos->member != (head);                                          \
-       pos = tmp,                                                       \
-         tmp = rut_container_of(pos->member.prev, tmp, member))
+#define rut_list_for_each_reverse_safe(pos, tmp, head, member)                 \
+    for (pos = 0,                                                              \
+         tmp = 0,                                                               \
+         pos = rut_container_of((head)->prev, pos, member),                     \
+         tmp = rut_container_of((pos)->member.prev, tmp, member);               \
+         &pos->member != (head);                                               \
+         pos = tmp, tmp = rut_container_of(pos->member.prev, tmp, member))
 
 #endif /* RUT_LIST_H */

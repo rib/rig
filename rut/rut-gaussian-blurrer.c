@@ -45,324 +45,299 @@
  */
 
 static float
-gaussian (float sigma, float x)
+gaussian(float sigma, float x)
 {
-  return 1 / (sigma * sqrtf (2 * G_PI)) *
-              powf (G_E, - (x * x)/(2 * sigma * sigma));
+    return 1 / (sigma * sqrtf(2 * G_PI)) *
+           powf(G_E, -(x * x) / (2 * sigma * sigma));
 }
 
 /* http://theinstructionlimit.com/gaussian-blur-revisited-part-two */
 static float
-n_taps_to_sigma (int n_taps)
+n_taps_to_sigma(int n_taps)
 {
-  static const float sigma[7] = {1.35, 1.55, 1.8, 2.18, 2.49, 2.85, 3.66};
+    static const float sigma[7] = { 1.35, 1.55, 1.8, 2.18, 2.49, 2.85, 3.66 };
 
-  return sigma[n_taps / 2 - 2];
+    return sigma[n_taps / 2 - 2];
 }
 
 static cg_pipeline_t *
-create_1d_gaussian_blur_pipeline (RutContext *ctx, int n_taps)
+create_1d_gaussian_blur_pipeline(rut_context_t *ctx,
+                                 int n_taps)
 {
-  static GHashTable *pipeline_cache = NULL;
-  cg_pipeline_t *pipeline;
-  cg_snippet_t *snippet;
-  c_string_t *shader;
-  cg_depth_state_t depth_state;
-  int i;
+    static GHashTable *pipeline_cache = NULL;
+    cg_pipeline_t *pipeline;
+    cg_snippet_t *snippet;
+    c_string_t *shader;
+    cg_depth_state_t depth_state;
+    int i;
 
-  /* initialize the pipeline cache. The shaders are only dependent on the
-   * number of taps, not the sigma, so we cache the corresponding pipelines
-   * in a hash table 'n_taps' => 'pipeline' */
-  if (G_UNLIKELY (pipeline_cache == NULL))
-    {
-      pipeline_cache =
-        g_hash_table_new_full (g_direct_hash,
-                               g_direct_equal,
-                               NULL, /* key destroy notify */
-                               (GDestroyNotify) cg_object_unref);
+    /* initialize the pipeline cache. The shaders are only dependent on the
+     * number of taps, not the sigma, so we cache the corresponding pipelines
+     * in a hash table 'n_taps' => 'pipeline' */
+    if (G_UNLIKELY(pipeline_cache == NULL)) {
+        pipeline_cache = g_hash_table_new_full(g_direct_hash,
+                                               g_direct_equal,
+                                               NULL, /* key destroy notify */
+                                               (GDestroyNotify)cg_object_unref);
     }
 
-  pipeline = g_hash_table_lookup (pipeline_cache, GINT_TO_POINTER (n_taps));
-  if (pipeline)
-    return cg_object_ref (pipeline);
+    pipeline = g_hash_table_lookup(pipeline_cache, GINT_TO_POINTER(n_taps));
+    if (pipeline)
+        return cg_object_ref(pipeline);
 
-  shader = c_string_new (NULL);
+    shader = c_string_new(NULL);
 
-  c_string_append_printf (shader,
-                          "uniform vec2 pixel_step;\n"
-                          "uniform float factors[%i];\n",
-                          n_taps);
+    c_string_append_printf(shader,
+                           "uniform vec2 pixel_step;\n"
+                           "uniform float factors[%i];\n",
+                           n_taps);
 
-  snippet = cg_snippet_new (CG_SNIPPET_HOOK_TEXTURE_LOOKUP,
-                              shader->str,
-                              NULL /* post */);
+    snippet = cg_snippet_new(
+        CG_SNIPPET_HOOK_TEXTURE_LOOKUP, shader->str, NULL /* post */);
 
-  c_string_set_size (shader, 0);
+    c_string_set_size(shader, 0);
 
-  pipeline = cg_pipeline_new (ctx->cg_context);
-  cg_pipeline_set_layer_null_texture (pipeline,
-                                        0, /* layer_num */
-                                        CG_TEXTURE_TYPE_2D);
-  cg_pipeline_set_layer_wrap_mode (pipeline,
-                                     0, /* layer_num */
-                                     CG_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE);
-  cg_pipeline_set_layer_filters (pipeline,
-                                   0, /* layer_num */
-                                   CG_PIPELINE_FILTER_NEAREST,
-                                   CG_PIPELINE_FILTER_NEAREST);
+    pipeline = cg_pipeline_new(ctx->cg_context);
+    cg_pipeline_set_layer_null_texture(pipeline,
+                                       0, /* layer_num */
+                                       CG_TEXTURE_TYPE_2D);
+    cg_pipeline_set_layer_wrap_mode(pipeline,
+                                    0, /* layer_num */
+                                    CG_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE);
+    cg_pipeline_set_layer_filters(pipeline,
+                                  0, /* layer_num */
+                                  CG_PIPELINE_FILTER_NEAREST,
+                                  CG_PIPELINE_FILTER_NEAREST);
 
-  for (i = 0; i < n_taps; i++)
-    {
-      c_string_append (shader, "cg_texel ");
+    for (i = 0; i < n_taps; i++) {
+        c_string_append(shader, "cg_texel ");
 
-      if (i == 0)
-        c_string_append (shader, "=");
-      else
-        c_string_append (shader, "+=");
+        if (i == 0)
+            c_string_append(shader, "=");
+        else
+            c_string_append(shader, "+=");
 
-      c_string_append_printf (shader,
-                              " texture2D (cg_sampler, "
-                              "cg_tex_coord.st");
-      if (i != (n_taps - 1) / 2)
-        c_string_append_printf (shader,
-                                " + pixel_step * %f",
-                                (float) (i - ((n_taps - 1) / 2)));
-      c_string_append_printf (shader,
-                              ") * factors[%i];\n",
-                              i);
+        c_string_append_printf(shader,
+                               " texture2D (cg_sampler, "
+                               "cg_tex_coord.st");
+        if (i != (n_taps - 1) / 2)
+            c_string_append_printf(
+                shader, " + pixel_step * %f", (float)(i - ((n_taps - 1) / 2)));
+        c_string_append_printf(shader, ") * factors[%i];\n", i);
     }
 
-  cg_snippet_set_replace (snippet, shader->str);
+    cg_snippet_set_replace(snippet, shader->str);
 
-  c_string_free (shader, true);
+    c_string_free(shader, true);
 
-  cg_pipeline_add_layer_snippet (pipeline, 0, snippet);
+    cg_pipeline_add_layer_snippet(pipeline, 0, snippet);
 
-  cg_object_unref (snippet);
+    cg_object_unref(snippet);
 
-  cg_pipeline_set_blend (pipeline, "RGBA=ADD(SRC_COLOR, 0)", NULL);
+    cg_pipeline_set_blend(pipeline, "RGBA=ADD(SRC_COLOR, 0)", NULL);
 
-  cg_depth_state_init (&depth_state);
-  cg_depth_state_set_write_enabled (&depth_state, false);
-  cg_depth_state_set_test_enabled (&depth_state, false);
-  cg_pipeline_set_depth_state (pipeline, &depth_state, NULL);
+    cg_depth_state_init(&depth_state);
+    cg_depth_state_set_write_enabled(&depth_state, false);
+    cg_depth_state_set_test_enabled(&depth_state, false);
+    cg_pipeline_set_depth_state(pipeline, &depth_state, NULL);
 
-  g_hash_table_insert (pipeline_cache, GINT_TO_POINTER (n_taps), pipeline);
+    g_hash_table_insert(pipeline_cache, GINT_TO_POINTER(n_taps), pipeline);
 
-  return pipeline;
+    return pipeline;
 }
 
 static void
-set_blurrer_pipeline_factors (cg_pipeline_t *pipeline, int n_taps)
+set_blurrer_pipeline_factors(cg_pipeline_t *pipeline, int n_taps)
 {
-  int i, radius;
-  float *factors, sigma;
-  int location;
-  float sum;
-  float scale;
+    int i, radius;
+    float *factors, sigma;
+    int location;
+    float sum;
+    float scale;
 
-  radius = n_taps / 2; /* which is (n_taps - 1) / 2 as well */
+    radius = n_taps / 2; /* which is (n_taps - 1) / 2 as well */
 
-  factors = g_alloca (n_taps * sizeof (float));
-  sigma = n_taps_to_sigma (n_taps);
+    factors = g_alloca(n_taps * sizeof(float));
+    sigma = n_taps_to_sigma(n_taps);
 
-  sum = 0;
-  for (i = -radius; i <= radius; i++)
-    {
-      factors[i + radius] = gaussian (sigma, i);
-      sum += factors[i + radius];
+    sum = 0;
+    for (i = -radius; i <= radius; i++) {
+        factors[i + radius] = gaussian(sigma, i);
+        sum += factors[i + radius];
     }
 
-  /* So that we don't loose any brightness when blurring, we
-   * normalized the factors... */
-  scale = 1.0 / sum;
-  for (i = -radius; i <= radius; i++)
-    factors[i + radius] *= scale;
+    /* So that we don't loose any brightness when blurring, we
+     * normalized the factors... */
+    scale = 1.0 / sum;
+    for (i = -radius; i <= radius; i++)
+        factors[i + radius] *= scale;
 
-  location = cg_pipeline_get_uniform_location (pipeline, "factors");
-  cg_pipeline_set_uniform_float (pipeline,
-                                   location,
-                                   1 /* n_components */,
-                                   n_taps /* count */,
-                                   factors);
+    location = cg_pipeline_get_uniform_location(pipeline, "factors");
+    cg_pipeline_set_uniform_float(
+        pipeline, location, 1 /* n_components */, n_taps /* count */, factors);
 }
 
 static void
-set_blurrer_pipeline_texture (cg_pipeline_t *pipeline,
-                              cg_texture_t *source,
-                              float x_pixel_step,
-                              float y_pixel_step)
+set_blurrer_pipeline_texture(cg_pipeline_t *pipeline,
+                             cg_texture_t *source,
+                             float x_pixel_step,
+                             float y_pixel_step)
 {
-  float pixel_step[2];
-  int pixel_step_location;
+    float pixel_step[2];
+    int pixel_step_location;
 
-  /* our input in the source texture */
-  cg_pipeline_set_layer_texture (pipeline,
-                                   0, /* layer_num */
-                                   source);
+    /* our input in the source texture */
+    cg_pipeline_set_layer_texture(pipeline,
+                                  0, /* layer_num */
+                                  source);
 
-  pixel_step[0] = x_pixel_step;
-  pixel_step[1] = y_pixel_step;
-  pixel_step_location =
-    cg_pipeline_get_uniform_location (pipeline, "pixel_step");
-  g_assert (pixel_step_location);
-  cg_pipeline_set_uniform_float (pipeline,
-                                   pixel_step_location,
-                                   2, /* n_components */
-                                   1, /* count */
-                                   pixel_step);
+    pixel_step[0] = x_pixel_step;
+    pixel_step[1] = y_pixel_step;
+    pixel_step_location =
+        cg_pipeline_get_uniform_location(pipeline, "pixel_step");
+    g_assert(pixel_step_location);
+    cg_pipeline_set_uniform_float(pipeline,
+                                  pixel_step_location,
+                                  2, /* n_components */
+                                  1, /* count */
+                                  pixel_step);
 }
 
-RutGaussianBlurrer *
-rut_gaussian_blurrer_new (RutContext *ctx, int n_taps)
+rut_gaussian_blurrer_t *
+rut_gaussian_blurrer_new(rut_context_t *ctx, int n_taps)
 {
-  RutGaussianBlurrer *blurrer = c_slice_new0 (RutGaussianBlurrer);
-  cg_pipeline_t *base_pipeline;
+    rut_gaussian_blurrer_t *blurrer = c_slice_new0(rut_gaussian_blurrer_t);
+    cg_pipeline_t *base_pipeline;
 
-  /* validation */
-  if (n_taps < 5 || n_taps > 17 || n_taps % 2 == 0 )
-    {
-      g_critical ("blur: the numbers of taps must belong to the {5, 7, 9, "
-                  "11, 13, 14, 17, 19} set");
-      g_assert_not_reached ();
-      return NULL;
+    /* validation */
+    if (n_taps < 5 || n_taps > 17 || n_taps % 2 == 0) {
+        g_critical("blur: the numbers of taps must belong to the {5, 7, 9, "
+                   "11, 13, 14, 17, 19} set");
+        g_assert_not_reached();
+        return NULL;
     }
 
-  blurrer->ctx = ctx;
-  blurrer->n_taps = n_taps;
+    blurrer->ctx = ctx;
+    blurrer->n_taps = n_taps;
 
-  base_pipeline = create_1d_gaussian_blur_pipeline (ctx, n_taps);
+    base_pipeline = create_1d_gaussian_blur_pipeline(ctx, n_taps);
 
-  blurrer->x_pass_pipeline = cg_pipeline_copy (base_pipeline);
-  set_blurrer_pipeline_factors (blurrer->x_pass_pipeline, n_taps);
-  blurrer->y_pass_pipeline = cg_pipeline_copy (base_pipeline);
-  set_blurrer_pipeline_factors (blurrer->x_pass_pipeline, n_taps);
+    blurrer->x_pass_pipeline = cg_pipeline_copy(base_pipeline);
+    set_blurrer_pipeline_factors(blurrer->x_pass_pipeline, n_taps);
+    blurrer->y_pass_pipeline = cg_pipeline_copy(base_pipeline);
+    set_blurrer_pipeline_factors(blurrer->x_pass_pipeline, n_taps);
 
-  cg_object_unref (base_pipeline);
+    cg_object_unref(base_pipeline);
 
-  return blurrer;
+    return blurrer;
 }
 
 static void
-_rut_gaussian_blurrer_free_buffers (RutGaussianBlurrer *blurrer)
+_rut_gaussian_blurrer_free_buffers(rut_gaussian_blurrer_t *blurrer)
 {
-  if (blurrer->x_pass)
-    {
-      cg_object_unref (blurrer->x_pass);
-      blurrer->x_pass = NULL;
+    if (blurrer->x_pass) {
+        cg_object_unref(blurrer->x_pass);
+        blurrer->x_pass = NULL;
     }
-  if (blurrer->x_pass_fb)
-    {
-      cg_object_unref (blurrer->x_pass_fb);
-      blurrer->x_pass_fb = NULL;
+    if (blurrer->x_pass_fb) {
+        cg_object_unref(blurrer->x_pass_fb);
+        blurrer->x_pass_fb = NULL;
     }
 
-  if (blurrer->y_pass)
-    {
-      cg_object_unref (blurrer->y_pass);
-      blurrer->y_pass = NULL;
+    if (blurrer->y_pass) {
+        cg_object_unref(blurrer->y_pass);
+        blurrer->y_pass = NULL;
     }
-  if (blurrer->y_pass_fb)
-    {
-      cg_object_unref (blurrer->y_pass_fb);
-      blurrer->y_pass_fb = NULL;
+    if (blurrer->y_pass_fb) {
+        cg_object_unref(blurrer->y_pass_fb);
+        blurrer->y_pass_fb = NULL;
     }
 }
 
 void
-rut_gaussian_blurrer_free (RutGaussianBlurrer *blurrer)
+rut_gaussian_blurrer_free(rut_gaussian_blurrer_t *blurrer)
 {
-  _rut_gaussian_blurrer_free_buffers (blurrer);
-  c_slice_free (RutGaussianBlurrer, blurrer);
+    _rut_gaussian_blurrer_free_buffers(blurrer);
+    c_slice_free(rut_gaussian_blurrer_t, blurrer);
 }
 
 cg_texture_t *
-rut_gaussian_blurrer_blur (RutGaussianBlurrer *blurrer,
-                           cg_texture_t *source)
+rut_gaussian_blurrer_blur(rut_gaussian_blurrer_t *blurrer,
+                          cg_texture_t *source)
 {
-  int src_w, src_h;
-  cg_texture_components_t components;
-  cg_offscreen_t *offscreen;
+    int src_w, src_h;
+    cg_texture_components_t components;
+    cg_offscreen_t *offscreen;
 
-  /* create the first FBO to render the x pass */
-  src_w = cg_texture_get_width (source);
-  src_h = cg_texture_get_height (source);
-  components = cg_texture_get_components (source);
+    /* create the first FBO to render the x pass */
+    src_w = cg_texture_get_width(source);
+    src_h = cg_texture_get_height(source);
+    components = cg_texture_get_components(source);
 
-  if (blurrer->width != src_w ||
-      blurrer->height != src_h ||
-      blurrer->components != components)
-    {
-      _rut_gaussian_blurrer_free_buffers (blurrer);
+    if (blurrer->width != src_w || blurrer->height != src_h ||
+        blurrer->components != components) {
+        _rut_gaussian_blurrer_free_buffers(blurrer);
     }
 
-  if (!blurrer->x_pass)
-    {
-      cg_error_t *error = NULL;
-      cg_texture_2d_t *texture_2d =
-        cg_texture_2d_new_with_size (blurrer->ctx->cg_context,
-                                       src_w, src_h);
+    if (!blurrer->x_pass) {
+        cg_error_t *error = NULL;
+        cg_texture_2d_t *texture_2d =
+            cg_texture_2d_new_with_size(blurrer->ctx->cg_context, src_w, src_h);
 
-      cg_texture_set_components (texture_2d, components);
+        cg_texture_set_components(texture_2d, components);
 
-      cg_texture_allocate (texture_2d, &error);
-      if (error)
-        {
-          c_warning ("blurrer: could not create x pass texture: %s",
-                     error->message);
+        cg_texture_allocate(texture_2d, &error);
+        if (error) {
+            c_warning("blurrer: could not create x pass texture: %s",
+                      error->message);
         }
-      blurrer->x_pass = texture_2d;
-      blurrer->width = src_w;
-      blurrer->height = src_h;
-      blurrer->components = components;
+        blurrer->x_pass = texture_2d;
+        blurrer->width = src_w;
+        blurrer->height = src_h;
+        blurrer->components = components;
 
-      offscreen = cg_offscreen_new_with_texture (blurrer->x_pass);
-      blurrer->x_pass_fb = offscreen;
-      cg_framebuffer_orthographic (blurrer->x_pass_fb,
-                                     0, 0, src_w, src_h, -1, 100);
+        offscreen = cg_offscreen_new_with_texture(blurrer->x_pass);
+        blurrer->x_pass_fb = offscreen;
+        cg_framebuffer_orthographic(
+            blurrer->x_pass_fb, 0, 0, src_w, src_h, -1, 100);
     }
 
-  if (!blurrer->y_pass)
-    {
-      /* create the second FBO (final destination) to render the y pass */
-      cg_texture_2d_t *texture_2d =
-        cg_texture_2d_new_with_size (blurrer->ctx->cg_context,
-                                       src_w,
-                                       src_h);
+    if (!blurrer->y_pass) {
+        /* create the second FBO (final destination) to render the y pass */
+        cg_texture_2d_t *texture_2d =
+            cg_texture_2d_new_with_size(blurrer->ctx->cg_context, src_w, src_h);
 
-      cg_texture_set_components (texture_2d, components);
+        cg_texture_set_components(texture_2d, components);
 
-      blurrer->destination = texture_2d;
-      blurrer->y_pass = blurrer->destination;
+        blurrer->destination = texture_2d;
+        blurrer->y_pass = blurrer->destination;
 
-      offscreen = cg_offscreen_new_with_texture (blurrer->destination);
-      blurrer->y_pass_fb = offscreen;
-      cg_framebuffer_orthographic (blurrer->y_pass_fb,
-                                     0, 0, src_w, src_h, -1, 100);
+        offscreen = cg_offscreen_new_with_texture(blurrer->destination);
+        blurrer->y_pass_fb = offscreen;
+        cg_framebuffer_orthographic(
+            blurrer->y_pass_fb, 0, 0, src_w, src_h, -1, 100);
     }
 
-  set_blurrer_pipeline_texture (blurrer->x_pass_pipeline,
-                                source, 1.0f / src_w, 0);
-  set_blurrer_pipeline_texture (blurrer->y_pass_pipeline,
-                                blurrer->x_pass, 0, 1.0f / src_h);
+    set_blurrer_pipeline_texture(
+        blurrer->x_pass_pipeline, source, 1.0f / src_w, 0);
+    set_blurrer_pipeline_texture(
+        blurrer->y_pass_pipeline, blurrer->x_pass, 0, 1.0f / src_h);
 
-  /* x pass */
-  cg_framebuffer_draw_rectangle (blurrer->x_pass_fb,
-                                   blurrer->x_pass_pipeline,
-                                   0,
-                                   0,
-                                   blurrer->width,
-                                   blurrer->height);
+    /* x pass */
+    cg_framebuffer_draw_rectangle(blurrer->x_pass_fb,
+                                  blurrer->x_pass_pipeline,
+                                  0,
+                                  0,
+                                  blurrer->width,
+                                  blurrer->height);
 
-  /* y pass */
-  cg_framebuffer_draw_rectangle (blurrer->y_pass_fb,
-                                   blurrer->y_pass_pipeline,
-                                   0,
-                                   0,
-                                   blurrer->width,
-                                   blurrer->height);
+    /* y pass */
+    cg_framebuffer_draw_rectangle(blurrer->y_pass_fb,
+                                  blurrer->y_pass_pipeline,
+                                  0,
+                                  0,
+                                  blurrer->width,
+                                  blurrer->height);
 
-  return cg_object_ref (blurrer->destination);
+    return cg_object_ref(blurrer->destination);
 }
-
-

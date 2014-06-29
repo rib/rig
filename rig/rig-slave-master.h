@@ -38,27 +38,24 @@
 #include "rig-rpc-network.h"
 #include "rig-engine.h"
 
-typedef struct _RigSlaveMaster
-{
-  RutObjectBase _base;
+typedef struct _rig_slave_master_t {
+    rut_object_base_t _base;
 
-  RigEngine *engine;
+    rig_engine_t *engine;
 
-  RigSlaveAddress *slave_address;
-  RigRPCClient *rpc_client;
-  bool connected;
-  GHashTable *registry;
+    rig_slave_address_t *slave_address;
+    rig_rpc_client_t *rpc_client;
+    bool connected;
+    GHashTable *registry;
 
-} RigSlaveMaster;
+} rig_slave_master_t;
 
-void
-rig_connect_to_slave (RigEngine *engine, RigSlaveAddress *slave_address);
+void rig_connect_to_slave(rig_engine_t *engine,
+                          rig_slave_address_t *slave_address);
 
-void
-rig_slave_master_reload_ui (RigSlaveMaster *master);
+void rig_slave_master_reload_ui(rig_slave_master_t *master);
 
-void
-rig_slave_master_forward_pb_ui_edit (RigSlaveMaster *master,
-                                     Rig__UIEdit *pb_edit);
+void rig_slave_master_forward_pb_ui_edit(rig_slave_master_t *master,
+                                         Rig__UIEdit *pb_edit);
 
 #endif /* __RIG_SLAVE_MASTER__ */

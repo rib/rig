@@ -29,18 +29,17 @@
 #ifndef _RIG_PROTOBUF_C_DISPATCH_H_
 #define _RIG_PROTOBUF_C_DISPATCH_H_
 
-typedef struct _RigProtobufCDispatch RigProtobufCDispatch;
-typedef struct _RigProtobufCDispatchTimer RigProtobufCDispatchTimer;
-typedef struct _RigProtobufCDispatchIdle RigProtobufCDispatchIdle;
+typedef struct _rig_protobuf_c_dispatch_t rig_protobuf_c_dispatch_t;
+typedef struct _rig_protobuf_c_dispatch_timer_t rig_protobuf_c_dispatch_timer_t;
+typedef struct _rig_protobuf_c_dispatch_idle_t rig_protobuf_c_dispatch_idle_t;
 
 #include <rut.h>
 
 #include <protobuf-c/protobuf-c.h>
 
-typedef enum
-{
-  PROTOBUF_C_EVENT_READABLE = (1<<0),
-  PROTOBUF_C_EVENT_WRITABLE = (1<<1)
+typedef enum {
+    PROTOBUF_C_EVENT_READABLE = (1 << 0),
+    PROTOBUF_C_EVENT_WRITABLE = (1 << 1)
 } ProtobufC_Events;
 
 #ifdef WIN32
@@ -50,64 +49,57 @@ typedef int ProtobufC_FD;
 #endif
 
 /* Create or destroy a Dispatch */
-RigProtobufCDispatch  *
-rig_protobuf_c_dispatch_new (RutShell *shell,
-                             ProtobufCAllocator *allocator);
+rig_protobuf_c_dispatch_t *
+rig_protobuf_c_dispatch_new(rut_shell_t *shell, ProtobufCAllocator *allocator);
 
-void
-rig_protobuf_c_dispatch_free (RigProtobufCDispatch *dispatch);
+void rig_protobuf_c_dispatch_free(rig_protobuf_c_dispatch_t *dispatch);
 
 ProtobufCAllocator *
-rig_protobuf_c_dispatch_peek_allocator (RigProtobufCDispatch *);
+rig_protobuf_c_dispatch_peek_allocator(rig_protobuf_c_dispatch_t *);
 
-typedef void (*RigProtobufCDispatchCallback) (ProtobufC_FD fd,
-                                              unsigned  events,
-                                              void *callback_data);
+typedef void (*rig_protobuf_c_dispatch_callback_t)(ProtobufC_FD fd,
+                                                   unsigned events,
+                                                   void *callback_data);
 
 /* Registering file-descriptors to watch. */
 void
-rig_protobuf_c_dispatch_watch_fd (RigProtobufCDispatch *dispatch,
-                                  ProtobufC_FD fd,
-                                  unsigned events,
-                                  RigProtobufCDispatchCallback callback,
-                                  void *callback_data);
+rig_protobuf_c_dispatch_watch_fd(rig_protobuf_c_dispatch_t *dispatch,
+                                 ProtobufC_FD fd,
+                                 unsigned events,
+                                 rig_protobuf_c_dispatch_callback_t callback,
+                                 void *callback_data);
 
-void
-rig_protobuf_c_dispatch_close_fd (RigProtobufCDispatch *dispatch,
-                                  ProtobufC_FD fd);
+void rig_protobuf_c_dispatch_close_fd(rig_protobuf_c_dispatch_t *dispatch,
+                                      ProtobufC_FD fd);
 
-void
-rig_protobuf_c_dispatch_fd_closed (RigProtobufCDispatch *dispatch,
-                                   ProtobufC_FD fd);
+void rig_protobuf_c_dispatch_fd_closed(rig_protobuf_c_dispatch_t *dispatch,
+                                       ProtobufC_FD fd);
 
 /* Timers */
-typedef void (*RigProtobufCDispatchTimerFunc) (RigProtobufCDispatch *dispatch,
-                                               void *func_data);
-RigProtobufCDispatchTimer *
-rig_protobuf_c_dispatch_add_timer_millis
-                                   (RigProtobufCDispatch *dispatch,
-                                    unsigned milliseconds,
-                                    RigProtobufCDispatchTimerFunc func,
-                                    void *func_data);
+typedef void (*rig_protobuf_c_dispatch_timer_func_t)(
+    rig_protobuf_c_dispatch_t *dispatch, void *func_data);
+rig_protobuf_c_dispatch_timer_t *rig_protobuf_c_dispatch_add_timer_millis(
+    rig_protobuf_c_dispatch_t *dispatch,
+    unsigned milliseconds,
+    rig_protobuf_c_dispatch_timer_func_t func,
+    void *func_data);
 
-void
-rig_protobuf_c_dispatch_remove_timer (RigProtobufCDispatchTimer *);
+void rig_protobuf_c_dispatch_remove_timer(rig_protobuf_c_dispatch_timer_t *);
 
 /* Idle functions */
-typedef void (*RigProtobufCDispatchIdleFunc) (RigProtobufCDispatch *dispatch,
-                                              void *func_data);
-RigProtobufCDispatchIdle *
-rig_protobuf_c_dispatch_add_idle (RigProtobufCDispatch *dispatch,
-                                  RigProtobufCDispatchIdleFunc func,
-                                  void *func_data);
+typedef void (*rig_protobuf_c_dispatch_idle_func_t)(
+    rig_protobuf_c_dispatch_t *dispatch, void *func_data);
+rig_protobuf_c_dispatch_idle_t *
+rig_protobuf_c_dispatch_add_idle(rig_protobuf_c_dispatch_t *dispatch,
+                                 rig_protobuf_c_dispatch_idle_func_t func,
+                                 void *func_data);
 
-void  rig_protobuf_c_dispatch_remove_idle (RigProtobufCDispatchIdle *);
+void rig_protobuf_c_dispatch_remove_idle(rig_protobuf_c_dispatch_idle_t *);
 
-struct _RigProtobufCDispatch
-{
-  RutShell *shell;
-  ProtobufCAllocator *allocator;
-  c_list_t *dispatch_closures;
+struct _rig_protobuf_c_dispatch_t {
+    rut_shell_t *shell;
+    ProtobufCAllocator *allocator;
+    c_list_t *dispatch_closures;
 };
 
 #endif /* _RIG_PROTOBUF_C_DISPATCH_H_ */

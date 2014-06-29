@@ -36,59 +36,60 @@
 #include "rig-slave-address.h"
 
 static void
-_rig_slave_address_free (void *object)
+_rig_slave_address_free(void *object)
 {
-  RigSlaveAddress *slave_address = object;
+    rig_slave_address_t *slave_address = object;
 
-  if (slave_address->serial)
-    c_free (slave_address->serial);
+    if (slave_address->serial)
+        c_free(slave_address->serial);
 
-  c_free (slave_address->name);
-  c_free (slave_address->hostname);
+    c_free(slave_address->name);
+    c_free(slave_address->hostname);
 
-  rut_object_free (RigSlaveAddress, slave_address);
+    rut_object_free(rig_slave_address_t, slave_address);
 }
 
-static RutType rig_slave_address_type;
+static rut_type_t rig_slave_address_type;
 
 static void
-_rig_slave_address_init_type (void)
+_rig_slave_address_init_type(void)
 {
-  rut_type_init (&rig_slave_address_type,
-                 "RigSlaveAddress", _rig_slave_address_free);
+    rut_type_init(&rig_slave_address_type,
+                  "rig_slave_address_t",
+                  _rig_slave_address_free);
 }
 
-RigSlaveAddress *
-rig_slave_address_new_tcp (const char *name,
-                           const char *hostname,
-                           int port)
+rig_slave_address_t *
+rig_slave_address_new_tcp(const char *name, const char *hostname, int port)
 {
-  RigSlaveAddress *slave_address =
-    rut_object_alloc0 (RigSlaveAddress, &rig_slave_address_type, _rig_slave_address_init_type);
+    rig_slave_address_t *slave_address =
+        rut_object_alloc0(rig_slave_address_t,
+                          &rig_slave_address_type,
+                          _rig_slave_address_init_type);
 
-  slave_address->type = RIG_SLAVE_ADDRESS_TYPE_TCP;
+    slave_address->type = RIG_SLAVE_ADDRESS_TYPE_TCP;
 
-  slave_address->name = c_strdup (name);
-  slave_address->hostname = c_strdup (hostname);
-  slave_address->port = port;
+    slave_address->name = c_strdup(name);
+    slave_address->hostname = c_strdup(hostname);
+    slave_address->port = port;
 
-  return slave_address;
+    return slave_address;
 }
 
-RigSlaveAddress *
-rig_slave_address_new_adb (const char *name,
-                           const char *serial,
-                           int port)
+rig_slave_address_t *
+rig_slave_address_new_adb(const char *name, const char *serial, int port)
 {
-  RigSlaveAddress *slave_address =
-    rut_object_alloc0 (RigSlaveAddress, &rig_slave_address_type, _rig_slave_address_init_type);
+    rig_slave_address_t *slave_address =
+        rut_object_alloc0(rig_slave_address_t,
+                          &rig_slave_address_type,
+                          _rig_slave_address_init_type);
 
-  slave_address->type = RIG_SLAVE_ADDRESS_TYPE_ADB_SERIAL;
+    slave_address->type = RIG_SLAVE_ADDRESS_TYPE_ADB_SERIAL;
 
-  slave_address->name = c_strdup (name);
-  slave_address->serial = c_strdup (serial);
-  slave_address->hostname = c_strdup ("127.0.0.1");
-  slave_address->port = port;
+    slave_address->name = c_strdup(name);
+    slave_address->serial = c_strdup(serial);
+    slave_address->hostname = c_strdup("127.0.0.1");
+    slave_address->port = port;
 
-  return slave_address;
+    return slave_address;
 }

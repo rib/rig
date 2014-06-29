@@ -30,41 +30,36 @@
 #ifndef __RUT_ICON_TOGGLE_SET_H__
 #define __RUT_ICON_TOGGLE_SET_H__
 
-typedef struct _RutIconToggleSet RutIconToggleSet;
-extern RutType rut_icon_toggle_set_type;
+typedef struct _rut_icon_toggle_set_t rut_icon_toggle_set_t;
+extern rut_type_t rut_icon_toggle_set_type;
 
-typedef enum _RutIconToggleSetPacking
-{
-  RUT_ICON_TOGGLE_SET_PACKING_LEFT_TO_RIGHT,
-  RUT_ICON_TOGGLE_SET_PACKING_RIGHT_TO_LEFT,
-  RUT_ICON_TOGGLE_SET_PACKING_TOP_TO_BOTTOM,
-  RUT_ICON_TOGGLE_SET_PACKING_BOTTOM_TO_TOP
-} RutIconToggleSetPacking;
+typedef enum _rut_icon_toggle_set_packing_t {
+    RUT_ICON_TOGGLE_SET_PACKING_LEFT_TO_RIGHT,
+    RUT_ICON_TOGGLE_SET_PACKING_RIGHT_TO_LEFT,
+    RUT_ICON_TOGGLE_SET_PACKING_TOP_TO_BOTTOM,
+    RUT_ICON_TOGGLE_SET_PACKING_BOTTOM_TO_TOP
+} rut_icon_toggle_set_packing_t;
 
-RutIconToggleSet *
-rut_icon_toggle_set_new (RutContext *ctx,
-                         RutIconToggleSetPacking packing);
+rut_icon_toggle_set_t *
+rut_icon_toggle_set_new(rut_context_t *ctx,
+                        rut_icon_toggle_set_packing_t packing);
 
-typedef void (*RutIconToggleSetChangedCallback) (RutIconToggleSet *toggle_set,
-                                                 int selection_value,
-                                                 void *user_data);
+typedef void (*rut_icon_toggle_set_changed_callback_t)(
+    rut_icon_toggle_set_t *toggle_set, int selection_value, void *user_data);
 
-RutClosure *
-rut_icon_toggle_set_add_on_change_callback (RutIconToggleSet *toggle_set,
-                                  RutIconToggleSetChangedCallback callback,
-                                  void *user_data,
-                                  RutClosureDestroyCallback destroy_cb);
+rut_closure_t *rut_icon_toggle_set_add_on_change_callback(
+    rut_icon_toggle_set_t *toggle_set,
+    rut_icon_toggle_set_changed_callback_t callback,
+    void *user_data,
+    rut_closure_destroy_callback_t destroy_cb);
 
-void
-rut_icon_toggle_set_add (RutIconToggleSet *toggle_set,
-                         RutIconToggle *toggle,
-                         int selection_value);
+void rut_icon_toggle_set_add(rut_icon_toggle_set_t *toggle_set,
+                             rut_icon_toggle_t *toggle,
+                             int selection_value);
 
-int
-rut_icon_toggle_set_get_selection (RutObject *toggle_set);
+int rut_icon_toggle_set_get_selection(rut_object_t *toggle_set);
 
-void
-rut_icon_toggle_set_set_selection (RutObject *toggle_set,
-                                   int selection_value);
+void rut_icon_toggle_set_set_selection(rut_object_t *toggle_set,
+                                       int selection_value);
 
 #endif /* __RUT_ICON_TOGGLE_SET_H__ */

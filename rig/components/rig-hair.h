@@ -33,103 +33,82 @@
 #include "rig-model.h"
 
 enum {
-  RIG_HAIR_SHELL_POSITION_BLENDED,
-  RIG_HAIR_SHELL_POSITION_UNBLENDED,
-  RIG_HAIR_SHELL_POSITION_SHADOW,
-  RIG_HAIR_LENGTH,
-  RIG_HAIR_N_UNIFORMS
+    RIG_HAIR_SHELL_POSITION_BLENDED,
+    RIG_HAIR_SHELL_POSITION_UNBLENDED,
+    RIG_HAIR_SHELL_POSITION_SHADOW,
+    RIG_HAIR_LENGTH,
+    RIG_HAIR_N_UNIFORMS
 };
 
 enum {
-  RIG_HAIR_PROP_LENGTH,
-  RIG_HAIR_PROP_DETAIL,
-  RIG_HAIR_PROP_DENSITY,
-  RIG_HAIR_PROP_THICKNESS,
-  RIG_HAIR_N_PROPS
+    RIG_HAIR_PROP_LENGTH,
+    RIG_HAIR_PROP_DETAIL,
+    RIG_HAIR_PROP_DENSITY,
+    RIG_HAIR_PROP_THICKNESS,
+    RIG_HAIR_N_PROPS
 };
 
-typedef struct _RigHair RigHair;
-#define RIG_HAIR(p) ((RigHair *)(p))
-extern RutType rig_hair_type;
+typedef struct _rig_hair_t rig_hair_t;
+#define RIG_HAIR(p) ((rig_hair_t *)(p))
+extern rut_type_t rig_hair_type;
 
-struct _RigHair
-{
-  RutObjectBase _base;
+struct _rig_hair_t {
+    rut_object_base_t _base;
 
+    rut_componentable_props_t component;
+    rut_context_t *ctx;
+    cg_texture_t *circle;
+    cg_texture_t *fin_texture;
+    float *shell_positions;
+    c_array_t *shell_textures;
+    c_array_t *particles;
 
-  RutComponentableProps component;
-  RutContext *ctx;
-  cg_texture_t *circle;
-  cg_texture_t *fin_texture;
-  float *shell_positions;
-  c_array_t *shell_textures;
-  c_array_t *particles;
+    float length;
+    int n_shells;
+    int n_textures;
+    int density;
+    float thickness;
+    int uniform_locations[4];
 
-  float length;
-  int n_shells;
-  int n_textures;
-  int density;
-  float thickness;
-  int uniform_locations[4];
+    rut_introspectable_props_t introspectable;
+    rut_property_t properties[RIG_HAIR_N_PROPS];
 
-  RutIntrospectableProps introspectable;
-  RutProperty properties[RIG_HAIR_N_PROPS];
-
-  unsigned int dirty_shell_textures: 1;
-  unsigned int dirty_fin_texture: 1;
-  unsigned int dirty_hair_positions: 1;
+    unsigned int dirty_shell_textures : 1;
+    unsigned int dirty_fin_texture : 1;
+    unsigned int dirty_hair_positions : 1;
 };
 
-void
-_rig_hair_init_type (void);
+void _rig_hair_init_type(void);
 
-RigHair *
-rig_hair_new (RutContext *ctx);
+rig_hair_t *rig_hair_new(rut_context_t *ctx);
 
-float
-rig_hair_get_length (RutObject *obj);
+float rig_hair_get_length(rut_object_t *obj);
 
-void
-rig_hair_set_length (RutObject *obj,
-                     float length);
+void rig_hair_set_length(rut_object_t *obj, float length);
 
-int
-rig_hair_get_n_shells (RutObject *obj);
+int rig_hair_get_n_shells(rut_object_t *obj);
 
-void
-rig_hair_set_n_shells (RutObject *obj,
-                       int n_shells);
+void rig_hair_set_n_shells(rut_object_t *obj, int n_shells);
 
-int
-rig_hair_get_density (RutObject *obj);
+int rig_hair_get_density(rut_object_t *obj);
 
-void
-rig_hair_set_density (RutObject *obj,
-                      int density);
+void rig_hair_set_density(rut_object_t *obj, int density);
 
-float
-rig_hair_get_thickness (RutObject *obj);
+float rig_hair_get_thickness(rut_object_t *obj);
 
-void
-rig_hair_set_thickness (RutObject *obj,
-                        float thickness);
+void rig_hair_set_thickness(rut_object_t *obj, float thickness);
 
-void
-rig_hair_update_state (RigHair *hair);
+void rig_hair_update_state(rig_hair_t *hair);
 
-float
-rig_hair_get_shell_position (RutObject *obj,
-                             int shell);
+float rig_hair_get_shell_position(rut_object_t *obj, int shell);
 
-void
-rig_hair_set_uniform_location (RutObject *obj,
-                               cg_pipeline_t *pln,
-                               int uniform);
+void rig_hair_set_uniform_location(rut_object_t *obj,
+                                   cg_pipeline_t *pln,
+                                   int uniform);
 
-void
-rig_hair_set_uniform_float_value (RutObject *obj,
-                                  cg_pipeline_t *pln,
-                                  int uniform,
-                                  float value);
+void rig_hair_set_uniform_float_value(rut_object_t *obj,
+                                      cg_pipeline_t *pln,
+                                      int uniform,
+                                      float value);
 
 #endif

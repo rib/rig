@@ -38,327 +38,293 @@
 #include "rut-paintable.h"
 
 enum {
-  RUT_SLIDER_PROP_PROGRESS,
-  RUT_SLIDER_N_PROPS
+    RUT_SLIDER_PROP_PROGRESS,
+    RUT_SLIDER_N_PROPS
 };
 
-struct _RutSlider
-{
-  RutObjectBase _base;
+struct _rut_slider_t {
+    rut_object_base_t _base;
 
-  /* FIXME: It doesn't seem right that we should have to save a
-   * pointer to the context for input here... */
-  RutContext *ctx;
+    /* FIXME: It doesn't seem right that we should have to save a
+     * pointer to the context for input here... */
+    rut_context_t *ctx;
 
-  /* FIXME: It also doesn't seem right to have to save a pointer
-   * to the camera here so we can queue a redraw */
-  //RutObject *camera;
+    /* FIXME: It also doesn't seem right to have to save a pointer
+     * to the camera here so we can queue a redraw */
+    // rut_object_t *camera;
 
-  RutGraphableProps graphable;
-  RutPaintableProps paintable;
+    rut_graphable_props_t graphable;
+    rut_paintable_props_t paintable;
 
-  RutNineSlice *background;
-  RutNineSlice *handle;
-  RutTransform *handle_transform;
+    rut_nine_slice_t *background;
+    rut_nine_slice_t *handle;
+    rut_transform_t *handle_transform;
 
-  RutInputRegion *input_region;
-  float grab_x;
-  float grab_y;
-  float grab_progress;
+    rut_input_region_t *input_region;
+    float grab_x;
+    float grab_y;
+    float grab_progress;
 
-  RutAxis axis;
-  float range_min;
-  float range_max;
-  float length;
-  float progress;
+    rut_axis_t axis;
+    float range_min;
+    float range_max;
+    float length;
+    float progress;
 
-  RutIntrospectableProps introspectable;
-  RutProperty properties[RUT_SLIDER_N_PROPS];
+    rut_introspectable_props_t introspectable;
+    rut_property_t properties[RUT_SLIDER_N_PROPS];
 };
 
-static RutPropertySpec _rut_slider_prop_specs[] = {
-  {
-    .name = "progress",
-    .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .type = RUT_PROPERTY_TYPE_FLOAT,
-    .data_offset = offsetof (RutSlider, progress),
-    .setter.float_type = rut_slider_set_progress
-  },
-  { 0 } /* XXX: Needed for runtime counting of the number of properties */
+static rut_property_spec_t _rut_slider_prop_specs[] = {
+    { .name = "progress",
+      .flags = RUT_PROPERTY_FLAG_READWRITE,
+      .type = RUT_PROPERTY_TYPE_FLOAT,
+      .data_offset = offsetof(rut_slider_t, progress),
+      .setter.float_type = rut_slider_set_progress },
+    { 0 } /* XXX: Needed for runtime counting of the number of properties */
 };
 
 static void
-_rut_slider_free (void *object)
+_rut_slider_free(void *object)
 {
-  RutSlider *slider = object;
+    rut_slider_t *slider = object;
 
-  rut_object_unref (slider->input_region);
+    rut_object_unref(slider->input_region);
 
-  rut_graphable_remove_child (slider->handle_transform);
+    rut_graphable_remove_child(slider->handle_transform);
 
-  rut_object_unref (slider->handle_transform);
-  rut_object_unref (slider->handle);
-  rut_object_unref (slider->background);
+    rut_object_unref(slider->handle_transform);
+    rut_object_unref(slider->handle);
+    rut_object_unref(slider->background);
 
-  rut_introspectable_destroy (slider);
+    rut_introspectable_destroy(slider);
 
-  rut_graphable_destroy (slider);
+    rut_graphable_destroy(slider);
 
-  rut_object_free (RutSlider, object);
+    rut_object_free(rut_slider_t, object);
 }
 
 static void
-_rut_slider_paint (RutObject *object, RutPaintContext *paint_ctx)
+_rut_slider_paint(rut_object_t *object,
+                  rut_paint_context_t *paint_ctx)
 {
-  RutSlider *slider = object;
-  RutPaintableVTable *bg_paintable =
-    rut_object_get_vtable (slider->background, RUT_TRAIT_ID_PAINTABLE);
+    rut_slider_t *slider = object;
+    rut_paintable_vtable_t *bg_paintable =
+        rut_object_get_vtable(slider->background, RUT_TRAIT_ID_PAINTABLE);
 
-  bg_paintable->paint (slider->background, paint_ctx);
+    bg_paintable->paint(slider->background, paint_ctx);
 }
 
 #if 0
 static void
-_rut_slider_set_camera (RutObject *object,
-                        RutObject *camera)
+_rut_slider_set_camera (rut_object_t *object,
+                        rut_object_t *camera)
 {
-  RutSlider *slider = object;
+    rut_slider_t *slider = object;
 
-  if (camera)
-    rut_camera_add_input_region (camera, slider->input_region);
+    if (camera)
+        rut_camera_add_input_region (camera, slider->input_region);
 
-  slider->camera = camera;
+    slider->camera = camera;
 }
 #endif
 
-RutType rut_slider_type;
+rut_type_t rut_slider_type;
 
 static void
-_rut_slider_init_type (void)
+_rut_slider_init_type(void)
 {
-  static RutGraphableVTable graphable_vtable = {
-    NULL, /* child remove */
-    NULL, /* child add */
-    NULL /* parent changed */
-  };
+    static rut_graphable_vtable_t graphable_vtable = { NULL, /* child remove */
+                                                       NULL, /* child add */
+                                                       NULL /* parent changed */
+    };
 
-  static RutPaintableVTable paintable_vtable = {
-    _rut_slider_paint
-  };
+    static rut_paintable_vtable_t paintable_vtable = { _rut_slider_paint };
 
+    rut_type_t *type = &rut_slider_type;
+#define TYPE rut_slider_t
 
-
-  RutType *type = &rut_slider_type;
-#define TYPE RutSlider
-
-  rut_type_init (&rut_slider_type, C_STRINGIFY (TYPE), _rut_slider_free);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_GRAPHABLE,
-                      offsetof (TYPE, graphable),
-                      &graphable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_PAINTABLE,
-                      offsetof (TYPE, paintable),
-                      &paintable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_INTROSPECTABLE,
-                      offsetof (TYPE, introspectable),
-                      NULL); /* no implied vtable */
+    rut_type_init(&rut_slider_type, C_STRINGIFY(TYPE), _rut_slider_free);
+    rut_type_add_trait(type,
+                       RUT_TRAIT_ID_GRAPHABLE,
+                       offsetof(TYPE, graphable),
+                       &graphable_vtable);
+    rut_type_add_trait(type,
+                       RUT_TRAIT_ID_PAINTABLE,
+                       offsetof(TYPE, paintable),
+                       &paintable_vtable);
+    rut_type_add_trait(type,
+                       RUT_TRAIT_ID_INTROSPECTABLE,
+                       offsetof(TYPE, introspectable),
+                       NULL); /* no implied vtable */
 
 #undef TYPE
 }
 
-static RutInputEventStatus
-_rut_slider_grab_input_cb (RutInputEvent *event,
-                           void *user_data)
+static rut_input_event_status_t
+_rut_slider_grab_input_cb(rut_input_event_t *event, void *user_data)
 {
-  RutSlider *slider = user_data;
+    rut_slider_t *slider = user_data;
 
-  if(rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
-    {
-      RutShell *shell = slider->ctx->shell;
-      if (rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_UP)
-        {
-          rut_shell_ungrab_input (shell,
-                                  _rut_slider_grab_input_cb,
-                                  user_data);
-          return RUT_INPUT_EVENT_STATUS_HANDLED;
-        }
-      else if (rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_MOVE)
-        {
-          float diff;
-          float progress;
+    if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_MOTION) {
+        rut_shell_t *shell = slider->ctx->shell;
+        if (rut_motion_event_get_action(event) == RUT_MOTION_EVENT_ACTION_UP) {
+            rut_shell_ungrab_input(shell, _rut_slider_grab_input_cb, user_data);
+            return RUT_INPUT_EVENT_STATUS_HANDLED;
+        } else if (rut_motion_event_get_action(event) ==
+                   RUT_MOTION_EVENT_ACTION_MOVE) {
+            float diff;
+            float progress;
 
-          if (slider->axis == RUT_AXIS_X)
-            diff = rut_motion_event_get_x (event) - slider->grab_x;
-          else
-            diff = rut_motion_event_get_y (event) - slider->grab_y;
+            if (slider->axis == RUT_AXIS_X)
+                diff = rut_motion_event_get_x(event) - slider->grab_x;
+            else
+                diff = rut_motion_event_get_y(event) - slider->grab_y;
 
-          progress = CLAMP (slider->grab_progress + diff / slider->length, 0, 1);
+            progress =
+                CLAMP(slider->grab_progress + diff / slider->length, 0, 1);
 
-          rut_slider_set_progress (slider, progress);
+            rut_slider_set_progress(slider, progress);
 
-          return RUT_INPUT_EVENT_STATUS_HANDLED;
+            return RUT_INPUT_EVENT_STATUS_HANDLED;
         }
     }
 
-  return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+    return RUT_INPUT_EVENT_STATUS_UNHANDLED;
 }
 
-static RutInputEventStatus
-_rut_slider_input_cb (RutInputRegion *region,
-                      RutInputEvent *event,
-                      void *user_data)
+static rut_input_event_status_t
+_rut_slider_input_cb(rut_input_region_t *region,
+                     rut_input_event_t *event,
+                     void *user_data)
 {
-  RutSlider *slider = user_data;
+    rut_slider_t *slider = user_data;
 
-  //c_print ("Slider input\n");
+    // c_print ("Slider input\n");
 
-  if(rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION &&
-     rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN)
-    {
-      RutShell *shell = slider->ctx->shell;
-      rut_shell_grab_input (shell,
-                            rut_input_event_get_camera (event),
-                            _rut_slider_grab_input_cb,
-                            slider);
-      slider->grab_x = rut_motion_event_get_x (event);
-      slider->grab_y = rut_motion_event_get_y (event);
-      slider->grab_progress = slider->progress;
-      return RUT_INPUT_EVENT_STATUS_HANDLED;
+    if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_MOTION &&
+        rut_motion_event_get_action(event) == RUT_MOTION_EVENT_ACTION_DOWN) {
+        rut_shell_t *shell = slider->ctx->shell;
+        rut_shell_grab_input(shell,
+                             rut_input_event_get_camera(event),
+                             _rut_slider_grab_input_cb,
+                             slider);
+        slider->grab_x = rut_motion_event_get_x(event);
+        slider->grab_y = rut_motion_event_get_y(event);
+        slider->grab_progress = slider->progress;
+        return RUT_INPUT_EVENT_STATUS_HANDLED;
     }
 
-  return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+    return RUT_INPUT_EVENT_STATUS_UNHANDLED;
 }
 
-RutSlider *
-rut_slider_new (RutContext *ctx,
-                RutAxis axis,
-                float min,
-                float max,
-                float length)
+rut_slider_t *
+rut_slider_new(
+    rut_context_t *ctx, rut_axis_t axis, float min, float max, float length)
 {
-  RutSlider *slider =
-    rut_object_alloc0 (RutSlider, &rut_slider_type, _rut_slider_init_type);
-  cg_texture_t *bg_texture;
-  cg_texture_t *handle_texture;
-  GError *error = NULL;
-  //PangoRectangle label_size;
-  float width;
-  float height;
+    rut_slider_t *slider = rut_object_alloc0(
+        rut_slider_t, &rut_slider_type, _rut_slider_init_type);
+    cg_texture_t *bg_texture;
+    cg_texture_t *handle_texture;
+    GError *error = NULL;
+    // PangoRectangle label_size;
+    float width;
+    float height;
 
+    rut_graphable_init(slider);
+    rut_paintable_init(slider);
 
+    slider->ctx = ctx;
 
-  rut_graphable_init (slider);
-  rut_paintable_init (slider);
+    slider->axis = axis;
+    slider->range_min = min;
+    slider->range_max = max;
+    slider->length = length;
+    slider->progress = 0;
 
-  slider->ctx = ctx;
-
-  slider->axis = axis;
-  slider->range_min = min;
-  slider->range_max = max;
-  slider->length = length;
-  slider->progress = 0;
-
-  bg_texture =
-    rut_load_texture_from_data_file (ctx, "slider-background.png", &error);
-  if (!bg_texture)
-    {
-      c_warning ("Failed to load slider-background.png: %s", error->message);
-      g_error_free (error);
+    bg_texture =
+        rut_load_texture_from_data_file(ctx, "slider-background.png", &error);
+    if (!bg_texture) {
+        c_warning("Failed to load slider-background.png: %s", error->message);
+        g_error_free(error);
     }
 
-  handle_texture =
-    rut_load_texture_from_data_file (ctx, "slider-handle.png", &error);
-  if (!handle_texture)
-    {
-      c_warning ("Failed to load slider-handle.png: %s", error->message);
-      g_error_free (error);
+    handle_texture =
+        rut_load_texture_from_data_file(ctx, "slider-handle.png", &error);
+    if (!handle_texture) {
+        c_warning("Failed to load slider-handle.png: %s", error->message);
+        g_error_free(error);
     }
 
-  if (axis == RUT_AXIS_X)
-    {
-      width = length;
-      height = 20;
-    }
-  else
-    {
-      width = 20;
-      height = length;
+    if (axis == RUT_AXIS_X) {
+        width = length;
+        height = 20;
+    } else {
+        width = 20;
+        height = length;
     }
 
-  slider->background = rut_nine_slice_new (ctx, bg_texture, 2, 3, 3, 3,
-                                           width, height);
+    slider->background =
+        rut_nine_slice_new(ctx, bg_texture, 2, 3, 3, 3, width, height);
 
-  if (axis == RUT_AXIS_X)
-    width = 20;
-  else
-    height = 20;
+    if (axis == RUT_AXIS_X)
+        width = 20;
+    else
+        height = 20;
 
-  slider->handle_transform = rut_transform_new (ctx);
-  slider->handle = rut_nine_slice_new (ctx,
-                                       handle_texture,
-                                       4, 5, 6, 5,
-                                       width, height);
-  rut_graphable_add_child (slider->handle_transform, slider->handle);
-  rut_graphable_add_child (slider, slider->handle_transform);
+    slider->handle_transform = rut_transform_new(ctx);
+    slider->handle =
+        rut_nine_slice_new(ctx, handle_texture, 4, 5, 6, 5, width, height);
+    rut_graphable_add_child(slider->handle_transform, slider->handle);
+    rut_graphable_add_child(slider, slider->handle_transform);
 
-  slider->input_region =
-    rut_input_region_new_rectangle (0, 0, width, height,
-                                    _rut_slider_input_cb,
-                                    slider);
+    slider->input_region = rut_input_region_new_rectangle(
+        0, 0, width, height, _rut_slider_input_cb, slider);
 
-  //rut_input_region_set_graphable (slider->input_region, slider->handle);
-  rut_graphable_add_child (slider, slider->input_region);
+    // rut_input_region_set_graphable (slider->input_region, slider->handle);
+    rut_graphable_add_child(slider, slider->input_region);
 
-  rut_introspectable_init (slider,
-                           _rut_slider_prop_specs,
-                           slider->properties);
+    rut_introspectable_init(slider, _rut_slider_prop_specs, slider->properties);
 
-  return slider;
+    return slider;
 }
 
 void
-rut_slider_set_range (RutSlider *slider,
-                      float min, float max)
+rut_slider_set_range(rut_slider_t *slider, float min, float max)
 {
-  slider->range_min = min;
-  slider->range_max = max;
+    slider->range_min = min;
+    slider->range_max = max;
 }
 
 void
-rut_slider_set_length (RutSlider *slider,
-                       float length)
+rut_slider_set_length(rut_slider_t *slider, float length)
 {
-  slider->length = length;
+    slider->length = length;
 }
 
 void
-rut_slider_set_progress (RutObject *obj,
-                         float progress)
+rut_slider_set_progress(rut_object_t *obj, float progress)
 {
-  RutSlider *slider = obj;
-  float translation;
+    rut_slider_t *slider = obj;
+    float translation;
 
-  if (slider->progress == progress)
-    return;
+    if (slider->progress == progress)
+        return;
 
-  slider->progress = progress;
-  rut_property_dirty (&slider->ctx->property_ctx,
-                      &slider->properties[RUT_SLIDER_PROP_PROGRESS]);
+    slider->progress = progress;
+    rut_property_dirty(&slider->ctx->property_ctx,
+                       &slider->properties[RUT_SLIDER_PROP_PROGRESS]);
 
-  translation = (slider->length - 20) * slider->progress;
+    translation = (slider->length - 20) * slider->progress;
 
-  rut_transform_init_identity (slider->handle_transform);
+    rut_transform_init_identity(slider->handle_transform);
 
-  if (slider->axis == RUT_AXIS_X)
-    rut_transform_translate (slider->handle_transform, translation, 0, 0);
-  else
-    rut_transform_translate (slider->handle_transform, 0, translation, 0);
+    if (slider->axis == RUT_AXIS_X)
+        rut_transform_translate(slider->handle_transform, translation, 0, 0);
+    else
+        rut_transform_translate(slider->handle_transform, 0, translation, 0);
 
-  rut_shell_queue_redraw (slider->ctx->shell);
+    rut_shell_queue_redraw(slider->ctx->shell);
 
-  //c_print ("progress = %f\n", slider->progress);
+    // c_print ("progress = %f\n", slider->progress);
 }
-
-

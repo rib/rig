@@ -34,87 +34,71 @@
 #include <cogl/cogl.h>
 #include <cogl-pango/cogl-pango.h>
 
-typedef enum _RutCmdType
-{
-  RUT_CMD_TYPE_NOP,
-  RUT_CMD_TYPE_TRANSFORM_PUSH,
-  RUT_CMD_TYPE_TRANSFORM_POP,
-  RUT_CMD_TYPE_TRANSFORM,
-  RUT_CMD_TYPE_PRIMITIVE,
-  RUT_CMD_TYPE_TEXT,
-  RUT_CMD_TYPE_RECTANGLE
-} RutCmdType;
+typedef enum _rut_cmd_type_t {
+    RUT_CMD_TYPE_NOP,
+    RUT_CMD_TYPE_TRANSFORM_PUSH,
+    RUT_CMD_TYPE_TRANSFORM_POP,
+    RUT_CMD_TYPE_TRANSFORM,
+    RUT_CMD_TYPE_PRIMITIVE,
+    RUT_CMD_TYPE_TEXT,
+    RUT_CMD_TYPE_RECTANGLE
+} rut_cmd_type_t;
 
-typedef struct _RutCmd
-{
-  RutCmdType type;
-} RutCmd;
-#define RUT_CMD(x) ((RutCmd *)X)
+typedef struct _rut_cmd_t {
+    rut_cmd_type_t type;
+} rut_cmd_t;
+#define RUT_CMD(x) ((rut_cmd_t *)X)
 
-typedef struct _RutTransformCmd
-{
-  RutCmd _parent;
-  cg_matrix_t matrix;
-} RutTransformCmd;
-#define RUT_TRANSFORM_CMD(X) ((RutTransformCmd *)X)
+typedef struct _rut_transform_cmd_t {
+    rut_cmd_t _parent;
+    cg_matrix_t matrix;
+} rut_transform_cmd_t;
+#define RUT_TRANSFORM_CMD(X) ((rut_transform_cmd_t *)X)
 
-typedef struct _RutPrimitiveCmd
-{
-  RutCmd _parent;
-  cg_pipeline_t *pipeline;
-  cg_primitive_t *primitive;
-} RutPrimitiveCmd;
-#define RUT_PRIMITIVE_CMD(X) ((RutPrimitiveCmd *)X)
+typedef struct _rut_primitive_cmd_t {
+    rut_cmd_t _parent;
+    cg_pipeline_t *pipeline;
+    cg_primitive_t *primitive;
+} rut_primitive_cmd_t;
+#define RUT_PRIMITIVE_CMD(X) ((rut_primitive_cmd_t *)X)
 
-typedef struct _RutTextCmd
-{
-  RutCmd _parent;
-  PangoLayout *layout;
-  cg_color_t color;
-  int x;
-  int y;
-} RutTextCmd;
-#define RUT_TEXT_CMD(X) ((RutTextCmd *)X)
+typedef struct _rut_text_cmd_t {
+    rut_cmd_t _parent;
+    PangoLayout *layout;
+    cg_color_t color;
+    int x;
+    int y;
+} rut_text_cmd_t;
+#define RUT_TEXT_CMD(X) ((rut_text_cmd_t *)X)
 
-typedef struct _RutRectangleCmd
-{
-  RutCmd _parent;
-  cg_pipeline_t *pipeline;
-  float width, height;
-} RutRectangleCmd;
-#define RUT_RECTANGLE_CMD(X) ((RutRectangleCmd *)X)
+typedef struct _rut_rectangle_cmd_t {
+    rut_cmd_t _parent;
+    cg_pipeline_t *pipeline;
+    float width, height;
+} rut_rectangle_cmd_t;
+#define RUT_RECTANGLE_CMD(X) ((rut_rectangle_cmd_t *)X)
 
-typedef struct _RutDisplayList
-{
-  /* PRIVATE */
-  c_list_t *head;
-  c_list_t *tail;
-} RutDisplayList;
+typedef struct _rut_display_list_t {
+    /* PRIVATE */
+    c_list_t *head;
+    c_list_t *tail;
+} rut_display_list_t;
 
-void
-rut_display_list_unsplice (RutDisplayList *list);
+void rut_display_list_unsplice(rut_display_list_t *list);
 
-void
-rut_display_list_splice (c_list_t *after, RutDisplayList *sub_list);
+void rut_display_list_splice(c_list_t *after, rut_display_list_t *sub_list);
 
-void
-rut_display_list_append (RutDisplayList *list, void *data);
+void rut_display_list_append(rut_display_list_t *list, void *data);
 
-c_list_t *
-rut_display_list_insert_before (c_list_t *sibling,
-                                 void *data);
+c_list_t *rut_display_list_insert_before(c_list_t *sibling, void *data);
 
-void
-rut_display_list_delete_link (c_list_t *link);
+void rut_display_list_delete_link(c_list_t *link);
 
-void
-rut_display_list_init (RutDisplayList *list);
+void rut_display_list_init(rut_display_list_t *list);
 
-void
-rut_display_list_destroy (RutDisplayList *list);
+void rut_display_list_destroy(rut_display_list_t *list);
 
-void
-rut_display_list_paint (RutDisplayList *display_list,
-                        cg_framebuffer_t *fb);
+void rut_display_list_paint(rut_display_list_t *display_list,
+                            cg_framebuffer_t *fb);
 
 #endif /* _RUT_DISPLAY_LIST_H_ */

@@ -37,351 +37,324 @@
 #include "rig-code.h"
 #include "rig-llvm.h"
 
+struct _rig_code_node_t {
+    rut_object_base_t _base;
 
-struct _RigCodeNode
-{
-  RutObjectBase _base;
+    rig_engine_t *engine;
 
-  RigEngine *engine;
+    rut_graphable_props_t graphable;
 
-  RutGraphableProps graphable;
+    rut_list_t link_closures;
 
-  RutList link_closures;
-
-  char *pre;
-  char *post;
+    char *pre;
+    char *post;
 };
 
 static void
-_rig_code_node_free (void *object)
+_rig_code_node_free(void *object)
 {
-  RigCodeNode *node = object;
+    rig_code_node_t *node = object;
 
-  if (node->pre)
-    c_free (node->pre);
-  if (node->post)
-    c_free (node->post);
+    if (node->pre)
+        c_free(node->pre);
+    if (node->post)
+        c_free(node->post);
 
-  rut_graphable_destroy (node);
+    rut_graphable_destroy(node);
 
-  rut_object_free (RigCodeNode, object);
+    rut_object_free(rig_code_node_t, object);
 }
 
-RutType rig_code_node_type;
+rut_type_t rig_code_node_type;
 
 static void
-_rig_code_node_init_type (void)
+_rig_code_node_init_type(void)
 {
-  static RutGraphableVTable graphable_vtable = {
-      NULL, /* child remove */
-      NULL, /* child add */
-      NULL /* parent changed */
-  };
+    static rut_graphable_vtable_t graphable_vtable = { NULL, /* child remove */
+                                                       NULL, /* child add */
+                                                       NULL /* parent changed */
+    };
 
-  RutType *type = &rig_code_node_type;
-#define TYPE RigCodeNode
+    rut_type_t *type = &rig_code_node_type;
+#define TYPE rig_code_node_t
 
-  rut_type_init (type, C_STRINGIFY (TYPE), _rig_code_node_free);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_GRAPHABLE,
-                      offsetof (TYPE, graphable),
-                      &graphable_vtable);
+    rut_type_init(type, C_STRINGIFY(TYPE), _rig_code_node_free);
+    rut_type_add_trait(type,
+                       RUT_TRAIT_ID_GRAPHABLE,
+                       offsetof(TYPE, graphable),
+                       &graphable_vtable);
 
 #undef TYPE
 }
 
-RigCodeNode *
-rig_code_node_new (RigEngine *engine,
-                   const char *pre,
-                   const char *post)
+rig_code_node_t *
+rig_code_node_new(rig_engine_t *engine, const char *pre, const char *post)
 {
-  RigCodeNode *node =
-    rut_object_alloc0 (RigCodeNode, &rig_code_node_type,
-                       _rig_code_node_init_type);
+    rig_code_node_t *node = rut_object_alloc0(
+        rig_code_node_t, &rig_code_node_type, _rig_code_node_init_type);
 
-  node->engine = engine;
+    node->engine = engine;
 
-  rut_graphable_init (node);
+    rut_graphable_init(node);
 
-  rut_list_init (&node->link_closures);
+    rut_list_init(&node->link_closures);
 
-  /* Note: in device mode and in the simulator we avoid
-   * tracking any source code. */
+    /* Note: in device mode and in the simulator we avoid
+     * tracking any source code. */
 
-  if (pre)
-    node->pre = c_strdup (pre);
+    if (pre)
+        node->pre = c_strdup(pre);
 
-  if (post)
-    node->post = c_strdup (post);
+    if (post)
+        node->post = c_strdup(post);
 
-  return node;
+    return node;
 }
 
-static RutTraverseVisitFlags
-code_generate_pre_cb (RutObject *object,
-                      int depth,
-                      void *user_data)
+static rut_traverse_visit_flags_t
+code_generate_pre_cb(rut_object_t *object, int depth, void *user_data)
 {
-  RigCodeNode *node = object;
-  c_string_t *code = user_data;
+    rig_code_node_t *node = object;
+    c_string_t *code = user_data;
 
-  if (node->pre)
-    c_string_append (code, node->pre);
+    if (node->pre)
+        c_string_append(code, node->pre);
 
-  return RUT_TRAVERSE_VISIT_CONTINUE;
+    return RUT_TRAVERSE_VISIT_CONTINUE;
 }
 
-static RutTraverseVisitFlags
-code_generate_post_cb (RutObject *object,
-                       int depth,
-                       void *user_data)
+static rut_traverse_visit_flags_t
+code_generate_post_cb(rut_object_t *object, int depth, void *user_data)
 {
-  RigCodeNode *node = object;
-  c_string_t *code = user_data;
+    rig_code_node_t *node = object;
+    c_string_t *code = user_data;
 
-  if (node->post)
-    c_string_append (code, node->post);
+    if (node->post)
+        c_string_append(code, node->post);
 
-  return RUT_TRAVERSE_VISIT_CONTINUE;
+    return RUT_TRAVERSE_VISIT_CONTINUE;
 }
 
-static RutTraverseVisitFlags
-notify_link_cb (RutObject *object,
-                int depth,
-                void *user_data)
+static rut_traverse_visit_flags_t
+notify_link_cb(rut_object_t *object, int depth, void *user_data)
 {
-  RigCodeNode *node = object;
+    rig_code_node_t *node = object;
 
-  rut_closure_list_invoke (&node->link_closures,
-                           RigCodeNodeLinkCallback,
-                           node);
+    rut_closure_list_invoke(
+        &node->link_closures, rig_code_node_link_callback_t, node);
 
-  return RUT_TRAVERSE_VISIT_CONTINUE;
+    return RUT_TRAVERSE_VISIT_CONTINUE;
 }
 
 void
-rig_code_update_dso (RigEngine *engine, uint8_t *data, int len)
+rig_code_update_dso(rig_engine_t *engine, uint8_t *data, int len)
 {
-  char *tmp_filename;
-  GError *error = NULL;
-  int dso_fd;
-  RutException *e = NULL;
-  GModule *module;
+    char *tmp_filename;
+    GError *error = NULL;
+    int dso_fd;
+    rut_exception_t *e = NULL;
+    GModule *module;
 
-  if (engine->code_dso_module)
-    {
-      g_module_close (engine->code_dso_module);
-      engine->code_dso_module = NULL;
+    if (engine->code_dso_module) {
+        g_module_close(engine->code_dso_module);
+        engine->code_dso_module = NULL;
     }
 
-  if (!data)
-    return;
+    if (!data)
+        return;
 
-  dso_fd = g_file_open_tmp (NULL, &tmp_filename, &error);
-  if (dso_fd == -1)
-    {
-      c_warning ("Failed to open a temporary file for shared object: %s",
-                 error->message);
-      g_error_free (error);
-      return;
+    dso_fd = g_file_open_tmp(NULL, &tmp_filename, &error);
+    if (dso_fd == -1) {
+        c_warning("Failed to open a temporary file for shared object: %s",
+                  error->message);
+        g_error_free(error);
+        return;
     }
 
-  if (!rut_os_write (dso_fd, data, len, &e))
-    {
-      c_warning ("Failed to write shared object: %s", e->message);
-      rut_exception_free (e);
-      return;
+    if (!rut_os_write(dso_fd, data, len, &e)) {
+        c_warning("Failed to write shared object: %s", e->message);
+        rut_exception_free(e);
+        return;
     }
 
-  module = g_module_open (tmp_filename, G_MODULE_BIND_LAZY);
-  if (!module)
-    {
-      g_module_close (module);
-      c_warning ("Failed to open shared object");
-      return;
+    module = g_module_open(tmp_filename, G_MODULE_BIND_LAZY);
+    if (!module) {
+        g_module_close(module);
+        c_warning("Failed to open shared object");
+        return;
     }
-  engine->code_dso_module = module;
+    engine->code_dso_module = module;
 
-  rut_graphable_traverse (engine->code_graph,
-                          RUT_TRAVERSE_DEPTH_FIRST,
-                          NULL,
-                          notify_link_cb,
-                          NULL);
+    rut_graphable_traverse(engine->code_graph,
+                           RUT_TRAVERSE_DEPTH_FIRST,
+                           NULL,
+                           notify_link_cb,
+                           NULL);
 }
 
 #ifdef RIG_EDITOR_ENABLED
 static void
-recompile (RigEngine *engine)
+recompile(rig_engine_t *engine)
 {
-  RigLLVMModule *module;
-  uint8_t *dso_data;
-  size_t dso_len;
+    rig_llvm_module_t *module;
+    uint8_t *dso_data;
+    size_t dso_len;
 
-  c_return_if_fail (engine->need_recompile);
-  engine->need_recompile = false;
+    c_return_if_fail(engine->need_recompile);
+    engine->need_recompile = false;
 
-  /* To avoid fragmentation we re-use one allocation for all codegen... */
-  c_string_set_size (engine->code_string, 0);
+    /* To avoid fragmentation we re-use one allocation for all codegen... */
+    c_string_set_size(engine->code_string, 0);
 
-  rut_graphable_traverse (engine->code_graph,
-                          RUT_TRAVERSE_DEPTH_FIRST,
-                          code_generate_pre_cb,
-                          code_generate_post_cb,
-                          engine->code_string);
+    rut_graphable_traverse(engine->code_graph,
+                           RUT_TRAVERSE_DEPTH_FIRST,
+                           code_generate_pre_cb,
+                           code_generate_post_cb,
+                           engine->code_string);
 
-  module = rig_llvm_compile_to_dso (engine->code_string->str,
-                                    &engine->code_dso_filename,
-                                    &dso_data,
-                                    &dso_len);
+    module = rig_llvm_compile_to_dso(engine->code_string->str,
+                                     &engine->code_dso_filename,
+                                     &dso_data,
+                                     &dso_len);
 
-  if (module)
-    {
-      rig_frontend_update_simulator_dso (engine->frontend,
-                                         dso_data, dso_len);
+    if (module) {
+        rig_frontend_update_simulator_dso(engine->frontend, dso_data, dso_len);
 
-#warning "fix freeing of llvm module - crashes due to null llvm context impl pointer"
-      //rut_object_unref (module);
+#warning                                                                       \
+        "fix freeing of llvm module - crashes due to null llvm context impl pointer"
+        // rut_object_unref (module);
     }
 }
 
 static void
-recompile_pre_paint_callback (RutObject *_null_graphable,
-                              void *user_data)
+recompile_pre_paint_callback(rut_object_t *_null_graphable,
+                             void *user_data)
 {
-  recompile (user_data);
+    recompile(user_data);
 }
 #endif /* RIG_EDITOR_ENABLED */
 
 static void
-queue_recompile (RigEngine *engine)
+queue_recompile(rig_engine_t *engine)
 {
-  c_return_if_fail (engine->frontend &&
-                    engine->frontend_id == RIG_FRONTEND_ID_EDITOR);
+    c_return_if_fail(engine->frontend &&
+                     engine->frontend_id == RIG_FRONTEND_ID_EDITOR);
 
 #ifdef RIG_EDITOR_ENABLED
-  if (engine->need_recompile)
-    return;
+    if (engine->need_recompile)
+        return;
 
-  engine->need_recompile = true;
+    engine->need_recompile = true;
 
-  rut_shell_add_pre_paint_callback (engine->shell,
-                                    NULL, /* graphable */
-                                    recompile_pre_paint_callback,
-                                    engine);
+    rut_shell_add_pre_paint_callback(engine->shell,
+                                     NULL, /* graphable */
+                                     recompile_pre_paint_callback,
+                                     engine);
 
-  rut_shell_queue_redraw (engine->shell);
+    rut_shell_queue_redraw(engine->shell);
 #endif
 }
 
 void
-rig_code_node_set_pre (RigCodeNode *node,
-                       const char *pre)
+rig_code_node_set_pre(rig_code_node_t *node, const char *pre)
 {
-  if (node->pre)
-    c_free (node->pre);
+    if (node->pre)
+        c_free(node->pre);
 
-  node->pre = c_strdup (pre);
+    node->pre = c_strdup(pre);
 
-  queue_recompile (node->engine);
+    queue_recompile(node->engine);
 }
 
 void
-rig_code_node_set_post (RigCodeNode *node,
-                        const char *post)
+rig_code_node_set_post(rig_code_node_t *node, const char *post)
 {
-  if (node->post)
-    c_free (node->post);
+    if (node->post)
+        c_free(node->post);
 
-  node->post = c_strdup (post);
+    node->post = c_strdup(post);
 
-  queue_recompile (node->engine);
+    queue_recompile(node->engine);
 }
 
 void
-rig_code_node_add_child (RigCodeNode *node,
-                         RigCodeNode *child)
+rig_code_node_add_child(rig_code_node_t *node, rig_code_node_t *child)
 {
-  rut_graphable_add_child (node, child);
+    rut_graphable_add_child(node, child);
 
-  queue_recompile (node->engine);
+    queue_recompile(node->engine);
 }
 
 void
-rig_code_node_remove_child (RigCodeNode *child)
+rig_code_node_remove_child(rig_code_node_t *child)
 {
-  queue_recompile (child->engine);
+    queue_recompile(child->engine);
 
-  rut_graphable_remove_child (child);
+    rut_graphable_remove_child(child);
 }
 
-RutClosure *
-rig_code_node_add_link_callback (RigCodeNode *node,
-                                 RigCodeNodeLinkCallback callback,
-                                 void *user_data,
-                                 RutClosureDestroyCallback destroy)
+rut_closure_t *
+rig_code_node_add_link_callback(rig_code_node_t *node,
+                                rig_code_node_link_callback_t callback,
+                                void *user_data,
+                                rut_closure_destroy_callback_t destroy)
 {
-  return rut_closure_list_add (&node->link_closures,
-                               callback,
-                               user_data,
-                               destroy);
+    return rut_closure_list_add(
+        &node->link_closures, callback, user_data, destroy);
 }
 
 void *
-rig_code_resolve_symbol (RigEngine *engine, const char *name)
+rig_code_resolve_symbol(rig_engine_t *engine, const char *name)
 {
-  if (engine->code_dso_module)
-    {
-      void *sym;
-      if (g_module_symbol (engine->code_dso_module, name, &sym))
-        return sym;
-      else
+    if (engine->code_dso_module) {
+        void *sym;
+        if (g_module_symbol(engine->code_dso_module, name, &sym))
+            return sym;
+        else
+            return NULL;
+    } else
         return NULL;
-    }
-  else
-    return NULL;
 }
 
 void
-_rig_code_init (RigEngine *engine)
+_rig_code_init(rig_engine_t *engine)
 {
 #ifdef RIG_EDITOR_ENABLED
-  engine->code_string = c_string_new ("");
-  engine->codegen_string0 = c_string_new ("");
-  engine->codegen_string1 = c_string_new ("");
+    engine->code_string = c_string_new("");
+    engine->codegen_string0 = c_string_new("");
+    engine->codegen_string1 = c_string_new("");
 
-  engine->next_code_id = 1;
-  engine->need_recompile = false;
+    engine->next_code_id = 1;
+    engine->need_recompile = false;
 #endif
 
-  engine->code_graph = rig_code_node_new (engine,
-                                          "typedef struct _RutProperty RutProperty;\n",
-                                          "");
+    engine->code_graph = rig_code_node_new(
+        engine, "typedef struct _rut_property_t rut_property_t;\n", "");
 }
 
 void
-_rig_code_fini (RigEngine *engine)
+_rig_code_fini(rig_engine_t *engine)
 {
 #ifdef RIG_EDITOR_ENABLED
-  c_string_free (engine->code_string, true);
-  engine->code_string = NULL;
+    c_string_free(engine->code_string, true);
+    engine->code_string = NULL;
 
-  c_string_free (engine->codegen_string0, true);
-  engine->codegen_string0 = NULL;
+    c_string_free(engine->codegen_string0, true);
+    engine->codegen_string0 = NULL;
 
-  c_string_free (engine->codegen_string1, true);
-  engine->codegen_string1 = NULL;
+    c_string_free(engine->codegen_string1, true);
+    engine->codegen_string1 = NULL;
 
-  if (engine->code_dso_filename)
-    c_free (engine->code_dso_filename);
+    if (engine->code_dso_filename)
+        c_free(engine->code_dso_filename);
 
-  rut_shell_remove_pre_paint_callback (engine->shell,
-                                       recompile_pre_paint_callback,
-                                       engine);
+    rut_shell_remove_pre_paint_callback(
+        engine->shell, recompile_pre_paint_callback, engine);
 #endif
 
-  rut_object_unref (engine->code_graph);
-  engine->code_graph = NULL;
+    rut_object_unref(engine->code_graph);
+    engine->code_graph = NULL;
 
-  if (engine->code_dso_module)
-    g_module_close (engine->code_dso_module);
+    if (engine->code_dso_module)
+        g_module_close(engine->code_dso_module);
 }

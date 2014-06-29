@@ -31,15 +31,13 @@
 
 #include <rut.h>
 
-typedef struct _RigFrontend RigFrontend;
+typedef struct _rig_frontend_t rig_frontend_t;
 
-typedef enum _RigFrontendID
-{
-  RIG_FRONTEND_ID_EDITOR=1,
-  RIG_FRONTEND_ID_SLAVE,
-  RIG_FRONTEND_ID_DEVICE
-} RigFrontendID;
-
+typedef enum _rig_frontend_id_t {
+    RIG_FRONTEND_ID_EDITOR = 1,
+    RIG_FRONTEND_ID_SLAVE,
+    RIG_FRONTEND_ID_DEVICE
+} rig_frontend_id_t;
 
 #include "rig-frontend.h"
 #include "rig-engine.h"
@@ -56,107 +54,95 @@ typedef enum _RigFrontendID
  * though in the future more things may be split out into different
  * threads and processes.
  */
-struct _RigFrontend
-{
-  RutObjectBase _base;
+struct _rig_frontend_t {
+    rut_object_base_t _base;
 
-  RigFrontendID id;
+    rig_frontend_id_t id;
 
-  RigEngine *engine;
+    rig_engine_t *engine;
 
-  pid_t simulator_pid;
+    pid_t simulator_pid;
 
 #ifdef linux
-  int listen_fd;
+    int listen_fd;
 #endif
-  int fd;
-  RigRPCPeer *frontend_peer;
-  bool connected;
+    int fd;
+    rig_rpc_peer_t *frontend_peer;
+    bool connected;
 
-  bool has_resized;
-  int pending_width;
-  int pending_height;
+    bool has_resized;
+    int pending_width;
+    int pending_height;
 
-  bool pending_play_mode_enabled;
+    bool pending_play_mode_enabled;
 
-  RutClosure *simulator_queue_frame_closure;
+    rut_closure_t *simulator_queue_frame_closure;
 
-  bool ui_update_pending;
+    bool ui_update_pending;
 
-  RutList ui_update_cb_list;
+    rut_list_t ui_update_cb_list;
 
-  void (*simulator_connected_callback) (void *user_data);
-  void *simulator_connected_data;
+    void (*simulator_connected_callback)(void *user_data);
+    void *simulator_connected_data;
 
-  RigEngineOpMapContext map_op_ctx;
-  RigEngineOpApplyContext apply_op_ctx;
-  RigPBUnSerializer *prop_change_unserializer;
+    rig_engine_op_map_context_t map_op_ctx;
+    rig_engine_op_apply_context_t apply_op_ctx;
+    rig_pb_un_serializer_t *prop_change_unserializer;
 
-  uint8_t *pending_dso_data;
-  size_t pending_dso_len;
+    uint8_t *pending_dso_data;
+    size_t pending_dso_len;
 
-  GHashTable *tmp_id_to_object_map;
+    GHashTable *tmp_id_to_object_map;
 };
 
+rig_frontend_t *
+rig_frontend_new(rut_shell_t *shell, rig_frontend_id_t id, bool play_mode);
 
-RigFrontend *
-rig_frontend_new (RutShell *shell,
-                  RigFrontendID id,
-                  bool play_mode);
+void rig_frontend_post_init_engine(rig_frontend_t *frontend,
+                                   const char *ui_filename);
 
-void
-rig_frontend_post_init_engine (RigFrontend *frontend,
-                               const char *ui_filename);
+void rig_frontend_forward_simulator_ui(rig_frontend_t *frontend,
+                                       const Rig__UI *pb_ui,
+                                       bool play_mode);
 
-void
-rig_frontend_forward_simulator_ui (RigFrontend *frontend,
-                                   const Rig__UI *pb_ui,
-                                   bool play_mode);
-
-void
-rig_frontend_reload_simulator_ui (RigFrontend *frontend,
-                                  RigUI *ui,
-                                  bool play_mode);
+void rig_frontend_reload_simulator_ui(rig_frontend_t *frontend,
+                                      rig_ui_t *ui,
+                                      bool play_mode);
 
 /* TODO: should support a destroy_notify callback */
-void
-rig_frontend_sync (RigFrontend *frontend,
-                   void (*synchronized) (const Rig__SyncAck *result,
-                                         void *user_data),
-                   void *user_data);
+void rig_frontend_sync(rig_frontend_t *frontend,
+                       void (*synchronized)(const Rig__SyncAck *result,
+                                            void *user_data),
+                       void *user_data);
+
+void rig_frontend_run_simulator_frame(rig_frontend_t *frontend,
+                                      rig_pb_serializer_t *serializer,
+                                      Rig__FrameSetup *setup);
 
 void
-rig_frontend_run_simulator_frame (RigFrontend *frontend,
-                                  RigPBSerializer *serializer,
-                                  Rig__FrameSetup *setup);
+rig_frontend_set_simulator_connected_callback(rig_frontend_t *frontend,
+                                              void (*callback)(void *user_data),
+                                              void *user_data);
 
-void
-rig_frontend_set_simulator_connected_callback (RigFrontend *frontend,
-                                               void (*callback) (void *user_data),
-                                               void *user_data);
+typedef void (*rig_frontend_ui_update_callback_t)(rig_frontend_t *frontend,
+                                                  void *user_data);
 
-typedef void (*RigFrontendUIUpdateCallback) (RigFrontend *frontend,
-                                             void *user_data);
+rut_closure_t *
+rig_frontend_add_ui_update_callback(rig_frontend_t *frontend,
+                                    rig_frontend_ui_update_callback_t callback,
+                                    void *user_data,
+                                    rut_closure_destroy_callback_t destroy);
 
-RutClosure *
-rig_frontend_add_ui_update_callback (RigFrontend *frontend,
-                                     RigFrontendUIUpdateCallback callback,
-                                     void *user_data,
-                                     RutClosureDestroyCallback destroy);
-
-void
-rig_frontend_queue_set_play_mode_enabled (RigFrontend *frontend,
-                                          bool play_mode_enabled);
+void rig_frontend_queue_set_play_mode_enabled(rig_frontend_t *frontend,
+                                              bool play_mode_enabled);
 
 /* Similar to rut_shell_queue_redraw() but for queuing a new simulator
  * frame. If the simulator is currently busy this waits until we
  * recieve an update from the simulator and then queues a redraw. */
-void
-rig_frontend_queue_simulator_frame (RigFrontend *frontend);
+void rig_frontend_queue_simulator_frame(rig_frontend_t *frontend);
 
-void
-rig_frontend_update_simulator_dso (RigFrontend *frontend,
-                                   uint8_t *dso,
-                                   int len);
+void rig_frontend_update_simulator_dso(rig_frontend_t *frontend,
+                                       uint8_t *dso,
+                                       int len);
 
 #endif /* _RIG_FRONTEND_H_ */

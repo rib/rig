@@ -34,13 +34,12 @@
 #include "rut-object.h"
 #include "rut-interfaces.h"
 
-struct _RutTransform
-{
-  RutObjectBase _base;
+struct _rut_transform_t {
+    rut_object_base_t _base;
 
-  RutGraphableProps graphable;
+    rut_graphable_props_t graphable;
 
-  cg_matrix_t matrix;
+    cg_matrix_t matrix;
 };
 
 #endif /* _RUT_TRANSFORM_PRIVATE_H_ */

@@ -43,190 +43,189 @@
 #include "rig.pb-c.h"
 
 static void
-handle_load_response (const Rig__LoadResult *result,
-                      void *closure_data)
+handle_load_response(const Rig__LoadResult *result,
+                     void *closure_data)
 {
-  c_print ("UI loaded by slave\n");
+    c_print("UI loaded by slave\n");
 }
 
 void
-slave_master_connected (PB_RPC_Client *pb_client,
-                        void *user_data)
+slave_master_connected(pb_rpc__client_t *pb_client, void *user_data)
 {
-  RigSlaveMaster *master = user_data;
+    rig_slave_master_t *master = user_data;
 
-  master->connected = true;
+    master->connected = true;
 
-  rig_slave_master_reload_ui (master);
+    rig_slave_master_reload_ui(master);
 
-  c_print ("XXXXXXXXXXXX Slave Connected and serialized UI sent!");
+    c_print("XXXXXXXXXXXX Slave Connected and serialized UI sent!");
 }
 
 static void
-destroy_slave_master (RigSlaveMaster *master)
+destroy_slave_master(rig_slave_master_t *master)
 {
-  RigEngine *engine = master->engine;
+    rig_engine_t *engine = master->engine;
 
-  if (!master->rpc_client)
-    return;
+    if (!master->rpc_client)
+        return;
 
-  rig_rpc_client_disconnect (master->rpc_client);
-  rut_object_unref (master->rpc_client);
-  master->rpc_client = NULL;
+    rig_rpc_client_disconnect(master->rpc_client);
+    rut_object_unref(master->rpc_client);
+    master->rpc_client = NULL;
 
-  master->connected = false;
+    master->connected = false;
 
-  engine->slave_masters = c_list_remove (engine->slave_masters, master);
+    engine->slave_masters = c_list_remove(engine->slave_masters, master);
 
-  rut_object_unref (master);
+    rut_object_unref(master);
 }
 
 static void
-client_error_handler (PB_RPC_Error_Code code,
-                      const char *message,
-                      void *user_data)
+client_error_handler(PB_RPC_Error_Code code,
+                     const char *message,
+                     void *user_data)
 {
-  RigSlaveMaster *master = user_data;
+    rig_slave_master_t *master = user_data;
 
-  c_return_if_fail (master->rpc_client);
+    c_return_if_fail(master->rpc_client);
 
-  c_warning ("RPC Client error: %s", message);
+    c_warning("RPC Client error: %s", message);
 
-  destroy_slave_master (master);
+    destroy_slave_master(master);
 }
 
 static void
-_rig_slave_master_free (void *object)
+_rig_slave_master_free(void *object)
 {
-  RigSlaveMaster *master = object;
+    rig_slave_master_t *master = object;
 
-  destroy_slave_master (master);
+    destroy_slave_master(master);
 
-  rut_object_free (RigSlaveMaster, master);
+    rut_object_free(rig_slave_master_t, master);
 }
 
-static RutType rig_slave_master_type;
+static rut_type_t rig_slave_master_type;
 
 static void
-_rig_slave_master_init_type (void)
+_rig_slave_master_init_type(void)
 {
-  rut_type_init (&rig_slave_master_type, C_STRINGIFY (TYPE),
-                 _rig_slave_master_free);
+    rut_type_init(
+        &rig_slave_master_type, C_STRINGIFY(TYPE), _rig_slave_master_free);
 }
 
-static RigSlaveMaster *
-rig_slave_master_new (RigEngine *engine,
-                      RigSlaveAddress *slave_address)
+static rig_slave_master_t *
+rig_slave_master_new(rig_engine_t *engine, rig_slave_address_t *slave_address)
 {
-  RigSlaveMaster *master =
-    rut_object_alloc0 (RigSlaveMaster,
-                       &rig_slave_master_type,
-                       _rig_slave_master_init_type);
+    rig_slave_master_t *master = rut_object_alloc0(rig_slave_master_t,
+                                                   &rig_slave_master_type,
+                                                   _rig_slave_master_init_type);
 
-  master->engine = engine;
+    master->engine = engine;
 
-  master->slave_address = rut_object_ref (slave_address);
+    master->slave_address = rut_object_ref(slave_address);
 
-  if (slave_address->type == RIG_SLAVE_ADDRESS_TYPE_ADB_SERIAL)
-    {
-      RutException *catch = NULL;
-      struct timespec spec;
+    if (slave_address->type == RIG_SLAVE_ADDRESS_TYPE_ADB_SERIAL) {
+        rut_exception_t *catch = NULL;
+        struct timespec spec;
 
-      if (!rut_adb_run_shell_cmd (slave_address->serial,
-                                  &catch,
-                                  "shell:am force-stop org.rig.app"))
-        {
-          c_warning ("Failed to force stop of Rig slave application on Android "
-                     "device %s", slave_address->serial);
-          rut_exception_free (catch);
-          catch = NULL;
+        if (!rut_adb_run_shell_cmd(slave_address->serial,
+                                   &catch,
+                                   "shell:am force-stop org.rig.app")) {
+            c_warning(
+                "Failed to force stop of Rig slave application on Android "
+                "device %s",
+                slave_address->serial);
+            rut_exception_free(catch);
+            catch = NULL;
         }
 
-      if (!rut_adb_run_shell_cmd (slave_address->serial,
-                                  &catch,
-                                  "shell:am start -n "
-                                  "org.rig.app/org.rig.app.RigSlave"))
-        {
-          c_warning ("Failed to start Rig slave application on Android "
-                     "device %s", slave_address->serial);
-          rut_exception_free (catch);
-          catch = NULL;
+        if (!rut_adb_run_shell_cmd(slave_address->serial,
+                                   &catch,
+                                   "shell:am start -n "
+                                   "org.rig.app/org.rig.app.rig_slave_t")) {
+            c_warning("Failed to start Rig slave application on Android "
+                      "device %s",
+                      slave_address->serial);
+            rut_exception_free(catch);
+            catch = NULL;
         }
 
-      /* Give the app a bit of time to start before trying to connect... */
-      spec.tv_sec = 0;
-      spec.tv_nsec = 500000000;
-      nanosleep (&spec, NULL);
+        /* Give the app a bit of time to start before trying to connect... */
+        spec.tv_sec = 0;
+        spec.tv_nsec = 500000000;
+        nanosleep(&spec, NULL);
     }
 
-  master->rpc_client =
-    rig_rpc_client_new (engine->shell,
-                        slave_address->hostname,
-                        slave_address->port,
-                        (ProtobufCServiceDescriptor *)&rig__slave__descriptor,
-                        client_error_handler,
-                        slave_master_connected,
-                        master);
+    master->rpc_client = rig_rpc_client_new(
+        engine->shell,
+        slave_address->hostname,
+        slave_address->port,
+        (ProtobufCServiceDescriptor *)&rig__slave__descriptor,
+        client_error_handler,
+        slave_master_connected,
+        master);
 
-  master->connected = false;
+    master->connected = false;
 
-  return master;
+    return master;
 }
 
 void
-rig_connect_to_slave (RigEngine *engine, RigSlaveAddress *slave_address)
+rig_connect_to_slave(rig_engine_t *engine,
+                     rig_slave_address_t *slave_address)
 {
-  RigSlaveMaster *slave_master = rig_slave_master_new (engine, slave_address);
+    rig_slave_master_t *slave_master =
+        rig_slave_master_new(engine, slave_address);
 
-  engine->slave_masters = c_list_prepend (engine->slave_masters, slave_master);
+    engine->slave_masters = c_list_prepend(engine->slave_masters, slave_master);
 }
 
 void
-rig_slave_master_reload_ui (RigSlaveMaster *master)
+rig_slave_master_reload_ui(rig_slave_master_t *master)
 {
-  RigPBSerializer *serializer;
-  RigEngine *engine = master->engine;
-  ProtobufCService *service =
-    rig_pb_rpc_client_get_service (master->rpc_client->pb_rpc_client);
-  Rig__UI *pb_ui;
+    rig_pb_serializer_t *serializer;
+    rig_engine_t *engine = master->engine;
+    ProtobufCService *service =
+        rig_pb_rpc_client_get_service(master->rpc_client->pb_rpc_client);
+    Rig__UI *pb_ui;
 
-  if (!master->connected)
-    return;
+    if (!master->connected)
+        return;
 
-  serializer = rig_pb_serializer_new (engine);
+    serializer = rig_pb_serializer_new(engine);
 
-  rig_pb_serializer_set_use_pointer_ids_enabled (serializer, true);
+    rig_pb_serializer_set_use_pointer_ids_enabled(serializer, true);
 
-  /* NB: We always use the edit-mode-ui as the basis for any ui sent
-   * to a slave device so that the slave device can maintain a mapping
-   * from edit-mode IDs to its play-mode IDs so that we can handle
-   * edit operations in the slave.
-   */
-  pb_ui = rig_pb_serialize_ui (serializer, true, engine->edit_mode_ui);
+    /* NB: We always use the edit-mode-ui as the basis for any ui sent
+     * to a slave device so that the slave device can maintain a mapping
+     * from edit-mode IDs to its play-mode IDs so that we can handle
+     * edit operations in the slave.
+     */
+    pb_ui = rig_pb_serialize_ui(serializer, true, engine->edit_mode_ui);
 
-  rig__slave__load (service, pb_ui, handle_load_response, NULL);
+    rig__slave__load(service, pb_ui, handle_load_response, NULL);
 
-  rig_pb_serialized_ui_destroy (pb_ui);
+    rig_pb_serialized_ui_destroy(pb_ui);
 
-  rig_pb_serializer_destroy (serializer);
+    rig_pb_serializer_destroy(serializer);
 }
 
 static void
-handle_edit_response (const Rig__UIEditResult *result,
-                      void *closure_data)
+handle_edit_response(const Rig__UIEditResult *result,
+                     void *closure_data)
 {
-  c_print ("UI edited by slave\n");
+    c_print("UI edited by slave\n");
 }
 
 void
-rig_slave_master_forward_pb_ui_edit (RigSlaveMaster *master,
-                                     Rig__UIEdit *pb_ui_edit)
+rig_slave_master_forward_pb_ui_edit(rig_slave_master_t *master,
+                                    Rig__UIEdit *pb_ui_edit)
 {
-  ProtobufCService *service =
-    rig_pb_rpc_client_get_service (master->rpc_client->pb_rpc_client);
+    ProtobufCService *service =
+        rig_pb_rpc_client_get_service(master->rpc_client->pb_rpc_client);
 
-  if (!master->connected)
-    return;
+    if (!master->connected)
+        return;
 
-  rig__slave__edit (service, pb_ui_edit, handle_edit_response, NULL);
+    rig__slave__edit(service, pb_ui_edit, handle_edit_response, NULL);
 }

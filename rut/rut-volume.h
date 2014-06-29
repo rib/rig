@@ -37,46 +37,42 @@
 
 G_BEGIN_DECLS
 
-typedef struct _RutVolume RutVolume;
+typedef struct _rut_volume_t rut_volume_t;
 
-void
-rut_volume_init (RutVolume *volume);
+void rut_volume_init(rut_volume_t *volume);
 
 /**
  * rut_volume_new:
  *
- * Creates a new #RutVolume representing a 3D region
+ * Creates a new #rut_volume_t representing a 3D region
  *
- * Return value: the newly allocated #RutVolume. Use
+ * Return value: the newly allocated #rut_volume_t. Use
  *   rut_volume_free() to free the resources it uses
  */
-RutVolume *
-rut_volume_new (void);
+rut_volume_t *rut_volume_new(void);
 
 /**
  * rut_volume_copy:
- * @volume: a #RutVolume
+ * @volume: a #rut_volume_t
  *
- * Copies @volume into a new #RutVolume
+ * Copies @volume into a new #rut_volume_t
  *
- * Return value: a newly allocated copy of a #RutVolume
+ * Return value: a newly allocated copy of a #rut_volume_t
  */
-RutVolume *
-rut_volume_copy (const RutVolume *volume);
+rut_volume_t *rut_volume_copy(const rut_volume_t *volume);
 
 /**
  * rut_volume_free:
- * @volume: a #RutVolume
+ * @volume: a #rut_volume_t
  *
  * Frees the resources allocated by @volume
  */
-void
-rut_volume_free (RutVolume *volume);
+void rut_volume_free(rut_volume_t *volume);
 
 /**
  * rut_volume_set_origin:
- * @volume: a #RutVolume
- * @origin: a #RutVector3
+ * @volume: a #rut_volume_t
+ * @origin: a #rut_vector3_t
  *
  * Sets the origin of the volume.
  *
@@ -87,33 +83,30 @@ rut_volume_free (RutVolume *volume);
  *
  * Since: 1.6
  */
-void
-rut_volume_set_origin (RutVolume *volume, const RutVector3 *origin);
+void rut_volume_set_origin(rut_volume_t *volume, const rut_vector3_t *origin);
 
 /**
  * rut_volume_get_origin:
- * @volume: a #RutVolume
+ * @volume: a #rut_volume_t
  * @origin: (out): a return location for 3 x,y,z coordinate values.
  *
- * Retrieves the origin of the #RutVolume.
+ * Retrieves the origin of the #rut_volume_t.
  */
-void
-rut_volume_get_origin (const RutVolume *volume, RutVector3 *origin);
+void rut_volume_get_origin(const rut_volume_t *volume, rut_vector3_t *origin);
 
 /**
  * rut_volume_set_width:
- * @volume: a #RutVolume
+ * @volume: a #rut_volume_t
  * @width: the width of the volume, in object units
  *
  * Sets the width of the volume. The width is measured along the x
  * axis in the object coordinates that @volume is associated with.
  */
-void
-rut_volume_set_width (RutVolume *volume, float width);
+void rut_volume_set_width(rut_volume_t *volume, float width);
 
 /**
  * rut_volume_get_width:
- * @volume: a #RutVolume
+ * @volume: a #rut_volume_t
  *
  * Retrieves the width of the volume's, axis aligned, bounding box.
  *
@@ -129,24 +122,21 @@ rut_volume_set_width (RutVolume *volume, float width);
 
  * Return value: the width, in units of @volume's local coordinate system.
  */
-float
-rut_volume_get_width (const RutVolume *volume);
+float rut_volume_get_width(const rut_volume_t *volume);
 
 /**
  * rut_volume_set_height:
- * @volume: a #RutVolume
+ * @volume: a #rut_volume_t
  * @height: the height of the volume, in object units
  *
  * Sets the height of the volume. The height is measured along
  * the y axis in the object coordinates that @volume is associated with.
  */
-void
-rut_volume_set_height (RutVolume *volume,
-                       float height);
+void rut_volume_set_height(rut_volume_t *volume, float height);
 
 /**
  * rut_volume_get_height:
- * @volume: a #RutVolume
+ * @volume: a #rut_volume_t
  *
  * Retrieves the height of the volume's, axis aligned, bounding box.
  *
@@ -162,24 +152,21 @@ rut_volume_set_height (RutVolume *volume,
  *
  * Return value: the height, in units of @volume's local coordinate system.
  */
-float
-rut_volume_get_height (const RutVolume *volume);
+float rut_volume_get_height(const rut_volume_t *volume);
 
 /**
  * rut_volume_set_depth:
- * @volume: a #RutVolume
+ * @volume: a #rut_volume_t
  * @depth: the depth of the volume, in object units
  *
  * Sets the depth of the volume. The depth is measured along
  * the z axis in the object coordinates that @volume is associated with.
  */
-void
-rut_volume_set_depth (RutVolume *volume,
-                      float depth);
+void rut_volume_set_depth(rut_volume_t *volume, float depth);
 
 /**
  * rut_volume_get_depth:
- * @volume: a #RutVolume
+ * @volume: a #rut_volume_t
  *
  * Retrieves the depth of the volume's, axis aligned, bounding box.
  *
@@ -195,50 +182,38 @@ rut_volume_set_depth (RutVolume *volume,
  *
  * Return value: the depth, in units of @volume's local coordinate system.
  */
-float
-rut_volume_get_depth (const RutVolume *volume);
+float rut_volume_get_depth(const rut_volume_t *volume);
 
 /**
  * rut_volume_union:
- * @volume: The first #RutVolume and destination for resulting
+ * @volume: The first #rut_volume_t and destination for resulting
  *          union
- * @another_volume: A second #RutVolume to union with @volume
+ * @another_volume: A second #rut_volume_t to union with @volume
  *
  * Updates the geometry of @volume to encompass @volume and @another_volume.
  *
  * <note>There are no guarantees about how precisely the two volumes
  * will be encompassed.</note>
  */
-void
-rut_volume_union (RutVolume *volume,
-                  const RutVolume *another_volume);
+void rut_volume_union(rut_volume_t *volume, const rut_volume_t *another_volume);
 
-void
-rut_volume_transform (RutVolume *pv,
-                      const cg_matrix_t *matrix);
-void
-rut_volume_project (RutVolume *pv,
-                    const cg_matrix_t *modelview,
-                    const cg_matrix_t *projection,
-                    const float *viewport);
+void rut_volume_transform(rut_volume_t *pv, const cg_matrix_t *matrix);
+void rut_volume_project(rut_volume_t *pv,
+                        const cg_matrix_t *modelview,
+                        const cg_matrix_t *projection,
+                        const float *viewport);
 
-void
-rut_volume_get_bounding_box (RutVolume *pv,
-                             RutBox *box);
+void rut_volume_get_bounding_box(rut_volume_t *pv, rut_box_t *box);
 /**
- * @volume: A #RutVolume
+ * @volume: A #rut_volume_t
  *
  * Given a volume that has been transformed by an arbitrary modelview
  * and is no longer axis aligned, this derives a replacement that is
  * axis aligned.
  */
-void
-rut_volume_axis_align (RutVolume *volume);
+void rut_volume_axis_align(rut_volume_t *volume);
 
-RutCullResult
-rut_volume_cull (RutVolume *pv,
-                 const RutPlane *planes);
-
+rut_cull_result_t rut_volume_cull(rut_volume_t *pv, const rut_plane_t *planes);
 
 G_END_DECLS
 

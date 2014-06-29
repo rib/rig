@@ -35,73 +35,62 @@
 
 #include <rut.h>
 
-typedef struct _RigImageSource RigImageSource;
+typedef struct _rig_image_source_t rig_image_source_t;
 
 #include "rig-engine.h"
 #include "rig-asset.h"
 
-extern RutType rig_image_source_type;
+extern rut_type_t rig_image_source_type;
 
-void _rig_image_source_init_type (void);
+void _rig_image_source_init_type(void);
 
-RigImageSource *
-rig_image_source_new (RigEngine *engine,
-                      RigAsset *asset);
+rig_image_source_t *rig_image_source_new(rig_engine_t *engine,
+                                         rig_asset_t *asset);
 
-cg_texture_t *
-rig_image_source_get_texture (RigImageSource *source);
+cg_texture_t *rig_image_source_get_texture(rig_image_source_t *source);
 
 #ifdef USE_GSTREAMER
-CgGstVideoSink *
-rig_image_source_get_sink (RigImageSource *source);
+CgGstVideoSink *rig_image_source_get_sink(rig_image_source_t *source);
 #endif
 
-bool
-rig_image_source_get_is_video (RigImageSource *source);
+bool rig_image_source_get_is_video(rig_image_source_t *source);
 
-typedef void (*RigImageSourceReadyCallback) (RigImageSource *source,
-                                             void *user_data);
+typedef void (*rig_image_source_ready_callback_t)(rig_image_source_t *source,
+                                                  void *user_data);
 
-typedef void (*RigImageSourceChangedCallback) (RigImageSource *source,
-                                               void *user_data);
+typedef void (*rig_image_source_changed_callback_t)(rig_image_source_t *source,
+                                                    void *user_data);
 
-RutClosure *
-rig_image_source_add_ready_callback (RigImageSource *source,
-                                     RigImageSourceReadyCallback callback,
-                                     void *user_data,
-                                     RutClosureDestroyCallback destroy_cb);
+rut_closure_t *
+rig_image_source_add_ready_callback(rig_image_source_t *source,
+                                    rig_image_source_ready_callback_t callback,
+                                    void *user_data,
+                                    rut_closure_destroy_callback_t destroy_cb);
 
-RutClosure *
-rig_image_source_add_on_changed_callback (RigImageSource *source,
-                                          RigImageSourceChangedCallback callback,
-                                          void *user_data,
-                                          RutClosureDestroyCallback destroy_cb);
+rut_closure_t *rig_image_source_add_on_changed_callback(
+    rig_image_source_t *source,
+    rig_image_source_changed_callback_t callback,
+    void *user_data,
+    rut_closure_destroy_callback_t destroy_cb);
 
-void
-rig_image_source_set_first_layer (RigImageSource *source,
-                                  int first_layer);
+void rig_image_source_set_first_layer(rig_image_source_t *source,
+                                      int first_layer);
 
-void
-rig_image_source_set_default_sample (RigImageSource *source,
-                                     bool default_sample);
+void rig_image_source_set_default_sample(rig_image_source_t *source,
+                                         bool default_sample);
 
-void
-rig_image_source_setup_pipeline (RigImageSource *source,
-                                 cg_pipeline_t *pipeline);
+void rig_image_source_setup_pipeline(rig_image_source_t *source,
+                                     cg_pipeline_t *pipeline);
 
-void
-rig_image_source_attach_frame (RigImageSource *source,
-                               cg_pipeline_t *pipeline);
+void rig_image_source_attach_frame(rig_image_source_t *source,
+                                   cg_pipeline_t *pipeline);
 
-void
-_rig_init_image_source_wrappers_cache (RigEngine *engine);
+void _rig_init_image_source_wrappers_cache(rig_engine_t *engine);
 
-void
-_rig_destroy_image_source_wrappers (RigEngine *engine);
+void _rig_destroy_image_source_wrappers(rig_engine_t *engine);
 
-void
-rig_image_source_get_natural_size (RigImageSource *source,
-                                   float *width,
-                                   float *height);
+void rig_image_source_get_natural_size(rig_image_source_t *source,
+                                       float *width,
+                                       float *height);
 
 #endif

@@ -31,88 +31,79 @@
 
 #include "rut-type.h"
 
-typedef struct _RutContext RutContext;
-extern RutType rut_context_type;
+typedef struct _rut_context_t rut_context_t;
+extern rut_type_t rut_context_type;
 
-typedef struct _RutShell RutShell;
-extern RutType rut_shell_type;
+typedef struct _rut_shell_t rut_shell_t;
+extern rut_type_t rut_shell_type;
 
-typedef struct _RutInputRegion RutInputRegion;
-extern RutType rut_input_region_type;
+typedef struct _rut_input_region_t rut_input_region_t;
+extern rut_type_t rut_input_region_type;
 
-typedef struct _RutUIEnumValue
-{
-  int value;
-  const char *nick;
-  const char *blurb;
-} RutUIEnumValue;
+typedef struct _rut_ui_enum_value_t {
+    int value;
+    const char *nick;
+    const char *blurb;
+} rut_ui_enum_value_t;
 
-typedef struct _RutUIEnum
-{
-  const char *nick;
-  const char *blurb;
-  RutUIEnumValue values[];
-} RutUIEnum;
+typedef struct _rut_ui_enum_t {
+    const char *nick;
+    const char *blurb;
+    rut_ui_enum_value_t values[];
+} rut_ui_enum_t;
 
-typedef enum
-{
-  RUT_PROJECTION_PERSPECTIVE,
-  RUT_PROJECTION_ORTHOGRAPHIC
-} RutProjection;
+typedef enum {
+    RUT_PROJECTION_PERSPECTIVE,
+    RUT_PROJECTION_ORTHOGRAPHIC
+} rut_projection_t;
 
-/* XXX: Update this in rig.c if RutProjection is changed! */
-extern RutUIEnum _rut_projection_ui_enum;
+/* XXX: Update this in rig.c if rut_projection_t is changed! */
+extern rut_ui_enum_t _rut_projection_ui_enum;
 
-typedef struct _RutBox
-{
-  float x1, y1, x2, y2;
-} RutBox;
+typedef struct _rut_box_t {
+    float x1, y1, x2, y2;
+} rut_box_t;
 
-typedef struct _RutRectangleInt
-{
-  int x;
-  int y;
-  int width;
-  int height;
-} RutRectangleInt;
+typedef struct _rut_rectangle_int_t {
+    int x;
+    int y;
+    int width;
+    int height;
+} rut_rectangle_int_t;
 
-typedef struct _RutVector3
-{
-  float x, y, z;
-} RutVector3;
+typedef struct _rut_vector3_t {
+    float x, y, z;
+} rut_vector3_t;
 
-typedef enum _RutCullResult
-{
-  RUT_CULL_RESULT_IN,
-  RUT_CULL_RESULT_OUT,
-  RUT_CULL_RESULT_PARTIAL
-} RutCullResult;
+typedef enum _rut_cull_result_t {
+    RUT_CULL_RESULT_IN,
+    RUT_CULL_RESULT_OUT,
+    RUT_CULL_RESULT_PARTIAL
+} rut_cull_result_t;
 
-typedef enum _RutAxis
-{
-  RUT_AXIS_X,
-  RUT_AXIS_Y,
-  RUT_AXIS_Z
-} RutAxis;
+typedef enum _rut_axis_t {
+    RUT_AXIS_X,
+    RUT_AXIS_Y,
+    RUT_AXIS_Z
+} rut_axis_t;
 
 /* FIXME: avoid this Rig typedef being in rut/
  *
  * Obviously we shouldn't ideally have Rig typedefs in Rut but this is
- * currently required because we want RigAsset based properties
+ * currently required because we want rig_asset_t based properties
  */
-typedef enum _RigAssetType {
-  RIG_ASSET_TYPE_BUILTIN,
-  RIG_ASSET_TYPE_TEXTURE,
-  RIG_ASSET_TYPE_NORMAL_MAP,
-  RIG_ASSET_TYPE_ALPHA_MASK,
-  RIG_ASSET_TYPE_MESH,
-  RIG_ASSET_TYPE_FONT,
-} RigAssetType;
+typedef enum _rig_asset_type_t {
+    RIG_ASSET_TYPE_BUILTIN,
+    RIG_ASSET_TYPE_TEXTURE,
+    RIG_ASSET_TYPE_NORMAL_MAP,
+    RIG_ASSET_TYPE_ALPHA_MASK,
+    RIG_ASSET_TYPE_MESH,
+    RIG_ASSET_TYPE_FONT,
+} rig_asset_type_t;
 
-typedef struct _RutPreferredSize
-{
-  float natural_size;
-  float minimum_size;
-} RutPreferredSize;
+typedef struct _rut_preferred_size_t {
+    float natural_size;
+    float minimum_size;
+} rut_preferred_size_t;
 
 #endif /* _RUT_TYPES_H_ */

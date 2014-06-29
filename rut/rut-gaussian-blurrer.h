@@ -33,33 +33,30 @@
 
 #include "rut-context.h"
 
-typedef struct _RutGaussianBlurrer
-{
-  RutContext *ctx;
+typedef struct _rut_gaussian_blurrer_t {
+    rut_context_t *ctx;
 
-  int n_taps;
+    int n_taps;
 
-  int width, height;
-  cg_texture_components_t components;
+    int width, height;
+    cg_texture_components_t components;
 
-  cg_framebuffer_t *x_pass_fb;
-  cg_texture_t *x_pass;
-  cg_pipeline_t *x_pass_pipeline;
+    cg_framebuffer_t *x_pass_fb;
+    cg_texture_t *x_pass;
+    cg_pipeline_t *x_pass_pipeline;
 
-  cg_framebuffer_t *y_pass_fb;
-  cg_texture_t *y_pass;
-  cg_texture_t *destination;
-  cg_pipeline_t *y_pass_pipeline;
-} RutGaussianBlurrer;
+    cg_framebuffer_t *y_pass_fb;
+    cg_texture_t *y_pass;
+    cg_texture_t *destination;
+    cg_pipeline_t *y_pass_pipeline;
+} rut_gaussian_blurrer_t;
 
-RutGaussianBlurrer *
-rut_gaussian_blurrer_new (RutContext *ctx, int n_taps);
+rut_gaussian_blurrer_t *rut_gaussian_blurrer_new(rut_context_t *ctx,
+                                                 int n_taps);
 
-void
-rut_gaussian_blurrer_free (RutGaussianBlurrer *blurrer);
+void rut_gaussian_blurrer_free(rut_gaussian_blurrer_t *blurrer);
 
-cg_texture_t *
-rut_gaussian_blurrer_blur (RutGaussianBlurrer *blurrer,
-                           cg_texture_t *source);
+cg_texture_t *rut_gaussian_blurrer_blur(rut_gaussian_blurrer_t *blurrer,
+                                        cg_texture_t *source);
 
 #endif /* __RUT_GAUSSIAN_BLURRER_H__ */

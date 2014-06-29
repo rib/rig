@@ -32,153 +32,93 @@
 #include <cogl/cogl.h>
 #include <rut.h>
 
-typedef struct
-{
-  RutList list_node;
+typedef struct {
+    rut_list_t list_node;
 
-  RutBoxed boxed;
+    rut_boxed_t boxed;
 
-  float t;
-} RigNode;
+    float t;
+} rig_node_t;
+
+void rig_node_float_lerp(rig_node_t *a, rig_node_t *b, float t, float *value);
+
+void rig_node_vec3_lerp(rig_node_t *a, rig_node_t *b, float t, float value[3]);
+
+void rig_node_quaternion_lerp(rig_node_t *a,
+                              rig_node_t *b,
+                              float t,
+                              cg_quaternion_t *value);
+
+void rig_node_double_lerp(rig_node_t *a, rig_node_t *b, float t, double *value);
+
+void rig_node_integer_lerp(rig_node_t *a, rig_node_t *b, float t, int *value);
 
 void
-rig_node_float_lerp (RigNode *a,
-                     RigNode *b,
-                     float t,
-                     float *value);
+rig_node_uint32_lerp(rig_node_t *a, rig_node_t *b, float t, uint32_t *value);
+
+void rig_node_vec4_lerp(rig_node_t *a, rig_node_t *b, float t, float value[4]);
 
 void
-rig_node_vec3_lerp (RigNode *a,
-                    RigNode *b,
-                    float t,
-                    float value[3]);
+rig_node_color_lerp(rig_node_t *a, rig_node_t *b, float t, cg_color_t *value);
+
+void rig_node_enum_lerp(rig_node_t *a, rig_node_t *b, float t, int *value);
+
+void rig_node_boolean_lerp(rig_node_t *a, rig_node_t *b, float t, bool *value);
 
 void
-rig_node_quaternion_lerp (RigNode *a,
-                          RigNode *b,
+rig_node_text_lerp(rig_node_t *a, rig_node_t *b, float t, const char **value);
+
+void
+rig_node_asset_lerp(rig_node_t *a, rig_node_t *b, float t, rig_asset_t **value);
+
+void rig_node_object_lerp(rig_node_t *a,
+                          rig_node_t *b,
                           float t,
-                          cg_quaternion_t *value);
-
-void
-rig_node_double_lerp (RigNode *a,
-                      RigNode *b,
-                      float t,
-                      double *value);
-
-void
-rig_node_integer_lerp (RigNode *a,
-                       RigNode *b,
-                       float t,
-                       int *value);
-
-void
-rig_node_uint32_lerp (RigNode *a,
-                      RigNode *b,
-                      float t,
-                      uint32_t *value);
-
-void
-rig_node_vec4_lerp (RigNode *a,
-                    RigNode *b,
-                    float t,
-                    float value[4]);
-
-void
-rig_node_color_lerp (RigNode *a,
-                     RigNode *b,
-                     float t,
-                     cg_color_t *value);
-
-void
-rig_node_enum_lerp (RigNode *a,
-                    RigNode *b,
-                    float t,
-                    int *value);
-
-void
-rig_node_boolean_lerp (RigNode *a,
-                       RigNode *b,
-                       float t,
-                       bool *value);
-
-void
-rig_node_text_lerp (RigNode *a,
-                    RigNode *b,
-                    float t,
-                    const char **value);
-
-void
-rig_node_asset_lerp (RigNode *a,
-                     RigNode *b,
-                     float t,
-                     RigAsset **value);
-
-void
-rig_node_object_lerp (RigNode *a,
-                      RigNode *b,
-                      float t,
-                      RutObject **value);
+                          rut_object_t **value);
 
 bool
-rig_node_box (RutPropertyType type,
-              RigNode *node,
-              RutBoxed *value);
+rig_node_box(rut_property_type_t type, rig_node_t *node, rut_boxed_t *value);
 
-void
-rig_node_free (RigNode *node);
+void rig_node_free(rig_node_t *node);
 
-RigNode *
-rig_node_new_for_float (float t, float value);
+rig_node_t *rig_node_new_for_float(float t, float value);
 
-RigNode *
-rig_node_new_for_double (float t, double value);
+rig_node_t *rig_node_new_for_double(float t, double value);
 
-RigNode *
-rig_node_new_for_vec3 (float t, const float value[3]);
+rig_node_t *rig_node_new_for_vec3(float t, const float value[3]);
 
-RigNode *
-rig_node_new_for_vec4 (float t, const float value[4]);
+rig_node_t *rig_node_new_for_vec4(float t, const float value[4]);
 
-RigNode *
-rig_node_new_for_integer (float t, int value);
+rig_node_t *rig_node_new_for_integer(float t, int value);
 
-RigNode *
-rig_node_new_for_uint32 (float t, uint32_t value);
+rig_node_t *rig_node_new_for_uint32(float t, uint32_t value);
 
-RigNode *
-rig_node_new_for_quaternion (float t, const cg_quaternion_t *value);
+rig_node_t *rig_node_new_for_quaternion(float t, const cg_quaternion_t *value);
 
-RigNode *
-rig_node_new_for_color (float t, const cg_color_t *value);
+rig_node_t *rig_node_new_for_color(float t, const cg_color_t *value);
 
-RigNode *
-rig_node_new_for_boolean (float t, bool value);
+rig_node_t *rig_node_new_for_boolean(float t, bool value);
 
-RigNode *
-rig_node_new_for_enum (float t, int value);
+rig_node_t *rig_node_new_for_enum(float t, int value);
 
-RigNode *
-rig_node_new_for_text (float t, const char *value);
+rig_node_t *rig_node_new_for_text(float t, const char *value);
 
-RigNode *
-rig_node_new_for_asset (float t, RigAsset *value);
+rig_node_t *rig_node_new_for_asset(float t, rig_asset_t *value);
 
-RigNode *
-rig_node_new_for_object (float t, RutObject *value);
+rig_node_t *rig_node_new_for_object(float t, rut_object_t *value);
 
-RigNode *
-rig_node_copy (RigNode *node);
+rig_node_t *rig_node_copy(rig_node_t *node);
 
-RigNode *
-rig_nodes_find_less_than (RigNode *start, RutList *end, float t);
+rig_node_t *
+rig_nodes_find_less_than(rig_node_t *start, rut_list_t *end, float t);
 
-RigNode *
-rig_nodes_find_less_than_equal (RigNode *start, RutList *end, float t);
+rig_node_t *
+rig_nodes_find_less_than_equal(rig_node_t *start, rut_list_t *end, float t);
 
-RigNode *
-rig_nodes_find_greater_than (RigNode *start, RutList *end, float t);
+rig_node_t *
+rig_nodes_find_greater_than(rig_node_t *start, rut_list_t *end, float t);
 
-RigNode *
-rig_nodes_find_greater_than_equal (RigNode *start, RutList *end, float t);
+rig_node_t *
+rig_nodes_find_greater_than_equal(rig_node_t *start, rut_list_t *end, float t);
 
 #endif /* _RUT_NODE_H_ */

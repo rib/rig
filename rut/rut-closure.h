@@ -38,21 +38,20 @@
  * provide a function to add a callback for that particular point. The
  * function can take a function pointer with the correct signature.
  * Internally the function will just call rut_closure_list_add. The
- * function should directly return a RutClosure pointer. The caller
+ * function should directly return a rut_closure_t pointer. The caller
  * can use this to disconnect the callback later without the object
  * having to provide a separate disconnect function.
  */
 
-typedef void (* RutClosureDestroyCallback) (void *user_data);
+typedef void (*rut_closure_destroy_callback_t)(void *user_data);
 
-typedef struct
-{
-  RutList list_node;
+typedef struct {
+    rut_list_t list_node;
 
-  void *function;
-  void *user_data;
-  RutClosureDestroyCallback destroy_cb;
-} RutClosure;
+    void *function;
+    void *user_data;
+    rut_closure_destroy_callback_t destroy_cb;
+} rut_closure_t;
 
 /**
  * rut_closure_disconnect:
@@ -61,21 +60,18 @@ typedef struct
  * Removes the given closure from the callback list it is connected to
  * and destroys it. If the closure was created with a destroy function
  * then it will be invoked. */
-void
-rut_closure_disconnect (RutClosure *closure);
+void rut_closure_disconnect(rut_closure_t *closure);
 
-void
-rut_closure_list_disconnect_all (RutList *list);
+void rut_closure_list_disconnect_all(rut_list_t *list);
 
-RutClosure *
-rut_closure_list_add (RutList *list,
-                      void *function,
-                      void *user_data,
-                      RutClosureDestroyCallback destroy_cb);
+rut_closure_t *rut_closure_list_add(rut_list_t *list,
+                                    void *function,
+                                    void *user_data,
+                                    rut_closure_destroy_callback_t destroy_cb);
 
 /**
  * rut_closure_list_invoke:
- * @list: A pointer to a RutList containing RutClosures
+ * @list: A pointer to a rut_list_t containing rut_closure_ts
  * @cb_type: The name of a typedef for the closure callback function signature
  * @...: The the arguments to pass to the callback
  *
@@ -88,26 +84,30 @@ rut_closure_list_add (RutList *list,
  * callbacks. If you want to handle the return value you should
  * manually iterate the list and invoke the callbacks yourself.
  */
-#define rut_closure_list_invoke(list, cb_type, ...)             \
-  G_STMT_START {                                                \
-    RutClosure *_c, *_tmp;                                      \
-                                                                \
-    rut_list_for_each_safe (_c, _tmp, (list), list_node)        \
-      {                                                         \
-        cb_type _cb = _c->function;                             \
-        _cb (__VA_ARGS__, _c->user_data);                       \
-      }                                                         \
-  } G_STMT_END
+#define rut_closure_list_invoke(list, cb_type, ...)                            \
+    G_STMT_START                                                               \
+    {                                                                          \
+        rut_closure_t *_c, *_tmp;                                              \
+                                                                               \
+        rut_list_for_each_safe(_c, _tmp, (list), list_node)                    \
+        {                                                                      \
+            cb_type _cb = _c->function;                                        \
+            _cb(__VA_ARGS__, _c->user_data);                                   \
+        }                                                                      \
+    }                                                                          \
+    G_STMT_END
 
-#define rut_closure_list_invoke_no_args(list)             \
-  G_STMT_START {                                          \
-    RutClosure *_c, *_tmp;                                \
-                                                          \
-    rut_list_for_each_safe (_c, _tmp, (list), list_node)  \
-      {                                                   \
-        void (*_cb)(void *) = _c->function;               \
-        _cb (_c->user_data);                              \
-      }                                                   \
-  } G_STMT_END
+#define rut_closure_list_invoke_no_args(list)                                  \
+    G_STMT_START                                                               \
+    {                                                                          \
+        rut_closure_t *_c, *_tmp;                                              \
+                                                                               \
+        rut_list_for_each_safe(_c, _tmp, (list), list_node)                    \
+        {                                                                      \
+            void (*_cb)(void *) = _c->function;                                \
+            _cb(_c->user_data);                                                \
+        }                                                                      \
+    }                                                                          \
+    G_STMT_END
 
 #endif /* _RUT_CLOSURE_LIST_H_ */

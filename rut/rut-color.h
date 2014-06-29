@@ -35,13 +35,11 @@
 
 #include "rut-context.h"
 
-bool
-rut_color_init_from_string (RutContext *ctx,
-                            cg_color_t *color,
-                            const char *str);
+bool rut_color_init_from_string(rut_context_t *ctx,
+                                cg_color_t *color,
+                                const char *str);
 
-void
-rut_color_init_from_uint32 (cg_color_t *color, uint32_t value);
+void rut_color_init_from_uint32(cg_color_t *color, uint32_t value);
 
 /**
  * rut_color_add:
@@ -55,9 +53,7 @@ rut_color_init_from_uint32 (cg_color_t *color, uint32_t value);
  * between the alpha channels of @a and @b.
  */
 void
-rut_color_add (const cg_color_t *a,
-               const cg_color_t *b,
-               cg_color_t *result);
+rut_color_add(const cg_color_t *a, const cg_color_t *b, cg_color_t *result);
 
 /**
  * rut_color_subtract:
@@ -73,10 +69,9 @@ rut_color_add (const cg_color_t *a,
  * The alpha channel of @result is set as the minimum value
  * between the alpha channels of @a and @b.
  */
-void
-rut_color_subtract (const cg_color_t *a,
-                    const cg_color_t *b,
-                    cg_color_t *result);
+void rut_color_subtract(const cg_color_t *a,
+                        const cg_color_t *b,
+                        cg_color_t *result);
 
 /**
  * rut_color_lighten:
@@ -86,9 +81,7 @@ rut_color_subtract (const cg_color_t *a,
  * Lightens @color by a fixed amount, and saves the changed color
  * in @result.
  */
-void
-rut_color_lighten (const cg_color_t *color,
-		   cg_color_t *result);
+void rut_color_lighten(const cg_color_t *color, cg_color_t *result);
 
 /**
  * rut_color_darken:
@@ -98,9 +91,7 @@ rut_color_lighten (const cg_color_t *color,
  * Darkens @color by a fixed amount, and saves the changed color
  * in @result.
  */
-void
-rut_color_darken (const cg_color_t *color,
-		  cg_color_t *result);
+void rut_color_darken(const cg_color_t *color, cg_color_t *result);
 
 /**
  * rut_color_to_hls:
@@ -114,11 +105,10 @@ rut_color_darken (const cg_color_t *color,
  * The @hue value is in the 0 .. 360 range. The @luminance and
  * @saturation values are in the 0 .. 1 range.
  */
-void
-rut_color_to_hls (const cg_color_t *color,
-                  float *hue,
-                  float *luminance,
-                  float *saturation);
+void rut_color_to_hls(const cg_color_t *color,
+                      float *hue,
+                      float *luminance,
+                      float *saturation);
 
 /**
  * rut_color_shade:
@@ -128,10 +118,7 @@ rut_color_to_hls (const cg_color_t *color,
  *
  * Shades @color by @factor and saves the modified color into @result.
  */
-void
-rut_color_shade (const cg_color_t *color,
-                 float factor,
-                 cg_color_t *result);
+void rut_color_shade(const cg_color_t *color, float factor, cg_color_t *result);
 
 /**
  * rut_color_to_string:
@@ -145,8 +132,7 @@ rut_color_shade (const cg_color_t *color,
  *
  * Return value: (transfer full): a newly-allocated text string
  */
-char *
-rut_color_to_string (const cg_color_t *color);
+char *rut_color_to_string(const cg_color_t *color);
 
 /**
  * rut_color_interpolate:
@@ -158,10 +144,9 @@ rut_color_to_string (const cg_color_t *color);
  * Interpolates between @initial and @final #cg_color_t<!-- -->s
  * using @progress
  */
-void
-rut_color_interpolate (const cg_color_t *initial,
-                       const cg_color_t *final,
-                       float progress,
-                       cg_color_t *result);
+void rut_color_interpolate(const cg_color_t *initial,
+                           const cg_color_t *final,
+                           float progress,
+                           cg_color_t *result);
 
 #endif /* _RUT_COLOR_H_ */

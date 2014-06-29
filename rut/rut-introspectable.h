@@ -33,59 +33,53 @@
 #ifndef _RUT_INTROSPECTABLE_H_
 #define _RUT_INTROSPECTABLE_H_
 
-typedef struct _RutIntrospectableProps
-{
-  RutProperty *first_property;
-  int n_properties;
-} RutIntrospectableProps;
+typedef struct _rut_introspectable_props_t {
+    rut_property_t *first_property;
+    int n_properties;
+} rut_introspectable_props_t;
 
-typedef void (*RutIntrospectablePropertyCallback) (RutProperty *property,
-                                                   void *user_data);
+typedef void (*rut_introspectable_property_callback_t)(rut_property_t *property,
+                                                       void *user_data);
 
-void
-rut_introspectable_init (RutObject *object,
-                         RutPropertySpec *specs,
-                         RutProperty *properties);
+void rut_introspectable_init(rut_object_t *object,
+                             rut_property_spec_t *specs,
+                             rut_property_t *properties);
 
-void
-rut_introspectable_destroy (RutObject *object);
+void rut_introspectable_destroy(rut_object_t *object);
 
-RutProperty *
-rut_introspectable_lookup_property (RutObject *object,
-                                    const char *name);
+rut_property_t *rut_introspectable_lookup_property(rut_object_t *object,
+                                                   const char *name);
 
-void
-rut_introspectable_foreach_property (RutObject *object,
-                                     RutIntrospectablePropertyCallback callback,
-                                     void *user_data);
+void rut_introspectable_foreach_property(
+    rut_object_t *object,
+    rut_introspectable_property_callback_t callback,
+    void *user_data);
 
-void
-rut_introspectable_copy_properties (RutPropertyContext *property_ctx,
-                                    RutObject *src,
-                                    RutObject *dst);
+void rut_introspectable_copy_properties(rut_property_context_t *property_ctx,
+                                        rut_object_t *src,
+                                        rut_object_t *dst);
 
 #if 0
 static inline int
-rut_introspectable_get_property_id (RutObject *object,
-                                    RutProperty *property)
+rut_introspectable_get_property_id (rut_object_t *object,
+                                    rut_property_t *property)
 {
-  RutIntrospectableProps *introspectable =
-    rut_object_get_properties (object, RUT_TRAIT_ID_INTROSPECTABLE);
+    rut_introspectable_props_t *introspectable =
+        rut_object_get_properties (object, RUT_TRAIT_ID_INTROSPECTABLE);
 
-  return property - introspectable->first_property;
+    return property - introspectable->first_property;
 }
 #endif
 
-static inline RutProperty *
-rut_introspectable_get_property (RutObject *object,
-                                 int id)
+static inline rut_property_t *
+rut_introspectable_get_property(rut_object_t *object, int id)
 {
-  RutIntrospectableProps *introspectable =
-    rut_object_get_properties (object, RUT_TRAIT_ID_INTROSPECTABLE);
+    rut_introspectable_props_t *introspectable =
+        rut_object_get_properties(object, RUT_TRAIT_ID_INTROSPECTABLE);
 
-  c_return_val_if_fail (id < introspectable->n_properties, NULL);
+    c_return_val_if_fail(id < introspectable->n_properties, NULL);
 
-  return &introspectable->first_property[id];
+    return &introspectable->first_property[id];
 }
 
 #endif /* _RUT_INTROSPECTABLE_H_ */

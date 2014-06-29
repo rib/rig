@@ -39,26 +39,26 @@
 #include "rut-volume-private.h"
 #include "rut-util.h"
 
-RutVolume *
-rut_volume_new (void)
+rut_volume_t *
+rut_volume_new(void)
 {
-  RutVolume *volume = c_slice_new (RutVolume);
+    rut_volume_t *volume = c_slice_new(rut_volume_t);
 
-  memset (volume->vertices, 0, 8 * sizeof (RutVector3));
+    memset(volume->vertices, 0, 8 * sizeof(rut_vector3_t));
 
-  volume->is_static = false;
-  volume->is_empty = true;
-  volume->is_axis_aligned = true;
-  volume->is_complete = true;
-  volume->is_2d = true;
+    volume->is_static = false;
+    volume->is_empty = true;
+    volume->is_axis_aligned = true;
+    volume->is_complete = true;
+    volume->is_2d = true;
 
-  return volume;
+    return volume;
 }
 
 /* Since volumes are used so heavily in a typical paint
  * traversal of a Rut scene graph and since volumes often
  * have a very short life cycle that maps well to stack allocation we
- * allow initializing a static RutVolume variable to avoid
+ * allow initializing a static rut_volume_t variable to avoid
  * hammering the slice allocator.
  *
  * We were seeing slice allocation take about 1% cumulative CPU time
@@ -72,367 +72,353 @@ rut_volume_new (void)
  * free it during _paint_volume_free().
  */
 void
-rut_volume_init (RutVolume *volume)
+rut_volume_init(rut_volume_t *volume)
 {
-  memset (volume->vertices, 0, 8 * sizeof (RutVector3));
+    memset(volume->vertices, 0, 8 * sizeof(rut_vector3_t));
 
-  volume->is_static = true;
-  volume->is_empty = true;
-  volume->is_axis_aligned = true;
-  volume->is_complete = true;
-  volume->is_2d = true;
+    volume->is_static = true;
+    volume->is_empty = true;
+    volume->is_axis_aligned = true;
+    volume->is_complete = true;
+    volume->is_2d = true;
 }
 
 void
-_rut_volume_copy_static (const RutVolume *src_volume, RutVolume *dst_volume)
+_rut_volume_copy_static(const rut_volume_t *src_volume,
+                        rut_volume_t *dst_volume)
 {
 
-  c_return_if_fail (src_volume != NULL && dst_volume != NULL);
+    c_return_if_fail(src_volume != NULL && dst_volume != NULL);
 
-  memcpy (dst_volume, src_volume, sizeof (RutVolume));
-  dst_volume->is_static = true;
+    memcpy(dst_volume, src_volume, sizeof(rut_volume_t));
+    dst_volume->is_static = true;
 }
 
-RutVolume *
-rut_volume_copy (const RutVolume *volume)
+rut_volume_t *
+rut_volume_copy(const rut_volume_t *volume)
 {
-  RutVolume *copy;
+    rut_volume_t *copy;
 
-  c_return_val_if_fail (volume != NULL, NULL);
+    c_return_val_if_fail(volume != NULL, NULL);
 
-  copy = c_slice_dup (RutVolume, volume);
-  copy->is_static = false;
+    copy = c_slice_dup(rut_volume_t, volume);
+    copy->is_static = false;
 
-  return copy;
-}
-
-void
-_rut_volume_set_from_volume (RutVolume *volume, const RutVolume *src)
-{
-  gboolean is_static = volume->is_static;
-  memcpy (volume, src, sizeof (RutVolume));
-  volume->is_static = is_static;
+    return copy;
 }
 
 void
-rut_volume_free (RutVolume *volume)
+_rut_volume_set_from_volume(rut_volume_t *volume, const rut_volume_t *src)
 {
-  c_return_if_fail (volume != NULL);
-
-  if (G_LIKELY (volume->is_static))
-    return;
-
-  c_slice_free (RutVolume, volume);
+    gboolean is_static = volume->is_static;
+    memcpy(volume, src, sizeof(rut_volume_t));
+    volume->is_static = is_static;
 }
 
 void
-rut_volume_set_origin (RutVolume *volume, const RutVector3 *origin)
+rut_volume_free(rut_volume_t *volume)
 {
-  static const int key_vertices[4] = { 0, 1, 3, 4 };
-  float dx, dy, dz;
-  int i;
+    c_return_if_fail(volume != NULL);
 
-  c_return_if_fail (volume != NULL);
+    if (G_LIKELY(volume->is_static))
+        return;
 
-  dx = origin->x - volume->vertices[0].x;
-  dy = origin->y - volume->vertices[0].y;
-  dz = origin->z - volume->vertices[0].z;
+    c_slice_free(rut_volume_t, volume);
+}
 
-  /* If we change the origin then all the key vertices of the paint
-   * volume need to be shifted too... */
-  for (i = 0; i < 4; i++)
-    {
-      volume->vertices[key_vertices[i]].x += dx;
-      volume->vertices[key_vertices[i]].y += dy;
-      volume->vertices[key_vertices[i]].z += dz;
+void
+rut_volume_set_origin(rut_volume_t *volume, const rut_vector3_t *origin)
+{
+    static const int key_vertices[4] = { 0, 1, 3, 4 };
+    float dx, dy, dz;
+    int i;
+
+    c_return_if_fail(volume != NULL);
+
+    dx = origin->x - volume->vertices[0].x;
+    dy = origin->y - volume->vertices[0].y;
+    dz = origin->z - volume->vertices[0].z;
+
+    /* If we change the origin then all the key vertices of the paint
+     * volume need to be shifted too... */
+    for (i = 0; i < 4; i++) {
+        volume->vertices[key_vertices[i]].x += dx;
+        volume->vertices[key_vertices[i]].y += dy;
+        volume->vertices[key_vertices[i]].z += dz;
     }
 
-  volume->is_complete = false;
+    volume->is_complete = false;
 }
 
 void
-rut_volume_get_origin (const RutVolume *volume, RutVector3 *origin)
+rut_volume_get_origin(const rut_volume_t *volume, rut_vector3_t *origin)
 {
-  c_return_if_fail (volume != NULL);
-  c_return_if_fail (origin != NULL);
+    c_return_if_fail(volume != NULL);
+    c_return_if_fail(origin != NULL);
 
-  *origin = volume->vertices[0];
+    *origin = volume->vertices[0];
 }
 
 static void
-_rut_volume_update_is_empty (RutVolume *volume)
+_rut_volume_update_is_empty(rut_volume_t *volume)
 {
-  if (volume->vertices[0].x == volume->vertices[1].x &&
-      volume->vertices[0].y == volume->vertices[3].y &&
-      volume->vertices[0].z == volume->vertices[4].z)
-    volume->is_empty = true;
-  else
-    volume->is_empty = false;
+    if (volume->vertices[0].x == volume->vertices[1].x &&
+        volume->vertices[0].y == volume->vertices[3].y &&
+        volume->vertices[0].z == volume->vertices[4].z)
+        volume->is_empty = true;
+    else
+        volume->is_empty = false;
 }
 
 void
-rut_volume_set_width (RutVolume *volume, float width)
+rut_volume_set_width(rut_volume_t *volume, float width)
 {
-  float right_xpos;
+    float right_xpos;
 
-  c_return_if_fail (volume != NULL);
-  c_return_if_fail (width >= 0.0f);
+    c_return_if_fail(volume != NULL);
+    c_return_if_fail(width >= 0.0f);
 
-  /* If the volume is currently empty then only the origin is
-   * currently valid */
-  if (volume->is_empty)
-    volume->vertices[1] = volume->vertices[3] = volume->vertices[4] = volume->vertices[0];
+    /* If the volume is currently empty then only the origin is
+     * currently valid */
+    if (volume->is_empty)
+        volume->vertices[1] = volume->vertices[3] = volume->vertices[4] =
+                                                        volume->vertices[0];
 
-  if (!volume->is_axis_aligned)
-    rut_volume_axis_align (volume);
+    if (!volume->is_axis_aligned)
+        rut_volume_axis_align(volume);
 
-  right_xpos = volume->vertices[0].x + width;
+    right_xpos = volume->vertices[0].x + width;
 
-  /* Move the right vertices of the paint box relative to the
-   * origin... */
-  volume->vertices[1].x = right_xpos;
-  /* volume->vertices[2].x = right_xpos; NB: updated lazily */
-  /* volume->vertices[5].x = right_xpos; NB: updated lazily */
-  /* volume->vertices[6].x = right_xpos; NB: updated lazily */
+    /* Move the right vertices of the paint box relative to the
+     * origin... */
+    volume->vertices[1].x = right_xpos;
+    /* volume->vertices[2].x = right_xpos; NB: updated lazily */
+    /* volume->vertices[5].x = right_xpos; NB: updated lazily */
+    /* volume->vertices[6].x = right_xpos; NB: updated lazily */
 
-  volume->is_complete = false;
+    volume->is_complete = false;
 
-  _rut_volume_update_is_empty (volume);
+    _rut_volume_update_is_empty(volume);
 }
 
 float
-rut_volume_get_width (const RutVolume *volume)
+rut_volume_get_width(const rut_volume_t *volume)
 {
-  c_return_val_if_fail (volume != NULL, 0.0);
+    c_return_val_if_fail(volume != NULL, 0.0);
 
-  if (volume->is_empty)
-    return 0;
-  else if (!volume->is_axis_aligned)
-    {
-      RutVolume tmp;
-      float width;
-      _rut_volume_copy_static (volume, &tmp);
-      rut_volume_axis_align (&tmp);
-      width = tmp.vertices[1].x - tmp.vertices[0].x;
-      rut_volume_free (&tmp);
-      return width;
-    }
-  else
-    return volume->vertices[1].x - volume->vertices[0].x;
+    if (volume->is_empty)
+        return 0;
+    else if (!volume->is_axis_aligned) {
+        rut_volume_t tmp;
+        float width;
+        _rut_volume_copy_static(volume, &tmp);
+        rut_volume_axis_align(&tmp);
+        width = tmp.vertices[1].x - tmp.vertices[0].x;
+        rut_volume_free(&tmp);
+        return width;
+    } else
+        return volume->vertices[1].x - volume->vertices[0].x;
 }
 
 void
-rut_volume_set_height (RutVolume *volume,
-                       float height)
+rut_volume_set_height(rut_volume_t *volume, float height)
 {
-  float height_ypos;
+    float height_ypos;
 
-  c_return_if_fail (volume != NULL);
-  c_return_if_fail (height >= 0.0f);
+    c_return_if_fail(volume != NULL);
+    c_return_if_fail(height >= 0.0f);
 
-  /* If the volume is currently empty then only the origin is
-   * currently valid */
-  if (volume->is_empty)
-    volume->vertices[1] = volume->vertices[3] = volume->vertices[4] = volume->vertices[0];
+    /* If the volume is currently empty then only the origin is
+     * currently valid */
+    if (volume->is_empty)
+        volume->vertices[1] = volume->vertices[3] = volume->vertices[4] =
+                                                        volume->vertices[0];
 
-  if (!volume->is_axis_aligned)
-    rut_volume_axis_align (volume);
+    if (!volume->is_axis_aligned)
+        rut_volume_axis_align(volume);
 
-  height_ypos = volume->vertices[0].y + height;
+    height_ypos = volume->vertices[0].y + height;
 
-  /* Move the bottom vertices of the paint box relative to the
-   * origin... */
-  /* volume->vertices[2].y = height_ypos; NB: updated lazily */
-  volume->vertices[3].y = height_ypos;
-  /* volume->vertices[6].y = height_ypos; NB: updated lazily */
-  /* volume->vertices[7].y = height_ypos; NB: updated lazily */
-  volume->is_complete = false;
+    /* Move the bottom vertices of the paint box relative to the
+     * origin... */
+    /* volume->vertices[2].y = height_ypos; NB: updated lazily */
+    volume->vertices[3].y = height_ypos;
+    /* volume->vertices[6].y = height_ypos; NB: updated lazily */
+    /* volume->vertices[7].y = height_ypos; NB: updated lazily */
+    volume->is_complete = false;
 
-  _rut_volume_update_is_empty (volume);
+    _rut_volume_update_is_empty(volume);
 }
 
 float
-rut_volume_get_height (const RutVolume *volume)
+rut_volume_get_height(const rut_volume_t *volume)
 {
-  c_return_val_if_fail (volume != NULL, 0.0);
+    c_return_val_if_fail(volume != NULL, 0.0);
 
-  if (volume->is_empty)
-    return 0;
-  else if (!volume->is_axis_aligned)
-    {
-      RutVolume tmp;
-      float height;
-      _rut_volume_copy_static (volume, &tmp);
-      rut_volume_axis_align (&tmp);
-      height = tmp.vertices[3].y - tmp.vertices[0].y;
-      rut_volume_free (&tmp);
-      return height;
-    }
-  else
-    return volume->vertices[3].y - volume->vertices[0].y;
+    if (volume->is_empty)
+        return 0;
+    else if (!volume->is_axis_aligned) {
+        rut_volume_t tmp;
+        float height;
+        _rut_volume_copy_static(volume, &tmp);
+        rut_volume_axis_align(&tmp);
+        height = tmp.vertices[3].y - tmp.vertices[0].y;
+        rut_volume_free(&tmp);
+        return height;
+    } else
+        return volume->vertices[3].y - volume->vertices[0].y;
 }
 
 void
-rut_volume_set_depth (RutVolume *volume,
-                      float depth)
+rut_volume_set_depth(rut_volume_t *volume, float depth)
 {
-  float depth_zpos;
+    float depth_zpos;
 
-  c_return_if_fail (volume != NULL);
-  c_return_if_fail (depth >= 0.0f);
+    c_return_if_fail(volume != NULL);
+    c_return_if_fail(depth >= 0.0f);
 
-  /* If the volume is currently empty then only the origin is
-   * currently valid */
-  if (volume->is_empty)
-    volume->vertices[1] = volume->vertices[3] = volume->vertices[4] = volume->vertices[0];
+    /* If the volume is currently empty then only the origin is
+     * currently valid */
+    if (volume->is_empty)
+        volume->vertices[1] = volume->vertices[3] = volume->vertices[4] =
+                                                        volume->vertices[0];
 
-  if (!volume->is_axis_aligned)
-    rut_volume_axis_align (volume);
+    if (!volume->is_axis_aligned)
+        rut_volume_axis_align(volume);
 
-  depth_zpos = volume->vertices[0].z + depth;
+    depth_zpos = volume->vertices[0].z + depth;
 
-  /* Move the back vertices of the paint box relative to the
-   * origin... */
-  volume->vertices[4].z = depth_zpos;
-  /* volume->vertices[5].z = depth_zpos; NB: updated lazily */
-  /* volume->vertices[6].z = depth_zpos; NB: updated lazily */
-  /* volume->vertices[7].z = depth_zpos; NB: updated lazily */
+    /* Move the back vertices of the paint box relative to the
+     * origin... */
+    volume->vertices[4].z = depth_zpos;
+    /* volume->vertices[5].z = depth_zpos; NB: updated lazily */
+    /* volume->vertices[6].z = depth_zpos; NB: updated lazily */
+    /* volume->vertices[7].z = depth_zpos; NB: updated lazily */
 
-  volume->is_complete = false;
-  volume->is_2d = depth ? false : true;
-  _rut_volume_update_is_empty (volume);
+    volume->is_complete = false;
+    volume->is_2d = depth ? false : true;
+    _rut_volume_update_is_empty(volume);
 }
 
 float
-rut_volume_get_depth (const RutVolume *volume)
+rut_volume_get_depth(const rut_volume_t *volume)
 {
-  c_return_val_if_fail (volume != NULL, 0.0);
+    c_return_val_if_fail(volume != NULL, 0.0);
 
-  if (volume->is_empty)
-    return 0;
-  else if (!volume->is_axis_aligned)
-    {
-      RutVolume tmp;
-      float depth;
-      _rut_volume_copy_static (volume, &tmp);
-      rut_volume_axis_align (&tmp);
-      depth = tmp.vertices[4].z - tmp.vertices[0].z;
-      rut_volume_free (&tmp);
-      return depth;
-    }
-  else
-    return volume->vertices[4].z - volume->vertices[0].z;
+    if (volume->is_empty)
+        return 0;
+    else if (!volume->is_axis_aligned) {
+        rut_volume_t tmp;
+        float depth;
+        _rut_volume_copy_static(volume, &tmp);
+        rut_volume_axis_align(&tmp);
+        depth = tmp.vertices[4].z - tmp.vertices[0].z;
+        rut_volume_free(&tmp);
+        return depth;
+    } else
+        return volume->vertices[4].z - volume->vertices[0].z;
 }
 
 void
-rut_volume_union (RutVolume *volume,
-                  const RutVolume *another_volume)
+rut_volume_union(rut_volume_t *volume, const rut_volume_t *another_volume)
 {
-  RutVolume aligned_volume;
+    rut_volume_t aligned_volume;
 
-  c_return_if_fail (volume != NULL);
-  c_return_if_fail (another_volume != NULL);
+    c_return_if_fail(volume != NULL);
+    c_return_if_fail(another_volume != NULL);
 
-  /* NB: we only have to update vertices 0, 1, 3 and 4
-   * (See the RutVolume typedef for more details) */
+    /* NB: we only have to update vertices 0, 1, 3 and 4
+    * (See the rut_volume_t typedef for more details) */
 
-  /* We special case empty volumes because otherwise we'd end up
-   * calculating a bounding box that would enclose the origin of
-   * the empty volume which isn't desired.
-   */
-  if (another_volume->is_empty)
-    return;
+    /* We special case empty volumes because otherwise we'd end up
+     * calculating a bounding box that would enclose the origin of
+     * the empty volume which isn't desired.
+     */
+    if (another_volume->is_empty)
+        return;
 
-  if (volume->is_empty)
-    {
-      _rut_volume_set_from_volume (volume, another_volume);
-      goto done;
+    if (volume->is_empty) {
+        _rut_volume_set_from_volume(volume, another_volume);
+        goto done;
     }
 
-  if (!volume->is_axis_aligned)
-    rut_volume_axis_align (volume);
+    if (!volume->is_axis_aligned)
+        rut_volume_axis_align(volume);
 
-  if (!another_volume->is_axis_aligned)
-    {
-      _rut_volume_copy_static (another_volume, &aligned_volume);
-      rut_volume_axis_align (&aligned_volume);
-      another_volume = &aligned_volume;
+    if (!another_volume->is_axis_aligned) {
+        _rut_volume_copy_static(another_volume, &aligned_volume);
+        rut_volume_axis_align(&aligned_volume);
+        another_volume = &aligned_volume;
     }
 
-  /* grow left*/
-  /* left vertices 0, 3, 4, 7 */
-  if (another_volume->vertices[0].x < volume->vertices[0].x)
-    {
-      int min_x = another_volume->vertices[0].x;
-      volume->vertices[0].x = min_x;
-      volume->vertices[3].x = min_x;
-      volume->vertices[4].x = min_x;
-      /* volume->vertices[7].x = min_x; */
+    /* grow left*/
+    /* left vertices 0, 3, 4, 7 */
+    if (another_volume->vertices[0].x < volume->vertices[0].x) {
+        int min_x = another_volume->vertices[0].x;
+        volume->vertices[0].x = min_x;
+        volume->vertices[3].x = min_x;
+        volume->vertices[4].x = min_x;
+        /* volume->vertices[7].x = min_x; */
     }
 
-  /* grow right */
-  /* right vertices 1, 2, 5, 6 */
-  if (another_volume->vertices[1].x > volume->vertices[1].x)
-    {
-      int max_x = another_volume->vertices[1].x;
-      volume->vertices[1].x = max_x;
-      /* volume->vertices[2].x = max_x; */
-      /* volume->vertices[5].x = max_x; */
-      /* volume->vertices[6].x = max_x; */
+    /* grow right */
+    /* right vertices 1, 2, 5, 6 */
+    if (another_volume->vertices[1].x > volume->vertices[1].x) {
+        int max_x = another_volume->vertices[1].x;
+        volume->vertices[1].x = max_x;
+        /* volume->vertices[2].x = max_x; */
+        /* volume->vertices[5].x = max_x; */
+        /* volume->vertices[6].x = max_x; */
     }
 
-  /* grow up */
-  /* top vertices 0, 1, 4, 5 */
-  if (another_volume->vertices[0].y < volume->vertices[0].y)
-    {
-      int min_y = another_volume->vertices[0].y;
-      volume->vertices[0].y = min_y;
-      volume->vertices[1].y = min_y;
-      volume->vertices[4].y = min_y;
-      /* volume->vertices[5].y = min_y; */
+    /* grow up */
+    /* top vertices 0, 1, 4, 5 */
+    if (another_volume->vertices[0].y < volume->vertices[0].y) {
+        int min_y = another_volume->vertices[0].y;
+        volume->vertices[0].y = min_y;
+        volume->vertices[1].y = min_y;
+        volume->vertices[4].y = min_y;
+        /* volume->vertices[5].y = min_y; */
     }
 
-  /* grow down */
-  /* bottom vertices 2, 3, 6, 7 */
-  if (another_volume->vertices[3].y > volume->vertices[3].y)
-    {
-      int may_y = another_volume->vertices[3].y;
-      /* volume->vertices[2].y = may_y; */
-      volume->vertices[3].y = may_y;
-      /* volume->vertices[6].y = may_y; */
-      /* volume->vertices[7].y = may_y; */
+    /* grow down */
+    /* bottom vertices 2, 3, 6, 7 */
+    if (another_volume->vertices[3].y > volume->vertices[3].y) {
+        int may_y = another_volume->vertices[3].y;
+        /* volume->vertices[2].y = may_y; */
+        volume->vertices[3].y = may_y;
+        /* volume->vertices[6].y = may_y; */
+        /* volume->vertices[7].y = may_y; */
     }
 
-  /* grow forward */
-  /* front vertices 0, 1, 2, 3 */
-  if (another_volume->vertices[0].z < volume->vertices[0].z)
-    {
-      int min_z = another_volume->vertices[0].z;
-      volume->vertices[0].z = min_z;
-      volume->vertices[1].z = min_z;
-      /* volume->vertices[2].z = min_z; */
-      volume->vertices[3].z = min_z;
+    /* grow forward */
+    /* front vertices 0, 1, 2, 3 */
+    if (another_volume->vertices[0].z < volume->vertices[0].z) {
+        int min_z = another_volume->vertices[0].z;
+        volume->vertices[0].z = min_z;
+        volume->vertices[1].z = min_z;
+        /* volume->vertices[2].z = min_z; */
+        volume->vertices[3].z = min_z;
     }
 
-  /* grow backward */
-  /* back vertices 4, 5, 6, 7 */
-  if (another_volume->vertices[4].z > volume->vertices[4].z)
-    {
-      int maz_z = another_volume->vertices[4].z;
-      volume->vertices[4].z = maz_z;
-      /* volume->vertices[5].z = maz_z; */
-      /* volume->vertices[6].z = maz_z; */
-      /* volume->vertices[7].z = maz_z; */
+    /* grow backward */
+    /* back vertices 4, 5, 6, 7 */
+    if (another_volume->vertices[4].z > volume->vertices[4].z) {
+        int maz_z = another_volume->vertices[4].z;
+        volume->vertices[4].z = maz_z;
+        /* volume->vertices[5].z = maz_z; */
+        /* volume->vertices[6].z = maz_z; */
+        /* volume->vertices[7].z = maz_z; */
     }
 
-  if (volume->vertices[4].z == volume->vertices[0].z)
-    volume->is_2d = true;
-  else
-    volume->is_2d = false;
+    if (volume->vertices[4].z == volume->vertices[0].z)
+        volume->is_2d = true;
+    else
+        volume->is_2d = false;
 
 done:
-  volume->is_empty = false;
-  volume->is_complete = false;
+    volume->is_empty = false;
+    volume->is_complete = false;
 }
 
 /* The paint_volume setters only update vertices 0, 1, 3 and
@@ -441,55 +427,54 @@ done:
  * This will set volume->completed = true;
  */
 void
-_rut_volume_complete (RutVolume *volume)
+_rut_volume_complete(rut_volume_t *volume)
 {
-  float dx_l2r, dy_l2r, dz_l2r;
-  float dx_t2b, dy_t2b, dz_t2b;
+    float dx_l2r, dy_l2r, dz_l2r;
+    float dx_t2b, dy_t2b, dz_t2b;
 
-  if (volume->is_empty)
-    return;
+    if (volume->is_empty)
+        return;
 
-  /* Find the vector that takes us from any vertex on the left face to
-   * the corresponding vertex on the right face. */
-  dx_l2r = volume->vertices[1].x - volume->vertices[0].x;
-  dy_l2r = volume->vertices[1].y - volume->vertices[0].y;
-  dz_l2r = volume->vertices[1].z - volume->vertices[0].z;
+    /* Find the vector that takes us from any vertex on the left face to
+     * the corresponding vertex on the right face. */
+    dx_l2r = volume->vertices[1].x - volume->vertices[0].x;
+    dy_l2r = volume->vertices[1].y - volume->vertices[0].y;
+    dz_l2r = volume->vertices[1].z - volume->vertices[0].z;
 
-  /* Find the vector that takes us from any vertex on the top face to
-   * the corresponding vertex on the bottom face. */
-  dx_t2b = volume->vertices[3].x - volume->vertices[0].x;
-  dy_t2b = volume->vertices[3].y - volume->vertices[0].y;
-  dz_t2b = volume->vertices[3].z - volume->vertices[0].z;
+    /* Find the vector that takes us from any vertex on the top face to
+     * the corresponding vertex on the bottom face. */
+    dx_t2b = volume->vertices[3].x - volume->vertices[0].x;
+    dy_t2b = volume->vertices[3].y - volume->vertices[0].y;
+    dz_t2b = volume->vertices[3].z - volume->vertices[0].z;
 
-  /* front-bottom-right */
-  volume->vertices[2].x = volume->vertices[3].x + dx_l2r;
-  volume->vertices[2].y = volume->vertices[3].y + dy_l2r;
-  volume->vertices[2].z = volume->vertices[3].z + dz_l2r;
+    /* front-bottom-right */
+    volume->vertices[2].x = volume->vertices[3].x + dx_l2r;
+    volume->vertices[2].y = volume->vertices[3].y + dy_l2r;
+    volume->vertices[2].z = volume->vertices[3].z + dz_l2r;
 
-  if (G_UNLIKELY (!volume->is_2d))
-    {
-      /* back-top-right */
-      volume->vertices[5].x = volume->vertices[4].x + dx_l2r;
-      volume->vertices[5].y = volume->vertices[4].y + dy_l2r;
-      volume->vertices[5].z = volume->vertices[4].z + dz_l2r;
+    if (G_UNLIKELY(!volume->is_2d)) {
+        /* back-top-right */
+        volume->vertices[5].x = volume->vertices[4].x + dx_l2r;
+        volume->vertices[5].y = volume->vertices[4].y + dy_l2r;
+        volume->vertices[5].z = volume->vertices[4].z + dz_l2r;
 
-      /* back-bottom-right */
-      volume->vertices[6].x = volume->vertices[5].x + dx_t2b;
-      volume->vertices[6].y = volume->vertices[5].y + dy_t2b;
-      volume->vertices[6].z = volume->vertices[5].z + dz_t2b;
+        /* back-bottom-right */
+        volume->vertices[6].x = volume->vertices[5].x + dx_t2b;
+        volume->vertices[6].y = volume->vertices[5].y + dy_t2b;
+        volume->vertices[6].z = volume->vertices[5].z + dz_t2b;
 
-      /* back-bottom-left */
-      volume->vertices[7].x = volume->vertices[4].x + dx_t2b;
-      volume->vertices[7].y = volume->vertices[4].y + dy_t2b;
-      volume->vertices[7].z = volume->vertices[4].z + dz_t2b;
+        /* back-bottom-left */
+        volume->vertices[7].x = volume->vertices[4].x + dx_t2b;
+        volume->vertices[7].y = volume->vertices[4].y + dy_t2b;
+        volume->vertices[7].z = volume->vertices[4].z + dz_t2b;
     }
 
-  volume->is_complete = true;
+    volume->is_complete = true;
 }
 
 /*
  * _rut_volume_get_box:
- * @volume: a #RutVolume
+ * @volume: a #rut_volume_t
  * @box: a pixel aligned #RutGeometry
  *
  * Transforms a 3D volume into a 2D bounding box in the
@@ -503,342 +488,328 @@ _rut_volume_complete (RutVolume *volume)
  * rut_box_clamp_to_pixel()</note>
  */
 void
-_rut_volume_get_bounding_box (RutVolume *volume,
-                              RutBox *box)
+_rut_volume_get_bounding_box(rut_volume_t *volume, rut_box_t *box)
 {
-  float x_min, y_min, x_max, y_max;
-  RutVector3 *vertices;
-  int count;
-  int i;
+    float x_min, y_min, x_max, y_max;
+    rut_vector3_t *vertices;
+    int count;
+    int i;
 
-  c_return_if_fail (volume != NULL);
-  c_return_if_fail (box != NULL);
+    c_return_if_fail(volume != NULL);
+    c_return_if_fail(box != NULL);
 
-  if (volume->is_empty)
-    {
-      box->x1 = box->x2 = volume->vertices[0].x;
-      box->y1 = box->y2 = volume->vertices[0].y;
-      return;
+    if (volume->is_empty) {
+        box->x1 = box->x2 = volume->vertices[0].x;
+        box->y1 = box->y2 = volume->vertices[0].y;
+        return;
     }
 
-  /* Updates the vertices we calculate lazily
-   * (See RutVolume typedef for more details) */
-  _rut_volume_complete (volume);
+    /* Updates the vertices we calculate lazily
+     * (See rut_volume_t typedef for more details) */
+    _rut_volume_complete(volume);
 
-  vertices = volume->vertices;
+    vertices = volume->vertices;
 
-  x_min = x_max = vertices[0].x;
-  y_min = y_max = vertices[0].y;
+    x_min = x_max = vertices[0].x;
+    y_min = y_max = vertices[0].y;
 
-  /* Assuming that most objects are 2D we only have to look at the front 4
-   * vertices of the volume... */
-  if (G_LIKELY (volume->is_2d))
-    count = 4;
-  else
-    count = 8;
+    /* Assuming that most objects are 2D we only have to look at the front 4
+     * vertices of the volume... */
+    if (G_LIKELY(volume->is_2d))
+        count = 4;
+    else
+        count = 8;
 
-  for (i = 1; i < count; i++)
-    {
-      if (vertices[i].x < x_min)
-        x_min = vertices[i].x;
-      else if (vertices[i].x > x_max)
-        x_max = vertices[i].x;
+    for (i = 1; i < count; i++) {
+        if (vertices[i].x < x_min)
+            x_min = vertices[i].x;
+        else if (vertices[i].x > x_max)
+            x_max = vertices[i].x;
 
-      if (vertices[i].y < y_min)
-        y_min = vertices[i].y;
-      else if (vertices[i].y > y_max)
-        y_max = vertices[i].y;
+        if (vertices[i].y < y_min)
+            y_min = vertices[i].y;
+        else if (vertices[i].y > y_max)
+            y_max = vertices[i].y;
     }
 
-  box->x1 = x_min;
-  box->y1 = y_min;
-  box->x2 = x_max;
-  box->y2 = y_max;
+    box->x1 = x_min;
+    box->y1 = y_min;
+    box->x2 = x_max;
+    box->y2 = y_max;
 }
 
 void
-_rut_volume_project (RutVolume *volume,
-                     const cg_matrix_t *modelview,
-                     const cg_matrix_t *projection,
-                     const float *viewport)
+_rut_volume_project(rut_volume_t *volume,
+                    const cg_matrix_t *modelview,
+                    const cg_matrix_t *projection,
+                    const float *viewport)
 {
-  int transform_count;
+    int transform_count;
 
-  if (volume->is_empty)
-    {
-      /* Just transform the origin... */
-      rut_util_fully_transform_vertices (modelview,
+    if (volume->is_empty) {
+        /* Just transform the origin... */
+        rut_util_fully_transform_vertices(modelview,
                                           projection,
                                           viewport,
                                           (float *)volume->vertices,
                                           (float *)volume->vertices,
                                           1);
-      return;
+        return;
     }
 
-  /* All the vertices must be up to date, since after the projection
-   * it wont be trivial to derive the other vertices. */
-  _rut_volume_complete (volume);
+    /* All the vertices must be up to date, since after the projection
+     * it wont be trivial to derive the other vertices. */
+    _rut_volume_complete(volume);
 
-  /* Most actors are 2D so we only have to transform the front 4
-   * vertices of the volume... */
-  if (G_LIKELY (volume->is_2d))
-    transform_count = 4;
-  else
-    transform_count = 8;
+    /* Most actors are 2D so we only have to transform the front 4
+     * vertices of the volume... */
+    if (G_LIKELY(volume->is_2d))
+        transform_count = 4;
+    else
+        transform_count = 8;
 
-  rut_util_fully_transform_vertices (modelview,
-                                     projection,
-                                     viewport,
-                                     (float *)volume->vertices,
-                                     (float *)volume->vertices,
-                                     transform_count);
+    rut_util_fully_transform_vertices(modelview,
+                                      projection,
+                                      viewport,
+                                      (float *)volume->vertices,
+                                      (float *)volume->vertices,
+                                      transform_count);
 
-  volume->is_axis_aligned = false;
+    volume->is_axis_aligned = false;
 }
 
 void
-_rut_volume_transform (RutVolume *volume,
-                       const cg_matrix_t *matrix)
+_rut_volume_transform(rut_volume_t *volume, const cg_matrix_t *matrix)
 {
-  int transform_count;
+    int transform_count;
 
-  if (volume->is_empty)
-    {
-      float w = 1;
-      /* Just transform the origin */
-      cg_matrix_transform_point (matrix,
-                                   &volume->vertices[0].x,
-                                   &volume->vertices[0].y,
-                                   &volume->vertices[0].z,
-                                   &w);
-      return;
+    if (volume->is_empty) {
+        float w = 1;
+        /* Just transform the origin */
+        cg_matrix_transform_point(matrix,
+                                  &volume->vertices[0].x,
+                                  &volume->vertices[0].y,
+                                  &volume->vertices[0].z,
+                                  &w);
+        return;
     }
 
-  /* All the vertices must be up to date, since after the transform
-   * it wont be trivial to derive the other vertices. */
-  _rut_volume_complete (volume);
+    /* All the vertices must be up to date, since after the transform
+     * it wont be trivial to derive the other vertices. */
+    _rut_volume_complete(volume);
 
-  /* Most actors are 2D so we only have to transform the front 4
-   * vertices of the volume... */
-  if (G_LIKELY (volume->is_2d))
-    transform_count = 4;
-  else
-    transform_count = 8;
+    /* Most actors are 2D so we only have to transform the front 4
+     * vertices of the volume... */
+    if (G_LIKELY(volume->is_2d))
+        transform_count = 4;
+    else
+        transform_count = 8;
 
-  cg_matrix_transform_points (matrix,
-                                3,
-                                sizeof (RutVector3),
-                                volume->vertices,
-                                sizeof (RutVector3),
-                                volume->vertices,
-                                transform_count);
+    cg_matrix_transform_points(matrix,
+                               3,
+                               sizeof(rut_vector3_t),
+                               volume->vertices,
+                               sizeof(rut_vector3_t),
+                               volume->vertices,
+                               transform_count);
 
-  volume->is_axis_aligned = false;
+    volume->is_axis_aligned = false;
 }
-
 
 /* Given a volume that has been transformed by an arbitrary
  * modelview and is no longer axis aligned, this derives a replacement
  * that is axis aligned. */
 void
-rut_volume_axis_align (RutVolume *volume)
+rut_volume_axis_align(rut_volume_t *volume)
 {
-  int count;
-  int i;
-  RutVector3 origin;
-  float max_x;
-  float max_y;
-  float max_z;
+    int count;
+    int i;
+    rut_vector3_t origin;
+    float max_x;
+    float max_y;
+    float max_z;
 
-  c_return_if_fail (volume != NULL);
+    c_return_if_fail(volume != NULL);
 
-  if (volume->is_empty)
-    return;
+    if (volume->is_empty)
+        return;
 
-  if (G_LIKELY (volume->is_axis_aligned))
-    return;
+    if (G_LIKELY(volume->is_axis_aligned))
+        return;
 
-  if (G_LIKELY (volume->vertices[0].x == volume->vertices[1].x &&
-                volume->vertices[0].y == volume->vertices[3].y &&
-                volume->vertices[0].z == volume->vertices[4].y))
-    {
-      volume->is_axis_aligned = true;
-      return;
+    if (G_LIKELY(volume->vertices[0].x == volume->vertices[1].x &&
+                 volume->vertices[0].y == volume->vertices[3].y &&
+                 volume->vertices[0].z == volume->vertices[4].y)) {
+        volume->is_axis_aligned = true;
+        return;
     }
 
-  if (!volume->is_complete)
-    _rut_volume_complete (volume);
+    if (!volume->is_complete)
+        _rut_volume_complete(volume);
 
-  origin = volume->vertices[0];
-  max_x = volume->vertices[0].x;
-  max_y = volume->vertices[0].y;
-  max_z = volume->vertices[0].z;
+    origin = volume->vertices[0];
+    max_x = volume->vertices[0].x;
+    max_y = volume->vertices[0].y;
+    max_z = volume->vertices[0].z;
 
-  count = volume->is_2d ? 4 : 8;
-  for (i = 1; i < count; i++)
-    {
-      if (volume->vertices[i].x < origin.x)
-        origin.x = volume->vertices[i].x;
-      else if (volume->vertices[i].x > max_x)
-        max_x = volume->vertices[i].x;
+    count = volume->is_2d ? 4 : 8;
+    for (i = 1; i < count; i++) {
+        if (volume->vertices[i].x < origin.x)
+            origin.x = volume->vertices[i].x;
+        else if (volume->vertices[i].x > max_x)
+            max_x = volume->vertices[i].x;
 
-      if (volume->vertices[i].y < origin.y)
-        origin.y = volume->vertices[i].y;
-      else if (volume->vertices[i].y > max_y)
-        max_y = volume->vertices[i].y;
+        if (volume->vertices[i].y < origin.y)
+            origin.y = volume->vertices[i].y;
+        else if (volume->vertices[i].y > max_y)
+            max_y = volume->vertices[i].y;
 
-      if (volume->vertices[i].z < origin.z)
-        origin.z = volume->vertices[i].z;
-      else if (volume->vertices[i].z > max_z)
-        max_z = volume->vertices[i].z;
+        if (volume->vertices[i].z < origin.z)
+            origin.z = volume->vertices[i].z;
+        else if (volume->vertices[i].z > max_z)
+            max_z = volume->vertices[i].z;
     }
 
-  volume->vertices[0] = origin;
+    volume->vertices[0] = origin;
 
-  volume->vertices[1].x = max_x;
-  volume->vertices[1].y = origin.y;
-  volume->vertices[1].z = origin.z;
+    volume->vertices[1].x = max_x;
+    volume->vertices[1].y = origin.y;
+    volume->vertices[1].z = origin.z;
 
-  volume->vertices[3].x = origin.x;
-  volume->vertices[3].y = max_y;
-  volume->vertices[3].z = origin.z;
+    volume->vertices[3].x = origin.x;
+    volume->vertices[3].y = max_y;
+    volume->vertices[3].z = origin.z;
 
-  volume->vertices[4].x = origin.x;
-  volume->vertices[4].y = origin.y;
-  volume->vertices[4].z = max_z;
+    volume->vertices[4].x = origin.x;
+    volume->vertices[4].y = origin.y;
+    volume->vertices[4].z = max_z;
 
-  volume->is_complete = false;
-  volume->is_axis_aligned = true;
+    volume->is_complete = false;
+    volume->is_axis_aligned = true;
 
-  if (volume->vertices[4].z == volume->vertices[0].z)
-    volume->is_2d = true;
-  else
-    volume->is_2d = false;
+    if (volume->vertices[4].z == volume->vertices[0].z)
+        volume->is_2d = true;
+    else
+        volume->is_2d = false;
 }
 
-RutCullResult
-rut_volume_cull (RutVolume *volume,
-                 const RutPlane *planes)
+rut_cull_result_t
+rut_volume_cull(rut_volume_t *volume,
+                const rut_plane_t *planes)
 {
-  int vertex_count;
-  RutVector3 *vertices = volume->vertices;
-  gboolean partial = false;
-  int i;
-  int j;
+    int vertex_count;
+    rut_vector3_t *vertices = volume->vertices;
+    gboolean partial = false;
+    int i;
+    int j;
 
-  if (volume->is_empty)
-    return RUT_CULL_RESULT_OUT;
+    if (volume->is_empty)
+        return RUT_CULL_RESULT_OUT;
 
-  /* We expect the volume to already be transformed into eye coordinates
-   */
-  c_return_val_if_fail (volume->is_complete == true, RUT_CULL_RESULT_IN);
+    /* We expect the volume to already be transformed into eye coordinates
+     */
+    c_return_val_if_fail(volume->is_complete == true, RUT_CULL_RESULT_IN);
 
-  /* Most actors are 2D so we only have to transform the front 4
-   * vertices of the volume... */
-  if (G_LIKELY (volume->is_2d))
-    vertex_count = 4;
-  else
-    vertex_count = 8;
+    /* Most actors are 2D so we only have to transform the front 4
+     * vertices of the volume... */
+    if (G_LIKELY(volume->is_2d))
+        vertex_count = 4;
+    else
+        vertex_count = 8;
 
-  for (i = 0; i < 4; i++)
-    {
-      int out = 0;
-      for (j = 0; j < vertex_count; j++)
-        {
-          RutVector3 p;
-          float distance;
+    for (i = 0; i < 4; i++) {
+        int out = 0;
+        for (j = 0; j < vertex_count; j++) {
+            rut_vector3_t p;
+            float distance;
 
-          /* XXX: for perspective projections this can be optimized
-           * out because all the planes should pass through the origin
-           * so (0,0,0) is a valid v0. */
-          p.x = vertices[j].x - planes[i].v0[0];
-          p.y = vertices[j].y - planes[i].v0[1];
-          p.z = vertices[j].z - planes[i].v0[2];
+            /* XXX: for perspective projections this can be optimized
+             * out because all the planes should pass through the origin
+             * so (0,0,0) is a valid v0. */
+            p.x = vertices[j].x - planes[i].v0[0];
+            p.y = vertices[j].y - planes[i].v0[1];
+            p.z = vertices[j].z - planes[i].v0[2];
 
-          distance =
-            planes[i].n[0] * p.x + planes[i].n[1] * p.y + planes[i].n[2] * p.z;
+            distance = planes[i].n[0] * p.x + planes[i].n[1] * p.y +
+                       planes[i].n[2] * p.z;
 
-          if (distance < 0)
-            out++;
+            if (distance < 0)
+                out++;
         }
 
-      if (out == vertex_count)
-        return RUT_CULL_RESULT_OUT;
-      else if (out != 0)
-        partial = true;
+        if (out == vertex_count)
+            return RUT_CULL_RESULT_OUT;
+        else if (out != 0)
+            partial = true;
     }
 
-  if (partial)
-    return RUT_CULL_RESULT_PARTIAL;
-  else
-    return RUT_CULL_RESULT_IN;
+    if (partial)
+        return RUT_CULL_RESULT_PARTIAL;
+    else
+        return RUT_CULL_RESULT_IN;
 }
 
 void
-_rut_volume_get_stable_bounding_int_rectangle (RutVolume *volume,
-                                               float *viewport,
-                                               const cg_matrix_t *projection,
-                                               const cg_matrix_t *modelview,
-                                               RutBox *box)
+_rut_volume_get_stable_bounding_int_rectangle(rut_volume_t *volume,
+                                              float *viewport,
+                                              const cg_matrix_t *projection,
+                                              const cg_matrix_t *modelview,
+                                              rut_box_t *box)
 {
-  RutVolume projected_volume;
-  float width;
-  float height;
+    rut_volume_t projected_volume;
+    float width;
+    float height;
 
-  _rut_volume_copy_static (volume, &projected_volume);
+    _rut_volume_copy_static(volume, &projected_volume);
 
-  _rut_volume_project (&projected_volume,
-                       modelview,
-                       projection,
-                       viewport);
+    _rut_volume_project(&projected_volume, modelview, projection, viewport);
 
-  _rut_volume_get_bounding_box (&projected_volume, box);
+    _rut_volume_get_bounding_box(&projected_volume, box);
 
-  /* The aim here is that for a given rectangle defined with floating point
-   * coordinates we want to determine a stable quantized size in pixels
-   * that doesn't vary due to the original box's sub-pixel position.
-   *
-   * The reason this is important is because effects will use this
-   * API to determine the size of offscreen framebuffers and so for
-   * a fixed-size object that may be animated accross the screen we
-   * want to make sure that the stage paint-box has an equally stable
-   * size so that effects aren't made to continuously re-allocate
-   * a corresponding fbo.
-   *
-   * The other thing we consider is that the calculation of this box is
-   * subject to floating point precision issues that might be slightly
-   * different to the precision issues involved with actually painting the
-   * actor, which might result in painting slightly leaking outside the
-   * user's calculated paint-volume. For this we simply aim to pad out the
-   * paint-volume by at least half a pixel all the way around.
-   */
-  width = box->x2 - box->x1;
-  height = box->y2 - box->y1;
-  width = RUT_UTIL_NEARBYINT (width);
-  height = RUT_UTIL_NEARBYINT (height);
-  /* XXX: NB the width/height may now be up to 0.5px too small so we
-   * must also pad by 0.25px all around to account for this. In total we
-   * must padd by at least 0.75px around all sides. */
+    /* The aim here is that for a given rectangle defined with floating point
+     * coordinates we want to determine a stable quantized size in pixels
+     * that doesn't vary due to the original box's sub-pixel position.
+     *
+     * The reason this is important is because effects will use this
+     * API to determine the size of offscreen framebuffers and so for
+     * a fixed-size object that may be animated accross the screen we
+     * want to make sure that the stage paint-box has an equally stable
+     * size so that effects aren't made to continuously re-allocate
+     * a corresponding fbo.
+     *
+     * The other thing we consider is that the calculation of this box is
+     * subject to floating point precision issues that might be slightly
+     * different to the precision issues involved with actually painting the
+     * actor, which might result in painting slightly leaking outside the
+     * user's calculated paint-volume. For this we simply aim to pad out the
+     * paint-volume by at least half a pixel all the way around.
+     */
+    width = box->x2 - box->x1;
+    height = box->y2 - box->y1;
+    width = RUT_UTIL_NEARBYINT(width);
+    height = RUT_UTIL_NEARBYINT(height);
+    /* XXX: NB the width/height may now be up to 0.5px too small so we
+     * must also pad by 0.25px all around to account for this. In total we
+     * must padd by at least 0.75px around all sides. */
 
-  /* XXX: The furthest that we can overshoot the bottom right corner by
-   * here is 1.75px in total if you consider that the 0.75 padding could
-   * just cross an integer boundary and so ceil will effectively add 1.
-   */
-  box->x2 = ceilf (box->x2 + 0.75);
-  box->y2 = ceilf (box->y2 + 0.75);
+    /* XXX: The furthest that we can overshoot the bottom right corner by
+     * here is 1.75px in total if you consider that the 0.75 padding could
+     * just cross an integer boundary and so ceil will effectively add 1.
+     */
+    box->x2 = ceilf(box->x2 + 0.75);
+    box->y2 = ceilf(box->y2 + 0.75);
 
-  /* Now we redefine the top-left relative to the bottom right based on the
-   * rounded width/height determined above + a constant so that the overall
-   * size of the box will be stable and not dependant on the box's
-   * position.
-   *
-   * Adding 3px to the width/height will ensure we cover the maximum of
-   * 1.75px padding on the bottom/right and still ensure we have > 0.75px
-   * padding on the top/left.
-   */
-  box->x1 = box->x2 - width - 3;
-  box->y1 = box->y2 - height - 3;
+    /* Now we redefine the top-left relative to the bottom right based on the
+     * rounded width/height determined above + a constant so that the overall
+     * size of the box will be stable and not dependant on the box's
+     * position.
+     *
+     * Adding 3px to the width/height will ensure we cover the maximum of
+     * 1.75px padding on the bottom/right and still ensure we have > 0.75px
+     * padding on the top/left.
+     */
+    box->x1 = box->x2 - width - 3;
+    box->y1 = box->y2 - height - 3;
 
-  rut_volume_free (&projected_volume);
+    rut_volume_free(&projected_volume);
 }

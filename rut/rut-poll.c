@@ -45,22 +45,19 @@
 #include "rut-context.h"
 #include "rut-os.h"
 
-struct _RutPollSource
-{
-  RutList link;
+struct _rut_poll_source_t {
+    rut_list_t link;
 
-  int fd;
-  int64_t (*prepare) (void *user_data);
-  void (*dispatch) (void *user_data,
-                    int fd,
-                    int revents);
-  void *user_data;
+    int fd;
+    int64_t (*prepare)(void *user_data);
+    void (*dispatch)(void *user_data, int fd, int revents);
+    void *user_data;
 
 #ifdef USE_UV
-  uv_timer_t uv_timer;
-  uv_poll_t uv_poll;
-  uv_prepare_t uv_prepare;
-  uv_check_t uv_check;
+    uv_timer_t uv_timer;
+    uv_poll_t uv_poll;
+    uv_prepare_t uv_prepare;
+    uv_check_t uv_check;
 #endif
 };
 
@@ -69,628 +66,588 @@ struct _RutPollSource
  * to dispatch work.
  */
 static void
-dummy_timer_cb (uv_timer_t *timer)
+dummy_timer_cb(uv_timer_t *timer)
 {
-  /* NOP */
+    /* NOP */
 }
 
 static void
-dummy_timer_check_cb (uv_check_t *check)
+dummy_timer_check_cb(uv_check_t *check)
 {
-  uv_timer_t *timer = check->data;
-  uv_timer_stop (timer);
-  uv_check_stop (check);
+    uv_timer_t *timer = check->data;
+    uv_timer_stop(timer);
+    uv_check_stop(check);
 }
 
 #ifndef RIG_SIMULATOR_ONLY
 static void
-on_cg_event_cb (void *user_data,
-                  int fd,
-                  int revents)
+on_cg_event_cb(void *user_data, int fd, int revents)
 {
-  RutShell *shell = user_data;
-  cg_renderer_t *renderer =
-    cg_context_get_renderer (shell->rut_ctx->cg_context);
+    rut_shell_t *shell = user_data;
+    cg_renderer_t *renderer =
+        cg_context_get_renderer(shell->rut_ctx->cg_context);
 
-  cg_poll_renderer_dispatch_fd (renderer,
-                                  fd,
-                                  revents);
+    cg_poll_renderer_dispatch_fd(renderer, fd, revents);
 }
 
 static void
-update_cg_sources (RutShell *shell)
+update_cg_sources(rut_shell_t *shell)
 {
-  cg_renderer_t *renderer =
-    cg_context_get_renderer (shell->rut_ctx->cg_context);
-  cg_poll_fd_t *poll_fds;
-  int n_poll_fds;
-  int64_t cg_timeout;
-  int age;
+    cg_renderer_t *renderer =
+        cg_context_get_renderer(shell->rut_ctx->cg_context);
+    cg_poll_fd_t *poll_fds;
+    int n_poll_fds;
+    int64_t cg_timeout;
+    int age;
 
-  age = cg_poll_renderer_get_info (renderer,
-                                     &poll_fds,
-                                     &n_poll_fds,
-                                     &cg_timeout);
+    age = cg_poll_renderer_get_info(
+        renderer, &poll_fds, &n_poll_fds, &cg_timeout);
 
-  if (age != shell->cg_poll_fds_age)
-    {
-      int i;
+    if (age != shell->cg_poll_fds_age) {
+        int i;
 
-      /* Remove any existing Cogl fds before adding the new ones */
-      for (i = 0; i < shell->cg_poll_fds->len; i++)
-        {
-          cg_poll_fd_t *poll_fd = &c_array_index (shell->cg_poll_fds, cg_poll_fd_t, i);
-          rut_poll_shell_remove_fd (shell, poll_fd->fd);
+        /* Remove any existing Cogl fds before adding the new ones */
+        for (i = 0; i < shell->cg_poll_fds->len; i++) {
+            cg_poll_fd_t *poll_fd =
+                &c_array_index(shell->cg_poll_fds, cg_poll_fd_t, i);
+            rut_poll_shell_remove_fd(shell, poll_fd->fd);
         }
 
-      for (i = 0; i < n_poll_fds; i++)
-        {
-          cg_poll_fd_t *poll_fd = &poll_fds[i];
-          rut_poll_shell_add_fd (shell,
-                                 poll_fd->fd,
-                                 poll_fd->events, /* assume equivalent */
-                                 NULL, /* prepare */
-                                 on_cg_event_cb, /* dispatch */
-                                 shell);
-          c_array_append_val (shell->cg_poll_fds, poll_fd);
+        for (i = 0; i < n_poll_fds; i++) {
+            cg_poll_fd_t *poll_fd = &poll_fds[i];
+            rut_poll_shell_add_fd(shell,
+                                  poll_fd->fd,
+                                  poll_fd->events, /* assume equivalent */
+                                  NULL, /* prepare */
+                                  on_cg_event_cb, /* dispatch */
+                                  shell);
+            c_array_append_val(shell->cg_poll_fds, poll_fd);
         }
     }
 
-  shell->cg_poll_fds_age = age;
+    shell->cg_poll_fds_age = age;
 
-  if (cg_timeout >= 0)
-    {
-      cg_timeout /= 1000;
-      uv_timer_start (&shell->cg_timer, dummy_timer_cb, cg_timeout, 0);
-      shell->cg_check.data = &shell->cg_timer;
-      uv_check_start (&shell->cg_check, dummy_timer_check_cb);
+    if (cg_timeout >= 0) {
+        cg_timeout /= 1000;
+        uv_timer_start(&shell->cg_timer, dummy_timer_cb, cg_timeout, 0);
+        shell->cg_check.data = &shell->cg_timer;
+        uv_check_start(&shell->cg_check, dummy_timer_check_cb);
     }
 }
 #endif /* RIG_SIMULATOR_ONLY */
 
-static RutPollSource *
-find_fd_source (RutShell *shell, int fd)
+static rut_poll_source_t *
+find_fd_source(rut_shell_t *shell, int fd)
 {
-  RutPollSource *tmp;
+    rut_poll_source_t *tmp;
 
-  rut_list_for_each (tmp, &shell->poll_sources, link)
+    rut_list_for_each(tmp, &shell->poll_sources, link)
     {
-      if (tmp->fd == fd)
-        return tmp;
+        if (tmp->fd == fd)
+            return tmp;
     }
 
-  return NULL;
+    return NULL;
 }
 
 static void
-free_source (RutPollSource *source)
+free_source(rut_poll_source_t *source)
 {
-  uv_timer_stop (&source->uv_timer);
-  uv_prepare_stop (&source->uv_prepare);
+    uv_timer_stop(&source->uv_timer);
+    uv_prepare_stop(&source->uv_prepare);
 
-  if (source->fd > 0)
-    uv_poll_stop (&source->uv_poll);
+    if (source->fd > 0)
+        uv_poll_stop(&source->uv_poll);
 
-  uv_check_stop (&source->uv_check);
+    uv_check_stop(&source->uv_check);
 
-  c_slice_free (RutPollSource, source);
+    c_slice_free(rut_poll_source_t, source);
 }
 
 void
-rut_poll_shell_remove_fd (RutShell *shell, int fd)
+rut_poll_shell_remove_fd(rut_shell_t *shell, int fd)
 {
-  RutPollSource *source = find_fd_source (shell, fd);
+    rut_poll_source_t *source = find_fd_source(shell, fd);
 
-  if (!source)
-    return;
+    if (!source)
+        return;
 
-  shell->poll_sources_age++;
+    shell->poll_sources_age++;
 
-  rut_list_remove (&source->link);
-  free_source (source);
+    rut_list_remove(&source->link);
+    free_source(source);
 }
 
 static enum uv_poll_event
-poll_fd_events_to_uv_events (RutPollFDEvent events)
+poll_fd_events_to_uv_events(rut_poll_fd_event_t events)
 {
-  enum uv_poll_event uv_events = 0;
+    enum uv_poll_event uv_events = 0;
 
-  if (events & RUT_POLL_FD_EVENT_IN)
-    uv_events |= UV_READABLE;
+    if (events & RUT_POLL_FD_EVENT_IN)
+        uv_events |= UV_READABLE;
 
-  if (events & RUT_POLL_FD_EVENT_OUT)
-    uv_events |= UV_WRITABLE;
+    if (events & RUT_POLL_FD_EVENT_OUT)
+        uv_events |= UV_WRITABLE;
 
-  return uv_events;
+    return uv_events;
 }
 
-static RutPollFDEvent
-uv_events_to_poll_fd_events (enum uv_poll_event events)
+static rut_poll_fd_event_t
+uv_events_to_poll_fd_events(enum uv_poll_event events)
 {
-  RutPollFDEvent poll_fd_events = 0;
-  if (events & UV_READABLE)
-    poll_fd_events |= RUT_POLL_FD_EVENT_IN;
-  if (events & UV_WRITABLE)
-    poll_fd_events |= RUT_POLL_FD_EVENT_OUT;
+    rut_poll_fd_event_t poll_fd_events = 0;
+    if (events & UV_READABLE)
+        poll_fd_events |= RUT_POLL_FD_EVENT_IN;
+    if (events & UV_WRITABLE)
+        poll_fd_events |= RUT_POLL_FD_EVENT_OUT;
 
-  return poll_fd_events;
-}
-
-static void
-source_poll_cb (uv_poll_t *poll, int status, int events)
-{
-  RutPollSource *source = poll->data;
-
-  RutPollFDEvent poll_fd_events = uv_events_to_poll_fd_events (events);
-  source->dispatch (source->user_data, source->fd, poll_fd_events);
-}
-
-void
-rut_poll_shell_modify_fd (RutShell *shell,
-                          int fd,
-                          RutPollFDEvent events)
-{
-  RutPollSource *source = find_fd_source (shell, fd);
-  enum uv_poll_event uv_events;
-
-  c_return_if_fail (source != NULL);
-
-  uv_events = poll_fd_events_to_uv_events (events);
-  uv_poll_start (&source->uv_poll, uv_events, source_poll_cb);
-
-  shell->poll_sources_age++;
+    return poll_fd_events;
 }
 
 static void
-source_prepare_cb (uv_prepare_t *prepare)
+source_poll_cb(uv_poll_t *poll, int status, int events)
 {
-  RutPollSource *source = prepare->data;
-  int64_t timeout = source->prepare (source->user_data);
+    rut_poll_source_t *source = poll->data;
 
-  if (timeout == 0)
-    source->dispatch (source->user_data, source->fd, 0);
-
-  if (timeout >= 0)
-    {
-      timeout /= 1000;
-      uv_timer_start (&source->uv_timer, dummy_timer_cb,
-                      timeout, 0 /* no repeat */);
-      source->uv_check.data = &source->uv_timer;
-      uv_check_start (&source->uv_check, dummy_timer_check_cb);
-    }
-}
-
-RutPollSource *
-rut_poll_shell_add_fd (RutShell *shell,
-                       int fd,
-                       RutPollFDEvent events,
-                       int64_t (*prepare) (void *user_data),
-                       void (*dispatch) (void *user_data,
-                                         int fd,
-                                         int revents),
-                       void *user_data)
-{
-  RutPollSource *source;
-
-  if (fd > 0)
-    rut_poll_shell_remove_fd (shell, fd);
-
-  source = c_slice_new0 (RutPollSource);
-  source->fd = fd;
-  source->prepare = prepare;
-  source->dispatch = dispatch;
-  source->user_data = user_data;
-
-  uv_timer_init (shell->uv_loop, &source->uv_timer);
-  uv_check_init (shell->uv_loop, &source->uv_check);
-
-  if (prepare)
-    {
-      uv_prepare_init (shell->uv_loop, &source->uv_prepare);
-      source->uv_prepare.data = source;
-      uv_prepare_start (&source->uv_prepare, source_prepare_cb);
-    }
-
-  if (fd > 0)
-    {
-      enum uv_poll_event uv_events = poll_fd_events_to_uv_events (events);
-
-      uv_poll_init (shell->uv_loop, &source->uv_poll, fd);
-      source->uv_poll.data = source;
-      uv_poll_start (&source->uv_poll, uv_events, source_poll_cb);
-    }
-
-  rut_list_insert (shell->poll_sources.prev, &source->link);
-
-  shell->poll_sources_age++;
-
-  return source;
-}
-
-RutPollSource *
-rut_poll_shell_add_source (RutShell *shell,
-                           int64_t (*prepare) (void *user_data),
-                           void (*dispatch) (void *user_data,
-                                             int fd,
-                                             int revents),
-                           void *user_data)
-{
-  return rut_poll_shell_add_fd (shell,
-                                -1, /* fd */
-                                0, /* events */
-                                prepare,
-                                dispatch,
-                                user_data);
+    rut_poll_fd_event_t poll_fd_events = uv_events_to_poll_fd_events(events);
+    source->dispatch(source->user_data, source->fd, poll_fd_events);
 }
 
 void
-rut_poll_shell_remove_source (RutShell *shell,
-                              RutPollSource *source)
+rut_poll_shell_modify_fd(rut_shell_t *shell, int fd, rut_poll_fd_event_t events)
 {
-  rut_list_remove (&source->link);
-  free_source (source);
+    rut_poll_source_t *source = find_fd_source(shell, fd);
+    enum uv_poll_event uv_events;
+
+    c_return_if_fail(source != NULL);
+
+    uv_events = poll_fd_events_to_uv_events(events);
+    uv_poll_start(&source->uv_poll, uv_events, source_poll_cb);
+
+    shell->poll_sources_age++;
 }
 
 static void
-dispatch_idles_cb (uv_idle_t *idle)
+source_prepare_cb(uv_prepare_t *prepare)
 {
-  RutShell *shell = idle->data;
+    rut_poll_source_t *source = prepare->data;
+    int64_t timeout = source->prepare(source->user_data);
 
-  rut_closure_list_invoke_no_args (&shell->idle_closures);
+    if (timeout == 0)
+        source->dispatch(source->user_data, source->fd, 0);
+
+    if (timeout >= 0) {
+        timeout /= 1000;
+        uv_timer_start(
+            &source->uv_timer, dummy_timer_cb, timeout, 0 /* no repeat */);
+        source->uv_check.data = &source->uv_timer;
+        uv_check_start(&source->uv_check, dummy_timer_check_cb);
+    }
 }
 
-RutClosure *
-rut_poll_shell_add_idle (RutShell *shell,
-                         void (*idle_cb) (void *user_data),
-                         void *user_data,
-                         void (*destroy_cb) (void *user_data))
+rut_poll_source_t *
+rut_poll_shell_add_fd(rut_shell_t *shell,
+                      int fd,
+                      rut_poll_fd_event_t events,
+                      int64_t (*prepare)(void *user_data),
+                      void (*dispatch)(void *user_data, int fd, int revents),
+                      void *user_data)
 {
-  uv_idle_start (&shell->uv_idle, dispatch_idles_cb);
-  return rut_closure_list_add (&shell->idle_closures,
-                               idle_cb,
-                               user_data,
-                               destroy_cb);
+    rut_poll_source_t *source;
+
+    if (fd > 0)
+        rut_poll_shell_remove_fd(shell, fd);
+
+    source = c_slice_new0(rut_poll_source_t);
+    source->fd = fd;
+    source->prepare = prepare;
+    source->dispatch = dispatch;
+    source->user_data = user_data;
+
+    uv_timer_init(shell->uv_loop, &source->uv_timer);
+    uv_check_init(shell->uv_loop, &source->uv_check);
+
+    if (prepare) {
+        uv_prepare_init(shell->uv_loop, &source->uv_prepare);
+        source->uv_prepare.data = source;
+        uv_prepare_start(&source->uv_prepare, source_prepare_cb);
+    }
+
+    if (fd > 0) {
+        enum uv_poll_event uv_events = poll_fd_events_to_uv_events(events);
+
+        uv_poll_init(shell->uv_loop, &source->uv_poll, fd);
+        source->uv_poll.data = source;
+        uv_poll_start(&source->uv_poll, uv_events, source_poll_cb);
+    }
+
+    rut_list_insert(shell->poll_sources.prev, &source->link);
+
+    shell->poll_sources_age++;
+
+    return source;
+}
+
+rut_poll_source_t *
+rut_poll_shell_add_source(
+    rut_shell_t *shell,
+    int64_t (*prepare)(void *user_data),
+    void (*dispatch)(void *user_data, int fd, int revents),
+    void *user_data)
+{
+    return rut_poll_shell_add_fd(shell,
+                                 -1, /* fd */
+                                 0, /* events */
+                                 prepare,
+                                 dispatch,
+                                 user_data);
 }
 
 void
-rut_poll_shell_remove_idle (RutShell *shell, RutClosure *idle)
+rut_poll_shell_remove_source(rut_shell_t *shell, rut_poll_source_t *source)
 {
-  rut_closure_disconnect (idle);
+    rut_list_remove(&source->link);
+    free_source(source);
+}
 
-  if (rut_list_empty (&shell->idle_closures))
-    uv_idle_stop (&shell->uv_idle);
+static void
+dispatch_idles_cb(uv_idle_t *idle)
+{
+    rut_shell_t *shell = idle->data;
+
+    rut_closure_list_invoke_no_args(&shell->idle_closures);
+}
+
+rut_closure_t *
+rut_poll_shell_add_idle(rut_shell_t *shell,
+                        void (*idle_cb)(void *user_data),
+                        void *user_data,
+                        void (*destroy_cb)(void *user_data))
+{
+    uv_idle_start(&shell->uv_idle, dispatch_idles_cb);
+    return rut_closure_list_add(
+        &shell->idle_closures, idle_cb, user_data, destroy_cb);
+}
+
+void
+rut_poll_shell_remove_idle(rut_shell_t *shell, rut_closure_t *idle)
+{
+    rut_closure_disconnect(idle);
+
+    if (rut_list_empty(&shell->idle_closures))
+        uv_idle_stop(&shell->uv_idle);
 }
 
 #ifdef __ANDROID__
 int
-sdl_android_event_filter_cb (void *user_data,
-                             SDL_Event *event)
+sdl_android_event_filter_cb(void *user_data, SDL_Event *event)
 {
-  RutShell *shell = user_data;
+    rut_shell_t *shell = user_data;
 
-  if (SDL_LockMutex (shell->event_pipe_mutex) != 0)
-    {
-      c_warning ("Spurious error locking event pipe mutex: %s", SDL_GetError ());
-      return 1; /* ignored */
+    if (SDL_LockMutex(shell->event_pipe_mutex) != 0) {
+        c_warning("Spurious error locking event pipe mutex: %s",
+                  SDL_GetError());
+        return 1; /* ignored */
     }
 
-  if (!shell->wake_queued)
-    {
-      rut_os_write (shell->event_pipe_write, "E", 1, NULL);
-      shell->wake_queued = true;
+    if (!shell->wake_queued) {
+        rut_os_write(shell->event_pipe_write, "E", 1, NULL);
+        shell->wake_queued = true;
     }
 
-  SDL_UnlockMutex (shell->event_pipe_mutex);
+    SDL_UnlockMutex(shell->event_pipe_mutex);
 
-  return 1; /* ignored */
+    return 1; /* ignored */
 }
 
 static void
-dispatch_sdl_pipe_events (void *user_data,
-                          int revents)
+dispatch_sdl_pipe_events(void *user_data, int revents)
 {
-  RutShell *shell = user_data;
-  SDL_Event event;
-  char buf;
+    rut_shell_t *shell = user_data;
+    SDL_Event event;
+    char buf;
 
-  if (SDL_LockMutex (shell->event_pipe_mutex) != 0)
-    {
-      c_warning ("Spurious error locking event pipe mutex: %s", SDL_GetError ());
-      return;
+    if (SDL_LockMutex(shell->event_pipe_mutex) != 0) {
+        c_warning("Spurious error locking event pipe mutex: %s",
+                  SDL_GetError());
+        return;
     }
 
-  rut_os_read_len (shell->event_pipe_read, &buf, 1, NULL);
-  shell->wake_queued = false;
+    rut_os_read_len(shell->event_pipe_read, &buf, 1, NULL);
+    shell->wake_queued = false;
 
-  SDL_UnlockMutex (shell->event_pipe_mutex);
+    SDL_UnlockMutex(shell->event_pipe_mutex);
 
-  while (SDL_PollEvent (&event))
-    {
-      cg_sdl_handle_event (shell->rut_ctx->cg_context,
-                             &event);
+    while (SDL_PollEvent(&event)) {
+        cg_sdl_handle_event(shell->rut_ctx->cg_context, &event);
 
-      rut_shell_handle_sdl_event (shell, &event);
+        rut_shell_handle_sdl_event(shell, &event);
     }
 }
 
 static void
-integrate_sdl_events_via_pipe (RutShell *shell)
+integrate_sdl_events_via_pipe(rut_shell_t *shell)
 {
-  int fds[2];
+    int fds[2];
 
-  shell->event_pipe_mutex = SDL_CreateMutex ();
-  if (!shell->event_pipe_mutex)
-    {
-      c_warning ("Failed to create event pipe mutex: %s",
-                 SDL_GetError ());
-      return;
+    shell->event_pipe_mutex = SDL_CreateMutex();
+    if (!shell->event_pipe_mutex) {
+        c_warning("Failed to create event pipe mutex: %s", SDL_GetError());
+        return;
     }
 
-  if (pipe (fds) < 0)
-    {
-      c_warning ("Failed to create event pipe");
-      SDL_DestroyMutex (shell->event_pipe_mutex);
-      return;
+    if (pipe(fds) < 0) {
+        c_warning("Failed to create event pipe");
+        SDL_DestroyMutex(shell->event_pipe_mutex);
+        return;
     }
 
-  shell->event_pipe_read = fds[0];
-  shell->event_pipe_write = fds[1];
+    shell->event_pipe_read = fds[0];
+    shell->event_pipe_write = fds[1];
 
-  rut_poll_shell_add_fd (shell,
-                         shell->event_pipe_read,
-                         RUT_POLL_FD_EVENT_IN,
-                         NULL, /* prepare */
-                         dispatch_sdl_pipe_events,
-                         shell);
+    rut_poll_shell_add_fd(shell,
+                          shell->event_pipe_read,
+                          RUT_POLL_FD_EVENT_IN,
+                          NULL, /* prepare */
+                          dispatch_sdl_pipe_events,
+                          shell);
 
-  SDL_AddEventWatch (sdl_android_event_filter_cb, shell);
+    SDL_AddEventWatch(sdl_android_event_filter_cb, shell);
 }
 #endif /* __ANDROID__ */
 
 static int64_t
-prepare_sdl_busy_wait (void *user_data)
+prepare_sdl_busy_wait(void *user_data)
 {
-  return SDL_PollEvent (NULL) ? 0 : 8000;
+    return SDL_PollEvent(NULL) ? 0 : 8000;
 }
 
 static void
-dispatch_sdl_busy_wait (void *user_data,
-                        int fd,
-                        int revents)
+dispatch_sdl_busy_wait(void *user_data, int fd, int revents)
 {
-  RutShell *shell = user_data;
-  SDL_Event event;
+    rut_shell_t *shell = user_data;
+    SDL_Event event;
 
-  while (SDL_PollEvent (&event))
-    {
-      cg_sdl_handle_event (shell->rut_ctx->cg_context, &event);
+    while (SDL_PollEvent(&event)) {
+        cg_sdl_handle_event(shell->rut_ctx->cg_context, &event);
 
-      rut_shell_handle_sdl_event (shell, &event);
+        rut_shell_handle_sdl_event(shell, &event);
     }
 }
 
 static void
-integrate_sdl_events_via_busy_wait (RutShell *shell)
+integrate_sdl_events_via_busy_wait(rut_shell_t *shell)
 {
-  rut_poll_shell_add_source (shell,
-                             prepare_sdl_busy_wait,
-                             dispatch_sdl_busy_wait,
-                             shell);
+    rut_poll_shell_add_source(
+        shell, prepare_sdl_busy_wait, dispatch_sdl_busy_wait, shell);
 }
 
 #ifdef USE_GLIB
-typedef struct _UVGlibPoll
-{
-  RutShell *shell;
-  uv_poll_t poll_handle;
-  int pollfd_index;
-} UVGlibPoll;
+typedef struct _uv_glib_poll_t {
+    rut_shell_t *shell;
+    uv_poll_t poll_handle;
+    int pollfd_index;
+} uv_glib_poll_t;
 
 static void
-glib_uv_poll_cb (uv_poll_t *poll, int status, int events)
+glib_uv_poll_cb(uv_poll_t *poll, int status, int events)
 {
-  UVGlibPoll *glib_poll = poll->data;
-  RutShell *shell = glib_poll->shell;
-  GPollFD *pollfd =
-    &g_array_index (shell->pollfds, GPollFD, glib_poll->pollfd_index);
+    uv_glib_poll_t *glib_poll = poll->data;
+    rut_shell_t *shell = glib_poll->shell;
+    GPollFD *pollfd =
+        &g_array_index(shell->pollfds, GPollFD, glib_poll->pollfd_index);
 
-  g_warn_if_fail ((events & ~(UV_READABLE|UV_WRITABLE)) == 0);
+    g_warn_if_fail((events & ~(UV_READABLE | UV_WRITABLE)) == 0);
 
-  pollfd->revents = 0;
-  if (events & UV_READABLE)
-    pollfd->revents |= G_IO_IN;
-  if (events & UV_WRITABLE)
-    pollfd->revents |= G_IO_OUT;
+    pollfd->revents = 0;
+    if (events & UV_READABLE)
+        pollfd->revents |= G_IO_IN;
+    if (events & UV_WRITABLE)
+        pollfd->revents |= G_IO_OUT;
 }
 
 static void
-glib_uv_prepare_cb (uv_prepare_t *prepare)
+glib_uv_prepare_cb(uv_prepare_t *prepare)
 {
-  RutShell *shell = prepare->data;
-  GMainContext *ctx = shell->glib_main_ctx;
-  GPollFD *pollfds;
-  int priority;
-  int timeout;
-  int i;
+    rut_shell_t *shell = prepare->data;
+    GMainContext *ctx = shell->glib_main_ctx;
+    GPollFD *pollfds;
+    int priority;
+    int timeout;
+    int i;
 
-  if (g_main_context_prepare (ctx, &priority))
-    g_main_context_dispatch (ctx);
+    if (g_main_context_prepare(ctx, &priority))
+        g_main_context_dispatch(ctx);
 
-  pollfds = (GPollFD *)shell->pollfds->data;
-  shell->n_pollfds = g_main_context_query (ctx, INT_MIN, &timeout,
-                                           pollfds, shell->pollfds->len);
+    pollfds = (GPollFD *)shell->pollfds->data;
+    shell->n_pollfds = g_main_context_query(
+        ctx, INT_MIN, &timeout, pollfds, shell->pollfds->len);
 
-  if (shell->n_pollfds > shell->pollfds->len)
-    {
-      g_array_set_size (shell->pollfds, shell->n_pollfds);
-      g_array_set_size (shell->glib_polls, shell->n_pollfds);
-      g_main_context_query (ctx, INT_MIN, &timeout,
-                            pollfds, shell->pollfds->len);
+    if (shell->n_pollfds > shell->pollfds->len) {
+        g_array_set_size(shell->pollfds, shell->n_pollfds);
+        g_array_set_size(shell->glib_polls, shell->n_pollfds);
+        g_main_context_query(
+            ctx, INT_MIN, &timeout, pollfds, shell->pollfds->len);
     }
 
-  for (i = 0; i < shell->n_pollfds; i++)
-    {
-      int events = 0;
-      UVGlibPoll *glib_poll =
-        &g_array_index (shell->glib_polls, UVGlibPoll, i);
+    for (i = 0; i < shell->n_pollfds; i++) {
+        int events = 0;
+        uv_glib_poll_t *glib_poll =
+            &g_array_index(shell->glib_polls, uv_glib_poll_t, i);
 
-      glib_poll->shell = shell;
-      uv_poll_init (shell->uv_loop, &glib_poll->poll_handle, pollfds[i].fd);
-      glib_poll->pollfd_index = i;
+        glib_poll->shell = shell;
+        uv_poll_init(shell->uv_loop, &glib_poll->poll_handle, pollfds[i].fd);
+        glib_poll->pollfd_index = i;
 
-      g_warn_if_fail ((pollfds[i].events & ~(G_IO_IN|G_IO_OUT)) == 0);
+        g_warn_if_fail((pollfds[i].events & ~(G_IO_IN | G_IO_OUT)) == 0);
 
-      if (pollfds[i].events & G_IO_IN)
-        events |= UV_READABLE;
-      if (pollfds[i].events & G_IO_OUT)
-        events |= UV_READABLE;
+        if (pollfds[i].events & G_IO_IN)
+            events |= UV_READABLE;
+        if (pollfds[i].events & G_IO_OUT)
+            events |= UV_READABLE;
 
-      uv_poll_start (&glib_poll->poll_handle, events, glib_uv_poll_cb);
+        uv_poll_start(&glib_poll->poll_handle, events, glib_uv_poll_cb);
     }
 
-  if (timeout >= 0)
-    {
-      uv_timer_start (&shell->glib_uv_timer, dummy_timer_cb, timeout, 0);
-      uv_check_start (&shell->glib_uv_timer_check, dummy_timer_check_cb);
+    if (timeout >= 0) {
+        uv_timer_start(&shell->glib_uv_timer, dummy_timer_cb, timeout, 0);
+        uv_check_start(&shell->glib_uv_timer_check, dummy_timer_check_cb);
     }
 }
 
 static void
-glib_uv_check_cb (uv_check_t *check)
+glib_uv_check_cb(uv_check_t *check)
 {
-  RutShell *shell = check->data;
-  int i;
+    rut_shell_t *shell = check->data;
+    int i;
 
-  g_main_context_check (shell->glib_main_ctx,
-                        INT_MIN,
-                        (GPollFD *)shell->pollfds->data,
-                        shell->n_pollfds);
+    g_main_context_check(shell->glib_main_ctx,
+                         INT_MIN,
+                         (GPollFD *)shell->pollfds->data,
+                         shell->n_pollfds);
 
-  for (i = 0; i < shell->n_pollfds; i++)
-    {
-      UVGlibPoll *glib_poll =
-        &g_array_index (shell->glib_polls, UVGlibPoll, i);
-      uv_poll_stop (&glib_poll->poll_handle);
+    for (i = 0; i < shell->n_pollfds; i++) {
+        uv_glib_poll_t *glib_poll =
+            &g_array_index(shell->glib_polls, uv_glib_poll_t, i);
+        uv_poll_stop(&glib_poll->poll_handle);
     }
-  shell->n_pollfds = 0;
+    shell->n_pollfds = 0;
 }
 #endif /* USE_GLIB */
 
 static void
-cg_prepare_cb (uv_prepare_t *prepare)
+cg_prepare_cb(uv_prepare_t *prepare)
 {
-  RutShell *shell = prepare->data;
-  cg_renderer_t *renderer =
-    cg_context_get_renderer (shell->rut_ctx->cg_context);
+    rut_shell_t *shell = prepare->data;
+    cg_renderer_t *renderer =
+        cg_context_get_renderer(shell->rut_ctx->cg_context);
 
-  cg_poll_renderer_dispatch (renderer, NULL, 0);
+    cg_poll_renderer_dispatch(renderer, NULL, 0);
 
-  update_cg_sources (shell);
+    update_cg_sources(shell);
 }
 
 static void
-integrate_cg_events (RutShell *shell)
+integrate_cg_events(rut_shell_t *shell)
 {
-  uv_timer_init (shell->uv_loop, &shell->cg_timer);
+    uv_timer_init(shell->uv_loop, &shell->cg_timer);
 
-  uv_prepare_init (shell->uv_loop, &shell->cg_prepare);
-  shell->cg_prepare.data = shell;
-  uv_prepare_start (&shell->cg_prepare, cg_prepare_cb);
+    uv_prepare_init(shell->uv_loop, &shell->cg_prepare);
+    shell->cg_prepare.data = shell;
+    uv_prepare_start(&shell->cg_prepare, cg_prepare_cb);
 
-  uv_check_init (shell->uv_loop, &shell->cg_check);
+    uv_check_init(shell->uv_loop, &shell->cg_check);
 }
 
 void
-rut_poll_init (RutShell *shell)
+rut_poll_init(rut_shell_t *shell)
 {
-  rut_list_init (&shell->poll_sources);
-  rut_list_init (&shell->idle_closures);
+    rut_list_init(&shell->poll_sources);
+    rut_list_init(&shell->idle_closures);
 
 #ifdef USE_UV
-  shell->uv_loop = uv_loop_new ();
+    shell->uv_loop = uv_loop_new();
 
-  uv_idle_init (shell->uv_loop, &shell->uv_idle);
-  shell->uv_idle.data = shell;
+    uv_idle_init(shell->uv_loop, &shell->uv_idle);
+    shell->uv_idle.data = shell;
 
-  /* XXX: On Android we know that SDL events are queued up from a
-   * separate thread so we can use an event watch as a means to wake
-   * up the mainloop... */
-  if (!shell->headless)
-    {
-      /* XXX: SDL doesn't give us a portable way of blocking for
-       * events that is compatible with us polling for other file
-       * descriptor events outside of SDL which means we normally
-       * resort to busily polling SDL for events.
-       *
-       * Luckily on Android though we know that events are delivered
-       * to SDL in a separate thread which we can monitor and using a
-       * pipe we are able to wake up our own polling mainloop. This
-       * means we can allow the Glib mainloop to block on Android...
-       *
-       * TODO: On X11 use XConnectionNumber(sdl_info.info.x11.display)
-       * so we can also poll for events on X. One caveat would
-       * probably be that we'd subvert SDL being able to specify a
-       * timeout for polling.
-       */
+    /* XXX: On Android we know that SDL events are queued up from a
+     * separate thread so we can use an event watch as a means to wake
+     * up the mainloop... */
+    if (!shell->headless) {
+/* XXX: SDL doesn't give us a portable way of blocking for
+ * events that is compatible with us polling for other file
+ * descriptor events outside of SDL which means we normally
+ * resort to busily polling SDL for events.
+ *
+ * Luckily on Android though we know that events are delivered
+ * to SDL in a separate thread which we can monitor and using a
+ * pipe we are able to wake up our own polling mainloop. This
+ * means we can allow the Glib mainloop to block on Android...
+ *
+ * TODO: On X11 use XConnectionNumber(sdl_info.info.x11.display)
+ * so we can also poll for events on X. One caveat would
+ * probably be that we'd subvert SDL being able to specify a
+ * timeout for polling.
+ */
 #ifndef RIG_SIMULATOR_ONLY
 
 #ifdef __ANDROID__
-      integrate_sdl_events_via_pipe (shell);
+        integrate_sdl_events_via_pipe(shell);
 #else
-      integrate_sdl_events_via_busy_wait (shell);
+        integrate_sdl_events_via_busy_wait(shell);
 #endif
 
-      integrate_cg_events (shell);
+        integrate_cg_events(shell);
 #endif /* RIG_SIMULATOR_ONLY */
     }
 #endif /* USE_UV */
 
 #ifdef USE_GLIB
-  uv_prepare_init (shell->uv_loop, &shell->glib_uv_prepare);
-  shell->glib_uv_prepare.data = shell;
+    uv_prepare_init(shell->uv_loop, &shell->glib_uv_prepare);
+    shell->glib_uv_prepare.data = shell;
 
-  uv_check_init (shell->uv_loop, &shell->glib_uv_check);
-  shell->glib_uv_check.data = shell;
+    uv_check_init(shell->uv_loop, &shell->glib_uv_check);
+    shell->glib_uv_check.data = shell;
 
-  uv_timer_init (shell->uv_loop, &shell->glib_uv_timer);
-  uv_check_init (shell->uv_loop, &shell->glib_uv_timer_check);
-  shell->glib_uv_timer_check.data = &shell->glib_uv_timer;
+    uv_timer_init(shell->uv_loop, &shell->glib_uv_timer);
+    uv_check_init(shell->uv_loop, &shell->glib_uv_timer_check);
+    shell->glib_uv_timer_check.data = &shell->glib_uv_timer;
 
-  shell->n_pollfds = 0;
-  shell->pollfds = g_array_sized_new (false, false, sizeof (GPollFD), 5);
-  shell->glib_polls = g_array_sized_new (false, false, sizeof (UVGlibPoll), 5);
+    shell->n_pollfds = 0;
+    shell->pollfds = g_array_sized_new(false, false, sizeof(GPollFD), 5);
+    shell->glib_polls =
+        g_array_sized_new(false, false, sizeof(uv_glib_poll_t), 5);
 #endif
 }
 
 void
-rut_poll_run (RutShell *shell)
+rut_poll_run(rut_shell_t *shell)
 {
 #ifdef USE_GLIB
-  GMainContext *ctx = g_main_context_get_thread_default ();
+    GMainContext *ctx = g_main_context_get_thread_default();
 
-  if (!ctx)
-    ctx = g_main_context_default ();
+    if (!ctx)
+        ctx = g_main_context_default();
 
-  if (g_main_context_acquire (ctx))
-    {
-      shell->glib_main_ctx = ctx;
-      uv_prepare_start (&shell->glib_uv_prepare, glib_uv_prepare_cb);
-      uv_check_start (&shell->glib_uv_check, glib_uv_check_cb);
-    }
-  else
-    c_warning ("Failed to acquire glib context");
+    if (g_main_context_acquire(ctx)) {
+        shell->glib_main_ctx = ctx;
+        uv_prepare_start(&shell->glib_uv_prepare, glib_uv_prepare_cb);
+        uv_check_start(&shell->glib_uv_check, glib_uv_check_cb);
+    } else
+        c_warning("Failed to acquire glib context");
 
-  uv_run (shell->uv_loop, UV_RUN_DEFAULT);
+    uv_run(shell->uv_loop, UV_RUN_DEFAULT);
 
-  g_main_context_release (shell->glib_main_ctx);
+    g_main_context_release(shell->glib_main_ctx);
 #else
 
-  uv_run (shell->uv_loop, UV_RUN_DEFAULT);
+    uv_run(shell->uv_loop, UV_RUN_DEFAULT);
 #endif
 }
 
 void
-rut_poll_quit (RutShell *shell)
+rut_poll_quit(rut_shell_t *shell)
 {
-  uv_stop (shell->uv_loop);
+    uv_stop(shell->uv_loop);
 }

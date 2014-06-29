@@ -30,10 +30,10 @@
 #define _RIG_TYPES_H_
 
 /* This header exists to resolve circular header dependencies that
- * occur from having pointers to lots of engine types from the RigEngine
- * struct that also themselves need to refer back to the RigEngine
+ * occur from having pointers to lots of engine types from the rig_engine_t
+ * struct that also themselves need to refer back to the rig_engine_t
  * struct */
 
-typedef struct _RigEngine RigEngine;
+typedef struct _rig_engine_t rig_engine_t;
 
 #endif /* _RIG_TYPES_H_ */

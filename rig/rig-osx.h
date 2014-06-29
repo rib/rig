@@ -32,12 +32,10 @@
 #include <cogl/cogl.h>
 #include "rig-types.h"
 
-typedef struct _RigOSXData RigOSXData;
+typedef struct _rig_osx_data_t rig_osx_data_t;
 
-void
-rig_osx_init (RigEngine *engine);
+void rig_osx_init(rig_engine_t *engine);
 
-void
-rig_osx_deinit (RigEngine *engine);
+void rig_osx_deinit(rig_engine_t *engine);
 
 #endif /* _RUT_OSX_H_ */

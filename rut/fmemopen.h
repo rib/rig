@@ -31,7 +31,6 @@
 
 #include <stdio.h>
 
-FILE *
-fmemopen (void *buf, size_t size, const char *mode);
+FILE *fmemopen(void *buf, size_t size, const char *mode);
 
 #endif /* _RUT_FMEMOPEN_H_ */

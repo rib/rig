@@ -34,33 +34,28 @@
  * @list this unlinks the sub-list from @list and returns the new
  * head of @list if it has changed. */
 static c_list_t *
-list_unsplice (c_list_t *list, c_list_t *head, c_list_t *tail)
+list_unsplice(c_list_t *list, c_list_t *head, c_list_t *tail)
 {
-  c_list_t *after;
+    c_list_t *after;
 
-  if (tail->next)
-    {
-      after = tail->next;
-      after->prev = NULL;
-      tail->next = NULL;
-    }
-  else
-    after = NULL;
+    if (tail->next) {
+        after = tail->next;
+        after->prev = NULL;
+        tail->next = NULL;
+    } else
+        after = NULL;
 
-  if (head->prev)
-    {
-      head->prev->next = after;
+    if (head->prev) {
+        head->prev->next = after;
 
-      if (after)
-        after->prev = head->prev;
+        if (after)
+            after->prev = head->prev;
 
-      head->prev = NULL;
-      return list;
-    }
-  else
-    {
-      c_return_val_if_fail (head == list, list);
-      return after;
+        head->prev = NULL;
+        return list;
+    } else {
+        c_return_val_if_fail(head == list, list);
+        return after;
     }
 }
 
@@ -80,31 +75,26 @@ list_unsplice (c_list_t *list, c_list_t *head, c_list_t *tail)
  * and tail->next == NULL.
  */
 static c_list_t *
-list_splice (c_list_t *list, c_list_t *after, c_list_t *head, c_list_t *tail)
+list_splice(c_list_t *list, c_list_t *after, c_list_t *head, c_list_t *tail)
 {
-  c_return_val_if_fail (head->prev == NULL, NULL);
-  c_return_val_if_fail (tail->next == NULL, NULL);
+    c_return_val_if_fail(head->prev == NULL, NULL);
+    c_return_val_if_fail(tail->next == NULL, NULL);
 
-  if (after)
-    {
-      c_list_t *remainder = after->next;
-      after->next = head;
-      head->prev = after;
-      if (remainder)
-        {
-          tail->next = remainder;
-          remainder->prev = tail;
+    if (after) {
+        c_list_t *remainder = after->next;
+        after->next = head;
+        head->prev = after;
+        if (remainder) {
+            tail->next = remainder;
+            remainder->prev = tail;
         }
-      return list;
-    }
-  else
-    {
-      if (list)
-        {
-          tail->next = list;
-          list->prev = tail;
+        return list;
+    } else {
+        if (list) {
+            tail->next = list;
+            list->prev = tail;
         }
-      return head;
+        return head;
     }
 }
 
@@ -112,70 +102,70 @@ list_splice (c_list_t *list, c_list_t *after, c_list_t *head, c_list_t *tail)
 static void
 _assert_list_is (c_list_t *list, unsigned int length, unsigned int value)
 {
-  c_list_t *l;
+    c_list_t *l;
 
-  g_assert (list->prev == NULL);
-  g_assert_cmpuint (c_list_length (list), ==, length);
+    g_assert (list->prev == NULL);
+    g_assert_cmpuint (c_list_length (list), ==, length);
 
-  for (l = c_list_last (list); l; l = l->prev)
+    for (l = c_list_last (list); l; l = l->prev)
     {
-      g_assert_cmpuint (GPOINTER_TO_UINT (l->data), ==, value % 10);
-      value /= 10;
+        g_assert_cmpuint (GPOINTER_TO_UINT (l->data), ==, value % 10);
+        value /= 10;
     }
 }
 
 static void
 _rut_test_list_splice (void)
 {
-  c_list_t *l0 = NULL, *l1 = NULL, *l2 = NULL;
-  c_list_t *l0_tail, *l1_tail, *l2_tail;
-  c_list_t *list = NULL;
+    c_list_t *l0 = NULL, *l1 = NULL, *l2 = NULL;
+    c_list_t *l0_tail, *l1_tail, *l2_tail;
+    c_list_t *list = NULL;
 
-  l0 = c_list_append (l0, GUINT_TO_POINTER (1));
-  l0 = c_list_append (l0, GUINT_TO_POINTER (2));
-  l0 = c_list_append (l0, GUINT_TO_POINTER (3));
-  l0_tail = c_list_last (l0);
-  _assert_list_is (l0, 3, 123);
+    l0 = c_list_append (l0, GUINT_TO_POINTER (1));
+    l0 = c_list_append (l0, GUINT_TO_POINTER (2));
+    l0 = c_list_append (l0, GUINT_TO_POINTER (3));
+    l0_tail = c_list_last (l0);
+    _assert_list_is (l0, 3, 123);
 
-  l1 = c_list_append (l1, GUINT_TO_POINTER (4));
-  l1 = c_list_append (l1, GUINT_TO_POINTER (5));
-  l1 = c_list_append (l1, GUINT_TO_POINTER (6));
-  l1_tail = c_list_last (l1);
-  _assert_list_is (l1, 3, 456);
+    l1 = c_list_append (l1, GUINT_TO_POINTER (4));
+    l1 = c_list_append (l1, GUINT_TO_POINTER (5));
+    l1 = c_list_append (l1, GUINT_TO_POINTER (6));
+    l1_tail = c_list_last (l1);
+    _assert_list_is (l1, 3, 456);
 
-  l2 = c_list_append (l2, GUINT_TO_POINTER (7));
-  l2 = c_list_append (l2, GUINT_TO_POINTER (8));
-  l2_tail = c_list_last (l2);
-  _assert_list_is (l2, 2, 78);
+    l2 = c_list_append (l2, GUINT_TO_POINTER (7));
+    l2 = c_list_append (l2, GUINT_TO_POINTER (8));
+    l2_tail = c_list_last (l2);
+    _assert_list_is (l2, 2, 78);
 
-  list = l0;
+    list = l0;
 
-  /* splice on the end */
-  list = list_splice (list, l0_tail, l1, l1_tail);
-  _assert_list_is (list, 6, 123456);
+    /* splice on the end */
+    list = list_splice (list, l0_tail, l1, l1_tail);
+    _assert_list_is (list, 6, 123456);
 
-  /* splice in the middle */
-  list = list_splice (list, l0_tail, l2, l2_tail);
-  _assert_list_is (list, 8, 12378456);
+    /* splice in the middle */
+    list = list_splice (list, l0_tail, l2, l2_tail);
+    _assert_list_is (list, 8, 12378456);
 
-  /* unsplice from the middle */
-  list = list_unsplice (list, l2, l2_tail);
-  _assert_list_is (list, 6, 123456);
-  _assert_list_is (l2, 2, 78);
+    /* unsplice from the middle */
+    list = list_unsplice (list, l2, l2_tail);
+    _assert_list_is (list, 6, 123456);
+    _assert_list_is (l2, 2, 78);
 
-  /* unsplice the end */
-  list = list_unsplice (list, l1, l1_tail);
-  _assert_list_is (list, 3, 123);
-  _assert_list_is (l1, 3, 456);
+    /* unsplice the end */
+    list = list_unsplice (list, l1, l1_tail);
+    _assert_list_is (list, 3, 123);
+    _assert_list_is (l1, 3, 456);
 
-  /* splice at the beginning */
-  list = list_splice (list, NULL, l2, l2_tail);
-  _assert_list_is (list, 5, 78123);
+    /* splice at the beginning */
+    list = list_splice (list, NULL, l2, l2_tail);
+    _assert_list_is (list, 5, 78123);
 
-  /* unsplice from the beginning */
-  list = list_unsplice (list, l2, l2_tail);
-  _assert_list_is (list, 3, 123);
-  _assert_list_is (l2, 2, 78);
+    /* unsplice from the beginning */
+    list = list_unsplice (list, l2, l2_tail);
+    _assert_list_is (list, 3, 123);
+    _assert_list_is (l2, 2, 78);
 }
 #endif
 
@@ -199,7 +189,7 @@ _rut_test_list_splice (void)
  * pass in dummy head arguments to these functions and assert that
  * modification of the head wasn't required.
  *   Note: to make this work it requires that the outermost display
- *   list owned by a RutObject must add at least one link into the
+ *   list owned by a rut_object_t must add at least one link into the
  *   display list before allowing any splice or unsplice operations.
  *
  * A complete command sequence is created from a scene-graph by
@@ -212,139 +202,127 @@ _rut_test_list_splice (void)
  */
 
 void
-rut_display_list_unsplice (RutDisplayList *list)
+rut_display_list_unsplice(rut_display_list_t *list)
 {
-  if (list->head->prev)
-    g_assert (list_unsplice ((void *)0xDEADBEEF, list->head, list->tail)
-              == (c_list_t *)0xDEADBEEF);
+    if (list->head->prev)
+        g_assert(list_unsplice((void *)0xDEADBEEF, list->head, list->tail) ==
+                 (c_list_t *)0xDEADBEEF);
 }
 
 void
-rut_display_list_splice (c_list_t *after, RutDisplayList *sub_list)
+rut_display_list_splice(c_list_t *after, rut_display_list_t *sub_list)
 {
-  rut_display_list_unsplice (sub_list);
-  g_assert (list_splice (after, after, sub_list->head, sub_list->tail)
-            == after);
+    rut_display_list_unsplice(sub_list);
+    g_assert(list_splice(after, after, sub_list->head, sub_list->tail) ==
+             after);
 }
 
 void
-rut_display_list_append (RutDisplayList *list, void *data)
+rut_display_list_append(rut_display_list_t *list, void *data)
 {
-  c_list_t *link = c_list_alloc ();
-  link->data = data;
-  link->prev = list->tail;
-  link->next = NULL;
+    c_list_t *link = c_list_alloc();
+    link->data = data;
+    link->prev = list->tail;
+    link->next = NULL;
 
-  if (list->tail)
-    list->tail->next = link;
-  else
-    {
-      g_assert (list->head == NULL);
-      list->head = link;
+    if (list->tail)
+        list->tail->next = link;
+    else {
+        g_assert(list->head == NULL);
+        list->head = link;
     }
-  list->tail = link;
+    list->tail = link;
 }
 
 /* Note: unlike the similar c_list_t api this returns the newly inserted
  * link not the head of the list. */
 c_list_t *
-rut_display_list_insert_before (c_list_t *sibling,
-                                 void *data)
+rut_display_list_insert_before(c_list_t *sibling, void *data)
 {
-  c_list_t *link = c_list_alloc ();
-  link->data = data;
-  link->next = sibling;
-  link->prev = sibling->prev;
-  link->prev->next = link;
-  sibling->prev = link;
+    c_list_t *link = c_list_alloc();
+    link->data = data;
+    link->next = sibling;
+    link->prev = sibling->prev;
+    link->prev->next = link;
+    sibling->prev = link;
 
-  return link;
+    return link;
 }
 
 void
-rut_display_list_delete_link (c_list_t *link)
+rut_display_list_delete_link(c_list_t *link)
 {
-  link->prev->next = link->next;
-  link->next->prev = link->prev;
-  c_list_free_1 (link);
+    link->prev->next = link->next;
+    link->next->prev = link->prev;
+    c_list_free_1(link);
 }
 
 void
-rut_display_list_init (RutDisplayList *list)
+rut_display_list_init(rut_display_list_t *list)
 {
-  list->head = NULL;
-  list->tail = NULL;
+    list->head = NULL;
+    list->tail = NULL;
 }
 
 void
-rut_display_list_destroy (RutDisplayList *list)
+rut_display_list_destroy(rut_display_list_t *list)
 {
-  rut_display_list_unsplice (list);
-  c_list_free (list->head);
-  list->head = NULL;
-  list->tail = NULL;
+    rut_display_list_unsplice(list);
+    c_list_free(list->head);
+    list->head = NULL;
+    list->tail = NULL;
 }
 
 void
-rut_display_list_paint (RutDisplayList *display_list,
-                        cg_framebuffer_t *fb)
+rut_display_list_paint(rut_display_list_t *display_list,
+                       cg_framebuffer_t *fb)
 {
-  c_list_t *l;
+    c_list_t *l;
 
-  for (l = display_list->head; l; l = l->next)
-    {
-      RutCmd *cmd = l->data;
+    for (l = display_list->head; l; l = l->next) {
+        rut_cmd_t *cmd = l->data;
 
-      if (!cmd)
-        continue;
+        if (!cmd)
+            continue;
 
-      switch (cmd->type)
-        {
+        switch (cmd->type) {
         case RUT_CMD_TYPE_NOP:
-          continue;
+            continue;
         case RUT_CMD_TYPE_TRANSFORM_PUSH:
-          cg_framebuffer_push_matrix (fb);
-          break;
+            cg_framebuffer_push_matrix(fb);
+            break;
         case RUT_CMD_TYPE_TRANSFORM_POP:
-          cg_framebuffer_pop_matrix (fb);
-          break;
-        case RUT_CMD_TYPE_TRANSFORM:
-          {
-            RutTransformCmd *transform_cmd = RUT_TRANSFORM_CMD (cmd);
-            cg_framebuffer_transform (fb,
-                                        &transform_cmd->matrix);
+            cg_framebuffer_pop_matrix(fb);
             break;
-          }
-        case RUT_CMD_TYPE_PRIMITIVE:
-          {
-            RutPrimitiveCmd *prim_cmd = RUT_PRIMITIVE_CMD (cmd);
-            cg_primitive_draw (prim_cmd->primitive,
-                                 fb,
-                                 prim_cmd->pipeline);
+        case RUT_CMD_TYPE_TRANSFORM: {
+            rut_transform_cmd_t *transform_cmd = RUT_TRANSFORM_CMD(cmd);
+            cg_framebuffer_transform(fb, &transform_cmd->matrix);
             break;
-          }
-        case RUT_CMD_TYPE_TEXT:
-          {
-            RutTextCmd *text_cmd = RUT_TEXT_CMD (cmd);
-            cg_pango_show_layout (fb,
-                                    text_cmd->layout,
-                                    text_cmd->x, text_cmd->y,
-                                    &text_cmd->color);
+        }
+        case RUT_CMD_TYPE_PRIMITIVE: {
+            rut_primitive_cmd_t *prim_cmd = RUT_PRIMITIVE_CMD(cmd);
+            cg_primitive_draw(prim_cmd->primitive, fb, prim_cmd->pipeline);
             break;
-          }
-        case RUT_CMD_TYPE_RECTANGLE:
-          {
-            RutRectangleCmd *rect_cmd = RUT_RECTANGLE_CMD (cmd);
-            cg_framebuffer_draw_rectangle (fb,
-                                             rect_cmd->pipeline,
-                                             0,
-                                             0,
-                                             rect_cmd->width,
-                                             rect_cmd->height);
+        }
+        case RUT_CMD_TYPE_TEXT: {
+            rut_text_cmd_t *text_cmd = RUT_TEXT_CMD(cmd);
+            cg_pango_show_layout(fb,
+                                 text_cmd->layout,
+                                 text_cmd->x,
+                                 text_cmd->y,
+                                 &text_cmd->color);
             break;
-          }
+        }
+        case RUT_CMD_TYPE_RECTANGLE: {
+            rut_rectangle_cmd_t *rect_cmd = RUT_RECTANGLE_CMD(cmd);
+            cg_framebuffer_draw_rectangle(fb,
+                                          rect_cmd->pipeline,
+                                          0,
+                                          0,
+                                          rect_cmd->width,
+                                          rect_cmd->height);
+            break;
+        }
         }
     }
 }
-
-

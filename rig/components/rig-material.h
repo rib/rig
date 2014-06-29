@@ -32,141 +32,106 @@
 #include "rig-entity.h"
 #include "rig-asset.h"
 
-typedef struct _RigMaterial RigMaterial;
-extern RutType rig_material_type;
+typedef struct _rig_material_t rig_material_t;
+extern rut_type_t rig_material_type;
 
 enum {
-  RIG_MATERIAL_PROP_VISIBLE,
-  RIG_MATERIAL_PROP_CAST_SHADOW,
-  RIG_MATERIAL_PROP_RECEIVE_SHADOW,
-  RIG_MATERIAL_PROP_COLOR_SOURCE,
-  RIG_MATERIAL_PROP_NORMAL_MAP,
-  RIG_MATERIAL_PROP_ALPHA_MASK,
-  RIG_MATERIAL_PROP_AMBIENT,
-  RIG_MATERIAL_PROP_DIFFUSE,
-  RIG_MATERIAL_PROP_SPECULAR,
-  RIG_MATERIAL_PROP_SHININESS,
-  RIG_MATERIAL_PROP_ALPHA_MASK_THRESHOLD,
-  RIG_MATERIAL_N_PROPS
+    RIG_MATERIAL_PROP_VISIBLE,
+    RIG_MATERIAL_PROP_CAST_SHADOW,
+    RIG_MATERIAL_PROP_RECEIVE_SHADOW,
+    RIG_MATERIAL_PROP_COLOR_SOURCE,
+    RIG_MATERIAL_PROP_NORMAL_MAP,
+    RIG_MATERIAL_PROP_ALPHA_MASK,
+    RIG_MATERIAL_PROP_AMBIENT,
+    RIG_MATERIAL_PROP_DIFFUSE,
+    RIG_MATERIAL_PROP_SPECULAR,
+    RIG_MATERIAL_PROP_SHININESS,
+    RIG_MATERIAL_PROP_ALPHA_MASK_THRESHOLD,
+    RIG_MATERIAL_N_PROPS
 };
 
-struct _RigMaterial
-{
-  RutObjectBase _base;
+struct _rig_material_t {
+    rut_object_base_t _base;
 
+    rut_componentable_props_t component;
+    rig_asset_t *color_source_asset;
+    rig_asset_t *normal_map_asset;
+    rig_asset_t *alpha_mask_asset;
 
-  RutComponentableProps component;
-  RigAsset *color_source_asset;
-  RigAsset *normal_map_asset;
-  RigAsset *alpha_mask_asset;
+    cg_color_t ambient;
+    cg_color_t diffuse;
+    cg_color_t specular;
+    float shininess;
 
-  cg_color_t ambient;
-  cg_color_t diffuse;
-  cg_color_t specular;
-  float shininess;
+    float alpha_mask_threshold;
 
-  float alpha_mask_threshold;
+    int uniforms_age;
+    int uniforms_flush_age;
 
-  int uniforms_age;
-  int uniforms_flush_age;
+    rut_introspectable_props_t introspectable;
+    rut_property_t properties[RIG_MATERIAL_N_PROPS];
 
-  RutIntrospectableProps introspectable;
-  RutProperty properties[RIG_MATERIAL_N_PROPS];
-
-  unsigned int visible:1;
-  unsigned int cast_shadow:1;
-  unsigned int receive_shadow:1;
+    unsigned int visible : 1;
+    unsigned int cast_shadow : 1;
+    unsigned int receive_shadow : 1;
 };
 
-void
-_rig_material_init_type (void);
+void _rig_material_init_type(void);
 
-RigMaterial *
-rig_material_new (RutContext *ctx,
-                  RigAsset *asset);
+rig_material_t *rig_material_new(rut_context_t *ctx, rig_asset_t *asset);
 
-void
-rig_material_set_color_source_asset (RutObject *object,
-                                     RigAsset *asset);
+void rig_material_set_color_source_asset(rut_object_t *object,
+                                         rig_asset_t *asset);
 
-RigAsset *
-rig_material_get_color_source_asset (RutObject *object);
+rig_asset_t *rig_material_get_color_source_asset(rut_object_t *object);
 
-void
-rig_material_set_normal_map_asset (RutObject *material,
-                                   RigAsset *normal_map_asset);
+void rig_material_set_normal_map_asset(rut_object_t *material,
+                                       rig_asset_t *normal_map_asset);
 
-RigAsset *
-rig_material_get_normal_map_asset (RutObject *material);
+rig_asset_t *rig_material_get_normal_map_asset(rut_object_t *material);
 
-void
-rig_material_set_alpha_mask_asset (RutObject *material,
-                                   RigAsset *alpha_mask_asset);
+void rig_material_set_alpha_mask_asset(rut_object_t *material,
+                                       rig_asset_t *alpha_mask_asset);
 
-RigAsset *
-rig_material_get_alpha_mask_asset (RutObject *material);
+rig_asset_t *rig_material_get_alpha_mask_asset(rut_object_t *material);
 
-void
-rig_material_set_ambient (RutObject *material,
-                          const cg_color_t *color);
+void rig_material_set_ambient(rut_object_t *material, const cg_color_t *color);
 
-const cg_color_t *
-rig_material_get_ambient (RutObject *material);
+const cg_color_t *rig_material_get_ambient(rut_object_t *material);
 
-void
-rig_material_set_diffuse (RutObject *material,
-                          const cg_color_t *color);
+void rig_material_set_diffuse(rut_object_t *material, const cg_color_t *color);
 
-const cg_color_t *
-rig_material_get_diffuse (RutObject *material);
+const cg_color_t *rig_material_get_diffuse(rut_object_t *material);
 
-void
-rig_material_set_specular (RutObject *material,
-                           const cg_color_t *color);
+void rig_material_set_specular(rut_object_t *material, const cg_color_t *color);
 
-const cg_color_t *
-rig_material_get_specular (RutObject *material);
+const cg_color_t *rig_material_get_specular(rut_object_t *material);
 
-void
-rig_material_set_shininess (RutObject *material,
-                            float shininess);
+void rig_material_set_shininess(rut_object_t *material, float shininess);
 
-float
-rig_material_get_shininess (RutObject *material);
+float rig_material_get_shininess(rut_object_t *material);
 
-float
-rig_material_get_alpha_mask_threshold (RutObject *material);
+float rig_material_get_alpha_mask_threshold(rut_object_t *material);
 
-void
-rig_material_set_alpha_mask_threshold (RutObject *material,
-                                       float alpha_mask_threshold);
+void rig_material_set_alpha_mask_threshold(rut_object_t *material,
+                                           float alpha_mask_threshold);
 
-void
-rig_material_flush_uniforms (RigMaterial *material,
-                             cg_pipeline_t *pipeline);
+void rig_material_flush_uniforms(rig_material_t *material,
+                                 cg_pipeline_t *pipeline);
 
-void
-rig_material_flush_uniforms_ignore_age (RigMaterial *material);
+void rig_material_flush_uniforms_ignore_age(rig_material_t *material);
 
-bool
-rig_material_get_visible (RutObject *material);
+bool rig_material_get_visible(rut_object_t *material);
 
-void
-rig_material_set_visible (RutObject *material, bool visible);
+void rig_material_set_visible(rut_object_t *material, bool visible);
 
-bool
-rig_material_get_cast_shadow (RutObject *entity);
+bool rig_material_get_cast_shadow(rut_object_t *entity);
 
-void
-rig_material_set_cast_shadow (RutObject *material,
-                              bool cast_shadow);
+void rig_material_set_cast_shadow(rut_object_t *material, bool cast_shadow);
 
-bool
-rig_material_get_receive_shadow (RutObject *material);
+bool rig_material_get_receive_shadow(rut_object_t *material);
 
-void
-rig_material_set_receive_shadow (RutObject *material,
-                                 bool receive_shadow);
-
+void rig_material_set_receive_shadow(rut_object_t *material,
+                                     bool receive_shadow);
 
 #endif /* __RIG_MATERIAL_H__ */

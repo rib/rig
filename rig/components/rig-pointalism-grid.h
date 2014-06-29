@@ -31,106 +31,85 @@
 
 #include "rig-entity.h"
 
-typedef struct _RigPointalismGridSlice RigPointalismGridSlice;
-#define RIG_POINTALISM_GRID_SLICE(X) ((RigPointalismGridSlice *)X)
-extern RutType _rig_pointalism_grid_slice_type;
+typedef struct _rig_pointalism_grid_slice_t rig_pointalism_grid_slice_t;
+#define RIG_POINTALISM_GRID_SLICE(X) ((rig_pointalism_grid_slice_t *)X)
+extern rut_type_t _rig_pointalism_grid_slice_type;
 
 enum {
-  RIG_POINTALISM_GRID_PROP_SCALE,
-  RIG_POINTALISM_GRID_PROP_Z,
-  RIG_POINTALISM_GRID_PROP_LIGHTER,
-  RIG_POINTALISM_GRID_PROP_CELL_SIZE,
-  RIG_POINTALISM_GRID_N_PROPS
+    RIG_POINTALISM_GRID_PROP_SCALE,
+    RIG_POINTALISM_GRID_PROP_Z,
+    RIG_POINTALISM_GRID_PROP_LIGHTER,
+    RIG_POINTALISM_GRID_PROP_CELL_SIZE,
+    RIG_POINTALISM_GRID_N_PROPS
 };
 
-struct _RigPointalismGridSlice
-{
-  RutObjectBase _base;
-  RutMesh *mesh;
+struct _rig_pointalism_grid_slice_t {
+    rut_object_base_t _base;
+    rut_mesh_t *mesh;
 };
 
-void
-_rig_pointalism_grid_slice_init_type (void);
+void _rig_pointalism_grid_slice_init_type(void);
 
-typedef struct _RigPointalismGrid RigPointalismGrid;
-#define RIG_POINTALISM_GRID(p) ((RigPointalismGrid *)(p))
-extern RutType rig_pointalism_grid_type;
+typedef struct _rig_pointalism_grid_t rig_pointalism_grid_t;
+#define RIG_POINTALISM_GRID(p) ((rig_pointalism_grid_t *)(p))
+extern rut_type_t rig_pointalism_grid_type;
 
-struct _RigPointalismGrid
-{
-  RutObjectBase _base;
+struct _rig_pointalism_grid_t {
+    rut_object_base_t _base;
 
-  RutComponentableProps component;
+    rut_componentable_props_t component;
 
-  RutContext *ctx;
+    rut_context_t *ctx;
 
-  RutList updated_cb_list;
+    rut_list_t updated_cb_list;
 
-  RutMesh *pick_mesh;
-  RutMesh *mesh;
+    rut_mesh_t *pick_mesh;
+    rut_mesh_t *mesh;
 
-  float pointalism_scale;
-  float pointalism_z;
-  bool pointalism_lighter;
+    float pointalism_scale;
+    float pointalism_z;
+    bool pointalism_lighter;
 
-  RutIntrospectableProps introspectable;
-  RutProperty properties[RIG_POINTALISM_GRID_N_PROPS];
-  float cell_size;
-  int tex_width;
-  int tex_height;
+    rut_introspectable_props_t introspectable;
+    rut_property_t properties[RIG_POINTALISM_GRID_N_PROPS];
+    float cell_size;
+    int tex_width;
+    int tex_height;
 };
 
-void
-_rig_pointalism_grid_init_type (void);
+void _rig_pointalism_grid_init_type(void);
 
-RigPointalismGrid *
-rig_pointalism_grid_new (RutContext *ctx, float size);
+rig_pointalism_grid_t *rig_pointalism_grid_new(rut_context_t *ctx, float size);
 
-cg_primitive_t *
-rig_pointalism_grid_get_primitive (RutObject *object);
+cg_primitive_t *rig_pointalism_grid_get_primitive(rut_object_t *object);
 
-RutMesh *
-rig_pointalism_grid_get_pick_mesh (RutObject *self);
+rut_mesh_t *rig_pointalism_grid_get_pick_mesh(rut_object_t *self);
 
-float
-rig_pointalism_grid_get_scale (RutObject *obj);
+float rig_pointalism_grid_get_scale(rut_object_t *obj);
 
-void
-rig_pointalism_grid_set_scale (RutObject *obj,
-                               float scale);
+void rig_pointalism_grid_set_scale(rut_object_t *obj, float scale);
 
-float
-rig_pointalism_grid_get_z (RutObject *obj);
+float rig_pointalism_grid_get_z(rut_object_t *obj);
 
-void
-rig_pointalism_grid_set_z (RutObject *obj,
-                           float z);
+void rig_pointalism_grid_set_z(rut_object_t *obj, float z);
 
-bool
-rig_pointalism_grid_get_lighter (RutObject *obj);
+bool rig_pointalism_grid_get_lighter(rut_object_t *obj);
 
-void
-rig_pointalism_grid_set_lighter (RutObject *obj,
-                                 bool lighter);
+void rig_pointalism_grid_set_lighter(rut_object_t *obj, bool lighter);
 
-float
-rig_pointalism_grid_get_cell_size (RutObject *obj);
+float rig_pointalism_grid_get_cell_size(rut_object_t *obj);
+
+void rig_pointalism_grid_set_cell_size(rut_object_t *obj, float rows);
+
+typedef void (*rig_pointalism_grid_update_callback_t)(
+    rig_pointalism_grid_t *grid, void *user_data);
+rut_closure_t *rig_pointalism_grid_add_update_callback(
+    rig_pointalism_grid_t *grid,
+    rig_pointalism_grid_update_callback_t callback,
+    void *user_data,
+    rut_closure_destroy_callback_t destroy_cb);
 
 void
-rig_pointalism_grid_set_cell_size (RutObject *obj,
-                                   float rows);
-
-typedef void (* RigPointalismGridUpdateCallback) (RigPointalismGrid *grid,
-                                                  void *user_data);
-RutClosure *
-rig_pointalism_grid_add_update_callback (RigPointalismGrid *grid,
-                                         RigPointalismGridUpdateCallback callback,
-                                         void *user_data,
-                                         RutClosureDestroyCallback destroy_cb);
-
-void
-rig_pointalism_grid_set_image_size (RutObject *self,
-                                    int width,
-                                    int height);
+rig_pointalism_grid_set_image_size(rut_object_t *self, int width, int height);
 
 #endif /* __RIG_POINTALISM_GRID_H__ */

@@ -34,28 +34,20 @@
 
 G_BEGIN_DECLS
 
-typedef struct
-{
-  float center[2], down[2];
-  float radius;
-  cg_quaternion_t q_drag;
+typedef struct {
+    float center[2], down[2];
+    float radius;
+    cg_quaternion_t q_drag;
 
-} RutArcball;
+} rut_arcball_t;
 
-void
-rut_arcball_init (RutArcball *ball,
-                  float       center_x,
-                  float       center_y,
-                  float       radius);
+void rut_arcball_init(rut_arcball_t *ball,
+                      float center_x,
+                      float center_y,
+                      float radius);
 
-void
-rut_arcball_mouse_down (RutArcball *ball,
-                        float       x,
-                        float       y);
-void
-rut_arcball_mouse_motion (RutArcball *ball,
-                          float       x,
-                          float       y);
+void rut_arcball_mouse_down(rut_arcball_t *ball, float x, float y);
+void rut_arcball_mouse_motion(rut_arcball_t *ball, float x, float y);
 
 G_END_DECLS
 

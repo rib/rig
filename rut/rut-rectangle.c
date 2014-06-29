@@ -38,145 +38,134 @@
 #include "rut-camera.h"
 #include "rut-rectangle.h"
 
-struct _RutRectangle
-{
-  RutObjectBase _base;
+struct _rut_rectangle_t {
+    rut_object_base_t _base;
 
-  float width;
-  float height;
+    float width;
+    float height;
 
-  RutGraphableProps graphable;
-  RutPaintableProps paintable;
+    rut_graphable_props_t graphable;
+    rut_paintable_props_t paintable;
 
-  cg_pipeline_t *pipeline;
-
+    cg_pipeline_t *pipeline;
 };
 
 static void
-_rut_rectangle_free (void *object)
+_rut_rectangle_free(void *object)
 {
-  RutRectangle *rectangle = object;
+    rut_rectangle_t *rectangle = object;
 
-  cg_object_unref (rectangle->pipeline);
+    cg_object_unref(rectangle->pipeline);
 
-  rut_graphable_destroy (rectangle);
+    rut_graphable_destroy(rectangle);
 
-  rut_object_free (RutRectangle, object);
+    rut_object_free(rut_rectangle_t, object);
 }
 
 static void
-_rut_rectangle_paint (RutObject *object,
-                      RutPaintContext *paint_ctx)
+_rut_rectangle_paint(rut_object_t *object,
+                     rut_paint_context_t *paint_ctx)
 {
-  RutRectangle *rectangle = object;
-  RutObject *camera = paint_ctx->camera;
+    rut_rectangle_t *rectangle = object;
+    rut_object_t *camera = paint_ctx->camera;
 
-  cg_framebuffer_draw_rectangle (rut_camera_get_framebuffer (camera),
-                                   rectangle->pipeline,
-                                   0, 0,
-                                   rectangle->width,
-                                   rectangle->height);
+    cg_framebuffer_draw_rectangle(rut_camera_get_framebuffer(camera),
+                                  rectangle->pipeline,
+                                  0,
+                                  0,
+                                  rectangle->width,
+                                  rectangle->height);
 }
 
-RutType rut_rectangle_type;
+rut_type_t rut_rectangle_type;
 
 static void
-_rut_rectangle_init_type (void)
+_rut_rectangle_init_type(void)
 {
 
-  static RutGraphableVTable graphable_vtable = {
-      NULL, /* child remove */
-      NULL, /* child add */
-      NULL /* parent changed */
-  };
+    static rut_graphable_vtable_t graphable_vtable = { NULL, /* child remove */
+                                                       NULL, /* child add */
+                                                       NULL /* parent changed */
+    };
 
-  static RutPaintableVTable paintable_vtable = {
-      _rut_rectangle_paint
-  };
+    static rut_paintable_vtable_t paintable_vtable = { _rut_rectangle_paint };
 
-  static RutSizableVTable sizable_vtable = {
-      rut_rectangle_set_size,
-      rut_rectangle_get_size,
-      rut_simple_sizable_get_preferred_width,
-      rut_simple_sizable_get_preferred_height,
-      NULL /* add_preferred_size_callback */
-  };
+    static rut_sizable_vtable_t sizable_vtable = {
+        rut_rectangle_set_size,
+        rut_rectangle_get_size,
+        rut_simple_sizable_get_preferred_width,
+        rut_simple_sizable_get_preferred_height,
+        NULL /* add_preferred_size_callback */
+    };
 
-  RutType *type = &rut_rectangle_type;
-#define TYPE RutRectangle
+    rut_type_t *type = &rut_rectangle_type;
+#define TYPE rut_rectangle_t
 
-  rut_type_init (type, C_STRINGIFY (TYPE), _rut_rectangle_free);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_GRAPHABLE,
-                      offsetof (TYPE, graphable),
-                      &graphable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_PAINTABLE,
-                      offsetof (TYPE, paintable),
-                      &paintable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_SIZABLE,
-                      0, /* no implied properties */
-                      &sizable_vtable);
+    rut_type_init(type, C_STRINGIFY(TYPE), _rut_rectangle_free);
+    rut_type_add_trait(type,
+                       RUT_TRAIT_ID_GRAPHABLE,
+                       offsetof(TYPE, graphable),
+                       &graphable_vtable);
+    rut_type_add_trait(type,
+                       RUT_TRAIT_ID_PAINTABLE,
+                       offsetof(TYPE, paintable),
+                       &paintable_vtable);
+    rut_type_add_trait(type,
+                       RUT_TRAIT_ID_SIZABLE,
+                       0, /* no implied properties */
+                       &sizable_vtable);
 
 #undef TYPE
 }
 
-RutRectangle *
-rut_rectangle_new4f (RutContext *ctx,
-                     float width,
-                     float height,
-                     float red,
-                     float green,
-                     float blue,
-                     float alpha)
+rut_rectangle_t *
+rut_rectangle_new4f(rut_context_t *ctx,
+                    float width,
+                    float height,
+                    float red,
+                    float green,
+                    float blue,
+                    float alpha)
 {
-  RutRectangle *rectangle =
-    rut_object_alloc0 (RutRectangle, &rut_rectangle_type, _rut_rectangle_init_type);
+    rut_rectangle_t *rectangle = rut_object_alloc0(
+        rut_rectangle_t, &rut_rectangle_type, _rut_rectangle_init_type);
 
+    rut_graphable_init(rectangle);
+    rut_paintable_init(rectangle);
 
+    rectangle->width = width;
+    rectangle->height = height;
 
-  rut_graphable_init (rectangle);
-  rut_paintable_init (rectangle);
+    rectangle->pipeline = cg_pipeline_new(ctx->cg_context);
+    cg_pipeline_set_color4f(rectangle->pipeline, red, green, blue, alpha);
 
-  rectangle->width = width;
-  rectangle->height = height;
-
-  rectangle->pipeline = cg_pipeline_new (ctx->cg_context);
-  cg_pipeline_set_color4f (rectangle->pipeline,
-                             red, green, blue, alpha);
-
-  return rectangle;
+    return rectangle;
 }
 
 void
-rut_rectangle_set_width (RutRectangle *rectangle, float width)
+rut_rectangle_set_width(rut_rectangle_t *rectangle, float width)
 {
-  rectangle->width = width;
+    rectangle->width = width;
 }
 
 void
-rut_rectangle_set_height (RutRectangle *rectangle, float height)
+rut_rectangle_set_height(rut_rectangle_t *rectangle, float height)
 {
-  rectangle->height = height;
+    rectangle->height = height;
 }
 
 void
-rut_rectangle_set_size (RutObject *self,
-                        float width,
-                        float height)
+rut_rectangle_set_size(rut_object_t *self, float width, float height)
 {
-  RutRectangle *rectangle = self;
-  rectangle->width = width;
-  rectangle->height = height;
+    rut_rectangle_t *rectangle = self;
+    rectangle->width = width;
+    rectangle->height = height;
 }
 
 void
-rut_rectangle_get_size (RutObject *self,
-                        float *width,
-                        float *height)
+rut_rectangle_get_size(rut_object_t *self, float *width, float *height)
 {
-  RutRectangle *rectangle = self;
-  *width = rectangle->width;
-  *height = rectangle->height;
+    rut_rectangle_t *rectangle = self;
+    *width = rectangle->width;
+    *height = rectangle->height;
 }

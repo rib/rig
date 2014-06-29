@@ -36,114 +36,100 @@
 #include "rut-transform.h"
 
 static void
-_rut_transform_free (void *object)
+_rut_transform_free(void *object)
 {
-  RutTransform *transform = object;
+    rut_transform_t *transform = object;
 
-  rut_graphable_destroy (transform);
+    rut_graphable_destroy(transform);
 
-  rut_object_free (RutTransform, object);
+    rut_object_free(rut_transform_t, object);
 }
 
-RutType rut_transform_type;
+rut_type_t rut_transform_type;
 
 static void
-_rut_transform_init_type (void)
+_rut_transform_init_type(void)
 {
 
-  static RutGraphableVTable graphable_vtable = {
-      NULL, /* child remove */
-      NULL, /* child add */
-      NULL /* parent changed */
-  };
+    static rut_graphable_vtable_t graphable_vtable = { NULL, /* child remove */
+                                                       NULL, /* child add */
+                                                       NULL /* parent changed */
+    };
 
-  static RutTransformableVTable transformable_vtable = {
-      rut_transform_get_matrix
-  };
+    static rut_transformable_vtable_t transformable_vtable = {
+        rut_transform_get_matrix
+    };
 
-  RutType *type = &rut_transform_type;
-#define TYPE RutTransform
+    rut_type_t *type = &rut_transform_type;
+#define TYPE rut_transform_t
 
-  rut_type_init (type, C_STRINGIFY (TYPE), _rut_transform_free);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_GRAPHABLE,
-                      offsetof (TYPE, graphable),
-                      &graphable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_TRANSFORMABLE,
-                      0,
-                      &transformable_vtable);
+    rut_type_init(type, C_STRINGIFY(TYPE), _rut_transform_free);
+    rut_type_add_trait(type,
+                       RUT_TRAIT_ID_GRAPHABLE,
+                       offsetof(TYPE, graphable),
+                       &graphable_vtable);
+    rut_type_add_trait(
+        type, RUT_TRAIT_ID_TRANSFORMABLE, 0, &transformable_vtable);
 
 #undef TYPE
 }
 
-RutTransform *
-rut_transform_new (RutContext *ctx)
+rut_transform_t *
+rut_transform_new(rut_context_t *ctx)
 {
-  RutTransform *transform =
-    rut_object_alloc0 (RutTransform, &rut_transform_type, _rut_transform_init_type);
+    rut_transform_t *transform = rut_object_alloc0(
+        rut_transform_t, &rut_transform_type, _rut_transform_init_type);
 
+    rut_graphable_init(transform);
 
+    cg_matrix_init_identity(&transform->matrix);
 
-  rut_graphable_init (transform);
-
-  cg_matrix_init_identity (&transform->matrix);
-
-  return transform;
+    return transform;
 }
 
 void
-rut_transform_translate (RutTransform *transform,
-                         float x,
-                         float y,
-                         float z)
+rut_transform_translate(rut_transform_t *transform, float x, float y, float z)
 {
-  cg_matrix_translate (&transform->matrix, x, y, z);
+    cg_matrix_translate(&transform->matrix, x, y, z);
 }
 
 void
-rut_transform_quaternion_rotate (RutTransform *transform,
-                                 const cg_quaternion_t *quaternion)
+rut_transform_quaternion_rotate(rut_transform_t *transform,
+                                const cg_quaternion_t *quaternion)
 {
-  cg_matrix_t rotation;
-  cg_matrix_init_from_quaternion (&rotation, quaternion);
-  cg_matrix_multiply (&transform->matrix, &transform->matrix, &rotation);
+    cg_matrix_t rotation;
+    cg_matrix_init_from_quaternion(&rotation, quaternion);
+    cg_matrix_multiply(&transform->matrix, &transform->matrix, &rotation);
 }
 
 void
-rut_transform_rotate (RutTransform *transform,
-                      float angle,
-                      float x,
-                      float y,
-                      float z)
+rut_transform_rotate(
+    rut_transform_t *transform, float angle, float x, float y, float z)
 {
-  cg_matrix_rotate (&transform->matrix, angle, x, y, z);
+    cg_matrix_rotate(&transform->matrix, angle, x, y, z);
 }
 void
-rut_transform_scale (RutTransform *transform,
-                     float x,
-                     float y,
-                     float z)
+rut_transform_scale(rut_transform_t *transform, float x, float y, float z)
 {
-  cg_matrix_scale (&transform->matrix, x, y, z);
+    cg_matrix_scale(&transform->matrix, x, y, z);
 }
 
 void
-rut_transform_transform (RutTransform *transform,
-                         const cg_matrix_t *matrix)
+rut_transform_transform(rut_transform_t *transform,
+                        const cg_matrix_t *matrix)
 {
-  cg_matrix_multiply (&transform->matrix, &transform->matrix, matrix);
+    cg_matrix_multiply(&transform->matrix, &transform->matrix, matrix);
 }
 
 void
-rut_transform_init_identity (RutTransform *transform)
+rut_transform_init_identity(rut_transform_t *transform)
 {
-  cg_matrix_init_identity (&transform->matrix);
+    cg_matrix_init_identity(&transform->matrix);
 }
 
 const cg_matrix_t *
-rut_transform_get_matrix (RutObject *self)
+rut_transform_get_matrix(rut_object_t *self)
 {
-  RutTransform *transform = self;
-  return &transform->matrix;
+    rut_transform_t *transform = self;
+    return &transform->matrix;
 }

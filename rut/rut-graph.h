@@ -32,10 +32,9 @@
 
 #include <rut-context.h>
 
-typedef struct _RutGraph RutGraph;
-extern RutType rut_graph_type;
+typedef struct _rut_graph_t rut_graph_t;
+extern rut_type_t rut_graph_type;
 
-RutGraph *
-rut_graph_new (RutContext *ctx);
+rut_graph_t *rut_graph_new(rut_context_t *ctx);
 
 #endif /* __RUT_GRAPH_H__ */

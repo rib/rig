@@ -35,18 +35,17 @@
  * (E.g. implemented by all geometry components)
  *
  */
-typedef struct _RutMeshableVTable
-{
-  RutMesh *(*get_mesh)(void *object);
-} RutMeshableVTable;
+typedef struct _rut_meshable_vtable_t {
+    rut_mesh_t *(*get_mesh)(void *object);
+} rut_meshable_vtable_t;
 
 static inline void *
-rut_meshable_get_mesh (RutObject *object)
+rut_meshable_get_mesh(rut_object_t *object)
 {
-  RutMeshableVTable *meshable =
-    rut_object_get_vtable (object, RUT_TRAIT_ID_MESHABLE);
+    rut_meshable_vtable_t *meshable =
+        rut_object_get_vtable(object, RUT_TRAIT_ID_MESHABLE);
 
-  return meshable->get_mesh (object);
+    return meshable->get_mesh(object);
 }
 
 #endif /* __RUT_MESHABLE_H__ */

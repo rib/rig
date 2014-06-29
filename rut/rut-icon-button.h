@@ -30,51 +30,42 @@
 #ifndef __RUT_ICON_BUTTON_H__
 #define __RUT_ICON_BUTTON_H__
 
-typedef struct _RutIconButton RutIconButton;
-extern RutType rut_icon_button_type;
+typedef struct _rut_icon_button_t rut_icon_button_t;
+extern rut_type_t rut_icon_button_type;
 
-typedef enum
-{
-  RUT_ICON_BUTTON_POSITION_ABOVE,
-  RUT_ICON_BUTTON_POSITION_BELOW,
-  RUT_ICON_BUTTON_POSITION_SIDE,
-} RutIconButtonPosition;
+typedef enum {
+    RUT_ICON_BUTTON_POSITION_ABOVE,
+    RUT_ICON_BUTTON_POSITION_BELOW,
+    RUT_ICON_BUTTON_POSITION_SIDE,
+} rut_icon_button_position_t;
 
-RutIconButton *
-rut_icon_button_new (RutContext *ctx,
-                     const char *label,
-                     RutIconButtonPosition label_position,
-                     const char *normal_icon,
-                     const char *hover_icon,
-                     const char *active_icon,
-                     const char *disable_icon);
+rut_icon_button_t *
+rut_icon_button_new(rut_context_t *ctx,
+                    const char *label,
+                    rut_icon_button_position_t label_position,
+                    const char *normal_icon,
+                    const char *hover_icon,
+                    const char *active_icon,
+                    const char *disable_icon);
 
-typedef void (*RutIconButtonClickCallback) (RutIconButton *button, void *user_data);
+typedef void (*rut_icon_button_click_callback_t)(rut_icon_button_t *button,
+                                                 void *user_data);
 
-RutClosure *
-rut_icon_button_add_on_click_callback (RutIconButton *button,
-                                  RutIconButtonClickCallback callback,
-                                  void *user_data,
-                                  RutClosureDestroyCallback destroy_cb);
+rut_closure_t *rut_icon_button_add_on_click_callback(
+    rut_icon_button_t *button,
+    rut_icon_button_click_callback_t callback,
+    void *user_data,
+    rut_closure_destroy_callback_t destroy_cb);
 
-void
-rut_icon_button_set_normal (RutIconButton *button,
-                            const char *icon);
+void rut_icon_button_set_normal(rut_icon_button_t *button, const char *icon);
 
-void
-rut_icon_button_set_hover (RutIconButton *button,
-                           const char *icon);
+void rut_icon_button_set_hover(rut_icon_button_t *button, const char *icon);
 
-void
-rut_icon_button_set_active (RutIconButton *button,
-                            const char *icon);
+void rut_icon_button_set_active(rut_icon_button_t *button, const char *icon);
 
-void
-rut_icon_button_set_disabled (RutIconButton *button,
-                              const char *icon);
+void rut_icon_button_set_disabled(rut_icon_button_t *button, const char *icon);
 
-void
-rut_icon_button_set_label_color (RutIconButton *button,
-                                 const cg_color_t *color);
+void rut_icon_button_set_label_color(rut_icon_button_t *button,
+                                     const cg_color_t *color);
 
 #endif /* __RUT_ICON_BUTTON_H__ */

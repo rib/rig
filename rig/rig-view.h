@@ -33,13 +33,12 @@
 
 #include "rig-engine.h"
 
-extern RutType rig_view_type;
+extern rut_type_t rig_view_type;
 
-typedef struct _RigView RigView;
+typedef struct _rig_view_t rig_view_t;
 
-#define RIG_VIEW(x) ((RigView *) x)
+#define RIG_VIEW(x) ((rig_view_t *)x)
 
-RigView *
-rig_view_new (RigEngine *engine);
+rig_view_t *rig_view_new(rig_engine_t *engine);
 
 #endif /* _RIG_VIEW_H_ */

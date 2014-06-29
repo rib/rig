@@ -38,54 +38,51 @@
 #include "rig-entity.h"
 #include "rig-asset.h"
 
-typedef struct _RigModel RigModel;
-typedef struct _RigModelPrivate RigModelPrivate;
-extern RutType rig_model_type;
+typedef struct _rig_model_t rig_model_t;
+typedef struct _rig_model_private_t rig_model_private_t;
+extern rut_type_t rig_model_type;
 
-typedef enum _RigModelType
-{
-  RIG_MODEL_TYPE_TEMPLATE,
-  RIG_MODEL_TYPE_FILE,
-} RigModelType;
+typedef enum _rig_model_type_t {
+    RIG_MODEL_TYPE_TEMPLATE,
+    RIG_MODEL_TYPE_FILE,
+} rig_model_type_t;
 
-struct _RigModel
-{
-  RutObjectBase _base;
+struct _rig_model_t {
+    rut_object_base_t _base;
 
-  RutContext *ctx;
+    rut_context_t *ctx;
 
-  RutComponentableProps component;
+    rut_componentable_props_t component;
 
-  RigModelType type;
+    rig_model_type_t type;
 
-  RigAsset *asset;
+    rig_asset_t *asset;
 
-  RutMesh *mesh;
+    rut_mesh_t *mesh;
 
-  float min_x;
-  float max_x;
-  float min_y;
-  float max_y;
-  float min_z;
-  float max_z;
+    float min_x;
+    float max_x;
+    float min_y;
+    float max_y;
+    float min_z;
+    float max_z;
 
-  cg_primitive_t *primitive;
+    cg_primitive_t *primitive;
 
-  bool builtin_normals;
-  bool builtin_tex_coords;
+    bool builtin_normals;
+    bool builtin_tex_coords;
 
-  /* TODO: I think maybe we should make RigHair and RigModel mutually
-   * exclusive and move all of this stuff to RigHair instead. */
-  bool is_hair_model;
-  RigModelPrivate *priv;
-  RutMesh *patched_mesh;
-  RutMesh *fin_mesh;
-  cg_primitive_t *fin_primitive;
-  float default_hair_length;
+    /* TODO: I think maybe we should make rig_hair_t and rig_model_t mutually
+     * exclusive and move all of this stuff to rig_hair_t instead. */
+    bool is_hair_model;
+    rig_model_private_t *priv;
+    rut_mesh_t *patched_mesh;
+    rut_mesh_t *fin_mesh;
+    cg_primitive_t *fin_primitive;
+    float default_hair_length;
 };
 
-void
-_rig_model_init_type (void);
+void _rig_model_init_type(void);
 
 /* NB: the mesh given here is copied before deriving missing
  * attributes and not used directly.
@@ -95,32 +92,23 @@ _rig_model_init_type (void);
  * there should be no need to derive missing attributes at
  * runtime.
  */
-RigModel *
-rig_model_new_from_asset_mesh (RutContext *ctx,
-                               RutMesh *mesh,
-                               bool needs_normals,
-                               bool needs_tex_coords);
+rig_model_t *rig_model_new_from_asset_mesh(rut_context_t *ctx,
+                                           rut_mesh_t *mesh,
+                                           bool needs_normals,
+                                           bool needs_tex_coords);
 
-RigModel *
-rig_model_new_from_asset (RutContext *ctx,
-                          RigAsset *asset);
+rig_model_t *rig_model_new_from_asset(rut_context_t *ctx, rig_asset_t *asset);
 
-RigModel *
-rig_model_new_for_hair (RigModel *base);
+rig_model_t *rig_model_new_for_hair(rig_model_t *base);
 
-RutMesh *
-rig_model_get_mesh (RutObject *self);
+rut_mesh_t *rig_model_get_mesh(rut_object_t *self);
 
-RigAsset *
-rig_model_get_asset (RigModel *model);
+rig_asset_t *rig_model_get_asset(rig_model_t *model);
 
-cg_primitive_t *
-rig_model_get_primitive (RutObject *object);
+cg_primitive_t *rig_model_get_primitive(rut_object_t *object);
 
-cg_primitive_t *
-rig_model_get_fin_primitive (RutObject *object);
+cg_primitive_t *rig_model_get_fin_primitive(rut_object_t *object);
 
-float
-rig_model_get_default_hair_length (RutObject *object);
+float rig_model_get_default_hair_length(rut_object_t *object);
 
 #endif /* _RIG_MODEL_H_ */

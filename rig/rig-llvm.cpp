@@ -82,283 +82,276 @@
 using namespace clang;
 using namespace clang::driver;
 
-typedef int (*BindingSym) (RutProperty *property, void *user_data);
+typedef int (*binding_sym_t)(rut_property_t *property, void *user_data);
 
 static llvm::Module *
-compile_code (const char *code,
-              char **tmp_object_file)
+compile_code(const char *code, char **tmp_object_file)
 {
-  llvm::InitializeNativeTarget();
-  llvm::InitializeNativeTargetAsmPrinter();
+    llvm::InitializeNativeTarget();
+    llvm::InitializeNativeTargetAsmPrinter();
 
-  //std::string code = code;
+    // std::string code = code;
 
-  llvm::MemoryBuffer *buf = llvm::MemoryBuffer::getMemBuffer(code);
-  FrontendInputFile file (llvm::StringRef ("rig-codegen.c"), clang::IK_C);
+    llvm::MemoryBuffer *buf = llvm::MemoryBuffer::getMemBuffer(code);
+    FrontendInputFile file(llvm::StringRef("rig-codegen.c"), clang::IK_C);
 
-  OwningPtr<clang::CompilerInvocation> CI (new clang::CompilerInvocation);
-  CI->getFrontendOpts().Inputs.push_back (file);
+    OwningPtr<clang::CompilerInvocation> CI(new clang::CompilerInvocation);
+    CI->getFrontendOpts().Inputs.push_back(file);
 
-  char *clang_resourcedir =
-    g_build_filename (RIG_LLVM_PREFIX, "lib", "clang",
-                      RIG_LLVM_VERSION, NULL);
+    char *clang_resourcedir = g_build_filename(
+        RIG_LLVM_PREFIX, "lib", "clang", RIG_LLVM_VERSION, NULL);
 
-  CI->getHeaderSearchOpts().ResourceDir = clang_resourcedir;
+    CI->getHeaderSearchOpts().ResourceDir = clang_resourcedir;
 
-  /* XXX: for some reason these don't seem to have any affect... */
-  CI->getHeaderSearchOpts().UseBuiltinIncludes = false;
-  CI->getHeaderSearchOpts().UseStandardSystemIncludes = false;
+    /* XXX: for some reason these don't seem to have any affect... */
+    CI->getHeaderSearchOpts().UseBuiltinIncludes = false;
+    CI->getHeaderSearchOpts().UseStandardSystemIncludes = false;
 
-  char *clang_system_includedir =
-    g_build_filename (clang_resourcedir, "include", NULL);
+    char *clang_system_includedir =
+        g_build_filename(clang_resourcedir, "include", NULL);
 
-  CI->getHeaderSearchOpts().AddPath (clang_system_includedir,
-                                     frontend::System, false, true);
+    CI->getHeaderSearchOpts().AddPath(
+        clang_system_includedir, frontend::System, false, true);
 
-  g_free (clang_system_includedir);
+    g_free(clang_system_includedir);
 
-  g_free (clang_resourcedir);
+    g_free(clang_resourcedir);
 
+    CI->getHeaderSearchOpts().Verbose = true;
 
-  CI->getHeaderSearchOpts().Verbose = true;
+    char *includedir = rut_find_data_file("codegen_includes");
+    CI->getHeaderSearchOpts().AddPath(
+        includedir, frontend::System, false, true);
+    g_free(includedir);
 
-  char *includedir = rut_find_data_file ("codegen_includes");
-  CI->getHeaderSearchOpts().AddPath (includedir, frontend::System, false, true);
-  g_free (includedir);
+    CI->getPreprocessorOpts().Includes.push_back("stdint.h");
+    CI->getPreprocessorOpts().Includes.push_back("stdbool.h");
+    CI->getPreprocessorOpts().Includes.push_back("stddef.h");
+    CI->getPreprocessorOpts().Includes.push_back("rig-codegen.h");
+    CI->getPreprocessorOpts().Includes.push_back("rut-property-bare.h");
 
-  CI->getPreprocessorOpts().Includes.push_back ("stdint.h");
-  CI->getPreprocessorOpts().Includes.push_back ("stdbool.h");
-  CI->getPreprocessorOpts().Includes.push_back ("stddef.h");
-  CI->getPreprocessorOpts().Includes.push_back ("rig-codegen.h");
-  CI->getPreprocessorOpts().Includes.push_back ("rut-property-bare.h");
+    /* TODO: The first time we build some code at runtime we should
+     * do a special pass where we set the frontend options
+     * ProgramAction = frontend::GeneratePCH so we can generate a pre
+     * compiled header to make subsequent compilations faster.
+     */
 
-  /* TODO: The first time we build some code at runtime we should
-   * do a special pass where we set the frontend options
-   * ProgramAction = frontend::GeneratePCH so we can generate a pre
-   * compiled header to make subsequent compilations faster.
-   */
+    CI->getPreprocessorOpts().addRemappedFile("rig-codegen.c", buf);
 
-  CI->getPreprocessorOpts().addRemappedFile ("rig-codegen.c", buf);
+    std::string tmp_filename = "/tmp/rigXXXXXX.o";
+    int fd = mkstemps((char *)tmp_filename.c_str(), 2);
 
-  std::string tmp_filename = "/tmp/rigXXXXXX.o";
-  int fd = mkstemps ((char *)tmp_filename.c_str(), 2);
+    CI->getFrontendOpts().OutputFile = tmp_filename;
 
-  CI->getFrontendOpts().OutputFile = tmp_filename;
+    // CI->setLangDefaults(clang::IK_C);
 
-  //CI->setLangDefaults(clang::IK_C);
+    CI->getCodeGenOpts().setDebugInfo(CodeGenOptions::FullDebugInfo);
 
-  CI->getCodeGenOpts().setDebugInfo(CodeGenOptions::FullDebugInfo);
+    CI->getTargetOpts().Triple = llvm::sys::getProcessTriple();
 
-  CI->getTargetOpts().Triple = llvm::sys::getProcessTriple();
+    clang::CompilerInstance Clang;
+    Clang.setInvocation(CI.take());
 
-  clang::CompilerInstance Clang;
-  Clang.setInvocation (CI.take());
+    Clang.createDiagnostics();
 
-  Clang.createDiagnostics ();
+    clang::TextDiagnosticBuffer *diagnostics_buff =
+        new clang::TextDiagnosticBuffer;
+    clang::ChainedDiagnosticConsumer *chained_diagnostics =
+        new clang::ChainedDiagnosticConsumer(
+            diagnostics_buff, Clang.getDiagnostics().takeClient());
 
-  clang::TextDiagnosticBuffer *diagnostics_buff =
-    new clang::TextDiagnosticBuffer;
-  clang::ChainedDiagnosticConsumer *chained_diagnostics =
-    new clang::ChainedDiagnosticConsumer (diagnostics_buff,
-                                          Clang.getDiagnostics().takeClient ());
+    Clang.getDiagnostics().setClient(chained_diagnostics);
 
-  Clang.getDiagnostics().setClient (chained_diagnostics);
+    if (!Clang.hasDiagnostics())
+        return NULL;
 
-  if (!Clang.hasDiagnostics ())
-    return NULL;
-
-  /* XXX: We can't currently avoid writting to an intermediate .o file
-   * here even though we are going to pass the data straight through
-   * to mclinker.
-   *
-   * The problem is that it's not currently possible to override
-   * CodeGenAction::CreateASTConsumer and create your own raw_ostream
-   * for the assembly printer, since the BackendConsumer class is
-   * private to that file.
-   *
-   * Note: we can set the path for the output file via the
-   * FrontendOptions.
-   */
-  OwningPtr<clang::CodeGenAction> Act(new clang::EmitObjAction);
-  if (!Clang.ExecuteAction (*Act))
-    {
-      g_print ("Failed to execute action\n");
+    /* XXX: We can't currently avoid writting to an intermediate .o file
+     * here even though we are going to pass the data straight through
+     * to mclinker.
+     *
+     * The problem is that it's not currently possible to override
+     * CodeGenAction::CreateASTConsumer and create your own raw_ostream
+     * for the assembly printer, since the BackendConsumer class is
+     * private to that file.
+     *
+     * Note: we can set the path for the output file via the
+     * FrontendOptions.
+     */
+    OwningPtr<clang::CodeGenAction> Act(new clang::EmitObjAction);
+    if (!Clang.ExecuteAction(*Act)) {
+        g_print("Failed to execute action\n");
     }
 
-  TextDiagnosticBuffer::const_iterator diag_iterator;
+    TextDiagnosticBuffer::const_iterator diag_iterator;
 
-  for (diag_iterator = diagnostics_buff->warn_begin();
-       diag_iterator != diagnostics_buff->warn_end();
-       ++diag_iterator)
-    g_print ("Buffer Diangostics: warning: %s\n", (*diag_iterator).second.c_str());
+    for (diag_iterator = diagnostics_buff->warn_begin();
+         diag_iterator != diagnostics_buff->warn_end();
+         ++diag_iterator)
+        g_print("Buffer Diangostics: warning: %s\n",
+                (*diag_iterator).second.c_str());
 
-  for (diag_iterator = diagnostics_buff->err_begin();
-       diag_iterator != diagnostics_buff->err_end();
-       ++diag_iterator)
-    g_print ("Buffer Diangostics: error: %s\n", (*diag_iterator).second.c_str());
+    for (diag_iterator = diagnostics_buff->err_begin();
+         diag_iterator != diagnostics_buff->err_end();
+         ++diag_iterator)
+        g_print("Buffer Diangostics: error: %s\n",
+                (*diag_iterator).second.c_str());
 
-  /* XXX: I think this now means we need to explicitly delete mod
-   * since it's no longer wrapped by an OwningPtr... */
-  llvm::Module *mod = Act->takeModule();
+    /* XXX: I think this now means we need to explicitly delete mod
+     * since it's no longer wrapped by an OwningPtr... */
+    llvm::Module *mod = Act->takeModule();
 #if 0
-  mod->dump();
+    mod->dump();
 #endif
 
-  close (fd);
+    close(fd);
 
-  /* XXX: we can't shut down llvm all the while that we might need
-   * it again */
-  //llvm::llvm_shutdown();
+    /* XXX: we can't shut down llvm all the while that we might need
+     * it again */
+    // llvm::llvm_shutdown();
 
-  *tmp_object_file = g_strdup (tmp_filename.c_str ());
+    *tmp_object_file = g_strdup(tmp_filename.c_str());
 
-  return mod;
+    return mod;
 }
 
 static char *
-link (char *tmp_object_file,
-      uint8_t **dso_data_out,
-      size_t *dso_len_out)
+link(char *tmp_object_file, uint8_t **dso_data_out, size_t *dso_len_out)
 {
-  void *handle;
-  BindingSym binding_sym;
-  GError *error;
+    void *handle;
+    binding_sym_t binding_sym;
+    GError *error;
 
-  /*
-   * Deal with linking...
-   */
+    /*
+     * Deal with linking...
+     */
 
-  mcld::Initialize ();
+    mcld::Initialize();
 
-  mcld::LinkerConfig config;
+    mcld::LinkerConfig config;
 
-  std::string triple = llvm::sys::getProcessTriple();
-  llvm::Triple TargetTriple(triple);
-  config.targets().setTriple(TargetTriple);
+    std::string triple = llvm::sys::getProcessTriple();
+    llvm::Triple TargetTriple(triple);
+    config.targets().setTriple(TargetTriple);
 
-  mcld::LinkerScript script;
-  mcld::Module module("test", script);
-  mcld::IRBuilder builder (module, config);
+    mcld::LinkerScript script;
+    mcld::Module module("test", script);
+    mcld::IRBuilder builder(module, config);
 
-  config.setCodeGenType(mcld::LinkerConfig::DynObj);
+    config.setCodeGenType(mcld::LinkerConfig::DynObj);
 
-  mcld::Linker linker;
-  linker.emulate (script, config);
+    mcld::Linker linker;
+    linker.emulate(script, config);
 
-  mcld::sys::fs::Path path (tmp_object_file);
+    mcld::sys::fs::Path path(tmp_object_file);
 
-  builder.ReadInput ("rig", path);
+    builder.ReadInput("rig", path);
 
-  std::string tmp_filename = "/tmp/rigXXXXXX.so";
-  int fd = mkstemps ((char *)tmp_filename.c_str (), 3);
+    std::string tmp_filename = "/tmp/rigXXXXXX.so";
+    int fd = mkstemps((char *)tmp_filename.c_str(), 3);
 
-  if (linker.link (module, builder))
-    linker.emit (fd);
+    if (linker.link(module, builder))
+        linker.emit(fd);
 
-  close (fd);
+    close(fd);
 
-  mcld::Finalize ();
+    mcld::Finalize();
 
-  error = NULL;
-  if (!g_file_get_contents (tmp_filename.c_str (),
-                            (gchar **)dso_data_out,
-                            (gsize *)dso_len_out,
-                            &error))
-    {
-      g_warning ("Failed to read DSO");
-      return false;
+    error = NULL;
+    if (!g_file_get_contents(tmp_filename.c_str(),
+                             (gchar **)dso_data_out,
+                             (gsize *)dso_len_out,
+                             &error)) {
+        g_warning("Failed to read DSO");
+        return false;
     }
 
-  return g_strdup (tmp_filename.c_str ());
+    return g_strdup(tmp_filename.c_str());
 }
 
 G_BEGIN_DECLS
 
-struct _RigLLVMModule
-{
-  RutObjectBase _base;
+struct _rig_llvm_module_t {
+    rut_object_base_t _base;
 
-  llvm::Module *mod;
+    llvm::Module *mod;
 };
 
 static void
-_rig_llvm_module_free (void *object)
+_rig_llvm_module_free(void *object)
 {
-  RigLLVMModule *module = (RigLLVMModule *)object;
+    rig_llvm_module_t *module = (rig_llvm_module_t *)object;
 
-  delete module->mod;
+    delete module->mod;
 
-  rut_object_free (RigLLVMModule, object);
+    rut_object_free(rig_llvm_module_t, object);
 }
 
-RutType rig_llvm_module_type;
+rut_type_t rig_llvm_module_type;
 
 static void
-_rig_llvm_module_init_type (void)
+_rig_llvm_module_init_type(void)
 {
-  rut_type_init (&rig_llvm_module_type, "RigLLVMModule", _rig_llvm_module_free);
+    rut_type_init(
+        &rig_llvm_module_type, "rig_llvm_module_t", _rig_llvm_module_free);
 }
 
-static RigLLVMModule *
-_rig_llvm_module_new (llvm::Module *mod)
+static rig_llvm_module_t *
+_rig_llvm_module_new(llvm::Module *mod)
 {
-  RigLLVMModule *module = (RigLLVMModule *)
-    rut_object_alloc0 (RigLLVMModule, &rig_llvm_module_type,
-                       _rig_llvm_module_init_type);
+    rig_llvm_module_t *module = (rig_llvm_module_t *)rut_object_alloc0(
+        rig_llvm_module_t, &rig_llvm_module_type, _rig_llvm_module_init_type);
 
-  module->mod = mod;
+    module->mod = mod;
 
-  return module;
+    return module;
 }
 
 /* When we're connected to a slave device we write a native dso for
  * the slave that can be sent over the wire, written and then opened.
  */
-RigLLVMModule *
-rig_llvm_compile_to_dso (const char *code,
-                         char **dso_filename_out,
-                         uint8_t **dso_data_out,
-                         size_t *dso_len_out)
+rig_llvm_module_t *
+rig_llvm_compile_to_dso(const char *code,
+                        char **dso_filename_out,
+                        uint8_t **dso_data_out,
+                        size_t *dso_len_out)
 {
-  RigLLVMModule *ret = NULL;
-  char *tmp_object_file = NULL;
+    rig_llvm_module_t *ret = NULL;
+    char *tmp_object_file = NULL;
 
-  llvm::Module *mod = compile_code (code, &tmp_object_file);
+    llvm::Module *mod = compile_code(code, &tmp_object_file);
 
-  if (mod)
-    {
-      ret = _rig_llvm_module_new (mod);
+    if (mod) {
+        ret = _rig_llvm_module_new(mod);
 
-      *dso_filename_out = link (tmp_object_file, dso_data_out, dso_len_out);
-      if (!*dso_filename_out)
-        {
-          /* Note: we shouldn't just avoid calling
-           * _rig_llvm_module_new in this case otherwise we won't
-           * destroy the llvm::Module. */
-          rut_object_unref (ret);
-          ret = NULL;
+        *dso_filename_out = link(tmp_object_file, dso_data_out, dso_len_out);
+        if (!*dso_filename_out) {
+            /* Note: we shouldn't just avoid calling
+             * _rig_llvm_module_new in this case otherwise we won't
+             * destroy the llvm::Module. */
+            rut_object_unref(ret);
+            ret = NULL;
         }
 
-      g_free (tmp_object_file);
+        g_free(tmp_object_file);
     }
 
-  return ret;
+    return ret;
 }
 
 /* When we run code in the editor we simply rely on the LLVM JIT
  * without needing to write and then open a native dso. */
-RigLLVMModule *
-rig_llvm_compile_for_jit (const char *code)
+rig_llvm_module_t *
+rig_llvm_compile_for_jit(const char *code)
 {
-  char *tmp_object_file = NULL;
+    char *tmp_object_file = NULL;
 
-  /* TODO: avoid generating a redundant .o file in this case! */
-  llvm::Module *mod = compile_code (code, &tmp_object_file);
+    /* TODO: avoid generating a redundant .o file in this case! */
+    llvm::Module *mod = compile_code(code, &tmp_object_file);
 
-  if (mod)
-    return _rig_llvm_module_new (mod);
-  else
-    return NULL;
+    if (mod)
+        return _rig_llvm_module_new(mod);
+    else
+        return NULL;
 }
 
 G_END_DECLS

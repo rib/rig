@@ -33,7 +33,7 @@
 
 /* Forward declare this since there is a circluar header dependency
  * between rig-camera-view.h and rig-engine.h */
-typedef struct _RigCameraView RigCameraView;
+typedef struct _rig_camera_view_t rig_camera_view_t;
 
 #include "rig-engine.h"
 #include "rig-selection-tool.h"
@@ -41,111 +41,105 @@ typedef struct _RigCameraView RigCameraView;
 #include "rig-ui.h"
 #include "rig-dof-effect.h"
 
-typedef struct _EntityTranslateGrabClosure EntityTranslateGrabClosure;
-typedef struct _EntitiesTranslateGrabClosure EntitiesTranslateGrabClosure;
+typedef struct _entity_translate_grab_closure_t entity_translate_grab_closure_t;
+typedef struct _entities_translate_grab_closure_t
+    entities_translate_grab_closure_t;
 
-typedef struct
-{
-  RigEntity *origin_offset; /* negative offset */
-  RigEntity *dev_scale; /* scale to fit device coords */
-  RigEntity *screen_pos; /* position screen in edit view */
-} RigCameraViewDeviceTransforms;
+typedef struct {
+    rig_entity_t *origin_offset; /* negative offset */
+    rig_entity_t *dev_scale; /* scale to fit device coords */
+    rig_entity_t *screen_pos; /* position screen in edit view */
+} rig_camera_view_device_transforms_t;
 
-typedef enum _RigCameraViewMode
-{
-  RIG_CAMERA_VIEW_MODE_PLAY = 1,
-  RIG_CAMERA_VIEW_MODE_EDIT,
-} RigCameraViewMode;
+typedef enum _rig_camera_view_mode_t {
+    RIG_CAMERA_VIEW_MODE_PLAY = 1,
+    RIG_CAMERA_VIEW_MODE_EDIT,
+} rig_camera_view_mode_t;
 
-struct _RigCameraView
-{
-  RutObjectBase _base;
+struct _rig_camera_view_t {
+    rut_object_base_t _base;
 
-  RigEngine *engine;
+    rig_engine_t *engine;
 
-  RutContext *context;
+    rut_context_t *context;
 
-  RigUI *ui;
+    rig_ui_t *ui;
 
-  bool play_mode;
+    bool play_mode;
 
-  /* picking ray */
-  cg_pipeline_t *picking_ray_color;
-  cg_primitive_t *picking_ray;
-  bool debug_pick_ray;
+    /* picking ray */
+    cg_pipeline_t *picking_ray_color;
+    cg_primitive_t *picking_ray;
+    bool debug_pick_ray;
 
-  RutMatrixStack *matrix_stack;
+    rut_matrix_stack_t *matrix_stack;
 
-  RutGraphableProps graphable;
-  RutPaintableProps paintable;
+    rut_graphable_props_t graphable;
+    rut_paintable_props_t paintable;
 
-  float width, height;
+    float width, height;
 
-  cg_pipeline_t *bg_pipeline;
+    cg_pipeline_t *bg_pipeline;
 
-  float origin[3];
-  //float saved_origin[3];
+    float origin[3];
+    // float saved_origin[3];
 
-  float device_scale;
+    float device_scale;
 
-  EntitiesTranslateGrabClosure *entities_translate_grab_closure;
+    entities_translate_grab_closure_t *entities_translate_grab_closure;
 
-  RigEntity *view_camera_to_origin; /* move to origin */
-  RigEntity *view_camera_rotate; /* armature rotate rotate */
-  RigEntity *view_camera_armature; /* armature length */
-  RigEntity *view_camera_2d_view; /* setup 2d view, origin top-left */
-  RigCameraViewDeviceTransforms view_device_transforms;
+    rig_entity_t *view_camera_to_origin; /* move to origin */
+    rig_entity_t *view_camera_rotate; /* armature rotate rotate */
+    rig_entity_t *view_camera_armature; /* armature length */
+    rig_entity_t *view_camera_2d_view; /* setup 2d view, origin top-left */
+    rig_camera_view_device_transforms_t view_device_transforms;
 
-  RigEntity *play_camera;
-  RutObject *play_camera_component;
-  RigCameraViewDeviceTransforms play_device_transforms;
-  /* This entity is added as a child of all of the play device
-   * transforms. During paint the camera component is temporarily
-   * stolen from the play camera entity so that it can be transformed
-   * with the device transforms */
-  RigEntity *play_dummy_entity;
+    rig_entity_t *play_camera;
+    rut_object_t *play_camera_component;
+    rig_camera_view_device_transforms_t play_device_transforms;
+    /* This entity is added as a child of all of the play device
+     * transforms. During paint the camera component is temporarily
+     * stolen from the play camera entity so that it can be transformed
+     * with the device transforms */
+    rig_entity_t *play_dummy_entity;
 
 #ifdef RIG_EDITOR_ENABLED
-  RigEntity *play_camera_handle;
+    rig_entity_t *play_camera_handle;
 #endif
 
-  RigEntity *current_camera;
-  RutObject *current_camera_component;
+    rig_entity_t *current_camera;
+    rut_object_t *current_camera_component;
 
-  RigDepthOfField *dof;
-  bool enable_dof;
+    rig_depth_of_field_t *dof;
+    bool enable_dof;
 
-  RutArcball arcball;
-  cg_quaternion_t saved_rotation;
+    rut_arcball_t arcball;
+    cg_quaternion_t saved_rotation;
 
-  RigEntity *view_camera;
-  RutObject *view_camera_component;
-  float view_camera_z;
-  RutInputRegion *input_region;
+    rig_entity_t *view_camera;
+    rut_object_t *view_camera_component;
+    float view_camera_z;
+    rut_input_region_t *input_region;
 
-  float last_viewport_x;
-  float last_viewport_y;
-  bool dirty_viewport_size;
+    float last_viewport_x;
+    float last_viewport_y;
+    bool dirty_viewport_size;
 
 #ifdef RIG_EDITOR_ENABLED
-  RutGraph *tool_overlay;
-  RigSelectionTool *selection_tool;
-  RigRotationTool *rotation_tool;
-  RigToolID tool_id;
+    rut_graph_t *tool_overlay;
+    rig_selection_tool_t *selection_tool;
+    rig_rotation_tool_t *rotation_tool;
+    rig_tool_id_t tool_id;
 #endif
 };
 
-extern RutType rig_view_type;
+extern rut_type_t rig_view_type;
 
-RigCameraView *
-rig_camera_view_new (RigEngine *engine);
+rig_camera_view_t *rig_camera_view_new(rig_engine_t *engine);
 
-void
-rig_camera_view_set_ui (RigCameraView *view,
-                        RigUI *ui);
+void rig_camera_view_set_ui(rig_camera_view_t *view, rig_ui_t *ui);
 
-void
-rig_camera_view_set_play_mode_enabled (RigCameraView *view,
-                                       bool enabled);
+void rig_camera_view_set_play_mode_enabled(rig_camera_view_t *view,
+                                           bool enabled);
 
 #endif /* _RIG_CAMERA_VIEW_H_ */

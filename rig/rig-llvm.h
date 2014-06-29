@@ -32,21 +32,19 @@
 
 G_BEGIN_DECLS
 
-typedef struct _RigLLVMModule RigLLVMModule;
+typedef struct _rig_llvm_module_t rig_llvm_module_t;
 
 /* When we're connected to a slave device we write a native dso for
  * the slave that can be sent over the wire, written and then opened.
  */
-RigLLVMModule *
-rig_llvm_compile_to_dso (const char *code,
-                         char **dso_filename_out,
-                         uint8_t **dso_data_out,
-                         size_t *dso_len_out);
+rig_llvm_module_t *rig_llvm_compile_to_dso(const char *code,
+                                           char **dso_filename_out,
+                                           uint8_t **dso_data_out,
+                                           size_t *dso_len_out);
 
 /* When we run code in the editor we simply rely on the LLVM JIT
  * without needing to write and then open a native dso. */
-RigLLVMModule *
-rig_llvm_compile_for_jit (const char *code);
+rig_llvm_module_t *rig_llvm_compile_for_jit(const char *code);
 
 G_END_DECLS
 

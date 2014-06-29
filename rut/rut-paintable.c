@@ -33,85 +33,84 @@
 #include "rut-camera.h"
 
 void
-rut_paintable_init (RutObject *object)
+rut_paintable_init(rut_object_t *object)
 {
 #if 0
-  RutPaintableProps *props =
-    rut_object_get_properties (object, RUT_TRAIT_ID_PAINTABLE);
+    rut_paintable_props_t *props =
+        rut_object_get_properties (object, RUT_TRAIT_ID_PAINTABLE);
 #endif
 }
 
 void
-rut_paintable_paint (RutObject *object, RutPaintContext *paint_ctx)
+rut_paintable_paint(rut_object_t *object, rut_paint_context_t *paint_ctx)
 {
-  RutPaintableVTable *paintable =
-    rut_object_get_vtable (object, RUT_TRAIT_ID_PAINTABLE);
+    rut_paintable_vtable_t *paintable =
+        rut_object_get_vtable(object, RUT_TRAIT_ID_PAINTABLE);
 
-  paintable->paint (object, paint_ctx);
+    paintable->paint(object, paint_ctx);
 }
 
 void
-rut_paint_context_queue_paint (RutPaintContext *paint_ctx,
-                               RutObject *paintable)
+rut_paint_context_queue_paint(rut_paint_context_t *paint_ctx,
+                              rut_object_t *paintable)
 {
-  RutQueuedPaint *queue_entry = c_slice_new (RutQueuedPaint);
-  cg_framebuffer_t *fb = rut_camera_get_framebuffer (paint_ctx->camera);
+    rut_queued_paint_t *queue_entry = c_slice_new(rut_queued_paint_t);
+    cg_framebuffer_t *fb = rut_camera_get_framebuffer(paint_ctx->camera);
 
-  /* Get the modelview matrix that the widget was painted with so that
-   * we don't need to calculate it again the next time it is
-   * painted */
-  cg_framebuffer_get_modelview_matrix (fb, &queue_entry->modelview);
+    /* Get the modelview matrix that the widget was painted with so that
+     * we don't need to calculate it again the next time it is
+     * painted */
+    cg_framebuffer_get_modelview_matrix(fb, &queue_entry->modelview);
 
-  queue_entry->paintable = paintable;
+    queue_entry->paintable = paintable;
 
-  rut_list_insert (paint_ctx->paint_queue.prev, &queue_entry->list_node);
+    rut_list_insert(paint_ctx->paint_queue.prev, &queue_entry->list_node);
 }
 
 void
-rut_paint_graph_with_layers (RutObject *root,
-                             RutTraverseCallback before_children_cb,
-                             RutTraverseCallback after_children_cb,
-                             RutPaintContext *paint_ctx)
+rut_paint_graph_with_layers(rut_object_t *root,
+                            rut_traverse_callback_t before_children_cb,
+                            rut_traverse_callback_t after_children_cb,
+                            rut_paint_context_t *paint_ctx)
 {
-  cg_framebuffer_t *fb = rut_camera_get_framebuffer (paint_ctx->camera);
+    cg_framebuffer_t *fb = rut_camera_get_framebuffer(paint_ctx->camera);
 
-  /* The initial walk of the graph is in layer 0 */
-  paint_ctx->layer_number = 0;
+    /* The initial walk of the graph is in layer 0 */
+    paint_ctx->layer_number = 0;
 
-  rut_list_init (&paint_ctx->paint_queue);
+    rut_list_init(&paint_ctx->paint_queue);
 
-  rut_graphable_traverse (root,
-                          RUT_TRAVERSE_DEPTH_FIRST,
-                          before_children_cb,
-                          after_children_cb,
-                          paint_ctx);
+    rut_graphable_traverse(root,
+                           RUT_TRAVERSE_DEPTH_FIRST,
+                           before_children_cb,
+                           after_children_cb,
+                           paint_ctx);
 
-  /* Now paint anything that was queued to paint in higher layers */
-  while (!rut_list_empty (&paint_ctx->paint_queue))
-    {
-      RutList queue;
-      RutQueuedPaint *node, *tmp;
+    /* Now paint anything that was queued to paint in higher layers */
+    while (!rut_list_empty(&paint_ctx->paint_queue)) {
+        rut_list_t queue;
+        rut_queued_paint_t *node, *tmp;
 
-      paint_ctx->layer_number++;
+        paint_ctx->layer_number++;
 
-      cg_framebuffer_push_matrix (fb);
+        cg_framebuffer_push_matrix(fb);
 
-      /* Steal the list so that the widgets can start another layer by
-       * adding stuff again */
-      rut_list_init (&queue);
-      rut_list_insert_list (&queue, &paint_ctx->paint_queue);
-      rut_list_init (&paint_ctx->paint_queue);
+        /* Steal the list so that the widgets can start another layer by
+         * adding stuff again */
+        rut_list_init(&queue);
+        rut_list_insert_list(&queue, &paint_ctx->paint_queue);
+        rut_list_init(&paint_ctx->paint_queue);
 
-      rut_list_for_each_safe (node, tmp, &queue, list_node)
+        rut_list_for_each_safe(node, tmp, &queue, list_node)
         {
-          /* Restore the modelview matrix that was used for this
-           * widget */
-          cg_framebuffer_set_modelview_matrix (fb, &node->modelview);
-          before_children_cb (node->paintable, 0 /* depth */, paint_ctx);
-          after_children_cb (node->paintable, 0 /* depth */, paint_ctx);
-          c_slice_free (RutQueuedPaint, node);
+            /* Restore the modelview matrix that was used for this
+             * widget */
+            cg_framebuffer_set_modelview_matrix(fb, &node->modelview);
+            before_children_cb(node->paintable, 0 /* depth */, paint_ctx);
+            after_children_cb(node->paintable, 0 /* depth */, paint_ctx);
+            c_slice_free(rut_queued_paint_t, node);
         }
 
-      cg_framebuffer_pop_matrix (fb);
+        cg_framebuffer_pop_matrix(fb);
     }
 }

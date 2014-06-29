@@ -31,62 +31,60 @@
 #include "rut-list.h"
 
 void
-rut_list_init (RutList *list)
+rut_list_init(rut_list_t *list)
 {
-  list->prev = list;
-  list->next = list;
+    list->prev = list;
+    list->next = list;
 }
 
 void
-rut_list_insert (RutList *list, RutList *elm)
+rut_list_insert(rut_list_t *list, rut_list_t *elm)
 {
-  elm->prev = list;
-  elm->next = list->next;
-  list->next = elm;
-  elm->next->prev = elm;
+    elm->prev = list;
+    elm->next = list->next;
+    list->next = elm;
+    elm->next->prev = elm;
 }
 
 void
-rut_list_remove (RutList *elm)
+rut_list_remove(rut_list_t *elm)
 {
-  elm->prev->next = elm->next;
-  elm->next->prev = elm->prev;
-  elm->next = NULL;
-  elm->prev = NULL;
+    elm->prev->next = elm->next;
+    elm->next->prev = elm->prev;
+    elm->next = NULL;
+    elm->prev = NULL;
 }
 
 int
-rut_list_length (RutList *list)
+rut_list_length(rut_list_t *list)
 {
-  RutList *e;
-  int count;
+    rut_list_t *e;
+    int count;
 
-  count = 0;
-  e = list->next;
-  while (e != list)
-    {
-      e = e->next;
-      count++;
+    count = 0;
+    e = list->next;
+    while (e != list) {
+        e = e->next;
+        count++;
     }
 
-  return count;
+    return count;
 }
 
 int
-rut_list_empty (RutList *list)
+rut_list_empty(rut_list_t *list)
 {
-  return list->next == list;
+    return list->next == list;
 }
 
 void
-rut_list_insert_list (RutList *list,
-                      RutList *other)
+rut_list_insert_list(rut_list_t *list, rut_list_t *other)
 {
-  if (rut_list_empty (other))
-    return;
+    if (rut_list_empty(other))
+        return;
 
-  other->next->prev = list;
-  other->prev->next = list->next;
-  list->next->prev = other->prev;
-  list->next = other->next;
+    other->next->prev = list;
+    other->prev->next = list->next;
+    list->next->prev = other->prev;
+    list->next = other->next;
 }

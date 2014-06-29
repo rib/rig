@@ -34,11 +34,10 @@
 
 G_BEGIN_DECLS
 
-typedef struct _RutPlane
-{
-  CoglVector3 v0;
-  CoglVector3 n;
-} RutPlane;
+typedef struct _rut_plane_t {
+    CoglVector3 v0;
+    CoglVector3 n;
+} rut_plane_t;
 
 G_END_DECLS
 

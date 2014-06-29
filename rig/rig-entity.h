@@ -37,214 +37,154 @@
 
 #include "rig-types.h"
 
-typedef struct _RutComponent RutComponent;
+typedef struct _rut_component_t rut_component_t;
 
-typedef struct _RigEntity RigEntity;
-extern RutType rig_entity_type;
+typedef struct _rig_entity_t rig_entity_t;
+extern rut_type_t rig_entity_type;
 
-typedef enum
-{
-  RUT_COMPONENT_TYPE_ANIMATION_CLIP,
-  RUT_COMPONENT_TYPE_CAMERA,
-  RUT_COMPONENT_TYPE_LIGHT,
-  RUT_COMPONENT_TYPE_GEOMETRY,
-  RUT_COMPONENT_TYPE_MATERIAL,
-  RUT_COMPONENT_TYPE_HAIR,
-  RUT_COMPONENT_TYPE_INPUT,
-  RUT_N_COMPNONENTS
-} RutComponentType;
+typedef enum {
+    RUT_COMPONENT_TYPE_ANIMATION_CLIP,
+    RUT_COMPONENT_TYPE_CAMERA,
+    RUT_COMPONENT_TYPE_LIGHT,
+    RUT_COMPONENT_TYPE_GEOMETRY,
+    RUT_COMPONENT_TYPE_MATERIAL,
+    RUT_COMPONENT_TYPE_HAIR,
+    RUT_COMPONENT_TYPE_INPUT,
+    RUT_N_COMPNONENTS
+} rut_component_type_t;
 
-typedef struct _RutComponentableProps
-{
-  RutComponentType type;
-  RigEntity *entity; /* back pointer to the entity the component belongs to */
-} RutComponentableProps;
+typedef struct _rut_componentable_props_t {
+    rut_component_type_t type;
+    rig_entity_t *
+    entity; /* back pointer to the entity the component belongs to */
+} rut_componentable_props_t;
 
-typedef struct _RutComponentableVTable
-{
-  RutObject *(*copy) (RutObject *component);
-} RutComponentableVTable;
+typedef struct _rut_componentable_vtable_t {
+    rut_object_t *(*copy)(rut_object_t *component);
+} rut_componentable_vtable_t;
 
-typedef enum
-{
-  RUT_ENTITY_FLAG_NONE        = 0,
-  RUT_ENTITY_FLAG_DIRTY       = 1 << 0,
-  RUT_ENTITY_FLAG_CAST_SHADOW = 1 << 1,
-} RigEntityFlag;
+typedef enum {
+    RUT_ENTITY_FLAG_NONE = 0,
+    RUT_ENTITY_FLAG_DIRTY = 1 << 0,
+    RUT_ENTITY_FLAG_CAST_SHADOW = 1 << 1,
+} rig_entity_flag_t;
 
-enum
-{
-  RUT_ENTITY_PROP_LABEL,
-  RUT_ENTITY_PROP_POSITION,
-  RUT_ENTITY_PROP_ROTATION,
-  RUT_ENTITY_PROP_SCALE,
-
-  RUT_ENTITY_N_PROPS
+enum {
+    RUT_ENTITY_PROP_LABEL,
+    RUT_ENTITY_PROP_POSITION,
+    RUT_ENTITY_PROP_ROTATION,
+    RUT_ENTITY_PROP_SCALE,
+    RUT_ENTITY_N_PROPS
 };
 
-struct _RigEntity
-{
-  RutObjectBase _base;
+struct _rig_entity_t {
+    rut_object_base_t _base;
 
-  RutContext *ctx;
+    rut_context_t *ctx;
 
-  char *label;
+    char *label;
 
-  RutGraphableProps graphable;
+    rut_graphable_props_t graphable;
 
-  /* private fields */
-  float position[3];
-  cg_quaternion_t rotation;
-  float scale;                          /* uniform scaling only */
-  cg_matrix_t transform;
+    /* private fields */
+    float position[3];
+    cg_quaternion_t rotation;
+    float scale; /* uniform scaling only */
+    cg_matrix_t transform;
 
-  GPtrArray *components;
+    GPtrArray *components;
 
-  void *renderer_priv;
+    void *renderer_priv;
 
-  RutIntrospectableProps introspectable;
-  RutProperty properties[RUT_ENTITY_N_PROPS];
+    rut_introspectable_props_t introspectable;
+    rut_property_t properties[RUT_ENTITY_N_PROPS];
 
-  unsigned int dirty:1;
+    unsigned int dirty : 1;
 };
 
-void
-_rig_entity_init_type (void);
+void _rig_entity_init_type(void);
 
-RigEntity *
-rig_entity_new (RutContext *ctx);
+rig_entity_t *rig_entity_new(rut_context_t *ctx);
 
-RigEntity *
-rig_entity_copy (RigEntity *entity);
+rig_entity_t *rig_entity_copy(rig_entity_t *entity);
 
-RutContext *
-rig_entity_get_context (RigEntity *entity);
+rut_context_t *rig_entity_get_context(rig_entity_t *entity);
 
-const char *
-rig_entity_get_label (RutObject *entity);
+const char *rig_entity_get_label(rut_object_t *entity);
 
-void
-rig_entity_set_label (RutObject *entity,
-                      const char *label);
+void rig_entity_set_label(rut_object_t *entity, const char *label);
 
-float
-rig_entity_get_x (RutObject *entity);
+float rig_entity_get_x(rut_object_t *entity);
 
-void
-rig_entity_set_x (RutObject *entity,
-                  float x);
+void rig_entity_set_x(rut_object_t *entity, float x);
 
-float
-rig_entity_get_y (RutObject *entity);
+float rig_entity_get_y(rut_object_t *entity);
 
-void
-rig_entity_set_y (RutObject *entity,
-                  float y);
+void rig_entity_set_y(rut_object_t *entity, float y);
 
-float
-rig_entity_get_z (RutObject *entity);
+float rig_entity_get_z(rut_object_t *entity);
 
-void
-rig_entity_set_z (RutObject *entity,
-                  float z);
+void rig_entity_set_z(rut_object_t *entity, float z);
 
-const float *
-rig_entity_get_position (RutObject *entity);
+const float *rig_entity_get_position(rut_object_t *entity);
 
-void
-rig_entity_set_position (RutObject *entity,
-                         const float position[3]);
+void rig_entity_set_position(rut_object_t *entity, const float position[3]);
 
-void
-rig_entity_get_transformed_position (RigEntity *entity,
-                                     float position[3]);
+void rig_entity_get_transformed_position(rig_entity_t *entity,
+                                         float position[3]);
 
-const cg_quaternion_t *
-rig_entity_get_rotation (RutObject *entity);
+const cg_quaternion_t *rig_entity_get_rotation(rut_object_t *entity);
 
-void
-rig_entity_set_rotation (RutObject *entity,
-                         const cg_quaternion_t *rotation);
+void rig_entity_set_rotation(rut_object_t *entity,
+                             const cg_quaternion_t *rotation);
 
-void
-rig_entity_apply_rotations (RutObject *entity,
-                            cg_quaternion_t *rotations);
+void rig_entity_apply_rotations(rut_object_t *entity,
+                                cg_quaternion_t *rotations);
+
+void rig_entity_get_rotations(rut_object_t *entity, cg_quaternion_t *rotation);
+
+void rig_entity_get_view_rotations(rut_object_t *entity,
+                                   rut_object_t *camera_entity,
+                                   cg_quaternion_t *rotation);
+
+float rig_entity_get_scale(rut_object_t *entity);
+
+void rig_entity_set_scale(rut_object_t *entity, float scale);
+
+float rig_entity_get_scales(rut_object_t *entity);
+
+const cg_matrix_t *rig_entity_get_transform(rut_object_t *self);
+
+void rig_entity_add_component(rig_entity_t *entity, rut_object_t *component);
+
+void rig_entity_remove_component(rig_entity_t *entity, rut_object_t *component);
+
+void rig_entity_translate(rig_entity_t *entity, float tx, float tz, float ty);
 
 void
-rig_entity_get_rotations (RutObject *entity,
-                          cg_quaternion_t *rotation);
+rig_entity_set_translate(rig_entity_t *entity, float tx, float ty, float tz);
 
-void
-rig_entity_get_view_rotations (RutObject *entity,
-                               RutObject *camera_entity,
-                               cg_quaternion_t *rotation);
+void rig_entity_rotate_x_axis(rig_entity_t *entity, float x_angle);
+void rig_entity_rotate_y_axis(rig_entity_t *entity, float y_angle);
+void rig_entity_rotate_z_axis(rig_entity_t *entity, float z_angle);
 
-float
-rig_entity_get_scale (RutObject *entity);
+rut_object_t *rig_entity_get_component(rig_entity_t *entity,
+                                       rut_component_type_t type);
 
-void
-rig_entity_set_scale (RutObject *entity,
-                      float scale);
+void rig_entity_foreach_component(rig_entity_t *entity,
+                                  bool (*callback)(rut_object_t *component,
+                                                   void *user_data),
+                                  void *user_data);
 
-float
-rig_entity_get_scales (RutObject *entity);
+void rig_entity_foreach_component_safe(rig_entity_t *entity,
+                                       bool (*callback)(rut_object_t *component,
+                                                        void *user_data),
+                                       void *user_data);
 
-const cg_matrix_t *
-rig_entity_get_transform (RutObject *self);
+void rig_entity_notify_changed(rig_entity_t *entity);
 
-void
-rig_entity_add_component (RigEntity *entity,
-                          RutObject *component);
+void rig_entity_reap(rig_entity_t *entity, rig_engine_t *engine);
 
-void
-rig_entity_remove_component (RigEntity *entity,
-                             RutObject *component);
-
-void
-rig_entity_translate (RigEntity *entity,
-                      float tx,
-                      float tz,
-                      float ty);
-
-void
-rig_entity_set_translate (RigEntity *entity,
-                          float tx,
-                          float ty,
-                          float tz);
-
-void
-rig_entity_rotate_x_axis (RigEntity *entity,
-                          float x_angle);
-void
-rig_entity_rotate_y_axis (RigEntity *entity,
-                          float y_angle);
-void
-rig_entity_rotate_z_axis (RigEntity *entity,
-                          float z_angle);
-
-RutObject *
-rig_entity_get_component (RigEntity *entity,
-                          RutComponentType type);
-
-void
-rig_entity_foreach_component (RigEntity *entity,
-                              bool (*callback)(RutObject *component,
-                                               void *user_data),
-                              void *user_data);
-
-void
-rig_entity_foreach_component_safe (RigEntity *entity,
-                                   bool (*callback)(RutObject *component,
-                                                    void *user_data),
-                                   void *user_data);
-
-void
-rig_entity_notify_changed (RigEntity *entity);
-
-void
-rig_entity_reap (RigEntity *entity, RigEngine *engine);
-
-void
-rig_component_reap (RutObject *component, RigEngine *engine);
+void rig_component_reap(rut_object_t *component, rig_engine_t *engine);
 
 #endif /* __RUT_ENTITY_H__ */

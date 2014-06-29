@@ -33,49 +33,35 @@
 #include "rut-object.h"
 #include "rut-interfaces.h"
 
-extern RutType rut_box_layout_type;
-typedef struct _RutBoxLayout RutBoxLayout;
+extern rut_type_t rut_box_layout_type;
+typedef struct _rut_box_layout_t rut_box_layout_t;
 
-typedef enum
-{
-  RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT,
-  RUT_BOX_LAYOUT_PACKING_RIGHT_TO_LEFT,
-  RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM,
-  RUT_BOX_LAYOUT_PACKING_BOTTOM_TO_TOP
-} RutBoxLayoutPacking;
+typedef enum {
+    RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT,
+    RUT_BOX_LAYOUT_PACKING_RIGHT_TO_LEFT,
+    RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM,
+    RUT_BOX_LAYOUT_PACKING_BOTTOM_TO_TOP
+} rut_box_layout_packing_t;
 
-RutBoxLayout *
-rut_box_layout_new (RutContext *ctx,
-                    RutBoxLayoutPacking packing);
+rut_box_layout_t *rut_box_layout_new(rut_context_t *ctx,
+                                     rut_box_layout_packing_t packing);
 
 void
-rut_box_layout_add (RutBoxLayout *box,
-                    bool expand,
-                    RutObject *child);
+rut_box_layout_add(rut_box_layout_t *box, bool expand, rut_object_t *child);
 
-void
-rut_box_layout_remove (RutBoxLayout *box,
-                       RutObject *child);
+void rut_box_layout_remove(rut_box_layout_t *box, rut_object_t *child);
 
-bool
-rut_box_layout_get_homogeneous (RutObject *obj);
+bool rut_box_layout_get_homogeneous(rut_object_t *obj);
 
-void
-rut_box_layout_set_homogeneous (RutObject *obj,
-                                bool homogeneous);
+void rut_box_layout_set_homogeneous(rut_object_t *obj, bool homogeneous);
 
-int
-rut_box_layout_get_spacing (RutObject *obj);
+int rut_box_layout_get_spacing(rut_object_t *obj);
 
-void
-rut_box_layout_set_spacing (RutObject *obj,
-                            int spacing);
+void rut_box_layout_set_spacing(rut_object_t *obj, int spacing);
 
-int
-rut_box_layout_get_packing (RutObject *obj);
+int rut_box_layout_get_packing(rut_object_t *obj);
 
-void
-rut_box_layout_set_packing (RutObject *obj,
-                            RutBoxLayoutPacking packing);
+void rut_box_layout_set_packing(rut_object_t *obj,
+                                rut_box_layout_packing_t packing);
 
 #endif /* _RUT_BOX_LAYOUT_H_ */

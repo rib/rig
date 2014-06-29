@@ -34,33 +34,26 @@
 #include "rut-types.h"
 #include "rut-object.h"
 
-extern RutType rut_drop_down_type;
+extern rut_type_t rut_drop_down_type;
 
-typedef struct _RutDropDown RutDropDown;
+typedef struct _rut_drop_down_t rut_drop_down_t;
 
-typedef struct
-{
-  const char *name;
-  int value;
-} RutDropDownValue;
+typedef struct {
+    const char *name;
+    int value;
+} rut_drop_down_value_t;
 
-RutDropDown *
-rut_drop_down_new (RutContext *ctx);
+rut_drop_down_t *rut_drop_down_new(rut_context_t *ctx);
 
-void
-rut_drop_down_set_value (RutObject *slider,
-                         int value);
+void rut_drop_down_set_value(rut_object_t *slider, int value);
 
-int
-rut_drop_down_get_value (RutObject *slider);
+int rut_drop_down_get_value(rut_object_t *slider);
 
-void
-rut_drop_down_set_values (RutDropDown *drop,
-                          ...) G_GNUC_NULL_TERMINATED;
+void rut_drop_down_set_values(rut_drop_down_t *drop,
+                              ...) G_GNUC_NULL_TERMINATED;
 
-void
-rut_drop_down_set_values_array (RutDropDown *drop,
-                                const RutDropDownValue *values,
-                                int n_values);
+void rut_drop_down_set_values_array(rut_drop_down_t *drop,
+                                    const rut_drop_down_value_t *values,
+                                    int n_values);
 
 #endif /* _RUT_DROP_DOWN_H_ */

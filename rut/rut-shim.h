@@ -34,41 +34,27 @@
 
 #include <rut-context.h>
 
-typedef struct _RutShim RutShim;
-extern RutType rut_shim_type;
+typedef struct _rut_shim_t rut_shim_t;
+extern rut_type_t rut_shim_type;
 
-RutShim *
-rut_shim_new (RutContext *ctx,
-              float width,
-              float height);
+rut_shim_t *rut_shim_new(rut_context_t *ctx, float width, float height);
 
-void
-rut_shim_set_width (RutShim *shim, float width);
+void rut_shim_set_width(rut_shim_t *shim, float width);
 
-void
-rut_shim_set_height (RutShim *shim, float height);
+void rut_shim_set_height(rut_shim_t *shim, float height);
 
-void
-rut_shim_set_size (RutObject *self,
-                    float width,
-                    float height);
+void rut_shim_set_size(rut_object_t *self, float width, float height);
 
-void
-rut_shim_get_size (RutObject *self,
-                    float *width,
-                    float *height);
+void rut_shim_get_size(rut_object_t *self, float *width, float *height);
 
-void
-rut_shim_set_child (RutShim *shim, RutObject *child);
+void rut_shim_set_child(rut_shim_t *shim, rut_object_t *child);
 
-typedef enum _RutShimAxis
-{
-  RUT_SHIM_AXIS_XY,
-  RUT_SHIM_AXIS_X,
-  RUT_SHIM_AXIS_Y
-} RutShimAxis;
+typedef enum _rut_shim_axis_t {
+    RUT_SHIM_AXIS_XY,
+    RUT_SHIM_AXIS_X,
+    RUT_SHIM_AXIS_Y
+} rut_shim_axis_t;
 
-void
-rut_shim_set_shim_axis (RutShim *shim, RutShimAxis axis);
+void rut_shim_set_shim_axis(rut_shim_t *shim, rut_shim_axis_t axis);
 
 #endif /* __RUT_SHIM_H__ */

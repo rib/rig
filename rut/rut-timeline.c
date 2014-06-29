@@ -35,214 +35,192 @@
 #include "rut-timeline.h"
 
 enum {
-  RUT_TIMELINE_PROP_LENGTH,
-  RUT_TIMELINE_PROP_ELAPSED,
-  RUT_TIMELINE_PROP_PROGRESS,
-  RUT_TIMELINE_PROP_LOOP,
-  RUT_TIMELINE_PROP_RUNNING,
-  RUT_TIMELINE_N_PROPS
+    RUT_TIMELINE_PROP_LENGTH,
+    RUT_TIMELINE_PROP_ELAPSED,
+    RUT_TIMELINE_PROP_PROGRESS,
+    RUT_TIMELINE_PROP_LOOP,
+    RUT_TIMELINE_PROP_RUNNING,
+    RUT_TIMELINE_N_PROPS
 };
 
-struct _RutTimeline
-{
-  RutObjectBase _base;
+struct _rut_timeline_t {
+    rut_object_base_t _base;
 
-  RutContext *ctx;
+    rut_context_t *ctx;
 
+    float length;
 
-  float length;
+    GTimer *gtimer;
 
-  GTimer *gtimer;
+    double offset;
+    int direction;
+    bool loop_enabled;
+    bool running;
+    double elapsed;
 
-  double offset;
-  int direction;
-  bool loop_enabled;
-  bool running;
-  double elapsed;
-
-  RutIntrospectableProps introspectable;
-  RutProperty properties[RUT_TIMELINE_N_PROPS];
+    rut_introspectable_props_t introspectable;
+    rut_property_t properties[RUT_TIMELINE_N_PROPS];
 };
 
-static RutPropertySpec _rut_timeline_prop_specs[] = {
-  {
-    .name = "length",
-    .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .type = RUT_PROPERTY_TYPE_FLOAT,
-    .data_offset = offsetof (RutTimeline, length),
-    .setter.float_type = rut_timeline_set_length
-  },
-  {
-    .name = "elapsed",
-    .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .type = RUT_PROPERTY_TYPE_DOUBLE,
-    .data_offset = offsetof (RutTimeline, elapsed),
-    .setter.double_type = rut_timeline_set_elapsed
-  },
-  {
-    .name = "progress",
-    .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .type = RUT_PROPERTY_TYPE_DOUBLE,
-    .getter.double_type = rut_timeline_get_progress,
-    .setter.double_type = rut_timeline_set_progress
-  },
-  {
-    .name = "loop",
-    .nick = "Loop",
-    .blurb = "Whether the timeline loops",
-    .type = RUT_PROPERTY_TYPE_BOOLEAN,
-    .getter.boolean_type = rut_timeline_get_loop_enabled,
-    .setter.boolean_type = rut_timeline_set_loop_enabled,
-    .flags = RUT_PROPERTY_FLAG_READWRITE,
-  },
-  {
-    .name = "running",
-    .nick = "Running",
-    .blurb = "The timeline progressing over time",
-    .type = RUT_PROPERTY_TYPE_BOOLEAN,
-    .getter.boolean_type = rut_timeline_get_running,
-    .setter.boolean_type = rut_timeline_set_running,
-    .flags = RUT_PROPERTY_FLAG_READWRITE,
-  },
-
-  { 0 } /* XXX: Needed for runtime counting of the number of properties */
+static rut_property_spec_t _rut_timeline_prop_specs[] = {
+    { .name = "length",
+      .flags = RUT_PROPERTY_FLAG_READWRITE,
+      .type = RUT_PROPERTY_TYPE_FLOAT,
+      .data_offset = offsetof(rut_timeline_t, length),
+      .setter.float_type = rut_timeline_set_length },
+    { .name = "elapsed",
+      .flags = RUT_PROPERTY_FLAG_READWRITE,
+      .type = RUT_PROPERTY_TYPE_DOUBLE,
+      .data_offset = offsetof(rut_timeline_t, elapsed),
+      .setter.double_type = rut_timeline_set_elapsed },
+    { .name = "progress",
+      .flags = RUT_PROPERTY_FLAG_READWRITE,
+      .type = RUT_PROPERTY_TYPE_DOUBLE,
+      .getter.double_type = rut_timeline_get_progress,
+      .setter.double_type = rut_timeline_set_progress },
+    { .name = "loop",
+      .nick = "Loop",
+      .blurb = "Whether the timeline loops",
+      .type = RUT_PROPERTY_TYPE_BOOLEAN,
+      .getter.boolean_type = rut_timeline_get_loop_enabled,
+      .setter.boolean_type = rut_timeline_set_loop_enabled,
+      .flags = RUT_PROPERTY_FLAG_READWRITE, },
+    { .name = "running",
+      .nick = "Running",
+      .blurb = "The timeline progressing over time",
+      .type = RUT_PROPERTY_TYPE_BOOLEAN,
+      .getter.boolean_type = rut_timeline_get_running,
+      .setter.boolean_type = rut_timeline_set_running,
+      .flags = RUT_PROPERTY_FLAG_READWRITE, },
+    { 0 } /* XXX: Needed for runtime counting of the number of properties */
 };
 
 static void
-_rut_timeline_free (void *object)
+_rut_timeline_free(void *object)
 {
-  RutTimeline *timeline = object;
+    rut_timeline_t *timeline = object;
 
-  timeline->ctx->timelines =
-    g_slist_remove (timeline->ctx->timelines, timeline);
-  rut_object_unref (timeline->ctx);
+    timeline->ctx->timelines =
+        g_slist_remove(timeline->ctx->timelines, timeline);
+    rut_object_unref(timeline->ctx);
 
-  g_timer_destroy (timeline->gtimer);
+    g_timer_destroy(timeline->gtimer);
 
-  rut_introspectable_destroy (timeline);
+    rut_introspectable_destroy(timeline);
 
-  rut_object_free (RutTimeline, timeline);
+    rut_object_free(rut_timeline_t, timeline);
 }
 
-RutType rut_timeline_type;
+rut_type_t rut_timeline_type;
 
 static void
-_rut_timeline_init_type (void)
+_rut_timeline_init_type(void)
 {
 
-  RutType *type = &rut_timeline_type;
-#define TYPE RutTimeline
+    rut_type_t *type = &rut_timeline_type;
+#define TYPE rut_timeline_t
 
-  rut_type_init (type, C_STRINGIFY (TYPE), _rut_timeline_free);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_INTROSPECTABLE,
-                      offsetof (TYPE, introspectable),
-                      NULL); /* no implied vtable */
+    rut_type_init(type, C_STRINGIFY(TYPE), _rut_timeline_free);
+    rut_type_add_trait(type,
+                       RUT_TRAIT_ID_INTROSPECTABLE,
+                       offsetof(TYPE, introspectable),
+                       NULL); /* no implied vtable */
 
 #undef TYPE
 }
 
-RutTimeline *
-rut_timeline_new (RutContext *ctx,
-                  float length)
+rut_timeline_t *
+rut_timeline_new(rut_context_t *ctx, float length)
 {
-  RutTimeline *timeline =
-    rut_object_alloc0 (RutTimeline, &rut_timeline_type, _rut_timeline_init_type);
+    rut_timeline_t *timeline = rut_object_alloc0(
+        rut_timeline_t, &rut_timeline_type, _rut_timeline_init_type);
 
+    timeline->length = length;
+    timeline->gtimer = g_timer_new();
+    timeline->offset = 0;
+    timeline->direction = 1;
+    timeline->running = true;
 
+    timeline->elapsed = 0;
 
-  timeline->length = length;
-  timeline->gtimer = g_timer_new ();
-  timeline->offset = 0;
-  timeline->direction = 1;
-  timeline->running = true;
+    rut_introspectable_init(
+        timeline, _rut_timeline_prop_specs, timeline->properties);
 
-  timeline->elapsed = 0;
+    timeline->ctx = rut_object_ref(ctx);
+    ctx->timelines = g_slist_prepend(ctx->timelines, timeline);
 
-  rut_introspectable_init (timeline,
-                           _rut_timeline_prop_specs,
-                           timeline->properties);
-
-  timeline->ctx = rut_object_ref (ctx);
-  ctx->timelines = g_slist_prepend (ctx->timelines, timeline);
-
-  return timeline;
+    return timeline;
 }
 
 bool
-rut_timeline_get_running (RutObject *object)
+rut_timeline_get_running(rut_object_t *object)
 {
-  RutTimeline *timeline = object;
-  return timeline->running;
+    rut_timeline_t *timeline = object;
+    return timeline->running;
 }
 
 void
-rut_timeline_set_running (RutObject *object,
-                          bool running)
+rut_timeline_set_running(rut_object_t *object, bool running)
 {
-  RutTimeline *timeline = object;
+    rut_timeline_t *timeline = object;
 
-  if (timeline->running == running)
-    return;
+    if (timeline->running == running)
+        return;
 
-  timeline->running = running;
+    timeline->running = running;
 
-  rut_property_dirty (&timeline->ctx->property_ctx,
-                      &timeline->properties[RUT_TIMELINE_PROP_RUNNING]);
+    rut_property_dirty(&timeline->ctx->property_ctx,
+                       &timeline->properties[RUT_TIMELINE_PROP_RUNNING]);
 }
 
 void
-rut_timeline_start (RutTimeline *timeline)
+rut_timeline_start(rut_timeline_t *timeline)
 {
-  g_timer_start (timeline->gtimer);
+    g_timer_start(timeline->gtimer);
 
-  rut_timeline_set_elapsed (timeline, 0);
+    rut_timeline_set_elapsed(timeline, 0);
 
-  rut_timeline_set_running (timeline, true);
+    rut_timeline_set_running(timeline, true);
 }
 
 void
-rut_timeline_stop (RutTimeline *timeline)
+rut_timeline_stop(rut_timeline_t *timeline)
 {
-  g_timer_stop (timeline->gtimer);
-  rut_timeline_set_running (timeline, false);
+    g_timer_stop(timeline->gtimer);
+    rut_timeline_set_running(timeline, false);
 }
 
 bool
-rut_timeline_is_running (RutTimeline *timeline)
+rut_timeline_is_running(rut_timeline_t *timeline)
 {
-  return timeline->running;
+    return timeline->running;
 }
 
 double
-rut_timeline_get_elapsed (RutObject *obj)
+rut_timeline_get_elapsed(rut_object_t *obj)
 {
-  RutTimeline *timeline = obj;
+    rut_timeline_t *timeline = obj;
 
-  return timeline->elapsed;
+    return timeline->elapsed;
 }
 
 /* Considering an out of range elapsed value should wrap around
  * this returns an equivalent in-range value. */
 static double
-_rut_timeline_normalize (RutTimeline *timeline,
-                         double elapsed)
+_rut_timeline_normalize(rut_timeline_t *timeline, double elapsed)
 {
-  if (elapsed > timeline->length)
-    {
-      int n = elapsed / timeline->length;
-      elapsed -= n * timeline->length;
-    }
-  else if (elapsed < 0)
-    {
-      int n;
-      elapsed = -elapsed;
-      n = elapsed / timeline->length;
-      elapsed -= n * timeline->length;
-      elapsed = timeline->length - elapsed;
+    if (elapsed > timeline->length) {
+        int n = elapsed / timeline->length;
+        elapsed -= n * timeline->length;
+    } else if (elapsed < 0) {
+        int n;
+        elapsed = -elapsed;
+        n = elapsed / timeline->length;
+        elapsed -= n * timeline->length;
+        elapsed = timeline->length - elapsed;
     }
 
-  return elapsed;
+    return elapsed;
 }
 
 /* For any given elapsed value, if the value is out of range it
@@ -260,174 +238,156 @@ _rut_timeline_normalize (RutTimeline *timeline,
  * code again and just directly modify the timeline.
  */
 static double
-_rut_timeline_validate_elapsed (RutTimeline *timeline,
-                                double elapsed,
-                                bool *should_stop,
-                                bool *should_restart_with_offset)
+_rut_timeline_validate_elapsed(rut_timeline_t *timeline,
+                               double elapsed,
+                               bool *should_stop,
+                               bool *should_restart_with_offset)
 {
-  *should_stop = false;
-  *should_restart_with_offset = false;
+    *should_stop = false;
+    *should_restart_with_offset = false;
 
-  if (elapsed > timeline->length)
-    {
-      if (timeline->loop_enabled)
-        {
-          elapsed = _rut_timeline_normalize (timeline, elapsed);
-          *should_restart_with_offset = true;
+    if (elapsed > timeline->length) {
+        if (timeline->loop_enabled) {
+            elapsed = _rut_timeline_normalize(timeline, elapsed);
+            *should_restart_with_offset = true;
+        } else {
+            elapsed = timeline->length;
+            *should_stop = true;
         }
-      else
-        {
-          elapsed = timeline->length;
-          *should_stop = true;
-        }
-    }
-  else if (elapsed < 0)
-    {
-      if (timeline->loop_enabled)
-        {
-          elapsed = _rut_timeline_normalize (timeline, elapsed);
-          *should_restart_with_offset = true;
-        }
-      else
-        {
-          elapsed = 0;
-          *should_stop = true;
+    } else if (elapsed < 0) {
+        if (timeline->loop_enabled) {
+            elapsed = _rut_timeline_normalize(timeline, elapsed);
+            *should_restart_with_offset = true;
+        } else {
+            elapsed = 0;
+            *should_stop = true;
         }
     }
 
-  return elapsed;
+    return elapsed;
 }
 
 void
-rut_timeline_set_elapsed (RutObject *obj,
-                          double elapsed)
+rut_timeline_set_elapsed(rut_object_t *obj, double elapsed)
 {
-  RutTimeline *timeline = obj;
+    rut_timeline_t *timeline = obj;
 
-  bool should_stop;
-  bool should_restart_with_offset;
+    bool should_stop;
+    bool should_restart_with_offset;
 
-  elapsed = _rut_timeline_validate_elapsed (timeline, elapsed,
-                                            &should_stop,
-                                            &should_restart_with_offset);
+    elapsed = _rut_timeline_validate_elapsed(
+        timeline, elapsed, &should_stop, &should_restart_with_offset);
 
-  if (should_stop)
-    g_timer_stop (timeline->gtimer);
-  else
-    {
-      timeline->offset = elapsed;
-      g_timer_start (timeline->gtimer);
+    if (should_stop)
+        g_timer_stop(timeline->gtimer);
+    else {
+        timeline->offset = elapsed;
+        g_timer_start(timeline->gtimer);
     }
 
-  if (elapsed != timeline->elapsed)
-    {
-      timeline->elapsed = elapsed;
-      rut_property_dirty (&timeline->ctx->property_ctx,
-                          &timeline->properties[RUT_TIMELINE_PROP_ELAPSED]);
-      rut_property_dirty (&timeline->ctx->property_ctx,
-                          &timeline->properties[RUT_TIMELINE_PROP_PROGRESS]);
+    if (elapsed != timeline->elapsed) {
+        timeline->elapsed = elapsed;
+        rut_property_dirty(&timeline->ctx->property_ctx,
+                           &timeline->properties[RUT_TIMELINE_PROP_ELAPSED]);
+        rut_property_dirty(&timeline->ctx->property_ctx,
+                           &timeline->properties[RUT_TIMELINE_PROP_PROGRESS]);
     }
 }
 
 double
-rut_timeline_get_progress (RutObject *obj)
+rut_timeline_get_progress(rut_object_t *obj)
 {
-  RutTimeline *timeline = obj;
+    rut_timeline_t *timeline = obj;
 
-  if (timeline->length)
-    return timeline->elapsed / timeline->length;
-  else
-    return 0;
+    if (timeline->length)
+        return timeline->elapsed / timeline->length;
+    else
+        return 0;
 }
 
 void
-rut_timeline_set_progress (RutObject *obj,
-                           double progress)
+rut_timeline_set_progress(rut_object_t *obj, double progress)
 {
-  RutTimeline *timeline = obj;
+    rut_timeline_t *timeline = obj;
 
-  double elapsed = timeline->length * progress;
-  rut_timeline_set_elapsed (timeline, elapsed);
+    double elapsed = timeline->length * progress;
+    rut_timeline_set_elapsed(timeline, elapsed);
 }
 
 void
-rut_timeline_set_length (RutObject *obj,
-                         float length)
+rut_timeline_set_length(rut_object_t *obj, float length)
 {
-  RutTimeline *timeline = obj;
+    rut_timeline_t *timeline = obj;
 
-  if (timeline->length == length)
-    return;
+    if (timeline->length == length)
+        return;
 
-  timeline->length = length;
+    timeline->length = length;
 
-  rut_property_dirty (&timeline->ctx->property_ctx,
-                      &timeline->properties[RUT_TIMELINE_PROP_LENGTH]);
+    rut_property_dirty(&timeline->ctx->property_ctx,
+                       &timeline->properties[RUT_TIMELINE_PROP_LENGTH]);
 
-  rut_timeline_set_elapsed (timeline, timeline->elapsed);
+    rut_timeline_set_elapsed(timeline, timeline->elapsed);
 }
 
 float
-rut_timeline_get_length (RutObject *obj)
+rut_timeline_get_length(rut_object_t *obj)
 {
-  RutTimeline *timeline = obj;
+    rut_timeline_t *timeline = obj;
 
-  return timeline->length;
+    return timeline->length;
 }
 
 void
-rut_timeline_set_loop_enabled (RutObject *object, bool enabled)
+rut_timeline_set_loop_enabled(rut_object_t *object, bool enabled)
 {
-  RutTimeline *timeline = object;
+    rut_timeline_t *timeline = object;
 
-  if (timeline->loop_enabled == enabled)
-    return;
+    if (timeline->loop_enabled == enabled)
+        return;
 
-  timeline->loop_enabled = enabled;
+    timeline->loop_enabled = enabled;
 
-  rut_property_dirty (&timeline->ctx->property_ctx,
-                      &timeline->properties[RUT_TIMELINE_PROP_LOOP]);
+    rut_property_dirty(&timeline->ctx->property_ctx,
+                       &timeline->properties[RUT_TIMELINE_PROP_LOOP]);
 }
 
 bool
-rut_timeline_get_loop_enabled (RutObject *object)
+rut_timeline_get_loop_enabled(rut_object_t *object)
 {
-  RutTimeline *timeline = object;
-  return timeline->loop_enabled;
+    rut_timeline_t *timeline = object;
+    return timeline->loop_enabled;
 }
 
 void
-_rut_timeline_update (RutTimeline *timeline)
+_rut_timeline_update(rut_timeline_t *timeline)
 {
-  double elapsed;
-  bool should_stop;
-  bool should_restart_with_offset;
+    double elapsed;
+    bool should_stop;
+    bool should_restart_with_offset;
 
-  if (!timeline->running)
-    return;
+    if (!timeline->running)
+        return;
 
-  elapsed = timeline->offset +
-    g_timer_elapsed (timeline->gtimer, NULL) * timeline->direction;
+    elapsed = timeline->offset +
+              g_timer_elapsed(timeline->gtimer, NULL) * timeline->direction;
 
-  elapsed = _rut_timeline_validate_elapsed (timeline, elapsed,
-                                            &should_stop,
-                                            &should_restart_with_offset);
+    elapsed = _rut_timeline_validate_elapsed(
+        timeline, elapsed, &should_stop, &should_restart_with_offset);
 
-  c_print ("elapsed = %f\n", elapsed);
-  if (should_stop)
-    g_timer_stop (timeline->gtimer);
-  else if (should_restart_with_offset)
-    {
-      timeline->offset = elapsed;
-      g_timer_start (timeline->gtimer);
+    c_print("elapsed = %f\n", elapsed);
+    if (should_stop)
+        g_timer_stop(timeline->gtimer);
+    else if (should_restart_with_offset) {
+        timeline->offset = elapsed;
+        g_timer_start(timeline->gtimer);
     }
 
-  if (elapsed != timeline->elapsed)
-    {
-      timeline->elapsed = elapsed;
-      rut_property_dirty (&timeline->ctx->property_ctx,
-                          &timeline->properties[RUT_TIMELINE_PROP_ELAPSED]);
-      rut_property_dirty (&timeline->ctx->property_ctx,
-                          &timeline->properties[RUT_TIMELINE_PROP_PROGRESS]);
+    if (elapsed != timeline->elapsed) {
+        timeline->elapsed = elapsed;
+        rut_property_dirty(&timeline->ctx->property_ctx,
+                           &timeline->properties[RUT_TIMELINE_PROP_ELAPSED]);
+        rut_property_dirty(&timeline->ctx->property_ctx,
+                           &timeline->properties[RUT_TIMELINE_PROP_PROGRESS]);
     }
 }

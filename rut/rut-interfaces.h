@@ -40,78 +40,60 @@ G_BEGIN_DECLS
  * warrent being split out into separate files.
  */
 
-typedef struct RutTransformableVTable
-{
-  const cg_matrix_t *(*get_matrix) (RutObject *object);
-} RutTransformableVTable;
+typedef struct rut_transformable_vtable_t {
+    const cg_matrix_t *(*get_matrix)(rut_object_t *object);
+} rut_transformable_vtable_t;
 
-const cg_matrix_t *
-rut_transformable_get_matrix (RutObject *object);
+const cg_matrix_t *rut_transformable_get_matrix(rut_object_t *object);
 
-typedef void
-(* RutSizablePreferredSizeCallback) (RutObject *sizable,
-                                     void *user_data);
+typedef void (*RutSizablepreferred_size_callback_t)(rut_object_t *sizable,
+                                                    void *user_data);
 
-typedef struct _RutSizableVTable
-{
-  void (* set_size) (void *object,
-                     float width,
-                     float height);
-  void (* get_size) (void *object,
-                     float *width,
-                     float *height);
-  void (* get_preferred_width) (RutObject *object,
+typedef struct _rut_sizable_vtable_t {
+    void (*set_size)(void *object, float width, float height);
+    void (*get_size)(void *object, float *width, float *height);
+    void (*get_preferred_width)(rut_object_t *object,
                                 float for_height,
                                 float *min_width_p,
                                 float *natural_width_p);
-  void (* get_preferred_height) (RutObject *object,
+    void (*get_preferred_height)(rut_object_t *object,
                                  float for_width,
                                  float *min_height_p,
                                  float *natural_height_p);
-  /* Registers a callback that gets invoked whenever the preferred
-   * size of the sizable object changes. The implementation is
-   * optional. If it is not implemented then a dummy closure object
-   * will be returned and it is assumed that the object's preferred
-   * size never changes */
-  RutClosure *
-  (* add_preferred_size_callback) (RutObject *object,
-                                   RutSizablePreferredSizeCallback callback,
-                                   void *user_data,
-                                   RutClosureDestroyCallback destroy_cb);
-} RutSizableVTable;
+    /* Registers a callback that gets invoked whenever the preferred
+     * size of the sizable object changes. The implementation is
+     * optional. If it is not implemented then a dummy closure object
+     * will be returned and it is assumed that the object's preferred
+     * size never changes */
+    rut_closure_t *(*add_preferred_size_callback)(
+        rut_object_t *object,
+        RutSizablepreferred_size_callback_t callback,
+        void *user_data,
+        rut_closure_destroy_callback_t destroy_cb);
+} rut_sizable_vtable_t;
 
-void
-rut_sizable_set_size (RutObject *object,
-                      float width,
-                      float height);
+void rut_sizable_set_size(rut_object_t *object, float width, float height);
 
-void
-rut_sizable_get_size (void *object,
-                      float *width,
-                      float *height);
+void rut_sizable_get_size(void *object, float *width, float *height);
 
-void
-rut_sizable_get_preferred_width (void *object,
-                                 float for_height,
-                                 float *min_width_p,
-                                 float *natural_width_p);
-void
-rut_sizable_get_preferred_height (void *object,
-                                  float for_width,
-                                  float *min_height_p,
-                                  float *natural_height_p);
+void rut_sizable_get_preferred_width(void *object,
+                                     float for_height,
+                                     float *min_width_p,
+                                     float *natural_width_p);
+void rut_sizable_get_preferred_height(void *object,
+                                      float for_width,
+                                      float *min_height_p,
+                                      float *natural_height_p);
 
-void
-rut_simple_sizable_get_preferred_width (void *object,
-                                        float for_height,
-                                        float *min_width_p,
-                                        float *natural_width_p);
+void rut_simple_sizable_get_preferred_width(void *object,
+                                            float for_height,
+                                            float *min_width_p,
+                                            float *natural_width_p);
 
-void
-rut_simple_sizable_get_preferred_height (void *object,
-                                         float for_width,
-                                         float *min_height_p,
-                                         float *natural_height_p);
+void rut_simple_sizable_get_preferred_height(void *object,
+                                             float for_width,
+                                             float *min_height_p,
+                                             float *natural_height_p);
 
 /**
  * rut_sizable_add_preferred_size_callback:
@@ -123,14 +105,14 @@ rut_simple_sizable_get_preferred_height (void *object,
  * Adds a callback to be invoked whenever the preferred size of the
  * given sizable object changes.
  *
- * Return value: A #RutClosure representing the callback. This can be
+ * Return value: A #rut_closure_t representing the callback. This can be
  *   removed with rut_closure_disconnect().
  */
-RutClosure *
-rut_sizable_add_preferred_size_callback (RutObject *object,
-                                         RutSizablePreferredSizeCallback cb,
-                                         void *user_data,
-                                         RutClosureDestroyCallback destroy_cb);
+rut_closure_t *rut_sizable_add_preferred_size_callback(
+    rut_object_t *object,
+    RutSizablepreferred_size_callback_t cb,
+    void *user_data,
+    rut_closure_destroy_callback_t destroy_cb);
 
 /*
  *
@@ -138,14 +120,11 @@ rut_sizable_add_preferred_size_callback (RutObject *object,
  * (E.g. implemented by all geometry components)
  *
  */
-typedef struct _RutPrimableVTable
-{
-  cg_primitive_t *(*get_primitive)(void *object);
-} RutPrimableVTable;
+typedef struct _rut_primable_vtable_t {
+    cg_primitive_t *(*get_primitive)(void *object);
+} rut_primable_vtable_t;
 
-cg_primitive_t *
-rut_primable_get_primitive (RutObject *object);
-
+cg_primitive_t *rut_primable_get_primitive(rut_object_t *object);
 
 /*
  * Image Size Dependant Interface
@@ -157,13 +136,9 @@ rut_primable_get_primitive (RutObject *object);
  * texture being drawn, and the geometry of a pointalism component
  * depends on the size of the image.
  */
-typedef struct _RutImageSizeDependantVTable
-{
-  void (*set_image_size)(RutObject *object,
-                         int width,
-                         int height);
-} RutImageSizeDependantVTable;
-
+typedef struct _rut_image_size_dependant_vtable_t {
+    void (*set_image_size)(rut_object_t *object, int width, int height);
+} rut_image_size_dependant_vtable_t;
 
 /*
  * Selectable Interface
@@ -173,7 +148,7 @@ typedef struct _RutImageSizeDependantVTable
  *
  * Whenever a new user selection is made then an object implementing
  * the selectable interface should be created to track the selected
- * objects and that object should be registered with a RutShell.
+ * objects and that object should be registered with a rut_shell_t.
  *
  * Whenever a selection is registered then the ::cancel method of any
  * previous selection will be called.
@@ -185,15 +160,13 @@ typedef struct _RutImageSizeDependantVTable
  *   object that will be set on the clipboard.
  * - If Delete is pressed the ::del method will be called
  */
-typedef struct _RutSelectableVTable
-{
-  void (*cancel) (RutObject *selectable);
-  RutObject *(*copy) (RutObject *selectable);
-  void (*del) (RutObject *selectable);
-} RutSelectableVTable;
+typedef struct _rut_selectable_vtable_t {
+    void (*cancel)(rut_object_t *selectable);
+    rut_object_t *(*copy)(rut_object_t *selectable);
+    void (*del)(rut_object_t *selectable);
+} rut_selectable_vtable_t;
 
-void
-rut_selectable_cancel (RutObject *object);
+void rut_selectable_cancel(rut_object_t *object);
 
 G_END_DECLS
 

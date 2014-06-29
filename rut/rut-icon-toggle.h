@@ -30,43 +30,36 @@
 #ifndef __RUT_ICON_TOGGLE_H__
 #define __RUT_ICON_TOGGLE_H__
 
-typedef struct _RutIconToggle RutIconToggle;
-extern RutType rut_icon_toggle_type;
+typedef struct _rut_icon_toggle_t rut_icon_toggle_t;
+extern rut_type_t rut_icon_toggle_type;
 
-RutIconToggle *
-rut_icon_toggle_new (RutContext *ctx,
-                     const char *set_icon,
-                     const char *unset_icon);
+rut_icon_toggle_t *rut_icon_toggle_new(rut_context_t *ctx,
+                                       const char *set_icon,
+                                       const char *unset_icon);
 
-typedef void (*RutIconToggleCallback) (RutIconToggle *toggle,
-                                       bool state,
-                                       void *user_data);
+typedef void (*rut_icon_toggle_callback_t)(rut_icon_toggle_t *toggle,
+                                           bool state,
+                                           void *user_data);
 
-RutClosure *
-rut_icon_toggle_add_on_toggle_callback (RutIconToggle *toggle,
-                                  RutIconToggleCallback callback,
-                                  void *user_data,
-                                  RutClosureDestroyCallback destroy_cb);
+rut_closure_t *rut_icon_toggle_add_on_toggle_callback(
+    rut_icon_toggle_t *toggle,
+    rut_icon_toggle_callback_t callback,
+    void *user_data,
+    rut_closure_destroy_callback_t destroy_cb);
 
-void
-rut_icon_toggle_set_set_icon (RutIconToggle *toggle,
-                              const char *icon);
+void rut_icon_toggle_set_set_icon(rut_icon_toggle_t *toggle, const char *icon);
 
-void
-rut_icon_toggle_set_unset_icon (RutIconToggle *toggle,
-                                const char *icon);
+void rut_icon_toggle_set_unset_icon(rut_icon_toggle_t *toggle,
+                                    const char *icon);
 
-void
-rut_icon_toggle_set_state (RutObject *toggle,
-                           bool state);
+void rut_icon_toggle_set_state(rut_object_t *toggle, bool state);
 
 /* If a toggle is part of a toggle-set then there should always be one
  * toggle set in the toggle-set and so the only way to unset a toggle
  * is to set another one. This is a simple way for the
- * RutIconToggleSet widget to disable being able to directly unset a
+ * rut_icon_toggle_set_t widget to disable being able to directly unset a
  * toggle... */
-void
-rut_icon_toggle_set_interactive_unset_enable (RutIconToggle *toggle,
-                                              bool enabled);
+void rut_icon_toggle_set_interactive_unset_enable(rut_icon_toggle_t *toggle,
+                                                  bool enabled);
 
 #endif /* __RUT_ICON_TOGGLE_H__ */

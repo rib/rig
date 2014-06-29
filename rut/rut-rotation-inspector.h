@@ -34,26 +34,20 @@
 #include "rut-object.h"
 #include "rut-context.h"
 
-extern RutType rut_rotation_inspector_type;
-typedef struct _RutRotationInspector RutRotationInspector;
+extern rut_type_t rut_rotation_inspector_type;
+typedef struct _rut_rotation_inspector_t rut_rotation_inspector_t;
 
+rut_rotation_inspector_t *rut_rotation_inspector_new(rut_context_t *ctx);
 
-RutRotationInspector *
-rut_rotation_inspector_new (RutContext *ctx);
+void rut_rotation_inspector_set_value(rut_object_t *slider,
+                                      const cg_quaternion_t *value);
 
-void
-rut_rotation_inspector_set_value (RutObject *slider,
-                                  const cg_quaternion_t *value);
+void rut_rotation_inspector_set_step(rut_rotation_inspector_t *slider,
+                                     float step);
 
-void
-rut_rotation_inspector_set_step (RutRotationInspector *slider,
-                                 float step);
+void rut_rotation_inspector_set_decimal_places(rut_rotation_inspector_t *slider,
+                                               int decimal_places);
 
-void
-rut_rotation_inspector_set_decimal_places (RutRotationInspector *slider,
-                                           int decimal_places);
-
-int
-rut_rotation_inspector_get_decimal_places (RutRotationInspector *slider);
+int rut_rotation_inspector_get_decimal_places(rut_rotation_inspector_t *slider);
 
 #endif /* _RUT_ROTATION_INSPECTOR_H_ */

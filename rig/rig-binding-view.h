@@ -32,13 +32,12 @@
 
 #include <rut.h>
 
-extern RutType rig_binding_view_type;
+extern rut_type_t rig_binding_view_type;
 
-typedef struct _RigBindingView RigBindingView;
+typedef struct _rig_binding_view_t rig_binding_view_t;
 
-RigBindingView *
-rig_binding_view_new (RigEngine *engine,
-                      RutProperty *property,
-                      RigBinding *binding);
+rig_binding_view_t *rig_binding_view_new(rig_engine_t *engine,
+                                         rut_property_t *property,
+                                         rig_binding_t *binding);
 
 #endif /* _RIG_BINDING_VIEW_H_ */

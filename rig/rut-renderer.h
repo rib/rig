@@ -34,7 +34,7 @@
 #include "rig-entity.h"
 
 /* TODO: Rename this api to use the rig namespace (we currently
- * haven't done that because we already use the RigRenderer namespace
+ * haven't done that because we already use the rig_renderer_t namespace
  * for our implementation of this interface.) Maybe rename the
  * implementation to RigForwardRenderer.
  */
@@ -45,16 +45,14 @@
  * An interface for something to act as the renderer of a scenegraph
  * of entities.
  */
-typedef struct _RutRendererVTable
-{
-  void (*notify_entity_changed) (RigEntity *entity);
-  void (*free_priv) (RigEntity *entity);
-} RutRendererVTable;
+typedef struct _rut_renderer_vtable_t {
+    void (*notify_entity_changed)(rig_entity_t *entity);
+    void (*free_priv)(rig_entity_t *entity);
+} rut_renderer_vtable_t;
 
-void
-rut_renderer_notify_entity_changed (RutObject *renderer, RigEntity *entity);
+void rut_renderer_notify_entity_changed(rut_object_t *renderer,
+                                        rig_entity_t *entity);
 
-void
-rut_renderer_free_priv (RutObject *renderer, RigEntity *entity);
+void rut_renderer_free_priv(rut_object_t *renderer, rig_entity_t *entity);
 
 #endif /* _RUT_RENDERER_H_ */

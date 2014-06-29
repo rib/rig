@@ -35,261 +35,212 @@
 #include "rig-types.h"
 #include "rig-binding.h"
 
-extern RutType rig_controller_type;
+extern rut_type_t rig_controller_type;
 
-typedef struct _RigController RigController;
+typedef struct _rig_controller_t rig_controller_t;
 
 enum {
-  RIG_CONTROLLER_PROP_LABEL,
-  RIG_CONTROLLER_PROP_ACTIVE,
-  RIG_CONTROLLER_PROP_SUSPENDED, /* private */
-  RIG_CONTROLLER_PROP_AUTO_DEACTIVATE,
-  RIG_CONTROLLER_PROP_LOOP,
-  RIG_CONTROLLER_PROP_RUNNING,
-  RIG_CONTROLLER_PROP_LENGTH,
-  RIG_CONTROLLER_PROP_ELAPSED,
-  RIG_CONTROLLER_PROP_PROGRESS,
-  RIG_CONTROLLER_N_PROPS
+    RIG_CONTROLLER_PROP_LABEL,
+    RIG_CONTROLLER_PROP_ACTIVE,
+    RIG_CONTROLLER_PROP_SUSPENDED, /* private */
+    RIG_CONTROLLER_PROP_AUTO_DEACTIVATE,
+    RIG_CONTROLLER_PROP_LOOP,
+    RIG_CONTROLLER_PROP_RUNNING,
+    RIG_CONTROLLER_PROP_LENGTH,
+    RIG_CONTROLLER_PROP_ELAPSED,
+    RIG_CONTROLLER_PROP_PROGRESS,
+    RIG_CONTROLLER_N_PROPS
 };
 
-typedef enum _RigControllerMethod
-{
-  RIG_CONTROLLER_METHOD_CONSTANT,
-  RIG_CONTROLLER_METHOD_PATH,
-  RIG_CONTROLLER_METHOD_BINDING,
-} RigControllerMethod;
+typedef enum _rig_controller_method_t {
+    RIG_CONTROLLER_METHOD_CONSTANT,
+    RIG_CONTROLLER_METHOD_PATH,
+    RIG_CONTROLLER_METHOD_BINDING,
+} rig_controller_method_t;
 
 /* State for an individual property that the controller is tracking */
-typedef struct
-{
-  RigController *controller;
+typedef struct {
+    rig_controller_t *controller;
 
-  RutProperty *property;
+    rut_property_t *property;
 
-  /* The controller support 3 "methods" of control for any property. One is a
-   * constant value, another is a path whereby the property value depends on
-   * the progress through the path and lastly there can be a C expression that
-   * may update the property based on a number of other dependency properties.
-   *
-   * Only one of these methods will actually be used depending on the value of
-   * the 'method' member. However all the states are retained so that if the
-   * user changes the method then information won't be lost.
-   */
+    /* The controller support 3 "methods" of control for any property. One is a
+     * constant value, another is a path whereby the property value depends on
+     * the progress through the path and lastly there can be a C expression that
+     * may update the property based on a number of other dependency properties.
+     *
+     * Only one of these methods will actually be used depending on the value of
+     * the 'method' member. However all the states are retained so that if the
+     * user changes the method then information won't be lost.
+     */
 
-  RigControllerMethod method;
+    rig_controller_method_t method;
 
-  /* path may be NULL */
-  RigPath *path;
-  RutClosure *path_change_closure;
-  RutBoxed constant_value;
+    /* path may be NULL */
+    rig_path_t *path;
+    rut_closure_t *path_change_closure;
+    rut_boxed_t constant_value;
 
-  /* depenencies and c_expression may be NULL */
-  RigBinding *binding;
+    /* depenencies and c_expression may be NULL */
+    rig_binding_t *binding;
 
-  unsigned int active:1;
-} RigControllerPropData;
+    unsigned int active : 1;
+} rig_controller_prop_data_t;
 
-struct _RigController
-{
-  RutObjectBase _base;
+struct _rig_controller_t {
+    rut_object_base_t _base;
 
+    rig_engine_t *engine;
+    rut_context_t *context;
 
-  RigEngine *engine;
-  RutContext *context;
+    char *label;
 
-  char *label;
+    bool active;
+    bool auto_deactivate;
 
-  bool active;
-  bool auto_deactivate;
+    bool suspended;
 
-  bool suspended;
+    rut_timeline_t *timeline;
+    double elapsed;
 
-  RutTimeline *timeline;
-  double elapsed;
+    GHashTable *properties;
 
-  /* Hash table of RigControllerProperties. The key is a pointer to
-   * the RutProperty indexed using g_direct_hash and the value is the
-   * RigControllerPropData struct */
-  GHashTable *properties;
+    rut_list_t operation_cb_list;
 
-  RutList operation_cb_list;
-
-  RutProperty props[RIG_CONTROLLER_N_PROPS];
-  RutIntrospectableProps introspectable;
+    rut_property_t props[RIG_CONTROLLER_N_PROPS];
+    rut_introspectable_props_t introspectable;
 };
 
-typedef enum
-{
-  RIG_CONTROLLER_OPERATION_ADDED,
-  RIG_CONTROLLER_OPERATION_REMOVED,
-  RIG_CONTROLLER_OPERATION_METHOD_CHANGED
-} RigControllerOperation;
+typedef enum {
+    RIG_CONTROLLER_OPERATION_ADDED,
+    RIG_CONTROLLER_OPERATION_REMOVED,
+    RIG_CONTROLLER_OPERATION_METHOD_CHANGED
+} rig_controller_operation_t;
 
-typedef void
-(* RigControllerOperationCallback) (RigController *controller,
-                                    RigControllerOperation op,
-                                    RigControllerPropData *prop_data,
-                                    void *user_data);
+typedef void (*rig_controller_operation_callback_t)(
+    rig_controller_t *controller,
+    rig_controller_operation_t op,
+    rig_controller_prop_data_t *prop_data,
+    void *user_data);
 
-RigControllerPropData *
-rig_controller_find_prop_data_for_property (RigController *controller,
-                                            RutProperty *property);
+rig_controller_prop_data_t *
+rig_controller_find_prop_data_for_property(rig_controller_t *controller,
+                                           rut_property_t *property);
 
-RigPath *
-rig_controller_get_path_for_prop_data (RigController *controller,
-                                       RigControllerPropData *prop_data);
+rig_path_t *
+rig_controller_get_path_for_prop_data(rig_controller_t *controller,
+                                      rig_controller_prop_data_t *prop_data);
 
-RigPath *
-rig_controller_get_path_for_property (RigController *controller,
-                                      RutProperty *property);
+rig_path_t *rig_controller_get_path_for_property(rig_controller_t *controller,
+                                                 rut_property_t *property);
 
-RigPath *
-rig_controller_get_path (RigController *controller,
-                         RutObject *object,
-                         const char *property_name);
+rig_path_t *rig_controller_get_path(rig_controller_t *controller,
+                                    rut_object_t *object,
+                                    const char *property_name);
 
-RigBinding *
-rig_controller_get_binding_for_prop_data (RigController *controller,
-                                          RigControllerPropData *prop_data);
+rig_binding_t *
+rig_controller_get_binding_for_prop_data(rig_controller_t *controller,
+                                         rig_controller_prop_data_t *prop_data);
 
-RigController *
-rig_controller_new (RigEngine *engine, const char *name);
+rig_controller_t *rig_controller_new(rig_engine_t *engine, const char *name);
 
-void
-rig_controller_set_label (RutObject *object,
-                          const char *label);
+void rig_controller_set_label(rut_object_t *object, const char *label);
 
-const char *
-rig_controller_get_label (RutObject *object);
+const char *rig_controller_get_label(rut_object_t *object);
 
-void
-rig_controller_set_active (RutObject *controller,
-                           bool active);
+void rig_controller_set_active(rut_object_t *controller, bool active);
 
-bool
-rig_controller_get_active (RutObject *controller);
+bool rig_controller_get_active(rut_object_t *controller);
 
 /* Note: The suspended state overrides the active state and is
  * intended to be used by the editor as a way of disabling controllers
  * when in edit-mode but without inadvertently triggering any bindings
  * which could happen by directly touching the active property
  */
-void
-rig_controller_set_suspended (RutObject *object,
-                              bool suspended);
+void rig_controller_set_suspended(rut_object_t *object, bool suspended);
 
-bool
-rig_controller_get_suspended (RutObject *object);
+bool rig_controller_get_suspended(rut_object_t *object);
 
-void
-rig_controller_set_auto_deactivate (RutObject *controller,
-                                    bool auto_deactivate);
+void rig_controller_set_auto_deactivate(rut_object_t *controller,
+                                        bool auto_deactivate);
 
-bool
-rig_controller_get_auto_deactivate (RutObject *controller);
+bool rig_controller_get_auto_deactivate(rut_object_t *controller);
 
-void
-rig_controller_set_loop (RutObject *controller,
-                         bool loop);
+void rig_controller_set_loop(rut_object_t *controller, bool loop);
 
-bool
-rig_controller_get_loop (RutObject *controller);
+bool rig_controller_get_loop(rut_object_t *controller);
 
-void
-rig_controller_set_running (RutObject *controller,
-                            bool running);
+void rig_controller_set_running(rut_object_t *controller, bool running);
 
-bool
-rig_controller_get_running (RutObject *controller);
+bool rig_controller_get_running(rut_object_t *controller);
 
-void
-rig_controller_set_length (RutObject *controller,
-                           float length);
+void rig_controller_set_length(rut_object_t *controller, float length);
 
-float
-rig_controller_get_length (RutObject *controller);
+float rig_controller_get_length(rut_object_t *controller);
 
-void
-rig_controller_set_elapsed (RutObject *controller,
-                            double elapsed);
+void rig_controller_set_elapsed(rut_object_t *controller, double elapsed);
 
-double
-rig_controller_get_elapsed (RutObject *controller);
+double rig_controller_get_elapsed(rut_object_t *controller);
 
-void
-rig_controller_set_progress (RutObject *controller,
-                             double progress);
+void rig_controller_set_progress(rut_object_t *controller, double progress);
 
-double
-rig_controller_get_progress (RutObject *controller);
+double rig_controller_get_progress(rut_object_t *controller);
 
-void
-rig_controller_add_property (RigController *controller,
-                             RutProperty *property);
+void rig_controller_add_property(rig_controller_t *controller,
+                                 rut_property_t *property);
 
-void
-rig_controller_remove_property (RigController *controller,
-                                RutProperty *property);
+void rig_controller_remove_property(rig_controller_t *controller,
+                                    rut_property_t *property);
 
-void
-rig_controller_set_property_constant (RigController *controller,
-                                      RutProperty *property,
-                                      RutBoxed *boxed_value);
+void rig_controller_set_property_constant(rig_controller_t *controller,
+                                          rut_property_t *property,
+                                          rut_boxed_t *boxed_value);
 
-void
-rig_controller_set_property_path (RigController *controller,
-                                  RutProperty *property,
-                                  RigPath *path);
+void rig_controller_set_property_path(rig_controller_t *controller,
+                                      rut_property_t *property,
+                                      rig_path_t *path);
 
-typedef void
-(* RigControllerForeachPropertyCb) (RigControllerPropData *prop_data,
-                                    void *user_data);
+typedef void (*rig_controller_property_iter_func_t)(
+    rig_controller_prop_data_t *prop_data, void *user_data);
 
-void
-rig_controller_foreach_property (RigController *controller,
-                                 RigControllerForeachPropertyCb callback,
+void rig_controller_foreach_property(rig_controller_t *controller,
+                                     rig_controller_property_iter_func_t callback,
+                                     void *user_data);
+
+rut_closure_t *rig_controller_add_operation_callback(
+    rig_controller_t *controller,
+    rig_controller_operation_callback_t callback,
+    void *user_data,
+    rut_closure_destroy_callback_t destroy_cb);
+
+void rig_controller_set_property_method(rig_controller_t *controller,
+                                        rut_property_t *property,
+                                        rig_controller_method_t method);
+void rig_controller_set_property_binding(rig_controller_t *controller,
+                                         rut_property_t *property,
+                                         rig_binding_t *binding);
+
+typedef void (*rig_controller_node_callback_t)(rig_node_t *node,
+                                               void *user_data);
+
+void rig_controller_foreach_node(rig_controller_t *controller,
+                                 rig_controller_node_callback_t callback,
                                  void *user_data);
 
-RutClosure *
-rig_controller_add_operation_callback (RigController *controller,
-                                       RigControllerOperationCallback callback,
-                                       void *user_data,
-                                       RutClosureDestroyCallback destroy_cb);
+void rig_controller_insert_path_value(rig_controller_t *controller,
+                                      rut_property_t *property,
+                                      float t,
+                                      const rut_boxed_t *value);
 
-void
-rig_controller_set_property_method (RigController *controller,
-                                    RutProperty *property,
-                                    RigControllerMethod method);
-void
-rig_controller_set_property_binding (RigController *controller,
-                                     RutProperty *property,
-                                     RigBinding *binding);
+void rig_controller_box_path_value(rig_controller_t *controller,
+                                   rut_property_t *property,
+                                   float t,
+                                   rut_boxed_t *out);
 
-typedef void (*RigControllerNodeCallback) (RigNode *node, void *user_data);
+void rig_controller_remove_path_value(rig_controller_t *controller,
+                                      rut_property_t *property,
+                                      float t);
 
-void
-rig_controller_foreach_node (RigController *controller,
-                             RigControllerNodeCallback callback,
-                             void *user_data);
-
-void
-rig_controller_insert_path_value (RigController *controller,
-                                  RutProperty *property,
-                                  float t,
-                                  const RutBoxed *value);
-
-void
-rig_controller_box_path_value (RigController *controller,
-                               RutProperty *property,
-                               float t,
-                               RutBoxed *out);
-
-void
-rig_controller_remove_path_value (RigController *controller,
-                                  RutProperty *property,
-                                  float t);
-
-void
-rig_controller_reap (RigController *controller, RigEngine *engine);
+void rig_controller_reap(rig_controller_t *controller, rig_engine_t *engine);
 
 #endif /* _RUT_CONTROLLER_H_ */

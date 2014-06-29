@@ -30,35 +30,29 @@
 #ifndef __RIG_SLAVE_ADDRESS_H__
 #define __RIG_SLAVE_ADDRESS_H__
 
-typedef enum _RigSlaveAddressType
-{
-  RIG_SLAVE_ADDRESS_TYPE_TCP = 1,
-  RIG_SLAVE_ADDRESS_TYPE_ADB_SERIAL
-} RigSlaveAddressType;
+typedef enum _rig_slave_address_type_t {
+    RIG_SLAVE_ADDRESS_TYPE_TCP = 1,
+    RIG_SLAVE_ADDRESS_TYPE_ADB_SERIAL
+} rig_slave_address_type_t;
 
-typedef struct _RigSlaveAddress
-{
-  RutObjectBase _base;
+typedef struct _rig_slave_address_t {
+    rut_object_base_t _base;
 
-  RigSlaveAddressType type;
+    rig_slave_address_type_t type;
 
-  char *name;
+    char *name;
 
-  /* adb serial */
-  char *serial;
+    /* adb serial */
+    char *serial;
 
-  char *hostname;
-  int port;
-} RigSlaveAddress;
+    char *hostname;
+    int port;
+} rig_slave_address_t;
 
-RigSlaveAddress *
-rig_slave_address_new_tcp (const char *name,
-                           const char *hostname,
-                           int port);
+rig_slave_address_t *
+rig_slave_address_new_tcp(const char *name, const char *hostname, int port);
 
-RigSlaveAddress *
-rig_slave_address_new_adb (const char *name,
-                           const char *serial,
-                           int port);
+rig_slave_address_t *
+rig_slave_address_new_adb(const char *name, const char *serial, int port);
 
 #endif /* __RIG_SLAVE_ADDRESS_H__ */

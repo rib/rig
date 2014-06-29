@@ -37,144 +37,126 @@
 #include "rut-refcount-debug.h"
 
 const cg_matrix_t *
-rut_transformable_get_matrix (RutObject *object)
+rut_transformable_get_matrix(rut_object_t *object)
 {
-  RutTransformableVTable *transformable =
-    rut_object_get_vtable (object, RUT_TRAIT_ID_TRANSFORMABLE);
+    rut_transformable_vtable_t *transformable =
+        rut_object_get_vtable(object, RUT_TRAIT_ID_TRANSFORMABLE);
 
-  return transformable->get_matrix (object);
+    return transformable->get_matrix(object);
 }
 
 void
-rut_sizable_set_size (RutObject *object,
-                      float width,
-                      float height)
+rut_sizable_set_size(rut_object_t *object, float width, float height)
 {
-  RutSizableVTable *sizable =
-    rut_object_get_vtable (object, RUT_TRAIT_ID_SIZABLE);
+    rut_sizable_vtable_t *sizable =
+        rut_object_get_vtable(object, RUT_TRAIT_ID_SIZABLE);
 
-  sizable->set_size (object,
-                     width,
-                     height);
+    sizable->set_size(object, width, height);
 }
 
 void
-rut_sizable_get_size (void *object,
-                      float *width,
-                      float *height)
+rut_sizable_get_size(void *object, float *width, float *height)
 {
-  RutSizableVTable *sizable =
-    rut_object_get_vtable (object, RUT_TRAIT_ID_SIZABLE);
+    rut_sizable_vtable_t *sizable =
+        rut_object_get_vtable(object, RUT_TRAIT_ID_SIZABLE);
 
-  sizable->get_size (object,
-                     width,
-                     height);
+    sizable->get_size(object, width, height);
 }
 
 void
-rut_sizable_get_preferred_width (RutObject *object,
-                                 float for_height,
-                                 float *min_width_p,
-                                 float *natural_width_p)
+rut_sizable_get_preferred_width(rut_object_t *object,
+                                float for_height,
+                                float *min_width_p,
+                                float *natural_width_p)
 {
-  RutSizableVTable *sizable =
-    rut_object_get_vtable (object, RUT_TRAIT_ID_SIZABLE);
+    rut_sizable_vtable_t *sizable =
+        rut_object_get_vtable(object, RUT_TRAIT_ID_SIZABLE);
 
-  sizable->get_preferred_width (object,
-                                for_height,
-                                min_width_p,
-                                natural_width_p);
+    sizable->get_preferred_width(
+        object, for_height, min_width_p, natural_width_p);
 }
 
 void
-rut_sizable_get_preferred_height (RutObject *object,
-                                  float for_width,
-                                  float *min_height_p,
-                                  float *natural_height_p)
+rut_sizable_get_preferred_height(rut_object_t *object,
+                                 float for_width,
+                                 float *min_height_p,
+                                 float *natural_height_p)
 {
-  RutSizableVTable *sizable =
-    rut_object_get_vtable (object, RUT_TRAIT_ID_SIZABLE);
+    rut_sizable_vtable_t *sizable =
+        rut_object_get_vtable(object, RUT_TRAIT_ID_SIZABLE);
 
-  sizable->get_preferred_height (object,
-                                 for_width,
-                                 min_height_p,
-                                 natural_height_p);
+    sizable->get_preferred_height(
+        object, for_width, min_height_p, natural_height_p);
 }
 
 void
-rut_simple_sizable_get_preferred_width (void *object,
-                                        float for_height,
-                                        float *min_width_p,
-                                        float *natural_width_p)
+rut_simple_sizable_get_preferred_width(void *object,
+                                       float for_height,
+                                       float *min_width_p,
+                                       float *natural_width_p)
 {
-  if (min_width_p)
-    *min_width_p = 0;
-  if (natural_width_p)
-    *natural_width_p = 0;
+    if (min_width_p)
+        *min_width_p = 0;
+    if (natural_width_p)
+        *natural_width_p = 0;
 }
 
 void
-rut_simple_sizable_get_preferred_height (void *object,
-                                         float for_width,
-                                         float *min_height_p,
-                                         float *natural_height_p)
+rut_simple_sizable_get_preferred_height(void *object,
+                                        float for_width,
+                                        float *min_height_p,
+                                        float *natural_height_p)
 {
-  if (min_height_p)
-    *min_height_p = 0;
-  if (natural_height_p)
-    *natural_height_p = 0;
+    if (min_height_p)
+        *min_height_p = 0;
+    if (natural_height_p)
+        *natural_height_p = 0;
 }
 
-RutClosure *
-rut_sizable_add_preferred_size_callback (RutObject *object,
-                                         RutSizablePreferredSizeCallback cb,
-                                         void *user_data,
-                                         RutClosureDestroyCallback destroy_cb)
+rut_closure_t *
+rut_sizable_add_preferred_size_callback(
+    rut_object_t *object,
+    RutSizablepreferred_size_callback_t cb,
+    void *user_data,
+    rut_closure_destroy_callback_t destroy_cb)
 {
-  RutSizableVTable *sizable =
-    rut_object_get_vtable (object, RUT_TRAIT_ID_SIZABLE);
+    rut_sizable_vtable_t *sizable =
+        rut_object_get_vtable(object, RUT_TRAIT_ID_SIZABLE);
 
-  /* If the object has no implementation for the needs layout callback
-   * then we'll assume its preferred size never changes. We'll return
-   * a dummy closure object that will never be invoked so that the
-   * rest of the code doesn't need to handle this specially */
-  if (sizable->add_preferred_size_callback == NULL)
-    {
-      RutList dummy_list;
-      RutClosure *closure;
+    /* If the object has no implementation for the needs layout callback
+     * then we'll assume its preferred size never changes. We'll return
+     * a dummy closure object that will never be invoked so that the
+     * rest of the code doesn't need to handle this specially */
+    if (sizable->add_preferred_size_callback == NULL) {
+        rut_list_t dummy_list;
+        rut_closure_t *closure;
 
-      rut_list_init (&dummy_list);
+        rut_list_init(&dummy_list);
 
-      closure = rut_closure_list_add (&dummy_list,
-                                      cb,
-                                      user_data,
-                                      destroy_cb);
+        closure = rut_closure_list_add(&dummy_list, cb, user_data, destroy_cb);
 
-      rut_list_init (&closure->list_node);
+        rut_list_init(&closure->list_node);
 
-      return closure;
-    }
-  else
-    return sizable->add_preferred_size_callback (object,
-                                                 cb,
-                                                 user_data,
-                                                 destroy_cb);
+        return closure;
+    } else
+        return sizable->add_preferred_size_callback(
+            object, cb, user_data, destroy_cb);
 }
 
 cg_primitive_t *
-rut_primable_get_primitive (RutObject *object)
+rut_primable_get_primitive(rut_object_t *object)
 {
-  RutPrimableVTable *primable =
-    rut_object_get_vtable (object, RUT_TRAIT_ID_PRIMABLE);
+    rut_primable_vtable_t *primable =
+        rut_object_get_vtable(object, RUT_TRAIT_ID_PRIMABLE);
 
-  return primable->get_primitive (object);
+    return primable->get_primitive(object);
 }
 
 void
-rut_selectable_cancel (RutObject *object)
+rut_selectable_cancel(rut_object_t *object)
 {
-  RutSelectableVTable *selectable =
-    rut_object_get_vtable (object, RUT_TRAIT_ID_SELECTABLE);
+    rut_selectable_vtable_t *selectable =
+        rut_object_get_vtable(object, RUT_TRAIT_ID_SELECTABLE);
 
-  selectable->cancel (object);
+    selectable->cancel(object);
 }

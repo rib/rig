@@ -40,15 +40,15 @@
 #include "rut-object.h"
 #include "rut-types.h"
 
-/* FIXME: instead of supporting RigAsset properties we should
+/* FIXME: instead of supporting rig_asset_t properties we should
  * support declaring type validation information for
- * RutObject propertys. You should be able to specify a
- * specific RutType or a mask of interfaces.
+ * rut_object_t propertys. You should be able to specify a
+ * specific rut_type_t or a mask of interfaces.
  */
 #ifndef RIG_ASSET_TYPEDEF
 /* Note: we avoid including rig-asset.h to avoid a circular
  * dependency */
-typedef struct _RigAsset RigAsset;
+typedef struct _rig_asset_t rig_asset_t;
 #define RIG_ASSET_TYPEDEF
 #endif
 
@@ -58,23 +58,20 @@ typedef struct _RigAsset RigAsset;
  * keep includes for runtime compilation down to a minimum. */
 #include "rut-property-bare.h"
 
-
-typedef void (*RutPropertyUpdateCallback) (RutProperty *property,
-                                           void *user_data);
-
+typedef void (*rut_property_update_callback_t)(rut_property_t *property,
+                                               void *user_data);
 
 #if 0
-typedef struct _RutUIProperty
+typedef struct _rut_ui_property_t
 {
-  RutProperty _parent;
+    rut_property_t _parent;
 
-  const char *nick;
-  const char *description;
-  void *default_value;
-} RutUIProperty;
+    const char *nick;
+    const char *description;
+    void *default_value;
+} rut_ui_property_t;
 
 #endif
-
 
 /* A quick example of using the rig property system in conjunction
  * with the RutIntrospectable interface.
@@ -82,42 +79,42 @@ typedef struct _RutUIProperty
 #if 0
 
 enum {
-  FLIBBLE_X_PROP,
-  FLIBBLE_N_PROPS
+    FLIBBLE_X_PROP,
+    FLIBBLE_N_PROPS
 };
 
-typedef struct _Flibble
+typedef struct _flibble_t
 {
-  float x;
+    float x;
 
-  RutIntrospectableProps introspectable;
-  RutProperty properties[RUT_FLIBBLE_N_PROPS];
+    rut_introspectable_props_t introspectable;
+    rut_property_t properties[RUT_FLIBBLE_N_PROPS];
 
-} Flibble;
+} flibble_t;
 
-static RutPropertySpec flibble_prop_specs[] = {
-  {
-    .name = "x";
-    .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .type = RUT_PROPERTY_TYPE_FLOAT;
-    .data_offset = offsetof (RutSlider, x);
-    /* optional: for non-trivial properties */
-    .getter.float_type = flibble_get_x;
-    /* optional: for non-trivial properties */
-    .setter.float_type = flibble_set_x;
-  },
-  { 0 } /* XXX: Needed for runtime counting of the number of properties
-                if you use the RutSimpleIntrospectable interface */
+static rut_property_spec_t flibble_prop_specs[] = {
+    {
+        .name = "x";
+        .flags = RUT_PROPERTY_FLAG_READWRITE,
+        .type = RUT_PROPERTY_TYPE_FLOAT;
+        .data_offset = offsetof (rut_slider_t, x);
+        /* optional: for non-trivial properties */
+        .getter.float_type = flibble_get_x;
+        /* optional: for non-trivial properties */
+        .setter.float_type = flibble_set_x;
+    },
+    { 0 } /* XXX: Needed for runtime counting of the number of properties
+                  if you use the RutSimpleIntrospectable interface */
 };
 
 static void
 flibble_free (void *object)
 {
-  /* SNIP */
+    /* SNIP */
 
-  rut_introspectable_destroy (flibble);
+    rut_introspectable_destroy (flibble);
 
-  /* SNIP */
+    /* SNIP */
 }
 
 /* SNIP */
@@ -125,83 +122,76 @@ flibble_free (void *object)
 void
 flibble_new (void)
 {
-  /* SNIP */
+    /* SNIP */
 
-  rut_introspectable_init (flibble,
-                           flibble_prop_specs,
-                           flibble->properties);
+    rut_introspectable_init (flibble,
+                             flibble_prop_specs,
+                             flibble->properties);
 
-  /* SNIP */
+    /* SNIP */
 }
 
 /* Actually for this example you could leave the getter and setter as
  * NULL since rig can handle this case automatically without any
  * function call overhead. */
 void
-flibble_set_x (Flibble *flibble, float x)
+flibble_set_x (flibble_t *flibble, float x)
 {
-  if (flibble->x == x)
-    return;
+    if (flibble->x == x)
+        return;
 
-  flibble->x = x;
+    flibble->x = x;
 
-  rut_property_dirty (flibble->ctx, &flibble->properties[FLIBBLE_PROP_X]);
+    rut_property_dirty (flibble->ctx, &flibble->properties[FLIBBLE_PROP_X]);
 }
 
 float
-flibble_get_x (Flibble *flibble)
+flibble_get_x (flibble_t *flibble)
 {
-  return flibble->x;
+    return flibble->x;
 }
 #endif
 
-void
-rut_property_context_init (RutPropertyContext *context);
+void rut_property_context_init(rut_property_context_t *context);
 
-void
-rut_property_context_clear_log (RutPropertyContext *context);
+void rut_property_context_clear_log(rut_property_context_t *context);
 
-void
-rut_property_context_destroy (RutPropertyContext *context);
+void rut_property_context_destroy(rut_property_context_t *context);
 
-void
-rut_property_destroy (RutProperty *property);
+void rut_property_destroy(rut_property_t *property);
 
-void
-rut_property_set_binding (RutProperty *property,
-                          RutBindingCallback callback,
-                          void *user_data,
-                          ...) G_GNUC_NULL_TERMINATED;
+void rut_property_set_binding(rut_property_t *property,
+                              rut_binding_callback_t callback,
+                              void *user_data,
+                              ...) G_GNUC_NULL_TERMINATED;
 
-void
-_rut_property_set_binding_full_array (RutProperty *property,
-                                      RutBindingCallback callback,
+void _rut_property_set_binding_full_array(
+    rut_property_t *property,
+    rut_binding_callback_t callback,
+    void *user_data,
+    rut_binding_destroy_notify_t destroy_notify,
+    rut_property_t **dependencies,
+    int n_dependencies);
+
+void rut_property_set_binding_full(rut_property_t *property,
+                                   rut_binding_callback_t callback,
+                                   void *user_data,
+                                   rut_binding_destroy_notify_t destroy_notify,
+                                   ...) G_GNUC_NULL_TERMINATED;
+
+void rut_property_set_binding_by_name(rut_object_t *object,
+                                      const char *name,
+                                      rut_binding_callback_t callback,
                                       void *user_data,
-                                      RutBindingDestroyNotify destroy_notify,
-                                      RutProperty **dependencies,
-                                      int n_dependencies);
+                                      ...) G_GNUC_NULL_TERMINATED;
 
-void
-rut_property_set_binding_full (RutProperty *property,
-                               RutBindingCallback callback,
-                               void *user_data,
-                               RutBindingDestroyNotify destroy_notify,
-                               ...) G_GNUC_NULL_TERMINATED;
-
-void
-rut_property_set_binding_by_name (RutObject *object,
-                                  const char *name,
-                                  RutBindingCallback callback,
-                                  void *user_data,
-                                  ...) G_GNUC_NULL_TERMINATED;
-
-void
-rut_property_set_binding_full_by_name (RutObject *object,
-                                       const char *name,
-                                       RutBindingCallback callback,
-                                       void *user_data,
-                                       RutBindingDestroyNotify destroy_notify,
-                                       ...) G_GNUC_NULL_TERMINATED;
+void rut_property_set_binding_full_by_name(
+    rut_object_t *object,
+    const char *name,
+    rut_binding_callback_t callback,
+    void *user_data,
+    rut_binding_destroy_notify_t destroy_notify,
+    ...) G_GNUC_NULL_TERMINATED;
 
 /**
  * rut_property_set_copy_binding:
@@ -217,10 +207,9 @@ rut_property_set_binding_full_by_name (RutObject *object,
  *
  * An initial copy is triggered when setting the binding
  */
-void
-rut_property_set_copy_binding (RutPropertyContext *context,
-                               RutProperty *target_property,
-                               RutProperty *source_property);
+void rut_property_set_copy_binding(rut_property_context_t *context,
+                                   rut_property_t *target_property,
+                                   rut_property_t *source_property);
 
 /**
  * rut_property_set_cast_scalar_binding:
@@ -236,15 +225,13 @@ rut_property_set_copy_binding (RutPropertyContext *context,
  *
  * An initial cast is triggered when setting the binding
  */
-void
-rut_property_set_cast_scalar_binding (RutPropertyContext *context,
-                                      RutProperty *target_property,
-                                      RutProperty *source_property);
+void rut_property_set_cast_scalar_binding(rut_property_context_t *context,
+                                          rut_property_t *target_property,
+                                          rut_property_t *source_property);
 
-void
-rut_property_set_mirror_bindings (RutPropertyContext *context,
-                                  RutProperty *prop0,
-                                  RutProperty *prop1);
+void rut_property_set_mirror_bindings(rut_property_context_t *context,
+                                      rut_property_t *prop0,
+                                      rut_property_t *prop1);
 
 /**
  * rut_property_remove_binding:
@@ -253,10 +240,9 @@ rut_property_set_mirror_bindings (RutPropertyContext *context,
  * This removes any binding callback currently associated with the
  * given @property.
  */
-void
-rut_property_remove_binding (RutProperty *property);
+void rut_property_remove_binding(rut_property_t *property);
 
-typedef struct _RutPropertyClosure RutPropertyClosure;
+typedef struct _rut_property_closure_t rut_property_closure_t;
 
 /*
  * rut_property_connect_callback_full:
@@ -277,23 +263,20 @@ typedef struct _RutPropertyClosure RutPropertyClosure;
  * tracked. This mechanism is only intended as a way to trigger logic
  * in response to a property change.</note>
  *
- * Returns: a #RutPropertyClosure that can be explicitly destroyed by
+ * Returns: a #rut_property_closure_t that can be explicitly destroyed by
  *          calling rut_property_closure_destroy() or indirectly by
  *          destroying @property.
  */
-RutPropertyClosure *
-rut_property_connect_callback_full (RutProperty *property,
-                                    RutBindingCallback callback,
-                                    void *user_data,
-                                    GDestroyNotify destroy_notify);
+rut_property_closure_t *
+rut_property_connect_callback_full(rut_property_t *property,
+                                   rut_binding_callback_t callback,
+                                   void *user_data,
+                                   GDestroyNotify destroy_notify);
 
-RutPropertyClosure *
-rut_property_connect_callback (RutProperty *property,
-                               RutBindingCallback callback,
-                               void *user_data);
+rut_property_closure_t *rut_property_connect_callback(
+    rut_property_t *property, rut_binding_callback_t callback, void *user_data);
 
-void
-rut_property_closure_destroy (RutPropertyClosure *closure);
+void rut_property_closure_destroy(rut_property_closure_t *closure);
 
 /*
  * XXX: Issues
@@ -381,151 +364,140 @@ rut_property_closure_destroy (RutPropertyClosure *closure);
  *
  */
 
-void
-rut_property_init (RutProperty *property,
-                   const RutPropertySpec *spec,
-                   void *object,
-                   uint8_t id);
+void rut_property_init(rut_property_t *property,
+                       const rut_property_spec_t *spec,
+                       void *object,
+                       uint8_t id);
 
-void
-rut_property_copy_value (RutPropertyContext *ctx,
-                         RutProperty *target_property,
-                         RutProperty *source_property);
+void rut_property_copy_value(rut_property_context_t *ctx,
+                             rut_property_t *target_property,
+                             rut_property_t *source_property);
 
-void
-rut_property_cast_scalar_value (RutPropertyContext *ctx,
-                                RutProperty *dest,
-                                RutProperty *src);
+void rut_property_cast_scalar_value(rut_property_context_t *ctx,
+                                    rut_property_t *dest,
+                                    rut_property_t *src);
 
-void
-rut_property_box (RutProperty *property,
-                  RutBoxed *boxed);
+void rut_property_box(rut_property_t *property, rut_boxed_t *boxed);
 
-void
-rut_property_set_boxed (RutPropertyContext *ctx,
-                        RutProperty *property,
-                        const RutBoxed *boxed);
+void rut_property_set_boxed(rut_property_context_t *ctx,
+                            rut_property_t *property,
+                            const rut_boxed_t *boxed);
 
-char *
-rut_boxed_to_string (const RutBoxed *boxed,
-                     const RutPropertySpec *spec);
+char *rut_boxed_to_string(const rut_boxed_t *boxed,
+                          const rut_property_spec_t *spec);
 
-static inline RutProperty *
-rut_property_get_first_source (RutProperty *property)
+static inline rut_property_t *
+rut_property_get_first_source(rut_property_t *property)
 {
-  return property->binding->dependencies[0];
+    return property->binding->dependencies[0];
 }
 
-void
-rut_boxed_destroy (RutBoxed *boxed);
+void rut_boxed_destroy(rut_boxed_t *boxed);
 
-void
-rut_boxed_copy (RutBoxed *dst,
-                const RutBoxed *src);
-
+void rut_boxed_copy(rut_boxed_t *dst, const rut_boxed_t *src);
 
 #if 0
 
-struct _RutProperty
+struct _rut_property_t
 {
-  /* PRIVATE */
+    /* PRIVATE */
 
-  const char *name;
+    const char *name;
 
-  void *data;
+    void *data;
 
-  /* A property can be linked to any number of dependency properties
-   * so that it will be automatically prompted for an update if any of
-   * those dependencies change.
-   */
-  RutPropertyUpdateCallback update_cb;
+    /* A property can be linked to any number of dependency properties
+     * so that it will be automatically prompted for an update if any of
+     * those dependencies change.
+     */
+    rut_property_update_callback_t update_cb;
 
-  /* This is the list of properties that depend on this property and
-   * should be prompted for an update whenever this property changes.
-   */
-  GSList *dependants;
+    /* This is the list of properties that depend on this property and
+     * should be prompted for an update whenever this property changes.
+     */
+    GSList *dependants;
 
-  /* Callbacks typed according to the property::type for setting and
-   * getting the property value. These may be NULL if direct access
-   * via the ::data pointer is ok.
-   *
-   * For example, for _TYPE_FLOAT properties these would be typed as:
-   *
-   *   float (*getter) (void *object);
-   *   void (*setter) (void *object, float value);
-   *
-   * If the type is a struct then the getter would instead be:
-   *
-   *   void (*getter) (void *object, StructType *out_value);
-   */
-  void *getter;
-  void *setter;
+    /* Callbacks typed according to the property::type for setting and
+     * getting the property value. These may be NULL if direct access
+     * via the ::data pointer is ok.
+     *
+     * For example, for _TYPE_FLOAT properties these would be typed as:
+     *
+     *   float (*getter) (void *object);
+     *   void (*setter) (void *object, float value);
+     *
+     * If the type is a struct then the getter would instead be:
+     *
+     *   void (*getter) (void *object, StructType *out_value);
+     */
+    void *getter;
+    void *setter;
 
-  /* This can be any private data pointer really, but would normally
-   * be a pointer to an object instance. This is passed as the second
-   * argument to update callback and as the first argument to the
-   * getter and setter callbacks. */
-  void *object;
+    /* This can be any private data pointer really, but would normally
+     * be a pointer to an object instance. This is passed as the second
+     * argument to update callback and as the first argument to the
+     * getter and setter callbacks. */
+    void *object;
 
-  /* FLOAT | INT | BOOLEAN | STRING etc */
-  unsigned int type:16;
-  unsigned int queued_count:8;
+    /* FLOAT | INT | BOOLEAN | STRING etc */
+    unsigned int type : 16;
+    unsigned int queued_count : 8;
 
-  /* Can this property be cast to a RutUIProperty to access additional
-   * information, such as a description and default value?
-   */
-  unsigned int is_ui_property:1;
+    /* Can this property be cast to a rut_ui_property_t to access additional
+     * information, such as a description and default value?
+     */
+    unsigned int is_ui_property : 1;
 
-  /* When a property is changed, we queue all dependants to be
-   * updated. (We don't update them synchronously.)
-   *
-   * This is so that properties that depend on multiple properties
-   * don't get updated redundantly for each dependency change, they
-   * get updated once when potentially many dependencies have been
-   * updated.
-   *
-   * Note: It's possible for properties to be queued multiple times
-   * in a frame and we track that by incrementing the ->queued_count
-   * each time a property is queued to be updated.
-   *
-   * Note: queued_count is always initialized to 0 when a property
-   * is created and we always reset it to 0 when we actually update
-   * the property so we can use this to reliably track how many
-   * times the property has been queued.
-   *
-   * The updates are queued by pushing a pointer to a property to a
-   * stack. The underlying allocation for the stack is grow only and
-   * the stack is rewound after processing updates.
-   *
-   * To process updates we simply walk the stack of queued updates
-   * in the order the were pushed, and update each property that
-   * has a ->queued_count == 0. If we find a property with a
-   * queued_count > 0 then we decrement it and continue looking at the
-   * next property.
-   */
+    /* When a property is changed, we queue all dependants to be
+     * updated. (We don't update them synchronously.)
+     *
+     * This is so that properties that depend on multiple properties
+     * don't get updated redundantly for each dependency change, they
+     * get updated once when potentially many dependencies have been
+     * updated.
+     *
+     * Note: It's possible for properties to be queued multiple times
+     * in a frame and we track that by incrementing the ->queued_count
+     * each time a property is queued to be updated.
+     *
+     * Note: queued_count is always initialized to 0 when a property
+     * is created and we always reset it to 0 when we actually update
+     * the property so we can use this to reliably track how many
+     * times the property has been queued.
+     *
+     * The updates are queued by pushing a pointer to a property to a
+     * stack. The underlying allocation for the stack is grow only and
+     * the stack is rewound after processing updates.
+     *
+     * To process updates we simply walk the stack of queued updates
+     * in the order the were pushed, and update each property that
+     * has a ->queued_count == 0. If we find a property with a
+     * queued_count > 0 then we decrement it and continue looking at the
+     * next property.
+     */
 };
 
 void
-rut_property_init (RutProperty *property,
+rut_property_init (rut_property_t *property,
                    const char *name,
-                   RutPropertyType type,
+                   rut_property_type_t type,
                    void *value_addr,
-                   RutPropertyUpdateCallback update_cb,
+                   rut_property_update_callback_t update_cb,
                    void *user_data);
 
 void
-rut_property_set_float (RutProperty *property,
+rut_property_set_float (rut_property_t *property,
                         float value);
 
 float
-rut_property_get_float (RutProperty *property);
+rut_property_get_float (rut_property_t *property);
 
 void
-rut_property_set_double (RutProperty *property,
+rut_property_set_double (rut_property_t *property,
                          double value);
 
 double
-rut_property_get_double (RutProperty *property);
+rut_property_get_double (rut_property_t *property);
 
 #endif
 

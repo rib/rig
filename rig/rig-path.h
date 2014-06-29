@@ -33,137 +33,91 @@
 #include "rig-node.h"
 #include "rut-list.h"
 
-typedef struct _RigPath RigPath;
+typedef struct _rig_path_t rig_path_t;
 
-struct _RigPath
-{
-  RutObjectBase _base;
+struct _rig_path_t {
+    rut_object_base_t _base;
 
-  RutContext *ctx;
-  RutPropertyType type;
-  RutList nodes;
-  int length;
-  RigNode *pos;
-  RutList operation_cb_list;
-
+    rut_context_t *ctx;
+    rut_property_type_t type;
+    rut_list_t nodes;
+    int length;
+    rig_node_t *pos;
+    rut_list_t operation_cb_list;
 };
 
-typedef enum
-{
-  RIG_PATH_OPERATION_ADDED,
-  RIG_PATH_OPERATION_REMOVED,
-  RIG_PATH_OPERATION_MODIFIED,
-} RigPathOperation;
+typedef enum {
+    RIG_PATH_OPERATION_ADDED,
+    RIG_PATH_OPERATION_REMOVED,
+    RIG_PATH_OPERATION_MODIFIED,
+} rig_path_operation_t;
 
-typedef void
-(* RigPathOperationCallback) (RigPath *path,
-                              RigPathOperation op,
-                              RigNode *node,
-                              void *user_data);
+typedef void (*rig_path_operation_callback_t)(rig_path_t *path,
+                                             rig_path_operation_t op,
+                                             rig_node_t *node,
+                                             void *user_data);
 
-extern RutType rig_path_type;
+extern rut_type_t rig_path_type;
 
-#define RIG_PATH(x) ((RigPath *) x)
+#define RIG_PATH(x) ((rig_path_t *)x)
 
-RutProperty *
-rig_path_get_property (RigPath *path);
+rut_property_t *rig_path_get_property(rig_path_t *path);
 
-RigPath *
-rig_path_new (RutContext *ctx,
-              RutPropertyType type);
+rig_path_t *rig_path_new(rut_context_t *ctx, rut_property_type_t type);
 
-RigPath *
-rig_path_copy (RigPath *path);
+rig_path_t *rig_path_copy(rig_path_t *path);
 
-typedef enum _RigPathDirection
-{
-  RIG_PATH_DIRECTION_FORWARDS = 1,
-  RIG_PATH_DIRECTION_BACKWARDS
-} RigPathDirection;
+typedef enum _rig_path_direction_t {
+    RIG_PATH_DIRECTION_FORWARDS = 1,
+    RIG_PATH_DIRECTION_BACKWARDS
+} rig_path_direction_t;
 
-bool
-rig_path_find_control_points2 (RigPath *path,
-                               float t,
-                               RigPathDirection direction,
-                               RigNode **n0,
-                               RigNode **n1);
+bool rig_path_find_control_points2(rig_path_t *path,
+                                   float t,
+                                   rig_path_direction_t direction,
+                                   rig_node_t **n0,
+                                   rig_node_t **n1);
 
-void
-rig_path_insert_node (RigPath *path,
-                      RigNode *node);
+void rig_path_insert_node(rig_path_t *path, rig_node_t *node);
 
-void
-rig_path_insert_vec3 (RigPath *path,
-                      float t,
-                      const float value[3]);
+void rig_path_insert_vec3(rig_path_t *path, float t, const float value[3]);
 
-void
-rig_path_insert_vec4 (RigPath *path,
-                      float t,
-                      const float value[4]);
+void rig_path_insert_vec4(rig_path_t *path, float t, const float value[4]);
 
-void
-rig_path_insert_float (RigPath *path,
-                       float t,
-                       float value);
+void rig_path_insert_float(rig_path_t *path, float t, float value);
 
-void
-rig_path_insert_quaternion (RigPath *path,
-                            float t,
-                            const cg_quaternion_t *value);
+void rig_path_insert_quaternion(rig_path_t *path,
+                                float t,
+                                const cg_quaternion_t *value);
 
-void
-rig_path_insert_double (RigPath *path,
-                        float t,
-                        double value);
+void rig_path_insert_double(rig_path_t *path, float t, double value);
 
-void
-rig_path_insert_integer (RigPath *path,
-                         float t,
-                         int value);
+void rig_path_insert_integer(rig_path_t *path, float t, int value);
 
-void
-rig_path_insert_uint32 (RigPath *path,
-                        float t,
-                        uint32_t value);
+void rig_path_insert_uint32(rig_path_t *path, float t, uint32_t value);
 
-void
-rig_path_insert_color (RigPath *path,
-                       float t,
-                       const cg_color_t *value);
+void rig_path_insert_color(rig_path_t *path, float t, const cg_color_t *value);
 
 bool
-rig_path_lerp_property (RigPath *path,
-                        RutProperty *property,
-                        float t);
+rig_path_lerp_property(rig_path_t *path, rut_property_t *property, float t);
 
-bool
-rig_path_get_boxed (RigPath *path,
-                    float t,
-                    RutBoxed *value);
+bool rig_path_get_boxed(rig_path_t *path, float t, rut_boxed_t *value);
 
-void
-rig_path_insert_boxed (RigPath *path,
-                       float t,
-                       const RutBoxed *value);
+void rig_path_insert_boxed(rig_path_t *path, float t, const rut_boxed_t *value);
 
-void
-rig_path_remove (RigPath *path,
-                 float t);
+void rig_path_remove(rig_path_t *path, float t);
 
-void
-rig_path_remove_node (RigPath *path,
-                      RigNode *node);
+void rig_path_remove_node(rig_path_t *path, rig_node_t *node);
 
-RutClosure *
-rig_path_add_operation_callback (RigPath *path,
-                                 RigPathOperationCallback callback,
-                                 void *user_data,
-                                 RutClosureDestroyCallback destroy_cb);
+rut_closure_t *
+rig_path_add_operation_callback(rig_path_t *path,
+                                rig_path_operation_callback_t callback,
+                                void *user_data,
+                                rut_closure_destroy_callback_t destroy_cb);
 
 /**
  * rig_path_find_node:
- * @path: A #RigPath
+ * @path: A #rig_path_t
  * @t: The time to search for
  *
  * Finds and returns a node which has exactly the time @t. The
@@ -171,19 +125,14 @@ rig_path_add_operation_callback (RigPath *path,
  * alive until either the path is destroyed or the operation
  * %RIG_PATH_OPERATION_REMOVED is reported with the node's timestamp.
  */
-RigNode *
-rig_path_find_node (RigPath *path,
-                    float t);
+rig_node_t *rig_path_find_node(rig_path_t *path, float t);
 
-RigNode *
-rig_path_find_nearest (RigPath *path,
-                       float t);
+rig_node_t *rig_path_find_nearest(rig_path_t *path, float t);
 
-typedef void (*RigPathNodeCallback) (RigNode *node, void *user_data);
+typedef void (*rig_path_node_callback_t)(rig_node_t *node, void *user_data);
 
-void
-rut_path_foreach_node (RigPath *path,
-                       RigPathNodeCallback callback,
-                       void *user_data);
+void rut_path_foreach_node(rig_path_t *path,
+                           rig_path_node_callback_t callback,
+                           void *user_data);
 
 #endif /* _RUT_PATH_H_ */

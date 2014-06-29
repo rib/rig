@@ -36,39 +36,39 @@
 #include "rut-closure.h"
 
 void
-rut_closure_disconnect (RutClosure *closure)
+rut_closure_disconnect(rut_closure_t *closure)
 {
-  rut_list_remove (&closure->list_node);
+    rut_list_remove(&closure->list_node);
 
-  if (closure->destroy_cb)
-    closure->destroy_cb (closure->user_data);
+    if (closure->destroy_cb)
+        closure->destroy_cb(closure->user_data);
 
-  c_slice_free (RutClosure, closure);
+    c_slice_free(rut_closure_t, closure);
 }
 
 void
-rut_closure_list_disconnect_all (RutList *list)
+rut_closure_list_disconnect_all(rut_list_t *list)
 {
-  while (!rut_list_empty (list))
-    {
-      RutClosure *closure = rut_container_of (list->next, closure, list_node);
-      rut_closure_disconnect (closure);
+    while (!rut_list_empty(list)) {
+        rut_closure_t *closure =
+            rut_container_of(list->next, closure, list_node);
+        rut_closure_disconnect(closure);
     }
 }
 
-RutClosure *
-rut_closure_list_add (RutList *list,
-                      void *function,
-                      void *user_data,
-                      RutClosureDestroyCallback destroy_cb)
+rut_closure_t *
+rut_closure_list_add(rut_list_t *list,
+                     void *function,
+                     void *user_data,
+                     rut_closure_destroy_callback_t destroy_cb)
 {
-  RutClosure *closure = c_slice_new (RutClosure);
+    rut_closure_t *closure = c_slice_new(rut_closure_t);
 
-  closure->function = function;
-  closure->user_data = user_data;
-  closure->destroy_cb = destroy_cb;
+    closure->function = function;
+    closure->user_data = user_data;
+    closure->destroy_cb = destroy_cb;
 
-  rut_list_insert (list->prev, &closure->list_node);
+    rut_list_insert(list->prev, &closure->list_node);
 
-  return closure;
+    return closure;
 }

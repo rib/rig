@@ -35,25 +35,21 @@
 
 #include "rig-engine.h"
 
-typedef struct
-{
-  RigEngine *engine;
-  cg_pipeline_t *pipeline;
-  cg_texture_t *dest;
-  cg_framebuffer_t *fb;
-  RutObject *camera;
-} RigDownsampler;
+typedef struct {
+    rig_engine_t *engine;
+    cg_pipeline_t *pipeline;
+    cg_texture_t *dest;
+    cg_framebuffer_t *fb;
+    rut_object_t *camera;
+} rig_downsampler_t;
 
-RigDownsampler *
-rig_downsampler_new (RigEngine *engine);
+rig_downsampler_t *rig_downsampler_new(rig_engine_t *engine);
 
-void
-rig_downsampler_free (RigDownsampler *downsampler);
+void rig_downsampler_free(rig_downsampler_t *downsampler);
 
-cg_texture_t *
-rig_downsampler_downsample (RigDownsampler *downsampler,
-                            cg_texture_t *source,
-                            int scale_factor_x,
-                            int scale_factor_y);
+cg_texture_t *rig_downsampler_downsample(rig_downsampler_t *downsampler,
+                                         cg_texture_t *source,
+                                         int scale_factor_x,
+                                         int scale_factor_y);
 
 #endif /* __RIG_DOWNSAMPLER_H__ */

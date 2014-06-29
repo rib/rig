@@ -31,7 +31,7 @@
 
 #include <rut.h>
 
-typedef struct _RigEditor RigEditor;
+typedef struct _rig_editor_t rig_editor_t;
 
 #include "rig-types.h"
 #include "rig-entity.h"
@@ -40,86 +40,68 @@ typedef struct _RigEditor RigEditor;
 
 #include "rig.pb-c.h"
 
-extern RutType rig_editor_type;
+extern rut_type_t rig_editor_type;
 
-RigEditor *
-rig_editor_new (const char *filename);
+rig_editor_t *rig_editor_new(const char *filename);
 
-void
-rig_editor_run (RigEditor *editor);
+void rig_editor_run(rig_editor_t *editor);
 
-void
-rig_editor_load_file (RigEditor *editor,
-                      const char *filename);
+void rig_editor_load_file(rig_editor_t *editor, const char *filename);
 
-void
-rig_editor_apply_last_op (RigEngine *engine);
+void rig_editor_apply_last_op(rig_engine_t *engine);
 
 /* XXX: This rather esoteric prototype is used as a 'read_callback' to
  * rig_asset_thumbnail and is called whenever an asset's thumnail has
  * been updated.
  *
  * It would probably be better to just have a
- * rig_editor_reload_thumbnails(RigEditor *editor) considering that
+ * rig_editor_reload_thumbnails(rig_editor_t *editor) considering that
  * all this function does is trigger an asset search to refresh the
  * assets view.
  */
-void
-rig_editor_refresh_thumbnails (RigAsset *video, void *user_data);
+void rig_editor_refresh_thumbnails(rig_asset_t *video, void *user_data);
 
-void
-rig_editor_clear_search_results (RigEditor *editor);
+void rig_editor_clear_search_results(rig_editor_t *editor);
 
-void
-rig_editor_free_result_input_closures (RigEditor *editor);
+void rig_editor_free_result_input_closures(rig_editor_t *editor);
 
-void
-rig_reload_inspector_property (RigEngine *engine,
-                               RutProperty *property);
+void rig_reload_inspector_property(rig_engine_t *engine,
+                                   rut_property_t *property);
 
-void
-rig_reload_position_inspector (RigEngine *engine,
-                               RigEntity *entity);
+void rig_reload_position_inspector(rig_engine_t *engine, rig_entity_t *entity);
 
-/* TODO: Update to take a RigEditor */
-void
-rig_editor_update_inspector (RigEngine *engine);
+/* TODO: Update to take a rig_editor_t */
+void rig_editor_update_inspector(rig_engine_t *engine);
 
-void
-rig_select_object (RigEngine *engine,
-                   RutObject *object,
-                   RutSelectAction action);
+void rig_select_object(rig_engine_t *engine,
+                       rut_object_t *object,
+                       rut_select_action_t action);
 
-RigObjectsSelection *
-_rig_objects_selection_new (RigEngine *engine);
+rig_objects_selection_t *_rig_objects_selection_new(rig_engine_t *engine);
 
-typedef enum _RigObjectsSelectionEvent
-{
-  RIG_OBJECTS_SELECTION_ADD_EVENT,
-  RIG_OBJECTS_SELECTION_REMOVE_EVENT
-} RigObjectsSelectionEvent;
+typedef enum _rig_objects_selection_event_t {
+    RIG_OBJECTS_SELECTION_ADD_EVENT,
+    RIG_OBJECTS_SELECTION_REMOVE_EVENT
+} rig_objects_selection_event_t;
 
-typedef void (*RigObjectsSelectionEventCallback) (RigObjectsSelection *selection,
-                                                  RigObjectsSelectionEvent event,
-                                                  RutObject *object,
-                                                  void *user_data);
+typedef void (*rig_objects_selection_event_callback_t)(
+    rig_objects_selection_t *selection,
+    rig_objects_selection_event_t event,
+    rut_object_t *object,
+    void *user_data);
 
-RutClosure *
-rig_objects_selection_add_event_callback (RigObjectsSelection *selection,
-                                          RigObjectsSelectionEventCallback callback,
-                                          void *user_data,
-                                          RutClosureDestroyCallback destroy_cb);
-/* TODO: Update to take a RigEditor */
-void
-rig_editor_push_undo_subjournal (RigEngine *engine);
+rut_closure_t *rig_objects_selection_add_event_callback(
+    rig_objects_selection_t *selection,
+    rig_objects_selection_event_callback_t callback,
+    void *user_data,
+    rut_closure_destroy_callback_t destroy_cb);
+/* TODO: Update to take a rig_editor_t */
+void rig_editor_push_undo_subjournal(rig_engine_t *engine);
 
-RigUndoJournal *
-rig_editor_pop_undo_subjournal (RigEngine *engine);
+rig_undo_journal_t *rig_editor_pop_undo_subjournal(rig_engine_t *engine);
 
-void
-rig_editor_free_builtin_assets (RigEditor *editor);
+void rig_editor_free_builtin_assets(rig_editor_t *editor);
 
-void
-rig_editor_print_mappings (RigEditor *editor);
+void rig_editor_print_mappings(rig_editor_t *editor);
 
 #endif /* _RIG_EDITOR_H_ */

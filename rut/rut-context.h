@@ -42,13 +42,12 @@
 #include "rut-matrix-stack.h"
 
 /* TODO: This header needs to be split up, since most of the APIs here
- * don't relate directly to the RutContext type. */
+ * don't relate directly to the rut_context_t type. */
 
-#define RUT_UINT32_RED_AS_FLOAT(COLOR)   (((COLOR & 0xff000000) >> 24) / 255.0)
+#define RUT_UINT32_RED_AS_FLOAT(COLOR) (((COLOR & 0xff000000) >> 24) / 255.0)
 #define RUT_UINT32_GREEN_AS_FLOAT(COLOR) (((COLOR & 0xff0000) >> 16) / 255.0)
-#define RUT_UINT32_BLUE_AS_FLOAT(COLOR)  (((COLOR & 0xff00) >> 8) / 255.0)
+#define RUT_UINT32_BLUE_AS_FLOAT(COLOR) (((COLOR & 0xff00) >> 8) / 255.0)
 #define RUT_UINT32_ALPHA_AS_FLOAT(COLOR) ((COLOR & 0xff) / 255.0)
-
 
 extern uint8_t _rut_nine_slice_indices_data[54];
 
@@ -61,107 +60,95 @@ extern uint8_t _rut_nine_slice_indices_data[54];
 #define CIRCLE_TEX_RADIUS 256
 #define CIRCLE_TEX_PADDING 256
 
-typedef enum
-{
-  RUT_TEXT_DIRECTION_LEFT_TO_RIGHT = 1,
-  RUT_TEXT_DIRECTION_RIGHT_TO_LEFT
-} RutTextDirection;
+typedef enum {
+    RUT_TEXT_DIRECTION_LEFT_TO_RIGHT = 1,
+    RUT_TEXT_DIRECTION_RIGHT_TO_LEFT
+} rut_text_direction_t;
 
-typedef struct _RutSettings RutSettings;
+typedef struct _rut_settings_t rut_settings_t;
 
 /* TODO Make internals private */
-struct _RutContext
-{
-  RutObjectBase _base;
+struct _rut_context_t {
+    rut_object_base_t _base;
 
-  /* If true then this process does not handle input events directly
-   * or output graphics directly. */
-  bool headless;
+    /* If true then this process does not handle input events directly
+     * or output graphics directly. */
+    bool headless;
 
-  RutShell *shell;
+    rut_shell_t *shell;
 
-  RutSettings *settings;
+    rut_settings_t *settings;
 
-  RutMatrixEntry identity_entry;
+    rut_matrix_entry_t identity_entry;
 
-  cg_context_t *cg_context;
+    cg_context_t *cg_context;
 
-  FcConfig *fc_config;
-  FT_Library ft_library;
+    FcConfig *fc_config;
+    FT_Library ft_library;
 
-  cg_matrix_t identity_matrix;
+    cg_matrix_t identity_matrix;
 
-  char *assets_location;
+    char *assets_location;
 
-  GHashTable *texture_cache;
+    GHashTable *texture_cache;
 
-  cg_indices_t *nine_slice_indices;
+    cg_indices_t *nine_slice_indices;
 
-  cg_texture_t *circle_texture;
+    cg_texture_t *circle_texture;
 
-  GHashTable *colors_hash;
+    GHashTable *colors_hash;
 
-  CgPangoFontMap *pango_font_map;
-  PangoContext *pango_context;
-  PangoFontDescription *pango_font_desc;
+    CgPangoFontMap *pango_font_map;
+    PangoContext *pango_context;
+    PangoFontDescription *pango_font_desc;
 
-  RutPropertyContext property_ctx;
+    rut_property_context_t property_ctx;
 
-  cg_pipeline_t *single_texture_2d_template;
+    cg_pipeline_t *single_texture_2d_template;
 
-  GSList *timelines;
+    GSList *timelines;
 };
 
 G_BEGIN_DECLS
 
-RutContext *
-rut_context_new (RutShell *shell /* optional */);
+rut_context_t *rut_context_new(rut_shell_t *shell /* optional */);
+
+void rut_context_init(rut_context_t *context);
+
+rut_text_direction_t rut_get_text_direction(rut_context_t *context);
+
+void rut_set_assets_location(rut_context_t *context,
+                             const char *assets_location);
+
+typedef void (*rut_settings_changed_callback_t)(rut_settings_t *settings,
+                                                void *user_data);
+
+void rut_settings_add_changed_callback(rut_settings_t *settings,
+                                       rut_settings_changed_callback_t callback,
+                                       GDestroyNotify destroy_notify,
+                                       void *user_data);
 
 void
-rut_context_init (RutContext *context);
+rut_settings_remove_changed_callback(rut_settings_t *settings,
+                                     rut_settings_changed_callback_t callback);
 
-RutTextDirection
-rut_get_text_direction (RutContext *context);
+unsigned int rut_settings_get_password_hint_time(rut_settings_t *settings);
 
-void
-rut_set_assets_location (RutContext *context,
-                         const char *assets_location);
-
-typedef void (*RutSettingsChangedCallback) (RutSettings *settings,
-                                            void *user_data);
-
-void
-rut_settings_add_changed_callback (RutSettings *settings,
-                                   RutSettingsChangedCallback callback,
-                                   GDestroyNotify destroy_notify,
-                                   void *user_data);
-
-void
-rut_settings_remove_changed_callback (RutSettings *settings,
-                                      RutSettingsChangedCallback callback);
-
-unsigned int
-rut_settings_get_password_hint_time (RutSettings *settings);
-
-char *
-rut_settings_get_font_name (RutSettings *settings);
+char *rut_settings_get_font_name(rut_settings_t *settings);
 
 cg_texture_t *
-rut_load_texture (RutContext *ctx, const char *filename, cg_error_t **error);
+rut_load_texture(rut_context_t *ctx, const char *filename, cg_error_t **error);
+
+cg_texture_t *rut_load_texture_from_data_file(rut_context_t *ctx,
+                                              const char *filename,
+                                              GError **error);
+
+char *rut_find_data_file(const char *base_filename);
 
 cg_texture_t *
-rut_load_texture_from_data_file (RutContext *ctx,
-                                 const char *filename,
-                                 GError **error);
+_rut_load_texture(rut_context_t *ctx, const char *filename, cg_error_t **error);
 
-char *
-rut_find_data_file (const char *base_filename);
-
-cg_texture_t *
-_rut_load_texture (RutContext *ctx, const char *filename, cg_error_t **error);
-
-void
-rut_init_tls_state (void);
+void rut_init_tls_state(void);
 
 G_END_DECLS
 

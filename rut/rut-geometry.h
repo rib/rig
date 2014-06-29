@@ -33,48 +33,38 @@
 #include <rut-mesh.h>
 
 cg_attribute_t *
-rut_create_circle_fan_p2 (RutContext *ctx,
-                          int subdivisions,
-                          int *n_verts);
+rut_create_circle_fan_p2(rut_context_t *ctx, int subdivisions, int *n_verts);
 
-cg_primitive_t *
-rut_create_circle_fan_primitive (RutContext *ctx,
-                                 int subdivisions);
+cg_primitive_t *rut_create_circle_fan_primitive(rut_context_t *ctx,
+                                                int subdivisions);
 
-RutMesh *
-rut_create_circle_outline_mesh (uint8_t n_vertices);
+rut_mesh_t *rut_create_circle_outline_mesh(uint8_t n_vertices);
 
-cg_primitive_t *
-rut_create_circle_outline_primitive (RutContext *ctx,
-                                     uint8_t n_vertices);
+cg_primitive_t *rut_create_circle_outline_primitive(rut_context_t *ctx,
+                                                    uint8_t n_vertices);
 
-cg_texture_t *
-rut_create_circle_texture (RutContext *ctx,
-                           int radius_texels,
-                           int padding_texels);
+cg_texture_t *rut_create_circle_texture(rut_context_t *ctx,
+                                        int radius_texels,
+                                        int padding_texels);
 
-void
-rut_tesselate_circle_with_line_indices (cg_vertex_p3c4_t *buffer,
-                                        uint8_t n_vertices,
-                                        uint8_t *indices_data,
-                                        int indices_base,
-                                        RutAxis axis,
-                                        uint8_t r,
-                                        uint8_t g,
-                                        uint8_t b);
+void rut_tesselate_circle_with_line_indices(cg_vertex_p3c4_t *buffer,
+                                            uint8_t n_vertices,
+                                            uint8_t *indices_data,
+                                            int indices_base,
+                                            rut_axis_t axis,
+                                            uint8_t r,
+                                            uint8_t g,
+                                            uint8_t b);
 
-RutMesh *
-rut_create_rotation_tool_mesh (uint8_t n_vertices);
+rut_mesh_t *rut_create_rotation_tool_mesh(uint8_t n_vertices);
 
-cg_primitive_t *
-rut_create_rotation_tool_primitive (RutContext *ctx,
-                                    uint8_t n_vertices);
+cg_primitive_t *rut_create_rotation_tool_primitive(rut_context_t *ctx,
+                                                   uint8_t n_vertices);
 
-cg_primitive_t *
-rut_create_create_grid (RutContext *ctx,
-                        float width,
-                        float height,
-                        float x_space,
-                        float y_space);
+cg_primitive_t *rut_create_create_grid(rut_context_t *ctx,
+                                       float width,
+                                       float height,
+                                       float x_space,
+                                       float y_space);
 
 #endif /* _RUT_GEOMETRY_H_ */

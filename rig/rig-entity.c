@@ -33,699 +33,636 @@
 #include "rig-entity.h"
 #include "rig-engine.h"
 
-static RutPropertySpec _rig_entity_prop_specs[] = {
-  {
-    .name = "label",
-    .type = RUT_PROPERTY_TYPE_TEXT,
-    .getter.text_type = rig_entity_get_label,
-    .setter.text_type = rig_entity_set_label,
-    .nick = "Label",
-    .blurb = "A label for the entity",
-    .flags = RUT_PROPERTY_FLAG_READWRITE
-  },
-  {
-    .name = "position",
-    .type = RUT_PROPERTY_TYPE_VEC3,
-    .getter.vec3_type = rig_entity_get_position,
-    .setter.vec3_type = rig_entity_set_position,
-    .nick = "Position",
-    .blurb = "The entity's position",
-    .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .animatable = true
-  },
-  {
-    .name = "rotation",
-    .type = RUT_PROPERTY_TYPE_QUATERNION,
-    .getter.quaternion_type = rig_entity_get_rotation,
-    .setter.quaternion_type = rig_entity_set_rotation,
-    .nick = "Rotation",
-    .blurb = "The entity's rotation",
-    .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .animatable = true
-  },
-  {
-    .name = "scale",
-    .type = RUT_PROPERTY_TYPE_FLOAT,
-    .getter.float_type = rig_entity_get_scale,
-    .setter.float_type = rig_entity_set_scale,
-    .nick = "Scale",
-    .blurb = "The entity's uniform scale factor",
-    .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .animatable = true
-  },
-
-  { 0 }
+static rut_property_spec_t _rig_entity_prop_specs[] = {
+    { .name = "label",
+      .type = RUT_PROPERTY_TYPE_TEXT,
+      .getter.text_type = rig_entity_get_label,
+      .setter.text_type = rig_entity_set_label,
+      .nick = "label_t",
+      .blurb = "A label for the entity",
+      .flags = RUT_PROPERTY_FLAG_READWRITE },
+    { .name = "position",
+      .type = RUT_PROPERTY_TYPE_VEC3,
+      .getter.vec3_type = rig_entity_get_position,
+      .setter.vec3_type = rig_entity_set_position,
+      .nick = "Position",
+      .blurb = "The entity's position",
+      .flags = RUT_PROPERTY_FLAG_READWRITE,
+      .animatable = true },
+    { .name = "rotation",
+      .type = RUT_PROPERTY_TYPE_QUATERNION,
+      .getter.quaternion_type = rig_entity_get_rotation,
+      .setter.quaternion_type = rig_entity_set_rotation,
+      .nick = "Rotation",
+      .blurb = "The entity's rotation",
+      .flags = RUT_PROPERTY_FLAG_READWRITE,
+      .animatable = true },
+    { .name = "scale",
+      .type = RUT_PROPERTY_TYPE_FLOAT,
+      .getter.float_type = rig_entity_get_scale,
+      .setter.float_type = rig_entity_set_scale,
+      .nick = "Scale",
+      .blurb = "The entity's uniform scale factor",
+      .flags = RUT_PROPERTY_FLAG_READWRITE,
+      .animatable = true },
+    { 0 }
 };
 
 static void
-_rig_entity_free (void *object)
+_rig_entity_free(void *object)
 {
-  RigEntity *entity = object;
+    rig_entity_t *entity = object;
 
-  c_free (entity->label);
+    c_free(entity->label);
 
-  while (entity->components->len)
-    rig_entity_remove_component (entity,
-                                 g_ptr_array_index (entity->components, 0));
+    while (entity->components->len)
+        rig_entity_remove_component(entity,
+                                    g_ptr_array_index(entity->components, 0));
 
-  g_ptr_array_free (entity->components, true);
+    g_ptr_array_free(entity->components, true);
 
-  rut_graphable_destroy (entity);
+    rut_graphable_destroy(entity);
 
-  if (entity->renderer_priv)
-    {
-      RutObject *renderer = *(RutObject **)entity->renderer_priv;
-      rut_renderer_free_priv (renderer, entity);
+    if (entity->renderer_priv) {
+        rut_object_t *renderer = *(rut_object_t **)entity->renderer_priv;
+        rut_renderer_free_priv(renderer, entity);
     }
 
-  rut_object_free (RigEntity, entity);
+    rut_object_free(rig_entity_t, entity);
 }
 
 void
-rig_entity_reap (RigEntity *entity, RigEngine *engine)
+rig_entity_reap(rig_entity_t *entity, rig_engine_t *engine)
 {
-  int i;
-
-  for (i = 0; i < entity->components->len; i++)
-    {
-      RutObject *component = g_ptr_array_index (entity->components, i);
-      RutComponentableProps *componentable =
-        rut_object_get_properties (component, RUT_TRAIT_ID_COMPONENTABLE);
-
-      /* XXX: any changes made here should be consistent with how
-       * rig_entity_remove_component() works too. */
-
-      /* disassociate the component from the entity */
-      componentable->entity = NULL;
-
-      /* We want to defer garbage collection until the end of a frame
-       * so we pass our reference to the engine */
-      rut_object_claim (component, engine);
-      rut_object_release (component, entity);
-
-      rig_engine_queue_delete (engine, component);
-    }
-  g_ptr_array_set_size (entity->components, 0);
-
-  rig_engine_queue_delete (engine, entity);
-}
-
-void
-rig_component_reap (RutObject *component, RigEngine *engine)
-{
-  /* Currently no components reference any other objects that need
-   * to be garbage collected. */
-
-  rig_engine_queue_delete (engine, component);
-}
-
-void
-rig_entity_add_component (RigEntity *entity,
-                          RutObject *object)
-{
-  RutComponentableProps *component =
-    rut_object_get_properties (object, RUT_TRAIT_ID_COMPONENTABLE);
-
-#ifdef RIG_ENABLE_DEBUG
-  {
     int i;
 
-    c_return_if_fail (component->entity == NULL);
+    for (i = 0; i < entity->components->len; i++) {
+        rut_object_t *component = g_ptr_array_index(entity->components, i);
+        rut_componentable_props_t *componentable =
+            rut_object_get_properties(component, RUT_TRAIT_ID_COMPONENTABLE);
 
-    for (i = 0; i < entity->components->len; i++)
-      {
-        RutObject *existing = g_ptr_array_index (entity->components, i);
+        /* XXX: any changes made here should be consistent with how
+         * rig_entity_remove_component() works too. */
 
-        RutComponentableProps *existing_component =
-          rut_object_get_properties (existing, RUT_TRAIT_ID_COMPONENTABLE);
+        /* disassociate the component from the entity */
+        componentable->entity = NULL;
 
-        c_return_if_fail (existing != object);
-        c_return_if_fail (existing_component->type != component->type);
-      }
-  }
+        /* We want to defer garbage collection until the end of a frame
+         * so we pass our reference to the engine */
+        rut_object_claim(component, engine);
+        rut_object_release(component, entity);
+
+        rig_engine_queue_delete(engine, component);
+    }
+    g_ptr_array_set_size(entity->components, 0);
+
+    rig_engine_queue_delete(engine, entity);
+}
+
+void
+rig_component_reap(rut_object_t *component, rig_engine_t *engine)
+{
+    /* Currently no components reference any other objects that need
+     * to be garbage collected. */
+
+    rig_engine_queue_delete(engine, component);
+}
+
+void
+rig_entity_add_component(rig_entity_t *entity, rut_object_t *object)
+{
+    rut_componentable_props_t *component =
+        rut_object_get_properties(object, RUT_TRAIT_ID_COMPONENTABLE);
+
+#ifdef RIG_ENABLE_DEBUG
+    {
+        int i;
+
+        c_return_if_fail(component->entity == NULL);
+
+        for (i = 0; i < entity->components->len; i++) {
+            rut_object_t *existing = g_ptr_array_index(entity->components, i);
+
+            rut_componentable_props_t *existing_component =
+                rut_object_get_properties(existing, RUT_TRAIT_ID_COMPONENTABLE);
+
+            c_return_if_fail(existing != object);
+            c_return_if_fail(existing_component->type != component->type);
+        }
+    }
 #endif
 
-  component->entity = entity;
+    component->entity = entity;
 
-  rut_object_claim (object, entity);
-  g_ptr_array_add (entity->components, object);
+    rut_object_claim(object, entity);
+    g_ptr_array_add(entity->components, object);
 
-  if (entity->renderer_priv)
-    {
-      RutObject *renderer = *(RutObject **)entity->renderer_priv;
-      rut_renderer_notify_entity_changed (renderer, entity);
+    if (entity->renderer_priv) {
+        rut_object_t *renderer = *(rut_object_t **)entity->renderer_priv;
+        rut_renderer_notify_entity_changed(renderer, entity);
     }
 }
 
 /* XXX: any changes made here should be consistent with how
  * rig_entity_reap() works too. */
 void
-rig_entity_remove_component (RigEntity *entity,
-                             RutObject *object)
+rig_entity_remove_component(rig_entity_t *entity, rut_object_t *object)
 {
-  RutComponentableProps *component =
-    rut_object_get_properties (object, RUT_TRAIT_ID_COMPONENTABLE);
-  bool status;
+    rut_componentable_props_t *component =
+        rut_object_get_properties(object, RUT_TRAIT_ID_COMPONENTABLE);
+    bool status;
 
-  component->entity = NULL;
-  rut_object_release (object, entity);
+    component->entity = NULL;
+    rut_object_release(object, entity);
 
-  status = g_ptr_array_remove_fast (entity->components, object);
+    status = g_ptr_array_remove_fast(entity->components, object);
 
-  g_warn_if_fail (status);
+    g_warn_if_fail(status);
 
-  if (entity->renderer_priv)
-    {
-      RutObject *renderer = *(RutObject **)entity->renderer_priv;
-      rut_renderer_notify_entity_changed (renderer, entity);
+    if (entity->renderer_priv) {
+        rut_object_t *renderer = *(rut_object_t **)entity->renderer_priv;
+        rut_renderer_notify_entity_changed(renderer, entity);
     }
 }
 
 void
-rig_entity_translate (RigEntity *entity,
-                      float tx,
-                      float ty,
-                      float tz)
+rig_entity_translate(rig_entity_t *entity, float tx, float ty, float tz)
 {
-  float pos[3] = {
-      entity->position[1] + tx,
-      entity->position[1] + ty,
-      entity->position[2] + tz,
-  };
+    float pos[3] = { entity->position[1] + tx, entity->position[1] + ty,
+                     entity->position[2] + tz, };
 
-  rig_entity_set_position (entity, pos);
+    rig_entity_set_position(entity, pos);
 }
 
-
-RutType rig_entity_type;
+rut_type_t rig_entity_type;
 
 void
-_rig_entity_init_type (void)
+_rig_entity_init_type(void)
 {
-  static RutGraphableVTable graphable_vtable = {
-      NULL, /* child_removed */
-      NULL, /* child_added */
-      NULL, /* parent_changed */
-  };
-  static RutTransformableVTable transformable_vtable = {
-      rig_entity_get_transform
-  };
+    static rut_graphable_vtable_t graphable_vtable = {
+        NULL, /* child_removed */
+        NULL, /* child_added */
+        NULL, /* parent_changed */
+    };
+    static rut_transformable_vtable_t transformable_vtable = {
+        rig_entity_get_transform
+    };
 
-  RutType *type = &rig_entity_type;
-#define TYPE RigEntity
+    rut_type_t *type = &rig_entity_type;
+#define TYPE rig_entity_t
 
-  rut_type_init (type, C_STRINGIFY (TYPE), _rig_entity_free);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_GRAPHABLE,
-                      offsetof (TYPE, graphable),
-                      &graphable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_TRANSFORMABLE,
-                      0,
-                      &transformable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_INTROSPECTABLE,
-                      offsetof (TYPE, introspectable),
-                      NULL); /* no implied vtable */
+    rut_type_init(type, C_STRINGIFY(TYPE), _rig_entity_free);
+    rut_type_add_trait(type,
+                       RUT_TRAIT_ID_GRAPHABLE,
+                       offsetof(TYPE, graphable),
+                       &graphable_vtable);
+    rut_type_add_trait(
+        type, RUT_TRAIT_ID_TRANSFORMABLE, 0, &transformable_vtable);
+    rut_type_add_trait(type,
+                       RUT_TRAIT_ID_INTROSPECTABLE,
+                       offsetof(TYPE, introspectable),
+                       NULL); /* no implied vtable */
 
 #undef TYPE
 }
 
-RigEntity *
-rig_entity_new (RutContext *ctx)
+rig_entity_t *
+rig_entity_new(rut_context_t *ctx)
 {
-  RigEntity *entity =
-    rut_object_alloc0 (RigEntity, &rig_entity_type, _rig_entity_init_type);
+    rig_entity_t *entity = rut_object_alloc0(
+        rig_entity_t, &rig_entity_type, _rig_entity_init_type);
 
+    entity->ctx = ctx;
 
-  entity->ctx = ctx;
+    rut_introspectable_init(entity, _rig_entity_prop_specs, entity->properties);
 
-  rut_introspectable_init (entity,
-                           _rig_entity_prop_specs,
-                           entity->properties);
+    entity->position[0] = 0.0f;
+    entity->position[1] = 0.0f;
+    entity->position[2] = 0.0f;
 
-  entity->position[0] = 0.0f;
-  entity->position[1] = 0.0f;
-  entity->position[2] = 0.0f;
+    entity->scale = 1.0f;
 
-  entity->scale = 1.0f;
+    cg_quaternion_init_identity(&entity->rotation);
+    cg_matrix_init_identity(&entity->transform);
+    entity->components = g_ptr_array_new();
 
-  cg_quaternion_init_identity (&entity->rotation);
-  cg_matrix_init_identity (&entity->transform);
-  entity->components = g_ptr_array_new ();
+    rut_graphable_init(entity);
 
-  rut_graphable_init (entity);
-
-  return entity;
+    return entity;
 }
 
-RutContext *
-rig_entity_get_context (RigEntity *entity)
+rut_context_t *
+rig_entity_get_context(rig_entity_t *entity)
 {
-  return entity->ctx;
+    return entity->ctx;
 }
 
 void
-rig_entity_set_label (RutObject *obj,
-                      const char *label)
+rig_entity_set_label(rut_object_t *obj, const char *label)
 {
-  RigEntity *entity = obj;
+    rig_entity_t *entity = obj;
 
-  c_free (entity->label);
-  entity->label = c_strdup (label);
-  rut_property_dirty (&entity->ctx->property_ctx,
-                      &entity->properties[RUT_ENTITY_PROP_LABEL]);
+    c_free(entity->label);
+    entity->label = c_strdup(label);
+    rut_property_dirty(&entity->ctx->property_ctx,
+                       &entity->properties[RUT_ENTITY_PROP_LABEL]);
 }
 
 const char *
-rig_entity_get_label (RutObject *obj)
+rig_entity_get_label(rut_object_t *obj)
 {
-  RigEntity *entity = obj;
+    rig_entity_t *entity = obj;
 
-  return entity->label ? entity->label : "";
+    return entity->label ? entity->label : "";
 }
 
 const float *
-rig_entity_get_position (RutObject *obj)
+rig_entity_get_position(rut_object_t *obj)
 {
-  RigEntity *entity = obj;
+    rig_entity_t *entity = obj;
 
-  return entity->position;
+    return entity->position;
 }
 
 void
-rig_entity_set_position (RutObject *obj,
-                         const float position[3])
+rig_entity_set_position(rut_object_t *obj, const float position[3])
 {
-  RigEntity *entity = obj;
+    rig_entity_t *entity = obj;
 
-  if (memcpy (entity->position, position, sizeof (float) * 3) == 0)
-    return;
+    if (memcpy(entity->position, position, sizeof(float) * 3) == 0)
+        return;
 
-  entity->position[0] = position[0];
-  entity->position[1] = position[1];
-  entity->position[2] = position[2];
-  entity->dirty = true;
+    entity->position[0] = position[0];
+    entity->position[1] = position[1];
+    entity->position[2] = position[2];
+    entity->dirty = true;
 
-  rut_property_dirty (&entity->ctx->property_ctx,
-                      &entity->properties[RUT_ENTITY_PROP_POSITION]);
+    rut_property_dirty(&entity->ctx->property_ctx,
+                       &entity->properties[RUT_ENTITY_PROP_POSITION]);
 }
 
 float
-rig_entity_get_x (RutObject *obj)
+rig_entity_get_x(rut_object_t *obj)
 {
-  RigEntity *entity = obj;
+    rig_entity_t *entity = obj;
 
-  return entity->position[0];
+    return entity->position[0];
 }
 
 void
-rig_entity_set_x (RutObject *obj,
-                  float x)
+rig_entity_set_x(rut_object_t *obj, float x)
 {
-  RigEntity *entity = obj;
-  float pos[3] = {
-      x,
-      entity->position[1],
-      entity->position[2],
-  };
+    rig_entity_t *entity = obj;
+    float pos[3] = { x, entity->position[1], entity->position[2], };
 
-  rig_entity_set_position (entity, pos);
+    rig_entity_set_position(entity, pos);
 }
 
 float
-rig_entity_get_y (RutObject *obj)
+rig_entity_get_y(rut_object_t *obj)
 {
-  RigEntity *entity = obj;
+    rig_entity_t *entity = obj;
 
-  return entity->position[1];
+    return entity->position[1];
 }
 
 void
-rig_entity_set_y (RutObject *obj,
-                  float y)
+rig_entity_set_y(rut_object_t *obj, float y)
 {
-  RigEntity *entity = obj;
-  float pos[3] = {
-      entity->position[0],
-      y,
-      entity->position[2],
-  };
+    rig_entity_t *entity = obj;
+    float pos[3] = { entity->position[0], y, entity->position[2], };
 
-  rig_entity_set_position (entity, pos);
+    rig_entity_set_position(entity, pos);
 }
 
 float
-rig_entity_get_z (RutObject *obj)
+rig_entity_get_z(rut_object_t *obj)
 {
-  RigEntity *entity = obj;
+    rig_entity_t *entity = obj;
 
-  return entity->position[2];
+    return entity->position[2];
 }
 
 void
-rig_entity_set_z (RutObject *obj,
-                  float z)
+rig_entity_set_z(rut_object_t *obj, float z)
 {
-  RigEntity *entity = obj;
-  float pos[3] = {
-      entity->position[0],
-      entity->position[1],
-      z,
-  };
+    rig_entity_t *entity = obj;
+    float pos[3] = { entity->position[0], entity->position[1], z, };
 
-  rig_entity_set_position (entity, pos);
+    rig_entity_set_position(entity, pos);
 }
 
 void
-rig_entity_get_transformed_position (RigEntity *entity,
-                                     float position[3])
+rig_entity_get_transformed_position(rig_entity_t *entity,
+                                    float position[3])
 {
-  cg_matrix_t transform;
-  float w = 1;
+    cg_matrix_t transform;
+    float w = 1;
 
-  rut_graphable_get_transform (entity, &transform);
+    rut_graphable_get_transform(entity, &transform);
 
-  cg_matrix_transform_point (&transform,
-                               &position[0],
-                               &position[1],
-                               &position[2],
-                               &w);
+    cg_matrix_transform_point(
+        &transform, &position[0], &position[1], &position[2], &w);
 }
 
 const cg_quaternion_t *
-rig_entity_get_rotation (RutObject *obj)
+rig_entity_get_rotation(rut_object_t *obj)
 {
-  RigEntity *entity = obj;
+    rig_entity_t *entity = obj;
 
-  return &entity->rotation;
+    return &entity->rotation;
 }
 
 void
-rig_entity_set_rotation (RutObject *obj,
-                         const cg_quaternion_t *rotation)
+rig_entity_set_rotation(rut_object_t *obj, const cg_quaternion_t *rotation)
 {
-  RigEntity *entity = obj;
+    rig_entity_t *entity = obj;
 
-  if (memcmp (&entity->rotation, rotation, sizeof (*rotation)) == 0)
-      return;
+    if (memcmp(&entity->rotation, rotation, sizeof(*rotation)) == 0)
+        return;
 
-  entity->rotation = *rotation;
-  entity->dirty = true;
+    entity->rotation = *rotation;
+    entity->dirty = true;
 
-  rut_property_dirty (&entity->ctx->property_ctx,
-                      &entity->properties[RUT_ENTITY_PROP_ROTATION]);
+    rut_property_dirty(&entity->ctx->property_ctx,
+                       &entity->properties[RUT_ENTITY_PROP_ROTATION]);
 }
 
 void
-rig_entity_apply_rotations (RutObject *entity,
-                            cg_quaternion_t *rotations)
+rig_entity_apply_rotations(rut_object_t *entity,
+                           cg_quaternion_t *rotations)
 {
-  int depth = 0;
-  RutObject **entity_nodes;
-  RutObject *node = entity;
-  int i;
+    int depth = 0;
+    rut_object_t **entity_nodes;
+    rut_object_t *node = entity;
+    int i;
 
-  do {
-    RutGraphableProps *graphable_priv =
-      rut_object_get_properties (node, RUT_TRAIT_ID_GRAPHABLE);
+    do {
+        rut_graphable_props_t *graphable_priv =
+            rut_object_get_properties(node, RUT_TRAIT_ID_GRAPHABLE);
 
-    depth++;
+        depth++;
 
-    node = graphable_priv->parent;
-  } while (node);
+        node = graphable_priv->parent;
+    } while (node);
 
-  entity_nodes = g_alloca (sizeof (RutObject *) * depth);
+    entity_nodes = g_alloca(sizeof(rut_object_t *) * depth);
 
-  node = entity;
-  i = 0;
-  do {
-    RutGraphableProps *graphable_priv;
-    RutObjectBase *obj = node;
+    node = entity;
+    i = 0;
+    do {
+        rut_graphable_props_t *graphable_priv;
+        rut_object_base_t *obj = node;
 
-    if (obj->type == &rig_entity_type)
-      entity_nodes[i++] = node;
+        if (obj->type == &rig_entity_type)
+            entity_nodes[i++] = node;
 
-    graphable_priv =
-      rut_object_get_properties (node, RUT_TRAIT_ID_GRAPHABLE);
-    node = graphable_priv->parent;
-  } while (node);
+        graphable_priv =
+            rut_object_get_properties(node, RUT_TRAIT_ID_GRAPHABLE);
+        node = graphable_priv->parent;
+    } while (node);
 
-  for (i--; i >= 0; i--)
-    {
-      const cg_quaternion_t *rotation = rig_entity_get_rotation (entity_nodes[i]);
-      cg_quaternion_multiply (rotations, rotations, rotation);
+    for (i--; i >= 0; i--) {
+        const cg_quaternion_t *rotation =
+            rig_entity_get_rotation(entity_nodes[i]);
+        cg_quaternion_multiply(rotations, rotations, rotation);
     }
 }
 
 void
-rig_entity_get_rotations (RutObject *entity,
-                          cg_quaternion_t *rotation)
+rig_entity_get_rotations(rut_object_t *entity, cg_quaternion_t *rotation)
 {
-  cg_quaternion_init_identity (rotation);
-  rig_entity_apply_rotations (entity, rotation);
+    cg_quaternion_init_identity(rotation);
+    rig_entity_apply_rotations(entity, rotation);
 }
 
 void
-rig_entity_get_view_rotations (RutObject *entity,
-                               RutObject *camera_entity,
-                               cg_quaternion_t *rotation)
+rig_entity_get_view_rotations(rut_object_t *entity,
+                              rut_object_t *camera_entity,
+                              cg_quaternion_t *rotation)
 {
-  rig_entity_get_rotations (camera_entity, rotation);
-  cg_quaternion_invert (rotation);
+    rig_entity_get_rotations(camera_entity, rotation);
+    cg_quaternion_invert(rotation);
 
-  rig_entity_apply_rotations (entity, rotation);
+    rig_entity_apply_rotations(entity, rotation);
 }
 
 float
-rig_entity_get_scale (RutObject *obj)
+rig_entity_get_scale(rut_object_t *obj)
 {
-  RigEntity *entity = obj;
+    rig_entity_t *entity = obj;
 
-  return entity->scale;
+    return entity->scale;
 }
 
 void
-rig_entity_set_scale (RutObject *obj,
-                      float scale)
+rig_entity_set_scale(rut_object_t *obj, float scale)
 {
-  RigEntity *entity = obj;
+    rig_entity_t *entity = obj;
 
-  if (entity->scale == scale)
-    return;
+    if (entity->scale == scale)
+        return;
 
-  entity->scale = scale;
-  entity->dirty = true;
+    entity->scale = scale;
+    entity->dirty = true;
 
-  rut_property_dirty (&entity->ctx->property_ctx,
-                      &entity->properties[RUT_ENTITY_PROP_SCALE]);
+    rut_property_dirty(&entity->ctx->property_ctx,
+                       &entity->properties[RUT_ENTITY_PROP_SCALE]);
 }
 
 float
-rig_entity_get_scales (RutObject *entity)
+rig_entity_get_scales(rut_object_t *entity)
 {
-  RutObject *node = entity;
-  float scales = 1;
+    rut_object_t *node = entity;
+    float scales = 1;
 
-  do {
-    RutGraphableProps *graphable_priv =
-      rut_object_get_properties (node, RUT_TRAIT_ID_GRAPHABLE);
-    RutObjectBase *obj = node;
+    do {
+        rut_graphable_props_t *graphable_priv =
+            rut_object_get_properties(node, RUT_TRAIT_ID_GRAPHABLE);
+        rut_object_base_t *obj = node;
 
-    if (obj->type == &rig_entity_type)
-      scales *= rig_entity_get_scale (node);
+        if (obj->type == &rig_entity_type)
+            scales *= rig_entity_get_scale(node);
 
-    node = graphable_priv->parent;
-  } while (node);
+        node = graphable_priv->parent;
+    } while (node);
 
-  return scales;
+    return scales;
 }
 
 const cg_matrix_t *
-rig_entity_get_transform (RutObject *self)
+rig_entity_get_transform(rut_object_t *self)
 {
-  RigEntity *entity = self;
-  cg_matrix_t rotation;
+    rig_entity_t *entity = self;
+    cg_matrix_t rotation;
 
-  if (!entity->dirty)
+    if (!entity->dirty)
+        return &entity->transform;
+
+    cg_matrix_init_translation(&entity->transform,
+                               entity->position[0],
+                               entity->position[1],
+                               entity->position[2]);
+    cg_matrix_init_from_quaternion(&rotation, &entity->rotation);
+    cg_matrix_multiply(&entity->transform, &entity->transform, &rotation);
+    cg_matrix_scale(
+        &entity->transform, entity->scale, entity->scale, entity->scale);
+
+    entity->dirty = false;
+
     return &entity->transform;
-
-  cg_matrix_init_translation (&entity->transform,
-                                entity->position[0],
-                                entity->position[1],
-                                entity->position[2]);
-  cg_matrix_init_from_quaternion (&rotation, &entity->rotation);
-  cg_matrix_multiply (&entity->transform, &entity->transform, &rotation);
-  cg_matrix_scale (&entity->transform,
-                     entity->scale, entity->scale, entity->scale);
-
-  entity->dirty = false;
-
-  return &entity->transform;
 }
 
 void
-rig_entity_set_translate (RigEntity *entity,
-                          float tx,
-                          float ty,
-                          float tz)
+rig_entity_set_translate(rig_entity_t *entity, float tx, float ty, float tz)
 {
-  float pos[3] = { tx, ty, tz, };
+    float pos[3] = { tx, ty, tz, };
 
-  rig_entity_set_position (entity, pos);
+    rig_entity_set_position(entity, pos);
 }
 
 void
-rig_entity_rotate_x_axis (RigEntity *entity,
-                          float x_angle)
+rig_entity_rotate_x_axis(rig_entity_t *entity, float x_angle)
 {
-  cg_quaternion_t x_rotation;
+    cg_quaternion_t x_rotation;
 
-  cg_quaternion_init_from_x_rotation (&x_rotation, x_angle);
-  cg_quaternion_multiply (&entity->rotation, &entity->rotation,
-                            &x_rotation);
+    cg_quaternion_init_from_x_rotation(&x_rotation, x_angle);
+    cg_quaternion_multiply(&entity->rotation, &entity->rotation, &x_rotation);
 
-  entity->dirty = true;
+    entity->dirty = true;
 
-  rut_property_dirty (&entity->ctx->property_ctx,
-                      &entity->properties[RUT_ENTITY_PROP_ROTATION]);
+    rut_property_dirty(&entity->ctx->property_ctx,
+                       &entity->properties[RUT_ENTITY_PROP_ROTATION]);
 }
 
 void
-rig_entity_rotate_y_axis (RigEntity *entity,
-                          float y_angle)
+rig_entity_rotate_y_axis(rig_entity_t *entity, float y_angle)
 {
-  cg_quaternion_t y_rotation;
+    cg_quaternion_t y_rotation;
 
-  cg_quaternion_init_from_y_rotation (&y_rotation, y_angle);
-  cg_quaternion_multiply (&entity->rotation, &entity->rotation,
-                            &y_rotation);
+    cg_quaternion_init_from_y_rotation(&y_rotation, y_angle);
+    cg_quaternion_multiply(&entity->rotation, &entity->rotation, &y_rotation);
 
-  entity->dirty = true;
+    entity->dirty = true;
 
-  rut_property_dirty (&entity->ctx->property_ctx,
-                      &entity->properties[RUT_ENTITY_PROP_ROTATION]);
+    rut_property_dirty(&entity->ctx->property_ctx,
+                       &entity->properties[RUT_ENTITY_PROP_ROTATION]);
 }
 
 void
-rig_entity_rotate_z_axis (RigEntity *entity,
-                          float z_angle)
+rig_entity_rotate_z_axis(rig_entity_t *entity, float z_angle)
 {
-  cg_quaternion_t z_rotation;
+    cg_quaternion_t z_rotation;
 
-  cg_quaternion_init_from_z_rotation (&z_rotation, z_angle);
-  cg_quaternion_multiply (&entity->rotation, &entity->rotation,
-                            &z_rotation);
+    cg_quaternion_init_from_z_rotation(&z_rotation, z_angle);
+    cg_quaternion_multiply(&entity->rotation, &entity->rotation, &z_rotation);
 
-  entity->dirty = true;
+    entity->dirty = true;
 
-  rut_property_dirty (&entity->ctx->property_ctx,
-                      &entity->properties[RUT_ENTITY_PROP_ROTATION]);
+    rut_property_dirty(&entity->ctx->property_ctx,
+                       &entity->properties[RUT_ENTITY_PROP_ROTATION]);
 }
 
-RutObject *
-rig_entity_get_component (RigEntity *entity,
-                          RutComponentType type)
+rut_object_t *
+rig_entity_get_component(rig_entity_t *entity,
+                         rut_component_type_t type)
 {
-  int i;
+    int i;
 
-  for (i = 0; i < entity->components->len; i++)
-    {
-      RutObject *component = g_ptr_array_index (entity->components, i);
-      RutComponentableProps *component_props =
-        rut_object_get_properties (component, RUT_TRAIT_ID_COMPONENTABLE);
+    for (i = 0; i < entity->components->len; i++) {
+        rut_object_t *component = g_ptr_array_index(entity->components, i);
+        rut_componentable_props_t *component_props =
+            rut_object_get_properties(component, RUT_TRAIT_ID_COMPONENTABLE);
 
-      if (component_props->type == type)
-        return component;
+        if (component_props->type == type)
+            return component;
     }
 
-  return NULL;
+    return NULL;
 }
 
 void
-rig_entity_foreach_component_safe (RigEntity *entity,
-                                   bool (*callback)(RutObject *component,
-                                                    void *user_data),
-                                   void *user_data)
+rig_entity_foreach_component_safe(rig_entity_t *entity,
+                                  bool (*callback)(rut_object_t *component,
+                                                   void *user_data),
+                                  void *user_data)
 {
-  int i;
-  int n_components = entity->components->len;
-  size_t size = sizeof (void *) * n_components;
-  void **components = g_alloca (size);
-  bool cont = true;
+    int i;
+    int n_components = entity->components->len;
+    size_t size = sizeof(void *) * n_components;
+    void **components = g_alloca(size);
+    bool cont = true;
 
-  memcpy (components, entity->components->pdata, size);
+    memcpy(components, entity->components->pdata, size);
 
-  for (i = 0; cont && i < n_components; i++)
-    cont = callback (components[i], user_data);
+    for (i = 0; cont && i < n_components; i++)
+        cont = callback(components[i], user_data);
 }
 
 void
-rig_entity_foreach_component (RigEntity *entity,
-                              bool (*callback)(RutObject *component,
-                                               void *user_data),
-                              void *user_data)
+rig_entity_foreach_component(rig_entity_t *entity,
+                             bool (*callback)(rut_object_t *component,
+                                              void *user_data),
+                             void *user_data)
 {
-  int i;
-  bool cont = true;
-  for (i = 0; cont && i < entity->components->len; i++)
-    cont = callback (g_ptr_array_index (entity->components, i), user_data);
+    int i;
+    bool cont = true;
+    for (i = 0; cont && i < entity->components->len; i++)
+        cont = callback(g_ptr_array_index(entity->components, i), user_data);
 }
 
-RigEntity *
-rig_entity_copy (RigEntity *entity)
+rig_entity_t *
+rig_entity_copy(rig_entity_t *entity)
 {
-  RigEntity *copy = rig_entity_new (entity->ctx);
-  GPtrArray *entity_components = entity->components;
-  GPtrArray *copy_components;
-  RutGraphableProps *graph_props =
-    rut_object_get_properties (entity, RUT_TRAIT_ID_GRAPHABLE);
-  int i;
-  RutQueueItem *item;
+    rig_entity_t *copy = rig_entity_new(entity->ctx);
+    GPtrArray *entity_components = entity->components;
+    GPtrArray *copy_components;
+    rut_graphable_props_t *graph_props =
+        rut_object_get_properties(entity, RUT_TRAIT_ID_GRAPHABLE);
+    int i;
+    rut_queue_item_t *item;
 
-  copy->label = NULL;
+    copy->label = NULL;
 
-  memcpy (copy->position, entity->position, sizeof (entity->position));
-  copy->rotation = entity->rotation;
-  copy->scale = entity->scale;
-  copy->transform = entity->transform;
-  copy->dirty = false;
+    memcpy(copy->position, entity->position, sizeof(entity->position));
+    copy->rotation = entity->rotation;
+    copy->scale = entity->scale;
+    copy->transform = entity->transform;
+    copy->dirty = false;
 
-  copy_components = g_ptr_array_sized_new (entity_components->len);
-  copy->components = copy_components;
+    copy_components = g_ptr_array_sized_new(entity_components->len);
+    copy->components = copy_components;
 
-  for (i = 0; i < entity_components->len; i++)
-    {
-      RutObject *component = g_ptr_array_index (entity_components, i);
-      RutComponentableVTable *componentable =
-        rut_object_get_vtable (component, RUT_TRAIT_ID_COMPONENTABLE);
-      RutObject *component_copy = componentable->copy (component);
+    for (i = 0; i < entity_components->len; i++) {
+        rut_object_t *component = g_ptr_array_index(entity_components, i);
+        rut_componentable_vtable_t *componentable =
+            rut_object_get_vtable(component, RUT_TRAIT_ID_COMPONENTABLE);
+        rut_object_t *component_copy = componentable->copy(component);
 
-      rig_entity_add_component (copy, component_copy);
-      rut_object_unref (component_copy);
+        rig_entity_add_component(copy, component_copy);
+        rut_object_unref(component_copy);
     }
 
-  rut_list_for_each (item, &graph_props->children.items, list_node)
+    rut_list_for_each(item, &graph_props->children.items, list_node)
     {
-      RutObject *child = item->data;
-      RutObject *child_copy;
+        rut_object_t *child = item->data;
+        rut_object_t *child_copy;
 
-      if (rut_object_get_type (child) != &rig_entity_type)
-        continue;
+        if (rut_object_get_type(child) != &rig_entity_type)
+            continue;
 
-      child_copy = rig_entity_copy (child);
-      rut_graphable_add_child (copy, child_copy);
+        child_copy = rig_entity_copy(child);
+        rut_graphable_add_child(copy, child_copy);
     }
 
-  return copy;
+    return copy;
 }
 
 void
-rig_entity_notify_changed (RigEntity *entity)
+rig_entity_notify_changed(rig_entity_t *entity)
 {
-  if (entity->renderer_priv)
-    {
-      RutObject *renderer = *(RutObject **)entity->renderer_priv;
-      rut_renderer_notify_entity_changed (renderer, entity);
+    if (entity->renderer_priv) {
+        rut_object_t *renderer = *(rut_object_t **)entity->renderer_priv;
+        rut_renderer_notify_entity_changed(renderer, entity);
     }
 }

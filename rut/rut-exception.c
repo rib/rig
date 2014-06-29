@@ -37,74 +37,69 @@
 
 #include "rut-exception.h"
 
-static RutException *
-exception_new_valist (GQuark domain, int code, const char *format, va_list ap)
+static rut_exception_t *
+exception_new_valist(GQuark domain, int code, const char *format, va_list ap)
 {
-  RutException *err = c_new (RutException, 1);
+    rut_exception_t *err = c_new(rut_exception_t, 1);
 
-  err->domain = domain;
-  err->code = code;
+    err->domain = domain;
+    err->code = code;
 
-  err->message = c_strdup_vprintf (format, ap);
+    err->message = c_strdup_vprintf(format, ap);
 
-  return err;
+    return err;
 }
 
 void
-rut_throw (RutException **err, int domain, int code, const char *format, ...)
+rut_throw(rut_exception_t **err, int domain, int code, const char *format, ...)
 {
-  va_list args;
+    va_list args;
 
-  va_start (args, format);
+    va_start(args, format);
 
-  if (err)
-    *err = exception_new_valist (domain, code, format, args);
-  else
-    g_logv (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, format, args);
+    if (err)
+        *err = exception_new_valist(domain, code, format, args);
+    else
+        g_logv(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, format, args);
 
-  va_end (args);
+    va_end(args);
 }
 
 bool
-rut_catch (const RutException *error, int domain, int code)
+rut_catch(const rut_exception_t *error, int domain, int code)
 {
-  if (error)
-    {
-      if (error->domain == domain && error->code == code)
-        return true;
-      return false;
-    }
-  else
-    return false;
+    if (error) {
+        if (error->domain == domain && error->code == code)
+            return true;
+        return false;
+    } else
+        return false;
 }
 
 void
-rut_propagate_exception (RutException **dest, RutException *src)
+rut_propagate_exception(rut_exception_t **dest, rut_exception_t *src)
 {
-  if (dest == NULL)
-    {
-      if (src)
-        rut_exception_free (src);
-    }
-  else
-    {
-      *dest = src;
+    if (dest == NULL) {
+        if (src)
+            rut_exception_free(src);
+    } else {
+        *dest = src;
     }
 }
 
-RutException *
-rut_exception_copy (const RutException *error)
+rut_exception_t *
+rut_exception_copy(const rut_exception_t *error)
 {
-  RutException *copy = c_new (RutException, 1);
-  copy->domain = error->domain;
-  copy->code = error->code;
-  copy->message = c_strdup (error->message);
-  return copy;
+    rut_exception_t *copy = c_new(rut_exception_t, 1);
+    copy->domain = error->domain;
+    copy->code = error->code;
+    copy->message = c_strdup(error->message);
+    return copy;
 }
 
 void
-rut_exception_free (RutException *error)
+rut_exception_free(rut_exception_t *error)
 {
-  c_free (error->message);
-  c_free (error);
+    c_free(error->message);
+    c_free(error);
 }

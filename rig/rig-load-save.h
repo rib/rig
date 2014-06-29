@@ -32,10 +32,8 @@
 #include "rig-engine.h"
 #include "rig-ui.h"
 
-void
-rig_save (RigEngine *engine, const char *path);
+void rig_save(rig_engine_t *engine, const char *path);
 
-RigUI *
-rig_load (RigEngine *engine, const char *file);
+rig_ui_t *rig_load(rig_engine_t *engine, const char *file);
 
 #endif /* _RUT_LOAD_SAVE_H_ */

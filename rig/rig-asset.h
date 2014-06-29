@@ -26,7 +26,6 @@
  * SOFTWARE.
  */
 
-
 #ifndef _RIG_ASSET_H_
 #define _RIG_ASSET_H_
 
@@ -44,149 +43,116 @@
  * keep track of the original path, create a thumbnail and track
  * tags for use in the Rig editor.
  *
- * We have been creating components with RigAsset properties
+ * We have been creating components with rig_asset_t properties
  * though and when we load a UI or send it across to a slave then
  * we are doing redundant work to create models and thumbnails
  * which are only useful to an editor.
  *
  * XXX: Maybe we can introduce the idea of a "Blob" which can
  * track the same kind of data we currently use assets for and
- * perhaps rename RigAsset to RigAsset and clarify that it is
+ * perhaps rename rig_asset_t to rig_asset_t and clarify that it is
  * only for use in the editor. A Blob can have an optional
  * back-reference to an asset, but when serializing to slaves
  * for example the assets wouldn't be kept.
  */
 
-extern RutType rig_asset_type;
+extern rut_type_t rig_asset_type;
 
 #ifndef RIG_ASSET_TYPEDEF
 /* Note: rut-property.h currently avoids including rut-asset.h
  * to avoid a circular header dependency and directly declares
- * a RigAsset typedef */
-typedef struct _RigAsset RigAsset;
+ * a rig_asset_t typedef */
+typedef struct _rig_asset_t rig_asset_t;
 #define RIG_ASSET_TYPEDEF
 #endif
 
-void _rig_asset_type_init (void);
+void _rig_asset_type_init(void);
 
-bool
-rut_file_info_is_asset (GFileInfo *info, const char *name);
+bool rut_file_info_is_asset(GFileInfo *info, const char *name);
 
-RigAsset *
-rig_asset_new_builtin (RutContext *ctx,
-                       const char *icon_path);
+rig_asset_t *rig_asset_new_builtin(rut_context_t *ctx, const char *icon_path);
 
-RigAsset *
-rig_asset_new_texture (RutContext *ctx,
-                       const char *path,
-                       const c_list_t *inferred_tags);
+rig_asset_t *rig_asset_new_texture(rut_context_t *ctx,
+                                   const char *path,
+                                   const c_list_t *inferred_tags);
 
-RigAsset *
-rig_asset_new_normal_map (RutContext *ctx,
-                          const char *path,
-                          const c_list_t *inferred_tags);
+rig_asset_t *rig_asset_new_normal_map(rut_context_t *ctx,
+                                      const char *path,
+                                      const c_list_t *inferred_tags);
 
-RigAsset *
-rig_asset_new_alpha_mask (RutContext *ctx,
-                          const char *path,
-                          const c_list_t *inferred_tags);
+rig_asset_t *rig_asset_new_alpha_mask(rut_context_t *ctx,
+                                      const char *path,
+                                      const c_list_t *inferred_tags);
 
-RigAsset *
-rig_asset_new_ply_model (RutContext *ctx,
-                         const char *path,
-                         const c_list_t *inferred_tags);
+rig_asset_t *rig_asset_new_ply_model(rut_context_t *ctx,
+                                     const char *path,
+                                     const c_list_t *inferred_tags);
 
-RigAsset *
-rig_asset_new_font (RutContext *ctx,
-                    const char *path,
-                    const c_list_t *inferred_tags);
+rig_asset_t *rig_asset_new_font(rut_context_t *ctx,
+                                const char *path,
+                                const c_list_t *inferred_tags);
 
-RigAsset *
-rig_asset_new_from_file (RigEngine *engine,
-                         GFileInfo *info,
-                         GFile *asset_file,
-                         RutException **e);
+rig_asset_t *rig_asset_new_from_file(rig_engine_t *engine,
+                                     GFileInfo *info,
+                                     GFile *asset_file,
+                                     rut_exception_t **e);
 
-RigAsset *
-rig_asset_new_from_data (RutContext *ctx,
-                         const char *path,
-                         RigAssetType type,
-                         bool is_video,
-                         const uint8_t *data,
-                         size_t len);
+rig_asset_t *rig_asset_new_from_data(rut_context_t *ctx,
+                                     const char *path,
+                                     rig_asset_type_t type,
+                                     bool is_video,
+                                     const uint8_t *data,
+                                     size_t len);
 
-RigAsset *
-rig_asset_new_from_mesh (RutContext *ctx,
-                         RutMesh *mesh);
+rig_asset_t *rig_asset_new_from_mesh(rut_context_t *ctx, rut_mesh_t *mesh);
 
-RigAsset *
-rig_asset_new_from_pb_asset (RigPBUnSerializer *unserializer,
-                             Rig__Asset *pb_asset,
-                             RutException **e);
+rig_asset_t *rig_asset_new_from_pb_asset(rig_pb_un_serializer_t *unserializer,
+                                         Rig__Asset *pb_asset,
+                                         rut_exception_t **e);
 
-RigAssetType
-rig_asset_get_type (RigAsset *asset);
+rig_asset_type_t rig_asset_get_type(rig_asset_t *asset);
 
-const char *
-rig_asset_get_path (RigAsset *asset);
+const char *rig_asset_get_path(rig_asset_t *asset);
 
-RutContext *
-rig_asset_get_context (RigAsset *asset);
+rut_context_t *rig_asset_get_context(rig_asset_t *asset);
 
-cg_texture_t *
-rig_asset_get_texture (RigAsset *asset);
+cg_texture_t *rig_asset_get_texture(rig_asset_t *asset);
 
-RutMesh *
-rig_asset_get_mesh (RigAsset *asset);
+rut_mesh_t *rig_asset_get_mesh(rig_asset_t *asset);
 
-bool
-rig_asset_get_is_video (RigAsset *asset);
+bool rig_asset_get_is_video(rig_asset_t *asset);
 
-void
-rig_asset_set_inferred_tags (RigAsset *asset,
-                             const c_list_t *inferred_tags);
+void rig_asset_set_inferred_tags(rig_asset_t *asset,
+                                 const c_list_t *inferred_tags);
 
-const c_list_t *
-rig_asset_get_inferred_tags (RigAsset *asset);
+const c_list_t *rig_asset_get_inferred_tags(rig_asset_t *asset);
 
-bool
-rig_asset_has_tag (RigAsset *asset, const char *tag);
+bool rig_asset_has_tag(rig_asset_t *asset, const char *tag);
 
 c_list_t *
-rut_infer_asset_tags (RutContext *ctx, GFileInfo *info, GFile *asset_file);
+rut_infer_asset_tags(rut_context_t *ctx, GFileInfo *info, GFile *asset_file);
 
-void
-rig_asset_add_inferred_tag (RigAsset *asset, const char *tag);
+void rig_asset_add_inferred_tag(rig_asset_t *asset, const char *tag);
 
-bool
-rig_asset_needs_thumbnail (RigAsset *asset);
+bool rig_asset_needs_thumbnail(rig_asset_t *asset);
 
-typedef void (*RutThumbnailCallback) (RigAsset *asset, void *user_data);
+typedef void (*rut_thumbnail_callback_t)(rig_asset_t *asset, void *user_data);
 
-RutClosure *
-rig_asset_thumbnail (RigAsset *asset,
-                     RutThumbnailCallback ready_callback,
-                     void *user_data,
-                     RutClosureDestroyCallback destroy_cb);
+rut_closure_t *rig_asset_thumbnail(rig_asset_t *asset,
+                                   rut_thumbnail_callback_t ready_callback,
+                                   void *user_data,
+                                   rut_closure_destroy_callback_t destroy_cb);
 
-void *
-rig_asset_get_data (RigAsset *asset);
+void *rig_asset_get_data(rig_asset_t *asset);
 
-size_t
-rig_asset_get_data_len (RigAsset *asset);
+size_t rig_asset_get_data_len(rig_asset_t *asset);
 
-bool
-rig_asset_get_mesh_has_tex_coords (RigAsset *asset);
+bool rig_asset_get_mesh_has_tex_coords(rig_asset_t *asset);
 
-bool
-rig_asset_get_mesh_has_normals (RigAsset *asset);
+bool rig_asset_get_mesh_has_normals(rig_asset_t *asset);
 
-void
-rig_asset_reap (RigAsset *asset, RigEngine *engine);
+void rig_asset_reap(rig_asset_t *asset, rig_engine_t *engine);
 
-void
-rig_asset_get_image_size (RigAsset *asset,
-                          int *width,
-                          int *height);
+void rig_asset_get_image_size(rig_asset_t *asset, int *width, int *height);
 
 #endif /* _RIG_ASSET_H_ */

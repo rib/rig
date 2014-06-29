@@ -26,42 +26,27 @@
  * SOFTWARE.
  */
 
-
 #ifndef _RUT_ENTRY_H_
 #define _RUT_ENTRY_H_
 
 #include "rut-object.h"
 #include "rut-icon.h"
 
-extern RutType rut_entry_type;
-typedef struct _RutEntry RutEntry;
+extern rut_type_t rut_entry_type;
+typedef struct _rut_entry_t rut_entry_t;
 
-RutEntry *
-rut_entry_new (RutContext *context);
+rut_entry_t *rut_entry_new(rut_context_t *context);
 
-void
-rut_entry_set_size (RutObject *entry,
-                    float width,
-                    float height);
+void rut_entry_set_size(rut_object_t *entry, float width, float height);
 
-void
-rut_entry_set_width (RutObject *entry,
-                     float width);
+void rut_entry_set_width(rut_object_t *entry, float width);
 
-void
-rut_entry_set_height (RutObject *entry,
-                      float height);
+void rut_entry_set_height(rut_object_t *entry, float height);
 
-void
-rut_entry_get_size (RutObject *entry,
-                    float *width,
-                    float *height);
+void rut_entry_get_size(rut_object_t *entry, float *width, float *height);
 
-RutText *
-rut_entry_get_text (RutEntry *entry);
+rut_text_t *rut_entry_get_text(rut_entry_t *entry);
 
-void
-rut_entry_set_icon (RutEntry *entry,
-                    RutIcon *icon);
+void rut_entry_set_icon(rut_entry_t *entry, rut_icon_t *icon);
 
 #endif /* _RUT_ENTRY_H_ */

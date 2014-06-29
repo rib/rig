@@ -37,68 +37,60 @@
 
 #include "rig-camera-view.h"
 
-typedef struct _RigRotationTool
-{
-  RutContext *ctx;
+typedef struct _rig_rotation_tool_t {
+    rut_context_t *ctx;
 
-  RigCameraView *view;
+    rig_camera_view_t *view;
 
-  RigEntity *camera;
-  RutObject *camera_component; /* camera component of the camera above */
+    rig_entity_t *camera;
+    rut_object_t *camera_component; /* camera component of the camera above */
 
-  bool active;
-  RutClosure *objects_selection_closure;
+    bool active;
+    rut_closure_t *objects_selection_closure;
 
-  RigEntity *selected_entity;
+    rig_entity_t *selected_entity;
 
-  cg_pipeline_t *default_pipeline;
-  cg_primitive_t *rotation_tool;
-  cg_primitive_t *rotation_tool_handle;
+    cg_pipeline_t *default_pipeline;
+    cg_primitive_t *rotation_tool;
+    cg_primitive_t *rotation_tool_handle;
 
-  RutInputRegion *rotation_circle;
-  RutArcball arcball;
-  cg_quaternion_t start_rotation;
-  cg_quaternion_t start_view_rotations;
-  bool button_down;
-  float position[3];    /* transformed position of the selected entity */
-  float screen_pos[2];
-  float scale;
+    rut_input_region_t *rotation_circle;
+    rut_arcball_t arcball;
+    cg_quaternion_t start_rotation;
+    cg_quaternion_t start_view_rotations;
+    bool button_down;
+    float position[3]; /* transformed position of the selected entity */
+    float screen_pos[2];
+    float scale;
 
-  RutList rotation_event_cb_list;
-} RigRotationTool;
+    rut_list_t rotation_event_cb_list;
+} rig_rotation_tool_t;
 
-typedef enum
-{
-  RIG_ROTATION_TOOL_DRAG,
-  RIG_ROTATION_TOOL_RELEASE,
-  RIG_ROTATION_TOOL_CANCEL
-} RigRotationToolEventType;
+typedef enum {
+    RIG_ROTATION_TOOL_DRAG,
+    RIG_ROTATION_TOOL_RELEASE,
+    RIG_ROTATION_TOOL_CANCEL
+} rig_rotation_tool_event_type_t;
 
-typedef void
-(* RigRotationToolEventCallback) (RigRotationTool *tool,
-                                  RigRotationToolEventType type,
-                                  const cg_quaternion_t *start_rotation,
-                                  const cg_quaternion_t *new_rotation,
-                                  void *user_data);
+typedef void (*rig_rotation_tool_event_callback_t)(
+    rig_rotation_tool_t *tool,
+    rig_rotation_tool_event_type_t type,
+    const cg_quaternion_t *start_rotation,
+    const cg_quaternion_t *new_rotation,
+    void *user_data);
 
-RigRotationTool *
-rig_rotation_tool_new (RigCameraView *view);
+rig_rotation_tool_t *rig_rotation_tool_new(rig_camera_view_t *view);
 
-void
-rig_rotation_tool_set_active (RigRotationTool *tool,
-                              bool active);
+void rig_rotation_tool_set_active(rig_rotation_tool_t *tool, bool active);
 
-RutClosure *
-rig_rotation_tool_add_event_callback (RigRotationTool *tool,
-                                      RigRotationToolEventCallback callback,
-                                      void *user_data,
-                                      RutClosureDestroyCallback destroy_cb);
+rut_closure_t *
+rig_rotation_tool_add_event_callback(rig_rotation_tool_t *tool,
+                                     rig_rotation_tool_event_callback_t callback,
+                                     void *user_data,
+                                     rut_closure_destroy_callback_t destroy_cb);
 
-void
-rig_rotation_tool_draw (RigRotationTool *tool,
-                        cg_framebuffer_t *fb);
+void rig_rotation_tool_draw(rig_rotation_tool_t *tool, cg_framebuffer_t *fb);
 
-void
-rig_rotation_tool_destroy (RigRotationTool *tool);
+void rig_rotation_tool_destroy(rig_rotation_tool_t *tool);
 
 #endif /* __RIG_ROTATION_TOOL_H__ */

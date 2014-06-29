@@ -36,53 +36,42 @@
 #include "rut-types.h"
 #include "rut-shell.h"
 
-typedef struct _RutInputRegion RutInputRegion;
+typedef struct _rut_input_region_t rut_input_region_t;
 
-typedef RutInputEventStatus (*RutInputRegionCallback) (RutInputRegion *region,
-                                                       RutInputEvent *event,
-                                                       void *user_data);
+typedef rut_input_event_status_t (*rut_input_region_callback_t)(
+    rut_input_region_t *region, rut_input_event_t *event, void *user_data);
 
+rut_input_region_t *
+rut_input_region_new_rectangle(float x0,
+                               float y0,
+                               float x1,
+                               float y1,
+                               rut_input_region_callback_t callback,
+                               void *user_data);
 
-RutInputRegion *
-rut_input_region_new_rectangle (float x0,
-                                float y0,
-                                float x1,
-                                float y1,
-                                RutInputRegionCallback callback,
-                                void *user_data);
+rut_input_region_t *
+rut_input_region_new_circle(float x,
+                            float y,
+                            float radius,
+                            rut_input_region_callback_t callback,
+                            void *user_data);
 
-RutInputRegion *
-rut_input_region_new_circle (float x,
-                             float y,
-                             float radius,
-                             RutInputRegionCallback callback,
-                             void *user_data);
+void rut_input_region_set_transform(rut_input_region_t *region,
+                                    cg_matrix_t *matrix);
 
-void
-rut_input_region_set_transform (RutInputRegion *region,
-                                cg_matrix_t *matrix);
+void rut_input_region_set_rectangle(
+    rut_input_region_t *region, float x0, float y0, float x1, float y1);
 
-void
-rut_input_region_set_rectangle (RutInputRegion *region,
-                                float x0,
-                                float y0,
-                                float x1,
-                                float y1);
-
-void
-rut_input_region_set_circle (RutInputRegion *region,
-                             float x0,
-                             float y0,
-                             float radius);
+void rut_input_region_set_circle(rut_input_region_t *region,
+                                 float x0,
+                                 float y0,
+                                 float radius);
 
 /* XXX: Note: the plan is to remove this api at some point
  *
  * If HUD mode is true then the region isn't transformed by the
  * camera's view transform so the region is in window coordinates.
  */
-void
-rut_input_region_set_hud_mode (RutInputRegion *region,
-                               bool hud_mode);
-
+void rut_input_region_set_hud_mode(rut_input_region_t *region, bool hud_mode);
 
 #endif /* __RUT_INPUT_REGION_H__ */

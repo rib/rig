@@ -31,235 +31,209 @@
 #include "rig-light.h"
 #include "rut-color.h"
 
-static RutPropertySpec
-_rig_light_prop_specs[] = {
-  {
-    .name = "ambient",
-    .nick = "Ambient",
-    .type = RUT_PROPERTY_TYPE_COLOR,
-    .data_offset = offsetof (RigLight, ambient),
-    .setter.color_type = rig_light_set_ambient,
-    .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .animatable = true
-  },
-  {
-    .name = "diffuse",
-    .nick = "Diffuse",
-    .type = RUT_PROPERTY_TYPE_COLOR,
-    .data_offset = offsetof (RigLight, diffuse),
-    .setter.color_type = rig_light_set_diffuse,
-    .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .animatable = true
-  },
-  {
-    .name = "specular",
-    .nick = "Specular",
-    .type = RUT_PROPERTY_TYPE_COLOR,
-    .data_offset = offsetof (RigLight, specular),
-    .setter.color_type = rig_light_set_specular,
-    .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .animatable = true
-  },
-  { 0 }
+static rut_property_spec_t _rig_light_prop_specs[] = {
+    { .name = "ambient",
+      .nick = "Ambient",
+      .type = RUT_PROPERTY_TYPE_COLOR,
+      .data_offset = offsetof(rig_light_t, ambient),
+      .setter.color_type = rig_light_set_ambient,
+      .flags = RUT_PROPERTY_FLAG_READWRITE,
+      .animatable = true },
+    { .name = "diffuse",
+      .nick = "Diffuse",
+      .type = RUT_PROPERTY_TYPE_COLOR,
+      .data_offset = offsetof(rig_light_t, diffuse),
+      .setter.color_type = rig_light_set_diffuse,
+      .flags = RUT_PROPERTY_FLAG_READWRITE,
+      .animatable = true },
+    { .name = "specular",
+      .nick = "Specular",
+      .type = RUT_PROPERTY_TYPE_COLOR,
+      .data_offset = offsetof(rig_light_t, specular),
+      .setter.color_type = rig_light_set_specular,
+      .flags = RUT_PROPERTY_FLAG_READWRITE,
+      .animatable = true },
+    { 0 }
 };
 
 static float *
-get_color_array (cg_color_t *color)
+get_color_array(cg_color_t *color)
 {
-  static float array[4];
+    static float array[4];
 
-  array[0] = color->red;
-  array[1] = color->green;
-  array[2] = color->blue;
-  array[3] = color->alpha;
+    array[0] = color->red;
+    array[1] = color->green;
+    array[2] = color->blue;
+    array[3] = color->alpha;
 
-  return array;
+    return array;
 }
 
 void
-rig_light_set_uniforms (RigLight *light,
-                        cg_pipeline_t *pipeline)
+rig_light_set_uniforms(rig_light_t *light, cg_pipeline_t *pipeline)
 {
-  RutComponentableProps *component =
-    rut_object_get_properties (light, RUT_TRAIT_ID_COMPONENTABLE);
-  RigEntity *entity = component->entity;
-  float origin[3] = {0, 0, 0};
-  float norm_direction[3] = {0, 0, 1};
-  int location;
+    rut_componentable_props_t *component =
+        rut_object_get_properties(light, RUT_TRAIT_ID_COMPONENTABLE);
+    rig_entity_t *entity = component->entity;
+    float origin[3] = { 0, 0, 0 };
+    float norm_direction[3] = { 0, 0, 1 };
+    int location;
 
-  rig_entity_get_transformed_position (entity, origin);
-  rig_entity_get_transformed_position (entity, norm_direction);
-  cg_vector3_subtract (norm_direction, norm_direction, origin);
-  cg_vector3_normalize (norm_direction);
+    rig_entity_get_transformed_position(entity, origin);
+    rig_entity_get_transformed_position(entity, norm_direction);
+    cg_vector3_subtract(norm_direction, norm_direction, origin);
+    cg_vector3_normalize(norm_direction);
 
-  location = cg_pipeline_get_uniform_location (pipeline,
-                                                 "light0_direction_norm");
-  cg_pipeline_set_uniform_float (pipeline,
-                                   location,
-                                   3, 1,
-                                   norm_direction);
+    location =
+        cg_pipeline_get_uniform_location(pipeline, "light0_direction_norm");
+    cg_pipeline_set_uniform_float(pipeline, location, 3, 1, norm_direction);
 
-  location = cg_pipeline_get_uniform_location (pipeline,
-                                                 "light0_ambient");
-  cg_pipeline_set_uniform_float (pipeline,
-                                   location,
-                                   4, 1,
-                                   get_color_array (&light->ambient));
+    location = cg_pipeline_get_uniform_location(pipeline, "light0_ambient");
+    cg_pipeline_set_uniform_float(
+        pipeline, location, 4, 1, get_color_array(&light->ambient));
 
-  location = cg_pipeline_get_uniform_location (pipeline,
-                                                 "light0_diffuse");
-  cg_pipeline_set_uniform_float (pipeline,
-                                   location,
-                                   4, 1,
-                                   get_color_array (&light->diffuse));
+    location = cg_pipeline_get_uniform_location(pipeline, "light0_diffuse");
+    cg_pipeline_set_uniform_float(
+        pipeline, location, 4, 1, get_color_array(&light->diffuse));
 
-  location = cg_pipeline_get_uniform_location (pipeline,
-                                                 "light0_specular");
-  cg_pipeline_set_uniform_float (pipeline,
-                                   location,
-                                   4, 1,
-                                   get_color_array (&light->specular));
+    location = cg_pipeline_get_uniform_location(pipeline, "light0_specular");
+    cg_pipeline_set_uniform_float(
+        pipeline, location, 4, 1, get_color_array(&light->specular));
 }
 
 static void
-_rig_light_free (void *object)
+_rig_light_free(void *object)
 {
-  RigLight *light = object;
+    rig_light_t *light = object;
 
 #ifdef RIG_ENABLE_DEBUG
-  {
-    RutComponentableProps *component =
-      rut_object_get_properties (object, RUT_TRAIT_ID_COMPONENTABLE);
-    c_return_if_fail (component->entity == NULL);
-  }
+    {
+        rut_componentable_props_t *component =
+            rut_object_get_properties(object, RUT_TRAIT_ID_COMPONENTABLE);
+        c_return_if_fail(component->entity == NULL);
+    }
 #endif
 
-  rut_object_free (RigLight, light);
+    rut_object_free(rig_light_t, light);
 }
 
-static RutObject *
-_rig_light_copy (RutObject *object)
+static rut_object_t *
+_rig_light_copy(rut_object_t *object)
 {
-  RigLight *light = object;
-  RigLight *copy = rig_light_new (light->context);
+    rig_light_t *light = object;
+    rig_light_t *copy = rig_light_new(light->context);
 
-  copy->ambient = light->ambient;
-  copy->diffuse = light->diffuse;
-  copy->specular = light->specular;
+    copy->ambient = light->ambient;
+    copy->diffuse = light->diffuse;
+    copy->specular = light->specular;
 
-  return copy;
+    return copy;
 }
 
-RutType rig_light_type;
+rut_type_t rig_light_type;
 
 static void
-_rig_light_init_type (void)
+_rig_light_init_type(void)
 {
-  static RutComponentableVTable componentable_vtable = {
-    .copy = _rig_light_copy
-  };
+    static rut_componentable_vtable_t componentable_vtable = {
+        .copy = _rig_light_copy
+    };
 
+    rut_type_t *type = &rig_light_type;
+#define TYPE rig_light_t
 
-  RutType *type = &rig_light_type;
-#define TYPE RigLight
-
-  rut_type_init (type, C_STRINGIFY (TYPE), _rig_light_free);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_COMPONENTABLE,
-                      offsetof (TYPE, component),
-                      &componentable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_INTROSPECTABLE,
-                      offsetof (TYPE, introspectable),
-                      NULL); /* no implied vtable */
+    rut_type_init(type, C_STRINGIFY(TYPE), _rig_light_free);
+    rut_type_add_trait(type,
+                       RUT_TRAIT_ID_COMPONENTABLE,
+                       offsetof(TYPE, component),
+                       &componentable_vtable);
+    rut_type_add_trait(type,
+                       RUT_TRAIT_ID_INTROSPECTABLE,
+                       offsetof(TYPE, introspectable),
+                       NULL); /* no implied vtable */
 
 #undef TYPE
 }
 
-RigLight *
-rig_light_new (RutContext *context)
+rig_light_t *
+rig_light_new(rut_context_t *context)
 {
-  RigLight *light;
+    rig_light_t *light;
 
-  light =
-    rut_object_alloc0 (RigLight, &rig_light_type, _rig_light_init_type);
+    light =
+        rut_object_alloc0(rig_light_t, &rig_light_type, _rig_light_init_type);
 
-  light->component.type = RUT_COMPONENT_TYPE_LIGHT;
-  light->context = rut_object_ref (context);
+    light->component.type = RUT_COMPONENT_TYPE_LIGHT;
+    light->context = rut_object_ref(context);
 
-  rut_introspectable_init (light,
-                           _rig_light_prop_specs,
-                           light->properties);
+    rut_introspectable_init(light, _rig_light_prop_specs, light->properties);
 
-  cg_color_init_from_4f (&light->ambient, 1.0, 1.0, 1.0, 1.0);
-  cg_color_init_from_4f (&light->diffuse, 1.0, 1.0, 1.0, 1.0);
-  cg_color_init_from_4f (&light->specular, 1.0, 1.0, 1.0, 1.0);
+    cg_color_init_from_4f(&light->ambient, 1.0, 1.0, 1.0, 1.0);
+    cg_color_init_from_4f(&light->diffuse, 1.0, 1.0, 1.0, 1.0);
+    cg_color_init_from_4f(&light->specular, 1.0, 1.0, 1.0, 1.0);
 
-  return light;
+    return light;
 }
 
 void
-rig_light_free (RigLight *light)
+rig_light_free(rig_light_t *light)
 {
-  rut_object_unref (light->context);
+    rut_object_unref(light->context);
 
-  rut_introspectable_destroy (light);
+    rut_introspectable_destroy(light);
 
-  rut_object_free (RigLight, light);
+    rut_object_free(rig_light_t, light);
 }
 
 void
-rig_light_set_ambient (RutObject *obj,
-                       const cg_color_t *ambient)
+rig_light_set_ambient(rut_object_t *obj, const cg_color_t *ambient)
 {
-  RigLight *light = obj;
+    rig_light_t *light = obj;
 
-  light->ambient = *ambient;
+    light->ambient = *ambient;
 
-  rut_property_dirty (&light->context->property_ctx,
-                      &light->properties[RIG_LIGHT_PROP_AMBIENT]);
+    rut_property_dirty(&light->context->property_ctx,
+                       &light->properties[RIG_LIGHT_PROP_AMBIENT]);
 }
 
 const cg_color_t *
-rig_light_get_ambient (RutObject *obj)
+rig_light_get_ambient(rut_object_t *obj)
 {
-  RigLight *light = obj;
+    rig_light_t *light = obj;
 
-  return &light->ambient;
+    return &light->ambient;
 }
 
 void
-rig_light_set_diffuse (RutObject *obj,
-                       const cg_color_t *diffuse)
+rig_light_set_diffuse(rut_object_t *obj, const cg_color_t *diffuse)
 {
-  RigLight *light = obj;
+    rig_light_t *light = obj;
 
-  light->diffuse = *diffuse;
+    light->diffuse = *diffuse;
 
-  rut_property_dirty (&light->context->property_ctx,
-                      &light->properties[RIG_LIGHT_PROP_DIFFUSE]);
+    rut_property_dirty(&light->context->property_ctx,
+                       &light->properties[RIG_LIGHT_PROP_DIFFUSE]);
 }
 
 const cg_color_t *
-rig_light_get_diffuse (RigLight *light)
+rig_light_get_diffuse(rig_light_t *light)
 {
-  return &light->diffuse;
+    return &light->diffuse;
 }
 
 void
-rig_light_set_specular (RutObject *obj,
-                        const cg_color_t *specular)
+rig_light_set_specular(rut_object_t *obj, const cg_color_t *specular)
 {
-  RigLight *light = obj;
+    rig_light_t *light = obj;
 
-  light->specular = *specular;
+    light->specular = *specular;
 
-  rut_property_dirty (&light->context->property_ctx,
-                      &light->properties[RIG_LIGHT_PROP_SPECULAR]);
+    rut_property_dirty(&light->context->property_ctx,
+                       &light->properties[RIG_LIGHT_PROP_SPECULAR]);
 }
 
 const cg_color_t *
-rig_light_get_specular (RigLight *light)
+rig_light_get_specular(rig_light_t *light)
 {
-  return &light->specular;
+    return &light->specular;
 }

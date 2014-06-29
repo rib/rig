@@ -31,19 +31,14 @@
 
 #include "rut-object.h"
 
-extern RutType rut_drag_bin_type;
+extern rut_type_t rut_drag_bin_type;
 
-typedef struct _RutDragBin RutDragBin;
+typedef struct _rut_drag_bin_t rut_drag_bin_t;
 
-RutDragBin *
-rut_drag_bin_new (RutContext *ctx);
+rut_drag_bin_t *rut_drag_bin_new(rut_context_t *ctx);
 
-void
-rut_drag_bin_set_child (RutDragBin *bin,
-                        RutObject *child);
+void rut_drag_bin_set_child(rut_drag_bin_t *bin, rut_object_t *child);
 
-void
-rut_drag_bin_set_payload (RutDragBin *bin,
-                          RutObject *payload);
+void rut_drag_bin_set_payload(rut_drag_bin_t *bin, rut_object_t *payload);
 
 #endif /* _RUT_DRAG_BIN_H_ */

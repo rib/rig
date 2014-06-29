@@ -30,28 +30,22 @@
 #ifndef __RUT_BUTTON_H__
 #define __RUT_BUTTON_H__
 
-typedef struct _RutButton RutButton;
-extern RutType rut_button_type;
+typedef struct _rut_button_t rut_button_t;
+extern rut_type_t rut_button_type;
 
-RutButton *
-rut_button_new (RutContext *ctx, const char *label);
+rut_button_t *rut_button_new(rut_context_t *ctx, const char *label);
 
-typedef void (*RutButtonClickCallback) (RutButton *button, void *user_data);
+typedef void (*rut_button_click_callback_t)(rut_button_t *button,
+                                            void *user_data);
 
-RutClosure *
-rut_button_add_on_click_callback (RutButton *button,
-                                  RutButtonClickCallback callback,
-                                  void *user_data,
-                                  RutClosureDestroyCallback destroy_cb);
+rut_closure_t *
+rut_button_add_on_click_callback(rut_button_t *button,
+                                 rut_button_click_callback_t callback,
+                                 void *user_data,
+                                 rut_closure_destroy_callback_t destroy_cb);
 
-void
-rut_button_set_size (RutObject *self,
-                     float width,
-                     float height);
+void rut_button_set_size(rut_object_t *self, float width, float height);
 
-void
-rut_button_get_size (RutObject *self,
-                     float *width,
-                     float *height);
+void rut_button_get_size(rut_object_t *self, float *width, float *height);
 
 #endif /* __RUT_BUTTON_H__ */

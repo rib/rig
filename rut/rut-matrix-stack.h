@@ -33,7 +33,6 @@
 
 #include "rut-context.h"
 
-
 /**
  * SECTION:rut-matrix-stack
  * @short_description: Functions for efficiently tracking many
@@ -49,7 +48,7 @@
  * organized in a scenegraph for example then using a separate
  * #cg_matrix_t for each object may not be the most efficient way.
  *
- * A #RutMatrixStack enables applications to track lots of
+ * A #rut_matrix_stack_t enables applications to track lots of
  * transformations that are related to each other in some kind of
  * hierarchy.  In a scenegraph for example if you want to know how to
  * transform a particular node then you usually have to walk up
@@ -57,12 +56,12 @@
  * finally applying the transform of the node itself. In this model
  * things are grouped together spatially according to their ancestry
  * and all siblings with the same parent share the same initial
- * transformation. The #RutMatrixStack API is suited to tracking lots
+ * transformation. The #rut_matrix_stack_t API is suited to tracking lots
  * of transformations that fit this kind of model.
  *
  * Compared to using the #cg_matrix_t api directly to track many
  * related transforms, these can be some advantages to using a
- * #RutMatrixStack:
+ * #rut_matrix_stack_t:
  * <itemizedlist>
  *   <listitem>Faster equality comparisons of transformations</listitem>
  *   <listitem>Efficient comparisons of the differences between arbitrary
@@ -72,9 +71,9 @@
  *   <listitem>Can be more space efficient (not always though)</listitem>
  * </itemizedlist>
  *
- * For reference (to give an idea of when a #RutMatrixStack can
+ * For reference (to give an idea of when a #rut_matrix_stack_t can
  * provide a space saving) a #cg_matrix_t can be expected to take 72
- * bytes whereas a single #RutMatrixEntry in a #RutMatrixStack is
+ * bytes whereas a single #rut_matrix_entry_t in a #rut_matrix_stack_t is
  * currently around 32 bytes on a 32bit CPU or 36 bytes on a 64bit
  * CPU. An entry is needed for each individual operation applied to
  * the stack (such as rotate, scale, translate) so if most of your
@@ -89,19 +88,19 @@
  */
 
 /**
- * RutMatrixStack:
+ * rut_matrix_stack_t:
  *
  * Tracks your current position within a hierarchy and lets you build
  * up a graph of transformations as you traverse through a hierarchy
  * such as a scenegraph.
  *
- * A #RutMatrixStack always maintains a reference to a single
+ * A #rut_matrix_stack_t always maintains a reference to a single
  * transformation at any point in time, representing the
  * transformation at the current position in the hierarchy. You can
  * get a reference to the current transformation by calling
  * rut_matrix_stack_get_entry().
  *
- * When a #RutMatrixStack is first created with
+ * When a #rut_matrix_stack_t is first created with
  * rut_matrix_stack_new() then it is conceptually positioned at the
  * root of your hierarchy and the current transformation simply
  * represents an identity transformation.
@@ -113,242 +112,222 @@
  *
  * At any time you can apply a set of operations, such as "rotate",
  * "scale", "translate" on top of the current transformation of a
- * #RutMatrixStack using functions such as
+ * #rut_matrix_stack_t using functions such as
  * rut_matrix_stack_rotate(), rut_matrix_stack_scale() and
  * rut_matrix_stack_translate(). These operations will derive a new
  * current transformation and will never affect a transformation
  * that you have referenced using rut_matrix_stack_get_entry().
  *
- * Internally applying operations to a #RutMatrixStack builds up a
- * graph of #RutMatrixEntry structures which each represent a single
+ * Internally applying operations to a #rut_matrix_stack_t builds up a
+ * graph of #rut_matrix_entry_t structures which each represent a single
  * immutable transform.
  */
-typedef struct _RutMatrixStack RutMatrixStack;
+typedef struct _rut_matrix_stack_t rut_matrix_stack_t;
 
-extern RutType rut_matrix_stack_type;
+extern rut_type_t rut_matrix_stack_type;
 
 /**
- * RutMatrixEntry:
+ * rut_matrix_entry_t:
  *
  * Represents a single immutable transformation that was retrieved
- * from a #RutMatrixStack using rut_matrix_stack_get_entry().
+ * from a #rut_matrix_stack_t using rut_matrix_stack_get_entry().
  *
- * Internally a #RutMatrixEntry represents a single matrix
+ * Internally a #rut_matrix_entry_t represents a single matrix
  * operation (such as "rotate", "scale", "translate") which is applied
  * to the transform of a single parent entry.
  *
- * Using the #RutMatrixStack api effectively builds up a graph of
- * these immutable #RutMatrixEntry structures whereby operations
+ * Using the #rut_matrix_stack_t api effectively builds up a graph of
+ * these immutable #rut_matrix_entry_t structures whereby operations
  * that can be shared between multiple transformations will result
- * in shared #RutMatrixEntry nodes in the graph.
+ * in shared #rut_matrix_entry_t nodes in the graph.
  *
- * When a #RutMatrixStack is first created it references one
- * #RutMatrixEntry that represents a single "load identity"
+ * When a #rut_matrix_stack_t is first created it references one
+ * #rut_matrix_entry_t that represents a single "load identity"
  * operation. This serves as the root entry and all operations
  * that are then applied to the stack will extend the graph
  * starting from this root "load identity" entry.
  *
- * Given the typical usage model for a #RutMatrixStack and the way
+ * Given the typical usage model for a #rut_matrix_stack_t and the way
  * the entries are built up while traversing a scenegraph then in most
  * cases where an application is interested in comparing two
  * transformations for equality then it is enough to simply compare
- * two #RutMatrixEntry pointers directly. Technically this can lead
+ * two #rut_matrix_entry_t pointers directly. Technically this can lead
  * to false negatives that could be identified with a deeper
  * comparison but often these false negatives are unlikely and
  * don't matter anyway so this enables extremely cheap comparisons.
  *
- * <note>#RutMatrixEntry<!-- -->s are reference counted using
+ * <note>#rut_matrix_entry_t<!-- -->s are reference counted using
  * rut_matrix_entry_ref() and rut_matrix_entry_unref() not with
  * rut_object_ref() and rut_object_unref().</note>
  */
-typedef struct _RutMatrixEntry RutMatrixEntry;
+typedef struct _rut_matrix_entry_t rut_matrix_entry_t;
 
-typedef enum _cg_matrix_op_t
-{
-  RUT_MATRIX_OP_LOAD_IDENTITY,
-  RUT_MATRIX_OP_TRANSLATE,
-  RUT_MATRIX_OP_ROTATE,
-  RUT_MATRIX_OP_ROTATE_QUATERNION,
-  RUT_MATRIX_OP_ROTATE_EULER,
-  RUT_MATRIX_OP_SCALE,
-  RUT_MATRIX_OP_MULTIPLY,
-  RUT_MATRIX_OP_LOAD,
-  RUT_MATRIX_OP_SAVE,
+typedef enum _cg_matrix_op_t {
+    RUT_MATRIX_OP_LOAD_IDENTITY,
+    RUT_MATRIX_OP_TRANSLATE,
+    RUT_MATRIX_OP_ROTATE,
+    RUT_MATRIX_OP_ROTATE_QUATERNION,
+    RUT_MATRIX_OP_ROTATE_EULER,
+    RUT_MATRIX_OP_SCALE,
+    RUT_MATRIX_OP_MULTIPLY,
+    RUT_MATRIX_OP_LOAD,
+    RUT_MATRIX_OP_SAVE,
 } cg_matrix_op_t;
 
-struct _RutMatrixEntry
-{
-  RutMatrixEntry *parent;
-  cg_matrix_op_t op;
-  unsigned int ref_count;
+struct _rut_matrix_entry_t {
+    rut_matrix_entry_t *parent;
+    cg_matrix_op_t op;
+    unsigned int ref_count;
 
 #ifdef RUT_DEBUG_ENABLED
-  /* used for performance tracing */
-  int composite_gets;
+    /* used for performance tracing */
+    int composite_gets;
 #endif
 };
 
-typedef struct _RutMatrixEntryTranslate
-{
-  RutMatrixEntry _parent_data;
+typedef struct _rut_matrix_entry_translate_t {
+    rut_matrix_entry_t _parent_data;
 
-  float x;
-  float y;
-  float z;
+    float x;
+    float y;
+    float z;
 
-} RutMatrixEntryTranslate;
+} rut_matrix_entry_translate_t;
 
-typedef struct _RutMatrixEntryRotate
-{
-  RutMatrixEntry _parent_data;
+typedef struct _rut_matrix_entry_rotate_t {
+    rut_matrix_entry_t _parent_data;
 
-  float angle;
-  float x;
-  float y;
-  float z;
+    float angle;
+    float x;
+    float y;
+    float z;
 
-} RutMatrixEntryRotate;
+} rut_matrix_entry_rotate_t;
 
-typedef struct _RutMatrixEntryRotateEuler
-{
-  RutMatrixEntry _parent_data;
+typedef struct _rut_matrix_entry_rotate_euler_t {
+    rut_matrix_entry_t _parent_data;
 
-  /* This doesn't store an actual cg_euler_t in order to avoid the
-   * padding */
-  float heading;
-  float pitch;
-  float roll;
-} RutMatrixEntryRotateEuler;
+    /* This doesn't store an actual cg_euler_t in order to avoid the
+     * padding */
+    float heading;
+    float pitch;
+    float roll;
+} rut_matrix_entry_rotate_euler_t;
 
-typedef struct _RutMatrixEntryRotateQuaternion
-{
-  RutMatrixEntry _parent_data;
+typedef struct _rut_matrix_entry_rotate_quaternion_t {
+    rut_matrix_entry_t _parent_data;
 
-  /* This doesn't store an actual cg_quaternion_t in order to avoid the
-   * padding */
-  float values[4];
-} RutMatrixEntryRotateQuaternion;
+    /* This doesn't store an actual cg_quaternion_t in order to avoid the
+     * padding */
+    float values[4];
+} rut_matrix_entry_rotate_quaternion_t;
 
-typedef struct _RutMatrixEntryScale
-{
-  RutMatrixEntry _parent_data;
+typedef struct _rut_matrix_entry_scale_t {
+    rut_matrix_entry_t _parent_data;
 
-  float x;
-  float y;
-  float z;
+    float x;
+    float y;
+    float z;
 
-} RutMatrixEntryScale;
+} rut_matrix_entry_scale_t;
 
-typedef struct _RutMatrixEntryMultiply
-{
-  RutMatrixEntry _parent_data;
+typedef struct _rut_matrix_entry_multiply_t {
+    rut_matrix_entry_t _parent_data;
 
-  cg_matrix_t *matrix;
+    cg_matrix_t *matrix;
 
-} RutMatrixEntryMultiply;
+} rut_matrix_entry_multiply_t;
 
-typedef struct _RutMatrixEntryLoad
-{
-  RutMatrixEntry _parent_data;
+typedef struct _rut_matrix_entry_load_t {
+    rut_matrix_entry_t _parent_data;
 
-  cg_matrix_t *matrix;
+    cg_matrix_t *matrix;
 
-} RutMatrixEntryLoad;
+} rut_matrix_entry_load_t;
 
-typedef struct _RutMatrixEntrySave
-{
-  RutMatrixEntry _parent_data;
+typedef struct _rut_matrix_entry_save_t {
+    rut_matrix_entry_t _parent_data;
 
-  cg_matrix_t *cache;
-  bool cache_valid;
+    cg_matrix_t *cache;
+    bool cache_valid;
 
-} RutMatrixEntrySave;
+} rut_matrix_entry_save_t;
 
-typedef union _RutMatrixEntryFull
-{
-  RutMatrixEntry any;
-  RutMatrixEntryTranslate translate;
-  RutMatrixEntryRotate rotate;
-  RutMatrixEntryRotateEuler rotate_euler;
-  RutMatrixEntryRotateQuaternion rotate_quaternion;
-  RutMatrixEntryScale scale;
-  RutMatrixEntryMultiply multiply;
-  RutMatrixEntryLoad load;
-  RutMatrixEntrySave save;
-} RutMatrixEntryFull;
+typedef union _rut_matrix_entry_full_t {
+    rut_matrix_entry_t any;
+    rut_matrix_entry_translate_t translate;
+    rut_matrix_entry_rotate_t rotate;
+    rut_matrix_entry_rotate_euler_t rotate_euler;
+    rut_matrix_entry_rotate_quaternion_t rotate_quaternion;
+    rut_matrix_entry_scale_t scale;
+    rut_matrix_entry_multiply_t multiply;
+    rut_matrix_entry_load_t load;
+    rut_matrix_entry_save_t save;
+} rut_matrix_entry_full_t;
 
-struct _RutMatrixStack
-{
-  RutObjectBase _base;
+struct _rut_matrix_stack_t {
+    rut_object_base_t _base;
 
-  RutContext *context;
+    rut_context_t *context;
 
-  RutMatrixEntry *last_entry;
+    rut_matrix_entry_t *last_entry;
 };
 
-typedef struct _RutMatrixEntryCache
-{
-  RutMatrixEntry *entry;
-  bool flushed_identity;
-  bool flipped;
-} RutMatrixEntryCache;
+typedef struct _rut_matrix_entry_cache_t {
+    rut_matrix_entry_t *entry;
+    bool flushed_identity;
+    bool flipped;
+} rut_matrix_entry_cache_t;
 
-void
-_rut_matrix_entry_identity_init (RutMatrixEntry *entry);
+void _rut_matrix_entry_identity_init(rut_matrix_entry_t *entry);
 
 typedef enum {
-  RUT_MATRIX_MODELVIEW,
-  RUT_MATRIX_PROJECTION,
-  RUT_MATRIX_TEXTURE
-} cg_matrix_tMode;
+    RUT_MATRIX_MODELVIEW,
+    RUT_MATRIX_PROJECTION,
+    RUT_MATRIX_TEXTURE
+} rut_matrix_mode_t;
 
-void
-_rut_matrix_entry_cache_init (RutMatrixEntryCache *cache);
+void _rut_matrix_entry_cache_init(rut_matrix_entry_cache_t *cache);
 
-bool
-_rut_matrix_entry_cache_maybe_update (RutMatrixEntryCache *cache,
-                                      RutMatrixEntry *entry,
-                                      bool flip);
+bool _rut_matrix_entry_cache_maybe_update(rut_matrix_entry_cache_t *cache,
+                                          rut_matrix_entry_t *entry,
+                                          bool flip);
 
-void
-_rut_matrix_entry_cache_destroy (RutMatrixEntryCache *cache);
-
-
+void _rut_matrix_entry_cache_destroy(rut_matrix_entry_cache_t *cache);
 
 /**
  * rut_matrix_stack_new:
- * @ctx: A #RutContext
+ * @ctx: A #rut_context_t
  *
- * Allocates a new #RutMatrixStack that can be used to build up
+ * Allocates a new #rut_matrix_stack_t that can be used to build up
  * transformations relating to objects in a scenegraph like hierarchy.
- * (See the description of #RutMatrixStack and #RutMatrixEntry for
+ * (See the description of #rut_matrix_stack_t and #rut_matrix_entry_t for
  * more details of what a matrix stack is best suited for)
  *
- * When a #RutMatrixStack is first allocated it is conceptually
+ * When a #rut_matrix_stack_t is first allocated it is conceptually
  * positioned at the root of your scenegraph hierarchy. As you
  * traverse your scenegraph then you should call
  * rut_matrix_stack_push() whenever you move down a level and
  * rut_matrix_stack_pop() whenever you move back up a level towards
  * the root.
  *
- * Once you have allocated a #RutMatrixStack you can get a reference
+ * Once you have allocated a #rut_matrix_stack_t you can get a reference
  * to the current transformation for the current position in the
  * hierarchy by calling rut_matrix_stack_get_entry().
  *
- * Once you have allocated a #RutMatrixStack you can apply operations
+ * Once you have allocated a #rut_matrix_stack_t you can apply operations
  * such as rotate, scale and translate to modify the current transform
  * for the current position in the hierarchy by calling
  * rut_matrix_stack_rotate(), rut_matrix_stack_scale() and
  * rut_matrix_stack_translate().
  *
- * Return value: (transfer full): A newly allocated #RutMatrixStack
+ * Return value: (transfer full): A newly allocated #rut_matrix_stack_t
  */
-RutMatrixStack *
-rut_matrix_stack_new (RutContext *ctx);
+rut_matrix_stack_t *rut_matrix_stack_new(rut_context_t *ctx);
 
 /**
  * rut_matrix_stack_push:
- * @stack: A #RutMatrixStack
+ * @stack: A #rut_matrix_stack_t
  *
  * Saves the current transform and starts a new transform that derives
  * from the current transform.
@@ -358,12 +337,11 @@ rut_matrix_stack_new (RutContext *ctx);
  * called when going back up one layer to restore the previous
  * transform of an ancestor.
  */
-void
-rut_matrix_stack_push (RutMatrixStack *stack);
+void rut_matrix_stack_push(rut_matrix_stack_t *stack);
 
 /**
  * rut_matrix_stack_pop:
- * @stack: A #RutMatrixStack
+ * @stack: A #rut_matrix_stack_t
  *
  * Restores the previous transform that was last saved by calling
  * rut_matrix_stack_push().
@@ -371,21 +349,19 @@ rut_matrix_stack_push (RutMatrixStack *stack);
  * This is usually called while traversing a scenegraph whenever you
  * return up one level in the graph towards the root node.
  */
-void
-rut_matrix_stack_pop (RutMatrixStack *stack);
+void rut_matrix_stack_pop(rut_matrix_stack_t *stack);
 
 /**
  * rut_matrix_stack_load_identity:
- * @stack: A #RutMatrixStack
+ * @stack: A #rut_matrix_stack_t
  *
  * Resets the current matrix to the identity matrix.
  */
-void
-rut_matrix_stack_load_identity (RutMatrixStack *stack);
+void rut_matrix_stack_load_identity(rut_matrix_stack_t *stack);
 
 /**
  * rut_matrix_stack_scale:
- * @stack: A #RutMatrixStack
+ * @stack: A #rut_matrix_stack_t
  * @x: Amount to scale along the x-axis
  * @y: Amount to scale along the y-axis
  * @z: Amount to scale along the z-axis
@@ -394,14 +370,11 @@ rut_matrix_stack_load_identity (RutMatrixStack *stack);
  * axes by the given values.
  */
 void
-rut_matrix_stack_scale (RutMatrixStack *stack,
-                         float x,
-                         float y,
-                         float z);
+rut_matrix_stack_scale(rut_matrix_stack_t *stack, float x, float y, float z);
 
 /**
  * rut_matrix_stack_translate:
- * @stack: A #RutMatrixStack
+ * @stack: A #rut_matrix_stack_t
  * @x: Distance to translate along the x-axis
  * @y: Distance to translate along the y-axis
  * @z: Distance to translate along the z-axis
@@ -409,15 +382,14 @@ rut_matrix_stack_scale (RutMatrixStack *stack,
  * Multiplies the current matrix by one that translates along all
  * three axes according to the given values.
  */
-void
-rut_matrix_stack_translate (RutMatrixStack *stack,
-                             float x,
-                             float y,
-                             float z);
+void rut_matrix_stack_translate(rut_matrix_stack_t *stack,
+                                float x,
+                                float y,
+                                float z);
 
 /**
  * rut_matrix_stack_rotate:
- * @stack: A #RutMatrixStack
+ * @stack: A #rut_matrix_stack_t
  * @angle: Angle in degrees to rotate.
  * @x: X-component of vertex to rotate around.
  * @y: Y-component of vertex to rotate around.
@@ -429,51 +401,44 @@ rut_matrix_stack_translate (RutMatrixStack *stack,
  * the axis-vector (0, 0, 1) causes a small counter-clockwise
  * rotation.
  */
-void
-rut_matrix_stack_rotate (RutMatrixStack *stack,
-                         float angle,
-                         float x,
-                         float y,
-                         float z);
+void rut_matrix_stack_rotate(
+    rut_matrix_stack_t *stack, float angle, float x, float y, float z);
 
 /**
  * rut_matrix_stack_rotate_quaternion:
- * @stack: A #RutMatrixStack
+ * @stack: A #rut_matrix_stack_t
  * @quaternion: A #cg_quaternion_t
  *
  * Multiplies the current matrix by one that rotates according to the
  * rotation described by @quaternion.
  */
-void
-rut_matrix_stack_rotate_quaternion (RutMatrixStack *stack,
-                                    const cg_quaternion_t *quaternion);
+void rut_matrix_stack_rotate_quaternion(rut_matrix_stack_t *stack,
+                                        const cg_quaternion_t *quaternion);
 
 /**
  * rut_matrix_stack_rotate_euler:
- * @stack: A #RutMatrixStack
+ * @stack: A #rut_matrix_stack_t
  * @euler: A #cg_euler_t
  *
  * Multiplies the current matrix by one that rotates according to the
  * rotation described by @euler.
  */
-void
-rut_matrix_stack_rotate_euler (RutMatrixStack *stack,
-                               const cg_euler_t *euler);
+void rut_matrix_stack_rotate_euler(rut_matrix_stack_t *stack,
+                                   const cg_euler_t *euler);
 
 /**
  * rut_matrix_stack_multiply:
- * @stack: A #RutMatrixStack
+ * @stack: A #rut_matrix_stack_t
  * @matrix: the matrix to multiply with the current model-view
  *
  * Multiplies the current matrix by the given matrix.
  */
-void
-rut_matrix_stack_multiply (RutMatrixStack *stack,
-                           const cg_matrix_t *matrix);
+void rut_matrix_stack_multiply(rut_matrix_stack_t *stack,
+                               const cg_matrix_t *matrix);
 
 /**
  * rut_matrix_stack_frustum:
- * @stack: A #RutMatrixStack
+ * @stack: A #rut_matrix_stack_t
  * @left: X position of the left clipping plane where it
  *   intersects the near clipping plane
  * @right: X position of the right clipping plane where it
@@ -489,18 +454,17 @@ rut_matrix_stack_multiply (RutMatrixStack *stack,
  * viewing frustum defined by 4 side clip planes that all cross
  * through the origin and 2 near and far clip planes.
  */
-void
-rut_matrix_stack_frustum (RutMatrixStack *stack,
-                          float left,
-                          float right,
-                          float bottom,
-                          float top,
-                          float z_near,
-                          float z_far);
+void rut_matrix_stack_frustum(rut_matrix_stack_t *stack,
+                              float left,
+                              float right,
+                              float bottom,
+                              float top,
+                              float z_near,
+                              float z_far);
 
 /**
  * rut_matrix_stack_perspective:
- * @stack: A #RutMatrixStack
+ * @stack: A #rut_matrix_stack_t
  * @fov_y: Vertical field of view angle in degrees.
  * @aspect: The (width over height) aspect ratio for display
  * @z_near: The distance to the near clipping plane (Must be positive,
@@ -515,16 +479,15 @@ rut_matrix_stack_frustum (RutMatrixStack *stack,
  * since there wont be enough precision to identify the depth of
  * objects near to each other.</note>
  */
-void
-rut_matrix_stack_perspective (RutMatrixStack *stack,
-                              float fov_y,
-                              float aspect,
-                              float z_near,
-                              float z_far);
+void rut_matrix_stack_perspective(rut_matrix_stack_t *stack,
+                                  float fov_y,
+                                  float aspect,
+                                  float z_near,
+                                  float z_far);
 
 /**
  * rut_matrix_stack_orthographic:
- * @stack: A #RutMatrixStack
+ * @stack: A #rut_matrix_stack_t
  * @x_1: The x coordinate for the first vertical clipping plane
  * @y_1: The y coordinate for the first horizontal clipping plane
  * @x_2: The x coordinate for the second vertical clipping plane
@@ -538,18 +501,17 @@ rut_matrix_stack_perspective (RutMatrixStack *stack,
  *
  * Replaces the current matrix with an orthographic projection matrix.
  */
-void
-rut_matrix_stack_orthographic (RutMatrixStack *stack,
-                               float x_1,
-                               float y_1,
-                               float x_2,
-                               float y_2,
-                               float near,
-                               float far);
+void rut_matrix_stack_orthographic(rut_matrix_stack_t *stack,
+                                   float x_1,
+                                   float y_1,
+                                   float x_2,
+                                   float y_2,
+                                   float near,
+                                   float far);
 
 /**
  * rut_matrix_stack_get_inverse:
- * @stack: A #RutMatrixStack
+ * @stack: A #rut_matrix_stack_t
  * @inverse: (out): The destination for a 4x4 inverse transformation matrix
  *
  * Gets the inverse transform of the current matrix and uses it to
@@ -559,34 +521,32 @@ rut_matrix_stack_orthographic (RutMatrixStack *stack,
  *   for degenerate transformations that can't be inverted (in this case the
  *   @inverse matrix will simply be initialized with the identity matrix)
  */
-bool
-rut_matrix_stack_get_inverse (RutMatrixStack *stack,
-                              cg_matrix_t *inverse);
+bool rut_matrix_stack_get_inverse(rut_matrix_stack_t *stack,
+                                  cg_matrix_t *inverse);
 
 /**
  * rut_matrix_stack_get_entry:
- * @stack: A #RutMatrixStack
+ * @stack: A #rut_matrix_stack_t
  *
  * Gets a reference to the current transform represented by a
- * #RutMatrixEntry pointer.
+ * #rut_matrix_entry_t pointer.
  *
- * <note>The transform represented by a #RutMatrixEntry is
+ * <note>The transform represented by a #rut_matrix_entry_t is
  * immutable.</note>
  *
- * <note>#RutMatrixEntry<!-- -->s are reference counted using
+ * <note>#rut_matrix_entry_t<!-- -->s are reference counted using
  * rut_matrix_entry_ref() and rut_matrix_entry_unref() and you
  * should call rut_matrix_entry_unref() when you are finished with
  * and entry you get via rut_matrix_stack_get_entry().</note>
  *
- * Return value: (transfer none): A pointer to the #RutMatrixEntry
+ * Return value: (transfer none): A pointer to the #rut_matrix_entry_t
  *               representing the current matrix stack transform.
  */
-RutMatrixEntry *
-rut_matrix_stack_get_entry (RutMatrixStack *stack);
+rut_matrix_entry_t *rut_matrix_stack_get_entry(rut_matrix_stack_t *stack);
 
 /**
  * rut_matrix_stack_get:
- * @stack: A #RutMatrixStack
+ * @stack: A #rut_matrix_stack_t
  * @matrix: (out): The potential destination for the current matrix
  *
  * Resolves the current @stack transform into a #cg_matrix_t by
@@ -610,13 +570,12 @@ rut_matrix_stack_get_entry (RutMatrixStack *stack);
  *               and in that case @matrix will be initialized with
  *               the value of the current transform.
  */
-cg_matrix_t *
-rut_matrix_stack_get (RutMatrixStack *stack,
-                      cg_matrix_t *matrix);
+cg_matrix_t *rut_matrix_stack_get(rut_matrix_stack_t *stack,
+                                  cg_matrix_t *matrix);
 
 /**
  * rut_matrix_entry_get:
- * @entry: A #RutMatrixEntry
+ * @entry: A #rut_matrix_entry_t
  * @matrix: (out): The potential destination for the transform as
  *                 a matrix
  *
@@ -641,13 +600,12 @@ rut_matrix_stack_get (RutMatrixStack *stack,
  *               and in that case @matrix will be initialized with
  *               the effective transform represented by @entry.
  */
-cg_matrix_t *
-rut_matrix_entry_get (RutMatrixEntry *entry,
-                      cg_matrix_t *matrix);
+cg_matrix_t *rut_matrix_entry_get(rut_matrix_entry_t *entry,
+                                  cg_matrix_t *matrix);
 
 /**
  * rut_matrix_stack_set:
- * @stack: A #RutMatrixStack
+ * @stack: A #rut_matrix_stack_t
  * @matrix: A #cg_matrix_t replace the current matrix value with
  *
  * Replaces the current @stack matrix value with the value of @matrix.
@@ -655,9 +613,7 @@ rut_matrix_entry_get (RutMatrixEntry *entry,
  * since the last time rut_matrix_stack_push() was called or since
  * the stack was initialized.
  */
-void
-rut_matrix_stack_set (RutMatrixStack *stack,
-                      const cg_matrix_t *matrix);
+void rut_matrix_stack_set(rut_matrix_stack_t *stack, const cg_matrix_t *matrix);
 
 /**
  * rut_matrix_entry_calculate_translation:
@@ -678,16 +634,15 @@ rut_matrix_stack_set (RutMatrixStack *stack,
  *                @entry0 and the transform of @entry1 is a translation,
  *                otherwise %false.
  */
-bool
-rut_matrix_entry_calculate_translation (RutMatrixEntry *entry0,
-                                        RutMatrixEntry *entry1,
-                                        float *x,
-                                        float *y,
-                                        float *z);
+bool rut_matrix_entry_calculate_translation(rut_matrix_entry_t *entry0,
+                                            rut_matrix_entry_t *entry1,
+                                            float *x,
+                                            float *y,
+                                            float *z);
 
 /**
  * rut_matrix_entry_is_identity:
- * @entry: A #RutMatrixEntry
+ * @entry: A #rut_matrix_entry_t
  *
  * Determines whether @entry is known to represent an identity
  * transform.
@@ -699,15 +654,14 @@ rut_matrix_entry_calculate_translation (RutMatrixEntry *entry0,
  * Return value: %true if @entry is definitely an identity transform,
  *               otherwise %false.
  */
-bool
-rut_matrix_entry_is_identity (RutMatrixEntry *entry);
+bool rut_matrix_entry_is_identity(rut_matrix_entry_t *entry);
 
 /**
  * rut_matrix_entry_equal:
- * @entry0: The first #RutMatrixEntry to compare
- * @entry1: A second #RutMatrixEntry to compare
+ * @entry0: The first #rut_matrix_entry_t to compare
+ * @entry1: A second #rut_matrix_entry_t to compare
  *
- * Compares two arbitrary #RutMatrixEntry transforms for equality
+ * Compares two arbitrary #rut_matrix_entry_t transforms for equality
  * returning %true if they are equal or %false otherwise.
  *
  * <note>In many cases it is unnecessary to use this api and instead
@@ -717,23 +671,21 @@ rut_matrix_entry_is_identity (RutMatrixEntry *entry);
  * Return value: %true if @entry0 represents the same transform as
  *               @entry1, otherwise %false.
  */
-bool
-rut_matrix_entry_equal (RutMatrixEntry *entry0,
-                        RutMatrixEntry *entry1);
+bool rut_matrix_entry_equal(rut_matrix_entry_t *entry0,
+                            rut_matrix_entry_t *entry1);
 
 /**
  * rut_debug_matrix_entry_print:
- * @entry: A #RutMatrixEntry
+ * @entry: A #rut_matrix_entry_t
  *
  * Allows visualizing the operations that build up the given @entry
  * for debugging purposes by printing to stdout.
  */
-void
-rut_debug_matrix_entry_print (RutMatrixEntry *entry);
+void rut_debug_matrix_entry_print(rut_matrix_entry_t *entry);
 
 /**
  * rut_matrix_entry_ref:
- * @entry: A #RutMatrixEntry
+ * @entry: A #rut_matrix_entry_t
  *
  * Takes a reference on the given @entry to ensure the @entry stays
  * alive and remains valid. When you are finished with the @entry then
@@ -742,18 +694,16 @@ rut_debug_matrix_entry_print (RutMatrixEntry *entry);
  * It is an error to pass an @entry pointer to rut_object_ref() and
  * rut_object_unref()
  */
-RutMatrixEntry *
-rut_matrix_entry_ref (RutMatrixEntry *entry);
+rut_matrix_entry_t *rut_matrix_entry_ref(rut_matrix_entry_t *entry);
 
 /**
  * rut_matrix_entry_unref:
- * @entry: A #RutMatrixEntry
+ * @entry: A #rut_matrix_entry_t
  *
  * Releases a reference on @entry either taken by calling
  * rut_matrix_entry_unref() or to release the reference given when
  * calling rut_matrix_stack_get_entry().
  */
-void
-rut_matrix_entry_unref (RutMatrixEntry *entry);
+void rut_matrix_entry_unref(rut_matrix_entry_t *entry);
 
 #endif /* _RUT_MATRIX_STACK_H_ */

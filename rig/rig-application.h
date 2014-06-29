@@ -35,52 +35,39 @@
 
 G_BEGIN_DECLS
 
-#define RIG_TYPE_APPLICATION                                            \
-  (rig_application_get_type())
-#define RIG_APPLICATION(obj)                                            \
-  (G_TYPE_CHECK_INSTANCE_CAST ((obj),                                   \
-                               RIG_TYPE_APPLICATION,                    \
-                               RigApplication))
-#define RIG_APPLICATION_CLASS(klass)                                    \
-  (G_TYPE_CHECK_CLASS_CAST ((klass),                                    \
-                            RIG_TYPE_APPLICATION,                       \
-                            RigApplicationClass))
-#define RIG_IS_APPLICATION(obj)                                         \
-  (G_TYPE_CHECK_INSTANCE_TYPE ((obj),                                   \
-                               RIG_TYPE_APPLICATION))
-#define RIG_IS_APPLICATION_CLASS(klass)                                 \
-  (G_TYPE_CHECK_CLASS_TYPE ((klass),                                    \
-                            RIG_TYPE_APPLICATION))
-#define RIG_APPLICATION_GET_CLASS(obj)                                  \
-  (G_TYPE_INSTANCE_GET_CLASS ((obj),                                    \
-                              RIG_APPLICATION,                          \
-                              RigApplicationClass))
+#define RIG_TYPE_APPLICATION (rig_application_get_type())
+#define RIG_APPLICATION(obj)                                                   \
+    (G_TYPE_CHECK_INSTANCE_CAST((obj), RIG_TYPE_APPLICATION, rig_application_t))
+#define RIG_APPLICATION_CLASS(klass)                                           \
+    (G_TYPE_CHECK_CLASS_CAST(                                                  \
+         (klass), RIG_TYPE_APPLICATION, rig_application_class_t))
+#define RIG_IS_APPLICATION(obj)                                                \
+    (G_TYPE_CHECK_INSTANCE_TYPE((obj), RIG_TYPE_APPLICATION))
+#define RIG_IS_APPLICATION_CLASS(klass)                                        \
+    (G_TYPE_CHECK_CLASS_TYPE((klass), RIG_TYPE_APPLICATION))
+#define RIG_APPLICATION_GET_CLASS(obj)                                         \
+    (G_TYPE_INSTANCE_GET_CLASS((obj), RIG_APPLICATION, rig_application_class_t))
 
-typedef struct _RigApplication RigApplication;
-typedef struct _RigApplicationClass RigApplicationClass;
-typedef struct _RigApplicationPrivate RigApplicationPrivate;
+typedef struct _rig_application_t rig_application_t;
+typedef struct _rig_application_class_t rig_application_class_t;
+typedef struct _rig_application_private_t rig_application_private_t;
 
-struct _RigApplicationClass
-{
-  GApplicationClass parent_class;
+struct _rig_application_class_t {
+    GApplicationClass parent_class;
 };
 
-struct _RigApplication
-{
-  GApplication parent;
+struct _rig_application_t {
+    GApplication parent;
 
-  RigApplicationPrivate *priv;
+    rig_application_private_t *priv;
 };
 
-GType
-rig_application_get_type (void) G_GNUC_CONST;
+GType rig_application_get_type(void) G_GNUC_CONST;
 
-RigApplication *
-rig_application_new (RigEngine *engine);
+rig_application_t *rig_application_new(rig_engine_t *engine);
 
-void
-rig_application_add_onscreen (RigApplication *app,
-                              cg_onscreen_t *onscreen);
+void rig_application_add_onscreen(rig_application_t *app,
+                                  cg_onscreen_t *onscreen);
 
 G_END_DECLS
 

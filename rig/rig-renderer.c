@@ -47,40 +47,34 @@
 #include "components/rig-pointalism-grid.h"
 #include "components/rig-shape.h"
 
-struct _RigRenderer
-{
-  RutObjectBase _base;
+struct _rig_renderer_t {
+    rut_object_base_t _base;
 
-  c_array_t *journal;
+    c_array_t *journal;
 };
 
-typedef enum _CacheSlot
-{
-  CACHE_SLOT_SHADOW,
-  CACHE_SLOT_COLOR_BLENDED,
-  CACHE_SLOT_COLOR_UNBLENDED,
-  CACHE_SLOT_HAIR_FINS_BLENDED,
-  CACHE_SLOT_HAIR_FINS_UNBLENDED,
-} CacheSlot;
+typedef enum _cache_slot_t {
+    CACHE_SLOT_SHADOW,
+    CACHE_SLOT_COLOR_BLENDED,
+    CACHE_SLOT_COLOR_UNBLENDED,
+    CACHE_SLOT_HAIR_FINS_BLENDED,
+    CACHE_SLOT_HAIR_FINS_UNBLENDED,
+} cache_slot_t;
 
-typedef enum _SourceType
-{
-  SOURCE_TYPE_COLOR,
-  SOURCE_TYPE_ALPHA_MASK,
-  SOURCE_TYPE_NORMAL_MAP
-} SourceType;
+typedef enum _source_type_t {
+    SOURCE_TYPE_COLOR,
+    SOURCE_TYPE_ALPHA_MASK,
+    SOURCE_TYPE_NORMAL_MAP
+} source_type_t;
 
-typedef struct _RigJournalEntry
-{
-  RigEntity *entity;
-  cg_matrix_t matrix;
-} RigJournalEntry;
+typedef struct _rig_journal_entry_t {
+    rig_entity_t *entity;
+    cg_matrix_t matrix;
+} rig_journal_entry_t;
 
-typedef enum _GetPipelineFlags
-{
-  GET_PIPELINE_FLAG_N_FLAGS
-} GetPipelineFlags;
-
+typedef enum _get_pipeline_flags_t {
+    GET_PIPELINE_FLAG_N_FLAGS
+} get_pipeline_flags_t;
 
 /* In the shaders, any alpha value greater than or equal to this is
  * considered to be fully opaque. We can't just compare for equality
@@ -111,360 +105,349 @@ typedef enum _GetPipelineFlags
 #define N_IMAGE_SOURCE_CACHE_SLOTS 3
 #define N_PRIMITIVE_CACHE_SLOTS 1
 
-typedef struct _RigRendererPriv
-{
-  RigRenderer *renderer;
+typedef struct _rig_renderer_priv_t {
+    rig_renderer_t *renderer;
 
-  cg_pipeline_t *pipeline_caches[N_PIPELINE_CACHE_SLOTS];
-  RigImageSource *image_source_caches[N_IMAGE_SOURCE_CACHE_SLOTS];
-  cg_primitive_t *primitive_caches[N_PRIMITIVE_CACHE_SLOTS];
+    cg_pipeline_t *pipeline_caches[N_PIPELINE_CACHE_SLOTS];
+    rig_image_source_t *image_source_caches[N_IMAGE_SOURCE_CACHE_SLOTS];
+    cg_primitive_t *primitive_caches[N_PRIMITIVE_CACHE_SLOTS];
 
-  RutClosure *pointalism_grid_update_closure;
-  RutClosure *preferred_size_closure;
+    rut_closure_t *pointalism_grid_update_closure;
+    rut_closure_t *preferred_size_closure;
 
-  /* FIXME: these are mutually exclusive, so collapse into one pointer */
-  RutClosure *nine_slice_closure;
-  RutClosure *diamond_closure;
-  RutClosure *reshaped_closure;
-} RigRendererPriv;
+    /* FIXME: these are mutually exclusive, so collapse into one pointer */
+    rut_closure_t *nine_slice_closure;
+    rut_closure_t *diamond_closure;
+    rut_closure_t *reshaped_closure;
+} rig_renderer_priv_t;
 
 static void
-_rig_renderer_free (void *object)
+_rig_renderer_free(void *object)
 {
-  RigRenderer *renderer = object;
+    rig_renderer_t *renderer = object;
 
-  c_array_free (renderer->journal, true);
-  renderer->journal = NULL;
+    c_array_free(renderer->journal, true);
+    renderer->journal = NULL;
 
-  rut_object_free (RigRenderer, object);
+    rut_object_free(rig_renderer_t, object);
 }
 
 static void
-set_entity_pipeline_cache (RigEntity *entity,
-                           int slot,
-                           cg_pipeline_t *pipeline)
+set_entity_pipeline_cache(rig_entity_t *entity,
+                          int slot,
+                          cg_pipeline_t *pipeline)
 {
-  RigRendererPriv *priv = entity->renderer_priv;
+    rig_renderer_priv_t *priv = entity->renderer_priv;
 
-  if (priv->pipeline_caches[slot])
-    cg_object_unref (priv->pipeline_caches[slot]);
+    if (priv->pipeline_caches[slot])
+        cg_object_unref(priv->pipeline_caches[slot]);
 
-  priv->pipeline_caches[slot] = pipeline;
-  if (pipeline)
-    cg_object_ref (pipeline);
+    priv->pipeline_caches[slot] = pipeline;
+    if (pipeline)
+        cg_object_ref(pipeline);
 }
 
 static cg_pipeline_t *
-get_entity_pipeline_cache (RigEntity *entity,
-                           int slot)
+get_entity_pipeline_cache(rig_entity_t *entity, int slot)
 {
-  RigRendererPriv *priv = entity->renderer_priv;
-  return priv->pipeline_caches[slot];
+    rig_renderer_priv_t *priv = entity->renderer_priv;
+    return priv->pipeline_caches[slot];
 }
 
 static void
-set_entity_image_source_cache (RigEntity *entity,
-                               int slot,
-                               RigImageSource *source)
+set_entity_image_source_cache(rig_entity_t *entity,
+                              int slot,
+                              rig_image_source_t *source)
 {
-  RigRendererPriv *priv = entity->renderer_priv;
+    rig_renderer_priv_t *priv = entity->renderer_priv;
 
-  if (priv->image_source_caches[slot])
-    rut_object_unref (priv->image_source_caches[slot]);
+    if (priv->image_source_caches[slot])
+        rut_object_unref(priv->image_source_caches[slot]);
 
-  priv->image_source_caches[slot] = source;
-  if (source)
-    rut_object_ref (source);
+    priv->image_source_caches[slot] = source;
+    if (source)
+        rut_object_ref(source);
 }
 
-static RigImageSource*
-get_entity_image_source_cache (RigEntity *entity,
-                               int slot)
+static rig_image_source_t *
+get_entity_image_source_cache(rig_entity_t *entity,
+                              int slot)
 {
-  RigRendererPriv *priv = entity->renderer_priv;
+    rig_renderer_priv_t *priv = entity->renderer_priv;
 
-  return priv->image_source_caches[slot];
+    return priv->image_source_caches[slot];
 }
 
 static void
-set_entity_primitive_cache (RigEntity *entity,
-                            int slot,
-                            cg_primitive_t *primitive)
+set_entity_primitive_cache(rig_entity_t *entity,
+                           int slot,
+                           cg_primitive_t *primitive)
 {
-  RigRendererPriv *priv = entity->renderer_priv;
+    rig_renderer_priv_t *priv = entity->renderer_priv;
 
-  if (priv->primitive_caches[slot])
-    cg_object_unref (priv->primitive_caches[slot]);
+    if (priv->primitive_caches[slot])
+        cg_object_unref(priv->primitive_caches[slot]);
 
-  priv->primitive_caches[slot] = primitive;
-  if (primitive)
-    cg_object_ref (primitive);
+    priv->primitive_caches[slot] = primitive;
+    if (primitive)
+        cg_object_ref(primitive);
 }
 
 static cg_primitive_t *
-get_entity_primitive_cache (RigEntity *entity,
-                            int slot)
+get_entity_primitive_cache(rig_entity_t *entity,
+                           int slot)
 {
-  RigRendererPriv *priv = entity->renderer_priv;
+    rig_renderer_priv_t *priv = entity->renderer_priv;
 
-  return priv->primitive_caches[slot];
+    return priv->primitive_caches[slot];
 }
 
 static void
-dirty_entity_pipelines (RigEntity *entity)
+dirty_entity_pipelines(rig_entity_t *entity)
 {
-  set_entity_pipeline_cache (entity, CACHE_SLOT_COLOR_UNBLENDED, NULL);
-  set_entity_pipeline_cache (entity, CACHE_SLOT_COLOR_BLENDED, NULL);
-  set_entity_pipeline_cache (entity, CACHE_SLOT_SHADOW, NULL);
+    set_entity_pipeline_cache(entity, CACHE_SLOT_COLOR_UNBLENDED, NULL);
+    set_entity_pipeline_cache(entity, CACHE_SLOT_COLOR_BLENDED, NULL);
+    set_entity_pipeline_cache(entity, CACHE_SLOT_SHADOW, NULL);
 }
 
 static void
-dirty_entity_geometry (RigEntity *entity)
+dirty_entity_geometry(rig_entity_t *entity)
 {
-  set_entity_primitive_cache (entity, 0, NULL);
+    set_entity_primitive_cache(entity, 0, NULL);
 }
 
 /* TODO: allow more fine grained discarding of cached renderer state */
 static void
-_rig_renderer_notify_entity_changed (RigEntity *entity)
+_rig_renderer_notify_entity_changed(rig_entity_t *entity)
 {
-  if (!entity->renderer_priv)
-    return;
+    if (!entity->renderer_priv)
+        return;
 
-  dirty_entity_pipelines (entity);
-  dirty_entity_geometry (entity);
+    dirty_entity_pipelines(entity);
+    dirty_entity_geometry(entity);
 
-  set_entity_image_source_cache (entity, SOURCE_TYPE_COLOR, NULL);
-  set_entity_image_source_cache (entity, SOURCE_TYPE_ALPHA_MASK, NULL);
-  set_entity_image_source_cache (entity, SOURCE_TYPE_NORMAL_MAP, NULL);
+    set_entity_image_source_cache(entity, SOURCE_TYPE_COLOR, NULL);
+    set_entity_image_source_cache(entity, SOURCE_TYPE_ALPHA_MASK, NULL);
+    set_entity_image_source_cache(entity, SOURCE_TYPE_NORMAL_MAP, NULL);
 }
 
 static void
-_rig_renderer_free_priv (RigEntity *entity)
+_rig_renderer_free_priv(rig_entity_t *entity)
 {
-  RigRendererPriv *priv = entity->renderer_priv;
-  cg_pipeline_t **pipeline_caches = priv->pipeline_caches;
-  RigImageSource **image_source_caches = priv->image_source_caches;
-  cg_primitive_t **primitive_caches = priv->primitive_caches;
-  int i;
+    rig_renderer_priv_t *priv = entity->renderer_priv;
+    cg_pipeline_t **pipeline_caches = priv->pipeline_caches;
+    rig_image_source_t **image_source_caches = priv->image_source_caches;
+    cg_primitive_t **primitive_caches = priv->primitive_caches;
+    int i;
 
-  for (i = 0; i < N_PIPELINE_CACHE_SLOTS; i++)
-    {
-      if (pipeline_caches[i])
-        cg_object_unref (pipeline_caches[i]);
+    for (i = 0; i < N_PIPELINE_CACHE_SLOTS; i++) {
+        if (pipeline_caches[i])
+            cg_object_unref(pipeline_caches[i]);
     }
 
-  for (i = 0; i < N_IMAGE_SOURCE_CACHE_SLOTS; i++)
-    {
-      if (image_source_caches[i])
-        rut_object_unref (image_source_caches[i]);
+    for (i = 0; i < N_IMAGE_SOURCE_CACHE_SLOTS; i++) {
+        if (image_source_caches[i])
+            rut_object_unref(image_source_caches[i]);
     }
 
-  for (i = 0; i < N_PRIMITIVE_CACHE_SLOTS; i++)
-    {
-      if (primitive_caches[i])
-        cg_object_unref (primitive_caches[i]);
+    for (i = 0; i < N_PRIMITIVE_CACHE_SLOTS; i++) {
+        if (primitive_caches[i])
+            cg_object_unref(primitive_caches[i]);
     }
 
-  if (priv->pointalism_grid_update_closure)
-    rut_closure_disconnect (priv->pointalism_grid_update_closure);
+    if (priv->pointalism_grid_update_closure)
+        rut_closure_disconnect(priv->pointalism_grid_update_closure);
 
-  if (priv->preferred_size_closure)
-    rut_closure_disconnect (priv->preferred_size_closure);
+    if (priv->preferred_size_closure)
+        rut_closure_disconnect(priv->preferred_size_closure);
 
-  if (priv->nine_slice_closure)
-    rut_closure_disconnect (priv->nine_slice_closure);
+    if (priv->nine_slice_closure)
+        rut_closure_disconnect(priv->nine_slice_closure);
 
-  if (priv->diamond_closure)
-    rut_closure_disconnect (priv->diamond_closure);
+    if (priv->diamond_closure)
+        rut_closure_disconnect(priv->diamond_closure);
 
-  if (priv->reshaped_closure)
-    rut_closure_disconnect (priv->reshaped_closure);
+    if (priv->reshaped_closure)
+        rut_closure_disconnect(priv->reshaped_closure);
 
-  c_slice_free (RigRendererPriv, priv);
-  entity->renderer_priv = NULL;
+    c_slice_free(rig_renderer_priv_t, priv);
+    entity->renderer_priv = NULL;
 }
 
-RutType rig_renderer_type;
+rut_type_t rig_renderer_type;
 
 static void
-_rig_renderer_init_type (void)
+_rig_renderer_init_type(void)
 {
 
-  static RutRendererVTable renderer_vtable = {
-      .notify_entity_changed = _rig_renderer_notify_entity_changed,
-      .free_priv = _rig_renderer_free_priv
-  };
+    static rut_renderer_vtable_t renderer_vtable = {
+        .notify_entity_changed = _rig_renderer_notify_entity_changed,
+        .free_priv = _rig_renderer_free_priv
+    };
 
-  RutType *type = &rig_renderer_type;
-#define TYPE RigRenderer
+    rut_type_t *type = &rig_renderer_type;
+#define TYPE rig_renderer_t
 
-  rut_type_init (type, C_STRINGIFY (TYPE), _rig_renderer_free);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_RENDERER,
-                      0, /* no implied properties */
-                      &renderer_vtable);
+    rut_type_init(type, C_STRINGIFY(TYPE), _rig_renderer_free);
+    rut_type_add_trait(type,
+                       RUT_TRAIT_ID_RENDERER,
+                       0, /* no implied properties */
+                       &renderer_vtable);
 
 #undef TYPE
 }
 
-RigRenderer *
-rig_renderer_new (RigEngine *engine)
+rig_renderer_t *
+rig_renderer_new(rig_engine_t *engine)
 {
-  RigRenderer *renderer = rut_object_alloc0 (RigRenderer,
-                                             &rig_renderer_type,
-                                             _rig_renderer_init_type);
+    rig_renderer_t *renderer = rut_object_alloc0(
+        rig_renderer_t, &rig_renderer_type, _rig_renderer_init_type);
 
+    renderer->journal = c_array_new(false, false, sizeof(rig_journal_entry_t));
 
-  renderer->journal = c_array_new (false, false, sizeof (RigJournalEntry));
-
-  return renderer;
+    return renderer;
 }
 
 static void
-rig_journal_log (c_array_t *journal,
-                 RigPaintContext *paint_ctx,
-                 RigEntity *entity,
-                 const cg_matrix_t *matrix)
+rig_journal_log(c_array_t *journal,
+                rig_paint_context_t *paint_ctx,
+                rig_entity_t *entity,
+                const cg_matrix_t *matrix)
 {
 
-  RigJournalEntry *entry;
+    rig_journal_entry_t *entry;
 
-  c_array_set_size (journal, journal->len + 1);
-  entry = &c_array_index (journal, RigJournalEntry, journal->len - 1);
+    c_array_set_size(journal, journal->len + 1);
+    entry = &c_array_index(journal, rig_journal_entry_t, journal->len - 1);
 
-  entry->entity = rut_object_ref (entity);
-  entry->matrix = *matrix;
+    entry->entity = rut_object_ref(entity);
+    entry->matrix = *matrix;
 }
 
 static int
-sort_entry_cb (const RigJournalEntry *entry0,
-               const RigJournalEntry *entry1)
+sort_entry_cb(const rig_journal_entry_t *entry0,
+              const rig_journal_entry_t *entry1)
 {
-  float z0 = entry0->matrix.zw;
-  float z1 = entry1->matrix.zw;
+    float z0 = entry0->matrix.zw;
+    float z1 = entry1->matrix.zw;
 
-  /* TODO: also sort based on the state */
+    /* TODO: also sort based on the state */
 
-  if (z0 < z1)
-    return -1;
-  else if (z0 > z1)
-    return 1;
+    if (z0 < z1)
+        return -1;
+    else if (z0 > z1)
+        return 1;
 
-  return 0;
+    return 0;
 }
 
 static void
-reshape_cb (RigShape *shape, void *user_data)
+reshape_cb(rig_shape_t *shape, void *user_data)
 {
-  RutComponentableProps *componentable =
-    rut_object_get_properties (shape, RUT_TRAIT_ID_COMPONENTABLE);
-  RigEntity *entity = componentable->entity;
-  dirty_entity_pipelines (entity);
+    rut_componentable_props_t *componentable =
+        rut_object_get_properties(shape, RUT_TRAIT_ID_COMPONENTABLE);
+    rig_entity_t *entity = componentable->entity;
+    dirty_entity_pipelines(entity);
 }
 
 static void
-nine_slice_changed_cb (RigNineSlice *nine_slice, void *user_data)
+nine_slice_changed_cb(rig_nine_slice_t *nine_slice, void *user_data)
 {
-  RutComponentableProps *componentable =
-    rut_object_get_properties (nine_slice, RUT_TRAIT_ID_COMPONENTABLE);
-  RigEntity *entity = componentable->entity;
-  _rig_renderer_notify_entity_changed (entity);
-  dirty_entity_geometry (entity);
+    rut_componentable_props_t *componentable =
+        rut_object_get_properties(nine_slice, RUT_TRAIT_ID_COMPONENTABLE);
+    rig_entity_t *entity = componentable->entity;
+    _rig_renderer_notify_entity_changed(entity);
+    dirty_entity_geometry(entity);
 }
 
 static void
-diamond_changed_cb (RigDiamond *diamond, void *user_data)
+diamond_changed_cb(rig_diamond_t *diamond, void *user_data)
 {
-  RutComponentableProps *componentable =
-    rut_object_get_properties (diamond, RUT_TRAIT_ID_COMPONENTABLE);
-  RigEntity *entity = componentable->entity;
-  _rig_renderer_notify_entity_changed (entity);
-  dirty_entity_geometry (entity);
+    rut_componentable_props_t *componentable =
+        rut_object_get_properties(diamond, RUT_TRAIT_ID_COMPONENTABLE);
+    rig_entity_t *entity = componentable->entity;
+    _rig_renderer_notify_entity_changed(entity);
+    dirty_entity_geometry(entity);
 }
 
 /* Called if the geometry of the pointalism grid has changed... */
 static void
-pointalism_changed_cb (RigPointalismGrid *grid, void *user_data)
+pointalism_changed_cb(rig_pointalism_grid_t *grid, void *user_data)
 {
-  RutComponentableProps *componentable =
-    rut_object_get_properties (grid, RUT_TRAIT_ID_COMPONENTABLE);
-  RigEntity *entity = componentable->entity;
+    rut_componentable_props_t *componentable =
+        rut_object_get_properties(grid, RUT_TRAIT_ID_COMPONENTABLE);
+    rig_entity_t *entity = componentable->entity;
 
-  dirty_entity_geometry (entity);
+    dirty_entity_geometry(entity);
 }
 
 static void
-set_focal_parameters (cg_pipeline_t *pipeline,
-                      float focal_distance,
-                      float depth_of_field)
+set_focal_parameters(cg_pipeline_t *pipeline,
+                     float focal_distance,
+                     float depth_of_field)
 {
-  int location;
-  float distance;
+    int location;
+    float distance;
 
-  /* I want to have the focal distance as positive when it's in front of the
-   * camera (it seems more natural, but as, in OpenGL, the camera is facing
-   * the negative Ys, the actual value to give to the shader has to be
-   * negated */
-  distance = -focal_distance;
+    /* I want to have the focal distance as positive when it's in front of the
+     * camera (it seems more natural, but as, in OpenGL, the camera is facing
+     * the negative Ys, the actual value to give to the shader has to be
+     * negated */
+    distance = -focal_distance;
 
-  location = cg_pipeline_get_uniform_location (pipeline,
-                                                 "dof_focal_distance");
-  cg_pipeline_set_uniform_float (pipeline,
-                                   location,
-                                   1 /* n_components */, 1 /* count */,
-                                   &distance);
+    location = cg_pipeline_get_uniform_location(pipeline, "dof_focal_distance");
+    cg_pipeline_set_uniform_float(
+        pipeline, location, 1 /* n_components */, 1 /* count */, &distance);
 
-  location = cg_pipeline_get_uniform_location (pipeline,
-                                                 "dof_depth_of_field");
-  cg_pipeline_set_uniform_float (pipeline,
-                                   location,
-                                   1 /* n_components */, 1 /* count */,
-                                   &depth_of_field);
+    location = cg_pipeline_get_uniform_location(pipeline, "dof_depth_of_field");
+    cg_pipeline_set_uniform_float(pipeline,
+                                  location,
+                                  1 /* n_components */,
+                                  1 /* count */,
+                                  &depth_of_field);
 }
 
 static void
-init_dof_pipeline_template (RigEngine *engine)
+init_dof_pipeline_template(rig_engine_t *engine)
 {
-  cg_pipeline_t *pipeline;
-  cg_depth_state_t depth_state;
-  cg_snippet_t *snippet;
+    cg_pipeline_t *pipeline;
+    cg_depth_state_t depth_state;
+    cg_snippet_t *snippet;
 
-  pipeline = cg_pipeline_new (engine->ctx->cg_context);
+    pipeline = cg_pipeline_new(engine->ctx->cg_context);
 
-  cg_pipeline_set_color_mask (pipeline, CG_COLOR_MASK_ALPHA);
+    cg_pipeline_set_color_mask(pipeline, CG_COLOR_MASK_ALPHA);
 
-  cg_pipeline_set_blend (pipeline, "RGBA=ADD(SRC_COLOR, 0)", NULL);
+    cg_pipeline_set_blend(pipeline, "RGBA=ADD(SRC_COLOR, 0)", NULL);
 
-  cg_depth_state_init (&depth_state);
-  cg_depth_state_set_test_enabled (&depth_state, true);
-  cg_pipeline_set_depth_state (pipeline, &depth_state, NULL);
+    cg_depth_state_init(&depth_state);
+    cg_depth_state_set_test_enabled(&depth_state, true);
+    cg_pipeline_set_depth_state(pipeline, &depth_state, NULL);
 
-  snippet = cg_snippet_new (CG_SNIPPET_HOOK_VERTEX,
+    snippet = cg_snippet_new(
+        CG_SNIPPET_HOOK_VERTEX,
 
-                              /* definitions */
-                              "uniform float dof_focal_distance;\n"
-                              "uniform float dof_depth_of_field;\n"
+        /* definitions */
+        "uniform float dof_focal_distance;\n"
+        "uniform float dof_depth_of_field;\n"
+        "out float dof_blur;\n",
+        //"out vec4 world_pos;\n",
 
-                              "out float dof_blur;\n",
-                              //"out vec4 world_pos;\n",
+        /* compute the amount of bluriness we want */
+        "vec4 world_pos = cg_modelview_matrix * pos;\n"
+        //"world_pos = cg_modelview_matrix * cg_position_in;\n"
+        "dof_blur = 1.0 - clamp (abs (world_pos.z - dof_focal_distance) /\n"
+        "                  dof_depth_of_field, 0.0, 1.0);\n");
 
-                              /* compute the amount of bluriness we want */
-                              "vec4 world_pos = cg_modelview_matrix * pos;\n"
-                              //"world_pos = cg_modelview_matrix * cg_position_in;\n"
-                              "dof_blur = 1.0 - clamp (abs (world_pos.z - dof_focal_distance) /\n"
-                              "                  dof_depth_of_field, 0.0, 1.0);\n"
-  );
+    cg_pipeline_add_snippet(pipeline, engine->cache_position_snippet);
+    cg_pipeline_add_snippet(pipeline, snippet);
+    cg_object_unref(snippet);
 
-  cg_pipeline_add_snippet (pipeline, engine->cache_position_snippet);
-  cg_pipeline_add_snippet (pipeline, snippet);
-  cg_object_unref (snippet);
-
-  /* This was used to debug the focal distance and bluriness amount in the DoF
-   * effect: */
+/* This was used to debug the focal distance and bluriness amount in the DoF
+ * effect: */
 #if 0
-  cg_pipeline_set_color_mask (pipeline, CG_COLOR_MASK_ALL);
-  snippet = cg_snippet_new (CG_SNIPPET_HOOK_FRAGMENT,
+    cg_pipeline_set_color_mask (pipeline, CG_COLOR_MASK_ALL);
+    snippet = cg_snippet_new (CG_SNIPPET_HOOK_FRAGMENT,
                               "in vec4 world_pos;\n"
                               "in float dof_blur;",
 
@@ -474,1595 +457,1468 @@ init_dof_pipeline_template (RigEngine *engine)
                               //"if (abs (world_pos.z + 30.f) < 0.1) cg_color_out = vec4(0,1,0,1);\n"
                               "cg_color_out.a = dof_blur;\n"
                               //"cg_color_out.a = 1.0;\n"
-  );
+                              );
 
-  cg_pipeline_add_snippet (pipeline, snippet);
-  cg_object_unref (snippet);
+    cg_pipeline_add_snippet (pipeline, snippet);
+    cg_object_unref (snippet);
 #endif
 
-  engine->dof_pipeline_template = pipeline;
+    engine->dof_pipeline_template = pipeline;
 }
 
 static void
-init_dof_diamond_pipeline (RigEngine *engine)
+init_dof_diamond_pipeline(rig_engine_t *engine)
 {
-  cg_pipeline_t *dof_diamond_pipeline =
-    cg_pipeline_copy (engine->dof_pipeline_template);
-  cg_snippet_t *snippet;
+    cg_pipeline_t *dof_diamond_pipeline =
+        cg_pipeline_copy(engine->dof_pipeline_template);
+    cg_snippet_t *snippet;
 
-  cg_pipeline_set_layer_texture (dof_diamond_pipeline,
-                                   0,
-                                   engine->ctx->circle_texture);
+    cg_pipeline_set_layer_texture(
+        dof_diamond_pipeline, 0, engine->ctx->circle_texture);
 
-  snippet = cg_snippet_new (CG_SNIPPET_HOOK_FRAGMENT,
-                              /* declarations */
-                              "in float dof_blur;",
+    snippet = cg_snippet_new(CG_SNIPPET_HOOK_FRAGMENT,
+                             /* declarations */
+                             "in float dof_blur;",
 
-                              /* post */
-                              "if (cg_color_out.a <= 0.0)\n"
-                              "  discard;\n"
-                              "\n"
-                              "cg_color_out.a = dof_blur;\n");
+                             /* post */
+                             "if (cg_color_out.a <= 0.0)\n"
+                             "  discard;\n"
+                             "\n"
+                             "cg_color_out.a = dof_blur;\n");
 
-  cg_pipeline_add_snippet (dof_diamond_pipeline, snippet);
-  cg_object_unref (snippet);
+    cg_pipeline_add_snippet(dof_diamond_pipeline, snippet);
+    cg_object_unref(snippet);
 
-  engine->dof_diamond_pipeline = dof_diamond_pipeline;
+    engine->dof_diamond_pipeline = dof_diamond_pipeline;
 }
 
 static void
-init_dof_unshaped_pipeline (RigEngine *engine)
+init_dof_unshaped_pipeline(rig_engine_t *engine)
 {
-  cg_pipeline_t *dof_unshaped_pipeline =
-    cg_pipeline_copy (engine->dof_pipeline_template);
-  cg_snippet_t *snippet;
+    cg_pipeline_t *dof_unshaped_pipeline =
+        cg_pipeline_copy(engine->dof_pipeline_template);
+    cg_snippet_t *snippet;
 
-  snippet = cg_snippet_new (CG_SNIPPET_HOOK_FRAGMENT,
-                              /* declarations */
-                              "in float dof_blur;",
+    snippet = cg_snippet_new(CG_SNIPPET_HOOK_FRAGMENT,
+                             /* declarations */
+                             "in float dof_blur;",
 
-                              /* post */
-                              "if (cg_color_out.a < 0.25)\n"
-                              "  discard;\n"
-                              "\n"
-                              "cg_color_out.a = dof_blur;\n");
+                             /* post */
+                             "if (cg_color_out.a < 0.25)\n"
+                             "  discard;\n"
+                             "\n"
+                             "cg_color_out.a = dof_blur;\n");
 
-  cg_pipeline_add_snippet (dof_unshaped_pipeline, snippet);
-  cg_object_unref (snippet);
+    cg_pipeline_add_snippet(dof_unshaped_pipeline, snippet);
+    cg_object_unref(snippet);
 
-  engine->dof_unshaped_pipeline = dof_unshaped_pipeline;
+    engine->dof_unshaped_pipeline = dof_unshaped_pipeline;
 }
 
 static void
-init_dof_pipeline (RigEngine *engine)
+init_dof_pipeline(rig_engine_t *engine)
 {
-  cg_pipeline_t *dof_pipeline =
-    cg_pipeline_copy (engine->dof_pipeline_template);
-  cg_snippet_t *snippet;
+    cg_pipeline_t *dof_pipeline =
+        cg_pipeline_copy(engine->dof_pipeline_template);
+    cg_snippet_t *snippet;
 
-  /* store the bluriness in the alpha channel */
-  snippet = cg_snippet_new (CG_SNIPPET_HOOK_FRAGMENT,
-                              "in float dof_blur;",
+    /* store the bluriness in the alpha channel */
+    snippet = cg_snippet_new(CG_SNIPPET_HOOK_FRAGMENT,
+                             "in float dof_blur;",
+                             "cg_color_out.a = dof_blur;\n");
+    cg_pipeline_add_snippet(dof_pipeline, snippet);
+    cg_object_unref(snippet);
 
-                              "cg_color_out.a = dof_blur;\n"
-  );
-  cg_pipeline_add_snippet (dof_pipeline, snippet);
-  cg_object_unref (snippet);
-
-  engine->dof_pipeline = dof_pipeline;
+    engine->dof_pipeline = dof_pipeline;
 }
 
 void
-rig_renderer_init (RigEngine *engine)
+rig_renderer_init(rig_engine_t *engine)
 {
-  /* We always want to use exactly the same snippets when creating
-   * similar pipelines so that we can take advantage of Cogl's program
-   * caching. The program cache only compares the snippet pointers,
-   * not the contents of the snippets. Therefore we just create the
-   * snippets we're going to use upfront and retain them */
-
-  engine->alpha_mask_snippet =
-    cg_snippet_new (CG_SNIPPET_HOOK_FRAGMENT,
-                      /* definitions */
-                      "uniform float material_alpha_threshold;\n",
-                      /* post */
-                      "if (rig_image_source_sample4 (\n"
-                      "    cg_tex_coord4_in.st).r < \n"
-                      "    material_alpha_threshold)\n"
-                      "  discard;\n");
-
-  engine->lighting_vertex_snippet =
-    cg_snippet_new (CG_SNIPPET_HOOK_VERTEX,
-                      /* definitions */
-                      "uniform mat3 normal_matrix;\n"
-                      "in vec3 tangent_in;\n"
-                      "out vec3 normal, eye_direction;\n",
-                      /* post */
-                      "normal = normalize(normal_matrix * cg_normal_in);\n"
-                      "eye_direction = -vec3(cg_modelview_matrix *\n"
-                      "                      pos);\n"
-                      );
-
-  engine->normal_map_vertex_snippet =
-    cg_snippet_new (CG_SNIPPET_HOOK_VERTEX,
-                      /* definitions */
-                      "uniform vec3 light0_direction_norm;\n"
-                      "out vec3 light_direction;\n",
-
-                      /* post */
-                      "vec3 tangent = normalize(normal_matrix * tangent_in);\n"
-                      "vec3 binormal = cross(normal, tangent);\n"
-
-                      /* Transform the light direction into tangent space */
-                      "vec3 v;\n"
-                      "v.x = dot (light0_direction_norm, tangent);\n"
-                      "v.y = dot (light0_direction_norm, binormal);\n"
-                      "v.z = dot (light0_direction_norm, normal);\n"
-                      "light_direction = normalize (v);\n"
-
-                      /* Transform the eye direction into tangent space */
-                      "v.x = dot (eye_direction, tangent);\n"
-                      "v.y = dot (eye_direction, binormal);\n"
-                      "v.z = dot (eye_direction, normal);\n"
-                      "eye_direction = normalize (v);\n");
-
-  engine->cache_position_snippet =
-    cg_snippet_new (CG_SNIPPET_HOOK_VERTEX_TRANSFORM,
-                      "out vec4 pos;\n",
-                      "pos = cg_position_in;\n");
-
-  engine->pointalism_vertex_snippet =
-    cg_snippet_new (CG_SNIPPET_HOOK_VERTEX_TRANSFORM,
-    "in vec2 cell_xy;\n"
-    "in vec4 cell_st;\n"
-    "uniform float scale_factor;\n"
-    "uniform float z_trans;\n"
-    "uniform int anti_scale;\n"
-    "out vec4 av_color;\n",
-
-    "float grey;\n"
-
-    "av_color = rig_image_source_sample1 (vec2 (cell_st.x, cell_st.z));\n"
-    "av_color += rig_image_source_sample1 (vec2 (cell_st.y, cell_st.z));\n"
-    "av_color += rig_image_source_sample1 (vec2 (cell_st.y, cell_st.w));\n"
-    "av_color += rig_image_source_sample1 (vec2 (cell_st.x, cell_st.w));\n"
-    "av_color /= 4.0;\n"
-
-    "grey = av_color.r * 0.2126 + av_color.g * 0.7152 + av_color.b * 0.0722;\n"
-
-    "if (anti_scale == 1)\n"
-    "{"
-    "  pos.xy *= scale_factor * grey;\n"
-    "  pos.z += z_trans * grey;\n"
-    "}"
-    "else\n"
-    "{"
-    "  pos.xy *= scale_factor - (scale_factor * grey);\n"
-    "  pos.z += z_trans - (z_trans * grey);\n"
-    "}"
-    "pos.x += cell_xy.x;\n"
-    "pos.y += cell_xy.y;\n"
-    "cg_position_out = cg_modelview_projection_matrix * pos;\n");
-
-  engine->shadow_mapping_vertex_snippet =
-    cg_snippet_new (CG_SNIPPET_HOOK_VERTEX,
-
-                      /* definitions */
-                      "uniform mat4 light_shadow_matrix;\n"
-                      "out vec4 shadow_coords;\n",
-
-                      /* post */
-                      "shadow_coords = light_shadow_matrix *\n"
-                      "                pos;\n");
-
-  engine->blended_discard_snippet =
-    cg_snippet_new (CG_SNIPPET_HOOK_FRAGMENT,
-                      /* definitions */
-                      NULL,
-
-                      /* post */
-                      "if (cg_color_out.a <= 0.0 ||\n"
-                      "    cg_color_out.a >= "
-                      C_STRINGIFY (OPAQUE_THRESHOLD) ")\n"
-                      "  discard;\n");
-
-  engine->unblended_discard_snippet =
-    cg_snippet_new (CG_SNIPPET_HOOK_FRAGMENT,
-                      /* definitions */
-                      NULL,
-
-                      /* post */
-                      "if (cg_color_out.a < "
-                      C_STRINGIFY (OPAQUE_THRESHOLD) ")\n"
-                      "  discard;\n");
-
-  engine->premultiply_snippet =
-    cg_snippet_new (CG_SNIPPET_HOOK_FRAGMENT,
-                      /* definitions */
-                      NULL,
-
-                      /* post */
-
-                      /* FIXME: Avoid premultiplying here by fiddling the
-                       * blend mode instead which should be more efficient */
-                      "cg_color_out.rgb *= cg_color_out.a;\n");
-
-  engine->unpremultiply_snippet =
-    cg_snippet_new (CG_SNIPPET_HOOK_FRAGMENT,
-                      /* definitions */
-                      NULL,
-
-                      /* post */
-
-                      /* FIXME: We need to unpremultiply our colour at this
-                       * point to perform lighting, but this is obviously not
-                       * ideal and we should instead avoid being premultiplied
-                       * at this stage by not premultiplying our textures on
-                       * load for example. */
-                      "cg_color_out.rgb /= cg_color_out.a;\n");
-
-  engine->normal_map_fragment_snippet =
-    cg_snippet_new (CG_SNIPPET_HOOK_FRAGMENT,
-         /* definitions */
-         "uniform vec4 light0_ambient, light0_diffuse, light0_specular;\n"
-         "uniform vec4 material_ambient, material_diffuse, material_specular;\n"
-         "uniform float material_shininess;\n"
-         "in vec3 light_direction, eye_direction;\n",
-
-         /* post */
-         "vec4 final_color;\n"
-
-         "vec3 L = normalize(light_direction);\n"
-
-         "vec3 N = rig_image_source_sample7(cg_tex_coord7_in.st).rgb;\n"
-         "N = 2.0 * N - 1.0;\n"
-         "N = normalize(N);\n"
-
-         "vec4 ambient = light0_ambient * material_ambient;\n"
-
-         "final_color = ambient * cg_color_out;\n"
-         "float lambert = dot(N, L);\n"
-
-         "if (lambert > 0.0)\n"
-         "{\n"
-         "  vec4 diffuse = light0_diffuse * material_diffuse;\n"
-         "  vec4 specular = light0_specular * material_specular;\n"
-
-         "  final_color += cg_color_out * diffuse * lambert;\n"
-
-         "  vec3 E = normalize(eye_direction);\n"
-         "  vec3 R = reflect (-L, N);\n"
-         "  float specular_factor = pow (max(dot(R, E), 0.0),\n"
-         "                               material_shininess);\n"
-         "  final_color += specular * specular_factor;\n"
-         "}\n"
-
-         "cg_color_out.rgb = final_color.rgb;\n");
-
-  engine->material_lighting_snippet =
-    cg_snippet_new (CG_SNIPPET_HOOK_FRAGMENT,
-         /* definitions */
-         "/* material lighting declarations */\n"
-         "in vec3 normal, eye_direction;\n"
-         "uniform vec4 light0_ambient, light0_diffuse, light0_specular;\n"
-         "uniform vec3 light0_direction_norm;\n"
-         "uniform vec4 material_ambient, material_diffuse, material_specular;\n"
-         "uniform float material_shininess;\n",
-
-         /* post */
-         "vec4 final_color;\n"
-
-         "vec3 L = light0_direction_norm;\n"
-         "vec3 N = normalize(normal);\n"
-
-         "vec4 ambient = light0_ambient * material_ambient;\n"
-
-         "final_color = ambient * cg_color_out;\n"
-         "float lambert = dot(N, L);\n"
-
-         "if (lambert > 0.0)\n"
-         "{\n"
-         "  vec4 diffuse = light0_diffuse * material_diffuse;\n"
-         "  vec4 specular = light0_specular * material_specular;\n"
-
-         "  final_color += cg_color_out * diffuse * lambert;\n"
-
-         "  vec3 E = normalize(eye_direction);\n"
-         "  vec3 R = reflect (-L, N);\n"
-         "  float specular_factor = pow (max(dot(R, E), 0.0),\n"
-         "                               material_shininess);\n"
-         "  final_color += specular * specular_factor;\n"
-         "}\n"
-
-         "cg_color_out.rgb = final_color.rgb;\n");
-
-  engine->simple_lighting_snippet =
-    cg_snippet_new (CG_SNIPPET_HOOK_FRAGMENT,
-         /* definitions */
-         "/* simple lighting declarations */\n"
-         "in vec3 normal, eye_direction;\n"
-         "uniform vec4 light0_ambient, light0_diffuse, light0_specular;\n"
-         "uniform vec3 light0_direction_norm;\n",
-
-         /* post */
-         "vec4 final_color;\n"
-
-         "vec3 L = light0_direction_norm;\n"
-         "vec3 N = normalize(normal);\n"
-
-         "final_color = light0_ambient * cg_color_out;\n"
-         "float lambert = dot(N, L);\n"
-
-         "if (lambert > 0.0)\n"
-         "{\n"
-         "  final_color += cg_color_out * light0_diffuse * lambert;\n"
-
-         "  vec3 E = normalize(eye_direction);\n"
-         "  vec3 R = reflect (-L, N);\n"
-         "  float specular = pow (max(dot(R, E), 0.0),\n"
-         "                        2.);\n"
-         "  final_color += light0_specular * vec4(.6, .6, .6, 1.0) *\n"
-         "                 specular;\n"
-         "}\n"
-
-         "cg_color_out.rgb = final_color.rgb;\n");
-
-
-  engine->shadow_mapping_fragment_snippet =
-    cg_snippet_new (CG_SNIPPET_HOOK_FRAGMENT,
-                      /* declarations */
-                      "in vec4 shadow_coords;\n",
-                      /* post */
-                      "#if __VERSION__ >= 130\n"
-                      "  vec4 texel10 =\n"
-                      "    texture (cg_sampler10, shadow_coords.xy);\n"
-                      "#else\n"
-                      "  vec4 texel10 =\n"
-                      "    texture2D (cg_sampler10, shadow_coords.xy);\n"
-                      "#endif\n"
-                      "  float distance_from_light = texel10.r + 0.0005;\n"
-                      "  float shadow = 1.0;\n"
-                      "  if (distance_from_light < shadow_coords.z)\n"
-                      "    shadow = 0.5;\n"
-                      "  cg_color_out.rgb = shadow * cg_color_out.rgb;\n");
-
-  engine->pointalism_halo_snippet =
-    cg_snippet_new (CG_SNIPPET_HOOK_FRAGMENT,
-         /* declarations */
-         "in vec4 av_color;\n",
-
-         /* post */
-         "  cg_color_out = av_color;\n"
-         "#if __VERSION__ >= 130\n"
-         "  cg_color_out *=\n"
-         "    texture (cg_sampler0, cg_tex_coord0_in.st);\n"
-         "#else\n"
-         "  cg_color_out *=\n"
-         "    texture2D (cg_sampler0, cg_tex_coord0_in.st);\n"
-         "#endif\n"
-         "  if (cg_color_out.a > 0.90 || cg_color_out.a <= 0.0)\n"
-         "    discard;\n");
-
-  engine->pointalism_opaque_snippet =
-    cg_snippet_new (CG_SNIPPET_HOOK_FRAGMENT,
-         /* declarations */
-         "in vec4 av_color;\n",
-
-         /* post */
-         "  cg_color_out = av_color;\n"
-         "  cg_color_out *=\n"
-         "    cg_texture_lookup0 (cg_sampler0,\n"
-         "                          vec4(cg_tex_coord0_in.st, 0.0, 1.0));\n"
-         "  if (cg_color_out.a < 0.90)\n"
-         "    discard;\n");
-
-  engine->hair_simple_snippet =
-    cg_snippet_new (CG_SNIPPET_HOOK_FRAGMENT,
-                      /* declarations */
-                      "/* hair simple declarations */\n"
-                      "in vec3 normal, eye_direction;\n"
-                      "uniform vec4 light0_ambient, light0_diffuse, light0_specular;\n"
-                      "uniform vec3 light0_direction_norm;\n",
-                      /* post */
-                      "#if __VERSION__ >= 130\n"
-                      "  vec4 texel =\n"
-                      "    texture (cg_sampler11, cg_tex_coord11_in.st);\n"
-                      "#else\n"
-                      "  vec4 texel =\n"
-                      "    texture2D (cg_sampler11, cg_tex_coord11_in.st);\n"
-                      "#endif\n"
-                      "  cg_color_out *= texel;\n"
-                      "  if (cg_color_out.a < 0.9)\n"
-                      "    discard;\n"
-                      "\n"
-                      "  vec3 E = normalize (eye_direction);\n"
-                      "  vec3 L = normalize (light0_direction_norm);\n"
-                      "  vec3 H = normalize (L + E);\n"
-                      "  vec3 N = normalize (normal);\n"
-                      "  vec3 Ka = light0_ambient.rgb;\n"
-                      "  vec3 Kd = vec3 (0.0, 0.0, 0.0);\n"
-                      "  vec3 Ks = vec3 (0.0, 0.0, 0.0);\n"
-                      "  float Pd = max (0.0, dot (N, L));\n"
-                      "  float Ps = max (0.0, dot (N, H));\n"
-                      "  float u = max (0.0, dot (N, L));\n"
-                      "  float v = max (0.0, dot (N, H));\n"
-                      "\n"
-                      "  if (Pd > 0.0)\n"
-                      "    Kd = light0_diffuse.rgb * pow (1.0 - (u * u), Pd / 2.0);\n"
-                      "  if (Ps > 0.0)\n"
-                      "    Ks = light0_specular.rgb * pow (1.0 - (v * v), Ps / 2.0);\n"
-                      "\n"
-                      "  vec3 color = Ka + Kd + Ks;\n"
-                      "  cg_color_out.rgb *= color;\n"
-                      );
-
-  engine->hair_material_snippet =
-    cg_snippet_new (CG_SNIPPET_HOOK_FRAGMENT,
-                      /* declarations */
-                      "/* hair material declarations */\n"
-                      "in vec3 normal, eye_direction;\n"
-                      "uniform vec4 light0_ambient, light0_diffuse, light0_specular;\n"
-                      "uniform vec3 light0_direction_norm;\n"
-                      "uniform vec4 material_ambient, material_diffuse, material_specular;\n"
-                      "uniform float material_shininess;\n",
-                      /* post */
-                      "#if __VERSION__ >= 130\n"
-                      "  vec4 texel =\n"
-                      "    texture (cg_sampler11, cg_tex_coord11_in.st);\n"
-                      "#else\n"
-                      "  vec4 texel =\n"
-                      "    texture2D (cg_sampler11, cg_tex_coord11_in.st);\n"
-                      "#endif\n"
-                      "\n"
-                      "  cg_color_out *= texel;\n"
-                      "  if (cg_color_out.a < 0.9)\n"
-                      "    discard;\n"
-                      "\n"
-                      "  vec3 E = normalize(eye_direction);\n"
-                      "  vec3 L = normalize (light0_direction_norm);\n"
-                      "  vec3 H = normalize (L + E);\n"
-                      "  vec3 N = normalize (normal);\n"
-                      "  vec3 Ka = light0_ambient.rgb * material_ambient.rgb;\n"
-                      "  vec3 Kd = vec3 (0.0, 0.0, 0.0);\n"
-                      "  vec3 Ks = vec3 (0.0, 0.0, 0.0);\n"
-                      "  float Pd = max (0.0, dot (N, L));\n"
-                      "  float Ps = max (0.0, dot (N, H));\n"
-                      "  float u = max (0.0, dot (N, L));\n"
-                      "  float v = max (0.0, dot (N, H));\n"
-                      "\n"
-                      "  if (Pd > 0.0) {\n"
-                      "    Kd = (light0_diffuse.rgb * material_diffuse.rgb) *\n"
-                      "         pow (1.0 - (u * u), Pd / 2.0);\n"
-                      "  }\n"
-                      "  if (Ps > 0.0) {\n"
-                      "    Ks = (light0_specular.rgb * material_specular.rgb) *\n"
-                      "         pow (1.0 - (v * v), Ps / 2.0);\n"
-                      "  }\n"
-                      "\n"
-                      "  vec3 color = Ka + Kd + Ks;\n"
-                      "  cg_color_out.rgb *= color;\n"
-                      );
-
-  engine->hair_vertex_snippet =
-    cg_snippet_new (CG_SNIPPET_HOOK_VERTEX,
-      /* declarations */
-      "uniform float hair_pos;\n",
-      /* post */
-      "vec4 displace = pos;\n"
-      "displace.xyz = cg_normal_in * hair_pos + displace.xyz;\n"
-      "cg_position_out = cg_modelview_projection_matrix * displace;\n");
-
-  engine->hair_fin_snippet =
-    cg_snippet_new (CG_SNIPPET_HOOK_VERTEX,
-      "uniform float length;\n",
-      "vec4 displace = pos;\n"
-      "if (cg_tex_coord11_in.t < 1.0)\n"
-      "displace.xyz += cg_normal_in * length;\n"
-      "cg_position_out = cg_modelview_projection_matrix * displace;\n");
-
-  init_dof_pipeline_template (engine);
-
-  init_dof_diamond_pipeline (engine);
-
-  init_dof_unshaped_pipeline (engine);
-
-  init_dof_pipeline (engine);
+    /* We always want to use exactly the same snippets when creating
+     * similar pipelines so that we can take advantage of Cogl's program
+     * caching. The program cache only compares the snippet pointers,
+     * not the contents of the snippets. Therefore we just create the
+     * snippets we're going to use upfront and retain them */
+
+    engine->alpha_mask_snippet =
+        cg_snippet_new(CG_SNIPPET_HOOK_FRAGMENT,
+                       /* definitions */
+                       "uniform float material_alpha_threshold;\n",
+                       /* post */
+                       "if (rig_image_source_sample4 (\n"
+                       "    cg_tex_coord4_in.st).r < \n"
+                       "    material_alpha_threshold)\n"
+                       "  discard;\n");
+
+    engine->lighting_vertex_snippet =
+        cg_snippet_new(CG_SNIPPET_HOOK_VERTEX,
+                       /* definitions */
+                       "uniform mat3 normal_matrix;\n"
+                       "in vec3 tangent_in;\n"
+                       "out vec3 normal, eye_direction;\n",
+                       /* post */
+                       "normal = normalize(normal_matrix * cg_normal_in);\n"
+                       "eye_direction = -vec3(cg_modelview_matrix *\n"
+                       "                      pos);\n");
+
+    engine->normal_map_vertex_snippet =
+        cg_snippet_new(CG_SNIPPET_HOOK_VERTEX,
+                       /* definitions */
+                       "uniform vec3 light0_direction_norm;\n"
+                       "out vec3 light_direction;\n",
+
+                       /* post */
+                       "vec3 tangent = normalize(normal_matrix * tangent_in);\n"
+                       "vec3 binormal = cross(normal, tangent);\n"
+
+                       /* Transform the light direction into tangent space */
+                       "vec3 v;\n"
+                       "v.x = dot (light0_direction_norm, tangent);\n"
+                       "v.y = dot (light0_direction_norm, binormal);\n"
+                       "v.z = dot (light0_direction_norm, normal);\n"
+                       "light_direction = normalize (v);\n"
+
+                       /* Transform the eye direction into tangent space */
+                       "v.x = dot (eye_direction, tangent);\n"
+                       "v.y = dot (eye_direction, binormal);\n"
+                       "v.z = dot (eye_direction, normal);\n"
+                       "eye_direction = normalize (v);\n");
+
+    engine->cache_position_snippet =
+        cg_snippet_new(CG_SNIPPET_HOOK_VERTEX_TRANSFORM,
+                       "out vec4 pos;\n",
+                       "pos = cg_position_in;\n");
+
+    engine->pointalism_vertex_snippet = cg_snippet_new(
+        CG_SNIPPET_HOOK_VERTEX_TRANSFORM,
+        "in vec2 cell_xy;\n"
+        "in vec4 cell_st;\n"
+        "uniform float scale_factor;\n"
+        "uniform float z_trans;\n"
+        "uniform int anti_scale;\n"
+        "out vec4 av_color;\n",
+        "float grey;\n"
+        "av_color = rig_image_source_sample1 (vec2 (cell_st.x, cell_st.z));\n"
+        "av_color += rig_image_source_sample1 (vec2 (cell_st.y, cell_st.z));\n"
+        "av_color += rig_image_source_sample1 (vec2 (cell_st.y, cell_st.w));\n"
+        "av_color += rig_image_source_sample1 (vec2 (cell_st.x, cell_st.w));\n"
+        "av_color /= 4.0;\n"
+        "grey = av_color.r * 0.2126 + av_color.g * 0.7152 + av_color.b * "
+        "0.0722;\n"
+        "if (anti_scale == 1)\n"
+        "{"
+        "  pos.xy *= scale_factor * grey;\n"
+        "  pos.z += z_trans * grey;\n"
+        "}"
+        "else\n"
+        "{"
+        "  pos.xy *= scale_factor - (scale_factor * grey);\n"
+        "  pos.z += z_trans - (z_trans * grey);\n"
+        "}"
+        "pos.x += cell_xy.x;\n"
+        "pos.y += cell_xy.y;\n"
+        "cg_position_out = cg_modelview_projection_matrix * pos;\n");
+
+    engine->shadow_mapping_vertex_snippet =
+        cg_snippet_new(CG_SNIPPET_HOOK_VERTEX,
+
+                       /* definitions */
+                       "uniform mat4 light_shadow_matrix;\n"
+                       "out vec4 shadow_coords;\n",
+
+                       /* post */
+                       "shadow_coords = light_shadow_matrix *\n"
+                       "                pos;\n");
+
+    engine->blended_discard_snippet = cg_snippet_new(
+        CG_SNIPPET_HOOK_FRAGMENT,
+        /* definitions */
+        NULL,
+
+        /* post */
+        "if (cg_color_out.a <= 0.0 ||\n"
+        "    cg_color_out.a >= " C_STRINGIFY(OPAQUE_THRESHOLD) ")\n"
+        "  discard;\n");
+
+    engine->unblended_discard_snippet = cg_snippet_new(
+        CG_SNIPPET_HOOK_FRAGMENT,
+        /* definitions */
+        NULL,
+
+        /* post */
+        "if (cg_color_out.a < " C_STRINGIFY(OPAQUE_THRESHOLD) ")\n"
+        "  discard;\n");
+
+    engine->premultiply_snippet =
+        cg_snippet_new(CG_SNIPPET_HOOK_FRAGMENT,
+                       /* definitions */
+                       NULL,
+
+                       /* post */
+
+                       /* FIXME: Avoid premultiplying here by fiddling the
+                        * blend mode instead which should be more efficient */
+                       "cg_color_out.rgb *= cg_color_out.a;\n");
+
+    engine->unpremultiply_snippet =
+        cg_snippet_new(CG_SNIPPET_HOOK_FRAGMENT,
+                       /* definitions */
+                       NULL,
+
+                       /* post */
+
+                       /* FIXME: We need to unpremultiply our colour at this
+                        * point to perform lighting, but this is obviously not
+                        * ideal and we should instead avoid being premultiplied
+                        * at this stage by not premultiplying our textures on
+                        * load for example. */
+                       "cg_color_out.rgb /= cg_color_out.a;\n");
+
+    engine->normal_map_fragment_snippet = cg_snippet_new(
+        CG_SNIPPET_HOOK_FRAGMENT,
+        /* definitions */
+        "uniform vec4 light0_ambient, light0_diffuse, light0_specular;\n"
+        "uniform vec4 material_ambient, material_diffuse, material_specular;\n"
+        "uniform float material_shininess;\n"
+        "in vec3 light_direction, eye_direction;\n",
+
+        /* post */
+        "vec4 final_color;\n"
+        "vec3 L = normalize(light_direction);\n"
+        "vec3 N = rig_image_source_sample7(cg_tex_coord7_in.st).rgb;\n"
+        "N = 2.0 * N - 1.0;\n"
+        "N = normalize(N);\n"
+        "vec4 ambient = light0_ambient * material_ambient;\n"
+        "final_color = ambient * cg_color_out;\n"
+        "float lambert = dot(N, L);\n"
+        "if (lambert > 0.0)\n"
+        "{\n"
+        "  vec4 diffuse = light0_diffuse * material_diffuse;\n"
+        "  vec4 specular = light0_specular * material_specular;\n"
+        "  final_color += cg_color_out * diffuse * lambert;\n"
+        "  vec3 E = normalize(eye_direction);\n"
+        "  vec3 R = reflect (-L, N);\n"
+        "  float specular_factor = pow (max(dot(R, E), 0.0),\n"
+        "                               material_shininess);\n"
+        "  final_color += specular * specular_factor;\n"
+        "}\n"
+        "cg_color_out.rgb = final_color.rgb;\n");
+
+    engine->material_lighting_snippet = cg_snippet_new(
+        CG_SNIPPET_HOOK_FRAGMENT,
+        /* definitions */
+        "/* material lighting declarations */\n"
+        "in vec3 normal, eye_direction;\n"
+        "uniform vec4 light0_ambient, light0_diffuse, light0_specular;\n"
+        "uniform vec3 light0_direction_norm;\n"
+        "uniform vec4 material_ambient, material_diffuse, material_specular;\n"
+        "uniform float material_shininess;\n",
+
+        /* post */
+        "vec4 final_color;\n"
+        "vec3 L = light0_direction_norm;\n"
+        "vec3 N = normalize(normal);\n"
+        "vec4 ambient = light0_ambient * material_ambient;\n"
+        "final_color = ambient * cg_color_out;\n"
+        "float lambert = dot(N, L);\n"
+        "if (lambert > 0.0)\n"
+        "{\n"
+        "  vec4 diffuse = light0_diffuse * material_diffuse;\n"
+        "  vec4 specular = light0_specular * material_specular;\n"
+        "  final_color += cg_color_out * diffuse * lambert;\n"
+        "  vec3 E = normalize(eye_direction);\n"
+        "  vec3 R = reflect (-L, N);\n"
+        "  float specular_factor = pow (max(dot(R, E), 0.0),\n"
+        "                               material_shininess);\n"
+        "  final_color += specular * specular_factor;\n"
+        "}\n"
+        "cg_color_out.rgb = final_color.rgb;\n");
+
+    engine->simple_lighting_snippet = cg_snippet_new(
+        CG_SNIPPET_HOOK_FRAGMENT,
+        /* definitions */
+        "/* simple lighting declarations */\n"
+        "in vec3 normal, eye_direction;\n"
+        "uniform vec4 light0_ambient, light0_diffuse, light0_specular;\n"
+        "uniform vec3 light0_direction_norm;\n",
+
+        /* post */
+        "vec4 final_color;\n"
+        "vec3 L = light0_direction_norm;\n"
+        "vec3 N = normalize(normal);\n"
+        "final_color = light0_ambient * cg_color_out;\n"
+        "float lambert = dot(N, L);\n"
+        "if (lambert > 0.0)\n"
+        "{\n"
+        "  final_color += cg_color_out * light0_diffuse * lambert;\n"
+        "  vec3 E = normalize(eye_direction);\n"
+        "  vec3 R = reflect (-L, N);\n"
+        "  float specular = pow (max(dot(R, E), 0.0),\n"
+        "                        2.);\n"
+        "  final_color += light0_specular * vec4(.6, .6, .6, 1.0) *\n"
+        "                 specular;\n"
+        "}\n"
+        "cg_color_out.rgb = final_color.rgb;\n");
+
+    engine->shadow_mapping_fragment_snippet =
+        cg_snippet_new(CG_SNIPPET_HOOK_FRAGMENT,
+                       /* declarations */
+                       "in vec4 shadow_coords;\n",
+                       /* post */
+                       "#if __VERSION__ >= 130\n"
+                       "  vec4 texel10 =\n"
+                       "    texture (cg_sampler10, shadow_coords.xy);\n"
+                       "#else\n"
+                       "  vec4 texel10 =\n"
+                       "    texture2D (cg_sampler10, shadow_coords.xy);\n"
+                       "#endif\n"
+                       "  float distance_from_light = texel10.r + 0.0005;\n"
+                       "  float shadow = 1.0;\n"
+                       "  if (distance_from_light < shadow_coords.z)\n"
+                       "    shadow = 0.5;\n"
+                       "  cg_color_out.rgb = shadow * cg_color_out.rgb;\n");
+
+    engine->pointalism_halo_snippet =
+        cg_snippet_new(CG_SNIPPET_HOOK_FRAGMENT,
+                       /* declarations */
+                       "in vec4 av_color;\n",
+
+                       /* post */
+                       "  cg_color_out = av_color;\n"
+                       "#if __VERSION__ >= 130\n"
+                       "  cg_color_out *=\n"
+                       "    texture (cg_sampler0, cg_tex_coord0_in.st);\n"
+                       "#else\n"
+                       "  cg_color_out *=\n"
+                       "    texture2D (cg_sampler0, cg_tex_coord0_in.st);\n"
+                       "#endif\n"
+                       "  if (cg_color_out.a > 0.90 || cg_color_out.a <= 0.0)\n"
+                       "    discard;\n");
+
+    engine->pointalism_opaque_snippet = cg_snippet_new(
+        CG_SNIPPET_HOOK_FRAGMENT,
+        /* declarations */
+        "in vec4 av_color;\n",
+
+        /* post */
+        "  cg_color_out = av_color;\n"
+        "  cg_color_out *=\n"
+        "    cg_texture_lookup0 (cg_sampler0,\n"
+        "                          vec4(cg_tex_coord0_in.st, 0.0, 1.0));\n"
+        "  if (cg_color_out.a < 0.90)\n"
+        "    discard;\n");
+
+    engine->hair_simple_snippet = cg_snippet_new(
+        CG_SNIPPET_HOOK_FRAGMENT,
+        /* declarations */
+        "/* hair simple declarations */\n"
+        "in vec3 normal, eye_direction;\n"
+        "uniform vec4 light0_ambient, light0_diffuse, light0_specular;\n"
+        "uniform vec3 light0_direction_norm;\n",
+        /* post */
+        "#if __VERSION__ >= 130\n"
+        "  vec4 texel =\n"
+        "    texture (cg_sampler11, cg_tex_coord11_in.st);\n"
+        "#else\n"
+        "  vec4 texel =\n"
+        "    texture2D (cg_sampler11, cg_tex_coord11_in.st);\n"
+        "#endif\n"
+        "  cg_color_out *= texel;\n"
+        "  if (cg_color_out.a < 0.9)\n"
+        "    discard;\n"
+        "\n"
+        "  vec3 E = normalize (eye_direction);\n"
+        "  vec3 L = normalize (light0_direction_norm);\n"
+        "  vec3 H = normalize (L + E);\n"
+        "  vec3 N = normalize (normal);\n"
+        "  vec3 Ka = light0_ambient.rgb;\n"
+        "  vec3 Kd = vec3 (0.0, 0.0, 0.0);\n"
+        "  vec3 Ks = vec3 (0.0, 0.0, 0.0);\n"
+        "  float Pd = max (0.0, dot (N, L));\n"
+        "  float Ps = max (0.0, dot (N, H));\n"
+        "  float u = max (0.0, dot (N, L));\n"
+        "  float v = max (0.0, dot (N, H));\n"
+        "\n"
+        "  if (Pd > 0.0)\n"
+        "    Kd = light0_diffuse.rgb * pow (1.0 - (u * u), Pd / 2.0);\n"
+        "  if (Ps > 0.0)\n"
+        "    Ks = light0_specular.rgb * pow (1.0 - (v * v), Ps / 2.0);\n"
+        "\n"
+        "  vec3 color = Ka + Kd + Ks;\n"
+        "  cg_color_out.rgb *= color;\n");
+
+    engine->hair_material_snippet = cg_snippet_new(
+        CG_SNIPPET_HOOK_FRAGMENT,
+        /* declarations */
+        "/* hair material declarations */\n"
+        "in vec3 normal, eye_direction;\n"
+        "uniform vec4 light0_ambient, light0_diffuse, light0_specular;\n"
+        "uniform vec3 light0_direction_norm;\n"
+        "uniform vec4 material_ambient, material_diffuse, material_specular;\n"
+        "uniform float material_shininess;\n",
+        /* post */
+        "#if __VERSION__ >= 130\n"
+        "  vec4 texel =\n"
+        "    texture (cg_sampler11, cg_tex_coord11_in.st);\n"
+        "#else\n"
+        "  vec4 texel =\n"
+        "    texture2D (cg_sampler11, cg_tex_coord11_in.st);\n"
+        "#endif\n"
+        "\n"
+        "  cg_color_out *= texel;\n"
+        "  if (cg_color_out.a < 0.9)\n"
+        "    discard;\n"
+        "\n"
+        "  vec3 E = normalize(eye_direction);\n"
+        "  vec3 L = normalize (light0_direction_norm);\n"
+        "  vec3 H = normalize (L + E);\n"
+        "  vec3 N = normalize (normal);\n"
+        "  vec3 Ka = light0_ambient.rgb * material_ambient.rgb;\n"
+        "  vec3 Kd = vec3 (0.0, 0.0, 0.0);\n"
+        "  vec3 Ks = vec3 (0.0, 0.0, 0.0);\n"
+        "  float Pd = max (0.0, dot (N, L));\n"
+        "  float Ps = max (0.0, dot (N, H));\n"
+        "  float u = max (0.0, dot (N, L));\n"
+        "  float v = max (0.0, dot (N, H));\n"
+        "\n"
+        "  if (Pd > 0.0) {\n"
+        "    Kd = (light0_diffuse.rgb * material_diffuse.rgb) *\n"
+        "         pow (1.0 - (u * u), Pd / 2.0);\n"
+        "  }\n"
+        "  if (Ps > 0.0) {\n"
+        "    Ks = (light0_specular.rgb * material_specular.rgb) *\n"
+        "         pow (1.0 - (v * v), Ps / 2.0);\n"
+        "  }\n"
+        "\n"
+        "  vec3 color = Ka + Kd + Ks;\n"
+        "  cg_color_out.rgb *= color;\n");
+
+    engine->hair_vertex_snippet = cg_snippet_new(
+        CG_SNIPPET_HOOK_VERTEX,
+        /* declarations */
+        "uniform float hair_pos;\n",
+        /* post */
+        "vec4 displace = pos;\n"
+        "displace.xyz = cg_normal_in * hair_pos + displace.xyz;\n"
+        "cg_position_out = cg_modelview_projection_matrix * displace;\n");
+
+    engine->hair_fin_snippet = cg_snippet_new(
+        CG_SNIPPET_HOOK_VERTEX,
+        "uniform float length;\n",
+        "vec4 displace = pos;\n"
+        "if (cg_tex_coord11_in.t < 1.0)\n"
+        "displace.xyz += cg_normal_in * length;\n"
+        "cg_position_out = cg_modelview_projection_matrix * displace;\n");
+
+    init_dof_pipeline_template(engine);
+
+    init_dof_diamond_pipeline(engine);
+
+    init_dof_unshaped_pipeline(engine);
+
+    init_dof_pipeline(engine);
 }
 
 void
-rig_renderer_fini (RigEngine *engine)
+rig_renderer_fini(rig_engine_t *engine)
 {
-  cg_object_unref (engine->alpha_mask_snippet);
-  cg_object_unref (engine->lighting_vertex_snippet);
-  cg_object_unref (engine->normal_map_vertex_snippet);
-  cg_object_unref (engine->shadow_mapping_vertex_snippet);
-  cg_object_unref (engine->blended_discard_snippet);
-  cg_object_unref (engine->unblended_discard_snippet);
-  cg_object_unref (engine->premultiply_snippet);
-  cg_object_unref (engine->unpremultiply_snippet);
-  cg_object_unref (engine->normal_map_fragment_snippet);
-  cg_object_unref (engine->material_lighting_snippet);
-  cg_object_unref (engine->simple_lighting_snippet);
-  cg_object_unref (engine->shadow_mapping_fragment_snippet);
-  cg_object_unref (engine->pointalism_vertex_snippet);
-  cg_object_unref (engine->pointalism_halo_snippet);
-  cg_object_unref (engine->pointalism_opaque_snippet);
-  cg_object_unref (engine->cache_position_snippet);
+    cg_object_unref(engine->alpha_mask_snippet);
+    cg_object_unref(engine->lighting_vertex_snippet);
+    cg_object_unref(engine->normal_map_vertex_snippet);
+    cg_object_unref(engine->shadow_mapping_vertex_snippet);
+    cg_object_unref(engine->blended_discard_snippet);
+    cg_object_unref(engine->unblended_discard_snippet);
+    cg_object_unref(engine->premultiply_snippet);
+    cg_object_unref(engine->unpremultiply_snippet);
+    cg_object_unref(engine->normal_map_fragment_snippet);
+    cg_object_unref(engine->material_lighting_snippet);
+    cg_object_unref(engine->simple_lighting_snippet);
+    cg_object_unref(engine->shadow_mapping_fragment_snippet);
+    cg_object_unref(engine->pointalism_vertex_snippet);
+    cg_object_unref(engine->pointalism_halo_snippet);
+    cg_object_unref(engine->pointalism_opaque_snippet);
+    cg_object_unref(engine->cache_position_snippet);
 }
 
 static void
-add_material_for_mask (cg_pipeline_t *pipeline,
-                       RigEngine *engine,
-                       RigMaterial *material,
-                       RigImageSource **sources)
+add_material_for_mask(cg_pipeline_t *pipeline,
+                      rig_engine_t *engine,
+                      rig_material_t *material,
+                      rig_image_source_t **sources)
 {
-  if (sources[SOURCE_TYPE_ALPHA_MASK])
-    {
-      /* XXX: We assume a video source is opaque and so never add to
-       * mask pipeline. */
-      if (!rig_image_source_get_is_video (sources[SOURCE_TYPE_ALPHA_MASK]))
-        {
-          rig_image_source_setup_pipeline (sources[SOURCE_TYPE_ALPHA_MASK],
-                                           pipeline);
-          cg_pipeline_add_snippet (pipeline, engine->alpha_mask_snippet);
+    if (sources[SOURCE_TYPE_ALPHA_MASK]) {
+        /* XXX: We assume a video source is opaque and so never add to
+         * mask pipeline. */
+        if (!rig_image_source_get_is_video(sources[SOURCE_TYPE_ALPHA_MASK])) {
+            rig_image_source_setup_pipeline(sources[SOURCE_TYPE_ALPHA_MASK],
+                                            pipeline);
+            cg_pipeline_add_snippet(pipeline, engine->alpha_mask_snippet);
         }
     }
 
-  if (sources[SOURCE_TYPE_COLOR])
-    rig_image_source_setup_pipeline (sources[SOURCE_TYPE_COLOR], pipeline);
+    if (sources[SOURCE_TYPE_COLOR])
+        rig_image_source_setup_pipeline(sources[SOURCE_TYPE_COLOR], pipeline);
 }
 
 static cg_pipeline_t *
-get_entity_mask_pipeline (RigEngine *engine,
-                          RigEntity *entity,
-                          RutObject *geometry,
-                          RigMaterial *material,
-                          RigImageSource **sources,
-                          GetPipelineFlags flags)
+get_entity_mask_pipeline(rig_engine_t *engine,
+                         rig_entity_t *entity,
+                         rut_object_t *geometry,
+                         rig_material_t *material,
+                         rig_image_source_t **sources,
+                         get_pipeline_flags_t flags)
 {
-  cg_pipeline_t *pipeline;
+    cg_pipeline_t *pipeline;
 
-  pipeline = get_entity_pipeline_cache (entity, CACHE_SLOT_SHADOW);
+    pipeline = get_entity_pipeline_cache(entity, CACHE_SLOT_SHADOW);
 
-  if (pipeline)
-    {
-      if (sources[SOURCE_TYPE_COLOR] &&
-          rut_object_get_type (geometry) == &rig_pointalism_grid_type)
-        {
-          int location;
-          int scale, z;
+    if (pipeline) {
+        if (sources[SOURCE_TYPE_COLOR] &&
+            rut_object_get_type(geometry) == &rig_pointalism_grid_type) {
+            int location;
+            int scale, z;
 
-          if (rig_image_source_get_is_video (sources[SOURCE_TYPE_COLOR]))
-            rig_image_source_attach_frame (sources[SOURCE_TYPE_COLOR], pipeline);
+            if (rig_image_source_get_is_video(sources[SOURCE_TYPE_COLOR]))
+                rig_image_source_attach_frame(sources[SOURCE_TYPE_COLOR],
+                                              pipeline);
 
-          scale = rig_pointalism_grid_get_scale (geometry);
-          z = rig_pointalism_grid_get_z (geometry);
+            scale = rig_pointalism_grid_get_scale(geometry);
+            z = rig_pointalism_grid_get_z(geometry);
 
-          location = cg_pipeline_get_uniform_location (pipeline,
-                                                         "scale_factor");
-          cg_pipeline_set_uniform_1f (pipeline, location, scale);
+            location =
+                cg_pipeline_get_uniform_location(pipeline, "scale_factor");
+            cg_pipeline_set_uniform_1f(pipeline, location, scale);
 
-          location = cg_pipeline_get_uniform_location (pipeline, "z_trans");
-          cg_pipeline_set_uniform_1f (pipeline, location, z);
+            location = cg_pipeline_get_uniform_location(pipeline, "z_trans");
+            cg_pipeline_set_uniform_1f(pipeline, location, z);
 
-          location = cg_pipeline_get_uniform_location (pipeline, "anti_scale");
+            location = cg_pipeline_get_uniform_location(pipeline, "anti_scale");
 
-          if (rig_pointalism_grid_get_lighter (geometry))
-            cg_pipeline_set_uniform_1i (pipeline, location, 1);
-          else
-            cg_pipeline_set_uniform_1i (pipeline, location, 0);
+            if (rig_pointalism_grid_get_lighter(geometry))
+                cg_pipeline_set_uniform_1i(pipeline, location, 1);
+            else
+                cg_pipeline_set_uniform_1i(pipeline, location, 0);
         }
 
-      if (sources[SOURCE_TYPE_ALPHA_MASK])
-        {
-          int location;
-          if (rig_image_source_get_is_video (sources[SOURCE_TYPE_ALPHA_MASK]))
-            rig_image_source_attach_frame (sources[SOURCE_TYPE_COLOR], pipeline);
+        if (sources[SOURCE_TYPE_ALPHA_MASK]) {
+            int location;
+            if (rig_image_source_get_is_video(sources[SOURCE_TYPE_ALPHA_MASK]))
+                rig_image_source_attach_frame(sources[SOURCE_TYPE_COLOR],
+                                              pipeline);
 
-          location = cg_pipeline_get_uniform_location (pipeline,
-                       "material_alpha_threshold");
-          cg_pipeline_set_uniform_1f (pipeline, location,
-                                        material->alpha_mask_threshold);
+            location = cg_pipeline_get_uniform_location(
+                pipeline, "material_alpha_threshold");
+            cg_pipeline_set_uniform_1f(
+                pipeline, location, material->alpha_mask_threshold);
         }
 
-      return cg_object_ref (pipeline);
+        return cg_object_ref(pipeline);
     }
 
-  if (rut_object_get_type (geometry) == &rig_diamond_type)
-    {
-      pipeline = cg_object_ref (engine->dof_diamond_pipeline);
-      rig_diamond_apply_mask (geometry, pipeline);
+    if (rut_object_get_type(geometry) == &rig_diamond_type) {
+        pipeline = cg_object_ref(engine->dof_diamond_pipeline);
+        rig_diamond_apply_mask(geometry, pipeline);
 
-      if (material)
-        add_material_for_mask (pipeline, engine, material, sources);
-    }
-  else if (rut_object_get_type (geometry) == &rig_shape_type)
-    {
-      pipeline = cg_pipeline_copy (engine->dof_unshaped_pipeline);
+        if (material)
+            add_material_for_mask(pipeline, engine, material, sources);
+    } else if (rut_object_get_type(geometry) == &rig_shape_type) {
+        pipeline = cg_pipeline_copy(engine->dof_unshaped_pipeline);
 
-      if (rig_shape_get_shaped (geometry))
-        {
-          cg_texture_t *shape_texture =
-            rig_shape_get_shape_texture (geometry);
+        if (rig_shape_get_shaped(geometry)) {
+            cg_texture_t *shape_texture = rig_shape_get_shape_texture(geometry);
 
-          cg_pipeline_set_layer_texture (pipeline, 0, shape_texture);
+            cg_pipeline_set_layer_texture(pipeline, 0, shape_texture);
         }
 
-      if (material)
-        add_material_for_mask (pipeline, engine, material, sources);
-    }
-  else if (rut_object_get_type (geometry) == &rig_nine_slice_type)
-    {
-      pipeline = cg_pipeline_copy (engine->dof_unshaped_pipeline);
+        if (material)
+            add_material_for_mask(pipeline, engine, material, sources);
+    } else if (rut_object_get_type(geometry) == &rig_nine_slice_type) {
+        pipeline = cg_pipeline_copy(engine->dof_unshaped_pipeline);
 
-      if (material)
-        add_material_for_mask (pipeline, engine, material, sources);
-    }
-  else if (rut_object_get_type (geometry) == &rig_pointalism_grid_type)
-    {
-      pipeline = cg_pipeline_copy (engine->dof_diamond_pipeline);
+        if (material)
+            add_material_for_mask(pipeline, engine, material, sources);
+    } else if (rut_object_get_type(geometry) == &rig_pointalism_grid_type) {
+        pipeline = cg_pipeline_copy(engine->dof_diamond_pipeline);
 
-      if (material)
-        {
-          if (sources[SOURCE_TYPE_COLOR])
-            {
-              rig_image_source_set_first_layer (sources[SOURCE_TYPE_COLOR], 1);
-              rig_image_source_set_default_sample (sources[SOURCE_TYPE_COLOR], false);
-              rig_image_source_setup_pipeline (sources[SOURCE_TYPE_COLOR], pipeline);
-              cg_pipeline_add_snippet (pipeline,
-                                         engine->pointalism_vertex_snippet);
-             }
+        if (material) {
+            if (sources[SOURCE_TYPE_COLOR]) {
+                rig_image_source_set_first_layer(sources[SOURCE_TYPE_COLOR], 1);
+                rig_image_source_set_default_sample(sources[SOURCE_TYPE_COLOR],
+                                                    false);
+                rig_image_source_setup_pipeline(sources[SOURCE_TYPE_COLOR],
+                                                pipeline);
+                cg_pipeline_add_snippet(pipeline,
+                                        engine->pointalism_vertex_snippet);
+            }
 
-          if (sources[SOURCE_TYPE_ALPHA_MASK])
-            {
-              rig_image_source_set_first_layer (sources[SOURCE_TYPE_ALPHA_MASK], 4);
-              rig_image_source_set_default_sample (sources[SOURCE_TYPE_COLOR], false);
-              rig_image_source_setup_pipeline (sources[SOURCE_TYPE_COLOR], pipeline);
-              cg_pipeline_add_snippet (pipeline, engine->alpha_mask_snippet);
+            if (sources[SOURCE_TYPE_ALPHA_MASK]) {
+                rig_image_source_set_first_layer(
+                    sources[SOURCE_TYPE_ALPHA_MASK], 4);
+                rig_image_source_set_default_sample(sources[SOURCE_TYPE_COLOR],
+                                                    false);
+                rig_image_source_setup_pipeline(sources[SOURCE_TYPE_COLOR],
+                                                pipeline);
+                cg_pipeline_add_snippet(pipeline, engine->alpha_mask_snippet);
             }
         }
-    }
-  else
-    pipeline = cg_object_ref (engine->dof_pipeline);
+    } else
+        pipeline = cg_object_ref(engine->dof_pipeline);
 
-  set_entity_pipeline_cache (entity, CACHE_SLOT_SHADOW, pipeline);
+    set_entity_pipeline_cache(entity, CACHE_SLOT_SHADOW, pipeline);
 
-  return pipeline;
+    return pipeline;
 }
 
 static void
-get_light_modelviewprojection (const cg_matrix_t *model_transform,
-                               RigEntity  *light,
-                               const cg_matrix_t *light_projection,
-                               cg_matrix_t *light_mvp)
+get_light_modelviewprojection(const cg_matrix_t *model_transform,
+                              rig_entity_t *light,
+                              const cg_matrix_t *light_projection,
+                              cg_matrix_t *light_mvp)
 {
-  const cg_matrix_t *light_transform;
-  cg_matrix_t light_view;
+    const cg_matrix_t *light_transform;
+    cg_matrix_t light_view;
 
-  /* TODO: cache the bias * light_projection * light_view matrix! */
+    /* TODO: cache the bias * light_projection * light_view matrix! */
 
-  /* Move the unit engine from [-1,1] to [0,1], column major order */
-  float bias[16] = {
-    .5f, .0f, .0f, .0f,
-    .0f, .5f, .0f, .0f,
-    .0f, .0f, .5f, .0f,
-    .5f, .5f, .5f, 1.f
-  };
+    /* Move the unit engine from [-1,1] to [0,1], column major order */
+    float bias[16] = { .5f, .0f, .0f, .0f, .0f, .5f, .0f, .0f,
+                       .0f, .0f, .5f, .0f, .5f, .5f, .5f, 1.f };
 
-  light_transform = rig_entity_get_transform (light);
-  cg_matrix_get_inverse (light_transform, &light_view);
+    light_transform = rig_entity_get_transform(light);
+    cg_matrix_get_inverse(light_transform, &light_view);
 
-  cg_matrix_init_from_array (light_mvp, bias);
-  cg_matrix_multiply (light_mvp, light_mvp, light_projection);
-  cg_matrix_multiply (light_mvp, light_mvp, &light_view);
+    cg_matrix_init_from_array(light_mvp, bias);
+    cg_matrix_multiply(light_mvp, light_mvp, light_projection);
+    cg_matrix_multiply(light_mvp, light_mvp, &light_view);
 
-  cg_matrix_multiply (light_mvp, light_mvp, model_transform);
+    cg_matrix_multiply(light_mvp, light_mvp, model_transform);
 }
 
 static void
-image_source_changed_cb (RigImageSource *source,
-                         void *user_data)
+image_source_changed_cb(rig_image_source_t *source, void *user_data)
 {
-  RigEngine *engine = user_data;
+    rig_engine_t *engine = user_data;
 
-  rut_shell_queue_redraw (engine->shell);
+    rut_shell_queue_redraw(engine->shell);
 }
 
 static cg_pipeline_t *
-get_entity_color_pipeline (RigEngine *engine,
-                           RigEntity *entity,
-                           RutObject *geometry,
-                           RigMaterial *material,
-                           RigImageSource **sources,
-                           GetPipelineFlags flags,
-                           bool blended)
+get_entity_color_pipeline(rig_engine_t *engine,
+                          rig_entity_t *entity,
+                          rut_object_t *geometry,
+                          rig_material_t *material,
+                          rig_image_source_t **sources,
+                          get_pipeline_flags_t flags,
+                          bool blended)
 {
-  RigRendererPriv *priv = entity->renderer_priv;
-  cg_depth_state_t depth_state;
-  cg_pipeline_t *pipeline;
-  cg_pipeline_t *fin_pipeline;
-  cg_framebuffer_t *shadow_fb;
-  cg_snippet_t *blend = engine->blended_discard_snippet;
-  cg_snippet_t *unblend = engine->unblended_discard_snippet;
-  RutObject *hair;
-  int i;
+    rig_renderer_priv_t *priv = entity->renderer_priv;
+    cg_depth_state_t depth_state;
+    cg_pipeline_t *pipeline;
+    cg_pipeline_t *fin_pipeline;
+    cg_framebuffer_t *shadow_fb;
+    cg_snippet_t *blend = engine->blended_discard_snippet;
+    cg_snippet_t *unblend = engine->unblended_discard_snippet;
+    rut_object_t *hair;
+    int i;
 
-  /* TODO: come up with a scheme for minimizing how many separate
-   * cg_pipeline_ts we create or at least deriving the pipelines
-   * from a small set of templates.
-   */
+    /* TODO: come up with a scheme for minimizing how many separate
+     * cg_pipeline_ts we create or at least deriving the pipelines
+     * from a small set of templates.
+     */
 
-  hair = rig_entity_get_component (entity, RUT_COMPONENT_TYPE_HAIR);
+    hair = rig_entity_get_component(entity, RUT_COMPONENT_TYPE_HAIR);
 
-  if (blended)
-    {
-      pipeline = get_entity_pipeline_cache (entity, CACHE_SLOT_COLOR_BLENDED);
-      if (hair)
-        fin_pipeline = get_entity_pipeline_cache (entity,
-                                                  CACHE_SLOT_HAIR_FINS_BLENDED);
-    }
-  else
-    {
-      pipeline = get_entity_pipeline_cache (entity,
-                                            CACHE_SLOT_COLOR_UNBLENDED);
-      if (hair)
-        fin_pipeline = get_entity_pipeline_cache (entity,
-                                                  CACHE_SLOT_HAIR_FINS_UNBLENDED);
+    if (blended) {
+        pipeline = get_entity_pipeline_cache(entity, CACHE_SLOT_COLOR_BLENDED);
+        if (hair)
+            fin_pipeline =
+                get_entity_pipeline_cache(entity, CACHE_SLOT_HAIR_FINS_BLENDED);
+    } else {
+        pipeline =
+            get_entity_pipeline_cache(entity, CACHE_SLOT_COLOR_UNBLENDED);
+        if (hair)
+            fin_pipeline = get_entity_pipeline_cache(
+                entity, CACHE_SLOT_HAIR_FINS_UNBLENDED);
     }
 
-  if (pipeline)
-    {
-      cg_object_ref (pipeline);
-      goto FOUND;
+    if (pipeline) {
+        cg_object_ref(pipeline);
+        goto FOUND;
     }
 
-  pipeline = cg_pipeline_new (engine->ctx->cg_context);
+    pipeline = cg_pipeline_new(engine->ctx->cg_context);
 
-  if (sources[SOURCE_TYPE_COLOR])
-    rig_image_source_setup_pipeline (sources[SOURCE_TYPE_COLOR], pipeline);
-  if (sources[SOURCE_TYPE_ALPHA_MASK])
-    rig_image_source_setup_pipeline (sources[SOURCE_TYPE_ALPHA_MASK], pipeline);
-  if (sources[SOURCE_TYPE_NORMAL_MAP])
-    rig_image_source_setup_pipeline (sources[SOURCE_TYPE_NORMAL_MAP], pipeline);
+    if (sources[SOURCE_TYPE_COLOR])
+        rig_image_source_setup_pipeline(sources[SOURCE_TYPE_COLOR], pipeline);
+    if (sources[SOURCE_TYPE_ALPHA_MASK])
+        rig_image_source_setup_pipeline(sources[SOURCE_TYPE_ALPHA_MASK],
+                                        pipeline);
+    if (sources[SOURCE_TYPE_NORMAL_MAP])
+        rig_image_source_setup_pipeline(sources[SOURCE_TYPE_NORMAL_MAP],
+                                        pipeline);
 
-  cg_pipeline_set_color4f (pipeline, 0.8f, 0.8f, 0.8f, 1.f);
+    cg_pipeline_set_color4f(pipeline, 0.8f, 0.8f, 0.8f, 1.f);
 
-  /* enable depth testing */
-  cg_depth_state_init (&depth_state);
-  cg_depth_state_set_test_enabled (&depth_state, true);
+    /* enable depth testing */
+    cg_depth_state_init(&depth_state);
+    cg_depth_state_set_test_enabled(&depth_state, true);
 
-  if (blended)
-    cg_depth_state_set_write_enabled (&depth_state, false);
+    if (blended)
+        cg_depth_state_set_write_enabled(&depth_state, false);
 
-  cg_pipeline_set_depth_state (pipeline, &depth_state, NULL);
+    cg_pipeline_set_depth_state(pipeline, &depth_state, NULL);
 
-  cg_pipeline_add_snippet (pipeline, engine->cache_position_snippet);
+    cg_pipeline_add_snippet(pipeline, engine->cache_position_snippet);
 
-  /* Vertex shader setup for lighting */
+    /* vertex_t shader setup for lighting */
 
-  cg_pipeline_add_snippet (pipeline, engine->lighting_vertex_snippet);
+    cg_pipeline_add_snippet(pipeline, engine->lighting_vertex_snippet);
 
-  if (sources[SOURCE_TYPE_NORMAL_MAP])
-    cg_pipeline_add_snippet (pipeline, engine->normal_map_vertex_snippet);
+    if (sources[SOURCE_TYPE_NORMAL_MAP])
+        cg_pipeline_add_snippet(pipeline, engine->normal_map_vertex_snippet);
 
-  if (rig_material_get_receive_shadow (material))
-    cg_pipeline_add_snippet (pipeline, engine->shadow_mapping_vertex_snippet);
+    if (rig_material_get_receive_shadow(material))
+        cg_pipeline_add_snippet(pipeline,
+                                engine->shadow_mapping_vertex_snippet);
 
-  if (rut_object_get_type (geometry) == &rig_nine_slice_type &&
-      !priv->nine_slice_closure)
-    {
-      priv->nine_slice_closure =
-        rig_nine_slice_add_update_callback ((RigNineSlice *)geometry,
-                                            nine_slice_changed_cb,
-                                            NULL,
-                                            NULL);
-    }
-  else if (rut_object_get_type (geometry) == &rig_shape_type)
-    {
-      cg_texture_t *shape_texture;
+    if (rut_object_get_type(geometry) == &rig_nine_slice_type &&
+        !priv->nine_slice_closure) {
+        priv->nine_slice_closure = rig_nine_slice_add_update_callback(
+            (rig_nine_slice_t *)geometry, nine_slice_changed_cb, NULL, NULL);
+    } else if (rut_object_get_type(geometry) == &rig_shape_type) {
+        cg_texture_t *shape_texture;
 
-      if (rig_shape_get_shaped (geometry))
-        {
-          shape_texture =
-            rig_shape_get_shape_texture (geometry);
-          cg_pipeline_set_layer_texture (pipeline, 0, shape_texture);
+        if (rig_shape_get_shaped(geometry)) {
+            shape_texture = rig_shape_get_shape_texture(geometry);
+            cg_pipeline_set_layer_texture(pipeline, 0, shape_texture);
         }
 
-      if (priv->reshaped_closure)
-        {
-          priv->reshaped_closure =
-            rig_shape_add_reshaped_callback (geometry,
-                                             reshape_cb,
-                                             NULL,
-                                             NULL);
+        if (priv->reshaped_closure) {
+            priv->reshaped_closure = rig_shape_add_reshaped_callback(
+                geometry, reshape_cb, NULL, NULL);
         }
-    }
-  else if (rut_object_get_type (geometry) == &rig_diamond_type &&
-           !priv->diamond_closure)
-    {
-      rig_diamond_apply_mask (geometry, pipeline);
+    } else if (rut_object_get_type(geometry) == &rig_diamond_type &&
+               !priv->diamond_closure) {
+        rig_diamond_apply_mask(geometry, pipeline);
 
-      priv->diamond_closure =
-        rig_diamond_add_update_callback ((RigDiamond *)geometry,
-                                         diamond_changed_cb,
-                                         NULL,
-                                         NULL);
-    }
-  else if (rut_object_get_type (geometry) == &rig_pointalism_grid_type &&
-           sources[SOURCE_TYPE_COLOR])
-    {
-      if (!priv->pointalism_grid_update_closure)
-        {
-          RigPointalismGrid *grid = (RigPointalismGrid *)geometry;
-          priv->pointalism_grid_update_closure =
-            rig_pointalism_grid_add_update_callback (grid,
-                                                     pointalism_changed_cb,
-                                                     NULL,
-                                                     NULL);
+        priv->diamond_closure = rig_diamond_add_update_callback(
+            (rig_diamond_t *)geometry, diamond_changed_cb, NULL, NULL);
+    } else if (rut_object_get_type(geometry) == &rig_pointalism_grid_type &&
+               sources[SOURCE_TYPE_COLOR]) {
+        if (!priv->pointalism_grid_update_closure) {
+            rig_pointalism_grid_t *grid = (rig_pointalism_grid_t *)geometry;
+            priv->pointalism_grid_update_closure =
+                rig_pointalism_grid_add_update_callback(
+                    grid, pointalism_changed_cb, NULL, NULL);
         }
 
-      cg_pipeline_set_layer_texture (pipeline, 0,
-                                       engine->ctx->circle_texture);
-      cg_pipeline_set_layer_filters (pipeline, 0,
-        CG_PIPELINE_FILTER_LINEAR_MIPMAP_LINEAR,
-        CG_PIPELINE_FILTER_LINEAR);
+        cg_pipeline_set_layer_texture(pipeline, 0, engine->ctx->circle_texture);
+        cg_pipeline_set_layer_filters(pipeline,
+                                      0,
+                                      CG_PIPELINE_FILTER_LINEAR_MIPMAP_LINEAR,
+                                      CG_PIPELINE_FILTER_LINEAR);
 
-      cg_pipeline_add_snippet (pipeline,
-                                 engine->pointalism_vertex_snippet);
+        cg_pipeline_add_snippet(pipeline, engine->pointalism_vertex_snippet);
 
-      blend = engine->pointalism_halo_snippet;
-      unblend = engine->pointalism_opaque_snippet;
+        blend = engine->pointalism_halo_snippet;
+        unblend = engine->pointalism_opaque_snippet;
     }
 
-  /*if (hair)
-    {
-      cg_pipeline_add_snippet (pipeline, engine->hair_fin_snippet);
-      rig_hair_set_uniform_location (hair, pipeline,
-                                     blended ? RIG_HAIR_SHELL_POSITION_BLENDED :
-                                     RIG_HAIR_SHELL_POSITION_UNBLENDED);
-    }*/
+    /*if (hair)
+       {
+        cg_pipeline_add_snippet (pipeline, engine->hair_fin_snippet);
+        rig_hair_set_uniform_location (hair, pipeline,
+                                       blended ? RIG_HAIR_SHELL_POSITION_BLENDED
+       :
+                                       RIG_HAIR_SHELL_POSITION_UNBLENDED);
+       }*/
 
-  /* and fragment shader */
+    /* and fragment shader */
 
-  /* XXX: ideally we wouldn't have to rely on conditionals + discards
-   * in the fragment shader to differentiate blended and unblended
-   * regions and instead we should let users mark out opaque regions
-   * in geometry.
-   */
-  cg_pipeline_add_snippet (pipeline,  blended ? blend : unblend);
+    /* XXX: ideally we wouldn't have to rely on conditionals + discards
+     * in the fragment shader to differentiate blended and unblended
+     * regions and instead we should let users mark out opaque regions
+     * in geometry.
+     */
+    cg_pipeline_add_snippet(pipeline, blended ? blend : unblend);
 
-  cg_pipeline_add_snippet (pipeline, engine->unpremultiply_snippet);
+    cg_pipeline_add_snippet(pipeline, engine->unpremultiply_snippet);
 
+    if (hair) {
+        if (sources[SOURCE_TYPE_COLOR] || sources[SOURCE_TYPE_ALPHA_MASK] ||
+            sources[SOURCE_TYPE_NORMAL_MAP]) {
+            cg_pipeline_add_snippet(pipeline, engine->hair_material_snippet);
+        } else
+            cg_pipeline_add_snippet(pipeline, engine->hair_simple_snippet);
 
-  if (hair)
-    {
-      if (sources[SOURCE_TYPE_COLOR] ||
-          sources[SOURCE_TYPE_ALPHA_MASK] ||
-          sources[SOURCE_TYPE_NORMAL_MAP])
-        {
-          cg_pipeline_add_snippet (pipeline, engine->hair_material_snippet);
+        cg_pipeline_set_layer_combine(
+            pipeline, 11, "RGBA=REPLACE(PREVIOUS)", NULL);
+
+        fin_pipeline = cg_pipeline_copy(pipeline);
+        cg_pipeline_add_snippet(fin_pipeline, engine->hair_fin_snippet);
+        cg_pipeline_add_snippet(pipeline, engine->hair_vertex_snippet);
+        rig_hair_set_uniform_location(hair,
+                                      pipeline,
+                                      blended
+                                      ? RIG_HAIR_SHELL_POSITION_BLENDED
+                                      : RIG_HAIR_SHELL_POSITION_UNBLENDED);
+        rig_hair_set_uniform_location(hair, fin_pipeline, RIG_HAIR_LENGTH);
+    } else if (sources[SOURCE_TYPE_COLOR] || sources[SOURCE_TYPE_ALPHA_MASK] ||
+               sources[SOURCE_TYPE_NORMAL_MAP]) {
+        if (sources[SOURCE_TYPE_ALPHA_MASK])
+            cg_pipeline_add_snippet(pipeline, engine->alpha_mask_snippet);
+
+        if (sources[SOURCE_TYPE_NORMAL_MAP])
+            cg_pipeline_add_snippet(pipeline,
+                                    engine->normal_map_fragment_snippet);
+        else
+            cg_pipeline_add_snippet(pipeline,
+                                    engine->material_lighting_snippet);
+    } else
+        cg_pipeline_add_snippet(pipeline, engine->simple_lighting_snippet);
+
+    if (rig_material_get_receive_shadow(material)) {
+        /* Hook the shadow map sampling */
+
+        cg_pipeline_set_layer_texture(pipeline, 10, engine->shadow_map);
+        /* For debugging the shadow mapping... */
+        // cg_pipeline_set_layer_texture (pipeline, 7, engine->shadow_color);
+        // cg_pipeline_set_layer_texture (pipeline, 7, engine->gradient);
+
+        /* We don't want this layer to be automatically modulated with the
+         * previous layers so we set its combine mode to "REPLACE" so it
+         * will be skipped past and we can sample its texture manually */
+        cg_pipeline_set_layer_combine(
+            pipeline, 10, "RGBA=REPLACE(PREVIOUS)", NULL);
+
+        /* Handle shadow mapping */
+        cg_pipeline_add_snippet(pipeline,
+                                engine->shadow_mapping_fragment_snippet);
+    }
+
+    cg_pipeline_add_snippet(pipeline, engine->premultiply_snippet);
+
+    if (hair)
+        cg_pipeline_add_snippet(fin_pipeline, engine->premultiply_snippet);
+
+    if (!blended) {
+        cg_pipeline_set_blend(pipeline, "RGBA = ADD (SRC_COLOR, 0)", NULL);
+        set_entity_pipeline_cache(entity, CACHE_SLOT_COLOR_UNBLENDED, pipeline);
+        if (hair) {
+            cg_pipeline_set_blend(
+                fin_pipeline, "RGBA = ADD (SRC_COLOR, 0)", NULL);
+            set_entity_pipeline_cache(
+                entity, CACHE_SLOT_HAIR_FINS_UNBLENDED, fin_pipeline);
         }
-      else
-        cg_pipeline_add_snippet (pipeline, engine->hair_simple_snippet);
-
-      cg_pipeline_set_layer_combine (pipeline, 11, "RGBA=REPLACE(PREVIOUS)",
-                                       NULL);
-
-      fin_pipeline = cg_pipeline_copy (pipeline);
-      cg_pipeline_add_snippet (fin_pipeline, engine->hair_fin_snippet);
-      cg_pipeline_add_snippet (pipeline, engine->hair_vertex_snippet);
-      rig_hair_set_uniform_location (hair, pipeline,
-                                     blended ? RIG_HAIR_SHELL_POSITION_BLENDED :
-                                     RIG_HAIR_SHELL_POSITION_UNBLENDED);
-      rig_hair_set_uniform_location (hair, fin_pipeline, RIG_HAIR_LENGTH);
-    }
-  else if (sources[SOURCE_TYPE_COLOR] ||
-           sources[SOURCE_TYPE_ALPHA_MASK] ||
-           sources[SOURCE_TYPE_NORMAL_MAP])
-    {
-      if (sources[SOURCE_TYPE_ALPHA_MASK])
-        cg_pipeline_add_snippet (pipeline, engine->alpha_mask_snippet);
-
-      if (sources[SOURCE_TYPE_NORMAL_MAP])
-        cg_pipeline_add_snippet (pipeline,
-                                   engine->normal_map_fragment_snippet);
-      else
-        cg_pipeline_add_snippet (pipeline,
-                                   engine->material_lighting_snippet);
-    }
-  else
-    cg_pipeline_add_snippet (pipeline, engine->simple_lighting_snippet);
-
-
-  if (rig_material_get_receive_shadow (material))
-    {
-      /* Hook the shadow map sampling */
-
-      cg_pipeline_set_layer_texture (pipeline, 10, engine->shadow_map);
-      /* For debugging the shadow mapping... */
-      //cg_pipeline_set_layer_texture (pipeline, 7, engine->shadow_color);
-      //cg_pipeline_set_layer_texture (pipeline, 7, engine->gradient);
-
-      /* We don't want this layer to be automatically modulated with the
-       * previous layers so we set its combine mode to "REPLACE" so it
-       * will be skipped past and we can sample its texture manually */
-      cg_pipeline_set_layer_combine (pipeline, 10, "RGBA=REPLACE(PREVIOUS)",
-                                       NULL);
-
-      /* Handle shadow mapping */
-      cg_pipeline_add_snippet (pipeline,
-                                 engine->shadow_mapping_fragment_snippet);
-    }
-
-  cg_pipeline_add_snippet (pipeline, engine->premultiply_snippet);
-
-  if (hair)
-    cg_pipeline_add_snippet (fin_pipeline, engine->premultiply_snippet);
-
-  if (!blended)
-    {
-      cg_pipeline_set_blend (pipeline, "RGBA = ADD (SRC_COLOR, 0)", NULL);
-      set_entity_pipeline_cache (entity, CACHE_SLOT_COLOR_UNBLENDED, pipeline);
-      if (hair)
-        {
-          cg_pipeline_set_blend (fin_pipeline, "RGBA = ADD (SRC_COLOR, 0)", NULL);
-          set_entity_pipeline_cache (entity,
-                                     CACHE_SLOT_HAIR_FINS_UNBLENDED, fin_pipeline);
-        }
-    }
-  else
-    {
-      set_entity_pipeline_cache (entity, CACHE_SLOT_COLOR_BLENDED, pipeline);
-      if (hair)
-        set_entity_pipeline_cache (entity,
-                                   CACHE_SLOT_HAIR_FINS_BLENDED, fin_pipeline);
+    } else {
+        set_entity_pipeline_cache(entity, CACHE_SLOT_COLOR_BLENDED, pipeline);
+        if (hair)
+            set_entity_pipeline_cache(
+                entity, CACHE_SLOT_HAIR_FINS_BLENDED, fin_pipeline);
     }
 
 FOUND:
 
-  /* FIXME: there's lots to optimize about this! */
-  shadow_fb = engine->shadow_fb;
+    /* FIXME: there's lots to optimize about this! */
+    shadow_fb = engine->shadow_fb;
 
-  /* update uniforms in pipelines */
-  {
-    cg_matrix_t light_shadow_matrix, light_projection;
-    cg_matrix_t model_transform;
-    const float *light_matrix;
-    int location;
+    /* update uniforms in pipelines */
+    {
+        cg_matrix_t light_shadow_matrix, light_projection;
+        cg_matrix_t model_transform;
+        const float *light_matrix;
+        int location;
 
-    cg_framebuffer_get_projection_matrix (shadow_fb, &light_projection);
+        cg_framebuffer_get_projection_matrix(shadow_fb, &light_projection);
 
-    /* TODO: use Cogl's MatrixStack api so we can update the entity
-     * model matrix incrementally as we traverse the scenegraph */
-    rut_graphable_get_transform (entity, &model_transform);
+        /* TODO: use Cogl's MatrixStack api so we can update the entity
+         * model matrix incrementally as we traverse the scenegraph */
+        rut_graphable_get_transform(entity, &model_transform);
 
-    get_light_modelviewprojection (&model_transform,
-                                   engine->current_ui->light,
-                                   &light_projection,
-                                   &light_shadow_matrix);
+        get_light_modelviewprojection(&model_transform,
+                                      engine->current_ui->light,
+                                      &light_projection,
+                                      &light_shadow_matrix);
 
-    light_matrix = cg_matrix_get_array (&light_shadow_matrix);
+        light_matrix = cg_matrix_get_array(&light_shadow_matrix);
 
-    location = cg_pipeline_get_uniform_location (pipeline,
-                                                   "light_shadow_matrix");
-    cg_pipeline_set_uniform_matrix (pipeline,
-                                      location,
-                                      4, 1,
-                                      false,
-                                      light_matrix);
-    if (hair)
-      cg_pipeline_set_uniform_matrix (fin_pipeline,
-                                        location,
-                                        4, 1,
-                                        false,
-                                        light_matrix);
+        location =
+            cg_pipeline_get_uniform_location(pipeline, "light_shadow_matrix");
+        cg_pipeline_set_uniform_matrix(
+            pipeline, location, 4, 1, false, light_matrix);
+        if (hair)
+            cg_pipeline_set_uniform_matrix(
+                fin_pipeline, location, 4, 1, false, light_matrix);
 
-    for (i = 0; i < 3; i++)
-      if (sources[i])
-        rig_image_source_attach_frame (sources[i], pipeline);
-  }
+        for (i = 0; i < 3; i++)
+            if (sources[i])
+                rig_image_source_attach_frame(sources[i], pipeline);
+    }
 
-  return pipeline;
+    return pipeline;
 }
 
 static void
-image_source_ready_cb (RigImageSource *source,
-                       void *user_data)
+image_source_ready_cb(rig_image_source_t *source, void *user_data)
 {
-  RigEntity *entity = user_data;
-  RigImageSource *color_src;
-  RutObject *geometry;
-  RigMaterial *material;
-  float width, height;
+    rig_entity_t *entity = user_data;
+    rig_image_source_t *color_src;
+    rut_object_t *geometry;
+    rig_material_t *material;
+    float width, height;
 
-  geometry = rig_entity_get_component (entity, RUT_COMPONENT_TYPE_GEOMETRY);
-  material = rig_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
+    geometry = rig_entity_get_component(entity, RUT_COMPONENT_TYPE_GEOMETRY);
+    material = rig_entity_get_component(entity, RUT_COMPONENT_TYPE_MATERIAL);
 
-  dirty_entity_pipelines (entity);
+    dirty_entity_pipelines(entity);
 
-  if (material->color_source_asset)
-    color_src = get_entity_image_source_cache (entity, SOURCE_TYPE_COLOR);
-  else
-    color_src = NULL;
+    if (material->color_source_asset)
+        color_src = get_entity_image_source_cache(entity, SOURCE_TYPE_COLOR);
+    else
+        color_src = NULL;
 
-  /* If the color source has changed then we may also need to update
-   * the geometry according to the size of the color source */
-  if (source != color_src)
-    return;
+    /* If the color source has changed then we may also need to update
+     * the geometry according to the size of the color source */
+    if (source != color_src)
+        return;
 
-  rig_image_source_get_natural_size (source, &width, &height);
+    rig_image_source_get_natural_size(source, &width, &height);
 
-  if (rut_object_is (geometry, RUT_TRAIT_ID_IMAGE_SIZE_DEPENDENT))
-    {
-      RutImageSizeDependantVTable *dependant =
-        rut_object_get_vtable (geometry, RUT_TRAIT_ID_IMAGE_SIZE_DEPENDENT);
-      dependant->set_image_size (geometry, width, height);
+    if (rut_object_is(geometry, RUT_TRAIT_ID_IMAGE_SIZE_DEPENDENT)) {
+        rut_image_size_dependant_vtable_t *dependant =
+            rut_object_get_vtable(geometry, RUT_TRAIT_ID_IMAGE_SIZE_DEPENDENT);
+        dependant->set_image_size(geometry, width, height);
     }
 }
 
 static cg_pipeline_t *
-get_entity_pipeline (RigEngine *engine,
-                     RigEntity *entity,
-                     RutComponent *geometry,
-                     RigPass pass)
+get_entity_pipeline(rig_engine_t *engine,
+                    rig_entity_t *entity,
+                    rut_component_t *geometry,
+                    rig_pass_t pass)
 {
-  RigMaterial *material =
-    rig_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
-  RigImageSource *sources[3];
-  GetPipelineFlags flags = 0;
-  RigAsset *asset;
+    rig_material_t *material =
+        rig_entity_get_component(entity, RUT_COMPONENT_TYPE_MATERIAL);
+    rig_image_source_t *sources[3];
+    get_pipeline_flags_t flags = 0;
+    rig_asset_t *asset;
 
-  c_return_val_if_fail (material != NULL, NULL);
+    c_return_val_if_fail(material != NULL, NULL);
 
-  /* FIXME: Instead of having rig_entity apis for caching image
-   * sources, we should allow the renderer to track arbitrary
-   * private state with entities so it can better manage caches
-   * of different kinds of derived, renderer specific state.
-   */
+    /* FIXME: Instead of having rig_entity apis for caching image
+     * sources, we should allow the renderer to track arbitrary
+     * private state with entities so it can better manage caches
+     * of different kinds of derived, renderer specific state.
+     */
 
-  sources[SOURCE_TYPE_COLOR] =
-    get_entity_image_source_cache (entity, SOURCE_TYPE_COLOR);
-  sources[SOURCE_TYPE_ALPHA_MASK] =
-    get_entity_image_source_cache (entity, SOURCE_TYPE_ALPHA_MASK);
-  sources[SOURCE_TYPE_NORMAL_MAP] =
-    get_entity_image_source_cache (entity, SOURCE_TYPE_NORMAL_MAP);
+    sources[SOURCE_TYPE_COLOR] =
+        get_entity_image_source_cache(entity, SOURCE_TYPE_COLOR);
+    sources[SOURCE_TYPE_ALPHA_MASK] =
+        get_entity_image_source_cache(entity, SOURCE_TYPE_ALPHA_MASK);
+    sources[SOURCE_TYPE_NORMAL_MAP] =
+        get_entity_image_source_cache(entity, SOURCE_TYPE_NORMAL_MAP);
 
-  /* Materials may be associated with various image sources which need
-   * to be setup before we try creating pipelines and querying the
-   * geometry of entities because many components are influenced by
-   * the size of associated images being mapped.
-   */
-  asset = material->color_source_asset;
+    /* Materials may be associated with various image sources which need
+     * to be setup before we try creating pipelines and querying the
+     * geometry of entities because many components are influenced by
+     * the size of associated images being mapped.
+     */
+    asset = material->color_source_asset;
 
-  if (asset && !sources[SOURCE_TYPE_COLOR])
-    {
-      sources[SOURCE_TYPE_COLOR] = rig_image_source_new (engine, asset);
+    if (asset && !sources[SOURCE_TYPE_COLOR]) {
+        sources[SOURCE_TYPE_COLOR] = rig_image_source_new(engine, asset);
 
-      set_entity_image_source_cache (entity,
-                                     SOURCE_TYPE_COLOR,
-                                     sources[SOURCE_TYPE_COLOR]);
-#warning "FIXME: we need to track this as renderer priv since we're leaking closures a.t.m"
-      rig_image_source_add_ready_callback (sources[SOURCE_TYPE_COLOR],
-                                           image_source_ready_cb,
-                                           entity, NULL);
-      rig_image_source_add_on_changed_callback (sources[SOURCE_TYPE_COLOR],
-                                                image_source_changed_cb,
-                                                engine,
-                                                NULL);
+        set_entity_image_source_cache(
+            entity, SOURCE_TYPE_COLOR, sources[SOURCE_TYPE_COLOR]);
+#warning                                                                       \
+        "FIXME: we need to track this as renderer priv since we're leaking closures a.t.m"
+        rig_image_source_add_ready_callback(
+            sources[SOURCE_TYPE_COLOR], image_source_ready_cb, entity, NULL);
+        rig_image_source_add_on_changed_callback(
+            sources[SOURCE_TYPE_COLOR], image_source_changed_cb, engine, NULL);
 
-      rig_image_source_set_first_layer (sources[SOURCE_TYPE_COLOR], 1);
+        rig_image_source_set_first_layer(sources[SOURCE_TYPE_COLOR], 1);
     }
 
-  asset = material->alpha_mask_asset;
+    asset = material->alpha_mask_asset;
 
-  if (asset && !sources[SOURCE_TYPE_ALPHA_MASK])
-    {
-      sources[SOURCE_TYPE_ALPHA_MASK] = rig_image_source_new (engine, asset);
+    if (asset && !sources[SOURCE_TYPE_ALPHA_MASK]) {
+        sources[SOURCE_TYPE_ALPHA_MASK] = rig_image_source_new(engine, asset);
 
-      set_entity_image_source_cache (entity, 1, sources[SOURCE_TYPE_ALPHA_MASK]);
-#warning "FIXME: we need to track this as renderer priv since we're leaking closures a.t.m"
-      rig_image_source_add_ready_callback (sources[SOURCE_TYPE_ALPHA_MASK],
-                                           image_source_ready_cb,
-                                           entity, NULL);
-      rig_image_source_add_on_changed_callback (sources[SOURCE_TYPE_ALPHA_MASK],
-                                                image_source_changed_cb,
-                                                engine,
-                                                NULL);
+        set_entity_image_source_cache(
+            entity, 1, sources[SOURCE_TYPE_ALPHA_MASK]);
+#warning                                                                       \
+        "FIXME: we need to track this as renderer priv since we're leaking closures a.t.m"
+        rig_image_source_add_ready_callback(sources[SOURCE_TYPE_ALPHA_MASK],
+                                            image_source_ready_cb,
+                                            entity,
+                                            NULL);
+        rig_image_source_add_on_changed_callback(
+            sources[SOURCE_TYPE_ALPHA_MASK],
+            image_source_changed_cb,
+            engine,
+            NULL);
 
-      rig_image_source_set_first_layer (sources[SOURCE_TYPE_ALPHA_MASK], 4);
-      rig_image_source_set_default_sample (sources[SOURCE_TYPE_ALPHA_MASK],
-                                           false);
+        rig_image_source_set_first_layer(sources[SOURCE_TYPE_ALPHA_MASK], 4);
+        rig_image_source_set_default_sample(sources[SOURCE_TYPE_ALPHA_MASK],
+                                            false);
     }
 
-  asset = material->normal_map_asset;
+    asset = material->normal_map_asset;
 
-  if (asset && !sources[SOURCE_TYPE_NORMAL_MAP])
-    {
-      sources[SOURCE_TYPE_NORMAL_MAP] = rig_image_source_new (engine, asset);
+    if (asset && !sources[SOURCE_TYPE_NORMAL_MAP]) {
+        sources[SOURCE_TYPE_NORMAL_MAP] = rig_image_source_new(engine, asset);
 
-      set_entity_image_source_cache (entity, 2, sources[SOURCE_TYPE_NORMAL_MAP]);
-#warning "FIXME: we need to track this as renderer priv since we're leaking closures a.t.m"
-      rig_image_source_add_ready_callback (sources[SOURCE_TYPE_NORMAL_MAP],
-                                           image_source_ready_cb,
-                                           entity, NULL);
-      rig_image_source_add_on_changed_callback (sources[SOURCE_TYPE_NORMAL_MAP],
-                                                image_source_changed_cb,
-                                                engine,
-                                                NULL);
+        set_entity_image_source_cache(
+            entity, 2, sources[SOURCE_TYPE_NORMAL_MAP]);
+#warning                                                                       \
+        "FIXME: we need to track this as renderer priv since we're leaking closures a.t.m"
+        rig_image_source_add_ready_callback(sources[SOURCE_TYPE_NORMAL_MAP],
+                                            image_source_ready_cb,
+                                            entity,
+                                            NULL);
+        rig_image_source_add_on_changed_callback(
+            sources[SOURCE_TYPE_NORMAL_MAP],
+            image_source_changed_cb,
+            engine,
+            NULL);
 
-      rig_image_source_set_first_layer (sources[SOURCE_TYPE_NORMAL_MAP], 7);
-      rig_image_source_set_default_sample (sources[SOURCE_TYPE_NORMAL_MAP],
-                                           false);
+        rig_image_source_set_first_layer(sources[SOURCE_TYPE_NORMAL_MAP], 7);
+        rig_image_source_set_default_sample(sources[SOURCE_TYPE_NORMAL_MAP],
+                                            false);
     }
 
-  if (pass == RIG_PASS_COLOR_UNBLENDED)
-    return get_entity_color_pipeline (engine, entity,
-                                      geometry, material, sources, flags, false);
-  else if (pass == RIG_PASS_COLOR_BLENDED)
-    return get_entity_color_pipeline (engine, entity,
-                                      geometry, material, sources, flags, true);
-  else if (pass == RIG_PASS_DOF_DEPTH || pass == RIG_PASS_SHADOW)
-    return get_entity_mask_pipeline (engine, entity,
-                                     geometry, material, sources, flags);
+    if (pass == RIG_PASS_COLOR_UNBLENDED)
+        return get_entity_color_pipeline(
+            engine, entity, geometry, material, sources, flags, false);
+    else if (pass == RIG_PASS_COLOR_BLENDED)
+        return get_entity_color_pipeline(
+            engine, entity, geometry, material, sources, flags, true);
+    else if (pass == RIG_PASS_DOF_DEPTH || pass == RIG_PASS_SHADOW)
+        return get_entity_mask_pipeline(
+            engine, entity, geometry, material, sources, flags);
 
-  c_warn_if_reached ();
-  return NULL;
+    c_warn_if_reached();
+    return NULL;
 }
 static void
-get_normal_matrix (const cg_matrix_t *matrix,
-                   float *normal_matrix)
+get_normal_matrix(const cg_matrix_t *matrix, float *normal_matrix)
 {
-  cg_matrix_t inverse_matrix;
+    cg_matrix_t inverse_matrix;
 
-  /* Invert the matrix */
-  cg_matrix_get_inverse (matrix, &inverse_matrix);
+    /* Invert the matrix */
+    cg_matrix_get_inverse(matrix, &inverse_matrix);
 
-  /* Transpose it while converting it to 3x3 */
-  normal_matrix[0] = inverse_matrix.xx;
-  normal_matrix[1] = inverse_matrix.xy;
-  normal_matrix[2] = inverse_matrix.xz;
+    /* Transpose it while converting it to 3x3 */
+    normal_matrix[0] = inverse_matrix.xx;
+    normal_matrix[1] = inverse_matrix.xy;
+    normal_matrix[2] = inverse_matrix.xz;
 
-  normal_matrix[3] = inverse_matrix.yx;
-  normal_matrix[4] = inverse_matrix.yy;
-  normal_matrix[5] = inverse_matrix.yz;
+    normal_matrix[3] = inverse_matrix.yx;
+    normal_matrix[4] = inverse_matrix.yy;
+    normal_matrix[5] = inverse_matrix.yz;
 
-  normal_matrix[6] = inverse_matrix.zx;
-  normal_matrix[7] = inverse_matrix.zy;
-  normal_matrix[8] = inverse_matrix.zz;
-}
-
-static void
-ensure_renderer_priv (RigEntity *entity, RigRenderer *renderer)
-{
-  /* If this entity was last renderered with some other renderer then
-   * we free any private state associated with the previous renderer
-   * before creating our own private state */
-  if (entity->renderer_priv)
-    {
-      RutObject *renderer = *(RutObject **)entity->renderer_priv;
-      if (rut_object_get_type (renderer) != &rig_renderer_type)
-        rut_renderer_free_priv (renderer, entity);
-    }
-
-  if (!entity->renderer_priv)
-    {
-      RigRendererPriv *priv = c_slice_new0 (RigRendererPriv);
-
-      priv->renderer = renderer;
-      entity->renderer_priv = priv;
-    }
+    normal_matrix[6] = inverse_matrix.zx;
+    normal_matrix[7] = inverse_matrix.zy;
+    normal_matrix[8] = inverse_matrix.zz;
 }
 
 static void
-rig_renderer_flush_journal (RigRenderer *renderer,
-                            RigPaintContext *paint_ctx)
+ensure_renderer_priv(rig_entity_t *entity, rig_renderer_t *renderer)
 {
-  c_array_t *journal = renderer->journal;
-  RutPaintContext *rut_paint_ctx = &paint_ctx->_parent;
-  RutObject *camera = rut_paint_ctx->camera;
-  cg_framebuffer_t *fb = rut_camera_get_framebuffer (camera);
-  int start, dir, end;
-  int i;
-
-  /* TODO: use an inline qsort implementation */
-  c_array_sort (journal, (void *)sort_entry_cb);
-
-  /* We draw opaque geometry front-to-back so we are more likely to be
-   * able to discard later fragments earlier by depth testing.
-   *
-   * We draw transparent geometry back-to-front so it blends
-   * correctly.
-   */
-  if ( paint_ctx->pass == RIG_PASS_COLOR_BLENDED)
-    {
-      start = 0;
-      dir = 1;
-      end = journal->len;
-    }
-  else
-    {
-      start = journal->len - 1;
-      dir = -1;
-      end = -1;
+    /* If this entity was last renderered with some other renderer then
+     * we free any private state associated with the previous renderer
+     * before creating our own private state */
+    if (entity->renderer_priv) {
+        rut_object_t *renderer = *(rut_object_t **)entity->renderer_priv;
+        if (rut_object_get_type(renderer) != &rig_renderer_type)
+            rut_renderer_free_priv(renderer, entity);
     }
 
-  cg_framebuffer_push_matrix (fb);
+    if (!entity->renderer_priv) {
+        rig_renderer_priv_t *priv = c_slice_new0(rig_renderer_priv_t);
 
-  for (i = start; i != end; i += dir)
-    {
-      RigJournalEntry *entry = &c_array_index (journal, RigJournalEntry, i);
-      RigEntity *entity = entry->entity;
-      RutObject *geometry =
-        rig_entity_get_component (entity, RUT_COMPONENT_TYPE_GEOMETRY);
-      cg_pipeline_t *pipeline;
-      cg_primitive_t *primitive;
-      float normal_matrix[9];
-      RigMaterial *material;
-      cg_pipeline_t *fin_pipeline = NULL;
-      RigHair *hair;
+        priv->renderer = renderer;
+        entity->renderer_priv = priv;
+    }
+}
 
-      if (rut_object_get_type (geometry) == &rut_text_type &&
-          paint_ctx->pass == RIG_PASS_COLOR_BLENDED)
-        {
-          cg_framebuffer_set_modelview_matrix (fb, &entry->matrix);
-          rut_paintable_paint (geometry, rut_paint_ctx);
-          continue;
+static void
+rig_renderer_flush_journal(rig_renderer_t *renderer,
+                           rig_paint_context_t *paint_ctx)
+{
+    c_array_t *journal = renderer->journal;
+    rut_paint_context_t *rut_paint_ctx = &paint_ctx->_parent;
+    rut_object_t *camera = rut_paint_ctx->camera;
+    cg_framebuffer_t *fb = rut_camera_get_framebuffer(camera);
+    int start, dir, end;
+    int i;
+
+    /* TODO: use an inline qsort implementation */
+    c_array_sort(journal, (void *)sort_entry_cb);
+
+    /* We draw opaque geometry front-to-back so we are more likely to be
+     * able to discard later fragments earlier by depth testing.
+     *
+     * We draw transparent geometry back-to-front so it blends
+     * correctly.
+     */
+    if (paint_ctx->pass == RIG_PASS_COLOR_BLENDED) {
+        start = 0;
+        dir = 1;
+        end = journal->len;
+    } else {
+        start = journal->len - 1;
+        dir = -1;
+        end = -1;
+    }
+
+    cg_framebuffer_push_matrix(fb);
+
+    for (i = start; i != end; i += dir) {
+        rig_journal_entry_t *entry =
+            &c_array_index(journal, rig_journal_entry_t, i);
+        rig_entity_t *entity = entry->entity;
+        rut_object_t *geometry =
+            rig_entity_get_component(entity, RUT_COMPONENT_TYPE_GEOMETRY);
+        cg_pipeline_t *pipeline;
+        cg_primitive_t *primitive;
+        float normal_matrix[9];
+        rig_material_t *material;
+        cg_pipeline_t *fin_pipeline = NULL;
+        rig_hair_t *hair;
+
+        if (rut_object_get_type(geometry) == &rut_text_type &&
+            paint_ctx->pass == RIG_PASS_COLOR_BLENDED) {
+            cg_framebuffer_set_modelview_matrix(fb, &entry->matrix);
+            rut_paintable_paint(geometry, rut_paint_ctx);
+            continue;
         }
 
-      if (!rut_object_is (geometry, RUT_TRAIT_ID_PRIMABLE))
-        continue;
+        if (!rut_object_is(geometry, RUT_TRAIT_ID_PRIMABLE))
+            continue;
 
-      /*
-       * Setup Pipelines...
-       */
+        /*
+         * Setup Pipelines...
+         */
 
-      pipeline = get_entity_pipeline (paint_ctx->engine,
-                                      entity,
-                                      geometry,
-                                      paint_ctx->pass);
+        pipeline = get_entity_pipeline(
+            paint_ctx->engine, entity, geometry, paint_ctx->pass);
 
-      material = rig_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
+        material =
+            rig_entity_get_component(entity, RUT_COMPONENT_TYPE_MATERIAL);
 
-      hair  = rig_entity_get_component (entity, RUT_COMPONENT_TYPE_HAIR);
-      if (hair)
-        {
-          rig_hair_update_state (hair);
+        hair = rig_entity_get_component(entity, RUT_COMPONENT_TYPE_HAIR);
+        if (hair) {
+            rig_hair_update_state(hair);
 
-          if (rut_object_get_type (geometry) == &rig_model_type)
-            {
-              if (paint_ctx->pass == RIG_PASS_COLOR_BLENDED)
-                {
-                  fin_pipeline =
-                    get_entity_pipeline_cache (entity,
-                                               CACHE_SLOT_HAIR_FINS_BLENDED);
-                }
-              else
-                {
-                  fin_pipeline =
-                    get_entity_pipeline_cache (entity,
-                                               CACHE_SLOT_HAIR_FINS_UNBLENDED);
+            if (rut_object_get_type(geometry) == &rig_model_type) {
+                if (paint_ctx->pass == RIG_PASS_COLOR_BLENDED) {
+                    fin_pipeline = get_entity_pipeline_cache(
+                        entity, CACHE_SLOT_HAIR_FINS_BLENDED);
+                } else {
+                    fin_pipeline = get_entity_pipeline_cache(
+                        entity, CACHE_SLOT_HAIR_FINS_UNBLENDED);
                 }
             }
         }
 
-      /*
-       * Update Uniforms...
-       */
+        /*
+         * Update Uniforms...
+         */
 
-      if ((paint_ctx->pass == RIG_PASS_DOF_DEPTH ||
-           paint_ctx->pass == RIG_PASS_SHADOW))
-        {
-          /* FIXME: avoid updating these uniforms for every primitive if
-           * the focal parameters haven't change! */
-          set_focal_parameters (pipeline,
-                                rut_camera_get_focal_distance (camera),
-                                rut_camera_get_depth_of_field (camera));
+        if ((paint_ctx->pass == RIG_PASS_DOF_DEPTH ||
+             paint_ctx->pass == RIG_PASS_SHADOW)) {
+            /* FIXME: avoid updating these uniforms for every primitive if
+             * the focal parameters haven't change! */
+            set_focal_parameters(pipeline,
+                                 rut_camera_get_focal_distance(camera),
+                                 rut_camera_get_depth_of_field(camera));
 
-        }
-      else if ((paint_ctx->pass == RIG_PASS_COLOR_UNBLENDED ||
-                paint_ctx->pass == RIG_PASS_COLOR_BLENDED))
-        {
-          RigUI *ui = paint_ctx->engine->current_ui;
-          RigLight *light =
-            rig_entity_get_component (ui->light, RUT_COMPONENT_TYPE_LIGHT);
-          int location;
+        } else if ((paint_ctx->pass == RIG_PASS_COLOR_UNBLENDED ||
+                    paint_ctx->pass == RIG_PASS_COLOR_BLENDED)) {
+            rig_ui_t *ui = paint_ctx->engine->current_ui;
+            rig_light_t *light =
+                rig_entity_get_component(ui->light, RUT_COMPONENT_TYPE_LIGHT);
+            int location;
 
-          /* FIXME: only update the lighting uniforms when the light has
-           * actually moved! */
-          rig_light_set_uniforms (light, pipeline);
+            /* FIXME: only update the lighting uniforms when the light has
+             * actually moved! */
+            rig_light_set_uniforms(light, pipeline);
 
-          /* FIXME: only update the material uniforms when the material has
-           * actually changed! */
-          if (material)
-            rig_material_flush_uniforms (material, pipeline);
+            /* FIXME: only update the material uniforms when the material has
+             * actually changed! */
+            if (material)
+                rig_material_flush_uniforms(material, pipeline);
 
-          get_normal_matrix (&entry->matrix, normal_matrix);
+            get_normal_matrix(&entry->matrix, normal_matrix);
 
-          location = cg_pipeline_get_uniform_location (pipeline, "normal_matrix");
-          cg_pipeline_set_uniform_matrix (pipeline,
-                                            location,
-                                            3, /* dimensions */
-                                            1, /* count */
-                                            false, /* don't transpose again */
-                                            normal_matrix);
+            location =
+                cg_pipeline_get_uniform_location(pipeline, "normal_matrix");
+            cg_pipeline_set_uniform_matrix(pipeline,
+                                           location,
+                                           3, /* dimensions */
+                                           1, /* count */
+                                           false, /* don't transpose again */
+                                           normal_matrix);
 
-          if (fin_pipeline)
-            {
-              rig_light_set_uniforms (light, fin_pipeline);
+            if (fin_pipeline) {
+                rig_light_set_uniforms(light, fin_pipeline);
 
-              if (material)
-                rig_material_flush_uniforms (material, fin_pipeline);
+                if (material)
+                    rig_material_flush_uniforms(material, fin_pipeline);
 
-              cg_pipeline_set_uniform_matrix (fin_pipeline,
-                                            location,
-                                            3, /* dimensions */
-                                            1, /* count */
-                                            false, /* don't transpose again */
-                                            normal_matrix);
+                cg_pipeline_set_uniform_matrix(
+                    fin_pipeline,
+                    location,
+                    3, /* dimensions */
+                    1, /* count */
+                    false, /* don't transpose again */
+                    normal_matrix);
 
-              cg_pipeline_set_layer_texture (fin_pipeline, 11,
-                                               hair->fin_texture);
+                cg_pipeline_set_layer_texture(
+                    fin_pipeline, 11, hair->fin_texture);
 
-              rig_hair_set_uniform_float_value (hair, fin_pipeline,
-                                                RIG_HAIR_LENGTH,
-                                                hair->length);
+                rig_hair_set_uniform_float_value(
+                    hair, fin_pipeline, RIG_HAIR_LENGTH, hair->length);
             }
         }
 
-      /*
-       * Draw Primitive...
-       */
+        /*
+         * Draw Primitive...
+         */
 
-      primitive = get_entity_primitive_cache (entity, 0);
-      if (!primitive)
-        {
-          primitive = rut_primable_get_primitive (geometry);
-          set_entity_primitive_cache (entity, 0, primitive);
+        primitive = get_entity_primitive_cache(entity, 0);
+        if (!primitive) {
+            primitive = rut_primable_get_primitive(geometry);
+            set_entity_primitive_cache(entity, 0, primitive);
         }
 
-      cg_framebuffer_set_modelview_matrix (fb, &entry->matrix);
+        cg_framebuffer_set_modelview_matrix(fb, &entry->matrix);
 
-      if (hair)
-        {
-          cg_texture_t *texture;
-          int i, uniform;
+        if (hair) {
+            cg_texture_t *texture;
+            int i, uniform;
 
-          if (fin_pipeline)
-            {
-              RigModel *model = geometry;
-              cg_primitive_draw (model->fin_primitive, fb, fin_pipeline);
+            if (fin_pipeline) {
+                rig_model_t *model = geometry;
+                cg_primitive_draw(model->fin_primitive, fb, fin_pipeline);
             }
 
-          if (paint_ctx->pass == RIG_PASS_COLOR_BLENDED)
-            uniform = RIG_HAIR_SHELL_POSITION_BLENDED;
-          else if (paint_ctx->pass == RIG_PASS_COLOR_UNBLENDED)
-            uniform = RIG_HAIR_SHELL_POSITION_UNBLENDED;
-          else if (paint_ctx->pass == RIG_PASS_DOF_DEPTH ||
-                   paint_ctx->pass == RIG_PASS_SHADOW)
-            uniform = RIG_HAIR_SHELL_POSITION_SHADOW;
+            if (paint_ctx->pass == RIG_PASS_COLOR_BLENDED)
+                uniform = RIG_HAIR_SHELL_POSITION_BLENDED;
+            else if (paint_ctx->pass == RIG_PASS_COLOR_UNBLENDED)
+                uniform = RIG_HAIR_SHELL_POSITION_UNBLENDED;
+            else if (paint_ctx->pass == RIG_PASS_DOF_DEPTH ||
+                     paint_ctx->pass == RIG_PASS_SHADOW)
+                uniform = RIG_HAIR_SHELL_POSITION_SHADOW;
 
-          /* FIXME: only update the hair uniforms when they change! */
-          /* FIXME: avoid needing to query the uniform locations by
-           * name for each primitive! */
+            /* FIXME: only update the hair uniforms when they change! */
+            /* FIXME: avoid needing to query the uniform locations by
+             * name for each primitive! */
 
-          texture = c_array_index (hair->shell_textures, cg_texture_t *, 0);
+            texture = c_array_index(hair->shell_textures, cg_texture_t *, 0);
 
-          cg_pipeline_set_layer_texture (pipeline, 11, texture);
+            cg_pipeline_set_layer_texture(pipeline, 11, texture);
 
-          rig_hair_set_uniform_float_value (hair, pipeline, uniform, 0);
+            rig_hair_set_uniform_float_value(hair, pipeline, uniform, 0);
 
-          /* TODO: we should be drawing the original base model as
-           * the interior, with depth write and test enabled to
-           * make sure we reduce the work involved in blending all
-           * the shells on top. */
-          cg_primitive_draw (primitive, fb, pipeline);
+            /* TODO: we should be drawing the original base model as
+             * the interior, with depth write and test enabled to
+             * make sure we reduce the work involved in blending all
+             * the shells on top. */
+            cg_primitive_draw(primitive, fb, pipeline);
 
-          cg_pipeline_set_alpha_test_function (pipeline,
-                                                 CG_PIPELINE_ALPHA_FUNC_GREATER, 0.49);
+            cg_pipeline_set_alpha_test_function(
+                pipeline, CG_PIPELINE_ALPHA_FUNC_GREATER, 0.49);
 
-          /* TODO: we should support having more shells than
-           * real textures... */
-          for (i = 1; i < hair->n_shells; i++)
-            {
-              float hair_pos = hair->shell_positions[i];
+            /* TODO: we should support having more shells than
+             * real textures... */
+            for (i = 1; i < hair->n_shells; i++) {
+                float hair_pos = hair->shell_positions[i];
 
-              texture = c_array_index (hair->shell_textures, cg_texture_t *, i);
-              cg_pipeline_set_layer_texture (pipeline, 11, texture);
+                texture =
+                    c_array_index(hair->shell_textures, cg_texture_t *, i);
+                cg_pipeline_set_layer_texture(pipeline, 11, texture);
 
-              rig_hair_set_uniform_float_value (hair, pipeline, uniform,
-                                                hair_pos);
+                rig_hair_set_uniform_float_value(
+                    hair, pipeline, uniform, hair_pos);
 
-              cg_primitive_draw (primitive, fb, pipeline);
+                cg_primitive_draw(primitive, fb, pipeline);
             }
-        }
-      else
-        cg_primitive_draw (primitive, fb, pipeline);
+        } else
+            cg_primitive_draw(primitive, fb, pipeline);
 
-      cg_object_unref (pipeline);
+        cg_object_unref(pipeline);
 
-      rut_object_unref (entry->entity);
+        rut_object_unref(entry->entity);
     }
 
-  cg_framebuffer_pop_matrix (fb);
+    cg_framebuffer_pop_matrix(fb);
 
-  c_array_set_size (journal, 0);
+    c_array_set_size(journal, 0);
 }
 
 void
-rig_camera_update_view (RigEngine *engine, RigEntity *camera, bool shadow_pass)
+rig_camera_update_view(rig_engine_t *engine,
+                       rig_entity_t *camera,
+                       bool shadow_pass)
 {
-  RutObject *camera_component =
-    rig_entity_get_component (camera, RUT_COMPONENT_TYPE_CAMERA);
-  cg_matrix_t transform;
-  cg_matrix_t inverse_transform;
-  cg_matrix_t view;
+    rut_object_t *camera_component =
+        rig_entity_get_component(camera, RUT_COMPONENT_TYPE_CAMERA);
+    cg_matrix_t transform;
+    cg_matrix_t inverse_transform;
+    cg_matrix_t view;
 
-  /* translate to z_2d and scale */
-  if (!shadow_pass)
-    view = engine->main_view;
-  else
-    view = engine->identity;
+    /* translate to z_2d and scale */
+    if (!shadow_pass)
+        view = engine->main_view;
+    else
+        view = engine->identity;
 
-  /* apply the camera viewing transform */
-  rut_graphable_get_transform (camera, &transform);
-  cg_matrix_get_inverse (&transform, &inverse_transform);
-  cg_matrix_multiply (&view, &view, &inverse_transform);
+    /* apply the camera viewing transform */
+    rut_graphable_get_transform(camera, &transform);
+    cg_matrix_get_inverse(&transform, &inverse_transform);
+    cg_matrix_multiply(&view, &view, &inverse_transform);
 
-  if (shadow_pass)
-    {
-      cg_matrix_t flipped_view;
-      cg_matrix_init_identity (&flipped_view);
-      cg_matrix_scale (&flipped_view, 1, -1, 1);
-      cg_matrix_multiply (&flipped_view, &flipped_view, &view);
-      rut_camera_set_view_transform (camera_component, &flipped_view);
-    }
-  else
-    rut_camera_set_view_transform (camera_component, &view);
+    if (shadow_pass) {
+        cg_matrix_t flipped_view;
+        cg_matrix_init_identity(&flipped_view);
+        cg_matrix_scale(&flipped_view, 1, -1, 1);
+        cg_matrix_multiply(&flipped_view, &flipped_view, &view);
+        rut_camera_set_view_transform(camera_component, &flipped_view);
+    } else
+        rut_camera_set_view_transform(camera_component, &view);
 }
 
 static void
-draw_entity_camera_frustum (RigEngine *engine,
-                            RigEntity *entity,
-                            cg_framebuffer_t *fb)
+draw_entity_camera_frustum(rig_engine_t *engine,
+                           rig_entity_t *entity,
+                           cg_framebuffer_t *fb)
 {
-  RutObject *camera =
-    rig_entity_get_component (entity, RUT_COMPONENT_TYPE_CAMERA);
-  cg_primitive_t *primitive = rut_camera_create_frustum_primitive (camera);
-  cg_pipeline_t *pipeline = cg_pipeline_new (engine->ctx->cg_context);
-  cg_depth_state_t depth_state;
+    rut_object_t *camera =
+        rig_entity_get_component(entity, RUT_COMPONENT_TYPE_CAMERA);
+    cg_primitive_t *primitive = rut_camera_create_frustum_primitive(camera);
+    cg_pipeline_t *pipeline = cg_pipeline_new(engine->ctx->cg_context);
+    cg_depth_state_t depth_state;
 
-  /* enable depth testing */
-  cg_depth_state_init (&depth_state);
-  cg_depth_state_set_test_enabled (&depth_state, true);
-  cg_pipeline_set_depth_state (pipeline, &depth_state, NULL);
+    /* enable depth testing */
+    cg_depth_state_init(&depth_state);
+    cg_depth_state_set_test_enabled(&depth_state, true);
+    cg_pipeline_set_depth_state(pipeline, &depth_state, NULL);
 
-  rut_util_draw_jittered_primitive3f (fb, primitive, 0.8, 0.6, 0.1);
+    rut_util_draw_jittered_primitive3f(fb, primitive, 0.8, 0.6, 0.1);
 
-  cg_object_unref (primitive);
-  cg_object_unref (pipeline);
+    cg_object_unref(primitive);
+    cg_object_unref(pipeline);
 }
 
 static void
-text_preferred_size_changed_cb (RutObject *sizable, void *user_data)
+text_preferred_size_changed_cb(rut_object_t *sizable,
+                               void *user_data)
 {
-  RutText *text = sizable;
-  float width, height;
-  RutProperty *width_prop = &text->properties[RUT_TEXT_PROP_WIDTH];
+    rut_text_t *text = sizable;
+    float width, height;
+    rut_property_t *width_prop = &text->properties[RUT_TEXT_PROP_WIDTH];
 
-  if (width_prop->binding)
-    width = rut_property_get_float (width_prop);
-  else
-    {
-      rut_sizable_get_preferred_width (text,
-                                       -1,
-                                       NULL,
-                                       &width);
+    if (width_prop->binding)
+        width = rut_property_get_float(width_prop);
+    else {
+        rut_sizable_get_preferred_width(text, -1, NULL, &width);
     }
 
-  rut_sizable_get_preferred_height (text,
-                                    width,
-                                    NULL,
-                                    &height);
-  rut_sizable_set_size (text, width, height);
+    rut_sizable_get_preferred_height(text, width, NULL, &height);
+    rut_sizable_set_size(text, width, height);
 }
 
-static RutTraverseVisitFlags
-entitygraph_pre_paint_cb (RutObject *object,
-                          int depth,
-                          void *user_data)
+static rut_traverse_visit_flags_t
+entitygraph_pre_paint_cb(rut_object_t *object, int depth, void *user_data)
 {
-  RigPaintContext *paint_ctx = user_data;
-  RutPaintContext *rut_paint_ctx = user_data;
-  RigRenderer *renderer = paint_ctx->renderer;
-  RutObject *camera = rut_paint_ctx->camera;
-  cg_framebuffer_t *fb = rut_camera_get_framebuffer (camera);
+    rig_paint_context_t *paint_ctx = user_data;
+    rut_paint_context_t *rut_paint_ctx = user_data;
+    rig_renderer_t *renderer = paint_ctx->renderer;
+    rut_object_t *camera = rut_paint_ctx->camera;
+    cg_framebuffer_t *fb = rut_camera_get_framebuffer(camera);
 
-  if (rut_object_is (object, RUT_TRAIT_ID_TRANSFORMABLE))
-    {
-      const cg_matrix_t *matrix = rut_transformable_get_matrix (object);
-      cg_framebuffer_push_matrix (fb);
-      cg_framebuffer_transform (fb, matrix);
+    if (rut_object_is(object, RUT_TRAIT_ID_TRANSFORMABLE)) {
+        const cg_matrix_t *matrix = rut_transformable_get_matrix(object);
+        cg_framebuffer_push_matrix(fb);
+        cg_framebuffer_transform(fb, matrix);
     }
 
-  if (rut_object_get_type (object) == &rig_entity_type)
-    {
-      RigEntity *entity = object;
-      RigMaterial *material;
-      RutObject *geometry;
-      cg_matrix_t matrix;
-      RigRendererPriv *priv;
+    if (rut_object_get_type(object) == &rig_entity_type) {
+        rig_entity_t *entity = object;
+        rig_material_t *material;
+        rut_object_t *geometry;
+        cg_matrix_t matrix;
+        rig_renderer_priv_t *priv;
 
-      material = rig_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
-      if (!material || !rig_material_get_visible (material))
-        return RUT_TRAVERSE_VISIT_CONTINUE;
+        material =
+            rig_entity_get_component(entity, RUT_COMPONENT_TYPE_MATERIAL);
+        if (!material || !rig_material_get_visible(material))
+            return RUT_TRAVERSE_VISIT_CONTINUE;
 
-      if (paint_ctx->pass == RIG_PASS_SHADOW && !rig_material_get_cast_shadow (material))
-        return RUT_TRAVERSE_VISIT_CONTINUE;
+        if (paint_ctx->pass == RIG_PASS_SHADOW &&
+            !rig_material_get_cast_shadow(material))
+            return RUT_TRAVERSE_VISIT_CONTINUE;
 
-      geometry =
-        rig_entity_get_component (object, RUT_COMPONENT_TYPE_GEOMETRY);
-      if (!geometry)
-        {
-          if (!paint_ctx->engine->play_mode &&
-              object == paint_ctx->engine->current_ui->light)
-            {
-              draw_entity_camera_frustum (paint_ctx->engine, object, fb);
+        geometry =
+            rig_entity_get_component(object, RUT_COMPONENT_TYPE_GEOMETRY);
+        if (!geometry) {
+            if (!paint_ctx->engine->play_mode &&
+                object == paint_ctx->engine->current_ui->light) {
+                draw_entity_camera_frustum(paint_ctx->engine, object, fb);
             }
-          return RUT_TRAVERSE_VISIT_CONTINUE;
+            return RUT_TRAVERSE_VISIT_CONTINUE;
         }
 
-      ensure_renderer_priv (entity, renderer);
-      priv = entity->renderer_priv;
+        ensure_renderer_priv(entity, renderer);
+        priv = entity->renderer_priv;
 
-      /* XXX: Ideally the renderer code wouldn't have to handle this
-       * but for now we make sure to allocate all text components
-       * their preferred size before rendering them.
-       *
-       * Note: we first check to see if the text component has a
-       * binding for the width property, and if so we assume the
-       * UI is constraining the width and wants the text to be
-       * wrapped.
-       */
-      if (rut_object_get_type (geometry) == &rut_text_type)
-        {
-          RutText *text = geometry;
+        /* XXX: Ideally the renderer code wouldn't have to handle this
+         * but for now we make sure to allocate all text components
+         * their preferred size before rendering them.
+         *
+         * Note: we first check to see if the text component has a
+         * binding for the width property, and if so we assume the
+         * UI is constraining the width and wants the text to be
+         * wrapped.
+         */
+        if (rut_object_get_type(geometry) == &rut_text_type) {
+            rut_text_t *text = geometry;
 
-          if (!priv->preferred_size_closure)
-            {
-              priv->preferred_size_closure =
-                rut_sizable_add_preferred_size_callback (text,
-                                                         text_preferred_size_changed_cb,
-                                                         NULL, /* user data */
-                                                         NULL); /* destroy */
-              text_preferred_size_changed_cb (text, NULL);
+            if (!priv->preferred_size_closure) {
+                priv->preferred_size_closure =
+                    rut_sizable_add_preferred_size_callback(
+                        text,
+                        text_preferred_size_changed_cb,
+                        NULL, /* user data */
+                        NULL); /* destroy */
+                text_preferred_size_changed_cb(text, NULL);
             }
         }
 
-      cg_framebuffer_get_modelview_matrix (fb, &matrix);
-      rig_journal_log (renderer->journal,
-                       paint_ctx,
-                       entity,
-                       &matrix);
+        cg_framebuffer_get_modelview_matrix(fb, &matrix);
+        rig_journal_log(renderer->journal, paint_ctx, entity, &matrix);
 
-      return RUT_TRAVERSE_VISIT_CONTINUE;
+        return RUT_TRAVERSE_VISIT_CONTINUE;
     }
 
-  return RUT_TRAVERSE_VISIT_CONTINUE;
+    return RUT_TRAVERSE_VISIT_CONTINUE;
 }
 
-static RutTraverseVisitFlags
-entitygraph_post_paint_cb (RutObject *object,
-                           int depth,
-                           void *user_data)
+static rut_traverse_visit_flags_t
+entitygraph_post_paint_cb(rut_object_t *object, int depth, void *user_data)
 {
-  if (rut_object_is (object, RUT_TRAIT_ID_TRANSFORMABLE))
-    {
-      RutPaintContext *rut_paint_ctx = user_data;
-      cg_framebuffer_t *fb = rut_camera_get_framebuffer (rut_paint_ctx->camera);
-      cg_framebuffer_pop_matrix (fb);
+    if (rut_object_is(object, RUT_TRAIT_ID_TRANSFORMABLE)) {
+        rut_paint_context_t *rut_paint_ctx = user_data;
+        cg_framebuffer_t *fb =
+            rut_camera_get_framebuffer(rut_paint_ctx->camera);
+        cg_framebuffer_pop_matrix(fb);
     }
 
-  return RUT_TRAVERSE_VISIT_CONTINUE;
+    return RUT_TRAVERSE_VISIT_CONTINUE;
 }
 
 /* The view camera is the entity associated with the camera we will
@@ -2074,51 +1930,47 @@ entitygraph_post_paint_cb (RutObject *object,
  * of the play camera to visualize while rendering the view camera.
  */
 void
-rig_paint_camera_entity (RigEntity *view_camera,
-                         RigPaintContext *paint_ctx,
-                         RutObject *play_camera)
+rig_paint_camera_entity(rig_entity_t *view_camera,
+                        rig_paint_context_t *paint_ctx,
+                        rut_object_t *play_camera)
 {
-  RutPaintContext *rut_paint_ctx = &paint_ctx->_parent;
-  RutObject *saved_camera = rut_paint_ctx->camera;
-  RutObject *camera =
-    rig_entity_get_component (view_camera, RUT_COMPONENT_TYPE_CAMERA);
-  RigRenderer *renderer = paint_ctx->renderer;
-  RigEngine *engine = paint_ctx->engine;
-  cg_context_t *ctx = engine->ctx->cg_context;
-  cg_framebuffer_t *fb = rut_camera_get_framebuffer (camera);
+    rut_paint_context_t *rut_paint_ctx = &paint_ctx->_parent;
+    rut_object_t *saved_camera = rut_paint_ctx->camera;
+    rut_object_t *camera =
+        rig_entity_get_component(view_camera, RUT_COMPONENT_TYPE_CAMERA);
+    rig_renderer_t *renderer = paint_ctx->renderer;
+    rig_engine_t *engine = paint_ctx->engine;
+    cg_context_t *ctx = engine->ctx->cg_context;
+    cg_framebuffer_t *fb = rut_camera_get_framebuffer(camera);
 
-  rut_paint_ctx->camera = camera;
+    rut_paint_ctx->camera = camera;
 
-  rut_camera_flush (camera);
+    rut_camera_flush(camera);
 
-  if (paint_ctx->pass == RIG_PASS_COLOR_UNBLENDED &&
-      play_camera &&
-      camera != play_camera)
-    {
-      cg_pipeline_t *pipeline = cg_pipeline_new (ctx);
-      const cg_color_t *bg_color = rut_camera_get_background_color (play_camera);
-      cg_pipeline_set_color4f (pipeline,
-                                 bg_color->red,
-                                 bg_color->green,
-                                 bg_color->blue,
-                                 bg_color->alpha);
-      cg_framebuffer_draw_rectangle (fb,
-                                       pipeline,
-                                       0, 0,
-                                       engine->device_width,
-                                       engine->device_height);
-      cg_object_unref (pipeline);
+    if (paint_ctx->pass == RIG_PASS_COLOR_UNBLENDED && play_camera &&
+        camera != play_camera) {
+        cg_pipeline_t *pipeline = cg_pipeline_new(ctx);
+        const cg_color_t *bg_color =
+            rut_camera_get_background_color(play_camera);
+        cg_pipeline_set_color4f(pipeline,
+                                bg_color->red,
+                                bg_color->green,
+                                bg_color->blue,
+                                bg_color->alpha);
+        cg_framebuffer_draw_rectangle(
+            fb, pipeline, 0, 0, engine->device_width, engine->device_height);
+        cg_object_unref(pipeline);
     }
 
-  rut_graphable_traverse (engine->current_ui->scene,
-                          RUT_TRAVERSE_DEPTH_FIRST,
-                          entitygraph_pre_paint_cb,
-                          entitygraph_post_paint_cb,
-                          paint_ctx);
+    rut_graphable_traverse(engine->current_ui->scene,
+                           RUT_TRAVERSE_DEPTH_FIRST,
+                           entitygraph_pre_paint_cb,
+                           entitygraph_post_paint_cb,
+                           paint_ctx);
 
-  rig_renderer_flush_journal (renderer, paint_ctx);
+    rig_renderer_flush_journal(renderer, paint_ctx);
 
-  rut_camera_end_frame (camera);
+    rut_camera_end_frame(camera);
 
-  rut_paint_ctx->camera = saved_camera;
+    rut_paint_ctx->camera = saved_camera;
 }

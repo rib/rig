@@ -35,34 +35,26 @@
 
 #include "rut-exception.h"
 
-typedef enum _RutIOException
-{
-  RUT_IO_EXCEPTION_BAD_VALUE = 1,
-  RUT_IO_EXCEPTION_NO_SPACE,
-  RUT_IO_EXCEPTION_IO,
-} RutIOException;
+typedef enum _rut_io_exception_t {
+    RUT_IO_EXCEPTION_BAD_VALUE = 1,
+    RUT_IO_EXCEPTION_NO_SPACE,
+    RUT_IO_EXCEPTION_IO,
+} rut_io_exception_t;
 
-bool
-rut_os_read (int fd, void *data, int *len, RutException **e);
+bool rut_os_read(int fd, void *data, int *len, rut_exception_t **e);
 
 /* Doesn't give up until it's read the expected amount of data... */
-bool
-rut_os_read_len (int fd, void *data, int len, RutException **e);
+bool rut_os_read_len(int fd, void *data, int len, rut_exception_t **e);
 
-bool
-rut_os_write (int fd, void *data, int len, RutException **e);
+bool rut_os_write(int fd, void *data, int len, rut_exception_t **e);
 
 #ifdef linux
-int
-rut_os_listen_on_abstract_socket (const char *socket_name,
-                                  RutException **e);
+int rut_os_listen_on_abstract_socket(const char *socket_name,
+                                     rut_exception_t **e);
 
-int
-rut_os_connect_to_abstract_socket (const char *socket_name);
+int rut_os_connect_to_abstract_socket(const char *socket_name);
 #endif /* linux */
 
-int
-rut_os_listen_on_tcp_socket (int port,
-                             RutException **e);
+int rut_os_listen_on_tcp_socket(int port, rut_exception_t **e);
 
 #endif /* _RUT_OS_H_ */

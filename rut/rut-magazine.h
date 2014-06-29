@@ -32,48 +32,42 @@
 
 G_BEGIN_DECLS
 
-typedef struct _RutMagazineChunk RutMagazineChunk;
+typedef struct _rut_magazine_chunk_t rut_magazine_chunk_t;
 
-struct _RutMagazineChunk
-{
-  RutMagazineChunk *next;
+struct _rut_magazine_chunk_t {
+    rut_magazine_chunk_t *next;
 };
 
-typedef struct _RutMagazine
-{
-  size_t chunk_size;
+typedef struct _rut_magazine_t {
+    size_t chunk_size;
 
-  RutMemoryStack *stack;
-  RutMagazineChunk *head;
-} RutMagazine;
+    rut_memory_stack_t *stack;
+    rut_magazine_chunk_t *head;
+} rut_magazine_t;
 
-RutMagazine *
-rut_magazine_new (size_t chunk_size, int initial_chunk_count);
+rut_magazine_t *rut_magazine_new(size_t chunk_size, int initial_chunk_count);
 
 static inline void *
-rut_magazine_chunk_alloc (RutMagazine *magazine)
+rut_magazine_chunk_alloc(rut_magazine_t *magazine)
 {
-  if (G_LIKELY (magazine->head))
-    {
-      RutMagazineChunk *chunk = magazine->head;
-      magazine->head = chunk->next;
-      return chunk;
-    }
-  else
-    return rut_memory_stack_alloc (magazine->stack, magazine->chunk_size);
+    if (G_LIKELY(magazine->head)) {
+        rut_magazine_chunk_t *chunk = magazine->head;
+        magazine->head = chunk->next;
+        return chunk;
+    } else
+        return rut_memory_stack_alloc(magazine->stack, magazine->chunk_size);
 }
 
 static inline void
-rut_magazine_chunk_free (RutMagazine *magazine, void *data)
+rut_magazine_chunk_free(rut_magazine_t *magazine, void *data)
 {
-  RutMagazineChunk *chunk = (RutMagazineChunk *)data;
+    rut_magazine_chunk_t *chunk = (rut_magazine_chunk_t *)data;
 
-  chunk->next = magazine->head;
-  magazine->head = chunk;
+    chunk->next = magazine->head;
+    magazine->head = chunk;
 }
 
-void
-rut_magazine_free (RutMagazine *magazine);
+void rut_magazine_free(rut_magazine_t *magazine);
 
 G_END_DECLS
 

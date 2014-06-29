@@ -35,14 +35,11 @@
 
 G_BEGIN_DECLS
 
-void
-rig_pb_print_ui (const Rig__UI *pb_ui);
+void rig_pb_print_ui(const Rig__UI *pb_ui);
 
-void
-rig_pb_print_frame_setup (const Rig__FrameSetup *pb_frame_setup);
+void rig_pb_print_frame_setup(const Rig__FrameSetup *pb_frame_setup);
 
-void
-rig_pb_print_ui_diff (const Rig__UIDiff *pb_ui_diff);
+void rig_pb_print_ui_diff(const Rig__UIDiff *pb_ui_diff);
 
 G_END_DECLS
 

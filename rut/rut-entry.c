@@ -40,109 +40,103 @@
 #include "rut-nine-slice.h"
 
 enum {
-  RUT_ENTRY_PROP_WIDTH,
-  RUT_ENTRY_PROP_HEIGHT,
-  RUT_ENTRY_N_PROPS
+    RUT_ENTRY_PROP_WIDTH,
+    RUT_ENTRY_PROP_HEIGHT,
+    RUT_ENTRY_N_PROPS
 };
 
-struct _RutEntry
-{
-  RutObjectBase _base;
+struct _rut_entry_t {
+    rut_object_base_t _base;
 
-  RutContext *ctx;
+    rut_context_t *ctx;
 
+    rut_graphable_props_t graphable;
 
-  RutGraphableProps graphable;
+    rut_nine_slice_t *background;
 
-  RutNineSlice *background;
+    rut_icon_t *icon;
+    rut_transform_t *icon_transform;
 
-  RutIcon *icon;
-  RutTransform *icon_transform;
+    rut_text_t *text;
+    rut_transform_t *text_transform;
 
-  RutText *text;
-  RutTransform *text_transform;
+    float width;
+    float height;
 
-  float width;
-  float height;
-
-  RutIntrospectableProps introspectable;
-  RutProperty properties[RUT_ENTRY_N_PROPS];
+    rut_introspectable_props_t introspectable;
+    rut_property_t properties[RUT_ENTRY_N_PROPS];
 };
 
-static RutPropertySpec _rut_entry_prop_specs[] = {
-  {
-    .name = "width",
-    .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .type = RUT_PROPERTY_TYPE_FLOAT,
-    .data_offset = offsetof (RutEntry, width),
-    .setter.float_type = rut_entry_set_width
-  },
-  {
-    .name = "height",
-    .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .type = RUT_PROPERTY_TYPE_FLOAT,
-    .data_offset = offsetof (RutEntry, height),
-    .setter.float_type = rut_entry_set_height
-  },
-  { 0 } /* XXX: Needed for runtime counting of the number of properties */
+static rut_property_spec_t _rut_entry_prop_specs[] = {
+    { .name = "width",
+      .flags = RUT_PROPERTY_FLAG_READWRITE,
+      .type = RUT_PROPERTY_TYPE_FLOAT,
+      .data_offset = offsetof(rut_entry_t, width),
+      .setter.float_type = rut_entry_set_width },
+    { .name = "height",
+      .flags = RUT_PROPERTY_FLAG_READWRITE,
+      .type = RUT_PROPERTY_TYPE_FLOAT,
+      .data_offset = offsetof(rut_entry_t, height),
+      .setter.float_type = rut_entry_set_height },
+    { 0 } /* XXX: Needed for runtime counting of the number of properties */
 };
 
 static void
-remove_icon (RutEntry *entry)
+remove_icon(rut_entry_t *entry)
 {
-  if (!entry->icon)
-    return;
+    if (!entry->icon)
+        return;
 
-  /* NB: we don't keep any addition references on the icon and icon
-   * transform other those for adding them to the scene graph... */
+    /* NB: we don't keep any addition references on the icon and icon
+     * transform other those for adding them to the scene graph... */
 
-  rut_graphable_remove_child (entry->icon_transform);
-  entry->icon = NULL;
-  entry->icon_transform = NULL;
+    rut_graphable_remove_child(entry->icon_transform);
+    entry->icon = NULL;
+    entry->icon_transform = NULL;
 }
 
 static void
-_rut_entry_free (void *object)
+_rut_entry_free(void *object)
 {
-  RutEntry *entry = object;
+    rut_entry_t *entry = object;
 
-  rut_object_unref (entry->ctx);
+    rut_object_unref(entry->ctx);
 
-  remove_icon (entry);
+    remove_icon(entry);
 
-  rut_introspectable_destroy (entry);
+    rut_introspectable_destroy(entry);
 
-  rut_graphable_remove_child (entry->text);
-  rut_object_unref (entry->text);
+    rut_graphable_remove_child(entry->text);
+    rut_object_unref(entry->text);
 
-  rut_graphable_remove_child (entry->text_transform);
-  rut_object_unref (entry->text_transform);
+    rut_graphable_remove_child(entry->text_transform);
+    rut_object_unref(entry->text_transform);
 
-  rut_graphable_destroy (entry);
+    rut_graphable_destroy(entry);
 
-  rut_object_free (RutEntry, entry);
+    rut_object_free(rut_entry_t, entry);
 }
 
 #if 0
 static cg_primitive_t *
-create_entry_prim (RutEntry *entry)
+create_entry_prim (rut_entry_t *entry)
 {
-  cg_vertex_p2c4_t lines[] =
+    cg_vertex_p2c4_t lines[] =
     {
-      {0, 0, 0x80, 0x80, 0x80, 0x80},
-      {0, entry->height, 0x80, 0x80, 0x80, 0x80},
+        {0, 0, 0x80, 0x80, 0x80, 0x80},
+        {0, entry->height, 0x80, 0x80, 0x80, 0x80},
 
-      {0, entry->height, 0x80, 0x80, 0x80, 0x80},
-      {entry->width, entry->height, 0x80, 0x80, 0x80, 0x80},
+        {0, entry->height, 0x80, 0x80, 0x80, 0x80},
+        {entry->width, entry->height, 0x80, 0x80, 0x80, 0x80},
 
-      {entry->width, entry->height, 0x80, 0x80, 0x80, 0x80},
-      {entry->width, 0, 0x80, 0x80, 0x80, 0x80},
+        {entry->width, entry->height, 0x80, 0x80, 0x80, 0x80},
+        {entry->width, 0, 0x80, 0x80, 0x80, 0x80},
 
-      {entry->width, 0, 0x80, 0x80, 0x80, 0x80},
-      {0, 0, 0x80, 0x80, 0x80, 0x80},
+        {entry->width, 0, 0x80, 0x80, 0x80, 0x80},
+        {0, 0, 0x80, 0x80, 0x80, 0x80},
     };
 
-  return cg_primitive_new_p2c4 (entry->ctx->cg_context,
+    return cg_primitive_new_p2c4 (entry->ctx->cg_context,
                                   CG_VERTICES_MODE_LINES,
                                   8,
                                   lines);
@@ -150,272 +144,238 @@ create_entry_prim (RutEntry *entry)
 #endif
 
 static void
-allocate (RutEntry *entry)
+allocate(rut_entry_t *entry)
 {
-  float width = entry->width;
-  float height = entry->height;
-  float icon_width = 0;
-  float icon_height = 0;
+    float width = entry->width;
+    float height = entry->height;
+    float icon_width = 0;
+    float icon_height = 0;
 
-  rut_sizable_set_size (entry->background, width, height);
+    rut_sizable_set_size(entry->background, width, height);
 
-  if (entry->icon)
-    {
-      rut_sizable_get_size (entry->icon, &icon_width, &icon_height);
+    if (entry->icon) {
+        rut_sizable_get_size(entry->icon, &icon_width, &icon_height);
 
-      rut_transform_init_identity (entry->icon_transform);
-      rut_transform_translate (entry->icon_transform,
-                               (int) (height / 2.0f),
-                               0.0f,
-                               0.0f);
+        rut_transform_init_identity(entry->icon_transform);
+        rut_transform_translate(
+            entry->icon_transform, (int)(height / 2.0f), 0.0f, 0.0f);
     }
 
-  rut_transform_init_identity (entry->text_transform);
-  rut_transform_translate (entry->text_transform,
-                           (int) (height / 2.0f) + icon_width,
-                           0.0f,
-                           0.0f);
+    rut_transform_init_identity(entry->text_transform);
+    rut_transform_translate(
+        entry->text_transform, (int)(height / 2.0f) + icon_width, 0.0f, 0.0f);
 
-  rut_sizable_set_size (entry->text,
-                        width - height,
-                        height);
+    rut_sizable_set_size(entry->text, width - height, height);
 }
 
 void
-rut_entry_set_size (RutObject *object,
-                    float width,
-                    float height)
+rut_entry_set_size(rut_object_t *object, float width, float height)
 {
-  RutEntry *entry = object;
+    rut_entry_t *entry = object;
 
-  if (entry->width == width && entry->height == height)
-    return;
+    if (entry->width == width && entry->height == height)
+        return;
 
-  entry->width = width;
-  entry->height = height;
+    entry->width = width;
+    entry->height = height;
 
-  allocate (entry);
+    allocate(entry);
 
-  rut_property_dirty (&entry->ctx->property_ctx,
-                      &entry->properties[RUT_ENTRY_PROP_WIDTH]);
-  rut_property_dirty (&entry->ctx->property_ctx,
-                      &entry->properties[RUT_ENTRY_PROP_HEIGHT]);
+    rut_property_dirty(&entry->ctx->property_ctx,
+                       &entry->properties[RUT_ENTRY_PROP_WIDTH]);
+    rut_property_dirty(&entry->ctx->property_ctx,
+                       &entry->properties[RUT_ENTRY_PROP_HEIGHT]);
 }
 
 void
-rut_entry_get_size (RutObject *object,
-                    float *width,
-                    float *height)
+rut_entry_get_size(rut_object_t *object, float *width, float *height)
 {
-  RutEntry *entry = object;
+    rut_entry_t *entry = object;
 
-  *width = entry->width;
-  *height = entry->height;
+    *width = entry->width;
+    *height = entry->height;
 }
 
 static void
-_rut_entry_get_preferred_width (RutObject *object,
-                                float for_height,
-                                float *min_width_p,
-                                float *natural_width_p)
+_rut_entry_get_preferred_width(rut_object_t *object,
+                               float for_height,
+                               float *min_width_p,
+                               float *natural_width_p)
 {
-  RutEntry *entry = object;
-  float min_width, natural_width;
-  float natural_height;
+    rut_entry_t *entry = object;
+    float min_width, natural_width;
+    float natural_height;
 
-  rut_sizable_get_preferred_width (entry->text,
-                                   for_height,
-                                   &min_width,
-                                   &natural_width);
-  rut_sizable_get_preferred_height (entry->text,
-                                    natural_width,
-                                    NULL,
-                                    &natural_height);
+    rut_sizable_get_preferred_width(
+        entry->text, for_height, &min_width, &natural_width);
+    rut_sizable_get_preferred_height(
+        entry->text, natural_width, NULL, &natural_height);
 
-  /* The entry will add a half circle with a diameter of the height of
-   * the control to either side of the text widget */
-  min_width += natural_height;
-  natural_width += natural_height;
+    /* The entry will add a half circle with a diameter of the height of
+     * the control to either side of the text widget */
+    min_width += natural_height;
+    natural_width += natural_height;
 
-  if (entry->icon)
-    {
-      float width, height;
-      rut_sizable_get_size (entry->icon, &width, &height);
-      min_width += width;
-      natural_width += width;
+    if (entry->icon) {
+        float width, height;
+        rut_sizable_get_size(entry->icon, &width, &height);
+        min_width += width;
+        natural_width += width;
     }
 
-  if (min_width_p)
-    *min_width_p = min_width;
-  if (natural_width_p)
-    *natural_width_p = natural_width;
+    if (min_width_p)
+        *min_width_p = min_width;
+    if (natural_width_p)
+        *natural_width_p = natural_width;
 }
 
 static void
-_rut_entry_get_preferred_height (RutObject *object,
-                                 float for_width,
-                                 float *min_height_p,
-                                 float *natural_height_p)
+_rut_entry_get_preferred_height(rut_object_t *object,
+                                float for_width,
+                                float *min_height_p,
+                                float *natural_height_p)
 {
-  RutEntry *entry = object;
+    rut_entry_t *entry = object;
 
-  /* We can't pass on the for_width parameter because the width that
-   * the text widget will actually get depends on the height that it
-   * returns */
-  rut_sizable_get_preferred_height (entry->text, -1,
-                                    min_height_p, natural_height_p);
+    /* We can't pass on the for_width parameter because the width that
+     * the text widget will actually get depends on the height that it
+     * returns */
+    rut_sizable_get_preferred_height(
+        entry->text, -1, min_height_p, natural_height_p);
 
-  if (entry->icon)
-    {
-      float width, height;
-      rut_sizable_get_size (entry->icon, &width, &height);
-      if (min_height_p)
-        *min_height_p = MAX (*min_height_p, height);
-      if (natural_height_p)
-        *natural_height_p = MAX (*natural_height_p, height);
+    if (entry->icon) {
+        float width, height;
+        rut_sizable_get_size(entry->icon, &width, &height);
+        if (min_height_p)
+            *min_height_p = MAX(*min_height_p, height);
+        if (natural_height_p)
+            *natural_height_p = MAX(*natural_height_p, height);
     }
 }
 
-RutType rut_entry_type;
+rut_type_t rut_entry_type;
 
 static void
-_rut_entry_init_type (void)
+_rut_entry_init_type(void)
 {
-  static RutGraphableVTable graphable_vtable = {
-    NULL, /* child removed */
-    NULL, /* child addded */
-    NULL /* parent changed */
-  };
+    static rut_graphable_vtable_t graphable_vtable = { NULL, /* child removed */
+                                                       NULL, /* child addded */
+                                                       NULL /* parent changed */
+    };
 
-  static RutSizableVTable sizable_vtable = {
-    rut_entry_set_size,
-    rut_entry_get_size,
-    _rut_entry_get_preferred_width,
-    _rut_entry_get_preferred_height,
-    NULL /* add_preferred_size_callback */
-  };
+    static rut_sizable_vtable_t sizable_vtable = {
+        rut_entry_set_size,             rut_entry_get_size,
+        _rut_entry_get_preferred_width, _rut_entry_get_preferred_height,
+        NULL /* add_preferred_size_callback */
+    };
 
+    rut_type_t *type = &rut_entry_type;
+#define TYPE rut_entry_t
 
-  RutType *type = &rut_entry_type;
-#define TYPE RutEntry
-
-  rut_type_init (type, C_STRINGIFY (TYPE), _rut_entry_free);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_GRAPHABLE,
-                      offsetof (TYPE, graphable),
-                      &graphable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_SIZABLE,
-                      0, /* no implied properties */
-                      &sizable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_INTROSPECTABLE,
-                      offsetof (TYPE, introspectable),
-                      NULL); /* no implied vtable */
+    rut_type_init(type, C_STRINGIFY(TYPE), _rut_entry_free);
+    rut_type_add_trait(type,
+                       RUT_TRAIT_ID_GRAPHABLE,
+                       offsetof(TYPE, graphable),
+                       &graphable_vtable);
+    rut_type_add_trait(type,
+                       RUT_TRAIT_ID_SIZABLE,
+                       0, /* no implied properties */
+                       &sizable_vtable);
+    rut_type_add_trait(type,
+                       RUT_TRAIT_ID_INTROSPECTABLE,
+                       offsetof(TYPE, introspectable),
+                       NULL); /* no implied vtable */
 
 #undef TYPE
 }
 
-
 void
-rut_entry_set_width (RutObject *obj,
-                     float width)
+rut_entry_set_width(rut_object_t *obj, float width)
 {
-  RutEntry *entry = obj;
+    rut_entry_t *entry = obj;
 
-  rut_entry_set_size (entry, width, entry->height);
+    rut_entry_set_size(entry, width, entry->height);
 }
 
 void
-rut_entry_set_height (RutObject *obj,
-                      float height)
+rut_entry_set_height(rut_object_t *obj, float height)
 {
-  RutEntry *entry = obj;
+    rut_entry_t *entry = obj;
 
-  rut_entry_set_size (entry, entry->width, height);
+    rut_entry_set_size(entry, entry->width, height);
 }
 
-RutEntry *
-rut_entry_new (RutContext *ctx)
+rut_entry_t *
+rut_entry_new(rut_context_t *ctx)
 {
-  RutEntry *entry =
-    rut_object_alloc0 (RutEntry, &rut_entry_type, _rut_entry_init_type);
-  float width, height;
-  cg_texture_t *bg_texture;
+    rut_entry_t *entry =
+        rut_object_alloc0(rut_entry_t, &rut_entry_type, _rut_entry_init_type);
+    float width, height;
+    cg_texture_t *bg_texture;
 
+    entry->ctx = rut_object_ref(ctx);
 
-  entry->ctx = rut_object_ref (ctx);
+    rut_introspectable_init(entry, _rut_entry_prop_specs, entry->properties);
 
-  rut_introspectable_init (entry,
-                           _rut_entry_prop_specs,
-                           entry->properties);
+    rut_graphable_init(entry);
 
-  rut_graphable_init (entry);
+    bg_texture = rut_load_texture_from_data_file(
+        ctx, "number-slider-background.png", NULL);
 
-  bg_texture =
-    rut_load_texture_from_data_file (ctx,
-                                     "number-slider-background.png",
-                                     NULL);
+    entry->background = rut_nine_slice_new(ctx, bg_texture, 7, 7, 7, 7, 0, 0);
+    cg_object_unref(bg_texture);
+    rut_graphable_add_child(entry, entry->background);
+    rut_object_unref(entry->background);
 
-  entry->background = rut_nine_slice_new (ctx,
-                                          bg_texture,
-                                          7, 7, 7, 7,
-                                          0, 0);
-  cg_object_unref (bg_texture);
-  rut_graphable_add_child (entry, entry->background);
-  rut_object_unref (entry->background);
+    entry->text = rut_text_new(ctx);
+    rut_text_set_editable(entry->text, true);
 
-  entry->text = rut_text_new (ctx);
-  rut_text_set_editable (entry->text, true);
+    entry->text_transform = rut_transform_new(ctx);
+    rut_graphable_add_child(entry->text_transform, entry->text);
 
-  entry->text_transform = rut_transform_new (ctx);
-  rut_graphable_add_child (entry->text_transform, entry->text);
+    rut_graphable_add_child(entry, entry->text_transform);
 
-  rut_graphable_add_child (entry, entry->text_transform);
+    rut_sizable_get_preferred_width(entry,
+                                    -1, /* for_height */
+                                    NULL, /* min_width */
+                                    &width);
+    rut_sizable_get_preferred_height(entry,
+                                     width, /* for_width */
+                                     NULL, /* min_height */
+                                     &height);
+    rut_sizable_set_size(entry, width, height);
 
-  rut_sizable_get_preferred_width (entry,
-                                   -1, /* for_height */
-                                   NULL, /* min_width */
-                                   &width);
-  rut_sizable_get_preferred_height (entry,
-                                    width, /* for_width */
-                                    NULL, /* min_height */
-                                    &height);
-  rut_sizable_set_size (entry, width, height);
-
-  return entry;
+    return entry;
 }
 
-RutText *
-rut_entry_get_text (RutEntry *entry)
+rut_text_t *
+rut_entry_get_text(rut_entry_t *entry)
 {
-  return entry->text;
+    return entry->text;
 }
 
 void
-rut_entry_set_icon (RutEntry *entry,
-                    RutIcon *icon)
+rut_entry_set_icon(rut_entry_t *entry, rut_icon_t *icon)
 {
-  if (entry->icon == icon)
-    return;
+    if (entry->icon == icon)
+        return;
 
-  remove_icon (entry);
+    remove_icon(entry);
 
-  if (icon)
-    {
-      /* XXX: note we don't keep any additional reference on the
-       * icon and icon transform other than those for adding
-       * them to the scene graph... */
+    if (icon) {
+        /* XXX: note we don't keep any additional reference on the
+         * icon and icon transform other than those for adding
+         * them to the scene graph... */
 
-      entry->icon_transform = rut_transform_new (entry->ctx);
-      rut_graphable_add_child (entry, entry->icon_transform);
-      rut_object_unref (entry->icon_transform);
+        entry->icon_transform = rut_transform_new(entry->ctx);
+        rut_graphable_add_child(entry, entry->icon_transform);
+        rut_object_unref(entry->icon_transform);
 
-      rut_graphable_add_child (entry->icon_transform, icon);
-      entry->icon = icon;
+        rut_graphable_add_child(entry->icon_transform, icon);
+        entry->icon = icon;
 
-      allocate (entry);
+        allocate(entry);
     }
 
-  rut_shell_queue_redraw (entry->ctx->shell);
+    rut_shell_queue_redraw(entry->ctx->shell);
 }

@@ -33,51 +33,40 @@
 #include "rut-context.h"
 #include "rut-types.h"
 
-typedef struct _RutScrollBar RutScrollBar;
-#define RUT_SCROLL_BAR(X) ((RutScrollBar *)X)
+typedef struct _rut_scroll_bar_t rut_scroll_bar_t;
+#define RUT_SCROLL_BAR(X) ((rut_scroll_bar_t *)X)
 
-extern RutType rut_scroll_bar_type;
+extern rut_type_t rut_scroll_bar_type;
 
-void
-_rut_scroll_bar_init_type (void);
+void _rut_scroll_bar_init_type(void);
 
-RutScrollBar *
-rut_scroll_bar_new (RutContext *ctx,
-                    RutAxis axis,
-                    float length,
-                    float virtual_length,
-                    float virtual_viewport_length);
+rut_scroll_bar_t *rut_scroll_bar_new(rut_context_t *ctx,
+                                     rut_axis_t axis,
+                                     float length,
+                                     float virtual_length,
+                                     float virtual_viewport_length);
 
 /* Set the length of the scroll bar widget itself */
-void
-rut_scroll_bar_set_length (RutObject *scroll_bar,
-                           float length);
+void rut_scroll_bar_set_length(rut_object_t *scroll_bar, float length);
 
 /* How long is virtual length of the document being scrolled */
-void
-rut_scroll_bar_set_virtual_length (RutObject *scroll_bar,
-                                   float virtual_length);
+void rut_scroll_bar_set_virtual_length(rut_object_t *scroll_bar,
+                                       float virtual_length);
 
 /* What is the length of the viewport into the document being scrolled */
-void
-rut_scroll_bar_set_virtual_viewport (RutObject *scroll_bar,
-                                     float viewport_length);
+void rut_scroll_bar_set_virtual_viewport(rut_object_t *scroll_bar,
+                                         float viewport_length);
 
-void
-rut_scroll_bar_set_virtual_offset (RutObject *scroll_bar,
-                                   float viewport_offset);
+void rut_scroll_bar_set_virtual_offset(rut_object_t *scroll_bar,
+                                       float viewport_offset);
 
-float
-rut_scroll_bar_get_virtual_offset (RutScrollBar *scroll_bar);
+float rut_scroll_bar_get_virtual_offset(rut_scroll_bar_t *scroll_bar);
 
-float
-rut_scroll_bar_get_virtual_viewport (RutScrollBar *scroll_bar);
+float rut_scroll_bar_get_virtual_viewport(rut_scroll_bar_t *scroll_bar);
 
-float
-rut_scroll_bar_get_thickness (RutScrollBar *scroll_bar);
+float rut_scroll_bar_get_thickness(rut_scroll_bar_t *scroll_bar);
 
-void
-rut_scroll_bar_set_color (RutScrollBar *scroll_bar,
-                          const cg_color_t *color);
+void rut_scroll_bar_set_color(rut_scroll_bar_t *scroll_bar,
+                              const cg_color_t *color);
 
 #endif /* _RUT_SCROLL_BAR_H_ */

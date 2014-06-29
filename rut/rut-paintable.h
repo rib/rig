@@ -35,57 +35,49 @@
 #include "rut-list.h"
 #include "rut-interfaces.h"
 
-typedef struct _RutPaintableProps
-{
-  int padding;
-} RutPaintableProps;
+typedef struct _rut_paintable_props_t {
+    int padding;
+} rut_paintable_props_t;
 
-typedef struct _RutQueuedPaint
-{
-  RutList list_node;
-  cg_matrix_t modelview;
-  RutObject *paintable;
-} RutQueuedPaint;
+typedef struct _rut_queued_paint_t {
+    rut_list_t list_node;
+    cg_matrix_t modelview;
+    rut_object_t *paintable;
+} rut_queued_paint_t;
 
-typedef struct _RutPaintContext
-{
-  RutObject *camera;
+typedef struct _rut_paint_context_t {
+    rut_object_t *camera;
 
-  /* The next two members are used to implement a layer mechanism so
-   * that widgets can draw something above all other widgets without
-   * having to add a separate node to the graph. During the initial
-   * walk of the tree for painting the layer_number is zero and the
-   * paint method on all of the paintable objects in the graph are
-   * called. If a widget wants to paint in another layer it can add
-   * itself to the queue using rut_paint_context_queue_paint(). Once
-   * the initial walk of the graph is complete the layer_number will
-   * be incremented and everything in the list will be painted again.
-   * This will be repeated until the list becomes empty. */
-  int layer_number;
-  RutList paint_queue;
-} RutPaintContext;
+    /* The next two members are used to implement a layer mechanism so
+     * that widgets can draw something above all other widgets without
+     * having to add a separate node to the graph. During the initial
+     * walk of the tree for painting the layer_number is zero and the
+     * paint method on all of the paintable objects in the graph are
+     * called. If a widget wants to paint in another layer it can add
+     * itself to the queue using rut_paint_context_queue_paint(). Once
+     * the initial walk of the graph is complete the layer_number will
+     * be incremented and everything in the list will be painted again.
+     * This will be repeated until the list becomes empty. */
+    int layer_number;
+    rut_list_t paint_queue;
+} rut_paint_context_t;
 
-#define RUT_PAINT_CONTEXT(X) ((RutPaintContext *)X)
+#define RUT_PAINT_CONTEXT(X) ((rut_paint_context_t *)X)
 
-typedef struct _RutPaintableVtable
-{
-  void (*paint) (RutObject *object, RutPaintContext *paint_ctx);
-} RutPaintableVTable;
+typedef struct _rut_paintable_vtable_t {
+    void (*paint)(rut_object_t *object, rut_paint_context_t *paint_ctx);
+} rut_paintable_vtable_t;
 
-void
-rut_paintable_init (RutObject *object);
+void rut_paintable_init(rut_object_t *object);
 
-void
-rut_paintable_paint (RutObject *object, RutPaintContext *paint_ctx);
+void rut_paintable_paint(rut_object_t *object, rut_paint_context_t *paint_ctx);
 
-void
-rut_paint_context_queue_paint (RutPaintContext *paint_ctx,
-                               RutObject *paintable);
+void rut_paint_context_queue_paint(rut_paint_context_t *paint_ctx,
+                                   rut_object_t *paintable);
 
-void
-rut_paint_graph_with_layers (RutObject *root,
-                             RutTraverseCallback before_children_cb,
-                             RutTraverseCallback after_children_cb,
-                             RutPaintContext *paint_ctx);
+void rut_paint_graph_with_layers(rut_object_t *root,
+                                 rut_traverse_callback_t before_children_cb,
+                                 rut_traverse_callback_t after_children_cb,
+                                 rut_paint_context_t *paint_ctx);
 
 #endif /* _RUT_PAINTABLE_H_ */

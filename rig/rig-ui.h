@@ -33,7 +33,7 @@
 
 #include <rut.h>
 
-typedef struct _RigUI RigUI;
+typedef struct _rig_ui_t rig_ui_t;
 
 #include "rut-object.h"
 #include "rig-engine.h"
@@ -46,55 +46,43 @@ typedef struct _RigUI RigUI;
  * the play mode UI so that all UI logic involved in play mode
  * does not affect the state of the UI that gets saved.
  */
-struct _RigUI
-{
-  RutObjectBase _base;
+struct _rig_ui_t {
+    rut_object_base_t _base;
 
-  RigEngine *engine;
+    rig_engine_t *engine;
 
-  c_list_t *assets;
+    c_list_t *assets;
 
-  RutObject *scene;
-  c_list_t *controllers;
+    rut_object_t *scene;
+    c_list_t *controllers;
 
-  RigEntity *light;
-  RigEntity *play_camera;
-  RutObject *play_camera_component;
+    rig_entity_t *light;
+    rig_entity_t *play_camera;
+    rut_object_t *play_camera_component;
 
-  uint8_t *dso_data;
-  int dso_len;
+    uint8_t *dso_data;
+    int dso_len;
 
-  c_list_t *suspended_controllers;
-  bool suspended;
+    c_list_t *suspended_controllers;
+    bool suspended;
 };
 
-RigUI *
-rig_ui_new (RigEngine *engine);
+rig_ui_t *rig_ui_new(rig_engine_t *engine);
 
-void
-rig_ui_set_dso_data (RigUI *ui, uint8_t *data, int len);
+void rig_ui_set_dso_data(rig_ui_t *ui, uint8_t *data, int len);
 
-void
-rig_ui_prepare (RigUI *ui);
+void rig_ui_prepare(rig_ui_t *ui);
 
-void
-rig_ui_suspend (RigUI *ui);
+void rig_ui_suspend(rig_ui_t *ui);
 
-void
-rig_ui_resume (RigUI *ui);
+void rig_ui_resume(rig_ui_t *ui);
 
-RigEntity *
-rig_ui_find_entity (RigUI *ui, const char *label);
+rig_entity_t *rig_ui_find_entity(rig_ui_t *ui, const char *label);
 
-void
-rig_ui_reap (RigUI *ui);
+void rig_ui_reap(rig_ui_t *ui);
 
-void
-rig_ui_add_controller (RigUI *ui,
-                       RigController *controller);
+void rig_ui_add_controller(rig_ui_t *ui, rig_controller_t *controller);
 
-void
-rig_ui_remove_controller (RigUI *ui,
-                          RigController *controller);
+void rig_ui_remove_controller(rig_ui_t *ui, rig_controller_t *controller);
 
 #endif /* _RIG_UI_H_ */

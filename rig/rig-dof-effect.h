@@ -33,33 +33,27 @@
 
 #include <rut.h>
 
-typedef struct _RigDepthOfField RigDepthOfField;
+typedef struct _rig_depth_of_field_t rig_depth_of_field_t;
 
 #include "rig-engine.h"
 
-RigDepthOfField *
-rig_dof_effect_new (RigEngine *engine);
+rig_depth_of_field_t *rig_dof_effect_new(rig_engine_t *engine);
 
-void
-rig_dof_effect_free (RigDepthOfField *dof);
+void rig_dof_effect_free(rig_depth_of_field_t *dof);
 
-void
-rig_dof_effect_set_framebuffer_size (RigDepthOfField *dof,
-                                     int width,
-                                     int height);
+void rig_dof_effect_set_framebuffer_size(rig_depth_of_field_t *dof,
+                                         int width,
+                                         int height);
 
-cg_framebuffer_t *
-rig_dof_effect_get_depth_pass_fb (RigDepthOfField *dof);
+cg_framebuffer_t *rig_dof_effect_get_depth_pass_fb(rig_depth_of_field_t *dof);
 
-cg_framebuffer_t *
-rig_dof_effect_get_color_pass_fb (RigDepthOfField *dof);
+cg_framebuffer_t *rig_dof_effect_get_color_pass_fb(rig_depth_of_field_t *dof);
 
-void
-rig_dof_effect_draw_rectangle (RigDepthOfField *dof,
-                               cg_framebuffer_t *fb,
-                               float x1,
-                               float y1,
-                               float x2,
-                               float y2);
+void rig_dof_effect_draw_rectangle(rig_depth_of_field_t *dof,
+                                   cg_framebuffer_t *fb,
+                                   float x1,
+                                   float y1,
+                                   float x2,
+                                   float y2);
 
 #endif /* __RIG_DOF_EFFECT_H__ */

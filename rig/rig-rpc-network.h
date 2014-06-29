@@ -35,72 +35,65 @@
 
 #include "protobuf-c-rpc/rig-protobuf-c-rpc.h"
 
-typedef struct _RigRPCServer RigRPCServer;
-typedef struct _RigRPCPeer RigRPCPeer;
+typedef struct _rig_rpc_server_t rig_rpc_server_t;
+typedef struct _rig_rpc_peer_t rig_rpc_peer_t;
 
 #include "rig-types.h"
 
-struct _RigRPCServer
-{
-  RutObjectBase _base;
+struct _rig_rpc_server_t {
+    rut_object_base_t _base;
 
-  int port;
+    int port;
 
-  PB_RPC_Server *pb_rpc_server;
+    pb_rpc__server_t *pb_rpc_server;
 };
 
-RigRPCServer *
-rig_rpc_server_new (RutShell *shell,
-                    const char *name,
-                    int listening_fd,
-                    ProtobufCService *service,
-                    PB_RPC_Error_Func server_error_handler,
-                    PB_RPC_Client_Connect_Func new_client_handler,
-                    void *user_data);
+rig_rpc_server_t *
+rig_rpc_server_new(rut_shell_t *shell,
+                   const char *name,
+                   int listening_fd,
+                   ProtobufCService *service,
+                   PB_RPC_Error_Func server_error_handler,
+                   pb_rpc__client_t_Connect_Func new_client_handler,
+                   void *user_data);
 
-void
-rig_rpc_server_shutdown (RigRPCServer *server);
+void rig_rpc_server_shutdown(rig_rpc_server_t *server);
 
-typedef struct _RigRPCClient
-{
-  RutObjectBase _base;
+typedef struct _rig_rpc_client_t {
+    rut_object_base_t _base;
 
-  char *hostname;
-  int port;
+    char *hostname;
+    int port;
 
-  PB_RPC_Client *pb_rpc_client;
-} RigRPCClient;
+    pb_rpc__client_t *pb_rpc_client;
+} rig_rpc_client_t;
 
-RigRPCClient *
-rig_rpc_client_new (RutShell *shell,
-                    const char *hostname,
-                    int port,
-                    ProtobufCServiceDescriptor *descriptor,
-                    PB_RPC_Error_Func client_error_handler,
-                    PB_RPC_Connect_Func connect_handler,
-                    void *user_data);
+rig_rpc_client_t *rig_rpc_client_new(rut_shell_t *shell,
+                                     const char *hostname,
+                                     int port,
+                                     ProtobufCServiceDescriptor *descriptor,
+                                     PB_RPC_Error_Func client_error_handler,
+                                     PB_RPC_Connect_Func connect_handler,
+                                     void *user_data);
 
-void
-rig_rpc_client_disconnect (RigRPCClient *rpc_client);
+void rig_rpc_client_disconnect(rig_rpc_client_t *rpc_client);
 
-struct _RigRPCPeer
-{
-  RutObjectBase _base;
+struct _rig_rpc_peer_t {
+    rut_object_base_t _base;
 
-  int fd;
+    int fd;
 
-  PB_RPC_Peer *pb_rpc_peer;
-  PB_RPC_Server *pb_rpc_server;
-  PB_RPC_Client *pb_rpc_client;
+    pb_rpc__peer_t *pb_rpc_peer;
+    pb_rpc__server_t *pb_rpc_server;
+    pb_rpc__client_t *pb_rpc_client;
 };
 
-RigRPCPeer *
-rig_rpc_peer_new (RutShell *shell,
-                  int fd,
-                  ProtobufCService *server_service,
-                  ProtobufCServiceDescriptor *client_service,
-                  PB_RPC_Error_Func peer_error_handler,
-                  PB_RPC_Connect_Func connect_handler,
-                  void *user_data);
+rig_rpc_peer_t *rig_rpc_peer_new(rut_shell_t *shell,
+                                 int fd,
+                                 ProtobufCService *server_service,
+                                 ProtobufCServiceDescriptor *client_service,
+                                 PB_RPC_Error_Func peer_error_handler,
+                                 PB_RPC_Connect_Func connect_handler,
+                                 void *user_data);
 
 #endif /* _RIG_RPC_NETWORK_H_ */

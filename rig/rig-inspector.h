@@ -26,7 +26,6 @@
  * SOFTWARE.
  */
 
-
 #ifndef _RIG_INSPECTOR_H_
 #define _RIG_INSPECTOR_H_
 
@@ -34,40 +33,35 @@
 
 #include <rut.h>
 
-extern RutType rig_inspector_type;
+extern rut_type_t rig_inspector_type;
 
-typedef struct _RigInspector RigInspector;
+typedef struct _rig_inspector_t rig_inspector_t;
 
 /* This is called whenever one of the properties changes */
-typedef void
-(* RigInspectorCallback) (RutProperty *target_property,
-                          RutProperty *source_property,
-                          bool mergable,
-                          void *user_data);
+typedef void (*rig_inspector_callback_t)(rut_property_t *target_property,
+                                        rut_property_t *source_property,
+                                        bool mergable,
+                                        void *user_data);
 
 /* This is called whenever the 'controlled' state changes */
-typedef void
-(* RigInspectorControlledCallback) (RutProperty *property,
-                                    bool value,
-                                    void *user_data);
+typedef void (*rig_inspector_controlled_callback_t)(rut_property_t *property,
+                                                  bool value,
+                                                  void *user_data);
 
-RigInspector *
-rig_inspector_new (RutContext *ctx,
-                   c_list_t *objects,
-                   RigInspectorCallback property_changed_cb,
-                   RigInspectorControlledCallback controlled_changed_cb,
-                   void *user_data);
+rig_inspector_t *
+rig_inspector_new(rut_context_t *ctx,
+                  c_list_t *objects,
+                  rig_inspector_callback_t property_changed_cb,
+                  rig_inspector_controlled_callback_t controlled_changed_cb,
+                  void *user_data);
 
-void
-rig_inspector_reload_property (RigInspector *inspector,
-                               RutProperty *property);
+void rig_inspector_reload_property(rig_inspector_t *inspector,
+                                   rut_property_t *property);
 
-void
-rig_inspector_reload_properties (RigInspector *inspector);
+void rig_inspector_reload_properties(rig_inspector_t *inspector);
 
-void
-rig_inspector_set_property_controlled (RigInspector *inspector,
-                                       RutProperty *property,
-                                       bool controlled);
+void rig_inspector_set_property_controlled(rig_inspector_t *inspector,
+                                           rut_property_t *property,
+                                           bool controlled);
 
 #endif /* _RIG_INSPECTOR_H_ */

@@ -31,19 +31,20 @@
 #include "rut-renderer.h"
 
 void
-rut_renderer_notify_entity_changed (RutObject *object, RigEntity *entity)
+rut_renderer_notify_entity_changed(rut_object_t *object,
+                                   rig_entity_t *entity)
 {
-  RutRendererVTable *renderer =
-    rut_object_get_vtable (object, RUT_TRAIT_ID_RENDERER);
+    rut_renderer_vtable_t *renderer =
+        rut_object_get_vtable(object, RUT_TRAIT_ID_RENDERER);
 
-  return renderer->notify_entity_changed (entity);
+    return renderer->notify_entity_changed(entity);
 }
 
 void
-rut_renderer_free_priv (RutObject *object, RigEntity *entity)
+rut_renderer_free_priv(rut_object_t *object, rig_entity_t *entity)
 {
-  RutRendererVTable *renderer =
-    rut_object_get_vtable (object, RUT_TRAIT_ID_RENDERER);
+    rut_renderer_vtable_t *renderer =
+        rut_object_get_vtable(object, RUT_TRAIT_ID_RENDERER);
 
-  return renderer->free_priv (entity);
+    return renderer->free_priv(entity);
 }

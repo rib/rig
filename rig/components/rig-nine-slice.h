@@ -34,75 +34,54 @@
 
 #include <rut.h>
 
-typedef struct _RigNineSlice RigNineSlice;
-extern RutType rig_nine_slice_type;
+typedef struct _rig_nine_slice_t rig_nine_slice_t;
+extern rut_type_t rig_nine_slice_type;
 
-RigNineSlice *
-rig_nine_slice_new (RutContext *ctx,
-                    cg_texture_t *texture,
-                    float top,
-                    float right,
-                    float bottom,
-                    float left,
-                    float width,
-                    float height);
+rig_nine_slice_t *rig_nine_slice_new(rut_context_t *ctx,
+                                     cg_texture_t *texture,
+                                     float top,
+                                     float right,
+                                     float bottom,
+                                     float left,
+                                     float width,
+                                     float height);
 
-void
-rig_nine_slice_set_size (RutObject *self,
-                         float width,
-                         float height);
+void rig_nine_slice_set_size(rut_object_t *self, float width, float height);
 
-void
-rig_nine_slice_get_size (RutObject *self,
-                         float *width,
-                         float *height);
+void rig_nine_slice_get_size(rut_object_t *self, float *width, float *height);
 
-void
-rig_nine_slice_set_image_size (RutObject *self,
-                               int width,
-                               int height);
+void rig_nine_slice_set_image_size(rut_object_t *self, int width, int height);
 
-cg_texture_t *
-rig_nine_slice_get_texture (RigNineSlice *nine_slice);
+cg_texture_t *rig_nine_slice_get_texture(rig_nine_slice_t *nine_slice);
 
-void
-rig_nine_slice_set_texture (RigNineSlice *nine_slice,
-                            cg_texture_t *texture);
+void rig_nine_slice_set_texture(rig_nine_slice_t *nine_slice,
+                                cg_texture_t *texture);
 
-cg_pipeline_t *
-rig_nine_slice_get_pipeline (RigNineSlice *nine_slice);
+cg_pipeline_t *rig_nine_slice_get_pipeline(rig_nine_slice_t *nine_slice);
 
-cg_primitive_t *
-rig_nine_slice_get_primitive (RutObject *object);
+cg_primitive_t *rig_nine_slice_get_primitive(rut_object_t *object);
 
-RutMesh *
-rig_nine_slice_get_pick_mesh (RutObject *object);
+rut_mesh_t *rig_nine_slice_get_pick_mesh(rut_object_t *object);
 
-typedef void (* RigNineSliceUpdateCallback) (RigNineSlice *nine_slice,
-                                             void *user_data);
+typedef void (*rig_nine_slice_update_callback_t)(rig_nine_slice_t *nine_slice,
+                                                 void *user_data);
 
-RutClosure *
-rig_nine_slice_add_update_callback (RigNineSlice *nine_slice,
-                                    RigNineSliceUpdateCallback callback,
-                                    void *user_data,
-                                    RutClosureDestroyCallback destroy_cb);
+rut_closure_t *
+rig_nine_slice_add_update_callback(rig_nine_slice_t *nine_slice,
+                                   rig_nine_slice_update_callback_t callback,
+                                   void *user_data,
+                                   rut_closure_destroy_callback_t destroy_cb);
 
-void
-rig_nine_slice_set_width (RutObject *nine_slice, float width);
+void rig_nine_slice_set_width(rut_object_t *nine_slice, float width);
 
-void
-rig_nine_slice_set_height (RutObject *nine_slice, float height);
+void rig_nine_slice_set_height(rut_object_t *nine_slice, float height);
 
-void
-rig_nine_slice_set_left (RutObject *nine_slice, float left);
+void rig_nine_slice_set_left(rut_object_t *nine_slice, float left);
 
-void
-rig_nine_slice_set_right (RutObject *nine_slice, float right);
+void rig_nine_slice_set_right(rut_object_t *nine_slice, float right);
 
-void
-rig_nine_slice_set_top (RutObject *nine_slice, float top);
+void rig_nine_slice_set_top(rut_object_t *nine_slice, float top);
 
-void
-rig_nine_slice_set_bottom (RutObject *nine_slice, float bottom);
+void rig_nine_slice_set_bottom(rut_object_t *nine_slice, float bottom);
 
 #endif /* __RIG_NINE_SLICE_H__ */

@@ -36,40 +36,53 @@ G_BEGIN_DECLS
 
 #ifdef RUT_ENABLE_REFCOUNT_DEBUG
 
-void
-rut_refcount_debug_init (void);
+void rut_refcount_debug_init(void);
 
-void
-_rut_refcount_debug_object_created (void *object);
+void _rut_refcount_debug_object_created(void *object);
 
-void
-_rut_refcount_debug_ref (void *object);
+void _rut_refcount_debug_ref(void *object);
 
-void
-_rut_refcount_debug_claim (void *object, void *owner);
+void _rut_refcount_debug_claim(void *object, void *owner);
 
-void
-_rut_refcount_debug_unref (void *object);
+void _rut_refcount_debug_unref(void *object);
 
-void
-_rut_refcount_debug_release (void *object, void *owner);
+void _rut_refcount_debug_release(void *object, void *owner);
 
 #else /* RUT_ENABLE_REFCOUNT_DEBUG */
 
 /* If recounting isn't enabled then we'll just no-op the debugging
  * code so that it won't be a performance burden */
 
-#define _rut_refcount_debug_object_created(o) G_STMT_START { } G_STMT_END
+#define _rut_refcount_debug_object_created(o)                                  \
+    G_STMT_START                                                               \
+    {                                                                          \
+    }                                                                          \
+    G_STMT_END
 
-#define _rut_refcount_debug_ref(o) G_STMT_START { } G_STMT_END
-#define _rut_refcount_debug_claim(o, owner) G_STMT_START { } G_STMT_END
+#define _rut_refcount_debug_ref(o)                                             \
+    G_STMT_START                                                               \
+    {                                                                          \
+    }                                                                          \
+    G_STMT_END
+#define _rut_refcount_debug_claim(o, owner)                                    \
+    G_STMT_START                                                               \
+    {                                                                          \
+    }                                                                          \
+    G_STMT_END
 
-#define _rut_refcount_debug_unref(o) G_STMT_START { } G_STMT_END
-#define _rut_refcount_debug_release(o, owner) G_STMT_START { } G_STMT_END
+#define _rut_refcount_debug_unref(o)                                           \
+    G_STMT_START                                                               \
+    {                                                                          \
+    }                                                                          \
+    G_STMT_END
+#define _rut_refcount_debug_release(o, owner)                                  \
+    G_STMT_START                                                               \
+    {                                                                          \
+    }                                                                          \
+    G_STMT_END
 
 #endif /* RUT_ENABLE_REFCOUNT_DEBUG */
 
 G_END_DECLS
 
 #endif /* _RUT_REFCOUNT_DEBUG_H_ */
-

@@ -34,34 +34,21 @@
 
 #include <rut-context.h>
 
-typedef struct _RutFixed RutFixed;
-extern RutType rut_fixed_type;
+typedef struct _rut_fixed_t rut_fixed_t;
+extern rut_type_t rut_fixed_type;
 
-RutFixed *
-rut_fixed_new (RutContext *ctx,
-               float width,
-               float height);
+rut_fixed_t *rut_fixed_new(rut_context_t *ctx, float width, float height);
 
-void
-rut_fixed_set_width (RutFixed *fixed, float width);
+void rut_fixed_set_width(rut_fixed_t *fixed, float width);
 
-void
-rut_fixed_set_height (RutFixed *fixed, float height);
+void rut_fixed_set_height(rut_fixed_t *fixed, float height);
 
-void
-rut_fixed_set_size (RutObject *self,
-                    float width,
-                    float height);
+void rut_fixed_set_size(rut_object_t *self, float width, float height);
 
-void
-rut_fixed_get_size (RutObject *self,
-                    float *width,
-                    float *height);
+void rut_fixed_get_size(rut_object_t *self, float *width, float *height);
 
-void
-rut_fixed_add_child (RutFixed *fixed, RutObject *child);
+void rut_fixed_add_child(rut_fixed_t *fixed, rut_object_t *child);
 
-void
-rut_fixed_remove_child (RutFixed *fixed, RutObject *child);
+void rut_fixed_remove_child(rut_fixed_t *fixed, rut_object_t *child);
 
 #endif /* __RUT_FIXED_H__ */

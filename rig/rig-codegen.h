@@ -26,26 +26,25 @@
  * SOFTWARE.
  */
 
-
 #ifndef __RIG_CODEGEN_H__
 #define __RIG_CODEGEN_H__
 
 //#define NULL ((void *)0)
 
-typedef struct _RutType RutType;
+typedef struct _rut_type_t rut_type_t;
 
-typedef void RutObject;
+typedef void rut_object_t;
 
-typedef struct _RutContext RutContext;
+typedef struct _rut_context_t rut_context_t;
 
-typedef struct _RutUIEnum RutUIEnum;
+typedef struct _rut_ui_enum_t rut_ui_enum_t;
 
-typedef struct _RutPropertyContext RutPropertyContext;
+typedef struct _rut_property_context_t rut_property_context_t;
 
-typedef void RigAsset;
-typedef int RigAssetType;
+typedef void rig_asset_t;
+typedef int rig_asset_type_t;
 
-typedef struct _RutMemoryStack RutMemoryStack;
+typedef struct _rut_memory_stack_t rut_memory_stack_t;
 
 /* We want to minimize the number of headers we include during the
  * runtime compilation of UI logic and so we just duplicate the
@@ -58,14 +57,12 @@ typedef struct _GSList GSList;
 
 typedef int bool;
 
-typedef struct _cg_color_t
-{
-  float r, g, b, a;
+typedef struct _cg_color_t {
+    float r, g, b, a;
 } cg_color_t;
 
-typedef struct _cg_quaternion_t
-{
-  float w, x, y, z;
+typedef struct _cg_quaternion_t {
+    float w, x, y, z;
 } cg_quaternion_t;
 
 #endif /* __RIG_CODEGEN_H__ */

@@ -26,7 +26,8 @@
  * SOFTWARE.
  */
 
-/* http://research.cs.wisc.edu/graphics/Courses/559-f2001/Examples/Gl3D/arcball-gems.pdf */
+/* http://research.cs.wisc.edu/graphics/Courses/559-f2001/Examples/Gl3D/arcball-gems.pdf
+ */
 
 #include <config.h>
 
@@ -35,69 +36,62 @@
 #include "rut-arcball.h"
 
 void
-rut_arcball_init (RutArcball *ball,
-                  float       center_x,
-                  float       center_y,
-                  float       radius)
+rut_arcball_init(rut_arcball_t *ball,
+                 float center_x,
+                 float center_y,
+                 float radius)
 {
-  ball->center[0] = center_x;
-  ball->center[1] = center_y;
-  ball->radius = radius;
+    ball->center[0] = center_x;
+    ball->center[1] = center_y;
+    ball->radius = radius;
 
-  cg_quaternion_init_identity (&ball->q_drag);
+    cg_quaternion_init_identity(&ball->q_drag);
 }
 
 void
-rut_arcball_mouse_down (RutArcball *ball,
-                        float       x,
-                        float       y)
+rut_arcball_mouse_down(rut_arcball_t *ball, float x, float y)
 {
-  ball->down[0] = x;
-  ball->down[1] = y;
+    ball->down[0] = x;
+    ball->down[1] = y;
 }
 
 static void
-rut_arcball_mouse_to_sphere (RutArcball *ball,
-                             float x,
-                             float y,
-                             float result[3])
+rut_arcball_mouse_to_sphere(rut_arcball_t *ball,
+                            float x,
+                            float y,
+                            float result[3])
 {
-  float mag_squared;
+    float mag_squared;
 
-  result[0] = (x - ball->center[0]) / ball->radius;
-  result[1] = (y - ball->center[1]) / ball->radius;
-  result[2] = 0.0f;
+    result[0] = (x - ball->center[0]) / ball->radius;
+    result[1] = (y - ball->center[1]) / ball->radius;
+    result[2] = 0.0f;
 
-  mag_squared = result[0] * result[0] + result[1] * result[1];
+    mag_squared = result[0] * result[0] + result[1] * result[1];
 
-  if (mag_squared > 1.0f)
-    {
-      /* normalize, but using mag_squared already computed and knowing the
-       * z component is 0 */
-      float one_over_mag = 1.0 / sqrtf (mag_squared);
+    if (mag_squared > 1.0f) {
+        /* normalize, but using mag_squared already computed and knowing the
+         * z component is 0 */
+        float one_over_mag = 1.0 / sqrtf(mag_squared);
 
-      result[0] *= one_over_mag;
-      result[1] *= one_over_mag;
-    }
-  else
-    {
-      result[2] = sqrtf (1.0f - mag_squared);
+        result[0] *= one_over_mag;
+        result[1] *= one_over_mag;
+    } else {
+        result[2] = sqrtf(1.0f - mag_squared);
     }
 }
 
 void
-rut_arcball_mouse_motion (RutArcball *ball,
-                          float       x,
-                          float       y)
+rut_arcball_mouse_motion(rut_arcball_t *ball, float x, float y)
 {
-  float v0[3], v1[3], *cross, drag_quat[4];
+    float v0[3], v1[3], *cross, drag_quat[4];
 
-  rut_arcball_mouse_to_sphere (ball, ball->down[0], ball->down[1], v0);
-  rut_arcball_mouse_to_sphere (ball, x, y, v1);
+    rut_arcball_mouse_to_sphere(ball, ball->down[0], ball->down[1], v0);
+    rut_arcball_mouse_to_sphere(ball, x, y, v1);
 
-  drag_quat[0] = cg_vector3_dot_product (v0, v1);
-  cross = drag_quat + 1;
-  cg_vector3_cross_product (cross, v0, v1);
+    drag_quat[0] = cg_vector3_dot_product(v0, v1);
+    cross = drag_quat + 1;
+    cg_vector3_cross_product(cross, v0, v1);
 
-  cg_quaternion_init_from_array (&ball->q_drag, drag_quat);
+    cg_quaternion_init_from_array(&ball->q_drag, drag_quat);
 }

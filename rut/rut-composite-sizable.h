@@ -32,29 +32,24 @@
 #ifndef _RUT_COMPOSITE_SIZABLE_
 #define _RUT_COMPOSITE_SIZABLE_
 
-void
-rut_composite_sizable_get_preferred_width (void *sizable,
-                                           float for_height,
-                                           float *min_width_p,
-                                           float *natural_width_p);
+void rut_composite_sizable_get_preferred_width(void *sizable,
+                                               float for_height,
+                                               float *min_width_p,
+                                               float *natural_width_p);
 
-void
-rut_composite_sizable_get_preferred_height (void *sizable,
-                                            float for_width,
-                                            float *min_height_p,
-                                            float *natural_height_p);
+void rut_composite_sizable_get_preferred_height(void *sizable,
+                                                float for_width,
+                                                float *min_height_p,
+                                                float *natural_height_p);
 
-RutClosure *
-rut_composite_sizable_add_preferred_size_callback (
-                                             void *object,
-                                             RutSizablePreferredSizeCallback cb,
-                                             void *user_data,
-                                             RutClosureDestroyCallback destroy);
+rut_closure_t *rut_composite_sizable_add_preferred_size_callback(
+    void *object,
+    RutSizablepreferred_size_callback_t cb,
+    void *user_data,
+    rut_closure_destroy_callback_t destroy);
 
-void
-rut_composite_sizable_set_size (void *object, float width, float height);
+void rut_composite_sizable_set_size(void *object, float width, float height);
 
-void
-rut_composite_sizable_get_size (void *object, float *width, float *height);
+void rut_composite_sizable_get_size(void *object, float *width, float *height);
 
 #endif /* _RUT_COMPOSITE_SIZABLE_ */

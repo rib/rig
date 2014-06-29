@@ -31,87 +31,73 @@
 
 #include "rig-entity.h"
 
-typedef struct _RigDiamondSlice RigDiamondSlice;
-#define RIG_DIAMOND_SLICE(X) ((RigDiamondSlice *)X)
-extern RutType _rig_diamond_slice_type;
+typedef struct _rig_diamond_slice_t rig_diamond_slice_t;
+#define RIG_DIAMOND_SLICE(X) ((rig_diamond_slice_t *)X)
+extern rut_type_t _rig_diamond_slice_type;
 
-struct _RigDiamondSlice
-{
-  RutObjectBase _base;
+struct _rig_diamond_slice_t {
+    rut_object_base_t _base;
 
-  cg_matrix_t rotate_matrix;
+    cg_matrix_t rotate_matrix;
 
-  float size;
+    float size;
 
-  RutMesh *mesh;
-  RutMesh *pick_mesh;
+    rut_mesh_t *mesh;
+    rut_mesh_t *pick_mesh;
 };
 
-void
-_rig_diamond_slice_init_type (void);
+void _rig_diamond_slice_init_type(void);
 
-typedef struct _RigDiamond RigDiamond;
-extern RutType rig_diamond_type;
+typedef struct _rig_diamond_t rig_diamond_t;
+extern rut_type_t rig_diamond_type;
 
 enum {
-  RIG_DIAMOND_PROP_SIZE,
-  RIG_DIAMOND_N_PROPS
+    RIG_DIAMOND_PROP_SIZE,
+    RIG_DIAMOND_N_PROPS
 };
 
-struct _RigDiamond
-{
-  RutObjectBase _base;
+struct _rig_diamond_t {
+    rut_object_base_t _base;
 
-  RutComponentableProps component;
+    rut_componentable_props_t component;
 
-  RutContext *ctx;
+    rut_context_t *ctx;
 
-  RutList updated_cb_list;
+    rut_list_t updated_cb_list;
 
-  RigDiamondSlice *slice;
+    rig_diamond_slice_t *slice;
 
-  int tex_width;
-  int tex_height;
-  float size;
+    int tex_width;
+    int tex_height;
+    float size;
 
-  RutIntrospectableProps introspectable;
-  RutProperty properties[RIG_DIAMOND_N_PROPS];
+    rut_introspectable_props_t introspectable;
+    rut_property_t properties[RIG_DIAMOND_N_PROPS];
 };
 
-void
-_rig_diamond_init_type (void);
+void _rig_diamond_init_type(void);
 
-RigDiamond *
-rig_diamond_new (RutContext *ctx, float size);
+rig_diamond_t *rig_diamond_new(rut_context_t *ctx, float size);
 
-float
-rig_diamond_get_size (RigDiamond *diamond);
+float rig_diamond_get_size(rig_diamond_t *diamond);
 
-void
-rig_diamond_set_size (RutObject *object, float size);
+void rig_diamond_set_size(rut_object_t *object, float size);
 
-cg_primitive_t *
-rig_diamond_get_primitive (RutObject *object);
+cg_primitive_t *rig_diamond_get_primitive(rut_object_t *object);
 
-void
-rig_diamond_apply_mask (RigDiamond *diamond,
-                        cg_pipeline_t *pipeline);
+void rig_diamond_apply_mask(rig_diamond_t *diamond, cg_pipeline_t *pipeline);
 
-RutMesh *
-rig_diamond_get_pick_mesh (RutObject *self);
+rut_mesh_t *rig_diamond_get_pick_mesh(rut_object_t *self);
 
-typedef void (* RigDiamondUpdateCallback) (RigDiamond *diamond,
-                                           void *user_data);
+typedef void (*rig_diamond_update_callback_t)(rig_diamond_t *diamond,
+                                              void *user_data);
 
-RutClosure *
-rig_diamond_add_update_callback (RigDiamond *diamond,
-                                 RigDiamondUpdateCallback callback,
-                                 void *user_data,
-                                 RutClosureDestroyCallback destroy_cb);
+rut_closure_t *
+rig_diamond_add_update_callback(rig_diamond_t *diamond,
+                                rig_diamond_update_callback_t callback,
+                                void *user_data,
+                                rut_closure_destroy_callback_t destroy_cb);
 
-void
-rig_diamond_set_image_size (RutObject *self,
-                            int width,
-                            int height);
+void rig_diamond_set_image_size(rut_object_t *self, int width, int height);
 
 #endif /* __RIG_DIAMOND_H__ */

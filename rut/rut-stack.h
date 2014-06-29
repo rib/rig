@@ -26,40 +26,24 @@
  * SOFTWARE.
  */
 
-
 #ifndef _RUT_STACK_H_
 #define _RUT_STACK_H_
 
 #include "rut-object.h"
 
-extern RutType rut_stack_type;
-typedef struct _RutStack RutStack;
+extern rut_type_t rut_stack_type;
+typedef struct _rut_stack_t rut_stack_t;
 
-RutStack *
-rut_stack_new (RutContext *context,
-               float width,
-               float height);
+rut_stack_t *rut_stack_new(rut_context_t *context, float width, float height);
 
-void
-rut_stack_add (RutStack *stack,
-               RutObject *child);
+void rut_stack_add(rut_stack_t *stack, rut_object_t *child);
 
-void
-rut_stack_set_size (RutObject *stack,
-                    float width,
-                    float height);
+void rut_stack_set_size(rut_object_t *stack, float width, float height);
 
-void
-rut_stack_set_width (RutObject *stack,
-                     float width);
+void rut_stack_set_width(rut_object_t *stack, float width);
 
-void
-rut_stack_set_height (RutObject *stack,
-                      float height);
+void rut_stack_set_height(rut_object_t *stack, float height);
 
-void
-rut_stack_get_size (RutObject *stack,
-                    float *width,
-                    float *height);
+void rut_stack_get_size(rut_object_t *stack, float *width, float *height);
 
 #endif /* _RUT_STACK_H_ */

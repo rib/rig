@@ -26,7 +26,6 @@
  * SOFTWARE.
  */
 
-
 #include <config.h>
 
 #include <stdlib.h>
@@ -50,53 +49,46 @@ static int option_width;
 static int option_height;
 static double option_scale;
 
-static const GOptionEntry rig_slave_entries[] =
-{
-  {
-    "width", 'w', 0, G_OPTION_ARG_INT, &option_width,
-    "Width of slave window", NULL
-  },
-  {
-    "height", 'h', 0, G_OPTION_ARG_INT, &option_width,
-    "Height of slave window", NULL
-  },
-  {
-    "scale", 's', 0, G_OPTION_ARG_DOUBLE, &option_scale,
-    "Scale factor for slave window based on default device dimensions", NULL
-  },
-
-  { 0 }
+static const GOptionEntry rig_slave_entries[] = {
+    { "width",       'w',                     0,   G_OPTION_ARG_INT,
+      &option_width, "Width of slave window", NULL },
+    { "height",      'h',                      0,   G_OPTION_ARG_INT,
+      &option_width, "Height of slave window", NULL },
+    { "scale",
+      's',
+      0,
+      G_OPTION_ARG_DOUBLE,
+      &option_scale,
+      "Scale factor for slave window based on default device dimensions",
+      NULL },
+    { 0 }
 };
 
-
 int
-main (int argc, char **argv)
+main(int argc, char **argv)
 {
-  RigSlave *slave;
-  GOptionContext *context = g_option_context_new (NULL);
-  GError *error = NULL;
+    rig_slave_t *slave;
+    GOptionContext *context = g_option_context_new(NULL);
+    GError *error = NULL;
 
-  rut_init_tls_state ();
+    rut_init_tls_state();
 
 #ifdef USE_GSTREAMER
-  gst_init (&argc, &argv);
+    gst_init(&argc, &argv);
 #endif
 
-  g_option_context_add_main_entries (context, rig_slave_entries, NULL);
+    g_option_context_add_main_entries(context, rig_slave_entries, NULL);
 
-  if (!g_option_context_parse (context, &argc, &argv, &error))
-    {
-      fprintf (stderr, "option parsing failed: %s\n", error->message);
-      exit (EXIT_FAILURE);
+    if (!g_option_context_parse(context, &argc, &argv, &error)) {
+        fprintf(stderr, "option parsing failed: %s\n", error->message);
+        exit(EXIT_FAILURE);
     }
 
-  slave = rig_slave_new (option_width,
-                         option_height,
-                         option_scale);
+    slave = rig_slave_new(option_width, option_height, option_scale);
 
-  rig_slave_run (slave);
+    rig_slave_run(slave);
 
-  rut_object_unref (slave);
+    rut_object_unref(slave);
 
-  return 0;
+    return 0;
 }

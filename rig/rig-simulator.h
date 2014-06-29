@@ -30,7 +30,7 @@
 #define _RIG_SIMULATOR_H_
 
 #include <rut.h>
-typedef struct _RigSimulator RigSimulator;
+typedef struct _rig_simulator_t rig_simulator_t;
 
 #include "rig-engine.h"
 #include "rig-engine-op.h"
@@ -40,78 +40,70 @@ typedef struct _RigSimulator RigSimulator;
  * Simulator actions are sent back as requests to the frontend at the
  * end of a frame.
  */
-typedef enum _RigSimulatorActionType
-{
-  RIG_SIMULATOR_ACTION_TYPE_REPORT_EDIT_FAILURE=1,
-} RigSimulatorActionType;
+typedef enum _rig_simulator_action_type_t {
+    RIG_SIMULATOR_ACTION_TYPE_REPORT_EDIT_FAILURE = 1,
+} rig_simulator_action_type_t;
 
 /* The "simulator" is the process responsible for updating object
  * properties either in response to user input, the progression of
  * animations or running other forms of simulation such as physics.
  */
-struct _RigSimulator
-{
-  RutObjectBase _base;
+struct _rig_simulator_t {
+    rut_object_base_t _base;
 
-  RigFrontendID frontend_id;
+    rig_frontend_id_t frontend_id;
 
-  bool redraw_queued;
+    bool redraw_queued;
 
-  /* when running as an editor or slave device then the UI
-   * can be edited at runtime and we handle some things a
-   * bit differently. For example we only need to be able
-   * to map ids to objects to support editing operations.
-   */
-  bool editable;
+    /* when running as an editor or slave device then the UI
+     * can be edited at runtime and we handle some things a
+     * bit differently. For example we only need to be able
+     * to map ids to objects to support editing operations.
+     */
+    bool editable;
 
-  RutShell *shell;
-  RutContext *ctx;
-  RigEngine *engine;
+    rut_shell_t *shell;
+    rut_context_t *ctx;
+    rig_engine_t *engine;
 
-  int fd;
-  RigRPCPeer *simulator_peer;
+    int fd;
+    rig_rpc_peer_t *simulator_peer;
 
-  float view_x;
-  float view_y;
+    float view_x;
+    float view_y;
 
-  float last_pointer_x;
-  float last_pointer_y;
+    float last_pointer_x;
+    float last_pointer_y;
 
-  RutButtonState button_state;
+    rut_button_state_t button_state;
 
-  RigPBUnSerializer *ui_unserializer;
-  RigPBUnSerializer *ops_unserializer;
-  RigEngineOpApplyContext apply_op_ctx;
-  RigEngineOpMapContext map_to_sim_objects_op_ctx;
-  RigEngineOpMapContext map_to_frontend_ids_op_ctx;
+    rig_pb_un_serializer_t *ui_unserializer;
+    rig_pb_un_serializer_t *ops_unserializer;
+    rig_engine_op_apply_context_t apply_op_ctx;
+    rig_engine_op_map_context_t map_to_sim_objects_op_ctx;
+    rig_engine_op_map_context_t map_to_frontend_ids_op_ctx;
 
-  GHashTable *object_to_id_map;
-  GHashTable *id_to_object_map;
-  //GHashTable *object_to_tmp_id_map;
-  uint64_t next_tmp_id;
+    GHashTable *object_to_id_map;
+    GHashTable *id_to_object_map;
+    // GHashTable *object_to_tmp_id_map;
+    uint64_t next_tmp_id;
 
-  RutList actions;
-  int n_actions;
+    rut_list_t actions;
+    int n_actions;
 
-  RutQueue *ops;
+    rut_queue_t *ops;
 };
 
-extern RutType rig_simulator_type;
+extern rut_type_t rig_simulator_type;
 
-RigSimulator *
-rig_simulator_new (RigFrontendID frontend_id,
-                   int fd);
+rig_simulator_t *rig_simulator_new(rig_frontend_id_t frontend_id, int fd);
 
-void
-rig_simulator_run (RigSimulator *simulator);
+void rig_simulator_run(rig_simulator_t *simulator);
 
-void
-rig_simulator_run_frame (RutShell *shell, void *user_data);
+void rig_simulator_run_frame(rut_shell_t *shell, void *user_data);
 
-void
-rig_simulator_queue_redraw_hook (RutShell *shell, void *user_data);
+void rig_simulator_queue_redraw_hook(rut_shell_t *shell, void *user_data);
 
-void
-rig_simulator_print_mappings (RigSimulator *simulator);
+void rig_simulator_print_mappings(rig_simulator_t *simulator);
 
 #endif /* _RIG_SIMULATOR_H_ */

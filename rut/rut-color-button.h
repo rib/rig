@@ -32,18 +32,14 @@
 #include "rut-object.h"
 #include "rut-context.h"
 
-extern RutType rut_color_button_type;
+extern rut_type_t rut_color_button_type;
 
-typedef struct _RutColorButton RutColorButton;
+typedef struct _rut_color_button_t rut_color_button_t;
 
-RutColorButton *
-rut_color_button_new (RutContext *ctx);
+rut_color_button_t *rut_color_button_new(rut_context_t *ctx);
 
-void
-rut_color_button_set_color (RutObject *picker,
-                            const cg_color_t *color);
+void rut_color_button_set_color(rut_object_t *picker, const cg_color_t *color);
 
-const cg_color_t *
-rut_color_button_get_color (RutColorButton *picker);
+const cg_color_t *rut_color_button_get_color(rut_color_button_t *picker);
 
 #endif /* _RUT_COLOR_BUTTON_H_ */

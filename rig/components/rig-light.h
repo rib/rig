@@ -31,64 +31,47 @@
 
 #include "rig-entity.h"
 
-typedef struct _RigLight RigLight;
-extern RutType rig_light_type;
+typedef struct _rig_light_t rig_light_t;
+extern rut_type_t rig_light_type;
 
 enum {
-  RIG_LIGHT_PROP_AMBIENT,
-  RIG_LIGHT_PROP_DIFFUSE,
-  RIG_LIGHT_PROP_SPECULAR,
-  RIG_LIGHT_N_PROPS
+    RIG_LIGHT_PROP_AMBIENT,
+    RIG_LIGHT_PROP_DIFFUSE,
+    RIG_LIGHT_PROP_SPECULAR,
+    RIG_LIGHT_N_PROPS
 };
 
+struct _rig_light_t {
+    rut_object_base_t _base;
+    rut_componentable_props_t component;
+    cg_color_t ambient;
+    cg_color_t diffuse;
+    cg_color_t specular;
 
-struct _RigLight
-{
-  RutObjectBase _base;
-  RutComponentableProps component;
-  cg_color_t ambient;
-  cg_color_t diffuse;
-  cg_color_t specular;
+    rut_context_t *context;
 
-  RutContext *context;
-
-  RutIntrospectableProps introspectable;
-  RutProperty properties[RIG_LIGHT_N_PROPS];
+    rut_introspectable_props_t introspectable;
+    rut_property_t properties[RIG_LIGHT_N_PROPS];
 };
 
-RigLight *
-rig_light_new (RutContext *context);
+rig_light_t *rig_light_new(rut_context_t *context);
 
-void
-rig_light_free (RigLight *light);
+void rig_light_free(rig_light_t *light);
 
-void
-rig_light_set_ambient (RutObject *light,
-                       const cg_color_t *ambient);
+void rig_light_set_ambient(rut_object_t *light, const cg_color_t *ambient);
 
-const cg_color_t *
-rig_light_get_ambient (RutObject *light);
+const cg_color_t *rig_light_get_ambient(rut_object_t *light);
 
-void
-rig_light_set_diffuse (RutObject *light,
-                       const cg_color_t *diffuse);
+void rig_light_set_diffuse(rut_object_t *light, const cg_color_t *diffuse);
 
-const cg_color_t *
-rig_light_get_diffuse (RigLight *light);
+const cg_color_t *rig_light_get_diffuse(rig_light_t *light);
 
-void
-rig_light_set_specular (RutObject *light,
-                        const cg_color_t *specular);
+void rig_light_set_specular(rut_object_t *light, const cg_color_t *specular);
 
-const cg_color_t *
-rig_light_get_specular (RigLight *light);
+const cg_color_t *rig_light_get_specular(rig_light_t *light);
 
-void
-rig_light_add_pipeline (RigLight *light,
-                        cg_pipeline_t *pipeline);
+void rig_light_add_pipeline(rig_light_t *light, cg_pipeline_t *pipeline);
 
-void
-rig_light_set_uniforms (RigLight *light,
-                        cg_pipeline_t *pipeline);
+void rig_light_set_uniforms(rig_light_t *light, cg_pipeline_t *pipeline);
 
 #endif /* __RIG_LIGHT_H__ */

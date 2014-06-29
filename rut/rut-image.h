@@ -31,31 +31,27 @@
 
 #include "rut-property.h"
 
-extern RutType rut_image_type;
+extern rut_type_t rut_image_type;
 
-typedef struct _RutImage RutImage;
+typedef struct _rut_image_t rut_image_t;
 
-#define RUT_IMAGE(x) ((RutImage *) x)
+#define RUT_IMAGE(x) ((rut_image_t *)x)
 
-typedef enum
-{
-  /* Don't scale the image */
-  RUT_IMAGE_DRAW_MODE_1_TO_1,
-  /* Fills the widget with repeats of the image */
-  RUT_IMAGE_DRAW_MODE_REPEAT,
-  /* Scales the image to fill the size of the widget */
-  RUT_IMAGE_DRAW_MODE_SCALE,
-  /* Scales the image to fill the size of the widget as much as
-   * possible without breaking the aspect ratio */
-  RUT_IMAGE_DRAW_MODE_SCALE_WITH_ASPECT_RATIO
-} RutImageDrawMode;
+typedef enum {
+    /* Don't scale the image */
+    RUT_IMAGE_DRAW_MODE_1_TO_1,
+    /* Fills the widget with repeats of the image */
+    RUT_IMAGE_DRAW_MODE_REPEAT,
+    /* Scales the image to fill the size of the widget */
+    RUT_IMAGE_DRAW_MODE_SCALE,
+    /* Scales the image to fill the size of the widget as much as
+     * possible without breaking the aspect ratio */
+    RUT_IMAGE_DRAW_MODE_SCALE_WITH_ASPECT_RATIO
+} rut_image_draw_mode_t;
 
-RutImage *
-rut_image_new (RutContext *ctx,
-               cg_texture_t *texture);
+rut_image_t *rut_image_new(rut_context_t *ctx, cg_texture_t *texture);
 
-void
-rut_image_set_draw_mode (RutImage *image,
-                         RutImageDrawMode draw_mode);
+void rut_image_set_draw_mode(rut_image_t *image,
+                             rut_image_draw_mode_t draw_mode);
 
 #endif /* _RUT_IMAGE_H_ */

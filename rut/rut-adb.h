@@ -34,44 +34,43 @@
 #include "rut-shell.h"
 #include "rut-exception.h"
 
-typedef enum _RutAdbException
-{
-  RUT_ADB_EXCEPTION_IO = 1
-} RutAdbException;
+typedef enum _rut_adb_exception_t {
+    RUT_ADB_EXCEPTION_IO = 1
+} rut_adb_exception_t;
 
-typedef struct _RutAdbDeviceTracker
-{
-  RutObjectBase _base;
+typedef struct _rut_adb_device_tracker_t {
+    rut_object_base_t _base;
 
-  RutShell *shell;
-  int fd;
+    rut_shell_t *shell;
+    int fd;
 
-  void (*devices_update_callback) (const char **serials,
-                                   int n_devices,
-                                   void *user_data);
-  void *devices_update_data;
-} RutAdbDeviceTracker;
+    void (*devices_update_callback)(const char **serials,
+                                    int n_devices,
+                                    void *user_data);
+    void *devices_update_data;
+} rut_adb_device_tracker_t;
 
-RutAdbDeviceTracker *
-rut_adb_device_tracker_new (RutShell *shell,
-                            void (*devices_update) (const char **serials,
-                                                    int n_devices,
-                                                    void *user_data),
-                            void *user_data);
+rut_adb_device_tracker_t *
+rut_adb_device_tracker_new(rut_shell_t *shell,
+                           void (*devices_update)(const char **serials,
+                                                  int n_devices,
+                                                  void *user_data),
+                           void *user_data);
 
-bool
-rut_adb_command (const char *serial, RutException **e, const char *format, ...);
-
-char *
-rut_adb_query (const char *serial, RutException **e, const char *format, ...);
+bool rut_adb_command(const char *serial,
+                     rut_exception_t **e,
+                     const char *format,
+                     ...);
 
 char *
-rut_adb_run_shell_cmd (const char *serial,
-                       RutException **e, const char *format, ...);
+rut_adb_query(const char *serial, rut_exception_t **e, const char *format, ...);
+
+char *rut_adb_run_shell_cmd(const char *serial,
+                            rut_exception_t **e,
+                            const char *format,
+                            ...);
 
 char *
-rut_adb_getprop (const char *serial,
-                 const char *property,
-                 RutException **e);
+rut_adb_getprop(const char *serial, const char *property, rut_exception_t **e);
 
 #endif /* _RUT_ADB_H_ */

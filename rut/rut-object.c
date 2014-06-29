@@ -33,59 +33,59 @@
 #include "rut-refcount-debug.h"
 
 void
-rut_object_init (RutObjectBase *object, RutType *type)
+rut_object_init(rut_object_base_t *object, rut_type_t *type)
 {
-  object->type = type;
-  object->ref_count = 1;
+    object->type = type;
+    object->ref_count = 1;
 
-  _rut_refcount_debug_object_created (object);
+    _rut_refcount_debug_object_created(object);
 }
 
-RutObject *
-_rut_object_alloc (size_t bytes, RutType *type, RutTypeInit type_init)
+rut_object_t *
+_rut_object_alloc(size_t bytes, rut_type_t *type, rut_type_init_t type_init)
 {
-  RutObject *object;
+    rut_object_t *object;
 
-  if (G_UNLIKELY (type->name == NULL))
-    type_init ();
+    if (G_UNLIKELY(type->name == NULL))
+        type_init();
 
-  if (type->magazine)
-    object = rut_magazine_chunk_alloc (type->magazine);
-  else
-    object = c_slice_alloc (bytes);
+    if (type->magazine)
+        object = rut_magazine_chunk_alloc(type->magazine);
+    else
+        object = c_slice_alloc(bytes);
 
-  rut_object_init (object, type);
+    rut_object_init(object, type);
 
-  return object;
+    return object;
 }
 
-RutObject *
-_rut_object_alloc0 (size_t bytes, RutType *type, RutTypeInit type_init)
+rut_object_t *
+_rut_object_alloc0(size_t bytes, rut_type_t *type, rut_type_init_t type_init)
 {
-  RutObject *object = c_slice_alloc0 (bytes);
+    rut_object_t *object = c_slice_alloc0(bytes);
 
-  if (G_UNLIKELY (type->name == NULL))
-    type_init ();
+    if (G_UNLIKELY(type->name == NULL))
+        type_init();
 
-  rut_object_init (object, type);
+    rut_object_init(object, type);
 
-  return object;
+    return object;
 }
 
 void
-_rut_object_free (size_t bytes, void *object)
+_rut_object_free(size_t bytes, void *object)
 {
-  RutObjectBase *base = object;
-  RutType *type = base->type;
-  RutTraitImplementation *trait, *tmp;
+    rut_object_base_t *base = object;
+    rut_type_t *type = base->type;
+    rut_trait_implementation_t *trait, *tmp;
 
-  rut_list_for_each_safe (trait, tmp, &type->destructors, destructor_link)
+    rut_list_for_each_safe(trait, tmp, &type->destructors, destructor_link)
     {
-      trait->destructor (object);
+        trait->destructor(object);
     }
 
-  if (type->magazine)
-    rut_magazine_chunk_free (type->magazine, object);
-  else
-    c_slice_free1 (bytes, object);
+    if (type->magazine)
+        rut_magazine_chunk_free(type->magazine, object);
+    else
+        c_slice_free1(bytes, object);
 }

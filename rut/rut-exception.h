@@ -35,31 +35,26 @@
 #include <clib.h>
 
 /* XXX: hack; these aren't GQuarks and aren't extensible... */
-typedef enum _RutExceptionDomain
-{
-  RUT_IO_EXCEPTION = 1,
-  RUT_ADB_EXCEPTION,
-  RUT_N_EXCEPTION_DOMAINS
-} RutExceptionDomain;
+typedef enum _rut_exception_domain_t {
+    RUT_IO_EXCEPTION = 1,
+    RUT_ADB_EXCEPTION,
+    RUT_N_EXCEPTION_DOMAINS
+} rut_exception_domain_t;
 
-typedef struct _RutException
-{
-  GQuark domain;
-  int code;
-  char *message;
-  //TODO: char *backtrace;
-} RutException;
+typedef struct _rut_exception_t {
+    GQuark domain;
+    int code;
+    char *message;
+    // TODO: char *backtrace;
+} rut_exception_t;
 
 void
-rut_throw (RutException **err, int klass, int code, const char *format, ...);
+rut_throw(rut_exception_t **err, int klass, int code, const char *format, ...);
 
-bool
-rut_catch (const RutException *error, int klass, int code);
+bool rut_catch(const rut_exception_t *error, int klass, int code);
 
-void
-rut_propagate_exception (RutException **dest, RutException *src);
+void rut_propagate_exception(rut_exception_t **dest, rut_exception_t *src);
 
-void
-rut_exception_free (RutException *error);
+void rut_exception_free(rut_exception_t *error);
 
 #endif /* _RUT_EXCEPTION_H_ */

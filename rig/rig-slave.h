@@ -26,7 +26,6 @@
  * SOFTWARE.
  */
 
-
 #ifndef _RIG_SLAVE_H
 #define _RIG_SLAVE_H
 
@@ -34,46 +33,41 @@
 
 #include "rig-frontend.h"
 
-typedef struct _RigSlave
-{
-  RutObjectBase _base;
+typedef struct _rig_slave_t {
+    rut_object_base_t _base;
 
-  RutShell *shell;
-  RutContext *ctx;
+    rut_shell_t *shell;
+    rut_context_t *ctx;
 
-  int request_width;
-  int request_height;
-  int request_scale;
+    int request_width;
+    int request_height;
+    int request_scale;
 
-  RigFrontend *frontend;
-  RigEngine *engine;
+    rig_frontend_t *frontend;
+    rig_engine_t *engine;
 
-  GHashTable *edit_id_to_play_object_map;
-  GHashTable *play_object_to_edit_id_map;
+    GHashTable *edit_id_to_play_object_map;
+    GHashTable *play_object_to_edit_id_map;
 
-  RigPBUnSerializer *ui_unserializer;
+    rig_pb_un_serializer_t *ui_unserializer;
 
-  RigEngineOpMapContext map_op_ctx;
-  RigEngineOpApplyContext apply_op_ctx;
+    rig_engine_op_map_context_t map_op_ctx;
+    rig_engine_op_apply_context_t apply_op_ctx;
 
-  RutClosure *ui_update_closure;
-  RutQueue *pending_edits;
+    rut_closure_t *ui_update_closure;
+    rut_queue_t *pending_edits;
 
-  RutClosure *ui_load_closure;
-  const Rig__UI *pending_ui_load;
-  Rig__LoadResult_Closure pending_ui_load_closure;
-  void *pending_ui_load_closure_data;
+    rut_closure_t *ui_load_closure;
+    const Rig__UI *pending_ui_load;
+    Rig__LoadResult_Closure pending_ui_load_closure;
+    void *pending_ui_load_closure_data;
 
-} RigSlave;
+} rig_slave_t;
 
+rig_slave_t *rig_slave_new(int width, int height, int scale);
 
-RigSlave *
-rig_slave_new (int width, int height, int scale);
+void rig_slave_run(rig_slave_t *slave);
 
-void
-rig_slave_run (RigSlave *slave);
-
-void
-rig_slave_print_mappings (RigSlave *slave);
+void rig_slave_print_mappings(rig_slave_t *slave);
 
 #endif /* _RIG_SLAVE_H */

@@ -43,372 +43,344 @@
 
 #include "rut-camera.h"
 
-struct _RutIconToggle
-{
-  RutObjectBase _base;
+struct _rut_icon_toggle_t {
+    rut_object_base_t _base;
 
-  RutContext *ctx;
+    rut_context_t *ctx;
 
-  bool visual_state;
-  bool real_state;
+    bool visual_state;
+    bool real_state;
 
-  RutStack *stack;
-  RutBin *bin;
+    rut_stack_t *stack;
+    rut_bin_t *bin;
 
-  RutIcon *icon_set;
-  RutIcon *icon_unset;
+    rut_icon_t *icon_set;
+    rut_icon_t *icon_unset;
 
-  RutIcon *current_icon;
+    rut_icon_t *current_icon;
 
-  RutInputRegion *input_region;
-  bool in_grab;
+    rut_input_region_t *input_region;
+    bool in_grab;
 
-  bool interactive_unset_enabled;
+    bool interactive_unset_enabled;
 
-  RutList on_toggle_cb_list;
+    rut_list_t on_toggle_cb_list;
 
-  RutGraphableProps graphable;
+    rut_graphable_props_t graphable;
 };
 
 static void
-destroy_icons (RutIconToggle *toggle)
+destroy_icons(rut_icon_toggle_t *toggle)
 {
-  if (toggle->icon_set)
-    {
-      rut_object_unref (toggle->icon_set);
-      toggle->icon_set = NULL;
+    if (toggle->icon_set) {
+        rut_object_unref(toggle->icon_set);
+        toggle->icon_set = NULL;
     }
 
-  if (toggle->icon_unset)
-    {
-      rut_object_unref (toggle->icon_unset);
-      toggle->icon_unset = NULL;
+    if (toggle->icon_unset) {
+        rut_object_unref(toggle->icon_unset);
+        toggle->icon_unset = NULL;
     }
 }
 
 static void
-_rut_icon_toggle_free (void *object)
+_rut_icon_toggle_free(void *object)
 {
-  RutIconToggle *toggle = object;
+    rut_icon_toggle_t *toggle = object;
 
-  rut_closure_list_disconnect_all (&toggle->on_toggle_cb_list);
+    rut_closure_list_disconnect_all(&toggle->on_toggle_cb_list);
 
-  destroy_icons (toggle);
+    destroy_icons(toggle);
 
-  /* NB: This will destroy the stack, layout, label and input_region
-   * which we don't hold extra references for... */
-  rut_graphable_destroy (toggle);
+    /* NB: This will destroy the stack, layout, label and input_region
+     * which we don't hold extra references for... */
+    rut_graphable_destroy(toggle);
 
-  rut_object_free (RutIconToggle, object);
+    rut_object_free(rut_icon_toggle_t, object);
 }
 
 #if 0
-static RutPropertySpec
-_rut_icon_toggle_prop_specs[] =
+static rut_property_spec_t
+    _rut_icon_toggle_prop_specs[] =
 {
-  {
-    .name = "state",
-    .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .type = RUT_PROPERTY_TYPE_BOOLEAN,
-    .data_offset = offsetof (RutIcnToggle, state),
-    .setter.boolean_type = rut_icon_toggle_set_state
-  },
-  { 0 } /* XXX: Needed for runtime counting of the number of properties */
+    {
+        .name = "state",
+        .flags = RUT_PROPERTY_FLAG_READWRITE,
+        .type = RUT_PROPERTY_TYPE_BOOLEAN,
+        .data_offset = offsetof (RutIcnToggle, state),
+        .setter.boolean_type = rut_icon_toggle_set_state
+    },
+    { 0 } /* XXX: Needed for runtime counting of the number of properties */
 };
 #endif
 
-RutType rut_icon_toggle_type;
+rut_type_t rut_icon_toggle_type;
 
 static void
-_rut_icon_toggle_init_type (void)
+_rut_icon_toggle_init_type(void)
 {
-  static RutGraphableVTable graphable_vtable = {
-      NULL, /* child remove */
-      NULL, /* child add */
-      NULL /* parent changed */
-  };
+    static rut_graphable_vtable_t graphable_vtable = { NULL, /* child remove */
+                                                       NULL, /* child add */
+                                                       NULL /* parent changed */
+    };
 
-  static RutSizableVTable sizable_vtable = {
-      rut_composite_sizable_set_size,
-      rut_composite_sizable_get_size,
-      rut_composite_sizable_get_preferred_width,
-      rut_composite_sizable_get_preferred_height,
-      rut_composite_sizable_add_preferred_size_callback
-  };
+    static rut_sizable_vtable_t sizable_vtable = {
+        rut_composite_sizable_set_size,
+        rut_composite_sizable_get_size,
+        rut_composite_sizable_get_preferred_width,
+        rut_composite_sizable_get_preferred_height,
+        rut_composite_sizable_add_preferred_size_callback
+    };
 
-  RutType *type = &rut_icon_toggle_type;
-#define TYPE RutIconToggle
+    rut_type_t *type = &rut_icon_toggle_type;
+#define TYPE rut_icon_toggle_t
 
-  rut_type_init (type, C_STRINGIFY (TYPE), _rut_icon_toggle_free);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_GRAPHABLE,
-                      offsetof (TYPE, graphable),
-                      &graphable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_SIZABLE,
-                      0, /* no implied properties */
-                      &sizable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_COMPOSITE_SIZABLE,
-                      offsetof (TYPE, stack),
-                      NULL); /* no vtable */
+    rut_type_init(type, C_STRINGIFY(TYPE), _rut_icon_toggle_free);
+    rut_type_add_trait(type,
+                       RUT_TRAIT_ID_GRAPHABLE,
+                       offsetof(TYPE, graphable),
+                       &graphable_vtable);
+    rut_type_add_trait(type,
+                       RUT_TRAIT_ID_SIZABLE,
+                       0, /* no implied properties */
+                       &sizable_vtable);
+    rut_type_add_trait(type,
+                       RUT_TRAIT_ID_COMPOSITE_SIZABLE,
+                       offsetof(TYPE, stack),
+                       NULL); /* no vtable */
 
 #undef TYPE
 }
 
-typedef struct _IconToggleGrabState
-{
-  RutObject *camera;
-  RutIconToggle *toggle;
-  cg_matrix_t transform;
-  cg_matrix_t inverse_transform;
-} IconToggleGrabState;
+typedef struct _Icontoggle_grab_state_t {
+    rut_object_t *camera;
+    rut_icon_toggle_t *toggle;
+    cg_matrix_t transform;
+    cg_matrix_t inverse_transform;
+} Icontoggle_grab_state_t;
 
 static void
-update_current_icon (RutIconToggle *toggle)
+update_current_icon(rut_icon_toggle_t *toggle)
 {
-  RutIcon *current;
+    rut_icon_t *current;
 
-  if (toggle->visual_state)
-    current = toggle->icon_set;
-  else
-    current = toggle->icon_unset;
+    if (toggle->visual_state)
+        current = toggle->icon_set;
+    else
+        current = toggle->icon_unset;
 
-  if (toggle->current_icon != current)
-    {
-      if (toggle->current_icon)
-        rut_bin_set_child (toggle->bin, NULL);
-      rut_bin_set_child (toggle->bin, current);
-      toggle->current_icon = current;
+    if (toggle->current_icon != current) {
+        if (toggle->current_icon)
+            rut_bin_set_child(toggle->bin, NULL);
+        rut_bin_set_child(toggle->bin, current);
+        toggle->current_icon = current;
     }
 }
 
 static void
-set_visual_state (RutIconToggle *toggle, bool state)
+set_visual_state(rut_icon_toggle_t *toggle, bool state)
 {
-  if (toggle->visual_state == state)
-    return;
+    if (toggle->visual_state == state)
+        return;
 
-  toggle->visual_state = state;
+    toggle->visual_state = state;
 
-  update_current_icon (toggle);
+    update_current_icon(toggle);
 }
 
-static RutInputEventStatus
-_rut_icon_toggle_grab_input_cb (RutInputEvent *event,
-                                void *user_data)
+static rut_input_event_status_t
+_rut_icon_toggle_grab_input_cb(rut_input_event_t *event, void *user_data)
 {
-  IconToggleGrabState *state = user_data;
-  RutIconToggle *toggle = state->toggle;
+    Icontoggle_grab_state_t *state = user_data;
+    rut_icon_toggle_t *toggle = state->toggle;
 
-  if(rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
-    {
-      RutShell *shell = toggle->ctx->shell;
-      if (rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_UP)
-        {
-          rut_shell_ungrab_input (shell, _rut_icon_toggle_grab_input_cb, user_data);
-          toggle->in_grab = false;
+    if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_MOTION) {
+        rut_shell_t *shell = toggle->ctx->shell;
+        if (rut_motion_event_get_action(event) == RUT_MOTION_EVENT_ACTION_UP) {
+            rut_shell_ungrab_input(
+                shell, _rut_icon_toggle_grab_input_cb, user_data);
+            toggle->in_grab = false;
 
-          rut_icon_toggle_set_state (toggle, toggle->visual_state);
+            rut_icon_toggle_set_state(toggle, toggle->visual_state);
 
-          rut_closure_list_invoke (&toggle->on_toggle_cb_list,
-                                   RutIconToggleCallback,
-                                   toggle,
-                                   toggle->real_state);
+            rut_closure_list_invoke(&toggle->on_toggle_cb_list,
+                                    rut_icon_toggle_callback_t,
+                                    toggle,
+                                    toggle->real_state);
 
-          c_slice_free (IconToggleGrabState, state);
+            c_slice_free(Icontoggle_grab_state_t, state);
 
-          return RUT_INPUT_EVENT_STATUS_HANDLED;
-        }
-      else if (rut_motion_event_get_action (event) ==
-               RUT_MOTION_EVENT_ACTION_MOVE)
-        {
-          float x = rut_motion_event_get_x (event);
-          float y = rut_motion_event_get_y (event);
-          float width, height;
-          RutObject *camera = state->camera;
+            return RUT_INPUT_EVENT_STATUS_HANDLED;
+        } else if (rut_motion_event_get_action(event) ==
+                   RUT_MOTION_EVENT_ACTION_MOVE) {
+            float x = rut_motion_event_get_x(event);
+            float y = rut_motion_event_get_y(event);
+            float width, height;
+            rut_object_t *camera = state->camera;
 
-          rut_camera_unproject_coord (camera,
-                                      &state->transform,
-                                      &state->inverse_transform,
-                                      0,
-                                      &x,
-                                      &y);
+            rut_camera_unproject_coord(camera,
+                                       &state->transform,
+                                       &state->inverse_transform,
+                                       0,
+                                       &x,
+                                       &y);
 
-          rut_sizable_get_size (toggle, &width, &height);
-          if (x < 0 || x > width || y < 0 || y > height)
-            set_visual_state (toggle, toggle->real_state);
-          else
-            set_visual_state (toggle, !toggle->real_state);
+            rut_sizable_get_size(toggle, &width, &height);
+            if (x < 0 || x > width || y < 0 || y > height)
+                set_visual_state(toggle, toggle->real_state);
+            else
+                set_visual_state(toggle, !toggle->real_state);
 
-          return RUT_INPUT_EVENT_STATUS_HANDLED;
+            return RUT_INPUT_EVENT_STATUS_HANDLED;
         }
     }
 
-  return RUT_INPUT_EVENT_STATUS_UNHANDLED;
-}
-
-static RutInputEventStatus
-_rut_icon_toggle_input_cb (RutInputRegion *region,
-                           RutInputEvent *event,
-                           void *user_data)
-{
-  RutIconToggle *toggle = user_data;
-
-  if (!toggle->interactive_unset_enabled && toggle->real_state == true)
     return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+}
 
-  if(rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION &&
-     rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN)
-    {
-      RutShell *shell = toggle->ctx->shell;
-      IconToggleGrabState *state = c_slice_new (IconToggleGrabState);
-      const cg_matrix_t *view;
+static rut_input_event_status_t
+_rut_icon_toggle_input_cb(
+    rut_input_region_t *region, rut_input_event_t *event, void *user_data)
+{
+    rut_icon_toggle_t *toggle = user_data;
 
-      state->toggle = toggle;
-      state->camera = rut_input_event_get_camera (event);
-      view = rut_camera_get_view_transform (state->camera);
-      state->transform = *view;
-      rut_graphable_apply_transform (toggle, &state->transform);
-      if (!cg_matrix_get_inverse (&state->transform,
-                                    &state->inverse_transform))
-        {
-          c_warning ("Failed to calculate inverse of toggle transform\n");
-          c_slice_free (IconToggleGrabState, state);
-          return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+    if (!toggle->interactive_unset_enabled && toggle->real_state == true)
+        return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+
+    if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_MOTION &&
+        rut_motion_event_get_action(event) == RUT_MOTION_EVENT_ACTION_DOWN) {
+        rut_shell_t *shell = toggle->ctx->shell;
+        Icontoggle_grab_state_t *state = c_slice_new(Icontoggle_grab_state_t);
+        const cg_matrix_t *view;
+
+        state->toggle = toggle;
+        state->camera = rut_input_event_get_camera(event);
+        view = rut_camera_get_view_transform(state->camera);
+        state->transform = *view;
+        rut_graphable_apply_transform(toggle, &state->transform);
+        if (!cg_matrix_get_inverse(&state->transform,
+                                   &state->inverse_transform)) {
+            c_warning("Failed to calculate inverse of toggle transform\n");
+            c_slice_free(Icontoggle_grab_state_t, state);
+            return RUT_INPUT_EVENT_STATUS_UNHANDLED;
         }
 
-      toggle->in_grab = true;
-      rut_shell_grab_input (shell,
-                            state->camera,
-                            _rut_icon_toggle_grab_input_cb,
-                            state);
+        toggle->in_grab = true;
+        rut_shell_grab_input(
+            shell, state->camera, _rut_icon_toggle_grab_input_cb, state);
 
-      set_visual_state (toggle, !toggle->real_state);
+        set_visual_state(toggle, !toggle->real_state);
 
-      return RUT_INPUT_EVENT_STATUS_HANDLED;
+        return RUT_INPUT_EVENT_STATUS_HANDLED;
     }
 
-  return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+    return RUT_INPUT_EVENT_STATUS_UNHANDLED;
 }
 
-RutIconToggle *
-rut_icon_toggle_new (RutContext *ctx,
-                     const char *set_icon,
-                     const char *unset_icon)
+rut_icon_toggle_t *
+rut_icon_toggle_new(rut_context_t *ctx,
+                    const char *set_icon,
+                    const char *unset_icon)
 {
-  RutIconToggle *toggle = rut_object_alloc0 (RutIconToggle,
-                                             &rut_icon_toggle_type,
-                                             _rut_icon_toggle_init_type);
-  float natural_width, natural_height;
+    rut_icon_toggle_t *toggle = rut_object_alloc0(
+        rut_icon_toggle_t, &rut_icon_toggle_type, _rut_icon_toggle_init_type);
+    float natural_width, natural_height;
 
+    rut_list_init(&toggle->on_toggle_cb_list);
 
-  rut_list_init (&toggle->on_toggle_cb_list);
+    rut_graphable_init(toggle);
 
-  rut_graphable_init (toggle);
+    toggle->ctx = ctx;
 
-  toggle->ctx = ctx;
+    toggle->interactive_unset_enabled = true;
 
-  toggle->interactive_unset_enabled = true;
+    toggle->real_state = false;
+    toggle->visual_state = false;
 
-  toggle->real_state = false;
-  toggle->visual_state = false;
+    toggle->stack = rut_stack_new(ctx, 1, 1);
+    rut_graphable_add_child(toggle, toggle->stack);
+    rut_object_unref(toggle->stack);
 
-  toggle->stack = rut_stack_new (ctx, 1, 1);
-  rut_graphable_add_child (toggle, toggle->stack);
-  rut_object_unref (toggle->stack);
+    toggle->bin = rut_bin_new(ctx);
+    rut_stack_add(toggle->stack, toggle->bin);
+    rut_object_unref(toggle->bin);
 
-  toggle->bin = rut_bin_new (ctx);
-  rut_stack_add (toggle->stack, toggle->bin);
-  rut_object_unref (toggle->bin);
+    rut_icon_toggle_set_set_icon(toggle, set_icon);
+    rut_icon_toggle_set_unset_icon(toggle, unset_icon);
 
-  rut_icon_toggle_set_set_icon (toggle, set_icon);
-  rut_icon_toggle_set_unset_icon (toggle, unset_icon);
+    toggle->input_region = rut_input_region_new_rectangle(
+        0, 0, 100, 100, _rut_icon_toggle_input_cb, toggle);
+    rut_stack_add(toggle->stack, toggle->input_region);
+    rut_object_unref(toggle->input_region);
 
-  toggle->input_region =
-    rut_input_region_new_rectangle (0, 0, 100, 100,
-                                    _rut_icon_toggle_input_cb,
-                                    toggle);
-  rut_stack_add (toggle->stack, toggle->input_region);
-  rut_object_unref (toggle->input_region);
+    rut_sizable_get_preferred_width(toggle->stack, -1, NULL, &natural_width);
+    rut_sizable_get_preferred_height(
+        toggle->stack, natural_width, NULL, &natural_height);
+    rut_sizable_set_size(toggle->stack, natural_width, natural_height);
 
-  rut_sizable_get_preferred_width (toggle->stack, -1, NULL,
-                                   &natural_width);
-  rut_sizable_get_preferred_height (toggle->stack, natural_width, NULL,
-                                    &natural_height);
-  rut_sizable_set_size (toggle->stack, natural_width, natural_height);
-
-  return toggle;
+    return toggle;
 }
 
-RutClosure *
-rut_icon_toggle_add_on_toggle_callback (RutIconToggle *toggle,
-                                  RutIconToggleCallback callback,
-                                  void *user_data,
-                                  RutClosureDestroyCallback destroy_cb)
+rut_closure_t *
+rut_icon_toggle_add_on_toggle_callback(
+    rut_icon_toggle_t *toggle,
+    rut_icon_toggle_callback_t callback,
+    void *user_data,
+    rut_closure_destroy_callback_t destroy_cb)
 {
-  c_return_val_if_fail (callback != NULL, NULL);
+    c_return_val_if_fail(callback != NULL, NULL);
 
-  return rut_closure_list_add (&toggle->on_toggle_cb_list,
-                               callback,
-                               user_data,
-                               destroy_cb);
+    return rut_closure_list_add(
+        &toggle->on_toggle_cb_list, callback, user_data, destroy_cb);
 }
 
 static void
-set_icon (RutIconToggle *toggle,
-          RutIcon **icon,
-          const char *icon_name)
+set_icon(rut_icon_toggle_t *toggle, rut_icon_t **icon, const char *icon_name)
 {
-  if (*icon)
-    {
-      rut_object_unref (*icon);
-      if (toggle->current_icon == *icon)
-        {
-          rut_bin_set_child (toggle->bin, NULL);
-          toggle->current_icon = NULL;
+    if (*icon) {
+        rut_object_unref(*icon);
+        if (toggle->current_icon == *icon) {
+            rut_bin_set_child(toggle->bin, NULL);
+            toggle->current_icon = NULL;
         }
     }
 
-  *icon = rut_icon_new (toggle->ctx, icon_name);
-  update_current_icon (toggle);
+    *icon = rut_icon_new(toggle->ctx, icon_name);
+    update_current_icon(toggle);
 }
 
 void
-rut_icon_toggle_set_set_icon (RutIconToggle *toggle,
-                              const char *icon)
+rut_icon_toggle_set_set_icon(rut_icon_toggle_t *toggle, const char *icon)
 {
-  set_icon (toggle, &toggle->icon_set, icon);
+    set_icon(toggle, &toggle->icon_set, icon);
 }
 
 void
-rut_icon_toggle_set_unset_icon (RutIconToggle *toggle,
-                                const char *icon)
+rut_icon_toggle_set_unset_icon(rut_icon_toggle_t *toggle, const char *icon)
 {
-  set_icon (toggle, &toggle->icon_unset, icon);
+    set_icon(toggle, &toggle->icon_unset, icon);
 }
 
 void
-rut_icon_toggle_set_state (RutObject *object,
-                           bool state)
+rut_icon_toggle_set_state(rut_object_t *object, bool state)
 {
-  RutIconToggle *toggle = object;
-  if (toggle->real_state == state)
-    return;
+    rut_icon_toggle_t *toggle = object;
+    if (toggle->real_state == state)
+        return;
 
-  toggle->real_state = state;
+    toggle->real_state = state;
 
-  if (toggle->in_grab)
-    set_visual_state (toggle, !toggle->visual_state);
-  else
-    set_visual_state (toggle, state);
+    if (toggle->in_grab)
+        set_visual_state(toggle, !toggle->visual_state);
+    else
+        set_visual_state(toggle, state);
 
-  update_current_icon (toggle);
+    update_current_icon(toggle);
 }
 
 void
-rut_icon_toggle_set_interactive_unset_enable (RutIconToggle *toggle,
-                                              bool enabled)
+rut_icon_toggle_set_interactive_unset_enable(rut_icon_toggle_t *toggle,
+                                             bool enabled)
 {
-  toggle->interactive_unset_enabled = enabled;
+    toggle->interactive_unset_enabled = enabled;
 }

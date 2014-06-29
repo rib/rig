@@ -34,10 +34,9 @@
 
 #include <rut-context.h>
 
-typedef struct _RigButtonInput RigButtonInput;
-extern RutType rig_button_input_type;
+typedef struct _rig_button_input_t rig_button_input_t;
+extern rut_type_t rig_button_input_type;
 
-RigButtonInput *
-rig_button_input_new (RutContext *ctx);
+rig_button_input_t *rig_button_input_new(rut_context_t *ctx);
 
 #endif /* __RIG_BUTTON_INPUT_H__ */

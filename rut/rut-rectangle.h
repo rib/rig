@@ -34,32 +34,23 @@
 
 #include <rut-context.h>
 
-typedef struct _RutRectangle RutRectangle;
-extern RutType rut_rectangle_type;
+typedef struct _rut_rectangle_t rut_rectangle_t;
+extern rut_type_t rut_rectangle_type;
 
-RutRectangle *
-rut_rectangle_new4f (RutContext *ctx,
-                     float width,
-                     float height,
-                     float red,
-                     float green,
-                     float blue,
-                     float alpha);
+rut_rectangle_t *rut_rectangle_new4f(rut_context_t *ctx,
+                                     float width,
+                                     float height,
+                                     float red,
+                                     float green,
+                                     float blue,
+                                     float alpha);
 
-void
-rut_rectangle_set_width (RutRectangle *rectangle, float width);
+void rut_rectangle_set_width(rut_rectangle_t *rectangle, float width);
 
-void
-rut_rectangle_set_height (RutRectangle *rectangle, float height);
+void rut_rectangle_set_height(rut_rectangle_t *rectangle, float height);
 
-void
-rut_rectangle_set_size (RutObject *self,
-                        float width,
-                        float height);
+void rut_rectangle_set_size(rut_object_t *self, float width, float height);
 
-void
-rut_rectangle_get_size (RutObject *self,
-                        float *width,
-                        float *height);
+void rut_rectangle_get_size(rut_object_t *self, float *width, float *height);
 
 #endif /* __RUT_RECTANGLE_H__ */

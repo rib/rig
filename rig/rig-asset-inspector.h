@@ -31,17 +31,16 @@
 
 #include <rut.h>
 
-extern RutType rig_asset_inspector_type;
+extern rut_type_t rig_asset_inspector_type;
 
-typedef struct _RigAssetInspector RigAssetInspector;
+typedef struct _rig_asset_inspector_t rig_asset_inspector_t;
 
-RigAssetInspector *
-rig_asset_inspector_new (RutContext *ctx, RigAssetType asset_type);
+rig_asset_inspector_t *rig_asset_inspector_new(rut_context_t *ctx,
+                                               rig_asset_type_t asset_type);
 
-RutObject *
-rig_asset_inspector_get_asset (RutObject *object);
+rut_object_t *rig_asset_inspector_get_asset(rut_object_t *object);
 
-void
-rig_asset_inspector_set_asset (RutObject *object, RutObject *asset_object);
+void rig_asset_inspector_set_asset(rut_object_t *object,
+                                   rut_object_t *asset_object);
 
 #endif /* _RIG_ASSET_INSPECTOR_H_ */

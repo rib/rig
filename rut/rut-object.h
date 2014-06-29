@@ -34,15 +34,15 @@
 
 G_BEGIN_DECLS
 
-/* We largely give up having compile time type safety for RutObjects
+/* We largely give up having compile time type safety for rut_object_ts
  * since the type system is intended to be dynamic and most apis
- * dealing with RutObjects, care more about traits than about object
+ * dealing with rut_object_ts, care more about traits than about object
  * types. Using strong types would require us to always be casting
  * objects between different trait types which would make code more
  * verbose and by explicitly casting we'd lose the compile time type
  * safety anyway.
  */
-typedef void RutObject;
+typedef void rut_object_t;
 
 /* Put one of these structs as the first member of your own struct
  * so that it can be used with the Rut type system.
@@ -50,91 +50,88 @@ typedef void RutObject;
  * Allocate instances of your struct using rut_object_alloc() or
  * zeroed using rut_object_alloc0().
  */
-typedef struct _RutObjectBase
+typedef struct _rut_object_base_t {
+    rut_type_t *type;
+    int ref_count;
+} rut_object_base_t;
+
+typedef void (*rut_type_init_t)(void);
+
+rut_object_t *
+_rut_object_alloc(size_t bytes, rut_type_t *type, rut_type_init_t type_init);
+
+rut_object_t *
+_rut_object_alloc0(size_t bytes, rut_type_t *type, rut_type_init_t type_init);
+
+#define rut_object_alloc(TYPE, TYPE_PTR, TYPE_INIT_FUNC)                       \
+    _rut_object_alloc(sizeof(TYPE), TYPE_PTR, TYPE_INIT_FUNC)
+
+#define rut_object_alloc0(TYPE, TYPE_PTR, TYPE_INIT_FUNC)                      \
+    _rut_object_alloc0(sizeof(TYPE), TYPE_PTR, TYPE_INIT_FUNC)
+
+void _rut_object_free(size_t bytes, void *object);
+
+#define rut_object_free(TYPE, MEM) _rut_object_free(sizeof(TYPE), MEM);
+
+void rut_object_init(rut_object_base_t *object_properties, rut_type_t *type);
+
+static inline const rut_type_t *
+rut_object_get_type(rut_object_t *object)
 {
-  RutType *type;
-  int ref_count;
-} RutObjectBase;
-
-typedef void (*RutTypeInit) (void);
-
-RutObject *
-_rut_object_alloc (size_t bytes, RutType *type, RutTypeInit type_init);
-
-RutObject *
-_rut_object_alloc0 (size_t bytes, RutType *type, RutTypeInit type_init);
-
-#define rut_object_alloc(TYPE, TYPE_PTR, TYPE_INIT_FUNC) \
-  _rut_object_alloc (sizeof (TYPE), TYPE_PTR, TYPE_INIT_FUNC)
-
-#define rut_object_alloc0(TYPE, TYPE_PTR, TYPE_INIT_FUNC) \
-  _rut_object_alloc0 (sizeof (TYPE), TYPE_PTR, TYPE_INIT_FUNC)
-
-void
-_rut_object_free (size_t bytes, void *object);
-
-#define rut_object_free(TYPE, MEM) \
-  _rut_object_free (sizeof (TYPE), MEM);
-
-void
-rut_object_init (RutObjectBase *object_properties, RutType *type);
-
-static inline const RutType *
-rut_object_get_type (RutObject *object)
-{
-  RutObjectBase *obj = (RutObjectBase *)object;
-  return obj->type;
+    rut_object_base_t *obj = (rut_object_base_t *)object;
+    return obj->type;
 }
 
 static inline void *
-rut_object_get_properties (RutObject *object, RutTraitID trait)
+rut_object_get_properties(rut_object_t *object,
+                          rut_trait_id_t trait)
 {
-  RutObjectBase *obj = (RutObjectBase *)object;
-  size_t props_offset = obj->type->traits[trait].props_offset;
-  return (uint8_t *)obj + props_offset;
+    rut_object_base_t *obj = (rut_object_base_t *)object;
+    size_t props_offset = obj->type->traits[trait].props_offset;
+    return (uint8_t *)obj + props_offset;
 }
 
 static inline void *
-rut_object_get_vtable (void *object, RutTraitID trait)
+rut_object_get_vtable(void *object, rut_trait_id_t trait)
 {
-  RutObjectBase *obj = (RutObjectBase *)object;
-  return obj->type->traits[trait].vtable;
+    rut_object_base_t *obj = (rut_object_base_t *)object;
+    return obj->type->traits[trait].vtable;
 }
 
 static inline bool
-rut_object_is (void *object, RutTraitID trait)
+rut_object_is(void *object, rut_trait_id_t trait)
 {
-  RutObjectBase *obj = (RutObjectBase *)object;
-  return _rut_bitmask_get (&obj->type->traits_mask, trait);
+    rut_object_base_t *obj = (rut_object_base_t *)object;
+    return _rut_bitmask_get(&obj->type->traits_mask, trait);
 }
 
 static inline const char *
-rut_object_get_type_name (void *object)
+rut_object_get_type_name(void *object)
 {
-  RutObjectBase *obj = (RutObjectBase *)object;
-  return obj->type->name;
+    rut_object_base_t *obj = (rut_object_base_t *)object;
+    return obj->type->name;
 }
 
 static inline void *
-rut_object_ref (void *object)
+rut_object_ref(void *object)
 {
-  RutObjectBase *base = (RutObjectBase *)object;
+    rut_object_base_t *base = (rut_object_base_t *)object;
 
-  _rut_refcount_debug_ref (object);
+    _rut_refcount_debug_ref(object);
 
-  base->ref_count++;
-  return object;
+    base->ref_count++;
+    return object;
 }
 
 static inline void
-rut_object_unref (void *object)
+rut_object_unref(void *object)
 {
-  RutObjectBase *base = (RutObjectBase *)object;
+    rut_object_base_t *base = (rut_object_base_t *)object;
 
-  _rut_refcount_debug_unref (object);
+    _rut_refcount_debug_unref(object);
 
-  if (--(base->ref_count) < 1)
-    base->type->free (object);
+    if (--(base->ref_count) < 1)
+        base->type->free(object);
 }
 
 /* Wherever possible it is recommended that you use rut_object_claim()
@@ -147,25 +144,25 @@ rut_object_unref (void *object)
  * detecting disconnected sub-graphs of objects.
  */
 static inline void *
-rut_object_claim (void *object, void *owner)
+rut_object_claim(void *object, void *owner)
 {
-  RutObjectBase *base = (RutObjectBase *)object;
+    rut_object_base_t *base = (rut_object_base_t *)object;
 
-  _rut_refcount_debug_claim (object, owner);
+    _rut_refcount_debug_claim(object, owner);
 
-  base->ref_count++;
-  return object;
+    base->ref_count++;
+    return object;
 }
 
 static inline void
-rut_object_release (void *object, void *owner)
+rut_object_release(void *object, void *owner)
 {
-  RutObjectBase *base = (RutObjectBase *)object;
+    rut_object_base_t *base = (rut_object_base_t *)object;
 
-  _rut_refcount_debug_release (object, owner);
+    _rut_refcount_debug_release(object, owner);
 
-  if (--(base->ref_count) < 1)
-    base->type->free (object);
+    if (--(base->ref_count) < 1)
+        base->type->free(object);
 }
 
 G_END_DECLS

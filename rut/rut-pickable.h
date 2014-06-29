@@ -33,28 +33,27 @@
 
 #include "rut-object.h"
 
-typedef bool (*RutPickablePick) (RutObject *pickable,
-                                 RutObject *camera,
-                                 const cg_matrix_t *graphable_modelview,
-                                 float x,
-                                 float y);
+typedef bool (*rut_pickable_pick_t)(rut_object_t *pickable,
+                                    rut_object_t *camera,
+                                    const cg_matrix_t *graphable_modelview,
+                                    float x,
+                                    float y);
 
-typedef struct _RutPickableVTable
-{
-  RutPickablePick pick;
-} RutPickableVTable;
+typedef struct _rut_pickable_vtable_t {
+    rut_pickable_pick_t pick;
+} rut_pickable_vtable_t;
 
 static inline bool
-rut_pickable_pick (RutObject *pickable,
-                   RutObject *camera,
-                   const cg_matrix_t *graphable_modelview,
-                   float x,
-                   float y)
+rut_pickable_pick(rut_object_t *pickable,
+                  rut_object_t *camera,
+                  const cg_matrix_t *graphable_modelview,
+                  float x,
+                  float y)
 {
-  RutPickableVTable *vtable =
-    rut_object_get_vtable (pickable, RUT_TRAIT_ID_PICKABLE);
+    rut_pickable_vtable_t *vtable =
+        rut_object_get_vtable(pickable, RUT_TRAIT_ID_PICKABLE);
 
-  return vtable->pick (pickable, camera, graphable_modelview, x, y);
+    return vtable->pick(pickable, camera, graphable_modelview, x, y);
 }
 
 #endif /* __RUT_PICKABLE_H__ */

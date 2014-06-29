@@ -37,107 +37,105 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-
 #ifndef __PROTOBUF_C_DATA_BUFFER_H_
 #define __PROTOBUF_C_DATA_BUFFER_H_
 
 #include <protobuf-c/protobuf-c.h>
 #include <stdarg.h>
 
+typedef struct _protobuf_c_data_buffer_t protobuf_c_data_buffer_t;
+typedef struct _protobuf_c_data_buffer_fragment_t
+    protobuf_c_data_buffer_fragment_t;
 
-typedef struct _ProtobufCDataBuffer ProtobufCDataBuffer;
-typedef struct _ProtobufCDataBufferFragment ProtobufCDataBufferFragment;
-
-struct _ProtobufCDataBufferFragment
-{
-  ProtobufCDataBufferFragment *next;
-  unsigned buf_start;	/* offset in buf of valid data */
-  unsigned buf_length;	/* length of valid data in buf */
+struct _protobuf_c_data_buffer_fragment_t {
+    protobuf_c_data_buffer_fragment_t *next;
+    unsigned buf_start; /* offset in buf of valid data */
+    unsigned buf_length; /* length of valid data in buf */
 };
 
-struct _ProtobufCDataBuffer
-{
-  size_t size;
+struct _protobuf_c_data_buffer_t {
+    size_t size;
 
-  ProtobufCDataBufferFragment    *first_frag;
-  ProtobufCDataBufferFragment    *last_frag;
-  ProtobufCAllocator *allocator;
+    protobuf_c_data_buffer_fragment_t *first_frag;
+    protobuf_c_data_buffer_fragment_t *last_frag;
+    ProtobufCAllocator *allocator;
 };
 
-void     rig_protobuf_c_data_buffer_init (ProtobufCDataBuffer       *buffer,
-                                                     ProtobufCAllocator    *allocator);
-void     rig_protobuf_c_data_buffer_clear (ProtobufCDataBuffer       *buffer);
-void     rig_protobuf_c_data_buffer_reset (ProtobufCDataBuffer       *buffer);
+void rig_protobuf_c_data_buffer_init(protobuf_c_data_buffer_t *buffer,
+                                     ProtobufCAllocator *allocator);
+void rig_protobuf_c_data_buffer_clear(protobuf_c_data_buffer_t *buffer);
+void rig_protobuf_c_data_buffer_reset(protobuf_c_data_buffer_t *buffer);
 
-size_t   rig_protobuf_c_data_buffer_read (ProtobufCDataBuffer    *buffer,
-                                          void*      data,
-                                          size_t         max_length);
-size_t   rig_protobuf_c_data_buffer_peek (const ProtobufCDataBuffer* buffer,
-                                          void*      data,
-                                          size_t        max_length);
-size_t   rig_protobuf_c_data_buffer_discard (ProtobufCDataBuffer    *buffer,
-                                             size_t        max_discard);
-char    *rig_protobuf_c_data_buffer_read_line (ProtobufCDataBuffer    *buffer);
+size_t rig_protobuf_c_data_buffer_read(protobuf_c_data_buffer_t *buffer,
+                                       void *data,
+                                       size_t max_length);
+size_t rig_protobuf_c_data_buffer_peek(const protobuf_c_data_buffer_t *buffer,
+                                       void *data,
+                                       size_t max_length);
+size_t rig_protobuf_c_data_buffer_discard(protobuf_c_data_buffer_t *buffer,
+                                          size_t max_discard);
+char *rig_protobuf_c_data_buffer_read_line(protobuf_c_data_buffer_t *buffer);
 
-char    *rig_protobuf_c_data_buffer_parse_string0 (ProtobufCDataBuffer    *buffer);
-                        /* Returns first char of buffer, or -1. */
-int      rig_protobuf_c_data_buffer_peek_char (const ProtobufCDataBuffer *buffer);
-int      rig_protobuf_c_data_buffer_read_char (ProtobufCDataBuffer    *buffer);
+char *
+rig_protobuf_c_data_buffer_parse_string0(protobuf_c_data_buffer_t *buffer);
+/* Returns first char of buffer, or -1. */
+int
+rig_protobuf_c_data_buffer_peek_char(const protobuf_c_data_buffer_t *buffer);
+int rig_protobuf_c_data_buffer_read_char(protobuf_c_data_buffer_t *buffer);
 
-int      rig_protobuf_c_data_buffer_index_of(ProtobufCDataBuffer *buffer,
-                                             char       char_to_find);
+int rig_protobuf_c_data_buffer_index_of(protobuf_c_data_buffer_t *buffer,
+                                        char char_to_find);
 /*
  * Appending to the buffer.
  */
-void     rig_protobuf_c_data_buffer_append (ProtobufCDataBuffer    *buffer,
-                                            const void   *data,
-                                            size_t        length);
-void     rig_protobuf_c_data_buffer_append_string (ProtobufCDataBuffer    *buffer,
-                                                   const char   *string);
-void     rig_protobuf_c_data_buffer_append_char (ProtobufCDataBuffer    *buffer,
-                                                 char          character);
-void     rig_protobuf_c_data_buffer_append_repeated_char (ProtobufCDataBuffer    *buffer,
-                                                          char          character,
-                                                          size_t        count);
-#define rig_protobuf_c_data_buffer_append_zeros(buffer, count) \
-  rig_protobuf_c_data_buffer_append_repeated_char ((buffer), 0, (count))
+void rig_protobuf_c_data_buffer_append(protobuf_c_data_buffer_t *buffer,
+                                       const void *data,
+                                       size_t length);
+void rig_protobuf_c_data_buffer_append_string(protobuf_c_data_buffer_t *buffer,
+                                              const char *string);
+void rig_protobuf_c_data_buffer_append_char(protobuf_c_data_buffer_t *buffer,
+                                            char character);
+void rig_protobuf_c_data_buffer_append_repeated_char(
+    protobuf_c_data_buffer_t *buffer, char character, size_t count);
+#define rig_protobuf_c_data_buffer_append_zeros(buffer, count)                 \
+    rig_protobuf_c_data_buffer_append_repeated_char((buffer), 0, (count))
 
 /* XXX: rig_protobuf_c_data_buffer_append_repeated_data() is UNIMPLEMENTED */
-void     rig_protobuf_c_data_buffer_append_repeated_data(ProtobufCDataBuffer    *buffer,
-                                                         const void   *data_to_repeat,
-                                                         size_t        data_length,
-                                                         size_t        count);
+void rig_protobuf_c_data_buffer_append_repeated_data(
+    protobuf_c_data_buffer_t *buffer,
+    const void *data_to_repeat,
+    size_t data_length,
+    size_t count);
 
-
-void     rig_protobuf_c_data_buffer_append_string0 (ProtobufCDataBuffer    *buffer,
-                                                    const char   *string);
-
+void rig_protobuf_c_data_buffer_append_string0(protobuf_c_data_buffer_t *buffer,
+                                               const char *string);
 
 /* Take all the contents from src and append
  * them to dst, leaving src empty.
  */
-size_t   rig_protobuf_c_data_buffer_drain (ProtobufCDataBuffer    *dst,
-                                           ProtobufCDataBuffer    *src);
+size_t rig_protobuf_c_data_buffer_drain(protobuf_c_data_buffer_t *dst,
+                                        protobuf_c_data_buffer_t *src);
 
 /* Like `drain', but only transfers some of the data. */
-size_t   rig_protobuf_c_data_buffer_transfer (ProtobufCDataBuffer    *dst,
-                                              ProtobufCDataBuffer    *src,
-                                              size_t        max_transfer);
+size_t rig_protobuf_c_data_buffer_transfer(protobuf_c_data_buffer_t *dst,
+                                           protobuf_c_data_buffer_t *src,
+                                           size_t max_transfer);
 
 /* file-descriptor mucking */
-int      rig_protobuf_c_data_buffer_writev (ProtobufCDataBuffer       *read_from,
-                                            int              fd);
-int      rig_protobuf_c_data_buffer_writev_len (ProtobufCDataBuffer       *read_from,
-                                                int              fd,
-                                                size_t           max_bytes);
-int      rig_protobuf_c_data_buffer_read_in_fd (ProtobufCDataBuffer       *write_to,
-                                                int              read_from);
+int rig_protobuf_c_data_buffer_writev(protobuf_c_data_buffer_t *read_from,
+                                      int fd);
+int rig_protobuf_c_data_buffer_writev_len(protobuf_c_data_buffer_t *read_from,
+                                          int fd,
+                                          size_t max_bytes);
+int rig_protobuf_c_data_buffer_read_in_fd(protobuf_c_data_buffer_t *write_to,
+                                          int read_from);
 
 /* This deallocates memory used by the buffer-- you are responsible
- * for the allocation and deallocation of the ProtobufCDataBuffer itself. */
-void     rig_protobuf_c_data_buffer_destruct (ProtobufCDataBuffer    *to_destroy);
+ * for the allocation and deallocation of the protobuf_c_data_buffer_t itself.
+ */
+void rig_protobuf_c_data_buffer_destruct(protobuf_c_data_buffer_t *to_destroy);
 
 /* Free all unused buffer fragments. */
-void     rig_protobuf_c_data_buffer_cleanup_recycling_bin ();
+void rig_protobuf_c_data_buffer_cleanup_recycling_bin();
 
 #endif

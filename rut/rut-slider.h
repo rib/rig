@@ -32,27 +32,17 @@
 
 #include "rut-context.h"
 
-typedef struct _RutSlider RutSlider;
+typedef struct _rut_slider_t rut_slider_t;
 
-extern RutType rut_slider_type;
+extern rut_type_t rut_slider_type;
 
-RutSlider *
-rut_slider_new (RutContext *ctx,
-                RutAxis axis,
-                float min,
-                float max,
-                float length);
+rut_slider_t *rut_slider_new(
+    rut_context_t *ctx, rut_axis_t axis, float min, float max, float length);
 
-void
-rut_slider_set_range (RutSlider *slider,
-                      float min, float max);
+void rut_slider_set_range(rut_slider_t *slider, float min, float max);
 
-void
-rut_slider_set_length (RutSlider *slider,
-                       float length);
+void rut_slider_set_length(rut_slider_t *slider, float length);
 
-void
-rut_slider_set_progress (RutObject *slider,
-                         float progress);
+void rut_slider_set_progress(rut_object_t *slider, float progress);
 
 #endif /* __RUT_SLIDER_H__ */

@@ -33,68 +33,54 @@
 #include "rut-context.h"
 #include "rut-types.h"
 
-extern RutType rut_toggle_type;
+extern rut_type_t rut_toggle_type;
 
-typedef struct _RutToggle RutToggle;
+typedef struct _rut_toggle_t rut_toggle_t;
 
-RutToggle *
-rut_toggle_new (RutContext *ctx,
-                const char *label);
+rut_toggle_t *rut_toggle_new(rut_context_t *ctx, const char *label);
 
-RutToggle *
-rut_toggle_new_with_icons (RutContext *ctx,
-                           const char *unselected_icon,
-                           const char *selected_icon,
-                           const char *label);
+rut_toggle_t *rut_toggle_new_with_icons(rut_context_t *ctx,
+                                        const char *unselected_icon,
+                                        const char *selected_icon,
+                                        const char *label);
 
-typedef void (*RutToggleCallback) (RutToggle *toggle,
-                                   bool value,
-                                   void *user_data);
+typedef void (*rut_toggle_callback_t)(rut_toggle_t *toggle,
+                                      bool value,
+                                      void *user_data);
 
-RutClosure *
-rut_toggle_add_on_toggle_callback (RutToggle *toggle,
-                                   RutToggleCallback callback,
-                                   void *user_data,
-                                   RutClosureDestroyCallback destroy_cb);
+rut_closure_t *
+rut_toggle_add_on_toggle_callback(rut_toggle_t *toggle,
+                                  rut_toggle_callback_t callback,
+                                  void *user_data,
+                                  rut_closure_destroy_callback_t destroy_cb);
 
-void
-rut_toggle_set_enabled (RutObject *toggle,
-                        bool enabled);
+void rut_toggle_set_enabled(rut_object_t *toggle, bool enabled);
 
-void
-rut_toggle_set_state (RutObject *toggle,
-                      bool state);
+void rut_toggle_set_state(rut_object_t *toggle, bool state);
 
-RutProperty *
-rut_toggle_get_enabled_property (RutToggle *toggle);
+rut_property_t *rut_toggle_get_enabled_property(rut_toggle_t *toggle);
 
 /**
  * rut_toggle_set_tick:
- * @toggle: A #RutToggle
+ * @toggle: A #rut_toggle_t
  * @tick: The new string to display for the tick
  *
  * Sets the string used to display the tick character. This defaults to ‘✔’.
  */
-void
-rut_toggle_set_tick (RutObject *toggle,
-                     const char *tick);
+void rut_toggle_set_tick(rut_object_t *toggle, const char *tick);
 
-const char *
-rut_toggle_get_tick (RutObject *toggle);
+const char *rut_toggle_get_tick(rut_object_t *toggle);
 
 /**
  * rut_toggle_set_tick_color:
- * @toggle: A #RutToggle
+ * @toggle: A #rut_toggle_t
  * @color: The new color
  *
  * Sets the color that will be used to display the tick character.
  * This defaults to black
  */
-void
-rut_toggle_set_tick_color (RutObject *toggle,
-                           const cg_color_t *color);
+void rut_toggle_set_tick_color(rut_object_t *toggle, const cg_color_t *color);
 
-const cg_color_t *
-rut_toggle_get_tick_color (RutObject *toggle);
+const cg_color_t *rut_toggle_get_tick_color(rut_object_t *toggle);
 
 #endif /* _RUT_TOGGLE_H_ */

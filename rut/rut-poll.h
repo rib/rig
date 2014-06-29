@@ -41,7 +41,7 @@ G_BEGIN_DECLS
  */
 
 /**
- * RutPollFDEvent:
+ * rut_poll_fd_event_t:
  * @RUT_POLL_FD_EVENT_IN: there is data to read
  * @RUT_POLL_FD_EVENT_PRI: data can be written (without blocking)
  * @RUT_POLL_FD_EVENT_OUT: there is urgent data to read.
@@ -58,83 +58,69 @@ G_BEGIN_DECLS
  * Since: 1.10
  * Stability: unstable
  */
-#if defined (linux) || defined (__APPLE__)
+#if defined(linux) || defined(__APPLE__)
 #include <poll.h>
-typedef enum
-{
-  RUT_POLL_FD_EVENT_IN = POLLIN,
-  RUT_POLL_FD_EVENT_PRI = POLLPRI,
-  RUT_POLL_FD_EVENT_OUT = POLLOUT,
-  RUT_POLL_FD_EVENT_ERR = POLLERR,
-  RUT_POLL_FD_EVENT_HUP = POLLHUP,
-  RUT_POLL_FD_EVENT_NVAL = POLLNVAL
-} RutPollFDEvent;
+typedef enum {
+    RUT_POLL_FD_EVENT_IN = POLLIN,
+    RUT_POLL_FD_EVENT_PRI = POLLPRI,
+    RUT_POLL_FD_EVENT_OUT = POLLOUT,
+    RUT_POLL_FD_EVENT_ERR = POLLERR,
+    RUT_POLL_FD_EVENT_HUP = POLLHUP,
+    RUT_POLL_FD_EVENT_NVAL = POLLNVAL
+} rut_poll_fd_event_t;
 #else
-typedef enum
-{
-  RUT_POLL_FD_EVENT_IN = 1,
-  RUT_POLL_FD_EVENT_PRI = 1<<1,
-  RUT_POLL_FD_EVENT_OUT = 1<<2,
-  RUT_POLL_FD_EVENT_ERR = 1<<3,
-  RUT_POLL_FD_EVENT_HUP = 1<<4,
-  RUT_POLL_FD_EVENT_NVAL = 1<<5
-} RutPollFDEvent;
+typedef enum {
+    RUT_POLL_FD_EVENT_IN = 1,
+    RUT_POLL_FD_EVENT_PRI = 1 << 1,
+    RUT_POLL_FD_EVENT_OUT = 1 << 2,
+    RUT_POLL_FD_EVENT_ERR = 1 << 3,
+    RUT_POLL_FD_EVENT_HUP = 1 << 4,
+    RUT_POLL_FD_EVENT_NVAL = 1 << 5
+} rut_poll_fd_event_t;
 #endif
 
-typedef struct _UVSource UVSource;
+typedef struct _uv_source_t uv_source_t;
 
-void
-rut_poll_shell_remove_fd (RutShell *shell, int fd);
+void rut_poll_shell_remove_fd(rut_shell_t *shell, int fd);
 
-typedef int64_t (*RutPollPrepareCallback) (void *user_data);
-typedef void (*RutPollDispatchCallback) (void *user_data, int revents);
+typedef int64_t (*rut_poll_prepare_callback_t)(void *user_data);
+typedef void (*rut_poll_dispatch_callback_t)(void *user_data, int revents);
 
-void
-rut_poll_renderer_modify_fd (RutShell *shell,
-                             int fd,
-                             RutPollFDEvent events);
+void rut_poll_renderer_modify_fd(rut_shell_t *shell,
+                                 int fd,
+                                 rut_poll_fd_event_t events);
 
-typedef struct _RutPollSource RutPollSource;
+typedef struct _rut_poll_source_t rut_poll_source_t;
 
-RutPollSource *
-rut_poll_shell_add_fd (RutShell *shell,
-                       int fd,
-                       RutPollFDEvent events,
-                       int64_t (*prepare) (void *user_data),
-                       void (*dispatch) (void *user_data,
-                                         int fd,
-                                         int revents),
-                       void *user_data);
+rut_poll_source_t *
+rut_poll_shell_add_fd(rut_shell_t *shell,
+                      int fd,
+                      rut_poll_fd_event_t events,
+                      int64_t (*prepare)(void *user_data),
+                      void (*dispatch)(void *user_data, int fd, int revents),
+                      void *user_data);
 
-RutPollSource *
-rut_poll_shell_add_source (RutShell *shell,
-                           int64_t (*prepare) (void *user_data),
-                           void (*dispatch) (void *user_data,
-                                             int fd,
-                                             int revents),
-                           void *user_data);
+rut_poll_source_t *rut_poll_shell_add_source(
+    rut_shell_t *shell,
+    int64_t (*prepare)(void *user_data),
+    void (*dispatch)(void *user_data, int fd, int revents),
+    void *user_data);
 
-void
-rut_poll_shell_remove_source (RutShell *shell,
-                              RutPollSource *source);
+void rut_poll_shell_remove_source(rut_shell_t *shell,
+                                  rut_poll_source_t *source);
 
-RutClosure *
-rut_poll_shell_add_idle (RutShell *shell,
-                         void (*idle_cb) (void *user_data),
-                         void *user_data,
-                         void (*destroy_cb) (void *user_data));
+rut_closure_t *rut_poll_shell_add_idle(rut_shell_t *shell,
+                                       void (*idle_cb)(void *user_data),
+                                       void *user_data,
+                                       void (*destroy_cb)(void *user_data));
 
-void
-rut_poll_shell_remove_idle (RutShell *shell, RutClosure *idle);
+void rut_poll_shell_remove_idle(rut_shell_t *shell, rut_closure_t *idle);
 
-void
-rut_poll_init (RutShell *shell);
+void rut_poll_init(rut_shell_t *shell);
 
-void
-rut_poll_run (RutShell *shell);
+void rut_poll_run(rut_shell_t *shell);
 
-void
-rut_poll_quit (RutShell *shell);
+void rut_poll_quit(rut_shell_t *shell);
 
 G_END_DECLS
 

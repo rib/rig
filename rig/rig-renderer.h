@@ -29,52 +29,45 @@
 #ifndef _RIG_RENDERER_H_
 #define _RIG_RENDERER_H_
 
-typedef enum _RigPass
-{
-  RIG_PASS_COLOR_UNBLENDED,
-  RIG_PASS_COLOR_BLENDED,
-  RIG_PASS_SHADOW,
-  RIG_PASS_DOF_DEPTH
-} RigPass;
+typedef enum _rig_pass_t {
+    RIG_PASS_COLOR_UNBLENDED,
+    RIG_PASS_COLOR_BLENDED,
+    RIG_PASS_SHADOW,
+    RIG_PASS_DOF_DEPTH
+} rig_pass_t;
 
-typedef struct _RigPaintContext
-{
-  RutPaintContext _parent;
+typedef struct _rig_paint_context_t {
+    rut_paint_context_t _parent;
 
-  RigEngine *engine;
-  RutObject *renderer;
+    rig_engine_t *engine;
+    rut_object_t *renderer;
 
-  c_list_t *camera_stack;
+    c_list_t *camera_stack;
 
-  RigPass pass;
+    rig_pass_t pass;
 
-} RigPaintContext;
+} rig_paint_context_t;
 
-typedef struct _RigRenderer RigRenderer;
+typedef struct _rig_renderer_t rig_renderer_t;
 
-extern RutType rig_renderer_type;
+extern rut_type_t rig_renderer_type;
 
-RigRenderer *
-rig_renderer_new (RigEngine *engine);
+rig_renderer_t *rig_renderer_new(rig_engine_t *engine);
 
-c_array_t *
-rig_journal_new (void);
+c_array_t *rig_journal_new(void);
 
-void
-rig_camera_update_view (RigEngine *engine, RigEntity *camera, bool shadow_pass);
+void rig_camera_update_view(rig_engine_t *engine,
+                            rig_entity_t *camera,
+                            bool shadow_pass);
 
-void
-rig_paint_camera_entity (RigEntity *view_camera,
-                         RigPaintContext *paint_ctx,
-                         RutObject *play_camera);
+void rig_paint_camera_entity(rig_entity_t *view_camera,
+                             rig_paint_context_t *paint_ctx,
+                             rut_object_t *play_camera);
 
-void
-rig_renderer_dirty_entity_state (RigEntity *entity);
+void rig_renderer_dirty_entity_state(rig_entity_t *entity);
 
-void
-rig_renderer_init (RigEngine *engine);
+void rig_renderer_init(rig_engine_t *engine);
 
-void
-rig_renderer_fini (RigEngine *engine);
+void rig_renderer_fini(rig_engine_t *engine);
 
 #endif /* _RIG_RENDERER_H_ */

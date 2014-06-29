@@ -32,53 +32,40 @@
 
 #include <rut.h>
 
-extern RutType rig_binding_type;
+extern rut_type_t rig_binding_type;
 
-typedef struct _RigBinding RigBinding;
+typedef struct _rig_binding_t rig_binding_t;
 
-RigBinding *
-rig_binding_new (RigEngine *engine,
-                 RutProperty *property,
-                 int binding_id);
+rig_binding_t *
+rig_binding_new(rig_engine_t *engine, rut_property_t *property, int binding_id);
 
-int
-rig_binding_get_id (RigBinding *binding);
+int rig_binding_get_id(rig_binding_t *binding);
 
-void
-rig_binding_add_dependency (RigBinding *binding,
-                            RutProperty *property,
-                            const char *name);
+void rig_binding_add_dependency(rig_binding_t *binding,
+                                rut_property_t *property,
+                                const char *name);
 
-void
-rig_binding_remove_dependency (RigBinding *binding,
-                               RutProperty *property);
+void rig_binding_remove_dependency(rig_binding_t *binding,
+                                   rut_property_t *property);
 
-char *
-rig_binding_get_expression (RigBinding *binding);
+char *rig_binding_get_expression(rig_binding_t *binding);
 
-void
-rig_binding_set_expression (RigBinding *binding,
-                            const char *expression);
+void rig_binding_set_expression(rig_binding_t *binding, const char *expression);
 
-void
-rig_binding_set_dependency_name (RigBinding *binding,
-                                 RutProperty *property,
-                                 const char *name);
+void rig_binding_set_dependency_name(rig_binding_t *binding,
+                                     rut_property_t *property,
+                                     const char *name);
 
-void
-rig_binding_activate (RigBinding *binding);
+void rig_binding_activate(rig_binding_t *binding);
 
-void
-rig_binding_deactivate (RigBinding *binding);
+void rig_binding_deactivate(rig_binding_t *binding);
 
-int
-rig_binding_get_n_dependencies (RigBinding *binding);
+int rig_binding_get_n_dependencies(rig_binding_t *binding);
 
-void
-rig_binding_foreach_dependency (RigBinding *binding,
-                                void (*callback) (RigBinding *binding,
-                                                  RutProperty *dependency,
-                                                  void *user_data),
-                                void *user_data);
+void rig_binding_foreach_dependency(rig_binding_t *binding,
+                                    void (*callback)(rig_binding_t *binding,
+                                                     rut_property_t *dependency,
+                                                     void *user_data),
+                                    void *user_data);
 
 #endif /* _RIG_BINDING_H_ */
