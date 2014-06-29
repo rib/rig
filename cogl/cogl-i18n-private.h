@@ -28,8 +28,8 @@
  *
  */
 
-#ifndef _COGL_I18N_PRIVATE_H_
-#define _COGL_I18N_PRIVATE_H_
+#ifndef _CG_I18N_PRIVATE_H_
+#define _CG_I18N_PRIVATE_H_
 
 #ifdef ENABLE_NLS
 #include <glib/gi18n-lib.h>
@@ -38,4 +38,4 @@
 #define N_(X) X
 #endif
 
-#endif /* _COGL_I18N_PRIVATE_H_ */
+#endif /* _CG_I18N_PRIVATE_H_ */

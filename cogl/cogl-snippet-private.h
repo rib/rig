@@ -31,47 +31,43 @@
  *   Neil Roberts <neil@linux.intel.com>
  */
 
-#ifndef __COGL_SNIPPET_PRIVATE_H
-#define __COGL_SNIPPET_PRIVATE_H
+#ifndef __CG_SNIPPET_PRIVATE_H
+#define __CG_SNIPPET_PRIVATE_H
 
 #include <clib.h>
 
 #include "cogl-snippet.h"
 #include "cogl-object-private.h"
 
-/* These values are also used in the enum for CoglSnippetHook. They
+/* These values are also used in the enum for cg_snippet_hook_t. They
    are copied here because we don't really want these names to be part
    of the public API */
-#define COGL_SNIPPET_HOOK_BAND_SIZE 2048
-#define COGL_SNIPPET_FIRST_PIPELINE_HOOK 0
-#define COGL_SNIPPET_FIRST_PIPELINE_VERTEX_HOOK \
-  COGL_SNIPPET_FIRST_PIPELINE_HOOK
-#define COGL_SNIPPET_FIRST_PIPELINE_FRAGMENT_HOOK \
-  (COGL_SNIPPET_FIRST_PIPELINE_VERTEX_HOOK + COGL_SNIPPET_HOOK_BAND_SIZE)
-#define COGL_SNIPPET_FIRST_LAYER_HOOK (COGL_SNIPPET_HOOK_BAND_SIZE * 2)
-#define COGL_SNIPPET_FIRST_LAYER_VERTEX_HOOK COGL_SNIPPET_FIRST_LAYER_HOOK
-#define COGL_SNIPPET_FIRST_LAYER_FRAGMENT_HOOK \
-  (COGL_SNIPPET_FIRST_LAYER_VERTEX_HOOK + COGL_SNIPPET_HOOK_BAND_SIZE)
+#define CG_SNIPPET_HOOK_BAND_SIZE 2048
+#define CG_SNIPPET_FIRST_PIPELINE_HOOK 0
+#define CG_SNIPPET_FIRST_PIPELINE_VERTEX_HOOK CG_SNIPPET_FIRST_PIPELINE_HOOK
+#define CG_SNIPPET_FIRST_PIPELINE_FRAGMENT_HOOK                                \
+    (CG_SNIPPET_FIRST_PIPELINE_VERTEX_HOOK + CG_SNIPPET_HOOK_BAND_SIZE)
+#define CG_SNIPPET_FIRST_LAYER_HOOK (CG_SNIPPET_HOOK_BAND_SIZE * 2)
+#define CG_SNIPPET_FIRST_LAYER_VERTEX_HOOK CG_SNIPPET_FIRST_LAYER_HOOK
+#define CG_SNIPPET_FIRST_LAYER_FRAGMENT_HOOK                                   \
+    (CG_SNIPPET_FIRST_LAYER_VERTEX_HOOK + CG_SNIPPET_HOOK_BAND_SIZE)
 
-struct _CoglSnippet
-{
-  CoglObject _parent;
+struct _cg_snippet_t {
+    cg_object_t _parent;
 
-  CoglSnippetHook hook;
+    cg_snippet_hook_t hook;
 
-  /* This is set to true the first time the snippet is attached to the
-     pipeline. After that any attempts to modify the snippet will be
-     ignored. */
-  bool immutable;
+    /* This is set to true the first time the snippet is attached to the
+       pipeline. After that any attempts to modify the snippet will be
+       ignored. */
+    bool immutable;
 
-  char *declarations;
-  char *pre;
-  char *replace;
-  char *post;
+    char *declarations;
+    char *pre;
+    char *replace;
+    char *post;
 };
 
-void
-_cogl_snippet_make_immutable (CoglSnippet *snippet);
+void _cg_snippet_make_immutable(cg_snippet_t *snippet);
 
-#endif /* __COGL_SNIPPET_PRIVATE_H */
-
+#endif /* __CG_SNIPPET_PRIVATE_H */

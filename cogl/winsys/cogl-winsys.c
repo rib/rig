@@ -37,16 +37,16 @@
 #include <cmodule.h>
 
 uint32_t
-_cogl_winsys_error_domain (void)
+_cg_winsys_error_domain(void)
 {
-  return c_quark_from_static_string ("cogl-winsys-error-quark");
+    return c_quark_from_static_string("cogl-winsys-error-quark");
 }
 
 /* FIXME: we should distinguish renderer and context features */
 bool
-_cogl_winsys_has_feature (CoglWinsysFeature feature)
+_cg_winsys_has_feature(cg_winsys_feature_t feature)
 {
-  _COGL_GET_CONTEXT (ctx, false);
+    _CG_GET_CONTEXT(ctx, false);
 
-  return COGL_FLAGS_GET (ctx->winsys_features, feature);
+    return CG_FLAGS_GET(ctx->winsys_features, feature);
 }

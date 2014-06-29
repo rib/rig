@@ -31,17 +31,15 @@
  *   Neil Roberts <neil@linux.intel.com>
  */
 
-#ifndef __COGL_PIPELINE_PROGEND_GLSL_PRIVATE_H
-#define __COGL_PIPELINE_PROGEND_GLSL_PRIVATE_H
+#ifndef __CG_PIPELINE_PROGEND_GLSL_PRIVATE_H
+#define __CG_PIPELINE_PROGEND_GLSL_PRIVATE_H
 
 #include "cogl-pipeline-private.h"
 #include "cogl-attribute-private.h"
 
-extern const CoglPipelineProgend _cogl_pipeline_glsl_progend;
+extern const cg_pipeline_progend_t _cg_pipeline_glsl_progend;
 
-int
-_cogl_pipeline_progend_glsl_get_attrib_location (CoglPipeline *pipeline,
-                                                 int name_index);
+int _cg_pipeline_progend_glsl_get_attrib_location(cg_pipeline_t *pipeline,
+                                                  int name_index);
 
-#endif /* __COGL_PIPELINE_PROGEND_GLSL_PRIVATE_H */
-
+#endif /* __CG_PIPELINE_PROGEND_GLSL_PRIVATE_H */

@@ -43,162 +43,66 @@
 #include "cogl-texture-2d-private.h"
 #include "cogl-private.h"
 
-static const CoglBlitMode *_cogl_blit_default_mode = NULL;
+static const cg_blit_mode_t *_cg_blit_default_mode = NULL;
 
 static bool
-_cogl_blit_texture_render_begin (CoglBlitData *data)
+_cg_blit_texture_render_begin(cg_blit_data_t *data)
 {
-  CoglContext *ctx = data->src_tex->context;
-  CoglOffscreen *offscreen;
-  CoglFramebuffer *fb;
-  CoglPipeline *pipeline;
-  unsigned int dst_width, dst_height;
-  CoglError *ignore_error = NULL;
+    cg_context_t *ctx = data->src_tex->context;
+    cg_offscreen_t *offscreen;
+    cg_framebuffer_t *fb;
+    cg_pipeline_t *pipeline;
+    unsigned int dst_width, dst_height;
+    cg_error_t *ignore_error = NULL;
 
-  offscreen = _cogl_offscreen_new_with_texture_full
-    (data->dst_tex, COGL_OFFSCREEN_DISABLE_DEPTH_AND_STENCIL, 0 /* level */);
+    offscreen = _cg_offscreen_new_with_texture_full(
+        data->dst_tex, CG_OFFSCREEN_DISABLE_DEPTH_AND_STENCIL, 0 /* level */);
 
-  fb = COGL_FRAMEBUFFER (offscreen);
-  if (!cogl_framebuffer_allocate (fb, &ignore_error))
-    {
-      cogl_error_free (ignore_error);
-      cogl_object_unref (fb);
-      return false;
+    fb = CG_FRAMEBUFFER(offscreen);
+    if (!cg_framebuffer_allocate(fb, &ignore_error)) {
+        cg_error_free(ignore_error);
+        cg_object_unref(fb);
+        return false;
     }
 
-  data->dest_fb = fb;
+    data->dest_fb = fb;
 
-  dst_width = cogl_texture_get_width (data->dst_tex);
-  dst_height = cogl_texture_get_height (data->dst_tex);
+    dst_width = cg_texture_get_width(data->dst_tex);
+    dst_height = cg_texture_get_height(data->dst_tex);
 
-  /* Set up an orthographic projection so we can use pixel
-     coordinates to render to the texture */
-  cogl_framebuffer_orthographic (fb,
-                                 0, 0, dst_width, dst_height,
-                                 -1 /* near */, 1 /* far */);
+    /* Set up an orthographic projection so we can use pixel
+       coordinates to render to the texture */
+    cg_framebuffer_orthographic(
+        fb, 0, 0, dst_width, dst_height, -1 /* near */, 1 /* far */);
 
-  /* We cache a pipeline used for migrating on to the context so
-     that it doesn't have to continuously regenerate a shader
-     program */
-  if (ctx->blit_texture_pipeline == NULL)
-    {
-      ctx->blit_texture_pipeline = cogl_pipeline_new (ctx);
+    /* We cache a pipeline used for migrating on to the context so
+       that it doesn't have to continuously regenerate a shader
+       program */
+    if (ctx->blit_texture_pipeline == NULL) {
+        ctx->blit_texture_pipeline = cg_pipeline_new(ctx);
 
-      cogl_pipeline_set_layer_filters (ctx->blit_texture_pipeline, 0,
-                                       COGL_PIPELINE_FILTER_NEAREST,
-                                       COGL_PIPELINE_FILTER_NEAREST);
+        cg_pipeline_set_layer_filters(ctx->blit_texture_pipeline,
+                                      0,
+                                      CG_PIPELINE_FILTER_NEAREST,
+                                      CG_PIPELINE_FILTER_NEAREST);
 
-      /* Disable blending by just directly taking the contents of the
-         source texture */
-      cogl_pipeline_set_blend (ctx->blit_texture_pipeline,
-                               "RGBA = ADD(SRC_COLOR, 0)",
-                               NULL);
+        /* Disable blending by just directly taking the contents of the
+           source texture */
+        cg_pipeline_set_blend(
+            ctx->blit_texture_pipeline, "RGBA = ADD(SRC_COLOR, 0)", NULL);
     }
 
-  pipeline = ctx->blit_texture_pipeline;
+    pipeline = ctx->blit_texture_pipeline;
 
-  cogl_pipeline_set_layer_texture (pipeline, 0, data->src_tex);
+    cg_pipeline_set_layer_texture(pipeline, 0, data->src_tex);
 
-  data->pipeline = pipeline;
+    data->pipeline = pipeline;
 
-  return true;
+    return true;
 }
 
 static void
-_cogl_blit_texture_render_blit (CoglBlitData *data,
-                                int src_x,
-                                int src_y,
-                                int dst_x,
-                                int dst_y,
-                                int width,
-                                int height)
-{
-  cogl_framebuffer_draw_textured_rectangle (data->dest_fb,
-                                            data->pipeline,
-                                            dst_x, dst_y,
-                                            dst_x + width,
-                                            dst_y + height,
-                                            src_x / (float) data->src_width,
-                                            src_y / (float) data->src_height,
-                                            (src_x + width) /
-                                            (float) data->src_width,
-                                            (src_y + height) /
-                                            (float) data->src_height);
-}
-
-static void
-_cogl_blit_texture_render_end (CoglBlitData *data)
-{
-  CoglContext *ctx = data->src_tex->context;
-
-  /* Attach the target texture to the texture render pipeline so that
-     we don't keep a reference to the source texture forever. This is
-     assuming that the destination texture will live for a long time
-     which is currently the case when cogl_blit_* is used from the
-     atlas code. It may be better in future to keep around a set of
-     dummy 1x1 textures for each texture target that we could bind
-     instead. This would also be useful when using a pipeline as a
-     hash table key such as for the GLSL program cache. */
-  cogl_pipeline_set_layer_texture (ctx->blit_texture_pipeline, 0,
-                                   data->dst_tex);
-
-  cogl_object_unref (data->dest_fb);
-}
-
-static bool
-_cogl_blit_framebuffer_begin (CoglBlitData *data)
-{
-  CoglContext *ctx = data->src_tex->context;
-  CoglOffscreen *dst_offscreen = NULL, *src_offscreen = NULL;
-  CoglFramebuffer *dst_fb, *src_fb;
-  CoglError *ignore_error = NULL;
-
-  /* We can only blit between FBOs if both textures are the same
-     format and the blit framebuffer extension is supported */
-  if ((_cogl_texture_get_format (data->src_tex) & ~COGL_A_BIT) !=
-      (_cogl_texture_get_format (data->dst_tex) & ~COGL_A_BIT) ||
-      !_cogl_has_private_feature (ctx, COGL_PRIVATE_FEATURE_OFFSCREEN_BLIT))
-    return false;
-
-  dst_offscreen = _cogl_offscreen_new_with_texture_full
-    (data->dst_tex, COGL_OFFSCREEN_DISABLE_DEPTH_AND_STENCIL, 0 /* level */);
-
-  dst_fb = COGL_FRAMEBUFFER (dst_offscreen);
-  if (!cogl_framebuffer_allocate (dst_fb, &ignore_error))
-    {
-      cogl_error_free (ignore_error);
-      goto error;
-    }
-
-  src_offscreen= _cogl_offscreen_new_with_texture_full
-    (data->src_tex,
-     COGL_OFFSCREEN_DISABLE_DEPTH_AND_STENCIL,
-     0 /* level */);
-
-  src_fb = COGL_FRAMEBUFFER (src_offscreen);
-  if (!cogl_framebuffer_allocate (src_fb, &ignore_error))
-    {
-      cogl_error_free (ignore_error);
-      goto error;
-    }
-
-  data->src_fb = src_fb;
-  data->dest_fb = dst_fb;
-
-  return true;
-
-error:
-
-  if (dst_offscreen)
-    cogl_object_unref (dst_offscreen);
-  if (src_offscreen)
-    cogl_object_unref (src_offscreen);
-
-  return false;
-}
-
-static void
-_cogl_blit_framebuffer_blit (CoglBlitData *data,
+_cg_blit_texture_render_blit(cg_blit_data_t *data,
                              int src_x,
                              int src_y,
                              int dst_x,
@@ -206,232 +110,297 @@ _cogl_blit_framebuffer_blit (CoglBlitData *data,
                              int width,
                              int height)
 {
-  _cogl_blit_framebuffer (data->src_fb,
-                          data->dest_fb,
-                          src_x, src_y,
-                          dst_x, dst_y,
-                          width, height);
+    cg_framebuffer_draw_textured_rectangle(
+        data->dest_fb,
+        data->pipeline,
+        dst_x,
+        dst_y,
+        dst_x + width,
+        dst_y + height,
+        src_x / (float)data->src_width,
+        src_y / (float)data->src_height,
+        (src_x + width) / (float)data->src_width,
+        (src_y + height) / (float)data->src_height);
 }
 
 static void
-_cogl_blit_framebuffer_end (CoglBlitData *data)
+_cg_blit_texture_render_end(cg_blit_data_t *data)
 {
-  cogl_object_unref (data->src_fb);
-  cogl_object_unref (data->dest_fb);
+    cg_context_t *ctx = data->src_tex->context;
+
+    /* Attach the target texture to the texture render pipeline so that
+       we don't keep a reference to the source texture forever. This is
+       assuming that the destination texture will live for a long time
+       which is currently the case when cg_blit_* is used from the
+       atlas code. It may be better in future to keep around a set of
+       dummy 1x1 textures for each texture target that we could bind
+       instead. This would also be useful when using a pipeline as a
+       hash table key such as for the GLSL program cache. */
+    cg_pipeline_set_layer_texture(ctx->blit_texture_pipeline, 0, data->dst_tex);
+
+    cg_object_unref(data->dest_fb);
 }
 
 static bool
-_cogl_blit_copy_tex_sub_image_begin (CoglBlitData *data)
+_cg_blit_framebuffer_begin(cg_blit_data_t *data)
 {
-  CoglOffscreen *offscreen;
-  CoglFramebuffer *fb;
-  CoglError *ignore_error = NULL;
+    cg_context_t *ctx = data->src_tex->context;
+    cg_offscreen_t *dst_offscreen = NULL, *src_offscreen = NULL;
+    cg_framebuffer_t *dst_fb, *src_fb;
+    cg_error_t *ignore_error = NULL;
 
-  /* This will only work if the target texture is a CoglTexture2D */
-  if (!cogl_is_texture_2d (data->dst_tex))
-    return false;
+    /* We can only blit between FBOs if both textures are the same
+       format and the blit framebuffer extension is supported */
+    if ((_cg_texture_get_format(data->src_tex) & ~CG_A_BIT) !=
+        (_cg_texture_get_format(data->dst_tex) & ~CG_A_BIT) ||
+        !_cg_has_private_feature(ctx, CG_PRIVATE_FEATURE_OFFSCREEN_BLIT))
+        return false;
 
-  offscreen = _cogl_offscreen_new_with_texture_full
-    (data->src_tex, COGL_OFFSCREEN_DISABLE_DEPTH_AND_STENCIL, 0 /* level */);
+    dst_offscreen = _cg_offscreen_new_with_texture_full(
+        data->dst_tex, CG_OFFSCREEN_DISABLE_DEPTH_AND_STENCIL, 0 /* level */);
 
-  fb = COGL_FRAMEBUFFER (offscreen);
-  if (!cogl_framebuffer_allocate (fb, &ignore_error))
-    {
-      cogl_error_free (ignore_error);
-      cogl_object_unref (fb);
-      return false;
+    dst_fb = CG_FRAMEBUFFER(dst_offscreen);
+    if (!cg_framebuffer_allocate(dst_fb, &ignore_error)) {
+        cg_error_free(ignore_error);
+        goto error;
     }
 
-  data->src_fb = fb;
+    src_offscreen = _cg_offscreen_new_with_texture_full(
+        data->src_tex, CG_OFFSCREEN_DISABLE_DEPTH_AND_STENCIL, 0 /* level */);
 
-  return true;
+    src_fb = CG_FRAMEBUFFER(src_offscreen);
+    if (!cg_framebuffer_allocate(src_fb, &ignore_error)) {
+        cg_error_free(ignore_error);
+        goto error;
+    }
+
+    data->src_fb = src_fb;
+    data->dest_fb = dst_fb;
+
+    return true;
+
+error:
+
+    if (dst_offscreen)
+        cg_object_unref(dst_offscreen);
+    if (src_offscreen)
+        cg_object_unref(src_offscreen);
+
+    return false;
 }
 
 static void
-_cogl_blit_copy_tex_sub_image_blit (CoglBlitData *data,
-                                    int src_x,
-                                    int src_y,
-                                    int dst_x,
-                                    int dst_y,
-                                    int width,
-                                    int height)
+_cg_blit_framebuffer_blit(cg_blit_data_t *data,
+                          int src_x,
+                          int src_y,
+                          int dst_x,
+                          int dst_y,
+                          int width,
+                          int height)
 {
-  _cogl_texture_2d_copy_from_framebuffer (COGL_TEXTURE_2D (data->dst_tex),
-                                          src_x, src_y,
-                                          width, height,
-                                          data->src_fb,
-                                          dst_x, dst_y,
-                                          0); /* level */
+    _cg_blit_framebuffer(
+        data->src_fb, data->dest_fb, src_x, src_y, dst_x, dst_y, width, height);
 }
 
 static void
-_cogl_blit_copy_tex_sub_image_end (CoglBlitData *data)
+_cg_blit_framebuffer_end(cg_blit_data_t *data)
 {
-  cogl_object_unref (data->src_fb);
+    cg_object_unref(data->src_fb);
+    cg_object_unref(data->dest_fb);
 }
 
 static bool
-_cogl_blit_get_tex_data_begin (CoglBlitData *data)
+_cg_blit_copy_tex_sub_image_begin(cg_blit_data_t *data)
 {
-  data->format = _cogl_texture_get_format (data->src_tex);
-  data->bpp = _cogl_pixel_format_get_bytes_per_pixel (data->format);
+    cg_offscreen_t *offscreen;
+    cg_framebuffer_t *fb;
+    cg_error_t *ignore_error = NULL;
 
-  data->image_data = c_malloc (data->bpp * data->src_width *
-                               data->src_height);
-  cogl_texture_get_data (data->src_tex, data->format,
-                         data->src_width * data->bpp, data->image_data);
+    /* This will only work if the target texture is a cg_texture_2d_t */
+    if (!cg_is_texture_2d(data->dst_tex))
+        return false;
 
-  return true;
+    offscreen = _cg_offscreen_new_with_texture_full(
+        data->src_tex, CG_OFFSCREEN_DISABLE_DEPTH_AND_STENCIL, 0 /* level */);
+
+    fb = CG_FRAMEBUFFER(offscreen);
+    if (!cg_framebuffer_allocate(fb, &ignore_error)) {
+        cg_error_free(ignore_error);
+        cg_object_unref(fb);
+        return false;
+    }
+
+    data->src_fb = fb;
+
+    return true;
 }
 
 static void
-_cogl_blit_get_tex_data_blit (CoglBlitData *data,
-                              int src_x,
-                              int src_y,
-                              int dst_x,
-                              int dst_y,
-                              int width,
-                              int height)
+_cg_blit_copy_tex_sub_image_blit(cg_blit_data_t *data,
+                                 int src_x,
+                                 int src_y,
+                                 int dst_x,
+                                 int dst_y,
+                                 int width,
+                                 int height)
 {
-  CoglError *ignore = NULL;
-  int rowstride = data->src_width * data->bpp;
-  int offset = rowstride * src_y + src_x * data->bpp;
-
-  cogl_texture_set_region (data->dst_tex,
-                           width, height,
-                           data->format,
-                           rowstride,
-                           data->image_data + offset,
-                           dst_x, dst_y,
-                           0, /* level */
-                           &ignore);
-  /* TODO: support chaining up errors during the blit */
+    _cg_texture_2d_copy_from_framebuffer(CG_TEXTURE_2D(data->dst_tex),
+                                         src_x,
+                                         src_y,
+                                         width,
+                                         height,
+                                         data->src_fb,
+                                         dst_x,
+                                         dst_y,
+                                         0); /* level */
 }
 
 static void
-_cogl_blit_get_tex_data_end (CoglBlitData *data)
+_cg_blit_copy_tex_sub_image_end(cg_blit_data_t *data)
 {
-  c_free (data->image_data);
+    cg_object_unref(data->src_fb);
+}
+
+static bool
+_cg_blit_get_tex_data_begin(cg_blit_data_t *data)
+{
+    data->format = _cg_texture_get_format(data->src_tex);
+    data->bpp = _cg_pixel_format_get_bytes_per_pixel(data->format);
+
+    data->image_data = c_malloc(data->bpp * data->src_width * data->src_height);
+    cg_texture_get_data(data->src_tex,
+                        data->format,
+                        data->src_width * data->bpp,
+                        data->image_data);
+
+    return true;
+}
+
+static void
+_cg_blit_get_tex_data_blit(cg_blit_data_t *data,
+                           int src_x,
+                           int src_y,
+                           int dst_x,
+                           int dst_y,
+                           int width,
+                           int height)
+{
+    cg_error_t *ignore = NULL;
+    int rowstride = data->src_width * data->bpp;
+    int offset = rowstride * src_y + src_x * data->bpp;
+
+    cg_texture_set_region(data->dst_tex,
+                          width,
+                          height,
+                          data->format,
+                          rowstride,
+                          data->image_data + offset,
+                          dst_x,
+                          dst_y,
+                          0, /* level */
+                          &ignore);
+    /* TODO: support chaining up errors during the blit */
+}
+
+static void
+_cg_blit_get_tex_data_end(cg_blit_data_t *data)
+{
+    c_free(data->image_data);
 }
 
 /* These should be specified in order of preference */
-static const CoglBlitMode
-_cogl_blit_modes[] =
-  {
-    {
-      "texture-render",
-      _cogl_blit_texture_render_begin,
-      _cogl_blit_texture_render_blit,
-      _cogl_blit_texture_render_end
-    },
-    {
-      "framebuffer",
-      _cogl_blit_framebuffer_begin,
-      _cogl_blit_framebuffer_blit,
-      _cogl_blit_framebuffer_end
-    },
-    {
-      "copy-tex-sub-image",
-      _cogl_blit_copy_tex_sub_image_begin,
-      _cogl_blit_copy_tex_sub_image_blit,
-      _cogl_blit_copy_tex_sub_image_end
-    },
-    {
-      "get-tex-data",
-      _cogl_blit_get_tex_data_begin,
-      _cogl_blit_get_tex_data_blit,
-      _cogl_blit_get_tex_data_end
-    }
-  };
+static const cg_blit_mode_t _cg_blit_modes[] = {
+    { "texture-render",             _cg_blit_texture_render_begin,
+      _cg_blit_texture_render_blit, _cg_blit_texture_render_end },
+    { "framebuffer",             _cg_blit_framebuffer_begin,
+      _cg_blit_framebuffer_blit, _cg_blit_framebuffer_end },
+    { "copy-tex-sub-image",             _cg_blit_copy_tex_sub_image_begin,
+      _cg_blit_copy_tex_sub_image_blit, _cg_blit_copy_tex_sub_image_end },
+    { "get-tex-data",             _cg_blit_get_tex_data_begin,
+      _cg_blit_get_tex_data_blit, _cg_blit_get_tex_data_end }
+};
 
 void
-_cogl_blit_begin (CoglBlitData *data,
-                  CoglTexture *dst_tex,
-                  CoglTexture *src_tex)
+_cg_blit_begin(cg_blit_data_t *data,
+               cg_texture_t *dst_tex,
+               cg_texture_t *src_tex)
 {
-  int i;
+    int i;
 
-  if (_cogl_blit_default_mode == NULL)
-    {
-      const char *default_mode_string;
+    if (_cg_blit_default_mode == NULL) {
+        const char *default_mode_string;
 
-      /* Allow the default to be specified with an environment
-         variable. For the time being these functions are only used
-         when blitting between atlas textures so the environment
-         variable is named to be specific to the atlas code. If we
-         want to use the code in other places we should create another
-         environment variable for each specific use case */
-      if ((default_mode_string = c_getenv ("COGL_ATLAS_DEFAULT_BLIT_MODE")))
-        {
-          for (i = 0; i < C_N_ELEMENTS (_cogl_blit_modes); i++)
-            if (!strcmp (_cogl_blit_modes[i].name, default_mode_string))
-              {
-                _cogl_blit_default_mode = _cogl_blit_modes + i;
-                break;
-              }
+        /* Allow the default to be specified with an environment
+           variable. For the time being these functions are only used
+           when blitting between atlas textures so the environment
+           variable is named to be specific to the atlas code. If we
+           want to use the code in other places we should create another
+           environment variable for each specific use case */
+        if ((default_mode_string = c_getenv("CG_ATLAS_DEFAULT_BLIT_MODE"))) {
+            for (i = 0; i < C_N_ELEMENTS(_cg_blit_modes); i++)
+                if (!strcmp(_cg_blit_modes[i].name, default_mode_string)) {
+                    _cg_blit_default_mode = _cg_blit_modes + i;
+                    break;
+                }
 
-          if (i >= C_N_ELEMENTS (_cogl_blit_modes))
-            {
-              c_warning ("Unknown blit mode %s", default_mode_string);
-              _cogl_blit_default_mode = _cogl_blit_modes;
+            if (i >= C_N_ELEMENTS(_cg_blit_modes)) {
+                c_warning("Unknown blit mode %s", default_mode_string);
+                _cg_blit_default_mode = _cg_blit_modes;
             }
-        }
-      else
-        /* Default to the first blit mode */
-        _cogl_blit_default_mode = _cogl_blit_modes;
+        } else
+            /* Default to the first blit mode */
+            _cg_blit_default_mode = _cg_blit_modes;
     }
 
-  memset (data, 0, sizeof (CoglBlitData));
+    memset(data, 0, sizeof(cg_blit_data_t));
 
-  data->dst_tex = dst_tex;
-  data->src_tex = src_tex;
+    data->dst_tex = dst_tex;
+    data->src_tex = src_tex;
 
-  data->src_width = cogl_texture_get_width (src_tex);
-  data->src_height = cogl_texture_get_height (src_tex);
+    data->src_width = cg_texture_get_width(src_tex);
+    data->src_height = cg_texture_get_height(src_tex);
 
-  /* Try the default blit mode first */
-  if (!_cogl_blit_default_mode->begin_func (data))
-    {
-      COGL_NOTE (ATLAS, "Failed to set up blit mode %s",
-                 _cogl_blit_default_mode->name);
+    /* Try the default blit mode first */
+    if (!_cg_blit_default_mode->begin_func(data)) {
+        CG_NOTE(ATLAS,
+                "Failed to set up blit mode %s",
+                _cg_blit_default_mode->name);
 
-      /* Try all of the other modes in order */
-      for (i = 0; i < C_N_ELEMENTS (_cogl_blit_modes); i++)
-        if (_cogl_blit_modes + i != _cogl_blit_default_mode &&
-            _cogl_blit_modes[i].begin_func (data))
-          {
-            /* Use this mode as the default from now on */
-            _cogl_blit_default_mode = _cogl_blit_modes + i;
-            break;
-          }
-        else
-          COGL_NOTE (ATLAS,
-                     "Failed to set up blit mode %s",
-                     _cogl_blit_modes[i].name);
+        /* Try all of the other modes in order */
+        for (i = 0; i < C_N_ELEMENTS(_cg_blit_modes); i++)
+            if (_cg_blit_modes + i != _cg_blit_default_mode &&
+                _cg_blit_modes[i].begin_func(data)) {
+                /* Use this mode as the default from now on */
+                _cg_blit_default_mode = _cg_blit_modes + i;
+                break;
+            } else
+                CG_NOTE(ATLAS,
+                        "Failed to set up blit mode %s",
+                        _cg_blit_modes[i].name);
 
-      /* The last blit mode can't fail so this should never happen */
-      _COGL_RETURN_IF_FAIL (i < C_N_ELEMENTS (_cogl_blit_modes));
+        /* The last blit mode can't fail so this should never happen */
+        _CG_RETURN_IF_FAIL(i < C_N_ELEMENTS(_cg_blit_modes));
     }
 
-  data->blit_mode = _cogl_blit_default_mode;
+    data->blit_mode = _cg_blit_default_mode;
 
-  COGL_NOTE (ATLAS, "Setup blit using %s", _cogl_blit_default_mode->name);
+    CG_NOTE(ATLAS, "Setup blit using %s", _cg_blit_default_mode->name);
 }
 
 void
-_cogl_blit (CoglBlitData *data,
-            int src_x,
-            int src_y,
-            int dst_x,
-            int dst_y,
-            int width,
-            int height)
+_cg_blit(cg_blit_data_t *data,
+         int src_x,
+         int src_y,
+         int dst_x,
+         int dst_y,
+         int width,
+         int height)
 {
-  data->blit_mode->blit_func (data, src_x, src_y, dst_x, dst_y, width, height);
+    data->blit_mode->blit_func(data, src_x, src_y, dst_x, dst_y, width, height);
 }
 
 void
-_cogl_blit_end (CoglBlitData *data)
+_cg_blit_end(cg_blit_data_t *data)
 {
-  data->blit_mode->end_func (data);
+    data->blit_mode->end_func(data);
 }

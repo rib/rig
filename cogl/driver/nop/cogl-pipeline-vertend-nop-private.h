@@ -27,12 +27,11 @@
  *
  */
 
-#ifndef __COGL_PIPELINE_VERTEND_NOP_PRIVATE_H
-#define __COGL_PIPELINE_VERTEND_NOP_PRIVATE_H
+#ifndef __CG_PIPELINE_VERTEND_NOP_PRIVATE_H
+#define __CG_PIPELINE_VERTEND_NOP_PRIVATE_H
 
 #include "cogl-pipeline-private.h"
 
-extern const CoglPipelineVertend _cogl_pipeline_nop_vertend;
+extern const cg_pipeline_vertend_t _cg_pipeline_nop_vertend;
 
-#endif /* __COGL_PIPELINE_VERTEND_NOP_PRIVATE_H */
-
+#endif /* __CG_PIPELINE_VERTEND_NOP_PRIVATE_H */

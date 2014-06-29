@@ -29,14 +29,14 @@
  *   Neil Roberts <neil@linux.intel.com>
  */
 
-#if !defined(__COGL_H_INSIDE__) && !defined(COGL_COMPILATION)
+#if !defined(__CG_H_INSIDE__) && !defined(CG_COMPILATION)
 #error "Only <cogl/cogl.h> can be included directly."
 #endif
 
-#ifndef __COGL_TEXTURE_3D_H
-#define __COGL_TEXTURE_3D_H
+#ifndef __CG_TEXTURE_3D_H
+#define __CG_TEXTURE_3D_H
 
-COGL_BEGIN_DECLS
+CG_BEGIN_DECLS
 
 /**
  * SECTION:cogl-texture-3d
@@ -48,22 +48,22 @@ COGL_BEGIN_DECLS
  * account the 'r' texture coordinate to select one of the images.
  */
 
-typedef struct _CoglTexture3D CoglTexture3D;
+typedef struct _cg_texture_3d_t cg_texture_3d_t;
 
-#define COGL_TEXTURE_3D(X) ((CoglTexture3D *)X)
+#define CG_TEXTURE_3D(X) ((cg_texture_3d_t *)X)
 
 /**
- * cogl_texture_3d_new_with_size:
- * @context: a #CoglContext
+ * cg_texture_3d_new_with_size:
+ * @context: a #cg_context_t
  * @width: width of the texture in pixels.
  * @height: height of the texture in pixels.
  * @depth: depth of the texture in pixels.
  *
- * Creates a low-level #CoglTexture3D texture with the specified
+ * Creates a low-level #cg_texture_3d_t texture with the specified
  * dimensions and pixel format.
  *
  * The storage for the texture is not allocated before this function
- * returns. You can call cogl_texture_allocate() to explicitly
+ * returns. You can call cg_texture_allocate() to explicitly
  * allocate the underlying storage or preferably let Cogl
  * automatically allocate storage lazily when it may know more about
  * how the texture is going to be used and can optimize how it is
@@ -71,31 +71,31 @@ typedef struct _CoglTexture3D CoglTexture3D;
  *
  * The texture is still configurable until it has been allocated so
  * for example you can influence the internal format of the texture
- * using cogl_texture_set_components() and
- * cogl_texture_set_premultiplied().
+ * using cg_texture_set_components() and
+ * cg_texture_set_premultiplied().
  *
  * <note>This texture will fail to allocate later if
- * %COGL_FEATURE_ID_TEXTURE_3D is not advertised. Allocation can also
+ * %CG_FEATURE_ID_TEXTURE_3D is not advertised. Allocation can also
  * fail if the requested dimensions are not supported by the
  * GPU.</note>
  *
- * Returns: (transfer full): A new #CoglTexture3D object with no storage yet allocated.
+ * Returns: (transfer full): A new #cg_texture_3d_t object with no storage yet
+ * allocated.
  * Since: 1.10
  * Stability: Unstable
  */
-CoglTexture3D *
-cogl_texture_3d_new_with_size (CoglContext *context,
-                               int width,
-                               int height,
-                               int depth);
+cg_texture_3d_t *cg_texture_3d_new_with_size(cg_context_t *context,
+                                             int width,
+                                             int height,
+                                             int depth);
 
 /**
- * cogl_texture_3d_new_from_data:
- * @context: a #CoglContext
+ * cg_texture_3d_new_from_data:
+ * @context: a #cg_context_t
  * @width: width of the texture in pixels.
  * @height: height of the texture in pixels.
  * @depth: depth of the texture in pixels.
- * @format: the #CoglPixelFormat the buffer is stored in in RAM
+ * @format: the #cg_pixel_format_t the buffer is stored in in RAM
  * @rowstride: the memory offset in bytes between the starts of
  *    scanlines in @data or 0 to infer it from the width and format
  * @image_stride: the number of bytes from one image to the next. This
@@ -104,7 +104,7 @@ cogl_texture_3d_new_with_size (CoglContext *context,
  *    rows. Alternatively 0 can be passed to infer the @image_stride
  *    from the @height.
  * @data: pointer the memory region where the source buffer resides
- * @error: A CoglError return location.
+ * @error: A cg_error_t return location.
  *
  * Creates a low-level 3D texture and initializes it with @data. The
  * data is assumed to be packed array of @depth images. There can be
@@ -116,29 +116,28 @@ cogl_texture_3d_new_with_size (CoglContext *context,
  * is not possible to configure the texture before it is allocated. If
  * you do need to configure the texture before allocation (to specify
  * constraints on the internal format for example) then you can
- * instead create a #CoglBitmap for your data and use
- * cogl_texture_3d_new_from_bitmap().</note>
+ * instead create a #cg_bitmap_t for your data and use
+ * cg_texture_3d_new_from_bitmap().</note>
  *
- * Return value: (transfer full): the newly created #CoglTexture3D or
+ * Return value: (transfer full): the newly created #cg_texture_3d_t or
  *               %NULL if there was an error and an exception will be
  *               returned through @error.
  * Since: 1.10
  * Stability: Unstable
  */
-CoglTexture3D *
-cogl_texture_3d_new_from_data (CoglContext *context,
-                               int width,
-                               int height,
-                               int depth,
-                               CoglPixelFormat format,
-                               int rowstride,
-                               int image_stride,
-                               const uint8_t *data,
-                               CoglError **error);
+cg_texture_3d_t *cg_texture_3d_new_from_data(cg_context_t *context,
+                                             int width,
+                                             int height,
+                                             int depth,
+                                             cg_pixel_format_t format,
+                                             int rowstride,
+                                             int image_stride,
+                                             const uint8_t *data,
+                                             cg_error_t **error);
 
 /**
- * cogl_texture_3d_new_from_bitmap:
- * @bitmap: A #CoglBitmap object.
+ * cg_texture_3d_new_from_bitmap:
+ * @bitmap: A #cg_bitmap_t object.
  * @height: height of the texture in pixels.
  * @depth: depth of the texture in pixels.
  *
@@ -150,7 +149,7 @@ cogl_texture_3d_new_from_data (CoglContext *context,
  * this case it assumes there is padding between the images.
  *
  * The storage for the texture is not allocated before this function
- * returns. You can call cogl_texture_allocate() to explicitly
+ * returns. You can call cg_texture_allocate() to explicitly
  * allocate the underlying storage or preferably let Cogl
  * automatically allocate storage lazily when it may know more about
  * how the texture is going to be used and can optimize how it is
@@ -158,28 +157,26 @@ cogl_texture_3d_new_from_data (CoglContext *context,
  *
  * The texture is still configurable until it has been allocated so
  * for example you can influence the internal format of the texture
- * using cogl_texture_set_components() and
- * cogl_texture_set_premultiplied().
+ * using cg_texture_set_components() and
+ * cg_texture_set_premultiplied().
  *
  * <note>This texture will fail to allocate later if
- * %COGL_FEATURE_ID_TEXTURE_3D is not advertised. Allocation can also
+ * %CG_FEATURE_ID_TEXTURE_3D is not advertised. Allocation can also
  * fail if the requested dimensions are not supported by the
  * GPU.</note>
  *
- * Return value: (transfer full): a newly created #CoglTexture3D
+ * Return value: (transfer full): a newly created #cg_texture_3d_t
  * Since: 2.0
  * Stability: unstable
  */
-CoglTexture3D *
-cogl_texture_3d_new_from_bitmap (CoglBitmap *bitmap,
-                                 int height,
-                                 int depth);
+cg_texture_3d_t *
+cg_texture_3d_new_from_bitmap(cg_bitmap_t *bitmap, int height, int depth);
 
 /**
- * cogl_is_texture_3d:
- * @object: a #CoglObject
+ * cg_is_texture_3d:
+ * @object: a #cg_object_t
  *
- * Checks whether the given object references a #CoglTexture3D
+ * Checks whether the given object references a #cg_texture_3d_t
  *
  * Return value: %true if the passed object represents a 3D texture
  *   and %false otherwise
@@ -187,9 +184,8 @@ cogl_texture_3d_new_from_bitmap (CoglBitmap *bitmap,
  * Since: 1.4
  * Stability: Unstable
  */
-bool
-cogl_is_texture_3d (void *object);
+bool cg_is_texture_3d(void *object);
 
-COGL_END_DECLS
+CG_END_DECLS
 
-#endif /* __COGL_TEXTURE_3D_H */
+#endif /* __CG_TEXTURE_3D_H */

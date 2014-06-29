@@ -30,14 +30,14 @@
  *
  */
 
-#if !defined(__COGL_H_INSIDE__) && !defined(COGL_COMPILATION)
+#if !defined(__CG_H_INSIDE__) && !defined(CG_COMPILATION)
 #error "Only <cogl/cogl.h> can be included directly."
 #endif
 
-#ifndef __COGL_DEPTH_STATE_H__
-#define __COGL_DEPTH_STATE_H__
+#ifndef __CG_DEPTH_STATE_H__
+#define __CG_DEPTH_STATE_H__
 
-COGL_BEGIN_DECLS
+CG_BEGIN_DECLS
 
 /**
  * SECTION:cogl-depth-state
@@ -46,93 +46,89 @@ COGL_BEGIN_DECLS
  */
 
 /**
- * CoglDepthState:
+ * cg_depth_state_t:
  *
  * Since: 2.0
  */
 typedef struct {
-  /*< private >*/
-  uint32_t COGL_PRIVATE (magic);
+    /*< private >*/
+    uint32_t CG_PRIVATE(magic);
 
-  bool COGL_PRIVATE (test_enabled);
-  CoglDepthTestFunction COGL_PRIVATE (test_function);
-  bool COGL_PRIVATE (write_enabled);
-  float COGL_PRIVATE (range_near);
-  float COGL_PRIVATE (range_far);
+    bool CG_PRIVATE(test_enabled);
+    cg_depth_test_function_t CG_PRIVATE(test_function);
+    bool CG_PRIVATE(write_enabled);
+    float CG_PRIVATE(range_near);
+    float CG_PRIVATE(range_far);
 
-  uint32_t COGL_PRIVATE (padding0);
-  uint32_t COGL_PRIVATE (padding1);
-  uint32_t COGL_PRIVATE (padding2);
-  uint32_t COGL_PRIVATE (padding3);
-  uint32_t COGL_PRIVATE (padding4);
-  uint32_t COGL_PRIVATE (padding5);
-  uint32_t COGL_PRIVATE (padding6);
-  uint32_t COGL_PRIVATE (padding7);
-  uint32_t COGL_PRIVATE (padding8);
-  uint32_t COGL_PRIVATE (padding9);
-} CoglDepthState;
+    uint32_t CG_PRIVATE(padding0);
+    uint32_t CG_PRIVATE(padding1);
+    uint32_t CG_PRIVATE(padding2);
+    uint32_t CG_PRIVATE(padding3);
+    uint32_t CG_PRIVATE(padding4);
+    uint32_t CG_PRIVATE(padding5);
+    uint32_t CG_PRIVATE(padding6);
+    uint32_t CG_PRIVATE(padding7);
+    uint32_t CG_PRIVATE(padding8);
+    uint32_t CG_PRIVATE(padding9);
+} cg_depth_state_t;
 
 /**
- * cogl_depth_state_init:
- * @state: A #CoglDepthState struct
+ * cg_depth_state_init:
+ * @state: A #cg_depth_state_t struct
  *
  * Initializes the members of @state to their default values.
  *
- * You should never pass an un initialized #CoglDepthState structure
- * to cogl_pipeline_set_depth_state().
+ * You should never pass an un initialized #cg_depth_state_t structure
+ * to cg_pipeline_set_depth_state().
  *
  * Since: 2.0
  * Stability: Unstable
  */
-void
-cogl_depth_state_init (CoglDepthState *state);
+void cg_depth_state_init(cg_depth_state_t *state);
 
 /**
- * cogl_depth_state_set_test_enabled:
- * @state: A #CoglDepthState struct
+ * cg_depth_state_set_test_enabled:
+ * @state: A #cg_depth_state_t struct
  * @enable: The enable state you want
  *
  * Enables or disables depth testing according to the value of
  * @enable.
  *
- * If depth testing is enable then the #CoglDepthTestFunction set
- * using cogl_depth_state_set_test_function() us used to evaluate
+ * If depth testing is enable then the #cg_depth_test_function_t set
+ * using cg_depth_state_set_test_function() us used to evaluate
  * the depth value of incoming fragments against the corresponding
  * value stored in the current depth buffer, and if the test passes
  * then the fragments depth value is used to update the depth buffer.
  * (unless you have disabled depth writing via
- * cogl_depth_state_set_write_enabled())
+ * cg_depth_state_set_write_enabled())
  *
  * By default depth testing is disabled.
  *
  * NB: this won't directly affect the state of the GPU. You have
- * to then set the state on a #CoglPipeline using
- * cogl_pipeline_set_depth_state()
+ * to then set the state on a #cg_pipeline_t using
+ * cg_pipeline_set_depth_state()
  *
  * Since: 2.0
  * Stability: Unstable
  */
-void
-cogl_depth_state_set_test_enabled (CoglDepthState *state,
-                                   bool enable);
+void cg_depth_state_set_test_enabled(cg_depth_state_t *state, bool enable);
 
 /**
- * cogl_depth_state_get_test_enabled:
- * @state: A #CoglDepthState struct
+ * cg_depth_state_get_test_enabled:
+ * @state: A #cg_depth_state_t struct
  *
  * Gets the current depth test enabled state as previously set by
- * cogl_depth_state_set_test_enabled().
+ * cg_depth_state_set_test_enabled().
  *
  * Returns: The pipeline's current depth test enabled state.
  * Since: 2.0
  * Stability: Unstable
  */
-bool
-cogl_depth_state_get_test_enabled (CoglDepthState *state);
+bool cg_depth_state_get_test_enabled(cg_depth_state_t *state);
 
 /**
- * cogl_depth_state_set_write_enabled:
- * @state: A #CoglDepthState struct
+ * cg_depth_state_set_write_enabled:
+ * @state: A #cg_depth_state_t struct
  * @enable: The enable state you want
  *
  * Enables or disables depth buffer writing according to the value of
@@ -144,69 +140,65 @@ cogl_depth_state_get_test_enabled (CoglDepthState *state);
  * By default depth writing is enabled
  *
  * NB: this won't directly affect the state of the GPU. You have
- * to then set the state on a #CoglPipeline using
- * cogl_pipeline_set_depth_state()
+ * to then set the state on a #cg_pipeline_t using
+ * cg_pipeline_set_depth_state()
  *
  * Since: 2.0
  * Stability: Unstable
  */
-void
-cogl_depth_state_set_write_enabled (CoglDepthState *state,
-                                    bool enable);
+void cg_depth_state_set_write_enabled(cg_depth_state_t *state, bool enable);
 
 /**
- * cogl_depth_state_get_write_enabled:
- * @state: A #CoglDepthState struct
+ * cg_depth_state_get_write_enabled:
+ * @state: A #cg_depth_state_t struct
  *
  * Gets the depth writing enable state as set by the corresponding
- * cogl_depth_state_set_write_enabled().
+ * cg_depth_state_set_write_enabled().
  *
  * Returns: The current depth writing enable state
  * Since: 2.0
  * Stability: Unstable
  */
-bool
-cogl_depth_state_get_write_enabled (CoglDepthState *state);
+bool cg_depth_state_get_write_enabled(cg_depth_state_t *state);
 
 /**
- * cogl_depth_state_set_test_function:
- * @state: A #CoglDepthState struct
- * @function: The #CoglDepthTestFunction to set
+ * cg_depth_state_set_test_function:
+ * @state: A #cg_depth_state_t struct
+ * @function: The #cg_depth_test_function_t to set
  *
- * Sets the #CoglDepthTestFunction used to compare the depth value of
+ * Sets the #cg_depth_test_function_t used to compare the depth value of
  * an incoming fragment against the corresponding value in the current
  * depth buffer.
  *
- * By default the depth test function is %COGL_DEPTH_TEST_FUNCTION_LESS
+ * By default the depth test function is %CG_DEPTH_TEST_FUNCTION_LESS
  *
  * NB: this won't directly affect the state of the GPU. You have
- * to then set the state on a #CoglPipeline using
- * cogl_pipeline_set_depth_state()
+ * to then set the state on a #cg_pipeline_t using
+ * cg_pipeline_set_depth_state()
  *
  * Since: 2.0
  * Stability: Unstable
  */
-void
-cogl_depth_state_set_test_function (CoglDepthState *state,
-                                    CoglDepthTestFunction function);
+void cg_depth_state_set_test_function(cg_depth_state_t *state,
+                                      cg_depth_test_function_t function);
 
 /**
- * cogl_depth_state_get_test_function:
- * @state: A #CoglDepthState struct
+ * cg_depth_state_get_test_function:
+ * @state: A #cg_depth_state_t struct
  *
  * Gets the current depth test enable state as previously set via
- * cogl_depth_state_set_test_enabled().
+ * cg_depth_state_set_test_enabled().
  *
  * Returns: The current depth test enable state.
  * Since: 2.0
  * Stability: Unstable
  */
-CoglDepthTestFunction
-cogl_depth_state_get_test_function (CoglDepthState *state);
+cg_depth_test_function_t
+cg_depth_state_get_test_function(cg_depth_state_t *state);
 
 /**
- * cogl_depth_state_set_range:
- * @state: A #CoglDepthState object
+ * cg_depth_state_set_range:
+ * @state: A #cg_depth_state_t object
  * @near_val: The near component of the desired depth range which will be
  * clamped to the range [0, 1]
  * @far_val: The far component of the desired depth range which will be
@@ -228,43 +220,41 @@ cogl_depth_state_get_test_function (CoglDepthState *state);
  * If your driver does not support this feature (for example you are
  * using GLES 1 drivers) then if you don't use the default range
  * values you will get an error reported when calling
- * cogl_pipeline_set_depth_state (). You can check ahead of time for
- * the %COGL_FEATURE_ID_DEPTH_RANGE feature with
- * cogl_has_feature() to know if this function will succeed.
+ * cg_pipeline_set_depth_state (). You can check ahead of time for
+ * the %CG_FEATURE_ID_DEPTH_RANGE feature with
+ * cg_has_feature() to know if this function will succeed.
  *
  * By default normalized device coordinate depth values are mapped to
  * the full range of depth buffer values, [0, 1].
  *
  * NB: this won't directly affect the state of the GPU. You have
- * to then set the state on a #CoglPipeline using
- * cogl_pipeline_set_depth_state().
+ * to then set the state on a #cg_pipeline_t using
+ * cg_pipeline_set_depth_state().
  *
  * Since: 2.0
  * Stability: Unstable
  */
-void
-cogl_depth_state_set_range (CoglDepthState *state,
-                            float near_val,
-                            float far_val);
+void cg_depth_state_set_range(cg_depth_state_t *state,
+                              float near_val,
+                              float far_val);
 
 /**
- * cogl_depth_state_get_range:
- * @state: A #CoglDepthState object
+ * cg_depth_state_get_range:
+ * @state: A #cg_depth_state_t object
  * @near_val: A pointer to store the near component of the depth range
  * @far_val: A pointer to store the far component of the depth range
  *
  * Gets the current range to which normalized depth values are mapped
  * before writing to the depth buffer. This corresponds to the range
- * set with cogl_depth_state_set_range().
+ * set with cg_depth_state_set_range().
  *
  * Since: 2.0
  * Stability: Unstable
  */
-void
-cogl_depth_state_get_range (CoglDepthState *state,
-                            float *near_val,
-                            float *far_val);
+void cg_depth_state_get_range(cg_depth_state_t *state,
+                              float *near_val,
+                              float *far_val);
 
-COGL_END_DECLS
+CG_END_DECLS
 
-#endif /* __COGL_DEPTH_STATE_H__ */
+#endif /* __CG_DEPTH_STATE_H__ */

@@ -31,19 +31,19 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#ifndef __COGL_MATRIX_H
-#define __COGL_MATRIX_H
+#ifndef __CG_MATRIX_H
+#define __CG_MATRIX_H
 
 #include <cogl/cogl-defines.h>
 
-#ifdef COGL_HAS_GTYPE_SUPPORT
+#ifdef CG_HAS_GTYPE_SUPPORT
 #include <glib-object.h>
-#endif /* COGL_HAS_GTYPE_SUPPORT */
+#endif /* CG_HAS_GTYPE_SUPPORT */
 
 #include "cogl-types.h"
 #include "cogl-quaternion.h"
 
-COGL_BEGIN_DECLS
+CG_BEGIN_DECLS
 
 /**
  * SECTION:cogl-matrix
@@ -55,17 +55,17 @@ COGL_BEGIN_DECLS
  */
 
 /**
- * CoglMatrix:
+ * cg_matrix_t:
  *
- * A CoglMatrix holds a 4x4 transform matrix. This is a single precision,
+ * A cg_matrix_t holds a 4x4 transform matrix. This is a single precision,
  * column-major matrix which means it is compatible with what OpenGL expects.
  *
- * A CoglMatrix can represent transforms such as, rotations, scaling,
+ * A cg_matrix_t can represent transforms such as, rotations, scaling,
  * translation, sheering, and linear projections. You can combine these
  * transforms by multiplying multiple matrices in the order you want them
  * applied.
  *
- * The transformation of a vertex (x, y, z, w) by a CoglMatrix is given by:
+ * The transformation of a vertex (x, y, z, w) by a cg_matrix_t is given by:
  *
  * |[
  *   x_new = xx * x + xy * y + xz * z + xw * w
@@ -76,46 +76,45 @@ COGL_BEGIN_DECLS
  *
  * Where w is normally 1
  *
- * <note>You must consider the members of the CoglMatrix structure read only,
- * and all matrix modifications must be done via the cogl_matrix API. This
+ * <note>You must consider the members of the cg_matrix_t structure read only,
+ * and all matrix modifications must be done via the cg_matrix API. This
  * allows Cogl to annotate the matrices internally. Violation of this will give
  * undefined results. If you need to initialize a matrix with a constant other
- * than the identity matrix you can use cogl_matrix_init_from_array().</note>
+ * than the identity matrix you can use cg_matrix_init_from_array().</note>
  */
-struct _CoglMatrix
-{
-  /* column 0 */
-  float xx;
-  float yx;
-  float zx;
-  float wx;
+struct _cg_matrix_t {
+    /* column 0 */
+    float xx;
+    float yx;
+    float zx;
+    float wx;
 
-  /* column 1 */
-  float xy;
-  float yy;
-  float zy;
-  float wy;
+    /* column 1 */
+    float xy;
+    float yy;
+    float zy;
+    float wy;
 
-  /* column 2 */
-  float xz;
-  float yz;
-  float zz;
-  float wz;
+    /* column 2 */
+    float xz;
+    float yz;
+    float zz;
+    float wz;
 
-  /* column 3 */
-  float xw;
-  float yw;
-  float zw;
-  float ww;
+    /* column 3 */
+    float xw;
+    float yw;
+    float zw;
+    float ww;
 
-  /*< private >*/
-  unsigned int COGL_PRIVATE (type) : 16;
-  unsigned int COGL_PRIVATE (flags) : 16;
+    /*< private >*/
+    unsigned int CG_PRIVATE(type) : 16;
+    unsigned int CG_PRIVATE(flags) : 16;
 };
-COGL_STRUCT_SIZE_ASSERT (CoglMatrix, sizeof (float) * 16 + 4);
+CG_STRUCT_SIZE_ASSERT(cg_matrix_t, sizeof(float) * 16 + 4);
 
 /**
- * cogl_matrix_init_identity:
+ * cg_matrix_init_identity:
  * @matrix: A 4x4 transformation matrix
  *
  * Resets matrix to the identity matrix:
@@ -127,11 +126,10 @@ COGL_STRUCT_SIZE_ASSERT (CoglMatrix, sizeof (float) * 16 + 4);
  *   .wx=0; .wy=0; .wz=0; .ww=1;
  * ]|
  */
-void
-cogl_matrix_init_identity (CoglMatrix *matrix);
+void cg_matrix_init_identity(cg_matrix_t *matrix);
 
 /**
- * cogl_matrix_init_translation:
+ * cg_matrix_init_translation:
  * @matrix: A 4x4 transformation matrix
  * @tx: x coordinate of the translation vector
  * @ty: y coordinate of the translation vector
@@ -149,13 +147,10 @@ cogl_matrix_init_identity (CoglMatrix *matrix);
  * Since: 2.0
  */
 void
-cogl_matrix_init_translation (CoglMatrix *matrix,
-                              float       tx,
-                              float       ty,
-                              float       tz);
+cg_matrix_init_translation(cg_matrix_t *matrix, float tx, float ty, float tz);
 
 /**
- * cogl_matrix_multiply:
+ * cg_matrix_multiply:
  * @result: The address of a 4x4 matrix to store the result in
  * @a: A 4x4 transformation matrix
  * @b: A 4x4 transformation matrix
@@ -166,13 +161,12 @@ cogl_matrix_init_translation (CoglMatrix *matrix,
  * <note>It is possible to multiply the @a matrix in-place, so
  * @result can be equal to @a but can't be equal to @b.</note>
  */
-void
-cogl_matrix_multiply (CoglMatrix *result,
-		      const CoglMatrix *a,
-		      const CoglMatrix *b);
+void cg_matrix_multiply(cg_matrix_t *result,
+                        const cg_matrix_t *a,
+                        const cg_matrix_t *b);
 
 /**
- * cogl_matrix_rotate:
+ * cg_matrix_rotate:
  * @matrix: A 4x4 transformation matrix
  * @angle: The angle you want to rotate in degrees
  * @x: X component of your rotation vector
@@ -183,42 +177,35 @@ cogl_matrix_multiply (CoglMatrix *result,
  * of @angle degrees around the specified 3D vector.
  */
 void
-cogl_matrix_rotate (CoglMatrix *matrix,
-		    float angle,
-		    float x,
-		    float y,
-		    float z);
+cg_matrix_rotate(cg_matrix_t *matrix, float angle, float x, float y, float z);
 
 /**
- * cogl_matrix_rotate_quaternion:
+ * cg_matrix_rotate_quaternion:
  * @matrix: A 4x4 transformation matrix
  * @quaternion: A quaternion describing a rotation
  *
  * Multiplies @matrix with a rotation transformation described by the
- * given #CoglQuaternion.
+ * given #cg_quaternion_t.
  *
  * Since: 2.0
  */
-void
-cogl_matrix_rotate_quaternion (CoglMatrix *matrix,
-                               const CoglQuaternion *quaternion);
+void cg_matrix_rotate_quaternion(cg_matrix_t *matrix,
+                                 const cg_quaternion_t *quaternion);
 
 /**
- * cogl_matrix_rotate_euler:
+ * cg_matrix_rotate_euler:
  * @matrix: A 4x4 transformation matrix
  * @euler: A euler describing a rotation
  *
  * Multiplies @matrix with a rotation transformation described by the
- * given #CoglEuler.
+ * given #cg_euler_t.
  *
  * Since: 2.0
  */
-void
-cogl_matrix_rotate_euler (CoglMatrix *matrix,
-                          const CoglEuler *euler);
+void cg_matrix_rotate_euler(cg_matrix_t *matrix, const cg_euler_t *euler);
 
 /**
- * cogl_matrix_translate:
+ * cg_matrix_translate:
  * @matrix: A 4x4 transformation matrix
  * @x: The X translation you want to apply
  * @y: The Y translation you want to apply
@@ -227,14 +214,10 @@ cogl_matrix_rotate_euler (CoglMatrix *matrix,
  * Multiplies @matrix with a transform matrix that translates along
  * the X, Y and Z axis.
  */
-void
-cogl_matrix_translate (CoglMatrix *matrix,
-		       float x,
-		       float y,
-		       float z);
+void cg_matrix_translate(cg_matrix_t *matrix, float x, float y, float z);
 
 /**
- * cogl_matrix_scale:
+ * cg_matrix_scale:
  * @matrix: A 4x4 transformation matrix
  * @sx: The X scale factor
  * @sy: The Y scale factor
@@ -243,14 +226,10 @@ cogl_matrix_translate (CoglMatrix *matrix,
  * Multiplies @matrix with a transform matrix that scales along the X,
  * Y and Z axis.
  */
-void
-cogl_matrix_scale (CoglMatrix *matrix,
-		   float sx,
-		   float sy,
-		   float sz);
+void cg_matrix_scale(cg_matrix_t *matrix, float sx, float sy, float sz);
 
 /**
- * cogl_matrix_look_at:
+ * cg_matrix_look_at:
  * @matrix: A 4x4 transformation matrix
  * @eye_position_x: The X coordinate to look from
  * @eye_position_y: The Y coordinate to look from
@@ -292,20 +271,19 @@ cogl_matrix_scale (CoglMatrix *matrix,
  * Since: 1.8
  * Stability: unstable
  */
-void
-cogl_matrix_look_at (CoglMatrix *matrix,
-                     float eye_position_x,
-                     float eye_position_y,
-                     float eye_position_z,
-                     float object_x,
-                     float object_y,
-                     float object_z,
-                     float world_up_x,
-                     float world_up_y,
-                     float world_up_z);
+void cg_matrix_look_at(cg_matrix_t *matrix,
+                       float eye_position_x,
+                       float eye_position_y,
+                       float eye_position_z,
+                       float object_x,
+                       float object_y,
+                       float object_z,
+                       float world_up_x,
+                       float world_up_y,
+                       float world_up_z);
 
 /**
- * cogl_matrix_frustum:
+ * cg_matrix_frustum:
  * @matrix: A 4x4 transformation matrix
  * @left: X position of the left clipping plane where it
  *   intersects the near clipping plane
@@ -320,17 +298,16 @@ cogl_matrix_look_at (CoglMatrix *matrix,
  *
  * Multiplies @matrix by the given frustum perspective matrix.
  */
-void
-cogl_matrix_frustum (CoglMatrix *matrix,
-                     float       left,
-                     float       right,
-                     float       bottom,
-                     float       top,
-                     float       z_near,
-                     float       z_far);
+void cg_matrix_frustum(cg_matrix_t *matrix,
+                       float left,
+                       float right,
+                       float bottom,
+                       float top,
+                       float z_near,
+                       float z_far);
 
 /**
- * cogl_matrix_perspective:
+ * cg_matrix_perspective:
  * @matrix: A 4x4 transformation matrix
  * @fov_y: Vertical field of view angle in degrees.
  * @aspect: The (width over height) aspect ratio for display
@@ -345,15 +322,11 @@ cogl_matrix_frustum (CoglMatrix *matrix,
  * since there wont be enough precision to identify the depth of
  * objects near to each other.</note>
  */
-void
-cogl_matrix_perspective (CoglMatrix *matrix,
-                         float       fov_y,
-                         float       aspect,
-                         float       z_near,
-                         float       z_far);
+void cg_matrix_perspective(
+    cg_matrix_t *matrix, float fov_y, float aspect, float z_near, float z_far);
 
 /**
- * cogl_matrix_orthographic:
+ * cg_matrix_orthographic:
  * @matrix: A 4x4 transformation matrix
  * @x_1: The x coordinate for the first vertical clipping plane
  * @y_1: The y coordinate for the first horizontal clipping plane
@@ -371,17 +344,16 @@ cogl_matrix_perspective (CoglMatrix *matrix,
  * Since: 1.10
  * Stability: unstable
  */
-void
-cogl_matrix_orthographic (CoglMatrix *matrix,
-                          float x_1,
-                          float y_1,
-                          float x_2,
-                          float y_2,
-                          float near,
-                          float far);
+void cg_matrix_orthographic(cg_matrix_t *matrix,
+                            float x_1,
+                            float y_1,
+                            float x_2,
+                            float y_2,
+                            float near,
+                            float far);
 
 /**
- * cogl_matrix_view_2d_in_frustum:
+ * cg_matrix_view_2d_in_frustum:
  * @matrix: A 4x4 transformation matrix
  * @left: coord of left vertical clipping plane
  * @right: coord of right vertical clipping plane
@@ -391,7 +363,7 @@ cogl_matrix_orthographic (CoglMatrix *matrix,
  *   a positive number.
  * @z_2d: The distance to the 2D plane. (Should always be positive and
  *   be between @z_near and the z_far value that was passed to
- *   cogl_matrix_frustum())
+ *   cg_matrix_frustum())
  * @width_2d: The width of the 2D coordinate system
  * @height_2d: The height of the 2D coordinate system
  *
@@ -401,7 +373,7 @@ cogl_matrix_orthographic (CoglMatrix *matrix,
  *
  * Note: this doesn't multiply the matrix by any projection matrix,
  * but it assumes you have a perspective projection as defined by
- * passing the corresponding arguments to cogl_matrix_frustum().
+ * passing the corresponding arguments to cg_matrix_frustum().
 
  * Toolkits such as Clutter that mix 2D and 3D drawing can use this to
  * create a 2D coordinate system within a 3D perspective projected
@@ -410,19 +382,18 @@ cogl_matrix_orthographic (CoglMatrix *matrix,
  * Since: 1.8
  * Stability: unstable
  */
-void
-cogl_matrix_view_2d_in_frustum (CoglMatrix *matrix,
-                                float left,
-                                float right,
-                                float bottom,
-                                float top,
-                                float z_near,
-                                float z_2d,
-                                float width_2d,
-                                float height_2d);
+void cg_matrix_view_2d_in_frustum(cg_matrix_t *matrix,
+                                  float left,
+                                  float right,
+                                  float bottom,
+                                  float top,
+                                  float z_near,
+                                  float z_2d,
+                                  float width_2d,
+                                  float height_2d);
 
 /**
- * cogl_matrix_view_2d_in_perspective:
+ * cg_matrix_view_2d_in_perspective:
  * @fov_y: A field of view angle for the Y axis
  * @aspect: The ratio of width to height determining the field of view angle
  *   for the x axis.
@@ -430,7 +401,7 @@ cogl_matrix_view_2d_in_frustum (CoglMatrix *matrix,
  *   a positive number.
  * @z_2d: The distance to the 2D plane. (Should always be positive and
  *   be between @z_near and the z_far value that was passed to
- *   cogl_matrix_frustum())
+ *   cg_matrix_frustum())
  * @width_2d: The width of the 2D coordinate system
  * @height_2d: The height of the 2D coordinate system
  *
@@ -440,7 +411,7 @@ cogl_matrix_view_2d_in_frustum (CoglMatrix *matrix,
  *
  * Note: this doesn't multiply the matrix by any projection matrix,
  * but it assumes you have a perspective projection as defined by
- * passing the corresponding arguments to cogl_matrix_perspective().
+ * passing the corresponding arguments to cg_matrix_perspective().
  *
  * Toolkits such as Clutter that mix 2D and 3D drawing can use this to
  * create a 2D coordinate system within a 3D perspective projected
@@ -449,62 +420,54 @@ cogl_matrix_view_2d_in_frustum (CoglMatrix *matrix,
  * Since: 1.8
  * Stability: unstable
  */
-void
-cogl_matrix_view_2d_in_perspective (CoglMatrix *matrix,
-                                    float fov_y,
-                                    float aspect,
-                                    float z_near,
-                                    float z_2d,
-                                    float width_2d,
-                                    float height_2d);
-
+void cg_matrix_view_2d_in_perspective(cg_matrix_t *matrix,
+                                      float fov_y,
+                                      float aspect,
+                                      float z_near,
+                                      float z_2d,
+                                      float width_2d,
+                                      float height_2d);
 
 /**
- * cogl_matrix_init_from_array:
+ * cg_matrix_init_from_array:
  * @matrix: A 4x4 transformation matrix
  * @array: A linear array of 16 floats (column-major order)
  *
  * Initializes @matrix with the contents of @array
  */
-void
-cogl_matrix_init_from_array (CoglMatrix *matrix,
-                             const float *array);
+void cg_matrix_init_from_array(cg_matrix_t *matrix, const float *array);
 
 /**
- * cogl_matrix_get_array:
+ * cg_matrix_get_array:
  * @matrix: A 4x4 transformation matrix
  *
  * Casts @matrix to a float array which can be directly passed to OpenGL.
  *
  * Return value: a pointer to the float array
  */
-const float *
-cogl_matrix_get_array (const CoglMatrix *matrix);
+const float *cg_matrix_get_array(const cg_matrix_t *matrix);
 
 /**
- * cogl_matrix_init_from_quaternion:
+ * cg_matrix_init_from_quaternion:
  * @matrix: A 4x4 transformation matrix
- * @quaternion: A #CoglQuaternion
+ * @quaternion: A #cg_quaternion_t
  *
- * Initializes @matrix from a #CoglQuaternion rotation.
+ * Initializes @matrix from a #cg_quaternion_t rotation.
  */
-void
-cogl_matrix_init_from_quaternion (CoglMatrix *matrix,
-                                  const CoglQuaternion *quaternion);
+void cg_matrix_init_from_quaternion(cg_matrix_t *matrix,
+                                    const cg_quaternion_t *quaternion);
 
 /**
- * cogl_matrix_init_from_euler:
+ * cg_matrix_init_from_euler:
  * @matrix: A 4x4 transformation matrix
- * @euler: A #CoglEuler
+ * @euler: A #cg_euler_t
  *
- * Initializes @matrix from a #CoglEuler rotation.
+ * Initializes @matrix from a #cg_euler_t rotation.
  */
-void
-cogl_matrix_init_from_euler (CoglMatrix *matrix,
-                             const CoglEuler *euler);
+void cg_matrix_init_from_euler(cg_matrix_t *matrix, const cg_euler_t *euler);
 
 /**
- * cogl_matrix_equal:
+ * cg_matrix_equal:
  * @v1: A 4x4 transformation matrix
  * @v2: A 4x4 transformation matrix
  *
@@ -515,48 +478,45 @@ cogl_matrix_init_from_euler (CoglMatrix *matrix,
  *
  * Since: 1.4
  */
-bool
-cogl_matrix_equal (const void *v1, const void *v2);
+bool cg_matrix_equal(const void *v1, const void *v2);
 
 /**
- * cogl_matrix_copy:
+ * cg_matrix_copy:
  * @matrix: A 4x4 transformation matrix you want to copy
  *
- * Allocates a new #CoglMatrix on the heap and initializes it with
+ * Allocates a new #cg_matrix_t on the heap and initializes it with
  * the same values as @matrix.
  *
- * Return value: (transfer full): A newly allocated #CoglMatrix which
- * should be freed using cogl_matrix_free()
+ * Return value: (transfer full): A newly allocated #cg_matrix_t which
+ * should be freed using cg_matrix_free()
  *
  * Since: 1.6
  */
-CoglMatrix *
-cogl_matrix_copy (const CoglMatrix *matrix);
+cg_matrix_t *cg_matrix_copy(const cg_matrix_t *matrix);
 
 /**
- * cogl_matrix_free:
+ * cg_matrix_free:
  * @matrix: A 4x4 transformation matrix you want to free
  *
- * Frees a #CoglMatrix that was previously allocated via a call to
- * cogl_matrix_copy().
+ * Frees a #cg_matrix_t that was previously allocated via a call to
+ * cg_matrix_copy().
  *
  * Since: 1.6
  */
-void
-cogl_matrix_free (CoglMatrix *matrix);
+void cg_matrix_free(cg_matrix_t *matrix);
 
 /**
- * cogl_matrix_get_inverse:
+ * cg_matrix_get_inverse:
  * @matrix: A 4x4 transformation matrix
  * @inverse: (out): The destination for a 4x4 inverse transformation matrix
  *
  * Gets the inverse transform of a given matrix and uses it to initialize
- * a new #CoglMatrix.
+ * a new #cg_matrix_t.
  *
  * <note>Although the first parameter is annotated as const to indicate
  * that the transform it represents isn't modified this function may
  * technically save a copy of the inverse transform within the given
- * #CoglMatrix so that subsequent requests for the inverse transform may
+ * #cg_matrix_t so that subsequent requests for the inverse transform may
  * avoid costly inversion calculations.</note>
  *
  * Return value: %true if the inverse was successfully calculated or %false
@@ -565,16 +525,14 @@ cogl_matrix_free (CoglMatrix *matrix);
  *
  * Since: 1.2
  */
-bool
-cogl_matrix_get_inverse (const CoglMatrix *matrix,
-                         CoglMatrix *inverse);
+bool cg_matrix_get_inverse(const cg_matrix_t *matrix, cg_matrix_t *inverse);
 
-/* FIXME: to be consistent with cogl_matrix_{transform,project}_points
- * this could be renamed to cogl_matrix_project_point for Cogl 2.0...
+/* FIXME: to be consistent with cg_matrix_{transform,project}_points
+ * this could be renamed to cg_matrix_project_point for Cogl 2.0...
  */
 
 /**
- * cogl_matrix_transform_point:
+ * cg_matrix_transform_point:
  * @matrix: A 4x4 transformation matrix
  * @x: (inout): The X component of your points position
  * @y: (inout): The Y component of your points position
@@ -584,15 +542,11 @@ cogl_matrix_get_inverse (const CoglMatrix *matrix,
  * Transforms a point whos position is given and returned as four float
  * components.
  */
-void
-cogl_matrix_transform_point (const CoglMatrix *matrix,
-                             float *x,
-                             float *y,
-                             float *z,
-                             float *w);
+void cg_matrix_transform_point(
+    const cg_matrix_t *matrix, float *x, float *y, float *z, float *w);
 
 /**
- * cogl_matrix_transform_points:
+ * cg_matrix_transform_points:
  * @matrix: A transformation matrix
  * @n_components: The number of position components for each input point.
  *                (either 2 or 3)
@@ -609,7 +563,7 @@ cogl_matrix_transform_point (const CoglMatrix *matrix,
  * transform in-place.
  *
  * If you need to transform 4 component points see
- * cogl_matrix_project_points().
+ * cg_matrix_project_points().
  *
  * Here's an example with differing input/output strides:
  * |[
@@ -624,12 +578,12 @@ cogl_matrix_transform_point (const CoglMatrix *matrix,
  * } MyOutVertex;
  * MyInVertex vertices[N_VERTICES];
  * MyOutVertex results[N_VERTICES];
- * CoglMatrix matrix;
+ * cg_matrix_t matrix;
  *
  * my_load_vertices (vertices);
  * my_get_matrix (&matrix);
  *
- * cogl_matrix_transform_points (&matrix,
+ * cg_matrix_transform_points (&matrix,
  *                               2,
  *                               sizeof (MyInVertex),
  *                               &vertices[0].x,
@@ -640,17 +594,16 @@ cogl_matrix_transform_point (const CoglMatrix *matrix,
  *
  * Stability: unstable
  */
-void
-cogl_matrix_transform_points (const CoglMatrix *matrix,
-                              int n_components,
-                              size_t stride_in,
-                              const void *points_in,
-                              size_t stride_out,
-                              void *points_out,
-                              int n_points);
+void cg_matrix_transform_points(const cg_matrix_t *matrix,
+                                int n_components,
+                                size_t stride_in,
+                                const void *points_in,
+                                size_t stride_out,
+                                void *points_out,
+                                int n_points);
 
 /**
- * cogl_matrix_project_points:
+ * cg_matrix_project_points:
  * @matrix: A projection matrix
  * @n_components: The number of position components for each input point.
  *                (either 2, 3 or 4)
@@ -679,12 +632,12 @@ cogl_matrix_transform_points (const CoglMatrix *matrix,
  * } MyOutVertex;
  * MyInVertex vertices[N_VERTICES];
  * MyOutVertex results[N_VERTICES];
- * CoglMatrix matrix;
+ * cg_matrix_t matrix;
  *
  * my_load_vertices (vertices);
  * my_get_matrix (&matrix);
  *
- * cogl_matrix_project_points (&matrix,
+ * cg_matrix_project_points (&matrix,
  *                             2,
  *                             sizeof (MyInVertex),
  *                             &vertices[0].x,
@@ -695,67 +648,61 @@ cogl_matrix_transform_points (const CoglMatrix *matrix,
  *
  * Stability: unstable
  */
-void
-cogl_matrix_project_points (const CoglMatrix *matrix,
-                            int n_components,
-                            size_t stride_in,
-                            const void *points_in,
-                            size_t stride_out,
-                            void *points_out,
-                            int n_points);
+void cg_matrix_project_points(const cg_matrix_t *matrix,
+                              int n_components,
+                              size_t stride_in,
+                              const void *points_in,
+                              size_t stride_out,
+                              void *points_out,
+                              int n_points);
 
 /**
- * cogl_matrix_is_identity:
- * @matrix: A #CoglMatrix
+ * cg_matrix_is_identity:
+ * @matrix: A #cg_matrix_t
  *
  * Determines if the given matrix is an identity matrix.
  *
  * Returns: %true if @matrix is an identity matrix else %false
  * Since: 1.8
  */
-bool
-cogl_matrix_is_identity (const CoglMatrix *matrix);
+bool cg_matrix_is_identity(const cg_matrix_t *matrix);
 
 /**
- * cogl_matrix_transpose:
- * @matrix: A #CoglMatrix
+ * cg_matrix_transpose:
+ * @matrix: A #cg_matrix_t
  *
  * Replaces @matrix with its transpose. Ie, every element (i,j) in the
  * new matrix is taken from element (j,i) in the old matrix.
  *
  * Since: 1.10
  */
-void
-cogl_matrix_transpose (CoglMatrix *matrix);
+void cg_matrix_transpose(cg_matrix_t *matrix);
 
 /**
- * cogl_debug_matrix_print:
- * @matrix: A #CoglMatrix
+ * cg_debug_matrix_print:
+ * @matrix: A #cg_matrix_t
  *
- * Prints the contents of a #CoglMatrix to stdout.
+ * Prints the contents of a #cg_matrix_t to stdout.
  *
  * Since: 2.0
  */
-void
-cogl_debug_matrix_print (const CoglMatrix *matrix);
+void cg_debug_matrix_print(const cg_matrix_t *matrix);
 
-#ifdef COGL_HAS_GTYPE_SUPPORT
+#ifdef CG_HAS_GTYPE_SUPPORT
 
-#define COGL_GTYPE_TYPE_MATRIX (cogl_gtype_matrix_get_type ())
+#define CG_GTYPE_TYPE_MATRIX (cg_gtype_matrix_get_type())
 
 /**
- * cogl_gtype_matrix_get_type:
+ * cg_gtype_matrix_get_type:
  *
- * Returns: the GType for the registered "CoglMatrix" boxed type. This
+ * Returns: the GType for the registered "cg_matrix_t" boxed type. This
  * can be used for example to define GObject properties that accept a
- * #CoglMatrix value.
+ * #cg_matrix_t value.
  */
-GType
-cogl_gtype_matrix_get_type (void);
+GType cg_gtype_matrix_get_type(void);
 
-#endif /* COGL_HAS_GTYPE_SUPPORT */
+#endif /* CG_HAS_GTYPE_SUPPORT */
 
-COGL_END_DECLS
+CG_END_DECLS
 
-#endif /* __COGL_MATRIX_H */
-
+#endif /* __CG_MATRIX_H */

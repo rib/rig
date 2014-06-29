@@ -31,21 +31,21 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#if !defined(__COGL_H_INSIDE__) && !defined(COGL_COMPILATION)
+#if !defined(__CG_H_INSIDE__) && !defined(CG_COMPILATION)
 #error "Only <cogl/cogl.h> can be included directly."
 #endif
 
-#ifndef __COGL_ATTRIBUTE_BUFFER_H__
-#define __COGL_ATTRIBUTE_BUFFER_H__
+#ifndef __CG_ATTRIBUTE_BUFFER_H__
+#define __CG_ATTRIBUTE_BUFFER_H__
 
-/* We forward declare the CoglAttributeBuffer type here to avoid some circular
+/* We forward declare the cg_attribute_buffer_t type here to avoid some circular
  * dependency issues with the following headers.
  */
-typedef struct _CoglAttributeBuffer CoglAttributeBuffer;
+typedef struct _cg_attribute_buffer_t cg_attribute_buffer_t;
 
 #include <cogl/cogl-context.h>
 
-COGL_BEGIN_DECLS
+CG_BEGIN_DECLS
 
 /**
  * SECTION:cogl-attribute-buffer
@@ -55,43 +55,43 @@ COGL_BEGIN_DECLS
  * FIXME
  */
 
-#define COGL_ATTRIBUTE_BUFFER(buffer) ((CoglAttributeBuffer *)(buffer))
+#define CG_ATTRIBUTE_BUFFER(buffer) ((cg_attribute_buffer_t *)(buffer))
 
 /**
- * cogl_attribute_buffer_new_with_size:
- * @context: A #CoglContext
+ * cg_attribute_buffer_new_with_size:
+ * @context: A #cg_context_t
  * @bytes: The number of bytes to allocate for vertex attribute data.
  *
- * Describes a new #CoglAttributeBuffer of @size bytes to contain
+ * Describes a new #cg_attribute_buffer_t of @size bytes to contain
  * arrays of vertex attribute data. Afterwards data can be set using
- * cogl_buffer_set_data() or by mapping it into the application's
- * address space using cogl_buffer_map().
+ * cg_buffer_set_data() or by mapping it into the application's
+ * address space using cg_buffer_map().
  *
  * The underlying storage of this buffer isn't allocated by this
  * function so that you have an opportunity to use the
- * cogl_buffer_set_update_hint() and cogl_buffer_set_usage_hint()
+ * cg_buffer_set_update_hint() and cg_buffer_set_usage_hint()
  * functions which may influence how the storage is allocated. The
  * storage will be allocated once you upload data to the buffer.
  *
  * Note: You can assume this function always succeeds and won't return
  * %NULL
  *
- * Return value: (transfer full): A newly allocated #CoglAttributeBuffer. Never %NULL.
+ * Return value: (transfer full): A newly allocated #cg_attribute_buffer_t.
+ * Never %NULL.
  *
  * Stability: Unstable
  */
-CoglAttributeBuffer *
-cogl_attribute_buffer_new_with_size (CoglContext *context,
-                                     size_t bytes);
+cg_attribute_buffer_t *cg_attribute_buffer_new_with_size(cg_context_t *context,
+                                                         size_t bytes);
 
 /**
- * cogl_attribute_buffer_new:
- * @context: A #CoglContext
+ * cg_attribute_buffer_new:
+ * @context: A #cg_context_t
  * @bytes: The number of bytes to allocate for vertex attribute data.
  * @data: (array length=bytes): An optional pointer to vertex data to
  *        upload immediately.
  *
- * Describes a new #CoglAttributeBuffer of @size bytes to contain
+ * Describes a new #cg_attribute_buffer_t of @size bytes to contain
  * arrays of vertex attribute data and also uploads @size bytes read
  * from @data to the new buffer.
  *
@@ -104,36 +104,33 @@ cogl_attribute_buffer_new_with_size (CoglContext *context,
  * <note>In the unlikely case that there is an out of memory problem
  * then Cogl will abort the application with a message. If your
  * application needs to gracefully handle out-of-memory errors then
- * you can use cogl_attribute_buffer_new_with_size() and then
- * explicitly catch errors with cogl_buffer_set_data() or
- * cogl_buffer_map().</note>
+ * you can use cg_attribute_buffer_new_with_size() and then
+ * explicitly catch errors with cg_buffer_set_data() or
+ * cg_buffer_map().</note>
  *
- * Return value: (transfer full): A newly allocated #CoglAttributeBuffer (never %NULL)
+ * Return value: (transfer full): A newly allocated #cg_attribute_buffer_t
+ *(never %NULL)
  *
  * Since: 1.4
  * Stability: Unstable
  */
-CoglAttributeBuffer *
-cogl_attribute_buffer_new (CoglContext *context,
-                           size_t bytes,
-                           const void *data);
+cg_attribute_buffer_t *
+cg_attribute_buffer_new(cg_context_t *context, size_t bytes, const void *data);
 
 /**
- * cogl_is_attribute_buffer:
- * @object: A #CoglObject
+ * cg_is_attribute_buffer:
+ * @object: A #cg_object_t
  *
- * Gets whether the given object references a #CoglAttributeBuffer.
+ * Gets whether the given object references a #cg_attribute_buffer_t.
  *
- * Returns: %true if @object references a #CoglAttributeBuffer,
+ * Returns: %true if @object references a #cg_attribute_buffer_t,
  *   %false otherwise
  *
  * Since: 1.4
  * Stability: Unstable
  */
-bool
-cogl_is_attribute_buffer (void *object);
+bool cg_is_attribute_buffer(void *object);
 
-COGL_END_DECLS
+CG_END_DECLS
 
-#endif /* __COGL_ATTRIBUTE_BUFFER_H__ */
-
+#endif /* __CG_ATTRIBUTE_BUFFER_H__ */

@@ -30,49 +30,48 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#if !defined(__COGL_H_INSIDE__) && !defined(COGL_COMPILATION)
+#if !defined(__CG_H_INSIDE__) && !defined(CG_COMPILATION)
 #error "Only <cogl/cogl.h> can be included directly."
 #endif
 
-#ifndef _COGL_TEXTURE_2D_GL_H_
-#define _COGL_TEXTURE_2D_GL_H_
+#ifndef _CG_TEXTURE_2D_GL_H_
+#define _CG_TEXTURE_2D_GL_H_
 
 #include "cogl-context.h"
 #include "cogl-texture-2d.h"
 
-COGL_BEGIN_DECLS
+CG_BEGIN_DECLS
 
 /**
- * cogl_texture_2d_gl_new_from_foreign:
- * @ctx: A #CoglContext
+ * cg_texture_2d_gl_new_from_foreign:
+ * @ctx: A #cg_context_t
  * @gl_handle: A GL handle for a GL_TEXTURE_2D texture object
  * @width: Width of the foreign GL texture
  * @height: Height of the foreign GL texture
  * @format: The format of the texture
  *
- * Wraps an existing GL_TEXTURE_2D texture object as a #CoglTexture2D.
+ * Wraps an existing GL_TEXTURE_2D texture object as a #cg_texture_2d_t.
  * This can be used for integrating Cogl with software using OpenGL
  * directly.
  *
  * The texture is still configurable until it has been allocated so
  * for example you can declare whether the texture is premultiplied
- * with cogl_texture_set_premultiplied().
+ * with cg_texture_set_premultiplied().
  *
  * <note>The results are undefined for passing an invalid @gl_handle
  * or if @width or @height don't have the correct texture
  * geometry.</note>
  *
- * Returns: (transfer full): A newly allocated #CoglTexture2D
+ * Returns: (transfer full): A newly allocated #cg_texture_2d_t
  *
  * Since: 2.0
  */
-CoglTexture2D *
-cogl_texture_2d_gl_new_from_foreign (CoglContext *ctx,
-                                     unsigned int gl_handle,
-                                     int width,
-                                     int height,
-                                     CoglPixelFormat format);
+cg_texture_2d_t *cg_texture_2d_gl_new_from_foreign(cg_context_t *ctx,
+                                                   unsigned int gl_handle,
+                                                   int width,
+                                                   int height,
+                                                   cg_pixel_format_t format);
 
-COGL_END_DECLS
+CG_END_DECLS
 
-#endif /* _COGL_TEXTURE_2D_GL_H_ */
+#endif /* _CG_TEXTURE_2D_GL_H_ */

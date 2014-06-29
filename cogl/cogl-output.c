@@ -36,82 +36,81 @@
 
 #include <string.h>
 
-static void _cogl_output_free (CoglOutput *output);
+static void _cg_output_free(cg_output_t *output);
 
-COGL_OBJECT_DEFINE (Output, output);
+CG_OBJECT_DEFINE(Output, output);
 
-CoglOutput *
-_cogl_output_new (const char *name)
+cg_output_t *
+_cg_output_new(const char *name)
 {
-  CoglOutput *output;
+    cg_output_t *output;
 
-  output = c_slice_new0 (CoglOutput);
-  output->name = c_strdup (name);
+    output = c_slice_new0(cg_output_t);
+    output->name = c_strdup(name);
 
-  return _cogl_output_object_new (output);
+    return _cg_output_object_new(output);
 }
 
 static void
-_cogl_output_free (CoglOutput *output)
+_cg_output_free(cg_output_t *output)
 {
-  c_free (output->name);
+    c_free(output->name);
 
-  c_slice_free (CoglOutput, output);
+    c_slice_free(cg_output_t, output);
 }
 
 bool
-_cogl_output_values_equal (CoglOutput *output,
-                           CoglOutput *other)
+_cg_output_values_equal(cg_output_t *output, cg_output_t *other)
 {
-  return memcmp ((const char *)output + C_STRUCT_OFFSET (CoglOutput, x),
-                 (const char *)other + C_STRUCT_OFFSET (CoglOutput, x),
-                 sizeof (CoglOutput) - C_STRUCT_OFFSET (CoglOutput, x)) == 0;
+    return memcmp((const char *)output + C_STRUCT_OFFSET(cg_output_t, x),
+                  (const char *)other + C_STRUCT_OFFSET(cg_output_t, x),
+                  sizeof(cg_output_t) - C_STRUCT_OFFSET(cg_output_t, x)) == 0;
 }
 
 int
-cogl_output_get_x (CoglOutput *output)
+cg_output_get_x(cg_output_t *output)
 {
-  return output->x;
+    return output->x;
 }
 
 int
-cogl_output_get_y (CoglOutput *output)
+cg_output_get_y(cg_output_t *output)
 {
-  return output->y;
+    return output->y;
 }
 
 int
-cogl_output_get_width (CoglOutput *output)
+cg_output_get_width(cg_output_t *output)
 {
-  return output->width;
+    return output->width;
 }
 
 int
-cogl_output_get_height (CoglOutput *output)
+cg_output_get_height(cg_output_t *output)
 {
-  return output->height;
+    return output->height;
 }
 
 int
-cogl_output_get_mm_width (CoglOutput *output)
+cg_output_get_mm_width(cg_output_t *output)
 {
-  return output->mm_width;
+    return output->mm_width;
 }
 
 int
-cogl_output_get_mm_height (CoglOutput *output)
+cg_output_get_mm_height(cg_output_t *output)
 {
-  return output->mm_height;
+    return output->mm_height;
 }
 
-CoglSubpixelOrder
-cogl_output_get_subpixel_order (CoglOutput *output)
+cg_subpixel_order_t
+cg_output_get_subpixel_order(cg_output_t *output)
 {
-  return output->subpixel_order;
+    return output->subpixel_order;
 }
 
 float
-cogl_output_get_refresh_rate (CoglOutput *output)
+cg_output_get_refresh_rate(cg_output_t *output)
 {
-  return output->refresh_rate;
+    return output->refresh_rate;
 }

@@ -44,154 +44,149 @@
 
 #include <string.h>
 
-static int _cogl_winsys_stub_dummy_ptr;
+static int _cg_winsys_stub_dummy_ptr;
 
 /* This provides a NOP winsys. This can be useful for debugging or for
  * integrating with toolkits that already have window system
  * integration code.
  */
 
-static CoglFuncPtr
-_cogl_winsys_renderer_get_proc_address (CoglRenderer *renderer,
-                                        const char *name,
-                                        bool in_core)
+static cg_func_ptr_t
+_cg_winsys_renderer_get_proc_address(
+    cg_renderer_t *renderer, const char *name, bool in_core)
 {
-  static UModule *module = NULL;
+    static UModule *module = NULL;
 
-  /* this should find the right function if the program is linked against a
-   * library providing it */
-  if (C_UNLIKELY (module == NULL))
-    module = c_module_open (NULL, 0);
+    /* this should find the right function if the program is linked against a
+     * library providing it */
+    if (C_UNLIKELY(module == NULL))
+        module = c_module_open(NULL, 0);
 
-  if (module)
-    {
-      void *symbol;
+    if (module) {
+        void *symbol;
 
-      if (c_module_symbol (module, name, &symbol))
-        return symbol;
+        if (c_module_symbol(module, name, &symbol))
+            return symbol;
     }
 
-  return NULL;
+    return NULL;
 }
 
 static void
-_cogl_winsys_renderer_disconnect (CoglRenderer *renderer)
+_cg_winsys_renderer_disconnect(cg_renderer_t *renderer)
 {
-  renderer->winsys = NULL;
+    renderer->winsys = NULL;
 }
 
 static bool
-_cogl_winsys_renderer_connect (CoglRenderer *renderer,
-                               CoglError **error)
+_cg_winsys_renderer_connect(cg_renderer_t *renderer,
+                            cg_error_t **error)
 {
-  renderer->winsys = &_cogl_winsys_stub_dummy_ptr;
-  return true;
+    renderer->winsys = &_cg_winsys_stub_dummy_ptr;
+    return true;
 }
 
 static void
-_cogl_winsys_display_destroy (CoglDisplay *display)
+_cg_winsys_display_destroy(cg_display_t *display)
 {
-  display->winsys = NULL;
+    display->winsys = NULL;
 }
 
 static bool
-_cogl_winsys_display_setup (CoglDisplay *display,
-                            CoglError **error)
+_cg_winsys_display_setup(cg_display_t *display, cg_error_t **error)
 {
-  display->winsys = &_cogl_winsys_stub_dummy_ptr;
-  return true;
+    display->winsys = &_cg_winsys_stub_dummy_ptr;
+    return true;
 }
 
 static bool
-_cogl_winsys_context_init (CoglContext *context, CoglError **error)
+_cg_winsys_context_init(cg_context_t *context, cg_error_t **error)
 {
-  context->winsys = &_cogl_winsys_stub_dummy_ptr;
+    context->winsys = &_cg_winsys_stub_dummy_ptr;
 
-  if (!_cogl_context_update_features (context, error))
-    return false;
+    if (!_cg_context_update_features(context, error))
+        return false;
 
-  memset (context->winsys_features, 0, sizeof (context->winsys_features));
+    memset(context->winsys_features, 0, sizeof(context->winsys_features));
 
-  return true;
+    return true;
 }
 
 static void
-_cogl_winsys_context_deinit (CoglContext *context)
+_cg_winsys_context_deinit(cg_context_t *context)
 {
-  context->winsys = NULL;
+    context->winsys = NULL;
 }
 
 static bool
-_cogl_winsys_onscreen_init (CoglOnscreen *onscreen,
-                            CoglError **error)
+_cg_winsys_onscreen_init(cg_onscreen_t *onscreen,
+                         cg_error_t **error)
 {
-  return true;
+    return true;
 }
 
 static void
-_cogl_winsys_onscreen_deinit (CoglOnscreen *onscreen)
-{
-}
-
-static void
-_cogl_winsys_onscreen_bind (CoglOnscreen *onscreen)
+_cg_winsys_onscreen_deinit(cg_onscreen_t *onscreen)
 {
 }
 
 static void
-_cogl_winsys_onscreen_swap_buffers_with_damage (CoglOnscreen *onscreen,
-                                                const int *rectangles,
-                                                int n_rectangles)
+_cg_winsys_onscreen_bind(cg_onscreen_t *onscreen)
 {
 }
 
 static void
-_cogl_winsys_onscreen_update_swap_throttled (CoglOnscreen *onscreen)
+_cg_winsys_onscreen_swap_buffers_with_damage(
+    cg_onscreen_t *onscreen, const int *rectangles, int n_rectangles)
 {
 }
 
 static void
-_cogl_winsys_onscreen_set_visibility (CoglOnscreen *onscreen,
-                                      bool visibility)
+_cg_winsys_onscreen_update_swap_throttled(cg_onscreen_t *onscreen)
 {
 }
 
-const CoglWinsysVtable *
-_cogl_winsys_stub_get_vtable (void)
+static void
+_cg_winsys_onscreen_set_visibility(cg_onscreen_t *onscreen,
+                                   bool visibility)
 {
-  static bool vtable_inited = false;
-  static CoglWinsysVtable vtable;
+}
 
-  /* It would be nice if we could use C99 struct initializers here
-     like the GLX backend does. However this code is more likely to be
-     compiled using Visual Studio which (still!) doesn't support them
-     so we initialize it in code instead */
+const cg_winsys_vtable_t *
+_cg_winsys_stub_get_vtable(void)
+{
+    static bool vtable_inited = false;
+    static cg_winsys_vtable_t vtable;
 
-  if (!vtable_inited)
-    {
-      memset (&vtable, 0, sizeof (vtable));
+    /* It would be nice if we could use C99 struct initializers here
+       like the GLX backend does. However this code is more likely to be
+       compiled using Visual Studio which (still!) doesn't support them
+       so we initialize it in code instead */
 
-      vtable.id = COGL_WINSYS_ID_STUB;
-      vtable.name = "STUB";
-      vtable.renderer_get_proc_address = _cogl_winsys_renderer_get_proc_address;
-      vtable.renderer_connect = _cogl_winsys_renderer_connect;
-      vtable.renderer_disconnect = _cogl_winsys_renderer_disconnect;
-      vtable.display_setup = _cogl_winsys_display_setup;
-      vtable.display_destroy = _cogl_winsys_display_destroy;
-      vtable.context_init = _cogl_winsys_context_init;
-      vtable.context_deinit = _cogl_winsys_context_deinit;
+    if (!vtable_inited) {
+        memset(&vtable, 0, sizeof(vtable));
 
-      vtable.onscreen_init = _cogl_winsys_onscreen_init;
-      vtable.onscreen_deinit = _cogl_winsys_onscreen_deinit;
-      vtable.onscreen_bind = _cogl_winsys_onscreen_bind;
-      vtable.onscreen_swap_buffers_with_damage =
-        _cogl_winsys_onscreen_swap_buffers_with_damage;
-      vtable.onscreen_update_swap_throttled =
-        _cogl_winsys_onscreen_update_swap_throttled;
-      vtable.onscreen_set_visibility = _cogl_winsys_onscreen_set_visibility;
+        vtable.id = CG_WINSYS_ID_STUB;
+        vtable.name = "STUB";
+        vtable.renderer_get_proc_address = _cg_winsys_renderer_get_proc_address;
+        vtable.renderer_connect = _cg_winsys_renderer_connect;
+        vtable.renderer_disconnect = _cg_winsys_renderer_disconnect;
+        vtable.display_setup = _cg_winsys_display_setup;
+        vtable.display_destroy = _cg_winsys_display_destroy;
+        vtable.context_init = _cg_winsys_context_init;
+        vtable.context_deinit = _cg_winsys_context_deinit;
 
-      vtable_inited = true;
+        vtable.onscreen_init = _cg_winsys_onscreen_init;
+        vtable.onscreen_deinit = _cg_winsys_onscreen_deinit;
+        vtable.onscreen_bind = _cg_winsys_onscreen_bind;
+        vtable.onscreen_swap_buffers_with_damage =
+            _cg_winsys_onscreen_swap_buffers_with_damage;
+        vtable.onscreen_update_swap_throttled =
+            _cg_winsys_onscreen_update_swap_throttled;
+        vtable.onscreen_set_visibility = _cg_winsys_onscreen_set_visibility;
+
+        vtable_inited = true;
     }
 
-  return &vtable;
+    return &vtable;
 }

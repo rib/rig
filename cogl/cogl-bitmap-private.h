@@ -28,8 +28,8 @@
  *
  */
 
-#ifndef __COGL_BITMAP_H
-#define __COGL_BITMAP_H
+#ifndef __CG_BITMAP_H
+#define __CG_BITMAP_H
 
 #include <clib.h>
 
@@ -37,140 +37,119 @@
 #include "cogl-buffer.h"
 #include "cogl-bitmap.h"
 
-#ifdef COGL_HAS_ANDROID_SUPPORT
+#ifdef CG_HAS_ANDROID_SUPPORT
 #include <android/asset_manager.h>
 #endif
 
-struct _CoglBitmap
-{
-  CoglObject _parent;
+struct _cg_bitmap_t {
+    cg_object_t _parent;
 
-  /* Pointer back to the context that this bitmap was created with */
-  CoglContext *context;
+    /* Pointer back to the context that this bitmap was created with */
+    cg_context_t *context;
 
-  CoglPixelFormat format;
-  int width;
-  int height;
-  int rowstride;
+    cg_pixel_format_t format;
+    int width;
+    int height;
+    int rowstride;
 
-  uint8_t *data;
+    uint8_t *data;
 
-  bool mapped;
-  bool bound;
+    bool mapped;
+    bool bound;
 
-  /* If this is non-null then 'data' is ignored and instead it is
-     fetched from this shared bitmap. */
-  CoglBitmap *shared_bmp;
+    /* If this is non-null then 'data' is ignored and instead it is
+       fetched from this shared bitmap. */
+    cg_bitmap_t *shared_bmp;
 
-  /* If this is non-null then 'data' is treated as an offset into the
-     buffer and map will divert to mapping the buffer */
-  CoglBuffer *buffer;
+    /* If this is non-null then 'data' is treated as an offset into the
+       buffer and map will divert to mapping the buffer */
+    cg_buffer_t *buffer;
 };
 
-
 /*
- * _cogl_bitmap_new_with_malloc_buffer:
- * @context: A #CoglContext
+ * _cg_bitmap_new_with_malloc_buffer:
+ * @context: A #cg_context_t
  * @width: width of the bitmap in pixels
  * @height: height of the bitmap in pixels
  * @format: the format of the pixels the array will store
- * @error: A #CoglError for catching exceptional errors or %NULL
+ * @error: A #cg_error_t for catching exceptional errors or %NULL
  *
- * This is equivalent to cogl_bitmap_new_with_size() except that it
+ * This is equivalent to cg_bitmap_new_with_size() except that it
  * allocated the buffer using c_malloc() instead of creating a
- * #CoglPixelBuffer. The buffer will be automatically destroyed when
+ * #cg_pixel_buffer_t. The buffer will be automatically destroyed when
  * the bitmap is freed.
  *
- * Return value: a #CoglPixelBuffer representing the newly created array
+ * Return value: a #cg_pixel_buffer_t representing the newly created array
  *
  * Since: 1.10
  * Stability: Unstable
  */
-CoglBitmap *
-_cogl_bitmap_new_with_malloc_buffer (CoglContext *context,
-                                     int width,
-                                     int height,
-                                     CoglPixelFormat format,
-                                     CoglError **error);
+cg_bitmap_t *_cg_bitmap_new_with_malloc_buffer(cg_context_t *context,
+                                               int width,
+                                               int height,
+                                               cg_pixel_format_t format,
+                                               cg_error_t **error);
 
 /* The idea of this function is that it will create a bitmap that
    shares the actual data with another bitmap. This is needed for the
    atlas texture backend because it needs upload a bitmap to a sub
    texture but override the format so that it ignores the premult
    flag. */
-CoglBitmap *
-_cogl_bitmap_new_shared (CoglBitmap      *shared_bmp,
-                         CoglPixelFormat  format,
-                         int              width,
-                         int              height,
-                         int              rowstride);
+cg_bitmap_t *_cg_bitmap_new_shared(cg_bitmap_t *shared_bmp,
+                                   cg_pixel_format_t format,
+                                   int width,
+                                   int height,
+                                   int rowstride);
 
-CoglBitmap *
-_cogl_bitmap_convert (CoglBitmap *bmp,
-		      CoglPixelFormat dst_format,
-                      CoglError **error);
+cg_bitmap_t *_cg_bitmap_convert(cg_bitmap_t *bmp,
+                                cg_pixel_format_t dst_format,
+                                cg_error_t **error);
 
-CoglBitmap *
-_cogl_bitmap_convert_for_upload (CoglBitmap *src_bmp,
-                                 CoglPixelFormat internal_format,
-                                 bool can_convert_in_place,
-                                 CoglError **error);
+cg_bitmap_t *_cg_bitmap_convert_for_upload(cg_bitmap_t *src_bmp,
+                                           cg_pixel_format_t internal_format,
+                                           bool can_convert_in_place,
+                                           cg_error_t **error);
 
-bool
-_cogl_bitmap_convert_into_bitmap (CoglBitmap *src_bmp,
-                                  CoglBitmap *dst_bmp,
-                                  CoglError **error);
+bool _cg_bitmap_convert_into_bitmap(cg_bitmap_t *src_bmp,
+                                    cg_bitmap_t *dst_bmp,
+                                    cg_error_t **error);
 
-CoglBitmap *
-_cogl_bitmap_from_file (CoglContext *ctx,
-                        const char *filename,
-			CoglError **error);
+cg_bitmap_t *_cg_bitmap_from_file(cg_context_t *ctx,
+                                  const char *filename,
+                                  cg_error_t **error);
 
-#ifdef COGL_HAS_ANDROID_SUPPORT
-CoglBitmap *
-_cogl_android_bitmap_new_from_asset (CoglContext *ctx,
-                                     AAssetManager *manager,
-                                     const char *filename,
-                                     CoglError **error);
+#ifdef CG_HAS_ANDROID_SUPPORT
+cg_bitmap_t *_cg_android_bitmap_new_from_asset(cg_context_t *ctx,
+                                               AAssetManager *manager,
+                                               const char *filename,
+                                               cg_error_t **error);
 #endif
 
-bool
-_cogl_bitmap_unpremult (CoglBitmap *dst_bmp,
-                        CoglError **error);
+bool _cg_bitmap_unpremult(cg_bitmap_t *dst_bmp, cg_error_t **error);
 
-bool
-_cogl_bitmap_premult (CoglBitmap *dst_bmp,
-                      CoglError **error);
+bool _cg_bitmap_premult(cg_bitmap_t *dst_bmp, cg_error_t **error);
 
-bool
-_cogl_bitmap_convert_premult_status (CoglBitmap *bmp,
-                                     CoglPixelFormat dst_format,
-                                     CoglError **error);
+bool _cg_bitmap_convert_premult_status(cg_bitmap_t *bmp,
+                                       cg_pixel_format_t dst_format,
+                                       cg_error_t **error);
 
-bool
-_cogl_bitmap_copy_subregion (CoglBitmap *src,
-			     CoglBitmap *dst,
-			     int src_x,
-			     int src_y,
-			     int dst_x,
-			     int dst_y,
-			     int width,
-			     int height,
-                             CoglError **error);
+bool _cg_bitmap_copy_subregion(cg_bitmap_t *src,
+                               cg_bitmap_t *dst,
+                               int src_x,
+                               int src_y,
+                               int dst_x,
+                               int dst_y,
+                               int width,
+                               int height,
+                               cg_error_t **error);
 
 /* Creates a deep copy of the source bitmap */
-CoglBitmap *
-_cogl_bitmap_copy (CoglBitmap *src_bmp,
-                   CoglError **error);
+cg_bitmap_t *_cg_bitmap_copy(cg_bitmap_t *src_bmp, cg_error_t **error);
 
 bool
-_cogl_bitmap_get_size_from_file (const char *filename,
-                                 int        *width,
-                                 int        *height);
+_cg_bitmap_get_size_from_file(const char *filename, int *width, int *height);
 
-void
-_cogl_bitmap_set_format (CoglBitmap *bitmap,
-                         CoglPixelFormat format);
+void _cg_bitmap_set_format(cg_bitmap_t *bitmap, cg_pixel_format_t format);
 
 /* Maps the bitmap so that the pixels can be accessed directly or if
    the bitmap is just a memory bitmap then it just returns the pointer
@@ -180,14 +159,12 @@ _cogl_bitmap_set_format (CoglBitmap *bitmap,
    uploads data using gdk_pixbuf_new_subpixbuf with a sub region
    containing the last row of the pixbuf because in that case the
    rowstride can be much larger than the width of the image */
-uint8_t *
-_cogl_bitmap_map (CoglBitmap *bitmap,
-                  CoglBufferAccess access,
-                  CoglBufferMapHint hints,
-                  CoglError **error);
+uint8_t *_cg_bitmap_map(cg_bitmap_t *bitmap,
+                        cg_buffer_access_t access,
+                        cg_buffer_map_hint_t hints,
+                        cg_error_t **error);
 
-void
-_cogl_bitmap_unmap (CoglBitmap *bitmap);
+void _cg_bitmap_unmap(cg_bitmap_t *bitmap);
 
 /* These two are replacements for map and unmap that should used when
  * the pointer is going to be passed to GL for pixel packing or
@@ -198,16 +175,13 @@ _cogl_bitmap_unmap (CoglBitmap *bitmap);
  *
  * TODO: split this bind/unbind functions out into a GL specific file
  */
-uint8_t *
-_cogl_bitmap_gl_bind (CoglBitmap *bitmap,
-                      CoglBufferAccess access,
-                      CoglBufferMapHint hints,
-                      CoglError **error);
+uint8_t *_cg_bitmap_gl_bind(cg_bitmap_t *bitmap,
+                            cg_buffer_access_t access,
+                            cg_buffer_map_hint_t hints,
+                            cg_error_t **error);
 
-void
-_cogl_bitmap_gl_unbind (CoglBitmap *bitmap);
+void _cg_bitmap_gl_unbind(cg_bitmap_t *bitmap);
 
-CoglContext *
-_cogl_bitmap_get_context (CoglBitmap *bitmap);
+cg_context_t *_cg_bitmap_get_context(cg_bitmap_t *bitmap);
 
-#endif /* __COGL_BITMAP_H */
+#endif /* __CG_BITMAP_H */

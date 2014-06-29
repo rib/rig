@@ -28,30 +28,28 @@
  *
  */
 
-#ifndef __COGL_OUTPUT_PRIVATE_H
-#define __COGL_OUTPUT_PRIVATE_H
+#ifndef __CG_OUTPUT_PRIVATE_H
+#define __CG_OUTPUT_PRIVATE_H
 
 #include "cogl-output.h"
 #include "cogl-object-private.h"
 
-struct _CoglOutput
-{
-  CoglObject _parent;
+struct _cg_output_t {
+    cg_object_t _parent;
 
-  char *name;
+    char *name;
 
-  int x; /* Must be first field for _cogl_output_values_equal() */
-  int y;
-  int width;
-  int height;
-  int mm_width;
-  int mm_height;
-  float refresh_rate;
-  CoglSubpixelOrder subpixel_order;
+    int x; /* Must be first field for _cg_output_values_equal() */
+    int y;
+    int width;
+    int height;
+    int mm_width;
+    int mm_height;
+    float refresh_rate;
+    cg_subpixel_order_t subpixel_order;
 };
 
-CoglOutput *_cogl_output_new (const char *name);
-bool _cogl_output_values_equal (CoglOutput *output,
-                                    CoglOutput *other);
+cg_output_t *_cg_output_new(const char *name);
+bool _cg_output_values_equal(cg_output_t *output, cg_output_t *other);
 
-#endif /* __COGL_OUTPUT_PRIVATE_H */
+#endif /* __CG_OUTPUT_PRIVATE_H */

@@ -31,30 +31,26 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#ifndef __COGL_INDICES_PRIVATE_H
-#define __COGL_INDICES_PRIVATE_H
+#ifndef __CG_INDICES_PRIVATE_H
+#define __CG_INDICES_PRIVATE_H
 
 #include "cogl-object-private.h"
 #include "cogl-index-buffer-private.h"
 #include "cogl-types.h"
 
-struct _CoglIndices
-{
-  CoglObject _parent;
+struct _cg_indices_t {
+    cg_object_t _parent;
 
-  CoglIndexBuffer *buffer;
-  size_t offset;
+    cg_index_buffer_t *buffer;
+    size_t offset;
 
-  CoglIndicesType type;
+    cg_indices_type_t type;
 
-  int immutable_ref;
+    int immutable_ref;
 };
 
-CoglIndices *
-_cogl_indices_immutable_ref (CoglIndices *indices);
+cg_indices_t *_cg_indices_immutable_ref(cg_indices_t *indices);
 
-void
-_cogl_indices_immutable_unref (CoglIndices *indices);
+void _cg_indices_immutable_unref(cg_indices_t *indices);
 
-#endif /* __COGL_INDICES_PRIVATE_H */
-
+#endif /* __CG_INDICES_PRIVATE_H */

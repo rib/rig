@@ -46,132 +46,125 @@
 #include <clib.h>
 
 void
-_cogl_glsl_shader_set_source_with_boilerplate (CoglContext *ctx,
-                                               GLuint shader_gl_handle,
-                                               GLenum shader_gl_type,
-                                               GLsizei count_in,
-                                               const char **strings_in,
-                                               const GLint *lengths_in)
+_cg_glsl_shader_set_source_with_boilerplate(cg_context_t *ctx,
+                                            GLuint shader_gl_handle,
+                                            GLenum shader_gl_type,
+                                            GLsizei count_in,
+                                            const char **strings_in,
+                                            const GLint *lengths_in)
 {
-  const char *vertex_boilerplate;
-  const char *fragment_boilerplate;
+    const char *vertex_boilerplate;
+    const char *fragment_boilerplate;
 
-  const char **strings = c_alloca (sizeof (char *) * (count_in + 6));
-  GLint *lengths = c_alloca (sizeof (GLint) * (count_in + 6));
-  char *version_string;
-  int count = 0;
+    const char **strings = c_alloca(sizeof(char *) * (count_in + 6));
+    GLint *lengths = c_alloca(sizeof(GLint) * (count_in + 6));
+    char *version_string;
+    int count = 0;
 
-  vertex_boilerplate = _COGL_VERTEX_SHADER_BOILERPLATE;
-  fragment_boilerplate = _COGL_FRAGMENT_SHADER_BOILERPLATE;
+    vertex_boilerplate = _CG_VERTEX_SHADER_BOILERPLATE;
+    fragment_boilerplate = _CG_FRAGMENT_SHADER_BOILERPLATE;
 
-  version_string = c_strdup_printf ("#version %i\n\n",
-                                    ctx->glsl_version_to_use);
+    version_string =
+        c_strdup_printf("#version %i\n\n", ctx->glsl_version_to_use);
 
-  strings[count] = version_string;
-  lengths[count++] = -1;
+    strings[count] = version_string;
+    lengths[count++] = -1;
 
-  if (_cogl_has_private_feature (ctx, COGL_PRIVATE_FEATURE_GL_EMBEDDED) &&
-      cogl_has_feature (ctx, COGL_FEATURE_ID_TEXTURE_3D))
-    {
-      static const char texture_3d_extension[] =
-        "#extension GL_OES_texture_3D : enable\n";
-      strings[count] = texture_3d_extension;
-      lengths[count++] = sizeof (texture_3d_extension) - 1;
+    if (_cg_has_private_feature(ctx, CG_PRIVATE_FEATURE_GL_EMBEDDED) &&
+        cg_has_feature(ctx, CG_FEATURE_ID_TEXTURE_3D)) {
+        static const char texture_3d_extension[] =
+            "#extension GL_OES_texture_3D : enable\n";
+        strings[count] = texture_3d_extension;
+        lengths[count++] = sizeof(texture_3d_extension) - 1;
     }
 
-  if (shader_gl_type == GL_VERTEX_SHADER)
-    {
-      if (ctx->glsl_version_to_use < 130)
-        {
-          strings[count] =
-            "#define in attribute\n"
-            "#define out varying\n";
-          lengths[count++] = -1;
-        }
-      else
-        {
-          /* To support source compatibility with glsl >= 1.3 which has replaced
-           * all of the texture sampler functions with one polymorphic texture()
-           * function we use the preprocessor to map the old names onto the new
-           * name...
-           */
-          strings[count] =
-            "#define texture2D texture\n"
-            "#define texture3D texture\n"
-            "#define textureRect texture\n";
-          lengths[count++] = -1;
+    if (shader_gl_type == GL_VERTEX_SHADER) {
+        if (ctx->glsl_version_to_use < 130) {
+            strings[count] = "#define in attribute\n"
+                             "#define out varying\n";
+            lengths[count++] = -1;
+        } else {
+            /* To support source compatibility with glsl >= 1.3 which has
+             * replaced
+             * all of the texture sampler functions with one polymorphic
+             * texture()
+             * function we use the preprocessor to map the old names onto the
+             * new
+             * name...
+             */
+            strings[count] = "#define texture2D texture\n"
+                             "#define texture3D texture\n"
+                             "#define textureRect texture\n";
+            lengths[count++] = -1;
         }
 
-      strings[count] = vertex_boilerplate;
-      lengths[count++] = strlen (vertex_boilerplate);
-    }
-  else if (shader_gl_type == GL_FRAGMENT_SHADER)
-    {
-      if (ctx->glsl_version_to_use < 130)
-        {
-          strings[count] = "#define in varying\n" \
-                            "\n" \
-                            "#define cogl_color_out gl_FragColor\n" \
-                            "#define cogl_depth_out gl_FragDepth\n";
-          lengths[count++] = -1;
+        strings[count] = vertex_boilerplate;
+        lengths[count++] = strlen(vertex_boilerplate);
+    } else if (shader_gl_type == GL_FRAGMENT_SHADER) {
+        if (ctx->glsl_version_to_use < 130) {
+            strings[count] = "#define in varying\n"
+                             "\n"
+                             "#define cg_color_out gl_FragColor\n"
+                             "#define cg_depth_out gl_FragDepth\n";
+            lengths[count++] = -1;
         }
 
-      strings[count] = fragment_boilerplate;
-      lengths[count++] = strlen (fragment_boilerplate);
+        strings[count] = fragment_boilerplate;
+        lengths[count++] = strlen(fragment_boilerplate);
 
-      if (ctx->glsl_version_to_use >= 130)
-        {
-          /* FIXME: Support cogl_depth_out. */
-          /* To support source compatibility with glsl >= 1.3 which has replaced
-           * all of the texture sampler functions with one polymorphic texture()
-           * function we use the preprocessor to map the old names onto the new
-           * name...
-           */
-          strings[count] =
-            "#define texture2D texture\n"
-            "#define texture3D texture\n"
-            "#define textureRect texture\n"
-            "\n"
-            "out vec4 cogl_color_out;\n";
-            //"out vec4 cogl_depth_out\n";
-          lengths[count++] = -1;
+        if (ctx->glsl_version_to_use >= 130) {
+            /* FIXME: Support cg_depth_out. */
+            /* To support source compatibility with glsl >= 1.3 which has
+             * replaced
+             * all of the texture sampler functions with one polymorphic
+             * texture()
+             * function we use the preprocessor to map the old names onto the
+             * new
+             * name...
+             */
+            strings[count] = "#define texture2D texture\n"
+                             "#define texture3D texture\n"
+                             "#define textureRect texture\n"
+                             "\n"
+                             "out vec4 cg_color_out;\n";
+            //"out vec4 cg_depth_out\n";
+            lengths[count++] = -1;
         }
     }
 
-  memcpy (strings + count, strings_in, sizeof (char *) * count_in);
-  if (lengths_in)
-    memcpy (lengths + count, lengths_in, sizeof (GLint) * count_in);
-  else
-    {
-      int i;
+    memcpy(strings + count, strings_in, sizeof(char *) * count_in);
+    if (lengths_in)
+        memcpy(lengths + count, lengths_in, sizeof(GLint) * count_in);
+    else {
+        int i;
 
-      for (i = 0; i < count_in; i++)
-        lengths[count + i] = -1; /* null terminated */
+        for (i = 0; i < count_in; i++)
+            lengths[count + i] = -1; /* null terminated */
     }
-  count += count_in;
+    count += count_in;
 
-  if (C_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_SHOW_SOURCE)))
-    {
-      c_string_t *buf = c_string_new (NULL);
-      int i;
+    if (C_UNLIKELY(CG_DEBUG_ENABLED(CG_DEBUG_SHOW_SOURCE))) {
+        c_string_t *buf = c_string_new(NULL);
+        int i;
 
-      c_string_append_printf (buf,
-                              "%s shader:\n",
-                              shader_gl_type == GL_VERTEX_SHADER ?
-                              "vertex" : "fragment");
-      for (i = 0; i < count; i++)
-        if (lengths[i] != -1)
-          c_string_append_len (buf, strings[i], lengths[i]);
-        else
-          c_string_append (buf, strings[i]);
+        c_string_append_printf(buf,
+                               "%s shader:\n",
+                               shader_gl_type == GL_VERTEX_SHADER ? "vertex"
+                               : "fragment");
+        for (i = 0; i < count; i++)
+            if (lengths[i] != -1)
+                c_string_append_len(buf, strings[i], lengths[i]);
+            else
+                c_string_append(buf, strings[i]);
 
-      c_message ("%s", buf->str);
+        c_message("%s", buf->str);
 
-      c_string_free (buf, true);
+        c_string_free(buf, true);
     }
 
-  GE( ctx, glShaderSource (shader_gl_handle, count,
-                           (const char **) strings, lengths) );
+    GE(ctx,
+       glShaderSource(
+           shader_gl_handle, count, (const char **)strings, lengths));
 
-  c_free (version_string);
+    c_free(version_string);
 }

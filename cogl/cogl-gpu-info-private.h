@@ -28,90 +28,82 @@
  *
  */
 
-#ifndef __COGL_GPU_INFO_PRIVATE_H
-#define __COGL_GPU_INFO_PRIVATE_H
+#ifndef __CG_GPU_INFO_PRIVATE_H
+#define __CG_GPU_INFO_PRIVATE_H
 
 #include "cogl-context.h"
 
-typedef enum _CoglGpuInfoArchitectureFlag
-{
-  COGL_GPU_INFO_ARCHITECTURE_FLAG_VERTEX_IMMEDIATE_MODE,
-  COGL_GPU_INFO_ARCHITECTURE_FLAG_VERTEX_TILED,
-  COGL_GPU_INFO_ARCHITECTURE_FLAG_VERTEX_SOFTWARE,
-  COGL_GPU_INFO_ARCHITECTURE_FLAG_FRAGMENT_IMMEDIATE_MODE,
-  COGL_GPU_INFO_ARCHITECTURE_FLAG_FRAGMENT_DEFERRED,
-  COGL_GPU_INFO_ARCHITECTURE_FLAG_FRAGMENT_SOFTWARE
-} CoglGpuInfoArchitectureFlag;
+typedef enum _cg_gpu_info_architecture_flag_t {
+    CG_GPU_INFO_ARCHITECTURE_FLAG_VERTEX_IMMEDIATE_MODE,
+    CG_GPU_INFO_ARCHITECTURE_FLAG_VERTEX_TILED,
+    CG_GPU_INFO_ARCHITECTURE_FLAG_VERTEX_SOFTWARE,
+    CG_GPU_INFO_ARCHITECTURE_FLAG_FRAGMENT_IMMEDIATE_MODE,
+    CG_GPU_INFO_ARCHITECTURE_FLAG_FRAGMENT_DEFERRED,
+    CG_GPU_INFO_ARCHITECTURE_FLAG_FRAGMENT_SOFTWARE
+} cg_gpu_info_architecture_flag_t;
 
-typedef enum _CoglGpuInfoArchitecture
-{
-  COGL_GPU_INFO_ARCHITECTURE_UNKNOWN,
-  COGL_GPU_INFO_ARCHITECTURE_SANDYBRIDGE,
-  COGL_GPU_INFO_ARCHITECTURE_SGX,
-  COGL_GPU_INFO_ARCHITECTURE_MALI,
-  COGL_GPU_INFO_ARCHITECTURE_LLVMPIPE,
-  COGL_GPU_INFO_ARCHITECTURE_SOFTPIPE,
-  COGL_GPU_INFO_ARCHITECTURE_SWRAST
-} CoglGpuInfoArchitecture;
+typedef enum _cg_gpu_info_architecture_t {
+    CG_GPU_INFO_ARCHITECTURE_UNKNOWN,
+    CG_GPU_INFO_ARCHITECTURE_SANDYBRIDGE,
+    CG_GPU_INFO_ARCHITECTURE_SGX,
+    CG_GPU_INFO_ARCHITECTURE_MALI,
+    CG_GPU_INFO_ARCHITECTURE_LLVMPIPE,
+    CG_GPU_INFO_ARCHITECTURE_SOFTPIPE,
+    CG_GPU_INFO_ARCHITECTURE_SWRAST
+} cg_gpu_info_architecture_t;
 
-typedef enum
-{
-  COGL_GPU_INFO_VENDOR_UNKNOWN,
-  COGL_GPU_INFO_VENDOR_INTEL,
-  COGL_GPU_INFO_VENDOR_IMAGINATION_TECHNOLOGIES,
-  COGL_GPU_INFO_VENDOR_ARM,
-  COGL_GPU_INFO_VENDOR_QUALCOMM,
-  COGL_GPU_INFO_VENDOR_NVIDIA,
-  COGL_GPU_INFO_VENDOR_ATI,
-  COGL_GPU_INFO_VENDOR_MESA
-} CoglGpuInfoVendor;
+typedef enum {
+    CG_GPU_INFO_VENDOR_UNKNOWN,
+    CG_GPU_INFO_VENDOR_INTEL,
+    CG_GPU_INFO_VENDOR_IMAGINATION_TECHNOLOGIES,
+    CG_GPU_INFO_VENDOR_ARM,
+    CG_GPU_INFO_VENDOR_QUALCOMM,
+    CG_GPU_INFO_VENDOR_NVIDIA,
+    CG_GPU_INFO_VENDOR_ATI,
+    CG_GPU_INFO_VENDOR_MESA
+} cg_gpu_info_vendor_t;
 
-typedef enum
-{
-  COGL_GPU_INFO_DRIVER_PACKAGE_UNKNOWN,
-  COGL_GPU_INFO_DRIVER_PACKAGE_MESA
-} CoglGpuInfoDriverPackage;
+typedef enum {
+    CG_GPU_INFO_DRIVER_PACKAGE_UNKNOWN,
+    CG_GPU_INFO_DRIVER_PACKAGE_MESA
+} cg_gpu_info_driver_package_t;
 
-typedef enum
-{
-  /* If this bug is present then it is faster to read pixels into a
-   * PBO and then memcpy out of the PBO into system memory rather than
-   * directly read into system memory.
-   * https://bugs.freedesktop.org/show_bug.cgi?id=46631
-   */
-  COGL_GPU_INFO_DRIVER_BUG_MESA_46631_SLOW_READ_PIXELS = 1 << 0
-} CoglGpuInfoDriverBug;
+typedef enum {
+    /* If this bug is present then it is faster to read pixels into a
+     * PBO and then memcpy out of the PBO into system memory rather than
+     * directly read into system memory.
+     * https://bugs.freedesktop.org/show_bug.cgi?id=46631
+     */
+    CG_GPU_INFO_DRIVER_BUG_MESA_46631_SLOW_READ_PIXELS = 1 << 0
+} cg_gpu_info_driver_bug_t;
 
-typedef struct _CoglGpuInfoVersion CoglGpuInfoVersion;
+typedef struct _cg_gpu_info_version_t cg_gpu_info_version_t;
 
-typedef struct _CoglGpuInfo CoglGpuInfo;
+typedef struct _cg_gpu_info_t cg_gpu_info_t;
 
-struct _CoglGpuInfo
-{
-  CoglGpuInfoVendor vendor;
-  const char *vendor_name;
+struct _cg_gpu_info_t {
+    cg_gpu_info_vendor_t vendor;
+    const char *vendor_name;
 
-  CoglGpuInfoDriverPackage driver_package;
-  const char *driver_package_name;
-  int driver_package_version;
+    cg_gpu_info_driver_package_t driver_package;
+    const char *driver_package_name;
+    int driver_package_version;
 
-  CoglGpuInfoArchitecture architecture;
-  const char *architecture_name;
-  CoglGpuInfoArchitectureFlag architecture_flags;
+    cg_gpu_info_architecture_t architecture;
+    const char *architecture_name;
+    cg_gpu_info_architecture_flag_t architecture_flags;
 
-  CoglGpuInfoDriverBug driver_bugs;
+    cg_gpu_info_driver_bug_t driver_bugs;
 };
 
 /*
- * _cogl_gpc_info_init:
- * @ctx: A #CoglContext
+ * _cg_gpc_info_init:
+ * @ctx: A #cg_context_t
  * @gpu: A return location for the GPU information
  *
  * Determines information about the GPU and driver from the given
  * context.
  */
-void
-_cogl_gpc_info_init (CoglContext *ctx,
-                     CoglGpuInfo *gpu);
+void _cg_gpc_info_init(cg_context_t *ctx, cg_gpu_info_t *gpu);
 
-#endif /* __COGL_GPU_INFO_PRIVATE_H */
+#endif /* __CG_GPU_INFO_PRIVATE_H */

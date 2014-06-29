@@ -28,39 +28,39 @@
  *
  */
 
-#if !defined(__COGL_H_INSIDE__) && !defined(COGL_COMPILATION)
+#if !defined(__CG_H_INSIDE__) && !defined(CG_COMPILATION)
 #error "Only <cogl/cogl.h> can be included directly."
 #endif
 
-#ifndef __COGL_PIPELINE_LAYER_STATE_H__
-#define __COGL_PIPELINE_LAYER_STATE_H__
+#ifndef __CG_PIPELINE_LAYER_STATE_H__
+#define __CG_PIPELINE_LAYER_STATE_H__
 
 #include <cogl/cogl-pipeline.h>
 #include <cogl/cogl-color.h>
 #include <cogl/cogl-matrix.h>
 #include <cogl/cogl-texture.h>
 
-COGL_BEGIN_DECLS
+CG_BEGIN_DECLS
 
 /**
- * CoglPipelineFilter:
- * @COGL_PIPELINE_FILTER_NEAREST: Measuring in manhatten distance from the,
+ * cg_pipeline_filter_t:
+ * @CG_PIPELINE_FILTER_NEAREST: Measuring in manhatten distance from the,
  *   current pixel center, use the nearest texture texel
- * @COGL_PIPELINE_FILTER_LINEAR: Use the weighted average of the 4 texels
+ * @CG_PIPELINE_FILTER_LINEAR: Use the weighted average of the 4 texels
  *   nearest the current pixel center
- * @COGL_PIPELINE_FILTER_NEAREST_MIPMAP_NEAREST: Select the mimap level whose
+ * @CG_PIPELINE_FILTER_NEAREST_MIPMAP_NEAREST: Select the mimap level whose
  *   texel size most closely matches the current pixel, and use the
- *   %COGL_PIPELINE_FILTER_NEAREST criterion
- * @COGL_PIPELINE_FILTER_LINEAR_MIPMAP_NEAREST: Select the mimap level whose
+ *   %CG_PIPELINE_FILTER_NEAREST criterion
+ * @CG_PIPELINE_FILTER_LINEAR_MIPMAP_NEAREST: Select the mimap level whose
  *   texel size most closely matches the current pixel, and use the
- *   %COGL_PIPELINE_FILTER_LINEAR criterion
- * @COGL_PIPELINE_FILTER_NEAREST_MIPMAP_LINEAR: Select the two mimap levels
+ *   %CG_PIPELINE_FILTER_LINEAR criterion
+ * @CG_PIPELINE_FILTER_NEAREST_MIPMAP_LINEAR: Select the two mimap levels
  *   whose texel size most closely matches the current pixel, use
- *   the %COGL_PIPELINE_FILTER_NEAREST criterion on each one and take
+ *   the %CG_PIPELINE_FILTER_NEAREST criterion on each one and take
  *   their weighted average
- * @COGL_PIPELINE_FILTER_LINEAR_MIPMAP_LINEAR: Select the two mimap levels
+ * @CG_PIPELINE_FILTER_LINEAR_MIPMAP_LINEAR: Select the two mimap levels
  *   whose texel size most closely matches the current pixel, use
- *   the %COGL_PIPELINE_FILTER_LINEAR criterion on each one and take
+ *   the %CG_PIPELINE_FILTER_LINEAR criterion on each one and take
  *   their weighted average
  *
  * Texture filtering is used whenever the current pixel maps either to more
@@ -70,35 +70,35 @@ COGL_BEGIN_DECLS
  * average or simply using the nearest texel.
  */
 typedef enum {
-  COGL_PIPELINE_FILTER_NEAREST = 0x2600,
-  COGL_PIPELINE_FILTER_LINEAR = 0x2601,
-  COGL_PIPELINE_FILTER_NEAREST_MIPMAP_NEAREST = 0x2700,
-  COGL_PIPELINE_FILTER_LINEAR_MIPMAP_NEAREST = 0x2701,
-  COGL_PIPELINE_FILTER_NEAREST_MIPMAP_LINEAR = 0x2702,
-  COGL_PIPELINE_FILTER_LINEAR_MIPMAP_LINEAR = 0x2703
-} CoglPipelineFilter;
+    CG_PIPELINE_FILTER_NEAREST = 0x2600,
+    CG_PIPELINE_FILTER_LINEAR = 0x2601,
+    CG_PIPELINE_FILTER_NEAREST_MIPMAP_NEAREST = 0x2700,
+    CG_PIPELINE_FILTER_LINEAR_MIPMAP_NEAREST = 0x2701,
+    CG_PIPELINE_FILTER_NEAREST_MIPMAP_LINEAR = 0x2702,
+    CG_PIPELINE_FILTER_LINEAR_MIPMAP_LINEAR = 0x2703
+} cg_pipeline_filter_t;
 /* NB: these values come from the equivalents in gl.h */
 
 /**
- * CoglPipelineWrapMode:
- * @COGL_PIPELINE_WRAP_MODE_REPEAT: The texture will be repeated. This
+ * cg_pipeline_wrap_mode_t:
+ * @CG_PIPELINE_WRAP_MODE_REPEAT: The texture will be repeated. This
  *   is useful for example to draw a tiled background.
- * @COGL_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE: The coordinates outside the
+ * @CG_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE: The coordinates outside the
  *   range 0→1 will sample copies of the edge pixels of the
  *   texture. This is useful to avoid artifacts if only one copy of
  *   the texture is being rendered.
- * @COGL_PIPELINE_WRAP_MODE_AUTOMATIC: Cogl will try to automatically
+ * @CG_PIPELINE_WRAP_MODE_AUTOMATIC: Cogl will try to automatically
  *   decide which of the above two to use. For
- *   cogl_framebuffer_draw_rectangle(), it will use repeat mode if any
+ *   cg_framebuffer_draw_rectangle(), it will use repeat mode if any
  *   of the texture coordinates are outside the range 0→1, otherwise
- *   it will use clamp to edge. For cogl_framebuffer_draw_attributes()
- *   or cogl_primitive_draw() it will use repeat mode
+ *   it will use clamp to edge. For cg_framebuffer_draw_attributes()
+ *   or cg_primitive_draw() it will use repeat mode
  *   except for layers that have point sprite coordinate generation
  *   enabled. This is the default value.
  *
  * The wrap mode specifies what happens when texture coordinates
  * outside the range 0→1 are used. Note that if the filter mode is
- * anything but %COGL_PIPELINE_FILTER_NEAREST then texels outside the
+ * anything but %CG_PIPELINE_FILTER_NEAREST then texels outside the
  * range 0→1 might be used even when the coordinate is exactly 0 or 1
  * because OpenGL will try to sample neighbouring pixels. For example
  * if you are trying to render the full texture then you may get
@@ -110,22 +110,22 @@ typedef enum {
 /* GL_ALWAYS is just used here as a value that is known not to clash
  * with any valid GL wrap modes
  *
- * XXX: keep the values in sync with the CoglPipelineWrapModeInternal
+ * XXX: keep the values in sync with the cg_pipeline_wrap_mode_internal_t
  * enum so no conversion is actually needed.
  */
 typedef enum {
-  COGL_PIPELINE_WRAP_MODE_REPEAT = 0x2901,
-  COGL_PIPELINE_WRAP_MODE_MIRRORED_REPEAT = 0x8370,
-  COGL_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE = 0x812F,
-  COGL_PIPELINE_WRAP_MODE_AUTOMATIC = 0x0207 /* GL_ALWAYS */
-} CoglPipelineWrapMode;
+    CG_PIPELINE_WRAP_MODE_REPEAT = 0x2901,
+    CG_PIPELINE_WRAP_MODE_MIRRORED_REPEAT = 0x8370,
+    CG_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE = 0x812F,
+    CG_PIPELINE_WRAP_MODE_AUTOMATIC = 0x0207 /* GL_ALWAYS */
+} cg_pipeline_wrap_mode_t;
 /* NB: these values come from the equivalents in gl.h */
 
 /**
- * cogl_pipeline_set_layer:
- * @pipeline: A #CoglPipeline object
+ * cg_pipeline_set_layer:
+ * @pipeline: A #cg_pipeline_t object
  * @layer_index: the index of the layer
- * @texture: a #CoglTexture for the layer object
+ * @texture: a #cg_texture_t for the layer object
  *
  * In addition to the standard OpenGL lighting model a Cogl pipeline may have
  * one or more layers comprised of textures that can be blended together in
@@ -138,9 +138,9 @@ typedef enum {
  * The @texture parameter can also be %NULL in which case the pipeline
  * will use a default white texture. The type of the default texture
  * will be the same as whatever texture was last used for the pipeline
- * or %COGL_TEXTURE_TYPE_2D if none has been specified yet. To
+ * or %CG_TEXTURE_TYPE_2D if none has been specified yet. To
  * explicitly specify the type of default texture required, use
- * cogl_pipeline_set_layer_null_texture() instead.
+ * cg_pipeline_set_layer_null_texture() instead.
  *
  * <note>In the future, we may define other types of pipeline layers, such
  * as purely GLSL based layers.</note>
@@ -148,40 +148,38 @@ typedef enum {
  * Since: 2.0
  * Stability: unstable
  */
-void
-cogl_pipeline_set_layer_texture (CoglPipeline *pipeline,
-                                 int           layer_index,
-                                 CoglTexture  *texture);
+void cg_pipeline_set_layer_texture(cg_pipeline_t *pipeline,
+                                   int layer_index,
+                                   cg_texture_t *texture);
 
 /**
- * cogl_pipeline_set_layer_null_texture:
- * @pipeline: A #CoglPipeline
+ * cg_pipeline_set_layer_null_texture:
+ * @pipeline: A #cg_pipeline_t
  * @layer_index: The layer number to modify
  * @texture_type: The type of the default texture to use
  *
  * Sets the texture for this layer to be the default texture for the
  * given type. This is equivalent to calling
- * cogl_pipeline_set_layer_texture() with %NULL for the texture
+ * cg_pipeline_set_layer_texture() with %NULL for the texture
  * argument except that you can also specify the type of default
  * texture to use. The default texture is a 1x1 pixel white texture.
  *
  * This function is mostly useful if you want to create a base
  * pipeline that you want to create multiple copies from using
- * cogl_pipeline_copy(). In that case this function can be used to
+ * cg_pipeline_copy(). In that case this function can be used to
  * specify the texture type so that any pipeline copies can share the
  * internal texture type state for efficiency.
  *
  * Since: 1.10
  * Stability: unstable
  */
-void
-cogl_pipeline_set_layer_null_texture (CoglPipeline *pipeline,
-                                      int layer_index,
-                                      CoglTextureType texture_type);
+void cg_pipeline_set_layer_null_texture(cg_pipeline_t *pipeline,
+                                        int layer_index,
+                                        cg_texture_type_t texture_type);
 
 /**
- * cogl_pipeline_get_layer_texture:
- * @pipeline: A #CoglPipeline object
+ * cg_pipeline_get_layer_texture:
+ * @pipeline: A #cg_pipeline_t object
  * @layer_index: the index of the layer
  *
  * Return value: the texture that was set for the given layer of the
@@ -189,30 +187,27 @@ cogl_pipeline_set_layer_null_texture (CoglPipeline *pipeline,
  * Stability: unstable
  * Since: 1.10
  */
-CoglTexture *
-cogl_pipeline_get_layer_texture (CoglPipeline *pipeline,
-                                 int layer_index);
+cg_texture_t *cg_pipeline_get_layer_texture(cg_pipeline_t *pipeline,
+                                            int layer_index);
 
 /**
- * cogl_pipeline_remove_layer:
- * @pipeline: A #CoglPipeline object
+ * cg_pipeline_remove_layer:
+ * @pipeline: A #cg_pipeline_t object
  * @layer_index: Specifies the layer you want to remove
  *
  * This function removes a layer from your pipeline
  * Since: 1.10
  * Stability: unstable
  */
-void
-cogl_pipeline_remove_layer (CoglPipeline *pipeline,
-			    int           layer_index);
+void cg_pipeline_remove_layer(cg_pipeline_t *pipeline, int layer_index);
 
 /**
- * cogl_pipeline_set_layer_combine:
- * @pipeline: A #CoglPipeline object
+ * cg_pipeline_set_layer_combine:
+ * @pipeline: A #cg_pipeline_t object
  * @layer_index: Specifies the layer you want define a combine function for
  * @blend_string: A <link linkend="cogl-Blend-Strings">Cogl blend string</link>
  *    describing the desired texture combine function.
- * @error: A #CoglError that may report parse errors or lack of GPU/driver
+ * @error: A #cg_error_t that may report parse errors or lack of GPU/driver
  *   support. May be %NULL, in which case a warning will be printed out if an
  *   error is encountered.
  *
@@ -226,7 +221,8 @@ cogl_pipeline_remove_layer (CoglPipeline *pipeline,
  *   <listitem>MODULATE(arg0, arg1) = arg0 x arg1</listitem>
  *   <listitem>ADD(arg0, arg1) = arg0 + arg1</listitem>
  *   <listitem>ADD_SIGNED(arg0, arg1) = arg0 + arg1 - 0.5</listitem>
- *   <listitem>INTERPOLATE(arg0, arg1, arg2) = arg0 x arg2 + arg1 x (1 - arg2)</listitem>
+ *   <listitem>INTERPOLATE(arg0, arg1, arg2) = arg0 x arg2 + arg1 x (1 -
+ * arg2)</listitem>
  *   <listitem>SUBTRACT(arg0, arg1) = arg0 - arg1</listitem>
  *   <listitem>
  *     <programlisting>
@@ -260,18 +256,18 @@ cogl_pipeline_remove_layer (CoglPipeline *pipeline,
  *   <varlistentry>
  *     <term>CONSTANT</term>
  *     <listitem>Use the color from the constant given with
- *     cogl_pipeline_set_layer_combine_constant()</listitem>
+ *     cg_pipeline_set_layer_combine_constant()</listitem>
  *   </varlistentry>
  *   <varlistentry>
  *     <term>PRIMARY</term>
  *     <listitem>Use the color of the pipeline as set with
- *     cogl_pipeline_set_color()</listitem>
+ *     cg_pipeline_set_color()</listitem>
  *   </varlistentry>
  *   <varlistentry>
  *     <term>PREVIOUS</term>
  *     <listitem>Either use the texture color from the previous layer, or
  *     if this is layer 0, use the color of the pipeline as set with
- *     cogl_pipeline_set_color()</listitem>
+ *     cg_pipeline_set_color()</listitem>
  *   </varlistentry>
  * </variablelist>
  *
@@ -284,7 +280,7 @@ cogl_pipeline_remove_layer (CoglPipeline *pipeline,
  *   <para>This could be used to cross-fade between two images, using
  *   the alpha component of a constant as the interpolator. The constant
  *   color is given by calling
- *   cogl_pipeline_set_layer_combine_constant().</para>
+ *   cg_pipeline_set_layer_combine_constant().</para>
  *   <informalexample><programlisting>
  *   RGBA = INTERPOLATE (PREVIOUS, TEXTURE, CONSTANT[A])
  *   </programlisting></informalexample>
@@ -300,15 +296,14 @@ cogl_pipeline_remove_layer (CoglPipeline *pipeline,
  * Since: 2.0
  * Stability: unstable
  */
-bool
-cogl_pipeline_set_layer_combine (CoglPipeline *pipeline,
-				 int           layer_index,
-				 const char   *blend_string,
-                                 CoglError      **error);
+bool cg_pipeline_set_layer_combine(cg_pipeline_t *pipeline,
+                                   int layer_index,
+                                   const char *blend_string,
+                                   cg_error_t **error);
 
 /**
- * cogl_pipeline_set_layer_combine_constant:
- * @pipeline: A #CoglPipeline object
+ * cg_pipeline_set_layer_combine_constant:
+ * @pipeline: A #cg_pipeline_t object
  * @layer_index: Specifies the layer you want to specify a constant used
  *               for texture combining
  * @constant: The constant color you want
@@ -319,14 +314,13 @@ cogl_pipeline_set_layer_combine (CoglPipeline *pipeline,
  * Since: 2.0
  * Stability: unstable
  */
-void
-cogl_pipeline_set_layer_combine_constant (CoglPipeline    *pipeline,
-                                          int              layer_index,
-                                          const CoglColor *constant);
+void cg_pipeline_set_layer_combine_constant(cg_pipeline_t *pipeline,
+                                            int layer_index,
+                                            const cg_color_t *constant);
 
 /**
- * cogl_pipeline_get_n_layers:
- * @pipeline: A #CoglPipeline object
+ * cg_pipeline_get_n_layers:
+ * @pipeline: A #cg_pipeline_t object
  *
  * Retrieves the number of layers defined for the given @pipeline
  *
@@ -335,12 +329,11 @@ cogl_pipeline_set_layer_combine_constant (CoglPipeline    *pipeline,
  * Since: 2.0
  * Stability: unstable
  */
-int
-cogl_pipeline_get_n_layers (CoglPipeline *pipeline);
+int cg_pipeline_get_n_layers(cg_pipeline_t *pipeline);
 
 /**
- * cogl_pipeline_set_layer_filters:
- * @pipeline: A #CoglPipeline object
+ * cg_pipeline_set_layer_filters:
+ * @pipeline: A #cg_pipeline_t object
  * @layer_index: the layer number to change.
  * @min_filter: the filter used when scaling a texture down.
  * @mag_filter: the filter used when magnifying a texture.
@@ -349,67 +342,64 @@ cogl_pipeline_get_n_layers (CoglPipeline *pipeline);
  * drawn at other scales than 100%.
  *
  * <note>It is an error to pass anything other than
- * %COGL_PIPELINE_FILTER_NEAREST or %COGL_PIPELINE_FILTER_LINEAR as
+ * %CG_PIPELINE_FILTER_NEAREST or %CG_PIPELINE_FILTER_LINEAR as
  * magnification filters since magnification doesn't ever need to
  * reference values stored in the mipmap chain.</note>
  *
  * Since: 1.10
  * Stability: unstable
  */
-void
-cogl_pipeline_set_layer_filters (CoglPipeline      *pipeline,
-                                 int                layer_index,
-                                 CoglPipelineFilter min_filter,
-                                 CoglPipelineFilter mag_filter);
+void cg_pipeline_set_layer_filters(cg_pipeline_t *pipeline,
+                                   int layer_index,
+                                   cg_pipeline_filter_t min_filter,
+                                   cg_pipeline_filter_t mag_filter);
 
 /**
- * cogl_pipeline_get_layer_min_filter:
- * @pipeline: A #CoglPipeline object
+ * cg_pipeline_get_layer_min_filter:
+ * @pipeline: A #cg_pipeline_t object
  * @layer_index: the layer number to change.
  *
- * Retrieves the currently set minification #CoglPipelineFilter set on
+ * Retrieves the currently set minification #cg_pipeline_filter_t set on
  * the specified layer. The miniifcation filter determines how the
  * layer should be sampled when down-scaled.
  *
- * The default filter is %COGL_PIPELINE_FILTER_LINEAR but this can be
- * changed using cogl_pipeline_set_layer_filters().
+ * The default filter is %CG_PIPELINE_FILTER_LINEAR but this can be
+ * changed using cg_pipeline_set_layer_filters().
  *
- * Return value: The minification #CoglPipelineFilter for the
+ * Return value: The minification #cg_pipeline_filter_t for the
  *               specified layer.
  * Since: 1.10
  * Stability: unstable
  */
-CoglPipelineFilter
-cogl_pipeline_get_layer_min_filter (CoglPipeline *pipeline,
-                                    int layer_index);
+cg_pipeline_filter_t cg_pipeline_get_layer_min_filter(cg_pipeline_t *pipeline,
+                                                      int layer_index);
 
 /**
- * cogl_pipeline_get_layer_mag_filter:
- * @pipeline: A #CoglPipeline object
+ * cg_pipeline_get_layer_mag_filter:
+ * @pipeline: A #cg_pipeline_t object
  * @layer_index: the layer number to change.
  *
- * Retrieves the currently set magnification #CoglPipelineFilter set on
+ * Retrieves the currently set magnification #cg_pipeline_filter_t set on
  * the specified layer. The magnification filter determines how the
  * layer should be sampled when up-scaled.
  *
- * The default filter is %COGL_PIPELINE_FILTER_LINEAR but this can be
- * changed using cogl_pipeline_set_layer_filters().
+ * The default filter is %CG_PIPELINE_FILTER_LINEAR but this can be
+ * changed using cg_pipeline_set_layer_filters().
  *
- * Return value: The magnification #CoglPipelineFilter for the
+ * Return value: The magnification #cg_pipeline_filter_t for the
  *               specified layer.
  * Since: 1.10
  * Stability: unstable
  */
-CoglPipelineFilter
-cogl_pipeline_get_layer_mag_filter (CoglPipeline *pipeline,
-                                    int layer_index);
+cg_pipeline_filter_t cg_pipeline_get_layer_mag_filter(cg_pipeline_t *pipeline,
+                                                      int layer_index);
 
 /**
- * cogl_pipeline_set_layer_point_sprite_coords_enabled:
- * @pipeline: A #CoglPipeline object
+ * cg_pipeline_set_layer_point_sprite_coords_enabled:
+ * @pipeline: A #cg_pipeline_t object
  * @layer_index: the layer number to change.
  * @enable: whether to enable point sprite coord generation.
- * @error: A return location for a CoglError, or NULL to ignore errors.
+ * @error: A return location for a cg_error_t, or NULL to ignore errors.
  *
  * When rendering points, if @enable is %true then the texture
  * coordinates for this layer will be replaced with coordinates that
@@ -418,7 +408,7 @@ cogl_pipeline_get_layer_mag_filter (CoglPipeline *pipeline,
  * have 1.0,1.0. If @enable is %false then the coordinates will be
  * fixed for the entire point.
  *
- * This function will only work if %COGL_FEATURE_ID_POINT_SPRITE is
+ * This function will only work if %CG_FEATURE_ID_POINT_SPRITE is
  * available. If the feature is not available then the function will
  * return %false and set @error.
  *
@@ -426,15 +416,14 @@ cogl_pipeline_get_layer_mag_filter (CoglPipeline *pipeline,
  * Since: 2.0
  * Stability: unstable
  */
-bool
-cogl_pipeline_set_layer_point_sprite_coords_enabled (CoglPipeline *pipeline,
-                                                     int           layer_index,
-                                                     bool      enable,
-                                                     CoglError      **error);
+bool cg_pipeline_set_layer_point_sprite_coords_enabled(cg_pipeline_t *pipeline,
+                                                       int layer_index,
+                                                       bool enable,
+                                                       cg_error_t **error);
 
 /**
- * cogl_pipeline_get_layer_point_sprite_coords_enabled:
- * @pipeline: A #CoglPipeline object
+ * cg_pipeline_get_layer_point_sprite_coords_enabled:
+ * @pipeline: A #cg_pipeline_t object
  * @layer_index: the layer number to check.
  *
  * Gets whether point sprite coordinate generation is enabled for this
@@ -446,13 +435,12 @@ cogl_pipeline_set_layer_point_sprite_coords_enabled (CoglPipeline *pipeline,
  * Since: 2.0
  * Stability: unstable
  */
-bool
-cogl_pipeline_get_layer_point_sprite_coords_enabled (CoglPipeline *pipeline,
-                                                     int           layer_index);
+bool cg_pipeline_get_layer_point_sprite_coords_enabled(cg_pipeline_t *pipeline,
+                                                       int layer_index);
 
 /**
- * cogl_pipeline_get_layer_wrap_mode_s:
- * @pipeline: A #CoglPipeline object
+ * cg_pipeline_get_layer_wrap_mode_s:
+ * @pipeline: A #cg_pipeline_t object
  * @layer_index: the layer number to change.
  *
  * Returns the wrap mode for the 's' coordinate of texture lookups on this
@@ -464,13 +452,12 @@ cogl_pipeline_get_layer_point_sprite_coords_enabled (CoglPipeline *pipeline,
  * Since: 1.6
  * Stability: unstable
  */
-CoglPipelineWrapMode
-cogl_pipeline_get_layer_wrap_mode_s (CoglPipeline *pipeline,
-                                     int           layer_index);
+cg_pipeline_wrap_mode_t
+cg_pipeline_get_layer_wrap_mode_s(cg_pipeline_t *pipeline, int layer_index);
 
 /**
- * cogl_pipeline_set_layer_wrap_mode_s:
- * @pipeline: A #CoglPipeline object
+ * cg_pipeline_set_layer_wrap_mode_s:
+ * @pipeline: A #cg_pipeline_t object
  * @layer_index: the layer number to change.
  * @mode: the new wrap mode
  *
@@ -479,14 +466,13 @@ cogl_pipeline_get_layer_wrap_mode_s (CoglPipeline *pipeline,
  * Since: 2.0
  * Stability: unstable
  */
-void
-cogl_pipeline_set_layer_wrap_mode_s (CoglPipeline        *pipeline,
-                                     int                  layer_index,
-                                     CoglPipelineWrapMode mode);
+void cg_pipeline_set_layer_wrap_mode_s(cg_pipeline_t *pipeline,
+                                       int layer_index,
+                                       cg_pipeline_wrap_mode_t mode);
 
 /**
- * cogl_pipeline_get_layer_wrap_mode_t:
- * @pipeline: A #CoglPipeline object
+ * cg_pipeline_get_layer_wrap_mode_t:
+ * @pipeline: A #cg_pipeline_t object
  * @layer_index: the layer number to change.
  *
  * Returns the wrap mode for the 't' coordinate of texture lookups on this
@@ -498,14 +484,12 @@ cogl_pipeline_set_layer_wrap_mode_s (CoglPipeline        *pipeline,
  * Since: 1.6
  * Stability: unstable
  */
-CoglPipelineWrapMode
-cogl_pipeline_get_layer_wrap_mode_t (CoglPipeline *pipeline,
-                                     int           layer_index);
-
+cg_pipeline_wrap_mode_t
+cg_pipeline_get_layer_wrap_mode_t(cg_pipeline_t *pipeline, int layer_index);
 
 /**
- * cogl_pipeline_set_layer_wrap_mode_t:
- * @pipeline: A #CoglPipeline object
+ * cg_pipeline_set_layer_wrap_mode_t:
+ * @pipeline: A #cg_pipeline_t object
  * @layer_index: the layer number to change.
  * @mode: the new wrap mode
  *
@@ -514,14 +498,13 @@ cogl_pipeline_get_layer_wrap_mode_t (CoglPipeline *pipeline,
  * Since: 2.0
  * Stability: unstable
  */
-void
-cogl_pipeline_set_layer_wrap_mode_t (CoglPipeline        *pipeline,
-                                     int                  layer_index,
-                                     CoglPipelineWrapMode mode);
+void cg_pipeline_set_layer_wrap_mode_t(cg_pipeline_t *pipeline,
+                                       int layer_index,
+                                       cg_pipeline_wrap_mode_t mode);
 
 /**
- * cogl_pipeline_get_layer_wrap_mode_p:
- * @pipeline: A #CoglPipeline object
+ * cg_pipeline_get_layer_wrap_mode_p:
+ * @pipeline: A #cg_pipeline_t object
  * @layer_index: the layer number to change.
  *
  * Returns the wrap mode for the 'p' coordinate of texture lookups on this
@@ -533,13 +516,12 @@ cogl_pipeline_set_layer_wrap_mode_t (CoglPipeline        *pipeline,
  * Since: 1.6
  * Stability: unstable
  */
-CoglPipelineWrapMode
-cogl_pipeline_get_layer_wrap_mode_p (CoglPipeline *pipeline,
-                                     int           layer_index);
+cg_pipeline_wrap_mode_t
+cg_pipeline_get_layer_wrap_mode_p(cg_pipeline_t *pipeline, int layer_index);
 
 /**
- * cogl_pipeline_set_layer_wrap_mode_p:
- * @pipeline: A #CoglPipeline object
+ * cg_pipeline_set_layer_wrap_mode_p:
+ * @pipeline: A #cg_pipeline_t object
  * @layer_index: the layer number to change.
  * @mode: the new wrap mode
  *
@@ -549,51 +531,48 @@ cogl_pipeline_get_layer_wrap_mode_p (CoglPipeline *pipeline,
  * Since: 2.0
  * Stability: unstable
  */
-void
-cogl_pipeline_set_layer_wrap_mode_p (CoglPipeline        *pipeline,
-                                     int                  layer_index,
-                                     CoglPipelineWrapMode mode);
+void cg_pipeline_set_layer_wrap_mode_p(cg_pipeline_t *pipeline,
+                                       int layer_index,
+                                       cg_pipeline_wrap_mode_t mode);
 
 /**
- * cogl_pipeline_set_layer_wrap_mode:
- * @pipeline: A #CoglPipeline object
+ * cg_pipeline_set_layer_wrap_mode:
+ * @pipeline: A #cg_pipeline_t object
  * @layer_index: the layer number to change.
  * @mode: the new wrap mode
  *
  * Sets the wrap mode for all three coordinates of texture lookups on
  * this layer. This is equivalent to calling
- * cogl_pipeline_set_layer_wrap_mode_s(),
- * cogl_pipeline_set_layer_wrap_mode_t() and
- * cogl_pipeline_set_layer_wrap_mode_p() separately.
+ * cg_pipeline_set_layer_wrap_mode_s(),
+ * cg_pipeline_set_layer_wrap_mode_t() and
+ * cg_pipeline_set_layer_wrap_mode_p() separately.
  *
  * Since: 2.0
  * Stability: unstable
  */
-void
-cogl_pipeline_set_layer_wrap_mode (CoglPipeline        *pipeline,
-                                   int                  layer_index,
-                                   CoglPipelineWrapMode mode);
+void cg_pipeline_set_layer_wrap_mode(cg_pipeline_t *pipeline,
+                                     int layer_index,
+                                     cg_pipeline_wrap_mode_t mode);
 
 /**
- * cogl_pipeline_add_layer_snippet:
- * @pipeline: A #CoglPipeline
+ * cg_pipeline_add_layer_snippet:
+ * @pipeline: A #cg_pipeline_t
  * @layer: The layer to hook the snippet to
- * @snippet: A #CoglSnippet
+ * @snippet: A #cg_snippet_t
  *
  * Adds a shader snippet that will hook on to the given layer of the
  * pipeline. The exact part of the pipeline that the snippet wraps
  * around depends on the hook that is given to
- * cogl_snippet_new(). Note that some hooks can't be used with a layer
- * and need to be added with cogl_pipeline_add_snippet() instead.
+ * cg_snippet_new(). Note that some hooks can't be used with a layer
+ * and need to be added with cg_pipeline_add_snippet() instead.
  *
  * Since: 1.10
  * Stability: Unstable
  */
-void
-cogl_pipeline_add_layer_snippet (CoglPipeline *pipeline,
-                                 int layer,
-                                 CoglSnippet *snippet);
+void cg_pipeline_add_layer_snippet(cg_pipeline_t *pipeline,
+                                   int layer,
+                                   cg_snippet_t *snippet);
 
-COGL_END_DECLS
+CG_END_DECLS
 
-#endif /* __COGL_PIPELINE_LAYER_STATE_H__ */
+#endif /* __CG_PIPELINE_LAYER_STATE_H__ */

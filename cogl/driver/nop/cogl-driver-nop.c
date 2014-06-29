@@ -45,41 +45,38 @@
 #include "cogl-clip-stack-nop-private.h"
 
 static bool
-_cogl_driver_update_features (CoglContext *ctx,
-                              CoglError **error)
+_cg_driver_update_features(cg_context_t *ctx, cg_error_t **error)
 {
-  /* _cogl_gpc_info_init (ctx, &ctx->gpu); */
+    /* _cg_gpc_info_init (ctx, &ctx->gpu); */
 
-  memset (ctx->private_features, 0, sizeof (ctx->private_features));
+    memset(ctx->private_features, 0, sizeof(ctx->private_features));
 
-  return true;
+    return true;
 }
 
-const CoglDriverVtable
-_cogl_driver_nop =
-  {
+const cg_driver_vtable_t _cg_driver_nop = {
     NULL, /* pixel_format_from_gl_internal */
     NULL, /* pixel_format_to_gl */
-    _cogl_driver_update_features,
-    _cogl_offscreen_nop_allocate,
-    _cogl_offscreen_nop_free,
-    _cogl_framebuffer_nop_flush_state,
-    _cogl_framebuffer_nop_clear,
-    _cogl_framebuffer_nop_query_bits,
-    _cogl_framebuffer_nop_finish,
-    _cogl_framebuffer_nop_discard_buffers,
-    _cogl_framebuffer_nop_draw_attributes,
-    _cogl_framebuffer_nop_draw_indexed_attributes,
-    _cogl_framebuffer_nop_read_pixels_into_bitmap,
-    _cogl_texture_2d_nop_free,
-    _cogl_texture_2d_nop_can_create,
-    _cogl_texture_2d_nop_init,
-    _cogl_texture_2d_nop_allocate,
-    _cogl_texture_2d_nop_copy_from_framebuffer,
-    _cogl_texture_2d_nop_get_gl_handle,
-    _cogl_texture_2d_nop_generate_mipmap,
-    _cogl_texture_2d_nop_copy_from_bitmap,
+    _cg_driver_update_features,
+    _cg_offscreen_nop_allocate,
+    _cg_offscreen_nop_free,
+    _cg_framebuffer_nop_flush_state,
+    _cg_framebuffer_nop_clear,
+    _cg_framebuffer_nop_query_bits,
+    _cg_framebuffer_nop_finish,
+    _cg_framebuffer_nop_discard_buffers,
+    _cg_framebuffer_nop_draw_attributes,
+    _cg_framebuffer_nop_draw_indexed_attributes,
+    _cg_framebuffer_nop_read_pixels_into_bitmap,
+    _cg_texture_2d_nop_free,
+    _cg_texture_2d_nop_can_create,
+    _cg_texture_2d_nop_init,
+    _cg_texture_2d_nop_allocate,
+    _cg_texture_2d_nop_copy_from_framebuffer,
+    _cg_texture_2d_nop_get_gl_handle,
+    _cg_texture_2d_nop_generate_mipmap,
+    _cg_texture_2d_nop_copy_from_bitmap,
     NULL, /* texture_2d_get_data */
-    _cogl_nop_flush_attributes_state,
-    _cogl_clip_stack_nop_flush,
-  };
+    _cg_nop_flush_attributes_state,
+    _cg_clip_stack_nop_flush,
+};

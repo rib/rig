@@ -27,12 +27,11 @@
  *
  */
 
-#ifndef __COGL_PIPELINE_FRAGEND_NOP_PRIVATE_H
-#define __COGL_PIPELINE_FRAGEND_NOP_PRIVATE_H
+#ifndef __CG_PIPELINE_FRAGEND_NOP_PRIVATE_H
+#define __CG_PIPELINE_FRAGEND_NOP_PRIVATE_H
 
 #include "cogl-pipeline-private.h"
 
-extern const CoglPipelineFragend _cogl_pipeline_nop_fragend;
+extern const cg_pipeline_fragend_t _cg_pipeline_nop_fragend;
 
-#endif /* __COGL_PIPELINE_FRAGEND_NOP_PRIVATE_H */
-
+#endif /* __CG_PIPELINE_FRAGEND_NOP_PRIVATE_H */

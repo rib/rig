@@ -29,16 +29,16 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#ifndef __COGL_QUATERNION_PRIVATE_H__
-#define __COGL_QUATERNION_PRIVATE_H__
+#ifndef __CG_QUATERNION_PRIVATE_H__
+#define __CG_QUATERNION_PRIVATE_H__
 
 #include <clib.h>
 
 /* squared length */
-#define _COGL_QUATERNION_NORM(Q) \
-  ((Q)->x*(Q)->x + (Q)->y*(Q)->y + (Q)->z*(Q)->z + (Q)->w*(Q)->w)
+#define _CG_QUATERNION_NORM(Q)                                                 \
+    ((Q)->x *(Q)->x + (Q)->y *(Q)->y + (Q)->z *(Q)->z + (Q)->w *(Q)->w)
 
-#define _COGL_QUATERNION_DEGREES_TO_RADIANS (G_PI / 180.0f)
-#define _COGL_QUATERNION_RADIANS_TO_DEGREES (180.0f / G_PI)
+#define _CG_QUATERNION_DEGREES_TO_RADIANS (G_PI / 180.0f)
+#define _CG_QUATERNION_RADIANS_TO_DEGREES (180.0f / G_PI)
 
-#endif /* __COGL_QUATERNION_PRIVATE_H__ */
+#endif /* __CG_QUATERNION_PRIVATE_H__ */

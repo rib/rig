@@ -68,34 +68,30 @@
  * vertices which should eradicate most noise due to in-precision.
  */
 int
-_cogl_util_point_in_screen_poly (float point_x,
-                                 float point_y,
-                                 void *vertices,
-                                 size_t stride,
-                                 int n_vertices)
+_cg_util_point_in_screen_poly(
+    float point_x, float point_y, void *vertices, size_t stride, int n_vertices)
 {
-  int i, j, c = 0;
+    int i, j, c = 0;
 
-  for (i = 0, j = n_vertices - 1; i < n_vertices; j = i++)
-    {
-      float vert_xi = *(float *)((uint8_t *)vertices + i * stride);
-      float vert_xj = *(float *)((uint8_t *)vertices + j * stride);
-      float vert_yi = *(float *)((uint8_t *)vertices + i * stride +
-                                 sizeof (float));
-      float vert_yj = *(float *)((uint8_t *)vertices + j * stride +
-                                 sizeof (float));
+    for (i = 0, j = n_vertices - 1; i < n_vertices; j = i++) {
+        float vert_xi = *(float *)((uint8_t *)vertices + i * stride);
+        float vert_xj = *(float *)((uint8_t *)vertices + j * stride);
+        float vert_yi =
+            *(float *)((uint8_t *)vertices + i * stride + sizeof(float));
+        float vert_yj =
+            *(float *)((uint8_t *)vertices + j * stride + sizeof(float));
 
-      vert_xi = COGL_UTIL_NEARBYINT (vert_xi);
-      vert_xj = COGL_UTIL_NEARBYINT (vert_xj);
-      vert_yi = COGL_UTIL_NEARBYINT (vert_yi);
-      vert_yj = COGL_UTIL_NEARBYINT (vert_yj);
+        vert_xi = CG_UTIL_NEARBYINT(vert_xi);
+        vert_xj = CG_UTIL_NEARBYINT(vert_xj);
+        vert_yi = CG_UTIL_NEARBYINT(vert_yi);
+        vert_yj = CG_UTIL_NEARBYINT(vert_yj);
 
-      if (((vert_yi > point_y) != (vert_yj > point_y)) &&
-           (point_x < (vert_xj - vert_xi) * (point_y - vert_yi) /
-            (vert_yj - vert_yi) + vert_xi) )
-         c = !c;
+        if (((vert_yi > point_y) != (vert_yj > point_y)) &&
+            (point_x <
+             (vert_xj - vert_xi) * (point_y - vert_yi) / (vert_yj - vert_yi) +
+             vert_xi))
+            c = !c;
     }
 
-  return c;
+    return c;
 }
-

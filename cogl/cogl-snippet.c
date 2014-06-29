@@ -39,147 +39,142 @@
 #include "cogl-snippet-private.h"
 #include "cogl-util.h"
 
-static void
-_cogl_snippet_free (CoglSnippet *snippet);
+static void _cg_snippet_free(cg_snippet_t *snippet);
 
-COGL_OBJECT_DEFINE (Snippet, snippet);
+CG_OBJECT_DEFINE(Snippet, snippet);
 
-CoglSnippet *
-cogl_snippet_new (CoglSnippetHook hook,
-                  const char *declarations,
-                  const char *post)
+cg_snippet_t *
+cg_snippet_new(cg_snippet_hook_t hook,
+               const char *declarations,
+               const char *post)
 {
-  CoglSnippet *snippet = c_slice_new0 (CoglSnippet);
+    cg_snippet_t *snippet = c_slice_new0(cg_snippet_t);
 
-  _cogl_snippet_object_new (snippet);
+    _cg_snippet_object_new(snippet);
 
-  snippet->hook = hook;
+    snippet->hook = hook;
 
-  cogl_snippet_set_declarations (snippet, declarations);
-  cogl_snippet_set_post (snippet, post);
+    cg_snippet_set_declarations(snippet, declarations);
+    cg_snippet_set_post(snippet, post);
 
-  return snippet;
+    return snippet;
 }
 
-CoglSnippetHook
-cogl_snippet_get_hook (CoglSnippet *snippet)
+cg_snippet_hook_t
+cg_snippet_get_hook(cg_snippet_t *snippet)
 {
-  _COGL_RETURN_VAL_IF_FAIL (cogl_is_snippet (snippet), 0);
+    _CG_RETURN_VAL_IF_FAIL(cg_is_snippet(snippet), 0);
 
-  return snippet->hook;
+    return snippet->hook;
 }
 
 static bool
-_cogl_snippet_modify (CoglSnippet *snippet)
+_cg_snippet_modify(cg_snippet_t *snippet)
 {
-  if (snippet->immutable)
-    {
-      c_warning ("A CoglSnippet should not be modified once it has been "
-                 "attached to a pipeline. Any modifications after that point "
-                 "will be ignored.");
+    if (snippet->immutable) {
+        c_warning("A cg_snippet_t should not be modified once it has been "
+                  "attached to a pipeline. Any modifications after that point "
+                  "will be ignored.");
 
-      return false;
+        return false;
     }
 
-  return true;
+    return true;
 }
 
 void
-cogl_snippet_set_declarations (CoglSnippet *snippet,
-                               const char *declarations)
+cg_snippet_set_declarations(cg_snippet_t *snippet,
+                            const char *declarations)
 {
-  _COGL_RETURN_IF_FAIL (cogl_is_snippet (snippet));
+    _CG_RETURN_IF_FAIL(cg_is_snippet(snippet));
 
-  if (!_cogl_snippet_modify (snippet))
-    return;
+    if (!_cg_snippet_modify(snippet))
+        return;
 
-  c_free (snippet->declarations);
-  snippet->declarations = declarations ? c_strdup (declarations) : NULL;
+    c_free(snippet->declarations);
+    snippet->declarations = declarations ? c_strdup(declarations) : NULL;
 }
 
 const char *
-cogl_snippet_get_declarations (CoglSnippet *snippet)
+cg_snippet_get_declarations(cg_snippet_t *snippet)
 {
-  _COGL_RETURN_VAL_IF_FAIL (cogl_is_snippet (snippet), NULL);
+    _CG_RETURN_VAL_IF_FAIL(cg_is_snippet(snippet), NULL);
 
-  return snippet->declarations;
+    return snippet->declarations;
 }
 
 void
-cogl_snippet_set_pre (CoglSnippet *snippet,
-                      const char *pre)
+cg_snippet_set_pre(cg_snippet_t *snippet, const char *pre)
 {
-  _COGL_RETURN_IF_FAIL (cogl_is_snippet (snippet));
+    _CG_RETURN_IF_FAIL(cg_is_snippet(snippet));
 
-  if (!_cogl_snippet_modify (snippet))
-    return;
+    if (!_cg_snippet_modify(snippet))
+        return;
 
-  c_free (snippet->pre);
-  snippet->pre = pre ? c_strdup (pre) : NULL;
+    c_free(snippet->pre);
+    snippet->pre = pre ? c_strdup(pre) : NULL;
 }
 
 const char *
-cogl_snippet_get_pre (CoglSnippet *snippet)
+cg_snippet_get_pre(cg_snippet_t *snippet)
 {
-  _COGL_RETURN_VAL_IF_FAIL (cogl_is_snippet (snippet), NULL);
+    _CG_RETURN_VAL_IF_FAIL(cg_is_snippet(snippet), NULL);
 
-  return snippet->pre;
+    return snippet->pre;
 }
 
 void
-cogl_snippet_set_replace (CoglSnippet *snippet,
-                          const char *replace)
+cg_snippet_set_replace(cg_snippet_t *snippet, const char *replace)
 {
-  _COGL_RETURN_IF_FAIL (cogl_is_snippet (snippet));
+    _CG_RETURN_IF_FAIL(cg_is_snippet(snippet));
 
-  if (!_cogl_snippet_modify (snippet))
-    return;
+    if (!_cg_snippet_modify(snippet))
+        return;
 
-  c_free (snippet->replace);
-  snippet->replace = replace ? c_strdup (replace) : NULL;
+    c_free(snippet->replace);
+    snippet->replace = replace ? c_strdup(replace) : NULL;
 }
 
 const char *
-cogl_snippet_get_replace (CoglSnippet *snippet)
+cg_snippet_get_replace(cg_snippet_t *snippet)
 {
-  _COGL_RETURN_VAL_IF_FAIL (cogl_is_snippet (snippet), NULL);
+    _CG_RETURN_VAL_IF_FAIL(cg_is_snippet(snippet), NULL);
 
-  return snippet->replace;
+    return snippet->replace;
 }
 
 void
-cogl_snippet_set_post (CoglSnippet *snippet,
-                       const char *post)
+cg_snippet_set_post(cg_snippet_t *snippet, const char *post)
 {
-  _COGL_RETURN_IF_FAIL (cogl_is_snippet (snippet));
+    _CG_RETURN_IF_FAIL(cg_is_snippet(snippet));
 
-  if (!_cogl_snippet_modify (snippet))
-    return;
+    if (!_cg_snippet_modify(snippet))
+        return;
 
-  c_free (snippet->post);
-  snippet->post = post ? c_strdup (post) : NULL;
+    c_free(snippet->post);
+    snippet->post = post ? c_strdup(post) : NULL;
 }
 
 const char *
-cogl_snippet_get_post (CoglSnippet *snippet)
+cg_snippet_get_post(cg_snippet_t *snippet)
 {
-  _COGL_RETURN_VAL_IF_FAIL (cogl_is_snippet (snippet), NULL);
+    _CG_RETURN_VAL_IF_FAIL(cg_is_snippet(snippet), NULL);
 
-  return snippet->post;
+    return snippet->post;
 }
 
 void
-_cogl_snippet_make_immutable (CoglSnippet *snippet)
+_cg_snippet_make_immutable(cg_snippet_t *snippet)
 {
-  snippet->immutable = true;
+    snippet->immutable = true;
 }
 
 static void
-_cogl_snippet_free (CoglSnippet *snippet)
+_cg_snippet_free(cg_snippet_t *snippet)
 {
-  c_free (snippet->declarations);
-  c_free (snippet->pre);
-  c_free (snippet->replace);
-  c_free (snippet->post);
-  c_slice_free (CoglSnippet, snippet);
+    c_free(snippet->declarations);
+    c_free(snippet->pre);
+    c_free(snippet->replace);
+    c_free(snippet->post);
+    c_slice_free(cg_snippet_t, snippet);
 }

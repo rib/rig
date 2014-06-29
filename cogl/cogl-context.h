@@ -30,32 +30,32 @@
  *
  */
 
-#if !defined(__COGL_H_INSIDE__) && !defined(COGL_COMPILATION)
+#if !defined(__CG_H_INSIDE__) && !defined(CG_COMPILATION)
 #error "Only <cogl/cogl.h> can be included directly."
 #endif
 
-#ifndef __COGL_CONTEXT_H__
-#define __COGL_CONTEXT_H__
+#ifndef __CG_CONTEXT_H__
+#define __CG_CONTEXT_H__
 
-/* We forward declare the CoglContext type here to avoid some circular
+/* We forward declare the cg_context_t type here to avoid some circular
  * dependency issues with the following headers.
  */
-typedef struct _CoglContext CoglContext;
+typedef struct _cg_context_t cg_context_t;
 
 #include <cogl/cogl-defines.h>
 #include <cogl/cogl-display.h>
 #include <cogl/cogl-primitive.h>
-#ifdef COGL_HAS_EGL_PLATFORM_ANDROID_SUPPORT
+#ifdef CG_HAS_EGL_PLATFORM_ANDROID_SUPPORT
 #include <android/native_window.h>
 #endif
 
-COGL_BEGIN_DECLS
+CG_BEGIN_DECLS
 
 /**
  * SECTION:cogl-context
  * @short_description: The top level application context.
  *
- * A #CoglContext is the top most sandbox of Cogl state for an
+ * A #cg_context_t is the top most sandbox of Cogl state for an
  * application or toolkit. Its main purpose is to act as a sandbox
  * for the memory management of state objects. Normally an application
  * will only create a single context since there is no way to share
@@ -93,183 +93,175 @@ COGL_BEGIN_DECLS
  * context.</para></note>
  */
 
-#define COGL_CONTEXT(OBJECT) ((CoglContext *)OBJECT)
+#define CG_CONTEXT(OBJECT) ((cg_context_t *)OBJECT)
 
 /**
- * cogl_context_new: (constructor)
- * @display: (allow-none): A #CoglDisplay pointer
- * @error: A CoglError return location.
+ * cg_context_new: (constructor)
+ * @display: (allow-none): A #cg_display_t pointer
+ * @error: A cg_error_t return location.
  *
- * Creates a new #CoglContext which acts as an application sandbox
+ * Creates a new #cg_context_t which acts as an application sandbox
  * for any state objects that are allocated.
  *
- * Return value: (transfer full): A newly allocated #CoglContext
+ * Return value: (transfer full): A newly allocated #cg_context_t
  * Since: 1.8
  * Stability: unstable
  */
-CoglContext *
-cogl_context_new (CoglDisplay *display,
-                  CoglError **error);
+cg_context_t *cg_context_new(cg_display_t *display, cg_error_t **error);
 
 /**
- * cogl_context_get_display:
- * @context: A #CoglContext pointer
+ * cg_context_get_display:
+ * @context: A #cg_context_t pointer
  *
- * Retrieves the #CoglDisplay that is internally associated with the
- * given @context. This will return the same #CoglDisplay that was
- * passed to cogl_context_new() or if %NULL was passed to
- * cogl_context_new() then this function returns a pointer to the
+ * Retrieves the #cg_display_t that is internally associated with the
+ * given @context. This will return the same #cg_display_t that was
+ * passed to cg_context_new() or if %NULL was passed to
+ * cg_context_new() then this function returns a pointer to the
  * display that was automatically setup internally.
  *
- * Return value: (transfer none): The #CoglDisplay associated with the
+ * Return value: (transfer none): The #cg_display_t associated with the
  *               given @context.
  * Since: 1.8
  * Stability: unstable
  */
-CoglDisplay *
-cogl_context_get_display (CoglContext *context);
+cg_display_t *cg_context_get_display(cg_context_t *context);
 
 /**
- * cogl_context_get_renderer:
- * @context: A #CoglContext pointer
+ * cg_context_get_renderer:
+ * @context: A #cg_context_t pointer
  *
- * Retrieves the #CoglRenderer that is internally associated with the
- * given @context. This will return the same #CoglRenderer that was
- * passed to cogl_display_new() or if %NULL was passed to
- * cogl_display_new() or cogl_context_new() then this function returns
+ * Retrieves the #cg_renderer_t that is internally associated with the
+ * given @context. This will return the same #cg_renderer_t that was
+ * passed to cg_display_new() or if %NULL was passed to
+ * cg_display_new() or cg_context_new() then this function returns
  * a pointer to the renderer that was automatically connected
  * internally.
  *
- * Return value: (transfer none): The #CoglRenderer associated with the
+ * Return value: (transfer none): The #cg_renderer_t associated with the
  *               given @context.
  * Since: 1.16
  * Stability: unstable
  */
-CoglRenderer *
-cogl_context_get_renderer (CoglContext *context);
+cg_renderer_t *cg_context_get_renderer(cg_context_t *context);
 
-#ifdef COGL_HAS_EGL_PLATFORM_ANDROID_SUPPORT
+#ifdef CG_HAS_EGL_PLATFORM_ANDROID_SUPPORT
 /**
- * cogl_android_set_native_window:
+ * cg_android_set_native_window:
  * @window: A native Android window
  *
  * Allows Android applications to inform Cogl of the native window
  * that they have been given which Cogl can render too. On Android
- * this API must be used before creating a #CoglRenderer, #CoglDisplay
- * and #CoglContext.
+ * this API must be used before creating a #cg_renderer_t, #cg_display_t
+ * and #cg_context_t.
  *
  * Since: 1.8
  * Stability: unstable
  */
-void
-cogl_android_set_native_window (ANativeWindow *window);
+void cg_android_set_native_window(ANativeWindow *window);
 #endif
 
 /**
- * cogl_is_context:
+ * cg_is_context:
  * @object: An object or %NULL
  *
  * Gets whether the given object references an existing context object.
  *
- * Return value: %true if the @object references a #CoglContext,
+ * Return value: %true if the @object references a #cg_context_t,
  *   %false otherwise
  *
  * Since: 1.10
  * Stability: Unstable
  */
-bool
-cogl_is_context (void *object);
+bool cg_is_context(void *object);
 
 /* XXX: not guarded by the EXPERIMENTAL_API defines to avoid
  * upsetting glib-mkenums, but this can still be considered implicitly
  * experimental since it's only useable with experimental API... */
 /**
- * CoglFeatureID:
- * @COGL_FEATURE_ID_TEXTURE_NPOT_BASIC: The hardware supports non power
+ * cg_feature_id_t:
+ * @CG_FEATURE_ID_TEXTURE_NPOT_BASIC: The hardware supports non power
  *     of two textures, but you also need to check the
- *     %COGL_FEATURE_ID_TEXTURE_NPOT_MIPMAP and %COGL_FEATURE_ID_TEXTURE_NPOT_REPEAT
+ *     %CG_FEATURE_ID_TEXTURE_NPOT_MIPMAP and %CG_FEATURE_ID_TEXTURE_NPOT_REPEAT
  *     features to know if the hardware supports npot texture mipmaps
  *     or repeat modes other than
- *     %COGL_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE respectively.
- * @COGL_FEATURE_ID_TEXTURE_NPOT_MIPMAP: Mipmapping is supported in
+ *     %CG_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE respectively.
+ * @CG_FEATURE_ID_TEXTURE_NPOT_MIPMAP: Mipmapping is supported in
  *     conjuntion with non power of two textures.
- * @COGL_FEATURE_ID_TEXTURE_NPOT_REPEAT: Repeat modes other than
- *     %COGL_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE are supported by the
+ * @CG_FEATURE_ID_TEXTURE_NPOT_REPEAT: Repeat modes other than
+ *     %CG_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE are supported by the
  *     hardware.
- * @COGL_FEATURE_ID_TEXTURE_NPOT: Non power of two textures are supported
+ * @CG_FEATURE_ID_TEXTURE_NPOT: Non power of two textures are supported
  *    by the hardware. This is a equivalent to the
- *    %COGL_FEATURE_ID_TEXTURE_NPOT_BASIC, %COGL_FEATURE_ID_TEXTURE_NPOT_MIPMAP
- *    and %COGL_FEATURE_ID_TEXTURE_NPOT_REPEAT features combined.
- * @COGL_FEATURE_ID_TEXTURE_RG: Support for
- *    %COGL_TEXTURE_COMPONENTS_RG as the internal components of a
+ *    %CG_FEATURE_ID_TEXTURE_NPOT_BASIC, %CG_FEATURE_ID_TEXTURE_NPOT_MIPMAP
+ *    and %CG_FEATURE_ID_TEXTURE_NPOT_REPEAT features combined.
+ * @CG_FEATURE_ID_TEXTURE_RG: Support for
+ *    %CG_TEXTURE_COMPONENTS_RG as the internal components of a
  *    texture.
- * @COGL_FEATURE_ID_TEXTURE_3D: 3D texture support
- * @COGL_FEATURE_ID_OFFSCREEN: Offscreen rendering support
- * @COGL_FEATURE_ID_OFFSCREEN_MULTISAMPLE: Multisample support for
+ * @CG_FEATURE_ID_TEXTURE_3D: 3D texture support
+ * @CG_FEATURE_ID_OFFSCREEN: Offscreen rendering support
+ * @CG_FEATURE_ID_OFFSCREEN_MULTISAMPLE: Multisample support for
  *    offscreen framebuffers
- * @COGL_FEATURE_ID_ONSCREEN_MULTIPLE: Multiple onscreen framebuffers
+ * @CG_FEATURE_ID_ONSCREEN_MULTIPLE: Multiple onscreen framebuffers
  *    supported.
- * @COGL_FEATURE_ID_GLSL: GLSL support
- * @COGL_FEATURE_ID_UNSIGNED_INT_INDICES: Set if
- *     %COGL_INDICES_TYPE_UNSIGNED_INT is supported in
- *     cogl_indices_new().
- * @COGL_FEATURE_ID_DEPTH_RANGE: cogl_pipeline_set_depth_range() support
- * @COGL_FEATURE_ID_POINT_SPRITE: Whether
- *     cogl_pipeline_set_layer_point_sprite_coords_enabled() is supported.
- * @COGL_FEATURE_ID_PER_VERTEX_POINT_SIZE: Whether cogl_point_size_in
+ * @CG_FEATURE_ID_GLSL: GLSL support
+ * @CG_FEATURE_ID_UNSIGNED_INT_INDICES: Set if
+ *     %CG_INDICES_TYPE_UNSIGNED_INT is supported in
+ *     cg_indices_new().
+ * @CG_FEATURE_ID_DEPTH_RANGE: cg_pipeline_set_depth_range() support
+ * @CG_FEATURE_ID_POINT_SPRITE: Whether
+ *     cg_pipeline_set_layer_point_sprite_coords_enabled() is supported.
+ * @CG_FEATURE_ID_PER_VERTEX_POINT_SIZE: Whether cg_point_size_in
  *     can be used as an attribute to set a per-vertex point size.
- * @COGL_FEATURE_ID_MAP_BUFFER_FOR_READ: Whether cogl_buffer_map() is
- *     supported with CoglBufferAccess including read support.
- * @COGL_FEATURE_ID_MAP_BUFFER_FOR_WRITE: Whether cogl_buffer_map() is
- *     supported with CoglBufferAccess including write support.
- * @COGL_FEATURE_ID_MIRRORED_REPEAT: Whether
- *    %COGL_PIPELINE_WRAP_MODE_MIRRORED_REPEAT is supported.
- * @COGL_FEATURE_ID_GLES2_CONTEXT: Whether creating new GLES2 contexts is
+ * @CG_FEATURE_ID_MAP_BUFFER_FOR_READ: Whether cg_buffer_map() is
+ *     supported with cg_buffer_access_t including read support.
+ * @CG_FEATURE_ID_MAP_BUFFER_FOR_WRITE: Whether cg_buffer_map() is
+ *     supported with cg_buffer_access_t including write support.
+ * @CG_FEATURE_ID_MIRRORED_REPEAT: Whether
+ *    %CG_PIPELINE_WRAP_MODE_MIRRORED_REPEAT is supported.
+ * @CG_FEATURE_ID_GLES2_CONTEXT: Whether creating new GLES2 contexts is
  *    suported.
- * @COGL_FEATURE_ID_DEPTH_TEXTURE: Whether #CoglFramebuffer support rendering
+ * @CG_FEATURE_ID_DEPTH_TEXTURE: Whether #cg_framebuffer_t support rendering
  *     the depth buffer to a texture.
- * @COGL_FEATURE_ID_PRESENTATION_TIME: Whether frame presentation
- *    time stamps will be recorded in #CoglFrameInfo objects.
+ * @CG_FEATURE_ID_PRESENTATION_TIME: Whether frame presentation
+ *    time stamps will be recorded in #cg_frame_info_t objects.
  *
  * All the capabilities that can vary between different GPUs supported
  * by Cogl. Applications that depend on any of these features should explicitly
- * check for them using cogl_has_feature() or cogl_has_features().
+ * check for them using cg_has_feature() or cg_has_features().
  *
  * Since: 1.10
  */
-typedef enum _CoglFeatureID
-{
-  COGL_FEATURE_ID_TEXTURE_NPOT_BASIC = 1,
-  COGL_FEATURE_ID_TEXTURE_NPOT_MIPMAP,
-  COGL_FEATURE_ID_TEXTURE_NPOT_REPEAT,
-  COGL_FEATURE_ID_TEXTURE_NPOT,
-  COGL_FEATURE_ID_TEXTURE_3D,
-  COGL_FEATURE_ID_GLSL,
-  COGL_FEATURE_ID_OFFSCREEN,
-  COGL_FEATURE_ID_OFFSCREEN_MULTISAMPLE,
-  COGL_FEATURE_ID_ONSCREEN_MULTIPLE,
-  COGL_FEATURE_ID_UNSIGNED_INT_INDICES,
-  COGL_FEATURE_ID_DEPTH_RANGE,
-  COGL_FEATURE_ID_POINT_SPRITE,
-  COGL_FEATURE_ID_MAP_BUFFER_FOR_READ,
-  COGL_FEATURE_ID_MAP_BUFFER_FOR_WRITE,
-  COGL_FEATURE_ID_MIRRORED_REPEAT,
-  COGL_FEATURE_ID_GLES2_CONTEXT,
-  COGL_FEATURE_ID_DEPTH_TEXTURE,
-  COGL_FEATURE_ID_PRESENTATION_TIME,
-  COGL_FEATURE_ID_FENCE,
-  COGL_FEATURE_ID_PER_VERTEX_POINT_SIZE,
-  COGL_FEATURE_ID_TEXTURE_RG,
+typedef enum _cg_feature_id_t {
+    CG_FEATURE_ID_TEXTURE_NPOT_BASIC = 1,
+    CG_FEATURE_ID_TEXTURE_NPOT_MIPMAP,
+    CG_FEATURE_ID_TEXTURE_NPOT_REPEAT,
+    CG_FEATURE_ID_TEXTURE_NPOT,
+    CG_FEATURE_ID_TEXTURE_3D,
+    CG_FEATURE_ID_GLSL,
+    CG_FEATURE_ID_OFFSCREEN,
+    CG_FEATURE_ID_OFFSCREEN_MULTISAMPLE,
+    CG_FEATURE_ID_ONSCREEN_MULTIPLE,
+    CG_FEATURE_ID_UNSIGNED_INT_INDICES,
+    CG_FEATURE_ID_DEPTH_RANGE,
+    CG_FEATURE_ID_POINT_SPRITE,
+    CG_FEATURE_ID_MAP_BUFFER_FOR_READ,
+    CG_FEATURE_ID_MAP_BUFFER_FOR_WRITE,
+    CG_FEATURE_ID_MIRRORED_REPEAT,
+    CG_FEATURE_ID_GLES2_CONTEXT,
+    CG_FEATURE_ID_DEPTH_TEXTURE,
+    CG_FEATURE_ID_PRESENTATION_TIME,
+    CG_FEATURE_ID_FENCE,
+    CG_FEATURE_ID_PER_VERTEX_POINT_SIZE,
+    CG_FEATURE_ID_TEXTURE_RG,
 
-  /*< private >*/
-  _COGL_N_FEATURE_IDS   /*< skip >*/
-} CoglFeatureID;
-
+    /*< private >*/
+    _CG_N_FEATURE_IDS /*< skip >*/
+} cg_feature_id_t;
 
 /**
- * cogl_has_feature:
- * @context: A #CoglContext pointer
- * @feature: A #CoglFeatureID
+ * cg_has_feature:
+ * @context: A #cg_context_t pointer
+ * @feature: A #cg_feature_id_t
  *
  * Checks if a given @feature is currently available
  *
@@ -284,17 +276,16 @@ typedef enum _CoglFeatureID
  * Since: 1.10
  * Stability: unstable
  */
-bool
-cogl_has_feature (CoglContext *context, CoglFeatureID feature);
+bool cg_has_feature(cg_context_t *context, cg_feature_id_t feature);
 
 /**
- * cogl_has_features:
- * @context: A #CoglContext pointer
- * @...: A 0 terminated list of CoglFeatureID<!-- -->s
+ * cg_has_features:
+ * @context: A #cg_context_t pointer
+ * @...: A 0 terminated list of cg_feature_id_t<!-- -->s
  *
  * Checks if a list of features are all currently available.
  *
- * This checks all of the listed features using cogl_has_feature() and
+ * This checks all of the listed features using cg_has_feature() and
  * returns %true if all the features are available or %false
  * otherwise.
  *
@@ -304,26 +295,25 @@ cogl_has_feature (CoglContext *context, CoglFeatureID feature);
  * Since: 1.10
  * Stability: unstable
  */
-bool
-cogl_has_features (CoglContext *context, ...);
+bool cg_has_features(cg_context_t *context, ...);
 
 /**
- * CoglFeatureCallback:
+ * cg_feature_callback_t:
  * @feature: A single feature currently supported by Cogl
- * @user_data: A private pointer passed to cogl_foreach_feature().
+ * @user_data: A private pointer passed to cg_foreach_feature().
  *
- * A callback used with cogl_foreach_feature() for enumerating all
+ * A callback used with cg_foreach_feature() for enumerating all
  * context level features supported by Cogl.
  *
  * Since: 0.10
  * Stability: unstable
  */
-typedef void (*CoglFeatureCallback) (CoglFeatureID feature, void *user_data);
+typedef void (*cg_feature_callback_t)(cg_feature_id_t feature, void *user_data);
 
 /**
- * cogl_foreach_feature:
- * @context: A #CoglContext pointer
- * @callback: (scope call): A #CoglFeatureCallback called for each
+ * cg_foreach_feature:
+ * @context: A #cg_context_t pointer
+ * @callback: (scope call): A #cg_feature_callback_t called for each
  *            supported feature
  * @user_data: (closure): Private data to pass to the callback
  *
@@ -333,18 +323,17 @@ typedef void (*CoglFeatureCallback) (CoglFeatureID feature, void *user_data);
  * Since: 1.10
  * Stability: unstable
  */
-void
-cogl_foreach_feature (CoglContext *context,
-                      CoglFeatureCallback callback,
-                      void *user_data);
+void cg_foreach_feature(cg_context_t *context,
+                        cg_feature_callback_t callback,
+                        void *user_data);
 
 /**
- * cogl_get_clock_time:
- * @context: a #CoglContext pointer
+ * cg_get_clock_time:
+ * @context: a #cg_context_t pointer
  *
  * Returns the current time value from Cogl's internal clock. This
  * clock is used for measuring times such as the presentation time
- * in a #CoglFrameInfo.
+ * in a #cg_frame_info_t.
  *
  * This method is meant for converting timestamps retrieved from Cogl
  * to other time systems, and is not meant to be used as a standalone
@@ -358,10 +347,8 @@ cogl_foreach_feature (CoglContext *context,
  * Since: 1.14
  * Stability: unstable
  */
-int64_t
-cogl_get_clock_time (CoglContext *context);
+int64_t cg_get_clock_time(cg_context_t *context);
 
-COGL_END_DECLS
+CG_END_DECLS
 
-#endif /* __COGL_CONTEXT_H__ */
-
+#endif /* __CG_CONTEXT_H__ */

@@ -31,20 +31,19 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#ifndef _COGL_ATTRIBUTE_GL_PRIVATE_H_
-#define _COGL_ATTRIBUTE_GL_PRIVATE_H_
+#ifndef _CG_ATTRIBUTE_GL_PRIVATE_H_
+#define _CG_ATTRIBUTE_GL_PRIVATE_H_
 
 #include "cogl-types.h"
 #include "cogl-framebuffer.h"
 #include "cogl-attribute.h"
 #include "cogl-attribute-private.h"
 
-void
-_cogl_gl_flush_attributes_state (CoglFramebuffer *framebuffer,
-                                 CoglPipeline *pipeline,
-                                 CoglFlushLayerState *layers_state,
-                                 CoglDrawFlags flags,
-                                 CoglAttribute **attributes,
-                                 int n_attributes);
+void _cg_gl_flush_attributes_state(cg_framebuffer_t *framebuffer,
+                                   cg_pipeline_t *pipeline,
+                                   cg_flush_layer_state_t *layers_state,
+                                   cg_draw_flags_t flags,
+                                   cg_attribute_t **attributes,
+                                   int n_attributes);
 
-#endif /* _COGL_ATTRIBUTE_GL_PRIVATE_H_ */
+#endif /* _CG_ATTRIBUTE_GL_PRIVATE_H_ */

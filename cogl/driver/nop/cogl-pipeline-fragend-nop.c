@@ -33,38 +33,34 @@
 
 #include <clib.h>
 
-const CoglPipelineFragend _cogl_pipeline_nop_fragend;
+const cg_pipeline_fragend_t _cg_pipeline_nop_fragend;
 
 static void
-_cogl_pipeline_fragend_nop_start (CoglPipeline *pipeline,
-                                  int n_layers,
-                                  unsigned long pipelines_difference)
+_cg_pipeline_fragend_nop_start(cg_pipeline_t *pipeline,
+                               int n_layers,
+                               unsigned long pipelines_difference)
 {
 }
 
 static bool
-_cogl_pipeline_fragend_nop_add_layer (CoglPipeline *pipeline,
-                                      CoglPipelineLayer *layer,
-                                      unsigned long layers_difference)
+_cg_pipeline_fragend_nop_add_layer(cg_pipeline_t *pipeline,
+                                   cg_pipeline_layer_t *layer,
+                                   unsigned long layers_difference)
 {
-  return true;
+    return true;
 }
 
 static bool
-_cogl_pipeline_fragend_nop_end (CoglPipeline *pipeline,
-                                unsigned long pipelines_difference)
+_cg_pipeline_fragend_nop_end(cg_pipeline_t *pipeline,
+                             unsigned long pipelines_difference)
 {
-  return true;
+    return true;
 }
 
-const CoglPipelineFragend _cogl_pipeline_nop_fragend =
-{
-  _cogl_pipeline_fragend_nop_start,
-  _cogl_pipeline_fragend_nop_add_layer,
-  NULL, /* passthrough */
-  _cogl_pipeline_fragend_nop_end,
-  NULL, /* pipeline_change_notify */
-  NULL, /* pipeline_set_parent_notify */
-  NULL, /* layer_change_notify */
+const cg_pipeline_fragend_t _cg_pipeline_nop_fragend = {
+    _cg_pipeline_fragend_nop_start, _cg_pipeline_fragend_nop_add_layer,
+    NULL, /* passthrough */
+    _cg_pipeline_fragend_nop_end,   NULL, /* pipeline_change_notify */
+    NULL, /* pipeline_set_parent_notify */
+    NULL, /* layer_change_notify */
 };
-

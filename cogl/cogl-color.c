@@ -39,370 +39,343 @@
 #include "cogl-color-private.h"
 
 void
-cogl_color_init_from_4ub (CoglColor *color,
-                          uint8_t red,
-                          uint8_t green,
-                          uint8_t blue,
-                          uint8_t alpha)
+cg_color_init_from_4ub(
+    cg_color_t *color, uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha)
 {
-  color->red = red / 255.0f;
-  color->green = green / 255.0f;
-  color->blue = blue / 255.0f;
-  color->alpha = alpha / 255.0f;
+    color->red = red / 255.0f;
+    color->green = green / 255.0f;
+    color->blue = blue / 255.0f;
+    color->alpha = alpha / 255.0f;
 }
 
 void
-cogl_color_init_from_4f (CoglColor *color,
-                         float red,
-                         float green,
-                         float blue,
-                         float alpha)
+cg_color_init_from_4f(
+    cg_color_t *color, float red, float green, float blue, float alpha)
 {
-  color->red = red;
-  color->green = green;
-  color->blue = blue;
-  color->alpha = alpha;
+    color->red = red;
+    color->green = green;
+    color->blue = blue;
+    color->alpha = alpha;
 }
 
 void
-cogl_color_init_from_4fv (CoglColor *color,
-                          const float *color_array)
+cg_color_init_from_4fv(cg_color_t *color, const float *color_array)
 {
-  memcpy (color, color_array, sizeof (CoglColor));
+    memcpy(color, color_array, sizeof(cg_color_t));
 }
 
 uint8_t
-cogl_color_get_red_byte (const CoglColor *color)
+cg_color_get_red_byte(const cg_color_t *color)
 {
-  return color->red * 255;
+    return color->red * 255;
 }
 
 float
-cogl_color_get_red_float (const CoglColor *color)
+cg_color_get_red_float(const cg_color_t *color)
 {
-  return color->red;
+    return color->red;
 }
 
 float
-cogl_color_get_red (const CoglColor *color)
+cg_color_get_red(const cg_color_t *color)
 {
-  return color->red;
+    return color->red;
 }
 
 uint8_t
-cogl_color_get_green_byte (const CoglColor *color)
+cg_color_get_green_byte(const cg_color_t *color)
 {
-  return color->green * 255;
+    return color->green * 255;
 }
 
 float
-cogl_color_get_green_float (const CoglColor *color)
+cg_color_get_green_float(const cg_color_t *color)
 {
-  return color->green;
+    return color->green;
 }
 
 float
-cogl_color_get_green (const CoglColor *color)
+cg_color_get_green(const cg_color_t *color)
 {
-  return color->green;
+    return color->green;
 }
 
 uint8_t
-cogl_color_get_blue_byte (const CoglColor *color)
+cg_color_get_blue_byte(const cg_color_t *color)
 {
-  return color->blue * 255;
+    return color->blue * 255;
 }
 
 float
-cogl_color_get_blue_float (const CoglColor *color)
+cg_color_get_blue_float(const cg_color_t *color)
 {
-  return color->blue;
+    return color->blue;
 }
 
 float
-cogl_color_get_blue (const CoglColor *color)
+cg_color_get_blue(const cg_color_t *color)
 {
-  return color->blue;
+    return color->blue;
 }
 
 uint8_t
-cogl_color_get_alpha_byte (const CoglColor *color)
+cg_color_get_alpha_byte(const cg_color_t *color)
 {
-  return color->alpha * 255;
+    return color->alpha * 255;
 }
 
 float
-cogl_color_get_alpha_float (const CoglColor *color)
+cg_color_get_alpha_float(const cg_color_t *color)
 {
-  return color->alpha;
+    return color->alpha;
 }
 
 float
-cogl_color_get_alpha (const CoglColor *color)
+cg_color_get_alpha(const cg_color_t *color)
 {
-  return color->alpha;
+    return color->alpha;
 }
 
 void
-cogl_color_set_red_byte (CoglColor *color,
-                         uint8_t red)
+cg_color_set_red_byte(cg_color_t *color, uint8_t red)
 {
-  color->red = red / 255.0f;
+    color->red = red / 255.0f;
 }
 
 void
-cogl_color_set_red_float (CoglColor *color,
-                          float red)
+cg_color_set_red_float(cg_color_t *color, float red)
 {
-  color->red = red;
+    color->red = red;
 }
 
 void
-cogl_color_set_red (CoglColor *color,
-                    float red)
+cg_color_set_red(cg_color_t *color, float red)
 {
-  color->red = red;
+    color->red = red;
 }
 
 void
-cogl_color_set_green_byte (CoglColor *color,
-                           uint8_t green)
+cg_color_set_green_byte(cg_color_t *color, uint8_t green)
 {
-  color->green = green / 255.0f;
+    color->green = green / 255.0f;
 }
 
 void
-cogl_color_set_green_float (CoglColor *color,
-                            float green)
+cg_color_set_green_float(cg_color_t *color, float green)
 {
-  color->green = green;
+    color->green = green;
 }
 
 void
-cogl_color_set_green (CoglColor *color,
-                      float green)
+cg_color_set_green(cg_color_t *color, float green)
 {
-  color->green = green;
+    color->green = green;
 }
 
 void
-cogl_color_set_blue_byte (CoglColor *color,
-                          uint8_t blue)
+cg_color_set_blue_byte(cg_color_t *color, uint8_t blue)
 {
-  color->blue = blue / 255.0f;
+    color->blue = blue / 255.0f;
 }
 
 void
-cogl_color_set_blue_float (CoglColor *color,
-                           float blue)
+cg_color_set_blue_float(cg_color_t *color, float blue)
 {
-  color->blue = blue;
+    color->blue = blue;
 }
 
 void
-cogl_color_set_blue (CoglColor *color,
-                     float blue)
+cg_color_set_blue(cg_color_t *color, float blue)
 {
-  color->blue = blue;
+    color->blue = blue;
 }
 
 void
-cogl_color_set_alpha_byte (CoglColor *color,
-                           uint8_t alpha)
+cg_color_set_alpha_byte(cg_color_t *color, uint8_t alpha)
 {
-  color->alpha = alpha / 255.0f;
+    color->alpha = alpha / 255.0f;
 }
 
 void
-cogl_color_set_alpha_float (CoglColor *color,
-                            float alpha)
+cg_color_set_alpha_float(cg_color_t *color, float alpha)
 {
-  color->alpha = alpha;
+    color->alpha = alpha;
 }
 
 void
-cogl_color_set_alpha (CoglColor *color,
-                      float alpha)
+cg_color_set_alpha(cg_color_t *color, float alpha)
 {
-  color->alpha = alpha;
+    color->alpha = alpha;
 }
 
 void
-cogl_color_premultiply (CoglColor *color)
+cg_color_premultiply(cg_color_t *color)
 {
-  color->red *= color->alpha;
-  color->green *= color->alpha;
-  color->blue *= color->alpha;
+    color->red *= color->alpha;
+    color->green *= color->alpha;
+    color->blue *= color->alpha;
 }
 
 void
-cogl_color_unpremultiply (CoglColor *color)
+cg_color_unpremultiply(cg_color_t *color)
 {
-  if (color->alpha != 0)
-    {
-      color->red /= color->alpha;
-      color->green /= color->alpha;
-      color->blue /= color->alpha;
+    if (color->alpha != 0) {
+        color->red /= color->alpha;
+        color->green /= color->alpha;
+        color->blue /= color->alpha;
     }
 }
 
 bool
-cogl_color_equal (const void *v1, const void *v2)
+cg_color_equal(const void *v1, const void *v2)
 {
-  _COGL_RETURN_VAL_IF_FAIL (v1 != NULL, false);
-  _COGL_RETURN_VAL_IF_FAIL (v2 != NULL, false);
+    _CG_RETURN_VAL_IF_FAIL(v1 != NULL, false);
+    _CG_RETURN_VAL_IF_FAIL(v2 != NULL, false);
 
-  return memcmp (v1, v2, sizeof (CoglColor)) == 0;
+    return memcmp(v1, v2, sizeof(cg_color_t)) == 0;
 }
 
-CoglColor *
-cogl_color_copy (const CoglColor *color)
+cg_color_t *
+cg_color_copy(const cg_color_t *color)
 {
-  if (C_LIKELY (color))
-    return c_slice_dup (CoglColor, color);
+    if (C_LIKELY(color))
+        return c_slice_dup(cg_color_t, color);
 
-  return NULL;
-}
-
-void
-cogl_color_free (CoglColor *color)
-{
-  if (C_LIKELY (color))
-    c_slice_free (CoglColor, color);
+    return NULL;
 }
 
 void
-cogl_color_to_hsl (const CoglColor *color,
-                   float           *hue,
-                   float           *saturation,
-                   float           *luminance)
+cg_color_free(cg_color_t *color)
 {
-  float red, green, blue;
-  float min, max, delta;
-  float h, l, s;
-
-  red   = color->red;
-  green = color->green;
-  blue  = color->blue;
-
-  if (red > green)
-    {
-      if (red > blue)
-	max = red;
-      else
-	max = blue;
-
-      if (green < blue)
-	min = green;
-      else
-	min = blue;
-    }
-  else
-    {
-      if (green > blue)
-	max = green;
-      else
-	max = blue;
-
-      if (red < blue)
-	min = red;
-      else
-	min = blue;
-    }
-
-  l = (max + min) / 2;
-  s = 0;
-  h = 0;
-
-  if (max != min)
-    {
-      if (l <= 0.5)
-	s = (max - min) / (max + min);
-      else
-	s = (max - min) / (2.0 - max - min);
-
-      delta = max - min;
-
-      if (red == max)
-	h = (green - blue) / delta;
-      else if (green == max)
-	h = 2.0 + (blue - red) / delta;
-      else if (blue == max)
-	h = 4.0 + (red - green) / delta;
-
-      h *= 60;
-
-      if (h < 0)
-	h += 360.0;
-    }
-
-  if (hue)
-    *hue = h;
-
-  if (luminance)
-    *luminance = l;
-
-  if (saturation)
-    *saturation = s;
+    if (C_LIKELY(color))
+        c_slice_free(cg_color_t, color);
 }
 
 void
-cogl_color_init_from_hsl (CoglColor *color,
-                          float      hue,
-                          float      saturation,
-                          float      luminance)
+cg_color_to_hsl(const cg_color_t *color,
+                float *hue,
+                float *saturation,
+                float *luminance)
 {
-  float tmp1, tmp2;
-  float tmp3[3];
-  float clr[3];
-  int   i;
+    float red, green, blue;
+    float min, max, delta;
+    float h, l, s;
 
-  hue /= 360.0;
+    red = color->red;
+    green = color->green;
+    blue = color->blue;
 
-  if (saturation == 0)
-    {
-      cogl_color_init_from_4f (color, luminance, luminance, luminance, 1.0f);
-      return;
+    if (red > green) {
+        if (red > blue)
+            max = red;
+        else
+            max = blue;
+
+        if (green < blue)
+            min = green;
+        else
+            min = blue;
+    } else {
+        if (green > blue)
+            max = green;
+        else
+            max = blue;
+
+        if (red < blue)
+            min = red;
+        else
+            min = blue;
     }
 
-  if (luminance <= 0.5)
-    tmp2 = luminance * (1.0 + saturation);
-  else
-    tmp2 = luminance + saturation - (luminance * saturation);
+    l = (max + min) / 2;
+    s = 0;
+    h = 0;
 
-  tmp1 = 2.0 * luminance - tmp2;
+    if (max != min) {
+        if (l <= 0.5)
+            s = (max - min) / (max + min);
+        else
+            s = (max - min) / (2.0 - max - min);
 
-  tmp3[0] = hue + 1.0 / 3.0;
-  tmp3[1] = hue;
-  tmp3[2] = hue - 1.0 / 3.0;
+        delta = max - min;
 
-  for (i = 0; i < 3; i++)
-    {
-      if (tmp3[i] < 0)
-        tmp3[i] += 1.0;
+        if (red == max)
+            h = (green - blue) / delta;
+        else if (green == max)
+            h = 2.0 + (blue - red) / delta;
+        else if (blue == max)
+            h = 4.0 + (red - green) / delta;
 
-      if (tmp3[i] > 1)
-        tmp3[i] -= 1.0;
+        h *= 60;
 
-      if (6.0 * tmp3[i] < 1.0)
-        clr[i] = tmp1 + (tmp2 - tmp1) * tmp3[i] * 6.0;
-      else if (2.0 * tmp3[i] < 1.0)
-        clr[i] = tmp2;
-      else if (3.0 * tmp3[i] < 2.0)
-        clr[i] = (tmp1 + (tmp2 - tmp1) * ((2.0 / 3.0) - tmp3[i]) * 6.0);
-      else
-        clr[i] = tmp1;
+        if (h < 0)
+            h += 360.0;
     }
 
-  color->red   = clr[0];
-  color->green = clr[1];
-  color->blue  = clr[2];
-  color->alpha = 1.0f;
+    if (hue)
+        *hue = h;
+
+    if (luminance)
+        *luminance = l;
+
+    if (saturation)
+        *saturation = s;
 }
 
 void
-_cogl_color_get_rgba_4fv (const CoglColor *color,
-                          float *dest)
+cg_color_init_from_hsl(cg_color_t *color,
+                       float hue,
+                       float saturation,
+                       float luminance)
 {
-  memcpy (dest, color, sizeof (CoglColor));
+    float tmp1, tmp2;
+    float tmp3[3];
+    float clr[3];
+    int i;
+
+    hue /= 360.0;
+
+    if (saturation == 0) {
+        cg_color_init_from_4f(color, luminance, luminance, luminance, 1.0f);
+        return;
+    }
+
+    if (luminance <= 0.5)
+        tmp2 = luminance * (1.0 + saturation);
+    else
+        tmp2 = luminance + saturation - (luminance * saturation);
+
+    tmp1 = 2.0 * luminance - tmp2;
+
+    tmp3[0] = hue + 1.0 / 3.0;
+    tmp3[1] = hue;
+    tmp3[2] = hue - 1.0 / 3.0;
+
+    for (i = 0; i < 3; i++) {
+        if (tmp3[i] < 0)
+            tmp3[i] += 1.0;
+
+        if (tmp3[i] > 1)
+            tmp3[i] -= 1.0;
+
+        if (6.0 * tmp3[i] < 1.0)
+            clr[i] = tmp1 + (tmp2 - tmp1) * tmp3[i] * 6.0;
+        else if (2.0 * tmp3[i] < 1.0)
+            clr[i] = tmp2;
+        else if (3.0 * tmp3[i] < 2.0)
+            clr[i] = (tmp1 + (tmp2 - tmp1) * ((2.0 / 3.0) - tmp3[i]) * 6.0);
+        else
+            clr[i] = tmp1;
+    }
+
+    color->red = clr[0];
+    color->green = clr[1];
+    color->blue = clr[2];
+    color->alpha = 1.0f;
+}
+
+void
+_cg_color_get_rgba_4fv(const cg_color_t *color, float *dest)
+{
+    memcpy(dest, color, sizeof(cg_color_t));
 }

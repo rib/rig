@@ -31,25 +31,25 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#if !defined(__COGL_H_INSIDE__) && !defined(COGL_COMPILATION)
+#if !defined(__CG_H_INSIDE__) && !defined(CG_COMPILATION)
 #error "Only <cogl/cogl.h> can be included directly."
 #endif
 
-#ifndef __COGL_INDICES_H__
-#define __COGL_INDICES_H__
+#ifndef __CG_INDICES_H__
+#define __CG_INDICES_H__
 
-/* We forward declare the CoglIndices type here to avoid some circular
+/* We forward declare the cg_indices_t type here to avoid some circular
  * dependency issues with the following headers.
  */
-typedef struct _CoglIndices CoglIndices;
+typedef struct _cg_indices_t cg_indices_t;
 
 #include <cogl/cogl-index-buffer.h>
 
-COGL_BEGIN_DECLS
+CG_BEGIN_DECLS
 
 /**
  * SECTION:cogl-indices
- * @short_description: Describe vertex indices stored in a #CoglIndexBuffer.
+ * @short_description: Describe vertex indices stored in a #cg_index_buffer_t.
  *
  * Indices allow you to avoid duplicating vertices in your vertex data
  * by virtualizing your data and instead providing a sequence of index
@@ -101,52 +101,42 @@ COGL_BEGIN_DECLS
  * needs to look like depending on the number of quads that need to be
  * drawn. It doesn't matter how the quads might be animated and
  * changed the indices will remain the same. Cogl even has a utility
- * (cogl_get_rectangle_indices()) to get access to re-useable indices
+ * (cg_get_rectangle_indices()) to get access to re-useable indices
  * for drawing quads as above.
  */
 
-CoglIndices *
-cogl_indices_new (CoglContext *context,
-                  CoglIndicesType type,
-                  const void *indices_data,
-                  int n_indices);
+cg_indices_t *cg_indices_new(cg_context_t *context,
+                             cg_indices_type_t type,
+                             const void *indices_data,
+                             int n_indices);
 
-CoglIndices *
-cogl_indices_new_for_buffer (CoglIndicesType type,
-                             CoglIndexBuffer *buffer,
-                             size_t offset);
+cg_indices_t *cg_indices_new_for_buffer(cg_indices_type_t type,
+                                        cg_index_buffer_t *buffer,
+                                        size_t offset);
 
-CoglIndexBuffer *
-cogl_indices_get_buffer (CoglIndices *indices);
+cg_index_buffer_t *cg_indices_get_buffer(cg_indices_t *indices);
 
-CoglIndicesType
-cogl_indices_get_type (CoglIndices *indices);
+cg_indices_type_t cg_indices_get_type(cg_indices_t *indices);
 
-size_t
-cogl_indices_get_offset (CoglIndices *indices);
+size_t cg_indices_get_offset(cg_indices_t *indices);
 
-void
-cogl_indices_set_offset (CoglIndices *indices,
-                         size_t offset);
+void cg_indices_set_offset(cg_indices_t *indices, size_t offset);
 
-CoglIndices *
-cogl_get_rectangle_indices (CoglContext *context, int n_rectangles);
+cg_indices_t *cg_get_rectangle_indices(cg_context_t *context, int n_rectangles);
 
 /**
- * cogl_is_indices:
- * @object: A #CoglObject pointer
+ * cg_is_indices:
+ * @object: A #cg_object_t pointer
  *
- * Gets whether the given object references a #CoglIndices.
+ * Gets whether the given object references a #cg_indices_t.
  *
- * Return value: %true if the object references a #CoglIndices
+ * Return value: %true if the object references a #cg_indices_t
  *   and %false otherwise.
  * Since: 1.10
  * Stability: unstable
  */
-bool
-cogl_is_indices (void *object);
+bool cg_is_indices(void *object);
 
-COGL_END_DECLS
+CG_END_DECLS
 
-#endif /* __COGL_INDICES_H__ */
-
+#endif /* __CG_INDICES_H__ */

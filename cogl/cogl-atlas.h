@@ -26,89 +26,84 @@
  * SOFTWARE.
  */
 
-#if !defined(__COGL_H_INSIDE__) && !defined(COGL_COMPILATION)
+#if !defined(__CG_H_INSIDE__) && !defined(CG_COMPILATION)
 #error "Only <cogl/cogl.h> can be included directly."
 #endif
 
-#ifndef _COGL_ATLAS_H_
-#define _COGL_ATLAS_H_
+#ifndef _CG_ATLAS_H_
+#define _CG_ATLAS_H_
 
 #include <cogl/cogl-types.h>
 #include <cogl/cogl-object.h>
 #include <cogl/cogl-texture.h>
 
-typedef struct _CoglAtlasAllocation
-{
-  int x;
-  int y;
-  int width;
-  int height;
-} CoglAtlasAllocation;
+typedef struct _cg_atlas_allocation_t {
+    int x;
+    int y;
+    int width;
+    int height;
+} cg_atlas_allocation_t;
 
-typedef struct _CoglAtlas CoglAtlas;
+typedef struct _cg_atlas_t cg_atlas_t;
 
-/* XXX: Note that during migration _cogl_atlas_get_texture() may not match the
+/* XXX: Note that during migration _cg_atlas_get_texture() may not match the
  * @texture given here. @texture is more up to date... */
-typedef void
-(* CoglAtlasAllocateCallback) (CoglAtlas *atlas,
-                               CoglTexture *texture,
-                               const CoglAtlasAllocation *allocation,
-                               void *allocation_data,
-                               void *user_data);
+typedef void (*cg_atlas_allocate_callback_t)(
+    cg_atlas_t *atlas,
+    cg_texture_t *texture,
+    const cg_atlas_allocation_t *allocation,
+    void *allocation_data,
+    void *user_data);
 
-typedef struct _CoglClosure CoglAtlasAllocateClosure;
+typedef struct _cg_closure_t cg_atlas_allocate_closure_t;
 
-CoglAtlasAllocateClosure *
-cogl_atlas_add_allocate_callback (CoglAtlas *atlas,
-                                  CoglAtlasAllocateCallback callback,
-                                  void *user_data,
-                                  CoglUserDataDestroyCallback destroy);
+cg_atlas_allocate_closure_t *
+cg_atlas_add_allocate_callback(cg_atlas_t *atlas,
+                               cg_atlas_allocate_callback_t callback,
+                               void *user_data,
+                               cg_user_data_destroy_callback_t destroy);
 
-void
-cogl_atlas_remove_allocate_callback (CoglAtlas *atlas,
-                                     CoglAtlasAllocateClosure *closure);
+void cg_atlas_remove_allocate_callback(cg_atlas_t *atlas,
+                                       cg_atlas_allocate_closure_t *closure);
 
-CoglTexture *
-cogl_atlas_get_texture (CoglAtlas *atlas);
+cg_texture_t *cg_atlas_get_texture(cg_atlas_t *atlas);
 
-typedef void (*CoglAtlasForeachCallback) (CoglAtlas *atlas,
-                                          const CoglAtlasAllocation *allocation,
-                                          void *allocation_data,
-                                          void *user_data);
-void
-cogl_atlas_foreach (CoglAtlas *atlas,
-                    CoglAtlasForeachCallback callback,
-                    void *user_data);
+typedef void (*cg_atlas_foreach_callback_t)(
+    cg_atlas_t *atlas,
+    const cg_atlas_allocation_t *allocation,
+    void *allocation_data,
+    void *user_data);
+void cg_atlas_foreach(cg_atlas_t *atlas,
+                      cg_atlas_foreach_callback_t callback,
+                      void *user_data);
 
-int
-cogl_atlas_get_n_allocations (CoglAtlas *atlas);
+int cg_atlas_get_n_allocations(cg_atlas_t *atlas);
 
-typedef struct _CoglClosure CoglAtlasReorganizeClosure;
+typedef struct _cg_closure_t cg_atlas_reorganize_closure_t;
 
-typedef void (*CoglAtlasReorganizeCallback) (CoglAtlas *atlas,
-                                             void *user_data);
+typedef void (*cg_atlas_reorganize_callback_t)(cg_atlas_t *atlas,
+                                               void *user_data);
 
-CoglAtlasReorganizeClosure *
-cogl_atlas_add_pre_reorganize_callback (CoglAtlas *atlas,
-                                        CoglAtlasReorganizeCallback callback,
-                                        void *user_data,
-                                        CoglUserDataDestroyCallback destroy);
+cg_atlas_reorganize_closure_t *
+cg_atlas_add_pre_reorganize_callback(cg_atlas_t *atlas,
+                                     cg_atlas_reorganize_callback_t callback,
+                                     void *user_data,
+                                     cg_user_data_destroy_callback_t destroy);
 
 void
-cogl_atlas_remove_pre_reorganize_callback (CoglAtlas *atlas,
-                                           CoglAtlasReorganizeClosure *closure);
+cg_atlas_remove_pre_reorganize_callback(cg_atlas_t *atlas,
+                                        cg_atlas_reorganize_closure_t *closure);
 
-CoglAtlasReorganizeClosure *
-cogl_atlas_add_post_reorganize_callback (CoglAtlas *atlas,
-                                         CoglAtlasReorganizeCallback callback,
-                                         void *user_data,
-                                         CoglUserDataDestroyCallback destroy);
+cg_atlas_reorganize_closure_t *
+cg_atlas_add_post_reorganize_callback(cg_atlas_t *atlas,
+                                      cg_atlas_reorganize_callback_t callback,
+                                      void *user_data,
+                                      cg_user_data_destroy_callback_t destroy);
 
 void
-cogl_atlas_remove_post_reorganize_callback (CoglAtlas *atlas,
-                                            CoglAtlasReorganizeClosure *closure);
+cg_atlas_remove_post_reorganize_callback(cg_atlas_t *atlas,
+                                         cg_atlas_reorganize_closure_t *closure);
 
-bool
-cogl_is_atlas (void *object);
+bool cg_is_atlas(void *object);
 
-#endif /* _COGL_ATLAS_H_ */
+#endif /* _CG_ATLAS_H_ */

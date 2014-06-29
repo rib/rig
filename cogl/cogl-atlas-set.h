@@ -28,35 +28,35 @@
  *
  */
 
-#if !defined(__COGL_H_INSIDE__) && !defined(COGL_COMPILATION)
+#if !defined(__CG_H_INSIDE__) && !defined(CG_COMPILATION)
 #error "Only <cogl/cogl.h> can be included directly."
 #endif
 
-#ifndef _COGL_ATLAS_SET_H_
-#define _COGL_ATLAS_SET_H_
+#ifndef _CG_ATLAS_SET_H_
+#define _CG_ATLAS_SET_H_
 
 #include <cogl/cogl-types.h>
 #include <cogl/cogl-object.h>
 #include <cogl/cogl-atlas.h>
 
 /**
- * CoglAtlasSet:
+ * cg_atlas_set_t:
  *
- * A #CoglAtlasSet represents a set of #CoglAtlas<!-- -->es and a
- * #CoglAtlas represents one texture that is sub divided into smaller
+ * A #cg_atlas_set_t represents a set of #cg_atlas_t<!-- -->es and a
+ * #cg_atlas_t represents one texture that is sub divided into smaller
  * allocations.
  *
- * After creating a #CoglAtlas you can specify a common format for all
- * #CoglAtlas textures that will belong to that set via
- * cogl_atlas_set_set_components() and
- * cogl_atlas_set_set_premultiplied(). These can't be changed once you
+ * After creating a #cg_atlas_t you can specify a common format for all
+ * #cg_atlas_t textures that will belong to that set via
+ * cg_atlas_set_set_components() and
+ * cg_atlas_set_set_premultiplied(). These can't be changed once you
  * start allocating from the set.
  *
- * Two notable properties of a #CoglAtlasSet are whether automatic
+ * Two notable properties of a #cg_atlas_set_t are whether automatic
  * clearing is enabled and whether migration is enabled.
  *
- * Enabling automatic clearing via cogl_atlas_set_clear_enabled()
- * ensures that each new #CoglAtlas texture that's created is
+ * Enabling automatic clearing via cg_atlas_set_clear_enabled()
+ * ensures that each new #cg_atlas_t texture that's created is
  * initialized to contain zeros for all components. Enabling clearing
  * can be useful for applications that might end up sampling outside
  * the bounds of individual atlas allocations due to filtering so they
@@ -70,92 +70,73 @@
  * perhaps only used in an add-hoc fashion it may not be worthwhile
  * the cost of migrating the previous allocations. Migration of
  * allocations can be disabled via
- * cogl_atlas_set_set_migration_enabled(). With migrations disabled
+ * cg_atlas_set_set_migration_enabled(). With migrations disabled
  * then previous allocations will be re-allocated space in any
  * replacement texture, but no image data will be copied.
  */
-typedef struct _CoglAtlasSet CoglAtlasSet;
+typedef struct _cg_atlas_set_t cg_atlas_set_t;
 
 /**
- * cogl_atlas_set_new:
- * @context: A #CoglContext pointer
+ * cg_atlas_set_new:
+ * @context: A #cg_context_t pointer
  *
- * Return value: A newly allocated #CoglAtlasSet
+ * Return value: A newly allocated #cg_atlas_set_t
  */
-CoglAtlasSet *
-cogl_atlas_set_new (CoglContext *context);
+cg_atlas_set_t *cg_atlas_set_new(cg_context_t *context);
 
-bool
-cogl_is_atlas_set (void *object);
+bool cg_is_atlas_set(void *object);
 
-void
-cogl_atlas_set_set_components (CoglAtlasSet *set,
-                               CoglTextureComponents components);
+void cg_atlas_set_set_components(cg_atlas_set_t *set,
+                                 cg_texture_components_t components);
 
-CoglTextureComponents
-cogl_atlas_set_get_components (CoglAtlasSet *set);
+cg_texture_components_t cg_atlas_set_get_components(cg_atlas_set_t *set);
 
-void
-cogl_atlas_set_set_premultiplied (CoglAtlasSet *set,
-                                  bool premultiplied);
+void cg_atlas_set_set_premultiplied(cg_atlas_set_t *set, bool premultiplied);
 
-bool
-cogl_atlas_set_get_premultiplied (CoglAtlasSet *set);
+bool cg_atlas_set_get_premultiplied(cg_atlas_set_t *set);
 
-void
-cogl_atlas_set_set_clear_enabled (CoglAtlasSet *set,
-                                  bool clear_enabled);
+void cg_atlas_set_set_clear_enabled(cg_atlas_set_t *set, bool clear_enabled);
 
-bool
-cogl_atlas_set_get_clear_enabled (CoglAtlasSet *set,
-                                  bool clear_enabled);
+bool cg_atlas_set_get_clear_enabled(cg_atlas_set_t *set, bool clear_enabled);
 
-void
-cogl_atlas_set_set_migration_enabled (CoglAtlasSet *set,
-                                      bool migration_enabled);
+void cg_atlas_set_set_migration_enabled(cg_atlas_set_t *set,
+                                        bool migration_enabled);
 
-bool
-cogl_atlas_set_get_migration_enabled (CoglAtlasSet *set);
+bool cg_atlas_set_get_migration_enabled(cg_atlas_set_t *set);
 
+void cg_atlas_set_clear(cg_atlas_set_t *set);
 
-void
-cogl_atlas_set_clear (CoglAtlasSet *set);
+typedef enum _cg_atlas_set_event_t {
+    CG_ATLAS_SET_EVENT_ADDED = 1,
+    CG_ATLAS_SET_EVENT_REMOVED = 2
+} cg_atlas_set_event_t;
 
-typedef enum _CoglAtlasSetEvent
-{
-  COGL_ATLAS_SET_EVENT_ADDED = 1,
-  COGL_ATLAS_SET_EVENT_REMOVED = 2
-} CoglAtlasSetEvent;
+typedef struct _cg_closure_t cg_atlas_set_atlas_closure_t;
 
-typedef struct _CoglClosure CoglAtlasSetAtlasClosure;
-
-typedef void (*CoglAtlasSetAtlasCallback) (CoglAtlasSet *set,
-                                           CoglAtlas *atlas,
-                                           CoglAtlasSetEvent event,
-                                           void *user_data);
-
-CoglAtlasSetAtlasClosure *
-cogl_atlas_set_add_atlas_callback (CoglAtlasSet *set,
-                                   CoglAtlasSetAtlasCallback callback,
-                                   void *user_data,
-                                   CoglUserDataDestroyCallback destroy);
-
-void
-cogl_atlas_set_remove_atlas_callback (CoglAtlasSet *set,
-                                      CoglAtlasSetAtlasClosure *closure);
-
-CoglAtlas *
-cogl_atlas_set_allocate_space (CoglAtlasSet *set,
-                               int width,
-                               int height,
-                               void *allocation_data);
-
-typedef void (* CoglAtlasSetForeachCallback) (CoglAtlas *atlas,
+typedef void (*cg_atlas_set_atlas_callback_t)(cg_atlas_set_t *set,
+                                              cg_atlas_t *atlas,
+                                              cg_atlas_set_event_t event,
                                               void *user_data);
 
-void
-cogl_atlas_set_foreach (CoglAtlasSet *atlas_set,
-                        CoglAtlasSetForeachCallback callback,
-                        void *user_data);
+cg_atlas_set_atlas_closure_t *
+cg_atlas_set_add_atlas_callback(cg_atlas_set_t *set,
+                                cg_atlas_set_atlas_callback_t callback,
+                                void *user_data,
+                                cg_user_data_destroy_callback_t destroy);
 
-#endif /* _COGL_ATLAS_SET_H_ */
+void cg_atlas_set_remove_atlas_callback(cg_atlas_set_t *set,
+                                        cg_atlas_set_atlas_closure_t *closure);
+
+cg_atlas_t *cg_atlas_set_allocate_space(cg_atlas_set_t *set,
+                                        int width,
+                                        int height,
+                                        void *allocation_data);
+
+typedef void (*cg_atlas_set_foreach_callback_t)(cg_atlas_t *atlas,
+                                                void *user_data);
+
+void cg_atlas_set_foreach(cg_atlas_set_t *atlas_set,
+                          cg_atlas_set_foreach_callback_t callback,
+                          void *user_data);
+
+#endif /* _CG_ATLAS_SET_H_ */

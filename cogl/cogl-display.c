@@ -41,140 +41,135 @@
 #include "cogl-display-private.h"
 #include "cogl-renderer-private.h"
 #include "cogl-winsys-private.h"
-#ifdef COGL_HAS_WAYLAND_EGL_SERVER_SUPPORT
+#ifdef CG_HAS_WAYLAND_EGL_SERVER_SUPPORT
 #include "cogl-wayland-server.h"
 #endif
 
-static void _cogl_display_free (CoglDisplay *display);
+static void _cg_display_free(cg_display_t *display);
 
-COGL_OBJECT_DEFINE (Display, display);
+CG_OBJECT_DEFINE(Display, display);
 
-static const CoglWinsysVtable *
-_cogl_display_get_winsys (CoglDisplay *display)
+static const cg_winsys_vtable_t *
+_cg_display_get_winsys(cg_display_t *display)
 {
-  return display->renderer->winsys_vtable;
+    return display->renderer->winsys_vtable;
 }
 
 static void
-_cogl_display_free (CoglDisplay *display)
+_cg_display_free(cg_display_t *display)
 {
-  const CoglWinsysVtable *winsys;
+    const cg_winsys_vtable_t *winsys;
 
-  if (display->setup)
-    {
-      winsys = _cogl_display_get_winsys (display);
-      winsys->display_destroy (display);
-      display->setup = false;
+    if (display->setup) {
+        winsys = _cg_display_get_winsys(display);
+        winsys->display_destroy(display);
+        display->setup = false;
     }
 
-  if (display->renderer)
-    {
-      cogl_object_unref (display->renderer);
-      display->renderer = NULL;
+    if (display->renderer) {
+        cg_object_unref(display->renderer);
+        display->renderer = NULL;
     }
 
-  if (display->onscreen_template)
-    {
-      cogl_object_unref (display->onscreen_template);
-      display->onscreen_template = NULL;
+    if (display->onscreen_template) {
+        cg_object_unref(display->onscreen_template);
+        display->onscreen_template = NULL;
     }
 
-  c_slice_free (CoglDisplay, display);
+    c_slice_free(cg_display_t, display);
 }
 
-CoglDisplay *
-cogl_display_new (CoglRenderer *renderer,
-                  CoglOnscreenTemplate *onscreen_template)
+cg_display_t *
+cg_display_new(cg_renderer_t *renderer,
+               cg_onscreen_template_t *onscreen_template)
 {
-  CoglDisplay *display = c_slice_new0 (CoglDisplay);
-  CoglError *error = NULL;
+    cg_display_t *display = c_slice_new0(cg_display_t);
+    cg_error_t *error = NULL;
 
-  _cogl_init ();
+    _cg_init();
 
-  display->renderer = renderer;
-  if (renderer)
-    cogl_object_ref (renderer);
-  else
-    display->renderer = cogl_renderer_new ();
+    display->renderer = renderer;
+    if (renderer)
+        cg_object_ref(renderer);
+    else
+        display->renderer = cg_renderer_new();
 
-  if (!cogl_renderer_connect (display->renderer, &error))
-    c_error ("Failed to connect to renderer: %s\n", error->message);
+    if (!cg_renderer_connect(display->renderer, &error))
+        c_error("Failed to connect to renderer: %s\n", error->message);
 
-  display->setup = false;
+    display->setup = false;
 
-#ifdef COGL_HAS_EGL_PLATFORM_GDL_SUPPORT
-  display->gdl_plane = GDL_PLANE_ID_UPP_C;
+#ifdef CG_HAS_EGL_PLATFORM_GDL_SUPPORT
+    display->gdl_plane = GDL_PLANE_ID_UPP_C;
 #endif
 
-  display = _cogl_display_object_new (display);
+    display = _cg_display_object_new(display);
 
-  cogl_display_set_onscreen_template (display, onscreen_template);
+    cg_display_set_onscreen_template(display, onscreen_template);
 
-  return display;
+    return display;
 }
 
-CoglRenderer *
-cogl_display_get_renderer (CoglDisplay *display)
+cg_renderer_t *
+cg_display_get_renderer(cg_display_t *display)
 {
-  return display->renderer;
+    return display->renderer;
 }
 
 void
-cogl_display_set_onscreen_template (CoglDisplay *display,
-                                    CoglOnscreenTemplate *onscreen_template)
+cg_display_set_onscreen_template(cg_display_t *display,
+                                 cg_onscreen_template_t *onscreen_template)
 {
-  _COGL_RETURN_IF_FAIL (display->setup == false);
+    _CG_RETURN_IF_FAIL(display->setup == false);
 
-  if (onscreen_template)
-    cogl_object_ref (onscreen_template);
+    if (onscreen_template)
+        cg_object_ref(onscreen_template);
 
-  if (display->onscreen_template)
-    cogl_object_unref (display->onscreen_template);
+    if (display->onscreen_template)
+        cg_object_unref(display->onscreen_template);
 
-  display->onscreen_template = onscreen_template;
+    display->onscreen_template = onscreen_template;
 
-  /* NB: we want to maintain the invariable that there is always an
-   * onscreen template associated with a CoglDisplay... */
-  if (!onscreen_template)
-    display->onscreen_template = cogl_onscreen_template_new ();
+    /* NB: we want to maintain the invariable that there is always an
+     * onscreen template associated with a cg_display_t... */
+    if (!onscreen_template)
+        display->onscreen_template = cg_onscreen_template_new();
 }
 
 bool
-cogl_display_setup (CoglDisplay *display,
-                    CoglError **error)
+cg_display_setup(cg_display_t *display, cg_error_t **error)
 {
-  const CoglWinsysVtable *winsys;
+    const cg_winsys_vtable_t *winsys;
 
-  if (display->setup)
+    if (display->setup)
+        return true;
+
+    winsys = _cg_display_get_winsys(display);
+    if (!winsys->display_setup(display, error))
+        return false;
+
+    display->setup = true;
+
     return true;
-
-  winsys = _cogl_display_get_winsys (display);
-  if (!winsys->display_setup (display, error))
-    return false;
-
-  display->setup = true;
-
-  return true;
 }
 
-#ifdef COGL_HAS_EGL_PLATFORM_GDL_SUPPORT
+#ifdef CG_HAS_EGL_PLATFORM_GDL_SUPPORT
 void
-cogl_gdl_display_set_plane (CoglDisplay *display,
-                            gdl_plane_id_t plane)
+cg_gdl_display_set_plane(cg_display_t *display, gdl_plane_id_t plane)
 {
-  _COGL_RETURN_IF_FAIL (display->setup == false);
+    _CG_RETURN_IF_FAIL(display->setup == false);
 
-  display->gdl_plane = plane;
+    display->gdl_plane = plane;
 }
 #endif
 
-#ifdef COGL_HAS_WAYLAND_EGL_SERVER_SUPPORT
+#ifdef CG_HAS_WAYLAND_EGL_SERVER_SUPPORT
 void
-cogl_wayland_display_set_compositor_display (CoglDisplay *display,
-                                             struct wl_display *wayland_display)
+cg_wayland_display_set_compositor_display(cg_display_t *display,
+                                          struct wl_display *wayland_display)
 {
-  _COGL_RETURN_IF_FAIL (display->setup == false);
+    _CG_RETURN_IF_FAIL(display->setup == false);
 
-  display->wayland_compositor_display = wayland_display;
+    display->wayland_compositor_display = wayland_display;
 }
 #endif

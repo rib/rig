@@ -30,17 +30,17 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#if !defined(__COGL_H_INSIDE__) && !defined(COGL_COMPILATION)
+#if !defined(__CG_H_INSIDE__) && !defined(CG_COMPILATION)
 #error "Only <cogl/cogl.h> can be included directly."
 #endif
 
-#ifndef __COGL_TEXTURE_2D_H
-#define __COGL_TEXTURE_2D_H
+#ifndef __CG_TEXTURE_2D_H
+#define __CG_TEXTURE_2D_H
 
 #include "cogl-context.h"
 #include "cogl-bitmap.h"
 
-COGL_BEGIN_DECLS
+CG_BEGIN_DECLS
 
 /**
  * SECTION:cogl-texture-2d
@@ -53,108 +53,106 @@ COGL_BEGIN_DECLS
  * by the GPU.
  *
  * You should be aware that many GPUs only support power of two sizes
- * for #CoglTexture2D textures. You can check support for non power of
- * two textures by checking for the %COGL_FEATURE_ID_TEXTURE_NPOT feature
- * via cogl_has_feature().
+ * for #cg_texture_2d_t textures. You can check support for non power of
+ * two textures by checking for the %CG_FEATURE_ID_TEXTURE_NPOT feature
+ * via cg_has_feature().
  */
 
-typedef struct _CoglTexture2D CoglTexture2D;
-#define COGL_TEXTURE_2D(X) ((CoglTexture2D *)X)
+typedef struct _cg_texture_2d_t cg_texture_2d_t;
+#define CG_TEXTURE_2D(X) ((cg_texture_2d_t *)X)
 
 /**
- * cogl_is_texture_2d:
- * @object: A #CoglObject
+ * cg_is_texture_2d:
+ * @object: A #cg_object_t
  *
- * Gets whether the given object references an existing #CoglTexture2D
+ * Gets whether the given object references an existing #cg_texture_2d_t
  * object.
  *
- * Return value: %true if the object references a #CoglTexture2D,
+ * Return value: %true if the object references a #cg_texture_2d_t,
  *   %false otherwise
  */
-bool
-cogl_is_texture_2d (void *object);
+bool cg_is_texture_2d(void *object);
 
 /**
- * cogl_texture_2d_new_with_size:
- * @ctx: A #CoglContext
+ * cg_texture_2d_new_with_size:
+ * @ctx: A #cg_context_t
  * @width: Width of the texture to allocate
  * @height: Height of the texture to allocate
  *
- * Creates a low-level #CoglTexture2D texture with a given @width and
+ * Creates a low-level #cg_texture_2d_t texture with a given @width and
  * @height that your GPU can texture from directly.
  *
  * The storage for the texture is not allocated before this function
- * returns. You can call cogl_texture_allocate() to explicitly
+ * returns. You can call cg_texture_allocate() to explicitly
  * allocate the underlying storage or preferably let Cogl
  * automatically allocate storage lazily when it may know more about
  * how the texture is being used and can optimize how it is allocated.
  *
  * The texture is still configurable until it has been allocated so
  * for example you can influence the internal format of the texture
- * using cogl_texture_set_components() and
- * cogl_texture_set_premultiplied().
+ * using cg_texture_set_components() and
+ * cg_texture_set_premultiplied().
  *
- * <note>Many GPUs only support power of two sizes for #CoglTexture2D
+ * <note>Many GPUs only support power of two sizes for #cg_texture_2d_t
  * textures. You can check support for non power of two textures by
- * checking for the %COGL_FEATURE_ID_TEXTURE_NPOT feature via
- * cogl_has_feature().</note>
+ * checking for the %CG_FEATURE_ID_TEXTURE_NPOT feature via
+ * cg_has_feature().</note>
  *
- * Returns: (transfer full): A new #CoglTexture2D object with no storage yet allocated.
+ * Returns: (transfer full): A new #cg_texture_2d_t object with no storage yet
+ * allocated.
  *
  * Since: 2.0
  */
-CoglTexture2D *
-cogl_texture_2d_new_with_size (CoglContext *ctx,
-                               int width,
-                               int height);
+cg_texture_2d_t *
+cg_texture_2d_new_with_size(cg_context_t *ctx, int width, int height);
 
 /**
- * cogl_texture_2d_new_from_file:
- * @ctx: A #CoglContext
+ * cg_texture_2d_new_from_file:
+ * @ctx: A #cg_context_t
  * @filename: the file to load
- * @error: A #CoglError to catch exceptional errors or %NULL
+ * @error: A #cg_error_t to catch exceptional errors or %NULL
  *
- * Creates a low-level #CoglTexture2D texture from an image file.
+ * Creates a low-level #cg_texture_2d_t texture from an image file.
  *
  * The storage for the texture is not allocated before this function
- * returns. You can call cogl_texture_allocate() to explicitly
+ * returns. You can call cg_texture_allocate() to explicitly
  * allocate the underlying storage or preferably let Cogl
  * automatically allocate storage lazily when it may know more about
  * how the texture is being used and can optimize how it is allocated.
  *
  * The texture is still configurable until it has been allocated so
  * for example you can influence the internal format of the texture
- * using cogl_texture_set_components() and
- * cogl_texture_set_premultiplied().
+ * using cg_texture_set_components() and
+ * cg_texture_set_premultiplied().
  *
- * <note>Many GPUs only support power of two sizes for #CoglTexture2D
+ * <note>Many GPUs only support power of two sizes for #cg_texture_2d_t
  * textures. You can check support for non power of two textures by
- * checking for the %COGL_FEATURE_ID_TEXTURE_NPOT feature via
- * cogl_has_feature().</note>
+ * checking for the %CG_FEATURE_ID_TEXTURE_NPOT feature via
+ * cg_has_feature().</note>
  *
- * Return value: (transfer full): A newly created #CoglTexture2D or %NULL on failure
+ * Return value: (transfer full): A newly created #cg_texture_2d_t or %NULL on
+ * failure
  *               and @error will be updated.
  *
  * Since: 1.16
  */
-CoglTexture2D *
-cogl_texture_2d_new_from_file (CoglContext *ctx,
-                               const char *filename,
-                               CoglError **error);
+cg_texture_2d_t *cg_texture_2d_new_from_file(cg_context_t *ctx,
+                                             const char *filename,
+                                             cg_error_t **error);
 
 /**
- * cogl_texture_2d_new_from_data:
- * @ctx: A #CoglContext
+ * cg_texture_2d_new_from_data:
+ * @ctx: A #cg_context_t
  * @width: width of texture in pixels
  * @height: height of texture in pixels
- * @format: the #CoglPixelFormat the buffer is stored in in RAM
+ * @format: the #cg_pixel_format_t the buffer is stored in in RAM
  * @rowstride: the memory offset in bytes between the starts of
  *    scanlines in @data. A value of 0 will make Cogl automatically
  *    calculate @rowstride from @width and @format.
  * @data: pointer the memory region where the source buffer resides
- * @error: A #CoglError for exceptions
+ * @error: A #cg_error_t for exceptions
  *
- * Creates a low-level #CoglTexture2D texture based on data residing
+ * Creates a low-level #cg_texture_2d_t texture based on data residing
  * in memory.
  *
  * <note>This api will always immediately allocate GPU memory for the
@@ -163,63 +161,61 @@ cogl_texture_2d_new_from_file (CoglContext *ctx,
  * is not possible to configure the texture before it is allocated. If
  * you do need to configure the texture before allocation (to specify
  * constraints on the internal format for example) then you can
- * instead create a #CoglBitmap for your data and use
- * cogl_texture_2d_new_from_bitmap() or use
- * cogl_texture_2d_new_with_size() and then upload data using
- * cogl_texture_set_data()</note>
+ * instead create a #cg_bitmap_t for your data and use
+ * cg_texture_2d_new_from_bitmap() or use
+ * cg_texture_2d_new_with_size() and then upload data using
+ * cg_texture_set_data()</note>
  *
- * <note>Many GPUs only support power of two sizes for #CoglTexture2D
+ * <note>Many GPUs only support power of two sizes for #cg_texture_2d_t
  * textures. You can check support for non power of two textures by
- * checking for the %COGL_FEATURE_ID_TEXTURE_NPOT feature via
- * cogl_has_feature().</note>
+ * checking for the %CG_FEATURE_ID_TEXTURE_NPOT feature via
+ * cg_has_feature().</note>
  *
- * Returns: (transfer full): A newly allocated #CoglTexture2D, or if
+ * Returns: (transfer full): A newly allocated #cg_texture_2d_t, or if
  *          the size is not supported (because it is too large or a
  *          non-power-of-two size that the hardware doesn't support)
  *          it will return %NULL and set @error.
  *
  * Since: 2.0
  */
-CoglTexture2D *
-cogl_texture_2d_new_from_data (CoglContext *ctx,
-                               int width,
-                               int height,
-                               CoglPixelFormat format,
-                               int rowstride,
-                               const uint8_t *data,
-                               CoglError **error);
+cg_texture_2d_t *cg_texture_2d_new_from_data(cg_context_t *ctx,
+                                             int width,
+                                             int height,
+                                             cg_pixel_format_t format,
+                                             int rowstride,
+                                             const uint8_t *data,
+                                             cg_error_t **error);
 
 /**
- * cogl_texture_2d_new_from_bitmap:
- * @bitmap: A #CoglBitmap
+ * cg_texture_2d_new_from_bitmap:
+ * @bitmap: A #cg_bitmap_t
  *
- * Creates a low-level #CoglTexture2D texture based on data residing
- * in a #CoglBitmap.
+ * Creates a low-level #cg_texture_2d_t texture based on data residing
+ * in a #cg_bitmap_t.
  *
  * The storage for the texture is not allocated before this function
- * returns. You can call cogl_texture_allocate() to explicitly
+ * returns. You can call cg_texture_allocate() to explicitly
  * allocate the underlying storage or preferably let Cogl
  * automatically allocate storage lazily when it may know more about
  * how the texture is being used and can optimize how it is allocated.
  *
  * The texture is still configurable until it has been allocated so
  * for example you can influence the internal format of the texture
- * using cogl_texture_set_components() and
- * cogl_texture_set_premultiplied().
+ * using cg_texture_set_components() and
+ * cg_texture_set_premultiplied().
  *
- * <note>Many GPUs only support power of two sizes for #CoglTexture2D
+ * <note>Many GPUs only support power of two sizes for #cg_texture_2d_t
  * textures. You can check support for non power of two textures by
- * checking for the %COGL_FEATURE_ID_TEXTURE_NPOT feature via
- * cogl_has_feature().</note>
+ * checking for the %CG_FEATURE_ID_TEXTURE_NPOT feature via
+ * cg_has_feature().</note>
  *
- * Returns: (transfer full): A newly allocated #CoglTexture2D
+ * Returns: (transfer full): A newly allocated #cg_texture_2d_t
  *
  * Since: 2.0
  * Stability: unstable
  */
-CoglTexture2D *
-cogl_texture_2d_new_from_bitmap (CoglBitmap *bitmap);
+cg_texture_2d_t *cg_texture_2d_new_from_bitmap(cg_bitmap_t *bitmap);
 
-COGL_END_DECLS
+CG_END_DECLS
 
-#endif /* __COGL_TEXTURE_2D_H */
+#endif /* __CG_TEXTURE_2D_H */

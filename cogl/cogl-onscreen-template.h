@@ -30,28 +30,27 @@
  *
  */
 
-#if !defined(__COGL_H_INSIDE__) && !defined(COGL_COMPILATION)
+#if !defined(__CG_H_INSIDE__) && !defined(CG_COMPILATION)
 #error "Only <cogl/cogl.h> can be included directly."
 #endif
 
-#ifndef __COGL_ONSCREEN_TEMPLATE_H__
-#define __COGL_ONSCREEN_TEMPLATE_H__
+#ifndef __CG_ONSCREEN_TEMPLATE_H__
+#define __CG_ONSCREEN_TEMPLATE_H__
 
-COGL_BEGIN_DECLS
+CG_BEGIN_DECLS
 
-typedef struct _CoglOnscreenTemplate	      CoglOnscreenTemplate;
+typedef struct _cg_onscreen_template_t cg_onscreen_template_t;
 
-#define COGL_ONSCREEN_TEMPLATE(OBJECT) ((CoglOnscreenTemplate *)OBJECT)
+#define CG_ONSCREEN_TEMPLATE(OBJECT) ((cg_onscreen_template_t *)OBJECT)
 
-CoglOnscreenTemplate *
-cogl_onscreen_template_new (void);
+cg_onscreen_template_t *cg_onscreen_template_new(void);
 
 /**
- * cogl_onscreen_template_set_samples_per_pixel:
- * @onscreen_template: A #CoglOnscreenTemplate template framebuffer
+ * cg_onscreen_template_set_samples_per_pixel:
+ * @onscreen_template: A #cg_onscreen_template_t template framebuffer
  * @n: The minimum number of samples per pixel
  *
- * Requires that any future CoglOnscreen framebuffers derived from
+ * Requires that any future cg_onscreen_t framebuffers derived from
  * this template must support making at least @n samples per pixel
  * which will all contribute to the final resolved color for that
  * pixel.
@@ -62,41 +61,37 @@ cogl_onscreen_template_new (void);
  *
  * <note>There are some semantic differences between single-sample
  * rendering and multisampling with just 1 point sample such as it
- * being redundant to use the cogl_framebuffer_resolve_samples() and
- * cogl_framebuffer_resolve_samples_region() apis with single-sample
+ * being redundant to use the cg_framebuffer_resolve_samples() and
+ * cg_framebuffer_resolve_samples_region() apis with single-sample
  * rendering.</note>
  *
  * Since: 1.10
  * Stability: unstable
  */
-void
-cogl_onscreen_template_set_samples_per_pixel (
-                                          CoglOnscreenTemplate *onscreen_template,
-                                          int n);
+void cg_onscreen_template_set_samples_per_pixel(
+    cg_onscreen_template_t *onscreen_template, int n);
 
 /**
- * cogl_onscreen_template_set_swap_throttled:
- * @onscreen_template: A #CoglOnscreenTemplate template framebuffer
+ * cg_onscreen_template_set_swap_throttled:
+ * @onscreen_template: A #cg_onscreen_template_t template framebuffer
  * @throttled: Whether throttling should be enabled
  *
- * Requests that any future #CoglOnscreen framebuffers derived from this
+ * Requests that any future #cg_onscreen_t framebuffers derived from this
  * template should enable or disable swap throttling according to the given
  * @throttled argument.
  *
  * Since: 1.10
  * Stability: unstable
  */
-void
-cogl_onscreen_template_set_swap_throttled (
-                                          CoglOnscreenTemplate *onscreen_template,
-                                          bool throttled);
+void cg_onscreen_template_set_swap_throttled(
+    cg_onscreen_template_t *onscreen_template, bool throttled);
 
 /**
- * cogl_onscreen_template_set_has_alpha:
- * @onscreen_template: A #CoglOnscreenTemplate template framebuffer
+ * cg_onscreen_template_set_has_alpha:
+ * @onscreen_template: A #cg_onscreen_template_t template framebuffer
  * @has_alpha: Whether an alpha channel is required
  *
- * Requests that any future #CoglOnscreen framebuffers derived from
+ * Requests that any future #cg_onscreen_t framebuffers derived from
  * this template should have an alpha channel if @has_alpha is %true.
  * If @has_alpha is false then future framebuffers derived from this
  * template aren't required to have an alpha channel, although Cogl
@@ -108,23 +103,22 @@ cogl_onscreen_template_set_swap_throttled (
  * Stability: unstable
  */
 void
-cogl_onscreen_template_set_has_alpha (CoglOnscreenTemplate *onscreen_template,
-                                      bool has_alpha);
+cg_onscreen_template_set_has_alpha(cg_onscreen_template_t *onscreen_template,
+                                   bool has_alpha);
 
 /**
- * cogl_is_onscreen_template:
- * @object: A #CoglObject pointer
+ * cg_is_onscreen_template:
+ * @object: A #cg_object_t pointer
  *
- * Gets whether the given object references a #CoglOnscreenTemplate.
+ * Gets whether the given object references a #cg_onscreen_template_t.
  *
- * Return value: %true if the object references a #CoglOnscreenTemplate
+ * Return value: %true if the object references a #cg_onscreen_template_t
  *   and %false otherwise.
  * Since: 1.10
  * Stability: unstable
  */
-bool
-cogl_is_onscreen_template (void *object);
+bool cg_is_onscreen_template(void *object);
 
-COGL_END_DECLS
+CG_END_DECLS
 
-#endif /* __COGL_ONSCREEN_TEMPLATE_H__ */
+#endif /* __CG_ONSCREEN_TEMPLATE_H__ */

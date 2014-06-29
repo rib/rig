@@ -33,11 +33,7 @@
 /* See cogl-winsys-glx-feature-functions.h for a description of how
    this file is used */
 
-COGL_WINSYS_FEATURE_BEGIN (swap_control,
-                           "EXT\0",
-                           "swap_control\0",
-                           0,
-                           COGL_WINSYS_FEATURE_SWAP_THROTTLE)
-COGL_WINSYS_FEATURE_FUNCTION (int, wglSwapInterval,
-                              (int interval))
-COGL_WINSYS_FEATURE_END ()
+CG_WINSYS_FEATURE_BEGIN(
+    swap_control, "EXT\0", "swap_control\0", 0, CG_WINSYS_FEATURE_SWAP_THROTTLE)
+CG_WINSYS_FEATURE_FUNCTION(int, wglSwapInterval, (int interval))
+CG_WINSYS_FEATURE_END()

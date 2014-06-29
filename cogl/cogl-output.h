@@ -30,22 +30,22 @@
  * Authors:
  *   Owen Taylor <otaylor@redhat.com>
  */
-#if !defined(__COGL_H_INSIDE__) && !defined(COGL_COMPILATION)
+#if !defined(__CG_H_INSIDE__) && !defined(CG_COMPILATION)
 #error "Only <cogl/cogl.h> can be included directly."
 #endif
 
-#ifndef __COGL_OUTPUT_H
-#define __COGL_OUTPUT_H
+#ifndef __CG_OUTPUT_H
+#define __CG_OUTPUT_H
 
 #include <cogl/cogl-types.h>
 
-COGL_BEGIN_DECLS
+CG_BEGIN_DECLS
 
 /**
  * SECTION:cogl-output
  * @short_description: information about an output device
  *
- * The #CoglOutput object holds information about an output device
+ * The #cg_output_t object holds information about an output device
  * such as a monitor or laptop display. It can be queried to find
  * out the position of the output with respect to the screen
  * coordinate system and other information such as the resolution
@@ -57,33 +57,33 @@ COGL_BEGIN_DECLS
  *
  * XXX: though it's possible to query the position of the output
  * with respect to screen coordinates, there is currently no way
- * of finding out the position of a #CoglOnscreen in screen
+ * of finding out the position of a #cg_onscreen_t in screen
  * coordinates, at least without using windowing-system specific
  * API's, so it's not easy to get the output positions relative
- * to the #CoglOnscreen.
+ * to the #cg_onscreen_t.
  */
 
-typedef struct _CoglOutput CoglOutput;
-#define COGL_OUTPUT(X) ((CoglOutput *)(X))
+typedef struct _cg_output_t cg_output_t;
+#define CG_OUTPUT(X) ((cg_output_t *)(X))
 
 /**
- * CoglSubpixelOrder:
- * @COGL_SUBPIXEL_ORDER_UNKNOWN: the layout of subpixel
+ * cg_subpixel_order_t:
+ * @CG_SUBPIXEL_ORDER_UNKNOWN: the layout of subpixel
  *   components for the device is unknown.
- * @COGL_SUBPIXEL_ORDER_NONE: the device displays colors
+ * @CG_SUBPIXEL_ORDER_NONE: the device displays colors
  *   without geometrically-separated subpixel components,
  *   or the positioning or colors of the components do not
  *   match any of the values in the enumeration.
- * @COGL_SUBPIXEL_ORDER_HORIZONTAL_RGB: the device has
+ * @CG_SUBPIXEL_ORDER_HORIZONTAL_RGB: the device has
  *   horizontally arranged components in the order
  *   red-green-blue from left to right.
- * @COGL_SUBPIXEL_ORDER_HORIZONTAL_BGR: the device has
+ * @CG_SUBPIXEL_ORDER_HORIZONTAL_BGR: the device has
  *   horizontally arranged  components in the order
  *   blue-green-red from left to right.
- * @COGL_SUBPIXEL_ORDER_VERTICAL_RGB: the device has
+ * @CG_SUBPIXEL_ORDER_VERTICAL_RGB: the device has
  *   vertically arranged components in the order
  *   red-green-blue from top to bottom.
- * @COGL_SUBPIXEL_ORDER_VERTICAL_BGR: the device has
+ * @CG_SUBPIXEL_ORDER_VERTICAL_BGR: the device has
  *   vertically arranged components in the order
  *   blue-green-red from top to bottom.
  *
@@ -98,31 +98,30 @@ typedef struct _CoglOutput CoglOutput;
  * Stability: unstable
  */
 typedef enum {
-  COGL_SUBPIXEL_ORDER_UNKNOWN,
-  COGL_SUBPIXEL_ORDER_NONE,
-  COGL_SUBPIXEL_ORDER_HORIZONTAL_RGB,
-  COGL_SUBPIXEL_ORDER_HORIZONTAL_BGR,
-  COGL_SUBPIXEL_ORDER_VERTICAL_RGB,
-  COGL_SUBPIXEL_ORDER_VERTICAL_BGR
-} CoglSubpixelOrder;
+    CG_SUBPIXEL_ORDER_UNKNOWN,
+    CG_SUBPIXEL_ORDER_NONE,
+    CG_SUBPIXEL_ORDER_HORIZONTAL_RGB,
+    CG_SUBPIXEL_ORDER_HORIZONTAL_BGR,
+    CG_SUBPIXEL_ORDER_VERTICAL_RGB,
+    CG_SUBPIXEL_ORDER_VERTICAL_BGR
+} cg_subpixel_order_t;
 
 /**
- * cogl_is_output:
- * @object: A #CoglObject pointer
+ * cg_is_output:
+ * @object: A #cg_object_t pointer
  *
- * Gets whether the given object references a #CoglOutput.
+ * Gets whether the given object references a #cg_output_t.
  *
- * Return value: %true if the object references a #CoglOutput
+ * Return value: %true if the object references a #cg_output_t
  *   and %false otherwise.
  * Since: 1.14
  * Stability: unstable
  */
-bool
-cogl_is_output (void *object);
+bool cg_is_output(void *object);
 
 /**
- * cogl_output_get_x:
- * @output: a #CoglOutput
+ * cg_output_get_x:
+ * @output: a #cg_output_t
  *
  * Gets the X position of the output with respect to the coordinate
  * system of the screen.
@@ -132,12 +131,11 @@ cogl_is_output (void *object);
  * Since: 1.14
  * Stability: unstable
  */
-int
-cogl_output_get_x (CoglOutput *output);
+int cg_output_get_x(cg_output_t *output);
 
 /**
- * cogl_output_get_y:
- * @output: a #CoglOutput
+ * cg_output_get_y:
+ * @output: a #cg_output_t
  *
  * Gets the Y position of the output with respect to the coordinate
  * system of the screen.
@@ -147,12 +145,11 @@ cogl_output_get_x (CoglOutput *output);
  * Since: 1.14
  * Stability: unstable
  */
-int
-cogl_output_get_y (CoglOutput *output);
+int cg_output_get_y(cg_output_t *output);
 
 /**
- * cogl_output_get_width:
- * @output: a #CoglOutput
+ * cg_output_get_width:
+ * @output: a #cg_output_t
  *
  * Gets the width of the output in pixels.
  *
@@ -160,12 +157,11 @@ cogl_output_get_y (CoglOutput *output);
  * Since: 1.14
  * Stability: unstable
  */
-int
-cogl_output_get_width (CoglOutput *output);
+int cg_output_get_width(cg_output_t *output);
 
 /**
- * cogl_output_get_height:
- * @output: a #CoglOutput
+ * cg_output_get_height:
+ * @output: a #cg_output_t
  *
  * Gets the height of the output in pixels.
  *
@@ -173,12 +169,11 @@ cogl_output_get_width (CoglOutput *output);
  * Since: 1.14
  * Stability: unstable
  */
-int
-cogl_output_get_height (CoglOutput *output);
+int cg_output_get_height(cg_output_t *output);
 
 /**
- * cogl_output_get_mm_width:
- * @output: a #CoglOutput
+ * cg_output_get_mm_width:
+ * @output: a #cg_output_t
  *
  * Gets the physical width of the output. In some cases (such as
  * as a projector), the value returned here might correspond to
@@ -190,12 +185,11 @@ cogl_output_get_height (CoglOutput *output);
  * Since: 1.14
  * Stability: unstable
  */
-int
-cogl_output_get_mm_width (CoglOutput *output);
+int cg_output_get_mm_width(cg_output_t *output);
 
 /**
- * cogl_output_get_mm_height:
- * @output: a #CoglOutput
+ * cg_output_get_mm_height:
+ * @output: a #cg_output_t
  *
  * Gets the physical height of the output. In some cases (such as
  * as a projector), the value returned here might correspond to
@@ -207,12 +201,11 @@ cogl_output_get_mm_width (CoglOutput *output);
  * Since: 1.14
  * Stability: unstable
  */
-int
-cogl_output_get_mm_height (CoglOutput *output);
+int cg_output_get_mm_height(cg_output_t *output);
 
 /**
- * cogl_output_get_subpixel_order:
- * @output: a #CoglOutput
+ * cg_output_get_subpixel_order:
+ * @output: a #cg_output_t
  *
  * For an output device where each pixel is made up of smaller components
  * with different colors, returns the layout of the subpixel
@@ -222,12 +215,11 @@ cogl_output_get_mm_height (CoglOutput *output);
  * Since: 1.14
  * Stability: unstable
  */
-CoglSubpixelOrder
-cogl_output_get_subpixel_order (CoglOutput *output);
+cg_subpixel_order_t cg_output_get_subpixel_order(cg_output_t *output);
 
 /**
- * cogl_output_get_refresh_rate:
- * @output: a #CoglOutput
+ * cg_output_get_refresh_rate:
+ * @output: a #cg_output_t
  *
  * Gets the number of times per second that the output device refreshes
  * the display contents.
@@ -237,12 +229,8 @@ cogl_output_get_subpixel_order (CoglOutput *output);
  * Since: 1.14
  * Stability: unstable
  */
-float
-cogl_output_get_refresh_rate (CoglOutput *output);
+float cg_output_get_refresh_rate(cg_output_t *output);
 
-COGL_END_DECLS
+CG_END_DECLS
 
-#endif /* __COGL_OUTPUT_H */
-
-
-
+#endif /* __CG_OUTPUT_H */

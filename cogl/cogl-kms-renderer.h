@@ -26,21 +26,21 @@
  * SOFTWARE.
  */
 
-#if !defined(__COGL_H_INSIDE__) && !defined(COGL_COMPILATION)
+#if !defined(__CG_H_INSIDE__) && !defined(CG_COMPILATION)
 #error "Only <cogl/cogl.h> can be included directly."
 #endif
 
-#ifndef __COGL_KMS_RENDERER_H__
-#define __COGL_KMS_RENDERER_H__
+#ifndef __CG_KMS_RENDERER_H__
+#define __CG_KMS_RENDERER_H__
 
 #include <cogl/cogl-types.h>
 #include <cogl/cogl-renderer.h>
 
-COGL_BEGIN_DECLS
+CG_BEGIN_DECLS
 
 /**
- * cogl_kms_renderer_set_kms_fd:
- * @renderer: A #CoglRenderer
+ * cg_kms_renderer_set_kms_fd:
+ * @renderer: A #cg_renderer_t
  * @fd: The fd to kms to use
  *
  * Sets the file descriptor Cogl should use to communicate
@@ -50,13 +50,11 @@ COGL_BEGIN_DECLS
  * Since: 1.18
  * Stability: unstable
  */
-void
-cogl_kms_renderer_set_kms_fd (CoglRenderer *renderer,
-                              int fd);
+void cg_kms_renderer_set_kms_fd(cg_renderer_t *renderer, int fd);
 
 /**
- * cogl_kms_renderer_get_kms_fd:
- * @renderer: A #CoglRenderer
+ * cg_kms_renderer_get_kms_fd:
+ * @renderer: A #cg_renderer_t
  *
  * Queries the file descriptor Cogl is using internally for
  * communicating with the kms driver.
@@ -65,8 +63,7 @@ cogl_kms_renderer_set_kms_fd (CoglRenderer *renderer,
  *               desriptor has been opened by Cogl.
  * Stability: unstable
  */
-int
-cogl_kms_renderer_get_kms_fd (CoglRenderer *renderer);
+int cg_kms_renderer_get_kms_fd(cg_renderer_t *renderer);
 
-COGL_END_DECLS
-#endif /* __COGL_KMS_RENDERER_H__ */
+CG_END_DECLS
+#endif /* __CG_KMS_RENDERER_H__ */

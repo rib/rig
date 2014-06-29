@@ -32,53 +32,52 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#if !defined(__COGL_H_INSIDE__) && !defined(COGL_COMPILATION)
+#if !defined(__CG_H_INSIDE__) && !defined(CG_COMPILATION)
 #error "Only <cogl/cogl.h> can be included directly."
 #endif
 
-#ifndef __COGL_PIXEL_BUFFER_H__
-#define __COGL_PIXEL_BUFFER_H__
+#ifndef __CG_PIXEL_BUFFER_H__
+#define __CG_PIXEL_BUFFER_H__
 
-/* XXX: We forward declare CoglPixelBuffer here to allow for circular
+/* XXX: We forward declare cg_pixel_buffer_t here to allow for circular
  * dependencies between some headers */
-typedef struct _CoglPixelBuffer CoglPixelBuffer;
+typedef struct _cg_pixel_buffer_t cg_pixel_buffer_t;
 
 #include <cogl/cogl-types.h>
 #include <cogl/cogl-context.h>
 
-COGL_BEGIN_DECLS
+CG_BEGIN_DECLS
 
-#define COGL_PIXEL_BUFFER(buffer) ((CoglPixelBuffer *)(buffer))
+#define CG_PIXEL_BUFFER(buffer) ((cg_pixel_buffer_t *)(buffer))
 
 /**
- * cogl_pixel_buffer_new:
- * @context: A #CoglContext
+ * cg_pixel_buffer_new:
+ * @context: A #cg_context_t
  * @size: The number of bytes to allocate for the pixel data.
  * @data: An optional pointer to vertex data to upload immediately
- * @error: A #CoglError for catching exceptional errors
+ * @error: A #cg_error_t for catching exceptional errors
  *
- * Declares a new #CoglPixelBuffer of @size bytes to contain arrays of
- * pixels. Once declared, data can be set using cogl_buffer_set_data()
+ * Declares a new #cg_pixel_buffer_t of @size bytes to contain arrays of
+ * pixels. Once declared, data can be set using cg_buffer_set_data()
  * or by mapping it into the application's address space using
- * cogl_buffer_map().
+ * cg_buffer_map().
  *
  * If @data isn't %NULL then @size bytes will be read from @data and
  * immediately copied into the new buffer.
  *
- * Return value: (transfer full): a newly allocated #CoglPixelBuffer
+ * Return value: (transfer full): a newly allocated #cg_pixel_buffer_t
  *
  * Since: 1.10
  * Stability: unstable
  */
-CoglPixelBuffer *
-cogl_pixel_buffer_new (CoglContext *context,
-                       size_t size,
-                       const void *data,
-                       CoglError **error);
+cg_pixel_buffer_t *cg_pixel_buffer_new(cg_context_t *context,
+                                       size_t size,
+                                       const void *data,
+                                       cg_error_t **error);
 
 /**
- * cogl_is_pixel_buffer:
- * @object: a #CoglObject to test
+ * cg_is_pixel_buffer:
+ * @object: a #cg_object_t to test
  *
  * Checks whether @object is a pixel buffer.
  *
@@ -88,13 +87,12 @@ cogl_pixel_buffer_new (CoglContext *context,
  * Since: 1.2
  * Stability: Unstable
  */
-bool
-cogl_is_pixel_buffer (void *object);
+bool cg_is_pixel_buffer(void *object);
 
 #if 0
 /*
- * cogl_pixel_buffer_set_region:
- * @buffer: A #CoglPixelBuffer object
+ * cg_pixel_buffer_set_region:
+ * @buffer: A #cg_pixel_buffer_t object
  * @data: pixel data to upload to @array
  * @src_width: width in pixels of the region to update
  * @src_height: height in pixels of the region to update
@@ -113,15 +111,15 @@ cogl_is_pixel_buffer (void *object);
  * Stability: Unstable
  */
 bool
-cogl_pixel_buffer_set_region (CoglPixelBuffer *buffer,
-                              uint8_t *data,
-                              unsigned int src_width,
-                              unsigned int src_height,
-                              unsigned int src_rowstride,
-                              unsigned int dst_x,
-                              unsigned int dst_y);
+cg_pixel_buffer_set_region (cg_pixel_buffer_t *buffer,
+                            uint8_t *data,
+                            unsigned int src_width,
+                            unsigned int src_height,
+                            unsigned int src_rowstride,
+                            unsigned int dst_x,
+                            unsigned int dst_y);
 #endif
 
-COGL_END_DECLS
+CG_END_DECLS
 
-#endif /* __COGL_PIXEL_BUFFER_H__ */
+#endif /* __CG_PIXEL_BUFFER_H__ */

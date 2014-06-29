@@ -38,79 +38,75 @@
 #include "cogl-depth-state.h"
 
 void
-cogl_depth_state_init (CoglDepthState *state)
+cg_depth_state_init(cg_depth_state_t *state)
 {
-  state->magic = COGL_DEPTH_STATE_MAGIC;
+    state->magic = CG_DEPTH_STATE_MAGIC;
 
-  /* The same as the GL defaults */
-  state->test_enabled = false;
-  state->write_enabled = true;
-  state->test_function = COGL_DEPTH_TEST_FUNCTION_LESS;
-  state->range_near = 0;
-  state->range_far = 1;
+    /* The same as the GL defaults */
+    state->test_enabled = false;
+    state->write_enabled = true;
+    state->test_function = CG_DEPTH_TEST_FUNCTION_LESS;
+    state->range_near = 0;
+    state->range_far = 1;
 }
 
 void
-cogl_depth_state_set_test_enabled (CoglDepthState *state,
-                                   bool enabled)
+cg_depth_state_set_test_enabled(cg_depth_state_t *state, bool enabled)
 {
-  _COGL_RETURN_IF_FAIL (state->magic == COGL_DEPTH_STATE_MAGIC);
-  state->test_enabled = enabled;
+    _CG_RETURN_IF_FAIL(state->magic == CG_DEPTH_STATE_MAGIC);
+    state->test_enabled = enabled;
 }
 
 bool
-cogl_depth_state_get_test_enabled (CoglDepthState *state)
+cg_depth_state_get_test_enabled(cg_depth_state_t *state)
 {
-  _COGL_RETURN_VAL_IF_FAIL (state->magic == COGL_DEPTH_STATE_MAGIC, false);
-  return state->test_enabled;
+    _CG_RETURN_VAL_IF_FAIL(state->magic == CG_DEPTH_STATE_MAGIC, false);
+    return state->test_enabled;
 }
 
 void
-cogl_depth_state_set_write_enabled (CoglDepthState *state,
-                                    bool enabled)
+cg_depth_state_set_write_enabled(cg_depth_state_t *state, bool enabled)
 {
-  _COGL_RETURN_IF_FAIL (state->magic == COGL_DEPTH_STATE_MAGIC);
-  state->write_enabled = enabled;
+    _CG_RETURN_IF_FAIL(state->magic == CG_DEPTH_STATE_MAGIC);
+    state->write_enabled = enabled;
 }
 
 bool
-cogl_depth_state_get_write_enabled (CoglDepthState *state)
+cg_depth_state_get_write_enabled(cg_depth_state_t *state)
 {
-  _COGL_RETURN_VAL_IF_FAIL (state->magic == COGL_DEPTH_STATE_MAGIC, false);
-  return state->write_enabled;
+    _CG_RETURN_VAL_IF_FAIL(state->magic == CG_DEPTH_STATE_MAGIC, false);
+    return state->write_enabled;
 }
 
 void
-cogl_depth_state_set_test_function (CoglDepthState *state,
-                                    CoglDepthTestFunction function)
+cg_depth_state_set_test_function(cg_depth_state_t *state,
+                                 cg_depth_test_function_t function)
 {
-  _COGL_RETURN_IF_FAIL (state->magic == COGL_DEPTH_STATE_MAGIC);
-  state->test_function = function;
+    _CG_RETURN_IF_FAIL(state->magic == CG_DEPTH_STATE_MAGIC);
+    state->test_function = function;
 }
 
-CoglDepthTestFunction
-cogl_depth_state_get_test_function (CoglDepthState *state)
+cg_depth_test_function_t
+cg_depth_state_get_test_function(cg_depth_state_t *state)
 {
-  _COGL_RETURN_VAL_IF_FAIL (state->magic == COGL_DEPTH_STATE_MAGIC, false);
-  return state->test_function;
-}
-
-void
-cogl_depth_state_set_range (CoglDepthState *state,
-                            float near,
-                            float far)
-{
-  _COGL_RETURN_IF_FAIL (state->magic == COGL_DEPTH_STATE_MAGIC);
-  state->range_near = near;
-  state->range_far = far;
+    _CG_RETURN_VAL_IF_FAIL(state->magic == CG_DEPTH_STATE_MAGIC, false);
+    return state->test_function;
 }
 
 void
-cogl_depth_state_get_range (CoglDepthState *state,
-                            float *near_out,
-                            float *far_out)
+cg_depth_state_set_range(cg_depth_state_t *state, float near, float far)
 {
-  _COGL_RETURN_IF_FAIL (state->magic == COGL_DEPTH_STATE_MAGIC);
-  *near_out = state->range_near;
-  *far_out = state->range_far;
+    _CG_RETURN_IF_FAIL(state->magic == CG_DEPTH_STATE_MAGIC);
+    state->range_near = near;
+    state->range_far = far;
+}
+
+void
+cg_depth_state_get_range(cg_depth_state_t *state,
+                         float *near_out,
+                         float *far_out)
+{
+    _CG_RETURN_IF_FAIL(state->magic == CG_DEPTH_STATE_MAGIC);
+    *near_out = state->range_near;
+    *far_out = state->range_far;
 }

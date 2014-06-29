@@ -26,15 +26,14 @@
  * SOFTWARE.
  */
 
-#ifndef _COGL_GLSL_SHADER_PRIVATE_H_
-#define _COGL_GLSL_SHADER_PRIVATE_H_
+#ifndef _CG_GLSL_SHADER_PRIVATE_H_
+#define _CG_GLSL_SHADER_PRIVATE_H_
 
-void
-_cogl_glsl_shader_set_source_with_boilerplate (CoglContext *ctx,
-                                               GLuint shader_gl_handle,
-                                               GLenum shader_gl_type,
-                                               GLsizei count_in,
-                                               const char **strings_in,
-                                               const GLint *lengths_in);
+void _cg_glsl_shader_set_source_with_boilerplate(cg_context_t *ctx,
+                                                 GLuint shader_gl_handle,
+                                                 GLenum shader_gl_type,
+                                                 GLsizei count_in,
+                                                 const char **strings_in,
+                                                 const GLint *lengths_in);
 
-#endif /* _COGL_GLSL_SHADER_PRIVATE_H_ */
+#endif /* _CG_GLSL_SHADER_PRIVATE_H_ */

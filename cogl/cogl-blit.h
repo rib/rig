@@ -26,8 +26,8 @@
  * SOFTWARE.
  */
 
-#ifndef __COGL_BLIT_H
-#define __COGL_BLIT_H
+#ifndef __CG_BLIT_H
+#define __CG_BLIT_H
 
 #include <clib.h>
 #include "cogl-object-private.h"
@@ -39,12 +39,12 @@
    multiple methods we can use, most of which involve transferring
    between an FBO bound to the texture. */
 
-typedef struct _CoglBlitData CoglBlitData;
+typedef struct _cg_blit_data_t cg_blit_data_t;
 
-typedef bool (* CoglBlitBeginFunc) (CoglBlitData *data);
-typedef void (* CoglBlitEndFunc) (CoglBlitData *data);
+typedef bool (*cg_blit_begin_func_t)(cg_blit_data_t *data);
+typedef void (*cg_blit_end_func_t)(cg_blit_data_t *data);
 
-typedef void (* CoglBlitFunc) (CoglBlitData *data,
+typedef void (*cg_blit_func_t)(cg_blit_data_t *data,
                                int src_x,
                                int src_y,
                                int dst_x,
@@ -52,50 +52,45 @@ typedef void (* CoglBlitFunc) (CoglBlitData *data,
                                int width,
                                int height);
 
-typedef struct
-{
-  const char *name;
-  CoglBlitBeginFunc begin_func;
-  CoglBlitFunc blit_func;
-  CoglBlitEndFunc end_func;
-} CoglBlitMode;
+typedef struct {
+    const char *name;
+    cg_blit_begin_func_t begin_func;
+    cg_blit_func_t blit_func;
+    cg_blit_end_func_t end_func;
+} cg_blit_mode_t;
 
-struct _CoglBlitData
-{
-  CoglTexture *src_tex, *dst_tex;
+struct _cg_blit_data_t {
+    cg_texture_t *src_tex, *dst_tex;
 
-  unsigned int src_width;
-  unsigned int src_height;
+    unsigned int src_width;
+    unsigned int src_height;
 
-  const CoglBlitMode *blit_mode;
+    const cg_blit_mode_t *blit_mode;
 
-  /* If we're not using an FBO then we c_malloc a buffer and copy the
-     complete texture data in */
-  unsigned char *image_data;
-  CoglPixelFormat format;
+    /* If we're not using an FBO then we c_malloc a buffer and copy the
+       complete texture data in */
+    unsigned char *image_data;
+    cg_pixel_format_t format;
 
-  int bpp;
+    int bpp;
 
-  CoglFramebuffer *src_fb;
-  CoglFramebuffer *dest_fb;
-  CoglPipeline *pipeline;
+    cg_framebuffer_t *src_fb;
+    cg_framebuffer_t *dest_fb;
+    cg_pipeline_t *pipeline;
 };
 
-void
-_cogl_blit_begin (CoglBlitData *data,
-                  CoglTexture *dst_tex,
-                  CoglTexture *src_tex);
+void _cg_blit_begin(cg_blit_data_t *data,
+                    cg_texture_t *dst_tex,
+                    cg_texture_t *src_tex);
 
-void
-_cogl_blit (CoglBlitData *data,
-            int src_x,
-            int src_y,
-            int dst_x,
-            int dst_y,
-            int width,
-            int height);
+void _cg_blit(cg_blit_data_t *data,
+              int src_x,
+              int src_y,
+              int dst_x,
+              int dst_y,
+              int width,
+              int height);
 
-void
-_cogl_blit_end (CoglBlitData *data);
+void _cg_blit_end(cg_blit_data_t *data);
 
-#endif /* __COGL_BLIT_H */
+#endif /* __CG_BLIT_H */

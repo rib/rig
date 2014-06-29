@@ -28,8 +28,8 @@
  *
  */
 
-#ifndef __COGL_WINSYS_EGL_PRIVATE_H
-#define __COGL_WINSYS_EGL_PRIVATE_H
+#ifndef __CG_WINSYS_EGL_PRIVATE_H
+#define __CG_WINSYS_EGL_PRIVATE_H
 
 #include "cogl-defines.h"
 #include "cogl-winsys-private.h"
@@ -58,146 +58,122 @@
 struct wl_resource;
 #endif
 
-typedef struct _CoglWinsysEGLVtable
-{
-  bool
-  (* display_setup) (CoglDisplay *display,
-                     CoglError **error);
-  void
-  (* display_destroy) (CoglDisplay *display);
+typedef struct _cg_winsys_egl_vtable_t {
+    bool (*display_setup)(cg_display_t *display, cg_error_t **error);
+    void (*display_destroy)(cg_display_t *display);
 
-  bool
-  (* context_created) (CoglDisplay *display,
-                       CoglError **error);
+    bool (*context_created)(cg_display_t *display, cg_error_t **error);
 
-  void
-  (* cleanup_context) (CoglDisplay *display);
+    void (*cleanup_context)(cg_display_t *display);
 
-  bool
-  (* context_init) (CoglContext *context, CoglError **error);
+    bool (*context_init)(cg_context_t *context, cg_error_t **error);
 
-  void
-  (* context_deinit) (CoglContext *context);
+    void (*context_deinit)(cg_context_t *context);
 
-  bool
-  (* onscreen_init) (CoglOnscreen *onscreen,
-                     EGLConfig config,
-                     CoglError **error);
-  void
-  (* onscreen_deinit) (CoglOnscreen *onscreen);
+    bool (*onscreen_init)(cg_onscreen_t *onscreen,
+                          EGLConfig config,
+                          cg_error_t **error);
+    void (*onscreen_deinit)(cg_onscreen_t *onscreen);
 
-  int
-  (* add_config_attributes) (CoglDisplay *display,
-                             CoglFramebufferConfig *config,
-                             EGLint *attributes);
-} CoglWinsysEGLVtable;
+    int (*add_config_attributes)(cg_display_t *display,
+                                 cg_framebuffer_config_t *config,
+                                 EGLint *attributes);
+} cg_winsys_egl_vtable_t;
 
-typedef enum _CoglEGLWinsysFeature
-{
-  COGL_EGL_WINSYS_FEATURE_SWAP_REGION                   =1L<<0,
-  COGL_EGL_WINSYS_FEATURE_EGL_IMAGE_FROM_X11_PIXMAP     =1L<<1,
-  COGL_EGL_WINSYS_FEATURE_EGL_IMAGE_FROM_WAYLAND_BUFFER =1L<<2,
-  COGL_EGL_WINSYS_FEATURE_CREATE_CONTEXT                =1L<<3,
-  COGL_EGL_WINSYS_FEATURE_BUFFER_AGE                    =1L<<4,
-  COGL_EGL_WINSYS_FEATURE_FENCE_SYNC                    =1L<<5,
-  COGL_EGL_WINSYS_FEATURE_SURFACELESS_CONTEXT           =1L<<6
-} CoglEGLWinsysFeature;
+typedef enum _cg_egl_winsys_feature_t {
+    CG_EGL_WINSYS_FEATURE_SWAP_REGION = 1L << 0,
+    CG_EGL_WINSYS_FEATURE_EGL_IMAGE_FROM_X11_PIXMAP = 1L << 1,
+    CG_EGL_WINSYS_FEATURE_EGL_IMAGE_FROM_WAYLAND_BUFFER = 1L << 2,
+    CG_EGL_WINSYS_FEATURE_CREATE_CONTEXT = 1L << 3,
+    CG_EGL_WINSYS_FEATURE_BUFFER_AGE = 1L << 4,
+    CG_EGL_WINSYS_FEATURE_FENCE_SYNC = 1L << 5,
+    CG_EGL_WINSYS_FEATURE_SURFACELESS_CONTEXT = 1L << 6
+} cg_egl_winsys_feature_t;
 
-typedef struct _CoglRendererEGL
-{
-  CoglEGLWinsysFeature private_features;
+typedef struct _cg_renderer_egl_t {
+    cg_egl_winsys_feature_t private_features;
 
-  EGLDisplay edpy;
+    EGLDisplay edpy;
 
-  EGLint egl_version_major;
-  EGLint egl_version_minor;
+    EGLint egl_version_major;
+    EGLint egl_version_minor;
 
-  CoglClosure *resize_notify_idle;
+    cg_closure_t *resize_notify_idle;
 
-  /* Data specific to the EGL platform */
-  void *platform;
-  /* vtable for platform specific parts */
-  const CoglWinsysEGLVtable *platform_vtable;
+    /* Data specific to the EGL platform */
+    void *platform;
+    /* vtable for platform specific parts */
+    const cg_winsys_egl_vtable_t *platform_vtable;
 
-  /* Function pointers for EGL specific extensions */
-#define COGL_WINSYS_FEATURE_BEGIN(a, b, c, d)
+/* Function pointers for EGL specific extensions */
+#define CG_WINSYS_FEATURE_BEGIN(a, b, c, d)
 
-#define COGL_WINSYS_FEATURE_FUNCTION(ret, name, args) \
-  ret (APIENTRY * pf_ ## name) args;
+#define CG_WINSYS_FEATURE_FUNCTION(ret, name, args)                            \
+    ret(APIENTRY *pf_##name) args;
 
-#define COGL_WINSYS_FEATURE_END()
+#define CG_WINSYS_FEATURE_END()
 
 #include "cogl-winsys-egl-feature-functions.h"
 
-#undef COGL_WINSYS_FEATURE_BEGIN
-#undef COGL_WINSYS_FEATURE_FUNCTION
-#undef COGL_WINSYS_FEATURE_END
-} CoglRendererEGL;
+#undef CG_WINSYS_FEATURE_BEGIN
+#undef CG_WINSYS_FEATURE_FUNCTION
+#undef CG_WINSYS_FEATURE_END
+} cg_renderer_egl_t;
 
-typedef struct _CoglDisplayEGL
-{
-  EGLContext egl_context;
-  EGLSurface dummy_surface;
-  EGLSurface egl_surface;
+typedef struct _cg_display_egl_t {
+    EGLContext egl_context;
+    EGLSurface dummy_surface;
+    EGLSurface egl_surface;
 
-  EGLConfig egl_config;
-  bool found_egl_config;
+    EGLConfig egl_config;
+    bool found_egl_config;
 
-  EGLSurface current_read_surface;
-  EGLSurface current_draw_surface;
-  EGLContext current_context;
+    EGLSurface current_read_surface;
+    EGLSurface current_draw_surface;
+    EGLContext current_context;
 
-  /* Platform specific display data */
-  void *platform;
-} CoglDisplayEGL;
+    /* Platform specific display data */
+    void *platform;
+} cg_display_egl_t;
 
-typedef struct _CoglContextEGL
-{
-  EGLSurface saved_draw_surface;
-  EGLSurface saved_read_surface;
-} CoglContextEGL;
+typedef struct _cg_context_egl_t {
+    EGLSurface saved_draw_surface;
+    EGLSurface saved_read_surface;
+} cg_context_egl_t;
 
-typedef struct _CoglOnscreenEGL
-{
-  EGLSurface egl_surface;
+typedef struct _cg_onscreen_egl_t {
+    EGLSurface egl_surface;
 
-  bool pending_resize_notify;
+    bool pending_resize_notify;
 
-  /* Platform specific data */
-  void *platform;
-} CoglOnscreenEGL;
+    /* Platform specific data */
+    void *platform;
+} cg_onscreen_egl_t;
 
-const CoglWinsysVtable *
-_cogl_winsys_egl_get_vtable (void);
+const cg_winsys_vtable_t *_cg_winsys_egl_get_vtable(void);
 
-EGLBoolean
-_cogl_winsys_egl_make_current (CoglDisplay *display,
-                               EGLSurface draw,
-                               EGLSurface read,
-                               EGLContext context);
+EGLBoolean _cg_winsys_egl_make_current(cg_display_t *display,
+                                       EGLSurface draw,
+                                       EGLSurface read,
+                                       EGLContext context);
 
 #ifdef EGL_KHR_image_base
-EGLImageKHR
-_cogl_egl_create_image (CoglContext *ctx,
-                        EGLenum target,
-                        EGLClientBuffer buffer,
-                        const EGLint *attribs);
+EGLImageKHR _cg_egl_create_image(cg_context_t *ctx,
+                                 EGLenum target,
+                                 EGLClientBuffer buffer,
+                                 const EGLint *attribs);
 
-void
-_cogl_egl_destroy_image (CoglContext *ctx,
-                         EGLImageKHR image);
+void _cg_egl_destroy_image(cg_context_t *ctx, EGLImageKHR image);
 #endif
 
 #ifdef EGL_WL_bind_wayland_display
-bool
-_cogl_egl_query_wayland_buffer (CoglContext *ctx,
-                                struct wl_resource *buffer,
-                                int attribute,
-                                int *value);
+bool _cg_egl_query_wayland_buffer(cg_context_t *ctx,
+                                  struct wl_resource *buffer,
+                                  int attribute,
+                                  int *value);
 #endif
 
-bool
-_cogl_winsys_egl_renderer_connect_common (CoglRenderer *renderer,
-                                          CoglError **error);
+bool _cg_winsys_egl_renderer_connect_common(cg_renderer_t *renderer,
+                                            cg_error_t **error);
 
-#endif /* __COGL_WINSYS_EGL_PRIVATE_H */
+#endif /* __CG_WINSYS_EGL_PRIVATE_H */

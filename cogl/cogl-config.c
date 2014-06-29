@@ -35,113 +35,98 @@
 #include "cogl-debug.h"
 #include "cogl-config-private.h"
 
-#ifdef COGL_HAS_GLIB_SUPPORT
+#ifdef CG_HAS_GLIB_SUPPORT
 #include <glib.h>
 #endif
 
-char *_cogl_config_driver;
-char *_cogl_config_renderer;
-char *_cogl_config_disable_gl_extensions;
-char *_cogl_config_override_gl_version;
+char *_cg_config_driver;
+char *_cg_config_renderer;
+char *_cg_config_disable_gl_extensions;
+char *_cg_config_override_gl_version;
 
-#ifndef COGL_HAS_GLIB_SUPPORT
+#ifndef CG_HAS_GLIB_SUPPORT
 
 void
-_cogl_config_read (void)
+_cg_config_read(void)
 {
-
 }
 
-#else /* COGL_HAS_GLIB_SUPPORT */
+#else /* CG_HAS_GLIB_SUPPORT */
 
 /* Array of config options that just set a global string */
-static const struct
-{
-  const char *conf_name;
-  char **variable;
-} cogl_config_string_options[] =
-  {
-    { "COGL_DRIVER", &_cogl_config_driver },
-    { "COGL_RENDERER", &_cogl_config_renderer },
-    { "COGL_DISABLE_GL_EXTENSIONS", &_cogl_config_disable_gl_extensions },
-    { "COGL_OVERRIDE_GL_VERSION", &_cogl_config_override_gl_version }
-  };
+static const struct {
+    const char *conf_name;
+    char **variable;
+} cg_config_string_options[] = {
+    { "CG_DRIVER", &_cg_config_driver },
+    { "CG_RENDERER", &_cg_config_renderer },
+    { "CG_DISABLE_GL_EXTENSIONS", &_cg_config_disable_gl_extensions },
+    { "CG_OVERRIDE_GL_VERSION", &_cg_config_override_gl_version }
+};
 
 static void
-_cogl_config_process (GKeyFile *key_file)
+_cg_config_process(GKeyFile *key_file)
 {
-  char *value;
-  int i;
+    char *value;
+    int i;
 
-  value = g_key_file_get_string (key_file, "global", "COGL_DEBUG", NULL);
-  if (value)
-    {
-      _cogl_parse_debug_string (value,
-                                true /* enable the flags */,
-                                true /* ignore help option */);
-      g_free (value);
+    value = g_key_file_get_string(key_file, "global", "CG_DEBUG", NULL);
+    if (value) {
+        _cg_parse_debug_string(
+            value, true /* enable the flags */, true /* ignore help option */);
+        g_free(value);
     }
 
-  value = g_key_file_get_string (key_file, "global", "COGL_NO_DEBUG", NULL);
-  if (value)
-    {
-      _cogl_parse_debug_string (value,
-                                false /* disable the flags */,
-                                true /* ignore help option */);
-      g_free (value);
+    value = g_key_file_get_string(key_file, "global", "CG_NO_DEBUG", NULL);
+    if (value) {
+        _cg_parse_debug_string(value,
+                               false /* disable the flags */,
+                               true /* ignore help option */);
+        g_free(value);
     }
 
-  for (i = 0; i < C_N_ELEMENTS (cogl_config_string_options); i++)
-    {
-      const char *conf_name = cogl_config_string_options[i].conf_name;
-      char **variable = cogl_config_string_options[i].variable;
+    for (i = 0; i < C_N_ELEMENTS(cg_config_string_options); i++) {
+        const char *conf_name = cg_config_string_options[i].conf_name;
+        char **variable = cg_config_string_options[i].variable;
 
-      value = g_key_file_get_string (key_file, "global", conf_name, NULL);
-      if (value)
-        {
-          g_free (*variable);
-          *variable = value;
+        value = g_key_file_get_string(key_file, "global", conf_name, NULL);
+        if (value) {
+            g_free(*variable);
+            *variable = value;
         }
     }
 }
 
 void
-_cogl_config_read (void)
+_cg_config_read(void)
 {
-  GKeyFile *key_file = g_key_file_new ();
-  const char * const *system_dirs = g_get_system_config_dirs ();
-  char *filename;
-  bool status = false;
-  int i;
+    GKeyFile *key_file = g_key_file_new();
+    const char *const *system_dirs = g_get_system_config_dirs();
+    char *filename;
+    bool status = false;
+    int i;
 
-  for (i = 0; system_dirs[i]; i++)
-    {
-      filename = g_build_filename (system_dirs[i], "cogl", "cogl.conf", NULL);
-      status = g_key_file_load_from_file (key_file,
-                                          filename,
-                                          0,
-                                          NULL);
-      g_free (filename);
-      if (status)
-        {
-          _cogl_config_process (key_file);
-          g_key_file_free (key_file);
-          key_file = g_key_file_new ();
-          break;
+    for (i = 0; system_dirs[i]; i++) {
+        filename = g_build_filename(system_dirs[i], "cogl", "cogl.conf", NULL);
+        status = g_key_file_load_from_file(key_file, filename, 0, NULL);
+        g_free(filename);
+        if (status) {
+            _cg_config_process(key_file);
+            g_key_file_free(key_file);
+            key_file = g_key_file_new();
+            break;
         }
     }
 
-  filename = g_build_filename (g_get_user_config_dir (), "cogl", "cogl.conf", NULL);
-  status = g_key_file_load_from_file (key_file,
-                                      filename,
-                                      0,
-                                      NULL);
-  g_free (filename);
+    filename =
+        g_build_filename(g_get_user_config_dir(), "cogl", "cogl.conf", NULL);
+    status = g_key_file_load_from_file(key_file, filename, 0, NULL);
+    g_free(filename);
 
-  if (status)
-    _cogl_config_process (key_file);
+    if (status)
+        _cg_config_process(key_file);
 
-  g_key_file_free (key_file);
+    g_key_file_free(key_file);
 }
 
-#endif /* COGL_HAS_GLIB_SUPPORT */
+#endif /* CG_HAS_GLIB_SUPPORT */

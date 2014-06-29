@@ -29,38 +29,37 @@
  *   Neil Roberts <neil@linux.intel.com>
  */
 
-#ifndef __COGL_TEXTURE_3D_PRIVATE_H
-#define __COGL_TEXTURE_3D_PRIVATE_H
+#ifndef __CG_TEXTURE_3D_PRIVATE_H
+#define __CG_TEXTURE_3D_PRIVATE_H
 
 #include "cogl-object-private.h"
 #include "cogl-pipeline-private.h"
 #include "cogl-texture-private.h"
 #include "cogl-texture-3d.h"
 
-struct _CoglTexture3D
-{
-  CoglTexture _parent;
+struct _cg_texture_3d_t {
+    cg_texture_t _parent;
 
-  /* The internal format of the texture represented as a
-     CoglPixelFormat */
-  CoglPixelFormat internal_format;
-  int depth;
-  bool auto_mipmap;
-  bool mipmaps_dirty;
+    /* The internal format of the texture represented as a
+       cg_pixel_format_t */
+    cg_pixel_format_t internal_format;
+    int depth;
+    bool auto_mipmap;
+    bool mipmaps_dirty;
 
-  /* TODO: factor out these OpenGL specific members into some form
-   * of driver private state. */
+    /* TODO: factor out these OpenGL specific members into some form
+     * of driver private state. */
 
-  /* The internal format of the GL texture represented as a GL enum */
-  GLenum gl_format;
-  /* The texture object number */
-  GLuint gl_texture;
-  GLenum gl_legacy_texobj_min_filter;
-  GLenum gl_legacy_texobj_mag_filter;
-  GLint gl_legacy_texobj_wrap_mode_s;
-  GLint gl_legacy_texobj_wrap_mode_t;
-  GLint gl_legacy_texobj_wrap_mode_p;
-  CoglTexturePixel first_pixel;
+    /* The internal format of the GL texture represented as a GL enum */
+    GLenum gl_format;
+    /* The texture object number */
+    GLuint gl_texture;
+    GLenum gl_legacy_texobj_min_filter;
+    GLenum gl_legacy_texobj_mag_filter;
+    GLint gl_legacy_texobj_wrap_mode_s;
+    GLint gl_legacy_texobj_wrap_mode_t;
+    GLint gl_legacy_texobj_wrap_mode_p;
+    cg_texture_pixel_t first_pixel;
 };
 
-#endif /* __COGL_TEXTURE_3D_PRIVATE_H */
+#endif /* __CG_TEXTURE_3D_PRIVATE_H */

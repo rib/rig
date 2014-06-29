@@ -56,7 +56,7 @@
  * GL/GLES compatibility defines for the buffer API:
  */
 
-#if defined (HAVE_COGL_GL)
+#if defined(HAVE_CG_GL)
 
 #ifndef GL_PIXEL_UNPACK_BUFFER
 #define GL_PIXEL_UNPACK_BUFFER GL_PIXEL_UNPACK_BUFFER_ARB
@@ -68,52 +68,44 @@
 
 #endif
 
-static void
-_cogl_pixel_buffer_free (CoglPixelBuffer *buffer);
+static void _cg_pixel_buffer_free(cg_pixel_buffer_t *buffer);
 
-COGL_BUFFER_DEFINE (PixelBuffer, pixel_buffer)
+CG_BUFFER_DEFINE(PixelBuffer, pixel_buffer)
 
-CoglPixelBuffer *
-cogl_pixel_buffer_new (CoglContext *context,
-                       size_t size,
-                       const void *data,
-                       CoglError **error)
+cg_pixel_buffer_t *cg_pixel_buffer_new(cg_context_t *context,
+                                       size_t size,
+                                       const void *data,
+                                       cg_error_t **error)
 {
-  CoglPixelBuffer *pixel_buffer = c_slice_new0 (CoglPixelBuffer);
-  CoglBuffer *buffer = COGL_BUFFER (pixel_buffer);
+    cg_pixel_buffer_t *pixel_buffer = c_slice_new0(cg_pixel_buffer_t);
+    cg_buffer_t *buffer = CG_BUFFER(pixel_buffer);
 
-  /* parent's constructor */
-  _cogl_buffer_initialize (buffer,
-                           context,
-                           size,
-                           COGL_BUFFER_BIND_TARGET_PIXEL_UNPACK,
-                           COGL_BUFFER_USAGE_HINT_TEXTURE,
-                           COGL_BUFFER_UPDATE_HINT_STATIC);
+    /* parent's constructor */
+    _cg_buffer_initialize(buffer,
+                          context,
+                          size,
+                          CG_BUFFER_BIND_TARGET_PIXEL_UNPACK,
+                          CG_BUFFER_USAGE_HINT_TEXTURE,
+                          CG_BUFFER_UPDATE_HINT_STATIC);
 
-  _cogl_pixel_buffer_object_new (pixel_buffer);
+    _cg_pixel_buffer_object_new(pixel_buffer);
 
-  if (data)
-    {
-      if (!cogl_buffer_set_data (COGL_BUFFER (pixel_buffer),
-                                 0,
-                                 data,
-                                 size,
-                                 error))
-        {
-          cogl_object_unref (pixel_buffer);
-          return NULL;
+    if (data) {
+        if (!cg_buffer_set_data(
+                CG_BUFFER(pixel_buffer), 0, data, size, error)) {
+            cg_object_unref(pixel_buffer);
+            return NULL;
         }
     }
 
-  return pixel_buffer;
+    return pixel_buffer;
 }
 
 static void
-_cogl_pixel_buffer_free (CoglPixelBuffer *buffer)
+_cg_pixel_buffer_free(cg_pixel_buffer_t *buffer)
 {
-  /* parent's destructor */
-  _cogl_buffer_fini (COGL_BUFFER (buffer));
+    /* parent's destructor */
+    _cg_buffer_fini(CG_BUFFER(buffer));
 
-  c_slice_free (CoglPixelBuffer, buffer);
+    c_slice_free(cg_pixel_buffer_t, buffer);
 }
-

@@ -31,115 +31,102 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#ifndef COGL_BLEND_STRING_H
-#define COGL_BLEND_STRING_H
+#ifndef CG_BLEND_STRING_H
+#define CG_BLEND_STRING_H
 
 #include <stdlib.h>
 #include <clib.h>
 
-typedef enum _CoglBlendStringContext
-{
-  COGL_BLEND_STRING_CONTEXT_BLENDING,
-  COGL_BLEND_STRING_CONTEXT_TEXTURE_COMBINE
-} CoglBlendStringContext;
+typedef enum _cg_blend_string_context_t {
+    CG_BLEND_STRING_CONTEXT_BLENDING,
+    CG_BLEND_STRING_CONTEXT_TEXTURE_COMBINE
+} cg_blend_string_context_t;
 
 /* NB: debug stringify code will get upset if these
  * are re-ordered */
-typedef enum _CoglBlendStringChannelMask
-{
-  COGL_BLEND_STRING_CHANNEL_MASK_RGB,
-  COGL_BLEND_STRING_CHANNEL_MASK_ALPHA,
-  COGL_BLEND_STRING_CHANNEL_MASK_RGBA
-} CoglBlendStringChannelMask;
+typedef enum _cg_blend_string_channel_mask_t {
+    CG_BLEND_STRING_CHANNEL_MASK_RGB,
+    CG_BLEND_STRING_CHANNEL_MASK_ALPHA,
+    CG_BLEND_STRING_CHANNEL_MASK_RGBA
+} cg_blend_string_channel_mask_t;
 
-typedef enum _CoglBlendStringColorSourceType
-{
-  /* blending */
-  COGL_BLEND_STRING_COLOR_SOURCE_SRC_COLOR,
-  COGL_BLEND_STRING_COLOR_SOURCE_DST_COLOR,
+typedef enum _cg_blend_string_color_source_type_t {
+    /* blending */
+    CG_BLEND_STRING_COLOR_SOURCE_SRC_COLOR,
+    CG_BLEND_STRING_COLOR_SOURCE_DST_COLOR,
 
-  /* shared */
-  COGL_BLEND_STRING_COLOR_SOURCE_CONSTANT,
+    /* shared */
+    CG_BLEND_STRING_COLOR_SOURCE_CONSTANT,
 
-  /* texture combining */
-  COGL_BLEND_STRING_COLOR_SOURCE_TEXTURE,
-  COGL_BLEND_STRING_COLOR_SOURCE_TEXTURE_N,
-  COGL_BLEND_STRING_COLOR_SOURCE_PRIMARY,
-  COGL_BLEND_STRING_COLOR_SOURCE_PREVIOUS
-} CoglBlendStringColorSourceType;
+    /* texture combining */
+    CG_BLEND_STRING_COLOR_SOURCE_TEXTURE,
+    CG_BLEND_STRING_COLOR_SOURCE_TEXTURE_N,
+    CG_BLEND_STRING_COLOR_SOURCE_PRIMARY,
+    CG_BLEND_STRING_COLOR_SOURCE_PREVIOUS
+} cg_blend_string_color_source_type_t;
 
-typedef struct _CoglBlendStringColorSourceInfo
-{
-  CoglBlendStringColorSourceType type;
-  const char *name;
-  size_t name_len;
-} CoglBlendStringColorSourceInfo;
+typedef struct _cg_blend_string_color_source_info_t {
+    cg_blend_string_color_source_type_t type;
+    const char *name;
+    size_t name_len;
+} cg_blend_string_color_source_info_t;
 
-typedef struct _CoglBlendStringColorSource
-{
-  bool is_zero;
-  const CoglBlendStringColorSourceInfo *info;
-  int texture; /* for the TEXTURE_N color source */
-  bool one_minus;
-  CoglBlendStringChannelMask mask;
-} CoglBlendStringColorSource;
+typedef struct _cg_blend_string_color_source_t {
+    bool is_zero;
+    const cg_blend_string_color_source_info_t *info;
+    int texture; /* for the TEXTURE_N color source */
+    bool one_minus;
+    cg_blend_string_channel_mask_t mask;
+} cg_blend_string_color_source_t;
 
-typedef struct _CoglBlendStringFactor
-{
-  bool is_one;
-  bool is_src_alpha_saturate;
-  bool is_color;
-  CoglBlendStringColorSource source;
-} CoglBlendStringFactor;
+typedef struct _cg_blend_string_factor_t {
+    bool is_one;
+    bool is_src_alpha_saturate;
+    bool is_color;
+    cg_blend_string_color_source_t source;
+} cg_blend_string_factor_t;
 
-typedef struct _CoglBlendStringArgument
-{
-  CoglBlendStringColorSource source;
-  CoglBlendStringFactor factor;
-} CoglBlendStringArgument;
+typedef struct _cg_blend_string_argument_t {
+    cg_blend_string_color_source_t source;
+    cg_blend_string_factor_t factor;
+} cg_blend_string_argument_t;
 
-typedef enum _CoglBlendStringFunctionType
-{
-  /* shared */
-  COGL_BLEND_STRING_FUNCTION_ADD,
+typedef enum _cg_blend_string_function_type_t {
+    /* shared */
+    CG_BLEND_STRING_FUNCTION_ADD,
 
-  /* texture combine only */
-  COGL_BLEND_STRING_FUNCTION_REPLACE,
-  COGL_BLEND_STRING_FUNCTION_MODULATE,
-  COGL_BLEND_STRING_FUNCTION_ADD_SIGNED,
-  COGL_BLEND_STRING_FUNCTION_INTERPOLATE,
-  COGL_BLEND_STRING_FUNCTION_SUBTRACT,
-  COGL_BLEND_STRING_FUNCTION_DOT3_RGB,
-  COGL_BLEND_STRING_FUNCTION_DOT3_RGBA
-} CoglBlendStringFunctionType;
+    /* texture combine only */
+    CG_BLEND_STRING_FUNCTION_REPLACE,
+    CG_BLEND_STRING_FUNCTION_MODULATE,
+    CG_BLEND_STRING_FUNCTION_ADD_SIGNED,
+    CG_BLEND_STRING_FUNCTION_INTERPOLATE,
+    CG_BLEND_STRING_FUNCTION_SUBTRACT,
+    CG_BLEND_STRING_FUNCTION_DOT3_RGB,
+    CG_BLEND_STRING_FUNCTION_DOT3_RGBA
+} cg_blend_string_function_type_t;
 
-typedef struct _CoglBlendStringFunctionInfo
-{
-  enum _CoglBlendStringFunctionType type;
-  const char *name;
-  size_t name_len;
-  int argc;
-} CoglBlendStringFunctionInfo;
+typedef struct _cg_blend_string_function_info_t {
+    enum _cg_blend_string_function_type_t type;
+    const char *name;
+    size_t name_len;
+    int argc;
+} cg_blend_string_function_info_t;
 
-typedef struct _CoglBlendStringStatement
-{
-  CoglBlendStringChannelMask mask;
-  const CoglBlendStringFunctionInfo *function;
-  CoglBlendStringArgument args[3];
-} CoglBlendStringStatement;
+typedef struct _cg_blend_string_statement_t {
+    cg_blend_string_channel_mask_t mask;
+    const cg_blend_string_function_info_t *function;
+    cg_blend_string_argument_t args[3];
+} cg_blend_string_statement_t;
 
-
-bool
-_cogl_blend_string_compile (CoglContext *ctx,
-                            const char *string,
-                            CoglBlendStringContext context,
-                            CoglBlendStringStatement *statements,
-                            CoglError **error);
+bool _cg_blend_string_compile(cg_context_t *ctx,
+                              const char *string,
+                              cg_blend_string_context_t context,
+                              cg_blend_string_statement_t *statements,
+                              cg_error_t **error);
 
 void
-_cogl_blend_string_split_rgba_statement (CoglBlendStringStatement *statement,
-                                         CoglBlendStringStatement *rgb,
-                                         CoglBlendStringStatement *a);
+_cg_blend_string_split_rgba_statement(cg_blend_string_statement_t *statement,
+                                      cg_blend_string_statement_t *rgb,
+                                      cg_blend_string_statement_t *a);
 
-#endif /* COGL_BLEND_STRING_H */
-
+#endif /* CG_BLEND_STRING_H */

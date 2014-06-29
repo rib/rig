@@ -28,54 +28,48 @@
  *
  */
 
-#ifndef __COGL_SPANS_PRIVATE_H
-#define __COGL_SPANS_PRIVATE_H
+#ifndef __CG_SPANS_PRIVATE_H
+#define __CG_SPANS_PRIVATE_H
 
 #include "cogl-object-private.h"
 #include "cogl-pipeline-layer-state.h"
 
-typedef struct _CoglSpan
-{
-  float start;
-  float size;
-  float waste;
-} CoglSpan;
+typedef struct _cg_span_t {
+    float start;
+    float size;
+    float waste;
+} cg_span_t;
 
-typedef struct _CoglSpanIter
-{
-  int index;
-  const CoglSpan *spans;
-  int n_spans;
-  const CoglSpan *span;
-  float pos;
-  float next_pos;
-  float origin;
-  float cover_start;
-  float cover_end;
-  float intersect_start;
-  float intersect_end;
-  bool intersects;
-  bool flipped;
-  CoglPipelineWrapMode wrap_mode;
-  int mirror_direction;
-} CoglSpanIter;
+typedef struct _cg_span_iter_t {
+    int index;
+    const cg_span_t *spans;
+    int n_spans;
+    const cg_span_t *span;
+    float pos;
+    float next_pos;
+    float origin;
+    float cover_start;
+    float cover_end;
+    float intersect_start;
+    float intersect_end;
+    bool intersects;
+    bool flipped;
+    cg_pipeline_wrap_mode_t wrap_mode;
+    int mirror_direction;
+} cg_span_iter_t;
 
-void
-_cogl_span_iter_update (CoglSpanIter *iter);
+void _cg_span_iter_update(cg_span_iter_t *iter);
 
-void
-_cogl_span_iter_begin (CoglSpanIter *iter,
-                       const CoglSpan *spans,
-                       int n_spans,
-                       float normalize_factor,
-                       float cover_start,
-                       float cover_end,
-                       CoglPipelineWrapMode wrap_mode);
+void _cg_span_iter_begin(cg_span_iter_t *iter,
+                         const cg_span_t *spans,
+                         int n_spans,
+                         float normalize_factor,
+                         float cover_start,
+                         float cover_end,
+                         cg_pipeline_wrap_mode_t wrap_mode);
 
-void
-_cogl_span_iter_next (CoglSpanIter *iter);
+void _cg_span_iter_next(cg_span_iter_t *iter);
 
-bool
-_cogl_span_iter_end (CoglSpanIter *iter);
+bool _cg_span_iter_end(cg_span_iter_t *iter);
 
-#endif /* __COGL_SPANS_PRIVATE_H */
+#endif /* __CG_SPANS_PRIVATE_H */

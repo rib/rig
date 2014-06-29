@@ -41,234 +41,219 @@
 #include "cogl-object-private.h"
 
 void *
-cogl_object_ref (void *object)
+cg_object_ref(void *object)
 {
-  CoglObject *obj = object;
+    cg_object_t *obj = object;
 
-  _COGL_RETURN_VAL_IF_FAIL (object != NULL, NULL);
+    _CG_RETURN_VAL_IF_FAIL(object != NULL, NULL);
 
-  obj->ref_count++;
-  return object;
+    obj->ref_count++;
+    return object;
 }
 
 void
-_cogl_object_default_unref (void *object)
+_cg_object_default_unref(void *object)
 {
-  CoglObject *obj = object;
+    cg_object_t *obj = object;
 
-  _COGL_RETURN_IF_FAIL (object != NULL);
-  _COGL_RETURN_IF_FAIL (obj->ref_count > 0);
+    _CG_RETURN_IF_FAIL(object != NULL);
+    _CG_RETURN_IF_FAIL(obj->ref_count > 0);
 
-  if (--obj->ref_count < 1)
-    {
-      void (*free_func)(void *obj);
+    if (--obj->ref_count < 1) {
+        void (*free_func)(void * obj);
 
-      if (obj->n_user_data_entries)
-        {
-          int i;
-          int count = MIN (obj->n_user_data_entries,
-                           COGL_OBJECT_N_PRE_ALLOCATED_USER_DATA_ENTRIES);
+        if (obj->n_user_data_entries) {
+            int i;
+            int count = MIN(obj->n_user_data_entries,
+                            CG_OBJECT_N_PRE_ALLOCATED_USER_DATA_ENTRIES);
 
-          for (i = 0; i < count; i++)
-            {
-              CoglUserDataEntry *entry = &obj->user_data_entry[i];
-              if (entry->destroy)
-                entry->destroy (entry->user_data, obj);
+            for (i = 0; i < count; i++) {
+                cg_user_data_entry_t *entry = &obj->user_data_entry[i];
+                if (entry->destroy)
+                    entry->destroy(entry->user_data, obj);
             }
 
-          if (obj->user_data_array != NULL)
-            {
-              for (i = 0; i < obj->user_data_array->len; i++)
-                {
-                  CoglUserDataEntry *entry =
-                    &c_array_index (obj->user_data_array,
-                                    CoglUserDataEntry, i);
+            if (obj->user_data_array != NULL) {
+                for (i = 0; i < obj->user_data_array->len; i++) {
+                    cg_user_data_entry_t *entry =
+                        &c_array_index(
+                            obj->user_data_array, cg_user_data_entry_t, i);
 
-                  if (entry->destroy)
-                    entry->destroy (entry->user_data, obj);
+                    if (entry->destroy)
+                        entry->destroy(entry->user_data, obj);
                 }
-              c_array_free (obj->user_data_array, true);
+                c_array_free(obj->user_data_array, true);
             }
         }
 
-      COGL_OBJECT_DEBUG_FREE (obj);
-      free_func = obj->klass->virt_free;
-      free_func (obj);
+        CG_OBJECT_DEBUG_FREE(obj);
+        free_func = obj->klass->virt_free;
+        free_func(obj);
     }
 }
 
 void
-cogl_object_unref (void *obj)
+cg_object_unref(void *obj)
 {
-  void (* unref_func) (void *) = ((CoglObject *) obj)->klass->virt_unref;
-  unref_func (obj);
+    void (*unref_func)(void *) = ((cg_object_t *)obj)->klass->virt_unref;
+    unref_func(obj);
 }
 
-/* XXX: Unlike for cogl_object_get_user_data this code will return
+/* XXX: Unlike for cg_object_get_user_data this code will return
  * an empty entry if available and no entry for the given key can be
  * found. */
-static CoglUserDataEntry *
-_cogl_object_find_entry (CoglObject *object, CoglUserDataKey *key)
+static cg_user_data_entry_t *
+_cg_object_find_entry(cg_object_t *object,
+                      cg_user_data_key_t *key)
 {
-  CoglUserDataEntry *entry = NULL;
-  int count;
-  int i;
+    cg_user_data_entry_t *entry = NULL;
+    int count;
+    int i;
 
-  count = MIN (object->n_user_data_entries,
-               COGL_OBJECT_N_PRE_ALLOCATED_USER_DATA_ENTRIES);
+    count = MIN(object->n_user_data_entries,
+                CG_OBJECT_N_PRE_ALLOCATED_USER_DATA_ENTRIES);
 
-  for (i = 0; i < count; i++)
-    {
-      CoglUserDataEntry *current = &object->user_data_entry[i];
-      if (current->key == key)
-        return current;
-      if (current->user_data == NULL)
-        entry = current;
+    for (i = 0; i < count; i++) {
+        cg_user_data_entry_t *current = &object->user_data_entry[i];
+        if (current->key == key)
+            return current;
+        if (current->user_data == NULL)
+            entry = current;
     }
 
-  if (C_UNLIKELY (object->user_data_array != NULL))
-    {
-      for (i = 0; i < object->user_data_array->len; i++)
-        {
-          CoglUserDataEntry *current =
-            &c_array_index (object->user_data_array, CoglUserDataEntry, i);
+    if (C_UNLIKELY(object->user_data_array != NULL)) {
+        for (i = 0; i < object->user_data_array->len; i++) {
+            cg_user_data_entry_t *current =
+                &c_array_index(
+                    object->user_data_array, cg_user_data_entry_t, i);
 
-          if (current->key == key)
-            return current;
-          if (current->user_data == NULL)
-            entry = current;
+            if (current->key == key)
+                return current;
+            if (current->user_data == NULL)
+                entry = current;
         }
     }
 
-  return entry;
+    return entry;
 }
 
 void
-_cogl_object_set_user_data (CoglObject *object,
-                            CoglUserDataKey *key,
-                            void *user_data,
-                            CoglUserDataDestroyInternalCallback destroy)
+_cg_object_set_user_data(cg_object_t *object,
+                         cg_user_data_key_t *key,
+                         void *user_data,
+                         cg_user_data_destroy_internal_callback_t destroy)
 {
-  CoglUserDataEntry new_entry;
-  CoglUserDataEntry *entry;
+    cg_user_data_entry_t new_entry;
+    cg_user_data_entry_t *entry;
 
-  if (user_data)
-    {
-      new_entry.key = key;
-      new_entry.user_data = user_data;
-      new_entry.destroy = destroy;
-    }
-  else
-    memset (&new_entry, 0, sizeof (new_entry));
+    if (user_data) {
+        new_entry.key = key;
+        new_entry.user_data = user_data;
+        new_entry.destroy = destroy;
+    } else
+        memset(&new_entry, 0, sizeof(new_entry));
 
-  entry = _cogl_object_find_entry (object, key);
-  if (entry)
-    {
-      if (C_LIKELY (entry->destroy))
-        entry->destroy (entry->user_data, object);
-    }
-  else
-    {
-      /* NB: Setting a value of NULL is documented to delete the
-       * corresponding entry so we can return immediately in this
-       * case. */
-      if (user_data == NULL)
-        return;
+    entry = _cg_object_find_entry(object, key);
+    if (entry) {
+        if (C_LIKELY(entry->destroy))
+            entry->destroy(entry->user_data, object);
+    } else {
+        /* NB: Setting a value of NULL is documented to delete the
+         * corresponding entry so we can return immediately in this
+         * case. */
+        if (user_data == NULL)
+            return;
 
-      if (C_LIKELY (object->n_user_data_entries <
-                    COGL_OBJECT_N_PRE_ALLOCATED_USER_DATA_ENTRIES))
-        entry = &object->user_data_entry[object->n_user_data_entries++];
-      else
-        {
-          if (C_UNLIKELY (object->user_data_array == NULL))
-            {
-              object->user_data_array =
-                c_array_new (false, false, sizeof (CoglUserDataEntry));
+        if (C_LIKELY(object->n_user_data_entries <
+                     CG_OBJECT_N_PRE_ALLOCATED_USER_DATA_ENTRIES))
+            entry = &object->user_data_entry[object->n_user_data_entries++];
+        else {
+            if (C_UNLIKELY(object->user_data_array == NULL)) {
+                object->user_data_array =
+                    c_array_new(false, false, sizeof(cg_user_data_entry_t));
             }
 
-          c_array_set_size (object->user_data_array,
-                            object->user_data_array->len + 1);
-          entry =
-            &c_array_index (object->user_data_array, CoglUserDataEntry,
-                            object->user_data_array->len - 1);
+            c_array_set_size(object->user_data_array,
+                             object->user_data_array->len + 1);
+            entry = &c_array_index(object->user_data_array,
+                                   cg_user_data_entry_t,
+                                   object->user_data_array->len - 1);
 
-          object->n_user_data_entries++;
+            object->n_user_data_entries++;
         }
     }
 
-  *entry = new_entry;
+    *entry = new_entry;
 }
 
 void
-cogl_object_set_user_data (CoglObject *object,
-                           CoglUserDataKey *key,
-                           void *user_data,
-                           CoglUserDataDestroyCallback destroy)
+cg_object_set_user_data(cg_object_t *object,
+                        cg_user_data_key_t *key,
+                        void *user_data,
+                        cg_user_data_destroy_callback_t destroy)
 {
-  _cogl_object_set_user_data (object, key, user_data,
-                              (CoglUserDataDestroyInternalCallback)destroy);
+    _cg_object_set_user_data(object,
+                             key,
+                             user_data,
+                             (cg_user_data_destroy_internal_callback_t)destroy);
 }
 
 void *
-cogl_object_get_user_data (CoglObject *object, CoglUserDataKey *key)
+cg_object_get_user_data(cg_object_t *object, cg_user_data_key_t *key)
 {
-  int count;
-  int i;
+    int count;
+    int i;
 
-  count = MIN (object->n_user_data_entries,
-               COGL_OBJECT_N_PRE_ALLOCATED_USER_DATA_ENTRIES);
+    count = MIN(object->n_user_data_entries,
+                CG_OBJECT_N_PRE_ALLOCATED_USER_DATA_ENTRIES);
 
-  for (i = 0; i < count; i++)
-    {
-      CoglUserDataEntry *entry = &object->user_data_entry[i];
-      if (entry->key == key)
-        return entry->user_data;
+    for (i = 0; i < count; i++) {
+        cg_user_data_entry_t *entry = &object->user_data_entry[i];
+        if (entry->key == key)
+            return entry->user_data;
     }
 
-  if (object->user_data_array != NULL)
-    {
-      for (i = 0; i < object->user_data_array->len; i++)
-        {
-          CoglUserDataEntry *entry =
-            &c_array_index (object->user_data_array, CoglUserDataEntry, i);
+    if (object->user_data_array != NULL) {
+        for (i = 0; i < object->user_data_array->len; i++) {
+            cg_user_data_entry_t *entry =
+                &c_array_index(
+                    object->user_data_array, cg_user_data_entry_t, i);
 
-          if (entry->key == key)
-            return entry->user_data;
+            if (entry->key == key)
+                return entry->user_data;
         }
     }
 
-  return NULL;
+    return NULL;
 }
 
 void
-cogl_debug_object_foreach_type (CoglDebugObjectForeachTypeCallback func,
-                                void *user_data)
+cg_debug_object_foreach_type(CoglDebugObjectForeachTypeCallback func,
+                             void *user_data)
 {
-  c_hash_table_iter_t iter;
-  unsigned int *instance_count;
-  CoglDebugObjectTypeInfo info;
+    c_hash_table_iter_t iter;
+    unsigned int *instance_count;
+    cg_debug_object_type_info_t info;
 
-  c_hash_table_iter_init (&iter, _cogl_debug_instances);
-  while (c_hash_table_iter_next (&iter,
-                                 (void *) &info.name,
-                                 (void *) &instance_count))
-    {
-      info.instance_count = *instance_count;
-      func (&info, user_data);
+    c_hash_table_iter_init(&iter, _cg_debug_instances);
+    while (c_hash_table_iter_next(
+               &iter, (void *)&info.name, (void *)&instance_count)) {
+        info.instance_count = *instance_count;
+        func(&info, user_data);
     }
 }
 
 static void
-print_instances_cb (const CoglDebugObjectTypeInfo *info,
-                    void *user_data)
+print_instances_cb(const cg_debug_object_type_info_t *info,
+                   void *user_data)
 {
-  c_print ("\t%s: %u\n", info->name, info->instance_count);
+    c_print("\t%s: %u\n", info->name, info->instance_count);
 }
 
 void
-cogl_debug_object_print_instances (void)
+cg_debug_object_print_instances(void)
 {
-  c_print ("Cogl instances:\n");
+    c_print("Cogl instances:\n");
 
-  cogl_debug_object_foreach_type (print_instances_cb, NULL);
+    cg_debug_object_foreach_type(print_instances_cb, NULL);
 }

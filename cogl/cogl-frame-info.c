@@ -34,46 +34,46 @@
 
 #include "cogl-frame-info-private.h"
 
-static void _cogl_frame_info_free (CoglFrameInfo *info);
+static void _cg_frame_info_free(cg_frame_info_t *info);
 
-COGL_OBJECT_DEFINE (FrameInfo, frame_info);
+CG_OBJECT_DEFINE(FrameInfo, frame_info);
 
-CoglFrameInfo *
-_cogl_frame_info_new (void)
+cg_frame_info_t *
+_cg_frame_info_new(void)
 {
-  CoglFrameInfo *info;
+    cg_frame_info_t *info;
 
-  info = c_slice_new0 (CoglFrameInfo);
+    info = c_slice_new0(cg_frame_info_t);
 
-  return _cogl_frame_info_object_new (info);
+    return _cg_frame_info_object_new(info);
 }
 
 static void
-_cogl_frame_info_free (CoglFrameInfo *info)
+_cg_frame_info_free(cg_frame_info_t *info)
 {
-  c_slice_free (CoglFrameInfo, info);
+    c_slice_free(cg_frame_info_t, info);
 }
 
 int64_t
-cogl_frame_info_get_frame_counter (CoglFrameInfo *info)
+cg_frame_info_get_frame_counter(cg_frame_info_t *info)
 {
-  return info->frame_counter;
+    return info->frame_counter;
 }
 
 int64_t
-cogl_frame_info_get_presentation_time (CoglFrameInfo *info)
+cg_frame_info_get_presentation_time(cg_frame_info_t *info)
 {
-  return info->presentation_time;
+    return info->presentation_time;
 }
 
 float
-cogl_frame_info_get_refresh_rate (CoglFrameInfo *info)
+cg_frame_info_get_refresh_rate(cg_frame_info_t *info)
 {
-  return info->refresh_rate;
+    return info->refresh_rate;
 }
 
-CoglOutput *
-cogl_frame_info_get_output (CoglFrameInfo *info)
+cg_output_t *
+cg_frame_info_get_output(cg_frame_info_t *info)
 {
-  return info->output;
+    return info->output;
 }

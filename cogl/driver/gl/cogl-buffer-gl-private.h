@@ -31,44 +31,37 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#ifndef _COGL_BUFFER_GL_PRIVATE_H_
-#define _COGL_BUFFER_GL_PRIVATE_H_
+#ifndef _CG_BUFFER_GL_PRIVATE_H_
+#define _CG_BUFFER_GL_PRIVATE_H_
 
 #include "cogl-types.h"
 #include "cogl-context.h"
 #include "cogl-buffer.h"
 #include "cogl-buffer-private.h"
 
-void
-_cogl_buffer_gl_create (CoglBuffer *buffer);
+void _cg_buffer_gl_create(cg_buffer_t *buffer);
 
-void
-_cogl_buffer_gl_destroy (CoglBuffer *buffer);
+void _cg_buffer_gl_destroy(cg_buffer_t *buffer);
 
-void *
-_cogl_buffer_gl_map_range (CoglBuffer *buffer,
-                           size_t offset,
-                           size_t size,
-                           CoglBufferAccess access,
-                           CoglBufferMapHint hints,
-                           CoglError **error);
+void *_cg_buffer_gl_map_range(cg_buffer_t *buffer,
+                              size_t offset,
+                              size_t size,
+                              cg_buffer_access_t access,
+                              cg_buffer_map_hint_t hints,
+                              cg_error_t **error);
 
-void
-_cogl_buffer_gl_unmap (CoglBuffer *buffer);
+void _cg_buffer_gl_unmap(cg_buffer_t *buffer);
 
-bool
-_cogl_buffer_gl_set_data (CoglBuffer *buffer,
-                          unsigned int offset,
-                          const void *data,
-                          unsigned int size,
-                          CoglError **error);
+bool _cg_buffer_gl_set_data(cg_buffer_t *buffer,
+                            unsigned int offset,
+                            const void *data,
+                            unsigned int size,
+                            cg_error_t **error);
 
-void *
-_cogl_buffer_gl_bind (CoglBuffer *buffer,
-                      CoglBufferBindTarget target,
-                      CoglError **error);
+void *_cg_buffer_gl_bind(cg_buffer_t *buffer,
+                         cg_buffer_bind_target_t target,
+                         cg_error_t **error);
 
-void
-_cogl_buffer_gl_unbind (CoglBuffer *buffer);
+void _cg_buffer_gl_unbind(cg_buffer_t *buffer);
 
-#endif /* _COGL_BUFFER_GL_PRIVATE_H_ */
+#endif /* _CG_BUFFER_GL_PRIVATE_H_ */

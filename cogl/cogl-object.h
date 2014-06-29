@@ -28,55 +28,53 @@
  *
  */
 
-#ifndef __COGL_OBJECT_H
-#define __COGL_OBJECT_H
+#ifndef __CG_OBJECT_H
+#define __CG_OBJECT_H
 
 #include <cogl/cogl-types.h>
-#ifdef COGL_HAS_GTYPE_SUPPORT
+#ifdef CG_HAS_GTYPE_SUPPORT
 #include <glib.h>
 #endif
 
-COGL_BEGIN_DECLS
+CG_BEGIN_DECLS
 
-typedef struct _CoglObject      CoglObject;
+typedef struct _cg_object_t cg_object_t;
 
-#define COGL_OBJECT(X)          ((CoglObject *)X)
+#define CG_OBJECT(X) ((cg_object_t *)X)
 
 /**
- * cogl_object_ref: (skip)
- * @object: a #CoglObject
+ * cg_object_ref: (skip)
+ * @object: a #cg_object_t
  *
  * Increases the reference count of @object by 1
  *
  * Returns: the @object, with its reference count increased
  */
-void *
-cogl_object_ref (void *object);
+void *cg_object_ref(void *object);
 
 /**
- * cogl_object_unref: (skip)
- * @object: a #CoglObject
+ * cg_object_unref: (skip)
+ * @object: a #cg_object_t
  *
  * Drecreases the reference count of @object by 1; if the reference
  * count reaches 0, the resources allocated by @object will be freed
  */
-void
-cogl_object_unref (void *object);
+void cg_object_unref(void *object);
 
 /**
- * CoglUserDataKey:
+ * cg_user_data_key_t:
  * @unused: ignored.
  *
- * A #CoglUserDataKey is used to declare a key for attaching data to a
- * #CoglObject using cogl_object_set_user_data. The typedef only exists as a
+ * A #cg_user_data_key_t is used to declare a key for attaching data to a
+ * #cg_object_t using cg_object_set_user_data. The typedef only exists as a
  * formality to make code self documenting since only the unique address of a
- * #CoglUserDataKey is used.
+ * #cg_user_data_key_t is used.
  *
- * Typically you would declare a static #CoglUserDataKey and set private data
+ * Typically you would declare a static #cg_user_data_key_t and set private data
  * on an object something like this:
  *
  * |[
- * static CoglUserDataKey path_private_key;
+ * static cg_user_data_key_t path_private_key;
  *
  * static void
  * destroy_path_private_cb (void *data)
@@ -87,7 +85,7 @@ cogl_object_unref (void *object);
  * static void
  * my_path_set_data (CoglPath *path, void *data)
  * {
- *   cogl_object_set_user_data (COGL_OBJECT (path),
+ *   cg_object_set_user_data (CG_OBJECT (path),
  *                              &private_key,
  *                              data,
  *                              destroy_path_private_cb);
@@ -97,84 +95,82 @@ cogl_object_unref (void *object);
  * Since: 1.4
  */
 typedef struct {
-  int unused;
-} CoglUserDataKey;
+    int unused;
+} cg_user_data_key_t;
 
 /**
- * CoglUserDataDestroyCallback:
- * @user_data: The data whos association with a #CoglObject has been
+ * cg_user_data_destroy_callback_t:
+ * @user_data: The data whos association with a #cg_object_t has been
  *             destoyed.
  *
- * When associating private data with a #CoglObject a callback can be
+ * When associating private data with a #cg_object_t a callback can be
  * given which will be called either if the object is destroyed or if
- * cogl_object_set_user_data() is called with NULL user_data for the
+ * cg_object_set_user_data() is called with NULL user_data for the
  * same key.
  *
  * Since: 1.4
  */
-#ifdef COGL_HAS_GTYPE_SUPPORT
-typedef GDestroyNotify CoglUserDataDestroyCallback;
+#ifdef CG_HAS_GTYPE_SUPPORT
+typedef GDestroyNotify cg_user_data_destroy_callback_t;
 #else
-typedef void (*CoglUserDataDestroyCallback) (void *user_data);
+typedef void (*cg_user_data_destroy_callback_t)(void *user_data);
 #endif
 
 /**
- * CoglDebugObjectTypeInfo:
+ * cg_debug_object_type_info_t:
  * @name: A human readable name for the type.
  * @instance_count: The number of objects of this type that are
  *   currently in use
  *
  * This struct is used to pass information to the callback when
- * cogl_debug_object_foreach_type() is called.
+ * cg_debug_object_foreach_type() is called.
  *
  * Since: 1.8
  * Stability: unstable
  */
 typedef struct {
-  const char *name;
-  unsigned int instance_count;
-} CoglDebugObjectTypeInfo;
+    const char *name;
+    unsigned int instance_count;
+} cg_debug_object_type_info_t;
 
 /**
  * CoglDebugObjectForeachTypeCallback:
  * @info: A pointer to a struct containing information about the type.
  *
- * A callback function to use for cogl_debug_object_foreach_type().
+ * A callback function to use for cg_debug_object_foreach_type().
  *
  * Since: 1.8
  * Stability: unstable
  */
-typedef void
-(* CoglDebugObjectForeachTypeCallback) (const CoglDebugObjectTypeInfo *info,
-                                        void *user_data);
+typedef void (*CoglDebugObjectForeachTypeCallback)(
+    const cg_debug_object_type_info_t *info, void *user_data);
 
 /**
- * cogl_object_set_user_data: (skip)
+ * cg_object_set_user_data: (skip)
  * @object: The object to associate private data with
- * @key: The address of a #CoglUserDataKey which provides a unique value
+ * @key: The address of a #cg_user_data_key_t which provides a unique value
  *   with which to index the private data.
  * @user_data: The data to associate with the given object,
  *   or %NULL to remove a previous association.
- * @destroy: A #CoglUserDataDestroyCallback to call if the object is
+ * @destroy: A #cg_user_data_destroy_callback_t to call if the object is
  *   destroyed or if the association is removed by later setting
  *   %NULL data for the same key.
  *
- * Associates some private @user_data with a given #CoglObject. To
- * later remove the association call cogl_object_set_user_data() with
+ * Associates some private @user_data with a given #cg_object_t. To
+ * later remove the association call cg_object_set_user_data() with
  * the same @key but NULL for the @user_data.
  *
  * Since: 1.4
  */
-void
-cogl_object_set_user_data (CoglObject *object,
-                           CoglUserDataKey *key,
-                           void *user_data,
-                           CoglUserDataDestroyCallback destroy);
+void cg_object_set_user_data(cg_object_t *object,
+                             cg_user_data_key_t *key,
+                             void *user_data,
+                             cg_user_data_destroy_callback_t destroy);
 
 /**
- * cogl_object_get_user_data: (skip)
+ * cg_object_get_user_data: (skip)
  * @object: The object with associated private data to query
- * @key: The address of a #CoglUserDataKey which provides a unique value
+ * @key: The address of a #cg_user_data_key_t which provides a unique value
  *       with which to index the private data.
  *
  * Finds the user data previously associated with @object using
@@ -187,12 +183,10 @@ cogl_object_set_user_data (CoglObject *object,
  *
  * Since: 1.4
  */
-void *
-cogl_object_get_user_data (CoglObject *object,
-                           CoglUserDataKey *key);
+void *cg_object_get_user_data(cg_object_t *object, cg_user_data_key_t *key);
 
 /**
- * cogl_debug_object_foreach_type:
+ * cg_debug_object_foreach_type:
  * @func: (scope call): A callback function for each type
  * @user_data: (closure): A pointer to pass to @func
  *
@@ -204,12 +198,11 @@ cogl_object_get_user_data (CoglObject *object,
  * Since: 1.8
  * Stability: unstable
  */
-void
-cogl_debug_object_foreach_type (CoglDebugObjectForeachTypeCallback func,
-                                void *user_data);
+void cg_debug_object_foreach_type(CoglDebugObjectForeachTypeCallback func,
+                                  void *user_data);
 
 /**
- * cogl_debug_object_print_instances:
+ * cg_debug_object_print_instances:
  *
  * Prints a list of all the object types that Cogl uses along with the
  * number of objects of that type that are currently in use. This is
@@ -219,10 +212,8 @@ cogl_debug_object_foreach_type (CoglDebugObjectForeachTypeCallback func,
  * Since: 1.8
  * Stability: unstable
  */
-void
-cogl_debug_object_print_instances (void);
+void cg_debug_object_print_instances(void);
 
-COGL_END_DECLS
+CG_END_DECLS
 
-#endif /* __COGL_OBJECT_H */
-
+#endif /* __CG_OBJECT_H */

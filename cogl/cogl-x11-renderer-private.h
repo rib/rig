@@ -28,13 +28,12 @@
  *
  */
 
-#ifndef __COGL_RENDERER_X11_PRIVATE_H
-#define __COGL_RENDERER_X11_PRIVATE_H
+#ifndef __CG_RENDERER_X11_PRIVATE_H
+#define __CG_RENDERER_X11_PRIVATE_H
 
-typedef struct _CoglX11Renderer
-{
-  int damage_base;
-  int randr_base;
-} CoglX11Renderer;
+typedef struct _cg_x11_renderer_t {
+    int damage_base;
+    int randr_base;
+} cg_x11_renderer_t;
 
-#endif /* __COGL_RENDERER_X11_PRIVATE_H */
+#endif /* __CG_RENDERER_X11_PRIVATE_H */

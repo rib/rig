@@ -28,57 +28,55 @@
  *
  */
 
-#if !defined(__COGL_H_INSIDE__) && !defined(COGL_COMPILATION)
+#if !defined(__CG_H_INSIDE__) && !defined(CG_COMPILATION)
 #error "Only <cogl/cogl.h> can be included directly."
 #endif
 
-#ifndef __COGL_GSOURCE_H__
-#define __COGL_GSOURCE_H__
+#ifndef __CG_GSOURCE_H__
+#define __CG_GSOURCE_H__
 
 #include <glib.h>
 #include <cogl/cogl-context.h>
 
-COGL_BEGIN_DECLS
+CG_BEGIN_DECLS
 
 /**
- * cogl_glib_source_new:
- * @context: A #CoglContext
+ * cg_glib_source_new:
+ * @context: A #cg_context_t
  * @priority: The priority of the #GSource
  *
  * Creates a #GSource which handles Cogl's internal system event
  * processing. This can be used as a convenience instead of
- * cogl_poll_renderer_get_info() and cogl_poll_renderer_dispatch() in
+ * cg_poll_renderer_get_info() and cg_poll_renderer_dispatch() in
  * applications that are already using the GLib main loop. After this
  * is called the #GSource should be attached to the main loop using
  * c_source_attach().
  *
- * Applications that manually connect to a #CoglRenderer before they
- * create a #CoglContext should instead use
- * cogl_glib_renderer_source_new() so that events may be dispatched
+ * Applications that manually connect to a #cg_renderer_t before they
+ * create a #cg_context_t should instead use
+ * cg_glib_renderer_source_new() so that events may be dispatched
  * before a context has been created. In that case you don't need to
  * use this api in addition later, it is simply enough to use
- * cogl_glib_renderer_source_new() instead.
+ * cg_glib_renderer_source_new() instead.
  *
  * <note>This api is actually just a thin convenience wrapper around
- * cogl_glib_renderer_source_new()</note>
+ * cg_glib_renderer_source_new()</note>
  *
  * Return value: a new #GSource
  *
  * Stability: unstable
  * Since: 1.10
  */
-GSource *
-cogl_glib_source_new (CoglContext *context,
-                      int priority);
+GSource *cg_glib_source_new(cg_context_t *context, int priority);
 
 /**
- * cogl_glib_renderer_source_new:
- * @renderer: A #CoglRenderer
+ * cg_glib_renderer_source_new:
+ * @renderer: A #cg_renderer_t
  * @priority: The priority of the #GSource
  *
  * Creates a #GSource which handles Cogl's internal system event
  * processing. This can be used as a convenience instead of
- * cogl_poll_renderer_get_info() and cogl_poll_renderer_dispatch() in
+ * cg_poll_renderer_get_info() and cg_poll_renderer_dispatch() in
  * applications that are already using the GLib main loop. After this
  * is called the #GSource should be attached to the main loop using
  * c_source_attach().
@@ -88,10 +86,8 @@ cogl_glib_source_new (CoglContext *context,
  * Stability: unstable
  * Since: 1.16
  */
-GSource *
-cogl_glib_renderer_source_new (CoglRenderer *renderer,
-                               int priority);
+GSource *cg_glib_renderer_source_new(cg_renderer_t *renderer, int priority);
 
-COGL_END_DECLS
+CG_END_DECLS
 
-#endif /* __COGL_GSOURCE_H__ */
+#endif /* __CG_GSOURCE_H__ */

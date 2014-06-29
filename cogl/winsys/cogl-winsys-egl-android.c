@@ -44,219 +44,210 @@
 #include "cogl-onscreen-private.h"
 #include "cogl-private.h"
 
-static const CoglWinsysEGLVtable _cogl_winsys_egl_vtable;
+static const cg_winsys_egl_vtable_t _cg_winsys_egl_vtable;
 
-typedef struct _CoglDisplayAndroid
-{
-  int egl_surface_width;
-  int egl_surface_height;
-  bool have_onscreen;
-} CoglDisplayAndroid;
+typedef struct _cg_display_android_t {
+    int egl_surface_width;
+    int egl_surface_height;
+    bool have_onscreen;
+} cg_display_android_t;
 
 static ANativeWindow *android_native_window;
 
 void
-cogl_android_set_native_window (ANativeWindow *window)
+cg_android_set_native_window(ANativeWindow *window)
 {
-  _cogl_init ();
+    _cg_init();
 
-  android_native_window = window;
+    android_native_window = window;
 }
 
 static void
-_cogl_winsys_renderer_disconnect (CoglRenderer *renderer)
+_cg_winsys_renderer_disconnect(cg_renderer_t *renderer)
 {
-  CoglRendererEGL *egl_renderer = renderer->winsys;
+    cg_renderer_egl_t *egl_renderer = renderer->winsys;
 
-  eglTerminate (egl_renderer->edpy);
+    eglTerminate(egl_renderer->edpy);
 
-  c_slice_free (CoglRendererEGL, egl_renderer);
+    c_slice_free(cg_renderer_egl_t, egl_renderer);
 }
 
 static bool
-_cogl_winsys_renderer_connect (CoglRenderer *renderer,
-                               CoglError **error)
+_cg_winsys_renderer_connect(cg_renderer_t *renderer,
+                            cg_error_t **error)
 {
-  CoglRendererEGL *egl_renderer;
+    cg_renderer_egl_t *egl_renderer;
 
-  renderer->winsys = c_slice_new0 (CoglRendererEGL);
-  egl_renderer = renderer->winsys;
+    renderer->winsys = c_slice_new0(cg_renderer_egl_t);
+    egl_renderer = renderer->winsys;
 
-  egl_renderer->platform_vtable = &_cogl_winsys_egl_vtable;
+    egl_renderer->platform_vtable = &_cg_winsys_egl_vtable;
 
-  egl_renderer->edpy = eglGetDisplay (EGL_DEFAULT_DISPLAY);
+    egl_renderer->edpy = eglGetDisplay(EGL_DEFAULT_DISPLAY);
 
-  if (!_cogl_winsys_egl_renderer_connect_common (renderer, error))
-    goto error;
+    if (!_cg_winsys_egl_renderer_connect_common(renderer, error))
+        goto error;
 
-  return true;
+    return true;
 
 error:
-  _cogl_winsys_renderer_disconnect (renderer);
-  return false;
+    _cg_winsys_renderer_disconnect(renderer);
+    return false;
 }
 
 static bool
-_cogl_winsys_egl_context_created (CoglDisplay *display,
-                                  CoglError **error)
+_cg_winsys_egl_context_created(cg_display_t *display,
+                               cg_error_t **error)
 {
-  CoglRenderer *renderer = display->renderer;
-  CoglRendererEGL *egl_renderer = renderer->winsys;
-  CoglDisplayEGL *egl_display = display->winsys;
-  CoglDisplayAndroid *android_display = egl_display->platform;
-  const char *error_message;
-  EGLint format;
+    cg_renderer_t *renderer = display->renderer;
+    cg_renderer_egl_t *egl_renderer = renderer->winsys;
+    cg_display_egl_t *egl_display = display->winsys;
+    cg_display_android_t *android_display = egl_display->platform;
+    const char *error_message;
+    EGLint format;
 
-  if (android_native_window == NULL)
-    {
-      error_message = "No ANativeWindow window specified with "
-        "cogl_android_set_native_window()";
-      goto fail;
+    if (android_native_window == NULL) {
+        error_message = "No ANativeWindow window specified with "
+                        "cg_android_set_native_window()";
+        goto fail;
     }
 
-  /* EGL_NATIVE_VISUAL_ID is an attribute of the EGLConfig that is
-   * guaranteed to be accepted by ANativeWindow_setBuffersGeometry ().
-   * As soon as we picked a EGLConfig, we can safely reconfigure the
-   * ANativeWindow buffers to match, using EGL_NATIVE_VISUAL_ID. */
-  eglGetConfigAttrib (egl_renderer->edpy,
-                      egl_display->egl_config,
-                      EGL_NATIVE_VISUAL_ID, &format);
+    /* EGL_NATIVE_VISUAL_ID is an attribute of the EGLConfig that is
+    * guaranteed to be accepted by ANativeWindow_setBuffersGeometry ().
+    * As soon as we picked a EGLConfig, we can safely reconfigure the
+    * ANativeWindow buffers to match, using EGL_NATIVE_VISUAL_ID. */
+    eglGetConfigAttrib(egl_renderer->edpy,
+                       egl_display->egl_config,
+                       EGL_NATIVE_VISUAL_ID,
+                       &format);
 
-  ANativeWindow_setBuffersGeometry (android_native_window,
-                                    0,
-                                    0,
-                                    format);
+    ANativeWindow_setBuffersGeometry(android_native_window, 0, 0, format);
 
-  egl_display->egl_surface =
-    eglCreateWindowSurface (egl_renderer->edpy,
-                            egl_display->egl_config,
-                            (NativeWindowType) android_native_window,
-                            NULL);
-  if (egl_display->egl_surface == EGL_NO_SURFACE)
-    {
-      error_message = "Unable to create EGL window surface";
-      goto fail;
+    egl_display->egl_surface =
+        eglCreateWindowSurface(egl_renderer->edpy,
+                               egl_display->egl_config,
+                               (NativeWindowType)android_native_window,
+                               NULL);
+    if (egl_display->egl_surface == EGL_NO_SURFACE) {
+        error_message = "Unable to create EGL window surface";
+        goto fail;
     }
 
-  if (!_cogl_winsys_egl_make_current (display,
-                                      egl_display->egl_surface,
-                                      egl_display->egl_surface,
-                                      egl_display->egl_context))
-    {
-      error_message = "Unable to eglMakeCurrent with egl surface";
-      goto fail;
+    if (!_cg_winsys_egl_make_current(display,
+                                     egl_display->egl_surface,
+                                     egl_display->egl_surface,
+                                     egl_display->egl_context)) {
+        error_message = "Unable to eglMakeCurrent with egl surface";
+        goto fail;
     }
 
-  eglQuerySurface (egl_renderer->edpy,
-                   egl_display->egl_surface,
-                   EGL_WIDTH,
-                   &android_display->egl_surface_width);
+    eglQuerySurface(egl_renderer->edpy,
+                    egl_display->egl_surface,
+                    EGL_WIDTH,
+                    &android_display->egl_surface_width);
 
-  eglQuerySurface (egl_renderer->edpy,
-                   egl_display->egl_surface,
-                   EGL_HEIGHT,
-                   &android_display->egl_surface_height);
+    eglQuerySurface(egl_renderer->edpy,
+                    egl_display->egl_surface,
+                    EGL_HEIGHT,
+                    &android_display->egl_surface_height);
 
-  return true;
+    return true;
 
- fail:
-  _cogl_set_error (error, COGL_WINSYS_ERROR,
-               COGL_WINSYS_ERROR_CREATE_CONTEXT,
-               "%s", error_message);
-  return false;
+fail:
+    _cg_set_error(error,
+                  CG_WINSYS_ERROR,
+                  CG_WINSYS_ERROR_CREATE_CONTEXT,
+                  "%s",
+                  error_message);
+    return false;
 }
 
 static bool
-_cogl_winsys_egl_display_setup (CoglDisplay *display,
-                                CoglError **error)
+_cg_winsys_egl_display_setup(cg_display_t *display,
+                             cg_error_t **error)
 {
-  CoglDisplayEGL *egl_display = display->winsys;
-  CoglDisplayAndroid *android_display;
+    cg_display_egl_t *egl_display = display->winsys;
+    cg_display_android_t *android_display;
 
-  android_display = c_slice_new0 (CoglDisplayAndroid);
-  egl_display->platform = android_display;
+    android_display = c_slice_new0(cg_display_android_t);
+    egl_display->platform = android_display;
 
-  return true;
+    return true;
 }
 
 static void
-_cogl_winsys_egl_display_destroy (CoglDisplay *display)
+_cg_winsys_egl_display_destroy(cg_display_t *display)
 {
-  CoglDisplayEGL *egl_display = display->winsys;
+    cg_display_egl_t *egl_display = display->winsys;
 
-  c_slice_free (CoglDisplayAndroid, egl_display->platform);
+    c_slice_free(cg_display_android_t, egl_display->platform);
 }
 
 static bool
-_cogl_winsys_egl_onscreen_init (CoglOnscreen *onscreen,
-                                EGLConfig egl_config,
-                                CoglError **error)
+_cg_winsys_egl_onscreen_init(cg_onscreen_t *onscreen,
+                             EGLConfig egl_config,
+                             cg_error_t **error)
 {
-  CoglFramebuffer *framebuffer = COGL_FRAMEBUFFER (onscreen);
-  CoglContext *context = framebuffer->context;
-  CoglDisplay *display = context->display;
-  CoglDisplayEGL *egl_display = display->winsys;
-  CoglDisplayAndroid *android_display = egl_display->platform;
-  CoglOnscreenEGL *egl_onscreen = onscreen->winsys;
+    cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
+    cg_context_t *context = framebuffer->context;
+    cg_display_t *display = context->display;
+    cg_display_egl_t *egl_display = display->winsys;
+    cg_display_android_t *android_display = egl_display->platform;
+    cg_onscreen_egl_t *egl_onscreen = onscreen->winsys;
 
-  if (android_display->have_onscreen)
-    {
-      _cogl_set_error (error, COGL_WINSYS_ERROR,
-                   COGL_WINSYS_ERROR_CREATE_ONSCREEN,
-                   "EGL platform only supports a single onscreen window");
-      return false;
+    if (android_display->have_onscreen) {
+        _cg_set_error(error,
+                      CG_WINSYS_ERROR,
+                      CG_WINSYS_ERROR_CREATE_ONSCREEN,
+                      "EGL platform only supports a single onscreen window");
+        return false;
     }
 
-  egl_onscreen->egl_surface = egl_display->egl_surface;
+    egl_onscreen->egl_surface = egl_display->egl_surface;
 
-  _cogl_framebuffer_winsys_update_size (framebuffer,
-                                        android_display->egl_surface_width,
-                                        android_display->egl_surface_height);
+    _cg_framebuffer_winsys_update_size(framebuffer,
+                                       android_display->egl_surface_width,
+                                       android_display->egl_surface_height);
 
-  android_display->have_onscreen = true;
+    android_display->have_onscreen = true;
 
-  return true;
+    return true;
 }
 
 void
-cogl_android_onscreen_update_size (CoglOnscreen *onscreen,
-                                   int width,
-                                   int height)
+cg_android_onscreen_update_size(cg_onscreen_t *onscreen, int width, int height)
 {
-  CoglFramebuffer *fb = COGL_FRAMEBUFFER (onscreen);
-  _cogl_framebuffer_winsys_update_size (fb, width, height);
+    cg_framebuffer_t *fb = CG_FRAMEBUFFER(onscreen);
+    _cg_framebuffer_winsys_update_size(fb, width, height);
 }
 
-static const CoglWinsysEGLVtable
-_cogl_winsys_egl_vtable =
-  {
-    .display_setup = _cogl_winsys_egl_display_setup,
-    .display_destroy = _cogl_winsys_egl_display_destroy,
-    .context_created = _cogl_winsys_egl_context_created,
-    .onscreen_init = _cogl_winsys_egl_onscreen_init,
-  };
+static const cg_winsys_egl_vtable_t _cg_winsys_egl_vtable = {
+    .display_setup = _cg_winsys_egl_display_setup,
+    .display_destroy = _cg_winsys_egl_display_destroy,
+    .context_created = _cg_winsys_egl_context_created,
+    .onscreen_init = _cg_winsys_egl_onscreen_init,
+};
 
-const CoglWinsysVtable *
-_cogl_winsys_egl_android_get_vtable (void)
+const cg_winsys_vtable_t *
+_cg_winsys_egl_android_get_vtable(void)
 {
-  static bool vtable_inited = false;
-  static CoglWinsysVtable vtable;
+    static bool vtable_inited = false;
+    static cg_winsys_vtable_t vtable;
 
-  if (!vtable_inited)
-    {
-      /* The EGL_ANDROID winsys is a subclass of the EGL winsys so we
-         start by copying its vtable */
+    if (!vtable_inited) {
+        /* The EGL_ANDROID winsys is a subclass of the EGL winsys so we
+           start by copying its vtable */
 
-      vtable = *_cogl_winsys_egl_get_vtable ();
+        vtable = *_cg_winsys_egl_get_vtable();
 
-      vtable.id = COGL_WINSYS_ID_EGL_ANDROID;
-      vtable.name = "EGL_ANDROID";
+        vtable.id = CG_WINSYS_ID_EGL_ANDROID;
+        vtable.name = "EGL_ANDROID";
 
-      vtable.renderer_connect = _cogl_winsys_renderer_connect;
-      vtable.renderer_disconnect = _cogl_winsys_renderer_disconnect;
+        vtable.renderer_connect = _cg_winsys_renderer_connect;
+        vtable.renderer_disconnect = _cg_winsys_renderer_disconnect;
 
-      vtable_inited = true;
+        vtable_inited = true;
     }
 
-  return &vtable;
+    return &vtable;
 }

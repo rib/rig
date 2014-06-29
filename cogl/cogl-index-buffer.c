@@ -40,71 +40,70 @@
 #include "cogl-indices-private.h"
 #include "cogl-context-private.h"
 
-static void _cogl_index_buffer_free (CoglIndexBuffer *indices);
+static void _cg_index_buffer_free(cg_index_buffer_t *indices);
 
-COGL_BUFFER_DEFINE (IndexBuffer, index_buffer);
+CG_BUFFER_DEFINE(IndexBuffer, index_buffer);
 
 /* XXX: Unlike the wiki design this just takes a size. A single
  * indices buffer should be able to contain multiple ranges of indices
  * which the wiki design doesn't currently consider. */
-CoglIndexBuffer *
-cogl_index_buffer_new (CoglContext *context, size_t bytes)
+cg_index_buffer_t *
+cg_index_buffer_new(cg_context_t *context, size_t bytes)
 {
-  CoglIndexBuffer *indices = c_slice_new (CoglIndexBuffer);
+    cg_index_buffer_t *indices = c_slice_new(cg_index_buffer_t);
 
-  /* parent's constructor */
-  _cogl_buffer_initialize (COGL_BUFFER (indices),
-                           context,
-                           bytes,
-                           COGL_BUFFER_BIND_TARGET_INDEX_BUFFER,
-                           COGL_BUFFER_USAGE_HINT_INDEX_BUFFER,
-                           COGL_BUFFER_UPDATE_HINT_STATIC);
+    /* parent's constructor */
+    _cg_buffer_initialize(CG_BUFFER(indices),
+                          context,
+                          bytes,
+                          CG_BUFFER_BIND_TARGET_INDEX_BUFFER,
+                          CG_BUFFER_USAGE_HINT_INDEX_BUFFER,
+                          CG_BUFFER_UPDATE_HINT_STATIC);
 
-  return _cogl_index_buffer_object_new (indices);
+    return _cg_index_buffer_object_new(indices);
 }
 
 static void
-_cogl_index_buffer_free (CoglIndexBuffer *indices)
+_cg_index_buffer_free(cg_index_buffer_t *indices)
 {
-  /* parent's destructor */
-  _cogl_buffer_fini (COGL_BUFFER (indices));
+    /* parent's destructor */
+    _cg_buffer_fini(CG_BUFFER(indices));
 
-  c_slice_free (CoglIndexBuffer, indices);
+    c_slice_free(cg_index_buffer_t, indices);
 }
 
 /* XXX: do we want a convenience function like this as an alternative
- * to using cogl_buffer_set_data? The advantage of this is that we can
+ * to using cg_buffer_set_data? The advantage of this is that we can
  * track meta data such as the indices type and max_index_value for a
  * range as part of the indices buffer. If we just leave people to use
- * cogl_buffer_set_data then we either need a way to specify the type
+ * cg_buffer_set_data then we either need a way to specify the type
  * and max index value at draw time or we'll want a separate way to
  * declare the type and max value for a range after uploading the
  * data.
  *
- * XXX: I think in the end it'll be that CoglIndices are to
- * CoglIndexBuffers as CoglAttributes are to CoglAttributeBuffers. I.e
- * a CoglIndexBuffer is a lite subclass of CoglBuffer that simply
+ * XXX: I think in the end it'll be that cg_indices_t are to
+ * cg_index_buffer_ts as cg_attribute_ts are to cg_attribute_buffer_ts. I.e
+ * a cg_index_buffer_t is a lite subclass of cg_buffer_t that simply
  * implies that the buffer will later be bound as indices but doesn't
- * track more detailed meta data. CoglIndices build on a
- * CoglIndexBuffer and define the type and max_index_value for some
- * sub-range of a CoglIndexBuffer.
+ * track more detailed meta data. cg_indices_t build on a
+ * cg_index_buffer_t and define the type and max_index_value for some
+ * sub-range of a cg_index_buffer_t.
  */
 #if 0
 void
-cogl_index_buffer_set_data (CoglIndexBuffer *indices,
-                            CoglIndicesType type,
-                            int max_index_value,
-                            size_t write_offset,
-                            void *user_indices,
-                            int n_indices)
+cg_index_buffer_set_data (cg_index_buffer_t *indices,
+                          cg_indices_type_t type,
+                          int max_index_value,
+                          size_t write_offset,
+                          void *user_indices,
+                          int n_indices)
 {
-  c_list_t *l;
+    c_list_t *l;
 
-  for (l = indices->ranges; l; l = l->next)
+    for (l = indices->ranges; l; l = l->next)
     {
 
     }
-  cogl_buffer_set
+    cg_buffer_set
 }
 #endif
-

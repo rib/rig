@@ -26,23 +26,23 @@
  * SOFTWARE.
  */
 
-#if !defined(__COGL_H_INSIDE__) && !defined(COGL_COMPILATION)
+#if !defined(__CG_H_INSIDE__) && !defined(CG_COMPILATION)
 #error "Only <cogl/cogl.h> can be included directly."
 #endif
 
-#ifndef __COGL_WAYLAND_RENDERER_H__
-#define __COGL_WAYLAND_RENDERER_H__
+#ifndef __CG_WAYLAND_RENDERER_H__
+#define __CG_WAYLAND_RENDERER_H__
 
 #include <cogl/cogl-types.h>
 #include <cogl/cogl-renderer.h>
 
 #include <wayland-client.h>
 
-COGL_BEGIN_DECLS
+CG_BEGIN_DECLS
 
 /**
- * cogl_wayland_renderer_set_foreign_display:
- * @renderer: A #CoglRenderer
+ * cg_wayland_renderer_set_foreign_display:
+ * @renderer: A #cg_renderer_t
  * @display: A Wayland display
  *
  * Allows you to explicitly control what Wayland display you want Cogl
@@ -52,21 +52,20 @@ COGL_BEGIN_DECLS
  * Since: 1.8
  * Stability: unstable
  */
-void
-cogl_wayland_renderer_set_foreign_display (CoglRenderer *renderer,
-                                           struct wl_display *display);
+void cg_wayland_renderer_set_foreign_display(cg_renderer_t *renderer,
+                                             struct wl_display *display);
 
 /**
- * cogl_wayland_renderer_set_event_dispatch_enabled:
- * @renderer: A #CoglRenderer
+ * cg_wayland_renderer_set_event_dispatch_enabled:
+ * @renderer: A #cg_renderer_t
  * @enable: The new value
  *
  * Sets whether Cogl should handle calling wl_display_dispatch() and
  * wl_display_flush() as part of its main loop integration via
- * cogl_poll_renderer_get_info() and cogl_poll_renderer_dispatch().
+ * cg_poll_renderer_get_info() and cg_poll_renderer_dispatch().
  * The default value is %true. When it is enabled the application can
  * register listeners for Wayland interfaces and the callbacks will be
- * invoked during cogl_poll_renderer_dispatch(). If the application
+ * invoked during cg_poll_renderer_dispatch(). If the application
  * wants to integrate with its own code that is already handling
  * reading from the Wayland display socket, it should disable this to
  * avoid having competing code read from the socket.
@@ -74,21 +73,20 @@ cogl_wayland_renderer_set_foreign_display (CoglRenderer *renderer,
  * Since: 1.16
  * Stability: unstable
  */
-void
-cogl_wayland_renderer_set_event_dispatch_enabled (CoglRenderer *renderer,
-                                                  bool enable);
+void cg_wayland_renderer_set_event_dispatch_enabled(cg_renderer_t *renderer,
+                                                    bool enable);
 
 /**
- * cogl_wayland_renderer_get_display:
- * @renderer: A #CoglRenderer
+ * cg_wayland_renderer_get_display:
+ * @renderer: A #cg_renderer_t
  *
  * Retrieves the Wayland display that Cogl is using. If a foreign
  * display has been specified using
- * cogl_wayland_renderer_set_foreign_display() then that display will
+ * cg_wayland_renderer_set_foreign_display() then that display will
  * be returned. If no foreign display has been specified then the
  * display that Cogl creates internally will be returned unless the
  * renderer has not yet been connected (either implicitly or explicitly by
- * calling cogl_renderer_connect()) in which case %NULL is returned.
+ * calling cg_renderer_connect()) in which case %NULL is returned.
  *
  * Returns: The wayland display currently associated with @renderer,
  *          or %NULL if the renderer hasn't yet been connected and no
@@ -97,9 +95,8 @@ cogl_wayland_renderer_set_event_dispatch_enabled (CoglRenderer *renderer,
  * Since: 1.8
  * Stability: unstable
  */
-struct wl_display *
-cogl_wayland_renderer_get_display (CoglRenderer *renderer);
+struct wl_display *cg_wayland_renderer_get_display(cg_renderer_t *renderer);
 
-COGL_END_DECLS
+CG_END_DECLS
 
-#endif /* __COGL_WAYLAND_RENDERER_H__ */
+#endif /* __CG_WAYLAND_RENDERER_H__ */

@@ -31,43 +31,38 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#ifndef __COGL_PRIMITIVE_PRIVATE_H
-#define __COGL_PRIMITIVE_PRIVATE_H
+#ifndef __CG_PRIMITIVE_PRIVATE_H
+#define __CG_PRIMITIVE_PRIVATE_H
 
 #include "cogl-object-private.h"
 #include "cogl-attribute-buffer-private.h"
 #include "cogl-attribute-private.h"
 #include "cogl-framebuffer.h"
 
-struct _CoglPrimitive
-{
-  CoglObject _parent;
+struct _cg_primitive_t {
+    cg_object_t _parent;
 
-  CoglIndices *indices;
-  CoglVerticesMode mode;
-  int first_vertex;
-  int n_vertices;
+    cg_indices_t *indices;
+    cg_vertices_mode_t mode;
+    int first_vertex;
+    int n_vertices;
 
-  int immutable_ref;
+    int immutable_ref;
 
-  CoglAttribute **attributes;
-  int n_attributes;
+    cg_attribute_t **attributes;
+    int n_attributes;
 
-  int n_embedded_attributes;
-  CoglAttribute *embedded_attribute;
+    int n_embedded_attributes;
+    cg_attribute_t *embedded_attribute;
 };
 
-CoglPrimitive *
-_cogl_primitive_immutable_ref (CoglPrimitive *primitive);
+cg_primitive_t *_cg_primitive_immutable_ref(cg_primitive_t *primitive);
 
-void
-_cogl_primitive_immutable_unref (CoglPrimitive *primitive);
+void _cg_primitive_immutable_unref(cg_primitive_t *primitive);
 
-void
-_cogl_primitive_draw (CoglPrimitive *primitive,
-                      CoglFramebuffer *framebuffer,
-                      CoglPipeline *pipeline,
-                      CoglDrawFlags flags);
+void _cg_primitive_draw(cg_primitive_t *primitive,
+                        cg_framebuffer_t *framebuffer,
+                        cg_pipeline_t *pipeline,
+                        cg_draw_flags_t flags);
 
-#endif /* __COGL_PRIMITIVE_PRIVATE_H */
-
+#endif /* __CG_PRIMITIVE_PRIVATE_H */

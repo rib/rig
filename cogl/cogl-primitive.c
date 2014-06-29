@@ -45,599 +45,572 @@
 #include <stdarg.h>
 #include <string.h>
 
-static void _cogl_primitive_free (CoglPrimitive *primitive);
+static void _cg_primitive_free(cg_primitive_t *primitive);
 
-COGL_OBJECT_DEFINE (Primitive, primitive);
+CG_OBJECT_DEFINE(Primitive, primitive);
 
-CoglPrimitive *
-cogl_primitive_new_with_attributes (CoglVerticesMode mode,
-                                    int n_vertices,
-                                    CoglAttribute **attributes,
-                                    int n_attributes)
+cg_primitive_t *
+cg_primitive_new_with_attributes(cg_vertices_mode_t mode,
+                                 int n_vertices,
+                                 cg_attribute_t **attributes,
+                                 int n_attributes)
 {
-  CoglPrimitive *primitive;
-  int i;
+    cg_primitive_t *primitive;
+    int i;
 
-  primitive = c_slice_alloc (sizeof (CoglPrimitive) +
-                             sizeof (CoglAttribute *) * (n_attributes - 1));
-  primitive->mode = mode;
-  primitive->first_vertex = 0;
-  primitive->n_vertices = n_vertices;
-  primitive->indices = NULL;
-  primitive->immutable_ref = 0;
+    primitive = c_slice_alloc(sizeof(cg_primitive_t) +
+                              sizeof(cg_attribute_t *) * (n_attributes - 1));
+    primitive->mode = mode;
+    primitive->first_vertex = 0;
+    primitive->n_vertices = n_vertices;
+    primitive->indices = NULL;
+    primitive->immutable_ref = 0;
 
-  primitive->n_attributes = n_attributes;
-  primitive->n_embedded_attributes = n_attributes;
-  primitive->attributes = &primitive->embedded_attribute;
-  for (i = 0; i < n_attributes; i++)
-    {
-      CoglAttribute *attribute = attributes[i];
-      cogl_object_ref (attribute);
+    primitive->n_attributes = n_attributes;
+    primitive->n_embedded_attributes = n_attributes;
+    primitive->attributes = &primitive->embedded_attribute;
+    for (i = 0; i < n_attributes; i++) {
+        cg_attribute_t *attribute = attributes[i];
+        cg_object_ref(attribute);
 
-      _COGL_RETURN_VAL_IF_FAIL (cogl_is_attribute (attribute), NULL);
+        _CG_RETURN_VAL_IF_FAIL(cg_is_attribute(attribute), NULL);
 
-      primitive->attributes[i] = attribute;
+        primitive->attributes[i] = attribute;
     }
 
-  return _cogl_primitive_object_new (primitive);
+    return _cg_primitive_object_new(primitive);
 }
 
 /* This is just an internal convenience wrapper around
    new_with_attributes that also unrefs the attributes. It is just
    used for the builtin struct constructors */
-static CoglPrimitive *
-_cogl_primitive_new_with_attributes_unref (CoglVerticesMode mode,
-                                           int n_vertices,
-                                           CoglAttribute **attributes,
-                                           int n_attributes)
+static cg_primitive_t *
+_cg_primitive_new_with_attributes_unref(cg_vertices_mode_t mode,
+                                        int n_vertices,
+                                        cg_attribute_t **attributes,
+                                        int n_attributes)
 {
-  CoglPrimitive *primitive;
-  int i;
+    cg_primitive_t *primitive;
+    int i;
 
-  primitive = cogl_primitive_new_with_attributes (mode,
-                                                  n_vertices,
-                                                  attributes,
-                                                  n_attributes);
+    primitive = cg_primitive_new_with_attributes(
+        mode, n_vertices, attributes, n_attributes);
 
-  for (i = 0; i < n_attributes; i++)
-    cogl_object_unref (attributes[i]);
+    for (i = 0; i < n_attributes; i++)
+        cg_object_unref(attributes[i]);
 
-  return primitive;
+    return primitive;
 }
 
-CoglPrimitive *
-cogl_primitive_new (CoglVerticesMode mode,
+cg_primitive_t *
+cg_primitive_new(cg_vertices_mode_t mode, int n_vertices, ...)
+{
+    va_list ap;
+    int n_attributes;
+    cg_attribute_t **attributes;
+    int i;
+    cg_attribute_t *attribute;
+
+    va_start(ap, n_vertices);
+    for (n_attributes = 0; va_arg(ap, cg_attribute_t *); n_attributes++)
+        ;
+    va_end(ap);
+
+    attributes = c_alloca(sizeof(cg_attribute_t *) * n_attributes);
+
+    va_start(ap, n_vertices);
+    for (i = 0; (attribute = va_arg(ap, cg_attribute_t *)); i++)
+        attributes[i] = attribute;
+    va_end(ap);
+
+    return cg_primitive_new_with_attributes(mode, n_vertices, attributes, i);
+}
+
+cg_primitive_t *
+cg_primitive_new_p2(cg_context_t *ctx,
+                    cg_vertices_mode_t mode,
                     int n_vertices,
-                    ...)
+                    const cg_vertex_p2_t *data)
 {
-  va_list ap;
-  int n_attributes;
-  CoglAttribute **attributes;
-  int i;
-  CoglAttribute *attribute;
+    cg_attribute_buffer_t *attribute_buffer =
+        cg_attribute_buffer_new(ctx, n_vertices * sizeof(cg_vertex_p2_t), data);
+    cg_attribute_t *attributes[1];
 
-  va_start (ap, n_vertices);
-  for (n_attributes = 0; va_arg (ap, CoglAttribute *); n_attributes++)
-    ;
-  va_end (ap);
+    attributes[0] = cg_attribute_new(attribute_buffer,
+                                     "cg_position_in",
+                                     sizeof(cg_vertex_p2_t),
+                                     offsetof(cg_vertex_p2_t, x),
+                                     2,
+                                     CG_ATTRIBUTE_TYPE_FLOAT);
 
-  attributes = c_alloca (sizeof (CoglAttribute *) * n_attributes);
+    cg_object_unref(attribute_buffer);
 
-  va_start (ap, n_vertices);
-  for (i = 0; (attribute = va_arg (ap, CoglAttribute *)); i++)
-    attributes[i] = attribute;
-  va_end (ap);
-
-  return cogl_primitive_new_with_attributes (mode, n_vertices,
-                                             attributes,
-                                             i);
+    return _cg_primitive_new_with_attributes_unref(
+        mode, n_vertices, attributes, 1);
 }
 
-CoglPrimitive *
-cogl_primitive_new_p2 (CoglContext *ctx,
-                       CoglVerticesMode mode,
-                       int n_vertices,
-                       const CoglVertexP2 *data)
+cg_primitive_t *
+cg_primitive_new_p3(cg_context_t *ctx,
+                    cg_vertices_mode_t mode,
+                    int n_vertices,
+                    const cg_vertex_p3_t *data)
 {
-  CoglAttributeBuffer *attribute_buffer =
-    cogl_attribute_buffer_new (ctx, n_vertices * sizeof (CoglVertexP2), data);
-  CoglAttribute *attributes[1];
+    cg_attribute_buffer_t *attribute_buffer =
+        cg_attribute_buffer_new(ctx, n_vertices * sizeof(cg_vertex_p3_t), data);
+    cg_attribute_t *attributes[1];
 
-  attributes[0] = cogl_attribute_new (attribute_buffer,
-                                      "cogl_position_in",
-                                      sizeof (CoglVertexP2),
-                                      offsetof (CoglVertexP2, x),
-                                      2,
-                                      COGL_ATTRIBUTE_TYPE_FLOAT);
+    attributes[0] = cg_attribute_new(attribute_buffer,
+                                     "cg_position_in",
+                                     sizeof(cg_vertex_p3_t),
+                                     offsetof(cg_vertex_p3_t, x),
+                                     3,
+                                     CG_ATTRIBUTE_TYPE_FLOAT);
 
-  cogl_object_unref (attribute_buffer);
+    cg_object_unref(attribute_buffer);
 
-  return _cogl_primitive_new_with_attributes_unref (mode, n_vertices,
-                                                    attributes,
-                                                    1);
+    return _cg_primitive_new_with_attributes_unref(
+        mode, n_vertices, attributes, 1);
 }
 
-CoglPrimitive *
-cogl_primitive_new_p3 (CoglContext *ctx,
-                       CoglVerticesMode mode,
-                       int n_vertices,
-                       const CoglVertexP3 *data)
+cg_primitive_t *
+cg_primitive_new_p2c4(cg_context_t *ctx,
+                      cg_vertices_mode_t mode,
+                      int n_vertices,
+                      const cg_vertex_p2c4_t *data)
 {
-  CoglAttributeBuffer *attribute_buffer =
-    cogl_attribute_buffer_new (ctx, n_vertices * sizeof (CoglVertexP3), data);
-  CoglAttribute *attributes[1];
+    cg_attribute_buffer_t *attribute_buffer = cg_attribute_buffer_new(
+        ctx, n_vertices * sizeof(cg_vertex_p2c4_t), data);
+    cg_attribute_t *attributes[2];
 
-  attributes[0] = cogl_attribute_new (attribute_buffer,
-                                      "cogl_position_in",
-                                      sizeof (CoglVertexP3),
-                                      offsetof (CoglVertexP3, x),
-                                      3,
-                                      COGL_ATTRIBUTE_TYPE_FLOAT);
+    attributes[0] = cg_attribute_new(attribute_buffer,
+                                     "cg_position_in",
+                                     sizeof(cg_vertex_p2c4_t),
+                                     offsetof(cg_vertex_p2c4_t, x),
+                                     2,
+                                     CG_ATTRIBUTE_TYPE_FLOAT);
+    attributes[1] = cg_attribute_new(attribute_buffer,
+                                     "cg_color_in",
+                                     sizeof(cg_vertex_p2c4_t),
+                                     offsetof(cg_vertex_p2c4_t, r),
+                                     4,
+                                     CG_ATTRIBUTE_TYPE_UNSIGNED_BYTE);
 
-  cogl_object_unref (attribute_buffer);
+    cg_object_unref(attribute_buffer);
 
-  return _cogl_primitive_new_with_attributes_unref (mode, n_vertices,
-                                                    attributes,
-                                                    1);
+    return _cg_primitive_new_with_attributes_unref(
+        mode, n_vertices, attributes, 2);
 }
 
-CoglPrimitive *
-cogl_primitive_new_p2c4 (CoglContext *ctx,
-                         CoglVerticesMode mode,
-                         int n_vertices,
-                         const CoglVertexP2C4 *data)
+cg_primitive_t *
+cg_primitive_new_p3c4(cg_context_t *ctx,
+                      cg_vertices_mode_t mode,
+                      int n_vertices,
+                      const cg_vertex_p3c4_t *data)
 {
-  CoglAttributeBuffer *attribute_buffer =
-    cogl_attribute_buffer_new (ctx, n_vertices * sizeof (CoglVertexP2C4), data);
-  CoglAttribute *attributes[2];
+    cg_attribute_buffer_t *attribute_buffer = cg_attribute_buffer_new(
+        ctx, n_vertices * sizeof(cg_vertex_p3c4_t), data);
+    cg_attribute_t *attributes[2];
 
-  attributes[0] = cogl_attribute_new (attribute_buffer,
-                                      "cogl_position_in",
-                                      sizeof (CoglVertexP2C4),
-                                      offsetof (CoglVertexP2C4, x),
-                                      2,
-                                      COGL_ATTRIBUTE_TYPE_FLOAT);
-  attributes[1] = cogl_attribute_new (attribute_buffer,
-                                      "cogl_color_in",
-                                      sizeof (CoglVertexP2C4),
-                                      offsetof (CoglVertexP2C4, r),
-                                      4,
-                                      COGL_ATTRIBUTE_TYPE_UNSIGNED_BYTE);
+    attributes[0] = cg_attribute_new(attribute_buffer,
+                                     "cg_position_in",
+                                     sizeof(cg_vertex_p3c4_t),
+                                     offsetof(cg_vertex_p3c4_t, x),
+                                     3,
+                                     CG_ATTRIBUTE_TYPE_FLOAT);
+    attributes[1] = cg_attribute_new(attribute_buffer,
+                                     "cg_color_in",
+                                     sizeof(cg_vertex_p3c4_t),
+                                     offsetof(cg_vertex_p3c4_t, r),
+                                     4,
+                                     CG_ATTRIBUTE_TYPE_UNSIGNED_BYTE);
 
-  cogl_object_unref (attribute_buffer);
+    cg_object_unref(attribute_buffer);
 
-  return _cogl_primitive_new_with_attributes_unref (mode, n_vertices,
-                                                    attributes,
-                                                    2);
+    return _cg_primitive_new_with_attributes_unref(
+        mode, n_vertices, attributes, 2);
 }
 
-CoglPrimitive *
-cogl_primitive_new_p3c4 (CoglContext *ctx,
-                         CoglVerticesMode mode,
-                         int n_vertices,
-                         const CoglVertexP3C4 *data)
+cg_primitive_t *
+cg_primitive_new_p2t2(cg_context_t *ctx,
+                      cg_vertices_mode_t mode,
+                      int n_vertices,
+                      const cg_vertex_p2t2_t *data)
 {
-  CoglAttributeBuffer *attribute_buffer =
-    cogl_attribute_buffer_new (ctx, n_vertices * sizeof (CoglVertexP3C4), data);
-  CoglAttribute *attributes[2];
+    cg_attribute_buffer_t *attribute_buffer = cg_attribute_buffer_new(
+        ctx, n_vertices * sizeof(cg_vertex_p2t2_t), data);
+    cg_attribute_t *attributes[2];
 
-  attributes[0] = cogl_attribute_new (attribute_buffer,
-                                      "cogl_position_in",
-                                      sizeof (CoglVertexP3C4),
-                                      offsetof (CoglVertexP3C4, x),
-                                      3,
-                                      COGL_ATTRIBUTE_TYPE_FLOAT);
-  attributes[1] = cogl_attribute_new (attribute_buffer,
-                                      "cogl_color_in",
-                                      sizeof (CoglVertexP3C4),
-                                      offsetof (CoglVertexP3C4, r),
-                                      4,
-                                      COGL_ATTRIBUTE_TYPE_UNSIGNED_BYTE);
+    attributes[0] = cg_attribute_new(attribute_buffer,
+                                     "cg_position_in",
+                                     sizeof(cg_vertex_p2t2_t),
+                                     offsetof(cg_vertex_p2t2_t, x),
+                                     2,
+                                     CG_ATTRIBUTE_TYPE_FLOAT);
+    attributes[1] = cg_attribute_new(attribute_buffer,
+                                     "cg_tex_coord0_in",
+                                     sizeof(cg_vertex_p2t2_t),
+                                     offsetof(cg_vertex_p2t2_t, s),
+                                     2,
+                                     CG_ATTRIBUTE_TYPE_FLOAT);
 
-  cogl_object_unref (attribute_buffer);
+    cg_object_unref(attribute_buffer);
 
-  return _cogl_primitive_new_with_attributes_unref (mode, n_vertices,
-                                                    attributes,
-                                                    2);
+    return _cg_primitive_new_with_attributes_unref(
+        mode, n_vertices, attributes, 2);
 }
 
-CoglPrimitive *
-cogl_primitive_new_p2t2 (CoglContext *ctx,
-                         CoglVerticesMode mode,
-                         int n_vertices,
-                         const CoglVertexP2T2 *data)
+cg_primitive_t *
+cg_primitive_new_p3t2(cg_context_t *ctx,
+                      cg_vertices_mode_t mode,
+                      int n_vertices,
+                      const cg_vertex_p3t2_t *data)
 {
-  CoglAttributeBuffer *attribute_buffer =
-    cogl_attribute_buffer_new (ctx, n_vertices * sizeof (CoglVertexP2T2), data);
-  CoglAttribute *attributes[2];
+    cg_attribute_buffer_t *attribute_buffer = cg_attribute_buffer_new(
+        ctx, n_vertices * sizeof(cg_vertex_p3t2_t), data);
+    cg_attribute_t *attributes[2];
 
-  attributes[0] = cogl_attribute_new (attribute_buffer,
-                                      "cogl_position_in",
-                                      sizeof (CoglVertexP2T2),
-                                      offsetof (CoglVertexP2T2, x),
-                                      2,
-                                      COGL_ATTRIBUTE_TYPE_FLOAT);
-  attributes[1] = cogl_attribute_new (attribute_buffer,
-                                      "cogl_tex_coord0_in",
-                                      sizeof (CoglVertexP2T2),
-                                      offsetof (CoglVertexP2T2, s),
-                                      2,
-                                      COGL_ATTRIBUTE_TYPE_FLOAT);
+    attributes[0] = cg_attribute_new(attribute_buffer,
+                                     "cg_position_in",
+                                     sizeof(cg_vertex_p3t2_t),
+                                     offsetof(cg_vertex_p3t2_t, x),
+                                     3,
+                                     CG_ATTRIBUTE_TYPE_FLOAT);
+    attributes[1] = cg_attribute_new(attribute_buffer,
+                                     "cg_tex_coord0_in",
+                                     sizeof(cg_vertex_p3t2_t),
+                                     offsetof(cg_vertex_p3t2_t, s),
+                                     2,
+                                     CG_ATTRIBUTE_TYPE_FLOAT);
 
-  cogl_object_unref (attribute_buffer);
+    cg_object_unref(attribute_buffer);
 
-  return _cogl_primitive_new_with_attributes_unref (mode, n_vertices,
-                                                    attributes,
-                                                    2);
+    return _cg_primitive_new_with_attributes_unref(
+        mode, n_vertices, attributes, 2);
 }
 
-CoglPrimitive *
-cogl_primitive_new_p3t2 (CoglContext *ctx,
-                         CoglVerticesMode mode,
-                         int n_vertices,
-                         const CoglVertexP3T2 *data)
+cg_primitive_t *
+cg_primitive_new_p2t2c4(cg_context_t *ctx,
+                        cg_vertices_mode_t mode,
+                        int n_vertices,
+                        const cg_vertex_p2t2c4_t *data)
 {
-  CoglAttributeBuffer *attribute_buffer =
-    cogl_attribute_buffer_new (ctx, n_vertices * sizeof (CoglVertexP3T2), data);
-  CoglAttribute *attributes[2];
+    cg_attribute_buffer_t *attribute_buffer = cg_attribute_buffer_new(
+        ctx, n_vertices * sizeof(cg_vertex_p2t2c4_t), data);
+    cg_attribute_t *attributes[3];
 
-  attributes[0] = cogl_attribute_new (attribute_buffer,
-                                      "cogl_position_in",
-                                      sizeof (CoglVertexP3T2),
-                                      offsetof (CoglVertexP3T2, x),
-                                      3,
-                                      COGL_ATTRIBUTE_TYPE_FLOAT);
-  attributes[1] = cogl_attribute_new (attribute_buffer,
-                                      "cogl_tex_coord0_in",
-                                      sizeof (CoglVertexP3T2),
-                                      offsetof (CoglVertexP3T2, s),
-                                      2,
-                                      COGL_ATTRIBUTE_TYPE_FLOAT);
+    attributes[0] = cg_attribute_new(attribute_buffer,
+                                     "cg_position_in",
+                                     sizeof(cg_vertex_p2t2c4_t),
+                                     offsetof(cg_vertex_p2t2c4_t, x),
+                                     2,
+                                     CG_ATTRIBUTE_TYPE_FLOAT);
+    attributes[1] = cg_attribute_new(attribute_buffer,
+                                     "cg_tex_coord0_in",
+                                     sizeof(cg_vertex_p2t2c4_t),
+                                     offsetof(cg_vertex_p2t2c4_t, s),
+                                     2,
+                                     CG_ATTRIBUTE_TYPE_FLOAT);
+    attributes[2] = cg_attribute_new(attribute_buffer,
+                                     "cg_color_in",
+                                     sizeof(cg_vertex_p2t2c4_t),
+                                     offsetof(cg_vertex_p2t2c4_t, r),
+                                     4,
+                                     CG_ATTRIBUTE_TYPE_UNSIGNED_BYTE);
 
-  cogl_object_unref (attribute_buffer);
+    cg_object_unref(attribute_buffer);
 
-  return _cogl_primitive_new_with_attributes_unref (mode, n_vertices,
-                                                    attributes,
-                                                    2);
+    return _cg_primitive_new_with_attributes_unref(
+        mode, n_vertices, attributes, 3);
 }
 
-CoglPrimitive *
-cogl_primitive_new_p2t2c4 (CoglContext *ctx,
-                           CoglVerticesMode mode,
-                           int n_vertices,
-                           const CoglVertexP2T2C4 *data)
+cg_primitive_t *
+cg_primitive_new_p3t2c4(cg_context_t *ctx,
+                        cg_vertices_mode_t mode,
+                        int n_vertices,
+                        const cg_vertex_p3t2c4_t *data)
 {
-  CoglAttributeBuffer *attribute_buffer =
-    cogl_attribute_buffer_new (ctx,
-                               n_vertices * sizeof (CoglVertexP2T2C4), data);
-  CoglAttribute *attributes[3];
+    cg_attribute_buffer_t *attribute_buffer = cg_attribute_buffer_new(
+        ctx, n_vertices * sizeof(cg_vertex_p3t2c4_t), data);
+    cg_attribute_t *attributes[3];
 
-  attributes[0] = cogl_attribute_new (attribute_buffer,
-                                      "cogl_position_in",
-                                      sizeof (CoglVertexP2T2C4),
-                                      offsetof (CoglVertexP2T2C4, x),
-                                      2,
-                                      COGL_ATTRIBUTE_TYPE_FLOAT);
-  attributes[1] = cogl_attribute_new (attribute_buffer,
-                                      "cogl_tex_coord0_in",
-                                      sizeof (CoglVertexP2T2C4),
-                                      offsetof (CoglVertexP2T2C4, s),
-                                      2,
-                                      COGL_ATTRIBUTE_TYPE_FLOAT);
-  attributes[2] = cogl_attribute_new (attribute_buffer,
-                                      "cogl_color_in",
-                                      sizeof (CoglVertexP2T2C4),
-                                      offsetof (CoglVertexP2T2C4, r),
-                                      4,
-                                      COGL_ATTRIBUTE_TYPE_UNSIGNED_BYTE);
+    attributes[0] = cg_attribute_new(attribute_buffer,
+                                     "cg_position_in",
+                                     sizeof(cg_vertex_p3t2c4_t),
+                                     offsetof(cg_vertex_p3t2c4_t, x),
+                                     3,
+                                     CG_ATTRIBUTE_TYPE_FLOAT);
+    attributes[1] = cg_attribute_new(attribute_buffer,
+                                     "cg_tex_coord0_in",
+                                     sizeof(cg_vertex_p3t2c4_t),
+                                     offsetof(cg_vertex_p3t2c4_t, s),
+                                     2,
+                                     CG_ATTRIBUTE_TYPE_FLOAT);
+    attributes[2] = cg_attribute_new(attribute_buffer,
+                                     "cg_color_in",
+                                     sizeof(cg_vertex_p3t2c4_t),
+                                     offsetof(cg_vertex_p3t2c4_t, r),
+                                     4,
+                                     CG_ATTRIBUTE_TYPE_UNSIGNED_BYTE);
 
-  cogl_object_unref (attribute_buffer);
+    cg_object_unref(attribute_buffer);
 
-  return _cogl_primitive_new_with_attributes_unref (mode, n_vertices,
-                                                    attributes,
-                                                    3);
-}
-
-CoglPrimitive *
-cogl_primitive_new_p3t2c4 (CoglContext *ctx,
-                           CoglVerticesMode mode,
-                           int n_vertices,
-                           const CoglVertexP3T2C4 *data)
-{
-  CoglAttributeBuffer *attribute_buffer =
-    cogl_attribute_buffer_new (ctx,
-                               n_vertices * sizeof (CoglVertexP3T2C4), data);
-  CoglAttribute *attributes[3];
-
-  attributes[0] = cogl_attribute_new (attribute_buffer,
-                                      "cogl_position_in",
-                                      sizeof (CoglVertexP3T2C4),
-                                      offsetof (CoglVertexP3T2C4, x),
-                                      3,
-                                      COGL_ATTRIBUTE_TYPE_FLOAT);
-  attributes[1] = cogl_attribute_new (attribute_buffer,
-                                      "cogl_tex_coord0_in",
-                                      sizeof (CoglVertexP3T2C4),
-                                      offsetof (CoglVertexP3T2C4, s),
-                                      2,
-                                      COGL_ATTRIBUTE_TYPE_FLOAT);
-  attributes[2] = cogl_attribute_new (attribute_buffer,
-                                      "cogl_color_in",
-                                      sizeof (CoglVertexP3T2C4),
-                                      offsetof (CoglVertexP3T2C4, r),
-                                      4,
-                                      COGL_ATTRIBUTE_TYPE_UNSIGNED_BYTE);
-
-  cogl_object_unref (attribute_buffer);
-
-  return _cogl_primitive_new_with_attributes_unref (mode, n_vertices,
-                                                    attributes,
-                                                    3);
+    return _cg_primitive_new_with_attributes_unref(
+        mode, n_vertices, attributes, 3);
 }
 
 static void
-_cogl_primitive_free (CoglPrimitive *primitive)
+_cg_primitive_free(cg_primitive_t *primitive)
 {
-  int i;
+    int i;
 
-  for (i = 0; i < primitive->n_attributes; i++)
-    cogl_object_unref (primitive->attributes[i]);
+    for (i = 0; i < primitive->n_attributes; i++)
+        cg_object_unref(primitive->attributes[i]);
 
-  if (primitive->attributes != &primitive->embedded_attribute)
-    c_slice_free1 (sizeof (CoglAttribute *) * primitive->n_attributes,
-                   primitive->attributes);
+    if (primitive->attributes != &primitive->embedded_attribute)
+        c_slice_free1(sizeof(cg_attribute_t *) * primitive->n_attributes,
+                      primitive->attributes);
 
-  if (primitive->indices)
-    cogl_object_unref (primitive->indices);
+    if (primitive->indices)
+        cg_object_unref(primitive->indices);
 
-  c_slice_free1 (sizeof (CoglPrimitive) +
-                 sizeof (CoglAttribute *) *
-                 (primitive->n_embedded_attributes - 1), primitive);
+    c_slice_free1(sizeof(cg_primitive_t) +
+                  sizeof(cg_attribute_t *) *
+                  (primitive->n_embedded_attributes - 1),
+                  primitive);
 }
 
 static void
-warn_about_midscene_changes (void)
+warn_about_midscene_changes(void)
 {
-  static bool seen = false;
-  if (!seen)
-    {
-      c_warning ("Mid-scene modification of primitives has "
-                 "undefined results\n");
-      seen = true;
+    static bool seen = false;
+    if (!seen) {
+        c_warning("Mid-scene modification of primitives has "
+                  "undefined results\n");
+        seen = true;
     }
 }
 
 void
-cogl_primitive_set_attributes (CoglPrimitive *primitive,
-                               CoglAttribute **attributes,
-                               int n_attributes)
+cg_primitive_set_attributes(cg_primitive_t *primitive,
+                            cg_attribute_t **attributes,
+                            int n_attributes)
 {
-  int i;
+    int i;
 
-  _COGL_RETURN_IF_FAIL (cogl_is_primitive (primitive));
+    _CG_RETURN_IF_FAIL(cg_is_primitive(primitive));
 
-  if (C_UNLIKELY (primitive->immutable_ref))
-    {
-      warn_about_midscene_changes ();
-      return;
+    if (C_UNLIKELY(primitive->immutable_ref)) {
+        warn_about_midscene_changes();
+        return;
     }
 
-  /* NB: we don't unref the previous attributes before refing the new
-   * in case we would end up releasing the last reference for an
-   * attribute thats actually in the new list too. */
-  for (i = 0; i < n_attributes; i++)
-    {
-      _COGL_RETURN_IF_FAIL (cogl_is_attribute (attributes[i]));
-      cogl_object_ref (attributes[i]);
+    /* NB: we don't unref the previous attributes before refing the new
+     * in case we would end up releasing the last reference for an
+     * attribute thats actually in the new list too. */
+    for (i = 0; i < n_attributes; i++) {
+        _CG_RETURN_IF_FAIL(cg_is_attribute(attributes[i]));
+        cg_object_ref(attributes[i]);
     }
 
-  for (i = 0; i < primitive->n_attributes; i++)
-    cogl_object_unref (primitive->attributes[i]);
+    for (i = 0; i < primitive->n_attributes; i++)
+        cg_object_unref(primitive->attributes[i]);
 
-  /* First try to use the embedded storage assocated with the
-   * primitive, else fallback to slice allocating separate storage for
-   * the attribute pointers... */
+    /* First try to use the embedded storage assocated with the
+     * primitive, else fallback to slice allocating separate storage for
+     * the attribute pointers... */
 
-  if (n_attributes <= primitive->n_embedded_attributes)
-    {
-      if (primitive->attributes != &primitive->embedded_attribute)
-        c_slice_free1 (sizeof (CoglAttribute *) * primitive->n_attributes,
-                       primitive->attributes);
-      primitive->attributes = &primitive->embedded_attribute;
-    }
-  else
-    {
-      if (primitive->attributes != &primitive->embedded_attribute)
-        c_slice_free1 (sizeof (CoglAttribute *) * primitive->n_attributes,
-                       primitive->attributes);
-      primitive->attributes =
-        c_slice_alloc (sizeof (CoglAttribute *) * n_attributes);
+    if (n_attributes <= primitive->n_embedded_attributes) {
+        if (primitive->attributes != &primitive->embedded_attribute)
+            c_slice_free1(sizeof(cg_attribute_t *) * primitive->n_attributes,
+                          primitive->attributes);
+        primitive->attributes = &primitive->embedded_attribute;
+    } else {
+        if (primitive->attributes != &primitive->embedded_attribute)
+            c_slice_free1(sizeof(cg_attribute_t *) * primitive->n_attributes,
+                          primitive->attributes);
+        primitive->attributes =
+            c_slice_alloc(sizeof(cg_attribute_t *) * n_attributes);
     }
 
-  memcpy (primitive->attributes, attributes,
-          sizeof (CoglAttribute *) * n_attributes);
+    memcpy(primitive->attributes,
+           attributes,
+           sizeof(cg_attribute_t *) * n_attributes);
 
-  primitive->n_attributes = n_attributes;
+    primitive->n_attributes = n_attributes;
 }
 
 int
-cogl_primitive_get_first_vertex (CoglPrimitive *primitive)
+cg_primitive_get_first_vertex(cg_primitive_t *primitive)
 {
-  _COGL_RETURN_VAL_IF_FAIL (cogl_is_primitive (primitive), 0);
+    _CG_RETURN_VAL_IF_FAIL(cg_is_primitive(primitive), 0);
 
-  return primitive->first_vertex;
+    return primitive->first_vertex;
 }
 
 void
-cogl_primitive_set_first_vertex (CoglPrimitive *primitive,
-                                 int first_vertex)
+cg_primitive_set_first_vertex(cg_primitive_t *primitive, int first_vertex)
 {
-  _COGL_RETURN_IF_FAIL (cogl_is_primitive (primitive));
+    _CG_RETURN_IF_FAIL(cg_is_primitive(primitive));
 
-  if (C_UNLIKELY (primitive->immutable_ref))
-    {
-      warn_about_midscene_changes ();
-      return;
+    if (C_UNLIKELY(primitive->immutable_ref)) {
+        warn_about_midscene_changes();
+        return;
     }
 
-  primitive->first_vertex = first_vertex;
+    primitive->first_vertex = first_vertex;
 }
 
 int
-cogl_primitive_get_n_vertices (CoglPrimitive *primitive)
+cg_primitive_get_n_vertices(cg_primitive_t *primitive)
 {
-  _COGL_RETURN_VAL_IF_FAIL (cogl_is_primitive (primitive), 0);
+    _CG_RETURN_VAL_IF_FAIL(cg_is_primitive(primitive), 0);
 
-  return primitive->n_vertices;
+    return primitive->n_vertices;
 }
 
 void
-cogl_primitive_set_n_vertices (CoglPrimitive *primitive,
-                               int n_vertices)
+cg_primitive_set_n_vertices(cg_primitive_t *primitive, int n_vertices)
 {
-  _COGL_RETURN_IF_FAIL (cogl_is_primitive (primitive));
+    _CG_RETURN_IF_FAIL(cg_is_primitive(primitive));
 
-  primitive->n_vertices = n_vertices;
+    primitive->n_vertices = n_vertices;
 }
 
-CoglVerticesMode
-cogl_primitive_get_mode (CoglPrimitive *primitive)
+cg_vertices_mode_t
+cg_primitive_get_mode(cg_primitive_t *primitive)
 {
-  _COGL_RETURN_VAL_IF_FAIL (cogl_is_primitive (primitive), 0);
+    _CG_RETURN_VAL_IF_FAIL(cg_is_primitive(primitive), 0);
 
-  return primitive->mode;
+    return primitive->mode;
 }
 
 void
-cogl_primitive_set_mode (CoglPrimitive *primitive,
-                         CoglVerticesMode mode)
+cg_primitive_set_mode(cg_primitive_t *primitive, cg_vertices_mode_t mode)
 {
-  _COGL_RETURN_IF_FAIL (cogl_is_primitive (primitive));
+    _CG_RETURN_IF_FAIL(cg_is_primitive(primitive));
 
-  if (C_UNLIKELY (primitive->immutable_ref))
-    {
-      warn_about_midscene_changes ();
-      return;
+    if (C_UNLIKELY(primitive->immutable_ref)) {
+        warn_about_midscene_changes();
+        return;
     }
 
-  primitive->mode = mode;
+    primitive->mode = mode;
 }
 
 void
-cogl_primitive_set_indices (CoglPrimitive *primitive,
-                            CoglIndices *indices,
-                            int n_indices)
+cg_primitive_set_indices(cg_primitive_t *primitive,
+                         cg_indices_t *indices,
+                         int n_indices)
 {
-  _COGL_RETURN_IF_FAIL (cogl_is_primitive (primitive));
+    _CG_RETURN_IF_FAIL(cg_is_primitive(primitive));
 
-  if (C_UNLIKELY (primitive->immutable_ref))
-    {
-      warn_about_midscene_changes ();
-      return;
+    if (C_UNLIKELY(primitive->immutable_ref)) {
+        warn_about_midscene_changes();
+        return;
     }
 
-  if (indices)
-    cogl_object_ref (indices);
-  if (primitive->indices)
-    cogl_object_unref (primitive->indices);
-  primitive->indices = indices;
-  primitive->n_vertices = n_indices;
+    if (indices)
+        cg_object_ref(indices);
+    if (primitive->indices)
+        cg_object_unref(primitive->indices);
+    primitive->indices = indices;
+    primitive->n_vertices = n_indices;
 }
 
-CoglIndices *
-cogl_primitive_get_indices (CoglPrimitive *primitive)
+cg_indices_t *
+cg_primitive_get_indices(cg_primitive_t *primitive)
 {
-  return primitive->indices;
+    return primitive->indices;
 }
 
-CoglPrimitive *
-cogl_primitive_copy (CoglPrimitive *primitive)
+cg_primitive_t *
+cg_primitive_copy(cg_primitive_t *primitive)
 {
-  CoglPrimitive *copy;
+    cg_primitive_t *copy;
 
-  copy = cogl_primitive_new_with_attributes (primitive->mode,
-                                             primitive->n_vertices,
-                                             primitive->attributes,
-                                             primitive->n_attributes);
+    copy = cg_primitive_new_with_attributes(primitive->mode,
+                                            primitive->n_vertices,
+                                            primitive->attributes,
+                                            primitive->n_attributes);
 
-  cogl_primitive_set_indices (copy, primitive->indices, primitive->n_vertices);
-  cogl_primitive_set_first_vertex (copy, primitive->first_vertex);
+    cg_primitive_set_indices(copy, primitive->indices, primitive->n_vertices);
+    cg_primitive_set_first_vertex(copy, primitive->first_vertex);
 
-  return copy;
+    return copy;
 }
 
-CoglPrimitive *
-_cogl_primitive_immutable_ref (CoglPrimitive *primitive)
+cg_primitive_t *
+_cg_primitive_immutable_ref(cg_primitive_t *primitive)
 {
-  int i;
+    int i;
 
-  _COGL_RETURN_VAL_IF_FAIL (cogl_is_primitive (primitive), NULL);
+    _CG_RETURN_VAL_IF_FAIL(cg_is_primitive(primitive), NULL);
 
-  primitive->immutable_ref++;
+    primitive->immutable_ref++;
 
-  for (i = 0; i < primitive->n_attributes; i++)
-    _cogl_attribute_immutable_ref (primitive->attributes[i]);
+    for (i = 0; i < primitive->n_attributes; i++)
+        _cg_attribute_immutable_ref(primitive->attributes[i]);
 
-  return primitive;
-}
-
-void
-_cogl_primitive_immutable_unref (CoglPrimitive *primitive)
-{
-  int i;
-
-  _COGL_RETURN_IF_FAIL (cogl_is_primitive (primitive));
-  _COGL_RETURN_IF_FAIL (primitive->immutable_ref > 0);
-
-  primitive->immutable_ref--;
-
-  for (i = 0; i < primitive->n_attributes; i++)
-    _cogl_attribute_immutable_unref (primitive->attributes[i]);
+    return primitive;
 }
 
 void
-cogl_primitive_foreach_attribute (CoglPrimitive *primitive,
-                                  CoglPrimitiveAttributeCallback callback,
-                                  void *user_data)
+_cg_primitive_immutable_unref(cg_primitive_t *primitive)
 {
-  int i;
+    int i;
 
-  for (i = 0; i < primitive->n_attributes; i++)
-    if (!callback (primitive, primitive->attributes[i], user_data))
-      break;
+    _CG_RETURN_IF_FAIL(cg_is_primitive(primitive));
+    _CG_RETURN_IF_FAIL(primitive->immutable_ref > 0);
+
+    primitive->immutable_ref--;
+
+    for (i = 0; i < primitive->n_attributes; i++)
+        _cg_attribute_immutable_unref(primitive->attributes[i]);
 }
 
 void
-_cogl_primitive_draw (CoglPrimitive *primitive,
-                      CoglFramebuffer *framebuffer,
-                      CoglPipeline *pipeline,
-                      CoglDrawFlags flags)
+cg_primitive_foreach_attribute(cg_primitive_t *primitive,
+                               cg_primitive_attribute_callback_t callback,
+                               void *user_data)
 {
-  if (primitive->indices)
-    _cogl_framebuffer_draw_indexed_attributes (framebuffer,
-                                               pipeline,
-                                               primitive->mode,
-                                               primitive->first_vertex,
-                                               primitive->n_vertices,
-                                               primitive->indices,
-                                               primitive->attributes,
-                                               primitive->n_attributes,
-                                               flags);
-  else
-    _cogl_framebuffer_draw_attributes (framebuffer,
-                                       pipeline,
-                                       primitive->mode,
-                                       primitive->first_vertex,
-                                       primitive->n_vertices,
-                                       primitive->attributes,
-                                       primitive->n_attributes,
-                                       flags);
+    int i;
+
+    for (i = 0; i < primitive->n_attributes; i++)
+        if (!callback(primitive, primitive->attributes[i], user_data))
+            break;
 }
 
 void
-cogl_primitive_draw (CoglPrimitive *primitive,
-                     CoglFramebuffer *framebuffer,
-                     CoglPipeline *pipeline)
+_cg_primitive_draw(cg_primitive_t *primitive,
+                   cg_framebuffer_t *framebuffer,
+                   cg_pipeline_t *pipeline,
+                   cg_draw_flags_t flags)
 {
-  _cogl_primitive_draw (primitive, framebuffer, pipeline, 0 /* flags */);
+    if (primitive->indices)
+        _cg_framebuffer_draw_indexed_attributes(framebuffer,
+                                                pipeline,
+                                                primitive->mode,
+                                                primitive->first_vertex,
+                                                primitive->n_vertices,
+                                                primitive->indices,
+                                                primitive->attributes,
+                                                primitive->n_attributes,
+                                                flags);
+    else
+        _cg_framebuffer_draw_attributes(framebuffer,
+                                        pipeline,
+                                        primitive->mode,
+                                        primitive->first_vertex,
+                                        primitive->n_vertices,
+                                        primitive->attributes,
+                                        primitive->n_attributes,
+                                        flags);
+}
+
+void
+cg_primitive_draw(cg_primitive_t *primitive,
+                  cg_framebuffer_t *framebuffer,
+                  cg_pipeline_t *pipeline)
+{
+    _cg_primitive_draw(primitive, framebuffer, pipeline, 0 /* flags */);
 }

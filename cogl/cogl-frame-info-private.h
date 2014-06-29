@@ -28,23 +28,22 @@
  *
  */
 
-#ifndef __COGL_FRAME_INFO_PRIVATE_H
-#define __COGL_FRAME_INFO_PRIVATE_H
+#ifndef __CG_FRAME_INFO_PRIVATE_H
+#define __CG_FRAME_INFO_PRIVATE_H
 
 #include "cogl-frame-info.h"
 #include "cogl-object-private.h"
 
-struct _CoglFrameInfo
-{
-  CoglObject _parent;
+struct _cg_frame_info_t {
+    cg_object_t _parent;
 
-  int64_t frame_counter;
-  int64_t presentation_time;
-  float refresh_rate;
+    int64_t frame_counter;
+    int64_t presentation_time;
+    float refresh_rate;
 
-  CoglOutput *output;
+    cg_output_t *output;
 };
 
-CoglFrameInfo *_cogl_frame_info_new (void);
+cg_frame_info_t *_cg_frame_info_new(void);
 
-#endif /* __COGL_FRAME_INFO_PRIVATE_H */
+#endif /* __CG_FRAME_INFO_PRIVATE_H */

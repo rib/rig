@@ -28,54 +28,48 @@
  *
  */
 
-#ifndef __COGL_MAGAZINE_PRIVATE_H__
-#define __COGL_MAGAZINE_PRIVATE_H__
+#ifndef __CG_MAGAZINE_PRIVATE_H__
+#define __CG_MAGAZINE_PRIVATE_H__
 
 #include <clib.h>
 
 #include "cogl-memory-stack-private.h"
 
-typedef struct _CoglMagazineChunk CoglMagazineChunk;
+typedef struct _cg_magazine_chunk_t cg_magazine_chunk_t;
 
-struct _CoglMagazineChunk
-{
-  CoglMagazineChunk *next;
+struct _cg_magazine_chunk_t {
+    cg_magazine_chunk_t *next;
 };
 
-typedef struct _CoglMagazine
-{
-  size_t chunk_size;
+typedef struct _cg_magazine_t {
+    size_t chunk_size;
 
-  CoglMemoryStack *stack;
-  CoglMagazineChunk *head;
-} CoglMagazine;
+    cg_memory_stack_t *stack;
+    cg_magazine_chunk_t *head;
+} cg_magazine_t;
 
-CoglMagazine *
-_cogl_magazine_new (size_t chunk_size, int initial_chunk_count);
+cg_magazine_t *_cg_magazine_new(size_t chunk_size, int initial_chunk_count);
 
 static inline void *
-_cogl_magazine_chunk_alloc (CoglMagazine *magazine)
+_cg_magazine_chunk_alloc(cg_magazine_t *magazine)
 {
-  if (C_LIKELY (magazine->head))
-    {
-      CoglMagazineChunk *chunk = magazine->head;
-      magazine->head = chunk->next;
-      return chunk;
-    }
-  else
-    return _cogl_memory_stack_alloc (magazine->stack, magazine->chunk_size);
+    if (C_LIKELY(magazine->head)) {
+        cg_magazine_chunk_t *chunk = magazine->head;
+        magazine->head = chunk->next;
+        return chunk;
+    } else
+        return _cg_memory_stack_alloc(magazine->stack, magazine->chunk_size);
 }
 
 static inline void
-_cogl_magazine_chunk_free (CoglMagazine *magazine, void *data)
+_cg_magazine_chunk_free(cg_magazine_t *magazine, void *data)
 {
-  CoglMagazineChunk *chunk = data;
+    cg_magazine_chunk_t *chunk = data;
 
-  chunk->next = magazine->head;
-  magazine->head = chunk;
+    chunk->next = magazine->head;
+    magazine->head = chunk;
 }
 
-void
-_cogl_magazine_free (CoglMagazine *magazine);
+void _cg_magazine_free(cg_magazine_t *magazine);
 
-#endif /* __COGL_MAGAZINE_PRIVATE_H__ */
+#endif /* __CG_MAGAZINE_PRIVATE_H__ */

@@ -26,8 +26,8 @@
  * SOFTWARE.
  */
 
-#ifndef _COGL_ATLAS_PRIVATE_H_
-#define _COGL_ATLAS_PRIVATE_H_
+#ifndef _CG_ATLAS_PRIVATE_H_
+#define _CG_ATLAS_PRIVATE_H_
 
 #include "cogl-object-private.h"
 #include "cogl-texture.h"
@@ -35,54 +35,44 @@
 #include "cogl-rectangle-map.h"
 #include "cogl-atlas.h"
 
-typedef enum
-{
-  COGL_ATLAS_CLEAR_TEXTURE     = (1 << 0),
-  COGL_ATLAS_DISABLE_MIGRATION = (1 << 1)
-} CoglAtlasFlags;
+typedef enum {
+    CG_ATLAS_CLEAR_TEXTURE = (1 << 0),
+    CG_ATLAS_DISABLE_MIGRATION = (1 << 1)
+} cg_atlas_flags_t;
 
-struct _CoglAtlas
-{
-  CoglObject _parent;
+struct _cg_atlas_t {
+    cg_object_t _parent;
 
-  CoglContext *context;
+    cg_context_t *context;
 
-  CoglRectangleMap *map;
+    cg_rectangle_map_t *map;
 
-  CoglTexture *texture;
-  CoglPixelFormat internal_format;
-  CoglAtlasFlags flags;
+    cg_texture_t *texture;
+    cg_pixel_format_t internal_format;
+    cg_atlas_flags_t flags;
 
-  CoglList allocate_closures;
+    cg_list_t allocate_closures;
 
-  CoglList pre_reorganize_closures;
-  CoglList post_reorganize_closures;
+    cg_list_t pre_reorganize_closures;
+    cg_list_t post_reorganize_closures;
 };
 
-CoglAtlas *
-_cogl_atlas_new (CoglContext *context,
-                 CoglPixelFormat internal_format,
-                 CoglAtlasFlags flags);
+cg_atlas_t *_cg_atlas_new(cg_context_t *context,
+                          cg_pixel_format_t internal_format,
+                          cg_atlas_flags_t flags);
 
-bool
-_cogl_atlas_allocate_space (CoglAtlas *atlas,
-                            int width,
-                            int height,
-                            void *allocation_data);
+bool _cg_atlas_allocate_space(cg_atlas_t *atlas,
+                              int width,
+                              int height,
+                              void *allocation_data);
 
-void
-_cogl_atlas_remove (CoglAtlas *atlas,
-                    int x,
-                    int y,
-                    int width,
-                    int height);
+void _cg_atlas_remove(cg_atlas_t *atlas, int x, int y, int width, int height);
 
-CoglTexture *
-_cogl_atlas_migrate_allocation (CoglAtlas *atlas,
-                                int x,
-                                int y,
-                                int width,
-                                int height,
-                                CoglPixelFormat internal_format);
+cg_texture_t *_cg_atlas_migrate_allocation(cg_atlas_t *atlas,
+                                           int x,
+                                           int y,
+                                           int width,
+                                           int height,
+                                           cg_pixel_format_t internal_format);
 
-#endif /* _COGL_ATLAS_PRIVATE_H_ */
+#endif /* _CG_ATLAS_PRIVATE_H_ */

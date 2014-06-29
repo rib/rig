@@ -38,7 +38,7 @@
 #include "cogl-private.h"
 
 /*
- * cogl_util_next_p2:
+ * cg_util_next_p2:
  * @a: Value to get the next power of two
  *
  * Calculates the next power of two greater than or equal to @a.
@@ -47,75 +47,71 @@
  *   the next nearest power of two.
  */
 int
-_cogl_util_next_p2 (int a)
+_cg_util_next_p2(int a)
 {
-  int rval = 1;
+    int rval = 1;
 
-  while (rval < a)
-    rval <<= 1;
+    while (rval < a)
+        rval <<= 1;
 
-  return rval;
+    return rval;
 }
 
 unsigned int
-_cogl_util_one_at_a_time_mix (unsigned int hash)
+_cg_util_one_at_a_time_mix(unsigned int hash)
 {
-  hash += ( hash << 3 );
-  hash ^= ( hash >> 11 );
-  hash += ( hash << 15 );
+    hash += (hash << 3);
+    hash ^= (hash >> 11);
+    hash += (hash << 15);
 
-  return hash;
+    return hash;
 }
 
 /* The 'ffs' function is part of C99 so it isn't always available */
 #ifndef HAVE_FFS
 
 int
-_cogl_util_ffs (int num)
+_cg_util_ffs(int num)
 {
-  int i = 1;
+    int i = 1;
 
-  if (num == 0)
-    return 0;
+    if (num == 0)
+        return 0;
 
-  while ((num & 1) == 0)
-    {
-      num >>= 1;
-      i++;
+    while ((num & 1) == 0) {
+        num >>= 1;
+        i++;
     }
 
-  return i;
+    return i;
 }
 #endif /* HAVE_FFS */
 
 /* The 'ffsl' is non-standard but when building with GCC we'll use its
    builtin instead */
-#ifndef COGL_UTIL_HAVE_BUILTIN_FFSL
+#ifndef CG_UTIL_HAVE_BUILTIN_FFSL
 
 int
-_cogl_util_ffsl_wrapper (long int num)
+_cg_util_ffsl_wrapper(long int num)
 {
-  int i = 1;
+    int i = 1;
 
-  if (num == 0)
-    return 0;
+    if (num == 0)
+        return 0;
 
-  while ((num & 1) == 0)
-    {
-      num >>= 1;
-      i++;
+    while ((num & 1) == 0) {
+        num >>= 1;
+        i++;
     }
 
-  return i;
+    return i;
 }
 
-#endif /* COGL_UTIL_HAVE_BUILTIN_FFSL */
+#endif /* CG_UTIL_HAVE_BUILTIN_FFSL */
 
-#ifndef COGL_UTIL_HAVE_BUILTIN_POPCOUNTL
+#ifndef CG_UTIL_HAVE_BUILTIN_POPCOUNTL
 
-const unsigned char
-_cogl_util_popcount_table[256] =
-  {
+const unsigned char _cg_util_popcount_table[256] = {
     0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4, 1, 2, 2, 3, 2, 3, 3, 4,
     2, 3, 3, 4, 3, 4, 4, 5, 1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
     2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, 1, 2, 2, 3, 2, 3, 3, 4,
@@ -127,9 +123,9 @@ _cogl_util_popcount_table[256] =
     2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, 3, 4, 4, 5, 4, 5, 5, 6,
     4, 5, 5, 6, 5, 6, 6, 7, 3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
     4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8
-  };
+};
 
-#endif /* COGL_UTIL_HAVE_BUILTIN_POPCOUNTL */
+#endif /* CG_UTIL_HAVE_BUILTIN_POPCOUNTL */
 
 /* tests/conform/test-bitmask.c tests some cogl internals and includes this
  * file directly but since these functions depend on other internal Cogl
@@ -138,11 +134,11 @@ _cogl_util_popcount_table[256] =
  * XXX: maybe there's a better way for us to handle internal testing
  * to avoid needing hacks like this.
  */
-#ifndef _COGL_IN_TEST_BITMASK
+#ifndef _CG_IN_TEST_BITMASK
 
 /* Given a set of red, green and blue component masks, a depth and
  * bits per pixel this function tries to determine a corresponding
- * CoglPixelFormat.
+ * cg_pixel_format_t.
  *
  * The depth is measured in bits not including padding for un-used
  * alpha. The bits per pixel (bpp) does include padding for un-used
@@ -155,132 +151,128 @@ _cogl_util_popcount_table[256] =
  * ordered formats or it recurses with the masks shifted to check for
  * formats where the alpha component is the least significant bits.
  */
-static CoglPixelFormat
-_cogl_util_pixel_format_from_masks_real (unsigned long r_mask,
-                                         unsigned long c_mask,
-                                         unsigned long b_mask,
-                                         int depth, int bpp,
-                                         bool check_bgr,
-                                         bool check_afirst,
-                                         int recursion_depth)
+static cg_pixel_format_t
+_cg_util_pixel_format_from_masks_real(unsigned long r_mask,
+                                      unsigned long c_mask,
+                                      unsigned long b_mask,
+                                      int depth,
+                                      int bpp,
+                                      bool check_bgr,
+                                      bool check_afirst,
+                                      int recursion_depth)
 {
-  CoglPixelFormat image_format;
+    cg_pixel_format_t image_format;
 
-  if (depth == 24 && bpp == 24 &&
-      r_mask == 0xff0000 && c_mask == 0xff00 && b_mask == 0xff)
-    {
-      return COGL_PIXEL_FORMAT_RGB_888;
-    }
-  else if ((depth == 24 || depth == 32) && bpp == 32 &&
-           r_mask == 0xff0000 && c_mask == 0xff00 && b_mask == 0xff)
-    {
-      return COGL_PIXEL_FORMAT_ARGB_8888_PRE;
-    }
-  else if ((depth == 30 || depth == 32) &&
-           r_mask == 0x3ff00000 && c_mask == 0xffc00 && b_mask == 0x3ff)
-    {
-      return COGL_PIXEL_FORMAT_ARGB_2101010_PRE;
-    }
-  else if (depth == 16 && bpp == 16 &&
-           r_mask == 0xf800 && c_mask == 0x7e0 && b_mask == 0x1f)
-    {
-      return COGL_PIXEL_FORMAT_RGB_565;
+    if (depth == 24 && bpp == 24 && r_mask == 0xff0000 && c_mask == 0xff00 &&
+        b_mask == 0xff) {
+        return CG_PIXEL_FORMAT_RGB_888;
+    } else if ((depth == 24 || depth == 32) && bpp == 32 &&
+               r_mask == 0xff0000 && c_mask == 0xff00 && b_mask == 0xff) {
+        return CG_PIXEL_FORMAT_ARGB_8888_PRE;
+    } else if ((depth == 30 || depth == 32) && r_mask == 0x3ff00000 &&
+               c_mask == 0xffc00 && b_mask == 0x3ff) {
+        return CG_PIXEL_FORMAT_ARGB_2101010_PRE;
+    } else if (depth == 16 && bpp == 16 && r_mask == 0xf800 &&
+               c_mask == 0x7e0 && b_mask == 0x1f) {
+        return CG_PIXEL_FORMAT_RGB_565;
     }
 
-  if (recursion_depth == 2)
+    if (recursion_depth == 2)
+        return 0;
+
+    /* Check for BGR ordering if we didn't find a match */
+    if (check_bgr) {
+        image_format =
+            _cg_util_pixel_format_from_masks_real(b_mask,
+                                                  c_mask,
+                                                  r_mask,
+                                                  depth,
+                                                  bpp,
+                                                  false,
+                                                  true,
+                                                  recursion_depth + 1);
+        if (image_format)
+            return image_format ^ CG_BGR_BIT;
+    }
+
+    /* Check for alpha in the least significant bits if we still
+     * haven't found a match... */
+    if (check_afirst && depth != bpp) {
+        int shift = bpp - depth;
+
+        image_format =
+            _cg_util_pixel_format_from_masks_real(r_mask >> shift,
+                                                  c_mask >> shift,
+                                                  b_mask >> shift,
+                                                  depth,
+                                                  bpp,
+                                                  true,
+                                                  false,
+                                                  recursion_depth + 1);
+        if (image_format)
+            return image_format ^ CG_AFIRST_BIT;
+    }
+
     return 0;
-
-  /* Check for BGR ordering if we didn't find a match */
-  if (check_bgr)
-    {
-      image_format =
-        _cogl_util_pixel_format_from_masks_real (b_mask, c_mask, r_mask,
-                                                 depth, bpp,
-                                                 false,
-                                                 true,
-                                                 recursion_depth + 1);
-      if (image_format)
-        return image_format ^ COGL_BGR_BIT;
-    }
-
-  /* Check for alpha in the least significant bits if we still
-   * haven't found a match... */
-  if (check_afirst && depth != bpp)
-    {
-      int shift = bpp - depth;
-
-      image_format =
-        _cogl_util_pixel_format_from_masks_real (r_mask >> shift,
-                                                 c_mask >> shift,
-                                                 b_mask >> shift,
-                                                 depth, bpp,
-                                                 true,
-                                                 false,
-                                                 recursion_depth + 1);
-      if (image_format)
-        return image_format ^ COGL_AFIRST_BIT;
-    }
-
-  return 0;
 }
 
-CoglPixelFormat
-_cogl_util_pixel_format_from_masks (unsigned long r_mask,
-                                    unsigned long c_mask,
-                                    unsigned long b_mask,
-                                    int depth, int bpp,
-                                    bool byte_order_is_lsb_first)
+cg_pixel_format_t
+_cg_util_pixel_format_from_masks(unsigned long r_mask,
+                                 unsigned long c_mask,
+                                 unsigned long b_mask,
+                                 int depth,
+                                 int bpp,
+                                 bool byte_order_is_lsb_first)
 {
-  CoglPixelFormat image_format =
-    _cogl_util_pixel_format_from_masks_real (r_mask, c_mask, b_mask,
-                                             depth, bpp,
-                                             true,
-                                             true,
-                                             0);
+    cg_pixel_format_t image_format = _cg_util_pixel_format_from_masks_real(
+        r_mask, c_mask, b_mask, depth, bpp, true, true, 0);
 
-  if (!image_format)
-    {
-      const char *byte_order[] = { "MSB first", "LSB first" };
-      c_warning ("Could not find a matching pixel format for red mask=0x%lx,"
-                 "green mask=0x%lx, blue mask=0x%lx at depth=%d, bpp=%d "
-                 "and byte order=%s\n", r_mask, c_mask, b_mask, depth, bpp,
-                 byte_order[!!byte_order_is_lsb_first]);
-      return 0;
+    if (!image_format) {
+        const char *byte_order[] = { "MSB first", "LSB first" };
+        c_warning("Could not find a matching pixel format for red mask=0x%lx,"
+                  "green mask=0x%lx, blue mask=0x%lx at depth=%d, bpp=%d "
+                  "and byte order=%s\n",
+                  r_mask,
+                  c_mask,
+                  b_mask,
+                  depth,
+                  bpp,
+                  byte_order[!!byte_order_is_lsb_first]);
+        return 0;
     }
 
-  /* If the image is in little-endian then the order in memory is
-     reversed */
-  if (byte_order_is_lsb_first &&
-      _cogl_pixel_format_is_endian_dependant (image_format))
-    {
-      image_format ^= COGL_BGR_BIT;
-      if (image_format & COGL_A_BIT)
-        image_format ^= COGL_AFIRST_BIT;
+    /* If the image is in little-endian then the order in memory is
+       reversed */
+    if (byte_order_is_lsb_first &&
+        _cg_pixel_format_is_endian_dependant(image_format)) {
+        image_format ^= CG_BGR_BIT;
+        if (image_format & CG_A_BIT)
+            image_format ^= CG_AFIRST_BIT;
     }
 
-  return image_format;
+    return image_format;
 }
 
 #ifndef HAVE_MEMMEM
 
 char *
-_cogl_util_memmem (const void *haystack,
-                   size_t haystack_len,
-                   const void *needle,
-                   size_t needle_len)
+_cg_util_memmem(const void *haystack,
+                size_t haystack_len,
+                const void *needle,
+                size_t needle_len)
 {
-  size_t i;
+    size_t i;
 
-  if (needle_len > haystack_len)
+    if (needle_len > haystack_len)
+        return NULL;
+
+    for (i = 0; i <= haystack_len - needle_len; i++)
+        if (!memcmp((const char *)haystack + i, needle, needle_len))
+            return (char *)haystack + i;
+
     return NULL;
-
-  for (i = 0; i <= haystack_len - needle_len; i++)
-    if (!memcmp ((const char *) haystack + i, needle, needle_len))
-      return (char *) haystack + i;
-
-  return NULL;
 }
 
 #endif /* HAVE_MEMMEM */
 
-#endif /* _COGL_IN_TEST_BITMASK */
+#endif /* _CG_IN_TEST_BITMASK */

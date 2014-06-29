@@ -28,14 +28,14 @@
  *
  */
 
-#ifndef __COGL_CONTEXT_PRIVATE_H
-#define __COGL_CONTEXT_PRIVATE_H
+#ifndef __CG_CONTEXT_PRIVATE_H
+#define __CG_CONTEXT_PRIVATE_H
 
 #include "cogl-context.h"
 #include "cogl-winsys-private.h"
 #include "cogl-flags.h"
 
-#ifdef COGL_HAS_XLIB_SUPPORT
+#ifdef CG_HAS_XLIB_SUPPORT
 #include "cogl-xlib-renderer-private.h"
 #endif
 
@@ -60,257 +60,254 @@
 #include "cogl-poll-private.h"
 #include "cogl-private.h"
 
-typedef struct
-{
-  GLfloat v[3];
-  GLfloat t[2];
-  GLubyte c[4];
-} CoglTextureGLVertex;
+typedef struct {
+    GLfloat v[3];
+    GLfloat t[2];
+    GLubyte c[4];
+} cg_texture_gl_vertex_t;
 
-struct _CoglContext
-{
-  CoglObject _parent;
+struct _cg_context_t {
+    cg_object_t _parent;
 
-  CoglDisplay *display;
+    cg_display_t *display;
 
-  CoglDriver driver;
+    cg_driver_t driver;
 
-  /* Information about the GPU and driver which we can use to
-     determine certain workarounds */
-  CoglGpuInfo gpu;
+    /* Information about the GPU and driver which we can use to
+       determine certain workarounds */
+    cg_gpu_info_t gpu;
 
-  /* vtables for the driver functions */
-  const CoglDriverVtable *driver_vtable;
-  const CoglTextureDriver *texture_driver;
+    /* vtables for the driver functions */
+    const cg_driver_vtable_t *driver_vtable;
+    const cg_texture_driver_t *texture_driver;
 
-  int glsl_major;
-  int glsl_minor;
+    int glsl_major;
+    int glsl_minor;
 
-  /* This is the GLSL version that we will claim that snippets are
-   * written against using the #version pragma. This will be the
-   * largest version that is less than or equal to the version
-   * provided by the driver without massively altering the syntax. Eg,
-   * we wouldn't use version 1.3 even if it is available because that
-   * removes the ‘attribute’ and ‘varying’ keywords. */
-  int glsl_version_to_use;
+    /* This is the GLSL version that we will claim that snippets are
+     * written against using the #version pragma. This will be the
+     * largest version that is less than or equal to the version
+     * provided by the driver without massively altering the syntax. Eg,
+     * we wouldn't use version 1.3 even if it is available because that
+     * removes the ‘attribute’ and ‘varying’ keywords. */
+    int glsl_version_to_use;
 
-  /* Features cache */
-  unsigned long features[COGL_FLAGS_N_LONGS_FOR_SIZE (_COGL_N_FEATURE_IDS)];
-  unsigned long private_features
-    [COGL_FLAGS_N_LONGS_FOR_SIZE (COGL_N_PRIVATE_FEATURES)];
+    /* Features cache */
+    unsigned long features[CG_FLAGS_N_LONGS_FOR_SIZE(_CG_N_FEATURE_IDS)];
+    unsigned long private_features
+    [CG_FLAGS_N_LONGS_FOR_SIZE(CG_N_PRIVATE_FEATURES)];
 
-  bool needs_viewport_scissor_workaround;
-  CoglFramebuffer *viewport_scissor_workaround_framebuffer;
+    bool needs_viewport_scissor_workaround;
+    cg_framebuffer_t *viewport_scissor_workaround_framebuffer;
 
-  CoglPipeline *default_pipeline;
-  CoglPipelineLayer *default_layer_0;
-  CoglPipelineLayer *default_layer_n;
-  CoglPipelineLayer *dummy_layer_dependant;
+    cg_pipeline_t *default_pipeline;
+    cg_pipeline_layer_t *default_layer_0;
+    cg_pipeline_layer_t *default_layer_n;
+    cg_pipeline_layer_t *dummy_layer_dependant;
 
-  c_hash_table_t *attribute_name_states_hash;
-  c_array_t *attribute_name_index_map;
-  int n_attribute_names;
+    c_hash_table_t *attribute_name_states_hash;
+    c_array_t *attribute_name_index_map;
+    int n_attribute_names;
 
-  CoglBitmask       enabled_custom_attributes;
+    CoglBitmask enabled_custom_attributes;
 
-  /* A temporary bitmask that is used when enabling/disabling
-   * custom attribute arrays */
-  CoglBitmask       enable_custom_attributes_tmp;
-  CoglBitmask       changed_bits_tmp;
+    /* A temporary bitmask that is used when enabling/disabling
+     * custom attribute arrays */
+    CoglBitmask enable_custom_attributes_tmp;
+    CoglBitmask changed_bits_tmp;
 
-  /* A few handy matrix constants */
-  CoglMatrix        identity_matrix;
-  CoglMatrix        y_flip_matrix;
+    /* A few handy matrix constants */
+    cg_matrix_t identity_matrix;
+    cg_matrix_t y_flip_matrix;
 
-  /* The matrix stack entries that should be flushed during the next
-   * pipeline state flush */
-  CoglMatrixEntry *current_projection_entry;
-  CoglMatrixEntry *current_modelview_entry;
+    /* The matrix stack entries that should be flushed during the next
+     * pipeline state flush */
+    cg_matrix_entry_t *current_projection_entry;
+    cg_matrix_entry_t *current_modelview_entry;
 
-  CoglMatrixEntry identity_entry;
+    cg_matrix_entry_t identity_entry;
 
-  /* A cache of the last (immutable) matrix stack entries that were
-   * flushed to the GL matrix builtins */
-  CoglMatrixEntryCache builtin_flushed_projection;
-  CoglMatrixEntryCache builtin_flushed_modelview;
+    /* A cache of the last (immutable) matrix stack entries that were
+     * flushed to the GL matrix builtins */
+    cg_matrix_entry_cache_t builtin_flushed_projection;
+    cg_matrix_entry_cache_t builtin_flushed_modelview;
 
-  c_array_t           *texture_units;
-  int               active_texture_unit;
+    c_array_t *texture_units;
+    int active_texture_unit;
 
-  /* Pipelines */
-  CoglPipeline     *opaque_color_pipeline; /* to check for simple pipelines */
-  c_string_t          *codegen_header_buffer;
-  c_string_t          *codegen_source_buffer;
+    /* Pipelines */
+    cg_pipeline_t *opaque_color_pipeline; /* to check for simple pipelines */
+    c_string_t *codegen_header_buffer;
+    c_string_t *codegen_source_buffer;
 
-  CoglPipelineCache *pipeline_cache;
+    cg_pipeline_cache_t *pipeline_cache;
 
-  /* Textures */
-  CoglTexture2D *default_gl_texture_2d_tex;
-  CoglTexture3D *default_gl_texture_3d_tex;
+    /* Textures */
+    cg_texture_2d_t *default_gl_texture_2d_tex;
+    cg_texture_3d_t *default_gl_texture_3d_tex;
 
-  /* Central list of all framebuffers so all journals can be flushed
-   * at any time. */
-  c_list_t            *framebuffers;
+    /* Central list of all framebuffers so all journals can be flushed
+     * at any time. */
+    c_list_t *framebuffers;
 
-  /* Global journal buffers */
-  c_array_t           *journal_flush_attributes_array;
-  c_array_t           *journal_clip_bounds;
+    /* Global journal buffers */
+    c_array_t *journal_flush_attributes_array;
+    c_array_t *journal_clip_bounds;
 
-  /* Some simple caching, to minimize state changes... */
-  CoglPipeline     *current_pipeline;
-  unsigned long     current_pipeline_changes_since_flush;
-  bool          current_pipeline_with_color_attrib;
-  bool          current_pipeline_unknown_color_alpha;
-  unsigned long     current_pipeline_age;
+    /* Some simple caching, to minimize state changes... */
+    cg_pipeline_t *current_pipeline;
+    unsigned long current_pipeline_changes_since_flush;
+    bool current_pipeline_with_color_attrib;
+    bool current_pipeline_unknown_color_alpha;
+    unsigned long current_pipeline_age;
 
-  bool          gl_blend_enable_cache;
+    bool gl_blend_enable_cache;
 
-  bool              depth_test_enabled_cache;
-  CoglDepthTestFunction depth_test_function_cache;
-  bool              depth_writing_enabled_cache;
-  float                 depth_range_near_cache;
-  float                 depth_range_far_cache;
+    bool depth_test_enabled_cache;
+    cg_depth_test_function_t depth_test_function_cache;
+    bool depth_writing_enabled_cache;
+    float depth_range_near_cache;
+    float depth_range_far_cache;
 
-  CoglBuffer       *current_buffer[COGL_BUFFER_BIND_TARGET_COUNT];
+    cg_buffer_t *current_buffer[CG_BUFFER_BIND_TARGET_COUNT];
 
-  /* Framebuffers */
-  unsigned long     current_draw_buffer_state_flushed;
-  unsigned long     current_draw_buffer_changes;
-  CoglFramebuffer  *current_draw_buffer;
-  CoglFramebuffer  *current_read_buffer;
+    /* Framebuffers */
+    unsigned long current_draw_buffer_state_flushed;
+    unsigned long current_draw_buffer_changes;
+    cg_framebuffer_t *current_draw_buffer;
+    cg_framebuffer_t *current_read_buffer;
 
-  bool have_last_offscreen_allocate_flags;
-  CoglOffscreenAllocateFlags last_offscreen_allocate_flags;
+    bool have_last_offscreen_allocate_flags;
+    cg_offscreen_allocate_flags_t last_offscreen_allocate_flags;
 
-  CoglList onscreen_events_queue;
-  CoglList onscreen_dirty_queue;
-  CoglClosure *onscreen_dispatch_idle;
+    cg_list_t onscreen_events_queue;
+    cg_list_t onscreen_dirty_queue;
+    cg_closure_t *onscreen_dispatch_idle;
 
-  CoglGLES2Context *current_gles2_context;
-  c_queue_t gles2_context_stack;
+    cg_gles2_context_t *current_gles2_context;
+    c_queue_t gles2_context_stack;
 
-  /* This becomes true the first time the context is bound to an
-   * onscreen buffer. This is used by cogl-framebuffer-gl to determine
-   * when to initialise the glDrawBuffer state */
-  bool was_bound_to_onscreen;
+    /* This becomes true the first time the context is bound to an
+     * onscreen buffer. This is used by cogl-framebuffer-gl to determine
+     * when to initialise the glDrawBuffer state */
+    bool was_bound_to_onscreen;
 
-  /* Primitives */
-  CoglPipeline     *stencil_pipeline;
+    /* Primitives */
+    cg_pipeline_t *stencil_pipeline;
 
-  /* Pre-generated VBOs containing indices to generate GL_TRIANGLES
-     out of a vertex array of quads */
-  CoglIndices      *rectangle_byte_indices;
-  CoglIndices      *rectangle_short_indices;
-  int               rectangle_short_indices_len;
+    /* Pre-generated VBOs containing indices to generate GL_TRIANGLES
+       out of a vertex array of quads */
+    cg_indices_t *rectangle_byte_indices;
+    cg_indices_t *rectangle_short_indices;
+    int rectangle_short_indices_len;
 
-  CoglPipeline     *texture_download_pipeline;
-  CoglPipeline     *blit_texture_pipeline;
+    cg_pipeline_t *texture_download_pipeline;
+    cg_pipeline_t *blit_texture_pipeline;
 
-  CoglAtlasSet     *atlas_set;
+    cg_atlas_set_t *atlas_set;
 
-  /* This debugging variable is used to pick a colour for visually
-     displaying the quad batches. It needs to be global so that it can
-     be reset by cogl_clear. It needs to be reset to increase the
-     chances of getting the same colour during an animation */
-  uint8_t            journal_rectangles_color;
+    /* This debugging variable is used to pick a colour for visually
+       displaying the quad batches. It needs to be global so that it can
+       be reset by cg_clear. It needs to be reset to increase the
+       chances of getting the same colour during an animation */
+    uint8_t journal_rectangles_color;
 
-  /* Cached values for GL_MAX_TEXTURE_[IMAGE_]UNITS to avoid calling
-     glGetInteger too often */
-  GLint             max_texture_units;
-  GLint             max_activateable_texture_units;
+    /* Cached values for GL_MAX_TEXTURE_[IMAGE_]UNITS to avoid calling
+       glGetInteger too often */
+    GLint max_texture_units;
+    GLint max_activateable_texture_units;
 
-  GLuint current_gl_program;
+    GLuint current_gl_program;
 
-  bool current_gl_dither_enabled;
-  CoglColorMask current_gl_color_mask;
+    bool current_gl_dither_enabled;
+    cg_color_mask_t current_gl_color_mask;
 
-  /* Clipping */
-  /* true if we have a valid clipping stack flushed. In that case
-     current_clip_stack will describe what the current state is. If
-     this is false then the current clip stack is completely unknown
-     so it will need to be reflushed. In that case current_clip_stack
-     doesn't need to be a valid pointer. We can't just use NULL in
-     current_clip_stack to mark a dirty state because NULL is a valid
-     stack (meaning no clipping) */
-  bool          current_clip_stack_valid;
-  /* The clip state that was flushed. This isn't intended to be used
-     as a stack to push and pop new entries. Instead the current stack
-     that the user wants is part of the framebuffer state. This is
-     just used to record the flush state so we can avoid flushing the
-     same state multiple times. When the clip state is flushed this
-     will hold a reference */
-  CoglClipStack    *current_clip_stack;
+    /* Clipping */
+    /* true if we have a valid clipping stack flushed. In that case
+       current_clip_stack will describe what the current state is. If
+       this is false then the current clip stack is completely unknown
+       so it will need to be reflushed. In that case current_clip_stack
+       doesn't need to be a valid pointer. We can't just use NULL in
+       current_clip_stack to mark a dirty state because NULL is a valid
+       stack (meaning no clipping) */
+    bool current_clip_stack_valid;
+    /* The clip state that was flushed. This isn't intended to be used
+       as a stack to push and pop new entries. Instead the current stack
+       that the user wants is part of the framebuffer state. This is
+       just used to record the flush state so we can avoid flushing the
+       same state multiple times. When the clip state is flushed this
+       will hold a reference */
+    cg_clip_stack_t *current_clip_stack;
 
-  /* This is used as a temporary buffer to fill a CoglBuffer when
-     cogl_buffer_map fails and we only want to map to fill it with new
-     data */
-  c_byte_array_t       *buffer_map_fallback_array;
-  bool          buffer_map_fallback_in_use;
-  size_t            buffer_map_fallback_offset;
+    /* This is used as a temporary buffer to fill a cg_buffer_t when
+       cg_buffer_map fails and we only want to map to fill it with new
+       data */
+    c_byte_array_t *buffer_map_fallback_array;
+    bool buffer_map_fallback_in_use;
+    size_t buffer_map_fallback_offset;
 
-  CoglWinsysRectangleState rectangle_state;
+    cg_winsys_rectangle_state_t rectangle_state;
 
-  CoglSamplerCache *sampler_cache;
+    cg_sampler_cache_t *sampler_cache;
 
-  /* FIXME: remove these when we remove the last xlib based clutter
-   * backend. they should be tracked as part of the renderer but e.g.
-   * the eglx backend doesn't yet have a corresponding Cogl winsys
-   * and so we wont have a renderer in that case. */
-#ifdef COGL_HAS_XLIB_SUPPORT
-  int damage_base;
-  /* List of callback functions that will be given every Xlib event */
-  c_slist_t *event_filters;
-  /* Current top of the XError trap state stack. The actual memory for
-     these is expected to be allocated on the stack by the caller */
-  CoglXlibTrapState *trap_state;
+/* FIXME: remove these when we remove the last xlib based clutter
+ * backend. they should be tracked as part of the renderer but e.g.
+ * the eglx backend doesn't yet have a corresponding Cogl winsys
+ * and so we wont have a renderer in that case. */
+#ifdef CG_HAS_XLIB_SUPPORT
+    int damage_base;
+    /* List of callback functions that will be given every Xlib event */
+    c_slist_t *event_filters;
+    /* Current top of the XError trap state stack. The actual memory for
+       these is expected to be allocated on the stack by the caller */
+    cg_xlib_trap_state_t *trap_state;
 #endif
 
-  unsigned long winsys_features
-    [COGL_FLAGS_N_LONGS_FOR_SIZE (COGL_WINSYS_FEATURE_N_FEATURES)];
-  void *winsys;
+    unsigned long winsys_features
+    [CG_FLAGS_N_LONGS_FOR_SIZE(CG_WINSYS_FEATURE_N_FEATURES)];
+    void *winsys;
 
-  /* Array of names of uniforms. These are used like quarks to give a
-     unique number to each uniform name except that we ensure that
-     they increase sequentially so that we can use the id as an index
-     into a bitfield representing the uniforms that a pipeline
-     overrides from its parent. */
-  c_ptr_array_t *uniform_names;
-  /* A hash table to quickly get an index given an existing name. The
-     name strings are owned by the uniform_names array. The values are
-     the uniform location cast to a pointer. */
-  c_hash_table_t *uniform_name_hash;
-  int n_uniform_names;
+    /* Array of names of uniforms. These are used like quarks to give a
+       unique number to each uniform name except that we ensure that
+       they increase sequentially so that we can use the id as an index
+       into a bitfield representing the uniforms that a pipeline
+       overrides from its parent. */
+    c_ptr_array_t *uniform_names;
+    /* A hash table to quickly get an index given an existing name. The
+       name strings are owned by the uniform_names array. The values are
+       the uniform location cast to a pointer. */
+    c_hash_table_t *uniform_name_hash;
+    int n_uniform_names;
 
-  CoglPollSource *fences_poll_source;
-  CoglList fences;
+    cg_poll_source_t *fences_poll_source;
+    cg_list_t fences;
 
-  /* This defines a list of function pointers that Cogl uses from
-     either GL or GLES. All functions are accessed indirectly through
-     these pointers rather than linking to them directly */
+/* This defines a list of function pointers that Cogl uses from
+   either GL or GLES. All functions are accessed indirectly through
+   these pointers rather than linking to them directly */
 #ifndef APIENTRY
 #define APIENTRY
 #endif
 
-#define COGL_EXT_BEGIN(name, \
-                       min_gl_major, min_gl_minor, \
-                       gles_availability, \
-                       extension_suffixes, extension_names)
-#define COGL_EXT_FUNCTION(ret, name, args) \
-  ret (APIENTRY * name) args;
-#define COGL_EXT_END()
+#define CG_EXT_BEGIN(name,                                                     \
+                     min_gl_major,                                             \
+                     min_gl_minor,                                             \
+                     gles_availability,                                        \
+                     extension_suffixes,                                       \
+                     extension_names)
+#define CG_EXT_FUNCTION(ret, name, args) ret(APIENTRY *name) args;
+#define CG_EXT_END()
 
 #include "gl-prototypes/cogl-all-functions.h"
 
-#undef COGL_EXT_BEGIN
-#undef COGL_EXT_FUNCTION
-#undef COGL_EXT_END
+#undef CG_EXT_BEGIN
+#undef CG_EXT_FUNCTION
+#undef CG_EXT_END
 };
 
-CoglContext *
-_cogl_context_get_default ();
+cg_context_t *_cg_context_get_default();
 
-const CoglWinsysVtable *
-_cogl_context_get_winsys (CoglContext *context);
+const cg_winsys_vtable_t *_cg_context_get_winsys(cg_context_t *context);
 
 /* Query the GL extensions and lookup the corresponding function
  * pointers. Theoretically the list of extensions can change for
@@ -318,40 +315,34 @@ _cogl_context_get_winsys (CoglContext *context);
  * to know when to re-query the GL extensions. The backend should also
  * check whether the GL context is supported by Cogl. If not it should
  * return false and set @error */
-bool
-_cogl_context_update_features (CoglContext *context,
-                               CoglError **error);
+bool _cg_context_update_features(cg_context_t *context, cg_error_t **error);
 
 /* Obtains the context and returns retval if NULL */
-#define _COGL_GET_CONTEXT(ctxvar, retval) \
-CoglContext *ctxvar = _cogl_context_get_default (); \
-if (ctxvar == NULL) return retval;
+#define _CG_GET_CONTEXT(ctxvar, retval)                                        \
+    cg_context_t *ctxvar = _cg_context_get_default();                          \
+    if (ctxvar == NULL)                                                        \
+        return retval;
 
 #define NO_RETVAL
 
-void
-_cogl_context_set_current_projection_entry (CoglContext *context,
-                                            CoglMatrixEntry *entry);
+void _cg_context_set_current_projection_entry(cg_context_t *context,
+                                              cg_matrix_entry_t *entry);
 
-void
-_cogl_context_set_current_modelview_entry (CoglContext *context,
-                                           CoglMatrixEntry *entry);
+void _cg_context_set_current_modelview_entry(cg_context_t *context,
+                                             cg_matrix_entry_t *entry);
 
 /*
- * _cogl_context_get_gl_extensions:
- * @context: A CoglContext
+ * _cg_context_get_gl_extensions:
+ * @context: A cg_context_t
  *
  * Return value: a NULL-terminated array of strings representing the
  *   supported extensions by the current driver. This array is owned
  *   by the caller and should be freed with c_strfreev().
  */
-char **
-_cogl_context_get_gl_extensions (CoglContext *context);
+char **_cg_context_get_gl_extensions(cg_context_t *context);
 
-const char *
-_cogl_context_get_gl_version (CoglContext *context);
+const char *_cg_context_get_gl_version(cg_context_t *context);
 
-CoglAtlasSet *
-_cogl_get_atlas_set (CoglContext *context);
+cg_atlas_set_t *_cg_get_atlas_set(cg_context_t *context);
 
-#endif /* __COGL_CONTEXT_PRIVATE_H */
+#endif /* __CG_CONTEXT_PRIVATE_H */

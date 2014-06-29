@@ -31,73 +31,61 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#ifndef _COGL_TEXTURE_2D_NOP_PRIVATE_H_
-#define _COGL_TEXTURE_2D_NOP_PRIVATE_H_
+#ifndef _CG_TEXTURE_2D_NOP_PRIVATE_H_
+#define _CG_TEXTURE_2D_NOP_PRIVATE_H_
 
 #include "cogl-types.h"
 #include "cogl-context-private.h"
 #include "cogl-texture.h"
 
-void
-_cogl_texture_2d_nop_free (CoglTexture2D *tex_2d);
+void _cg_texture_2d_nop_free(cg_texture_2d_t *tex_2d);
 
-bool
-_cogl_texture_2d_nop_can_create (CoglContext *ctx,
-                                 int width,
-                                 int height,
-                                 CoglPixelFormat internal_format);
+bool _cg_texture_2d_nop_can_create(cg_context_t *ctx,
+                                   int width,
+                                   int height,
+                                   cg_pixel_format_t internal_format);
 
-void
-_cogl_texture_2d_nop_init (CoglTexture2D *tex_2d);
+void _cg_texture_2d_nop_init(cg_texture_2d_t *tex_2d);
 
-bool
-_cogl_texture_2d_nop_allocate (CoglTexture *tex,
-                               CoglError **error);
+bool _cg_texture_2d_nop_allocate(cg_texture_t *tex, cg_error_t **error);
 
-void
-_cogl_texture_2d_nop_flush_legacy_texobj_filters (CoglTexture *tex,
-                                                  GLenum min_filter,
-                                                  GLenum mag_filter);
+void _cg_texture_2d_nop_flush_legacy_texobj_filters(cg_texture_t *tex,
+                                                    GLenum min_filter,
+                                                    GLenum mag_filter);
 
-void
-_cogl_texture_2d_nop_flush_legacy_texobj_wrap_modes (CoglTexture *tex,
-                                                     GLenum wrap_mode_s,
-                                                     GLenum wrap_mode_t,
-                                                     GLenum wrap_mode_p);
+void _cg_texture_2d_nop_flush_legacy_texobj_wrap_modes(cg_texture_t *tex,
+                                                       GLenum wrap_mode_s,
+                                                       GLenum wrap_mode_t,
+                                                       GLenum wrap_mode_p);
 
-void
-_cogl_texture_2d_nop_copy_from_framebuffer (CoglTexture2D *tex_2d,
-                                            int src_x,
-                                            int src_y,
-                                            int width,
-                                            int height,
-                                            CoglFramebuffer *src_fb,
-                                            int dst_x,
-                                            int dst_y,
-                                            int level);
+void _cg_texture_2d_nop_copy_from_framebuffer(cg_texture_2d_t *tex_2d,
+                                              int src_x,
+                                              int src_y,
+                                              int width,
+                                              int height,
+                                              cg_framebuffer_t *src_fb,
+                                              int dst_x,
+                                              int dst_y,
+                                              int level);
 
-unsigned int
-_cogl_texture_2d_nop_get_gl_handle (CoglTexture2D *tex_2d);
+unsigned int _cg_texture_2d_nop_get_gl_handle(cg_texture_2d_t *tex_2d);
 
-void
-_cogl_texture_2d_nop_generate_mipmap (CoglTexture2D *tex_2d);
+void _cg_texture_2d_nop_generate_mipmap(cg_texture_2d_t *tex_2d);
 
-bool
-_cogl_texture_2d_nop_copy_from_bitmap (CoglTexture2D *tex_2d,
-                                       int src_x,
-                                       int src_y,
-                                       int width,
-                                       int height,
-                                       CoglBitmap *bitmap,
-                                       int dst_x,
-                                       int dst_y,
-                                       int level,
-                                       CoglError **error);
+bool _cg_texture_2d_nop_copy_from_bitmap(cg_texture_2d_t *tex_2d,
+                                         int src_x,
+                                         int src_y,
+                                         int width,
+                                         int height,
+                                         cg_bitmap_t *bitmap,
+                                         int dst_x,
+                                         int dst_y,
+                                         int level,
+                                         cg_error_t **error);
 
-void
-_cogl_texture_2d_nop_get_data (CoglTexture2D *tex_2d,
-                               CoglPixelFormat format,
-                               size_t rowstride,
-                               uint8_t *data);
+void _cg_texture_2d_nop_get_data(cg_texture_2d_t *tex_2d,
+                                 cg_pixel_format_t format,
+                                 size_t rowstride,
+                                 uint8_t *data);
 
-#endif /* _COGL_TEXTURE_2D_NOP_PRIVATE_H_ */
+#endif /* _CG_TEXTURE_2D_NOP_PRIVATE_H_ */

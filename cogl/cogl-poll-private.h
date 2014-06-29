@@ -28,50 +28,46 @@
  *
  */
 
-#ifndef __COGL_POLL_PRIVATE_H__
-#define __COGL_POLL_PRIVATE_H__
+#ifndef __CG_POLL_PRIVATE_H__
+#define __CG_POLL_PRIVATE_H__
 
 #include "cogl-poll.h"
 #include "cogl-renderer.h"
 #include "cogl-closure-list-private.h"
 
-void
-_cogl_poll_renderer_remove_fd (CoglRenderer *renderer, int fd);
+void _cg_poll_renderer_remove_fd(cg_renderer_t *renderer, int fd);
 
-typedef int64_t (*CoglPollPrepareCallback) (void *user_data);
-typedef void (*CoglPollDispatchCallback) (void *user_data, int revents);
+typedef int64_t (*cg_poll_prepare_callback_t)(void *user_data);
+typedef void (*cg_poll_dispatch_callback_t)(void *user_data, int revents);
 
-void
-_cogl_poll_renderer_add_fd (CoglRenderer *renderer,
-                            int fd,
-                            CoglPollFDEvent events,
-                            CoglPollPrepareCallback prepare,
-                            CoglPollDispatchCallback dispatch,
-                            void *user_data);
+void _cg_poll_renderer_add_fd(cg_renderer_t *renderer,
+                              int fd,
+                              cg_poll_fd_event_t events,
+                              cg_poll_prepare_callback_t prepare,
+                              cg_poll_dispatch_callback_t dispatch,
+                              void *user_data);
 
-void
-_cogl_poll_renderer_modify_fd (CoglRenderer *renderer,
-                               int fd,
-                               CoglPollFDEvent events);
+void _cg_poll_renderer_modify_fd(cg_renderer_t *renderer,
+                                 int fd,
+                                 cg_poll_fd_event_t events);
 
-typedef struct _CoglPollSource CoglPollSource;
+typedef struct _cg_poll_source_t cg_poll_source_t;
 
-CoglPollSource *
-_cogl_poll_renderer_add_source (CoglRenderer *renderer,
-                                CoglPollPrepareCallback prepare,
-                                CoglPollDispatchCallback dispatch,
-                                void *user_data);
+cg_poll_source_t *
+_cg_poll_renderer_add_source(cg_renderer_t *renderer,
+                             cg_poll_prepare_callback_t prepare,
+                             cg_poll_dispatch_callback_t dispatch,
+                             void *user_data);
 
-void
-_cogl_poll_renderer_remove_source (CoglRenderer *renderer,
-                                   CoglPollSource *source);
+void _cg_poll_renderer_remove_source(cg_renderer_t *renderer,
+                                     cg_poll_source_t *source);
 
-typedef void (*CoglIdleCallback) (void *user_data);
+typedef void (*cg_idle_callback_t)(void *user_data);
 
-CoglClosure *
-_cogl_poll_renderer_add_idle (CoglRenderer *renderer,
-                              CoglIdleCallback idle_cb,
-                              void *user_data,
-                              CoglUserDataDestroyCallback destroy_cb);
+cg_closure_t *
+_cg_poll_renderer_add_idle(cg_renderer_t *renderer,
+                           cg_idle_callback_t idle_cb,
+                           void *user_data,
+                           cg_user_data_destroy_callback_t destroy_cb);
 
-#endif /* __COGL_POLL_PRIVATE_H__ */
+#endif /* __CG_POLL_PRIVATE_H__ */

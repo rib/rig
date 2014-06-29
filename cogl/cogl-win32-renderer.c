@@ -36,38 +36,38 @@
 #include "cogl-renderer-private.h"
 #include "cogl-win32-renderer.h"
 
-CoglFilterReturn
-cogl_win32_renderer_handle_event (CoglRenderer *renderer,
-                                  MSG *event)
+cg_filter_return_t
+cg_win32_renderer_handle_event(cg_renderer_t *renderer,
+                               MSG *event)
 {
-  return _cogl_renderer_handle_native_event (renderer, event);
+    return _cg_renderer_handle_native_event(renderer, event);
 }
 
 void
-cogl_win32_renderer_add_filter (CoglRenderer *renderer,
-                                CoglWin32FilterFunc func,
+cg_win32_renderer_add_filter(cg_renderer_t *renderer,
+                             cg_win32_filter_func_t func,
+                             void *data)
+{
+    _cg_renderer_add_native_filter(
+        renderer, (cg_native_filter_func_t)func, data);
+}
+
+void
+cg_win32_renderer_remove_filter(cg_renderer_t *renderer,
+                                cg_win32_filter_func_t func,
                                 void *data)
 {
-  _cogl_renderer_add_native_filter (renderer,
-                                    (CoglNativeFilterFunc)func, data);
+    _cg_renderer_remove_native_filter(
+        renderer, (cg_native_filter_func_t)func, data);
 }
 
 void
-cogl_win32_renderer_remove_filter (CoglRenderer *renderer,
-                                   CoglWin32FilterFunc func,
-                                   void *data)
+cg_win32_renderer_set_event_retrieval_enabled(cg_renderer_t *renderer,
+                                              bool enable)
 {
-  _cogl_renderer_remove_native_filter (renderer,
-                                       (CoglNativeFilterFunc)func, data);
-}
+    _CG_RETURN_IF_FAIL(cg_is_renderer(renderer));
+    /* NB: Renderers are considered immutable once connected */
+    _CG_RETURN_IF_FAIL(!renderer->connected);
 
-void
-cogl_win32_renderer_set_event_retrieval_enabled (CoglRenderer *renderer,
-                                                 bool enable)
-{
-  _COGL_RETURN_IF_FAIL (cogl_is_renderer (renderer));
-  /* NB: Renderers are considered immutable once connected */
-  _COGL_RETURN_IF_FAIL (!renderer->connected);
-
-  renderer->win32_enable_event_retrieval = enable;
+    renderer->win32_enable_event_retrieval = enable;
 }

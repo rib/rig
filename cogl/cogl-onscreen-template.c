@@ -40,57 +40,55 @@
 
 #include <stdlib.h>
 
-static void _cogl_onscreen_template_free (CoglOnscreenTemplate *onscreen_template);
+static void
+_cg_onscreen_template_free(cg_onscreen_template_t *onscreen_template);
 
-COGL_OBJECT_DEFINE (OnscreenTemplate, onscreen_template);
+CG_OBJECT_DEFINE(OnscreenTemplate, onscreen_template);
 
 static void
-_cogl_onscreen_template_free (CoglOnscreenTemplate *onscreen_template)
+_cg_onscreen_template_free(cg_onscreen_template_t *onscreen_template)
 {
-  c_slice_free (CoglOnscreenTemplate, onscreen_template);
+    c_slice_free(cg_onscreen_template_t, onscreen_template);
 }
 
-CoglOnscreenTemplate *
-cogl_onscreen_template_new (void)
+cg_onscreen_template_t *
+cg_onscreen_template_new(void)
 {
-  CoglOnscreenTemplate *onscreen_template = c_slice_new0 (CoglOnscreenTemplate);
-  char *user_config;
+    cg_onscreen_template_t *onscreen_template =
+        c_slice_new0(cg_onscreen_template_t);
+    char *user_config;
 
-  onscreen_template->config.swap_throttled = true;
-  onscreen_template->config.need_stencil = true;
-  onscreen_template->config.samples_per_pixel = 0;
+    onscreen_template->config.swap_throttled = true;
+    onscreen_template->config.need_stencil = true;
+    onscreen_template->config.samples_per_pixel = 0;
 
-  user_config = getenv ("COGL_POINT_SAMPLES_PER_PIXEL");
-  if (user_config)
-    {
-      unsigned long samples_per_pixel = strtoul (user_config, NULL, 10);
-      if (samples_per_pixel != ULONG_MAX)
-        onscreen_template->config.samples_per_pixel =
-          samples_per_pixel;
+    user_config = getenv("CG_POINT_SAMPLES_PER_PIXEL");
+    if (user_config) {
+        unsigned long samples_per_pixel = strtoul(user_config, NULL, 10);
+        if (samples_per_pixel != ULONG_MAX)
+            onscreen_template->config.samples_per_pixel = samples_per_pixel;
     }
 
-  return _cogl_onscreen_template_object_new (onscreen_template);
+    return _cg_onscreen_template_object_new(onscreen_template);
 }
 
 void
-cogl_onscreen_template_set_samples_per_pixel (
-                                        CoglOnscreenTemplate *onscreen_template,
-                                        int samples_per_pixel)
+cg_onscreen_template_set_samples_per_pixel(
+    cg_onscreen_template_t *onscreen_template, int samples_per_pixel)
 {
-  onscreen_template->config.samples_per_pixel = samples_per_pixel;
+    onscreen_template->config.samples_per_pixel = samples_per_pixel;
 }
 
 void
-cogl_onscreen_template_set_swap_throttled (
-                                          CoglOnscreenTemplate *onscreen_template,
-                                          bool throttled)
+cg_onscreen_template_set_swap_throttled(
+    cg_onscreen_template_t *onscreen_template, bool throttled)
 {
-  onscreen_template->config.swap_throttled = throttled;
+    onscreen_template->config.swap_throttled = throttled;
 }
 
 void
-cogl_onscreen_template_set_has_alpha (CoglOnscreenTemplate *onscreen_template,
-                                      bool has_alpha)
+cg_onscreen_template_set_has_alpha(cg_onscreen_template_t *onscreen_template,
+                                   bool has_alpha)
 {
-  onscreen_template->config.has_alpha = has_alpha;
+    onscreen_template->config.has_alpha = has_alpha;
 }

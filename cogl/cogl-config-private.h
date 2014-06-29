@@ -31,15 +31,14 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#ifndef __COGL_CONFIG_PRIVATE_H
-#define __COGL_CONFIG_PRIVATE_H
+#ifndef __CG_CONFIG_PRIVATE_H
+#define __CG_CONFIG_PRIVATE_H
 
-void
-_cogl_config_read (void);
+void _cg_config_read(void);
 
-extern char *_cogl_config_driver;
-extern char *_cogl_config_renderer;
-extern char *_cogl_config_disable_gl_extensions;
-extern char *_cogl_config_override_gl_version;
+extern char *_cg_config_driver;
+extern char *_cg_config_renderer;
+extern char *_cg_config_disable_gl_extensions;
+extern char *_cg_config_override_gl_version;
 
-#endif /* __COGL_CONFIG_PRIVATE_H */
+#endif /* __CG_CONFIG_PRIVATE_H */

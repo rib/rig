@@ -28,8 +28,8 @@
  *
  */
 
-#ifndef __COGL_TEXTURE_PIXMAP_X11_PRIVATE_H
-#define __COGL_TEXTURE_PIXMAP_X11_PRIVATE_H
+#ifndef __CG_TEXTURE_PIXMAP_X11_PRIVATE_H
+#define __CG_TEXTURE_PIXMAP_X11_PRIVATE_H
 
 #include <X11/Xlib.h>
 #include <X11/extensions/XShm.h>
@@ -37,7 +37,7 @@
 
 #include <sys/shm.h>
 
-#ifdef COGL_HAS_GLX_SUPPORT
+#ifdef CG_HAS_GLX_SUPPORT
 #include <GL/glx.h>
 #endif
 
@@ -45,41 +45,39 @@
 #include "cogl-texture-private.h"
 #include "cogl-texture-pixmap-x11.h"
 
-typedef struct _CoglDamageRectangle CoglDamageRectangle;
+typedef struct _cg_damage_rectangle_t cg_damage_rectangle_t;
 
-struct _CoglDamageRectangle
-{
-  unsigned int x1;
-  unsigned int y1;
-  unsigned int x2;
-  unsigned int y2;
+struct _cg_damage_rectangle_t {
+    unsigned int x1;
+    unsigned int y1;
+    unsigned int x2;
+    unsigned int y2;
 };
 
-struct _CoglTexturePixmapX11
-{
-  CoglTexture _parent;
+struct _cg_texture_pixmap_x11_t {
+    cg_texture_t _parent;
 
-  Pixmap pixmap;
-  CoglTexture *tex;
+    Pixmap pixmap;
+    cg_texture_t *tex;
 
-  unsigned int depth;
-  Visual *visual;
+    unsigned int depth;
+    Visual *visual;
 
-  XImage *image;
+    XImage *image;
 
-  XShmSegmentInfo shm_info;
+    XShmSegmentInfo shm_info;
 
-  Damage damage;
-  CoglTexturePixmapX11ReportLevel damage_report_level;
-  bool damage_owned;
-  CoglDamageRectangle damage_rect;
+    Damage damage;
+    cg_texture_pixmap_x11_report_level_t damage_report_level;
+    bool damage_owned;
+    cg_damage_rectangle_t damage_rect;
 
-  void *winsys;
+    void *winsys;
 
-  /* During the pre_paint method, this will be set to true if we
-     should use the winsys texture, otherwise we will use the regular
-     texture */
-  bool use_winsys_texture;
+    /* During the pre_paint method, this will be set to true if we
+       should use the winsys texture, otherwise we will use the regular
+       texture */
+    bool use_winsys_texture;
 };
 
-#endif /* __COGL_TEXTURE_PIXMAP_X11_PRIVATE_H */
+#endif /* __CG_TEXTURE_PIXMAP_X11_PRIVATE_H */

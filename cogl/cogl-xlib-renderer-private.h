@@ -28,88 +28,75 @@
  *
  */
 
-#ifndef __COGL_RENDERER_XLIB_PRIVATE_H
-#define __COGL_RENDERER_XLIB_PRIVATE_H
+#ifndef __CG_RENDERER_XLIB_PRIVATE_H
+#define __CG_RENDERER_XLIB_PRIVATE_H
 
 #include "cogl-object-private.h"
 #include "cogl-x11-renderer-private.h"
 #include "cogl-context.h"
 #include "cogl-output.h"
 
-typedef struct _CoglXlibTrapState CoglXlibTrapState;
+typedef struct _cg_xlib_trap_state_t cg_xlib_trap_state_t;
 
-struct _CoglXlibTrapState
-{
-  /* These values are intended to be internal to
-   * _cogl_xlib_{un,}trap_errors but they need to be in the header so
-   * that the struct can be allocated on the stack */
-  int (* old_error_handler) (Display *, XErrorEvent *);
-  int trapped_error_code;
-  CoglXlibTrapState *old_state;
+struct _cg_xlib_trap_state_t {
+    /* These values are intended to be internal to
+     * _cg_xlib_{un,}trap_errors but they need to be in the header so
+     * that the struct can be allocated on the stack */
+    int (*old_error_handler)(Display *, XErrorEvent *);
+    int trapped_error_code;
+    cg_xlib_trap_state_t *old_state;
 };
 
-typedef struct _CoglXlibRenderer
-{
-  CoglX11Renderer _parent;
+typedef struct _cg_xlib_renderer_t {
+    cg_x11_renderer_t _parent;
 
-  Display *xdpy;
+    Display *xdpy;
 
-  /* Current top of the XError trap state stack. The actual memory for
-     these is expected to be allocated on the stack by the caller */
-  CoglXlibTrapState *trap_state;
+    /* Current top of the XError trap state stack. The actual memory for
+       these is expected to be allocated on the stack by the caller */
+    cg_xlib_trap_state_t *trap_state;
 
-  unsigned long outputs_update_serial;
-} CoglXlibRenderer;
+    unsigned long outputs_update_serial;
+} cg_xlib_renderer_t;
 
-bool
-_cogl_xlib_renderer_connect (CoglRenderer *renderer, CoglError **error);
+bool _cg_xlib_renderer_connect(cg_renderer_t *renderer, cg_error_t **error);
 
-void
-_cogl_xlib_renderer_disconnect (CoglRenderer *renderer);
+void _cg_xlib_renderer_disconnect(cg_renderer_t *renderer);
 
 /*
- * cogl_xlib_renderer_trap_errors:
+ * cg_xlib_renderer_trap_errors:
  * @state: A temporary place to store data for the trap.
  *
- * Traps every X error until _cogl_xlib_renderer_untrap_errors()
- * called. You should allocate an uninitialised CoglXlibTrapState
+ * Traps every X error until _cg_xlib_renderer_untrap_errors()
+ * called. You should allocate an uninitialised cg_xlib_trap_state_t
  * struct on the stack to pass to this function. The same pointer
- * should later be passed to _cogl_xlib_renderer_untrap_errors().
+ * should later be passed to _cg_xlib_renderer_untrap_errors().
  *
- * Calls to _cogl_xlib_renderer_trap_errors() can be nested as long as
- * _cogl_xlib_renderer_untrap_errors() is called with the
+ * Calls to _cg_xlib_renderer_trap_errors() can be nested as long as
+ * _cg_xlib_renderer_untrap_errors() is called with the
  * corresponding state pointers in reverse order.
  */
-void
-_cogl_xlib_renderer_trap_errors (CoglRenderer *renderer,
-                                 CoglXlibTrapState *state);
+void _cg_xlib_renderer_trap_errors(cg_renderer_t *renderer,
+                                   cg_xlib_trap_state_t *state);
 
 /*
- * cogl_xlib_renderer_untrap_errors:
- * @state: The state that was passed to _cogl_xlib_renderer_trap_errors().
+ * cg_xlib_renderer_untrap_errors:
+ * @state: The state that was passed to _cg_xlib_renderer_trap_errors().
  *
  * Removes the X error trap and returns the current status.
  *
  * Return value: the trapped error code, or 0 for success
  */
-int
-_cogl_xlib_renderer_untrap_errors (CoglRenderer *renderer,
-                                   CoglXlibTrapState *state);
+int _cg_xlib_renderer_untrap_errors(cg_renderer_t *renderer,
+                                    cg_xlib_trap_state_t *state);
 
-CoglXlibRenderer *
-_cogl_xlib_renderer_get_data (CoglRenderer *renderer);
+cg_xlib_renderer_t *_cg_xlib_renderer_get_data(cg_renderer_t *renderer);
 
-int64_t
-_cogl_xlib_renderer_get_dispatch_timeout (CoglRenderer *renderer);
+int64_t _cg_xlib_renderer_get_dispatch_timeout(cg_renderer_t *renderer);
 
-CoglOutput *
-_cogl_xlib_renderer_output_for_rectangle (CoglRenderer *renderer,
-                                          int x,
-                                          int y,
-                                          int width,
-                                          int height);
+cg_output_t *_cg_xlib_renderer_output_for_rectangle(
+    cg_renderer_t *renderer, int x, int y, int width, int height);
 
-int
-_cogl_xlib_renderer_get_damage_base (CoglRenderer *renderer);
+int _cg_xlib_renderer_get_damage_base(cg_renderer_t *renderer);
 
-#endif /* __COGL_RENDERER_XLIB_PRIVATE_H */
+#endif /* __CG_RENDERER_XLIB_PRIVATE_H */

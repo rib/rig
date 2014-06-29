@@ -33,25 +33,21 @@
 #include "cogl-framebuffer-private.h"
 
 static bool
-_cogl_pipeline_progend_nop_start (CoglPipeline *pipeline)
+_cg_pipeline_progend_nop_start(cg_pipeline_t *pipeline)
 {
-  return true;
+    return true;
 }
 
 static void
-_cogl_pipeline_progend_nop_pre_paint (CoglPipeline *pipeline,
-                                      CoglFramebuffer *framebuffer)
+_cg_pipeline_progend_nop_pre_paint(cg_pipeline_t *pipeline,
+                                   cg_framebuffer_t *framebuffer)
 {
 }
 
-const CoglPipelineProgend _cogl_pipeline_nop_progend =
-  {
-    COGL_PIPELINE_VERTEND_NOP,
-    COGL_PIPELINE_FRAGEND_NOP,
-    _cogl_pipeline_progend_nop_start,
-    NULL, /* end */
+const cg_pipeline_progend_t _cg_pipeline_nop_progend = {
+    CG_PIPELINE_VERTEND_NOP,           CG_PIPELINE_FRAGEND_NOP,
+    _cg_pipeline_progend_nop_start,    NULL, /* end */
     NULL, /* pre_change_notify */
     NULL, /* layer_pre_change_notify */
-    _cogl_pipeline_progend_nop_pre_paint
-  };
-
+    _cg_pipeline_progend_nop_pre_paint
+};

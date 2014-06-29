@@ -37,37 +37,33 @@
 #include "cogl-context-private.h"
 #include "cogl-object-private.h"
 
-const CoglPipelineVertend _cogl_pipeline_nop_vertend;
+const cg_pipeline_vertend_t _cg_pipeline_nop_vertend;
 
 static void
-_cogl_pipeline_vertend_nop_start (CoglPipeline *pipeline,
-                                  int n_layers,
-                                  unsigned long pipelines_difference)
+_cg_pipeline_vertend_nop_start(cg_pipeline_t *pipeline,
+                               int n_layers,
+                               unsigned long pipelines_difference)
 {
 }
 
 static bool
-_cogl_pipeline_vertend_nop_add_layer (CoglPipeline *pipeline,
-                                      CoglPipelineLayer *layer,
-                                      unsigned long layers_difference,
-                                      CoglFramebuffer *framebuffer)
+_cg_pipeline_vertend_nop_add_layer(cg_pipeline_t *pipeline,
+                                   cg_pipeline_layer_t *layer,
+                                   unsigned long layers_difference,
+                                   cg_framebuffer_t *framebuffer)
 {
-  return true;
+    return true;
 }
 
 static bool
-_cogl_pipeline_vertend_nop_end (CoglPipeline *pipeline,
-                                unsigned long pipelines_difference)
+_cg_pipeline_vertend_nop_end(cg_pipeline_t *pipeline,
+                             unsigned long pipelines_difference)
 {
-  return true;
+    return true;
 }
 
-const CoglPipelineVertend _cogl_pipeline_nop_vertend =
-{
-  _cogl_pipeline_vertend_nop_start,
-  _cogl_pipeline_vertend_nop_add_layer,
-  _cogl_pipeline_vertend_nop_end,
-  NULL, /* pipeline_change_notify */
-  NULL /* layer_change_notify */
+const cg_pipeline_vertend_t _cg_pipeline_nop_vertend = {
+    _cg_pipeline_vertend_nop_start, _cg_pipeline_vertend_nop_add_layer,
+    _cg_pipeline_vertend_nop_end,   NULL, /* pipeline_change_notify */
+    NULL /* layer_change_notify */
 };
-

@@ -39,339 +39,297 @@
 #include "cogl-util-gl-private.h"
 
 bool
-_cogl_boxed_value_equal (const CoglBoxedValue *bva,
-                         const CoglBoxedValue *bvb)
+_cg_boxed_value_equal(const cg_boxed_value_t *bva,
+                      const cg_boxed_value_t *bvb)
 {
-  const void *pa, *pb;
+    const void *pa, *pb;
 
-  if (bva->type != bvb->type)
+    if (bva->type != bvb->type)
+        return false;
+
+    switch (bva->type) {
+    case CG_BOXED_NONE:
+        return true;
+
+    case CG_BOXED_INT:
+        if (bva->size != bvb->size || bva->count != bvb->count)
+            return false;
+
+        if (bva->count == 1) {
+            pa = bva->v.int_value;
+            pb = bvb->v.int_value;
+        } else {
+            pa = bva->v.int_array;
+            pb = bvb->v.int_array;
+        }
+
+        return !memcmp(pa, pb, sizeof(int) * bva->size * bva->count);
+
+    case CG_BOXED_FLOAT:
+        if (bva->size != bvb->size || bva->count != bvb->count)
+            return false;
+
+        if (bva->count == 1) {
+            pa = bva->v.float_value;
+            pb = bvb->v.float_value;
+        } else {
+            pa = bva->v.float_array;
+            pb = bvb->v.float_array;
+        }
+
+        return !memcmp(pa, pb, sizeof(float) * bva->size * bva->count);
+
+    case CG_BOXED_MATRIX:
+        if (bva->size != bvb->size || bva->count != bvb->count)
+            return false;
+
+        if (bva->count == 1) {
+            pa = bva->v.matrix;
+            pb = bvb->v.matrix;
+        } else {
+            pa = bva->v.array;
+            pb = bvb->v.array;
+        }
+
+        return !memcmp(
+            pa, pb, sizeof(float) * bva->size * bva->size * bva->count);
+    }
+
+    c_warn_if_reached();
+
     return false;
-
-  switch (bva->type)
-    {
-    case COGL_BOXED_NONE:
-      return true;
-
-    case COGL_BOXED_INT:
-      if (bva->size != bvb->size || bva->count != bvb->count)
-        return false;
-
-      if (bva->count == 1)
-        {
-          pa = bva->v.int_value;
-          pb = bvb->v.int_value;
-        }
-      else
-        {
-          pa = bva->v.int_array;
-          pb = bvb->v.int_array;
-        }
-
-      return !memcmp (pa, pb, sizeof (int) * bva->size * bva->count);
-
-    case COGL_BOXED_FLOAT:
-      if (bva->size != bvb->size || bva->count != bvb->count)
-        return false;
-
-      if (bva->count == 1)
-        {
-          pa = bva->v.float_value;
-          pb = bvb->v.float_value;
-        }
-      else
-        {
-          pa = bva->v.float_array;
-          pb = bvb->v.float_array;
-        }
-
-      return !memcmp (pa, pb, sizeof (float) * bva->size * bva->count);
-
-    case COGL_BOXED_MATRIX:
-      if (bva->size != bvb->size ||
-          bva->count != bvb->count)
-        return false;
-
-      if (bva->count == 1)
-        {
-          pa = bva->v.matrix;
-          pb = bvb->v.matrix;
-        }
-      else
-        {
-          pa = bva->v.array;
-          pb = bvb->v.array;
-        }
-
-      return !memcmp (pa, pb,
-                      sizeof (float) * bva->size * bva->size * bva->count);
-    }
-
-  c_warn_if_reached ();
-
-  return false;
 }
 
 static void
-_cogl_boxed_value_tranpose (float *dst,
-                            int size,
-                            const float *src)
+_cg_boxed_value_tranpose(float *dst, int size, const float *src)
 {
-  int y, x;
+    int y, x;
 
-  /* If the value is transposed we'll just transpose it now as it
-   * is copied into the boxed value instead of passing true to
-   * glUniformMatrix because that is not supported on GLES and it
-   * doesn't seem like the GL driver would be able to do anything
-   * much smarter than this anyway */
+    /* If the value is transposed we'll just transpose it now as it
+     * is copied into the boxed value instead of passing true to
+     * glUniformMatrix because that is not supported on GLES and it
+     * doesn't seem like the GL driver would be able to do anything
+     * much smarter than this anyway */
 
-  for (y = 0; y < size; y++)
-    for (x = 0; x < size; x++)
-      *(dst++) = src[y + x * size];
+    for (y = 0; y < size; y++)
+        for (x = 0; x < size; x++)
+            *(dst++) = src[y + x * size];
 }
 
 static void
-_cogl_boxed_value_set_x (CoglBoxedValue *bv,
-                         int size,
-                         int count,
-                         CoglBoxedType type,
-                         size_t value_size,
-                         const void *value,
-                         bool transpose)
+_cg_boxed_value_set_x(cg_boxed_value_t *bv,
+                      int size,
+                      int count,
+                      cg_boxed_type_t type,
+                      size_t value_size,
+                      const void *value,
+                      bool transpose)
 {
-  if (count == 1)
-    {
-      if (bv->count > 1)
-        c_free (bv->v.array);
+    if (count == 1) {
+        if (bv->count > 1)
+            c_free(bv->v.array);
 
-      if (transpose)
-        _cogl_boxed_value_tranpose (bv->v.float_value,
-                                    size,
-                                    value);
-      else
-        memcpy (bv->v.float_value, value, value_size);
-    }
-  else
-    {
-      if (bv->count > 1)
-        {
-          if (bv->count != count ||
-              bv->size != size ||
-              bv->type != type)
-            {
-              c_free (bv->v.array);
-              bv->v.array = c_malloc (count * value_size);
+        if (transpose)
+            _cg_boxed_value_tranpose(bv->v.float_value, size, value);
+        else
+            memcpy(bv->v.float_value, value, value_size);
+    } else {
+        if (bv->count > 1) {
+            if (bv->count != count || bv->size != size || bv->type != type) {
+                c_free(bv->v.array);
+                bv->v.array = c_malloc(count * value_size);
             }
-        }
-      else
-        bv->v.array = c_malloc (count * value_size);
+        } else
+            bv->v.array = c_malloc(count * value_size);
 
-      if (transpose)
-        {
-          int value_num;
+        if (transpose) {
+            int value_num;
 
-          for (value_num = 0; value_num < count; value_num++)
-            _cogl_boxed_value_tranpose (bv->v.float_array +
-                                        value_num * size * size,
-                                        size,
-                                        (const float *) value +
-                                        value_num * size * size);
-        }
-      else
-        memcpy (bv->v.array, value, count * value_size);
+            for (value_num = 0; value_num < count; value_num++)
+                _cg_boxed_value_tranpose(
+                    bv->v.float_array + value_num * size * size,
+                    size,
+                    (const float *)value + value_num * size * size);
+        } else
+            memcpy(bv->v.array, value, count * value_size);
     }
 
-  bv->type = type;
-  bv->size = size;
-  bv->count = count;
+    bv->type = type;
+    bv->size = size;
+    bv->count = count;
 }
 
 void
-_cogl_boxed_value_set_1f (CoglBoxedValue *bv,
-                          float value)
+_cg_boxed_value_set_1f(cg_boxed_value_t *bv, float value)
 {
-  _cogl_boxed_value_set_x (bv,
-                           1, 1, COGL_BOXED_FLOAT,
-                           sizeof (float), &value, false);
+    _cg_boxed_value_set_x(
+        bv, 1, 1, CG_BOXED_FLOAT, sizeof(float), &value, false);
 }
 
 void
-_cogl_boxed_value_set_1i (CoglBoxedValue *bv,
-                          int value)
+_cg_boxed_value_set_1i(cg_boxed_value_t *bv, int value)
 {
-  _cogl_boxed_value_set_x (bv,
-                           1, 1, COGL_BOXED_INT,
-                           sizeof (int), &value, false);
+    _cg_boxed_value_set_x(bv, 1, 1, CG_BOXED_INT, sizeof(int), &value, false);
 }
 
 void
-_cogl_boxed_value_set_float (CoglBoxedValue *bv,
-                             int n_components,
-                             int count,
-                             const float *value)
+_cg_boxed_value_set_float(cg_boxed_value_t *bv,
+                          int n_components,
+                          int count,
+                          const float *value)
 {
-  _cogl_boxed_value_set_x (bv,
-                           n_components, count,
-                           COGL_BOXED_FLOAT,
-                           sizeof (float) * n_components, value, false);
+    _cg_boxed_value_set_x(bv,
+                          n_components,
+                          count,
+                          CG_BOXED_FLOAT,
+                          sizeof(float) * n_components,
+                          value,
+                          false);
 }
 
 void
-_cogl_boxed_value_set_int (CoglBoxedValue *bv,
-                           int n_components,
+_cg_boxed_value_set_int(cg_boxed_value_t *bv,
+                        int n_components,
+                        int count,
+                        const int *value)
+{
+    _cg_boxed_value_set_x(bv,
+                          n_components,
+                          count,
+                          CG_BOXED_INT,
+                          sizeof(int) * n_components,
+                          value,
+                          false);
+}
+
+void
+_cg_boxed_value_set_matrix(cg_boxed_value_t *bv,
+                           int dimensions,
                            int count,
-                           const int *value)
+                           bool transpose,
+                           const float *value)
 {
-  _cogl_boxed_value_set_x (bv,
-                           n_components, count,
-                           COGL_BOXED_INT,
-                           sizeof (int) * n_components, value, false);
+    _cg_boxed_value_set_x(bv,
+                          dimensions,
+                          count,
+                          CG_BOXED_MATRIX,
+                          sizeof(float) * dimensions * dimensions,
+                          value,
+                          transpose);
 }
 
 void
-_cogl_boxed_value_set_matrix (CoglBoxedValue *bv,
-                              int dimensions,
-                              int count,
-                              bool transpose,
-                              const float *value)
+_cg_boxed_value_copy(cg_boxed_value_t *dst, const cg_boxed_value_t *src)
 {
-  _cogl_boxed_value_set_x (bv,
-                           dimensions, count,
-                           COGL_BOXED_MATRIX,
-                           sizeof (float) * dimensions * dimensions,
-                           value,
-                           transpose);
-}
+    *dst = *src;
 
-void
-_cogl_boxed_value_copy (CoglBoxedValue *dst,
-                        const CoglBoxedValue *src)
-{
-  *dst = *src;
+    if (src->count > 1) {
+        switch (src->type) {
+        case CG_BOXED_NONE:
+            break;
 
-  if (src->count > 1)
-    {
-      switch (src->type)
-        {
-        case COGL_BOXED_NONE:
-          break;
+        case CG_BOXED_INT:
+            dst->v.int_array = c_memdup(src->v.int_array,
+                                        src->size * src->count * sizeof(int));
+            break;
 
-        case COGL_BOXED_INT:
-          dst->v.int_array = c_memdup (src->v.int_array,
-                                       src->size * src->count * sizeof (int));
-          break;
+        case CG_BOXED_FLOAT:
+            dst->v.float_array = c_memdup(
+                src->v.float_array, src->size * src->count * sizeof(float));
+            break;
 
-        case COGL_BOXED_FLOAT:
-          dst->v.float_array = c_memdup (src->v.float_array,
-                                         src->size *
-                                         src->count *
-                                         sizeof (float));
-          break;
-
-        case COGL_BOXED_MATRIX:
-          dst->v.float_array = c_memdup (src->v.float_array,
-                                         src->size * src->size *
-                                         src->count * sizeof (float));
-          break;
+        case CG_BOXED_MATRIX:
+            dst->v.float_array =
+                c_memdup(src->v.float_array,
+                         src->size * src->size * src->count * sizeof(float));
+            break;
         }
     }
 }
 
 void
-_cogl_boxed_value_destroy (CoglBoxedValue *bv)
+_cg_boxed_value_destroy(cg_boxed_value_t *bv)
 {
-  if (bv->count > 1)
-    c_free (bv->v.array);
+    if (bv->count > 1)
+        c_free(bv->v.array);
 }
 
 void
-_cogl_boxed_value_set_uniform (CoglContext *ctx,
-                               GLint location,
-                               const CoglBoxedValue *value)
+_cg_boxed_value_set_uniform(cg_context_t *ctx,
+                            GLint location,
+                            const cg_boxed_value_t *value)
 {
-  switch (value->type)
-    {
-    case COGL_BOXED_NONE:
-      break;
+    switch (value->type) {
+    case CG_BOXED_NONE:
+        break;
 
-    case COGL_BOXED_INT:
-      {
+    case CG_BOXED_INT: {
         const int *ptr;
 
         if (value->count == 1)
-          ptr = value->v.int_value;
+            ptr = value->v.int_value;
         else
-          ptr = value->v.int_array;
+            ptr = value->v.int_array;
 
-        switch (value->size)
-          {
-          case 1:
-            GE( ctx, glUniform1iv (location, value->count, ptr) );
+        switch (value->size) {
+        case 1:
+            GE(ctx, glUniform1iv(location, value->count, ptr));
             break;
-          case 2:
-            GE( ctx, glUniform2iv (location, value->count, ptr) );
+        case 2:
+            GE(ctx, glUniform2iv(location, value->count, ptr));
             break;
-          case 3:
-            GE( ctx, glUniform3iv (location, value->count, ptr) );
+        case 3:
+            GE(ctx, glUniform3iv(location, value->count, ptr));
             break;
-          case 4:
-            GE( ctx, glUniform4iv (location, value->count, ptr) );
+        case 4:
+            GE(ctx, glUniform4iv(location, value->count, ptr));
             break;
-          }
-      }
-      break;
+        }
+    } break;
 
-    case COGL_BOXED_FLOAT:
-      {
+    case CG_BOXED_FLOAT: {
         const float *ptr;
 
         if (value->count == 1)
-          ptr = value->v.float_value;
+            ptr = value->v.float_value;
         else
-          ptr = value->v.float_array;
+            ptr = value->v.float_array;
 
-        switch (value->size)
-          {
-          case 1:
-            GE( ctx, glUniform1fv (location, value->count, ptr) );
+        switch (value->size) {
+        case 1:
+            GE(ctx, glUniform1fv(location, value->count, ptr));
             break;
-          case 2:
-            GE( ctx, glUniform2fv (location, value->count, ptr) );
+        case 2:
+            GE(ctx, glUniform2fv(location, value->count, ptr));
             break;
-          case 3:
-            GE( ctx, glUniform3fv (location, value->count, ptr) );
+        case 3:
+            GE(ctx, glUniform3fv(location, value->count, ptr));
             break;
-          case 4:
-            GE( ctx, glUniform4fv (location, value->count, ptr) );
+        case 4:
+            GE(ctx, glUniform4fv(location, value->count, ptr));
             break;
-          }
-      }
-      break;
+        }
+    } break;
 
-    case COGL_BOXED_MATRIX:
-      {
+    case CG_BOXED_MATRIX: {
         const float *ptr;
 
         if (value->count == 1)
-          ptr = value->v.matrix;
+            ptr = value->v.matrix;
         else
-          ptr = value->v.float_array;
+            ptr = value->v.float_array;
 
-        switch (value->size)
-          {
-          case 2:
-            GE( ctx, glUniformMatrix2fv (location, value->count,
-                                         false, ptr) );
+        switch (value->size) {
+        case 2:
+            GE(ctx, glUniformMatrix2fv(location, value->count, false, ptr));
             break;
-          case 3:
-            GE( ctx, glUniformMatrix3fv (location, value->count,
-                                         false, ptr) );
+        case 3:
+            GE(ctx, glUniformMatrix3fv(location, value->count, false, ptr));
             break;
-          case 4:
-            GE( ctx, glUniformMatrix4fv (location, value->count,
-                                         false, ptr) );
+        case 4:
+            GE(ctx, glUniformMatrix4fv(location, value->count, false, ptr));
             break;
-          }
-      }
-      break;
+        }
+    } break;
     }
 }

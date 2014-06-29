@@ -31,59 +31,54 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#ifndef __COGL_NODE_PRIVATE_H
-#define __COGL_NODE_PRIVATE_H
+#ifndef __CG_NODE_PRIVATE_H
+#define __CG_NODE_PRIVATE_H
 
 #include "cogl-object-private.h"
 #include "cogl-list.h"
 
-typedef struct _CoglNode CoglNode;
+typedef struct _cg_node_t cg_node_t;
 
 /* Pipelines and layers represent their state in a tree structure where
  * some of the state relating to a given pipeline or layer may actually
  * be owned by one if is ancestors in the tree. We have a common data
  * type to track the tree heirachy so we can share code... */
-struct _CoglNode
-{
-  /* the parent in terms of class hierarchy, so anything inheriting
-   * from CoglNode also inherits from CoglObject. */
-  CoglObject _parent;
+struct _cg_node_t {
+    /* the parent in terms of class hierarchy, so anything inheriting
+     * from cg_node_t also inherits from cg_object_t. */
+    cg_object_t _parent;
 
-  /* The parent pipeline/layer */
-  CoglNode *parent;
+    /* The parent pipeline/layer */
+    cg_node_t *parent;
 
-  /* The list entry here contains pointers to the node's siblings */
-  CoglList link;
+    /* The list entry here contains pointers to the node's siblings */
+    cg_list_t link;
 
-  /* List of children */
-  CoglList children;
+    /* List of children */
+    cg_list_t children;
 
-  /* true if the node took a strong reference on its parent. Weak
-   * pipelines for instance don't take a reference on their parent. */
-  bool has_parent_reference;
+    /* true if the node took a strong reference on its parent. Weak
+     * pipelines for instance don't take a reference on their parent. */
+    bool has_parent_reference;
 };
 
-#define COGL_NODE(X) ((CoglNode *)(X))
+#define CG_NODE(X) ((cg_node_t *)(X))
 
-void
-_cogl_pipeline_node_init (CoglNode *node);
+void _cg_pipeline_node_init(cg_node_t *node);
 
-typedef void (*CoglNodeUnparentVFunc) (CoglNode *node);
+typedef void (*cg_node_unparent_vfunc_t)(cg_node_t *node);
 
-void
-_cogl_pipeline_node_set_parent_real (CoglNode *node,
-                                     CoglNode *parent,
-                                     CoglNodeUnparentVFunc unparent,
-                                     bool take_strong_reference);
+void _cg_pipeline_node_set_parent_real(cg_node_t *node,
+                                       cg_node_t *parent,
+                                       cg_node_unparent_vfunc_t unparent,
+                                       bool take_strong_reference);
 
-void
-_cogl_pipeline_node_unparent_real (CoglNode *node);
+void _cg_pipeline_node_unparent_real(cg_node_t *node);
 
-typedef bool (*CoglNodeChildCallback) (CoglNode *child, void *user_data);
+typedef bool (*cg_node_child_callback_t)(cg_node_t *child, void *user_data);
 
-void
-_cogl_pipeline_node_foreach_child (CoglNode *node,
-                                   CoglNodeChildCallback callback,
-                                   void *user_data);
+void _cg_pipeline_node_foreach_child(cg_node_t *node,
+                                     cg_node_child_callback_t callback,
+                                     void *user_data);
 
-#endif /* __COGL_NODE_PRIVATE_H */
+#endif /* __CG_NODE_PRIVATE_H */

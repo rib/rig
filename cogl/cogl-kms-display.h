@@ -26,55 +26,54 @@
  * SOFTWARE.
  */
 
-#if !defined(__COGL_H_INSIDE__) && !defined(COGL_COMPILATION)
+#if !defined(__CG_H_INSIDE__) && !defined(CG_COMPILATION)
 #error "Only <cogl/cogl.h> can be included directly."
 #endif
 
-#ifndef __COGL_KMS_DISPLAY_H__
-#define __COGL_KMS_DISPLAY_H__
+#ifndef __CG_KMS_DISPLAY_H__
+#define __CG_KMS_DISPLAY_H__
 
 #include <cogl/cogl-types.h>
 #include <cogl/cogl-display.h>
 
 #include <xf86drmMode.h>
 
-COGL_BEGIN_DECLS
+CG_BEGIN_DECLS
 
 /**
- * cogl_kms_display_queue_modes_reset:
- * @display: A #CoglDisplay
+ * cg_kms_display_queue_modes_reset:
+ * @display: A #cg_display_t
  *
  * Asks Cogl to explicitly reset the crtc output modes at the next
- * #CoglOnscreen swap_buffers request. For applications that support
+ * #cg_onscreen_t swap_buffers request. For applications that support
  * VT switching they may want to re-assert the output modes when
  * switching back to the applications VT since the modes are often not
  * correctly restored automatically.
  *
  * <note>The @display must have been either explicitly setup via
- * cogl_display_setup() or implicitily setup by having created a
+ * cg_display_setup() or implicitily setup by having created a
  * context using the @display</note>
  *
  * Since: 2.0
  * Stability: unstable
  */
-void
-cogl_kms_display_queue_modes_reset (CoglDisplay *display);
+void cg_kms_display_queue_modes_reset(cg_display_t *display);
 
 typedef struct {
-  uint32_t id;
-  uint32_t x, y;
-  drmModeModeInfo mode;
+    uint32_t id;
+    uint32_t x, y;
+    drmModeModeInfo mode;
 
-  uint32_t *connectors;
-  uint32_t  count;
-} CoglKmsCrtc;
+    uint32_t *connectors;
+    uint32_t count;
+} cg_kms_crtc_t;
 
 /**
- * cogl_kms_display_set_layout:
- * @onscreen: a #CoglDisplay
+ * cg_kms_display_set_layout:
+ * @onscreen: a #cg_display_t
  * @width: the framebuffer width
  * @height: the framebuffer height
- * @crtcs: the array of #CoglKmsCrtc structure with the desired CRTC layout
+ * @crtcs: the array of #cg_kms_crtc_t structure with the desired CRTC layout
  *
  * Configures @display to use a framebuffer sized @width x @height, covering
  * the CRTCS in @crtcs.
@@ -82,20 +81,20 @@ typedef struct {
  * must be valid KMS API IDs.
  *
  * Calling this function overrides the automatic mode setting done by Cogl,
- * and for this reason must be called before the first call to cogl_onscreen_swap_buffers().
+ * and for this reason must be called before the first call to
+ * cg_onscreen_swap_buffers().
  *
  * If you want to restore the default behaviour, you can call this function
  * with @width and @height set to -1.
  *
  * Stability: unstable
  */
-bool
-cogl_kms_display_set_layout (CoglDisplay *display,
-                             int width,
-                             int height,
-                             CoglKmsCrtc **crtcs,
-                             int n_crtcs,
-                             CoglError **error);
+bool cg_kms_display_set_layout(cg_display_t *display,
+                               int width,
+                               int height,
+                               cg_kms_crtc_t **crtcs,
+                               int n_crtcs,
+                               cg_error_t **error);
 
-COGL_END_DECLS
-#endif /* __COGL_KMS_DISPLAY_H__ */
+CG_END_DECLS
+#endif /* __CG_KMS_DISPLAY_H__ */

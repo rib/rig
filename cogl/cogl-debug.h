@@ -28,8 +28,8 @@
  *
  */
 
-#ifndef __COGL_DEBUG_H__
-#define __COGL_DEBUG_H__
+#ifndef __CG_DEBUG_H__
+#define __CG_DEBUG_H__
 
 #include "cogl-profile.h"
 #include "cogl-flags.h"
@@ -37,88 +37,87 @@
 
 #include <clib.h>
 
-COGL_BEGIN_DECLS
+CG_BEGIN_DECLS
 
 typedef enum {
-  COGL_DEBUG_SLICING,
-  COGL_DEBUG_OFFSCREEN,
-  COGL_DEBUG_DRAW,
-  COGL_DEBUG_PANGO,
-  COGL_DEBUG_RECTANGLES,
-  COGL_DEBUG_OBJECT,
-  COGL_DEBUG_BLEND_STRINGS,
-  COGL_DEBUG_DISABLE_BATCHING,
-  COGL_DEBUG_DISABLE_VBOS,
-  COGL_DEBUG_DISABLE_PBOS,
-  COGL_DEBUG_JOURNAL,
-  COGL_DEBUG_BATCHING,
-  COGL_DEBUG_DISABLE_SOFTWARE_TRANSFORM,
-  COGL_DEBUG_MATRICES,
-  COGL_DEBUG_ATLAS,
-  COGL_DEBUG_DUMP_ATLAS_IMAGE,
-  COGL_DEBUG_DISABLE_ATLAS,
-  COGL_DEBUG_DISABLE_SHARED_ATLAS,
-  COGL_DEBUG_OPENGL,
-  COGL_DEBUG_DISABLE_TEXTURING,
-  COGL_DEBUG_DISABLE_GLSL,
-  COGL_DEBUG_SHOW_SOURCE,
-  COGL_DEBUG_DISABLE_BLENDING,
-  COGL_DEBUG_TEXTURE_PIXMAP,
-  COGL_DEBUG_BITMAP,
-  COGL_DEBUG_DISABLE_NPOT_TEXTURES,
-  COGL_DEBUG_WIREFRAME,
-  COGL_DEBUG_DISABLE_SOFTWARE_CLIP,
-  COGL_DEBUG_DISABLE_PROGRAM_CACHES,
-  COGL_DEBUG_DISABLE_FAST_READ_PIXEL,
-  COGL_DEBUG_CLIPPING,
-  COGL_DEBUG_WINSYS,
-  COGL_DEBUG_PERFORMANCE,
+    CG_DEBUG_SLICING,
+    CG_DEBUG_OFFSCREEN,
+    CG_DEBUG_DRAW,
+    CG_DEBUG_PANGO,
+    CG_DEBUG_RECTANGLES,
+    CG_DEBUG_OBJECT,
+    CG_DEBUG_BLEND_STRINGS,
+    CG_DEBUG_DISABLE_BATCHING,
+    CG_DEBUG_DISABLE_VBOS,
+    CG_DEBUG_DISABLE_PBOS,
+    CG_DEBUG_JOURNAL,
+    CG_DEBUG_BATCHING,
+    CG_DEBUG_DISABLE_SOFTWARE_TRANSFORM,
+    CG_DEBUG_MATRICES,
+    CG_DEBUG_ATLAS,
+    CG_DEBUG_DUMP_ATLAS_IMAGE,
+    CG_DEBUG_DISABLE_ATLAS,
+    CG_DEBUG_DISABLE_SHARED_ATLAS,
+    CG_DEBUG_OPENGL,
+    CG_DEBUG_DISABLE_TEXTURING,
+    CG_DEBUG_DISABLE_GLSL,
+    CG_DEBUG_SHOW_SOURCE,
+    CG_DEBUG_DISABLE_BLENDING,
+    CG_DEBUG_TEXTURE_PIXMAP,
+    CG_DEBUG_BITMAP,
+    CG_DEBUG_DISABLE_NPOT_TEXTURES,
+    CG_DEBUG_WIREFRAME,
+    CG_DEBUG_DISABLE_SOFTWARE_CLIP,
+    CG_DEBUG_DISABLE_PROGRAM_CACHES,
+    CG_DEBUG_DISABLE_FAST_READ_PIXEL,
+    CG_DEBUG_CLIPPING,
+    CG_DEBUG_WINSYS,
+    CG_DEBUG_PERFORMANCE,
+    CG_DEBUG_N_FLAGS
+} cg_debug_flags_t;
 
-  COGL_DEBUG_N_FLAGS
-} CoglDebugFlags;
+extern c_hash_table_t *_cg_debug_instances;
+#define CG_DEBUG_N_LONGS CG_FLAGS_N_LONGS_FOR_SIZE(CG_DEBUG_N_FLAGS)
 
-extern c_hash_table_t *_cogl_debug_instances;
-#define COGL_DEBUG_N_LONGS COGL_FLAGS_N_LONGS_FOR_SIZE (COGL_DEBUG_N_FLAGS)
-
-/* _cogl_debug_flags currently needs to exported outside of the shared
-   library for cogl-pango. The special COGL_EXPORT macro is needed to
+/* _cg_debug_flags currently needs to exported outside of the shared
+   library for cogl-pango. The special CG_EXPORT macro is needed to
    get this to work when building with MSVC */
-COGL_EXPORT extern unsigned long _cogl_debug_flags[COGL_DEBUG_N_LONGS];
+CG_EXPORT extern unsigned long _cg_debug_flags[CG_DEBUG_N_LONGS];
 
-#define COGL_DEBUG_ENABLED(flag) \
-  COGL_FLAGS_GET (_cogl_debug_flags, flag)
+#define CG_DEBUG_ENABLED(flag) CG_FLAGS_GET(_cg_debug_flags, flag)
 
-#define COGL_DEBUG_SET_FLAG(flag) \
-  COGL_FLAGS_SET (_cogl_debug_flags, flag, true)
+#define CG_DEBUG_SET_FLAG(flag) CG_FLAGS_SET(_cg_debug_flags, flag, true)
 
-#define COGL_DEBUG_CLEAR_FLAG(flag) \
-  COGL_FLAGS_SET (_cogl_debug_flags, flag, false)
+#define CG_DEBUG_CLEAR_FLAG(flag) CG_FLAGS_SET(_cg_debug_flags, flag, false)
 
 #ifdef __GNUC__
-#define COGL_NOTE(type,x,a...)                      C_STMT_START {            \
-        if (C_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_##type))) {            \
-          _cogl_profile_trace_message ("[" #type "] " G_STRLOC " & " x, ##a); \
-        }                                           } C_STMT_END
+#define CG_NOTE(type, x, a ...)                                                 \
+    C_STMT_START                                                               \
+    {                                                                          \
+        if (C_UNLIKELY(CG_DEBUG_ENABLED(CG_DEBUG_##type))) {                   \
+            _cg_profile_trace_message("[" #type "] " G_STRLOC " & " x, ##a);   \
+        }                                                                      \
+    }                                                                          \
+    C_STMT_END
 
 #else
-#define COGL_NOTE(type,...)                         C_STMT_START {            \
-        if (C_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_##type))) {            \
-          char *_fmt = c_strdup_printf (__VA_ARGS__);                         \
-          _cogl_profile_trace_message ("[" #type "] " G_STRLOC " & %s", _fmt);\
-          c_free (_fmt);                                                      \
-        }                                           } C_STMT_END
+#define CG_NOTE(type, ...)                                                     \
+    C_STMT_START                                                               \
+    {                                                                          \
+        if (C_UNLIKELY(CG_DEBUG_ENABLED(CG_DEBUG_##type))) {                   \
+            char *_fmt = c_strdup_printf(__VA_ARGS__);                         \
+            _cg_profile_trace_message("[" #type "] " G_STRLOC " & %s", _fmt);  \
+            c_free(_fmt);                                                      \
+        }                                                                      \
+    }                                                                          \
+    C_STMT_END
 
 #endif /* __GNUC__ */
 
-void
-_cogl_debug_check_environment (void);
+void _cg_debug_check_environment(void);
 
-void
-_cogl_parse_debug_string (const char *value,
-                          bool enable,
-                          bool ignore_help);
+void _cg_parse_debug_string(const char *value, bool enable, bool ignore_help);
 
-COGL_END_DECLS
+CG_END_DECLS
 
-#endif /* __COGL_DEBUG_H__ */
-
+#endif /* __CG_DEBUG_H__ */

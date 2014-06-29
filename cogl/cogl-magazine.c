@@ -27,10 +27,10 @@
  *
  *
  *
- * CoglMagazine provides a really light weight allocator for chunks
+ * cg_magazine_t provides a really light weight allocator for chunks
  * of memory with a pre-determined size.
  *
- * This allocator builds on CoglMemoryStack for making all initial
+ * This allocator builds on cg_memory_stack_t for making all initial
  * allocations but never frees memory back to the stack.
  *
  * Memory chunks that haven't been allocated yet are stored in a
@@ -44,7 +44,7 @@
  * re-use.
  *
  * No attempt is ever made to shrink the amount of memory associated
- * with a CoglMagazine.
+ * with a cg_magazine_t.
  *
  *
  * Authors:
@@ -61,24 +61,24 @@
 
 #define ROUND_UP_8(X) ((X + (8 - 1)) & ~(8 - 1))
 
-CoglMagazine *
-_cogl_magazine_new (size_t chunk_size, int initial_chunk_count)
+cg_magazine_t *
+_cg_magazine_new(size_t chunk_size, int initial_chunk_count)
 {
-  CoglMagazine *magazine = c_new0 (CoglMagazine, 1);
+    cg_magazine_t *magazine = c_new0(cg_magazine_t, 1);
 
-  chunk_size = MAX (chunk_size, sizeof (CoglMagazineChunk));
-  chunk_size = ROUND_UP_8 (chunk_size);
+    chunk_size = MAX(chunk_size, sizeof(cg_magazine_chunk_t));
+    chunk_size = ROUND_UP_8(chunk_size);
 
-  magazine->chunk_size = chunk_size;
-  magazine->stack = _cogl_memory_stack_new (chunk_size * initial_chunk_count);
-  magazine->head = NULL;
+    magazine->chunk_size = chunk_size;
+    magazine->stack = _cg_memory_stack_new(chunk_size * initial_chunk_count);
+    magazine->head = NULL;
 
-  return magazine;
+    return magazine;
 }
 
 void
-_cogl_magazine_free (CoglMagazine *magazine)
+_cg_magazine_free(cg_magazine_t *magazine)
 {
-  _cogl_memory_stack_free (magazine->stack);
-  c_free (magazine);
+    _cg_memory_stack_free(magazine->stack);
+    c_free(magazine);
 }

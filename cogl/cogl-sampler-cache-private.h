@@ -28,8 +28,8 @@
  *
  */
 
-#ifndef __COGL_SAMPLER_CACHE_PRIVATE_H
-#define __COGL_SAMPLER_CACHE_PRIVATE_H
+#ifndef __CG_SAMPLER_CACHE_PRIVATE_H
+#define __CG_SAMPLER_CACHE_PRIVATE_H
 
 #include "cogl-context.h"
 #include "cogl-gl-header.h"
@@ -45,52 +45,48 @@
 /* GL_ALWAYS is just used here as a value that is known not to clash
  * with any valid GL wrap modes.
  *
- * XXX: keep the values in sync with the CoglPipelineWrapMode enum
+ * XXX: keep the values in sync with the cg_pipeline_wrap_mode_t enum
  * so no conversion is actually needed.
  */
-typedef enum _CoglSamplerCacheWrapMode
-{
-  COGL_SAMPLER_CACHE_WRAP_MODE_REPEAT = GL_REPEAT,
-  COGL_SAMPLER_CACHE_WRAP_MODE_MIRRORED_REPEAT = GL_MIRRORED_REPEAT,
-  COGL_SAMPLER_CACHE_WRAP_MODE_CLAMP_TO_EDGE = GL_CLAMP_TO_EDGE,
-  COGL_SAMPLER_CACHE_WRAP_MODE_CLAMP_TO_BORDER = GL_CLAMP_TO_BORDER,
-  COGL_SAMPLER_CACHE_WRAP_MODE_AUTOMATIC = GL_ALWAYS
-} CoglSamplerCacheWrapMode;
+typedef enum _cg_sampler_cache_wrap_mode_t {
+    CG_SAMPLER_CACHE_WRAP_MODE_REPEAT = GL_REPEAT,
+    CG_SAMPLER_CACHE_WRAP_MODE_MIRRORED_REPEAT = GL_MIRRORED_REPEAT,
+    CG_SAMPLER_CACHE_WRAP_MODE_CLAMP_TO_EDGE = GL_CLAMP_TO_EDGE,
+    CG_SAMPLER_CACHE_WRAP_MODE_CLAMP_TO_BORDER = GL_CLAMP_TO_BORDER,
+    CG_SAMPLER_CACHE_WRAP_MODE_AUTOMATIC = GL_ALWAYS
+} cg_sampler_cache_wrap_mode_t;
 
-typedef struct _CoglSamplerCache CoglSamplerCache;
+typedef struct _cg_sampler_cache_t cg_sampler_cache_t;
 
-typedef struct _CoglSamplerCacheEntry
-{
-  GLuint sampler_object;
+typedef struct _cg_sampler_cache_entry_t {
+    GLuint sampler_object;
 
-  GLenum min_filter;
-  GLenum mag_filter;
+    GLenum min_filter;
+    GLenum mag_filter;
 
-  CoglSamplerCacheWrapMode wrap_mode_s;
-  CoglSamplerCacheWrapMode wrap_mode_t;
-  CoglSamplerCacheWrapMode wrap_mode_p;
-} CoglSamplerCacheEntry;
+    cg_sampler_cache_wrap_mode_t wrap_mode_s;
+    cg_sampler_cache_wrap_mode_t wrap_mode_t;
+    cg_sampler_cache_wrap_mode_t wrap_mode_p;
+} cg_sampler_cache_entry_t;
 
-CoglSamplerCache *
-_cogl_sampler_cache_new (CoglContext *context);
+cg_sampler_cache_t *_cg_sampler_cache_new(cg_context_t *context);
 
-const CoglSamplerCacheEntry *
-_cogl_sampler_cache_get_default_entry (CoglSamplerCache *cache);
+const cg_sampler_cache_entry_t *
+_cg_sampler_cache_get_default_entry(cg_sampler_cache_t *cache);
 
-const CoglSamplerCacheEntry *
-_cogl_sampler_cache_update_wrap_modes (CoglSamplerCache *cache,
-                                       const CoglSamplerCacheEntry *old_entry,
-                                       CoglSamplerCacheWrapMode wrap_mode_s,
-                                       CoglSamplerCacheWrapMode wrap_mode_t,
-                                       CoglSamplerCacheWrapMode wrap_mode_p);
+const cg_sampler_cache_entry_t *
+_cg_sampler_cache_update_wrap_modes(cg_sampler_cache_t *cache,
+                                    const cg_sampler_cache_entry_t *old_entry,
+                                    cg_sampler_cache_wrap_mode_t wrap_mode_s,
+                                    cg_sampler_cache_wrap_mode_t wrap_mode_t,
+                                    cg_sampler_cache_wrap_mode_t wrap_mode_p);
 
-const CoglSamplerCacheEntry *
-_cogl_sampler_cache_update_filters (CoglSamplerCache *cache,
-                                    const CoglSamplerCacheEntry *old_entry,
-                                    GLenum min_filter,
-                                    GLenum mag_filter);
+const cg_sampler_cache_entry_t *
+_cg_sampler_cache_update_filters(cg_sampler_cache_t *cache,
+                                 const cg_sampler_cache_entry_t *old_entry,
+                                 GLenum min_filter,
+                                 GLenum mag_filter);
 
-void
-_cogl_sampler_cache_free (CoglSamplerCache *cache);
+void _cg_sampler_cache_free(cg_sampler_cache_t *cache);
 
-#endif /* __COGL_SAMPLER_CACHE_PRIVATE_H */
+#endif /* __CG_SAMPLER_CACHE_PRIVATE_H */

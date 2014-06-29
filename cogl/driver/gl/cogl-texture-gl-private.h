@@ -27,40 +27,33 @@
  *
  */
 
-#ifndef _COGL_TEXTURE_GL_PRIVATE_H_
-#define _COGL_TEXTURE_GL_PRIVATE_H_
+#ifndef _CG_TEXTURE_GL_PRIVATE_H_
+#define _CG_TEXTURE_GL_PRIVATE_H_
 
 #include "cogl-context.h"
 
-void
-_cogl_texture_gl_prep_alignment_for_pixels_upload (CoglContext *ctx,
-                                                   int pixels_rowstride);
+void _cg_texture_gl_prep_alignment_for_pixels_upload(cg_context_t *ctx,
+                                                     int pixels_rowstride);
 
-void
-_cogl_texture_gl_prep_alignment_for_pixels_download (CoglContext *ctx,
-                                                     int bpp,
-                                                     int width,
-                                                     int rowstride);
+void _cg_texture_gl_prep_alignment_for_pixels_download(cg_context_t *ctx,
+                                                       int bpp,
+                                                       int width,
+                                                       int rowstride);
 
-void
-_cogl_texture_gl_flush_legacy_texobj_wrap_modes (CoglTexture *texture,
-                                                 unsigned int wrap_mode_s,
-                                                 unsigned int wrap_mode_t,
-                                                 unsigned int wrap_mode_p);
+void _cg_texture_gl_flush_legacy_texobj_wrap_modes(cg_texture_t *texture,
+                                                   unsigned int wrap_mode_s,
+                                                   unsigned int wrap_mode_t,
+                                                   unsigned int wrap_mode_p);
 
-void
-_cogl_texture_gl_flush_legacy_texobj_filters (CoglTexture *texture,
-                                              unsigned int min_filter,
-                                              unsigned int mag_filter);
+void _cg_texture_gl_flush_legacy_texobj_filters(cg_texture_t *texture,
+                                                unsigned int min_filter,
+                                                unsigned int mag_filter);
 
-void
-_cogl_texture_gl_maybe_update_max_level (CoglTexture *texture,
-                                         int max_level);
+void _cg_texture_gl_maybe_update_max_level(cg_texture_t *texture,
+                                           int max_level);
 
-void
-_cogl_texture_gl_generate_mipmaps (CoglTexture *texture);
+void _cg_texture_gl_generate_mipmaps(cg_texture_t *texture);
 
-GLenum
-_cogl_texture_gl_get_format (CoglTexture *texture);
+GLenum _cg_texture_gl_get_format(cg_texture_t *texture);
 
-#endif /* _COGL_TEXTURE_GL_PRIVATE_H_ */
+#endif /* _CG_TEXTURE_GL_PRIVATE_H_ */

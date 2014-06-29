@@ -31,16 +31,16 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#if !defined(__COGL_H_INSIDE__) && !defined(COGL_COMPILATION)
+#if !defined(__CG_H_INSIDE__) && !defined(CG_COMPILATION)
 #error "Only <cogl/cogl.h> can be included directly."
 #endif
 
-#ifndef __COGL_INDEX_BUFFER_H__
-#define __COGL_INDEX_BUFFER_H__
+#ifndef __CG_INDEX_BUFFER_H__
+#define __CG_INDEX_BUFFER_H__
 
 #include <cogl/cogl-context.h>
 
-COGL_BEGIN_DECLS
+CG_BEGIN_DECLS
 
 /**
  * SECTION:cogl-index-buffer
@@ -50,45 +50,41 @@ COGL_BEGIN_DECLS
  * FIXME
  */
 
-#define COGL_INDEX_BUFFER(buffer) ((CoglIndexBuffer*) buffer)
+#define CG_INDEX_BUFFER(buffer) ((cg_index_buffer_t *)buffer)
 
-typedef struct _CoglIndexBuffer	      CoglIndexBuffer;
+typedef struct _cg_index_buffer_t cg_index_buffer_t;
 
 /**
- * cogl_index_buffer_new:
- * @context: A #CoglContext
+ * cg_index_buffer_new:
+ * @context: A #cg_context_t
  * @bytes: The number of bytes to allocate for vertex attribute data.
  *
- * Declares a new #CoglIndexBuffer of @size bytes to contain vertex
+ * Declares a new #cg_index_buffer_t of @size bytes to contain vertex
  * indices. Once declared, data can be set using
- * cogl_buffer_set_data() or by mapping it into the application's
- * address space using cogl_buffer_map().
+ * cg_buffer_set_data() or by mapping it into the application's
+ * address space using cg_buffer_map().
  *
- * Return value: (transfer full): A newly allocated #CoglIndexBuffer
+ * Return value: (transfer full): A newly allocated #cg_index_buffer_t
  *
  * Since: 1.4
  * Stability: Unstable
  */
-CoglIndexBuffer *
-cogl_index_buffer_new (CoglContext *context,
-                       size_t bytes);
+cg_index_buffer_t *cg_index_buffer_new(cg_context_t *context, size_t bytes);
 
 /**
- * cogl_is_index_buffer:
- * @object: A #CoglObject
+ * cg_is_index_buffer:
+ * @object: A #cg_object_t
  *
- * Gets whether the given object references a #CoglIndexBuffer.
+ * Gets whether the given object references a #cg_index_buffer_t.
  *
- * Returns: %true if the @object references a #CoglIndexBuffer,
+ * Returns: %true if the @object references a #cg_index_buffer_t,
  *   %false otherwise
  *
  * Since: 1.4
  * Stability: Unstable
  */
-bool
-cogl_is_index_buffer (void *object);
+bool cg_is_index_buffer(void *object);
 
-COGL_END_DECLS
+CG_END_DECLS
 
-#endif /* __COGL_INDEX_BUFFER_H__ */
-
+#endif /* __CG_INDEX_BUFFER_H__ */

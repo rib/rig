@@ -28,18 +28,18 @@
  *
  */
 
-#ifndef __COGL_H__
-#define __COGL_H__
+#ifndef __CG_H__
+#define __CG_H__
 
-#ifdef COGL_COMPILATION
+#ifdef CG_COMPILATION
 #error "<cogl/cogl.h> shouldn't be included internally"
 #endif
 
 /* Note: When building Cogl .gir we explicitly define
- * __COGL_H_INSIDE__ */
-#ifndef __COGL_H_INSIDE__
-#define __COGL_H_INSIDE__
-#define __COGL_MUST_UNDEF_COGL_H_INSIDE__
+ * __CG_H_INSIDE__ */
+#ifndef __CG_H_INSIDE__
+#define __CG_H_INSIDE__
+#define __CG_MUST_UNDEF_CG_H_INSIDE__
 #endif
 
 #include <cogl/cogl-defines.h>
@@ -55,7 +55,7 @@
 #include <cogl/cogl-types.h>
 #include <cogl/cogl-version.h>
 
-#ifdef COGL_HAS_GTYPE_SUPPORT
+#ifdef CG_HAS_GTYPE_SUPPORT
 /* GType integration */
 #include <cogl/cogl-enum-types.h>
 #endif
@@ -94,28 +94,28 @@
 #include <cogl/cogl-frame-info.h>
 #include <cogl/cogl-poll.h>
 #include <cogl/cogl-fence.h>
-#if defined (COGL_HAS_EGL_PLATFORM_KMS_SUPPORT)
+#if defined(CG_HAS_EGL_PLATFORM_KMS_SUPPORT)
 #include <cogl/cogl-kms-renderer.h>
 #include <cogl/cogl-kms-display.h>
 #endif
-#ifdef COGL_HAS_WIN32_SUPPORT
+#ifdef CG_HAS_WIN32_SUPPORT
 #include <cogl/cogl-win32-renderer.h>
 #endif
-#ifdef COGL_HAS_GLIB_SUPPORT
+#ifdef CG_HAS_GLIB_SUPPORT
 #include <cogl/cogl-glib-source.h>
 #endif
 
 /* The gobject introspection scanner seems to parse public headers in
  * isolation which means we need to be extra careful about how we
- * define and undefine __COGL_H_INSIDE__ used to detect when internal
+ * define and undefine __CG_H_INSIDE__ used to detect when internal
  * headers are incorrectly included by developers. In the gobject
- * introspection case we have to manually define __COGL_H_INSIDE__ as
+ * introspection case we have to manually define __CG_H_INSIDE__ as
  * a commandline argument for the scanner which means we must be
  * careful not to undefine it in a header...
  */
-#ifdef __COGL_MUST_UNDEF_COGL_H_INSIDE__
-#undef __COGL_H_INSIDE__
-#undef __COGL_MUST_UNDEF_COGL_H_INSIDE__
+#ifdef __CG_MUST_UNDEF_CG_H_INSIDE__
+#undef __CG_H_INSIDE__
+#undef __CG_MUST_UNDEF_CG_H_INSIDE__
 #endif
 
-#endif /* __COGL_H__ */
+#endif /* __CG_H__ */

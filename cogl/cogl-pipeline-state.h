@@ -28,22 +28,22 @@
  *
  */
 
-#if !defined(__COGL_H_INSIDE__) && !defined(COGL_COMPILATION)
+#if !defined(__CG_H_INSIDE__) && !defined(CG_COMPILATION)
 #error "Only <cogl/cogl.h> can be included directly."
 #endif
 
-#ifndef __COGL_PIPELINE_STATE_H__
-#define __COGL_PIPELINE_STATE_H__
+#ifndef __CG_PIPELINE_STATE_H__
+#define __CG_PIPELINE_STATE_H__
 
 #include <cogl/cogl-pipeline.h>
 #include <cogl/cogl-color.h>
 #include <cogl/cogl-depth-state.h>
 
-COGL_BEGIN_DECLS
+CG_BEGIN_DECLS
 
 /**
- * cogl_pipeline_set_color:
- * @pipeline: A #CoglPipeline object
+ * cg_pipeline_set_color:
+ * @pipeline: A #cg_pipeline_t object
  * @color: The components of the color
  *
  * Sets the basic color of the pipeline, used when no lighting is enabled.
@@ -51,20 +51,18 @@ COGL_BEGIN_DECLS
  * Note that if you don't add any layers to the pipeline then the color
  * will be blended unmodified with the destination; the default blend
  * expects premultiplied colors: for example, use (0.5, 0.0, 0.0, 0.5) for
- * semi-transparent red. See cogl_color_premultiply().
+ * semi-transparent red. See cg_color_premultiply().
  *
  * The default value is (1.0, 1.0, 1.0, 1.0)
  *
  * Since: 2.0
  * Stability: Unstable
  */
-void
-cogl_pipeline_set_color (CoglPipeline    *pipeline,
-                         const CoglColor *color);
+void cg_pipeline_set_color(cg_pipeline_t *pipeline, const cg_color_t *color);
 
 /**
- * cogl_pipeline_set_color4ub:
- * @pipeline: A #CoglPipeline object
+ * cg_pipeline_set_color4ub:
+ * @pipeline: A #cg_pipeline_t object
  * @red: The red component
  * @green: The green component
  * @blue: The blue component
@@ -77,16 +75,15 @@ cogl_pipeline_set_color (CoglPipeline    *pipeline,
  * Since: 2.0
  * Stability: Unstable
  */
-void
-cogl_pipeline_set_color4ub (CoglPipeline *pipeline,
-			    uint8_t red,
-                            uint8_t green,
-                            uint8_t blue,
-                            uint8_t alpha);
+void cg_pipeline_set_color4ub(cg_pipeline_t *pipeline,
+                              uint8_t red,
+                              uint8_t green,
+                              uint8_t blue,
+                              uint8_t alpha);
 
 /**
- * cogl_pipeline_set_color4f:
- * @pipeline: A #CoglPipeline object
+ * cg_pipeline_set_color4f:
+ * @pipeline: A #cg_pipeline_t object
  * @red: The red component
  * @green: The green component
  * @blue: The blue component
@@ -99,16 +96,12 @@ cogl_pipeline_set_color4ub (CoglPipeline *pipeline,
  * Since: 2.0
  * Stability: Unstable
  */
-void
-cogl_pipeline_set_color4f (CoglPipeline *pipeline,
-                           float         red,
-                           float         green,
-                           float         blue,
-                           float         alpha);
+void cg_pipeline_set_color4f(
+    cg_pipeline_t *pipeline, float red, float green, float blue, float alpha);
 
 /**
- * cogl_pipeline_get_color:
- * @pipeline: A #CoglPipeline object
+ * cg_pipeline_get_color:
+ * @pipeline: A #cg_pipeline_t object
  * @color: (out): The location to store the color
  *
  * Retrieves the current pipeline color.
@@ -116,48 +109,47 @@ cogl_pipeline_set_color4f (CoglPipeline *pipeline,
  * Since: 2.0
  * Stability: Unstable
  */
-void
-cogl_pipeline_get_color (CoglPipeline *pipeline,
-                         CoglColor    *color);
+void cg_pipeline_get_color(cg_pipeline_t *pipeline, cg_color_t *color);
 
 /**
- * CoglPipelineAlphaFunc:
- * @COGL_PIPELINE_ALPHA_FUNC_NEVER: Never let the fragment through.
- * @COGL_PIPELINE_ALPHA_FUNC_LESS: Let the fragment through if the incoming
+ * cg_pipeline_alpha_func_t:
+ * @CG_PIPELINE_ALPHA_FUNC_NEVER: Never let the fragment through.
+ * @CG_PIPELINE_ALPHA_FUNC_LESS: Let the fragment through if the incoming
  *   alpha value is less than the reference alpha value
- * @COGL_PIPELINE_ALPHA_FUNC_EQUAL: Let the fragment through if the incoming
+ * @CG_PIPELINE_ALPHA_FUNC_EQUAL: Let the fragment through if the incoming
  *   alpha value equals the reference alpha value
- * @COGL_PIPELINE_ALPHA_FUNC_LEQUAL: Let the fragment through if the incoming
+ * @CG_PIPELINE_ALPHA_FUNC_LEQUAL: Let the fragment through if the incoming
  *   alpha value is less than or equal to the reference alpha value
- * @COGL_PIPELINE_ALPHA_FUNC_GREATER: Let the fragment through if the incoming
+ * @CG_PIPELINE_ALPHA_FUNC_GREATER: Let the fragment through if the incoming
  *   alpha value is greater than the reference alpha value
- * @COGL_PIPELINE_ALPHA_FUNC_NOTEQUAL: Let the fragment through if the incoming
+ * @CG_PIPELINE_ALPHA_FUNC_NOTEQUAL: Let the fragment through if the incoming
  *   alpha value does not equal the reference alpha value
- * @COGL_PIPELINE_ALPHA_FUNC_GEQUAL: Let the fragment through if the incoming
+ * @CG_PIPELINE_ALPHA_FUNC_GEQUAL: Let the fragment through if the incoming
  *   alpha value is greater than or equal to the reference alpha value.
- * @COGL_PIPELINE_ALPHA_FUNC_ALWAYS: Always let the fragment through.
+ * @CG_PIPELINE_ALPHA_FUNC_ALWAYS: Always let the fragment through.
  *
  * Alpha testing happens before blending primitives with the framebuffer and
  * gives an opportunity to discard fragments based on a comparison with the
- * incoming alpha value and a reference alpha value. The #CoglPipelineAlphaFunc
+ * incoming alpha value and a reference alpha value. The
+ **#cg_pipeline_alpha_func_t
  * determines how the comparison is done.
  */
 typedef enum {
-  COGL_PIPELINE_ALPHA_FUNC_NEVER    = 0x0200,
-  COGL_PIPELINE_ALPHA_FUNC_LESS	    = 0x0201,
-  COGL_PIPELINE_ALPHA_FUNC_EQUAL    = 0x0202,
-  COGL_PIPELINE_ALPHA_FUNC_LEQUAL   = 0x0203,
-  COGL_PIPELINE_ALPHA_FUNC_GREATER  = 0x0204,
-  COGL_PIPELINE_ALPHA_FUNC_NOTEQUAL = 0x0205,
-  COGL_PIPELINE_ALPHA_FUNC_GEQUAL   = 0x0206,
-  COGL_PIPELINE_ALPHA_FUNC_ALWAYS   = 0x0207
-} CoglPipelineAlphaFunc;
+    CG_PIPELINE_ALPHA_FUNC_NEVER = 0x0200,
+    CG_PIPELINE_ALPHA_FUNC_LESS = 0x0201,
+    CG_PIPELINE_ALPHA_FUNC_EQUAL = 0x0202,
+    CG_PIPELINE_ALPHA_FUNC_LEQUAL = 0x0203,
+    CG_PIPELINE_ALPHA_FUNC_GREATER = 0x0204,
+    CG_PIPELINE_ALPHA_FUNC_NOTEQUAL = 0x0205,
+    CG_PIPELINE_ALPHA_FUNC_GEQUAL = 0x0206,
+    CG_PIPELINE_ALPHA_FUNC_ALWAYS = 0x0207
+} cg_pipeline_alpha_func_t;
 /* NB: these values come from the equivalents in gl.h */
 
 /**
- * cogl_pipeline_set_alpha_test_function:
- * @pipeline: A #CoglPipeline object
- * @alpha_func: A @CoglPipelineAlphaFunc constant
+ * cg_pipeline_set_alpha_test_function:
+ * @pipeline: A #cg_pipeline_t object
+ * @alpha_func: A @cg_pipeline_alpha_func_t constant
  * @alpha_reference: A reference point that the chosen alpha function uses
  *   to compare incoming fragments to.
  *
@@ -167,52 +159,51 @@ typedef enum {
  * the alpha channel, and thus determine which fragments are discarded
  * and which continue on to the blending stage.
  *
- * The default is %COGL_PIPELINE_ALPHA_FUNC_ALWAYS
+ * The default is %CG_PIPELINE_ALPHA_FUNC_ALWAYS
  *
  * Since: 2.0
  * Stability: Unstable
  */
-void
-cogl_pipeline_set_alpha_test_function (CoglPipeline         *pipeline,
-				       CoglPipelineAlphaFunc alpha_func,
-				       float                 alpha_reference);
+void cg_pipeline_set_alpha_test_function(cg_pipeline_t *pipeline,
+                                         cg_pipeline_alpha_func_t alpha_func,
+                                         float alpha_reference);
 
 /**
- * cogl_pipeline_get_alpha_test_function:
- * @pipeline: A #CoglPipeline object
+ * cg_pipeline_get_alpha_test_function:
+ * @pipeline: A #cg_pipeline_t object
  *
  * Return value: The alpha test function of @pipeline.
  *
  * Since: 2.0
  * Stability: Unstable
  */
-CoglPipelineAlphaFunc
-cogl_pipeline_get_alpha_test_function (CoglPipeline *pipeline);
+cg_pipeline_alpha_func_t
+cg_pipeline_get_alpha_test_function(cg_pipeline_t *pipeline);
 
 /**
- * cogl_pipeline_get_alpha_test_reference:
- * @pipeline: A #CoglPipeline object
+ * cg_pipeline_get_alpha_test_reference:
+ * @pipeline: A #cg_pipeline_t object
  *
  * Return value: The alpha test reference value of @pipeline.
  *
  * Since: 2.0
  * Stability: Unstable
  */
-float
-cogl_pipeline_get_alpha_test_reference (CoglPipeline *pipeline);
+float cg_pipeline_get_alpha_test_reference(cg_pipeline_t *pipeline);
 
 /**
- * cogl_pipeline_set_blend:
- * @pipeline: A #CoglPipeline object
+ * cg_pipeline_set_blend:
+ * @pipeline: A #cg_pipeline_t object
  * @blend_string: A <link linkend="cogl-Blend-Strings">Cogl blend string</link>
  *   describing the desired blend function.
- * @error: return location for a #CoglError that may report lack of driver
+ * @error: return location for a #cg_error_t that may report lack of driver
  *   support if you give separate blend string statements for the alpha
  *   channel and RGB channels since some drivers. May be %NULL, in which case
  *   an error will cause the program to terminate with an error
  *   message.
  *
- * If not already familiar; please refer <link linkend="cogl-Blend-Strings">here</link>
+ * If not already familiar; please refer <link
+   linkend="cogl-Blend-Strings">here</link>
  * for an overview of what blend strings are, and their syntax.
  *
  * Blending occurs after the alpha test function, and combines fragments with
@@ -222,18 +213,22 @@ cogl_pipeline_get_alpha_test_reference (CoglPipeline *pipeline);
  * blend statements will be of the form:
  *
  * |[
- *   &lt;channel-mask&gt;=ADD(SRC_COLOR*(&lt;factor&gt;), DST_COLOR*(&lt;factor&gt;))
+ *   &lt;channel-mask&gt;=ADD(SRC_COLOR*(&lt;factor&gt;),
+   DST_COLOR*(&lt;factor&gt;))
  * ]|
  *
  * This is the list of source-names usable as blend factors:
  * <itemizedlist>
- *   <listitem><para>SRC_COLOR: The color of the in comming fragment</para></listitem>
+ *   <listitem><para>SRC_COLOR: The color of the in comming
+   fragment</para></listitem>
  *   <listitem><para>DST_COLOR: The color of the framebuffer</para></listitem>
- *   <listitem><para>CONSTANT: The constant set via cogl_pipeline_set_blend_constant()</para></listitem>
+ *   <listitem><para>CONSTANT: The constant set via
+   cg_pipeline_set_blend_constant()</para></listitem>
  * </itemizedlist>
  *
  * The source names can be used according to the
- * <link linkend="cogl-Blend-String-syntax">color-source and factor syntax</link>,
+ * <link linkend="cogl-Blend-String-syntax">color-source and factor
+   syntax</link>,
  * so for example "(1-SRC_COLOR[A])" would be a valid factor, as would
  * "(CONSTANT[RGB])"
  *
@@ -241,7 +236,8 @@ cogl_pipeline_get_alpha_test_reference (CoglPipeline *pipeline);
  * <itemizedlist>
  *   <listitem>0: (0, 0, 0, 0)</listitem>
  *   <listitem>1: (1, 1, 1, 1)</listitem>
- *   <listitem>SRC_ALPHA_SATURATE_FACTOR: (f,f,f,1) where f = MIN(SRC_COLOR[A],1-DST_COLOR[A])</listitem>
+ *   <listitem>SRC_ALPHA_SATURATE_FACTOR: (f,f,f,1) where f =
+   MIN(SRC_COLOR[A],1-DST_COLOR[A])</listitem>
  * </itemizedlist>
  *
  * <note>Remember; all color components are normalized to the range [0, 1]
@@ -282,14 +278,13 @@ cogl_pipeline_get_alpha_test_reference (CoglPipeline *pipeline);
  * Since: 2.0
  * Stability: Unstable
  */
-bool
-cogl_pipeline_set_blend (CoglPipeline *pipeline,
-                         const char   *blend_string,
-                         CoglError      **error);
+bool cg_pipeline_set_blend(cg_pipeline_t *pipeline,
+                           const char *blend_string,
+                           cg_error_t **error);
 
 /**
- * cogl_pipeline_set_blend_constant:
- * @pipeline: A #CoglPipeline object
+ * cg_pipeline_set_blend_constant:
+ * @pipeline: A #cg_pipeline_t object
  * @constant_color: The constant color you want
  *
  * When blending is setup to reference a CONSTANT blend factor then
@@ -298,16 +293,15 @@ cogl_pipeline_set_blend (CoglPipeline *pipeline,
  * Since: 2.0
  * Stability: Unstable
  */
-void
-cogl_pipeline_set_blend_constant (CoglPipeline *pipeline,
-                                  const CoglColor *constant_color);
+void cg_pipeline_set_blend_constant(cg_pipeline_t *pipeline,
+                                    const cg_color_t *constant_color);
 
 /**
- * cogl_pipeline_set_point_size:
- * @pipeline: a #CoglPipeline pointer
+ * cg_pipeline_set_point_size:
+ * @pipeline: a #cg_pipeline_t pointer
  * @point_size: the new point size.
  *
- * Changes the size of points drawn when %COGL_VERTICES_MODE_POINTS is
+ * Changes the size of points drawn when %CG_VERTICES_MODE_POINTS is
  * used with the attribute buffer API. Note that typically the GPU
  * will only support a limited minimum and maximum range of point
  * sizes. If the chosen point size is outside that range then the
@@ -323,15 +317,13 @@ cogl_pipeline_set_blend_constant (CoglPipeline *pipeline,
  * Since: 2.0
  * Stability: Unstable
  */
-void
-cogl_pipeline_set_point_size (CoglPipeline *pipeline,
-                              float point_size);
+void cg_pipeline_set_point_size(cg_pipeline_t *pipeline, float point_size);
 
 /**
- * cogl_pipeline_get_point_size:
- * @pipeline: a #CoglPipeline pointer
+ * cg_pipeline_get_point_size:
+ * @pipeline: a #cg_pipeline_t pointer
  *
- * Get the size of points drawn when %COGL_VERTICES_MODE_POINTS is
+ * Get the size of points drawn when %CG_VERTICES_MODE_POINTS is
  * used with the vertex buffer API.
  *
  * Return value: the point size of the @pipeline.
@@ -339,72 +331,68 @@ cogl_pipeline_set_point_size (CoglPipeline *pipeline,
  * Since: 2.0
  * Stability: Unstable
  */
-float
-cogl_pipeline_get_point_size (CoglPipeline *pipeline);
+float cg_pipeline_get_point_size(cg_pipeline_t *pipeline);
 
 /**
- * cogl_pipeline_set_per_vertex_point_size:
- * @pipeline: a #CoglPipeline pointer
+ * cg_pipeline_set_per_vertex_point_size:
+ * @pipeline: a #cg_pipeline_t pointer
  * @enable: whether to enable per-vertex point size
- * @error: a location to store a #CoglError if the change failed
+ * @error: a location to store a #cg_error_t if the change failed
  *
  * Sets whether to use a per-vertex point size or to use the value set
- * by cogl_pipeline_set_point_size(). If per-vertex point size is
+ * by cg_pipeline_set_point_size(). If per-vertex point size is
  * enabled then the point size can be set for an individual point
- * either by drawing with a #CoglAttribute with the name
- * ‘cogl_point_size_in’ or by writing to the GLSL builtin
- * ‘cogl_point_size_out’ from a vertex shader snippet.
+ * either by drawing with a #cg_attribute_t with the name
+ * ‘cg_point_size_in’ or by writing to the GLSL builtin
+ * ‘cg_point_size_out’ from a vertex shader snippet.
  *
  * If per-vertex point size is enabled and this attribute is not used
- * and cogl_point_size_out is not written to then the results are
+ * and cg_point_size_out is not written to then the results are
  * undefined.
  *
  * Note that enabling this will only work if the
- * %COGL_FEATURE_ID_PER_VERTEX_POINT_SIZE feature is available. If
+ * %CG_FEATURE_ID_PER_VERTEX_POINT_SIZE feature is available. If
  * this is not available then the function will return %false and set
- * a #CoglError.
+ * a #cg_error_t.
  *
  * Since: 2.0
  * Stability: Unstable
  * Return value: %true if the change suceeded or %false otherwise
  */
-bool
-cogl_pipeline_set_per_vertex_point_size (CoglPipeline *pipeline,
-                                         bool enable,
-                                         CoglError **error);
+bool cg_pipeline_set_per_vertex_point_size(cg_pipeline_t *pipeline,
+                                           bool enable,
+                                           cg_error_t **error);
 
 /**
- * cogl_pipeline_get_per_vertex_point_size:
- * @pipeline: a #CoglPipeline pointer
+ * cg_pipeline_get_per_vertex_point_size:
+ * @pipeline: a #cg_pipeline_t pointer
  *
  * Since: 2.0
  * Stability: Unstable
  * Return value: %true if the pipeline has per-vertex point size
  *   enabled or %false otherwise. The per-vertex point size can be
- *   enabled with cogl_pipeline_set_per_vertex_point_size().
+ *   enabled with cg_pipeline_set_per_vertex_point_size().
  */
-bool
-cogl_pipeline_get_per_vertex_point_size (CoglPipeline *pipeline);
+bool cg_pipeline_get_per_vertex_point_size(cg_pipeline_t *pipeline);
 
 /**
- * cogl_pipeline_get_color_mask:
- * @pipeline: a #CoglPipeline object.
+ * cg_pipeline_get_color_mask:
+ * @pipeline: a #cg_pipeline_t object.
  *
- * Gets the current #CoglColorMask of which channels would be written to the
+ * Gets the current #cg_color_mask_t of which channels would be written to the
  * current framebuffer. Each bit set in the mask means that the
  * corresponding color would be written.
  *
- * Returns: A #CoglColorMask
+ * Returns: A #cg_color_mask_t
  * Since: 1.8
  * Stability: unstable
  */
-CoglColorMask
-cogl_pipeline_get_color_mask (CoglPipeline *pipeline);
+cg_color_mask_t cg_pipeline_get_color_mask(cg_pipeline_t *pipeline);
 
 /**
- * cogl_pipeline_set_color_mask:
- * @pipeline: a #CoglPipeline object.
- * @color_mask: A #CoglColorMask of which color channels to write to
+ * cg_pipeline_set_color_mask:
+ * @pipeline: a #cg_pipeline_t object.
+ * @color_mask: A #cg_color_mask_t of which color channels to write to
  *              the current framebuffer.
  *
  * Defines a bit mask of which color channels should be written to the
@@ -414,19 +402,18 @@ cogl_pipeline_get_color_mask (CoglPipeline *pipeline);
  * Since: 1.8
  * Stability: unstable
  */
-void
-cogl_pipeline_set_color_mask (CoglPipeline *pipeline,
-                              CoglColorMask color_mask);
+void cg_pipeline_set_color_mask(cg_pipeline_t *pipeline,
+                                cg_color_mask_t color_mask);
 
 /**
- * cogl_pipeline_set_depth_state:
- * @pipeline: A #CoglPipeline object
- * @state: A #CoglDepthState struct
- * @error: A #CoglError to report failures to setup the given @state.
+ * cg_pipeline_set_depth_state:
+ * @pipeline: A #cg_pipeline_t object
+ * @state: A #cg_depth_state_t struct
+ * @error: A #cg_error_t to report failures to setup the given @state.
  *
  * This commits all the depth state configured in @state struct to the
  * given @pipeline. The configuration values are copied into the
- * pipeline so there is no requirement to keep the #CoglDepthState
+ * pipeline so there is no requirement to keep the #cg_depth_state_t
  * struct around if you don't need it any more.
  *
  * Note: Since some platforms do not support the depth range feature
@@ -438,48 +425,45 @@ cogl_pipeline_set_color_mask (CoglPipeline *pipeline,
  * Since: 2.0
  * Stability: Unstable
  */
-bool
-cogl_pipeline_set_depth_state (CoglPipeline *pipeline,
-                               const CoglDepthState *state,
-                               CoglError **error);
+bool cg_pipeline_set_depth_state(cg_pipeline_t *pipeline,
+                                 const cg_depth_state_t *state,
+                                 cg_error_t **error);
 
 /**
- * cogl_pipeline_get_depth_state:
- * @pipeline: A #CoglPipeline object
- * @state_out: (out): A destination #CoglDepthState struct
+ * cg_pipeline_get_depth_state:
+ * @pipeline: A #cg_pipeline_t object
+ * @state_out: (out): A destination #cg_depth_state_t struct
  *
  * Retrieves the current depth state configuration for the given
- * @pipeline as previously set using cogl_pipeline_set_depth_state().
+ * @pipeline as previously set using cg_pipeline_set_depth_state().
  *
  * Since: 2.0
  * Stability: Unstable
  */
-void
-cogl_pipeline_get_depth_state (CoglPipeline *pipeline,
-                               CoglDepthState *state_out);
+void cg_pipeline_get_depth_state(cg_pipeline_t *pipeline,
+                                 cg_depth_state_t *state_out);
 
 /**
- * CoglPipelineCullFaceMode:
- * @COGL_PIPELINE_CULL_FACE_MODE_NONE: Neither face will be
+ * cg_pipeline_cull_face_mode_t:
+ * @CG_PIPELINE_CULL_FACE_MODE_NONE: Neither face will be
  *  culled. This is the default.
- * @COGL_PIPELINE_CULL_FACE_MODE_FRONT: Front faces will be culled.
- * @COGL_PIPELINE_CULL_FACE_MODE_BACK: Back faces will be culled.
- * @COGL_PIPELINE_CULL_FACE_MODE_BOTH: All faces will be culled.
+ * @CG_PIPELINE_CULL_FACE_MODE_FRONT: Front faces will be culled.
+ * @CG_PIPELINE_CULL_FACE_MODE_BACK: Back faces will be culled.
+ * @CG_PIPELINE_CULL_FACE_MODE_BOTH: All faces will be culled.
  *
  * Specifies which faces should be culled. This can be set on a
- * pipeline using cogl_pipeline_set_cull_face_mode().
+ * pipeline using cg_pipeline_set_cull_face_mode().
  */
-typedef enum
-{
-  COGL_PIPELINE_CULL_FACE_MODE_NONE,
-  COGL_PIPELINE_CULL_FACE_MODE_FRONT,
-  COGL_PIPELINE_CULL_FACE_MODE_BACK,
-  COGL_PIPELINE_CULL_FACE_MODE_BOTH
-} CoglPipelineCullFaceMode;
+typedef enum {
+    CG_PIPELINE_CULL_FACE_MODE_NONE,
+    CG_PIPELINE_CULL_FACE_MODE_FRONT,
+    CG_PIPELINE_CULL_FACE_MODE_BACK,
+    CG_PIPELINE_CULL_FACE_MODE_BOTH
+} cg_pipeline_cull_face_mode_t;
 
 /**
- * cogl_pipeline_set_cull_face_mode:
- * @pipeline: A #CoglPipeline
+ * cg_pipeline_set_cull_face_mode:
+ * @pipeline: A #cg_pipeline_t
  * @cull_face_mode: The new mode to set
  *
  * Sets which faces will be culled when drawing. Face culling can be
@@ -488,75 +472,73 @@ typedef enum
  * impossible to see the inside then faces which are facing away from
  * the screen will never be seen so there is no point in drawing
  * them. This can be acheived by setting the cull face mode to
- * %COGL_PIPELINE_CULL_FACE_MODE_BACK.
+ * %CG_PIPELINE_CULL_FACE_MODE_BACK.
  *
  * Face culling relies on the primitives being drawn with a specific
  * order to represent which faces are facing inside and outside the
  * model. This order can be specified by calling
- * cogl_pipeline_set_front_face_winding().
+ * cg_pipeline_set_front_face_winding().
  *
  * Status: Unstable
  * Since: 2.0
  */
 void
-cogl_pipeline_set_cull_face_mode (CoglPipeline *pipeline,
-                                  CoglPipelineCullFaceMode cull_face_mode);
+cg_pipeline_set_cull_face_mode(cg_pipeline_t *pipeline,
+                               cg_pipeline_cull_face_mode_t cull_face_mode);
 
 /**
- * cogl_pipeline_get_cull_face_mode:
+ * cg_pipeline_get_cull_face_mode:
  *
  * Return value: the cull face mode that was previously set with
- * cogl_pipeline_set_cull_face_mode().
+ * cg_pipeline_set_cull_face_mode().
  *
  * Status: Unstable
  * Since: 2.0
  */
-CoglPipelineCullFaceMode
-cogl_pipeline_get_cull_face_mode (CoglPipeline *pipeline);
+cg_pipeline_cull_face_mode_t
+cg_pipeline_get_cull_face_mode(cg_pipeline_t *pipeline);
 
 /**
- * cogl_pipeline_set_front_face_winding:
- * @pipeline: a #CoglPipeline
+ * cg_pipeline_set_front_face_winding:
+ * @pipeline: a #cg_pipeline_t
  * @front_winding: the winding order
  *
  * The order of the vertices within a primitive specifies whether it
  * is considered to be front or back facing. This function specifies
  * which order is considered to be the front
- * faces. %COGL_WINDING_COUNTER_CLOCKWISE sets the front faces to
+ * faces. %CG_WINDING_COUNTER_CLOCKWISE sets the front faces to
  * primitives with vertices in a counter-clockwise order and
- * %COGL_WINDING_CLOCKWISE sets them to be clockwise. The default is
- * %COGL_WINDING_COUNTER_CLOCKWISE.
+ * %CG_WINDING_CLOCKWISE sets them to be clockwise. The default is
+ * %CG_WINDING_COUNTER_CLOCKWISE.
  *
  * Status: Unstable
  * Since: 2.0
  */
-void
-cogl_pipeline_set_front_face_winding (CoglPipeline *pipeline,
-                                      CoglWinding front_winding);
+void cg_pipeline_set_front_face_winding(cg_pipeline_t *pipeline,
+                                        cg_winding_t front_winding);
 
 /**
- * cogl_pipeline_get_front_face_winding:
- * @pipeline: a #CoglPipeline
+ * cg_pipeline_get_front_face_winding:
+ * @pipeline: a #cg_pipeline_t
  *
  * The order of the vertices within a primitive specifies whether it
  * is considered to be front or back facing. This function specifies
  * which order is considered to be the front
- * faces. %COGL_WINDING_COUNTER_CLOCKWISE sets the front faces to
+ * faces. %CG_WINDING_COUNTER_CLOCKWISE sets the front faces to
  * primitives with vertices in a counter-clockwise order and
- * %COGL_WINDING_CLOCKWISE sets them to be clockwise. The default is
- * %COGL_WINDING_COUNTER_CLOCKWISE.
+ * %CG_WINDING_CLOCKWISE sets them to be clockwise. The default is
+ * %CG_WINDING_COUNTER_CLOCKWISE.
  *
  * Returns: The @pipeline front face winding
  *
  * Status: Unstable
  * Since: 2.0
  */
-CoglWinding
-cogl_pipeline_get_front_face_winding (CoglPipeline *pipeline);
+cg_winding_t cg_pipeline_get_front_face_winding(cg_pipeline_t *pipeline);
 
 /**
- * cogl_pipeline_set_uniform_1f:
- * @pipeline: A #CoglPipeline object
+ * cg_pipeline_set_uniform_1f:
+ * @pipeline: A #cg_pipeline_t object
  * @uniform_location: The uniform's location identifier
  * @value: The new value for the uniform
  *
@@ -565,7 +547,7 @@ cogl_pipeline_get_front_face_winding (CoglPipeline *pipeline);
  * for drawing, the given value will be assigned to the uniform which
  * can be accessed from the shader's source. The value for
  * @uniform_location should be retrieved from the string name of the
- * uniform by calling cogl_pipeline_get_uniform_location().
+ * uniform by calling cg_pipeline_get_uniform_location().
  *
  * This function should be used to set uniforms that are of type
  * float. It can also be used to set a single member of a float array
@@ -574,14 +556,13 @@ cogl_pipeline_get_front_face_winding (CoglPipeline *pipeline);
  * Since: 2.0
  * Stability: Unstable
  */
-void
-cogl_pipeline_set_uniform_1f (CoglPipeline *pipeline,
-                              int uniform_location,
-                              float value);
+void cg_pipeline_set_uniform_1f(cg_pipeline_t *pipeline,
+                                int uniform_location,
+                                float value);
 
 /**
- * cogl_pipeline_set_uniform_1i:
- * @pipeline: A #CoglPipeline object
+ * cg_pipeline_set_uniform_1i:
+ * @pipeline: A #cg_pipeline_t object
  * @uniform_location: The uniform's location identifier
  * @value: The new value for the uniform
  *
@@ -590,7 +571,7 @@ cogl_pipeline_set_uniform_1f (CoglPipeline *pipeline,
  * for drawing, the given value will be assigned to the uniform which
  * can be accessed from the shader's source. The value for
  * @uniform_location should be retrieved from the string name of the
- * uniform by calling cogl_pipeline_get_uniform_location().
+ * uniform by calling cg_pipeline_get_uniform_location().
  *
  * This function should be used to set uniforms that are of type
  * int. It can also be used to set a single member of a int array
@@ -599,14 +580,13 @@ cogl_pipeline_set_uniform_1f (CoglPipeline *pipeline,
  * Since: 2.0
  * Stability: Unstable
  */
-void
-cogl_pipeline_set_uniform_1i (CoglPipeline *pipeline,
-                              int uniform_location,
-                              int value);
+void cg_pipeline_set_uniform_1i(cg_pipeline_t *pipeline,
+                                int uniform_location,
+                                int value);
 
 /**
- * cogl_pipeline_set_uniform_float:
- * @pipeline: A #CoglPipeline object
+ * cg_pipeline_set_uniform_float:
+ * @pipeline: A #cg_pipeline_t object
  * @uniform_location: The uniform's location identifier
  * @n_components: The number of components in the corresponding uniform's type
  * @count: The number of values to set
@@ -617,7 +597,7 @@ cogl_pipeline_set_uniform_1i (CoglPipeline *pipeline,
  * for drawing, the given values will be assigned to the uniform which
  * can be accessed from the shader's source. The value for
  * @uniform_location should be retrieved from the string name of the
- * uniform by calling cogl_pipeline_get_uniform_location().
+ * uniform by calling cg_pipeline_get_uniform_location().
  *
  * This function can be used to set any floating point type uniform,
  * including float arrays and float vectors. For example, to set a
@@ -628,16 +608,15 @@ cogl_pipeline_set_uniform_1i (CoglPipeline *pipeline,
  * Since: 2.0
  * Stability: Unstable
  */
-void
-cogl_pipeline_set_uniform_float (CoglPipeline *pipeline,
-                                 int uniform_location,
-                                 int n_components,
-                                 int count,
-                                 const float *value);
+void cg_pipeline_set_uniform_float(cg_pipeline_t *pipeline,
+                                   int uniform_location,
+                                   int n_components,
+                                   int count,
+                                   const float *value);
 
 /**
- * cogl_pipeline_set_uniform_int:
- * @pipeline: A #CoglPipeline object
+ * cg_pipeline_set_uniform_int:
+ * @pipeline: A #cg_pipeline_t object
  * @uniform_location: The uniform's location identifier
  * @n_components: The number of components in the corresponding uniform's type
  * @count: The number of values to set
@@ -648,7 +627,7 @@ cogl_pipeline_set_uniform_float (CoglPipeline *pipeline,
  * for drawing, the given values will be assigned to the uniform which
  * can be accessed from the shader's source. The value for
  * @uniform_location should be retrieved from the string name of the
- * uniform by calling cogl_pipeline_get_uniform_location().
+ * uniform by calling cg_pipeline_get_uniform_location().
  *
  * This function can be used to set any integer type uniform,
  * including int arrays and int vectors. For example, to set a single
@@ -659,16 +638,15 @@ cogl_pipeline_set_uniform_float (CoglPipeline *pipeline,
  * Since: 2.0
  * Stability: Unstable
  */
-void
-cogl_pipeline_set_uniform_int (CoglPipeline *pipeline,
-                               int uniform_location,
-                               int n_components,
-                               int count,
-                               const int *value);
+void cg_pipeline_set_uniform_int(cg_pipeline_t *pipeline,
+                                 int uniform_location,
+                                 int n_components,
+                                 int count,
+                                 const int *value);
 
 /**
- * cogl_pipeline_set_uniform_matrix:
- * @pipeline: A #CoglPipeline object
+ * cg_pipeline_set_uniform_matrix:
+ * @pipeline: A #cg_pipeline_t object
  * @uniform_location: The uniform's location identifier
  * @dimensions: The size of the matrix
  * @count: The number of values to set
@@ -680,7 +658,7 @@ cogl_pipeline_set_uniform_int (CoglPipeline *pipeline,
  * for drawing, the given values will be assigned to the uniform which
  * can be accessed from the shader's source. The value for
  * @uniform_location should be retrieved from the string name of the
- * uniform by calling cogl_pipeline_get_uniform_location().
+ * uniform by calling cg_pipeline_get_uniform_location().
  *
  * This function can be used to set any matrix type uniform, including
  * matrix arrays. For example, to set a single mat4 uniform you would
@@ -689,38 +667,35 @@ cogl_pipeline_set_uniform_int (CoglPipeline *pipeline,
  *
  * If @transpose is %false then the matrix is expected to be in
  * column-major order or if it is %true then the matrix is in
- * row-major order. You can pass a #CoglMatrix by calling by passing
- * the result of cogl_matrix_get_array() in @value and setting
+ * row-major order. You can pass a #cg_matrix_t by calling by passing
+ * the result of cg_matrix_get_array() in @value and setting
  * @transpose to %false.
  *
  * Since: 2.0
  * Stability: Unstable
  */
-void
-cogl_pipeline_set_uniform_matrix (CoglPipeline *pipeline,
-                                  int uniform_location,
-                                  int dimensions,
-                                  int count,
-                                  bool transpose,
-                                  const float *value);
+void cg_pipeline_set_uniform_matrix(cg_pipeline_t *pipeline,
+                                    int uniform_location,
+                                    int dimensions,
+                                    int count,
+                                    bool transpose,
+                                    const float *value);
 
 /**
- * cogl_pipeline_add_snippet:
- * @pipeline: A #CoglPipeline
- * @snippet: The #CoglSnippet to add to the vertex processing hook
+ * cg_pipeline_add_snippet:
+ * @pipeline: A #cg_pipeline_t
+ * @snippet: The #cg_snippet_t to add to the vertex processing hook
  *
  * Adds a shader snippet to @pipeline. The snippet will wrap around or
  * replace some part of the pipeline as defined by the hook point in
  * @snippet. Note that some hook points are specific to a layer and
- * must be added with cogl_pipeline_add_layer_snippet() instead.
+ * must be added with cg_pipeline_add_layer_snippet() instead.
  *
  * Since: 1.10
  * Stability: Unstable
  */
-void
-cogl_pipeline_add_snippet (CoglPipeline *pipeline,
-                           CoglSnippet *snippet);
+void cg_pipeline_add_snippet(cg_pipeline_t *pipeline, cg_snippet_t *snippet);
 
-COGL_END_DECLS
+CG_END_DECLS
 
-#endif /* __COGL_PIPELINE_STATE_H__ */
+#endif /* __CG_PIPELINE_STATE_H__ */

@@ -36,161 +36,137 @@
 #include "cogl-glib-source.h"
 #include "cogl-poll.h"
 
-typedef struct _CoglGLibSource
-{
-  GSource source;
+typedef struct _cg_glib_source_t {
+    GSource source;
 
-  CoglRenderer *renderer;
+    cg_renderer_t *renderer;
 
-  c_array_t *poll_fds;
-  int poll_fds_age;
+    c_array_t *poll_fds;
+    int poll_fds_age;
 
-  int64_t expiration_time;
-} CoglGLibSource;
+    int64_t expiration_time;
+} cg_glib_source_t;
 
 static gboolean
-cogl_glib_source_prepare (GSource *source, int *timeout)
+cg_glib_source_prepare(GSource *source, int *timeout)
 {
-  CoglGLibSource *cogl_source = (CoglGLibSource *) source;
-  CoglPollFD *poll_fds;
-  int n_poll_fds;
-  int64_t cogl_timeout;
-  int age;
-  int i;
+    cg_glib_source_t *cg_source = (cg_glib_source_t *)source;
+    cg_poll_fd_t *poll_fds;
+    int n_poll_fds;
+    int64_t cg_timeout;
+    int age;
+    int i;
 
-  age = cogl_poll_renderer_get_info (cogl_source->renderer,
-                                     &poll_fds,
-                                     &n_poll_fds,
-                                     &cogl_timeout);
+    age = cg_poll_renderer_get_info(
+        cg_source->renderer, &poll_fds, &n_poll_fds, &cg_timeout);
 
-  /* We have to be careful not to call g_source_add/remove_poll unless
-   * the FDs have changed because it will cause the main loop to
-   * immediately wake up. If we call it every time the source is
-   * prepared it will effectively never go idle. */
-  if (age != cogl_source->poll_fds_age)
-    {
-      /* Remove any existing polls before adding the new ones */
-      for (i = 0; i < cogl_source->poll_fds->len; i++)
-        {
-          GPollFD *poll_fd = &c_array_index (cogl_source->poll_fds, GPollFD, i);
-          g_source_remove_poll (source, poll_fd);
+    /* We have to be careful not to call g_source_add/remove_poll unless
+     * the FDs have changed because it will cause the main loop to
+     * immediately wake up. If we call it every time the source is
+     * prepared it will effectively never go idle. */
+    if (age != cg_source->poll_fds_age) {
+        /* Remove any existing polls before adding the new ones */
+        for (i = 0; i < cg_source->poll_fds->len; i++) {
+            GPollFD *poll_fd = &c_array_index(cg_source->poll_fds, GPollFD, i);
+            g_source_remove_poll(source, poll_fd);
         }
 
-      c_array_set_size (cogl_source->poll_fds, n_poll_fds);
+        c_array_set_size(cg_source->poll_fds, n_poll_fds);
 
-      for (i = 0; i < n_poll_fds; i++)
-        {
-          GPollFD *poll_fd = &c_array_index (cogl_source->poll_fds, GPollFD, i);
-          poll_fd->fd = poll_fds[i].fd;
-          g_source_add_poll (source, poll_fd);
+        for (i = 0; i < n_poll_fds; i++) {
+            GPollFD *poll_fd = &c_array_index(cg_source->poll_fds, GPollFD, i);
+            poll_fd->fd = poll_fds[i].fd;
+            g_source_add_poll(source, poll_fd);
         }
     }
 
-  cogl_source->poll_fds_age = age;
+    cg_source->poll_fds_age = age;
 
-  /* Update the events */
-  for (i = 0; i < n_poll_fds; i++)
-    {
-      GPollFD *poll_fd = &c_array_index (cogl_source->poll_fds, GPollFD, i);
-      poll_fd->events = poll_fds[i].events;
-      poll_fd->revents = 0;
+    /* Update the events */
+    for (i = 0; i < n_poll_fds; i++) {
+        GPollFD *poll_fd = &c_array_index(cg_source->poll_fds, GPollFD, i);
+        poll_fd->events = poll_fds[i].events;
+        poll_fd->revents = 0;
     }
 
-  if (cogl_timeout == -1)
-    {
-      *timeout = -1;
-      cogl_source->expiration_time = -1;
-    }
-  else
-    {
-      /* Round up to ensure that we don't try again too early */
-      *timeout = (cogl_timeout + 999) / 1000;
-      cogl_source->expiration_time = (g_source_get_time (source) +
-                                      cogl_timeout);
+    if (cg_timeout == -1) {
+        *timeout = -1;
+        cg_source->expiration_time = -1;
+    } else {
+        /* Round up to ensure that we don't try again too early */
+        *timeout = (cg_timeout + 999) / 1000;
+        cg_source->expiration_time = (g_source_get_time(source) + cg_timeout);
     }
 
-  return *timeout == 0;
+    return *timeout == 0;
 }
 
 static gboolean
-cogl_glib_source_check (GSource *source)
+cg_glib_source_check(GSource *source)
 {
-  CoglGLibSource *cogl_source = (CoglGLibSource *) source;
-  int i;
+    cg_glib_source_t *cg_source = (cg_glib_source_t *)source;
+    int i;
 
-  if (cogl_source->expiration_time >= 0 &&
-      g_source_get_time (source) >= cogl_source->expiration_time)
-    return true;
-
-  for (i = 0; i < cogl_source->poll_fds->len; i++)
-    {
-      GPollFD *poll_fd = &c_array_index (cogl_source->poll_fds, GPollFD, i);
-      if (poll_fd->revents != 0)
+    if (cg_source->expiration_time >= 0 &&
+        g_source_get_time(source) >= cg_source->expiration_time)
         return true;
+
+    for (i = 0; i < cg_source->poll_fds->len; i++) {
+        GPollFD *poll_fd = &c_array_index(cg_source->poll_fds, GPollFD, i);
+        if (poll_fd->revents != 0)
+            return true;
     }
 
-  return false;
+    return false;
 }
 
 static gboolean
-cogl_glib_source_dispatch (GSource *source,
-                           GSourceFunc callback,
-                           void *user_data)
+cg_glib_source_dispatch(GSource *source, GSourceFunc callback, void *user_data)
 {
-  CoglGLibSource *cogl_source = (CoglGLibSource *) source;
-  CoglPollFD *poll_fds =
-    (CoglPollFD *) &c_array_index (cogl_source->poll_fds, GPollFD, 0);
+    cg_glib_source_t *cg_source = (cg_glib_source_t *)source;
+    cg_poll_fd_t *poll_fds =
+        (cg_poll_fd_t *)&c_array_index(cg_source->poll_fds, GPollFD, 0);
 
-  cogl_poll_renderer_dispatch (cogl_source->renderer,
-                               poll_fds,
-                               cogl_source->poll_fds->len);
+    cg_poll_renderer_dispatch(
+        cg_source->renderer, poll_fds, cg_source->poll_fds->len);
 
-  return true;
+    return true;
 }
 
 static void
-cogl_glib_source_finalize (GSource *source)
+cg_glib_source_finalize(GSource *source)
 {
-  CoglGLibSource *cogl_source = (CoglGLibSource *) source;
+    cg_glib_source_t *cg_source = (cg_glib_source_t *)source;
 
-  c_array_free (cogl_source->poll_fds, true);
+    c_array_free(cg_source->poll_fds, true);
 }
 
-static GSourceFuncs
-cogl_glib_source_funcs =
-  {
-    cogl_glib_source_prepare,
-    cogl_glib_source_check,
-    cogl_glib_source_dispatch,
-    cogl_glib_source_finalize
-  };
+static GSourceFuncs cg_glib_source_funcs = { cg_glib_source_prepare,
+                                             cg_glib_source_check,
+                                             cg_glib_source_dispatch,
+                                             cg_glib_source_finalize };
 
 GSource *
-cogl_glib_renderer_source_new (CoglRenderer *renderer,
-                               int priority)
+cg_glib_renderer_source_new(cg_renderer_t *renderer, int priority)
 {
-  GSource *source;
-  CoglGLibSource *cogl_source;
+    GSource *source;
+    cg_glib_source_t *cg_source;
 
-  source = g_source_new (&cogl_glib_source_funcs,
-                         sizeof (CoglGLibSource));
-  cogl_source = (CoglGLibSource *) source;
+    source = g_source_new(&cg_glib_source_funcs, sizeof(cg_glib_source_t));
+    cg_source = (cg_glib_source_t *)source;
 
-  cogl_source->renderer = renderer;
-  cogl_source->poll_fds = c_array_new (false, false, sizeof (GPollFD));
+    cg_source->renderer = renderer;
+    cg_source->poll_fds = c_array_new(false, false, sizeof(GPollFD));
 
-  if (priority != G_PRIORITY_DEFAULT)
-    g_source_set_priority (source, priority);
+    if (priority != G_PRIORITY_DEFAULT)
+        g_source_set_priority(source, priority);
 
-  return source;
+    return source;
 }
 
 GSource *
-cogl_glib_source_new (CoglContext *context,
-                      int priority)
+cg_glib_source_new(cg_context_t *context, int priority)
 {
-  return cogl_glib_renderer_source_new (cogl_context_get_renderer (context),
-                                        priority);
+    return cg_glib_renderer_source_new(cg_context_get_renderer(context),
+                                       priority);
 }
-
-

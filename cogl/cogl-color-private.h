@@ -31,21 +31,18 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#ifndef __COGL_COLOR_PRIVATE_PRIVATE_H
-#define __COGL_COLOR_PRIVATE_PRIVATE_H
+#ifndef __CG_COLOR_PRIVATE_PRIVATE_H
+#define __CG_COLOR_PRIVATE_PRIVATE_H
 
 #include "cogl-color.h"
 
 #include <clib.h>
 
-/* cogl-pipeline.c wants to be able to hash CoglColor data so it needs
+/* cogl-pipeline.c wants to be able to hash cg_color_t data so it needs
  * the exact data size to be able to avoid reading the padding bytes.
  */
-#define _COGL_COLOR_DATA_SIZE 4
+#define _CG_COLOR_DATA_SIZE 4
 
-void
-_cogl_color_get_rgba_4fv (const CoglColor *color,
-                          float *dest);
+void _cg_color_get_rgba_4fv(const cg_color_t *color, float *dest);
 
-#endif /* __COGL_COLOR_PRIVATE_PRIVATE_H */
-
+#endif /* __CG_COLOR_PRIVATE_PRIVATE_H */

@@ -28,25 +28,25 @@
  *
  */
 
-#ifndef __COGL_SDL_H__
-#define __COGL_SDL_H__
+#ifndef __CG_SDL_H__
+#define __CG_SDL_H__
 
 /* NB: this is a top-level header that can be included directly but we
- * want to be careful not to define __COGL_H_INSIDE__ when this is
+ * want to be careful not to define __CG_H_INSIDE__ when this is
  * included internally while building Cogl itself since
- * __COGL_H_INSIDE__ is used in headers to guard public vs private api
+ * __CG_H_INSIDE__ is used in headers to guard public vs private api
  * definitions
  */
-#ifndef COGL_COMPILATION
+#ifndef CG_COMPILATION
 
 /* Note: When building Cogl .gir we explicitly define
- * __COGL_H_INSIDE__ */
-#ifndef __COGL_H_INSIDE__
-#define __COGL_H_INSIDE__
-#define __COGL_SDL_H_MUST_UNDEF_COGL_H_INSIDE__
+ * __CG_H_INSIDE__ */
+#ifndef __CG_H_INSIDE__
+#define __CG_H_INSIDE__
+#define __CG_SDL_H_MUST_UNDEF_CG_H_INSIDE__
 #endif
 
-#endif /* COGL_COMPILATION */
+#endif /* CG_COMPILATION */
 
 #include <cogl/cogl-context.h>
 #include <cogl/cogl-onscreen.h>
@@ -57,11 +57,11 @@
  * if we are using Cogl
  * that uses the SDL winsys
  */
-#pragma comment (lib, "SDL.lib")
-#pragma comment (lib, "SDLmain.lib")
+#pragma comment(lib, "SDL.lib")
+#pragma comment(lib, "SDLmain.lib")
 #endif
 
-COGL_BEGIN_DECLS
+CG_BEGIN_DECLS
 
 /**
  * SECTION:cogl-sdl
@@ -77,9 +77,9 @@ COGL_BEGIN_DECLS
  * this:
  * |[
  * MyAppData data;
- * CoglError *error = NULL;
+ * cg_error_t *error = NULL;
  *
- * data.ctx = cogl_sdl_context_new (SDL_USEREVENT, &error);
+ * data.ctx = cg_sdl_context_new (SDL_USEREVENT, &error);
  * if (!data.ctx)
  *   {
  *     fprintf (stderr, "Failed to create context: %s\n",
@@ -99,7 +99,7 @@ COGL_BEGIN_DECLS
  *             if (data.redraw_queued)
  *               break;
  *
- *             cogl_sdl_idle (ctx);
+ *             cg_sdl_idle (ctx);
  *             if (!SDL_WaitEvent (&event))
  *               {
  *                 fprintf (stderr, "Error waiting for SDL events");
@@ -108,7 +108,7 @@ COGL_BEGIN_DECLS
  *           }
  *
  *          handle_event (&data, &event);
- *          cogl_sdl_handle_event (ctx, &event);
+ *          cg_sdl_handle_event (ctx, &event);
  *        }
  *
  *     data.redraw_queued = redraw (&data);
@@ -117,86 +117,83 @@ COGL_BEGIN_DECLS
  */
 
 /**
- * cogl_sdl_context_new:
+ * cg_sdl_context_new:
  * @type: An SDL user event type between <constant>SDL_USEREVENT</constant> and
  *        <constant>SDL_NUMEVENTS</constant> - 1
- * @error: A CoglError return location.
+ * @error: A cg_error_t return location.
  *
- * This is a convenience function for creating a new #CoglContext for
+ * This is a convenience function for creating a new #cg_context_t for
  * use with SDL and specifying what SDL user event type Cogl can use
  * as a way to interrupt SDL_WaitEvent().
  *
  * This function is equivalent to the following code:
  * |[
- * CoglRenderer *renderer = cogl_renderer_new ();
- * CoglDisplay *display;
+ * cg_renderer_t *renderer = cg_renderer_new ();
+ * cg_display_t *display;
  *
- * cogl_renderer_set_winsys_id (renderer, COGL_WINSYS_ID_SDL);
+ * cg_renderer_set_winsys_id (renderer, CG_WINSYS_ID_SDL);
  *
- * cogl_sdl_renderer_set_event_type (renderer, type);
+ * cg_sdl_renderer_set_event_type (renderer, type);
  *
- * if (!cogl_renderer_connect (renderer, error))
+ * if (!cg_renderer_connect (renderer, error))
  *   return NULL;
  *
- * display = cogl_display_new (renderer, NULL);
- * if (!cogl_display_setup (display, error))
+ * display = cg_display_new (renderer, NULL);
+ * if (!cg_display_setup (display, error))
  *   return NULL;
  *
- * return cogl_context_new (display, error);
+ * return cg_context_new (display, error);
  * ]|
  *
  * <note>SDL applications are required to either use this API or
- * to manually create a #CoglRenderer and call
- * cogl_sdl_renderer_set_event_type().</note>
+ * to manually create a #cg_renderer_t and call
+ * cg_sdl_renderer_set_event_type().</note>
  *
  * Since: 2.0
  * Stability: unstable
  */
-CoglContext *
-cogl_sdl_context_new (int type, CoglError **error);
+cg_context_t *cg_sdl_context_new(int type, cg_error_t **error);
 
 /**
- * cogl_sdl_renderer_set_event_type:
- * @renderer: A #CoglRenderer
+ * cg_sdl_renderer_set_event_type:
+ * @renderer: A #cg_renderer_t
  * @type: An SDL user event type between <constant>SDL_USEREVENT</constant> and
  *        <constant>SDL_NUMEVENTS</constant> - 1
  *
  * Tells Cogl what SDL user event type it can use as a way to
- * interrupt SDL_WaitEvent() to ensure that cogl_sdl_handle_event()
+ * interrupt SDL_WaitEvent() to ensure that cg_sdl_handle_event()
  * will be called in a finite amount of time.
  *
  * <note>This should only be called on an un-connected
  * @renderer.</note>
  *
  * <note>For convenience most simple applications can use
- * cogl_sdl_context_new() if they don't want to manually create
- * #CoglRenderer and #CoglDisplay objects during
+ * cg_sdl_context_new() if they don't want to manually create
+ * #cg_renderer_t and #cg_display_t objects during
  * initialization.</note>
  *
  * Since: 2.0
  * Stability: unstable
  */
-void
-cogl_sdl_renderer_set_event_type (CoglRenderer *renderer, int type);
+void cg_sdl_renderer_set_event_type(cg_renderer_t *renderer, int type);
 
 /**
- * cogl_sdl_renderer_get_event_type:
- * @renderer: A #CoglRenderer
+ * cg_sdl_renderer_get_event_type:
+ * @renderer: A #cg_renderer_t
  *
  * Queries what SDL user event type Cogl is using as a way to
  * interrupt SDL_WaitEvent(). This is set either using
- * cogl_sdl_context_new or by using
- * cogl_sdl_renderer_set_event_type().
+ * cg_sdl_context_new or by using
+ * cg_sdl_renderer_set_event_type().
  *
  * Since: 2.0
  * Stability: unstable
  */
-int
-cogl_sdl_renderer_get_event_type (CoglRenderer *renderer);
+int cg_sdl_renderer_get_event_type(cg_renderer_t *renderer);
 
 /**
- * cogl_sdl_handle_event:
- * @context: A #CoglContext
+ * cg_sdl_handle_event:
+ * @context: A #cg_context_t
  * @event: An SDL event
  *
  * Passes control to Cogl so that it may dispatch any internal event
@@ -206,12 +203,11 @@ cogl_sdl_renderer_get_event_type (CoglRenderer *renderer);
  * Since: 2.0
  * Stability: unstable
  */
-void
-cogl_sdl_handle_event (CoglContext *context, SDL_Event *event);
+void cg_sdl_handle_event(cg_context_t *context, SDL_Event *event);
 
 /**
- * cogl_sdl_idle:
- * @context: A #CoglContext
+ * cg_sdl_idle:
+ * @context: A #cg_context_t
  *
  * Notifies Cogl that the application is idle and about to call
  * SDL_WaitEvent(). Cogl may use this to run low priority book keeping
@@ -220,38 +216,36 @@ cogl_sdl_handle_event (CoglContext *context, SDL_Event *event);
  * Since: 2.0
  * Stability: unstable
  */
-void
-cogl_sdl_idle (CoglContext *context);
+void cg_sdl_idle(cg_context_t *context);
 
 #if SDL_MAJOR_VERSION >= 2
 
 /**
- * cogl_sdl_onscreen_get_window:
- * @onscreen: A #CoglOnscreen
+ * cg_sdl_onscreen_get_window:
+ * @onscreen: A #cg_onscreen_t
  *
  * Returns: the underlying SDL_Window associated with an onscreen framebuffer.
  *
  * Since: 2.0
  * Stability: unstable
  */
-SDL_Window *
-cogl_sdl_onscreen_get_window (CoglOnscreen *onscreen);
+SDL_Window *cg_sdl_onscreen_get_window(cg_onscreen_t *onscreen);
 
 #endif /* SDL_MAJOR_VERSION */
 
-COGL_END_DECLS
+CG_END_DECLS
 
 /* The gobject introspection scanner seems to parse public headers in
  * isolation which means we need to be extra careful about how we
- * define and undefine __COGL_H_INSIDE__ used to detect when internal
+ * define and undefine __CG_H_INSIDE__ used to detect when internal
  * headers are incorrectly included by developers. In the gobject
- * introspection case we have to manually define __COGL_H_INSIDE__ as
+ * introspection case we have to manually define __CG_H_INSIDE__ as
  * a commandline argument for the scanner which means we must be
  * careful not to undefine it in a header...
  */
-#ifdef __COGL_SDL_H_MUST_UNDEF_COGL_H_INSIDE__
-#undef __COGL_H_INSIDE__
-#undef __COGL_SDL_H_MUST_UNDEF_COGL_H_INSIDE__
+#ifdef __CG_SDL_H_MUST_UNDEF_CG_H_INSIDE__
+#undef __CG_H_INSIDE__
+#undef __CG_SDL_H_MUST_UNDEF_CG_H_INSIDE__
 #endif
 
-#endif /* __COGL_SDL_H__ */
+#endif /* __CG_SDL_H__ */

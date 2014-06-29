@@ -30,51 +30,50 @@
  * Authors:
  *   Owen Taylor <otaylor@redhat.com>
  */
-#if !defined(__COGL_H_INSIDE__) && !defined(COGL_COMPILATION)
+#if !defined(__CG_H_INSIDE__) && !defined(CG_COMPILATION)
 #error "Only <cogl/cogl.h> can be included directly."
 #endif
 
-#ifndef __COGL_FRAME_INFO_H
-#define __COGL_FRAME_INFO_H
+#ifndef __CG_FRAME_INFO_H
+#define __CG_FRAME_INFO_H
 
 #include <cogl/cogl-types.h>
 #include <cogl/cogl-output.h>
 
-COGL_BEGIN_DECLS
+CG_BEGIN_DECLS
 
-typedef struct _CoglFrameInfo CoglFrameInfo;
-#define COGL_FRAME_INFO(X) ((CoglFrameInfo *)(X))
+typedef struct _cg_frame_info_t cg_frame_info_t;
+#define CG_FRAME_INFO(X) ((cg_frame_info_t *)(X))
 
 /**
- * cogl_is_frame_info:
- * @object: A #CoglObject pointer
+ * cg_is_frame_info:
+ * @object: A #cg_object_t pointer
  *
- * Gets whether the given object references a #CoglFrameInfo.
+ * Gets whether the given object references a #cg_frame_info_t.
  *
- * Return value: %true if the object references a #CoglFrameInfo
+ * Return value: %true if the object references a #cg_frame_info_t
  *   and %false otherwise.
  * Since: 2.0
  * Stability: unstable
  */
-bool
-cogl_is_frame_info (void *object);
+bool cg_is_frame_info(void *object);
 
 /**
- * cogl_frame_info_get_frame_counter:
- * @info: a #CoglFrameInfo object
+ * cg_frame_info_get_frame_counter:
+ * @info: a #cg_frame_info_t object
  *
- * Gets the frame counter for the #CoglOnscreen that corresponds
+ * Gets the frame counter for the #cg_onscreen_t that corresponds
  * to this frame.
  *
  * Return value: The frame counter value
  * Since: 1.14
  * Stability: unstable
  */
-int64_t cogl_frame_info_get_frame_counter (CoglFrameInfo *info);
+int64_t cg_frame_info_get_frame_counter(cg_frame_info_t *info);
 
 /**
- * cogl_frame_info_get_presentation_time:
- * @info: a #CoglFrameInfo object
+ * cg_frame_info_get_presentation_time:
+ * @info: a #cg_frame_info_t object
  *
  * Gets the presentation time for the frame. This is the time at which
  * the frame became visible to the user.
@@ -94,41 +93,40 @@ int64_t cogl_frame_info_get_frame_counter (CoglFrameInfo *info);
  * Since: 1.14
  * Stability: unstable
  */
-int64_t cogl_frame_info_get_presentation_time (CoglFrameInfo *info);
+int64_t cg_frame_info_get_presentation_time(cg_frame_info_t *info);
 
 /**
- * cogl_frame_info_get_refresh_rate:
- * @info: a #CoglFrameInfo object
+ * cg_frame_info_get_refresh_rate:
+ * @info: a #cg_frame_info_t object
  *
  * Gets the refresh rate in Hertz for the output that the frame was on
  * at the time the frame was presented.
  *
- * <note>Some platforms can't associate a #CoglOutput with a
- * #CoglFrameInfo object but are able to report a refresh rate via
+ * <note>Some platforms can't associate a #cg_output_t with a
+ * #cg_frame_info_t object but are able to report a refresh rate via
  * this api. Therefore if you need this information then this api is
- * more reliable than using cogl_frame_info_get_output() followed by
- * cogl_output_get_refresh_rate().</note>
+ * more reliable than using cg_frame_info_get_output() followed by
+ * cg_output_get_refresh_rate().</note>
  *
  * Return value: the refresh rate in Hertz
  * Since: 1.14
  * Stability: unstable
  */
-float cogl_frame_info_get_refresh_rate (CoglFrameInfo *info);
+float cg_frame_info_get_refresh_rate(cg_frame_info_t *info);
 
 /**
- * cogl_frame_info_get_output:
- * @info: a #CoglFrameInfo object
+ * cg_frame_info_get_output:
+ * @info: a #cg_frame_info_t object
  *
- * Gets the #CoglOutput that the swapped frame was presented to.
+ * Gets the #cg_output_t that the swapped frame was presented to.
  *
- * Return value: (transfer none): The #CoglOutput that the frame was
+ * Return value: (transfer none): The #cg_output_t that the frame was
  *        presented to, or %NULL if this could not be determined.
  * Since: 1.14
  * Stability: unstable
  */
-CoglOutput *
-cogl_frame_info_get_output (CoglFrameInfo *info);
+cg_output_t *cg_frame_info_get_output(cg_frame_info_t *info);
 
-COGL_END_DECLS
+CG_END_DECLS
 
-#endif /* __COGL_FRAME_INFO_H */
+#endif /* __CG_FRAME_INFO_H */

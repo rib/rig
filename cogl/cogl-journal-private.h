@@ -28,94 +28,85 @@
  *
  */
 
-#ifndef __COGL_JOURNAL_PRIVATE_H
-#define __COGL_JOURNAL_PRIVATE_H
+#ifndef __CG_JOURNAL_PRIVATE_H
+#define __CG_JOURNAL_PRIVATE_H
 
 #include "cogl-texture.h"
 #include "cogl-object-private.h"
 #include "cogl-clip-stack.h"
 #include "cogl-fence-private.h"
 
-#define COGL_JOURNAL_VBO_POOL_SIZE 8
+#define CG_JOURNAL_VBO_POOL_SIZE 8
 
-typedef struct _CoglJournal
-{
-  CoglObject _parent;
+typedef struct _cg_journal_t {
+    cg_object_t _parent;
 
-  /* A pointer the framebuffer that is using this journal. This is
-     only valid when the journal is not empty. It *does* take a
-     reference on the framebuffer. Although this creates a circular
-     reference, the framebuffer has special code to handle the case
-     where the journal is the only thing holding a reference and it
-     will cause the journal to flush */
-  CoglFramebuffer *framebuffer;
+    /* A pointer the framebuffer that is using this journal. This is
+       only valid when the journal is not empty. It *does* take a
+       reference on the framebuffer. Although this creates a circular
+       reference, the framebuffer has special code to handle the case
+       where the journal is the only thing holding a reference and it
+       will cause the journal to flush */
+    cg_framebuffer_t *framebuffer;
 
-  c_array_t *entries;
-  c_array_t *vertices;
-  size_t needed_vbo_len;
+    c_array_t *entries;
+    c_array_t *vertices;
+    size_t needed_vbo_len;
 
-  /* A pool of attribute buffers is used so that we can avoid repeatedly
-     reallocating buffers. Only one of these buffers at a time will be
-     used by Cogl but we keep more than one alive anyway in case the
-     GL driver is internally using the buffer and it would have to
-     allocate a new one when we start writing to it */
-  CoglAttributeBuffer *vbo_pool[COGL_JOURNAL_VBO_POOL_SIZE];
-  /* The next vbo to use from the pool. We just cycle through them in
-     order */
-  unsigned int next_vbo_in_pool;
+    /* A pool of attribute buffers is used so that we can avoid repeatedly
+       reallocating buffers. Only one of these buffers at a time will be
+       used by Cogl but we keep more than one alive anyway in case the
+       GL driver is internally using the buffer and it would have to
+       allocate a new one when we start writing to it */
+    cg_attribute_buffer_t *vbo_pool[CG_JOURNAL_VBO_POOL_SIZE];
+    /* The next vbo to use from the pool. We just cycle through them in
+       order */
+    unsigned int next_vbo_in_pool;
 
-  int fast_read_pixel_count;
+    int fast_read_pixel_count;
 
-  CoglList pending_fences;
+    cg_list_t pending_fences;
 
-} CoglJournal;
+} cg_journal_t;
 
 /* To improve batching of geometry when submitting vertices to OpenGL we
  * log the texture rectangles we want to draw to a journal, so when we
  * later flush the journal we aim to batch data, and gl draw calls. */
-typedef struct _CoglJournalEntry
-{
-  CoglPipeline            *pipeline;
-  CoglMatrixEntry         *modelview_entry;
-  CoglClipStack           *clip_stack;
-  /* Offset into ctx->logged_vertices */
-  size_t                   array_offset;
-  int                      n_layers;
-} CoglJournalEntry;
+typedef struct _cg_journal_entry_t {
+    cg_pipeline_t *pipeline;
+    cg_matrix_entry_t *modelview_entry;
+    cg_clip_stack_t *clip_stack;
+    /* Offset into ctx->logged_vertices */
+    size_t array_offset;
+    int n_layers;
+} cg_journal_entry_t;
 
-CoglJournal *
-_cogl_journal_new (CoglFramebuffer *framebuffer);
+cg_journal_t *_cg_journal_new(cg_framebuffer_t *framebuffer);
 
-void
-_cogl_journal_log_quad (CoglJournal  *journal,
-                        const float  *position,
-                        CoglPipeline *pipeline,
-                        int           n_layers,
-                        CoglTexture  *layer0_override_texture,
-                        const float  *tex_coords,
-                        unsigned int  tex_coords_len);
+void _cg_journal_log_quad(cg_journal_t *journal,
+                          const float *position,
+                          cg_pipeline_t *pipeline,
+                          int n_layers,
+                          cg_texture_t *layer0_override_texture,
+                          const float *tex_coords,
+                          unsigned int tex_coords_len);
 
-void
-_cogl_journal_flush (CoglJournal *journal);
+void _cg_journal_flush(cg_journal_t *journal);
 
-void
-_cogl_journal_discard (CoglJournal *journal);
+void _cg_journal_discard(cg_journal_t *journal);
 
-bool
-_cogl_journal_all_entries_within_bounds (CoglJournal *journal,
-                                         float clip_x0,
-                                         float clip_y0,
-                                         float clip_x1,
-                                         float clip_y1);
+bool _cg_journal_all_entries_within_bounds(cg_journal_t *journal,
+                                           float clip_x0,
+                                           float clip_y0,
+                                           float clip_x1,
+                                           float clip_y1);
 
-bool
-_cogl_journal_try_read_pixel (CoglJournal *journal,
-                              int x,
-                              int y,
-                              CoglBitmap *bitmap,
-                              bool *found_intersection);
+bool _cg_journal_try_read_pixel(cg_journal_t *journal,
+                                int x,
+                                int y,
+                                cg_bitmap_t *bitmap,
+                                bool *found_intersection);
 
-bool
-_cogl_is_journal (void *object);
+bool _cg_is_journal(void *object);
 
-#endif /* __COGL_JOURNAL_PRIVATE_H */
+#endif /* __CG_JOURNAL_PRIVATE_H */

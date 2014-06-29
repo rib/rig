@@ -31,24 +31,21 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#ifndef __COGL_MATRIX_PRIVATE_H
-#define __COGL_MATRIX_PRIVATE_H
+#ifndef __CG_MATRIX_PRIVATE_H
+#define __CG_MATRIX_PRIVATE_H
 
 #include <clib.h>
 
-COGL_BEGIN_DECLS
+CG_BEGIN_DECLS
 
-#define _COGL_MATRIX_DEBUG_PRINT(MATRIX) \
-  if (C_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_MATRICES))) \
-    { \
-      c_print ("%s:\n", G_STRFUNC); \
-      cogl_debug_matrix_print (MATRIX); \
+#define _CG_MATRIX_DEBUG_PRINT(MATRIX)                                         \
+    if (C_UNLIKELY(CG_DEBUG_ENABLED(CG_DEBUG_MATRICES))) {                     \
+        c_print("%s:\n", G_STRFUNC);                                           \
+        cg_debug_matrix_print(MATRIX);                                         \
     }
 
-void
-_cogl_matrix_prefix_print (const char *prefix, const CoglMatrix *matrix);
+void _cg_matrix_prefix_print(const char *prefix, const cg_matrix_t *matrix);
 
-COGL_END_DECLS
+CG_END_DECLS
 
-#endif /* __COGL_MATRIX_PRIVATE_H */
-
+#endif /* __CG_MATRIX_PRIVATE_H */

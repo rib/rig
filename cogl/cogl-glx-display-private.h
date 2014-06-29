@@ -28,34 +28,32 @@
  *
  */
 
-#ifndef __COGL_DISPLAY_GLX_PRIVATE_H
-#define __COGL_DISPLAY_GLX_PRIVATE_H
+#ifndef __CG_DISPLAY_GLX_PRIVATE_H
+#define __CG_DISPLAY_GLX_PRIVATE_H
 
 #include "cogl-object-private.h"
 
-typedef struct _CoglGLXCachedConfig
-{
-  /* This will be -1 if there is no cached config in this slot */
-  int depth;
-  bool found;
-  GLXFBConfig fb_config;
-  bool can_mipmap;
-} CoglGLXCachedConfig;
+typedef struct _cg_glx_cached_config_t {
+    /* This will be -1 if there is no cached config in this slot */
+    int depth;
+    bool found;
+    GLXFBConfig fb_config;
+    bool can_mipmap;
+} cg_glx_cached_config_t;
 
-#define COGL_GLX_N_CACHED_CONFIGS 3
+#define CG_GLX_N_CACHED_CONFIGS 3
 
-typedef struct _CoglGLXDisplay
-{
-  CoglGLXCachedConfig glx_cached_configs[COGL_GLX_N_CACHED_CONFIGS];
+typedef struct _cg_glx_display_t {
+    cg_glx_cached_config_t glx_cached_configs[CG_GLX_N_CACHED_CONFIGS];
 
-  bool found_fbconfig;
-  bool fbconfig_has_rgba_visual;
-  GLXFBConfig fbconfig;
+    bool found_fbconfig;
+    bool fbconfig_has_rgba_visual;
+    GLXFBConfig fbconfig;
 
-  /* Single context for all wins */
-  GLXContext glx_context;
-  GLXWindow dummy_glxwin;
-  Window dummy_xwin;
-} CoglGLXDisplay;
+    /* Single context for all wins */
+    GLXContext glx_context;
+    GLXWindow dummy_glxwin;
+    Window dummy_xwin;
+} cg_glx_display_t;
 
-#endif /* __COGL_DISPLAY_GLX_PRIVATE_H */
+#endif /* __CG_DISPLAY_GLX_PRIVATE_H */

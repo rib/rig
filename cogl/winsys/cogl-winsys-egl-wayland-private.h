@@ -28,12 +28,11 @@
  *
  */
 
-#ifndef __COGL_WINSYS_EGL_WAYLAND_PRIVATE_H
-#define __COGL_WINSYS_EGL_WAYLAND_PRIVATE_H
+#ifndef __CG_WINSYS_EGL_WAYLAND_PRIVATE_H
+#define __CG_WINSYS_EGL_WAYLAND_PRIVATE_H
 
 #include "cogl-winsys-private.h"
 
-const CoglWinsysVtable *
-_cogl_winsys_egl_wayland_get_vtable (void);
+const cg_winsys_vtable_t *_cg_winsys_egl_wayland_get_vtable(void);
 
-#endif /* __COGL_WINSYS_EGL_WAYLAND_PRIVATE_H */
+#endif /* __CG_WINSYS_EGL_WAYLAND_PRIVATE_H */

@@ -30,8 +30,8 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#ifndef __COGL_TEXURE_2D_SLICED_H
-#define __COGL_TEXURE_2D_SLICED_H
+#ifndef __CG_TEXURE_2D_SLICED_H
+#define __CG_TEXURE_2D_SLICED_H
 
 #include "cogl-context.h"
 #include "cogl-types.h"
@@ -43,7 +43,7 @@
  *                     multiple 2D textures with power-of-two sizes.
  *
  * These functions allow high-level meta textures (See the
- * #CoglMetaTexture interface) to be allocated that may internally be
+ * #cg_meta_texture_t interface) to be allocated that may internally be
  * comprised of multiple 2D texture "slices" with power-of-two sizes.
  *
  * This API can be useful when working with GPUs that don't have
@@ -67,12 +67,12 @@
  * is also applied from top to bottom.
  */
 
-typedef struct _CoglTexture2DSliced CoglTexture2DSliced;
-#define COGL_TEXTURE_2D_SLICED(X) ((CoglTexture2DSliced *)X)
+typedef struct _cg_texture_2d_sliced_t cg_texture_2d_sliced_t;
+#define CG_TEXTURE_2D_SLICED(X) ((cg_texture_2d_sliced_t *)X)
 
 /**
- * cogl_texture_2d_sliced_new_with_size:
- * @ctx: A #CoglContext
+ * cg_texture_2d_sliced_new_with_size:
+ * @ctx: A #cg_context_t
  * @width: The virtual width of your sliced texture.
  * @height: The virtual height of your sliced texture.
  * @max_waste: The threshold of how wide a strip of wasted texels
@@ -80,8 +80,8 @@ typedef struct _CoglTexture2DSliced CoglTexture2DSliced;
  *             they must be sliced to reduce the amount of waste. A
  *             negative can be passed to disable slicing.
  *
- * Creates a #CoglTexture2DSliced that may internally be comprised of
- * 1 or more #CoglTexture2D textures depending on GPU limitations.
+ * Creates a #cg_texture_2d_sliced_t that may internally be comprised of
+ * 1 or more #cg_texture_2d_t textures depending on GPU limitations.
  * For example if the GPU only supports power-of-two sized textures
  * then a sliced texture will turn a non-power-of-two size into a
  * combination of smaller power-of-two sized textures. If the
@@ -95,7 +95,7 @@ typedef struct _CoglTexture2DSliced CoglTexture2DSliced;
  * specified. A negative @max_waste will disable slicing.
  *
  * The storage for the texture is not allocated before this function
- * returns. You can call cogl_texture_allocate() to explicitly
+ * returns. You can call cg_texture_allocate() to explicitly
  * allocate the underlying storage or let Cogl automatically allocate
  * storage lazily.
  *
@@ -105,32 +105,32 @@ typedef struct _CoglTexture2DSliced CoglTexture2DSliced;
  * is larger than is supported by the hardware but slicing is disabled
  * the texture size would be too large to handle.</note>
  *
- * Returns: (transfer full): A new #CoglTexture2DSliced object with no storage
+ * Returns: (transfer full): A new #cg_texture_2d_sliced_t object with no
+ * storage
  *          allocated yet.
  *
  * Since: 1.10
  * Stability: unstable
  */
-CoglTexture2DSliced *
-cogl_texture_2d_sliced_new_with_size (CoglContext *ctx,
-                                      int width,
-                                      int height,
-                                      int max_waste);
+cg_texture_2d_sliced_t *cg_texture_2d_sliced_new_with_size(cg_context_t *ctx,
+                                                           int width,
+                                                           int height,
+                                                           int max_waste);
 
 /**
- * cogl_texture_2d_sliced_new_from_file:
- * @ctx: A #CoglContext
+ * cg_texture_2d_sliced_new_from_file:
+ * @ctx: A #cg_context_t
  * @filename: the file to load
  * @max_waste: The threshold of how wide a strip of wasted texels
  *             are allowed along the right and bottom textures before
  *             they must be sliced to reduce the amount of waste. A
  *             negative can be passed to disable slicing.
- * @error: A #CoglError to catch exceptional errors or %NULL
+ * @error: A #cg_error_t to catch exceptional errors or %NULL
  *
- * Creates a #CoglTexture2DSliced from an image file.
+ * Creates a #cg_texture_2d_sliced_t from an image file.
  *
- * A #CoglTexture2DSliced may internally be comprised of 1 or more
- * #CoglTexture2D textures depending on GPU limitations.  For example
+ * A #cg_texture_2d_sliced_t may internally be comprised of 1 or more
+ * #cg_texture_2d_t textures depending on GPU limitations.  For example
  * if the GPU only supports power-of-two sized textures then a sliced
  * texture will turn a non-power-of-two size into a combination of
  * smaller power-of-two sized textures. If the requested texture size
@@ -144,7 +144,7 @@ cogl_texture_2d_sliced_new_with_size (CoglContext *ctx,
  * specified. A negative @max_waste will disable slicing.
  *
  * The storage for the texture is not allocated before this function
- * returns. You can call cogl_texture_allocate() to explicitly
+ * returns. You can call cg_texture_allocate() to explicitly
  * allocate the underlying storage or let Cogl automatically allocate
  * storage lazily.
  *
@@ -154,23 +154,22 @@ cogl_texture_2d_sliced_new_with_size (CoglContext *ctx,
  * larger than is supported by the hardware but slicing is disabled
  * the texture size would be too large to handle.</note>
  *
- * Return value: (transfer full): A newly created #CoglTexture2DSliced
+ * Return value: (transfer full): A newly created #cg_texture_2d_sliced_t
  *               or %NULL on failure and @error will be updated.
  *
  * Since: 1.16
  */
-CoglTexture2DSliced *
-cogl_texture_2d_sliced_new_from_file (CoglContext *ctx,
-                                      const char *filename,
-                                      int max_waste,
-                                      CoglError **error);
+cg_texture_2d_sliced_t *cg_texture_2d_sliced_new_from_file(cg_context_t *ctx,
+                                                           const char *filename,
+                                                           int max_waste,
+                                                           cg_error_t **error);
 
 /**
- * cogl_texture_2d_sliced_new_from_data:
- * @ctx: A #CoglContext
+ * cg_texture_2d_sliced_new_from_data:
+ * @ctx: A #cg_context_t
  * @width: width of texture in pixels
  * @height: height of texture in pixels
- * @format: the #CoglPixelFormat the buffer is stored in in RAM
+ * @format: the #cg_pixel_format_t the buffer is stored in in RAM
  * @max_waste: The threshold of how wide a strip of wasted texels
  *             are allowed along the right and bottom textures before
  *             they must be sliced to reduce the amount of waste. A
@@ -179,13 +178,13 @@ cogl_texture_2d_sliced_new_from_file (CoglContext *ctx,
  *    row in @data. A value of 0 will make Cogl automatically
  *    calculate @rowstride from @width and @format.
  * @data: pointer the memory region where the source buffer resides
- * @error: A #CoglError to catch exceptional errors or %NULL
+ * @error: A #cg_error_t to catch exceptional errors or %NULL
  *
- * Creates a new #CoglTexture2DSliced texture based on data residing
+ * Creates a new #cg_texture_2d_sliced_t texture based on data residing
  * in memory.
  *
- * A #CoglTexture2DSliced may internally be comprised of 1 or more
- * #CoglTexture2D textures depending on GPU limitations.  For example
+ * A #cg_texture_2d_sliced_t may internally be comprised of 1 or more
+ * #cg_texture_2d_t textures depending on GPU limitations.  For example
  * if the GPU only supports power-of-two sized textures then a sliced
  * texture will turn a non-power-of-two size into a combination of
  * smaller power-of-two sized textures. If the requested texture size
@@ -204,10 +203,10 @@ cogl_texture_2d_sliced_new_from_file (CoglContext *ctx,
  * returns. This means it is not possible to configure the texture
  * before it is allocated. If you do need to configure the texture
  * before allocation (to specify constraints on the internal format
- * for example) then you can instead create a #CoglBitmap for your
- * data and use cogl_texture_2d_sliced_new_from_bitmap() or use
- * cogl_texture_2d_sliced_new_with_size() and then upload data using
- * cogl_texture_set_data()</note>
+ * for example) then you can instead create a #cg_bitmap_t for your
+ * data and use cg_texture_2d_sliced_new_from_bitmap() or use
+ * cg_texture_2d_sliced_new_with_size() and then upload data using
+ * cg_texture_set_data()</note>
  *
  * <note>It's possible for the allocation of a sliced texture to fail
  * due to impossible slicing constraints if a negative @max_waste
@@ -215,34 +214,34 @@ cogl_texture_2d_sliced_new_from_file (CoglContext *ctx,
  * supported by the hardware but slicing is disabled the texture size
  * would be too large to handle.</note>
  *
- * Return value: (transfer full): A newly created #CoglTexture2DSliced
+ * Return value: (transfer full): A newly created #cg_texture_2d_sliced_t
  *               or %NULL on failure and @error will be updated.
  *
  * Since: 1.16
  */
-CoglTexture2DSliced *
-cogl_texture_2d_sliced_new_from_data (CoglContext *ctx,
-                                      int width,
-                                      int height,
-                                      int max_waste,
-                                      CoglPixelFormat format,
-                                      int rowstride,
-                                      const uint8_t *data,
-                                      CoglError **error);
+cg_texture_2d_sliced_t *
+cg_texture_2d_sliced_new_from_data(cg_context_t *ctx,
+                                   int width,
+                                   int height,
+                                   int max_waste,
+                                   cg_pixel_format_t format,
+                                   int rowstride,
+                                   const uint8_t *data,
+                                   cg_error_t **error);
 
 /**
- * cogl_texture_2d_sliced_new_from_bitmap:
- * @bmp: A #CoglBitmap
+ * cg_texture_2d_sliced_new_from_bitmap:
+ * @bmp: A #cg_bitmap_t
  * @max_waste: The threshold of how wide a strip of wasted texels
  *             are allowed along the right and bottom textures before
  *             they must be sliced to reduce the amount of waste. A
  *             negative can be passed to disable slicing.
  *
- * Creates a new #CoglTexture2DSliced texture based on data residing
+ * Creates a new #cg_texture_2d_sliced_t texture based on data residing
  * in a bitmap.
  *
- * A #CoglTexture2DSliced may internally be comprised of 1 or more
- * #CoglTexture2D textures depending on GPU limitations.  For example
+ * A #cg_texture_2d_sliced_t may internally be comprised of 1 or more
+ * #cg_texture_2d_t textures depending on GPU limitations.  For example
  * if the GPU only supports power-of-two sized textures then a sliced
  * texture will turn a non-power-of-two size into a combination of
  * smaller power-of-two sized textures. If the requested texture size
@@ -256,7 +255,7 @@ cogl_texture_2d_sliced_new_from_data (CoglContext *ctx,
  * specified. A negative @max_waste will disable slicing.
  *
  * The storage for the texture is not allocated before this function
- * returns. You can call cogl_texture_allocate() to explicitly
+ * returns. You can call cg_texture_allocate() to explicitly
  * allocate the underlying storage or let Cogl automatically allocate
  * storage lazily.
  *
@@ -266,27 +265,25 @@ cogl_texture_2d_sliced_new_from_data (CoglContext *ctx,
  * larger than is supported by the hardware but slicing is disabled
  * the texture size would be too large to handle.</note>
  *
- * Return value: (transfer full): A newly created #CoglTexture2DSliced
+ * Return value: (transfer full): A newly created #cg_texture_2d_sliced_t
  *               or %NULL on failure and @error will be updated.
  *
  * Since: 1.16
  */
-CoglTexture2DSliced *
-cogl_texture_2d_sliced_new_from_bitmap (CoglBitmap *bmp,
-                                        int max_waste);
+cg_texture_2d_sliced_t *cg_texture_2d_sliced_new_from_bitmap(cg_bitmap_t *bmp,
+                                                             int max_waste);
 
 /**
- * cogl_is_texture_2d_sliced:
- * @object: A #CoglObject pointer
+ * cg_is_texture_2d_sliced:
+ * @object: A #cg_object_t pointer
  *
- * Gets whether the given object references a #CoglTexture2DSliced.
+ * Gets whether the given object references a #cg_texture_2d_sliced_t.
  *
- * Return value: %true if the object references a #CoglTexture2DSliced
+ * Return value: %true if the object references a #cg_texture_2d_sliced_t
  *   and %false otherwise.
  * Since: 1.10
  * Stability: unstable
  */
-bool
-cogl_is_texture_2d_sliced (void *object);
+bool cg_is_texture_2d_sliced(void *object);
 
-#endif /* __COGL_TEXURE_2D_SLICED_H */
+#endif /* __CG_TEXURE_2D_SLICED_H */

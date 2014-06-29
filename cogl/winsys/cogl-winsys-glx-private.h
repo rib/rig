@@ -28,10 +28,9 @@
  *
  */
 
-#ifndef __COGL_WINSYS_GLX_PRIVATE_H
-#define __COGL_WINSYS_GLX_PRIVATE_H
+#ifndef __CG_WINSYS_GLX_PRIVATE_H
+#define __CG_WINSYS_GLX_PRIVATE_H
 
-const CoglWinsysVtable *
-_cogl_winsys_glx_get_vtable (void);
+const cg_winsys_vtable_t *_cg_winsys_glx_get_vtable(void);
 
-#endif /* __COGL_WINSYS_GLX_PRIVATE_H */
+#endif /* __CG_WINSYS_GLX_PRIVATE_H */

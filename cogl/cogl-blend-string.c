@@ -45,986 +45,866 @@
 #include "cogl-blend-string.h"
 #include "cogl-error-private.h"
 
-typedef enum _ParserState
-{
-  PARSER_STATE_EXPECT_DEST_CHANNELS,
-  PARSER_STATE_SCRAPING_DEST_CHANNELS,
-  PARSER_STATE_EXPECT_FUNCTION_NAME,
-  PARSER_STATE_SCRAPING_FUNCTION_NAME,
-  PARSER_STATE_EXPECT_ARG_START,
-  PARSER_STATE_EXPECT_STATEMENT_END
-} ParserState;
+typedef enum _parser_state_t {
+    PARSER_STATE_EXPECT_DEST_CHANNELS,
+    PARSER_STATE_SCRAPING_DEST_CHANNELS,
+    PARSER_STATE_EXPECT_FUNCTION_NAME,
+    PARSER_STATE_SCRAPING_FUNCTION_NAME,
+    PARSER_STATE_EXPECT_ARG_START,
+    PARSER_STATE_EXPECT_STATEMENT_END
+} parser_state_t;
 
-typedef enum _ParserArgState
-{
-  PARSER_ARG_STATE_START,
-  PARSER_ARG_STATE_EXPECT_MINUS,
-  PARSER_ARG_STATE_EXPECT_COLOR_SRC_NAME,
-  PARSER_ARG_STATE_SCRAPING_COLOR_SRC_NAME,
-  PARSER_ARG_STATE_MAYBE_COLOR_MASK,
-  PARSER_ARG_STATE_SCRAPING_MASK,
-  PARSER_ARG_STATE_MAYBE_MULT,
-  PARSER_ARG_STATE_EXPECT_OPEN_PAREN,
-  PARSER_ARG_STATE_EXPECT_FACTOR,
-  PARSER_ARG_STATE_MAYBE_SRC_ALPHA_SATURATE,
-  PARSER_ARG_STATE_MAYBE_MINUS,
-  PARSER_ARG_STATE_EXPECT_CLOSE_PAREN,
-  PARSER_ARG_STATE_EXPECT_END
-} ParserArgState;
+typedef enum _parser_arg_state_t {
+    PARSER_ARG_STATE_START,
+    PARSER_ARG_STATE_EXPECT_MINUS,
+    PARSER_ARG_STATE_EXPECT_COLOR_SRC_NAME,
+    PARSER_ARG_STATE_SCRAPING_COLOR_SRC_NAME,
+    PARSER_ARG_STATE_MAYBE_COLOR_MASK,
+    PARSER_ARG_STATE_SCRAPING_MASK,
+    PARSER_ARG_STATE_MAYBE_MULT,
+    PARSER_ARG_STATE_EXPECT_OPEN_PAREN,
+    PARSER_ARG_STATE_EXPECT_FACTOR,
+    PARSER_ARG_STATE_MAYBE_SRC_ALPHA_SATURATE,
+    PARSER_ARG_STATE_MAYBE_MINUS,
+    PARSER_ARG_STATE_EXPECT_CLOSE_PAREN,
+    PARSER_ARG_STATE_EXPECT_END
+} parser_arg_state_t;
 
+#define DEFINE_COLOR_SOURCE(NAME, NAME_LEN)                                    \
+    { /*.type = */                                                             \
+        CG_BLEND_STRING_COLOR_SOURCE_##NAME,                                   \
+        /*.name = */ #NAME,                                                \
+        /*.name_len = */ NAME_LEN                                          \
+    }
 
-#define DEFINE_COLOR_SOURCE(NAME, NAME_LEN) \
-  {/*.type = */COGL_BLEND_STRING_COLOR_SOURCE_ ## NAME, \
-   /*.name = */#NAME, \
-   /*.name_len = */NAME_LEN}
-
-static CoglBlendStringColorSourceInfo blending_color_sources[] = {
-  DEFINE_COLOR_SOURCE (SRC_COLOR, 9),
-  DEFINE_COLOR_SOURCE (DST_COLOR, 9),
-  DEFINE_COLOR_SOURCE (CONSTANT, 8)
+static cg_blend_string_color_source_info_t blending_color_sources[] = {
+    DEFINE_COLOR_SOURCE(SRC_COLOR, 9), DEFINE_COLOR_SOURCE(DST_COLOR, 9),
+    DEFINE_COLOR_SOURCE(CONSTANT, 8)
 };
 
-static CoglBlendStringColorSourceInfo tex_combine_color_sources[] = {
-  DEFINE_COLOR_SOURCE (TEXTURE, 7),
-  /* DEFINE_COLOR_SOURCE (TEXTURE_N, *) - handled manually */
-  DEFINE_COLOR_SOURCE (PRIMARY, 7),
-  DEFINE_COLOR_SOURCE (CONSTANT, 8),
-  DEFINE_COLOR_SOURCE (PREVIOUS, 8)
+static cg_blend_string_color_source_info_t tex_combine_color_sources[] = {
+    DEFINE_COLOR_SOURCE(TEXTURE, 7),
+    /* DEFINE_COLOR_SOURCE (TEXTURE_N, *) - handled manually */
+    DEFINE_COLOR_SOURCE(PRIMARY, 7), DEFINE_COLOR_SOURCE(CONSTANT, 8),
+    DEFINE_COLOR_SOURCE(PREVIOUS, 8)
 };
 
-static CoglBlendStringColorSourceInfo tex_combine_texture_n_color_source = {
-  /*.type = */COGL_BLEND_STRING_COLOR_SOURCE_TEXTURE_N,
-  /*.name = */"TEXTURE_N",
-  /*.name_len = */0
+static cg_blend_string_color_source_info_t tex_combine_texture_n_color_source =
+{
+    /*.type = */ CG_BLEND_STRING_COLOR_SOURCE_TEXTURE_N,
+    /*.name = */ "TEXTURE_N",
+    /*.name_len = */ 0
 };
 
 #undef DEFINE_COLOR_SOURCE
 
-#define DEFINE_FUNCTION(NAME, NAME_LEN, ARGC) \
-  { /*.type = */COGL_BLEND_STRING_FUNCTION_ ## NAME, \
-    /*.name = */#NAME, \
-    /*.name_len = */NAME_LEN, \
-    /*.argc = */ARGC }
+#define DEFINE_FUNCTION(NAME, NAME_LEN, ARGC)                                  \
+    { /*.type = */                                                             \
+        CG_BLEND_STRING_FUNCTION_##NAME,                                       \
+        /*.name = */ #NAME,                                                \
+        /*.name_len = */ NAME_LEN,                                         \
+        /*.argc = */ ARGC                                                  \
+    }
 
 /* NB: These must be sorted so any name that's a subset of another
  * comes later than the longer name. */
-static CoglBlendStringFunctionInfo tex_combine_functions[] = {
-  DEFINE_FUNCTION (REPLACE, 7, 1),
-  DEFINE_FUNCTION (MODULATE, 8, 2),
-  DEFINE_FUNCTION (ADD_SIGNED, 10, 2),
-  DEFINE_FUNCTION (ADD, 3, 2),
-  DEFINE_FUNCTION (INTERPOLATE, 11, 3),
-  DEFINE_FUNCTION (SUBTRACT, 8, 2),
-  DEFINE_FUNCTION (DOT3_RGBA, 9, 2),
-  DEFINE_FUNCTION (DOT3_RGB, 8, 2)
+static cg_blend_string_function_info_t tex_combine_functions[] = {
+    DEFINE_FUNCTION(REPLACE, 7, 1),      DEFINE_FUNCTION(MODULATE, 8, 2),
+    DEFINE_FUNCTION(ADD_SIGNED, 10, 2),  DEFINE_FUNCTION(ADD, 3, 2),
+    DEFINE_FUNCTION(INTERPOLATE, 11, 3), DEFINE_FUNCTION(SUBTRACT, 8, 2),
+    DEFINE_FUNCTION(DOT3_RGBA, 9, 2),    DEFINE_FUNCTION(DOT3_RGB, 8, 2)
 };
 
-static CoglBlendStringFunctionInfo blend_functions[] = {
-  DEFINE_FUNCTION (ADD, 3, 2)
-};
+static cg_blend_string_function_info_t blend_functions[] = { DEFINE_FUNCTION(
+                                                                 ADD, 3, 2) };
 
 #undef DEFINE_FUNCTION
 
 uint32_t
-cogl_blend_string_error_domain (void)
+cg_blend_string_error_domain(void)
 {
-  return c_quark_from_static_string ("cogl-blend-string-error-quark");
+    return c_quark_from_static_string("cogl-blend-string-error-quark");
 }
 
 void
-_cogl_blend_string_split_rgba_statement (CoglBlendStringStatement *statement,
-                                         CoglBlendStringStatement *rgb,
-                                         CoglBlendStringStatement *a)
+_cg_blend_string_split_rgba_statement(cg_blend_string_statement_t *statement,
+                                      cg_blend_string_statement_t *rgb,
+                                      cg_blend_string_statement_t *a)
 {
-  int i;
+    int i;
 
-  memcpy (rgb, statement, sizeof (CoglBlendStringStatement));
-  memcpy (a, statement, sizeof (CoglBlendStringStatement));
+    memcpy(rgb, statement, sizeof(cg_blend_string_statement_t));
+    memcpy(a, statement, sizeof(cg_blend_string_statement_t));
 
-  rgb->mask = COGL_BLEND_STRING_CHANNEL_MASK_RGB;
-  a->mask = COGL_BLEND_STRING_CHANNEL_MASK_ALPHA;
+    rgb->mask = CG_BLEND_STRING_CHANNEL_MASK_RGB;
+    a->mask = CG_BLEND_STRING_CHANNEL_MASK_ALPHA;
 
-  for (i = 0; i < statement->function->argc; i++)
-    {
-      CoglBlendStringArgument *arg = &statement->args[i];
-      CoglBlendStringArgument *rgb_arg = &rgb->args[i];
-      CoglBlendStringArgument *a_arg = &a->args[i];
+    for (i = 0; i < statement->function->argc; i++) {
+        cg_blend_string_argument_t *arg = &statement->args[i];
+        cg_blend_string_argument_t *rgb_arg = &rgb->args[i];
+        cg_blend_string_argument_t *a_arg = &a->args[i];
 
-      if (arg->source.mask == COGL_BLEND_STRING_CHANNEL_MASK_RGBA)
-        {
-          rgb_arg->source.mask = COGL_BLEND_STRING_CHANNEL_MASK_RGB;
-          a_arg->source.mask = COGL_BLEND_STRING_CHANNEL_MASK_ALPHA;
+        if (arg->source.mask == CG_BLEND_STRING_CHANNEL_MASK_RGBA) {
+            rgb_arg->source.mask = CG_BLEND_STRING_CHANNEL_MASK_RGB;
+            a_arg->source.mask = CG_BLEND_STRING_CHANNEL_MASK_ALPHA;
         }
 
-      if (arg->factor.is_color &&
-          arg->factor.source.mask == COGL_BLEND_STRING_CHANNEL_MASK_RGBA)
-        {
-          rgb_arg->factor.source.mask = COGL_BLEND_STRING_CHANNEL_MASK_RGB;
-          a_arg->factor.source.mask = COGL_BLEND_STRING_CHANNEL_MASK_ALPHA;
+        if (arg->factor.is_color &&
+            arg->factor.source.mask == CG_BLEND_STRING_CHANNEL_MASK_RGBA) {
+            rgb_arg->factor.source.mask = CG_BLEND_STRING_CHANNEL_MASK_RGB;
+            a_arg->factor.source.mask = CG_BLEND_STRING_CHANNEL_MASK_ALPHA;
         }
     }
 }
 
 static bool
-validate_tex_combine_statements (CoglBlendStringStatement *statements,
-                                 int n_statements,
-                                 CoglError **error)
+validate_tex_combine_statements(cg_blend_string_statement_t *statements,
+                                int n_statements,
+                                cg_error_t **error)
 {
-  int i, j;
-  const char *error_string;
-  CoglBlendStringError detail = COGL_BLEND_STRING_ERROR_INVALID_ERROR;
+    int i, j;
+    const char *error_string;
+    cg_blend_string_error_t detail = CG_BLEND_STRING_ERROR_INVALID_ERROR;
 
-  for (i = 0; i < n_statements; i++)
-    {
-      for (j = 0; j < statements[i].function->argc; j++)
-        {
-          CoglBlendStringArgument *arg = &statements[i].args[j];
-          if (arg->source.is_zero)
-            {
-              error_string = "You can't use the constant '0' as a texture "
-                             "combine argument";
-              goto error;
+    for (i = 0; i < n_statements; i++) {
+        for (j = 0; j < statements[i].function->argc; j++) {
+            cg_blend_string_argument_t *arg = &statements[i].args[j];
+            if (arg->source.is_zero) {
+                error_string = "You can't use the constant '0' as a texture "
+                               "combine argument";
+                goto error;
             }
-          if (!arg->factor.is_one)
-            {
-              error_string = "Argument factors are only relevant to blending "
-                             "not texture combining";
-              goto error;
+            if (!arg->factor.is_one) {
+                error_string = "Argument factors are only relevant to blending "
+                               "not texture combining";
+                goto error;
             }
         }
     }
 
-  return true;
+    return true;
 
 error:
-  _cogl_set_error (error,
-                   COGL_BLEND_STRING_ERROR,
-                   detail,
-                   "Invalid texture combine string: %s",
-                   error_string);
+    _cg_set_error(error,
+                  CG_BLEND_STRING_ERROR,
+                  detail,
+                  "Invalid texture combine string: %s",
+                  error_string);
 
-  if (COGL_DEBUG_ENABLED (COGL_DEBUG_BLEND_STRINGS))
-    {
-      c_debug ("Invalid texture combine string: %s",
-               error_string);
+    if (CG_DEBUG_ENABLED(CG_DEBUG_BLEND_STRINGS)) {
+        c_debug("Invalid texture combine string: %s", error_string);
     }
-  return false;
+    return false;
 }
 
 static bool
-validate_blend_statements (CoglContext *ctx,
-                           CoglBlendStringStatement *statements,
-                           int n_statements,
-                           CoglError **error)
+validate_blend_statements(cg_context_t *ctx,
+                          cg_blend_string_statement_t *statements,
+                          int n_statements,
+                          cg_error_t **error)
 {
-  int i, j;
-  const char *error_string;
-  CoglBlendStringError detail = COGL_BLEND_STRING_ERROR_INVALID_ERROR;
+    int i, j;
+    const char *error_string;
+    cg_blend_string_error_t detail = CG_BLEND_STRING_ERROR_INVALID_ERROR;
 
-  if (n_statements == 2 &&
-      !ctx->glBlendEquationSeparate &&
-      statements[0].function->type != statements[1].function->type)
-    {
-      error_string = "Separate blend functions for the RGB an A "
-        "channels isn't supported by the driver";
-      detail = COGL_BLEND_STRING_ERROR_GPU_UNSUPPORTED_ERROR;
-      goto error;
+    if (n_statements == 2 && !ctx->glBlendEquationSeparate &&
+        statements[0].function->type != statements[1].function->type) {
+        error_string = "Separate blend functions for the RGB an A "
+                       "channels isn't supported by the driver";
+        detail = CG_BLEND_STRING_ERROR_GPU_UNSUPPORTED_ERROR;
+        goto error;
     }
 
-  for (i = 0; i < n_statements; i++)
-    for (j = 0; j < statements[i].function->argc; j++)
-      {
-        CoglBlendStringArgument *arg = &statements[i].args[j];
+    for (i = 0; i < n_statements; i++)
+        for (j = 0; j < statements[i].function->argc; j++) {
+            cg_blend_string_argument_t *arg = &statements[i].args[j];
 
-        if (arg->source.is_zero)
-          continue;
+            if (arg->source.is_zero)
+                continue;
 
-        if ((j == 0 &&
-             arg->source.info->type !=
-             COGL_BLEND_STRING_COLOR_SOURCE_SRC_COLOR)
-            || (j == 1 &&
-                arg->source.info->type !=
-                COGL_BLEND_STRING_COLOR_SOURCE_DST_COLOR))
-          {
-            error_string = "For blending you must always use SRC_COLOR "
-                           "for arg0 and DST_COLOR for arg1";
-            goto error;
-          }
+            if ((j == 0 && arg->source.info->type !=
+                 CG_BLEND_STRING_COLOR_SOURCE_SRC_COLOR) ||
+                (j == 1 && arg->source.info->type !=
+                 CG_BLEND_STRING_COLOR_SOURCE_DST_COLOR)) {
+                error_string = "For blending you must always use SRC_COLOR "
+                               "for arg0 and DST_COLOR for arg1";
+                goto error;
+            }
 
-        if (!_cogl_has_private_feature (ctx,
-                                        COGL_PRIVATE_FEATURE_BLEND_CONSTANT) &&
-            arg->factor.is_color &&
-            (arg->factor.source.info->type ==
-             COGL_BLEND_STRING_COLOR_SOURCE_CONSTANT))
-          {
-            error_string = "Driver doesn't support constant blend factors";
-            detail = COGL_BLEND_STRING_ERROR_GPU_UNSUPPORTED_ERROR;
-            goto error;
-          }
-      }
+            if (!_cg_has_private_feature(ctx,
+                                         CG_PRIVATE_FEATURE_BLEND_CONSTANT) &&
+                arg->factor.is_color &&
+                (arg->factor.source.info->type ==
+                 CG_BLEND_STRING_COLOR_SOURCE_CONSTANT)) {
+                error_string = "Driver doesn't support constant blend factors";
+                detail = CG_BLEND_STRING_ERROR_GPU_UNSUPPORTED_ERROR;
+                goto error;
+            }
+        }
 
-  return true;
+    return true;
 
 error:
-  _cogl_set_error (error,
-                   COGL_BLEND_STRING_ERROR,
-                   detail,
-                   "Invalid blend string: %s",
-                   error_string);
-  return false;
+    _cg_set_error(error,
+                  CG_BLEND_STRING_ERROR,
+                  detail,
+                  "Invalid blend string: %s",
+                  error_string);
+    return false;
 }
 
 static bool
-validate_statements_for_context (CoglContext *ctx,
-                                 CoglBlendStringStatement *statements,
-                                 int n_statements,
-                                 CoglBlendStringContext context,
-                                 CoglError **error)
+validate_statements_for_context(cg_context_t *ctx,
+                                cg_blend_string_statement_t *statements,
+                                int n_statements,
+                                cg_blend_string_context_t context,
+                                cg_error_t **error)
 {
-  const char *error_string;
+    const char *error_string;
 
-  if (n_statements == 1)
-    {
-      if (statements[0].mask == COGL_BLEND_STRING_CHANNEL_MASK_ALPHA)
-        {
-          error_string = "You need to also give a blend statement for the RGB "
-                         "channels";
-          goto error;
-        }
-      else if (statements[0].mask == COGL_BLEND_STRING_CHANNEL_MASK_RGB)
-        {
-          error_string = "You need to also give a blend statement for the "
-                         "Alpha channel";
-          goto error;
+    if (n_statements == 1) {
+        if (statements[0].mask == CG_BLEND_STRING_CHANNEL_MASK_ALPHA) {
+            error_string =
+                "You need to also give a blend statement for the RGB "
+                "channels";
+            goto error;
+        } else if (statements[0].mask == CG_BLEND_STRING_CHANNEL_MASK_RGB) {
+            error_string = "You need to also give a blend statement for the "
+                           "Alpha channel";
+            goto error;
         }
     }
 
-  if (context == COGL_BLEND_STRING_CONTEXT_BLENDING)
-    return validate_blend_statements (ctx, statements, n_statements, error);
-  else
-    return validate_tex_combine_statements (statements, n_statements, error);
+    if (context == CG_BLEND_STRING_CONTEXT_BLENDING)
+        return validate_blend_statements(ctx, statements, n_statements, error);
+    else
+        return validate_tex_combine_statements(statements, n_statements, error);
 
 error:
-  _cogl_set_error (error,
-                   COGL_BLEND_STRING_ERROR,
-                   COGL_BLEND_STRING_ERROR_INVALID_ERROR,
-                   "Invalid %s string: %s",
-                   context == COGL_BLEND_STRING_CONTEXT_BLENDING ?
-                   "blend" : "texture combine",
-                   error_string);
+    _cg_set_error(error,
+                  CG_BLEND_STRING_ERROR,
+                  CG_BLEND_STRING_ERROR_INVALID_ERROR,
+                  "Invalid %s string: %s",
+                  context == CG_BLEND_STRING_CONTEXT_BLENDING
+                  ? "blend"
+                  : "texture combine",
+                  error_string);
 
-  if (COGL_DEBUG_ENABLED (COGL_DEBUG_BLEND_STRINGS))
-    {
-      c_debug ("Invalid %s string: %s",
-               context == COGL_BLEND_STRING_CONTEXT_BLENDING ?
-               "blend" : "texture combine",
-               error_string);
+    if (CG_DEBUG_ENABLED(CG_DEBUG_BLEND_STRINGS)) {
+        c_debug("Invalid %s string: %s",
+                context == CG_BLEND_STRING_CONTEXT_BLENDING ? "blend"
+                : "texture combine",
+                error_string);
     }
 
-  return false;
+    return false;
 }
 
 static void
-print_argument (CoglBlendStringArgument *arg)
+print_argument(cg_blend_string_argument_t *arg)
 {
-  const char *mask_names[] = {
-      "RGB",
-      "A",
-      "RGBA"
-  };
+    const char *mask_names[] = { "RGB", "A", "RGBA" };
 
-  c_print (" Arg:\n");
-  c_print ("  is zero = %s\n", arg->source.is_zero ? "yes" : "no");
-  if (!arg->source.is_zero)
-    {
-      c_print ("  color source = %s\n", arg->source.info->name);
-      c_print ("  one minus = %s\n", arg->source.one_minus ? "yes" : "no");
-      c_print ("  mask = %s\n", mask_names[arg->source.mask]);
-      c_print ("  texture = %d\n", arg->source.texture);
-      c_print ("\n");
-      c_print ("  factor is_one = %s\n", arg->factor.is_one ? "yes" : "no");
-      c_print ("  factor is_src_alpha_saturate = %s\n",
-               arg->factor.is_src_alpha_saturate ? "yes" : "no");
-      c_print ("  factor is_color = %s\n", arg->factor.is_color ? "yes" : "no");
-      if (arg->factor.is_color)
-        {
-          c_print ("  factor color:is zero = %s\n",
-                   arg->factor.source.is_zero ? "yes" : "no");
-          c_print ("  factor color:color source = %s\n",
-                   arg->factor.source.info->name);
-          c_print ("  factor color:one minus = %s\n",
-                   arg->factor.source.one_minus ? "yes" : "no");
-          c_print ("  factor color:mask = %s\n",
-                   mask_names[arg->factor.source.mask]);
-          c_print ("  factor color:texture = %d\n",
-                   arg->factor.source.texture);
+    c_print(" Arg:\n");
+    c_print("  is zero = %s\n", arg->source.is_zero ? "yes" : "no");
+    if (!arg->source.is_zero) {
+        c_print("  color source = %s\n", arg->source.info->name);
+        c_print("  one minus = %s\n", arg->source.one_minus ? "yes" : "no");
+        c_print("  mask = %s\n", mask_names[arg->source.mask]);
+        c_print("  texture = %d\n", arg->source.texture);
+        c_print("\n");
+        c_print("  factor is_one = %s\n", arg->factor.is_one ? "yes" : "no");
+        c_print("  factor is_src_alpha_saturate = %s\n",
+                arg->factor.is_src_alpha_saturate ? "yes" : "no");
+        c_print("  factor is_color = %s\n",
+                arg->factor.is_color ? "yes" : "no");
+        if (arg->factor.is_color) {
+            c_print("  factor color:is zero = %s\n",
+                    arg->factor.source.is_zero ? "yes" : "no");
+            c_print("  factor color:color source = %s\n",
+                    arg->factor.source.info->name);
+            c_print("  factor color:one minus = %s\n",
+                    arg->factor.source.one_minus ? "yes" : "no");
+            c_print("  factor color:mask = %s\n",
+                    mask_names[arg->factor.source.mask]);
+            c_print("  factor color:texture = %d\n",
+                    arg->factor.source.texture);
         }
     }
 }
 
 static void
-print_statement (int num, CoglBlendStringStatement *statement)
+print_statement(int num, cg_blend_string_statement_t *statement)
 {
-  const char *mask_names[] = {
-      "RGB",
-      "A",
-      "RGBA"
-  };
-  int i;
-  c_print ("Statement %d:\n", num);
-  c_print (" Destination channel mask = %s\n",
-           mask_names[statement->mask]);
-  c_print (" Function = %s\n", statement->function->name);
-  for (i = 0; i < statement->function->argc; i++)
-    print_argument (&statement->args[i]);
+    const char *mask_names[] = { "RGB", "A", "RGBA" };
+    int i;
+    c_print("Statement %d:\n", num);
+    c_print(" Destination channel mask = %s\n", mask_names[statement->mask]);
+    c_print(" Function = %s\n", statement->function->name);
+    for (i = 0; i < statement->function->argc; i++)
+        print_argument(&statement->args[i]);
 }
 
-static const CoglBlendStringFunctionInfo *
-get_function_info (const char *mark,
-                   const char *p,
-                   CoglBlendStringContext context)
+static const cg_blend_string_function_info_t *
+get_function_info(
+    const char *mark, const char *p, cg_blend_string_context_t context)
 {
-  size_t len = p - mark;
-  CoglBlendStringFunctionInfo *functions;
-  size_t array_len;
-  int i;
+    size_t len = p - mark;
+    cg_blend_string_function_info_t *functions;
+    size_t array_len;
+    int i;
 
-  if (context == COGL_BLEND_STRING_CONTEXT_BLENDING)
-    {
-      functions = blend_functions;
-      array_len = C_N_ELEMENTS (blend_functions);
-    }
-  else
-    {
-      functions = tex_combine_functions;
-      array_len = C_N_ELEMENTS (tex_combine_functions);
+    if (context == CG_BLEND_STRING_CONTEXT_BLENDING) {
+        functions = blend_functions;
+        array_len = C_N_ELEMENTS(blend_functions);
+    } else {
+        functions = tex_combine_functions;
+        array_len = C_N_ELEMENTS(tex_combine_functions);
     }
 
-  for (i = 0; i < array_len; i++)
-    {
-      if (len >= functions[i].name_len
-          && strncmp (mark, functions[i].name, functions[i].name_len) == 0)
-        return &functions[i];
+    for (i = 0; i < array_len; i++) {
+        if (len >= functions[i].name_len &&
+            strncmp(mark, functions[i].name, functions[i].name_len) == 0)
+            return &functions[i];
     }
-  return NULL;
+    return NULL;
 }
 
-static const CoglBlendStringColorSourceInfo *
-get_color_src_info (const char *mark,
-                    const char *p,
-                    CoglBlendStringContext context)
+static const cg_blend_string_color_source_info_t *
+get_color_src_info(
+    const char *mark, const char *p, cg_blend_string_context_t context)
 {
-  size_t len = p - mark;
-  CoglBlendStringColorSourceInfo *sources;
-  size_t array_len;
-  int i;
+    size_t len = p - mark;
+    cg_blend_string_color_source_info_t *sources;
+    size_t array_len;
+    int i;
 
-  if (context == COGL_BLEND_STRING_CONTEXT_BLENDING)
-    {
-      sources = blending_color_sources;
-      array_len = C_N_ELEMENTS (blending_color_sources);
-    }
-  else
-    {
-      sources = tex_combine_color_sources;
-      array_len = C_N_ELEMENTS (tex_combine_color_sources);
+    if (context == CG_BLEND_STRING_CONTEXT_BLENDING) {
+        sources = blending_color_sources;
+        array_len = C_N_ELEMENTS(blending_color_sources);
+    } else {
+        sources = tex_combine_color_sources;
+        array_len = C_N_ELEMENTS(tex_combine_color_sources);
     }
 
-  if (len >= 8 &&
-      strncmp (mark, "TEXTURE_", 8) == 0 &&
-      c_ascii_isdigit (mark[8]))
-    {
-      return &tex_combine_texture_n_color_source;
+    if (len >= 8 && strncmp(mark, "TEXTURE_", 8) == 0 &&
+        c_ascii_isdigit(mark[8])) {
+        return &tex_combine_texture_n_color_source;
     }
 
-  for (i = 0; i < array_len; i++)
-    {
-      if (len >= sources[i].name_len
-          && strncmp (mark, sources[i].name, sources[i].name_len) == 0)
-        return &sources[i];
+    for (i = 0; i < array_len; i++) {
+        if (len >= sources[i].name_len &&
+            strncmp(mark, sources[i].name, sources[i].name_len) == 0)
+            return &sources[i];
     }
 
-  return NULL;
+    return NULL;
 }
 
 static bool
-is_symbol_char (const char c)
+is_symbol_char(const char c)
 {
-  return (c_ascii_isalpha (c) || c == '_') ? true : false;
+    return (c_ascii_isalpha(c) || c == '_') ? true : false;
 }
 
 static bool
-is_alphanum_char (const char c)
+is_alphanum_char(const char c)
 {
-  return (c_ascii_isalnum (c) || c == '_') ? true : false;
+    return (c_ascii_isalnum(c) || c == '_') ? true : false;
 }
 
 static bool
-parse_argument (const char *string, /* original user string */
-                const char **ret_p, /* start of argument IN:OUT */
-                const CoglBlendStringStatement *statement,
-                int current_arg,
-                CoglBlendStringArgument *arg, /* OUT */
-                CoglBlendStringContext context,
-                CoglError **error)
+parse_argument(const char *string,             /* original user string */
+               const char **ret_p,             /* start of argument IN:OUT */
+               const cg_blend_string_statement_t *statement,
+               int current_arg,
+               cg_blend_string_argument_t *arg,             /* OUT */
+               cg_blend_string_context_t context,
+               cg_error_t **error)
 {
-  const char *p = *ret_p;
-  const char *mark = NULL;
-  const char *error_string = NULL;
-  ParserArgState state = PARSER_ARG_STATE_START;
-  bool parsing_factor = false;
-  bool implicit_factor_brace;
+    const char *p = *ret_p;
+    const char *mark = NULL;
+    const char *error_string = NULL;
+    parser_arg_state_t state = PARSER_ARG_STATE_START;
+    bool parsing_factor = false;
+    bool implicit_factor_brace;
 
-  arg->source.is_zero = false;
-  arg->source.info = NULL;
-  arg->source.texture = 0;
-  arg->source.one_minus = false;
-  arg->source.mask = statement->mask;
+    arg->source.is_zero = false;
+    arg->source.info = NULL;
+    arg->source.texture = 0;
+    arg->source.one_minus = false;
+    arg->source.mask = statement->mask;
 
-  arg->factor.is_one = false;
-  arg->factor.is_color = false;
-  arg->factor.is_src_alpha_saturate = false;
+    arg->factor.is_one = false;
+    arg->factor.is_color = false;
+    arg->factor.is_src_alpha_saturate = false;
 
-  arg->factor.source.is_zero = false;
-  arg->factor.source.info = NULL;
-  arg->factor.source.texture = 0;
-  arg->factor.source.one_minus = false;
-  arg->factor.source.mask = statement->mask;
+    arg->factor.source.is_zero = false;
+    arg->factor.source.info = NULL;
+    arg->factor.source.texture = 0;
+    arg->factor.source.one_minus = false;
+    arg->factor.source.mask = statement->mask;
 
-  do
-    {
-      if (c_ascii_isspace (*p))
-        continue;
-
-      if (*p == '\0')
-        {
-          error_string = "Unexpected end of string while parsing argument";
-          goto error;
-        }
-
-      switch (state)
-        {
-        case PARSER_ARG_STATE_START:
-          if (*p == '1')
-            state = PARSER_ARG_STATE_EXPECT_MINUS;
-          else if (*p == '0')
-            {
-              arg->source.is_zero = true;
-              state = PARSER_ARG_STATE_EXPECT_END;
-            }
-          else
-            {
-              p--; /* backtrack */
-              state = PARSER_ARG_STATE_EXPECT_COLOR_SRC_NAME;
-            }
-          continue;
-
-        case PARSER_ARG_STATE_EXPECT_MINUS:
-          if (*p != '-')
-            {
-              error_string = "expected a '-' following the 1";
-              goto error;
-            }
-          arg->source.one_minus = true;
-          state = PARSER_ARG_STATE_EXPECT_COLOR_SRC_NAME;
-          continue;
-
-        case PARSER_ARG_STATE_EXPECT_COLOR_SRC_NAME:
-          if (!is_symbol_char (*p))
-            {
-              error_string = "expected a color source name";
-              goto error;
-            }
-          state = PARSER_ARG_STATE_SCRAPING_COLOR_SRC_NAME;
-          mark = p;
-          if (parsing_factor)
-            arg->factor.is_color = true;
-
-          /* fall through */
-        case PARSER_ARG_STATE_SCRAPING_COLOR_SRC_NAME:
-          if (!is_symbol_char (*p))
-            {
-              CoglBlendStringColorSource *source =
-                parsing_factor ? &arg->factor.source : &arg->source;
-              source->info = get_color_src_info (mark, p, context);
-              if (!source->info)
-                {
-                  error_string = "Unknown color source name";
-                  goto error;
-                }
-              if (source->info->type ==
-                  COGL_BLEND_STRING_COLOR_SOURCE_TEXTURE_N)
-                {
-                  char *endp;
-                  source->texture =
-                    strtoul (&mark[strlen ("TEXTURE_")], &endp, 10);
-                  if (mark == endp)
-                    {
-                      error_string = "invalid texture number given with "
-                                     "TEXTURE_N color source";
-                      goto error;
-                    }
-                  p = endp;
-                }
-              state = PARSER_ARG_STATE_MAYBE_COLOR_MASK;
-            }
-          else
+    do {
+        if (c_ascii_isspace(*p))
             continue;
 
-          /* fall through */
-        case PARSER_ARG_STATE_MAYBE_COLOR_MASK:
-          if (*p != '[')
-            {
-              p--; /* backtrack */
-              if (!parsing_factor)
-                state = PARSER_ARG_STATE_MAYBE_MULT;
-              else
+        if (*p == '\0') {
+            error_string = "Unexpected end of string while parsing argument";
+            goto error;
+        }
+
+        switch (state) {
+        case PARSER_ARG_STATE_START:
+            if (*p == '1')
+                state = PARSER_ARG_STATE_EXPECT_MINUS;
+            else if (*p == '0') {
+                arg->source.is_zero = true;
                 state = PARSER_ARG_STATE_EXPECT_END;
-              continue;
+            } else {
+                p--; /* backtrack */
+                state = PARSER_ARG_STATE_EXPECT_COLOR_SRC_NAME;
             }
-          state = PARSER_ARG_STATE_SCRAPING_MASK;
-          mark = p;
+            continue;
 
-          /* fall through */
-        case PARSER_ARG_STATE_SCRAPING_MASK:
-          if (*p == ']')
-            {
-              size_t len = p - mark;
-              CoglBlendStringColorSource *source =
-                parsing_factor ? &arg->factor.source : &arg->source;
+        case PARSER_ARG_STATE_EXPECT_MINUS:
+            if (*p != '-') {
+                error_string = "expected a '-' following the 1";
+                goto error;
+            }
+            arg->source.one_minus = true;
+            state = PARSER_ARG_STATE_EXPECT_COLOR_SRC_NAME;
+            continue;
 
-              if (len == 5 && strncmp (mark, "[RGBA", len) == 0)
-                {
-                  if (statement->mask != COGL_BLEND_STRING_CHANNEL_MASK_RGBA)
-                    {
-                      error_string = "You can't use an RGBA color mask if the "
-                                     "statement hasn't also got an RGBA= mask";
-                      goto error;
+        case PARSER_ARG_STATE_EXPECT_COLOR_SRC_NAME:
+            if (!is_symbol_char(*p)) {
+                error_string = "expected a color source name";
+                goto error;
+            }
+            state = PARSER_ARG_STATE_SCRAPING_COLOR_SRC_NAME;
+            mark = p;
+            if (parsing_factor)
+                arg->factor.is_color = true;
+
+        /* fall through */
+        case PARSER_ARG_STATE_SCRAPING_COLOR_SRC_NAME:
+            if (!is_symbol_char(*p)) {
+                cg_blend_string_color_source_t *source =
+                    parsing_factor ? &arg->factor.source : &arg->source;
+                source->info = get_color_src_info(mark, p, context);
+                if (!source->info) {
+                    error_string = "Unknown color source name";
+                    goto error;
+                }
+                if (source->info->type ==
+                    CG_BLEND_STRING_COLOR_SOURCE_TEXTURE_N) {
+                    char *endp;
+                    source->texture =
+                        strtoul(&mark[strlen("TEXTURE_")], &endp, 10);
+                    if (mark == endp) {
+                        error_string = "invalid texture number given with "
+                                       "TEXTURE_N color source";
+                        goto error;
                     }
-                  source->mask = COGL_BLEND_STRING_CHANNEL_MASK_RGBA;
+                    p = endp;
                 }
-              else if (len == 4 && strncmp (mark, "[RGB", len) == 0)
-                source->mask = COGL_BLEND_STRING_CHANNEL_MASK_RGB;
-              else if (len == 2 && strncmp (mark, "[A", len) == 0)
-                source->mask = COGL_BLEND_STRING_CHANNEL_MASK_ALPHA;
-              else
-                {
-                  error_string = "Expected a channel mask of [RGBA]"
-                                 "[RGB] or [A]";
-                  goto error;
-                }
-              if (parsing_factor)
-                state = PARSER_ARG_STATE_EXPECT_CLOSE_PAREN;
-              else
-                state = PARSER_ARG_STATE_MAYBE_MULT;
+                state = PARSER_ARG_STATE_MAYBE_COLOR_MASK;
+            } else
+                continue;
+
+        /* fall through */
+        case PARSER_ARG_STATE_MAYBE_COLOR_MASK:
+            if (*p != '[') {
+                p--; /* backtrack */
+                if (!parsing_factor)
+                    state = PARSER_ARG_STATE_MAYBE_MULT;
+                else
+                    state = PARSER_ARG_STATE_EXPECT_END;
+                continue;
             }
-          continue;
+            state = PARSER_ARG_STATE_SCRAPING_MASK;
+            mark = p;
+
+        /* fall through */
+        case PARSER_ARG_STATE_SCRAPING_MASK:
+            if (*p == ']') {
+                size_t len = p - mark;
+                cg_blend_string_color_source_t *source =
+                    parsing_factor ? &arg->factor.source : &arg->source;
+
+                if (len == 5 && strncmp(mark, "[RGBA", len) == 0) {
+                    if (statement->mask != CG_BLEND_STRING_CHANNEL_MASK_RGBA) {
+                        error_string =
+                            "You can't use an RGBA color mask if the "
+                            "statement hasn't also got an RGBA= mask";
+                        goto error;
+                    }
+                    source->mask = CG_BLEND_STRING_CHANNEL_MASK_RGBA;
+                } else if (len == 4 && strncmp(mark, "[RGB", len) == 0)
+                    source->mask = CG_BLEND_STRING_CHANNEL_MASK_RGB;
+                else if (len == 2 && strncmp(mark, "[A", len) == 0)
+                    source->mask = CG_BLEND_STRING_CHANNEL_MASK_ALPHA;
+                else {
+                    error_string = "Expected a channel mask of [RGBA]"
+                                   "[RGB] or [A]";
+                    goto error;
+                }
+                if (parsing_factor)
+                    state = PARSER_ARG_STATE_EXPECT_CLOSE_PAREN;
+                else
+                    state = PARSER_ARG_STATE_MAYBE_MULT;
+            }
+            continue;
 
         case PARSER_ARG_STATE_EXPECT_OPEN_PAREN:
-          if (*p != '(')
-            {
-              if (is_alphanum_char (*p))
-                {
-                  p--; /* compensate for implicit brace and ensure this
-                        * char gets considered part of the blend factor */
-                  implicit_factor_brace = true;
+            if (*p != '(') {
+                if (is_alphanum_char(*p)) {
+                    p--; /* compensate for implicit brace and ensure this
+                          * char gets considered part of the blend factor */
+                    implicit_factor_brace = true;
+                } else {
+                    error_string = "Expected '(' around blend factor or alpha "
+                                   "numeric character for blend factor name";
+                    goto error;
                 }
-              else
-                {
-                  error_string = "Expected '(' around blend factor or alpha "
-                                 "numeric character for blend factor name";
-                  goto error;
-                }
-            }
-          else
-            implicit_factor_brace = false;
-          parsing_factor = true;
-          state = PARSER_ARG_STATE_EXPECT_FACTOR;
-          continue;
+            } else
+                implicit_factor_brace = false;
+            parsing_factor = true;
+            state = PARSER_ARG_STATE_EXPECT_FACTOR;
+            continue;
 
         case PARSER_ARG_STATE_EXPECT_FACTOR:
-          if (*p == '1')
-            state = PARSER_ARG_STATE_MAYBE_MINUS;
-          else if (*p == '0')
-            {
-              arg->source.is_zero = true;
-              state = PARSER_ARG_STATE_EXPECT_CLOSE_PAREN;
+            if (*p == '1')
+                state = PARSER_ARG_STATE_MAYBE_MINUS;
+            else if (*p == '0') {
+                arg->source.is_zero = true;
+                state = PARSER_ARG_STATE_EXPECT_CLOSE_PAREN;
+            } else {
+                state = PARSER_ARG_STATE_MAYBE_SRC_ALPHA_SATURATE;
+                mark = p;
             }
-          else
-            {
-              state = PARSER_ARG_STATE_MAYBE_SRC_ALPHA_SATURATE;
-              mark = p;
-            }
-          continue;
+            continue;
 
         case PARSER_ARG_STATE_MAYBE_SRC_ALPHA_SATURATE:
-          if (!is_symbol_char (*p))
-            {
-              size_t len = p - mark;
-              if (len >= strlen ("SRC_ALPHA_SATURATE") &&
-                  strncmp (mark, "SRC_ALPHA_SATURATE", len) == 0)
-                {
-                  arg->factor.is_src_alpha_saturate = true;
-                  state = PARSER_ARG_STATE_EXPECT_CLOSE_PAREN;
-                }
-              else
-                {
-                  state = PARSER_ARG_STATE_EXPECT_COLOR_SRC_NAME;
-                  p = mark - 1; /* backtrack */
+            if (!is_symbol_char(*p)) {
+                size_t len = p - mark;
+                if (len >= strlen("SRC_ALPHA_SATURATE") &&
+                    strncmp(mark, "SRC_ALPHA_SATURATE", len) == 0) {
+                    arg->factor.is_src_alpha_saturate = true;
+                    state = PARSER_ARG_STATE_EXPECT_CLOSE_PAREN;
+                } else {
+                    state = PARSER_ARG_STATE_EXPECT_COLOR_SRC_NAME;
+                    p = mark - 1; /* backtrack */
                 }
             }
-          continue;
+            continue;
 
         case PARSER_ARG_STATE_MAYBE_MINUS:
-          if (*p == '-')
-            {
-              if (implicit_factor_brace)
-                {
-                  error_string = "Expected ( ) braces around blend factor with "
-                                 "a subtraction";
-                  goto error;
+            if (*p == '-') {
+                if (implicit_factor_brace) {
+                    error_string =
+                        "Expected ( ) braces around blend factor with "
+                        "a subtraction";
+                    goto error;
                 }
-              arg->factor.source.one_minus = true;
-              state = PARSER_ARG_STATE_EXPECT_COLOR_SRC_NAME;
+                arg->factor.source.one_minus = true;
+                state = PARSER_ARG_STATE_EXPECT_COLOR_SRC_NAME;
+            } else {
+                arg->factor.is_one = true;
+                state = PARSER_ARG_STATE_EXPECT_CLOSE_PAREN;
             }
-          else
-            {
-              arg->factor.is_one = true;
-              state = PARSER_ARG_STATE_EXPECT_CLOSE_PAREN;
-            }
-          continue;
+            continue;
 
         case PARSER_ARG_STATE_EXPECT_CLOSE_PAREN:
-          if (implicit_factor_brace)
-            {
-              p--;
-              state = PARSER_ARG_STATE_EXPECT_END;
-              continue;
+            if (implicit_factor_brace) {
+                p--;
+                state = PARSER_ARG_STATE_EXPECT_END;
+                continue;
             }
-          if (*p != ')')
-            {
-              error_string = "Expected closing parenthesis after blend factor";
-              goto error;
+            if (*p != ')') {
+                error_string =
+                    "Expected closing parenthesis after blend factor";
+                goto error;
             }
-          state = PARSER_ARG_STATE_EXPECT_END;
-          continue;
+            state = PARSER_ARG_STATE_EXPECT_END;
+            continue;
 
         case PARSER_ARG_STATE_MAYBE_MULT:
-          if (*p == '*')
-            {
-              state = PARSER_ARG_STATE_EXPECT_OPEN_PAREN;
-              continue;
+            if (*p == '*') {
+                state = PARSER_ARG_STATE_EXPECT_OPEN_PAREN;
+                continue;
             }
-          arg->factor.is_one = true;
-          state = PARSER_ARG_STATE_EXPECT_END;
+            arg->factor.is_one = true;
+            state = PARSER_ARG_STATE_EXPECT_END;
 
-          /* fall through */
+        /* fall through */
         case PARSER_ARG_STATE_EXPECT_END:
-          if (*p != ',' && *p != ')')
-            {
-              error_string = "expected , or )";
-              goto error;
+            if (*p != ',' && *p != ')') {
+                error_string = "expected , or )";
+                goto error;
             }
 
-          *ret_p = p - 1;
-          return true;
+            *ret_p = p - 1;
+            return true;
         }
+    } while (p++);
+
+error: {
+        int offset = p - string;
+        _cg_set_error(error,
+                      CG_BLEND_STRING_ERROR,
+                      CG_BLEND_STRING_ERROR_ARGUMENT_PARSE_ERROR,
+                      "Syntax error for argument %d at offset %d: %s",
+                      current_arg,
+                      offset,
+                      error_string);
+
+        if (CG_DEBUG_ENABLED(CG_DEBUG_BLEND_STRINGS)) {
+            c_debug("Syntax error for argument %d at offset %d: %s",
+                    current_arg,
+                    offset,
+                    error_string);
+        }
+        return false;
     }
-  while (p++);
-
-error:
-  {
-    int offset = p - string;
-    _cogl_set_error (error,
-                     COGL_BLEND_STRING_ERROR,
-                     COGL_BLEND_STRING_ERROR_ARGUMENT_PARSE_ERROR,
-                     "Syntax error for argument %d at offset %d: %s",
-                     current_arg,
-                     offset,
-                     error_string);
-
-    if (COGL_DEBUG_ENABLED (COGL_DEBUG_BLEND_STRINGS))
-      {
-        c_debug ("Syntax error for argument %d at offset %d: %s",
-                 current_arg, offset, error_string);
-      }
-    return false;
-  }
 }
 
 bool
-_cogl_blend_string_compile (CoglContext *ctx,
-                            const char *string,
-                            CoglBlendStringContext context,
-                            CoglBlendStringStatement *statements,
-                            CoglError **error)
+_cg_blend_string_compile(cg_context_t *ctx,
+                         const char *string,
+                         cg_blend_string_context_t context,
+                         cg_blend_string_statement_t *statements,
+                         cg_error_t **error)
 {
-  const char *p = string;
-  const char *mark = NULL;
-  const char *error_string;
-  ParserState state = PARSER_STATE_EXPECT_DEST_CHANNELS;
-  CoglBlendStringStatement *statement = statements;
-  int current_statement = 0;
-  int current_arg = 0;
-  int remaining_argc = 0;
+    const char *p = string;
+    const char *mark = NULL;
+    const char *error_string;
+    parser_state_t state = PARSER_STATE_EXPECT_DEST_CHANNELS;
+    cg_blend_string_statement_t *statement = statements;
+    int current_statement = 0;
+    int current_arg = 0;
+    int remaining_argc = 0;
 
 #if 0
-  COGL_DEBUG_SET_FLAG (COGL_DEBUG_BLEND_STRINGS);
+    CG_DEBUG_SET_FLAG (CG_DEBUG_BLEND_STRINGS);
 #endif
 
-  if (COGL_DEBUG_ENABLED (COGL_DEBUG_BLEND_STRINGS))
-    {
-      COGL_NOTE (BLEND_STRINGS, "Compiling %s string:\n%s\n",
-                 context == COGL_BLEND_STRING_CONTEXT_BLENDING ?
-                 "blend" : "texture combine",
-                 string);
+    if (CG_DEBUG_ENABLED(CG_DEBUG_BLEND_STRINGS)) {
+        CG_NOTE(BLEND_STRINGS,
+                "Compiling %s string:\n%s\n",
+                context == CG_BLEND_STRING_CONTEXT_BLENDING ? "blend"
+                : "texture combine",
+                string);
     }
 
-  do
-    {
-      if (c_ascii_isspace (*p))
-        continue;
+    do {
+        if (c_ascii_isspace(*p))
+            continue;
 
-      if (*p == '\0')
-        {
-          switch (state)
-            {
+        if (*p == '\0') {
+            switch (state) {
             case PARSER_STATE_EXPECT_DEST_CHANNELS:
-              if (current_statement != 0)
-                goto finished;
-              error_string = "Empty statement";
-              goto error;
+                if (current_statement != 0)
+                    goto finished;
+                error_string = "Empty statement";
+                goto error;
             case PARSER_STATE_SCRAPING_DEST_CHANNELS:
-              error_string = "Expected an '=' following the destination "
-                "channel mask";
-              goto error;
+                error_string = "Expected an '=' following the destination "
+                               "channel mask";
+                goto error;
             case PARSER_STATE_EXPECT_FUNCTION_NAME:
-              error_string = "Expected a function name";
-              goto error;
+                error_string = "Expected a function name";
+                goto error;
             case PARSER_STATE_SCRAPING_FUNCTION_NAME:
-              error_string = "Expected parenthesis after the function name";
-              goto error;
+                error_string = "Expected parenthesis after the function name";
+                goto error;
             case PARSER_STATE_EXPECT_ARG_START:
-              error_string = "Expected to find the start of an argument";
-              goto error;
+                error_string = "Expected to find the start of an argument";
+                goto error;
             case PARSER_STATE_EXPECT_STATEMENT_END:
-              error_string = "Expected closing parenthesis for statement";
-              goto error;
+                error_string = "Expected closing parenthesis for statement";
+                goto error;
             }
         }
 
-      switch (state)
-        {
+        switch (state) {
         case PARSER_STATE_EXPECT_DEST_CHANNELS:
-          mark = p;
-          state = PARSER_STATE_SCRAPING_DEST_CHANNELS;
+            mark = p;
+            state = PARSER_STATE_SCRAPING_DEST_CHANNELS;
 
-          /* fall through */
+        /* fall through */
         case PARSER_STATE_SCRAPING_DEST_CHANNELS:
-          if (*p != '=')
-            continue;
-          if (strncmp (mark, "RGBA", 4) == 0)
-            statement->mask = COGL_BLEND_STRING_CHANNEL_MASK_RGBA;
-          else if (strncmp (mark, "RGB", 3) == 0)
-            statement->mask = COGL_BLEND_STRING_CHANNEL_MASK_RGB;
-          else if (strncmp (mark, "A", 1) == 0)
-            statement->mask = COGL_BLEND_STRING_CHANNEL_MASK_ALPHA;
-          else
-            {
-              error_string = "Unknown destination channel mask; "
-                "expected RGBA=, RGB= or A=";
-              goto error;
+            if (*p != '=')
+                continue;
+            if (strncmp(mark, "RGBA", 4) == 0)
+                statement->mask = CG_BLEND_STRING_CHANNEL_MASK_RGBA;
+            else if (strncmp(mark, "RGB", 3) == 0)
+                statement->mask = CG_BLEND_STRING_CHANNEL_MASK_RGB;
+            else if (strncmp(mark, "A", 1) == 0)
+                statement->mask = CG_BLEND_STRING_CHANNEL_MASK_ALPHA;
+            else {
+                error_string = "Unknown destination channel mask; "
+                               "expected RGBA=, RGB= or A=";
+                goto error;
             }
-          state = PARSER_STATE_EXPECT_FUNCTION_NAME;
-          continue;
+            state = PARSER_STATE_EXPECT_FUNCTION_NAME;
+            continue;
 
         case PARSER_STATE_EXPECT_FUNCTION_NAME:
-          mark = p;
-          state = PARSER_STATE_SCRAPING_FUNCTION_NAME;
+            mark = p;
+            state = PARSER_STATE_SCRAPING_FUNCTION_NAME;
 
-          /* fall through */
+        /* fall through */
         case PARSER_STATE_SCRAPING_FUNCTION_NAME:
-          if (*p != '(')
-            {
-              if (!is_alphanum_char (*p))
-                {
-                  error_string = "non alpha numeric character in function"
-                    "name";
-                  goto error;
+            if (*p != '(') {
+                if (!is_alphanum_char(*p)) {
+                    error_string = "non alpha numeric character in function"
+                                   "name";
+                    goto error;
                 }
-              continue;
+                continue;
             }
-          statement->function = get_function_info (mark, p, context);
-          if (!statement->function)
-            {
-              error_string = "Unknown function name";
-              goto error;
+            statement->function = get_function_info(mark, p, context);
+            if (!statement->function) {
+                error_string = "Unknown function name";
+                goto error;
             }
-          remaining_argc = statement->function->argc;
-          current_arg = 0;
-          state = PARSER_STATE_EXPECT_ARG_START;
+            remaining_argc = statement->function->argc;
+            current_arg = 0;
+            state = PARSER_STATE_EXPECT_ARG_START;
 
-          /* fall through */
+        /* fall through */
         case PARSER_STATE_EXPECT_ARG_START:
-          if (*p != '(' && *p != ',')
-            continue;
-          if (remaining_argc)
-            {
-              p++; /* parse_argument expects to see the first char of the arg */
-              if (!parse_argument (string, &p, statement,
-                                   current_arg, &statement->args[current_arg],
-                                   context, error))
-                return 0;
-              current_arg++;
-              remaining_argc--;
+            if (*p != '(' && *p != ',')
+                continue;
+            if (remaining_argc) {
+                p++; /* parse_argument expects to see the first char of the arg
+                      */
+                if (!parse_argument(string,
+                                    &p,
+                                    statement,
+                                    current_arg,
+                                    &statement->args[current_arg],
+                                    context,
+                                    error))
+                    return 0;
+                current_arg++;
+                remaining_argc--;
             }
-          if (!remaining_argc)
-            state = PARSER_STATE_EXPECT_STATEMENT_END;
-          continue;
+            if (!remaining_argc)
+                state = PARSER_STATE_EXPECT_STATEMENT_END;
+            continue;
 
         case PARSER_STATE_EXPECT_STATEMENT_END:
-          if (*p != ')')
-            {
-              error_string = "Expected end of statement";
-              goto error;
+            if (*p != ')') {
+                error_string = "Expected end of statement";
+                goto error;
             }
-          state = PARSER_STATE_EXPECT_DEST_CHANNELS;
-          if (current_statement++ == 1)
-            goto finished;
-          statement = &statements[current_statement];
+            state = PARSER_STATE_EXPECT_DEST_CHANNELS;
+            if (current_statement++ == 1)
+                goto finished;
+            statement = &statements[current_statement];
         }
-    }
-  while (p++);
+    } while (p++);
 
 finished:
 
-  if (COGL_DEBUG_ENABLED (COGL_DEBUG_BLEND_STRINGS))
-    {
-      if (current_statement > 0)
-        print_statement (0, &statements[0]);
-      if (current_statement > 1)
-        print_statement (1, &statements[1]);
+    if (CG_DEBUG_ENABLED(CG_DEBUG_BLEND_STRINGS)) {
+        if (current_statement > 0)
+            print_statement(0, &statements[0]);
+        if (current_statement > 1)
+            print_statement(1, &statements[1]);
     }
 
-  if (!validate_statements_for_context (ctx,
-                                        statements,
-                                        current_statement,
-                                        context,
-                                        error))
-    return 0;
+    if (!validate_statements_for_context(
+            ctx, statements, current_statement, context, error))
+        return 0;
 
-  return current_statement;
+    return current_statement;
 
-error:
-    {
-      int offset = p - string;
-      _cogl_set_error (error,
-                       COGL_BLEND_STRING_ERROR,
-                       COGL_BLEND_STRING_ERROR_PARSE_ERROR,
-                       "Syntax error for string \"%s\" at offset %d: %s",
-                       string,
-                       offset,
-                       error_string);
+error: {
+        int offset = p - string;
+        _cg_set_error(error,
+                      CG_BLEND_STRING_ERROR,
+                      CG_BLEND_STRING_ERROR_PARSE_ERROR,
+                      "Syntax error for string \"%s\" at offset %d: %s",
+                      string,
+                      offset,
+                      error_string);
 
-      if (COGL_DEBUG_ENABLED (COGL_DEBUG_BLEND_STRINGS))
-        {
-          c_debug ("Syntax error at offset %d: %s",
-                   offset, error_string);
+        if (CG_DEBUG_ENABLED(CG_DEBUG_BLEND_STRINGS)) {
+            c_debug("Syntax error at offset %d: %s", offset, error_string);
         }
-      return 0;
+        return 0;
     }
 }
 
-UNIT_TEST (blend_string_parsing,
-           0 /* no requirements */,
-           0 /* no known failures */)
+UNIT_TEST(blend_string_parsing,
+          0 /* no requirements */,
+          0 /* no known failures */)
 {
-  struct _TestString
-    {
-      const char *string;
-      CoglBlendStringContext context;
-      bool should_pass;
-    } tests[] = {
-        {"  A = MODULATE ( TEXTURE[RGB], PREVIOUS[A], PREVIOUS[A] )  ",
-          COGL_BLEND_STRING_CONTEXT_TEXTURE_COMBINE,
-          false, /* to many arguments */
-        },
-        {"  A = MODULATE ( TEXTURE[RGB], PREVIOUS[A] )  ",
-          COGL_BLEND_STRING_CONTEXT_TEXTURE_COMBINE,
-          false, /* Must specify an RGB blend string too */
-        },
-        {"  RGB = MODULATE ( TEXTURE[RGB], PREVIOUS[A] )  ",
-          COGL_BLEND_STRING_CONTEXT_TEXTURE_COMBINE,
-          false, /* Must specify an alpha component blend string too */
-        },
-        {"  A = MODULATE ( TEXTURE[RGB], PREVIOUS[A] )"
-         "RGB = MODULATE ( TEXTURE[RGB], PREVIOUS[A] )  ",
-          COGL_BLEND_STRING_CONTEXT_TEXTURE_COMBINE,
-          true,
-        },
-        {"  A = MODULATE ( TEXTURE[RGB], PREVIOUS[A] ) "
-         "RGB = MODULATE ( TEXTURE[RGB], PREVIOUS[A] )  ",
-          COGL_BLEND_STRING_CONTEXT_TEXTURE_COMBINE,
-          true,
-        },
-        {"A = MODULATE ( TEXTURE[RGB], PREVIOUS[A] )\n "
-         "RGB = MODULATE ( TEXTURE[RGB], PREVIOUS[A] )  ",
-          COGL_BLEND_STRING_CONTEXT_TEXTURE_COMBINE,
-          true,
-        },
-        {"A=ADD(TEXTURE[A],PREVIOUS[RGB])\n"
-         "RGB=MODULATE(TEXTURE[RGB], PREVIOUS[A])",
-          COGL_BLEND_STRING_CONTEXT_TEXTURE_COMBINE,
-          true,
-        },
-        {"RGBA = ADD(SRC_COLOR*(SRC_COLOR[A]), DST_COLOR*(1-SRC_COLOR[A]))",
-          COGL_BLEND_STRING_CONTEXT_BLENDING,
-          true,
-        },
-        {"RGBA = ADD(SRC_COLOR,\nDST_COLOR*(0))",
-          COGL_BLEND_STRING_CONTEXT_BLENDING,
-          true,
-        },
-        {"RGBA = ADD(SRC_COLOR, 0)",
-          COGL_BLEND_STRING_CONTEXT_BLENDING,
-          true,
-        },
-        {"RGBA = ADD()",
-          COGL_BLEND_STRING_CONTEXT_BLENDING,
-          false, /* missing arguments */
-        },
-        {"RGBA = ADD(SRC_COLOR, DST_COLOR)",
-          COGL_BLEND_STRING_CONTEXT_BLENDING,
-          true,
-        },
-        {NULL}
-  };
-  int i;
+    struct _TestString {
+        const char *string;
+        cg_blend_string_context_t context;
+        bool should_pass;
+    } tests[] =
+    { { "  A = MODULATE ( TEXTURE[RGB], PREVIOUS[A], PREVIOUS[A] )  ",
+        CG_BLEND_STRING_CONTEXT_TEXTURE_COMBINE,
+        false,       /* to many arguments */
+      },
+      { "  A = MODULATE ( TEXTURE[RGB], PREVIOUS[A] )  ",
+              CG_BLEND_STRING_CONTEXT_TEXTURE_COMBINE,
+              false, /* Must specify an RGB blend string too */
+      },
+      { "  RGB = MODULATE ( TEXTURE[RGB], PREVIOUS[A] )  ",
+              CG_BLEND_STRING_CONTEXT_TEXTURE_COMBINE,
+              false, /* Must specify an alpha component blend string too */
+      },
+      { "  A = MODULATE ( TEXTURE[RGB], PREVIOUS[A] )"
+              "RGB = MODULATE ( TEXTURE[RGB], PREVIOUS[A] )  ",
+              CG_BLEND_STRING_CONTEXT_TEXTURE_COMBINE, true, },
+      { "  A = MODULATE ( TEXTURE[RGB], PREVIOUS[A] ) "
+              "RGB = MODULATE ( TEXTURE[RGB], PREVIOUS[A] )  ",
+              CG_BLEND_STRING_CONTEXT_TEXTURE_COMBINE, true, },
+      { "A = MODULATE ( TEXTURE[RGB], PREVIOUS[A] )\n "
+              "RGB = MODULATE ( TEXTURE[RGB], PREVIOUS[A] )  ",
+              CG_BLEND_STRING_CONTEXT_TEXTURE_COMBINE, true, },
+      { "A=ADD(TEXTURE[A],PREVIOUS[RGB])\n"
+              "RGB=MODULATE(TEXTURE[RGB], PREVIOUS[A])",
+              CG_BLEND_STRING_CONTEXT_TEXTURE_COMBINE, true, },
+      { "RGBA = ADD(SRC_COLOR*(SRC_COLOR[A]), "
+              "DST_COLOR*(1-SRC_COLOR[A]))",
+              CG_BLEND_STRING_CONTEXT_BLENDING,
+              true, },
+      { "RGBA = ADD(SRC_COLOR,\nDST_COLOR*(0))",
+              CG_BLEND_STRING_CONTEXT_BLENDING,
+              true, },
+      { "RGBA = ADD(SRC_COLOR, 0)", CG_BLEND_STRING_CONTEXT_BLENDING,
+              true, },
+      { "RGBA = ADD()", CG_BLEND_STRING_CONTEXT_BLENDING,
+              false, /* missing arguments */
+      },
+      { "RGBA = ADD(SRC_COLOR, DST_COLOR)",
+              CG_BLEND_STRING_CONTEXT_BLENDING,
+              true, },
+      { NULL } };
+    int i;
 
-  CoglError *error = NULL;
-  for (i = 0; tests[i].string; i++)
-    {
-      CoglBlendStringStatement statements[2];
-      _cogl_blend_string_compile (test_ctx,
-                                  tests[i].string,
-                                  tests[i].context,
-                                  statements,
-                                  &error);
-      if (tests[i].should_pass)
-        {
-          if (error)
-            {
-              c_debug ("Unexpected parse error for string \"%s\"",
-                       tests[i].string);
-              c_assert_cmpstr ("", ==, error->message);
+    cg_error_t *error = NULL;
+    for (i = 0; tests[i].string; i++) {
+        cg_blend_string_statement_t statements[2];
+        _cg_blend_string_compile(
+            test_ctx, tests[i].string, tests[i].context, statements, &error);
+        if (tests[i].should_pass) {
+            if (error) {
+                c_debug("Unexpected parse error for string \"%s\"",
+                        tests[i].string);
+                c_assert_cmpstr("", ==, error->message);
             }
-        }
-      else
-        {
-          c_assert (error);
-          cogl_error_free (error);
-          error = NULL;
+        } else {
+            c_assert(error);
+            cg_error_free(error);
+            error = NULL;
         }
     }
 }
-

@@ -31,102 +31,90 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#ifndef __COGL_PIPELINE_LAYER_STATE_PRIVATE_H
-#define __COGL_PIPELINE_LAYER_STATE_PRIVATE_H
+#ifndef __CG_PIPELINE_LAYER_STATE_PRIVATE_H
+#define __CG_PIPELINE_LAYER_STATE_PRIVATE_H
 
 #include "cogl-pipeline-layer-state.h"
 #include "cogl-pipeline-private.h"
 
-CoglPipelineLayer *
-_cogl_pipeline_set_layer_unit (CoglPipeline *required_owner,
-                               CoglPipelineLayer *layer,
-                               int unit_index);
+cg_pipeline_layer_t *_cg_pipeline_set_layer_unit(cg_pipeline_t *required_owner,
+                                                 cg_pipeline_layer_t *layer,
+                                                 int unit_index);
 
-CoglPipelineFilter
-_cogl_pipeline_get_layer_min_filter (CoglPipeline *pipeline,
-                                     int layer_index);
+cg_pipeline_filter_t _cg_pipeline_get_layer_min_filter(cg_pipeline_t *pipeline,
+                                                       int layer_index);
 
-CoglPipelineFilter
-_cogl_pipeline_get_layer_mag_filter (CoglPipeline *pipeline,
-                                     int layer_index);
+cg_pipeline_filter_t _cg_pipeline_get_layer_mag_filter(cg_pipeline_t *pipeline,
+                                                       int layer_index);
 
-bool
-_cogl_pipeline_layer_texture_type_equal (CoglPipelineLayer *authority0,
-                                         CoglPipelineLayer *authority1,
-                                         CoglPipelineEvalFlags flags);
+bool _cg_pipeline_layer_texture_type_equal(cg_pipeline_layer_t *authority0,
+                                           cg_pipeline_layer_t *authority1,
+                                           cg_pipeline_eval_flags_t flags);
 
-bool
-_cogl_pipeline_layer_texture_data_equal (CoglPipelineLayer *authority0,
-                                         CoglPipelineLayer *authority1,
-                                         CoglPipelineEvalFlags flags);
+bool _cg_pipeline_layer_texture_data_equal(cg_pipeline_layer_t *authority0,
+                                           cg_pipeline_layer_t *authority1,
+                                           cg_pipeline_eval_flags_t flags);
 
-bool
-_cogl_pipeline_layer_combine_state_equal (CoglPipelineLayer *authority0,
-                                          CoglPipelineLayer *authority1);
+bool _cg_pipeline_layer_combine_state_equal(cg_pipeline_layer_t *authority0,
+                                            cg_pipeline_layer_t *authority1);
 
-bool
-_cogl_pipeline_layer_combine_constant_equal (CoglPipelineLayer *authority0,
-                                             CoglPipelineLayer *authority1);
+bool _cg_pipeline_layer_combine_constant_equal(cg_pipeline_layer_t *authority0,
+                                               cg_pipeline_layer_t *authority1);
+
+bool _cg_pipeline_layer_sampler_equal(cg_pipeline_layer_t *authority0,
+                                      cg_pipeline_layer_t *authority1);
 
 bool
-_cogl_pipeline_layer_sampler_equal (CoglPipelineLayer *authority0,
-                                    CoglPipelineLayer *authority1);
+_cg_pipeline_layer_point_sprite_coords_equal(cg_pipeline_layer_t *authority0,
+                                             cg_pipeline_layer_t *authority1);
+
+bool _cg_pipeline_layer_vertex_snippets_equal(cg_pipeline_layer_t *authority0,
+                                              cg_pipeline_layer_t *authority1);
 
 bool
-_cogl_pipeline_layer_point_sprite_coords_equal (CoglPipelineLayer *authority0,
-                                                CoglPipelineLayer *authority1);
+_cg_pipeline_layer_fragment_snippets_equal(cg_pipeline_layer_t *authority0,
+                                           cg_pipeline_layer_t *authority1);
 
-bool
-_cogl_pipeline_layer_vertex_snippets_equal (CoglPipelineLayer *authority0,
-                                            CoglPipelineLayer *authority1);
-
-bool
-_cogl_pipeline_layer_fragment_snippets_equal (CoglPipelineLayer *authority0,
-                                              CoglPipelineLayer *authority1);
+void _cg_pipeline_layer_hash_unit_state(cg_pipeline_layer_t *authority,
+                                        cg_pipeline_layer_t **authorities,
+                                        cg_pipeline_hash_state_t *state);
 
 void
-_cogl_pipeline_layer_hash_unit_state (CoglPipelineLayer *authority,
-                                      CoglPipelineLayer **authorities,
-                                      CoglPipelineHashState *state);
+_cg_pipeline_layer_hash_texture_type_state(cg_pipeline_layer_t *authority,
+                                           cg_pipeline_layer_t **authorities,
+                                           cg_pipeline_hash_state_t *state);
 
 void
-_cogl_pipeline_layer_hash_texture_type_state (CoglPipelineLayer *authority,
-                                              CoglPipelineLayer **authorities,
-                                              CoglPipelineHashState *state);
+_cg_pipeline_layer_hash_texture_data_state(cg_pipeline_layer_t *authority,
+                                           cg_pipeline_layer_t **authorities,
+                                           cg_pipeline_hash_state_t *state);
+
+void _cg_pipeline_layer_hash_sampler_state(cg_pipeline_layer_t *authority,
+                                           cg_pipeline_layer_t **authorities,
+                                           cg_pipeline_hash_state_t *state);
+
+void _cg_pipeline_layer_hash_combine_state(cg_pipeline_layer_t *authority,
+                                           cg_pipeline_layer_t **authorities,
+                                           cg_pipeline_hash_state_t *state);
+
+void _cg_pipeline_layer_hash_combine_constant_state(
+    cg_pipeline_layer_t *authority,
+    cg_pipeline_layer_t **authorities,
+    cg_pipeline_hash_state_t *state);
 
 void
-_cogl_pipeline_layer_hash_texture_data_state (CoglPipelineLayer *authority,
-                                              CoglPipelineLayer **authorities,
-                                              CoglPipelineHashState *state);
+_cg_pipeline_layer_hash_point_sprite_state(cg_pipeline_layer_t *authority,
+                                           cg_pipeline_layer_t **authorities,
+                                           cg_pipeline_hash_state_t *state);
 
 void
-_cogl_pipeline_layer_hash_sampler_state (CoglPipelineLayer *authority,
-                                         CoglPipelineLayer **authorities,
-                                         CoglPipelineHashState *state);
+_cg_pipeline_layer_hash_vertex_snippets_state(cg_pipeline_layer_t *authority,
+                                              cg_pipeline_layer_t **authorities,
+                                              cg_pipeline_hash_state_t *state);
 
-void
-_cogl_pipeline_layer_hash_combine_state (CoglPipelineLayer *authority,
-                                         CoglPipelineLayer **authorities,
-                                         CoglPipelineHashState *state);
+void _cg_pipeline_layer_hash_fragment_snippets_state(
+    cg_pipeline_layer_t *authority,
+    cg_pipeline_layer_t **authorities,
+    cg_pipeline_hash_state_t *state);
 
-void
-_cogl_pipeline_layer_hash_combine_constant_state (CoglPipelineLayer *authority,
-                                                  CoglPipelineLayer **authorities,
-                                                  CoglPipelineHashState *state);
-
-void
-_cogl_pipeline_layer_hash_point_sprite_state (CoglPipelineLayer *authority,
-                                              CoglPipelineLayer **authorities,
-                                              CoglPipelineHashState *state);
-
-void
-_cogl_pipeline_layer_hash_vertex_snippets_state (CoglPipelineLayer *authority,
-                                                 CoglPipelineLayer **authorities,
-                                                 CoglPipelineHashState *state);
-
-void
-_cogl_pipeline_layer_hash_fragment_snippets_state (CoglPipelineLayer *authority,
-                                                   CoglPipelineLayer **authorities,
-                                                   CoglPipelineHashState *state);
-
-#endif /* __COGL_PIPELINE_LAYER_STATE_PRIVATE_H */
+#endif /* __CG_PIPELINE_LAYER_STATE_PRIVATE_H */

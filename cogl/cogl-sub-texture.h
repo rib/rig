@@ -29,14 +29,14 @@
  *   Neil Roberts <neil@linux.intel.com>
  */
 
-#if !defined(__COGL_H_INSIDE__) && !defined(COGL_COMPILATION)
+#if !defined(__CG_H_INSIDE__) && !defined(CG_COMPILATION)
 #error "Only <cogl/cogl.h> can be included directly."
 #endif
 
-#ifndef __COGL_SUB_TEXTURE_H
-#define __COGL_SUB_TEXTURE_H
+#ifndef __CG_SUB_TEXTURE_H
+#define __CG_SUB_TEXTURE_H
 
-COGL_BEGIN_DECLS
+CG_BEGIN_DECLS
 
 /**
  * SECTION:cogl-sub-texture
@@ -48,15 +48,14 @@ COGL_BEGIN_DECLS
  * can be used to implement custom texture atlasing schemes.
  */
 
-
-#define COGL_SUB_TEXTURE(tex) ((CoglSubTexture *) tex)
-typedef struct _CoglSubTexture CoglSubTexture;
+#define CG_SUB_TEXTURE(tex) ((cg_sub_texture_t *)tex)
+typedef struct _cg_sub_texture_t cg_sub_texture_t;
 
 /**
- * cogl_sub_texture_new:
- * @ctx: A #CoglContext pointer
+ * cg_sub_texture_new:
+ * @ctx: A #cg_context_t pointer
  * @parent_texture: The full texture containing a sub-region you want
- *                  to make a #CoglSubTexture from.
+ *                  to make a #cg_sub_texture_t from.
  * @sub_x: The top-left x coordinate of the parent region to make
  *         a texture from.
  * @sub_y: The top-left y coordinate of the parent region to make
@@ -65,63 +64,60 @@ typedef struct _CoglSubTexture CoglSubTexture;
  * @sub_height: The height of the parent region to make a texture
  *              from.
  *
- * Creates a high-level #CoglSubTexture representing a sub-region of
- * any other #CoglTexture. The sub-region must strictly lye within the
+ * Creates a high-level #cg_sub_texture_t representing a sub-region of
+ * any other #cg_texture_t. The sub-region must strictly lye within the
  * bounds of the @parent_texture. The returned texture implements the
- * #CoglMetaTexture interface because it's not a low level texture
+ * #cg_meta_texture_t interface because it's not a low level texture
  * that hardware can understand natively.
  *
  * <note>Remember: Unless you are using high level drawing APIs such
- * as cogl_framebuffer_draw_rectangle() or other APIs documented to
- * understand the #CoglMetaTexture interface then you need to use the
- * #CoglMetaTexture interface to resolve a #CoglSubTexture into a
+ * as cg_framebuffer_draw_rectangle() or other APIs documented to
+ * understand the #cg_meta_texture_t interface then you need to use the
+ * #cg_meta_texture_t interface to resolve a #cg_sub_texture_t into a
  * low-level texture before drawing.</note>
  *
- * Return value: (transfer full): A newly allocated #CoglSubTexture
+ * Return value: (transfer full): A newly allocated #cg_sub_texture_t
  *          representing a sub-region of @parent_texture.
  *
  * Since: 1.10
  * Stability: unstable
  */
-CoglSubTexture *
-cogl_sub_texture_new (CoglContext *ctx,
-                      CoglTexture *parent_texture,
-                      int sub_x,
-                      int sub_y,
-                      int sub_width,
-                      int sub_height);
+cg_sub_texture_t *cg_sub_texture_new(cg_context_t *ctx,
+                                     cg_texture_t *parent_texture,
+                                     int sub_x,
+                                     int sub_y,
+                                     int sub_width,
+                                     int sub_height);
 
 /**
- * cogl_sub_texture_get_parent:
- * @sub_texture: A pointer to a #CoglSubTexture
+ * cg_sub_texture_get_parent:
+ * @sub_texture: A pointer to a #cg_sub_texture_t
  *
  * Retrieves the parent texture that @sub_texture derives its content
  * from.  This is the texture that was passed to
- * cogl_sub_texture_new() as the parent_texture argument.
+ * cg_sub_texture_new() as the parent_texture argument.
  *
  * Return value: (transfer none): The parent texture that @sub_texture
  *               derives its content from.
  * Since: 1.10
  * Stability: unstable
  */
-CoglTexture *
-cogl_sub_texture_get_parent (CoglSubTexture *sub_texture);
+cg_texture_t *cg_sub_texture_get_parent(cg_sub_texture_t *sub_texture);
 
 /**
- * cogl_is_sub_texture:
- * @object: a #CoglObject
+ * cg_is_sub_texture:
+ * @object: a #cg_object_t
  *
- * Checks whether @object is a #CoglSubTexture.
+ * Checks whether @object is a #cg_sub_texture_t.
  *
  * Return value: %true if the passed @object represents a
- *               #CoglSubTexture and %false otherwise.
+ *               #cg_sub_texture_t and %false otherwise.
  *
  * Since: 1.10
  * Stability: unstable
  */
-bool
-cogl_is_sub_texture (void *object);
+bool cg_is_sub_texture(void *object);
 
-COGL_END_DECLS
+CG_END_DECLS
 
-#endif /* __COGL_SUB_TEXTURE_H */
+#endif /* __CG_SUB_TEXTURE_H */

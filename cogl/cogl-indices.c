@@ -45,225 +45,206 @@
 
 #include <stdarg.h>
 
-static void _cogl_indices_free (CoglIndices *indices);
+static void _cg_indices_free(cg_indices_t *indices);
 
-COGL_OBJECT_DEFINE (Indices, indices);
+CG_OBJECT_DEFINE(Indices, indices);
 
 static size_t
-sizeof_indices_type (CoglIndicesType type)
+sizeof_indices_type(cg_indices_type_t type)
 {
-  switch (type)
-    {
-    case COGL_INDICES_TYPE_UNSIGNED_BYTE:
-      return 1;
-    case COGL_INDICES_TYPE_UNSIGNED_SHORT:
-      return 2;
-    case COGL_INDICES_TYPE_UNSIGNED_INT:
-      return 4;
+    switch (type) {
+    case CG_INDICES_TYPE_UNSIGNED_BYTE:
+        return 1;
+    case CG_INDICES_TYPE_UNSIGNED_SHORT:
+        return 2;
+    case CG_INDICES_TYPE_UNSIGNED_INT:
+        return 4;
     }
-  c_return_val_if_reached (0);
+    c_return_val_if_reached(0);
 }
 
-CoglIndices *
-cogl_indices_new_for_buffer (CoglIndicesType type,
-                             CoglIndexBuffer *buffer,
-                             size_t offset)
+cg_indices_t *
+cg_indices_new_for_buffer(cg_indices_type_t type,
+                          cg_index_buffer_t *buffer,
+                          size_t offset)
 {
-  CoglIndices *indices = c_slice_new (CoglIndices);
+    cg_indices_t *indices = c_slice_new(cg_indices_t);
 
-  indices->buffer = cogl_object_ref (buffer);
-  indices->offset = offset;
+    indices->buffer = cg_object_ref(buffer);
+    indices->offset = offset;
 
-  indices->type = type;
+    indices->type = type;
 
-  indices->immutable_ref = 0;
+    indices->immutable_ref = 0;
 
-  return _cogl_indices_object_new (indices);
+    return _cg_indices_object_new(indices);
 }
 
-CoglIndices *
-cogl_indices_new (CoglContext *context,
-                  CoglIndicesType type,
-                  const void *indices_data,
-                  int n_indices)
+cg_indices_t *
+cg_indices_new(cg_context_t *context,
+               cg_indices_type_t type,
+               const void *indices_data,
+               int n_indices)
 {
-  size_t buffer_bytes = sizeof_indices_type (type) * n_indices;
-  CoglIndexBuffer *index_buffer = cogl_index_buffer_new (context, buffer_bytes);
-  CoglBuffer *buffer = COGL_BUFFER (index_buffer);
-  CoglIndices *indices;
-  CoglError *ignore_error = NULL;
+    size_t buffer_bytes = sizeof_indices_type(type) * n_indices;
+    cg_index_buffer_t *index_buffer =
+        cg_index_buffer_new(context, buffer_bytes);
+    cg_buffer_t *buffer = CG_BUFFER(index_buffer);
+    cg_indices_t *indices;
+    cg_error_t *ignore_error = NULL;
 
-  cogl_buffer_set_data (buffer,
-                        0,
-                        indices_data,
-                        buffer_bytes,
-                        &ignore_error);
-  if (ignore_error)
-    {
-      cogl_error_free (ignore_error);
-      cogl_object_unref (index_buffer);
-      return NULL;
+    cg_buffer_set_data(buffer, 0, indices_data, buffer_bytes, &ignore_error);
+    if (ignore_error) {
+        cg_error_free(ignore_error);
+        cg_object_unref(index_buffer);
+        return NULL;
     }
 
-  indices = cogl_indices_new_for_buffer (type, index_buffer, 0);
-  cogl_object_unref (index_buffer);
+    indices = cg_indices_new_for_buffer(type, index_buffer, 0);
+    cg_object_unref(index_buffer);
 
-  return indices;
+    return indices;
 }
 
-CoglIndexBuffer *
-cogl_indices_get_buffer (CoglIndices *indices)
+cg_index_buffer_t *
+cg_indices_get_buffer(cg_indices_t *indices)
 {
-  return indices->buffer;
+    return indices->buffer;
 }
 
-CoglIndicesType
-cogl_indices_get_type (CoglIndices *indices)
+cg_indices_type_t
+cg_indices_get_type(cg_indices_t *indices)
 {
-  _COGL_RETURN_VAL_IF_FAIL (cogl_is_indices (indices),
-                            COGL_INDICES_TYPE_UNSIGNED_BYTE);
-  return indices->type;
+    _CG_RETURN_VAL_IF_FAIL(cg_is_indices(indices),
+                           CG_INDICES_TYPE_UNSIGNED_BYTE);
+    return indices->type;
 }
 
 size_t
-cogl_indices_get_offset (CoglIndices *indices)
+cg_indices_get_offset(cg_indices_t *indices)
 {
-  _COGL_RETURN_VAL_IF_FAIL (cogl_is_indices (indices), 0);
+    _CG_RETURN_VAL_IF_FAIL(cg_is_indices(indices), 0);
 
-  return indices->offset;
+    return indices->offset;
 }
 
 static void
-warn_about_midscene_changes (void)
+warn_about_midscene_changes(void)
 {
-  static bool seen = false;
-  if (!seen)
-    {
-      c_warning ("Mid-scene modification of indices has "
-                 "undefined results\n");
-      seen = true;
+    static bool seen = false;
+    if (!seen) {
+        c_warning("Mid-scene modification of indices has "
+                  "undefined results\n");
+        seen = true;
     }
 }
 
 void
-cogl_indices_set_offset (CoglIndices *indices,
-                         size_t offset)
+cg_indices_set_offset(cg_indices_t *indices, size_t offset)
 {
-  _COGL_RETURN_IF_FAIL (cogl_is_indices (indices));
+    _CG_RETURN_IF_FAIL(cg_is_indices(indices));
 
-  if (C_UNLIKELY (indices->immutable_ref))
-    warn_about_midscene_changes ();
+    if (C_UNLIKELY(indices->immutable_ref))
+        warn_about_midscene_changes();
 
-  indices->offset = offset;
+    indices->offset = offset;
 }
 
 static void
-_cogl_indices_free (CoglIndices *indices)
+_cg_indices_free(cg_indices_t *indices)
 {
-  cogl_object_unref (indices->buffer);
-  c_slice_free (CoglIndices, indices);
+    cg_object_unref(indices->buffer);
+    c_slice_free(cg_indices_t, indices);
 }
 
-CoglIndices *
-_cogl_indices_immutable_ref (CoglIndices *indices)
+cg_indices_t *
+_cg_indices_immutable_ref(cg_indices_t *indices)
 {
-  _COGL_RETURN_VAL_IF_FAIL (cogl_is_indices (indices), NULL);
+    _CG_RETURN_VAL_IF_FAIL(cg_is_indices(indices), NULL);
 
-  indices->immutable_ref++;
-  _cogl_buffer_immutable_ref (COGL_BUFFER (indices->buffer));
-  return indices;
+    indices->immutable_ref++;
+    _cg_buffer_immutable_ref(CG_BUFFER(indices->buffer));
+    return indices;
 }
 
 void
-_cogl_indices_immutable_unref (CoglIndices *indices)
+_cg_indices_immutable_unref(cg_indices_t *indices)
 {
-  _COGL_RETURN_IF_FAIL (cogl_is_indices (indices));
-  _COGL_RETURN_IF_FAIL (indices->immutable_ref > 0);
+    _CG_RETURN_IF_FAIL(cg_is_indices(indices));
+    _CG_RETURN_IF_FAIL(indices->immutable_ref > 0);
 
-  indices->immutable_ref--;
-  _cogl_buffer_immutable_unref (COGL_BUFFER (indices->buffer));
+    indices->immutable_ref--;
+    _cg_buffer_immutable_unref(CG_BUFFER(indices->buffer));
 }
 
-CoglIndices *
-cogl_get_rectangle_indices (CoglContext *ctx, int n_rectangles)
+cg_indices_t *
+cg_get_rectangle_indices(cg_context_t *ctx, int n_rectangles)
 {
-  int n_indices = n_rectangles * 6;
+    int n_indices = n_rectangles * 6;
 
-  /* Check if the largest index required will fit in a byte array... */
-  if (n_indices <= 256 / 4 * 6)
-    {
-      /* Generate the byte array if we haven't already */
-      if (ctx->rectangle_byte_indices == NULL)
-        {
-          uint8_t *byte_array = c_malloc (256 / 4 * 6 * sizeof (uint8_t));
-          uint8_t *p = byte_array;
-          int i, vert_num = 0;
+    /* Check if the largest index required will fit in a byte array... */
+    if (n_indices <= 256 / 4 * 6) {
+        /* Generate the byte array if we haven't already */
+        if (ctx->rectangle_byte_indices == NULL) {
+            uint8_t *byte_array = c_malloc(256 / 4 * 6 * sizeof(uint8_t));
+            uint8_t *p = byte_array;
+            int i, vert_num = 0;
 
-          for (i = 0; i < 256 / 4; i++)
-            {
-              *(p++) = vert_num + 0;
-              *(p++) = vert_num + 1;
-              *(p++) = vert_num + 2;
-              *(p++) = vert_num + 0;
-              *(p++) = vert_num + 2;
-              *(p++) = vert_num + 3;
-              vert_num += 4;
+            for (i = 0; i < 256 / 4; i++) {
+                *(p++) = vert_num + 0;
+                *(p++) = vert_num + 1;
+                *(p++) = vert_num + 2;
+                *(p++) = vert_num + 0;
+                *(p++) = vert_num + 2;
+                *(p++) = vert_num + 3;
+                vert_num += 4;
             }
 
-          ctx->rectangle_byte_indices
-            = cogl_indices_new (ctx,
-                                COGL_INDICES_TYPE_UNSIGNED_BYTE,
-                                byte_array,
-                                256 / 4 * 6);
+            ctx->rectangle_byte_indices = cg_indices_new(
+                ctx, CG_INDICES_TYPE_UNSIGNED_BYTE, byte_array, 256 / 4 * 6);
 
-          c_free (byte_array);
+            c_free(byte_array);
         }
 
-      return ctx->rectangle_byte_indices;
-    }
-  else
-    {
-      if (ctx->rectangle_short_indices_len < n_indices)
-        {
-          uint16_t *short_array;
-          uint16_t *p;
-          int i, vert_num = 0;
+        return ctx->rectangle_byte_indices;
+    } else {
+        if (ctx->rectangle_short_indices_len < n_indices) {
+            uint16_t *short_array;
+            uint16_t *p;
+            int i, vert_num = 0;
 
-          if (ctx->rectangle_short_indices != NULL)
-            cogl_object_unref (ctx->rectangle_short_indices);
-          /* Pick a power of two >= MAX (512, n_indices) */
-          if (ctx->rectangle_short_indices_len == 0)
-            ctx->rectangle_short_indices_len = 512;
-          while (ctx->rectangle_short_indices_len < n_indices)
-            ctx->rectangle_short_indices_len *= 2;
+            if (ctx->rectangle_short_indices != NULL)
+                cg_object_unref(ctx->rectangle_short_indices);
+            /* Pick a power of two >= MAX (512, n_indices) */
+            if (ctx->rectangle_short_indices_len == 0)
+                ctx->rectangle_short_indices_len = 512;
+            while (ctx->rectangle_short_indices_len < n_indices)
+                ctx->rectangle_short_indices_len *= 2;
 
-          /* Over-allocate to generate a whole number of quads */
-          p = short_array = c_malloc ((ctx->rectangle_short_indices_len
-                                       + 5) / 6 * 6
-                                      * sizeof (uint16_t));
+            /* Over-allocate to generate a whole number of quads */
+            p = short_array = c_malloc((ctx->rectangle_short_indices_len + 5) /
+                                       6 * 6 * sizeof(uint16_t));
 
-          /* Fill in the complete quads */
-          for (i = 0; i < ctx->rectangle_short_indices_len; i += 6)
-            {
-              *(p++) = vert_num + 0;
-              *(p++) = vert_num + 1;
-              *(p++) = vert_num + 2;
-              *(p++) = vert_num + 0;
-              *(p++) = vert_num + 2;
-              *(p++) = vert_num + 3;
-              vert_num += 4;
+            /* Fill in the complete quads */
+            for (i = 0; i < ctx->rectangle_short_indices_len; i += 6) {
+                *(p++) = vert_num + 0;
+                *(p++) = vert_num + 1;
+                *(p++) = vert_num + 2;
+                *(p++) = vert_num + 0;
+                *(p++) = vert_num + 2;
+                *(p++) = vert_num + 3;
+                vert_num += 4;
             }
 
-          ctx->rectangle_short_indices
-            = cogl_indices_new (ctx,
-                                COGL_INDICES_TYPE_UNSIGNED_SHORT,
-                                short_array,
-                                ctx->rectangle_short_indices_len);
+            ctx->rectangle_short_indices =
+                cg_indices_new(ctx,
+                               CG_INDICES_TYPE_UNSIGNED_SHORT,
+                               short_array,
+                               ctx->rectangle_short_indices_len);
 
-          c_free (short_array);
+            c_free(short_array);
         }
 
-      return ctx->rectangle_short_indices;
+        return ctx->rectangle_short_indices;
     }
 }
-

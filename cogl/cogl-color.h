@@ -32,77 +32,67 @@
  * SECTION:cogl-color
  * @short_description: A generic color definition
  *
- * #CoglColor is a simple structure holding the definition of a color such
+ * #cg_color_t is a simple structure holding the definition of a color such
  * that it can be efficiently used by GL
  *
  * Since: 1.0
  */
 
-#if !defined(__COGL_H_INSIDE__) && !defined(COGL_COMPILATION)
+#if !defined(__CG_H_INSIDE__) && !defined(CG_COMPILATION)
 #error "Only <cogl/cogl.h> can be included directly."
 #endif
 
-#ifndef __COGL_COLOR_H__
-#define __COGL_COLOR_H__
+#ifndef __CG_COLOR_H__
+#define __CG_COLOR_H__
 
 #include <cogl/cogl-types.h>
 
-COGL_BEGIN_DECLS
+CG_BEGIN_DECLS
 
 /**
- * cogl_color_init_from_4ub:
- * @color: A pointer to a #CoglColor to initialize
+ * cg_color_init_from_4ub:
+ * @color: A pointer to a #cg_color_t to initialize
  * @red: value of the red channel, between 0 and 255
  * @green: value of the green channel, between 0 and 255
  * @blue: value of the blue channel, between 0 and 255
  * @alpha: value of the alpha channel, between 0 and 255
  *
- * Sets the values of the passed channels into a #CoglColor.
+ * Sets the values of the passed channels into a #cg_color_t.
  *
  * Since: 1.4
  */
-void
-cogl_color_init_from_4ub (CoglColor *color,
-                          uint8_t red,
-                          uint8_t green,
-                          uint8_t blue,
-                          uint8_t alpha);
+void cg_color_init_from_4ub(
+    cg_color_t *color, uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha);
 
 /**
- * cogl_color_init_from_4f:
- * @color: A pointer to a #CoglColor to initialize
+ * cg_color_init_from_4f:
+ * @color: A pointer to a #cg_color_t to initialize
  * @red: value of the red channel, between 0 and 1.0
  * @green: value of the green channel, between 0 and 1.0
  * @blue: value of the blue channel, between 0 and 1.0
  * @alpha: value of the alpha channel, between 0 and 1.0
  *
- * Sets the values of the passed channels into a #CoglColor
+ * Sets the values of the passed channels into a #cg_color_t
  *
  * Since: 1.4
  */
-void
-cogl_color_init_from_4f (CoglColor *color,
-                         float red,
-                         float green,
-                         float blue,
-                         float alpha);
+void cg_color_init_from_4f(
+    cg_color_t *color, float red, float green, float blue, float alpha);
 
 /**
- * cogl_color_init_from_4fv:
- * @color: A pointer to a #CoglColor to initialize
+ * cg_color_init_from_4fv:
+ * @color: A pointer to a #cg_color_t to initialize
  * @color_array: a pointer to an array of 4 float color components
  *
- * Sets the values of the passed channels into a #CoglColor
+ * Sets the values of the passed channels into a #cg_color_t
  *
  * Since: 1.4
  */
-void
-cogl_color_init_from_4fv (CoglColor *color,
-                          const float *color_array);
+void cg_color_init_from_4fv(cg_color_t *color, const float *color_array);
 
 /**
- * cogl_color_get_red_byte:
- * @color: a #CoglColor
+ * cg_color_get_red_byte:
+ * @color: a #cg_color_t
  *
  * Retrieves the red channel of @color as a byte value
  * between 0 and 255
@@ -111,12 +101,11 @@ cogl_color_init_from_4fv (CoglColor *color,
  *
  * Since: 1.0
  */
-uint8_t
-cogl_color_get_red_byte (const CoglColor *color);
+uint8_t cg_color_get_red_byte(const cg_color_t *color);
 
 /**
- * cogl_color_get_green_byte:
- * @color: a #CoglColor
+ * cg_color_get_green_byte:
+ * @color: a #cg_color_t
  *
  * Retrieves the green channel of @color as a byte value
  * between 0 and 255
@@ -125,12 +114,11 @@ cogl_color_get_red_byte (const CoglColor *color);
  *
  * Since: 1.0
  */
-uint8_t
-cogl_color_get_green_byte (const CoglColor *color);
+uint8_t cg_color_get_green_byte(const cg_color_t *color);
 
 /**
- * cogl_color_get_blue_byte:
- * @color: a #CoglColor
+ * cg_color_get_blue_byte:
+ * @color: a #cg_color_t
  *
  * Retrieves the blue channel of @color as a byte value
  * between 0 and 255
@@ -139,12 +127,11 @@ cogl_color_get_green_byte (const CoglColor *color);
  *
  * Since: 1.0
  */
-uint8_t
-cogl_color_get_blue_byte (const CoglColor *color);
+uint8_t cg_color_get_blue_byte(const cg_color_t *color);
 
 /**
- * cogl_color_get_alpha_byte:
- * @color: a #CoglColor
+ * cg_color_get_alpha_byte:
+ * @color: a #cg_color_t
  *
  * Retrieves the alpha channel of @color as a byte value
  * between 0 and 255
@@ -153,12 +140,11 @@ cogl_color_get_blue_byte (const CoglColor *color);
  *
  * Since: 1.0
  */
-uint8_t
-cogl_color_get_alpha_byte (const CoglColor *color);
+uint8_t cg_color_get_alpha_byte(const cg_color_t *color);
 
 /**
- * cogl_color_get_red_float:
- * @color: a #CoglColor
+ * cg_color_get_red_float:
+ * @color: a #cg_color_t
  *
  * Retrieves the red channel of @color as a floating point
  * value between 0.0 and 1.0
@@ -167,12 +153,11 @@ cogl_color_get_alpha_byte (const CoglColor *color);
  *
  * Since: 1.0
  */
-float
-cogl_color_get_red_float (const CoglColor *color);
+float cg_color_get_red_float(const cg_color_t *color);
 
 /**
- * cogl_color_get_green_float:
- * @color: a #CoglColor
+ * cg_color_get_green_float:
+ * @color: a #cg_color_t
  *
  * Retrieves the green channel of @color as a floating point
  * value between 0.0 and 1.0
@@ -181,12 +166,11 @@ cogl_color_get_red_float (const CoglColor *color);
  *
  * Since: 1.0
  */
-float
-cogl_color_get_green_float (const CoglColor *color);
+float cg_color_get_green_float(const cg_color_t *color);
 
 /**
- * cogl_color_get_blue_float:
- * @color: a #CoglColor
+ * cg_color_get_blue_float:
+ * @color: a #cg_color_t
  *
  * Retrieves the blue channel of @color as a floating point
  * value between 0.0 and 1.0
@@ -195,12 +179,11 @@ cogl_color_get_green_float (const CoglColor *color);
  *
  * Since: 1.0
  */
-float
-cogl_color_get_blue_float (const CoglColor *color);
+float cg_color_get_blue_float(const cg_color_t *color);
 
 /**
- * cogl_color_get_alpha_float:
- * @color: a #CoglColor
+ * cg_color_get_alpha_float:
+ * @color: a #cg_color_t
  *
  * Retrieves the alpha channel of @color as a floating point
  * value between 0.0 and 1.0
@@ -209,12 +192,11 @@ cogl_color_get_blue_float (const CoglColor *color);
  *
  * Since: 1.0
  */
-float
-cogl_color_get_alpha_float (const CoglColor *color);
+float cg_color_get_alpha_float(const cg_color_t *color);
 
 /**
- * cogl_color_get_red:
- * @color: a #CoglColor
+ * cg_color_get_red:
+ * @color: a #cg_color_t
  *
  * Retrieves the red channel of @color as a fixed point
  * value between 0 and 1.0.
@@ -223,12 +205,11 @@ cogl_color_get_alpha_float (const CoglColor *color);
  *
  * Since: 1.0
  */
-float
-cogl_color_get_red (const CoglColor *color);
+float cg_color_get_red(const cg_color_t *color);
 
 /**
- * cogl_color_get_green:
- * @color: a #CoglColor
+ * cg_color_get_green:
+ * @color: a #cg_color_t
  *
  * Retrieves the green channel of @color as a fixed point
  * value between 0 and 1.0.
@@ -237,12 +218,11 @@ cogl_color_get_red (const CoglColor *color);
  *
  * Since: 1.0
  */
-float
-cogl_color_get_green (const CoglColor *color);
+float cg_color_get_green(const cg_color_t *color);
 
 /**
- * cogl_color_get_blue:
- * @color: a #CoglColor
+ * cg_color_get_blue:
+ * @color: a #cg_color_t
  *
  * Retrieves the blue channel of @color as a fixed point
  * value between 0 and 1.0.
@@ -251,12 +231,11 @@ cogl_color_get_green (const CoglColor *color);
  *
  * Since: 1.0
  */
-float
-cogl_color_get_blue (const CoglColor *color);
+float cg_color_get_blue(const cg_color_t *color);
 
 /**
- * cogl_color_get_alpha:
- * @color: a #CoglColor
+ * cg_color_get_alpha:
+ * @color: a #cg_color_t
  *
  * Retrieves the alpha channel of @color as a fixed point
  * value between 0 and 1.0.
@@ -265,167 +244,142 @@ cogl_color_get_blue (const CoglColor *color);
  *
  * Since: 1.0
  */
-float
-cogl_color_get_alpha (const CoglColor *color);
+float cg_color_get_alpha(const cg_color_t *color);
 
 /**
- * cogl_color_set_red_byte:
- * @color: a #CoglColor
+ * cg_color_set_red_byte:
+ * @color: a #cg_color_t
  * @red: a byte value between 0 and 255
  *
  * Sets the red channel of @color to @red.
  *
  * Since: 1.4
  */
-void
-cogl_color_set_red_byte (CoglColor *color,
-                         uint8_t red);
+void cg_color_set_red_byte(cg_color_t *color, uint8_t red);
 
 /**
- * cogl_color_set_green_byte:
- * @color: a #CoglColor
+ * cg_color_set_green_byte:
+ * @color: a #cg_color_t
  * @green: a byte value between 0 and 255
  *
  * Sets the green channel of @color to @green.
  *
  * Since: 1.4
  */
-void
-cogl_color_set_green_byte (CoglColor *color,
-                           uint8_t green);
+void cg_color_set_green_byte(cg_color_t *color, uint8_t green);
 
 /**
- * cogl_color_set_blue_byte:
- * @color: a #CoglColor
+ * cg_color_set_blue_byte:
+ * @color: a #cg_color_t
  * @blue: a byte value between 0 and 255
  *
  * Sets the blue channel of @color to @blue.
  *
  * Since: 1.4
  */
-void
-cogl_color_set_blue_byte (CoglColor *color,
-                          uint8_t blue);
+void cg_color_set_blue_byte(cg_color_t *color, uint8_t blue);
 
 /**
- * cogl_color_set_alpha_byte:
- * @color: a #CoglColor
+ * cg_color_set_alpha_byte:
+ * @color: a #cg_color_t
  * @alpha: a byte value between 0 and 255
  *
  * Sets the alpha channel of @color to @alpha.
  *
  * Since: 1.4
  */
-void
-cogl_color_set_alpha_byte (CoglColor *color,
-                           uint8_t alpha);
+void cg_color_set_alpha_byte(cg_color_t *color, uint8_t alpha);
 
 /**
- * cogl_color_set_red_float:
- * @color: a #CoglColor
+ * cg_color_set_red_float:
+ * @color: a #cg_color_t
  * @red: a float value between 0.0f and 1.0f
  *
  * Sets the red channel of @color to @red.
  *
  * since: 1.4
  */
-void
-cogl_color_set_red_float (CoglColor *color,
-                          float red);
+void cg_color_set_red_float(cg_color_t *color, float red);
 
 /**
- * cogl_color_set_green_float:
- * @color: a #CoglColor
+ * cg_color_set_green_float:
+ * @color: a #cg_color_t
  * @green: a float value between 0.0f and 1.0f
  *
  * Sets the green channel of @color to @green.
  *
  * since: 1.4
  */
-void
-cogl_color_set_green_float (CoglColor *color,
-                            float green);
+void cg_color_set_green_float(cg_color_t *color, float green);
 
 /**
- * cogl_color_set_blue_float:
- * @color: a #CoglColor
+ * cg_color_set_blue_float:
+ * @color: a #cg_color_t
  * @blue: a float value between 0.0f and 1.0f
  *
  * Sets the blue channel of @color to @blue.
  *
  * since: 1.4
  */
-void
-cogl_color_set_blue_float (CoglColor *color,
-                           float blue);
+void cg_color_set_blue_float(cg_color_t *color, float blue);
 
 /**
- * cogl_color_set_alpha_float:
- * @color: a #CoglColor
+ * cg_color_set_alpha_float:
+ * @color: a #cg_color_t
  * @alpha: a float value between 0.0f and 1.0f
  *
  * Sets the alpha channel of @color to @alpha.
  *
  * since: 1.4
  */
-void
-cogl_color_set_alpha_float (CoglColor *color,
-                            float alpha);
+void cg_color_set_alpha_float(cg_color_t *color, float alpha);
 
 /**
- * cogl_color_set_red:
- * @color: a #CoglColor
+ * cg_color_set_red:
+ * @color: a #cg_color_t
  * @red: a float value between 0.0f and 1.0f
  *
  * Sets the red channel of @color to @red.
  *
  * Since: 1.4
  */
-void
-cogl_color_set_red (CoglColor *color,
-                    float red);
+void cg_color_set_red(cg_color_t *color, float red);
 
 /**
- * cogl_color_set_green:
- * @color: a #CoglColor
+ * cg_color_set_green:
+ * @color: a #cg_color_t
  * @green: a float value between 0.0f and 1.0f
  *
  * Sets the green channel of @color to @green.
  *
  * Since: 1.4
  */
-void
-cogl_color_set_green (CoglColor *color,
-                      float green);
+void cg_color_set_green(cg_color_t *color, float green);
 
 /**
- * cogl_color_set_blue:
- * @color: a #CoglColor
+ * cg_color_set_blue:
+ * @color: a #cg_color_t
  * @blue: a float value between 0.0f and 1.0f
  *
  * Sets the blue channel of @color to @blue.
  *
  * Since: 1.4
  */
-void
-cogl_color_set_blue (CoglColor *color,
-                     float blue);
+void cg_color_set_blue(cg_color_t *color, float blue);
 
 /**
- * cogl_color_set_alpha:
- * @color: a #CoglColor
+ * cg_color_set_alpha:
+ * @color: a #cg_color_t
  * @alpha: a float value between 0.0f and 1.0f
  *
  * Sets the alpha channel of @color to @alpha.
  *
  * Since: 1.4
  */
-void
-cogl_color_set_alpha (CoglColor *color,
-                      float alpha);
+void cg_color_set_alpha(cg_color_t *color, float alpha);
 
 /**
- * cogl_color_premultiply:
+ * cg_color_premultiply:
  * @color: the color to premultiply
  *
  * Converts a non-premultiplied color to a pre-multiplied color. For
@@ -434,11 +388,10 @@ cogl_color_set_alpha (CoglColor *color,
  *
  * Since: 1.0
  */
-void
-cogl_color_premultiply (CoglColor *color);
+void cg_color_premultiply(cg_color_t *color);
 
 /**
- * cogl_color_unpremultiply:
+ * cg_color_unpremultiply:
  * @color: the color to unpremultiply
  *
  * Converts a pre-multiplied color to a non-premultiplied color. For
@@ -447,54 +400,50 @@ cogl_color_premultiply (CoglColor *color);
  *
  * Since: 1.4
  */
-void
-cogl_color_unpremultiply (CoglColor *color);
+void cg_color_unpremultiply(cg_color_t *color);
 
 /**
- * cogl_color_equal:
- * @v1: a #CoglColor
- * @v2: a #CoglColor
+ * cg_color_equal:
+ * @v1: a #cg_color_t
+ * @v2: a #cg_color_t
  *
- * Compares two #CoglColor<!-- -->s and checks if they are the same.
+ * Compares two #cg_color_t<!-- -->s and checks if they are the same.
  *
  * This function can be passed to c_hash_table_new() as the @key_equal_func
- * parameter, when using #CoglColor<!-- -->s as keys in a #c_hash_table_t.
+ * parameter, when using #cg_color_t<!-- -->s as keys in a #c_hash_table_t.
  *
  * Return value: %true if the two colors are the same.
  *
  * Since: 1.0
  */
-bool
-cogl_color_equal (const void *v1, const void *v2);
+bool cg_color_equal(const void *v1, const void *v2);
 
 /**
- * cogl_color_copy:
+ * cg_color_copy:
  * @color: the color to copy
  *
  * Creates a copy of @color
  *
- * Return value: a newly-allocated #CoglColor. Use cogl_color_free()
+ * Return value: a newly-allocated #cg_color_t. Use cg_color_free()
  *   to free the allocate resources
  *
  * Since: 1.0
  */
-CoglColor *
-cogl_color_copy (const CoglColor *color);
+cg_color_t *cg_color_copy(const cg_color_t *color);
 
 /**
- * cogl_color_free:
+ * cg_color_free:
  * @color: the color to free
  *
- * Frees the resources allocated by cogl_color_copy().
+ * Frees the resources allocated by cg_color_copy().
  *
  * Since: 1.0
  */
-void
-cogl_color_free (CoglColor *color);
+void cg_color_free(cg_color_t *color);
 
 /**
- * cogl_color_to_hsl:
- * @color: a #CoglColor
+ * cg_color_to_hsl:
+ * @color: a #cg_color_t
  * @hue: (out): return location for the hue value or %NULL
  * @saturation: (out): return location for the saturation value or %NULL
  * @luminance: (out): return location for the luminance value or %NULL
@@ -506,30 +455,28 @@ cogl_color_free (CoglColor *color);
  *
  * Since: 1.16
  */
-void
-cogl_color_to_hsl (const CoglColor *color,
-                   float           *hue,
-                   float           *saturation,
-                   float           *luminance);
+void cg_color_to_hsl(const cg_color_t *color,
+                     float *hue,
+                     float *saturation,
+                     float *luminance);
 
 /**
- * cogl_color_init_from_hsl:
- * @color: (out): return location for a #CoglColor
+ * cg_color_init_from_hsl:
+ * @color: (out): return location for a #cg_color_t
  * @hue: hue value, in the 0 .. 360 range
  * @saturation: saturation value, in the 0 .. 1 range
  * @luminance: luminance value, in the 0 .. 1 range
  *
  * Converts a color expressed in HLS (hue, luminance and saturation)
- * values into a #CoglColor.
+ * values into a #cg_color_t.
  *
  * Since: 1.16
  */
-void
-cogl_color_init_from_hsl (CoglColor *color,
-                          float      hue,
-                          float      saturation,
-                          float      luminance);
+void cg_color_init_from_hsl(cg_color_t *color,
+                            float hue,
+                            float saturation,
+                            float luminance);
 
-COGL_END_DECLS
+CG_END_DECLS
 
-#endif /* __COGL_COLOR_H__ */
+#endif /* __CG_COLOR_H__ */

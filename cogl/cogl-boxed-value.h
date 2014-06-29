@@ -28,90 +28,79 @@
  *
  */
 
-#ifndef __COGL_BOXED_VALUE_H
-#define __COGL_BOXED_VALUE_H
+#ifndef __CG_BOXED_VALUE_H
+#define __CG_BOXED_VALUE_H
 
 #include <clib.h>
 
 #include "cogl-context.h"
 
 typedef enum {
-  COGL_BOXED_NONE,
-  COGL_BOXED_INT,
-  COGL_BOXED_FLOAT,
-  COGL_BOXED_MATRIX
-} CoglBoxedType;
+    CG_BOXED_NONE,
+    CG_BOXED_INT,
+    CG_BOXED_FLOAT,
+    CG_BOXED_MATRIX
+} cg_boxed_type_t;
 
-typedef struct _CoglBoxedValue
-{
-  CoglBoxedType type;
-  int size, count;
+typedef struct _cg_boxed_value_t {
+    cg_boxed_type_t type;
+    int size, count;
 
-  union {
-    float float_value[4];
-    int int_value[4];
-    float matrix[16];
-    float *float_array;
-    int *int_array;
-    void *array;
-  } v;
-} CoglBoxedValue;
+    union {
+        float float_value[4];
+        int int_value[4];
+        float matrix[16];
+        float *float_array;
+        int *int_array;
+        void *array;
+    } v;
+} cg_boxed_value_t;
 
-#define _cogl_boxed_value_init(bv)              \
-  C_STMT_START {                                \
-    CoglBoxedValue *_bv = (bv);                 \
-    _bv->type = COGL_BOXED_NONE;                \
-    _bv->count = 1;                             \
-  } C_STMT_END
+#define _cg_boxed_value_init(bv)                                               \
+    C_STMT_START                                                               \
+    {                                                                          \
+        cg_boxed_value_t *_bv = (bv);                                          \
+        _bv->type = CG_BOXED_NONE;                                             \
+        _bv->count = 1;                                                        \
+    }                                                                          \
+    C_STMT_END
 
-bool
-_cogl_boxed_value_equal (const CoglBoxedValue *bva,
-                         const CoglBoxedValue *bvb);
+bool _cg_boxed_value_equal(const cg_boxed_value_t *bva,
+                           const cg_boxed_value_t *bvb);
 
-void
-_cogl_boxed_value_set_1f (CoglBoxedValue *bv,
-                          float value);
+void _cg_boxed_value_set_1f(cg_boxed_value_t *bv, float value);
 
-void
-_cogl_boxed_value_set_1i (CoglBoxedValue *bv,
-                          int value);
+void _cg_boxed_value_set_1i(cg_boxed_value_t *bv, int value);
 
-void
-_cogl_boxed_value_set_float (CoglBoxedValue *bv,
+void _cg_boxed_value_set_float(cg_boxed_value_t *bv,
+                               int n_components,
+                               int count,
+                               const float *value);
+
+void _cg_boxed_value_set_int(cg_boxed_value_t *bv,
                              int n_components,
                              int count,
-                             const float *value);
+                             const int *value);
 
-void
-_cogl_boxed_value_set_int (CoglBoxedValue *bv,
-                           int n_components,
-                           int count,
-                           const int *value);
-
-void
-_cogl_boxed_value_set_matrix (CoglBoxedValue *bv,
-                              int dimensions,
-                              int count,
-                              bool transpose,
-                              const float *value);
+void _cg_boxed_value_set_matrix(cg_boxed_value_t *bv,
+                                int dimensions,
+                                int count,
+                                bool transpose,
+                                const float *value);
 
 /*
- * _cogl_boxed_value_copy:
+ * _cg_boxed_value_copy:
  * @dst: The destination boxed value
  * @src: The source boxed value
  *
  * This copies @src to @dst. It is assumed that @dst is initialised.
  */
-void
-_cogl_boxed_value_copy (CoglBoxedValue *dst,
-                        const CoglBoxedValue *src);
+void _cg_boxed_value_copy(cg_boxed_value_t *dst, const cg_boxed_value_t *src);
 
-void
-_cogl_boxed_value_destroy (CoglBoxedValue *bv);
+void _cg_boxed_value_destroy(cg_boxed_value_t *bv);
 
-void
-_cogl_boxed_value_set_uniform (CoglContext *ctx,
-                               int location,
-                               const CoglBoxedValue *value);
+void _cg_boxed_value_set_uniform(cg_context_t *ctx,
+                                 int location,
+                                 const cg_boxed_value_t *value);
 
-#endif /* __COGL_BOXED_VALUE_H */
+#endif /* __CG_BOXED_VALUE_H */

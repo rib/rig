@@ -30,52 +30,49 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#ifndef __COGL_SHADER_BOILERPLATE_H
-#define __COGL_SHADER_BOILERPLATE_H
+#ifndef __CG_SHADER_BOILERPLATE_H
+#define __CG_SHADER_BOILERPLATE_H
 
-#define _COGL_COMMON_SHADER_BOILERPLATE \
-  "#define COGL_VERSION 100\n" \
-  "\n" \
-  "uniform mat4 cogl_modelview_matrix;\n" \
-  "uniform mat4 cogl_modelview_projection_matrix;\n"  \
-  "uniform mat4 cogl_projection_matrix;\n"
+#define _CG_COMMON_SHADER_BOILERPLATE                                          \
+    "#define CG_VERSION 100\n"                                                 \
+    "\n"                                                                       \
+    "uniform mat4 cg_modelview_matrix;\n"                                      \
+    "uniform mat4 cg_modelview_projection_matrix;\n"                           \
+    "uniform mat4 cg_projection_matrix;\n"
 
 /* This declares all of the variables that we might need. This is
  * working on the assumption that the compiler will optimise them out
  * if they are not actually used. The GLSL spec at least implies that
  * this will happen for varyings but it doesn't explicitly so for
  * attributes */
-#define _COGL_VERTEX_SHADER_BOILERPLATE \
-  _COGL_COMMON_SHADER_BOILERPLATE \
-  "#define cogl_color_out _cogl_color\n" \
-  "out vec4 _cogl_color;\n" \
-  "#define cogl_position_out gl_Position\n" \
-  "#define cogl_point_size_out gl_PointSize\n" \
-  "\n" \
-  "in vec4 cogl_color_in;\n" \
-  "in vec4 cogl_position_in;\n" \
-  "#define cogl_tex_coord_in cogl_tex_coord0_in;\n" \
-  "in vec3 cogl_normal_in;\n"
+#define _CG_VERTEX_SHADER_BOILERPLATE                                          \
+    _CG_COMMON_SHADER_BOILERPLATE                                              \
+    "#define cg_color_out _cg_color\n"                                     \
+    "out vec4 _cg_color;\n"                                                \
+    "#define cg_position_out gl_Position\n"                                \
+    "#define cg_point_size_out gl_PointSize\n"                             \
+    "\n"                                                                   \
+    "in vec4 cg_color_in;\n"                                               \
+    "in vec4 cg_position_in;\n"                                            \
+    "#define cg_tex_coord_in cg_tex_coord0_in;\n"                          \
+    "in vec3 cg_normal_in;\n"
 
-#define _COGL_FRAGMENT_SHADER_BOILERPLATE \
-  "#ifdef GL_ES\n" \
-  "precision highp float;\n" \
-  "#endif\n" \
-  _COGL_COMMON_SHADER_BOILERPLATE \
-  "\n" \
-  "in vec4 _cogl_color;\n" \
-  "\n" \
-  "#define cogl_color_in _cogl_color\n" \
-  "\n" \
-  "#define cogl_front_facing gl_FrontFacing\n" \
-  "\n" \
-  "#define cogl_point_coord gl_PointCoord\n"
+#define _CG_FRAGMENT_SHADER_BOILERPLATE                                        \
+    "#ifdef GL_ES\n"                                                           \
+    "precision highp float;\n"                                                 \
+    "#endif\n" _CG_COMMON_SHADER_BOILERPLATE "\n"                              \
+    "in vec4 _cg_color;\n"                                                     \
+    "\n"                                                                       \
+    "#define cg_color_in _cg_color\n"                                          \
+    "\n"                                                                       \
+    "#define cg_front_facing gl_FrontFacing\n"                                 \
+    "\n"                                                                       \
+    "#define cg_point_coord gl_PointCoord\n"
 #if 0
-  /* GLSL 1.2 has a bottom left origin, though later versions
-   * allow use of an origin_upper_left keyword which would be
-   * more appropriate for Cogl. */
-  "#define coglFragCoord   gl_FragCoord\n"
+/* GLSL 1.2 has a bottom left origin, though later versions
+ * allow use of an origin_upper_left keyword which would be
+ * more appropriate for Cogl. */
+"#define coglFragCoord   gl_FragCoord\n"
 #endif
 
-#endif /* __COGL_SHADER_BOILERPLATE_H */
-
+#endif /* __CG_SHADER_BOILERPLATE_H */

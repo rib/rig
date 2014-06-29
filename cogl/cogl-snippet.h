@@ -31,21 +31,21 @@
  *   Neil Roberts <neil@linux.intel.com>
  */
 
-#if !defined(__COGL_H_INSIDE__) && !defined(COGL_COMPILATION)
+#if !defined(__CG_H_INSIDE__) && !defined(CG_COMPILATION)
 #error "Only <cogl/cogl.h> can be included directly."
 #endif
 
-#ifndef __COGL_SNIPPET_H__
-#define __COGL_SNIPPET_H__
+#ifndef __CG_SNIPPET_H__
+#define __CG_SNIPPET_H__
 
-COGL_BEGIN_DECLS
+CG_BEGIN_DECLS
 
 /**
  * SECTION:cogl-snippet
  * @short_description: Functions for creating and manipulating shader snippets
  *
- * #CoglSnippet<!-- -->s are used to modify or replace parts of a
- * #CoglPipeline using GLSL. GLSL is a programming language supported
+ * #cg_snippet_t<!-- -->s are used to modify or replace parts of a
+ * #cg_pipeline_t using GLSL. GLSL is a programming language supported
  * by OpenGL on programmable hardware to provide a more flexible
  * description of what should be rendered. A description of GLSL
  * itself is outside the scope of this documentation but any good
@@ -105,25 +105,25 @@ COGL_BEGIN_DECLS
  * snippets.
  *
  * The snippets can be added to a pipeline with
- * cogl_pipeline_add_snippet() or
- * cogl_pipeline_add_layer_snippet(). Which function to use depends on
+ * cg_pipeline_add_snippet() or
+ * cg_pipeline_add_layer_snippet(). Which function to use depends on
  * which hook the snippet is targetting. The snippets are all
  * generated in the order they are added to the pipeline. That is, the
  * post strings are executed in the order they are added to the
  * pipeline and the pre strings are executed in reverse order. If any
  * replace strings are given for a snippet then any other snippets
  * with the same hook added before that snippet will be ignored. The
- * different hooks are documented under #CoglSnippetHook.
+ * different hooks are documented under #cg_snippet_hook_t.
  *
  * For portability with GLES2, it is recommended not to use the GLSL
  * builtin names such as gl_FragColor. Instead there are replacement
- * names under the cogl_* namespace which can be used instead. These
+ * names under the cg_* namespace which can be used instead. These
  * are:
  *
  * <glosslist>
  *  <glossentry>
  *   <glossterm>uniform mat4
- *         <emphasis>cogl_modelview_matrix</emphasis></glossterm>
+ *         <emphasis>cg_modelview_matrix</emphasis></glossterm>
  *   <glossdef><para>
  *    The current modelview matrix. This is equivalent to
  *    #gl_ModelViewMatrix.
@@ -131,7 +131,7 @@ COGL_BEGIN_DECLS
  *  </glossentry>
  *  <glossentry>
  *   <glossterm>uniform mat4
- *         <emphasis>cogl_projection_matrix</emphasis></glossterm>
+ *         <emphasis>cg_projection_matrix</emphasis></glossterm>
  *   <glossdef><para>
  *    The current projection matrix. This is equivalent to
  *    #gl_ProjectionMatrix.
@@ -139,7 +139,7 @@ COGL_BEGIN_DECLS
  *  </glossentry>
  *  <glossentry>
  *   <glossterm>uniform mat4
- *         <emphasis>cogl_modelview_projection_matrix</emphasis></glossterm>
+ *         <emphasis>cg_modelview_projection_matrix</emphasis></glossterm>
  *   <glossdef><para>
  *    The combined modelview and projection matrix. A vertex shader
  *    would typically use this to transform the incoming vertex
@@ -155,45 +155,45 @@ COGL_BEGIN_DECLS
  * <glosslist>
  *  <glossentry>
  *   <glossterm>in vec4
- *         <emphasis>cogl_position_in</emphasis></glossterm>
+ *         <emphasis>cg_position_in</emphasis></glossterm>
  *   <glossdef><para>
  *    The incoming vertex position. This is equivalent to #gl_Vertex.
  *   </para></glossdef>
  *  </glossentry>
  *  <glossentry>
  *   <glossterm>in vec4
- *         <emphasis>cogl_color_in</emphasis></glossterm>
+ *         <emphasis>cg_color_in</emphasis></glossterm>
  *   <glossdef><para>
  *    The incoming vertex color. This is equivalent to #gl_Color.
  *   </para></glossdef>
  *  </glossentry>
  *  <glossentry>
  *   <glossterm>in vec4
- *         <emphasis>cogl_tex_coord_in</emphasis></glossterm>
+ *         <emphasis>cg_tex_coord_in</emphasis></glossterm>
  *   <glossdef><para>
  *    The texture coordinate for layer 0. This is an alternative name
- *    for #cogl_tex_coord0_in.
+ *    for #cg_tex_coord0_in.
  *   </para></glossdef>
  *  </glossentry>
  *  <glossentry>
  *   <glossterm>in vec4
- *         <emphasis>cogl_tex_coord0_in</emphasis></glossterm>
+ *         <emphasis>cg_tex_coord0_in</emphasis></glossterm>
  *   <glossdef><para>
  *    The texture coordinate for the layer 0. This is equivalent to
- *    #gl_MultiTexCoord0. There will also be #cogl_tex_coord1_in and
+ *    #gl_MultiTexCoord0. There will also be #cg_tex_coord1_in and
  *    so on if more layers are added to the pipeline.
  *   </para></glossdef>
  *  </glossentry>
  *  <glossentry>
  *   <glossterm>in vec3
- *         <emphasis>cogl_normal_in</emphasis></glossterm>
+ *         <emphasis>cg_normal_in</emphasis></glossterm>
  *   <glossdef><para>
  *    The normal of the vertex. This is equivalent to #gl_Normal.
  *   </para></glossdef>
  *  </glossentry>
  *  <glossentry>
  *   <glossterm>vec4
- *         <emphasis>cogl_position_out</emphasis></glossterm>
+ *         <emphasis>cg_position_out</emphasis></glossterm>
  *   <glossdef><para>
  *    The calculated position of the vertex. This must be written to
  *    in all vertex shaders. This is equivalent to #gl_Position.
@@ -201,37 +201,37 @@ COGL_BEGIN_DECLS
  *  </glossentry>
  *  <glossentry>
  *   <glossterm>float
- *         <emphasis>cogl_point_size_in</emphasis></glossterm>
+ *         <emphasis>cg_point_size_in</emphasis></glossterm>
  *   <glossdef><para>
- *    The incoming point size from the cogl_point_size_in attribute.
+ *    The incoming point size from the cg_point_size_in attribute.
  *    This is only available if
- *    cogl_pipeline_set_per_vertex_point_size() is set on the
+ *    cg_pipeline_set_per_vertex_point_size() is set on the
  *    pipeline.
  *   </para></glossdef>
  *  </glossentry>
  *  <glossentry>
  *   <glossterm>float
- *         <emphasis>cogl_point_size_out</emphasis></glossterm>
+ *         <emphasis>cg_point_size_out</emphasis></glossterm>
  *   <glossdef><para>
  *    The calculated size of a point. This is equivalent to #gl_PointSize.
  *   </para></glossdef>
  *  </glossentry>
  *  <glossentry>
  *   <glossterm>out vec4
- *         <emphasis>cogl_color_out</emphasis></glossterm>
+ *         <emphasis>cg_color_out</emphasis></glossterm>
  *   <glossdef><para>
  *    The calculated color of a vertex. This is equivalent to #gl_FrontColor.
  *   </para></glossdef>
  *  </glossentry>
  *  <glossentry>
  *   <glossterm>out vec4
- *         <emphasis>cogl_tex_coord0_out</emphasis></glossterm>
+ *         <emphasis>cg_tex_coord0_out</emphasis></glossterm>
  *   <glossdef><para>
  *    The calculated texture coordinate for layer 0 of the pipeline.
  *    This is equivalent to #gl_TexCoord[0]. There will also be
- *    #cogl_tex_coord1_out and so on if more layers are added to the
+ *    #cg_tex_coord1_out and so on if more layers are added to the
  *    pipeline. In the fragment shader, this varying is called
- *    #cogl_tex_coord0_in.
+ *    #cg_tex_coord0_in.
  *   </para></glossdef>
  *  </glossentry>
  * </glosslist>
@@ -240,22 +240,22 @@ COGL_BEGIN_DECLS
  *
  * <glosslist>
  *  <glossentry>
- *   <glossterm>in vec4 <emphasis>cogl_color_in</emphasis></glossterm>
+ *   <glossterm>in vec4 <emphasis>cg_color_in</emphasis></glossterm>
  *   <glossdef><para>
  *    The calculated color of a vertex. This is equivalent to #gl_FrontColor.
  *   </para></glossdef>
  *  </glossentry>
  *  <glossentry>
  *   <glossterm>in vec4
- *              <emphasis>cogl_tex_coord0_in</emphasis></glossterm>
+ *              <emphasis>cg_tex_coord0_in</emphasis></glossterm>
  *   <glossdef><para>
  *    The texture coordinate for layer 0. This is equivalent to
- *    #gl_TexCoord[0]. There will also be #cogl_tex_coord1_in and so
+ *    #gl_TexCoord[0]. There will also be #cg_tex_coord1_in and so
  *    on if more layers are added to the pipeline.
  *   </para></glossdef>
  *  </glossentry>
  *  <glossentry>
- *   <glossterm>vec4 <emphasis>cogl_color_out</emphasis></glossterm>
+ *   <glossterm>vec4 <emphasis>cg_color_out</emphasis></glossterm>
  *   <glossdef><para>
  *    The final calculated color of the fragment. All fragment shaders
  *    must write to this variable. This is equivalent to
@@ -263,14 +263,14 @@ COGL_BEGIN_DECLS
  *   </para></glossdef>
  *  </glossentry>
  *  <glossentry>
- *   <glossterm>float <emphasis>cogl_depth_out</emphasis></glossterm>
+ *   <glossterm>float <emphasis>cg_depth_out</emphasis></glossterm>
  *   <glossdef><para>
  *    An optional output variable specifying the depth value to use
  *    for this fragment. This is equivalent to #gl_FragDepth.
  *   </para></glossdef>
  *  </glossentry>
  *  <glossentry>
- *   <glossterm>bool <emphasis>cogl_front_facing</emphasis></glossterm>
+ *   <glossterm>bool <emphasis>cg_front_facing</emphasis></glossterm>
  *   <glossdef><para>
  *    A readonly variable that will be true if the current primitive
  *    is front facing. This can be used to implement two-sided
@@ -278,7 +278,7 @@ COGL_BEGIN_DECLS
  *   </para></glossdef>
  *  </glossentry>
  *  <glossentry>
- *   <glossterm>vec2 <emphasis>cogl_point_coord</emphasis></glossterm>
+ *   <glossterm>vec2 <emphasis>cg_point_coord</emphasis></glossterm>
  *   <glossdef><para>
  *    When rendering points, this will contain a vec2 which represents
  *    the position within the point of the current fragment.
@@ -287,7 +287,7 @@ COGL_BEGIN_DECLS
  *    Cogl where when rendering to an offscreen buffer these
  *    coordinates will be upside-down. The value is undefined when not
  *    rendering points. This builtin can only be used if the
- *    %COGL_FEATURE_ID_POINT_SPRITE feature is available.
+ *    %CG_FEATURE_ID_POINT_SPRITE feature is available.
  *   </para></glossdef>
  *  </glossentry>
  * </glosslist>
@@ -296,7 +296,7 @@ COGL_BEGIN_DECLS
  * generated color on a pipeline.
  *
  * <programlisting>
- *   CoglPipeline *pipeline = cogl_pipeline_new ();
+ *   cg_pipeline_t *pipeline = cg_pipeline_new ();
  *
  *   /<!-- -->* Set up the pipeline here, ie by adding a texture or other
  *      layers *<!-- -->/
@@ -304,66 +304,66 @@ COGL_BEGIN_DECLS
  *   /<!-- -->* Create the snippet. The first string is the declarations which
  *      we will use to add a uniform. The second is the 'post' string which
  *      will contain the code to perform the desaturation. *<!-- -->/
- *   CoglSnippet *snippet =
- *     cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
+ *   cg_snippet_t *snippet =
+ *     cg_snippet_new (CG_SNIPPET_HOOK_FRAGMENT,
  *                       "uniform float factor;",
  *                       "float gray = dot (vec3 (0.299, 0.587, 0.114), "
- *                       "                  cogl_color_out.rgb);"
- *                       "cogl_color_out.rgb = mix (vec3 (gray),"
- *                       "                          cogl_color_out.rgb,"
+ *                       "                  cg_color_out.rgb);"
+ *                       "cg_color_out.rgb = mix (vec3 (gray),"
+ *                       "                          cg_color_out.rgb,"
  *                       "                          factor);");
  *
  *   /<!-- -->* Add it to the pipeline *<!-- -->/
- *   cogl_pipeline_add_snippet (pipeline, snippet);
+ *   cg_pipeline_add_snippet (pipeline, snippet);
  *   /<!-- -->* The pipeline keeps a reference to the snippet
  *      so we don't need to *<!-- -->/
- *   cogl_object_unref (snippet);
+ *   cg_object_unref (snippet);
  *
  *   /<!-- -->* Update the custom uniform on the pipeline *<!-- -->/
- *   int location = cogl_pipeline_get_uniform_location (pipeline, "factor");
- *   cogl_pipeline_set_uniform_1f (pipeline, location, 0.5f);
+ *   int location = cg_pipeline_get_uniform_location (pipeline, "factor");
+ *   cg_pipeline_set_uniform_1f (pipeline, location, 0.5f);
  *
  *   /<!-- -->* Now we can render with the snippet as usual *<!-- -->/
- *   cogl_framebuffer_draw_rectangle (fb, pipeline, 0, 0, 10, 10);
+ *   cg_framebuffer_draw_rectangle (fb, pipeline, 0, 0, 10, 10);
  * </programlisting>
  */
-typedef struct _CoglSnippet CoglSnippet;
+typedef struct _cg_snippet_t cg_snippet_t;
 
-#define COGL_SNIPPET(OBJECT) ((CoglSnippet *)OBJECT)
+#define CG_SNIPPET(OBJECT) ((cg_snippet_t *)OBJECT)
 
 /* Enumeration of all the hook points that a snippet can be attached
    to within a pipeline. */
 /**
- * CoglSnippetHook:
- * @COGL_SNIPPET_HOOK_VERTEX_GLOBALS: A hook for declaring global data
+ * cg_snippet_hook_t:
+ * @CG_SNIPPET_HOOK_VERTEX_GLOBALS: A hook for declaring global data
  *   that can be shared with all other snippets that are on a vertex
  *   hook.
- * @COGL_SNIPPET_HOOK_FRAGMENT_GLOBALS: A hook for declaring global
+ * @CG_SNIPPET_HOOK_FRAGMENT_GLOBALS: A hook for declaring global
  *   data wthat can be shared with all other snippets that are on a
  *   fragment hook.
- * @COGL_SNIPPET_HOOK_VERTEX: A hook for the entire vertex processing
+ * @CG_SNIPPET_HOOK_VERTEX: A hook for the entire vertex processing
  *   stage of the pipeline.
- * @COGL_SNIPPET_HOOK_VERTEX_TRANSFORM: A hook for the vertex transformation.
- * @COGL_SNIPPET_HOOK_POINT_SIZE: A hook for manipulating the point
+ * @CG_SNIPPET_HOOK_VERTEX_TRANSFORM: A hook for the vertex transformation.
+ * @CG_SNIPPET_HOOK_POINT_SIZE: A hook for manipulating the point
  *   size of a vertex. This is only used if
- *   cogl_pipeline_set_per_vertex_point_size() is enabled on the
+ *   cg_pipeline_set_per_vertex_point_size() is enabled on the
  *   pipeline.
- * @COGL_SNIPPET_HOOK_FRAGMENT: A hook for the entire fragment
+ * @CG_SNIPPET_HOOK_FRAGMENT: A hook for the entire fragment
  *   processing stage of the pipeline.
- * @COGL_SNIPPET_HOOK_TEXTURE_COORD_TRANSFORM: A hook for transforming
+ * @CG_SNIPPET_HOOK_TEXTURE_COORD_TRANSFORM: A hook for transforming
  *   the texture coordinates for a layer.
- * @COGL_SNIPPET_HOOK_LAYER_FRAGMENT: A hook for the fragment
+ * @CG_SNIPPET_HOOK_LAYER_FRAGMENT: A hook for the fragment
  *   processing of a particular layer.
- * @COGL_SNIPPET_HOOK_TEXTURE_LOOKUP: A hook for the texture lookup
+ * @CG_SNIPPET_HOOK_TEXTURE_LOOKUP: A hook for the texture lookup
  *   stage of a given layer in a pipeline.
  *
- * #CoglSnippetHook is used to specify a location within a
- * #CoglPipeline where the code of the snippet should be used when it
+ * #cg_snippet_hook_t is used to specify a location within a
+ * #cg_pipeline_t where the code of the snippet should be used when it
  * is attached to a pipeline.
  *
  * <glosslist>
  *  <glossentry>
- *   <glossterm>%COGL_SNIPPET_HOOK_VERTEX_GLOBALS</glossterm>
+ *   <glossterm>%CG_SNIPPET_HOOK_VERTEX_GLOBALS</glossterm>
  *   <glossdef>
  * <para>
  * Adds a shader snippet at the beginning of the global section of the
@@ -375,7 +375,7 @@ typedef struct _CoglSnippet CoglSnippet;
  *   </glossdef>
  *  </glossentry>
  *  <glossentry>
- *   <glossterm>%COGL_SNIPPET_HOOK_FRAGMENT_GLOBALS</glossterm>
+ *   <glossterm>%CG_SNIPPET_HOOK_FRAGMENT_GLOBALS</glossterm>
  *   <glossdef>
  * <para>
  * Adds a shader snippet at the beginning of the global section of the
@@ -387,13 +387,13 @@ typedef struct _CoglSnippet CoglSnippet;
  *   </glossdef>
  *  </glossentry>
  *  <glossentry>
- *   <glossterm>%COGL_SNIPPET_HOOK_VERTEX</glossterm>
+ *   <glossterm>%CG_SNIPPET_HOOK_VERTEX</glossterm>
  *   <glossdef>
  * <para>
  * Adds a shader snippet that will hook on to the vertex processing
  * stage of the pipeline. This gives a chance for the application to
  * modify the vertex attributes generated by the shader. Typically the
- * snippet will modify cogl_color_out or cogl_position_out builtins.
+ * snippet will modify cg_color_out or cg_position_out builtins.
  * </para>
  * <para>
  * The ‘declarations’ string in @snippet will be inserted in the
@@ -418,15 +418,15 @@ typedef struct _CoglSnippet CoglSnippet;
  *   </glossdef>
  *  </glossentry>
  *  <glossentry>
- *   <glossterm>%COGL_SNIPPET_HOOK_VERTEX_TRANSFORM</glossterm>
+ *   <glossterm>%CG_SNIPPET_HOOK_VERTEX_TRANSFORM</glossterm>
  *   <glossdef>
  * <para>
  * Adds a shader snippet that will hook on to the vertex transform stage.
- * Typically the snippet will use the cogl_modelview_matrix,
- * cogl_projection_matrix and cogl_modelview_projection_matrix matrices and the
- * cogl_position_in attribute. The hook must write to cogl_position_out.
- * The default processing for this hook will multiply cogl_position_in by
- * the combined modelview-projection matrix and store it on cogl_position_out.
+ * Typically the snippet will use the cg_modelview_matrix,
+ * cg_projection_matrix and cg_modelview_projection_matrix matrices and the
+ * cg_position_in attribute. The hook must write to cg_position_out.
+ * The default processing for this hook will multiply cg_position_in by
+ * the combined modelview-projection matrix and store it on cg_position_out.
  * </para>
  * <para>
  * The ‘declarations’ string in @snippet will be inserted in the
@@ -444,21 +444,21 @@ typedef struct _CoglSnippet CoglSnippet;
  * <para>
  * The ‘post’ string in @snippet will be inserted after all of the
  * standard vertex transformation is done. This can be used to modify the
- * cogl_position_out in addition to the default processing.
+ * cg_position_out in addition to the default processing.
  * </para>
  *   </glossdef>
  *  </glossentry>
  *  <glossentry>
- *   <glossterm>%COGL_SNIPPET_HOOK_POINT_SIZE</glossterm>
+ *   <glossterm>%CG_SNIPPET_HOOK_POINT_SIZE</glossterm>
  *   <glossdef>
  * <para>
  * Adds a shader snippet that will hook on to the point size
  * calculation step within the vertex shader stage. The snippet should
- * write to the builtin cogl_point_size_out with the new point size.
- * The snippet can either read cogl_point_size_in directly and write a
- * new value or first read an existing value in cogl_point_size_out
+ * write to the builtin cg_point_size_out with the new point size.
+ * The snippet can either read cg_point_size_in directly and write a
+ * new value or first read an existing value in cg_point_size_out
  * that would be set by a previous snippet. Note that this hook is
- * only used if cogl_pipeline_set_per_vertex_point_size() is enabled
+ * only used if cg_pipeline_set_per_vertex_point_size() is enabled
  * on the pipeline.
  * </para>
  * <para>
@@ -477,18 +477,18 @@ typedef struct _CoglSnippet CoglSnippet;
  * <para>
  * The ‘post’ string in @snippet will be inserted after the
  * standard point size calculation is done. This can be used to modify
- * cogl_point_size_out in addition to the default processing.
+ * cg_point_size_out in addition to the default processing.
  * </para>
  *   </glossdef>
  *  </glossentry>
  *  <glossentry>
- *   <glossterm>%COGL_SNIPPET_HOOK_FRAGMENT</glossterm>
+ *   <glossterm>%CG_SNIPPET_HOOK_FRAGMENT</glossterm>
  *   <glossdef>
  * <para>
  * Adds a shader snippet that will hook on to the fragment processing
  * stage of the pipeline. This gives a chance for the application to
  * modify the fragment color generated by the shader. Typically the
- * snippet will modify cogl_color_out.
+ * snippet will modify cg_color_out.
  * </para>
  * <para>
  * The ‘declarations’ string in @snippet will be inserted in the
@@ -509,13 +509,13 @@ typedef struct _CoglSnippet CoglSnippet;
  * The ‘post’ string in @snippet will be inserted after all of the
  * standard fragment processing is done. At this point the generated
  * value for the rest of the pipeline state will already be in
- * cogl_color_out so the application can modify the result by altering
+ * cg_color_out so the application can modify the result by altering
  * this variable.
  * </para>
  *   </glossdef>
  *  </glossentry>
  *  <glossentry>
- *   <glossterm>%COGL_SNIPPET_HOOK_TEXTURE_COORD_TRANSFORM</glossterm>
+ *   <glossterm>%CG_SNIPPET_HOOK_TEXTURE_COORD_TRANSFORM</glossterm>
  *    <glossdef>
  * <para>
  * Adds a shader snippet that will hook on to the texture coordinate
@@ -524,12 +524,12 @@ typedef struct _CoglSnippet CoglSnippet;
  * </para>
  * <para>
  * Within the snippet code for this hook there is an extra variable
- * called cogl_tex_coord and represents the incoming and outgoing
- * texture coordinate. On entry to the hook, cogl_tex_coord contains
+ * called cg_tex_coord and represents the incoming and outgoing
+ * texture coordinate. On entry to the hook, cg_tex_coord contains
  * the value of the corresponding texture coordinate attribute for
  * this layer. The hook is expected to modify this variable. The
  * output will be passed as a varying to the fragment processing
- * stage. The default code will leave cogl_tex_coord untouched.
+ * stage. The default code will leave cg_tex_coord untouched.
  * </para>
  * <para>
  * The ‘declarations’ string in @snippet will be inserted in the
@@ -538,24 +538,24 @@ typedef struct _CoglSnippet CoglSnippet;
  * </para>
  * <para>
  * The ‘pre’ string in @snippet will be inserted just before the
- * fragment processing for this layer. At this point cogl_tex_coord
+ * fragment processing for this layer. At this point cg_tex_coord
  * still contains the value of the texture coordinate attribute.
  * </para>
  * <para>
  * If a ‘replace’ string is given then this will be used instead of
  * the default fragment processing for this layer. The snippet can
- * modify cogl_tex_coord or leave it as is to apply no transformation.
+ * modify cg_tex_coord or leave it as is to apply no transformation.
  * </para>
  * <para>
  * The ‘post’ string in @snippet will be inserted just after the
- * transformation. At this point cogl_tex_coord will contain the
+ * transformation. At this point cg_tex_coord will contain the
  * results of the transformation but it can be further modified by the
  * snippet.
  * </para>
  *   </glossdef>
  *  </glossentry>
  *  <glossentry>
- *   <glossterm>%COGL_SNIPPET_HOOK_LAYER_FRAGMENT</glossterm>
+ *   <glossterm>%CG_SNIPPET_HOOK_LAYER_FRAGMENT</glossterm>
  *    <glossdef>
  * <para>
  * Adds a shader snippet that will hook on to the fragment processing
@@ -564,7 +564,7 @@ typedef struct _CoglSnippet CoglSnippet;
  * </para>
  * <para>
  * Within the snippet code for this hook there is an extra vec4
- * variable called ‘cogl_layer’. This contains the resulting color
+ * variable called ‘cg_layer’. This contains the resulting color
  * that will be used for the layer. This can be modified in the ‘post’
  * section or it the default processing can be replaced entirely using
  * the ‘replace’ section.
@@ -581,17 +581,17 @@ typedef struct _CoglSnippet CoglSnippet;
  * <para>
  * If a ‘replace’ string is given then this will be used instead of
  * the default fragment processing for this layer. The snippet must write to
- * the ‘cogl_layer’ variable in that case.
+ * the ‘cg_layer’ variable in that case.
  * </para>
  * <para>
  * The ‘post’ string in @snippet will be inserted just after the
  * fragment processing for the layer. The results can be modified by changing
- * the value of the ‘cogl_layer’ variable.
+ * the value of the ‘cg_layer’ variable.
  * </para>
  *   </glossdef>
  *  </glossentry>
  *  <glossentry>
- *   <glossterm>%COGL_SNIPPET_HOOK_TEXTURE_LOOKUP</glossterm>
+ *   <glossterm>%CG_SNIPPET_HOOK_TEXTURE_LOOKUP</glossterm>
  *   <glossdef>
  * <para>
  * Adds a shader snippet that will hook on to the texture lookup part
@@ -601,11 +601,11 @@ typedef struct _CoglSnippet CoglSnippet;
  * </para>
  * <para>
  * Within the snippet code for this hook there are three extra
- * variables available. ‘cogl_sampler’ is a sampler object
+ * variables available. ‘cg_sampler’ is a sampler object
  * representing the sampler for the layer where the snippet is
- * attached. ‘cogl_tex_coord’ is a vec4 which contains the texture
+ * attached. ‘cg_tex_coord’ is a vec4 which contains the texture
  * coordinates that will be used for the texture lookup. This can be
- * modified. ‘cogl_texel’ will contain the result of the texture
+ * modified. ‘cg_texel’ will contain the result of the texture
  * lookup. This can also be modified.
  * </para>
  * <para>
@@ -616,7 +616,7 @@ typedef struct _CoglSnippet CoglSnippet;
  * <para>
  * The ‘pre’ string in @snippet will be inserted at the top of the
  * main() function before any fragment processing is done. This is a
- * good place to modify the cogl_tex_coord variable.
+ * good place to modify the cg_tex_coord variable.
  * </para>
  * <para>
  * If a ‘replace’ string is given then this will be used instead of a
@@ -625,7 +625,7 @@ typedef struct _CoglSnippet CoglSnippet;
  * </para>
  * <para>
  * The ‘post’ string in @snippet will be inserted after texture lookup
- * has been preformed. Here the snippet can modify the cogl_texel
+ * has been preformed. Here the snippet can modify the cg_texel
  * variable to alter the returned texel.
  * </para>
  *   </glossdef>
@@ -636,75 +636,72 @@ typedef struct _CoglSnippet CoglSnippet;
  * Stability: Unstable
  */
 typedef enum {
-  /* Per pipeline vertex hooks */
-  COGL_SNIPPET_HOOK_VERTEX = 0,
-  COGL_SNIPPET_HOOK_VERTEX_TRANSFORM,
-  COGL_SNIPPET_HOOK_VERTEX_GLOBALS,
-  COGL_SNIPPET_HOOK_POINT_SIZE,
+    /* Per pipeline vertex hooks */
+    CG_SNIPPET_HOOK_VERTEX = 0,
+    CG_SNIPPET_HOOK_VERTEX_TRANSFORM,
+    CG_SNIPPET_HOOK_VERTEX_GLOBALS,
+    CG_SNIPPET_HOOK_POINT_SIZE,
 
-  /* Per pipeline fragment hooks */
-  COGL_SNIPPET_HOOK_FRAGMENT = 2048,
-  COGL_SNIPPET_HOOK_FRAGMENT_GLOBALS,
+    /* Per pipeline fragment hooks */
+    CG_SNIPPET_HOOK_FRAGMENT = 2048,
+    CG_SNIPPET_HOOK_FRAGMENT_GLOBALS,
 
-  /* Per layer vertex hooks */
-  COGL_SNIPPET_HOOK_TEXTURE_COORD_TRANSFORM = 4096,
+    /* Per layer vertex hooks */
+    CG_SNIPPET_HOOK_TEXTURE_COORD_TRANSFORM = 4096,
 
-  /* Per layer fragment hooks */
-  COGL_SNIPPET_HOOK_LAYER_FRAGMENT = 6144,
-  COGL_SNIPPET_HOOK_TEXTURE_LOOKUP
-} CoglSnippetHook;
+    /* Per layer fragment hooks */
+    CG_SNIPPET_HOOK_LAYER_FRAGMENT = 6144,
+    CG_SNIPPET_HOOK_TEXTURE_LOOKUP
+} cg_snippet_hook_t;
 
 /**
- * cogl_snippet_new:
+ * cg_snippet_new:
  * @hook: The point in the pipeline that this snippet will wrap around
  *   or replace.
  * @declarations: The source code for the declarations for this
- *   snippet or %NULL. See cogl_snippet_set_declarations().
+ *   snippet or %NULL. See cg_snippet_set_declarations().
  * @post: The source code to run after the hook point where this
- *   shader snippet is attached or %NULL. See cogl_snippet_set_post().
+ *   shader snippet is attached or %NULL. See cg_snippet_set_post().
  *
  * Allocates and initializes a new snippet with the given source strings.
  *
- * Return value: a pointer to a new #CoglSnippet
+ * Return value: a pointer to a new #cg_snippet_t
  *
  * Since: 1.10
  * Stability: Unstable
  */
-CoglSnippet *
-cogl_snippet_new (CoglSnippetHook hook,
-                  const char *declarations,
-                  const char *post);
+cg_snippet_t *cg_snippet_new(cg_snippet_hook_t hook,
+                             const char *declarations,
+                             const char *post);
 
 /**
- * cogl_snippet_get_hook:
- * @snippet: A #CoglSnippet
+ * cg_snippet_get_hook:
+ * @snippet: A #cg_snippet_t
  *
- * Return value: the hook that was set when cogl_snippet_new() was
+ * Return value: the hook that was set when cg_snippet_new() was
  *   called.
  * Since: 1.10
  * Stability: Unstable
  */
-CoglSnippetHook
-cogl_snippet_get_hook (CoglSnippet *snippet);
+cg_snippet_hook_t cg_snippet_get_hook(cg_snippet_t *snippet);
 
 /**
- * cogl_is_snippet:
- * @object: A #CoglObject pointer
+ * cg_is_snippet:
+ * @object: A #cg_object_t pointer
  *
  * Gets whether the given @object references an existing snippet object.
  *
- * Return value: %true if the @object references a #CoglSnippet,
+ * Return value: %true if the @object references a #cg_snippet_t,
  *   %false otherwise
  *
  * Since: 1.10
  * Stability: Unstable
  */
-bool
-cogl_is_snippet (void *object);
+bool cg_is_snippet(void *object);
 
 /**
- * cogl_snippet_set_declarations:
- * @snippet: A #CoglSnippet
+ * cg_snippet_set_declarations:
+ * @snippet: A #cg_snippet_t
  * @declarations: The new source string for the declarations section
  *   of this snippet.
  *
@@ -720,32 +717,30 @@ cogl_is_snippet (void *object);
  * Since: 1.10
  * Stability: Unstable
  */
-void
-cogl_snippet_set_declarations (CoglSnippet *snippet,
-                               const char *declarations);
+void cg_snippet_set_declarations(cg_snippet_t *snippet,
+                                 const char *declarations);
 
 /**
- * cogl_snippet_get_declarations:
- * @snippet: A #CoglSnippet
+ * cg_snippet_get_declarations:
+ * @snippet: A #cg_snippet_t
  *
  * Return value: the source string that was set with
- *   cogl_snippet_set_declarations() or %NULL if none was set.
+ *   cg_snippet_set_declarations() or %NULL if none was set.
  *
  * Since: 1.10
  * Stability: Unstable
  */
-const char *
-cogl_snippet_get_declarations (CoglSnippet *snippet);
+const char *cg_snippet_get_declarations(cg_snippet_t *snippet);
 
 /**
- * cogl_snippet_set_pre:
- * @snippet: A #CoglSnippet
+ * cg_snippet_set_pre:
+ * @snippet: A #cg_snippet_t
  * @pre: The new source string for the pre section of this snippet.
  *
  * Sets a source string that will be inserted before the hook point in
  * the generated shader for the pipeline that this snippet is attached
  * to. Please see the documentation of each hook point in
- * #CoglPipeline for a description of how this string should be used.
+ * #cg_pipeline_t for a description of how this string should be used.
  *
  * This function should only be called before the snippet is attached
  * to its first pipeline. After that the snippet should be considered
@@ -754,31 +749,28 @@ cogl_snippet_get_declarations (CoglSnippet *snippet);
  * Since: 1.10
  * Stability: Unstable
  */
-void
-cogl_snippet_set_pre (CoglSnippet *snippet,
-                      const char *pre);
+void cg_snippet_set_pre(cg_snippet_t *snippet, const char *pre);
 
 /**
- * cogl_snippet_get_pre:
- * @snippet: A #CoglSnippet
+ * cg_snippet_get_pre:
+ * @snippet: A #cg_snippet_t
  *
  * Return value: the source string that was set with
- *   cogl_snippet_set_pre() or %NULL if none was set.
+ *   cg_snippet_set_pre() or %NULL if none was set.
  *
  * Since: 1.10
  * Stability: Unstable
  */
-const char *
-cogl_snippet_get_pre (CoglSnippet *snippet);
+const char *cg_snippet_get_pre(cg_snippet_t *snippet);
 
 /**
- * cogl_snippet_set_replace:
- * @snippet: A #CoglSnippet
+ * cg_snippet_set_replace:
+ * @snippet: A #cg_snippet_t
  * @replace: The new source string for the replace section of this snippet.
  *
  * Sets a source string that will be used instead of any generated
  * source code or any previous snippets for this hook point. Please
- * see the documentation of each hook point in #CoglPipeline for a
+ * see the documentation of each hook point in #cg_pipeline_t for a
  * description of how this string should be used.
  *
  * This function should only be called before the snippet is attached
@@ -788,32 +780,29 @@ cogl_snippet_get_pre (CoglSnippet *snippet);
  * Since: 1.10
  * Stability: Unstable
  */
-void
-cogl_snippet_set_replace (CoglSnippet *snippet,
-                          const char *replace);
+void cg_snippet_set_replace(cg_snippet_t *snippet, const char *replace);
 
 /**
- * cogl_snippet_get_replace:
- * @snippet: A #CoglSnippet
+ * cg_snippet_get_replace:
+ * @snippet: A #cg_snippet_t
  *
  * Return value: the source string that was set with
- *   cogl_snippet_set_replace() or %NULL if none was set.
+ *   cg_snippet_set_replace() or %NULL if none was set.
  *
  * Since: 1.10
  * Stability: Unstable
  */
-const char *
-cogl_snippet_get_replace (CoglSnippet *snippet);
+const char *cg_snippet_get_replace(cg_snippet_t *snippet);
 
 /**
- * cogl_snippet_set_post:
- * @snippet: A #CoglSnippet
+ * cg_snippet_set_post:
+ * @snippet: A #cg_snippet_t
  * @post: The new source string for the post section of this snippet.
  *
  * Sets a source string that will be inserted after the hook point in
  * the generated shader for the pipeline that this snippet is attached
  * to. Please see the documentation of each hook point in
- * #CoglPipeline for a description of how this string should be used.
+ * #cg_pipeline_t for a description of how this string should be used.
  *
  * This function should only be called before the snippet is attached
  * to its first pipeline. After that the snippet should be considered
@@ -822,23 +811,20 @@ cogl_snippet_get_replace (CoglSnippet *snippet);
  * Since: 1.10
  * Stability: Unstable
  */
-void
-cogl_snippet_set_post (CoglSnippet *snippet,
-                       const char *post);
+void cg_snippet_set_post(cg_snippet_t *snippet, const char *post);
 
 /**
- * cogl_snippet_get_post:
- * @snippet: A #CoglSnippet
+ * cg_snippet_get_post:
+ * @snippet: A #cg_snippet_t
  *
  * Return value: the source string that was set with
- *   cogl_snippet_set_post() or %NULL if none was set.
+ *   cg_snippet_set_post() or %NULL if none was set.
  *
  * Since: 1.10
  * Stability: Unstable
  */
-const char *
-cogl_snippet_get_post (CoglSnippet *snippet);
+const char *cg_snippet_get_post(cg_snippet_t *snippet);
 
-COGL_END_DECLS
+CG_END_DECLS
 
-#endif /* __COGL_SNIPPET_H__ */
+#endif /* __CG_SNIPPET_H__ */

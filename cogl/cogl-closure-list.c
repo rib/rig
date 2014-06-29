@@ -34,38 +34,38 @@
 #include "cogl-closure-list-private.h"
 
 void
-_cogl_closure_disconnect (CoglClosure *closure)
+_cg_closure_disconnect(cg_closure_t *closure)
 {
-  _cogl_list_remove (&closure->link);
+    _cg_list_remove(&closure->link);
 
-  if (closure->destroy_cb)
-    closure->destroy_cb (closure->user_data);
+    if (closure->destroy_cb)
+        closure->destroy_cb(closure->user_data);
 
-  c_slice_free (CoglClosure, closure);
+    c_slice_free(cg_closure_t, closure);
 }
 
 void
-_cogl_closure_list_disconnect_all (CoglList *list)
+_cg_closure_list_disconnect_all(cg_list_t *list)
 {
-  CoglClosure *closure, *next;
+    cg_closure_t *closure, *next;
 
-  _cogl_list_for_each_safe (closure, next, list, link)
-    _cogl_closure_disconnect (closure);
+    _cg_list_for_each_safe(closure, next, list, link)
+    _cg_closure_disconnect(closure);
 }
 
-CoglClosure *
-_cogl_closure_list_add (CoglList *list,
-                        void *function,
-                        void *user_data,
-                        CoglUserDataDestroyCallback destroy_cb)
+cg_closure_t *
+_cg_closure_list_add(cg_list_t *list,
+                     void *function,
+                     void *user_data,
+                     cg_user_data_destroy_callback_t destroy_cb)
 {
-  CoglClosure *closure = c_slice_new (CoglClosure);
+    cg_closure_t *closure = c_slice_new(cg_closure_t);
 
-  closure->function = function;
-  closure->user_data = user_data;
-  closure->destroy_cb = destroy_cb;
+    closure->function = function;
+    closure->user_data = user_data;
+    closure->destroy_cb = destroy_cb;
 
-  _cogl_list_insert (list, &closure->link);
+    _cg_list_insert(list, &closure->link);
 
-  return closure;
+    return closure;
 }

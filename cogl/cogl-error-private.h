@@ -26,38 +26,32 @@
  * SOFTWARE.
  */
 
-#ifndef __COGL_ERROR_PRIVATE_H__
-#define __COGL_ERROR_PRIVATE_H__
+#ifndef __CG_ERROR_PRIVATE_H__
+#define __CG_ERROR_PRIVATE_H__
 
 #include "cogl-error.h"
 
-#ifdef COGL_HAS_GLIB_SUPPORT
+#ifdef CG_HAS_GLIB_SUPPORT
 #include <glib.h>
 #endif
 
-void
-_cogl_set_error (CoglError **error,
-                 uint32_t domain,
-                 int code,
-                 const char *format,
-                 ...) C_GNUC_PRINTF (4, 5);
+void _cg_set_error(cg_error_t **error,
+                   uint32_t domain,
+                   int code,
+                   const char *format,
+                   ...) C_GNUC_PRINTF(4, 5);
 
-void
-_cogl_set_error_literal (CoglError **error,
-                         uint32_t domain,
-                         int code,
-                         const char *message);
+void _cg_set_error_literal(cg_error_t **error,
+                           uint32_t domain,
+                           int code,
+                           const char *message);
 
-void
-_cogl_propagate_error (CoglError **dest,
-                       CoglError *src);
+void _cg_propagate_error(cg_error_t **dest, cg_error_t *src);
 
-#ifdef COGL_HAS_GLIB_SUPPORT
-void
-_cogl_propagate_gerror (CoglError **dest,
-                        GError *src);
-#endif /* COGL_HAS_GLIB_SUPPORT */
+#ifdef CG_HAS_GLIB_SUPPORT
+void _cg_propagate_gerror(cg_error_t **dest, GError *src);
+#endif /* CG_HAS_GLIB_SUPPORT */
 
-#define _cogl_clear_error(X) c_clear_error ((GError **)X)
+#define _cg_clear_error(X) c_clear_error((GError **)X)
 
-#endif /* __COGL_ERROR_PRIVATE_H__ */
+#endif /* __CG_ERROR_PRIVATE_H__ */

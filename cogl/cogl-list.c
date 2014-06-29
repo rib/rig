@@ -33,62 +33,60 @@
 #include "cogl-list.h"
 
 void
-_cogl_list_init (CoglList *list)
+_cg_list_init(cg_list_t *list)
 {
-  list->prev = list;
-  list->next = list;
+    list->prev = list;
+    list->next = list;
 }
 
 void
-_cogl_list_insert (CoglList *list, CoglList *elm)
+_cg_list_insert(cg_list_t *list, cg_list_t *elm)
 {
-  elm->prev = list;
-  elm->next = list->next;
-  list->next = elm;
-  elm->next->prev = elm;
+    elm->prev = list;
+    elm->next = list->next;
+    list->next = elm;
+    elm->next->prev = elm;
 }
 
 void
-_cogl_list_remove (CoglList *elm)
+_cg_list_remove(cg_list_t *elm)
 {
-  elm->prev->next = elm->next;
-  elm->next->prev = elm->prev;
-  elm->next = NULL;
-  elm->prev = NULL;
+    elm->prev->next = elm->next;
+    elm->next->prev = elm->prev;
+    elm->next = NULL;
+    elm->prev = NULL;
 }
 
 int
-_cogl_list_length (CoglList *list)
+_cg_list_length(cg_list_t *list)
 {
-  CoglList *e;
-  int count;
+    cg_list_t *e;
+    int count;
 
-  count = 0;
-  e = list->next;
-  while (e != list)
-    {
-      e = e->next;
-      count++;
+    count = 0;
+    e = list->next;
+    while (e != list) {
+        e = e->next;
+        count++;
     }
 
-  return count;
+    return count;
 }
 
 int
-_cogl_list_empty (CoglList *list)
+_cg_list_empty(cg_list_t *list)
 {
-  return list->next == list;
+    return list->next == list;
 }
 
 void
-_cogl_list_insert_list (CoglList *list,
-                        CoglList *other)
+_cg_list_insert_list(cg_list_t *list, cg_list_t *other)
 {
-  if (_cogl_list_empty (other))
-    return;
+    if (_cg_list_empty(other))
+        return;
 
-  other->next->prev = list;
-  other->prev->next = list->next;
-  list->next->prev = other->prev;
-  list->next = other->next;
+    other->next->prev = list;
+    other->prev->next = list->next;
+    list->next->prev = other->prev;
+    list->next = other->next;
 }

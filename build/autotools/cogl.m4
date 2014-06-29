@@ -75,7 +75,7 @@ AC_DEFUN([AM_COGL],
     [$enable_debug],
     [yes],
     [
-      COGL_EXTRA_CFLAGS="$COGL_EXTRA_CFLAGS -DCOGL_GL_DEBUG -DCOGL_OBJECT_DEBUG -DCOGL_ENABLE_DEBUG"
+      COGL_EXTRA_CFLAGS="$COGL_EXTRA_CFLAGS -DCG_GL_DEBUG -DCG_OBJECT_DEBUG -DCG_ENABLE_DEBUG"
     ],
     [no],
     [
@@ -122,7 +122,7 @@ AC_DEFUN([AM_COGL],
 
   AS_IF([test "x$enable_glib" = "xyes"],
         [
-          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS COGL_HAS_GLIB_SUPPORT"
+          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS CG_HAS_GLIB_SUPPORT"
           COGL_PKG_REQUIRES="$COGL_PKG_REQUIRES gobject-2.0 gmodule-no-export-2.0"
         ])
 
@@ -174,7 +174,7 @@ AC_DEFUN([AM_COGL],
 
   AS_IF([test "x$enable_cogl_path" = "xyes"],
         [
-          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS COGL_HAS_COGL_PATH_SUPPORT"
+          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS CG_HAS_CG_PATH_SUPPORT"
         ]
   )
 
@@ -258,16 +258,16 @@ AC_DEFUN([AM_COGL],
           enabled_drivers="$enabled_drivers gles2"
 
           cogl_gl_headers="GLES2/gl2.h GLES2/gl2ext.h"
-          AC_DEFINE([HAVE_COGL_GLES2], 1, [Have GLES 2.0 for rendering])
-          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS COGL_HAS_GLES CLUTTER_COGL_HAS_GLES"
-          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS COGL_HAS_GLES2"
+          AC_DEFINE([HAVE_CG_GLES2], 1, [Have GLES 2.0 for rendering])
+          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS CG_HAS_GLES CLUTTER_CG_HAS_GLES"
+          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS CG_HAS_GLES2"
           HAVE_GLES2=1
 
           AS_IF([test "x$enable_emscripten" = "xyes"],
                 [
                   GL_LIBRARY_DIRECTLY_LINKED=yes
                   COGL_GLES2_LIBNAME=""
-                  AC_DEFINE([HAVE_COGL_WEBGL], 1, [Have WebGL for rendering])
+                  AC_DEFINE([HAVE_CG_WEBGL], 1, [Have WebGL for rendering])
                 ],
 
                 [
@@ -340,10 +340,10 @@ AC_DEFUN([AM_COGL],
                   COGL_GL_LIBNAME="libGL.so.1"
                 ])
 
-          AC_DEFINE([HAVE_COGL_GL], [1], [Have GL for rendering])
+          AC_DEFINE([HAVE_CG_GL], [1], [Have GL for rendering])
 
-          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS COGL_HAS_GL"
-          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS CLUTTER_COGL_HAS_GL"
+          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS CG_HAS_GL"
+          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS CLUTTER_CG_HAS_GL"
           HAVE_GL=1
         ])
 
@@ -388,7 +388,7 @@ AC_DEFUN([AM_COGL],
           SUPPORT_GLX=yes
           GL_WINSYS_APIS="$GL_WINSYS_APIS glx"
 
-          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS COGL_HAS_GLX_SUPPORT"
+          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS CG_HAS_GLX_SUPPORT"
         ])
   AM_CONDITIONAL(COGL_SUPPORT_GLX, [test "x$SUPPORT_GLX" = "xyes"])
 
@@ -406,8 +406,8 @@ AC_DEFUN([AM_COGL],
           SUPPORT_WGL=yes
           GL_WINSYS_APIS="$GL_WINSYS_APIS wgl"
 
-          AC_DEFINE([COGL_HAS_WGL_SUPPORT], [1], [Cogl supports OpenGL using the WGL API])
-          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS COGL_HAS_WIN32_SUPPORT"
+          AC_DEFINE([CG_HAS_WGL_SUPPORT], [1], [Cogl supports OpenGL using the WGL API])
+          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS CG_HAS_WIN32_SUPPORT"
         ])
   AM_CONDITIONAL(COGL_SUPPORT_WGL, [test "x$SUPPORT_WGL" = "xyes"])
 
@@ -435,7 +435,7 @@ AC_DEFUN([AM_COGL],
           SUPPORT_SDL=yes
           GL_WINSYS_APIS="$GL_WINSYS_APIS sdl"
 
-          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS COGL_HAS_SDL_SUPPORT"
+          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS CG_HAS_SDL_SUPPORT"
 
           dnl If we are building with emscripten then that simply implies we are
           dnl using SDL in conjunction with WebGL (GLES2)
@@ -444,7 +444,7 @@ AC_DEFUN([AM_COGL],
                   SUPPORTED_SDL_GL_APIS="webgl"
                   SUPPORT_SDL_WEBGL=yes
                   SUPPORT_SDL_GLES=no
-                  COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS COGL_HAS_SDL_WEBGL_SUPPORT"
+                  COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS CG_HAS_SDL_WEBGL_SUPPORT"
                 ],
                 [
                   dnl WebOS has a specially patched version of SDL to add
@@ -466,7 +466,7 @@ AC_DEFUN([AM_COGL],
                   AS_IF([test "x$SUPPORT_SDL_GLES" = "xyes"],
                         [
                          SUPPORTED_SDL_GL_APIS="gles2"
-                         COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS COGL_HAS_SDL_GLES_SUPPORT"
+                         COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS CG_HAS_SDL_GLES_SUPPORT"
                         ],
                         [ SUPPORTED_SDL_GL_APIS="gl" ])
                 ])
@@ -490,7 +490,7 @@ AC_DEFUN([AM_COGL],
           GL_WINSYS_APIS="$GL_WINSYS_APIS sdl2"
           COGL_PKG_REQUIRES="$COGL_PKG_REQUIRES sdl2-rig"
 
-          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS COGL_HAS_SDL_SUPPORT"
+          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS CG_HAS_SDL_SUPPORT"
         ],
         [SUPPORT_SDL2=no])
   AM_CONDITIONAL(COGL_SUPPORT_SDL2, [test "x$SUPPORT_SDL2" = "xyes"])
@@ -512,7 +512,7 @@ AC_DEFUN([AM_COGL],
           NEED_EGL=yes
           EGL_PLATFORMS="$EGL_PLATFORMS null"
 
-          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS COGL_HAS_EGL_PLATFORM_POWERVR_NULL_SUPPORT"
+          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS CG_HAS_EGL_PLATFORM_POWERVR_NULL_SUPPORT"
         ])
   AM_CONDITIONAL(COGL_SUPPORT_EGL_PLATFORM_POWERVR_NULL,
                  [test "x$enable_null_egl_platform" = "xyes"])
@@ -543,7 +543,7 @@ AC_DEFUN([AM_COGL],
 
           COGL_EXTRA_LDFLAGS="$COGL_EXTRA_LDFLAGS -lgdl"
 
-          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS COGL_HAS_EGL_PLATFORM_GDL_SUPPORT"
+          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS CG_HAS_EGL_PLATFORM_GDL_SUPPORT"
         ])
   AM_CONDITIONAL(COGL_SUPPORT_EGL_PLATFORM_GDL,
                  [test "x$enable_gdl_egl_platform" = "xyes"])
@@ -565,7 +565,7 @@ AC_DEFUN([AM_COGL],
           COGL_PKG_REQUIRES="$COGL_PKG_REQUIRES wayland-egl >= wayland_req_version"
           COGL_PKG_REQUIRES="$COGL_PKG_REQUIRES wayland-client >= wayland_req_version"
 
-          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS COGL_HAS_EGL_PLATFORM_WAYLAND_SUPPORT"
+          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS CG_HAS_EGL_PLATFORM_WAYLAND_SUPPORT"
         ])
   AM_CONDITIONAL(COGL_SUPPORT_EGL_PLATFORM_WAYLAND,
                  [test "x$enable_wayland_egl_platform" = "xyes"])
@@ -594,11 +594,11 @@ AC_DEFUN([AM_COGL],
           GBM_MINOR=`echo $GBM_VERSION | cut -d'.' -f2`
           GBM_MICRO=`echo $GBM_VERSION | cut -d'.' -f3 | sed 's/-.*//'`
 
-          AC_DEFINE_UNQUOTED([COGL_GBM_MAJOR], [$GBM_MAJOR], [The major version for libgbm])
-          AC_DEFINE_UNQUOTED([COGL_GBM_MINOR], [$GBM_MINOR], [The minor version for libgbm])
-          AC_DEFINE_UNQUOTED([COGL_GBM_MICRO], [$GBM_MICRO], [The micro version for libgbm])
+          AC_DEFINE_UNQUOTED([CG_GBM_MAJOR], [$GBM_MAJOR], [The major version for libgbm])
+          AC_DEFINE_UNQUOTED([CG_GBM_MINOR], [$GBM_MINOR], [The minor version for libgbm])
+          AC_DEFINE_UNQUOTED([CG_GBM_MICRO], [$GBM_MICRO], [The micro version for libgbm])
 
-          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS COGL_HAS_EGL_PLATFORM_KMS_SUPPORT"
+          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS CG_HAS_EGL_PLATFORM_KMS_SUPPORT"
         ])
   AM_CONDITIONAL(COGL_SUPPORT_EGL_PLATFORM_KMS,
                  [test "x$enable_kms_egl_platform" = "xyes"])
@@ -617,7 +617,7 @@ AC_DEFUN([AM_COGL],
                             [wayland-server >= wayland_server_req_version])
           COGL_PKG_REQUIRES="$COGL_PKG_REQUIRES wayland-server >= wayland_server_req_version"
 
-          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS COGL_HAS_WAYLAND_EGL_SERVER_SUPPORT"
+          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS CG_HAS_WAYLAND_EGL_SERVER_SUPPORT"
         ])
   AM_CONDITIONAL(COGL_SUPPORT_WAYLAND_EGL_SERVER,
                  [test "x$enable_wayland_egl_server" = "xyes"])
@@ -639,7 +639,7 @@ AC_DEFUN([AM_COGL],
                           [],
                           [AC_MSG_ERROR([Unable to locate android/native_window.h])])
 
-          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS COGL_HAS_EGL_PLATFORM_ANDROID_SUPPORT"
+          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS CG_HAS_EGL_PLATFORM_ANDROID_SUPPORT"
         ])
   AM_CONDITIONAL(COGL_SUPPORT_EGL_PLATFORM_ANDROID,
                  [test "x$enable_android_egl_platform" = "xyes"])
@@ -664,7 +664,7 @@ AC_DEFUN([AM_COGL],
           NEED_XLIB=yes
           EGL_PLATFORMS="$EGL_PLATFORMS xlib"
 
-          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS COGL_HAS_EGL_PLATFORM_XLIB_SUPPORT"
+          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS CG_HAS_EGL_PLATFORM_XLIB_SUPPORT"
         ])
   AM_CONDITIONAL(COGL_SUPPORT_EGL_PLATFORM_XLIB,
                  [test "x$enable_xlib_egl_platform" = "xyes"])
@@ -701,7 +701,7 @@ AC_DEFUN([AM_COGL],
         [
           SUPPORT_EGL=yes
           GL_WINSYS_APIS="$GL_WINSYS_APIS egl"
-          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS COGL_HAS_EGL_SUPPORT"
+          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS CG_HAS_EGL_SUPPORT"
         ])
 
   AM_CONDITIONAL(COGL_SUPPORT_EGL, [test "x$SUPPORT_EGL" = "xyes"])
@@ -717,10 +717,10 @@ AC_DEFUN([AM_COGL],
           SUPPORT_X11=yes
           SUPPORT_XLIB=yes
 
-          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS COGL_HAS_X11"
-          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS COGL_HAS_X11_SUPPORT"
-          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS COGL_HAS_XLIB"
-          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS COGL_HAS_XLIB_SUPPORT"
+          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS CG_HAS_X11"
+          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS CG_HAS_X11_SUPPORT"
+          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS CG_HAS_XLIB"
+          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS CG_HAS_XLIB_SUPPORT"
         ])
 
   AM_CONDITIONAL(X11_TESTS, [test "x$SUPPORT_X11" = "xyes"])
@@ -823,7 +823,7 @@ AC_DEFUN([AM_COGL],
                                          AC_MSG_ERROR([Unable to get value of POLLHUP]))
                           AC_COMPUTE_INT(COGL_SYSDEF_POLLNVAL, POLLNVAL, [#include <poll.h>],
                                          AC_MSG_ERROR([Unable to get value of POLLNVAL]))
-                          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS COGL_HAS_POLL_SUPPORT"
+                          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS CG_HAS_POLL_SUPPORT"
                           have_poll_h=yes
                          ])
         ])
@@ -839,12 +839,12 @@ AC_DEFUN([AM_COGL],
         ])
 
   COGL_DEFINES_EXTRA="$COGL_DEFINES_EXTRA
-  #define COGL_SYSDEF_POLLIN $COGL_SYSDEF_POLLIN
-  #define COGL_SYSDEF_POLLPRI $COGL_SYSDEF_POLLPRI
-  #define COGL_SYSDEF_POLLOUT $COGL_SYSDEF_POLLOUT
-  #define COGL_SYSDEF_POLLERR $COGL_SYSDEF_POLLERR
-  #define COGL_SYSDEF_POLLHUP $COGL_SYSDEF_POLLHUP
-  #define COGL_SYSDEF_POLLNVAL $COGL_SYSDEF_POLLNVAL
+  #define CG_SYSDEF_POLLIN $COGL_SYSDEF_POLLIN
+  #define CG_SYSDEF_POLLPRI $COGL_SYSDEF_POLLPRI
+  #define CG_SYSDEF_POLLOUT $COGL_SYSDEF_POLLOUT
+  #define CG_SYSDEF_POLLERR $COGL_SYSDEF_POLLERR
+  #define CG_SYSDEF_POLLHUP $COGL_SYSDEF_POLLHUP
+  #define CG_SYSDEF_POLLNVAL $COGL_SYSDEF_POLLNVAL
   "
 
   dnl ================================================================
@@ -883,9 +883,9 @@ AC_DEFUN([AM_COGL],
   AC_SUBST(COGL_GL_HEADER_INCLUDES)
   AM_SUBST_NOTMAKE(COGL_GL_HEADER_INCLUDES)
 
-  AC_DEFINE([COGL_ENABLE_EXPERIMENTAL_2_0_API], [1],
+  AC_DEFINE([CG_ENABLE_EXPERIMENTAL_2_0_API], [1],
             [Can use Cogl 2.0 API internally])
-  AC_DEFINE([COGL_ENABLE_EXPERIMENTAL_API], [1],
+  AC_DEFINE([CG_ENABLE_EXPERIMENTAL_API], [1],
             [Can use experimental API internally])
 
   AC_SUBST(COGL_DEP_CFLAGS)

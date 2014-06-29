@@ -28,33 +28,33 @@
  *
  */
 
-#if !defined(__COGL_H_INSIDE__) && !defined(COGL_COMPILATION)
+#if !defined(__CG_H_INSIDE__) && !defined(CG_COMPILATION)
 #error "Only <cogl/cogl.h> can be included directly."
 #endif
 
-#ifndef __COGL_PRIMITIVE_TEXTURE_H__
-#define __COGL_PRIMITIVE_TEXTURE_H__
+#ifndef __CG_PRIMITIVE_TEXTURE_H__
+#define __CG_PRIMITIVE_TEXTURE_H__
 
 #include "cogl-types.h"
 
-COGL_BEGIN_DECLS
+CG_BEGIN_DECLS
 
 /**
  * SECTION:cogl-primitive-texture
  * @short_description: Interface for low-level textures like
- *                     #CoglTexture2D and #CoglTexture3D.
+ *                     #cg_texture_2d_t and #cg_texture_3d_t.
  *
- * A #CoglPrimitiveTexture is a texture that is directly represented
- * by a single texture on the GPU, such as #CoglTexture2D and
- * #CoglTexture3D. This is in contrast to high level meta textures
+ * A #cg_primitive_texture_t is a texture that is directly represented
+ * by a single texture on the GPU, such as #cg_texture_2d_t and
+ * #cg_texture_3d_t. This is in contrast to high level meta textures
  * which may be composed of multiple primitive textures or a
- * sub-region of another texture such as #CoglAtlasTexture and
- * #CoglTexture2DSliced.
+ * sub-region of another texture such as #cg_atlas_texture_t and
+ * #cg_texture_2d_sliced_t.
  *
  * A texture that implements this interface can be directly used with
- * the low level cogl_primitive_draw() API. Other types of textures
+ * the low level cg_primitive_draw() API. Other types of textures
  * need to be first resolved to primitive textures using the
- * #CoglMetaTexture interface.
+ * #cg_meta_texture_t interface.
  *
  * <note>Most developers won't need to use this interface directly but
  * still it is worth understanding the distinction between high-level
@@ -63,19 +63,19 @@ COGL_BEGIN_DECLS
  * primitive textures.</note>
  */
 
-#ifdef __COGL_H_INSIDE__
+#ifdef __CG_H_INSIDE__
 /* For the public C api we typedef interface types as void to avoid needing
  * lots of casting in code and instead we will rely on runtime type checking
  * for these objects. */
-typedef void CoglPrimitiveTexture;
+typedef void cg_primitive_texture_t;
 #else
-typedef struct _CoglPrimitiveTexture CoglPrimitiveTexture;
-#define COGL_PRIMITIVE_TEXTURE(X) ((CoglPrimitiveTexture *)X)
+typedef struct _cg_primitive_texture_t cg_primitive_texture_t;
+#define CG_PRIMITIVE_TEXTURE(X) ((cg_primitive_texture_t *)X)
 #endif
 
 /**
- * cogl_is_primitive_texture:
- * @object: A #CoglObject pointer
+ * cg_is_primitive_texture:
+ * @object: A #cg_object_t pointer
  *
  * Gets whether the given object references a primitive texture object.
  *
@@ -84,12 +84,11 @@ typedef struct _CoglPrimitiveTexture CoglPrimitiveTexture;
  * Since: 2.0
  * Stability: unstable
  */
-bool
-cogl_is_primitive_texture (void *object);
+bool cg_is_primitive_texture(void *object);
 
 /**
- * cogl_primitive_texture_set_auto_mipmap:
- * @primitive_texture: A #CoglPrimitiveTexture
+ * cg_primitive_texture_set_auto_mipmap:
+ * @primitive_texture: A #cg_primitive_texture_t
  * @value: The new value for whether to auto mipmap
  *
  * Sets whether the texture will automatically update the smaller
@@ -103,9 +102,9 @@ cogl_is_primitive_texture (void *object);
  * Stability: unstable
  */
 void
-cogl_primitive_texture_set_auto_mipmap (CoglPrimitiveTexture *primitive_texture,
-                                        bool value);
+cg_primitive_texture_set_auto_mipmap(cg_primitive_texture_t *primitive_texture,
+                                     bool value);
 
-COGL_END_DECLS
+CG_END_DECLS
 
-#endif /* __COGL_PRIMITIVE_TEXTURE_H__ */
+#endif /* __CG_PRIMITIVE_TEXTURE_H__ */

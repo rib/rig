@@ -26,21 +26,21 @@
  * SOFTWARE.
  */
 
-#ifndef __COGL_XLIB_H__
-#define __COGL_XLIB_H__
+#ifndef __CG_XLIB_H__
+#define __CG_XLIB_H__
 
 #include <X11/Xlib.h>
 
-#ifdef COGL_COMPILATION
+#ifdef CG_COMPILATION
 #error "<cogl/cogl-xlib.h> shouldn't be included internally"
 #endif
 
 /* Note: When building Cogl .gir we explicitly define
- * __COGL_XLIB_H_INSIDE__ */
-#ifndef __COGL_XLIB_H_INSIDE__
-#define __COGL_XLIB_H_INSIDE__
-#define __COGL_H_INSIDE__
-#define __COGL_MUST_UNDEF_COGL_H_INSIDE__
+ * __CG_XLIB_H_INSIDE__ */
+#ifndef __CG_XLIB_H_INSIDE__
+#define __CG_XLIB_H_INSIDE__
+#define __CG_H_INSIDE__
+#define __CG_MUST_UNDEF_CG_H_INSIDE__
 #endif
 
 #include <cogl/cogl-types.h>
@@ -48,16 +48,16 @@
 
 /* The gobject introspection scanner seems to parse public headers in
  * isolation which means we need to be extra careful about how we
- * define and undefine __COGL_H_INSIDE__ used to detect when internal
+ * define and undefine __CG_H_INSIDE__ used to detect when internal
  * headers are incorrectly included by developers. In the gobject
- * introspection case we have to manually define __COGL_H_INSIDE__ as
+ * introspection case we have to manually define __CG_H_INSIDE__ as
  * a commandline argument for the scanner which means we must be
  * careful not to undefine it in a header...
  */
-#ifdef __COGL_MUST_UNDEF_COGL_H_INSIDE__
-#undef __COGL_H_INSIDE__
-#undef __COGL_XLIB_H_INSIDE__
-#undef __COGL_MUST_UNDEF_COGL_H_INSIDE__
+#ifdef __CG_MUST_UNDEF_CG_H_INSIDE__
+#undef __CG_H_INSIDE__
+#undef __CG_XLIB_H_INSIDE__
+#undef __CG_MUST_UNDEF_CG_H_INSIDE__
 #endif
 
-#endif /* __COGL_XLIB_H__ */
+#endif /* __CG_XLIB_H__ */

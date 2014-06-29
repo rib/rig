@@ -28,8 +28,8 @@
  *
  */
 
-#ifndef _COGL_ATLAS_TEXTURE_PRIVATE_H_
-#define _COGL_ATLAS_TEXTURE_PRIVATE_H_
+#ifndef _CG_ATLAS_TEXTURE_PRIVATE_H_
+#define _CG_ATLAS_TEXTURE_PRIVATE_H_
 
 #include "cogl-object-private.h"
 #include "cogl-texture-private.h"
@@ -37,37 +37,34 @@
 #include "cogl-atlas-set-private.h"
 #include "cogl-atlas-texture.h"
 
-struct _CoglAtlasTexture
-{
-  CoglTexture           _parent;
+struct _cg_atlas_texture_t {
+    cg_texture_t _parent;
 
-  /* The format that the texture is in. This isn't necessarily the
-     same format as the atlas texture because we can store
-     pre-multiplied and non-pre-multiplied textures together */
-  CoglPixelFormat       internal_format;
+    /* The format that the texture is in. This isn't necessarily the
+       same format as the atlas texture because we can store
+       pre-multiplied and non-pre-multiplied textures together */
+    cg_pixel_format_t internal_format;
 
-  /* The rectangle that was used to add this texture to the
-     atlas. This includes the 1-pixel border */
-  CoglAtlasAllocation allocation;
+    /* The rectangle that was used to add this texture to the
+       atlas. This includes the 1-pixel border */
+    cg_atlas_allocation_t allocation;
 
-  /* The atlas that this texture is in. If the texture is no longer in
-     an atlas then this will be NULL. A reference is taken on the
-     atlas by the texture (but not vice versa so there is no cycle) */
-  CoglAtlas            *atlas;
+    /* The atlas that this texture is in. If the texture is no longer in
+       an atlas then this will be NULL. A reference is taken on the
+       atlas by the texture (but not vice versa so there is no cycle) */
+    cg_atlas_t *atlas;
 
-  /* Either a CoglSubTexture representing the atlas region for easy
-   * rendering or if the texture has been migrated out of the atlas it
-   * may be some other texture type such as CoglTexture2D */
-  CoglTexture          *sub_texture;
+    /* Either a cg_sub_texture_t representing the atlas region for easy
+     * rendering or if the texture has been migrated out of the atlas it
+     * may be some other texture type such as cg_texture_2d_t */
+    cg_texture_t *sub_texture;
 };
 
-bool
-_cogl_is_atlas_texture (void *object);
+bool _cg_is_atlas_texture(void *object);
 
-void
-_cogl_atlas_texture_atlas_event_handler (CoglAtlasSet *set,
-                                         CoglAtlas *atlas,
-                                         CoglAtlasSetEvent event,
-                                         void *user_data);
+void _cg_atlas_texture_atlas_event_handler(cg_atlas_set_t *set,
+                                           cg_atlas_t *atlas,
+                                           cg_atlas_set_event_t event,
+                                           void *user_data);
 
-#endif /* _COGL_ATLAS_TEXTURE_PRIVATE_H_ */
+#endif /* _CG_ATLAS_TEXTURE_PRIVATE_H_ */

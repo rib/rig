@@ -28,8 +28,8 @@
  *
  */
 
-#ifndef _COGL_ATLAS_SET_PRIVATE_H_
-#define _COGL_ATLAS_SET_PRIVATE_H_
+#ifndef _CG_ATLAS_SET_PRIVATE_H_
+#define _CG_ATLAS_SET_PRIVATE_H_
 
 #include <glib.h>
 
@@ -38,21 +38,20 @@
 #include "cogl-list.h"
 #include "cogl-object-private.h"
 
-struct _CoglAtlasSet
-{
-  CoglObject _parent;
+struct _cg_atlas_set_t {
+    cg_object_t _parent;
 
-  CoglContext *context;
-  c_slist_t *atlases;
+    cg_context_t *context;
+    c_slist_t *atlases;
 
-  CoglTextureComponents components;
-  CoglPixelFormat internal_format;
+    cg_texture_components_t components;
+    cg_pixel_format_t internal_format;
 
-  CoglList atlas_closures;
+    cg_list_t atlas_closures;
 
-  unsigned int clear_enabled : 1;
-  unsigned int premultiplied : 1;
-  unsigned int migration_enabled : 1;
+    unsigned int clear_enabled : 1;
+    unsigned int premultiplied : 1;
+    unsigned int migration_enabled : 1;
 };
 
-#endif /* _COGL_ATLAS_SET_PRIVATE_H_ */
+#endif /* _CG_ATLAS_SET_PRIVATE_H_ */

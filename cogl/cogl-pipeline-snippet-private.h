@@ -31,86 +31,77 @@
  *   Neil Roberts <neil@linux.intel.com>
  */
 
-#ifndef __COGL_PIPELINE_SNIPPET_PRIVATE_H
-#define __COGL_PIPELINE_SNIPPET_PRIVATE_H
+#ifndef __CG_PIPELINE_SNIPPET_PRIVATE_H
+#define __CG_PIPELINE_SNIPPET_PRIVATE_H
 
 #include <clib.h>
 
 #include "cogl-snippet.h"
 
-typedef struct
-{
-  c_list_t *entries;
-} CoglPipelineSnippetList;
+typedef struct {
+    c_list_t *entries;
+} cg_pipeline_snippet_list_t;
 
-/* Arguments to pass to _cogl_pipeline_snippet_generate_code() */
-typedef struct
-{
-  CoglPipelineSnippetList *snippets;
+/* Arguments to pass to _cg_pipeline_snippet_generate_code() */
+typedef struct {
+    cg_pipeline_snippet_list_t *snippets;
 
-  /* Only snippets at this hook point will be used */
-  CoglSnippetHook hook;
+    /* Only snippets at this hook point will be used */
+    cg_snippet_hook_t hook;
 
-  /* The final function to chain on to after all of the snippets code
-     has been run */
-  const char *chain_function;
+    /* The final function to chain on to after all of the snippets code
+       has been run */
+    const char *chain_function;
 
-  /* The name of the final generated function */
-  const char *final_name;
+    /* The name of the final generated function */
+    const char *final_name;
 
-  /* A prefix to insert before each generate function name */
-  const char *function_prefix;
+    /* A prefix to insert before each generate function name */
+    const char *function_prefix;
 
-  /* The return type of all of the functions, or NULL to use void */
-  const char *return_type;
+    /* The return type of all of the functions, or NULL to use void */
+    const char *return_type;
 
-  /* A variable to return from the functions. The snippets are
-     expected to modify this variable. Ignored if return_type is
-     NULL */
-  const char *return_variable;
+    /* A variable to return from the functions. The snippets are
+       expected to modify this variable. Ignored if return_type is
+       NULL */
+    const char *return_variable;
 
-  /* If this is true then it won't allocate a separate variable for
-     the return value. Instead it is expected that the snippet will
-     modify one of the argument variables directly and that will be
-     returned */
-  bool return_variable_is_argument;
+    /* If this is true then it won't allocate a separate variable for
+       the return value. Instead it is expected that the snippet will
+       modify one of the argument variables directly and that will be
+       returned */
+    bool return_variable_is_argument;
 
-  /* The argument names or NULL if there are none */
-  const char *arguments;
+    /* The argument names or NULL if there are none */
+    const char *arguments;
 
-  /* The argument types or NULL */
-  const char *argument_declarations;
+    /* The argument types or NULL */
+    const char *argument_declarations;
 
-  /* The string to generate the source into */
-  c_string_t *source_buf;
-} CoglPipelineSnippetData;
+    /* The string to generate the source into */
+    c_string_t *source_buf;
+} cg_pipeline_snippet_data_t;
 
-void
-_cogl_pipeline_snippet_generate_code (const CoglPipelineSnippetData *data);
+void _cg_pipeline_snippet_generate_code(const cg_pipeline_snippet_data_t *data);
 
 void
-_cogl_pipeline_snippet_generate_declarations (c_string_t *declarations_buf,
-                                              CoglSnippetHook hook,
-                                              CoglPipelineSnippetList *list);
+_cg_pipeline_snippet_generate_declarations(c_string_t *declarations_buf,
+                                           cg_snippet_hook_t hook,
+                                           cg_pipeline_snippet_list_t *list);
 
-void
-_cogl_pipeline_snippet_list_free (CoglPipelineSnippetList *list);
+void _cg_pipeline_snippet_list_free(cg_pipeline_snippet_list_t *list);
 
-void
-_cogl_pipeline_snippet_list_add (CoglPipelineSnippetList *list,
-                                 CoglSnippet *snippet);
+void _cg_pipeline_snippet_list_add(cg_pipeline_snippet_list_t *list,
+                                   cg_snippet_t *snippet);
 
-void
-_cogl_pipeline_snippet_list_copy (CoglPipelineSnippetList *dst,
-                                  const CoglPipelineSnippetList *src);
+void _cg_pipeline_snippet_list_copy(cg_pipeline_snippet_list_t *dst,
+                                    const cg_pipeline_snippet_list_t *src);
 
-void
-_cogl_pipeline_snippet_list_hash (CoglPipelineSnippetList *list,
-                                  unsigned int *hash);
+void _cg_pipeline_snippet_list_hash(cg_pipeline_snippet_list_t *list,
+                                    unsigned int *hash);
 
-bool
-_cogl_pipeline_snippet_list_equal (CoglPipelineSnippetList *list0,
-                                   CoglPipelineSnippetList *list1);
+bool _cg_pipeline_snippet_list_equal(cg_pipeline_snippet_list_t *list0,
+                                     cg_pipeline_snippet_list_t *list1);
 
-#endif /* __COGL_PIPELINE_SNIPPET_PRIVATE_H */
-
+#endif /* __CG_PIPELINE_SNIPPET_PRIVATE_H */

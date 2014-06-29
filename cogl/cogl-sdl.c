@@ -37,75 +37,75 @@
 #include "cogl-renderer-private.h"
 
 void
-cogl_sdl_renderer_set_event_type (CoglRenderer *renderer, int type)
+cg_sdl_renderer_set_event_type(cg_renderer_t *renderer, int type)
 {
-  renderer->sdl_event_type_set = true;
-  renderer->sdl_event_type = type;
+    renderer->sdl_event_type_set = true;
+    renderer->sdl_event_type = type;
 }
 
 int
-cogl_sdl_renderer_get_event_type (CoglRenderer *renderer)
+cg_sdl_renderer_get_event_type(cg_renderer_t *renderer)
 {
-  _COGL_RETURN_VAL_IF_FAIL (renderer->sdl_event_type_set, SDL_USEREVENT);
+    _CG_RETURN_VAL_IF_FAIL(renderer->sdl_event_type_set, SDL_USEREVENT);
 
-  return renderer->sdl_event_type;
+    return renderer->sdl_event_type;
 }
 
-CoglContext *
-cogl_sdl_context_new (int type, CoglError **error)
+cg_context_t *
+cg_sdl_context_new(int type, cg_error_t **error)
 {
-  CoglRenderer *renderer = cogl_renderer_new ();
-  CoglDisplay *display;
+    cg_renderer_t *renderer = cg_renderer_new();
+    cg_display_t *display;
 
-  cogl_renderer_set_winsys_id (renderer, COGL_WINSYS_ID_SDL);
+    cg_renderer_set_winsys_id(renderer, CG_WINSYS_ID_SDL);
 
-  cogl_sdl_renderer_set_event_type (renderer, type);
+    cg_sdl_renderer_set_event_type(renderer, type);
 
-  if (!cogl_renderer_connect (renderer, error))
-    return NULL;
+    if (!cg_renderer_connect(renderer, error))
+        return NULL;
 
-  display = cogl_display_new (renderer, NULL);
-  if (!cogl_display_setup (display, error))
-    return NULL;
+    display = cg_display_new(renderer, NULL);
+    if (!cg_display_setup(display, error))
+        return NULL;
 
-  return cogl_context_new (display, error);
+    return cg_context_new(display, error);
 }
 
 void
-cogl_sdl_handle_event (CoglContext *context, SDL_Event *event)
+cg_sdl_handle_event(cg_context_t *context, SDL_Event *event)
 {
-  CoglRenderer *renderer;
+    cg_renderer_t *renderer;
 
-  _COGL_RETURN_IF_FAIL (cogl_is_context (context));
+    _CG_RETURN_IF_FAIL(cg_is_context(context));
 
-  renderer = context->display->renderer;
+    renderer = context->display->renderer;
 
-  _cogl_renderer_handle_native_event (renderer, event);
+    _cg_renderer_handle_native_event(renderer, event);
 }
 
 static void
-_cogl_sdl_push_wakeup_event (CoglContext *context)
+_cg_sdl_push_wakeup_event(cg_context_t *context)
 {
-  SDL_Event wakeup_event;
+    SDL_Event wakeup_event;
 
-  wakeup_event.type = context->display->renderer->sdl_event_type;
+    wakeup_event.type = context->display->renderer->sdl_event_type;
 
-  SDL_PushEvent (&wakeup_event);
+    SDL_PushEvent(&wakeup_event);
 }
 
 void
-cogl_sdl_idle (CoglContext *context)
+cg_sdl_idle(cg_context_t *context)
 {
-  CoglRenderer *renderer = context->display->renderer;
+    cg_renderer_t *renderer = context->display->renderer;
 
-  cogl_poll_renderer_dispatch (renderer, NULL, 0);
+    cg_poll_renderer_dispatch(renderer, NULL, 0);
 
-  /* It is expected that this will be called from the application
-   * immediately before blocking in SDL_WaitEvent. However,
-   * dispatching cause more work to be queued. If that happens we need
-   * to make sure the blocking returns immediately. We'll post our
-   * dummy event to make sure that happens
-   */
-  if (!_cogl_list_empty (&renderer->idle_closures))
-    _cogl_sdl_push_wakeup_event (context);
+    /* It is expected that this will be called from the application
+     * immediately before blocking in SDL_WaitEvent. However,
+     * dispatching cause more work to be queued. If that happens we need
+     * to make sure the blocking returns immediately. We'll post our
+     * dummy event to make sure that happens
+     */
+    if (!_cg_list_empty(&renderer->idle_closures))
+        _cg_sdl_push_wakeup_event(context);
 }

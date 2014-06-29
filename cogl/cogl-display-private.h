@@ -28,31 +28,30 @@
  *
  */
 
-#ifndef __COGL_DISPLAY_PRIVATE_H
-#define __COGL_DISPLAY_PRIVATE_H
+#ifndef __CG_DISPLAY_PRIVATE_H
+#define __CG_DISPLAY_PRIVATE_H
 
 #include "cogl-object-private.h"
 #include "cogl-display.h"
 #include "cogl-renderer.h"
 #include "cogl-onscreen-template.h"
 
-struct _CoglDisplay
-{
-  CoglObject _parent;
+struct _cg_display_t {
+    cg_object_t _parent;
 
-  bool setup;
-  CoglRenderer *renderer;
-  CoglOnscreenTemplate *onscreen_template;
+    bool setup;
+    cg_renderer_t *renderer;
+    cg_onscreen_template_t *onscreen_template;
 
-#ifdef COGL_HAS_WAYLAND_EGL_SERVER_SUPPORT
-  struct wl_display *wayland_compositor_display;
+#ifdef CG_HAS_WAYLAND_EGL_SERVER_SUPPORT
+    struct wl_display *wayland_compositor_display;
 #endif
 
-#ifdef COGL_HAS_EGL_PLATFORM_GDL_SUPPORT
-  gdl_plane_id_t gdl_plane;
+#ifdef CG_HAS_EGL_PLATFORM_GDL_SUPPORT
+    gdl_plane_id_t gdl_plane;
 #endif
 
-  void *winsys;
+    void *winsys;
 };
 
-#endif /* __COGL_DISPLAY_PRIVATE_H */
+#endif /* __CG_DISPLAY_PRIVATE_H */

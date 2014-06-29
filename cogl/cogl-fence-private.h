@@ -28,39 +28,35 @@
  *
  */
 
-#ifndef __COGL_FENCE_PRIVATE_H__
-#define __COGL_FENCE_PRIVATE_H__
+#ifndef __CG_FENCE_PRIVATE_H__
+#define __CG_FENCE_PRIVATE_H__
 
 #include "cogl-fence.h"
 #include "cogl-list.h"
 #include "cogl-winsys-private.h"
 
-typedef enum
-{
-  FENCE_TYPE_PENDING,
+typedef enum {
+    FENCE_TYPE_PENDING,
 #ifdef GL_ARB_sync
-  FENCE_TYPE_GL_ARB,
+    FENCE_TYPE_GL_ARB,
 #endif
-  FENCE_TYPE_WINSYS,
-  FENCE_TYPE_ERROR
-} CoglFenceType;
+    FENCE_TYPE_WINSYS,
+    FENCE_TYPE_ERROR
+} cg_fence_type_t;
 
-struct _CoglFenceClosure
-{
-  CoglList link;
-  CoglFramebuffer *framebuffer;
+struct _cg_fence_closure_t {
+    cg_list_t link;
+    cg_framebuffer_t *framebuffer;
 
-  CoglFenceType type;
-  void *fence_obj;
+    cg_fence_type_t type;
+    void *fence_obj;
 
-  CoglFenceCallback callback;
-  void *user_data;
+    cg_fence_callback_t callback;
+    void *user_data;
 };
 
-void
-_cogl_fence_submit (CoglFenceClosure *fence);
+void _cg_fence_submit(cg_fence_closure_t *fence);
 
-void
-_cogl_fence_cancel_fences_for_framebuffer (CoglFramebuffer *framebuffer);
+void _cg_fence_cancel_fences_for_framebuffer(cg_framebuffer_t *framebuffer);
 
-#endif /* __COGL_FENCE_PRIVATE_H__ */
+#endif /* __CG_FENCE_PRIVATE_H__ */

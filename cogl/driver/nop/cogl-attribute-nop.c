@@ -39,11 +39,11 @@
 #include "cogl-attribute-nop-private.h"
 
 void
-_cogl_nop_flush_attributes_state (CoglFramebuffer *framebuffer,
-                                  CoglPipeline *pipeline,
-                                  CoglFlushLayerState *layers_state,
-                                  CoglDrawFlags flags,
-                                  CoglAttribute **attributes,
-                                  int n_attributes)
+_cg_nop_flush_attributes_state(cg_framebuffer_t *framebuffer,
+                               cg_pipeline_t *pipeline,
+                               cg_flush_layer_state_t *layers_state,
+                               cg_draw_flags_t flags,
+                               cg_attribute_t **attributes,
+                               int n_attributes)
 {
 }

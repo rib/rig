@@ -28,145 +28,141 @@
  *
  */
 
-#if !defined(__COGL_H_INSIDE__) && !defined(COGL_COMPILATION)
+#if !defined(__CG_H_INSIDE__) && !defined(CG_COMPILATION)
 #error "Only <cogl/cogl.h> can be included directly."
 #endif
 
-#ifndef __COGL_BITMAP_H__
-#define __COGL_BITMAP_H__
+#ifndef __CG_BITMAP_H__
+#define __CG_BITMAP_H__
 
-/* XXX: We forward declare CoglBitmap here to allow for circular
+/* XXX: We forward declare cg_bitmap_t here to allow for circular
  * dependencies between some headers */
-typedef struct _CoglBitmap CoglBitmap;
+typedef struct _cg_bitmap_t cg_bitmap_t;
 
 #include <cogl/cogl-types.h>
 #include <cogl/cogl-buffer.h>
 #include <cogl/cogl-context.h>
 #include <cogl/cogl-pixel-buffer.h>
 
-#ifdef COGL_HAS_ANDROID_SUPPORT
+#ifdef CG_HAS_ANDROID_SUPPORT
 #include <android/asset_manager.h>
 #endif
 
-COGL_BEGIN_DECLS
+CG_BEGIN_DECLS
 
 /**
  * SECTION:cogl-bitmap
  * @short_description: Functions for loading images
  *
- * Cogl allows loading image data into memory as CoglBitmaps without
+ * Cogl allows loading image data into memory as cg_bitmap_ts without
  * loading them immediately into GPU textures.
  *
- * #CoglBitmap is available since Cogl 1.0
+ * #cg_bitmap_t is available since Cogl 1.0
  */
 
-
 /**
- * cogl_bitmap_new_from_file:
- * @context: A #CoglContext
+ * cg_bitmap_new_from_file:
+ * @context: A #cg_context_t
  * @filename: the file to load.
- * @error: a #CoglError or %NULL.
+ * @error: a #cg_error_t or %NULL.
  *
  * Loads an image file from disk. This function can be safely called from
  * within a thread.
  *
- * Return value: (transfer full): a #CoglBitmap to the new loaded
+ * Return value: (transfer full): a #cg_bitmap_t to the new loaded
  *               image data, or %NULL if loading the image failed.
  *
  * Since: 1.0
  */
-CoglBitmap *
-cogl_bitmap_new_from_file (CoglContext *context,
-                           const char *filename,
-                           CoglError **error);
+cg_bitmap_t *cg_bitmap_new_from_file(cg_context_t *context,
+                                     const char *filename,
+                                     cg_error_t **error);
 
-#ifdef COGL_HAS_ANDROID_SUPPORT
+#ifdef CG_HAS_ANDROID_SUPPORT
 /**
- * cogl_android_bitmap_new_from_asset:
- * @context: A #CoglContext
+ * cg_android_bitmap_new_from_asset:
+ * @context: A #cg_context_t
  * @manager: An Android Asset Manager.
  * @filename: The file name for the asset
- * @error: A return location for a CoglError exception.
+ * @error: A return location for a cg_error_t exception.
  *
- * Loads an Android asset into a newly allocated #CoglBitmap.
+ * Loads an Android asset into a newly allocated #cg_bitmap_t.
  *
- * Return value: (transfer full): A newly allocated #CoglBitmap
+ * Return value: (transfer full): A newly allocated #cg_bitmap_t
  *               holding the image data of the specified asset.
  *
  * Since: 2.0
  */
-CoglBitmap *
-cogl_android_bitmap_new_from_asset (CoglContext *context,
-                                    AAssetManager *manager,
-                                    const char *filename,
-                                    CoglError **error);
+cg_bitmap_t *cg_android_bitmap_new_from_asset(cg_context_t *context,
+                                              AAssetManager *manager,
+                                              const char *filename,
+                                              cg_error_t **error);
 #endif
 
 /**
- * cogl_bitmap_new_from_buffer:
- * @buffer: A #CoglBuffer containing image data
- * @format: The #CoglPixelFormat defining the format of the image data
+ * cg_bitmap_new_from_buffer:
+ * @buffer: A #cg_buffer_t containing image data
+ * @format: The #cg_pixel_format_t defining the format of the image data
  *          in the given @buffer.
  * @width: The width of the image data in the given @buffer.
  * @height: The height of the image data in the given @buffer.
  * @rowstride: The rowstride in bytes of the image data in the given @buffer.
  * @offset: The offset into the given @buffer to the first pixel that
- *          should be considered part of the #CoglBitmap.
+ *          should be considered part of the #cg_bitmap_t.
  *
- * Wraps some image data that has been uploaded into a #CoglBuffer as
- * a #CoglBitmap. The data is not copied in this process.
+ * Wraps some image data that has been uploaded into a #cg_buffer_t as
+ * a #cg_bitmap_t. The data is not copied in this process.
  *
- * Return value: (transfer full): a #CoglBitmap encapsulating the given @buffer.
+ * Return value: (transfer full): a #cg_bitmap_t encapsulating the given
+ *@buffer.
  *
  * Since: 1.8
  * Stability: unstable
  */
-CoglBitmap *
-cogl_bitmap_new_from_buffer (CoglBuffer *buffer,
-                             CoglPixelFormat format,
-                             int width,
-                             int height,
-                             int rowstride,
-                             int offset);
+cg_bitmap_t *cg_bitmap_new_from_buffer(cg_buffer_t *buffer,
+                                       cg_pixel_format_t format,
+                                       int width,
+                                       int height,
+                                       int rowstride,
+                                       int offset);
 
 /**
- * cogl_bitmap_new_with_size:
- * @context: A #CoglContext
+ * cg_bitmap_new_with_size:
+ * @context: A #cg_context_t
  * @width: width of the bitmap in pixels
  * @height: height of the bitmap in pixels
  * @format: the format of the pixels the array will store
  *
- * Creates a new #CoglBitmap with the given width, height and format.
+ * Creates a new #cg_bitmap_t with the given width, height and format.
  * The initial contents of the bitmap are undefined.
  *
  * The data for the bitmap will be stored in a newly created
- * #CoglPixelBuffer. You can get a pointer to the pixel buffer using
- * cogl_bitmap_get_buffer(). The #CoglBuffer API can then be
+ * #cg_pixel_buffer_t. You can get a pointer to the pixel buffer using
+ * cg_bitmap_get_buffer(). The #cg_buffer_t API can then be
  * used to fill the bitmap with data.
  *
  * <note>Cogl will try its best to provide a hardware array you can
  * map, write into and effectively do a zero copy upload when creating
- * a texture from it with cogl_texture_new_from_bitmap(). For various
+ * a texture from it with cg_texture_new_from_bitmap(). For various
  * reasons, such arrays are likely to have a stride larger than width
  * * bytes_per_pixel. The user must take the stride into account when
  * writing into it. The stride can be retrieved with
- * cogl_bitmap_get_rowstride().</note>
+ * cg_bitmap_get_rowstride().</note>
  *
- * Return value: (transfer full): a #CoglPixelBuffer representing the
+ * Return value: (transfer full): a #cg_pixel_buffer_t representing the
  *               newly created array or %NULL on failure
  *
  * Since: 1.10
  * Stability: Unstable
  */
-CoglBitmap *
-cogl_bitmap_new_with_size (CoglContext *context,
-                           int width,
-                           int height,
-                           CoglPixelFormat format);
+cg_bitmap_t *cg_bitmap_new_with_size(cg_context_t *context,
+                                     int width,
+                                     int height,
+                                     cg_pixel_format_t format);
 
 /**
- * cogl_bitmap_new_for_data:
- * @context: A #CoglContext
+ * cg_bitmap_new_for_data:
+ * @context: A #cg_context_t
  * @width: The width of the bitmap.
  * @height: The height of the bitmap.
  * @format: The format of the pixel data.
@@ -176,58 +172,54 @@ cogl_bitmap_new_with_size (CoglContext *context,
  *
  * Creates a bitmap using some existing data. The data is not copied
  * so the application must keep the buffer alive for the lifetime of
- * the #CoglBitmap. This can be used for example with
- * cogl_framebuffer_read_pixels_into_bitmap() to read data directly
+ * the #cg_bitmap_t. This can be used for example with
+ * cg_framebuffer_read_pixels_into_bitmap() to read data directly
  * into an application buffer with the specified rowstride.
  *
- * Return value: (transfer full): A new #CoglBitmap.
+ * Return value: (transfer full): A new #cg_bitmap_t.
  * Since: 1.10
  * Stability: unstable
  */
-CoglBitmap *
-cogl_bitmap_new_for_data (CoglContext *context,
-                          int width,
-                          int height,
-                          CoglPixelFormat format,
-                          int rowstride,
-                          uint8_t *data);
+cg_bitmap_t *cg_bitmap_new_for_data(cg_context_t *context,
+                                    int width,
+                                    int height,
+                                    cg_pixel_format_t format,
+                                    int rowstride,
+                                    uint8_t *data);
 
 /**
- * cogl_bitmap_get_format:
- * @bitmap: A #CoglBitmap
+ * cg_bitmap_get_format:
+ * @bitmap: A #cg_bitmap_t
  *
- * Return value: the #CoglPixelFormat that the data for the bitmap is in.
+ * Return value: the #cg_pixel_format_t that the data for the bitmap is in.
  * Since: 1.10
  * Stability: unstable
  */
-CoglPixelFormat
-cogl_bitmap_get_format (CoglBitmap *bitmap);
+cg_pixel_format_t cg_bitmap_get_format(cg_bitmap_t *bitmap);
 
 /**
- * cogl_bitmap_get_width:
- * @bitmap: A #CoglBitmap
+ * cg_bitmap_get_width:
+ * @bitmap: A #cg_bitmap_t
  *
  * Return value: the width of the bitmap
  * Since: 1.10
  * Stability: unstable
  */
-int
-cogl_bitmap_get_width (CoglBitmap *bitmap);
+int cg_bitmap_get_width(cg_bitmap_t *bitmap);
 
 /**
- * cogl_bitmap_get_height:
- * @bitmap: A #CoglBitmap
+ * cg_bitmap_get_height:
+ * @bitmap: A #cg_bitmap_t
  *
  * Return value: the height of the bitmap
  * Since: 1.10
  * Stability: unstable
  */
-int
-cogl_bitmap_get_height (CoglBitmap *bitmap);
+int cg_bitmap_get_height(cg_bitmap_t *bitmap);
 
 /**
- * cogl_bitmap_get_rowstride:
- * @bitmap: A #CoglBitmap
+ * cg_bitmap_get_rowstride:
+ * @bitmap: A #cg_bitmap_t
  *
  * Return value: the rowstride of the bitmap. This is the number of
  *   bytes between the address of start of one row to the address of the
@@ -235,25 +227,23 @@ cogl_bitmap_get_height (CoglBitmap *bitmap);
  * Since: 1.10
  * Stability: unstable
  */
-int
-cogl_bitmap_get_rowstride (CoglBitmap *bitmap);
+int cg_bitmap_get_rowstride(cg_bitmap_t *bitmap);
 
 /**
- * cogl_bitmap_get_buffer:
- * @bitmap: A #CoglBitmap
+ * cg_bitmap_get_buffer:
+ * @bitmap: A #cg_bitmap_t
  *
- * Return value: (transfer none): the #CoglPixelBuffer that this
+ * Return value: (transfer none): the #cg_pixel_buffer_t that this
  *   buffer uses for storage. Note that if the bitmap was created with
- *   cogl_bitmap_new_from_file() then it will not actually be using a
+ *   cg_bitmap_new_from_file() then it will not actually be using a
  *   pixel buffer and this function will return %NULL.
  * Stability: unstable
  * Since: 1.10
  */
-CoglPixelBuffer *
-cogl_bitmap_get_buffer (CoglBitmap *bitmap);
+cg_pixel_buffer_t *cg_bitmap_get_buffer(cg_bitmap_t *bitmap);
 
 /**
- * cogl_bitmap_get_size_from_file:
+ * cg_bitmap_get_size_from_file:
  * @filename: the file to check
  * @width: (out): return location for the bitmap width, or %NULL
  * @height: (out): return location for the bitmap height, or %NULL
@@ -266,39 +256,36 @@ cogl_bitmap_get_buffer (CoglBitmap *bitmap);
  * Since: 1.0
  */
 bool
-cogl_bitmap_get_size_from_file (const char *filename,
-                                int *width,
-                                int *height);
+cg_bitmap_get_size_from_file(const char *filename, int *width, int *height);
 
 /**
- * cogl_is_bitmap:
- * @object: a #CoglObject pointer
+ * cg_is_bitmap:
+ * @object: a #cg_object_t pointer
  *
- * Checks whether @object is a #CoglBitmap
+ * Checks whether @object is a #cg_bitmap_t
  *
  * Return value: %true if the passed @object represents a bitmap,
  *   and %false otherwise
  *
  * Since: 1.0
  */
-bool
-cogl_is_bitmap (void *object);
+bool cg_is_bitmap(void *object);
 
 /**
- * COGL_BITMAP_ERROR:
+ * CG_BITMAP_ERROR:
  *
- * #CoglError domain for bitmap errors.
+ * #cg_error_t domain for bitmap errors.
  *
  * Since: 1.4
  */
-#define COGL_BITMAP_ERROR (cogl_bitmap_error_domain ())
+#define CG_BITMAP_ERROR (cg_bitmap_error_domain())
 
 /**
- * CoglBitmapError:
- * @COGL_BITMAP_ERROR_FAILED: Generic failure code, something went
+ * cg_bitmap_error_t:
+ * @CG_BITMAP_ERROR_FAILED: Generic failure code, something went
  *   wrong.
- * @COGL_BITMAP_ERROR_UNKNOWN_TYPE: Unknown image type.
- * @COGL_BITMAP_ERROR_CORRUPT_IMAGE: An image file was broken somehow.
+ * @CG_BITMAP_ERROR_UNKNOWN_TYPE: Unknown image type.
+ * @CG_BITMAP_ERROR_CORRUPT_IMAGE: An image file was broken somehow.
  *
  * Error codes that can be thrown when performing bitmap
  * operations. Note that gdk_pixbuf_new_from_file() can also throw
@@ -309,13 +296,13 @@ cogl_is_bitmap (void *object);
  * Since: 1.4
  */
 typedef enum {
-  COGL_BITMAP_ERROR_FAILED,
-  COGL_BITMAP_ERROR_UNKNOWN_TYPE,
-  COGL_BITMAP_ERROR_CORRUPT_IMAGE
-} CoglBitmapError;
+    CG_BITMAP_ERROR_FAILED,
+    CG_BITMAP_ERROR_UNKNOWN_TYPE,
+    CG_BITMAP_ERROR_CORRUPT_IMAGE
+} cg_bitmap_error_t;
 
-uint32_t cogl_bitmap_error_domain (void);
+uint32_t cg_bitmap_error_domain(void);
 
-COGL_END_DECLS
+CG_END_DECLS
 
-#endif /* __COGL_BITMAP_H__ */
+#endif /* __CG_BITMAP_H__ */

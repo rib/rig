@@ -37,7 +37,7 @@
 #include "cogl-framebuffer-private.h"
 
 void
-_cogl_clip_stack_nop_flush (CoglClipStack *stack,
-                            CoglFramebuffer *framebuffer)
+_cg_clip_stack_nop_flush(cg_clip_stack_t *stack,
+                         cg_framebuffer_t *framebuffer)
 {
 }

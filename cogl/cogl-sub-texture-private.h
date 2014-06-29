@@ -28,35 +28,34 @@
  *
  */
 
-#ifndef __COGL_SUB_TEXTURE_PRIVATE_H
-#define __COGL_SUB_TEXTURE_PRIVATE_H
+#ifndef __CG_SUB_TEXTURE_PRIVATE_H
+#define __CG_SUB_TEXTURE_PRIVATE_H
 
 #include "cogl-texture-private.h"
 
 #include <clib.h>
 
-struct _CoglSubTexture
-{
-  CoglTexture _parent;
+struct _cg_sub_texture_t {
+    cg_texture_t _parent;
 
-  /* This is the texture that was passed in to
-     _cogl_sub_texture_new. If this is also a sub texture then we will
-     use the full texture from that to render instead of making a
-     chain. However we want to preserve the next texture in case the
-     user is expecting us to keep a reference and also so that we can
-     later add a cogl_sub_texture_get_parent_texture() function. */
-  CoglTexture *next_texture;
-  /* This is the texture that will actually be used to draw. It will
-     point to the end of the chain if a sub texture of a sub texture
-     is created */
-  CoglTexture *full_texture;
+    /* This is the texture that was passed in to
+       _cg_sub_texture_new. If this is also a sub texture then we will
+       use the full texture from that to render instead of making a
+       chain. However we want to preserve the next texture in case the
+       user is expecting us to keep a reference and also so that we can
+       later add a cg_sub_texture_get_parent_texture() function. */
+    cg_texture_t *next_texture;
+    /* This is the texture that will actually be used to draw. It will
+       point to the end of the chain if a sub texture of a sub texture
+       is created */
+    cg_texture_t *full_texture;
 
-  /* The offset of the region represented by this sub-texture. This is
-   * the offset in full_texture which won't necessarily be the same as
-   * the offset passed to _cogl_sub_texture_new if next_texture is
-   * actually already a sub texture */
-  int sub_x;
-  int sub_y;
+    /* The offset of the region represented by this sub-texture. This is
+     * the offset in full_texture which won't necessarily be the same as
+     * the offset passed to _cg_sub_texture_new if next_texture is
+     * actually already a sub texture */
+    int sub_x;
+    int sub_y;
 };
 
-#endif /* __COGL_SUB_TEXTURE_PRIVATE_H */
+#endif /* __CG_SUB_TEXTURE_PRIVATE_H */

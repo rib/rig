@@ -28,18 +28,17 @@
  *
  */
 
-#ifndef __COGL_ONSCREEN_TEMPLATE_PRIVATE_H
-#define __COGL_ONSCREEN_TEMPLATE_PRIVATE_H
+#ifndef __CG_ONSCREEN_TEMPLATE_PRIVATE_H
+#define __CG_ONSCREEN_TEMPLATE_PRIVATE_H
 
 #include "cogl-object-private.h"
 #include "cogl-framebuffer-private.h"
 #include "cogl-boxed-value.h"
 
-struct _CoglOnscreenTemplate
-{
-  CoglObject _parent;
+struct _cg_onscreen_template_t {
+    cg_object_t _parent;
 
-  CoglFramebufferConfig config;
+    cg_framebuffer_config_t config;
 };
 
-#endif /* __COGL_ONSCREEN_TEMPLATE_PRIVATE_H */
+#endif /* __CG_ONSCREEN_TEMPLATE_PRIVATE_H */

@@ -37,104 +37,95 @@
 
 #include <clib.h>
 
-#ifdef COGL_HAS_GLIB_SUPPORT
+#ifdef CG_HAS_GLIB_SUPPORT
 #include <glib.h>
 
-#define _RealError              GError
-#define _real_error_free        g_error_free
-#define _real_error_copy        g_error_copy
-#define _real_error_matches     g_error_matches
-#define _real_error_new_valist  g_error_new_valist
+#define _RealError GError
+#define _real_error_free g_error_free
+#define _real_error_copy g_error_copy
+#define _real_error_matches g_error_matches
+#define _real_error_new_valist g_error_new_valist
 
 #else
 
-#define _RealError              c_error_t
-#define _real_error_free        c_error_free
-#define _real_error_copy        c_error_copy
-#define _real_error_matches     c_error_matches
-#define _real_error_new_valist  c_error_new_valist
+#define _RealError c_error_t
+#define _real_error_free c_error_free
+#define _real_error_copy c_error_copy
+#define _real_error_matches c_error_matches
+#define _real_error_new_valist c_error_new_valist
 
 #endif
 
 void
-cogl_error_free (CoglError *error)
+cg_error_free(cg_error_t *error)
 {
-  _real_error_free ((_RealError *)error);
+    _real_error_free((_RealError *)error);
 }
 
-CoglError *
-cogl_error_copy (CoglError *error)
+cg_error_t *
+cg_error_copy(cg_error_t *error)
 {
-  return (CoglError *)_real_error_copy ((_RealError *)error);
+    return (cg_error_t *)_real_error_copy((_RealError *)error);
 }
 
 bool
-cogl_error_matches (CoglError *error,
-                    uint32_t domain,
-                    int code)
+cg_error_matches(cg_error_t *error, uint32_t domain, int code)
 {
-  return _real_error_matches ((_RealError *)error, domain, code);
+    return _real_error_matches((_RealError *)error, domain, code);
 }
 
-#define ERROR_OVERWRITTEN_WARNING \
-  "CoglError set over the top of a previous CoglError or " \
-  "uninitialized memory.\nThis indicates a bug in someone's " \
-  "code. You must ensure an error is NULL before it's set.\n" \
-  "The overwriting error message was: %s"
+#define ERROR_OVERWRITTEN_WARNING                                              \
+    "cg_error_t set over the top of a previous cg_error_t or "                 \
+    "uninitialized memory.\nThis indicates a bug in someone's "                \
+    "code. You must ensure an error is NULL before it's set.\n"                \
+    "The overwriting error message was: %s"
 
 void
-_cogl_set_error (CoglError **error,
-                 uint32_t domain,
-                 int code,
-                 const char *format,
-                 ...)
+_cg_set_error(
+    cg_error_t **error, uint32_t domain, int code, const char *format, ...)
 {
-  _RealError *new;
+    _RealError *new;
 
-  va_list args;
+    va_list args;
 
-  va_start (args, format);
+    va_start(args, format);
 
-  if (error == NULL)
-    {
-      c_logv (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, format, args);
-      va_end (args);
-      return;
+    if (error == NULL) {
+        c_logv(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, format, args);
+        va_end(args);
+        return;
     }
 
-  new = _real_error_new_valist (domain, code, format, args);
-  va_end (args);
+    new = _real_error_new_valist(domain, code, format, args);
+    va_end(args);
 
-  if (*error == NULL)
-    *error = (CoglError *)new;
-  else
-    c_warning (ERROR_OVERWRITTEN_WARNING, new->message);
+    if (*error == NULL)
+        *error = (cg_error_t *)new;
+    else
+        c_warning(ERROR_OVERWRITTEN_WARNING, new->message);
 }
 
 void
-_cogl_set_error_literal (CoglError **error,
-                         uint32_t domain,
-                         int code,
-                         const char *message)
+_cg_set_error_literal(cg_error_t **error,
+                      uint32_t domain,
+                      int code,
+                      const char *message)
 {
-  _cogl_set_error (error, domain, code, "%s", message);
+    _cg_set_error(error, domain, code, "%s", message);
 }
 
 void
-_cogl_propagate_error (CoglError **dest,
-                       CoglError *src)
+_cg_propagate_error(cg_error_t **dest, cg_error_t *src)
 {
-  _COGL_RETURN_IF_FAIL (src != NULL);
+    _CG_RETURN_IF_FAIL(src != NULL);
 
-  if (dest == NULL)
-    {
-      c_log (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "%s", src->message);
-      cogl_error_free (src);
-    }
-  else if (*dest)
-    c_warning (ERROR_OVERWRITTEN_WARNING, src->message);
-  else
-    *dest = src;
+    if (dest == NULL) {
+        c_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "%s", src->message);
+        cg_error_free(src);
+    } else if (*dest)
+        c_warning(ERROR_OVERWRITTEN_WARNING, src->message);
+    else
+        *dest = src;
 }
 
 /* This function is only used from the gdk-pixbuf image backend so it
@@ -142,11 +133,10 @@ _cogl_propagate_error (CoglError **dest,
  * difficult to get this to work without the system glib because we
  * would need to somehow call the same g_error_free function that
  * gdk-pixbuf is using */
-#ifdef COGL_HAS_GLIB_SUPPORT
+#ifdef CG_HAS_GLIB_SUPPORT
 void
-_cogl_propagate_gerror (CoglError **dest,
-                        GError *src)
+_cg_propagate_gerror(cg_error_t **dest, GError *src)
 {
-  _cogl_propagate_error (dest, (CoglError *) src);
+    _cg_propagate_error(dest, (cg_error_t *)src);
 }
-#endif /* COGL_HAS_GLIB_SUPPORT */
+#endif /* CG_HAS_GLIB_SUPPORT */

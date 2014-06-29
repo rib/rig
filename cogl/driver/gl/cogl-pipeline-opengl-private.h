@@ -31,8 +31,8 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#ifndef __COGL_PIPELINE_OPENGL_PRIVATE_H
-#define __COGL_PIPELINE_OPENGL_PRIVATE_H
+#ifndef __CG_PIPELINE_OPENGL_PRIVATE_H
+#define __CG_PIPELINE_OPENGL_PRIVATE_H
 
 #include "cogl-pipeline-private.h"
 #include "cogl-matrix-stack.h"
@@ -46,116 +46,107 @@
  * Roughly speaking the members in this structure are of two kinds:
  * either they are a low level reflection of the state we send to
  * OpenGL or they are for high level meta data assoicated with the
- * texture unit when flushing CoglPipelineLayers that is typically
+ * texture unit when flushing cg_pipeline_layer_ts that is typically
  * used to optimize subsequent re-flushing of the same layer.
  *
  * The low level members are at the top, and the high level members
  * start with the .layer member.
  */
-typedef struct _CoglTextureUnit
-{
-  /* The base 0 texture unit index which can be used with
-   * glActiveTexture () */
-  int                index;
+typedef struct _cg_texture_unit_t {
+    /* The base 0 texture unit index which can be used with
+     * glActiveTexture () */
+    int index;
 
-  /* The GL target currently glEnabled or 0 if nothing is
-   * enabled. This is only used by the fixed pipeline fragend */
-  GLenum             enabled_gl_target;
+    /* The GL target currently glEnabled or 0 if nothing is
+     * enabled. This is only used by the fixed pipeline fragend */
+    GLenum enabled_gl_target;
 
-  /* The raw GL texture object name for which we called glBindTexture when
-   * we flushed the last layer. (NB: The CoglTexture associated
-   * with a layer may represent more than one GL texture) */
-  GLuint             gl_texture;
-  /* The target of the GL texture object. This is just used so that we
-   * can quickly determine the intended target to flush when
-   * dirty_gl_texture == true */
-  GLenum             gl_target;
+    /* The raw GL texture object name for which we called glBindTexture when
+     * we flushed the last layer. (NB: The cg_texture_t associated
+     * with a layer may represent more than one GL texture) */
+    GLuint gl_texture;
+    /* The target of the GL texture object. This is just used so that we
+     * can quickly determine the intended target to flush when
+     * dirty_gl_texture == true */
+    GLenum gl_target;
 
-  /* Foreign textures are those not created or deleted by Cogl. If we ever
-   * call glBindTexture for a foreign texture then the next time we are
-   * asked to glBindTexture we can't try and optimize a redundant state
-   * change because we don't know if the original texture name was deleted
-   * and now we are being asked to bind a recycled name. */
-  bool           is_foreign;
+    /* Foreign textures are those not created or deleted by Cogl. If we ever
+     * call glBindTexture for a foreign texture then the next time we are
+     * asked to glBindTexture we can't try and optimize a redundant state
+     * change because we don't know if the original texture name was deleted
+     * and now we are being asked to bind a recycled name. */
+    bool is_foreign;
 
-  /* We have many components in Cogl that need to temporarily bind arbitrary
-   * textures e.g. to query texture object parameters and since we don't
-   * want that to result in too much redundant reflushing of layer state
-   * when all that's needed is to re-bind the layer's gl_texture we use this
-   * to track when the unit->gl_texture state is out of sync with the GL
-   * texture object really bound too (GL_TEXTURE0+unit->index).
-   *
-   * XXX: as a further optimization cogl-pipeline.c uses a convention
-   * of always using texture unit 1 for these transient bindings so we
-   * can assume this is only ever true for unit 1.
-   */
-  bool           dirty_gl_texture;
+    /* We have many components in Cogl that need to temporarily bind arbitrary
+     * textures e.g. to query texture object parameters and since we don't
+     * want that to result in too much redundant reflushing of layer state
+     * when all that's needed is to re-bind the layer's gl_texture we use this
+     * to track when the unit->gl_texture state is out of sync with the GL
+     * texture object really bound too (GL_TEXTURE0+unit->index).
+     *
+     * XXX: as a further optimization cogl-pipeline.c uses a convention
+     * of always using texture unit 1 for these transient bindings so we
+     * can assume this is only ever true for unit 1.
+     */
+    bool dirty_gl_texture;
 
-  /* A matrix stack giving us the means to associate a texture
-   * transform matrix with the texture unit. */
-  CoglMatrixStack   *matrix_stack;
+    /* A matrix stack giving us the means to associate a texture
+     * transform matrix with the texture unit. */
+    cg_matrix_stack_t *matrix_stack;
 
-  /*
-   * Higher level layer state associated with the unit...
-   */
+    /*
+     * Higher level layer state associated with the unit...
+     */
 
-  /* The CoglPipelineLayer whos state was flushed to update this
-   * texture unit last.
-   *
-   * This will be set to NULL if the layer is modified or freed which
-   * means when we come to flush a layer; if this pointer is still
-   * valid and == to the layer being flushed we don't need to update
-   * any texture unit state. */
-  CoglPipelineLayer *layer;
+    /* The cg_pipeline_layer_t whos state was flushed to update this
+     * texture unit last.
+     *
+     * This will be set to NULL if the layer is modified or freed which
+     * means when we come to flush a layer; if this pointer is still
+     * valid and == to the layer being flushed we don't need to update
+     * any texture unit state. */
+    cg_pipeline_layer_t *layer;
 
-  /* To help minimize the state changes required we track the
-   * difference flags associated with the layer whos state was last
-   * flushed to update this texture unit.
-   *
-   * Note: we track this explicitly because .layer may get invalidated
-   * if that layer is modified or deleted. Even if the layer is
-   * invalidated though these flags can be used to optimize the state
-   * flush of the next layer
-   */
-  unsigned long      layer_changes_since_flush;
+    /* To help minimize the state changes required we track the
+     * difference flags associated with the layer whos state was last
+     * flushed to update this texture unit.
+     *
+     * Note: we track this explicitly because .layer may get invalidated
+     * if that layer is modified or deleted. Even if the layer is
+     * invalidated though these flags can be used to optimize the state
+     * flush of the next layer
+     */
+    unsigned long layer_changes_since_flush;
 
-  /* Whenever a CoglTexture's internal GL texture storage changes
-   * cogl-pipeline.c is notified with a call to
-   * _cogl_pipeline_texture_storage_change_notify which inturn sets
-   * this to true for each texture unit that it is currently bound
-   * too. When we later come to flush some pipeline state then we will
-   * always check this to potentially force an update of the texture
-   * state even if the pipeline hasn't changed. */
-  bool           texture_storage_changed;
+    /* Whenever a cg_texture_t's internal GL texture storage changes
+     * cogl-pipeline.c is notified with a call to
+     * _cg_pipeline_texture_storage_change_notify which inturn sets
+     * this to true for each texture unit that it is currently bound
+     * too. When we later come to flush some pipeline state then we will
+     * always check this to potentially force an update of the texture
+     * state even if the pipeline hasn't changed. */
+    bool texture_storage_changed;
 
-} CoglTextureUnit;
+} cg_texture_unit_t;
 
-CoglTextureUnit *
-_cogl_get_texture_unit (int index_);
+cg_texture_unit_t *_cg_get_texture_unit(int index_);
 
-void
-_cogl_destroy_texture_units (void);
+void _cg_destroy_texture_units(void);
 
-void
-_cogl_set_active_texture_unit (int unit_index);
+void _cg_set_active_texture_unit(int unit_index);
 
-void
-_cogl_bind_gl_texture_transient (GLenum gl_target,
-                                 GLuint gl_texture,
-                                 bool is_foreign);
+void _cg_bind_gl_texture_transient(GLenum gl_target,
+                                   GLuint gl_texture,
+                                   bool is_foreign);
 
-void
-_cogl_delete_gl_texture (GLuint gl_texture);
+void _cg_delete_gl_texture(GLuint gl_texture);
 
-void
-_cogl_pipeline_flush_gl_state (CoglContext *context,
-                               CoglPipeline *pipeline,
-                               CoglFramebuffer *framebuffer,
-                               bool skip_gl_state,
-                               bool unknown_color_alpha);
+void _cg_pipeline_flush_gl_state(cg_context_t *context,
+                                 cg_pipeline_t *pipeline,
+                                 cg_framebuffer_t *framebuffer,
+                                 bool skip_gl_state,
+                                 bool unknown_color_alpha);
 
-void
-_cogl_gl_use_program (CoglContext *context, GLuint gl_program);
+void _cg_gl_use_program(cg_context_t *context, GLuint gl_program);
 
-#endif /* __COGL_PIPELINE_OPENGL_PRIVATE_H */
-
+#endif /* __CG_PIPELINE_OPENGL_PRIVATE_H */

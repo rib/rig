@@ -31,24 +31,21 @@
 #include <glib.h>
 #include <glib-object.h>
 
-#ifndef __COGL_GTYPE_PRIVATE_H__
-#define __COGL_GTYPE_PRIVATE_H__
+#ifndef __CG_GTYPE_PRIVATE_H__
+#define __CG_GTYPE_PRIVATE_H__
 
-#define COGL_GTYPE_DEFINE_BOXED(Name, underscore_name, copy_func, free_func) \
-GType \
-cogl_gtype_ ## underscore_name ## _get_type (void) \
-{ \
-   static volatile size_t type_volatile = 0; \
-   if (g_once_init_enter (&type_volatile)) \
-     { \
-       GType type = \
-         g_boxed_type_register_static (g_intern_static_string ("Cogl" Name), \
-                                       (GBoxedCopyFunc)copy_func, \
-                                       (GBoxedFreeFunc)free_func); \
-       g_once_init_leave (&type_volatile, type); \
-     } \
-   return type_volatile; \
-}
+#define CG_GTYPE_DEFINE_BOXED(Name, underscore_name, copy_func, free_func)     \
+    GType cg_gtype_##underscore_name##_get_type(void)                          \
+    {                                                                          \
+        static volatile size_t type_volatile = 0;                              \
+        if (g_once_init_enter(&type_volatile)) {                               \
+            GType type = g_boxed_type_register_static(                         \
+                g_intern_static_string("Cogl" Name),                           \
+                (GBoxedCopyFunc)copy_func,                                     \
+                (GBoxedFreeFunc)free_func);                                    \
+            g_once_init_leave(&type_volatile, type);                           \
+        }                                                                      \
+        return type_volatile;                                                  \
+    }
 
-#endif /* __COGL_GTYPE_PRIVATE_H__ */
-
+#endif /* __CG_GTYPE_PRIVATE_H__ */

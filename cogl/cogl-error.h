@@ -26,16 +26,16 @@
  * SOFTWARE.
  */
 
-#if !defined(__COGL_H_INSIDE__) && !defined(COGL_COMPILATION)
+#if !defined(__CG_H_INSIDE__) && !defined(CG_COMPILATION)
 #error "Only <cogl/cogl.h> can be included directly."
 #endif
 
-#ifndef __COGL_ERROR_H__
-#define __COGL_ERROR_H__
+#ifndef __CG_ERROR_H__
+#define __CG_ERROR_H__
 
 #include "cogl-types.h"
 
-COGL_BEGIN_DECLS
+CG_BEGIN_DECLS
 
 /**
  * SECTION:cogl-error
@@ -51,22 +51,22 @@ COGL_BEGIN_DECLS
  * and for these apis we use a standard convention for reporting
  * runtime recoverable errors.
  *
- * As an example if we look at the cogl_context_new() api which
+ * As an example if we look at the cg_context_new() api which
  * takes an error argument:
  * |[
- *   CoglContext *
- *   cogl_context_new (CoglDisplay *display, CoglError **error);
+ *   cg_context_t *
+ *   cg_context_new (cg_display_t *display, cg_error_t **error);
  * ]|
  *
  * A caller interested in catching any runtime error when creating a
- * new #CoglContext would pass the address of a #CoglError pointer
+ * new #cg_context_t would pass the address of a #cg_error_t pointer
  * that has first been initialized to %NULL as follows:
  *
  * |[
- *   CoglError *error = NULL;
- *   CoglContext *context;
+ *   cg_error_t *error = NULL;
+ *   cg_context_t *context;
  *
- *   context = cogl_context_new (NULL, &error);
+ *   context = cg_context_new (NULL, &error);
  * ]|
  *
  * The return status should usually be enough to determine if there
@@ -82,7 +82,7 @@ COGL_BEGIN_DECLS
  *     {
  *       fprintf (stderr, "Failed to create a Cogl context: %s\n",
  *                error->message);
- *       cogl_error_free (error);
+ *       cg_error_free (error);
  *       abort ();
  *     }
  * ]|
@@ -95,12 +95,12 @@ COGL_BEGIN_DECLS
  * above example is essentially redundant because it's what Cogl would
  * have done automatically and so, similarly, if your application has
  * no way to recover from a particular error you might just as well
- * pass a %NULL #CoglError pointer to save a bit of typing.
+ * pass a %NULL #cg_error_t pointer to save a bit of typing.
  *
  * <note>If you are used to using the GLib API you will probably
- * recognize that #CoglError is just like a #GError. In fact if Cogl
+ * recognize that #cg_error_t is just like a #GError. In fact if Cogl
  * has been built with --enable-glib then it is safe to cast a
- * #CoglError to a #GError.</note>
+ * #cg_error_t to a #GError.</note>
  *
  * <note>An important detail to be aware of if you are used to using
  * GLib's GError API is that Cogl deviates from the GLib GError
@@ -112,42 +112,40 @@ COGL_BEGIN_DECLS
  */
 
 /**
- * CoglError:
+ * cg_error_t:
  * @domain: A high-level domain identifier for the error
  * @code: A specific error code within a specified domain
  * @message: A human readable error message
  */
-typedef struct _CoglError {
-  uint32_t domain;
-  int code;
-  char *message;
-} CoglError;
+typedef struct _cg_error_t {
+    uint32_t domain;
+    int code;
+    char *message;
+} cg_error_t;
 
 /**
- * cogl_error_free:
- * @error: A #CoglError thrown by the Cogl api
+ * cg_error_free:
+ * @error: A #cg_error_t thrown by the Cogl api
  *
- * Frees a #CoglError and associated resources.
+ * Frees a #cg_error_t and associated resources.
  */
-void
-cogl_error_free (CoglError *error);
+void cg_error_free(cg_error_t *error);
 
 /**
- * cogl_error_copy:
- * @error: A #CoglError thrown by the Cogl api
+ * cg_error_copy:
+ * @error: A #cg_error_t thrown by the Cogl api
  *
  * Makes a copy of @error which can later be freed using
- * cogl_error_free().
+ * cg_error_free().
  *
- * Return value: A newly allocated #CoglError initialized to match the
+ * Return value: A newly allocated #cg_error_t initialized to match the
  *               contents of @error.
  */
-CoglError *
-cogl_error_copy (CoglError *error);
+cg_error_t *cg_error_copy(cg_error_t *error);
 
 /**
- * cogl_error_matches:
- * @error: A #CoglError thrown by the Cogl api or %NULL
+ * cg_error_matches:
+ * @error: A #cg_error_t thrown by the Cogl api or %NULL
  * @domain: The error domain
  * @code: The error code
  *
@@ -157,25 +155,22 @@ cogl_error_copy (CoglError *error);
  * Return value: whether the @error corresponds to the given @domain
  *               and @code.
  */
-bool
-cogl_error_matches (CoglError *error,
-                    uint32_t domain,
-                    int code);
+bool cg_error_matches(cg_error_t *error, uint32_t domain, int code);
 
 /**
- * COGL_GLIB_ERROR:
- * @COGL_ERROR: A #CoglError thrown by the Cogl api or %NULL
+ * CG_GLIB_ERROR:
+ * @CG_ERROR: A #cg_error_t thrown by the Cogl api or %NULL
  *
- * Simply casts a #CoglError to a #GError
+ * Simply casts a #cg_error_t to a #GError
  *
  * If Cogl is built with GLib support then it can safely be assumed
- * that a CoglError is a GError and can be used directly with the
+ * that a cg_error_t is a GError and can be used directly with the
  * GError api.
  */
-#ifdef COGL_HAS_GLIB_SUPPORT
-#define COGL_GLIB_ERROR(COGL_ERROR) ((GError *)COGL_ERROR)
+#ifdef CG_HAS_GLIB_SUPPORT
+#define CG_GLIB_ERROR(CG_ERROR) ((GError *)CG_ERROR)
 #endif
 
-COGL_END_DECLS
+CG_END_DECLS
 
-#endif /* __COGL_ERROR_H__ */
+#endif /* __CG_ERROR_H__ */

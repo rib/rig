@@ -40,62 +40,55 @@
 #include "cogl-attribute-buffer-private.h"
 #include "cogl-context-private.h"
 
-static void _cogl_attribute_buffer_free (CoglAttributeBuffer *array);
+static void _cg_attribute_buffer_free(cg_attribute_buffer_t *array);
 
-COGL_BUFFER_DEFINE (AttributeBuffer, attribute_buffer);
+CG_BUFFER_DEFINE(AttributeBuffer, attribute_buffer);
 
-CoglAttributeBuffer *
-cogl_attribute_buffer_new_with_size (CoglContext *context,
-                                     size_t bytes)
+cg_attribute_buffer_t *
+cg_attribute_buffer_new_with_size(cg_context_t *context,
+                                  size_t bytes)
 {
-  CoglAttributeBuffer *buffer = c_slice_new (CoglAttributeBuffer);
+    cg_attribute_buffer_t *buffer = c_slice_new(cg_attribute_buffer_t);
 
-  /* parent's constructor */
-  _cogl_buffer_initialize (COGL_BUFFER (buffer),
-                           context,
-                           bytes,
-                           COGL_BUFFER_BIND_TARGET_ATTRIBUTE_BUFFER,
-                           COGL_BUFFER_USAGE_HINT_ATTRIBUTE_BUFFER,
-                           COGL_BUFFER_UPDATE_HINT_STATIC);
+    /* parent's constructor */
+    _cg_buffer_initialize(CG_BUFFER(buffer),
+                          context,
+                          bytes,
+                          CG_BUFFER_BIND_TARGET_ATTRIBUTE_BUFFER,
+                          CG_BUFFER_USAGE_HINT_ATTRIBUTE_BUFFER,
+                          CG_BUFFER_UPDATE_HINT_STATIC);
 
-  return _cogl_attribute_buffer_object_new (buffer);
+    return _cg_attribute_buffer_object_new(buffer);
 }
 
-CoglAttributeBuffer *
-cogl_attribute_buffer_new (CoglContext *context,
-                           size_t bytes,
-                           const void *data)
+cg_attribute_buffer_t *
+cg_attribute_buffer_new(cg_context_t *context, size_t bytes, const void *data)
 {
-  CoglAttributeBuffer *buffer;
+    cg_attribute_buffer_t *buffer;
 
-  _COGL_RETURN_VAL_IF_FAIL (data, NULL);
+    _CG_RETURN_VAL_IF_FAIL(data, NULL);
 
-  buffer = cogl_attribute_buffer_new_with_size (context, bytes);
+    buffer = cg_attribute_buffer_new_with_size(context, bytes);
 
-  /* Note: to keep the common cases simple this API doesn't throw
-   * CoglErrors, so developers can assume this function never returns
-   * NULL and we will simply abort on error.
-   *
-   * Developers wanting to catch errors can use
-   * cogl_attribute_buffer_new_with_size() and catch errors when later
-   * calling cogl_buffer_set_data() or cogl_buffer_map().
-   */
+    /* Note: to keep the common cases simple this API doesn't throw
+     * cg_error_ts, so developers can assume this function never returns
+     * NULL and we will simply abort on error.
+     *
+     * Developers wanting to catch errors can use
+     * cg_attribute_buffer_new_with_size() and catch errors when later
+     * calling cg_buffer_set_data() or cg_buffer_map().
+     */
 
-  cogl_buffer_set_data (COGL_BUFFER (buffer),
-                        0,
-                        data,
-                        bytes,
-                        NULL);
+    cg_buffer_set_data(CG_BUFFER(buffer), 0, data, bytes, NULL);
 
-  return buffer;
+    return buffer;
 }
 
 static void
-_cogl_attribute_buffer_free (CoglAttributeBuffer *array)
+_cg_attribute_buffer_free(cg_attribute_buffer_t *array)
 {
-  /* parent's destructor */
-  _cogl_buffer_fini (COGL_BUFFER (array));
+    /* parent's destructor */
+    _cg_buffer_fini(CG_BUFFER(array));
 
-  c_slice_free (CoglAttributeBuffer, array);
+    c_slice_free(cg_attribute_buffer_t, array);
 }
-

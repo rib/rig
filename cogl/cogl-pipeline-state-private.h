@@ -31,160 +31,128 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#ifndef __COGL_PIPELINE_STATE_PRIVATE_H
-#define __COGL_PIPELINE_STATE_PRIVATE_H
+#ifndef __CG_PIPELINE_STATE_PRIVATE_H
+#define __CG_PIPELINE_STATE_PRIVATE_H
 
 #include "cogl-pipeline-private.h"
 
 /* This is used heavily by the cogl journal when logging quads */
 static inline void
-_cogl_pipeline_get_colorubv (CoglPipeline *pipeline,
-                             uint8_t *color)
+_cg_pipeline_get_colorubv(cg_pipeline_t *pipeline,
+                          uint8_t *color)
 {
-  CoglPipeline *authority =
-    _cogl_pipeline_get_authority (pipeline, COGL_PIPELINE_STATE_COLOR);
-  const CoglColor *cogl_color = &authority->color;
+    cg_pipeline_t *authority =
+        _cg_pipeline_get_authority(pipeline, CG_PIPELINE_STATE_COLOR);
+    const cg_color_t *cg_color = &authority->color;
 
-  color[0] = cogl_color->red * 255;
-  color[1] = cogl_color->green * 255;
-  color[2] = cogl_color->blue * 255;
-  color[3] = cogl_color->alpha * 255;
+    color[0] = cg_color->red * 255;
+    color[1] = cg_color->green * 255;
+    color[2] = cg_color->blue * 255;
+    color[3] = cg_color->alpha * 255;
 }
 
-bool
-_cogl_pipeline_has_vertex_snippets (CoglPipeline *pipeline);
+bool _cg_pipeline_has_vertex_snippets(cg_pipeline_t *pipeline);
 
-bool
-_cogl_pipeline_has_fragment_snippets (CoglPipeline *pipeline);
+bool _cg_pipeline_has_fragment_snippets(cg_pipeline_t *pipeline);
 
-bool
-_cogl_pipeline_has_non_layer_vertex_snippets (CoglPipeline *pipeline);
+bool _cg_pipeline_has_non_layer_vertex_snippets(cg_pipeline_t *pipeline);
 
-bool
-_cogl_pipeline_has_non_layer_fragment_snippets (CoglPipeline *pipeline);
+bool _cg_pipeline_has_non_layer_fragment_snippets(cg_pipeline_t *pipeline);
 
-bool
-_cogl_pipeline_color_equal (CoglPipeline *authority0,
-                            CoglPipeline *authority1);
+bool _cg_pipeline_color_equal(cg_pipeline_t *authority0,
+                              cg_pipeline_t *authority1);
 
-bool
-_cogl_pipeline_alpha_func_state_equal (CoglPipeline *authority0,
-                                       CoglPipeline *authority1);
+bool _cg_pipeline_alpha_func_state_equal(cg_pipeline_t *authority0,
+                                         cg_pipeline_t *authority1);
 
-bool
-_cogl_pipeline_alpha_func_reference_state_equal (CoglPipeline *authority0,
-                                                 CoglPipeline *authority1);
+bool _cg_pipeline_alpha_func_reference_state_equal(cg_pipeline_t *authority0,
+                                                   cg_pipeline_t *authority1);
 
-bool
-_cogl_pipeline_blend_state_equal (CoglPipeline *authority0,
-                                  CoglPipeline *authority1);
+bool _cg_pipeline_blend_state_equal(cg_pipeline_t *authority0,
+                                    cg_pipeline_t *authority1);
 
-bool
-_cogl_pipeline_depth_state_equal (CoglPipeline *authority0,
-                                  CoglPipeline *authority1);
+bool _cg_pipeline_depth_state_equal(cg_pipeline_t *authority0,
+                                    cg_pipeline_t *authority1);
 
-bool
-_cogl_pipeline_non_zero_point_size_equal (CoglPipeline *authority0,
-                                          CoglPipeline *authority1);
+bool _cg_pipeline_non_zero_point_size_equal(cg_pipeline_t *authority0,
+                                            cg_pipeline_t *authority1);
 
-bool
-_cogl_pipeline_point_size_equal (CoglPipeline *authority0,
-                                 CoglPipeline *authority1);
-bool
-_cogl_pipeline_per_vertex_point_size_equal (CoglPipeline *authority0,
-                                            CoglPipeline *authority1);
+bool _cg_pipeline_point_size_equal(cg_pipeline_t *authority0,
+                                   cg_pipeline_t *authority1);
+bool _cg_pipeline_per_vertex_point_size_equal(cg_pipeline_t *authority0,
+                                              cg_pipeline_t *authority1);
 
-bool
-_cogl_pipeline_logic_ops_state_equal (CoglPipeline *authority0,
-                                      CoglPipeline *authority1);
+bool _cg_pipeline_logic_ops_state_equal(cg_pipeline_t *authority0,
+                                        cg_pipeline_t *authority1);
 
-bool
-_cogl_pipeline_user_shader_equal (CoglPipeline *authority0,
-                                  CoglPipeline *authority1);
+bool _cg_pipeline_user_shader_equal(cg_pipeline_t *authority0,
+                                    cg_pipeline_t *authority1);
 
-bool
-_cogl_pipeline_cull_face_state_equal (CoglPipeline *authority0,
-                                      CoglPipeline *authority1);
+bool _cg_pipeline_cull_face_state_equal(cg_pipeline_t *authority0,
+                                        cg_pipeline_t *authority1);
 
-bool
-_cogl_pipeline_uniforms_state_equal (CoglPipeline *authority0,
-                                     CoglPipeline *authority1);
+bool _cg_pipeline_uniforms_state_equal(cg_pipeline_t *authority0,
+                                       cg_pipeline_t *authority1);
 
-bool
-_cogl_pipeline_vertex_snippets_state_equal (CoglPipeline *authority0,
-                                            CoglPipeline *authority1);
+bool _cg_pipeline_vertex_snippets_state_equal(cg_pipeline_t *authority0,
+                                              cg_pipeline_t *authority1);
 
-bool
-_cogl_pipeline_fragment_snippets_state_equal (CoglPipeline *authority0,
-                                              CoglPipeline *authority1);
+bool _cg_pipeline_fragment_snippets_state_equal(cg_pipeline_t *authority0,
+                                                cg_pipeline_t *authority1);
+
+void _cg_pipeline_hash_color_state(cg_pipeline_t *authority,
+                                   cg_pipeline_hash_state_t *state);
+
+void _cg_pipeline_hash_blend_enable_state(cg_pipeline_t *authority,
+                                          cg_pipeline_hash_state_t *state);
+
+void _cg_pipeline_hash_layers_state(cg_pipeline_t *authority,
+                                    cg_pipeline_hash_state_t *state);
+
+void _cg_pipeline_hash_alpha_func_state(cg_pipeline_t *authority,
+                                        cg_pipeline_hash_state_t *state);
 
 void
-_cogl_pipeline_hash_color_state (CoglPipeline *authority,
-                                 CoglPipelineHashState *state);
+_cg_pipeline_hash_alpha_func_reference_state(cg_pipeline_t *authority,
+                                             cg_pipeline_hash_state_t *state);
+
+void _cg_pipeline_hash_blend_state(cg_pipeline_t *authority,
+                                   cg_pipeline_hash_state_t *state);
+
+void _cg_pipeline_hash_user_shader_state(cg_pipeline_t *authority,
+                                         cg_pipeline_hash_state_t *state);
+
+void _cg_pipeline_hash_depth_state(cg_pipeline_t *authority,
+                                   cg_pipeline_hash_state_t *state);
 
 void
-_cogl_pipeline_hash_blend_enable_state (CoglPipeline *authority,
-                                        CoglPipelineHashState *state);
+_cg_pipeline_hash_non_zero_point_size_state(cg_pipeline_t *authority,
+                                            cg_pipeline_hash_state_t *state);
+
+void _cg_pipeline_hash_point_size_state(cg_pipeline_t *authority,
+                                        cg_pipeline_hash_state_t *state);
 
 void
-_cogl_pipeline_hash_layers_state (CoglPipeline *authority,
-                                  CoglPipelineHashState *state);
+_cg_pipeline_hash_per_vertex_point_size_state(cg_pipeline_t *authority,
+                                              cg_pipeline_hash_state_t *state);
 
-void
-_cogl_pipeline_hash_alpha_func_state (CoglPipeline *authority,
-                                      CoglPipelineHashState *state);
+void _cg_pipeline_hash_logic_ops_state(cg_pipeline_t *authority,
+                                       cg_pipeline_hash_state_t *state);
 
-void
-_cogl_pipeline_hash_alpha_func_reference_state (CoglPipeline *authority,
-                                                CoglPipelineHashState *state);
+void _cg_pipeline_hash_cull_face_state(cg_pipeline_t *authority,
+                                       cg_pipeline_hash_state_t *state);
 
-void
-_cogl_pipeline_hash_blend_state (CoglPipeline *authority,
-                                 CoglPipelineHashState *state);
+void _cg_pipeline_hash_uniforms_state(cg_pipeline_t *authority,
+                                      cg_pipeline_hash_state_t *state);
 
-void
-_cogl_pipeline_hash_user_shader_state (CoglPipeline *authority,
-                                       CoglPipelineHashState *state);
+void _cg_pipeline_hash_vertex_snippets_state(cg_pipeline_t *authority,
+                                             cg_pipeline_hash_state_t *state);
 
-void
-_cogl_pipeline_hash_depth_state (CoglPipeline *authority,
-                                 CoglPipelineHashState *state);
+void _cg_pipeline_hash_fragment_snippets_state(cg_pipeline_t *authority,
+                                               cg_pipeline_hash_state_t *state);
 
-void
-_cogl_pipeline_hash_non_zero_point_size_state (CoglPipeline *authority,
-                                               CoglPipelineHashState *state);
+void _cg_pipeline_compare_uniform_differences(unsigned long *differences,
+                                              cg_pipeline_t *pipeline0,
+                                              cg_pipeline_t *pipeline1);
 
-void
-_cogl_pipeline_hash_point_size_state (CoglPipeline *authority,
-                                      CoglPipelineHashState *state);
-
-void
-_cogl_pipeline_hash_per_vertex_point_size_state (CoglPipeline *authority,
-                                                 CoglPipelineHashState *state);
-
-void
-_cogl_pipeline_hash_logic_ops_state (CoglPipeline *authority,
-                                     CoglPipelineHashState *state);
-
-void
-_cogl_pipeline_hash_cull_face_state (CoglPipeline *authority,
-                                     CoglPipelineHashState *state);
-
-void
-_cogl_pipeline_hash_uniforms_state (CoglPipeline *authority,
-                                    CoglPipelineHashState *state);
-
-void
-_cogl_pipeline_hash_vertex_snippets_state (CoglPipeline *authority,
-                                           CoglPipelineHashState *state);
-
-void
-_cogl_pipeline_hash_fragment_snippets_state (CoglPipeline *authority,
-                                             CoglPipelineHashState *state);
-
-void
-_cogl_pipeline_compare_uniform_differences (unsigned long *differences,
-                                            CoglPipeline *pipeline0,
-                                            CoglPipeline *pipeline1);
-
-#endif /* __COGL_PIPELINE_STATE_PRIVATE_H */
+#endif /* __CG_PIPELINE_STATE_PRIVATE_H */

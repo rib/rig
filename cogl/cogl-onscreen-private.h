@@ -28,8 +28,8 @@
  *
  */
 
-#ifndef __COGL_ONSCREEN_PRIVATE_H
-#define __COGL_ONSCREEN_PRIVATE_H
+#ifndef __CG_ONSCREEN_PRIVATE_H
+#define __CG_ONSCREEN_PRIVATE_H
 
 #include "cogl-onscreen.h"
 #include "cogl-framebuffer-private.h"
@@ -38,87 +38,79 @@
 
 #include <clib.h>
 
-#ifdef COGL_HAS_WIN32_SUPPORT
+#ifdef CG_HAS_WIN32_SUPPORT
 #include <windows.h>
 #endif
 
-typedef struct _CoglOnscreenEvent
-{
-  CoglList link;
+typedef struct _cg_onscreen_event_t {
+    cg_list_t link;
 
-  CoglOnscreen *onscreen;
-  CoglFrameInfo *info;
-  CoglFrameEvent type;
-} CoglOnscreenEvent;
+    cg_onscreen_t *onscreen;
+    cg_frame_info_t *info;
+    cg_frame_event_t type;
+} cg_onscreen_event_t;
 
-typedef struct _CoglOnscreenQueuedDirty
-{
-  CoglList link;
+typedef struct _cg_onscreen_queued_dirty_t {
+    cg_list_t link;
 
-  CoglOnscreen *onscreen;
-  CoglOnscreenDirtyInfo info;
-} CoglOnscreenQueuedDirty;
+    cg_onscreen_t *onscreen;
+    cg_onscreen_dirty_info_t info;
+} cg_onscreen_queued_dirty_t;
 
-struct _CoglOnscreen
-{
-  CoglFramebuffer  _parent;
+struct _cg_onscreen_t {
+    cg_framebuffer_t _parent;
 
-#ifdef COGL_HAS_X11_SUPPORT
-  uint32_t foreign_xid;
-  CoglOnscreenX11MaskCallback foreign_update_mask_callback;
-  void *foreign_update_mask_data;
+#ifdef CG_HAS_X11_SUPPORT
+    uint32_t foreign_xid;
+    cg_onscreen_x11_mask_callback_t foreign_update_mask_callback;
+    void *foreign_update_mask_data;
 #endif
 
-#ifdef COGL_HAS_WIN32_SUPPORT
-  HWND foreign_hwnd;
+#ifdef CG_HAS_WIN32_SUPPORT
+    HWND foreign_hwnd;
 #endif
 
-#ifdef COGL_HAS_EGL_PLATFORM_WAYLAND_SUPPORT
-  struct wl_surface *foreign_surface;
+#ifdef CG_HAS_EGL_PLATFORM_WAYLAND_SUPPORT
+    struct wl_surface *foreign_surface;
 #endif
 
-  bool swap_throttled;
+    bool swap_throttled;
 
-  CoglList frame_closures;
+    cg_list_t frame_closures;
 
-  bool resizable;
-  CoglList resize_closures;
+    bool resizable;
+    cg_list_t resize_closures;
 
-  CoglList dirty_closures;
+    cg_list_t dirty_closures;
 
-  int64_t frame_counter;
-  int64_t swap_frame_counter; /* frame counter at last all to
-                               * cogl_onscreen_swap_region() or
-                               * cogl_onscreen_swap_buffers() */
-  c_queue_t pending_frame_infos;
+    int64_t frame_counter;
+    int64_t swap_frame_counter; /* frame counter at last all to
+                                * cg_onscreen_swap_region() or
+                                * cg_onscreen_swap_buffers() */
+    c_queue_t pending_frame_infos;
 
-  void *winsys;
+    void *winsys;
 };
 
-void
-_cogl_framebuffer_winsys_update_size (CoglFramebuffer *framebuffer,
-                                      int width, int height);
+void _cg_framebuffer_winsys_update_size(cg_framebuffer_t *framebuffer,
+                                        int width,
+                                        int height);
 
-void
-_cogl_onscreen_queue_event (CoglOnscreen *onscreen,
-                            CoglFrameEvent type,
-                            CoglFrameInfo *info);
+void _cg_onscreen_queue_event(cg_onscreen_t *onscreen,
+                              cg_frame_event_t type,
+                              cg_frame_info_t *info);
 
-void
-_cogl_onscreen_notify_frame_sync (CoglOnscreen *onscreen, CoglFrameInfo *info);
+void _cg_onscreen_notify_frame_sync(cg_onscreen_t *onscreen,
+                                    cg_frame_info_t *info);
 
-void
-_cogl_onscreen_notify_complete (CoglOnscreen *onscreen, CoglFrameInfo *info);
+void _cg_onscreen_notify_complete(cg_onscreen_t *onscreen,
+                                  cg_frame_info_t *info);
 
-void
-_cogl_onscreen_notify_resize (CoglOnscreen *onscreen);
+void _cg_onscreen_notify_resize(cg_onscreen_t *onscreen);
 
-void
-_cogl_onscreen_queue_dirty (CoglOnscreen *onscreen,
-                            const CoglOnscreenDirtyInfo *info);
+void _cg_onscreen_queue_dirty(cg_onscreen_t *onscreen,
+                              const cg_onscreen_dirty_info_t *info);
 
+void _cg_onscreen_queue_full_dirty(cg_onscreen_t *onscreen);
 
-void
-_cogl_onscreen_queue_full_dirty (CoglOnscreen *onscreen);
-
-#endif /* __COGL_ONSCREEN_PRIVATE_H */
+#endif /* __CG_ONSCREEN_PRIVATE_H */

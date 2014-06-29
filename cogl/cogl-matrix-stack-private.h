@@ -32,156 +32,139 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#ifndef _COGL_MATRIX_STACK_PRIVATE_H_
-#define _COGL_MATRIX_STACK_PRIVATE_H_
+#ifndef _CG_MATRIX_STACK_PRIVATE_H_
+#define _CG_MATRIX_STACK_PRIVATE_H_
 
 #include "cogl-object-private.h"
 #include "cogl-matrix-stack.h"
 #include "cogl-context.h"
 #include "cogl-framebuffer.h"
 
-typedef enum _CoglMatrixOp
-{
-  COGL_MATRIX_OP_LOAD_IDENTITY,
-  COGL_MATRIX_OP_TRANSLATE,
-  COGL_MATRIX_OP_ROTATE,
-  COGL_MATRIX_OP_ROTATE_QUATERNION,
-  COGL_MATRIX_OP_ROTATE_EULER,
-  COGL_MATRIX_OP_SCALE,
-  COGL_MATRIX_OP_MULTIPLY,
-  COGL_MATRIX_OP_LOAD,
-  COGL_MATRIX_OP_SAVE,
-} CoglMatrixOp;
+typedef enum _cg_matrix_op_t {
+    CG_MATRIX_OP_LOAD_IDENTITY,
+    CG_MATRIX_OP_TRANSLATE,
+    CG_MATRIX_OP_ROTATE,
+    CG_MATRIX_OP_ROTATE_QUATERNION,
+    CG_MATRIX_OP_ROTATE_EULER,
+    CG_MATRIX_OP_SCALE,
+    CG_MATRIX_OP_MULTIPLY,
+    CG_MATRIX_OP_LOAD,
+    CG_MATRIX_OP_SAVE,
+} cg_matrix_op_t;
 
-struct _CoglMatrixEntry
-{
-  CoglMatrixEntry *parent;
-  CoglMatrixOp op;
-  unsigned int ref_count;
+struct _cg_matrix_entry_t {
+    cg_matrix_entry_t *parent;
+    cg_matrix_op_t op;
+    unsigned int ref_count;
 
-#ifdef COGL_DEBUG_ENABLED
-  /* used for performance tracing */
-  int composite_gets;
+#ifdef CG_DEBUG_ENABLED
+    /* used for performance tracing */
+    int composite_gets;
 #endif
 };
 
-typedef struct _CoglMatrixEntryTranslate
-{
-  CoglMatrixEntry _parent_data;
+typedef struct _cg_matrix_entry_translate_t {
+    cg_matrix_entry_t _parent_data;
 
-  float x;
-  float y;
-  float z;
+    float x;
+    float y;
+    float z;
 
-} CoglMatrixEntryTranslate;
+} cg_matrix_entry_translate_t;
 
-typedef struct _CoglMatrixEntryRotate
-{
-  CoglMatrixEntry _parent_data;
+typedef struct _cg_matrix_entry_rotate_t {
+    cg_matrix_entry_t _parent_data;
 
-  float angle;
-  float x;
-  float y;
-  float z;
+    float angle;
+    float x;
+    float y;
+    float z;
 
-} CoglMatrixEntryRotate;
+} cg_matrix_entry_rotate_t;
 
-typedef struct _CoglMatrixEntryRotateEuler
-{
-  CoglMatrixEntry _parent_data;
+typedef struct _cg_matrix_entry_rotate_euler_t {
+    cg_matrix_entry_t _parent_data;
 
-  /* This doesn't store an actual CoglEuler in order to avoid the
-   * padding */
-  float heading;
-  float pitch;
-  float roll;
-} CoglMatrixEntryRotateEuler;
+    /* This doesn't store an actual cg_euler_t in order to avoid the
+     * padding */
+    float heading;
+    float pitch;
+    float roll;
+} cg_matrix_entry_rotate_euler_t;
 
-typedef struct _CoglMatrixEntryRotateQuaternion
-{
-  CoglMatrixEntry _parent_data;
+typedef struct _cg_matrix_entry_rotate_quaternion_t {
+    cg_matrix_entry_t _parent_data;
 
-  /* This doesn't store an actual CoglQuaternion in order to avoid the
-   * padding */
-  float values[4];
-} CoglMatrixEntryRotateQuaternion;
+    /* This doesn't store an actual cg_quaternion_t in order to avoid the
+     * padding */
+    float values[4];
+} cg_matrix_entry_rotate_quaternion_t;
 
-typedef struct _CoglMatrixEntryScale
-{
-  CoglMatrixEntry _parent_data;
+typedef struct _cg_matrix_entry_scale_t {
+    cg_matrix_entry_t _parent_data;
 
-  float x;
-  float y;
-  float z;
+    float x;
+    float y;
+    float z;
 
-} CoglMatrixEntryScale;
+} cg_matrix_entry_scale_t;
 
-typedef struct _CoglMatrixEntryMultiply
-{
-  CoglMatrixEntry _parent_data;
+typedef struct _cg_matrix_entry_multiply_t {
+    cg_matrix_entry_t _parent_data;
 
-  CoglMatrix *matrix;
+    cg_matrix_t *matrix;
 
-} CoglMatrixEntryMultiply;
+} cg_matrix_entry_multiply_t;
 
-typedef struct _CoglMatrixEntryLoad
-{
-  CoglMatrixEntry _parent_data;
+typedef struct _cg_matrix_entry_load_t {
+    cg_matrix_entry_t _parent_data;
 
-  CoglMatrix *matrix;
+    cg_matrix_t *matrix;
 
-} CoglMatrixEntryLoad;
+} cg_matrix_entry_load_t;
 
-typedef struct _CoglMatrixEntrySave
-{
-  CoglMatrixEntry _parent_data;
+typedef struct _cg_matrix_entry_save_t {
+    cg_matrix_entry_t _parent_data;
 
-  CoglMatrix *cache;
-  bool cache_valid;
+    cg_matrix_t *cache;
+    bool cache_valid;
 
-} CoglMatrixEntrySave;
+} cg_matrix_entry_save_t;
 
-typedef union _CoglMatrixEntryFull
-{
-  CoglMatrixEntry any;
-  CoglMatrixEntryTranslate translate;
-  CoglMatrixEntryRotate rotate;
-  CoglMatrixEntryRotateEuler rotate_euler;
-  CoglMatrixEntryRotateQuaternion rotate_quaternion;
-  CoglMatrixEntryScale scale;
-  CoglMatrixEntryMultiply multiply;
-  CoglMatrixEntryLoad load;
-  CoglMatrixEntrySave save;
-} CoglMatrixEntryFull;
+typedef union _cg_matrix_entry_full_t {
+    cg_matrix_entry_t any;
+    cg_matrix_entry_translate_t translate;
+    cg_matrix_entry_rotate_t rotate;
+    cg_matrix_entry_rotate_euler_t rotate_euler;
+    cg_matrix_entry_rotate_quaternion_t rotate_quaternion;
+    cg_matrix_entry_scale_t scale;
+    cg_matrix_entry_multiply_t multiply;
+    cg_matrix_entry_load_t load;
+    cg_matrix_entry_save_t save;
+} cg_matrix_entry_full_t;
 
-struct _CoglMatrixStack
-{
-  CoglObject _parent;
+struct _cg_matrix_stack_t {
+    cg_object_t _parent;
 
-  CoglContext *context;
+    cg_context_t *context;
 
-  CoglMatrixEntry *last_entry;
+    cg_matrix_entry_t *last_entry;
 };
 
-typedef struct _CoglMatrixEntryCache
-{
-  CoglMatrixEntry *entry;
-  bool flushed_identity;
-  bool flipped;
-} CoglMatrixEntryCache;
+typedef struct _cg_matrix_entry_cache_t {
+    cg_matrix_entry_t *entry;
+    bool flushed_identity;
+    bool flipped;
+} cg_matrix_entry_cache_t;
 
-void
-_cogl_matrix_entry_identity_init (CoglMatrixEntry *entry);
+void _cg_matrix_entry_identity_init(cg_matrix_entry_t *entry);
 
-void
-_cogl_matrix_entry_cache_init (CoglMatrixEntryCache *cache);
+void _cg_matrix_entry_cache_init(cg_matrix_entry_cache_t *cache);
 
-bool
-_cogl_matrix_entry_cache_maybe_update (CoglMatrixEntryCache *cache,
-                                       CoglMatrixEntry *entry,
-                                       bool flip);
+bool _cg_matrix_entry_cache_maybe_update(cg_matrix_entry_cache_t *cache,
+                                         cg_matrix_entry_t *entry,
+                                         bool flip);
 
-void
-_cogl_matrix_entry_cache_destroy (CoglMatrixEntryCache *cache);
+void _cg_matrix_entry_cache_destroy(cg_matrix_entry_cache_t *cache);
 
-#endif /* _COGL_MATRIX_STACK_PRIVATE_H_ */
+#endif /* _CG_MATRIX_STACK_PRIVATE_H_ */

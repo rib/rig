@@ -31,72 +31,58 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#ifndef __COGL_FRAMEBUFFER_GL_PRIVATE_H__
-#define __COGL_FRAMEBUFFER_GL_PRIVATE_H__
+#ifndef __CG_FRAMEBUFFER_GL_PRIVATE_H__
+#define __CG_FRAMEBUFFER_GL_PRIVATE_H__
 
-bool
-_cogl_offscreen_gl_allocate (CoglOffscreen *offscreen,
-                             CoglError **error);
+bool _cg_offscreen_gl_allocate(cg_offscreen_t *offscreen, cg_error_t **error);
 
-void
-_cogl_offscreen_gl_free (CoglOffscreen *offscreen);
+void _cg_offscreen_gl_free(cg_offscreen_t *offscreen);
 
-void
-_cogl_framebuffer_gl_flush_state (CoglFramebuffer *draw_buffer,
-                                  CoglFramebuffer *read_buffer,
-                                  CoglFramebufferState state);
+void _cg_framebuffer_gl_flush_state(cg_framebuffer_t *draw_buffer,
+                                    cg_framebuffer_t *read_buffer,
+                                    cg_framebuffer_state_t state);
 
-void
-_cogl_framebuffer_gl_clear (CoglFramebuffer *framebuffer,
-                            unsigned long buffers,
-                            float red,
-                            float green,
-                            float blue,
-                            float alpha);
+void _cg_framebuffer_gl_clear(cg_framebuffer_t *framebuffer,
+                              unsigned long buffers,
+                              float red,
+                              float green,
+                              float blue,
+                              float alpha);
 
-void
-_cogl_framebuffer_gl_query_bits (CoglFramebuffer *framebuffer,
-                                 CoglFramebufferBits *bits);
+void _cg_framebuffer_gl_query_bits(cg_framebuffer_t *framebuffer,
+                                   cg_framebuffer_bits_t *bits);
 
-void
-_cogl_framebuffer_gl_finish (CoglFramebuffer *framebuffer);
+void _cg_framebuffer_gl_finish(cg_framebuffer_t *framebuffer);
 
-void
-_cogl_framebuffer_gl_discard_buffers (CoglFramebuffer *framebuffer,
-                                      unsigned long buffers);
+void _cg_framebuffer_gl_discard_buffers(cg_framebuffer_t *framebuffer,
+                                        unsigned long buffers);
 
-void
-_cogl_framebuffer_gl_bind (CoglFramebuffer *framebuffer, GLenum target);
+void _cg_framebuffer_gl_bind(cg_framebuffer_t *framebuffer, GLenum target);
 
-void
-_cogl_framebuffer_gl_draw_attributes (CoglFramebuffer *framebuffer,
-                                      CoglPipeline *pipeline,
-                                      CoglVerticesMode mode,
-                                      int first_vertex,
-                                      int n_vertices,
-                                      CoglAttribute **attributes,
-                                      int n_attributes,
-                                      CoglDrawFlags flags);
+void _cg_framebuffer_gl_draw_attributes(cg_framebuffer_t *framebuffer,
+                                        cg_pipeline_t *pipeline,
+                                        cg_vertices_mode_t mode,
+                                        int first_vertex,
+                                        int n_vertices,
+                                        cg_attribute_t **attributes,
+                                        int n_attributes,
+                                        cg_draw_flags_t flags);
 
-void
-_cogl_framebuffer_gl_draw_indexed_attributes (CoglFramebuffer *framebuffer,
-                                              CoglPipeline *pipeline,
-                                              CoglVerticesMode mode,
-                                              int first_vertex,
-                                              int n_vertices,
-                                              CoglIndices *indices,
-                                              CoglAttribute **attributes,
-                                              int n_attributes,
-                                              CoglDrawFlags flags);
+void _cg_framebuffer_gl_draw_indexed_attributes(cg_framebuffer_t *framebuffer,
+                                                cg_pipeline_t *pipeline,
+                                                cg_vertices_mode_t mode,
+                                                int first_vertex,
+                                                int n_vertices,
+                                                cg_indices_t *indices,
+                                                cg_attribute_t **attributes,
+                                                int n_attributes,
+                                                cg_draw_flags_t flags);
 
-bool
-_cogl_framebuffer_gl_read_pixels_into_bitmap (CoglFramebuffer *framebuffer,
-                                              int x,
-                                              int y,
-                                              CoglReadPixelsFlags source,
-                                              CoglBitmap *bitmap,
-                                              CoglError **error);
+bool _cg_framebuffer_gl_read_pixels_into_bitmap(cg_framebuffer_t *framebuffer,
+                                                int x,
+                                                int y,
+                                                cg_read_pixels_flags_t source,
+                                                cg_bitmap_t *bitmap,
+                                                cg_error_t **error);
 
-#endif /* __COGL_FRAMEBUFFER_GL_PRIVATE_H__ */
-
-
+#endif /* __CG_FRAMEBUFFER_GL_PRIVATE_H__ */

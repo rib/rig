@@ -31,22 +31,22 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#if !defined(__COGL_H_INSIDE__) && !defined(COGL_COMPILATION)
+#if !defined(__CG_H_INSIDE__) && !defined(CG_COMPILATION)
 #error "Only <cogl/cogl.h> can be included directly."
 #endif
 
-#ifndef __COGL_ATTRIBUTE_H__
-#define __COGL_ATTRIBUTE_H__
+#ifndef __CG_ATTRIBUTE_H__
+#define __CG_ATTRIBUTE_H__
 
-/* We forward declare the CoglAttribute type here to avoid some circular
+/* We forward declare the cg_attribute_t type here to avoid some circular
  * dependency issues with the following headers.
  */
-typedef struct _CoglAttribute CoglAttribute;
+typedef struct _cg_attribute_t cg_attribute_t;
 
 #include <cogl/cogl-attribute-buffer.h>
 #include <cogl/cogl-indices.h>
 
-COGL_BEGIN_DECLS
+CG_BEGIN_DECLS
 
 /**
  * SECTION:cogl-attribute
@@ -57,8 +57,8 @@ COGL_BEGIN_DECLS
  */
 
 /**
- * cogl_attribute_new: (constructor)
- * @attribute_buffer: The #CoglAttributeBuffer containing the actual
+ * cg_attribute_new: (constructor)
+ * @attribute_buffer: The #cg_attribute_buffer_t containing the actual
  *                    attribute data
  * @name: The name of the attribute (used to reference it from GLSL)
  * @stride: The number of bytes to jump to get to the next attribute
@@ -78,15 +78,15 @@ COGL_BEGIN_DECLS
  * shader and there are some special names you should use if they are
  * applicable:
  *  <itemizedlist>
- *    <listitem>"cogl_position_in" (used for vertex positions)</listitem>
- *    <listitem>"cogl_color_in" (used for vertex colors)</listitem>
- *    <listitem>"cogl_tex_coord0_in", "cogl_tex_coord1", ...
+ *    <listitem>"cg_position_in" (used for vertex positions)</listitem>
+ *    <listitem>"cg_color_in" (used for vertex colors)</listitem>
+ *    <listitem>"cg_tex_coord0_in", "cg_tex_coord1", ...
  * (used for vertex texture coordinates)</listitem>
- *    <listitem>"cogl_normal_in" (used for vertex normals)</listitem>
- *    <listitem>"cogl_point_size_in" (used to set the size of points
+ *    <listitem>"cg_normal_in" (used for vertex normals)</listitem>
+ *    <listitem>"cg_point_size_in" (used to set the size of points
  *    per-vertex. Note this can only be used if
- *    %COGL_FEATURE_ID_POINT_SIZE_ATTRIBUTE is advertised and
- *    cogl_pipeline_set_per_vertex_point_size() is called on the pipeline.
+ *    %CG_FEATURE_ID_POINT_SIZE_ATTRIBUTE is advertised and
+ *    cg_pipeline_set_per_vertex_point_size() is called on the pipeline.
  *    </listitem>
  *  </itemizedlist>
  *
@@ -137,7 +137,7 @@ COGL_BEGIN_DECLS
  * mapped into the GPU which can be a bottlneck when dealing with
  * a large number of vertices.
  *
- * Return value: (transfer full): A newly allocated #CoglAttribute
+ * Return value: (transfer full): A newly allocated #cg_attribute_t
  *          describing the layout for a list of attribute values
  *          stored in @array.
  *
@@ -146,17 +146,16 @@ COGL_BEGIN_DECLS
  */
 /* XXX: look for a precedent to see if the stride/offset args should
  * have a different order. */
-CoglAttribute *
-cogl_attribute_new (CoglAttributeBuffer *attribute_buffer,
-                    const char *name,
-                    size_t stride,
-                    size_t offset,
-                    int components,
-                    CoglAttributeType type);
+cg_attribute_t *cg_attribute_new(cg_attribute_buffer_t *attribute_buffer,
+                                 const char *name,
+                                 size_t stride,
+                                 size_t offset,
+                                 int components,
+                                 cg_attribute_type_t type);
 
 /**
- * cogl_attribute_new_const_1f:
- * @context: A #CoglContext
+ * cg_attribute_new_const_1f:
+ * @context: A #cg_context_t
  * @name: The name of the attribute (used to reference it from GLSL)
  * @value: The constant value for the attribute
  *
@@ -171,17 +170,15 @@ cogl_attribute_new (CoglAttributeBuffer *attribute_buffer,
  * attribute float name;
  * |]
  *
- * Return value: (transfer full): A newly allocated #CoglAttribute
+ * Return value: (transfer full): A newly allocated #cg_attribute_t
  *          representing the given constant @value.
  */
-CoglAttribute *
-cogl_attribute_new_const_1f (CoglContext *context,
-                             const char *name,
-                             float value);
+cg_attribute_t *
+cg_attribute_new_const_1f(cg_context_t *context, const char *name, float value);
 
 /**
- * cogl_attribute_new_const_2f:
- * @context: A #CoglContext
+ * cg_attribute_new_const_2f:
+ * @context: A #cg_context_t
  * @name: The name of the attribute (used to reference it from GLSL)
  * @component0: The first component of a 2 component vector
  * @component1: The second component of a 2 component vector
@@ -198,18 +195,17 @@ cogl_attribute_new_const_1f (CoglContext *context,
  * in vec2 name;
  * |]
  *
- * Return value: (transfer full): A newly allocated #CoglAttribute
+ * Return value: (transfer full): A newly allocated #cg_attribute_t
  *          representing the given constant vector.
  */
-CoglAttribute *
-cogl_attribute_new_const_2f (CoglContext *context,
-                             const char *name,
-                             float component0,
-                             float component1);
+cg_attribute_t *cg_attribute_new_const_2f(cg_context_t *context,
+                                          const char *name,
+                                          float component0,
+                                          float component1);
 
 /**
- * cogl_attribute_new_const_3f:
- * @context: A #CoglContext
+ * cg_attribute_new_const_3f:
+ * @context: A #cg_context_t
  * @name: The name of the attribute (used to reference it from GLSL)
  * @component0: The first component of a 3 component vector
  * @component1: The second component of a 3 component vector
@@ -227,22 +223,21 @@ cogl_attribute_new_const_2f (CoglContext *context,
  * in vec3 name;
  * |]
  *
- * unless the built in name "cogl_normal_in" is being used where no
+ * unless the built in name "cg_normal_in" is being used where no
  * explicit GLSL declaration need be made.
  *
- * Return value: (transfer full): A newly allocated #CoglAttribute
+ * Return value: (transfer full): A newly allocated #cg_attribute_t
  *          representing the given constant vector.
  */
-CoglAttribute *
-cogl_attribute_new_const_3f (CoglContext *context,
-                             const char *name,
-                             float component0,
-                             float component1,
-                             float component2);
+cg_attribute_t *cg_attribute_new_const_3f(cg_context_t *context,
+                                          const char *name,
+                                          float component0,
+                                          float component1,
+                                          float component2);
 
 /**
- * cogl_attribute_new_const_4f:
- * @context: A #CoglContext
+ * cg_attribute_new_const_4f:
+ * @context: A #cg_context_t
  * @name: The name of the attribute (used to reference it from GLSL)
  * @component0: The first component of a 4 component vector
  * @component1: The second component of a 4 component vector
@@ -261,24 +256,23 @@ cogl_attribute_new_const_3f (CoglContext *context,
  * in vec4 name;
  * |]
  *
- * unless one of the built in names "cogl_color_in",
- * "cogl_tex_coord0_in or "cogl_tex_coord1_in" etc is being used where
+ * unless one of the built in names "cg_color_in",
+ * "cg_tex_coord0_in or "cg_tex_coord1_in" etc is being used where
  * no explicit GLSL declaration need be made.
  *
- * Return value: (transfer full): A newly allocated #CoglAttribute
+ * Return value: (transfer full): A newly allocated #cg_attribute_t
  *          representing the given constant vector.
  */
-CoglAttribute *
-cogl_attribute_new_const_4f (CoglContext *context,
-                             const char *name,
-                             float component0,
-                             float component1,
-                             float component2,
-                             float component3);
+cg_attribute_t *cg_attribute_new_const_4f(cg_context_t *context,
+                                          const char *name,
+                                          float component0,
+                                          float component1,
+                                          float component2,
+                                          float component3);
 
 /**
- * cogl_attribute_new_const_2fv:
- * @context: A #CoglContext
+ * cg_attribute_new_const_2fv:
+ * @context: A #cg_context_t
  * @name: The name of the attribute (used to reference it from GLSL)
  * @value: A pointer to a 2 component float vector
  *
@@ -294,17 +288,16 @@ cogl_attribute_new_const_4f (CoglContext *context,
  * in vec2 name;
  * |]
  *
- * Return value: (transfer full): A newly allocated #CoglAttribute
+ * Return value: (transfer full): A newly allocated #cg_attribute_t
  *          representing the given constant vector.
  */
-CoglAttribute *
-cogl_attribute_new_const_2fv (CoglContext *context,
-                              const char *name,
-                              const float *value);
+cg_attribute_t *cg_attribute_new_const_2fv(cg_context_t *context,
+                                           const char *name,
+                                           const float *value);
 
 /**
- * cogl_attribute_new_const_3fv:
- * @context: A #CoglContext
+ * cg_attribute_new_const_3fv:
+ * @context: A #cg_context_t
  * @name: The name of the attribute (used to reference it from GLSL)
  * @value: A pointer to a 3 component float vector
  *
@@ -320,20 +313,19 @@ cogl_attribute_new_const_2fv (CoglContext *context,
  * in vec3 name;
  * |]
  *
- * unless the built in name "cogl_normal_in" is being used where no
+ * unless the built in name "cg_normal_in" is being used where no
  * explicit GLSL declaration need be made.
  *
- * Return value: (transfer full): A newly allocated #CoglAttribute
+ * Return value: (transfer full): A newly allocated #cg_attribute_t
  *          representing the given constant vector.
  */
-CoglAttribute *
-cogl_attribute_new_const_3fv (CoglContext *context,
-                              const char *name,
-                              const float *value);
+cg_attribute_t *cg_attribute_new_const_3fv(cg_context_t *context,
+                                           const char *name,
+                                           const float *value);
 
 /**
- * cogl_attribute_new_const_4fv:
- * @context: A #CoglContext
+ * cg_attribute_new_const_4fv:
+ * @context: A #cg_context_t
  * @name: The name of the attribute (used to reference it from GLSL)
  * @value: A pointer to a 4 component float vector
  *
@@ -349,21 +341,20 @@ cogl_attribute_new_const_3fv (CoglContext *context,
  * in vec4 name;
  * |]
  *
- * unless one of the built in names "cogl_color_in",
- * "cogl_tex_coord0_in or "cogl_tex_coord1_in" etc is being used where
+ * unless one of the built in names "cg_color_in",
+ * "cg_tex_coord0_in or "cg_tex_coord1_in" etc is being used where
  * no explicit GLSL declaration need be made.
  *
- * Return value: (transfer full): A newly allocated #CoglAttribute
+ * Return value: (transfer full): A newly allocated #cg_attribute_t
  *          representing the given constant vector.
  */
-CoglAttribute *
-cogl_attribute_new_const_4fv (CoglContext *context,
-                              const char *name,
-                              const float *value);
+cg_attribute_t *cg_attribute_new_const_4fv(cg_context_t *context,
+                                           const char *name,
+                                           const float *value);
 
 /**
- * cogl_attribute_new_const_2x2fv:
- * @context: A #CoglContext
+ * cg_attribute_new_const_2x2fv:
+ * @context: A #cg_context_t
  * @name: The name of the attribute (used to reference it from GLSL)
  * @matrix2x2: A pointer to a 2 by 2 matrix
  * @transpose: Whether the matrix should be transposed on upload or
@@ -386,18 +377,17 @@ cogl_attribute_new_const_4fv (CoglContext *context,
  * around the diagonal of the matrix such that the first column
  * becomes the first row and the second column becomes the second row.
  *
- * Return value: (transfer full): A newly allocated #CoglAttribute
+ * Return value: (transfer full): A newly allocated #cg_attribute_t
  *          representing the given constant matrix.
  */
-CoglAttribute *
-cogl_attribute_new_const_2x2fv (CoglContext *context,
-                                const char *name,
-                                const float *matrix2x2,
-                                bool transpose);
+cg_attribute_t *cg_attribute_new_const_2x2fv(cg_context_t *context,
+                                             const char *name,
+                                             const float *matrix2x2,
+                                             bool transpose);
 
 /**
- * cogl_attribute_new_const_3x3fv:
- * @context: A #CoglContext
+ * cg_attribute_new_const_3x3fv:
+ * @context: A #cg_context_t
  * @name: The name of the attribute (used to reference it from GLSL)
  * @matrix3x3: A pointer to a 3 by 3 matrix
  * @transpose: Whether the matrix should be transposed on upload or
@@ -421,18 +411,17 @@ cogl_attribute_new_const_2x2fv (CoglContext *context,
  * becomes the first row and the second column becomes the second row
  * etc.
  *
- * Return value: (transfer full): A newly allocated #CoglAttribute
+ * Return value: (transfer full): A newly allocated #cg_attribute_t
  *          representing the given constant matrix.
  */
-CoglAttribute *
-cogl_attribute_new_const_3x3fv (CoglContext *context,
-                                const char *name,
-                                const float *matrix3x3,
-                                bool transpose);
+cg_attribute_t *cg_attribute_new_const_3x3fv(cg_context_t *context,
+                                             const char *name,
+                                             const float *matrix3x3,
+                                             bool transpose);
 
 /**
- * cogl_attribute_new_const_4x4fv:
- * @context: A #CoglContext
+ * cg_attribute_new_const_4x4fv:
+ * @context: A #cg_context_t
  * @name: The name of the attribute (used to reference it from GLSL)
  * @matrix4x4: A pointer to a 4 by 4 matrix
  * @transpose: Whether the matrix should be transposed on upload or
@@ -456,90 +445,82 @@ cogl_attribute_new_const_3x3fv (CoglContext *context,
  * becomes the first row and the second column becomes the second row
  * etc.
  *
- * Return value: (transfer full): A newly allocated #CoglAttribute
+ * Return value: (transfer full): A newly allocated #cg_attribute_t
  *          representing the given constant matrix.
  */
-CoglAttribute *
-cogl_attribute_new_const_4x4fv (CoglContext *context,
-                                const char *name,
-                                const float *matrix4x4,
-                                bool transpose);
+cg_attribute_t *cg_attribute_new_const_4x4fv(cg_context_t *context,
+                                             const char *name,
+                                             const float *matrix4x4,
+                                             bool transpose);
 
 /**
- * cogl_attribute_set_normalized:
- * @attribute: A #CoglAttribute
+ * cg_attribute_set_normalized:
+ * @attribute: A #cg_attribute_t
  * @normalized: The new value for the normalized property.
  *
  * Sets whether fixed point attribute types are mapped to the range
  * 0→1. For example when this property is true and a
- * %COGL_ATTRIBUTE_TYPE_UNSIGNED_BYTE type is used then the value 255
+ * %CG_ATTRIBUTE_TYPE_UNSIGNED_BYTE type is used then the value 255
  * will be mapped to 1.0.
  *
  * The default value of this property depends on the name of the
- * attribute. For the builtin properties cogl_color_in and
- * cogl_normal_in it will default to true and for all other names it
+ * attribute. For the builtin properties cg_color_in and
+ * cg_normal_in it will default to true and for all other names it
  * will default to false.
  *
  * Stability: unstable
  * Since: 1.10
  */
-void
-cogl_attribute_set_normalized (CoglAttribute *attribute,
-                               bool normalized);
+void cg_attribute_set_normalized(cg_attribute_t *attribute, bool normalized);
 
 /**
- * cogl_attribute_get_normalized:
- * @attribute: A #CoglAttribute
+ * cg_attribute_get_normalized:
+ * @attribute: A #cg_attribute_t
  *
  * Return value: the value of the normalized property set with
- * cogl_attribute_set_normalized().
+ * cg_attribute_set_normalized().
  *
  * Stability: unstable
  * Since: 1.10
  */
-bool
-cogl_attribute_get_normalized (CoglAttribute *attribute);
+bool cg_attribute_get_normalized(cg_attribute_t *attribute);
 
 /**
- * cogl_attribute_get_buffer:
- * @attribute: A #CoglAttribute
+ * cg_attribute_get_buffer:
+ * @attribute: A #cg_attribute_t
  *
- * Return value: (transfer none): the #CoglAttributeBuffer that was
- *        set with cogl_attribute_set_buffer() or cogl_attribute_new().
+ * Return value: (transfer none): the #cg_attribute_buffer_t that was
+ *        set with cg_attribute_set_buffer() or cg_attribute_new().
  *
  * Stability: unstable
  * Since: 1.10
  */
-CoglAttributeBuffer *
-cogl_attribute_get_buffer (CoglAttribute *attribute);
+cg_attribute_buffer_t *cg_attribute_get_buffer(cg_attribute_t *attribute);
 
 /**
- * cogl_attribute_set_buffer:
- * @attribute: A #CoglAttribute
- * @attribute_buffer: A #CoglAttributeBuffer
+ * cg_attribute_set_buffer:
+ * @attribute: A #cg_attribute_t
+ * @attribute_buffer: A #cg_attribute_buffer_t
  *
- * Sets a new #CoglAttributeBuffer for the attribute.
+ * Sets a new #cg_attribute_buffer_t for the attribute.
  *
  * Stability: unstable
  * Since: 1.10
  */
-void
-cogl_attribute_set_buffer (CoglAttribute *attribute,
-                           CoglAttributeBuffer *attribute_buffer);
+void cg_attribute_set_buffer(cg_attribute_t *attribute,
+                             cg_attribute_buffer_t *attribute_buffer);
 
 /**
- * cogl_is_attribute:
- * @object: A #CoglObject
+ * cg_is_attribute:
+ * @object: A #cg_object_t
  *
- * Gets whether the given object references a #CoglAttribute.
+ * Gets whether the given object references a #cg_attribute_t.
  *
- * Return value: %true if the @object references a #CoglAttribute,
+ * Return value: %true if the @object references a #cg_attribute_t,
  *   %false otherwise
  */
-bool
-cogl_is_attribute (void *object);
+bool cg_is_attribute(void *object);
 
-COGL_END_DECLS
+CG_END_DECLS
 
-#endif /* __COGL_ATTRIBUTE_H__ */
-
+#endif /* __CG_ATTRIBUTE_H__ */

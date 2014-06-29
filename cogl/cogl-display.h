@@ -30,19 +30,19 @@
  *
  */
 
-#if !defined(__COGL_H_INSIDE__) && !defined(COGL_COMPILATION)
+#if !defined(__CG_H_INSIDE__) && !defined(CG_COMPILATION)
 #error "Only <cogl/cogl.h> can be included directly."
 #endif
 
-#ifndef __COGL_DISPLAY_H__
-#define __COGL_DISPLAY_H__
+#ifndef __CG_DISPLAY_H__
+#define __CG_DISPLAY_H__
 
 #include <cogl/cogl-renderer.h>
 #include <cogl/cogl-onscreen-template.h>
 
-COGL_BEGIN_DECLS
+CG_BEGIN_DECLS
 
-#ifdef COGL_HAS_EGL_PLATFORM_GDL_SUPPORT
+#ifdef CG_HAS_EGL_PLATFORM_GDL_SUPPORT
 #include <libgdl.h>
 #endif
 
@@ -68,21 +68,21 @@ COGL_BEGIN_DECLS
  * create a GLContext.
  */
 
-typedef struct _CoglDisplay	      CoglDisplay;
+typedef struct _cg_display_t cg_display_t;
 
-#define COGL_DISPLAY(OBJECT) ((CoglDisplay *)OBJECT)
+#define CG_DISPLAY(OBJECT) ((cg_display_t *)OBJECT)
 
 /**
- * cogl_display_new:
- * @renderer: A #CoglRenderer
- * @onscreen_template: A #CoglOnscreenTemplate
+ * cg_display_new:
+ * @renderer: A #cg_renderer_t
+ * @onscreen_template: A #cg_onscreen_template_t
  *
- * Explicitly allocates a new #CoglDisplay object to encapsulate the
+ * Explicitly allocates a new #cg_display_t object to encapsulate the
  * common state of the display pipeline that applies to the whole
  * application.
  *
  * <note>Many applications don't need to explicitly use
- * cogl_display_new() and can just jump straight to cogl_context_new()
+ * cg_display_new() and can just jump straight to cg_context_new()
  * and pass a %NULL display argument so Cogl will automatically
  * connect and setup a renderer and display.</note>
  *
@@ -92,53 +92,51 @@ typedef struct _CoglDisplay	      CoglDisplay;
  * A common use for explicitly allocating a display object is to
  * define a template for allocating onscreen framebuffers which is
  * what the @onscreen_template argument is for, or alternatively
- * you can use cogl_display_set_onscreen_template().
+ * you can use cg_display_set_onscreen_template().
  *
- * When a display is first allocated via cogl_display_new() it is in a
+ * When a display is first allocated via cg_display_new() it is in a
  * mutable configuration mode. It's designed this way so we can
  * extend the apis available for configuring a display without
  * requiring huge numbers of constructor arguments.
  *
  * When you have finished configuring a display object you can
- * optionally call cogl_display_setup() to explicitly apply the
+ * optionally call cg_display_setup() to explicitly apply the
  * configuration and check for errors. Alternaitvely you can pass the
- * display to cogl_context_new() and Cogl will implicitly apply your
+ * display to cg_context_new() and Cogl will implicitly apply your
  * configuration but if there are errors then the application will
  * abort with a message. For simple applications with no fallback
  * options then relying on the implicit setup can be fine.
  *
- * Return value: (transfer full): A newly allocated #CoglDisplay
+ * Return value: (transfer full): A newly allocated #cg_display_t
  *               object in a mutable configuration mode.
  * Since: 1.10
  * Stability: unstable
  */
-CoglDisplay *
-cogl_display_new (CoglRenderer *renderer,
-                  CoglOnscreenTemplate *onscreen_template);
+cg_display_t *cg_display_new(cg_renderer_t *renderer,
+                             cg_onscreen_template_t *onscreen_template);
 
 /**
- * cogl_display_get_renderer:
- * @display: a #CoglDisplay
+ * cg_display_get_renderer:
+ * @display: a #cg_display_t
  *
- * Queries the #CoglRenderer associated with the given @display.
+ * Queries the #cg_renderer_t associated with the given @display.
  *
- * Return value: (transfer none): The associated #CoglRenderer
+ * Return value: (transfer none): The associated #cg_renderer_t
  *
  * Since: 1.10
  * Stability: unstable
  */
-CoglRenderer *
-cogl_display_get_renderer (CoglDisplay *display);
+cg_renderer_t *cg_display_get_renderer(cg_display_t *display);
 
 /**
- * cogl_display_set_onscreen_template:
- * @display: a #CoglDisplay
- * @onscreen_template: A template for creating #CoglOnscreen framebuffers
+ * cg_display_set_onscreen_template:
+ * @display: a #cg_display_t
+ * @onscreen_template: A template for creating #cg_onscreen_t framebuffers
  *
- * Specifies a template for creating #CoglOnscreen framebuffers.
+ * Specifies a template for creating #cg_onscreen_t framebuffers.
  *
- * Depending on the system, the constraints for creating #CoglOnscreen
- * framebuffers need to be known before setting up a #CoglDisplay because the
+ * Depending on the system, the constraints for creating #cg_onscreen_t
+ * framebuffers need to be known before setting up a #cg_display_t because the
  * final setup of the display may constrain how onscreen framebuffers may be
  * allocated. If Cogl knows how an application wants to allocate onscreen
  * framebuffers then it can try to make sure to setup the display accordingly.
@@ -147,19 +145,19 @@ cogl_display_get_renderer (CoglDisplay *display);
  * Stability: unstable
  */
 void
-cogl_display_set_onscreen_template (CoglDisplay *display,
-                                    CoglOnscreenTemplate *onscreen_template);
+cg_display_set_onscreen_template(cg_display_t *display,
+                                 cg_onscreen_template_t *onscreen_template);
 
 /**
- * cogl_display_setup:
- * @display: a #CoglDisplay
- * @error: return location for a #CoglError
+ * cg_display_setup:
+ * @display: a #cg_display_t
+ * @error: return location for a #cg_error_t
  *
  * Explicitly sets up the given @display object. Use of this api is
  * optional since Cogl will internally setup the display if not done
  * explicitly.
  *
- * When a display is first allocated via cogl_display_new() it is in a
+ * When a display is first allocated via cg_display_new() it is in a
  * mutable configuration mode. This allows us to extend the apis
  * available for configuring a display without requiring huge numbers
  * of constructor arguments.
@@ -170,7 +168,7 @@ cogl_display_set_onscreen_template (CoglDisplay *display,
  * exception will be returned so you can handle the error gracefully
  * and perhaps fall back to an alternative configuration.
  *
- * If you instead rely on Cogl implicitly calling cogl_display_setup()
+ * If you instead rely on Cogl implicitly calling cg_display_setup()
  * for you then if there is an error with the configuration you won't
  * get an opportunity to handle that and the application may abort
  * with a message.  For simple applications that don't have any
@@ -181,14 +179,12 @@ cogl_display_set_onscreen_template (CoglDisplay *display,
  * Since: 1.10
  * Stability: unstable
  */
-bool
-cogl_display_setup (CoglDisplay *display,
-                    CoglError **error);
+bool cg_display_setup(cg_display_t *display, cg_error_t **error);
 
-#ifdef COGL_HAS_EGL_PLATFORM_GDL_SUPPORT
+#ifdef CG_HAS_EGL_PLATFORM_GDL_SUPPORT
 /**
- * cogl_gdl_display_set_plane:
- * @display: a #CoglDisplay
+ * cg_gdl_display_set_plane:
+ * @display: a #cg_display_t
  * @plane: the GDL plane id
  *
  * Request that Cogl output to a specific GDL overlay @plane.
@@ -196,26 +192,22 @@ cogl_display_setup (CoglDisplay *display,
  * Since: 1.10
  * Stability: unstable
  */
-void
-cogl_gdl_display_set_plane (CoglDisplay *display,
-                            gdl_plane_id_t plane);
+void cg_gdl_display_set_plane(cg_display_t *display, gdl_plane_id_t plane);
 #endif
 
 /**
- * cogl_is_display:
- * @object: A #CoglObject pointer
+ * cg_is_display:
+ * @object: A #cg_object_t pointer
  *
- * Gets whether the given object references a #CoglDisplay.
+ * Gets whether the given object references a #cg_display_t.
  *
- * Return value: %true if the object references a #CoglDisplay
+ * Return value: %true if the object references a #cg_display_t
  *   and %false otherwise.
  * Since: 1.10
  * Stability: unstable
  */
-bool
-cogl_is_display (void *object);
+bool cg_is_display(void *object);
 
-COGL_END_DECLS
+CG_END_DECLS
 
-#endif /* __COGL_DISPLAY_H__ */
-
+#endif /* __CG_DISPLAY_H__ */

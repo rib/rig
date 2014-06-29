@@ -38,23 +38,22 @@
 #include "cogl-texture-private.h"
 
 bool
-cogl_is_primitive_texture (void *object)
+cg_is_primitive_texture(void *object)
 {
-  return (cogl_is_texture (object) &&
-          COGL_TEXTURE (object)->vtable->is_primitive);
+    return (cg_is_texture(object) && CG_TEXTURE(object)->vtable->is_primitive);
 }
 
 void
-cogl_primitive_texture_set_auto_mipmap (CoglPrimitiveTexture *primitive_texture,
-                                        bool value)
+cg_primitive_texture_set_auto_mipmap(cg_primitive_texture_t *primitive_texture,
+                                     bool value)
 {
-  CoglTexture *texture;
+    cg_texture_t *texture;
 
-  _COGL_RETURN_IF_FAIL (cogl_is_primitive_texture (primitive_texture));
+    _CG_RETURN_IF_FAIL(cg_is_primitive_texture(primitive_texture));
 
-  texture = COGL_TEXTURE (primitive_texture);
+    texture = CG_TEXTURE(primitive_texture);
 
-  c_assert (texture->vtable->set_auto_mipmap != NULL);
+    c_assert(texture->vtable->set_auto_mipmap != NULL);
 
-  texture->vtable->set_auto_mipmap (texture, value);
+    texture->vtable->set_auto_mipmap(texture, value);
 }

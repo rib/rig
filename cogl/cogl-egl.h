@@ -28,14 +28,14 @@
  *
  */
 
-#ifndef __COGL_EGL_H__
-#define __COGL_EGL_H__
+#ifndef __CG_EGL_H__
+#define __CG_EGL_H__
 
-#ifdef COGL_HAS_EGL_SUPPORT
+#ifdef CG_HAS_EGL_SUPPORT
 
 #include "cogl-egl-defines.h"
 
-COGL_BEGIN_DECLS
+CG_BEGIN_DECLS
 
 #define NativeDisplayType EGLNativeDisplayType
 #define NativeWindowType EGLNativeWindowType
@@ -45,8 +45,8 @@ COGL_BEGIN_DECLS
 #endif
 
 /**
- * cogl_egl_context_get_egl_display:
- * @context: A #CoglContext pointer
+ * cg_egl_context_get_egl_display:
+ * @context: A #cg_context_t pointer
  *
  * If you have done a runtime check to determine that Cogl is using
  * EGL internally then this API can be used to retrieve the EGLDisplay
@@ -57,11 +57,10 @@ COGL_BEGIN_DECLS
  * Since: 1.8
  * Stability: unstable
  */
-EGLDisplay
-cogl_egl_context_get_egl_display (CoglContext *context);
+EGLDisplay cg_egl_context_get_egl_display(cg_context_t *context);
 
-COGL_END_DECLS
+CG_END_DECLS
 
-#endif /* COGL_HAS_EGL_SUPPORT */
+#endif /* CG_HAS_EGL_SUPPORT */
 
 #endif

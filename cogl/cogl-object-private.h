@@ -29,8 +29,8 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#ifndef __COGL_OBJECT_PRIVATE_H
-#define __COGL_OBJECT_PRIVATE_H
+#ifndef __CG_OBJECT_PRIVATE_H
+#define __CG_OBJECT_PRIVATE_H
 
 #include <clib.h>
 
@@ -48,182 +48,173 @@
  * Internally we use a small hack to avoid needing these micro
  * allocations by actually passing the instance as a second argument
  * to the callback */
-typedef void (*CoglUserDataDestroyInternalCallback) (void *user_data,
-                                                     void *instance);
+typedef void (*cg_user_data_destroy_internal_callback_t)(void *user_data,
+                                                         void *instance);
 
-typedef struct _CoglObjectClass
-{
-  const char *name;
-  void *virt_free;
-  void *virt_unref;
-} CoglObjectClass;
+typedef struct _cg_object_class_t {
+    const char *name;
+    void *virt_free;
+    void *virt_unref;
+} cg_object_class_t;
 
-#define COGL_OBJECT_N_PRE_ALLOCATED_USER_DATA_ENTRIES 2
+#define CG_OBJECT_N_PRE_ALLOCATED_USER_DATA_ENTRIES 2
 
-typedef struct
-{
-  CoglUserDataKey *key;
-  void *user_data;
-  CoglUserDataDestroyInternalCallback destroy;
-} CoglUserDataEntry;
+typedef struct {
+    cg_user_data_key_t *key;
+    void *user_data;
+    cg_user_data_destroy_internal_callback_t destroy;
+} cg_user_data_entry_t;
 
 /* All Cogl objects inherit from this base object by adding a member:
  *
- *   CoglObject _parent;
+ *   cg_object_t _parent;
  *
  * at the top of its main structure. This structure is initialized
- * when you call _cogl_#type_name#_object_new (new_object);
+ * when you call _cg_#type_name#_object_new (new_object);
  */
-struct _CoglObject
-{
-  CoglObjectClass  *klass;
+struct _cg_object_t {
+    cg_object_class_t *klass;
 
-  CoglUserDataEntry user_data_entry[
-    COGL_OBJECT_N_PRE_ALLOCATED_USER_DATA_ENTRIES];
-  c_array_t           *user_data_array;
-  int               n_user_data_entries;
+    cg_user_data_entry_t user_data_entry
+    [CG_OBJECT_N_PRE_ALLOCATED_USER_DATA_ENTRIES];
+    c_array_t *user_data_array;
+    int n_user_data_entries;
 
-  unsigned int      ref_count;
+    unsigned int ref_count;
 };
 
 /* Helper macro to encapsulate the common code for COGL reference
    counted objects */
 
-#ifdef COGL_OBJECT_DEBUG
+#ifdef CG_OBJECT_DEBUG
 
-#define _COGL_OBJECT_DEBUG_NEW(type_name, obj)                          \
-  COGL_NOTE (OBJECT, "COGL " G_STRINGIFY (type_name) " NEW   %p %i",    \
-             (obj), (obj)->ref_count)
+#define _CG_OBJECT_DEBUG_NEW(type_name, obj)                                   \
+    CG_NOTE(OBJECT,                                                            \
+            "COGL cg_" G_STRINGIFY(type_name) "_t NEW   %p %i",                \
+            (obj),                                                             \
+            (obj)->ref_count)
 
-#define _COGL_OBJECT_DEBUG_REF(type_name, object)       C_STMT_START {  \
-  CoglObject *__obj = (CoglObject *)object;                             \
-  COGL_NOTE (OBJECT, "COGL %s REF %p %i",                               \
-             (__obj)->klass->name,                                      \
-             (__obj), (__obj)->ref_count);              } C_STMT_END
+#define _CG_OBJECT_DEBUG_REF(type_name, object)                                \
+    C_STMT_START                                                               \
+    {                                                                          \
+        cg_object_t *__obj = (cg_object_t *)object;                            \
+        CG_NOTE(OBJECT,                                                        \
+                "COGL %s REF %p %i",                                           \
+                (__obj)->klass->name,                                          \
+                (__obj),                                                       \
+                (__obj)->ref_count);                                           \
+    }                                                                          \
+    C_STMT_END
 
-#define _COGL_OBJECT_DEBUG_UNREF(type_name, object)     C_STMT_START {  \
-  CoglObject *__obj = (CoglObject *)object;                             \
-  COGL_NOTE (OBJECT, "COGL %s UNREF %p %i",                             \
-             (__obj)->klass->name,                                      \
-             (__obj), (__obj)->ref_count - 1);          } C_STMT_END
+#define _CG_OBJECT_DEBUG_UNREF(type_name, object)                              \
+    C_STMT_START                                                               \
+    {                                                                          \
+        cg_object_t *__obj = (cg_object_t *)object;                            \
+        CG_NOTE(OBJECT,                                                        \
+                "COGL %s UNREF %p %i",                                         \
+                (__obj)->klass->name,                                          \
+                (__obj),                                                       \
+                (__obj)->ref_count - 1);                                       \
+    }                                                                          \
+    C_STMT_END
 
-#define COGL_OBJECT_DEBUG_FREE(obj)                                     \
-  COGL_NOTE (OBJECT, "COGL %s FREE %p",                                 \
-             (obj)->klass->name, (obj))
+#define CG_OBJECT_DEBUG_FREE(obj)                                              \
+    CG_NOTE(OBJECT, "COGL %s FREE %p", (obj)->klass->name, (obj))
 
-#else /* !COGL_OBJECT_DEBUG */
+#else /* !CG_OBJECT_DEBUG */
 
-#define _COGL_OBJECT_DEBUG_NEW(type_name, obj)
-#define _COGL_OBJECT_DEBUG_REF(type_name, obj)
-#define _COGL_OBJECT_DEBUG_UNREF(type_name, obj)
-#define COGL_OBJECT_DEBUG_FREE(obj)
+#define _CG_OBJECT_DEBUG_NEW(type_name, obj)
+#define _CG_OBJECT_DEBUG_REF(type_name, obj)
+#define _CG_OBJECT_DEBUG_UNREF(type_name, obj)
+#define CG_OBJECT_DEBUG_FREE(obj)
 
-#endif /* COGL_OBJECT_DEBUG */
+#endif /* CG_OBJECT_DEBUG */
 
-#define COGL_OBJECT_COMMON_DEFINE_WITH_CODE(TypeName, type_name, code)  \
-                                                                        \
-CoglObjectClass _cogl_##type_name##_class;                              \
-static unsigned int _cogl_object_##type_name##_count;                   \
-                                                                        \
-static inline void                                                      \
-_cogl_object_##type_name##_inc (void)                                   \
-{                                                                       \
-  _cogl_object_##type_name##_count++;                                   \
-}                                                                       \
-                                                                        \
-static inline void                                                      \
-_cogl_object_##type_name##_dec (void)                                   \
-{                                                                       \
-  _cogl_object_##type_name##_count--;                                   \
-}                                                                       \
-                                                                        \
-static void                                                             \
-_cogl_object_##type_name##_indirect_free (CoglObject *obj)              \
-{                                                                       \
-  _cogl_##type_name##_free ((Cogl##TypeName *) obj);                    \
-  _cogl_object_##type_name##_dec ();                                    \
-}                                                                       \
-                                                                        \
-static Cogl##TypeName *                                                 \
-_cogl_##type_name##_object_new (Cogl##TypeName *new_obj)                \
-{                                                                       \
-  CoglObject *obj = (CoglObject *)&new_obj->_parent;                    \
-  obj->ref_count = 0;                                                   \
-  cogl_object_ref (obj);                                                \
-  obj->n_user_data_entries = 0;                                         \
-  obj->user_data_array = NULL;                                          \
-                                                                        \
-  obj->klass = &_cogl_##type_name##_class;                              \
-  if (!obj->klass->virt_free)                                           \
-    {                                                                   \
-      _cogl_object_##type_name##_count = 0;                             \
-                                                                        \
-      if (_cogl_debug_instances == NULL)                                \
-        _cogl_debug_instances =                                         \
-          c_hash_table_new (c_str_hash, c_str_equal);                   \
-                                                                        \
-      obj->klass->virt_free =                                           \
-        _cogl_object_##type_name##_indirect_free;                       \
-      obj->klass->virt_unref =                                          \
-        _cogl_object_default_unref;                                     \
-      obj->klass->name = "Cogl"#TypeName,                               \
-                                                                        \
-      c_hash_table_insert (_cogl_debug_instances,                       \
-                           (void *) obj->klass->name,                   \
-                           &_cogl_object_##type_name##_count);          \
-                                                                        \
-      { code; }                                                         \
-    }                                                                   \
-                                                                        \
-  _cogl_object_##type_name##_inc ();                                    \
-  _COGL_OBJECT_DEBUG_NEW (TypeName, obj);                               \
-  return new_obj;                                                       \
-}
+#define CG_OBJECT_COMMON_DEFINE_WITH_CODE(TypeName, type_name, code)           \
+    cg_object_class_t _cg_##type_name##_class;                                 \
+    static unsigned int _cg_object_##type_name##_count;                        \
+    static inline void _cg_object_##type_name##_inc(void)                      \
+    {                                                                          \
+        _cg_object_##type_name##_count++;                                      \
+    }                                                                          \
+    static inline void _cg_object_##type_name##_dec(void)                      \
+    {                                                                          \
+        _cg_object_##type_name##_count--;                                      \
+    }                                                                          \
+    static void _cg_object_##type_name##_indirect_free(cg_object_t *obj)       \
+    {                                                                          \
+        _cg_##type_name##_free((cg_##type_name##_t *)obj);                     \
+        _cg_object_##type_name##_dec();                                        \
+    }                                                                          \
+    static cg_##type_name##_t *_cg_##type_name##_object_new(                   \
+        cg_##type_name##_t *new_obj)                                           \
+    {                                                                          \
+        cg_object_t *obj = (cg_object_t *)&new_obj->_parent;                   \
+        obj->ref_count = 0;                                                    \
+        cg_object_ref(obj);                                                    \
+        obj->n_user_data_entries = 0;                                          \
+        obj->user_data_array = NULL;                                           \
+                                                                               \
+        obj->klass = &_cg_##type_name##_class;                                 \
+        if (!obj->klass->virt_free) {                                          \
+            _cg_object_##type_name##_count = 0;                                \
+                                                                               \
+            if (_cg_debug_instances == NULL)                                   \
+                _cg_debug_instances =                                          \
+                    c_hash_table_new(c_str_hash, c_str_equal);                 \
+                                                                               \
+            obj->klass->virt_free = _cg_object_##type_name##_indirect_free;    \
+            obj->klass->virt_unref = _cg_object_default_unref;                 \
+            obj->klass->name = "cg_" #type_name "_t",                          \
+            c_hash_table_insert(_cg_debug_instances,                           \
+                                (void *)obj->klass->name,                      \
+                                &_cg_object_##type_name##_count);              \
+                                                                               \
+            {                                                                  \
+                code;                                                          \
+            }                                                                  \
+        }                                                                      \
+                                                                               \
+        _cg_object_##type_name##_inc();                                        \
+        _CG_OBJECT_DEBUG_NEW(type_name, obj);                                  \
+        return new_obj;                                                        \
+    }
 
-#define COGL_OBJECT_DEFINE_WITH_CODE(TypeName, type_name, code)         \
-                                                                        \
-COGL_OBJECT_COMMON_DEFINE_WITH_CODE(TypeName, type_name, code)          \
-                                                                        \
-bool                                                                \
-cogl_is_##type_name (void *object)                                      \
-{                                                                       \
-  CoglObject *obj = object;                                             \
-                                                                        \
-  if (object == NULL)                                                   \
-    return false;                                                       \
-                                                                        \
-  return obj->klass == &_cogl_##type_name##_class;                      \
-}
+#define CG_OBJECT_DEFINE_WITH_CODE(TypeName, type_name, code)                  \
+    CG_OBJECT_COMMON_DEFINE_WITH_CODE(                                         \
+        TypeName, type_name, code) bool cg_is_##type_name(void *object)        \
+    {                                                                          \
+        cg_object_t *obj = object;                                             \
+                                                                               \
+        if (object == NULL)                                                    \
+            return false;                                                      \
+                                                                               \
+        return obj->klass == &_cg_##type_name##_class;                         \
+    }
 
-#define COGL_OBJECT_INTERNAL_DEFINE_WITH_CODE(TypeName, type_name, code) \
-                                                                        \
-COGL_OBJECT_COMMON_DEFINE_WITH_CODE(TypeName, type_name, code)          \
-                                                                        \
-bool                                                                \
-_cogl_is_##type_name (void *object)                                     \
-{                                                                       \
-  CoglObject *obj = object;                                             \
-                                                                        \
-  if (object == NULL)                                                   \
-    return false;                                                       \
-                                                                        \
-  return obj->klass == &_cogl_##type_name##_class;                      \
-}
+#define CG_OBJECT_INTERNAL_DEFINE_WITH_CODE(TypeName, type_name, code)         \
+    CG_OBJECT_COMMON_DEFINE_WITH_CODE(                                         \
+        TypeName, type_name, code) bool _cg_is_##type_name(void *object)       \
+    {                                                                          \
+        cg_object_t *obj = object;                                             \
+                                                                               \
+        if (object == NULL)                                                    \
+            return false;                                                      \
+                                                                               \
+        return obj->klass == &_cg_##type_name##_class;                         \
+    }
 
-#define COGL_OBJECT_DEFINE(TypeName, type_name)                 \
-  COGL_OBJECT_DEFINE_WITH_CODE (TypeName, type_name, (void) 0)
+#define CG_OBJECT_DEFINE(TypeName, type_name)                                  \
+    CG_OBJECT_DEFINE_WITH_CODE(TypeName, type_name, (void)0)
 
-#define COGL_OBJECT_INTERNAL_DEFINE(TypeName, type_name)         \
-  COGL_OBJECT_INTERNAL_DEFINE_WITH_CODE (TypeName, type_name, (void) 0)
+#define CG_OBJECT_INTERNAL_DEFINE(TypeName, type_name)                         \
+    CG_OBJECT_INTERNAL_DEFINE_WITH_CODE(TypeName, type_name, (void)0)
 
-void
-_cogl_object_set_user_data (CoglObject *object,
-                            CoglUserDataKey *key,
-                            void *user_data,
-                            CoglUserDataDestroyInternalCallback destroy);
+void _cg_object_set_user_data(cg_object_t *object,
+                              cg_user_data_key_t *key,
+                              void *user_data,
+                              cg_user_data_destroy_internal_callback_t destroy);
 
-void
-_cogl_object_default_unref (void *obj);
+void _cg_object_default_unref(void *obj);
 
-#endif /* __COGL_OBJECT_PRIVATE_H */
-
+#endif /* __CG_OBJECT_PRIVATE_H */

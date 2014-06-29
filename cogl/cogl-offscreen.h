@@ -28,17 +28,17 @@
  *
  */
 
-#if !defined(__COGL_H_INSIDE__) && !defined(COGL_COMPILATION)
+#if !defined(__CG_H_INSIDE__) && !defined(CG_COMPILATION)
 #error "Only <cogl/cogl.h> can be included directly."
 #endif
 
-#ifndef __COGL_OFFSCREEN_H__
-#define __COGL_OFFSCREEN_H__
+#ifndef __CG_OFFSCREEN_H__
+#define __CG_OFFSCREEN_H__
 
 #include <cogl/cogl-types.h>
 #include <cogl/cogl-texture.h>
 
-COGL_BEGIN_DECLS
+CG_BEGIN_DECLS
 
 /**
  * SECTION:cogl-offscreen
@@ -48,15 +48,15 @@ COGL_BEGIN_DECLS
  * Cogl allows creating and operating on offscreen framebuffers.
  */
 
-typedef struct _CoglOffscreen CoglOffscreen;
+typedef struct _cg_offscreen_t cg_offscreen_t;
 
-#define COGL_OFFSCREEN(X) ((CoglOffscreen *)X)
+#define CG_OFFSCREEN(X) ((cg_offscreen_t *)X)
 
 /* Offscreen api */
 
 /**
- * cogl_offscreen_new_with_texture:
- * @texture: A #CoglTexture pointer
+ * cg_offscreen_new_with_texture:
+ * @texture: A #cg_texture_t pointer
  *
  * This creates an offscreen framebuffer object using the given
  * @texture as the primary color buffer. It doesn't just initialize
@@ -65,9 +65,9 @@ typedef struct _CoglOffscreen CoglOffscreen;
  * updates the contents of the given texture. You don't need to
  * destroy the offscreen buffer before you can use the @texture again.
  *
- * <note>This api only works with low-level #CoglTexture types such as
- * #CoglTexture2D, #CoglTexture3D and not with meta-texture types such
- * as #CoglTexture2DSliced.</note>
+ * <note>This api only works with low-level #cg_texture_t types such as
+ * #cg_texture_2d_t, #cg_texture_3d_t and not with meta-texture types such
+ * as #cg_texture_2d_sliced_t.</note>
  *
  * The storage for the framebuffer is actually allocated lazily
  * so this function will never return %NULL to indicate a runtime
@@ -80,28 +80,26 @@ typedef struct _CoglOffscreen CoglOffscreen;
  * GPU memory) then your application will simply abort with an error
  * message. If you need to be able to catch such exceptions at runtime
  * then you can explicitly allocate your framebuffer when you have
- * finished configuring it by calling cogl_framebuffer_allocate() and
- * passing in a #CoglError argument to catch any exceptions.
+ * finished configuring it by calling cg_framebuffer_allocate() and
+ * passing in a #cg_error_t argument to catch any exceptions.
  *
- * Return value: (transfer full): a newly instantiated #CoglOffscreen
+ * Return value: (transfer full): a newly instantiated #cg_offscreen_t
  *   framebuffer.
  */
-CoglOffscreen *
-cogl_offscreen_new_with_texture (CoglTexture *texture);
+cg_offscreen_t *cg_offscreen_new_with_texture(cg_texture_t *texture);
 
 /**
- * cogl_is_offscreen:
- * @object: A pointer to a #CoglObject
+ * cg_is_offscreen:
+ * @object: A pointer to a #cg_object_t
  *
- * Determines whether the given #CoglObject references an offscreen
+ * Determines whether the given #cg_object_t references an offscreen
  * framebuffer object.
  *
- * Returns: %true if @object is a #CoglOffscreen framebuffer,
+ * Returns: %true if @object is a #cg_offscreen_t framebuffer,
  *          %false otherwise
  */
-bool
-cogl_is_offscreen (void *object);
+bool cg_is_offscreen(void *object);
 
-COGL_END_DECLS
+CG_END_DECLS
 
-#endif /* __COGL_OFFSCREEN_H__ */
+#endif /* __CG_OFFSCREEN_H__ */

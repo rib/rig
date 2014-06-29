@@ -31,14 +31,13 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#ifndef _COGL_CLIP_STACK_NOP_PRIVATE_H_
-#define _COGL_CLIP_STACK_NOP_PRIVATE_H_
+#ifndef _CG_CLIP_STACK_NOP_PRIVATE_H_
+#define _CG_CLIP_STACK_NOP_PRIVATE_H_
 
 #include "cogl-types.h"
 #include "cogl-context-private.h"
 
-void
-_cogl_clip_stack_nop_flush (CoglClipStack *stack,
-                            CoglFramebuffer *framebuffer);
+void _cg_clip_stack_nop_flush(cg_clip_stack_t *stack,
+                              cg_framebuffer_t *framebuffer);
 
-#endif /* _COGL_CLIP_STACK_NOP_PRIVATE_H_ */
+#endif /* _CG_CLIP_STACK_NOP_PRIVATE_H_ */

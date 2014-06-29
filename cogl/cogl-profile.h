@@ -28,41 +28,57 @@
  *
  */
 
-#ifndef __COGL_PROFILE_H__
-#define __COGL_PROFILE_H__
-
+#ifndef __CG_PROFILE_H__
+#define __CG_PROFILE_H__
 
 #ifdef ENABLE_PROFILE
 
 #include <uprof.h>
 
-extern UProfContext *_cogl_uprof_context;
+extern UProfContext *_cg_uprof_context;
 
-#define COGL_STATIC_TIMER    UPROF_STATIC_TIMER
-#define COGL_STATIC_COUNTER  UPROF_STATIC_COUNTER
-#define COGL_COUNTER_INC     UPROF_COUNTER_INC
-#define COGL_COUNTER_DEC     UPROF_COUNTER_DEC
-#define COGL_TIMER_START     UPROF_TIMER_START
-#define COGL_TIMER_STOP      UPROF_TIMER_STOP
+#define CG_STATIC_TIMER UPROF_STATIC_TIMER
+#define CG_STATIC_COUNTER UPROF_STATIC_COUNTER
+#define CG_COUNTER_INC UPROF_COUNTER_INC
+#define CG_COUNTER_DEC UPROF_COUNTER_DEC
+#define CG_TIMER_START UPROF_TIMER_START
+#define CG_TIMER_STOP UPROF_TIMER_STOP
 
-void
-_cogl_uprof_init (void);
+void _cg_uprof_init(void);
 
-void
-_cogl_profile_trace_message (const char *format, ...);
+void _cg_profile_trace_message(const char *format, ...);
 
 #else
 
-#define COGL_STATIC_TIMER(A,B,C,D,E) extern void _cogl_dummy_decl (void)
-#define COGL_STATIC_COUNTER(A,B,C,D) extern void _cogl_dummy_decl (void)
-#define COGL_COUNTER_INC(A,B) C_STMT_START{ (void)0; }C_STMT_END
-#define COGL_COUNTER_DEC(A,B) C_STMT_START{ (void)0; }C_STMT_END
-#define COGL_TIMER_START(A,B) C_STMT_START{ (void)0; }C_STMT_END
-#define COGL_TIMER_STOP(A,B) C_STMT_START{ (void)0; }C_STMT_END
+#define CG_STATIC_TIMER(A, B, C, D, E) extern void _cg_dummy_decl(void)
+#define CG_STATIC_COUNTER(A, B, C, D) extern void _cg_dummy_decl(void)
+#define CG_COUNTER_INC(A, B)                                                   \
+    C_STMT_START                                                               \
+    {                                                                          \
+        (void)0;                                                               \
+    }                                                                          \
+    C_STMT_END
+#define CG_COUNTER_DEC(A, B)                                                   \
+    C_STMT_START                                                               \
+    {                                                                          \
+        (void)0;                                                               \
+    }                                                                          \
+    C_STMT_END
+#define CG_TIMER_START(A, B)                                                   \
+    C_STMT_START                                                               \
+    {                                                                          \
+        (void)0;                                                               \
+    }                                                                          \
+    C_STMT_END
+#define CG_TIMER_STOP(A, B)                                                    \
+    C_STMT_START                                                               \
+    {                                                                          \
+        (void)0;                                                               \
+    }                                                                          \
+    C_STMT_END
 
-#define _cogl_profile_trace_message c_message
+#define _cg_profile_trace_message c_message
 
 #endif
 
-#endif /* __COGL_PROFILE_H__ */
-
+#endif /* __CG_PROFILE_H__ */

@@ -28,23 +28,19 @@
  *
  */
 
-#ifndef __COGL_MEMORY_STACK__
-#define __COGL_MEMORY_STACK__
+#ifndef __CG_MEMORY_STACK__
+#define __CG_MEMORY_STACK__
 
 #include <clib.h>
 
-typedef struct _CoglMemoryStack CoglMemoryStack;
+typedef struct _cg_memory_stack_t cg_memory_stack_t;
 
-CoglMemoryStack *
-_cogl_memory_stack_new (size_t initial_size_bytes);
+cg_memory_stack_t *_cg_memory_stack_new(size_t initial_size_bytes);
 
-void *
-_cogl_memory_stack_alloc (CoglMemoryStack *stack, size_t bytes);
+void *_cg_memory_stack_alloc(cg_memory_stack_t *stack, size_t bytes);
 
-void
-_cogl_memory_stack_rewind (CoglMemoryStack *stack);
+void _cg_memory_stack_rewind(cg_memory_stack_t *stack);
 
-void
-_cogl_memory_stack_free (CoglMemoryStack *stack);
+void _cg_memory_stack_free(cg_memory_stack_t *stack);
 
-#endif /* __COGL_MEMORY_STACK__ */
+#endif /* __CG_MEMORY_STACK__ */

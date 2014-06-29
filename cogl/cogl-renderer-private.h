@@ -28,8 +28,8 @@
  *
  */
 
-#ifndef __COGL_RENDERER_PRIVATE_H
-#define __COGL_RENDERER_PRIVATE_H
+#ifndef __CG_RENDERER_PRIVATE_H
+#define __CG_RENDERER_PRIVATE_H
 
 #include <cmodule.h>
 
@@ -40,93 +40,87 @@
 #include "cogl-context.h"
 #include "cogl-closure-list-private.h"
 
-#ifdef COGL_HAS_XLIB_SUPPORT
+#ifdef CG_HAS_XLIB_SUPPORT
 #include <X11/Xlib.h>
 #endif
 
-#if defined (COGL_HAS_EGL_PLATFORM_WAYLAND_SUPPORT)
+#if defined(CG_HAS_EGL_PLATFORM_WAYLAND_SUPPORT)
 #include <wayland-client.h>
 #endif
 
-struct _CoglRenderer
-{
-  CoglObject _parent;
-  bool connected;
-  CoglDriver driver_override;
-  const CoglDriverVtable *driver_vtable;
-  const CoglTextureDriver *texture_driver;
-  const CoglWinsysVtable *winsys_vtable;
-  CoglWinsysID winsys_id_override;
-  c_list_t *constraints;
+struct _cg_renderer_t {
+    cg_object_t _parent;
+    bool connected;
+    cg_driver_t driver_override;
+    const cg_driver_vtable_t *driver_vtable;
+    const cg_texture_driver_t *texture_driver;
+    const cg_winsys_vtable_t *winsys_vtable;
+    cg_winsys_id_t winsys_id_override;
+    c_list_t *constraints;
 
-  c_array_t *poll_fds;
-  int poll_fds_age;
-  c_list_t *poll_sources;
+    c_array_t *poll_fds;
+    int poll_fds_age;
+    c_list_t *poll_sources;
 
-  CoglList idle_closures;
+    cg_list_t idle_closures;
 
-  c_list_t *outputs;
+    c_list_t *outputs;
 
-#ifdef COGL_HAS_XLIB_SUPPORT
-  Display *foreign_xdpy;
-  bool xlib_enable_event_retrieval;
+#ifdef CG_HAS_XLIB_SUPPORT
+    Display *foreign_xdpy;
+    bool xlib_enable_event_retrieval;
 #endif
 
-#ifdef COGL_HAS_WIN32_SUPPORT
-  bool win32_enable_event_retrieval;
+#ifdef CG_HAS_WIN32_SUPPORT
+    bool win32_enable_event_retrieval;
 #endif
 
-  CoglDriver driver;
-  unsigned long private_features
-    [COGL_FLAGS_N_LONGS_FOR_SIZE (COGL_N_PRIVATE_FEATURES)];
+    cg_driver_t driver;
+    unsigned long private_features
+    [CG_FLAGS_N_LONGS_FOR_SIZE(CG_N_PRIVATE_FEATURES)];
 #ifndef HAVE_DIRECTLY_LINKED_GL_LIBRARY
-  UModule *libgl_module;
+    UModule *libgl_module;
 #endif
 
-#if defined (COGL_HAS_EGL_PLATFORM_WAYLAND_SUPPORT)
-  struct wl_display *foreign_wayland_display;
-  bool wayland_enable_event_dispatch;
+#if defined(CG_HAS_EGL_PLATFORM_WAYLAND_SUPPORT)
+    struct wl_display *foreign_wayland_display;
+    bool wayland_enable_event_dispatch;
 #endif
 
-#if defined (COGL_HAS_EGL_PLATFORM_KMS_SUPPORT)
-  int kms_fd;
+#if defined(CG_HAS_EGL_PLATFORM_KMS_SUPPORT)
+    int kms_fd;
 #endif
 
-#ifdef COGL_HAS_SDL_SUPPORT
-  bool sdl_event_type_set;
-  uint32_t sdl_event_type;
+#ifdef CG_HAS_SDL_SUPPORT
+    bool sdl_event_type_set;
+    uint32_t sdl_event_type;
 #endif
 
-  /* List of callback functions that will be given every native event */
-  c_slist_t *event_filters;
-  void *winsys;
+    /* List of callback functions that will be given every native event */
+    c_slist_t *event_filters;
+    void *winsys;
 };
 
 /* Mask of constraints that effect driver selection. All of the other
  * constraints effect only the winsys selection */
-#define COGL_RENDERER_DRIVER_CONSTRAINTS \
-  COGL_RENDERER_CONSTRAINT_SUPPORTS_COGL_GLES2
+#define CG_RENDERER_DRIVER_CONSTRAINTS CG_RENDERER_CONSTRAINT_SUPPORTS_CG_GLES2
 
-typedef CoglFilterReturn (* CoglNativeFilterFunc) (void *native_event,
-                                                   void *data);
+typedef cg_filter_return_t (*cg_native_filter_func_t)(void *native_event,
+                                                      void *data);
 
-CoglFilterReturn
-_cogl_renderer_handle_native_event (CoglRenderer *renderer,
-                                    void *event);
+cg_filter_return_t _cg_renderer_handle_native_event(cg_renderer_t *renderer,
+                                                    void *event);
 
-void
-_cogl_renderer_add_native_filter (CoglRenderer *renderer,
-                                  CoglNativeFilterFunc func,
-                                  void *data);
+void _cg_renderer_add_native_filter(cg_renderer_t *renderer,
+                                    cg_native_filter_func_t func,
+                                    void *data);
 
-void
-_cogl_renderer_remove_native_filter (CoglRenderer *renderer,
-                                     CoglNativeFilterFunc func,
-                                     void *data);
+void _cg_renderer_remove_native_filter(cg_renderer_t *renderer,
+                                       cg_native_filter_func_t func,
+                                       void *data);
 
-void *
-_cogl_renderer_get_proc_address (CoglRenderer *renderer,
-                                 const char *name,
-                                 bool in_core);
+void *_cg_renderer_get_proc_address(cg_renderer_t *renderer,
+                                    const char *name,
+                                    bool in_core);
 
-#endif /* __COGL_RENDERER_PRIVATE_H */
+#endif /* __CG_RENDERER_PRIVATE_H */

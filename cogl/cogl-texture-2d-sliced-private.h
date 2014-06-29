@@ -28,8 +28,8 @@
  *
  */
 
-#ifndef __COGL_TEXTURE_2D_SLICED_PRIVATE_H
-#define __COGL_TEXTURE_2D_SLICED_PRIVATE_H
+#ifndef __CG_TEXTURE_2D_SLICED_PRIVATE_H
+#define __CG_TEXTURE_2D_SLICED_PRIVATE_H
 
 #include "cogl-bitmap-private.h"
 #include "cogl-pipeline-private.h"
@@ -38,15 +38,14 @@
 
 #include <clib.h>
 
-struct _CoglTexture2DSliced
-{
-  CoglTexture _parent;
+struct _cg_texture_2d_sliced_t {
+    cg_texture_t _parent;
 
-  c_array_t *slice_x_spans;
-  c_array_t *slice_y_spans;
-  c_array_t *slice_textures;
-  int max_waste;
-  CoglPixelFormat internal_format;
+    c_array_t *slice_x_spans;
+    c_array_t *slice_y_spans;
+    c_array_t *slice_textures;
+    int max_waste;
+    cg_pixel_format_t internal_format;
 };
 
-#endif /* __COGL_TEXTURE_2D_SLICED_PRIVATE_H */
+#endif /* __CG_TEXTURE_2D_SLICED_PRIVATE_H */

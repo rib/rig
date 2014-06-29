@@ -46,436 +46,422 @@
 #include "cogl-error-private.h"
 #include "cogl-poll-private.h"
 
-typedef struct _CoglRendererSdl
+typedef struct _cg_renderer_sdl_t {
+    cg_closure_t *resize_notify_idle;
+} cg_renderer_sdl_t;
+
+typedef struct _cg_display_sdl_t {
+    SDL_Surface *surface;
+    cg_onscreen_t *onscreen;
+    Uint32 video_mode_flags;
+} cg_display_sdl_t;
+
+static cg_func_ptr_t
+_cg_winsys_renderer_get_proc_address(
+    cg_renderer_t *renderer, const char *name, bool in_core)
 {
-  CoglClosure *resize_notify_idle;
-} CoglRendererSdl;
+    cg_func_ptr_t ptr;
 
-typedef struct _CoglDisplaySdl
-{
-  SDL_Surface *surface;
-  CoglOnscreen *onscreen;
-  Uint32 video_mode_flags;
-} CoglDisplaySdl;
+/* XXX: It's not totally clear whether it's safe to call this for
+ * core functions. From the code it looks like the implementations
+ * will fall back to using some form of dlsym if the winsys
+ * GetProcAddress function returns NULL. Presumably this will work
+ * in most cases apart from EGL platforms that return invalid
+ * pointers for core functions. It's awkward for this code to get a
+ * handle to the GL module that SDL has chosen to load so just
+ * calling SDL_GL_GetProcAddress is probably the best we can do
+ * here. */
 
-static CoglFuncPtr
-_cogl_winsys_renderer_get_proc_address (CoglRenderer *renderer,
-                                        const char *name,
-                                        bool in_core)
-{
-  CoglFuncPtr ptr;
-
-  /* XXX: It's not totally clear whether it's safe to call this for
-   * core functions. From the code it looks like the implementations
-   * will fall back to using some form of dlsym if the winsys
-   * GetProcAddress function returns NULL. Presumably this will work
-   * in most cases apart from EGL platforms that return invalid
-   * pointers for core functions. It's awkward for this code to get a
-   * handle to the GL module that SDL has chosen to load so just
-   * calling SDL_GL_GetProcAddress is probably the best we can do
-   * here. */
-
-#ifdef COGL_HAS_SDL_GLES_SUPPORT
-  if (renderer->driver != COGL_DRIVER_GL)
-    return SDL_GLES_GetProcAddress (name);
+#ifdef CG_HAS_SDL_GLES_SUPPORT
+    if (renderer->driver != CG_DRIVER_GL)
+        return SDL_GLES_GetProcAddress(name);
 #endif
 
-  return SDL_GL_GetProcAddress (name);
+    return SDL_GL_GetProcAddress(name);
 }
 
 static void
-_cogl_winsys_renderer_disconnect (CoglRenderer *renderer)
+_cg_winsys_renderer_disconnect(cg_renderer_t *renderer)
 {
-  SDL_Quit ();
+    SDL_Quit();
 
-  c_slice_free (CoglRendererSdl, renderer->winsys);
+    c_slice_free(cg_renderer_sdl_t, renderer->winsys);
 }
 
 static bool
-_cogl_winsys_renderer_connect (CoglRenderer *renderer,
-                               CoglError **error)
+_cg_winsys_renderer_connect(cg_renderer_t *renderer,
+                            cg_error_t **error)
 {
 #ifdef EMSCRIPTEN
-  if (renderer->driver != COGL_DRIVER_GLES2)
-    {
-      _cogl_set_error (error, COGL_WINSYS_ERROR,
-                       COGL_WINSYS_ERROR_INIT,
-                       "The SDL winsys with emscripten only supports "
-                       "the GLES2 driver");
-      return false;
+    if (renderer->driver != CG_DRIVER_GLES2) {
+        _cg_set_error(error,
+                      CG_WINSYS_ERROR,
+                      CG_WINSYS_ERROR_INIT,
+                      "The SDL winsys with emscripten only supports "
+                      "the GLES2 driver");
+        return false;
     }
-#elif !defined (COGL_HAS_SDL_GLES_SUPPORT)
-  if (renderer->driver != COGL_DRIVER_GL)
-    {
-      _cogl_set_error (error, COGL_WINSYS_ERROR,
-                   COGL_WINSYS_ERROR_INIT,
-                   "The SDL winsys only supports the GL driver");
-      return false;
+#elif !defined(CG_HAS_SDL_GLES_SUPPORT)
+    if (renderer->driver != CG_DRIVER_GL) {
+        _cg_set_error(error,
+                      CG_WINSYS_ERROR,
+                      CG_WINSYS_ERROR_INIT,
+                      "The SDL winsys only supports the GL driver");
+        return false;
     }
 #endif
 
-  if (SDL_Init (SDL_INIT_VIDEO) == -1)
-    {
-      _cogl_set_error (error, COGL_WINSYS_ERROR,
-                   COGL_WINSYS_ERROR_INIT,
-                   "SDL_Init failed: %s",
-                   SDL_GetError ());
-      return false;
+    if (SDL_Init(SDL_INIT_VIDEO) == -1) {
+        _cg_set_error(error,
+                      CG_WINSYS_ERROR,
+                      CG_WINSYS_ERROR_INIT,
+                      "SDL_Init failed: %s",
+                      SDL_GetError());
+        return false;
     }
 
-  renderer->winsys = c_slice_new0 (CoglRendererSdl);
+    renderer->winsys = c_slice_new0(cg_renderer_sdl_t);
 
-  return true;
+    return true;
 }
 
 static void
-_cogl_winsys_display_destroy (CoglDisplay *display)
+_cg_winsys_display_destroy(cg_display_t *display)
 {
-  CoglDisplaySdl *sdl_display = display->winsys;
+    cg_display_sdl_t *sdl_display = display->winsys;
 
-  _COGL_RETURN_IF_FAIL (sdl_display != NULL);
+    _CG_RETURN_IF_FAIL(sdl_display != NULL);
 
-  /* No need to destroy the surface - it is freed by SDL_Quit */
+    /* No need to destroy the surface - it is freed by SDL_Quit */
 
-  c_slice_free (CoglDisplaySdl, display->winsys);
-  display->winsys = NULL;
+    c_slice_free(cg_display_sdl_t, display->winsys);
+    display->winsys = NULL;
 }
 
 static void
-set_gl_attribs_from_framebuffer_config (CoglFramebufferConfig *config)
+set_gl_attribs_from_framebuffer_config(cg_framebuffer_config_t *config)
 {
-  SDL_GL_SetAttribute (SDL_GL_RED_SIZE, 1);
-  SDL_GL_SetAttribute (SDL_GL_GREEN_SIZE, 1);
-  SDL_GL_SetAttribute (SDL_GL_BLUE_SIZE, 1);
-  SDL_GL_SetAttribute (SDL_GL_DEPTH_SIZE, 1);
+    SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 1);
+    SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 1);
+    SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 1);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 1);
 
-  SDL_GL_SetAttribute (SDL_GL_STENCIL_SIZE,
-                       config->need_stencil ? 1 : 0);
+    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, config->need_stencil ? 1 : 0);
 
-  SDL_GL_SetAttribute (SDL_GL_DOUBLEBUFFER, 1);
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
-  SDL_GL_SetAttribute (SDL_GL_ALPHA_SIZE,
-                       config->has_alpha ? 1 : 0);
+    SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, config->has_alpha ? 1 : 0);
 }
 
 static bool
-_cogl_winsys_display_setup (CoglDisplay *display,
-                            CoglError **error)
+_cg_winsys_display_setup(cg_display_t *display, cg_error_t **error)
 {
-  CoglDisplaySdl *sdl_display;
+    cg_display_sdl_t *sdl_display;
 
-  _COGL_RETURN_VAL_IF_FAIL (display->winsys == NULL, false);
+    _CG_RETURN_VAL_IF_FAIL(display->winsys == NULL, false);
 
-  sdl_display = c_slice_new0 (CoglDisplaySdl);
-  display->winsys = sdl_display;
+    sdl_display = c_slice_new0(cg_display_sdl_t);
+    display->winsys = sdl_display;
 
-  set_gl_attribs_from_framebuffer_config (&display->onscreen_template->config);
+    set_gl_attribs_from_framebuffer_config(&display->onscreen_template->config);
 
-  switch (display->renderer->driver)
-    {
-    case COGL_DRIVER_GL:
-      sdl_display->video_mode_flags = SDL_OPENGL;
-      break;
+    switch (display->renderer->driver) {
+    case CG_DRIVER_GL:
+        sdl_display->video_mode_flags = SDL_OPENGL;
+        break;
 
-    case COGL_DRIVER_GL3:
-      _cogl_set_error (error, COGL_WINSYS_ERROR,
-                       COGL_WINSYS_ERROR_INIT,
-                       "The SDL winsys does not support GL 3");
-      goto error;
+    case CG_DRIVER_GL3:
+        _cg_set_error(error,
+                      CG_WINSYS_ERROR,
+                      CG_WINSYS_ERROR_INIT,
+                      "The SDL winsys does not support GL 3");
+        goto error;
 
-#ifdef COGL_HAS_SDL_GLES_SUPPORT
-    case COGL_DRIVER_GLES2:
-      sdl_display->video_mode_flags = SDL_OPENGLES;
-      SDL_GL_SetAttribute (SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-      SDL_GL_SetAttribute (SDL_GL_CONTEXT_MINOR_VERSION, 0);
-      break;
+#ifdef CG_HAS_SDL_GLES_SUPPORT
+    case CG_DRIVER_GLES2:
+        sdl_display->video_mode_flags = SDL_OPENGLES;
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+        break;
 
-#elif defined (EMSCRIPTEN)
-    case COGL_DRIVER_GLES2:
-      sdl_display->video_mode_flags = SDL_OPENGL;
-      break;
+#elif defined(EMSCRIPTEN)
+    case CG_DRIVER_GLES2:
+        sdl_display->video_mode_flags = SDL_OPENGL;
+        break;
 #endif
 
     default:
-      c_assert_not_reached ();
+        c_assert_not_reached();
     }
 
-  /* There's no way to know what size the application will need until
-     it creates the first onscreen but we need to set the video mode
-     now so that we can get a GL context. We'll have to just guess at
-     a size an resize it later */
-  sdl_display->surface = SDL_SetVideoMode (640, 480, /* width/height */
-                                           0, /* bitsperpixel */
-                                           sdl_display->video_mode_flags);
+    /* There's no way to know what size the application will need until
+       it creates the first onscreen but we need to set the video mode
+       now so that we can get a GL context. We'll have to just guess at
+       a size an resize it later */
+    sdl_display->surface = SDL_SetVideoMode(640,
+                                            480, /* width/height */
+                                            0, /* bitsperpixel */
+                                            sdl_display->video_mode_flags);
 
-  if (sdl_display->surface == NULL)
-    {
-      _cogl_set_error (error, COGL_WINSYS_ERROR,
-                   COGL_WINSYS_ERROR_INIT,
-                   "SDL_SetVideoMode failed: %s",
-                   SDL_GetError ());
-      goto error;
+    if (sdl_display->surface == NULL) {
+        _cg_set_error(error,
+                      CG_WINSYS_ERROR,
+                      CG_WINSYS_ERROR_INIT,
+                      "SDL_SetVideoMode failed: %s",
+                      SDL_GetError());
+        goto error;
     }
 
-  return true;
+    return true;
 
 error:
-  _cogl_winsys_display_destroy (display);
-  return false;
+    _cg_winsys_display_destroy(display);
+    return false;
 }
 
 static void
-flush_pending_resize_notification_idle (void *user_data)
+flush_pending_resize_notification_idle(void *user_data)
 {
-  CoglContext *context = user_data;
-  CoglRenderer *renderer = context->display->renderer;
-  CoglRendererSdl *sdl_renderer = renderer->winsys;
-  CoglDisplaySdl *sdl_display = context->display->winsys;
-  CoglOnscreen *onscreen = sdl_display->onscreen;
+    cg_context_t *context = user_data;
+    cg_renderer_t *renderer = context->display->renderer;
+    cg_renderer_sdl_t *sdl_renderer = renderer->winsys;
+    cg_display_sdl_t *sdl_display = context->display->winsys;
+    cg_onscreen_t *onscreen = sdl_display->onscreen;
 
-  /* This needs to be disconnected before invoking the callbacks in
-   * case the callbacks cause it to be queued again */
-  _cogl_closure_disconnect (sdl_renderer->resize_notify_idle);
-  sdl_renderer->resize_notify_idle = NULL;
+    /* This needs to be disconnected before invoking the callbacks in
+     * case the callbacks cause it to be queued again */
+    _cg_closure_disconnect(sdl_renderer->resize_notify_idle);
+    sdl_renderer->resize_notify_idle = NULL;
 
-  _cogl_onscreen_notify_resize (onscreen);
+    _cg_onscreen_notify_resize(onscreen);
 }
 
-static CoglFilterReturn
-sdl_event_filter_cb (SDL_Event *event, void *data)
+static cg_filter_return_t
+sdl_event_filter_cb(SDL_Event *event, void *data)
 {
-  CoglContext *context = data;
-  CoglDisplay *display = context->display;
-  CoglDisplaySdl *sdl_display = display->winsys;
-  CoglFramebuffer *framebuffer;
+    cg_context_t *context = data;
+    cg_display_t *display = context->display;
+    cg_display_sdl_t *sdl_display = display->winsys;
+    cg_framebuffer_t *framebuffer;
 
-  if (!sdl_display->onscreen)
-    return COGL_FILTER_CONTINUE;
+    if (!sdl_display->onscreen)
+        return CG_FILTER_CONTINUE;
 
-  framebuffer = COGL_FRAMEBUFFER (sdl_display->onscreen);
+    framebuffer = CG_FRAMEBUFFER(sdl_display->onscreen);
 
-  if (event->type == SDL_VIDEORESIZE)
-    {
-      CoglRenderer *renderer = display->renderer;
-      CoglRendererSdl *sdl_renderer = renderer->winsys;
-      float width = event->resize.w;
-      float height = event->resize.h;
+    if (event->type == SDL_VIDEORESIZE) {
+        cg_renderer_t *renderer = display->renderer;
+        cg_renderer_sdl_t *sdl_renderer = renderer->winsys;
+        float width = event->resize.w;
+        float height = event->resize.h;
 
-      sdl_display->surface = SDL_SetVideoMode (width, height,
-                                               0, /* bitsperpixel */
-                                               sdl_display->video_mode_flags);
+        sdl_display->surface = SDL_SetVideoMode(width,
+                                                height,
+                                                0, /* bitsperpixel */
+                                                sdl_display->video_mode_flags);
 
-      _cogl_framebuffer_winsys_update_size (framebuffer, width, height);
+        _cg_framebuffer_winsys_update_size(framebuffer, width, height);
 
-      /* We only want to notify that a resize happened when the
-       * application calls cogl_context_dispatch so instead of
-       * immediately notifying we queue an idle callback */
-      if (!sdl_renderer->resize_notify_idle)
-        {
-          sdl_renderer->resize_notify_idle =
-            _cogl_poll_renderer_add_idle (renderer,
-                                          flush_pending_resize_notification_idle,
-                                          context,
-                                          NULL);
+        /* We only want to notify that a resize happened when the
+         * application calls cg_context_dispatch so instead of
+         * immediately notifying we queue an idle callback */
+        if (!sdl_renderer->resize_notify_idle) {
+            sdl_renderer->resize_notify_idle = _cg_poll_renderer_add_idle(
+                renderer,
+                flush_pending_resize_notification_idle,
+                context,
+                NULL);
         }
 
-      return COGL_FILTER_CONTINUE;
-    }
-  else if (event->type == SDL_VIDEOEXPOSE)
-    {
-      CoglOnscreenDirtyInfo info;
+        return CG_FILTER_CONTINUE;
+    } else if (event->type == SDL_VIDEOEXPOSE) {
+        cg_onscreen_dirty_info_t info;
 
-      /* Sadly SDL doesn't seem to report the rectangle of the expose
-       * event so we'll just queue the whole window */
-      info.x = 0;
-      info.y = 0;
-      info.width = framebuffer->width;
-      info.height = framebuffer->height;
+        /* Sadly SDL doesn't seem to report the rectangle of the expose
+         * event so we'll just queue the whole window */
+        info.x = 0;
+        info.y = 0;
+        info.width = framebuffer->width;
+        info.height = framebuffer->height;
 
-      _cogl_onscreen_queue_dirty (COGL_ONSCREEN (framebuffer), &info);
+        _cg_onscreen_queue_dirty(CG_ONSCREEN(framebuffer), &info);
     }
 
-  return COGL_FILTER_CONTINUE;
+    return CG_FILTER_CONTINUE;
 }
 
 static bool
-_cogl_winsys_context_init (CoglContext *context, CoglError **error)
+_cg_winsys_context_init(cg_context_t *context, cg_error_t **error)
 {
-  CoglRenderer *renderer = context->display->renderer;
+    cg_renderer_t *renderer = context->display->renderer;
 
-  if (C_UNLIKELY (renderer->sdl_event_type_set == false))
-    c_error ("cogl_sdl_renderer_set_event_type() or cogl_sdl_context_new() "
-             "must be called during initialization");
+    if (C_UNLIKELY(renderer->sdl_event_type_set == false))
+        c_error("cg_sdl_renderer_set_event_type() or cg_sdl_context_new() "
+                "must be called during initialization");
 
-  _cogl_renderer_add_native_filter (renderer,
-                                    (CoglNativeFilterFunc)sdl_event_filter_cb,
-                                    context);
+    _cg_renderer_add_native_filter(
+        renderer, (cg_native_filter_func_t)sdl_event_filter_cb, context);
 
-  /* We'll manually handle queueing dirty events in response to
-   * SDL_VIDEOEXPOSE events */
-  COGL_FLAGS_SET (context->private_features,
-                  COGL_PRIVATE_FEATURE_DIRTY_EVENTS,
-                  true);
+    /* We'll manually handle queueing dirty events in response to
+     * SDL_VIDEOEXPOSE events */
+    CG_FLAGS_SET(
+        context->private_features, CG_PRIVATE_FEATURE_DIRTY_EVENTS, true);
 
-  return _cogl_context_update_features (context, error);
+    return _cg_context_update_features(context, error);
 }
 
 static void
-_cogl_winsys_context_deinit (CoglContext *context)
-{
-}
-
-static void
-_cogl_winsys_onscreen_bind (CoglOnscreen *onscreen)
+_cg_winsys_context_deinit(cg_context_t *context)
 {
 }
 
 static void
-_cogl_winsys_onscreen_deinit (CoglOnscreen *onscreen)
+_cg_winsys_onscreen_bind(cg_onscreen_t *onscreen)
 {
-  CoglContext *context = COGL_FRAMEBUFFER (onscreen)->context;
-  CoglDisplay *display = context->display;
-  CoglDisplaySdl *sdl_display = display->winsys;
+}
 
-  sdl_display->onscreen = NULL;
+static void
+_cg_winsys_onscreen_deinit(cg_onscreen_t *onscreen)
+{
+    cg_context_t *context = CG_FRAMEBUFFER(onscreen)->context;
+    cg_display_t *display = context->display;
+    cg_display_sdl_t *sdl_display = display->winsys;
+
+    sdl_display->onscreen = NULL;
 }
 
 static bool
-_cogl_winsys_onscreen_init (CoglOnscreen *onscreen,
-                            CoglError **error)
+_cg_winsys_onscreen_init(cg_onscreen_t *onscreen,
+                         cg_error_t **error)
 {
-  CoglFramebuffer *framebuffer = COGL_FRAMEBUFFER (onscreen);
-  CoglContext *context = framebuffer->context;
-  CoglDisplay *display = context->display;
-  CoglDisplaySdl *sdl_display = display->winsys;
-  bool flags_changed = false;
-  int width, height;
+    cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
+    cg_context_t *context = framebuffer->context;
+    cg_display_t *display = context->display;
+    cg_display_sdl_t *sdl_display = display->winsys;
+    bool flags_changed = false;
+    int width, height;
 
-  if (sdl_display->onscreen)
-    {
-      _cogl_set_error (error, COGL_WINSYS_ERROR,
-                   COGL_WINSYS_ERROR_CREATE_ONSCREEN,
-                   "SDL winsys only supports a single onscreen window");
-      return false;
+    if (sdl_display->onscreen) {
+        _cg_set_error(error,
+                      CG_WINSYS_ERROR,
+                      CG_WINSYS_ERROR_CREATE_ONSCREEN,
+                      "SDL winsys only supports a single onscreen window");
+        return false;
     }
 
-  width = cogl_framebuffer_get_width (framebuffer);
-  height = cogl_framebuffer_get_height (framebuffer);
+    width = cg_framebuffer_get_width(framebuffer);
+    height = cg_framebuffer_get_height(framebuffer);
 
-  if (cogl_onscreen_get_resizable (onscreen))
-    {
-      sdl_display->video_mode_flags |= SDL_RESIZABLE;
-      flags_changed = true;
+    if (cg_onscreen_get_resizable(onscreen)) {
+        sdl_display->video_mode_flags |= SDL_RESIZABLE;
+        flags_changed = true;
     }
 
-  /* Try to update the video size using the onscreen size */
-  if (width != sdl_display->surface->w ||
-      height != sdl_display->surface->h ||
-      flags_changed)
-    {
-      sdl_display->surface = SDL_SetVideoMode (width, height,
-                                               0, /* bitsperpixel */
-                                               sdl_display->video_mode_flags);
+    /* Try to update the video size using the onscreen size */
+    if (width != sdl_display->surface->w || height != sdl_display->surface->h ||
+        flags_changed) {
+        sdl_display->surface = SDL_SetVideoMode(width,
+                                                height,
+                                                0, /* bitsperpixel */
+                                                sdl_display->video_mode_flags);
 
-      if (sdl_display->surface == NULL)
-        {
-          _cogl_set_error (error, COGL_WINSYS_ERROR,
-                       COGL_WINSYS_ERROR_CREATE_ONSCREEN,
-                       "SDL_SetVideoMode failed: %s",
-                       SDL_GetError ());
-          return false;
+        if (sdl_display->surface == NULL) {
+            _cg_set_error(error,
+                          CG_WINSYS_ERROR,
+                          CG_WINSYS_ERROR_CREATE_ONSCREEN,
+                          "SDL_SetVideoMode failed: %s",
+                          SDL_GetError());
+            return false;
         }
     }
 
-  _cogl_framebuffer_winsys_update_size (framebuffer,
-                                        sdl_display->surface->w,
-                                        sdl_display->surface->h);
+    _cg_framebuffer_winsys_update_size(
+        framebuffer, sdl_display->surface->w, sdl_display->surface->h);
 
-  sdl_display->onscreen = onscreen;
+    sdl_display->onscreen = onscreen;
 
-  return true;
+    return true;
 }
 
 static void
-_cogl_winsys_onscreen_swap_buffers_with_damage (CoglOnscreen *onscreen,
-                                                const int *rectangles,
-                                                int n_rectangles)
+_cg_winsys_onscreen_swap_buffers_with_damage(
+    cg_onscreen_t *onscreen, const int *rectangles, int n_rectangles)
 {
-  SDL_GL_SwapBuffers ();
+    SDL_GL_SwapBuffers();
 }
 
 static void
-_cogl_winsys_onscreen_update_swap_throttled (CoglOnscreen *onscreen)
+_cg_winsys_onscreen_update_swap_throttled(cg_onscreen_t *onscreen)
 {
-  /* SDL doesn't appear to provide a way to set this */
+    /* SDL doesn't appear to provide a way to set this */
 }
 
 static void
-_cogl_winsys_onscreen_set_visibility (CoglOnscreen *onscreen,
-                                      bool visibility)
+_cg_winsys_onscreen_set_visibility(cg_onscreen_t *onscreen,
+                                   bool visibility)
 {
-  /* SDL doesn't appear to provide a way to set this */
+    /* SDL doesn't appear to provide a way to set this */
 }
 
 static void
-_cogl_winsys_onscreen_set_resizable (CoglOnscreen *onscreen,
-                                     bool resizable)
+_cg_winsys_onscreen_set_resizable(cg_onscreen_t *onscreen,
+                                  bool resizable)
 {
-  CoglFramebuffer *framebuffer = COGL_FRAMEBUFFER (onscreen);
-  CoglContext *context = framebuffer->context;
-  CoglDisplay *display = context->display;
-  CoglDisplaySdl *sdl_display = display->winsys;
-  int width, height;
+    cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
+    cg_context_t *context = framebuffer->context;
+    cg_display_t *display = context->display;
+    cg_display_sdl_t *sdl_display = display->winsys;
+    int width, height;
 
-  width = cogl_framebuffer_get_width (framebuffer);
-  height = cogl_framebuffer_get_height (framebuffer);
+    width = cg_framebuffer_get_width(framebuffer);
+    height = cg_framebuffer_get_height(framebuffer);
 
-  if (resizable)
-    sdl_display->video_mode_flags |= SDL_RESIZABLE;
-  else
-    sdl_display->video_mode_flags &= ~SDL_RESIZABLE;
+    if (resizable)
+        sdl_display->video_mode_flags |= SDL_RESIZABLE;
+    else
+        sdl_display->video_mode_flags &= ~SDL_RESIZABLE;
 
-  sdl_display->surface = SDL_SetVideoMode (width, height,
-                                           0, /* bitsperpixel */
-                                           sdl_display->video_mode_flags);
+    sdl_display->surface = SDL_SetVideoMode(width,
+                                            height,
+                                            0, /* bitsperpixel */
+                                            sdl_display->video_mode_flags);
 }
 
-const CoglWinsysVtable *
-_cogl_winsys_sdl_get_vtable (void)
+const cg_winsys_vtable_t *
+_cg_winsys_sdl_get_vtable(void)
 {
-  static bool vtable_inited = false;
-  static CoglWinsysVtable vtable;
+    static bool vtable_inited = false;
+    static cg_winsys_vtable_t vtable;
 
-  /* It would be nice if we could use C99 struct initializers here
-     like the GLX backend does. However this code is more likely to be
-     compiled using Visual Studio which (still!) doesn't support them
-     so we initialize it in code instead */
+    /* It would be nice if we could use C99 struct initializers here
+       like the GLX backend does. However this code is more likely to be
+       compiled using Visual Studio which (still!) doesn't support them
+       so we initialize it in code instead */
 
-  if (!vtable_inited)
-    {
-      memset (&vtable, 0, sizeof (vtable));
+    if (!vtable_inited) {
+        memset(&vtable, 0, sizeof(vtable));
 
-      vtable.id = COGL_WINSYS_ID_SDL;
-      vtable.name = "SDL";
-      vtable.renderer_get_proc_address = _cogl_winsys_renderer_get_proc_address;
-      vtable.renderer_connect = _cogl_winsys_renderer_connect;
-      vtable.renderer_disconnect = _cogl_winsys_renderer_disconnect;
-      vtable.display_setup = _cogl_winsys_display_setup;
-      vtable.display_destroy = _cogl_winsys_display_destroy;
-      vtable.context_init = _cogl_winsys_context_init;
-      vtable.context_deinit = _cogl_winsys_context_deinit;
-      vtable.onscreen_init = _cogl_winsys_onscreen_init;
-      vtable.onscreen_deinit = _cogl_winsys_onscreen_deinit;
-      vtable.onscreen_bind = _cogl_winsys_onscreen_bind;
-      vtable.onscreen_swap_buffers_with_damage =
-        _cogl_winsys_onscreen_swap_buffers_with_damage;
-      vtable.onscreen_update_swap_throttled =
-        _cogl_winsys_onscreen_update_swap_throttled;
-      vtable.onscreen_set_visibility = _cogl_winsys_onscreen_set_visibility;
-      vtable.onscreen_set_resizable = _cogl_winsys_onscreen_set_resizable;
+        vtable.id = CG_WINSYS_ID_SDL;
+        vtable.name = "SDL";
+        vtable.renderer_get_proc_address = _cg_winsys_renderer_get_proc_address;
+        vtable.renderer_connect = _cg_winsys_renderer_connect;
+        vtable.renderer_disconnect = _cg_winsys_renderer_disconnect;
+        vtable.display_setup = _cg_winsys_display_setup;
+        vtable.display_destroy = _cg_winsys_display_destroy;
+        vtable.context_init = _cg_winsys_context_init;
+        vtable.context_deinit = _cg_winsys_context_deinit;
+        vtable.onscreen_init = _cg_winsys_onscreen_init;
+        vtable.onscreen_deinit = _cg_winsys_onscreen_deinit;
+        vtable.onscreen_bind = _cg_winsys_onscreen_bind;
+        vtable.onscreen_swap_buffers_with_damage =
+            _cg_winsys_onscreen_swap_buffers_with_damage;
+        vtable.onscreen_update_swap_throttled =
+            _cg_winsys_onscreen_update_swap_throttled;
+        vtable.onscreen_set_visibility = _cg_winsys_onscreen_set_visibility;
+        vtable.onscreen_set_resizable = _cg_winsys_onscreen_set_resizable;
 
-      vtable_inited = true;
+        vtable_inited = true;
     }
 
-  return &vtable;
+    return &vtable;
 }
