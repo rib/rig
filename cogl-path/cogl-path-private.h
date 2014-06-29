@@ -28,110 +28,95 @@
  *
  */
 
-#ifndef __COGL_PATH_PRIVATE_H
-#define __COGL_PATH_PRIVATE_H
+#ifndef __CG_PATH_PRIVATE_H
+#define __CG_PATH_PRIVATE_H
 
 #include "cogl-object.h"
 #include "cogl-attribute-private.h"
 
-typedef struct _floatVec2
-{
-  float x;
-  float y;
-} floatVec2;
+typedef struct _float_vec2_t {
+    float x;
+    float y;
+} float_vec2_t;
 
-typedef struct _CoglPathNode
-{
-  float x;
-  float y;
-  unsigned int path_size;
-} CoglPathNode;
+typedef struct _cg_path_node_t {
+    float x;
+    float y;
+    unsigned int path_size;
+} cg_path_node_t;
 
-typedef struct _CoglBezQuad
-{
-  floatVec2 p1;
-  floatVec2 p2;
-  floatVec2 p3;
-} CoglBezQuad;
+typedef struct _cg_bez_quad_t {
+    float_vec2_t p1;
+    float_vec2_t p2;
+    float_vec2_t p3;
+} cg_bez_quad_t;
 
-typedef struct _CoglBezCubic
-{
-  floatVec2 p1;
-  floatVec2 p2;
-  floatVec2 p3;
-  floatVec2 p4;
-} CoglBezCubic;
+typedef struct _cg_bez_cubic_t {
+    float_vec2_t p1;
+    float_vec2_t p2;
+    float_vec2_t p3;
+    float_vec2_t p4;
+} cg_bez_cubic_t;
 
-typedef struct _CoglPathData CoglPathData;
+typedef struct _cg_path_data_t cg_path_data_t;
 
-struct _CoglPath
-{
-  CoglObject _parent;
+struct _cg_path_t {
+    cg_object_t _parent;
 
-  CoglPathData *data;
+    cg_path_data_t *data;
 };
 
-#define COGL_PATH_N_ATTRIBUTES 2
+#define CG_PATH_N_ATTRIBUTES 2
 
-struct _CoglPathData
-{
-  unsigned int         ref_count;
+struct _cg_path_data_t {
+    unsigned int ref_count;
 
-  CoglContext         *context;
+    cg_context_t *context;
 
-  CoglPathFillRule     fill_rule;
+    cg_path_fill_rule_t fill_rule;
 
-  c_array_t              *path_nodes;
+    c_array_t *path_nodes;
 
-  floatVec2            path_start;
-  floatVec2            path_pen;
-  unsigned int         last_path;
-  floatVec2            path_nodes_min;
-  floatVec2            path_nodes_max;
+    float_vec2_t path_start;
+    float_vec2_t path_pen;
+    unsigned int last_path;
+    float_vec2_t path_nodes_min;
+    float_vec2_t path_nodes_max;
 
-  CoglAttributeBuffer *fill_attribute_buffer;
-  CoglIndices         *fill_vbo_indices;
-  unsigned int         fill_vbo_n_indices;
-  CoglAttribute       *fill_attributes[COGL_PATH_N_ATTRIBUTES + 1];
-  CoglPrimitive       *fill_primitive;
+    cg_attribute_buffer_t *fill_attribute_buffer;
+    cg_indices_t *fill_vbo_indices;
+    unsigned int fill_vbo_n_indices;
+    cg_attribute_t *fill_attributes[CG_PATH_N_ATTRIBUTES + 1];
+    cg_primitive_t *fill_primitive;
 
-  CoglAttributeBuffer *stroke_attribute_buffer;
-  CoglAttribute      **stroke_attributes;
-  unsigned int         stroke_n_attributes;
+    cg_attribute_buffer_t *stroke_attribute_buffer;
+    cg_attribute_t **stroke_attributes;
+    unsigned int stroke_n_attributes;
 
-  /* This is used as an optimisation for when the path contains a
-     single contour specified using cogl2_path_rectangle. Cogl is more
-     optimised to handle rectangles than paths so we can detect this
-     case and divert to the journal or a rectangle clip. If it is true
-     then the entire path can be described by calling
-     _cogl_path_get_bounds */
-  bool             is_rectangle;
+    /* This is used as an optimisation for when the path contains a
+       single contour specified using cogl2_path_rectangle. Cogl is more
+       optimised to handle rectangles than paths so we can detect this
+       case and divert to the journal or a rectangle clip. If it is true
+       then the entire path can be described by calling
+       _cg_path_get_bounds */
+    bool is_rectangle;
 };
 
 void
-_cogl_add_path_to_stencil_buffer (CoglPath  *path,
-                                  bool   merge,
-                                  bool   need_clear);
+_cg_add_path_to_stencil_buffer(cg_path_t *path, bool merge, bool need_clear);
 
-void
-_cogl_path_get_bounds (CoglPath *path,
-                       float *min_x,
-                       float *min_y,
-                       float *max_x,
-                       float *max_y);
+void _cg_path_get_bounds(
+    cg_path_t *path, float *min_x, float *min_y, float *max_x, float *max_y);
 
-bool
-_cogl_path_is_rectangle (CoglPath *path);
+bool _cg_path_is_rectangle(cg_path_t *path);
 
-void
-_cogl_path_stroke_nodes (CoglPath *path,
-                         CoglFramebuffer *framebuffer,
-                         CoglPipeline *pipeline);
+void _cg_path_stroke_nodes(cg_path_t *path,
+                           cg_framebuffer_t *framebuffer,
+                           cg_pipeline_t *pipeline);
 
-void
-_cogl_path_fill_nodes (CoglPath *path,
-                       CoglFramebuffer *framebuffer,
-                       CoglPipeline *pipeline,
-                       CoglDrawFlags flags);
+void _cg_path_fill_nodes(cg_path_t *path,
+                         cg_framebuffer_t *framebuffer,
+                         cg_pipeline_t *pipeline,
+                         cg_draw_flags_t flags);
 
-#endif /* __COGL_PATH_PRIVATE_H */
+#endif /* __CG_PATH_PRIVATE_H */

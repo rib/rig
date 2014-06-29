@@ -28,16 +28,16 @@
  *
  */
 
-#ifndef __COGL_PATH_H__
-#define __COGL_PATH_H__
+#ifndef __CG_PATH_H__
+#define __CG_PATH_H__
 
-#ifdef COGL_COMPILATION
+#ifdef CG_COMPILATION
 #include "cogl-context.h"
 #else
 #include <cogl/cogl.h>
 #endif
 
-COGL_BEGIN_DECLS
+CG_BEGIN_DECLS
 
 /**
  * SECTION:cogl-paths
@@ -57,30 +57,29 @@ COGL_BEGIN_DECLS
  * vertices of the path segments relative to the last pen location
  * rather then in the absolute coordinates.
  */
-typedef struct _CoglPath CoglPath;
+typedef struct _cg_path_t cg_path_t;
 
 /**
- * cogl_path_new:
- * @context: A #CoglContext pointer
+ * cg_path_new:
+ * @context: A #cg_context_t pointer
  *
  * Creates a new, empty path object. The default fill rule is
- * %COGL_PATH_FILL_RULE_EVEN_ODD.
+ * %CG_PATH_FILL_RULE_EVEN_ODD.
  *
- * Return value: A pointer to a newly allocated #CoglPath, which can
- * be freed using cogl_object_unref().
+ * Return value: A pointer to a newly allocated #cg_path_t, which can
+ * be freed using cg_object_unref().
  *
  * Since: 2.0
  */
-CoglPath *
-cogl_path_new (CoglContext *context);
+cg_path_t *cg_path_new(cg_context_t *context);
 
 /**
- * cogl_path_copy:
- * @path: A #CoglPath object
+ * cg_path_copy:
+ * @path: A #cg_path_t object
  *
  * Returns a new copy of the path in @path. The new path has a
  * reference count of 1 so you should unref it with
- * cogl_object_unref() if you no longer need it.
+ * cg_object_unref() if you no longer need it.
  *
  * Internally the path will share the data until one of the paths is
  * modified so copying paths should be relatively cheap.
@@ -89,26 +88,24 @@ cogl_path_new (CoglContext *context);
  *
  * Since: 2.0
  */
-CoglPath *
-cogl_path_copy (CoglPath *path);
+cg_path_t *cg_path_copy(cg_path_t *path);
 
 /**
- * cogl_is_path:
- * @object: A #CoglObject
+ * cg_is_path:
+ * @object: A #cg_object_t
  *
  * Gets whether the given object references an existing path object.
  *
- * Return value: %true if the object references a #CoglPath,
+ * Return value: %true if the object references a #cg_path_t,
  *   %false otherwise.
  *
  * Since: 2.0
  */
-bool
-cogl_is_path (void *object);
+bool cg_is_path(void *object);
 
 /**
- * cogl_path_move_to:
- * @path: A #CoglPath
+ * cg_path_move_to:
+ * @path: A #cg_path_t
  * @x: X coordinate of the pen location to move to.
  * @y: Y coordinate of the pen location to move to.
  *
@@ -117,14 +114,11 @@ cogl_is_path (void *object);
  *
  * Since: 2.0
  */
-void
-cogl_path_move_to (CoglPath *path,
-                   float x,
-                   float y);
+void cg_path_move_to(cg_path_t *path, float x, float y);
 
 /**
- * cogl_path_rel_move_to:
- * @path: A #CoglPath
+ * cg_path_rel_move_to:
+ * @path: A #cg_path_t
  * @x: X offset from the current pen location to move the pen to.
  * @y: Y offset from the current pen location to move the pen to.
  *
@@ -134,14 +128,11 @@ cogl_path_move_to (CoglPath *path,
  *
  * Since: 2.0
  */
-void
-cogl_path_rel_move_to (CoglPath *path,
-                       float x,
-                       float y);
+void cg_path_rel_move_to(cg_path_t *path, float x, float y);
 
 /**
- * cogl_path_line_to:
- * @path: A #CoglPath
+ * cg_path_line_to:
+ * @path: A #cg_path_t
  * @x: X coordinate of the end line vertex
  * @y: Y coordinate of the end line vertex
  *
@@ -150,14 +141,11 @@ cogl_path_rel_move_to (CoglPath *path,
  *
  * Since: 2.0
  */
-void
-cogl_path_line_to (CoglPath *path,
-                   float x,
-                   float y);
+void cg_path_line_to(cg_path_t *path, float x, float y);
 
 /**
- * cogl_path_rel_line_to:
- * @path: A #CoglPath
+ * cg_path_rel_line_to:
+ * @path: A #cg_path_t
  * @x: X offset from the current pen location of the end line vertex
  * @y: Y offset from the current pen location of the end line vertex
  *
@@ -166,14 +154,11 @@ cogl_path_line_to (CoglPath *path,
  *
  * Since: 2.0
  */
-void
-cogl_path_rel_line_to (CoglPath *path,
-                       float x,
-                       float y);
+void cg_path_rel_line_to(cg_path_t *path, float x, float y);
 
 /**
- * cogl_path_arc:
- * @path: A #CoglPath
+ * cg_path_arc:
+ * @path: A #cg_path_t
  * @center_x: X coordinate of the elliptical arc center
  * @center_y: Y coordinate of the elliptical arc center
  * @radius_x: X radius of the elliptical arc
@@ -194,18 +179,17 @@ cogl_path_rel_line_to (CoglPath *path,
  *
  * Since: 2.0
  */
-void
-cogl_path_arc (CoglPath *path,
-               float center_x,
-               float center_y,
-               float radius_x,
-               float radius_y,
-               float angle_1,
-               float angle_2);
+void cg_path_arc(cg_path_t *path,
+                 float center_x,
+                 float center_y,
+                 float radius_x,
+                 float radius_y,
+                 float angle_1,
+                 float angle_2);
 
 /**
- * cogl_path_curve_to:
- * @path: A #CoglPath
+ * cg_path_curve_to:
+ * @path: A #cg_path_t
  * @x_1: X coordinate of the second bezier control point
  * @y_1: Y coordinate of the second bezier control point
  * @x_2: X coordinate of the third bezier control point
@@ -219,18 +203,17 @@ cogl_path_arc (CoglPath *path,
  *
  * Since: 2.0
  */
-void
-cogl_path_curve_to (CoglPath *path,
-                    float x_1,
-                    float y_1,
-                    float x_2,
-                    float y_2,
-                    float x_3,
-                    float y_3);
+void cg_path_curve_to(cg_path_t *path,
+                      float x_1,
+                      float y_1,
+                      float x_2,
+                      float y_2,
+                      float x_3,
+                      float y_3);
 
 /**
- * cogl_path_rel_curve_to:
- * @path: A #CoglPath
+ * cg_path_rel_curve_to:
+ * @path: A #cg_path_t
  * @x_1: X coordinate of the second bezier control point
  * @y_1: Y coordinate of the second bezier control point
  * @x_2: X coordinate of the third bezier control point
@@ -245,30 +228,28 @@ cogl_path_curve_to (CoglPath *path,
  *
  * Since: 2.0
  */
-void
-cogl_path_rel_curve_to (CoglPath *path,
-                        float x_1,
-                        float y_1,
-                        float x_2,
-                        float y_2,
-                        float x_3,
-                        float y_3);
+void cg_path_rel_curve_to(cg_path_t *path,
+                          float x_1,
+                          float y_1,
+                          float x_2,
+                          float y_2,
+                          float x_3,
+                          float y_3);
 
 /**
- * cogl_path_close:
- * @path: A #CoglPath
+ * cg_path_close:
+ * @path: A #cg_path_t
  *
  * Closes the path being constructed by adding a straight line segment
  * to it that ends at the first vertex of the path.
  *
  * Since: 2.0
  */
-void
-cogl_path_close (CoglPath *path);
+void cg_path_close(cg_path_t *path);
 
 /**
- * cogl_path_line:
- * @path: A #CoglPath
+ * cg_path_line:
+ * @path: A #cg_path_t
  * @x_1: X coordinate of the start line vertex
  * @y_1: Y coordinate of the start line vertex
  * @x_2: X coordinate of the end line vertex
@@ -280,16 +261,11 @@ cogl_path_close (CoglPath *path);
  *
  * Since: 2.0
  */
-void
-cogl_path_line (CoglPath *path,
-                float x_1,
-                float y_1,
-                float x_2,
-                float y_2);
+void cg_path_line(cg_path_t *path, float x_1, float y_1, float x_2, float y_2);
 
 /**
- * cogl_path_polyline:
- * @path: A #CoglPath
+ * cg_path_polyline:
+ * @path: A #cg_path_t
  * @coords: (in) (array) (transfer none): A pointer to the first element of an
  * array of fixed-point values that specify the vertex coordinates.
  * @num_points: The total number of vertices.
@@ -308,14 +284,11 @@ cogl_path_line (CoglPath *path,
  *
  * Since: 2.0
  */
-void
-cogl_path_polyline (CoglPath *path,
-                    const float *coords,
-                    int num_points);
+void cg_path_polyline(cg_path_t *path, const float *coords, int num_points);
 
 /**
- * cogl_path_polygon:
- * @path: A #CoglPath
+ * cg_path_polygon:
+ * @path: A #cg_path_t
  * @coords: (in) (array) (transfer none): A pointer to the first element of
  * an array of fixed-point values that specify the vertex coordinates.
  * @num_points: The total number of vertices.
@@ -330,14 +303,11 @@ cogl_path_polyline (CoglPath *path,
  *
  * Since: 2.0
  */
-void
-cogl_path_polygon (CoglPath *path,
-                   const float *coords,
-                   int num_points);
+void cg_path_polygon(cg_path_t *path, const float *coords, int num_points);
 
 /**
- * cogl_path_rectangle:
- * @path: A #CoglPath
+ * cg_path_rectangle:
+ * @path: A #cg_path_t
  * @x_1: X coordinate of the top-left corner.
  * @y_1: Y coordinate of the top-left corner.
  * @x_2: X coordinate of the bottom-right corner.
@@ -349,15 +319,11 @@ cogl_path_polygon (CoglPath *path,
  * Since: 2.0
  */
 void
-cogl_path_rectangle (CoglPath *path,
-                     float x_1,
-                     float y_1,
-                     float x_2,
-                     float y_2);
+cg_path_rectangle(cg_path_t *path, float x_1, float y_1, float x_2, float y_2);
 
 /**
- * cogl_path_ellipse:
- * @path: A #CoglPath
+ * cg_path_ellipse:
+ * @path: A #cg_path_t
  * @center_x: X coordinate of the ellipse center
  * @center_y: Y coordinate of the ellipse center
  * @radius_x: X radius of the ellipse
@@ -368,16 +334,15 @@ cogl_path_rectangle (CoglPath *path,
  *
  * Since: 2.0
  */
-void
-cogl_path_ellipse (CoglPath *path,
-                   float center_x,
-                   float center_y,
-                   float radius_x,
-                   float radius_y);
+void cg_path_ellipse(cg_path_t *path,
+                     float center_x,
+                     float center_y,
+                     float radius_x,
+                     float radius_y);
 
 /**
- * cogl_path_round_rectangle:
- * @path: A #CoglPath
+ * cg_path_round_rectangle:
+ * @path: A #cg_path_t
  * @x_1: X coordinate of the top-left corner.
  * @y_1: Y coordinate of the top-left corner.
  * @x_2: X coordinate of the bottom-right corner.
@@ -391,27 +356,26 @@ cogl_path_ellipse (CoglPath *path,
  *
  * Since: 2.0
  */
-void
-cogl_path_round_rectangle (CoglPath *path,
-                           float x_1,
-                           float y_1,
-                           float x_2,
-                           float y_2,
-                           float radius,
-                           float arc_step);
+void cg_path_round_rectangle(cg_path_t *path,
+                             float x_1,
+                             float y_1,
+                             float x_2,
+                             float y_2,
+                             float radius,
+                             float arc_step);
 
 /**
- * CoglPathFillRule:
- * @COGL_PATH_FILL_RULE_NON_ZERO: Each time the line crosses an edge of
+ * cg_path_fill_rule_t:
+ * @CG_PATH_FILL_RULE_NON_ZERO: Each time the line crosses an edge of
  * the path from left to right one is added to a counter and each time
  * it crosses from right to left the counter is decremented. If the
  * counter is non-zero then the point will be filled. See <xref
  * linkend="fill-rule-non-zero"/>.
- * @COGL_PATH_FILL_RULE_EVEN_ODD: If the line crosses an edge of the
+ * @CG_PATH_FILL_RULE_EVEN_ODD: If the line crosses an edge of the
  * path an odd number of times then the point will filled, otherwise
  * it won't. See <xref linkend="fill-rule-even-odd"/>.
  *
- * #CoglPathFillRule is used to determine how a path is filled. There
+ * #cg_path_fill_rule_t is used to determine how a path is filled. There
  * are two options - 'non-zero' and 'even-odd'. To work out whether any
  * point will be filled imagine drawing an infinetely long line in any
  * direction from that point. The number of times and the direction
@@ -420,7 +384,7 @@ cogl_path_round_rectangle (CoglPath *path,
  * as if there was an extra line joining the first point and the last
  * point.
  *
- * The default fill rule when creating a path is %COGL_PATH_FILL_RULE_EVEN_ODD.
+ * The default fill rule when creating a path is %CG_PATH_FILL_RULE_EVEN_ODD.
  *
  * <figure id="fill-rule-non-zero">
  *   <title>Example of filling various paths using the non-zero rule</title>
@@ -435,66 +399,63 @@ cogl_path_round_rectangle (CoglPath *path,
  * Since: 1.4
  */
 typedef enum {
-  COGL_PATH_FILL_RULE_NON_ZERO,
-  COGL_PATH_FILL_RULE_EVEN_ODD
-} CoglPathFillRule;
+    CG_PATH_FILL_RULE_NON_ZERO,
+    CG_PATH_FILL_RULE_EVEN_ODD
+} cg_path_fill_rule_t;
 
 /**
- * cogl_path_set_fill_rule:
- * @path: A #CoglPath
+ * cg_path_set_fill_rule:
+ * @path: A #cg_path_t
  * @fill_rule: The new fill rule.
  *
  * Sets the fill rule of the current path to @fill_rule. This will
- * affect how the path is filled when cogl_framebuffer_fill_path() is
+ * affect how the path is filled when cg_framebuffer_fill_path() is
  * later called.
  *
  * Since: 2.0
  */
-void
-cogl_path_set_fill_rule (CoglPath *path, CoglPathFillRule fill_rule);
+void cg_path_set_fill_rule(cg_path_t *path, cg_path_fill_rule_t fill_rule);
 
 /**
- * cogl_path_get_fill_rule:
- * @path: A #CoglPath
+ * cg_path_get_fill_rule:
+ * @path: A #cg_path_t
  *
- * Retrieves the fill rule set using cogl_path_set_fill_rule().
+ * Retrieves the fill rule set using cg_path_set_fill_rule().
  *
  * Return value: the fill rule that is used for the current path.
  *
  * Since: 2.0
  */
-CoglPathFillRule
-cogl_path_get_fill_rule (CoglPath *path);
+cg_path_fill_rule_t cg_path_get_fill_rule(cg_path_t *path);
 
 /**
- * cogl_framebuffer_fill_path:
- * @path: The #CoglPath to fill
- * @framebuffer: A #CoglFramebuffer
- * @pipeline: A #CoglPipeline to render with
+ * cg_framebuffer_fill_path:
+ * @path: The #cg_path_t to fill
+ * @framebuffer: A #cg_framebuffer_t
+ * @pipeline: A #cg_pipeline_t to render with
  *
  * Draws a triangle tesselation of the given @path using the specified
  * GPU @pipeline to the given @framebuffer.
  *
  * The tesselated interior of the path is determined using the fill
- * rule of the path. See %CoglPathFillRule for details.
+ * rule of the path. See %cg_path_fill_rule_t for details.
  *
  * <note>The result of referencing sliced textures in your current
  * pipeline when filling a path are undefined. You should pass
- * the %COGL_TEXTURE_NO_SLICING flag when loading any texture you will
+ * the %CG_TEXTURE_NO_SLICING flag when loading any texture you will
  * use while filling a path.</note>
  *
  * Since: 2.0
  */
-void
-cogl_path_fill (CoglPath *path,
-                CoglFramebuffer *framebuffer,
-                CoglPipeline *pipeline);
+void cg_path_fill(cg_path_t *path,
+                  cg_framebuffer_t *framebuffer,
+                  cg_pipeline_t *pipeline);
 
 /**
- * cogl_path_stroke:
- * @path: The #CoglPath to stroke
- * @framebuffer: A #CoglFramebuffer
- * @pipeline: A #CoglPipeline to render with
+ * cg_path_stroke:
+ * @path: The #cg_path_t to stroke
+ * @framebuffer: A #cg_framebuffer_t
+ * @pipeline: A #cg_pipeline_t to render with
  *
  * Draws a list of line primitives corresponding to the edge of the
  * given @path using the specified GPU @pipeline to the given
@@ -507,29 +468,26 @@ cogl_path_fill (CoglPath *path,
  *
  * Since: 2.0
  */
-void
-cogl_path_stroke (CoglPath *path,
-                  CoglFramebuffer *framebuffer,
-                  CoglPipeline *pipeline);
+void cg_path_stroke(cg_path_t *path,
+                    cg_framebuffer_t *framebuffer,
+                    cg_pipeline_t *pipeline);
 
 /**
- * cogl_framebuffer_push_path_clip:
- * @framebuffer: A #CoglFramebuffer pointer
+ * cg_framebuffer_push_path_clip:
+ * @framebuffer: A #cg_framebuffer_t pointer
  * @path: The path to clip with.
  *
  * Sets a new clipping area using the silhouette of the specified,
  * filled @path.  The clipping area is intersected with the previous
  * clipping area. To restore the previous clipping area, call
- * cogl_framebuffer_pop_clip().
+ * cg_framebuffer_pop_clip().
  *
  * Since: 1.0
  * Stability: unstable
  */
-void
-cogl_framebuffer_push_path_clip (CoglFramebuffer *framebuffer,
-                                 CoglPath *path);
+void cg_framebuffer_push_path_clip(cg_framebuffer_t *framebuffer,
+                                   cg_path_t *path);
 
-COGL_END_DECLS
+CG_END_DECLS
 
-#endif /* __COGL_PATH_H__ */
-
+#endif /* __CG_PATH_H__ */

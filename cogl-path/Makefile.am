@@ -63,7 +63,7 @@ libcogl_path_la_LIBADD += $(COGL_DEP_LIBS) $(COGL_GST_DEP_LIBS) $(COGL_EXTRA_LDF
 libcogl_path_la_LDFLAGS = -static
 
 AM_CPPFLAGS = \
-	-DCOGL_COMPILATION \
+	-DCG_COMPILATION \
 	-DG_LOG_DOMAIN=\"CoglPath\" \
 	-I$(top_srcdir)/clib/src \
 	-I$(top_builddir)/clib/src \

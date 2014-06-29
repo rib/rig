@@ -37,8 +37,8 @@
 #include <clib.h>
 
 #define memRealloc c_realloc
-#define memAlloc   c_malloc
-#define memFree    c_free
+#define memAlloc c_malloc
+#define memFree c_free
 #define memInit(x) 1
 
 /* tess.c defines true and false itself unconditionally so we need to
