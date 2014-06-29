@@ -38,20 +38,18 @@
 #define PACKAGE "CoglGst"
 
 static gboolean
-_plugin_init (GstPlugin *coglgstvideosink)
+_plugin_init(GstPlugin *coglgstvideosink)
 {
-  return gst_element_register (coglgstvideosink,
-                               "coglsink",
-                               GST_RANK_PRIMARY,
-                               COGL_GST_TYPE_VIDEO_SINK);
+    return gst_element_register(
+        coglgstvideosink, "coglsink", GST_RANK_PRIMARY, CG_GST_TYPE_VIDEO_SINK);
 }
 
-GST_PLUGIN_DEFINE (GST_VERSION_MAJOR,
-                   GST_VERSION_MINOR,
-                   cogl,
-                   "Sends video data from GStreamer to a Cogl pipeline",
-                   _plugin_init,
-                   COGL_VERSION_STRING,
-                   "MIT",
-                   PACKAGE,
-                   "http://cogl3d.org/")
+GST_PLUGIN_DEFINE(GST_VERSION_MAJOR,
+                  GST_VERSION_MINOR,
+                  cogl,
+                  "Sends video data from GStreamer to a Cogl pipeline",
+                  _plugin_init,
+                  CG_VERSION_STRING,
+                  "MIT",
+                  PACKAGE,
+                  "http://cogl3d.org/")

@@ -27,16 +27,16 @@
  * SOFTWARE.
  */
 
-#ifndef __COGL_GST_VIDEO_SINK_H__
-#define __COGL_GST_VIDEO_SINK_H__
+#ifndef __CG_GST_VIDEO_SINK_H__
+#define __CG_GST_VIDEO_SINK_H__
 #include <glib-object.h>
 #include <gst/base/gstbasesink.h>
 
 /* We just need the public Cogl api for cogl-gst but we first need to
- * undef COGL_COMPILATION to avoid getting an error that normally
+ * undef CG_COMPILATION to avoid getting an error that normally
  * checks cogl.h isn't used internally. */
-#ifdef COGL_COMPILATION
-#undef COGL_COMPILATION
+#ifdef CG_COMPILATION
+#undef CG_COMPILATION
 #endif
 
 #include <cogl/cogl.h>
@@ -48,34 +48,34 @@
  * @short_description: A video sink for integrating a GStreamer
  *   pipeline with a Cogl pipeline.
  *
- * #CoglGstVideoSink is a subclass of #GstBaseSink which can be used to
- * create a #CoglPipeline for rendering the frames of the video.
+ * #CgGstVideoSink is a subclass of #GstBaseSink which can be used to
+ * create a #cg_pipeline_t for rendering the frames of the video.
  *
  * To create a basic video player, an application can create a
  * #GstPipeline as normal using gst_pipeline_new() and set the
- * sink on it to one created with cogl_gst_video_sink_new(). The
- * application can then listen for the #CoglGstVideoSink::new-frame
+ * sink on it to one created with cg_gst_video_sink_new(). The
+ * application can then listen for the #CgGstVideoSink::new-frame
  * signal which will be emitted whenever there are new textures ready
  * for rendering. For simple rendering, the application can just call
- * cogl_gst_video_sink_get_pipeline() in the signal handler and use
+ * cg_gst_video_sink_get_pipeline() in the signal handler and use
  * the returned pipeline to paint the new frame.
  *
  * An application is also free to do more advanced rendering by
  * customizing the pipeline. In that case it should listen for the
- * #CoglGstVideoSink::pipeline-ready signal which will be emitted as
+ * #CgGstVideoSink::pipeline-ready signal which will be emitted as
  * soon as the sink has determined enough information about the video
  * to know how it should be rendered. In the handler for this signal,
  * the application can either make modifications to a copy of the
- * pipeline returned by cogl_gst_video_sink_get_pipeline() or it can
+ * pipeline returned by cg_gst_video_sink_get_pipeline() or it can
  * create its own pipeline from scratch and ask the sink to configure
- * it with cogl_gst_video_sink_setup_pipeline(). If a custom pipeline
+ * it with cg_gst_video_sink_setup_pipeline(). If a custom pipeline
  * is created using one of these methods then the application should
- * call cogl_gst_video_sink_attach_frame() on the pipeline before
+ * call cg_gst_video_sink_attach_frame() on the pipeline before
  * rendering in order to update the textures on the pipeline's layers.
  *
- * If the %COGL_FEATURE_ID_GLSL feature is available then the pipeline
+ * If the %CG_FEATURE_ID_GLSL feature is available then the pipeline
  * used by the sink will have a shader snippet with a function in it
- * called cogl_gst_sample_video0 which takes a single vec2 argument.
+ * called cg_gst_sample_video0 which takes a single vec2 argument.
  * This can be used by custom snippets set the by the application to
  * sample from the video. The vec2 argument represents the normalised
  * coordinates within the video. The function returns a vec4
@@ -87,128 +87,121 @@
 
 G_BEGIN_DECLS
 
-#define COGL_GST_TYPE_VIDEO_SINK cogl_gst_video_sink_get_type()
+#define CG_GST_TYPE_VIDEO_SINK cg_gst_video_sink_get_type()
 
-#define COGL_GST_VIDEO_SINK(obj) \
-  (G_TYPE_CHECK_INSTANCE_CAST ((obj), \
-  COGL_GST_TYPE_VIDEO_SINK, CoglGstVideoSink))
+#define CG_GST_VIDEO_SINK(obj)                                                 \
+    (G_TYPE_CHECK_INSTANCE_CAST((obj), CG_GST_TYPE_VIDEO_SINK, CgGstVideoSink))
 
-#define COGL_GST_VIDEO_SINK_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_CAST ((klass), \
-  COGL_GST_TYPE_VIDEO_SINK, CoglGstVideoSinkClass))
+#define CG_GST_VIDEO_SINK_CLASS(klass)                                         \
+    (G_TYPE_CHECK_CLASS_CAST(                                                  \
+         (klass), CG_GST_TYPE_VIDEO_SINK, CgGstVideoSinkClass))
 
-#define COGL_GST_IS_VIDEO_SINK(obj) \
-  (G_TYPE_CHECK_INSTANCE_TYPE ((obj), \
-  COGL_GST_TYPE_VIDEO_SINK))
+#define CG_GST_IS_VIDEO_SINK(obj)                                              \
+    (G_TYPE_CHECK_INSTANCE_TYPE((obj), CG_GST_TYPE_VIDEO_SINK))
 
-#define COGL_GST_IS_VIDEO_SINK_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_TYPE ((klass), \
-  COGL_GST_TYPE_VIDEO_SINK))
+#define CG_GST_IS_VIDEO_SINK_CLASS(klass)                                      \
+    (G_TYPE_CHECK_CLASS_TYPE((klass), CG_GST_TYPE_VIDEO_SINK))
 
-#define COGL_GST_VIDEO_SINK_GET_CLASS(obj) \
-  (G_TYPE_INSTANCE_GET_CLASS ((obj), \
-  COGL_GST_TYPE_VIDEO_SINK, CoglGstVideoSinkClass))
+#define CG_GST_VIDEO_SINK_GET_CLASS(obj)                                       \
+    (G_TYPE_INSTANCE_GET_CLASS(                                                \
+         (obj), CG_GST_TYPE_VIDEO_SINK, CgGstVideoSinkClass))
 
-typedef struct _CoglGstVideoSink CoglGstVideoSink;
-typedef struct _CoglGstVideoSinkClass CoglGstVideoSinkClass;
-typedef struct _CoglGstVideoSinkPrivate CoglGstVideoSinkPrivate;
+typedef struct _CgGstVideoSink CgGstVideoSink;
+typedef struct _CgGstVideoSinkClass CgGstVideoSinkClass;
+typedef struct _CgGstVideoSinkPrivate CgGstVideoSinkPrivate;
 
 /**
- * CoglGstVideoSink:
+ * CgGstVideoSink:
  *
- * The #CoglGstVideoSink structure contains only private data and
+ * The #CgGstVideoSink structure contains only private data and
  * should be accessed using the provided API.
  *
  * Since: 1.16
  */
-struct _CoglGstVideoSink
-{
-  /*< private >*/
-  GstBaseSink parent;
-  CoglGstVideoSinkPrivate *priv;
+struct _CgGstVideoSink {
+    /*< private >*/
+    GstBaseSink parent;
+    CgGstVideoSinkPrivate *priv;
 };
 
 /**
- * CoglGstVideoSinkClass:
- * @new_frame: handler for the #CoglGstVideoSink::new-frame signal
- * @pipeline_ready: handler for the #CoglGstVideoSink::pipeline-ready signal
+ * CgGstVideoSinkClass:
+ * @new_frame: handler for the #CgGstVideoSink::new-frame signal
+ * @pipeline_ready: handler for the #CgGstVideoSink::pipeline-ready signal
  *
  * Since: 1.16
  */
 
 /**
- * CoglGstVideoSink::new-frame:
- * @sink: the #CoglGstVideoSink
+ * CgGstVideoSink::new-frame:
+ * @sink: the #CgGstVideoSink
  *
  * The sink will emit this signal whenever there are new textures
  * available for a new frame of the video. After this signal is
- * emitted, an application can call cogl_gst_video_sink_get_pipeline()
+ * emitted, an application can call cg_gst_video_sink_get_pipeline()
  * to get a pipeline suitable for rendering the frame. If the
  * application is using a custom pipeline it can alternatively call
- * cogl_gst_video_sink_attach_frame() to attach the textures.
+ * cg_gst_video_sink_attach_frame() to attach the textures.
  *
  * Since: 1.16
  */
 
 /**
- * CoglGstVideoSink::pipeline-ready:
- * @sink: the #CoglGstVideoSink
+ * CgGstVideoSink::pipeline-ready:
+ * @sink: the #CgGstVideoSink
  *
  * The sink will emit this signal as soon as it has gathered enough
  * information from the video to configure a pipeline. If the
  * application wants to do some customized rendering, it can setup its
  * pipeline after this signal is emitted. The application's pipeline
  * will typically either be a copy of the one returned by
- * cogl_gst_video_sink_get_pipeline() or it can be a completely custom
- * pipeline which is setup using cogl_gst_video_sink_setup_pipeline().
+ * cg_gst_video_sink_get_pipeline() or it can be a completely custom
+ * pipeline which is setup using cg_gst_video_sink_setup_pipeline().
  *
  * Note that it is an error to call either of those functions before
- * this signal is emitted. The #CoglGstVideoSink::new-frame signal
+ * this signal is emitted. The #CgGstVideoSink::new-frame signal
  * will only be emitted after the pipeline is ready so the application
  * could also create its pipeline in the handler for that.
  *
  * Since: 1.16
  */
 
-struct _CoglGstVideoSinkClass
-{
-  /*< private >*/
-  GstBaseSinkClass parent_class;
+struct _CgGstVideoSinkClass {
+    /*< private >*/
+    GstBaseSinkClass parent_class;
 
-  /*< public >*/
-  void (* new_frame) (CoglGstVideoSink *sink);
-  void (* pipeline_ready) (CoglGstVideoSink *sink);
+    /*< public >*/
+    void (*new_frame)(CgGstVideoSink *sink);
+    void (*pipeline_ready)(CgGstVideoSink *sink);
 
-  /*< private >*/
-  void *_padding_dummy[8];
+    /*< private >*/
+    void *_padding_dummy[8];
 };
 
-GType
-cogl_gst_video_sink_get_type (void) G_GNUC_CONST;
+GType cg_gst_video_sink_get_type(void) G_GNUC_CONST;
 
 /**
- * cogl_gst_video_sink_new:
- * @ctx: The #CoglContext
+ * cg_gst_video_sink_new:
+ * @ctx: The #cg_context_t
  *
- * Creates a new #CoglGstVideoSink which will create resources for use
+ * Creates a new #CgGstVideoSink which will create resources for use
  * with the given context.
  *
- * Return value: (transfer full): a new #CoglGstVideoSink
+ * Return value: (transfer full): a new #CgGstVideoSink
  * Since: 1.16
  */
-CoglGstVideoSink *
-cogl_gst_video_sink_new (CoglContext *ctx);
+CgGstVideoSink *cg_gst_video_sink_new(cg_context_t *ctx);
 
 /**
- * cogl_gst_video_sink_is_ready:
- * @sink: The #CoglGstVideoSink
+ * cg_gst_video_sink_is_ready:
+ * @sink: The #CgGstVideoSink
  *
  * Returns whether the pipeline is ready and so
- * cogl_gst_video_sink_get_pipeline() and
- * cogl_gst_video_sink_setup_pipeline() can be called without causing error.
+ * cg_gst_video_sink_get_pipeline() and
+ * cg_gst_video_sink_setup_pipeline() can be called without causing error.
  *
  * Note: Normally an application will wait until the
- * #CoglGstVideoSink::pipeline-ready signal is emitted instead of
+ * #CgGstVideoSink::pipeline-ready signal is emitted instead of
  * polling the ready status with this api, but sometimes when a sink
  * is passed between components that didn't have an opportunity to
  * connect a signal handler this can be useful.
@@ -216,12 +209,11 @@ cogl_gst_video_sink_new (CoglContext *ctx);
  * Return value: %true if the sink is ready, else %false
  * Since: 1.16
  */
-bool
-cogl_gst_video_sink_is_ready (CoglGstVideoSink *sink);
+bool cg_gst_video_sink_is_ready(CgGstVideoSink *sink);
 
 /**
- * cogl_gst_video_sink_get_pipeline:
- * @vt: The #CoglGstVideoSink
+ * cg_gst_video_sink_get_pipeline:
+ * @vt: The #CgGstVideoSink
  *
  * Returns a pipeline suitable for rendering the current frame of the
  * given video sink. The pipeline will already have the textures for
@@ -234,37 +226,34 @@ cogl_gst_video_sink_is_ready (CoglGstVideoSink *sink);
  * pipeline and modify it for custom rendering.
  *
  * Note: it is considered an error to call this function before the
- * #CoglGstVideoSink::pipeline-ready signal is emitted.
+ * #CgGstVideoSink::pipeline-ready signal is emitted.
  *
  * Return value: (transfer none): the pipeline for rendering the
  *   current frame
  * Since: 1.16
  */
-CoglPipeline *
-cogl_gst_video_sink_get_pipeline (CoglGstVideoSink *vt);
+cg_pipeline_t *cg_gst_video_sink_get_pipeline(CgGstVideoSink *vt);
 
 /**
- * cogl_gst_video_sink_set_context:
- * @vt: The #CoglGstVideoSink
- * @ctx: The #CoglContext for the sink to use
+ * cg_gst_video_sink_set_context:
+ * @vt: The #CgGstVideoSink
+ * @ctx: The #cg_context_t for the sink to use
  *
- * Sets the #CoglContext that the video sink should use for creating
+ * Sets the #cg_context_t that the video sink should use for creating
  * any resources. This function would normally only be used if the
  * sink was constructed via gst_element_factory_make() instead of
- * cogl_gst_video_sink_new().
+ * cg_gst_video_sink_new().
  *
  * Since: 1.16
  */
-void
-cogl_gst_video_sink_set_context (CoglGstVideoSink *vt,
-                                 CoglContext *ctx);
+void cg_gst_video_sink_set_context(CgGstVideoSink *vt, cg_context_t *ctx);
 
 /**
- * cogl_gst_video_sink_get_free_layer:
- * @sink: The #CoglGstVideoSink
+ * cg_gst_video_sink_get_free_layer:
+ * @sink: The #CgGstVideoSink
  *
  * This can be used when doing specialised rendering of the video by
- * customizing the pipeline. #CoglGstVideoSink may use up to three
+ * customizing the pipeline. #CgGstVideoSink may use up to three
  * private layers on the pipeline in order to attach the textures of
  * the video frame. This function will return the index of the next
  * available unused layer after the sink's internal layers. This can
@@ -275,31 +264,28 @@ cogl_gst_video_sink_set_context (CoglGstVideoSink *vt,
  *   sink's internal layers.
  * Since: 1.16
  */
-int
-cogl_gst_video_sink_get_free_layer (CoglGstVideoSink *sink);
+int cg_gst_video_sink_get_free_layer(CgGstVideoSink *sink);
 
 /**
- * cogl_gst_video_sink_attach_frame:
- * @sink: The #CoglGstVideoSink
- * @pln: A #CoglPipeline
+ * cg_gst_video_sink_attach_frame:
+ * @sink: The #CgGstVideoSink
+ * @pln: A #cg_pipeline_t
  *
  * Updates the given pipeline with the textures for the current frame.
  * This can be used if the application wants to customize the
  * rendering using its own pipeline. Typically this would be called in
- * response to the #CoglGstVideoSink::new-frame signal which is
+ * response to the #CgGstVideoSink::new-frame signal which is
  * emitted whenever the new textures are available. The application
  * would then make a copy of its template pipeline and call this to
  * set the textures.
  *
  * Since: 1.16
  */
-void
-cogl_gst_video_sink_attach_frame (CoglGstVideoSink *sink,
-                                  CoglPipeline *pln);
+void cg_gst_video_sink_attach_frame(CgGstVideoSink *sink, cg_pipeline_t *pln);
 
 /**
- * cogl_gst_video_sink_set_first_layer:
- * @sink: The #CoglGstVideoSink
+ * cg_gst_video_sink_set_first_layer:
+ * @sink: The #CgGstVideoSink
  * @first_layer: The new first layer
  *
  * Sets the index of the first layer that the sink will use for its
@@ -311,57 +297,53 @@ cogl_gst_video_sink_attach_frame (CoglGstVideoSink *sink,
  * Note that if this function is called then the name of the function
  * to call in the shader snippets to sample the video will also
  * change. For example, if @first_layer is three then the function
- * will be cogl_gst_sample_video3.
+ * will be cg_gst_sample_video3.
  *
  * Since: 1.16
  */
-void
-cogl_gst_video_sink_set_first_layer (CoglGstVideoSink *sink,
-                                     int first_layer);
+void cg_gst_video_sink_set_first_layer(CgGstVideoSink *sink, int first_layer);
 
 /**
- * cogl_gst_video_sink_set_default_sample:
- * @sink: The #CoglGstVideoSink
+ * cg_gst_video_sink_set_default_sample:
+ * @sink: The #CgGstVideoSink
  * @default_sample: Whether to add the default sampling
  *
  * By default the pipeline generated by
- * cogl_gst_video_sink_setup_pipeline() and
- * cogl_gst_video_sink_get_pipeline() will have a layer with a shader
+ * cg_gst_video_sink_setup_pipeline() and
+ * cg_gst_video_sink_get_pipeline() will have a layer with a shader
  * snippet that automatically samples the video. If the application
  * wants to sample the video in a completely custom way using its own
  * shader snippet it can set @default_sample to %false to avoid this
  * default snippet being added. In that case the application's snippet
- * can call cogl_gst_sample_video0 to sample the texture itself.
+ * can call cg_gst_sample_video0 to sample the texture itself.
  *
  * Since: 1.16
  */
-void
-cogl_gst_video_sink_set_default_sample (CoglGstVideoSink *sink,
-                                        bool default_sample);
+void cg_gst_video_sink_set_default_sample(CgGstVideoSink *sink,
+                                          bool default_sample);
 
 /**
- * cogl_gst_video_sink_setup_pipeline:
- * @sink: The #CoglGstVideoSink
- * @pipeline: A #CoglPipeline
+ * cg_gst_video_sink_setup_pipeline:
+ * @sink: The #CgGstVideoSink
+ * @pipeline: A #cg_pipeline_t
  *
  * Configures the given pipeline so that will be able to render the
  * video for the @sink. This should only be used if the application
  * wants to perform some custom rendering using its own pipeline.
  * Typically an application will call this in response to the
- * #CoglGstVideoSink::pipeline-ready signal.
+ * #CgGstVideoSink::pipeline-ready signal.
  *
  * Note: it is considered an error to call this function before the
- * #CoglGstVideoSink::pipeline-ready signal is emitted.
+ * #CgGstVideoSink::pipeline-ready signal is emitted.
  *
  * Since: 1.16
  */
-void
-cogl_gst_video_sink_setup_pipeline (CoglGstVideoSink *sink,
-                                    CoglPipeline *pipeline);
+void cg_gst_video_sink_setup_pipeline(CgGstVideoSink *sink,
+                                      cg_pipeline_t *pipeline);
 
 /**
- * cogl_gst_video_sink_get_aspect:
- * @sink: A #CoglGstVideoSink
+ * cg_gst_video_sink_get_aspect:
+ * @sink: A #CgGstVideoSink
  *
  * Returns a width-for-height aspect ratio that lets you calculate a
  * suitable width for displaying your video based on a given height by
@@ -375,12 +357,11 @@ cogl_gst_video_sink_setup_pipeline (CoglGstVideoSink *sink,
  * Since: 1.16
  * Stability: unstable
  */
-float
-cogl_gst_video_sink_get_aspect (CoglGstVideoSink *sink);
+float cg_gst_video_sink_get_aspect(CgGstVideoSink *sink);
 
 /**
- * cogl_gst_video_sink_get_width_for_height:
- * @sink: A #CoglGstVideoSink
+ * cg_gst_video_sink_get_width_for_height:
+ * @sink: A #CgGstVideoSink
  * @height: A specific output @height
  *
  * Calculates a suitable output width for a specific output @height
@@ -391,13 +372,12 @@ cogl_gst_video_sink_get_aspect (CoglGstVideoSink *sink);
  * Since: 1.16
  * Stability: unstable
  */
-float
-cogl_gst_video_sink_get_width_for_height (CoglGstVideoSink *sink,
-                                          float height);
+float cg_gst_video_sink_get_width_for_height(CgGstVideoSink *sink,
+                                             float height);
 
 /**
- * cogl_gst_video_sink_get_height_for_width:
- * @sink: A #CoglGstVideoSink
+ * cg_gst_video_sink_get_height_for_width:
+ * @sink: A #CgGstVideoSink
  * @width: A specific output @width
  *
  * Calculates a suitable output height for a specific output @width
@@ -408,13 +388,11 @@ cogl_gst_video_sink_get_width_for_height (CoglGstVideoSink *sink,
  * Since: 1.16
  * Stability: unstable
  */
-float
-cogl_gst_video_sink_get_height_for_width (CoglGstVideoSink *sink,
-                                          float width);
+float cg_gst_video_sink_get_height_for_width(CgGstVideoSink *sink, float width);
 
 /**
- * cogl_gst_video_sink_get_natural_size:
- * @sink: A #CoglGstVideoSink
+ * cg_gst_video_sink_get_natural_size:
+ * @sink: A #CgGstVideoSink
  * @width: (out): return location for the video's natural width
  * @height: (out): return location for the video's natural height
  *
@@ -432,14 +410,13 @@ cogl_gst_video_sink_get_height_for_width (CoglGstVideoSink *sink,
  * Since: 1.18
  * Stability: unstable
  */
-void
-cogl_gst_video_sink_get_natural_size (CoglGstVideoSink *sink,
-                                      float *width,
-                                      float *height);
+void cg_gst_video_sink_get_natural_size(CgGstVideoSink *sink,
+                                        float *width,
+                                        float *height);
 
 /**
- * cogl_gst_video_sink_get_natural_width:
- * @sink: A #CoglGstVideoSink
+ * cg_gst_video_sink_get_natural_width:
+ * @sink: A #CgGstVideoSink
  *
  * Considering the real resolution of the video as well as the aspect
  * ratio of pixel data that may need to be stretched when being displayed;
@@ -457,12 +434,11 @@ cogl_gst_video_sink_get_natural_size (CoglGstVideoSink *sink,
  * Since: 1.18
  * Stability: unstable
  */
-float
-cogl_gst_video_sink_get_natural_width (CoglGstVideoSink *sink);
+float cg_gst_video_sink_get_natural_width(CgGstVideoSink *sink);
 
 /**
- * cogl_gst_video_sink_get_natural_height:
- * @sink: A #CoglGstVideoSink
+ * cg_gst_video_sink_get_natural_height:
+ * @sink: A #CgGstVideoSink
  *
  * Considering the real resolution of the video as well as the aspect
  * ratio of pixel data that may need to be stretched when being displayed;
@@ -480,11 +456,10 @@ cogl_gst_video_sink_get_natural_width (CoglGstVideoSink *sink);
  * Since: 1.18
  * Stability: unstable
  */
-float
-cogl_gst_video_sink_get_natural_height (CoglGstVideoSink *sink);
+float cg_gst_video_sink_get_natural_height(CgGstVideoSink *sink);
 
 /**
- * CoglGstRectangle:
+ * CgGstRectangle:
  * @x: The X coordinate of the top left of the rectangle
  * @y: The Y coordinate of the top left of the rectangle
  * @width: The width of the rectangle
@@ -492,17 +467,16 @@ cogl_gst_video_sink_get_natural_height (CoglGstVideoSink *sink);
  *
  * Describes a rectangle that can be used for video output.
  */
-typedef struct _CoglGstRectangle
-{
-  float x;
-  float y;
-  float width;
-  float height;
-} CoglGstRectangle;
+typedef struct _CgGstRectangle {
+    float x;
+    float y;
+    float width;
+    float height;
+} CgGstRectangle;
 
 /**
- * cogl_gst_video_sink_fit_size:
- * @sink: A #CoglGstVideoSink
+ * cg_gst_video_sink_fit_size:
+ * @sink: A #CgGstVideoSink
  * @available: (in): The space available for video output
  * @output: (inout): The return location for the calculated output position
  *
@@ -517,10 +491,9 @@ typedef struct _CoglGstRectangle
  * Since: 1.16
  * Stability: unstable
  */
-void
-cogl_gst_video_sink_fit_size (CoglGstVideoSink *sink,
-                              const CoglGstRectangle *available,
-                              CoglGstRectangle *output);
+void cg_gst_video_sink_fit_size(CgGstVideoSink *sink,
+                                const CgGstRectangle *available,
+                                CgGstRectangle *output);
 
 G_END_DECLS
 

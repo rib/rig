@@ -27,8 +27,8 @@
  * SOFTWARE.
  */
 
-#ifndef __COGL_GST_H__
-#define __COGL_GST_H__
+#ifndef __CG_GST_H__
+#define __CG_GST_H__
 
 #include <cogl-gst/cogl-gst-video-sink.h>
 

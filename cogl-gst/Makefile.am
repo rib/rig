@@ -26,7 +26,7 @@ libcogl_gst_la_LIBADD += $(COGL_DEP_LIBS) $(COGL_GST_DEP_LIBS) $(COGL_EXTRA_LDFL
 libcogl_gst_la_LDFLAGS = -static
 
 AM_CPPFLAGS = \
-	-DCOGL_COMPILATION \
+	-DCG_COMPILATION \
 	-DG_LOG_DOMAIN=\"CoglGst\" \
 	-I$(top_srcdir)/clib/src \
 	-I$(top_builddir)/clib/src \
