@@ -699,10 +699,10 @@ rig_camera_flush (RutObject *object)
                                 CG_BUFFER_BIT_COLOR |
                                 CG_BUFFER_BIT_DEPTH |
                                 CG_BUFFER_BIT_STENCIL,
-                                cg_color_get_red_float (&camera->props.bg_color),
-                                cg_color_get_green_float (&camera->props.bg_color),
-                                cg_color_get_blue_float (&camera->props.bg_color),
-                                cg_color_get_alpha_float (&camera->props.bg_color));
+                                camera->props.bg_color.red,
+                                camera->props.bg_color.green,
+                                camera->props.bg_color.blue,
+                                camera->props.bg_color.alpha);
     }
 }
 

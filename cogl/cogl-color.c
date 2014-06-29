@@ -70,46 +70,16 @@ cg_color_get_red_byte(const cg_color_t *color)
     return color->red * 255;
 }
 
-float
-cg_color_get_red_float(const cg_color_t *color)
-{
-    return color->red;
-}
-
-float
-cg_color_get_red(const cg_color_t *color)
-{
-    return color->red;
-}
-
 uint8_t
 cg_color_get_green_byte(const cg_color_t *color)
 {
     return color->green * 255;
 }
 
-float
-cg_color_get_green_float(const cg_color_t *color)
-{
-    return color->green;
-}
-
-float
-cg_color_get_green(const cg_color_t *color)
-{
-    return color->green;
-}
-
 uint8_t
 cg_color_get_blue_byte(const cg_color_t *color)
 {
     return color->blue * 255;
-}
-
-float
-cg_color_get_blue_float(const cg_color_t *color)
-{
-    return color->blue;
 }
 
 float
@@ -124,34 +94,10 @@ cg_color_get_alpha_byte(const cg_color_t *color)
     return color->alpha * 255;
 }
 
-float
-cg_color_get_alpha_float(const cg_color_t *color)
-{
-    return color->alpha;
-}
-
-float
-cg_color_get_alpha(const cg_color_t *color)
-{
-    return color->alpha;
-}
-
 void
 cg_color_set_red_byte(cg_color_t *color, uint8_t red)
 {
     color->red = red / 255.0f;
-}
-
-void
-cg_color_set_red_float(cg_color_t *color, float red)
-{
-    color->red = red;
-}
-
-void
-cg_color_set_red(cg_color_t *color, float red)
-{
-    color->red = red;
 }
 
 void
@@ -161,51 +107,15 @@ cg_color_set_green_byte(cg_color_t *color, uint8_t green)
 }
 
 void
-cg_color_set_green_float(cg_color_t *color, float green)
-{
-    color->green = green;
-}
-
-void
-cg_color_set_green(cg_color_t *color, float green)
-{
-    color->green = green;
-}
-
-void
 cg_color_set_blue_byte(cg_color_t *color, uint8_t blue)
 {
     color->blue = blue / 255.0f;
 }
 
 void
-cg_color_set_blue_float(cg_color_t *color, float blue)
-{
-    color->blue = blue;
-}
-
-void
-cg_color_set_blue(cg_color_t *color, float blue)
-{
-    color->blue = blue;
-}
-
-void
 cg_color_set_alpha_byte(cg_color_t *color, uint8_t alpha)
 {
     color->alpha = alpha / 255.0f;
-}
-
-void
-cg_color_set_alpha_float(cg_color_t *color, float alpha)
-{
-    color->alpha = alpha;
-}
-
-void
-cg_color_set_alpha(cg_color_t *color, float alpha)
-{
-    color->alpha = alpha;
 }
 
 void

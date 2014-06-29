@@ -528,12 +528,10 @@ _cg_pipeline_flush_common_gl_state(cg_context_t *ctx,
             blend_factor_uses_constant(blend_state->blend_src_factor_alpha) ||
             blend_factor_uses_constant(blend_state->blend_dst_factor_rgb) ||
             blend_factor_uses_constant(blend_state->blend_dst_factor_alpha)) {
-            float red = cg_color_get_red_float(&blend_state->blend_constant);
-            float green =
-                cg_color_get_green_float(&blend_state->blend_constant);
-            float blue = cg_color_get_blue_float(&blend_state->blend_constant);
-            float alpha =
-                cg_color_get_alpha_float(&blend_state->blend_constant);
+            float red = blend_state->blend_constant.red;
+            float green = blend_state->blend_constant.green;
+            float blue = blend_state->blend_constant.blue;
+            float alpha = blend_state->blend_constant.alpha;
 
             GE(ctx, glBlendColor(red, green, blue, alpha));
         }
@@ -1116,10 +1114,10 @@ done:
         if (attribute != -1)
             GE(ctx,
                glVertexAttrib4f(attribute,
-                                cg_color_get_red_float(&authority->color),
-                                cg_color_get_green_float(&authority->color),
-                                cg_color_get_blue_float(&authority->color),
-                                cg_color_get_alpha_float(&authority->color)));
+                                authority->color.red,
+                                authority->color.green,
+                                authority->color.blue,
+                                authority->color.alpha));
     }
 
     /* Give the progend a chance to update any uniforms that might not
