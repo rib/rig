@@ -6,133 +6,117 @@
 #define OFFSCREEN_WIDTH 100
 #define OFFSCREEN_HEIGHT 100
 
-typedef struct _Data
-{
-    CoglContext *ctx;
-    CoglFramebuffer *fb;
-    CoglPrimitive *triangle;
-    CoglPipeline *pipeline;
+typedef struct _Data {
+    cg_context_t *ctx;
+    cg_framebuffer_t *fb;
+    cg_primitive_t *triangle;
+    cg_pipeline_t *pipeline;
 
-    CoglTexture *offscreen_texture;
-    CoglOffscreen *offscreen;
-    CoglGLES2Context *gles2_ctx;
-    const CoglGLES2Vtable *gles2_vtable;
+    cg_texture_t *offscreen_texture;
+    cg_offscreen_t *offscreen;
+    cg_gles2_context_t *gles2_ctx;
+    const cg_gles2_vtable_t *gles2_vtable;
 } Data;
 
 static gboolean
-paint_cb (void *user_data)
+paint_cb(void *user_data)
 {
     Data *data = user_data;
-    CoglError *error = NULL;
-    const CoglGLES2Vtable *gles2 = data->gles2_vtable;
+    cg_error_t *error = NULL;
+    const cg_gles2_vtable_t *gles2 = data->gles2_vtable;
 
     /* Draw scene with GLES2 */
-    if (!cogl_push_gles2_context (data->ctx,
-                                  data->gles2_ctx,
-                                  data->fb,
-                                  data->fb,
-                                  &error))
-    {
-        g_error ("Failed to push gles2 context: %s\n", error->message);
+    if (!cg_push_gles2_context(
+            data->ctx, data->gles2_ctx, data->fb, data->fb, &error)) {
+        g_error("Failed to push gles2 context: %s\n", error->message);
     }
 
     /* Clear offscreen framebuffer with a random color */
-    gles2->glClearColor (g_random_double (),
-                         g_random_double (),
-                         g_random_double (),
-                         1.0f);
-    gles2->glClear (GL_COLOR_BUFFER_BIT);
+    gles2->glClearColor(
+        g_random_double(), g_random_double(), g_random_double(), 1.0f);
+    gles2->glClear(GL_COLOR_BUFFER_BIT);
 
-    cogl_pop_gles2_context (data->ctx);
+    cg_pop_gles2_context(data->ctx);
 
     /* Draw scene with Cogl */
-    cogl_primitive_draw (data->triangle, data->fb, data->pipeline);
+    cg_primitive_draw(data->triangle, data->fb, data->pipeline);
 
-    cogl_onscreen_swap_buffers (COGL_ONSCREEN (data->fb));
+    cg_onscreen_swap_buffers(CG_ONSCREEN(data->fb));
 
     return FALSE; /* remove the callback */
 }
 
 static void
-frame_event_cb (CoglOnscreen *onscreen,
-                CoglFrameEvent event,
-                CoglFrameInfo *info,
-                void *user_data)
+frame_event_cb(cg_onscreen_t *onscreen,
+               cg_frame_event_t event,
+               cg_frame_info_t *info,
+               void *user_data)
 {
-    if (event == COGL_FRAME_EVENT_SYNC)
-        paint_cb (user_data);
+    if (event == CG_FRAME_EVENT_SYNC)
+        paint_cb(user_data);
 }
 
 int
-main (int argc, char **argv)
+main(int argc, char **argv)
 {
     Data data;
-    CoglOnscreen *onscreen;
-    CoglError *error = NULL;
-    CoglVertexP2C4 triangle_vertices[] = {
-        {0, 0.7, 0xff, 0x00, 0x00, 0xff},
-        {-0.7, -0.7, 0x00, 0xff, 0x00, 0xff},
-        {0.7, -0.7, 0x00, 0x00, 0xff, 0xff}
+    cg_onscreen_t *onscreen;
+    cg_error_t *error = NULL;
+    cg_vertex_p2c4_t triangle_vertices[] = {
+        { 0, 0.7, 0xff, 0x00, 0x00, 0xff },
+        { -0.7, -0.7, 0x00, 0xff, 0x00, 0xff },
+        { 0.7, -0.7, 0x00, 0x00, 0xff, 0xff }
     };
-    GSource *cogl_source;
+    GSource *cg_source;
     GMainLoop *loop;
-    CoglRenderer *renderer;
-    CoglDisplay *display;
+    cg_renderer_t *renderer;
+    cg_display_t *display;
 
-    renderer = cogl_renderer_new ();
-    cogl_renderer_add_constraint (renderer,
-                                  COGL_RENDERER_CONSTRAINT_SUPPORTS_COGL_GLES2);
-    display = cogl_display_new (renderer, NULL);
-    data.ctx = cogl_context_new (display, NULL);
+    renderer = cg_renderer_new();
+    cg_renderer_add_constraint(renderer,
+                               CG_RENDERER_CONSTRAINT_SUPPORTS_CG_GLES2);
+    display = cg_display_new(renderer, NULL);
+    data.ctx = cg_context_new(display, NULL);
 
-    onscreen = cogl_onscreen_new (data.ctx, 640, 480);
-    cogl_onscreen_show (onscreen);
+    onscreen = cg_onscreen_new(data.ctx, 640, 480);
+    cg_onscreen_show(onscreen);
     data.fb = onscreen;
 
     /* Prepare onscreen primitive */
-    data.triangle = cogl_primitive_new_p2c4 (data.ctx,
-                                             COGL_VERTICES_MODE_TRIANGLES,
-                                             3, triangle_vertices);
-    data.pipeline = cogl_pipeline_new (data.ctx);
+    data.triangle = cg_primitive_new_p2c4(
+        data.ctx, CG_VERTICES_MODE_TRIANGLES, 3, triangle_vertices);
+    data.pipeline = cg_pipeline_new(data.ctx);
 
-    data.offscreen_texture =
-      cogl_texture_2d_new_with_size (data.ctx,
-                                     OFFSCREEN_WIDTH,
-                                     OFFSCREEN_HEIGHT);
-    data.offscreen = cogl_offscreen_new_with_texture (data.offscreen_texture);
+    data.offscreen_texture = cg_texture_2d_new_with_size(
+        data.ctx, OFFSCREEN_WIDTH, OFFSCREEN_HEIGHT);
+    data.offscreen = cg_offscreen_new_with_texture(data.offscreen_texture);
 
-    data.gles2_ctx = cogl_gles2_context_new (data.ctx, &error);
+    data.gles2_ctx = cg_gles2_context_new(data.ctx, &error);
     if (!data.gles2_ctx) {
-        g_error ("Failed to create GLES2 context: %s\n", error->message);
+        g_error("Failed to create GLES2 context: %s\n", error->message);
     }
 
-    data.gles2_vtable = cogl_gles2_context_get_vtable (data.gles2_ctx);
+    data.gles2_vtable = cg_gles2_context_get_vtable(data.gles2_ctx);
 
     /* Draw scene with GLES2 */
-    if (!cogl_push_gles2_context (data.ctx,
-                                  data.gles2_ctx,
-                                  data.fb,
-                                  data.fb,
-                                  &error))
-    {
-        g_error ("Failed to push gles2 context: %s\n", error->message);
+    if (!cg_push_gles2_context(
+            data.ctx, data.gles2_ctx, data.fb, data.fb, &error)) {
+        g_error("Failed to push gles2 context: %s\n", error->message);
     }
 
-    cogl_pop_gles2_context (data.ctx);
+    cg_pop_gles2_context(data.ctx);
 
-    cogl_source = cogl_glib_source_new (data.ctx, G_PRIORITY_DEFAULT);
+    cg_source = cg_glib_source_new(data.ctx, G_PRIORITY_DEFAULT);
 
-    g_source_attach (cogl_source, NULL);
+    g_source_attach(cg_source, NULL);
 
-    cogl_onscreen_add_frame_callback (COGL_ONSCREEN (data.fb),
-                                      frame_event_cb,
-                                      &data,
-                                      NULL); /* destroy notify */
+    cg_onscreen_add_frame_callback(
+        CG_ONSCREEN(data.fb), frame_event_cb, &data, NULL); /* destroy notify */
 
-    g_idle_add (paint_cb, &data);
+    g_idle_add(paint_cb, &data);
 
-    loop = g_main_loop_new (NULL, TRUE);
-    g_main_loop_run (loop);
+    loop = g_main_loop_new(NULL, TRUE);
+    g_main_loop_run(loop);
 
     return 0;
 }

@@ -3,111 +3,111 @@
 #include <stdio.h>
 
 int
-main (int argc, char **argv)
+main(int argc, char **argv)
 {
-    CoglOnscreenTemplate *onscreen_template;
-    CoglDisplay *display;
-    CoglContext *ctx;
-    CoglOnscreen *onscreen;
-    CoglFramebuffer *fb;
-    CoglError *error = NULL;
-    CoglVertexP2C4 triangle_vertices[] = {
-        {0, 0.7, 0xff, 0x00, 0x00, 0xff},
-        {-0.7, -0.7, 0x00, 0xff, 0x00, 0xff},
-        {0.7, -0.7, 0x00, 0x00, 0xff, 0xff}
+    cg_onscreen_template_t *onscreen_template;
+    cg_display_t *display;
+    cg_context_t *ctx;
+    cg_onscreen_t *onscreen;
+    cg_framebuffer_t *fb;
+    cg_error_t *error = NULL;
+    cg_vertex_p2c4_t triangle_vertices[] = {
+        { 0, 0.7, 0xff, 0x00, 0x00, 0xff },
+        { -0.7, -0.7, 0x00, 0xff, 0x00, 0xff },
+        { 0.7, -0.7, 0x00, 0x00, 0xff, 0xff }
     };
-    CoglPrimitive *triangle;
-    CoglTexture *tex;
-    CoglOffscreen *offscreen;
-    CoglFramebuffer *offscreen_fb;
-    CoglPipeline *pipeline;
+    cg_primitive_t *triangle;
+    cg_texture_t *tex;
+    cg_offscreen_t *offscreen;
+    cg_framebuffer_t *offscreen_fb;
+    cg_pipeline_t *pipeline;
 
-    onscreen_template = cogl_onscreen_template_new ();
-    cogl_onscreen_template_set_samples_per_pixel (onscreen_template, 4);
-    display = cogl_display_new (NULL, onscreen_template);
+    onscreen_template = cg_onscreen_template_new();
+    cg_onscreen_template_set_samples_per_pixel(onscreen_template, 4);
+    display = cg_display_new(NULL, onscreen_template);
 
-    if (!cogl_display_setup (display, &error))
-      {
-        fprintf (stderr, "Platform doesn't support onscreen 4x msaa rendering: %s\n",
-                 error->message);
+    if (!cg_display_setup(display, &error)) {
+        fprintf(stderr,
+                "Platform doesn't support onscreen 4x msaa rendering: %s\n",
+                error->message);
         return 1;
-      }
+    }
 
-    ctx = cogl_context_new (display, &error);
-    if (!ctx)
-      {
-        fprintf (stderr, "Failed to create context: %s\n", error->message);
+    ctx = cg_context_new(display, &error);
+    if (!ctx) {
+        fprintf(stderr, "Failed to create context: %s\n", error->message);
         return 1;
-      }
+    }
 
-    onscreen = cogl_onscreen_new (ctx, 640, 480);
+    onscreen = cg_onscreen_new(ctx, 640, 480);
     fb = onscreen;
 
-    cogl_framebuffer_set_samples_per_pixel (fb, 4);
+    cg_framebuffer_set_samples_per_pixel(fb, 4);
 
-    if (!cogl_framebuffer_allocate (fb, &error))
-      {
-        fprintf (stderr, "Failed to allocate 4x msaa offscreen framebuffer, "
-                 "disabling msaa for onscreen rendering: %s\n", error->message);
-        cogl_error_free (error);
-        cogl_framebuffer_set_samples_per_pixel (fb, 0);
+    if (!cg_framebuffer_allocate(fb, &error)) {
+        fprintf(stderr,
+                "Failed to allocate 4x msaa offscreen framebuffer, "
+                "disabling msaa for onscreen rendering: %s\n",
+                error->message);
+        cg_error_free(error);
+        cg_framebuffer_set_samples_per_pixel(fb, 0);
 
         error = NULL;
-        if (!cogl_framebuffer_allocate (fb, &error))
-          {
-            fprintf (stderr, "Failed to allocate framebuffer: %s\n", error->message);
+        if (!cg_framebuffer_allocate(fb, &error)) {
+            fprintf(
+                stderr, "Failed to allocate framebuffer: %s\n", error->message);
             return 1;
-          }
-      }
+        }
+    }
 
-    cogl_onscreen_show (onscreen);
+    cg_onscreen_show(onscreen);
 
-    tex = cogl_texture_2d_new_with_size (ctx, 320, 480);
-    offscreen = cogl_offscreen_new_with_texture (tex);
+    tex = cg_texture_2d_new_with_size(ctx, 320, 480);
+    offscreen = cg_offscreen_new_with_texture(tex);
     offscreen_fb = offscreen;
-    cogl_framebuffer_set_samples_per_pixel (offscreen_fb, 4);
-    if (!cogl_framebuffer_allocate (offscreen_fb, &error))
-      {
-        cogl_error_free (error);
+    cg_framebuffer_set_samples_per_pixel(offscreen_fb, 4);
+    if (!cg_framebuffer_allocate(offscreen_fb, &error)) {
+        cg_error_free(error);
         error = NULL;
-        fprintf (stderr, "Failed to allocate 4x msaa offscreen framebuffer, "
-                 "disabling msaa for offscreen rendering");
-        cogl_framebuffer_set_samples_per_pixel (offscreen_fb, 0);
-      }
+        fprintf(stderr,
+                "Failed to allocate 4x msaa offscreen framebuffer, "
+                "disabling msaa for offscreen rendering");
+        cg_framebuffer_set_samples_per_pixel(offscreen_fb, 0);
+    }
 
-    triangle = cogl_primitive_new_p2c4 (ctx, COGL_VERTICES_MODE_TRIANGLES,
-                                        3, triangle_vertices);
-    pipeline = cogl_pipeline_new (ctx);
+    triangle = cg_primitive_new_p2c4(
+        ctx, CG_VERTICES_MODE_TRIANGLES, 3, triangle_vertices);
+    pipeline = cg_pipeline_new(ctx);
 
-    for (;;) {
-        CoglPollFD *poll_fds;
+    for (;; ) {
+        cg_poll_fd_t *poll_fds;
         int n_poll_fds;
         int64_t timeout;
-        CoglPipeline *texture_pipeline;
+        cg_pipeline_t *texture_pipeline;
 
-        cogl_framebuffer_clear4f (fb, COGL_BUFFER_BIT_COLOR, 0, 0, 0, 1);
+        cg_framebuffer_clear4f(fb, CG_BUFFER_BIT_COLOR, 0, 0, 0, 1);
 
-        cogl_framebuffer_push_matrix (fb);
-        cogl_framebuffer_scale (fb, 0.5, 1, 1);
-        cogl_framebuffer_translate (fb, -1, 0, 0);
-        cogl_primitive_draw (triangle, fb, pipeline);
-        cogl_framebuffer_pop_matrix (fb);
+        cg_framebuffer_push_matrix(fb);
+        cg_framebuffer_scale(fb, 0.5, 1, 1);
+        cg_framebuffer_translate(fb, -1, 0, 0);
+        cg_primitive_draw(triangle, fb, pipeline);
+        cg_framebuffer_pop_matrix(fb);
 
-        cogl_primitive_draw (triangle, fb, pipeline);
-        cogl_framebuffer_resolve_samples (offscreen_fb);
+        cg_primitive_draw(triangle, fb, pipeline);
+        cg_framebuffer_resolve_samples(offscreen_fb);
 
-        texture_pipeline = cogl_pipeline_new (ctx);
-        cogl_pipeline_set_layer_texture (texture_pipeline, 0, tex);
-        cogl_framebuffer_draw_rectangle (fb, texture_pipeline, 0, 1, 1, -1);
-        cogl_object_unref (texture_pipeline);
+        texture_pipeline = cg_pipeline_new(ctx);
+        cg_pipeline_set_layer_texture(texture_pipeline, 0, tex);
+        cg_framebuffer_draw_rectangle(fb, texture_pipeline, 0, 1, 1, -1);
+        cg_object_unref(texture_pipeline);
 
-        cogl_onscreen_swap_buffers (onscreen);
+        cg_onscreen_swap_buffers(onscreen);
 
-        cogl_poll_renderer_get_info (cogl_context_get_renderer (ctx),
-                                     &poll_fds, &n_poll_fds, &timeout);
-        g_poll ((GPollFD *) poll_fds, n_poll_fds, 0);
-        cogl_poll_renderer_dispatch (cogl_context_get_renderer (ctx),
-                                     poll_fds, n_poll_fds);
+        cg_poll_renderer_get_info(
+            cg_context_get_renderer(ctx), &poll_fds, &n_poll_fds, &timeout);
+        g_poll((GPollFD *)poll_fds, n_poll_fds, 0);
+        cg_poll_renderer_dispatch(
+            cg_context_get_renderer(ctx), poll_fds, n_poll_fds);
     }
 
     return 0;

@@ -56,18 +56,16 @@
 #define VERTICES_PER_TOOTH 34
 #define GEAR_VERTEX_STRIDE 6
 
-typedef struct _Data
-{
-    CoglContext *ctx;
-    CoglFramebuffer *fb;
+typedef struct _Data {
+    cg_context_t *ctx;
+    cg_framebuffer_t *fb;
 
-    CoglGLES2Context *gles2_ctx;
+    cg_gles2_context_t *gles2_ctx;
 
     GTimer *timer;
     int frames;
     double last_elapsed;
 } Data;
-
 
 /**
  * Struct describing the vertices in triangle strip
@@ -105,21 +103,19 @@ static struct gear *gear1, *gear2, *gear3;
 /** The current gear rotation angle */
 static GLfloat angle = 0.0;
 /** The location of the shader uniforms */
-static GLuint ModelViewProjectionMatrix_location,
-              NormalMatrix_location,
-              LightSourcePosition_location,
-              MaterialColor_location;
+static GLuint ModelViewProjectionMatrix_location, NormalMatrix_location,
+              LightSourcePosition_location, MaterialColor_location;
 /** The projection matrix */
 static GLfloat ProjectionMatrix[16];
 /** The direction of the directional light for the scene */
-static const GLfloat LightSourcePosition[4] = { 5.0, 5.0, 10.0, 1.0};
+static const GLfloat LightSourcePosition[4] = { 5.0, 5.0, 10.0, 1.0 };
 
 #ifndef HAVE_SINCOS
 static void
-sincos (double x, double *sinx, double *cosx)
+sincos(double x, double *sinx, double *cosx)
 {
-  *sinx = sin (x);
-  *cosx = cos (x);
+    *sinx = sin(x);
+    *cosx = cos(x);
 }
 #endif /* HAVE_SINCOS */
 
@@ -135,7 +131,7 @@ sincos (double x, double *sinx, double *cosx)
  * @return the operation error code
  */
 static GearVertex *
-vert (GearVertex *v, GLfloat x, GLfloat y, GLfloat z, GLfloat n[3])
+vert(GearVertex *v, GLfloat x, GLfloat y, GLfloat z, GLfloat n[3])
 {
     v[0][0] = x;
     v[0][1] = y;
@@ -159,8 +155,11 @@ vert (GearVertex *v, GLfloat x, GLfloat y, GLfloat z, GLfloat n[3])
  *  @return pointer to the constructed struct gear
  */
 static struct gear *
-create_gear (GLfloat inner_radius, GLfloat outer_radius, GLfloat width,
-             GLint teeth, GLfloat tooth_depth)
+create_gear(GLfloat inner_radius,
+            GLfloat outer_radius,
+            GLfloat width,
+            GLint teeth,
+            GLfloat tooth_depth)
 {
     GLfloat r0, r1, r2;
     GLfloat da;
@@ -172,7 +171,7 @@ create_gear (GLfloat inner_radius, GLfloat outer_radius, GLfloat width,
     int i;
 
     /* Allocate memory for the gear */
-    gear = malloc (sizeof *gear);
+    gear = malloc(sizeof *gear);
     if (gear == NULL)
         return NULL;
 
@@ -185,45 +184,56 @@ create_gear (GLfloat inner_radius, GLfloat outer_radius, GLfloat width,
 
     /* Allocate memory for the triangle strip information */
     gear->nstrips = STRIPS_PER_TOOTH * teeth;
-    gear->strips = calloc (gear->nstrips, sizeof (*gear->strips));
+    gear->strips = calloc(gear->nstrips, sizeof(*gear->strips));
 
     /* Allocate memory for the vertices */
-    gear->vertices = calloc (VERTICES_PER_TOOTH * teeth, sizeof(*gear->vertices));
+    gear->vertices =
+        calloc(VERTICES_PER_TOOTH * teeth, sizeof(*gear->vertices));
     v = gear->vertices;
 
     for (i = 0; i < teeth; i++) {
         /* Calculate needed sin/cos for varius angles */
-        sincos (i * 2.0 * M_PI / teeth, &s[0], &c[0]);
-        sincos (i * 2.0 * M_PI / teeth + da, &s[1], &c[1]);
-        sincos (i * 2.0 * M_PI / teeth + da * 2, &s[2], &c[2]);
-        sincos (i * 2.0 * M_PI / teeth + da * 3, &s[3], &c[3]);
-        sincos (i * 2.0 * M_PI / teeth + da * 4, &s[4], &c[4]);
+        sincos(i * 2.0 * M_PI / teeth, &s[0], &c[0]);
+        sincos(i * 2.0 * M_PI / teeth + da, &s[1], &c[1]);
+        sincos(i * 2.0 * M_PI / teeth + da * 2, &s[2], &c[2]);
+        sincos(i * 2.0 * M_PI / teeth + da * 3, &s[3], &c[3]);
+        sincos(i * 2.0 * M_PI / teeth + da * 4, &s[4], &c[4]);
 
-      /* A set of macros for making the creation of the gears easier */
-#define  GEAR_POINT(r, da) { (r) * c[(da)], (r) * s[(da)] }
-#define  SET_NORMAL(x, y, z) do { \
-    normal[0] = (x); normal[1] = (y); normal[2] = (z); \
-} while(0)
+/* A set of macros for making the creation of the gears easier */
+#define GEAR_POINT(r, da)                                                      \
+    {                                                                          \
+        (r) * c[(da)], (r) * s[(da)]                                           \
+    }
+#define SET_NORMAL(x, y, z)                                                    \
+    do {                                                                       \
+        normal[0] = (x);                                                       \
+        normal[1] = (y);                                                       \
+        normal[2] = (z);                                                       \
+    } while (0)
 
-#define  GEAR_VERT(v, point, sign) vert((v), p[(point)].x, p[(point)].y, (sign) * width * 0.5, normal)
+#define GEAR_VERT(v, point, sign)                                              \
+    vert((v), p[(point)].x, p[(point)].y, (sign) * width * 0.5, normal)
 
-#define START_STRIP do { \
-    gear->strips[cur_strip].first = v - gear->vertices; \
-} while(0);
+#define START_STRIP                                                            \
+    do {                                                                       \
+        gear->strips[cur_strip].first = v - gear->vertices;                    \
+    } while (0);
 
-#define END_STRIP do { \
-    int _tmp = (v - gear->vertices); \
-    gear->strips[cur_strip].count = _tmp - gear->strips[cur_strip].first; \
-    cur_strip++; \
-} while (0)
+#define END_STRIP                                                              \
+    do {                                                                       \
+        int _tmp = (v - gear->vertices);                                       \
+        gear->strips[cur_strip].count = _tmp - gear->strips[cur_strip].first;  \
+        cur_strip++;                                                           \
+    } while (0)
 
-#define QUAD_WITH_NORMAL(p1, p2) do { \
-    SET_NORMAL((p[(p1)].y - p[(p2)].y), -(p[(p1)].x - p[(p2)].x), 0); \
-    v = GEAR_VERT(v, (p1), -1); \
-    v = GEAR_VERT(v, (p1), 1); \
-    v = GEAR_VERT(v, (p2), -1); \
-    v = GEAR_VERT(v, (p2), 1); \
-} while(0)
+#define QUAD_WITH_NORMAL(p1, p2)                                               \
+    do {                                                                       \
+        SET_NORMAL((p[(p1)].y - p[(p2)].y), -(p[(p1)].x - p[(p2)].x), 0);      \
+        v = GEAR_VERT(v, (p1), -1);                                            \
+        v = GEAR_VERT(v, (p1), 1);                                             \
+        v = GEAR_VERT(v, (p2), -1);                                            \
+        v = GEAR_VERT(v, (p2), 1);                                             \
+    } while (0)
 
         {
             struct point {
@@ -232,60 +242,59 @@ create_gear (GLfloat inner_radius, GLfloat outer_radius, GLfloat width,
             };
 
             /* Create the 7 points (only x,y coords) used to draw a tooth */
-            struct point p[7] = {
-                GEAR_POINT (r2, 1), // 0
-                GEAR_POINT (r2, 2), // 1
-                GEAR_POINT (r1, 0), // 2
-                GEAR_POINT (r1, 3), // 3
-                GEAR_POINT (r0, 0), // 4
-                GEAR_POINT (r1, 4), // 5
-                GEAR_POINT (r0, 4), // 6
+            struct point p[7] = { GEAR_POINT(r2, 1), // 0
+                                  GEAR_POINT(r2, 2), // 1
+                                  GEAR_POINT(r1, 0), // 2
+                                  GEAR_POINT(r1, 3), // 3
+                                  GEAR_POINT(r0, 0), // 4
+                                  GEAR_POINT(r1, 4), // 5
+                                  GEAR_POINT(r0, 4), // 6
             };
 
             /* Front face */
             START_STRIP;
-            SET_NORMAL (0, 0, 1.0);
-            v = GEAR_VERT (v, 0, +1);
-            v = GEAR_VERT (v, 1, +1);
-            v = GEAR_VERT (v, 2, +1);
-            v = GEAR_VERT (v, 3, +1);
-            v = GEAR_VERT (v, 4, +1);
-            v = GEAR_VERT (v, 5, +1);
-            v = GEAR_VERT (v, 6, +1);
+            SET_NORMAL(0, 0, 1.0);
+            v = GEAR_VERT(v, 0, +1);
+            v = GEAR_VERT(v, 1, +1);
+            v = GEAR_VERT(v, 2, +1);
+            v = GEAR_VERT(v, 3, +1);
+            v = GEAR_VERT(v, 4, +1);
+            v = GEAR_VERT(v, 5, +1);
+            v = GEAR_VERT(v, 6, +1);
             END_STRIP;
 
             /* Inner face */
             START_STRIP;
-            QUAD_WITH_NORMAL (4, 6);
+            QUAD_WITH_NORMAL(4, 6);
             END_STRIP;
 
             /* Back face */
             START_STRIP;
-            SET_NORMAL (0, 0, -1.0);
-            v = GEAR_VERT (v, 6, -1);
-            v = GEAR_VERT (v, 5, -1);
-            v = GEAR_VERT (v, 4, -1);
-            v = GEAR_VERT (v, 3, -1);
-            v = GEAR_VERT (v, 2, -1);
-            v = GEAR_VERT (v, 1, -1);
-            v = GEAR_VERT (v, 0, -1);
+            SET_NORMAL(0, 0, -1.0);
+            v = GEAR_VERT(v, 6, -1);
+            v = GEAR_VERT(v, 5, -1);
+            v = GEAR_VERT(v, 4, -1);
+            v = GEAR_VERT(v, 3, -1);
+            v = GEAR_VERT(v, 2, -1);
+            v = GEAR_VERT(v, 1, -1);
+            v = GEAR_VERT(v, 0, -1);
             END_STRIP;
 
             /* Outer face */
             START_STRIP;
-            QUAD_WITH_NORMAL (0, 2);
+            QUAD_WITH_NORMAL(0, 2);
             END_STRIP;
 
             START_STRIP;
-            QUAD_WITH_NORMAL (1, 0);
+            QUAD_WITH_NORMAL(1, 0);
             END_STRIP;
 
             START_STRIP;
-            QUAD_WITH_NORMAL (3, 1);
+            QUAD_WITH_NORMAL(3, 1);
             END_STRIP;
 
             START_STRIP;
-            QUAD_WITH_NORMAL (5, 3);
+            QUAD_WITH_NORMAL(5, 3);
             END_STRIP;
         }
     }
@@ -293,10 +302,12 @@ create_gear (GLfloat inner_radius, GLfloat outer_radius, GLfloat width,
     gear->nvertices = (v - gear->vertices);
 
     /* Store the vertices in a vertex buffer object (VBO) */
-    glGenBuffers (1, &gear->vbo);
-    glBindBuffer (GL_ARRAY_BUFFER, gear->vbo);
-    glBufferData (GL_ARRAY_BUFFER, gear->nvertices * sizeof(GearVertex),
-                  gear->vertices, GL_STATIC_DRAW);
+    glGenBuffers(1, &gear->vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, gear->vbo);
+    glBufferData(GL_ARRAY_BUFFER,
+                 gear->nvertices * sizeof(GearVertex),
+                 gear->vertices,
+                 GL_STATIC_DRAW);
 
     return gear;
 }
@@ -310,7 +321,7 @@ create_gear (GLfloat inner_radius, GLfloat outer_radius, GLfloat width,
  * @param n the second matrix to multiply
  */
 static void
-multiply (GLfloat *m, const GLfloat *n)
+multiply(GLfloat *m, const GLfloat *n)
 {
     GLfloat tmp[16];
     const GLfloat *row, *column;
@@ -325,7 +336,7 @@ multiply (GLfloat *m, const GLfloat *n)
         for (j = 0; j < 4; j++)
             tmp[i] += row[j] * column[j * 4];
     }
-    memcpy (m, &tmp, sizeof tmp);
+    memcpy(m, &tmp, sizeof tmp);
 }
 
 /**
@@ -338,24 +349,25 @@ multiply (GLfloat *m, const GLfloat *n)
  * @param z the z component of the direction to rotate to
  */
 static void
-rotate (GLfloat *m, GLfloat angle, GLfloat x, GLfloat y, GLfloat z)
+rotate(GLfloat *m, GLfloat angle, GLfloat x, GLfloat y, GLfloat z)
 {
     double s, c;
 
-    sincos (angle, &s, &c);
+    sincos(angle, &s, &c);
 
     {
-        GLfloat r[16] = {
-            x * x * (1 - c) + c,     y * x * (1 - c) + z * s, x * z * (1 - c) - y * s, 0,
-            x * y * (1 - c) - z * s, y * y * (1 - c) + c,     y * z * (1 - c) + x * s, 0,
-            x * z * (1 - c) + y * s, y * z * (1 - c) - x * s, z * z * (1 - c) + c,     0,
-            0, 0, 0, 1
-        };
+        GLfloat r[16] = { x * x * (1 - c) + c,     y * x * (1 - c) + z * s,
+                          x * z * (1 - c) - y * s, 0,
+                          x * y * (1 - c) - z * s, y * y * (1 - c) + c,
+                          y * z * (1 - c) + x * s, 0,
+                          x * z * (1 - c) + y * s, y * z * (1 - c) - x * s,
+                          z * z * (1 - c) + c,     0,
+                          0,                       0,
+                          0,                       1 };
 
-        multiply (m, r);
+        multiply(m, r);
     }
 }
-
 
 /**
  * Translates a 4x4 matrix.
@@ -368,9 +380,9 @@ rotate (GLfloat *m, GLfloat angle, GLfloat x, GLfloat y, GLfloat z)
 static void
 translate(GLfloat *m, GLfloat x, GLfloat y, GLfloat z)
 {
-    GLfloat t[16] = { 1, 0, 0, 0,  0, 1, 0, 0,  0, 0, 1, 0,  x, y, z, 1 };
+    GLfloat t[16] = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1 };
 
-    multiply (m, t);
+    multiply(m, t);
 }
 
 /**
@@ -379,16 +391,12 @@ translate(GLfloat *m, GLfloat x, GLfloat y, GLfloat z)
  * @param m the matrix make an identity matrix
  */
 static void
-identity (GLfloat *m)
+identity(GLfloat *m)
 {
-    GLfloat t[16] = {
-        1.0, 0.0, 0.0, 0.0,
-        0.0, 1.0, 0.0, 0.0,
-        0.0, 0.0, 1.0, 0.0,
-        0.0, 0.0, 0.0, 1.0,
-    };
+    GLfloat t[16] = { 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+                      0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, };
 
-    memcpy (m, t, sizeof(t));
+    memcpy(m, t, sizeof(t));
 }
 
 /**
@@ -397,15 +405,12 @@ identity (GLfloat *m)
  * @param m the matrix to transpose
  */
 static void
-transpose (GLfloat *m)
+transpose(GLfloat *m)
 {
-    GLfloat t[16] = {
-        m[0], m[4], m[8],  m[12],
-        m[1], m[5], m[9],  m[13],
-        m[2], m[6], m[10], m[14],
-        m[3], m[7], m[11], m[15]};
+    GLfloat t[16] = { m[0], m[4], m[8],  m[12], m[1], m[5], m[9],  m[13],
+                      m[2], m[6], m[10], m[14], m[3], m[7], m[11], m[15] };
 
-    memcpy (m, t, sizeof(t));
+    memcpy(m, t, sizeof(t));
 }
 
 /**
@@ -416,23 +421,25 @@ transpose (GLfloat *m)
  * for an explanation.
  */
 static void
-invert (GLfloat *m)
+invert(GLfloat *m)
 {
     GLfloat t[16];
-    identity (t);
+    identity(t);
 
     // Extract and invert the translation part 't'. The inverse of a
     // translation matrix can be calculated by negating the translation
     // coordinates.
-    t[12] = -m[12]; t[13] = -m[13]; t[14] = -m[14];
+    t[12] = -m[12];
+    t[13] = -m[13];
+    t[14] = -m[14];
 
     // Invert the rotation part 'r'. The inverse of a rotation matrix is
     // equal to its transpose.
     m[12] = m[13] = m[14] = 0;
-    transpose (m);
+    transpose(m);
 
     // inv (m) = inv (r) * inv (t)
-    multiply (m, t);
+    multiply(m, t);
 }
 
 /**
@@ -445,19 +452,20 @@ invert (GLfloat *m)
  * @param zFar the far clipping plane
  */
 static void
-perspective (GLfloat *m, GLfloat fovy, GLfloat aspect, GLfloat zNear, GLfloat zFar)
+perspective(
+    GLfloat *m, GLfloat fovy, GLfloat aspect, GLfloat zNear, GLfloat zFar)
 {
     GLfloat tmp[16];
     double sine, cosine, cotangent, deltaZ;
     GLfloat radians = fovy / 2 * M_PI / 180;
 
-    identity (tmp);
+    identity(tmp);
 
     deltaZ = zFar - zNear;
-    sincos (radians, &sine, &cosine);
+    sincos(radians, &sine, &cosine);
 
     if ((deltaZ == 0) || (sine == 0) || (aspect == 0))
-      return;
+        return;
 
     cotangent = cosine / sine;
 
@@ -468,7 +476,7 @@ perspective (GLfloat *m, GLfloat fovy, GLfloat aspect, GLfloat zNear, GLfloat zF
     tmp[14] = -2 * zNear * zFar / deltaZ;
     tmp[15] = 0;
 
-    memcpy (m, tmp, sizeof(tmp));
+    memcpy(m, tmp, sizeof(tmp));
 }
 
 /**
@@ -482,8 +490,12 @@ perspective (GLfloat *m, GLfloat fovy, GLfloat aspect, GLfloat zNear, GLfloat zF
  * @param color the color of the gear
  */
 static void
-draw_gear (struct gear *gear, GLfloat *transform,
-           GLfloat x, GLfloat y, GLfloat angle, const GLfloat color[4])
+draw_gear(struct gear *gear,
+          GLfloat *transform,
+          GLfloat x,
+          GLfloat y,
+          GLfloat angle,
+          const GLfloat color[4])
 {
     GLfloat model_view[16];
     GLfloat normal_matrix[16];
@@ -491,53 +503,50 @@ draw_gear (struct gear *gear, GLfloat *transform,
     int n;
 
     /* Translate and rotate the gear */
-    memcpy(model_view, transform, sizeof (model_view));
+    memcpy(model_view, transform, sizeof(model_view));
     translate(model_view, x, y, 0);
     rotate(model_view, 2 * M_PI * angle / 360.0, 0, 0, 1);
 
     /* Create and set the ModelViewProjectionMatrix */
-    memcpy (model_view_projection,
-            ProjectionMatrix,
-            sizeof(model_view_projection));
-    multiply (model_view_projection, model_view);
+    memcpy(
+        model_view_projection, ProjectionMatrix, sizeof(model_view_projection));
+    multiply(model_view_projection, model_view);
 
-    glUniformMatrix4fv (ModelViewProjectionMatrix_location, 1, GL_FALSE,
-                        model_view_projection);
+    glUniformMatrix4fv(
+        ModelViewProjectionMatrix_location, 1, GL_FALSE, model_view_projection);
 
     /*
      * Create and set the NormalMatrix. It's the inverse transpose of the
      * ModelView matrix.
      */
-    memcpy (normal_matrix, model_view, sizeof (normal_matrix));
-    invert (normal_matrix);
-    transpose (normal_matrix);
-    glUniformMatrix4fv (NormalMatrix_location, 1, GL_FALSE, normal_matrix);
+    memcpy(normal_matrix, model_view, sizeof(normal_matrix));
+    invert(normal_matrix);
+    transpose(normal_matrix);
+    glUniformMatrix4fv(NormalMatrix_location, 1, GL_FALSE, normal_matrix);
 
     /* Set the gear color */
-    glUniform4fv (MaterialColor_location, 1, color);
+    glUniform4fv(MaterialColor_location, 1, color);
 
     /* Set the vertex buffer object to use */
-    glBindBuffer (GL_ARRAY_BUFFER, gear->vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, gear->vbo);
 
     /* Set up the position of the attributes in the vertex buffer object */
-    glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE,
-                           6 * sizeof(GLfloat), NULL);
-    glVertexAttribPointer (1, 3, GL_FLOAT, GL_FALSE,
-                           6 * sizeof(GLfloat), (GLfloat *) 0 + 3);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), NULL);
+    glVertexAttribPointer(
+        1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLfloat *)0 + 3);
 
     /* Enable the attributes */
-    glEnableVertexAttribArray (0);
-    glEnableVertexAttribArray (1);
+    glEnableVertexAttribArray(0);
+    glEnableVertexAttribArray(1);
 
     /* Draw the triangle strips that comprise the gear */
     for (n = 0; n < gear->nstrips; n++)
-        glDrawArrays (GL_TRIANGLE_STRIP,
-                      gear->strips[n].first,
-                      gear->strips[n].count);
+        glDrawArrays(
+            GL_TRIANGLE_STRIP, gear->strips[n].first, gear->strips[n].count);
 
     /* Disable the attributes */
-    glDisableVertexAttribArray (1);
-    glDisableVertexAttribArray (0);
+    glDisableVertexAttribArray(1);
+    glDisableVertexAttribArray(0);
 }
 
 /**
@@ -552,47 +561,43 @@ gears_draw(void)
     GLfloat transform[16];
     identity(transform);
 
-    glClearColor (0.0, 0.0, 0.0, 0.0);
-    glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClearColor(0.0, 0.0, 0.0, 0.0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     /* Translate and rotate the view */
-    translate (transform, 0, 0, -20);
-    rotate (transform, 2 * M_PI * view_rot[0] / 360.0, 1, 0, 0);
-    rotate (transform, 2 * M_PI * view_rot[1] / 360.0, 0, 1, 0);
-    rotate (transform, 2 * M_PI * view_rot[2] / 360.0, 0, 0, 1);
+    translate(transform, 0, 0, -20);
+    rotate(transform, 2 * M_PI * view_rot[0] / 360.0, 1, 0, 0);
+    rotate(transform, 2 * M_PI * view_rot[1] / 360.0, 0, 1, 0);
+    rotate(transform, 2 * M_PI * view_rot[2] / 360.0, 0, 0, 1);
 
     /* Draw the gears */
-    draw_gear (gear1, transform, -3.0, -2.0, angle, red);
-    draw_gear (gear2, transform, 3.1, -2.0, -2 * angle - 9.0, green);
-    draw_gear (gear3, transform, -3.1, 4.2, -2 * angle - 25.0, blue);
+    draw_gear(gear1, transform, -3.0, -2.0, angle, red);
+    draw_gear(gear2, transform, 3.1, -2.0, -2 * angle - 9.0, green);
+    draw_gear(gear3, transform, -3.1, 4.2, -2 * angle - 25.0, blue);
 }
 
 static gboolean
-paint_cb (void *user_data)
+paint_cb(void *user_data)
 {
     Data *data = user_data;
-    double elapsed = g_timer_elapsed (data->timer, NULL);
+    double elapsed = g_timer_elapsed(data->timer, NULL);
     double dt = elapsed - data->last_elapsed;
-    CoglError *error = NULL;
+    cg_error_t *error = NULL;
 
     /* Draw scene with GLES2 */
-    if (!cogl_push_gles2_context (data->ctx,
-                                  data->gles2_ctx,
-                                  data->fb,
-                                  data->fb,
-                                  &error))
-    {
-        g_error ("Failed to push gles2 context: %s\n", error->message);
+    if (!cg_push_gles2_context(
+            data->ctx, data->gles2_ctx, data->fb, data->fb, &error)) {
+        g_error("Failed to push gles2 context: %s\n", error->message);
     }
 
-    gears_draw ();
+    gears_draw();
 
-    cogl_pop_gles2_context (data->ctx);
+    cg_pop_gles2_context(data->ctx);
 
-    cogl_onscreen_swap_buffers (COGL_ONSCREEN (data->fb));
+    cg_onscreen_swap_buffers(CG_ONSCREEN(data->fb));
 
     /* advance rotation for next frame */
-    angle += 70.0 * dt;  /* 70 degrees per second */
+    angle += 70.0 * dt; /* 70 degrees per second */
     if (angle > 3600.0)
         angle -= 3600.0;
 
@@ -600,25 +605,27 @@ paint_cb (void *user_data)
 
     if (elapsed > 5.0) {
         GLfloat fps = data->frames / elapsed;
-        printf ("%d frames in %3.1f seconds = %6.3f FPS\n",
-                data->frames, elapsed, fps);
-        g_timer_reset (data->timer);
+        printf("%d frames in %3.1f seconds = %6.3f FPS\n",
+               data->frames,
+               elapsed,
+               fps);
+        g_timer_reset(data->timer);
         data->last_elapsed = 0;
         data->frames = 0;
-    }else
-      data->last_elapsed = elapsed;
+    } else
+        data->last_elapsed = elapsed;
 
     return FALSE; /* remove the callback */
 }
 
 static void
-frame_event_cb (CoglOnscreen *onscreen,
-                CoglFrameEvent event,
-                CoglFrameInfo *info,
-                void *user_data)
+frame_event_cb(cg_onscreen_t *onscreen,
+               cg_frame_event_t event,
+               cg_frame_info_t *info,
+               void *user_data)
 {
-    if (event == COGL_FRAME_EVENT_SYNC)
-        paint_cb (user_data);
+    if (event == CG_FRAME_EVENT_SYNC)
+        paint_cb(user_data);
 }
 
 /**
@@ -628,13 +635,13 @@ frame_event_cb (CoglOnscreen *onscreen,
  * @param height the window height
  */
 static void
-gears_reshape (int width, int height)
+gears_reshape(int width, int height)
 {
     /* Update the projection matrix */
-    perspective (ProjectionMatrix, 60.0, width / (float)height, 1.0, 1024.0);
+    perspective(ProjectionMatrix, 60.0, width / (float)height, 1.0, 1024.0);
 
     /* Set the viewport */
-    glViewport (0, 0, (GLint) width, (GLint) height);
+    glViewport(0, 0, (GLint)width, (GLint)height);
 }
 
 #if 0
@@ -647,16 +654,16 @@ static void
 gears_special(int special)
 {
     switch (special) {
-      case EGLUT_KEY_LEFT:
+    case EGLUT_KEY_LEFT:
         view_rot[1] += 5.0;
         break;
-      case EGLUT_KEY_RIGHT:
+    case EGLUT_KEY_RIGHT:
         view_rot[1] -= 5.0;
         break;
-      case EGLUT_KEY_UP:
+    case EGLUT_KEY_UP:
         view_rot[0] += 5.0;
         break;
-      case EGLUT_KEY_DOWN:
+    case EGLUT_KEY_DOWN:
         view_rot[0] -= 5.0;
         break;
     }
@@ -679,10 +686,12 @@ static const char vertex_shader[] =
     "    // Transform the normal to eye coordinates\n"
     "    vec3 N = normalize(vec3(NormalMatrix * vec4(normal, 1.0)));\n"
     "\n"
-    "    // The LightSourcePosition is actually its direction for directional light\n"
+    "    // The LightSourcePosition is actually its direction for directional "
+    "light\n"
     "    vec3 L = normalize(LightSourcePosition.xyz);\n"
     "\n"
-    "    // Multiply the diffuse value by the vertex color (which is fixed in this case)\n"
+    "    // Multiply the diffuse value by the vertex color (which is fixed in "
+    "this case)\n"
     "    // to get the actual color that we will use to draw this vertex with\n"
     "    float diffuse = max(dot(N, L), 0.0);\n"
     "    Color = diffuse * MaterialColor;\n"
@@ -691,14 +700,13 @@ static const char vertex_shader[] =
     "    gl_Position = ModelViewProjectionMatrix * vec4(position, 1.0);\n"
     "}";
 
-static const char fragment_shader[] =
-    "precision mediump float;\n"
-    "varying vec4 Color;\n"
-    "\n"
-    "void main(void)\n"
-    "{\n"
-    "    gl_FragColor = Color;\n"
-    "}";
+static const char fragment_shader[] = "precision mediump float;\n"
+                                      "varying vec4 Color;\n"
+                                      "\n"
+                                      "void main(void)\n"
+                                      "{\n"
+                                      "    gl_FragColor = Color;\n"
+                                      "}";
 
 static void
 gears_init(void)
@@ -707,119 +715,111 @@ gears_init(void)
     const char *p;
     char msg[512];
 
-    glEnable (GL_CULL_FACE);
-    glEnable (GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
+    glEnable(GL_DEPTH_TEST);
 
     /* Compile the vertex shader */
     p = vertex_shader;
-    v = glCreateShader (GL_VERTEX_SHADER);
-    glShaderSource (v, 1, &p, NULL);
-    glCompileShader (v);
-    glGetShaderInfoLog (v, sizeof msg, NULL, msg);
-    printf ("vertex shader info: %s\n", msg);
+    v = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(v, 1, &p, NULL);
+    glCompileShader(v);
+    glGetShaderInfoLog(v, sizeof msg, NULL, msg);
+    printf("vertex shader info: %s\n", msg);
 
     /* Compile the fragment shader */
     p = fragment_shader;
-    f = glCreateShader (GL_FRAGMENT_SHADER);
-    glShaderSource (f, 1, &p, NULL);
-    glCompileShader (f);
-    glGetShaderInfoLog (f, sizeof msg, NULL, msg);
-    printf ("fragment shader info: %s\n", msg);
+    f = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(f, 1, &p, NULL);
+    glCompileShader(f);
+    glGetShaderInfoLog(f, sizeof msg, NULL, msg);
+    printf("fragment shader info: %s\n", msg);
 
     /* Create and link the shader program */
-    program = glCreateProgram ();
-    glAttachShader (program, v);
-    glAttachShader (program, f);
-    glBindAttribLocation (program, 0, "position");
-    glBindAttribLocation (program, 1, "normal");
+    program = glCreateProgram();
+    glAttachShader(program, v);
+    glAttachShader(program, f);
+    glBindAttribLocation(program, 0, "position");
+    glBindAttribLocation(program, 1, "normal");
 
-    glLinkProgram (program);
-    glGetProgramInfoLog (program, sizeof msg, NULL, msg);
-    printf ("info: %s\n", msg);
+    glLinkProgram(program);
+    glGetProgramInfoLog(program, sizeof msg, NULL, msg);
+    printf("info: %s\n", msg);
 
     /* Enable the shaders */
-    glUseProgram (program);
+    glUseProgram(program);
 
     /* Get the locations of the uniforms so we can access them */
     ModelViewProjectionMatrix_location =
-      glGetUniformLocation (program, "ModelViewProjectionMatrix");
-    NormalMatrix_location =
-      glGetUniformLocation (program, "NormalMatrix");
+        glGetUniformLocation(program, "ModelViewProjectionMatrix");
+    NormalMatrix_location = glGetUniformLocation(program, "NormalMatrix");
     LightSourcePosition_location =
-      glGetUniformLocation (program, "LightSourcePosition");
-    MaterialColor_location =
-      glGetUniformLocation (program, "MaterialColor");
+        glGetUniformLocation(program, "LightSourcePosition");
+    MaterialColor_location = glGetUniformLocation(program, "MaterialColor");
 
     /* Set the LightSourcePosition uniform which is constant throughout
      * the program */
-    glUniform4fv (LightSourcePosition_location, 1, LightSourcePosition);
+    glUniform4fv(LightSourcePosition_location, 1, LightSourcePosition);
 
     /* make the gears */
-    gear1 = create_gear (1.0, 4.0, 1.0, 20, 0.7);
-    gear2 = create_gear (0.5, 2.0, 2.0, 10, 0.7);
-    gear3 = create_gear (1.3, 2.0, 0.5, 10, 0.7);
+    gear1 = create_gear(1.0, 4.0, 1.0, 20, 0.7);
+    gear2 = create_gear(0.5, 2.0, 2.0, 10, 0.7);
+    gear3 = create_gear(1.3, 2.0, 0.5, 10, 0.7);
 }
 
 int
-main (int argc, char **argv)
+main(int argc, char **argv)
 {
     Data data;
-    CoglOnscreen *onscreen;
-    CoglError *error = NULL;
-    GSource *cogl_source;
+    cg_onscreen_t *onscreen;
+    cg_error_t *error = NULL;
+    GSource *cg_source;
     GMainLoop *loop;
-    CoglRenderer *renderer;
-    CoglDisplay *display;
+    cg_renderer_t *renderer;
+    cg_display_t *display;
 
-    renderer = cogl_renderer_new ();
-    cogl_renderer_add_constraint (renderer,
-                                  COGL_RENDERER_CONSTRAINT_SUPPORTS_COGL_GLES2);
-    display = cogl_display_new (renderer, NULL);
-    data.ctx = cogl_context_new (display, NULL);
+    renderer = cg_renderer_new();
+    cg_renderer_add_constraint(renderer,
+                               CG_RENDERER_CONSTRAINT_SUPPORTS_CG_GLES2);
+    display = cg_display_new(renderer, NULL);
+    data.ctx = cg_context_new(display, NULL);
 
-    onscreen = cogl_onscreen_new (data.ctx, 300, 300);
-    cogl_onscreen_show (onscreen);
+    onscreen = cg_onscreen_new(data.ctx, 300, 300);
+    cg_onscreen_show(onscreen);
     data.fb = onscreen;
 
-    data.gles2_ctx = cogl_gles2_context_new (data.ctx, &error);
+    data.gles2_ctx = cg_gles2_context_new(data.ctx, &error);
     if (!data.gles2_ctx)
-        g_error ("Failed to create GLES2 context: %s\n", error->message);
+        g_error("Failed to create GLES2 context: %s\n", error->message);
 
     /* Draw scene with GLES2 */
-    if (!cogl_push_gles2_context (data.ctx,
-                                  data.gles2_ctx,
-                                  data.fb,
-                                  data.fb,
-                                  &error))
-    {
-        g_error ("Failed to push gles2 context: %s\n", error->message);
+    if (!cg_push_gles2_context(
+            data.ctx, data.gles2_ctx, data.fb, data.fb, &error)) {
+        g_error("Failed to push gles2 context: %s\n", error->message);
     }
 
-    gears_reshape (cogl_framebuffer_get_width (data.fb),
-                   cogl_framebuffer_get_height (data.fb));
+    gears_reshape(cg_framebuffer_get_width(data.fb),
+                  cg_framebuffer_get_height(data.fb));
 
     /* Initialize the gears */
     gears_init();
 
-    cogl_pop_gles2_context (data.ctx);
+    cg_pop_gles2_context(data.ctx);
 
-    cogl_source = cogl_glib_source_new (data.ctx, G_PRIORITY_DEFAULT);
+    cg_source = cg_glib_source_new(data.ctx, G_PRIORITY_DEFAULT);
 
-    g_source_attach (cogl_source, NULL);
+    g_source_attach(cg_source, NULL);
 
-    cogl_onscreen_add_frame_callback (COGL_ONSCREEN (data.fb),
-                                      frame_event_cb,
-                                      &data,
-                                      NULL); /* destroy notify */
+    cg_onscreen_add_frame_callback(
+        CG_ONSCREEN(data.fb), frame_event_cb, &data, NULL); /* destroy notify */
 
-    g_idle_add (paint_cb, &data);
+    g_idle_add(paint_cb, &data);
 
-    data.timer = g_timer_new ();
+    data.timer = g_timer_new();
     data.frames = 0;
     data.last_elapsed = 0;
 
-    loop = g_main_loop_new (NULL, TRUE);
-    g_main_loop_run (loop);
+    loop = g_main_loop_new(NULL, TRUE);
+    g_main_loop_run(loop);
 
     return 0;
 }

@@ -28,78 +28,74 @@
 #include <glib-android/glib-android.h>
 #include <cogl/cogl.h>
 
-typedef struct
-{
-  struct android_app* app;
+typedef struct {
+    struct android_app *app;
 
-  CoglContext *context;
-  CoglPrimitive *triangle;
-  CoglFramebuffer *fb;
+    cg_context_t *context;
+    cg_primitive_t *triangle;
+    cg_framebuffer_t *fb;
 } TestData;
 
-static int test_init (TestData* data)
+static int
+test_init(TestData *data)
 {
-  CoglOnscreen *onscreen;
-  CoglError *error = NULL;
-  CoglVertexP2C4 triangle_vertices[] = {
-        {0, 0.7, 0xff, 0x00, 0x00, 0xff},
-        {-0.7, -0.7, 0x00, 0xff, 0x00, 0xff},
-        {0.7, -0.7, 0x00, 0x00, 0xff, 0xff}
-  };
+    cg_onscreen_t *onscreen;
+    cg_error_t *error = NULL;
+    cg_vertex_p2c4_t triangle_vertices[] = {
+        { 0, 0.7, 0xff, 0x00, 0x00, 0xff },
+        { -0.7, -0.7, 0x00, 0xff, 0x00, 0xff },
+        { 0.7, -0.7, 0x00, 0x00, 0xff, 0xff }
+    };
 
-  cogl_android_set_native_window (data->app->window);
+    cg_android_set_native_window(data->app->window);
 
-  data->context = cogl_context_new (NULL, &error);
-  if (!data->context)
-    {
-      g_critical ("Failed to create context: %s\n", error->message);
-      return 1;
+    data->context = cg_context_new(NULL, &error);
+    if (!data->context) {
+        g_critical("Failed to create context: %s\n", error->message);
+        return 1;
     }
 
-  onscreen = cogl_onscreen_new (data->context, 320, 420);
+    onscreen = cg_onscreen_new(data->context, 320, 420);
 
-  /* Eventually there will be an implicit allocate on first use so this
-   * will become optional... */
-  data->fb = COGL_FRAMEBUFFER (onscreen);
-  if (!cogl_framebuffer_allocate (data->fb, &error))
-    {
-      if (error)
-        g_critical ("Failed to allocate framebuffer: %s\n", error->message);
-      else
-        g_critical ("Failed to allocate framebuffer");
-      return 1;
+    /* Eventually there will be an implicit allocate on first use so this
+     * will become optional... */
+    data->fb = CG_FRAMEBUFFER(onscreen);
+    if (!cg_framebuffer_allocate(data->fb, &error)) {
+        if (error)
+            g_critical("Failed to allocate framebuffer: %s\n", error->message);
+        else
+            g_critical("Failed to allocate framebuffer");
+        return 1;
     }
 
-  cogl_onscreen_show (onscreen);
+    cg_onscreen_show(onscreen);
 
-  cogl_push_framebuffer (data->fb);
+    cg_push_framebuffer(data->fb);
 
-  data->triangle = cogl_primitive_new_p2c4 (COGL_VERTICES_MODE_TRIANGLES,
-                                            3, triangle_vertices);
+    data->triangle =
+        cg_primitive_new_p2c4(CG_VERTICES_MODE_TRIANGLES, 3, triangle_vertices);
 
-  return 0;
+    return 0;
 }
 
-static test_draw_frame_and_swap (TestData *data)
+static test_draw_frame_and_swap(TestData *data)
 {
-  if (data->context)
-    {
-      cogl_primitive_draw (data->triangle);
-      cogl_framebuffer_swap_buffers (data->fb);
+    if (data->context) {
+        cg_primitive_draw(data->triangle);
+        cg_framebuffer_swap_buffers(data->fb);
     }
 }
 
 static void
-test_fini (TestData *data)
+test_fini(TestData *data)
 {
-  if (data->fb)
-    {
-      cogl_object_unref (data->triangle);
-      cogl_object_unref (data->fb);
-      cogl_object_unref (data->context);
-      data->triangle = NULL;
-      data->fb = NULL;
-      data->context = NULL;
+    if (data->fb) {
+        cg_object_unref(data->triangle);
+        cg_object_unref(data->fb);
+        cg_object_unref(data->context);
+        data->triangle = NULL;
+        data->fb = NULL;
+        data->context = NULL;
     }
 }
 
@@ -107,39 +103,36 @@ test_fini (TestData *data)
  * Process the next main command.
  */
 static void
-test_handle_cmd (struct android_app* app,
-                 int32_t             cmd)
+test_handle_cmd(struct android_app *app, int32_t cmd)
 {
-  TestData *data = (TestData *) app->userData;
+    TestData *data = (TestData *)app->userData;
 
-  switch (cmd)
-    {
+    switch (cmd) {
     case APP_CMD_INIT_WINDOW:
-      /* The window is being shown, get it ready */
-      g_message ("command: INIT_WINDOW");
-      if (data->app->window != NULL)
-        {
-          test_init (data);
-          test_draw_frame_and_swap (data);
+        /* The window is being shown, get it ready */
+        g_message("command: INIT_WINDOW");
+        if (data->app->window != NULL) {
+            test_init(data);
+            test_draw_frame_and_swap(data);
         }
-      break;
+        break;
 
     case APP_CMD_TERM_WINDOW:
-      /* The window is being hidden or closed, clean it up */
-      g_message ("command: TERM_WINDOW");
-      test_fini (data);
-      break;
+        /* The window is being hidden or closed, clean it up */
+        g_message("command: TERM_WINDOW");
+        test_fini(data);
+        break;
 
     case APP_CMD_GAINED_FOCUS:
-      g_message ("command: GAINED_FOCUS");
-      break;
+        g_message("command: GAINED_FOCUS");
+        break;
 
     case APP_CMD_LOST_FOCUS:
-      /* When our app loses focus, we stop monitoring the accelerometer.
-       * This is to avoid consuming battery while not being used. */
-      g_message ("command: LOST_FOCUS");
-      test_draw_frame_and_swap (data);
-      break;
+        /* When our app loses focus, we stop monitoring the accelerometer.
+         * This is to avoid consuming battery while not being used. */
+        g_message("command: LOST_FOCUS");
+        test_draw_frame_and_swap(data);
+        break;
     }
 }
 
@@ -149,40 +142,37 @@ test_handle_cmd (struct android_app* app,
  * event loop for receiving input events and doing other things.
  */
 void
-android_main (struct android_app* application)
+android_main(struct android_app *application)
 {
-  TestData data;
+    TestData data;
 
-  /* Make sure glue isn't stripped */
-  app_dummy ();
+    /* Make sure glue isn't stripped */
+    app_dummy();
 
-  g_android_init ();
+    g_android_init();
 
-  memset (&data, 0, sizeof (TestData));
-  application->userData = &data;
-  application->onAppCmd = test_handle_cmd;
-  data.app = application;
+    memset(&data, 0, sizeof(TestData));
+    application->userData = &data;
+    application->onAppCmd = test_handle_cmd;
+    data.app = application;
 
-  while (1)
-    {
-      int events;
-      struct android_poll_source* source;
+    while (1) {
+        int events;
+        struct android_poll_source *source;
 
-      while ((ALooper_pollAll (0, NULL, &events, (void**)&source)) >= 0)
-        {
+        while ((ALooper_pollAll(0, NULL, &events, (void **)&source)) >= 0) {
 
-          /* Process this event */
-          if (source != NULL)
-            source->process (application, source);
+            /* Process this event */
+            if (source != NULL)
+                source->process(application, source);
 
-          /* Check if we are exiting */
-          if  (application->destroyRequested != 0)
-            {
-              test_fini (&data);
-              return;
+            /* Check if we are exiting */
+            if (application->destroyRequested != 0) {
+                test_fini(&data);
+                return;
             }
-      }
+        }
 
-      test_draw_frame_and_swap (&data);
+        test_draw_frame_and_swap(&data);
     }
 }

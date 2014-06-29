@@ -9,7 +9,7 @@ AM_CFLAGS = \
 	$(COGL_DEP_CFLAGS) \
 	$(COGL_EXTRA_CFLAGS)
 
-AM_CFLAGS += -DCOGL_EXAMPLES_DATA=\""$(abs_top_srcdir)/cogl-examples/"\"
+AM_CFLAGS += -DCG_EXAMPLES_DATA=\""$(abs_top_srcdir)/cogl-examples/"\"
 
 common_ldadd = \
 	$(COGL_DEP_LIBS) \
