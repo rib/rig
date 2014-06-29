@@ -5,7 +5,7 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir)/rut \
 	-I$(top_builddir)/rut
 	-DG_DISABLE_SINGLE_INCLUDES \
-	-DCOGL_DISABLE_DEPRECATED
+	-DCG_DISABLE_DEPRECATED
 
 AM_CFLAGS = \
 	$(RIG_DEP_CFLAGS) \
@@ -14,7 +14,10 @@ AM_CFLAGS = \
 	-DRIG_SHARE_DIR=\"$(datadir)/\"
 
 common_ldadd = \
-	$(RIG_DEP_LIBS)
+	$(RIG_DEP_LIBS) \
+	$(COGL_DEP_LIBS) \
+	$(top_builddir)/cogl/libcogl2.la \
+	$(top_builddir)/clib/src/libclib.la
 
 bin_PROGRAMS = rig-bump-map-gen
 
