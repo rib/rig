@@ -5,38 +5,38 @@
 #include "test-utils.h"
 
 static void
-create_pipeline (CoglTexture **tex_out,
-                 CoglPipeline **pipeline_out)
+create_pipeline (cg_texture_t **tex_out,
+                 cg_pipeline_t **pipeline_out)
 {
-  CoglTexture2D *tex;
-  CoglPipeline *pipeline;
+  cg_texture_2d_t *tex;
+  cg_pipeline_t *pipeline;
   static const uint8_t tex_data[] =
     { 0x00, 0x44, 0x88, 0xcc };
 
-  tex = cogl_texture_2d_new_from_data (test_ctx,
+  tex = cg_texture_2d_new_from_data (test_ctx,
                                        2, 2, /* width/height */
-                                       COGL_PIXEL_FORMAT_A_8, /* format */
+                                       CG_PIXEL_FORMAT_A_8, /* format */
                                        2, /* rowstride */
                                        tex_data,
                                        NULL);
 
-  pipeline = cogl_pipeline_new (test_ctx);
+  pipeline = cg_pipeline_new (test_ctx);
 
-  cogl_pipeline_set_layer_filters (pipeline,
+  cg_pipeline_set_layer_filters (pipeline,
                                    0, /* layer */
-                                   COGL_PIPELINE_FILTER_NEAREST,
-                                   COGL_PIPELINE_FILTER_NEAREST);
-  cogl_pipeline_set_layer_wrap_mode (pipeline,
+                                   CG_PIPELINE_FILTER_NEAREST,
+                                   CG_PIPELINE_FILTER_NEAREST);
+  cg_pipeline_set_layer_wrap_mode (pipeline,
                                      0, /* layer */
-                                     COGL_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE);
+                                     CG_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE);
 
   /* This is the layer combine used by cogl-pango */
-  cogl_pipeline_set_layer_combine (pipeline,
+  cg_pipeline_set_layer_combine (pipeline,
                                    0, /* layer */
                                    "RGBA = MODULATE (PREVIOUS, TEXTURE[A])",
                                    NULL);
 
-  cogl_pipeline_set_layer_texture (pipeline,
+  cg_pipeline_set_layer_texture (pipeline,
                                    0, /* layer */
                                    tex);
 
@@ -47,39 +47,39 @@ create_pipeline (CoglTexture **tex_out,
 void
 test_alpha_textures (void)
 {
-  CoglTexture *tex1, *tex2;
-  CoglPipeline *pipeline1, *pipeline2;
-  int fb_width = cogl_framebuffer_get_width (test_fb);
-  int fb_height = cogl_framebuffer_get_height (test_fb);
+  cg_texture_t *tex1, *tex2;
+  cg_pipeline_t *pipeline1, *pipeline2;
+  int fb_width = cg_framebuffer_get_width (test_fb);
+  int fb_height = cg_framebuffer_get_height (test_fb);
   uint8_t replacement_data[1] = { 0xff };
 
   create_pipeline (&tex1, &pipeline1);
 
-  cogl_framebuffer_draw_rectangle (test_fb,
+  cg_framebuffer_draw_rectangle (test_fb,
                                    pipeline1,
                                    -1.0f, 1.0f, /* x1/y1 */
                                    1.0f, 0.0f /* x2/y2 */);
 
   create_pipeline (&tex2, &pipeline2);
 
-  cogl_texture_set_region (tex2,
+  cg_texture_set_region (tex2,
                            1, 1, /* width / height */
-                           COGL_PIXEL_FORMAT_A_8,
+                           CG_PIXEL_FORMAT_A_8,
                            1, /* rowstride */
                            replacement_data,
                            1, 1, /* dst_x/y */
                            0, /* level */
                            NULL); /* abort on error */
 
-  cogl_framebuffer_draw_rectangle (test_fb,
+  cg_framebuffer_draw_rectangle (test_fb,
                                    pipeline2,
                                    -1.0f, 0.0f, /* x1/y1 */
                                    1.0f, -1.0f /* x2/y2 */);
 
-  cogl_object_unref (tex1);
-  cogl_object_unref (tex2);
-  cogl_object_unref (pipeline1);
-  cogl_object_unref (pipeline2);
+  cg_object_unref (tex1);
+  cg_object_unref (tex2);
+  cg_object_unref (pipeline1);
+  cg_object_unref (pipeline2);
 
   /* Unmodified texture */
   test_utils_check_pixel (test_fb,
@@ -117,7 +117,7 @@ test_alpha_textures (void)
                           fb_height * 7 / 8,
                           0xffffffff);
 
-  if (cogl_test_verbose ())
+  if (cg_test_verbose ())
     c_print ("OK\n");
 }
 

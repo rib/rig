@@ -13,10 +13,10 @@ bool run_all = FALSE;
 
 typedef struct _Data
 {
-  CoglContext *ctx;
-  CoglFramebuffer *fb;
-  CoglPipeline *pipeline;
-  CoglPipeline *alpha_pipeline;
+  cg_context_t *ctx;
+  cg_framebuffer_t *fb;
+  cg_pipeline_t *pipeline;
+  cg_pipeline_t *alpha_pipeline;
   GTimer *timer;
   int frame;
 } Data;
@@ -29,9 +29,9 @@ test_rectangles (Data *data)
   int x;
   int y;
 
-  cogl_framebuffer_clear4f (data->fb, COGL_BUFFER_BIT_COLOR, 1, 1, 1, 1);
+  cg_framebuffer_clear4f (data->fb, CG_BUFFER_BIT_COLOR, 1, 1, 1, 1);
 
-  cogl_framebuffer_push_rectangle_clip (data->fb,
+  cg_framebuffer_push_rectangle_clip (data->fb,
                                         10,
                                         10,
                                         FRAMEBUFFER_WIDTH - 10,
@@ -62,20 +62,20 @@ test_rectangles (Data *data)
     {
       for (x = 0; x < FRAMEBUFFER_WIDTH; x += RECT_WIDTH)
         {
-          cogl_framebuffer_push_matrix (data->fb);
-          cogl_framebuffer_translate (data->fb, x, y, 0);
-          cogl_framebuffer_rotate (data->fb, 45, 0, 0, 1);
+          cg_framebuffer_push_matrix (data->fb);
+          cg_framebuffer_translate (data->fb, x, y, 0);
+          cg_framebuffer_rotate (data->fb, 45, 0, 0, 1);
 
-          cogl_pipeline_set_color4f (data->pipeline,
+          cg_pipeline_set_color4f (data->pipeline,
                                      1,
                                      (1.0f/FRAMEBUFFER_WIDTH)*y,
                                      (1.0f/FRAMEBUFFER_HEIGHT)*x,
                                      1);
-          cogl_framebuffer_draw_rectangle (data->fb,
+          cg_framebuffer_draw_rectangle (data->fb,
                                            data->pipeline,
                                            0, 0, RECT_WIDTH, RECT_HEIGHT);
 
-          cogl_framebuffer_pop_matrix (data->fb);
+          cg_framebuffer_pop_matrix (data->fb);
         }
     }
 
@@ -83,23 +83,23 @@ test_rectangles (Data *data)
     {
       for (x = 0; x < FRAMEBUFFER_WIDTH; x += RECT_WIDTH)
         {
-          cogl_framebuffer_push_matrix (data->fb);
-          cogl_framebuffer_translate (data->fb, x, y, 0);
+          cg_framebuffer_push_matrix (data->fb);
+          cg_framebuffer_translate (data->fb, x, y, 0);
 
-          cogl_pipeline_set_color4f (data->alpha_pipeline,
+          cg_pipeline_set_color4f (data->alpha_pipeline,
                                      1,
                                      (1.0f/FRAMEBUFFER_WIDTH)*x,
                                      (1.0f/FRAMEBUFFER_HEIGHT)*y,
                                      (1.0f/FRAMEBUFFER_WIDTH)*x);
-          cogl_framebuffer_draw_rectangle (data->fb,
+          cg_framebuffer_draw_rectangle (data->fb,
                                            data->alpha_pipeline,
                                            0, 0, RECT_WIDTH, RECT_HEIGHT);
 
-          cogl_framebuffer_pop_matrix (data->fb);
+          cg_framebuffer_pop_matrix (data->fb);
         }
     }
 
-  cogl_framebuffer_pop_clip (data->fb);
+  cg_framebuffer_pop_clip (data->fb);
 }
 
 static bool
@@ -112,7 +112,7 @@ paint_cb (void *user_data)
 
   test_rectangles (data);
 
-  cogl_onscreen_swap_buffers (COGL_ONSCREEN (data->fb));
+  cg_onscreen_swap_buffers (CG_ONSCREEN (data->fb));
 
   elapsed = g_timer_elapsed (data->timer, NULL);
   if (elapsed > 1.0)
@@ -126,12 +126,12 @@ paint_cb (void *user_data)
 }
 
 static void
-frame_event_cb (CoglOnscreen *onscreen,
-                CoglFrameEvent event,
-                CoglFrameInfo *info,
+frame_event_cb (cg_onscreen_t *onscreen,
+                cg_frame_event_t event,
+                cg_frame_info_t *info,
                 void *user_data)
 {
-  if (event == COGL_FRAME_EVENT_SYNC)
+  if (event == CG_FRAME_EVENT_SYNC)
     paint_cb (user_data);
 }
 
@@ -139,39 +139,39 @@ int
 main (int argc, char **argv)
 {
   Data data;
-  CoglOnscreen *onscreen;
-  GSource *cogl_source;
+  cg_onscreen_t *onscreen;
+  GSource *cg_source;
   GMainLoop *loop;
-  COGL_STATIC_TIMER (mainloop_timer,
+  CG_STATIC_TIMER (mainloop_timer,
                       NULL, //no parent
                       "Mainloop",
                       "The time spent in the glib mainloop",
                       0);  // no application private data
 
-  data.ctx = cogl_context_new (NULL, NULL);
+  data.ctx = cg_context_new (NULL, NULL);
 
-  onscreen = cogl_onscreen_new (data.ctx,
+  onscreen = cg_onscreen_new (data.ctx,
                                 FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT);
-  cogl_onscreen_set_swap_throttled (onscreen, FALSE);
-  cogl_onscreen_show (onscreen);
+  cg_onscreen_set_swap_throttled (onscreen, FALSE);
+  cg_onscreen_show (onscreen);
 
   data.fb = onscreen;
-  cogl_framebuffer_orthographic (data.fb,
+  cg_framebuffer_orthographic (data.fb,
                                  0, 0,
                                  FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT,
                                  -1,
                                  100);
 
-  data.pipeline = cogl_pipeline_new (data.ctx);
-  cogl_pipeline_set_color4f (data.pipeline, 1, 1, 1, 1);
-  data.alpha_pipeline = cogl_pipeline_new (data.ctx);
-  cogl_pipeline_set_color4f (data.alpha_pipeline, 1, 1, 1, 0.5);
+  data.pipeline = cg_pipeline_new (data.ctx);
+  cg_pipeline_set_color4f (data.pipeline, 1, 1, 1, 1);
+  data.alpha_pipeline = cg_pipeline_new (data.ctx);
+  cg_pipeline_set_color4f (data.alpha_pipeline, 1, 1, 1, 0.5);
 
-  cogl_source = cogl_glib_source_new (data.ctx, G_PRIORITY_DEFAULT);
+  cg_source = cg_glib_source_new (data.ctx, G_PRIORITY_DEFAULT);
 
-  g_source_attach (cogl_source, NULL);
+  g_source_attach (cg_source, NULL);
 
-  cogl_onscreen_add_frame_callback (COGL_ONSCREEN (data.fb),
+  cg_onscreen_add_frame_callback (CG_ONSCREEN (data.fb),
                                     frame_event_cb,
                                     &data,
                                     NULL); /* destroy notify */
@@ -183,9 +183,9 @@ main (int argc, char **argv)
   g_timer_start (data.timer);
 
   loop = g_main_loop_new (NULL, TRUE);
-  COGL_TIMER_START (uprof_get_mainloop_context (), mainloop_timer);
+  CG_TIMER_START (uprof_get_mainloop_context (), mainloop_timer);
   g_main_loop_run (loop);
-  COGL_TIMER_STOP (uprof_get_mainloop_context (), mainloop_timer);
+  CG_TIMER_STOP (uprof_get_mainloop_context (), mainloop_timer);
 
   return 0;
 }

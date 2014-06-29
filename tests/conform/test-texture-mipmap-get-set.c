@@ -6,11 +6,11 @@
 
 #define TEXTURE_SIZE  128
 
-static CoglTexture *
+static cg_texture_t *
 make_texture (void)
 {
   uint8_t *p, *tex_data;
-  CoglTexture *tex;
+  cg_texture_t *tex;
   int x, y;
 
   p = tex_data = c_malloc (TEXTURE_SIZE * TEXTURE_SIZE * 4);
@@ -30,11 +30,11 @@ make_texture (void)
                                           TEXTURE_SIZE,
                                           TEXTURE_SIZE,
                                           TEST_UTILS_TEXTURE_NO_ATLAS,
-                                          COGL_PIXEL_FORMAT_RGBA_8888_PRE,
+                                          CG_PIXEL_FORMAT_RGBA_8888_PRE,
                                           TEXTURE_SIZE * 4,
                                           tex_data);
 
-  cogl_primitive_texture_set_auto_mipmap (tex, FALSE);
+  cg_primitive_texture_set_auto_mipmap (tex, FALSE);
 
   g_free (tex_data);
 
@@ -42,7 +42,7 @@ make_texture (void)
 }
 
 static void
-update_mipmap_levels (CoglTexture *tex)
+update_mipmap_levels (cg_texture_t *tex)
 {
   uint8_t *p, *tex_data;
   int x, y;
@@ -61,10 +61,10 @@ update_mipmap_levels (CoglTexture *tex)
         }
     }
 
-  cogl_texture_set_region (tex,
+  cg_texture_set_region (tex,
                            TEXTURE_SIZE / 2,
                            TEXTURE_SIZE / 2,
-                           COGL_PIXEL_FORMAT_RGBA_8888_PRE,
+                           CG_PIXEL_FORMAT_RGBA_8888_PRE,
                            0, /* auto rowstride */
                            tex_data,
                            0, /* dest x */
@@ -84,10 +84,10 @@ update_mipmap_levels (CoglTexture *tex)
         }
     }
 
-  cogl_texture_set_region (tex,
+  cg_texture_set_region (tex,
                            TEXTURE_SIZE / 4,
                            TEXTURE_SIZE / 4,
-                           COGL_PIXEL_FORMAT_RGBA_8888_PRE,
+                           CG_PIXEL_FORMAT_RGBA_8888_PRE,
                            0, /* auto rowstride */
                            tex_data,
                            0, /* dest x */
@@ -115,17 +115,17 @@ validate_results (void)
 }
 
 static void
-paint (CoglTexture *texture)
+paint (cg_texture_t *texture)
 {
-  CoglPipeline *pipeline = cogl_pipeline_new (test_ctx);
+  cg_pipeline_t *pipeline = cg_pipeline_new (test_ctx);
   int x = 0, y = 0, size = TEXTURE_SIZE;
 
-  cogl_pipeline_set_layer_texture (pipeline, 0, texture);
-  cogl_pipeline_set_layer_filters (pipeline, 0,
-                                   COGL_PIPELINE_FILTER_NEAREST_MIPMAP_NEAREST,
-                                   COGL_PIPELINE_FILTER_NEAREST);
+  cg_pipeline_set_layer_texture (pipeline, 0, texture);
+  cg_pipeline_set_layer_filters (pipeline, 0,
+                                   CG_PIPELINE_FILTER_NEAREST_MIPMAP_NEAREST,
+                                   CG_PIPELINE_FILTER_NEAREST);
 
-  cogl_framebuffer_draw_rectangle (test_fb,
+  cg_framebuffer_draw_rectangle (test_fb,
                                    pipeline,
                                    x, y,
                                    x + size,
@@ -133,7 +133,7 @@ paint (CoglTexture *texture)
 
   x += size;
   size /= 2;
-  cogl_framebuffer_draw_rectangle (test_fb,
+  cg_framebuffer_draw_rectangle (test_fb,
                                    pipeline,
                                    x, y,
                                    x + size,
@@ -141,25 +141,25 @@ paint (CoglTexture *texture)
 
   x += size;
   size /= 2;
-  cogl_framebuffer_draw_rectangle (test_fb,
+  cg_framebuffer_draw_rectangle (test_fb,
                                    pipeline,
                                    x, y,
                                    x + size,
                                    y + size);
 
-  cogl_object_unref (pipeline);
-  cogl_object_unref (texture);
+  cg_object_unref (pipeline);
+  cg_object_unref (texture);
 }
 
 void
 test_texture_mipmap_get_set (void)
 {
-  CoglTexture *texture = make_texture ();
+  cg_texture_t *texture = make_texture ();
 
-  cogl_framebuffer_orthographic (test_fb,
+  cg_framebuffer_orthographic (test_fb,
                                  0, 0,
-                                 cogl_framebuffer_get_width (test_fb),
-                                 cogl_framebuffer_get_height (test_fb),
+                                 cg_framebuffer_get_width (test_fb),
+                                 cg_framebuffer_get_height (test_fb),
                                  -1,
                                  100);
 
@@ -168,7 +168,7 @@ test_texture_mipmap_get_set (void)
 
   validate_results ();
 
-  if (cogl_test_verbose ())
+  if (cg_test_verbose ())
     c_print ("OK\n");
 }
 

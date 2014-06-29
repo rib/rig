@@ -37,45 +37,45 @@
 void
 test_euler_quaternion (void)
 {
-  CoglEuler euler;
-  CoglQuaternion quaternion;
-  CoglMatrix matrix_a, matrix_b;
+  cg_euler_t euler;
+  cg_quaternion_t quaternion;
+  cg_matrix_t matrix_a, matrix_b;
 
   /* Try doing the rotation with three separate rotations */
-  cogl_matrix_init_identity (&matrix_a);
-  cogl_matrix_rotate (&matrix_a, -30.0f, 0.0f, 1.0f, 0.0f);
-  cogl_matrix_rotate (&matrix_a, 40.0f, 1.0f, 0.0f, 0.0f);
-  cogl_matrix_rotate (&matrix_a, 50.0f, 0.0f, 0.0f, 1.0f);
+  cg_matrix_init_identity (&matrix_a);
+  cg_matrix_rotate (&matrix_a, -30.0f, 0.0f, 1.0f, 0.0f);
+  cg_matrix_rotate (&matrix_a, 40.0f, 1.0f, 0.0f, 0.0f);
+  cg_matrix_rotate (&matrix_a, 50.0f, 0.0f, 0.0f, 1.0f);
 
   /* And try the same rotation with a euler */
-  cogl_euler_init (&euler, -30, 40, 50);
-  cogl_matrix_init_from_euler (&matrix_b, &euler);
+  cg_euler_init (&euler, -30, 40, 50);
+  cg_matrix_init_from_euler (&matrix_b, &euler);
 
   /* Verify that the matrices are approximately the same */
   COMPARE_MATRICES (&matrix_a, &matrix_b);
 
   /* Try converting the euler to a matrix via a quaternion */
-  cogl_quaternion_init_from_euler (&quaternion, &euler);
+  cg_quaternion_init_from_euler (&quaternion, &euler);
   memset (&matrix_b, 0, sizeof (matrix_b));
-  cogl_matrix_init_from_quaternion (&matrix_b, &quaternion);
+  cg_matrix_init_from_quaternion (&matrix_b, &quaternion);
   COMPARE_MATRICES (&matrix_a, &matrix_b);
 
   /* Try applying the rotation from a euler to a framebuffer */
-  cogl_framebuffer_identity_matrix (test_fb);
-  cogl_framebuffer_rotate_euler (test_fb, &euler);
+  cg_framebuffer_identity_matrix (test_fb);
+  cg_framebuffer_rotate_euler (test_fb, &euler);
   memset (&matrix_b, 0, sizeof (matrix_b));
-  cogl_framebuffer_get_modelview_matrix (test_fb, &matrix_b);
+  cg_framebuffer_get_modelview_matrix (test_fb, &matrix_b);
   COMPARE_MATRICES (&matrix_a, &matrix_b);
 
   /* And again with a quaternion */
-  cogl_framebuffer_identity_matrix (test_fb);
-  cogl_framebuffer_rotate_quaternion (test_fb, &quaternion);
+  cg_framebuffer_identity_matrix (test_fb);
+  cg_framebuffer_rotate_quaternion (test_fb, &quaternion);
   memset (&matrix_b, 0, sizeof (matrix_b));
-  cogl_framebuffer_get_modelview_matrix (test_fb, &matrix_b);
+  cg_framebuffer_get_modelview_matrix (test_fb, &matrix_b);
   COMPARE_MATRICES (&matrix_a, &matrix_b);
 
   /* FIXME: This needs a lot more tests! */
 
-  if (cogl_test_verbose ())
+  if (cg_test_verbose ())
     c_print ("OK\n");
 }

@@ -50,39 +50,39 @@ test_blend (TestState *state,
   uint8_t Bg = MASK_GREEN (blend_constant);
   uint8_t Bb = MASK_BLUE (blend_constant);
   uint8_t Ba = MASK_ALPHA (blend_constant);
-  CoglColor blend_const_color;
+  cg_color_t blend_const_color;
 
-  CoglPipeline *pipeline;
+  cg_pipeline_t *pipeline;
   bool status;
-  CoglError *error = NULL;
+  cg_error_t *error = NULL;
   int y_off;
   int x_off;
 
   /* First write out the destination color without any blending... */
-  pipeline = cogl_pipeline_new (test_ctx);
-  cogl_pipeline_set_color4ub (pipeline, Dr, Dg, Db, Da);
-  cogl_pipeline_set_blend (pipeline, "RGBA = ADD (SRC_COLOR, 0)", NULL);
-  cogl_framebuffer_draw_rectangle (test_fb,
+  pipeline = cg_pipeline_new (test_ctx);
+  cg_pipeline_set_color4ub (pipeline, Dr, Dg, Db, Da);
+  cg_pipeline_set_blend (pipeline, "RGBA = ADD (SRC_COLOR, 0)", NULL);
+  cg_framebuffer_draw_rectangle (test_fb,
                                    pipeline,
                                    x * QUAD_WIDTH,
                                    y * QUAD_WIDTH,
                                    x * QUAD_WIDTH + QUAD_WIDTH,
                                    y * QUAD_WIDTH + QUAD_WIDTH);
-  cogl_object_unref (pipeline);
+  cg_object_unref (pipeline);
 
   /*
    * Now blend a rectangle over our well defined destination:
    */
 
-  pipeline = cogl_pipeline_new (test_ctx);
-  cogl_pipeline_set_color4ub (pipeline, Sr, Sg, Sb, Sa);
+  pipeline = cg_pipeline_new (test_ctx);
+  cg_pipeline_set_color4ub (pipeline, Sr, Sg, Sb, Sa);
 
-  status = cogl_pipeline_set_blend (pipeline, blend_string, &error);
+  status = cg_pipeline_set_blend (pipeline, blend_string, &error);
   if (!status)
     {
       /* It's not strictly a test failure; you need a more capable GPU or
        * driver to test this blend string. */
-      if (cogl_test_verbose ())
+      if (cg_test_verbose ())
 	{
 	  g_debug ("Failed to test blend string %s: %s",
 		   blend_string, error->message);
@@ -91,23 +91,23 @@ test_blend (TestState *state,
       return;
     }
 
-  cogl_color_init_from_4ub (&blend_const_color, Br, Bg, Bb, Ba);
-  cogl_pipeline_set_blend_constant (pipeline, &blend_const_color);
+  cg_color_init_from_4ub (&blend_const_color, Br, Bg, Bb, Ba);
+  cg_pipeline_set_blend_constant (pipeline, &blend_const_color);
 
-  cogl_framebuffer_draw_rectangle (test_fb,
+  cg_framebuffer_draw_rectangle (test_fb,
                                    pipeline,
                                    x * QUAD_WIDTH,
                                    y * QUAD_WIDTH,
                                    x * QUAD_WIDTH + QUAD_WIDTH,
                                    y * QUAD_WIDTH + QUAD_WIDTH);
-  cogl_object_unref (pipeline);
+  cg_object_unref (pipeline);
 
   /* See what we got... */
 
   y_off = y * QUAD_WIDTH + (QUAD_WIDTH / 2);
   x_off = x * QUAD_WIDTH + (QUAD_WIDTH / 2);
 
-  if (cogl_test_verbose ())
+  if (cg_test_verbose ())
     {
       c_print ("test_blend (%d, %d):\n%s\n", x, y, blend_string);
       c_print ("  src color = %02x, %02x, %02x, %02x\n", Sr, Sg, Sb, Sa);
@@ -122,7 +122,7 @@ test_blend (TestState *state,
   test_utils_check_pixel (test_fb, x_off, y_off, expected_result);
 }
 
-static CoglTexture *
+static cg_texture_t *
 make_texture (uint32_t color)
 {
   guchar *tex_data, *p;
@@ -130,7 +130,7 @@ make_texture (uint32_t color)
   uint8_t g = MASK_GREEN (color);
   uint8_t b = MASK_BLUE (color);
   uint8_t a = MASK_ALPHA (color);
-  CoglTexture *tex;
+  cg_texture_t *tex;
 
   tex_data = c_malloc (QUAD_WIDTH * QUAD_WIDTH * 4);
 
@@ -148,7 +148,7 @@ make_texture (uint32_t color)
                                           QUAD_WIDTH,
                                           QUAD_WIDTH,
                                           TEST_UTILS_TEXTURE_NONE,
-                                          COGL_PIXEL_FORMAT_RGBA_8888_PRE,
+                                          CG_PIXEL_FORMAT_RGBA_8888_PRE,
                                           QUAD_WIDTH * 4,
                                           tex_data);
 
@@ -167,18 +167,18 @@ test_tex_combine (TestState *state,
                   const char *combine_string,
                   uint32_t expected_result)
 {
-  CoglTexture *tex0, *tex1;
+  cg_texture_t *tex0, *tex1;
 
   /* combine constant - when applicable */
   uint8_t Cr = MASK_RED (combine_constant);
   uint8_t Cg = MASK_GREEN (combine_constant);
   uint8_t Cb = MASK_BLUE (combine_constant);
   uint8_t Ca = MASK_ALPHA (combine_constant);
-  CoglColor combine_const_color;
+  cg_color_t combine_const_color;
 
-  CoglPipeline *pipeline;
+  cg_pipeline_t *pipeline;
   bool status;
-  CoglError *error = NULL;
+  cg_error_t *error = NULL;
   int y_off;
   int x_off;
 
@@ -186,17 +186,17 @@ test_tex_combine (TestState *state,
   tex0 = make_texture (tex0_color);
   tex1 = make_texture (tex1_color);
 
-  pipeline = cogl_pipeline_new (test_ctx);
+  pipeline = cg_pipeline_new (test_ctx);
 
-  cogl_pipeline_set_color4ub (pipeline, 0x80, 0x80, 0x80, 0x80);
-  cogl_pipeline_set_blend (pipeline, "RGBA = ADD (SRC_COLOR, 0)", NULL);
+  cg_pipeline_set_color4ub (pipeline, 0x80, 0x80, 0x80, 0x80);
+  cg_pipeline_set_blend (pipeline, "RGBA = ADD (SRC_COLOR, 0)", NULL);
 
-  cogl_pipeline_set_layer_texture (pipeline, 0, tex0);
-  cogl_pipeline_set_layer_combine (pipeline, 0,
+  cg_pipeline_set_layer_texture (pipeline, 0, tex0);
+  cg_pipeline_set_layer_combine (pipeline, 0,
                                    "RGBA = REPLACE (TEXTURE)", NULL);
 
-  cogl_pipeline_set_layer_texture (pipeline, 1, tex1);
-  status = cogl_pipeline_set_layer_combine (pipeline, 1,
+  cg_pipeline_set_layer_texture (pipeline, 1, tex1);
+  status = cg_pipeline_set_layer_combine (pipeline, 1,
                                             combine_string, &error);
   if (!status)
     {
@@ -206,25 +206,25 @@ test_tex_combine (TestState *state,
                combine_string, error->message);
     }
 
-  cogl_color_init_from_4ub (&combine_const_color, Cr, Cg, Cb, Ca);
-  cogl_pipeline_set_layer_combine_constant (pipeline, 1, &combine_const_color);
+  cg_color_init_from_4ub (&combine_const_color, Cr, Cg, Cb, Ca);
+  cg_pipeline_set_layer_combine_constant (pipeline, 1, &combine_const_color);
 
-  cogl_framebuffer_draw_rectangle (test_fb,
+  cg_framebuffer_draw_rectangle (test_fb,
                                    pipeline,
                                    x * QUAD_WIDTH,
                                    y * QUAD_WIDTH,
                                    x * QUAD_WIDTH + QUAD_WIDTH,
                                    y * QUAD_WIDTH + QUAD_WIDTH);
-  cogl_object_unref (pipeline);
-  cogl_object_unref (tex0);
-  cogl_object_unref (tex1);
+  cg_object_unref (pipeline);
+  cg_object_unref (tex0);
+  cg_object_unref (tex1);
 
   /* See what we got... */
 
   y_off = y * QUAD_WIDTH + (QUAD_WIDTH / 2);
   x_off = x * QUAD_WIDTH + (QUAD_WIDTH / 2);
 
-  if (cogl_test_verbose ())
+  if (cg_test_verbose ())
     {
       c_print ("test_tex_combine (%d, %d):\n%s\n", x, y, combine_string);
       c_print ("  texture 0 color = 0x%08lX\n", (unsigned long)tex0_color);
@@ -360,15 +360,15 @@ test_blend_strings (void)
 {
   TestState state;
 
-  cogl_framebuffer_orthographic (test_fb, 0, 0,
-                                 cogl_framebuffer_get_width (test_fb),
-                                 cogl_framebuffer_get_height (test_fb),
+  cg_framebuffer_orthographic (test_fb, 0, 0,
+                                 cg_framebuffer_get_width (test_fb),
+                                 cg_framebuffer_get_height (test_fb),
                                  -1,
                                  100);
 
   paint (&state);
 
-  if (cogl_test_verbose ())
+  if (cg_test_verbose ())
     c_print ("OK\n");
 }
 

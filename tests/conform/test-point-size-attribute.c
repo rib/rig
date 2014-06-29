@@ -32,7 +32,7 @@ calc_coord_offset (int pos, int pos_index, int point_size)
 }
 
 static void
-verify_point_size (CoglFramebuffer *test_fb,
+verify_point_size (cg_framebuffer_t *test_fb,
                    int x_pos,
                    int y_pos,
                    int point_size)
@@ -52,13 +52,13 @@ verify_point_size (CoglFramebuffer *test_fb,
       }
 }
 
-static CoglPrimitive *
+static cg_primitive_t *
 create_primitive (const char *attribute_name)
 {
   PointVertex vertices[N_POINTS];
-  CoglAttributeBuffer *buffer;
-  CoglAttribute *attributes[2];
-  CoglPrimitive *prim;
+  cg_attribute_buffer_t *buffer;
+  cg_attribute_t *attributes[2];
+  cg_primitive_t *prim;
   int i;
 
   for (i = 0; i < N_POINTS; i++)
@@ -68,63 +68,63 @@ create_primitive (const char *attribute_name)
       vertices[i].point_size = MAX_POINT_SIZE - i;
     }
 
-  buffer = cogl_attribute_buffer_new (test_ctx,
+  buffer = cg_attribute_buffer_new (test_ctx,
                                       sizeof (vertices),
                                       vertices);
 
-  attributes[0] = cogl_attribute_new (buffer,
-                                      "cogl_position_in",
+  attributes[0] = cg_attribute_new (buffer,
+                                      "cg_position_in",
                                       sizeof (PointVertex),
                                       C_STRUCT_OFFSET (PointVertex, x),
                                       2, /* n_components */
-                                      COGL_ATTRIBUTE_TYPE_FLOAT);
-  attributes[1] = cogl_attribute_new (buffer,
+                                      CG_ATTRIBUTE_TYPE_FLOAT);
+  attributes[1] = cg_attribute_new (buffer,
                                       attribute_name,
                                       sizeof (PointVertex),
                                       C_STRUCT_OFFSET (PointVertex, point_size),
                                       1, /* n_components */
-                                      COGL_ATTRIBUTE_TYPE_FLOAT);
+                                      CG_ATTRIBUTE_TYPE_FLOAT);
 
-  prim = cogl_primitive_new_with_attributes (COGL_VERTICES_MODE_POINTS,
+  prim = cg_primitive_new_with_attributes (CG_VERTICES_MODE_POINTS,
                                              N_POINTS,
                                              attributes,
                                              2 /* n_attributes */);
 
   for (i = 0; i < 2; i++)
-    cogl_object_unref (attributes[i]);
+    cg_object_unref (attributes[i]);
 
   return prim;
 }
 
 static void
 do_test (const char *attribute_name,
-         void (* pipeline_setup_func) (CoglPipeline *pipeline))
+         void (* pipeline_setup_func) (cg_pipeline_t *pipeline))
 {
-  int fb_width = cogl_framebuffer_get_width (test_fb);
-  int fb_height = cogl_framebuffer_get_height (test_fb);
-  CoglPrimitive *primitive;
-  CoglPipeline *pipeline;
+  int fb_width = cg_framebuffer_get_width (test_fb);
+  int fb_height = cg_framebuffer_get_height (test_fb);
+  cg_primitive_t *primitive;
+  cg_pipeline_t *pipeline;
   int i;
 
-  cogl_framebuffer_orthographic (test_fb,
+  cg_framebuffer_orthographic (test_fb,
                                  0, 0, /* x_1, y_1 */
                                  fb_width, /* x_2 */
                                  fb_height /* y_2 */,
                                  -1, 100 /* near/far */);
 
-  cogl_framebuffer_clear4f (test_fb,
-                            COGL_BUFFER_BIT_COLOR,
+  cg_framebuffer_clear4f (test_fb,
+                            CG_BUFFER_BIT_COLOR,
                             1.0f, 0.0f, 0.0f, 1.0f);
 
   primitive = create_primitive (attribute_name);
-  pipeline = cogl_pipeline_new (test_ctx);
-  cogl_pipeline_set_color4ub (pipeline, 0x00, 0xff, 0x00, 0xff);
-  cogl_pipeline_set_per_vertex_point_size (pipeline, TRUE, NULL);
+  pipeline = cg_pipeline_new (test_ctx);
+  cg_pipeline_set_color4ub (pipeline, 0x00, 0xff, 0x00, 0xff);
+  cg_pipeline_set_per_vertex_point_size (pipeline, TRUE, NULL);
   if (pipeline_setup_func)
     pipeline_setup_func (pipeline);
-  cogl_primitive_draw (primitive, test_fb, pipeline);
-  cogl_object_unref (pipeline);
-  cogl_object_unref (primitive);
+  cg_primitive_draw (primitive, test_fb, pipeline);
+  cg_object_unref (pipeline);
+  cg_object_unref (primitive);
 
   /* Verify all of the points where drawn at the right size */
   for (i = 0; i < N_POINTS; i++)
@@ -133,30 +133,30 @@ do_test (const char *attribute_name,
                        POINT_BOX_SIZE / 2, /* y */
                        MAX_POINT_SIZE - i /* point size */);
 
-  if (cogl_test_verbose ())
+  if (cg_test_verbose ())
     c_print ("OK\n");
 }
 
 void
 test_point_size_attribute (void)
 {
-  do_test ("cogl_point_size_in", NULL);
+  do_test ("cg_point_size_in", NULL);
 }
 
 static void
-setup_snippet (CoglPipeline *pipeline)
+setup_snippet (cg_pipeline_t *pipeline)
 {
-  CoglSnippet *snippet;
+  cg_snippet_t *snippet;
 
-  snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_POINT_SIZE,
+  snippet = cg_snippet_new (CG_SNIPPET_HOOK_POINT_SIZE,
                               "attribute float "
                               "my_super_duper_point_size_attrib;\n",
                               NULL);
-  cogl_snippet_set_replace (snippet,
-                            "cogl_point_size_out = "
+  cg_snippet_set_replace (snippet,
+                            "cg_point_size_out = "
                             "my_super_duper_point_size_attrib;\n");
-  cogl_pipeline_add_snippet (pipeline, snippet);
-  cogl_object_unref (snippet);
+  cg_pipeline_add_snippet (pipeline, snippet);
+  cg_object_unref (snippet);
 }
 
 void

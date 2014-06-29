@@ -52,12 +52,12 @@ validate_result (void)
   validate_part (1, 1, corner_colors[3]);
 }
 
-static CoglTexture *
+static cg_texture_t *
 make_texture (void)
 {
   void *tex_data;
   uint32_t *p;
-  CoglTexture *tex;
+  cg_texture_t *tex;
   int partx, party, width, height;
 
   p = tex_data = c_malloc (TEXTURE_SIZE * TEXTURE_SIZE * 4);
@@ -91,24 +91,24 @@ make_texture (void)
                                           TEXTURE_SIZE,
                                           TEXTURE_SIZE,
                                           TEST_UTILS_TEXTURE_NO_ATLAS,
-                                          COGL_PIXEL_FORMAT_RGBA_8888_PRE,
+                                          CG_PIXEL_FORMAT_RGBA_8888_PRE,
                                           TEXTURE_SIZE * 4,
                                           tex_data);
 
   g_free (tex_data);
 
-  if (cogl_test_verbose ())
+  if (cg_test_verbose ())
     {
-      if (cogl_texture_is_sliced (tex))
+      if (cg_texture_is_sliced (tex))
         c_print ("Texture is sliced\n");
       else
         c_print ("Texture is not sliced\n");
     }
 
   /* The texture should be sliced unless NPOTs are supported */
-  g_assert (cogl_has_feature (test_ctx, COGL_FEATURE_ID_TEXTURE_NPOT)
-            ? !cogl_texture_is_sliced (tex)
-            : cogl_texture_is_sliced (tex));
+  g_assert (cg_has_feature (test_ctx, CG_FEATURE_ID_TEXTURE_NPOT)
+            ? !cg_texture_is_sliced (tex)
+            : cg_texture_is_sliced (tex));
 
   return tex;
 }
@@ -116,17 +116,17 @@ make_texture (void)
 static void
 paint (void)
 {
-  CoglPipeline *pipeline = cogl_pipeline_new (test_ctx);
-  CoglTexture *texture = make_texture ();
+  cg_pipeline_t *pipeline = cg_pipeline_new (test_ctx);
+  cg_texture_t *texture = make_texture ();
   int y, x;
 
-  cogl_pipeline_set_layer_texture (pipeline, 0, texture);
+  cg_pipeline_set_layer_texture (pipeline, 0, texture);
 
   /* Just render the texture in the top left corner */
   /* Render the texture using four separate rectangles */
   for (y = 0; y < 2; y++)
     for (x = 0; x < 2; x++)
-      cogl_framebuffer_draw_textured_rectangle (test_fb,
+      cg_framebuffer_draw_textured_rectangle (test_fb,
                                                 pipeline,
                                                 x * TEXTURE_RENDER_SIZE / 2,
                                                 y * TEXTURE_RENDER_SIZE / 2,
@@ -139,32 +139,32 @@ paint (void)
                                                 (x + 1) / 2.0f,
                                                 (y + 1) / 2.0f);
 
-  cogl_object_unref (pipeline);
-  cogl_object_unref (texture);
+  cg_object_unref (pipeline);
+  cg_object_unref (texture);
 }
 
 void
 test_npot_texture (void)
 {
-  if (cogl_test_verbose ())
+  if (cg_test_verbose ())
     {
-      if (cogl_has_feature (test_ctx, COGL_FEATURE_ID_TEXTURE_NPOT))
+      if (cg_has_feature (test_ctx, CG_FEATURE_ID_TEXTURE_NPOT))
         c_print ("NPOT textures are supported\n");
       else
         c_print ("NPOT textures are not supported\n");
     }
 
-  cogl_framebuffer_orthographic (test_fb,
+  cg_framebuffer_orthographic (test_fb,
                                  0, 0,
-                                 cogl_framebuffer_get_width (test_fb),
-                                 cogl_framebuffer_get_height (test_fb),
+                                 cg_framebuffer_get_width (test_fb),
+                                 cg_framebuffer_get_height (test_fb),
                                  -1,
                                  100);
 
   paint ();
   validate_result ();
 
-  if (cogl_test_verbose ())
+  if (cg_test_verbose ())
     c_print ("OK\n");
 }
 

@@ -7,11 +7,11 @@
 static void
 check_texture (int width, int height, TestUtilsTextureFlags flags)
 {
-  CoglTexture *tex;
+  cg_texture_t *tex;
   uint8_t *data, *p;
   int y, x;
   int rowstride;
-  CoglBitmap *bmp;
+  cg_bitmap_t *bmp;
 
   p = data = c_malloc (width * height * 4);
   for (y = 0; y < height; y++)
@@ -23,9 +23,9 @@ check_texture (int width, int height, TestUtilsTextureFlags flags)
         *(p++) = (x ^ y);
       }
 
-  bmp = cogl_bitmap_new_for_data (test_ctx,
+  bmp = cg_bitmap_new_for_data (test_ctx,
                                   width, height,
-                                  COGL_PIXEL_FORMAT_RGBA_8888,
+                                  CG_PIXEL_FORMAT_RGBA_8888,
                                   width * 4,
                                   data);
 
@@ -48,10 +48,10 @@ check_texture (int width, int height, TestUtilsTextureFlags flags)
         }
       p += width * 2;
     }
-  cogl_texture_set_region (tex,
+  cg_texture_set_region (tex,
                            width / 2, /* region width */
                            height / 2, /* region height */
-                           COGL_PIXEL_FORMAT_RGBA_8888,
+                           CG_PIXEL_FORMAT_RGBA_8888,
                            rowstride,
                            data + (height / 2) * rowstride + rowstride / 2,
                            width / 2, /* dest x */
@@ -61,7 +61,7 @@ check_texture (int width, int height, TestUtilsTextureFlags flags)
 
   /* Check passing a NULL pointer and a zero rowstride. The texture
      should calculate the needed data size and return it */
-  g_assert_cmpint (cogl_texture_get_data (tex, COGL_PIXEL_FORMAT_ANY, 0, NULL),
+  g_assert_cmpint (cg_texture_get_data (tex, CG_PIXEL_FORMAT_ANY, 0, NULL),
                    ==,
                    width * height * 4);
 
@@ -69,7 +69,7 @@ check_texture (int width, int height, TestUtilsTextureFlags flags)
    * conversion */
   memset (data, 0, width * height * 4);
 
-  cogl_texture_get_data (tex, COGL_PIXEL_FORMAT_RGB_888,
+  cg_texture_get_data (tex, CG_PIXEL_FORMAT_RGB_888,
                          width * 3, data);
 
   p = data;
@@ -97,7 +97,7 @@ check_texture (int width, int height, TestUtilsTextureFlags flags)
    * the internal format when we created the texture */
   memset (data, 0, width * height * 4);
 
-  cogl_texture_get_data (tex, COGL_PIXEL_FORMAT_RGBA_8888,
+  cg_texture_get_data (tex, CG_PIXEL_FORMAT_RGBA_8888,
                          width * 4, data);
 
   p = data;
@@ -122,7 +122,7 @@ check_texture (int width, int height, TestUtilsTextureFlags flags)
         p += 4;
       }
 
-  cogl_object_unref (tex);
+  cg_object_unref (tex);
   g_free (data);
 }
 

@@ -20,10 +20,10 @@ static const TestColor colors[] =
     { 0x00, 0xff, 0x00, 0xff },
     { 0x00, 0x00, 0xff, 0xff } };
 
-static CoglTexture *
+static cg_texture_t *
 create_texture (int size)
 {
-  CoglTexture *texture;
+  cg_texture_t *texture;
   const TestColor *color;
   uint8_t *data, *p;
   int x, y;
@@ -58,7 +58,7 @@ create_texture (int size)
                                               size, /* height */
                                               TEST_UTILS_TEXTURE_NONE, /* flags */
                                               /* format */
-                                              COGL_PIXEL_FORMAT_RGBA_8888_PRE,
+                                              CG_PIXEL_FORMAT_RGBA_8888_PRE,
                                               /* rowstride */
                                               size * 4,
                                               data);
@@ -69,7 +69,7 @@ create_texture (int size)
 }
 
 static void
-verify_texture (CoglTexture *texture, int size)
+verify_texture (cg_texture_t *texture, int size)
 {
   uint8_t *data, *p;
   int x, y;
@@ -79,8 +79,8 @@ verify_texture (CoglTexture *texture, int size)
 
   p = data = c_malloc (size * size * 4);
 
-  cogl_texture_get_data (texture,
-                         COGL_PIXEL_FORMAT_RGBA_8888_PRE,
+  cg_texture_get_data (texture,
+                         CG_PIXEL_FORMAT_RGBA_8888_PRE,
                          size * 4,
                          data);
 
@@ -114,7 +114,7 @@ verify_texture (CoglTexture *texture, int size)
 void
 test_atlas_migration (void)
 {
-  CoglTexture *textures[N_TEXTURES];
+  cg_texture_t *textures[N_TEXTURES];
   int i, tex_num;
 
   /* Create and destroy all of the textures a few times to increase
@@ -125,7 +125,7 @@ test_atlas_migration (void)
       for (tex_num = 0; tex_num < N_TEXTURES; tex_num++)
         textures[tex_num] = create_texture (tex_num + 1);
       for (tex_num = 0; tex_num < N_TEXTURES; tex_num++)
-        cogl_object_unref (textures[tex_num]);
+        cg_object_unref (textures[tex_num]);
     }
 
   /* Create all the textures again */
@@ -138,8 +138,8 @@ test_atlas_migration (void)
 
   /* Destroy them all */
   for (tex_num = 0; tex_num < N_TEXTURES; tex_num++)
-    cogl_object_unref (textures[tex_num]);
+    cg_object_unref (textures[tex_num]);
 
-  if (cogl_test_verbose ())
+  if (cg_test_verbose ())
     c_print ("OK\n");
 }

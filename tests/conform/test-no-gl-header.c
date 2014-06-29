@@ -1,4 +1,4 @@
-#undef COGL_COMPILATION
+#undef CG_COMPILATION
 #include <cogl/cogl.h>
 
 /* If you just include cogl/cogl.h, you shouldn't end up including any

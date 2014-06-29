@@ -56,7 +56,7 @@ main (int argc, char **argv)
   ADD_TEST (test_blend, 0, 0);
   ADD_TEST (test_premult, 0, 0);
   UNPORTED_TEST (test_readpixels);
-#ifdef COGL_HAS_COGL_PATH_SUPPORT
+#ifdef CG_HAS_CG_PATH_SUPPORT
   ADD_TEST (test_path, 0, 0);
   ADD_TEST (test_path_clip, 0, 0);
 #endif
@@ -143,7 +143,7 @@ main (int argc, char **argv)
   ADD_TEST (test_euler_quaternion, 0, 0);
   ADD_TEST (test_color_hsl, 0, 0);
 
-#ifdef COGL_HAS_GLIB_SUPPORT
+#ifdef CG_HAS_GLIB_SUPPORT
   ADD_TEST (test_fence, TEST_REQUIREMENT_FENCE, 0);
 #endif
 

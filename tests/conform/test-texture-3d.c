@@ -17,14 +17,14 @@ typedef struct _TestState
   int fb_height;
 } TestState;
 
-static CoglTexture3D *
-create_texture_3d (CoglContext *context)
+static cg_texture_3d_t *
+create_texture_3d (cg_context_t *context)
 {
   int x, y, z;
   uint8_t *data = c_malloc (TEX_IMAGE_STRIDE * TEX_DEPTH);
   uint8_t *p = data;
-  CoglTexture3D *tex;
-  CoglError *error = NULL;
+  cg_texture_3d_t *tex;
+  cg_error_t *error = NULL;
 
   for (z = 0; z < TEX_DEPTH; z++)
     {
@@ -49,9 +49,9 @@ create_texture_3d (CoglContext *context)
       p += TEX_IMAGE_STRIDE - (TEX_HEIGHT * TEX_ROWSTRIDE);
     }
 
-  tex = cogl_texture_3d_new_from_data (context,
+  tex = cg_texture_3d_new_from_data (context,
                                        TEX_WIDTH, TEX_HEIGHT, TEX_DEPTH,
-                                       COGL_PIXEL_FORMAT_RGBA_8888,
+                                       CG_PIXEL_FORMAT_RGBA_8888,
                                        TEX_ROWSTRIDE,
                                        TEX_IMAGE_STRIDE,
                                        data,
@@ -72,30 +72,30 @@ create_texture_3d (CoglContext *context)
 static void
 draw_frame (TestState *state)
 {
-  CoglTexture *tex = create_texture_3d (test_ctx);
-  CoglPipeline *pipeline = cogl_pipeline_new (test_ctx);
+  cg_texture_t *tex = create_texture_3d (test_ctx);
+  cg_pipeline_t *pipeline = cg_pipeline_new (test_ctx);
   typedef struct { float x, y, s, t, r; } Vert;
-  CoglPrimitive *primitive;
-  CoglAttributeBuffer *attribute_buffer;
-  CoglAttribute *attributes[2];
+  cg_primitive_t *primitive;
+  cg_attribute_buffer_t *attribute_buffer;
+  cg_attribute_t *attributes[2];
   Vert *verts, *v;
   int i;
 
-  cogl_pipeline_set_layer_texture (pipeline, 0, tex);
-  cogl_object_unref (tex);
-  cogl_pipeline_set_layer_filters (pipeline, 0,
-                                   COGL_PIPELINE_FILTER_NEAREST,
-                                   COGL_PIPELINE_FILTER_NEAREST);
+  cg_pipeline_set_layer_texture (pipeline, 0, tex);
+  cg_object_unref (tex);
+  cg_pipeline_set_layer_filters (pipeline, 0,
+                                   CG_PIPELINE_FILTER_NEAREST,
+                                   CG_PIPELINE_FILTER_NEAREST);
 
   /* Render the texture repeated horizontally twice using a regular
      cogl rectangle. This should end up with the r texture coordinates
      as zero */
-  cogl_framebuffer_draw_textured_rectangle (test_fb, pipeline,
+  cg_framebuffer_draw_textured_rectangle (test_fb, pipeline,
                                             0.0f, 0.0f, TEX_WIDTH * 2, TEX_HEIGHT,
                                             0.0f, 0.0f, 2.0f, 1.0f);
 
   /* Render all of the images in the texture using coordinates from a
-     CoglPrimitive */
+     cg_primitive_t */
   v = verts = g_new (Vert, 4 * TEX_DEPTH);
   for (i = 0; i < TEX_DEPTH; i++)
     {
@@ -130,40 +130,40 @@ draw_frame (TestState *state)
       v++;
     }
 
-  attribute_buffer = cogl_attribute_buffer_new (test_ctx,
+  attribute_buffer = cg_attribute_buffer_new (test_ctx,
                                                 4 * TEX_DEPTH * sizeof (Vert),
                                                 verts);
-  attributes[0] = cogl_attribute_new (attribute_buffer,
-                                      "cogl_position_in",
+  attributes[0] = cg_attribute_new (attribute_buffer,
+                                      "cg_position_in",
                                       sizeof (Vert),
                                       C_STRUCT_OFFSET (Vert, x),
                                       2, /* n_components */
-                                      COGL_ATTRIBUTE_TYPE_FLOAT);
-  attributes[1] = cogl_attribute_new (attribute_buffer,
-                                      "cogl_tex_coord_in",
+                                      CG_ATTRIBUTE_TYPE_FLOAT);
+  attributes[1] = cg_attribute_new (attribute_buffer,
+                                      "cg_tex_coord_in",
                                       sizeof (Vert),
                                       C_STRUCT_OFFSET (Vert, s),
                                       3, /* n_components */
-                                      COGL_ATTRIBUTE_TYPE_FLOAT);
-  primitive = cogl_primitive_new_with_attributes (COGL_VERTICES_MODE_TRIANGLES,
+                                      CG_ATTRIBUTE_TYPE_FLOAT);
+  primitive = cg_primitive_new_with_attributes (CG_VERTICES_MODE_TRIANGLES,
                                                   6 * TEX_DEPTH,
                                                   attributes,
                                                   2 /* n_attributes */);
 
-  cogl_primitive_set_indices (primitive,
-                              cogl_get_rectangle_indices (test_ctx,
+  cg_primitive_set_indices (primitive,
+                              cg_get_rectangle_indices (test_ctx,
                                                           TEX_DEPTH),
                               6 * TEX_DEPTH);
 
-  cogl_primitive_draw (primitive, test_fb, pipeline);
+  cg_primitive_draw (primitive, test_fb, pipeline);
 
   g_free (verts);
 
-  cogl_object_unref (primitive);
-  cogl_object_unref (attributes[0]);
-  cogl_object_unref (attributes[1]);
-  cogl_object_unref (attribute_buffer);
-  cogl_object_unref (pipeline);
+  cg_object_unref (primitive);
+  cg_object_unref (attributes[0]);
+  cg_object_unref (attributes[1]);
+  cg_object_unref (attribute_buffer);
+  cg_object_unref (pipeline);
 }
 
 static void
@@ -195,59 +195,59 @@ validate_result (void)
 static void
 test_multi_texture (TestState *state)
 {
-  CoglPipeline *pipeline;
-  CoglTexture3D *tex_3d;
-  CoglTexture2D *tex_2d;
+  cg_pipeline_t *pipeline;
+  cg_texture_3d_t *tex_3d;
+  cg_texture_2d_t *tex_2d;
   uint8_t tex_data[4];
 
-  cogl_framebuffer_clear4f (test_fb, COGL_BUFFER_BIT_COLOR, 0, 0, 0, 1);
+  cg_framebuffer_clear4f (test_fb, CG_BUFFER_BIT_COLOR, 0, 0, 0, 1);
 
   /* Tests a pipeline that is using multi-texturing to combine a 3D
      texture with a 2D texture. The texture from another layer is
      sampled with TEXTURE_? just to pick up a specific bug that was
      happening with the ARBfp fragend */
 
-  pipeline = cogl_pipeline_new (test_ctx);
+  pipeline = cg_pipeline_new (test_ctx);
 
   tex_data[0] = 0xff;
   tex_data[1] = 0x00;
   tex_data[2] = 0x00;
   tex_data[3] = 0xff;
-  tex_2d = cogl_texture_2d_new_from_data (test_ctx,
+  tex_2d = cg_texture_2d_new_from_data (test_ctx,
                                           1, 1, /* width/height */
-                                          COGL_PIXEL_FORMAT_RGBA_8888_PRE,
+                                          CG_PIXEL_FORMAT_RGBA_8888_PRE,
                                           4, /* rowstride */
                                           tex_data,
                                           NULL);
-  cogl_pipeline_set_layer_texture (pipeline, 0, tex_2d);
+  cg_pipeline_set_layer_texture (pipeline, 0, tex_2d);
 
   tex_data[0] = 0x00;
   tex_data[1] = 0xff;
   tex_data[2] = 0x00;
   tex_data[3] = 0xff;
-  tex_3d = cogl_texture_3d_new_from_data (test_ctx,
+  tex_3d = cg_texture_3d_new_from_data (test_ctx,
                                           1, 1, 1, /* width/height/depth */
-                                          COGL_PIXEL_FORMAT_RGBA_8888_PRE,
+                                          CG_PIXEL_FORMAT_RGBA_8888_PRE,
                                           4, /* rowstride */
                                           4, /* image_stride */
                                           tex_data,
                                           NULL);
-  cogl_pipeline_set_layer_texture (pipeline, 1, tex_3d);
+  cg_pipeline_set_layer_texture (pipeline, 1, tex_3d);
 
-  cogl_pipeline_set_layer_combine (pipeline, 0,
+  cg_pipeline_set_layer_combine (pipeline, 0,
                                    "RGBA = REPLACE(PREVIOUS)",
                                    NULL);
-  cogl_pipeline_set_layer_combine (pipeline, 1,
+  cg_pipeline_set_layer_combine (pipeline, 1,
                                    "RGBA = ADD(TEXTURE_0, TEXTURE_1)",
                                    NULL);
 
-  cogl_framebuffer_draw_rectangle (test_fb, pipeline, 0, 0, 10, 10);
+  cg_framebuffer_draw_rectangle (test_fb, pipeline, 0, 0, 10, 10);
 
   test_utils_check_pixel (test_fb, 5, 5, 0xffff00ff);
 
-  cogl_object_unref (tex_2d);
-  cogl_object_unref (tex_3d);
-  cogl_object_unref (pipeline);
+  cg_object_unref (tex_2d);
+  cg_object_unref (tex_3d);
+  cg_object_unref (pipeline);
 }
 
 void
@@ -255,10 +255,10 @@ test_texture_3d (void)
 {
   TestState state;
 
-  state.fb_width = cogl_framebuffer_get_width (test_fb);
-  state.fb_height = cogl_framebuffer_get_height (test_fb);
+  state.fb_width = cg_framebuffer_get_width (test_fb);
+  state.fb_height = cg_framebuffer_get_height (test_fb);
 
-  cogl_framebuffer_orthographic (test_fb,
+  cg_framebuffer_orthographic (test_fb,
                                  0, 0, /* x_1, y_1 */
                                  state.fb_width, /* x_2 */
                                  state.fb_height /* y_2 */,
@@ -269,6 +269,6 @@ test_texture_3d (void)
 
   test_multi_texture (&state);
 
-  if (cogl_test_verbose ())
+  if (cg_test_verbose ())
     c_print ("OK\n");
 }

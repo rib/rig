@@ -29,74 +29,74 @@ generate_bitmap_data (uint8_t *data,
     }
 }
 
-static CoglBitmap *
+static cg_bitmap_t *
 create_bitmap (void)
 {
-  CoglBitmap *bitmap;
-  CoglBuffer *buffer;
+  cg_bitmap_t *bitmap;
+  cg_buffer_t *buffer;
 
-  bitmap = cogl_bitmap_new_with_size (test_ctx,
+  bitmap = cg_bitmap_new_with_size (test_ctx,
                                       BITMAP_SIZE,
                                       BITMAP_SIZE,
-                                      COGL_PIXEL_FORMAT_RGBA_8888);
-  buffer = cogl_bitmap_get_buffer (bitmap);
+                                      CG_PIXEL_FORMAT_RGBA_8888);
+  buffer = cg_bitmap_get_buffer (bitmap);
 
-  g_assert (cogl_is_pixel_buffer (buffer));
-  g_assert (cogl_is_buffer (buffer));
+  g_assert (cg_is_pixel_buffer (buffer));
+  g_assert (cg_is_buffer (buffer));
 
-  cogl_buffer_set_update_hint (buffer, COGL_BUFFER_UPDATE_HINT_DYNAMIC);
-  g_assert_cmpint (cogl_buffer_get_update_hint (buffer),
+  cg_buffer_set_update_hint (buffer, CG_BUFFER_UPDATE_HINT_DYNAMIC);
+  g_assert_cmpint (cg_buffer_get_update_hint (buffer),
                    ==,
-                   COGL_BUFFER_UPDATE_HINT_DYNAMIC);
+                   CG_BUFFER_UPDATE_HINT_DYNAMIC);
 
   return bitmap;
 }
 
-static CoglBitmap *
+static cg_bitmap_t *
 create_and_fill_bitmap (void)
 {
-  CoglBitmap *bitmap = create_bitmap ();
-  CoglBuffer *buffer = cogl_bitmap_get_buffer (bitmap);
+  cg_bitmap_t *bitmap = create_bitmap ();
+  cg_buffer_t *buffer = cg_bitmap_get_buffer (bitmap);
   uint8_t *map;
   unsigned int stride;
 
-  stride = cogl_bitmap_get_rowstride (bitmap);
+  stride = cg_bitmap_get_rowstride (bitmap);
 
-  map = cogl_buffer_map (buffer,
-                         COGL_BUFFER_ACCESS_WRITE,
-                         COGL_BUFFER_MAP_HINT_DISCARD,
+  map = cg_buffer_map (buffer,
+                         CG_BUFFER_ACCESS_WRITE,
+                         CG_BUFFER_MAP_HINT_DISCARD,
                          NULL); /* don't catch errors */
   g_assert (map);
 
   generate_bitmap_data (map, stride);
 
-  cogl_buffer_unmap (buffer);
+  cg_buffer_unmap (buffer);
 
   return bitmap;
 }
 
-static CoglTexture *
-create_texture_from_bitmap (CoglBitmap *bitmap)
+static cg_texture_t *
+create_texture_from_bitmap (cg_bitmap_t *bitmap)
 {
-  CoglTexture2D *texture;
+  cg_texture_2d_t *texture;
 
-  texture = cogl_texture_2d_new_from_bitmap (bitmap);
+  texture = cg_texture_2d_new_from_bitmap (bitmap);
 
   g_assert (texture != NULL);
 
   return texture;
 }
 
-static CoglPipeline *
-create_pipeline_from_texture (CoglTexture *texture)
+static cg_pipeline_t *
+create_pipeline_from_texture (cg_texture_t *texture)
 {
-  CoglPipeline *pipeline = cogl_pipeline_new (test_ctx);
+  cg_pipeline_t *pipeline = cg_pipeline_new (test_ctx);
 
-  cogl_pipeline_set_layer_texture (pipeline, 0, texture);
-  cogl_pipeline_set_layer_filters (pipeline,
+  cg_pipeline_set_layer_texture (pipeline, 0, texture);
+  cg_pipeline_set_layer_filters (pipeline,
                                    0, /* layer_num */
-                                   COGL_PIPELINE_FILTER_NEAREST,
-                                   COGL_PIPELINE_FILTER_NEAREST);
+                                   CG_PIPELINE_FILTER_NEAREST,
+                                   CG_PIPELINE_FILTER_NEAREST);
 
   return pipeline;
 }
@@ -107,8 +107,8 @@ check_colours (uint32_t color0,
                uint32_t color2,
                uint32_t color3)
 {
-  int fb_width = cogl_framebuffer_get_width (test_fb);
-  int fb_height = cogl_framebuffer_get_height (test_fb);
+  int fb_width = cg_framebuffer_get_width (test_fb);
+  int fb_height = cg_framebuffer_get_height (test_fb);
 
   test_utils_check_region (test_fb,
                            1, 1, /* x/y */
@@ -138,48 +138,48 @@ check_colours (uint32_t color0,
 void
 test_pixel_buffer_map (void)
 {
-  CoglBitmap *bitmap = create_and_fill_bitmap ();
-  CoglPipeline *pipeline;
-  CoglTexture *texture;
+  cg_bitmap_t *bitmap = create_and_fill_bitmap ();
+  cg_pipeline_t *pipeline;
+  cg_texture_t *texture;
 
   texture = create_texture_from_bitmap (bitmap);
   pipeline = create_pipeline_from_texture (texture);
 
-  cogl_framebuffer_draw_rectangle (test_fb,
+  cg_framebuffer_draw_rectangle (test_fb,
                                    pipeline,
                                    -1.0f, 1.0f,
                                    1.0f, -1.0f);
 
-  cogl_object_unref (bitmap);
-  cogl_object_unref (texture);
-  cogl_object_unref (pipeline);
+  cg_object_unref (bitmap);
+  cg_object_unref (texture);
+  cg_object_unref (pipeline);
 
   check_colours (0x0000ffff,
                  0x00ff00ff,
                  0x00ffffff,
                  0xff0000ff);
 
-  if (cogl_test_verbose ())
+  if (cg_test_verbose ())
     c_print ("OK\n");
 }
 
 void
 test_pixel_buffer_set_data (void)
 {
-  CoglBitmap *bitmap = create_bitmap ();
-  CoglBuffer *buffer = cogl_bitmap_get_buffer (bitmap);
-  CoglPipeline *pipeline;
-  CoglTexture *texture;
+  cg_bitmap_t *bitmap = create_bitmap ();
+  cg_buffer_t *buffer = cg_bitmap_get_buffer (bitmap);
+  cg_pipeline_t *pipeline;
+  cg_texture_t *texture;
   uint8_t *data;
   unsigned int stride;
 
-  stride = cogl_bitmap_get_rowstride (bitmap);
+  stride = cg_bitmap_get_rowstride (bitmap);
 
   data = c_malloc (stride * BITMAP_SIZE);
 
   generate_bitmap_data (data, stride);
 
-  cogl_buffer_set_data (buffer,
+  cg_buffer_set_data (buffer,
                         0, /* offset */
                         data,
                         stride * (BITMAP_SIZE - 1) +
@@ -191,36 +191,36 @@ test_pixel_buffer_set_data (void)
   texture = create_texture_from_bitmap (bitmap);
   pipeline = create_pipeline_from_texture (texture);
 
-  cogl_framebuffer_draw_rectangle (test_fb,
+  cg_framebuffer_draw_rectangle (test_fb,
                                    pipeline,
                                    -1.0f, 1.0f,
                                    1.0f, -1.0f);
 
-  cogl_object_unref (bitmap);
-  cogl_object_unref (texture);
-  cogl_object_unref (pipeline);
+  cg_object_unref (bitmap);
+  cg_object_unref (texture);
+  cg_object_unref (pipeline);
 
   check_colours (0x0000ffff,
                  0x00ff00ff,
                  0x00ffffff,
                  0xff0000ff);
 
-  if (cogl_test_verbose ())
+  if (cg_test_verbose ())
     c_print ("OK\n");
 }
 
-static CoglTexture *
+static cg_texture_t *
 create_white_texture (void)
 {
-  CoglTexture2D *texture;
+  cg_texture_2d_t *texture;
   uint8_t *data = c_malloc (BITMAP_SIZE * BITMAP_SIZE * 4);
 
   memset (data, 255, BITMAP_SIZE * BITMAP_SIZE * 4);
 
-  texture = cogl_texture_2d_new_from_data (test_ctx,
+  texture = cg_texture_2d_new_from_data (test_ctx,
                                            BITMAP_SIZE,
                                            BITMAP_SIZE,
-                                           COGL_PIXEL_FORMAT_RGBA_8888,
+                                           CG_PIXEL_FORMAT_RGBA_8888,
                                            BITMAP_SIZE * 4, /* rowstride */
                                            data,
                                            NULL); /* don't catch errors */
@@ -233,15 +233,15 @@ create_white_texture (void)
 void
 test_pixel_buffer_sub_region (void)
 {
-  CoglBitmap *bitmap = create_and_fill_bitmap ();
-  CoglPipeline *pipeline;
-  CoglTexture *texture;
+  cg_bitmap_t *bitmap = create_and_fill_bitmap ();
+  cg_pipeline_t *pipeline;
+  cg_texture_t *texture;
 
   texture = create_white_texture ();
 
   /* Replace the top-right quadrant of the texture with the red part
    * of the bitmap */
-  cogl_texture_set_region_from_bitmap (texture,
+  cg_texture_set_region_from_bitmap (texture,
                                        BITMAP_SIZE / 2, /* src_x */
                                        BITMAP_SIZE / 2, /* src_y */
                                        BITMAP_SIZE / 2, /* width */
@@ -254,20 +254,20 @@ test_pixel_buffer_sub_region (void)
 
   pipeline = create_pipeline_from_texture (texture);
 
-  cogl_framebuffer_draw_rectangle (test_fb,
+  cg_framebuffer_draw_rectangle (test_fb,
                                    pipeline,
                                    -1.0f, 1.0f,
                                    1.0f, -1.0f);
 
-  cogl_object_unref (bitmap);
-  cogl_object_unref (texture);
-  cogl_object_unref (pipeline);
+  cg_object_unref (bitmap);
+  cg_object_unref (texture);
+  cg_object_unref (pipeline);
 
   check_colours (0xffffffff,
                  0xff0000ff,
                  0xffffffff,
                  0xffffffff);
 
-  if (cogl_test_verbose ())
+  if (cg_test_verbose ())
     c_print ("OK\n");
 }

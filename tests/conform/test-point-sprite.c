@@ -4,7 +4,7 @@
 
 #define POINT_SIZE 8
 
-static const CoglVertexP2T2
+static const cg_vertex_p2t2_t
 point =
   {
     POINT_SIZE, POINT_SIZE,
@@ -22,22 +22,22 @@ static void
 do_test (bool check_orientation,
          bool use_glsl)
 {
-  int fb_width = cogl_framebuffer_get_width (test_fb);
-  int fb_height = cogl_framebuffer_get_height (test_fb);
-  CoglPrimitive *prim;
-  CoglError *error = NULL;
-  CoglTexture2D *tex_2d;
-  CoglPipeline *pipeline, *solid_pipeline;
+  int fb_width = cg_framebuffer_get_width (test_fb);
+  int fb_height = cg_framebuffer_get_height (test_fb);
+  cg_primitive_t *prim;
+  cg_error_t *error = NULL;
+  cg_texture_2d_t *tex_2d;
+  cg_pipeline_t *pipeline, *solid_pipeline;
   int tex_height;
 
-  cogl_framebuffer_orthographic (test_fb,
+  cg_framebuffer_orthographic (test_fb,
                                  0, 0, /* x_1, y_1 */
                                  fb_width, /* x_2 */
                                  fb_height /* y_2 */,
                                  -1, 100 /* near/far */);
 
-  cogl_framebuffer_clear4f (test_fb,
-                            COGL_BUFFER_BIT_COLOR,
+  cg_framebuffer_clear4f (test_fb,
+                            CG_BUFFER_BIT_COLOR,
                             1.0f, 1.0f, 1.0f, 1.0f);
 
   /* If we're not checking the orientation of the point sprite then
@@ -48,51 +48,51 @@ do_test (bool check_orientation,
   else
     tex_height = 1;
 
-  tex_2d = cogl_texture_2d_new_from_data (test_ctx,
+  tex_2d = cg_texture_2d_new_from_data (test_ctx,
                                           2, tex_height, /* width/height */
-                                          COGL_PIXEL_FORMAT_RGB_888,
+                                          CG_PIXEL_FORMAT_RGB_888,
                                           6, /* row stride */
                                           tex_data,
                                           &error);
   g_assert (tex_2d != NULL);
   g_assert (error == NULL);
 
-  pipeline = cogl_pipeline_new (test_ctx);
-  cogl_pipeline_set_layer_texture (pipeline, 0, tex_2d);
+  pipeline = cg_pipeline_new (test_ctx);
+  cg_pipeline_set_layer_texture (pipeline, 0, tex_2d);
 
-  cogl_pipeline_set_layer_filters (pipeline,
+  cg_pipeline_set_layer_filters (pipeline,
                                    0, /* layer_index */
-                                   COGL_PIPELINE_FILTER_NEAREST,
-                                   COGL_PIPELINE_FILTER_NEAREST);
-  cogl_pipeline_set_point_size (pipeline, POINT_SIZE);
+                                   CG_PIPELINE_FILTER_NEAREST,
+                                   CG_PIPELINE_FILTER_NEAREST);
+  cg_pipeline_set_point_size (pipeline, POINT_SIZE);
 
   /* If we're using GLSL then we don't need to enable point sprite
-   * coords and we can just directly reference cogl_point_coord in the
+   * coords and we can just directly reference cg_point_coord in the
    * snippet */
   if (use_glsl)
     {
-      CoglSnippet *snippet =
-        cogl_snippet_new (COGL_SNIPPET_HOOK_TEXTURE_LOOKUP,
+      cg_snippet_t *snippet =
+        cg_snippet_new (CG_SNIPPET_HOOK_TEXTURE_LOOKUP,
                           NULL, /* declarations */
                           NULL /* post */);
       static const char source[] =
-        "  cogl_texel = texture2D (cogl_sampler, cogl_point_coord);\n";
+        "  cg_texel = texture2D (cg_sampler, cg_point_coord);\n";
 
-      cogl_snippet_set_replace (snippet, source);
+      cg_snippet_set_replace (snippet, source);
 
       /* Keep a reference to the original pipeline because there is no
        * way to remove a snippet in order to recreate the solid
        * pipeline */
-      solid_pipeline = cogl_pipeline_copy (pipeline);
+      solid_pipeline = cg_pipeline_copy (pipeline);
 
-      cogl_pipeline_add_layer_snippet (pipeline, 0, snippet);
+      cg_pipeline_add_layer_snippet (pipeline, 0, snippet);
 
-      cogl_object_unref (snippet);
+      cg_object_unref (snippet);
     }
   else
     {
       bool res =
-        cogl_pipeline_set_layer_point_sprite_coords_enabled (pipeline,
+        cg_pipeline_set_layer_point_sprite_coords_enabled (pipeline,
                                                              /* layer_index */
                                                              0,
                                                              /* enable */
@@ -101,10 +101,10 @@ do_test (bool check_orientation,
       g_assert (res == TRUE);
       g_assert (error == NULL);
 
-      solid_pipeline = cogl_pipeline_copy (pipeline);
+      solid_pipeline = cg_pipeline_copy (pipeline);
 
       res =
-        cogl_pipeline_set_layer_point_sprite_coords_enabled (solid_pipeline,
+        cg_pipeline_set_layer_point_sprite_coords_enabled (solid_pipeline,
                                                              /* layer_index */
                                                              0,
                                                              /* enable */
@@ -115,28 +115,28 @@ do_test (bool check_orientation,
       g_assert (error == NULL);
     }
 
-  prim = cogl_primitive_new_p2t2 (test_ctx,
-                                  COGL_VERTICES_MODE_POINTS,
+  prim = cg_primitive_new_p2t2 (test_ctx,
+                                  CG_VERTICES_MODE_POINTS,
                                   1, /* n_vertices */
                                   &point);
 
-  cogl_primitive_draw (prim, test_fb, pipeline);
+  cg_primitive_draw (prim, test_fb, pipeline);
 
   /* Render the primitive again without point sprites to make sure
      disabling it works */
 
-  cogl_framebuffer_push_matrix (test_fb);
-  cogl_framebuffer_translate (test_fb,
+  cg_framebuffer_push_matrix (test_fb);
+  cg_framebuffer_translate (test_fb,
                               POINT_SIZE * 2, /* x */
                               0.0f, /* y */
                               0.0f /* z */);
-  cogl_primitive_draw (prim, test_fb, solid_pipeline);
-  cogl_framebuffer_pop_matrix (test_fb);
+  cg_primitive_draw (prim, test_fb, solid_pipeline);
+  cg_framebuffer_pop_matrix (test_fb);
 
-  cogl_object_unref (prim);
-  cogl_object_unref (solid_pipeline);
-  cogl_object_unref (pipeline);
-  cogl_object_unref (tex_2d);
+  cg_object_unref (prim);
+  cg_object_unref (solid_pipeline);
+  cg_object_unref (pipeline);
+  cg_object_unref (tex_2d);
 
   test_utils_check_pixel (test_fb,
                           POINT_SIZE - POINT_SIZE / 4,
@@ -168,7 +168,7 @@ do_test (bool check_orientation,
                            POINT_SIZE - 2, POINT_SIZE - 2,
                            0x0000ffff);
 
-  if (cogl_test_verbose ())
+  if (cg_test_verbose ())
     c_print ("OK\n");
 }
 

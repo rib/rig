@@ -16,14 +16,14 @@ typedef struct _TestState
 } TestState;
 
 static void
-draw_path_at (CoglPath *path, CoglPipeline *pipeline, int x, int y)
+draw_path_at (cg_path_t *path, cg_pipeline_t *pipeline, int x, int y)
 {
-  cogl_framebuffer_push_matrix (test_fb);
-  cogl_framebuffer_translate (test_fb, x * BLOCK_SIZE, y * BLOCK_SIZE, 0.0f);
+  cg_framebuffer_push_matrix (test_fb);
+  cg_framebuffer_translate (test_fb, x * BLOCK_SIZE, y * BLOCK_SIZE, 0.0f);
 
-  cogl_path_fill (path, test_fb, pipeline);
+  cg_path_fill (path, test_fb, pipeline);
 
-  cogl_framebuffer_pop_matrix (test_fb);
+  cg_framebuffer_pop_matrix (test_fb);
 }
 
 static void
@@ -36,11 +36,11 @@ check_block (int block_x, int block_y, int block_mask)
      filled. The bits from 0->3 represent the top left, top right,
      bottom left and bottom right respectively */
 
-  cogl_framebuffer_read_pixels (test_fb,
+  cg_framebuffer_read_pixels (test_fb,
                                 block_x * BLOCK_SIZE,
                                 block_y * BLOCK_SIZE,
                                 BLOCK_SIZE, BLOCK_SIZE,
-                                COGL_PIXEL_FORMAT_RGBA_8888_PRE,
+                                CG_PIXEL_FORMAT_RGBA_8888_PRE,
                                 (uint8_t *)data);
 
   for (qy = 0; qy < 2; qy++)
@@ -67,41 +67,41 @@ check_block (int block_x, int block_y, int block_mask)
 static void
 paint (TestState *state)
 {
-  CoglPath *path_a, *path_b, *path_c;
-  CoglPipeline *white = cogl_pipeline_new (test_ctx);
+  cg_path_t *path_a, *path_b, *path_c;
+  cg_pipeline_t *white = cg_pipeline_new (test_ctx);
 
-  cogl_pipeline_set_color4f (white, 1, 1, 1, 1);
+  cg_pipeline_set_color4f (white, 1, 1, 1, 1);
 
   /* Create a path filling just a quarter of a block. It will use two
      rectangles so that we have a sub path in the path */
-  path_a = cogl_path_new (test_ctx);
-  cogl_path_rectangle (path_a,
+  path_a = cg_path_new (test_ctx);
+  cg_path_rectangle (path_a,
                        BLOCK_SIZE * 3 / 4, BLOCK_SIZE / 2,
                        BLOCK_SIZE, BLOCK_SIZE);
-  cogl_path_rectangle (path_a,
+  cg_path_rectangle (path_a,
                        BLOCK_SIZE / 2, BLOCK_SIZE / 2,
                        BLOCK_SIZE * 3 / 4, BLOCK_SIZE);
   draw_path_at (path_a, white, 0, 0);
 
   /* Create another path filling the whole block */
-  path_b = cogl_path_new (test_ctx);
-  cogl_path_rectangle (path_b, 0, 0, BLOCK_SIZE, BLOCK_SIZE);
+  path_b = cg_path_new (test_ctx);
+  cg_path_rectangle (path_b, 0, 0, BLOCK_SIZE, BLOCK_SIZE);
   draw_path_at (path_b, white, 1, 0);
 
   /* Draw the first path again */
   draw_path_at (path_a, white, 2, 0);
 
   /* Draw a copy of path a */
-  path_c = cogl_path_copy (path_a);
+  path_c = cg_path_copy (path_a);
   draw_path_at (path_c, white, 3, 0);
 
   /* Add another rectangle to path a. We'll use line_to's instead of
-     cogl_rectangle so that we don't create another sub-path because
+     cg_rectangle so that we don't create another sub-path because
      that is more likely to break the copy */
-  cogl_path_line_to (path_a, 0, BLOCK_SIZE / 2);
-  cogl_path_line_to (path_a, 0, 0);
-  cogl_path_line_to (path_a, BLOCK_SIZE / 2, 0);
-  cogl_path_line_to (path_a, BLOCK_SIZE / 2, BLOCK_SIZE / 2);
+  cg_path_line_to (path_a, 0, BLOCK_SIZE / 2);
+  cg_path_line_to (path_a, 0, 0);
+  cg_path_line_to (path_a, BLOCK_SIZE / 2, 0);
+  cg_path_line_to (path_a, BLOCK_SIZE / 2, BLOCK_SIZE / 2);
   draw_path_at (path_a, white, 4, 0);
 
   /* Draw the copy again. It should not have changed */
@@ -110,68 +110,68 @@ paint (TestState *state)
   /* Add another rectangle to path c. It will be added in two halves,
      one as an extension of the previous path and the other as a new
      sub path */
-  cogl_path_line_to (path_c, BLOCK_SIZE / 2, 0);
-  cogl_path_line_to (path_c, BLOCK_SIZE * 3 / 4, 0);
-  cogl_path_line_to (path_c, BLOCK_SIZE * 3 / 4, BLOCK_SIZE / 2);
-  cogl_path_line_to (path_c, BLOCK_SIZE / 2, BLOCK_SIZE / 2);
-  cogl_path_rectangle (path_c,
+  cg_path_line_to (path_c, BLOCK_SIZE / 2, 0);
+  cg_path_line_to (path_c, BLOCK_SIZE * 3 / 4, 0);
+  cg_path_line_to (path_c, BLOCK_SIZE * 3 / 4, BLOCK_SIZE / 2);
+  cg_path_line_to (path_c, BLOCK_SIZE / 2, BLOCK_SIZE / 2);
+  cg_path_rectangle (path_c,
                        BLOCK_SIZE * 3 / 4, 0, BLOCK_SIZE, BLOCK_SIZE / 2);
   draw_path_at (path_c, white, 6, 0);
 
   /* Draw the original path again. It should not have changed */
   draw_path_at (path_a, white, 7, 0);
 
-  cogl_object_unref (path_a);
-  cogl_object_unref (path_b);
-  cogl_object_unref (path_c);
+  cg_object_unref (path_a);
+  cg_object_unref (path_b);
+  cg_object_unref (path_c);
 
   /* Draw a self-intersecting path. The part that intersects should be
      inverted */
-  path_a = cogl_path_new (test_ctx);
-  cogl_path_rectangle (path_a, 0, 0, BLOCK_SIZE, BLOCK_SIZE);
-  cogl_path_line_to (path_a, 0, BLOCK_SIZE / 2);
-  cogl_path_line_to (path_a, BLOCK_SIZE / 2, BLOCK_SIZE / 2);
-  cogl_path_line_to (path_a, BLOCK_SIZE / 2, 0);
-  cogl_path_close (path_a);
+  path_a = cg_path_new (test_ctx);
+  cg_path_rectangle (path_a, 0, 0, BLOCK_SIZE, BLOCK_SIZE);
+  cg_path_line_to (path_a, 0, BLOCK_SIZE / 2);
+  cg_path_line_to (path_a, BLOCK_SIZE / 2, BLOCK_SIZE / 2);
+  cg_path_line_to (path_a, BLOCK_SIZE / 2, 0);
+  cg_path_close (path_a);
   draw_path_at (path_a, white, 8, 0);
-  cogl_object_unref (path_a);
+  cg_object_unref (path_a);
 
   /* Draw two sub paths. Where the paths intersect it should be
      inverted */
-  path_a = cogl_path_new (test_ctx);
-  cogl_path_rectangle (path_a, 0, 0, BLOCK_SIZE, BLOCK_SIZE);
-  cogl_path_rectangle (path_a,
+  path_a = cg_path_new (test_ctx);
+  cg_path_rectangle (path_a, 0, 0, BLOCK_SIZE, BLOCK_SIZE);
+  cg_path_rectangle (path_a,
                        BLOCK_SIZE / 2, BLOCK_SIZE / 2, BLOCK_SIZE, BLOCK_SIZE);
   draw_path_at (path_a, white, 9, 0);
-  cogl_object_unref (path_a);
+  cg_object_unref (path_a);
 
   /* Draw a clockwise outer path */
-  path_a = cogl_path_new (test_ctx);
-  cogl_path_move_to (path_a, 0, 0);
-  cogl_path_line_to (path_a, BLOCK_SIZE, 0);
-  cogl_path_line_to (path_a, BLOCK_SIZE, BLOCK_SIZE);
-  cogl_path_line_to (path_a, 0, BLOCK_SIZE);
-  cogl_path_close (path_a);
+  path_a = cg_path_new (test_ctx);
+  cg_path_move_to (path_a, 0, 0);
+  cg_path_line_to (path_a, BLOCK_SIZE, 0);
+  cg_path_line_to (path_a, BLOCK_SIZE, BLOCK_SIZE);
+  cg_path_line_to (path_a, 0, BLOCK_SIZE);
+  cg_path_close (path_a);
   /* Add a clockwise sub path in the upper left quadrant */
-  cogl_path_move_to (path_a, 0, 0);
-  cogl_path_line_to (path_a, BLOCK_SIZE / 2, 0);
-  cogl_path_line_to (path_a, BLOCK_SIZE / 2, BLOCK_SIZE / 2);
-  cogl_path_line_to (path_a, 0, BLOCK_SIZE / 2);
-  cogl_path_close (path_a);
+  cg_path_move_to (path_a, 0, 0);
+  cg_path_line_to (path_a, BLOCK_SIZE / 2, 0);
+  cg_path_line_to (path_a, BLOCK_SIZE / 2, BLOCK_SIZE / 2);
+  cg_path_line_to (path_a, 0, BLOCK_SIZE / 2);
+  cg_path_close (path_a);
   /* Add a counter-clockwise sub path in the upper right quadrant */
-  cogl_path_move_to (path_a, BLOCK_SIZE / 2, 0);
-  cogl_path_line_to (path_a, BLOCK_SIZE / 2, BLOCK_SIZE / 2);
-  cogl_path_line_to (path_a, BLOCK_SIZE, BLOCK_SIZE / 2);
-  cogl_path_line_to (path_a, BLOCK_SIZE, 0);
-  cogl_path_close (path_a);
+  cg_path_move_to (path_a, BLOCK_SIZE / 2, 0);
+  cg_path_line_to (path_a, BLOCK_SIZE / 2, BLOCK_SIZE / 2);
+  cg_path_line_to (path_a, BLOCK_SIZE, BLOCK_SIZE / 2);
+  cg_path_line_to (path_a, BLOCK_SIZE, 0);
+  cg_path_close (path_a);
   /* Retain the path for the next test */
   draw_path_at (path_a, white, 10, 0);
 
   /* Draw the same path again with the other fill rule */
-  cogl_path_set_fill_rule (path_a, COGL_PATH_FILL_RULE_NON_ZERO);
+  cg_path_set_fill_rule (path_a, CG_PATH_FILL_RULE_NON_ZERO);
   draw_path_at (path_a, white, 11, 0);
 
-  cogl_object_unref (path_a);
+  cg_object_unref (path_a);
 }
 
 static void
@@ -196,17 +196,17 @@ test_path (void)
 {
   TestState state;
 
-  cogl_framebuffer_orthographic (test_fb,
+  cg_framebuffer_orthographic (test_fb,
                                  0, 0,
-                                 cogl_framebuffer_get_width (test_fb),
-                                 cogl_framebuffer_get_height (test_fb),
+                                 cg_framebuffer_get_width (test_fb),
+                                 cg_framebuffer_get_height (test_fb),
                                  -1,
                                  100);
 
   paint (&state);
   validate_result ();
 
-  if (cogl_test_verbose ())
+  if (cg_test_verbose ())
     c_print ("OK\n");
 }
 

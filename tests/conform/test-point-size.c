@@ -24,7 +24,7 @@ calc_coord_offset (int pos, int pos_index, int point_size)
 }
 
 static void
-verify_point_size (CoglFramebuffer *test_fb,
+verify_point_size (cg_framebuffer_t *test_fb,
                    int x_pos,
                    int y_pos,
                    int point_size)
@@ -47,19 +47,19 @@ verify_point_size (CoglFramebuffer *test_fb,
 void
 test_point_size (void)
 {
-  int fb_width = cogl_framebuffer_get_width (test_fb);
-  int fb_height = cogl_framebuffer_get_height (test_fb);
+  int fb_width = cg_framebuffer_get_width (test_fb);
+  int fb_height = cg_framebuffer_get_height (test_fb);
   int point_size;
   int x_pos;
 
-  cogl_framebuffer_orthographic (test_fb,
+  cg_framebuffer_orthographic (test_fb,
                                  0, 0, /* x_1, y_1 */
                                  fb_width, /* x_2 */
                                  fb_height /* y_2 */,
                                  -1, 100 /* near/far */);
 
-  cogl_framebuffer_clear4f (test_fb,
-                            COGL_BUFFER_BIT_COLOR,
+  cg_framebuffer_clear4f (test_fb,
+                            CG_BUFFER_BIT_COLOR,
                             1.0f, 0.0f, 0.0f, 1.0f);
 
   /* Try a rendering a single point with a few different point
@@ -68,21 +68,21 @@ test_point_size (void)
        point_size >= 4;
        x_pos += POINT_BOX_SIZE, point_size /= 2)
     {
-      CoglPipeline *pipeline = cogl_pipeline_new (test_ctx);
-      CoglVertexP2 point = { x_pos + POINT_BOX_SIZE / 2,
+      cg_pipeline_t *pipeline = cg_pipeline_new (test_ctx);
+      cg_vertex_p2_t point = { x_pos + POINT_BOX_SIZE / 2,
                              POINT_BOX_SIZE / 2 };
-      CoglPrimitive *prim =
-        cogl_primitive_new_p2 (test_ctx,
-                               COGL_VERTICES_MODE_POINTS,
+      cg_primitive_t *prim =
+        cg_primitive_new_p2 (test_ctx,
+                               CG_VERTICES_MODE_POINTS,
                                1, /* n_vertices */
                                &point);
 
-      cogl_pipeline_set_point_size (pipeline, point_size);
-      cogl_pipeline_set_color4ub (pipeline, 0, 255, 0, 255);
-      cogl_primitive_draw (prim, test_fb, pipeline);
+      cg_pipeline_set_point_size (pipeline, point_size);
+      cg_pipeline_set_color4ub (pipeline, 0, 255, 0, 255);
+      cg_primitive_draw (prim, test_fb, pipeline);
 
-      cogl_object_unref (prim);
-      cogl_object_unref (pipeline);
+      cg_object_unref (prim);
+      cg_object_unref (pipeline);
     }
 
   /* Verify all of the points where drawn at the right size */
@@ -94,6 +94,6 @@ test_point_size (void)
                        POINT_BOX_SIZE / 2,
                        point_size);
 
-  if (cogl_test_verbose ())
+  if (cg_test_verbose ())
     c_print ("OK\n");
 }

@@ -14,9 +14,9 @@ void
 test_texture_no_allocate (void)
 {
   uint8_t *tex_data;
-  CoglTexture *texture;
-  CoglTexture2D *texture_2d;
-  CoglError *error = NULL;
+  cg_texture_t *texture;
+  cg_texture_2d_t *texture_2d;
+  cg_error_t *error = NULL;
 
   tex_data = c_malloc (BIG_TEX_WIDTH * BIG_TEX_HEIGHT * 4);
 
@@ -27,11 +27,11 @@ test_texture_no_allocate (void)
   /* Try to create an atlas texture that is too big so it will
    * internally be freed without allocating */
   texture =
-    cogl_atlas_texture_new_from_data (test_ctx,
+    cg_atlas_texture_new_from_data (test_ctx,
                                       BIG_TEX_WIDTH,
                                       BIG_TEX_HEIGHT,
                                       /* format */
-                                      COGL_PIXEL_FORMAT_RGBA_8888_PRE,
+                                      CG_PIXEL_FORMAT_RGBA_8888_PRE,
                                       /* rowstride */
                                       BIG_TEX_WIDTH * 4,
                                       tex_data,
@@ -43,29 +43,29 @@ test_texture_no_allocate (void)
    * crash */
 
   if (texture == NULL)
-    cogl_error_free (error);
+    cg_error_free (error);
   else
-    cogl_object_unref (texture);
+    cg_object_unref (texture);
 
   /* Try to create a sliced texture without allocating it */
   texture =
-    cogl_texture_2d_sliced_new_with_size (test_ctx,
+    cg_texture_2d_sliced_new_with_size (test_ctx,
                                           BIG_TEX_WIDTH,
                                           BIG_TEX_HEIGHT,
-                                          COGL_TEXTURE_MAX_WASTE);
-  cogl_object_unref (texture);
+                                          CG_TEXTURE_MAX_WASTE);
+  cg_object_unref (texture);
 
   /* 2D texture */
-  texture_2d = cogl_texture_2d_new_with_size (test_ctx,
+  texture_2d = cg_texture_2d_new_with_size (test_ctx,
                                               64, 64);
-  cogl_object_unref (texture_2d);
+  cg_object_unref (texture_2d);
 
   /* 3D texture */
-  if (cogl_has_feature (test_ctx, COGL_FEATURE_ID_TEXTURE_3D))
+  if (cg_has_feature (test_ctx, CG_FEATURE_ID_TEXTURE_3D))
     {
-      CoglTexture3D *texture_3d =
-        cogl_texture_3d_new_with_size (test_ctx,
+      cg_texture_3d_t *texture_3d =
+        cg_texture_3d_new_with_size (test_ctx,
                                        64, 64, 64);
-      cogl_object_unref (texture_3d);
+      cg_object_unref (texture_3d);
     }
 }

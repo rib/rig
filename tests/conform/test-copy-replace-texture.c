@@ -23,27 +23,27 @@ free_texture_cb (void *user_data)
   alive_texture_mask &= ~(1 << texture_num);
 }
 
-static CoglTexture *
+static cg_texture_t *
 create_texture (void)
 {
   static const guint8 data[] =
     { 0xff, 0xff, 0xff, 0xff };
-  static CoglUserDataKey texture_data_key;
-  CoglTexture2D *tex_2d;
+  static cg_user_data_key_t texture_data_key;
+  cg_texture_2d_t *tex_2d;
   static int texture_num = 1;
 
   alive_texture_mask |= (1 << texture_num);
 
-  tex_2d = cogl_texture_2d_new_from_data (test_ctx,
+  tex_2d = cg_texture_2d_new_from_data (test_ctx,
                                           1, 1, /* width / height */
-                                          COGL_PIXEL_FORMAT_RGBA_8888_PRE,
+                                          CG_PIXEL_FORMAT_RGBA_8888_PRE,
                                           4, /* rowstride */
                                           data,
                                           NULL);
 
   /* Set some user data on the texture so we can track when it has
    * been destroyed */
-  cogl_object_set_user_data (COGL_OBJECT (tex_2d),
+  cg_object_set_user_data (CG_OBJECT (tex_2d),
                              &texture_data_key,
                              GINT_TO_POINTER (texture_num),
                              free_texture_cb);
@@ -56,7 +56,7 @@ create_texture (void)
 void
 test_copy_replace_texture (void)
 {
-  CoglPipeline *pipelines[N_PIPELINES];
+  cg_pipeline_t *pipelines[N_PIPELINES];
   int pipeline_num;
 
   /* Create a set of pipeline copies each with three of their own
@@ -66,26 +66,26 @@ test_copy_replace_texture (void)
       int layer_num;
 
       if (pipeline_num == 0)
-        pipelines[pipeline_num] = cogl_pipeline_new (test_ctx);
+        pipelines[pipeline_num] = cg_pipeline_new (test_ctx);
       else
         pipelines[pipeline_num] =
-          cogl_pipeline_copy (pipelines[pipeline_num - 1]);
+          cg_pipeline_copy (pipelines[pipeline_num - 1]);
 
       for (layer_num = 0; layer_num < N_LAYERS; layer_num++)
         {
-          CoglTexture *tex = create_texture ();
-          cogl_pipeline_set_layer_texture (pipelines[pipeline_num],
+          cg_texture_t *tex = create_texture ();
+          cg_pipeline_set_layer_texture (pipelines[pipeline_num],
                                            layer_num,
                                            tex);
-          cogl_object_unref (tex);
+          cg_object_unref (tex);
         }
     }
 
   /* Unref everything but the last pipeline */
   for (pipeline_num = 0; pipeline_num < N_PIPELINES - 1; pipeline_num++)
-    cogl_object_unref (pipelines[pipeline_num]);
+    cg_object_unref (pipelines[pipeline_num]);
 
-  if (alive_texture_mask && cogl_test_verbose ())
+  if (alive_texture_mask && cg_test_verbose ())
     {
       int i;
 
@@ -110,11 +110,11 @@ test_copy_replace_texture (void)
                    LAST_PIPELINE_MASK);
 
   /* Clean up the last pipeline */
-  cogl_object_unref (pipelines[N_PIPELINES - 1]);
+  cg_object_unref (pipelines[N_PIPELINES - 1]);
 
   /* That should get rid of the last of the textures */
   g_assert_cmpint (alive_texture_mask, ==, 0);
 
-  if (cogl_test_verbose ())
+  if (cg_test_verbose ())
     c_print ("OK\n");
 }

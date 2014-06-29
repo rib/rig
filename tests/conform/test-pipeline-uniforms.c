@@ -8,15 +8,15 @@
 
 typedef struct _TestState
 {
-  CoglPipeline *pipeline_red;
-  CoglPipeline *pipeline_green;
-  CoglPipeline *pipeline_blue;
+  cg_pipeline_t *pipeline_red;
+  cg_pipeline_t *pipeline_green;
+  cg_pipeline_t *pipeline_blue;
 
-  CoglPipeline *matrix_pipeline;
-  CoglPipeline *vector_pipeline;
-  CoglPipeline *int_pipeline;
+  cg_pipeline_t *matrix_pipeline;
+  cg_pipeline_t *vector_pipeline;
+  cg_pipeline_t *int_pipeline;
 
-  CoglPipeline *long_pipeline;
+  cg_pipeline_t *long_pipeline;
   int long_uniform_locations[LONG_ARRAY_SIZE];
 } TestState;
 
@@ -24,7 +24,7 @@ static const char *
 color_declarations = "uniform float red, green, blue;\n";
 
 static const char *
-color_fragment_source = "  cogl_color_out = vec4 (red, green, blue, 1.0);\n";
+color_fragment_source = "  cg_color_out = vec4 (red, green, blue, 1.0);\n";
 
 static const char *
 matrix_declarations = "uniform mat4 matrix_array[4];\n";
@@ -37,7 +37,7 @@ matrix_fragment_source =
   "  for (i = 0; i < 4; i++)\n"
   "    color = matrix_array[i] * color;\n"
   "\n"
-  "  cogl_color_out = color;\n";
+  "  cg_color_out = color;\n";
 
 static const char *
 vector_declarations =
@@ -46,7 +46,7 @@ vector_declarations =
 
 static const char *
 vector_fragment_source =
-  "  cogl_color_out = (vector_array[0] +\n"
+  "  cg_color_out = (vector_array[0] +\n"
   "                    vector_array[1] +\n"
   "                    vec4 (short_vector, 1.0));\n";
 
@@ -57,7 +57,7 @@ int_declarations =
 
 static const char *
 int_fragment_source =
-  "  cogl_color_out = (vec4 (vector_array[0]) +\n"
+  "  cg_color_out = (vec4 (vector_array[0]) +\n"
   "                    vec4 (vector_array[1]) +\n"
   "                    vec4 (float (single_value), 0.0, 0.0, 255.0)) / 255.0;\n";
 
@@ -68,21 +68,21 @@ long_declarations =
 
 static const char *
 long_fragment_source =
-  "  cogl_color_out = vec4 (float (long_array[last_index]), 0.0, 0.0, 1.0);\n";
+  "  cg_color_out = vec4 (float (long_array[last_index]), 0.0, 0.0, 1.0);\n";
 
-static CoglPipeline *
+static cg_pipeline_t *
 create_pipeline_for_shader (TestState *state,
                             const char *declarations,
                             const char *fragment_source)
 {
-  CoglPipeline *pipeline = cogl_pipeline_new (test_ctx);
-  CoglSnippet *snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
+  cg_pipeline_t *pipeline = cg_pipeline_new (test_ctx);
+  cg_snippet_t *snippet = cg_snippet_new (CG_SNIPPET_HOOK_FRAGMENT,
                                            declarations,
                                            NULL);
-  cogl_snippet_set_replace (snippet, fragment_source);
+  cg_snippet_set_replace (snippet, fragment_source);
 
-  cogl_pipeline_add_snippet (pipeline, snippet);
-  cogl_object_unref (snippet);
+  cg_pipeline_add_snippet (pipeline, snippet);
+  cg_object_unref (snippet);
 
   return pipeline;
 }
@@ -97,24 +97,24 @@ init_state (TestState *state)
                                                     color_fragment_source);
 
   uniform_location =
-    cogl_pipeline_get_uniform_location (state->pipeline_red, "red");
-  cogl_pipeline_set_uniform_1f (state->pipeline_red, uniform_location, 1.0f);
+    cg_pipeline_get_uniform_location (state->pipeline_red, "red");
+  cg_pipeline_set_uniform_1f (state->pipeline_red, uniform_location, 1.0f);
   uniform_location =
-    cogl_pipeline_get_uniform_location (state->pipeline_red, "green");
-  cogl_pipeline_set_uniform_1f (state->pipeline_red, uniform_location, 0.0f);
+    cg_pipeline_get_uniform_location (state->pipeline_red, "green");
+  cg_pipeline_set_uniform_1f (state->pipeline_red, uniform_location, 0.0f);
   uniform_location =
-    cogl_pipeline_get_uniform_location (state->pipeline_red, "blue");
-  cogl_pipeline_set_uniform_1f (state->pipeline_red, uniform_location, 0.0f);
+    cg_pipeline_get_uniform_location (state->pipeline_red, "blue");
+  cg_pipeline_set_uniform_1f (state->pipeline_red, uniform_location, 0.0f);
 
-  state->pipeline_green = cogl_pipeline_copy (state->pipeline_red);
+  state->pipeline_green = cg_pipeline_copy (state->pipeline_red);
   uniform_location =
-    cogl_pipeline_get_uniform_location (state->pipeline_green, "green");
-  cogl_pipeline_set_uniform_1f (state->pipeline_green, uniform_location, 1.0f);
+    cg_pipeline_get_uniform_location (state->pipeline_green, "green");
+  cg_pipeline_set_uniform_1f (state->pipeline_green, uniform_location, 1.0f);
 
-  state->pipeline_blue = cogl_pipeline_copy (state->pipeline_red);
+  state->pipeline_blue = cg_pipeline_copy (state->pipeline_red);
   uniform_location =
-    cogl_pipeline_get_uniform_location (state->pipeline_blue, "blue");
-  cogl_pipeline_set_uniform_1f (state->pipeline_blue, uniform_location, 1.0f);
+    cg_pipeline_get_uniform_location (state->pipeline_blue, "blue");
+  cg_pipeline_set_uniform_1f (state->pipeline_blue, uniform_location, 1.0f);
 
   state->matrix_pipeline = create_pipeline_for_shader (state,
                                                        matrix_declarations,
@@ -145,7 +145,7 @@ init_long_pipeline_state (TestState *state)
     {
       char *uniform_name = g_strdup_printf ("long_array[%i]", i);
       state->long_uniform_locations[i] =
-        cogl_pipeline_get_uniform_location (state->long_pipeline,
+        cg_pipeline_get_uniform_location (state->long_pipeline,
                                             uniform_name);
       g_free (uniform_name);
     }
@@ -154,28 +154,28 @@ init_long_pipeline_state (TestState *state)
 static void
 destroy_state (TestState *state)
 {
-  cogl_object_unref (state->pipeline_red);
-  cogl_object_unref (state->pipeline_green);
-  cogl_object_unref (state->pipeline_blue);
-  cogl_object_unref (state->matrix_pipeline);
-  cogl_object_unref (state->vector_pipeline);
-  cogl_object_unref (state->int_pipeline);
+  cg_object_unref (state->pipeline_red);
+  cg_object_unref (state->pipeline_green);
+  cg_object_unref (state->pipeline_blue);
+  cg_object_unref (state->matrix_pipeline);
+  cg_object_unref (state->vector_pipeline);
+  cg_object_unref (state->int_pipeline);
 
   if (state->long_pipeline)
-    cogl_object_unref (state->long_pipeline);
+    cg_object_unref (state->long_pipeline);
 }
 
 static void
-paint_pipeline (CoglPipeline *pipeline, int pos)
+paint_pipeline (cg_pipeline_t *pipeline, int pos)
 {
-  cogl_framebuffer_draw_rectangle (test_fb, pipeline,
+  cg_framebuffer_draw_rectangle (test_fb, pipeline,
                                    pos * 10, 0, pos * 10 + 10, 10);
 }
 
 static void
 paint_color_pipelines (TestState *state)
 {
-  CoglPipeline *temp_pipeline;
+  cg_pipeline_t *temp_pipeline;
   int uniform_location;
   int i;
 
@@ -191,55 +191,55 @@ paint_color_pipelines (TestState *state)
   paint_pipeline (state->pipeline_blue, 2);
 
   /* Try modifying a single pipeline for multiple rectangles */
-  temp_pipeline = cogl_pipeline_copy (state->pipeline_green);
-  uniform_location = cogl_pipeline_get_uniform_location (temp_pipeline,
+  temp_pipeline = cg_pipeline_copy (state->pipeline_green);
+  uniform_location = cg_pipeline_get_uniform_location (temp_pipeline,
                                                          "green");
 
   for (i = 0; i <= 8; i++)
     {
-      cogl_pipeline_set_uniform_1f (temp_pipeline, uniform_location,
+      cg_pipeline_set_uniform_1f (temp_pipeline, uniform_location,
                                     i / 8.0f);
       paint_pipeline (temp_pipeline, i + 3);
     }
 
-  cogl_object_unref (temp_pipeline);
+  cg_object_unref (temp_pipeline);
 }
 
 static void
-paint_matrix_pipeline (CoglPipeline *pipeline)
+paint_matrix_pipeline (cg_pipeline_t *pipeline)
 {
-  CoglMatrix matrices[4];
+  cg_matrix_t matrices[4];
   float matrix_floats[16 * 4];
   int uniform_location;
   int i;
 
   for (i = 0; i < 4; i++)
-    cogl_matrix_init_identity (matrices + i);
+    cg_matrix_init_identity (matrices + i);
 
   /* Use the first matrix to make the color red */
-  cogl_matrix_translate (matrices + 0, 1.0f, 0.0f, 0.0f);
+  cg_matrix_translate (matrices + 0, 1.0f, 0.0f, 0.0f);
 
   /* Rotate the vertex so that it ends up green */
-  cogl_matrix_rotate (matrices + 1, 90.0f, 0.0f, 0.0f, 1.0f);
+  cg_matrix_rotate (matrices + 1, 90.0f, 0.0f, 0.0f, 1.0f);
 
   /* Scale the vertex so it ends up halved */
-  cogl_matrix_scale (matrices + 2, 0.5f, 0.5f, 0.5f);
+  cg_matrix_scale (matrices + 2, 0.5f, 0.5f, 0.5f);
 
   /* Add a blue component in the final matrix. The final matrix is
      uploaded as transposed so we need to transpose first to cancel
      that out */
-  cogl_matrix_translate (matrices + 3, 0.0f, 0.0f, 1.0f);
-  cogl_matrix_transpose (matrices + 3);
+  cg_matrix_translate (matrices + 3, 0.0f, 0.0f, 1.0f);
+  cg_matrix_transpose (matrices + 3);
 
   for (i = 0; i < 4; i++)
     memcpy (matrix_floats + i * 16,
-            cogl_matrix_get_array (matrices + i),
+            cg_matrix_get_array (matrices + i),
             sizeof (float) * 16);
 
   /* Set the first three matrices as transposed */
   uniform_location =
-    cogl_pipeline_get_uniform_location (pipeline, "matrix_array");
-  cogl_pipeline_set_uniform_matrix (pipeline,
+    cg_pipeline_get_uniform_location (pipeline, "matrix_array");
+  cg_pipeline_set_uniform_matrix (pipeline,
                                     uniform_location,
                                     4, /* dimensions */
                                     3, /* count */
@@ -248,8 +248,8 @@ paint_matrix_pipeline (CoglPipeline *pipeline)
 
   /* Set the last matrix as untransposed */
   uniform_location =
-    cogl_pipeline_get_uniform_location (pipeline, "matrix_array[3]");
-  cogl_pipeline_set_uniform_matrix (pipeline,
+    cg_pipeline_get_uniform_location (pipeline, "matrix_array[3]");
+  cg_pipeline_set_uniform_matrix (pipeline,
                                     uniform_location,
                                     4, /* dimensions */
                                     1, /* count */
@@ -260,7 +260,7 @@ paint_matrix_pipeline (CoglPipeline *pipeline)
 }
 
 static void
-paint_vector_pipeline (CoglPipeline *pipeline)
+paint_vector_pipeline (cg_pipeline_t *pipeline)
 {
   float vector_array_values[] = { 1.0f, 0.0f, 0.0f, 0.0f,
                                   0.0f, 1.0f, 0.0f, 0.0f };
@@ -268,16 +268,16 @@ paint_vector_pipeline (CoglPipeline *pipeline)
   int uniform_location;
 
   uniform_location =
-    cogl_pipeline_get_uniform_location (pipeline, "vector_array");
-  cogl_pipeline_set_uniform_float (pipeline,
+    cg_pipeline_get_uniform_location (pipeline, "vector_array");
+  cg_pipeline_set_uniform_float (pipeline,
                                    uniform_location,
                                    4, /* n_components */
                                    2, /* count */
                                    vector_array_values);
 
   uniform_location =
-    cogl_pipeline_get_uniform_location (pipeline, "short_vector");
-  cogl_pipeline_set_uniform_float (pipeline,
+    cg_pipeline_get_uniform_location (pipeline, "short_vector");
+  cg_pipeline_set_uniform_float (pipeline,
                                    uniform_location,
                                    3, /* n_components */
                                    1, /* count */
@@ -287,7 +287,7 @@ paint_vector_pipeline (CoglPipeline *pipeline)
 }
 
 static void
-paint_int_pipeline (CoglPipeline *pipeline)
+paint_int_pipeline (cg_pipeline_t *pipeline)
 {
   int vector_array_values[] = { 0x00, 0x00, 0xff, 0x00,
                                 0x00, 0xff, 0x00, 0x00 };
@@ -295,16 +295,16 @@ paint_int_pipeline (CoglPipeline *pipeline)
   int uniform_location;
 
   uniform_location =
-    cogl_pipeline_get_uniform_location (pipeline, "vector_array");
-  cogl_pipeline_set_uniform_int (pipeline,
+    cg_pipeline_get_uniform_location (pipeline, "vector_array");
+  cg_pipeline_set_uniform_int (pipeline,
                                  uniform_location,
                                  4, /* n_components */
                                  2, /* count */
                                  vector_array_values);
 
   uniform_location =
-    cogl_pipeline_get_uniform_location (pipeline, "single_value");
-  cogl_pipeline_set_uniform_1i (pipeline,
+    cg_pipeline_get_uniform_location (pipeline, "single_value");
+  cg_pipeline_set_uniform_1i (pipeline,
                                 uniform_location,
                                 single_value);
 
@@ -320,7 +320,7 @@ paint_long_pipeline (TestState *state)
     {
       int location = state->long_uniform_locations[i];
 
-      cogl_pipeline_set_uniform_1i (state->long_pipeline,
+      cg_pipeline_set_uniform_1i (state->long_pipeline,
                                     location,
                                     i == LONG_ARRAY_SIZE - 1);
     }
@@ -331,7 +331,7 @@ paint_long_pipeline (TestState *state)
 static void
 paint (TestState *state)
 {
-  cogl_framebuffer_clear4f (test_fb, COGL_BUFFER_BIT_COLOR, 0, 0, 0, 1);
+  cg_framebuffer_clear4f (test_fb, CG_BUFFER_BIT_COLOR, 0, 0, 0, 1);
 
   paint_color_pipelines (state);
   paint_matrix_pipeline (state->matrix_pipeline);
@@ -378,10 +378,10 @@ test_pipeline_uniforms (void)
 
   init_state (&state);
 
-  cogl_framebuffer_orthographic (test_fb,
+  cg_framebuffer_orthographic (test_fb,
                                  0, 0,
-                                 cogl_framebuffer_get_width (test_fb),
-                                 cogl_framebuffer_get_height (test_fb),
+                                 cg_framebuffer_get_width (test_fb),
+                                 cg_framebuffer_get_height (test_fb),
                                  -1,
                                  100);
 
@@ -401,6 +401,6 @@ test_pipeline_uniforms (void)
 
   destroy_state (&state);
 
-  if (cogl_test_verbose ())
+  if (cg_test_verbose ())
     c_print ("OK\n");
 }

@@ -26,7 +26,7 @@ typedef struct
   uint32_t               color;
   float                 depth;
   bool              test_enable;
-  CoglDepthTestFunction test_function;
+  cg_depth_test_function_t test_function;
   bool              write_enable;
   bool              fb_write_enable;
   float                 range_near;
@@ -43,38 +43,38 @@ draw_rectangle (TestState *state,
   uint8_t Cg = MASK_GREEN (rect_state->color);
   uint8_t Cb = MASK_BLUE (rect_state->color);
   uint8_t Ca = MASK_ALPHA (rect_state->color);
-  CoglPipeline *pipeline;
-  CoglDepthState depth_state;
+  cg_pipeline_t *pipeline;
+  cg_depth_state_t depth_state;
 
-  cogl_depth_state_init (&depth_state);
-  cogl_depth_state_set_test_enabled (&depth_state, rect_state->test_enable);
-  cogl_depth_state_set_test_function (&depth_state, rect_state->test_function);
-  cogl_depth_state_set_write_enabled (&depth_state, rect_state->write_enable);
-  cogl_depth_state_set_range (&depth_state,
+  cg_depth_state_init (&depth_state);
+  cg_depth_state_set_test_enabled (&depth_state, rect_state->test_enable);
+  cg_depth_state_set_test_function (&depth_state, rect_state->test_function);
+  cg_depth_state_set_write_enabled (&depth_state, rect_state->write_enable);
+  cg_depth_state_set_range (&depth_state,
                               rect_state->range_near,
                               rect_state->range_far);
 
-  pipeline = cogl_pipeline_new (test_ctx);
-  if (!cogl_pipeline_set_depth_state (pipeline, &depth_state, NULL))
+  pipeline = cg_pipeline_new (test_ctx);
+  if (!cg_pipeline_set_depth_state (pipeline, &depth_state, NULL))
     {
-      cogl_object_unref (pipeline);
+      cg_object_unref (pipeline);
       return FALSE;
     }
 
-  cogl_pipeline_set_color4ub (pipeline, Cr, Cg, Cb, Ca);
+  cg_pipeline_set_color4ub (pipeline, Cr, Cg, Cb, Ca);
 
-  cogl_framebuffer_set_depth_write_enabled (test_fb, rect_state->fb_write_enable);
-  cogl_framebuffer_push_matrix (test_fb);
-  cogl_framebuffer_translate (test_fb, 0, 0, rect_state->depth);
-  cogl_framebuffer_draw_rectangle (test_fb,
+  cg_framebuffer_set_depth_write_enabled (test_fb, rect_state->fb_write_enable);
+  cg_framebuffer_push_matrix (test_fb);
+  cg_framebuffer_translate (test_fb, 0, 0, rect_state->depth);
+  cg_framebuffer_draw_rectangle (test_fb,
                                    pipeline,
                                    x * QUAD_WIDTH,
                                    y * QUAD_WIDTH,
                                    x * QUAD_WIDTH + QUAD_WIDTH,
                                    y * QUAD_WIDTH + QUAD_WIDTH);
-  cogl_framebuffer_pop_matrix (test_fb);
+  cg_framebuffer_pop_matrix (test_fb);
 
-  cogl_object_unref (pipeline);
+  cg_object_unref (pipeline);
 
   return TRUE;
 }
@@ -120,7 +120,7 @@ paint (TestState *state)
       0xff0000ff, /* rgba color */
       -10, /* depth */
       FALSE, /* depth test enable */
-      COGL_DEPTH_TEST_FUNCTION_ALWAYS,
+      CG_DEPTH_TEST_FUNCTION_ALWAYS,
       TRUE, /* depth write enable */
       TRUE, /* FB depth write enable */
       0, 1 /* depth range */
@@ -130,7 +130,7 @@ paint (TestState *state)
       0x00ff00ff, /* rgba color */
       -70, /* depth */
       TRUE, /* depth test enable */
-      COGL_DEPTH_TEST_FUNCTION_ALWAYS,
+      CG_DEPTH_TEST_FUNCTION_ALWAYS,
       TRUE, /* depth write enable */
       TRUE, /* FB depth write enable */
       0, 1 /* depth range */
@@ -140,7 +140,7 @@ paint (TestState *state)
       0x0000ffff, /* rgba color */
       -20, /* depth */
       TRUE, /* depth test enable */
-      COGL_DEPTH_TEST_FUNCTION_NEVER,
+      CG_DEPTH_TEST_FUNCTION_NEVER,
       TRUE, /* depth write enable */
       TRUE, /* FB depth write enable */
       0, 1 /* depth range */
@@ -150,17 +150,17 @@ paint (TestState *state)
                 &rect0_state, &rect1_state, &rect2_state,
                 0x00ff00ff); /* expected */
 
-    rect2_state.test_function = COGL_DEPTH_TEST_FUNCTION_ALWAYS;
+    rect2_state.test_function = CG_DEPTH_TEST_FUNCTION_ALWAYS;
     test_depth (state, 1, 0, /* position */
                 &rect0_state, &rect1_state, &rect2_state,
                 0x0000ffff); /* expected */
 
-    rect2_state.test_function = COGL_DEPTH_TEST_FUNCTION_LESS;
+    rect2_state.test_function = CG_DEPTH_TEST_FUNCTION_LESS;
     test_depth (state, 2, 0, /* position */
                 &rect0_state, &rect1_state, &rect2_state,
                 0x0000ffff); /* expected */
 
-    rect2_state.test_function = COGL_DEPTH_TEST_FUNCTION_GREATER;
+    rect2_state.test_function = CG_DEPTH_TEST_FUNCTION_GREATER;
     test_depth (state, 3, 0, /* position */
                 &rect0_state, &rect1_state, &rect2_state,
                 0x00ff00ff); /* expected */
@@ -194,7 +194,7 @@ paint (TestState *state)
       0xff0000ff, /* rgba color */
       -10, /* depth */
       TRUE, /* depth test enable */
-      COGL_DEPTH_TEST_FUNCTION_ALWAYS,
+      CG_DEPTH_TEST_FUNCTION_ALWAYS,
       TRUE, /* depth write enable */
       TRUE, /* FB depth write enable */
       0.5, 1 /* depth range */
@@ -204,7 +204,7 @@ paint (TestState *state)
       0x00ff00ff, /* rgba color */
       -70, /* depth */
       TRUE, /* depth test enable */
-      COGL_DEPTH_TEST_FUNCTION_GREATER,
+      CG_DEPTH_TEST_FUNCTION_GREATER,
       TRUE, /* depth write enable */
       TRUE, /* FB depth write enable */
       0, 0.5 /* depth range */
@@ -221,15 +221,15 @@ test_depth_test (void)
 {
   TestState state;
 
-  cogl_framebuffer_orthographic (test_fb, 0, 0,
-                                 cogl_framebuffer_get_width (test_fb),
-                                 cogl_framebuffer_get_height (test_fb),
+  cg_framebuffer_orthographic (test_fb, 0, 0,
+                                 cg_framebuffer_get_width (test_fb),
+                                 cg_framebuffer_get_height (test_fb),
                                  -1,
                                  100);
 
   paint (&state);
 
-  if (cogl_test_verbose ())
+  if (cg_test_verbose ())
     c_print ("OK\n");
 }
 

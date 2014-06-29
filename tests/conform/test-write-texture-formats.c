@@ -9,13 +9,13 @@
  */
 
 static void
-test_color (CoglTexture *texture,
+test_color (cg_texture_t *texture,
             uint32_t expected_pixel)
 {
   uint8_t received_pixel[4];
 
-  cogl_texture_get_data (texture,
-                         COGL_PIXEL_FORMAT_RGBA_8888_PRE,
+  cg_texture_get_data (texture,
+                         CG_PIXEL_FORMAT_RGBA_8888_PRE,
                          4, /* rowstride */
                          received_pixel);
 
@@ -23,13 +23,13 @@ test_color (CoglTexture *texture,
 }
 
 static void
-test_write_byte (CoglPixelFormat format,
+test_write_byte (cg_pixel_format_t format,
                  uint8_t byte,
                  uint32_t expected_pixel)
 {
-  CoglTexture *texture = test_utils_create_color_texture (test_ctx, 0);
+  cg_texture_t *texture = test_utils_create_color_texture (test_ctx, 0);
 
-  cogl_texture_set_region (texture,
+  cg_texture_set_region (texture,
                            1, 1, /* width / height */
                            format,
                            1, /* rowstride */
@@ -40,17 +40,17 @@ test_write_byte (CoglPixelFormat format,
 
   test_color (texture, expected_pixel);
 
-  cogl_object_unref (texture);
+  cg_object_unref (texture);
 }
 
 static void
-test_write_short (CoglPixelFormat format,
+test_write_short (cg_pixel_format_t format,
                   uint16_t value,
                   uint32_t expected_pixel)
 {
-  CoglTexture *texture = test_utils_create_color_texture (test_ctx, 0);
+  cg_texture_t *texture = test_utils_create_color_texture (test_ctx, 0);
 
-  cogl_texture_set_region (texture,
+  cg_texture_set_region (texture,
                            1, 1, /* width / height */
                            format,
                            2, /* rowstride */
@@ -61,19 +61,19 @@ test_write_short (CoglPixelFormat format,
 
   test_color (texture, expected_pixel);
 
-  cogl_object_unref (texture);
+  cg_object_unref (texture);
 }
 
 static void
-test_write_bytes (CoglPixelFormat format,
+test_write_bytes (cg_pixel_format_t format,
                   uint32_t value,
                   uint32_t expected_pixel)
 {
-  CoglTexture *texture = test_utils_create_color_texture (test_ctx, 0);
+  cg_texture_t *texture = test_utils_create_color_texture (test_ctx, 0);
 
   value = GUINT32_TO_BE (value);
 
-  cogl_texture_set_region (texture,
+  cg_texture_set_region (texture,
                            1, 1, /* width / height */
                            format,
                            4, /* rowstride */
@@ -84,11 +84,11 @@ test_write_bytes (CoglPixelFormat format,
 
   test_color (texture, expected_pixel);
 
-  cogl_object_unref (texture);
+  cg_object_unref (texture);
 }
 
 static void
-test_write_int (CoglPixelFormat format,
+test_write_int (cg_pixel_format_t format,
                 uint32_t expected_pixel,
                 ...)
 {
@@ -96,7 +96,7 @@ test_write_int (CoglPixelFormat format,
   int bits;
   uint32_t tex_data = 0;
   int bits_sum = 0;
-  CoglTexture *texture = test_utils_create_color_texture (test_ctx, 0);
+  cg_texture_t *texture = test_utils_create_color_texture (test_ctx, 0);
 
   va_start (ap, expected_pixel);
 
@@ -112,7 +112,7 @@ test_write_int (CoglPixelFormat format,
 
   va_end (ap);
 
-  cogl_texture_set_region (texture,
+  cg_texture_set_region (texture,
                            1, 1, /* width / height */
                            format,
                            4, /* rowstride */
@@ -123,48 +123,48 @@ test_write_int (CoglPixelFormat format,
 
   test_color (texture, expected_pixel);
 
-  cogl_object_unref (texture);
+  cg_object_unref (texture);
 }
 
 void
 test_write_texture_formats (void)
 {
-  test_write_byte (COGL_PIXEL_FORMAT_A_8, 0x34, 0x00000034);
+  test_write_byte (CG_PIXEL_FORMAT_A_8, 0x34, 0x00000034);
 
   /* We should always be able to read from an RG buffer regardless of
    * whether RG textures are supported because Cogl will do the
    * conversion for us */
-  test_write_bytes (COGL_PIXEL_FORMAT_RG_88, 0x123456ff, 0x123400ff);
+  test_write_bytes (CG_PIXEL_FORMAT_RG_88, 0x123456ff, 0x123400ff);
 
-  test_write_short (COGL_PIXEL_FORMAT_RGB_565, 0x0843, 0x080819ff);
-  test_write_short (COGL_PIXEL_FORMAT_RGBA_4444_PRE, 0x1234, 0x11223344);
-  test_write_short (COGL_PIXEL_FORMAT_RGBA_5551_PRE, 0x0887, 0x081019ff);
+  test_write_short (CG_PIXEL_FORMAT_RGB_565, 0x0843, 0x080819ff);
+  test_write_short (CG_PIXEL_FORMAT_RGBA_4444_PRE, 0x1234, 0x11223344);
+  test_write_short (CG_PIXEL_FORMAT_RGBA_5551_PRE, 0x0887, 0x081019ff);
 
-  test_write_bytes (COGL_PIXEL_FORMAT_RGB_888, 0x123456ff, 0x123456ff);
-  test_write_bytes (COGL_PIXEL_FORMAT_BGR_888, 0x563412ff, 0x123456ff);
+  test_write_bytes (CG_PIXEL_FORMAT_RGB_888, 0x123456ff, 0x123456ff);
+  test_write_bytes (CG_PIXEL_FORMAT_BGR_888, 0x563412ff, 0x123456ff);
 
-  test_write_bytes (COGL_PIXEL_FORMAT_RGBA_8888_PRE, 0x12345678, 0x12345678);
-  test_write_bytes (COGL_PIXEL_FORMAT_BGRA_8888_PRE, 0x56341278, 0x12345678);
-  test_write_bytes (COGL_PIXEL_FORMAT_ARGB_8888_PRE, 0x78123456, 0x12345678);
-  test_write_bytes (COGL_PIXEL_FORMAT_ABGR_8888_PRE, 0x78563412, 0x12345678);
+  test_write_bytes (CG_PIXEL_FORMAT_RGBA_8888_PRE, 0x12345678, 0x12345678);
+  test_write_bytes (CG_PIXEL_FORMAT_BGRA_8888_PRE, 0x56341278, 0x12345678);
+  test_write_bytes (CG_PIXEL_FORMAT_ARGB_8888_PRE, 0x78123456, 0x12345678);
+  test_write_bytes (CG_PIXEL_FORMAT_ABGR_8888_PRE, 0x78563412, 0x12345678);
 
-  test_write_int (COGL_PIXEL_FORMAT_RGBA_1010102_PRE,
+  test_write_int (CG_PIXEL_FORMAT_RGBA_1010102_PRE,
                   0x123456ff,
                   10, 0x12, 10, 0x34, 10, 0x56, 2, 0xff,
                   -1);
-  test_write_int (COGL_PIXEL_FORMAT_BGRA_1010102_PRE,
+  test_write_int (CG_PIXEL_FORMAT_BGRA_1010102_PRE,
                   0x123456ff,
                   10, 0x56, 10, 0x34, 10, 0x12, 2, 0xff,
                   -1);
-  test_write_int (COGL_PIXEL_FORMAT_ARGB_2101010_PRE,
+  test_write_int (CG_PIXEL_FORMAT_ARGB_2101010_PRE,
                   0x123456ff,
                   2, 0xff, 10, 0x12, 10, 0x34, 10, 0x56,
                   -1);
-  test_write_int (COGL_PIXEL_FORMAT_ABGR_2101010_PRE,
+  test_write_int (CG_PIXEL_FORMAT_ABGR_2101010_PRE,
                   0x123456ff,
                   2, 0xff, 10, 0x56, 10, 0x34, 10, 0x12,
                   -1);
 
-  if (cogl_test_verbose ())
+  if (cg_test_verbose ())
     c_print ("OK\n");
 }
