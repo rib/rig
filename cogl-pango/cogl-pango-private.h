@@ -33,47 +33,45 @@
  *   Matthew Allum  <mallum@openedhand.com>
  */
 
-#ifndef __COGL_PANGO_PRIVATE_H__
-#define __COGL_PANGO_PRIVATE_H__
+#ifndef __CG_PANGO_PRIVATE_H__
+#define __CG_PANGO_PRIVATE_H__
 
 #include "cogl-pango.h"
 
-COGL_BEGIN_DECLS
+CG_BEGIN_DECLS
 
-#define COGL_PANGO_TYPE_RENDERER                (_cogl_pango_renderer_get_type ())
-#define COGL_PANGO_RENDERER(obj)		(G_TYPE_CHECK_INSTANCE_CAST ((obj), COGL_PANGO_TYPE_RENDERER, CoglPangoRenderer))
-#define COGL_PANGO_RENDERER_CLASS(klass)        (G_TYPE_CHECK_CLASS_CAST ((klass), COGL_PANGO_TYPE_RENDERER, CoglPangoRendererClass))
-#define COGL_PANGO_IS_RENDERER(obj)             (G_TYPE_CHECK_INSTANCE_TYPE ((obj), COGL_PANGO_TYPE_RENDERER))
-#define COGL_PANGO_IS_RENDERER_CLASS(klass)     (G_TYPE_CHECK_CLASS_TYPE ((klass),  COGL_PANGO_TYPE_RENDERER))
-#define COGL_PANGO_RENDERER_GET_CLASS(obj)      (G_TYPE_INSTANCE_GET_CLASS ((obj), COGL_PANGO_TYPE_RENDERER, CoglPangoRendererClass))
+#define CG_PANGO_TYPE_RENDERER (_cg_pango_renderer_get_type())
+#define CG_PANGO_RENDERER(obj)                                                 \
+    (G_TYPE_CHECK_INSTANCE_CAST((obj), CG_PANGO_TYPE_RENDERER, CgPangoRenderer))
+#define CG_PANGO_RENDERER_CLASS(klass)                                         \
+    (G_TYPE_CHECK_CLASS_CAST(                                                  \
+         (klass), CG_PANGO_TYPE_RENDERER, CgPangoRendererClass))
+#define CG_PANGO_IS_RENDERER(obj)                                              \
+    (G_TYPE_CHECK_INSTANCE_TYPE((obj), CG_PANGO_TYPE_RENDERER))
+#define CG_PANGO_IS_RENDERER_CLASS(klass)                                      \
+    (G_TYPE_CHECK_CLASS_TYPE((klass), CG_PANGO_TYPE_RENDERER))
+#define CG_PANGO_RENDERER_GET_CLASS(obj)                                       \
+    (G_TYPE_INSTANCE_GET_CLASS(                                                \
+         (obj), CG_PANGO_TYPE_RENDERER, CgPangoRendererClass))
 
 /* opaque types */
-typedef struct _CoglPangoRenderer      CoglPangoRenderer;
-typedef struct _CoglPangoRendererClass CoglPangoRendererClass;
+typedef struct _CgPangoRenderer CgPangoRenderer;
+typedef struct _CgPangoRendererClass CgPangoRendererClass;
 
-GType
-_cogl_pango_renderer_get_type (void) G_GNUC_CONST;
+GType _cg_pango_renderer_get_type(void) G_GNUC_CONST;
 
-PangoRenderer *
-_cogl_pango_renderer_new (CoglContext *context);
+PangoRenderer *_cg_pango_renderer_new(cg_context_t *context);
 
-void
-_cogl_pango_renderer_clear_glyph_cache  (CoglPangoRenderer *renderer);
+void _cg_pango_renderer_clear_glyph_cache(CgPangoRenderer *renderer);
 
-void
-_cogl_pango_renderer_set_use_mipmapping (CoglPangoRenderer *renderer,
-                                         bool value);
-bool
-_cogl_pango_renderer_get_use_mipmapping (CoglPangoRenderer *renderer);
+void _cg_pango_renderer_set_use_mipmapping(CgPangoRenderer *renderer,
+                                           bool value);
+bool _cg_pango_renderer_get_use_mipmapping(CgPangoRenderer *renderer);
 
+cg_context_t *_cg_pango_font_map_get_cg_context(CgPangoFontMap *fm);
 
+PangoRenderer *_cg_pango_font_map_get_renderer(CgPangoFontMap *fm);
 
-CoglContext *
-_cogl_pango_font_map_get_cogl_context (CoglPangoFontMap *fm);
+CG_END_DECLS
 
-PangoRenderer *
-_cogl_pango_font_map_get_renderer (CoglPangoFontMap *fm);
-
-COGL_END_DECLS
-
-#endif /* __COGL_PANGO_PRIVATE_H__ */
+#endif /* __CG_PANGO_PRIVATE_H__ */

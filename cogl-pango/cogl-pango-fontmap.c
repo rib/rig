@@ -52,109 +52,101 @@
 #include "cogl-pango-private.h"
 #include "cogl-util.h"
 
-static GQuark cogl_pango_font_map_get_priv_key (void) G_GNUC_CONST;
+static GQuark cg_pango_font_map_get_priv_key(void) G_GNUC_CONST;
 
-typedef struct _CoglPangoFontMapPriv
-{
-  CoglContext *ctx;
-  PangoRenderer *renderer;
-} CoglPangoFontMapPriv;
+typedef struct _CgPangoFontMapPriv {
+    cg_context_t *ctx;
+    PangoRenderer *renderer;
+} CgPangoFontMapPriv;
 
 static void
-free_priv (gpointer data)
+free_priv(gpointer data)
 {
-  CoglPangoFontMapPriv *priv = data;
+    CgPangoFontMapPriv *priv = data;
 
-  g_object_unref (priv->renderer);
+    g_object_unref(priv->renderer);
 
-  g_free (priv);
+    g_free(priv);
 }
 
 PangoFontMap *
-cogl_pango_font_map_new (CoglContext *context)
+cg_pango_font_map_new(cg_context_t *context)
 {
-  PangoFontMap *fm = pango_cairo_font_map_new ();
-  CoglPangoFontMapPriv *priv = g_new0 (CoglPangoFontMapPriv, 1);
+    PangoFontMap *fm = pango_cairo_font_map_new();
+    CgPangoFontMapPriv *priv = g_new0(CgPangoFontMapPriv, 1);
 
-  priv->ctx = context;
+    priv->ctx = context;
 
-  /* XXX: The public pango api doesn't let us sub-class
-   * PangoCairoFontMap so we attach our own private data using qdata
-   * for now. */
-  g_object_set_qdata_full (G_OBJECT (fm),
-                           cogl_pango_font_map_get_priv_key (),
-                           priv,
-                           free_priv);
+    /* XXX: The public pango api doesn't let us sub-class
+     * PangoCairoFontMap so we attach our own private data using qdata
+     * for now. */
+    g_object_set_qdata_full(
+        G_OBJECT(fm), cg_pango_font_map_get_priv_key(), priv, free_priv);
 
-  return fm;
+    return fm;
 }
 
-static CoglPangoFontMapPriv *
-_cogl_pango_font_map_get_priv (CoglPangoFontMap *fm)
+static CgPangoFontMapPriv *
+_cg_pango_font_map_get_priv(CgPangoFontMap *fm)
 {
-  return g_object_get_qdata (G_OBJECT (fm),
-			     cogl_pango_font_map_get_priv_key ());
+    return g_object_get_qdata(G_OBJECT(fm), cg_pango_font_map_get_priv_key());
 }
 
 PangoRenderer *
-_cogl_pango_font_map_get_renderer (CoglPangoFontMap *fm)
+_cg_pango_font_map_get_renderer(CgPangoFontMap *fm)
 {
-  CoglPangoFontMapPriv *priv = _cogl_pango_font_map_get_priv (fm);
-  if (G_UNLIKELY (!priv->renderer))
-    priv->renderer = _cogl_pango_renderer_new (priv->ctx);
-  return priv->renderer;
+    CgPangoFontMapPriv *priv = _cg_pango_font_map_get_priv(fm);
+    if (G_UNLIKELY(!priv->renderer))
+        priv->renderer = _cg_pango_renderer_new(priv->ctx);
+    return priv->renderer;
 }
 
-CoglContext *
-_cogl_pango_font_map_get_cogl_context (CoglPangoFontMap *fm)
+cg_context_t *
+_cg_pango_font_map_get_cg_context(CgPangoFontMap *fm)
 {
-  CoglPangoFontMapPriv *priv = _cogl_pango_font_map_get_priv (fm);
-  return priv->ctx;
-}
-
-void
-cogl_pango_font_map_set_resolution (CoglPangoFontMap *font_map,
-				    double            dpi)
-{
-  _COGL_RETURN_IF_FAIL (COGL_PANGO_IS_FONT_MAP (font_map));
-
-  pango_cairo_font_map_set_resolution (PANGO_CAIRO_FONT_MAP (font_map), dpi);
+    CgPangoFontMapPriv *priv = _cg_pango_font_map_get_priv(fm);
+    return priv->ctx;
 }
 
 void
-cogl_pango_font_map_clear_glyph_cache (CoglPangoFontMap *fm)
+cg_pango_font_map_set_resolution(CgPangoFontMap *font_map, double dpi)
 {
-  PangoRenderer *renderer = _cogl_pango_font_map_get_renderer (fm);
+    _CG_RETURN_IF_FAIL(CG_PANGO_IS_FONT_MAP(font_map));
 
-  _cogl_pango_renderer_clear_glyph_cache (COGL_PANGO_RENDERER (renderer));
+    pango_cairo_font_map_set_resolution(PANGO_CAIRO_FONT_MAP(font_map), dpi);
 }
 
 void
-cogl_pango_font_map_set_use_mipmapping (CoglPangoFontMap *fm,
-                                        bool          value)
+cg_pango_font_map_clear_glyph_cache(CgPangoFontMap *fm)
 {
-  PangoRenderer *renderer = _cogl_pango_font_map_get_renderer (fm);
+    PangoRenderer *renderer = _cg_pango_font_map_get_renderer(fm);
 
-  _cogl_pango_renderer_set_use_mipmapping (COGL_PANGO_RENDERER (renderer),
-                                           value);
+    _cg_pango_renderer_clear_glyph_cache(CG_PANGO_RENDERER(renderer));
+}
+
+void
+cg_pango_font_map_set_use_mipmapping(CgPangoFontMap *fm, bool value)
+{
+    PangoRenderer *renderer = _cg_pango_font_map_get_renderer(fm);
+
+    _cg_pango_renderer_set_use_mipmapping(CG_PANGO_RENDERER(renderer), value);
 }
 
 bool
-cogl_pango_font_map_get_use_mipmapping (CoglPangoFontMap *fm)
+cg_pango_font_map_get_use_mipmapping(CgPangoFontMap *fm)
 {
-  PangoRenderer *renderer = _cogl_pango_font_map_get_renderer (fm);
+    PangoRenderer *renderer = _cg_pango_font_map_get_renderer(fm);
 
-  return
-    _cogl_pango_renderer_get_use_mipmapping (COGL_PANGO_RENDERER (renderer));
+    return _cg_pango_renderer_get_use_mipmapping(CG_PANGO_RENDERER(renderer));
 }
 
 static GQuark
-cogl_pango_font_map_get_priv_key (void)
+cg_pango_font_map_get_priv_key(void)
 {
-  static GQuark priv_key = 0;
+    static GQuark priv_key = 0;
 
-  if (G_UNLIKELY (priv_key == 0))
-      priv_key = g_quark_from_static_string ("CoglPangoFontMap");
+    if (G_UNLIKELY(priv_key == 0))
+        priv_key = g_quark_from_static_string("CgPangoFontMap");
 
-  return priv_key;
+    return priv_key;
 }

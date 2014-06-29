@@ -31,42 +31,37 @@
  *   Neil Roberts <neil@linux.intel.com>
  */
 
-#ifndef __COGL_PANGO_PIPELINE_CACHE_H__
-#define __COGL_PANGO_PIPELINE_CACHE_H__
+#ifndef __CG_PANGO_PIPELINE_CACHE_H__
+#define __CG_PANGO_PIPELINE_CACHE_H__
 
 #include <glib.h>
 
 #include "cogl/cogl-context-private.h"
 
-COGL_BEGIN_DECLS
+CG_BEGIN_DECLS
 
-typedef struct _CoglPangoPipelineCache
-{
-  CoglContext *ctx;
+typedef struct _cg_pango_pipeline_cache_t {
+    cg_context_t *ctx;
 
-  GHashTable *hash_table;
+    GHashTable *hash_table;
 
-  CoglPipeline *base_texture_alpha_pipeline;
-  CoglPipeline *base_texture_rgba_pipeline;
+    cg_pipeline_t *base_texture_alpha_pipeline;
+    cg_pipeline_t *base_texture_rgba_pipeline;
 
-  bool use_mipmapping;
-} CoglPangoPipelineCache;
+    bool use_mipmapping;
+} cg_pango_pipeline_cache_t;
 
-
-CoglPangoPipelineCache *
-_cogl_pango_pipeline_cache_new (CoglContext *ctx,
-                                bool use_mipmapping);
+cg_pango_pipeline_cache_t *_cg_pango_pipeline_cache_new(cg_context_t *ctx,
+                                                        bool use_mipmapping);
 
 /* Returns a pipeline that can be used to render glyphs in the given
    texture. The pipeline has a new reference so it is up to the caller
    to unref it */
-CoglPipeline *
-_cogl_pango_pipeline_cache_get (CoglPangoPipelineCache *cache,
-                                CoglTexture *texture);
+cg_pipeline_t *_cg_pango_pipeline_cache_get(cg_pango_pipeline_cache_t *cache,
+                                            cg_texture_t *texture);
 
-void
-_cogl_pango_pipeline_cache_free (CoglPangoPipelineCache *cache);
+void _cg_pango_pipeline_cache_free(cg_pango_pipeline_cache_t *cache);
 
-COGL_END_DECLS
+CG_END_DECLS
 
-#endif /* __COGL_PANGO_PIPELINE_CACHE_H__ */
+#endif /* __CG_PANGO_PIPELINE_CACHE_H__ */

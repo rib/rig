@@ -34,7 +34,7 @@ libcogl_pango2_la_LIBADD += $(COGL_DEP_LIBS) $(COGL_PANGO_DEP_LIBS) $(COGL_EXTRA
 libcogl_pango2_la_LDFLAGS = -static
 
 AM_CPPFLAGS = \
-	-DCOGL_COMPILATION \
+	-DCG_COMPILATION \
 	-DG_LOG_DOMAIN=\"CoglPango\" \
 	-I$(top_srcdir)/clib/src \
 	-I$(top_builddir)/clib/src \

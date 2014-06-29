@@ -32,8 +32,8 @@
  *   Matthew Allum  <mallum@openedhand.com>
  */
 
-#ifndef __COGL_PANGO_H__
-#define __COGL_PANGO_H__
+#ifndef __CG_PANGO_H__
+#define __CG_PANGO_H__
 
 #include <glib-object.h>
 #include <pango/pango.h>
@@ -47,27 +47,29 @@
  * determine the current context and switch between including cogl.h
  * or specific internal cogl headers here...
  */
-#ifndef COGL_COMPILATION
+#ifndef CG_COMPILATION
 #include <cogl/cogl.h>
 #else
 #include "cogl/cogl-context.h"
 #endif
 
-COGL_BEGIN_DECLS
+CG_BEGIN_DECLS
 
 /* It's too difficult to actually subclass the pango cairo font
  * map. Instead we just make a fake set of macros that actually just
  * directly use the original type
  */
-#define COGL_PANGO_TYPE_FONT_MAP        PANGO_TYPE_CAIRO_FONT_MAP
-#define COGL_PANGO_FONT_MAP(obj)        (G_TYPE_CHECK_INSTANCE_CAST ((obj), COGL_PANGO_TYPE_FONT_MAP, CoglPangoFontMap))
-#define COGL_PANGO_IS_FONT_MAP(obj)     (G_TYPE_CHECK_INSTANCE_TYPE ((obj), COGL_PANGO_TYPE_FONT_MAP))
+#define CG_PANGO_TYPE_FONT_MAP PANGO_TYPE_CAIRO_FONT_MAP
+#define CG_PANGO_FONT_MAP(obj)                                                 \
+    (G_TYPE_CHECK_INSTANCE_CAST((obj), CG_PANGO_TYPE_FONT_MAP, CgPangoFontMap))
+#define CG_PANGO_IS_FONT_MAP(obj)                                              \
+    (G_TYPE_CHECK_INSTANCE_TYPE((obj), CG_PANGO_TYPE_FONT_MAP))
 
-typedef PangoCairoFontMap CoglPangoFontMap;
+typedef PangoCairoFontMap CgPangoFontMap;
 
 /**
- * cogl_pango_font_map_new:
- * @context: A #CoglContext
+ * cg_pango_font_map_new:
+ * @context: A #cg_context_t
  *
  * Creates a new font map.
  *
@@ -75,12 +77,11 @@ typedef PangoCairoFontMap CoglPangoFontMap;
  *
  * Since: 2.0
  */
-PangoFontMap *
-cogl_pango_font_map_new (CoglContext *context);
+PangoFontMap *cg_pango_font_map_new(cg_context_t *context);
 
 /**
- * cogl_pango_font_map_set_resolution:
- * @font_map: a #CoglPangoFontMap
+ * cg_pango_font_map_set_resolution:
+ * @font_map: a #CgPangoFontMap
  * @dpi: The resolution in "dots per inch". (Physical inches aren't
  *       actually involved; the terminology is conventional.)
  *
@@ -91,23 +92,20 @@ cogl_pango_font_map_new (CoglContext *context);
  *
  * Since: 2.0
  */
-void
-cogl_pango_font_map_set_resolution (CoglPangoFontMap *font_map,
-                                    double dpi);
+void cg_pango_font_map_set_resolution(CgPangoFontMap *font_map, double dpi);
 
 /**
- * cogl_pango_font_map_clear_glyph_cache:
- * @font_map: a #CoglPangoFontMap
+ * cg_pango_font_map_clear_glyph_cache:
+ * @font_map: a #CgPangoFontMap
  *
  * Clears the glyph cache for @font_map.
  *
  * Since: 1.0
  */
-void
-cogl_pango_font_map_clear_glyph_cache (CoglPangoFontMap *font_map);
+void cg_pango_font_map_clear_glyph_cache(CgPangoFontMap *font_map);
 
 /**
- * cogl_pango_ensure_glyph_cache_for_layout:
+ * cg_pango_ensure_glyph_cache_for_layout:
  * @layout: A #PangoLayout
  *
  * This updates any internal glyph cache textures as necessary to be
@@ -118,12 +116,11 @@ cogl_pango_font_map_clear_glyph_cache (CoglPangoFontMap *font_map);
  *
  * Since: 1.0
  */
-void
-cogl_pango_ensure_glyph_cache_for_layout (PangoLayout *layout);
+void cg_pango_ensure_glyph_cache_for_layout(PangoLayout *layout);
 
 /**
- * cogl_pango_font_map_set_use_mipmapping:
- * @font_map: a #CoglPangoFontMap
+ * cg_pango_font_map_set_use_mipmapping:
+ * @font_map: a #CgPangoFontMap
  * @value: %true to enable the use of mipmapping
  *
  * Sets whether the renderer for the passed font map should use
@@ -131,27 +128,24 @@ cogl_pango_ensure_glyph_cache_for_layout (PangoLayout *layout);
  *
  * Since: 1.0
  */
-void
-cogl_pango_font_map_set_use_mipmapping (CoglPangoFontMap *font_map,
-                                        bool value);
+void cg_pango_font_map_set_use_mipmapping(CgPangoFontMap *font_map, bool value);
 
 /**
- * cogl_pango_font_map_get_use_mipmapping:
- * @font_map: a #CoglPangoFontMap
+ * cg_pango_font_map_get_use_mipmapping:
+ * @font_map: a #CgPangoFontMap
  *
- * Retrieves whether the #CoglPangoRenderer used by @font_map will use
+ * Retrieves whether the #CgPangoRenderer used by @font_map will use
  * mipmapping when rendering the glyphs.
  *
  * Return value: %true if mipmapping is used, %false otherwise.
  *
  * Since: 1.0
  */
-bool
-cogl_pango_font_map_get_use_mipmapping (CoglPangoFontMap *font_map);
+bool cg_pango_font_map_get_use_mipmapping(CgPangoFontMap *font_map);
 
 /**
- * cogl_pango_show_layout:
- * @framebuffer: A #CoglFramebuffer to draw too.
+ * cg_pango_show_layout:
+ * @framebuffer: A #cg_framebuffer_t to draw too.
  * @layout: a #PangoLayout
  * @x: X coordinate to render the layout at
  * @y: Y coordinate to render the layout at
@@ -163,16 +157,15 @@ cogl_pango_font_map_get_use_mipmapping (CoglPangoFontMap *font_map);
  *
  * Since: 2.0
  */
-void
-cogl_pango_show_layout (CoglFramebuffer *framebuffer,
-                        PangoLayout *layout,
-                        float x,
-                        float y,
-                        const CoglColor *color);
+void cg_pango_show_layout(cg_framebuffer_t *framebuffer,
+                          PangoLayout *layout,
+                          float x,
+                          float y,
+                          const cg_color_t *color);
 
 /**
- * cogl_pango_render_layout_line:
- * @framebuffer: A #CoglFramebuffer to draw too.
+ * cg_pango_render_layout_line:
+ * @framebuffer: A #cg_framebuffer_t to draw too.
  * @line: a #PangoLayoutLine
  * @x: X coordinate to render the line at
  * @y: Y coordinate to render the line at
@@ -184,13 +177,12 @@ cogl_pango_show_layout (CoglFramebuffer *framebuffer,
  *
  * Since: 2.0
  */
-void
-cogl_pango_show_layout_line (CoglFramebuffer *framebuffer,
-                             PangoLayoutLine *line,
-                             float x,
-                             float y,
-                             const CoglColor *color);
+void cg_pango_show_layout_line(cg_framebuffer_t *framebuffer,
+                               PangoLayoutLine *line,
+                               float x,
+                               float y,
+                               const cg_color_t *color);
 
-COGL_END_DECLS
+CG_END_DECLS
 
-#endif /* __COGL_PANGO_H__ */
+#endif /* __CG_PANGO_H__ */
