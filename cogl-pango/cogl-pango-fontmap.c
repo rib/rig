@@ -111,7 +111,7 @@ _cg_pango_font_map_get_cg_context(CgPangoFontMap *fm)
 void
 cg_pango_font_map_set_resolution(CgPangoFontMap *font_map, double dpi)
 {
-    _CG_RETURN_IF_FAIL(CG_PANGO_IS_FONT_MAP(font_map));
+    c_return_if_fail(CG_PANGO_IS_FONT_MAP(font_map));
 
     pango_cairo_font_map_set_resolution(PANGO_CAIRO_FONT_MAP(font_map), dpi);
 }

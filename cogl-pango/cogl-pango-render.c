@@ -147,7 +147,7 @@ cg_pango_renderer_draw_glyph(CgPangoRenderer *priv,
 {
     cg_pango_renderer_slice_cb_data_t data;
 
-    _CG_RETURN_IF_FAIL(priv->display_list != NULL);
+    c_return_if_fail(priv->display_list != NULL);
 
     data.display_list = priv->display_list;
     data.x1 = x1;
@@ -508,7 +508,7 @@ cg_pango_renderer_set_dirty_glyph(
     /* Glyphs that don't take up any space will end up without a
        texture. These should never become dirty so they shouldn't end up
        here */
-    _CG_RETURN_IF_FAIL(value->texture != NULL);
+    c_return_if_fail(value->texture != NULL);
 
     if (_cg_texture_get_format(value->texture) == CG_PIXEL_FORMAT_A_8) {
         format_cairo = CAIRO_FORMAT_A8;
@@ -626,7 +626,7 @@ cg_pango_ensure_glyph_cache_for_layout(PangoLayout *layout)
     context = pango_layout_get_context(layout);
     priv = cg_pango_get_renderer_from_context(context);
 
-    _CG_RETURN_IF_FAIL(PANGO_IS_LAYOUT(layout));
+    c_return_if_fail(PANGO_IS_LAYOUT(layout));
 
     if ((iter = pango_layout_get_iter(layout)) == NULL)
         return;
@@ -673,7 +673,7 @@ cg_pango_renderer_draw_box(
 {
     CgPangoRenderer *priv = CG_PANGO_RENDERER(renderer);
 
-    _CG_RETURN_IF_FAIL(priv->display_list != NULL);
+    c_return_if_fail(priv->display_list != NULL);
 
     _cg_pango_display_list_add_rectangle(
         priv->display_list, x, y - height, x + width, y);
@@ -708,7 +708,7 @@ cg_pango_renderer_draw_rectangle(PangoRenderer *renderer,
     CgPangoRenderer *priv = CG_PANGO_RENDERER(renderer);
     float x1, x2, y1, y2;
 
-    _CG_RETURN_IF_FAIL(priv->display_list != NULL);
+    c_return_if_fail(priv->display_list != NULL);
 
     cg_pango_renderer_set_color_for_part(renderer, part);
 
@@ -731,7 +731,7 @@ cg_pango_renderer_draw_trapezoid(PangoRenderer *renderer,
 {
     CgPangoRenderer *priv = CG_PANGO_RENDERER(renderer);
 
-    _CG_RETURN_IF_FAIL(priv->display_list != NULL);
+    c_return_if_fail(priv->display_list != NULL);
 
     cg_pango_renderer_set_color_for_part(renderer, part);
 

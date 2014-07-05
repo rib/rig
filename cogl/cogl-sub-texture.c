@@ -185,10 +185,10 @@ cg_sub_texture_new(cg_context_t *ctx,
     next_height = cg_texture_get_height(next_texture);
 
     /* The region must specify a non-zero subset of the full texture */
-    _CG_RETURN_VAL_IF_FAIL(sub_x >= 0 && sub_y >= 0, NULL);
-    _CG_RETURN_VAL_IF_FAIL(sub_width > 0 && sub_height > 0, NULL);
-    _CG_RETURN_VAL_IF_FAIL(sub_x + sub_width <= next_width, NULL);
-    _CG_RETURN_VAL_IF_FAIL(sub_y + sub_height <= next_height, NULL);
+    c_return_val_if_fail(sub_x >= 0 && sub_y >= 0, NULL);
+    c_return_val_if_fail(sub_width > 0 && sub_height > 0, NULL);
+    c_return_val_if_fail(sub_x + sub_width <= next_width, NULL);
+    c_return_val_if_fail(sub_y + sub_height <= next_height, NULL);
 
     sub_tex = c_new(cg_sub_texture_t, 1);
 
@@ -349,10 +349,10 @@ _cg_sub_texture_set_region(cg_texture_t *tex,
         int full_width = cg_texture_get_width(sub_tex->full_texture);
         int full_height = cg_texture_get_width(sub_tex->full_texture);
 
-        _CG_RETURN_VAL_IF_FAIL(sub_tex->sub_x == 0 &&
+        c_return_val_if_fail(sub_tex->sub_x == 0 &&
                                cg_texture_get_width(tex) == full_width,
                                false);
-        _CG_RETURN_VAL_IF_FAIL(sub_tex->sub_y == 0 &&
+        c_return_val_if_fail(sub_tex->sub_y == 0 &&
                                cg_texture_get_height(tex) == full_height,
                                false);
     }

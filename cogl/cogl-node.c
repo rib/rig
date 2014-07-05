@@ -86,7 +86,7 @@ _cg_pipeline_node_unparent_real(cg_node_t *node)
     if (parent == NULL)
         return;
 
-    _CG_RETURN_IF_FAIL(!_cg_list_empty(&parent->children));
+    c_return_if_fail(!_cg_list_empty(&parent->children));
 
     _cg_list_remove(&node->link);
 

@@ -144,7 +144,7 @@ _cg_texture_2d_new_from_bitmap(cg_bitmap_t *bmp, bool can_convert_in_place)
 {
     cg_texture_loader_t *loader;
 
-    _CG_RETURN_VAL_IF_FAIL(bmp != NULL, NULL);
+    c_return_val_if_fail(bmp != NULL, NULL);
 
     loader = _cg_texture_create_loader();
     loader->src_type = CG_TEXTURE_SOURCE_TYPE_BITMAP;
@@ -173,7 +173,7 @@ cg_texture_2d_new_from_file(cg_context_t *ctx,
     cg_bitmap_t *bmp;
     cg_texture_2d_t *tex_2d = NULL;
 
-    _CG_RETURN_VAL_IF_FAIL(error == NULL || *error == NULL, NULL);
+    c_return_val_if_fail(error == NULL || *error == NULL, NULL);
 
     bmp = cg_bitmap_new_from_file(ctx, filename, error);
     if (bmp == NULL)
@@ -199,8 +199,8 @@ cg_texture_2d_new_from_data(cg_context_t *ctx,
     cg_bitmap_t *bmp;
     cg_texture_2d_t *tex_2d;
 
-    _CG_RETURN_VAL_IF_FAIL(format != CG_PIXEL_FORMAT_ANY, NULL);
-    _CG_RETURN_VAL_IF_FAIL(data != NULL, NULL);
+    c_return_val_if_fail(format != CG_PIXEL_FORMAT_ANY, NULL);
+    c_return_val_if_fail(data != NULL, NULL);
 
     /* Rowstride from width if not given */
     if (rowstride == 0)
@@ -237,11 +237,11 @@ _cg_egl_texture_2d_new_from_image(cg_context_t *ctx,
     cg_texture_loader_t *loader;
     cg_texture_2d_t *tex;
 
-    _CG_RETURN_VAL_IF_FAIL(_cg_context_get_winsys(ctx)->constraints &
+    c_return_val_if_fail(_cg_context_get_winsys(ctx)->constraints &
                            CG_RENDERER_CONSTRAINT_USES_EGL,
                            NULL);
 
-    _CG_RETURN_VAL_IF_FAIL(
+    c_return_val_if_fail(
         _cg_has_private_feature(ctx,
                                 CG_PRIVATE_FEATURE_TEXTURE_2D_FROM_EGL_IMAGE),
         NULL);
@@ -381,7 +381,7 @@ cg_wayland_texture_2d_new_from_buffer(
             EGLImageKHR image;
             cg_pixel_format_t internal_format;
 
-            _CG_RETURN_VAL_IF_FAIL(_cg_context_get_winsys(ctx)->constraints &
+            c_return_val_if_fail(_cg_context_get_winsys(ctx)->constraints &
                                    CG_RENDERER_CONSTRAINT_USES_EGL,
                                    NULL);
 

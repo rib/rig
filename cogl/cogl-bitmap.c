@@ -131,7 +131,7 @@ _cg_bitmap_copy_subregion(cg_bitmap_t *src,
     bool succeeded = false;
 
     /* Intended only for fast copies when format is equal! */
-    _CG_RETURN_VAL_IF_FAIL((src->format & ~CG_PREMULT_BIT) ==
+    c_return_val_if_fail((src->format & ~CG_PREMULT_BIT) ==
                            (dst->format & ~CG_PREMULT_BIT),
                            false);
 
@@ -246,8 +246,8 @@ cg_bitmap_new_from_file(cg_context_t *ctx,
                         const char *filename,
                         cg_error_t **error)
 {
-    _CG_RETURN_VAL_IF_FAIL(filename != NULL, NULL);
-    _CG_RETURN_VAL_IF_FAIL(error == NULL || *error == NULL, NULL);
+    c_return_val_if_fail(filename != NULL, NULL);
+    c_return_val_if_fail(error == NULL || *error == NULL, NULL);
 
     return _cg_bitmap_from_file(ctx, filename, error);
 }
@@ -262,7 +262,7 @@ cg_bitmap_new_from_buffer(cg_buffer_t *buffer,
 {
     cg_bitmap_t *bmp;
 
-    _CG_RETURN_VAL_IF_FAIL(cg_is_buffer(buffer), NULL);
+    c_return_val_if_fail(cg_is_buffer(buffer), NULL);
 
     bmp = cg_bitmap_new_for_data(
         buffer->context, width, height, format, rowstride, NULL /* data */);
@@ -284,7 +284,7 @@ cg_bitmap_new_with_size(cg_context_t *context,
     int rowstride;
 
     /* creating a buffer to store "any" format does not make sense */
-    _CG_RETURN_VAL_IF_FAIL(format != CG_PIXEL_FORMAT_ANY, NULL);
+    c_return_val_if_fail(format != CG_PIXEL_FORMAT_ANY, NULL);
 
     /* for now we fallback to cg_pixel_buffer_new, later, we could ask
      * libdrm a tiled buffer for instance */
@@ -295,7 +295,7 @@ cg_bitmap_new_with_size(cg_context_t *context,
                                        NULL, /* data */
                                        NULL); /* don't catch errors */
 
-    _CG_RETURN_VAL_IF_FAIL(pixel_buffer != NULL, NULL);
+    c_return_val_if_fail(pixel_buffer != NULL, NULL);
 
     bitmap = cg_bitmap_new_from_buffer(CG_BUFFER(pixel_buffer),
                                        format,
@@ -316,10 +316,10 @@ cg_android_bitmap_new_from_asset(cg_context_t *ctx,
                                  const char *filename,
                                  cg_error_t **error)
 {
-    _CG_RETURN_VAL_IF_FAIL(ctx != NULL, NULL);
-    _CG_RETURN_VAL_IF_FAIL(manager != NULL, NULL);
-    _CG_RETURN_VAL_IF_FAIL(filename != NULL, NULL);
-    _CG_RETURN_VAL_IF_FAIL(error == NULL || *error == NULL, NULL);
+    c_return_val_if_fail(ctx != NULL, NULL);
+    c_return_val_if_fail(manager != NULL, NULL);
+    c_return_val_if_fail(filename != NULL, NULL);
+    c_return_val_if_fail(error == NULL || *error == NULL, NULL);
 
     return _cg_android_bitmap_new_from_asset(ctx, manager, filename, error);
 }
@@ -435,7 +435,7 @@ _cg_bitmap_gl_bind(cg_bitmap_t *bitmap,
     if (bitmap->shared_bmp)
         return _cg_bitmap_gl_bind(bitmap->shared_bmp, access, hints, error);
 
-    _CG_RETURN_VAL_IF_FAIL(!bitmap->bound, NULL);
+    c_return_val_if_fail(!bitmap->bound, NULL);
 
     /* If the bitmap wasn't created from a buffer then the
        implementation of bind is the same as map */

@@ -769,7 +769,7 @@ update_winsys_features(cg_context_t *context, cg_error_t **error)
     cg_glx_display_t *glx_display = context->display->winsys;
     cg_glx_renderer_t *glx_renderer = context->display->renderer->winsys;
 
-    _CG_RETURN_VAL_IF_FAIL(glx_display->glx_context, false);
+    c_return_val_if_fail(glx_display->glx_context, false);
 
     if (!_cg_context_update_features(context, error))
         return false;
@@ -982,7 +982,7 @@ create_context(cg_display_t *display, cg_error_t **error)
     GLXDrawable dummy_drawable;
     cg_xlib_trap_state_t old_state;
 
-    _CG_RETURN_VAL_IF_FAIL(glx_display->glx_context == NULL, true);
+    c_return_val_if_fail(glx_display->glx_context == NULL, true);
 
     glx_display->found_fbconfig = find_fbconfig(
         display, &display->onscreen_template->config, &config, &fbconfig_error);
@@ -1104,7 +1104,7 @@ _cg_winsys_display_destroy(cg_display_t *display)
         _cg_xlib_renderer_get_data(display->renderer);
     cg_glx_renderer_t *glx_renderer = display->renderer->winsys;
 
-    _CG_RETURN_IF_FAIL(glx_display != NULL);
+    c_return_if_fail(glx_display != NULL);
 
     if (glx_display->glx_context) {
         glx_renderer->glXMakeContextCurrent(
@@ -1135,7 +1135,7 @@ _cg_winsys_display_setup(cg_display_t *display, cg_error_t **error)
     cg_glx_display_t *glx_display;
     int i;
 
-    _CG_RETURN_VAL_IF_FAIL(display->winsys == NULL, false);
+    c_return_val_if_fail(display->winsys == NULL, false);
 
     glx_display = c_slice_new0(cg_glx_display_t);
     display->winsys = glx_display;
@@ -1188,7 +1188,7 @@ _cg_winsys_onscreen_init(cg_onscreen_t *onscreen,
     GLXFBConfig fbconfig;
     cg_error_t *fbconfig_error = NULL;
 
-    _CG_RETURN_VAL_IF_FAIL(glx_display->glx_context, false);
+    c_return_val_if_fail(glx_display->glx_context, false);
 
     if (!find_fbconfig(
             display, &framebuffer->config, &fbconfig, &fbconfig_error)) {
@@ -1974,7 +1974,7 @@ _cg_winsys_xlib_get_visual_info(void)
 
     _CG_GET_CONTEXT(ctx, NULL);
 
-    _CG_RETURN_VAL_IF_FAIL(ctx->display->winsys, false);
+    c_return_val_if_fail(ctx->display->winsys, false);
 
     glx_display = ctx->display->winsys;
     xlib_renderer = _cg_xlib_renderer_get_data(ctx->display->renderer);

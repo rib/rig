@@ -379,7 +379,7 @@ _cg_blit_begin(cg_blit_data_t *data,
                         _cg_blit_modes[i].name);
 
         /* The last blit mode can't fail so this should never happen */
-        _CG_RETURN_IF_FAIL(i < C_N_ELEMENTS(_cg_blit_modes));
+        c_return_if_fail(i < C_N_ELEMENTS(_cg_blit_modes));
     }
 
     data->blit_mode = _cg_blit_default_mode;

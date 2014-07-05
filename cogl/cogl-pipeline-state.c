@@ -316,7 +316,7 @@ cg_pipeline_get_color(cg_pipeline_t *pipeline, cg_color_t *color)
 {
     cg_pipeline_t *authority;
 
-    _CG_RETURN_IF_FAIL(cg_is_pipeline(pipeline));
+    c_return_if_fail(cg_is_pipeline(pipeline));
 
     authority = _cg_pipeline_get_authority(pipeline, CG_PIPELINE_STATE_COLOR);
 
@@ -329,7 +329,7 @@ cg_pipeline_set_color(cg_pipeline_t *pipeline, const cg_color_t *color)
     cg_pipeline_state_t state = CG_PIPELINE_STATE_COLOR;
     cg_pipeline_t *authority;
 
-    _CG_RETURN_IF_FAIL(cg_is_pipeline(pipeline));
+    c_return_if_fail(cg_is_pipeline(pipeline));
 
     authority = _cg_pipeline_get_authority(pipeline, state);
 
@@ -377,7 +377,7 @@ _cg_pipeline_get_blend_enabled(cg_pipeline_t *pipeline)
 {
     cg_pipeline_t *authority;
 
-    _CG_RETURN_VAL_IF_FAIL(cg_is_pipeline(pipeline), false);
+    c_return_val_if_fail(cg_is_pipeline(pipeline), false);
 
     authority =
         _cg_pipeline_get_authority(pipeline, CG_PIPELINE_STATE_BLEND_ENABLE);
@@ -398,8 +398,8 @@ _cg_pipeline_set_blend_enabled(cg_pipeline_t *pipeline,
     cg_pipeline_state_t state = CG_PIPELINE_STATE_BLEND_ENABLE;
     cg_pipeline_t *authority;
 
-    _CG_RETURN_IF_FAIL(cg_is_pipeline(pipeline));
-    _CG_RETURN_IF_FAIL(enable > 1 &&
+    c_return_if_fail(cg_is_pipeline(pipeline));
+    c_return_if_fail(enable > 1 &&
                        "don't pass true or false to _set_blend_enabled!");
 
     authority = _cg_pipeline_get_authority(pipeline, state);
@@ -430,7 +430,7 @@ _cg_pipeline_set_alpha_test_function(cg_pipeline_t *pipeline,
     cg_pipeline_t *authority;
     cg_pipeline_alpha_func_state_t *alpha_state;
 
-    _CG_RETURN_IF_FAIL(cg_is_pipeline(pipeline));
+    c_return_if_fail(cg_is_pipeline(pipeline));
 
     authority = _cg_pipeline_get_authority(pipeline, state);
 
@@ -460,7 +460,7 @@ _cg_pipeline_set_alpha_test_function_reference(cg_pipeline_t *pipeline,
     cg_pipeline_t *authority;
     cg_pipeline_alpha_func_state_t *alpha_state;
 
-    _CG_RETURN_IF_FAIL(cg_is_pipeline(pipeline));
+    c_return_if_fail(cg_is_pipeline(pipeline));
 
     authority = _cg_pipeline_get_authority(pipeline, state);
 
@@ -499,7 +499,7 @@ cg_pipeline_get_alpha_test_function(cg_pipeline_t *pipeline)
 {
     cg_pipeline_t *authority;
 
-    _CG_RETURN_VAL_IF_FAIL(cg_is_pipeline(pipeline), 0);
+    c_return_val_if_fail(cg_is_pipeline(pipeline), 0);
 
     authority =
         _cg_pipeline_get_authority(pipeline, CG_PIPELINE_STATE_ALPHA_FUNC);
@@ -512,7 +512,7 @@ cg_pipeline_get_alpha_test_reference(cg_pipeline_t *pipeline)
 {
     cg_pipeline_t *authority;
 
-    _CG_RETURN_VAL_IF_FAIL(cg_is_pipeline(pipeline), 0.0f);
+    c_return_val_if_fail(cg_is_pipeline(pipeline), 0.0f);
 
     authority = _cg_pipeline_get_authority(
         pipeline, CG_PIPELINE_STATE_ALPHA_FUNC_REFERENCE);
@@ -612,7 +612,7 @@ cg_pipeline_set_blend(cg_pipeline_t *pipeline,
 
     _CG_GET_CONTEXT(ctx, false);
 
-    _CG_RETURN_VAL_IF_FAIL(cg_is_pipeline(pipeline), false);
+    c_return_val_if_fail(cg_is_pipeline(pipeline), false);
 
     count = _cg_blend_string_compile(ctx,
                                      blend_description,
@@ -680,7 +680,7 @@ cg_pipeline_set_blend_constant(cg_pipeline_t *pipeline,
 {
     _CG_GET_CONTEXT(ctx, NO_RETVAL);
 
-    _CG_RETURN_IF_FAIL(cg_is_pipeline(pipeline));
+    c_return_if_fail(cg_is_pipeline(pipeline));
 
     if (!_cg_has_private_feature(ctx, CG_PRIVATE_FEATURE_BLEND_CONSTANT))
         return;
@@ -726,8 +726,8 @@ cg_pipeline_set_depth_state(cg_pipeline_t *pipeline,
 
     _CG_GET_CONTEXT(ctx, false);
 
-    _CG_RETURN_VAL_IF_FAIL(cg_is_pipeline(pipeline), false);
-    _CG_RETURN_VAL_IF_FAIL(depth_state->magic == CG_DEPTH_STATE_MAGIC, false);
+    c_return_val_if_fail(cg_is_pipeline(pipeline), false);
+    c_return_val_if_fail(depth_state->magic == CG_DEPTH_STATE_MAGIC, false);
 
     authority = _cg_pipeline_get_authority(pipeline, state);
 
@@ -760,7 +760,7 @@ cg_pipeline_get_depth_state(cg_pipeline_t *pipeline,
 {
     cg_pipeline_t *authority;
 
-    _CG_RETURN_IF_FAIL(cg_is_pipeline(pipeline));
+    c_return_if_fail(cg_is_pipeline(pipeline));
 
     authority = _cg_pipeline_get_authority(pipeline, CG_PIPELINE_STATE_DEPTH);
     *state = authority->big_state->depth_state;
@@ -771,7 +771,7 @@ cg_pipeline_get_color_mask(cg_pipeline_t *pipeline)
 {
     cg_pipeline_t *authority;
 
-    _CG_RETURN_VAL_IF_FAIL(cg_is_pipeline(pipeline), 0);
+    c_return_val_if_fail(cg_is_pipeline(pipeline), 0);
 
     authority =
         _cg_pipeline_get_authority(pipeline, CG_PIPELINE_STATE_LOGIC_OPS);
@@ -787,7 +787,7 @@ cg_pipeline_set_color_mask(cg_pipeline_t *pipeline,
     cg_pipeline_t *authority;
     cg_pipeline_logic_ops_state_t *logic_ops_state;
 
-    _CG_RETURN_IF_FAIL(cg_is_pipeline(pipeline));
+    c_return_if_fail(cg_is_pipeline(pipeline));
 
     authority = _cg_pipeline_get_authority(pipeline, state);
 
@@ -817,7 +817,7 @@ cg_pipeline_set_cull_face_mode(cg_pipeline_t *pipeline,
     cg_pipeline_t *authority;
     cg_pipeline_cull_face_state_t *cull_face_state;
 
-    _CG_RETURN_IF_FAIL(cg_is_pipeline(pipeline));
+    c_return_if_fail(cg_is_pipeline(pipeline));
 
     authority = _cg_pipeline_get_authority(pipeline, state);
 
@@ -847,7 +847,7 @@ cg_pipeline_set_front_face_winding(cg_pipeline_t *pipeline,
     cg_pipeline_t *authority;
     cg_pipeline_cull_face_state_t *cull_face_state;
 
-    _CG_RETURN_IF_FAIL(cg_is_pipeline(pipeline));
+    c_return_if_fail(cg_is_pipeline(pipeline));
 
     authority = _cg_pipeline_get_authority(pipeline, state);
 
@@ -875,7 +875,7 @@ cg_pipeline_get_cull_face_mode(cg_pipeline_t *pipeline)
     cg_pipeline_state_t state = CG_PIPELINE_STATE_CULL_FACE;
     cg_pipeline_t *authority;
 
-    _CG_RETURN_VAL_IF_FAIL(cg_is_pipeline(pipeline),
+    c_return_val_if_fail(cg_is_pipeline(pipeline),
                            CG_PIPELINE_CULL_FACE_MODE_NONE);
 
     authority = _cg_pipeline_get_authority(pipeline, state);
@@ -889,7 +889,7 @@ cg_pipeline_get_front_face_winding(cg_pipeline_t *pipeline)
     cg_pipeline_state_t state = CG_PIPELINE_STATE_CULL_FACE;
     cg_pipeline_t *authority;
 
-    _CG_RETURN_VAL_IF_FAIL(cg_is_pipeline(pipeline),
+    c_return_val_if_fail(cg_is_pipeline(pipeline),
                            CG_PIPELINE_CULL_FACE_MODE_NONE);
 
     authority = _cg_pipeline_get_authority(pipeline, state);
@@ -902,7 +902,7 @@ cg_pipeline_get_point_size(cg_pipeline_t *pipeline)
 {
     cg_pipeline_t *authority;
 
-    _CG_RETURN_VAL_IF_FAIL(cg_is_pipeline(pipeline), false);
+    c_return_val_if_fail(cg_is_pipeline(pipeline), false);
 
     authority =
         _cg_pipeline_get_authority(pipeline, CG_PIPELINE_STATE_POINT_SIZE);
@@ -917,7 +917,7 @@ _cg_pipeline_set_non_zero_point_size(cg_pipeline_t *pipeline,
     cg_pipeline_state_t state = CG_PIPELINE_STATE_NON_ZERO_POINT_SIZE;
     cg_pipeline_t *authority;
 
-    _CG_RETURN_IF_FAIL(cg_is_pipeline(pipeline));
+    c_return_if_fail(cg_is_pipeline(pipeline));
 
     authority = _cg_pipeline_get_authority(pipeline, state);
 
@@ -940,7 +940,7 @@ cg_pipeline_set_point_size(cg_pipeline_t *pipeline, float point_size)
     cg_pipeline_state_t state = CG_PIPELINE_STATE_POINT_SIZE;
     cg_pipeline_t *authority;
 
-    _CG_RETURN_IF_FAIL(cg_is_pipeline(pipeline));
+    c_return_if_fail(cg_is_pipeline(pipeline));
 
     authority = _cg_pipeline_get_authority(pipeline, state);
 
@@ -975,7 +975,7 @@ cg_pipeline_set_per_vertex_point_size(cg_pipeline_t *pipeline,
     cg_pipeline_t *authority;
 
     _CG_GET_CONTEXT(ctx, false);
-    _CG_RETURN_VAL_IF_FAIL(cg_is_pipeline(pipeline), false);
+    c_return_val_if_fail(cg_is_pipeline(pipeline), false);
 
     authority = _cg_pipeline_get_authority(pipeline, state);
 
@@ -1013,7 +1013,7 @@ cg_pipeline_get_per_vertex_point_size(cg_pipeline_t *pipeline)
 {
     cg_pipeline_t *authority;
 
-    _CG_RETURN_VAL_IF_FAIL(cg_is_pipeline(pipeline), false);
+    c_return_val_if_fail(cg_is_pipeline(pipeline), false);
 
     authority = _cg_pipeline_get_authority(
         pipeline, CG_PIPELINE_STATE_PER_VERTEX_POINT_SIZE);

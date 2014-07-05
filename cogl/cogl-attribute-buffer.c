@@ -66,7 +66,7 @@ cg_attribute_buffer_new(cg_context_t *context, size_t bytes, const void *data)
 {
     cg_attribute_buffer_t *buffer;
 
-    _CG_RETURN_VAL_IF_FAIL(data, NULL);
+    c_return_val_if_fail(data, NULL);
 
     buffer = cg_attribute_buffer_new_with_size(context, bytes);
 

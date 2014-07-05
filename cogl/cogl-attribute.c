@@ -281,7 +281,7 @@ _cg_attribute_new_const(cg_context_t *context,
         /* FIXME: Up until GL[ES] 3 only square matrices were supported
          * and we don't currently expose non-square matrices in Cogl.
          */
-        _CG_RETURN_VAL_IF_FAIL(n_columns == n_components, NULL);
+        c_return_val_if_fail(n_columns == n_components, NULL);
         _cg_boxed_value_set_matrix(
             &attribute->d.constant.boxed, n_columns, 1, transpose, value);
     }
@@ -436,7 +436,7 @@ cg_attribute_new_const_4x4fv(cg_context_t *context,
 bool
 cg_attribute_get_normalized(cg_attribute_t *attribute)
 {
-    _CG_RETURN_VAL_IF_FAIL(cg_is_attribute(attribute), false);
+    c_return_val_if_fail(cg_is_attribute(attribute), false);
 
     return attribute->normalized;
 }
@@ -455,7 +455,7 @@ warn_about_midscene_changes(void)
 void
 cg_attribute_set_normalized(cg_attribute_t *attribute, bool normalized)
 {
-    _CG_RETURN_IF_FAIL(cg_is_attribute(attribute));
+    c_return_if_fail(cg_is_attribute(attribute));
 
     if (C_UNLIKELY(attribute->immutable_ref))
         warn_about_midscene_changes();
@@ -466,8 +466,8 @@ cg_attribute_set_normalized(cg_attribute_t *attribute, bool normalized)
 cg_attribute_buffer_t *
 cg_attribute_get_buffer(cg_attribute_t *attribute)
 {
-    _CG_RETURN_VAL_IF_FAIL(cg_is_attribute(attribute), NULL);
-    _CG_RETURN_VAL_IF_FAIL(attribute->is_buffered, NULL);
+    c_return_val_if_fail(cg_is_attribute(attribute), NULL);
+    c_return_val_if_fail(attribute->is_buffered, NULL);
 
     return attribute->d.buffered.attribute_buffer;
 }
@@ -476,8 +476,8 @@ void
 cg_attribute_set_buffer(cg_attribute_t *attribute,
                         cg_attribute_buffer_t *attribute_buffer)
 {
-    _CG_RETURN_IF_FAIL(cg_is_attribute(attribute));
-    _CG_RETURN_IF_FAIL(attribute->is_buffered);
+    c_return_if_fail(cg_is_attribute(attribute));
+    c_return_if_fail(attribute->is_buffered);
 
     if (C_UNLIKELY(attribute->immutable_ref))
         warn_about_midscene_changes();
@@ -493,7 +493,7 @@ _cg_attribute_immutable_ref(cg_attribute_t *attribute)
 {
     cg_buffer_t *buffer = CG_BUFFER(attribute->d.buffered.attribute_buffer);
 
-    _CG_RETURN_VAL_IF_FAIL(cg_is_attribute(attribute), NULL);
+    c_return_val_if_fail(cg_is_attribute(attribute), NULL);
 
     attribute->immutable_ref++;
     _cg_buffer_immutable_ref(buffer);
@@ -505,8 +505,8 @@ _cg_attribute_immutable_unref(cg_attribute_t *attribute)
 {
     cg_buffer_t *buffer = CG_BUFFER(attribute->d.buffered.attribute_buffer);
 
-    _CG_RETURN_IF_FAIL(cg_is_attribute(attribute));
-    _CG_RETURN_IF_FAIL(attribute->immutable_ref > 0);
+    c_return_if_fail(cg_is_attribute(attribute));
+    c_return_if_fail(attribute->immutable_ref > 0);
 
     attribute->immutable_ref--;
     _cg_buffer_immutable_unref(buffer);

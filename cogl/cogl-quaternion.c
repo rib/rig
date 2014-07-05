@@ -304,8 +304,8 @@ cg_quaternion_equal(const void *v1, const void *v2)
     const cg_quaternion_t *a = v1;
     const cg_quaternion_t *b = v2;
 
-    _CG_RETURN_VAL_IF_FAIL(v1 != NULL, false);
-    _CG_RETURN_VAL_IF_FAIL(v2 != NULL, false);
+    c_return_val_if_fail(v1 != NULL, false);
+    c_return_val_if_fail(v2 != NULL, false);
 
     if (v1 == v2)
         return true;
@@ -415,7 +415,7 @@ cg_quaternion_multiply(cg_quaternion_t *result,
     float y = a->y;
     float z = a->z;
 
-    _CG_RETURN_IF_FAIL(b != result);
+    c_return_if_fail(b != result);
 
     result->w = w * b->w - x * b->x - y * b->y - z * b->z;
 
@@ -472,7 +472,7 @@ cg_quaternion_slerp(cg_quaternion_t *result,
     float fa;
     float fb;
 
-    _CG_RETURN_IF_FAIL(t >= 0 && t <= 1.0f);
+    c_return_if_fail(t >= 0 && t <= 1.0f);
 
     if (t == 0) {
         *result = *a;
@@ -551,7 +551,7 @@ cg_quaternion_nlerp(cg_quaternion_t *result,
     float fa;
     float fb;
 
-    _CG_RETURN_IF_FAIL(t >= 0 && t <= 1.0f);
+    c_return_if_fail(t >= 0 && t <= 1.0f);
 
     if (t == 0) {
         *result = *a;

@@ -169,14 +169,14 @@ _cg_buffer_bind_no_create(cg_buffer_t *buffer,
 {
     cg_context_t *ctx = buffer->context;
 
-    _CG_RETURN_VAL_IF_FAIL(buffer != NULL, NULL);
+    c_return_val_if_fail(buffer != NULL, NULL);
 
     /* Don't allow binding the buffer to multiple targets at the same time */
-    _CG_RETURN_VAL_IF_FAIL(ctx->current_buffer[buffer->last_target] != buffer,
+    c_return_val_if_fail(ctx->current_buffer[buffer->last_target] != buffer,
                            NULL);
 
     /* Don't allow nesting binds to the same target */
-    _CG_RETURN_VAL_IF_FAIL(ctx->current_buffer[target] == NULL, NULL);
+    c_return_val_if_fail(ctx->current_buffer[target] == NULL, NULL);
 
     buffer->last_target = target;
     ctx->current_buffer[target] = buffer;
@@ -272,7 +272,7 @@ _cg_buffer_gl_map_range(cg_buffer_t *buffer,
             return NULL;
         }
 
-        _CG_RETURN_VAL_IF_FAIL(data != NULL, NULL);
+        c_return_val_if_fail(data != NULL, NULL);
     } else {
         /* create an empty store if we don't have one yet. creating the store
          * lazily allows the user of the cg_buffer_t to set a hint before the
@@ -296,7 +296,7 @@ _cg_buffer_gl_map_range(cg_buffer_t *buffer,
             return NULL;
         }
 
-        _CG_RETURN_VAL_IF_FAIL(data != NULL, NULL);
+        c_return_val_if_fail(data != NULL, NULL);
 
         data += offset;
     }
@@ -394,10 +394,10 @@ _cg_buffer_gl_unbind(cg_buffer_t *buffer)
 {
     cg_context_t *ctx = buffer->context;
 
-    _CG_RETURN_IF_FAIL(buffer != NULL);
+    c_return_if_fail(buffer != NULL);
 
     /* the unbind should pair up with a previous bind */
-    _CG_RETURN_IF_FAIL(ctx->current_buffer[buffer->last_target] == buffer);
+    c_return_if_fail(ctx->current_buffer[buffer->last_target] == buffer);
 
     if (buffer->flags & CG_BUFFER_FLAG_BUFFER_OBJECT) {
         GLenum gl_target =

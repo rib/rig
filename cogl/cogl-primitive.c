@@ -73,7 +73,7 @@ cg_primitive_new_with_attributes(cg_vertices_mode_t mode,
         cg_attribute_t *attribute = attributes[i];
         cg_object_ref(attribute);
 
-        _CG_RETURN_VAL_IF_FAIL(cg_is_attribute(attribute), NULL);
+        c_return_val_if_fail(cg_is_attribute(attribute), NULL);
 
         primitive->attributes[i] = attribute;
     }
@@ -397,7 +397,7 @@ cg_primitive_set_attributes(cg_primitive_t *primitive,
 {
     int i;
 
-    _CG_RETURN_IF_FAIL(cg_is_primitive(primitive));
+    c_return_if_fail(cg_is_primitive(primitive));
 
     if (C_UNLIKELY(primitive->immutable_ref)) {
         warn_about_midscene_changes();
@@ -408,7 +408,7 @@ cg_primitive_set_attributes(cg_primitive_t *primitive,
      * in case we would end up releasing the last reference for an
      * attribute thats actually in the new list too. */
     for (i = 0; i < n_attributes; i++) {
-        _CG_RETURN_IF_FAIL(cg_is_attribute(attributes[i]));
+        c_return_if_fail(cg_is_attribute(attributes[i]));
         cg_object_ref(attributes[i]);
     }
 
@@ -442,7 +442,7 @@ cg_primitive_set_attributes(cg_primitive_t *primitive,
 int
 cg_primitive_get_first_vertex(cg_primitive_t *primitive)
 {
-    _CG_RETURN_VAL_IF_FAIL(cg_is_primitive(primitive), 0);
+    c_return_val_if_fail(cg_is_primitive(primitive), 0);
 
     return primitive->first_vertex;
 }
@@ -450,7 +450,7 @@ cg_primitive_get_first_vertex(cg_primitive_t *primitive)
 void
 cg_primitive_set_first_vertex(cg_primitive_t *primitive, int first_vertex)
 {
-    _CG_RETURN_IF_FAIL(cg_is_primitive(primitive));
+    c_return_if_fail(cg_is_primitive(primitive));
 
     if (C_UNLIKELY(primitive->immutable_ref)) {
         warn_about_midscene_changes();
@@ -463,7 +463,7 @@ cg_primitive_set_first_vertex(cg_primitive_t *primitive, int first_vertex)
 int
 cg_primitive_get_n_vertices(cg_primitive_t *primitive)
 {
-    _CG_RETURN_VAL_IF_FAIL(cg_is_primitive(primitive), 0);
+    c_return_val_if_fail(cg_is_primitive(primitive), 0);
 
     return primitive->n_vertices;
 }
@@ -471,7 +471,7 @@ cg_primitive_get_n_vertices(cg_primitive_t *primitive)
 void
 cg_primitive_set_n_vertices(cg_primitive_t *primitive, int n_vertices)
 {
-    _CG_RETURN_IF_FAIL(cg_is_primitive(primitive));
+    c_return_if_fail(cg_is_primitive(primitive));
 
     primitive->n_vertices = n_vertices;
 }
@@ -479,7 +479,7 @@ cg_primitive_set_n_vertices(cg_primitive_t *primitive, int n_vertices)
 cg_vertices_mode_t
 cg_primitive_get_mode(cg_primitive_t *primitive)
 {
-    _CG_RETURN_VAL_IF_FAIL(cg_is_primitive(primitive), 0);
+    c_return_val_if_fail(cg_is_primitive(primitive), 0);
 
     return primitive->mode;
 }
@@ -487,7 +487,7 @@ cg_primitive_get_mode(cg_primitive_t *primitive)
 void
 cg_primitive_set_mode(cg_primitive_t *primitive, cg_vertices_mode_t mode)
 {
-    _CG_RETURN_IF_FAIL(cg_is_primitive(primitive));
+    c_return_if_fail(cg_is_primitive(primitive));
 
     if (C_UNLIKELY(primitive->immutable_ref)) {
         warn_about_midscene_changes();
@@ -502,7 +502,7 @@ cg_primitive_set_indices(cg_primitive_t *primitive,
                          cg_indices_t *indices,
                          int n_indices)
 {
-    _CG_RETURN_IF_FAIL(cg_is_primitive(primitive));
+    c_return_if_fail(cg_is_primitive(primitive));
 
     if (C_UNLIKELY(primitive->immutable_ref)) {
         warn_about_midscene_changes();
@@ -544,7 +544,7 @@ _cg_primitive_immutable_ref(cg_primitive_t *primitive)
 {
     int i;
 
-    _CG_RETURN_VAL_IF_FAIL(cg_is_primitive(primitive), NULL);
+    c_return_val_if_fail(cg_is_primitive(primitive), NULL);
 
     primitive->immutable_ref++;
 
@@ -559,8 +559,8 @@ _cg_primitive_immutable_unref(cg_primitive_t *primitive)
 {
     int i;
 
-    _CG_RETURN_IF_FAIL(cg_is_primitive(primitive));
-    _CG_RETURN_IF_FAIL(primitive->immutable_ref > 0);
+    c_return_if_fail(cg_is_primitive(primitive));
+    c_return_if_fail(primitive->immutable_ref > 0);
 
     primitive->immutable_ref--;
 

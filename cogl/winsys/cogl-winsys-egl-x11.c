@@ -647,7 +647,7 @@ _cg_winsys_xlib_get_visual_info(void)
 
     _CG_GET_CONTEXT(ctx, NULL);
 
-    _CG_RETURN_VAL_IF_FAIL(ctx->display->winsys, false);
+    c_return_val_if_fail(ctx->display->winsys, false);
 
     egl_display = ctx->display->winsys;
 

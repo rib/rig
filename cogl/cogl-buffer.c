@@ -163,8 +163,8 @@ _cg_buffer_initialize(cg_buffer_t *buffer,
 void
 _cg_buffer_fini(cg_buffer_t *buffer)
 {
-    _CG_RETURN_IF_FAIL(!(buffer->flags & CG_BUFFER_FLAG_MAPPED));
-    _CG_RETURN_IF_FAIL(buffer->immutable_ref == 0);
+    c_return_if_fail(!(buffer->flags & CG_BUFFER_FLAG_MAPPED));
+    c_return_if_fail(buffer->immutable_ref == 0);
 
     if (buffer->flags & CG_BUFFER_FLAG_BUFFER_OBJECT)
         buffer->context->driver_vtable->buffer_destroy(buffer);
@@ -220,7 +220,7 @@ cg_buffer_map(cg_buffer_t *buffer,
               cg_buffer_map_hint_t hints,
               cg_error_t **error)
 {
-    _CG_RETURN_VAL_IF_FAIL(cg_is_buffer(buffer), NULL);
+    c_return_val_if_fail(cg_is_buffer(buffer), NULL);
 
     return cg_buffer_map_range(buffer, 0, buffer->size, access, hints, error);
 }
@@ -233,8 +233,8 @@ cg_buffer_map_range(cg_buffer_t *buffer,
                     cg_buffer_map_hint_t hints,
                     cg_error_t **error)
 {
-    _CG_RETURN_VAL_IF_FAIL(cg_is_buffer(buffer), NULL);
-    _CG_RETURN_VAL_IF_FAIL(!(buffer->flags & CG_BUFFER_FLAG_MAPPED), NULL);
+    c_return_val_if_fail(cg_is_buffer(buffer), NULL);
+    c_return_val_if_fail(!(buffer->flags & CG_BUFFER_FLAG_MAPPED), NULL);
 
     if (C_UNLIKELY(buffer->immutable_ref))
         warn_about_midscene_changes();
@@ -272,7 +272,7 @@ _cg_buffer_map_range_for_fill_or_fallback(cg_buffer_t *buffer,
     void *ret;
     cg_error_t *ignore_error = NULL;
 
-    _CG_RETURN_VAL_IF_FAIL(!ctx->buffer_map_fallback_in_use, NULL);
+    c_return_val_if_fail(!ctx->buffer_map_fallback_in_use, NULL);
 
     ctx->buffer_map_fallback_in_use = true;
 
@@ -305,7 +305,7 @@ _cg_buffer_unmap_for_fill_or_fallback(cg_buffer_t *buffer)
 {
     cg_context_t *ctx = buffer->context;
 
-    _CG_RETURN_IF_FAIL(ctx->buffer_map_fallback_in_use);
+    c_return_if_fail(ctx->buffer_map_fallback_in_use);
 
     ctx->buffer_map_fallback_in_use = false;
 
@@ -341,8 +341,8 @@ cg_buffer_set_data(cg_buffer_t *buffer,
                    size_t size,
                    cg_error_t **error)
 {
-    _CG_RETURN_VAL_IF_FAIL(cg_is_buffer(buffer), false);
-    _CG_RETURN_VAL_IF_FAIL((offset + size) <= buffer->size, false);
+    c_return_val_if_fail(cg_is_buffer(buffer), false);
+    c_return_val_if_fail((offset + size) <= buffer->size, false);
 
     if (C_UNLIKELY(buffer->immutable_ref))
         warn_about_midscene_changes();
@@ -353,7 +353,7 @@ cg_buffer_set_data(cg_buffer_t *buffer,
 cg_buffer_t *
 _cg_buffer_immutable_ref(cg_buffer_t *buffer)
 {
-    _CG_RETURN_VAL_IF_FAIL(cg_is_buffer(buffer), NULL);
+    c_return_val_if_fail(cg_is_buffer(buffer), NULL);
 
     buffer->immutable_ref++;
     return buffer;
@@ -362,8 +362,8 @@ _cg_buffer_immutable_ref(cg_buffer_t *buffer)
 void
 _cg_buffer_immutable_unref(cg_buffer_t *buffer)
 {
-    _CG_RETURN_IF_FAIL(cg_is_buffer(buffer));
-    _CG_RETURN_IF_FAIL(buffer->immutable_ref > 0);
+    c_return_if_fail(cg_is_buffer(buffer));
+    c_return_if_fail(buffer->immutable_ref > 0);
 
     buffer->immutable_ref--;
 }

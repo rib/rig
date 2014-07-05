@@ -170,7 +170,7 @@ _cg_bitmap_from_file(cg_context_t *ctx,
 bool
 _cg_bitmap_get_size_from_file(const char *filename, int *width, int *height)
 {
-    _CG_RETURN_VAL_IF_FAIL(filename != NULL, false);
+    c_return_val_if_fail(filename != NULL, false);
 
     if (gdk_pixbuf_get_file_info(filename, width, height) != NULL)
         return true;

@@ -348,11 +348,11 @@ _cg_framebuffer_gl_flush_state(cg_framebuffer_t *draw_buffer,
             /* NB: Currently we only take advantage of binding separate
              * read/write buffers for offscreen framebuffer blit
              * purposes.  */
-            _CG_RETURN_IF_FAIL(_cg_has_private_feature(
+            c_return_if_fail(_cg_has_private_feature(
                                    ctx, CG_PRIVATE_FEATURE_OFFSCREEN_BLIT));
-            _CG_RETURN_IF_FAIL(draw_buffer->type ==
+            c_return_if_fail(draw_buffer->type ==
                                CG_FRAMEBUFFER_TYPE_OFFSCREEN);
-            _CG_RETURN_IF_FAIL(read_buffer->type ==
+            c_return_if_fail(read_buffer->type ==
                                CG_FRAMEBUFFER_TYPE_OFFSCREEN);
 
             _cg_framebuffer_gl_bind(draw_buffer, GL_DRAW_FRAMEBUFFER);
@@ -493,7 +493,7 @@ try_creating_renderbuffers(cg_context_t *ctx,
                 ctx, CG_PRIVATE_FEATURE_EXT_PACKED_DEPTH_STENCIL))
             format = GL_DEPTH_STENCIL;
         else {
-            _CG_RETURN_VAL_IF_FAIL(
+            c_return_val_if_fail(
                 _cg_has_private_feature(
                     ctx, CG_PRIVATE_FEATURE_OES_PACKED_DEPTH_STENCIL),
                 NULL);
@@ -744,7 +744,7 @@ _cg_offscreen_gl_allocate(cg_offscreen_t *offscreen, cg_error_t **error)
     int level_width;
     int level_height;
 
-    _CG_RETURN_VAL_IF_FAIL(offscreen->texture_level <
+    c_return_val_if_fail(offscreen->texture_level <
                            _cg_texture_get_n_levels(offscreen->texture),
                            false);
 

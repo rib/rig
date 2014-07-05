@@ -889,7 +889,7 @@ _cg_texture_2d_sliced_new_from_bitmap(
 {
     cg_texture_loader_t *loader;
 
-    _CG_RETURN_VAL_IF_FAIL(cg_is_bitmap(bmp), NULL);
+    c_return_val_if_fail(cg_is_bitmap(bmp), NULL);
 
     loader = _cg_texture_create_loader();
     loader->src_type = CG_TEXTURE_SOURCE_TYPE_BITMAP;
@@ -924,8 +924,8 @@ cg_texture_2d_sliced_new_from_data(cg_context_t *ctx,
     cg_bitmap_t *bmp;
     cg_texture_2d_sliced_t *tex_2ds;
 
-    _CG_RETURN_VAL_IF_FAIL(format != CG_PIXEL_FORMAT_ANY, NULL);
-    _CG_RETURN_VAL_IF_FAIL(data != NULL, NULL);
+    c_return_val_if_fail(format != CG_PIXEL_FORMAT_ANY, NULL);
+    c_return_val_if_fail(data != NULL, NULL);
 
     /* Rowstride from width if not given */
     if (rowstride == 0)
@@ -956,7 +956,7 @@ cg_texture_2d_sliced_new_from_file(cg_context_t *ctx,
     cg_bitmap_t *bmp;
     cg_texture_2d_sliced_t *tex_2ds = NULL;
 
-    _CG_RETURN_VAL_IF_FAIL(error == NULL || *error == NULL, NULL);
+    c_return_val_if_fail(error == NULL || *error == NULL, NULL);
 
     bmp = cg_bitmap_new_from_file(ctx, filename, error);
     if (bmp == NULL)
@@ -1007,7 +1007,7 @@ allocate_from_bitmap(cg_texture_2d_sliced_t *tex_2ds,
     cg_pixel_format_t internal_format;
     cg_bitmap_t *upload_bmp;
 
-    _CG_RETURN_VAL_IF_FAIL(tex_2ds->slice_textures == NULL, false);
+    c_return_val_if_fail(tex_2ds->slice_textures == NULL, false);
 
     internal_format =
         _cg_texture_determine_internal_format(tex, cg_bitmap_get_format(bmp));
@@ -1047,7 +1047,7 @@ _cg_texture_2d_sliced_allocate(cg_texture_t *tex,
     cg_texture_2d_sliced_t *tex_2ds = CG_TEXTURE_2D_SLICED(tex);
     cg_texture_loader_t *loader = tex->loader;
 
-    _CG_RETURN_VAL_IF_FAIL(loader, false);
+    c_return_val_if_fail(loader, false);
 
     switch (loader->src_type) {
     case CG_TEXTURE_SOURCE_TYPE_SIZED:
@@ -1196,7 +1196,7 @@ _cg_texture_2d_sliced_gl_flush_legacy_texobj_filters(
     cg_texture_2d_t *slice_tex;
     int i;
 
-    _CG_RETURN_IF_FAIL(tex_2ds->slice_textures != NULL);
+    c_return_if_fail(tex_2ds->slice_textures != NULL);
 
     /* Apply new filters to every slice. The slice texture itself should
        cache the value and avoid resubmitting the same filter value to
@@ -1216,7 +1216,7 @@ _cg_texture_2d_sliced_pre_paint(cg_texture_t *tex,
     cg_texture_2d_sliced_t *tex_2ds = CG_TEXTURE_2D_SLICED(tex);
     int i;
 
-    _CG_RETURN_IF_FAIL(tex_2ds->slice_textures != NULL);
+    c_return_if_fail(tex_2ds->slice_textures != NULL);
 
     /* Pass the pre-paint on to every slice */
     for (i = 0; i < tex_2ds->slice_textures->len; i++) {
@@ -1232,7 +1232,7 @@ _cg_texture_2d_sliced_ensure_non_quad_rendering(cg_texture_t *tex)
     cg_texture_2d_sliced_t *tex_2ds = CG_TEXTURE_2D_SLICED(tex);
     int i;
 
-    _CG_RETURN_IF_FAIL(tex_2ds->slice_textures != NULL);
+    c_return_if_fail(tex_2ds->slice_textures != NULL);
 
     /* Pass the call on to every slice */
     for (i = 0; i < tex_2ds->slice_textures->len; i++) {

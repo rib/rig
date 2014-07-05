@@ -336,7 +336,7 @@ _cg_pipeline_layer_pre_change_notify(cg_pipeline_t *required_owner,
         goto init_layer_state;
 
     /* We only allow a NULL required_owner for new layers */
-    _CG_RETURN_VAL_IF_FAIL(required_owner != NULL, layer);
+    c_return_val_if_fail(required_owner != NULL, layer);
 
     /* Chain up:
      * A modification of a layer is indirectly also a modification of

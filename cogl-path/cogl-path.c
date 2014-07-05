@@ -140,7 +140,7 @@ _cg_path_modify(cg_path_t *path)
 void
 cg_path_set_fill_rule(cg_path_t *path, cg_path_fill_rule_t fill_rule)
 {
-    _CG_RETURN_IF_FAIL(cg_is_path(path));
+    c_return_if_fail(cg_is_path(path));
 
     if (path->data->fill_rule != fill_rule) {
         _cg_path_modify(path);
@@ -152,7 +152,7 @@ cg_path_set_fill_rule(cg_path_t *path, cg_path_fill_rule_t fill_rule)
 cg_path_fill_rule_t
 cg_path_get_fill_rule(cg_path_t *path)
 {
-    _CG_RETURN_VAL_IF_FAIL(cg_is_path(path), CG_PATH_FILL_RULE_NON_ZERO);
+    c_return_val_if_fail(cg_is_path(path), CG_PATH_FILL_RULE_NON_ZERO);
 
     return path->data->fill_rule;
 }
@@ -210,9 +210,9 @@ cg_path_stroke(cg_path_t *path,
     int path_num = 0;
     cg_path_node_t *node;
 
-    _CG_RETURN_IF_FAIL(cg_is_path(path));
-    _CG_RETURN_IF_FAIL(cg_is_framebuffer(framebuffer));
-    _CG_RETURN_IF_FAIL(cg_is_pipeline(pipeline));
+    c_return_if_fail(cg_is_path(path));
+    c_return_if_fail(cg_is_framebuffer(framebuffer));
+    c_return_if_fail(cg_is_pipeline(pipeline));
 
     data = path->data;
 
@@ -355,9 +355,9 @@ cg_path_fill(cg_path_t *path,
              cg_framebuffer_t *framebuffer,
              cg_pipeline_t *pipeline)
 {
-    _CG_RETURN_IF_FAIL(cg_is_path(path));
-    _CG_RETURN_IF_FAIL(cg_is_framebuffer(framebuffer));
-    _CG_RETURN_IF_FAIL(cg_is_pipeline(pipeline));
+    c_return_if_fail(cg_is_path(path));
+    c_return_if_fail(cg_is_framebuffer(framebuffer));
+    c_return_if_fail(cg_is_pipeline(pipeline));
 
     _cg_path_fill_nodes(path, framebuffer, pipeline, 0 /* flags */);
 }
@@ -367,7 +367,7 @@ cg_path_move_to(cg_path_t *path, float x, float y)
 {
     cg_path_data_t *data;
 
-    _CG_RETURN_IF_FAIL(cg_is_path(path));
+    c_return_if_fail(cg_is_path(path));
 
     _cg_path_add_node(path, true, x, y);
 
@@ -384,7 +384,7 @@ cg_path_rel_move_to(cg_path_t *path, float x, float y)
 {
     cg_path_data_t *data;
 
-    _CG_RETURN_IF_FAIL(cg_is_path(path));
+    c_return_if_fail(cg_is_path(path));
 
     data = path->data;
 
@@ -396,7 +396,7 @@ cg_path_line_to(cg_path_t *path, float x, float y)
 {
     cg_path_data_t *data;
 
-    _CG_RETURN_IF_FAIL(cg_is_path(path));
+    c_return_if_fail(cg_is_path(path));
 
     _cg_path_add_node(path, false, x, y);
 
@@ -411,7 +411,7 @@ cg_path_rel_line_to(cg_path_t *path, float x, float y)
 {
     cg_path_data_t *data;
 
-    _CG_RETURN_IF_FAIL(cg_is_path(path));
+    c_return_if_fail(cg_is_path(path));
 
     data = path->data;
 
@@ -421,7 +421,7 @@ cg_path_rel_line_to(cg_path_t *path, float x, float y)
 void
 cg_path_close(cg_path_t *path)
 {
-    _CG_RETURN_IF_FAIL(cg_is_path(path));
+    c_return_if_fail(cg_is_path(path));
 
     _cg_path_add_node(
         path, false, path->data->path_start.x, path->data->path_start.y);
@@ -441,7 +441,7 @@ cg_path_polyline(cg_path_t *path, const float *coords, int num_points)
 {
     int c = 0;
 
-    _CG_RETURN_IF_FAIL(cg_is_path(path));
+    c_return_if_fail(cg_is_path(path));
 
     cg_path_move_to(path, coords[0], coords[1]);
 
@@ -555,7 +555,7 @@ cg_path_arc(cg_path_t *path,
 {
     float angle_step = 10;
 
-    _CG_RETURN_IF_FAIL(cg_is_path(path));
+    c_return_if_fail(cg_is_path(path));
 
     /* it is documented that a move to is needed to create a freestanding
      * arc
@@ -605,7 +605,7 @@ cg_path_ellipse(cg_path_t *path,
 {
     float angle_step = 10;
 
-    _CG_RETURN_IF_FAIL(cg_is_path(path));
+    c_return_if_fail(cg_is_path(path));
 
     /* FIXME: if shows to be slow might be optimized
      * by mirroring just a quarter of it */
@@ -635,7 +635,7 @@ cg_path_round_rectangle(cg_path_t *path,
     float inner_width = x_2 - x_1 - radius * 2;
     float inner_height = y_2 - y_1 - radius * 2;
 
-    _CG_RETURN_IF_FAIL(cg_is_path(path));
+    c_return_if_fail(cg_is_path(path));
 
     cg_path_move_to(path, x_1, y_1 + radius);
     _cg_path_rel_arc(path, radius, 0, radius, radius, 180, 270, arc_step);
@@ -760,7 +760,7 @@ cg_path_curve_to(cg_path_t *path,
 {
     cg_bez_cubic_t cubic;
 
-    _CG_RETURN_IF_FAIL(cg_is_path(path));
+    c_return_if_fail(cg_is_path(path));
 
     /* Prepare cubic curve */
     cubic.p1 = path->data->path_pen;
@@ -790,7 +790,7 @@ cg_path_rel_curve_to(cg_path_t *path,
 {
     cg_path_data_t *data;
 
-    _CG_RETURN_IF_FAIL(cg_is_path(path));
+    c_return_if_fail(cg_is_path(path));
 
     data = path->data;
 
@@ -830,7 +830,7 @@ cg_path_copy(cg_path_t *old_path)
 {
     cg_path_t *new_path;
 
-    _CG_RETURN_VAL_IF_FAIL(cg_is_path(old_path), NULL);
+    c_return_val_if_fail(cg_is_path(old_path), NULL);
 
     new_path = c_slice_new(cg_path_t);
     new_path->data = old_path->data;
@@ -951,7 +951,7 @@ cg_rel_curve2_to (cg_path_t *path,
 {
     cg_path_data_t *data;
 
-    _CG_RETURN_IF_FAIL (cg_is_path (path));
+    c_return_if_fail (cg_is_path (path));
 
     data = path->data;
 

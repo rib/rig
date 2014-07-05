@@ -1647,7 +1647,7 @@ cg_push_gles2_context(cg_context_t *ctx,
     const cg_winsys_vtable_t *winsys = ctx->display->renderer->winsys_vtable;
     cg_error_t *internal_error = NULL;
 
-    _CG_RETURN_VAL_IF_FAIL(gles2_ctx != NULL, false);
+    c_return_val_if_fail(gles2_ctx != NULL, false);
 
     /* The read/write buffers are properties of the gles2 context and we
      * don't currently track the read/write buffers as part of the stack
@@ -1772,7 +1772,7 @@ cg_pop_gles2_context(cg_context_t *ctx)
     cg_gles2_context_t *gles2_ctx;
     const cg_winsys_vtable_t *winsys = ctx->display->renderer->winsys_vtable;
 
-    _CG_RETURN_IF_FAIL(ctx->gles2_context_stack.length > 0);
+    c_return_if_fail(ctx->gles2_context_stack.length > 0);
 
     c_queue_pop_tail(&ctx->gles2_context_stack);
 

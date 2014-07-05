@@ -154,8 +154,8 @@ cg_euler_equal(const void *v1, const void *v2)
     const cg_euler_t *a = v1;
     const cg_euler_t *b = v2;
 
-    _CG_RETURN_VAL_IF_FAIL(v1 != NULL, false);
-    _CG_RETURN_VAL_IF_FAIL(v2 != NULL, false);
+    c_return_val_if_fail(v1 != NULL, false);
+    c_return_val_if_fail(v2 != NULL, false);
 
     if (v1 == v2)
         return true;

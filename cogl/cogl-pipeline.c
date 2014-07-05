@@ -268,7 +268,7 @@ _cg_pipeline_promote_weak_ancestors(cg_pipeline_t *strong)
 {
     cg_node_t *n;
 
-    _CG_RETURN_IF_FAIL(!strong->is_weak);
+    c_return_if_fail(!strong->is_weak);
 
     /* If the parent of strong is weak, then we want to promote it by
        taking a reference on strong's grandparent. We don't need to take
@@ -290,7 +290,7 @@ _cg_pipeline_revert_weak_ancestors(cg_pipeline_t *strong)
 {
     cg_node_t *n;
 
-    _CG_RETURN_IF_FAIL(!strong->is_weak);
+    c_return_if_fail(!strong->is_weak);
 
     /* This reverts the effect of calling
        _cg_pipeline_promote_weak_ancestors */
@@ -456,7 +456,7 @@ _cg_pipeline_free(cg_pipeline_t *pipeline)
 bool
 _cg_pipeline_get_real_blend_enabled(cg_pipeline_t *pipeline)
 {
-    _CG_RETURN_VAL_IF_FAIL(cg_is_pipeline(pipeline), false);
+    c_return_val_if_fail(cg_is_pipeline(pipeline), false);
 
     return pipeline->real_blend_enable;
 }
@@ -554,7 +554,7 @@ _cg_pipeline_foreach_layer_internal(
     _cg_pipeline_update_layers_cache(authority);
 
     for (i = 0, cont = true; i < n_layers && cont == true; i++) {
-        _CG_RETURN_IF_FAIL(authority->layers_cache_dirty == false);
+        c_return_if_fail(authority->layers_cache_dirty == false);
         cont = callback(authority->layers_cache[i], user_data);
     }
 }
@@ -945,7 +945,7 @@ _cg_pipeline_init_multi_property_sparse_state(cg_pipeline_t *pipeline,
 {
     cg_pipeline_t *authority;
 
-    _CG_RETURN_IF_FAIL(change & CG_PIPELINE_STATE_ALL_SPARSE);
+    c_return_if_fail(change & CG_PIPELINE_STATE_ALL_SPARSE);
 
     if (!(change & CG_PIPELINE_STATE_MULTI_PROPERTY))
         return;
@@ -1259,7 +1259,7 @@ _cg_pipeline_add_layer_difference(cg_pipeline_t *pipeline,
                                   cg_pipeline_layer_t *layer,
                                   bool inc_n_layers)
 {
-    _CG_RETURN_IF_FAIL(layer->owner == NULL);
+    c_return_if_fail(layer->owner == NULL);
 
     layer->owner = pipeline;
     cg_object_ref(layer);
@@ -1626,7 +1626,7 @@ _cg_pipeline_prune_empty_layer_difference(cg_pipeline_t *layers_authority,
     cg_pipeline_layer_info_t layer_info;
     cg_pipeline_t *old_layers_authority;
 
-    _CG_RETURN_IF_FAIL(link != NULL);
+    c_return_if_fail(link != NULL);
 
     /* If the layer's parent doesn't have an owner then we can simply
      * take ownership ourselves and drop our reference on the empty
@@ -2175,7 +2175,7 @@ _cg_pipeline_update_authority(cg_pipeline_t *pipeline,
 unsigned long
 _cg_pipeline_get_age(cg_pipeline_t *pipeline)
 {
-    _CG_RETURN_VAL_IF_FAIL(cg_is_pipeline(pipeline), 0);
+    c_return_val_if_fail(cg_is_pipeline(pipeline), 0);
 
     return pipeline->age;
 }
@@ -2187,7 +2187,7 @@ cg_pipeline_remove_layer(cg_pipeline_t *pipeline, int layer_index)
     cg_pipeline_layer_info_t layer_info;
     int i;
 
-    _CG_RETURN_IF_FAIL(cg_is_pipeline(pipeline));
+    c_return_if_fail(cg_is_pipeline(pipeline));
 
     authority = _cg_pipeline_get_authority(pipeline, CG_PIPELINE_STATE_LAYERS);
 
@@ -2235,7 +2235,7 @@ cg_pipeline_get_n_layers(cg_pipeline_t *pipeline)
 {
     cg_pipeline_t *authority;
 
-    _CG_RETURN_VAL_IF_FAIL(cg_is_pipeline(pipeline), 0);
+    c_return_val_if_fail(cg_is_pipeline(pipeline), 0);
 
     authority = _cg_pipeline_get_authority(pipeline, CG_PIPELINE_STATE_LAYERS);
 

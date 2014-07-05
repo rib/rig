@@ -120,7 +120,7 @@ void
 cg_display_set_onscreen_template(cg_display_t *display,
                                  cg_onscreen_template_t *onscreen_template)
 {
-    _CG_RETURN_IF_FAIL(display->setup == false);
+    c_return_if_fail(display->setup == false);
 
     if (onscreen_template)
         cg_object_ref(onscreen_template);
@@ -157,7 +157,7 @@ cg_display_setup(cg_display_t *display, cg_error_t **error)
 void
 cg_gdl_display_set_plane(cg_display_t *display, gdl_plane_id_t plane)
 {
-    _CG_RETURN_IF_FAIL(display->setup == false);
+    c_return_if_fail(display->setup == false);
 
     display->gdl_plane = plane;
 }
@@ -168,7 +168,7 @@ void
 cg_wayland_display_set_compositor_display(cg_display_t *display,
                                           struct wl_display *wayland_display)
 {
-    _CG_RETURN_IF_FAIL(display->setup == false);
+    c_return_if_fail(display->setup == false);
 
     display->wayland_compositor_display = wayland_display;
 }

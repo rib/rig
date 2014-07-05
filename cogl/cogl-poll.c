@@ -54,10 +54,10 @@ cg_poll_renderer_get_info(cg_renderer_t *renderer,
 {
     c_list_t *l, *next;
 
-    _CG_RETURN_VAL_IF_FAIL(cg_is_renderer(renderer), 0);
-    _CG_RETURN_VAL_IF_FAIL(poll_fds != NULL, 0);
-    _CG_RETURN_VAL_IF_FAIL(n_poll_fds != NULL, 0);
-    _CG_RETURN_VAL_IF_FAIL(timeout != NULL, 0);
+    c_return_val_if_fail(cg_is_renderer(renderer), 0);
+    c_return_val_if_fail(poll_fds != NULL, 0);
+    c_return_val_if_fail(n_poll_fds != NULL, 0);
+    c_return_val_if_fail(timeout != NULL, 0);
 
     *timeout = -1;
 
@@ -94,7 +94,7 @@ cg_poll_renderer_dispatch(cg_renderer_t *renderer,
 {
     c_list_t *l, *next;
 
-    _CG_RETURN_IF_FAIL(cg_is_renderer(renderer));
+    c_return_if_fail(cg_is_renderer(renderer));
 
     _cg_closure_list_invoke_no_args(&renderer->idle_closures);
 

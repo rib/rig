@@ -362,11 +362,11 @@ cg_texture_set_region_from_bitmap(cg_texture_t *texture,
                                   int level,
                                   cg_error_t **error)
 {
-    _CG_RETURN_VAL_IF_FAIL((cg_bitmap_get_width(bmp) - src_x) >= width, false);
-    _CG_RETURN_VAL_IF_FAIL((cg_bitmap_get_height(bmp) - src_y) >= height,
+    c_return_val_if_fail((cg_bitmap_get_width(bmp) - src_x) >= width, false);
+    c_return_val_if_fail((cg_bitmap_get_height(bmp) - src_y) >= height,
                            false);
-    _CG_RETURN_VAL_IF_FAIL(width > 0, false);
-    _CG_RETURN_VAL_IF_FAIL(height > 0, false);
+    c_return_val_if_fail(width > 0, false);
+    c_return_val_if_fail(height > 0, false);
 
     /* Assert that the storage for this texture has been allocated */
     if (!cg_texture_allocate(texture, error))
@@ -399,7 +399,7 @@ cg_texture_set_region(cg_texture_t *texture,
     cg_bitmap_t *source_bmp;
     bool ret;
 
-    _CG_RETURN_VAL_IF_FAIL(format != CG_PIXEL_FORMAT_ANY, false);
+    c_return_val_if_fail(format != CG_PIXEL_FORMAT_ANY, false);
 
     /* Rowstride from width if none specified */
     if (rowstride == 0)
@@ -1314,7 +1314,7 @@ void
 cg_texture_set_components(cg_texture_t *texture,
                           cg_texture_components_t components)
 {
-    _CG_RETURN_IF_FAIL(!texture->allocated);
+    c_return_if_fail(!texture->allocated);
 
     if (texture->components == components)
         return;
@@ -1331,7 +1331,7 @@ cg_texture_get_components(cg_texture_t *texture)
 void
 cg_texture_set_premultiplied(cg_texture_t *texture, bool premultiplied)
 {
-    _CG_RETURN_IF_FAIL(!texture->allocated);
+    c_return_if_fail(!texture->allocated);
 
     premultiplied = !!premultiplied;
 

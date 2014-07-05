@@ -338,7 +338,7 @@ try_create_context(cg_display_t *display, cg_error_t **error)
     EGLint cfg_attribs[MAX_EGL_CONFIG_ATTRIBS];
     const char *error_message;
 
-    _CG_RETURN_VAL_IF_FAIL(egl_display->egl_context == NULL, true);
+    c_return_val_if_fail(egl_display->egl_context == NULL, true);
 
     if (renderer->driver == CG_DRIVER_GL || renderer->driver == CG_DRIVER_GL3)
         eglBindAPI(EGL_OPENGL_API);
@@ -412,7 +412,7 @@ _cg_winsys_display_destroy(cg_display_t *display)
     cg_renderer_egl_t *egl_renderer = display->renderer->winsys;
     cg_display_egl_t *egl_display = display->winsys;
 
-    _CG_RETURN_IF_FAIL(egl_display != NULL);
+    c_return_if_fail(egl_display != NULL);
 
     cleanup_context(display);
 
@@ -430,7 +430,7 @@ _cg_winsys_display_setup(cg_display_t *display, cg_error_t **error)
     cg_renderer_t *renderer = display->renderer;
     cg_renderer_egl_t *egl_renderer = renderer->winsys;
 
-    _CG_RETURN_VAL_IF_FAIL(display->winsys == NULL, false);
+    c_return_val_if_fail(display->winsys == NULL, false);
 
     egl_display = c_slice_new0(cg_display_egl_t);
     display->winsys = egl_display;
@@ -472,7 +472,7 @@ _cg_winsys_context_init(cg_context_t *context, cg_error_t **error)
 
     context->winsys = c_new0(cg_context_egl_t, 1);
 
-    _CG_RETURN_VAL_IF_FAIL(egl_display->egl_context, false);
+    c_return_val_if_fail(egl_display->egl_context, false);
 
     memset(context->winsys_features, 0, sizeof(context->winsys_features));
 
@@ -567,7 +567,7 @@ _cg_winsys_destroy_gles2_context(cg_gles2_context_t *gles2_ctx)
     cg_renderer_egl_t *egl_renderer = renderer->winsys;
     EGLContext egl_context = gles2_ctx->winsys;
 
-    _CG_RETURN_IF_FAIL(egl_display->current_context != egl_context);
+    c_return_if_fail(egl_display->current_context != egl_context);
 
     eglDestroyContext(egl_renderer->edpy, egl_context);
 }
@@ -587,7 +587,7 @@ _cg_winsys_onscreen_init(cg_onscreen_t *onscreen,
     EGLint config_count = 0;
     EGLBoolean status;
 
-    _CG_RETURN_VAL_IF_FAIL(egl_display->egl_context, false);
+    c_return_val_if_fail(egl_display->egl_context, false);
 
     egl_attributes_from_framebuffer_config(
         display, &framebuffer->config, attributes);
@@ -977,7 +977,7 @@ _cg_egl_create_image(cg_context_t *ctx,
     cg_renderer_egl_t *egl_renderer = ctx->display->renderer->winsys;
     EGLContext egl_ctx;
 
-    _CG_RETURN_VAL_IF_FAIL(egl_renderer->pf_eglCreateImage, EGL_NO_IMAGE_KHR);
+    c_return_val_if_fail(egl_renderer->pf_eglCreateImage, EGL_NO_IMAGE_KHR);
 
 /* The EGL_KHR_image_pixmap spec explicitly states that EGL_NO_CONTEXT must
  * always be used in conjunction with the EGL_NATIVE_PIXMAP_KHR target */
@@ -997,7 +997,7 @@ _cg_egl_destroy_image(cg_context_t *ctx, EGLImageKHR image)
 {
     cg_renderer_egl_t *egl_renderer = ctx->display->renderer->winsys;
 
-    _CG_RETURN_IF_FAIL(egl_renderer->pf_eglDestroyImage);
+    c_return_if_fail(egl_renderer->pf_eglDestroyImage);
 
     egl_renderer->pf_eglDestroyImage(egl_renderer->edpy, image);
 }
@@ -1012,7 +1012,7 @@ _cg_egl_query_wayland_buffer(cg_context_t *ctx,
 {
     cg_renderer_egl_t *egl_renderer = ctx->display->renderer->winsys;
 
-    _CG_RETURN_VAL_IF_FAIL(egl_renderer->pf_eglQueryWaylandBuffer, false);
+    c_return_val_if_fail(egl_renderer->pf_eglQueryWaylandBuffer, false);
 
     return egl_renderer->pf_eglQueryWaylandBuffer(
         egl_renderer->edpy, buffer, attribute, value);

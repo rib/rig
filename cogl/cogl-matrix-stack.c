@@ -358,10 +358,10 @@ cg_matrix_stack_pop(cg_matrix_stack_t *stack)
     cg_matrix_entry_t *old_top;
     cg_matrix_entry_t *new_top;
 
-    _CG_RETURN_IF_FAIL(stack != NULL);
+    c_return_if_fail(stack != NULL);
 
     old_top = stack->last_entry;
-    _CG_RETURN_IF_FAIL(old_top != NULL);
+    c_return_if_fail(old_top != NULL);
 
     /* To pop we are moving the top of the stack to the old top's parent
      * node. The stack always needs to have a reference to the top entry

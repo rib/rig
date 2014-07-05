@@ -422,11 +422,11 @@ ensure_size_initialized(cg_framebuffer_t *framebuffer)
     if (framebuffer->width < 0) {
         /* Currently we assume the size is always initialized for
          * onscreen framebuffers. */
-        _CG_RETURN_IF_FAIL(cg_is_offscreen(framebuffer));
+        c_return_if_fail(cg_is_offscreen(framebuffer));
 
         /* We also assume the size would have been initialized if the
          * framebuffer were allocated. */
-        _CG_RETURN_IF_FAIL(!framebuffer->allocated);
+        c_return_if_fail(!framebuffer->allocated);
 
         cg_framebuffer_allocate(framebuffer, NULL);
     }
@@ -467,7 +467,7 @@ cg_framebuffer_set_viewport(
 {
     cg_context_t *context = framebuffer->context;
 
-    _CG_RETURN_IF_FAIL(width > 0 && height > 0);
+    c_return_if_fail(width > 0 && height > 0);
 
     if (framebuffer->viewport_x == x && framebuffer->viewport_y == y &&
         framebuffer->viewport_width == width &&
@@ -599,7 +599,7 @@ _cg_offscreen_new_with_texture_full(
     cg_framebuffer_t *fb;
     cg_offscreen_t *ret;
 
-    _CG_RETURN_VAL_IF_FAIL(cg_is_texture(texture), NULL);
+    c_return_val_if_fail(cg_is_texture(texture), NULL);
 
     offscreen = c_new0(cg_offscreen_t, 1);
     offscreen->texture = cg_object_ref(texture);
@@ -1030,7 +1030,7 @@ void
 cg_framebuffer_set_depth_texture_enabled(cg_framebuffer_t *framebuffer,
                                          bool enabled)
 {
-    _CG_RETURN_IF_FAIL(!framebuffer->allocated);
+    c_return_if_fail(!framebuffer->allocated);
 
     framebuffer->config.depth_texture_enabled = enabled;
 }
@@ -1048,7 +1048,7 @@ cg_framebuffer_get_depth_texture(cg_framebuffer_t *framebuffer)
     if (!cg_framebuffer_allocate(framebuffer, NULL))
         return NULL;
 
-    _CG_RETURN_VAL_IF_FAIL(cg_is_offscreen(framebuffer), NULL);
+    c_return_val_if_fail(cg_is_offscreen(framebuffer), NULL);
     return CG_OFFSCREEN(framebuffer)->depth_texture;
 }
 
@@ -1065,7 +1065,7 @@ void
 cg_framebuffer_set_samples_per_pixel(cg_framebuffer_t *framebuffer,
                                      int samples_per_pixel)
 {
-    _CG_RETURN_IF_FAIL(!framebuffer->allocated);
+    c_return_if_fail(!framebuffer->allocated);
 
     framebuffer->config.samples_per_pixel = samples_per_pixel;
 }
@@ -1114,7 +1114,7 @@ cg_framebuffer_resolve_samples_region(
 cg_context_t *
 cg_framebuffer_get_context(cg_framebuffer_t *framebuffer)
 {
-    _CG_RETURN_VAL_IF_FAIL(framebuffer != NULL, NULL);
+    c_return_val_if_fail(framebuffer != NULL, NULL);
 
     return framebuffer->context;
 }
@@ -1205,8 +1205,8 @@ cg_framebuffer_read_pixels_into_bitmap(cg_framebuffer_t *framebuffer,
     int width;
     int height;
 
-    _CG_RETURN_VAL_IF_FAIL(source & CG_READ_PIXELS_COLOR_BUFFER, false);
-    _CG_RETURN_VAL_IF_FAIL(cg_is_framebuffer(framebuffer), false);
+    c_return_val_if_fail(source & CG_READ_PIXELS_COLOR_BUFFER, false);
+    c_return_val_if_fail(cg_is_framebuffer(framebuffer), false);
 
     if (!cg_framebuffer_allocate(framebuffer, error))
         return false;
@@ -1283,16 +1283,16 @@ _cg_blit_framebuffer(cg_framebuffer_t *src,
 {
     cg_context_t *ctx = src->context;
 
-    _CG_RETURN_IF_FAIL(
+    c_return_if_fail(
         _cg_has_private_feature(ctx, CG_PRIVATE_FEATURE_OFFSCREEN_BLIT));
 
     /* We can only support blitting between offscreen buffers because
        otherwise we would need to mirror the image and GLES2.0 doesn't
        support this */
-    _CG_RETURN_IF_FAIL(cg_is_offscreen(src));
-    _CG_RETURN_IF_FAIL(cg_is_offscreen(dest));
+    c_return_if_fail(cg_is_offscreen(src));
+    c_return_if_fail(cg_is_offscreen(dest));
     /* The buffers must be the same format */
-    _CG_RETURN_IF_FAIL(src->internal_format == dest->internal_format);
+    c_return_if_fail(src->internal_format == dest->internal_format);
 
     /* Make sure the current framebuffers are bound. We explicitly avoid
        flushing the clip state so we can bind our own empty state */
@@ -1329,7 +1329,7 @@ cg_framebuffer_discard_buffers(cg_framebuffer_t *framebuffer,
 {
     cg_context_t *ctx = framebuffer->context;
 
-    _CG_RETURN_IF_FAIL(buffers & CG_BUFFER_BIT_COLOR);
+    c_return_if_fail(buffers & CG_BUFFER_BIT_COLOR);
 
     ctx->driver_vtable->framebuffer_discard_buffers(framebuffer, buffers);
 }

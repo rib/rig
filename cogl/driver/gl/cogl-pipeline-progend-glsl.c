@@ -175,8 +175,8 @@ _cg_pipeline_progend_glsl_get_attrib_location(cg_pipeline_t *pipeline,
 
     _CG_GET_CONTEXT(ctx, -1);
 
-    _CG_RETURN_VAL_IF_FAIL(program_state != NULL, -1);
-    _CG_RETURN_VAL_IF_FAIL(program_state->program != 0, -1);
+    c_return_val_if_fail(program_state != NULL, -1);
+    c_return_val_if_fail(program_state->program != 0, -1);
 
     if (C_UNLIKELY(program_state->attribute_locations == NULL))
         program_state->attribute_locations =
@@ -198,7 +198,7 @@ _cg_pipeline_progend_glsl_get_attrib_location(cg_pipeline_t *pipeline,
                           cg_attribute_name_state_t *,
                           name_index);
 
-        _CG_RETURN_VAL_IF_FAIL(name_state != NULL, 0);
+        c_return_val_if_fail(name_state != NULL, 0);
 
         GE_RET(locations[name_index],
                ctx,

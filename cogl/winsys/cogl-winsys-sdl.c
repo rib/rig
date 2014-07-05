@@ -130,7 +130,7 @@ _cg_winsys_display_destroy(cg_display_t *display)
 {
     cg_display_sdl_t *sdl_display = display->winsys;
 
-    _CG_RETURN_IF_FAIL(sdl_display != NULL);
+    c_return_if_fail(sdl_display != NULL);
 
     /* No need to destroy the surface - it is freed by SDL_Quit */
 
@@ -158,7 +158,7 @@ _cg_winsys_display_setup(cg_display_t *display, cg_error_t **error)
 {
     cg_display_sdl_t *sdl_display;
 
-    _CG_RETURN_VAL_IF_FAIL(display->winsys == NULL, false);
+    c_return_val_if_fail(display->winsys == NULL, false);
 
     sdl_display = c_slice_new0(cg_display_sdl_t);
     display->winsys = sdl_display;

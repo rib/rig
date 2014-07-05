@@ -270,10 +270,10 @@ void
 cg_xlib_renderer_set_foreign_display(cg_renderer_t *renderer,
                                      Display *xdisplay)
 {
-    _CG_RETURN_IF_FAIL(cg_is_renderer(renderer));
+    c_return_if_fail(cg_is_renderer(renderer));
 
     /* NB: Renderers are considered immutable once connected */
-    _CG_RETURN_IF_FAIL(!renderer->connected);
+    c_return_if_fail(!renderer->connected);
 
     renderer->foreign_xdpy = xdisplay;
 
@@ -285,7 +285,7 @@ cg_xlib_renderer_set_foreign_display(cg_renderer_t *renderer,
 Display *
 cg_xlib_renderer_get_foreign_display(cg_renderer_t *renderer)
 {
-    _CG_RETURN_VAL_IF_FAIL(cg_is_renderer(renderer), NULL);
+    c_return_val_if_fail(cg_is_renderer(renderer), NULL);
 
     return renderer->foreign_xdpy;
 }
@@ -294,9 +294,9 @@ void
 cg_xlib_renderer_set_event_retrieval_enabled(cg_renderer_t *renderer,
                                              bool enable)
 {
-    _CG_RETURN_IF_FAIL(cg_is_renderer(renderer));
+    c_return_if_fail(cg_is_renderer(renderer));
     /* NB: Renderers are considered immutable once connected */
-    _CG_RETURN_IF_FAIL(!renderer->connected);
+    c_return_if_fail(!renderer->connected);
 
     renderer->xlib_enable_event_retrieval = enable;
 }
@@ -695,7 +695,7 @@ void
 cg_renderer_set_winsys_id(cg_renderer_t *renderer,
                           cg_winsys_id_t winsys_id)
 {
-    _CG_RETURN_IF_FAIL(!renderer->connected);
+    c_return_if_fail(!renderer->connected);
 
     renderer->winsys_id_override = winsys_id;
 }
@@ -703,7 +703,7 @@ cg_renderer_set_winsys_id(cg_renderer_t *renderer,
 cg_winsys_id_t
 cg_renderer_get_winsys_id(cg_renderer_t *renderer)
 {
-    _CG_RETURN_VAL_IF_FAIL(renderer->connected, 0);
+    c_return_val_if_fail(renderer->connected, 0);
 
     return renderer->winsys_vtable->id;
 }
@@ -754,14 +754,14 @@ cg_renderer_remove_constraint(cg_renderer_t *renderer,
 void
 cg_renderer_set_driver(cg_renderer_t *renderer, cg_driver_t driver)
 {
-    _CG_RETURN_IF_FAIL(!renderer->connected);
+    c_return_if_fail(!renderer->connected);
     renderer->driver_override = driver;
 }
 
 cg_driver_t
 cg_renderer_get_driver(cg_renderer_t *renderer)
 {
-    _CG_RETURN_VAL_IF_FAIL(renderer->connected, 0);
+    c_return_val_if_fail(renderer->connected, 0);
 
     return renderer->driver;
 }
@@ -773,8 +773,8 @@ cg_renderer_foreach_output(cg_renderer_t *renderer,
 {
     c_list_t *l;
 
-    _CG_RETURN_IF_FAIL(renderer->connected);
-    _CG_RETURN_IF_FAIL(callback != NULL);
+    c_return_if_fail(renderer->connected);
+    c_return_if_fail(callback != NULL);
 
     for (l = renderer->outputs; l; l = l->next)
         callback(l->data, user_data);

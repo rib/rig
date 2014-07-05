@@ -644,7 +644,7 @@ cg_atlas_add_pre_reorganize_callback(cg_atlas_t *atlas,
                                      void *user_data,
                                      cg_user_data_destroy_callback_t destroy)
 {
-    _CG_RETURN_VAL_IF_FAIL(callback != NULL, NULL);
+    c_return_val_if_fail(callback != NULL, NULL);
 
     return _cg_closure_list_add(
         &atlas->pre_reorganize_closures, callback, user_data, destroy);
@@ -663,7 +663,7 @@ cg_atlas_add_post_reorganize_callback(cg_atlas_t *atlas,
                                       void *user_data,
                                       cg_user_data_destroy_callback_t destroy)
 {
-    _CG_RETURN_VAL_IF_FAIL(callback != NULL, NULL);
+    c_return_val_if_fail(callback != NULL, NULL);
 
     return _cg_closure_list_add(
         &atlas->post_reorganize_closures, callback, user_data, destroy);

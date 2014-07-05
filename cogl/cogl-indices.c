@@ -115,7 +115,7 @@ cg_indices_get_buffer(cg_indices_t *indices)
 cg_indices_type_t
 cg_indices_get_type(cg_indices_t *indices)
 {
-    _CG_RETURN_VAL_IF_FAIL(cg_is_indices(indices),
+    c_return_val_if_fail(cg_is_indices(indices),
                            CG_INDICES_TYPE_UNSIGNED_BYTE);
     return indices->type;
 }
@@ -123,7 +123,7 @@ cg_indices_get_type(cg_indices_t *indices)
 size_t
 cg_indices_get_offset(cg_indices_t *indices)
 {
-    _CG_RETURN_VAL_IF_FAIL(cg_is_indices(indices), 0);
+    c_return_val_if_fail(cg_is_indices(indices), 0);
 
     return indices->offset;
 }
@@ -142,7 +142,7 @@ warn_about_midscene_changes(void)
 void
 cg_indices_set_offset(cg_indices_t *indices, size_t offset)
 {
-    _CG_RETURN_IF_FAIL(cg_is_indices(indices));
+    c_return_if_fail(cg_is_indices(indices));
 
     if (C_UNLIKELY(indices->immutable_ref))
         warn_about_midscene_changes();
@@ -160,7 +160,7 @@ _cg_indices_free(cg_indices_t *indices)
 cg_indices_t *
 _cg_indices_immutable_ref(cg_indices_t *indices)
 {
-    _CG_RETURN_VAL_IF_FAIL(cg_is_indices(indices), NULL);
+    c_return_val_if_fail(cg_is_indices(indices), NULL);
 
     indices->immutable_ref++;
     _cg_buffer_immutable_ref(CG_BUFFER(indices->buffer));
@@ -170,8 +170,8 @@ _cg_indices_immutable_ref(cg_indices_t *indices)
 void
 _cg_indices_immutable_unref(cg_indices_t *indices)
 {
-    _CG_RETURN_IF_FAIL(cg_is_indices(indices));
-    _CG_RETURN_IF_FAIL(indices->immutable_ref > 0);
+    c_return_if_fail(cg_is_indices(indices));
+    c_return_if_fail(indices->immutable_ref > 0);
 
     indices->immutable_ref--;
     _cg_buffer_immutable_unref(CG_BUFFER(indices->buffer));

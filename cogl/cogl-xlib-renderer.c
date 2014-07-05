@@ -543,7 +543,7 @@ cg_xlib_renderer_get_display(cg_renderer_t *renderer)
 {
     cg_xlib_renderer_t *xlib_renderer;
 
-    _CG_RETURN_VAL_IF_FAIL(cg_is_renderer(renderer), NULL);
+    c_return_val_if_fail(cg_is_renderer(renderer), NULL);
 
     xlib_renderer = _cg_xlib_renderer_get_data(renderer);
 

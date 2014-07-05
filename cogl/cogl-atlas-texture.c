@@ -671,7 +671,7 @@ cg_atlas_texture_new_with_size(cg_context_t *ctx, int width, int height)
 
     /* We can't atlas zero-sized textures because it breaks the atlas
      * data structure */
-    _CG_RETURN_VAL_IF_FAIL(width > 0 && height > 0, NULL);
+    c_return_val_if_fail(width > 0 && height > 0, NULL);
 
     loader = _cg_texture_create_loader();
     loader->src_type = CG_TEXTURE_SOURCE_TYPE_SIZED;
@@ -771,7 +771,7 @@ allocate_from_bitmap(cg_atlas_texture_t *atlas_tex,
     cg_pixel_format_t internal_format;
     cg_bitmap_t *upload_bmp;
 
-    _CG_RETURN_VAL_IF_FAIL(atlas_tex->atlas == NULL, false);
+    c_return_val_if_fail(atlas_tex->atlas == NULL, false);
 
     internal_format = _cg_texture_determine_internal_format(tex, bmp_format);
 
@@ -814,7 +814,7 @@ _cg_atlas_texture_allocate(cg_texture_t *tex, cg_error_t **error)
     cg_atlas_texture_t *atlas_tex = CG_ATLAS_TEXTURE(tex);
     cg_texture_loader_t *loader = tex->loader;
 
-    _CG_RETURN_VAL_IF_FAIL(loader, false);
+    c_return_val_if_fail(loader, false);
 
     switch (loader->src_type) {
     case CG_TEXTURE_SOURCE_TYPE_SIZED:
@@ -833,7 +833,7 @@ _cg_atlas_texture_new_from_bitmap(cg_bitmap_t *bmp, bool can_convert_in_place)
 {
     cg_texture_loader_t *loader;
 
-    _CG_RETURN_VAL_IF_FAIL(cg_is_bitmap(bmp), NULL);
+    c_return_val_if_fail(cg_is_bitmap(bmp), NULL);
 
     loader = _cg_texture_create_loader();
     loader->src_type = CG_TEXTURE_SOURCE_TYPE_BITMAP;
@@ -865,8 +865,8 @@ cg_atlas_texture_new_from_data(cg_context_t *ctx,
     cg_bitmap_t *bmp;
     cg_atlas_texture_t *atlas_tex;
 
-    _CG_RETURN_VAL_IF_FAIL(format != CG_PIXEL_FORMAT_ANY, NULL);
-    _CG_RETURN_VAL_IF_FAIL(data != NULL, NULL);
+    c_return_val_if_fail(format != CG_PIXEL_FORMAT_ANY, NULL);
+    c_return_val_if_fail(data != NULL, NULL);
 
     /* Rowstride from width if not given */
     if (rowstride == 0)
@@ -896,7 +896,7 @@ cg_atlas_texture_new_from_file(cg_context_t *ctx,
     cg_bitmap_t *bmp;
     cg_atlas_texture_t *atlas_tex = NULL;
 
-    _CG_RETURN_VAL_IF_FAIL(error == NULL || *error == NULL, NULL);
+    c_return_val_if_fail(error == NULL || *error == NULL, NULL);
 
     bmp = cg_bitmap_new_from_file(ctx, filename, error);
     if (bmp == NULL)

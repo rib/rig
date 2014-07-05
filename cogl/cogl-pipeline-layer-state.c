@@ -392,7 +392,7 @@ public_to_internal_wrap_mode(cg_pipeline_wrap_mode_t mode)
 static cg_pipeline_wrap_mode_t
 internal_to_public_wrap_mode(cg_sampler_cache_wrap_mode_t internal_mode)
 {
-    _CG_RETURN_VAL_IF_FAIL(internal_mode !=
+    c_return_val_if_fail(internal_mode !=
                            CG_SAMPLER_CACHE_WRAP_MODE_CLAMP_TO_BORDER,
                            CG_PIPELINE_WRAP_MODE_AUTOMATIC);
     return (cg_pipeline_wrap_mode_t)internal_mode;
@@ -412,7 +412,7 @@ cg_pipeline_set_layer_wrap_mode_s(cg_pipeline_t *pipeline,
 
     _CG_GET_CONTEXT(ctx, NO_RETVAL);
 
-    _CG_RETURN_IF_FAIL(cg_is_pipeline(pipeline));
+    c_return_if_fail(cg_is_pipeline(pipeline));
 
     /* Note: this will ensure that the layer exists, creating one if it
      * doesn't already.
@@ -450,7 +450,7 @@ cg_pipeline_set_layer_wrap_mode_t(cg_pipeline_t *pipeline,
 
     _CG_GET_CONTEXT(ctx, NO_RETVAL);
 
-    _CG_RETURN_IF_FAIL(cg_is_pipeline(pipeline));
+    c_return_if_fail(cg_is_pipeline(pipeline));
 
     /* Note: this will ensure that the layer exists, creating one if it
      * doesn't already.
@@ -500,7 +500,7 @@ cg_pipeline_set_layer_wrap_mode_p(cg_pipeline_t *pipeline,
 
     _CG_GET_CONTEXT(ctx, NO_RETVAL);
 
-    _CG_RETURN_IF_FAIL(cg_is_pipeline(pipeline));
+    c_return_if_fail(cg_is_pipeline(pipeline));
 
     /* Note: this will ensure that the layer exists, creating one if it
      * doesn't already.
@@ -538,7 +538,7 @@ cg_pipeline_set_layer_wrap_mode(cg_pipeline_t *pipeline,
 
     _CG_GET_CONTEXT(ctx, NO_RETVAL);
 
-    _CG_RETURN_IF_FAIL(cg_is_pipeline(pipeline));
+    c_return_if_fail(cg_is_pipeline(pipeline));
 
     /* Note: this will ensure that the layer exists, creating one if it
      * doesn't already.
@@ -572,7 +572,7 @@ _cg_pipeline_layer_get_wrap_mode_s(cg_pipeline_layer_t *layer)
     cg_pipeline_layer_t *authority;
     const cg_sampler_cache_entry_t *sampler_state;
 
-    _CG_RETURN_VAL_IF_FAIL(_cg_is_pipeline_layer(layer), false);
+    c_return_val_if_fail(_cg_is_pipeline_layer(layer), false);
 
     /* Now find the ancestor of the layer that is the authority for the
      * state we want to change */
@@ -587,7 +587,7 @@ cg_pipeline_get_layer_wrap_mode_s(cg_pipeline_t *pipeline, int layer_index)
 {
     cg_pipeline_layer_t *layer;
 
-    _CG_RETURN_VAL_IF_FAIL(cg_is_pipeline(pipeline), false);
+    c_return_val_if_fail(cg_is_pipeline(pipeline), false);
 
     /* Note: this will ensure that the layer exists, creating one if it
      * doesn't already.
@@ -609,7 +609,7 @@ _cg_pipeline_layer_get_wrap_mode_t(cg_pipeline_layer_t *layer)
     cg_pipeline_layer_t *authority;
     const cg_sampler_cache_entry_t *sampler_state;
 
-    _CG_RETURN_VAL_IF_FAIL(_cg_is_pipeline_layer(layer), false);
+    c_return_val_if_fail(_cg_is_pipeline_layer(layer), false);
 
     /* Now find the ancestor of the layer that is the authority for the
      * state we want to change */
@@ -624,7 +624,7 @@ cg_pipeline_get_layer_wrap_mode_t(cg_pipeline_t *pipeline, int layer_index)
 {
     cg_pipeline_layer_t *layer;
 
-    _CG_RETURN_VAL_IF_FAIL(cg_is_pipeline(pipeline), false);
+    c_return_val_if_fail(cg_is_pipeline(pipeline), false);
 
     /* Note: this will ensure that the layer exists, creating one if it
      * doesn't already.
@@ -655,7 +655,7 @@ cg_pipeline_get_layer_wrap_mode_p(cg_pipeline_t *pipeline, int layer_index)
 {
     cg_pipeline_layer_t *layer;
 
-    _CG_RETURN_VAL_IF_FAIL(cg_is_pipeline(pipeline), false);
+    c_return_val_if_fail(cg_is_pipeline(pipeline), false);
 
     /* Note: this will ensure that the layer exists, creating one if it
      * doesn't already.
@@ -696,7 +696,7 @@ cg_pipeline_set_layer_point_sprite_coords_enabled(cg_pipeline_t *pipeline,
 
     _CG_GET_CONTEXT(ctx, false);
 
-    _CG_RETURN_VAL_IF_FAIL(cg_is_pipeline(pipeline), false);
+    c_return_val_if_fail(cg_is_pipeline(pipeline), false);
 
     /* Don't allow point sprite coordinates to be enabled if the driver
        doesn't support it */
@@ -781,7 +781,7 @@ cg_pipeline_get_layer_point_sprite_coords_enabled(cg_pipeline_t *pipeline,
     cg_pipeline_layer_t *layer;
     cg_pipeline_layer_t *authority;
 
-    _CG_RETURN_VAL_IF_FAIL(cg_is_pipeline(pipeline), false);
+    c_return_val_if_fail(cg_is_pipeline(pipeline), false);
 
     /* Note: this will ensure that the layer exists, creating one if it
      * doesn't already.
@@ -872,9 +872,9 @@ cg_pipeline_add_layer_snippet(cg_pipeline_t *pipeline,
                               int layer_index,
                               cg_snippet_t *snippet)
 {
-    _CG_RETURN_IF_FAIL(cg_is_pipeline(pipeline));
-    _CG_RETURN_IF_FAIL(cg_is_snippet(snippet));
-    _CG_RETURN_IF_FAIL(snippet->hook >= CG_SNIPPET_FIRST_LAYER_HOOK);
+    c_return_if_fail(cg_is_pipeline(pipeline));
+    c_return_if_fail(cg_is_snippet(snippet));
+    c_return_if_fail(snippet->hook >= CG_SNIPPET_FIRST_LAYER_HOOK);
 
     if (snippet->hook < CG_SNIPPET_FIRST_LAYER_FRAGMENT_HOOK)
         _cg_pipeline_layer_add_vertex_snippet(pipeline, layer_index, snippet);
@@ -1096,7 +1096,7 @@ cg_pipeline_set_layer_combine(cg_pipeline_t *pipeline,
 
     _CG_GET_CONTEXT(ctx, false);
 
-    _CG_RETURN_VAL_IF_FAIL(cg_is_pipeline(pipeline), false);
+    c_return_val_if_fail(cg_is_pipeline(pipeline), false);
 
     /* Note: this will ensure that the layer exists, creating one if it
      * doesn't already.
@@ -1187,7 +1187,7 @@ cg_pipeline_set_layer_combine_constant(cg_pipeline_t *pipeline,
     cg_pipeline_layer_t *new;
     float color_as_floats[4];
 
-    _CG_RETURN_IF_FAIL(cg_is_pipeline(pipeline));
+    c_return_if_fail(cg_is_pipeline(pipeline));
 
     /* Note: this will ensure that the layer exists, creating one if it
      * doesn't already.
@@ -1267,7 +1267,7 @@ _cg_pipeline_get_layer_combine_constant(cg_pipeline_t *pipeline,
     cg_pipeline_layer_t *layer;
     cg_pipeline_layer_t *authority;
 
-    _CG_RETURN_IF_FAIL(cg_is_pipeline(pipeline));
+    c_return_if_fail(cg_is_pipeline(pipeline));
 
     /* Note: this will ensure that the layer exists, creating one if it
      * doesn't already.
@@ -1287,7 +1287,7 @@ _cg_pipeline_get_layer_combine_constant(cg_pipeline_t *pipeline,
 cg_texture_t *
 _cg_pipeline_layer_get_texture(cg_pipeline_layer_t *layer)
 {
-    _CG_RETURN_VAL_IF_FAIL(_cg_is_pipeline_layer(layer), NULL);
+    c_return_val_if_fail(_cg_is_pipeline_layer(layer), NULL);
 
     return _cg_pipeline_layer_get_texture_real(layer);
 }
@@ -1313,7 +1313,7 @@ _cg_pipeline_get_layer_filters(cg_pipeline_t *pipeline,
     cg_pipeline_layer_t *layer;
     cg_pipeline_layer_t *authority;
 
-    _CG_RETURN_IF_FAIL(cg_is_pipeline(pipeline));
+    c_return_if_fail(cg_is_pipeline(pipeline));
 
     layer = _cg_pipeline_get_layer(pipeline, layer_index);
 
@@ -1353,7 +1353,7 @@ _cg_pipeline_layer_get_min_filter(cg_pipeline_layer_t *layer)
 {
     cg_pipeline_layer_t *authority;
 
-    _CG_RETURN_VAL_IF_FAIL(_cg_is_pipeline_layer(layer), 0);
+    c_return_val_if_fail(_cg_is_pipeline_layer(layer), 0);
 
     authority = _cg_pipeline_layer_get_authority(
         layer, CG_PIPELINE_LAYER_STATE_SAMPLER);
@@ -1366,7 +1366,7 @@ _cg_pipeline_layer_get_mag_filter(cg_pipeline_layer_t *layer)
 {
     cg_pipeline_layer_t *authority;
 
-    _CG_RETURN_VAL_IF_FAIL(_cg_is_pipeline_layer(layer), 0);
+    c_return_val_if_fail(_cg_is_pipeline_layer(layer), 0);
 
     authority = _cg_pipeline_layer_get_authority(
         layer, CG_PIPELINE_LAYER_STATE_SAMPLER);
@@ -1387,9 +1387,9 @@ cg_pipeline_set_layer_filters(cg_pipeline_t *pipeline,
 
     _CG_GET_CONTEXT(ctx, NO_RETVAL);
 
-    _CG_RETURN_IF_FAIL(cg_is_pipeline(pipeline));
+    c_return_if_fail(cg_is_pipeline(pipeline));
 
-    _CG_RETURN_IF_FAIL(mag_filter == CG_PIPELINE_FILTER_NEAREST ||
+    c_return_if_fail(mag_filter == CG_PIPELINE_FILTER_NEAREST ||
                        mag_filter == CG_PIPELINE_FILTER_LINEAR);
 
     /* Note: this will ensure that the layer exists, creating one if it

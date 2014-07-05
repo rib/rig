@@ -464,7 +464,7 @@ _cg_context_free(cg_context_t *context)
 cg_context_t *
 _cg_context_get_default(void)
 {
-    _CG_RETURN_VAL_IF_FAIL(_cg_context != NULL, NULL);
+    c_return_val_if_fail(_cg_context != NULL, NULL);
     return _cg_context;
 }
 
@@ -487,7 +487,7 @@ cg_egl_context_get_egl_display(cg_context_t *context)
     const cg_winsys_vtable_t *winsys = _cg_context_get_winsys(context);
 
     /* This should only be called for EGL contexts */
-    _CG_RETURN_VAL_IF_FAIL(winsys->context_egl_get_egl_display != NULL, NULL);
+    c_return_val_if_fail(winsys->context_egl_get_egl_display != NULL, NULL);
 
     return winsys->context_egl_get_egl_display(context);
 }

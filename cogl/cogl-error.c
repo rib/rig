@@ -117,7 +117,7 @@ _cg_set_error_literal(cg_error_t **error,
 void
 _cg_propagate_error(cg_error_t **dest, cg_error_t *src)
 {
-    _CG_RETURN_IF_FAIL(src != NULL);
+    c_return_if_fail(src != NULL);
 
     if (dest == NULL) {
         c_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "%s", src->message);

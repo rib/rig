@@ -163,7 +163,7 @@ cg_texture_3d_new_from_bitmap(cg_bitmap_t *bmp, int height, int depth)
 {
     cg_texture_loader_t *loader;
 
-    _CG_RETURN_VAL_IF_FAIL(bmp, NULL);
+    c_return_val_if_fail(bmp, NULL);
 
     loader = _cg_texture_create_loader();
     loader->src_type = CG_TEXTURE_SOURCE_TYPE_BITMAP;
@@ -194,8 +194,8 @@ cg_texture_3d_new_from_data(cg_context_t *context,
     cg_bitmap_t *bitmap;
     cg_texture_3d_t *ret;
 
-    _CG_RETURN_VAL_IF_FAIL(data, NULL);
-    _CG_RETURN_VAL_IF_FAIL(format != CG_PIXEL_FORMAT_ANY, NULL);
+    c_return_val_if_fail(data, NULL);
+    c_return_val_if_fail(format != CG_PIXEL_FORMAT_ANY, NULL);
 
     /* Rowstride from width if not given */
     if (rowstride == 0)
@@ -474,7 +474,7 @@ _cg_texture_3d_allocate(cg_texture_t *tex, cg_error_t **error)
     cg_texture_3d_t *tex_3d = CG_TEXTURE_3D(tex);
     cg_texture_loader_t *loader = tex->loader;
 
-    _CG_RETURN_VAL_IF_FAIL(loader, false);
+    c_return_val_if_fail(loader, false);
 
     switch (loader->src_type) {
     case CG_TEXTURE_SOURCE_TYPE_SIZED:

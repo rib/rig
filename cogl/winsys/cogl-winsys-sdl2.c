@@ -117,7 +117,7 @@ _cg_winsys_display_destroy(cg_display_t *display)
 {
     cg_display_sdl2_t *sdl_display = display->winsys;
 
-    _CG_RETURN_IF_FAIL(sdl_display != NULL);
+    c_return_if_fail(sdl_display != NULL);
 
     if (sdl_display->context)
         SDL_GL_DeleteContext(sdl_display->context);
@@ -151,7 +151,7 @@ _cg_winsys_display_setup(cg_display_t *display, cg_error_t **error)
     const char *(*get_string_func)(GLenum name);
     const char *gl_version;
 
-    _CG_RETURN_VAL_IF_FAIL(display->winsys == NULL, false);
+    c_return_val_if_fail(display->winsys == NULL, false);
 
     sdl_display = c_slice_new0(cg_display_sdl2_t);
     display->winsys = sdl_display;
@@ -576,7 +576,7 @@ cg_sdl_onscreen_get_window(cg_onscreen_t *onscreen)
 {
     cg_onscreen_sdl2_t *sdl_onscreen;
 
-    _CG_RETURN_VAL_IF_FAIL(cg_is_onscreen(onscreen), NULL);
+    c_return_val_if_fail(cg_is_onscreen(onscreen), NULL);
 
     if (!cg_framebuffer_allocate(CG_FRAMEBUFFER(onscreen), NULL))
         return NULL;

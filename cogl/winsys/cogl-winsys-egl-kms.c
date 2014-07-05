@@ -895,7 +895,7 @@ _cg_winsys_onscreen_init(cg_onscreen_t *onscreen,
     cg_onscreen_egl_t *egl_onscreen;
     cg_onscreen_kms_t *kms_onscreen;
 
-    _CG_RETURN_VAL_IF_FAIL(egl_display->egl_context, false);
+    c_return_val_if_fail(egl_display->egl_context, false);
 
     if (kms_display->onscreen) {
         _cg_set_error(error,
@@ -1033,9 +1033,9 @@ _cg_winsys_egl_kms_get_vtable(void)
 void
 cg_kms_renderer_set_kms_fd(cg_renderer_t *renderer, int fd)
 {
-    _CG_RETURN_IF_FAIL(cg_is_renderer(renderer));
+    c_return_if_fail(cg_is_renderer(renderer));
     /* NB: Renderers are considered immutable once connected */
-    _CG_RETURN_IF_FAIL(!renderer->connected);
+    c_return_if_fail(!renderer->connected);
 
     renderer->kms_fd = fd;
 }
@@ -1043,7 +1043,7 @@ cg_kms_renderer_set_kms_fd(cg_renderer_t *renderer, int fd)
 int
 cg_kms_renderer_get_kms_fd(cg_renderer_t *renderer)
 {
-    _CG_RETURN_VAL_IF_FAIL(cg_is_renderer(renderer), -1);
+    c_return_val_if_fail(cg_is_renderer(renderer), -1);
 
     if (renderer->connected) {
         cg_renderer_egl_t *egl_renderer = renderer->winsys;

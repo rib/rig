@@ -79,7 +79,7 @@ _cg_span_iter_begin(cg_span_iter_t *iter,
 {
     /* XXX: If CLAMP_TO_EDGE needs to be emulated then it needs to be
      * done at a higher level than here... */
-    _CG_RETURN_IF_FAIL(wrap_mode == CG_PIPELINE_WRAP_MODE_REPEAT ||
+    c_return_if_fail(wrap_mode == CG_PIPELINE_WRAP_MODE_REPEAT ||
                        wrap_mode == CG_PIPELINE_WRAP_MODE_MIRRORED_REPEAT);
 
     iter->span = NULL;

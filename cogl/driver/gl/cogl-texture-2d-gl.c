@@ -412,7 +412,7 @@ _cg_texture_2d_gl_allocate(cg_texture_t *tex, cg_error_t **error)
     cg_texture_2d_t *tex_2d = CG_TEXTURE_2D(tex);
     cg_texture_loader_t *loader = tex->loader;
 
-    _CG_RETURN_VAL_IF_FAIL(loader, false);
+    c_return_val_if_fail(loader, false);
 
     switch (loader->src_type) {
     case CG_TEXTURE_SOURCE_TYPE_SIZED:
@@ -500,10 +500,10 @@ cg_texture_2d_gl_new_from_foreign(cg_context_t *ctx,
      */
 
     /* Assert it is a valid GL texture object */
-    _CG_RETURN_VAL_IF_FAIL(ctx->glIsTexture(gl_handle), false);
+    c_return_val_if_fail(ctx->glIsTexture(gl_handle), false);
 
     /* Validate width and height */
-    _CG_RETURN_VAL_IF_FAIL(width > 0 && height > 0, NULL);
+    c_return_val_if_fail(width > 0 && height > 0, NULL);
 
     loader = _cg_texture_create_loader();
     loader->src_type = CG_TEXTURE_SOURCE_TYPE_GL_FOREIGN;

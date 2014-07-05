@@ -46,7 +46,7 @@ cg_sdl_renderer_set_event_type(cg_renderer_t *renderer, int type)
 int
 cg_sdl_renderer_get_event_type(cg_renderer_t *renderer)
 {
-    _CG_RETURN_VAL_IF_FAIL(renderer->sdl_event_type_set, SDL_USEREVENT);
+    c_return_val_if_fail(renderer->sdl_event_type_set, SDL_USEREVENT);
 
     return renderer->sdl_event_type;
 }
@@ -76,7 +76,7 @@ cg_sdl_handle_event(cg_context_t *context, SDL_Event *event)
 {
     cg_renderer_t *renderer;
 
-    _CG_RETURN_IF_FAIL(cg_is_context(context));
+    c_return_if_fail(cg_is_context(context));
 
     renderer = context->display->renderer;
 

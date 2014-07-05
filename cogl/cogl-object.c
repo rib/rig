@@ -45,7 +45,7 @@ cg_object_ref(void *object)
 {
     cg_object_t *obj = object;
 
-    _CG_RETURN_VAL_IF_FAIL(object != NULL, NULL);
+    c_return_val_if_fail(object != NULL, NULL);
 
     obj->ref_count++;
     return object;
@@ -56,8 +56,8 @@ _cg_object_default_unref(void *object)
 {
     cg_object_t *obj = object;
 
-    _CG_RETURN_IF_FAIL(object != NULL);
-    _CG_RETURN_IF_FAIL(obj->ref_count > 0);
+    c_return_if_fail(object != NULL);
+    c_return_if_fail(obj->ref_count > 0);
 
     if (--obj->ref_count < 1) {
         void (*free_func)(void * obj);

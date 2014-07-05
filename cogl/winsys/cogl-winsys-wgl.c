@@ -472,7 +472,7 @@ create_context(cg_display_t *display, cg_error_t **error)
 {
     cg_display_wgl_t *wgl_display = display->winsys;
 
-    _CG_RETURN_VAL_IF_FAIL(wgl_display->wgl_context == NULL, false);
+    c_return_val_if_fail(wgl_display->wgl_context == NULL, false);
 
     /* Cogl assumes that there is always a GL context selected; in order
      * to make sure that a WGL context exists and is made current, we
@@ -548,7 +548,7 @@ _cg_winsys_display_destroy(cg_display_t *display)
 {
     cg_display_wgl_t *wgl_display = display->winsys;
 
-    _CG_RETURN_IF_FAIL(wgl_display != NULL);
+    c_return_if_fail(wgl_display != NULL);
 
     if (wgl_display->wgl_context) {
         wglMakeCurrent(NULL, NULL);
@@ -574,7 +574,7 @@ _cg_winsys_display_setup(cg_display_t *display, cg_error_t **error)
 {
     cg_display_wgl_t *wgl_display;
 
-    _CG_RETURN_VAL_IF_FAIL(display->winsys == NULL, false);
+    c_return_val_if_fail(display->winsys == NULL, false);
 
     wgl_display = c_slice_new0(cg_display_wgl_t);
     display->winsys = wgl_display;
@@ -639,7 +639,7 @@ update_winsys_features(cg_context_t *context, cg_error_t **error)
     const char *wgl_extensions;
     int i;
 
-    _CG_RETURN_VAL_IF_FAIL(wgl_display->wgl_context, false);
+    c_return_val_if_fail(wgl_display->wgl_context, false);
 
     if (!_cg_context_update_features(context, error))
         return false;
@@ -718,7 +718,7 @@ _cg_winsys_onscreen_bind(cg_onscreen_t *onscreen)
        NULL, but this isn't really going to work because before checking
        whether onscreen == NULL it reads the pointer to get the
        context */
-    _CG_RETURN_IF_FAIL(onscreen != NULL);
+    c_return_if_fail(onscreen != NULL);
 
     fb = CG_FRAMEBUFFER(onscreen);
     context = fb->context;
@@ -790,7 +790,7 @@ _cg_winsys_onscreen_init(cg_onscreen_t *onscreen,
     int pf;
     HWND hwnd;
 
-    _CG_RETURN_VAL_IF_FAIL(wgl_display->wgl_context, false);
+    c_return_val_if_fail(wgl_display->wgl_context, false);
 
     /* XXX: Note we ignore the user's original width/height when given a
      * foreign window. */

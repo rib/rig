@@ -199,56 +199,6 @@ _cg_util_popcountl(unsigned long num)
 
 #endif /* CG_UTIL_HAVE_BUILTIN_POPCOUNTL */
 
-#ifdef CG_HAS_GLIB_SUPPORT
-#define _CG_RETURN_IF_FAIL(EXPR) c_return_if_fail(EXPR)
-#define _CG_RETURN_VAL_IF_FAIL(EXPR, VAL) c_return_val_if_fail(EXPR, VAL)
-#else
-#ifdef CG_ENABLE_DEBUG
-#define _CG_RETURN_START do {
-#define _CG_RETURN_END                                                         \
-    }                                                                          \
-    while (0)
-#else /* CG_ENABLE_DEBUG */
-/* If debugging is disabled then we don't actually want to do the
- * check but we still want the code for the expression to be generated
- * so that it won't give loads of warnings about unused variables.
- * Therefore we just surround the block with if(0) */
-#define _CG_RETURN_START                                                       \
-    do {                                                                       \
-        if (0) {
-#define _CG_RETURN_END                                                         \
-    }                                                                          \
-    }                                                                          \
-    while (0)
-#endif /* CG_ENABLE_DEBUG */
-#define _CG_RETURN_IF_FAIL(EXPR)                                               \
-    _CG_RETURN_START                                                           \
-    {                                                                          \
-        if (!(EXPR)) {                                                         \
-            fprintf(stderr,                                                    \
-                    "file %s: line %d: assertion `%s' failed",                 \
-                    __FILE__,                                                  \
-                    __LINE__,                                                  \
-                    #EXPR);                                                    \
-            return;                                                            \
-        };                                                                     \
-    }                                                                          \
-    _CG_RETURN_END
-#define _CG_RETURN_VAL_IF_FAIL(EXPR, VAL)                                      \
-    _CG_RETURN_START                                                           \
-    {                                                                          \
-        if (!(EXPR)) {                                                         \
-            fprintf(stderr,                                                    \
-                    "file %s: line %d: assertion `%s' failed",                 \
-                    __FILE__,                                                  \
-                    __LINE__,                                                  \
-                    #EXPR);                                                    \
-            return (VAL);                                                      \
-        };                                                                     \
-    }                                                                          \
-    _CG_RETURN_END
-#endif /* CG_HAS_GLIB_SUPPORT */
-
 /* Match a cg_pixel_format_t according to channel masks, color depth,
  * bits per pixel and byte order. These information are provided by
  * the Visual and XImage structures.

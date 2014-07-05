@@ -63,7 +63,7 @@ cg_snippet_new(cg_snippet_hook_t hook,
 cg_snippet_hook_t
 cg_snippet_get_hook(cg_snippet_t *snippet)
 {
-    _CG_RETURN_VAL_IF_FAIL(cg_is_snippet(snippet), 0);
+    c_return_val_if_fail(cg_is_snippet(snippet), 0);
 
     return snippet->hook;
 }
@@ -86,7 +86,7 @@ void
 cg_snippet_set_declarations(cg_snippet_t *snippet,
                             const char *declarations)
 {
-    _CG_RETURN_IF_FAIL(cg_is_snippet(snippet));
+    c_return_if_fail(cg_is_snippet(snippet));
 
     if (!_cg_snippet_modify(snippet))
         return;
@@ -98,7 +98,7 @@ cg_snippet_set_declarations(cg_snippet_t *snippet,
 const char *
 cg_snippet_get_declarations(cg_snippet_t *snippet)
 {
-    _CG_RETURN_VAL_IF_FAIL(cg_is_snippet(snippet), NULL);
+    c_return_val_if_fail(cg_is_snippet(snippet), NULL);
 
     return snippet->declarations;
 }
@@ -106,7 +106,7 @@ cg_snippet_get_declarations(cg_snippet_t *snippet)
 void
 cg_snippet_set_pre(cg_snippet_t *snippet, const char *pre)
 {
-    _CG_RETURN_IF_FAIL(cg_is_snippet(snippet));
+    c_return_if_fail(cg_is_snippet(snippet));
 
     if (!_cg_snippet_modify(snippet))
         return;
@@ -118,7 +118,7 @@ cg_snippet_set_pre(cg_snippet_t *snippet, const char *pre)
 const char *
 cg_snippet_get_pre(cg_snippet_t *snippet)
 {
-    _CG_RETURN_VAL_IF_FAIL(cg_is_snippet(snippet), NULL);
+    c_return_val_if_fail(cg_is_snippet(snippet), NULL);
 
     return snippet->pre;
 }
@@ -126,7 +126,7 @@ cg_snippet_get_pre(cg_snippet_t *snippet)
 void
 cg_snippet_set_replace(cg_snippet_t *snippet, const char *replace)
 {
-    _CG_RETURN_IF_FAIL(cg_is_snippet(snippet));
+    c_return_if_fail(cg_is_snippet(snippet));
 
     if (!_cg_snippet_modify(snippet))
         return;
@@ -138,7 +138,7 @@ cg_snippet_set_replace(cg_snippet_t *snippet, const char *replace)
 const char *
 cg_snippet_get_replace(cg_snippet_t *snippet)
 {
-    _CG_RETURN_VAL_IF_FAIL(cg_is_snippet(snippet), NULL);
+    c_return_val_if_fail(cg_is_snippet(snippet), NULL);
 
     return snippet->replace;
 }
@@ -146,7 +146,7 @@ cg_snippet_get_replace(cg_snippet_t *snippet)
 void
 cg_snippet_set_post(cg_snippet_t *snippet, const char *post)
 {
-    _CG_RETURN_IF_FAIL(cg_is_snippet(snippet));
+    c_return_if_fail(cg_is_snippet(snippet));
 
     if (!_cg_snippet_modify(snippet))
         return;
@@ -158,7 +158,7 @@ cg_snippet_set_post(cg_snippet_t *snippet, const char *post)
 const char *
 cg_snippet_get_post(cg_snippet_t *snippet)
 {
-    _CG_RETURN_VAL_IF_FAIL(cg_is_snippet(snippet), NULL);
+    c_return_val_if_fail(cg_is_snippet(snippet), NULL);
 
     return snippet->post;
 }

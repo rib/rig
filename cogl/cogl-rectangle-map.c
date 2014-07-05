@@ -351,7 +351,7 @@ _cg_rectangle_map_add(cg_rectangle_map_t *map,
 
     /* Zero-sized rectangles break the algorithm for removing rectangles
        so we'll disallow them */
-    _CG_RETURN_VAL_IF_FAIL(width > 0 && height > 0, false);
+    c_return_val_if_fail(width > 0 && height > 0, false);
 
     /* Start with the root node */
     c_array_set_size(stack, 0);

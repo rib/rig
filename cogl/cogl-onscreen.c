@@ -106,7 +106,7 @@ _cg_onscreen_free(cg_onscreen_t *onscreen)
     c_queue_clear(&onscreen->pending_frame_infos);
 
     winsys->onscreen_deinit(onscreen);
-    _CG_RETURN_IF_FAIL(onscreen->winsys == NULL);
+    c_return_if_fail(onscreen->winsys == NULL);
 
     /* Chain up to parent */
     _cg_framebuffer_free(framebuffer);
@@ -241,7 +241,7 @@ cg_onscreen_swap_buffers_with_damage(cg_onscreen_t *onscreen,
     const cg_winsys_vtable_t *winsys;
     cg_frame_info_t *info;
 
-    _CG_RETURN_IF_FAIL(framebuffer->type == CG_FRAMEBUFFER_TYPE_ONSCREEN);
+    c_return_if_fail(framebuffer->type == CG_FRAMEBUFFER_TYPE_ONSCREEN);
 
     info = _cg_frame_info_new();
     info->frame_counter = onscreen->frame_counter;
@@ -288,7 +288,7 @@ cg_onscreen_swap_region(cg_onscreen_t *onscreen,
     const cg_winsys_vtable_t *winsys;
     cg_frame_info_t *info;
 
-    _CG_RETURN_IF_FAIL(framebuffer->type == CG_FRAMEBUFFER_TYPE_ONSCREEN);
+    c_return_if_fail(framebuffer->type == CG_FRAMEBUFFER_TYPE_ONSCREEN);
 
     info = _cg_frame_info_new();
     info->frame_counter = onscreen->frame_counter;
@@ -300,7 +300,7 @@ cg_onscreen_swap_region(cg_onscreen_t *onscreen,
 
     /* This should only be called if the winsys advertises
        CG_WINSYS_FEATURE_SWAP_REGION */
-    _CG_RETURN_IF_FAIL(winsys->onscreen_swap_region != NULL);
+    c_return_if_fail(winsys->onscreen_swap_region != NULL);
 
     winsys->onscreen_swap_region(
         CG_ONSCREEN(framebuffer), rectangles, n_rectangles);
@@ -332,7 +332,7 @@ cg_onscreen_get_buffer_age(cg_onscreen_t *onscreen)
     cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
     const cg_winsys_vtable_t *winsys;
 
-    _CG_RETURN_VAL_IF_FAIL(framebuffer->type == CG_FRAMEBUFFER_TYPE_ONSCREEN,
+    c_return_val_if_fail(framebuffer->type == CG_FRAMEBUFFER_TYPE_ONSCREEN,
                            0);
 
     winsys = _cg_framebuffer_get_winsys(framebuffer);
@@ -352,7 +352,7 @@ cg_x11_onscreen_set_foreign_window_xid(cg_onscreen_t *onscreen,
 {
     /* We don't wan't applications to get away with being lazy here and not
      * passing an update callback... */
-    _CG_RETURN_IF_FAIL(update);
+    c_return_if_fail(update);
 
     onscreen->foreign_xid = xid;
     onscreen->foreign_update_mask_callback = update;
@@ -371,7 +371,7 @@ cg_x11_onscreen_get_window_xid(cg_onscreen_t *onscreen)
             _cg_framebuffer_get_winsys(framebuffer);
 
         /* This should only be called for x11 onscreens */
-        _CG_RETURN_VAL_IF_FAIL(winsys->onscreen_x11_get_window_xid != NULL, 0);
+        c_return_val_if_fail(winsys->onscreen_x11_get_window_xid != NULL, 0);
 
         return winsys->onscreen_x11_get_window_xid(onscreen);
     }
@@ -386,7 +386,7 @@ cg_x11_onscreen_get_visual_xid(cg_onscreen_t *onscreen)
     uint32_t id;
 
     /* This should only be called for xlib based onscreens */
-    _CG_RETURN_VAL_IF_FAIL(winsys->xlib_get_visual_info != NULL, 0);
+    c_return_val_if_fail(winsys->xlib_get_visual_info != NULL, 0);
 
     visinfo = winsys->xlib_get_visual_info();
     id = (uint32_t)visinfo->visualid;
@@ -415,7 +415,7 @@ cg_win32_onscreen_get_window(cg_onscreen_t *onscreen)
             _cg_framebuffer_get_winsys(framebuffer);
 
         /* This should only be called for win32 onscreens */
-        _CG_RETURN_VAL_IF_FAIL(winsys->onscreen_win32_get_window != NULL, 0);
+        c_return_val_if_fail(winsys->onscreen_win32_get_window != NULL, 0);
 
         return winsys->onscreen_win32_get_window(onscreen);
     }
@@ -437,7 +437,7 @@ void
 cg_onscreen_remove_frame_callback(cg_onscreen_t *onscreen,
                                   CoglFrameClosure *closure)
 {
-    _CG_RETURN_IF_FAIL(closure);
+    c_return_if_fail(closure);
 
     _cg_closure_disconnect(closure);
 }
@@ -584,7 +584,7 @@ void
 cg_onscreen_remove_dirty_callback(cg_onscreen_t *onscreen,
                                   cg_onscreen_dirty_closure_t *closure)
 {
-    _CG_RETURN_IF_FAIL(closure);
+    c_return_if_fail(closure);
 
     _cg_closure_disconnect(closure);
 }

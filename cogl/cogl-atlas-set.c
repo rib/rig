@@ -122,7 +122,7 @@ cg_atlas_set_get_premultiplied(cg_atlas_set_t *set)
 void
 cg_atlas_set_set_clear_enabled(cg_atlas_set_t *set, bool clear_enabled)
 {
-    _CG_RETURN_IF_FAIL(set->atlases == NULL);
+    c_return_if_fail(set->atlases == NULL);
 
     set->clear_enabled = clear_enabled;
 }
@@ -137,7 +137,7 @@ void
 cg_atlas_set_set_migration_enabled(cg_atlas_set_t *set,
                                    bool migration_enabled)
 {
-    _CG_RETURN_IF_FAIL(set->atlases == NULL);
+    c_return_if_fail(set->atlases == NULL);
 
     set->migration_enabled = migration_enabled;
 }

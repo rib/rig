@@ -65,8 +65,8 @@ cg_vector3_equal(const void *v1, const void *v2)
     float *vector0 = (float *)v1;
     float *vector1 = (float *)v2;
 
-    _CG_RETURN_VAL_IF_FAIL(v1 != NULL, false);
-    _CG_RETURN_VAL_IF_FAIL(v2 != NULL, false);
+    c_return_val_if_fail(v1 != NULL, false);
+    c_return_val_if_fail(v2 != NULL, false);
 
     /* There's no point picking an arbitrary epsilon that's appropriate
      * for comparing the components so we just use == that will at least
@@ -80,8 +80,8 @@ cg_vector3_equal_with_epsilon(const float *vector0,
                               const float *vector1,
                               float epsilon)
 {
-    _CG_RETURN_VAL_IF_FAIL(vector0 != NULL, false);
-    _CG_RETURN_VAL_IF_FAIL(vector1 != NULL, false);
+    c_return_val_if_fail(vector0 != NULL, false);
+    c_return_val_if_fail(vector1 != NULL, false);
 
     if (fabsf(vector0[X] - vector1[X]) < epsilon &&
         fabsf(vector0[Y] - vector1[Y]) < epsilon &&
@@ -215,8 +215,8 @@ cg_vector4_init_zero (float *vector)
 bool
 cg_vector4_equal (const void *v0, const void *v1)
 {
-    _CG_RETURN_VAL_IF_FAIL (v1 != NULL, false);
-    _CG_RETURN_VAL_IF_FAIL (v2 != NULL, false);
+    c_return_val_if_fail (v1 != NULL, false);
+    c_return_val_if_fail (v2 != NULL, false);
 
     return memcmp (v1, v2, sizeof (float) * 4) == 0 ? true : false;
 }

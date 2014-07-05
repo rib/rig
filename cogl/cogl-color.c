@@ -139,8 +139,8 @@ cg_color_unpremultiply(cg_color_t *color)
 bool
 cg_color_equal(const void *v1, const void *v2)
 {
-    _CG_RETURN_VAL_IF_FAIL(v1 != NULL, false);
-    _CG_RETURN_VAL_IF_FAIL(v2 != NULL, false);
+    c_return_val_if_fail(v1 != NULL, false);
+    c_return_val_if_fail(v2 != NULL, false);
 
     return memcmp(v1, v2, sizeof(cg_color_t)) == 0;
 }

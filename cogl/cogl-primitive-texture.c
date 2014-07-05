@@ -49,7 +49,7 @@ cg_primitive_texture_set_auto_mipmap(cg_primitive_texture_t *primitive_texture,
 {
     cg_texture_t *texture;
 
-    _CG_RETURN_IF_FAIL(cg_is_primitive_texture(primitive_texture));
+    c_return_if_fail(cg_is_primitive_texture(primitive_texture));
 
     texture = CG_TEXTURE(primitive_texture);
 

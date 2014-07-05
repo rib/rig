@@ -637,10 +637,10 @@ void
 cg_wayland_renderer_set_foreign_display(cg_renderer_t *renderer,
                                         struct wl_display *display)
 {
-    _CG_RETURN_IF_FAIL(cg_is_renderer(renderer));
+    c_return_if_fail(cg_is_renderer(renderer));
 
     /* NB: Renderers are considered immutable once connected */
-    _CG_RETURN_IF_FAIL(!renderer->connected);
+    c_return_if_fail(!renderer->connected);
 
     renderer->foreign_wayland_display = display;
 }
@@ -649,9 +649,9 @@ void
 cg_wayland_renderer_set_event_dispatch_enabled(cg_renderer_t *renderer,
                                                bool enable)
 {
-    _CG_RETURN_IF_FAIL(cg_is_renderer(renderer));
+    c_return_if_fail(cg_is_renderer(renderer));
     /* NB: Renderers are considered immutable once connected */
-    _CG_RETURN_IF_FAIL(!renderer->connected);
+    c_return_if_fail(!renderer->connected);
 
     renderer->wayland_enable_event_dispatch = enable;
 }
@@ -659,7 +659,7 @@ cg_wayland_renderer_set_event_dispatch_enabled(cg_renderer_t *renderer,
 struct wl_display *
 cg_wayland_renderer_get_display(cg_renderer_t *renderer)
 {
-    _CG_RETURN_VAL_IF_FAIL(cg_is_renderer(renderer), NULL);
+    c_return_val_if_fail(cg_is_renderer(renderer), NULL);
 
     if (renderer->foreign_wayland_display)
         return renderer->foreign_wayland_display;
@@ -706,7 +706,7 @@ cg_wayland_onscreen_set_foreign_surface(cg_onscreen_t *onscreen,
     cg_framebuffer_t *fb;
 
     fb = CG_FRAMEBUFFER(onscreen);
-    _CG_RETURN_IF_FAIL(!fb->allocated);
+    c_return_if_fail(!fb->allocated);
 
     onscreen->foreign_surface = surface;
 }

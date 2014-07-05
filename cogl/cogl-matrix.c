@@ -346,7 +346,7 @@ void
 _cg_matrix_prefix_print(const char *prefix, const cg_matrix_t *matrix)
 {
     if (!(matrix->flags & MAT_DIRTY_TYPE)) {
-        _CG_RETURN_IF_FAIL(matrix->type < CG_MATRIX_N_TYPES);
+        c_return_if_fail(matrix->type < CG_MATRIX_N_TYPES);
         c_print("%sMatrix type: %s, flags: %x\n",
                 prefix,
                 types[matrix->type],
@@ -1870,8 +1870,8 @@ cg_matrix_equal(const void *v1, const void *v2)
     const cg_matrix_t *a = v1;
     const cg_matrix_t *b = v2;
 
-    _CG_RETURN_VAL_IF_FAIL(v1 != NULL, false);
-    _CG_RETURN_VAL_IF_FAIL(v2 != NULL, false);
+    c_return_val_if_fail(v1 != NULL, false);
+    c_return_val_if_fail(v2 != NULL, false);
 
     /* We want to avoid having a fuzzy _equal() function (e.g. that uses
      * an arbitrary epsilon value) since this function noteably conforms
@@ -2072,13 +2072,13 @@ cg_matrix_transform_points(const cg_matrix_t *matrix,
                            int n_points)
 {
     /* The results of transforming always have three components... */
-    _CG_RETURN_IF_FAIL(stride_out >= sizeof(point3f_t));
+    c_return_if_fail(stride_out >= sizeof(point3f_t));
 
     if (n_components == 2)
         _cg_matrix_transform_points_f2(
             matrix, stride_in, points_in, stride_out, points_out, n_points);
     else {
-        _CG_RETURN_IF_FAIL(n_components == 3);
+        c_return_if_fail(n_components == 3);
 
         _cg_matrix_transform_points_f3(
             matrix, stride_in, points_in, stride_out, points_out, n_points);
@@ -2101,7 +2101,7 @@ cg_matrix_project_points(const cg_matrix_t *matrix,
         _cg_matrix_project_points_f3(
             matrix, stride_in, points_in, stride_out, points_out, n_points);
     else {
-        _CG_RETURN_IF_FAIL(n_components == 4);
+        c_return_if_fail(n_components == 4);
 
         _cg_matrix_project_points_f4(
             matrix, stride_in, points_in, stride_out, points_out, n_points);

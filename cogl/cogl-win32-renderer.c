@@ -65,9 +65,9 @@ void
 cg_win32_renderer_set_event_retrieval_enabled(cg_renderer_t *renderer,
                                               bool enable)
 {
-    _CG_RETURN_IF_FAIL(cg_is_renderer(renderer));
+    c_return_if_fail(cg_is_renderer(renderer));
     /* NB: Renderers are considered immutable once connected */
-    _CG_RETURN_IF_FAIL(!renderer->connected);
+    c_return_if_fail(!renderer->connected);
 
     renderer->win32_enable_event_retrieval = enable;
 }
