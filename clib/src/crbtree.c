@@ -86,7 +86,7 @@ struct c_rbtree *c_rbtree_create(int (*compar)(const void *, const void *))
 {
 	struct c_rbtree *tree;
 
-	tree = (struct c_rbtree *)malloc(sizeof(*tree));
+	tree = (struct c_rbtree *)c_malloc(sizeof(*tree));
 	tree->compar = compar;
 
 	/*
@@ -176,7 +176,7 @@ struct c_rbnode *c_rbtree_insert(struct c_rbtree *tree, void *data)
 		node = res < 0 ? node->left : node->right;
 	}
 
-	node = (struct c_rbnode *) malloc(sizeof(*node));
+	node = (struct c_rbnode *) c_malloc(sizeof(*node));
 	node->data = data;
 	node->left = node->right = rbnil(tree);
 	node->parent = parent;
@@ -351,7 +351,7 @@ static void _rbdestroy(struct c_rbtree *tree, struct c_rbnode *node,
 		if (destroy != NULL) {
 			destroy(node->data);
 		}
-		free(node);
+		c_free(node);
 	}
 }
 
@@ -366,7 +366,7 @@ void c_rbtree_destroy(struct c_rbtree *tree, void (*destroy)(void *))
 
 	if (c_rbtree_first(tree))
 		_rbdestroy(tree, c_rbtree_first(tree), destroy);
-	free(tree);
+	c_free(tree);
 }
 
 /*
@@ -408,7 +408,7 @@ void *c_rbtree_delete(struct c_rbtree *tree, struct c_rbnode *z)
 			z->parent->right = y;
 		}
 	}
-	free(z);
+	c_free(z);
 
 	tree->num_nodes--;
 	return (data);
