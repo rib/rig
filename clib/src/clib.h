@@ -1421,4 +1421,6 @@ long c_utf8_pointer_to_offset(const char *str, const char *pos);
 
 C_END_DECLS
 
+#include <crbtree.h>
+
 #endif
