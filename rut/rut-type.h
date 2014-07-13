@@ -55,6 +55,8 @@ typedef enum _rut_trait_id_t {
     RUT_TRAIT_ID_SELECTABLE,
     RUT_TRAIT_ID_MIMABLE,
     RUT_TRAIT_ID_CAMERA,
+
+    RUT_N_BUILTIN_TRAITS
 } rut_trait_id_t;
 
 typedef void (*RutTraitDestructor)(void *object);
@@ -112,6 +114,8 @@ void rut_type_add_trait(rut_type_t *type,
 void rut_trait_set_destructor(rut_type_t *type,
                               rut_trait_id_t id,
                               RutTraitDestructor trait_destructor);
+
+void rut_ensure_trait_id(int *trait_id);
 
 G_END_DECLS
 

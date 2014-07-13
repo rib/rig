@@ -33,6 +33,8 @@
 #include "rut-type.h"
 #include "rut-bitmask.h"
 
+static int rut_next_trait_id = RUT_N_BUILTIN_TRAITS;
+
 static bool
 find_max_id(int bit_num, void *user_data)
 {
@@ -91,4 +93,12 @@ void
 rut_type_set_magazine(rut_type_t *type, rut_magazine_t *magazine)
 {
     type->magazine = magazine;
+}
+
+void
+rut_ensure_trait_id(int *trait_id)
+{
+    if (*trait_id == 0) {
+        *trait_id = rut_next_trait_id++;
+    }
 }
