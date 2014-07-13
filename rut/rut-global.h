@@ -35,11 +35,11 @@
 
 #include <cogl/cogl.h>
 
-G_BEGIN_DECLS
+C_BEGIN_DECLS
 
 extern cg_context_t *rut_cg_context;
 
-G_END_DECLS
+C_END_DECLS
 
 #endif /* RIG_SIMULATOR_ONLY */
 

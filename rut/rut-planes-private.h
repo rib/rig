@@ -32,13 +32,13 @@
 #include <cogl/cogl2-experimental.h>
 #include <clib.h>
 
-G_BEGIN_DECLS
+C_BEGIN_DECLS
 
 typedef struct _rut_plane_t {
     CoglVector3 v0;
     CoglVector3 n;
 } rut_plane_t;
 
-G_END_DECLS
+C_END_DECLS
 
 #endif /* __RUT_PLANES_PRIVATE_H__ */

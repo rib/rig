@@ -109,7 +109,7 @@ struct _rut_context_t {
     GSList *timelines;
 };
 
-G_BEGIN_DECLS
+C_BEGIN_DECLS
 
 rut_context_t *rut_context_new(rut_shell_t *shell /* optional */);
 
@@ -150,6 +150,6 @@ _rut_load_texture(rut_context_t *ctx, const char *filename, cg_error_t **error);
 
 void rut_init_tls_state(void);
 
-G_END_DECLS
+C_END_DECLS
 
 #endif /* _RUT_CONTEXT_H_ */

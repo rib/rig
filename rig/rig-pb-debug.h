@@ -33,7 +33,7 @@
 
 #include "rig.pb-c.h"
 
-G_BEGIN_DECLS
+C_BEGIN_DECLS
 
 void rig_pb_print_ui(const Rig__UI *pb_ui);
 
@@ -41,6 +41,6 @@ void rig_pb_print_frame_setup(const Rig__FrameSetup *pb_frame_setup);
 
 void rig_pb_print_ui_diff(const Rig__UIDiff *pb_ui_diff);
 
-G_END_DECLS
+C_END_DECLS
 
 #endif /* __RIG_PB_DEBUG_H__ */

@@ -32,7 +32,7 @@
 
 #include <clib.h>
 
-G_BEGIN_DECLS
+C_BEGIN_DECLS
 
 #ifdef RUT_ENABLE_REFCOUNT_DEBUG
 
@@ -83,6 +83,6 @@ void _rut_refcount_debug_release(void *object, void *owner);
 
 #endif /* RUT_ENABLE_REFCOUNT_DEBUG */
 
-G_END_DECLS
+C_END_DECLS
 
 #endif /* _RUT_REFCOUNT_DEBUG_H_ */

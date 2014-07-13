@@ -32,7 +32,7 @@
 #include "rut-type.h"
 #include "rut-refcount-debug.h"
 
-G_BEGIN_DECLS
+C_BEGIN_DECLS
 
 /* We largely give up having compile time type safety for rut_object_ts
  * since the type system is intended to be dynamic and most apis
@@ -165,6 +165,6 @@ rut_object_release(void *object, void *owner)
         base->type->free(object);
 }
 
-G_END_DECLS
+C_END_DECLS
 
 #endif /* _RUT_OBJECT_H_ */

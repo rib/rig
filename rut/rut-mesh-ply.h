@@ -35,7 +35,7 @@
 
 #include "rut-mesh.h"
 
-G_BEGIN_DECLS
+C_BEGIN_DECLS
 
 #define RUT_MESH_PLY_ERROR rut_mesh_ply_error_quark()
 
@@ -113,6 +113,6 @@ rut_mesh_t *rut_mesh_new_from_ply_data(rut_context_t *ctx,
                                        rut_ply_attribute_status_t *load_status,
                                        GError **error);
 
-G_END_DECLS
+C_END_DECLS
 
 #endif /* _RUT_MESH_PLY_ */

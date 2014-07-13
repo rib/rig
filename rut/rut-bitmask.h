@@ -36,7 +36,7 @@
 
 #include <stdbool.h>
 
-G_BEGIN_DECLS
+C_BEGIN_DECLS
 
 /*
  * RutBitmask implements a growable array of bits. A RutBitmask can
@@ -307,6 +307,6 @@ _rut_bitmask_popcount_upto(const RutBitmask *bitmask,
                                    ((1UL << upto) - 1));
 }
 
-G_END_DECLS
+C_END_DECLS
 
 #endif /* __CG_BITMASK_H */

@@ -37,7 +37,7 @@
 #ifndef __RUT_MEMORY_STACK__
 #define __RUT_MEMORY_STACK__
 
-G_BEGIN_DECLS
+C_BEGIN_DECLS
 
 typedef struct _rut_memory_stack_t rut_memory_stack_t;
 typedef struct _rut_memory_sub_stack_t rut_memory_sub_stack_t;
@@ -110,6 +110,6 @@ void rut_memory_stack_rewind(rut_memory_stack_t *stack);
 
 void rut_memory_stack_free(rut_memory_stack_t *stack);
 
-G_END_DECLS
+C_END_DECLS
 
 #endif /* __RUT_MEMORY_STACK__ */

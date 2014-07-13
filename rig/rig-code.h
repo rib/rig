@@ -34,7 +34,7 @@ typedef struct _rig_code_node_t rig_code_node_t;
 
 #include "rig-engine.h"
 
-G_BEGIN_DECLS
+C_BEGIN_DECLS
 
 void _rig_code_init(rig_engine_t *engine);
 
@@ -69,6 +69,6 @@ void *rig_code_resolve_symbol(rig_engine_t *engine, const char *name);
 
 void rig_code_update_dso(rig_engine_t *engine, uint8_t *data, int len);
 
-G_END_DECLS
+C_END_DECLS
 
 #endif /* __RIG_CODE_H__ */

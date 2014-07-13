@@ -33,7 +33,7 @@
 
 #include "rig-engine.h"
 
-G_BEGIN_DECLS
+C_BEGIN_DECLS
 
 #define RIG_TYPE_APPLICATION (rig_application_get_type())
 #define RIG_APPLICATION(obj)                                                   \
@@ -69,6 +69,6 @@ rig_application_t *rig_application_new(rig_engine_t *engine);
 void rig_application_add_onscreen(rig_application_t *app,
                                   cg_onscreen_t *onscreen);
 
-G_END_DECLS
+C_END_DECLS
 
 #endif /* _RIG_APPLICATION_H_ */

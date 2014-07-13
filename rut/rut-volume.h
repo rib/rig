@@ -35,7 +35,7 @@
 #include <cogl/cogl.h>
 #include <clib.h>
 
-G_BEGIN_DECLS
+C_BEGIN_DECLS
 
 typedef struct _rut_volume_t rut_volume_t;
 
@@ -215,6 +215,6 @@ void rut_volume_axis_align(rut_volume_t *volume);
 
 rut_cull_result_t rut_volume_cull(rut_volume_t *pv, const rut_plane_t *planes);
 
-G_END_DECLS
+C_END_DECLS
 
 #endif /* _RUT_VOLUME_H_ */

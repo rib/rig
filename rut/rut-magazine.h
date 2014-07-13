@@ -30,7 +30,7 @@
 
 #include "rut-memory-stack.h"
 
-G_BEGIN_DECLS
+C_BEGIN_DECLS
 
 typedef struct _rut_magazine_chunk_t rut_magazine_chunk_t;
 
@@ -69,6 +69,6 @@ rut_magazine_chunk_free(rut_magazine_t *magazine, void *data)
 
 void rut_magazine_free(rut_magazine_t *magazine);
 
-G_END_DECLS
+C_END_DECLS
 
 #endif /* __RUT_MAGAZINE_H__ */

@@ -25,7 +25,7 @@
 #include "rut-types.h"
 #include "rut-closure.h"
 
-G_BEGIN_DECLS
+C_BEGIN_DECLS
 
 /**
  * SECTION:rut-text-buffer
@@ -237,6 +237,6 @@ rut_closure_t *rut_text_buffer_add_delete_text_callback(
     void *user_data,
     rut_closure_destroy_callback_t destroy_cb);
 
-G_END_DECLS
+C_END_DECLS
 
 #endif /* __RUT_TEXT_BUFFER_H__ */

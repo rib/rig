@@ -24,7 +24,7 @@
 #include "rut-types.h"
 #include "rut-closure.h"
 
-G_BEGIN_DECLS
+C_BEGIN_DECLS
 
 /**
  * SECTION:rut-poll
@@ -122,6 +122,6 @@ void rut_poll_run(rut_shell_t *shell);
 
 void rut_poll_quit(rut_shell_t *shell);
 
-G_END_DECLS
+C_END_DECLS
 
 #endif /* __RUT_POLL_H__ */

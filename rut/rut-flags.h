@@ -34,7 +34,7 @@
 
 #include <clib.h>
 
-G_BEGIN_DECLS
+C_BEGIN_DECLS
 
 /* These are macros used to implement a fixed-size array of bits. This
    should be used instead of CoglBitmask when the maximum bit number

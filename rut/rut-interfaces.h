@@ -34,7 +34,7 @@
 #include "rut-mesh.h"
 #include "rut-graphable.h"
 
-G_BEGIN_DECLS
+C_BEGIN_DECLS
 
 /* A Collection of really simple, common interfaces that don't seem to
  * warrent being split out into separate files.
@@ -168,6 +168,6 @@ typedef struct _rut_selectable_vtable_t {
 
 void rut_selectable_cancel(rut_object_t *object);
 
-G_END_DECLS
+C_END_DECLS
 
 #endif /* _RUT_INTERFACES_H_ */

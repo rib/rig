@@ -35,7 +35,7 @@
 
 #include <pango/pango.h>
 
-G_BEGIN_DECLS
+C_BEGIN_DECLS
 
 /**
  * SECTION:rut-text
@@ -1301,6 +1301,6 @@ void rut_text_set_height(rut_object_t *text, float height);
 
 rut_mesh_t *rut_text_get_pick_mesh(rut_object_t *text);
 
-G_END_DECLS
+C_END_DECLS
 
 #endif /* __RUT_TEXT_H__ */

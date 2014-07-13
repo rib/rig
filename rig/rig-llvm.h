@@ -30,7 +30,7 @@
 #ifndef __RIG_LLVM_H__
 #define __RIG_LLVM_H__
 
-G_BEGIN_DECLS
+C_BEGIN_DECLS
 
 typedef struct _rig_llvm_module_t rig_llvm_module_t;
 
@@ -46,6 +46,6 @@ rig_llvm_module_t *rig_llvm_compile_to_dso(const char *code,
  * without needing to write and then open a native dso. */
 rig_llvm_module_t *rig_llvm_compile_for_jit(const char *code);
 
-G_END_DECLS
+C_END_DECLS
 
 #endif /* __RIG_LLVM_H__ */

@@ -35,7 +35,7 @@
 #include "rut-list.h"
 #include "rut-magazine.h"
 
-G_BEGIN_DECLS
+C_BEGIN_DECLS
 
 /* Indices for builtin traits */
 typedef enum _rut_trait_id_t {
@@ -117,6 +117,6 @@ void rut_trait_set_destructor(rut_type_t *type,
 
 void rut_ensure_trait_id(int *trait_id);
 
-G_END_DECLS
+C_END_DECLS
 
 #endif /* _RUT_TYPE_H_ */

@@ -32,7 +32,7 @@
 #include <clib.h>
 #include <cogl/cogl.h>
 
-G_BEGIN_DECLS
+C_BEGIN_DECLS
 
 typedef struct {
     float center[2], down[2];
@@ -49,6 +49,6 @@ void rut_arcball_init(rut_arcball_t *ball,
 void rut_arcball_mouse_down(rut_arcball_t *ball, float x, float y);
 void rut_arcball_mouse_motion(rut_arcball_t *ball, float x, float y);
 
-G_END_DECLS
+C_END_DECLS
 
 #endif /* __RUT_ARCBALL_H__ */

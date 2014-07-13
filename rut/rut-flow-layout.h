@@ -36,7 +36,7 @@
 #include "rut-type.h"
 #include "rut-object.h"
 
-G_BEGIN_DECLS
+C_BEGIN_DECLS
 
 /**
  * SECTION:clutter-flow-layout
@@ -284,6 +284,6 @@ void rut_flow_layout_set_max_child_height(rut_flow_layout_t *flow,
  */
 int rut_flow_layout_get_max_child_height(rut_flow_layout_t *flow);
 
-G_END_DECLS
+C_END_DECLS
 
 #endif /* __RUT_FLOW_LAYOUT_H__ */
