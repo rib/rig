@@ -97,7 +97,7 @@ create_1d_gaussian_blur_pipeline(rut_context_t *ctx,
 
     c_string_set_size(shader, 0);
 
-    pipeline = cg_pipeline_new(ctx->cg_context);
+    pipeline = cg_pipeline_new(ctx->cg_device);
     cg_pipeline_set_layer_null_texture(pipeline,
                                        0, /* layer_num */
                                        CG_TEXTURE_TYPE_2D);
@@ -282,7 +282,7 @@ rut_gaussian_blurrer_blur(rut_gaussian_blurrer_t *blurrer,
     if (!blurrer->x_pass) {
         cg_error_t *error = NULL;
         cg_texture_2d_t *texture_2d =
-            cg_texture_2d_new_with_size(blurrer->ctx->cg_context, src_w, src_h);
+            cg_texture_2d_new_with_size(blurrer->ctx->cg_device, src_w, src_h);
 
         cg_texture_set_components(texture_2d, components);
 
@@ -305,7 +305,7 @@ rut_gaussian_blurrer_blur(rut_gaussian_blurrer_t *blurrer,
     if (!blurrer->y_pass) {
         /* create the second FBO (final destination) to render the y pass */
         cg_texture_2d_t *texture_2d =
-            cg_texture_2d_new_with_size(blurrer->ctx->cg_context, src_w, src_h);
+            cg_texture_2d_new_with_size(blurrer->ctx->cg_device, src_w, src_h);
 
         cg_texture_set_components(texture_2d, components);
 

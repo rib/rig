@@ -380,8 +380,8 @@ rut_util_draw_jittered_primitive3f(cg_framebuffer_t *fb,
                                    float green,
                                    float blue)
 {
-    cg_context_t *cg_ctx = cg_framebuffer_get_context(fb);
-    cg_pipeline_t *pipeline = cg_pipeline_new(cg_ctx);
+    cg_device_t *dev = cg_framebuffer_get_context(fb);
+    cg_pipeline_t *pipeline = cg_pipeline_new(dev);
     float viewport[4];
     cg_matrix_t projection;
     float pixel_dx, pixel_dy;

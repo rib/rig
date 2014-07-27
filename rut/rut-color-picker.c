@@ -265,7 +265,7 @@ ensure_hs_pipeline(rut_color_picker_t *picker)
     if (!picker->hs_pipeline_dirty)
         return;
 
-    bitmap = cg_bitmap_new_with_size(picker->context->cg_context,
+    bitmap = cg_bitmap_new_with_size(picker->context->cg_device,
                                      RUT_COLOR_PICKER_HS_SIZE,
                                      RUT_COLOR_PICKER_HS_SIZE,
                                      CG_PIXEL_FORMAT_RGBA_8888_PRE);
@@ -355,7 +355,7 @@ ensure_v_pipeline(rut_color_picker_t *picker)
     if (!picker->v_pipeline_dirty)
         return;
 
-    bitmap = cg_bitmap_new_with_size(picker->context->cg_context,
+    bitmap = cg_bitmap_new_with_size(picker->context->cg_device,
                                      1, /* width */
                                      RUT_COLOR_PICKER_V_HEIGHT,
                                      CG_PIXEL_FORMAT_RGB_888);
@@ -545,11 +545,11 @@ _rut_color_picker_init_type(void)
 }
 
 static cg_pipeline_t *
-create_hs_pipeline(cg_context_t *context)
+create_hs_pipeline(cg_device_t *dev)
 {
     cg_pipeline_t *pipeline;
 
-    pipeline = cg_pipeline_new(context);
+    pipeline = cg_pipeline_new(dev);
 
     cg_pipeline_set_layer_null_texture(pipeline, 0, CG_TEXTURE_TYPE_2D);
     cg_pipeline_set_layer_filters(pipeline,
@@ -569,7 +569,7 @@ create_dot_pipeline(rut_color_picker_t *picker)
     cg_texture_t *texture;
     GError *error = NULL;
 
-    picker->dot_pipeline = cg_pipeline_new(picker->context->cg_context);
+    picker->dot_pipeline = cg_pipeline_new(picker->context->cg_device);
 
     texture = rut_load_texture_from_data_file(
         picker->context, "color-picker-dot.png", &error);
@@ -590,11 +590,11 @@ create_dot_pipeline(rut_color_picker_t *picker)
 }
 
 static cg_pipeline_t *
-create_bg_pipeline(cg_context_t *context)
+create_bg_pipeline(cg_device_t *dev)
 {
     cg_pipeline_t *pipeline;
 
-    pipeline = cg_pipeline_new(context);
+    pipeline = cg_pipeline_new(dev);
 
     cg_pipeline_set_color4ub(pipeline, 0, 0, 0, 200);
 
@@ -776,7 +776,7 @@ rut_color_picker_new(rut_context_t *context)
 
     cg_color_init_from_4ub(&picker->color, 0, 0, 0, 255);
 
-    picker->hs_pipeline = create_hs_pipeline(context->cg_context);
+    picker->hs_pipeline = create_hs_pipeline(context->cg_device);
     picker->hs_pipeline_dirty = true;
 
     picker->v_pipeline = cg_pipeline_copy(picker->hs_pipeline);
@@ -784,7 +784,7 @@ rut_color_picker_new(rut_context_t *context)
 
     create_dot_pipeline(picker);
 
-    picker->bg_pipeline = create_bg_pipeline(context->cg_context);
+    picker->bg_pipeline = create_bg_pipeline(context->cg_device);
 
     rut_paintable_init(picker);
     rut_graphable_init(picker);

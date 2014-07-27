@@ -56,7 +56,7 @@ typedef struct _rut_texture_cache_entry_t {
 } rut_texture_cache_entry_t;
 #define RUT_TEXTURE_CACHE_ENTRY(X) ((rut_texture_cache_entry_t *)X)
 
-cg_context_t *rut_cg_context;
+cg_device_t *rut_cg_context;
 
 static cg_user_data_key_t texture_cache_key;
 
@@ -173,12 +173,12 @@ _rut_context_free(void *object)
 
     g_hash_table_destroy(ctx->texture_cache);
 
-    if (rut_cg_context == ctx->cg_context) {
+    if (rut_cg_context == ctx->cg_device) {
         cg_object_unref(rut_cg_context);
         rut_cg_context = NULL;
     }
 
-    cg_object_unref(ctx->cg_context);
+    cg_object_unref(ctx->cg_device);
 
     _rut_settings_free(ctx->settings);
 
@@ -244,7 +244,7 @@ rut_load_texture(rut_context_t *ctx, const char *filename, cg_error_t **error)
         return cg_object_ref(entry->texture);
 
     texture = (cg_texture_t *)cg_texture_2d_new_from_file(
-        ctx->cg_context, filename, error);
+        ctx->cg_device, filename, error);
     if (!texture)
         return NULL;
 
@@ -312,11 +312,11 @@ rut_context_new(rut_shell_t *shell)
 
     if (!context->headless) {
 #ifdef USE_SDL
-        context->cg_context = cg_sdl_context_new(SDL_USEREVENT, &error);
+        context->cg_device = cg_sdl_context_new(SDL_USEREVENT, &error);
 #else
-        context->cg_context = cg_context_new(NULL, &error);
+        context->cg_device = cg_device_new(NULL, &error);
 #endif
-        if (!context->cg_context) {
+        if (!context->cg_device) {
             c_warning("Failed to create Cogl Context: %s", error->message);
             c_free(context);
             return NULL;
@@ -325,7 +325,7 @@ rut_context_new(rut_shell_t *shell)
         /* We set up the first created rut_context_t as a global default context
          */
         if (rut_cg_context == NULL)
-            rut_cg_context = cg_object_ref(context->cg_context);
+            rut_cg_context = cg_object_ref(context->cg_device);
 
         context->texture_cache =
             g_hash_table_new_full(g_direct_hash,
@@ -334,14 +334,14 @@ rut_context_new(rut_shell_t *shell)
                                   _rut_texture_cache_entry_destroy_cb);
 
         context->nine_slice_indices =
-            cg_indices_new(context->cg_context,
+            cg_indices_new(context->cg_device,
                            CG_INDICES_TYPE_UNSIGNED_BYTE,
                            _rut_nine_slice_indices_data,
                            sizeof(_rut_nine_slice_indices_data) /
                            sizeof(_rut_nine_slice_indices_data[0]));
 
         context->single_texture_2d_template =
-            cg_pipeline_new(context->cg_context);
+            cg_pipeline_new(context->cg_device);
         cg_pipeline_set_layer_null_texture(
             context->single_texture_2d_template, 0, CG_TEXTURE_TYPE_2D);
 
@@ -353,7 +353,7 @@ rut_context_new(rut_shell_t *shell)
         cg_matrix_init_identity(&context->identity_matrix);
 
         context->pango_font_map =
-            CG_PANGO_FONT_MAP(cg_pango_font_map_new(context->cg_context));
+            CG_PANGO_FONT_MAP(cg_pango_font_map_new(context->cg_device));
 
         cg_pango_font_map_set_use_mipmapping(context->pango_font_map, true);
 

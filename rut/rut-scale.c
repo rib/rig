@@ -761,7 +761,7 @@ rut_scale_new(rut_context_t *ctx, float length, float natural_length)
     rut_graphable_add_child(scale->select_transform, scale->select_rect);
     rut_object_unref(scale->select_rect);
 
-    scale->pipeline = cg_pipeline_new(ctx->cg_context);
+    scale->pipeline = cg_pipeline_new(ctx->cg_device);
     cg_pipeline_set_color4f(scale->pipeline, 1, 0, 0, 1);
 
     scale->input_region =

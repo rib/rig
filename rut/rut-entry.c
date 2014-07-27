@@ -136,7 +136,7 @@ create_entry_prim (rut_entry_t *entry)
         {0, 0, 0x80, 0x80, 0x80, 0x80},
     };
 
-    return cg_primitive_new_p2c4 (entry->ctx->cg_context,
+    return cg_primitive_new_p2c4 (entry->ctx->cg_device,
                                   CG_VERTICES_MODE_LINES,
                                   8,
                                   lines);

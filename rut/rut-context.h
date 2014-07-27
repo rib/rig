@@ -81,7 +81,7 @@ struct _rut_context_t {
 
     rut_matrix_entry_t identity_entry;
 
-    cg_context_t *cg_context;
+    cg_device_t *cg_device;
 
     FcConfig *fc_config;
     FT_Library ft_library;

@@ -105,8 +105,8 @@ struct _rut_drop_down_t {
     cg_pipeline_t *selector_outline_pipeline;
 };
 
-/* Some of the pipelines are cached and attached to the cg_context_t so
- * that multiple drop downs created using the same cg_context_t will
+/* Some of the pipelines are cached and attached to the cg_device_t so
+ * that multiple drop downs created using the same cg_device_t will
  * use the same pipelines */
 typedef struct {
     cg_pipeline_t *bg_pipeline;
@@ -131,11 +131,11 @@ rut_drop_down_get_context_data(rut_context_t *context)
 {
     static cg_user_data_key_t context_data_key;
     rut_drop_down_context_data_t *context_data = cg_object_get_user_data(
-        CG_OBJECT(context->cg_context), &context_data_key);
+        CG_OBJECT(context->cg_device), &context_data_key);
 
     if (context_data == NULL) {
         context_data = c_new0(rut_drop_down_context_data_t, 1);
-        cg_object_set_user_data(CG_OBJECT(context->cg_context),
+        cg_object_set_user_data(CG_OBJECT(context->cg_device),
                                 &context_data_key,
                                 context_data,
                                 c_free);
@@ -155,7 +155,7 @@ rut_drop_down_create_bg_pipeline(rut_context_t *context)
     if (context_data->bg_pipeline)
         return cg_object_ref(context_data->bg_pipeline);
     else {
-        cg_pipeline_t *pipeline = cg_pipeline_new(context->cg_context);
+        cg_pipeline_t *pipeline = cg_pipeline_new(context->cg_device);
         static cg_user_data_key_t bg_pipeline_destroy_key;
         cg_texture_t *bg_texture;
         GError *error = NULL;
@@ -641,11 +641,11 @@ rut_drop_down_handle_click(rut_drop_down_t *drop,
 
     if (drop->selector_outline_pipeline == NULL) {
         drop->selector_outline_pipeline =
-            cg_pipeline_new(drop->context->cg_context);
+            cg_pipeline_new(drop->context->cg_device);
         cg_pipeline_set_color4ub(drop->selector_outline_pipeline, 0, 0, 0, 255);
     }
 
-    drop->selector_outline_path = cg_path_new(drop->context->cg_context);
+    drop->selector_outline_path = cg_path_new(drop->context->cg_device);
     cg_path_rectangle(drop->selector_outline_path,
                       drop->selector_x,
                       drop->selector_y,

@@ -360,7 +360,7 @@ rut_scroll_bar_new(rut_context_t *ctx,
 
     scroll_bar->thickness = THICKNESS;
 
-    scroll_bar->rect_pipeline = cg_pipeline_new(ctx->cg_context);
+    scroll_bar->rect_pipeline = cg_pipeline_new(ctx->cg_device);
     cg_pipeline_set_color(scroll_bar->rect_pipeline, &scroll_bar->color);
 
     scroll_bar->rounded_pipeline = cg_pipeline_copy(scroll_bar->rect_pipeline);

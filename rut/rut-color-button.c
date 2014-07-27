@@ -318,10 +318,10 @@ _rut_color_button_init_type(void)
 }
 
 static cg_pipeline_t *
-create_color_pipeline(cg_context_t *context,
+create_color_pipeline(cg_device_t *dev,
                       uint32_t color)
 {
-    cg_pipeline_t *pipeline = cg_pipeline_new(context);
+    cg_pipeline_t *pipeline = cg_pipeline_new(dev);
 
     cg_pipeline_set_color4ub(pipeline,
                              color >> 24,
@@ -591,13 +591,13 @@ rut_color_button_new(rut_context_t *context)
     cg_color_init_from_4ub(&button->color, 0, 0, 0, 255);
 
     button->dark_edge_pipeline =
-        create_color_pipeline(context->cg_context, 0x000000ff);
+        create_color_pipeline(context->cg_device, 0x000000ff);
     button->light_edge_pipeline =
-        create_color_pipeline(context->cg_context, 0xdadadaff);
+        create_color_pipeline(context->cg_device, 0xdadadaff);
     button->padding_pipeline =
-        create_color_pipeline(context->cg_context, 0x919191ff);
+        create_color_pipeline(context->cg_device, 0x919191ff);
     button->color_pipeline =
-        create_color_pipeline(context->cg_context, 0x000000ff);
+        create_color_pipeline(context->cg_device, 0x000000ff);
 
     rut_paintable_init(button);
     rut_graphable_init(button);

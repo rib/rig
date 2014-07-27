@@ -363,7 +363,7 @@ rut_image_new(rut_context_t *ctx, cg_texture_t *texture)
 
     rut_list_init(&image->preferred_size_cb_list);
 
-    image->pipeline = cg_pipeline_new(ctx->cg_context);
+    image->pipeline = cg_pipeline_new(ctx->cg_device);
     cg_pipeline_set_layer_texture(image->pipeline,
                                   0, /* layer_num */
                                   texture);

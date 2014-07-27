@@ -519,7 +519,7 @@ rut_toggle_new_with_icons(rut_context_t *ctx,
             toggle->unselected_icon =
                 rut_load_texture(ctx, unselected_icon, NULL);
         if (toggle->unselected_icon) {
-            toggle->pipeline_selected_icon = cg_pipeline_new(ctx->cg_context);
+            toggle->pipeline_selected_icon = cg_pipeline_new(ctx->cg_device);
             cg_pipeline_set_layer_texture(
                 toggle->pipeline_selected_icon, 0, toggle->selected_icon);
             toggle->pipeline_unselected_icon =
@@ -562,8 +562,8 @@ rut_toggle_new_with_icons(rut_context_t *ctx,
         toggle->label_width + RUT_TOGGLE_BOX_RIGHT_PAD + RUT_TOGGLE_BOX_WIDTH;
     toggle->height = toggle->label_height + RUT_TOGGLE_LABEL_VPAD;
 
-    toggle->pipeline_border = cg_pipeline_new(ctx->cg_context);
-    toggle->pipeline_box = cg_pipeline_new(ctx->cg_context);
+    toggle->pipeline_border = cg_pipeline_new(ctx->cg_device);
+    toggle->pipeline_box = cg_pipeline_new(ctx->cg_device);
 
     _rut_toggle_update_colours(toggle);
 

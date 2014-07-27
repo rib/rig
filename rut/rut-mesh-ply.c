@@ -283,7 +283,7 @@ init_indices_array(loader_t *loader, int n_vertices, GError **error)
     } else if (n_vertices <= 0x10000) {
         loader->indices_type = CG_INDICES_TYPE_UNSIGNED_SHORT;
         loader->faces = c_array_new(false, false, sizeof(uint16_t));
-    } else if (cg_has_feature(loader->ctx->cg_context,
+    } else if (cg_has_feature(loader->ctx->cg_device,
                               CG_FEATURE_ID_UNSIGNED_INT_INDICES)) {
         loader->indices_type = CG_INDICES_TYPE_UNSIGNED_INT;
         loader->faces = c_array_new(false, false, sizeof(uint32_t));

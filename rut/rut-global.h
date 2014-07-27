@@ -37,7 +37,7 @@
 
 C_BEGIN_DECLS
 
-extern cg_context_t *rut_cg_context;
+extern cg_device_t *rut_cg_context;
 
 C_END_DECLS
 

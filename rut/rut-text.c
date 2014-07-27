@@ -1504,7 +1504,7 @@ selection_paint(rut_text_t *text, rut_paint_context_t *paint_ctx)
         position = text->position;
 
         if (position == text->selection_bound) {
-            cg_pipeline_t *pipeline = cg_pipeline_new(text->ctx->cg_context);
+            cg_pipeline_t *pipeline = cg_pipeline_new(text->ctx->cg_device);
 
             /* No selection, just draw the cursor */
             if (text->cursor_color_set)
@@ -1528,9 +1528,9 @@ selection_paint(rut_text_t *text, rut_paint_context_t *paint_ctx)
         } else {
             /* Paint selection background first */
             PangoLayout *layout = rut_text_get_layout(text);
-            cg_path_t *selection_path = cg_path_new(text->ctx->cg_context);
+            cg_path_t *selection_path = cg_path_new(text->ctx->cg_device);
             cg_color_t cg_color = { 0, };
-            cg_pipeline_t *pipeline = cg_pipeline_new(text->ctx->cg_context);
+            cg_pipeline_t *pipeline = cg_pipeline_new(text->ctx->cg_device);
 
             /* Paint selection background */
             if (text->selection_color_set)

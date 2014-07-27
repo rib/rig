@@ -66,7 +66,7 @@ rut_create_circle_fan_p2(rut_context_t *ctx, int subdivisions, int *n_verts_ret)
     *n_verts_ret = n_verts;
 
     attribute_buffer =
-        cg_attribute_buffer_new(ctx->cg_context, buffer_size, verts);
+        cg_attribute_buffer_new(ctx->cg_device, buffer_size, verts);
 
     attribute = cg_attribute_new(attribute_buffer,
                                  "cg_position_in",
@@ -136,7 +136,7 @@ rut_create_circle_texture(rut_context_t *ctx,
     int half_size = radius_texels + padding_texels;
     int size = half_size * 2;
 
-    tex2d = cg_texture_2d_new_with_size(ctx->cg_context, size, size);
+    tex2d = cg_texture_2d_new_with_size(ctx->cg_device, size, size);
     offscreen = cg_offscreen_new_with_texture(tex2d);
     fb = offscreen;
 
@@ -150,7 +150,7 @@ rut_create_circle_texture(rut_context_t *ctx,
     cg_framebuffer_translate(fb, half_size, half_size, 0);
     cg_framebuffer_scale(fb, radius_texels, radius_texels, 1);
 
-    white_pipeline = cg_pipeline_new(ctx->cg_context);
+    white_pipeline = cg_pipeline_new(ctx->cg_device);
     cg_pipeline_set_color4f(white_pipeline, 1, 1, 1, 1);
 
     cg_primitive_draw(circle, fb, white_pipeline);
@@ -311,7 +311,7 @@ rut_create_create_grid(
         n_lines++;
     }
 
-    return cg_primitive_new_p2(ctx->cg_context,
+    return cg_primitive_new_p2(ctx->cg_device,
                                CG_VERTICES_MODE_LINES,
                                n_lines * 2,
                                (cg_vertex_p2_t *)lines->data);

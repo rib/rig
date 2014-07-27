@@ -669,7 +669,7 @@ rut_mesh_create_primitive(rut_context_t *ctx, rut_mesh_t *mesh)
             attribute_buffers_map[i] = attribute_buffers[j];
         else {
             attribute_buffers[n_buffers] =
-                cg_attribute_buffer_new(ctx->cg_context,
+                cg_attribute_buffer_new(ctx->cg_device,
                                         mesh->attributes[i]->buffer->size,
                                         mesh->attributes[i]->buffer->data);
 
@@ -704,7 +704,7 @@ rut_mesh_create_primitive(rut_context_t *ctx, rut_mesh_t *mesh)
         cg_object_unref(attributes[i]);
 
     if (mesh->indices_buffer) {
-        cg_indices_t *indices = cg_indices_new(ctx->cg_context,
+        cg_indices_t *indices = cg_indices_new(ctx->cg_device,
                                                mesh->indices_type,
                                                mesh->indices_buffer->data,
                                                mesh->n_indices);

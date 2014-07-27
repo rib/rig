@@ -136,7 +136,7 @@ rut_rectangle_new4f(rut_context_t *ctx,
     rectangle->width = width;
     rectangle->height = height;
 
-    rectangle->pipeline = cg_pipeline_new(ctx->cg_context);
+    rectangle->pipeline = cg_pipeline_new(ctx->cg_device);
     cg_pipeline_set_color4f(rectangle->pipeline, red, green, blue, alpha);
 
     return rectangle;
