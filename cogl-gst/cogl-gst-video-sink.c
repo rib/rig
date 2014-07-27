@@ -140,7 +140,7 @@ typedef struct _CgGstRenderer {
 } CgGstRenderer;
 
 struct _CgGstVideoSinkPrivate {
-    cg_context_t *ctx;
+    cg_device_t *dev;
     cg_pipeline_t *pipeline;
     cg_texture_t *frame[3];
     bool frame_dirty;
@@ -352,7 +352,7 @@ cg_gst_video_sink_get_pipeline(CgGstVideoSink *vt)
     priv = vt->priv;
 
     if (priv->pipeline == NULL) {
-        priv->pipeline = cg_pipeline_new(priv->ctx);
+        priv->pipeline = cg_pipeline_new(priv->dev);
         cg_gst_video_sink_setup_pipeline(vt, priv->pipeline);
         cg_gst_video_sink_attach_frame(vt, priv->pipeline);
         priv->frame_dirty = false;
@@ -399,7 +399,7 @@ is_pot(unsigned int number)
  * Auto-mipmapping of any uploaded texture is disabled
  */
 static cg_texture_t *
-video_texture_new_from_data(cg_context_t *ctx,
+video_texture_new_from_data(cg_device_t *dev,
                             int width,
                             int height,
                             cg_pixel_format_t format,
@@ -410,12 +410,12 @@ video_texture_new_from_data(cg_context_t *ctx,
     cg_texture_t *tex;
     cg_error_t *internal_error = NULL;
 
-    bitmap = cg_bitmap_new_for_data(
-        ctx, width, height, format, rowstride, (uint8_t *)data);
+    bitmap = cg_bitmap_new_for_data(dev, width, height, format, rowstride,
+                                    (uint8_t *)data);
 
     if ((is_pot(cg_bitmap_get_width(bitmap)) &&
          is_pot(cg_bitmap_get_height(bitmap))) ||
-        cg_has_feature(ctx, CG_FEATURE_ID_TEXTURE_NPOT_BASIC)) {
+        cg_has_feature(dev, CG_FEATURE_ID_TEXTURE_NPOT_BASIC)) {
         tex = cg_texture_2d_new_from_bitmap(bitmap);
 
         cg_texture_set_premultiplied(tex, false);
@@ -494,7 +494,7 @@ cg_gst_rgb24_upload(CgGstVideoSink *sink, GstBuffer *buffer)
 
     clear_frame_textures(sink);
 
-    priv->frame[0] = video_texture_new_from_data(priv->ctx,
+    priv->frame[0] = video_texture_new_from_data(priv->dev,
                                                  priv->info.width,
                                                  priv->info.height,
                                                  format,
@@ -593,7 +593,7 @@ cg_gst_rgb32_upload(CgGstVideoSink *sink, GstBuffer *buffer)
 
     clear_frame_textures(sink);
 
-    priv->frame[0] = video_texture_new_from_data(priv->ctx,
+    priv->frame[0] = video_texture_new_from_data(priv->dev,
                                                  priv->info.width,
                                                  priv->info.height,
                                                  format,
@@ -640,7 +640,7 @@ cg_gst_yv12_upload(CgGstVideoSink *sink, GstBuffer *buffer)
     clear_frame_textures(sink);
 
     priv->frame[0] =
-        video_texture_new_from_data(priv->ctx,
+        video_texture_new_from_data(priv->dev,
                                     GST_VIDEO_INFO_COMP_WIDTH(&priv->info, 0),
                                     GST_VIDEO_INFO_COMP_HEIGHT(&priv->info, 0),
                                     format,
@@ -648,7 +648,7 @@ cg_gst_yv12_upload(CgGstVideoSink *sink, GstBuffer *buffer)
                                     frame.data[0]);
 
     priv->frame[2] =
-        video_texture_new_from_data(priv->ctx,
+        video_texture_new_from_data(priv->dev,
                                     GST_VIDEO_INFO_COMP_WIDTH(&priv->info, 1),
                                     GST_VIDEO_INFO_COMP_HEIGHT(&priv->info, 1),
                                     format,
@@ -656,7 +656,7 @@ cg_gst_yv12_upload(CgGstVideoSink *sink, GstBuffer *buffer)
                                     frame.data[1]);
 
     priv->frame[1] =
-        video_texture_new_from_data(priv->ctx,
+        video_texture_new_from_data(priv->dev,
                                     GST_VIDEO_INFO_COMP_WIDTH(&priv->info, 2),
                                     GST_VIDEO_INFO_COMP_HEIGHT(&priv->info, 2),
                                     format,
@@ -686,7 +686,7 @@ cg_gst_i420_upload(CgGstVideoSink *sink, GstBuffer *buffer)
     clear_frame_textures(sink);
 
     priv->frame[0] =
-        video_texture_new_from_data(priv->ctx,
+        video_texture_new_from_data(priv->dev,
                                     GST_VIDEO_INFO_COMP_WIDTH(&priv->info, 0),
                                     GST_VIDEO_INFO_COMP_HEIGHT(&priv->info, 0),
                                     format,
@@ -694,7 +694,7 @@ cg_gst_i420_upload(CgGstVideoSink *sink, GstBuffer *buffer)
                                     frame.data[0]);
 
     priv->frame[1] =
-        video_texture_new_from_data(priv->ctx,
+        video_texture_new_from_data(priv->dev,
                                     GST_VIDEO_INFO_COMP_WIDTH(&priv->info, 1),
                                     GST_VIDEO_INFO_COMP_HEIGHT(&priv->info, 1),
                                     format,
@@ -702,7 +702,7 @@ cg_gst_i420_upload(CgGstVideoSink *sink, GstBuffer *buffer)
                                     frame.data[1]);
 
     priv->frame[2] =
-        video_texture_new_from_data(priv->ctx,
+        video_texture_new_from_data(priv->dev,
                                     GST_VIDEO_INFO_COMP_WIDTH(&priv->info, 2),
                                     GST_VIDEO_INFO_COMP_HEIGHT(&priv->info, 2),
                                     format,
@@ -826,7 +826,7 @@ cg_gst_ayuv_upload(CgGstVideoSink *sink, GstBuffer *buffer)
 
     clear_frame_textures(sink);
 
-    priv->frame[0] = video_texture_new_from_data(priv->ctx,
+    priv->frame[0] = video_texture_new_from_data(priv->dev,
                                                  priv->info.width,
                                                  priv->info.height,
                                                  format,
@@ -905,7 +905,7 @@ cg_gst_nv12_upload(CgGstVideoSink *sink, GstBuffer *buffer)
     clear_frame_textures(sink);
 
     priv->frame[0] =
-        video_texture_new_from_data(priv->ctx,
+        video_texture_new_from_data(priv->dev,
                                     GST_VIDEO_INFO_COMP_WIDTH(&priv->info, 0),
                                     GST_VIDEO_INFO_COMP_HEIGHT(&priv->info, 0),
                                     CG_PIXEL_FORMAT_A_8,
@@ -913,7 +913,7 @@ cg_gst_nv12_upload(CgGstVideoSink *sink, GstBuffer *buffer)
                                     frame.data[0]);
 
     priv->frame[1] =
-        video_texture_new_from_data(priv->ctx,
+        video_texture_new_from_data(priv->dev,
                                     GST_VIDEO_INFO_COMP_WIDTH(&priv->info, 1),
                                     GST_VIDEO_INFO_COMP_HEIGHT(&priv->info, 1),
                                     CG_PIXEL_FORMAT_RG_88,
@@ -940,7 +940,7 @@ static CgGstRenderer nv12_glsl_renderer = {
 };
 
 static GSList *
-cg_gst_build_renderers_list(cg_context_t *ctx)
+cg_gst_build_renderers_list(cg_device_t *dev)
 {
     GSList *list = NULL;
     CgGstRendererFlag flags = 0;
@@ -954,10 +954,10 @@ cg_gst_build_renderers_list(cg_context_t *ctx)
         &ayuv_glsl_renderer,  &nv12_glsl_renderer, NULL
     };
 
-    if (cg_has_feature(ctx, CG_FEATURE_ID_GLSL))
+    if (cg_has_feature(dev, CG_FEATURE_ID_GLSL))
         flags |= CG_GST_RENDERER_NEEDS_GLSL;
 
-    if (cg_has_feature(ctx, CG_FEATURE_ID_TEXTURE_RG))
+    if (cg_has_feature(dev, CG_FEATURE_ID_TEXTURE_RG))
         flags |= CG_GST_RENDERER_NEEDS_TEXTURE_RG;
 
     for (i = 0; renderers[i]; i++)
@@ -991,15 +991,15 @@ cg_gst_build_caps(GSList *renderers)
 }
 
 void
-cg_gst_video_sink_set_context(CgGstVideoSink *vt, cg_context_t *ctx)
+cg_gst_video_sink_set_context(CgGstVideoSink *vt, cg_device_t *dev)
 {
     CgGstVideoSinkPrivate *priv = vt->priv;
 
-    if (ctx)
-        ctx = cg_object_ref(ctx);
+    if (dev)
+        dev = cg_object_ref(dev);
 
-    if (priv->ctx) {
-        cg_object_unref(priv->ctx);
+    if (priv->dev) {
+        cg_object_unref(priv->dev);
         g_slist_free(priv->renderers);
         priv->renderers = NULL;
         if (priv->caps) {
@@ -1008,9 +1008,9 @@ cg_gst_video_sink_set_context(CgGstVideoSink *vt, cg_context_t *ctx)
         }
     }
 
-    if (ctx) {
-        priv->ctx = ctx;
-        priv->renderers = cg_gst_build_renderers_list(priv->ctx);
+    if (dev) {
+        priv->dev = dev;
+        priv->renderers = cg_gst_build_renderers_list(priv->dev);
         priv->caps = cg_gst_build_caps(priv->renderers);
     }
 }
@@ -1465,10 +1465,10 @@ cg_gst_video_sink_class_init(CgGstVideoSinkClass *klass)
 }
 
 CgGstVideoSink *
-cg_gst_video_sink_new(cg_context_t *ctx)
+cg_gst_video_sink_new(cg_device_t *dev)
 {
     CgGstVideoSink *sink = g_object_new(CG_GST_TYPE_VIDEO_SINK, NULL);
-    cg_gst_video_sink_set_context(sink, ctx);
+    cg_gst_video_sink_set_context(sink, dev);
 
     return sink;
 }

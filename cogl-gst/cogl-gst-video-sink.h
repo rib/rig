@@ -177,14 +177,14 @@ GType cg_gst_video_sink_get_type(void) G_GNUC_CONST;
 
 /**
  * cg_gst_video_sink_new:
- * @ctx: The #cg_context_t
+ * @dev: The #cg_device_t
  *
  * Creates a new #CgGstVideoSink which will create resources for use
  * with the given context.
  *
  * Return value: (transfer full): a new #CgGstVideoSink
  */
-CgGstVideoSink *cg_gst_video_sink_new(cg_context_t *ctx);
+CgGstVideoSink *cg_gst_video_sink_new(cg_device_t *dev);
 
 /**
  * cg_gst_video_sink_is_ready:
@@ -229,15 +229,15 @@ cg_pipeline_t *cg_gst_video_sink_get_pipeline(CgGstVideoSink *vt);
 /**
  * cg_gst_video_sink_set_context:
  * @vt: The #CgGstVideoSink
- * @ctx: The #cg_context_t for the sink to use
+ * @dev: The #cg_device_t for the sink to use
  *
- * Sets the #cg_context_t that the video sink should use for creating
+ * Sets the #cg_device_t that the video sink should use for creating
  * any resources. This function would normally only be used if the
  * sink was constructed via gst_element_factory_make() instead of
  * cg_gst_video_sink_new().
  *
  */
-void cg_gst_video_sink_set_context(CgGstVideoSink *vt, cg_context_t *ctx);
+void cg_gst_video_sink_set_context(CgGstVideoSink *vt, cg_device_t *dev);
 
 /**
  * cg_gst_video_sink_get_free_layer:
