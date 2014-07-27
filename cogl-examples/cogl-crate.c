@@ -139,7 +139,7 @@ frame_event_cb(cg_onscreen_t *onscreen,
 int
 main(int argc, char **argv)
 {
-    cg_context_t *ctx;
+    cg_device_t *dev;
     cg_onscreen_t *onscreen;
     cg_framebuffer_t *fb;
     cg_error_t *error = NULL;
@@ -148,13 +148,13 @@ main(int argc, char **argv)
     float fovy, aspect, z_near, z_2d, z_far;
     cg_depth_state_t depth_state;
 
-    ctx = cg_context_new(NULL, &error);
-    if (!ctx) {
+    dev = cg_device_new(NULL, &error);
+    if (!dev) {
         fprintf(stderr, "Failed to create context: %s\n", error->message);
         return 1;
     }
 
-    onscreen = cg_onscreen_new(ctx, 640, 480);
+    onscreen = cg_onscreen_new(dev, 640, 480);
     fb = onscreen;
     data.fb = fb;
     data.framebuffer_width = cg_framebuffer_get_width(fb);
@@ -207,8 +207,8 @@ main(int argc, char **argv)
      * cg_get_rectangle_indices() is a convenience function for
      * accessing internal index buffers that can be shared.
      */
-    data.indices = cg_get_rectangle_indices(ctx, 6 /* n_rectangles */);
-    data.prim = cg_primitive_new_p3t2(ctx,
+    data.indices = cg_get_rectangle_indices(dev, 6 /* n_rectangles */);
+    data.prim = cg_primitive_new_p3t2(dev,
                                       CG_VERTICES_MODE_TRIANGLES,
                                       sizeof(vertices) / sizeof(vertices[0]),
                                       vertices);
@@ -219,7 +219,8 @@ main(int argc, char **argv)
     printf("crate.jpg (CC by-nc-nd http://bit.ly/9kP45T) ShadowRunner27 "
            "http://bit.ly/m1YXLh\n");
     data.texture =
-        cg_texture_2d_new_from_file(ctx, CG_EXAMPLES_DATA "crate.jpg", &error);
+        cg_texture_2d_new_from_file(dev, CG_EXAMPLES_DATA "crate.jpg",
+                                    &error);
     if (!data.texture)
         g_error("Failed to load texture: %s", error->message);
 
@@ -227,7 +228,7 @@ main(int argc, char **argv)
      * processing, fragment processing and blending geometry. When
      * drawing the geometry for the crate this pipeline says to sample a
      * single texture during fragment processing... */
-    data.crate_pipeline = cg_pipeline_new(ctx);
+    data.crate_pipeline = cg_pipeline_new(dev);
     cg_pipeline_set_layer_texture(data.crate_pipeline, 0, data.texture);
 
     /* Since the box is made of multiple triangles that will overlap
@@ -241,7 +242,7 @@ main(int argc, char **argv)
 
     /* Setup a Pango font map and context */
 
-    data.pango_font_map = CG_PANGO_FONT_MAP(cg_pango_font_map_new(ctx));
+    data.pango_font_map = CG_PANGO_FONT_MAP(cg_pango_font_map_new(dev));
 
     cg_pango_font_map_set_use_mipmapping(data.pango_font_map, TRUE);
 
@@ -285,13 +286,13 @@ main(int argc, char **argv)
         }
 
         cg_poll_renderer_get_info(
-            cg_context_get_renderer(ctx), &poll_fds, &n_poll_fds, &timeout);
+            cg_device_get_renderer(dev), &poll_fds, &n_poll_fds, &timeout);
 
         g_poll((GPollFD *)poll_fds,
                n_poll_fds,
                timeout == -1 ? -1 : timeout / 1000);
 
-        cg_poll_renderer_dispatch(cg_context_get_renderer(ctx),
+        cg_poll_renderer_dispatch(cg_device_get_renderer(dev),
                                   poll_fds, n_poll_fds);
     }
 

@@ -44,7 +44,7 @@ typedef struct {
     Spark sparks[N_SPARKS];
     GTimer *last_spark_time;
 
-    cg_context_t *context;
+    cg_device_t *dev;
     cg_framebuffer_t *fb;
     cg_pipeline_t *pipeline;
     cg_primitive_t *primitive;
@@ -52,7 +52,7 @@ typedef struct {
 } Data;
 
 static cg_texture_t *
-generate_round_texture(cg_context_t *context)
+generate_round_texture(cg_device_t *dev)
 {
     uint8_t *p, *data;
     int x, y;
@@ -75,7 +75,7 @@ generate_round_texture(cg_context_t *context)
             *(p++) = value;
         }
 
-    tex = cg_texture_2d_new_from_data(context,
+    tex = cg_texture_2d_new_from_data(dev,
                                       TEXTURE_SIZE,
                                       TEXTURE_SIZE,
                                       CG_PIXEL_FORMAT_RGBA_8888_PRE,
@@ -190,7 +190,7 @@ create_primitive(Data *data)
     int i;
 
     data->attribute_buffer =
-        cg_attribute_buffer_new_with_size(data->context, sizeof(data->sparks));
+        cg_attribute_buffer_new_with_size(data->dev, sizeof(data->sparks));
     cg_buffer_set_update_hint(data->attribute_buffer,
                               CG_BUFFER_UPDATE_HINT_DYNAMIC);
 
@@ -239,16 +239,16 @@ main(int argc, char *argv[])
     Data data;
     int i;
 
-    data.context = cg_context_new(NULL, NULL);
+    data.dev = cg_device_new(NULL, NULL);
 
     create_primitive(&data);
 
-    data.pipeline = cg_pipeline_new(data.context);
+    data.pipeline = cg_pipeline_new(data.dev);
     data.last_spark_time = g_timer_new();
     data.next_spark_num = 0;
     cg_pipeline_set_point_size(data.pipeline, TEXTURE_SIZE);
 
-    tex = generate_round_texture(data.context);
+    tex = generate_round_texture(data.dev);
     cg_pipeline_set_layer_texture(data.pipeline, 0, tex);
     cg_object_unref(tex);
 
@@ -269,11 +269,11 @@ main(int argc, char *argv[])
         data.sparks[i].y = 2.0f;
     }
 
-    onscreen = cg_onscreen_new(data.context, 800, 600);
+    onscreen = cg_onscreen_new(data.dev, 800, 600);
     cg_onscreen_show(onscreen);
     data.fb = onscreen;
 
-    cg_source = cg_glib_source_new(data.context, G_PRIORITY_DEFAULT);
+    cg_source = cg_glib_source_new(data.dev, G_PRIORITY_DEFAULT);
 
     g_source_attach(cg_source, NULL);
 
@@ -294,7 +294,7 @@ main(int argc, char *argv[])
     cg_object_unref(data.attribute_buffer);
     cg_object_unref(data.primitive);
     cg_object_unref(onscreen);
-    cg_object_unref(data.context);
+    cg_object_unref(data.dev);
 
     g_timer_destroy(data.last_spark_time);
 

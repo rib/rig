@@ -251,7 +251,7 @@ find_cg_gst_video_sink(GstElement *element)
 }
 
 static bool
-make_pipeline_for_uri(cg_context_t *ctx,
+make_pipeline_for_uri(cg_device_t *dev,
                       const char *uri,
                       GstElement **pipeline_out,
                       CgGstVideoSink **sink_out,
@@ -266,7 +266,7 @@ make_pipeline_for_uri(cg_context_t *ctx,
         pipeline = gst_pipeline_new("gst-player");
         bin = gst_element_factory_make("playbin", "bin");
 
-        sink = cg_gst_video_sink_new(ctx);
+        sink = cg_gst_video_sink_new(dev);
 
         g_object_set(G_OBJECT(bin), "video-sink", GST_ELEMENT(sink), NULL);
 
@@ -300,7 +300,7 @@ make_pipeline_for_uri(cg_context_t *ctx,
 
         g_object_ref(sink);
 
-        cg_gst_video_sink_set_context(sink, ctx);
+        cg_gst_video_sink_set_context(sink, dev);
     }
 
     *pipeline_out = pipeline;
@@ -313,7 +313,7 @@ int
 main(int argc, char **argv)
 {
     Data data;
-    cg_context_t *ctx;
+    cg_device_t *dev;
     cg_onscreen_t *onscreen;
     GstElement *pipeline;
     GSource *cg_source;
@@ -325,9 +325,9 @@ main(int argc, char **argv)
 
     /* Set the necessary cogl elements */
 
-    ctx = cg_context_new(NULL, NULL);
+    dev = cg_device_new(NULL, NULL);
 
-    onscreen = cg_onscreen_new(ctx, 640, 480);
+    onscreen = cg_onscreen_new(dev, 640, 480);
     cg_onscreen_set_resizable(onscreen, TRUE);
     cg_onscreen_add_resize_callback(onscreen, _resize_callback, &data, NULL);
     cg_onscreen_show(onscreen);
@@ -335,7 +335,7 @@ main(int argc, char **argv)
     data.fb = onscreen;
     cg_framebuffer_orthographic(data.fb, 0, 0, 640, 480, -1, 100);
 
-    data.border_pipeline = cg_pipeline_new(ctx);
+    data.border_pipeline = cg_pipeline_new(dev);
     cg_pipeline_set_color4f(data.border_pipeline, 0, 0, 0, 1);
     /* disable blending */
     cg_pipeline_set_blend(
@@ -347,7 +347,7 @@ main(int argc, char **argv)
 
     /*
        Create the cogl-gst video sink by calling the cg_gst_video_sink_new
-       function and passing it a cg_context_t (this is used to create the
+       function and passing it a cg_device_t (this is used to create the
        cg_pipeline_t and the texures for each frame). Alternatively you can use
        gst_element_factory_make ("coglsink", "some_name") and then set the
        context with cg_gst_video_sink_set_context.
@@ -358,7 +358,7 @@ main(int argc, char **argv)
     else
         uri = argv[1];
 
-    if (!make_pipeline_for_uri(ctx, uri, &pipeline, &data.sink, &error)) {
+    if (!make_pipeline_for_uri(dev, uri, &pipeline, &data.sink, &error)) {
         g_print("Error creating pipeline: %s\n", error->message);
         g_clear_error(&error);
         return EXIT_FAILURE;
@@ -370,7 +370,7 @@ main(int argc, char **argv)
 
     data.main_loop = g_main_loop_new(NULL, FALSE);
 
-    cg_source = cg_glib_source_new(ctx, G_PRIORITY_DEFAULT);
+    cg_source = cg_glib_source_new(dev, G_PRIORITY_DEFAULT);
     g_source_attach(cg_source, NULL);
 
     /*

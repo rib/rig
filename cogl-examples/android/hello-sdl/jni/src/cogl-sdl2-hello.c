@@ -85,7 +85,7 @@ frame_cb(cg_onscreen_t *onscreen,
 int
 main(int argc, char **argv)
 {
-    cg_context_t *ctx;
+    cg_device_t *dev;
     cg_onscreen_t *onscreen;
     cg_error_t *error = NULL;
     cg_vertex_p2c4_t triangle_vertices[] = {
@@ -98,13 +98,13 @@ main(int argc, char **argv)
 
     SDL_VideoInit(NULL);
 
-    ctx = cg_sdl_context_new(SDL_USEREVENT, &error);
-    if (!ctx) {
+    dev = cg_sdl_context_new(SDL_USEREVENT, &error);
+    if (!dev) {
         fprintf(stderr, "Failed to create context: %s\n", error->message);
         return 1;
     }
 
-    onscreen = cg_onscreen_new(ctx, 800, 600);
+    onscreen = cg_onscreen_new(dev, 800, 600);
     data.fb = onscreen;
 
     cg_onscreen_add_frame_callback(
@@ -123,8 +123,8 @@ main(int argc, char **argv)
     cg_onscreen_show(onscreen);
 
     data.triangle = cg_primitive_new_p2c4(
-        ctx, CG_VERTICES_MODE_TRIANGLES, 3, triangle_vertices);
-    data.pipeline = cg_pipeline_new(ctx);
+        dev, CG_VERTICES_MODE_TRIANGLES, 3, triangle_vertices);
+    data.pipeline = cg_pipeline_new(dev);
 
     data.redraw_queued = FALSE;
     data.ready_to_draw = TRUE;
@@ -138,7 +138,7 @@ main(int argc, char **argv)
                 continue;
             }
 
-            cg_sdl_idle(ctx);
+            cg_sdl_idle(dev);
             if (!SDL_WaitEvent(&event)) {
                 fprintf(stderr, "Error waiting for SDL events");
                 return 1;
@@ -146,10 +146,10 @@ main(int argc, char **argv)
         }
 
         handle_event(&data, &event);
-        cg_sdl_handle_event(ctx, &event);
+        cg_sdl_handle_event(dev, &event);
     }
 
-    cg_object_unref(ctx);
+    cg_object_unref(dev);
 
     return 0;
 }

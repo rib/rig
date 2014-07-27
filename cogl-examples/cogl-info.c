@@ -161,30 +161,30 @@ main(int argc, char **argv)
 {
     cg_renderer_t *renderer;
     cg_display_t *display;
-    cg_context_t *ctx;
+    cg_device_t *dev;
     cg_error_t *error = NULL;
     cg_winsys_id_t winsys_id;
     const char *winsys_name;
     OutputState output_state;
 
 #ifdef CG_HAS_EMSCRIPTEN_SUPPORT
-    ctx = cg_sdl_context_new(SDL_USEREVENT, &error);
+    dev = cg_sdl_context_new(SDL_USEREVENT, &error);
 #else
-    ctx = cg_context_new(NULL, &error);
+    dev = cg_device_new(NULL, &error);
 #endif
-    if (!ctx) {
+    if (!dev) {
         fprintf(stderr, "Failed to create context: %s\n", error->message);
         return 1;
     }
 
-    display = cg_context_get_display(ctx);
+    display = cg_device_get_display(dev);
     renderer = cg_display_get_renderer(display);
     winsys_id = cg_renderer_get_winsys_id(renderer);
     winsys_name = get_winsys_name_for_id(winsys_id);
     g_print("Renderer: %s\n\n", winsys_name);
 
     g_print("Features:\n");
-    cg_foreach_feature(ctx, feature_cb, NULL);
+    cg_foreach_feature(dev, feature_cb, NULL);
 
     g_print("Outputs:\n");
     output_state.id = 0;

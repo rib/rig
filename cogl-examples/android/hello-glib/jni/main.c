@@ -31,7 +31,7 @@
 typedef struct {
     struct android_app *app;
 
-    cg_context_t *context;
+    cg_device_t *context;
     cg_primitive_t *triangle;
     cg_framebuffer_t *fb;
 } TestData;
@@ -49,7 +49,7 @@ test_init(TestData *data)
 
     cg_android_set_native_window(data->app->window);
 
-    data->context = cg_context_new(NULL, &error);
+    data->context = cg_device_new(NULL, &error);
     if (!data->context) {
         g_critical("Failed to create context: %s\n", error->message);
         return 1;

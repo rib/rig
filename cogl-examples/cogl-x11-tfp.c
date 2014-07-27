@@ -39,7 +39,7 @@ main(int argc, char **argv)
     cg_renderer_t *renderer;
     cg_onscreen_template_t *onscreen_template;
     cg_display_t *display;
-    cg_context_t *ctx;
+    cg_device_t *dev;
     cg_onscreen_t *onscreen;
     cg_framebuffer_t *fb;
     cg_error_t *error = NULL;
@@ -99,13 +99,13 @@ main(int argc, char **argv)
         return 1;
     }
 
-    ctx = cg_context_new(display, &error);
-    if (!ctx) {
+    dev = cg_device_new(display, &error);
+    if (!dev) {
         fprintf(stderr, "Failed to create context: %s\n", error->message);
         return 1;
     }
 
-    onscreen = cg_onscreen_new(ctx, 640, 480);
+    onscreen = cg_onscreen_new(dev, 640, 480);
 
     /* We want to test that Cogl can handle foreign X windows... */
 
@@ -165,7 +165,7 @@ main(int argc, char **argv)
 
     pixmap = XCompositeNameWindowPixmap(xdpy, tfp_xwin);
 
-    tfp = cg_texture_pixmap_x11_new(ctx, pixmap, TRUE, &error);
+    tfp = cg_texture_pixmap_x11_new(dev, pixmap, TRUE, &error);
     if (!tfp) {
         fprintf(stderr,
                 "Failed to create cg_texture_pixmap_x11_t: %s",
@@ -202,7 +202,7 @@ main(int argc, char **argv)
         XFlush(xdpy);
 
         cg_framebuffer_clear4f(fb, CG_BUFFER_BIT_COLOR, 0, 0, 0, 1);
-        pipeline = cg_pipeline_new(ctx);
+        pipeline = cg_pipeline_new(dev);
         cg_pipeline_set_layer_texture(pipeline, 0, tfp);
         cg_framebuffer_draw_rectangle(fb, pipeline, -0.8, 0.8, 0.8, -0.8);
         cg_object_unref(pipeline);

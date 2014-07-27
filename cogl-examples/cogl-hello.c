@@ -3,7 +3,7 @@
 #include <stdio.h>
 
 typedef struct _Data {
-    cg_context_t *ctx;
+    cg_device_t *dev;
     cg_framebuffer_t *fb;
     cg_primitive_t *triangle;
     cg_pipeline_t *pipeline;
@@ -83,23 +83,23 @@ main(int argc, char **argv)
     data.is_dirty = FALSE;
     data.draw_ready = TRUE;
 
-    data.ctx = cg_context_new(NULL, &error);
-    if (!data.ctx) {
+    data.dev = cg_device_new(NULL, &error);
+    if (!data.dev) {
         fprintf(stderr, "Failed to create context: %s\n", error->message);
         return 1;
     }
 
-    onscreen = cg_onscreen_new(data.ctx, 640, 480);
+    onscreen = cg_onscreen_new(data.dev, 640, 480);
     cg_onscreen_show(onscreen);
     data.fb = onscreen;
 
     cg_onscreen_set_resizable(onscreen, TRUE);
 
     data.triangle = cg_primitive_new_p2c4(
-        data.ctx, CG_VERTICES_MODE_TRIANGLES, 3, triangle_vertices);
-    data.pipeline = cg_pipeline_new(data.ctx);
+        data.dev, CG_VERTICES_MODE_TRIANGLES, 3, triangle_vertices);
+    data.pipeline = cg_pipeline_new(data.dev);
 
-    cg_source = cg_glib_source_new(data.ctx, G_PRIORITY_DEFAULT);
+    cg_source = cg_glib_source_new(data.dev, G_PRIORITY_DEFAULT);
 
     g_source_attach(cg_source, NULL);
 

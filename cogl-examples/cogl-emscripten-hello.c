@@ -17,7 +17,7 @@ typedef struct Data {
 } Data;
 
 static Data data;
-static cg_context_t *ctx;
+static cg_device_t *dev;
 
 static void
 redraw(Data *data)
@@ -70,7 +70,7 @@ mainloop(void)
 
     while (SDL_PollEvent(&event)) {
         handle_event(&data, &event);
-        cg_sdl_handle_event(ctx, &event);
+        cg_sdl_handle_event(dev, &event);
     }
 
     if (data.redraw_queued && data.ready_to_draw) {
@@ -84,7 +84,7 @@ mainloop(void)
     if (!data.redraw_queued)
         emscripten_pause_main_loop();
 
-    cg_sdl_idle(ctx);
+    cg_sdl_idle(dev);
 }
 
 int
@@ -98,13 +98,13 @@ main(int argc, char **argv)
         { 0.7, -0.7, 0x00, 0x00, 0xff, 0xff }
     };
 
-    ctx = cg_sdl_context_new(SDL_USEREVENT, &error);
-    if (!ctx) {
+    dev = cg_sdl_context_new(SDL_USEREVENT, &error);
+    if (!dev) {
         fprintf(stderr, "Failed to create context: %s\n", error->message);
         return 1;
     }
 
-    onscreen = cg_onscreen_new(ctx, 800, 600);
+    onscreen = cg_onscreen_new(dev, 800, 600);
     data.fb = CG_FRAMEBUFFER(onscreen);
 
     cg_onscreen_add_frame_callback(
@@ -115,9 +115,9 @@ main(int argc, char **argv)
 
     cg_onscreen_show(onscreen);
 
-    data.triangle = cg_primitive_new_p2c4(
-        ctx, CG_VERTICES_MODE_TRIANGLES, 3, triangle_vertices);
-    data.pipeline = cg_pipeline_new(ctx);
+    data.triangle = cg_primitive_new_p2c4(dev, CG_VERTICES_MODE_TRIANGLES, 3,
+                                          triangle_vertices);
+    data.pipeline = cg_pipeline_new(dev);
 
     data.redraw_queued = TRUE;
     data.ready_to_draw = TRUE;
@@ -133,7 +133,7 @@ main(int argc, char **argv)
 
     emscripten_set_main_loop(mainloop, -1, TRUE);
 
-    cg_object_unref(ctx);
+    cg_object_unref(dev);
 
     return 0;
 }

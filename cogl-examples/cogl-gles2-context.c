@@ -7,7 +7,7 @@
 #define OFFSCREEN_HEIGHT 100
 
 typedef struct _Data {
-    cg_context_t *ctx;
+    cg_device_t *dev;
     cg_framebuffer_t *fb;
     cg_primitive_t *triangle;
     cg_pipeline_t *pipeline;
@@ -27,7 +27,7 @@ paint_cb(void *user_data)
 
     /* Draw scene with GLES2 */
     if (!cg_push_gles2_context(
-            data->ctx, data->gles2_ctx, data->fb, data->fb, &error)) {
+            data->dev, data->gles2_ctx, data->fb, data->fb, &error)) {
         g_error("Failed to push gles2 context: %s\n", error->message);
     }
 
@@ -36,7 +36,7 @@ paint_cb(void *user_data)
         g_random_double(), g_random_double(), g_random_double(), 1.0f);
     gles2->glClear(GL_COLOR_BUFFER_BIT);
 
-    cg_pop_gles2_context(data->ctx);
+    cg_pop_gles2_context(data->dev);
 
     /* Draw scene with Cogl */
     cg_primitive_draw(data->triangle, data->fb, data->pipeline);
@@ -76,22 +76,22 @@ main(int argc, char **argv)
     cg_renderer_add_constraint(renderer,
                                CG_RENDERER_CONSTRAINT_SUPPORTS_CG_GLES2);
     display = cg_display_new(renderer, NULL);
-    data.ctx = cg_context_new(display, NULL);
+    data.dev = cg_device_new(display, NULL);
 
-    onscreen = cg_onscreen_new(data.ctx, 640, 480);
+    onscreen = cg_onscreen_new(data.dev, 640, 480);
     cg_onscreen_show(onscreen);
     data.fb = onscreen;
 
     /* Prepare onscreen primitive */
     data.triangle = cg_primitive_new_p2c4(
-        data.ctx, CG_VERTICES_MODE_TRIANGLES, 3, triangle_vertices);
-    data.pipeline = cg_pipeline_new(data.ctx);
+        data.dev, CG_VERTICES_MODE_TRIANGLES, 3, triangle_vertices);
+    data.pipeline = cg_pipeline_new(data.dev);
 
     data.offscreen_texture = cg_texture_2d_new_with_size(
-        data.ctx, OFFSCREEN_WIDTH, OFFSCREEN_HEIGHT);
+        data.dev, OFFSCREEN_WIDTH, OFFSCREEN_HEIGHT);
     data.offscreen = cg_offscreen_new_with_texture(data.offscreen_texture);
 
-    data.gles2_ctx = cg_gles2_context_new(data.ctx, &error);
+    data.gles2_ctx = cg_gles2_context_new(data.dev, &error);
     if (!data.gles2_ctx) {
         g_error("Failed to create GLES2 context: %s\n", error->message);
     }
@@ -100,13 +100,13 @@ main(int argc, char **argv)
 
     /* Draw scene with GLES2 */
     if (!cg_push_gles2_context(
-            data.ctx, data.gles2_ctx, data.fb, data.fb, &error)) {
+            data.dev, data.gles2_ctx, data.fb, data.fb, &error)) {
         g_error("Failed to push gles2 context: %s\n", error->message);
     }
 
-    cg_pop_gles2_context(data.ctx);
+    cg_pop_gles2_context(data.dev);
 
-    cg_source = cg_glib_source_new(data.ctx, G_PRIORITY_DEFAULT);
+    cg_source = cg_glib_source_new(data.dev, G_PRIORITY_DEFAULT);
 
     g_source_attach(cg_source, NULL);
 

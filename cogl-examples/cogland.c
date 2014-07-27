@@ -105,7 +105,7 @@ struct _CoglandCompositor {
     struct wl_display *wayland_display;
     struct wl_event_loop *wayland_loop;
 
-    cg_context_t *cg_context;
+    cg_device_t *dev;
 
     int virtual_width;
     int virtual_height;
@@ -362,7 +362,7 @@ paint_cb(void *user_data)
             if (surface->texture) {
                 cg_texture_2d_t *texture = surface->texture;
                 cg_pipeline_t *pipeline =
-                    cg_pipeline_new(compositor->cg_context);
+                    cg_pipeline_new(compositor->cg_device);
                 cg_pipeline_set_layer_texture(pipeline, 0, texture);
                 cg_framebuffer_draw_rectangle(fb, pipeline, -1, 1, 1, -1);
                 cg_object_unref(pipeline);
@@ -536,7 +536,7 @@ cogland_surface_commit(struct wl_client *client,
                 surface->pending.buffer->resource;
 
             surface->texture = cg_wayland_texture_2d_new_from_buffer(
-                compositor->cg_context, buffer_resource, &error);
+                compositor->cg_device, buffer_resource, &error);
 
             if (!surface->texture) {
                 g_error("Failed to create texture_2d from wayland buffer: %s",
@@ -790,7 +790,7 @@ cogland_compositor_create_output(
         compositor->wayland_display, &wl_output_interface, output, bind_output);
 
     output->onscreen =
-        cg_onscreen_new(compositor->cg_context, width_mm, height_mm);
+        cg_onscreen_new(compositor->cg_device, width_mm, height_mm);
     /* Eventually there will be an implicit allocate on first use so this
      * will become optional... */
     fb = output->onscreen;
@@ -1004,14 +1004,14 @@ bind_shell(struct wl_client *client, void *data, uint32_t version, uint32_t id)
         client, &wl_shell_interface, &cogland_shell_interface, id, data);
 }
 
-static cg_context_t *
-create_cg_context(CoglandCompositor *compositor,
+static cg_device_t *
+create_cg_device(CoglandCompositor *compositor,
                   bool use_egl_constraint,
                   cg_error_t **error)
 {
     cg_renderer_t *renderer = renderer = cg_renderer_new();
     cg_display_t *display;
-    cg_context_t *context;
+    cg_device_t *dev;
 
     if (use_egl_constraint)
         cg_renderer_add_constraint(renderer, CG_RENDERER_CONSTRAINT_USES_EGL);
@@ -1025,12 +1025,12 @@ create_cg_context(CoglandCompositor *compositor,
     cg_wayland_display_set_compositor_display(display,
                                               compositor->wayland_display);
 
-    context = cg_context_new(display, error);
+    dev = cg_device_new(display, error);
 
     cg_object_unref(renderer);
     cg_object_unref(display);
 
-    return context;
+    return dev;
 }
 
 int
@@ -1077,20 +1077,20 @@ main(int argc, char **argv)
 
     /* We want Cogl to use an EGL renderer because otherwise it won't
      * set up the wl_drm object and only SHM buffers will work. */
-    compositor.cg_context =
-        create_cg_context(&compositor, TRUE /* use EGL constraint */, &error);
-    if (compositor.cg_context == NULL) {
+    compositor.cg_device =
+        create_cg_device(&compositor, TRUE /* use EGL constraint */, &error);
+    if (compositor.cg_device == NULL) {
         /* If we couldn't get an EGL context then try any type of
          * context */
         cg_error_free(error);
         error = NULL;
 
-        compositor.cg_context =
-            create_cg_context(&compositor,
+        compositor.cg_device =
+            create_cg_device(&compositor,
                               FALSE, /* don't set EGL constraint */
                               &error);
 
-        if (compositor.cg_context)
+        if (compositor.cg_device)
             g_warning("Failed to create context with EGL constraint, "
                       "falling back");
         else
@@ -1125,13 +1125,13 @@ main(int argc, char **argv)
     if (wl_display_add_socket(compositor.wayland_display, "wayland-0"))
         g_error("Failed to create socket");
 
-    compositor.triangle = cg_primitive_new_p2c4(compositor.cg_context,
+    compositor.triangle = cg_primitive_new_p2c4(compositor.cg_device,
                                                 CG_VERTICES_MODE_TRIANGLES,
                                                 3,
                                                 triangle_vertices);
-    compositor.triangle_pipeline = cg_pipeline_new(compositor.cg_context);
+    compositor.triangle_pipeline = cg_pipeline_new(compositor.cg_device);
 
-    cg_source = cg_glib_source_new(compositor.cg_context, G_PRIORITY_DEFAULT);
+    cg_source = cg_glib_source_new(compositor.cg_device, G_PRIORITY_DEFAULT);
 
     g_source_attach(cg_source, NULL);
 

@@ -40,7 +40,7 @@ main(int argc, char **argv)
     cg_renderer_t *renderer;
     cg_onscreen_template_t *onscreen_template;
     cg_display_t *display;
-    cg_context_t *ctx;
+    cg_device_t *dev;
     cg_onscreen_t *onscreen;
     cg_framebuffer_t *fb;
     cg_pipeline_t *pipeline;
@@ -89,13 +89,13 @@ main(int argc, char **argv)
         return 1;
     }
 
-    ctx = cg_context_new(display, &error);
-    if (!ctx) {
+    dev = cg_device_new(display, &error);
+    if (!dev) {
         fprintf(stderr, "Failed to create context: %s\n", error->message);
         return 1;
     }
 
-    onscreen = cg_onscreen_new(ctx, 640, 480);
+    onscreen = cg_onscreen_new(dev, 640, 480);
 
     /* We want to test that Cogl can handle foreign X windows... */
 
@@ -142,9 +142,9 @@ main(int argc, char **argv)
     cg_onscreen_set_resizable(onscreen, TRUE);
     cg_onscreen_add_resize_callback(onscreen, resize_handler, onscreen, NULL);
 
-    triangle = cg_primitive_new_p2c4(
-        ctx, CG_VERTICES_MODE_TRIANGLES, 3, triangle_vertices);
-    pipeline = cg_pipeline_new(ctx);
+    triangle = cg_primitive_new_p2c4(dev, CG_VERTICES_MODE_TRIANGLES, 3,
+                                     triangle_vertices);
+    pipeline = cg_pipeline_new(dev);
     for (;; ) {
         cg_poll_fd_t *poll_fds;
         int n_poll_fds;
@@ -166,10 +166,10 @@ main(int argc, char **argv)
          * callbacks, such as resize notification callbacks...
          */
         cg_poll_renderer_get_info(
-            cg_context_get_renderer(ctx), &poll_fds, &n_poll_fds, &timeout);
+            cg_device_get_renderer(dev), &poll_fds, &n_poll_fds, &timeout);
         g_poll((GPollFD *)poll_fds, n_poll_fds, 0);
         cg_poll_renderer_dispatch(
-            cg_context_get_renderer(ctx), poll_fds, n_poll_fds);
+            cg_device_get_renderer(dev), poll_fds, n_poll_fds);
 
         cg_framebuffer_clear4f(fb, CG_BUFFER_BIT_COLOR, 0, 0, 0, 1);
         cg_primitive_draw(triangle, fb, pipeline);

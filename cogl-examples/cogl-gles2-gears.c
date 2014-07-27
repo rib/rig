@@ -57,7 +57,7 @@
 #define GEAR_VERTEX_STRIDE 6
 
 typedef struct _Data {
-    cg_context_t *ctx;
+    cg_device_t *dev;
     cg_framebuffer_t *fb;
 
     cg_gles2_context_t *gles2_ctx;
@@ -586,13 +586,13 @@ paint_cb(void *user_data)
 
     /* Draw scene with GLES2 */
     if (!cg_push_gles2_context(
-            data->ctx, data->gles2_ctx, data->fb, data->fb, &error)) {
+            data->dev, data->gles2_ctx, data->fb, data->fb, &error)) {
         g_error("Failed to push gles2 context: %s\n", error->message);
     }
 
     gears_draw();
 
-    cg_pop_gles2_context(data->ctx);
+    cg_pop_gles2_context(data->dev);
 
     cg_onscreen_swap_buffers(CG_ONSCREEN(data->fb));
 
@@ -781,19 +781,19 @@ main(int argc, char **argv)
     cg_renderer_add_constraint(renderer,
                                CG_RENDERER_CONSTRAINT_SUPPORTS_CG_GLES2);
     display = cg_display_new(renderer, NULL);
-    data.ctx = cg_context_new(display, NULL);
+    data.dev = cg_device_new(display, NULL);
 
-    onscreen = cg_onscreen_new(data.ctx, 300, 300);
+    onscreen = cg_onscreen_new(data.dev, 300, 300);
     cg_onscreen_show(onscreen);
     data.fb = onscreen;
 
-    data.gles2_ctx = cg_gles2_context_new(data.ctx, &error);
+    data.gles2_ctx = cg_gles2_context_new(data.dev, &error);
     if (!data.gles2_ctx)
         g_error("Failed to create GLES2 context: %s\n", error->message);
 
     /* Draw scene with GLES2 */
     if (!cg_push_gles2_context(
-            data.ctx, data.gles2_ctx, data.fb, data.fb, &error)) {
+            data.dev, data.gles2_ctx, data.fb, data.fb, &error)) {
         g_error("Failed to push gles2 context: %s\n", error->message);
     }
 
@@ -803,9 +803,9 @@ main(int argc, char **argv)
     /* Initialize the gears */
     gears_init();
 
-    cg_pop_gles2_context(data.ctx);
+    cg_pop_gles2_context(data.dev);
 
-    cg_source = cg_glib_source_new(data.ctx, G_PRIORITY_DEFAULT);
+    cg_source = cg_glib_source_new(data.dev, G_PRIORITY_DEFAULT);
 
     g_source_attach(cg_source, NULL);
 
