@@ -32,7 +32,7 @@
 #define __CG_PATH_H__
 
 #ifdef CG_COMPILATION
-#include "cogl-context.h"
+#include "cogl-device.h"
 #else
 #include <cogl/cogl.h>
 #endif
@@ -61,7 +61,7 @@ typedef struct _cg_path_t cg_path_t;
 
 /**
  * cg_path_new:
- * @context: A #cg_context_t pointer
+ * @dev: A #cg_device_t pointer
  *
  * Creates a new, empty path object. The default fill rule is
  * %CG_PATH_FILL_RULE_EVEN_ODD.
@@ -70,7 +70,7 @@ typedef struct _cg_path_t cg_path_t;
  * be freed using cg_object_unref().
  *
  */
-cg_path_t *cg_path_new(cg_context_t *context);
+cg_path_t *cg_path_new(cg_device_t *context);
 
 /**
  * cg_path_copy:

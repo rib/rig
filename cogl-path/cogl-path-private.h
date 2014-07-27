@@ -71,7 +71,7 @@ struct _cg_path_t {
 struct _cg_path_data_t {
     unsigned int ref_count;
 
-    cg_context_t *context;
+    cg_device_t *dev;
 
     cg_path_fill_rule_t fill_rule;
 

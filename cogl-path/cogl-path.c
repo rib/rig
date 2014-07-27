@@ -41,7 +41,7 @@
 
 #include "cogl-util.h"
 #include "cogl-object.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-journal-private.h"
 #include "cogl-pipeline-private.h"
 #include "cogl-framebuffer-private.h"
@@ -804,7 +804,7 @@ cg_path_rel_curve_to(cg_path_t *path,
 }
 
 cg_path_t *
-cg_path_new(cg_context_t *context)
+cg_path_new(cg_device_t *dev)
 {
     cg_path_t *path;
     cg_path_data_t *data;
@@ -813,7 +813,7 @@ cg_path_new(cg_context_t *context)
     data = path->data = c_slice_new(cg_path_data_t);
 
     data->ref_count = 1;
-    data->context = context;
+    data->dev = dev;
     data->fill_rule = CG_PATH_FILL_RULE_EVEN_ODD;
     data->path_nodes = c_array_new(false, false, sizeof(cg_path_node_t));
     data->last_path = 0;
@@ -1268,7 +1268,7 @@ _cg_path_build_fill_attribute_buffer(cg_path_t *path)
     gluDeleteTess(tess.glc_tess);
 
     data->fill_attribute_buffer = cg_attribute_buffer_new(
-        data->context,
+        data->dev,
         sizeof(cg_path_tesselator_vertex_t) * tess.vertices->len,
         tess.vertices->data);
     c_array_free(tess.vertices, true);
@@ -1288,7 +1288,7 @@ _cg_path_build_fill_attribute_buffer(cg_path_t *path)
                          2, /* n_components */
                          CG_ATTRIBUTE_TYPE_FLOAT);
 
-    data->fill_vbo_indices = cg_indices_new(data->context,
+    data->fill_vbo_indices = cg_indices_new(data->dev,
                                             tess.indices_type,
                                             tess.indices->data,
                                             tess.indices->len);
@@ -1376,8 +1376,8 @@ cg_framebuffer_push_path_clip(cg_framebuffer_t *framebuffer,
                                       projection_entry,
                                       viewport);
 
-    if (framebuffer->context->current_draw_buffer == framebuffer)
-        framebuffer->context->current_draw_buffer_changes |=
+    if (framebuffer->dev->current_draw_buffer == framebuffer)
+        framebuffer->dev->current_draw_buffer_changes |=
             CG_FRAMEBUFFER_STATE_CLIP;
 }
 
@@ -1397,7 +1397,7 @@ _cg_path_build_stroke_attribute_buffer(cg_path_t *path)
         return;
 
     data->stroke_attribute_buffer = cg_attribute_buffer_new_with_size(
-        data->context, data->path_nodes->len * sizeof(float_vec2_t));
+        data->dev, data->path_nodes->len * sizeof(float_vec2_t));
 
     buffer = CG_BUFFER(data->stroke_attribute_buffer);
     buffer_p = _cg_buffer_map_for_fill_or_fallback(buffer);
