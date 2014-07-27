@@ -163,7 +163,7 @@ paint_overlays(rig_camera_view_t *view,
 
 /* Use this to visualize the depth-of-field alpha buffer... */
 #if 0
-    cg_pipeline_t *pipeline = cg_pipeline_new (engine->ctx->cg_context);
+    cg_pipeline_t *pipeline = cg_pipeline_new (engine->ctx->cg_device);
     cg_pipeline_set_layer_texture (pipeline, 0, view->dof.depth_pass);
     cg_pipeline_set_blend (pipeline, "RGBA=ADD(SRC_COLOR, 0)", NULL);
     cg_framebuffer_draw_rectangle (fb,
@@ -174,7 +174,7 @@ paint_overlays(rig_camera_view_t *view,
 
 /* Use this to visualize the shadow_map */
 #if 0
-    cg_pipeline_t *pipeline = cg_pipeline_new (engine->ctx->cg_context);
+    cg_pipeline_t *pipeline = cg_pipeline_new (engine->ctx->cg_device);
     cg_pipeline_set_layer_texture (pipeline, 0, engine->shadow_map);
     //cg_pipeline_set_layer_texture (pipeline, 0, engine->shadow_color);
     cg_pipeline_set_blend (pipeline, "RGBA=ADD(SRC_COLOR, 0)", NULL);
@@ -1164,7 +1164,7 @@ create_line_primitive(rig_engine_t *engine, float a[3], float b[3])
     data[1].z = b[2];
 
     attribute_buffer = cg_attribute_buffer_new(
-        engine->ctx->cg_context, 2 * sizeof(cg_vertex_p3_t), data);
+        engine->ctx->cg_device, 2 * sizeof(cg_vertex_p3_t), data);
 
     attributes[0] = cg_attribute_new(attribute_buffer,
                                      "cg_position_in",
@@ -2119,10 +2119,10 @@ rig_camera_view_new(rig_engine_t *engine)
 
     if (engine->frontend) {
         /* picking ray */
-        view->picking_ray_color = cg_pipeline_new(engine->ctx->cg_context);
+        view->picking_ray_color = cg_pipeline_new(engine->ctx->cg_device);
         cg_pipeline_set_color4f(view->picking_ray_color, 1.0, 0.0, 0.0, 1.0);
 
-        view->bg_pipeline = cg_pipeline_new(ctx->cg_context);
+        view->bg_pipeline = cg_pipeline_new(ctx->cg_device);
     }
 
     view->matrix_stack = rut_matrix_stack_new(ctx);

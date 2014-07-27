@@ -816,7 +816,7 @@ rig_frontend_post_init_engine(rig_frontend_t *frontend,
     rig_engine_t *engine = frontend->engine;
     cg_framebuffer_t *fb;
 
-    engine->default_pipeline = cg_pipeline_new(engine->ctx->cg_context);
+    engine->default_pipeline = cg_pipeline_new(engine->ctx->cg_device);
 
     engine->circle_node_attribute =
         rut_create_circle_fan_p2(engine->ctx, 20, &engine->circle_node_n_verts);
@@ -840,11 +840,11 @@ rig_frontend_post_init_engine(rig_frontend_t *frontend,
 
 #ifdef RIG_EDITOR_ENABLED
     if (engine->frontend_id == RIG_FRONTEND_ID_EDITOR) {
-        engine->onscreen = cg_onscreen_new(engine->ctx->cg_context, 1000, 700);
+        engine->onscreen = cg_onscreen_new(engine->ctx->cg_device, 1000, 700);
         cg_onscreen_set_resizable(engine->onscreen, true);
     } else
 #endif
-    engine->onscreen = cg_onscreen_new(engine->ctx->cg_context,
+    engine->onscreen = cg_onscreen_new(engine->ctx->cg_device,
                                        engine->device_width / 2,
                                        engine->device_height / 2);
 

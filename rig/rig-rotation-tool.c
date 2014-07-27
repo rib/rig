@@ -269,7 +269,7 @@ rig_rotation_tool_new(rig_camera_view_t *view)
     rut_list_init(&tool->rotation_event_cb_list);
 
     /* pipeline to draw the tool */
-    tool->default_pipeline = cg_pipeline_new(ctx->cg_context);
+    tool->default_pipeline = cg_pipeline_new(ctx->cg_device);
 
     /* rotation tool */
     tool->rotation_tool = rut_create_rotation_tool_primitive(ctx, 64);

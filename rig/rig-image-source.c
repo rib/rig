@@ -194,7 +194,7 @@ _rig_image_source_video_play(rig_image_source_t *source,
 
     _rig_image_source_video_stop(source);
 
-    source->sink = cg_gst_video_sink_new(engine->ctx->cg_context);
+    source->sink = cg_gst_video_sink_new(engine->ctx->cg_device);
     source->pipeline = gst_pipeline_new("renderer");
     source->bin = gst_element_factory_make("playbin", NULL);
 

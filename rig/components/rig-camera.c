@@ -836,7 +836,7 @@ cg_primitive_t *
 rig_camera_create_frustum_primitive(rut_object_t *object)
 {
     rig_camera_t *camera = object;
-    cg_context_t *cg_context = camera->engine->ctx->cg_context;
+    cg_device_t *dev = camera->engine->ctx->cg_device;
     Rutvertex4_t vertices[8] = {
         /* near plane in projection space */
         { -1, -1, -1, 1, },
@@ -873,7 +873,7 @@ rig_camera_create_frustum_primitive(rut_object_t *object)
     }
 
     attribute_buffer =
-        cg_attribute_buffer_new(cg_context, 8 * sizeof(Rutvertex4_t), vertices);
+        cg_attribute_buffer_new(dev, 8 * sizeof(Rutvertex4_t), vertices);
 
     attributes[0] = cg_attribute_new(attribute_buffer,
                                      "cg_position_in",
@@ -882,7 +882,7 @@ rig_camera_create_frustum_primitive(rut_object_t *object)
                                      3,
                                      CG_ATTRIBUTE_TYPE_FLOAT);
 
-    indices = cg_indices_new(cg_context,
+    indices = cg_indices_new(dev,
                              CG_INDICES_TYPE_UNSIGNED_BYTE,
                              indices_data,
                              G_N_ELEMENTS(indices_data));

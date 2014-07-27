@@ -271,9 +271,9 @@ _rig_hair_get_fin_texture(rig_hair_t *hair)
     int i;
 
     fin_texture = (cg_texture_t *)cg_texture_2d_new_with_size(
-        hair->ctx->cg_context, 1000, 1000);
+        hair->ctx->cg_device, 1000, 1000);
 
-    pipeline = cg_pipeline_new(hair->ctx->cg_context);
+    pipeline = cg_pipeline_new(hair->ctx->cg_device);
 
     offscreen = cg_offscreen_new_with_texture(fin_texture);
 
@@ -326,7 +326,7 @@ _rig_hair_draw_shell_texture(rig_hair_t *hair,
     cg_pipeline_t *pipeline;
     int i;
 
-    pipeline = cg_pipeline_new(hair->ctx->cg_context);
+    pipeline = cg_pipeline_new(hair->ctx->cg_device);
 
     offscreen = cg_offscreen_new_with_texture(shell_texture);
 
@@ -402,7 +402,7 @@ _rig_hair_generate_shell_textures(rig_hair_t *hair)
         for (i = num_textures; i < hair->n_shells; i++) {
             cg_texture_t **textures = (void *)hair->shell_textures->data;
             textures[i] = (cg_texture_t *)cg_texture_2d_new_with_size(
-                hair->ctx->cg_context, 256, 256);
+                hair->ctx->cg_device, 256, 256);
         }
     } else if (hair->n_shells < num_textures) {
         for (i = hair->n_shells; i < num_textures; i++) {
@@ -538,7 +538,7 @@ rig_hair_new(rut_context_t *ctx)
 
     if (!ctx->headless) {
         hair->circle = (cg_texture_t *)cg_texture_2d_new_from_file(
-            hair->ctx->cg_context, rut_find_data_file("circle1.png"), NULL);
+            hair->ctx->cg_device, rut_find_data_file("circle1.png"), NULL);
     }
 
     rut_introspectable_init(hair, _rig_hair_prop_specs, hair->properties);

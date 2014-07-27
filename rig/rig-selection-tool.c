@@ -359,7 +359,7 @@ rig_selection_tool_new(rig_camera_view_t *view,
     rut_list_init(&tool->selection_event_cb_list);
 
     /* pipeline to draw the tool */
-    tool->default_pipeline = cg_pipeline_new(ctx->cg_context);
+    tool->default_pipeline = cg_pipeline_new(ctx->cg_device);
 
     return tool;
 }

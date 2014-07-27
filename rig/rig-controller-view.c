@@ -1241,9 +1241,9 @@ draw_timeline_background(rig_path_view_t *path_view,
         cg_texture_t *texture;
         uint8_t *tex_data;
 
-        pipeline = cg_pipeline_new(view->context->cg_context);
+        pipeline = cg_pipeline_new(view->context->cg_device);
 
-        bitmap = cg_bitmap_new_with_size(view->context->cg_context,
+        bitmap = cg_bitmap_new_with_size(view->context->cg_device,
                                          tex_width,
                                          tex_height,
                                          CG_PIXEL_FORMAT_RGB_888);
@@ -2481,7 +2481,7 @@ rig_controller_view_create_dots_buffer (rig_controller_view_t *view)
 {
     size_t size = MAX (8, view->n_dots) * sizeof (rig_controller_view_dot_vertex_t);
 
-    return cg_attribute_buffer_new_with_size (view->context->cg_context,
+    return cg_attribute_buffer_new_with_size (view->context->cg_device,
                                               size);
 }
 #endif
@@ -2656,13 +2656,13 @@ rig_controller_view_draw_box (rig_controller_view_t *view,
 {
     if (view->box_pipeline == NULL)
     {
-        view->box_pipeline = cg_pipeline_new (view->context->cg_context);
+        view->box_pipeline = cg_pipeline_new (view->context->cg_device);
         cg_pipeline_set_color4ub (view->box_pipeline, 0, 0, 0, 255);
     }
 
     if (view->box_path == NULL)
     {
-        view->box_path = cg_path_new (view->context->cg_context);
+        view->box_path = cg_path_new (view->context->cg_device);
         cg_path_rectangle (view->box_path,
                            view->nodes_x + view->box_x1 * view->nodes_width,
                            view->box_y1 * view->row_height,
@@ -3139,7 +3139,7 @@ rig_controller_view_property_removed(rig_controller_view_t *view,
 static cg_pipeline_t *
 rig_controller_view_create_dots_pipeline (rig_controller_view_t *view)
 {
-    cg_pipeline_t *pipeline = cg_pipeline_new (view->context->cg_context);
+    cg_pipeline_t *pipeline = cg_pipeline_new (view->context->cg_device);
     char *dot_filename;
     cg_bitmap_t *bitmap;
     cg_error_t *error = NULL;
@@ -3153,7 +3153,7 @@ rig_controller_view_create_dots_pipeline (rig_controller_view_t *view)
     }
     else
     {
-        bitmap = cg_bitmap_new_from_file (view->context->cg_context,
+        bitmap = cg_bitmap_new_from_file (view->context->cg_device,
                                           dot_filename,
                                           &error);
         c_free (dot_filename);
@@ -3224,7 +3224,7 @@ rig_controller_view_create_separator_pipeline(rig_controller_view_t *view)
         view->context, "controller-view-separator.png", &error);
 
     if (texture) {
-        cg_pipeline_t *pipeline = cg_pipeline_new(view->context->cg_context);
+        cg_pipeline_t *pipeline = cg_pipeline_new(view->context->cg_device);
 
         view->separator_pipeline = pipeline;
         view->separator_width = cg_texture_get_width(texture);

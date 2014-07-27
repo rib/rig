@@ -210,7 +210,7 @@ static rut_ply_attribute_t ply_attributes[] = {
 #ifdef USE_GSTREAMER
 
 typedef struct _rig_thumbnail_generator_t {
-    cg_context_t *ctx;
+    cg_device_t *dev;
     cg_pipeline_t *cg_pipeline;
     rig_asset_t *video;
     GstElement *pipeline;
@@ -238,7 +238,7 @@ video_thumbnailer_grab(void *instance, void *user_data)
         cg_object_unref(generator->video->texture);
 
     generator->video->texture =
-        cg_texture_2d_new_with_size(generator->ctx, tex_width, tex_height);
+        cg_texture_2d_new_with_size(generator->dev, tex_width, tex_height);
 
     offscreen = cg_offscreen_new_with_texture(generator->video->texture);
     fbo = offscreen;
@@ -292,9 +292,9 @@ generate_video_thumbnail(rig_asset_t *asset)
     GstBus *bus;
 
     generator->seek_done = false;
-    generator->ctx = ctx->cg_context;
+    generator->dev = ctx->cg_device;
     generator->video = asset;
-    generator->sink = cg_gst_video_sink_new(ctx->cg_context);
+    generator->sink = cg_gst_video_sink_new(ctx->cg_device);
     generator->pipeline = gst_pipeline_new("thumbnailer");
     generator->bin = gst_element_factory_make("playbin", NULL);
 
@@ -369,7 +369,7 @@ generate_mesh_thumbnail(rig_asset_t *asset)
     mesh = rig_model_get_mesh(model);
 
     thumbnail =
-        cg_texture_2d_new_with_size(ctx->cg_context, tex_width, tex_height);
+        cg_texture_2d_new_with_size(ctx->cg_device, tex_width, tex_height);
 
     offscreen = cg_offscreen_new_with_texture(thumbnail);
     frame_buffer = offscreen;
@@ -380,7 +380,7 @@ generate_mesh_thumbnail(rig_asset_t *asset)
         &view, fovy, aspect, z_near, z_2d, tex_width, tex_height);
     cg_framebuffer_set_modelview_matrix(frame_buffer, &view);
 
-    pipeline = cg_pipeline_new(ctx->cg_context);
+    pipeline = cg_pipeline_new(ctx->cg_device);
 
     snippet =
         cg_snippet_new(CG_SNIPPET_HOOK_VERTEX,
@@ -625,7 +625,7 @@ DONE:
 }
 
 static cg_bitmap_t *
-bitmap_new_from_pixbuf(cg_context_t *ctx, GdkPixbuf *pixbuf)
+bitmap_new_from_pixbuf(cg_device_t *dev, GdkPixbuf *pixbuf)
 {
     bool has_alpha;
     GdkColorspace color_space;
@@ -672,7 +672,7 @@ bitmap_new_from_pixbuf(cg_context_t *ctx, GdkPixbuf *pixbuf)
     /* We just use the data directly from the pixbuf so that we don't
      * have to copy to a seperate buffer.
      */
-    bmp = cg_bitmap_new_for_data(ctx,
+    bmp = cg_bitmap_new_for_data(dev,
                                  width,
                                  height,
                                  pixel_format,
@@ -726,7 +726,7 @@ rig_asset_new_from_image_data(rut_context_t *ctx,
 
         g_object_unref(istream);
 
-        bitmap = bitmap_new_from_pixbuf(ctx->cg_context, pixbuf);
+        bitmap = bitmap_new_from_pixbuf(ctx->cg_device, pixbuf);
 
         asset->texture = cg_texture_2d_new_from_bitmap(bitmap);
 

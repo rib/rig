@@ -71,7 +71,7 @@ rig_dof_effect_new(rig_engine_t *engine)
 
     dof->engine = engine;
 
-    pipeline = cg_pipeline_new(engine->ctx->cg_context);
+    pipeline = cg_pipeline_new(engine->ctx->cg_device);
     dof->pipeline = pipeline;
 
     cg_pipeline_set_layer_texture(pipeline, 0, NULL); /* depth */
@@ -152,7 +152,7 @@ rig_dof_effect_get_depth_pass_fb(rig_depth_of_field_t *dof)
          * Offscreen render for post-processing
          */
         dof->depth_pass = cg_texture_2d_new_with_size(
-            dof->engine->ctx->cg_context, dof->width, dof->height);
+            dof->engine->ctx->cg_device, dof->width, dof->height);
 
         dof->depth_pass_fb = cg_offscreen_new_with_texture(dof->depth_pass);
     }
@@ -168,7 +168,7 @@ rig_dof_effect_get_color_pass_fb(rig_depth_of_field_t *dof)
          * Offscreen render for post-processing
          */
         dof->color_pass = cg_texture_2d_new_with_size(
-            dof->engine->ctx->cg_context, dof->width, dof->height);
+            dof->engine->ctx->cg_device, dof->width, dof->height);
 
         dof->color_pass_fb = cg_offscreen_new_with_texture(dof->color_pass);
     }

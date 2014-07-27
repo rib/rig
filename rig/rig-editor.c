@@ -2335,11 +2335,11 @@ create_debug_gradient(rig_engine_t *engine)
                                 { 200, 0, 0xff, 0xff, 0xff, 0xff } };
     cg_offscreen_t *offscreen;
     cg_primitive_t *prim = cg_primitive_new_p2c4(
-        engine->ctx->cg_context, CG_VERTICES_MODE_TRIANGLE_FAN, 4, quad);
-    cg_pipeline_t *pipeline = cg_pipeline_new(engine->ctx->cg_context);
+        engine->ctx->cg_device, CG_VERTICES_MODE_TRIANGLE_FAN, 4, quad);
+    cg_pipeline_t *pipeline = cg_pipeline_new(engine->ctx->cg_device);
 
     engine->gradient =
-        cg_texture_2d_new_with_size(engine->ctx->cg_context, 200, 200);
+        cg_texture_2d_new_with_size(engine->ctx->cg_device, 200, 200);
 
     offscreen = cg_offscreen_new_with_texture(engine->gradient);
 

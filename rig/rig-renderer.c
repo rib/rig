@@ -414,7 +414,7 @@ init_dof_pipeline_template(rig_engine_t *engine)
     cg_depth_state_t depth_state;
     cg_snippet_t *snippet;
 
-    pipeline = cg_pipeline_new(engine->ctx->cg_context);
+    pipeline = cg_pipeline_new(engine->ctx->cg_device);
 
     cg_pipeline_set_color_mask(pipeline, CG_COLOR_MASK_ALPHA);
 
@@ -1147,7 +1147,7 @@ get_entity_color_pipeline(rig_engine_t *engine,
         goto FOUND;
     }
 
-    pipeline = cg_pipeline_new(engine->ctx->cg_context);
+    pipeline = cg_pipeline_new(engine->ctx->cg_device);
 
     if (sources[SOURCE_TYPE_COLOR])
         rig_image_source_setup_pipeline(sources[SOURCE_TYPE_COLOR], pipeline);
@@ -1800,7 +1800,7 @@ draw_entity_camera_frustum(rig_engine_t *engine,
     rut_object_t *camera =
         rig_entity_get_component(entity, RUT_COMPONENT_TYPE_CAMERA);
     cg_primitive_t *primitive = rut_camera_create_frustum_primitive(camera);
-    cg_pipeline_t *pipeline = cg_pipeline_new(engine->ctx->cg_context);
+    cg_pipeline_t *pipeline = cg_pipeline_new(engine->ctx->cg_device);
     cg_depth_state_t depth_state;
 
     /* enable depth testing */
@@ -1940,7 +1940,7 @@ rig_paint_camera_entity(rig_entity_t *view_camera,
         rig_entity_get_component(view_camera, RUT_COMPONENT_TYPE_CAMERA);
     rig_renderer_t *renderer = paint_ctx->renderer;
     rig_engine_t *engine = paint_ctx->engine;
-    cg_context_t *ctx = engine->ctx->cg_context;
+    cg_device_t *dev = engine->ctx->cg_device;
     cg_framebuffer_t *fb = rut_camera_get_framebuffer(camera);
 
     rut_paint_ctx->camera = camera;
@@ -1949,7 +1949,7 @@ rig_paint_camera_entity(rig_entity_t *view_camera,
 
     if (paint_ctx->pass == RIG_PASS_COLOR_UNBLENDED && play_camera &&
         camera != play_camera) {
-        cg_pipeline_t *pipeline = cg_pipeline_new(ctx);
+        cg_pipeline_t *pipeline = cg_pipeline_new(dev);
         const cg_color_t *bg_color =
             rut_camera_get_background_color(play_camera);
         cg_pipeline_set_color4f(pipeline,

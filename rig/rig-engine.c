@@ -410,7 +410,7 @@ ensure_shadow_map(rig_engine_t *engine)
 
     g_warn_if_fail(engine->shadow_color == NULL);
 
-    color_buffer = cg_texture_2d_new_with_size(engine->ctx->cg_context,
+    color_buffer = cg_texture_2d_new_with_size(engine->ctx->cg_device,
                                                engine->device_width * 2,
                                                engine->device_height * 2);
 
