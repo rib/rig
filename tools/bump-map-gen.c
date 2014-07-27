@@ -94,15 +94,16 @@ choose_output_file_type(const char *path)
 }
 
 static void
-generate_bump_map(cg_context_t *ctx, const char *path, const char *output)
+generate_bump_map(cg_device_t *dev, const char *path, const char *output)
 {
-    cg_bitmap_t *bitmap = cg_bitmap_new_from_file(ctx, path, NULL);
+    cg_bitmap_t *bitmap = cg_bitmap_new_from_file(dev, path, NULL);
     cg_texture_t *src = cg_texture_2d_new_from_bitmap(bitmap);
 
     int tex_width = cg_texture_get_width(src);
     int tex_height = cg_texture_get_height(src);
 
-    cg_texture_t *dst = cg_texture_2d_new_with_size(ctx, tex_width, tex_height);
+    cg_texture_t *dst = cg_texture_2d_new_with_size(dev, tex_width,
+                                                    tex_height);
 
     cg_offscreen_t *offscreen = cg_offscreen_new_with_texture(dst);
     cg_framebuffer_t *fb = offscreen;
@@ -116,7 +117,7 @@ generate_bump_map(cg_context_t *ctx, const char *path, const char *output)
 
     cg_framebuffer_orthographic(fb, 0, 0, tex_width, tex_height, -1, 100);
 
-    pipeline = cg_pipeline_new(ctx);
+    pipeline = cg_pipeline_new(dev);
     cg_pipeline_set_layer_texture(pipeline, 0, src);
 
     snippet =
@@ -159,15 +160,16 @@ generate_bump_map(cg_context_t *ctx, const char *path, const char *output)
 }
 
 void
-generate_normal_map(cg_context_t *ctx, const char *path, const char *output)
+generate_normal_map(cg_device_t *dev, const char *path, const char *output)
 {
-    cg_bitmap_t *bitmap = cg_bitmap_new_from_file(ctx, path, NULL);
+    cg_bitmap_t *bitmap = cg_bitmap_new_from_file(dev, path, NULL);
     cg_texture_t *src = cg_texture_2d_new_from_bitmap(bitmap);
 
     int tex_width = cg_texture_get_width(src);
     int tex_height = cg_texture_get_height(src);
 
-    cg_texture_t *dst = cg_texture_2d_new_with_size(ctx, tex_width, tex_height);
+    cg_texture_t *dst = cg_texture_2d_new_with_size(dev, tex_width,
+                                                    tex_height);
 
     cg_offscreen_t *offscreen = cg_offscreen_new_with_texture(dst);
     cg_framebuffer_t *fb = offscreen;
@@ -197,7 +199,7 @@ generate_normal_map(cg_context_t *ctx, const char *path, const char *output)
 
     cg_framebuffer_orthographic(fb, 0, 0, tex_width, tex_height, -1, 100);
 
-    pipeline = cg_pipeline_new(ctx);
+    pipeline = cg_pipeline_new(dev);
     cg_pipeline_set_layer_texture(pipeline, 0, src);
 
     /* We don't want this layer to automatically be sampled so we opt
@@ -289,7 +291,7 @@ generate_normal_map(cg_context_t *ctx, const char *path, const char *output)
 int
 main(int argc, char **argv)
 {
-    cg_context_t *ctx = cg_context_new(NULL, NULL);
+    cg_device_t *dev = cg_device_new(NULL, NULL);
     GOptionContext *context = g_option_context_new(NULL);
     GError *error = NULL;
 
@@ -311,9 +313,9 @@ main(int argc, char **argv)
     }
 
     if (bump_map_mode)
-        generate_bump_map(ctx, remaining_args[0], output);
+        generate_bump_map(dev, remaining_args[0], output);
     else
-        generate_normal_map(ctx, remaining_args[0], output);
+        generate_normal_map(dev, remaining_args[0], output);
 
     return 0;
 }
