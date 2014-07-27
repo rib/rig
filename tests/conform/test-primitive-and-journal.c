@@ -44,7 +44,7 @@ create_primitives (cg_primitive_t *primitives[2])
       { 300, 100, 0, 0, 255, 255 },
     };
 
-  primitives[0] = cg_primitive_new_p2c4 (test_ctx,
+  primitives[0] = cg_primitive_new_p2c4 (test_dev,
                                            CG_VERTICES_MODE_TRIANGLE_STRIP,
                                            C_N_ELEMENTS (vertex_data),
                                            vertex_data);
@@ -58,7 +58,7 @@ create_primitives (cg_primitive_t *primitives[2])
 static cg_pipeline_t *
 create_pipeline (void)
 {
-  cg_pipeline_t *pipeline = cg_pipeline_new (test_ctx);
+  cg_pipeline_t *pipeline = cg_pipeline_new (test_dev);
 
   cg_pipeline_set_color4ub (pipeline, 0, 255, 0, 255);
 

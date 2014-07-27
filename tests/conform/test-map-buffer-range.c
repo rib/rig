@@ -34,14 +34,14 @@ test_map_buffer_range (void)
   cg_attribute_t *tex_coord_attribute;
   cg_primitive_t *primitive;
 
-  tex = cg_texture_2d_new_from_data (test_ctx,
+  tex = cg_texture_2d_new_from_data (test_dev,
                                        2, 2, /* width/height */
                                        CG_PIXEL_FORMAT_RGBA_8888_PRE,
                                        2 * 4, /* rowstride */
                                        tex_data,
                                        NULL /* error */);
 
-  pipeline = cg_pipeline_new (test_ctx);
+  pipeline = cg_pipeline_new (test_dev);
 
   cg_pipeline_set_layer_texture (pipeline, 0, tex);
   cg_pipeline_set_layer_filters (pipeline,
@@ -55,7 +55,7 @@ test_map_buffer_range (void)
   fb_width = cg_framebuffer_get_width (test_fb);
   fb_height = cg_framebuffer_get_height (test_fb);
 
-  buffer = cg_attribute_buffer_new (test_ctx,
+  buffer = cg_attribute_buffer_new (test_dev,
                                       sizeof (vertex_data),
                                       vertex_data);
 

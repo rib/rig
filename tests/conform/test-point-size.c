@@ -68,11 +68,11 @@ test_point_size (void)
        point_size >= 4;
        x_pos += POINT_BOX_SIZE, point_size /= 2)
     {
-      cg_pipeline_t *pipeline = cg_pipeline_new (test_ctx);
+      cg_pipeline_t *pipeline = cg_pipeline_new (test_dev);
       cg_vertex_p2_t point = { x_pos + POINT_BOX_SIZE / 2,
                              POINT_BOX_SIZE / 2 };
       cg_primitive_t *prim =
-        cg_primitive_new_p2 (test_ctx,
+        cg_primitive_new_p2 (test_dev,
                                CG_VERTICES_MODE_POINTS,
                                1, /* n_vertices */
                                &point);

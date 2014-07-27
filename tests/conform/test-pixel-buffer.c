@@ -35,7 +35,7 @@ create_bitmap (void)
   cg_bitmap_t *bitmap;
   cg_buffer_t *buffer;
 
-  bitmap = cg_bitmap_new_with_size (test_ctx,
+  bitmap = cg_bitmap_new_with_size (test_dev,
                                       BITMAP_SIZE,
                                       BITMAP_SIZE,
                                       CG_PIXEL_FORMAT_RGBA_8888);
@@ -90,7 +90,7 @@ create_texture_from_bitmap (cg_bitmap_t *bitmap)
 static cg_pipeline_t *
 create_pipeline_from_texture (cg_texture_t *texture)
 {
-  cg_pipeline_t *pipeline = cg_pipeline_new (test_ctx);
+  cg_pipeline_t *pipeline = cg_pipeline_new (test_dev);
 
   cg_pipeline_set_layer_texture (pipeline, 0, texture);
   cg_pipeline_set_layer_filters (pipeline,
@@ -217,7 +217,7 @@ create_white_texture (void)
 
   memset (data, 255, BITMAP_SIZE * BITMAP_SIZE * 4);
 
-  texture = cg_texture_2d_new_from_data (test_ctx,
+  texture = cg_texture_2d_new_from_data (test_dev,
                                            BITMAP_SIZE,
                                            BITMAP_SIZE,
                                            CG_PIXEL_FORMAT_RGBA_8888,

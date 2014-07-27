@@ -7,7 +7,7 @@
 static void
 paint (void)
 {
-  cg_pipeline_t *pipeline = cg_pipeline_new (test_ctx);
+  cg_pipeline_t *pipeline = cg_pipeline_new (test_dev);
   int width = cg_framebuffer_get_width (test_fb);
   int half_width = width / 2;
   int height = cg_framebuffer_get_height (test_fb);
@@ -26,9 +26,9 @@ paint (void)
 
   cg_framebuffer_clear4f (test_fb, CG_BUFFER_BIT_COLOR, 0, 0, 0, 0);
 
-  tri0 = cg_primitive_new_p2 (test_ctx, CG_VERTICES_MODE_TRIANGLES,
+  tri0 = cg_primitive_new_p2 (test_dev, CG_VERTICES_MODE_TRIANGLES,
                                 3, tri0_vertices);
-  tri1 = cg_primitive_new_p2c4 (test_ctx, CG_VERTICES_MODE_TRIANGLES,
+  tri1 = cg_primitive_new_p2c4 (test_dev, CG_VERTICES_MODE_TRIANGLES,
                                   3, tri1_vertices);
 
   /* Check that cogl correctly handles the case where we draw

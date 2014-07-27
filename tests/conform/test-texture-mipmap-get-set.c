@@ -26,7 +26,7 @@ make_texture (void)
         }
     }
 
-  tex = test_utils_texture_new_from_data (test_ctx,
+  tex = test_utils_texture_new_from_data (test_dev,
                                           TEXTURE_SIZE,
                                           TEXTURE_SIZE,
                                           TEST_UTILS_TEXTURE_NO_ATLAS,
@@ -117,7 +117,7 @@ validate_results (void)
 static void
 paint (cg_texture_t *texture)
 {
-  cg_pipeline_t *pipeline = cg_pipeline_new (test_ctx);
+  cg_pipeline_t *pipeline = cg_pipeline_new (test_dev);
   int x = 0, y = 0, size = TEXTURE_SIZE;
 
   cg_pipeline_set_layer_texture (pipeline, 0, texture);

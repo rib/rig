@@ -68,13 +68,13 @@ static void
 paint (TestState *state)
 {
   cg_path_t *path_a, *path_b, *path_c;
-  cg_pipeline_t *white = cg_pipeline_new (test_ctx);
+  cg_pipeline_t *white = cg_pipeline_new (test_dev);
 
   cg_pipeline_set_color4f (white, 1, 1, 1, 1);
 
   /* Create a path filling just a quarter of a block. It will use two
      rectangles so that we have a sub path in the path */
-  path_a = cg_path_new (test_ctx);
+  path_a = cg_path_new (test_dev);
   cg_path_rectangle (path_a,
                        BLOCK_SIZE * 3 / 4, BLOCK_SIZE / 2,
                        BLOCK_SIZE, BLOCK_SIZE);
@@ -84,7 +84,7 @@ paint (TestState *state)
   draw_path_at (path_a, white, 0, 0);
 
   /* Create another path filling the whole block */
-  path_b = cg_path_new (test_ctx);
+  path_b = cg_path_new (test_dev);
   cg_path_rectangle (path_b, 0, 0, BLOCK_SIZE, BLOCK_SIZE);
   draw_path_at (path_b, white, 1, 0);
 
@@ -127,7 +127,7 @@ paint (TestState *state)
 
   /* Draw a self-intersecting path. The part that intersects should be
      inverted */
-  path_a = cg_path_new (test_ctx);
+  path_a = cg_path_new (test_dev);
   cg_path_rectangle (path_a, 0, 0, BLOCK_SIZE, BLOCK_SIZE);
   cg_path_line_to (path_a, 0, BLOCK_SIZE / 2);
   cg_path_line_to (path_a, BLOCK_SIZE / 2, BLOCK_SIZE / 2);
@@ -138,7 +138,7 @@ paint (TestState *state)
 
   /* Draw two sub paths. Where the paths intersect it should be
      inverted */
-  path_a = cg_path_new (test_ctx);
+  path_a = cg_path_new (test_dev);
   cg_path_rectangle (path_a, 0, 0, BLOCK_SIZE, BLOCK_SIZE);
   cg_path_rectangle (path_a,
                        BLOCK_SIZE / 2, BLOCK_SIZE / 2, BLOCK_SIZE, BLOCK_SIZE);
@@ -146,7 +146,7 @@ paint (TestState *state)
   cg_object_unref (path_a);
 
   /* Draw a clockwise outer path */
-  path_a = cg_path_new (test_ctx);
+  path_a = cg_path_new (test_dev);
   cg_path_move_to (path_a, 0, 0);
   cg_path_line_to (path_a, BLOCK_SIZE, 0);
   cg_path_line_to (path_a, BLOCK_SIZE, BLOCK_SIZE);

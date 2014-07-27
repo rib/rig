@@ -6,13 +6,13 @@ void
 test_framebuffer_get_bits (void)
 {
   cg_texture_2d_t *tex_a =
-    cg_texture_2d_new_with_size (test_ctx,
+    cg_texture_2d_new_with_size (test_dev,
                                    16, 16); /* width/height */
   cg_offscreen_t *offscreen_a =
     cg_offscreen_new_with_texture (tex_a);
   cg_framebuffer_t *fb_a = offscreen_a;
   cg_texture_2d_t *tex_rgba =
-    cg_texture_2d_new_with_size (test_ctx,
+    cg_texture_2d_new_with_size (test_dev,
                                    16, 16); /* width/height */
   cg_offscreen_t *offscreen_rgba =
     cg_offscreen_new_with_texture (tex_rgba);

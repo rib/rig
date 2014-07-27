@@ -22,14 +22,14 @@ create_texture_pipeline (TestState *state)
       0x00, 0x00, 0xff, 0xff, /* blue */ 0xff, 0xff, 0x00, 0xff, /* yellow */
     };
 
-  tex = test_utils_texture_new_from_data (test_ctx,
+  tex = test_utils_texture_new_from_data (test_dev,
                                           2, 2, /* width/height */
                                           TEST_UTILS_TEXTURE_NO_ATLAS,
                                           CG_PIXEL_FORMAT_RGBA_8888_PRE,
                                           8, /* rowstride */
                                           tex_data);
 
-  pipeline = cg_pipeline_new (test_ctx);
+  pipeline = cg_pipeline_new (test_dev);
 
   cg_pipeline_set_layer_texture (pipeline, 0, tex);
 
@@ -49,7 +49,7 @@ simple_fragment_snippet (TestState *state)
   cg_snippet_t *snippet;
 
   /* Simple fragment snippet */
-  pipeline = cg_pipeline_new (test_ctx);
+  pipeline = cg_pipeline_new (test_dev);
 
   cg_pipeline_set_color4ub (pipeline, 255, 0, 0, 255);
 
@@ -73,7 +73,7 @@ simple_vertex_snippet (TestState *state)
   cg_snippet_t *snippet;
 
   /* Simple vertex snippet */
-  pipeline = cg_pipeline_new (test_ctx);
+  pipeline = cg_pipeline_new (test_dev);
 
   cg_pipeline_set_color4ub (pipeline, 255, 0, 0, 255);
 
@@ -99,7 +99,7 @@ shared_uniform (TestState *state)
 
   /* Snippets sharing a uniform across the vertex and fragment
      hooks */
-  pipeline = cg_pipeline_new (test_ctx);
+  pipeline = cg_pipeline_new (test_dev);
 
   location = cg_pipeline_get_uniform_location (pipeline, "a_value");
   cg_pipeline_set_uniform_1f (pipeline, location, 0.25f);
@@ -135,7 +135,7 @@ lots_snippets (TestState *state)
   int i;
 
   /* Lots of snippets on one pipeline */
-  pipeline = cg_pipeline_new (test_ctx);
+  pipeline = cg_pipeline_new (test_dev);
 
   cg_pipeline_set_color4ub (pipeline, 0, 0, 0, 255);
 
@@ -178,7 +178,7 @@ shared_variable_pre_post (TestState *state)
 
   /* Test that the pre string can declare variables used by the post
      string */
-  pipeline = cg_pipeline_new (test_ctx);
+  pipeline = cg_pipeline_new (test_dev);
 
   cg_pipeline_set_color4ub (pipeline, 255, 255, 255, 255);
 
@@ -214,12 +214,12 @@ test_pipeline_caching (TestState *state)
                               "   unrelated pipelines */",
                               "cg_color_out = vec4 (0.0, 1.0, 0.0, 1.0);\n");
 
-  pipeline = cg_pipeline_new (test_ctx);
+  pipeline = cg_pipeline_new (test_dev);
   cg_pipeline_add_snippet (pipeline, snippet);
   cg_framebuffer_draw_rectangle (test_fb, pipeline, 50, 0, 60, 10);
   cg_object_unref (pipeline);
 
-  pipeline = cg_pipeline_new (test_ctx);
+  pipeline = cg_pipeline_new (test_dev);
   cg_pipeline_add_snippet (pipeline, snippet);
   cg_framebuffer_draw_rectangle (test_fb, pipeline, 60, 0, 70, 10);
   cg_object_unref (pipeline);
@@ -247,7 +247,7 @@ test_replace_string (TestState *state)
   cg_snippet_set_post (snippet,
                          "cg_color_out += vec4 (0.5, 0.0, 0.0, 1.0);");
 
-  pipeline = cg_pipeline_new (test_ctx);
+  pipeline = cg_pipeline_new (test_dev);
   cg_pipeline_add_snippet (pipeline, snippet);
   cg_framebuffer_draw_rectangle (test_fb, pipeline, 70, 0, 80, 10);
   cg_object_unref (pipeline);
@@ -403,7 +403,7 @@ test_modify_fragment_layer (TestState *state)
   cg_snippet_t *snippet;
 
   /* Test modifying the fragment layer code */
-  pipeline = cg_pipeline_new (test_ctx);
+  pipeline = cg_pipeline_new (test_dev);
 
   cg_pipeline_set_uniform_1f (pipeline,
                                 cg_pipeline_get_uniform_location (pipeline,
@@ -487,7 +487,7 @@ test_vertex_transform_hook (TestState *state)
 
   cg_matrix_init_identity (&identity_matrix);
 
-  pipeline = cg_pipeline_new (test_ctx);
+  pipeline = cg_pipeline_new (test_dev);
 
   cg_pipeline_set_color4ub (pipeline, 255, 0, 255, 255);
 
@@ -528,7 +528,7 @@ test_global_vertex_hook (TestState *state)
   cg_pipeline_t *pipeline;
   cg_snippet_t *snippet;
 
-  pipeline = cg_pipeline_new (test_ctx);
+  pipeline = cg_pipeline_new (test_dev);
 
   /* Creates a function in the global declarations hook which is used
    * by a subsequent snippet. The subsequent snippets replace any
@@ -581,7 +581,7 @@ test_global_fragment_hook (TestState *state)
   cg_pipeline_t *pipeline;
   cg_snippet_t *snippet;
 
-  pipeline = cg_pipeline_new (test_ctx);
+  pipeline = cg_pipeline_new (test_dev);
 
   /* Creates a function in the global declarations hook which is used
    * by a subsequent snippet. The subsequent snippets replace any
@@ -638,7 +638,7 @@ test_snippet_order (TestState *state)
      sections in the same order as they were added. Therefore the r
      component should be taken from the the second snippet and the g
      component from the first */
-  pipeline = cg_pipeline_new (test_ctx);
+  pipeline = cg_pipeline_new (test_dev);
 
   cg_pipeline_set_color4ub (pipeline, 0, 0, 0, 255);
 
@@ -681,10 +681,10 @@ test_naming_texture_units (TestState *state)
                             "texture2D (cg_sampler100, vec2 (0.0, 0.0)) + "
                             "texture2D (cg_sampler200, vec2 (0.0, 0.0));");
 
-  tex1 = test_utils_create_color_texture (test_ctx, 0xff0000ff);
-  tex2 = test_utils_create_color_texture (test_ctx, 0x00ff00ff);
+  tex1 = test_utils_create_color_texture (test_dev, 0xff0000ff);
+  tex2 = test_utils_create_color_texture (test_dev, 0x00ff00ff);
 
-  pipeline = cg_pipeline_new (test_ctx);
+  pipeline = cg_pipeline_new (test_dev);
 
   cg_pipeline_set_layer_texture (pipeline, 100, tex1);
   cg_pipeline_set_layer_texture (pipeline, 200, tex2);

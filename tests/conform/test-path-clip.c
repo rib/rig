@@ -18,7 +18,7 @@ test_path_clip (void)
   cg_framebuffer_orthographic (test_fb,
                                  0, 0, fb_width, fb_height, -1, 100);
 
-  path = cg_path_new (test_ctx);
+  path = cg_path_new (test_dev);
 
   cg_framebuffer_clear4f (test_fb,
                             CG_BUFFER_BIT_COLOR,
@@ -37,7 +37,7 @@ test_path_clip (void)
 
   /* Try to fill the framebuffer with a blue rectangle. This should be
    * clipped to leave the top right quadrant as is */
-  pipeline = cg_pipeline_new (test_ctx);
+  pipeline = cg_pipeline_new (test_dev);
   cg_pipeline_set_color4ub (pipeline, 0, 0, 255, 255);
   cg_framebuffer_draw_rectangle (test_fb,
                                    pipeline,

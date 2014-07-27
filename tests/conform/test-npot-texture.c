@@ -87,7 +87,7 @@ make_texture (void)
         }
     }
 
-  tex = test_utils_texture_new_from_data (test_ctx,
+  tex = test_utils_texture_new_from_data (test_dev,
                                           TEXTURE_SIZE,
                                           TEXTURE_SIZE,
                                           TEST_UTILS_TEXTURE_NO_ATLAS,
@@ -106,7 +106,7 @@ make_texture (void)
     }
 
   /* The texture should be sliced unless NPOTs are supported */
-  g_assert (cg_has_feature (test_ctx, CG_FEATURE_ID_TEXTURE_NPOT)
+  g_assert (cg_has_feature (test_dev, CG_FEATURE_ID_TEXTURE_NPOT)
             ? !cg_texture_is_sliced (tex)
             : cg_texture_is_sliced (tex));
 
@@ -116,7 +116,7 @@ make_texture (void)
 static void
 paint (void)
 {
-  cg_pipeline_t *pipeline = cg_pipeline_new (test_ctx);
+  cg_pipeline_t *pipeline = cg_pipeline_new (test_dev);
   cg_texture_t *texture = make_texture ();
   int y, x;
 
@@ -148,7 +148,7 @@ test_npot_texture (void)
 {
   if (cg_test_verbose ())
     {
-      if (cg_has_feature (test_ctx, CG_FEATURE_ID_TEXTURE_NPOT))
+      if (cg_has_feature (test_dev, CG_FEATURE_ID_TEXTURE_NPOT))
         c_print ("NPOT textures are supported\n");
       else
         c_print ("NPOT textures are not supported\n");

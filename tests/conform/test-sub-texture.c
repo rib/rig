@@ -54,7 +54,7 @@ create_source (TestState *state)
           }
       }
 
-  tex = cg_texture_2d_new_from_data (test_ctx,
+  tex = cg_texture_2d_new_from_data (test_dev,
                                        SOURCE_SIZE, SOURCE_SIZE,
                                        CG_PIXEL_FORMAT_RGBA_8888,
                                        SOURCE_SIZE * 4,
@@ -83,7 +83,7 @@ create_test_texture (TestState *state)
         *(p++) = 255;
       }
 
-  tex = cg_texture_2d_new_from_data (test_ctx,
+  tex = cg_texture_2d_new_from_data (test_dev,
                                        256, 256,
                                        CG_PIXEL_FORMAT_RGBA_8888_PRE,
                                        256 * 4,
@@ -99,10 +99,10 @@ paint (TestState *state)
 {
   cg_texture_2d_t *full_texture;
   cg_sub_texture_t *sub_texture, *sub_sub_texture;
-  cg_pipeline_t *pipeline = cg_pipeline_new (test_ctx);
+  cg_pipeline_t *pipeline = cg_pipeline_new (test_dev);
 
   /* Create a sub texture of the bottom right quarter of the texture */
-  sub_texture = cg_sub_texture_new (test_ctx,
+  sub_texture = cg_sub_texture_new (test_dev,
                                       state->tex,
                                       DIVISION_WIDTH,
                                       DIVISION_HEIGHT,
@@ -119,7 +119,7 @@ paint (TestState *state)
   /* Repeat a sub texture of the top half of the full texture. This is
      documented to be undefined so it doesn't technically have to work
      but it will with the current implementation */
-  sub_texture = cg_sub_texture_new (test_ctx,
+  sub_texture = cg_sub_texture_new (test_dev,
                                       state->tex,
                                       0, 0,
                                       SOURCE_SIZE,
@@ -136,11 +136,11 @@ paint (TestState *state)
 
   /* Create a sub texture of a sub texture */
   full_texture = create_test_texture (state);
-  sub_texture = cg_sub_texture_new (test_ctx,
+  sub_texture = cg_sub_texture_new (test_dev,
                                       full_texture,
                                       20, 10, 30, 20);
   cg_object_unref (full_texture);
-  sub_sub_texture = cg_sub_texture_new (test_ctx,
+  sub_sub_texture = cg_sub_texture_new (test_dev,
                                           sub_texture,
                                           20, 10, 10, 10);
   cg_object_unref (sub_texture);
@@ -227,7 +227,7 @@ validate_result (TestState *state)
   g_free (texture_data);
 
   /* Try reading back the texture data */
-  sub_texture = cg_sub_texture_new (test_ctx,
+  sub_texture = cg_sub_texture_new (test_dev,
                                       state->tex,
                                       SOURCE_SIZE / 4,
                                       SOURCE_SIZE / 4,
@@ -258,7 +258,7 @@ validate_result (TestState *state)
   /* Create a 256x256 test texture */
   test_tex = create_test_texture (state);
   /* Create a sub texture the views the center half of the texture */
-  sub_texture = cg_sub_texture_new (test_ctx,
+  sub_texture = cg_sub_texture_new (test_dev,
                                       test_tex,
                                       64, 64, 128, 128);
   /* Update the center half of the sub texture */

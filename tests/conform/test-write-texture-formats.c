@@ -27,7 +27,7 @@ test_write_byte (cg_pixel_format_t format,
                  uint8_t byte,
                  uint32_t expected_pixel)
 {
-  cg_texture_t *texture = test_utils_create_color_texture (test_ctx, 0);
+  cg_texture_t *texture = test_utils_create_color_texture (test_dev, 0);
 
   cg_texture_set_region (texture,
                            1, 1, /* width / height */
@@ -48,7 +48,7 @@ test_write_short (cg_pixel_format_t format,
                   uint16_t value,
                   uint32_t expected_pixel)
 {
-  cg_texture_t *texture = test_utils_create_color_texture (test_ctx, 0);
+  cg_texture_t *texture = test_utils_create_color_texture (test_dev, 0);
 
   cg_texture_set_region (texture,
                            1, 1, /* width / height */
@@ -69,7 +69,7 @@ test_write_bytes (cg_pixel_format_t format,
                   uint32_t value,
                   uint32_t expected_pixel)
 {
-  cg_texture_t *texture = test_utils_create_color_texture (test_ctx, 0);
+  cg_texture_t *texture = test_utils_create_color_texture (test_dev, 0);
 
   value = GUINT32_TO_BE (value);
 
@@ -96,7 +96,7 @@ test_write_int (cg_pixel_format_t format,
   int bits;
   uint32_t tex_data = 0;
   int bits_sum = 0;
-  cg_texture_t *texture = test_utils_create_color_texture (test_ctx, 0);
+  cg_texture_t *texture = test_utils_create_color_texture (test_dev, 0);
 
   va_start (ap, expected_pixel);
 

@@ -51,7 +51,7 @@ make_texture (uint32_t color,
 {
   cg_texture_2d_t *tex_2d;
   guchar *tex_data = gen_tex_data (color);
-  cg_bitmap_t *bmp = cg_bitmap_new_for_data (test_ctx,
+  cg_bitmap_t *bmp = cg_bitmap_new_for_data (test_dev,
                                               QUAD_WIDTH,
                                               QUAD_WIDTH,
                                               src_format,
@@ -123,7 +123,7 @@ test_premult (void)
                             CG_BUFFER_BIT_COLOR,
                             1.0f, 1.0f, 1.0f, 1.0f);
 
-  pipeline = cg_pipeline_new (test_ctx);
+  pipeline = cg_pipeline_new (test_dev);
   cg_pipeline_set_blend (pipeline,
                            "RGBA = ADD (SRC_COLOR, 0)", NULL);
   cg_pipeline_set_layer_combine (pipeline, 0,

@@ -16,7 +16,7 @@ create_dummy_texture (void)
      vertex shader */
   static const uint8_t data[4] = { 0x00, 0xff, 0x00, 0xff };
 
-  return test_utils_texture_new_from_data (test_ctx,
+  return test_utils_texture_new_from_data (test_dev,
                                            1, 1, /* size */
                                            TEST_UTILS_TEXTURE_NONE,
                                            CG_PIXEL_FORMAT_RGB_888,
@@ -27,7 +27,7 @@ create_dummy_texture (void)
 static void
 paint (TestState *state)
 {
-  cg_pipeline_t *pipeline = cg_pipeline_new (test_ctx);
+  cg_pipeline_t *pipeline = cg_pipeline_new (test_dev);
   cg_texture_t *tex;
   cg_error_t *error = NULL;
   cg_snippet_t *snippet;

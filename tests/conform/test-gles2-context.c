@@ -24,15 +24,15 @@ test_push_pop_single_context (void)
   cg_error_t *error = NULL;
 
   offscreen_texture =
-    cg_texture_2d_new_with_size (test_ctx,
+    cg_texture_2d_new_with_size (test_dev,
                                    cg_framebuffer_get_width (test_fb),
                                    cg_framebuffer_get_height (test_fb));
   offscreen = cg_offscreen_new_with_texture (offscreen_texture);
 
-  pipeline = cg_pipeline_new (test_ctx);
+  pipeline = cg_pipeline_new (test_dev);
   cg_pipeline_set_layer_texture (pipeline, 0, offscreen_texture);
 
-  gles2_ctx = cg_gles2_context_new (test_ctx, &error);
+  gles2_ctx = cg_gles2_context_new (test_dev, &error);
   if (!gles2_ctx)
     g_error ("Failed to create GLES2 context: %s\n", error->message);
 
@@ -40,7 +40,7 @@ test_push_pop_single_context (void)
 
   /* Clear onscreen to 0xffff00 using GLES2 */
 
-  if (!cg_push_gles2_context (test_ctx,
+  if (!cg_push_gles2_context (test_dev,
                                 gles2_ctx,
                                 test_fb,
                                 test_fb,
@@ -52,7 +52,7 @@ test_push_pop_single_context (void)
   gles2->glClearColor (1, 1, 0, 1);
   gles2->glClear (GL_COLOR_BUFFER_BIT);
 
-  cg_pop_gles2_context (test_ctx);
+  cg_pop_gles2_context (test_dev);
 
   test_utils_check_pixel (test_fb, 0, 0, 0xffff00ff);
 
@@ -64,7 +64,7 @@ test_push_pop_single_context (void)
    * instead.
    */
 
-  if (!cg_push_gles2_context (test_ctx,
+  if (!cg_push_gles2_context (test_dev,
                                 gles2_ctx,
                                 offscreen,
                                 offscreen,
@@ -76,7 +76,7 @@ test_push_pop_single_context (void)
   gles2->glClearColor (1, 0, 0, 1);
   gles2->glClear (GL_COLOR_BUFFER_BIT);
 
-  cg_pop_gles2_context (test_ctx);
+  cg_pop_gles2_context (test_dev);
 
   cg_framebuffer_draw_rectangle (test_fb,
                                    pipeline,
@@ -91,7 +91,7 @@ test_push_pop_single_context (void)
    * reading back from the onscreen framebuffer in case we mistakenly
    * read from the offscreen framebuffer and get a false positive
    */
-  if (!cg_push_gles2_context (test_ctx,
+  if (!cg_push_gles2_context (test_dev,
                                 gles2_ctx,
                                 offscreen,
                                 offscreen,
@@ -103,7 +103,7 @@ test_push_pop_single_context (void)
   gles2->glClearColor (0, 0, 1, 1);
   gles2->glClear (GL_COLOR_BUFFER_BIT);
 
-  cg_pop_gles2_context (test_ctx);
+  cg_pop_gles2_context (test_dev);
 
   test_utils_check_pixel (test_fb, 0, 0, 0xff0000ff);
 
@@ -115,7 +115,7 @@ test_push_pop_single_context (void)
 
   test_utils_check_pixel (test_fb, 0, 0, 0x0000ffff);
 
-  if (!cg_push_gles2_context (test_ctx,
+  if (!cg_push_gles2_context (test_dev,
                                 gles2_ctx,
                                 test_fb,
                                 test_fb,
@@ -127,7 +127,7 @@ test_push_pop_single_context (void)
   gles2->glClearColor (1, 0, 1, 1);
   gles2->glClear (GL_COLOR_BUFFER_BIT);
 
-  cg_pop_gles2_context (test_ctx);
+  cg_pop_gles2_context (test_dev);
 
   test_utils_check_pixel (test_fb, 0, 0, 0xff00ffff);
 
@@ -147,15 +147,15 @@ create_gles2_context (cg_texture_t **offscreen_texture,
   cg_error_t *error = NULL;
 
   *offscreen_texture =
-    cg_texture_2d_new_with_size (test_ctx,
+    cg_texture_2d_new_with_size (test_dev,
                                    cg_framebuffer_get_width (test_fb),
                                    cg_framebuffer_get_height (test_fb));
   *offscreen = cg_offscreen_new_with_texture (*offscreen_texture);
 
-  *pipeline = cg_pipeline_new (test_ctx);
+  *pipeline = cg_pipeline_new (test_dev);
   cg_pipeline_set_layer_texture (*pipeline, 0, *offscreen_texture);
 
-  *gles2_ctx = cg_gles2_context_new (test_ctx, &error);
+  *gles2_ctx = cg_gles2_context_new (test_dev, &error);
   if (!*gles2_ctx)
     g_error ("Failed to create GLES2 context: %s\n", error->message);
 
@@ -191,7 +191,7 @@ test_push_pop_multi_context (void)
 
   cg_framebuffer_clear4f (test_fb, CG_BUFFER_BIT_COLOR, 1, 1, 1, 1);
 
-  if (!cg_push_gles2_context (test_ctx,
+  if (!cg_push_gles2_context (test_dev,
                                 gles2_ctx0,
                                 offscreen0,
                                 offscreen0,
@@ -203,7 +203,7 @@ test_push_pop_multi_context (void)
   gles20->glClearColor (1, 0, 0, 1);
   gles20->glClear (GL_COLOR_BUFFER_BIT);
 
-  if (!cg_push_gles2_context (test_ctx,
+  if (!cg_push_gles2_context (test_dev,
                                 gles2_ctx1,
                                 offscreen1,
                                 offscreen1,
@@ -215,8 +215,8 @@ test_push_pop_multi_context (void)
   gles21->glClearColor (0, 1, 0, 1);
   gles21->glClear (GL_COLOR_BUFFER_BIT);
 
-  cg_pop_gles2_context (test_ctx);
-  cg_pop_gles2_context (test_ctx);
+  cg_pop_gles2_context (test_dev);
+  cg_pop_gles2_context (test_dev);
 
   test_utils_check_pixel (test_fb, 0, 0, 0xffffffff);
 
@@ -286,7 +286,7 @@ test_gles2_read_pixels (void)
 
   cg_framebuffer_clear4f (test_fb, CG_BUFFER_BIT_COLOR, 1, 1, 1, 1);
 
-  if (!cg_push_gles2_context (test_ctx,
+  if (!cg_push_gles2_context (test_dev,
                                 gles2_ctx,
                                 offscreen,
                                 offscreen,
@@ -319,12 +319,12 @@ test_gles2_read_pixels (void)
 
   test_utils_compare_pixel (pixel, 0x00ffffff);
 
-  cg_pop_gles2_context (test_ctx);
+  cg_pop_gles2_context (test_dev);
 
   test_utils_check_pixel (test_fb, 0, 0, 0xffffffff);
 
   /* Bind different read and write buffers */
-  if (!cg_push_gles2_context (test_ctx,
+  if (!cg_push_gles2_context (test_dev,
                                 gles2_ctx,
                                 offscreen,
                                 test_fb,
@@ -337,14 +337,14 @@ test_gles2_read_pixels (void)
 
   test_utils_compare_pixel (pixel, 0x00ffffff);
 
-  cg_pop_gles2_context (test_ctx);
+  cg_pop_gles2_context (test_dev);
 
   test_utils_check_pixel (test_fb, 0, 0, 0xffffffff);
 
   /* Bind different read and write buffers (the other way around from
    * before so when we test with CG_TEST_ONSCREEN=1 we will read
    * from an onscreen framebuffer) */
-  if (!cg_push_gles2_context (test_ctx,
+  if (!cg_push_gles2_context (test_dev,
                                 gles2_ctx,
                                 test_fb,
                                 offscreen,
@@ -357,7 +357,7 @@ test_gles2_read_pixels (void)
 
   test_utils_compare_pixel (pixel, 0xffffffff);
 
-  cg_pop_gles2_context (test_ctx);
+  cg_pop_gles2_context (test_dev);
 }
 
 void
@@ -678,7 +678,7 @@ test_gles2_context_fbo (void)
                             &gles2_ctx,
                             &data.gles2);
 
-      if (!cg_push_gles2_context (test_ctx,
+      if (!cg_push_gles2_context (test_dev,
                                     gles2_ctx,
                                     offscreen,
                                     offscreen,
@@ -706,7 +706,7 @@ test_gles2_context_fbo (void)
 
       verify_read_pixels (&data);
 
-      cg_pop_gles2_context (test_ctx);
+      cg_pop_gles2_context (test_dev);
 
       cg_object_unref (offscreen);
       cg_object_unref (gles2_ctx);
@@ -813,7 +813,7 @@ test_gles2_context_copy_tex_image (void)
                         &gles2_ctx,
                         &gles2);
 
-  if (!cg_push_gles2_context (test_ctx,
+  if (!cg_push_gles2_context (test_dev,
                                 gles2_ctx,
                                 offscreen,
                                 offscreen,
@@ -953,7 +953,7 @@ test_gles2_context_copy_tex_image (void)
                  RECTANGLE_HEIGHT / 2,
                  0x0000ffff);
 
-  cg_pop_gles2_context (test_ctx);
+  cg_pop_gles2_context (test_dev);
 
   cg_object_unref (offscreen);
   cg_object_unref (gles2_ctx);

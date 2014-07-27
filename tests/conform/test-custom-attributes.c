@@ -45,7 +45,7 @@ test_float_verts (TestState *state, int offset_x, int offset_y)
       { 15, 0, /**/ 0, 1, 0, 1 }
     };
 
-  buffer = cg_attribute_buffer_new (test_ctx,
+  buffer = cg_attribute_buffer_new (test_dev,
                                       sizeof (float_verts), float_verts);
   attributes[0] = cg_attribute_new (buffer,
                                       "cg_position_in",
@@ -105,7 +105,7 @@ test_byte_verts (TestState *state, int offset_x, int offset_y)
       { 0, 0, /**/ 0, 0, 1, 1 },
     };
 
-  buffer = cg_attribute_buffer_new (test_ctx,
+  buffer = cg_attribute_buffer_new (test_dev,
                                       sizeof (norm_verts), norm_verts);
   attributes[0] = cg_attribute_new (buffer,
                                       "cg_position_in",
@@ -134,7 +134,7 @@ test_byte_verts (TestState *state, int offset_x, int offset_y)
   cg_object_unref (attributes[1]);
 
   /* Test again with unnormalized attributes */
-  unnorm_buffer = cg_attribute_buffer_new (test_ctx,
+  unnorm_buffer = cg_attribute_buffer_new (test_dev,
                                              sizeof (unnorm_verts),
                                              unnorm_verts);
   attributes[1] = cg_attribute_new (unnorm_buffer,
@@ -186,7 +186,7 @@ test_short_verts (TestState *state, int offset_x, int offset_y)
 
   cg_pipeline_set_color4ub (pipeline, 255, 0, 0, 255);
 
-  buffer = cg_attribute_buffer_new (test_ctx,
+  buffer = cg_attribute_buffer_new (test_dev,
                                       sizeof (short_verts), short_verts);
   attributes[0] = cg_attribute_new (buffer,
                                       "cg_position_in",
@@ -231,7 +231,7 @@ test_short_verts (TestState *state, int offset_x, int offset_y)
    * because we know it's not possible to test short vertex position
    * components with the legacy GL backend since which might otherwise
    * be used internally... */
-  pipeline2 = cg_pipeline_new (test_ctx);
+  pipeline2 = cg_pipeline_new (test_dev);
   snippet = cg_snippet_new (CG_SNIPPET_HOOK_VERTEX,
                               "in vec4 color;",
                               "cg_color_out = vec4 (0.0, 1.0, 0.0, 1.0);");
@@ -285,7 +285,7 @@ test_custom_attributes (void)
                                  -1,
                                  100);
 
-  state.pipeline = cg_pipeline_new (test_ctx);
+  state.pipeline = cg_pipeline_new (test_dev);
   snippet = cg_snippet_new (CG_SNIPPET_HOOK_VERTEX,
                               "in vec4 color;",
                               "cg_color_out = color;");

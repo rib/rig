@@ -7,7 +7,7 @@
 static cg_pipeline_t *
 create_two_layer_pipeline (void)
 {
-  cg_pipeline_t *pipeline = cg_pipeline_new (test_ctx);
+  cg_pipeline_t *pipeline = cg_pipeline_new (test_dev);
   cg_color_t color;
 
   /* The pipeline is initially black */

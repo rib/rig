@@ -48,7 +48,7 @@ do_test (bool check_orientation,
   else
     tex_height = 1;
 
-  tex_2d = cg_texture_2d_new_from_data (test_ctx,
+  tex_2d = cg_texture_2d_new_from_data (test_dev,
                                           2, tex_height, /* width/height */
                                           CG_PIXEL_FORMAT_RGB_888,
                                           6, /* row stride */
@@ -57,7 +57,7 @@ do_test (bool check_orientation,
   g_assert (tex_2d != NULL);
   g_assert (error == NULL);
 
-  pipeline = cg_pipeline_new (test_ctx);
+  pipeline = cg_pipeline_new (test_dev);
   cg_pipeline_set_layer_texture (pipeline, 0, tex_2d);
 
   cg_pipeline_set_layer_filters (pipeline,
@@ -115,7 +115,7 @@ do_test (bool check_orientation,
       g_assert (error == NULL);
     }
 
-  prim = cg_primitive_new_p2t2 (test_ctx,
+  prim = cg_primitive_new_p2t2 (test_dev,
                                   CG_VERTICES_MODE_POINTS,
                                   1, /* n_vertices */
                                   &point);

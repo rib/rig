@@ -28,7 +28,7 @@ create_texture (TestUtilsTextureFlags flags)
         *(p++) = 255;
       }
 
-  tex = test_utils_texture_new_from_data (test_ctx,
+  tex = test_utils_texture_new_from_data (test_dev,
                                           TEX_SIZE, TEX_SIZE, flags,
                                           CG_PIXEL_FORMAT_RGBA_8888_PRE,
                                           TEX_SIZE * 4,
@@ -45,7 +45,7 @@ create_pipeline (TestState *state,
 {
   cg_pipeline_t *pipeline;
 
-  pipeline = cg_pipeline_new (test_ctx);
+  pipeline = cg_pipeline_new (test_dev);
   cg_pipeline_set_layer_texture (pipeline, 0, state->texture);
   cg_pipeline_set_layer_filters (pipeline, 0,
                                    CG_PIPELINE_FILTER_NEAREST,

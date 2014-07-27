@@ -54,7 +54,7 @@ draw_rectangle (TestState *state,
                               rect_state->range_near,
                               rect_state->range_far);
 
-  pipeline = cg_pipeline_new (test_ctx);
+  pipeline = cg_pipeline_new (test_dev);
   if (!cg_pipeline_set_depth_state (pipeline, &depth_state, NULL))
     {
       cg_object_unref (pipeline);

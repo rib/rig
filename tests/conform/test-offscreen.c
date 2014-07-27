@@ -44,7 +44,7 @@ test_paint (TestState *state)
   cg_pipeline_t *color;
   cg_pipeline_t *textured;
 
-  tex_2d = cg_texture_2d_new_with_size (test_ctx,
+  tex_2d = cg_texture_2d_new_with_size (test_dev,
                                           state->fb_width,
                                           state->fb_height);
   tex = tex_2d;
@@ -69,7 +69,7 @@ test_paint (TestState *state)
    * verify it gets restored when we switch back to test_fb */
   cg_framebuffer_scale (offscreen, 2, 2, 1);
 
-  color = cg_pipeline_new (test_ctx);
+  color = cg_pipeline_new (test_dev);
 
   /* red, top left */
   cg_pipeline_set_color4f (color, 1, 0, 0, 1);
@@ -86,7 +86,7 @@ test_paint (TestState *state)
 
   cg_object_unref (offscreen);
 
-  textured = cg_pipeline_new (test_ctx);
+  textured = cg_pipeline_new (test_dev);
   cg_pipeline_set_layer_texture (textured, 0, tex);
   cg_framebuffer_draw_rectangle (test_fb, textured, -1, 1, 1, -1);
   cg_object_unref (textured);
@@ -124,7 +124,7 @@ test_flush (TestState *state)
          the contents of the texture will automatically flush the
          journal */
 
-      tex_2d = cg_texture_2d_new_with_size (test_ctx,
+      tex_2d = cg_texture_2d_new_with_size (test_dev,
                                               16, 16); /* width/height */
       tex = tex_2d;
 
@@ -133,7 +133,7 @@ test_flush (TestState *state)
       cg_framebuffer_clear4f (offscreen, CG_BUFFER_BIT_COLOR,
                                 0, 0, 0, 1);
 
-      red = cg_pipeline_new (test_ctx);
+      red = cg_pipeline_new (test_dev);
       cg_pipeline_set_color4f (red, 1, 0, 0, 1);
       cg_framebuffer_draw_rectangle (offscreen,
                                        red,
@@ -163,7 +163,7 @@ test_flush (TestState *state)
 
       if (i == 2)
         {
-          cg_pipeline_t *textured = cg_pipeline_new (test_ctx);
+          cg_pipeline_t *textured = cg_pipeline_new (test_dev);
           cg_pipeline_set_layer_texture (textured, 0, tex);
           /* Third time try drawing the texture to the screen */
           cg_framebuffer_draw_rectangle (test_fb,

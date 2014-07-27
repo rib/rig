@@ -163,7 +163,7 @@ test_read_texture_formats (void)
 {
   cg_texture_2d_t *tex_2d;
 
-  tex_2d = cg_texture_2d_new_from_data (test_ctx,
+  tex_2d = cg_texture_2d_new_from_data (test_dev,
                                           1, 1, /* width / height */
                                           CG_PIXEL_FORMAT_RGBA_8888_PRE,
                                           4, /* rowstride */

@@ -22,7 +22,7 @@ create_texture (void)
   static cg_user_data_key_t texture_data_key;
   cg_texture_2d_t *tex_2d;
 
-  tex_2d = cg_texture_2d_new_from_data (test_ctx,
+  tex_2d = cg_texture_2d_new_from_data (test_dev,
                                           1, 1, /* width / height */
                                           CG_PIXEL_FORMAT_RGBA_8888_PRE,
                                           4, /* rowstride */
@@ -42,7 +42,7 @@ create_texture (void)
 void
 test_pipeline_cache_unrefs_texture (void)
 {
-  cg_pipeline_t *pipeline = cg_pipeline_new (test_ctx);
+  cg_pipeline_t *pipeline = cg_pipeline_new (test_dev);
   cg_pipeline_t *simple_pipeline;
   int i;
 
@@ -65,7 +65,7 @@ test_pipeline_cache_unrefs_texture (void)
 
   /* Draw something else so that it is no longer the current flushed
    * pipeline, and the units have a different texture bound */
-  simple_pipeline = cg_pipeline_new (test_ctx);
+  simple_pipeline = cg_pipeline_new (test_dev);
   for (i = 0; i < N_TEXTURES; i++)
     {
       cg_color_t combine_constant;

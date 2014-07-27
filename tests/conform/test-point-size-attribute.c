@@ -68,7 +68,7 @@ create_primitive (const char *attribute_name)
       vertices[i].point_size = MAX_POINT_SIZE - i;
     }
 
-  buffer = cg_attribute_buffer_new (test_ctx,
+  buffer = cg_attribute_buffer_new (test_dev,
                                       sizeof (vertices),
                                       vertices);
 
@@ -117,7 +117,7 @@ do_test (const char *attribute_name,
                             1.0f, 0.0f, 0.0f, 1.0f);
 
   primitive = create_primitive (attribute_name);
-  pipeline = cg_pipeline_new (test_ctx);
+  pipeline = cg_pipeline_new (test_dev);
   cg_pipeline_set_color4ub (pipeline, 0x00, 0xff, 0x00, 0xff);
   cg_pipeline_set_per_vertex_point_size (pipeline, TRUE, NULL);
   if (pipeline_setup_func)

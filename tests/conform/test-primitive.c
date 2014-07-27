@@ -15,34 +15,34 @@ typedef struct _TestState
 
 #define N_ATTRIBS 8
 
-typedef cg_primitive_t * (* TestPrimFunc) (cg_context_t *ctx, uint32_t *expected_color);
+typedef cg_primitive_t * (* TestPrimFunc) (cg_device_t *dev, uint32_t *expected_color);
 
 static cg_primitive_t *
-test_prim_p2 (cg_context_t *ctx, uint32_t *expected_color)
+test_prim_p2 (cg_device_t *dev, uint32_t *expected_color)
 {
   static const cg_vertex_p2_t verts[] =
     { { 0, 0 }, { 0, 10 }, { 10, 0 } };
 
-  return cg_primitive_new_p2 (ctx,
+  return cg_primitive_new_p2 (dev,
                                 CG_VERTICES_MODE_TRIANGLES,
                                 3, /* n_vertices */
                                 verts);
 }
 
 static cg_primitive_t *
-test_prim_p3 (cg_context_t *ctx, uint32_t *expected_color)
+test_prim_p3 (cg_device_t *dev, uint32_t *expected_color)
 {
   static const cg_vertex_p3_t verts[] =
     { { 0, 0, 0 }, { 0, 10, 0 }, { 10, 0, 0 } };
 
-  return cg_primitive_new_p3 (ctx,
+  return cg_primitive_new_p3 (dev,
                                 CG_VERTICES_MODE_TRIANGLES,
                                 3, /* n_vertices */
                                 verts);
 }
 
 static cg_primitive_t *
-test_prim_p2c4 (cg_context_t *ctx, uint32_t *expected_color)
+test_prim_p2c4 (cg_device_t *dev, uint32_t *expected_color)
 {
   static const cg_vertex_p2c4_t verts[] =
     { { 0, 0, 255, 255, 0, 255 },
@@ -51,14 +51,14 @@ test_prim_p2c4 (cg_context_t *ctx, uint32_t *expected_color)
 
   *expected_color = 0xffff00ff;
 
-  return cg_primitive_new_p2c4 (ctx,
+  return cg_primitive_new_p2c4 (dev,
                                   CG_VERTICES_MODE_TRIANGLES,
                                   3, /* n_vertices */
                                   verts);
 }
 
 static cg_primitive_t *
-test_prim_p3c4 (cg_context_t *ctx, uint32_t *expected_color)
+test_prim_p3c4 (cg_device_t *dev, uint32_t *expected_color)
 {
   static const cg_vertex_p3c4_t verts[] =
     { { 0, 0, 0, 255, 255, 0, 255 },
@@ -67,14 +67,14 @@ test_prim_p3c4 (cg_context_t *ctx, uint32_t *expected_color)
 
   *expected_color = 0xffff00ff;
 
-  return cg_primitive_new_p3c4 (ctx,
+  return cg_primitive_new_p3c4 (dev,
                                   CG_VERTICES_MODE_TRIANGLES,
                                   3, /* n_vertices */
                                   verts);
 }
 
 static cg_primitive_t *
-test_prim_p2t2 (cg_context_t *ctx, uint32_t *expected_color)
+test_prim_p2t2 (cg_device_t *dev, uint32_t *expected_color)
 {
   static const cg_vertex_p2t2_t verts[] =
     { { 0, 0, 1, 0 },
@@ -83,14 +83,14 @@ test_prim_p2t2 (cg_context_t *ctx, uint32_t *expected_color)
 
   *expected_color = TEX_COLOR;
 
-  return cg_primitive_new_p2t2 (ctx,
+  return cg_primitive_new_p2t2 (dev,
                                   CG_VERTICES_MODE_TRIANGLES,
                                   3, /* n_vertices */
                                   verts);
 }
 
 static cg_primitive_t *
-test_prim_p3t2 (cg_context_t *ctx, uint32_t *expected_color)
+test_prim_p3t2 (cg_device_t *dev, uint32_t *expected_color)
 {
   static const cg_vertex_p3t2_t verts[] =
     { { 0, 0, 0, 1, 0 },
@@ -99,14 +99,14 @@ test_prim_p3t2 (cg_context_t *ctx, uint32_t *expected_color)
 
   *expected_color = TEX_COLOR;
 
-  return cg_primitive_new_p3t2 (ctx,
+  return cg_primitive_new_p3t2 (dev,
                                   CG_VERTICES_MODE_TRIANGLES,
                                   3, /* n_vertices */
                                   verts);
 }
 
 static cg_primitive_t *
-test_prim_p2t2c4 (cg_context_t *ctx, uint32_t *expected_color)
+test_prim_p2t2c4 (cg_device_t *dev, uint32_t *expected_color)
 {
   static const cg_vertex_p2t2c4_t verts[] =
     { { 0, 0, 1, 0, 0xff, 0xff, 0xf0, 0xff },
@@ -116,14 +116,14 @@ test_prim_p2t2c4 (cg_context_t *ctx, uint32_t *expected_color)
   /* The blue component of the texture color should be replaced with 0xf0 */
   *expected_color = (TEX_COLOR & 0xffff00ff) | 0x0000f000;
 
-  return cg_primitive_new_p2t2c4 (ctx,
+  return cg_primitive_new_p2t2c4 (dev,
                                     CG_VERTICES_MODE_TRIANGLES,
                                     3, /* n_vertices */
                                     verts);
 }
 
 static cg_primitive_t *
-test_prim_p3t2c4 (cg_context_t *ctx, uint32_t *expected_color)
+test_prim_p3t2c4 (cg_device_t *dev, uint32_t *expected_color)
 {
   static const cg_vertex_p3t2c4_t verts[] =
     { { 0, 0, 0, 1, 0, 0xff, 0xff, 0xf0, 0xff },
@@ -133,7 +133,7 @@ test_prim_p3t2c4 (cg_context_t *ctx, uint32_t *expected_color)
   /* The blue component of the texture color should be replaced with 0xf0 */
   *expected_color = (TEX_COLOR & 0xffff00ff) | 0x0000f000;
 
-  return cg_primitive_new_p3t2c4 (ctx,
+  return cg_primitive_new_p3t2c4 (dev,
                                     CG_VERTICES_MODE_TRIANGLES,
                                     3, /* n_vertices */
                                     verts);
@@ -170,13 +170,13 @@ test_paint (TestState *state)
   tex_data[3] = (TEX_COLOR >> 24) & 0xff;
   tex_data[4] = (TEX_COLOR >> 16) & 0xff;
   tex_data[5] = (TEX_COLOR >> 8) & 0xff;
-  tex = test_utils_texture_new_from_data (test_ctx,
+  tex = test_utils_texture_new_from_data (test_dev,
                                           2, 1, /* size */
                                           TEST_UTILS_TEXTURE_NO_ATLAS,
                                           CG_PIXEL_FORMAT_RGB_888,
                                           6, /* rowstride */
                                           tex_data);
-  pipeline = cg_pipeline_new (test_ctx);
+  pipeline = cg_pipeline_new (test_dev);
   cg_pipeline_set_color4ub (pipeline,
                               (PRIM_COLOR >> 24) & 0xff,
                               (PRIM_COLOR >> 16) & 0xff,
@@ -190,7 +190,7 @@ test_paint (TestState *state)
       cg_primitive_t *prim;
       uint32_t expected_color = PRIM_COLOR;
 
-      prim = test_prim_funcs[i] (test_ctx, &expected_color);
+      prim = test_prim_funcs[i] (test_dev, &expected_color);
 
       cg_framebuffer_push_matrix (test_fb);
       cg_framebuffer_translate (test_fb, i * 10, 0, 0);
@@ -234,7 +234,7 @@ test_copy (TestState *state)
 {
   static const uint16_t indices_data[2] = { 1, 2 };
   cg_attribute_buffer_t *buffer =
-    cg_attribute_buffer_new_with_size (test_ctx, 100);
+    cg_attribute_buffer_new_with_size (test_dev, 100);
   cg_attribute_t *attributes[N_ATTRIBS];
   cg_attribute_t *attributes_a[N_ATTRIBS], *attributes_b[N_ATTRIBS];
   cg_attribute_t **p;
@@ -259,7 +259,7 @@ test_copy (TestState *state)
                                                attributes,
                                                N_ATTRIBS);
 
-  indices = cg_indices_new (test_ctx,
+  indices = cg_indices_new (test_dev,
                               CG_INDICES_TYPE_UNSIGNED_SHORT,
                               indices_data,
                               2 /* n_indices */);

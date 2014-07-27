@@ -34,7 +34,7 @@ create_texture (void)
 
   alive_texture_mask |= (1 << texture_num);
 
-  tex_2d = cg_texture_2d_new_from_data (test_ctx,
+  tex_2d = cg_texture_2d_new_from_data (test_dev,
                                           1, 1, /* width / height */
                                           CG_PIXEL_FORMAT_RGBA_8888_PRE,
                                           4, /* rowstride */
@@ -66,7 +66,7 @@ test_copy_replace_texture (void)
       int layer_num;
 
       if (pipeline_num == 0)
-        pipelines[pipeline_num] = cg_pipeline_new (test_ctx);
+        pipelines[pipeline_num] = cg_pipeline_new (test_dev);
       else
         pipelines[pipeline_num] =
           cg_pipeline_copy (pipelines[pipeline_num - 1]);

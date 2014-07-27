@@ -41,7 +41,7 @@ test_fence (void)
   int fb_height = cg_framebuffer_get_height (test_fb);
   cg_fence_closure_t *closure;
 
-  cg_source = cg_glib_source_new (test_ctx, G_PRIORITY_DEFAULT);
+  cg_source = cg_glib_source_new (test_dev, G_PRIORITY_DEFAULT);
   g_source_attach (cg_source, NULL);
   loop = g_main_loop_new (NULL, TRUE);
 

@@ -20,7 +20,7 @@ make_texture (void)
         *(p++) = y * 256 / TEX_HEIGHT;
       }
 
-  return cg_texture_2d_new_from_data (test_ctx,
+  return cg_texture_2d_new_from_data (test_dev,
                                         TEX_WIDTH, TEX_HEIGHT,
                                         CG_PIXEL_FORMAT_RG_88,
                                         TEX_WIDTH * 2,
@@ -43,7 +43,7 @@ test_texture_rg (void)
 
   g_assert (cg_texture_get_components (tex) == CG_TEXTURE_COMPONENTS_RG);
 
-  pipeline = cg_pipeline_new (test_ctx);
+  pipeline = cg_pipeline_new (test_dev);
 
   cg_pipeline_set_layer_texture (pipeline, 0, tex);
   cg_pipeline_set_layer_filters (pipeline,

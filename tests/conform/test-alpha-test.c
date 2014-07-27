@@ -4,7 +4,7 @@
 #include "test-utils.h"
 
 static cg_texture_2d_t *
-create_texture (cg_context_t *context)
+create_texture (cg_device_t *dev)
 {
   static const uint8_t data[] =
     {
@@ -12,7 +12,7 @@ create_texture (cg_context_t *context)
       0x00, 0xfa, 0x00, 0xfa
     };
 
-  return cg_texture_2d_new_from_data (context,
+  return cg_texture_2d_new_from_data (dev,
                                         2, 1, /* width/height */
                                         CG_PIXEL_FORMAT_RGBA_8888_PRE,
                                         4, /* rowstride */
@@ -23,8 +23,8 @@ create_texture (cg_context_t *context)
 void
 test_alpha_test (void)
 {
-  cg_texture_t *tex = create_texture (test_ctx);
-  cg_pipeline_t *pipeline = cg_pipeline_new (test_ctx);
+  cg_texture_t *tex = create_texture (test_dev);
+  cg_pipeline_t *pipeline = cg_pipeline_new (test_dev);
   int fb_width = cg_framebuffer_get_width (test_fb);
   int fb_height = cg_framebuffer_get_height (test_fb);
   cg_color_t clear_color;

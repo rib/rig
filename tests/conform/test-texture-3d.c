@@ -18,7 +18,7 @@ typedef struct _TestState
 } TestState;
 
 static cg_texture_3d_t *
-create_texture_3d (cg_context_t *context)
+create_texture_3d (cg_device_t *dev)
 {
   int x, y, z;
   uint8_t *data = c_malloc (TEX_IMAGE_STRIDE * TEX_DEPTH);
@@ -49,7 +49,7 @@ create_texture_3d (cg_context_t *context)
       p += TEX_IMAGE_STRIDE - (TEX_HEIGHT * TEX_ROWSTRIDE);
     }
 
-  tex = cg_texture_3d_new_from_data (context,
+  tex = cg_texture_3d_new_from_data (dev,
                                        TEX_WIDTH, TEX_HEIGHT, TEX_DEPTH,
                                        CG_PIXEL_FORMAT_RGBA_8888,
                                        TEX_ROWSTRIDE,
@@ -72,8 +72,8 @@ create_texture_3d (cg_context_t *context)
 static void
 draw_frame (TestState *state)
 {
-  cg_texture_t *tex = create_texture_3d (test_ctx);
-  cg_pipeline_t *pipeline = cg_pipeline_new (test_ctx);
+  cg_texture_t *tex = create_texture_3d (test_dev);
+  cg_pipeline_t *pipeline = cg_pipeline_new (test_dev);
   typedef struct { float x, y, s, t, r; } Vert;
   cg_primitive_t *primitive;
   cg_attribute_buffer_t *attribute_buffer;
@@ -130,7 +130,7 @@ draw_frame (TestState *state)
       v++;
     }
 
-  attribute_buffer = cg_attribute_buffer_new (test_ctx,
+  attribute_buffer = cg_attribute_buffer_new (test_dev,
                                                 4 * TEX_DEPTH * sizeof (Vert),
                                                 verts);
   attributes[0] = cg_attribute_new (attribute_buffer,
@@ -151,7 +151,7 @@ draw_frame (TestState *state)
                                                   2 /* n_attributes */);
 
   cg_primitive_set_indices (primitive,
-                              cg_get_rectangle_indices (test_ctx,
+                              cg_get_rectangle_indices (test_dev,
                                                           TEX_DEPTH),
                               6 * TEX_DEPTH);
 
@@ -207,13 +207,13 @@ test_multi_texture (TestState *state)
      sampled with TEXTURE_? just to pick up a specific bug that was
      happening with the ARBfp fragend */
 
-  pipeline = cg_pipeline_new (test_ctx);
+  pipeline = cg_pipeline_new (test_dev);
 
   tex_data[0] = 0xff;
   tex_data[1] = 0x00;
   tex_data[2] = 0x00;
   tex_data[3] = 0xff;
-  tex_2d = cg_texture_2d_new_from_data (test_ctx,
+  tex_2d = cg_texture_2d_new_from_data (test_dev,
                                           1, 1, /* width/height */
                                           CG_PIXEL_FORMAT_RGBA_8888_PRE,
                                           4, /* rowstride */
@@ -225,7 +225,7 @@ test_multi_texture (TestState *state)
   tex_data[1] = 0xff;
   tex_data[2] = 0x00;
   tex_data[3] = 0xff;
-  tex_3d = cg_texture_3d_new_from_data (test_ctx,
+  tex_3d = cg_texture_3d_new_from_data (test_dev,
                                           1, 1, 1, /* width/height/depth */
                                           CG_PIXEL_FORMAT_RGBA_8888_PRE,
                                           4, /* rowstride */

@@ -13,14 +13,14 @@ create_pipeline (cg_texture_t **tex_out,
   static const uint8_t tex_data[] =
     { 0x00, 0x44, 0x88, 0xcc };
 
-  tex = cg_texture_2d_new_from_data (test_ctx,
+  tex = cg_texture_2d_new_from_data (test_dev,
                                        2, 2, /* width/height */
                                        CG_PIXEL_FORMAT_A_8, /* format */
                                        2, /* rowstride */
                                        tex_data,
                                        NULL);
 
-  pipeline = cg_pipeline_new (test_ctx);
+  pipeline = cg_pipeline_new (test_dev);
 
   cg_pipeline_set_layer_filters (pipeline,
                                    0, /* layer */

@@ -59,7 +59,7 @@ test_blend (TestState *state,
   int x_off;
 
   /* First write out the destination color without any blending... */
-  pipeline = cg_pipeline_new (test_ctx);
+  pipeline = cg_pipeline_new (test_dev);
   cg_pipeline_set_color4ub (pipeline, Dr, Dg, Db, Da);
   cg_pipeline_set_blend (pipeline, "RGBA = ADD (SRC_COLOR, 0)", NULL);
   cg_framebuffer_draw_rectangle (test_fb,
@@ -74,7 +74,7 @@ test_blend (TestState *state,
    * Now blend a rectangle over our well defined destination:
    */
 
-  pipeline = cg_pipeline_new (test_ctx);
+  pipeline = cg_pipeline_new (test_dev);
   cg_pipeline_set_color4ub (pipeline, Sr, Sg, Sb, Sa);
 
   status = cg_pipeline_set_blend (pipeline, blend_string, &error);
@@ -144,7 +144,7 @@ make_texture (uint32_t color)
 
   /* Note: we claim that the data is premultiplied so that Cogl won't
    * premultiply the data on upload */
-  tex = test_utils_texture_new_from_data (test_ctx,
+  tex = test_utils_texture_new_from_data (test_dev,
                                           QUAD_WIDTH,
                                           QUAD_WIDTH,
                                           TEST_UTILS_TEXTURE_NONE,
@@ -186,7 +186,7 @@ test_tex_combine (TestState *state,
   tex0 = make_texture (tex0_color);
   tex1 = make_texture (tex1_color);
 
-  pipeline = cg_pipeline_new (test_ctx);
+  pipeline = cg_pipeline_new (test_dev);
 
   cg_pipeline_set_color4ub (pipeline, 0x80, 0x80, 0x80, 0x80);
   cg_pipeline_set_blend (pipeline, "RGBA = ADD (SRC_COLOR, 0)", NULL);

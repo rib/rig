@@ -75,7 +75,7 @@ create_pipeline_for_shader (TestState *state,
                             const char *declarations,
                             const char *fragment_source)
 {
-  cg_pipeline_t *pipeline = cg_pipeline_new (test_ctx);
+  cg_pipeline_t *pipeline = cg_pipeline_new (test_dev);
   cg_snippet_t *snippet = cg_snippet_new (CG_SNIPPET_HOOK_FRAGMENT,
                                            declarations,
                                            NULL);

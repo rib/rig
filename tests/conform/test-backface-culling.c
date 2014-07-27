@@ -47,7 +47,7 @@ paint_test_backface_culling (TestState *state,
                              cg_framebuffer_t *framebuffer)
 {
   int draw_num;
-  cg_pipeline_t *base_pipeline = cg_pipeline_new (test_ctx);
+  cg_pipeline_t *base_pipeline = cg_pipeline_new (test_dev);
 
   cg_framebuffer_orthographic (framebuffer,
                                  0, 0,
@@ -181,7 +181,7 @@ paint (TestState *state)
 
   /* Copy the result of the offscreen rendering for validation and
    * also so we can have visual feedback. */
-  pipeline = cg_pipeline_new (test_ctx);
+  pipeline = cg_pipeline_new (test_dev);
   cg_pipeline_set_layer_texture (pipeline, 0, state->offscreen_tex);
   cg_framebuffer_draw_rectangle (test_fb,
                                    pipeline,
@@ -210,7 +210,7 @@ make_texture (void)
       *(--p) = 255;
     }
 
-  tex = test_utils_texture_new_from_data (test_ctx,
+  tex = test_utils_texture_new_from_data (test_dev,
                                           TEXTURE_SIZE,
                                           TEXTURE_SIZE,
                                           TEST_UTILS_TEXTURE_NO_ATLAS,
@@ -236,7 +236,7 @@ test_backface_culling (void)
 
   state.texture = make_texture ();
 
-  tex = test_utils_texture_new_with_size (test_ctx,
+  tex = test_utils_texture_new_with_size (test_dev,
                                           state.width, state.height,
                                           TEST_UTILS_TEXTURE_NO_SLICING,
                                           CG_TEXTURE_COMPONENTS_RGBA);

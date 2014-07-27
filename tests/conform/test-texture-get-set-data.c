@@ -23,7 +23,7 @@ check_texture (int width, int height, TestUtilsTextureFlags flags)
         *(p++) = (x ^ y);
       }
 
-  bmp = cg_bitmap_new_for_data (test_ctx,
+  bmp = cg_bitmap_new_for_data (test_dev,
                                   width, height,
                                   CG_PIXEL_FORMAT_RGBA_8888,
                                   width * 4,

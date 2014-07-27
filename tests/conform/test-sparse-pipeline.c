@@ -22,10 +22,10 @@ test_sparse_layer_combine (TestState *state)
      creating a pipeline with very large layer numbers. This should
      end up being mapped to much smaller unit numbers */
 
-  tex1 = test_utils_create_color_texture (test_ctx, 0xff0000ff);
-  tex2 = test_utils_create_color_texture (test_ctx, 0x00ff00ff);
+  tex1 = test_utils_create_color_texture (test_dev, 0xff0000ff);
+  tex2 = test_utils_create_color_texture (test_dev, 0x00ff00ff);
 
-  pipeline = cg_pipeline_new (test_ctx);
+  pipeline = cg_pipeline_new (test_dev);
 
   cg_pipeline_set_layer_texture (pipeline, 50, tex1);
   cg_pipeline_set_layer_texture (pipeline, 100, tex2);

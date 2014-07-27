@@ -18,7 +18,7 @@ typedef struct _TestState
 static void
 paint (TestState *state)
 {
-  cg_pipeline_t *white = cg_pipeline_new (test_ctx);
+  cg_pipeline_t *white = cg_pipeline_new (test_dev);
   int i;
 
   cg_pipeline_set_color4f (white, 1, 1, 1, 1);
@@ -45,7 +45,7 @@ paint (TestState *state)
   /* Render all of the textures to the screen */
   for (i = 0; i < NUM_FBOS; i++)
     {
-      cg_pipeline_t *pipeline = cg_pipeline_new (test_ctx);
+      cg_pipeline_t *pipeline = cg_pipeline_new (test_dev);
       cg_pipeline_set_layer_texture (pipeline, 0, state->tex[i]);
       cg_framebuffer_draw_rectangle (test_fb, pipeline,
                                        2.0f / NUM_FBOS * i - 1.0f, -1.0f,
@@ -81,7 +81,7 @@ test_color_mask (void)
 
   for (i = 0; i < NUM_FBOS; i++)
     {
-      state.tex[i] = test_utils_texture_new_with_size (test_ctx, 128, 128,
+      state.tex[i] = test_utils_texture_new_with_size (test_dev, 128, 128,
                                                  TEST_UTILS_TEXTURE_NO_ATLAS,
                                                  CG_TEXTURE_COMPONENTS_RGB);
 

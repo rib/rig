@@ -27,7 +27,7 @@ test_texture_no_allocate (void)
   /* Try to create an atlas texture that is too big so it will
    * internally be freed without allocating */
   texture =
-    cg_atlas_texture_new_from_data (test_ctx,
+    cg_atlas_texture_new_from_data (test_dev,
                                       BIG_TEX_WIDTH,
                                       BIG_TEX_HEIGHT,
                                       /* format */
@@ -49,22 +49,22 @@ test_texture_no_allocate (void)
 
   /* Try to create a sliced texture without allocating it */
   texture =
-    cg_texture_2d_sliced_new_with_size (test_ctx,
+    cg_texture_2d_sliced_new_with_size (test_dev,
                                           BIG_TEX_WIDTH,
                                           BIG_TEX_HEIGHT,
                                           CG_TEXTURE_MAX_WASTE);
   cg_object_unref (texture);
 
   /* 2D texture */
-  texture_2d = cg_texture_2d_new_with_size (test_ctx,
+  texture_2d = cg_texture_2d_new_with_size (test_dev,
                                               64, 64);
   cg_object_unref (texture_2d);
 
   /* 3D texture */
-  if (cg_has_feature (test_ctx, CG_FEATURE_ID_TEXTURE_3D))
+  if (cg_has_feature (test_dev, CG_FEATURE_ID_TEXTURE_3D))
     {
       cg_texture_3d_t *texture_3d =
-        cg_texture_3d_new_with_size (test_ctx,
+        cg_texture_3d_new_with_size (test_dev,
                                        64, 64, 64);
       cg_object_unref (texture_3d);
     }

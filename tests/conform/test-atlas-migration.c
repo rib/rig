@@ -53,7 +53,7 @@ create_texture (int size)
         }
     }
 
-  texture = test_utils_texture_new_from_data (test_ctx,
+  texture = test_utils_texture_new_from_data (test_dev,
                                               size, /* width */
                                               size, /* height */
                                               TEST_UTILS_TEXTURE_NONE, /* flags */
