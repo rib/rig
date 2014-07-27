@@ -55,7 +55,7 @@
 static GQuark cg_pango_font_map_get_priv_key(void) G_GNUC_CONST;
 
 typedef struct _CgPangoFontMapPriv {
-    cg_context_t *ctx;
+    cg_device_t *dev;
     PangoRenderer *renderer;
 } CgPangoFontMapPriv;
 
@@ -70,12 +70,12 @@ free_priv(gpointer data)
 }
 
 PangoFontMap *
-cg_pango_font_map_new(cg_context_t *context)
+cg_pango_font_map_new(cg_device_t *dev)
 {
     PangoFontMap *fm = pango_cairo_font_map_new();
     CgPangoFontMapPriv *priv = g_new0(CgPangoFontMapPriv, 1);
 
-    priv->ctx = context;
+    priv->dev = dev;
 
     /* XXX: The public pango api doesn't let us sub-class
      * PangoCairoFontMap so we attach our own private data using qdata
@@ -97,15 +97,15 @@ _cg_pango_font_map_get_renderer(CgPangoFontMap *fm)
 {
     CgPangoFontMapPriv *priv = _cg_pango_font_map_get_priv(fm);
     if (G_UNLIKELY(!priv->renderer))
-        priv->renderer = _cg_pango_renderer_new(priv->ctx);
+        priv->renderer = _cg_pango_renderer_new(priv->dev);
     return priv->renderer;
 }
 
-cg_context_t *
-_cg_pango_font_map_get_cg_context(CgPangoFontMap *fm)
+cg_device_t *
+_cg_pango_font_map_get_cg_device(CgPangoFontMap *fm)
 {
     CgPangoFontMapPriv *priv = _cg_pango_font_map_get_priv(fm);
-    return priv->ctx;
+    return priv->dev;
 }
 
 void

@@ -36,7 +36,7 @@
 #include <glib.h>
 #include "cogl-pango-pipeline-cache.h"
 
-#include "cogl/cogl-context-private.h"
+#include "cogl/cogl-device-private.h"
 #include "cogl/cogl-texture-private.h"
 
 typedef struct _cg_pango_pipeline_cache_entry_t cg_pango_pipeline_cache_entry_t;
@@ -72,12 +72,12 @@ _cg_pango_pipeline_cache_value_destroy(void *data)
 }
 
 cg_pango_pipeline_cache_t *
-_cg_pango_pipeline_cache_new(cg_context_t *ctx,
+_cg_pango_pipeline_cache_new(cg_device_t *dev,
                              bool use_mipmapping)
 {
     cg_pango_pipeline_cache_t *cache = g_new(cg_pango_pipeline_cache_t, 1);
 
-    cache->ctx = ctx;
+    cache->dev = dev;
 
     /* The key is the pipeline pointer. A reference is taken when the
        pipeline is used as a key so we should unref it again in the
@@ -103,7 +103,7 @@ get_base_texture_rgba_pipeline(cg_pango_pipeline_cache_t *cache)
         cg_pipeline_t *pipeline;
 
         pipeline = cache->base_texture_rgba_pipeline =
-                       cg_pipeline_new(cache->ctx);
+                       cg_pipeline_new(cache->dev);
 
         cg_pipeline_set_layer_wrap_mode(
             pipeline, 0, CG_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE);
@@ -197,7 +197,7 @@ _cg_pango_pipeline_cache_get(cg_pango_pipeline_cache_t *cache,
         cg_pipeline_set_layer_texture(entry->pipeline, 0 /* layer */, texture);
     } else {
         entry->texture = NULL;
-        entry->pipeline = cg_pipeline_new(cache->ctx);
+        entry->pipeline = cg_pipeline_new(cache->dev);
     }
 
     /* Add a weak reference to the pipeline so we can remove it from the

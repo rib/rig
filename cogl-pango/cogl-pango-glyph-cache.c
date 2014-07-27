@@ -34,7 +34,7 @@
 #include "cogl-pango-private.h"
 #include "cogl/cogl-atlas-set.h"
 #include "cogl/cogl-atlas-texture-private.h"
-#include "cogl/cogl-context-private.h"
+#include "cogl/cogl-device-private.h"
 
 typedef struct _cg_pango_glyph_cache_key_t cg_pango_glyph_cache_key_t;
 
@@ -46,7 +46,7 @@ typedef struct _atlas_closure_state_t {
 } atlas_closure_state_t;
 
 struct _cg_pango_glyph_cache_t {
-    cg_context_t *ctx;
+    cg_device_t *dev;
 
     /* Hash table to quickly check whether a particular glyph in a
        particular font is already cached */
@@ -190,20 +190,20 @@ add_global_atlas_cb(cg_atlas_t *atlas, void *user_data)
     cg_pango_glyph_cache_t *cache = user_data;
 
     atlas_callback(
-        _cg_get_atlas_set(cache->ctx), atlas, CG_ATLAS_SET_EVENT_ADDED, cache);
+        _cg_get_atlas_set(cache->dev), atlas, CG_ATLAS_SET_EVENT_ADDED, cache);
 }
 
 cg_pango_glyph_cache_t *
-cg_pango_glyph_cache_new(cg_context_t *ctx,
+cg_pango_glyph_cache_new(cg_device_t *dev,
                          bool use_mipmapping)
 {
     cg_pango_glyph_cache_t *cache;
 
     cache = g_malloc(sizeof(cg_pango_glyph_cache_t));
 
-    /* Note: as a rule we don't take references to a cg_context_t
+    /* Note: as a rule we don't take references to a cg_device_t
      * internally since */
-    cache->ctx = ctx;
+    cache->dev = dev;
 
     cache->hash_table = g_hash_table_new_full(
         cg_pango_glyph_cache_hash_func,
@@ -213,7 +213,7 @@ cg_pango_glyph_cache_new(cg_context_t *ctx,
 
     _cg_list_init(&cache->atlas_closures);
 
-    cache->atlas_set = cg_atlas_set_new(ctx);
+    cache->atlas_set = cg_atlas_set_new(dev);
 
     cg_atlas_set_set_components(cache->atlas_set, CG_TEXTURE_COMPONENTS_A);
 
@@ -228,10 +228,10 @@ cg_pango_glyph_cache_new(cg_context_t *ctx,
     /* We want to be notified when new atlases are added to the global
      * atlas set so they can be monitored for being re-arranged... */
     cg_atlas_set_add_atlas_callback(
-        _cg_get_atlas_set(ctx), atlas_callback, cache, NULL); /* destroy */
+        _cg_get_atlas_set(dev), atlas_callback, cache, NULL); /* destroy */
     /* The global atlas set may already have atlases that we will
      * want to monitor... */
-    cg_atlas_set_foreach(_cg_get_atlas_set(ctx), add_global_atlas_cb, cache);
+    cg_atlas_set_foreach(_cg_get_atlas_set(dev), add_global_atlas_cb, cache);
 
     g_hook_list_init(&cache->reorganize_callbacks, sizeof(GHook));
 
@@ -292,7 +292,7 @@ cg_pango_glyph_cache_add_to_global_atlas(cg_pango_glyph_cache_t *cache,
         return false;
 
     texture = cg_atlas_texture_new_with_size(
-        cache->ctx, value->draw_width, value->draw_height);
+        cache->dev, value->draw_width, value->draw_height);
     if (!cg_texture_allocate(CG_TEXTURE(texture), &ignore_error)) {
         cg_error_free(ignore_error);
         return false;

@@ -35,7 +35,7 @@
 
 #include "cogl-pango-display-list.h"
 #include "cogl-pango-pipeline-cache.h"
-#include "cogl/cogl-context-private.h"
+#include "cogl/cogl-device-private.h"
 
 typedef enum {
     CG_PANGO_DISPLAY_LIST_TEXTURE,
@@ -212,7 +212,7 @@ _cg_pango_display_list_add_trapezoid(cg_pango_display_list_t *dl,
                                      float x_12,
                                      float x_22)
 {
-    cg_context_t *ctx = dl->pipeline_cache->ctx;
+    cg_device_t *dev = dl->pipeline_cache->dev;
     cg_pango_display_list_node_t *node =
         g_slice_new(cg_pango_display_list_node_t);
     cg_vertex_p2_t vertices[4] = {
@@ -225,7 +225,7 @@ _cg_pango_display_list_add_trapezoid(cg_pango_display_list_t *dl,
     node->pipeline = NULL;
 
     node->d.trapezoid.primitive =
-        cg_primitive_new_p2(ctx, CG_VERTICES_MODE_TRIANGLE_FAN, 4, vertices);
+        cg_primitive_new_p2(dev, CG_VERTICES_MODE_TRIANGLE_FAN, 4, vertices);
 
     _cg_pango_display_list_append_node(dl, node);
 }
@@ -246,7 +246,7 @@ emit_vertex_buffer_geometry(cg_framebuffer_t *fb,
                             cg_pipeline_t *pipeline,
                             cg_pango_display_list_node_t *node)
 {
-    cg_context_t *ctx = fb->context;
+    cg_device_t *dev = fb->dev;
 
     /* It's expensive to go through the Cogl journal for large runs
      * of text in part because the journal transforms the quads in software
@@ -268,8 +268,8 @@ emit_vertex_buffer_geometry(cg_framebuffer_t *fb,
 
         n_verts = node->d.texture.rectangles->len * 4;
 
-        buffer = cg_attribute_buffer_new_with_size(
-            ctx, n_verts * sizeof(cg_vertex_p2t2_t));
+        buffer = cg_attribute_buffer_new_with_size(dev,
+                                                   n_verts * sizeof(cg_vertex_p2t2_t));
 
         if ((verts = cg_buffer_map(CG_BUFFER(buffer),
                                    CG_BUFFER_ACCESS_WRITE,
@@ -341,7 +341,7 @@ emit_vertex_buffer_geometry(cg_framebuffer_t *fb,
                                                 2 /* n_attributes */);
 
 #ifdef CLUTTER_CG_HAS_GL
-        if (_cg_has_private_feature(ctx, CG_PRIVATE_FEATURE_QUADS))
+        if (_cg_has_private_feature(dev, CG_PRIVATE_FEATURE_QUADS))
             cg_primitive_set_mode(prim, GL_QUADS);
         else
 #endif
@@ -351,7 +351,7 @@ emit_vertex_buffer_geometry(cg_framebuffer_t *fb,
                quads */
 
             cg_indices_t *indices =
-                cg_get_rectangle_indices(ctx, node->d.texture.rectangles->len);
+                cg_get_rectangle_indices(dev, node->d.texture.rectangles->len);
 
             cg_primitive_set_indices(
                 prim, indices, node->d.texture.rectangles->len * 6);

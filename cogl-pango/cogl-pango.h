@@ -50,7 +50,7 @@
 #ifndef CG_COMPILATION
 #include <cogl/cogl.h>
 #else
-#include "cogl/cogl-context.h"
+#include "cogl/cogl-device.h"
 #endif
 
 CG_BEGIN_DECLS
@@ -69,14 +69,14 @@ typedef PangoCairoFontMap CgPangoFontMap;
 
 /**
  * cg_pango_font_map_new:
- * @context: A #cg_context_t
+ * @dev: A #cg_device_t
  *
  * Creates a new font map.
  *
  * Return value: (transfer full): the newly created #PangoFontMap
  *
  */
-PangoFontMap *cg_pango_font_map_new(cg_context_t *context);
+PangoFontMap *cg_pango_font_map_new(cg_device_t *dev);
 
 /**
  * cg_pango_font_map_set_resolution:

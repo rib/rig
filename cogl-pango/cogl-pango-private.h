@@ -60,7 +60,7 @@ typedef struct _CgPangoRendererClass CgPangoRendererClass;
 
 GType _cg_pango_renderer_get_type(void) G_GNUC_CONST;
 
-PangoRenderer *_cg_pango_renderer_new(cg_context_t *context);
+PangoRenderer *_cg_pango_renderer_new(cg_device_t *context);
 
 void _cg_pango_renderer_clear_glyph_cache(CgPangoRenderer *renderer);
 
@@ -68,7 +68,7 @@ void _cg_pango_renderer_set_use_mipmapping(CgPangoRenderer *renderer,
                                            bool value);
 bool _cg_pango_renderer_get_use_mipmapping(CgPangoRenderer *renderer);
 
-cg_context_t *_cg_pango_font_map_get_cg_context(CgPangoFontMap *fm);
+cg_device_t *_cg_pango_font_map_get_cg_device(CgPangoFontMap *fm);
 
 PangoRenderer *_cg_pango_font_map_get_renderer(CgPangoFontMap *fm);
 

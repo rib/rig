@@ -65,7 +65,7 @@ struct _cg_pango_glyph_cache_value_t {
 typedef void (*cg_pango_glyph_cache_dirty_func_t)(
     PangoFont *font, PangoGlyph glyph, cg_pango_glyph_cache_value_t *value);
 
-cg_pango_glyph_cache_t *cg_pango_glyph_cache_new(cg_context_t *ctx,
+cg_pango_glyph_cache_t *cg_pango_glyph_cache_new(cg_device_t *dev,
                                                  bool use_mipmapping);
 
 void cg_pango_glyph_cache_free(cg_pango_glyph_cache_t *cache);

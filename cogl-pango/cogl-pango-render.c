@@ -47,7 +47,7 @@
 #include <cairo.h>
 
 #include "cogl/cogl-debug.h"
-#include "cogl/cogl-context-private.h"
+#include "cogl/cogl-device-private.h"
 #include "cogl/cogl-texture-private.h"
 #include "cogl-pango-private.h"
 #include "cogl-pango-glyph-cache.h"
@@ -67,7 +67,7 @@ typedef struct {
 struct _CgPangoRenderer {
     PangoRenderer parent_instance;
 
-    cg_context_t *ctx;
+    cg_device_t *dev;
 
     /* Two caches of glyphs as textures and their corresponding pipeline
        caches, one with mipmapped textures and one without */
@@ -109,10 +109,10 @@ typedef struct {
 } cg_pango_renderer_slice_cb_data_t;
 
 PangoRenderer *
-_cg_pango_renderer_new(cg_context_t *context)
+_cg_pango_renderer_new(cg_device_t *dev)
 {
     return PANGO_RENDERER(
-        g_object_new(CG_PANGO_TYPE_RENDERER, "context", context, NULL));
+        g_object_new(CG_PANGO_TYPE_RENDERER, "context", dev, NULL));
 }
 
 static void
@@ -205,16 +205,16 @@ static void
 _cg_pango_renderer_constructed(GObject *gobject)
 {
     CgPangoRenderer *renderer = CG_PANGO_RENDERER(gobject);
-    cg_context_t *ctx = renderer->ctx;
+    cg_device_t *dev = renderer->dev;
 
     renderer->no_mipmap_caches.pipeline_cache =
-        _cg_pango_pipeline_cache_new(ctx, false);
+        _cg_pango_pipeline_cache_new(dev, false);
     renderer->mipmap_caches.pipeline_cache =
-        _cg_pango_pipeline_cache_new(ctx, true);
+        _cg_pango_pipeline_cache_new(dev, true);
 
     renderer->no_mipmap_caches.glyph_cache =
-        cg_pango_glyph_cache_new(ctx, false);
-    renderer->mipmap_caches.glyph_cache = cg_pango_glyph_cache_new(ctx, true);
+        cg_pango_glyph_cache_new(dev, false);
+    renderer->mipmap_caches.glyph_cache = cg_pango_glyph_cache_new(dev, true);
 
     _cg_pango_renderer_set_use_mipmapping(renderer, false);
 
@@ -232,7 +232,7 @@ cg_pango_renderer_set_property(GObject *object,
 
     switch (prop_id) {
     case PROP_CG_CONTEXT:
-        renderer->ctx = g_value_get_pointer(value);
+        renderer->dev = g_value_get_pointer(value);
         break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
@@ -270,8 +270,8 @@ cg_pango_renderer_dispose(GObject *object)
 {
     CgPangoRenderer *priv = CG_PANGO_RENDERER(object);
 
-    if (priv->ctx)
-        priv->ctx = NULL;
+    if (priv->dev)
+        priv->dev = NULL;
 }
 
 static void

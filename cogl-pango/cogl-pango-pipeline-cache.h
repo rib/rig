@@ -36,12 +36,12 @@
 
 #include <glib.h>
 
-#include "cogl/cogl-context-private.h"
+#include "cogl/cogl-device-private.h"
 
 CG_BEGIN_DECLS
 
 typedef struct _cg_pango_pipeline_cache_t {
-    cg_context_t *ctx;
+    cg_device_t *dev;
 
     GHashTable *hash_table;
 
@@ -51,7 +51,7 @@ typedef struct _cg_pango_pipeline_cache_t {
     bool use_mipmapping;
 } cg_pango_pipeline_cache_t;
 
-cg_pango_pipeline_cache_t *_cg_pango_pipeline_cache_new(cg_context_t *ctx,
+cg_pango_pipeline_cache_t *_cg_pango_pipeline_cache_new(cg_device_t *dev,
                                                         bool use_mipmapping);
 
 /* Returns a pipeline that can be used to render glyphs in the given
