@@ -13,7 +13,7 @@ bool run_all = FALSE;
 
 typedef struct _Data
 {
-  cg_context_t *ctx;
+  cg_device_t *dev;
   cg_framebuffer_t *fb;
   cg_pipeline_t *pipeline;
   cg_pipeline_t *alpha_pipeline;
@@ -102,7 +102,7 @@ test_rectangles (Data *data)
   cg_framebuffer_pop_clip (data->fb);
 }
 
-static bool
+static gboolean
 paint_cb (void *user_data)
 {
   Data *data = user_data;
@@ -148,9 +148,9 @@ main (int argc, char **argv)
                       "The time spent in the glib mainloop",
                       0);  // no application private data
 
-  data.ctx = cg_context_new (NULL, NULL);
+  data.dev = cg_device_new (NULL, NULL);
 
-  onscreen = cg_onscreen_new (data.ctx,
+  onscreen = cg_onscreen_new (data.dev,
                                 FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT);
   cg_onscreen_set_swap_throttled (onscreen, FALSE);
   cg_onscreen_show (onscreen);
@@ -162,12 +162,12 @@ main (int argc, char **argv)
                                  -1,
                                  100);
 
-  data.pipeline = cg_pipeline_new (data.ctx);
+  data.pipeline = cg_pipeline_new (data.dev);
   cg_pipeline_set_color4f (data.pipeline, 1, 1, 1, 1);
-  data.alpha_pipeline = cg_pipeline_new (data.ctx);
+  data.alpha_pipeline = cg_pipeline_new (data.dev);
   cg_pipeline_set_color4f (data.alpha_pipeline, 1, 1, 1, 0.5);
 
-  cg_source = cg_glib_source_new (data.ctx, G_PRIORITY_DEFAULT);
+  cg_source = cg_glib_source_new (data.dev, G_PRIORITY_DEFAULT);
 
   g_source_attach (cg_source, NULL);
 
