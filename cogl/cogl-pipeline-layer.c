@@ -36,7 +36,7 @@
 #endif
 
 #include "cogl-util.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-texture-private.h"
 
 #include "cogl-pipeline.h"
@@ -45,7 +45,7 @@
 #include "cogl-pipeline-layer-state.h"
 #include "cogl-node-private.h"
 #include "cogl-pipeline-opengl-private.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-texture-private.h"
 
 #include <string.h>
@@ -713,7 +713,7 @@ _cg_pipeline_init_default_layers(void)
         c_slice_new0(cg_pipeline_layer_big_state_t);
     cg_pipeline_layer_t *new;
 
-    _CG_GET_CONTEXT(ctx, NO_RETVAL);
+    _CG_GET_DEVICE(dev, NO_RETVAL);
 
     _cg_pipeline_node_init(CG_NODE(layer));
 
@@ -727,7 +727,7 @@ _cg_pipeline_init_default_layers(void)
     layer->texture_type = CG_TEXTURE_TYPE_2D;
 
     layer->sampler_cache_entry =
-        _cg_sampler_cache_get_default_entry(ctx->sampler_cache);
+        _cg_sampler_cache_get_default_entry(dev->sampler_cache);
 
     layer->big_state = big_state;
     layer->has_big_state = true;
@@ -749,7 +749,7 @@ _cg_pipeline_init_default_layers(void)
 
     big_state->point_sprite_coords = false;
 
-    ctx->default_layer_0 = _cg_pipeline_layer_object_new(layer);
+    dev->default_layer_0 = _cg_pipeline_layer_object_new(layer);
 
     /* TODO: we should make default_layer_n comprise of two
      * descendants of default_layer_0:
@@ -769,9 +769,9 @@ _cg_pipeline_init_default_layers(void)
      * optimizations for flattening the ancestry when we make
      * the second descendant which reverts the state.
      */
-    ctx->default_layer_n = _cg_pipeline_layer_copy(layer);
-    new = _cg_pipeline_set_layer_unit(NULL, ctx->default_layer_n, 1);
-    c_assert(new == ctx->default_layer_n);
+    dev->default_layer_n = _cg_pipeline_layer_copy(layer);
+    new = _cg_pipeline_set_layer_unit(NULL, dev->default_layer_n, 1);
+    c_assert(new == dev->default_layer_n);
     /* Since we passed a newly allocated layer we don't expect that
      * _set_layer_unit() will have to allocate *another* layer. */
 
@@ -779,7 +779,7 @@ _cg_pipeline_init_default_layers(void)
      * effectively ensures that ->default_layer_n and ->default_layer_0
      * remain immutable.
      */
-    ctx->dummy_layer_dependant = _cg_pipeline_layer_copy(ctx->default_layer_n);
+    dev->dummy_layer_dependant = _cg_pipeline_layer_copy(dev->default_layer_n);
 }
 
 void

@@ -53,7 +53,7 @@
 #endif /* CG_COMPILATION */
 
 #include <cogl/cogl-defines.h>
-#include <cogl/cogl-context.h>
+#include <cogl/cogl-device.h>
 #include <cogl/cogl-framebuffer.h>
 #include <cogl/cogl-texture.h>
 #include <cogl/cogl-texture-2d.h>
@@ -173,7 +173,7 @@ typedef enum { /*< prefix=CG_GLES2_CONTEXT_ERROR >*/
 
 /**
  * cg_gles2_context_new:
- * @ctx: A #cg_context_t
+ * @dev: A #cg_device_t
  * @error: A pointer to a #cg_error_t for returning exceptions
  *
  * Allocates a new OpenGLES 2.0 context that can be used to render to
@@ -199,7 +199,7 @@ typedef enum { /*< prefix=CG_GLES2_CONTEXT_ERROR >*/
  *               was an error and @error will be updated in that case.
  * Stability: unstable
  */
-cg_gles2_context_t *cg_gles2_context_new(cg_context_t *ctx, cg_error_t **error);
+cg_gles2_context_t *cg_gles2_context_new(cg_device_t *dev, cg_error_t **error);
 
 /**
  * cg_gles2_context_get_vtable:
@@ -221,7 +221,7 @@ cg_gles2_context_get_vtable(cg_gles2_context_t *gles2_ctx);
 
 /**
  * cg_push_gles2_context:
- * @ctx: A #cg_context_t
+ * @dev: A #cg_device_t
  * @gles2_ctx: A #cg_gles2_context_t allocated with
  *             cg_gles2_context_new()
  * @read_buffer: A #cg_framebuffer_t to access to read operations
@@ -248,7 +248,7 @@ cg_gles2_context_get_vtable(cg_gles2_context_t *gles2_ctx);
  *               otherwise and @error will be updated.
  * Stability: unstable
  */
-bool cg_push_gles2_context(cg_context_t *ctx,
+bool cg_push_gles2_context(cg_device_t *dev,
                            cg_gles2_context_t *gles2_ctx,
                            cg_framebuffer_t *read_buffer,
                            cg_framebuffer_t *write_buffer,
@@ -256,7 +256,7 @@ bool cg_push_gles2_context(cg_context_t *ctx,
 
 /**
  * cg_pop_gles2_context:
- * @ctx: A #cg_context_t
+ * @dev: A #cg_device_t
  *
  * Restores the previously active #cg_gles2_context_t if there
  * were nested calls to cg_push_gles2_context() or otherwise
@@ -269,7 +269,7 @@ bool cg_push_gles2_context(cg_context_t *ctx,
  *
  * Stability: unstable
  */
-void cg_pop_gles2_context(cg_context_t *ctx);
+void cg_pop_gles2_context(cg_device_t *dev);
 
 /**
  * cg_gles2_get_current_vtable:
@@ -286,7 +286,7 @@ cg_gles2_vtable_t *cg_gles2_get_current_vtable(void);
 
 /**
  * cg_gles2_texture_2d_new_from_handle:
- * @ctx: A #cg_context_t
+ * @dev: A #cg_device_t
  * @gles2_ctx: A #cg_gles2_context_t allocated with
  *             cg_gles2_context_new()
  * @handle: An OpenGL ES 2.0 texture handle created with
@@ -311,7 +311,7 @@ cg_gles2_vtable_t *cg_gles2_get_current_vtable(void);
  * Stability: unstable
  */
 cg_texture_2d_t *
-cg_gles2_texture_2d_new_from_handle(cg_context_t *ctx,
+cg_gles2_texture_2d_new_from_handle(cg_device_t *dev,
                                     cg_gles2_context_t *gles2_ctx,
                                     unsigned int handle,
                                     int width,

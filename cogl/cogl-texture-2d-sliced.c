@@ -48,7 +48,7 @@
 #include "cogl-texture-2d-sliced-private.h"
 #include "cogl-texture-gl-private.h"
 #include "cogl-texture-driver.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-object-private.h"
 #include "cogl-spans.h"
 #include "cogl-journal-private.h"
@@ -192,7 +192,7 @@ _cg_texture_2d_sliced_set_waste(cg_texture_2d_sliced_t *tex_2ds,
                                 cg_error_t **error)
 {
     bool need_x, need_y;
-    cg_context_t *ctx = CG_TEXTURE(tex_2ds)->context;
+    cg_device_t *dev = CG_TEXTURE(tex_2ds)->dev;
 
     /* If the x_span is sliced and the upload touches the
        rightmost pixels then fill the waste with copies of the
@@ -236,7 +236,7 @@ _cg_texture_2d_sliced_set_waste(cg_texture_2d_sliced_t *tex_2ds,
                 src += bmp_rowstride;
             }
 
-            waste_bmp = cg_bitmap_new_for_data(ctx,
+            waste_bmp = cg_bitmap_new_for_data(dev,
                                                x_span->waste,
                                                y_iter->intersect_end -
                                                y_iter->intersect_start,
@@ -295,7 +295,7 @@ _cg_texture_2d_sliced_set_waste(cg_texture_2d_sliced_t *tex_2ds,
                 }
             }
 
-            waste_bmp = cg_bitmap_new_for_data(ctx,
+            waste_bmp = cg_bitmap_new_for_data(dev,
                                                copy_width,
                                                y_span->waste,
                                                source_format,
@@ -650,7 +650,7 @@ free_spans(cg_texture_2d_sliced_t *tex_2ds)
 }
 
 static bool
-setup_spans(cg_context_t *ctx,
+setup_spans(cg_device_t *dev,
             cg_texture_2d_sliced_t *tex_2ds,
             int width,
             int height,
@@ -666,7 +666,7 @@ setup_spans(cg_context_t *ctx,
     int (*slices_for_size)(int, int, int, c_array_t *);
 
     /* Initialize size of largest slice according to supported features */
-    if (cg_has_feature(ctx, CG_FEATURE_ID_TEXTURE_NPOT)) {
+    if (cg_has_feature(dev, CG_FEATURE_ID_TEXTURE_NPOT)) {
         max_width = width;
         max_height = height;
         slices_for_size = _cg_rect_slices_for_size;
@@ -681,8 +681,7 @@ setup_spans(cg_context_t *ctx,
         cg_span_t span;
 
         /* Check if size supported else bail out */
-        if (!ctx->driver_vtable->texture_2d_can_create(
-                ctx, max_width, max_height, internal_format)) {
+        if (!dev->driver_vtable->texture_2d_can_create(dev, max_width, max_height, internal_format)) {
             _cg_set_error(error,
                           CG_TEXTURE_ERROR,
                           CG_TEXTURE_ERROR_SIZE,
@@ -714,8 +713,7 @@ setup_spans(cg_context_t *ctx,
         c_array_append_val(tex_2ds->slice_y_spans, span);
     } else {
         /* Decrease the size of largest slice until supported by GL */
-        while (!ctx->driver_vtable->texture_2d_can_create(
-                   ctx, max_width, max_height, internal_format)) {
+        while (!dev->driver_vtable->texture_2d_can_create(dev, max_width, max_height, internal_format)) {
             /* Alternate between width and height */
             if (max_width > max_height)
                 max_width /= 2;
@@ -782,7 +780,7 @@ allocate_slices(cg_texture_2d_sliced_t *tex_2ds,
                 cg_error_t **error)
 {
     cg_texture_t *tex = CG_TEXTURE(tex_2ds);
-    cg_context_t *ctx = tex->context;
+    cg_device_t *dev = tex->dev;
     int n_x_slices;
     int n_y_slices;
     int n_slices;
@@ -792,8 +790,7 @@ allocate_slices(cg_texture_2d_sliced_t *tex_2ds,
 
     tex_2ds->internal_format = internal_format;
 
-    if (!setup_spans(
-            ctx, tex_2ds, width, height, max_waste, internal_format, error)) {
+    if (!setup_spans(dev, tex_2ds, width, height, max_waste, internal_format, error)) {
         return false;
     }
 
@@ -821,7 +818,7 @@ allocate_slices(cg_texture_2d_sliced_t *tex_2ds,
                     (int)(y_span->size - y_span->waste));
 
             slice = CG_TEXTURE(
-                cg_texture_2d_new_with_size(ctx, x_span->size, y_span->size));
+                cg_texture_2d_new_with_size(dev, x_span->size, y_span->size));
 
             _cg_texture_copy_internal_format(tex, slice);
 
@@ -846,7 +843,7 @@ _cg_texture_2d_sliced_free(cg_texture_2d_sliced_t *tex_2ds)
 }
 
 static cg_texture_2d_sliced_t *
-_cg_texture_2d_sliced_create_base(cg_context_t *ctx,
+_cg_texture_2d_sliced_create_base(cg_device_t *dev,
                                   int width,
                                   int height,
                                   int max_waste,
@@ -856,7 +853,7 @@ _cg_texture_2d_sliced_create_base(cg_context_t *ctx,
     cg_texture_2d_sliced_t *tex_2ds = c_new0(cg_texture_2d_sliced_t, 1);
 
     _cg_texture_init(CG_TEXTURE(tex_2ds),
-                     ctx,
+                     dev,
                      width,
                      height,
                      internal_format,
@@ -869,7 +866,7 @@ _cg_texture_2d_sliced_create_base(cg_context_t *ctx,
 }
 
 cg_texture_2d_sliced_t *
-cg_texture_2d_sliced_new_with_size(cg_context_t *ctx,
+cg_texture_2d_sliced_new_with_size(cg_device_t *dev,
                                    int width,
                                    int height,
                                    int max_waste)
@@ -879,8 +876,9 @@ cg_texture_2d_sliced_new_with_size(cg_context_t *ctx,
     loader->src.sized.width = width;
     loader->src.sized.height = height;
 
-    return _cg_texture_2d_sliced_create_base(
-        ctx, width, height, max_waste, CG_PIXEL_FORMAT_RGBA_8888_PRE, loader);
+    return _cg_texture_2d_sliced_create_base(dev, width, height, max_waste,
+                                             CG_PIXEL_FORMAT_RGBA_8888_PRE,
+                                             loader);
 }
 
 static cg_texture_2d_sliced_t *
@@ -912,7 +910,7 @@ cg_texture_2d_sliced_new_from_bitmap(cg_bitmap_t *bmp,
 }
 
 cg_texture_2d_sliced_t *
-cg_texture_2d_sliced_new_from_data(cg_context_t *ctx,
+cg_texture_2d_sliced_new_from_data(cg_device_t *dev,
                                    int width,
                                    int height,
                                    int max_waste,
@@ -932,8 +930,8 @@ cg_texture_2d_sliced_new_from_data(cg_context_t *ctx,
         rowstride = width * _cg_pixel_format_get_bytes_per_pixel(format);
 
     /* Wrap the data into a bitmap */
-    bmp = cg_bitmap_new_for_data(
-        ctx, width, height, format, rowstride, (uint8_t *)data);
+    bmp = cg_bitmap_new_for_data(dev, width, height, format, rowstride,
+                                 (uint8_t *)data);
 
     tex_2ds = cg_texture_2d_sliced_new_from_bitmap(bmp, max_waste);
 
@@ -948,7 +946,7 @@ cg_texture_2d_sliced_new_from_data(cg_context_t *ctx,
 }
 
 cg_texture_2d_sliced_t *
-cg_texture_2d_sliced_new_from_file(cg_context_t *ctx,
+cg_texture_2d_sliced_new_from_file(cg_device_t *dev,
                                    const char *filename,
                                    int max_waste,
                                    cg_error_t **error)
@@ -958,7 +956,7 @@ cg_texture_2d_sliced_new_from_file(cg_context_t *ctx,
 
     c_return_val_if_fail(error == NULL || *error == NULL, NULL);
 
-    bmp = cg_bitmap_new_from_file(ctx, filename, error);
+    bmp = cg_bitmap_new_from_file(dev, filename, error);
     if (bmp == NULL)
         return NULL;
 

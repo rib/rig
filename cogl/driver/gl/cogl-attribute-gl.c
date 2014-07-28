@@ -42,7 +42,7 @@
 #include "cogl-util-gl-private.h"
 #include "cogl-pipeline-opengl-private.h"
 #include "cogl-error-private.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-attribute.h"
 #include "cogl-attribute-private.h"
 #include "cogl-attribute-gl-private.h"
@@ -50,7 +50,7 @@
 #include "cogl-buffer-gl-private.h"
 
 typedef struct _foreach_changed_bit_state_t {
-    cg_context_t *context;
+    cg_device_t *dev;
     const CoglBitmask *new_bits;
     cg_pipeline_t *pipeline;
 } foreach_changed_bit_state_t;
@@ -60,31 +60,31 @@ toggle_custom_attribute_enabled_cb(int bit_num, void *user_data)
 {
     foreach_changed_bit_state_t *state = user_data;
     bool enabled = _cg_bitmask_get(state->new_bits, bit_num);
-    cg_context_t *context = state->context;
+    cg_device_t *dev = state->dev;
 
     if (enabled)
-        GE(context, glEnableVertexAttribArray(bit_num));
+        GE(dev, glEnableVertexAttribArray(bit_num));
     else
-        GE(context, glDisableVertexAttribArray(bit_num));
+        GE(dev, glDisableVertexAttribArray(bit_num));
 
     return true;
 }
 
 static void
-foreach_changed_bit_and_save(cg_context_t *context,
+foreach_changed_bit_and_save(cg_device_t *dev,
                              CoglBitmask *current_bits,
                              const CoglBitmask *new_bits,
                              cg_bitmask_foreach_func_t callback,
                              foreach_changed_bit_state_t *state)
 {
     /* Get the list of bits that are different */
-    _cg_bitmask_clear_all(&context->changed_bits_tmp);
-    _cg_bitmask_set_bits(&context->changed_bits_tmp, current_bits);
-    _cg_bitmask_xor_bits(&context->changed_bits_tmp, new_bits);
+    _cg_bitmask_clear_all(&dev->changed_bits_tmp);
+    _cg_bitmask_set_bits(&dev->changed_bits_tmp, current_bits);
+    _cg_bitmask_xor_bits(&dev->changed_bits_tmp, new_bits);
 
     /* Iterate over each bit to change */
     state->new_bits = new_bits;
-    _cg_bitmask_foreach(&context->changed_bits_tmp, callback, state);
+    _cg_bitmask_foreach(&dev->changed_bits_tmp, callback, state);
 
     /* Store the new values */
     _cg_bitmask_clear_all(current_bits);
@@ -92,7 +92,7 @@ foreach_changed_bit_and_save(cg_context_t *context,
 }
 
 static void
-setup_generic_buffered_attribute(cg_context_t *context,
+setup_generic_buffered_attribute(cg_device_t *dev,
                                  cg_pipeline_t *pipeline,
                                  cg_attribute_t *attribute,
                                  uint8_t *base)
@@ -104,7 +104,7 @@ setup_generic_buffered_attribute(cg_context_t *context,
     if (attrib_location == -1)
         return;
 
-    GE(context,
+    GE(dev,
        glVertexAttribPointer(attrib_location,
                              attribute->d.buffered.n_components,
                              attribute->d.buffered.type,
@@ -112,11 +112,11 @@ setup_generic_buffered_attribute(cg_context_t *context,
                              attribute->d.buffered.stride,
                              base + attribute->d.buffered.offset));
     _cg_bitmask_set(
-        &context->enable_custom_attributes_tmp, attrib_location, true);
+        &dev->enable_custom_attributes_tmp, attrib_location, true);
 }
 
 static void
-setup_generic_const_attribute(cg_context_t *context,
+setup_generic_const_attribute(cg_device_t *dev,
                               cg_pipeline_t *pipeline,
                               cg_attribute_t *attribute)
 {
@@ -139,25 +139,25 @@ setup_generic_const_attribute(cg_context_t *context,
 
     switch (attribute->d.constant.boxed.size) {
     case 1:
-        GE(context,
+        GE(dev,
            glVertexAttrib1fv(attrib_location,
                              attribute->d.constant.boxed.v.matrix));
         break;
     case 2:
         for (i = 0; i < columns; i++)
-            GE(context,
+            GE(dev,
                glVertexAttrib2fv(attrib_location + i,
                                  attribute->d.constant.boxed.v.matrix));
         break;
     case 3:
         for (i = 0; i < columns; i++)
-            GE(context,
+            GE(dev,
                glVertexAttrib3fv(attrib_location + i,
                                  attribute->d.constant.boxed.v.matrix));
         break;
     case 4:
         for (i = 0; i < columns; i++)
-            GE(context,
+            GE(dev,
                glVertexAttrib4fv(attrib_location + i,
                                  attribute->d.constant.boxed.v.matrix));
         break;
@@ -167,18 +167,18 @@ setup_generic_const_attribute(cg_context_t *context,
 }
 
 static void
-apply_attribute_enable_updates(cg_context_t *context,
+apply_attribute_enable_updates(cg_device_t *dev,
                                cg_pipeline_t *pipeline)
 {
     foreach_changed_bit_state_t changed_bits_state;
 
-    changed_bits_state.context = context;
+    changed_bits_state.dev = dev;
     changed_bits_state.pipeline = pipeline;
 
-    changed_bits_state.new_bits = &context->enable_custom_attributes_tmp;
-    foreach_changed_bit_and_save(context,
-                                 &context->enabled_custom_attributes,
-                                 &context->enable_custom_attributes_tmp,
+    changed_bits_state.new_bits = &dev->enable_custom_attributes_tmp;
+    foreach_changed_bit_and_save(dev,
+                                 &dev->enabled_custom_attributes,
+                                 &dev->enable_custom_attributes_tmp,
                                  toggle_custom_attribute_enabled_cb,
                                  &changed_bits_state);
 }
@@ -191,7 +191,7 @@ _cg_gl_flush_attributes_state(cg_framebuffer_t *framebuffer,
                               cg_attribute_t **attributes,
                               int n_attributes)
 {
-    cg_context_t *ctx = framebuffer->context;
+    cg_device_t *dev = framebuffer->dev;
     int i;
     bool with_color_attrib = false;
     bool unknown_color_alpha = false;
@@ -256,10 +256,10 @@ _cg_gl_flush_attributes_state(cg_framebuffer_t *framebuffer,
          */
     }
 
-    _cg_pipeline_flush_gl_state(
-        ctx, pipeline, framebuffer, with_color_attrib, unknown_color_alpha);
+    _cg_pipeline_flush_gl_state(dev, pipeline, framebuffer,
+                                with_color_attrib, unknown_color_alpha);
 
-    _cg_bitmask_clear_all(&ctx->enable_custom_attributes_tmp);
+    _cg_bitmask_clear_all(&dev->enable_custom_attributes_tmp);
 
     /* Bind the attribute pointers. We need to do this after the
      * pipeline is flushed because when using GLSL that is the only
@@ -283,14 +283,14 @@ _cg_gl_flush_attributes_state(cg_framebuffer_t *framebuffer,
             base = _cg_buffer_gl_bind(
                 buffer, CG_BUFFER_BIND_TARGET_ATTRIBUTE_BUFFER, NULL);
 
-            setup_generic_buffered_attribute(ctx, pipeline, attribute, base);
+            setup_generic_buffered_attribute(dev, pipeline, attribute, base);
 
             _cg_buffer_gl_unbind(buffer);
         } else
-            setup_generic_const_attribute(ctx, pipeline, attribute);
+            setup_generic_const_attribute(dev, pipeline, attribute);
     }
 
-    apply_attribute_enable_updates(ctx, pipeline);
+    apply_attribute_enable_updates(dev, pipeline);
 
     if (copy)
         cg_object_unref(copy);

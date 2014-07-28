@@ -38,7 +38,7 @@
 #ifndef __CG_ONSCREEN_H
 #define __CG_ONSCREEN_H
 
-#include <cogl/cogl-context.h>
+#include <cogl/cogl-device.h>
 #include <cogl/cogl-framebuffer.h>
 #include <cogl/cogl-frame-info.h>
 #include <cogl/cogl-object.h>
@@ -50,7 +50,7 @@ typedef struct _cg_onscreen_t cg_onscreen_t;
 
 /**
  * cg_onscreen_new: (constructor)
- * @context: A #cg_context_t
+ * @dev: A #cg_device_t
  * @width: The desired framebuffer width
  * @height: The desired framebuffer height
  *
@@ -62,7 +62,7 @@ typedef struct _cg_onscreen_t cg_onscreen_t;
  * framebuffer
  * Stability: unstable
  */
-cg_onscreen_t *cg_onscreen_new(cg_context_t *context, int width, int height);
+cg_onscreen_t *cg_onscreen_new(cg_device_t *dev, int width, int height);
 
 #ifdef CG_HAS_X11
 typedef void (*cg_onscreen_x11_mask_callback_t)(cg_onscreen_t *onscreen,

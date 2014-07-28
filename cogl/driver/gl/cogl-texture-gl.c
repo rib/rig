@@ -35,7 +35,7 @@
 #include <strings.h>
 #endif
 
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-util-gl-private.h"
 #include "cogl-texture-gl-private.h"
 #include "cogl-texture-3d-private.h"
@@ -51,16 +51,16 @@ calculate_alignment(int rowstride)
 }
 
 void
-_cg_texture_gl_prep_alignment_for_pixels_upload(cg_context_t *ctx,
+_cg_texture_gl_prep_alignment_for_pixels_upload(cg_device_t *dev,
                                                 int pixels_rowstride)
 {
-    GE(ctx,
+    GE(dev,
        glPixelStorei(GL_UNPACK_ALIGNMENT,
                      calculate_alignment(pixels_rowstride)));
 }
 
 void
-_cg_texture_gl_prep_alignment_for_pixels_download(cg_context_t *ctx,
+_cg_texture_gl_prep_alignment_for_pixels_download(cg_device_t *dev,
                                                   int bpp,
                                                   int width,
                                                   int rowstride)
@@ -81,7 +81,7 @@ _cg_texture_gl_prep_alignment_for_pixels_download(cg_context_t *ctx,
     else
         alignment = calculate_alignment(rowstride);
 
-    GE(ctx, glPixelStorei(GL_PACK_ALIGNMENT, alignment));
+    GE(dev, glPixelStorei(GL_PACK_ALIGNMENT, alignment));
 }
 
 void
@@ -108,11 +108,11 @@ _cg_texture_gl_maybe_update_max_level(cg_texture_t *texture, int max_level)
 {
 /* This isn't supported on GLES */
 #ifdef HAVE_CG_GL
-    cg_context_t *ctx = texture->context;
+    cg_device_t *dev = texture->dev;
 
-    if (_cg_has_private_feature(ctx, CG_PRIVATE_FEATURE_TEXTURE_MAX_LEVEL) &&
+    if (_cg_has_private_feature(dev, CG_PRIVATE_FEATURE_TEXTURE_MAX_LEVEL) &&
         texture->max_level < max_level) {
-        cg_context_t *ctx = texture->context;
+        cg_device_t *dev = texture->dev;
         GLuint gl_handle;
         GLenum gl_target;
 
@@ -123,7 +123,7 @@ _cg_texture_gl_maybe_update_max_level(cg_texture_t *texture, int max_level)
         _cg_bind_gl_texture_transient(
             gl_target, gl_handle, _cg_texture_is_foreign(texture));
 
-        GE(ctx,
+        GE(dev,
            glTexParameteri(
                gl_target, GL_TEXTURE_MAX_LEVEL, texture->max_level));
     }
@@ -133,7 +133,7 @@ _cg_texture_gl_maybe_update_max_level(cg_texture_t *texture, int max_level)
 void
 _cg_texture_gl_generate_mipmaps(cg_texture_t *texture)
 {
-    cg_context_t *ctx = texture->context;
+    cg_device_t *dev = texture->dev;
     int n_levels = _cg_texture_get_n_levels(texture);
     GLuint gl_handle;
     GLenum gl_target;
@@ -144,7 +144,7 @@ _cg_texture_gl_generate_mipmaps(cg_texture_t *texture)
 
     _cg_bind_gl_texture_transient(
         gl_target, gl_handle, _cg_texture_is_foreign(texture));
-    GE(ctx, glGenerateMipmap(gl_target));
+    GE(dev, glGenerateMipmap(gl_target));
 }
 
 GLenum

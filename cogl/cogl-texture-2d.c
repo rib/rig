@@ -41,7 +41,7 @@
 #include "cogl-texture-2d-private.h"
 #include "cogl-texture-2d-gl-private.h"
 #include "cogl-texture-driver.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-object-private.h"
 #include "cogl-journal-private.h"
 #include "cogl-pipeline-opengl-private.h"
@@ -73,9 +73,9 @@ typedef struct _cg_texture_2d_manual_repeat_data_t {
 static void
 _cg_texture_2d_free(cg_texture_2d_t *tex_2d)
 {
-    cg_context_t *ctx = CG_TEXTURE(tex_2d)->context;
+    cg_device_t *dev = CG_TEXTURE(tex_2d)->dev;
 
-    ctx->driver_vtable->texture_2d_free(tex_2d);
+    dev->driver_vtable->texture_2d_free(tex_2d);
 
     /* Chain up */
     _cg_texture_free(CG_TEXTURE(tex_2d));
@@ -90,7 +90,7 @@ _cg_texture_2d_set_auto_mipmap(cg_texture_t *tex, bool value)
 }
 
 cg_texture_2d_t *
-_cg_texture_2d_create_base(cg_context_t *ctx,
+_cg_texture_2d_create_base(cg_device_t *dev,
                            int width,
                            int height,
                            cg_pixel_format_t internal_format,
@@ -100,7 +100,7 @@ _cg_texture_2d_create_base(cg_context_t *ctx,
     cg_texture_t *tex = CG_TEXTURE(tex_2d);
 
     _cg_texture_init(tex,
-                     ctx,
+                     dev,
                      width,
                      height,
                      internal_format,
@@ -112,13 +112,13 @@ _cg_texture_2d_create_base(cg_context_t *ctx,
 
     tex_2d->is_foreign = false;
 
-    ctx->driver_vtable->texture_2d_init(tex_2d);
+    dev->driver_vtable->texture_2d_init(tex_2d);
 
     return _cg_texture_2d_object_new(tex_2d);
 }
 
 cg_texture_2d_t *
-cg_texture_2d_new_with_size(cg_context_t *ctx, int width, int height)
+cg_texture_2d_new_with_size(cg_device_t *dev, int width, int height)
 {
     cg_texture_loader_t *loader;
 
@@ -127,16 +127,16 @@ cg_texture_2d_new_with_size(cg_context_t *ctx, int width, int height)
     loader->src.sized.width = width;
     loader->src.sized.height = height;
 
-    return _cg_texture_2d_create_base(
-        ctx, width, height, CG_PIXEL_FORMAT_RGBA_8888_PRE, loader);
+    return _cg_texture_2d_create_base(dev, width, height,
+                                      CG_PIXEL_FORMAT_RGBA_8888_PRE, loader);
 }
 
 static bool
 _cg_texture_2d_allocate(cg_texture_t *tex, cg_error_t **error)
 {
-    cg_context_t *ctx = tex->context;
+    cg_device_t *dev = tex->dev;
 
-    return ctx->driver_vtable->texture_2d_allocate(tex, error);
+    return dev->driver_vtable->texture_2d_allocate(tex, error);
 }
 
 static cg_texture_2d_t *
@@ -166,7 +166,7 @@ cg_texture_2d_new_from_bitmap(cg_bitmap_t *bmp)
 }
 
 cg_texture_2d_t *
-cg_texture_2d_new_from_file(cg_context_t *ctx,
+cg_texture_2d_new_from_file(cg_device_t *dev,
                             const char *filename,
                             cg_error_t **error)
 {
@@ -175,7 +175,7 @@ cg_texture_2d_new_from_file(cg_context_t *ctx,
 
     c_return_val_if_fail(error == NULL || *error == NULL, NULL);
 
-    bmp = cg_bitmap_new_from_file(ctx, filename, error);
+    bmp = cg_bitmap_new_from_file(dev, filename, error);
     if (bmp == NULL)
         return NULL;
 
@@ -188,7 +188,7 @@ cg_texture_2d_new_from_file(cg_context_t *ctx,
 }
 
 cg_texture_2d_t *
-cg_texture_2d_new_from_data(cg_context_t *ctx,
+cg_texture_2d_new_from_data(cg_device_t *dev,
                             int width,
                             int height,
                             cg_pixel_format_t format,
@@ -207,8 +207,8 @@ cg_texture_2d_new_from_data(cg_context_t *ctx,
         rowstride = width * _cg_pixel_format_get_bytes_per_pixel(format);
 
     /* Wrap the data into a bitmap */
-    bmp = cg_bitmap_new_for_data(
-        ctx, width, height, format, rowstride, (uint8_t *)data);
+    bmp = cg_bitmap_new_for_data(dev, width, height, format, rowstride,
+                                 (uint8_t *)data);
 
     tex_2d = cg_texture_2d_new_from_bitmap(bmp);
 
@@ -227,7 +227,7 @@ cg_texture_2d_new_from_data(cg_context_t *ctx,
  * even though they may seem redundant is because GLES 1/2 don't
  * provide a way to query these properties. */
 cg_texture_2d_t *
-_cg_egl_texture_2d_new_from_image(cg_context_t *ctx,
+_cg_egl_texture_2d_new_from_image(cg_device_t *dev,
                                   int width,
                                   int height,
                                   cg_pixel_format_t format,
@@ -237,12 +237,12 @@ _cg_egl_texture_2d_new_from_image(cg_context_t *ctx,
     cg_texture_loader_t *loader;
     cg_texture_2d_t *tex;
 
-    c_return_val_if_fail(_cg_context_get_winsys(ctx)->constraints &
+    c_return_val_if_fail(_cg_device_get_winsys(dev)->constraints &
                            CG_RENDERER_CONSTRAINT_USES_EGL,
                            NULL);
 
     c_return_val_if_fail(
-        _cg_has_private_feature(ctx,
+        _cg_has_private_feature(dev,
                                 CG_PRIVATE_FEATURE_TEXTURE_2D_FROM_EGL_IMAGE),
         NULL);
 
@@ -253,7 +253,7 @@ _cg_egl_texture_2d_new_from_image(cg_context_t *ctx,
     loader->src.egl_image.height = height;
     loader->src.egl_image.format = format;
 
-    tex = _cg_texture_2d_create_base(ctx, width, height, format, loader);
+    tex = _cg_texture_2d_create_base(dev, width, height, format, loader);
 
     if (!cg_texture_allocate(CG_TEXTURE(tex), error)) {
         cg_object_unref(tex);
@@ -335,8 +335,9 @@ cg_wayland_texture_set_region_from_shm_buffer(cg_texture_t *texture,
 }
 
 cg_texture_2d_t *
-cg_wayland_texture_2d_new_from_buffer(
-    cg_context_t *ctx, struct wl_resource *buffer, cg_error_t **error)
+cg_wayland_texture_2d_new_from_buffer(cg_device_t *dev,
+                                      struct wl_resource *buffer,
+                                      cg_error_t **error)
 {
     struct wl_shm_buffer *shm_buffer;
     cg_texture_2d_t *tex = NULL;
@@ -353,7 +354,7 @@ cg_wayland_texture_2d_new_from_buffer(
 
         shm_buffer_get_cg_pixel_format(shm_buffer, &format, &components);
 
-        bmp = cg_bitmap_new_for_data(ctx,
+        bmp = cg_bitmap_new_for_data(dev,
                                      width,
                                      height,
                                      format,
@@ -374,14 +375,13 @@ cg_wayland_texture_2d_new_from_buffer(
     } else {
         int format, width, height;
 
-        if (_cg_egl_query_wayland_buffer(
-                ctx, buffer, EGL_TEXTURE_FORMAT, &format) &&
-            _cg_egl_query_wayland_buffer(ctx, buffer, EGL_WIDTH, &width) &&
-            _cg_egl_query_wayland_buffer(ctx, buffer, EGL_HEIGHT, &height)) {
+        if (_cg_egl_query_wayland_buffer(dev, buffer, EGL_TEXTURE_FORMAT, &format) &&
+            _cg_egl_query_wayland_buffer(dev, buffer, EGL_WIDTH, &width) &&
+            _cg_egl_query_wayland_buffer(dev, buffer, EGL_HEIGHT, &height)) {
             EGLImageKHR image;
             cg_pixel_format_t internal_format;
 
-            c_return_val_if_fail(_cg_context_get_winsys(ctx)->constraints &
+            c_return_val_if_fail(_cg_device_get_winsys(dev)->constraints &
                                    CG_RENDERER_CONSTRAINT_USES_EGL,
                                    NULL);
 
@@ -403,10 +403,12 @@ cg_wayland_texture_2d_new_from_buffer(
             }
 
             image =
-                _cg_egl_create_image(ctx, EGL_WAYLAND_BUFFER_WL, buffer, NULL);
-            tex = _cg_egl_texture_2d_new_from_image(
-                ctx, width, height, internal_format, image, error);
-            _cg_egl_destroy_image(ctx, image);
+                _cg_egl_create_image(dev, EGL_WAYLAND_BUFFER_WL, buffer,
+                                     NULL);
+            tex = _cg_egl_texture_2d_new_from_image(dev, width, height,
+                                                    internal_format, image,
+                                                    error);
+            _cg_egl_destroy_image(dev, image);
             return tex;
         }
     }
@@ -441,12 +443,12 @@ _cg_texture_2d_copy_from_framebuffer(cg_texture_2d_t *tex_2d,
                                      int level)
 {
     cg_texture_t *tex = CG_TEXTURE(tex_2d);
-    cg_context_t *ctx = tex->context;
+    cg_device_t *dev = tex->dev;
 
     /* Assert that the storage for this texture has been allocated */
     cg_texture_allocate(tex, NULL); /* (abort on error) */
 
-    ctx->driver_vtable->texture_2d_copy_from_framebuffer(
+    dev->driver_vtable->texture_2d_copy_from_framebuffer(
         tex_2d, src_x, src_y, width, height, src_fb, dst_x, dst_y, level);
 
     tex_2d->mipmaps_dirty = true;
@@ -461,9 +463,9 @@ _cg_texture_2d_is_sliced(cg_texture_t *tex)
 static bool
 _cg_texture_2d_can_hardware_repeat(cg_texture_t *tex)
 {
-    cg_context_t *ctx = tex->context;
+    cg_device_t *dev = tex->dev;
 
-    if (cg_has_feature(ctx, CG_FEATURE_ID_TEXTURE_NPOT_REPEAT) ||
+    if (cg_has_feature(dev, CG_FEATURE_ID_TEXTURE_NPOT_REPEAT) ||
         (_cg_util_is_pot(tex->width) && _cg_util_is_pot(tex->height)))
         return true;
     else
@@ -502,16 +504,16 @@ _cg_texture_2d_get_gl_texture(cg_texture_t *tex,
                               GLuint *out_gl_handle,
                               GLenum *out_gl_target)
 {
-    cg_context_t *ctx = tex->context;
+    cg_device_t *dev = tex->dev;
     cg_texture_2d_t *tex_2d = CG_TEXTURE_2D(tex);
 
-    if (ctx->driver_vtable->texture_2d_get_gl_handle) {
+    if (dev->driver_vtable->texture_2d_get_gl_handle) {
         GLuint handle;
 
         if (out_gl_target)
             *out_gl_target = GL_TEXTURE_2D;
 
-        handle = ctx->driver_vtable->texture_2d_get_gl_handle(tex_2d);
+        handle = dev->driver_vtable->texture_2d_get_gl_handle(tex_2d);
 
         if (out_gl_handle)
             *out_gl_handle = handle;
@@ -530,9 +532,9 @@ _cg_texture_2d_pre_paint(cg_texture_t *tex,
     /* Only update if the mipmaps are dirty */
     if ((flags & CG_TEXTURE_NEEDS_MIPMAP) && tex_2d->auto_mipmap &&
         tex_2d->mipmaps_dirty) {
-        cg_context_t *ctx = tex->context;
+        cg_device_t *dev = tex->dev;
 
-        ctx->driver_vtable->texture_2d_generate_mipmap(tex_2d);
+        dev->driver_vtable->texture_2d_generate_mipmap(tex_2d);
 
         tex_2d->mipmaps_dirty = false;
     }
@@ -556,10 +558,10 @@ _cg_texture_2d_set_region(cg_texture_t *tex,
                           cg_bitmap_t *bmp,
                           cg_error_t **error)
 {
-    cg_context_t *ctx = tex->context;
+    cg_device_t *dev = tex->dev;
     cg_texture_2d_t *tex_2d = CG_TEXTURE_2D(tex);
 
-    if (!ctx->driver_vtable->texture_2d_copy_from_bitmap(tex_2d,
+    if (!dev->driver_vtable->texture_2d_copy_from_bitmap(tex_2d,
                                                          src_x,
                                                          src_y,
                                                          width,
@@ -583,11 +585,11 @@ _cg_texture_2d_get_data(cg_texture_t *tex,
                         int rowstride,
                         uint8_t *data)
 {
-    cg_context_t *ctx = tex->context;
+    cg_device_t *dev = tex->dev;
 
-    if (ctx->driver_vtable->texture_2d_get_data) {
+    if (dev->driver_vtable->texture_2d_get_data) {
         cg_texture_2d_t *tex_2d = CG_TEXTURE_2D(tex);
-        ctx->driver_vtable->texture_2d_get_data(
+        dev->driver_vtable->texture_2d_get_data(
             tex_2d, format, rowstride, data);
         return true;
     } else

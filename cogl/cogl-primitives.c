@@ -33,7 +33,7 @@
 #endif
 
 #include "cogl-debug.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-journal-private.h"
 #include "cogl-texture-private.h"
 #include "cogl-pipeline-private.h"
@@ -461,7 +461,7 @@ _cg_multitexture_quad_single_primitive(cg_framebuffer_t *framebuffer,
 }
 
 typedef struct _validate_layer_state_t {
-    cg_context_t *ctx;
+    cg_device_t *dev;
     int i;
     int first_layer;
     cg_pipeline_t *override_source;
@@ -571,7 +571,7 @@ _cg_rectangles_validate_layer_cb(cg_pipeline_t *pipeline,
             warning_seen = true;
 
             /* Note: currently only 2D textures can be sliced. */
-            tex_2d = state->ctx->default_gl_texture_2d_tex;
+            tex_2d = state->dev->default_gl_texture_2d_tex;
             cg_pipeline_set_layer_texture(
                 pipeline, layer_index, CG_TEXTURE(tex_2d));
             return true;
@@ -587,7 +587,7 @@ _cg_framebuffer_draw_multitextured_rectangles(cg_framebuffer_t *framebuffer,
                                               cg_multi_textured_rect_t *rects,
                                               int n_rects)
 {
-    cg_context_t *ctx = framebuffer->context;
+    cg_device_t *dev = framebuffer->dev;
     cg_pipeline_t *original_pipeline;
     validate_layer_state_t state;
     int i;
@@ -597,7 +597,7 @@ _cg_framebuffer_draw_multitextured_rectangles(cg_framebuffer_t *framebuffer,
     /*
      * Validate all the layers of the current source pipeline...
      */
-    state.ctx = ctx;
+    state.dev = dev;
     state.i = -1;
     state.first_layer = 0;
     state.override_source = NULL;
@@ -672,12 +672,13 @@ _cg_rectangle_immediate(cg_framebuffer_t *framebuffer,
        through the journal. This should only be used in cases where the
        code might be called while the journal is already being flushed
        such as when flushing the clip state */
-    cg_context_t *ctx = framebuffer->context;
+    cg_device_t *dev = framebuffer->dev;
     float vertices[8] = { x_1, y_1, x_1, y_2, x_2, y_1, x_2, y_2 };
     cg_attribute_buffer_t *attribute_buffer;
     cg_attribute_t *attributes[1];
 
-    attribute_buffer = cg_attribute_buffer_new(ctx, sizeof(vertices), vertices);
+    attribute_buffer = cg_attribute_buffer_new(dev, sizeof(vertices),
+                                               vertices);
     attributes[0] = cg_attribute_new(attribute_buffer,
                                      "cg_position_in",
                                      sizeof(float) * 2, /* stride */

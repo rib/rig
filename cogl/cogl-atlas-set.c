@@ -65,15 +65,15 @@ static void
 _update_internal_format(cg_atlas_set_t *set)
 {
     set->internal_format = _cg_texture_derive_format(
-        set->context, CG_PIXEL_FORMAT_ANY, set->components, set->premultiplied);
+        set->dev, CG_PIXEL_FORMAT_ANY, set->components, set->premultiplied);
 }
 
 cg_atlas_set_t *
-cg_atlas_set_new(cg_context_t *context)
+cg_atlas_set_new(cg_device_t *dev)
 {
     cg_atlas_set_t *set = c_slice_new0(cg_atlas_set_t);
 
-    set->context = context;
+    set->dev = dev;
     set->atlases = NULL;
 
     set->components = CG_TEXTURE_COMPONENTS_RGBA;
@@ -196,7 +196,7 @@ cg_atlas_set_allocate_space(cg_atlas_set_t *set,
     if (!set->migration_enabled)
         flags |= CG_ATLAS_DISABLE_MIGRATION;
 
-    atlas = _cg_atlas_new(set->context, set->internal_format, flags);
+    atlas = _cg_atlas_new(set->dev, set->internal_format, flags);
 
     _cg_closure_list_invoke(&set->atlas_closures,
                             cg_atlas_set_atlas_callback_t,

@@ -34,7 +34,7 @@
 
 #include "cogl-private.h"
 #include "cogl-bitmap-private.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-texture-private.h"
 
 #include <string.h>
@@ -471,15 +471,15 @@ _cg_bitmap_convert(cg_bitmap_t *src_bmp,
                    cg_pixel_format_t dst_format,
                    cg_error_t **error)
 {
-    cg_context_t *ctx = src_bmp->context;
+    cg_device_t *dev = src_bmp->dev;
     cg_bitmap_t *dst_bmp;
     int width, height;
 
     width = cg_bitmap_get_width(src_bmp);
     height = cg_bitmap_get_height(src_bmp);
 
-    dst_bmp = _cg_bitmap_new_with_malloc_buffer(
-        ctx, width, height, dst_format, error);
+    dst_bmp = _cg_bitmap_new_with_malloc_buffer(dev, width, height,
+                                                dst_format, error);
     if (!dst_bmp)
         return NULL;
 
@@ -492,11 +492,11 @@ _cg_bitmap_convert(cg_bitmap_t *src_bmp,
 }
 
 static bool
-driver_can_convert(cg_context_t *ctx,
+driver_can_convert(cg_device_t *dev,
                    cg_pixel_format_t src_format,
                    cg_pixel_format_t internal_format)
 {
-    if (!_cg_has_private_feature(ctx, CG_PRIVATE_FEATURE_FORMAT_CONVERSION))
+    if (!_cg_has_private_feature(dev, CG_PRIVATE_FEATURE_FORMAT_CONVERSION))
         return false;
 
     if (src_format == internal_format)
@@ -505,7 +505,7 @@ driver_can_convert(cg_context_t *ctx,
     /* If the driver doesn't natively support alpha textures then it
      * won't work correctly to convert to/from component-alpha
      * textures */
-    if (!_cg_has_private_feature(ctx, CG_PRIVATE_FEATURE_ALPHA_TEXTURES) &&
+    if (!_cg_has_private_feature(dev, CG_PRIVATE_FEATURE_ALPHA_TEXTURES) &&
         (src_format == CG_PIXEL_FORMAT_A_8 ||
          internal_format == CG_PIXEL_FORMAT_A_8))
         return false;
@@ -513,7 +513,7 @@ driver_can_convert(cg_context_t *ctx,
     /* Same for red-green textures. If red-green textures aren't
     * supported then the internal format should never be RG_88 but we
     * should still be able to convert from an RG source image */
-    if (!cg_has_feature(ctx, CG_FEATURE_ID_TEXTURE_RG) &&
+    if (!cg_has_feature(dev, CG_FEATURE_ID_TEXTURE_RG) &&
         src_format == CG_PIXEL_FORMAT_RG_88)
         return false;
 
@@ -526,7 +526,7 @@ _cg_bitmap_convert_for_upload(cg_bitmap_t *src_bmp,
                               bool can_convert_in_place,
                               cg_error_t **error)
 {
-    cg_context_t *ctx = _cg_bitmap_get_context(src_bmp);
+    cg_device_t *dev = _cg_bitmap_get_context(src_bmp);
     cg_pixel_format_t src_format = cg_bitmap_get_format(src_bmp);
     cg_bitmap_t *dst_bmp;
 
@@ -540,7 +540,7 @@ _cg_bitmap_convert_for_upload(cg_bitmap_t *src_bmp,
        limited number of formats so we must convert using the Cogl
        bitmap code instead */
 
-    if (driver_can_convert(ctx, src_format, internal_format)) {
+    if (driver_can_convert(dev, src_format, internal_format)) {
         /* If the source format does not have the same premult flag as the
            internal_format then we need to copy and convert it */
         if (_cg_texture_needs_premult_conversion(src_format, internal_format)) {
@@ -561,8 +561,7 @@ _cg_bitmap_convert_for_upload(cg_bitmap_t *src_bmp,
     } else {
         cg_pixel_format_t closest_format;
 
-        closest_format = ctx->driver_vtable->pixel_format_to_gl(
-            ctx,
+        closest_format = dev->driver_vtable->pixel_format_to_gl(dev,
             internal_format,
             NULL, /* ignore gl intformat */
             NULL, /* ignore gl format */

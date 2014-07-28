@@ -32,7 +32,7 @@
 #include "config.h"
 #endif
 
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 
 #include <cmodule.h>
 
@@ -46,7 +46,7 @@ _cg_winsys_error_domain(void)
 bool
 _cg_winsys_has_feature(cg_winsys_feature_t feature)
 {
-    _CG_GET_CONTEXT(ctx, false);
+    _CG_GET_DEVICE(dev, false);
 
-    return CG_FLAGS_GET(ctx->winsys_features, feature);
+    return CG_FLAGS_GET(dev->winsys_features, feature);
 }

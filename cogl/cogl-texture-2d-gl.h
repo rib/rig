@@ -37,14 +37,14 @@
 #ifndef _CG_TEXTURE_2D_GL_H_
 #define _CG_TEXTURE_2D_GL_H_
 
-#include "cogl-context.h"
+#include "cogl-device.h"
 #include "cogl-texture-2d.h"
 
 CG_BEGIN_DECLS
 
 /**
  * cg_texture_2d_gl_new_from_foreign:
- * @ctx: A #cg_context_t
+ * @dev: A #cg_device_t
  * @gl_handle: A GL handle for a GL_TEXTURE_2D texture object
  * @width: Width of the foreign GL texture
  * @height: Height of the foreign GL texture
@@ -65,7 +65,7 @@ CG_BEGIN_DECLS
  * Returns: (transfer full): A newly allocated #cg_texture_2d_t
  *
  */
-cg_texture_2d_t *cg_texture_2d_gl_new_from_foreign(cg_context_t *ctx,
+cg_texture_2d_t *cg_texture_2d_gl_new_from_foreign(cg_device_t *dev,
                                                    unsigned int gl_handle,
                                                    int width,
                                                    int height,

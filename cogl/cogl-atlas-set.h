@@ -78,11 +78,11 @@ typedef struct _cg_atlas_set_t cg_atlas_set_t;
 
 /**
  * cg_atlas_set_new:
- * @context: A #cg_context_t pointer
+ * @dev: A #cg_device_t pointer
  *
  * Return value: A newly allocated #cg_atlas_set_t
  */
-cg_atlas_set_t *cg_atlas_set_new(cg_context_t *context);
+cg_atlas_set_t *cg_atlas_set_new(cg_device_t *dev);
 
 bool cg_is_atlas_set(void *object);
 

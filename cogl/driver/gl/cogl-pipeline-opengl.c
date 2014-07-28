@@ -37,7 +37,7 @@
 #include "cogl-util-gl-private.h"
 #include "cogl-pipeline-opengl-private.h"
 #include "cogl-pipeline-private.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-texture-private.h"
 #include "cogl-framebuffer-private.h"
 #include "cogl-offscreen.h"
@@ -69,7 +69,7 @@
 #endif
 
 static void
-texture_unit_init(cg_context_t *ctx, cg_texture_unit_t *unit, int index_)
+texture_unit_init(cg_device_t *dev, cg_texture_unit_t *unit, int index_)
 {
     unit->index = index_;
     unit->enabled_gl_target = 0;
@@ -77,7 +77,7 @@ texture_unit_init(cg_context_t *ctx, cg_texture_unit_t *unit, int index_)
     unit->gl_target = 0;
     unit->is_foreign = false;
     unit->dirty_gl_texture = false;
-    unit->matrix_stack = cg_matrix_stack_new(ctx);
+    unit->matrix_stack = cg_matrix_stack_new(dev);
 
     unit->layer = NULL;
     unit->layer_changes_since_flush = 0;
@@ -95,21 +95,21 @@ texture_unit_free(cg_texture_unit_t *unit)
 cg_texture_unit_t *
 _cg_get_texture_unit(int index_)
 {
-    _CG_GET_CONTEXT(ctx, NULL);
+    _CG_GET_DEVICE(dev, NULL);
 
-    if (ctx->texture_units->len < (index_ + 1)) {
+    if (dev->texture_units->len < (index_ + 1)) {
         int i;
-        int prev_len = ctx->texture_units->len;
-        ctx->texture_units = c_array_set_size(ctx->texture_units, index_ + 1);
+        int prev_len = dev->texture_units->len;
+        dev->texture_units = c_array_set_size(dev->texture_units, index_ + 1);
         for (i = prev_len; i <= index_; i++) {
             cg_texture_unit_t *unit =
-                &c_array_index(ctx->texture_units, cg_texture_unit_t, i);
+                &c_array_index(dev->texture_units, cg_texture_unit_t, i);
 
-            texture_unit_init(ctx, unit, i);
+            texture_unit_init(dev, unit, i);
         }
     }
 
-    return &c_array_index(ctx->texture_units, cg_texture_unit_t, index_);
+    return &c_array_index(dev->texture_units, cg_texture_unit_t, index_);
 }
 
 void
@@ -117,24 +117,24 @@ _cg_destroy_texture_units(void)
 {
     int i;
 
-    _CG_GET_CONTEXT(ctx, NO_RETVAL);
+    _CG_GET_DEVICE(dev, NO_RETVAL);
 
-    for (i = 0; i < ctx->texture_units->len; i++) {
+    for (i = 0; i < dev->texture_units->len; i++) {
         cg_texture_unit_t *unit =
-            &c_array_index(ctx->texture_units, cg_texture_unit_t, i);
+            &c_array_index(dev->texture_units, cg_texture_unit_t, i);
         texture_unit_free(unit);
     }
-    c_array_free(ctx->texture_units, true);
+    c_array_free(dev->texture_units, true);
 }
 
 void
 _cg_set_active_texture_unit(int unit_index)
 {
-    _CG_GET_CONTEXT(ctx, NO_RETVAL);
+    _CG_GET_DEVICE(dev, NO_RETVAL);
 
-    if (ctx->active_texture_unit != unit_index) {
-        GE(ctx, glActiveTexture(GL_TEXTURE0 + unit_index));
-        ctx->active_texture_unit = unit_index;
+    if (dev->active_texture_unit != unit_index) {
+        GE(dev, glActiveTexture(GL_TEXTURE0 + unit_index));
+        dev->active_texture_unit = unit_index;
     }
 }
 
@@ -165,7 +165,7 @@ _cg_bind_gl_texture_transient(GLenum gl_target,
 {
     cg_texture_unit_t *unit;
 
-    _CG_GET_CONTEXT(ctx, NO_RETVAL);
+    _CG_GET_DEVICE(dev, NO_RETVAL);
 
     /* We choose to always make texture unit 1 active for transient
      * binds so that in the common case where multitexturing isn't used
@@ -184,7 +184,7 @@ _cg_bind_gl_texture_transient(GLenum gl_target,
         !unit->is_foreign)
         return;
 
-    GE(ctx, glBindTexture(gl_target, gl_texture));
+    GE(dev, glBindTexture(gl_target, gl_texture));
 
     unit->dirty_gl_texture = true;
     unit->is_foreign = is_foreign;
@@ -195,11 +195,11 @@ _cg_delete_gl_texture(GLuint gl_texture)
 {
     int i;
 
-    _CG_GET_CONTEXT(ctx, NO_RETVAL);
+    _CG_GET_DEVICE(dev, NO_RETVAL);
 
-    for (i = 0; i < ctx->texture_units->len; i++) {
+    for (i = 0; i < dev->texture_units->len; i++) {
         cg_texture_unit_t *unit =
-            &c_array_index(ctx->texture_units, cg_texture_unit_t, i);
+            &c_array_index(dev->texture_units, cg_texture_unit_t, i);
 
         if (unit->gl_texture == gl_texture) {
             unit->gl_texture = 0;
@@ -208,7 +208,7 @@ _cg_delete_gl_texture(GLuint gl_texture)
         }
     }
 
-    GE(ctx, glDeleteTextures(1, &gl_texture));
+    GE(dev, glDeleteTextures(1, &gl_texture));
 }
 
 /* Whenever the underlying GL texture storage of a cg_texture_t is
@@ -221,11 +221,11 @@ _cg_pipeline_texture_storage_change_notify(cg_texture_t *texture)
 {
     int i;
 
-    _CG_GET_CONTEXT(ctx, NO_RETVAL);
+    _CG_GET_DEVICE(dev, NO_RETVAL);
 
-    for (i = 0; i < ctx->texture_units->len; i++) {
+    for (i = 0; i < dev->texture_units->len; i++) {
         cg_texture_unit_t *unit =
-            &c_array_index(ctx->texture_units, cg_texture_unit_t, i);
+            &c_array_index(dev->texture_units, cg_texture_unit_t, i);
 
         if (unit->layer &&
             _cg_pipeline_layer_get_texture(unit->layer) == texture)
@@ -237,19 +237,19 @@ _cg_pipeline_texture_storage_change_notify(cg_texture_t *texture)
 }
 
 void
-_cg_gl_use_program(cg_context_t *ctx, GLuint gl_program)
+_cg_gl_use_program(cg_device_t *dev, GLuint gl_program)
 {
-    if (ctx->current_gl_program != gl_program) {
+    if (dev->current_gl_program != gl_program) {
         GLenum gl_error;
 
-        while ((gl_error = ctx->glGetError()) != GL_NO_ERROR)
+        while ((gl_error = dev->glGetError()) != GL_NO_ERROR)
             ;
-        ctx->glUseProgram(gl_program);
-        if (ctx->glGetError() == GL_NO_ERROR)
-            ctx->current_gl_program = gl_program;
+        dev->glUseProgram(gl_program);
+        if (dev->glGetError() == GL_NO_ERROR)
+            dev->current_gl_program = gl_program;
         else {
-            GE(ctx, glUseProgram(0));
-            ctx->current_gl_program = 0;
+            GE(dev, glUseProgram(0));
+            dev->current_gl_program = 0;
         }
     }
 }
@@ -268,44 +268,44 @@ blend_factor_uses_constant(GLenum blend_factor)
 #endif
 
 static void
-flush_depth_state(cg_context_t *ctx, cg_depth_state_t *depth_state)
+flush_depth_state(cg_device_t *dev, cg_depth_state_t *depth_state)
 {
     bool depth_writing_enabled = depth_state->write_enabled;
 
-    if (ctx->current_draw_buffer)
+    if (dev->current_draw_buffer)
         depth_writing_enabled &=
-            ctx->current_draw_buffer->depth_writing_enabled;
+            dev->current_draw_buffer->depth_writing_enabled;
 
-    if (ctx->depth_test_enabled_cache != depth_state->test_enabled) {
+    if (dev->depth_test_enabled_cache != depth_state->test_enabled) {
         if (depth_state->test_enabled == true)
-            GE(ctx, glEnable(GL_DEPTH_TEST));
+            GE(dev, glEnable(GL_DEPTH_TEST));
         else
-            GE(ctx, glDisable(GL_DEPTH_TEST));
-        ctx->depth_test_enabled_cache = depth_state->test_enabled;
+            GE(dev, glDisable(GL_DEPTH_TEST));
+        dev->depth_test_enabled_cache = depth_state->test_enabled;
     }
 
-    if (ctx->depth_test_function_cache != depth_state->test_function &&
+    if (dev->depth_test_function_cache != depth_state->test_function &&
         depth_state->test_enabled == true) {
-        GE(ctx, glDepthFunc(depth_state->test_function));
-        ctx->depth_test_function_cache = depth_state->test_function;
+        GE(dev, glDepthFunc(depth_state->test_function));
+        dev->depth_test_function_cache = depth_state->test_function;
     }
 
-    if (ctx->depth_writing_enabled_cache != depth_writing_enabled) {
-        GE(ctx, glDepthMask(depth_writing_enabled ? GL_TRUE : FALSE));
-        ctx->depth_writing_enabled_cache = depth_writing_enabled;
+    if (dev->depth_writing_enabled_cache != depth_writing_enabled) {
+        GE(dev, glDepthMask(depth_writing_enabled ? GL_TRUE : FALSE));
+        dev->depth_writing_enabled_cache = depth_writing_enabled;
     }
 
-    if (ctx->depth_range_near_cache != depth_state->range_near ||
-        ctx->depth_range_far_cache != depth_state->range_far) {
-        if (_cg_has_private_feature(ctx, CG_PRIVATE_FEATURE_GL_EMBEDDED))
-            GE(ctx,
+    if (dev->depth_range_near_cache != depth_state->range_near ||
+        dev->depth_range_far_cache != depth_state->range_far) {
+        if (_cg_has_private_feature(dev, CG_PRIVATE_FEATURE_GL_EMBEDDED))
+            GE(dev,
                glDepthRangef(depth_state->range_near, depth_state->range_far));
         else
-            GE(ctx,
+            GE(dev,
                glDepthRange(depth_state->range_near, depth_state->range_far));
 
-        ctx->depth_range_near_cache = depth_state->range_near;
-        ctx->depth_range_far_cache = depth_state->range_far;
+        dev->depth_range_near_cache = depth_state->range_near;
+        dev->depth_range_far_cache = depth_state->range_far;
     }
 }
 
@@ -313,24 +313,24 @@ UNIT_TEST(check_gl_blend_enable,
           0 /* no requirements */,
           0 /* no failure cases */)
 {
-    cg_pipeline_t *pipeline = cg_pipeline_new(test_ctx);
+    cg_pipeline_t *pipeline = cg_pipeline_new(test_dev);
 
     /* By default blending should be disabled */
-    c_assert_cmpint(test_ctx->gl_blend_enable_cache, ==, 0);
+    c_assert_cmpint(test_dev->gl_blend_enable_cache, ==, 0);
 
     cg_framebuffer_draw_rectangle(test_fb, pipeline, 0, 0, 1, 1);
     _cg_framebuffer_flush_journal(test_fb);
 
     /* After drawing an opaque rectangle blending should still be
      * disabled */
-    c_assert_cmpint(test_ctx->gl_blend_enable_cache, ==, 0);
+    c_assert_cmpint(test_dev->gl_blend_enable_cache, ==, 0);
 
     cg_pipeline_set_color4f(pipeline, 0, 0, 0, 0);
     cg_framebuffer_draw_rectangle(test_fb, pipeline, 0, 0, 1, 1);
     _cg_framebuffer_flush_journal(test_fb);
 
     /* After drawing a transparent rectangle blending should be enabled */
-    c_assert_cmpint(test_ctx->gl_blend_enable_cache, ==, 1);
+    c_assert_cmpint(test_dev->gl_blend_enable_cache, ==, 1);
 
     cg_pipeline_set_blend(pipeline, "RGBA=ADD(SRC_COLOR, 0)", NULL);
     cg_framebuffer_draw_rectangle(test_fb, pipeline, 0, 0, 1, 1);
@@ -338,32 +338,32 @@ UNIT_TEST(check_gl_blend_enable,
 
     /* After setting a blend string that effectively disables blending
      * then blending should be disabled */
-    c_assert_cmpint(test_ctx->gl_blend_enable_cache, ==, 0);
+    c_assert_cmpint(test_dev->gl_blend_enable_cache, ==, 0);
 }
 
 static int
-get_max_activateable_texture_units(cg_context_t *ctx)
+get_max_activateable_texture_units(cg_device_t *dev)
 {
-    if (C_UNLIKELY(ctx->max_activateable_texture_units == -1)) {
+    if (C_UNLIKELY(dev->max_activateable_texture_units == -1)) {
         GLint values[3];
         int n_values = 0;
         int i;
 
 #ifdef HAVE_CG_GL
-        if (!_cg_has_private_feature(ctx, CG_PRIVATE_FEATURE_GL_EMBEDDED)) {
+        if (!_cg_has_private_feature(dev, CG_PRIVATE_FEATURE_GL_EMBEDDED)) {
             /* GL_MAX_TEXTURE_COORDS is provided for GLSL. It defines
              * the number of texture coordinates that can be uploaded
              * (but doesn't necessarily relate to how many texture
              *  images can be sampled) */
-            if (cg_has_feature(ctx, CG_FEATURE_ID_GLSL)) {
+            if (cg_has_feature(dev, CG_FEATURE_ID_GLSL)) {
                 /* Previously this code subtracted the value by one but there
                    was no explanation for why it did this and it doesn't seem
                    to make sense so it has been removed */
-                GE(ctx,
+                GE(dev,
                    glGetIntegerv(GL_MAX_TEXTURE_COORDS, values + n_values++));
 
                 /* GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS is defined for GLSL */
-                GE(ctx,
+                GE(dev,
                    glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS,
                                  values + n_values++));
             }
@@ -371,13 +371,13 @@ get_max_activateable_texture_units(cg_context_t *ctx)
 #endif /* HAVE_CG_GL */
 
 #ifdef HAVE_CG_GLES2
-        if (_cg_has_private_feature(ctx, CG_PRIVATE_FEATURE_GL_EMBEDDED)) {
-            GE(ctx, glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, values + n_values));
+        if (_cg_has_private_feature(dev, CG_PRIVATE_FEATURE_GL_EMBEDDED)) {
+            GE(dev, glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, values + n_values));
             /* Two of the vertex attribs need to be used for the position
                and color */
             values[n_values++] -= 2;
 
-            GE(ctx,
+            GE(dev,
                glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS,
                              values + n_values++));
         }
@@ -386,17 +386,17 @@ get_max_activateable_texture_units(cg_context_t *ctx)
         c_assert(n_values <= C_N_ELEMENTS(values) && n_values > 0);
 
         /* Use the maximum value */
-        ctx->max_activateable_texture_units = values[0];
+        dev->max_activateable_texture_units = values[0];
         for (i = 1; i < n_values; i++)
-            ctx->max_activateable_texture_units =
-                MAX(values[i], ctx->max_activateable_texture_units);
+            dev->max_activateable_texture_units =
+                MAX(values[i], dev->max_activateable_texture_units);
     }
 
-    return ctx->max_activateable_texture_units;
+    return dev->max_activateable_texture_units;
 }
 
 typedef struct {
-    cg_context_t *ctx;
+    cg_device_t *dev;
     int i;
     unsigned long *layer_differences;
 } cg_pipeline_flush_layer_state_t;
@@ -406,7 +406,7 @@ flush_layers_common_gl_state_cb(cg_pipeline_layer_t *layer,
                                 void *user_data)
 {
     cg_pipeline_flush_layer_state_t *flush_state = user_data;
-    cg_context_t *ctx = flush_state->ctx;
+    cg_device_t *dev = flush_state->dev;
     int unit_index = flush_state->i;
     cg_texture_unit_t *unit = _cg_get_texture_unit(unit_index);
     unsigned long layers_difference =
@@ -415,7 +415,7 @@ flush_layers_common_gl_state_cb(cg_pipeline_layer_t *layer,
     /* There may not be enough texture units so we can bail out if
      * that's the case...
      */
-    if (C_UNLIKELY(unit_index >= get_max_activateable_texture_units(ctx))) {
+    if (C_UNLIKELY(unit_index >= get_max_activateable_texture_units(dev))) {
         static bool shown_warning = false;
 
         if (!shown_warning) {
@@ -434,10 +434,10 @@ flush_layers_common_gl_state_cb(cg_pipeline_layer_t *layer,
         if (texture == NULL)
             switch (_cg_pipeline_layer_get_texture_type(layer)) {
             case CG_TEXTURE_TYPE_2D:
-                texture = CG_TEXTURE(ctx->default_gl_texture_2d_tex);
+                texture = CG_TEXTURE(dev->default_gl_texture_2d_tex);
                 break;
             case CG_TEXTURE_TYPE_3D:
-                texture = CG_TEXTURE(ctx->default_gl_texture_3d_tex);
+                texture = CG_TEXTURE(dev->default_gl_texture_3d_tex);
                 break;
             }
 
@@ -474,7 +474,7 @@ flush_layers_common_gl_state_cb(cg_pipeline_layer_t *layer,
             if (unit_index == 1)
                 unit->dirty_gl_texture = true;
             else
-                GE(ctx, glBindTexture(gl_target, gl_texture));
+                GE(dev, glBindTexture(gl_target, gl_texture));
             unit->gl_texture = gl_texture;
             unit->gl_target = gl_target;
         }
@@ -489,12 +489,12 @@ flush_layers_common_gl_state_cb(cg_pipeline_layer_t *layer,
     }
 
     if ((layers_difference & CG_PIPELINE_LAYER_STATE_SAMPLER) &&
-        _cg_has_private_feature(ctx, CG_PRIVATE_FEATURE_SAMPLER_OBJECTS)) {
+        _cg_has_private_feature(dev, CG_PRIVATE_FEATURE_SAMPLER_OBJECTS)) {
         const cg_sampler_cache_entry_t *sampler_state;
 
         sampler_state = _cg_pipeline_layer_get_sampler_state(layer);
 
-        GE(ctx, glBindSampler(unit_index, sampler_state->sampler_object));
+        GE(dev, glBindSampler(unit_index, sampler_state->sampler_object));
     }
 
     cg_object_ref(layer);
@@ -510,7 +510,7 @@ flush_layers_common_gl_state_cb(cg_pipeline_layer_t *layer,
 }
 
 static void
-_cg_pipeline_flush_common_gl_state(cg_context_t *ctx,
+_cg_pipeline_flush_common_gl_state(cg_device_t *dev,
                                    cg_pipeline_t *pipeline,
                                    unsigned long pipelines_difference,
                                    unsigned long *layer_differences,
@@ -533,30 +533,30 @@ _cg_pipeline_flush_common_gl_state(cg_context_t *ctx,
             float blue = blend_state->blend_constant.blue;
             float alpha = blend_state->blend_constant.alpha;
 
-            GE(ctx, glBlendColor(red, green, blue, alpha));
+            GE(dev, glBlendColor(red, green, blue, alpha));
         }
 
-        if (ctx->glBlendEquationSeparate &&
+        if (dev->glBlendEquationSeparate &&
             blend_state->blend_equation_rgb !=
             blend_state->blend_equation_alpha)
-            GE(ctx,
+            GE(dev,
                glBlendEquationSeparate(blend_state->blend_equation_rgb,
                                        blend_state->blend_equation_alpha));
         else
-            GE(ctx, glBlendEquation(blend_state->blend_equation_rgb));
+            GE(dev, glBlendEquation(blend_state->blend_equation_rgb));
 
-        if (ctx->glBlendFuncSeparate &&
+        if (dev->glBlendFuncSeparate &&
             (blend_state->blend_src_factor_rgb !=
              blend_state->blend_src_factor_alpha ||
              (blend_state->blend_dst_factor_rgb !=
               blend_state->blend_dst_factor_alpha)))
-            GE(ctx,
+            GE(dev,
                glBlendFuncSeparate(blend_state->blend_src_factor_rgb,
                                    blend_state->blend_dst_factor_rgb,
                                    blend_state->blend_src_factor_alpha,
                                    blend_state->blend_dst_factor_alpha));
         else
-            GE(ctx,
+            GE(dev,
                glBlendFunc(blend_state->blend_src_factor_rgb,
                            blend_state->blend_dst_factor_rgb));
     }
@@ -566,7 +566,7 @@ _cg_pipeline_flush_common_gl_state(cg_context_t *ctx,
             _cg_pipeline_get_authority(pipeline, CG_PIPELINE_STATE_DEPTH);
         cg_depth_state_t *depth_state = &authority->big_state->depth_state;
 
-        flush_depth_state(ctx, depth_state);
+        flush_depth_state(dev, depth_state);
     }
 
     if (pipelines_difference & CG_PIPELINE_STATE_LOGIC_OPS) {
@@ -576,15 +576,15 @@ _cg_pipeline_flush_common_gl_state(cg_context_t *ctx,
             &authority->big_state->logic_ops_state;
         cg_color_mask_t color_mask = logic_ops_state->color_mask;
 
-        if (ctx->current_draw_buffer)
-            color_mask &= ctx->current_draw_buffer->color_mask;
+        if (dev->current_draw_buffer)
+            color_mask &= dev->current_draw_buffer->color_mask;
 
-        GE(ctx,
+        GE(dev,
            glColorMask(!!(color_mask & CG_COLOR_MASK_RED),
                        !!(color_mask & CG_COLOR_MASK_GREEN),
                        !!(color_mask & CG_COLOR_MASK_BLUE),
                        !!(color_mask & CG_COLOR_MASK_ALPHA)));
-        ctx->current_gl_color_mask = color_mask;
+        dev->current_gl_color_mask = color_mask;
     }
 
     if (pipelines_difference & CG_PIPELINE_STATE_CULL_FACE) {
@@ -594,71 +594,71 @@ _cg_pipeline_flush_common_gl_state(cg_context_t *ctx,
             &authority->big_state->cull_face_state;
 
         if (cull_face_state->mode == CG_PIPELINE_CULL_FACE_MODE_NONE)
-            GE(ctx, glDisable(GL_CULL_FACE));
+            GE(dev, glDisable(GL_CULL_FACE));
         else {
             bool invert_winding;
 
-            GE(ctx, glEnable(GL_CULL_FACE));
+            GE(dev, glEnable(GL_CULL_FACE));
 
             switch (cull_face_state->mode) {
             case CG_PIPELINE_CULL_FACE_MODE_NONE:
                 c_assert_not_reached();
 
             case CG_PIPELINE_CULL_FACE_MODE_FRONT:
-                GE(ctx, glCullFace(GL_FRONT));
+                GE(dev, glCullFace(GL_FRONT));
                 break;
 
             case CG_PIPELINE_CULL_FACE_MODE_BACK:
-                GE(ctx, glCullFace(GL_BACK));
+                GE(dev, glCullFace(GL_BACK));
                 break;
 
             case CG_PIPELINE_CULL_FACE_MODE_BOTH:
-                GE(ctx, glCullFace(GL_FRONT_AND_BACK));
+                GE(dev, glCullFace(GL_FRONT_AND_BACK));
                 break;
             }
 
             /* If we are painting to an offscreen framebuffer then we
                need to invert the winding of the front face because
                everything is painted upside down */
-            invert_winding = cg_is_offscreen(ctx->current_draw_buffer);
+            invert_winding = cg_is_offscreen(dev->current_draw_buffer);
 
             switch (cull_face_state->front_winding) {
             case CG_WINDING_CLOCKWISE:
-                GE(ctx, glFrontFace(invert_winding ? GL_CCW : GL_CW));
+                GE(dev, glFrontFace(invert_winding ? GL_CCW : GL_CW));
                 break;
 
             case CG_WINDING_COUNTER_CLOCKWISE:
-                GE(ctx, glFrontFace(invert_winding ? GL_CW : GL_CCW));
+                GE(dev, glFrontFace(invert_winding ? GL_CW : GL_CCW));
                 break;
             }
         }
     }
 
 #ifdef HAVE_CG_GL
-    if (_cg_has_private_feature(ctx,
+    if (_cg_has_private_feature(dev,
                                 CG_PRIVATE_FEATURE_ENABLE_PROGRAM_POINT_SIZE) &&
         (pipelines_difference & CG_PIPELINE_STATE_PER_VERTEX_POINT_SIZE)) {
         unsigned long state = CG_PIPELINE_STATE_PER_VERTEX_POINT_SIZE;
         cg_pipeline_t *authority = _cg_pipeline_get_authority(pipeline, state);
 
         if (authority->big_state->per_vertex_point_size)
-            GE(ctx, glEnable(GL_PROGRAM_POINT_SIZE));
+            GE(dev, glEnable(GL_PROGRAM_POINT_SIZE));
         else
-            GE(ctx, glDisable(GL_PROGRAM_POINT_SIZE));
+            GE(dev, glDisable(GL_PROGRAM_POINT_SIZE));
     }
 #endif
 
-    if (pipeline->real_blend_enable != ctx->gl_blend_enable_cache) {
+    if (pipeline->real_blend_enable != dev->gl_blend_enable_cache) {
         if (pipeline->real_blend_enable)
-            GE(ctx, glEnable(GL_BLEND));
+            GE(dev, glEnable(GL_BLEND));
         else
-            GE(ctx, glDisable(GL_BLEND));
+            GE(dev, glDisable(GL_BLEND));
         /* XXX: we shouldn't update any other blend state if blending
          * is disabled! */
-        ctx->gl_blend_enable_cache = pipeline->real_blend_enable;
+        dev->gl_blend_enable_cache = pipeline->real_blend_enable;
     }
 
-    state.ctx = ctx;
+    state.dev = dev;
     state.i = 0;
     state.layer_differences = layer_differences;
     _cg_pipeline_foreach_layer_internal(
@@ -728,11 +728,11 @@ foreach_texture_unit_update_filter_and_wrap_modes(void)
 {
     int i;
 
-    _CG_GET_CONTEXT(ctx, NO_RETVAL);
+    _CG_GET_DEVICE(dev, NO_RETVAL);
 
-    for (i = 0; i < ctx->texture_units->len; i++) {
+    for (i = 0; i < dev->texture_units->len; i++) {
         cg_texture_unit_t *unit =
-            &c_array_index(ctx->texture_units, cg_texture_unit_t, i);
+            &c_array_index(dev->texture_units, cg_texture_unit_t, i);
 
         if (unit->layer) {
             cg_texture_t *texture = _cg_pipeline_layer_get_texture(unit->layer);
@@ -893,13 +893,13 @@ fragend_add_layer_cb(cg_pipeline_layer_t *layer, void *user_data)
  *    isn't ideal, and can't be used with CoglVertexBuffers.
  */
 void
-_cg_pipeline_flush_gl_state(cg_context_t *ctx,
+_cg_pipeline_flush_gl_state(cg_device_t *dev,
                             cg_pipeline_t *pipeline,
                             cg_framebuffer_t *framebuffer,
                             bool with_color_attrib,
                             bool unknown_color_alpha)
 {
-    cg_pipeline_t *current_pipeline = ctx->current_pipeline;
+    cg_pipeline_t *current_pipeline = dev->current_pipeline;
     unsigned long pipelines_difference;
     int n_layers;
     unsigned long *layer_differences;
@@ -918,9 +918,9 @@ _cg_pipeline_flush_gl_state(cg_context_t *ctx,
     /* Bail out asap if we've been asked to re-flush the already current
      * pipeline and we can see the pipeline hasn't changed */
     if (current_pipeline == pipeline &&
-        ctx->current_pipeline_age == pipeline->age &&
-        ctx->current_pipeline_with_color_attrib == with_color_attrib &&
-        ctx->current_pipeline_unknown_color_alpha == unknown_color_alpha)
+        dev->current_pipeline_age == pipeline->age &&
+        dev->current_pipeline_with_color_attrib == with_color_attrib &&
+        dev->current_pipeline_unknown_color_alpha == unknown_color_alpha)
         goto done;
     else {
         /* Update derived state (currently just the 'real_blend_enable'
@@ -933,7 +933,7 @@ _cg_pipeline_flush_gl_state(cg_context_t *ctx,
          */
 
         if (current_pipeline == pipeline) {
-            pipelines_difference = ctx->current_pipeline_changes_since_flush;
+            pipelines_difference = dev->current_pipeline_changes_since_flush;
 
             if (pipelines_difference & CG_PIPELINE_STATE_AFFECTS_BLENDING ||
                 pipeline->unknown_color_alpha != unknown_color_alpha) {
@@ -946,13 +946,13 @@ _cg_pipeline_flush_gl_state(cg_context_t *ctx,
                     pipelines_difference |= CG_PIPELINE_STATE_REAL_BLEND_ENABLE;
             }
         } else if (current_pipeline) {
-            pipelines_difference = ctx->current_pipeline_changes_since_flush;
+            pipelines_difference = dev->current_pipeline_changes_since_flush;
 
             _cg_pipeline_update_real_blend_enable(pipeline,
                                                   unknown_color_alpha);
 
-            pipelines_difference |= _cg_pipeline_compare_differences(
-                ctx->current_pipeline, pipeline);
+            pipelines_difference |= _cg_pipeline_compare_differences(dev->current_pipeline,
+                                                                     pipeline);
         } else {
             _cg_pipeline_update_real_blend_enable(pipeline,
                                                   unknown_color_alpha);
@@ -990,7 +990,7 @@ _cg_pipeline_flush_gl_state(cg_context_t *ctx,
      *  all state of the layers corresponding texture unit to be
      *  updated.
      */
-    _cg_pipeline_flush_common_gl_state(ctx,
+    _cg_pipeline_flush_common_gl_state(dev,
                                        pipeline,
                                        pipelines_difference,
                                        layer_differences,
@@ -1046,7 +1046,7 @@ _cg_pipeline_flush_gl_state(cg_context_t *ctx,
          *
          * NB: We can't combine the setup of the vertend and fragend
          * since the backends that do code generation share
-         * ctx->codegen_source_buffer as a scratch buffer.
+         * dev->codegen_source_buffer as a scratch buffer.
          */
 
         fragend = _cg_pipeline_fragends[progend->fragend];
@@ -1087,13 +1087,13 @@ _cg_pipeline_flush_gl_state(cg_context_t *ctx,
      * weak pipelines for overrides.
      */
     cg_object_ref(pipeline);
-    if (ctx->current_pipeline != NULL)
-        cg_object_unref(ctx->current_pipeline);
-    ctx->current_pipeline = pipeline;
-    ctx->current_pipeline_changes_since_flush = 0;
-    ctx->current_pipeline_with_color_attrib = with_color_attrib;
-    ctx->current_pipeline_unknown_color_alpha = unknown_color_alpha;
-    ctx->current_pipeline_age = pipeline->age;
+    if (dev->current_pipeline != NULL)
+        cg_object_unref(dev->current_pipeline);
+    dev->current_pipeline = pipeline;
+    dev->current_pipeline_changes_since_flush = 0;
+    dev->current_pipeline_with_color_attrib = with_color_attrib;
+    dev->current_pipeline_unknown_color_alpha = unknown_color_alpha;
+    dev->current_pipeline_age = pipeline->age;
 
 done:
 
@@ -1112,7 +1112,7 @@ done:
         attribute =
             _cg_pipeline_progend_glsl_get_attrib_location(pipeline, name_index);
         if (attribute != -1)
-            GE(ctx,
+            GE(dev,
                glVertexAttrib4f(attribute,
                                 authority->color.red,
                                 authority->color.green,
@@ -1128,7 +1128,7 @@ done:
 
     /* Handle the fact that OpenGL associates texture filter and wrap
      * modes with the texture objects not the texture units... */
-    if (!_cg_has_private_feature(ctx, CG_PRIVATE_FEATURE_SAMPLER_OBJECTS))
+    if (!_cg_has_private_feature(dev, CG_PRIVATE_FEATURE_SAMPLER_OBJECTS))
         foreach_texture_unit_update_filter_and_wrap_modes();
 
     /* If this pipeline has more than one layer then we always need
@@ -1142,7 +1142,7 @@ done:
     unit1 = _cg_get_texture_unit(1);
     if (cg_pipeline_get_n_layers(pipeline) > 1 && unit1->dirty_gl_texture) {
         _cg_set_active_texture_unit(1);
-        GE(ctx, glBindTexture(unit1->gl_target, unit1->gl_texture));
+        GE(dev, glBindTexture(unit1->gl_target, unit1->gl_texture));
         unit1->dirty_gl_texture = false;
     }
 

@@ -33,7 +33,7 @@
 #ifndef __CG_TEXURE_2D_SLICED_H
 #define __CG_TEXURE_2D_SLICED_H
 
-#include "cogl-context.h"
+#include "cogl-device.h"
 #include "cogl-types.h"
 
 /**
@@ -72,7 +72,7 @@ typedef struct _cg_texture_2d_sliced_t cg_texture_2d_sliced_t;
 
 /**
  * cg_texture_2d_sliced_new_with_size:
- * @ctx: A #cg_context_t
+ * @dev: A #cg_device_t
  * @width: The virtual width of your sliced texture.
  * @height: The virtual height of your sliced texture.
  * @max_waste: The threshold of how wide a strip of wasted texels
@@ -111,14 +111,14 @@ typedef struct _cg_texture_2d_sliced_t cg_texture_2d_sliced_t;
  *
  * Stability: unstable
  */
-cg_texture_2d_sliced_t *cg_texture_2d_sliced_new_with_size(cg_context_t *ctx,
+cg_texture_2d_sliced_t *cg_texture_2d_sliced_new_with_size(cg_device_t *dev,
                                                            int width,
                                                            int height,
                                                            int max_waste);
 
 /**
  * cg_texture_2d_sliced_new_from_file:
- * @ctx: A #cg_context_t
+ * @dev: A #cg_device_t
  * @filename: the file to load
  * @max_waste: The threshold of how wide a strip of wasted texels
  *             are allowed along the right and bottom textures before
@@ -157,14 +157,14 @@ cg_texture_2d_sliced_t *cg_texture_2d_sliced_new_with_size(cg_context_t *ctx,
  *               or %NULL on failure and @error will be updated.
  *
  */
-cg_texture_2d_sliced_t *cg_texture_2d_sliced_new_from_file(cg_context_t *ctx,
+cg_texture_2d_sliced_t *cg_texture_2d_sliced_new_from_file(cg_device_t *dev,
                                                            const char *filename,
                                                            int max_waste,
                                                            cg_error_t **error);
 
 /**
  * cg_texture_2d_sliced_new_from_data:
- * @ctx: A #cg_context_t
+ * @dev: A #cg_device_t
  * @width: width of texture in pixels
  * @height: height of texture in pixels
  * @format: the #cg_pixel_format_t the buffer is stored in in RAM
@@ -217,7 +217,7 @@ cg_texture_2d_sliced_t *cg_texture_2d_sliced_new_from_file(cg_context_t *ctx,
  *
  */
 cg_texture_2d_sliced_t *
-cg_texture_2d_sliced_new_from_data(cg_context_t *ctx,
+cg_texture_2d_sliced_new_from_data(cg_device_t *dev,
                                    int width,
                                    int height,
                                    int max_waste,

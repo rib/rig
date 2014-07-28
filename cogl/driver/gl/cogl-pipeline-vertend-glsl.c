@@ -39,14 +39,14 @@
 
 #include <test-fixtures/test-unit.h>
 
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-util-gl-private.h"
 #include "cogl-pipeline-private.h"
 #include "cogl-pipeline-opengl-private.h"
 
 #ifdef CG_PIPELINE_VERTEND_GLSL
 
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-object-private.h"
 #include "cogl-pipeline-vertend-glsl-private.h"
 #include "cogl-pipeline-state-private.h"
@@ -88,7 +88,7 @@ destroy_shader_state(void *user_data, void *instance)
 {
     cg_pipeline_shader_state_t *shader_state = user_data;
 
-    _CG_GET_CONTEXT(ctx, NO_RETVAL);
+    _CG_GET_DEVICE(dev, NO_RETVAL);
 
     if (shader_state->cache_entry &&
         shader_state->cache_entry->pipeline != instance)
@@ -96,7 +96,7 @@ destroy_shader_state(void *user_data, void *instance)
 
     if (--shader_state->ref_count == 0) {
         if (shader_state->gl_shader)
-            GE(ctx, glDeleteShader(shader_state->gl_shader));
+            GE(dev, glDeleteShader(shader_state->gl_shader));
 
         c_slice_free(cg_pipeline_shader_state_t, shader_state);
     }
@@ -215,7 +215,7 @@ _cg_pipeline_vertend_glsl_start(cg_pipeline_t *pipeline,
     cg_pipeline_shader_state_t *shader_state;
     cg_pipeline_cache_entry_t *cache_entry = NULL;
 
-    _CG_GET_CONTEXT(ctx, NO_RETVAL);
+    _CG_GET_DEVICE(dev, NO_RETVAL);
 
     /* Now lookup our glsl backend private state (allocating if
      * necessary) */
@@ -228,7 +228,7 @@ _cg_pipeline_vertend_glsl_start(cg_pipeline_t *pipeline,
            state */
         authority = _cg_pipeline_find_equivalent_parent(
             pipeline,
-            _cg_pipeline_get_state_for_vertex_codegen(ctx) &
+            _cg_pipeline_get_state_for_vertex_codegen(dev) &
             ~CG_PIPELINE_STATE_LAYERS,
             CG_PIPELINE_LAYER_STATE_AFFECTS_VERTEX_CODEGEN);
 
@@ -240,7 +240,7 @@ _cg_pipeline_vertend_glsl_start(cg_pipeline_t *pipeline,
             if (C_LIKELY(
                     !(CG_DEBUG_ENABLED(CG_DEBUG_DISABLE_PROGRAM_CACHES)))) {
                 cache_entry = _cg_pipeline_cache_get_vertex_template(
-                    ctx->pipeline_cache, authority);
+                    dev->pipeline_cache, authority);
 
                 shader_state = get_shader_state(cache_entry->pipeline);
             }
@@ -273,10 +273,10 @@ _cg_pipeline_vertend_glsl_start(cg_pipeline_t *pipeline,
        other contains the main function. We need two strings
        because we need to dynamically declare attributes as the
        add_layer callback is invoked */
-    c_string_set_size(ctx->codegen_header_buffer, 0);
-    c_string_set_size(ctx->codegen_source_buffer, 0);
-    shader_state->header = ctx->codegen_header_buffer;
-    shader_state->source = ctx->codegen_source_buffer;
+    c_string_set_size(dev->codegen_header_buffer, 0);
+    c_string_set_size(dev->codegen_source_buffer, 0);
+    shader_state->header = dev->codegen_header_buffer;
+    shader_state->source = dev->codegen_source_buffer;
 
     add_layer_declarations(pipeline, shader_state);
     add_global_declarations(pipeline, shader_state);
@@ -289,7 +289,7 @@ _cg_pipeline_vertend_glsl_start(cg_pipeline_t *pipeline,
     if (cg_pipeline_get_per_vertex_point_size(pipeline))
         c_string_append(shader_state->header, "in float cg_point_size_in;\n");
     else if (!_cg_has_private_feature(
-                 ctx, CG_PRIVATE_FEATURE_BUILTIN_POINT_SIZE_UNIFORM)) {
+                 dev, CG_PRIVATE_FEATURE_BUILTIN_POINT_SIZE_UNIFORM)) {
         /* There is no builtin uniform for the point size on GLES2 so we
            need to copy it from the custom uniform in the vertex shader
            if we're not using per-vertex point sizes, however we'll only
@@ -315,7 +315,7 @@ _cg_pipeline_vertend_glsl_add_layer(cg_pipeline_t *pipeline,
     cg_pipeline_snippet_data_t snippet_data;
     int layer_index = layer->index;
 
-    _CG_GET_CONTEXT(ctx, false);
+    _CG_GET_DEVICE(dev, false);
 
     shader_state = get_shader_state(pipeline);
 
@@ -373,7 +373,7 @@ _cg_pipeline_vertend_glsl_end(cg_pipeline_t *pipeline,
 {
     cg_pipeline_shader_state_t *shader_state;
 
-    _CG_GET_CONTEXT(ctx, false);
+    _CG_GET_DEVICE(dev, false);
 
     shader_state = get_shader_state(pipeline);
 
@@ -473,30 +473,30 @@ _cg_pipeline_vertend_glsl_end(cg_pipeline_t *pipeline,
 
         c_string_append(shader_state->source, "}\n");
 
-        GE_RET(shader, ctx, glCreateShader(GL_VERTEX_SHADER));
+        GE_RET(shader, dev, glCreateShader(GL_VERTEX_SHADER));
 
         lengths[0] = shader_state->header->len;
         source_strings[0] = shader_state->header->str;
         lengths[1] = shader_state->source->len;
         source_strings[1] = shader_state->source->str;
 
-        _cg_glsl_shader_set_source_with_boilerplate(ctx,
+        _cg_glsl_shader_set_source_with_boilerplate(dev,
                                                     shader,
                                                     GL_VERTEX_SHADER,
                                                     2, /* count */
                                                     source_strings,
                                                     lengths);
 
-        GE(ctx, glCompileShader(shader));
-        GE(ctx, glGetShaderiv(shader, GL_COMPILE_STATUS, &compile_status));
+        GE(dev, glCompileShader(shader));
+        GE(dev, glGetShaderiv(shader, GL_COMPILE_STATUS, &compile_status));
 
         if (!compile_status) {
             GLint len = 0;
             char *shader_log;
 
-            GE(ctx, glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &len));
+            GE(dev, glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &len));
             shader_log = c_alloca(len);
-            GE(ctx, glGetShaderInfoLog(shader, len, &len, shader_log));
+            GE(dev, glGetShaderInfoLog(shader, len, &len, shader_log));
             c_warning("Shader compilation failed:\n%s", shader_log);
         }
 
@@ -507,13 +507,13 @@ _cg_pipeline_vertend_glsl_end(cg_pipeline_t *pipeline,
 
 #ifdef HAVE_CG_GL
     if (_cg_has_private_feature(
-            ctx, CG_PRIVATE_FEATURE_BUILTIN_POINT_SIZE_UNIFORM) &&
+            dev, CG_PRIVATE_FEATURE_BUILTIN_POINT_SIZE_UNIFORM) &&
         (pipelines_difference & CG_PIPELINE_STATE_POINT_SIZE)) {
         cg_pipeline_t *authority =
             _cg_pipeline_get_authority(pipeline, CG_PIPELINE_STATE_POINT_SIZE);
 
         if (authority->big_state->point_size > 0.0f)
-            GE(ctx, glPointSize(authority->big_state->point_size));
+            GE(dev, glPointSize(authority->big_state->point_size));
     }
 #endif /* HAVE_CG_GL */
 
@@ -525,9 +525,9 @@ _cg_pipeline_vertend_glsl_pre_change_notify(cg_pipeline_t *pipeline,
                                             cg_pipeline_state_t change,
                                             const cg_color_t *new_color)
 {
-    _CG_GET_CONTEXT(ctx, NO_RETVAL);
+    _CG_GET_DEVICE(dev, NO_RETVAL);
 
-    if ((change & _cg_pipeline_get_state_for_vertex_codegen(ctx)))
+    if ((change & _cg_pipeline_get_state_for_vertex_codegen(dev)))
         dirty_shader_state(pipeline);
 }
 
@@ -578,14 +578,14 @@ UNIT_TEST(check_point_size_shader,
     int i;
 
     /* Default pipeline with zero point size */
-    pipelines[0] = cg_pipeline_new(test_ctx);
+    pipelines[0] = cg_pipeline_new(test_dev);
 
     /* Point size 1 */
-    pipelines[1] = cg_pipeline_new(test_ctx);
+    pipelines[1] = cg_pipeline_new(test_dev);
     cg_pipeline_set_point_size(pipelines[1], 1.0f);
 
     /* Point size 2 */
-    pipelines[2] = cg_pipeline_new(test_ctx);
+    pipelines[2] = cg_pipeline_new(test_dev);
     cg_pipeline_set_point_size(pipelines[2], 2.0f);
 
     /* Same as the first pipeline, but reached by restoring the old
@@ -610,7 +610,7 @@ UNIT_TEST(check_point_size_shader,
      * size */
     if (shader_states[0]) {
         if (_cg_has_private_feature(
-                test_ctx, CG_PRIVATE_FEATURE_BUILTIN_POINT_SIZE_UNIFORM))
+                test_dev, CG_PRIVATE_FEATURE_BUILTIN_POINT_SIZE_UNIFORM))
             c_assert(shader_states[0] == shader_states[1]);
         else
             c_assert(shader_states[0] != shader_states[1]);

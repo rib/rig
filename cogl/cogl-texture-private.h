@@ -183,7 +183,7 @@ typedef struct _cg_texture_loader_t {
 
 struct _cg_texture_t {
     cg_object_t _parent;
-    cg_context_t *context;
+    cg_device_t *dev;
     cg_texture_loader_t *loader;
     c_list_t *framebuffers;
     int max_level;
@@ -225,7 +225,7 @@ struct _cg_texture_pixel_t {
 };
 
 void _cg_texture_init(cg_texture_t *texture,
-                      cg_context_t *ctx,
+                      cg_device_t *dev,
                       int width,
                       int height,
                       cg_pixel_format_t src_format,
@@ -274,7 +274,7 @@ void _cg_texture_ensure_non_quad_rendering(cg_texture_t *texture);
  * Texture backends can call this when allocating a texture to know
  * how to convert a source image in preparation for uploading.
  */
-cg_pixel_format_t _cg_texture_derive_format(cg_context_t *ctx,
+cg_pixel_format_t _cg_texture_derive_format(cg_device_t *dev,
                                             cg_pixel_format_t src_format,
                                             cg_texture_components_t components,
                                             bool premultiplied);

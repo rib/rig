@@ -38,7 +38,7 @@
 #ifndef __CG_INDEX_BUFFER_H__
 #define __CG_INDEX_BUFFER_H__
 
-#include <cogl/cogl-context.h>
+#include <cogl/cogl-device.h>
 
 CG_BEGIN_DECLS
 
@@ -56,7 +56,7 @@ typedef struct _cg_index_buffer_t cg_index_buffer_t;
 
 /**
  * cg_index_buffer_new:
- * @context: A #cg_context_t
+ * @dev: A #cg_device_t
  * @bytes: The number of bytes to allocate for vertex attribute data.
  *
  * Declares a new #cg_index_buffer_t of @size bytes to contain vertex
@@ -68,7 +68,7 @@ typedef struct _cg_index_buffer_t cg_index_buffer_t;
  *
  * Stability: Unstable
  */
-cg_index_buffer_t *cg_index_buffer_new(cg_context_t *context, size_t bytes);
+cg_index_buffer_t *cg_index_buffer_new(cg_device_t *context, size_t bytes);
 
 /**
  * cg_is_index_buffer:

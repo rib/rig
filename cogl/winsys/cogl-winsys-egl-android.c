@@ -189,8 +189,8 @@ _cg_winsys_egl_onscreen_init(cg_onscreen_t *onscreen,
                              cg_error_t **error)
 {
     cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
-    cg_context_t *context = framebuffer->context;
-    cg_display_t *display = context->display;
+    cg_device_t *dev = framebuffer->dev;
+    cg_display_t *display = dev->display;
     cg_display_egl_t *egl_display = display->winsys;
     cg_display_android_t *android_display = egl_display->platform;
     cg_onscreen_egl_t *egl_onscreen = onscreen->winsys;

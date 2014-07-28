@@ -36,7 +36,7 @@
 #include "config.h"
 #endif
 
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-util-gl-private.h"
 #include "cogl-glsl-shader-private.h"
 #include "cogl-glsl-shader-boilerplate.h"
@@ -46,7 +46,7 @@
 #include <clib.h>
 
 void
-_cg_glsl_shader_set_source_with_boilerplate(cg_context_t *ctx,
+_cg_glsl_shader_set_source_with_boilerplate(cg_device_t *dev,
                                             GLuint shader_gl_handle,
                                             GLenum shader_gl_type,
                                             GLsizei count_in,
@@ -65,13 +65,13 @@ _cg_glsl_shader_set_source_with_boilerplate(cg_context_t *ctx,
     fragment_boilerplate = _CG_FRAGMENT_SHADER_BOILERPLATE;
 
     version_string =
-        c_strdup_printf("#version %i\n\n", ctx->glsl_version_to_use);
+        c_strdup_printf("#version %i\n\n", dev->glsl_version_to_use);
 
     strings[count] = version_string;
     lengths[count++] = -1;
 
-    if (_cg_has_private_feature(ctx, CG_PRIVATE_FEATURE_GL_EMBEDDED) &&
-        cg_has_feature(ctx, CG_FEATURE_ID_TEXTURE_3D)) {
+    if (_cg_has_private_feature(dev, CG_PRIVATE_FEATURE_GL_EMBEDDED) &&
+        cg_has_feature(dev, CG_FEATURE_ID_TEXTURE_3D)) {
         static const char texture_3d_extension[] =
             "#extension GL_OES_texture_3D : enable\n";
         strings[count] = texture_3d_extension;
@@ -79,7 +79,7 @@ _cg_glsl_shader_set_source_with_boilerplate(cg_context_t *ctx,
     }
 
     if (shader_gl_type == GL_VERTEX_SHADER) {
-        if (ctx->glsl_version_to_use < 130) {
+        if (dev->glsl_version_to_use < 130) {
             strings[count] = "#define in attribute\n"
                              "#define out varying\n";
             lengths[count++] = -1;
@@ -101,7 +101,7 @@ _cg_glsl_shader_set_source_with_boilerplate(cg_context_t *ctx,
         strings[count] = vertex_boilerplate;
         lengths[count++] = strlen(vertex_boilerplate);
     } else if (shader_gl_type == GL_FRAGMENT_SHADER) {
-        if (ctx->glsl_version_to_use < 130) {
+        if (dev->glsl_version_to_use < 130) {
             strings[count] = "#define in varying\n"
                              "\n"
                              "#define cg_color_out gl_FragColor\n"
@@ -112,7 +112,7 @@ _cg_glsl_shader_set_source_with_boilerplate(cg_context_t *ctx,
         strings[count] = fragment_boilerplate;
         lengths[count++] = strlen(fragment_boilerplate);
 
-        if (ctx->glsl_version_to_use >= 130) {
+        if (dev->glsl_version_to_use >= 130) {
             /* FIXME: Support cg_depth_out. */
             /* To support source compatibility with glsl >= 1.3 which has
              * replaced
@@ -162,7 +162,7 @@ _cg_glsl_shader_set_source_with_boilerplate(cg_context_t *ctx,
         c_string_free(buf, true);
     }
 
-    GE(ctx,
+    GE(dev,
        glShaderSource(
            shader_gl_handle, count, (const char **)strings, lengths));
 

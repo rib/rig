@@ -46,7 +46,7 @@
 #include <clib.h>
 
 #include "cogl-util.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-object-private.h"
 #include "cogl-pixel-buffer-private.h"
 
@@ -115,7 +115,7 @@ malloc_set_data(cg_buffer_t *buffer,
 
 void
 _cg_buffer_initialize(cg_buffer_t *buffer,
-                      cg_context_t *ctx,
+                      cg_device_t *dev,
                       size_t size,
                       cg_buffer_bind_target_t default_target,
                       cg_buffer_usage_hint_t usage_hint,
@@ -123,7 +123,7 @@ _cg_buffer_initialize(cg_buffer_t *buffer,
 {
     bool use_malloc = false;
 
-    buffer->context = ctx;
+    buffer->dev = dev;
     buffer->flags = CG_BUFFER_FLAG_NONE;
     buffer->store_created = false;
     buffer->size = size;
@@ -135,11 +135,11 @@ _cg_buffer_initialize(cg_buffer_t *buffer,
 
     if (default_target == CG_BUFFER_BIND_TARGET_PIXEL_PACK ||
         default_target == CG_BUFFER_BIND_TARGET_PIXEL_UNPACK) {
-        if (!_cg_has_private_feature(ctx, CG_PRIVATE_FEATURE_PBOS))
+        if (!_cg_has_private_feature(dev, CG_PRIVATE_FEATURE_PBOS))
             use_malloc = true;
     } else if (default_target == CG_BUFFER_BIND_TARGET_ATTRIBUTE_BUFFER ||
                default_target == CG_BUFFER_BIND_TARGET_INDEX_BUFFER) {
-        if (!_cg_has_private_feature(ctx, CG_PRIVATE_FEATURE_VBOS))
+        if (!_cg_has_private_feature(dev, CG_PRIVATE_FEATURE_VBOS))
             use_malloc = true;
     }
 
@@ -150,11 +150,11 @@ _cg_buffer_initialize(cg_buffer_t *buffer,
 
         buffer->data = c_malloc(size);
     } else {
-        buffer->vtable.map_range = ctx->driver_vtable->buffer_map_range;
-        buffer->vtable.unmap = ctx->driver_vtable->buffer_unmap;
-        buffer->vtable.set_data = ctx->driver_vtable->buffer_set_data;
+        buffer->vtable.map_range = dev->driver_vtable->buffer_map_range;
+        buffer->vtable.unmap = dev->driver_vtable->buffer_unmap;
+        buffer->vtable.set_data = dev->driver_vtable->buffer_set_data;
 
-        ctx->driver_vtable->buffer_create(buffer);
+        dev->driver_vtable->buffer_create(buffer);
 
         buffer->flags |= CG_BUFFER_FLAG_BUFFER_OBJECT;
     }
@@ -167,7 +167,7 @@ _cg_buffer_fini(cg_buffer_t *buffer)
     c_return_if_fail(buffer->immutable_ref == 0);
 
     if (buffer->flags & CG_BUFFER_FLAG_BUFFER_OBJECT)
-        buffer->context->driver_vtable->buffer_destroy(buffer);
+        buffer->dev->driver_vtable->buffer_destroy(buffer);
     else
         c_free(buffer->data);
 }
@@ -268,13 +268,13 @@ _cg_buffer_map_range_for_fill_or_fallback(cg_buffer_t *buffer,
                                           size_t offset,
                                           size_t size)
 {
-    cg_context_t *ctx = buffer->context;
+    cg_device_t *dev = buffer->dev;
     void *ret;
     cg_error_t *ignore_error = NULL;
 
-    c_return_val_if_fail(!ctx->buffer_map_fallback_in_use, NULL);
+    c_return_val_if_fail(!dev->buffer_map_fallback_in_use, NULL);
 
-    ctx->buffer_map_fallback_in_use = true;
+    dev->buffer_map_fallback_in_use = true;
 
     ret = cg_buffer_map_range(buffer,
                               offset,
@@ -292,22 +292,22 @@ _cg_buffer_map_range_for_fill_or_fallback(cg_buffer_t *buffer,
        the data and then upload it using cg_buffer_set_data when
        the buffer is unmapped. The temporary buffer is shared to
        avoid reallocating it every time */
-    c_byte_array_set_size(ctx->buffer_map_fallback_array, size);
-    ctx->buffer_map_fallback_offset = offset;
+    c_byte_array_set_size(dev->buffer_map_fallback_array, size);
+    dev->buffer_map_fallback_offset = offset;
 
     buffer->flags |= CG_BUFFER_FLAG_MAPPED_FALLBACK;
 
-    return ctx->buffer_map_fallback_array->data;
+    return dev->buffer_map_fallback_array->data;
 }
 
 void
 _cg_buffer_unmap_for_fill_or_fallback(cg_buffer_t *buffer)
 {
-    cg_context_t *ctx = buffer->context;
+    cg_device_t *dev = buffer->dev;
 
-    c_return_if_fail(ctx->buffer_map_fallback_in_use);
+    c_return_if_fail(dev->buffer_map_fallback_in_use);
 
-    ctx->buffer_map_fallback_in_use = false;
+    dev->buffer_map_fallback_in_use = false;
 
     if ((buffer->flags & CG_BUFFER_FLAG_MAPPED_FALLBACK)) {
         /* Note: don't try to catch OOM errors here since the use cases
@@ -325,9 +325,9 @@ _cg_buffer_unmap_for_fill_or_fallback(cg_buffer_t *buffer)
          * deferred renderers.
          */
         cg_buffer_set_data(buffer,
-                           ctx->buffer_map_fallback_offset,
-                           ctx->buffer_map_fallback_array->data,
-                           ctx->buffer_map_fallback_array->len,
+                           dev->buffer_map_fallback_offset,
+                           dev->buffer_map_fallback_array->data,
+                           dev->buffer_map_fallback_array->len,
                            NULL);
         buffer->flags &= ~CG_BUFFER_FLAG_MAPPED_FALLBACK;
     } else

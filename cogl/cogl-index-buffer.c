@@ -38,7 +38,7 @@
 #include "cogl-object-private.h"
 #include "cogl-indices.h"
 #include "cogl-indices-private.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 
 static void _cg_index_buffer_free(cg_index_buffer_t *indices);
 
@@ -48,13 +48,13 @@ CG_BUFFER_DEFINE(IndexBuffer, index_buffer);
  * indices buffer should be able to contain multiple ranges of indices
  * which the wiki design doesn't currently consider. */
 cg_index_buffer_t *
-cg_index_buffer_new(cg_context_t *context, size_t bytes)
+cg_index_buffer_new(cg_device_t *dev, size_t bytes)
 {
     cg_index_buffer_t *indices = c_slice_new(cg_index_buffer_t);
 
     /* parent's constructor */
     _cg_buffer_initialize(CG_BUFFER(indices),
-                          context,
+                          dev,
                           bytes,
                           CG_BUFFER_BIND_TARGET_INDEX_BUFFER,
                           CG_BUFFER_USAGE_HINT_INDEX_BUFFER,

@@ -141,12 +141,12 @@ void _cg_bind_gl_texture_transient(GLenum gl_target,
 
 void _cg_delete_gl_texture(GLuint gl_texture);
 
-void _cg_pipeline_flush_gl_state(cg_context_t *context,
+void _cg_pipeline_flush_gl_state(cg_device_t *dev,
                                  cg_pipeline_t *pipeline,
                                  cg_framebuffer_t *framebuffer,
                                  bool skip_gl_state,
                                  bool unknown_color_alpha);
 
-void _cg_gl_use_program(cg_context_t *context, GLuint gl_program);
+void _cg_gl_use_program(cg_device_t *dev, GLuint gl_program);
 
 #endif /* __CG_PIPELINE_OPENGL_PRIVATE_H */

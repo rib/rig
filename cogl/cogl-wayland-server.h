@@ -49,7 +49,7 @@
 
 #endif /* CG_COMPILATION */
 
-#include <cogl/cogl-context.h>
+#include <cogl/cogl-device.h>
 #include <cogl/cogl-texture-2d.h>
 
 CG_BEGIN_DECLS
@@ -71,7 +71,7 @@ cg_wayland_display_set_compositor_display(cg_display_t *display,
 
 /**
  * cg_wayland_texture_2d_new_from_buffer:
- * @ctx: A #cg_context_t
+ * @dev: A #cg_device_t
  * @buffer: A Wayland resource for a buffer
  * @error: A #cg_error_t for exceptions
  *
@@ -94,8 +94,9 @@ cg_wayland_display_set_compositor_display(cg_display_t *display,
  *
  * Stability: unstable
  */
-cg_texture_2d_t *cg_wayland_texture_2d_new_from_buffer(
-    cg_context_t *ctx, struct wl_resource *buffer, cg_error_t **error);
+cg_texture_2d_t *cg_wayland_texture_2d_new_from_buffer(cg_device_t *dev,
+						       struct wl_resource *buffer,
+						       cg_error_t **error);
 
 /**
  * cg_wayland_texture_set_region_from_shm_buffer:

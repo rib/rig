@@ -72,11 +72,11 @@ typedef struct _cg_texture_pixmap_egl_t {
 #endif
 
 static cg_onscreen_t *
-find_onscreen_for_xid(cg_context_t *context, uint32_t xid)
+find_onscreen_for_xid(cg_device_t *dev, uint32_t xid)
 {
     c_list_t *l;
 
-    for (l = context->framebuffers; l; l = l->next) {
+    for (l = dev->framebuffers; l; l = l->next) {
         cg_framebuffer_t *framebuffer = l->data;
         cg_onscreen_egl_t *egl_onscreen;
         cg_onscreen_xlib_t *xlib_onscreen;
@@ -112,8 +112,8 @@ flush_pending_resize_notifications_cb(void *data, void *user_data)
 static void
 flush_pending_resize_notifications_idle(void *user_data)
 {
-    cg_context_t *context = user_data;
-    cg_renderer_t *renderer = context->display->renderer;
+    cg_device_t *dev = user_data;
+    cg_renderer_t *renderer = dev->display->renderer;
     cg_renderer_egl_t *egl_renderer = renderer->winsys;
 
     /* This needs to be disconnected before invoking the callbacks in
@@ -121,16 +121,16 @@ flush_pending_resize_notifications_idle(void *user_data)
     _cg_closure_disconnect(egl_renderer->resize_notify_idle);
     egl_renderer->resize_notify_idle = NULL;
 
-    c_list_foreach(
-        context->framebuffers, flush_pending_resize_notifications_cb, NULL);
+    c_list_foreach(dev->framebuffers, flush_pending_resize_notifications_cb,
+                   NULL);
 }
 
 static void
-notify_resize(cg_context_t *context, Window drawable, int width, int height)
+notify_resize(cg_device_t *dev, Window drawable, int width, int height)
 {
-    cg_renderer_t *renderer = context->display->renderer;
+    cg_renderer_t *renderer = dev->display->renderer;
     cg_renderer_egl_t *egl_renderer = renderer->winsys;
-    cg_onscreen_t *onscreen = find_onscreen_for_xid(context, drawable);
+    cg_onscreen_t *onscreen = find_onscreen_for_xid(dev, drawable);
     cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
     cg_onscreen_egl_t *egl_onscreen;
 
@@ -142,11 +142,11 @@ notify_resize(cg_context_t *context, Window drawable, int width, int height)
     _cg_framebuffer_winsys_update_size(framebuffer, width, height);
 
     /* We only want to notify that a resize happened when the
-     * application calls cg_context_dispatch so instead of immediately
+     * application calls cg_device_dispatch so instead of immediately
      * notifying we queue an idle callback */
     if (!egl_renderer->resize_notify_idle) {
         egl_renderer->resize_notify_idle = _cg_poll_renderer_add_idle(
-            renderer, flush_pending_resize_notifications_idle, context, NULL);
+            renderer, flush_pending_resize_notifications_idle, dev, NULL);
     }
 
     egl_onscreen->pending_resize_notify = true;
@@ -155,16 +155,16 @@ notify_resize(cg_context_t *context, Window drawable, int width, int height)
 static cg_filter_return_t
 event_filter_cb(XEvent *xevent, void *data)
 {
-    cg_context_t *context = data;
+    cg_device_t *dev = data;
 
     if (xevent->type == ConfigureNotify) {
-        notify_resize(context,
+        notify_resize(dev,
                       xevent->xconfigure.window,
                       xevent->xconfigure.width,
                       xevent->xconfigure.height);
     } else if (xevent->type == Expose) {
         cg_onscreen_t *onscreen =
-            find_onscreen_for_xid(context, xevent->xexpose.window);
+            find_onscreen_for_xid(dev, xevent->xexpose.window);
 
         if (onscreen) {
             cg_onscreen_dirty_info_t info;
@@ -287,29 +287,28 @@ _cg_winsys_egl_display_destroy(cg_display_t *display)
 }
 
 static bool
-_cg_winsys_egl_context_init(cg_context_t *context,
+_cg_winsys_egl_context_init(cg_device_t *dev,
                             cg_error_t **error)
 {
-    cg_xlib_renderer_add_filter(
-        context->display->renderer, event_filter_cb, context);
+    cg_xlib_renderer_add_filter(dev->display->renderer, event_filter_cb, dev);
 
-    CG_FLAGS_SET(context->features, CG_FEATURE_ID_ONSCREEN_MULTIPLE, true);
-    CG_FLAGS_SET(
-        context->winsys_features, CG_WINSYS_FEATURE_MULTIPLE_ONSCREEN, true);
+    CG_FLAGS_SET(dev->features, CG_FEATURE_ID_ONSCREEN_MULTIPLE, true);
+    CG_FLAGS_SET(dev->winsys_features, CG_WINSYS_FEATURE_MULTIPLE_ONSCREEN,
+                 true);
 
     /* We'll manually handle queueing dirty events in response to
      * Expose events from X */
-    CG_FLAGS_SET(
-        context->private_features, CG_PRIVATE_FEATURE_DIRTY_EVENTS, true);
+    CG_FLAGS_SET(dev->private_features, CG_PRIVATE_FEATURE_DIRTY_EVENTS,
+                 true);
 
     return true;
 }
 
 static void
-_cg_winsys_egl_context_deinit(cg_context_t *context)
+_cg_winsys_egl_context_deinit(cg_device_t *dev)
 {
-    cg_xlib_renderer_remove_filter(
-        context->display->renderer, event_filter_cb, context);
+    cg_xlib_renderer_remove_filter(dev->display->renderer, event_filter_cb,
+                                   dev);
 }
 
 static bool
@@ -318,8 +317,8 @@ _cg_winsys_egl_onscreen_init(cg_onscreen_t *onscreen,
                              cg_error_t **error)
 {
     cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
-    cg_context_t *context = framebuffer->context;
-    cg_display_t *display = context->display;
+    cg_device_t *dev = framebuffer->dev;
+    cg_display_t *display = dev->display;
     cg_renderer_t *renderer = display->renderer;
     cg_renderer_egl_t *egl_renderer = renderer->winsys;
     cg_xlib_renderer_t *xlib_renderer = _cg_xlib_renderer_get_data(renderer);
@@ -456,8 +455,8 @@ static void
 _cg_winsys_egl_onscreen_deinit(cg_onscreen_t *onscreen)
 {
     cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
-    cg_context_t *context = framebuffer->context;
-    cg_renderer_t *renderer = context->display->renderer;
+    cg_device_t *dev = framebuffer->dev;
+    cg_renderer_t *renderer = dev->display->renderer;
     cg_xlib_renderer_t *xlib_renderer = _cg_xlib_renderer_get_data(renderer);
     cg_xlib_trap_state_t old_state;
     cg_onscreen_egl_t *egl_onscreen = onscreen->winsys;
@@ -483,8 +482,8 @@ static void
 _cg_winsys_onscreen_set_visibility(cg_onscreen_t *onscreen,
                                    bool visibility)
 {
-    cg_context_t *context = CG_FRAMEBUFFER(onscreen)->context;
-    cg_renderer_t *renderer = context->display->renderer;
+    cg_device_t *dev = CG_FRAMEBUFFER(onscreen)->dev;
+    cg_renderer_t *renderer = dev->display->renderer;
     cg_xlib_renderer_t *xlib_renderer = _cg_xlib_renderer_get_data(renderer);
     cg_onscreen_egl_t *onscreen_egl = onscreen->winsys;
     cg_onscreen_xlib_t *xlib_onscreen = onscreen_egl->platform;
@@ -500,9 +499,9 @@ _cg_winsys_onscreen_set_resizable(cg_onscreen_t *onscreen,
                                   bool resizable)
 {
     cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
-    cg_context_t *context = framebuffer->context;
+    cg_device_t *dev = framebuffer->dev;
     cg_xlib_renderer_t *xlib_renderer =
-        _cg_xlib_renderer_get_data(context->display->renderer);
+        _cg_xlib_renderer_get_data(dev->display->renderer);
     cg_onscreen_egl_t *egl_onscreen = onscreen->winsys;
     cg_onscreen_xlib_t *xlib_onscreen = egl_onscreen->platform;
 
@@ -645,16 +644,16 @@ _cg_winsys_xlib_get_visual_info(void)
 {
     cg_display_egl_t *egl_display;
 
-    _CG_GET_CONTEXT(ctx, NULL);
+    _CG_GET_DEVICE(dev, NULL);
 
-    c_return_val_if_fail(ctx->display->winsys, false);
+    c_return_val_if_fail(dev->display->winsys, false);
 
-    egl_display = ctx->display->winsys;
+    egl_display = dev->display->winsys;
 
     if (!egl_display->found_egl_config)
         return NULL;
 
-    return get_visual_info(ctx->display, egl_display->egl_config);
+    return get_visual_info(dev->display, egl_display->egl_config);
 }
 
 #ifdef EGL_KHR_image_pixmap
@@ -663,18 +662,17 @@ static bool
 _cg_winsys_texture_pixmap_x11_create(cg_texture_pixmap_x11_t *tex_pixmap)
 {
     cg_texture_t *tex = CG_TEXTURE(tex_pixmap);
-    cg_context_t *ctx = tex->context;
+    cg_device_t *dev = tex->dev;
     cg_texture_pixmap_egl_t *egl_tex_pixmap;
     EGLint attribs[] = { EGL_IMAGE_PRESERVED_KHR, EGL_TRUE, EGL_NONE };
     cg_pixel_format_t texture_format;
     cg_renderer_egl_t *egl_renderer;
 
-    egl_renderer = ctx->display->renderer->winsys;
+    egl_renderer = dev->display->renderer->winsys;
 
     if (!(egl_renderer->private_features &
           CG_EGL_WINSYS_FEATURE_EGL_IMAGE_FROM_X11_PIXMAP) ||
-        !_cg_has_private_feature(
-            ctx, CG_PRIVATE_FEATURE_TEXTURE_2D_FROM_EGL_IMAGE)) {
+        !_cg_has_private_feature(dev, CG_PRIVATE_FEATURE_TEXTURE_2D_FROM_EGL_IMAGE)) {
         tex_pixmap->winsys = NULL;
         return false;
     }
@@ -682,7 +680,7 @@ _cg_winsys_texture_pixmap_x11_create(cg_texture_pixmap_x11_t *tex_pixmap)
     egl_tex_pixmap = c_new0(cg_texture_pixmap_egl_t, 1);
 
     egl_tex_pixmap->image =
-        _cg_egl_create_image(ctx,
+        _cg_egl_create_image(dev,
                              EGL_NATIVE_PIXMAP_KHR,
                              (EGLClientBuffer)tex_pixmap->pixmap,
                              attribs);
@@ -695,7 +693,7 @@ _cg_winsys_texture_pixmap_x11_create(cg_texture_pixmap_x11_t *tex_pixmap)
                       : CG_PIXEL_FORMAT_RGB_888);
 
     egl_tex_pixmap->texture =
-        CG_TEXTURE(_cg_egl_texture_2d_new_from_image(ctx,
+        CG_TEXTURE(_cg_egl_texture_2d_new_from_image(dev,
                                                      tex->width,
                                                      tex->height,
                                                      texture_format,
@@ -712,9 +710,9 @@ _cg_winsys_texture_pixmap_x11_free(cg_texture_pixmap_x11_t *tex_pixmap)
 {
     cg_texture_pixmap_egl_t *egl_tex_pixmap;
 
-    /* FIXME: It should be possible to get to a cg_context_t from any
+    /* FIXME: It should be possible to get to a cg_device_t from any
      * cg_texture_t pointer. */
-    _CG_GET_CONTEXT(ctx, NO_RETVAL);
+    _CG_GET_DEVICE(dev, NO_RETVAL);
 
     if (!tex_pixmap->winsys)
         return;
@@ -725,7 +723,7 @@ _cg_winsys_texture_pixmap_x11_free(cg_texture_pixmap_x11_t *tex_pixmap)
         cg_object_unref(egl_tex_pixmap->texture);
 
     if (egl_tex_pixmap->image != EGL_NO_IMAGE_KHR)
-        _cg_egl_destroy_image(ctx, egl_tex_pixmap->image);
+        _cg_egl_destroy_image(dev, egl_tex_pixmap->image);
 
     tex_pixmap->winsys = NULL;
     c_free(egl_tex_pixmap);

@@ -34,7 +34,7 @@
 #include <config.h>
 
 #include "cogl-debug.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-object.h"
 
 #include "cogl-pipeline-private.h"
@@ -110,7 +110,7 @@ _cg_pipeline_init_default_pipeline(void)
         &big_state->cull_face_state;
     cg_pipeline_uniforms_state_t *uniforms_state = &big_state->uniforms_state;
 
-    _CG_GET_CONTEXT(ctx, NO_RETVAL);
+    _CG_GET_DEVICE(dev, NO_RETVAL);
 
 /* Take this opportunity to setup the backends... */
 #ifdef CG_PIPELINE_PROGEND_GLSL
@@ -190,7 +190,7 @@ _cg_pipeline_init_default_pipeline(void)
     _cg_bitmask_init(&uniforms_state->changed_mask);
     uniforms_state->override_values = NULL;
 
-    ctx->default_pipeline = _cg_pipeline_object_new(pipeline);
+    dev->default_pipeline = _cg_pipeline_object_new(pipeline);
 }
 
 static void
@@ -378,11 +378,11 @@ _cg_pipeline_weak_copy(cg_pipeline_t *pipeline,
 }
 
 cg_pipeline_t *
-cg_pipeline_new(cg_context_t *context)
+cg_pipeline_new(cg_device_t *dev)
 {
     cg_pipeline_t *new;
 
-    new = cg_pipeline_copy(context->default_pipeline);
+    new = cg_pipeline_copy(dev->default_pipeline);
 #ifdef CG_DEBUG_ENABLED
     _cg_pipeline_set_static_breadcrumb(new, "new");
 #endif
@@ -1063,7 +1063,7 @@ _cg_pipeline_pre_change_notify(cg_pipeline_t *pipeline,
                                const cg_color_t *new_color,
                                bool from_layer_change)
 {
-    _CG_GET_CONTEXT(ctx, NO_RETVAL);
+    _CG_GET_DEVICE(dev, NO_RETVAL);
 
     /* If primitives have been logged in the journal referencing the
      * current state of this pipeline we need to flush the journal
@@ -1088,7 +1088,7 @@ _cg_pipeline_pre_change_notify(cg_pipeline_t *pipeline,
             /* XXX: note we need to use _cg_flush() so we will flush
              * *all* journals that might reference the current pipeline.
              */
-            _cg_flush(ctx);
+            _cg_flush(dev);
         }
     }
 
@@ -1250,8 +1250,8 @@ _cg_pipeline_pre_change_notify(cg_pipeline_t *pipeline,
      * minimize redundant OpenGL calls if the same pipeline is flushed
      * again.
      */
-    if (ctx->current_pipeline == pipeline)
-        ctx->current_pipeline_changes_since_flush |= change;
+    if (dev->current_pipeline == pipeline)
+        dev->current_pipeline_changes_since_flush |= change;
 }
 
 void
@@ -1553,7 +1553,7 @@ _cg_pipeline_get_layer_with_flags(cg_pipeline_t *pipeline,
     cg_pipeline_layer_t *layer;
     int unit_index;
     int i;
-    cg_context_t *ctx;
+    cg_device_t *dev;
 
     /* The layer index of the layer we want info about */
     layer_info.layer_index = layer_index;
@@ -1582,14 +1582,14 @@ _cg_pipeline_get_layer_with_flags(cg_pipeline_t *pipeline,
     if (layer_info.layer || (flags & CG_PIPELINE_GET_LAYER_NO_CREATE))
         return layer_info.layer;
 
-    ctx = _cg_context_get_default();
+    dev = _cg_device_get_default();
 
     unit_index = layer_info.insert_after + 1;
     if (unit_index == 0)
-        layer = _cg_pipeline_layer_copy(ctx->default_layer_0);
+        layer = _cg_pipeline_layer_copy(dev->default_layer_0);
     else {
         cg_pipeline_layer_t *new;
-        layer = _cg_pipeline_layer_copy(ctx->default_layer_n);
+        layer = _cg_pipeline_layer_copy(dev->default_layer_n);
         new = _cg_pipeline_set_layer_unit(NULL, layer, unit_index);
         /* Since we passed a newly allocated layer we wouldn't expect
          * _set_layer_unit() to have to allocate *another* layer. */
@@ -1709,7 +1709,7 @@ fallback_layer_cb(cg_pipeline_layer_t *layer, void *user_data)
                       "forced to a fallback texture",
                       0 /* no application private data */);
 
-    _CG_GET_CONTEXT(ctx, false);
+    _CG_GET_DEVICE(dev, false);
 
     if (!(state->fallback_layers & 1 << state->i))
         return true;
@@ -1718,11 +1718,11 @@ fallback_layer_cb(cg_pipeline_layer_t *layer, void *user_data)
 
     switch (texture_type) {
     case CG_TEXTURE_TYPE_2D:
-        texture = CG_TEXTURE(ctx->default_gl_texture_2d_tex);
+        texture = CG_TEXTURE(dev->default_gl_texture_2d_tex);
         break;
 
     case CG_TEXTURE_TYPE_3D:
-        texture = CG_TEXTURE(ctx->default_gl_texture_3d_tex);
+        texture = CG_TEXTURE(dev->default_gl_texture_3d_tex);
         break;
     }
 
@@ -1731,7 +1731,7 @@ fallback_layer_cb(cg_pipeline_layer_t *layer, void *user_data)
                   "in for an invalid pipeline layer, since it was "
                   "using an unsupported texture target ");
         /* might get away with this... */
-        texture = CG_TEXTURE(ctx->default_gl_texture_2d_tex);
+        texture = CG_TEXTURE(dev->default_gl_texture_2d_tex);
     }
 
     cg_pipeline_set_layer_texture(pipeline, layer->index, texture);
@@ -2479,7 +2479,7 @@ _cg_pipeline_hash(cg_pipeline_t *pipeline,
 }
 
 typedef struct {
-    cg_context_t *context;
+    cg_device_t *dev;
     cg_pipeline_t *src_pipeline;
     cg_pipeline_t *dst_pipeline;
     unsigned int layer_differences;
@@ -2494,8 +2494,8 @@ deep_copy_layer_cb(cg_pipeline_layer_t *src_layer, void *user_data)
 
     dst_layer = _cg_pipeline_get_layer(data->dst_pipeline, src_layer->index);
 
-    while (src_layer != data->context->default_layer_n &&
-           src_layer != data->context->default_layer_0 && differences) {
+    while (src_layer != data->dev->default_layer_n &&
+           src_layer != data->dev->default_layer_0 && differences) {
         unsigned long to_copy = differences & src_layer->differences;
 
         if (to_copy) {
@@ -2517,7 +2517,7 @@ _cg_pipeline_deep_copy(cg_pipeline_t *pipeline,
     cg_pipeline_t *new, *authority;
     bool copy_layer_state;
 
-    _CG_GET_CONTEXT(ctx, NULL);
+    _CG_GET_DEVICE(dev, NULL);
 
     if ((differences & CG_PIPELINE_STATE_LAYERS)) {
         copy_layer_state = true;
@@ -2525,10 +2525,10 @@ _cg_pipeline_deep_copy(cg_pipeline_t *pipeline,
     } else
         copy_layer_state = false;
 
-    new = cg_pipeline_new(ctx);
+    new = cg_pipeline_new(dev);
 
     for (authority = pipeline;
-         authority != ctx->default_pipeline && differences;
+         authority != dev->default_pipeline && differences;
          authority = CG_PIPELINE(CG_NODE(authority)->parent)) {
         unsigned long to_copy = differences & authority->differences;
 
@@ -2546,7 +2546,7 @@ _cg_pipeline_deep_copy(cg_pipeline_t *pipeline,
          * will have the same indices as the source pipeline */
         layer_differences &= ~CG_PIPELINE_LAYER_STATE_UNIT;
 
-        data.context = ctx;
+        data.dev = dev;
         data.src_pipeline = pipeline;
         data.dst_pipeline = new;
         data.layer_differences = layer_differences;
@@ -2659,7 +2659,7 @@ _cg_pipeline_find_equivalent_parent(cg_pipeline_t *pipeline,
 }
 
 cg_pipeline_state_t
-_cg_pipeline_get_state_for_vertex_codegen(cg_context_t *context)
+_cg_pipeline_get_state_for_vertex_codegen(cg_device_t *dev)
 {
     cg_pipeline_state_t state =
         (CG_PIPELINE_STATE_LAYERS | CG_PIPELINE_STATE_PER_VERTEX_POINT_SIZE |
@@ -2669,7 +2669,7 @@ _cg_pipeline_get_state_for_vertex_codegen(cg_context_t *context)
      * one in the GLSL but we'll only do this if the point size is
      * non-zero. Whether or not the point size is zero is represented by
      * CG_PIPELINE_STATE_NON_ZERO_POINT_SIZE */
-    if (!_cg_has_private_feature(context,
+    if (!_cg_has_private_feature(dev,
                                  CG_PRIVATE_FEATURE_BUILTIN_POINT_SIZE_UNIFORM))
         state |= CG_PIPELINE_STATE_NON_ZERO_POINT_SIZE;
 
@@ -2677,7 +2677,7 @@ _cg_pipeline_get_state_for_vertex_codegen(cg_context_t *context)
 }
 
 cg_pipeline_layer_state_t
-_cg_pipeline_get_layer_state_for_fragment_codegen(cg_context_t *context)
+_cg_pipeline_get_layer_state_for_fragment_codegen(cg_device_t *dev)
 {
     cg_pipeline_layer_state_t state =
         (CG_PIPELINE_LAYER_STATE_COMBINE |
@@ -2687,14 +2687,14 @@ _cg_pipeline_get_layer_state_for_fragment_codegen(cg_context_t *context)
     /* If the driver supports GLSL then we might be using gl_PointCoord
      * to implement the sprite coords. In that case the generated code
      * depends on the point sprite state */
-    if (cg_has_feature(context, CG_FEATURE_ID_GLSL))
+    if (cg_has_feature(dev, CG_FEATURE_ID_GLSL))
         state |= CG_PIPELINE_LAYER_STATE_POINT_SPRITE_COORDS;
 
     return state;
 }
 
 cg_pipeline_state_t
-_cg_pipeline_get_state_for_fragment_codegen(cg_context_t *context)
+_cg_pipeline_get_state_for_fragment_codegen(cg_device_t *dev)
 {
     return (CG_PIPELINE_STATE_LAYERS | CG_PIPELINE_STATE_FRAGMENT_SNIPPETS |
             CG_PIPELINE_STATE_ALPHA_FUNC);
@@ -2707,25 +2707,25 @@ cg_pipeline_get_uniform_location(cg_pipeline_t *pipeline,
     void *location_ptr;
     char *uniform_name_copy;
 
-    _CG_GET_CONTEXT(ctx, -1);
+    _CG_GET_DEVICE(dev, -1);
 
     /* This API is designed as if the uniform locations are specific to
        a pipeline but they are actually unique across a whole
-       cg_context_t. Potentially this could just be
-       cg_context_get_uniform_location but it seems to make sense to
+       cg_device_t. Potentially this could just be
+       cg_device_get_uniform_location but it seems to make sense to
        keep the API this way so that we can change the internals if need
        be. */
 
     /* Look for an existing uniform with this name */
     if (c_hash_table_lookup_extended(
-            ctx->uniform_name_hash, uniform_name, NULL, &location_ptr))
+            dev->uniform_name_hash, uniform_name, NULL, &location_ptr))
         return GPOINTER_TO_INT(location_ptr);
 
     uniform_name_copy = c_strdup(uniform_name);
-    c_ptr_array_add(ctx->uniform_names, uniform_name_copy);
-    c_hash_table_insert(ctx->uniform_name_hash,
+    c_ptr_array_add(dev->uniform_names, uniform_name_copy);
+    c_hash_table_insert(dev->uniform_name_hash,
                         uniform_name_copy,
-                        GINT_TO_POINTER(ctx->n_uniform_names));
+                        GINT_TO_POINTER(dev->n_uniform_names));
 
-    return ctx->n_uniform_names++;
+    return dev->n_uniform_names++;
 }

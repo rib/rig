@@ -51,7 +51,7 @@
 #include "cogl-sub-texture-private.h"
 #include "cogl-atlas-texture-private.h"
 #include "cogl-pipeline.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-object-private.h"
 #include "cogl-object-private.h"
 #include "cogl-framebuffer-private.h"
@@ -106,14 +106,14 @@ cg_is_texture(void *object)
 
 void
 _cg_texture_init(cg_texture_t *texture,
-                 cg_context_t *context,
+                 cg_device_t *dev,
                  int width,
                  int height,
                  cg_pixel_format_t src_format,
                  cg_texture_loader_t *loader,
                  const cg_texture_vtable_t *vtable)
 {
-    texture->context = context;
+    texture->dev = dev;
     texture->max_level = 0;
     texture->width = width;
     texture->height = height;
@@ -395,7 +395,7 @@ cg_texture_set_region(cg_texture_t *texture,
                       int level,
                       cg_error_t **error)
 {
-    cg_context_t *ctx = texture->context;
+    cg_device_t *dev = texture->dev;
     cg_bitmap_t *source_bmp;
     bool ret;
 
@@ -406,8 +406,8 @@ cg_texture_set_region(cg_texture_t *texture,
         rowstride = _cg_pixel_format_get_bytes_per_pixel(format) * width;
 
     /* Init source bitmap */
-    source_bmp = cg_bitmap_new_for_data(
-        ctx, width, height, format, rowstride, (uint8_t *)data);
+    source_bmp = cg_bitmap_new_for_data(dev, width, height, format,
+                                        rowstride, (uint8_t *)data);
 
     ret = cg_texture_set_region_from_bitmap(
         texture, 0, 0, width, height, source_bmp, dst_x, dst_y, level, error);
@@ -471,7 +471,7 @@ do_texture_draw_and_read(cg_framebuffer_t *fb,
     int bw, bh;
     cg_bitmap_t *rect_bmp;
     unsigned int tex_width, tex_height;
-    cg_context_t *ctx = fb->context;
+    cg_device_t *dev = fb->dev;
 
     tex_width = cg_texture_get_width(texture);
     tex_height = cg_texture_get_height(texture);
@@ -513,8 +513,9 @@ do_texture_draw_and_read(cg_framebuffer_t *fb,
                 fb, pipeline, 0, 0, rx2 - rx1, ry2 - ry1, tx1, ty1, tx2, ty2);
 
             /* Read into a temporary bitmap */
-            rect_bmp = _cg_bitmap_new_with_malloc_buffer(
-                ctx, width, height, CG_PIXEL_FORMAT_RGBA_8888_PRE, error);
+            rect_bmp = _cg_bitmap_new_with_malloc_buffer(dev, width, height,
+                                                         CG_PIXEL_FORMAT_RGBA_8888_PRE,
+                                                         error);
             if (!rect_bmp)
                 return false;
 
@@ -557,7 +558,7 @@ cg_texture_draw_and_read_to_bitmap(cg_texture_t *texture,
                                    cg_bitmap_t *target_bmp,
                                    cg_error_t **error)
 {
-    cg_context_t *ctx = framebuffer->context;
+    cg_device_t *dev = framebuffer->dev;
     float save_viewport[4];
     float viewport[4];
     bool status = false;
@@ -577,26 +578,26 @@ cg_texture_draw_and_read_to_bitmap(cg_texture_t *texture,
 
     /* Direct copy operation */
 
-    if (ctx->texture_download_pipeline == NULL) {
-        ctx->texture_download_pipeline = cg_pipeline_new(ctx);
-        cg_pipeline_set_blend(
-            ctx->texture_download_pipeline, "RGBA = ADD (SRC_COLOR, 0)", NULL);
+    if (dev->texture_download_pipeline == NULL) {
+        dev->texture_download_pipeline = cg_pipeline_new(dev);
+        cg_pipeline_set_blend(dev->texture_download_pipeline,
+                              "RGBA = ADD (SRC_COLOR, 0)", NULL);
     }
 
-    cg_pipeline_set_layer_texture(ctx->texture_download_pipeline, 0, texture);
+    cg_pipeline_set_layer_texture(dev->texture_download_pipeline, 0, texture);
 
-    cg_pipeline_set_layer_combine(ctx->texture_download_pipeline,
+    cg_pipeline_set_layer_combine(dev->texture_download_pipeline,
                                   0, /* layer */
                                   "RGBA = REPLACE (TEXTURE)",
                                   NULL);
 
-    cg_pipeline_set_layer_filters(ctx->texture_download_pipeline,
+    cg_pipeline_set_layer_filters(dev->texture_download_pipeline,
                                   0,
                                   CG_PIPELINE_FILTER_NEAREST,
                                   CG_PIPELINE_FILTER_NEAREST);
 
     if (!do_texture_draw_and_read(framebuffer,
-                                  ctx->texture_download_pipeline,
+                                  dev->texture_download_pipeline,
                                   texture,
                                   target_bmp,
                                   viewport,
@@ -631,21 +632,23 @@ cg_texture_draw_and_read_to_bitmap(cg_texture_t *texture,
             goto EXIT;
 
         /* Create temp bitmap for alpha values */
-        alpha_bmp = _cg_bitmap_new_with_malloc_buffer(
-            ctx, target_width, target_height, CG_PIXEL_FORMAT_RGBA_8888, error);
+        alpha_bmp = _cg_bitmap_new_with_malloc_buffer(dev, target_width,
+                                                      target_height,
+                                                      CG_PIXEL_FORMAT_RGBA_8888,
+                                                      error);
         if (!alpha_bmp) {
             _cg_bitmap_unmap(target_bmp);
             goto EXIT;
         }
 
         /* Draw alpha values into RGB channels */
-        cg_pipeline_set_layer_combine(ctx->texture_download_pipeline,
+        cg_pipeline_set_layer_combine(dev->texture_download_pipeline,
                                       0, /* layer */
                                       "RGBA = REPLACE (TEXTURE[A])",
                                       NULL);
 
         if (!do_texture_draw_and_read(framebuffer,
-                                      ctx->texture_download_pipeline,
+                                      dev->texture_download_pipeline,
                                       texture,
                                       alpha_bmp,
                                       viewport,
@@ -705,7 +708,7 @@ get_texture_bits_via_offscreen(cg_texture_t *meta_texture,
                                unsigned int dst_rowstride,
                                cg_pixel_format_t closest_format)
 {
-    cg_context_t *ctx = sub_texture->context;
+    cg_device_t *dev = sub_texture->dev;
     cg_offscreen_t *offscreen;
     cg_framebuffer_t *framebuffer;
     cg_bitmap_t *bitmap;
@@ -713,7 +716,7 @@ get_texture_bits_via_offscreen(cg_texture_t *meta_texture,
     cg_error_t *ignore_error = NULL;
     cg_pixel_format_t real_format;
 
-    if (!cg_has_feature(ctx, CG_FEATURE_ID_OFFSCREEN))
+    if (!cg_has_feature(dev, CG_FEATURE_ID_OFFSCREEN))
         return false;
 
     offscreen = _cg_offscreen_new_with_texture_full(
@@ -739,8 +742,8 @@ get_texture_bits_via_offscreen(cg_texture_t *meta_texture,
     real_format = _cg_texture_get_format(meta_texture);
     _cg_framebuffer_set_internal_format(framebuffer, real_format);
 
-    bitmap = cg_bitmap_new_for_data(
-        ctx, width, height, closest_format, dst_rowstride, dst_bits);
+    bitmap = cg_bitmap_new_for_data(dev, width, height, closest_format,
+                                    dst_rowstride, dst_bits);
     ret = cg_framebuffer_read_pixels_into_bitmap(
         framebuffer, x, y, CG_READ_PIXELS_COLOR_BUFFER, bitmap, &ignore_error);
 
@@ -885,7 +888,7 @@ cg_texture_get_data(cg_texture_t *texture,
                     unsigned int rowstride,
                     uint8_t *data)
 {
-    cg_context_t *ctx = texture->context;
+    cg_device_t *dev = texture->dev;
     int bpp;
     int byte_size;
     cg_pixel_format_t closest_format;
@@ -918,8 +921,10 @@ cg_texture_get_data(cg_texture_t *texture,
     if (data == NULL)
         return byte_size;
 
-    closest_format = ctx->texture_driver->find_best_gl_get_data_format(
-        ctx, format, &closest_gl_format, &closest_gl_type);
+    closest_format = dev->texture_driver->find_best_gl_get_data_format(dev,
+                                                                       format,
+                                                                       &closest_gl_format,
+                                                                       &closest_gl_type);
 
     /* We can assume that whatever data GL gives us will have the
        premult status of the original texture */
@@ -933,7 +938,7 @@ cg_texture_get_data(cg_texture_t *texture,
      * this case the driver will be faking the alpha textures with a
      * red-component texture and it won't swizzle to the correct format
      * while reading */
-    if (!_cg_has_private_feature(ctx, CG_PRIVATE_FEATURE_ALPHA_TEXTURES)) {
+    if (!_cg_has_private_feature(dev, CG_PRIVATE_FEATURE_ALPHA_TEXTURES)) {
         if (texture_format == CG_PIXEL_FORMAT_A_8) {
             closest_format = CG_PIXEL_FORMAT_A_8;
             closest_gl_format = GL_RED;
@@ -954,11 +959,13 @@ cg_texture_get_data(cg_texture_t *texture,
     /* Is the requested format supported? */
     if (closest_format == format)
         /* Target user data directly */
-        target_bmp = cg_bitmap_new_for_data(
-            ctx, tex_width, tex_height, format, rowstride, data);
+        target_bmp = cg_bitmap_new_for_data(dev, tex_width, tex_height,
+                                            format, rowstride, data);
     else {
-        target_bmp = _cg_bitmap_new_with_malloc_buffer(
-            ctx, tex_width, tex_height, closest_format, &ignore_error);
+        target_bmp = _cg_bitmap_new_with_malloc_buffer(dev, tex_width,
+                                                       tex_height,
+                                                       closest_format,
+                                                       &ignore_error);
         if (!target_bmp) {
             cg_error_free(ignore_error);
             return 0;
@@ -1017,8 +1024,8 @@ cg_texture_get_data(cg_texture_t *texture,
         cg_error_t *error = NULL;
 
         /* Convert to requested format directly into the user's buffer */
-        new_bmp = cg_bitmap_new_for_data(
-            ctx, tex_width, tex_height, format, rowstride, data);
+        new_bmp = cg_bitmap_new_for_data(dev, tex_width, tex_height, format,
+                                         rowstride, data);
         result = _cg_bitmap_convert_into_bitmap(target_bmp, new_bmp, &error);
 
         if (!result) {
@@ -1210,7 +1217,7 @@ cg_texture_allocate(cg_texture_t *texture, cg_error_t **error)
         return true;
 
     if (texture->components == CG_TEXTURE_COMPONENTS_RG &&
-        !cg_has_feature(texture->context, CG_FEATURE_ID_TEXTURE_RG))
+        !cg_has_feature(texture->dev, CG_FEATURE_ID_TEXTURE_RG))
         _cg_set_error(error,
                       CG_TEXTURE_ERROR,
                       CG_TEXTURE_ERROR_FORMAT,
@@ -1250,7 +1257,7 @@ _cg_texture_set_internal_format(cg_texture_t *texture,
 }
 
 cg_pixel_format_t
-_cg_texture_derive_format(cg_context_t *ctx,
+_cg_texture_derive_format(cg_device_t *dev,
                           cg_pixel_format_t src_format,
                           cg_texture_components_t components,
                           bool premultiplied)
@@ -1260,10 +1267,8 @@ _cg_texture_derive_format(cg_context_t *ctx,
         if (src_format & CG_DEPTH_BIT)
             return src_format;
         else {
-            if (_cg_has_private_feature(
-                    ctx, CG_PRIVATE_FEATURE_EXT_PACKED_DEPTH_STENCIL) ||
-                _cg_has_private_feature(
-                    ctx, CG_PRIVATE_FEATURE_OES_PACKED_DEPTH_STENCIL)) {
+            if (_cg_has_private_feature(dev, CG_PRIVATE_FEATURE_EXT_PACKED_DEPTH_STENCIL) ||
+                _cg_has_private_feature(dev, CG_PRIVATE_FEATURE_OES_PACKED_DEPTH_STENCIL)) {
                 return CG_PIXEL_FORMAT_DEPTH_24_STENCIL_8;
             } else
                 return CG_PIXEL_FORMAT_DEPTH_16;
@@ -1304,7 +1309,7 @@ cg_pixel_format_t
 _cg_texture_determine_internal_format(cg_texture_t *texture,
                                       cg_pixel_format_t src_format)
 {
-    return _cg_texture_derive_format(texture->context,
+    return _cg_texture_derive_format(texture->dev,
                                      src_format,
                                      texture->components,
                                      texture->premultiplied);

@@ -35,7 +35,7 @@
 #endif
 
 #include "cogl-sampler-cache-private.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-util-gl-private.h"
 
 #ifndef GL_TEXTURE_WRAP_R
@@ -43,7 +43,7 @@
 #endif
 
 struct _cg_sampler_cache_t {
-    cg_context_t *context;
+    cg_device_t *dev;
 
     /* The samplers are hashed in two tables. One is using the enum
        values that Cogl exposes (so it can include the 'automatic' wrap
@@ -168,13 +168,13 @@ hash_sampler_state_cogl(const void *key)
 }
 
 cg_sampler_cache_t *
-_cg_sampler_cache_new(cg_context_t *context)
+_cg_sampler_cache_new(cg_device_t *dev)
 {
     cg_sampler_cache_t *cache = c_new(cg_sampler_cache_t, 1);
 
     /* No reference is taken on the context because it would create a
        circular reference */
-    cache->context = context;
+    cache->dev = dev;
 
     cache->hash_table_gl =
         c_hash_table_new(hash_sampler_state_gl, sampler_state_equal_gl);
@@ -186,12 +186,12 @@ _cg_sampler_cache_new(cg_context_t *context)
 }
 
 static void
-set_wrap_mode(cg_context_t *context,
+set_wrap_mode(cg_device_t *dev,
               GLuint sampler_object,
               GLenum param,
               cg_sampler_cache_wrap_mode_t wrap_mode)
 {
-    GE(context, glSamplerParameteri(sampler_object, param, wrap_mode));
+    GE(dev, glSamplerParameteri(sampler_object, param, wrap_mode));
 }
 
 static cg_sampler_cache_entry_t *
@@ -203,32 +203,32 @@ _cg_sampler_cache_get_entry_gl(cg_sampler_cache_t *cache,
     entry = c_hash_table_lookup(cache->hash_table_gl, key);
 
     if (entry == NULL) {
-        cg_context_t *context = cache->context;
+        cg_device_t *dev = cache->dev;
 
         entry = c_slice_dup(cg_sampler_cache_entry_t, key);
 
-        if (_cg_has_private_feature(context,
+        if (_cg_has_private_feature(dev,
                                     CG_PRIVATE_FEATURE_SAMPLER_OBJECTS)) {
-            GE(context, glGenSamplers(1, &entry->sampler_object));
+            GE(dev, glGenSamplers(1, &entry->sampler_object));
 
-            GE(context,
+            GE(dev,
                glSamplerParameteri(entry->sampler_object,
                                    GL_TEXTURE_MIN_FILTER,
                                    entry->min_filter));
-            GE(context,
+            GE(dev,
                glSamplerParameteri(entry->sampler_object,
                                    GL_TEXTURE_MAG_FILTER,
                                    entry->mag_filter));
 
-            set_wrap_mode(context,
+            set_wrap_mode(dev,
                           entry->sampler_object,
                           GL_TEXTURE_WRAP_S,
                           entry->wrap_mode_s);
-            set_wrap_mode(context,
+            set_wrap_mode(dev,
                           entry->sampler_object,
                           GL_TEXTURE_WRAP_T,
                           entry->wrap_mode_t);
-            set_wrap_mode(context,
+            set_wrap_mode(dev,
                           entry->sampler_object,
                           GL_TEXTURE_WRAP_R,
                           entry->wrap_mode_p);
@@ -321,11 +321,11 @@ _cg_sampler_cache_update_filters(cg_sampler_cache_t *cache,
 static void
 hash_table_free_gl_cb(void *key, void *value, void *user_data)
 {
-    cg_context_t *context = user_data;
+    cg_device_t *dev = user_data;
     cg_sampler_cache_entry_t *entry = value;
 
-    if (_cg_has_private_feature(context, CG_PRIVATE_FEATURE_SAMPLER_OBJECTS))
-        GE(context, glDeleteSamplers(1, &entry->sampler_object));
+    if (_cg_has_private_feature(dev, CG_PRIVATE_FEATURE_SAMPLER_OBJECTS))
+        GE(dev, glDeleteSamplers(1, &entry->sampler_object));
 
     c_slice_free(cg_sampler_cache_entry_t, entry);
 }
@@ -342,12 +342,12 @@ void
 _cg_sampler_cache_free(cg_sampler_cache_t *cache)
 {
     c_hash_table_foreach(
-        cache->hash_table_gl, hash_table_free_gl_cb, cache->context);
+        cache->hash_table_gl, hash_table_free_gl_cb, cache->dev);
 
     c_hash_table_destroy(cache->hash_table_gl);
 
     c_hash_table_foreach(
-        cache->hash_table_cogl, hash_table_free_cg_cb, cache->context);
+        cache->hash_table_cogl, hash_table_free_cg_cb, cache->dev);
 
     c_hash_table_destroy(cache->hash_table_cogl);
 

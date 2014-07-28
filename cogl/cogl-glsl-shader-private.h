@@ -29,7 +29,7 @@
 #ifndef _CG_GLSL_SHADER_PRIVATE_H_
 #define _CG_GLSL_SHADER_PRIVATE_H_
 
-void _cg_glsl_shader_set_source_with_boilerplate(cg_context_t *ctx,
+void _cg_glsl_shader_set_source_with_boilerplate(cg_device_t *dev,
                                                  GLuint shader_gl_handle,
                                                  GLenum shader_gl_type,
                                                  GLsizei count_in,

@@ -31,7 +31,7 @@
 #ifndef __CG_DRIVER_H
 #define __CG_DRIVER_H
 
-#include "cogl-context.h"
+#include "cogl-device.h"
 #include "cogl-offscreen.h"
 #include "cogl-framebuffer-private.h"
 #include "cogl-attribute-private.h"
@@ -41,19 +41,19 @@ typedef struct _cg_driver_vtable_t cg_driver_vtable_t;
 struct _cg_driver_vtable_t {
     /* TODO: factor this out since this is OpenGL specific and
      * so can be ignored by non-OpenGL drivers. */
-    bool (*pixel_format_from_gl_internal)(cg_context_t *context,
+    bool (*pixel_format_from_gl_internal)(cg_device_t *dev,
                                           GLenum gl_int_format,
                                           cg_pixel_format_t *out_format);
 
     /* TODO: factor this out since this is OpenGL specific and
      * so can be ignored by non-OpenGL drivers. */
-    cg_pixel_format_t (*pixel_format_to_gl)(cg_context_t *context,
+    cg_pixel_format_t (*pixel_format_to_gl)(cg_device_t *dev,
                                             cg_pixel_format_t format,
                                             GLenum *out_glintformat,
                                             GLenum *out_glformat,
                                             GLenum *out_gltype);
 
-    bool (*update_features)(cg_context_t *context, cg_error_t **error);
+    bool (*update_features)(cg_device_t *dev, cg_error_t **error);
 
     bool (*offscreen_allocate)(cg_offscreen_t *offscreen, cg_error_t **error);
 
@@ -111,7 +111,7 @@ struct _cg_driver_vtable_t {
     /* Returns true if the driver can support creating a 2D texture with
      * the given geometry and specified internal format.
      */
-    bool (*texture_2d_can_create)(cg_context_t *ctx,
+    bool (*texture_2d_can_create)(cg_device_t *dev,
                                   int width,
                                   int height,
                                   cg_pixel_format_t internal_format);

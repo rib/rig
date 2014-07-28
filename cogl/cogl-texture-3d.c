@@ -40,7 +40,7 @@
 #include "cogl-texture-3d.h"
 #include "cogl-texture-gl-private.h"
 #include "cogl-texture-driver.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-object-private.h"
 #include "cogl-journal-private.h"
 #include "cogl-pipeline-private.h"
@@ -72,7 +72,7 @@ _cg_texture_3d_gl_flush_legacy_texobj_wrap_modes(cg_texture_t *tex,
                                                  GLenum wrap_mode_p)
 {
     cg_texture_3d_t *tex_3d = CG_TEXTURE_3D(tex);
-    cg_context_t *ctx = tex->context;
+    cg_device_t *dev = tex->dev;
 
     /* Only set the wrap mode if it's different from the current value
        to avoid too many GL calls. */
@@ -80,9 +80,12 @@ _cg_texture_3d_gl_flush_legacy_texobj_wrap_modes(cg_texture_t *tex,
         tex_3d->gl_legacy_texobj_wrap_mode_t != wrap_mode_t ||
         tex_3d->gl_legacy_texobj_wrap_mode_p != wrap_mode_p) {
         _cg_bind_gl_texture_transient(GL_TEXTURE_3D, tex_3d->gl_texture, false);
-        GE(ctx, glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, wrap_mode_s));
-        GE(ctx, glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, wrap_mode_t));
-        GE(ctx, glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, wrap_mode_p));
+        GE(dev,
+           glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, wrap_mode_s));
+        GE(dev,
+           glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, wrap_mode_t));
+        GE(dev,
+           glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, wrap_mode_p));
 
         tex_3d->gl_legacy_texobj_wrap_mode_s = wrap_mode_s;
         tex_3d->gl_legacy_texobj_wrap_mode_t = wrap_mode_t;
@@ -109,7 +112,7 @@ _cg_texture_3d_set_auto_mipmap(cg_texture_t *tex, bool value)
 }
 
 static cg_texture_3d_t *
-_cg_texture_3d_create_base(cg_context_t *ctx,
+_cg_texture_3d_create_base(cg_device_t *dev,
                            int width,
                            int height,
                            int depth,
@@ -120,7 +123,7 @@ _cg_texture_3d_create_base(cg_context_t *ctx,
     cg_texture_t *tex = CG_TEXTURE(tex_3d);
 
     _cg_texture_init(tex,
-                     ctx,
+                     dev,
                      width,
                      height,
                      internal_format,
@@ -146,7 +149,8 @@ _cg_texture_3d_create_base(cg_context_t *ctx,
 }
 
 cg_texture_3d_t *
-cg_texture_3d_new_with_size(cg_context_t *ctx, int width, int height, int depth)
+cg_texture_3d_new_with_size(cg_device_t *dev, int width, int height,
+                            int depth)
 {
     cg_texture_loader_t *loader = _cg_texture_create_loader();
     loader->src_type = CG_TEXTURE_SOURCE_TYPE_SIZED;
@@ -154,8 +158,8 @@ cg_texture_3d_new_with_size(cg_context_t *ctx, int width, int height, int depth)
     loader->src.sized.height = height;
     loader->src.sized.depth = depth;
 
-    return _cg_texture_3d_create_base(
-        ctx, width, height, depth, CG_PIXEL_FORMAT_RGBA_8888_PRE, loader);
+    return _cg_texture_3d_create_base(dev, width, height, depth,
+                                      CG_PIXEL_FORMAT_RGBA_8888_PRE, loader);
 }
 
 cg_texture_3d_t *
@@ -181,7 +185,7 @@ cg_texture_3d_new_from_bitmap(cg_bitmap_t *bmp, int height, int depth)
 }
 
 cg_texture_3d_t *
-cg_texture_3d_new_from_data(cg_context_t *context,
+cg_texture_3d_new_from_data(cg_device_t *dev,
                             int width,
                             int height,
                             int depth,
@@ -216,8 +220,9 @@ cg_texture_3d_new_from_data(cg_context_t *context,
         int bmp_rowstride;
         int z, y;
 
-        bitmap = _cg_bitmap_new_with_malloc_buffer(
-            context, width, depth * height, format, error);
+        bitmap = _cg_bitmap_new_with_malloc_buffer(dev, width,
+                                                   depth * height, format,
+                                                   error);
         if (!bitmap)
             return NULL;
 
@@ -241,7 +246,7 @@ cg_texture_3d_new_from_data(cg_context_t *context,
 
         _cg_bitmap_unmap(bitmap);
     } else
-        bitmap = cg_bitmap_new_for_data(context,
+        bitmap = cg_bitmap_new_for_data(dev,
                                         width,
                                         image_stride / rowstride * depth,
                                         format,
@@ -261,7 +266,7 @@ cg_texture_3d_new_from_data(cg_context_t *context,
 }
 
 static bool
-_cg_texture_3d_can_create(cg_context_t *ctx,
+_cg_texture_3d_can_create(cg_device_t *dev,
                           int width,
                           int height,
                           int depth,
@@ -272,7 +277,7 @@ _cg_texture_3d_can_create(cg_context_t *ctx,
     GLenum gl_type;
 
     /* This should only happen on GLES */
-    if (!cg_has_feature(ctx, CG_FEATURE_ID_TEXTURE_3D)) {
+    if (!cg_has_feature(dev, CG_FEATURE_ID_TEXTURE_3D)) {
         _cg_set_error(error,
                       CG_SYSTEM_ERROR,
                       CG_SYSTEM_ERROR_UNSUPPORTED,
@@ -282,7 +287,7 @@ _cg_texture_3d_can_create(cg_context_t *ctx,
 
     /* If NPOT textures aren't supported then the size must be a power
        of two */
-    if (!cg_has_feature(ctx, CG_FEATURE_ID_TEXTURE_NPOT) &&
+    if (!cg_has_feature(dev, CG_FEATURE_ID_TEXTURE_NPOT) &&
         (!_cg_util_is_pot(width) || !_cg_util_is_pot(height) ||
          !_cg_util_is_pot(depth))) {
         _cg_set_error(error,
@@ -293,12 +298,11 @@ _cg_texture_3d_can_create(cg_context_t *ctx,
         return false;
     }
 
-    ctx->driver_vtable->pixel_format_to_gl(
-        ctx, internal_format, &gl_intformat, NULL, &gl_type);
+    dev->driver_vtable->pixel_format_to_gl(dev, internal_format,
+                                           &gl_intformat, NULL, &gl_type);
 
     /* Check that the driver can create a texture with that size */
-    if (!ctx->texture_driver->size_supported_3d(
-            ctx, GL_TEXTURE_3D, gl_intformat, gl_type, width, height, depth)) {
+    if (!dev->texture_driver->size_supported_3d(dev, GL_TEXTURE_3D, gl_intformat, gl_type, width, height, depth)) {
         _cg_set_error(error,
                       CG_SYSTEM_ERROR,
                       CG_SYSTEM_ERROR_UNSUPPORTED,
@@ -315,7 +319,7 @@ allocate_with_size(cg_texture_3d_t *tex_3d,
                    cg_error_t **error)
 {
     cg_texture_t *tex = CG_TEXTURE(tex_3d);
-    cg_context_t *ctx = tex->context;
+    cg_device_t *dev = tex->dev;
     cg_pixel_format_t internal_format;
     int width = loader->src.sized.width;
     int height = loader->src.sized.height;
@@ -329,20 +333,21 @@ allocate_with_size(cg_texture_3d_t *tex_3d,
     internal_format =
         _cg_texture_determine_internal_format(tex, CG_PIXEL_FORMAT_ANY);
 
-    if (!_cg_texture_3d_can_create(
-            ctx, width, height, depth, internal_format, error))
+    if (!_cg_texture_3d_can_create(dev, width, height, depth, internal_format, error))
         return false;
 
-    ctx->driver_vtable->pixel_format_to_gl(
-        ctx, internal_format, &gl_intformat, &gl_format, &gl_type);
+    dev->driver_vtable->pixel_format_to_gl(dev, internal_format,
+                                           &gl_intformat, &gl_format,
+                                           &gl_type);
 
-    gl_texture = ctx->texture_driver->gen(ctx, GL_TEXTURE_3D, internal_format);
+    gl_texture = dev->texture_driver->gen(dev, GL_TEXTURE_3D,
+                                          internal_format);
     _cg_bind_gl_texture_transient(GL_TEXTURE_3D, gl_texture, false);
     /* Clear any GL errors */
-    while ((gl_error = ctx->glGetError()) != GL_NO_ERROR)
+    while ((gl_error = dev->glGetError()) != GL_NO_ERROR)
         ;
 
-    ctx->glTexImage3D(GL_TEXTURE_3D,
+    dev->glTexImage3D(GL_TEXTURE_3D,
                       0,
                       gl_intformat,
                       width,
@@ -353,8 +358,8 @@ allocate_with_size(cg_texture_3d_t *tex_3d,
                       gl_type,
                       NULL);
 
-    if (_cg_gl_util_catch_out_of_memory(ctx, error)) {
-        GE(ctx, glDeleteTextures(1, &gl_texture));
+    if (_cg_gl_util_catch_out_of_memory(dev, error)) {
+        GE(dev, glDeleteTextures(1, &gl_texture));
         return false;
     }
 
@@ -376,7 +381,7 @@ allocate_from_bitmap(cg_texture_3d_t *tex_3d,
                      cg_error_t **error)
 {
     cg_texture_t *tex = CG_TEXTURE(tex_3d);
-    cg_context_t *ctx = tex->context;
+    cg_device_t *dev = tex->dev;
     cg_pixel_format_t internal_format;
     cg_bitmap_t *bmp = loader->src.bitmap.bitmap;
     int bmp_width = cg_bitmap_get_width(bmp);
@@ -392,8 +397,7 @@ allocate_from_bitmap(cg_texture_3d_t *tex_3d,
 
     internal_format = _cg_texture_determine_internal_format(tex, bmp_format);
 
-    if (!_cg_texture_3d_can_create(
-            ctx, bmp_width, height, depth, internal_format, error))
+    if (!_cg_texture_3d_can_create(dev, bmp_width, height, depth, internal_format, error))
         return false;
 
     upload_bmp = _cg_bitmap_convert_for_upload(
@@ -403,17 +407,17 @@ allocate_from_bitmap(cg_texture_3d_t *tex_3d,
 
     upload_format = cg_bitmap_get_format(upload_bmp);
 
-    ctx->driver_vtable->pixel_format_to_gl(ctx,
+    dev->driver_vtable->pixel_format_to_gl(dev,
                                            upload_format,
                                            NULL, /* internal format */
                                            &gl_format,
                                            &gl_type);
-    ctx->driver_vtable->pixel_format_to_gl(
-        ctx, internal_format, &gl_intformat, NULL, NULL);
+    dev->driver_vtable->pixel_format_to_gl(dev, internal_format,
+                                           &gl_intformat, NULL, NULL);
 
     /* Keep a copy of the first pixel so that if glGenerateMipmap isn't
        supported we can fallback to using GL_GENERATE_MIPMAP */
-    if (!cg_has_feature(ctx, CG_FEATURE_ID_OFFSCREEN)) {
+    if (!cg_has_feature(dev, CG_FEATURE_ID_OFFSCREEN)) {
         cg_error_t *ignore = NULL;
         uint8_t *data =
             _cg_bitmap_map(upload_bmp, CG_BUFFER_ACCESS_READ, 0, &ignore);
@@ -437,9 +441,9 @@ allocate_from_bitmap(cg_texture_3d_t *tex_3d,
     }
 
     tex_3d->gl_texture =
-        ctx->texture_driver->gen(ctx, GL_TEXTURE_3D, internal_format);
+        dev->texture_driver->gen(dev, GL_TEXTURE_3D, internal_format);
 
-    if (!ctx->texture_driver->upload_to_gl_3d(ctx,
+    if (!dev->texture_driver->upload_to_gl_3d(dev,
                                               GL_TEXTURE_3D,
                                               tex_3d->gl_texture,
                                               false, /* is_foreign */
@@ -546,7 +550,7 @@ _cg_texture_3d_gl_flush_legacy_texobj_filters(cg_texture_t *tex,
                                               GLenum mag_filter)
 {
     cg_texture_3d_t *tex_3d = CG_TEXTURE_3D(tex);
-    cg_context_t *ctx = tex->context;
+    cg_device_t *dev = tex->dev;
 
     if (min_filter == tex_3d->gl_legacy_texobj_min_filter &&
         mag_filter == tex_3d->gl_legacy_texobj_mag_filter)
@@ -558,8 +562,8 @@ _cg_texture_3d_gl_flush_legacy_texobj_filters(cg_texture_t *tex,
 
     /* Apply new filters to the texture */
     _cg_bind_gl_texture_transient(GL_TEXTURE_3D, tex_3d->gl_texture, false);
-    GE(ctx, glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, mag_filter));
-    GE(ctx, glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, min_filter));
+    GE(dev, glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, mag_filter));
+    GE(dev, glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, min_filter));
 }
 
 static void
@@ -567,7 +571,7 @@ _cg_texture_3d_pre_paint(cg_texture_t *tex,
                          cg_texture_pre_paint_flags_t flags)
 {
     cg_texture_3d_t *tex_3d = CG_TEXTURE_3D(tex);
-    cg_context_t *ctx = tex->context;
+    cg_device_t *dev = tex->dev;
 
     /* Only update if the mipmaps are dirty */
     if ((flags & CG_TEXTURE_NEEDS_MIPMAP) && tex_3d->auto_mipmap &&
@@ -575,7 +579,7 @@ _cg_texture_3d_pre_paint(cg_texture_t *tex,
         /* glGenerateMipmap is defined in the FBO extension. If it's not
            available we'll fallback to temporarily enabling
            GL_GENERATE_MIPMAP and reuploading the first pixel */
-        if (cg_has_feature(ctx, CG_FEATURE_ID_OFFSCREEN))
+        if (cg_has_feature(dev, CG_FEATURE_ID_OFFSCREEN))
             _cg_texture_gl_generate_mipmaps(tex);
 
         tex_3d->mipmaps_dirty = false;

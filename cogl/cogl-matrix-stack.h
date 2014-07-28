@@ -40,7 +40,7 @@
 #endif
 
 #include "cogl-matrix.h"
-#include "cogl-context.h"
+#include "cogl-device.h"
 
 /**
  * SECTION:cogl-matrix-stack
@@ -171,7 +171,7 @@ typedef struct _cg_matrix_entry_t cg_matrix_entry_t;
 
 /**
  * cg_matrix_stack_new:
- * @ctx: A #cg_context_t
+ * @dev: A #cg_device_t
  *
  * Allocates a new #cg_matrix_stack_t that can be used to build up
  * transformations relating to objects in a scenegraph like hierarchy.
@@ -197,7 +197,7 @@ typedef struct _cg_matrix_entry_t cg_matrix_entry_t;
  *
  * Return value: (transfer full): A newly allocated #cg_matrix_stack_t
  */
-cg_matrix_stack_t *cg_matrix_stack_new(cg_context_t *ctx);
+cg_matrix_stack_t *cg_matrix_stack_new(cg_device_t *dev);
 
 /**
  * cg_matrix_stack_push:

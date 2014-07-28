@@ -35,7 +35,7 @@
 #include "config.h"
 #endif
 
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-pipeline-private.h"
 #include "cogl-pipeline-layer-private.h"
 #include "cogl-node-private.h"
@@ -263,9 +263,9 @@ _cg_debug_dump_pipelines_dot_file(const char *filename)
     int layer_id = 0;
     int pipeline_id = 0;
 
-    _CG_GET_CONTEXT(ctx, NO_RETVAL);
+    _CG_GET_DEVICE(dev, NO_RETVAL);
 
-    if (!ctx->default_pipeline)
+    if (!dev->default_pipeline)
         return;
 
     graph = c_string_new("");
@@ -275,13 +275,13 @@ _cg_debug_dump_pipelines_dot_file(const char *filename)
     layer_state.parent_id = -1;
     layer_state.node_id_ptr = &layer_id;
     layer_state.indent = 0;
-    dump_layer_cb((cg_node_t *)ctx->default_layer_0, &layer_state);
+    dump_layer_cb((cg_node_t *)dev->default_layer_0, &layer_state);
 
     pipeline_state.graph = graph;
     pipeline_state.parent_id = -1;
     pipeline_state.node_id_ptr = &pipeline_id;
     pipeline_state.indent = 0;
-    dump_pipeline_cb((cg_node_t *)ctx->default_pipeline, &pipeline_state);
+    dump_pipeline_cb((cg_node_t *)dev->default_pipeline, &pipeline_state);
 
     c_string_append_printf(graph, "}\n");
 

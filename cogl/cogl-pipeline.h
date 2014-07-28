@@ -41,7 +41,7 @@
 typedef struct _cg_pipeline_t cg_pipeline_t;
 
 #include <cogl/cogl-types.h>
-#include <cogl/cogl-context.h>
+#include <cogl/cogl-device.h>
 #include <cogl/cogl-snippet.h>
 
 CG_BEGIN_DECLS
@@ -64,7 +64,7 @@ CG_BEGIN_DECLS
 
 /**
  * cg_pipeline_new:
- * @context: a #cg_context_t
+ * @dev: A #cg_device_t
  *
  * Allocates and initializes a default simple pipeline that will color
  * a primitive white.
@@ -73,7 +73,7 @@ CG_BEGIN_DECLS
  *
  * Stability: Unstable
  */
-cg_pipeline_t *cg_pipeline_new(cg_context_t *context);
+cg_pipeline_t *cg_pipeline_new(cg_device_t *dev);
 
 /**
  * cg_pipeline_copy:

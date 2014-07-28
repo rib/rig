@@ -35,12 +35,12 @@
 #define _CG_TEXTURE_2D_GL_PRIVATE_H_
 
 #include "cogl-types.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-texture.h"
 
 void _cg_texture_2d_gl_free(cg_texture_2d_t *tex_2d);
 
-bool _cg_texture_2d_gl_can_create(cg_context_t *ctx,
+bool _cg_texture_2d_gl_can_create(cg_device_t *dev,
                                   int width,
                                   int height,
                                   cg_pixel_format_t internal_format);
@@ -56,7 +56,7 @@ _cg_texture_2d_gl_new_from_bitmap(cg_bitmap_t *bmp,
                                   cg_error_t **error);
 
 #if defined(CG_HAS_EGL_SUPPORT) && defined(EGL_KHR_image_base)
-cg_texture_2d_t *_cg_egl_texture_2d_gl_new_from_image(cg_context_t *ctx,
+cg_texture_2d_t *_cg_egl_texture_2d_gl_new_from_image(cg_device_t *dev,
                                                       int width,
                                                       int height,
                                                       cg_pixel_format_t format,

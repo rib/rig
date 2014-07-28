@@ -42,7 +42,7 @@
 #include "cogl-gles2.h"
 #include "cogl-gles2-context-private.h"
 
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-display-private.h"
 #include "cogl-framebuffer-private.h"
 #include "cogl-framebuffer-gl-private.h"
@@ -254,7 +254,7 @@ copy_flipped_texture(cg_gles2_context_t *gles2_ctx,
 {
     GLuint tex_id = get_current_texture_2d_object(gles2_ctx);
     cg_gles2_texture_object_data_t *tex_object_data;
-    cg_context_t *ctx;
+    cg_device_t *dev;
     const cg_winsys_vtable_t *winsys;
     cg_texture_2d_t *dst_texture;
     cg_pixel_format_t internal_format;
@@ -286,21 +286,21 @@ copy_flipped_texture(cg_gles2_context_t *gles2_ctx,
         return;
     }
 
-    ctx = gles2_ctx->context;
-    winsys = ctx->display->renderer->winsys_vtable;
+    dev = gles2_ctx->dev;
+    winsys = dev->display->renderer->winsys_vtable;
 
     /* We need to make sure the rendering on the GLES2 context is
      * complete before the blit will be ready in the GLES2 context */
-    ctx->glFinish();
+    dev->glFinish();
     /* We need to force Cogl to rebind the texture because according to
      * the GL spec a shared texture isn't guaranteed to be updated until
      * is rebound */
     _cg_get_texture_unit(0)->dirty_gl_texture = true;
 
     /* Temporarily switch back to the Cogl context */
-    winsys->restore_context(ctx);
+    winsys->restore_context(dev);
 
-    dst_texture = cg_gles2_texture_2d_new_from_handle(gles2_ctx->context,
+    dst_texture = cg_gles2_texture_2d_new_from_handle(gles2_ctx->dev,
                                                       gles2_ctx,
                                                       tex_id,
                                                       tex_object_data->width,
@@ -310,7 +310,7 @@ copy_flipped_texture(cg_gles2_context_t *gles2_ctx,
     if (dst_texture) {
         cg_texture_t *src_texture =
             CG_OFFSCREEN(gles2_ctx->read_buffer)->texture;
-        cg_pipeline_t *pipeline = cg_pipeline_new(ctx);
+        cg_pipeline_t *pipeline = cg_pipeline_new(dev);
         const cg_offscreen_flags_t flags =
             CG_OFFSCREEN_DISABLE_DEPTH_AND_STENCIL;
         cg_offscreen_t *offscreen = _cg_offscreen_new_with_texture_full(
@@ -355,7 +355,7 @@ copy_flipped_texture(cg_gles2_context_t *gles2_ctx,
 
         /* We need to make sure the rendering is complete before the
          * blit will be ready in the GLES2 context */
-        ctx->glFinish();
+        dev->glFinish();
 
         cg_object_unref(pipeline);
         cg_object_unref(dst_texture);
@@ -387,7 +387,7 @@ gl_bind_framebuffer_wrapper(GLenum target, GLuint framebuffer)
         framebuffer = write->gl_framebuffer.fbo_handle;
     }
 
-    gles2_ctx->context->glBindFramebuffer(target, framebuffer);
+    gles2_ctx->dev->glBindFramebuffer(target, framebuffer);
 
     update_current_flip_state(gles2_ctx);
 }
@@ -400,7 +400,7 @@ transient_bind_read_buffer(cg_gles2_context_t *gles2_ctx)
             cg_gles2_offscreen_t *read = gles2_ctx->gles2_read_buffer;
             GLuint read_fbo_handle = read->gl_framebuffer.fbo_handle;
 
-            gles2_ctx->context->glBindFramebuffer(GL_FRAMEBUFFER,
+            gles2_ctx->dev->glBindFramebuffer(GL_FRAMEBUFFER,
                                                   read_fbo_handle);
 
             return RESTORE_FB_FROM_OFFSCREEN;
@@ -457,7 +457,7 @@ gl_read_pixels_wrapper(GLint x,
     cg_gles2_context_t *gles2_ctx = current_gles2_context;
     int restore_mode = transient_bind_read_buffer(gles2_ctx);
 
-    gles2_ctx->context->glReadPixels(x, y, width, height, format, type, pixels);
+    gles2_ctx->dev->glReadPixels(x, y, width, height, format, type, pixels);
 
     restore_write_buffer(gles2_ctx, restore_mode);
 
@@ -586,7 +586,7 @@ gl_copy_tex_image_2d_wrapper(GLenum target,
     } else {
         int restore_mode = transient_bind_read_buffer(gles2_ctx);
 
-        gles2_ctx->context->glCopyTexImage2D(
+        gles2_ctx->dev->glCopyTexImage2D(
             target, level, internal_format, x, y, width, height, border);
 
         restore_write_buffer(gles2_ctx, restore_mode);
@@ -631,7 +631,7 @@ gl_copy_tex_sub_image_2d_wrapper(GLenum target,
     } else {
         int restore_mode = transient_bind_read_buffer(gles2_ctx);
 
-        gles2_ctx->context->glCopyTexSubImage2D(
+        gles2_ctx->dev->glCopyTexSubImage2D(
             target, level, xoffset, yoffset, x, y, width, height);
 
         restore_write_buffer(gles2_ctx, restore_mode);
@@ -644,7 +644,7 @@ gl_create_shader_wrapper(GLenum type)
     cg_gles2_context_t *gles2_ctx = current_gles2_context;
     GLuint id;
 
-    id = gles2_ctx->context->glCreateShader(type);
+    id = gles2_ctx->dev->glCreateShader(type);
 
     if (id != 0) {
         cg_gles2_shader_data_t *data = c_slice_new(cg_gles2_shader_data_t);
@@ -673,7 +673,7 @@ gl_delete_shader_wrapper(GLuint shader)
         shader_data_unref(gles2_ctx, shader_data);
     }
 
-    gles2_ctx->context->glDeleteShader(shader);
+    gles2_ctx->dev->glDeleteShader(shader);
 }
 
 static GLuint
@@ -682,7 +682,7 @@ gl_create_program_wrapper(void)
     cg_gles2_context_t *gles2_ctx = current_gles2_context;
     GLuint id;
 
-    id = gles2_ctx->context->glCreateProgram();
+    id = gles2_ctx->dev->glCreateProgram();
 
     if (id != 0) {
         cg_gles2_program_data_t *data = c_slice_new(cg_gles2_program_data_t);
@@ -714,7 +714,7 @@ gl_delete_program_wrapper(GLuint program)
         program_data_unref(program_data);
     }
 
-    gles2_ctx->context->glDeleteProgram(program);
+    gles2_ctx->dev->glDeleteProgram(program);
 }
 
 static void
@@ -733,7 +733,7 @@ gl_use_program_wrapper(GLuint program)
 
     gles2_ctx->current_program = program_data;
 
-    gles2_ctx->context->glUseProgram(program);
+    gles2_ctx->dev->glUseProgram(program);
 }
 
 static void
@@ -754,7 +754,7 @@ gl_attach_shader_wrapper(GLuint program, GLuint shader)
             c_list_prepend(program_data->attached_shaders, shader_data);
     }
 
-    gles2_ctx->context->glAttachShader(program, shader);
+    gles2_ctx->dev->glAttachShader(program, shader);
 }
 
 static void
@@ -770,7 +770,7 @@ gl_detach_shader_wrapper(GLuint program, GLuint shader)
                                            GINT_TO_POINTER(shader))))
         detach_shader(program_data, shader_data);
 
-    gles2_ctx->context->glDetachShader(program, shader);
+    gles2_ctx->dev->glDetachShader(program, shader);
 }
 
 static void
@@ -814,7 +814,7 @@ gl_shader_source_wrapper(GLuint shader,
         string_copy[count] = (char *)main_wrapper_function;
         length_copy[count] = sizeof(main_wrapper_function) - 1;
 
-        gles2_ctx->context->glShaderSource(
+        gles2_ctx->dev->glShaderSource(
             shader, count + 1, (const char * const *)string_copy, length_copy);
 
         /* Note: we don't need to free the last entry in string_copy[]
@@ -822,7 +822,7 @@ gl_shader_source_wrapper(GLuint shader,
         for (i = 0; i < count; i++)
             c_free(string_copy[i]);
     } else
-        gles2_ctx->context->glShaderSource(shader, count, string, length);
+        gles2_ctx->dev->glShaderSource(shader, count, string, length);
 }
 
 static void
@@ -835,7 +835,7 @@ gl_get_shader_source_wrapper(GLuint shader,
     cg_gles2_shader_data_t *shader_data;
     GLsizei length;
 
-    gles2_ctx->context->glGetShaderSource(shader, buf_size, &length, source);
+    gles2_ctx->dev->glGetShaderSource(shader, buf_size, &length, source);
 
     if ((shader_data = c_hash_table_lookup(gles2_ctx->shader_map,
                                            GINT_TO_POINTER(shader))) &&
@@ -869,7 +869,7 @@ gl_link_program_wrapper(GLuint program)
     cg_gles2_context_t *gles2_ctx = current_gles2_context;
     cg_gles2_program_data_t *program_data;
 
-    gles2_ctx->context->glLinkProgram(program);
+    gles2_ctx->dev->glLinkProgram(program);
 
     program_data =
         c_hash_table_lookup(gles2_ctx->program_map, GINT_TO_POINTER(program));
@@ -877,11 +877,11 @@ gl_link_program_wrapper(GLuint program)
     if (program_data) {
         GLint status;
 
-        gles2_ctx->context->glGetProgramiv(program, GL_LINK_STATUS, &status);
+        gles2_ctx->dev->glGetProgramiv(program, GL_LINK_STATUS, &status);
 
         if (status)
             program_data->flip_vector_location =
-                gles2_ctx->context->glGetUniformLocation(
+                gles2_ctx->dev->glGetUniformLocation(
                     program, MAIN_WRAPPER_FLIP_UNIFORM);
     }
 }
@@ -891,7 +891,7 @@ gl_get_program_iv_wrapper(GLuint program, GLenum pname, GLint *params)
 {
     cg_gles2_context_t *gles2_ctx = current_gles2_context;
 
-    gles2_ctx->context->glGetProgramiv(program, pname, params);
+    gles2_ctx->dev->glGetProgramiv(program, pname, params);
 
     switch (pname) {
     case GL_ATTACHED_SHADERS:
@@ -921,7 +921,7 @@ flush_viewport_state(cg_gles2_context_t *gles2_ctx)
         } else
             y = gles2_ctx->viewport[1];
 
-        gles2_ctx->context->glViewport(gles2_ctx->viewport[0],
+        gles2_ctx->dev->glViewport(gles2_ctx->viewport[0],
                                        y,
                                        gles2_ctx->viewport[2],
                                        gles2_ctx->viewport[3]);
@@ -943,7 +943,7 @@ flush_scissor_state(cg_gles2_context_t *gles2_ctx)
         } else
             y = gles2_ctx->scissor[1];
 
-        gles2_ctx->context->glScissor(gles2_ctx->scissor[0],
+        gles2_ctx->dev->glScissor(gles2_ctx->scissor[0],
                                       y,
                                       gles2_ctx->scissor[2],
                                       gles2_ctx->scissor[3]);
@@ -966,7 +966,7 @@ flush_front_face_state(cg_gles2_context_t *gles2_ctx)
         } else
             front_face = gles2_ctx->front_face;
 
-        gles2_ctx->context->glFrontFace(front_face);
+        gles2_ctx->dev->glFrontFace(front_face);
 
         gles2_ctx->front_face_dirty = false;
     }
@@ -995,7 +995,7 @@ pre_draw_wrapper(cg_gles2_context_t *gles2_ctx)
         if (gles2_ctx->current_flip_state == CG_GLES2_FLIP_STATE_FLIPPED)
             value[1] = -1.0f;
 
-        gles2_ctx->context->glUniform4fv(location, 1, value);
+        gles2_ctx->dev->glUniform4fv(location, 1, value);
 
         gles2_ctx->current_program->flip_vector_state =
             gles2_ctx->current_flip_state;
@@ -1011,7 +1011,7 @@ gl_clear_wrapper(GLbitfield mask)
      * that's flushed */
     flush_scissor_state(gles2_ctx);
 
-    gles2_ctx->context->glClear(mask);
+    gles2_ctx->dev->glClear(mask);
 }
 
 static void
@@ -1024,7 +1024,7 @@ gl_draw_elements_wrapper(GLenum mode,
 
     pre_draw_wrapper(gles2_ctx);
 
-    gles2_ctx->context->glDrawElements(mode, count, type, indices);
+    gles2_ctx->dev->glDrawElements(mode, count, type, indices);
 }
 
 static void
@@ -1034,7 +1034,7 @@ gl_draw_arrays_wrapper(GLenum mode, GLint first, GLsizei count)
 
     pre_draw_wrapper(gles2_ctx);
 
-    gles2_ctx->context->glDrawArrays(mode, first, count);
+    gles2_ctx->dev->glDrawArrays(mode, first, count);
 }
 
 static void
@@ -1046,7 +1046,7 @@ gl_get_program_info_log_wrapper(GLuint program,
     cg_gles2_context_t *gles2_ctx = current_gles2_context;
     GLsizei length;
 
-    gles2_ctx->context->glGetProgramInfoLog(
+    gles2_ctx->dev->glGetProgramInfoLog(
         program, buf_size, &length, info_log);
 
     replace_token(
@@ -1065,7 +1065,7 @@ gl_get_shader_info_log_wrapper(GLuint shader,
     cg_gles2_context_t *gles2_ctx = current_gles2_context;
     GLsizei length;
 
-    gles2_ctx->context->glGetShaderInfoLog(shader, buf_size, &length, info_log);
+    gles2_ctx->dev->glGetShaderInfoLog(shader, buf_size, &length, info_log);
 
     replace_token(
         info_log, MAIN_WRAPPER_REPLACEMENT_NAME, "main", MIN(length, buf_size));
@@ -1082,7 +1082,7 @@ gl_front_face_wrapper(GLenum mode)
     /* If the mode doesn't make any sense then we'll just let the
      * context deal with it directly so that it will throw an error */
     if (mode != GL_CW && mode != GL_CCW)
-        gles2_ctx->context->glFrontFace(mode);
+        gles2_ctx->dev->glFrontFace(mode);
     else {
         gles2_ctx->front_face = mode;
         gles2_ctx->front_face_dirty = true;
@@ -1097,7 +1097,7 @@ gl_viewport_wrapper(GLint x, GLint y, GLsizei width, GLsizei height)
     /* If the viewport is invalid then we'll just let the context deal
      * with it directly so that it will throw an error */
     if (width < 0 || height < 0)
-        gles2_ctx->context->glViewport(x, y, width, height);
+        gles2_ctx->dev->glViewport(x, y, width, height);
     else {
         gles2_ctx->viewport[0] = x;
         gles2_ctx->viewport[1] = y;
@@ -1115,7 +1115,7 @@ gl_scissor_wrapper(GLint x, GLint y, GLsizei width, GLsizei height)
     /* If the scissor is invalid then we'll just let the context deal
      * with it directly so that it will throw an error */
     if (width < 0 || height < 0)
-        gles2_ctx->context->glScissor(x, y, width, height);
+        gles2_ctx->dev->glScissor(x, y, width, height);
     else {
         gles2_ctx->scissor[0] = x;
         gles2_ctx->scissor[1] = y;
@@ -1146,7 +1146,7 @@ gl_get_boolean_v_wrapper(GLenum pname, GLboolean *params)
     } break;
 
     default:
-        gles2_ctx->context->glGetBooleanv(pname, params);
+        gles2_ctx->dev->glGetBooleanv(pname, params);
     }
 }
 
@@ -1175,7 +1175,7 @@ gl_get_integer_v_wrapper(GLenum pname, GLint *params)
         break;
 
     default:
-        gles2_ctx->context->glGetIntegerv(pname, params);
+        gles2_ctx->dev->glGetIntegerv(pname, params);
     }
 }
 
@@ -1204,7 +1204,7 @@ gl_get_float_v_wrapper(GLenum pname, GLfloat *params)
         break;
 
     default:
-        gles2_ctx->context->glGetFloatv(pname, params);
+        gles2_ctx->dev->glGetFloatv(pname, params);
     }
 }
 
@@ -1213,7 +1213,7 @@ gl_pixel_store_i_wrapper(GLenum pname, GLint param)
 {
     cg_gles2_context_t *gles2_ctx = current_gles2_context;
 
-    gles2_ctx->context->glPixelStorei(pname, param);
+    gles2_ctx->dev->glPixelStorei(pname, param);
 
     if (pname == GL_PACK_ALIGNMENT &&
         (param == 1 || param == 2 || param == 4 || param == 8))
@@ -1226,7 +1226,7 @@ gl_active_texture_wrapper(GLenum texture)
     cg_gles2_context_t *gles2_ctx = current_gles2_context;
     int texture_unit;
 
-    gles2_ctx->context->glActiveTexture(texture);
+    gles2_ctx->dev->glActiveTexture(texture);
 
     texture_unit = texture - GL_TEXTURE0;
 
@@ -1247,7 +1247,7 @@ gl_delete_textures_wrapper(GLsizei n, const GLuint *textures)
     int texture_index;
     int texture_unit;
 
-    gles2_ctx->context->glDeleteTextures(n, textures);
+    gles2_ctx->dev->glDeleteTextures(n, textures);
 
     for (texture_index = 0; texture_index < n; texture_index++) {
         /* Reset any texture units that have any of these textures bound */
@@ -1275,7 +1275,7 @@ gl_bind_texture_wrapper(GLenum target, GLuint texture)
 {
     cg_gles2_context_t *gles2_ctx = current_gles2_context;
 
-    gles2_ctx->context->glBindTexture(target, texture);
+    gles2_ctx->dev->glBindTexture(target, texture);
 
     if (target == GL_TEXTURE_2D) {
         cg_gles2_texture_unit_data_t *unit =
@@ -1299,7 +1299,7 @@ gl_tex_image_2d_wrapper(GLenum target,
 {
     cg_gles2_context_t *gles2_ctx = current_gles2_context;
 
-    gles2_ctx->context->glTexImage2D(target,
+    gles2_ctx->dev->glTexImage2D(target,
                                      level,
                                      internal_format,
                                      width,
@@ -1325,7 +1325,7 @@ force_delete_program_object(cg_gles2_context_t *context,
                             cg_gles2_program_data_t *program_data)
 {
     if (!program_data->deleted) {
-        context->context->glDeleteProgram(program_data->object_id);
+        context->dev->glDeleteProgram(program_data->object_id);
         program_data->deleted = true;
         program_data_unref(program_data);
     }
@@ -1336,7 +1336,7 @@ force_delete_shader_object(cg_gles2_context_t *context,
                            cg_gles2_shader_data_t *shader_data)
 {
     if (!shader_data->deleted) {
-        context->context->glDeleteShader(shader_data->object_id);
+        context->dev->glDeleteShader(shader_data->object_id);
         shader_data->deleted = true;
         shader_data_unref(context, shader_data);
     }
@@ -1346,13 +1346,13 @@ static void
 force_delete_texture_object(cg_gles2_context_t *context,
                             cg_gles2_texture_object_data_t *texture_data)
 {
-    context->context->glDeleteTextures(1, &texture_data->object_id);
+    context->dev->glDeleteTextures(1, &texture_data->object_id);
 }
 
 static void
 _cg_gles2_context_free(cg_gles2_context_t *gles2_context)
 {
-    cg_context_t *ctx = gles2_context->context;
+    cg_device_t *dev = gles2_context->dev;
     const cg_winsys_vtable_t *winsys;
     c_list_t *objects, *l;
 
@@ -1389,7 +1389,7 @@ _cg_gles2_context_free(cg_gles2_context_t *gles2_context)
     c_hash_table_destroy(gles2_context->texture_object_map);
     c_array_free(gles2_context->texture_units, true);
 
-    winsys = ctx->display->renderer->winsys_vtable;
+    winsys = dev->display->renderer->winsys_vtable;
     winsys->destroy_gles2_context(gles2_context);
 
     while (!_cg_list_empty(&gles2_context->foreign_offscreens)) {
@@ -1431,12 +1431,12 @@ free_texture_object_data(cg_gles2_texture_object_data_t *data)
 }
 
 cg_gles2_context_t *
-cg_gles2_context_new(cg_context_t *ctx, cg_error_t **error)
+cg_gles2_context_new(cg_device_t *dev, cg_error_t **error)
 {
     cg_gles2_context_t *gles2_ctx;
     const cg_winsys_vtable_t *winsys;
 
-    if (!cg_has_feature(ctx, CG_FEATURE_ID_GLES2_CONTEXT)) {
+    if (!cg_has_feature(dev, CG_FEATURE_ID_GLES2_CONTEXT)) {
         _cg_set_error(error,
                       CG_GLES2_CONTEXT_ERROR,
                       CG_GLES2_CONTEXT_ERROR_UNSUPPORTED,
@@ -1447,12 +1447,12 @@ cg_gles2_context_new(cg_context_t *ctx, cg_error_t **error)
 
     gles2_ctx = c_malloc0(sizeof(cg_gles2_context_t));
 
-    gles2_ctx->context = ctx;
+    gles2_ctx->dev = dev;
 
     _cg_list_init(&gles2_ctx->foreign_offscreens);
 
-    winsys = ctx->display->renderer->winsys_vtable;
-    gles2_ctx->winsys = winsys->context_create_gles2_context(ctx, error);
+    winsys = dev->display->renderer->winsys_vtable;
+    gles2_ctx->winsys = winsys->device_create_gles2_context(dev, error);
     if (gles2_ctx->winsys == NULL) {
         c_free(gles2_ctx);
         return NULL;
@@ -1474,7 +1474,7 @@ cg_gles2_context_new(cg_context_t *ctx, cg_error_t **error)
                      extension_names)
 
 #define CG_EXT_FUNCTION(ret, name, args)                                       \
-    gles2_ctx->vtable->name = (void *)ctx->name;
+    gles2_ctx->vtable->name = (void *)dev->name;
 
 #define CG_EXT_END()
 
@@ -1578,9 +1578,9 @@ _cg_gles2_offscreen_allocate(cg_offscreen_t *offscreen,
     }
 
     winsys = _cg_framebuffer_get_winsys(framebuffer);
-    winsys->save_context(framebuffer->context);
+    winsys->save_context(framebuffer->dev);
     if (!winsys->set_gles2_context(gles2_context, &internal_error)) {
-        winsys->restore_context(framebuffer->context);
+        winsys->restore_context(framebuffer->dev);
 
         cg_error_free(internal_error);
         _cg_set_error(error,
@@ -1599,7 +1599,7 @@ _cg_gles2_offscreen_allocate(cg_offscreen_t *offscreen,
                                NULL);
 
     if (!_cg_framebuffer_try_creating_gl_fbo(
-            gles2_context->context,
+            gles2_context->dev,
             offscreen->texture,
             offscreen->texture_level,
             level_width,
@@ -1608,7 +1608,7 @@ _cg_gles2_offscreen_allocate(cg_offscreen_t *offscreen,
             &CG_FRAMEBUFFER(offscreen)->config,
             offscreen->allocation_flags,
             &gles2_offscreen->gl_framebuffer)) {
-        winsys->restore_context(framebuffer->context);
+        winsys->restore_context(framebuffer->dev);
 
         c_slice_free(cg_gles2_offscreen_t, gles2_offscreen);
 
@@ -1619,7 +1619,7 @@ _cg_gles2_offscreen_allocate(cg_offscreen_t *offscreen,
         return NULL;
     }
 
-    winsys->restore_context(framebuffer->context);
+    winsys->restore_context(framebuffer->dev);
 
     gles2_offscreen->original_offscreen = offscreen;
 
@@ -1638,13 +1638,13 @@ _cg_gles2_offscreen_allocate(cg_offscreen_t *offscreen,
 }
 
 bool
-cg_push_gles2_context(cg_context_t *ctx,
+cg_push_gles2_context(cg_device_t *dev,
                       cg_gles2_context_t *gles2_ctx,
                       cg_framebuffer_t *read_buffer,
                       cg_framebuffer_t *write_buffer,
                       cg_error_t **error)
 {
-    const cg_winsys_vtable_t *winsys = ctx->display->renderer->winsys_vtable;
+    const cg_winsys_vtable_t *winsys = dev->display->renderer->winsys_vtable;
     cg_error_t *internal_error = NULL;
 
     c_return_val_if_fail(gles2_ctx != NULL, false);
@@ -1653,17 +1653,17 @@ cg_push_gles2_context(cg_context_t *ctx,
      * don't currently track the read/write buffers as part of the stack
      * entries so we explicitly don't allow the same context to be
      * pushed multiple times. */
-    if (c_queue_find(&ctx->gles2_context_stack, gles2_ctx)) {
+    if (c_queue_find(&dev->gles2_context_stack, gles2_ctx)) {
         c_critical("Pushing the same GLES2 context multiple times isn't "
                    "supported");
         return false;
     }
 
-    if (ctx->gles2_context_stack.length == 0) {
+    if (dev->gles2_context_stack.length == 0) {
         _cg_journal_flush(read_buffer->journal);
         if (write_buffer != read_buffer)
             _cg_journal_flush(write_buffer->journal);
-        winsys->save_context(ctx);
+        winsys->save_context(dev);
     } else
         gles2_ctx->vtable->glFlush();
 
@@ -1708,7 +1708,7 @@ cg_push_gles2_context(cg_context_t *ctx,
     }
 
     if (!winsys->set_gles2_context(gles2_ctx, &internal_error)) {
-        winsys->restore_context(ctx);
+        winsys->restore_context(dev);
 
         cg_error_free(internal_error);
         _cg_set_error(error,
@@ -1718,7 +1718,7 @@ cg_push_gles2_context(cg_context_t *ctx,
         return false;
     }
 
-    c_queue_push_tail(&ctx->gles2_context_stack, gles2_ctx);
+    c_queue_push_tail(&dev->gles2_context_stack, gles2_ctx);
 
     /* The last time this context was pushed may have been with a
      * different offscreen draw framebuffer and so if GL framebuffer 0
@@ -1728,7 +1728,7 @@ cg_push_gles2_context(cg_context_t *ctx,
         if (cg_is_offscreen(gles2_ctx->write_buffer)) {
             cg_gles2_offscreen_t *write = gles2_ctx->gles2_write_buffer;
             GLuint handle = write->gl_framebuffer.fbo_handle;
-            gles2_ctx->context->glBindFramebuffer(GL_FRAMEBUFFER, handle);
+            gles2_ctx->dev->glBindFramebuffer(GL_FRAMEBUFFER, handle);
         }
     }
 
@@ -1767,36 +1767,36 @@ cg_gles2_get_current_vtable(void)
 }
 
 void
-cg_pop_gles2_context(cg_context_t *ctx)
+cg_pop_gles2_context(cg_device_t *dev)
 {
     cg_gles2_context_t *gles2_ctx;
-    const cg_winsys_vtable_t *winsys = ctx->display->renderer->winsys_vtable;
+    const cg_winsys_vtable_t *winsys = dev->display->renderer->winsys_vtable;
 
-    c_return_if_fail(ctx->gles2_context_stack.length > 0);
+    c_return_if_fail(dev->gles2_context_stack.length > 0);
 
-    c_queue_pop_tail(&ctx->gles2_context_stack);
+    c_queue_pop_tail(&dev->gles2_context_stack);
 
-    gles2_ctx = c_queue_peek_tail(&ctx->gles2_context_stack);
+    gles2_ctx = c_queue_peek_tail(&dev->gles2_context_stack);
 
     if (gles2_ctx) {
         winsys->set_gles2_context(gles2_ctx, NULL);
         current_gles2_context = gles2_ctx;
     } else {
-        winsys->restore_context(ctx);
+        winsys->restore_context(dev);
         current_gles2_context = NULL;
     }
 }
 
 cg_texture_2d_t *
-cg_gles2_texture_2d_new_from_handle(cg_context_t *ctx,
+cg_gles2_texture_2d_new_from_handle(cg_device_t *dev,
                                     cg_gles2_context_t *gles2_ctx,
                                     unsigned int handle,
                                     int width,
                                     int height,
                                     cg_pixel_format_t format)
 {
-    return cg_texture_2d_gl_new_from_foreign(
-        ctx, handle, width, height, format);
+    return cg_texture_2d_gl_new_from_foreign(dev, handle, width, height,
+                                             format);
 }
 
 bool

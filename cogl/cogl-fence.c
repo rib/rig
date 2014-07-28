@@ -33,7 +33,7 @@
 
 #include "cogl-fence.h"
 #include "cogl-fence-private.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-winsys-private.h"
 
 #define FENCE_CHECK_TIMEOUT 5000 /* microseconds */
@@ -47,13 +47,13 @@ cg_fence_closure_get_user_data(cg_fence_closure_t *closure)
 static void
 _cg_fence_check(cg_fence_closure_t *fence)
 {
-    cg_context_t *context = fence->framebuffer->context;
+    cg_device_t *dev = fence->framebuffer->dev;
 
     if (fence->type == FENCE_TYPE_WINSYS) {
-        const cg_winsys_vtable_t *winsys = _cg_context_get_winsys(context);
+        const cg_winsys_vtable_t *winsys = _cg_device_get_winsys(dev);
         bool ret;
 
-        ret = winsys->fence_is_complete(context, fence->fence_obj);
+        ret = winsys->fence_is_complete(dev, fence->fence_obj);
         if (!ret)
             return;
     }
@@ -61,7 +61,7 @@ _cg_fence_check(cg_fence_closure_t *fence)
     else if (fence->type == FENCE_TYPE_GL_ARB) {
         GLenum arb;
 
-        arb = context->glClientWaitSync(
+        arb = dev->glClientWaitSync(
             fence->fence_obj, GL_SYNC_FLUSH_COMMANDS_BIT, 0);
         if (arb != GL_ALREADY_SIGNALED && arb != GL_CONDITION_SATISFIED)
             return;
@@ -76,30 +76,30 @@ _cg_fence_check(cg_fence_closure_t *fence)
 static void
 _cg_fence_poll_dispatch(void *source, int revents)
 {
-    cg_context_t *context = source;
+    cg_device_t *dev = source;
     cg_fence_closure_t *fence, *tmp;
 
-    _cg_list_for_each_safe(fence, tmp, &context->fences, link)
-    _cg_fence_check(fence);
+    _cg_list_for_each_safe(fence, tmp, &dev->fences, link)
+        _cg_fence_check(fence);
 }
 
 static int64_t
 _cg_fence_poll_prepare(void *source)
 {
-    cg_context_t *context = source;
+    cg_device_t *dev = source;
     c_list_t *l;
 
     /* If there are any pending fences in any of the journals then we
      * need to flush the journal otherwise the fence will never be
      * hit and the main loop might block forever */
-    for (l = context->framebuffers; l; l = l->next) {
+    for (l = dev->framebuffers; l; l = l->next) {
         cg_framebuffer_t *fb = l->data;
 
         if (!_cg_list_empty(&fb->journal->pending_fences))
             _cg_framebuffer_flush_journal(fb);
     }
 
-    if (!_cg_list_empty(&context->fences))
+    if (!_cg_list_empty(&dev->fences))
         return FENCE_CHECK_TIMEOUT;
     else
         return -1;
@@ -108,13 +108,13 @@ _cg_fence_poll_prepare(void *source)
 void
 _cg_fence_submit(cg_fence_closure_t *fence)
 {
-    cg_context_t *context = fence->framebuffer->context;
-    const cg_winsys_vtable_t *winsys = _cg_context_get_winsys(context);
+    cg_device_t *dev = fence->framebuffer->dev;
+    const cg_winsys_vtable_t *winsys = _cg_device_get_winsys(dev);
 
     fence->type = FENCE_TYPE_ERROR;
 
     if (winsys->fence_add) {
-        fence->fence_obj = winsys->fence_add(context);
+        fence->fence_obj = winsys->fence_add(dev);
         if (fence->fence_obj) {
             fence->type = FENCE_TYPE_WINSYS;
             goto done;
@@ -122,9 +122,9 @@ _cg_fence_submit(cg_fence_closure_t *fence)
     }
 
 #ifdef GL_ARB_sync
-    if (context->glFenceSync) {
+    if (dev->glFenceSync) {
         fence->fence_obj =
-            context->glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+            dev->glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
         if (fence->fence_obj) {
             fence->type = FENCE_TYPE_GL_ARB;
             goto done;
@@ -133,14 +133,14 @@ _cg_fence_submit(cg_fence_closure_t *fence)
 #endif
 
 done:
-    _cg_list_insert(context->fences.prev, &fence->link);
+    _cg_list_insert(dev->fences.prev, &fence->link);
 
-    if (!context->fences_poll_source) {
-        context->fences_poll_source =
-            _cg_poll_renderer_add_source(context->display->renderer,
+    if (!dev->fences_poll_source) {
+        dev->fences_poll_source =
+            _cg_poll_renderer_add_source(dev->display->renderer,
                                          _cg_fence_poll_prepare,
                                          _cg_fence_poll_dispatch,
-                                         context);
+                                         dev);
     }
 }
 
@@ -149,11 +149,11 @@ cg_framebuffer_add_fence_callback(cg_framebuffer_t *framebuffer,
                                   cg_fence_callback_t callback,
                                   void *user_data)
 {
-    cg_context_t *context = framebuffer->context;
+    cg_device_t *dev = framebuffer->dev;
     cg_journal_t *journal = framebuffer->journal;
     cg_fence_closure_t *fence;
 
-    if (!CG_FLAGS_GET(context->features, CG_FEATURE_ID_FENCE))
+    if (!CG_FLAGS_GET(dev->features, CG_FEATURE_ID_FENCE))
         return NULL;
 
     fence = c_slice_new(cg_fence_closure_t);
@@ -175,7 +175,7 @@ void
 cg_framebuffer_cancel_fence_callback(cg_framebuffer_t *framebuffer,
                                      cg_fence_closure_t *fence)
 {
-    cg_context_t *context = framebuffer->context;
+    cg_device_t *dev = framebuffer->dev;
 
     if (fence->type == FENCE_TYPE_PENDING) {
         _cg_list_remove(&fence->link);
@@ -183,13 +183,13 @@ cg_framebuffer_cancel_fence_callback(cg_framebuffer_t *framebuffer,
         _cg_list_remove(&fence->link);
 
         if (fence->type == FENCE_TYPE_WINSYS) {
-            const cg_winsys_vtable_t *winsys = _cg_context_get_winsys(context);
+            const cg_winsys_vtable_t *winsys = _cg_device_get_winsys(dev);
 
-            winsys->fence_destroy(context, fence->fence_obj);
+            winsys->fence_destroy(dev, fence->fence_obj);
         }
 #ifdef GL_ARB_sync
         else if (fence->type == FENCE_TYPE_GL_ARB) {
-            context->glDeleteSync(fence->fence_obj);
+            dev->glDeleteSync(fence->fence_obj);
         }
 #endif
     }
@@ -201,7 +201,7 @@ void
 _cg_fence_cancel_fences_for_framebuffer(cg_framebuffer_t *framebuffer)
 {
     cg_journal_t *journal = framebuffer->journal;
-    cg_context_t *context = framebuffer->context;
+    cg_device_t *dev = framebuffer->dev;
     cg_fence_closure_t *fence, *tmp;
 
     while (!_cg_list_empty(&journal->pending_fences)) {
@@ -210,7 +210,7 @@ _cg_fence_cancel_fences_for_framebuffer(cg_framebuffer_t *framebuffer)
         cg_framebuffer_cancel_fence_callback(framebuffer, fence);
     }
 
-    _cg_list_for_each_safe(fence, tmp, &context->fences, link)
+    _cg_list_for_each_safe(fence, tmp, &dev->fences, link)
     {
         if (fence->framebuffer == framebuffer)
             cg_framebuffer_cancel_fence_callback(framebuffer, fence);

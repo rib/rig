@@ -40,7 +40,7 @@
 
 #include <test-fixtures/test-unit.h>
 
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-debug.h"
 #include "cogl-blend-string.h"
 #include "cogl-error-private.h"
@@ -198,7 +198,7 @@ error:
 }
 
 static bool
-validate_blend_statements(cg_context_t *ctx,
+validate_blend_statements(cg_device_t *dev,
                           cg_blend_string_statement_t *statements,
                           int n_statements,
                           cg_error_t **error)
@@ -207,7 +207,7 @@ validate_blend_statements(cg_context_t *ctx,
     const char *error_string;
     cg_blend_string_error_t detail = CG_BLEND_STRING_ERROR_INVALID_ERROR;
 
-    if (n_statements == 2 && !ctx->glBlendEquationSeparate &&
+    if (n_statements == 2 && !dev->glBlendEquationSeparate &&
         statements[0].function->type != statements[1].function->type) {
         error_string = "Separate blend functions for the RGB an A "
                        "channels isn't supported by the driver";
@@ -231,7 +231,7 @@ validate_blend_statements(cg_context_t *ctx,
                 goto error;
             }
 
-            if (!_cg_has_private_feature(ctx,
+            if (!_cg_has_private_feature(dev,
                                          CG_PRIVATE_FEATURE_BLEND_CONSTANT) &&
                 arg->factor.is_color &&
                 (arg->factor.source.info->type ==
@@ -254,7 +254,7 @@ error:
 }
 
 static bool
-validate_statements_for_context(cg_context_t *ctx,
+validate_statements_for_context(cg_device_t *dev,
                                 cg_blend_string_statement_t *statements,
                                 int n_statements,
                                 cg_blend_string_context_t context,
@@ -276,7 +276,8 @@ validate_statements_for_context(cg_context_t *ctx,
     }
 
     if (context == CG_BLEND_STRING_CONTEXT_BLENDING)
-        return validate_blend_statements(ctx, statements, n_statements, error);
+        return validate_blend_statements(dev, statements, n_statements,
+                                         error);
     else
         return validate_tex_combine_statements(statements, n_statements, error);
 
@@ -670,7 +671,7 @@ error: {
 }
 
 bool
-_cg_blend_string_compile(cg_context_t *ctx,
+_cg_blend_string_compile(cg_device_t *dev,
                          const char *string,
                          cg_blend_string_context_t context,
                          cg_blend_string_statement_t *statements,
@@ -816,8 +817,7 @@ finished:
             print_statement(1, &statements[1]);
     }
 
-    if (!validate_statements_for_context(
-            ctx, statements, current_statement, context, error))
+    if (!validate_statements_for_context(dev, statements, current_statement, context, error))
         return 0;
 
     return current_statement;
@@ -894,7 +894,7 @@ UNIT_TEST(blend_string_parsing,
     for (i = 0; tests[i].string; i++) {
         cg_blend_string_statement_t statements[2];
         _cg_blend_string_compile(
-            test_ctx, tests[i].string, tests[i].context, statements, &error);
+            test_dev, tests[i].string, tests[i].context, statements, &error);
         if (tests[i].should_pass) {
             if (error) {
                 c_debug("Unexpected parse error for string \"%s\"",

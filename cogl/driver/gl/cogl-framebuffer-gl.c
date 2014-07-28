@@ -32,7 +32,7 @@
 #include "config.h"
 #endif
 
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-util-gl-private.h"
 #include "cogl-framebuffer-private.h"
 #include "cogl-framebuffer-gl-private.h"
@@ -144,7 +144,7 @@ _cg_framebuffer_gl_flush_viewport_state(cg_framebuffer_t *framebuffer)
             framebuffer->viewport_width,
             framebuffer->viewport_height);
 
-    GE(framebuffer->context,
+    GE(framebuffer->dev,
        glViewport(framebuffer->viewport_x,
                   gl_viewport_y,
                   framebuffer->viewport_width,
@@ -160,14 +160,14 @@ _cg_framebuffer_gl_flush_clip_state(cg_framebuffer_t *framebuffer)
 static void
 _cg_framebuffer_gl_flush_dither_state(cg_framebuffer_t *framebuffer)
 {
-    cg_context_t *ctx = framebuffer->context;
+    cg_device_t *dev = framebuffer->dev;
 
-    if (ctx->current_gl_dither_enabled != framebuffer->dither_enabled) {
+    if (dev->current_gl_dither_enabled != framebuffer->dither_enabled) {
         if (framebuffer->dither_enabled)
-            GE(ctx, glEnable(GL_DITHER));
+            GE(dev, glEnable(GL_DITHER));
         else
-            GE(ctx, glDisable(GL_DITHER));
-        ctx->current_gl_dither_enabled = framebuffer->dither_enabled;
+            GE(dev, glDisable(GL_DITHER));
+        dev->current_gl_dither_enabled = framebuffer->dither_enabled;
     }
 }
 
@@ -176,8 +176,7 @@ _cg_framebuffer_gl_flush_modelview_state(cg_framebuffer_t *framebuffer)
 {
     cg_matrix_entry_t *modelview_entry =
         _cg_framebuffer_get_modelview_entry(framebuffer);
-    _cg_context_set_current_modelview_entry(framebuffer->context,
-                                            modelview_entry);
+    _cg_device_set_current_modelview_entry(framebuffer->dev, modelview_entry);
 }
 
 static void
@@ -185,28 +184,27 @@ _cg_framebuffer_gl_flush_projection_state(cg_framebuffer_t *framebuffer)
 {
     cg_matrix_entry_t *projection_entry =
         _cg_framebuffer_get_projection_entry(framebuffer);
-    _cg_context_set_current_projection_entry(framebuffer->context,
-                                             projection_entry);
+    _cg_device_set_current_projection_entry(framebuffer->dev, projection_entry);
 }
 
 static void
 _cg_framebuffer_gl_flush_color_mask_state(cg_framebuffer_t *framebuffer)
 {
-    cg_context_t *context = framebuffer->context;
+    cg_device_t *dev = framebuffer->dev;
 
     /* The color mask state is really owned by a cg_pipeline_t so to
      * ensure the color mask is updated the next time we draw something
      * we need to make sure the logic ops for the pipeline are
      * re-flushed... */
-    context->current_pipeline_changes_since_flush |=
+    dev->current_pipeline_changes_since_flush |=
         CG_PIPELINE_STATE_LOGIC_OPS;
-    context->current_pipeline_age--;
+    dev->current_pipeline_age--;
 }
 
 static void
 _cg_framebuffer_gl_flush_front_face_winding_state(cg_framebuffer_t *framebuffer)
 {
-    cg_context_t *context = framebuffer->context;
+    cg_device_t *dev = framebuffer->dev;
     cg_pipeline_cull_face_mode_t mode;
 
     /* NB: The face winding state is actually owned by the current
@@ -215,10 +213,10 @@ _cg_framebuffer_gl_flush_front_face_winding_state(cg_framebuffer_t *framebuffer)
      * If we don't have a current pipeline then we can just assume that
      * when we later do flush a pipeline we will check the current
      * framebuffer to know how to setup the winding */
-    if (!context->current_pipeline)
+    if (!dev->current_pipeline)
         return;
 
-    mode = cg_pipeline_get_cull_face_mode(context->current_pipeline);
+    mode = cg_pipeline_get_cull_face_mode(dev->current_pipeline);
 
     /* If the current cg_pipeline_t has a culling mode that doesn't care
      * about the winding we can avoid forcing an update of the state and
@@ -230,27 +228,27 @@ _cg_framebuffer_gl_flush_front_face_winding_state(cg_framebuffer_t *framebuffer)
     /* Since the winding state is really owned by the current pipeline
      * the way we "flush" an updated winding is to dirty the pipeline
      * state... */
-    context->current_pipeline_changes_since_flush |=
+    dev->current_pipeline_changes_since_flush |=
         CG_PIPELINE_STATE_CULL_FACE;
-    context->current_pipeline_age--;
+    dev->current_pipeline_age--;
 }
 
 void
 _cg_framebuffer_gl_bind(cg_framebuffer_t *framebuffer, GLenum target)
 {
-    cg_context_t *ctx = framebuffer->context;
+    cg_device_t *dev = framebuffer->dev;
 
     if (framebuffer->type == CG_FRAMEBUFFER_TYPE_OFFSCREEN) {
         cg_offscreen_t *offscreen = CG_OFFSCREEN(framebuffer);
-        GE(ctx,
+        GE(dev,
            glBindFramebuffer(target, offscreen->gl_framebuffer.fbo_handle));
     } else {
         const cg_winsys_vtable_t *winsys =
             _cg_framebuffer_get_winsys(framebuffer);
         winsys->onscreen_bind(CG_ONSCREEN(framebuffer));
         /* glBindFramebuffer is an an extension with OpenGL ES 1.1 */
-        if (cg_has_feature(ctx, CG_FEATURE_ID_OFFSCREEN))
-            GE(ctx, glBindFramebuffer(target, 0));
+        if (cg_has_feature(dev, CG_FEATURE_ID_OFFSCREEN))
+            GE(dev, glBindFramebuffer(target, 0));
 
         /* Initialise the glDrawBuffer state the first time the context
          * is bound to the default framebuffer. If the winsys is using a
@@ -258,10 +256,10 @@ _cg_framebuffer_gl_bind(cg_framebuffer_t *framebuffer, GLenum target)
          * default draw buffer will be GL_NONE so we need to correct
          * that. We can't do it any earlier because binding GL_BACK when
          * there is no default framebuffer won't work */
-        if (!ctx->was_bound_to_onscreen) {
-            if (ctx->glDrawBuffer) {
-                GE(ctx, glDrawBuffer(GL_BACK));
-            } else if (ctx->glDrawBuffers) {
+        if (!dev->was_bound_to_onscreen) {
+            if (dev->glDrawBuffer) {
+                GE(dev, glDrawBuffer(GL_BACK));
+            } else if (dev->glDrawBuffers) {
                 /* glDrawBuffer isn't available on GLES 3.0 so we need
                  * to be able to use glDrawBuffers as well. On GLES 2
                  * neither is available but the state should always be
@@ -271,10 +269,10 @@ _cg_framebuffer_gl_bind(cg_framebuffer_t *framebuffer, GLenum target)
                  * GLES we can just use GL_BACK. */
                 static const GLenum buffers[] = { GL_BACK };
 
-                GE(ctx, glDrawBuffers(C_N_ELEMENTS(buffers), buffers));
+                GE(dev, glDrawBuffers(C_N_ELEMENTS(buffers), buffers));
             }
 
-            ctx->was_bound_to_onscreen = true;
+            dev->was_bound_to_onscreen = true;
         }
     }
 }
@@ -284,49 +282,50 @@ _cg_framebuffer_gl_flush_state(cg_framebuffer_t *draw_buffer,
                                cg_framebuffer_t *read_buffer,
                                cg_framebuffer_state_t state)
 {
-    cg_context_t *ctx = draw_buffer->context;
+    cg_device_t *dev = draw_buffer->dev;
     unsigned long differences;
     int bit;
 
     /* We can assume that any state that has changed for the current
      * framebuffer is different to the currently flushed value. */
-    differences = ctx->current_draw_buffer_changes;
+    differences = dev->current_draw_buffer_changes;
 
     /* Any state of the current framebuffer that hasn't already been
      * flushed is assumed to be unknown so we will always flush that
      * state if asked. */
-    differences |= ~ctx->current_draw_buffer_state_flushed;
+    differences |= ~dev->current_draw_buffer_state_flushed;
 
     /* We only need to consider the state we've been asked to flush */
     differences &= state;
 
-    if (ctx->current_draw_buffer != draw_buffer) {
+    if (dev->current_draw_buffer != draw_buffer) {
         /* If the previous draw buffer is NULL then we'll assume
            everything has changed. This can happen if a framebuffer is
            destroyed while it is the last flushed draw buffer. In that
            case the framebuffer destructor will set
-           ctx->current_draw_buffer to NULL */
-        if (ctx->current_draw_buffer == NULL)
+           dev->current_draw_buffer to NULL */
+        if (dev->current_draw_buffer == NULL)
             differences |= state;
         else
             /* NB: we only need to compare the state we're being asked to flush
              * and we don't need to compare the state we've already decided
              * we will definitely flush... */
-            differences |= _cg_framebuffer_compare(
-                ctx->current_draw_buffer, draw_buffer, state & ~differences);
+            differences |= _cg_framebuffer_compare(dev->current_draw_buffer,
+                                                   draw_buffer,
+                                                   state & ~differences);
 
         /* NB: we don't take a reference here, to avoid a circular
          * reference. */
-        ctx->current_draw_buffer = draw_buffer;
-        ctx->current_draw_buffer_state_flushed = 0;
+        dev->current_draw_buffer = draw_buffer;
+        dev->current_draw_buffer_state_flushed = 0;
     }
 
-    if (ctx->current_read_buffer != read_buffer &&
+    if (dev->current_read_buffer != read_buffer &&
         state & CG_FRAMEBUFFER_STATE_BIND) {
         differences |= CG_FRAMEBUFFER_STATE_BIND;
         /* NB: we don't take a reference here, to avoid a circular
          * reference. */
-        ctx->current_read_buffer = read_buffer;
+        dev->current_read_buffer = read_buffer;
     }
 
     if (!differences)
@@ -348,8 +347,7 @@ _cg_framebuffer_gl_flush_state(cg_framebuffer_t *draw_buffer,
             /* NB: Currently we only take advantage of binding separate
              * read/write buffers for offscreen framebuffer blit
              * purposes.  */
-            c_return_if_fail(_cg_has_private_feature(
-                                   ctx, CG_PRIVATE_FEATURE_OFFSCREEN_BLIT));
+            c_return_if_fail(_cg_has_private_feature(dev, CG_PRIVATE_FEATURE_OFFSCREEN_BLIT));
             c_return_if_fail(draw_buffer->type ==
                                CG_FRAMEBUFFER_TYPE_OFFSCREEN);
             c_return_if_fail(read_buffer->type ==
@@ -401,15 +399,15 @@ _cg_framebuffer_gl_flush_state(cg_framebuffer_t *draw_buffer,
     }
     CG_FLAGS_FOREACH_END;
 
-    ctx->current_draw_buffer_state_flushed |= state;
-    ctx->current_draw_buffer_changes &= ~state;
+    dev->current_draw_buffer_state_flushed |= state;
+    dev->current_draw_buffer_changes &= ~state;
 }
 
 static cg_texture_t *
-create_depth_texture(cg_context_t *ctx, int width, int height)
+create_depth_texture(cg_device_t *dev, int width, int height)
 {
     cg_texture_2d_t *depth_texture =
-        cg_texture_2d_new_with_size(ctx, width, height);
+        cg_texture_2d_new_with_size(dev, width, height);
 
     cg_texture_set_components(CG_TEXTURE(depth_texture),
                               CG_TEXTURE_COMPONENTS_DEPTH);
@@ -418,7 +416,7 @@ create_depth_texture(cg_context_t *ctx, int width, int height)
 }
 
 static cg_texture_t *
-attach_depth_texture(cg_context_t *ctx,
+attach_depth_texture(cg_device_t *dev,
                      cg_texture_t *depth_texture,
                      cg_offscreen_allocate_flags_t flags)
 {
@@ -434,13 +432,13 @@ attach_depth_texture(cg_context_t *ctx,
         cg_texture_get_gl_texture(
             depth_texture, &tex_gl_handle, &tex_gl_target);
 
-        GE(ctx,
+        GE(dev,
            glFramebufferTexture2D(GL_FRAMEBUFFER,
                                   GL_DEPTH_ATTACHMENT,
                                   tex_gl_target,
                                   tex_gl_handle,
                                   0));
-        GE(ctx,
+        GE(dev,
            glFramebufferTexture2D(GL_FRAMEBUFFER,
                                   GL_STENCIL_ATTACHMENT,
                                   tex_gl_target,
@@ -455,7 +453,7 @@ attach_depth_texture(cg_context_t *ctx,
         cg_texture_get_gl_texture(
             CG_TEXTURE(depth_texture), &tex_gl_handle, &tex_gl_target);
 
-        GE(ctx,
+        GE(dev,
            glFramebufferTexture2D(GL_FRAMEBUFFER,
                                   GL_DEPTH_ATTACHMENT,
                                   tex_gl_target,
@@ -467,7 +465,7 @@ attach_depth_texture(cg_context_t *ctx,
 }
 
 static c_list_t *
-try_creating_renderbuffers(cg_context_t *ctx,
+try_creating_renderbuffers(cg_device_t *dev,
                            int width,
                            int height,
                            cg_offscreen_allocate_flags_t flags,
@@ -489,43 +487,41 @@ try_creating_renderbuffers(cg_context_t *ctx,
          * GL_OES_packed_depth_stencil doesn't allow GL_DEPTH_STENCIL to
          * be passed as an internal format to glRenderbufferStorage.
          */
-        if (_cg_has_private_feature(
-                ctx, CG_PRIVATE_FEATURE_EXT_PACKED_DEPTH_STENCIL))
+        if (_cg_has_private_feature(dev, CG_PRIVATE_FEATURE_EXT_PACKED_DEPTH_STENCIL))
             format = GL_DEPTH_STENCIL;
         else {
             c_return_val_if_fail(
-                _cg_has_private_feature(
-                    ctx, CG_PRIVATE_FEATURE_OES_PACKED_DEPTH_STENCIL),
+                _cg_has_private_feature(dev, CG_PRIVATE_FEATURE_OES_PACKED_DEPTH_STENCIL),
                 NULL);
             format = GL_DEPTH24_STENCIL8;
         }
 #endif
 
         /* Create a renderbuffer for depth and stenciling */
-        GE(ctx, glGenRenderbuffers(1, &gl_depth_stencil_handle));
-        GE(ctx, glBindRenderbuffer(GL_RENDERBUFFER, gl_depth_stencil_handle));
+        GE(dev, glGenRenderbuffers(1, &gl_depth_stencil_handle));
+        GE(dev, glBindRenderbuffer(GL_RENDERBUFFER, gl_depth_stencil_handle));
         if (n_samples)
-            GE(ctx,
+            GE(dev,
                glRenderbufferStorageMultisampleIMG(
                    GL_RENDERBUFFER, n_samples, format, width, height));
         else
-            GE(ctx,
+            GE(dev,
                glRenderbufferStorage(GL_RENDERBUFFER, format, width, height));
-        GE(ctx, glBindRenderbuffer(GL_RENDERBUFFER, 0));
+        GE(dev, glBindRenderbuffer(GL_RENDERBUFFER, 0));
 
 #ifdef HAVE_CG_WEBGL
-        GE(ctx,
+        GE(dev,
            glFramebufferRenderbuffer(GL_FRAMEBUFFER,
                                      GL_DEPTH_STENCIL_ATTACHMENT,
                                      GL_RENDERBUFFER,
                                      gl_depth_stencil_handle));
 #else
-        GE(ctx,
+        GE(dev,
            glFramebufferRenderbuffer(GL_FRAMEBUFFER,
                                      GL_STENCIL_ATTACHMENT,
                                      GL_RENDERBUFFER,
                                      gl_depth_stencil_handle));
-        GE(ctx,
+        GE(dev,
            glFramebufferRenderbuffer(GL_FRAMEBUFFER,
                                      GL_DEPTH_ATTACHMENT,
                                      GL_RENDERBUFFER,
@@ -538,23 +534,23 @@ try_creating_renderbuffers(cg_context_t *ctx,
     if (flags & CG_OFFSCREEN_ALLOCATE_FLAG_DEPTH) {
         GLuint gl_depth_handle;
 
-        GE(ctx, glGenRenderbuffers(1, &gl_depth_handle));
-        GE(ctx, glBindRenderbuffer(GL_RENDERBUFFER, gl_depth_handle));
+        GE(dev, glGenRenderbuffers(1, &gl_depth_handle));
+        GE(dev, glBindRenderbuffer(GL_RENDERBUFFER, gl_depth_handle));
         /* For now we just ask for GL_DEPTH_COMPONENT16 since this is all that's
          * available under GLES */
         if (n_samples)
-            GE(ctx,
+            GE(dev,
                glRenderbufferStorageMultisampleIMG(GL_RENDERBUFFER,
                                                    n_samples,
                                                    GL_DEPTH_COMPONENT16,
                                                    width,
                                                    height));
         else
-            GE(ctx,
+            GE(dev,
                glRenderbufferStorage(
                    GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, width, height));
-        GE(ctx, glBindRenderbuffer(GL_RENDERBUFFER, 0));
-        GE(ctx,
+        GE(dev, glBindRenderbuffer(GL_RENDERBUFFER, 0));
+        GE(dev,
            glFramebufferRenderbuffer(GL_FRAMEBUFFER,
                                      GL_DEPTH_ATTACHMENT,
                                      GL_RENDERBUFFER,
@@ -566,21 +562,21 @@ try_creating_renderbuffers(cg_context_t *ctx,
     if (flags & CG_OFFSCREEN_ALLOCATE_FLAG_STENCIL) {
         GLuint gl_stencil_handle;
 
-        GE(ctx, glGenRenderbuffers(1, &gl_stencil_handle));
-        GE(ctx, glBindRenderbuffer(GL_RENDERBUFFER, gl_stencil_handle));
+        GE(dev, glGenRenderbuffers(1, &gl_stencil_handle));
+        GE(dev, glBindRenderbuffer(GL_RENDERBUFFER, gl_stencil_handle));
         if (n_samples)
-            GE(ctx,
+            GE(dev,
                glRenderbufferStorageMultisampleIMG(GL_RENDERBUFFER,
                                                    n_samples,
                                                    GL_STENCIL_INDEX8,
                                                    width,
                                                    height));
         else
-            GE(ctx,
+            GE(dev,
                glRenderbufferStorage(
                    GL_RENDERBUFFER, GL_STENCIL_INDEX8, width, height));
-        GE(ctx, glBindRenderbuffer(GL_RENDERBUFFER, 0));
-        GE(ctx,
+        GE(dev, glBindRenderbuffer(GL_RENDERBUFFER, 0));
+        GE(dev,
            glFramebufferRenderbuffer(GL_FRAMEBUFFER,
                                      GL_STENCIL_ATTACHMENT,
                                      GL_RENDERBUFFER,
@@ -593,13 +589,13 @@ try_creating_renderbuffers(cg_context_t *ctx,
 }
 
 static void
-delete_renderbuffers(cg_context_t *ctx, c_list_t *renderbuffers)
+delete_renderbuffers(cg_device_t *dev, c_list_t *renderbuffers)
 {
     c_list_t *l;
 
     for (l = renderbuffers; l; l = l->next) {
         GLuint renderbuffer = GPOINTER_TO_UINT(l->data);
-        GE(ctx, glDeleteRenderbuffers(1, &renderbuffer));
+        GE(dev, glDeleteRenderbuffers(1, &renderbuffer));
     }
 
     c_list_free(renderbuffers);
@@ -612,7 +608,7 @@ delete_renderbuffers(cg_context_t *ctx, c_list_t *renderbuffers)
  * modify anything in
  */
 static bool
-try_creating_fbo(cg_context_t *ctx,
+try_creating_fbo(cg_device_t *dev,
                  cg_texture_t *texture,
                  int texture_level,
                  int texture_level_width,
@@ -634,7 +630,7 @@ try_creating_fbo(cg_context_t *ctx,
         return false;
 
     if (config->samples_per_pixel) {
-        if (!ctx->glFramebufferTexture2DMultisampleIMG)
+        if (!dev->glFramebufferTexture2DMultisampleIMG)
             return false;
         n_samples = config->samples_per_pixel;
     } else
@@ -643,14 +639,14 @@ try_creating_fbo(cg_context_t *ctx,
     /* We are about to generate and bind a new fbo, so we pretend to
      * change framebuffer state so that the old framebuffer will be
      * rebound again before drawing. */
-    ctx->current_draw_buffer_changes |= CG_FRAMEBUFFER_STATE_BIND;
+    dev->current_draw_buffer_changes |= CG_FRAMEBUFFER_STATE_BIND;
 
     /* Generate framebuffer */
-    ctx->glGenFramebuffers(1, &gl_framebuffer->fbo_handle);
-    GE(ctx, glBindFramebuffer(GL_FRAMEBUFFER, gl_framebuffer->fbo_handle));
+    dev->glGenFramebuffers(1, &gl_framebuffer->fbo_handle);
+    GE(dev, glBindFramebuffer(GL_FRAMEBUFFER, gl_framebuffer->fbo_handle));
 
     if (n_samples) {
-        GE(ctx,
+        GE(dev,
            glFramebufferTexture2DMultisampleIMG(GL_FRAMEBUFFER,
                                                 GL_COLOR_ATTACHMENT0,
                                                 tex_gl_target,
@@ -658,7 +654,7 @@ try_creating_fbo(cg_context_t *ctx,
                                                 n_samples,
                                                 texture_level));
     } else
-        GE(ctx,
+        GE(dev,
            glFramebufferTexture2D(GL_FRAMEBUFFER,
                                   GL_COLOR_ATTACHMENT0,
                                   tex_gl_target,
@@ -670,7 +666,7 @@ try_creating_fbo(cg_context_t *ctx,
 
     if (depth_texture && flags & (CG_OFFSCREEN_ALLOCATE_FLAG_DEPTH_STENCIL |
                                   CG_OFFSCREEN_ALLOCATE_FLAG_DEPTH)) {
-        attach_depth_texture(ctx, depth_texture, flags);
+        attach_depth_texture(dev, depth_texture, flags);
 
         /* Let's clear the flags that are now fulfilled as we might need to
          * create renderbuffers (for the ALLOCATE_FLAG_DEPTH |
@@ -680,17 +676,20 @@ try_creating_fbo(cg_context_t *ctx,
     }
 
     if (flags) {
-        gl_framebuffer->renderbuffers = try_creating_renderbuffers(
-            ctx, texture_level_width, texture_level_height, flags, n_samples);
+        gl_framebuffer->renderbuffers = try_creating_renderbuffers(dev,
+                                                                   texture_level_width,
+                                                                   texture_level_height,
+                                                                   flags,
+                                                                   n_samples);
     }
 
     /* Make sure it's complete */
-    status = ctx->glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    status = dev->glCheckFramebufferStatus(GL_FRAMEBUFFER);
 
     if (status != GL_FRAMEBUFFER_COMPLETE) {
-        GE(ctx, glDeleteFramebuffers(1, &gl_framebuffer->fbo_handle));
+        GE(dev, glDeleteFramebuffers(1, &gl_framebuffer->fbo_handle));
 
-        delete_renderbuffers(ctx, gl_framebuffer->renderbuffers);
+        delete_renderbuffers(dev, gl_framebuffer->renderbuffers);
         gl_framebuffer->renderbuffers = NULL;
 
         return false;
@@ -703,7 +702,7 @@ try_creating_fbo(cg_context_t *ctx,
         GLenum pname = GL_TEXTURE_SAMPLES_IMG;
         int texture_samples;
 
-        GE(ctx,
+        GE(dev,
            glGetFramebufferAttachmentParameteriv(
                GL_FRAMEBUFFER, attachment, pname, &texture_samples));
         gl_framebuffer->samples_per_pixel = texture_samples;
@@ -713,7 +712,7 @@ try_creating_fbo(cg_context_t *ctx,
 }
 
 bool
-_cg_framebuffer_try_creating_gl_fbo(cg_context_t *ctx,
+_cg_framebuffer_try_creating_gl_fbo(cg_device_t *dev,
                                     cg_texture_t *texture,
                                     int texture_level,
                                     int texture_level_width,
@@ -723,7 +722,7 @@ _cg_framebuffer_try_creating_gl_fbo(cg_context_t *ctx,
                                     cg_offscreen_allocate_flags_t flags,
                                     cg_gl_framebuffer_t *gl_framebuffer)
 {
-    return try_creating_fbo(ctx,
+    return try_creating_fbo(dev,
                             texture,
                             texture_level,
                             texture_level_width,
@@ -738,7 +737,7 @@ bool
 _cg_offscreen_gl_allocate(cg_offscreen_t *offscreen, cg_error_t **error)
 {
     cg_framebuffer_t *fb = CG_FRAMEBUFFER(offscreen);
-    cg_context_t *ctx = fb->context;
+    cg_device_t *dev = fb->dev;
     cg_offscreen_allocate_flags_t flags;
     cg_gl_framebuffer_t *gl_framebuffer = &offscreen->gl_framebuffer;
     int level_width;
@@ -756,7 +755,7 @@ _cg_offscreen_gl_allocate(cg_offscreen_t *offscreen, cg_error_t **error)
 
     if (fb->config.depth_texture_enabled && offscreen->depth_texture == NULL) {
         offscreen->depth_texture =
-            create_depth_texture(ctx, level_width, level_height);
+            create_depth_texture(dev, level_width, level_height);
 
         if (!cg_texture_allocate(offscreen->depth_texture, error)) {
             cg_object_unref(offscreen->depth_texture);
@@ -783,7 +782,7 @@ _cg_offscreen_gl_allocate(cg_offscreen_t *offscreen, cg_error_t **error)
         offscreen->texture, GL_NEAREST, GL_NEAREST);
 
     if (((offscreen->create_flags & CG_OFFSCREEN_DISABLE_DEPTH_AND_STENCIL) &&
-         try_creating_fbo(ctx,
+         try_creating_fbo(dev,
                           offscreen->texture,
                           offscreen->texture_level,
                           level_width,
@@ -792,26 +791,24 @@ _cg_offscreen_gl_allocate(cg_offscreen_t *offscreen, cg_error_t **error)
                           &fb->config,
                           flags = 0,
                           gl_framebuffer)) ||
-        (ctx->have_last_offscreen_allocate_flags &&
-         try_creating_fbo(ctx,
+        (dev->have_last_offscreen_allocate_flags &&
+         try_creating_fbo(dev,
                           offscreen->texture,
                           offscreen->texture_level,
                           level_width,
                           level_height,
                           offscreen->depth_texture,
                           &fb->config,
-                          flags = ctx->last_offscreen_allocate_flags,
+                          flags = dev->last_offscreen_allocate_flags,
                           gl_framebuffer)) ||
         (
 /* NB: WebGL introduces a DEPTH_STENCIL_ATTACHMENT and doesn't
  * need an extension to handle _FLAG_DEPTH_STENCIL */
 #ifndef HAVE_CG_WEBGL
-            (_cg_has_private_feature(
-                 ctx, CG_PRIVATE_FEATURE_EXT_PACKED_DEPTH_STENCIL) ||
-             _cg_has_private_feature(
-                 ctx, CG_PRIVATE_FEATURE_OES_PACKED_DEPTH_STENCIL)) &&
+            (_cg_has_private_feature(dev, CG_PRIVATE_FEATURE_EXT_PACKED_DEPTH_STENCIL) ||
+             _cg_has_private_feature(dev, CG_PRIVATE_FEATURE_OES_PACKED_DEPTH_STENCIL)) &&
 #endif
-            try_creating_fbo(ctx,
+            try_creating_fbo(dev,
                              offscreen->texture,
                              offscreen->texture_level,
                              level_width,
@@ -820,7 +817,7 @@ _cg_offscreen_gl_allocate(cg_offscreen_t *offscreen, cg_error_t **error)
                              &fb->config,
                              flags = CG_OFFSCREEN_ALLOCATE_FLAG_DEPTH_STENCIL,
                              gl_framebuffer)) ||
-        try_creating_fbo(ctx,
+        try_creating_fbo(dev,
                          offscreen->texture,
                          offscreen->texture_level,
                          level_width,
@@ -830,7 +827,7 @@ _cg_offscreen_gl_allocate(cg_offscreen_t *offscreen, cg_error_t **error)
                          flags = CG_OFFSCREEN_ALLOCATE_FLAG_DEPTH |
                                  CG_OFFSCREEN_ALLOCATE_FLAG_STENCIL,
                          gl_framebuffer) ||
-        try_creating_fbo(ctx,
+        try_creating_fbo(dev,
                          offscreen->texture,
                          offscreen->texture_level,
                          level_width,
@@ -839,7 +836,7 @@ _cg_offscreen_gl_allocate(cg_offscreen_t *offscreen, cg_error_t **error)
                          &fb->config,
                          flags = CG_OFFSCREEN_ALLOCATE_FLAG_STENCIL,
                          gl_framebuffer) ||
-        try_creating_fbo(ctx,
+        try_creating_fbo(dev,
                          offscreen->texture,
                          offscreen->texture_level,
                          level_width,
@@ -848,7 +845,7 @@ _cg_offscreen_gl_allocate(cg_offscreen_t *offscreen, cg_error_t **error)
                          &fb->config,
                          flags = CG_OFFSCREEN_ALLOCATE_FLAG_DEPTH,
                          gl_framebuffer) ||
-        try_creating_fbo(ctx,
+        try_creating_fbo(dev,
                          offscreen->texture,
                          offscreen->texture_level,
                          level_width,
@@ -862,8 +859,8 @@ _cg_offscreen_gl_allocate(cg_offscreen_t *offscreen, cg_error_t **error)
         if (!offscreen->create_flags & CG_OFFSCREEN_DISABLE_DEPTH_AND_STENCIL) {
             /* Record that the last set of flags succeeded so that we can
                try that set first next time */
-            ctx->last_offscreen_allocate_flags = flags;
-            ctx->have_last_offscreen_allocate_flags = true;
+            dev->last_offscreen_allocate_flags = flags;
+            dev->have_last_offscreen_allocate_flags = true;
         }
 
         /* Save the flags we managed to successfully allocate the
@@ -884,11 +881,11 @@ _cg_offscreen_gl_allocate(cg_offscreen_t *offscreen, cg_error_t **error)
 void
 _cg_offscreen_gl_free(cg_offscreen_t *offscreen)
 {
-    cg_context_t *ctx = CG_FRAMEBUFFER(offscreen)->context;
+    cg_device_t *dev = CG_FRAMEBUFFER(offscreen)->dev;
 
-    delete_renderbuffers(ctx, offscreen->gl_framebuffer.renderbuffers);
+    delete_renderbuffers(dev, offscreen->gl_framebuffer.renderbuffers);
 
-    GE(ctx, glDeleteFramebuffers(1, &offscreen->gl_framebuffer.fbo_handle));
+    GE(dev, glDeleteFramebuffers(1, &offscreen->gl_framebuffer.fbo_handle));
 }
 
 void
@@ -899,57 +896,57 @@ _cg_framebuffer_gl_clear(cg_framebuffer_t *framebuffer,
                          float blue,
                          float alpha)
 {
-    cg_context_t *ctx = framebuffer->context;
+    cg_device_t *dev = framebuffer->dev;
     GLbitfield gl_buffers = 0;
 
     if (buffers & CG_BUFFER_BIT_COLOR) {
-        GE(ctx, glClearColor(red, green, blue, alpha));
+        GE(dev, glClearColor(red, green, blue, alpha));
         gl_buffers |= GL_COLOR_BUFFER_BIT;
 
-        if (ctx->current_gl_color_mask != framebuffer->color_mask) {
+        if (dev->current_gl_color_mask != framebuffer->color_mask) {
             cg_color_mask_t color_mask = framebuffer->color_mask;
-            GE(ctx,
+            GE(dev,
                glColorMask(!!(color_mask & CG_COLOR_MASK_RED),
                            !!(color_mask & CG_COLOR_MASK_GREEN),
                            !!(color_mask & CG_COLOR_MASK_BLUE),
                            !!(color_mask & CG_COLOR_MASK_ALPHA)));
-            ctx->current_gl_color_mask = color_mask;
+            dev->current_gl_color_mask = color_mask;
             /* Make sure the ColorMask is updated when the next primitive is
              * drawn */
-            ctx->current_pipeline_changes_since_flush |=
+            dev->current_pipeline_changes_since_flush |=
                 CG_PIPELINE_STATE_LOGIC_OPS;
-            ctx->current_pipeline_age--;
+            dev->current_pipeline_age--;
         }
     }
 
     if (buffers & CG_BUFFER_BIT_DEPTH) {
         gl_buffers |= GL_DEPTH_BUFFER_BIT;
 
-        if (ctx->depth_writing_enabled_cache !=
+        if (dev->depth_writing_enabled_cache !=
             framebuffer->depth_writing_enabled) {
-            GE(ctx, glDepthMask(framebuffer->depth_writing_enabled));
+            GE(dev, glDepthMask(framebuffer->depth_writing_enabled));
 
-            ctx->depth_writing_enabled_cache =
+            dev->depth_writing_enabled_cache =
                 framebuffer->depth_writing_enabled;
 
             /* Make sure the DepthMask is updated when the next primitive is
              * drawn */
-            ctx->current_pipeline_changes_since_flush |=
+            dev->current_pipeline_changes_since_flush |=
                 CG_PIPELINE_STATE_DEPTH;
-            ctx->current_pipeline_age--;
+            dev->current_pipeline_age--;
         }
     }
 
     if (buffers & CG_BUFFER_BIT_STENCIL)
         gl_buffers |= GL_STENCIL_BUFFER_BIT;
 
-    GE(ctx, glClear(gl_buffers));
+    GE(dev, glClear(gl_buffers));
 }
 
 static inline void
 _cg_framebuffer_init_bits(cg_framebuffer_t *framebuffer)
 {
-    cg_context_t *ctx = framebuffer->context;
+    cg_device_t *dev = framebuffer->dev;
 
     if (C_LIKELY(!framebuffer->dirty_bitmasks))
         return;
@@ -960,7 +957,7 @@ _cg_framebuffer_init_bits(cg_framebuffer_t *framebuffer)
         framebuffer, framebuffer, CG_FRAMEBUFFER_STATE_BIND);
 
 #ifdef HAVE_CG_GL
-    if (_cg_has_private_feature(ctx,
+    if (_cg_has_private_feature(dev,
                                 CG_PRIVATE_FEATURE_QUERY_FRAMEBUFFER_BITS) &&
         framebuffer->type == CG_FRAMEBUFFER_TYPE_OFFSCREEN) {
         static const struct {
@@ -985,7 +982,7 @@ _cg_framebuffer_init_bits(cg_framebuffer_t *framebuffer)
         for (i = 0; i < C_N_ELEMENTS(params); i++) {
             int *value =
                 (int *)((uint8_t *)&framebuffer->bits + params[i].offset);
-            GE(ctx,
+            GE(dev,
                glGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER,
                                                      params[i].attachment,
                                                      params[i].pname,
@@ -994,17 +991,17 @@ _cg_framebuffer_init_bits(cg_framebuffer_t *framebuffer)
     } else
 #endif /* HAVE_CG_GL */
     {
-        GE(ctx, glGetIntegerv(GL_RED_BITS, &framebuffer->bits.red));
-        GE(ctx, glGetIntegerv(GL_GREEN_BITS, &framebuffer->bits.green));
-        GE(ctx, glGetIntegerv(GL_BLUE_BITS, &framebuffer->bits.blue));
-        GE(ctx, glGetIntegerv(GL_ALPHA_BITS, &framebuffer->bits.alpha));
-        GE(ctx, glGetIntegerv(GL_DEPTH_BITS, &framebuffer->bits.depth));
-        GE(ctx, glGetIntegerv(GL_STENCIL_BITS, &framebuffer->bits.stencil));
+        GE(dev, glGetIntegerv(GL_RED_BITS, &framebuffer->bits.red));
+        GE(dev, glGetIntegerv(GL_GREEN_BITS, &framebuffer->bits.green));
+        GE(dev, glGetIntegerv(GL_BLUE_BITS, &framebuffer->bits.blue));
+        GE(dev, glGetIntegerv(GL_ALPHA_BITS, &framebuffer->bits.alpha));
+        GE(dev, glGetIntegerv(GL_DEPTH_BITS, &framebuffer->bits.depth));
+        GE(dev, glGetIntegerv(GL_STENCIL_BITS, &framebuffer->bits.stencil));
     }
 
     /* If we don't have alpha textures then the alpha bits are actually
      * stored in the red component */
-    if (!_cg_has_private_feature(ctx, CG_PRIVATE_FEATURE_ALPHA_TEXTURES) &&
+    if (!_cg_has_private_feature(dev, CG_PRIVATE_FEATURE_ALPHA_TEXTURES) &&
         framebuffer->type == CG_FRAMEBUFFER_TYPE_OFFSCREEN &&
         framebuffer->internal_format == CG_PIXEL_FORMAT_A_8) {
         framebuffer->bits.alpha = framebuffer->bits.red;
@@ -1040,16 +1037,16 @@ _cg_framebuffer_gl_query_bits(cg_framebuffer_t *framebuffer,
 void
 _cg_framebuffer_gl_finish(cg_framebuffer_t *framebuffer)
 {
-    GE(framebuffer->context, glFinish());
+    GE(framebuffer->dev, glFinish());
 }
 
 void
 _cg_framebuffer_gl_discard_buffers(cg_framebuffer_t *framebuffer,
                                    unsigned long buffers)
 {
-    cg_context_t *ctx = framebuffer->context;
+    cg_device_t *dev = framebuffer->dev;
 
-    if (ctx->glDiscardFramebuffer) {
+    if (dev->glDiscardFramebuffer) {
         GLenum attachments[3];
         int i = 0;
 
@@ -1071,7 +1068,7 @@ _cg_framebuffer_gl_discard_buffers(cg_framebuffer_t *framebuffer,
 
         _cg_framebuffer_flush_state(
             framebuffer, framebuffer, CG_FRAMEBUFFER_STATE_BIND);
-        GE(ctx, glDiscardFramebuffer(GL_FRAMEBUFFER, i, attachments));
+        GE(dev, glDiscardFramebuffer(GL_FRAMEBUFFER, i, attachments));
     }
 }
 
@@ -1088,7 +1085,7 @@ _cg_framebuffer_gl_draw_attributes(cg_framebuffer_t *framebuffer,
     _cg_flush_attributes_state(
         framebuffer, pipeline, flags, attributes, n_attributes);
 
-    GE(framebuffer->context,
+    GE(framebuffer->dev,
        glDrawArrays((GLenum)mode, first_vertex, n_vertices));
 }
 
@@ -1149,7 +1146,7 @@ _cg_framebuffer_gl_draw_indexed_attributes(cg_framebuffer_t *framebuffer,
         break;
     }
 
-    GE(framebuffer->context,
+    GE(framebuffer->dev,
        glDrawElements((GLenum)mode,
                       n_vertices,
                       indices_gl_type,
@@ -1166,7 +1163,7 @@ mesa_46631_slow_read_pixels_workaround(cg_framebuffer_t *framebuffer,
                                        cg_bitmap_t *bitmap,
                                        cg_error_t **error)
 {
-    cg_context_t *ctx;
+    cg_device_t *dev;
     cg_pixel_format_t format;
     cg_bitmap_t *pbo;
     int width;
@@ -1175,13 +1172,13 @@ mesa_46631_slow_read_pixels_workaround(cg_framebuffer_t *framebuffer,
     uint8_t *dst;
     const uint8_t *src;
 
-    ctx = cg_framebuffer_get_context(framebuffer);
+    dev = cg_framebuffer_get_context(framebuffer);
 
     width = cg_bitmap_get_width(bitmap);
     height = cg_bitmap_get_height(bitmap);
     format = cg_bitmap_get_format(bitmap);
 
-    pbo = cg_bitmap_new_with_size(ctx, width, height, format);
+    pbo = cg_bitmap_new_with_size(dev, width, height, format);
 
     /* Read into the pbo. We need to disable the flipping because the
        blit fast path in the driver does not work with
@@ -1243,7 +1240,7 @@ _cg_framebuffer_gl_read_pixels_into_bitmap(cg_framebuffer_t *framebuffer,
                                            cg_bitmap_t *bitmap,
                                            cg_error_t **error)
 {
-    cg_context_t *ctx = framebuffer->context;
+    cg_device_t *dev = framebuffer->dev;
     int framebuffer_height = cg_framebuffer_get_height(framebuffer);
     int width = cg_bitmap_get_width(bitmap);
     int height = cg_bitmap_get_height(bitmap);
@@ -1271,7 +1268,7 @@ _cg_framebuffer_gl_read_pixels_into_bitmap(cg_framebuffer_t *framebuffer,
      *   allocating a PBO will outweigh the cost of temporarily
      *   converting the data to floats.
      */
-    if ((ctx->gpu.driver_bugs &
+    if ((dev->gpu.driver_bugs &
          CG_GPU_INFO_DRIVER_BUG_MESA_46631_SLOW_READ_PIXELS) &&
         (width > 8 || height > 8) &&
         (format & ~CG_PREMULT_BIT) == CG_PIXEL_FORMAT_BGRA_8888 &&
@@ -1297,15 +1294,17 @@ _cg_framebuffer_gl_read_pixels_into_bitmap(cg_framebuffer_t *framebuffer,
     if (!cg_is_offscreen(framebuffer))
         y = framebuffer_height - y - height;
 
-    required_format = ctx->driver_vtable->pixel_format_to_gl(
-        ctx, format, &gl_intformat, &gl_format, &gl_type);
+    required_format = dev->driver_vtable->pixel_format_to_gl(dev, format,
+                                                             &gl_intformat,
+                                                             &gl_format,
+                                                             &gl_type);
 
     /* NB: All offscreen rendering is done upside down so there is no need
      * to flip in this case... */
-    if (_cg_has_private_feature(ctx, CG_PRIVATE_FEATURE_MESA_PACK_INVERT) &&
+    if (_cg_has_private_feature(dev, CG_PRIVATE_FEATURE_MESA_PACK_INVERT) &&
         (source & CG_READ_PIXELS_NO_FLIP) == 0 &&
         !cg_is_offscreen(framebuffer)) {
-        GE(ctx, glPixelStorei(GL_PACK_INVERT_MESA, true));
+        GE(dev, glPixelStorei(GL_PACK_INVERT_MESA, true));
         pack_invert_set = true;
     } else
         pack_invert_set = false;
@@ -1320,7 +1319,7 @@ _cg_framebuffer_gl_read_pixels_into_bitmap(cg_framebuffer_t *framebuffer,
        GL_RGBA/GL_UNSIGNED_BYTE and convert if necessary. We also need
        to use this intermediate buffer if the rowstride has padding
        because GLES does not support setting GL_ROW_LENGTH */
-    if ((!_cg_has_private_feature(ctx,
+    if ((!_cg_has_private_feature(dev,
                                   CG_PRIVATE_FEATURE_READ_PIXELS_ANY_FORMAT) &&
          (gl_format != GL_RGBA || gl_type != GL_UNSIGNED_BYTE ||
           cg_bitmap_get_rowstride(bitmap) != 4 * width)) ||
@@ -1331,7 +1330,7 @@ _cg_framebuffer_gl_read_pixels_into_bitmap(cg_framebuffer_t *framebuffer,
         uint8_t *tmp_data;
         bool succeeded;
 
-        if (_cg_has_private_feature(ctx,
+        if (_cg_has_private_feature(dev,
                                     CG_PRIVATE_FEATURE_READ_PIXELS_ANY_FORMAT))
             read_format = required_format;
         else {
@@ -1344,16 +1343,16 @@ _cg_framebuffer_gl_read_pixels_into_bitmap(cg_framebuffer_t *framebuffer,
             read_format = ((read_format & ~CG_PREMULT_BIT) |
                            (framebuffer->internal_format & CG_PREMULT_BIT));
 
-        tmp_bmp = _cg_bitmap_new_with_malloc_buffer(
-            ctx, width, height, read_format, error);
+        tmp_bmp = _cg_bitmap_new_with_malloc_buffer(dev, width, height,
+                                                    read_format, error);
         if (!tmp_bmp)
             goto EXIT;
 
         bpp = _cg_pixel_format_get_bytes_per_pixel(read_format);
         rowstride = cg_bitmap_get_rowstride(tmp_bmp);
 
-        ctx->texture_driver->prep_gl_for_pixels_download(
-            ctx, rowstride, width, bpp);
+        dev->texture_driver->prep_gl_for_pixels_download(dev, rowstride,
+                                                         width, bpp);
 
         /* Note: we don't worry about catching errors here since we know
          * we won't be lazily allocating storage for this buffer so it
@@ -1361,7 +1360,7 @@ _cg_framebuffer_gl_read_pixels_into_bitmap(cg_framebuffer_t *framebuffer,
         tmp_data = _cg_bitmap_gl_bind(
             tmp_bmp, CG_BUFFER_ACCESS_WRITE, CG_BUFFER_MAP_HINT_DISCARD, NULL);
 
-        GE(ctx,
+        GE(dev,
            glReadPixels(x, y, width, height, gl_format, gl_type, tmp_data));
 
         _cg_bitmap_gl_unbind(tmp_bmp);
@@ -1399,8 +1398,8 @@ _cg_framebuffer_gl_read_pixels_into_bitmap(cg_framebuffer_t *framebuffer,
 
         bpp = _cg_pixel_format_get_bytes_per_pixel(bmp_format);
 
-        ctx->texture_driver->prep_gl_for_pixels_download(
-            ctx, rowstride, width, bpp);
+        dev->texture_driver->prep_gl_for_pixels_download(dev, rowstride,
+                                                         width, bpp);
 
         pixels = _cg_bitmap_gl_bind(shared_bmp,
                                     CG_BUFFER_ACCESS_WRITE,
@@ -1415,7 +1414,7 @@ _cg_framebuffer_gl_read_pixels_into_bitmap(cg_framebuffer_t *framebuffer,
             goto EXIT;
         }
 
-        GE(ctx, glReadPixels(x, y, width, height, gl_format, gl_type, pixels));
+        GE(dev, glReadPixels(x, y, width, height, gl_format, gl_type, pixels));
 
         _cg_bitmap_gl_unbind(shared_bmp);
 
@@ -1474,7 +1473,7 @@ EXIT:
      * to interfere with other Cogl components so all other code can assume that
      * we leave the pack_invert state off. */
     if (pack_invert_set)
-        GE(ctx, glPixelStorei(GL_PACK_INVERT_MESA, false));
+        GE(dev, glPixelStorei(GL_PACK_INVERT_MESA, false));
 
     return status;
 }

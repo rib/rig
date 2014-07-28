@@ -40,7 +40,7 @@
 #include "cogl-display-private.h"
 #include "cogl-framebuffer-private.h"
 #include "cogl-onscreen-template-private.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-onscreen-private.h"
 #include "cogl-winsys-sdl-private.h"
 #include "cogl-error-private.h"
@@ -222,10 +222,10 @@ error:
 static void
 flush_pending_resize_notification_idle(void *user_data)
 {
-    cg_context_t *context = user_data;
-    cg_renderer_t *renderer = context->display->renderer;
+    cg_device_t *dev = user_data;
+    cg_renderer_t *renderer = dev->display->renderer;
     cg_renderer_sdl_t *sdl_renderer = renderer->winsys;
-    cg_display_sdl_t *sdl_display = context->display->winsys;
+    cg_display_sdl_t *sdl_display = dev->display->winsys;
     cg_onscreen_t *onscreen = sdl_display->onscreen;
 
     /* This needs to be disconnected before invoking the callbacks in
@@ -239,8 +239,8 @@ flush_pending_resize_notification_idle(void *user_data)
 static cg_filter_return_t
 sdl_event_filter_cb(SDL_Event *event, void *data)
 {
-    cg_context_t *context = data;
-    cg_display_t *display = context->display;
+    cg_device_t *dev = data;
+    cg_display_t *display = dev->display;
     cg_display_sdl_t *sdl_display = display->winsys;
     cg_framebuffer_t *framebuffer;
 
@@ -263,13 +263,13 @@ sdl_event_filter_cb(SDL_Event *event, void *data)
         _cg_framebuffer_winsys_update_size(framebuffer, width, height);
 
         /* We only want to notify that a resize happened when the
-         * application calls cg_context_dispatch so instead of
+         * application calls cg_device_dispatch so instead of
          * immediately notifying we queue an idle callback */
         if (!sdl_renderer->resize_notify_idle) {
             sdl_renderer->resize_notify_idle = _cg_poll_renderer_add_idle(
                 renderer,
                 flush_pending_resize_notification_idle,
-                context,
+                dev,
                 NULL);
         }
 
@@ -291,27 +291,27 @@ sdl_event_filter_cb(SDL_Event *event, void *data)
 }
 
 static bool
-_cg_winsys_context_init(cg_context_t *context, cg_error_t **error)
+_cg_winsys_device_init(cg_device_t *dev, cg_error_t **error)
 {
-    cg_renderer_t *renderer = context->display->renderer;
+    cg_renderer_t *renderer = dev->display->renderer;
 
     if (C_UNLIKELY(renderer->sdl_event_type_set == false))
-        c_error("cg_sdl_renderer_set_event_type() or cg_sdl_context_new() "
+        c_error("cg_sdl_renderer_set_event_type() or cg_sdl_device_new() "
                 "must be called during initialization");
 
     _cg_renderer_add_native_filter(
-        renderer, (cg_native_filter_func_t)sdl_event_filter_cb, context);
+        renderer, (cg_native_filter_func_t)sdl_event_filter_cb, dev);
 
     /* We'll manually handle queueing dirty events in response to
      * SDL_VIDEOEXPOSE events */
-    CG_FLAGS_SET(
-        context->private_features, CG_PRIVATE_FEATURE_DIRTY_EVENTS, true);
+    CG_FLAGS_SET(dev->private_features, CG_PRIVATE_FEATURE_DIRTY_EVENTS,
+                 true);
 
-    return _cg_context_update_features(context, error);
+    return _cg_device_update_features(dev, error);
 }
 
 static void
-_cg_winsys_context_deinit(cg_context_t *context)
+_cg_winsys_device_deinit(cg_device_t *dev)
 {
 }
 
@@ -323,8 +323,8 @@ _cg_winsys_onscreen_bind(cg_onscreen_t *onscreen)
 static void
 _cg_winsys_onscreen_deinit(cg_onscreen_t *onscreen)
 {
-    cg_context_t *context = CG_FRAMEBUFFER(onscreen)->context;
-    cg_display_t *display = context->display;
+    cg_device_t *dev = CG_FRAMEBUFFER(onscreen)->dev;
+    cg_display_t *display = dev->display;
     cg_display_sdl_t *sdl_display = display->winsys;
 
     sdl_display->onscreen = NULL;
@@ -335,8 +335,8 @@ _cg_winsys_onscreen_init(cg_onscreen_t *onscreen,
                          cg_error_t **error)
 {
     cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
-    cg_context_t *context = framebuffer->context;
-    cg_display_t *display = context->display;
+    cg_device_t *dev = framebuffer->dev;
+    cg_display_t *display = dev->display;
     cg_display_sdl_t *sdl_display = display->winsys;
     bool flags_changed = false;
     int width, height;
@@ -408,8 +408,8 @@ _cg_winsys_onscreen_set_resizable(cg_onscreen_t *onscreen,
                                   bool resizable)
 {
     cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
-    cg_context_t *context = framebuffer->context;
-    cg_display_t *display = context->display;
+    cg_device_t *dev = framebuffer->dev;
+    cg_display_t *display = dev->display;
     cg_display_sdl_t *sdl_display = display->winsys;
     int width, height;
 
@@ -448,8 +448,8 @@ _cg_winsys_sdl_get_vtable(void)
         vtable.renderer_disconnect = _cg_winsys_renderer_disconnect;
         vtable.display_setup = _cg_winsys_display_setup;
         vtable.display_destroy = _cg_winsys_display_destroy;
-        vtable.context_init = _cg_winsys_context_init;
-        vtable.context_deinit = _cg_winsys_context_deinit;
+        vtable.device_init = _cg_winsys_device_init;
+        vtable.device_deinit = _cg_winsys_device_deinit;
         vtable.onscreen_init = _cg_winsys_onscreen_init;
         vtable.onscreen_deinit = _cg_winsys_onscreen_deinit;
         vtable.onscreen_bind = _cg_winsys_onscreen_bind;

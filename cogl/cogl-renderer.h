@@ -67,7 +67,7 @@ CG_BEGIN_DECLS
  *
  * <note>Many applications don't need to explicitly use
  * cg_renderer_new() or cg_display_new() and can just jump
- * straight to cg_context_new() and pass a %NULL display argument so
+ * straight to cg_device_new() and pass a %NULL display argument so
  * Cogl will automatically connect and setup a renderer and
  * display.</note>
  */
@@ -126,7 +126,7 @@ bool cg_is_renderer(void *object);
  *
  * <note>Many applications don't need to explicitly use
  * cg_renderer_new() or cg_display_new() and can just jump
- * straight to cg_context_new() and pass a %NULL display argument
+ * straight to cg_device_new() and pass a %NULL display argument
  * so Cogl will automatically connect and setup a renderer and
  * display.</note>
  *

@@ -124,7 +124,7 @@ typedef struct {
 struct _cg_gles2_context_t {
     cg_object_t _parent;
 
-    cg_context_t *context;
+    cg_device_t *dev;
 
     /* This is set to false until the first time the GLES2 context is
      * bound to something. We need to keep track of this so we can set

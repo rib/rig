@@ -36,7 +36,7 @@
 #endif
 
 #include "cogl-util.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-object-private.h"
 #include "cogl-journal-private.h"
 #include "cogl-attribute.h"
@@ -109,10 +109,10 @@ validate_cg_attribute_name(const char *name,
 }
 
 cg_attribute_name_state_t *
-_cg_attribute_register_attribute_name(cg_context_t *context, const char *name)
+_cg_attribute_register_attribute_name(cg_device_t *dev, const char *name)
 {
     cg_attribute_name_state_t *name_state = c_new(cg_attribute_name_state_t, 1);
-    int name_index = context->n_attribute_names++;
+    int name_index = dev->n_attribute_names++;
     char *name_copy = c_strdup(name);
 
     name_state->name = NULL;
@@ -133,16 +133,16 @@ _cg_attribute_register_attribute_name(cg_context_t *context, const char *name)
     if (name_state->name == NULL)
         name_state->name = name_copy;
 
-    c_hash_table_insert(
-        context->attribute_name_states_hash, name_copy, name_state);
+    c_hash_table_insert(dev->attribute_name_states_hash, name_copy,
+                        name_state);
 
-    if (C_UNLIKELY(context->attribute_name_index_map == NULL))
-        context->attribute_name_index_map =
+    if (C_UNLIKELY(dev->attribute_name_index_map == NULL))
+        dev->attribute_name_index_map =
             c_array_new(false, false, sizeof(void *));
 
-    c_array_set_size(context->attribute_name_index_map, name_index + 1);
+    c_array_set_size(dev->attribute_name_index_map, name_index + 1);
 
-    c_array_index(context->attribute_name_index_map,
+    c_array_index(dev->attribute_name_index_map,
                   cg_attribute_name_state_t *,
                   name_index) = name_state;
 
@@ -208,15 +208,15 @@ cg_attribute_new(cg_attribute_buffer_t *attribute_buffer,
 {
     cg_attribute_t *attribute = c_slice_new(cg_attribute_t);
     cg_buffer_t *buffer = CG_BUFFER(attribute_buffer);
-    cg_context_t *ctx = buffer->context;
+    cg_device_t *dev = buffer->dev;
 
     attribute->is_buffered = true;
 
     attribute->name_state =
-        c_hash_table_lookup(ctx->attribute_name_states_hash, name);
+        c_hash_table_lookup(dev->attribute_name_states_hash, name);
     if (!attribute->name_state) {
         cg_attribute_name_state_t *name_state =
-            _cg_attribute_register_attribute_name(ctx, name);
+            _cg_attribute_register_attribute_name(dev, name);
         if (!name_state)
             goto error;
         attribute->name_state = name_state;
@@ -245,7 +245,7 @@ error:
 }
 
 static cg_attribute_t *
-_cg_attribute_new_const(cg_context_t *context,
+_cg_attribute_new_const(cg_device_t *dev,
                         const char *name,
                         int n_components,
                         int n_columns,
@@ -255,10 +255,10 @@ _cg_attribute_new_const(cg_context_t *context,
     cg_attribute_t *attribute = c_slice_new(cg_attribute_t);
 
     attribute->name_state =
-        c_hash_table_lookup(context->attribute_name_states_hash, name);
+        c_hash_table_lookup(dev->attribute_name_states_hash, name);
     if (!attribute->name_state) {
         cg_attribute_name_state_t *name_state =
-            _cg_attribute_register_attribute_name(context, name);
+            _cg_attribute_register_attribute_name(dev, name);
         if (!name_state)
             goto error;
         attribute->name_state = name_state;
@@ -270,7 +270,7 @@ _cg_attribute_new_const(cg_context_t *context,
     attribute->is_buffered = false;
     attribute->normalized = false;
 
-    attribute->d.constant.context = cg_object_ref(context);
+    attribute->d.constant.dev = cg_object_ref(dev);
 
     attribute->d.constant.boxed.v.array = NULL;
 
@@ -294,9 +294,9 @@ error:
 }
 
 cg_attribute_t *
-cg_attribute_new_const_1f(cg_context_t *context, const char *name, float value)
+cg_attribute_new_const_1f(cg_device_t *dev, const char *name, float value)
 {
-    return _cg_attribute_new_const(context,
+    return _cg_attribute_new_const(dev,
                                    name,
                                    1, /* n_components */
                                    1, /* 1 column vector */
@@ -305,11 +305,11 @@ cg_attribute_new_const_1f(cg_context_t *context, const char *name, float value)
 }
 
 cg_attribute_t *
-cg_attribute_new_const_2fv(cg_context_t *context,
+cg_attribute_new_const_2fv(cg_device_t *dev,
                            const char *name,
                            const float *value)
 {
-    return _cg_attribute_new_const(context,
+    return _cg_attribute_new_const(dev,
                                    name,
                                    2, /* n_components */
                                    1, /* 1 column vector */
@@ -318,11 +318,11 @@ cg_attribute_new_const_2fv(cg_context_t *context,
 }
 
 cg_attribute_t *
-cg_attribute_new_const_3fv(cg_context_t *context,
+cg_attribute_new_const_3fv(cg_device_t *dev,
                            const char *name,
                            const float *value)
 {
-    return _cg_attribute_new_const(context,
+    return _cg_attribute_new_const(dev,
                                    name,
                                    3, /* n_components */
                                    1, /* 1 column vector */
@@ -331,11 +331,11 @@ cg_attribute_new_const_3fv(cg_context_t *context,
 }
 
 cg_attribute_t *
-cg_attribute_new_const_4fv(cg_context_t *context,
+cg_attribute_new_const_4fv(cg_device_t *dev,
                            const char *name,
                            const float *value)
 {
-    return _cg_attribute_new_const(context,
+    return _cg_attribute_new_const(dev,
                                    name,
                                    4, /* n_components */
                                    1, /* 1 column vector */
@@ -344,13 +344,13 @@ cg_attribute_new_const_4fv(cg_context_t *context,
 }
 
 cg_attribute_t *
-cg_attribute_new_const_2f(cg_context_t *context,
+cg_attribute_new_const_2f(cg_device_t *dev,
                           const char *name,
                           float component0,
                           float component1)
 {
     float vec2[2] = { component0, component1 };
-    return _cg_attribute_new_const(context,
+    return _cg_attribute_new_const(dev,
                                    name,
                                    2, /* n_components */
                                    1, /* 1 column vector */
@@ -359,14 +359,14 @@ cg_attribute_new_const_2f(cg_context_t *context,
 }
 
 cg_attribute_t *
-cg_attribute_new_const_3f(cg_context_t *context,
+cg_attribute_new_const_3f(cg_device_t *dev,
                           const char *name,
                           float component0,
                           float component1,
                           float component2)
 {
     float vec3[3] = { component0, component1, component2 };
-    return _cg_attribute_new_const(context,
+    return _cg_attribute_new_const(dev,
                                    name,
                                    3, /* n_components */
                                    1, /* 1 column vector */
@@ -375,7 +375,7 @@ cg_attribute_new_const_3f(cg_context_t *context,
 }
 
 cg_attribute_t *
-cg_attribute_new_const_4f(cg_context_t *context,
+cg_attribute_new_const_4f(cg_device_t *dev,
                           const char *name,
                           float component0,
                           float component1,
@@ -383,7 +383,7 @@ cg_attribute_new_const_4f(cg_context_t *context,
                           float component3)
 {
     float vec4[4] = { component0, component1, component2, component3 };
-    return _cg_attribute_new_const(context,
+    return _cg_attribute_new_const(dev,
                                    name,
                                    4, /* n_components */
                                    1, /* 1 column vector */
@@ -392,12 +392,12 @@ cg_attribute_new_const_4f(cg_context_t *context,
 }
 
 cg_attribute_t *
-cg_attribute_new_const_2x2fv(cg_context_t *context,
+cg_attribute_new_const_2x2fv(cg_device_t *dev,
                              const char *name,
                              const float *matrix2x2,
                              bool transpose)
 {
-    return _cg_attribute_new_const(context,
+    return _cg_attribute_new_const(dev,
                                    name,
                                    2, /* n_components */
                                    2, /* 2 column vector */
@@ -406,12 +406,12 @@ cg_attribute_new_const_2x2fv(cg_context_t *context,
 }
 
 cg_attribute_t *
-cg_attribute_new_const_3x3fv(cg_context_t *context,
+cg_attribute_new_const_3x3fv(cg_device_t *dev,
                              const char *name,
                              const float *matrix3x3,
                              bool transpose)
 {
-    return _cg_attribute_new_const(context,
+    return _cg_attribute_new_const(dev,
                                    name,
                                    3, /* n_components */
                                    3, /* 3 column vector */
@@ -420,12 +420,12 @@ cg_attribute_new_const_3x3fv(cg_context_t *context,
 }
 
 cg_attribute_t *
-cg_attribute_new_const_4x4fv(cg_context_t *context,
+cg_attribute_new_const_4x4fv(cg_device_t *dev,
                              const char *name,
                              const float *matrix4x4,
                              bool transpose)
 {
-    return _cg_attribute_new_const(context,
+    return _cg_attribute_new_const(dev,
                                    name,
                                    4, /* n_components */
                                    4, /* 4 column vector */
@@ -584,7 +584,7 @@ _cg_flush_attributes_state(cg_framebuffer_t *framebuffer,
                            cg_attribute_t **attributes,
                            int n_attributes)
 {
-    cg_context_t *ctx = framebuffer->context;
+    cg_device_t *dev = framebuffer->dev;
     cg_flush_layer_state_t layers_state;
 
     if (!(flags & CG_DRAW_SKIP_JOURNAL_FLUSH))
@@ -614,7 +614,7 @@ _cg_flush_attributes_state(cg_framebuffer_t *framebuffer,
     _cg_framebuffer_mark_mid_scene(framebuffer);
     _cg_framebuffer_mark_clear_clip_dirty(framebuffer);
 
-    ctx->driver_vtable->flush_attributes_state(
+    dev->driver_vtable->flush_attributes_state(
         framebuffer, pipeline, &layers_state, flags, attributes, n_attributes);
 }
 

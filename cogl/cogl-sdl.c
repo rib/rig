@@ -33,7 +33,7 @@
 #endif
 
 #include "cogl-sdl.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-renderer-private.h"
 
 void
@@ -51,7 +51,7 @@ cg_sdl_renderer_get_event_type(cg_renderer_t *renderer)
     return renderer->sdl_event_type;
 }
 
-cg_context_t *
+cg_device_t *
 cg_sdl_context_new(int type, cg_error_t **error)
 {
     cg_renderer_t *renderer = cg_renderer_new();
@@ -68,35 +68,35 @@ cg_sdl_context_new(int type, cg_error_t **error)
     if (!cg_display_setup(display, error))
         return NULL;
 
-    return cg_context_new(display, error);
+    return cg_device_new(display, error);
 }
 
 void
-cg_sdl_handle_event(cg_context_t *context, SDL_Event *event)
+cg_sdl_handle_event(cg_device_t *dev, SDL_Event *event)
 {
     cg_renderer_t *renderer;
 
-    c_return_if_fail(cg_is_context(context));
+    c_return_if_fail(cg_is_device(dev));
 
-    renderer = context->display->renderer;
+    renderer = dev->display->renderer;
 
     _cg_renderer_handle_native_event(renderer, event);
 }
 
 static void
-_cg_sdl_push_wakeup_event(cg_context_t *context)
+_cg_sdl_push_wakeup_event(cg_device_t *dev)
 {
     SDL_Event wakeup_event;
 
-    wakeup_event.type = context->display->renderer->sdl_event_type;
+    wakeup_event.type = dev->display->renderer->sdl_event_type;
 
     SDL_PushEvent(&wakeup_event);
 }
 
 void
-cg_sdl_idle(cg_context_t *context)
+cg_sdl_idle(cg_device_t *dev)
 {
-    cg_renderer_t *renderer = context->display->renderer;
+    cg_renderer_t *renderer = dev->display->renderer;
 
     cg_poll_renderer_dispatch(renderer, NULL, 0);
 
@@ -107,5 +107,5 @@ cg_sdl_idle(cg_context_t *context)
      * dummy event to make sure that happens
      */
     if (!_cg_list_empty(&renderer->idle_closures))
-        _cg_sdl_push_wakeup_event(context);
+        _cg_sdl_push_wakeup_event(dev);
 }

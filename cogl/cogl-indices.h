@@ -105,7 +105,7 @@ CG_BEGIN_DECLS
  * for drawing quads as above.
  */
 
-cg_indices_t *cg_indices_new(cg_context_t *context,
+cg_indices_t *cg_indices_new(cg_device_t *dev,
                              cg_indices_type_t type,
                              const void *indices_data,
                              int n_indices);
@@ -122,7 +122,7 @@ size_t cg_indices_get_offset(cg_indices_t *indices);
 
 void cg_indices_set_offset(cg_indices_t *indices, size_t offset);
 
-cg_indices_t *cg_get_rectangle_indices(cg_context_t *context, int n_rectangles);
+cg_indices_t *cg_get_rectangle_indices(cg_device_t *dev, int n_rectangles);
 
 /**
  * cg_is_indices:

@@ -38,7 +38,7 @@
 #define __CG_POLL_H__
 
 #include <cogl/cogl-defines.h>
-#include <cogl/cogl-context.h>
+#include <cogl/cogl-device.h>
 
 CG_BEGIN_DECLS
 

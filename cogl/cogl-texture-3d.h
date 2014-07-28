@@ -54,7 +54,7 @@ typedef struct _cg_texture_3d_t cg_texture_3d_t;
 
 /**
  * cg_texture_3d_new_with_size:
- * @context: a #cg_context_t
+ * @dev: A #cg_device_t
  * @width: width of the texture in pixels.
  * @height: height of the texture in pixels.
  * @depth: depth of the texture in pixels.
@@ -83,14 +83,14 @@ typedef struct _cg_texture_3d_t cg_texture_3d_t;
  * allocated.
  * Stability: Unstable
  */
-cg_texture_3d_t *cg_texture_3d_new_with_size(cg_context_t *context,
+cg_texture_3d_t *cg_texture_3d_new_with_size(cg_device_t *dev,
                                              int width,
                                              int height,
                                              int depth);
 
 /**
  * cg_texture_3d_new_from_data:
- * @context: a #cg_context_t
+ * @dev: A #cg_device_t
  * @width: width of the texture in pixels.
  * @height: height of the texture in pixels.
  * @depth: depth of the texture in pixels.
@@ -123,7 +123,7 @@ cg_texture_3d_t *cg_texture_3d_new_with_size(cg_context_t *context,
  *               returned through @error.
  * Stability: Unstable
  */
-cg_texture_3d_t *cg_texture_3d_new_from_data(cg_context_t *context,
+cg_texture_3d_t *cg_texture_3d_new_from_data(cg_device_t *dev,
                                              int width,
                                              int height,
                                              int depth,

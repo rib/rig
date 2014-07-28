@@ -37,7 +37,7 @@
 
 #include "cogl-object-private.h"
 #include "cogl-matrix-stack.h"
-#include "cogl-context.h"
+#include "cogl-device.h"
 #include "cogl-framebuffer.h"
 
 typedef enum _cg_matrix_op_t {
@@ -146,7 +146,7 @@ typedef union _cg_matrix_entry_full_t {
 struct _cg_matrix_stack_t {
     cg_object_t _parent;
 
-    cg_context_t *context;
+    cg_device_t *dev;
 
     cg_matrix_entry_t *last_entry;
 };

@@ -48,7 +48,7 @@
 
 #endif /* CG_COMPILATION */
 
-#include <cogl/cogl-context.h>
+#include <cogl/cogl-device.h>
 
 CG_BEGIN_DECLS
 
@@ -97,7 +97,7 @@ uint32_t cg_texture_pixmap_x11_error_domain(void);
 
 /**
  * cg_texture_pixmap_x11_new:
- * @context: A #cg_context_t
+ * @dev: A #cg_device_t
  * @pixmap: A X11 pixmap ID
  * @automatic_updates: Whether to automatically copy the contents of
  * the pixmap to the texture.
@@ -112,7 +112,7 @@ uint32_t cg_texture_pixmap_x11_error_domain(void);
  *
  * Stability: Unstable
  */
-cg_texture_pixmap_x11_t *cg_texture_pixmap_x11_new(cg_context_t *context,
+cg_texture_pixmap_x11_t *cg_texture_pixmap_x11_new(cg_device_t *dev,
                                                    uint32_t pixmap,
                                                    bool automatic_updates,
                                                    cg_error_t **error);

@@ -39,7 +39,7 @@
 #include "cogl-i18n-private.h"
 #include "cogl-debug.h"
 #include "cogl-util.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-pipeline-private.h"
 #include "cogl-pipeline-opengl-private.h"
 #include "cogl-winsys-private.h"
@@ -69,20 +69,20 @@ _cg_check_extension(const char *name, char *const *ext)
 }
 
 bool
-cg_has_feature(cg_context_t *ctx, cg_feature_id_t feature)
+cg_has_feature(cg_device_t *dev, cg_feature_id_t feature)
 {
-    return CG_FLAGS_GET(ctx->features, feature);
+    return CG_FLAGS_GET(dev->features, feature);
 }
 
 bool
-cg_has_features(cg_context_t *ctx, ...)
+cg_has_features(cg_device_t *dev, ...)
 {
     va_list args;
     cg_feature_id_t feature;
 
-    va_start(args, ctx);
+    va_start(args, dev);
     while ((feature = va_arg(args, cg_feature_id_t)))
-        if (!cg_has_feature(ctx, feature))
+        if (!cg_has_feature(dev, feature))
             return false;
     va_end(args);
 
@@ -90,22 +90,22 @@ cg_has_features(cg_context_t *ctx, ...)
 }
 
 void
-cg_foreach_feature(cg_context_t *ctx,
+cg_foreach_feature(cg_device_t *dev,
                    cg_feature_callback_t callback,
                    void *user_data)
 {
     int i;
     for (i = 0; i < _CG_N_FEATURE_IDS; i++)
-        if (CG_FLAGS_GET(ctx->features, i))
+        if (CG_FLAGS_GET(dev->features, i))
             callback(i, user_data);
 }
 
 void
-_cg_flush(cg_context_t *ctx)
+_cg_flush(cg_device_t *dev)
 {
     c_list_t *l;
 
-    for (l = ctx->framebuffers; l; l = l->next)
+    for (l = dev->framebuffers; l; l = l->next)
         _cg_framebuffer_flush_journal(l->data);
 }
 

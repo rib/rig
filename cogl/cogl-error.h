@@ -51,22 +51,22 @@ CG_BEGIN_DECLS
  * and for these apis we use a standard convention for reporting
  * runtime recoverable errors.
  *
- * As an example if we look at the cg_context_new() api which
+ * As an example if we look at the cg_device_new() api which
  * takes an error argument:
  * |[
- *   cg_context_t *
- *   cg_context_new (cg_display_t *display, cg_error_t **error);
+ *   cg_device_t *
+ *   cg_device_new (cg_display_t *display, cg_error_t **error);
  * ]|
  *
  * A caller interested in catching any runtime error when creating a
- * new #cg_context_t would pass the address of a #cg_error_t pointer
+ * new #cg_device_t would pass the address of a #cg_error_t pointer
  * that has first been initialized to %NULL as follows:
  *
  * |[
  *   cg_error_t *error = NULL;
- *   cg_context_t *context;
+ *   cg_device_t *context;
  *
- *   context = cg_context_new (NULL, &error);
+ *   context = cg_device_new (NULL, &error);
  * ]|
  *
  * The return status should usually be enough to determine if there

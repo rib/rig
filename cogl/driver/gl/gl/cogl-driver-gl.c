@@ -35,7 +35,7 @@
 #include <string.h>
 
 #include "cogl-private.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-util-gl-private.h"
 #include "cogl-feature-private.h"
 #include "cogl-renderer-private.h"
@@ -47,8 +47,9 @@
 #include "cogl-buffer-gl-private.h"
 
 static bool
-_cg_driver_pixel_format_from_gl_internal(
-    cg_context_t *context, GLenum gl_int_format, cg_pixel_format_t *out_format)
+_cg_driver_pixel_format_from_gl_internal(cg_device_t *dev,
+                                         GLenum gl_int_format,
+                                         cg_pixel_format_t *out_format)
 {
     /* It doesn't really matter we convert to exact same
        format (some have no cogl match anyway) since format
@@ -103,7 +104,7 @@ _cg_driver_pixel_format_from_gl_internal(
 }
 
 static cg_pixel_format_t
-_cg_driver_pixel_format_to_gl(cg_context_t *context,
+_cg_driver_pixel_format_to_gl(cg_device_t *dev,
                               cg_pixel_format_t format,
                               GLenum *out_glintformat,
                               GLenum *out_glformat,
@@ -122,7 +123,7 @@ _cg_driver_pixel_format_to_gl(cg_context_t *context,
         /* If the driver doesn't natively support alpha textures then we
          * will use a red component texture with a swizzle to implement
          * the texture */
-        if (_cg_has_private_feature(context,
+        if (_cg_has_private_feature(dev,
                                     CG_PRIVATE_FEATURE_ALPHA_TEXTURES) == 0) {
             glintformat = GL_RED;
             glformat = GL_RED;
@@ -134,7 +135,7 @@ _cg_driver_pixel_format_to_gl(cg_context_t *context,
         break;
 
     case CG_PIXEL_FORMAT_RG_88:
-        if (cg_has_feature(context, CG_FEATURE_ID_TEXTURE_RG)) {
+        if (cg_has_feature(dev, CG_FEATURE_ID_TEXTURE_RG)) {
             glintformat = GL_RG;
             glformat = GL_RG;
         } else {
@@ -284,23 +285,23 @@ _cg_driver_pixel_format_to_gl(cg_context_t *context,
 }
 
 static bool
-_cg_get_gl_version(cg_context_t *ctx, int *major_out, int *minor_out)
+_cg_get_gl_version(cg_device_t *dev, int *major_out, int *minor_out)
 {
     const char *version_string;
 
     /* Get the OpenGL version number */
-    if ((version_string = _cg_context_get_gl_version(ctx)) == NULL)
+    if ((version_string = _cg_device_get_gl_version(dev)) == NULL)
         return false;
 
     return _cg_gl_util_parse_gl_version(version_string, major_out, minor_out);
 }
 
 static bool
-check_gl_version(cg_context_t *ctx, char **gl_extensions, cg_error_t **error)
+check_gl_version(cg_device_t *dev, char **gl_extensions, cg_error_t **error)
 {
     int major, minor;
 
-    if (!_cg_get_gl_version(ctx, &major, &minor)) {
+    if (!_cg_get_gl_version(dev, &major, &minor)) {
         _cg_set_error(error,
                       CG_DRIVER_ERROR,
                       CG_DRIVER_ERROR_UNKNOWN_VERSION,
@@ -339,7 +340,7 @@ check_gl_version(cg_context_t *ctx, char **gl_extensions, cg_error_t **error)
 }
 
 static bool
-_cg_driver_update_features(cg_context_t *ctx, cg_error_t **error)
+_cg_driver_update_features(cg_device_t *dev, cg_error_t **error)
 {
     unsigned long private_features
     [CG_FLAGS_N_LONGS_FOR_SIZE(CG_N_PRIVATE_FEATURES)] = { 0 };
@@ -351,16 +352,19 @@ _cg_driver_update_features(cg_context_t *ctx, cg_error_t **error)
     /* We have to special case getting the pointer to the glGetString*
        functions because we need to use them to determine what functions
        we can expect */
-    ctx->glGetString = (void *)_cg_renderer_get_proc_address(
-        ctx->display->renderer, "glGetString", true);
-    ctx->glGetStringi = (void *)_cg_renderer_get_proc_address(
-        ctx->display->renderer, "glGetStringi", true);
-    ctx->glGetIntegerv = (void *)_cg_renderer_get_proc_address(
-        ctx->display->renderer, "glGetIntegerv", true);
+    dev->glGetString = (void *)_cg_renderer_get_proc_address(dev->display->renderer,
+                                                             "glGetString",
+                                                             true);
+    dev->glGetStringi = (void *)_cg_renderer_get_proc_address(dev->display->renderer,
+                                                              "glGetStringi",
+                                                              true);
+    dev->glGetIntegerv = (void *)_cg_renderer_get_proc_address(dev->display->renderer,
+                                                               "glGetIntegerv",
+                                                               true);
 
-    gl_extensions = _cg_context_get_gl_extensions(ctx);
+    gl_extensions = _cg_device_get_gl_extensions(dev);
 
-    if (!check_gl_version(ctx, gl_extensions, error))
+    if (!check_gl_version(dev, gl_extensions, error))
         return false;
 
     if (C_UNLIKELY(CG_DEBUG_ENABLED(CG_DEBUG_WINSYS))) {
@@ -372,33 +376,33 @@ _cg_driver_update_features(cg_context_t *ctx, cg_error_t **error)
                 "  GL_RENDERER: %s\n"
                 "  GL_VERSION: %s\n"
                 "  GL_EXTENSIONS: %s",
-                ctx->glGetString(GL_VENDOR),
-                ctx->glGetString(GL_RENDERER),
-                _cg_context_get_gl_version(ctx),
+                dev->glGetString(GL_VENDOR),
+                dev->glGetString(GL_RENDERER),
+                _cg_device_get_gl_version(dev),
                 all_extensions);
 
         c_free(all_extensions);
     }
 
-    _cg_get_gl_version(ctx, &gl_major, &gl_minor);
+    _cg_get_gl_version(dev, &gl_major, &gl_minor);
 
-    _cg_gpc_info_init(ctx, &ctx->gpu);
+    _cg_gpc_info_init(dev, &dev->gpu);
 
-    ctx->glsl_major = 1;
-    ctx->glsl_minor = 1;
+    dev->glsl_major = 1;
+    dev->glsl_minor = 1;
 
     if (CG_CHECK_GL_VERSION(gl_major, gl_minor, 2, 0)) {
         const char *glsl_version =
-            (char *)ctx->glGetString(GL_SHADING_LANGUAGE_VERSION);
+            (char *)dev->glGetString(GL_SHADING_LANGUAGE_VERSION);
         _cg_gl_util_parse_gl_version(
-            glsl_version, &ctx->glsl_major, &ctx->glsl_minor);
+            glsl_version, &dev->glsl_major, &dev->glsl_minor);
     }
 
     if (gl_major < 3) {
         min_glsl_major = 1;
         min_glsl_minor = 1;
 
-        if (CG_CHECK_GL_VERSION(ctx->glsl_major, ctx->glsl_minor, 1, 2)) {
+        if (CG_CHECK_GL_VERSION(dev->glsl_major, dev->glsl_minor, 1, 2)) {
             /* We want to use version 120 if it is available so that the
              * gl_PointCoord can be used. */
             min_glsl_major = 1;
@@ -411,43 +415,44 @@ _cg_driver_update_features(cg_context_t *ctx, cg_error_t **error)
         min_glsl_minor = 3;
     }
 
-    ctx->glsl_version_to_use = min_glsl_major * 100 + min_glsl_minor * 10;
+    dev->glsl_version_to_use = min_glsl_major * 100 + min_glsl_minor * 10;
 
-    CG_FLAGS_SET(ctx->features, CG_FEATURE_ID_UNSIGNED_INT_INDICES, true);
-    CG_FLAGS_SET(ctx->features, CG_FEATURE_ID_DEPTH_RANGE, true);
+    CG_FLAGS_SET(dev->features, CG_FEATURE_ID_UNSIGNED_INT_INDICES, true);
+    CG_FLAGS_SET(dev->features, CG_FEATURE_ID_DEPTH_RANGE, true);
 
     if (CG_CHECK_GL_VERSION(gl_major, gl_minor, 1, 4))
-        CG_FLAGS_SET(ctx->features, CG_FEATURE_ID_MIRRORED_REPEAT, true);
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_MIRRORED_REPEAT, true);
 
-    _cg_feature_check_ext_functions(ctx, gl_major, gl_minor, gl_extensions);
+    _cg_feature_check_ext_functions(dev, gl_major, gl_minor, gl_extensions);
 
     if (CG_CHECK_GL_VERSION(gl_major, gl_minor, 2, 0) ||
         _cg_check_extension("GL_ARB_texture_non_power_of_two", gl_extensions)) {
-        CG_FLAGS_SET(ctx->features, CG_FEATURE_ID_TEXTURE_NPOT, true);
-        CG_FLAGS_SET(ctx->features, CG_FEATURE_ID_TEXTURE_NPOT_BASIC, true);
-        CG_FLAGS_SET(ctx->features, CG_FEATURE_ID_TEXTURE_NPOT_MIPMAP, true);
-        CG_FLAGS_SET(ctx->features, CG_FEATURE_ID_TEXTURE_NPOT_REPEAT, true);
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_TEXTURE_NPOT, true);
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_TEXTURE_NPOT_BASIC, true);
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_TEXTURE_NPOT_MIPMAP, true);
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_TEXTURE_NPOT_REPEAT, true);
     }
 
     if (_cg_check_extension("GL_MESA_pack_invert", gl_extensions))
         CG_FLAGS_SET(
             private_features, CG_PRIVATE_FEATURE_MESA_PACK_INVERT, true);
 
-    if (ctx->glGenRenderbuffers) {
-        CG_FLAGS_SET(ctx->features, CG_FEATURE_ID_OFFSCREEN, true);
+    if (dev->glGenRenderbuffers) {
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_OFFSCREEN, true);
         CG_FLAGS_SET(
             private_features, CG_PRIVATE_FEATURE_QUERY_FRAMEBUFFER_BITS, true);
     }
 
-    if (ctx->glBlitFramebuffer)
+    if (dev->glBlitFramebuffer)
         CG_FLAGS_SET(private_features, CG_PRIVATE_FEATURE_OFFSCREEN_BLIT, true);
 
-    if (ctx->glRenderbufferStorageMultisampleIMG)
-        CG_FLAGS_SET(ctx->features, CG_FEATURE_ID_OFFSCREEN_MULTISAMPLE, true);
+    if (dev->glRenderbufferStorageMultisampleIMG)
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_OFFSCREEN_MULTISAMPLE,
+                     true);
 
     if (CG_CHECK_GL_VERSION(gl_major, gl_minor, 3, 0) ||
         _cg_check_extension("GL_ARB_depth_texture", gl_extensions))
-        CG_FLAGS_SET(ctx->features, CG_FEATURE_ID_DEPTH_TEXTURE, true);
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_DEPTH_TEXTURE, true);
 
     if (CG_CHECK_GL_VERSION(gl_major, gl_minor, 2, 1) ||
         _cg_check_extension("GL_EXT_pixel_buffer_object", gl_extensions))
@@ -457,33 +462,33 @@ _cg_driver_update_features(cg_context_t *ctx, cg_error_t **error)
         _cg_check_extension("GL_EXT_blend_color", gl_extensions))
         CG_FLAGS_SET(private_features, CG_PRIVATE_FEATURE_BLEND_CONSTANT, true);
 
-    if (ctx->glCreateProgram)
-        CG_FLAGS_SET(ctx->features, CG_FEATURE_ID_GLSL, true);
+    if (dev->glCreateProgram)
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_GLSL, true);
     else {
         /* If all of the old GLSL extensions are available then we can fake
         * the GL 2.0 GLSL support by diverting to the old function names */
-        if (ctx->glCreateProgramObject && /* GL_ARB_shader_objects */
-            ctx->glVertexAttribPointer && /* GL_ARB_vertex_shader */
+        if (dev->glCreateProgramObject && /* GL_ARB_shader_objects */
+            dev->glVertexAttribPointer && /* GL_ARB_vertex_shader */
             _cg_check_extension("GL_ARB_fragment_shader", gl_extensions)) {
-            ctx->glCreateShader = ctx->glCreateShaderObject;
-            ctx->glCreateProgram = ctx->glCreateProgramObject;
-            ctx->glDeleteShader = ctx->glDeleteObject;
-            ctx->glDeleteProgram = ctx->glDeleteObject;
-            ctx->glAttachShader = ctx->glAttachObject;
-            ctx->glUseProgram = ctx->glUseProgramObject;
-            ctx->glGetProgramInfoLog = ctx->glGetInfoLog;
-            ctx->glGetShaderInfoLog = ctx->glGetInfoLog;
-            ctx->glGetShaderiv = ctx->glGetObjectParameteriv;
-            ctx->glGetProgramiv = ctx->glGetObjectParameteriv;
-            ctx->glDetachShader = ctx->glDetachObject;
-            ctx->glGetAttachedShaders = ctx->glGetAttachedObjects;
+            dev->glCreateShader = dev->glCreateShaderObject;
+            dev->glCreateProgram = dev->glCreateProgramObject;
+            dev->glDeleteShader = dev->glDeleteObject;
+            dev->glDeleteProgram = dev->glDeleteObject;
+            dev->glAttachShader = dev->glAttachObject;
+            dev->glUseProgram = dev->glUseProgramObject;
+            dev->glGetProgramInfoLog = dev->glGetInfoLog;
+            dev->glGetShaderInfoLog = dev->glGetInfoLog;
+            dev->glGetShaderiv = dev->glGetObjectParameteriv;
+            dev->glGetProgramiv = dev->glGetObjectParameteriv;
+            dev->glDetachShader = dev->glDetachObject;
+            dev->glGetAttachedShaders = dev->glGetAttachedObjects;
             /* FIXME: there doesn't seem to be an equivalent for glIsShader
              * and glIsProgram. This doesn't matter for now because Cogl
              * doesn't use these but if we add support for simulating a
              * GLES2 context on top of regular GL then we'll need to do
              * something here */
 
-            CG_FLAGS_SET(ctx->features, CG_FEATURE_ID_GLSL, true);
+            CG_FLAGS_SET(dev->features, CG_FEATURE_ID_GLSL, true);
         }
     }
 
@@ -494,21 +499,21 @@ _cg_driver_update_features(cg_context_t *ctx, cg_error_t **error)
          * too if we have glsl >= 1.2 otherwise we don't have the
          * gl_PointCoord builtin which we depend on in the glsl backend.
          */
-        (!CG_FLAGS_GET(ctx->features, CG_FEATURE_ID_GLSL) ||
-         CG_CHECK_GL_VERSION(ctx->glsl_major, ctx->glsl_minor, 1, 2))) {
-        CG_FLAGS_SET(ctx->features, CG_FEATURE_ID_POINT_SPRITE, true);
+        (!CG_FLAGS_GET(dev->features, CG_FEATURE_ID_GLSL) ||
+         CG_CHECK_GL_VERSION(dev->glsl_major, dev->glsl_minor, 1, 2))) {
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_POINT_SPRITE, true);
     }
 
-    if (ctx->glGenBuffers) {
+    if (dev->glGenBuffers) {
         CG_FLAGS_SET(private_features, CG_PRIVATE_FEATURE_VBOS, true);
-        CG_FLAGS_SET(ctx->features, CG_FEATURE_ID_MAP_BUFFER_FOR_READ, true);
-        CG_FLAGS_SET(ctx->features, CG_FEATURE_ID_MAP_BUFFER_FOR_WRITE, true);
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_MAP_BUFFER_FOR_READ, true);
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_MAP_BUFFER_FOR_WRITE, true);
     }
 
-    if (ctx->glTexImage3D)
-        CG_FLAGS_SET(ctx->features, CG_FEATURE_ID_TEXTURE_3D, true);
+    if (dev->glTexImage3D)
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_TEXTURE_3D, true);
 
-    if (ctx->glEGLImageTargetTexture2D)
+    if (dev->glEGLImageTargetTexture2D)
         CG_FLAGS_SET(private_features,
                      CG_PRIVATE_FEATURE_TEXTURE_2D_FROM_EGL_IMAGE,
                      true);
@@ -518,7 +523,7 @@ _cg_driver_update_features(cg_context_t *ctx, cg_error_t **error)
                      CG_PRIVATE_FEATURE_EXT_PACKED_DEPTH_STENCIL,
                      true);
 
-    if (ctx->glGenSamplers)
+    if (dev->glGenSamplers)
         CG_FLAGS_SET(
             private_features, CG_PRIVATE_FEATURE_SAMPLER_OBJECTS, true);
 
@@ -532,13 +537,14 @@ _cg_driver_update_features(cg_context_t *ctx, cg_error_t **error)
      * gl_PointSize builtin. This is only available in GL 2.0 (not the
      * GLSL extensions) */
     if (CG_CHECK_GL_VERSION(gl_major, gl_minor, 2, 0)) {
-        CG_FLAGS_SET(ctx->features, CG_FEATURE_ID_PER_VERTEX_POINT_SIZE, true);
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_PER_VERTEX_POINT_SIZE,
+                     true);
         CG_FLAGS_SET(private_features,
                      CG_PRIVATE_FEATURE_ENABLE_PROGRAM_POINT_SIZE,
                      true);
     }
 
-    if (ctx->driver == CG_DRIVER_GL) {
+    if (dev->driver == CG_DRIVER_GL) {
         /* Features which are not available in GL 3 */
         CG_FLAGS_SET(private_features, CG_PRIVATE_FEATURE_QUADS, true);
         CG_FLAGS_SET(private_features, CG_PRIVATE_FEATURE_ALPHA_TEXTURES, true);
@@ -555,16 +561,16 @@ _cg_driver_update_features(cg_context_t *ctx, cg_error_t **error)
         private_features, CG_PRIVATE_FEATURE_QUERY_TEXTURE_PARAMETERS, true);
     CG_FLAGS_SET(private_features, CG_PRIVATE_FEATURE_TEXTURE_MAX_LEVEL, true);
 
-    if (ctx->glFenceSync)
-        CG_FLAGS_SET(ctx->features, CG_FEATURE_ID_FENCE, true);
+    if (dev->glFenceSync)
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_FENCE, true);
 
     if (CG_CHECK_GL_VERSION(gl_major, gl_minor, 3, 0) ||
         _cg_check_extension("GL_ARB_texture_rg", gl_extensions))
-        CG_FLAGS_SET(ctx->features, CG_FEATURE_ID_TEXTURE_RG, true);
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_TEXTURE_RG, true);
 
     /* Cache features */
     for (i = 0; i < C_N_ELEMENTS(private_features); i++)
-        ctx->private_features[i] |= private_features[i];
+        dev->private_features[i] |= private_features[i];
 
     c_strfreev(gl_extensions);
 

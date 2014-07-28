@@ -38,7 +38,7 @@
 
 #include <string.h>
 
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-util-gl-private.h"
 #include "cogl-pipeline-private.h"
 #include "cogl-pipeline-layer-private.h"
@@ -48,7 +48,7 @@
 
 #ifdef CG_PIPELINE_FRAGEND_GLSL
 
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-object-private.h"
 #include "cogl-pipeline-cache.h"
 #include "cogl-pipeline-fragend-glsl-private.h"
@@ -130,7 +130,7 @@ destroy_shader_state(void *user_data, void *instance)
 {
     cg_pipeline_shader_state_t *shader_state = user_data;
 
-    _CG_GET_CONTEXT(ctx, NO_RETVAL);
+    _CG_GET_DEVICE(dev, NO_RETVAL);
 
     if (shader_state->cache_entry &&
         shader_state->cache_entry->pipeline != instance)
@@ -138,7 +138,7 @@ destroy_shader_state(void *user_data, void *instance)
 
     if (--shader_state->ref_count == 0) {
         if (shader_state->gl_shader)
-            GE(ctx, glDeleteShader(shader_state->gl_shader));
+            GE(dev, glDeleteShader(shader_state->gl_shader));
 
         c_free(shader_state->unit_state);
 
@@ -274,7 +274,7 @@ _cg_pipeline_fragend_glsl_start(cg_pipeline_t *pipeline,
     cg_pipeline_cache_entry_t *cache_entry = NULL;
     int i;
 
-    _CG_GET_CONTEXT(ctx, NO_RETVAL);
+    _CG_GET_DEVICE(dev, NO_RETVAL);
 
     /* Now lookup our glsl backend private state */
     shader_state = get_shader_state(pipeline);
@@ -290,9 +290,9 @@ _cg_pipeline_fragend_glsl_start(cg_pipeline_t *pipeline,
          */
         authority = _cg_pipeline_find_equivalent_parent(
             pipeline,
-            _cg_pipeline_get_state_for_fragment_codegen(ctx) &
+            _cg_pipeline_get_state_for_fragment_codegen(dev) &
             ~CG_PIPELINE_STATE_LAYERS,
-            _cg_pipeline_get_layer_state_for_fragment_codegen(ctx));
+            _cg_pipeline_get_layer_state_for_fragment_codegen(dev));
 
         shader_state = get_shader_state(authority);
 
@@ -305,7 +305,7 @@ _cg_pipeline_fragend_glsl_start(cg_pipeline_t *pipeline,
             if (C_LIKELY(
                     !(CG_DEBUG_ENABLED(CG_DEBUG_DISABLE_PROGRAM_CACHES)))) {
                 cache_entry = _cg_pipeline_cache_get_fragment_template(
-                    ctx->pipeline_cache, authority);
+                    dev->pipeline_cache, authority);
 
                 shader_state = get_shader_state(cache_entry->pipeline);
             }
@@ -342,10 +342,10 @@ _cg_pipeline_fragend_glsl_start(cg_pipeline_t *pipeline,
        other contains the main function. We need two strings
        because we need to dynamically declare attributes as the
        add_layer callback is invoked */
-    c_string_set_size(ctx->codegen_header_buffer, 0);
-    c_string_set_size(ctx->codegen_source_buffer, 0);
-    shader_state->header = ctx->codegen_header_buffer;
-    shader_state->source = ctx->codegen_source_buffer;
+    c_string_set_size(dev->codegen_header_buffer, 0);
+    c_string_set_size(dev->codegen_source_buffer, 0);
+    shader_state->header = dev->codegen_header_buffer;
+    shader_state->source = dev->codegen_source_buffer;
     _cg_list_init(&shader_state->layers);
 
     add_layer_declarations(pipeline, shader_state);
@@ -384,7 +384,7 @@ ensure_texture_lookup_generated(cg_pipeline_shader_state_t *shader_state,
     cg_texture_type_t texture_type;
     const char *target_string, *tex_coord_swizzle;
 
-    _CG_GET_CONTEXT(ctx, NO_RETVAL);
+    _CG_GET_DEVICE(dev, NO_RETVAL);
 
     if (shader_state->unit_state[unit_index].sampled)
         return;
@@ -431,7 +431,7 @@ ensure_texture_lookup_generated(cg_pipeline_shader_state_t *shader_state,
             c_string_append(shader_state->header,
                             "vec4 (1.0, 1.0, 1.0, 1.0);\n");
         else {
-            if (ctx->glsl_version_to_use >= 130) {
+            if (dev->glsl_version_to_use >= 130) {
                 c_string_append_printf(shader_state->header,
                                        "texture (tex, coords.%s);\n",
                                        tex_coord_swizzle);
@@ -1031,7 +1031,7 @@ _cg_pipeline_fragend_glsl_end(cg_pipeline_t *pipeline,
 {
     cg_pipeline_shader_state_t *shader_state = get_shader_state(pipeline);
 
-    _CG_GET_CONTEXT(ctx, false);
+    _CG_GET_DEVICE(dev, false);
 
     if (shader_state->source) {
         const char *source_strings[2];
@@ -1093,30 +1093,30 @@ _cg_pipeline_fragend_glsl_end(cg_pipeline_t *pipeline,
         snippet_data.source_buf = shader_state->source;
         _cg_pipeline_snippet_generate_code(&snippet_data);
 
-        GE_RET(shader, ctx, glCreateShader(GL_FRAGMENT_SHADER));
+        GE_RET(shader, dev, glCreateShader(GL_FRAGMENT_SHADER));
 
         lengths[0] = shader_state->header->len;
         source_strings[0] = shader_state->header->str;
         lengths[1] = shader_state->source->len;
         source_strings[1] = shader_state->source->str;
 
-        _cg_glsl_shader_set_source_with_boilerplate(ctx,
+        _cg_glsl_shader_set_source_with_boilerplate(dev,
                                                     shader,
                                                     GL_FRAGMENT_SHADER,
                                                     2, /* count */
                                                     source_strings,
                                                     lengths);
 
-        GE(ctx, glCompileShader(shader));
-        GE(ctx, glGetShaderiv(shader, GL_COMPILE_STATUS, &compile_status));
+        GE(dev, glCompileShader(shader));
+        GE(dev, glGetShaderiv(shader, GL_COMPILE_STATUS, &compile_status));
 
         if (!compile_status) {
             GLint len = 0;
             char *shader_log;
 
-            GE(ctx, glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &len));
+            GE(dev, glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &len));
             shader_log = c_alloca(len);
-            GE(ctx, glGetShaderInfoLog(shader, len, &len, shader_log));
+            GE(dev, glGetShaderInfoLog(shader, len, &len, shader_log));
             c_warning("Shader compilation failed:\n%s", shader_log);
         }
 
@@ -1133,9 +1133,9 @@ _cg_pipeline_fragend_glsl_pre_change_notify(cg_pipeline_t *pipeline,
                                             cg_pipeline_state_t change,
                                             const cg_color_t *new_color)
 {
-    _CG_GET_CONTEXT(ctx, NO_RETVAL);
+    _CG_GET_DEVICE(dev, NO_RETVAL);
 
-    if ((change & _cg_pipeline_get_state_for_fragment_codegen(ctx)))
+    if ((change & _cg_pipeline_get_state_for_fragment_codegen(dev)))
         dirty_shader_state(pipeline);
 }
 
@@ -1153,9 +1153,9 @@ _cg_pipeline_fragend_glsl_layer_pre_change_notify(
     cg_pipeline_layer_t *layer,
     cg_pipeline_layer_state_t change)
 {
-    _CG_GET_CONTEXT(ctx, NO_RETVAL);
+    _CG_GET_DEVICE(dev, NO_RETVAL);
 
-    if ((change & _cg_pipeline_get_layer_state_for_fragment_codegen(ctx))) {
+    if ((change & _cg_pipeline_get_layer_state_for_fragment_codegen(dev))) {
         dirty_shader_state(owner);
         return;
     }

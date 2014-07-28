@@ -35,7 +35,7 @@
 #define _CG_FRAMEBUFFER_NOP_PRIVATE_H_
 
 #include "cogl-types.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 
 bool _cg_offscreen_nop_allocate(cg_offscreen_t *offscreen, cg_error_t **error);
 

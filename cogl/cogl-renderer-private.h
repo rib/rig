@@ -37,7 +37,7 @@
 #include "cogl-winsys-private.h"
 #include "cogl-driver.h"
 #include "cogl-texture-driver.h"
-#include "cogl-context.h"
+#include "cogl-device.h"
 #include "cogl-closure-list-private.h"
 
 #ifdef CG_HAS_XLIB_SUPPORT

@@ -34,7 +34,7 @@
 
 #include <string.h>
 
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 
 #include "cogl-feature-private.h"
 #include "cogl-renderer-private.h"
@@ -166,7 +166,7 @@ error:
     static const cg_feature_function_t cg_ext_##name##_funcs[] = {
 #define CG_EXT_FUNCTION(ret, name, args)                                       \
     {                                                                          \
-        G_STRINGIFY(name), C_STRUCT_OFFSET(cg_context_t, name)                 \
+        G_STRINGIFY(name), C_STRUCT_OFFSET(cg_device_t, name)                 \
     }                                                                          \
     ,
 #define CG_EXT_END()                                                           \
@@ -201,7 +201,7 @@ static const cg_feature_data_t cg_feature_ext_functions_data[] = {
 };
 
 void
-_cg_feature_check_ext_functions(cg_context_t *context,
+_cg_feature_check_ext_functions(cg_device_t *dev,
                                 int gl_major,
                                 int gl_minor,
                                 char *const *gl_extensions)
@@ -209,12 +209,12 @@ _cg_feature_check_ext_functions(cg_context_t *context,
     int i;
 
     for (i = 0; i < C_N_ELEMENTS(cg_feature_ext_functions_data); i++)
-        _cg_feature_check(context->display->renderer,
+        _cg_feature_check(dev->display->renderer,
                           "GL",
                           cg_feature_ext_functions_data + i,
                           gl_major,
                           gl_minor,
-                          context->driver,
+                          dev->driver,
                           gl_extensions,
-                          context);
+                          dev);
 }

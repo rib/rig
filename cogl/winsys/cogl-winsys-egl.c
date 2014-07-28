@@ -39,7 +39,7 @@
 #include "cogl-winsys-egl-private.h"
 #include "cogl-winsys-private.h"
 #include "cogl-feature-private.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-framebuffer.h"
 #include "cogl-onscreen-private.h"
 #include "cogl-renderer-private.h"
@@ -388,8 +388,8 @@ try_create_context(cg_display_t *display, cg_error_t **error)
         goto fail;
     }
 
-    if (egl_renderer->platform_vtable->context_created &&
-        !egl_renderer->platform_vtable->context_created(display, error))
+    if (egl_renderer->platform_vtable->dev_created &&
+        !egl_renderer->platform_vtable->dev_created(display, error))
         return false;
 
     return true;
@@ -464,63 +464,63 @@ error:
 }
 
 static bool
-_cg_winsys_context_init(cg_context_t *context, cg_error_t **error)
+_cg_winsys_context_init(cg_device_t *dev, cg_error_t **error)
 {
-    cg_renderer_t *renderer = context->display->renderer;
-    cg_display_egl_t *egl_display = context->display->winsys;
+    cg_renderer_t *renderer = dev->display->renderer;
+    cg_display_egl_t *egl_display = dev->display->winsys;
     cg_renderer_egl_t *egl_renderer = renderer->winsys;
 
-    context->winsys = c_new0(cg_context_egl_t, 1);
+    dev->winsys = c_new0(cg_device_egl_t, 1);
 
     c_return_val_if_fail(egl_display->egl_context, false);
 
-    memset(context->winsys_features, 0, sizeof(context->winsys_features));
+    memset(dev->winsys_features, 0, sizeof(dev->winsys_features));
 
     check_egl_extensions(renderer);
 
-    if (!_cg_context_update_features(context, error))
+    if (!_cg_device_update_features(dev, error))
         return false;
 
     if (egl_renderer->private_features & CG_EGL_WINSYS_FEATURE_SWAP_REGION) {
-        CG_FLAGS_SET(
-            context->winsys_features, CG_WINSYS_FEATURE_SWAP_REGION, true);
-        CG_FLAGS_SET(context->winsys_features,
+        CG_FLAGS_SET(dev->winsys_features, CG_WINSYS_FEATURE_SWAP_REGION,
+                     true);
+        CG_FLAGS_SET(dev->winsys_features,
                      CG_WINSYS_FEATURE_SWAP_REGION_THROTTLE,
                      true);
     }
 
     if ((egl_renderer->private_features & CG_EGL_WINSYS_FEATURE_FENCE_SYNC) &&
-        _cg_has_private_feature(context, CG_PRIVATE_FEATURE_OES_EGL_SYNC))
-        CG_FLAGS_SET(context->features, CG_FEATURE_ID_FENCE, true);
+        _cg_has_private_feature(dev, CG_PRIVATE_FEATURE_OES_EGL_SYNC))
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_FENCE, true);
 
     if (egl_renderer->private_features & CG_EGL_WINSYS_FEATURE_BUFFER_AGE)
-        CG_FLAGS_SET(
-            context->winsys_features, CG_WINSYS_FEATURE_BUFFER_AGE, true);
+        CG_FLAGS_SET(dev->winsys_features, CG_WINSYS_FEATURE_BUFFER_AGE,
+                     true);
 
     /* NB: We currently only support creating standalone GLES2 contexts
      * for offscreen rendering and so we need a dummy (non-visible)
      * surface to be able to bind those contexts */
     if (egl_display->dummy_surface != EGL_NO_SURFACE &&
-        context->driver == CG_DRIVER_GLES2)
-        CG_FLAGS_SET(context->features, CG_FEATURE_ID_GLES2_CONTEXT, true);
+        dev->driver == CG_DRIVER_GLES2)
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_GLES2_CONTEXT, true);
 
-    if (egl_renderer->platform_vtable->context_init &&
-        !egl_renderer->platform_vtable->context_init(context, error))
+    if (egl_renderer->platform_vtable->dev_init &&
+        !egl_renderer->platform_vtable->dev_init(dev, error))
         return false;
 
     return true;
 }
 
 static void
-_cg_winsys_context_deinit(cg_context_t *context)
+_cg_winsys_context_deinit(cg_device_t *dev)
 {
-    cg_renderer_t *renderer = context->display->renderer;
+    cg_renderer_t *renderer = dev->display->renderer;
     cg_renderer_egl_t *egl_renderer = renderer->winsys;
 
-    if (egl_renderer->platform_vtable->context_deinit)
-        egl_renderer->platform_vtable->context_deinit(context);
+    if (egl_renderer->platform_vtable->dev_deinit)
+        egl_renderer->platform_vtable->dev_deinit(dev);
 
-    c_free(context->winsys);
+    c_free(dev->winsys);
 }
 
 typedef struct _cg_gles2_context_egl_t {
@@ -529,11 +529,11 @@ typedef struct _cg_gles2_context_egl_t {
 } cg_gles2_context_egl_t;
 
 static void *
-_cg_winsys_context_create_gles2_context(cg_context_t *ctx,
+_cg_winsys_context_create_gles2_context(cg_device_t *dev,
                                         cg_error_t **error)
 {
-    cg_renderer_egl_t *egl_renderer = ctx->display->renderer->winsys;
-    cg_display_egl_t *egl_display = ctx->display->winsys;
+    cg_renderer_egl_t *egl_renderer = dev->display->renderer->winsys;
+    cg_display_egl_t *egl_display = dev->display->winsys;
     EGLint attribs[3];
     EGLContext egl_context;
 
@@ -560,8 +560,8 @@ _cg_winsys_context_create_gles2_context(cg_context_t *ctx,
 static void
 _cg_winsys_destroy_gles2_context(cg_gles2_context_t *gles2_ctx)
 {
-    cg_context_t *context = gles2_ctx->context;
-    cg_display_t *display = context->display;
+    cg_device_t *dev = gles2_ctx->context;
+    cg_display_t *display = dev->display;
     cg_display_egl_t *egl_display = display->winsys;
     cg_renderer_t *renderer = display->renderer;
     cg_renderer_egl_t *egl_renderer = renderer->winsys;
@@ -577,8 +577,8 @@ _cg_winsys_onscreen_init(cg_onscreen_t *onscreen,
                          cg_error_t **error)
 {
     cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
-    cg_context_t *context = framebuffer->context;
-    cg_display_t *display = context->display;
+    cg_device_t *dev = framebuffer->dev;
+    cg_display_t *display = dev->display;
     cg_display_egl_t *egl_display = display->winsys;
     cg_renderer_t *renderer = display->renderer;
     cg_renderer_egl_t *egl_renderer = renderer->winsys;
@@ -628,9 +628,9 @@ static void
 _cg_winsys_onscreen_deinit(cg_onscreen_t *onscreen)
 {
     cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
-    cg_context_t *context = framebuffer->context;
-    cg_display_egl_t *egl_display = context->display->winsys;
-    cg_renderer_t *renderer = context->display->renderer;
+    cg_device_t *dev = framebuffer->dev;
+    cg_display_egl_t *egl_display = dev->display->winsys;
+    cg_renderer_t *renderer = dev->display->renderer;
     cg_renderer_egl_t *egl_renderer = renderer->winsys;
     cg_onscreen_egl_t *egl_onscreen = onscreen->winsys;
 
@@ -645,7 +645,7 @@ _cg_winsys_onscreen_deinit(cg_onscreen_t *onscreen)
         if (egl_display->dummy_surface != EGL_NO_SURFACE &&
             (egl_display->current_draw_surface == egl_onscreen->egl_surface ||
              egl_display->current_read_surface == egl_onscreen->egl_surface)) {
-            _cg_winsys_egl_make_current(context->display,
+            _cg_winsys_egl_make_current(dev->display,
                                         egl_display->dummy_surface,
                                         egl_display->dummy_surface,
                                         egl_display->current_context);
@@ -669,15 +669,15 @@ bind_onscreen_with_context(cg_onscreen_t *onscreen,
                            EGLContext egl_context)
 {
     cg_framebuffer_t *fb = CG_FRAMEBUFFER(onscreen);
-    cg_context_t *context = fb->context;
+    cg_device_t *dev = fb->dev;
     cg_onscreen_egl_t *egl_onscreen = onscreen->winsys;
 
-    bool status = _cg_winsys_egl_make_current(context->display,
+    bool status = _cg_winsys_egl_make_current(dev->display,
                                               egl_onscreen->egl_surface,
                                               egl_onscreen->egl_surface,
                                               egl_context);
     if (status) {
-        cg_renderer_t *renderer = context->display->renderer;
+        cg_renderer_t *renderer = dev->display->renderer;
         cg_renderer_egl_t *egl_renderer = renderer->winsys;
 
         if (fb->config.swap_throttled)
@@ -693,8 +693,8 @@ static bool
 bind_onscreen(cg_onscreen_t *onscreen)
 {
     cg_framebuffer_t *fb = CG_FRAMEBUFFER(onscreen);
-    cg_context_t *context = fb->context;
-    cg_display_egl_t *egl_display = context->display->winsys;
+    cg_device_t *dev = fb->dev;
+    cg_display_egl_t *egl_display = dev->display->winsys;
 
     return bind_onscreen_with_context(onscreen, egl_display->egl_context);
 }
@@ -712,8 +712,8 @@ _cg_winsys_onscreen_bind(cg_onscreen_t *onscreen)
 static int
 _cg_winsys_onscreen_get_buffer_age(cg_onscreen_t *onscreen)
 {
-    cg_context_t *context = CG_FRAMEBUFFER(onscreen)->context;
-    cg_renderer_t *renderer = context->display->renderer;
+    cg_device_t *dev = CG_FRAMEBUFFER(onscreen)->dev;
+    cg_renderer_t *renderer = dev->display->renderer;
     cg_renderer_egl_t *egl_renderer = renderer->winsys;
     cg_onscreen_egl_t *egl_onscreen = onscreen->winsys;
     EGLSurface surface = egl_onscreen->egl_surface;
@@ -732,8 +732,8 @@ _cg_winsys_onscreen_swap_region(cg_onscreen_t *onscreen,
                                 const int *user_rectangles,
                                 int n_rectangles)
 {
-    cg_context_t *context = CG_FRAMEBUFFER(onscreen)->context;
-    cg_renderer_t *renderer = context->display->renderer;
+    cg_device_t *dev = CG_FRAMEBUFFER(onscreen)->dev;
+    cg_renderer_t *renderer = dev->display->renderer;
     cg_renderer_egl_t *egl_renderer = renderer->winsys;
     cg_onscreen_egl_t *egl_onscreen = onscreen->winsys;
     cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
@@ -769,8 +769,8 @@ static void
 _cg_winsys_onscreen_swap_buffers_with_damage(
     cg_onscreen_t *onscreen, const int *rectangles, int n_rectangles)
 {
-    cg_context_t *context = CG_FRAMEBUFFER(onscreen)->context;
-    cg_renderer_t *renderer = context->display->renderer;
+    cg_device_t *dev = CG_FRAMEBUFFER(onscreen)->dev;
+    cg_renderer_t *renderer = dev->display->renderer;
     cg_renderer_egl_t *egl_renderer = renderer->winsys;
     cg_onscreen_egl_t *egl_onscreen = onscreen->winsys;
 
@@ -808,8 +808,8 @@ _cg_winsys_onscreen_swap_buffers_with_damage(
 static void
 _cg_winsys_onscreen_update_swap_throttled(cg_onscreen_t *onscreen)
 {
-    cg_context_t *context = CG_FRAMEBUFFER(onscreen)->context;
-    cg_display_egl_t *egl_display = context->display->winsys;
+    cg_device_t *dev = CG_FRAMEBUFFER(onscreen)->dev;
+    cg_display_egl_t *egl_display = dev->display->winsys;
     cg_onscreen_egl_t *egl_onscreen = onscreen->winsys;
 
     if (egl_display->current_draw_surface != egl_onscreen->egl_surface)
@@ -821,18 +821,18 @@ _cg_winsys_onscreen_update_swap_throttled(cg_onscreen_t *onscreen)
 }
 
 static EGLDisplay
-_cg_winsys_context_egl_get_egl_display(cg_context_t *context)
+_cg_winsys_context_egl_get_egl_display(cg_device_t *dev)
 {
-    cg_renderer_egl_t *egl_renderer = context->display->renderer->winsys;
+    cg_renderer_egl_t *egl_renderer = dev->display->renderer->winsys;
 
     return egl_renderer->edpy;
 }
 
 static void
-_cg_winsys_save_context(cg_context_t *ctx)
+_cg_winsys_save_context(cg_device_t *dev)
 {
-    cg_context_egl_t *egl_context = ctx->winsys;
-    cg_display_egl_t *egl_display = ctx->display->winsys;
+    cg_device_egl_t *egl_context = dev->winsys;
+    cg_display_egl_t *egl_display = dev->display->winsys;
 
     egl_context->saved_draw_surface = egl_display->current_draw_surface;
     egl_context->saved_read_surface = egl_display->current_read_surface;
@@ -842,15 +842,15 @@ static bool
 _cg_winsys_set_gles2_context(cg_gles2_context_t *gles2_ctx,
                              cg_error_t **error)
 {
-    cg_context_t *ctx = gles2_ctx->context;
-    cg_display_egl_t *egl_display = ctx->display->winsys;
+    cg_device_t *dev = gles2_ctx->context;
+    cg_display_egl_t *egl_display = dev->display->winsys;
     bool status;
 
     if (gles2_ctx->write_buffer && cg_is_onscreen(gles2_ctx->write_buffer))
         status = bind_onscreen_with_context(
             CG_ONSCREEN(gles2_ctx->write_buffer), gles2_ctx->winsys);
     else
-        status = _cg_winsys_egl_make_current(ctx->display,
+        status = _cg_winsys_egl_make_current(dev->display,
                                              egl_display->dummy_surface,
                                              egl_display->dummy_surface,
                                              gles2_ctx->winsys);
@@ -867,12 +867,12 @@ _cg_winsys_set_gles2_context(cg_gles2_context_t *gles2_ctx,
 }
 
 static void
-_cg_winsys_restore_context(cg_context_t *ctx)
+_cg_winsys_restore_context(cg_device_t *dev)
 {
-    cg_context_egl_t *egl_context = ctx->winsys;
-    cg_display_egl_t *egl_display = ctx->display->winsys;
+    cg_device_egl_t *egl_context = dev->winsys;
+    cg_display_egl_t *egl_display = dev->display->winsys;
 
-    _cg_winsys_egl_make_current(ctx->display,
+    _cg_winsys_egl_make_current(dev->display,
                                 egl_context->saved_draw_surface,
                                 egl_context->saved_read_surface,
                                 egl_display->egl_context);
@@ -880,9 +880,9 @@ _cg_winsys_restore_context(cg_context_t *ctx)
 
 #if defined(EGL_KHR_fence_sync) || defined(EGL_KHR_reusable_sync)
 static void *
-_cg_winsys_fence_add(cg_context_t *context)
+_cg_winsys_fence_add(cg_device_t *dev)
 {
-    cg_renderer_egl_t *renderer = context->display->renderer->winsys;
+    cg_renderer_egl_t *renderer = dev->display->renderer->winsys;
     void *ret;
 
     if (renderer->pf_eglCreateSync)
@@ -895,9 +895,9 @@ _cg_winsys_fence_add(cg_context_t *context)
 }
 
 static bool
-_cg_winsys_fence_is_complete(cg_context_t *context, void *fence)
+_cg_winsys_fence_is_complete(cg_device_t *dev, void *fence)
 {
-    cg_renderer_egl_t *renderer = context->display->renderer->winsys;
+    cg_renderer_egl_t *renderer = dev->display->renderer->winsys;
     EGLint ret;
 
     ret = renderer->pf_eglClientWaitSync(
@@ -906,9 +906,9 @@ _cg_winsys_fence_is_complete(cg_context_t *context, void *fence)
 }
 
 static void
-_cg_winsys_fence_destroy(cg_context_t *context, void *fence)
+_cg_winsys_fence_destroy(cg_device_t *dev, void *fence)
 {
-    cg_renderer_egl_t *renderer = context->display->renderer->winsys;
+    cg_renderer_egl_t *renderer = dev->display->renderer->winsys;
 
     renderer->pf_eglDestroySync(renderer->edpy, fence);
 }
@@ -968,13 +968,13 @@ _cg_winsys_egl_get_vtable(void)
 
 #ifdef EGL_KHR_image_base
 EGLImageKHR
-_cg_egl_create_image(cg_context_t *ctx,
+_cg_egl_create_image(cg_device_t *dev,
                      EGLenum target,
                      EGLClientBuffer buffer,
                      const EGLint *attribs)
 {
-    cg_display_egl_t *egl_display = ctx->display->winsys;
-    cg_renderer_egl_t *egl_renderer = ctx->display->renderer->winsys;
+    cg_display_egl_t *egl_display = dev->display->winsys;
+    cg_renderer_egl_t *egl_renderer = dev->display->renderer->winsys;
     EGLContext egl_ctx;
 
     c_return_val_if_fail(egl_renderer->pf_eglCreateImage, EGL_NO_IMAGE_KHR);
@@ -993,9 +993,9 @@ _cg_egl_create_image(cg_context_t *ctx,
 }
 
 void
-_cg_egl_destroy_image(cg_context_t *ctx, EGLImageKHR image)
+_cg_egl_destroy_image(cg_device_t *dev, EGLImageKHR image)
 {
-    cg_renderer_egl_t *egl_renderer = ctx->display->renderer->winsys;
+    cg_renderer_egl_t *egl_renderer = dev->display->renderer->winsys;
 
     c_return_if_fail(egl_renderer->pf_eglDestroyImage);
 
@@ -1005,12 +1005,12 @@ _cg_egl_destroy_image(cg_context_t *ctx, EGLImageKHR image)
 
 #ifdef EGL_WL_bind_wayland_display
 bool
-_cg_egl_query_wayland_buffer(cg_context_t *ctx,
+_cg_egl_query_wayland_buffer(cg_device_t *dev,
                              struct wl_resource *buffer,
                              int attribute,
                              int *value)
 {
-    cg_renderer_egl_t *egl_renderer = ctx->display->renderer->winsys;
+    cg_renderer_egl_t *egl_renderer = dev->display->renderer->winsys;
 
     c_return_val_if_fail(egl_renderer->pf_eglQueryWaylandBuffer, false);
 

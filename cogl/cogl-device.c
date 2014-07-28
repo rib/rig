@@ -36,7 +36,7 @@
 #include "winsys/cogl-winsys-stub-private.h"
 #include "cogl-profile.h"
 #include "cogl-util.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-util-gl-private.h"
 #include "cogl-display-private.h"
 #include "cogl-renderer-private.h"
@@ -67,40 +67,41 @@
 #define GL_NUM_EXTENSIONS 0x821D
 #endif
 
-static void _cg_context_free(cg_context_t *context);
+static void _cg_device_free(cg_device_t *dev);
 
-CG_OBJECT_DEFINE(Context, context);
+CG_OBJECT_DEFINE(Device, device);
 
-extern void _cg_create_context_driver(cg_context_t *context);
+extern void _cg_create_context_driver(cg_device_t *dev);
 
-static cg_context_t *_cg_context = NULL;
+static cg_device_t *_cg_device = NULL;
 
 static void
-_cg_init_feature_overrides(cg_context_t *ctx)
+_cg_init_feature_overrides(cg_device_t *dev)
 {
     if (C_UNLIKELY(CG_DEBUG_ENABLED(CG_DEBUG_DISABLE_VBOS)))
-        CG_FLAGS_SET(ctx->private_features, CG_PRIVATE_FEATURE_VBOS, false);
+        CG_FLAGS_SET(dev->private_features, CG_PRIVATE_FEATURE_VBOS, false);
 
     if (C_UNLIKELY(CG_DEBUG_ENABLED(CG_DEBUG_DISABLE_PBOS)))
-        CG_FLAGS_SET(ctx->private_features, CG_PRIVATE_FEATURE_PBOS, false);
+        CG_FLAGS_SET(dev->private_features, CG_PRIVATE_FEATURE_PBOS, false);
 
     if (C_UNLIKELY(CG_DEBUG_ENABLED(CG_DEBUG_DISABLE_GLSL))) {
-        CG_FLAGS_SET(ctx->features, CG_FEATURE_ID_GLSL, false);
-        CG_FLAGS_SET(ctx->features, CG_FEATURE_ID_PER_VERTEX_POINT_SIZE, false);
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_GLSL, false);
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_PER_VERTEX_POINT_SIZE,
+                     false);
     }
 
     if (C_UNLIKELY(CG_DEBUG_ENABLED(CG_DEBUG_DISABLE_NPOT_TEXTURES))) {
-        CG_FLAGS_SET(ctx->features, CG_FEATURE_ID_TEXTURE_NPOT, false);
-        CG_FLAGS_SET(ctx->features, CG_FEATURE_ID_TEXTURE_NPOT_BASIC, false);
-        CG_FLAGS_SET(ctx->features, CG_FEATURE_ID_TEXTURE_NPOT_MIPMAP, false);
-        CG_FLAGS_SET(ctx->features, CG_FEATURE_ID_TEXTURE_NPOT_REPEAT, false);
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_TEXTURE_NPOT, false);
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_TEXTURE_NPOT_BASIC, false);
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_TEXTURE_NPOT_MIPMAP, false);
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_TEXTURE_NPOT_REPEAT, false);
     }
 }
 
 const cg_winsys_vtable_t *
-_cg_context_get_winsys(cg_context_t *context)
+_cg_device_get_winsys(cg_device_t *dev)
 {
-    return context->display->renderer->winsys_vtable;
+    return dev->display->renderer->winsys_vtable;
 }
 
 /* For reference: There was some deliberation over whether to have a
@@ -112,10 +113,10 @@ _cg_context_get_winsys(cg_context_t *context)
  * would then have to be explicitly checked via some form of ::is_ok()
  * method.
  */
-cg_context_t *
-cg_context_new(cg_display_t *display, cg_error_t **error)
+cg_device_t *
+cg_device_new(cg_display_t *display, cg_error_t **error)
 {
-    cg_context_t *context;
+    cg_device_t *dev;
     uint8_t white_pixel[] = { 0xff, 0xff, 0xff, 0xff };
     const cg_winsys_vtable_t *winsys;
     int i;
@@ -140,34 +141,34 @@ cg_context_new(cg_display_t *display, cg_error_t **error)
 #endif
 
     /* Allocate context memory */
-    context = c_malloc0(sizeof(cg_context_t));
+    dev = c_malloc0(sizeof(cg_device_t));
 
     /* Convert the context into an object immediately in case any of the
        code below wants to verify that the context pointer is a valid
        object */
-    _cg_context_object_new(context);
+    _cg_device_object_new(dev);
 
     /* XXX: Gross hack!
      * Currently everything in Cogl just assumes there is a default
-     * context which it can access via _CG_GET_CONTEXT() including
-     * code used to construct a cg_context_t. Until all of that code
+     * context which it can access via _CG_GET_DEVICE() including
+     * code used to construct a cg_device_t. Until all of that code
      * has been updated to take an explicit context argument we have
      * to immediately make our pointer the default context.
      */
-    _cg_context = context;
+    _cg_device = dev;
 
     /* Init default values */
-    memset(context->features, 0, sizeof(context->features));
-    memset(context->private_features, 0, sizeof(context->private_features));
+    memset(dev->features, 0, sizeof(dev->features));
+    memset(dev->private_features, 0, sizeof(dev->private_features));
 
-    context->rectangle_state = CG_WINSYS_RECTANGLE_STATE_UNKNOWN;
+    dev->rectangle_state = CG_WINSYS_RECTANGLE_STATE_UNKNOWN;
 
-    memset(context->winsys_features, 0, sizeof(context->winsys_features));
+    memset(dev->winsys_features, 0, sizeof(dev->winsys_features));
 
     if (!display) {
         cg_renderer_t *renderer = cg_renderer_new();
         if (!cg_renderer_connect(renderer, error)) {
-            c_free(context);
+            c_free(dev);
             return NULL;
         }
 
@@ -178,48 +179,48 @@ cg_context_new(cg_display_t *display, cg_error_t **error)
 
     if (!cg_display_setup(display, error)) {
         cg_object_unref(display);
-        c_free(context);
+        c_free(dev);
         return NULL;
     }
 
-    context->display = display;
+    dev->display = display;
 
     /* This is duplicated data, but it's much more convenient to have
        the driver attached to the context and the value is accessed a
        lot throughout Cogl */
-    context->driver = display->renderer->driver;
+    dev->driver = display->renderer->driver;
 
     /* Again this is duplicated data, but it convenient to be able
      * access these from the context. */
-    context->driver_vtable = display->renderer->driver_vtable;
-    context->texture_driver = display->renderer->texture_driver;
+    dev->driver_vtable = display->renderer->driver_vtable;
+    dev->texture_driver = display->renderer->texture_driver;
 
-    for (i = 0; i < C_N_ELEMENTS(context->private_features); i++)
-        context->private_features[i] |= display->renderer->private_features[i];
+    for (i = 0; i < C_N_ELEMENTS(dev->private_features); i++)
+        dev->private_features[i] |= display->renderer->private_features[i];
 
-    winsys = _cg_context_get_winsys(context);
-    if (!winsys->context_init(context, error)) {
+    winsys = _cg_device_get_winsys(dev);
+    if (!winsys->device_init(dev, error)) {
         cg_object_unref(display);
-        c_free(context);
+        c_free(dev);
         return NULL;
     }
 
-    context->attribute_name_states_hash =
+    dev->attribute_name_states_hash =
         c_hash_table_new_full(c_str_hash, c_str_equal, c_free, c_free);
-    context->attribute_name_index_map = NULL;
-    context->n_attribute_names = 0;
+    dev->attribute_name_index_map = NULL;
+    dev->n_attribute_names = 0;
 
     /* The "cg_color_in" attribute needs a deterministic name_index
      * so we make sure it's the first attribute name we register */
-    _cg_attribute_register_attribute_name(context, "cg_color_in");
+    _cg_attribute_register_attribute_name(dev, "cg_color_in");
 
-    context->uniform_names =
+    dev->uniform_names =
         c_ptr_array_new_with_free_func((c_destroy_func_t)c_free);
-    context->uniform_name_hash = c_hash_table_new(c_str_hash, c_str_equal);
-    context->n_uniform_names = 0;
+    dev->uniform_name_hash = c_hash_table_new(c_str_hash, c_str_equal);
+    dev->n_uniform_names = 0;
 
     /* Initialise the driver specific state */
-    _cg_init_feature_overrides(context);
+    _cg_init_feature_overrides(dev);
 
     /* XXX: ONGOING BUG: Intel viewport scissor
      *
@@ -230,100 +231,100 @@ cg_context_new(cg_display_t *display, cg_error_t **error)
      *
      * TODO: file a bug upstream!
      */
-    if (context->gpu.driver_package == CG_GPU_INFO_DRIVER_PACKAGE_MESA &&
-        context->gpu.architecture == CG_GPU_INFO_ARCHITECTURE_SANDYBRIDGE &&
+    if (dev->gpu.driver_package == CG_GPU_INFO_DRIVER_PACKAGE_MESA &&
+        dev->gpu.architecture == CG_GPU_INFO_ARCHITECTURE_SANDYBRIDGE &&
         !getenv("CG_DISABLE_INTEL_VIEWPORT_SCISSORT_WORKAROUND"))
-        context->needs_viewport_scissor_workaround = true;
+        dev->needs_viewport_scissor_workaround = true;
     else
-        context->needs_viewport_scissor_workaround = false;
+        dev->needs_viewport_scissor_workaround = false;
 
-    context->sampler_cache = _cg_sampler_cache_new(context);
+    dev->sampler_cache = _cg_sampler_cache_new(dev);
 
     _cg_pipeline_init_default_pipeline();
     _cg_pipeline_init_default_layers();
     _cg_pipeline_init_state_hash_functions();
     _cg_pipeline_init_layer_state_hash_functions();
 
-    context->current_clip_stack_valid = false;
-    context->current_clip_stack = NULL;
+    dev->current_clip_stack_valid = false;
+    dev->current_clip_stack = NULL;
 
-    cg_matrix_init_identity(&context->identity_matrix);
-    cg_matrix_init_identity(&context->y_flip_matrix);
-    cg_matrix_scale(&context->y_flip_matrix, 1, -1, 1);
+    cg_matrix_init_identity(&dev->identity_matrix);
+    cg_matrix_init_identity(&dev->y_flip_matrix);
+    cg_matrix_scale(&dev->y_flip_matrix, 1, -1, 1);
 
-    context->texture_units =
+    dev->texture_units =
         c_array_new(false, false, sizeof(cg_texture_unit_t));
 
-    if (_cg_has_private_feature(context, CG_PRIVATE_FEATURE_ANY_GL)) {
+    if (_cg_has_private_feature(dev, CG_PRIVATE_FEATURE_ANY_GL)) {
         /* See cogl-pipeline.c for more details about why we leave texture unit
          * 1
          * active by default... */
-        context->active_texture_unit = 1;
-        GE(context, glActiveTexture(GL_TEXTURE1));
+        dev->active_texture_unit = 1;
+        GE(dev, glActiveTexture(GL_TEXTURE1));
     }
 
-    context->opaque_color_pipeline = cg_pipeline_new(context);
-    context->codegen_header_buffer = c_string_new("");
-    context->codegen_source_buffer = c_string_new("");
+    dev->opaque_color_pipeline = cg_pipeline_new(dev);
+    dev->codegen_header_buffer = c_string_new("");
+    dev->codegen_source_buffer = c_string_new("");
 
-    context->default_gl_texture_2d_tex = NULL;
-    context->default_gl_texture_3d_tex = NULL;
+    dev->default_gl_texture_2d_tex = NULL;
+    dev->default_gl_texture_3d_tex = NULL;
 
-    context->framebuffers = NULL;
-    context->current_draw_buffer = NULL;
-    context->current_read_buffer = NULL;
-    context->current_draw_buffer_state_flushed = 0;
-    context->current_draw_buffer_changes = CG_FRAMEBUFFER_STATE_ALL;
+    dev->framebuffers = NULL;
+    dev->current_draw_buffer = NULL;
+    dev->current_read_buffer = NULL;
+    dev->current_draw_buffer_state_flushed = 0;
+    dev->current_draw_buffer_changes = CG_FRAMEBUFFER_STATE_ALL;
 
-    _cg_list_init(&context->onscreen_events_queue);
-    _cg_list_init(&context->onscreen_dirty_queue);
+    _cg_list_init(&dev->onscreen_events_queue);
+    _cg_list_init(&dev->onscreen_dirty_queue);
 
-    c_queue_init(&context->gles2_context_stack);
+    c_queue_init(&dev->gles2_context_stack);
 
-    context->journal_flush_attributes_array =
+    dev->journal_flush_attributes_array =
         c_array_new(true, false, sizeof(cg_attribute_t *));
-    context->journal_clip_bounds = NULL;
+    dev->journal_clip_bounds = NULL;
 
-    context->current_pipeline = NULL;
-    context->current_pipeline_changes_since_flush = 0;
-    context->current_pipeline_with_color_attrib = false;
+    dev->current_pipeline = NULL;
+    dev->current_pipeline_changes_since_flush = 0;
+    dev->current_pipeline_with_color_attrib = false;
 
-    _cg_bitmask_init(&context->enabled_custom_attributes);
-    _cg_bitmask_init(&context->enable_custom_attributes_tmp);
-    _cg_bitmask_init(&context->changed_bits_tmp);
+    _cg_bitmask_init(&dev->enabled_custom_attributes);
+    _cg_bitmask_init(&dev->enable_custom_attributes_tmp);
+    _cg_bitmask_init(&dev->changed_bits_tmp);
 
-    context->max_texture_units = -1;
-    context->max_activateable_texture_units = -1;
+    dev->max_texture_units = -1;
+    dev->max_activateable_texture_units = -1;
 
-    context->current_gl_program = 0;
+    dev->current_gl_program = 0;
 
-    context->current_gl_dither_enabled = true;
-    context->current_gl_color_mask = CG_COLOR_MASK_ALL;
+    dev->current_gl_dither_enabled = true;
+    dev->current_gl_color_mask = CG_COLOR_MASK_ALL;
 
-    context->gl_blend_enable_cache = false;
+    dev->gl_blend_enable_cache = false;
 
-    context->depth_test_enabled_cache = false;
-    context->depth_test_function_cache = CG_DEPTH_TEST_FUNCTION_LESS;
-    context->depth_writing_enabled_cache = true;
-    context->depth_range_near_cache = 0;
-    context->depth_range_far_cache = 1;
+    dev->depth_test_enabled_cache = false;
+    dev->depth_test_function_cache = CG_DEPTH_TEST_FUNCTION_LESS;
+    dev->depth_writing_enabled_cache = true;
+    dev->depth_range_near_cache = 0;
+    dev->depth_range_far_cache = 1;
 
-    context->pipeline_cache = _cg_pipeline_cache_new();
+    dev->pipeline_cache = _cg_pipeline_cache_new();
 
     for (i = 0; i < CG_BUFFER_BIND_TARGET_COUNT; i++)
-        context->current_buffer[i] = NULL;
+        dev->current_buffer[i] = NULL;
 
-    context->stencil_pipeline = cg_pipeline_new(context);
+    dev->stencil_pipeline = cg_pipeline_new(dev);
 
-    context->rectangle_byte_indices = NULL;
-    context->rectangle_short_indices = NULL;
-    context->rectangle_short_indices_len = 0;
+    dev->rectangle_byte_indices = NULL;
+    dev->rectangle_short_indices = NULL;
+    dev->rectangle_short_indices_len = 0;
 
-    context->texture_download_pipeline = NULL;
-    context->blit_texture_pipeline = NULL;
+    dev->texture_download_pipeline = NULL;
+    dev->blit_texture_pipeline = NULL;
 
 #if defined(HAVE_CG_GL)
-    if ((context->driver == CG_DRIVER_GL3)) {
+    if ((dev->driver == CG_DRIVER_GL3)) {
         GLuint vertex_array;
 
         /* In a forward compatible context, GL 3 doesn't support rendering
@@ -332,20 +333,20 @@ cg_context_new(cg_display_t *display, cg_error_t **error)
          * object that we will use as our own default object. Eventually
          * it could be good to attach the vertex array objects to
          * cg_primitive_ts */
-        context->glGenVertexArrays(1, &vertex_array);
-        context->glBindVertexArray(vertex_array);
+        dev->glGenVertexArrays(1, &vertex_array);
+        dev->glBindVertexArray(vertex_array);
     }
 #endif
 
-    context->current_modelview_entry = NULL;
-    context->current_projection_entry = NULL;
-    _cg_matrix_entry_identity_init(&context->identity_entry);
-    _cg_matrix_entry_cache_init(&context->builtin_flushed_projection);
-    _cg_matrix_entry_cache_init(&context->builtin_flushed_modelview);
+    dev->current_modelview_entry = NULL;
+    dev->current_projection_entry = NULL;
+    _cg_matrix_entry_identity_init(&dev->identity_entry);
+    _cg_matrix_entry_cache_init(&dev->builtin_flushed_projection);
+    _cg_matrix_entry_cache_init(&dev->builtin_flushed_modelview);
 
     /* Create default textures used for fall backs */
-    context->default_gl_texture_2d_tex =
-        cg_texture_2d_new_from_data(context,
+    dev->default_gl_texture_2d_tex =
+        cg_texture_2d_new_from_data(dev,
                                     1,
                                     1,
                                     CG_PIXEL_FORMAT_RGBA_8888_PRE,
@@ -356,8 +357,8 @@ cg_context_new(cg_display_t *display, cg_error_t **error)
     /* If 3D or rectangle textures aren't supported then these will
      * return errors that we can simply ignore. */
     internal_error = NULL;
-    context->default_gl_texture_3d_tex =
-        cg_texture_3d_new_from_data(context,
+    dev->default_gl_texture_3d_tex =
+        cg_texture_3d_new_from_data(dev,
                                     1,
                                     1,
                                     1, /* width, height, depth */
@@ -369,158 +370,158 @@ cg_context_new(cg_display_t *display, cg_error_t **error)
     if (internal_error)
         cg_error_free(internal_error);
 
-    context->buffer_map_fallback_array = c_byte_array_new();
-    context->buffer_map_fallback_in_use = false;
+    dev->buffer_map_fallback_array = c_byte_array_new();
+    dev->buffer_map_fallback_in_use = false;
 
-    _cg_list_init(&context->fences);
+    _cg_list_init(&dev->fences);
 
-    context->atlas_set = cg_atlas_set_new(context);
-    cg_atlas_set_set_components(context->atlas_set, CG_TEXTURE_COMPONENTS_RGBA);
-    cg_atlas_set_set_premultiplied(context->atlas_set, false);
-    cg_atlas_set_add_atlas_callback(context->atlas_set,
+    dev->atlas_set = cg_atlas_set_new(dev);
+    cg_atlas_set_set_components(dev->atlas_set, CG_TEXTURE_COMPONENTS_RGBA);
+    cg_atlas_set_set_premultiplied(dev->atlas_set, false);
+    cg_atlas_set_add_atlas_callback(dev->atlas_set,
                                     _cg_atlas_texture_atlas_event_handler,
                                     NULL, /* user data */
                                     NULL); /* destroy */
 
-    return context;
+    return dev;
 }
 
 static void
-_cg_context_free(cg_context_t *context)
+_cg_device_free(cg_device_t *dev)
 {
-    const cg_winsys_vtable_t *winsys = _cg_context_get_winsys(context);
+    const cg_winsys_vtable_t *winsys = _cg_device_get_winsys(dev);
 
-    winsys->context_deinit(context);
+    winsys->device_deinit(dev);
 
-    if (context->atlas_set)
-        cg_object_unref(context->atlas_set);
+    if (dev->atlas_set)
+        cg_object_unref(dev->atlas_set);
 
-    if (context->default_gl_texture_2d_tex)
-        cg_object_unref(context->default_gl_texture_2d_tex);
-    if (context->default_gl_texture_3d_tex)
-        cg_object_unref(context->default_gl_texture_3d_tex);
+    if (dev->default_gl_texture_2d_tex)
+        cg_object_unref(dev->default_gl_texture_2d_tex);
+    if (dev->default_gl_texture_3d_tex)
+        cg_object_unref(dev->default_gl_texture_3d_tex);
 
-    if (context->opaque_color_pipeline)
-        cg_object_unref(context->opaque_color_pipeline);
+    if (dev->opaque_color_pipeline)
+        cg_object_unref(dev->opaque_color_pipeline);
 
-    if (context->blit_texture_pipeline)
-        cg_object_unref(context->blit_texture_pipeline);
+    if (dev->blit_texture_pipeline)
+        cg_object_unref(dev->blit_texture_pipeline);
 
-    c_warn_if_fail(context->gles2_context_stack.length == 0);
+    c_warn_if_fail(dev->gles2_context_stack.length == 0);
 
-    if (context->journal_flush_attributes_array)
-        c_array_free(context->journal_flush_attributes_array, true);
-    if (context->journal_clip_bounds)
-        c_array_free(context->journal_clip_bounds, true);
+    if (dev->journal_flush_attributes_array)
+        c_array_free(dev->journal_flush_attributes_array, true);
+    if (dev->journal_clip_bounds)
+        c_array_free(dev->journal_clip_bounds, true);
 
-    if (context->rectangle_byte_indices)
-        cg_object_unref(context->rectangle_byte_indices);
-    if (context->rectangle_short_indices)
-        cg_object_unref(context->rectangle_short_indices);
+    if (dev->rectangle_byte_indices)
+        cg_object_unref(dev->rectangle_byte_indices);
+    if (dev->rectangle_short_indices)
+        cg_object_unref(dev->rectangle_short_indices);
 
-    if (context->default_pipeline)
-        cg_object_unref(context->default_pipeline);
+    if (dev->default_pipeline)
+        cg_object_unref(dev->default_pipeline);
 
-    if (context->dummy_layer_dependant)
-        cg_object_unref(context->dummy_layer_dependant);
-    if (context->default_layer_n)
-        cg_object_unref(context->default_layer_n);
-    if (context->default_layer_0)
-        cg_object_unref(context->default_layer_0);
+    if (dev->dummy_layer_dependant)
+        cg_object_unref(dev->dummy_layer_dependant);
+    if (dev->default_layer_n)
+        cg_object_unref(dev->default_layer_n);
+    if (dev->default_layer_0)
+        cg_object_unref(dev->default_layer_0);
 
-    if (context->current_clip_stack_valid)
-        _cg_clip_stack_unref(context->current_clip_stack);
+    if (dev->current_clip_stack_valid)
+        _cg_clip_stack_unref(dev->current_clip_stack);
 
-    _cg_bitmask_destroy(&context->enabled_custom_attributes);
-    _cg_bitmask_destroy(&context->enable_custom_attributes_tmp);
-    _cg_bitmask_destroy(&context->changed_bits_tmp);
+    _cg_bitmask_destroy(&dev->enabled_custom_attributes);
+    _cg_bitmask_destroy(&dev->enable_custom_attributes_tmp);
+    _cg_bitmask_destroy(&dev->changed_bits_tmp);
 
-    if (context->current_modelview_entry)
-        cg_matrix_entry_unref(context->current_modelview_entry);
-    if (context->current_projection_entry)
-        cg_matrix_entry_unref(context->current_projection_entry);
-    _cg_matrix_entry_cache_destroy(&context->builtin_flushed_projection);
-    _cg_matrix_entry_cache_destroy(&context->builtin_flushed_modelview);
+    if (dev->current_modelview_entry)
+        cg_matrix_entry_unref(dev->current_modelview_entry);
+    if (dev->current_projection_entry)
+        cg_matrix_entry_unref(dev->current_projection_entry);
+    _cg_matrix_entry_cache_destroy(&dev->builtin_flushed_projection);
+    _cg_matrix_entry_cache_destroy(&dev->builtin_flushed_modelview);
 
-    _cg_pipeline_cache_free(context->pipeline_cache);
+    _cg_pipeline_cache_free(dev->pipeline_cache);
 
-    _cg_sampler_cache_free(context->sampler_cache);
+    _cg_sampler_cache_free(dev->sampler_cache);
 
     _cg_destroy_texture_units();
 
-    c_ptr_array_free(context->uniform_names, true);
-    c_hash_table_destroy(context->uniform_name_hash);
+    c_ptr_array_free(dev->uniform_names, true);
+    c_hash_table_destroy(dev->uniform_name_hash);
 
-    c_hash_table_destroy(context->attribute_name_states_hash);
-    c_array_free(context->attribute_name_index_map, true);
+    c_hash_table_destroy(dev->attribute_name_states_hash);
+    c_array_free(dev->attribute_name_index_map, true);
 
-    c_byte_array_free(context->buffer_map_fallback_array, true);
+    c_byte_array_free(dev->buffer_map_fallback_array, true);
 
-    cg_object_unref(context->display);
+    cg_object_unref(dev->display);
 
-    c_free(context);
+    c_free(dev);
 }
 
-cg_context_t *
-_cg_context_get_default(void)
+cg_device_t *
+_cg_device_get_default(void)
 {
-    c_return_val_if_fail(_cg_context != NULL, NULL);
-    return _cg_context;
+    c_return_val_if_fail(_cg_device != NULL, NULL);
+    return _cg_device;
 }
 
 cg_display_t *
-cg_context_get_display(cg_context_t *context)
+cg_device_get_display(cg_device_t *dev)
 {
-    return context->display;
+    return dev->display;
 }
 
 cg_renderer_t *
-cg_context_get_renderer(cg_context_t *context)
+cg_device_get_renderer(cg_device_t *dev)
 {
-    return context->display->renderer;
+    return dev->display->renderer;
 }
 
 #ifdef CG_HAS_EGL_SUPPORT
 EGLDisplay
-cg_egl_context_get_egl_display(cg_context_t *context)
+cg_egl_context_get_egl_display(cg_device_t *dev)
 {
-    const cg_winsys_vtable_t *winsys = _cg_context_get_winsys(context);
+    const cg_winsys_vtable_t *winsys = _cg_device_get_winsys(dev);
 
     /* This should only be called for EGL contexts */
-    c_return_val_if_fail(winsys->context_egl_get_egl_display != NULL, NULL);
+    c_return_val_if_fail(winsys->dev_egl_get_egl_display != NULL, NULL);
 
-    return winsys->context_egl_get_egl_display(context);
+    return winsys->dev_egl_get_egl_display(dev);
 }
 #endif
 
 bool
-_cg_context_update_features(cg_context_t *context, cg_error_t **error)
+_cg_device_update_features(cg_device_t *dev, cg_error_t **error)
 {
-    return context->driver_vtable->update_features(context, error);
+    return dev->driver_vtable->update_features(dev, error);
 }
 
 void
-_cg_context_set_current_projection_entry(cg_context_t *context,
+_cg_device_set_current_projection_entry(cg_device_t *dev,
                                          cg_matrix_entry_t *entry)
 {
     cg_matrix_entry_ref(entry);
-    if (context->current_projection_entry)
-        cg_matrix_entry_unref(context->current_projection_entry);
-    context->current_projection_entry = entry;
+    if (dev->current_projection_entry)
+        cg_matrix_entry_unref(dev->current_projection_entry);
+    dev->current_projection_entry = entry;
 }
 
 void
-_cg_context_set_current_modelview_entry(cg_context_t *context,
+_cg_device_set_current_modelview_entry(cg_device_t *dev,
                                         cg_matrix_entry_t *entry)
 {
     cg_matrix_entry_ref(entry);
-    if (context->current_modelview_entry)
-        cg_matrix_entry_unref(context->current_modelview_entry);
-    context->current_modelview_entry = entry;
+    if (dev->current_modelview_entry)
+        cg_matrix_entry_unref(dev->current_modelview_entry);
+    dev->current_modelview_entry = entry;
 }
 
 char **
-_cg_context_get_gl_extensions(cg_context_t *context)
+_cg_device_get_gl_extensions(cg_device_t *dev)
 {
     const char *env_disabled_extensions;
     char **ret;
@@ -528,16 +529,16 @@ _cg_context_get_gl_extensions(cg_context_t *context)
 /* In GL 3, querying GL_EXTENSIONS is deprecated so we have to build
  * the array using glGetStringi instead */
 #ifdef HAVE_CG_GL
-    if (context->driver == CG_DRIVER_GL3) {
+    if (dev->driver == CG_DRIVER_GL3) {
         int num_extensions, i;
 
-        context->glGetIntegerv(GL_NUM_EXTENSIONS, &num_extensions);
+        dev->glGetIntegerv(GL_NUM_EXTENSIONS, &num_extensions);
 
         ret = c_malloc(sizeof(char *) * (num_extensions + 1));
 
         for (i = 0; i < num_extensions; i++) {
             const char *ext =
-                (const char *)context->glGetStringi(GL_EXTENSIONS, i);
+                (const char *)dev->glGetStringi(GL_EXTENSIONS, i);
             ret[i] = c_strdup(ext);
         }
 
@@ -546,7 +547,7 @@ _cg_context_get_gl_extensions(cg_context_t *context)
 #endif
     {
         const char *all_extensions =
-            (const char *)context->glGetString(GL_EXTENSIONS);
+            (const char *)dev->glGetString(GL_EXTENSIONS);
 
         ret = c_strsplit(all_extensions, " ", 0 /* max tokens */);
     }
@@ -601,7 +602,7 @@ disabled:
 }
 
 const char *
-_cg_context_get_gl_version(cg_context_t *context)
+_cg_device_get_gl_version(cg_device_t *dev)
 {
     const char *version_override;
 
@@ -610,22 +611,22 @@ _cg_context_get_gl_version(cg_context_t *context)
     else if (_cg_config_override_gl_version)
         return _cg_config_override_gl_version;
     else
-        return (const char *)context->glGetString(GL_VERSION);
+        return (const char *)dev->glGetString(GL_VERSION);
 }
 
 int64_t
-cg_get_clock_time(cg_context_t *context)
+cg_get_clock_time(cg_device_t *dev)
 {
-    const cg_winsys_vtable_t *winsys = _cg_context_get_winsys(context);
+    const cg_winsys_vtable_t *winsys = _cg_device_get_winsys(dev);
 
-    if (winsys->context_get_clock_time)
-        return winsys->context_get_clock_time(context);
+    if (winsys->device_get_clock_time)
+        return winsys->device_get_clock_time(dev);
     else
         return 0;
 }
 
 cg_atlas_set_t *
-_cg_get_atlas_set(cg_context_t *context)
+_cg_get_atlas_set(cg_device_t *dev)
 {
-    return context->atlas_set;
+    return dev->atlas_set;
 }

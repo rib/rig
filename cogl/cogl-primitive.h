@@ -253,7 +253,7 @@ cg_primitive_t *cg_primitive_new_with_attributes(cg_vertices_mode_t mode,
 
 /**
  * cg_primitive_new_p2:
- * @context: A #cg_context_t
+ * @dev: A #cg_device_t
  * @mode: A #cg_vertices_mode_t defining how to draw the vertices
  * @n_vertices: The number of vertices to read from @data and also
  *              the number of vertices to read when later drawing.
@@ -297,14 +297,14 @@ cg_primitive_t *cg_primitive_new_with_attributes(cg_vertices_mode_t mode,
  *
  * Stability: Unstable
  */
-cg_primitive_t *cg_primitive_new_p2(cg_context_t *context,
+cg_primitive_t *cg_primitive_new_p2(cg_device_t *dev,
                                     cg_vertices_mode_t mode,
                                     int n_vertices,
                                     const cg_vertex_p2_t *data);
 
 /**
  * cg_primitive_new_p3:
- * @context: A #cg_context_t
+ * @dev: A #cg_device_t
  * @mode: A #cg_vertices_mode_t defining how to draw the vertices
  * @n_vertices: The number of vertices to read from @data and also
  *              the number of vertices to read when later drawing.
@@ -347,14 +347,14 @@ cg_primitive_t *cg_primitive_new_p2(cg_context_t *context,
  *
  * Stability: Unstable
  */
-cg_primitive_t *cg_primitive_new_p3(cg_context_t *context,
+cg_primitive_t *cg_primitive_new_p3(cg_device_t *dev,
                                     cg_vertices_mode_t mode,
                                     int n_vertices,
                                     const cg_vertex_p3_t *data);
 
 /**
  * cg_primitive_new_p2c4:
- * @context: A #cg_context_t
+ * @dev: A #cg_device_t
  * @mode: A #cg_vertices_mode_t defining how to draw the vertices
  * @n_vertices: The number of vertices to read from @data and also
  *              the number of vertices to read when later drawing.
@@ -399,14 +399,14 @@ cg_primitive_t *cg_primitive_new_p3(cg_context_t *context,
  *
  * Stability: Unstable
  */
-cg_primitive_t *cg_primitive_new_p2c4(cg_context_t *context,
+cg_primitive_t *cg_primitive_new_p2c4(cg_device_t *dev,
                                       cg_vertices_mode_t mode,
                                       int n_vertices,
                                       const cg_vertex_p2c4_t *data);
 
 /**
  * cg_primitive_new_p3c4:
- * @context: A #cg_context_t
+ * @dev: A #cg_device_t
  * @mode: A #cg_vertices_mode_t defining how to draw the vertices
  * @n_vertices: The number of vertices to read from @data and also
  *              the number of vertices to read when later drawing.
@@ -451,14 +451,14 @@ cg_primitive_t *cg_primitive_new_p2c4(cg_context_t *context,
  *
  * Stability: Unstable
  */
-cg_primitive_t *cg_primitive_new_p3c4(cg_context_t *context,
+cg_primitive_t *cg_primitive_new_p3c4(cg_device_t *dev,
                                       cg_vertices_mode_t mode,
                                       int n_vertices,
                                       const cg_vertex_p3c4_t *data);
 
 /**
  * cg_primitive_new_p2t2:
- * @context: A #cg_context_t
+ * @dev: A #cg_device_t
  * @mode: A #cg_vertices_mode_t defining how to draw the vertices
  * @n_vertices: The number of vertices to read from @data and also
  *              the number of vertices to read when later drawing.
@@ -503,14 +503,14 @@ cg_primitive_t *cg_primitive_new_p3c4(cg_context_t *context,
  *
  * Stability: Unstable
  */
-cg_primitive_t *cg_primitive_new_p2t2(cg_context_t *context,
+cg_primitive_t *cg_primitive_new_p2t2(cg_device_t *dev,
                                       cg_vertices_mode_t mode,
                                       int n_vertices,
                                       const cg_vertex_p2t2_t *data);
 
 /**
  * cg_primitive_new_p3t2:
- * @context: A #cg_context_t
+ * @dev: A #cg_device_t
  * @mode: A #cg_vertices_mode_t defining how to draw the vertices
  * @n_vertices: The number of vertices to read from @data and also
  *              the number of vertices to read when later drawing.
@@ -555,14 +555,14 @@ cg_primitive_t *cg_primitive_new_p2t2(cg_context_t *context,
  *
  * Stability: Unstable
  */
-cg_primitive_t *cg_primitive_new_p3t2(cg_context_t *context,
+cg_primitive_t *cg_primitive_new_p3t2(cg_device_t *dev,
                                       cg_vertices_mode_t mode,
                                       int n_vertices,
                                       const cg_vertex_p3t2_t *data);
 
 /**
  * cg_primitive_new_p2t2c4:
- * @context: A #cg_context_t
+ * @dev: A #cg_device_t
  * @mode: A #cg_vertices_mode_t defining how to draw the vertices
  * @n_vertices: The number of vertices to read from @data and also
  *              the number of vertices to read when later drawing.
@@ -607,14 +607,14 @@ cg_primitive_t *cg_primitive_new_p3t2(cg_context_t *context,
  *
  * Stability: Unstable
  */
-cg_primitive_t *cg_primitive_new_p2t2c4(cg_context_t *context,
+cg_primitive_t *cg_primitive_new_p2t2c4(cg_device_t *dev,
                                         cg_vertices_mode_t mode,
                                         int n_vertices,
                                         const cg_vertex_p2t2c4_t *data);
 
 /**
  * cg_primitive_new_p3t2c4:
- * @context: A #cg_context_t
+ * @dev: A #cg_device_t
  * @mode: A #cg_vertices_mode_t defining how to draw the vertices
  * @n_vertices: The number of vertices to read from @data and also
  *              the number of vertices to read when later drawing.
@@ -659,7 +659,7 @@ cg_primitive_t *cg_primitive_new_p2t2c4(cg_context_t *context,
  *
  * Stability: Unstable
  */
-cg_primitive_t *cg_primitive_new_p3t2c4(cg_context_t *context,
+cg_primitive_t *cg_primitive_new_p3t2c4(cg_device_t *dev,
                                         cg_vertices_mode_t mode,
                                         int n_vertices,
                                         const cg_vertex_p3t2c4_t *data);

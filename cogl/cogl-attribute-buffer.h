@@ -43,7 +43,7 @@
  */
 typedef struct _cg_attribute_buffer_t cg_attribute_buffer_t;
 
-#include <cogl/cogl-context.h>
+#include <cogl/cogl-device.h>
 
 CG_BEGIN_DECLS
 
@@ -59,7 +59,7 @@ CG_BEGIN_DECLS
 
 /**
  * cg_attribute_buffer_new_with_size:
- * @context: A #cg_context_t
+ * @dev: A #cg_device_t
  * @bytes: The number of bytes to allocate for vertex attribute data.
  *
  * Describes a new #cg_attribute_buffer_t of @size bytes to contain
@@ -81,12 +81,12 @@ CG_BEGIN_DECLS
  *
  * Stability: Unstable
  */
-cg_attribute_buffer_t *cg_attribute_buffer_new_with_size(cg_context_t *context,
+cg_attribute_buffer_t *cg_attribute_buffer_new_with_size(cg_device_t *dev,
                                                          size_t bytes);
 
 /**
  * cg_attribute_buffer_new:
- * @context: A #cg_context_t
+ * @dev: A #cg_device_t
  * @bytes: The number of bytes to allocate for vertex attribute data.
  * @data: (array length=bytes): An optional pointer to vertex data to
  *        upload immediately.
@@ -114,7 +114,7 @@ cg_attribute_buffer_t *cg_attribute_buffer_new_with_size(cg_context_t *context,
  * Stability: Unstable
  */
 cg_attribute_buffer_t *
-cg_attribute_buffer_new(cg_context_t *context, size_t bytes, const void *data);
+cg_attribute_buffer_new(cg_device_t *dev, size_t bytes, const void *data);
 
 /**
  * cg_is_attribute_buffer:

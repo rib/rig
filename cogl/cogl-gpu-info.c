@@ -38,7 +38,7 @@
 #include <test-fixtures/test-unit.h>
 
 #include "cogl-gpu-info-private.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-version.h"
 
 typedef struct {
@@ -416,14 +416,14 @@ static const cg_gpu_info_driver_package_description_t
 };
 
 void
-_cg_gpc_info_init(cg_context_t *ctx, cg_gpu_info_t *gpu)
+_cg_gpc_info_init(cg_device_t *dev, cg_gpu_info_t *gpu)
 {
     cg_gpu_info_strings_t strings;
     int i;
 
-    strings.renderer_string = (const char *)ctx->glGetString(GL_RENDERER);
-    strings.version_string = _cg_context_get_gl_version(ctx);
-    strings.vendor_string = (const char *)ctx->glGetString(GL_VENDOR);
+    strings.renderer_string = (const char *)dev->glGetString(GL_RENDERER);
+    strings.version_string = _cg_device_get_gl_version(dev);
+    strings.vendor_string = (const char *)dev->glGetString(GL_VENDOR);
 
     /* Determine the driver package */
     for (i = 0;; i++) {

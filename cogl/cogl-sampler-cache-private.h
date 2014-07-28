@@ -31,7 +31,7 @@
 #ifndef __CG_SAMPLER_CACHE_PRIVATE_H
 #define __CG_SAMPLER_CACHE_PRIVATE_H
 
-#include "cogl-context.h"
+#include "cogl-device.h"
 #include "cogl-gl-header.h"
 
 /* These aren't defined in the GLES headers */
@@ -69,7 +69,7 @@ typedef struct _cg_sampler_cache_entry_t {
     cg_sampler_cache_wrap_mode_t wrap_mode_p;
 } cg_sampler_cache_entry_t;
 
-cg_sampler_cache_t *_cg_sampler_cache_new(cg_context_t *context);
+cg_sampler_cache_t *_cg_sampler_cache_new(cg_device_t *dev);
 
 const cg_sampler_cache_entry_t *
 _cg_sampler_cache_get_default_entry(cg_sampler_cache_t *cache);

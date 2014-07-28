@@ -89,7 +89,7 @@ bool _cg_feature_check(cg_renderer_t *renderer,
                        char *const *extensions,
                        void *function_table);
 
-void _cg_feature_check_ext_functions(cg_context_t *context,
+void _cg_feature_check_ext_functions(cg_device_t *dev,
                                      int gl_major,
                                      int gl_minor,
                                      char *const *gl_extensions);

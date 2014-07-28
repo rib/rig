@@ -35,7 +35,7 @@
 #include <string.h>
 
 #include "cogl-boxed-value.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-util-gl-private.h"
 
 bool
@@ -255,7 +255,7 @@ _cg_boxed_value_destroy(cg_boxed_value_t *bv)
 }
 
 void
-_cg_boxed_value_set_uniform(cg_context_t *ctx,
+_cg_boxed_value_set_uniform(cg_device_t *dev,
                             GLint location,
                             const cg_boxed_value_t *value)
 {
@@ -273,16 +273,16 @@ _cg_boxed_value_set_uniform(cg_context_t *ctx,
 
         switch (value->size) {
         case 1:
-            GE(ctx, glUniform1iv(location, value->count, ptr));
+            GE(dev, glUniform1iv(location, value->count, ptr));
             break;
         case 2:
-            GE(ctx, glUniform2iv(location, value->count, ptr));
+            GE(dev, glUniform2iv(location, value->count, ptr));
             break;
         case 3:
-            GE(ctx, glUniform3iv(location, value->count, ptr));
+            GE(dev, glUniform3iv(location, value->count, ptr));
             break;
         case 4:
-            GE(ctx, glUniform4iv(location, value->count, ptr));
+            GE(dev, glUniform4iv(location, value->count, ptr));
             break;
         }
     } break;
@@ -297,16 +297,16 @@ _cg_boxed_value_set_uniform(cg_context_t *ctx,
 
         switch (value->size) {
         case 1:
-            GE(ctx, glUniform1fv(location, value->count, ptr));
+            GE(dev, glUniform1fv(location, value->count, ptr));
             break;
         case 2:
-            GE(ctx, glUniform2fv(location, value->count, ptr));
+            GE(dev, glUniform2fv(location, value->count, ptr));
             break;
         case 3:
-            GE(ctx, glUniform3fv(location, value->count, ptr));
+            GE(dev, glUniform3fv(location, value->count, ptr));
             break;
         case 4:
-            GE(ctx, glUniform4fv(location, value->count, ptr));
+            GE(dev, glUniform4fv(location, value->count, ptr));
             break;
         }
     } break;
@@ -321,13 +321,13 @@ _cg_boxed_value_set_uniform(cg_context_t *ctx,
 
         switch (value->size) {
         case 2:
-            GE(ctx, glUniformMatrix2fv(location, value->count, false, ptr));
+            GE(dev, glUniformMatrix2fv(location, value->count, false, ptr));
             break;
         case 3:
-            GE(ctx, glUniformMatrix3fv(location, value->count, false, ptr));
+            GE(dev, glUniformMatrix3fv(location, value->count, false, ptr));
             break;
         case 4:
-            GE(ctx, glUniformMatrix4fv(location, value->count, false, ptr));
+            GE(dev, glUniformMatrix4fv(location, value->count, false, ptr));
             break;
         }
     } break;

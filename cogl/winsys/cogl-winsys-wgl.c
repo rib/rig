@@ -38,7 +38,7 @@
 
 #include "cogl-util.h"
 #include "cogl-winsys-private.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-framebuffer.h"
 #include "cogl-onscreen-private.h"
 #include "cogl-renderer-private.h"
@@ -85,9 +85,9 @@ typedef struct _cg_onscreen_win32_t {
     bool is_foreign_hwnd;
 } cg_onscreen_win32_t;
 
-typedef struct _cg_context_wgl_t {
+typedef struct _cg_device_wgl_t {
     HDC current_dc;
-} cg_context_wgl_t;
+} cg_device_wgl_t;
 
 typedef struct _cg_onscreen_wgl_t {
     cg_onscreen_win32_t _parent;
@@ -176,9 +176,9 @@ _cg_winsys_renderer_disconnect(cg_renderer_t *renderer)
 }
 
 static cg_onscreen_t *
-find_onscreen_for_hwnd(cg_context_t *context, HWND hwnd)
+find_onscreen_for_hwnd(cg_device_t *dev, HWND hwnd)
 {
-    cg_display_wgl_t *display_wgl = context->display->winsys;
+    cg_display_wgl_t *display_wgl = dev->display->winsys;
     c_list_t *l;
 
     /* If the hwnd has Cogl's window class then we can lookup the
@@ -190,7 +190,7 @@ find_onscreen_for_hwnd(cg_context_t *context, HWND hwnd)
             return onscreen;
     }
 
-    for (l = context->framebuffers; l; l = l->next) {
+    for (l = dev->framebuffers; l; l = l->next) {
         cg_framebuffer_t *framebuffer = l->data;
 
         if (framebuffer->type == CG_FRAMEBUFFER_TYPE_ONSCREEN) {
@@ -208,10 +208,10 @@ find_onscreen_for_hwnd(cg_context_t *context, HWND hwnd)
 static cg_filter_return_t
 win32_event_filter_cb(MSG *msg, void *data)
 {
-    cg_context_t *context = data;
+    cg_device_t *dev = data;
 
     if (msg->message == WM_SIZE) {
-        cg_onscreen_t *onscreen = find_onscreen_for_hwnd(context, msg->hwnd);
+        cg_onscreen_t *onscreen = find_onscreen_for_hwnd(dev, msg->hwnd);
 
         if (onscreen) {
             cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
@@ -227,7 +227,7 @@ win32_event_filter_cb(MSG *msg, void *data)
             }
         }
     } else if (msg->message == WM_PAINT) {
-        cg_onscreen_t *onscreen = find_onscreen_for_hwnd(context, msg->hwnd);
+        cg_onscreen_t *onscreen = find_onscreen_for_hwnd(dev, msg->hwnd);
         RECT rect;
 
         if (onscreen && GetUpdateRect(msg->hwnd, &rect, false)) {
@@ -342,7 +342,7 @@ window_proc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
         msg.pt.x = (SHORT)LOWORD(message_pos);
         msg.pt.y = (SHORT)HIWORD(message_pos);
 
-        renderer = CG_FRAMEBUFFER(onscreen)->context->display->renderer;
+        renderer = CG_FRAMEBUFFER(onscreen)->dev->display->renderer;
 
         message_handled = cg_win32_renderer_handle_event(renderer, &msg);
     }
@@ -598,7 +598,7 @@ get_wgl_extensions_string(HDC dc)
     const char *(APIENTRY * pf_wglGetExtensionsStringARB)(HDC);
     const char *(APIENTRY * pf_wglGetExtensionsStringEXT)(void);
 
-    _CG_GET_CONTEXT(ctx, NULL);
+    _CG_GET_DEVICE(dev, NULL);
 
     /* According to the docs for these two extensions, you are supposed
        to use wglGetProcAddress to detect their availability so
@@ -621,7 +621,7 @@ get_wgl_extensions_string(HDC dc)
        extensions isn't supported then we can at least fake it to
        support the swap control extension */
     {
-        char **extensions = _cg_context_get_gl_extensions(ctx);
+        char **extensions = _cg_device_get_gl_extensions(dev);
         bool have_ext = _cg_check_extension("WGL_EXT_swap_control", extensions);
         c_strfreev(extensions);
         if (have_ext)
@@ -632,23 +632,23 @@ get_wgl_extensions_string(HDC dc)
 }
 
 static bool
-update_winsys_features(cg_context_t *context, cg_error_t **error)
+update_winsys_features(cg_device_t *dev, cg_error_t **error)
 {
-    cg_display_wgl_t *wgl_display = context->display->winsys;
-    cg_renderer_wgl_t *wgl_renderer = context->display->renderer->winsys;
+    cg_display_wgl_t *wgl_display = dev->display->winsys;
+    cg_renderer_wgl_t *wgl_renderer = dev->display->renderer->winsys;
     const char *wgl_extensions;
     int i;
 
     c_return_val_if_fail(wgl_display->wgl_context, false);
 
-    if (!_cg_context_update_features(context, error))
+    if (!_cg_device_update_features(dev, error))
         return false;
 
-    memset(context->winsys_features, 0, sizeof(context->winsys_features));
+    memset(dev->winsys_features, 0, sizeof(dev->winsys_features));
 
-    CG_FLAGS_SET(context->features, CG_FEATURE_ID_ONSCREEN_MULTIPLE, true);
-    CG_FLAGS_SET(
-        context->winsys_features, CG_WINSYS_FEATURE_MULTIPLE_ONSCREEN, true);
+    CG_FLAGS_SET(dev->features, CG_FEATURE_ID_ONSCREEN_MULTIPLE, true);
+    CG_FLAGS_SET(dev->winsys_features, CG_WINSYS_FEATURE_MULTIPLE_ONSCREEN,
+                 true);
 
     wgl_extensions = get_wgl_extensions_string(wgl_display->dummy_dc);
 
@@ -659,7 +659,7 @@ update_winsys_features(cg_context_t *context, cg_error_t **error)
         CG_NOTE(WINSYS, "  WGL Extensions: %s", wgl_extensions);
 
         for (i = 0; i < C_N_ELEMENTS(winsys_feature_data); i++)
-            if (_cg_feature_check(context->display->renderer,
+            if (_cg_feature_check(dev->display->renderer,
                                   "WGL",
                                   winsys_feature_data + i,
                                   0,
@@ -668,7 +668,7 @@ update_winsys_features(cg_context_t *context, cg_error_t **error)
                                   split_extensions,
                                   wgl_renderer)) {
                 if (winsys_feature_data[i].winsys_feature)
-                    CG_FLAGS_SET(context->winsys_features,
+                    CG_FLAGS_SET(dev->winsys_features,
                                  winsys_feature_data[i].winsys_feature,
                                  true);
             }
@@ -678,38 +678,38 @@ update_winsys_features(cg_context_t *context, cg_error_t **error)
 
     /* We'll manually handle queueing dirty events in response to
      * WM_PAINT messages */
-    CG_FLAGS_SET(
-        context->private_features, CG_PRIVATE_FEATURE_DIRTY_EVENTS, true);
+    CG_FLAGS_SET(dev->private_features, CG_PRIVATE_FEATURE_DIRTY_EVENTS,
+                 true);
 
     return true;
 }
 
 static bool
-_cg_winsys_context_init(cg_context_t *context, cg_error_t **error)
+_cg_winsys_context_init(cg_device_t *dev, cg_error_t **error)
 {
-    context->winsys = c_new0(cg_context_wgl_t, 1);
+    dev->winsys = c_new0(cg_device_wgl_t, 1);
 
-    cg_win32_renderer_add_filter(
-        context->display->renderer, win32_event_filter_cb, context);
+    cg_win32_renderer_add_filter(dev->display->renderer,
+                                 win32_event_filter_cb, dev);
 
-    return update_winsys_features(context, error);
+    return update_winsys_features(dev, error);
 }
 
 static void
-_cg_winsys_context_deinit(cg_context_t *context)
+_cg_winsys_context_deinit(cg_device_t *dev)
 {
-    cg_win32_renderer_remove_filter(
-        context->display->renderer, win32_event_filter_cb, context);
+    cg_win32_renderer_remove_filter(dev->display->renderer,
+                                    win32_event_filter_cb, dev);
 
-    c_free(context->winsys);
+    c_free(dev->winsys);
 }
 
 static void
 _cg_winsys_onscreen_bind(cg_onscreen_t *onscreen)
 {
     cg_framebuffer_t *fb;
-    cg_context_t *context;
-    cg_context_wgl_t *wgl_context;
+    cg_device_t *dev;
+    cg_device_wgl_t *wgl_context;
     cg_display_wgl_t *wgl_display;
     cg_onscreen_wgl_t *wgl_onscreen;
     cg_renderer_wgl_t *wgl_renderer;
@@ -721,11 +721,11 @@ _cg_winsys_onscreen_bind(cg_onscreen_t *onscreen)
     c_return_if_fail(onscreen != NULL);
 
     fb = CG_FRAMEBUFFER(onscreen);
-    context = fb->context;
-    wgl_context = context->winsys;
-    wgl_display = context->display->winsys;
+    dev = fb->dev;
+    wgl_context = dev->winsys;
+    wgl_display = dev->display->winsys;
     wgl_onscreen = onscreen->winsys;
-    wgl_renderer = context->display->renderer->winsys;
+    wgl_renderer = dev->display->renderer->winsys;
 
     if (wgl_context->current_dc == wgl_onscreen->client_dc)
         return;
@@ -749,8 +749,8 @@ _cg_winsys_onscreen_bind(cg_onscreen_t *onscreen)
 static void
 _cg_winsys_onscreen_deinit(cg_onscreen_t *onscreen)
 {
-    cg_context_t *context = CG_FRAMEBUFFER(onscreen)->context;
-    cg_context_wgl_t *wgl_context = context->winsys;
+    cg_device_t *dev = CG_FRAMEBUFFER(onscreen)->dev;
+    cg_device_wgl_t *wgl_context = dev->winsys;
     cg_onscreen_win32_t *win32_onscreen = onscreen->winsys;
     cg_onscreen_wgl_t *wgl_onscreen = onscreen->winsys;
 
@@ -781,8 +781,8 @@ _cg_winsys_onscreen_init(cg_onscreen_t *onscreen,
                          cg_error_t **error)
 {
     cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
-    cg_context_t *context = framebuffer->context;
-    cg_display_t *display = context->display;
+    cg_device_t *dev = framebuffer->dev;
+    cg_display_t *display = dev->display;
     cg_display_wgl_t *wgl_display = display->winsys;
     cg_onscreen_wgl_t *wgl_onscreen;
     cg_onscreen_win32_t *win32_onscreen;
@@ -879,8 +879,8 @@ _cg_winsys_onscreen_swap_buffers_with_damage(
 static void
 _cg_winsys_onscreen_update_swap_throttled(cg_onscreen_t *onscreen)
 {
-    cg_context_t *context = CG_FRAMEBUFFER(onscreen)->context;
-    cg_context_wgl_t *wgl_context = context->winsys;
+    cg_device_t *dev = CG_FRAMEBUFFER(onscreen)->dev;
+    cg_device_wgl_t *wgl_context = dev->winsys;
     cg_onscreen_wgl_t *wgl_onscreen = onscreen->winsys;
 
     if (wgl_context->current_dc != wgl_onscreen->client_dc)

@@ -38,7 +38,7 @@
 #include "cogl-bitmap-private.h"
 #include "cogl-buffer-private.h"
 #include "cogl-pixel-buffer.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-buffer-gl-private.h"
 #include "cogl-error-private.h"
 
@@ -92,8 +92,8 @@ _cg_bitmap_copy(cg_bitmap_t *src_bmp, cg_error_t **error)
     int width = cg_bitmap_get_width(src_bmp);
     int height = cg_bitmap_get_height(src_bmp);
 
-    dst_bmp = _cg_bitmap_new_with_malloc_buffer(
-        src_bmp->context, width, height, src_format, error);
+    dst_bmp = _cg_bitmap_new_with_malloc_buffer(src_bmp->dev, width, height,
+                                                src_format, error);
     if (!dst_bmp)
         return NULL;
 
@@ -166,7 +166,7 @@ cg_bitmap_get_size_from_file(const char *filename, int *width, int *height)
 }
 
 cg_bitmap_t *
-cg_bitmap_new_for_data(cg_context_t *context,
+cg_bitmap_new_for_data(cg_device_t *dev,
                        int width,
                        int height,
                        cg_pixel_format_t format,
@@ -175,14 +175,14 @@ cg_bitmap_new_for_data(cg_context_t *context,
 {
     cg_bitmap_t *bmp;
 
-    c_return_val_if_fail(cg_is_context(context), NULL);
+    c_return_val_if_fail(cg_is_device(dev), NULL);
 
     /* Rowstride from width if not given */
     if (rowstride == 0)
         rowstride = width * _cg_pixel_format_get_bytes_per_pixel(format);
 
     bmp = c_slice_new(cg_bitmap_t);
-    bmp->context = context;
+    bmp->dev = dev;
     bmp->format = format;
     bmp->width = width;
     bmp->height = height;
@@ -197,7 +197,7 @@ cg_bitmap_new_for_data(cg_context_t *context,
 }
 
 cg_bitmap_t *
-_cg_bitmap_new_with_malloc_buffer(cg_context_t *context,
+_cg_bitmap_new_with_malloc_buffer(cg_device_t *dev,
                                   int width,
                                   int height,
                                   cg_pixel_format_t format,
@@ -218,7 +218,8 @@ _cg_bitmap_new_with_malloc_buffer(cg_context_t *context,
     }
 
     bitmap =
-        cg_bitmap_new_for_data(context, width, height, format, rowstride, data);
+        cg_bitmap_new_for_data(dev, width, height, format, rowstride,
+                               data);
     cg_object_set_user_data(CG_OBJECT(bitmap), &bitmap_free_key, data, c_free);
 
     return bitmap;
@@ -233,8 +234,8 @@ _cg_bitmap_new_shared(cg_bitmap_t *shared_bmp,
 {
     cg_bitmap_t *bmp;
 
-    bmp = cg_bitmap_new_for_data(
-        shared_bmp->context, width, height, format, rowstride, NULL /* data */);
+    bmp = cg_bitmap_new_for_data(shared_bmp->dev, width, height, format,
+                                 rowstride, NULL /* data */);
 
     bmp->shared_bmp = cg_object_ref(shared_bmp);
 
@@ -242,14 +243,14 @@ _cg_bitmap_new_shared(cg_bitmap_t *shared_bmp,
 }
 
 cg_bitmap_t *
-cg_bitmap_new_from_file(cg_context_t *ctx,
+cg_bitmap_new_from_file(cg_device_t *dev,
                         const char *filename,
                         cg_error_t **error)
 {
     c_return_val_if_fail(filename != NULL, NULL);
     c_return_val_if_fail(error == NULL || *error == NULL, NULL);
 
-    return _cg_bitmap_from_file(ctx, filename, error);
+    return _cg_bitmap_from_file(dev, filename, error);
 }
 
 cg_bitmap_t *
@@ -264,8 +265,8 @@ cg_bitmap_new_from_buffer(cg_buffer_t *buffer,
 
     c_return_val_if_fail(cg_is_buffer(buffer), NULL);
 
-    bmp = cg_bitmap_new_for_data(
-        buffer->context, width, height, format, rowstride, NULL /* data */);
+    bmp = cg_bitmap_new_for_data(buffer->dev, width, height, format,
+                                 rowstride, NULL /* data */);
 
     bmp->buffer = cg_object_ref(buffer);
     bmp->data = GINT_TO_POINTER(offset);
@@ -274,7 +275,7 @@ cg_bitmap_new_from_buffer(cg_buffer_t *buffer,
 }
 
 cg_bitmap_t *
-cg_bitmap_new_with_size(cg_context_t *context,
+cg_bitmap_new_with_size(cg_device_t *dev,
                         int width,
                         int height,
                         cg_pixel_format_t format)
@@ -290,7 +291,7 @@ cg_bitmap_new_with_size(cg_context_t *context,
      * libdrm a tiled buffer for instance */
     rowstride = width * _cg_pixel_format_get_bytes_per_pixel(format);
 
-    pixel_buffer = cg_pixel_buffer_new(context,
+    pixel_buffer = cg_pixel_buffer_new(dev,
                                        height * rowstride,
                                        NULL, /* data */
                                        NULL); /* don't catch errors */
@@ -311,17 +312,17 @@ cg_bitmap_new_with_size(cg_context_t *context,
 
 #ifdef CG_HAS_ANDROID_SUPPORT
 cg_bitmap_t *
-cg_android_bitmap_new_from_asset(cg_context_t *ctx,
+cg_android_bitmap_new_from_asset(cg_device_t *dev,
                                  AAssetManager *manager,
                                  const char *filename,
                                  cg_error_t **error)
 {
-    c_return_val_if_fail(ctx != NULL, NULL);
+    c_return_val_if_fail(dev != NULL, NULL);
     c_return_val_if_fail(manager != NULL, NULL);
     c_return_val_if_fail(filename != NULL, NULL);
     c_return_val_if_fail(error == NULL || *error == NULL, NULL);
 
-    return _cg_android_bitmap_new_from_asset(ctx, manager, filename, error);
+    return _cg_android_bitmap_new_from_asset(dev, manager, filename, error);
 }
 #endif
 
@@ -493,8 +494,8 @@ _cg_bitmap_gl_unbind(cg_bitmap_t *bitmap)
         _cg_bitmap_unmap(bitmap);
 }
 
-cg_context_t *
+cg_device_t *
 _cg_bitmap_get_context(cg_bitmap_t *bitmap)
 {
-    return bitmap->context;
+    return bitmap->dev;
 }

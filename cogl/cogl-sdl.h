@@ -48,7 +48,7 @@
 
 #endif /* CG_COMPILATION */
 
-#include <cogl/cogl-context.h>
+#include <cogl/cogl-device.h>
 #include <cogl/cogl-onscreen.h>
 #include <SDL.h>
 
@@ -122,7 +122,7 @@ CG_BEGIN_DECLS
  *        <constant>SDL_NUMEVENTS</constant> - 1
  * @error: A cg_error_t return location.
  *
- * This is a convenience function for creating a new #cg_context_t for
+ * This is a convenience function for creating a new #cg_device_t for
  * use with SDL and specifying what SDL user event type Cogl can use
  * as a way to interrupt SDL_WaitEvent().
  *
@@ -142,7 +142,7 @@ CG_BEGIN_DECLS
  * if (!cg_display_setup (display, error))
  *   return NULL;
  *
- * return cg_context_new (display, error);
+ * return cg_device_new (display, error);
  * ]|
  *
  * <note>SDL applications are required to either use this API or
@@ -151,7 +151,7 @@ CG_BEGIN_DECLS
  *
  * Stability: unstable
  */
-cg_context_t *cg_sdl_context_new(int type, cg_error_t **error);
+cg_device_t *cg_sdl_context_new(int type, cg_error_t **error);
 
 /**
  * cg_sdl_renderer_set_event_type:
@@ -190,7 +190,7 @@ int cg_sdl_renderer_get_event_type(cg_renderer_t *renderer);
 
 /**
  * cg_sdl_handle_event:
- * @context: A #cg_context_t
+ * @dev: A #cg_device_t
  * @event: An SDL event
  *
  * Passes control to Cogl so that it may dispatch any internal event
@@ -199,11 +199,11 @@ int cg_sdl_renderer_get_event_type(cg_renderer_t *renderer);
  *
  * Stability: unstable
  */
-void cg_sdl_handle_event(cg_context_t *context, SDL_Event *event);
+void cg_sdl_handle_event(cg_device_t *dev, SDL_Event *event);
 
 /**
  * cg_sdl_idle:
- * @context: A #cg_context_t
+ * @dev: A #cg_device_t
  *
  * Notifies Cogl that the application is idle and about to call
  * SDL_WaitEvent(). Cogl may use this to run low priority book keeping
@@ -211,7 +211,7 @@ void cg_sdl_handle_event(cg_context_t *context, SDL_Event *event);
  *
  * Stability: unstable
  */
-void cg_sdl_idle(cg_context_t *context);
+void cg_sdl_idle(cg_device_t *dev);
 
 #if SDL_MAJOR_VERSION >= 2
 

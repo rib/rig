@@ -35,7 +35,7 @@
 #include <string.h>
 
 #include "cogl-debug.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-display-private.h"
 #include "cogl-renderer-private.h"
 #include "cogl-object-private.h"
@@ -94,12 +94,12 @@ cg_is_framebuffer(void *object)
 
 void
 _cg_framebuffer_init(cg_framebuffer_t *framebuffer,
-                     cg_context_t *ctx,
+                     cg_device_t *dev,
                      cg_framebuffer_type_t type,
                      int width,
                      int height)
 {
-    framebuffer->context = ctx;
+    framebuffer->dev = dev;
 
     framebuffer->type = type;
     framebuffer->width = width;
@@ -114,8 +114,8 @@ _cg_framebuffer_init(cg_framebuffer_t *framebuffer,
     framebuffer->dither_enabled = true;
     framebuffer->depth_writing_enabled = true;
 
-    framebuffer->modelview_stack = cg_matrix_stack_new(ctx);
-    framebuffer->projection_stack = cg_matrix_stack_new(ctx);
+    framebuffer->modelview_stack = cg_matrix_stack_new(dev);
+    framebuffer->projection_stack = cg_matrix_stack_new(dev);
 
     framebuffer->dirty_bitmasks = true;
 
@@ -160,7 +160,7 @@ _cg_framebuffer_init(cg_framebuffer_t *framebuffer,
      * we don't have to worry about retaining references to OpenGL
      * texture coordinates that may later become invalid.
      */
-    ctx->framebuffers = c_list_prepend(ctx->framebuffers, framebuffer);
+    dev->framebuffers = c_list_prepend(dev->framebuffers, framebuffer);
 }
 
 void
@@ -173,7 +173,7 @@ _cg_framebuffer_set_internal_format(cg_framebuffer_t *framebuffer,
 void
 _cg_framebuffer_free(cg_framebuffer_t *framebuffer)
 {
-    cg_context_t *ctx = framebuffer->context;
+    cg_device_t *dev = framebuffer->dev;
 
     _cg_fence_cancel_fences_for_framebuffer(framebuffer);
 
@@ -187,21 +187,21 @@ _cg_framebuffer_free(cg_framebuffer_t *framebuffer)
 
     cg_object_unref(framebuffer->journal);
 
-    if (ctx->viewport_scissor_workaround_framebuffer == framebuffer)
-        ctx->viewport_scissor_workaround_framebuffer = NULL;
+    if (dev->viewport_scissor_workaround_framebuffer == framebuffer)
+        dev->viewport_scissor_workaround_framebuffer = NULL;
 
-    ctx->framebuffers = c_list_remove(ctx->framebuffers, framebuffer);
+    dev->framebuffers = c_list_remove(dev->framebuffers, framebuffer);
 
-    if (ctx->current_draw_buffer == framebuffer)
-        ctx->current_draw_buffer = NULL;
-    if (ctx->current_read_buffer == framebuffer)
-        ctx->current_read_buffer = NULL;
+    if (dev->current_draw_buffer == framebuffer)
+        dev->current_draw_buffer = NULL;
+    if (dev->current_read_buffer == framebuffer)
+        dev->current_read_buffer = NULL;
 }
 
 const cg_winsys_vtable_t *
 _cg_framebuffer_get_winsys(cg_framebuffer_t *framebuffer)
 {
-    return framebuffer->context->display->renderer->winsys_vtable;
+    return framebuffer->dev->display->renderer->winsys_vtable;
 }
 
 /* This version of cg_clear can be used internally as an alternative
@@ -216,7 +216,7 @@ _cg_framebuffer_clear_without_flush4f(cg_framebuffer_t *framebuffer,
                                       float blue,
                                       float alpha)
 {
-    cg_context_t *ctx = framebuffer->context;
+    cg_device_t *dev = framebuffer->dev;
 
     if (!buffers) {
         static bool shown = false;
@@ -229,7 +229,7 @@ _cg_framebuffer_clear_without_flush4f(cg_framebuffer_t *framebuffer,
         return;
     }
 
-    ctx->driver_vtable->framebuffer_clear(
+    dev->driver_vtable->framebuffer_clear(
         framebuffer, buffers, red, green, blue, alpha);
 }
 
@@ -354,7 +354,7 @@ cg_framebuffer_clear4f(cg_framebuffer_t *framebuffer,
      * animation */
     if (C_UNLIKELY(CG_DEBUG_ENABLED(CG_DEBUG_RECTANGLES)) &&
         buffers & CG_BUFFER_BIT_COLOR) {
-        framebuffer->context->journal_rectangles_color = 1;
+        framebuffer->dev->journal_rectangles_color = 1;
     }
 
     CG_NOTE(DRAW, "Clear end");
@@ -465,7 +465,7 @@ void
 cg_framebuffer_set_viewport(
     cg_framebuffer_t *framebuffer, float x, float y, float width, float height)
 {
-    cg_context_t *context = framebuffer->context;
+    cg_device_t *dev = framebuffer->dev;
 
     c_return_if_fail(width > 0 && height > 0);
 
@@ -482,11 +482,11 @@ cg_framebuffer_set_viewport(
     framebuffer->viewport_height = height;
     framebuffer->viewport_age++;
 
-    if (context->current_draw_buffer == framebuffer) {
-        context->current_draw_buffer_changes |= CG_FRAMEBUFFER_STATE_VIEWPORT;
+    if (dev->current_draw_buffer == framebuffer) {
+        dev->current_draw_buffer_changes |= CG_FRAMEBUFFER_STATE_VIEWPORT;
 
-        if (context->needs_viewport_scissor_workaround)
-            context->current_draw_buffer_changes |= CG_FRAMEBUFFER_STATE_CLIP;
+        if (dev->needs_viewport_scissor_workaround)
+            dev->current_draw_buffer_changes |= CG_FRAMEBUFFER_STATE_CLIP;
     }
 }
 
@@ -594,7 +594,7 @@ cg_offscreen_t *
 _cg_offscreen_new_with_texture_full(
     cg_texture_t *texture, cg_offscreen_flags_t create_flags, int level)
 {
-    cg_context_t *ctx = texture->context;
+    cg_device_t *dev = texture->dev;
     cg_offscreen_t *offscreen;
     cg_framebuffer_t *fb;
     cg_offscreen_t *ret;
@@ -614,7 +614,7 @@ _cg_offscreen_new_with_texture_full(
      * have been read yet. */
 
     _cg_framebuffer_init(fb,
-                         ctx,
+                         dev,
                          CG_FRAMEBUFFER_TYPE_OFFSCREEN,
                          -1, /* unknown width, until allocation */
                          -1); /* unknown height until allocation */
@@ -636,9 +636,9 @@ static void
 _cg_offscreen_free(cg_offscreen_t *offscreen)
 {
     cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(offscreen);
-    cg_context_t *ctx = framebuffer->context;
+    cg_device_t *dev = framebuffer->dev;
 
-    ctx->driver_vtable->offscreen_free(offscreen);
+    dev->driver_vtable->offscreen_free(offscreen);
 
     /* Chain up to parent */
     _cg_framebuffer_free(framebuffer);
@@ -657,7 +657,7 @@ cg_framebuffer_allocate(cg_framebuffer_t *framebuffer, cg_error_t **error)
 {
     cg_onscreen_t *onscreen = CG_ONSCREEN(framebuffer);
     const cg_winsys_vtable_t *winsys = _cg_framebuffer_get_winsys(framebuffer);
-    cg_context_t *ctx = framebuffer->context;
+    cg_device_t *dev = framebuffer->dev;
 
     if (framebuffer->allocated)
         return true;
@@ -679,12 +679,12 @@ cg_framebuffer_allocate(cg_framebuffer_t *framebuffer, cg_error_t **error)
          * one on allocation so that if the application only paints in
          * response to dirty events then it will at least paint once to
          * start */
-        if (!_cg_has_private_feature(ctx, CG_PRIVATE_FEATURE_DIRTY_EVENTS))
+        if (!_cg_has_private_feature(dev, CG_PRIVATE_FEATURE_DIRTY_EVENTS))
             _cg_onscreen_queue_full_dirty(onscreen);
     } else {
         cg_offscreen_t *offscreen = CG_OFFSCREEN(framebuffer);
 
-        if (!cg_has_feature(ctx, CG_FEATURE_ID_OFFSCREEN)) {
+        if (!cg_has_feature(dev, CG_FEATURE_ID_OFFSCREEN)) {
             _cg_set_error(error,
                           CG_SYSTEM_ERROR,
                           CG_SYSTEM_ERROR_UNSUPPORTED,
@@ -718,7 +718,7 @@ cg_framebuffer_allocate(cg_framebuffer_t *framebuffer, cg_error_t **error)
         framebuffer->internal_format =
             _cg_texture_get_format(offscreen->texture);
 
-        if (!ctx->driver_vtable->offscreen_allocate(offscreen, error))
+        if (!dev->driver_vtable->offscreen_allocate(offscreen, error))
             return false;
     }
 
@@ -738,7 +738,7 @@ _cg_framebuffer_compare_viewport_state(cg_framebuffer_t *a,
          * can affect how we setup the GL viewport... */
         a->type != b->type) {
         unsigned long differences = CG_FRAMEBUFFER_STATE_VIEWPORT;
-        cg_context_t *context = a->context;
+        cg_device_t *dev = a->dev;
 
         /* XXX: ONGOING BUG: Intel viewport scissor
          *
@@ -752,7 +752,7 @@ _cg_framebuffer_compare_viewport_state(cg_framebuffer_t *a,
          *
          * TODO: file a bug upstream!
          */
-        if (C_UNLIKELY(context->needs_viewport_scissor_workaround))
+        if (C_UNLIKELY(dev->needs_viewport_scissor_workaround))
             differences |= CG_FRAMEBUFFER_STATE_CLIP;
 
         return differences;
@@ -886,19 +886,19 @@ _cg_framebuffer_flush_state(cg_framebuffer_t *draw_buffer,
                             cg_framebuffer_t *read_buffer,
                             cg_framebuffer_state_t state)
 {
-    cg_context_t *ctx = draw_buffer->context;
+    cg_device_t *dev = draw_buffer->dev;
 
-    ctx->driver_vtable->framebuffer_flush_state(
+    dev->driver_vtable->framebuffer_flush_state(
         draw_buffer, read_buffer, state);
 }
 
 int
 cg_framebuffer_get_red_bits(cg_framebuffer_t *framebuffer)
 {
-    cg_context_t *ctx = framebuffer->context;
+    cg_device_t *dev = framebuffer->dev;
     cg_framebuffer_bits_t bits;
 
-    ctx->driver_vtable->framebuffer_query_bits(framebuffer, &bits);
+    dev->driver_vtable->framebuffer_query_bits(framebuffer, &bits);
 
     return bits.red;
 }
@@ -906,10 +906,10 @@ cg_framebuffer_get_red_bits(cg_framebuffer_t *framebuffer)
 int
 cg_framebuffer_get_green_bits(cg_framebuffer_t *framebuffer)
 {
-    cg_context_t *ctx = framebuffer->context;
+    cg_device_t *dev = framebuffer->dev;
     cg_framebuffer_bits_t bits;
 
-    ctx->driver_vtable->framebuffer_query_bits(framebuffer, &bits);
+    dev->driver_vtable->framebuffer_query_bits(framebuffer, &bits);
 
     return bits.green;
 }
@@ -917,10 +917,10 @@ cg_framebuffer_get_green_bits(cg_framebuffer_t *framebuffer)
 int
 cg_framebuffer_get_blue_bits(cg_framebuffer_t *framebuffer)
 {
-    cg_context_t *ctx = framebuffer->context;
+    cg_device_t *dev = framebuffer->dev;
     cg_framebuffer_bits_t bits;
 
-    ctx->driver_vtable->framebuffer_query_bits(framebuffer, &bits);
+    dev->driver_vtable->framebuffer_query_bits(framebuffer, &bits);
 
     return bits.blue;
 }
@@ -928,10 +928,10 @@ cg_framebuffer_get_blue_bits(cg_framebuffer_t *framebuffer)
 int
 cg_framebuffer_get_alpha_bits(cg_framebuffer_t *framebuffer)
 {
-    cg_context_t *ctx = framebuffer->context;
+    cg_device_t *dev = framebuffer->dev;
     cg_framebuffer_bits_t bits;
 
-    ctx->driver_vtable->framebuffer_query_bits(framebuffer, &bits);
+    dev->driver_vtable->framebuffer_query_bits(framebuffer, &bits);
 
     return bits.alpha;
 }
@@ -939,10 +939,10 @@ cg_framebuffer_get_alpha_bits(cg_framebuffer_t *framebuffer)
 int
 cg_framebuffer_get_depth_bits(cg_framebuffer_t *framebuffer)
 {
-    cg_context_t *ctx = framebuffer->context;
+    cg_device_t *dev = framebuffer->dev;
     cg_framebuffer_bits_t bits;
 
-    ctx->driver_vtable->framebuffer_query_bits(framebuffer, &bits);
+    dev->driver_vtable->framebuffer_query_bits(framebuffer, &bits);
 
     return bits.depth;
 }
@@ -950,10 +950,10 @@ cg_framebuffer_get_depth_bits(cg_framebuffer_t *framebuffer)
 int
 _cg_framebuffer_get_stencil_bits(cg_framebuffer_t *framebuffer)
 {
-    cg_context_t *ctx = framebuffer->context;
+    cg_device_t *dev = framebuffer->dev;
     cg_framebuffer_bits_t bits;
 
-    ctx->driver_vtable->framebuffer_query_bits(framebuffer, &bits);
+    dev->driver_vtable->framebuffer_query_bits(framebuffer, &bits);
 
     return bits.stencil;
 }
@@ -976,8 +976,8 @@ cg_framebuffer_set_color_mask(cg_framebuffer_t *framebuffer,
 
     framebuffer->color_mask = color_mask;
 
-    if (framebuffer->context->current_draw_buffer == framebuffer)
-        framebuffer->context->current_draw_buffer_changes |=
+    if (framebuffer->dev->current_draw_buffer == framebuffer)
+        framebuffer->dev->current_draw_buffer_changes |=
             CG_FRAMEBUFFER_STATE_COLOR_MASK;
 }
 
@@ -999,8 +999,8 @@ cg_framebuffer_set_depth_write_enabled(cg_framebuffer_t *framebuffer,
 
     framebuffer->depth_writing_enabled = depth_write_enabled;
 
-    if (framebuffer->context->current_draw_buffer == framebuffer)
-        framebuffer->context->current_draw_buffer_changes |=
+    if (framebuffer->dev->current_draw_buffer == framebuffer)
+        framebuffer->dev->current_draw_buffer_changes |=
             CG_FRAMEBUFFER_STATE_DEPTH_WRITE;
 }
 
@@ -1021,8 +1021,8 @@ cg_framebuffer_set_dither_enabled(cg_framebuffer_t *framebuffer,
 
     framebuffer->dither_enabled = dither_enabled;
 
-    if (framebuffer->context->current_draw_buffer == framebuffer)
-        framebuffer->context->current_draw_buffer_changes |=
+    if (framebuffer->dev->current_draw_buffer == framebuffer)
+        framebuffer->dev->current_draw_buffer_changes |=
             CG_FRAMEBUFFER_STATE_DITHER;
 }
 
@@ -1111,12 +1111,12 @@ cg_framebuffer_resolve_samples_region(
      * requires an explicit resolve. */
 }
 
-cg_context_t *
+cg_device_t *
 cg_framebuffer_get_context(cg_framebuffer_t *framebuffer)
 {
     c_return_val_if_fail(framebuffer != NULL, NULL);
 
-    return framebuffer->context;
+    return framebuffer->dev;
 }
 
 static bool
@@ -1201,7 +1201,7 @@ cg_framebuffer_read_pixels_into_bitmap(cg_framebuffer_t *framebuffer,
                                        cg_bitmap_t *bitmap,
                                        cg_error_t **error)
 {
-    cg_context_t *ctx;
+    cg_device_t *dev;
     int width;
     int height;
 
@@ -1228,14 +1228,14 @@ cg_framebuffer_read_pixels_into_bitmap(cg_framebuffer_t *framebuffer,
             return true;
     }
 
-    ctx = cg_framebuffer_get_context(framebuffer);
+    dev = cg_framebuffer_get_context(framebuffer);
 
     /* make sure any batched primitives get emitted to the driver
      * before issuing our read pixels...
      */
     _cg_framebuffer_flush_journal(framebuffer);
 
-    return ctx->driver_vtable->framebuffer_read_pixels_into_bitmap(
+    return dev->driver_vtable->framebuffer_read_pixels_into_bitmap(
         framebuffer, x, y, source, bitmap, error);
 }
 
@@ -1252,7 +1252,7 @@ cg_framebuffer_read_pixels(cg_framebuffer_t *framebuffer,
     cg_bitmap_t *bitmap;
     bool ret;
 
-    bitmap = cg_bitmap_new_for_data(framebuffer->context,
+    bitmap = cg_bitmap_new_for_data(framebuffer->dev,
                                     width,
                                     height,
                                     format,
@@ -1281,10 +1281,10 @@ _cg_blit_framebuffer(cg_framebuffer_t *src,
                      int width,
                      int height)
 {
-    cg_context_t *ctx = src->context;
+    cg_device_t *dev = src->dev;
 
     c_return_if_fail(
-        _cg_has_private_feature(ctx, CG_PRIVATE_FEATURE_OFFSCREEN_BLIT));
+        _cg_has_private_feature(dev, CG_PRIVATE_FEATURE_OFFSCREEN_BLIT));
 
     /* We can only support blitting between offscreen buffers because
        otherwise we would need to mirror the image and GLES2.0 doesn't
@@ -1309,9 +1309,9 @@ _cg_blit_framebuffer(cg_framebuffer_t *src,
      * make sure that the clip state gets updated the next time we flush
      * framebuffer state by marking the current framebuffer's clip state
      * as changed */
-    ctx->current_draw_buffer_changes |= CG_FRAMEBUFFER_STATE_CLIP;
+    dev->current_draw_buffer_changes |= CG_FRAMEBUFFER_STATE_CLIP;
 
-    ctx->glBlitFramebuffer(src_x,
+    dev->glBlitFramebuffer(src_x,
                            src_y,
                            src_x + width,
                            src_y + height,
@@ -1327,21 +1327,21 @@ void
 cg_framebuffer_discard_buffers(cg_framebuffer_t *framebuffer,
                                cg_buffer_bit_t buffers)
 {
-    cg_context_t *ctx = framebuffer->context;
+    cg_device_t *dev = framebuffer->dev;
 
     c_return_if_fail(buffers & CG_BUFFER_BIT_COLOR);
 
-    ctx->driver_vtable->framebuffer_discard_buffers(framebuffer, buffers);
+    dev->driver_vtable->framebuffer_discard_buffers(framebuffer, buffers);
 }
 
 void
 cg_framebuffer_finish(cg_framebuffer_t *framebuffer)
 {
-    cg_context_t *ctx = framebuffer->context;
+    cg_device_t *dev = framebuffer->dev;
 
     _cg_framebuffer_flush_journal(framebuffer);
 
-    ctx->driver_vtable->framebuffer_finish(framebuffer);
+    dev->driver_vtable->framebuffer_finish(framebuffer);
 }
 
 void
@@ -1351,8 +1351,8 @@ cg_framebuffer_push_matrix(cg_framebuffer_t *framebuffer)
         _cg_framebuffer_get_modelview_stack(framebuffer);
     cg_matrix_stack_push(modelview_stack);
 
-    if (framebuffer->context->current_draw_buffer == framebuffer)
-        framebuffer->context->current_draw_buffer_changes |=
+    if (framebuffer->dev->current_draw_buffer == framebuffer)
+        framebuffer->dev->current_draw_buffer_changes |=
             CG_FRAMEBUFFER_STATE_MODELVIEW;
 }
 
@@ -1363,8 +1363,8 @@ cg_framebuffer_pop_matrix(cg_framebuffer_t *framebuffer)
         _cg_framebuffer_get_modelview_stack(framebuffer);
     cg_matrix_stack_pop(modelview_stack);
 
-    if (framebuffer->context->current_draw_buffer == framebuffer)
-        framebuffer->context->current_draw_buffer_changes |=
+    if (framebuffer->dev->current_draw_buffer == framebuffer)
+        framebuffer->dev->current_draw_buffer_changes |=
             CG_FRAMEBUFFER_STATE_MODELVIEW;
 }
 
@@ -1375,8 +1375,8 @@ cg_framebuffer_identity_matrix(cg_framebuffer_t *framebuffer)
         _cg_framebuffer_get_modelview_stack(framebuffer);
     cg_matrix_stack_load_identity(modelview_stack);
 
-    if (framebuffer->context->current_draw_buffer == framebuffer)
-        framebuffer->context->current_draw_buffer_changes |=
+    if (framebuffer->dev->current_draw_buffer == framebuffer)
+        framebuffer->dev->current_draw_buffer_changes |=
             CG_FRAMEBUFFER_STATE_MODELVIEW;
 }
 
@@ -1387,8 +1387,8 @@ cg_framebuffer_scale(cg_framebuffer_t *framebuffer, float x, float y, float z)
         _cg_framebuffer_get_modelview_stack(framebuffer);
     cg_matrix_stack_scale(modelview_stack, x, y, z);
 
-    if (framebuffer->context->current_draw_buffer == framebuffer)
-        framebuffer->context->current_draw_buffer_changes |=
+    if (framebuffer->dev->current_draw_buffer == framebuffer)
+        framebuffer->dev->current_draw_buffer_changes |=
             CG_FRAMEBUFFER_STATE_MODELVIEW;
 }
 
@@ -1402,8 +1402,8 @@ cg_framebuffer_translate(cg_framebuffer_t *framebuffer,
         _cg_framebuffer_get_modelview_stack(framebuffer);
     cg_matrix_stack_translate(modelview_stack, x, y, z);
 
-    if (framebuffer->context->current_draw_buffer == framebuffer)
-        framebuffer->context->current_draw_buffer_changes |=
+    if (framebuffer->dev->current_draw_buffer == framebuffer)
+        framebuffer->dev->current_draw_buffer_changes |=
             CG_FRAMEBUFFER_STATE_MODELVIEW;
 }
 
@@ -1415,8 +1415,8 @@ cg_framebuffer_rotate(
         _cg_framebuffer_get_modelview_stack(framebuffer);
     cg_matrix_stack_rotate(modelview_stack, angle, x, y, z);
 
-    if (framebuffer->context->current_draw_buffer == framebuffer)
-        framebuffer->context->current_draw_buffer_changes |=
+    if (framebuffer->dev->current_draw_buffer == framebuffer)
+        framebuffer->dev->current_draw_buffer_changes |=
             CG_FRAMEBUFFER_STATE_MODELVIEW;
 }
 
@@ -1428,8 +1428,8 @@ cg_framebuffer_rotate_quaternion(cg_framebuffer_t *framebuffer,
         _cg_framebuffer_get_modelview_stack(framebuffer);
     cg_matrix_stack_rotate_quaternion(modelview_stack, quaternion);
 
-    if (framebuffer->context->current_draw_buffer == framebuffer)
-        framebuffer->context->current_draw_buffer_changes |=
+    if (framebuffer->dev->current_draw_buffer == framebuffer)
+        framebuffer->dev->current_draw_buffer_changes |=
             CG_FRAMEBUFFER_STATE_MODELVIEW;
 }
 
@@ -1441,8 +1441,8 @@ cg_framebuffer_rotate_euler(cg_framebuffer_t *framebuffer,
         _cg_framebuffer_get_modelview_stack(framebuffer);
     cg_matrix_stack_rotate_euler(modelview_stack, euler);
 
-    if (framebuffer->context->current_draw_buffer == framebuffer)
-        framebuffer->context->current_draw_buffer_changes |=
+    if (framebuffer->dev->current_draw_buffer == framebuffer)
+        framebuffer->dev->current_draw_buffer_changes |=
             CG_FRAMEBUFFER_STATE_MODELVIEW;
 }
 
@@ -1454,8 +1454,8 @@ cg_framebuffer_transform(cg_framebuffer_t *framebuffer,
         _cg_framebuffer_get_modelview_stack(framebuffer);
     cg_matrix_stack_multiply(modelview_stack, matrix);
 
-    if (framebuffer->context->current_draw_buffer == framebuffer)
-        framebuffer->context->current_draw_buffer_changes |=
+    if (framebuffer->dev->current_draw_buffer == framebuffer)
+        framebuffer->dev->current_draw_buffer_changes |=
             CG_FRAMEBUFFER_STATE_MODELVIEW;
 }
 
@@ -1476,8 +1476,8 @@ cg_framebuffer_perspective(cg_framebuffer_t *framebuffer,
                            z_near,
                            z_far);
 
-    if (framebuffer->context->current_draw_buffer == framebuffer)
-        framebuffer->context->current_draw_buffer_changes |=
+    if (framebuffer->dev->current_draw_buffer == framebuffer)
+        framebuffer->dev->current_draw_buffer_changes |=
             CG_FRAMEBUFFER_STATE_PROJECTION;
 }
 
@@ -1502,8 +1502,8 @@ cg_framebuffer_frustum(cg_framebuffer_t *framebuffer,
     cg_matrix_stack_frustum(
         projection_stack, left, right, bottom, top, z_near, z_far);
 
-    if (framebuffer->context->current_draw_buffer == framebuffer)
-        framebuffer->context->current_draw_buffer_changes |=
+    if (framebuffer->dev->current_draw_buffer == framebuffer)
+        framebuffer->dev->current_draw_buffer_changes |=
             CG_FRAMEBUFFER_STATE_PROJECTION;
 }
 
@@ -1528,8 +1528,8 @@ cg_framebuffer_orthographic(cg_framebuffer_t *framebuffer,
     cg_matrix_orthographic(&ortho, x_1, y_1, x_2, y_2, near, far);
     cg_matrix_stack_set(projection_stack, &ortho);
 
-    if (framebuffer->context->current_draw_buffer == framebuffer)
-        framebuffer->context->current_draw_buffer_changes |=
+    if (framebuffer->dev->current_draw_buffer == framebuffer)
+        framebuffer->dev->current_draw_buffer_changes |=
             CG_FRAMEBUFFER_STATE_PROJECTION;
 }
 
@@ -1540,8 +1540,8 @@ _cg_framebuffer_push_projection(cg_framebuffer_t *framebuffer)
         _cg_framebuffer_get_projection_stack(framebuffer);
     cg_matrix_stack_push(projection_stack);
 
-    if (framebuffer->context->current_draw_buffer == framebuffer)
-        framebuffer->context->current_draw_buffer_changes |=
+    if (framebuffer->dev->current_draw_buffer == framebuffer)
+        framebuffer->dev->current_draw_buffer_changes |=
             CG_FRAMEBUFFER_STATE_PROJECTION;
 }
 
@@ -1552,8 +1552,8 @@ _cg_framebuffer_pop_projection(cg_framebuffer_t *framebuffer)
         _cg_framebuffer_get_projection_stack(framebuffer);
     cg_matrix_stack_pop(projection_stack);
 
-    if (framebuffer->context->current_draw_buffer == framebuffer)
-        framebuffer->context->current_draw_buffer_changes |=
+    if (framebuffer->dev->current_draw_buffer == framebuffer)
+        framebuffer->dev->current_draw_buffer_changes |=
             CG_FRAMEBUFFER_STATE_PROJECTION;
 }
 
@@ -1575,8 +1575,8 @@ cg_framebuffer_set_modelview_matrix(cg_framebuffer_t *framebuffer,
         _cg_framebuffer_get_modelview_stack(framebuffer);
     cg_matrix_stack_set(modelview_stack, matrix);
 
-    if (framebuffer->context->current_draw_buffer == framebuffer)
-        framebuffer->context->current_draw_buffer_changes |=
+    if (framebuffer->dev->current_draw_buffer == framebuffer)
+        framebuffer->dev->current_draw_buffer_changes |=
             CG_FRAMEBUFFER_STATE_MODELVIEW;
 
     _CG_MATRIX_DEBUG_PRINT(matrix);
@@ -1605,8 +1605,8 @@ cg_framebuffer_set_projection_matrix(cg_framebuffer_t *framebuffer,
 
     cg_matrix_stack_set(projection_stack, matrix);
 
-    if (framebuffer->context->current_draw_buffer == framebuffer)
-        framebuffer->context->current_draw_buffer_changes |=
+    if (framebuffer->dev->current_draw_buffer == framebuffer)
+        framebuffer->dev->current_draw_buffer_changes |=
             CG_FRAMEBUFFER_STATE_PROJECTION;
 
     _CG_MATRIX_DEBUG_PRINT(matrix);
@@ -1619,8 +1619,8 @@ cg_framebuffer_push_scissor_clip(
     framebuffer->clip_stack = _cg_clip_stack_push_window_rectangle(
         framebuffer->clip_stack, x, y, width, height);
 
-    if (framebuffer->context->current_draw_buffer == framebuffer)
-        framebuffer->context->current_draw_buffer_changes |=
+    if (framebuffer->dev->current_draw_buffer == framebuffer)
+        framebuffer->dev->current_draw_buffer_changes |=
             CG_FRAMEBUFFER_STATE_CLIP;
 }
 
@@ -1649,8 +1649,8 @@ cg_framebuffer_push_rectangle_clip(
                                       projection_entry,
                                       viewport);
 
-    if (framebuffer->context->current_draw_buffer == framebuffer)
-        framebuffer->context->current_draw_buffer_changes |=
+    if (framebuffer->dev->current_draw_buffer == framebuffer)
+        framebuffer->dev->current_draw_buffer_changes |=
             CG_FRAMEBUFFER_STATE_CLIP;
 }
 
@@ -1684,8 +1684,8 @@ cg_framebuffer_push_primitive_clip(cg_framebuffer_t *framebuffer,
                                       projection_entry,
                                       viewport);
 
-    if (framebuffer->context->current_draw_buffer == framebuffer)
-        framebuffer->context->current_draw_buffer_changes |=
+    if (framebuffer->dev->current_draw_buffer == framebuffer)
+        framebuffer->dev->current_draw_buffer_changes |=
             CG_FRAMEBUFFER_STATE_CLIP;
 }
 
@@ -1694,8 +1694,8 @@ cg_framebuffer_pop_clip(cg_framebuffer_t *framebuffer)
 {
     framebuffer->clip_stack = _cg_clip_stack_pop(framebuffer->clip_stack);
 
-    if (framebuffer->context->current_draw_buffer == framebuffer)
-        framebuffer->context->current_draw_buffer_changes |=
+    if (framebuffer->dev->current_draw_buffer == framebuffer)
+        framebuffer->dev->current_draw_buffer_changes |=
             CG_FRAMEBUFFER_STATE_CLIP;
 }
 
@@ -1783,7 +1783,7 @@ get_line_count(cg_vertices_mode_t mode, int n_vertices)
 }
 
 static cg_indices_t *
-get_wire_line_indices(cg_context_t *ctx,
+get_wire_line_indices(cg_device_t *dev,
                       cg_vertices_mode_t mode,
                       int first_vertex,
                       int n_vertices_in,
@@ -1864,8 +1864,8 @@ get_wire_line_indices(cg_context_t *ctx,
 
     *n_indices = n_lines * 2;
 
-    ret = cg_indices_new(
-        ctx, CG_INDICES_TYPE_UNSIGNED_INT, line_indices, *n_indices);
+    ret = cg_indices_new(dev, CG_INDICES_TYPE_UNSIGNED_INT, line_indices,
+                         *n_indices);
 
     c_free(line_indices);
 
@@ -1903,7 +1903,7 @@ pipeline_destroyed_cb(cg_pipeline_t *weak_pipeline, void *user_data)
 }
 
 static void
-draw_wireframe(cg_context_t *ctx,
+draw_wireframe(cg_device_t *dev,
                cg_framebuffer_t *framebuffer,
                cg_pipeline_t *pipeline,
                cg_vertices_mode_t mode,
@@ -1918,8 +1918,8 @@ draw_wireframe(cg_context_t *ctx,
     cg_pipeline_t *wire_pipeline;
     int n_indices;
 
-    wire_indices = get_wire_line_indices(
-        ctx, mode, first_vertex, n_vertices, indices, &n_indices);
+    wire_indices = get_wire_line_indices(dev, mode, first_vertex,
+                                         n_vertices, indices, &n_indices);
 
     wire_pipeline =
         cg_object_get_user_data(CG_OBJECT(pipeline), &wire_pipeline_key);
@@ -1935,7 +1935,7 @@ draw_wireframe(cg_context_t *ctx,
          * vertex program and since we'd like to see the results of the
          * vertex program in the wireframe we just add a final clobber
          * of the wire color leaving the rest of the state untouched. */
-        if (cg_has_feature(framebuffer->context, CG_FEATURE_ID_GLSL)) {
+        if (cg_has_feature(framebuffer->dev, CG_FEATURE_ID_GLSL)) {
             static cg_snippet_t *snippet = NULL;
 
             /* The snippet is cached so that it will reuse the program
@@ -1988,7 +1988,7 @@ _cg_framebuffer_draw_attributes(cg_framebuffer_t *framebuffer,
                    (flags & CG_DRAW_SKIP_DEBUG_WIREFRAME) == 0) &&
         mode != CG_VERTICES_MODE_LINES && mode != CG_VERTICES_MODE_LINE_LOOP &&
         mode != CG_VERTICES_MODE_LINE_STRIP)
-        draw_wireframe(framebuffer->context,
+        draw_wireframe(framebuffer->dev,
                        framebuffer,
                        pipeline,
                        mode,
@@ -2001,9 +2001,9 @@ _cg_framebuffer_draw_attributes(cg_framebuffer_t *framebuffer,
     else
 #endif
     {
-        cg_context_t *ctx = framebuffer->context;
+        cg_device_t *dev = framebuffer->dev;
 
-        ctx->driver_vtable->framebuffer_draw_attributes(framebuffer,
+        dev->driver_vtable->framebuffer_draw_attributes(framebuffer,
                                                         pipeline,
                                                         mode,
                                                         first_vertex,
@@ -2030,7 +2030,7 @@ _cg_framebuffer_draw_indexed_attributes(cg_framebuffer_t *framebuffer,
                    (flags & CG_DRAW_SKIP_DEBUG_WIREFRAME) == 0) &&
         mode != CG_VERTICES_MODE_LINES && mode != CG_VERTICES_MODE_LINE_LOOP &&
         mode != CG_VERTICES_MODE_LINE_STRIP)
-        draw_wireframe(framebuffer->context,
+        draw_wireframe(framebuffer->dev,
                        framebuffer,
                        pipeline,
                        mode,
@@ -2043,9 +2043,9 @@ _cg_framebuffer_draw_indexed_attributes(cg_framebuffer_t *framebuffer,
     else
 #endif
     {
-        cg_context_t *ctx = framebuffer->context;
+        cg_device_t *dev = framebuffer->dev;
 
-        ctx->driver_vtable->framebuffer_draw_indexed_attributes(framebuffer,
+        dev->driver_vtable->framebuffer_draw_indexed_attributes(framebuffer,
                                                                 pipeline,
                                                                 mode,
                                                                 first_vertex,

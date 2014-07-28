@@ -39,7 +39,7 @@
 #include "cogl-atlas-texture-private.h"
 #include "cogl-texture-2d-private.h"
 #include "cogl-sub-texture-private.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-object-private.h"
 #include "cogl-texture-driver.h"
 #include "cogl-rectangle-map.h"
@@ -64,10 +64,10 @@ static cg_sub_texture_t *
 _cg_atlas_texture_create_sub_texture(cg_texture_t *full_texture,
                                      const cg_atlas_allocation_t *allocation)
 {
-    cg_context_t *ctx = full_texture->context;
+    cg_device_t *dev = full_texture->dev;
     /* Create a subtexture for the given rectangle not including the
        1-pixel border */
-    return cg_sub_texture_new(ctx,
+    return cg_sub_texture_new(dev,
                               full_texture,
                               allocation->x + 1,
                               allocation->y + 1,
@@ -113,7 +113,7 @@ static void
 _cg_atlas_texture_pre_reorganize_cb(cg_atlas_t *atlas,
                                     void *user_data)
 {
-    cg_context_t *ctx = user_data;
+    cg_device_t *dev = user_data;
 
     /* We don't know if any journal entries currently depend on OpenGL
      * texture coordinates that would be invalidated by reorganizing
@@ -122,7 +122,7 @@ _cg_atlas_texture_pre_reorganize_cb(cg_atlas_t *atlas,
      * We are assuming that texture atlas migration never happens
      * during a flush so we don't have to consider recursion here.
      */
-    _cg_flush(ctx);
+    _cg_flush(dev);
 
     cg_atlas_foreach(atlas, _cg_atlas_texture_pre_reorganize_foreach_cb, NULL);
 }
@@ -304,13 +304,13 @@ static void
 _cg_atlas_texture_migrate_out_of_atlas(cg_atlas_texture_t *atlas_tex)
 {
     cg_texture_t *standalone_tex;
-    cg_context_t *ctx;
+    cg_device_t *dev;
 
     /* Make sure this texture is not in the atlas */
     if (!atlas_tex->atlas)
         return;
 
-    ctx = CG_TEXTURE(atlas_tex)->context;
+    dev = CG_TEXTURE(atlas_tex)->dev;
 
     CG_NOTE(ATLAS, "Migrating texture out of the atlas");
 
@@ -322,7 +322,7 @@ _cg_atlas_texture_migrate_out_of_atlas(cg_atlas_texture_t *atlas_tex)
      * We are assuming that texture atlas migration never happens
      * during a flush so we don't have to consider recursion here.
      */
-    _cg_flush(ctx);
+    _cg_flush(dev);
 
     standalone_tex =
         _cg_atlas_migrate_allocation(atlas_tex->atlas,
@@ -621,9 +621,9 @@ _cg_atlas_texture_atlas_event_handler(cg_atlas_set_t *set,
                                        NULL, /* user data */
                                        NULL); /* destroy */
         cg_atlas_add_pre_reorganize_callback(
-            atlas, pre_callback, set->context, NULL); /* destroy */
+            atlas, pre_callback, set->dev, NULL); /* destroy */
         cg_atlas_add_post_reorganize_callback(
-            atlas, post_callback, set->context, NULL); /* destroy */
+            atlas, post_callback, set->dev, NULL); /* destroy */
         break;
     }
     case CG_ATLAS_SET_EVENT_REMOVED:
@@ -632,7 +632,7 @@ _cg_atlas_texture_atlas_event_handler(cg_atlas_set_t *set,
 }
 
 static cg_atlas_texture_t *
-_cg_atlas_texture_create_base(cg_context_t *ctx,
+_cg_atlas_texture_create_base(cg_device_t *dev,
                               int width,
                               int height,
                               cg_pixel_format_t internal_format,
@@ -650,7 +650,7 @@ _cg_atlas_texture_create_base(cg_context_t *ctx,
     atlas_tex->atlas = NULL;
 
     _cg_texture_init(CG_TEXTURE(atlas_tex),
-                     ctx,
+                     dev,
                      width,
                      height,
                      internal_format,
@@ -665,7 +665,7 @@ _cg_atlas_texture_create_base(cg_context_t *ctx,
 }
 
 cg_atlas_texture_t *
-cg_atlas_texture_new_with_size(cg_context_t *ctx, int width, int height)
+cg_atlas_texture_new_with_size(cg_device_t *dev, int width, int height)
 {
     cg_texture_loader_t *loader;
 
@@ -678,8 +678,9 @@ cg_atlas_texture_new_with_size(cg_context_t *ctx, int width, int height)
     loader->src.sized.width = width;
     loader->src.sized.height = height;
 
-    return _cg_atlas_texture_create_base(
-        ctx, width, height, CG_PIXEL_FORMAT_RGBA_8888_PRE, loader);
+    return _cg_atlas_texture_create_base(dev, width, height,
+                                         CG_PIXEL_FORMAT_RGBA_8888_PRE,
+                                         loader);
 }
 
 static bool
@@ -690,7 +691,7 @@ allocate_space(cg_atlas_texture_t *atlas_tex,
                cg_error_t **error)
 {
     cg_texture_t *tex = CG_TEXTURE(atlas_tex);
-    cg_context_t *ctx = tex->context;
+    cg_device_t *dev = tex->dev;
     cg_atlas_t *atlas;
 
     /* If the texture is in a strange format then we won't use it */
@@ -707,7 +708,7 @@ allocate_space(cg_atlas_texture_t *atlas_tex,
 
     /* If we can't use FBOs then it will be too slow to migrate textures
        and we shouldn't use the atlas */
-    if (!cg_has_feature(ctx, CG_FEATURE_ID_OFFSCREEN)) {
+    if (!cg_has_feature(dev, CG_FEATURE_ID_OFFSCREEN)) {
         _cg_set_error(error,
                       CG_SYSTEM_ERROR,
                       CG_SYSTEM_ERROR_UNSUPPORTED,
@@ -719,8 +720,8 @@ allocate_space(cg_atlas_texture_t *atlas_tex,
     /* Add two pixels for the border
      * FIXME: two pixels isn't enough if mipmapping is in use
      */
-    atlas = cg_atlas_set_allocate_space(
-        ctx->atlas_set, tex->width + 2, tex->height + 2, atlas_tex);
+    atlas = cg_atlas_set_allocate_space(dev->atlas_set, tex->width + 2,
+                                        tex->height + 2, atlas_tex);
     if (!atlas) {
         _cg_set_error(error,
                       CG_SYSTEM_ERROR,
@@ -854,7 +855,7 @@ cg_atlas_texture_new_from_bitmap(cg_bitmap_t *bmp)
 }
 
 cg_atlas_texture_t *
-cg_atlas_texture_new_from_data(cg_context_t *ctx,
+cg_atlas_texture_new_from_data(cg_device_t *dev,
                                int width,
                                int height,
                                cg_pixel_format_t format,
@@ -873,8 +874,8 @@ cg_atlas_texture_new_from_data(cg_context_t *ctx,
         rowstride = width * _cg_pixel_format_get_bytes_per_pixel(format);
 
     /* Wrap the data into a bitmap */
-    bmp = cg_bitmap_new_for_data(
-        ctx, width, height, format, rowstride, (uint8_t *)data);
+    bmp = cg_bitmap_new_for_data(dev, width, height, format, rowstride,
+                                 (uint8_t *)data);
 
     atlas_tex = cg_atlas_texture_new_from_bitmap(bmp);
 
@@ -889,7 +890,7 @@ cg_atlas_texture_new_from_data(cg_context_t *ctx,
 }
 
 cg_atlas_texture_t *
-cg_atlas_texture_new_from_file(cg_context_t *ctx,
+cg_atlas_texture_new_from_file(cg_device_t *dev,
                                const char *filename,
                                cg_error_t **error)
 {
@@ -898,7 +899,7 @@ cg_atlas_texture_new_from_file(cg_context_t *ctx,
 
     c_return_val_if_fail(error == NULL || *error == NULL, NULL);
 
-    bmp = cg_bitmap_new_from_file(ctx, filename, error);
+    bmp = cg_bitmap_new_from_file(dev, filename, error);
     if (bmp == NULL)
         return NULL;
 

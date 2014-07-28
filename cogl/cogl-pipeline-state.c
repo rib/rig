@@ -35,7 +35,7 @@
 #include "config.h"
 #endif
 
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-color-private.h"
 #include "cogl-blend-string.h"
 #include "cogl-util.h"
@@ -93,7 +93,7 @@ _cg_pipeline_blend_state_equal(cg_pipeline_t *authority0,
     cg_pipeline_blend_state_t *blend_state1 =
         &authority1->big_state->blend_state;
 
-    _CG_GET_CONTEXT(ctx, false);
+    _CG_GET_DEVICE(dev, false);
 
     if (blend_state0->blend_equation_rgb != blend_state1->blend_equation_rgb)
         return false;
@@ -227,9 +227,9 @@ _cg_pipeline_get_all_uniform_values(cg_pipeline_t *pipeline,
 {
     get_uniforms_closure_t data;
 
-    _CG_GET_CONTEXT(ctx, NO_RETVAL);
+    _CG_GET_DEVICE(dev, NO_RETVAL);
 
-    memset(values, 0, sizeof(const cg_boxed_value_t *) * ctx->n_uniform_names);
+    memset(values, 0, sizeof(const cg_boxed_value_t *) * dev->n_uniform_names);
 
     data.dst_values = values;
 
@@ -257,15 +257,15 @@ _cg_pipeline_uniforms_state_equal(cg_pipeline_t *authority0,
     int n_longs;
     int i;
 
-    _CG_GET_CONTEXT(ctx, false);
+    _CG_GET_DEVICE(dev, false);
 
     if (authority0 == authority1)
         return true;
 
-    values0 = c_alloca(sizeof(const cg_boxed_value_t *) * ctx->n_uniform_names);
-    values1 = c_alloca(sizeof(const cg_boxed_value_t *) * ctx->n_uniform_names);
+    values0 = c_alloca(sizeof(const cg_boxed_value_t *) * dev->n_uniform_names);
+    values1 = c_alloca(sizeof(const cg_boxed_value_t *) * dev->n_uniform_names);
 
-    n_longs = CG_FLAGS_N_LONGS_FOR_SIZE(ctx->n_uniform_names);
+    n_longs = CG_FLAGS_N_LONGS_FOR_SIZE(dev->n_uniform_names);
     differences = c_alloca(n_longs * sizeof(unsigned long));
     memset(differences, 0, sizeof(unsigned long) * n_longs);
     _cg_pipeline_compare_uniform_differences(
@@ -610,11 +610,11 @@ cg_pipeline_set_blend(cg_pipeline_t *pipeline,
     int count;
     cg_pipeline_blend_state_t *blend_state;
 
-    _CG_GET_CONTEXT(ctx, false);
+    _CG_GET_DEVICE(dev, false);
 
     c_return_val_if_fail(cg_is_pipeline(pipeline), false);
 
-    count = _cg_blend_string_compile(ctx,
+    count = _cg_blend_string_compile(dev,
                                      blend_description,
                                      CG_BLEND_STRING_CONTEXT_BLENDING,
                                      statements,
@@ -678,11 +678,11 @@ void
 cg_pipeline_set_blend_constant(cg_pipeline_t *pipeline,
                                const cg_color_t *constant_color)
 {
-    _CG_GET_CONTEXT(ctx, NO_RETVAL);
+    _CG_GET_DEVICE(dev, NO_RETVAL);
 
     c_return_if_fail(cg_is_pipeline(pipeline));
 
-    if (!_cg_has_private_feature(ctx, CG_PRIVATE_FEATURE_BLEND_CONSTANT))
+    if (!_cg_has_private_feature(dev, CG_PRIVATE_FEATURE_BLEND_CONSTANT))
         return;
 
 #if defined(HAVE_CG_GLES2) || defined(HAVE_CG_GL)
@@ -724,7 +724,7 @@ cg_pipeline_set_depth_state(cg_pipeline_t *pipeline,
     cg_pipeline_t *authority;
     cg_depth_state_t *orig_state;
 
-    _CG_GET_CONTEXT(ctx, false);
+    _CG_GET_DEVICE(dev, false);
 
     c_return_val_if_fail(cg_is_pipeline(pipeline), false);
     c_return_val_if_fail(depth_state->magic == CG_DEPTH_STATE_MAGIC, false);
@@ -974,7 +974,7 @@ cg_pipeline_set_per_vertex_point_size(cg_pipeline_t *pipeline,
     cg_pipeline_state_t state = CG_PIPELINE_STATE_PER_VERTEX_POINT_SIZE;
     cg_pipeline_t *authority;
 
-    _CG_GET_CONTEXT(ctx, false);
+    _CG_GET_DEVICE(dev, false);
     c_return_val_if_fail(cg_is_pipeline(pipeline), false);
 
     authority = _cg_pipeline_get_authority(pipeline, state);
@@ -984,7 +984,7 @@ cg_pipeline_set_per_vertex_point_size(cg_pipeline_t *pipeline,
     if (authority->big_state->per_vertex_point_size == enable)
         return true;
 
-    if (enable && !cg_has_feature(ctx, CG_FEATURE_ID_PER_VERTEX_POINT_SIZE)) {
+    if (enable && !cg_has_feature(dev, CG_FEATURE_ID_PER_VERTEX_POINT_SIZE)) {
         _cg_set_error(error,
                       CG_SYSTEM_ERROR,
                       CG_SYSTEM_ERROR_UNSUPPORTED,
@@ -1029,11 +1029,11 @@ _cg_pipeline_override_uniform(cg_pipeline_t *pipeline,
     cg_pipeline_uniforms_state_t *uniforms_state;
     int override_index;
 
-    _CG_GET_CONTEXT(ctx, NULL);
+    _CG_GET_DEVICE(dev, NULL);
 
     c_return_val_if_fail(cg_is_pipeline(pipeline), NULL);
     c_return_val_if_fail(location >= 0, NULL);
-    c_return_val_if_fail(location < ctx->n_uniform_names, NULL);
+    c_return_val_if_fail(location < dev->n_uniform_names, NULL);
 
     /* - Flush journal primitives referencing the current state.
      * - Make sure the pipeline has no dependants so it may be modified.
@@ -1328,7 +1328,7 @@ _cg_pipeline_hash_blend_state(cg_pipeline_t *authority,
     cg_pipeline_blend_state_t *blend_state = &authority->big_state->blend_state;
     unsigned int hash;
 
-    _CG_GET_CONTEXT(ctx, NO_RETVAL);
+    _CG_GET_DEVICE(dev, NO_RETVAL);
 
     if (!authority->real_blend_enable)
         return;
@@ -1557,7 +1557,7 @@ UNIT_TEST(check_blend_constant_ancestry,
           0 /* no requirements */,
           0 /* no known failures */)
 {
-    cg_pipeline_t *pipeline = cg_pipeline_new(test_ctx);
+    cg_pipeline_t *pipeline = cg_pipeline_new(test_dev);
     cg_node_t *node;
     int pipeline_length = 0;
     int i;
@@ -1588,7 +1588,7 @@ UNIT_TEST(check_blend_constant_ancestry,
 
 UNIT_TEST(check_uniform_ancestry, 0 /* no requirements */, TEST_KNOWN_FAILURE)
 {
-    cg_pipeline_t *pipeline = cg_pipeline_new(test_ctx);
+    cg_pipeline_t *pipeline = cg_pipeline_new(test_dev);
     cg_node_t *node;
     int pipeline_length = 0;
     int i;

@@ -44,7 +44,7 @@
 #include "cogl-texture-private.h"
 #include "cogl-pipeline.h"
 #include "cogl-pipeline-opengl-private.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-object-private.h"
 #include "cogl-util-gl-private.h"
 #include "cogl-error-private.h"
@@ -73,13 +73,13 @@
 #endif
 
 static GLuint
-_cg_texture_driver_gen(cg_context_t *ctx,
+_cg_texture_driver_gen(cg_device_t *dev,
                        GLenum gl_target,
                        cg_pixel_format_t internal_format)
 {
     GLuint tex;
 
-    GE(ctx, glGenTextures(1, &tex));
+    GE(dev, glGenTextures(1, &tex));
 
     _cg_bind_gl_texture_transient(gl_target, tex, false);
 
@@ -87,7 +87,7 @@ _cg_texture_driver_gen(cg_context_t *ctx,
     case GL_TEXTURE_2D:
     case GL_TEXTURE_3D:
         /* GL_TEXTURE_MAG_FILTER defaults to GL_LINEAR, no need to set it */
-        GE(ctx, glTexParameteri(gl_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+        GE(dev, glTexParameteri(gl_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
         break;
 
     default:
@@ -98,32 +98,32 @@ _cg_texture_driver_gen(cg_context_t *ctx,
 }
 
 static void
-prep_gl_for_pixels_upload_full(cg_context_t *ctx,
+prep_gl_for_pixels_upload_full(cg_device_t *dev,
                                int pixels_rowstride,
                                int pixels_src_x,
                                int pixels_src_y,
                                int pixels_bpp)
 {
-    if (_cg_has_private_feature(ctx, CG_PRIVATE_FEATURE_UNPACK_SUBIMAGE)) {
-        GE(ctx,
+    if (_cg_has_private_feature(dev, CG_PRIVATE_FEATURE_UNPACK_SUBIMAGE)) {
+        GE(dev,
            glPixelStorei(GL_UNPACK_ROW_LENGTH, pixels_rowstride / pixels_bpp));
 
-        GE(ctx, glPixelStorei(GL_UNPACK_SKIP_PIXELS, pixels_src_x));
-        GE(ctx, glPixelStorei(GL_UNPACK_SKIP_ROWS, pixels_src_y));
+        GE(dev, glPixelStorei(GL_UNPACK_SKIP_PIXELS, pixels_src_x));
+        GE(dev, glPixelStorei(GL_UNPACK_SKIP_ROWS, pixels_src_y));
     } else {
         c_assert(pixels_src_x == 0);
         c_assert(pixels_src_y == 0);
     }
 
-    _cg_texture_gl_prep_alignment_for_pixels_upload(ctx, pixels_rowstride);
+    _cg_texture_gl_prep_alignment_for_pixels_upload(dev, pixels_rowstride);
 }
 
 static void
-_cg_texture_driver_prep_gl_for_pixels_upload(cg_context_t *ctx,
+_cg_texture_driver_prep_gl_for_pixels_upload(cg_device_t *dev,
                                              int pixels_rowstride,
                                              int pixels_bpp)
 {
-    prep_gl_for_pixels_upload_full(ctx,
+    prep_gl_for_pixels_upload_full(dev,
                                    pixels_rowstride,
                                    0,
                                    0, /* src_x/y */
@@ -131,17 +131,18 @@ _cg_texture_driver_prep_gl_for_pixels_upload(cg_context_t *ctx,
 }
 
 static void
-_cg_texture_driver_prep_gl_for_pixels_download(cg_context_t *ctx,
+_cg_texture_driver_prep_gl_for_pixels_download(cg_device_t *dev,
                                                int pixels_rowstride,
                                                int image_width,
                                                int pixels_bpp)
 {
-    _cg_texture_gl_prep_alignment_for_pixels_download(
-        ctx, pixels_bpp, image_width, pixels_rowstride);
+    _cg_texture_gl_prep_alignment_for_pixels_download(dev, pixels_bpp,
+                                                      image_width,
+                                                      pixels_rowstride);
 }
 
 static cg_bitmap_t *
-prepare_bitmap_alignment_for_upload(cg_context_t *ctx,
+prepare_bitmap_alignment_for_upload(cg_device_t *dev,
                                     cg_bitmap_t *src_bmp,
                                     cg_error_t **error)
 {
@@ -151,7 +152,7 @@ prepare_bitmap_alignment_for_upload(cg_context_t *ctx,
     int width = cg_bitmap_get_width(src_bmp);
     int alignment = 1;
 
-    if (_cg_has_private_feature(ctx, CG_PRIVATE_FEATURE_UNPACK_SUBIMAGE) ||
+    if (_cg_has_private_feature(dev, CG_PRIVATE_FEATURE_UNPACK_SUBIMAGE) ||
         src_rowstride == 0)
         return cg_object_ref(src_bmp);
 
@@ -170,7 +171,7 @@ prepare_bitmap_alignment_for_upload(cg_context_t *ctx,
 }
 
 static bool
-_cg_texture_driver_upload_subregion_to_gl(cg_context_t *ctx,
+_cg_texture_driver_upload_subregion_to_gl(cg_device_t *dev,
                                           cg_texture_t *texture,
                                           bool is_foreign,
                                           int src_x,
@@ -203,11 +204,11 @@ _cg_texture_driver_upload_subregion_to_gl(cg_context_t *ctx,
     /* If we have the GL_EXT_unpack_subimage extension then we can
        upload from subregions directly. Otherwise we may need to copy
        the bitmap */
-    if (!_cg_has_private_feature(ctx, CG_PRIVATE_FEATURE_UNPACK_SUBIMAGE) &&
+    if (!_cg_has_private_feature(dev, CG_PRIVATE_FEATURE_UNPACK_SUBIMAGE) &&
         (src_x != 0 || src_y != 0 || width != cg_bitmap_get_width(source_bmp) ||
          height != cg_bitmap_get_height(source_bmp))) {
-        slice_bmp = _cg_bitmap_new_with_malloc_buffer(
-            ctx, width, height, source_format, error);
+        slice_bmp = _cg_bitmap_new_with_malloc_buffer(dev, width, height,
+                                                      source_format, error);
         if (!slice_bmp)
             return false;
 
@@ -226,7 +227,8 @@ _cg_texture_driver_upload_subregion_to_gl(cg_context_t *ctx,
 
         src_x = src_y = 0;
     } else {
-        slice_bmp = prepare_bitmap_alignment_for_upload(ctx, source_bmp, error);
+        slice_bmp = prepare_bitmap_alignment_for_upload(dev, source_bmp,
+                                                        error);
         if (!slice_bmp)
             return false;
     }
@@ -234,7 +236,7 @@ _cg_texture_driver_upload_subregion_to_gl(cg_context_t *ctx,
     rowstride = cg_bitmap_get_rowstride(slice_bmp);
 
     /* Setup gl alignment to match rowstride and top-left corner */
-    prep_gl_for_pixels_upload_full(ctx, rowstride, src_x, src_y, bpp);
+    prep_gl_for_pixels_upload_full(dev, rowstride, src_x, src_y, bpp);
 
     data = _cg_bitmap_gl_bind(
         slice_bmp, CG_BUFFER_ACCESS_READ, 0, &internal_error);
@@ -251,7 +253,7 @@ _cg_texture_driver_upload_subregion_to_gl(cg_context_t *ctx,
     _cg_bind_gl_texture_transient(gl_target, gl_handle, is_foreign);
 
     /* Clear any GL errors */
-    while ((gl_error = ctx->glGetError()) != GL_NO_ERROR)
+    while ((gl_error = dev->glGetError()) != GL_NO_ERROR)
         ;
 
     _cg_texture_get_level_size(
@@ -262,7 +264,7 @@ _cg_texture_driver_upload_subregion_to_gl(cg_context_t *ctx,
          * contents of a mipmap level so we make sure to use
          * glTexImage2D if we are uploading a full mipmap level.
          */
-        ctx->glTexImage2D(gl_target,
+        dev->glTexImage2D(gl_target,
                           level,
                           _cg_texture_gl_get_format(texture),
                           width,
@@ -279,7 +281,7 @@ _cg_texture_driver_upload_subregion_to_gl(cg_context_t *ctx,
          * level exists.
          */
         if (texture->max_level < level) {
-            ctx->glTexImage2D(gl_target,
+            dev->glTexImage2D(gl_target,
                               level,
                               _cg_texture_gl_get_format(texture),
                               level_width,
@@ -290,7 +292,7 @@ _cg_texture_driver_upload_subregion_to_gl(cg_context_t *ctx,
                               NULL);
         }
 
-        ctx->glTexSubImage2D(gl_target,
+        dev->glTexSubImage2D(gl_target,
                              level,
                              dst_x,
                              dst_y,
@@ -301,7 +303,7 @@ _cg_texture_driver_upload_subregion_to_gl(cg_context_t *ctx,
                              data);
     }
 
-    if (_cg_gl_util_catch_out_of_memory(ctx, error))
+    if (_cg_gl_util_catch_out_of_memory(dev, error))
         status = false;
 
     _cg_bitmap_gl_unbind(slice_bmp);
@@ -312,7 +314,7 @@ _cg_texture_driver_upload_subregion_to_gl(cg_context_t *ctx,
 }
 
 static bool
-_cg_texture_driver_upload_to_gl(cg_context_t *ctx,
+_cg_texture_driver_upload_to_gl(cg_device_t *dev,
                                 GLenum gl_target,
                                 GLuint gl_handle,
                                 bool is_foreign,
@@ -333,14 +335,14 @@ _cg_texture_driver_upload_to_gl(cg_context_t *ctx,
     cg_error_t *internal_error = NULL;
     bool status = true;
 
-    bmp = prepare_bitmap_alignment_for_upload(ctx, source_bmp, error);
+    bmp = prepare_bitmap_alignment_for_upload(dev, source_bmp, error);
     if (!bmp)
         return false;
 
     rowstride = cg_bitmap_get_rowstride(bmp);
 
     /* Setup gl alignment to match rowstride and top-left corner */
-    _cg_texture_driver_prep_gl_for_pixels_upload(ctx, rowstride, bpp);
+    _cg_texture_driver_prep_gl_for_pixels_upload(dev, rowstride, bpp);
 
     _cg_bind_gl_texture_transient(gl_target, gl_handle, is_foreign);
 
@@ -359,10 +361,10 @@ _cg_texture_driver_upload_to_gl(cg_context_t *ctx,
     }
 
     /* Clear any GL errors */
-    while ((gl_error = ctx->glGetError()) != GL_NO_ERROR)
+    while ((gl_error = dev->glGetError()) != GL_NO_ERROR)
         ;
 
-    ctx->glTexImage2D(gl_target,
+    dev->glTexImage2D(gl_target,
                       0,
                       internal_gl_format,
                       bmp_width,
@@ -372,7 +374,7 @@ _cg_texture_driver_upload_to_gl(cg_context_t *ctx,
                       source_gl_type,
                       data);
 
-    if (_cg_gl_util_catch_out_of_memory(ctx, error))
+    if (_cg_gl_util_catch_out_of_memory(dev, error))
         status = false;
 
     _cg_bitmap_gl_unbind(bmp);
@@ -383,7 +385,7 @@ _cg_texture_driver_upload_to_gl(cg_context_t *ctx,
 }
 
 static bool
-_cg_texture_driver_upload_to_gl_3d(cg_context_t *ctx,
+_cg_texture_driver_upload_to_gl_3d(cg_device_t *dev,
                                    GLenum gl_target,
                                    GLuint gl_handle,
                                    bool is_foreign,
@@ -414,16 +416,17 @@ _cg_texture_driver_upload_to_gl_3d(cg_context_t *ctx,
         cg_pixel_format_t source_bmp_format = cg_bitmap_get_format(source_bmp);
         int i;
 
-        _cg_texture_driver_prep_gl_for_pixels_upload(ctx, bmp_width * bpp, bpp);
+        _cg_texture_driver_prep_gl_for_pixels_upload(dev, bmp_width * bpp,
+                                                     bpp);
 
         /* Initialize the texture with empty data and then upload each
            image with a sub-region update */
 
         /* Clear any GL errors */
-        while ((gl_error = ctx->glGetError()) != GL_NO_ERROR)
+        while ((gl_error = dev->glGetError()) != GL_NO_ERROR)
             ;
 
-        ctx->glTexImage3D(gl_target,
+        dev->glTexImage3D(gl_target,
                           0, /* level */
                           internal_gl_format,
                           bmp_width,
@@ -434,11 +437,11 @@ _cg_texture_driver_upload_to_gl_3d(cg_context_t *ctx,
                           source_gl_type,
                           NULL);
 
-        if (_cg_gl_util_catch_out_of_memory(ctx, error))
+        if (_cg_gl_util_catch_out_of_memory(dev, error))
             return false;
 
-        bmp = _cg_bitmap_new_with_malloc_buffer(
-            ctx, bmp_width, height, source_bmp_format, error);
+        bmp = _cg_bitmap_new_with_malloc_buffer(dev, bmp_width, height,
+                                                source_bmp_format, error);
         if (!bmp)
             return false;
 
@@ -463,10 +466,10 @@ _cg_texture_driver_upload_to_gl_3d(cg_context_t *ctx,
             }
 
             /* Clear any GL errors */
-            while ((gl_error = ctx->glGetError()) != GL_NO_ERROR)
+            while ((gl_error = dev->glGetError()) != GL_NO_ERROR)
                 ;
 
-            ctx->glTexSubImage3D(gl_target,
+            dev->glTexSubImage3D(gl_target,
                                  0, /* level */
                                  0, /* xoffset */
                                  0, /* yoffset */
@@ -478,7 +481,7 @@ _cg_texture_driver_upload_to_gl_3d(cg_context_t *ctx,
                                  source_gl_type,
                                  data);
 
-            if (_cg_gl_util_catch_out_of_memory(ctx, error)) {
+            if (_cg_gl_util_catch_out_of_memory(dev, error)) {
                 cg_object_unref(bmp);
                 _cg_bitmap_gl_unbind(bmp);
                 return false;
@@ -493,13 +496,13 @@ _cg_texture_driver_upload_to_gl_3d(cg_context_t *ctx,
         if (!data)
             return false;
 
-        _cg_texture_driver_prep_gl_for_pixels_upload(ctx, rowstride, bpp);
+        _cg_texture_driver_prep_gl_for_pixels_upload(dev, rowstride, bpp);
 
         /* Clear any GL errors */
-        while ((gl_error = ctx->glGetError()) != GL_NO_ERROR)
+        while ((gl_error = dev->glGetError()) != GL_NO_ERROR)
             ;
 
-        ctx->glTexImage3D(gl_target,
+        dev->glTexImage3D(gl_target,
                           0, /* level */
                           internal_gl_format,
                           bmp_width,
@@ -510,7 +513,7 @@ _cg_texture_driver_upload_to_gl_3d(cg_context_t *ctx,
                           source_gl_type,
                           data);
 
-        if (_cg_gl_util_catch_out_of_memory(ctx, error)) {
+        if (_cg_gl_util_catch_out_of_memory(dev, error)) {
             _cg_bitmap_gl_unbind(source_bmp);
             return false;
         }
@@ -525,7 +528,7 @@ _cg_texture_driver_upload_to_gl_3d(cg_context_t *ctx,
  * fallback to a generic render + readpixels approach to downloading
  * texture data. (See _cg_texture_draw_and_read() ) */
 static bool
-_cg_texture_driver_gl_get_tex_image(cg_context_t *ctx,
+_cg_texture_driver_gl_get_tex_image(cg_device_t *dev,
                                     GLenum gl_target,
                                     GLenum dest_gl_format,
                                     GLenum dest_gl_type,
@@ -535,7 +538,7 @@ _cg_texture_driver_gl_get_tex_image(cg_context_t *ctx,
 }
 
 static bool
-_cg_texture_driver_size_supported_3d(cg_context_t *ctx,
+_cg_texture_driver_size_supported_3d(cg_device_t *dev,
                                      GLenum gl_target,
                                      GLenum gl_format,
                                      GLenum gl_type,
@@ -548,13 +551,13 @@ _cg_texture_driver_size_supported_3d(cg_context_t *ctx,
     /* GLES doesn't support a proxy texture target so let's at least
        check whether the size is greater than
        GL_MAX_3D_TEXTURE_SIZE_OES */
-    GE(ctx, glGetIntegerv(GL_MAX_3D_TEXTURE_SIZE_OES, &max_size));
+    GE(dev, glGetIntegerv(GL_MAX_3D_TEXTURE_SIZE_OES, &max_size));
 
     return width <= max_size && height <= max_size && depth <= max_size;
 }
 
 static bool
-_cg_texture_driver_size_supported(cg_context_t *ctx,
+_cg_texture_driver_size_supported(cg_device_t *dev,
                                   GLenum gl_target,
                                   GLenum gl_intformat,
                                   GLenum gl_format,
@@ -566,20 +569,21 @@ _cg_texture_driver_size_supported(cg_context_t *ctx,
 
     /* GLES doesn't support a proxy texture target so let's at least
        check whether the size is greater than GL_MAX_TEXTURE_SIZE */
-    GE(ctx, glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_size));
+    GE(dev, glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_size));
 
     return width <= max_size && height <= max_size;
 }
 
 static void
-_cg_texture_driver_try_setting_gl_border_color(
-    cg_context_t *ctx, GLuint gl_target, const GLfloat *transparent_color)
+_cg_texture_driver_try_setting_gl_border_color(cg_device_t *dev,
+					       GLuint gl_target,
+					       const GLfloat *transparent_color)
 {
     /* FAIL! */
 }
 
 static cg_pixel_format_t
-_cg_texture_driver_find_best_gl_get_data_format(cg_context_t *context,
+_cg_texture_driver_find_best_gl_get_data_format(cg_device_t *dev,
                                                 cg_pixel_format_t format,
                                                 GLenum *closest_gl_format,
                                                 GLenum *closest_gl_type)

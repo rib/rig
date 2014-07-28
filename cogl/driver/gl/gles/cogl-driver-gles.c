@@ -34,7 +34,7 @@
 
 #include <string.h>
 
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-util-gl-private.h"
 #include "cogl-feature-private.h"
 #include "cogl-renderer-private.h"
@@ -59,14 +59,15 @@
 #endif
 
 static bool
-_cg_driver_pixel_format_from_gl_internal(
-    cg_context_t *context, GLenum gl_int_format, cg_pixel_format_t *out_format)
+_cg_driver_pixel_format_from_gl_internal(cg_device_t *dev,
+                                         GLenum gl_int_format,
+                                         cg_pixel_format_t *out_format)
 {
     return true;
 }
 
 static cg_pixel_format_t
-_cg_driver_pixel_format_to_gl(cg_context_t *context,
+_cg_driver_pixel_format_to_gl(cg_device_t *dev,
                               cg_pixel_format_t format,
                               GLenum *out_glintformat,
                               GLenum *out_glformat,
@@ -88,7 +89,7 @@ _cg_driver_pixel_format_to_gl(cg_context_t *context,
         break;
 
     case CG_PIXEL_FORMAT_RG_88:
-        if (cg_has_feature(context, CG_FEATURE_ID_TEXTURE_RG)) {
+        if (cg_has_feature(dev, CG_FEATURE_ID_TEXTURE_RG)) {
             glintformat = GL_RG8;
             glformat = GL_RG;
         } else {
@@ -107,8 +108,7 @@ _cg_driver_pixel_format_to_gl(cg_context_t *context,
     case CG_PIXEL_FORMAT_BGRA_8888:
     case CG_PIXEL_FORMAT_BGRA_8888_PRE:
         /* There is an extension to support this format */
-        if (_cg_has_private_feature(
-                context, CG_PRIVATE_FEATURE_TEXTURE_FORMAT_BGRA8888)) {
+        if (_cg_has_private_feature(dev, CG_PRIVATE_FEATURE_TEXTURE_FORMAT_BGRA8888)) {
             /* For some reason the extension says you have to specify
                BGRA for the internal format too */
             glintformat = GL_BGRA_EXT;
@@ -208,12 +208,12 @@ _cg_driver_pixel_format_to_gl(cg_context_t *context,
 }
 
 static bool
-_cg_get_gl_version(cg_context_t *ctx, int *major_out, int *minor_out)
+_cg_get_gl_version(cg_device_t *dev, int *major_out, int *minor_out)
 {
     const char *version_string;
 
     /* Get the OpenGL version number */
-    if ((version_string = _cg_context_get_gl_version(ctx)) == NULL)
+    if ((version_string = _cg_device_get_gl_version(dev)) == NULL)
         return false;
 
     if (!g_str_has_prefix(version_string, "OpenGL ES "))
@@ -224,7 +224,7 @@ _cg_get_gl_version(cg_context_t *ctx, int *major_out, int *minor_out)
 }
 
 static bool
-_cg_driver_update_features(cg_context_t *context,
+_cg_driver_update_features(cg_device_t *dev,
                            cg_error_t **error)
 {
     unsigned long private_features
@@ -236,10 +236,11 @@ _cg_driver_update_features(cg_context_t *context,
     /* We have to special case getting the pointer to the glGetString
        function because we need to use it to determine what functions we
        can expect */
-    context->glGetString = (void *)_cg_renderer_get_proc_address(
-        context->display->renderer, "glGetString", true);
+    dev->glGetString = (void *)_cg_renderer_get_proc_address(dev->display->renderer,
+                                                             "glGetString",
+                                                             true);
 
-    gl_extensions = _cg_context_get_gl_extensions(context);
+    gl_extensions = _cg_device_get_gl_extensions(dev);
 
     if (C_UNLIKELY(CG_DEBUG_ENABLED(CG_DEBUG_WINSYS))) {
         char *all_extensions = c_strjoinv(" ", gl_extensions);
@@ -250,37 +251,37 @@ _cg_driver_update_features(cg_context_t *context,
                 "  GL_RENDERER: %s\n"
                 "  GL_VERSION: %s\n"
                 "  GL_EXTENSIONS: %s",
-                context->glGetString(GL_VENDOR),
-                context->glGetString(GL_RENDERER),
-                _cg_context_get_gl_version(context),
+                dev->glGetString(GL_VENDOR),
+                dev->glGetString(GL_RENDERER),
+                _cg_device_get_gl_version(dev),
                 all_extensions);
 
         c_free(all_extensions);
     }
 
-    context->glsl_major = 1;
-    context->glsl_minor = 0;
-    context->glsl_version_to_use = 100;
+    dev->glsl_major = 1;
+    dev->glsl_minor = 0;
+    dev->glsl_version_to_use = 100;
 
-    _cg_gpc_info_init(context, &context->gpu);
+    _cg_gpc_info_init(dev, &dev->gpu);
 
-    if (!_cg_get_gl_version(context, &gl_major, &gl_minor)) {
+    if (!_cg_get_gl_version(dev, &gl_major, &gl_minor)) {
         gl_major = 1;
         gl_minor = 1;
     }
 
-    _cg_feature_check_ext_functions(context, gl_major, gl_minor, gl_extensions);
+    _cg_feature_check_ext_functions(dev, gl_major, gl_minor, gl_extensions);
 
-    if (context->driver == CG_DRIVER_GLES2) {
+    if (dev->driver == CG_DRIVER_GLES2) {
         /* Note GLES 2 core doesn't support mipmaps for npot textures or
          * repeat modes other than CLAMP_TO_EDGE. */
-        CG_FLAGS_SET(context->features, CG_FEATURE_ID_GLSL, true);
-        CG_FLAGS_SET(context->features, CG_FEATURE_ID_OFFSCREEN, true);
-        CG_FLAGS_SET(context->features, CG_FEATURE_ID_TEXTURE_NPOT_BASIC, true);
-        CG_FLAGS_SET(context->features, CG_FEATURE_ID_DEPTH_RANGE, true);
-        CG_FLAGS_SET(context->features, CG_FEATURE_ID_MIRRORED_REPEAT, true);
-        CG_FLAGS_SET(
-            context->features, CG_FEATURE_ID_PER_VERTEX_POINT_SIZE, true);
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_GLSL, true);
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_OFFSCREEN, true);
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_TEXTURE_NPOT_BASIC, true);
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_DEPTH_RANGE, true);
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_MIRRORED_REPEAT, true);
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_PER_VERTEX_POINT_SIZE,
+                     true);
 
         CG_FLAGS_SET(private_features, CG_PRIVATE_FEATURE_BLEND_CONSTANT, true);
     }
@@ -290,44 +291,39 @@ _cg_driver_update_features(cg_context_t *context,
     CG_FLAGS_SET(private_features, CG_PRIVATE_FEATURE_ALPHA_TEXTURES, true);
 
     /* GLES 2.0 supports point sprites in core */
-    CG_FLAGS_SET(context->features, CG_FEATURE_ID_POINT_SPRITE, true);
+    CG_FLAGS_SET(dev->features, CG_FEATURE_ID_POINT_SPRITE, true);
 
-    if (context->glGenRenderbuffers)
-        CG_FLAGS_SET(context->features, CG_FEATURE_ID_OFFSCREEN, true);
+    if (dev->glGenRenderbuffers)
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_OFFSCREEN, true);
 
-    if (context->glBlitFramebuffer)
+    if (dev->glBlitFramebuffer)
         CG_FLAGS_SET(private_features, CG_PRIVATE_FEATURE_OFFSCREEN_BLIT, true);
 
     if (_cg_check_extension("GL_OES_element_index_uint", gl_extensions))
-        CG_FLAGS_SET(
-            context->features, CG_FEATURE_ID_UNSIGNED_INT_INDICES, true);
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_UNSIGNED_INT_INDICES, true);
 
     if (_cg_check_extension("GL_OES_depth_texture", gl_extensions))
-        CG_FLAGS_SET(context->features, CG_FEATURE_ID_DEPTH_TEXTURE, true);
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_DEPTH_TEXTURE, true);
 
     if (_cg_check_extension("GL_OES_texture_npot", gl_extensions)) {
-        CG_FLAGS_SET(context->features, CG_FEATURE_ID_TEXTURE_NPOT, true);
-        CG_FLAGS_SET(context->features, CG_FEATURE_ID_TEXTURE_NPOT_BASIC, true);
-        CG_FLAGS_SET(
-            context->features, CG_FEATURE_ID_TEXTURE_NPOT_MIPMAP, true);
-        CG_FLAGS_SET(
-            context->features, CG_FEATURE_ID_TEXTURE_NPOT_REPEAT, true);
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_TEXTURE_NPOT, true);
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_TEXTURE_NPOT_BASIC, true);
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_TEXTURE_NPOT_MIPMAP, true);
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_TEXTURE_NPOT_REPEAT, true);
     } else if (_cg_check_extension("GL_IMG_texture_npot", gl_extensions)) {
-        CG_FLAGS_SET(context->features, CG_FEATURE_ID_TEXTURE_NPOT_BASIC, true);
-        CG_FLAGS_SET(
-            context->features, CG_FEATURE_ID_TEXTURE_NPOT_MIPMAP, true);
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_TEXTURE_NPOT_BASIC, true);
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_TEXTURE_NPOT_MIPMAP, true);
     }
 
-    if (context->glTexImage3D)
-        CG_FLAGS_SET(context->features, CG_FEATURE_ID_TEXTURE_3D, true);
+    if (dev->glTexImage3D)
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_TEXTURE_3D, true);
 
-    if (context->glMapBuffer)
+    if (dev->glMapBuffer)
         /* The GL_OES_mapbuffer extension doesn't support mapping for
            read */
-        CG_FLAGS_SET(
-            context->features, CG_FEATURE_ID_MAP_BUFFER_FOR_WRITE, true);
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_MAP_BUFFER_FOR_WRITE, true);
 
-    if (context->glEGLImageTargetTexture2D)
+    if (dev->glEGLImageTargetTexture2D)
         CG_FLAGS_SET(private_features,
                      CG_PRIVATE_FEATURE_TEXTURE_2D_FROM_EGL_IMAGE,
                      true);
@@ -352,11 +348,11 @@ _cg_driver_update_features(cg_context_t *context,
         CG_FLAGS_SET(private_features, CG_PRIVATE_FEATURE_OES_EGL_SYNC, true);
 
     if (_cg_check_extension("GL_EXT_texture_rg", gl_extensions))
-        CG_FLAGS_SET(context->features, CG_FEATURE_ID_TEXTURE_RG, true);
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_TEXTURE_RG, true);
 
     /* Cache features */
     for (i = 0; i < C_N_ELEMENTS(private_features); i++)
-        context->private_features[i] |= private_features[i];
+        dev->private_features[i] |= private_features[i];
 
     c_strfreev(gl_extensions);
 

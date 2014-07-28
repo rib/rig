@@ -28,10 +28,10 @@
  *
  */
 
-#ifndef __CG_CONTEXT_PRIVATE_H
-#define __CG_CONTEXT_PRIVATE_H
+#ifndef __CG_DEVICE_PRIVATE_H
+#define __CG_DEVICE_PRIVATE_H
 
-#include "cogl-context.h"
+#include "cogl-device.h"
 #include "cogl-winsys-private.h"
 #include "cogl-flags.h"
 
@@ -66,7 +66,7 @@ typedef struct {
     GLubyte c[4];
 } cg_texture_gl_vertex_t;
 
-struct _cg_context_t {
+struct _cg_device_t {
     cg_object_t _parent;
 
     cg_display_t *display;
@@ -305,9 +305,9 @@ struct _cg_context_t {
 #undef CG_EXT_END
 };
 
-cg_context_t *_cg_context_get_default();
+cg_device_t *_cg_device_get_default();
 
-const cg_winsys_vtable_t *_cg_context_get_winsys(cg_context_t *context);
+const cg_winsys_vtable_t *_cg_device_get_winsys(cg_device_t *dev);
 
 /* Query the GL extensions and lookup the corresponding function
  * pointers. Theoretically the list of extensions can change for
@@ -315,34 +315,34 @@ const cg_winsys_vtable_t *_cg_context_get_winsys(cg_context_t *context);
  * to know when to re-query the GL extensions. The backend should also
  * check whether the GL context is supported by Cogl. If not it should
  * return false and set @error */
-bool _cg_context_update_features(cg_context_t *context, cg_error_t **error);
+bool _cg_device_update_features(cg_device_t *dev, cg_error_t **error);
 
 /* Obtains the context and returns retval if NULL */
-#define _CG_GET_CONTEXT(ctxvar, retval)                                        \
-    cg_context_t *ctxvar = _cg_context_get_default();                          \
-    if (ctxvar == NULL)                                                        \
+#define _CG_GET_DEVICE(devvar, retval) \
+    cg_device_t *devvar = _cg_device_get_default(); \
+    if (devvar == NULL) \
         return retval;
 
 #define NO_RETVAL
 
-void _cg_context_set_current_projection_entry(cg_context_t *context,
-                                              cg_matrix_entry_t *entry);
-
-void _cg_context_set_current_modelview_entry(cg_context_t *context,
+void _cg_device_set_current_projection_entry(cg_device_t *dev,
                                              cg_matrix_entry_t *entry);
 
+void _cg_device_set_current_modelview_entry(cg_device_t *dev,
+                                            cg_matrix_entry_t *entry);
+
 /*
- * _cg_context_get_gl_extensions:
- * @context: A cg_context_t
+ * _cg_device_get_gl_extensions:
+ * @context: A cg_device_t
  *
  * Return value: a NULL-terminated array of strings representing the
  *   supported extensions by the current driver. This array is owned
  *   by the caller and should be freed with c_strfreev().
  */
-char **_cg_context_get_gl_extensions(cg_context_t *context);
+char **_cg_device_get_gl_extensions(cg_device_t *dev);
 
-const char *_cg_context_get_gl_version(cg_context_t *context);
+const char *_cg_device_get_gl_version(cg_device_t *dev);
 
-cg_atlas_set_t *_cg_get_atlas_set(cg_context_t *context);
+cg_atlas_set_t *_cg_get_atlas_set(cg_device_t *dev);
 
-#endif /* __CG_CONTEXT_PRIVATE_H */
+#endif /* __CG_DEVICE_PRIVATE_H */

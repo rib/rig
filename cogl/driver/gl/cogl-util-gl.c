@@ -35,7 +35,7 @@
 #endif
 
 #include "cogl-types.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-error-private.h"
 #include "cogl-util-gl-private.h"
 
@@ -77,12 +77,12 @@ _cg_gl_error_to_string(GLenum error_code)
 #endif /* CG_GL_DEBUG */
 
 bool
-_cg_gl_util_catch_out_of_memory(cg_context_t *ctx, cg_error_t **error)
+_cg_gl_util_catch_out_of_memory(cg_device_t *dev, cg_error_t **error)
 {
     GLenum gl_error;
     bool out_of_memory = false;
 
-    while ((gl_error = ctx->glGetError()) != GL_NO_ERROR) {
+    while ((gl_error = dev->glGetError()) != GL_NO_ERROR) {
         if (gl_error == GL_OUT_OF_MEMORY)
             out_of_memory = true;
 #ifdef CG_GL_DEBUG

@@ -38,21 +38,21 @@
 #include "cogl-object-private.h"
 #include "cogl-attribute-buffer.h"
 #include "cogl-attribute-buffer-private.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 
 static void _cg_attribute_buffer_free(cg_attribute_buffer_t *array);
 
 CG_BUFFER_DEFINE(AttributeBuffer, attribute_buffer);
 
 cg_attribute_buffer_t *
-cg_attribute_buffer_new_with_size(cg_context_t *context,
+cg_attribute_buffer_new_with_size(cg_device_t *dev,
                                   size_t bytes)
 {
     cg_attribute_buffer_t *buffer = c_slice_new(cg_attribute_buffer_t);
 
     /* parent's constructor */
     _cg_buffer_initialize(CG_BUFFER(buffer),
-                          context,
+                          dev,
                           bytes,
                           CG_BUFFER_BIND_TARGET_ATTRIBUTE_BUFFER,
                           CG_BUFFER_USAGE_HINT_ATTRIBUTE_BUFFER,
@@ -62,13 +62,13 @@ cg_attribute_buffer_new_with_size(cg_context_t *context,
 }
 
 cg_attribute_buffer_t *
-cg_attribute_buffer_new(cg_context_t *context, size_t bytes, const void *data)
+cg_attribute_buffer_new(cg_device_t *dev, size_t bytes, const void *data)
 {
     cg_attribute_buffer_t *buffer;
 
     c_return_val_if_fail(data, NULL);
 
-    buffer = cg_attribute_buffer_new_with_size(context, bytes);
+    buffer = cg_attribute_buffer_new_with_size(dev, bytes);
 
     /* Note: to keep the common cases simple this API doesn't throw
      * cg_error_ts, so developers can assume this function never returns

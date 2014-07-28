@@ -90,12 +90,12 @@ typedef struct _cg_winsys_vtable_t {
 
     void (*display_destroy)(cg_display_t *display);
 
-    bool (*context_init)(cg_context_t *context, cg_error_t **error);
+    bool (*device_init)(cg_device_t *dev, cg_error_t **error);
 
-    void (*context_deinit)(cg_context_t *context);
+    void (*device_deinit)(cg_device_t *dev);
 
-    void *(*context_create_gles2_context)(cg_context_t *ctx,
-                                          cg_error_t **error);
+    void *(*device_create_gles2_context)(cg_device_t *dev,
+                                         cg_error_t **error);
 
     bool (*onscreen_init)(cg_onscreen_t *onscreen, cg_error_t **error);
 
@@ -113,7 +113,7 @@ typedef struct _cg_winsys_vtable_t {
 
     /* Optional functions */
 
-    int64_t (*context_get_clock_time)(cg_context_t *context);
+    int64_t (*device_get_clock_time)(cg_device_t *dev);
 
     void (*onscreen_swap_region)(cg_onscreen_t *onscreen,
                                  const int *rectangles,
@@ -124,7 +124,7 @@ typedef struct _cg_winsys_vtable_t {
     int (*onscreen_get_buffer_age)(cg_onscreen_t *onscreen);
 
 #ifdef CG_HAS_EGL_SUPPORT
-    EGLDisplay (*context_egl_get_egl_display)(cg_context_t *context);
+    EGLDisplay (*context_egl_get_egl_display)(cg_device_t *dev);
 #endif
 
 #ifdef CG_HAS_XLIB_SUPPORT
@@ -151,20 +151,20 @@ typedef struct _cg_winsys_vtable_t {
         cg_texture_pixmap_x11_t *tex_pixmap);
 #endif
 
-    void (*save_context)(cg_context_t *ctx);
+    void (*save_context)(cg_device_t *dev);
 
     bool (*set_gles2_context)(cg_gles2_context_t *gles2_ctx,
                               cg_error_t **error);
 
-    void (*restore_context)(cg_context_t *ctx);
+    void (*restore_context)(cg_device_t *dev);
 
     void (*destroy_gles2_context)(cg_gles2_context_t *gles2_ctx);
 
-    void *(*fence_add)(cg_context_t *ctx);
+    void *(*fence_add)(cg_device_t *dev);
 
-    bool (*fence_is_complete)(cg_context_t *ctx, void *fence);
+    bool (*fence_is_complete)(cg_device_t *dev, void *fence);
 
-    void (*fence_destroy)(cg_context_t *ctx, void *fence);
+    void (*fence_destroy)(cg_device_t *dev, void *fence);
 
 } cg_winsys_vtable_t;
 

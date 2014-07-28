@@ -45,7 +45,7 @@ struct _cg_bitmap_t {
     cg_object_t _parent;
 
     /* Pointer back to the context that this bitmap was created with */
-    cg_context_t *context;
+    cg_device_t *dev;
 
     cg_pixel_format_t format;
     int width;
@@ -68,7 +68,7 @@ struct _cg_bitmap_t {
 
 /*
  * _cg_bitmap_new_with_malloc_buffer:
- * @context: A #cg_context_t
+ * @dev: A #cg_device_t
  * @width: width of the bitmap in pixels
  * @height: height of the bitmap in pixels
  * @format: the format of the pixels the array will store
@@ -83,7 +83,7 @@ struct _cg_bitmap_t {
  *
  * Stability: Unstable
  */
-cg_bitmap_t *_cg_bitmap_new_with_malloc_buffer(cg_context_t *context,
+cg_bitmap_t *_cg_bitmap_new_with_malloc_buffer(cg_device_t *dev,
                                                int width,
                                                int height,
                                                cg_pixel_format_t format,
@@ -113,12 +113,12 @@ bool _cg_bitmap_convert_into_bitmap(cg_bitmap_t *src_bmp,
                                     cg_bitmap_t *dst_bmp,
                                     cg_error_t **error);
 
-cg_bitmap_t *_cg_bitmap_from_file(cg_context_t *ctx,
+cg_bitmap_t *_cg_bitmap_from_file(cg_device_t *dev,
                                   const char *filename,
                                   cg_error_t **error);
 
 #ifdef CG_HAS_ANDROID_SUPPORT
-cg_bitmap_t *_cg_android_bitmap_new_from_asset(cg_context_t *ctx,
+cg_bitmap_t *_cg_android_bitmap_new_from_asset(cg_device_t *dev,
                                                AAssetManager *manager,
                                                const char *filename,
                                                cg_error_t **error);
@@ -181,6 +181,6 @@ uint8_t *_cg_bitmap_gl_bind(cg_bitmap_t *bitmap,
 
 void _cg_bitmap_gl_unbind(cg_bitmap_t *bitmap);
 
-cg_context_t *_cg_bitmap_get_context(cg_bitmap_t *bitmap);
+cg_device_t *_cg_bitmap_get_context(cg_bitmap_t *bitmap);
 
 #endif /* __CG_BITMAP_H */

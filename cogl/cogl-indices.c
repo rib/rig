@@ -38,7 +38,7 @@
 
 #include "cogl-util.h"
 #include "cogl-object-private.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-indices.h"
 #include "cogl-indices-private.h"
 #include "cogl-index-buffer.h"
@@ -81,14 +81,14 @@ cg_indices_new_for_buffer(cg_indices_type_t type,
 }
 
 cg_indices_t *
-cg_indices_new(cg_context_t *context,
+cg_indices_new(cg_device_t *dev,
                cg_indices_type_t type,
                const void *indices_data,
                int n_indices)
 {
     size_t buffer_bytes = sizeof_indices_type(type) * n_indices;
     cg_index_buffer_t *index_buffer =
-        cg_index_buffer_new(context, buffer_bytes);
+        cg_index_buffer_new(dev, buffer_bytes);
     cg_buffer_t *buffer = CG_BUFFER(index_buffer);
     cg_indices_t *indices;
     cg_error_t *ignore_error = NULL;
@@ -178,14 +178,14 @@ _cg_indices_immutable_unref(cg_indices_t *indices)
 }
 
 cg_indices_t *
-cg_get_rectangle_indices(cg_context_t *ctx, int n_rectangles)
+cg_get_rectangle_indices(cg_device_t *dev, int n_rectangles)
 {
     int n_indices = n_rectangles * 6;
 
     /* Check if the largest index required will fit in a byte array... */
     if (n_indices <= 256 / 4 * 6) {
         /* Generate the byte array if we haven't already */
-        if (ctx->rectangle_byte_indices == NULL) {
+        if (dev->rectangle_byte_indices == NULL) {
             uint8_t *byte_array = c_malloc(256 / 4 * 6 * sizeof(uint8_t));
             uint8_t *p = byte_array;
             int i, vert_num = 0;
@@ -200,33 +200,35 @@ cg_get_rectangle_indices(cg_context_t *ctx, int n_rectangles)
                 vert_num += 4;
             }
 
-            ctx->rectangle_byte_indices = cg_indices_new(
-                ctx, CG_INDICES_TYPE_UNSIGNED_BYTE, byte_array, 256 / 4 * 6);
+            dev->rectangle_byte_indices = cg_indices_new(dev,
+                                                         CG_INDICES_TYPE_UNSIGNED_BYTE,
+                                                         byte_array,
+                                                         256 / 4 * 6);
 
             c_free(byte_array);
         }
 
-        return ctx->rectangle_byte_indices;
+        return dev->rectangle_byte_indices;
     } else {
-        if (ctx->rectangle_short_indices_len < n_indices) {
+        if (dev->rectangle_short_indices_len < n_indices) {
             uint16_t *short_array;
             uint16_t *p;
             int i, vert_num = 0;
 
-            if (ctx->rectangle_short_indices != NULL)
-                cg_object_unref(ctx->rectangle_short_indices);
+            if (dev->rectangle_short_indices != NULL)
+                cg_object_unref(dev->rectangle_short_indices);
             /* Pick a power of two >= MAX (512, n_indices) */
-            if (ctx->rectangle_short_indices_len == 0)
-                ctx->rectangle_short_indices_len = 512;
-            while (ctx->rectangle_short_indices_len < n_indices)
-                ctx->rectangle_short_indices_len *= 2;
+            if (dev->rectangle_short_indices_len == 0)
+                dev->rectangle_short_indices_len = 512;
+            while (dev->rectangle_short_indices_len < n_indices)
+                dev->rectangle_short_indices_len *= 2;
 
             /* Over-allocate to generate a whole number of quads */
-            p = short_array = c_malloc((ctx->rectangle_short_indices_len + 5) /
+            p = short_array = c_malloc((dev->rectangle_short_indices_len + 5) /
                                        6 * 6 * sizeof(uint16_t));
 
             /* Fill in the complete quads */
-            for (i = 0; i < ctx->rectangle_short_indices_len; i += 6) {
+            for (i = 0; i < dev->rectangle_short_indices_len; i += 6) {
                 *(p++) = vert_num + 0;
                 *(p++) = vert_num + 1;
                 *(p++) = vert_num + 2;
@@ -236,15 +238,15 @@ cg_get_rectangle_indices(cg_context_t *ctx, int n_rectangles)
                 vert_num += 4;
             }
 
-            ctx->rectangle_short_indices =
-                cg_indices_new(ctx,
+            dev->rectangle_short_indices =
+                cg_indices_new(dev,
                                CG_INDICES_TYPE_UNSIGNED_SHORT,
                                short_array,
-                               ctx->rectangle_short_indices_len);
+                               dev->rectangle_short_indices_len);
 
             c_free(short_array);
         }
 
-        return ctx->rectangle_short_indices;
+        return dev->rectangle_short_indices;
     }
 }

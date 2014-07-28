@@ -120,7 +120,7 @@ typedef struct {
 
 struct _cg_framebuffer_t {
     cg_object_t _parent;
-    cg_context_t *context;
+    cg_device_t *dev;
     cg_framebuffer_type_t type;
 
     /* The user configuration before allocation... */
@@ -215,7 +215,7 @@ struct _cg_offscreen_t {
 };
 
 void _cg_framebuffer_init(cg_framebuffer_t *framebuffer,
-                          cg_context_t *ctx,
+                          cg_device_t *dev,
                           cg_framebuffer_type_t type,
                           int width,
                           int height);
@@ -412,7 +412,7 @@ void _cg_framebuffer_draw_indexed_attributes(cg_framebuffer_t *framebuffer,
                                              int n_attributes,
                                              cg_draw_flags_t flags);
 
-bool _cg_framebuffer_try_creating_gl_fbo(cg_context_t *ctx,
+bool _cg_framebuffer_try_creating_gl_fbo(cg_device_t *dev,
                                          cg_texture_t *texture,
                                          int texture_level,
                                          int texture_level_width,

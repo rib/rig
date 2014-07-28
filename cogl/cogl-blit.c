@@ -37,7 +37,7 @@
 
 #include "cogl-util.h"
 #include "cogl-blit.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-framebuffer-private.h"
 #include "cogl-texture-private.h"
 #include "cogl-texture-2d-private.h"
@@ -48,7 +48,7 @@ static const cg_blit_mode_t *_cg_blit_default_mode = NULL;
 static bool
 _cg_blit_texture_render_begin(cg_blit_data_t *data)
 {
-    cg_context_t *ctx = data->src_tex->context;
+    cg_device_t *dev = data->src_tex->dev;
     cg_offscreen_t *offscreen;
     cg_framebuffer_t *fb;
     cg_pipeline_t *pipeline;
@@ -78,21 +78,21 @@ _cg_blit_texture_render_begin(cg_blit_data_t *data)
     /* We cache a pipeline used for migrating on to the context so
        that it doesn't have to continuously regenerate a shader
        program */
-    if (ctx->blit_texture_pipeline == NULL) {
-        ctx->blit_texture_pipeline = cg_pipeline_new(ctx);
+    if (dev->blit_texture_pipeline == NULL) {
+        dev->blit_texture_pipeline = cg_pipeline_new(dev);
 
-        cg_pipeline_set_layer_filters(ctx->blit_texture_pipeline,
+        cg_pipeline_set_layer_filters(dev->blit_texture_pipeline,
                                       0,
                                       CG_PIPELINE_FILTER_NEAREST,
                                       CG_PIPELINE_FILTER_NEAREST);
 
         /* Disable blending by just directly taking the contents of the
            source texture */
-        cg_pipeline_set_blend(
-            ctx->blit_texture_pipeline, "RGBA = ADD(SRC_COLOR, 0)", NULL);
+        cg_pipeline_set_blend(dev->blit_texture_pipeline,
+                              "RGBA = ADD(SRC_COLOR, 0)", NULL);
     }
 
-    pipeline = ctx->blit_texture_pipeline;
+    pipeline = dev->blit_texture_pipeline;
 
     cg_pipeline_set_layer_texture(pipeline, 0, data->src_tex);
 
@@ -126,7 +126,7 @@ _cg_blit_texture_render_blit(cg_blit_data_t *data,
 static void
 _cg_blit_texture_render_end(cg_blit_data_t *data)
 {
-    cg_context_t *ctx = data->src_tex->context;
+    cg_device_t *dev = data->src_tex->dev;
 
     /* Attach the target texture to the texture render pipeline so that
        we don't keep a reference to the source texture forever. This is
@@ -136,7 +136,8 @@ _cg_blit_texture_render_end(cg_blit_data_t *data)
        dummy 1x1 textures for each texture target that we could bind
        instead. This would also be useful when using a pipeline as a
        hash table key such as for the GLSL program cache. */
-    cg_pipeline_set_layer_texture(ctx->blit_texture_pipeline, 0, data->dst_tex);
+    cg_pipeline_set_layer_texture(dev->blit_texture_pipeline, 0,
+                                  data->dst_tex);
 
     cg_object_unref(data->dest_fb);
 }
@@ -144,7 +145,7 @@ _cg_blit_texture_render_end(cg_blit_data_t *data)
 static bool
 _cg_blit_framebuffer_begin(cg_blit_data_t *data)
 {
-    cg_context_t *ctx = data->src_tex->context;
+    cg_device_t *dev = data->src_tex->dev;
     cg_offscreen_t *dst_offscreen = NULL, *src_offscreen = NULL;
     cg_framebuffer_t *dst_fb, *src_fb;
     cg_error_t *ignore_error = NULL;
@@ -153,7 +154,7 @@ _cg_blit_framebuffer_begin(cg_blit_data_t *data)
        format and the blit framebuffer extension is supported */
     if ((_cg_texture_get_format(data->src_tex) & ~CG_A_BIT) !=
         (_cg_texture_get_format(data->dst_tex) & ~CG_A_BIT) ||
-        !_cg_has_private_feature(ctx, CG_PRIVATE_FEATURE_OFFSCREEN_BLIT))
+        !_cg_has_private_feature(dev, CG_PRIVATE_FEATURE_OFFSCREEN_BLIT))
         return false;
 
     dst_offscreen = _cg_offscreen_new_with_texture_full(

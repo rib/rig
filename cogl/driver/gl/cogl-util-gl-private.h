@@ -33,7 +33,7 @@
 #ifndef _CG_UTIL_GL_PRIVATE_H_
 
 #include "cogl-types.h"
-#include "cogl-context.h"
+#include "cogl-device.h"
 #include "cogl-gl-header.h"
 #include "cogl-texture.h"
 
@@ -76,7 +76,7 @@ const char *_cg_gl_error_to_string(GLenum error_code);
 
 #endif /* CG_GL_DEBUG */
 
-bool _cg_gl_util_catch_out_of_memory(cg_context_t *ctx, cg_error_t **error);
+bool _cg_gl_util_catch_out_of_memory(cg_device_t *dev, cg_error_t **error);
 
 void _cg_gl_util_get_texture_target_string(cg_texture_type_t texture_type,
                                            const char **target_string_out,

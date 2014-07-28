@@ -30,12 +30,12 @@
 #ifndef _CG_TEXTURE_GL_PRIVATE_H_
 #define _CG_TEXTURE_GL_PRIVATE_H_
 
-#include "cogl-context.h"
+#include "cogl-device.h"
 
-void _cg_texture_gl_prep_alignment_for_pixels_upload(cg_context_t *ctx,
+void _cg_texture_gl_prep_alignment_for_pixels_upload(cg_device_t *dev,
                                                      int pixels_rowstride);
 
-void _cg_texture_gl_prep_alignment_for_pixels_download(cg_context_t *ctx,
+void _cg_texture_gl_prep_alignment_for_pixels_download(cg_device_t *dev,
                                                        int bpp,
                                                        int width,
                                                        int rowstride);

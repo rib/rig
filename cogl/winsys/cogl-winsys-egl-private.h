@@ -33,8 +33,8 @@
 
 #include "cogl-defines.h"
 #include "cogl-winsys-private.h"
-#include "cogl-context.h"
-#include "cogl-context-private.h"
+#include "cogl-device.h"
+#include "cogl-device-private.h"
 #include "cogl-framebuffer-private.h"
 
 /* XXX: depending on what version of Mesa you have then
@@ -66,9 +66,9 @@ typedef struct _cg_winsys_egl_vtable_t {
 
     void (*cleanup_context)(cg_display_t *display);
 
-    bool (*context_init)(cg_context_t *context, cg_error_t **error);
+    bool (*context_init)(cg_device_t *dev, cg_error_t **error);
 
-    void (*context_deinit)(cg_context_t *context);
+    void (*context_deinit)(cg_device_t *dev);
 
     bool (*onscreen_init)(cg_onscreen_t *onscreen,
                           EGLConfig config,
@@ -136,10 +136,10 @@ typedef struct _cg_display_egl_t {
     void *platform;
 } cg_display_egl_t;
 
-typedef struct _cg_context_egl_t {
+typedef struct _cg_device_egl_t {
     EGLSurface saved_draw_surface;
     EGLSurface saved_read_surface;
-} cg_context_egl_t;
+} cg_device_egl_t;
 
 typedef struct _cg_onscreen_egl_t {
     EGLSurface egl_surface;
@@ -158,16 +158,16 @@ EGLBoolean _cg_winsys_egl_make_current(cg_display_t *display,
                                        EGLContext context);
 
 #ifdef EGL_KHR_image_base
-EGLImageKHR _cg_egl_create_image(cg_context_t *ctx,
+EGLImageKHR _cg_egl_create_image(cg_device_t *dev,
                                  EGLenum target,
                                  EGLClientBuffer buffer,
                                  const EGLint *attribs);
 
-void _cg_egl_destroy_image(cg_context_t *ctx, EGLImageKHR image);
+void _cg_egl_destroy_image(cg_device_t *dev, EGLImageKHR image);
 #endif
 
 #ifdef EGL_WL_bind_wayland_display
-bool _cg_egl_query_wayland_buffer(cg_context_t *ctx,
+bool _cg_egl_query_wayland_buffer(cg_device_t *dev,
                                   struct wl_resource *buffer,
                                   int attribute,
                                   int *value);

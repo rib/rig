@@ -34,13 +34,13 @@
 #error "Only <cogl/cogl.h> can be included directly."
 #endif
 
-#ifndef __CG_CONTEXT_H__
-#define __CG_CONTEXT_H__
+#ifndef __CG_DEVICE_H__
+#define __CG_DEVICE_H__
 
-/* We forward declare the cg_context_t type here to avoid some circular
+/* We forward declare the cg_device_t type here to avoid some circular
  * dependency issues with the following headers.
  */
-typedef struct _cg_context_t cg_context_t;
+typedef struct _cg_device_t cg_device_t;
 
 #include <cogl/cogl-defines.h>
 #include <cogl/cogl-display.h>
@@ -52,10 +52,10 @@ typedef struct _cg_context_t cg_context_t;
 CG_BEGIN_DECLS
 
 /**
- * SECTION:cogl-context
+ * SECTION:cogl-device
  * @short_description: The top level application context.
  *
- * A #cg_context_t is the top most sandbox of Cogl state for an
+ * A #cg_device_t is the top most sandbox of Cogl state for an
  * application or toolkit. Its main purpose is to act as a sandbox
  * for the memory management of state objects. Normally an application
  * will only create a single context since there is no way to share
@@ -93,45 +93,45 @@ CG_BEGIN_DECLS
  * context.</para></note>
  */
 
-#define CG_CONTEXT(OBJECT) ((cg_context_t *)OBJECT)
+#define CG_CONTEXT(OBJECT) ((cg_device_t *)OBJECT)
 
 /**
- * cg_context_new: (constructor)
+ * cg_device_new: (constructor)
  * @display: (allow-none): A #cg_display_t pointer
  * @error: A cg_error_t return location.
  *
- * Creates a new #cg_context_t which acts as an application sandbox
+ * Creates a new #cg_device_t which acts as an application sandbox
  * for any state objects that are allocated.
  *
- * Return value: (transfer full): A newly allocated #cg_context_t
+ * Return value: (transfer full): A newly allocated #cg_device_t
  * Stability: unstable
  */
-cg_context_t *cg_context_new(cg_display_t *display, cg_error_t **error);
+cg_device_t *cg_device_new(cg_display_t *display, cg_error_t **error);
 
 /**
- * cg_context_get_display:
- * @context: A #cg_context_t pointer
+ * cg_device_get_display:
+ * @dev: A #cg_device_t pointer
  *
  * Retrieves the #cg_display_t that is internally associated with the
  * given @context. This will return the same #cg_display_t that was
- * passed to cg_context_new() or if %NULL was passed to
- * cg_context_new() then this function returns a pointer to the
+ * passed to cg_device_new() or if %NULL was passed to
+ * cg_device_new() then this function returns a pointer to the
  * display that was automatically setup internally.
  *
  * Return value: (transfer none): The #cg_display_t associated with the
  *               given @context.
  * Stability: unstable
  */
-cg_display_t *cg_context_get_display(cg_context_t *context);
+cg_display_t *cg_device_get_display(cg_device_t *dev);
 
 /**
- * cg_context_get_renderer:
- * @context: A #cg_context_t pointer
+ * cg_device_get_renderer:
+ * @dev: A #cg_device_t pointer
  *
  * Retrieves the #cg_renderer_t that is internally associated with the
  * given @context. This will return the same #cg_renderer_t that was
  * passed to cg_display_new() or if %NULL was passed to
- * cg_display_new() or cg_context_new() then this function returns
+ * cg_display_new() or cg_device_new() then this function returns
  * a pointer to the renderer that was automatically connected
  * internally.
  *
@@ -139,7 +139,7 @@ cg_display_t *cg_context_get_display(cg_context_t *context);
  *               given @context.
  * Stability: unstable
  */
-cg_renderer_t *cg_context_get_renderer(cg_context_t *context);
+cg_renderer_t *cg_device_get_renderer(cg_device_t *dev);
 
 #ifdef CG_HAS_EGL_PLATFORM_ANDROID_SUPPORT
 /**
@@ -149,7 +149,7 @@ cg_renderer_t *cg_context_get_renderer(cg_context_t *context);
  * Allows Android applications to inform Cogl of the native window
  * that they have been given which Cogl can render too. On Android
  * this API must be used before creating a #cg_renderer_t, #cg_display_t
- * and #cg_context_t.
+ * and #cg_device_t.
  *
  * Stability: unstable
  */
@@ -157,17 +157,17 @@ void cg_android_set_native_window(ANativeWindow *window);
 #endif
 
 /**
- * cg_is_context:
+ * cg_is_device:
  * @object: An object or %NULL
  *
  * Gets whether the given object references an existing context object.
  *
- * Return value: %true if the @object references a #cg_context_t,
+ * Return value: %true if the @object references a #cg_device_t,
  *   %false otherwise
  *
  * Stability: Unstable
  */
-bool cg_is_context(void *object);
+bool cg_is_device(void *object);
 
 /* XXX: not guarded by the EXPERIMENTAL_API defines to avoid
  * upsetting glib-mkenums, but this can still be considered implicitly
@@ -254,7 +254,7 @@ typedef enum _cg_feature_id_t {
 
 /**
  * cg_has_feature:
- * @context: A #cg_context_t pointer
+ * @dev: A #cg_device_t pointer
  * @feature: A #cg_feature_id_t
  *
  * Checks if a given @feature is currently available
@@ -269,11 +269,11 @@ typedef enum _cg_feature_id_t {
  *
  * Stability: unstable
  */
-bool cg_has_feature(cg_context_t *context, cg_feature_id_t feature);
+bool cg_has_feature(cg_device_t *dev, cg_feature_id_t feature);
 
 /**
  * cg_has_features:
- * @context: A #cg_context_t pointer
+ * @dev: A #cg_device_t pointer
  * @...: A 0 terminated list of cg_feature_id_t<!-- -->s
  *
  * Checks if a list of features are all currently available.
@@ -287,7 +287,7 @@ bool cg_has_feature(cg_context_t *context, cg_feature_id_t feature);
  *
  * Stability: unstable
  */
-bool cg_has_features(cg_context_t *context, ...);
+bool cg_has_features(cg_device_t *dev, ...);
 
 /**
  * cg_feature_callback_t:
@@ -303,7 +303,7 @@ typedef void (*cg_feature_callback_t)(cg_feature_id_t feature, void *user_data);
 
 /**
  * cg_foreach_feature:
- * @context: A #cg_context_t pointer
+ * @dev: A #cg_device_t pointer
  * @callback: (scope call): A #cg_feature_callback_t called for each
  *            supported feature
  * @user_data: (closure): Private data to pass to the callback
@@ -313,13 +313,13 @@ typedef void (*cg_feature_callback_t)(cg_feature_id_t feature, void *user_data);
  *
  * Stability: unstable
  */
-void cg_foreach_feature(cg_context_t *context,
+void cg_foreach_feature(cg_device_t *dev,
                         cg_feature_callback_t callback,
                         void *user_data);
 
 /**
  * cg_get_clock_time:
- * @context: a #cg_context_t pointer
+ * @dev: A #cg_device_t pointer
  *
  * Returns the current time value from Cogl's internal clock. This
  * clock is used for measuring times such as the presentation time
@@ -336,8 +336,8 @@ void cg_foreach_feature(cg_context_t *context,
  *  active internal clock.
  * Stability: unstable
  */
-int64_t cg_get_clock_time(cg_context_t *context);
+int64_t cg_get_clock_time(cg_device_t *dev);
 
 CG_END_DECLS
 
-#endif /* __CG_CONTEXT_H__ */
+#endif /* __CG_DEVICE_H__ */

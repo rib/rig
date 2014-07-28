@@ -33,7 +33,7 @@
 
 #include "cogl-object-private.h"
 #include "cogl-x11-renderer-private.h"
-#include "cogl-context.h"
+#include "cogl-device.h"
 #include "cogl-output.h"
 
 typedef struct _cg_xlib_trap_state_t cg_xlib_trap_state_t;

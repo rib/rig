@@ -54,7 +54,7 @@ _cg_texture_2d_gl_free(cg_texture_2d_t *tex_2d)
 }
 
 bool
-_cg_texture_2d_gl_can_create(cg_context_t *ctx,
+_cg_texture_2d_gl_can_create(cg_device_t *dev,
                              int width,
                              int height,
                              cg_pixel_format_t internal_format)
@@ -65,15 +65,16 @@ _cg_texture_2d_gl_can_create(cg_context_t *ctx,
 
     /* If NPOT textures aren't supported then the size must be a power
        of two */
-    if (!cg_has_feature(ctx, CG_FEATURE_ID_TEXTURE_NPOT_BASIC) &&
+    if (!cg_has_feature(dev, CG_FEATURE_ID_TEXTURE_NPOT_BASIC) &&
         (!_cg_util_is_pot(width) || !_cg_util_is_pot(height)))
         return false;
 
-    ctx->driver_vtable->pixel_format_to_gl(
-        ctx, internal_format, &gl_intformat, &gl_format, &gl_type);
+    dev->driver_vtable->pixel_format_to_gl(dev, internal_format,
+                                           &gl_intformat, &gl_format,
+                                           &gl_type);
 
     /* Check that the driver can create a texture with that size */
-    if (!ctx->texture_driver->size_supported(ctx,
+    if (!dev->texture_driver->size_supported(dev,
                                              GL_TEXTURE_2D,
                                              gl_intformat,
                                              gl_format,
@@ -108,7 +109,7 @@ allocate_with_size(cg_texture_2d_t *tex_2d,
     cg_pixel_format_t internal_format;
     int width = loader->src.sized.width;
     int height = loader->src.sized.height;
-    cg_context_t *ctx = tex->context;
+    cg_device_t *dev = tex->dev;
     GLenum gl_intformat;
     GLenum gl_format;
     GLenum gl_type;
@@ -118,7 +119,7 @@ allocate_with_size(cg_texture_2d_t *tex_2d,
     internal_format =
         _cg_texture_determine_internal_format(tex, CG_PIXEL_FORMAT_ANY);
 
-    if (!_cg_texture_2d_gl_can_create(ctx, width, height, internal_format)) {
+    if (!_cg_texture_2d_gl_can_create(dev, width, height, internal_format)) {
         _cg_set_error(error,
                       CG_TEXTURE_ERROR,
                       CG_TEXTURE_ERROR_SIZE,
@@ -127,10 +128,12 @@ allocate_with_size(cg_texture_2d_t *tex_2d,
         return false;
     }
 
-    ctx->driver_vtable->pixel_format_to_gl(
-        ctx, internal_format, &gl_intformat, &gl_format, &gl_type);
+    dev->driver_vtable->pixel_format_to_gl(dev, internal_format,
+                                           &gl_intformat, &gl_format,
+                                           &gl_type);
 
-    gl_texture = ctx->texture_driver->gen(ctx, GL_TEXTURE_2D, internal_format);
+    gl_texture = dev->texture_driver->gen(dev, GL_TEXTURE_2D,
+                                          internal_format);
 
     tex_2d->gl_internal_format = gl_intformat;
 
@@ -138,10 +141,10 @@ allocate_with_size(cg_texture_2d_t *tex_2d,
         GL_TEXTURE_2D, gl_texture, tex_2d->is_foreign);
 
     /* Clear any GL errors */
-    while ((gl_error = ctx->glGetError()) != GL_NO_ERROR)
+    while ((gl_error = dev->glGetError()) != GL_NO_ERROR)
         ;
 
-    ctx->glTexImage2D(GL_TEXTURE_2D,
+    dev->glTexImage2D(GL_TEXTURE_2D,
                       0,
                       gl_intformat,
                       width,
@@ -151,8 +154,8 @@ allocate_with_size(cg_texture_2d_t *tex_2d,
                       gl_type,
                       NULL);
 
-    if (_cg_gl_util_catch_out_of_memory(ctx, error)) {
-        GE(ctx, glDeleteTextures(1, &gl_texture));
+    if (_cg_gl_util_catch_out_of_memory(dev, error)) {
+        GE(dev, glDeleteTextures(1, &gl_texture));
         return false;
     }
 
@@ -173,7 +176,7 @@ allocate_from_bitmap(cg_texture_2d_t *tex_2d,
 {
     cg_texture_t *tex = CG_TEXTURE(tex_2d);
     cg_bitmap_t *bmp = loader->src.bitmap.bitmap;
-    cg_context_t *ctx = _cg_bitmap_get_context(bmp);
+    cg_device_t *dev = _cg_bitmap_get_context(bmp);
     cg_pixel_format_t internal_format;
     int width = cg_bitmap_get_width(bmp);
     int height = cg_bitmap_get_height(bmp);
@@ -186,7 +189,7 @@ allocate_from_bitmap(cg_texture_2d_t *tex_2d,
     internal_format =
         _cg_texture_determine_internal_format(tex, cg_bitmap_get_format(bmp));
 
-    if (!_cg_texture_2d_gl_can_create(ctx, width, height, internal_format)) {
+    if (!_cg_texture_2d_gl_can_create(dev, width, height, internal_format)) {
         _cg_set_error(error,
                       CG_TEXTURE_ERROR,
                       CG_TEXTURE_ERROR_SIZE,
@@ -200,17 +203,17 @@ allocate_from_bitmap(cg_texture_2d_t *tex_2d,
     if (upload_bmp == NULL)
         return false;
 
-    ctx->driver_vtable->pixel_format_to_gl(ctx,
+    dev->driver_vtable->pixel_format_to_gl(dev,
                                            cg_bitmap_get_format(upload_bmp),
                                            NULL, /* internal format */
                                            &gl_format,
                                            &gl_type);
-    ctx->driver_vtable->pixel_format_to_gl(
-        ctx, internal_format, &gl_intformat, NULL, NULL);
+    dev->driver_vtable->pixel_format_to_gl(dev, internal_format,
+                                           &gl_intformat, NULL, NULL);
 
     /* Keep a copy of the first pixel so that if glGenerateMipmap isn't
        supported we can fallback to using GL_GENERATE_MIPMAP */
-    if (!cg_has_feature(ctx, CG_FEATURE_ID_OFFSCREEN)) {
+    if (!cg_has_feature(dev, CG_FEATURE_ID_OFFSCREEN)) {
         cg_error_t *ignore = NULL;
         uint8_t *data =
             _cg_bitmap_map(upload_bmp, CG_BUFFER_ACCESS_READ, 0, &ignore);
@@ -235,8 +238,8 @@ allocate_from_bitmap(cg_texture_2d_t *tex_2d,
     }
 
     tex_2d->gl_texture =
-        ctx->texture_driver->gen(ctx, GL_TEXTURE_2D, internal_format);
-    if (!ctx->texture_driver->upload_to_gl(ctx,
+        dev->texture_driver->gen(dev, GL_TEXTURE_2D, internal_format);
+    if (!dev->texture_driver->upload_to_gl(dev,
                                            GL_TEXTURE_2D,
                                            tex_2d->gl_texture,
                                            false,
@@ -267,24 +270,24 @@ allocate_from_egl_image(cg_texture_2d_t *tex_2d,
                         cg_error_t **error)
 {
     cg_texture_t *tex = CG_TEXTURE(tex_2d);
-    cg_context_t *ctx = tex->context;
+    cg_device_t *dev = tex->dev;
     cg_pixel_format_t internal_format = loader->src.egl_image.format;
     GLenum gl_error;
 
     tex_2d->gl_texture =
-        ctx->texture_driver->gen(ctx, GL_TEXTURE_2D, internal_format);
+        dev->texture_driver->gen(dev, GL_TEXTURE_2D, internal_format);
     _cg_bind_gl_texture_transient(GL_TEXTURE_2D, tex_2d->gl_texture, false);
 
-    while ((gl_error = ctx->glGetError()) != GL_NO_ERROR)
+    while ((gl_error = dev->glGetError()) != GL_NO_ERROR)
         ;
-    ctx->glEGLImageTargetTexture2D(GL_TEXTURE_2D, loader->src.egl_image.image);
-    if (ctx->glGetError() != GL_NO_ERROR) {
+    dev->glEGLImageTargetTexture2D(GL_TEXTURE_2D, loader->src.egl_image.image);
+    if (dev->glGetError() != GL_NO_ERROR) {
         _cg_set_error(error,
                       CG_TEXTURE_ERROR,
                       CG_TEXTURE_ERROR_BAD_PARAMETER,
                       "Could not create a cg_texture_2d_t from a given "
                       "EGLImage");
-        GE(ctx, glDeleteTextures(1, &tex_2d->gl_texture));
+        GE(dev, glDeleteTextures(1, &tex_2d->gl_texture));
         return false;
     }
 
@@ -305,19 +308,19 @@ allocate_from_gl_foreign(cg_texture_2d_t *tex_2d,
                          cg_error_t **error)
 {
     cg_texture_t *tex = CG_TEXTURE(tex_2d);
-    cg_context_t *ctx = tex->context;
+    cg_device_t *dev = tex->dev;
     cg_pixel_format_t format = loader->src.gl_foreign.format;
     GLenum gl_error = 0;
     GLint gl_compressed = FALSE;
     GLenum gl_int_format = 0;
 
     /* Make sure binding succeeds */
-    while ((gl_error = ctx->glGetError()) != GL_NO_ERROR)
+    while ((gl_error = dev->glGetError()) != GL_NO_ERROR)
         ;
 
     _cg_bind_gl_texture_transient(
         GL_TEXTURE_2D, loader->src.gl_foreign.gl_handle, true);
-    if (ctx->glGetError() != GL_NO_ERROR) {
+    if (dev->glGetError() != GL_NO_ERROR) {
         _cg_set_error(error,
                       CG_SYSTEM_ERROR,
                       CG_SYSTEM_ERROR_UNSUPPORTED,
@@ -329,16 +332,16 @@ allocate_from_gl_foreign(cg_texture_2d_t *tex_2d,
    (only level 0 we are interested in) */
 
 #ifdef HAVE_CG_GL
-    if (_cg_has_private_feature(ctx,
+    if (_cg_has_private_feature(dev,
                                 CG_PRIVATE_FEATURE_QUERY_TEXTURE_PARAMETERS)) {
-        GE(ctx,
+        GE(dev,
            glGetTexLevelParameteriv(
                GL_TEXTURE_2D, 0, GL_TEXTURE_COMPRESSED, &gl_compressed));
 
         {
             GLint val;
 
-            GE(ctx,
+            GE(dev,
                glGetTexLevelParameteriv(
                    GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &val));
 
@@ -347,8 +350,7 @@ allocate_from_gl_foreign(cg_texture_2d_t *tex_2d,
 
         /* If we can query GL for the actual pixel format then we'll ignore
            the passed in format and use that. */
-        if (!ctx->driver_vtable->pixel_format_from_gl_internal(
-                ctx, gl_int_format, &format)) {
+        if (!dev->driver_vtable->pixel_format_from_gl_internal(dev, gl_int_format, &format)) {
             _cg_set_error(error,
                           CG_SYSTEM_ERROR,
                           CG_SYSTEM_ERROR_UNSUPPORTED,
@@ -360,8 +362,8 @@ allocate_from_gl_foreign(cg_texture_2d_t *tex_2d,
     {
         /* Otherwise we'll assume we can derive the GL format from the
            passed in format */
-        ctx->driver_vtable->pixel_format_to_gl(
-            ctx, format, &gl_int_format, NULL, NULL);
+        dev->driver_vtable->pixel_format_to_gl(dev, format, &gl_int_format,
+                                               NULL, NULL);
     }
 
     /* Compressed texture images not supported */
@@ -438,7 +440,7 @@ _cg_texture_2d_gl_flush_legacy_texobj_filters(cg_texture_t *tex,
                                               GLenum mag_filter)
 {
     cg_texture_2d_t *tex_2d = CG_TEXTURE_2D(tex);
-    cg_context_t *ctx = tex->context;
+    cg_device_t *dev = tex->dev;
 
     if (min_filter == tex_2d->gl_legacy_texobj_min_filter &&
         mag_filter == tex_2d->gl_legacy_texobj_mag_filter)
@@ -451,8 +453,8 @@ _cg_texture_2d_gl_flush_legacy_texobj_filters(cg_texture_t *tex,
     /* Apply new filters to the texture */
     _cg_bind_gl_texture_transient(
         GL_TEXTURE_2D, tex_2d->gl_texture, tex_2d->is_foreign);
-    GE(ctx, glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter));
-    GE(ctx, glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter));
+    GE(dev, glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter));
+    GE(dev, glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter));
 }
 
 void
@@ -462,7 +464,7 @@ _cg_texture_2d_gl_flush_legacy_texobj_wrap_modes(cg_texture_t *tex,
                                                  GLenum wrap_mode_p)
 {
     cg_texture_2d_t *tex_2d = CG_TEXTURE_2D(tex);
-    cg_context_t *ctx = tex->context;
+    cg_device_t *dev = tex->dev;
 
     /* Only set the wrap mode if it's different from the current value
        to avoid too many GL calls. Texture 2D doesn't make use of the r
@@ -471,8 +473,10 @@ _cg_texture_2d_gl_flush_legacy_texobj_wrap_modes(cg_texture_t *tex,
         tex_2d->gl_legacy_texobj_wrap_mode_t != wrap_mode_t) {
         _cg_bind_gl_texture_transient(
             GL_TEXTURE_2D, tex_2d->gl_texture, tex_2d->is_foreign);
-        GE(ctx, glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap_mode_s));
-        GE(ctx, glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap_mode_t));
+        GE(dev,
+           glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap_mode_s));
+        GE(dev,
+           glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap_mode_t));
 
         tex_2d->gl_legacy_texobj_wrap_mode_s = wrap_mode_s;
         tex_2d->gl_legacy_texobj_wrap_mode_t = wrap_mode_t;
@@ -480,7 +484,7 @@ _cg_texture_2d_gl_flush_legacy_texobj_wrap_modes(cg_texture_t *tex,
 }
 
 cg_texture_2d_t *
-cg_texture_2d_gl_new_from_foreign(cg_context_t *ctx,
+cg_texture_2d_gl_new_from_foreign(cg_device_t *dev,
                                   unsigned int gl_handle,
                                   int width,
                                   int height,
@@ -500,7 +504,7 @@ cg_texture_2d_gl_new_from_foreign(cg_context_t *ctx,
      */
 
     /* Assert it is a valid GL texture object */
-    c_return_val_if_fail(ctx->glIsTexture(gl_handle), false);
+    c_return_val_if_fail(dev->glIsTexture(gl_handle), false);
 
     /* Validate width and height */
     c_return_val_if_fail(width > 0 && height > 0, NULL);
@@ -512,7 +516,7 @@ cg_texture_2d_gl_new_from_foreign(cg_context_t *ctx,
     loader->src.gl_foreign.height = height;
     loader->src.gl_foreign.format = format;
 
-    return _cg_texture_2d_create_base(ctx, width, height, format, loader);
+    return _cg_texture_2d_create_base(dev, width, height, format, loader);
 }
 
 void
@@ -527,12 +531,12 @@ _cg_texture_2d_gl_copy_from_framebuffer(cg_texture_2d_t *tex_2d,
                                         int level)
 {
     cg_texture_t *tex = CG_TEXTURE(tex_2d);
-    cg_context_t *ctx = tex->context;
+    cg_device_t *dev = tex->dev;
 
     /* Make sure the current framebuffers are bound, though we don't need to
      * flush the clip state here since we aren't going to draw to the
      * framebuffer. */
-    _cg_framebuffer_flush_state(ctx->current_draw_buffer,
+    _cg_framebuffer_flush_state(dev->current_draw_buffer,
                                 src_fb,
                                 CG_FRAMEBUFFER_STATE_ALL &
                                 ~CG_FRAMEBUFFER_STATE_CLIP);
@@ -540,7 +544,7 @@ _cg_texture_2d_gl_copy_from_framebuffer(cg_texture_2d_t *tex_2d,
     _cg_bind_gl_texture_transient(
         GL_TEXTURE_2D, tex_2d->gl_texture, tex_2d->is_foreign);
 
-    ctx->glCopyTexSubImage2D(GL_TEXTURE_2D,
+    dev->glCopyTexSubImage2D(GL_TEXTURE_2D,
                              0, /* level */
                              dst_x,
                              dst_y,
@@ -559,20 +563,20 @@ _cg_texture_2d_gl_get_gl_handle(cg_texture_2d_t *tex_2d)
 void
 _cg_texture_2d_gl_generate_mipmap(cg_texture_2d_t *tex_2d)
 {
-    cg_context_t *ctx = CG_TEXTURE(tex_2d)->context;
+    cg_device_t *dev = CG_TEXTURE(tex_2d)->dev;
 
     /* glGenerateMipmap is defined in the FBO extension. If it's not
        available we'll fallback to temporarily enabling
        GL_GENERATE_MIPMAP and reuploading the first pixel */
-    if (cg_has_feature(ctx, CG_FEATURE_ID_OFFSCREEN))
+    if (cg_has_feature(dev, CG_FEATURE_ID_OFFSCREEN))
         _cg_texture_gl_generate_mipmaps(CG_TEXTURE(tex_2d));
 #if defined(HAVE_CG_GL)
     else {
         _cg_bind_gl_texture_transient(
             GL_TEXTURE_2D, tex_2d->gl_texture, tex_2d->is_foreign);
 
-        GE(ctx, glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE));
-        GE(ctx,
+        GE(dev, glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE));
+        GE(dev,
            glTexSubImage2D(GL_TEXTURE_2D,
                            0,
                            0,
@@ -582,7 +586,7 @@ _cg_texture_2d_gl_generate_mipmap(cg_texture_2d_t *tex_2d)
                            tex_2d->first_pixel.gl_format,
                            tex_2d->first_pixel.gl_type,
                            tex_2d->first_pixel.data));
-        GE(ctx, glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, FALSE));
+        GE(dev, glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, FALSE));
     }
 #endif
 }
@@ -600,7 +604,7 @@ _cg_texture_2d_gl_copy_from_bitmap(cg_texture_2d_t *tex_2d,
                                    cg_error_t **error)
 {
     cg_texture_t *tex = CG_TEXTURE(tex_2d);
-    cg_context_t *ctx = tex->context;
+    cg_device_t *dev = tex->dev;
     cg_bitmap_t *upload_bmp;
     cg_pixel_format_t upload_format;
     GLenum gl_format;
@@ -617,7 +621,7 @@ _cg_texture_2d_gl_copy_from_bitmap(cg_texture_2d_t *tex_2d,
 
     upload_format = cg_bitmap_get_format(upload_bmp);
 
-    ctx->driver_vtable->pixel_format_to_gl(ctx,
+    dev->driver_vtable->pixel_format_to_gl(dev,
                                            upload_format,
                                            NULL, /* internal format */
                                            &gl_format,
@@ -625,7 +629,7 @@ _cg_texture_2d_gl_copy_from_bitmap(cg_texture_2d_t *tex_2d,
 
     /* If this touches the first pixel then we'll update our copy */
     if (dst_x == 0 && dst_y == 0 &&
-        !cg_has_feature(ctx, CG_FEATURE_ID_OFFSCREEN)) {
+        !cg_has_feature(dev, CG_FEATURE_ID_OFFSCREEN)) {
         cg_error_t *ignore = NULL;
         uint8_t *data =
             _cg_bitmap_map(upload_bmp, CG_BUFFER_ACCESS_READ, 0, &ignore);
@@ -649,7 +653,7 @@ _cg_texture_2d_gl_copy_from_bitmap(cg_texture_2d_t *tex_2d,
         }
     }
 
-    status = ctx->texture_driver->upload_subregion_to_gl(ctx,
+    status = dev->texture_driver->upload_subregion_to_gl(dev,
                                                          tex,
                                                          false,
                                                          src_x,
@@ -677,7 +681,7 @@ _cg_texture_2d_gl_get_data(cg_texture_2d_t *tex_2d,
                            int rowstride,
                            uint8_t *data)
 {
-    cg_context_t *ctx = CG_TEXTURE(tex_2d)->context;
+    cg_device_t *dev = CG_TEXTURE(tex_2d)->dev;
     int bpp;
     int width = CG_TEXTURE(tex_2d)->width;
     GLenum gl_format;
@@ -685,18 +689,18 @@ _cg_texture_2d_gl_get_data(cg_texture_2d_t *tex_2d,
 
     bpp = _cg_pixel_format_get_bytes_per_pixel(format);
 
-    ctx->driver_vtable->pixel_format_to_gl(ctx,
+    dev->driver_vtable->pixel_format_to_gl(dev,
                                            format,
                                            NULL, /* internal format */
                                            &gl_format,
                                            &gl_type);
 
-    ctx->texture_driver->prep_gl_for_pixels_download(
-        ctx, rowstride, width, bpp);
+    dev->texture_driver->prep_gl_for_pixels_download(dev, rowstride, width,
+                                                     bpp);
 
     _cg_bind_gl_texture_transient(
         GL_TEXTURE_2D, tex_2d->gl_texture, tex_2d->is_foreign);
 
-    ctx->texture_driver->gl_get_tex_image(
-        ctx, GL_TEXTURE_2D, gl_format, gl_type, data);
+    dev->texture_driver->gl_get_tex_image(dev, GL_TEXTURE_2D, gl_format,
+                                          gl_type, data);
 }

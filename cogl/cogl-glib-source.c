@@ -165,8 +165,8 @@ cg_glib_renderer_source_new(cg_renderer_t *renderer, int priority)
 }
 
 GSource *
-cg_glib_source_new(cg_context_t *context, int priority)
+cg_glib_source_new(cg_device_t *dev, int priority)
 {
-    return cg_glib_renderer_source_new(cg_context_get_renderer(context),
+    return cg_glib_renderer_source_new(cg_device_get_renderer(dev),
                                        priority);
 }

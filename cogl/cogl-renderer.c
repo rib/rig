@@ -39,7 +39,7 @@
 #include "cogl-util.h"
 #include "cogl-private.h"
 #include "cogl-object.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-util-gl-private.h"
 
 #include "cogl-renderer.h"
@@ -723,11 +723,11 @@ cg_renderer_get_n_fragment_texture_units(cg_renderer_t *renderer)
 {
     int n = 0;
 
-    _CG_GET_CONTEXT(ctx, 0);
+    _CG_GET_DEVICE(dev, 0);
 
 #if defined(HAVE_CG_GL) || defined(HAVE_CG_GLES2)
-    if (cg_has_feature(ctx, CG_FEATURE_ID_GLSL))
-        GE(ctx, glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &n));
+    if (cg_has_feature(dev, CG_FEATURE_ID_GLSL))
+        GE(dev, glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &n));
 #endif
 
     return n;

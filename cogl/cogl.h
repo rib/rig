@@ -63,7 +63,7 @@
 #include <cogl/cogl-renderer.h>
 #include <cogl/cogl-output.h>
 #include <cogl/cogl-display.h>
-#include <cogl/cogl-context.h>
+#include <cogl/cogl-device.h>
 #include <cogl/cogl-buffer.h>
 #include <cogl/cogl-pixel-buffer.h>
 #include <cogl/cogl-vector.h>

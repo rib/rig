@@ -38,7 +38,7 @@
 #include "cogl-util.h"
 #include "cogl-winsys-private.h"
 #include "cogl-feature-private.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-framebuffer.h"
 #include "cogl-renderer-private.h"
 #include "cogl-glx-renderer-private.h"
@@ -70,9 +70,9 @@
 #define CG_ONSCREEN_X11_EVENT_MASK (StructureNotifyMask | ExposureMask)
 #define MAX_GLX_CONFIG_ATTRIBS 30
 
-typedef struct _cg_context_glx_t {
+typedef struct _cg_device_glx_t {
     GLXDrawable current_drawable;
-} cg_context_glx_t;
+} cg_device_glx_t;
 
 typedef struct _cg_onscreen_xlib_t {
     Window xwin;
@@ -160,11 +160,11 @@ _cg_winsys_renderer_get_proc_address(
 }
 
 static cg_onscreen_t *
-find_onscreen_for_xid(cg_context_t *context, uint32_t xid)
+find_onscreen_for_xid(cg_device_t *dev, uint32_t xid)
 {
     c_list_t *l;
 
-    for (l = context->framebuffers; l; l = l->next) {
+    for (l = dev->framebuffers; l; l = l->next) {
         cg_framebuffer_t *framebuffer = l->data;
         cg_onscreen_xlib_t *xlib_onscreen;
 
@@ -271,9 +271,9 @@ ust_to_nanoseconds(cg_renderer_t *renderer, GLXDrawable drawable, int64_t ust)
 }
 
 static int64_t
-_cg_winsys_get_clock_time(cg_context_t *context)
+_cg_winsys_get_clock_time(cg_device_t *dev)
 {
-    cg_glx_renderer_t *glx_renderer = context->display->renderer->winsys;
+    cg_glx_renderer_t *glx_renderer = dev->display->renderer->winsys;
 
     /* We don't call ensure_ust_type() because we don't have a drawable
      * to work with. cg_get_clock_time() is documented to only work
@@ -346,8 +346,8 @@ flush_pending_notifications_cb(void *data, void *user_data)
 static void
 flush_pending_notifications_idle(void *user_data)
 {
-    cg_context_t *context = user_data;
-    cg_renderer_t *renderer = context->display->renderer;
+    cg_device_t *dev = user_data;
+    cg_renderer_t *renderer = dev->display->renderer;
     cg_glx_renderer_t *glx_renderer = renderer->winsys;
 
     /* This needs to be disconnected before invoking the callbacks in
@@ -355,23 +355,23 @@ flush_pending_notifications_idle(void *user_data)
     _cg_closure_disconnect(glx_renderer->flush_notifications_idle);
     glx_renderer->flush_notifications_idle = NULL;
 
-    c_list_foreach(context->framebuffers, flush_pending_notifications_cb, NULL);
+    c_list_foreach(dev->framebuffers, flush_pending_notifications_cb, NULL);
 }
 
 static void
 set_sync_pending(cg_onscreen_t *onscreen)
 {
     cg_onscreen_glx_t *glx_onscreen = onscreen->winsys;
-    cg_context_t *context = CG_FRAMEBUFFER(onscreen)->context;
-    cg_renderer_t *renderer = context->display->renderer;
+    cg_device_t *dev = CG_FRAMEBUFFER(onscreen)->dev;
+    cg_renderer_t *renderer = dev->display->renderer;
     cg_glx_renderer_t *glx_renderer = renderer->winsys;
 
     /* We only want to dispatch sync events when the application calls
-     * cg_context_dispatch so instead of immediately notifying we
+     * cg_device_dispatch so instead of immediately notifying we
      * queue an idle callback */
     if (!glx_renderer->flush_notifications_idle) {
         glx_renderer->flush_notifications_idle = _cg_poll_renderer_add_idle(
-            renderer, flush_pending_notifications_idle, context, NULL);
+            renderer, flush_pending_notifications_idle, dev, NULL);
     }
 
     glx_onscreen->pending_sync_notify = true;
@@ -381,27 +381,27 @@ static void
 set_complete_pending(cg_onscreen_t *onscreen)
 {
     cg_onscreen_glx_t *glx_onscreen = onscreen->winsys;
-    cg_context_t *context = CG_FRAMEBUFFER(onscreen)->context;
-    cg_renderer_t *renderer = context->display->renderer;
+    cg_device_t *dev = CG_FRAMEBUFFER(onscreen)->dev;
+    cg_renderer_t *renderer = dev->display->renderer;
     cg_glx_renderer_t *glx_renderer = renderer->winsys;
 
     /* We only want to notify swap completion when the application calls
-     * cg_context_dispatch so instead of immediately notifying we
+     * cg_device_dispatch so instead of immediately notifying we
      * queue an idle callback */
     if (!glx_renderer->flush_notifications_idle) {
         glx_renderer->flush_notifications_idle = _cg_poll_renderer_add_idle(
-            renderer, flush_pending_notifications_idle, context, NULL);
+            renderer, flush_pending_notifications_idle, dev, NULL);
     }
 
     glx_onscreen->pending_complete_notify = true;
 }
 
 static void
-notify_swap_buffers(cg_context_t *context,
+notify_swap_buffers(cg_device_t *dev,
                     GLXBufferSwapComplete *swap_event)
 {
     cg_onscreen_t *onscreen =
-        find_onscreen_for_xid(context, (uint32_t)swap_event->drawable);
+        find_onscreen_for_xid(dev, (uint32_t)swap_event->drawable);
     cg_onscreen_glx_t *glx_onscreen;
 
     if (!onscreen)
@@ -409,7 +409,7 @@ notify_swap_buffers(cg_context_t *context,
     glx_onscreen = onscreen->winsys;
 
     /* We only want to notify that the swap is complete when the
-       application calls cg_context_dispatch so instead of immediately
+       application calls cg_device_dispatch so instead of immediately
        notifying we'll set a flag to remember to notify later */
     set_sync_pending(onscreen);
 
@@ -417,8 +417,9 @@ notify_swap_buffers(cg_context_t *context,
         cg_frame_info_t *info =
             c_queue_peek_head(&onscreen->pending_frame_infos);
 
-        info->presentation_time = ust_to_nanoseconds(
-            context->display->renderer, glx_onscreen->glxwin, swap_event->ust);
+        info->presentation_time = ust_to_nanoseconds(dev->display->renderer,
+                                                     glx_onscreen->glxwin,
+                                                     swap_event->ust);
     }
 
     set_complete_pending(onscreen);
@@ -429,8 +430,8 @@ update_output(cg_onscreen_t *onscreen)
 {
     cg_onscreen_xlib_t *xlib_onscreen = onscreen->winsys;
     cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
-    cg_context_t *context = framebuffer->context;
-    cg_display_t *display = context->display;
+    cg_device_t *dev = framebuffer->dev;
+    cg_display_t *display = dev->display;
     cg_output_t *output;
     int width, height;
 
@@ -450,13 +451,13 @@ update_output(cg_onscreen_t *onscreen)
 }
 
 static void
-notify_resize(cg_context_t *context,
+notify_resize(cg_device_t *dev,
               XConfigureEvent *configure_event)
 {
     cg_onscreen_t *onscreen =
-        find_onscreen_for_xid(context, configure_event->window);
+        find_onscreen_for_xid(dev, configure_event->window);
     cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
-    cg_renderer_t *renderer = context->display->renderer;
+    cg_renderer_t *renderer = dev->display->renderer;
     cg_glx_renderer_t *glx_renderer = renderer->winsys;
     cg_onscreen_glx_t *glx_onscreen;
     cg_onscreen_xlib_t *xlib_onscreen;
@@ -471,11 +472,11 @@ notify_resize(cg_context_t *context,
         framebuffer, configure_event->width, configure_event->height);
 
     /* We only want to notify that a resize happened when the
-     * application calls cg_context_dispatch so instead of immediately
+     * application calls cg_device_dispatch so instead of immediately
      * notifying we queue an idle callback */
     if (!glx_renderer->flush_notifications_idle) {
         glx_renderer->flush_notifications_idle = _cg_poll_renderer_add_idle(
-            renderer, flush_pending_notifications_idle, context, NULL);
+            renderer, flush_pending_notifications_idle, dev, NULL);
     }
 
     glx_onscreen->pending_resize_notify = true;
@@ -508,26 +509,26 @@ notify_resize(cg_context_t *context,
 static cg_filter_return_t
 glx_event_filter_cb(XEvent *xevent, void *data)
 {
-    cg_context_t *context = data;
+    cg_device_t *dev = data;
 #ifdef GLX_INTEL_swap_event
     cg_glx_renderer_t *glx_renderer;
 #endif
 
     if (xevent->type == ConfigureNotify) {
-        notify_resize(context, &xevent->xconfigure);
+        notify_resize(dev, &xevent->xconfigure);
 
         /* we let ConfigureNotify pass through */
         return CG_FILTER_CONTINUE;
     }
 
 #ifdef GLX_INTEL_swap_event
-    glx_renderer = context->display->renderer->winsys;
+    glx_renderer = dev->display->renderer->winsys;
 
     if (xevent->type ==
         (glx_renderer->glx_event_base + GLX_BufferSwapComplete)) {
         GLXBufferSwapComplete *swap_event = (GLXBufferSwapComplete *)xevent;
 
-        notify_swap_buffers(context, swap_event);
+        notify_swap_buffers(dev, swap_event);
 
         /* remove SwapComplete events from the queue */
         return CG_FILTER_REMOVE;
@@ -536,7 +537,7 @@ glx_event_filter_cb(XEvent *xevent, void *data)
 
     if (xevent->type == Expose) {
         cg_onscreen_t *onscreen =
-            find_onscreen_for_xid(context, xevent->xexpose.window);
+            find_onscreen_for_xid(dev, xevent->xexpose.window);
 
         if (onscreen) {
             cg_onscreen_dirty_info_t info;
@@ -573,7 +574,7 @@ update_all_outputs(cg_renderer_t *renderer)
 {
     c_list_t *l;
 
-    _CG_GET_CONTEXT(context, false);
+    _CG_GET_DEVICE(context, false);
 
     if (context->display == NULL) /* during connection */
         return false;
@@ -764,28 +765,28 @@ error:
 }
 
 static bool
-update_winsys_features(cg_context_t *context, cg_error_t **error)
+update_winsys_features(cg_device_t *dev, cg_error_t **error)
 {
-    cg_glx_display_t *glx_display = context->display->winsys;
-    cg_glx_renderer_t *glx_renderer = context->display->renderer->winsys;
+    cg_glx_display_t *glx_display = dev->display->winsys;
+    cg_glx_renderer_t *glx_renderer = dev->display->renderer->winsys;
 
     c_return_val_if_fail(glx_display->glx_context, false);
 
-    if (!_cg_context_update_features(context, error))
+    if (!_cg_device_update_features(dev, error))
         return false;
 
-    memcpy(context->winsys_features,
+    memcpy(dev->winsys_features,
            glx_renderer->base_winsys_features,
-           sizeof(context->winsys_features));
+           sizeof(dev->winsys_features));
 
-    CG_FLAGS_SET(context->features, CG_FEATURE_ID_ONSCREEN_MULTIPLE, true);
+    CG_FLAGS_SET(dev->features, CG_FEATURE_ID_ONSCREEN_MULTIPLE, true);
 
-    if (glx_renderer->glXCopySubBuffer || context->glBlitFramebuffer) {
-        cg_gpu_info_t *info = &context->gpu;
+    if (glx_renderer->glXCopySubBuffer || dev->glBlitFramebuffer) {
+        cg_gpu_info_t *info = &dev->gpu;
         cg_gpu_info_architecture_t arch = info->architecture;
 
-        CG_FLAGS_SET(
-            context->winsys_features, CG_WINSYS_FEATURE_SWAP_REGION, true);
+        CG_FLAGS_SET(dev->winsys_features, CG_WINSYS_FEATURE_SWAP_REGION,
+                     true);
 
         /*
          * "The "drisw" binding in Mesa for loading sofware renderers is
@@ -803,8 +804,8 @@ update_winsys_features(cg_context_t *context, cg_error_t **error)
             (arch == CG_GPU_INFO_ARCHITECTURE_LLVMPIPE ||
              arch == CG_GPU_INFO_ARCHITECTURE_SOFTPIPE ||
              arch == CG_GPU_INFO_ARCHITECTURE_SWRAST)) {
-            CG_FLAGS_SET(
-                context->winsys_features, CG_WINSYS_FEATURE_SWAP_REGION, false);
+            CG_FLAGS_SET(dev->winsys_features, CG_WINSYS_FEATURE_SWAP_REGION,
+                         false);
         }
     }
 
@@ -813,18 +814,18 @@ update_winsys_features(cg_context_t *context, cg_error_t **error)
      * manually... */
     if (_cg_winsys_has_feature(CG_WINSYS_FEATURE_SWAP_REGION) &&
         _cg_winsys_has_feature(CG_WINSYS_FEATURE_VBLANK_WAIT))
-        CG_FLAGS_SET(context->winsys_features,
+        CG_FLAGS_SET(dev->winsys_features,
                      CG_WINSYS_FEATURE_SWAP_REGION_THROTTLE,
                      true);
 
     if (_cg_winsys_has_feature(CG_WINSYS_FEATURE_SYNC_AND_COMPLETE_EVENT)) {
-        CG_FLAGS_SET(context->features, CG_FEATURE_ID_PRESENTATION_TIME, true);
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_PRESENTATION_TIME, true);
     }
 
     /* We'll manually handle queueing dirty events in response to
      * Expose events from X */
-    CG_FLAGS_SET(
-        context->private_features, CG_PRIVATE_FEATURE_DIRTY_EVENTS, true);
+    CG_FLAGS_SET(dev->private_features, CG_PRIVATE_FEATURE_DIRTY_EVENTS,
+                 true);
 
     return true;
 }
@@ -1154,21 +1155,21 @@ error:
 }
 
 static bool
-_cg_winsys_context_init(cg_context_t *context, cg_error_t **error)
+_cg_winsys_device_init(cg_device_t *dev, cg_error_t **error)
 {
-    context->winsys = c_new0(cg_context_glx_t, 1);
+    dev->winsys = c_new0(cg_device_glx_t, 1);
 
-    cg_xlib_renderer_add_filter(
-        context->display->renderer, glx_event_filter_cb, context);
-    return update_winsys_features(context, error);
+    cg_xlib_renderer_add_filter(dev->display->renderer, glx_event_filter_cb,
+                                dev);
+    return update_winsys_features(dev, error);
 }
 
 static void
-_cg_winsys_context_deinit(cg_context_t *context)
+_cg_winsys_device_deinit(cg_device_t *dev)
 {
-    cg_xlib_renderer_remove_filter(
-        context->display->renderer, glx_event_filter_cb, context);
-    c_free(context->winsys);
+    cg_xlib_renderer_remove_filter(dev->display->renderer,
+                                   glx_event_filter_cb, dev);
+    c_free(dev->winsys);
 }
 
 static bool
@@ -1176,8 +1177,8 @@ _cg_winsys_onscreen_init(cg_onscreen_t *onscreen,
                          cg_error_t **error)
 {
     cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
-    cg_context_t *context = framebuffer->context;
-    cg_display_t *display = context->display;
+    cg_device_t *dev = framebuffer->dev;
+    cg_display_t *display = dev->display;
     cg_glx_display_t *glx_display = display->winsys;
     cg_xlib_renderer_t *xlib_renderer =
         _cg_xlib_renderer_get_data(display->renderer);
@@ -1359,12 +1360,12 @@ static void
 _cg_winsys_onscreen_deinit(cg_onscreen_t *onscreen)
 {
     cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
-    cg_context_t *context = framebuffer->context;
-    cg_context_glx_t *glx_context = context->winsys;
-    cg_glx_display_t *glx_display = context->display->winsys;
+    cg_device_t *dev = framebuffer->dev;
+    cg_device_glx_t *glx_context = dev->winsys;
+    cg_glx_display_t *glx_display = dev->display->winsys;
     cg_xlib_renderer_t *xlib_renderer =
-        _cg_xlib_renderer_get_data(context->display->renderer);
-    cg_glx_renderer_t *glx_renderer = context->display->renderer->winsys;
+        _cg_xlib_renderer_get_data(dev->display->renderer);
+    cg_glx_renderer_t *glx_renderer = dev->display->renderer->winsys;
     cg_xlib_trap_state_t old_state;
     cg_onscreen_xlib_t *xlib_onscreen = onscreen->winsys;
     cg_onscreen_glx_t *glx_onscreen = onscreen->winsys;
@@ -1379,7 +1380,7 @@ _cg_winsys_onscreen_deinit(cg_onscreen_t *onscreen)
         xlib_onscreen->output = NULL;
     }
 
-    _cg_xlib_renderer_trap_errors(context->display->renderer, &old_state);
+    _cg_xlib_renderer_trap_errors(dev->display->renderer, &old_state);
 
     drawable = glx_onscreen->glxwin == None ? xlib_onscreen->xwin
                : glx_onscreen->glxwin;
@@ -1416,7 +1417,7 @@ _cg_winsys_onscreen_deinit(cg_onscreen_t *onscreen)
 
     XSync(xlib_renderer->xdpy, False);
 
-    _cg_xlib_renderer_untrap_errors(context->display->renderer, &old_state);
+    _cg_xlib_renderer_untrap_errors(dev->display->renderer, &old_state);
 
     c_slice_free(cg_onscreen_glx_t, onscreen->winsys);
     onscreen->winsys = NULL;
@@ -1425,12 +1426,12 @@ _cg_winsys_onscreen_deinit(cg_onscreen_t *onscreen)
 static void
 _cg_winsys_onscreen_bind(cg_onscreen_t *onscreen)
 {
-    cg_context_t *context = CG_FRAMEBUFFER(onscreen)->context;
-    cg_context_glx_t *glx_context = context->winsys;
-    cg_glx_display_t *glx_display = context->display->winsys;
+    cg_device_t *dev = CG_FRAMEBUFFER(onscreen)->dev;
+    cg_device_glx_t *glx_context = dev->winsys;
+    cg_glx_display_t *glx_display = dev->display->winsys;
     cg_xlib_renderer_t *xlib_renderer =
-        _cg_xlib_renderer_get_data(context->display->renderer);
-    cg_glx_renderer_t *glx_renderer = context->display->renderer->winsys;
+        _cg_xlib_renderer_get_data(dev->display->renderer);
+    cg_glx_renderer_t *glx_renderer = dev->display->renderer->winsys;
     cg_onscreen_xlib_t *xlib_onscreen = onscreen->winsys;
     cg_onscreen_glx_t *glx_onscreen = onscreen->winsys;
     cg_xlib_trap_state_t old_state;
@@ -1442,7 +1443,7 @@ _cg_winsys_onscreen_bind(cg_onscreen_t *onscreen)
     if (glx_context->current_drawable == drawable)
         return;
 
-    _cg_xlib_renderer_trap_errors(context->display->renderer, &old_state);
+    _cg_xlib_renderer_trap_errors(dev->display->renderer, &old_state);
 
     CG_NOTE(WINSYS,
             "MakeContextCurrent dpy: %p, window: 0x%x (%s), context: %p",
@@ -1486,7 +1487,7 @@ _cg_winsys_onscreen_bind(cg_onscreen_t *onscreen)
 
     /* FIXME: We should be reporting a cg_error_t here
      */
-    if (_cg_xlib_renderer_untrap_errors(context->display->renderer,
+    if (_cg_xlib_renderer_untrap_errors(dev->display->renderer,
                                         &old_state)) {
         c_warning("X Error received while making drawable 0x%08lX current",
                   drawable);
@@ -1500,21 +1501,21 @@ static void
 _cg_winsys_wait_for_gpu(cg_onscreen_t *onscreen)
 {
     cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
-    cg_context_t *ctx = framebuffer->context;
+    cg_device_t *dev = framebuffer->dev;
 
-    ctx->glFinish();
+    dev->glFinish();
 }
 
 static void
 _cg_winsys_wait_for_vblank(cg_onscreen_t *onscreen)
 {
     cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
-    cg_context_t *ctx = framebuffer->context;
+    cg_device_t *dev = framebuffer->dev;
     cg_glx_renderer_t *glx_renderer;
     cg_xlib_renderer_t *xlib_renderer;
 
-    glx_renderer = ctx->display->renderer->winsys;
-    xlib_renderer = _cg_xlib_renderer_get_data(ctx->display->renderer);
+    glx_renderer = dev->display->renderer->winsys;
+    xlib_renderer = _cg_xlib_renderer_get_data(dev->display->renderer);
 
     if (glx_renderer->glXWaitForMsc || glx_renderer->glXGetVideoSync) {
         cg_frame_info_t *info =
@@ -1538,7 +1539,7 @@ _cg_winsys_wait_for_vblank(cg_onscreen_t *onscreen)
                                         &msc,
                                         &sbc);
             info->presentation_time =
-                ust_to_nanoseconds(ctx->display->renderer, drawable, ust);
+                ust_to_nanoseconds(dev->display->renderer, drawable, ust);
         } else {
             uint32_t current_count;
             struct timespec ts;
@@ -1555,12 +1556,12 @@ _cg_winsys_wait_for_vblank(cg_onscreen_t *onscreen)
 }
 
 static uint32_t
-_cg_winsys_get_vsync_counter(cg_context_t *ctx)
+_cg_winsys_get_vsync_counter(cg_device_t *dev)
 {
     uint32_t video_sync_count;
     cg_glx_renderer_t *glx_renderer;
 
-    glx_renderer = ctx->display->renderer->winsys;
+    glx_renderer = dev->display->renderer->winsys;
 
     glx_renderer->glXGetVideoSync(&video_sync_count);
 
@@ -1575,10 +1576,10 @@ static int
 _cg_winsys_onscreen_get_buffer_age(cg_onscreen_t *onscreen)
 {
     cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
-    cg_context_t *context = framebuffer->context;
+    cg_device_t *dev = framebuffer->dev;
     cg_xlib_renderer_t *xlib_renderer =
-        _cg_xlib_renderer_get_data(context->display->renderer);
-    cg_glx_renderer_t *glx_renderer = context->display->renderer->winsys;
+        _cg_xlib_renderer_get_data(dev->display->renderer);
+    cg_glx_renderer_t *glx_renderer = dev->display->renderer->winsys;
     cg_onscreen_glx_t *glx_onscreen = onscreen->winsys;
     cg_onscreen_xlib_t *xlib_onscreen = onscreen->winsys;
     GLXDrawable drawable =
@@ -1614,10 +1615,10 @@ _cg_winsys_onscreen_swap_region(cg_onscreen_t *onscreen,
                                 int n_rectangles)
 {
     cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
-    cg_context_t *context = framebuffer->context;
+    cg_device_t *dev = framebuffer->dev;
     cg_xlib_renderer_t *xlib_renderer =
-        _cg_xlib_renderer_get_data(context->display->renderer);
-    cg_glx_renderer_t *glx_renderer = context->display->renderer->winsys;
+        _cg_xlib_renderer_get_data(dev->display->renderer);
+    cg_glx_renderer_t *glx_renderer = dev->display->renderer->winsys;
     cg_onscreen_xlib_t *xlib_onscreen = onscreen->winsys;
     cg_onscreen_glx_t *glx_onscreen = onscreen->winsys;
     GLXDrawable drawable =
@@ -1715,7 +1716,7 @@ _cg_winsys_onscreen_swap_region(cg_onscreen_t *onscreen,
     _cg_winsys_wait_for_gpu(onscreen);
 
     if (blit_sub_buffer_is_synchronized && have_counter && can_wait) {
-        end_frame_vsync_counter = _cg_winsys_get_vsync_counter(context);
+        end_frame_vsync_counter = _cg_winsys_get_vsync_counter(dev);
 
         /* If we have the GLX_SGI_video_sync extension then we can
          * be a bit smarter about how we throttle blits by avoiding
@@ -1734,7 +1735,7 @@ _cg_winsys_onscreen_swap_region(cg_onscreen_t *onscreen,
             glx_renderer->glXCopySubBuffer(
                 xdpy, drawable, rect[0], rect[1], rect[2], rect[3]);
         }
-    } else if (context->glBlitFramebuffer) {
+    } else if (dev->glBlitFramebuffer) {
         int i;
         /* XXX: checkout how this state interacts with the code to use
          * glBlitFramebuffer in Neil's texture atlasing branch */
@@ -1745,14 +1746,14 @@ _cg_winsys_onscreen_swap_region(cg_onscreen_t *onscreen,
          * flushed to the correct state the next time something is
          * drawn */
         _cg_clip_stack_flush(NULL, framebuffer);
-        context->current_draw_buffer_changes |= CG_FRAMEBUFFER_STATE_CLIP;
+        dev->current_draw_buffer_changes |= CG_FRAMEBUFFER_STATE_CLIP;
 
-        context->glDrawBuffer(GL_FRONT);
+        dev->glDrawBuffer(GL_FRONT);
         for (i = 0; i < n_rectangles; i++) {
             int *rect = &rectangles[4 * i];
             int x2 = rect[0] + rect[2];
             int y2 = rect[1] + rect[3];
-            context->glBlitFramebuffer(rect[0],
+            dev->glBlitFramebuffer(rect[0],
                                        rect[1],
                                        x2,
                                        y2,
@@ -1763,7 +1764,7 @@ _cg_winsys_onscreen_swap_region(cg_onscreen_t *onscreen,
                                        GL_COLOR_BUFFER_BIT,
                                        GL_NEAREST);
         }
-        context->glDrawBuffer(GL_BACK);
+        dev->glDrawBuffer(GL_BACK);
     }
 
     /* NB: unlike glXSwapBuffers, glXCopySubBuffer and
@@ -1771,7 +1772,7 @@ _cg_winsys_onscreen_swap_region(cg_onscreen_t *onscreen,
      * have to flush ourselves if we want the request to complete in
      * a finite amount of time since otherwise the driver can batch
      * the command indefinitely. */
-    context->glFlush();
+    dev->glFlush();
 
     /* NB: It's important we save the counter we read before acting on
      * the swap request since if we are mixing and matching different
@@ -1794,7 +1795,7 @@ _cg_winsys_onscreen_swap_region(cg_onscreen_t *onscreen,
         y_max = CLAMP(y_max, 0, framebuffer_height);
 
         output =
-            _cg_xlib_renderer_output_for_rectangle(context->display->renderer,
+            _cg_xlib_renderer_output_for_rectangle(dev->display->renderer,
                                                    xlib_onscreen->x + x_min,
                                                    xlib_onscreen->y + y_min,
                                                    x_max - x_min,
@@ -1819,10 +1820,10 @@ _cg_winsys_onscreen_swap_buffers_with_damage(
     cg_onscreen_t *onscreen, const int *rectangles, int n_rectangles)
 {
     cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
-    cg_context_t *context = framebuffer->context;
+    cg_device_t *dev = framebuffer->dev;
     cg_xlib_renderer_t *xlib_renderer =
-        _cg_xlib_renderer_get_data(context->display->renderer);
-    cg_glx_renderer_t *glx_renderer = context->display->renderer->winsys;
+        _cg_xlib_renderer_get_data(dev->display->renderer);
+    cg_glx_renderer_t *glx_renderer = dev->display->renderer->winsys;
     cg_onscreen_xlib_t *xlib_onscreen = onscreen->winsys;
     cg_onscreen_glx_t *glx_onscreen = onscreen->winsys;
     bool have_counter;
@@ -1847,7 +1848,7 @@ _cg_winsys_onscreen_swap_buffers_with_damage(
          * the vsync counter for each swap request so we can manually
          * throttle swap_region requests. */
         if (have_counter)
-            end_frame_vsync_counter = _cg_winsys_get_vsync_counter(context);
+            end_frame_vsync_counter = _cg_winsys_get_vsync_counter(dev);
 
         if (!glx_renderer->glXSwapInterval) {
             bool can_wait =
@@ -1885,7 +1886,7 @@ _cg_winsys_onscreen_swap_buffers_with_damage(
 
     if (have_counter)
         glx_onscreen->last_swap_vsync_counter =
-            _cg_winsys_get_vsync_counter(context);
+            _cg_winsys_get_vsync_counter(dev);
 
     set_frame_info_output(onscreen, xlib_onscreen->output);
 }
@@ -1900,8 +1901,8 @@ _cg_winsys_onscreen_x11_get_window_xid(cg_onscreen_t *onscreen)
 static void
 _cg_winsys_onscreen_update_swap_throttled(cg_onscreen_t *onscreen)
 {
-    cg_context_t *context = CG_FRAMEBUFFER(onscreen)->context;
-    cg_context_glx_t *glx_context = context->winsys;
+    cg_device_t *dev = CG_FRAMEBUFFER(onscreen)->dev;
+    cg_device_glx_t *glx_context = dev->winsys;
     cg_onscreen_glx_t *glx_onscreen = onscreen->winsys;
     cg_onscreen_xlib_t *xlib_onscreen = onscreen->winsys;
     GLXDrawable drawable =
@@ -1918,9 +1919,9 @@ static void
 _cg_winsys_onscreen_set_visibility(cg_onscreen_t *onscreen,
                                    bool visibility)
 {
-    cg_context_t *context = CG_FRAMEBUFFER(onscreen)->context;
+    cg_device_t *dev = CG_FRAMEBUFFER(onscreen)->dev;
     cg_xlib_renderer_t *xlib_renderer =
-        _cg_xlib_renderer_get_data(context->display->renderer);
+        _cg_xlib_renderer_get_data(dev->display->renderer);
     cg_onscreen_xlib_t *xlib_onscreen = onscreen->winsys;
 
     if (visibility)
@@ -1934,9 +1935,9 @@ _cg_winsys_onscreen_set_resizable(cg_onscreen_t *onscreen,
                                   bool resizable)
 {
     cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
-    cg_context_t *context = framebuffer->context;
+    cg_device_t *dev = framebuffer->dev;
     cg_xlib_renderer_t *xlib_renderer =
-        _cg_xlib_renderer_get_data(context->display->renderer);
+        _cg_xlib_renderer_get_data(dev->display->renderer);
     cg_onscreen_xlib_t *xlib_onscreen = onscreen->winsys;
 
     XSizeHints *size_hints = XAllocSizeHints();
@@ -1972,13 +1973,13 @@ _cg_winsys_xlib_get_visual_info(void)
     cg_xlib_renderer_t *xlib_renderer;
     cg_glx_renderer_t *glx_renderer;
 
-    _CG_GET_CONTEXT(ctx, NULL);
+    _CG_GET_DEVICE(dev, NULL);
 
-    c_return_val_if_fail(ctx->display->winsys, false);
+    c_return_val_if_fail(dev->display->winsys, false);
 
-    glx_display = ctx->display->winsys;
-    xlib_renderer = _cg_xlib_renderer_get_data(ctx->display->renderer);
-    glx_renderer = ctx->display->renderer->winsys;
+    glx_display = dev->display->winsys;
+    xlib_renderer = _cg_xlib_renderer_get_data(dev->display->renderer);
+    glx_renderer = dev->display->renderer->winsys;
 
     if (!glx_display->found_fbconfig)
         return NULL;
@@ -1988,7 +1989,7 @@ _cg_winsys_xlib_get_visual_info(void)
 }
 
 static bool
-get_fbconfig_for_depth(cg_context_t *context,
+get_fbconfig_for_depth(cg_device_t *dev,
                        unsigned int depth,
                        GLXFBConfig *fbconfig_ret,
                        bool *can_mipmap_ret)
@@ -2003,9 +2004,9 @@ get_fbconfig_for_depth(cg_context_t *context,
     int spare_cache_slot = 0;
     bool found = false;
 
-    xlib_renderer = _cg_xlib_renderer_get_data(context->display->renderer);
-    glx_renderer = context->display->renderer->winsys;
-    glx_display = context->display->winsys;
+    xlib_renderer = _cg_xlib_renderer_get_data(dev->display->renderer);
+    glx_renderer = dev->display->renderer->winsys;
+    glx_display = dev->display->winsys;
 
     /* Check if we've already got a cached config for this depth */
     for (i = 0; i < CG_GLX_N_CACHED_CONFIGS; i++)
@@ -2089,7 +2090,7 @@ get_fbconfig_for_depth(cg_context_t *context,
         stencil = value;
 
         /* glGenerateMipmap is defined in the offscreen extension */
-        if (cg_has_feature(context, CG_FEATURE_ID_OFFSCREEN)) {
+        if (cg_has_feature(dev, CG_FEATURE_ID_OFFSCREEN)) {
             glx_renderer->glXGetFBConfigAttrib(
                 dpy, fbconfigs[i], GLX_BIND_TO_MIPMAP_TEXTURE_EXT, &value);
 
@@ -2116,7 +2117,7 @@ get_fbconfig_for_depth(cg_context_t *context,
 }
 
 static bool
-try_create_glx_pixmap(cg_context_t *context,
+try_create_glx_pixmap(cg_device_t *dev,
                       cg_texture_pixmap_x11_t *tex_pixmap,
                       bool mipmap)
 {
@@ -2137,13 +2138,12 @@ try_create_glx_pixmap(cg_context_t *context,
     unsigned int depth = tex_pixmap->depth;
     Visual *visual = tex_pixmap->visual;
 
-    renderer = context->display->renderer;
+    renderer = dev->display->renderer;
     xlib_renderer = _cg_xlib_renderer_get_data(renderer);
     glx_renderer = renderer->winsys;
     dpy = xlib_renderer->xdpy;
 
-    if (!get_fbconfig_for_depth(
-            context, depth, &fb_config, &glx_tex_pixmap->can_mipmap)) {
+    if (!get_fbconfig_for_depth(dev, depth, &fb_config, &glx_tex_pixmap->can_mipmap)) {
         CG_NOTE(
             TEXTURE_PIXMAP, "No suitable FBConfig found for depth %i", depth);
         return false;
@@ -2205,7 +2205,7 @@ static bool
 _cg_winsys_texture_pixmap_x11_create(cg_texture_pixmap_x11_t *tex_pixmap)
 {
     cg_texture_pixmap_glx_t *glx_tex_pixmap;
-    cg_context_t *ctx = CG_TEXTURE(tex_pixmap)->context;
+    cg_device_t *dev = CG_TEXTURE(tex_pixmap)->dev;
 
     if (!_cg_winsys_has_feature(CG_WINSYS_FEATURE_TEXTURE_FROM_PIXMAP)) {
         tex_pixmap->winsys = NULL;
@@ -2225,7 +2225,7 @@ _cg_winsys_texture_pixmap_x11_create(cg_texture_pixmap_x11_t *tex_pixmap)
 
     tex_pixmap->winsys = glx_tex_pixmap;
 
-    if (!try_create_glx_pixmap(ctx, tex_pixmap, false)) {
+    if (!try_create_glx_pixmap(dev, tex_pixmap, false)) {
         tex_pixmap->winsys = NULL;
         c_free(glx_tex_pixmap);
         return false;
@@ -2235,7 +2235,7 @@ _cg_winsys_texture_pixmap_x11_create(cg_texture_pixmap_x11_t *tex_pixmap)
 }
 
 static void
-free_glx_pixmap(cg_context_t *context,
+free_glx_pixmap(cg_device_t *dev,
                 cg_texture_pixmap_glx_t *glx_tex_pixmap)
 {
     cg_xlib_trap_state_t trap_state;
@@ -2243,7 +2243,7 @@ free_glx_pixmap(cg_context_t *context,
     cg_xlib_renderer_t *xlib_renderer;
     cg_glx_renderer_t *glx_renderer;
 
-    renderer = context->display->renderer;
+    renderer = dev->display->renderer;
     xlib_renderer = _cg_xlib_renderer_get_data(renderer);
     glx_renderer = renderer->winsys;
 
@@ -2288,7 +2288,7 @@ _cg_winsys_texture_pixmap_x11_free(cg_texture_pixmap_x11_t *tex_pixmap)
 
     glx_tex_pixmap = tex_pixmap->winsys;
 
-    free_glx_pixmap(CG_TEXTURE(tex_pixmap)->context, glx_tex_pixmap);
+    free_glx_pixmap(CG_TEXTURE(tex_pixmap)->dev, glx_tex_pixmap);
 
     if (glx_tex_pixmap->glx_tex)
         cg_object_unref(glx_tex_pixmap->glx_tex);
@@ -2302,7 +2302,7 @@ _cg_winsys_texture_pixmap_x11_update(cg_texture_pixmap_x11_t *tex_pixmap,
                                      bool needs_mipmap)
 {
     cg_texture_t *tex = CG_TEXTURE(tex_pixmap);
-    cg_context_t *ctx = CG_TEXTURE(tex_pixmap)->context;
+    cg_device_t *dev = CG_TEXTURE(tex_pixmap)->dev;
     cg_texture_pixmap_glx_t *glx_tex_pixmap = tex_pixmap->winsys;
     cg_glx_renderer_t *glx_renderer;
 
@@ -2310,7 +2310,7 @@ _cg_winsys_texture_pixmap_x11_update(cg_texture_pixmap_x11_t *tex_pixmap,
     if (glx_tex_pixmap->glx_pixmap == None)
         return false;
 
-    glx_renderer = ctx->display->renderer->winsys;
+    glx_renderer = dev->display->renderer->winsys;
 
     /* Lazily create a texture to hold the pixmap */
     if (glx_tex_pixmap->glx_tex == NULL) {
@@ -2322,7 +2322,7 @@ _cg_winsys_texture_pixmap_x11_update(cg_texture_pixmap_x11_t *tex_pixmap,
              : CG_PIXEL_FORMAT_RGB_888);
 
         glx_tex_pixmap->glx_tex = CG_TEXTURE(
-            cg_texture_2d_new_with_size(ctx, tex->width, tex->height));
+            cg_texture_2d_new_with_size(dev, tex->width, tex->height));
 
         _cg_texture_set_internal_format(tex, texture_format);
 
@@ -2335,7 +2335,7 @@ _cg_winsys_texture_pixmap_x11_update(cg_texture_pixmap_x11_t *tex_pixmap,
                     tex_pixmap,
                     error->message);
             cg_error_free(error);
-            free_glx_pixmap(ctx, glx_tex_pixmap);
+            free_glx_pixmap(dev, glx_tex_pixmap);
             return false;
         }
     }
@@ -2348,13 +2348,13 @@ _cg_winsys_texture_pixmap_x11_update(cg_texture_pixmap_x11_t *tex_pixmap,
         /* Recreate the GLXPixmap if it wasn't previously created with a
          * mipmap tree */
         if (!glx_tex_pixmap->has_mipmap_space) {
-            free_glx_pixmap(ctx, glx_tex_pixmap);
+            free_glx_pixmap(dev, glx_tex_pixmap);
 
             CG_NOTE(TEXTURE_PIXMAP,
                     "Recreating GLXPixmap with mipmap "
                     "support for %p",
                     tex_pixmap);
-            if (!try_create_glx_pixmap(ctx, tex_pixmap, true)) {
+            if (!try_create_glx_pixmap(dev, tex_pixmap, true)) {
                 /* If the pixmap failed then we'll permanently fallback
                  * to using XImage. This shouldn't happen. */
                 CG_NOTE(TEXTURE_PIXMAP,
@@ -2375,7 +2375,7 @@ _cg_winsys_texture_pixmap_x11_update(cg_texture_pixmap_x11_t *tex_pixmap,
     if (glx_tex_pixmap->bind_tex_image_queued) {
         GLuint gl_handle, gl_target;
         cg_xlib_renderer_t *xlib_renderer =
-            _cg_xlib_renderer_get_data(ctx->display->renderer);
+            _cg_xlib_renderer_get_data(dev->display->renderer);
 
         cg_texture_get_gl_texture(
             glx_tex_pixmap->glx_tex, &gl_handle, &gl_target);
@@ -2440,9 +2440,9 @@ static cg_winsys_vtable_t _cg_winsys_vtable = {
     .renderer_outputs_changed = _cg_winsys_renderer_outputs_changed,
     .display_setup = _cg_winsys_display_setup,
     .display_destroy = _cg_winsys_display_destroy,
-    .context_init = _cg_winsys_context_init,
-    .context_deinit = _cg_winsys_context_deinit,
-    .context_get_clock_time = _cg_winsys_get_clock_time,
+    .device_init = _cg_winsys_device_init,
+    .device_deinit = _cg_winsys_device_deinit,
+    .device_get_clock_time = _cg_winsys_get_clock_time,
     .xlib_get_visual_info = _cg_winsys_xlib_get_visual_info,
     .onscreen_init = _cg_winsys_onscreen_init,
     .onscreen_deinit = _cg_winsys_onscreen_deinit,

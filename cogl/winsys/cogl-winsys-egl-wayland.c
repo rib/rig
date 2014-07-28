@@ -407,13 +407,13 @@ _cg_winsys_egl_cleanup_context(cg_display_t *display)
 }
 
 static bool
-_cg_winsys_egl_context_init(cg_context_t *context,
+_cg_winsys_egl_context_init(cg_device_t *dev,
                             cg_error_t **error)
 {
-    CG_FLAGS_SET(context->features, CG_FEATURE_ID_ONSCREEN_MULTIPLE, true);
-    CG_FLAGS_SET(
-        context->winsys_features, CG_WINSYS_FEATURE_MULTIPLE_ONSCREEN, true);
-    CG_FLAGS_SET(context->winsys_features,
+    CG_FLAGS_SET(dev->features, CG_FEATURE_ID_ONSCREEN_MULTIPLE, true);
+    CG_FLAGS_SET(dev->winsys_features, CG_WINSYS_FEATURE_MULTIPLE_ONSCREEN,
+                 true);
+    CG_FLAGS_SET(dev->winsys_features,
                  CG_WINSYS_FEATURE_SYNC_AND_COMPLETE_EVENT,
                  true);
 
@@ -425,8 +425,8 @@ _cg_winsys_egl_context_init(cg_context_t *context,
      * delays setting the surface type until the next buffer is attached
      * so attaching a buffer before setting the type would not cause
      * anything to be displayed */
-    CG_FLAGS_SET(
-        context->private_features, CG_PRIVATE_FEATURE_DIRTY_EVENTS, true);
+    CG_FLAGS_SET(dev->private_features, CG_PRIVATE_FEATURE_DIRTY_EVENTS,
+                 true);
 
     return true;
 }
@@ -439,8 +439,8 @@ _cg_winsys_egl_onscreen_init(cg_onscreen_t *onscreen,
     cg_onscreen_egl_t *egl_onscreen = onscreen->winsys;
     cg_onscreen_wayland_t *wayland_onscreen;
     cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
-    cg_context_t *context = framebuffer->context;
-    cg_renderer_t *renderer = context->display->renderer;
+    cg_device_t *dev = framebuffer->dev;
+    cg_renderer_t *renderer = dev->display->renderer;
     cg_renderer_egl_t *egl_renderer = renderer->winsys;
     cg_renderer_wayland_t *wayland_renderer = egl_renderer->platform;
 

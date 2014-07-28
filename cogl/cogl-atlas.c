@@ -33,7 +33,7 @@
 
 #include "cogl-atlas-private.h"
 #include "cogl-rectangle-map.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-texture-private.h"
 #include "cogl-texture-2d-private.h"
 #include "cogl-texture-2d-sliced.h"
@@ -51,13 +51,13 @@ static void _cg_atlas_free(cg_atlas_t *atlas);
 CG_OBJECT_DEFINE(Atlas, atlas);
 
 cg_atlas_t *
-_cg_atlas_new(cg_context_t *context,
+_cg_atlas_new(cg_device_t *dev,
               cg_pixel_format_t internal_format,
               cg_atlas_flags_t flags)
 {
     cg_atlas_t *atlas = c_new(cg_atlas_t, 1);
 
-    atlas->context = context;
+    atlas->dev = dev;
     atlas->map = NULL;
     atlas->texture = NULL;
     atlas->flags = flags;
@@ -203,14 +203,15 @@ _cg_atlas_get_next_size(int *map_width, int *map_height)
 static void
 _cg_atlas_get_initial_size(cg_atlas_t *atlas, int *map_width, int *map_height)
 {
-    cg_context_t *ctx = atlas->context;
+    cg_device_t *dev = atlas->dev;
     unsigned int size;
     GLenum gl_intformat;
     GLenum gl_format;
     GLenum gl_type;
 
-    ctx->driver_vtable->pixel_format_to_gl(
-        ctx, atlas->internal_format, &gl_intformat, &gl_format, &gl_type);
+    dev->driver_vtable->pixel_format_to_gl(dev, atlas->internal_format,
+                                           &gl_intformat, &gl_format,
+                                           &gl_type);
 
     /* At least on Intel hardware, the texture size will be rounded up
        to at least 1MB so we might as well try to aim for that as an
@@ -226,8 +227,7 @@ _cg_atlas_get_initial_size(cg_atlas_t *atlas, int *map_width, int *map_height)
        decrease the size until it can */
     while (
         size > 1 &&
-        !ctx->texture_driver->size_supported(
-            ctx, GL_TEXTURE_2D, gl_intformat, gl_format, gl_type, size, size))
+        !dev->texture_driver->size_supported(dev, GL_TEXTURE_2D, gl_intformat, gl_format, gl_type, size, size))
         size >>= 1;
 
     *map_width = size;
@@ -241,17 +241,18 @@ _cg_atlas_create_map(cg_atlas_t *atlas,
                      int n_textures,
                      cg_atlas_reposition_data_t *textures)
 {
-    cg_context_t *ctx = atlas->context;
+    cg_device_t *dev = atlas->dev;
     GLenum gl_intformat;
     GLenum gl_format;
     GLenum gl_type;
 
-    ctx->driver_vtable->pixel_format_to_gl(
-        ctx, atlas->internal_format, &gl_intformat, &gl_format, &gl_type);
+    dev->driver_vtable->pixel_format_to_gl(dev, atlas->internal_format,
+                                           &gl_intformat, &gl_format,
+                                           &gl_type);
 
     /* Keep trying increasingly larger atlases until we can fit all of
        the textures */
-    while (ctx->texture_driver->size_supported(ctx,
+    while (dev->texture_driver->size_supported(dev,
                                                GL_TEXTURE_2D,
                                                gl_intformat,
                                                gl_format,
@@ -300,7 +301,7 @@ _cg_atlas_create_map(cg_atlas_t *atlas,
 static cg_texture_2d_t *
 _cg_atlas_create_texture(cg_atlas_t *atlas, int width, int height)
 {
-    cg_context_t *ctx = atlas->context;
+    cg_device_t *dev = atlas->dev;
     cg_texture_2d_t *tex;
     cg_error_t *ignore_error = NULL;
 
@@ -311,7 +312,7 @@ _cg_atlas_create_texture(cg_atlas_t *atlas, int width, int height)
 
         /* Create a buffer of zeroes to initially clear the texture */
         clear_data = c_malloc0(width * height * bpp);
-        clear_bmp = cg_bitmap_new_for_data(ctx,
+        clear_bmp = cg_bitmap_new_for_data(dev,
                                            width,
                                            height,
                                            atlas->internal_format,
@@ -333,7 +334,7 @@ _cg_atlas_create_texture(cg_atlas_t *atlas, int width, int height)
 
         c_free(clear_data);
     } else {
-        tex = cg_texture_2d_new_with_size(ctx, width, height);
+        tex = cg_texture_2d_new_with_size(dev, width, height);
 
         _cg_texture_set_internal_format(CG_TEXTURE(tex),
                                         atlas->internal_format);
@@ -567,7 +568,7 @@ cg_atlas_get_texture(cg_atlas_t *atlas)
 }
 
 static cg_texture_t *
-create_migration_texture(cg_context_t *ctx,
+create_migration_texture(cg_device_t *dev,
                          int width,
                          int height,
                          cg_pixel_format_t internal_format)
@@ -576,10 +577,10 @@ create_migration_texture(cg_context_t *ctx,
     cg_error_t *skip_error = NULL;
 
     if ((_cg_util_is_pot(width) && _cg_util_is_pot(height)) ||
-        (cg_has_feature(ctx, CG_FEATURE_ID_TEXTURE_NPOT_BASIC) &&
-         cg_has_feature(ctx, CG_FEATURE_ID_TEXTURE_NPOT_MIPMAP))) {
+        (cg_has_feature(dev, CG_FEATURE_ID_TEXTURE_NPOT_BASIC) &&
+         cg_has_feature(dev, CG_FEATURE_ID_TEXTURE_NPOT_MIPMAP))) {
         /* First try creating a fast-path non-sliced texture */
-        tex = CG_TEXTURE(cg_texture_2d_new_with_size(ctx, width, height));
+        tex = CG_TEXTURE(cg_texture_2d_new_with_size(dev, width, height));
 
         _cg_texture_set_internal_format(tex, internal_format);
 
@@ -596,8 +597,10 @@ create_migration_texture(cg_context_t *ctx,
         tex = NULL;
 
     if (!tex) {
-        cg_texture_2d_sliced_t *tex_2ds = cg_texture_2d_sliced_new_with_size(
-            ctx, width, height, CG_TEXTURE_MAX_WASTE);
+        cg_texture_2d_sliced_t *tex_2ds = cg_texture_2d_sliced_new_with_size(dev,
+                                                                             width,
+                                                                             height,
+                                                                             CG_TEXTURE_MAX_WASTE);
 
         _cg_texture_set_internal_format(CG_TEXTURE(tex_2ds), internal_format);
 
@@ -615,13 +618,13 @@ _cg_atlas_migrate_allocation(cg_atlas_t *atlas,
                              int height,
                              cg_pixel_format_t internal_format)
 {
-    cg_context_t *ctx = atlas->context;
+    cg_device_t *dev = atlas->dev;
     cg_texture_t *tex;
     cg_blit_data_t blit_data;
     cg_error_t *ignore_error = NULL;
 
     /* Create a new texture at the right size */
-    tex = create_migration_texture(ctx, width, height, internal_format);
+    tex = create_migration_texture(dev, width, height, internal_format);
     if (!cg_texture_allocate(tex, &ignore_error)) {
         cg_error_free(ignore_error);
         cg_object_unref(tex);

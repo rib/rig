@@ -5,7 +5,7 @@ cogl_public_h = \
 	cogl-bitmap.h 		\
 	cogl-buffer.h 		\
 	cogl-color.h 			\
-	cogl-context.h 		\
+	cogl-device.h 		\
 	cogl-depth-state.h 		\
 	cogl-display.h 		\
 	cogl-error.h			\
@@ -122,8 +122,8 @@ cogl_sources_c = \
 	cogl-debug-options.h			\
 	cogl-gpu-info.c			\
 	cogl-gpu-info-private.h		\
-	cogl-context-private.h		\
-	cogl-context.c			\
+	cogl-device-private.h		\
+	cogl-device.c			\
 	cogl-renderer-private.h		\
 	cogl-renderer.h			\
 	cogl-renderer.c			\

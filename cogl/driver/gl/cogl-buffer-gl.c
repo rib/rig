@@ -36,7 +36,7 @@
 #include "config.h"
 #endif
 
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-buffer-gl-private.h"
 #include "cogl-error-private.h"
 #include "cogl-util-gl-private.h"
@@ -82,15 +82,15 @@
 void
 _cg_buffer_gl_create(cg_buffer_t *buffer)
 {
-    cg_context_t *ctx = buffer->context;
+    cg_device_t *dev = buffer->dev;
 
-    GE(ctx, glGenBuffers(1, &buffer->gl_handle));
+    GE(dev, glGenBuffers(1, &buffer->gl_handle));
 }
 
 void
 _cg_buffer_gl_destroy(cg_buffer_t *buffer)
 {
-    GE(buffer->context, glDeleteBuffers(1, &buffer->gl_handle));
+    GE(buffer->dev, glDeleteBuffers(1, &buffer->gl_handle));
 }
 
 static GLenum
@@ -129,7 +129,7 @@ convert_bind_target_to_gl_target(cg_buffer_bind_target_t target)
 static bool
 recreate_store(cg_buffer_t *buffer, cg_error_t **error)
 {
-    cg_context_t *ctx = buffer->context;
+    cg_device_t *dev = buffer->dev;
     GLenum gl_target;
     GLenum gl_enum;
     GLenum gl_error;
@@ -140,12 +140,12 @@ recreate_store(cg_buffer_t *buffer, cg_error_t **error)
     gl_enum = update_hints_to_gl_enum(buffer);
 
     /* Clear any GL errors */
-    while ((gl_error = ctx->glGetError()) != GL_NO_ERROR)
+    while ((gl_error = dev->glGetError()) != GL_NO_ERROR)
         ;
 
-    ctx->glBufferData(gl_target, buffer->size, NULL, gl_enum);
+    dev->glBufferData(gl_target, buffer->size, NULL, gl_enum);
 
-    if (_cg_gl_util_catch_out_of_memory(ctx, error))
+    if (_cg_gl_util_catch_out_of_memory(dev, error))
         return false;
 
     buffer->store_created = true;
@@ -167,24 +167,24 @@ static void *
 _cg_buffer_bind_no_create(cg_buffer_t *buffer,
                           cg_buffer_bind_target_t target)
 {
-    cg_context_t *ctx = buffer->context;
+    cg_device_t *dev = buffer->dev;
 
     c_return_val_if_fail(buffer != NULL, NULL);
 
     /* Don't allow binding the buffer to multiple targets at the same time */
-    c_return_val_if_fail(ctx->current_buffer[buffer->last_target] != buffer,
+    c_return_val_if_fail(dev->current_buffer[buffer->last_target] != buffer,
                            NULL);
 
     /* Don't allow nesting binds to the same target */
-    c_return_val_if_fail(ctx->current_buffer[target] == NULL, NULL);
+    c_return_val_if_fail(dev->current_buffer[target] == NULL, NULL);
 
     buffer->last_target = target;
-    ctx->current_buffer[target] = buffer;
+    dev->current_buffer[target] = buffer;
 
     if (buffer->flags & CG_BUFFER_FLAG_BUFFER_OBJECT) {
         GLenum gl_target =
             convert_bind_target_to_gl_target(buffer->last_target);
-        GE(ctx, glBindBuffer(gl_target, buffer->gl_handle));
+        GE(dev, glBindBuffer(gl_target, buffer->gl_handle));
         return NULL;
     } else
         return buffer->data;
@@ -201,13 +201,13 @@ _cg_buffer_gl_map_range(cg_buffer_t *buffer,
     uint8_t *data;
     cg_buffer_bind_target_t target;
     GLenum gl_target;
-    cg_context_t *ctx = buffer->context;
+    cg_device_t *dev = buffer->dev;
     GLenum gl_error;
 
     if (((access & CG_BUFFER_ACCESS_READ) &&
-         !cg_has_feature(ctx, CG_FEATURE_ID_MAP_BUFFER_FOR_READ)) ||
+         !cg_has_feature(dev, CG_FEATURE_ID_MAP_BUFFER_FOR_READ)) ||
         ((access & CG_BUFFER_ACCESS_WRITE) &&
-         !cg_has_feature(ctx, CG_FEATURE_ID_MAP_BUFFER_FOR_WRITE))) {
+         !cg_has_feature(dev, CG_FEATURE_ID_MAP_BUFFER_FOR_WRITE))) {
         _cg_set_error(error,
                       CG_SYSTEM_ERROR,
                       CG_SYSTEM_ERROR_UNSUPPORTED,
@@ -228,7 +228,7 @@ _cg_buffer_gl_map_range(cg_buffer_t *buffer,
      * always use it even if we are mapping the full range because the
      * normal mapping function doesn't support passing the discard
      * hints */
-    if (ctx->glMapBufferRange) {
+    if (dev->glMapBufferRange) {
         GLbitfield gl_access = 0;
         bool should_recreate_store = !buffer->store_created;
 
@@ -262,12 +262,12 @@ _cg_buffer_gl_map_range(cg_buffer_t *buffer,
         }
 
         /* Clear any GL errors */
-        while ((gl_error = ctx->glGetError()) != GL_NO_ERROR)
+        while ((gl_error = dev->glGetError()) != GL_NO_ERROR)
             ;
 
-        data = ctx->glMapBufferRange(gl_target, offset, size, gl_access);
+        data = dev->glMapBufferRange(gl_target, offset, size, gl_access);
 
-        if (_cg_gl_util_catch_out_of_memory(ctx, error)) {
+        if (_cg_gl_util_catch_out_of_memory(dev, error)) {
             _cg_buffer_gl_unbind(buffer);
             return NULL;
         }
@@ -285,13 +285,13 @@ _cg_buffer_gl_map_range(cg_buffer_t *buffer,
         }
 
         /* Clear any GL errors */
-        while ((gl_error = ctx->glGetError()) != GL_NO_ERROR)
+        while ((gl_error = dev->glGetError()) != GL_NO_ERROR)
             ;
 
         data =
-            ctx->glMapBuffer(gl_target, _cg_buffer_access_to_gl_enum(access));
+            dev->glMapBuffer(gl_target, _cg_buffer_access_to_gl_enum(access));
 
-        if (_cg_gl_util_catch_out_of_memory(ctx, error)) {
+        if (_cg_gl_util_catch_out_of_memory(dev, error)) {
             _cg_buffer_gl_unbind(buffer);
             return NULL;
         }
@@ -312,11 +312,11 @@ _cg_buffer_gl_map_range(cg_buffer_t *buffer,
 void
 _cg_buffer_gl_unmap(cg_buffer_t *buffer)
 {
-    cg_context_t *ctx = buffer->context;
+    cg_device_t *dev = buffer->dev;
 
     _cg_buffer_bind_no_create(buffer, buffer->last_target);
 
-    GE(ctx,
+    GE(dev,
        glUnmapBuffer(convert_bind_target_to_gl_target(buffer->last_target)));
     buffer->flags &= ~CG_BUFFER_FLAG_MAPPED;
 
@@ -332,7 +332,7 @@ _cg_buffer_gl_set_data(cg_buffer_t *buffer,
 {
     cg_buffer_bind_target_t target;
     GLenum gl_target;
-    cg_context_t *ctx = buffer->context;
+    cg_device_t *dev = buffer->dev;
     GLenum gl_error;
     bool status = true;
     cg_error_t *internal_error = NULL;
@@ -353,12 +353,12 @@ _cg_buffer_gl_set_data(cg_buffer_t *buffer,
     gl_target = convert_bind_target_to_gl_target(target);
 
     /* Clear any GL errors */
-    while ((gl_error = ctx->glGetError()) != GL_NO_ERROR)
+    while ((gl_error = dev->glGetError()) != GL_NO_ERROR)
         ;
 
-    ctx->glBufferSubData(gl_target, offset, size, data);
+    dev->glBufferSubData(gl_target, offset, size, data);
 
-    if (_cg_gl_util_catch_out_of_memory(ctx, error))
+    if (_cg_gl_util_catch_out_of_memory(dev, error))
         status = false;
 
     _cg_buffer_gl_unbind(buffer);
@@ -392,18 +392,18 @@ _cg_buffer_gl_bind(cg_buffer_t *buffer,
 void
 _cg_buffer_gl_unbind(cg_buffer_t *buffer)
 {
-    cg_context_t *ctx = buffer->context;
+    cg_device_t *dev = buffer->dev;
 
     c_return_if_fail(buffer != NULL);
 
     /* the unbind should pair up with a previous bind */
-    c_return_if_fail(ctx->current_buffer[buffer->last_target] == buffer);
+    c_return_if_fail(dev->current_buffer[buffer->last_target] == buffer);
 
     if (buffer->flags & CG_BUFFER_FLAG_BUFFER_OBJECT) {
         GLenum gl_target =
             convert_bind_target_to_gl_target(buffer->last_target);
-        GE(ctx, glBindBuffer(gl_target, 0));
+        GE(dev, glBindBuffer(gl_target, 0));
     }
 
-    ctx->current_buffer[buffer->last_target] = NULL;
+    dev->current_buffer[buffer->last_target] = NULL;
 }

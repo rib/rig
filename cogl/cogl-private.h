@@ -33,7 +33,7 @@
 
 #include <cogl/cogl-pipeline.h>
 
-#include "cogl-context.h"
+#include "cogl-device.h"
 #include "cogl-flags.h"
 
 CG_BEGIN_DECLS
@@ -90,7 +90,7 @@ void _cg_transform_point(const cg_matrix_t *matrix_mv,
 
 bool _cg_check_extension(const char *name, char *const *ext);
 
-void _cg_flush(cg_context_t *ctx);
+void _cg_flush(cg_device_t *dev);
 
 void _cg_clear(const cg_color_t *color, unsigned long buffers);
 

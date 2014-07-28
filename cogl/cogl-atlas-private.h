@@ -43,7 +43,7 @@ typedef enum {
 struct _cg_atlas_t {
     cg_object_t _parent;
 
-    cg_context_t *context;
+    cg_device_t *dev;
 
     cg_rectangle_map_t *map;
 
@@ -57,7 +57,7 @@ struct _cg_atlas_t {
     cg_list_t post_reorganize_closures;
 };
 
-cg_atlas_t *_cg_atlas_new(cg_context_t *context,
+cg_atlas_t *_cg_atlas_new(cg_device_t *dev,
                           cg_pixel_format_t internal_format,
                           cg_atlas_flags_t flags);
 

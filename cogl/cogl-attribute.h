@@ -154,7 +154,7 @@ cg_attribute_t *cg_attribute_new(cg_attribute_buffer_t *attribute_buffer,
 
 /**
  * cg_attribute_new_const_1f:
- * @context: A #cg_context_t
+ * @dev: A #cg_device_t
  * @name: The name of the attribute (used to reference it from GLSL)
  * @value: The constant value for the attribute
  *
@@ -173,11 +173,11 @@ cg_attribute_t *cg_attribute_new(cg_attribute_buffer_t *attribute_buffer,
  *          representing the given constant @value.
  */
 cg_attribute_t *
-cg_attribute_new_const_1f(cg_context_t *context, const char *name, float value);
+cg_attribute_new_const_1f(cg_device_t *dev, const char *name, float value);
 
 /**
  * cg_attribute_new_const_2f:
- * @context: A #cg_context_t
+ * @dev: A #cg_device_t
  * @name: The name of the attribute (used to reference it from GLSL)
  * @component0: The first component of a 2 component vector
  * @component1: The second component of a 2 component vector
@@ -197,14 +197,14 @@ cg_attribute_new_const_1f(cg_context_t *context, const char *name, float value);
  * Return value: (transfer full): A newly allocated #cg_attribute_t
  *          representing the given constant vector.
  */
-cg_attribute_t *cg_attribute_new_const_2f(cg_context_t *context,
+cg_attribute_t *cg_attribute_new_const_2f(cg_device_t *dev,
                                           const char *name,
                                           float component0,
                                           float component1);
 
 /**
  * cg_attribute_new_const_3f:
- * @context: A #cg_context_t
+ * @dev: A #cg_device_t
  * @name: The name of the attribute (used to reference it from GLSL)
  * @component0: The first component of a 3 component vector
  * @component1: The second component of a 3 component vector
@@ -228,7 +228,7 @@ cg_attribute_t *cg_attribute_new_const_2f(cg_context_t *context,
  * Return value: (transfer full): A newly allocated #cg_attribute_t
  *          representing the given constant vector.
  */
-cg_attribute_t *cg_attribute_new_const_3f(cg_context_t *context,
+cg_attribute_t *cg_attribute_new_const_3f(cg_device_t *dev,
                                           const char *name,
                                           float component0,
                                           float component1,
@@ -236,7 +236,7 @@ cg_attribute_t *cg_attribute_new_const_3f(cg_context_t *context,
 
 /**
  * cg_attribute_new_const_4f:
- * @context: A #cg_context_t
+ * @dev: A #cg_device_t
  * @name: The name of the attribute (used to reference it from GLSL)
  * @component0: The first component of a 4 component vector
  * @component1: The second component of a 4 component vector
@@ -262,7 +262,7 @@ cg_attribute_t *cg_attribute_new_const_3f(cg_context_t *context,
  * Return value: (transfer full): A newly allocated #cg_attribute_t
  *          representing the given constant vector.
  */
-cg_attribute_t *cg_attribute_new_const_4f(cg_context_t *context,
+cg_attribute_t *cg_attribute_new_const_4f(cg_device_t *dev,
                                           const char *name,
                                           float component0,
                                           float component1,
@@ -271,7 +271,7 @@ cg_attribute_t *cg_attribute_new_const_4f(cg_context_t *context,
 
 /**
  * cg_attribute_new_const_2fv:
- * @context: A #cg_context_t
+ * @dev: A #cg_device_t
  * @name: The name of the attribute (used to reference it from GLSL)
  * @value: A pointer to a 2 component float vector
  *
@@ -290,13 +290,13 @@ cg_attribute_t *cg_attribute_new_const_4f(cg_context_t *context,
  * Return value: (transfer full): A newly allocated #cg_attribute_t
  *          representing the given constant vector.
  */
-cg_attribute_t *cg_attribute_new_const_2fv(cg_context_t *context,
+cg_attribute_t *cg_attribute_new_const_2fv(cg_device_t *dev,
                                            const char *name,
                                            const float *value);
 
 /**
  * cg_attribute_new_const_3fv:
- * @context: A #cg_context_t
+ * @dev: A #cg_device_t
  * @name: The name of the attribute (used to reference it from GLSL)
  * @value: A pointer to a 3 component float vector
  *
@@ -318,13 +318,13 @@ cg_attribute_t *cg_attribute_new_const_2fv(cg_context_t *context,
  * Return value: (transfer full): A newly allocated #cg_attribute_t
  *          representing the given constant vector.
  */
-cg_attribute_t *cg_attribute_new_const_3fv(cg_context_t *context,
+cg_attribute_t *cg_attribute_new_const_3fv(cg_device_t *dev,
                                            const char *name,
                                            const float *value);
 
 /**
  * cg_attribute_new_const_4fv:
- * @context: A #cg_context_t
+ * @dev: A #cg_device_t
  * @name: The name of the attribute (used to reference it from GLSL)
  * @value: A pointer to a 4 component float vector
  *
@@ -347,13 +347,13 @@ cg_attribute_t *cg_attribute_new_const_3fv(cg_context_t *context,
  * Return value: (transfer full): A newly allocated #cg_attribute_t
  *          representing the given constant vector.
  */
-cg_attribute_t *cg_attribute_new_const_4fv(cg_context_t *context,
+cg_attribute_t *cg_attribute_new_const_4fv(cg_device_t *dev,
                                            const char *name,
                                            const float *value);
 
 /**
  * cg_attribute_new_const_2x2fv:
- * @context: A #cg_context_t
+ * @dev: A #cg_device_t
  * @name: The name of the attribute (used to reference it from GLSL)
  * @matrix2x2: A pointer to a 2 by 2 matrix
  * @transpose: Whether the matrix should be transposed on upload or
@@ -379,14 +379,14 @@ cg_attribute_t *cg_attribute_new_const_4fv(cg_context_t *context,
  * Return value: (transfer full): A newly allocated #cg_attribute_t
  *          representing the given constant matrix.
  */
-cg_attribute_t *cg_attribute_new_const_2x2fv(cg_context_t *context,
+cg_attribute_t *cg_attribute_new_const_2x2fv(cg_device_t *dev,
                                              const char *name,
                                              const float *matrix2x2,
                                              bool transpose);
 
 /**
  * cg_attribute_new_const_3x3fv:
- * @context: A #cg_context_t
+ * @dev: A #cg_device_t
  * @name: The name of the attribute (used to reference it from GLSL)
  * @matrix3x3: A pointer to a 3 by 3 matrix
  * @transpose: Whether the matrix should be transposed on upload or
@@ -413,14 +413,14 @@ cg_attribute_t *cg_attribute_new_const_2x2fv(cg_context_t *context,
  * Return value: (transfer full): A newly allocated #cg_attribute_t
  *          representing the given constant matrix.
  */
-cg_attribute_t *cg_attribute_new_const_3x3fv(cg_context_t *context,
+cg_attribute_t *cg_attribute_new_const_3x3fv(cg_device_t *dev,
                                              const char *name,
                                              const float *matrix3x3,
                                              bool transpose);
 
 /**
  * cg_attribute_new_const_4x4fv:
- * @context: A #cg_context_t
+ * @dev: A #cg_device_t
  * @name: The name of the attribute (used to reference it from GLSL)
  * @matrix4x4: A pointer to a 4 by 4 matrix
  * @transpose: Whether the matrix should be transposed on upload or
@@ -447,7 +447,7 @@ cg_attribute_t *cg_attribute_new_const_3x3fv(cg_context_t *context,
  * Return value: (transfer full): A newly allocated #cg_attribute_t
  *          representing the given constant matrix.
  */
-cg_attribute_t *cg_attribute_new_const_4x4fv(cg_context_t *context,
+cg_attribute_t *cg_attribute_new_const_4x4fv(cg_device_t *dev,
                                              const char *name,
                                              const float *matrix4x4,
                                              bool transpose);

@@ -39,7 +39,7 @@ struct _cg_texture_driver_t {
      * non-mipmap filters when creating textures. This is to save some memory as
      * the driver will not allocate room for the mipmap tree.
      */
-    GLuint (*gen)(cg_context_t *ctx,
+    GLuint (*gen)(cg_device_t *dev,
                   GLenum gl_target,
                   cg_pixel_format_t internal_format);
 
@@ -50,7 +50,7 @@ struct _cg_texture_driver_t {
     /* NB: GLES can't upload a sub region of pixel data from a larger source
      * buffer which is why this interface is limited. The GL driver has a more
      * flexible version of this function that is uses internally */
-    void (*prep_gl_for_pixels_upload)(cg_context_t *ctx,
+    void (*prep_gl_for_pixels_upload)(cg_device_t *dev,
                                       int pixels_rowstride,
                                       int pixels_bpp);
 
@@ -67,7 +67,7 @@ struct _cg_texture_driver_t {
      *
      * XXX: sorry for the ridiculous number of arguments :-(
      */
-    bool (*upload_subregion_to_gl)(cg_context_t *ctx,
+    bool (*upload_subregion_to_gl)(cg_device_t *dev,
                                    cg_texture_t *texture,
                                    bool is_foreign,
                                    int src_x,
@@ -88,7 +88,7 @@ struct _cg_texture_driver_t {
      * to copy the bitmap if the rowstride is not a multiple of a possible
      * alignment value because there is no GL_UNPACK_ROW_LENGTH
      */
-    bool (*upload_to_gl)(cg_context_t *ctx,
+    bool (*upload_to_gl)(cg_device_t *dev,
                          GLenum gl_target,
                          GLuint gl_handle,
                          bool is_foreign,
@@ -105,7 +105,7 @@ struct _cg_texture_driver_t {
      * is the number of rows between images) is inferred by dividing the
      * height of the bitmap by the depth.
      */
-    bool (*upload_to_gl_3d)(cg_context_t *ctx,
+    bool (*upload_to_gl_3d)(cg_device_t *dev,
                             GLenum gl_target,
                             GLuint gl_handle,
                             bool is_foreign,
@@ -124,7 +124,7 @@ struct _cg_texture_driver_t {
     /* NB: GLES can't download pixel data into a sub region of a larger
      * destination buffer, the GL driver has a more flexible version of
      * this function that it uses internally. */
-    void (*prep_gl_for_pixels_download)(cg_context_t *ctx,
+    void (*prep_gl_for_pixels_download)(cg_device_t *dev,
                                         int image_width,
                                         int pixels_rowstride,
                                         int pixels_bpp);
@@ -136,7 +136,7 @@ struct _cg_texture_driver_t {
      * renders the texture and reads it back from the framebuffer. (See
      * _cg_texture_draw_and_read () )
      */
-    bool (*gl_get_tex_image)(cg_context_t *ctx,
+    bool (*gl_get_tex_image)(cg_device_t *dev,
                              GLenum gl_target,
                              GLenum dest_gl_format,
                              GLenum dest_gl_type,
@@ -145,7 +145,7 @@ struct _cg_texture_driver_t {
     /*
      * It may depend on the driver as to what texture sizes are supported...
      */
-    bool (*size_supported)(cg_context_t *ctx,
+    bool (*size_supported)(cg_device_t *dev,
                            GLenum gl_target,
                            GLenum gl_intformat,
                            GLenum gl_format,
@@ -153,7 +153,7 @@ struct _cg_texture_driver_t {
                            int width,
                            int height);
 
-    bool (*size_supported_3d)(cg_context_t *ctx,
+    bool (*size_supported_3d)(cg_device_t *dev,
                               GLenum gl_target,
                               GLenum gl_format,
                               GLenum gl_type,
@@ -165,7 +165,7 @@ struct _cg_texture_driver_t {
      * This driver abstraction is needed because GLES doesn't support setting
      * a texture border color.
      */
-    void (*try_setting_gl_border_color)(cg_context_t *ctx,
+    void (*try_setting_gl_border_color)(cg_device_t *dev,
                                         GLuint gl_target,
                                         const GLfloat *transparent_color);
 
@@ -175,7 +175,7 @@ struct _cg_texture_driver_t {
      * RGBA_8888, and so we need to manually convert the data if the final
      * destination has another format.
      */
-    cg_pixel_format_t (*find_best_gl_get_data_format)(cg_context_t *context,
+    cg_pixel_format_t (*find_best_gl_get_data_format)(cg_device_t *dev,
                                                       cg_pixel_format_t format,
                                                       GLenum *closest_gl_format,
                                                       GLenum *closest_gl_type);

@@ -35,7 +35,7 @@
 #include "config.h"
 #endif
 
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-util-gl-private.h"
 #include "cogl-matrix-stack.h"
 #include "cogl-framebuffer-private.h"
@@ -575,7 +575,7 @@ _cg_matrix_stack_free(cg_matrix_stack_t *stack)
 }
 
 cg_matrix_stack_t *
-cg_matrix_stack_new(cg_context_t *ctx)
+cg_matrix_stack_new(cg_device_t *dev)
 {
     cg_matrix_stack_t *stack = c_slice_new(cg_matrix_stack_t);
 
@@ -586,11 +586,11 @@ cg_matrix_stack_new(cg_context_t *ctx)
             _cg_magazine_new(sizeof(cg_matrix_t), 20);
     }
 
-    stack->context = ctx;
+    stack->dev = dev;
     stack->last_entry = NULL;
 
-    cg_matrix_entry_ref(&ctx->identity_entry);
-    _cg_matrix_stack_push_entry(stack, &ctx->identity_entry);
+    cg_matrix_entry_ref(&dev->identity_entry);
+    _cg_matrix_stack_push_entry(stack, &dev->identity_entry);
 
     return _cg_matrix_stack_object_new(stack);
 }

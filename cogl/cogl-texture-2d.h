@@ -37,7 +37,7 @@
 #ifndef __CG_TEXTURE_2D_H
 #define __CG_TEXTURE_2D_H
 
-#include "cogl-context.h"
+#include "cogl-device.h"
 #include "cogl-bitmap.h"
 
 CG_BEGIN_DECLS
@@ -75,7 +75,7 @@ bool cg_is_texture_2d(void *object);
 
 /**
  * cg_texture_2d_new_with_size:
- * @ctx: A #cg_context_t
+ * @dev: A #cg_device_t
  * @width: Width of the texture to allocate
  * @height: Height of the texture to allocate
  *
@@ -103,11 +103,11 @@ bool cg_is_texture_2d(void *object);
  *
  */
 cg_texture_2d_t *
-cg_texture_2d_new_with_size(cg_context_t *ctx, int width, int height);
+cg_texture_2d_new_with_size(cg_device_t *dev, int width, int height);
 
 /**
  * cg_texture_2d_new_from_file:
- * @ctx: A #cg_context_t
+ * @dev: A #cg_device_t
  * @filename: the file to load
  * @error: A #cg_error_t to catch exceptional errors or %NULL
  *
@@ -134,13 +134,13 @@ cg_texture_2d_new_with_size(cg_context_t *ctx, int width, int height);
  *               and @error will be updated.
  *
  */
-cg_texture_2d_t *cg_texture_2d_new_from_file(cg_context_t *ctx,
+cg_texture_2d_t *cg_texture_2d_new_from_file(cg_device_t *dev,
                                              const char *filename,
                                              cg_error_t **error);
 
 /**
  * cg_texture_2d_new_from_data:
- * @ctx: A #cg_context_t
+ * @dev: A #cg_device_t
  * @width: width of texture in pixels
  * @height: height of texture in pixels
  * @format: the #cg_pixel_format_t the buffer is stored in in RAM
@@ -175,7 +175,7 @@ cg_texture_2d_t *cg_texture_2d_new_from_file(cg_context_t *ctx,
  *          it will return %NULL and set @error.
  *
  */
-cg_texture_2d_t *cg_texture_2d_new_from_data(cg_context_t *ctx,
+cg_texture_2d_t *cg_texture_2d_new_from_data(cg_device_t *dev,
                                              int width,
                                              int height,
                                              cg_pixel_format_t format,

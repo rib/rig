@@ -37,7 +37,7 @@
 
 #include "cogl-renderer-private.h"
 #include "cogl-display-private.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-framebuffer-private.h"
 #include "cogl-private.h"
 #include "cogl-winsys-stub-private.h"
@@ -100,22 +100,22 @@ _cg_winsys_display_setup(cg_display_t *display, cg_error_t **error)
 }
 
 static bool
-_cg_winsys_context_init(cg_context_t *context, cg_error_t **error)
+_cg_winsys_context_init(cg_device_t *dev, cg_error_t **error)
 {
-    context->winsys = &_cg_winsys_stub_dummy_ptr;
+    dev->winsys = &_cg_winsys_stub_dummy_ptr;
 
-    if (!_cg_context_update_features(context, error))
+    if (!_cg_device_update_features(dev, error))
         return false;
 
-    memset(context->winsys_features, 0, sizeof(context->winsys_features));
+    memset(dev->winsys_features, 0, sizeof(dev->winsys_features));
 
     return true;
 }
 
 static void
-_cg_winsys_context_deinit(cg_context_t *context)
+_cg_winsys_context_deinit(cg_device_t *dev)
 {
-    context->winsys = NULL;
+    dev->winsys = NULL;
 }
 
 static bool
@@ -173,8 +173,8 @@ _cg_winsys_stub_get_vtable(void)
         vtable.renderer_disconnect = _cg_winsys_renderer_disconnect;
         vtable.display_setup = _cg_winsys_display_setup;
         vtable.display_destroy = _cg_winsys_display_destroy;
-        vtable.context_init = _cg_winsys_context_init;
-        vtable.context_deinit = _cg_winsys_context_deinit;
+        vtable.device_init = _cg_winsys_context_init;
+        vtable.device_deinit = _cg_winsys_context_deinit;
 
         vtable.onscreen_init = _cg_winsys_onscreen_init;
         vtable.onscreen_deinit = _cg_winsys_onscreen_deinit;

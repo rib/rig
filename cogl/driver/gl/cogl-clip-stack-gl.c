@@ -36,7 +36,7 @@
 #include "config.h"
 #endif
 
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-util-gl-private.h"
 #include "cogl-primitives-private.h"
 #include "cogl-pipeline-opengl-private.h"
@@ -54,51 +54,51 @@ add_stencil_clip_rectangle(cg_framebuffer_t *framebuffer,
 {
     cg_matrix_stack_t *projection_stack =
         _cg_framebuffer_get_projection_stack(framebuffer);
-    cg_context_t *ctx = cg_framebuffer_get_context(framebuffer);
+    cg_device_t *dev = cg_framebuffer_get_context(framebuffer);
 
     /* NB: This can be called while flushing the journal so we need
      * to be very conservative with what state we change.
      */
 
-    _cg_context_set_current_projection_entry(ctx, projection_stack->last_entry);
-    _cg_context_set_current_modelview_entry(ctx, modelview_entry);
+    _cg_device_set_current_projection_entry(dev, projection_stack->last_entry);
+    _cg_device_set_current_modelview_entry(dev, modelview_entry);
 
     if (first) {
-        GE(ctx, glEnable(GL_STENCIL_TEST));
+        GE(dev, glEnable(GL_STENCIL_TEST));
 
         /* Initially disallow everything */
-        GE(ctx, glClearStencil(0));
-        GE(ctx, glClear(GL_STENCIL_BUFFER_BIT));
+        GE(dev, glClearStencil(0));
+        GE(dev, glClear(GL_STENCIL_BUFFER_BIT));
 
         /* Punch out a hole to allow the rectangle */
-        GE(ctx, glStencilFunc(GL_NEVER, 0x1, 0x1));
-        GE(ctx, glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE));
+        GE(dev, glStencilFunc(GL_NEVER, 0x1, 0x1));
+        GE(dev, glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE));
 
         _cg_rectangle_immediate(
-            framebuffer, ctx->stencil_pipeline, x_1, y_1, x_2, y_2);
+            framebuffer, dev->stencil_pipeline, x_1, y_1, x_2, y_2);
     } else {
         /* Add one to every pixel of the stencil buffer in the
            rectangle */
-        GE(ctx, glStencilFunc(GL_NEVER, 0x1, 0x3));
-        GE(ctx, glStencilOp(GL_INCR, GL_INCR, GL_INCR));
+        GE(dev, glStencilFunc(GL_NEVER, 0x1, 0x3));
+        GE(dev, glStencilOp(GL_INCR, GL_INCR, GL_INCR));
         _cg_rectangle_immediate(
-            framebuffer, ctx->stencil_pipeline, x_1, y_1, x_2, y_2);
+            framebuffer, dev->stencil_pipeline, x_1, y_1, x_2, y_2);
 
         /* Subtract one from all pixels in the stencil buffer so that
            only pixels where both the original stencil buffer and the
            rectangle are set will be valid */
-        GE(ctx, glStencilOp(GL_DECR, GL_DECR, GL_DECR));
+        GE(dev, glStencilOp(GL_DECR, GL_DECR, GL_DECR));
 
-        _cg_context_set_current_projection_entry(ctx, &ctx->identity_entry);
-        _cg_context_set_current_modelview_entry(ctx, &ctx->identity_entry);
+        _cg_device_set_current_projection_entry(dev, &dev->identity_entry);
+        _cg_device_set_current_modelview_entry(dev, &dev->identity_entry);
 
         _cg_rectangle_immediate(
-            framebuffer, ctx->stencil_pipeline, -1.0, -1.0, 1.0, 1.0);
+            framebuffer, dev->stencil_pipeline, -1.0, -1.0, 1.0, 1.0);
     }
 
     /* Restore the stencil mode */
-    GE(ctx, glStencilFunc(GL_EQUAL, 0x1, 0x1));
-    GE(ctx, glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP));
+    GE(dev, glStencilFunc(GL_EQUAL, 0x1, 0x1));
+    GE(dev, glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP));
 }
 
 typedef void (*silhouette_paint_callback_t)(cg_framebuffer_t *framebuffer,
@@ -119,26 +119,26 @@ add_stencil_clip_silhouette(cg_framebuffer_t *framebuffer,
 {
     cg_matrix_stack_t *projection_stack =
         _cg_framebuffer_get_projection_stack(framebuffer);
-    cg_context_t *ctx = cg_framebuffer_get_context(framebuffer);
+    cg_device_t *dev = cg_framebuffer_get_context(framebuffer);
 
     /* NB: This can be called while flushing the journal so we need
      * to be very conservative with what state we change.
      */
 
-    _cg_context_set_current_projection_entry(ctx, projection_stack->last_entry);
-    _cg_context_set_current_modelview_entry(ctx, modelview_entry);
+    _cg_device_set_current_projection_entry(dev, projection_stack->last_entry);
+    _cg_device_set_current_modelview_entry(dev, modelview_entry);
 
-    _cg_pipeline_flush_gl_state(
-        ctx, ctx->stencil_pipeline, framebuffer, false, false);
+    _cg_pipeline_flush_gl_state(dev, dev->stencil_pipeline, framebuffer,
+                                false, false);
 
-    GE(ctx, glEnable(GL_STENCIL_TEST));
+    GE(dev, glEnable(GL_STENCIL_TEST));
 
-    GE(ctx, glColorMask(false, false, false, false));
-    GE(ctx, glDepthMask(false));
+    GE(dev, glColorMask(false, false, false, false));
+    GE(dev, glDepthMask(false));
 
     if (merge) {
-        GE(ctx, glStencilMask(2));
-        GE(ctx, glStencilFunc(GL_LEQUAL, 0x2, 0x6));
+        GE(dev, glStencilMask(2));
+        GE(dev, glStencilFunc(GL_LEQUAL, 0x2, 0x6));
     } else {
         /* If we're not using the stencil buffer for clipping then we
            don't need to clear the whole stencil buffer, just the area
@@ -154,47 +154,47 @@ add_stencil_clip_silhouette(cg_framebuffer_t *framebuffer,
                 framebuffer, CG_BUFFER_BIT_STENCIL, 0, 0, 0, 0);
         else {
             /* Just clear the bounding box */
-            GE(ctx, glStencilMask(~(GLuint)0));
-            GE(ctx, glStencilOp(GL_ZERO, GL_ZERO, GL_ZERO));
+            GE(dev, glStencilMask(~(GLuint)0));
+            GE(dev, glStencilOp(GL_ZERO, GL_ZERO, GL_ZERO));
             _cg_rectangle_immediate(framebuffer,
-                                    ctx->stencil_pipeline,
+                                    dev->stencil_pipeline,
                                     bounds_x1,
                                     bounds_y1,
                                     bounds_x2,
                                     bounds_y2);
         }
-        GE(ctx, glStencilMask(1));
-        GE(ctx, glStencilFunc(GL_LEQUAL, 0x1, 0x3));
+        GE(dev, glStencilMask(1));
+        GE(dev, glStencilFunc(GL_LEQUAL, 0x1, 0x3));
     }
 
-    GE(ctx, glStencilOp(GL_INVERT, GL_INVERT, GL_INVERT));
+    GE(dev, glStencilOp(GL_INVERT, GL_INVERT, GL_INVERT));
 
-    silhouette_callback(framebuffer, ctx->stencil_pipeline, user_data);
+    silhouette_callback(framebuffer, dev->stencil_pipeline, user_data);
 
     if (merge) {
         /* Now we have the new stencil buffer in bit 1 and the old
            stencil buffer in bit 0 so we need to intersect them */
-        GE(ctx, glStencilMask(3));
-        GE(ctx, glStencilFunc(GL_NEVER, 0x2, 0x3));
-        GE(ctx, glStencilOp(GL_DECR, GL_DECR, GL_DECR));
+        GE(dev, glStencilMask(3));
+        GE(dev, glStencilFunc(GL_NEVER, 0x2, 0x3));
+        GE(dev, glStencilOp(GL_DECR, GL_DECR, GL_DECR));
         /* Decrement all of the bits twice so that only pixels where the
            value is 3 will remain */
 
-        _cg_context_set_current_projection_entry(ctx, &ctx->identity_entry);
-        _cg_context_set_current_modelview_entry(ctx, &ctx->identity_entry);
+        _cg_device_set_current_projection_entry(dev, &dev->identity_entry);
+        _cg_device_set_current_modelview_entry(dev, &dev->identity_entry);
 
         _cg_rectangle_immediate(
-            framebuffer, ctx->stencil_pipeline, -1.0, -1.0, 1.0, 1.0);
+            framebuffer, dev->stencil_pipeline, -1.0, -1.0, 1.0, 1.0);
         _cg_rectangle_immediate(
-            framebuffer, ctx->stencil_pipeline, -1.0, -1.0, 1.0, 1.0);
+            framebuffer, dev->stencil_pipeline, -1.0, -1.0, 1.0, 1.0);
     }
 
-    GE(ctx, glStencilMask(~(GLuint)0));
-    GE(ctx, glDepthMask(true));
-    GE(ctx, glColorMask(true, true, true, true));
+    GE(dev, glStencilMask(~(GLuint)0));
+    GE(dev, glDepthMask(true));
+    GE(dev, glColorMask(true, true, true, true));
 
-    GE(ctx, glStencilFunc(GL_EQUAL, 0x1, 0x1));
-    GE(ctx, glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP));
+    GE(dev, glStencilFunc(GL_EQUAL, 0x1, 0x1));
+    GE(dev, glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP));
 }
 
 static void
@@ -237,7 +237,7 @@ void
 _cg_clip_stack_gl_flush(cg_clip_stack_t *stack,
                         cg_framebuffer_t *framebuffer)
 {
-    cg_context_t *ctx = framebuffer->context;
+    cg_device_t *dev = framebuffer->dev;
     bool using_stencil_buffer = false;
     int scissor_x0;
     int scissor_y0;
@@ -248,30 +248,30 @@ _cg_clip_stack_gl_flush(cg_clip_stack_t *stack,
 
     /* If we have already flushed this state then we don't need to do
        anything */
-    if (ctx->current_clip_stack_valid) {
-        if (ctx->current_clip_stack == stack &&
-            (ctx->needs_viewport_scissor_workaround == false ||
+    if (dev->current_clip_stack_valid) {
+        if (dev->current_clip_stack == stack &&
+            (dev->needs_viewport_scissor_workaround == false ||
              (framebuffer->viewport_age ==
               framebuffer->viewport_age_for_scissor_workaround &&
-              ctx->viewport_scissor_workaround_framebuffer == framebuffer)))
+              dev->viewport_scissor_workaround_framebuffer == framebuffer)))
             return;
 
-        _cg_clip_stack_unref(ctx->current_clip_stack);
+        _cg_clip_stack_unref(dev->current_clip_stack);
     }
 
-    ctx->current_clip_stack_valid = true;
-    ctx->current_clip_stack = _cg_clip_stack_ref(stack);
+    dev->current_clip_stack_valid = true;
+    dev->current_clip_stack = _cg_clip_stack_ref(stack);
 
-    GE(ctx, glDisable(GL_STENCIL_TEST));
+    GE(dev, glDisable(GL_STENCIL_TEST));
 
     /* If the stack is empty then there's nothing else to do
      *
-     * See comment below about ctx->needs_viewport_scissor_workaround
+     * See comment below about dev->needs_viewport_scissor_workaround
      */
-    if (stack == NULL && !ctx->needs_viewport_scissor_workaround) {
+    if (stack == NULL && !dev->needs_viewport_scissor_workaround) {
         CG_NOTE(CLIPPING, "Flushed empty clip stack");
 
-        GE(ctx, glDisable(GL_SCISSOR_TEST));
+        GE(dev, glDisable(GL_SCISSOR_TEST));
         return;
     }
 
@@ -291,7 +291,7 @@ _cg_clip_stack_gl_flush(cg_clip_stack_t *stack,
      *
      * TODO: file a bug upstream!
      */
-    if (ctx->needs_viewport_scissor_workaround) {
+    if (dev->needs_viewport_scissor_workaround) {
         _cg_util_scissor_intersect(
             framebuffer->viewport_x,
             framebuffer->viewport_y,
@@ -303,7 +303,7 @@ _cg_clip_stack_gl_flush(cg_clip_stack_t *stack,
             &scissor_y1);
         framebuffer->viewport_age_for_scissor_workaround =
             framebuffer->viewport_age;
-        ctx->viewport_scissor_workaround_framebuffer = framebuffer;
+        dev->viewport_scissor_workaround_framebuffer = framebuffer;
     }
 
     /* Enable scissoring as soon as possible */
@@ -334,8 +334,8 @@ _cg_clip_stack_gl_flush(cg_clip_stack_t *stack,
             scissor_x1,
             scissor_y1);
 
-    GE(ctx, glEnable(GL_SCISSOR_TEST));
-    GE(ctx,
+    GE(dev, glEnable(GL_SCISSOR_TEST));
+    GE(dev,
        glScissor(scissor_x0,
                  scissor_y_start,
                  scissor_x1 - scissor_x0,

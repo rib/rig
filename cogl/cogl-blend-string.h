@@ -118,7 +118,7 @@ typedef struct _cg_blend_string_statement_t {
     cg_blend_string_argument_t args[3];
 } cg_blend_string_statement_t;
 
-bool _cg_blend_string_compile(cg_context_t *ctx,
+bool _cg_blend_string_compile(cg_device_t *dev,
                               const char *string,
                               cg_blend_string_context_t context,
                               cg_blend_string_statement_t *statements,

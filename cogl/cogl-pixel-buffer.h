@@ -44,7 +44,7 @@
 typedef struct _cg_pixel_buffer_t cg_pixel_buffer_t;
 
 #include <cogl/cogl-types.h>
-#include <cogl/cogl-context.h>
+#include <cogl/cogl-device.h>
 
 CG_BEGIN_DECLS
 
@@ -52,7 +52,7 @@ CG_BEGIN_DECLS
 
 /**
  * cg_pixel_buffer_new:
- * @context: A #cg_context_t
+ * @dev: A #cg_device_t
  * @size: The number of bytes to allocate for the pixel data.
  * @data: An optional pointer to vertex data to upload immediately
  * @error: A #cg_error_t for catching exceptional errors
@@ -69,7 +69,7 @@ CG_BEGIN_DECLS
  *
  * Stability: unstable
  */
-cg_pixel_buffer_t *cg_pixel_buffer_new(cg_context_t *context,
+cg_pixel_buffer_t *cg_pixel_buffer_new(cg_device_t *dev,
                                        size_t size,
                                        const void *data,
                                        cg_error_t **error);

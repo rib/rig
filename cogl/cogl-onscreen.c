@@ -37,7 +37,7 @@
 #include "cogl-frame-info-private.h"
 #include "cogl-framebuffer-private.h"
 #include "cogl-onscreen-template-private.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-object-private.h"
 #include "cogl-closure-list-private.h"
 #include "cogl-poll-private.h"
@@ -63,7 +63,7 @@ _cg_onscreen_init_from_template(cg_onscreen_t *onscreen,
 }
 
 cg_onscreen_t *
-cg_onscreen_new(cg_context_t *ctx, int width, int height)
+cg_onscreen_new(cg_device_t *dev, int width, int height)
 {
     cg_onscreen_t *onscreen;
 
@@ -80,12 +80,12 @@ cg_onscreen_new(cg_context_t *ctx, int width, int height)
 
     onscreen = c_new0(cg_onscreen_t, 1);
     _cg_framebuffer_init(CG_FRAMEBUFFER(onscreen),
-                         ctx,
+                         dev,
                          CG_FRAMEBUFFER_TYPE_ONSCREEN,
                          width, /* width */
                          height); /* height */
 
-    _cg_onscreen_init_from_template(onscreen, ctx->display->onscreen_template);
+    _cg_onscreen_init_from_template(onscreen, dev->display->onscreen_template);
 
     return _cg_onscreen_object_new(onscreen);
 }
@@ -124,7 +124,7 @@ notify_event(cg_onscreen_t *onscreen,
 }
 
 static void
-_cg_dispatch_onscreen_cb(cg_context_t *context)
+_cg_dispatch_onscreen_cb(cg_device_t *dev)
 {
     cg_onscreen_event_t *event, *tmp;
     cg_list_t queue;
@@ -134,11 +134,11 @@ _cg_dispatch_onscreen_cb(cg_context_t *context)
      * To make sure this loop will only dispatch one set of events we'll
      * steal the queue and iterate that separately */
     _cg_list_init(&queue);
-    _cg_list_insert_list(&queue, &context->onscreen_events_queue);
-    _cg_list_init(&context->onscreen_events_queue);
+    _cg_list_insert_list(&queue, &dev->onscreen_events_queue);
+    _cg_list_init(&dev->onscreen_events_queue);
 
-    _cg_closure_disconnect(context->onscreen_dispatch_idle);
-    context->onscreen_dispatch_idle = NULL;
+    _cg_closure_disconnect(dev->onscreen_dispatch_idle);
+    dev->onscreen_dispatch_idle = NULL;
 
     _cg_list_for_each_safe(event, tmp, &queue, link)
     {
@@ -153,9 +153,9 @@ _cg_dispatch_onscreen_cb(cg_context_t *context)
         c_slice_free(cg_onscreen_event_t, event);
     }
 
-    while (!_cg_list_empty(&context->onscreen_dirty_queue)) {
+    while (!_cg_list_empty(&dev->onscreen_dirty_queue)) {
         cg_onscreen_queued_dirty_t *qe =
-            _cg_container_of(context->onscreen_dirty_queue.next,
+            _cg_container_of(dev->onscreen_dirty_queue.next,
                              cg_onscreen_queued_dirty_t,
                              link);
 
@@ -175,13 +175,12 @@ _cg_dispatch_onscreen_cb(cg_context_t *context)
 static void
 _cg_onscreen_queue_dispatch_idle(cg_onscreen_t *onscreen)
 {
-    cg_context_t *ctx = CG_FRAMEBUFFER(onscreen)->context;
+    cg_device_t *dev = CG_FRAMEBUFFER(onscreen)->dev;
 
-    if (!ctx->onscreen_dispatch_idle) {
-        ctx->onscreen_dispatch_idle = _cg_poll_renderer_add_idle(
-            ctx->display->renderer,
+    if (!dev->onscreen_dispatch_idle) {
+        dev->onscreen_dispatch_idle = _cg_poll_renderer_add_idle(dev->display->renderer,
             (cg_idle_callback_t)_cg_dispatch_onscreen_cb,
-            ctx,
+            dev,
             NULL);
     }
 }
@@ -190,12 +189,12 @@ void
 _cg_onscreen_queue_dirty(cg_onscreen_t *onscreen,
                          const cg_onscreen_dirty_info_t *info)
 {
-    cg_context_t *ctx = CG_FRAMEBUFFER(onscreen)->context;
+    cg_device_t *dev = CG_FRAMEBUFFER(onscreen)->dev;
     cg_onscreen_queued_dirty_t *qe = c_slice_new(cg_onscreen_queued_dirty_t);
 
     qe->onscreen = cg_object_ref(onscreen);
     qe->info = *info;
-    _cg_list_insert(ctx->onscreen_dirty_queue.prev, &qe->link);
+    _cg_list_insert(dev->onscreen_dirty_queue.prev, &qe->link);
 
     _cg_onscreen_queue_dispatch_idle(onscreen);
 }
@@ -219,7 +218,7 @@ _cg_onscreen_queue_event(cg_onscreen_t *onscreen,
                          cg_frame_event_t type,
                          cg_frame_info_t *info)
 {
-    cg_context_t *ctx = CG_FRAMEBUFFER(onscreen)->context;
+    cg_device_t *dev = CG_FRAMEBUFFER(onscreen)->dev;
 
     cg_onscreen_event_t *event = c_slice_new(cg_onscreen_event_t);
 
@@ -227,7 +226,7 @@ _cg_onscreen_queue_event(cg_onscreen_t *onscreen,
     event->info = cg_object_ref(info);
     event->type = type;
 
-    _cg_list_insert(ctx->onscreen_events_queue.prev, &event->link);
+    _cg_list_insert(dev->onscreen_events_queue.prev, &event->link);
 
     _cg_onscreen_queue_dispatch_idle(onscreen);
 }
@@ -522,7 +521,7 @@ _cg_framebuffer_winsys_update_size(cg_framebuffer_t *framebuffer,
 
     cg_framebuffer_set_viewport(framebuffer, 0, 0, width, height);
 
-    if (!_cg_has_private_feature(framebuffer->context,
+    if (!_cg_has_private_feature(framebuffer->dev,
                                  CG_PRIVATE_FEATURE_DIRTY_EVENTS))
         _cg_onscreen_queue_full_dirty(CG_ONSCREEN(framebuffer));
 }

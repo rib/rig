@@ -35,7 +35,7 @@
 #include "config.h"
 #endif
 
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-pipeline-private.h"
 #include "cogl-pipeline-hash-table.h"
 #include "cogl-pipeline-cache.h"

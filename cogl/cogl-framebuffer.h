@@ -943,15 +943,15 @@ void cg_framebuffer_resolve_samples_region(
  * cg_framebuffer_get_context:
  * @framebuffer: A #cg_framebuffer_t
  *
- * Can be used to query the #cg_context_t a given @framebuffer was
- * instantiated within. This is the #cg_context_t that was passed to
+ * Can be used to query the #cg_device_t a given @framebuffer was
+ * instantiated within. This is the #cg_device_t that was passed to
  * cg_onscreen_new() for example.
  *
- * Return value: (transfer none): The #cg_context_t that the given
+ * Return value: (transfer none): The #cg_device_t that the given
  *               @framebuffer was instantiated within.
  * Stability: unstable
  */
-cg_context_t *cg_framebuffer_get_context(cg_framebuffer_t *framebuffer);
+cg_device_t *cg_framebuffer_get_context(cg_framebuffer_t *framebuffer);
 
 /**
  * cg_framebuffer_clear:

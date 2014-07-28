@@ -33,7 +33,7 @@
 
 #include <clib.h>
 
-#include "cogl-context.h"
+#include "cogl-device.h"
 
 typedef enum {
     CG_BOXED_NONE,
@@ -99,7 +99,7 @@ void _cg_boxed_value_copy(cg_boxed_value_t *dst, const cg_boxed_value_t *src);
 
 void _cg_boxed_value_destroy(cg_boxed_value_t *bv);
 
-void _cg_boxed_value_set_uniform(cg_context_t *ctx,
+void _cg_boxed_value_set_uniform(cg_device_t *dev,
                                  int location,
                                  const cg_boxed_value_t *value);
 

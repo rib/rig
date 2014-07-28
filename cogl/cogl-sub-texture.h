@@ -53,7 +53,7 @@ typedef struct _cg_sub_texture_t cg_sub_texture_t;
 
 /**
  * cg_sub_texture_new:
- * @ctx: A #cg_context_t pointer
+ * @dev: A #cg_device_t pointer
  * @parent_texture: The full texture containing a sub-region you want
  *                  to make a #cg_sub_texture_t from.
  * @sub_x: The top-left x coordinate of the parent region to make
@@ -81,7 +81,7 @@ typedef struct _cg_sub_texture_t cg_sub_texture_t;
  *
  * Stability: unstable
  */
-cg_sub_texture_t *cg_sub_texture_new(cg_context_t *ctx,
+cg_sub_texture_t *cg_sub_texture_new(cg_device_t *ctx,
                                      cg_texture_t *parent_texture,
                                      int sub_x,
                                      int sub_y,

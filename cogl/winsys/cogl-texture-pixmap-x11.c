@@ -46,7 +46,7 @@
 #include "cogl-texture-driver.h"
 #include "cogl-texture-2d-private.h"
 #include "cogl-texture-2d-sliced.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-display-private.h"
 #include "cogl-renderer-private.h"
 #include "cogl-object-private.h"
@@ -116,9 +116,9 @@ static const cg_winsys_vtable_t *
 _cg_texture_pixmap_x11_get_winsys(cg_texture_pixmap_x11_t *tex_pixmap)
 {
     cg_texture_t *tex = CG_TEXTURE(tex_pixmap);
-    cg_context_t *ctx = tex->context;
+    cg_device_t *dev = tex->dev;
 
-    return ctx->display->renderer->winsys_vtable;
+    return dev->display->renderer->winsys_vtable;
 }
 
 static void
@@ -126,7 +126,7 @@ process_damage_event(cg_texture_pixmap_x11_t *tex_pixmap,
                      XDamageNotifyEvent *damage_event)
 {
     cg_texture_t *tex = CG_TEXTURE(tex_pixmap);
-    cg_context_t *ctx = tex->context;
+    cg_device_t *dev = tex->dev;
     Display *display;
     enum {
         DO_NOTHING,
@@ -135,7 +135,7 @@ process_damage_event(cg_texture_pixmap_x11_t *tex_pixmap,
     } handle_mode;
     const cg_winsys_vtable_t *winsys;
 
-    display = cg_xlib_renderer_get_display(ctx->display->renderer);
+    display = cg_xlib_renderer_get_display(dev->display->renderer);
 
     CG_NOTE(TEXTURE_PIXMAP, "Damage event received for %p", tex_pixmap);
 
@@ -223,10 +223,10 @@ _cg_texture_pixmap_x11_filter(XEvent *event,
 {
     cg_texture_pixmap_x11_t *tex_pixmap = data;
     cg_texture_t *tex = CG_TEXTURE(tex_pixmap);
-    cg_context_t *ctx = tex->context;
+    cg_device_t *dev = tex->dev;
     int damage_base;
 
-    damage_base = _cg_xlib_renderer_get_damage_base(ctx->display->renderer);
+    damage_base = _cg_xlib_renderer_get_damage_base(dev->display->renderer);
     if (event->type == damage_base + XDamageNotify) {
         XDamageNotifyEvent *damage_event = (XDamageNotifyEvent *)event;
 
@@ -238,16 +238,17 @@ _cg_texture_pixmap_x11_filter(XEvent *event,
 }
 
 static void
-set_damage_object_internal(cg_context_t *ctx,
+set_damage_object_internal(cg_device_t *dev,
                            cg_texture_pixmap_x11_t *tex_pixmap,
                            Damage damage,
                            cg_texture_pixmap_x11_report_level_t report_level)
 {
-    Display *display = cg_xlib_renderer_get_display(ctx->display->renderer);
+    Display *display = cg_xlib_renderer_get_display(dev->display->renderer);
 
     if (tex_pixmap->damage) {
-        cg_xlib_renderer_remove_filter(
-            ctx->display->renderer, _cg_texture_pixmap_x11_filter, tex_pixmap);
+        cg_xlib_renderer_remove_filter(dev->display->renderer,
+                                       _cg_texture_pixmap_x11_filter,
+                                       tex_pixmap);
 
         if (tex_pixmap->damage_owned) {
             XDamageDestroy(display, tex_pixmap->damage);
@@ -259,18 +260,19 @@ set_damage_object_internal(cg_context_t *ctx,
     tex_pixmap->damage_report_level = report_level;
 
     if (damage)
-        cg_xlib_renderer_add_filter(
-            ctx->display->renderer, _cg_texture_pixmap_x11_filter, tex_pixmap);
+        cg_xlib_renderer_add_filter(dev->display->renderer,
+                                    _cg_texture_pixmap_x11_filter,
+                                    tex_pixmap);
 }
 
 cg_texture_pixmap_x11_t *
-cg_texture_pixmap_x11_new(cg_context_t *ctx,
+cg_texture_pixmap_x11_new(cg_device_t *dev,
                           uint32_t pixmap,
                           bool automatic_updates,
                           cg_error_t **error)
 {
     cg_texture_pixmap_x11_t *tex_pixmap = c_new(cg_texture_pixmap_x11_t, 1);
-    Display *display = cg_xlib_renderer_get_display(ctx->display->renderer);
+    Display *display = cg_xlib_renderer_get_display(dev->display->renderer);
     Window pixmap_root_window;
     int pixmap_x, pixmap_y;
     unsigned int pixmap_width, pixmap_height;
@@ -304,7 +306,7 @@ cg_texture_pixmap_x11_new(cg_context_t *ctx,
                        : CG_PIXEL_FORMAT_RGB_888);
 
     _cg_texture_init(tex,
-                     ctx,
+                     dev,
                      pixmap_width,
                      pixmap_height,
                      internal_format,
@@ -335,12 +337,12 @@ cg_texture_pixmap_x11_new(cg_context_t *ctx,
     /* If automatic updates are requested and the Xlib connection
        supports damage events then we'll register a damage object on the
        pixmap */
-    damage_base = _cg_xlib_renderer_get_damage_base(ctx->display->renderer);
+    damage_base = _cg_xlib_renderer_get_damage_base(dev->display->renderer);
     if (automatic_updates && damage_base >= 0) {
         Damage damage =
             XDamageCreate(display, pixmap, XDamageReportBoundingBox);
-        set_damage_object_internal(
-            ctx, tex_pixmap, damage, CG_TEXTURE_PIXMAP_X11_DAMAGE_BOUNDING_BOX);
+        set_damage_object_internal(dev, tex_pixmap, damage,
+                                   CG_TEXTURE_PIXMAP_X11_DAMAGE_BOUNDING_BOX);
         tex_pixmap->damage_owned = true;
     }
 
@@ -379,11 +381,11 @@ static void
 try_alloc_shm(cg_texture_pixmap_x11_t *tex_pixmap)
 {
     cg_texture_t *tex = CG_TEXTURE(tex_pixmap);
-    cg_context_t *ctx = tex->context;
+    cg_device_t *dev = tex->dev;
     XImage *dummy_image;
     Display *display;
 
-    display = cg_xlib_renderer_get_display(ctx->display->renderer);
+    display = cg_xlib_renderer_get_display(dev->display->renderer);
 
     if (!XShmQueryExtension(display))
         return;
@@ -475,16 +477,16 @@ cg_texture_pixmap_x11_set_damage_object(
     cg_texture_pixmap_x11_report_level_t report_level)
 {
     cg_texture_t *tex = CG_TEXTURE(tex_pixmap);
-    cg_context_t *ctx = tex->context;
+    cg_device_t *dev = tex->dev;
     int damage_base;
 
-    damage_base = _cg_xlib_renderer_get_damage_base(ctx->display->renderer);
+    damage_base = _cg_xlib_renderer_get_damage_base(dev->display->renderer);
     if (damage_base >= 0)
-        set_damage_object_internal(ctx, tex_pixmap, damage, report_level);
+        set_damage_object_internal(dev, tex_pixmap, damage, report_level);
 }
 
 static cg_texture_t *
-create_fallback_texture(cg_context_t *ctx,
+create_fallback_texture(cg_device_t *dev,
                         int width,
                         int height,
                         cg_pixel_format_t internal_format)
@@ -493,10 +495,10 @@ create_fallback_texture(cg_context_t *ctx,
     cg_error_t *skip_error = NULL;
 
     if ((_cg_util_is_pot(width) && _cg_util_is_pot(height)) ||
-        (cg_has_feature(ctx, CG_FEATURE_ID_TEXTURE_NPOT_BASIC) &&
-         cg_has_feature(ctx, CG_FEATURE_ID_TEXTURE_NPOT_MIPMAP))) {
+        (cg_has_feature(dev, CG_FEATURE_ID_TEXTURE_NPOT_BASIC) &&
+         cg_has_feature(dev, CG_FEATURE_ID_TEXTURE_NPOT_MIPMAP))) {
         /* First try creating a fast-path non-sliced texture */
-        tex = CG_TEXTURE(cg_texture_2d_new_with_size(ctx, width, height));
+        tex = CG_TEXTURE(cg_texture_2d_new_with_size(dev, width, height));
 
         _cg_texture_set_internal_format(tex, internal_format);
 
@@ -513,8 +515,10 @@ create_fallback_texture(cg_context_t *ctx,
         tex = NULL;
 
     if (!tex) {
-        cg_texture_2d_sliced_t *tex_2ds = cg_texture_2d_sliced_new_with_size(
-            ctx, width, height, CG_TEXTURE_MAX_WASTE);
+        cg_texture_2d_sliced_t *tex_2ds = cg_texture_2d_sliced_new_with_size(dev,
+                                                                             width,
+                                                                             height,
+                                                                             CG_TEXTURE_MAX_WASTE);
         tex = CG_TEXTURE(tex_2ds);
 
         _cg_texture_set_internal_format(tex, internal_format);
@@ -527,7 +531,7 @@ static void
 _cg_texture_pixmap_x11_update_image_texture(cg_texture_pixmap_x11_t *tex_pixmap)
 {
     cg_texture_t *tex = CG_TEXTURE(tex_pixmap);
-    cg_context_t *ctx = tex->context;
+    cg_device_t *dev = tex->dev;
     Display *display;
     Visual *visual;
     cg_pixel_format_t image_format;
@@ -538,7 +542,7 @@ _cg_texture_pixmap_x11_update_image_texture(cg_texture_pixmap_x11_t *tex_pixmap)
     int offset;
     cg_error_t *ignore = NULL;
 
-    display = cg_xlib_renderer_get_display(ctx->display->renderer);
+    display = cg_xlib_renderer_get_display(dev->display->renderer);
     visual = tex_pixmap->visual;
 
     /* If the damage region is empty then there's nothing to do */
@@ -555,14 +559,15 @@ _cg_texture_pixmap_x11_update_image_texture(cg_texture_pixmap_x11_t *tex_pixmap)
        instead */
     if (tex_pixmap->tex == NULL) {
         cg_pixel_format_t texture_format;
-        cg_context_t *ctx = CG_TEXTURE(tex_pixmap)->context;
+        cg_device_t *dev = CG_TEXTURE(tex_pixmap)->dev;
 
         texture_format =
             (tex_pixmap->depth >= 32 ? CG_PIXEL_FORMAT_RGBA_8888_PRE
              : CG_PIXEL_FORMAT_RGB_888);
 
-        tex_pixmap->tex = create_fallback_texture(
-            ctx, tex->width, tex->height, texture_format);
+        tex_pixmap->tex = create_fallback_texture(dev, tex->width,
+                                                  tex->height,
+                                                  texture_format);
     }
 
     if (tex_pixmap->image == NULL) {
@@ -930,12 +935,12 @@ static void
 _cg_texture_pixmap_x11_free(cg_texture_pixmap_x11_t *tex_pixmap)
 {
     cg_texture_t *tex = CG_TEXTURE(tex_pixmap);
-    cg_context_t *ctx = tex->context;
+    cg_device_t *dev = tex->dev;
     Display *display;
 
-    display = cg_xlib_renderer_get_display(ctx->display->renderer);
+    display = cg_xlib_renderer_get_display(dev->display->renderer);
 
-    set_damage_object_internal(ctx, tex_pixmap, 0, 0);
+    set_damage_object_internal(dev, tex_pixmap, 0, 0);
 
     if (tex_pixmap->image)
         XDestroyImage(tex_pixmap->image);

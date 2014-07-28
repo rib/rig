@@ -127,13 +127,14 @@ cg_primitive_new(cg_vertices_mode_t mode, int n_vertices, ...)
 }
 
 cg_primitive_t *
-cg_primitive_new_p2(cg_context_t *ctx,
+cg_primitive_new_p2(cg_device_t *dev,
                     cg_vertices_mode_t mode,
                     int n_vertices,
                     const cg_vertex_p2_t *data)
 {
     cg_attribute_buffer_t *attribute_buffer =
-        cg_attribute_buffer_new(ctx, n_vertices * sizeof(cg_vertex_p2_t), data);
+        cg_attribute_buffer_new(dev, n_vertices * sizeof(cg_vertex_p2_t),
+                                data);
     cg_attribute_t *attributes[1];
 
     attributes[0] = cg_attribute_new(attribute_buffer,
@@ -150,13 +151,14 @@ cg_primitive_new_p2(cg_context_t *ctx,
 }
 
 cg_primitive_t *
-cg_primitive_new_p3(cg_context_t *ctx,
+cg_primitive_new_p3(cg_device_t *dev,
                     cg_vertices_mode_t mode,
                     int n_vertices,
                     const cg_vertex_p3_t *data)
 {
     cg_attribute_buffer_t *attribute_buffer =
-        cg_attribute_buffer_new(ctx, n_vertices * sizeof(cg_vertex_p3_t), data);
+        cg_attribute_buffer_new(dev, n_vertices * sizeof(cg_vertex_p3_t),
+                                data);
     cg_attribute_t *attributes[1];
 
     attributes[0] = cg_attribute_new(attribute_buffer,
@@ -173,13 +175,14 @@ cg_primitive_new_p3(cg_context_t *ctx,
 }
 
 cg_primitive_t *
-cg_primitive_new_p2c4(cg_context_t *ctx,
+cg_primitive_new_p2c4(cg_device_t *dev,
                       cg_vertices_mode_t mode,
                       int n_vertices,
                       const cg_vertex_p2c4_t *data)
 {
-    cg_attribute_buffer_t *attribute_buffer = cg_attribute_buffer_new(
-        ctx, n_vertices * sizeof(cg_vertex_p2c4_t), data);
+    cg_attribute_buffer_t *attribute_buffer = cg_attribute_buffer_new(dev,
+                                                                      n_vertices * sizeof(cg_vertex_p2c4_t),
+                                                                      data);
     cg_attribute_t *attributes[2];
 
     attributes[0] = cg_attribute_new(attribute_buffer,
@@ -202,13 +205,14 @@ cg_primitive_new_p2c4(cg_context_t *ctx,
 }
 
 cg_primitive_t *
-cg_primitive_new_p3c4(cg_context_t *ctx,
+cg_primitive_new_p3c4(cg_device_t *dev,
                       cg_vertices_mode_t mode,
                       int n_vertices,
                       const cg_vertex_p3c4_t *data)
 {
-    cg_attribute_buffer_t *attribute_buffer = cg_attribute_buffer_new(
-        ctx, n_vertices * sizeof(cg_vertex_p3c4_t), data);
+    cg_attribute_buffer_t *attribute_buffer = cg_attribute_buffer_new(dev,
+                                                                      n_vertices * sizeof(cg_vertex_p3c4_t),
+                                                                      data);
     cg_attribute_t *attributes[2];
 
     attributes[0] = cg_attribute_new(attribute_buffer,
@@ -231,13 +235,14 @@ cg_primitive_new_p3c4(cg_context_t *ctx,
 }
 
 cg_primitive_t *
-cg_primitive_new_p2t2(cg_context_t *ctx,
+cg_primitive_new_p2t2(cg_device_t *dev,
                       cg_vertices_mode_t mode,
                       int n_vertices,
                       const cg_vertex_p2t2_t *data)
 {
-    cg_attribute_buffer_t *attribute_buffer = cg_attribute_buffer_new(
-        ctx, n_vertices * sizeof(cg_vertex_p2t2_t), data);
+    cg_attribute_buffer_t *attribute_buffer = cg_attribute_buffer_new(dev,
+                                                                      n_vertices * sizeof(cg_vertex_p2t2_t),
+                                                                      data);
     cg_attribute_t *attributes[2];
 
     attributes[0] = cg_attribute_new(attribute_buffer,
@@ -260,13 +265,14 @@ cg_primitive_new_p2t2(cg_context_t *ctx,
 }
 
 cg_primitive_t *
-cg_primitive_new_p3t2(cg_context_t *ctx,
+cg_primitive_new_p3t2(cg_device_t *dev,
                       cg_vertices_mode_t mode,
                       int n_vertices,
                       const cg_vertex_p3t2_t *data)
 {
-    cg_attribute_buffer_t *attribute_buffer = cg_attribute_buffer_new(
-        ctx, n_vertices * sizeof(cg_vertex_p3t2_t), data);
+    cg_attribute_buffer_t *attribute_buffer = cg_attribute_buffer_new(dev,
+                                                                      n_vertices * sizeof(cg_vertex_p3t2_t),
+                                                                      data);
     cg_attribute_t *attributes[2];
 
     attributes[0] = cg_attribute_new(attribute_buffer,
@@ -289,13 +295,14 @@ cg_primitive_new_p3t2(cg_context_t *ctx,
 }
 
 cg_primitive_t *
-cg_primitive_new_p2t2c4(cg_context_t *ctx,
+cg_primitive_new_p2t2c4(cg_device_t *dev,
                         cg_vertices_mode_t mode,
                         int n_vertices,
                         const cg_vertex_p2t2c4_t *data)
 {
-    cg_attribute_buffer_t *attribute_buffer = cg_attribute_buffer_new(
-        ctx, n_vertices * sizeof(cg_vertex_p2t2c4_t), data);
+    cg_attribute_buffer_t *attribute_buffer = cg_attribute_buffer_new(dev,
+                                                                      n_vertices * sizeof(cg_vertex_p2t2c4_t),
+                                                                      data);
     cg_attribute_t *attributes[3];
 
     attributes[0] = cg_attribute_new(attribute_buffer,
@@ -324,13 +331,14 @@ cg_primitive_new_p2t2c4(cg_context_t *ctx,
 }
 
 cg_primitive_t *
-cg_primitive_new_p3t2c4(cg_context_t *ctx,
+cg_primitive_new_p3t2c4(cg_device_t *dev,
                         cg_vertices_mode_t mode,
                         int n_vertices,
                         const cg_vertex_p3t2c4_t *data)
 {
-    cg_attribute_buffer_t *attribute_buffer = cg_attribute_buffer_new(
-        ctx, n_vertices * sizeof(cg_vertex_p3t2c4_t), data);
+    cg_attribute_buffer_t *attribute_buffer = cg_attribute_buffer_new(dev,
+                                                                      n_vertices * sizeof(cg_vertex_p3t2c4_t),
+                                                                      data);
     cg_attribute_t *attributes[3];
 
     attributes[0] = cg_attribute_new(attribute_buffer,

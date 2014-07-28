@@ -46,7 +46,7 @@ CG_BEGIN_DECLS
 
 /**
  * cg_egl_context_get_egl_display:
- * @context: A #cg_context_t pointer
+ * @dev: A #cg_device_t pointer
  *
  * If you have done a runtime check to determine that Cogl is using
  * EGL internally then this API can be used to retrieve the EGLDisplay
@@ -56,7 +56,7 @@ CG_BEGIN_DECLS
  * Return value: The internally setup EGLDisplay handle.
  * Stability: unstable
  */
-EGLDisplay cg_egl_context_get_egl_display(cg_context_t *context);
+EGLDisplay cg_egl_context_get_egl_display(cg_device_t *dev);
 
 CG_END_DECLS
 

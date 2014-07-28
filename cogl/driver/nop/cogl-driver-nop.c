@@ -35,7 +35,7 @@
 #include <string.h>
 
 #include "cogl-private.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-feature-private.h"
 #include "cogl-renderer-private.h"
 #include "cogl-error-private.h"
@@ -45,11 +45,11 @@
 #include "cogl-clip-stack-nop-private.h"
 
 static bool
-_cg_driver_update_features(cg_context_t *ctx, cg_error_t **error)
+_cg_driver_update_features(cg_device_t *dev, cg_error_t **error)
 {
-    /* _cg_gpc_info_init (ctx, &ctx->gpu); */
+    /* _cg_gpc_info_init (dev, &dev->gpu); */
 
-    memset(ctx->private_features, 0, sizeof(ctx->private_features));
+    memset(dev->private_features, 0, sizeof(dev->private_features));
 
     return true;
 }

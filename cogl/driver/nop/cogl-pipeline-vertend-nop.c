@@ -29,12 +29,12 @@
 
 #include <config.h>
 
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-pipeline-private.h"
 #include "cogl-pipeline-state-private.h"
 #include "cogl-framebuffer-private.h"
 
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-object-private.h"
 
 const cg_pipeline_vertend_t _cg_pipeline_nop_vertend;

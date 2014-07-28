@@ -47,7 +47,7 @@
 
 #include "cogl-private.h"
 #include "cogl-util.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-object.h"
 #include "cogl-pixel-buffer-private.h"
 #include "cogl-pixel-buffer.h"
@@ -72,7 +72,7 @@ static void _cg_pixel_buffer_free(cg_pixel_buffer_t *buffer);
 
 CG_BUFFER_DEFINE(PixelBuffer, pixel_buffer)
 
-cg_pixel_buffer_t *cg_pixel_buffer_new(cg_context_t *context,
+cg_pixel_buffer_t *cg_pixel_buffer_new(cg_device_t *dev,
                                        size_t size,
                                        const void *data,
                                        cg_error_t **error)
@@ -82,7 +82,7 @@ cg_pixel_buffer_t *cg_pixel_buffer_new(cg_context_t *context,
 
     /* parent's constructor */
     _cg_buffer_initialize(buffer,
-                          context,
+                          dev,
                           size,
                           CG_BUFFER_BIND_TARGET_PIXEL_UNPACK,
                           CG_BUFFER_USAGE_HINT_TEXTURE,

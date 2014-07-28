@@ -82,7 +82,7 @@ typedef struct _cg_display_t cg_display_t;
  * application.
  *
  * <note>Many applications don't need to explicitly use
- * cg_display_new() and can just jump straight to cg_context_new()
+ * cg_display_new() and can just jump straight to cg_device_new()
  * and pass a %NULL display argument so Cogl will automatically
  * connect and setup a renderer and display.</note>
  *
@@ -102,7 +102,7 @@ typedef struct _cg_display_t cg_display_t;
  * When you have finished configuring a display object you can
  * optionally call cg_display_setup() to explicitly apply the
  * configuration and check for errors. Alternaitvely you can pass the
- * display to cg_context_new() and Cogl will implicitly apply your
+ * display to cg_device_new() and Cogl will implicitly apply your
  * configuration but if there are errors then the application will
  * abort with a message. For simple applications with no fallback
  * options then relying on the implicit setup can be fine.

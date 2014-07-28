@@ -39,7 +39,7 @@
 
 #include "cogl-object-private.h"
 #include "cogl-buffer.h"
-#include "cogl-context.h"
+#include "cogl-device.h"
 #include "cogl-gl-header.h"
 
 CG_BEGIN_DECLS
@@ -87,7 +87,7 @@ typedef enum {
 struct _cg_buffer_t {
     cg_object_t _parent;
 
-    cg_context_t *context;
+    cg_device_t *dev;
 
     cg_buffer_vtable_t vtable;
 
@@ -120,7 +120,7 @@ void _cg_buffer_register_buffer_type(const cg_object_class_t *klass);
         _cg_buffer_register_buffer_type(&_cg_##type_name##_class))
 
 void _cg_buffer_initialize(cg_buffer_t *buffer,
-                           cg_context_t *context,
+                           cg_device_t *dev,
                            size_t size,
                            cg_buffer_bind_target_t default_target,
                            cg_buffer_usage_hint_t usage_hint,

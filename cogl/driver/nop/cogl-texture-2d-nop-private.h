@@ -35,12 +35,12 @@
 #define _CG_TEXTURE_2D_NOP_PRIVATE_H_
 
 #include "cogl-types.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-texture.h"
 
 void _cg_texture_2d_nop_free(cg_texture_2d_t *tex_2d);
 
-bool _cg_texture_2d_nop_can_create(cg_context_t *ctx,
+bool _cg_texture_2d_nop_can_create(cg_device_t *dev,
                                    int width,
                                    int height,
                                    cg_pixel_format_t internal_format);

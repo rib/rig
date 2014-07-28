@@ -35,7 +35,7 @@
 #ifndef _CG_ATLAS_TEXTURE_H_
 #define _CG_ATLAS_TEXTURE_H_
 
-#include <cogl/cogl-context.h>
+#include <cogl/cogl-device.h>
 
 CG_BEGIN_DECLS
 
@@ -51,7 +51,7 @@ CG_BEGIN_DECLS
  * sample from.  This can enable more geometry to be batched together
  * into few draw calls.
  *
- * Each #cg_context_t has an shared, pool of texture atlases that are
+ * Each #cg_device_t has an shared, pool of texture atlases that are
  * are managed by Cogl.
  *
  * This api lets applications upload texture data into one of Cogl's
@@ -68,7 +68,7 @@ typedef struct _cg_atlas_texture_t cg_atlas_texture_t;
 
 /**
  * cg_atlas_texture_new_with_size:
- * @ctx: A #cg_context_t
+ * @dev: A #cg_device_t
  * @width: The width of your atlased texture.
  * @height: The height of your atlased texture.
  *
@@ -98,11 +98,11 @@ typedef struct _cg_atlas_texture_t cg_atlas_texture_t;
  * Stability: unstable
  */
 cg_atlas_texture_t *
-cg_atlas_texture_new_with_size(cg_context_t *ctx, int width, int height);
+cg_atlas_texture_new_with_size(cg_device_t *dev, int width, int height);
 
 /**
  * cg_atlas_texture_new_from_file:
- * @ctx: A #cg_context_t
+ * @dev: A #cg_device_t
  * @filename: the file to load
  * @error: A #cg_error_t to catch exceptional errors or %NULL
  *
@@ -132,13 +132,13 @@ cg_atlas_texture_new_with_size(cg_context_t *ctx, int width, int height);
  *          %NULL on failure and @error will be updated.
  * Stability: unstable
  */
-cg_atlas_texture_t *cg_atlas_texture_new_from_file(cg_context_t *ctx,
+cg_atlas_texture_t *cg_atlas_texture_new_from_file(cg_device_t *dev,
                                                    const char *filename,
                                                    cg_error_t **error);
 
 /**
  * cg_atlas_texture_new_from_data:
- * @ctx: A #cg_context_t
+ * @dev: A #cg_device_t
  * @width: width of texture in pixels
  * @height: height of texture in pixels
  * @format: the #cg_pixel_format_t the buffer is stored in in RAM
@@ -175,7 +175,7 @@ cg_atlas_texture_t *cg_atlas_texture_new_from_file(cg_context_t *ctx,
  *          %NULL on failure and @error will be updated.
  * Stability: unstable
  */
-cg_atlas_texture_t *cg_atlas_texture_new_from_data(cg_context_t *ctx,
+cg_atlas_texture_t *cg_atlas_texture_new_from_data(cg_device_t *dev,
                                                    int width,
                                                    int height,
                                                    cg_pixel_format_t format,

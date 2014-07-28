@@ -74,7 +74,7 @@ struct _cg_attribute_t {
             cg_attribute_type_t type;
         } buffered;
         struct {
-            cg_context_t *context;
+            cg_device_t *dev;
             cg_boxed_value_t boxed;
         } constant;
     } d;
@@ -98,14 +98,14 @@ typedef enum {
     CG_DRAW_SKIP_DEBUG_WIREFRAME = 1 << 4
 } cg_draw_flags_t;
 
-/* During cg_context_t initialization we register the "cg_color_in"
+/* During cg_device_t initialization we register the "cg_color_in"
  * attribute name so it gets a global name_index of 0. We need to know
  * the name_index for "cg_color_in" in
  * _cg_pipeline_flush_gl_state() */
 #define CG_ATTRIBUTE_COLOR_NAME_INDEX 0
 
 cg_attribute_name_state_t *
-_cg_attribute_register_attribute_name(cg_context_t *context, const char *name);
+_cg_attribute_register_attribute_name(cg_device_t *dev, const char *name);
 
 cg_attribute_t *_cg_attribute_immutable_ref(cg_attribute_t *attribute);
 

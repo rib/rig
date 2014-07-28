@@ -69,7 +69,7 @@ struct _cg_texture_2d_t {
 /* NB: The reason we require the width, height and format to be passed
  * even though they may seem redundant is because GLES 1/2 don't
  * provide a way to query these properties. */
-cg_texture_2d_t *_cg_egl_texture_2d_new_from_image(cg_context_t *ctx,
+cg_texture_2d_t *_cg_egl_texture_2d_new_from_image(cg_device_t *dev,
                                                    int width,
                                                    int height,
                                                    cg_pixel_format_t format,
@@ -77,7 +77,7 @@ cg_texture_2d_t *_cg_egl_texture_2d_new_from_image(cg_context_t *ctx,
                                                    cg_error_t **error);
 #endif
 
-cg_texture_2d_t *_cg_texture_2d_create_base(cg_context_t *ctx,
+cg_texture_2d_t *_cg_texture_2d_create_base(cg_device_t *dev,
                                             int width,
                                             int height,
                                             cg_pixel_format_t internal_format,

@@ -33,7 +33,7 @@
 #endif
 
 #include "cogl-debug.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-journal-private.h"
 #include "cogl-texture-private.h"
 #include "cogl-pipeline-private.h"
@@ -96,7 +96,7 @@
 #define CG_JOURNAL_HARDWARE_CLIP_THRESHOLD 8
 
 typedef struct _cg_journal_flush_state_t {
-    cg_context_t *ctx;
+    cg_device_t *dev;
 
     cg_journal_t *journal;
 
@@ -289,7 +289,7 @@ _cg_journal_flush_modelview_and_entries(
     cg_journal_entry_t *batch_start, int batch_len, void *data)
 {
     cg_journal_flush_state_t *state = data;
-    cg_context_t *ctx = state->ctx;
+    cg_device_t *dev = state->dev;
     cg_framebuffer_t *framebuffer = state->journal->framebuffer;
     cg_attribute_t **attributes;
     cg_draw_flags_t draw_flags =
@@ -308,7 +308,7 @@ _cg_journal_flush_modelview_and_entries(
         c_print("BATCHING:     modelview batch len = %d\n", batch_len);
 
     if (C_UNLIKELY(CG_DEBUG_ENABLED(CG_DEBUG_DISABLE_SOFTWARE_TRANSFORM)))
-        _cg_context_set_current_modelview_entry(ctx,
+        _cg_device_set_current_modelview_entry(dev,
                                                 batch_start->modelview_entry);
 
     attributes = (cg_attribute_t **)state->attributes->data;
@@ -317,7 +317,7 @@ _cg_journal_flush_modelview_and_entries(
         draw_flags |= CG_DRAW_COLOR_ATTRIBUTE_IS_OPAQUE;
 
 #ifdef HAVE_CG_GL
-    if (_cg_has_private_feature(ctx, CG_PRIVATE_FEATURE_QUADS)) {
+    if (_cg_has_private_feature(dev, CG_PRIVATE_FEATURE_QUADS)) {
         /* XXX: it's rather evil that we sneak in the GL_QUADS enum here... */
         _cg_framebuffer_draw_attributes(framebuffer,
                                         state->pipeline,
@@ -367,7 +367,7 @@ _cg_journal_flush_modelview_and_entries(
         cg_attribute_t *loop_attributes[1];
 
         if (outline == NULL)
-            outline = cg_pipeline_new(ctx);
+            outline = cg_pipeline_new(dev);
 
         /* The least significant three bits represent the three
            components so that the order of colours goes red, green,
@@ -376,12 +376,12 @@ _cg_journal_flush_modelview_and_entries(
            in the order 0xff, 0xcc, 0x99, and 0x66. This gives a total
            of 24 colours. If there are more than 24 batches on the stage
            then it will wrap around */
-        color_intensity = 0xff - 0x33 * (ctx->journal_rectangles_color >> 3);
+        color_intensity = 0xff - 0x33 * (dev->journal_rectangles_color >> 3);
         cg_pipeline_set_color4ub(
             outline,
-            (ctx->journal_rectangles_color & 1) ? color_intensity : 0,
-            (ctx->journal_rectangles_color & 2) ? color_intensity : 0,
-            (ctx->journal_rectangles_color & 4) ? color_intensity : 0,
+            (dev->journal_rectangles_color & 1) ? color_intensity : 0,
+            (dev->journal_rectangles_color & 2) ? color_intensity : 0,
+            (dev->journal_rectangles_color & 4) ? color_intensity : 0,
             0xff);
 
         loop_attributes[0] = attributes[0]; /* we just want the position */
@@ -397,11 +397,11 @@ _cg_journal_flush_modelview_and_entries(
 
         /* Go to the next color */
         do
-            ctx->journal_rectangles_color =
-                ((ctx->journal_rectangles_color + 1) & ((1 << 5) - 1));
+            dev->journal_rectangles_color =
+                ((dev->journal_rectangles_color + 1) & ((1 << 5) - 1));
         /* We don't want to use black or white */
-        while ((ctx->journal_rectangles_color & 0x07) == 0 ||
-               (ctx->journal_rectangles_color & 0x07) == 0x07);
+        while ((dev->journal_rectangles_color & 0x07) == 0 ||
+               (dev->journal_rectangles_color & 0x07) == 0x07);
     }
 
     state->current_vertex += (4 * batch_len);
@@ -576,7 +576,7 @@ _cg_journal_flush_vbo_offsets_and_entries(
     cg_journal_entry_t *batch_start, int batch_len, void *data)
 {
     cg_journal_flush_state_t *state = data;
-    cg_context_t *ctx = state->journal->framebuffer->context;
+    cg_device_t *dev = state->journal->framebuffer->dev;
     size_t stride;
     int i;
     cg_attribute_t **attribute_entry;
@@ -626,8 +626,8 @@ _cg_journal_flush_vbo_offsets_and_entries(
                                         4,
                                         CG_ATTRIBUTE_TYPE_UNSIGNED_BYTE);
 
-    if (!_cg_has_private_feature(ctx, CG_PRIVATE_FEATURE_QUADS))
-        state->indices = cg_get_rectangle_indices(ctx, batch_len);
+    if (!_cg_has_private_feature(dev, CG_PRIVATE_FEATURE_QUADS))
+        state->indices = cg_get_rectangle_indices(dev, batch_len);
 
     /* We only create new Attributes when the stride within the
      * AttributeBuffer changes. (due to a change in the number of pipeline
@@ -692,7 +692,7 @@ _cg_journal_flush_clip_stacks_and_entries(
 {
     cg_journal_flush_state_t *state = data;
     cg_framebuffer_t *framebuffer = state->journal->framebuffer;
-    cg_context_t *ctx = framebuffer->context;
+    cg_device_t *dev = framebuffer->dev;
     cg_matrix_stack_t *projection_stack;
 
     CG_STATIC_TIMER(time_flush_clip_stack_pipeline_entries,
@@ -713,7 +713,7 @@ _cg_journal_flush_clip_stacks_and_entries(
      * make sure that the clip state gets updated the next time we flush
      * framebuffer state by marking the current framebuffer's clip state
      * as changed. */
-    ctx->current_draw_buffer_changes |= CG_FRAMEBUFFER_STATE_CLIP;
+    dev->current_draw_buffer_changes |= CG_FRAMEBUFFER_STATE_CLIP;
 
     /* If we have transformed all our quads at log time then we ensure
      * no further model transform is applied by loading the identity
@@ -721,13 +721,13 @@ _cg_journal_flush_clip_stacks_and_entries(
      * because the clip stack flushing code can modify the current
      * modelview matrix entry */
     if (C_LIKELY(!(CG_DEBUG_ENABLED(CG_DEBUG_DISABLE_SOFTWARE_TRANSFORM))))
-        _cg_context_set_current_modelview_entry(ctx, &ctx->identity_entry);
+        _cg_device_set_current_modelview_entry(dev, &dev->identity_entry);
 
     /* Setting up the clip state can sometimes also update the current
      * projection matrix entry so we should update it again. This will have
      * no affect if the clip code didn't modify the projection */
     projection_stack = _cg_framebuffer_get_projection_stack(framebuffer);
-    _cg_context_set_current_projection_entry(ctx, projection_stack->last_entry);
+    _cg_device_set_current_projection_entry(dev, projection_stack->last_entry);
 
     batch_and_call(batch_start,
                    batch_len,
@@ -900,7 +900,7 @@ maybe_software_clip_entries(cg_journal_entry_t *batch_start,
                             int batch_len,
                             cg_journal_flush_state_t *state)
 {
-    cg_context_t *ctx;
+    cg_device_t *dev;
     cg_journal_t *journal;
     cg_clip_stack_t *clip_stack, *clip_entry;
     int entry_num;
@@ -926,7 +926,7 @@ maybe_software_clip_entries(cg_journal_entry_t *batch_start,
         if (clip_entry->type != CG_CLIP_STACK_RECT)
             return;
 
-    ctx = state->ctx;
+    dev = state->dev;
     journal = state->journal;
 
     /* This scratch buffer is used to store the translation for each
@@ -934,17 +934,18 @@ maybe_software_clip_entries(cg_journal_entry_t *batch_start,
        it's expensive to calculate but at this point we still don't know
        whether we can clip all of the entries so we don't want to do the
        rest of the dependant calculations until we're sure we can. */
-    if (ctx->journal_clip_bounds == NULL)
-        ctx->journal_clip_bounds =
+    if (dev->journal_clip_bounds == NULL)
+        dev->journal_clip_bounds =
             c_array_new(false, false, sizeof(clip_bounds_t));
-    c_array_set_size(ctx->journal_clip_bounds, batch_len);
+    c_array_set_size(dev->journal_clip_bounds, batch_len);
 
     for (entry_num = 0; entry_num < batch_len; entry_num++) {
         cg_journal_entry_t *journal_entry = batch_start + entry_num;
         cg_journal_entry_t *prev_journal_entry =
             entry_num ? batch_start + (entry_num - 1) : NULL;
         clip_bounds_t *clip_bounds =
-            &c_array_index(ctx->journal_clip_bounds, clip_bounds_t, entry_num);
+            &c_array_index(dev->journal_clip_bounds, clip_bounds_t,
+                           entry_num);
 
         if (!can_software_clip_entry(
                 journal_entry, prev_journal_entry, clip_stack, clip_bounds))
@@ -961,7 +962,8 @@ maybe_software_clip_entries(cg_journal_entry_t *batch_start,
                                       float,
                                       journal_entry->array_offset + 1);
         clip_bounds_t *clip_bounds =
-            &c_array_index(ctx->journal_clip_bounds, clip_bounds_t, entry_num);
+            &c_array_index(dev->journal_clip_bounds, clip_bounds_t,
+                           entry_num);
 
         software_clip_entry(journal_entry, verts, clip_bounds);
     }
@@ -1002,23 +1004,23 @@ create_attribute_buffer(cg_journal_t *journal,
                         size_t n_bytes)
 {
     cg_attribute_buffer_t *vbo;
-    cg_context_t *ctx = journal->framebuffer->context;
+    cg_device_t *dev = journal->framebuffer->dev;
 
     /* If cg_buffer_ts are being emulated with malloc then there's not
        really any point in using the pool so we'll just allocate the
        buffer directly */
-    if (!_cg_has_private_feature(ctx, CG_PRIVATE_FEATURE_VBOS))
-        return cg_attribute_buffer_new_with_size(ctx, n_bytes);
+    if (!_cg_has_private_feature(dev, CG_PRIVATE_FEATURE_VBOS))
+        return cg_attribute_buffer_new_with_size(dev, n_bytes);
 
     vbo = journal->vbo_pool[journal->next_vbo_in_pool];
 
     if (vbo == NULL) {
-        vbo = cg_attribute_buffer_new_with_size(ctx, n_bytes);
+        vbo = cg_attribute_buffer_new_with_size(dev, n_bytes);
         journal->vbo_pool[journal->next_vbo_in_pool] = vbo;
     } else if (cg_buffer_get_size(CG_BUFFER(vbo)) < n_bytes) {
         /* If the buffer is too small then we'll just recreate it */
         cg_object_unref(vbo);
-        vbo = cg_attribute_buffer_new_with_size(ctx, n_bytes);
+        vbo = cg_attribute_buffer_new_with_size(dev, n_bytes);
         journal->vbo_pool[journal->next_vbo_in_pool] = vbo;
     }
 
@@ -1230,7 +1232,7 @@ void
 _cg_journal_flush(cg_journal_t *journal)
 {
     cg_framebuffer_t *framebuffer;
-    cg_context_t *ctx;
+    cg_device_t *dev;
     cg_journal_flush_state_t state;
     int i;
     CG_STATIC_TIMER(flush_timer,
@@ -1250,7 +1252,7 @@ _cg_journal_flush(cg_journal_t *journal)
     }
 
     framebuffer = journal->framebuffer;
-    ctx = framebuffer->context;
+    dev = framebuffer->dev;
 
     /* The entries in this journal may depend on images in other
      * framebuffers which may require that we flush the journals
@@ -1275,12 +1277,12 @@ _cg_journal_flush(cg_journal_t *journal)
 
     /* We need to mark the current modelview state of the framebuffer as
      * dirty because we are going to manually replace it */
-    ctx->current_draw_buffer_changes |= CG_FRAMEBUFFER_STATE_MODELVIEW;
+    dev->current_draw_buffer_changes |= CG_FRAMEBUFFER_STATE_MODELVIEW;
 
-    state.ctx = ctx;
+    state.dev = dev;
     state.journal = journal;
 
-    state.attributes = ctx->journal_flush_attributes_array;
+    state.attributes = dev->journal_flush_attributes_array;
 
     if (C_UNLIKELY((CG_DEBUG_ENABLED(CG_DEBUG_DISABLE_SOFTWARE_CLIP)) == 0)) {
         /* We do an initial walk of the journal to analyse the clip stack
@@ -1660,7 +1662,7 @@ _cg_journal_try_read_pixel(cg_journal_t *journal,
                            cg_bitmap_t *bitmap,
                            bool *found_intersection)
 {
-    cg_context_t *ctx;
+    cg_device_t *dev;
     cg_pixel_format_t format;
     int i;
 
@@ -1681,7 +1683,7 @@ _cg_journal_try_read_pixel(cg_journal_t *journal,
         format != CG_PIXEL_FORMAT_RGBA_8888)
         return false;
 
-    ctx = _cg_bitmap_get_context(bitmap);
+    dev = _cg_bitmap_get_context(bitmap);
 
     *found_intersection = false;
 
@@ -1725,8 +1727,7 @@ _cg_journal_try_read_pixel(cg_journal_t *journal,
         /* If we find that the rectangle the point of interest
          * intersects has any state more complex than a constant opaque
          * color then we bail out. */
-        if (!_cg_pipeline_equal(
-                ctx->opaque_color_pipeline,
+        if (!_cg_pipeline_equal(dev->opaque_color_pipeline,
                 entry->pipeline,
                 (CG_PIPELINE_STATE_ALL & ~CG_PIPELINE_STATE_COLOR),
                 CG_PIPELINE_LAYER_STATE_ALL,

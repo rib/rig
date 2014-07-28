@@ -38,7 +38,7 @@
 #include <clib.h>
 
 #include "cogl-clip-stack.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-framebuffer-private.h"
 #include "cogl-journal-private.h"
 #include "cogl-util.h"
@@ -382,7 +382,7 @@ _cg_clip_stack_get_bounds(cg_clip_stack_t *stack,
 void
 _cg_clip_stack_flush(cg_clip_stack_t *stack, cg_framebuffer_t *framebuffer)
 {
-    cg_context_t *ctx = framebuffer->context;
+    cg_device_t *dev = framebuffer->dev;
 
-    ctx->driver_vtable->clip_stack_flush(stack, framebuffer);
+    dev->driver_vtable->clip_stack_flush(stack, framebuffer);
 }

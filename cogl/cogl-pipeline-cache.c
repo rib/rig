@@ -37,7 +37,7 @@
 
 #include <test-fixtures/test-unit.h>
 
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-pipeline-private.h"
 #include "cogl-pipeline-cache.h"
 #include "cogl-pipeline-hash-table.h"
@@ -57,13 +57,13 @@ _cg_pipeline_cache_new(void)
     unsigned int fragment_state;
     unsigned int layer_fragment_state;
 
-    _CG_GET_CONTEXT(ctx, 0);
+    _CG_GET_DEVICE(dev, 0);
 
-    vertex_state = _cg_pipeline_get_state_for_vertex_codegen(ctx);
+    vertex_state = _cg_pipeline_get_state_for_vertex_codegen(dev);
     layer_vertex_state = CG_PIPELINE_LAYER_STATE_AFFECTS_VERTEX_CODEGEN;
-    fragment_state = _cg_pipeline_get_state_for_fragment_codegen(ctx);
+    fragment_state = _cg_pipeline_get_state_for_fragment_codegen(dev);
     layer_fragment_state =
-        _cg_pipeline_get_layer_state_for_fragment_codegen(ctx);
+        _cg_pipeline_get_layer_state_for_fragment_codegen(dev);
 
     _cg_pipeline_hash_table_init(&cache->vertex_hash,
                                  vertex_state,
@@ -128,7 +128,7 @@ create_pipelines(cg_pipeline_t **pipelines, int n_pipelines)
 
         c_free(source);
 
-        pipelines[i] = cg_pipeline_new(test_ctx);
+        pipelines[i] = cg_pipeline_new(test_dev);
         cg_pipeline_add_snippet(pipelines[i], snippet);
         cg_object_unref(snippet);
     }
@@ -148,9 +148,9 @@ UNIT_TEST(check_pipeline_pruning,
     cg_pipeline_t *pipelines[18];
     int fb_width, fb_height;
     cg_pipeline_hash_table_t *fragment_hash =
-        &test_ctx->pipeline_cache->fragment_hash;
+        &test_dev->pipeline_cache->fragment_hash;
     cg_pipeline_hash_table_t *combined_hash =
-        &test_ctx->pipeline_cache->combined_hash;
+        &test_dev->pipeline_cache->combined_hash;
     int i;
 
     fb_width = cg_framebuffer_get_width(test_fb);

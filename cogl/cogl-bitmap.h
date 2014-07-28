@@ -41,7 +41,7 @@ typedef struct _cg_bitmap_t cg_bitmap_t;
 
 #include <cogl/cogl-types.h>
 #include <cogl/cogl-buffer.h>
-#include <cogl/cogl-context.h>
+#include <cogl/cogl-device.h>
 #include <cogl/cogl-pixel-buffer.h>
 
 #ifdef CG_HAS_ANDROID_SUPPORT
@@ -62,7 +62,7 @@ CG_BEGIN_DECLS
 
 /**
  * cg_bitmap_new_from_file:
- * @context: A #cg_context_t
+ * @dev: A #cg_device_t
  * @filename: the file to load.
  * @error: a #cg_error_t or %NULL.
  *
@@ -73,14 +73,14 @@ CG_BEGIN_DECLS
  *               image data, or %NULL if loading the image failed.
  *
  */
-cg_bitmap_t *cg_bitmap_new_from_file(cg_context_t *context,
+cg_bitmap_t *cg_bitmap_new_from_file(cg_device_t *dev,
                                      const char *filename,
                                      cg_error_t **error);
 
 #ifdef CG_HAS_ANDROID_SUPPORT
 /**
  * cg_android_bitmap_new_from_asset:
- * @context: A #cg_context_t
+ * @dev: A #cg_device_t
  * @manager: An Android Asset Manager.
  * @filename: The file name for the asset
  * @error: A return location for a cg_error_t exception.
@@ -91,7 +91,7 @@ cg_bitmap_t *cg_bitmap_new_from_file(cg_context_t *context,
  *               holding the image data of the specified asset.
  *
  */
-cg_bitmap_t *cg_android_bitmap_new_from_asset(cg_context_t *context,
+cg_bitmap_t *cg_android_bitmap_new_from_asset(cg_device_t *dev,
                                               AAssetManager *manager,
                                               const char *filename,
                                               cg_error_t **error);
@@ -125,7 +125,7 @@ cg_bitmap_t *cg_bitmap_new_from_buffer(cg_buffer_t *buffer,
 
 /**
  * cg_bitmap_new_with_size:
- * @context: A #cg_context_t
+ * @dev: A #cg_device_t
  * @width: width of the bitmap in pixels
  * @height: height of the bitmap in pixels
  * @format: the format of the pixels the array will store
@@ -151,14 +151,14 @@ cg_bitmap_t *cg_bitmap_new_from_buffer(cg_buffer_t *buffer,
  *
  * Stability: Unstable
  */
-cg_bitmap_t *cg_bitmap_new_with_size(cg_context_t *context,
+cg_bitmap_t *cg_bitmap_new_with_size(cg_device_t *dev,
                                      int width,
                                      int height,
                                      cg_pixel_format_t format);
 
 /**
  * cg_bitmap_new_for_data:
- * @context: A #cg_context_t
+ * @dev: A #cg_device_t
  * @width: The width of the bitmap.
  * @height: The height of the bitmap.
  * @format: The format of the pixel data.
@@ -175,7 +175,7 @@ cg_bitmap_t *cg_bitmap_new_with_size(cg_context_t *context,
  * Return value: (transfer full): A new #cg_bitmap_t.
  * Stability: unstable
  */
-cg_bitmap_t *cg_bitmap_new_for_data(cg_context_t *context,
+cg_bitmap_t *cg_bitmap_new_for_data(cg_device_t *dev,
                                     int width,
                                     int height,
                                     cg_pixel_format_t format,

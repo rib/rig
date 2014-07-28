@@ -36,13 +36,13 @@
 #define __CG_GSOURCE_H__
 
 #include <glib.h>
-#include <cogl/cogl-context.h>
+#include <cogl/cogl-device.h>
 
 CG_BEGIN_DECLS
 
 /**
  * cg_glib_source_new:
- * @context: A #cg_context_t
+ * @dev: A #cg_device_t
  * @priority: The priority of the #GSource
  *
  * Creates a #GSource which handles Cogl's internal system event
@@ -53,7 +53,7 @@ CG_BEGIN_DECLS
  * c_source_attach().
  *
  * Applications that manually connect to a #cg_renderer_t before they
- * create a #cg_context_t should instead use
+ * create a #cg_device_t should instead use
  * cg_glib_renderer_source_new() so that events may be dispatched
  * before a context has been created. In that case you don't need to
  * use this api in addition later, it is simply enough to use
@@ -66,7 +66,7 @@ CG_BEGIN_DECLS
  *
  * Stability: unstable
  */
-GSource *cg_glib_source_new(cg_context_t *context, int priority);
+GSource *cg_glib_source_new(cg_device_t *dev, int priority);
 
 /**
  * cg_glib_renderer_source_new:

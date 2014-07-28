@@ -39,7 +39,7 @@
 #include "cogl-texture-private.h"
 #include "cogl-sub-texture-private.h"
 #include "cogl-sub-texture.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-object.h"
 #include "cogl-texture-driver.h"
 #include "cogl-texture-2d.h"
@@ -169,7 +169,7 @@ _cg_sub_texture_free(cg_sub_texture_t *sub_tex)
 }
 
 cg_sub_texture_t *
-cg_sub_texture_new(cg_context_t *ctx,
+cg_sub_texture_new(cg_device_t *dev,
                    cg_texture_t *next_texture,
                    int sub_x,
                    int sub_y,
@@ -195,7 +195,7 @@ cg_sub_texture_new(cg_context_t *ctx,
     tex = CG_TEXTURE(sub_tex);
 
     _cg_texture_init(tex,
-                     ctx,
+                     dev,
                      sub_width,
                      sub_height,
                      _cg_texture_get_format(next_texture),

@@ -41,7 +41,7 @@
 struct _cg_atlas_set_t {
     cg_object_t _parent;
 
-    cg_context_t *context;
+    cg_device_t *dev;
     c_slist_t *atlases;
 
     cg_texture_components_t components;

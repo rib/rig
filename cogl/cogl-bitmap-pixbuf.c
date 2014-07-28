@@ -32,7 +32,7 @@
 
 #include "cogl-util.h"
 #include "cogl-bitmap-private.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-private.h"
 #include "cogl-error-private.h"
 
@@ -60,7 +60,7 @@ _cg_bitmap_get_size_from_file(const char *filename, int *width, int *height)
 
 /* the error does not contain the filename as the caller already has it */
 cg_bitmap_t *
-_cg_bitmap_from_file(cg_context_t *ctx,
+_cg_bitmap_from_file(cg_device_t *dev,
                      const char *filename,
                      cg_error_t **error)
 {
@@ -122,8 +122,8 @@ _cg_bitmap_from_file(cg_context_t *ctx,
     }
 
     /* allocate buffer big enough to hold pixel data */
-    bmp = _cg_bitmap_new_with_malloc_buffer(
-        ctx, width, height, CG_PIXEL_FORMAT_ARGB_8888, error);
+    bmp = _cg_bitmap_new_with_malloc_buffer(dev, width, height,
+                                            CG_PIXEL_FORMAT_ARGB_8888, error);
     if (bmp == NULL) {
         CFRelease(image);
         return NULL;
@@ -179,7 +179,7 @@ _cg_bitmap_get_size_from_file(const char *filename, int *width, int *height)
 }
 
 cg_bitmap_t *
-_cg_bitmap_from_file(cg_context_t *ctx,
+_cg_bitmap_from_file(cg_device_t *dev,
                      const char *filename,
                      cg_error_t **error)
 {
@@ -240,7 +240,7 @@ _cg_bitmap_from_file(cg_context_t *ctx,
        to read past the end of bpp*width on the last row even if the
        rowstride is much larger so we don't need to worry about
        GdkPixbuf's semantics that it may under-allocate the buffer. */
-    bmp = cg_bitmap_new_for_data(ctx,
+    bmp = cg_bitmap_new_for_data(dev,
                                  width,
                                  height,
                                  pixel_format,
@@ -304,7 +304,7 @@ convert_ra_88_to_rgba_8888(uint8_t *pixels, int width, int height)
 }
 
 static cg_bitmap_t *
-_cg_bitmap_new_from_stb_pixels(cg_context_t *ctx,
+_cg_bitmap_new_from_stb_pixels(cg_device_t *dev,
                                uint8_t *pixels,
                                int stb_pixel_format,
                                int width,
@@ -361,7 +361,8 @@ _cg_bitmap_new_from_stb_pixels(cg_context_t *ctx,
     stride = width * _cg_pixel_format_get_bytes_per_pixel(cg_format);
 
     /* Store bitmap info */
-    bmp = cg_bitmap_new_for_data(ctx, width, height, cg_format, stride, pixels);
+    bmp = cg_bitmap_new_for_data(dev, width, height, cg_format, stride,
+                                 pixels);
 
     /* Register a destroy function so the pixel data will be freed
        automatically when the bitmap object is destroyed */
@@ -371,7 +372,7 @@ _cg_bitmap_new_from_stb_pixels(cg_context_t *ctx,
 }
 
 cg_bitmap_t *
-_cg_bitmap_from_file(cg_context_t *ctx,
+_cg_bitmap_from_file(cg_device_t *dev,
                      const char *filename,
                      cg_error_t **error)
 {
@@ -383,13 +384,13 @@ _cg_bitmap_from_file(cg_context_t *ctx,
     pixels =
         stbi_load(filename, &width, &height, &stb_pixel_format, STBI_default);
 
-    return _cg_bitmap_new_from_stb_pixels(
-        ctx, pixels, stb_pixel_format, width, height, error);
+    return _cg_bitmap_new_from_stb_pixels(dev, pixels, stb_pixel_format,
+                                          width, height, error);
 }
 
 #ifdef CG_HAS_ANDROID_SUPPORT
 cg_bitmap_t *
-_cg_android_bitmap_new_from_asset(cg_context_t *ctx,
+_cg_android_bitmap_new_from_asset(cg_device_t *dev,
                                   AAssetManager *manager,
                                   const char *filename,
                                   cg_error_t **error)
@@ -426,8 +427,8 @@ _cg_android_bitmap_new_from_asset(cg_context_t *ctx,
     pixels = stbi_load_from_memory(
         data, len, &width, &height, &stb_pixel_format, STBI_default);
 
-    bmp = _cg_bitmap_new_from_stb_pixels(
-        ctx, pixels, stb_pixel_format, width, height, error);
+    bmp = _cg_bitmap_new_from_stb_pixels(dev, pixels, stb_pixel_format,
+                                         width, height, error);
 
     AAsset_close(asset);
 

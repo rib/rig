@@ -31,7 +31,7 @@
 #ifndef __CG_GPU_INFO_PRIVATE_H
 #define __CG_GPU_INFO_PRIVATE_H
 
-#include "cogl-context.h"
+#include "cogl-device.h"
 
 typedef enum _cg_gpu_info_architecture_flag_t {
     CG_GPU_INFO_ARCHITECTURE_FLAG_VERTEX_IMMEDIATE_MODE,
@@ -98,12 +98,12 @@ struct _cg_gpu_info_t {
 
 /*
  * _cg_gpc_info_init:
- * @ctx: A #cg_context_t
+ * @dev: A #cg_device_t
  * @gpu: A return location for the GPU information
  *
  * Determines information about the GPU and driver from the given
  * context.
  */
-void _cg_gpc_info_init(cg_context_t *ctx, cg_gpu_info_t *gpu);
+void _cg_gpc_info_init(cg_device_t *dev, cg_gpu_info_t *gpu);
 
 #endif /* __CG_GPU_INFO_PRIVATE_H */

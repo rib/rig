@@ -150,8 +150,8 @@ flush_pending_swap_notify_cb(void *data, void *user_data)
 static void
 flush_pending_swap_notify_idle(void *user_data)
 {
-    cg_context_t *context = user_data;
-    cg_renderer_egl_t *egl_renderer = context->display->renderer->winsys;
+    cg_device_t *dev = user_data;
+    cg_renderer_egl_t *egl_renderer = dev->display->renderer->winsys;
     cg_renderer_kms_t *kms_renderer = egl_renderer->platform;
 
     /* This needs to be disconnected before invoking the callbacks in
@@ -159,7 +159,7 @@ flush_pending_swap_notify_idle(void *user_data)
     _cg_closure_disconnect(kms_renderer->swap_notify_idle);
     kms_renderer->swap_notify_idle = NULL;
 
-    c_list_foreach(context->framebuffers, flush_pending_swap_notify_cb, NULL);
+    c_list_foreach(dev->framebuffers, flush_pending_swap_notify_cb, NULL);
 }
 
 static void
@@ -167,8 +167,8 @@ free_current_bo(cg_onscreen_t *onscreen)
 {
     cg_onscreen_egl_t *egl_onscreen = onscreen->winsys;
     cg_onscreen_kms_t *kms_onscreen = egl_onscreen->platform;
-    cg_context_t *context = CG_FRAMEBUFFER(onscreen)->context;
-    cg_renderer_t *renderer = context->display->renderer;
+    cg_device_t *dev = CG_FRAMEBUFFER(onscreen)->dev;
+    cg_renderer_t *renderer = dev->display->renderer;
     cg_renderer_egl_t *egl_renderer = renderer->winsys;
     cg_renderer_kms_t *kms_renderer = egl_renderer->platform;
 
@@ -196,17 +196,17 @@ page_flip_handler(
         cg_onscreen_t *onscreen = flip->onscreen;
         cg_onscreen_egl_t *egl_onscreen = onscreen->winsys;
         cg_onscreen_kms_t *kms_onscreen = egl_onscreen->platform;
-        cg_context_t *context = CG_FRAMEBUFFER(onscreen)->context;
-        cg_renderer_t *renderer = context->display->renderer;
+        cg_device_t *dev = CG_FRAMEBUFFER(onscreen)->dev;
+        cg_renderer_t *renderer = dev->display->renderer;
         cg_renderer_egl_t *egl_renderer = renderer->winsys;
         cg_renderer_kms_t *kms_renderer = egl_renderer->platform;
 
         /* We only want to notify that the swap is complete when the
-         * application calls cg_context_dispatch so instead of
+         * application calls cg_device_dispatch so instead of
          * immediately notifying we queue an idle callback */
         if (!kms_renderer->swap_notify_idle) {
             kms_renderer->swap_notify_idle = _cg_poll_renderer_add_idle(
-                renderer, flush_pending_swap_notify_idle, context, NULL);
+                renderer, flush_pending_swap_notify_idle, dev, NULL);
         }
 
         kms_onscreen->pending_swap_notify = true;
@@ -228,12 +228,12 @@ page_flip_handler(
 static void
 handle_drm_event(cg_renderer_kms_t *kms_renderer)
 {
-    drmEventContext evctx;
+    drmEventContext evdev;
 
-    memset(&evctx, 0, sizeof evctx);
-    evctx.version = DRM_EVENT_CONTEXT_VERSION;
-    evctx.page_flip_handler = page_flip_handler;
-    drmHandleEvent(kms_renderer->fd, &evctx);
+    memset(&evdev, 0, sizeof evdev);
+    evdev.version = DRM_EVENT_CONTEXT_VERSION;
+    evdev.page_flip_handler = page_flip_handler;
+    drmHandleEvent(kms_renderer->fd, &evdev);
 }
 
 static void
@@ -796,10 +796,10 @@ static void
 _cg_winsys_onscreen_swap_buffers_with_damage(
     cg_onscreen_t *onscreen, const int *rectangles, int n_rectangles)
 {
-    cg_context_t *context = CG_FRAMEBUFFER(onscreen)->context;
-    cg_display_egl_t *egl_display = context->display->winsys;
+    cg_device_t *dev = CG_FRAMEBUFFER(onscreen)->dev;
+    cg_display_egl_t *egl_display = dev->display->winsys;
     cg_display_kms_t *kms_display = egl_display->platform;
-    cg_renderer_t *renderer = context->display->renderer;
+    cg_renderer_t *renderer = dev->display->renderer;
     cg_renderer_egl_t *egl_renderer = renderer->winsys;
     cg_renderer_kms_t *kms_renderer = egl_renderer->platform;
     cg_onscreen_egl_t *egl_onscreen = onscreen->winsys;
@@ -845,14 +845,14 @@ _cg_winsys_onscreen_swap_buffers_with_damage(
     /* If this is the first framebuffer to be presented then we now setup the
      * crtc modes, else we flip from the previous buffer */
     if (kms_display->pending_set_crtc) {
-        setup_crtc_modes(context->display, kms_onscreen->next_fb_id);
+        setup_crtc_modes(dev->display, kms_onscreen->next_fb_id);
         kms_display->pending_set_crtc = false;
     }
 
     flip = c_slice_new0(cg_flip_kms_t);
     flip->onscreen = onscreen;
 
-    flip_all_crtcs(context->display, flip, kms_onscreen->next_fb_id);
+    flip_all_crtcs(dev->display, flip, kms_onscreen->next_fb_id);
 
     if (flip->pending == 0) {
         drmModeRmFB(kms_renderer->fd, kms_onscreen->next_fb_id);
@@ -870,10 +870,10 @@ _cg_winsys_onscreen_swap_buffers_with_damage(
 }
 
 static bool
-_cg_winsys_egl_context_init(cg_context_t *context,
+_cg_winsys_egl_context_init(cg_device_t *dev,
                             cg_error_t **error)
 {
-    CG_FLAGS_SET(context->winsys_features,
+    CG_FLAGS_SET(dev->winsys_features,
                  CG_WINSYS_FEATURE_SYNC_AND_COMPLETE_EVENT,
                  true);
 
@@ -885,8 +885,8 @@ _cg_winsys_onscreen_init(cg_onscreen_t *onscreen,
                          cg_error_t **error)
 {
     cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
-    cg_context_t *context = framebuffer->context;
-    cg_display_t *display = context->display;
+    cg_device_t *dev = framebuffer->dev;
+    cg_display_t *display = dev->display;
     cg_display_egl_t *egl_display = display->winsys;
     cg_display_kms_t *kms_display = egl_display->platform;
     cg_renderer_t *renderer = display->renderer;
@@ -951,11 +951,11 @@ static void
 _cg_winsys_onscreen_deinit(cg_onscreen_t *onscreen)
 {
     cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
-    cg_context_t *context = framebuffer->context;
-    cg_display_t *display = context->display;
+    cg_device_t *dev = framebuffer->dev;
+    cg_display_t *display = dev->display;
     cg_display_egl_t *egl_display = display->winsys;
     cg_display_kms_t *kms_display = egl_display->platform;
-    cg_renderer_t *renderer = context->display->renderer;
+    cg_renderer_t *renderer = dev->display->renderer;
     cg_renderer_egl_t *egl_renderer = renderer->winsys;
     cg_onscreen_egl_t *egl_onscreen = onscreen->winsys;
     cg_onscreen_kms_t *kms_onscreen;

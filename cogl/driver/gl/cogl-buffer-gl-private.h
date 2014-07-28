@@ -35,7 +35,7 @@
 #define _CG_BUFFER_GL_PRIVATE_H_
 
 #include "cogl-types.h"
-#include "cogl-context.h"
+#include "cogl-device.h"
 #include "cogl-buffer.h"
 #include "cogl-buffer-private.h"
 

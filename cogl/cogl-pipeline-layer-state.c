@@ -35,7 +35,7 @@
 #include "config.h"
 #endif
 
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-pipeline-private.h"
 #include "cogl-blend-string.h"
 #include "cogl-util.h"
@@ -47,7 +47,7 @@
 
 #include "string.h"
 #if 0
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 #include "cogl-color-private.h"
 
 #endif
@@ -313,7 +313,7 @@ cg_pipeline_set_layer_null_texture(cg_pipeline_t *pipeline,
                                    int layer_index,
                                    cg_texture_type_t texture_type)
 {
-    cg_context_t *ctx = _cg_context_get_default();
+    cg_device_t *dev = _cg_device_get_default();
 
     /* Disallow setting texture types that aren't supported */
     switch (texture_type) {
@@ -321,7 +321,7 @@ cg_pipeline_set_layer_null_texture(cg_pipeline_t *pipeline,
         break;
 
     case CG_TEXTURE_TYPE_3D:
-        if (ctx->default_gl_texture_3d_tex == NULL) {
+        if (dev->default_gl_texture_3d_tex == NULL) {
             c_warning("The default 3D texture was set on a pipeline but "
                       "3D textures are not supported");
             texture_type = CG_TEXTURE_TYPE_2D;
@@ -410,7 +410,7 @@ cg_pipeline_set_layer_wrap_mode_s(cg_pipeline_t *pipeline,
         public_to_internal_wrap_mode(mode);
     const cg_sampler_cache_entry_t *sampler_state;
 
-    _CG_GET_CONTEXT(ctx, NO_RETVAL);
+    _CG_GET_DEVICE(dev, NO_RETVAL);
 
     c_return_if_fail(cg_is_pipeline(pipeline));
 
@@ -427,7 +427,7 @@ cg_pipeline_set_layer_wrap_mode_s(cg_pipeline_t *pipeline,
     authority = _cg_pipeline_layer_get_authority(layer, change);
 
     sampler_state = _cg_sampler_cache_update_wrap_modes(
-        ctx->sampler_cache,
+        dev->sampler_cache,
         authority->sampler_cache_entry,
         internal_mode,
         authority->sampler_cache_entry->wrap_mode_t,
@@ -448,7 +448,7 @@ cg_pipeline_set_layer_wrap_mode_t(cg_pipeline_t *pipeline,
         public_to_internal_wrap_mode(mode);
     const cg_sampler_cache_entry_t *sampler_state;
 
-    _CG_GET_CONTEXT(ctx, NO_RETVAL);
+    _CG_GET_DEVICE(dev, NO_RETVAL);
 
     c_return_if_fail(cg_is_pipeline(pipeline));
 
@@ -465,7 +465,7 @@ cg_pipeline_set_layer_wrap_mode_t(cg_pipeline_t *pipeline,
     authority = _cg_pipeline_layer_get_authority(layer, change);
 
     sampler_state = _cg_sampler_cache_update_wrap_modes(
-        ctx->sampler_cache,
+        dev->sampler_cache,
         authority->sampler_cache_entry,
         authority->sampler_cache_entry->wrap_mode_s,
         internal_mode,
@@ -498,7 +498,7 @@ cg_pipeline_set_layer_wrap_mode_p(cg_pipeline_t *pipeline,
         public_to_internal_wrap_mode(mode);
     const cg_sampler_cache_entry_t *sampler_state;
 
-    _CG_GET_CONTEXT(ctx, NO_RETVAL);
+    _CG_GET_DEVICE(dev, NO_RETVAL);
 
     c_return_if_fail(cg_is_pipeline(pipeline));
 
@@ -515,7 +515,7 @@ cg_pipeline_set_layer_wrap_mode_p(cg_pipeline_t *pipeline,
     authority = _cg_pipeline_layer_get_authority(layer, change);
 
     sampler_state = _cg_sampler_cache_update_wrap_modes(
-        ctx->sampler_cache,
+        dev->sampler_cache,
         authority->sampler_cache_entry,
         authority->sampler_cache_entry->wrap_mode_s,
         authority->sampler_cache_entry->wrap_mode_t,
@@ -536,7 +536,7 @@ cg_pipeline_set_layer_wrap_mode(cg_pipeline_t *pipeline,
         public_to_internal_wrap_mode(mode);
     const cg_sampler_cache_entry_t *sampler_state;
 
-    _CG_GET_CONTEXT(ctx, NO_RETVAL);
+    _CG_GET_DEVICE(dev, NO_RETVAL);
 
     c_return_if_fail(cg_is_pipeline(pipeline));
 
@@ -553,7 +553,7 @@ cg_pipeline_set_layer_wrap_mode(cg_pipeline_t *pipeline,
     authority = _cg_pipeline_layer_get_authority(layer, change);
 
     sampler_state =
-        _cg_sampler_cache_update_wrap_modes(ctx->sampler_cache,
+        _cg_sampler_cache_update_wrap_modes(dev->sampler_cache,
                                             authority->sampler_cache_entry,
                                             internal_mode,
                                             internal_mode,
@@ -694,13 +694,13 @@ cg_pipeline_set_layer_point_sprite_coords_enabled(cg_pipeline_t *pipeline,
     cg_pipeline_layer_t *new;
     cg_pipeline_layer_t *authority;
 
-    _CG_GET_CONTEXT(ctx, false);
+    _CG_GET_DEVICE(dev, false);
 
     c_return_val_if_fail(cg_is_pipeline(pipeline), false);
 
     /* Don't allow point sprite coordinates to be enabled if the driver
        doesn't support it */
-    if (enable && !cg_has_feature(ctx, CG_FEATURE_ID_POINT_SPRITE)) {
+    if (enable && !cg_has_feature(dev, CG_FEATURE_ID_POINT_SPRITE)) {
         if (error) {
             _cg_set_error(error,
                           CG_SYSTEM_ERROR,
@@ -1094,7 +1094,7 @@ cg_pipeline_set_layer_combine(cg_pipeline_t *pipeline,
     cg_blend_string_statement_t *a;
     int count;
 
-    _CG_GET_CONTEXT(ctx, false);
+    _CG_GET_DEVICE(dev, false);
 
     c_return_val_if_fail(cg_is_pipeline(pipeline), false);
 
@@ -1110,7 +1110,7 @@ cg_pipeline_set_layer_combine(cg_pipeline_t *pipeline,
      * state we want to change */
     authority = _cg_pipeline_layer_get_authority(layer, state);
 
-    count = _cg_blend_string_compile(ctx,
+    count = _cg_blend_string_compile(dev,
                                      combine_description,
                                      CG_BLEND_STRING_CONTEXT_TEXTURE_COMBINE,
                                      statements,
@@ -1385,7 +1385,7 @@ cg_pipeline_set_layer_filters(cg_pipeline_t *pipeline,
     cg_pipeline_layer_t *authority;
     const cg_sampler_cache_entry_t *sampler_state;
 
-    _CG_GET_CONTEXT(ctx, NO_RETVAL);
+    _CG_GET_DEVICE(dev, NO_RETVAL);
 
     c_return_if_fail(cg_is_pipeline(pipeline));
 
@@ -1405,7 +1405,7 @@ cg_pipeline_set_layer_filters(cg_pipeline_t *pipeline,
     authority = _cg_pipeline_layer_get_authority(layer, state);
 
     sampler_state =
-        _cg_sampler_cache_update_filters(ctx->sampler_cache,
+        _cg_sampler_cache_update_filters(dev->sampler_cache,
                                          authority->sampler_cache_entry,
                                          min_filter,
                                          mag_filter);

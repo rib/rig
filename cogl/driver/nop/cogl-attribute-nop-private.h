@@ -35,7 +35,7 @@
 #define _CG_ATTRIBUTE_NOP_PRIVATE_H_
 
 #include "cogl-types.h"
-#include "cogl-context-private.h"
+#include "cogl-device-private.h"
 
 void _cg_nop_flush_attributes_state(cg_framebuffer_t *framebuffer,
                                     cg_pipeline_t *pipeline,

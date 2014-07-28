@@ -772,12 +772,12 @@ void _cg_pipeline_init_state_hash_functions(void);
 void _cg_pipeline_init_layer_state_hash_functions(void);
 
 cg_pipeline_state_t
-_cg_pipeline_get_state_for_vertex_codegen(cg_context_t *context);
+_cg_pipeline_get_state_for_vertex_codegen(cg_device_t *dev);
 
 cg_pipeline_layer_state_t
-_cg_pipeline_get_layer_state_for_fragment_codegen(cg_context_t *context);
+_cg_pipeline_get_layer_state_for_fragment_codegen(cg_device_t *dev);
 
 cg_pipeline_state_t
-_cg_pipeline_get_state_for_fragment_codegen(cg_context_t *context);
+_cg_pipeline_get_state_for_fragment_codegen(cg_device_t *dev);
 
 #endif /* __CG_PIPELINE_PRIVATE_H */
