@@ -17,7 +17,7 @@
 
 static bool cg_test_is_verbose;
 
-cg_context_t *test_ctx;
+cg_device_t *test_dev;
 cg_framebuffer_t *test_fb;
 
 static bool
@@ -30,52 +30,52 @@ check_flags(TestFlags flags, cg_renderer_t *renderer)
     }
 
     if (flags & TEST_REQUIREMENT_NPOT &&
-        !cg_has_feature(test_ctx, CG_FEATURE_ID_TEXTURE_NPOT)) {
+        !cg_has_feature(test_dev, CG_FEATURE_ID_TEXTURE_NPOT)) {
         return FALSE;
     }
 
     if (flags & TEST_REQUIREMENT_TEXTURE_3D &&
-        !cg_has_feature(test_ctx, CG_FEATURE_ID_TEXTURE_3D)) {
+        !cg_has_feature(test_dev, CG_FEATURE_ID_TEXTURE_3D)) {
         return FALSE;
     }
 
     if (flags & TEST_REQUIREMENT_TEXTURE_RG &&
-        !cg_has_feature(test_ctx, CG_FEATURE_ID_TEXTURE_RG)) {
+        !cg_has_feature(test_dev, CG_FEATURE_ID_TEXTURE_RG)) {
         return FALSE;
     }
 
     if (flags & TEST_REQUIREMENT_POINT_SPRITE &&
-        !cg_has_feature(test_ctx, CG_FEATURE_ID_POINT_SPRITE)) {
+        !cg_has_feature(test_dev, CG_FEATURE_ID_POINT_SPRITE)) {
         return FALSE;
     }
 
     if (flags & TEST_REQUIREMENT_PER_VERTEX_POINT_SIZE &&
-        !cg_has_feature(test_ctx, CG_FEATURE_ID_PER_VERTEX_POINT_SIZE)) {
+        !cg_has_feature(test_dev, CG_FEATURE_ID_PER_VERTEX_POINT_SIZE)) {
         return FALSE;
     }
 
     if (flags & TEST_REQUIREMENT_GLES2_CONTEXT &&
-        !cg_has_feature(test_ctx, CG_FEATURE_ID_GLES2_CONTEXT)) {
+        !cg_has_feature(test_dev, CG_FEATURE_ID_GLES2_CONTEXT)) {
         return FALSE;
     }
 
     if (flags & TEST_REQUIREMENT_MAP_WRITE &&
-        !cg_has_feature(test_ctx, CG_FEATURE_ID_MAP_BUFFER_FOR_WRITE)) {
+        !cg_has_feature(test_dev, CG_FEATURE_ID_MAP_BUFFER_FOR_WRITE)) {
         return FALSE;
     }
 
     if (flags & TEST_REQUIREMENT_GLSL &&
-        !cg_has_feature(test_ctx, CG_FEATURE_ID_GLSL)) {
+        !cg_has_feature(test_dev, CG_FEATURE_ID_GLSL)) {
         return FALSE;
     }
 
     if (flags & TEST_REQUIREMENT_OFFSCREEN &&
-        !cg_has_feature(test_ctx, CG_FEATURE_ID_OFFSCREEN)) {
+        !cg_has_feature(test_dev, CG_FEATURE_ID_OFFSCREEN)) {
         return FALSE;
     }
 
     if (flags & TEST_REQUIREMENT_FENCE &&
-        !cg_has_feature(test_ctx, CG_FEATURE_ID_FENCE)) {
+        !cg_has_feature(test_dev, CG_FEATURE_ID_FENCE)) {
         return FALSE;
     }
 
@@ -161,20 +161,20 @@ test_utils_init(TestFlags requirement_flags, TestFlags known_failure_flags)
     if (!cg_display_setup(display, &error))
         c_error("Failed to setup a cg_display_t: %s", error->message);
 
-    test_ctx = cg_context_new(display, &error);
-    if (!test_ctx)
-        c_error("Failed to create a cg_context_t: %s", error->message);
+    test_dev = cg_device_new(display, &error);
+    if (!test_dev)
+        c_error("Failed to create a cg_device_t: %s", error->message);
 
     missing_requirement = !check_flags(requirement_flags, renderer);
     known_failure = !check_flags(known_failure_flags, renderer);
 
     if (is_boolean_env_set("CG_TEST_ONSCREEN")) {
-        onscreen = cg_onscreen_new(test_ctx, 640, 480);
+        onscreen = cg_onscreen_new(test_dev, 640, 480);
         test_fb = CG_FRAMEBUFFER(onscreen);
     } else {
         cg_offscreen_t *offscreen;
         cg_texture_2d_t *tex =
-            cg_texture_2d_new_with_size(test_ctx, FB_WIDTH, FB_HEIGHT);
+            cg_texture_2d_new_with_size(test_dev, FB_WIDTH, FB_HEIGHT);
         offscreen = cg_offscreen_new_with_texture(CG_TEXTURE(tex));
         test_fb = CG_FRAMEBUFFER(offscreen);
     }
@@ -205,8 +205,8 @@ test_utils_fini(void)
     if (test_fb)
         cg_object_unref(test_fb);
 
-    if (test_ctx)
-        cg_object_unref(test_ctx);
+    if (test_dev)
+        cg_object_unref(test_dev);
 }
 
 static bool
@@ -316,14 +316,14 @@ test_utils_check_region(cg_framebuffer_t *fb,
 }
 
 cg_texture_t *
-test_utils_create_color_texture(cg_context_t *context,
+test_utils_create_color_texture(cg_device_t *dev,
                                 uint32_t color)
 {
     cg_texture_2d_t *tex_2d;
 
     color = GUINT32_TO_BE(color);
 
-    tex_2d = cg_texture_2d_new_from_data(context,
+    tex_2d = cg_texture_2d_new_from_data(dev,
                                          1,
                                          1, /* width/height */
                                          CG_PIXEL_FORMAT_RGBA_8888_PRE,
@@ -351,7 +351,7 @@ set_auto_mipmap_cb(cg_texture_t *sub_texture,
 }
 
 cg_texture_t *
-test_utils_texture_new_with_size(cg_context_t *ctx,
+test_utils_texture_new_with_size(cg_device_t *dev,
                                  int width,
                                  int height,
                                  TestUtilsTextureFlags flags,
@@ -361,10 +361,10 @@ test_utils_texture_new_with_size(cg_context_t *ctx,
     cg_error_t *skip_error = NULL;
 
     if ((test_utils_is_pot(width) && test_utils_is_pot(height)) ||
-        (cg_has_feature(ctx, CG_FEATURE_ID_TEXTURE_NPOT_BASIC) &&
-         cg_has_feature(ctx, CG_FEATURE_ID_TEXTURE_NPOT_MIPMAP))) {
+        (cg_has_feature(dev, CG_FEATURE_ID_TEXTURE_NPOT_BASIC) &&
+         cg_has_feature(dev, CG_FEATURE_ID_TEXTURE_NPOT_MIPMAP))) {
         /* First try creating a fast-path non-sliced texture */
-        tex = CG_TEXTURE(cg_texture_2d_new_with_size(ctx, width, height));
+        tex = CG_TEXTURE(cg_texture_2d_new_with_size(dev, width, height));
 
         cg_texture_set_components(tex, components);
 
@@ -381,7 +381,8 @@ test_utils_texture_new_with_size(cg_context_t *ctx,
         int max_waste =
             flags & TEST_UTILS_TEXTURE_NO_SLICING ? -1 : CG_TEXTURE_MAX_WASTE;
         cg_texture_2d_sliced_t *tex_2ds =
-            cg_texture_2d_sliced_new_with_size(ctx, width, height, max_waste);
+            cg_texture_2d_sliced_new_with_size(dev, width, height,
+                                               max_waste);
         tex = CG_TEXTURE(tex_2ds);
 
         cg_texture_set_components(tex, components);
@@ -434,8 +435,8 @@ test_utils_texture_new_from_bitmap(cg_bitmap_t *bitmap,
     /* If that doesn't work try a fast path 2D texture */
     if ((test_utils_is_pot(cg_bitmap_get_width(bitmap)) &&
          test_utils_is_pot(cg_bitmap_get_height(bitmap))) ||
-        (cg_has_feature(test_ctx, CG_FEATURE_ID_TEXTURE_NPOT_BASIC) &&
-         cg_has_feature(test_ctx, CG_FEATURE_ID_TEXTURE_NPOT_MIPMAP))) {
+        (cg_has_feature(test_dev, CG_FEATURE_ID_TEXTURE_NPOT_BASIC) &&
+         cg_has_feature(test_dev, CG_FEATURE_ID_TEXTURE_NPOT_MIPMAP))) {
         tex = CG_TEXTURE(cg_texture_2d_new_from_bitmap(bitmap));
 
         cg_texture_set_premultiplied(tex, premultiplied);
@@ -482,7 +483,7 @@ test_utils_texture_new_from_bitmap(cg_bitmap_t *bitmap,
 }
 
 cg_texture_t *
-test_utils_texture_new_from_data(cg_context_t *ctx,
+test_utils_texture_new_from_data(cg_device_t *ctx,
                                  int width,
                                  int height,
                                  TestUtilsTextureFlags flags,

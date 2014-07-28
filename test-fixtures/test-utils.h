@@ -8,7 +8,7 @@
  * for testing private apis...
  */
 #ifdef CG_COMPILATION
-#include <cogl/cogl-context.h>
+#include <cogl/cogl-device.h>
 #include <cogl/cogl-onscreen.h>
 #include <cogl/cogl-offscreen.h>
 #include <cogl/cogl-texture-2d.h>
@@ -64,7 +64,7 @@ typedef enum {
     TEST_UTILS_TEXTURE_NO_ATLAS = 1 << 2
 } TestUtilsTextureFlags;
 
-extern cg_context_t *test_ctx;
+extern cg_device_t *test_dev;
 extern cg_framebuffer_t *test_fb;
 
 void test_utils_init(TestFlags requirement_flags,
@@ -74,7 +74,7 @@ void test_utils_fini(void);
 
 /*
  * test_utils_texture_new_with_size:
- * @context: A #cg_context_t
+ * @dev: A #cg_device_t
  * @width: width of texture in pixels.
  * @height: height of texture in pixels.
  * @flags: Optional flags for the texture, or %TEST_UTILS_TEXTURE_NONE
@@ -92,7 +92,7 @@ void test_utils_fini(void);
  * Return value: A newly created #cg_texture_t
  */
 cg_texture_t *
-test_utils_texture_new_with_size(cg_context_t *ctx,
+test_utils_texture_new_with_size(cg_device_t *dev,
                                  int width,
                                  int height,
                                  TestUtilsTextureFlags flags,
@@ -100,7 +100,7 @@ test_utils_texture_new_with_size(cg_context_t *ctx,
 
 /*
  * test_utils_texture_new_from_data:
- * @context: A #cg_context_t
+ * @dev: A #cg_device_t
  * @width: width of texture in pixels
  * @height: height of texture in pixels
  * @flags: Optional flags for the texture, or %TEST_UTILS_TEXTURE_NONE
@@ -121,7 +121,7 @@ test_utils_texture_new_with_size(cg_context_t *ctx,
  *
  * Return value: A newly created #cg_texture_t or %NULL on failure
  */
-cg_texture_t *test_utils_texture_new_from_data(cg_context_t *ctx,
+cg_texture_t *test_utils_texture_new_from_data(cg_device_t *dev,
                                                int width,
                                                int height,
                                                TestUtilsTextureFlags flags,
@@ -252,12 +252,12 @@ void test_utils_compare_pixel_and_alpha(const uint8_t *screen_pixel,
 
 /*
  * test_utils_create_color_texture:
- * @context: A #cg_context_t
+ * @dev: A #cg_device_t
  * @color: A color to put in the texture
  *
  * Creates a 1x1-pixel RGBA texture filled with the given color.
  */
-cg_texture_t *test_utils_create_color_texture(cg_context_t *context,
+cg_texture_t *test_utils_create_color_texture(cg_device_t *dev,
                                               uint32_t color);
 
 /* cg_test_verbose:
