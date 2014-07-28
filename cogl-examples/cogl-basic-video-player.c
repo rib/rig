@@ -325,7 +325,7 @@ main(int argc, char **argv)
 
     /* Set the necessary cogl elements */
 
-    dev = cg_device_new(NULL, NULL);
+    dev = cg_device_new();
 
     onscreen = cg_onscreen_new(dev, 640, 480);
     cg_onscreen_set_resizable(onscreen, TRUE);

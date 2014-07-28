@@ -239,7 +239,7 @@ main(int argc, char *argv[])
     Data data;
     int i;
 
-    data.dev = cg_device_new(NULL, NULL);
+    data.dev = cg_device_new();
 
     create_primitive(&data);
 

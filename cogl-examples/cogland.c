@@ -1025,7 +1025,9 @@ create_cg_device(CoglandCompositor *compositor,
     cg_wayland_display_set_compositor_display(display,
                                               compositor->wayland_display);
 
-    dev = cg_device_new(display, error);
+    dev = cg_device_new();
+    cg_device_set_display(dev, display);
+    cg_device_connect(error);
 
     cg_object_unref(renderer);
     cg_object_unref(display);

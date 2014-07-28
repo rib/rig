@@ -161,8 +161,10 @@ _cg_texture_free_loader(cg_texture_t *texture)
 }
 
 cg_texture_loader_t *
-_cg_texture_create_loader(void)
+_cg_texture_create_loader(cg_device_t *dev)
 {
+    /* lazily assert that device has been connected */
+    cg_device_connect(dev, NULL);
     return c_slice_new0(cg_texture_loader_t);
 }
 

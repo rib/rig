@@ -69,9 +69,12 @@ typedef struct {
 struct _cg_device_t {
     cg_object_t _parent;
 
+    cg_renderer_t *renderer;
     cg_display_t *display;
 
     cg_driver_t driver;
+
+    bool connected;
 
     /* Information about the GPU and driver which we can use to
        determine certain workarounds */

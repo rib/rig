@@ -83,9 +83,10 @@ main(int argc, char **argv)
     data.is_dirty = FALSE;
     data.draw_ready = TRUE;
 
-    data.dev = cg_device_new(NULL, &error);
-    if (!data.dev) {
-        fprintf(stderr, "Failed to create context: %s\n", error->message);
+    data.dev = cg_device_new();
+    if (!cg_device_connect(data.dev, &error)) {
+        cg_object_unref(data.dev);
+        fprintf(stderr, "Failed to create device: %s\n", error->message);
         return 1;
     }
 

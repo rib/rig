@@ -382,6 +382,8 @@ cg_pipeline_new(cg_device_t *dev)
 {
     cg_pipeline_t *new;
 
+    cg_device_connect(dev, NULL);
+
     new = cg_pipeline_copy(dev->default_pipeline);
 #ifdef CG_DEBUG_ENABLED
     _cg_pipeline_set_static_breadcrumb(new, "new");

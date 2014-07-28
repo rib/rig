@@ -871,7 +871,7 @@ cg_texture_2d_sliced_new_with_size(cg_device_t *dev,
                                    int height,
                                    int max_waste)
 {
-    cg_texture_loader_t *loader = _cg_texture_create_loader();
+    cg_texture_loader_t *loader = _cg_texture_create_loader(dev);
     loader->src_type = CG_TEXTURE_SOURCE_TYPE_SIZED;
     loader->src.sized.width = width;
     loader->src.sized.height = height;
@@ -889,7 +889,7 @@ _cg_texture_2d_sliced_new_from_bitmap(
 
     c_return_val_if_fail(cg_is_bitmap(bmp), NULL);
 
-    loader = _cg_texture_create_loader();
+    loader = _cg_texture_create_loader(bmp->dev);
     loader->src_type = CG_TEXTURE_SOURCE_TYPE_BITMAP;
     loader->src.bitmap.bitmap = cg_object_ref(bmp);
     loader->src.bitmap.can_convert_in_place = can_convert_in_place;

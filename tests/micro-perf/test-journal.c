@@ -148,7 +148,7 @@ main (int argc, char **argv)
                       "The time spent in the glib mainloop",
                       0);  // no application private data
 
-  data.dev = cg_device_new (NULL, NULL);
+  data.dev = cg_device_new ();
 
   onscreen = cg_onscreen_new (data.dev,
                                 FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT);

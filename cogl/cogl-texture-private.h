@@ -350,7 +350,7 @@ void _cg_texture_set_allocated(cg_texture_t *texture,
 
 cg_pixel_format_t _cg_texture_get_format(cg_texture_t *texture);
 
-cg_texture_loader_t *_cg_texture_create_loader(void);
+cg_texture_loader_t *_cg_texture_create_loader(cg_device_t *dev);
 
 void _cg_texture_copy_internal_format(cg_texture_t *src, cg_texture_t *dest);
 

@@ -99,8 +99,8 @@ main(int argc, char **argv)
         return 1;
     }
 
-    dev = cg_device_new(display, &error);
-    if (!dev) {
+    dev = cg_device_new();
+    if (!cg_device_connect(dev, &error)) {
         fprintf(stderr, "Failed to create context: %s\n", error->message);
         return 1;
     }

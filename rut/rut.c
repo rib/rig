@@ -312,7 +312,7 @@ rut_context_new(rut_shell_t *shell)
 
     if (!context->headless) {
 #ifdef USE_SDL
-        context->cg_device = cg_sdl_context_new(SDL_USEREVENT, &error);
+        context->cg_device = cg_sdl_device_new(SDL_USEREVENT, &error);
 #else
         context->cg_device = cg_device_new(NULL, &error);
 #endif

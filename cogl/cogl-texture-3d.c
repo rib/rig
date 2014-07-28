@@ -152,7 +152,7 @@ cg_texture_3d_t *
 cg_texture_3d_new_with_size(cg_device_t *dev, int width, int height,
                             int depth)
 {
-    cg_texture_loader_t *loader = _cg_texture_create_loader();
+    cg_texture_loader_t *loader = _cg_texture_create_loader(dev);
     loader->src_type = CG_TEXTURE_SOURCE_TYPE_SIZED;
     loader->src.sized.width = width;
     loader->src.sized.height = height;
@@ -169,7 +169,7 @@ cg_texture_3d_new_from_bitmap(cg_bitmap_t *bmp, int height, int depth)
 
     c_return_val_if_fail(bmp, NULL);
 
-    loader = _cg_texture_create_loader();
+    loader = _cg_texture_create_loader(bmp->dev);
     loader->src_type = CG_TEXTURE_SOURCE_TYPE_BITMAP;
     loader->src.bitmap.bitmap = cg_object_ref(bmp);
     loader->src.bitmap.height = height;

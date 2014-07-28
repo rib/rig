@@ -96,8 +96,8 @@ main(int argc, char **argv)
     Data data;
     SDL_Event event;
 
-    dev = cg_sdl_context_new(SDL_USEREVENT, &error);
-    if (!dev) {
+    dev = cg_sdl_device_new(SDL_USEREVENT, &error);
+    if (!cg_device_connect(dev, &error)) {
         fprintf(stderr, "Failed to create context: %s\n", error->message);
         return 1;
     }

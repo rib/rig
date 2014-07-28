@@ -781,7 +781,8 @@ main(int argc, char **argv)
     cg_renderer_add_constraint(renderer,
                                CG_RENDERER_CONSTRAINT_SUPPORTS_CG_GLES2);
     display = cg_display_new(renderer, NULL);
-    data.dev = cg_device_new(display, NULL);
+    data.dev = cg_device_new();
+    cg_device_set_display(data.dev, display);
 
     onscreen = cg_onscreen_new(data.dev, 300, 300);
     cg_onscreen_show(onscreen);

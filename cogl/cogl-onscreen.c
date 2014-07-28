@@ -67,6 +67,8 @@ cg_onscreen_new(cg_device_t *dev, int width, int height)
 {
     cg_onscreen_t *onscreen;
 
+    cg_device_connect(dev, NULL);
+
     /* FIXME: We are assuming onscreen buffers will always be
        premultiplied so we'll set the premult flag on the bitmap
        format. This will usually be correct because the result of the

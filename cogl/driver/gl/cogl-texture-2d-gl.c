@@ -509,7 +509,7 @@ cg_texture_2d_gl_new_from_foreign(cg_device_t *dev,
     /* Validate width and height */
     c_return_val_if_fail(width > 0 && height > 0, NULL);
 
-    loader = _cg_texture_create_loader();
+    loader = _cg_texture_create_loader(dev);
     loader->src_type = CG_TEXTURE_SOURCE_TYPE_GL_FOREIGN;
     loader->src.gl_foreign.gl_handle = gl_handle;
     loader->src.gl_foreign.width = width;

@@ -148,8 +148,8 @@ main(int argc, char **argv)
     float fovy, aspect, z_near, z_2d, z_far;
     cg_depth_state_t depth_state;
 
-    dev = cg_device_new(NULL, &error);
-    if (!dev) {
+    dev = cg_device_new();
+    if (!cg_device_connect(dev, &error)) {
         fprintf(stderr, "Failed to create context: %s\n", error->message);
         return 1;
     }

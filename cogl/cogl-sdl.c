@@ -52,23 +52,29 @@ cg_sdl_renderer_get_event_type(cg_renderer_t *renderer)
 }
 
 cg_device_t *
-cg_sdl_context_new(int type, cg_error_t **error)
+cg_sdl_device_new(int type, cg_error_t **error)
 {
     cg_renderer_t *renderer = cg_renderer_new();
-    cg_display_t *display;
+    cg_device_t *dev = NULL;
 
     cg_renderer_set_winsys_id(renderer, CG_WINSYS_ID_SDL);
 
     cg_sdl_renderer_set_event_type(renderer, type);
 
     if (!cg_renderer_connect(renderer, error))
-        return NULL;
+        goto error;
 
-    display = cg_display_new(renderer, NULL);
-    if (!cg_display_setup(display, error))
-        return NULL;
+    dev = cg_device_new();
+    cg_device_set_renderer(dev, renderer);
 
-    return cg_device_new(display, error);
+    return dev;
+
+error:
+    cg_object_unref(renderer);
+    if (dev)
+        cg_object_unref(dev);
+
+    return NULL;
 }
 
 void

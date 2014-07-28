@@ -161,8 +161,9 @@ test_utils_init(TestFlags requirement_flags, TestFlags known_failure_flags)
     if (!cg_display_setup(display, &error))
         c_error("Failed to setup a cg_display_t: %s", error->message);
 
-    test_dev = cg_device_new(display, &error);
-    if (!test_dev)
+    test_dev = cg_device_new();
+    cg_device_set_display(test_dev, display);
+    if (!cg_device_connect(test_dev, &error))
         c_error("Failed to create a cg_device_t: %s", error->message);
 
     missing_requirement = !check_flags(requirement_flags, renderer);

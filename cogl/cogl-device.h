@@ -97,8 +97,6 @@ CG_BEGIN_DECLS
 
 /**
  * cg_device_new: (constructor)
- * @display: (allow-none): A #cg_display_t pointer
- * @error: A cg_error_t return location.
  *
  * Creates a new #cg_device_t which acts as an application sandbox
  * for any state objects that are allocated.
@@ -106,7 +104,56 @@ CG_BEGIN_DECLS
  * Return value: (transfer full): A newly allocated #cg_device_t
  * Stability: unstable
  */
-cg_device_t *cg_device_new(cg_display_t *display, cg_error_t **error);
+cg_device_t *cg_device_new(void);
+
+/**
+ * cg_device_set_renderer:
+ * @dev: A #cg_device_t pointer
+ * @renderer: (allow none): A #cg_renderer_t pointer
+ *
+ * Explicitly specifies what #cg_renderer_t should be used. Most
+ * simple applications will not need to use this api explicitly
+ * since Cogl will automatically setup a renderer either when
+ * cg_device_connect() is called or implicitly when a device is
+ * first used.
+ */
+void
+cg_device_set_renderer(cg_device_t *dev, cg_renderer_t *renderer);
+
+/**
+ * cg_device_set_display:
+ * @dev: A #cg_device_t pointer
+ * @display: (allow-none): A #cg_display_t pointer
+ *
+ * Explicitly specifies what #cg_display_t should be used. Most
+ * simple applications will not need to use this api explicitly
+ * since Cogl will automatically setup a display either when
+ * cg_device_connect() is called or implicitly when a device is
+ * first used.
+ */
+void
+cg_device_set_display(cg_device_t *dev, cg_display_t *display);
+
+/**
+ * cg_device_connect:
+ * @dev: A #cg_device_t pointer
+ * @error: A cg_error_t return location.
+ *
+ * Applies and finalises the device configuration before the device is
+ * used. Simple applications don't need to explicitly call this api if
+ * they don't have have an error handling code path since Cogl will
+ * implicitly connect a device when it is first used.
+ *
+ * <note> If an application needs to gracefully handle runtime errors
+ * while initialising a device before rendering it must use this api
+ * because Cogl will simply abort if there is an error when trying to
+ * connect implicitly. </note>
+ *
+ * Return value: %true if successful, else %false and @error will
+ *               contain a description of the error.
+ */
+bool
+cg_device_connect(cg_device_t *dev, cg_error_t **error);
 
 /**
  * cg_device_get_display:

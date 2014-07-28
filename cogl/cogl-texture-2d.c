@@ -122,7 +122,7 @@ cg_texture_2d_new_with_size(cg_device_t *dev, int width, int height)
 {
     cg_texture_loader_t *loader;
 
-    loader = _cg_texture_create_loader();
+    loader = _cg_texture_create_loader(dev);
     loader->src_type = CG_TEXTURE_SOURCE_TYPE_SIZED;
     loader->src.sized.width = width;
     loader->src.sized.height = height;
@@ -146,7 +146,7 @@ _cg_texture_2d_new_from_bitmap(cg_bitmap_t *bmp, bool can_convert_in_place)
 
     c_return_val_if_fail(bmp != NULL, NULL);
 
-    loader = _cg_texture_create_loader();
+    loader = _cg_texture_create_loader(bmp->dev);
     loader->src_type = CG_TEXTURE_SOURCE_TYPE_BITMAP;
     loader->src.bitmap.bitmap = cg_object_ref(bmp);
     loader->src.bitmap.can_convert_in_place = can_convert_in_place;
@@ -246,7 +246,7 @@ _cg_egl_texture_2d_new_from_image(cg_device_t *dev,
                                 CG_PRIVATE_FEATURE_TEXTURE_2D_FROM_EGL_IMAGE),
         NULL);
 
-    loader = _cg_texture_create_loader();
+    loader = _cg_texture_create_loader(dev);
     loader->src_type = CG_TEXTURE_SOURCE_TYPE_EGL_IMAGE;
     loader->src.egl_image.image = image;
     loader->src.egl_image.width = width;

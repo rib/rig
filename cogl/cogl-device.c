@@ -101,7 +101,7 @@ _cg_init_feature_overrides(cg_device_t *dev)
 const cg_winsys_vtable_t *
 _cg_device_get_winsys(cg_device_t *dev)
 {
-    return dev->display->renderer->winsys_vtable;
+    return dev->renderer->winsys_vtable;
 }
 
 /* For reference: There was some deliberation over whether to have a
@@ -114,13 +114,9 @@ _cg_device_get_winsys(cg_device_t *dev)
  * method.
  */
 cg_device_t *
-cg_device_new(cg_display_t *display, cg_error_t **error)
+cg_device_new(void)
 {
     cg_device_t *dev;
-    uint8_t white_pixel[] = { 0xff, 0xff, 0xff, 0xff };
-    const cg_winsys_vtable_t *winsys;
-    int i;
-    cg_error_t *internal_error = NULL;
 
     _cg_init();
 
@@ -140,21 +136,16 @@ cg_device_new(cg_display_t *display, cg_error_t **error)
     _cg_uprof_init();
 #endif
 
-    /* Allocate context memory */
     dev = c_malloc0(sizeof(cg_device_t));
+    memset(dev, 0, sizeof(cg_device_t));
 
     /* Convert the context into an object immediately in case any of the
        code below wants to verify that the context pointer is a valid
        object */
     _cg_device_object_new(dev);
 
-    /* XXX: Gross hack!
-     * Currently everything in Cogl just assumes there is a default
-     * context which it can access via _CG_GET_DEVICE() including
-     * code used to construct a cg_device_t. Until all of that code
-     * has been updated to take an explicit context argument we have
-     * to immediately make our pointer the default context.
-     */
+    /* TODO: remove final uses of _CG_GET_DEVICE() which depends on
+     * having one globally accessible device pointer. */
     _cg_device = dev;
 
     /* Init default values */
@@ -165,44 +156,85 @@ cg_device_new(cg_display_t *display, cg_error_t **error)
 
     memset(dev->winsys_features, 0, sizeof(dev->winsys_features));
 
-    if (!display) {
-        cg_renderer_t *renderer = cg_renderer_new();
-        if (!cg_renderer_connect(renderer, error)) {
-            c_free(dev);
-            return NULL;
-        }
+    return dev;
+}
 
-        display = cg_display_new(renderer, NULL);
-        cg_object_unref(renderer);
-    } else
+void
+cg_device_set_renderer(cg_device_t *dev, cg_renderer_t *renderer)
+{
+    if (renderer)
+        cg_object_ref(renderer);
+
+    if (dev->renderer)
+        cg_object_unref(dev->renderer);
+
+    dev->renderer = renderer;
+}
+
+void
+cg_device_set_display(cg_device_t *dev, cg_display_t *display)
+{
+    if (display)
         cg_object_ref(display);
 
-    if (!cg_display_setup(display, error)) {
-        cg_object_unref(display);
-        c_free(dev);
-        return NULL;
-    }
+    if (dev->display)
+        cg_object_unref(dev->display);
 
     dev->display = display;
+}
+
+bool
+cg_device_connect(cg_device_t *dev, cg_error_t **error)
+{
+    uint8_t white_pixel[] = { 0xff, 0xff, 0xff, 0xff };
+    const cg_winsys_vtable_t *winsys;
+    int i;
+    cg_error_t *internal_error = NULL;
+
+    if (dev->connected)
+        return true;
+
+    /* Mark as connected now to avoid recursion issues,
+     * but revert in error paths */
+    dev->connected = true;
+
+    if (!dev->renderer) {
+        cg_renderer_t *renderer = cg_renderer_new();
+        if (!cg_renderer_connect(renderer, error)) {
+            cg_object_unref(renderer);
+            dev->connected = false;
+            return false;
+        }
+        cg_device_set_renderer(dev, renderer);
+    }
+
+    if (!dev->display) {
+        cg_display_t *display = cg_display_new(dev->renderer, NULL);
+        if (!cg_display_setup(display, error)) {
+            cg_object_unref(display);
+            dev->connected = false;
+            return false;
+        }
+        cg_device_set_display(dev, display);
+    }
 
     /* This is duplicated data, but it's much more convenient to have
        the driver attached to the context and the value is accessed a
        lot throughout Cogl */
-    dev->driver = display->renderer->driver;
+    dev->driver = dev->renderer->driver;
 
     /* Again this is duplicated data, but it convenient to be able
      * access these from the context. */
-    dev->driver_vtable = display->renderer->driver_vtable;
-    dev->texture_driver = display->renderer->texture_driver;
+    dev->driver_vtable = dev->renderer->driver_vtable;
+    dev->texture_driver = dev->renderer->texture_driver;
 
     for (i = 0; i < C_N_ELEMENTS(dev->private_features); i++)
-        dev->private_features[i] |= display->renderer->private_features[i];
+        dev->private_features[i] |= dev->renderer->private_features[i];
 
     winsys = _cg_device_get_winsys(dev);
     if (!winsys->device_init(dev, error)) {
-        cg_object_unref(display);
-        c_free(dev);
-        return NULL;
+        dev->connected = false;
+        return false;
     }
 
     dev->attribute_name_states_hash =
@@ -383,7 +415,7 @@ cg_device_new(cg_display_t *display, cg_error_t **error)
                                     NULL, /* user data */
                                     NULL); /* destroy */
 
-    return dev;
+    return true;
 }
 
 static void
@@ -458,6 +490,7 @@ _cg_device_free(cg_device_t *dev)
     c_byte_array_free(dev->buffer_map_fallback_array, true);
 
     cg_object_unref(dev->display);
+    cg_object_unref(dev->renderer);
 
     c_free(dev);
 }
@@ -478,7 +511,7 @@ cg_device_get_display(cg_device_t *dev)
 cg_renderer_t *
 cg_device_get_renderer(cg_device_t *dev)
 {
-    return dev->display->renderer;
+    return dev->renderer;
 }
 
 #ifdef CG_HAS_EGL_SUPPORT

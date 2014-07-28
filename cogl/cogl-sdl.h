@@ -79,7 +79,7 @@ CG_BEGIN_DECLS
  * MyAppData data;
  * cg_error_t *error = NULL;
  *
- * data.ctx = cg_sdl_context_new (SDL_USEREVENT, &error);
+ * data.ctx = cg_sdl_device_new (SDL_USEREVENT, &error);
  * if (!data.ctx)
  *   {
  *     fprintf (stderr, "Failed to create context: %s\n",
@@ -117,7 +117,7 @@ CG_BEGIN_DECLS
  */
 
 /**
- * cg_sdl_context_new:
+ * cg_sdl_device_new:
  * @type: An SDL user event type between <constant>SDL_USEREVENT</constant> and
  *        <constant>SDL_NUMEVENTS</constant> - 1
  * @error: A cg_error_t return location.
@@ -129,7 +129,7 @@ CG_BEGIN_DECLS
  * This function is equivalent to the following code:
  * |[
  * cg_renderer_t *renderer = cg_renderer_new ();
- * cg_display_t *display;
+ * cg_device_t *dev;
  *
  * cg_renderer_set_winsys_id (renderer, CG_WINSYS_ID_SDL);
  *
@@ -138,11 +138,10 @@ CG_BEGIN_DECLS
  * if (!cg_renderer_connect (renderer, error))
  *   return NULL;
  *
- * display = cg_display_new (renderer, NULL);
- * if (!cg_display_setup (display, error))
- *   return NULL;
+ * dev = cg_device_new ();
+ * cg_device_set_renderer(dev, renderer);
  *
- * return cg_device_new (display, error);
+ * return dev;
  * ]|
  *
  * <note>SDL applications are required to either use this API or
@@ -151,7 +150,7 @@ CG_BEGIN_DECLS
  *
  * Stability: unstable
  */
-cg_device_t *cg_sdl_context_new(int type, cg_error_t **error);
+cg_device_t *cg_sdl_device_new(int type, cg_error_t **error);
 
 /**
  * cg_sdl_renderer_set_event_type:
@@ -167,7 +166,7 @@ cg_device_t *cg_sdl_context_new(int type, cg_error_t **error);
  * @renderer.</note>
  *
  * <note>For convenience most simple applications can use
- * cg_sdl_context_new() if they don't want to manually create
+ * cg_sdl_device_new() if they don't want to manually create
  * #cg_renderer_t and #cg_display_t objects during
  * initialization.</note>
  *
@@ -181,7 +180,7 @@ void cg_sdl_renderer_set_event_type(cg_renderer_t *renderer, int type);
  *
  * Queries what SDL user event type Cogl is using as a way to
  * interrupt SDL_WaitEvent(). This is set either using
- * cg_sdl_context_new or by using
+ * cg_sdl_device_new or by using
  * cg_sdl_renderer_set_event_type().
  *
  * Stability: unstable

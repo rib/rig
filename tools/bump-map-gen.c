@@ -291,7 +291,7 @@ generate_normal_map(cg_device_t *dev, const char *path, const char *output)
 int
 main(int argc, char **argv)
 {
-    cg_device_t *dev = cg_device_new(NULL, NULL);
+    cg_device_t *dev = cg_device_new();
     GOptionContext *context = g_option_context_new(NULL);
     GError *error = NULL;
 
