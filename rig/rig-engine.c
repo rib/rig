@@ -410,6 +410,8 @@ _rig_engine_free(void *object)
     rut_object_unref(engine->camera_2d);
     rut_object_unref(engine->root);
 
+    rig_text_engine_state_destroy(engine->text_state);
+
     if (engine->queued_deletes->len) {
         c_warning("Leaking %d un-garbage-collected objects",
                   engine->queued_deletes->len);
@@ -581,6 +583,8 @@ _rig_engine_new_full(rut_shell_t *shell,
 
     engine->device_width = DEVICE_WIDTH;
     engine->device_height = DEVICE_HEIGHT;
+
+    engine->text_state = rig_text_engine_state_new(engine);
 
     /*
      * Setup the 2D widget scenegraph

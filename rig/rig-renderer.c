@@ -36,6 +36,7 @@
 
 #include "rig-engine.h"
 #include "rig-renderer.h"
+#include "rig-text-renderer.h"
 
 #include "components/rig-camera.h"
 #include "components/rig-diamond.h"
@@ -46,6 +47,7 @@
 #include "components/rig-nine-slice.h"
 #include "components/rig-pointalism-grid.h"
 #include "components/rig-shape.h"
+#include "components/rig-text.h"
 
 struct _rig_renderer_t {
     rut_object_base_t _base;
@@ -91,6 +93,8 @@ struct _rig_renderer_t {
     cg_snippet_t *hair_fin_snippet;
 
     c_array_t *journal;
+
+    rig_text_renderer_state_t *text_state;
 };
 
 typedef enum _cache_slot_t {
@@ -168,6 +172,8 @@ _rig_renderer_free(void *object)
 
     c_array_free(renderer->journal, true);
     renderer->journal = NULL;
+
+    rig_text_renderer_state_destroy(renderer->text_state);
 
     rut_object_free(rig_renderer_t, object);
 }
@@ -346,6 +352,8 @@ rig_renderer_new(rig_engine_t *engine)
     renderer->engine = engine;
 
     renderer->journal = c_array_new(false, false, sizeof(rig_journal_entry_t));
+
+    renderer->text_state = rig_text_renderer_state_new(engine);
 
     return renderer;
 }
@@ -1741,6 +1749,7 @@ rig_renderer_flush_journal(rig_renderer_t *renderer,
     rut_paint_context_t *rut_paint_ctx = &paint_ctx->_parent;
     rut_object_t *camera = rut_paint_ctx->camera;
     cg_framebuffer_t *fb = rut_camera_get_framebuffer(camera);
+    rig_engine_t *engine = paint_ctx->engine;
     int start, dir, end;
     int i;
 
@@ -1778,10 +1787,10 @@ rig_renderer_flush_journal(rig_renderer_t *renderer,
         cg_pipeline_t *fin_pipeline = NULL;
         rig_hair_t *hair;
 
-        if (rut_object_get_type(geometry) == &rut_text_type &&
+        if (rut_object_get_type(geometry) == &rig_text_type &&
             paint_ctx->pass == RIG_PASS_COLOR_BLENDED) {
             cg_framebuffer_set_modelview_matrix(fb, &entry->matrix);
-            rut_paintable_paint(geometry, rut_paint_ctx);
+            rig_text_renderer_draw(paint_ctx, renderer->text_state, geometry);
             continue;
         }
 
@@ -1827,7 +1836,7 @@ rig_renderer_flush_journal(rig_renderer_t *renderer,
 
         } else if ((paint_ctx->pass == RIG_PASS_COLOR_UNBLENDED ||
                     paint_ctx->pass == RIG_PASS_COLOR_BLENDED)) {
-            rig_ui_t *ui = paint_ctx->engine->current_ui;
+            rig_ui_t *ui = engine->current_ui;
             rig_light_t *light =
                 rig_entity_get_component(ui->light, RUT_COMPONENT_TYPE_LIGHT);
             int location;
@@ -1975,9 +1984,9 @@ static void
 text_preferred_size_changed_cb(rut_object_t *sizable,
                                void *user_data)
 {
-    rut_text_t *text = sizable;
+    rig_text_t *text = sizable;
     float width, height;
-    rut_property_t *width_prop = &text->properties[RUT_TEXT_PROP_WIDTH];
+    rut_property_t *width_prop = &text->properties[RIG_TEXT_PROP_WIDTH];
 
     if (width_prop->binding)
         width = rut_property_get_float(width_prop);
@@ -2042,8 +2051,8 @@ entitygraph_pre_paint_cb(rut_object_t *object, int depth, void *user_data)
          * UI is constraining the width and wants the text to be
          * wrapped.
          */
-        if (rut_object_get_type(geometry) == &rut_text_type) {
-            rut_text_t *text = geometry;
+        if (rut_object_get_type(geometry) == &rig_text_type) {
+            rig_text_t *text = geometry;
 
             if (!priv->preferred_size_closure) {
                 priv->preferred_size_closure =

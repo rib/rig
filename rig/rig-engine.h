@@ -77,6 +77,7 @@ typedef enum _rut_select_action_t {
 #include "rig-slave.h"
 #include "rig-code.h"
 #include "rig-image-source.h"
+#include "rig-text-engine.h"
 
 enum {
     RIG_ENGINE_PROP_WIDTH,
@@ -121,6 +122,8 @@ struct _rig_engine_t {
 
     rig_code_node_t *code_graph;
     c_module_t *code_dso_module;
+
+    rig_text_engine_state_t *text_state;
 
     rut_object_t *renderer;
 
