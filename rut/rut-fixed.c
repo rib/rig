@@ -162,7 +162,7 @@ rut_fixed_set_size(rut_object_t *self, float width, float height)
     fixed->height = height;
 
     rut_closure_list_invoke(&fixed->preferred_size_cb_list,
-                            RutSizablepreferred_size_callback_t,
+                            rut_sizeable_preferred_size_callback_t,
                             fixed);
 }
 

@@ -120,7 +120,7 @@ rut_shim_get_preferred_height(void *sizable,
 
 static rut_closure_t *
 rut_shim_add_preferred_size_callback(void *object,
-                                     RutSizablepreferred_size_callback_t cb,
+                                     rut_sizeable_preferred_size_callback_t cb,
                                      void *user_data,
                                      rut_closure_destroy_callback_t destroy)
 {
@@ -197,7 +197,7 @@ static void
 preferred_size_changed(rut_shim_t *shim)
 {
     rut_closure_list_invoke(&shim->preferred_size_cb_list,
-                            RutSizablepreferred_size_callback_t,
+                            rut_sizeable_preferred_size_callback_t,
                             shim);
 }
 

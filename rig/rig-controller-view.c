@@ -1189,7 +1189,7 @@ rig_path_view_get_size(void *sizable, float *width, float *height)
 static rut_closure_t *
 _rig_path_view_add_preferred_size_callback(
     void *sizable,
-    RutSizablepreferred_size_callback_t cb,
+    rut_sizeable_preferred_size_callback_t cb,
     void *user_data,
     rut_closure_destroy_callback_t destroy_cb)
 {
@@ -1203,7 +1203,7 @@ static void
 _rig_path_view_preferred_size_changed(rig_path_view_t *path_view)
 {
     rut_closure_list_invoke(&path_view->preferred_size_cb_list,
-                            RutSizablepreferred_size_callback_t,
+                            rut_sizeable_preferred_size_callback_t,
                             path_view);
     _rig_path_view_queue_allocate(path_view);
 }
@@ -1815,7 +1815,7 @@ rig_controller_property_view_get_preferred_height(void *sizable,
 static rut_closure_t *
 rig_controller_property_view_add_preferred_size_callback(
     void *sizable,
-    RutSizablepreferred_size_callback_t cb,
+    rut_sizeable_preferred_size_callback_t cb,
     void *user_data,
     rut_closure_destroy_callback_t destroy_cb)
 {
@@ -1830,7 +1830,7 @@ _rig_controller_property_view_preferred_size_changed(
     rig_controller_property_view_t *prop_view)
 {
     rut_closure_list_invoke(&prop_view->preferred_size_cb_list,
-                            RutSizablepreferred_size_callback_t,
+                            rut_sizeable_preferred_size_callback_t,
                             prop_view);
 }
 

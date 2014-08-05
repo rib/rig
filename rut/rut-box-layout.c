@@ -293,7 +293,7 @@ static void
 preferred_size_changed(rut_box_layout_t *box)
 {
     rut_closure_list_invoke(
-        &box->preferred_size_cb_list, RutSizablepreferred_size_callback_t, box);
+        &box->preferred_size_cb_list, rut_sizeable_preferred_size_callback_t, box);
 }
 
 static void
@@ -446,7 +446,7 @@ rut_box_layout_get_preferred_height(void *sizable,
 static rut_closure_t *
 rut_box_layout_add_preferred_size_callback(
     void *object,
-    RutSizablepreferred_size_callback_t cb,
+    rut_sizeable_preferred_size_callback_t cb,
     void *user_data,
     rut_closure_destroy_callback_t destroy)
 {

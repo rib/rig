@@ -46,7 +46,7 @@ typedef struct rut_transformable_vtable_t {
 
 const cg_matrix_t *rut_transformable_get_matrix(rut_object_t *object);
 
-typedef void (*RutSizablepreferred_size_callback_t)(rut_object_t *sizable,
+typedef void (*rut_sizeable_preferred_size_callback_t)(rut_object_t *sizable,
                                                     void *user_data);
 
 typedef struct _rut_sizable_vtable_t {
@@ -67,7 +67,7 @@ typedef struct _rut_sizable_vtable_t {
      * size never changes */
     rut_closure_t *(*add_preferred_size_callback)(
         rut_object_t *object,
-        RutSizablepreferred_size_callback_t callback,
+        rut_sizeable_preferred_size_callback_t callback,
         void *user_data,
         rut_closure_destroy_callback_t destroy_cb);
 } rut_sizable_vtable_t;
@@ -110,7 +110,7 @@ void rut_simple_sizable_get_preferred_height(void *object,
  */
 rut_closure_t *rut_sizable_add_preferred_size_callback(
     rut_object_t *object,
-    RutSizablepreferred_size_callback_t cb,
+    rut_sizeable_preferred_size_callback_t cb,
     void *user_data,
     rut_closure_destroy_callback_t destroy_cb);
 

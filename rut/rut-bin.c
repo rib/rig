@@ -159,7 +159,7 @@ static void
 preferred_size_changed(rut_bin_t *bin)
 {
     rut_closure_list_invoke(
-        &bin->preferred_size_cb_list, RutSizablepreferred_size_callback_t, bin);
+        &bin->preferred_size_cb_list, rut_sizeable_preferred_size_callback_t, bin);
 }
 
 static void
@@ -248,7 +248,7 @@ rut_bin_get_preferred_height(void *sizable,
 
 static rut_closure_t *
 rut_bin_add_preferred_size_callback(void *object,
-                                    RutSizablepreferred_size_callback_t cb,
+                                    rut_sizeable_preferred_size_callback_t cb,
                                     void *user_data,
                                     rut_closure_destroy_callback_t destroy)
 {

@@ -234,7 +234,7 @@ rut_ui_viewport_get_preferred_height(void *sizable,
 static rut_closure_t *
 rut_ui_viewport_add_preferred_size_callback(
     void *object,
-    RutSizablepreferred_size_callback_t cb,
+    rut_sizeable_preferred_size_callback_t cb,
     void *user_data,
     rut_closure_destroy_callback_t destroy)
 {
@@ -911,7 +911,7 @@ static void
 preferred_size_changed(rut_ui_viewport_t *ui_viewport)
 {
     rut_closure_list_invoke(&ui_viewport->preferred_size_cb_list,
-                            RutSizablepreferred_size_callback_t,
+                            rut_sizeable_preferred_size_callback_t,
                             ui_viewport);
 }
 

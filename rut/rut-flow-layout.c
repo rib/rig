@@ -621,7 +621,7 @@ rut_flow_layout_get_preferred_width(void *sizable,
 static rut_closure_t *
 rut_flow_layout_add_preferred_size_callback(
     void *object,
-    RutSizablepreferred_size_callback_t cb,
+    rut_sizeable_preferred_size_callback_t cb,
     void *user_data,
     rut_closure_destroy_callback_t destroy)
 {
@@ -703,7 +703,7 @@ preferred_size_changed(rut_flow_layout_t *flow)
     flow->needs_reflow = true;
 
     rut_closure_list_invoke(&flow->preferred_size_cb_list,
-                            RutSizablepreferred_size_callback_t,
+                            rut_sizeable_preferred_size_callback_t,
                             flow);
 }
 

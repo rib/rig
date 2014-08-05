@@ -617,7 +617,7 @@ static void
 rut_text_notify_preferred_size_changed(rut_text_t *text)
 {
     rut_closure_list_invoke(&text->preferred_size_cb_list,
-                            RutSizablepreferred_size_callback_t,
+                            rut_sizeable_preferred_size_callback_t,
                             text);
 }
 
@@ -2773,7 +2773,7 @@ rut_text_set_height(rut_object_t *obj, float height)
 
 static rut_closure_t *
 _rut_text_add_preferred_size_callback(void *object,
-                                      RutSizablepreferred_size_callback_t cb,
+                                      rut_sizeable_preferred_size_callback_t cb,
                                       void *user_data,
                                       rut_closure_destroy_callback_t destroy)
 {

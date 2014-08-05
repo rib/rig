@@ -61,7 +61,7 @@ rut_composite_sizable_get_preferred_height(void *sizable,
 
 typedef struct _forwarding_closure_t {
     rut_object_t *composite_sizable;
-    RutSizablepreferred_size_callback_t cb;
+    rut_sizeable_preferred_size_callback_t cb;
     void *user_data;
 } forwarding_closure_t;
 
@@ -82,7 +82,7 @@ forward_preferred_size_change_cb(rut_object_t *container,
 rut_closure_t *
 rut_composite_sizable_add_preferred_size_callback(
     void *object,
-    RutSizablepreferred_size_callback_t cb,
+    rut_sizeable_preferred_size_callback_t cb,
     void *user_data,
     rut_closure_destroy_callback_t destroy)
 {

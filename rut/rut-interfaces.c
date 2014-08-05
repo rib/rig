@@ -116,7 +116,7 @@ rut_simple_sizable_get_preferred_height(void *object,
 rut_closure_t *
 rut_sizable_add_preferred_size_callback(
     rut_object_t *object,
-    RutSizablepreferred_size_callback_t cb,
+    rut_sizeable_preferred_size_callback_t cb,
     void *user_data,
     rut_closure_destroy_callback_t destroy_cb)
 {

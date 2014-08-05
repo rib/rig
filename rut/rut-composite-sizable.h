@@ -44,7 +44,7 @@ void rut_composite_sizable_get_preferred_height(void *sizable,
 
 rut_closure_t *rut_composite_sizable_add_preferred_size_callback(
     void *object,
-    RutSizablepreferred_size_callback_t cb,
+    rut_sizeable_preferred_size_callback_t cb,
     void *user_data,
     rut_closure_destroy_callback_t destroy);
 

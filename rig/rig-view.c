@@ -126,7 +126,7 @@ rig_view_get_preferred_height(void *sizable,
 
 static rut_closure_t *
 rig_view_add_preferred_size_callback(void *object,
-                                     RutSizablepreferred_size_callback_t cb,
+                                     rut_sizeable_preferred_size_callback_t cb,
                                      void *user_data,
                                      rut_closure_destroy_callback_t destroy)
 {
@@ -205,7 +205,7 @@ static void
 preferred_size_changed (rig_view_t *view)
 {
     rut_closure_list_invoke (&view->preferred_size_cb_list,
-                             RutSizablepreferred_size_callback_t,
+                             rut_sizeable_preferred_size_callback_t,
                              view);
 }
 
