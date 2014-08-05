@@ -76,14 +76,14 @@ void _rut_object_free(size_t bytes, void *object);
 void rut_object_init(rut_object_base_t *object_properties, rut_type_t *type);
 
 static inline const rut_type_t *
-rut_object_get_type(rut_object_t *object)
+rut_object_get_type(const rut_object_t *object)
 {
     rut_object_base_t *obj = (rut_object_base_t *)object;
     return obj->type;
 }
 
 static inline void *
-rut_object_get_properties(rut_object_t *object,
+rut_object_get_properties(const rut_object_t *object,
                           rut_trait_id_t trait)
 {
     rut_object_base_t *obj = (rut_object_base_t *)object;
@@ -92,14 +92,14 @@ rut_object_get_properties(rut_object_t *object,
 }
 
 static inline void *
-rut_object_get_vtable(void *object, rut_trait_id_t trait)
+rut_object_get_vtable(const void *object, rut_trait_id_t trait)
 {
     rut_object_base_t *obj = (rut_object_base_t *)object;
     return obj->type->traits[trait].vtable;
 }
 
 static inline bool
-rut_object_is(void *object, rut_trait_id_t trait)
+rut_object_is(const void *object, rut_trait_id_t trait)
 {
     rut_object_base_t *obj = (rut_object_base_t *)object;
     return _rut_bitmask_get(&obj->type->traits_mask, trait);

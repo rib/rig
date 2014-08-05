@@ -243,6 +243,7 @@ message Entity
           optional sint64 asset_id=1; //XXX ID
         }
 
+      //Deprecated (just rely on boxed properties)
       message Text
         {
           optional string text=1;

@@ -82,7 +82,7 @@ typedef struct _undo_redo_path_add_remove_t {
     float t;
 
     //#warning "XXX: figure out how undo_redo_path_add_remove_t with async edits
-    //via the simulator"
+    // via the simulator"
     /* When we initially log to remove a node then we won't save
      * a value until we actually apply the operation and so we
      * need to track when this boxed value is valid... */

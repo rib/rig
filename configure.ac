@@ -484,6 +484,8 @@ AM_CONDITIONAL([HAVE_AVAHI], [test "x$avahi_enabled" = "xyes"])
 AC_SUBST(RIG_PKG_REQUIRES)
 PKG_CHECK_MODULES(RIG_DEP, [$RIG_PKG_REQUIRES])
 
+PKG_CHECK_VAR(ICU_PREFIX, icu-uc, prefix, [],
+              [ AC_MSG_ERROR([Could not locate ICU data]) ])
 
 dnl ============================================================
 dnl Optional LLVM Enable

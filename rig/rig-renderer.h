@@ -29,6 +29,9 @@
 #ifndef _RIG_RENDERER_H_
 #define _RIG_RENDERER_H_
 
+#include "rig-types.h"
+#include "rig-entity.h"
+
 typedef enum _rig_pass_t {
     RIG_PASS_COLOR_UNBLENDED,
     RIG_PASS_COLOR_BLENDED,
