@@ -438,7 +438,7 @@ static rut_property_spec_t _rut_text_prop_specs[] = {
       .type = RUT_PROPERTY_TYPE_INTEGER,
       .getter.any_type = rut_text_get_line_alignment,
       .setter.any_type = rut_text_set_line_alignment,
-      .nick = "Line Alignment",
+      .nick = "Line alignment_t",
       .blurb = "The preferred alignment for the string, for multi-line text",
       .flags = RUT_PROPERTY_FLAG_READWRITE },
 
@@ -2738,7 +2738,7 @@ _rut_text_set_size(rut_object_t *object, float width, float height)
         rut_input_region_set_rectangle(text->input_region, 0, 0, width, height);
 
     pick_vertices =
-        (cg_vertex_p3_t *)text->pick_mesh->attributes[0]->buffer->data;
+        (cg_vertex_p3_t *)text->pick_mesh->attributes[0]->buffered.buffer->data;
     pick_vertices[0].x = 0;
     pick_vertices[0].y = 0;
     pick_vertices[1].x = 0;

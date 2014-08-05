@@ -76,6 +76,7 @@ typedef enum _rut_select_action_t {
 #include "rig-simulator.h"
 #include "rig-code.h"
 #include "rig-image-source.h"
+#include "rig-text-engine.h"
 
 enum {
     RIG_ENGINE_PROP_DEVICE_WIDTH,

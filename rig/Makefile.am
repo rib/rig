@@ -19,7 +19,8 @@ AM_CPPFLAGS = \
 	-DRIG_BIN_DIR=\"$(bindir)/\" \
 	$(RIG_CLANG_CFLAGS) \
 	-DRIG_LLVM_PREFIX=\"@RIG_LLVM_PREFIX@\" \
-	-DRIG_LLVM_VERSION=\"@RIG_LLVM_VERSION@\"
+	-DRIG_LLVM_VERSION=\"@RIG_LLVM_VERSION@\" \
+	-DICU_DATA_DIR=\""$(ICU_PREFIX)/share"\"
 
 if USE_UV
 AM_CPPFLAGS += -I$(top_srcdir)/h2o/include

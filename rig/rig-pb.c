@@ -47,6 +47,7 @@
 #include "components/rig-nine-slice.h"
 #include "components/rig-pointalism-grid.h"
 #include "components/rig-shape.h"
+#include "components/rig-text.h"
 
 #ifdef USE_UV
 #include "components/rig-native-module.h"
@@ -499,22 +500,12 @@ rig_pb_serialize_component(rig_pb_serializer_t *serializer,
             pb_component->model->has_asset_id = true;
             pb_component->model->asset_id = asset_id;
         }
-    } else if (type == &rut_text_type) {
-        rut_text_t *text = (rut_text_t *)component;
-        const cg_color_t *color;
-        Rig__Entity__Component__Text *pb_text;
-
+    } else if (type == &rig_text_type) {
         pb_component->type = RIG__ENTITY__COMPONENT__TYPE__TEXT;
-        pb_text = rig_pb_new(serializer,
-                             Rig__Entity__Component__Text,
-                             rig__entity__component__text__init);
-        pb_component->text = pb_text;
-
-        color = rut_text_get_color(text);
-
-        pb_text->text = (char *)rut_text_get_text(text);
-        pb_text->font = (char *)rut_text_get_font_name(text);
-        pb_text->color = pb_color_new(serializer, color);
+        serialize_instrospectable_properties(component,
+                                             &pb_component->n_properties,
+                                             (void **)&pb_component->properties,
+                                             serializer);
     } else if (type == &rig_camera_type) {
         rig_camera_t *camera = (rig_camera_t *)component;
         Rig__Entity__Component__Camera *pb_camera;
@@ -2066,18 +2057,15 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
         return model;
     }
     case RIG__ENTITY__COMPONENT__TYPE__TEXT: {
-        Rig__Entity__Component__Text *pb_text = pb_component->text;
-        rut_text_t *text = rut_text_new_with_text(
-            unserializer->engine->shell, pb_text->font, pb_text->text);
-
-        if (pb_text->color) {
-            cg_color_t color;
-            pb_init_color(unserializer->engine->shell, &color, pb_text->color);
-            rut_text_set_color(text, &color);
-        }
+        rig_text_t *text = rig_text_new(unserializer->engine);
 
         rig_entity_add_component(entity, text);
         rut_object_unref(text);
+
+        set_properties_from_pb_boxed_values(unserializer,
+                                            text,
+                                            pb_component->n_properties,
+                                            pb_component->properties);
 
         rig_pb_unserializer_register_object(unserializer, text, component_id);
         return text;

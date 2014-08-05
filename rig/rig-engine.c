@@ -129,6 +129,8 @@ _rig_engine_free(void *object)
 
     rig_engine_set_ui(engine, NULL);
 
+    rig_text_engine_state_destroy(engine->text_state);
+
     if (engine->queued_deletes->len) {
         c_warning("Leaking %d un-garbage-collected objects",
                   engine->queued_deletes->len);
