@@ -67,6 +67,7 @@
 #include "components/rig-nine-slice.h"
 #include "components/rig-pointalism-grid.h"
 #include "components/rig-shape.h"
+#include "components/rig-text.h"
 
 struct _rig_editor_t {
     rut_object_base_t _base;
@@ -527,7 +528,7 @@ apply_asset_input_with_entity(rig_editor_t *editor,
     }
     case RIG_ASSET_TYPE_BUILTIN:
         if (asset == editor->text_builtin_asset) {
-            rut_text_t *text;
+            rig_text_t *text;
             cg_color_t color;
             rig_hair_t *hair;
 
@@ -544,9 +545,10 @@ apply_asset_input_with_entity(rig_editor_t *editor,
             else if (geom)
                 rig_undo_journal_delete_component(engine->undo_journal, geom);
 
-            text = rut_text_new_with_text(engine->shell, "Sans 60px", "text");
+            text = rig_text_new(engine);
             cg_color_init_from_4f(&color, 1, 1, 1, 1);
-            rut_text_set_color(text, &color);
+            rig_text_set_color(text, &color);
+            rig_text_set_text(text, "Text...");
             rig_undo_journal_add_component(engine->undo_journal, entity, text);
             rut_object_unref(text);
 
