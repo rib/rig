@@ -482,6 +482,55 @@ void cg_attribute_set_normalized(cg_attribute_t *attribute, bool normalized);
  */
 bool cg_attribute_get_normalized(cg_attribute_t *attribute);
 
+
+
+/**
+ * cg_attribute_set_instance_stride:
+ * @attribute: A #cg_attribute_t
+ * @instance_stride: Number of instances the gpu should process before
+ *                   progressing to the next attribute value.
+ *
+ * Determines whether the gpu should step through the data associated with
+ * the given @attribute on a per vertex (default) or per instance basis.
+ *
+ * By default the @instance_stride is %0 and the gpu progresses through
+ * @attribute values on a per vertex basis.
+ *
+ * An instance may be a primitive comprised of multiple triangles. For example
+ * if an application represents a rectangle as %2 triangles (%6 vertices) and
+ * wants to use a different transformation matrix for thousands of rectangles
+ * then this api enables it to upload a matrix for each rectangle and tell the
+ * gpu to only progress to the next matrix after @instance_stride rectangles.
+ *
+ * The number of vertices that belong to a single instance (%6 in this
+ * example) is defined by the number of vertices belonging to the
+ * #cg_primitive_t being drawn via cg_primitive_draw(). Multiple instances can
+ * be drawn via cg_primitive_draw_instances().
+ *
+ * The default value of this property is %0 which means that the gpu progress
+ * though the @attribute data on a per-vertex basis instead of a per-instance
+ * basis.
+ */
+void cg_attribute_set_instance_stride(cg_attribute_t *attribute, int stride);
+
+
+/**
+ * cg_attribute_get_instance_stride:
+ * @attribute: A #cg_attribute_t
+ *
+ * Returns how many instances the gpu would process before progressing to the
+ * next @attribute value, as determined by calling
+ * cg_attribute_set_instance_stride().
+ *
+ * The default value of this property is %0 which means that the gpu progress
+ * though the @attribute data on a per-vertex basis instead of a per-instance
+ * basis.
+ *
+ * Return value: The number of instances for the gpu to process before it
+ *               should progress to the next @attribute value.
+ */
+int cg_attribute_get_instance_stride(cg_attribute_t *attribute);
+
 /**
  * cg_attribute_get_buffer:
  * @attribute: A #cg_attribute_t

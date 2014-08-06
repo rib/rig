@@ -592,6 +592,7 @@ void
 _cg_primitive_draw(cg_primitive_t *primitive,
                    cg_framebuffer_t *framebuffer,
                    cg_pipeline_t *pipeline,
+                   int n_instances,
                    cg_draw_flags_t flags)
 {
     if (primitive->indices)
@@ -603,6 +604,7 @@ _cg_primitive_draw(cg_primitive_t *primitive,
                                                 primitive->indices,
                                                 primitive->attributes,
                                                 primitive->n_attributes,
+                                                n_instances,
                                                 flags);
     else
         _cg_framebuffer_draw_attributes(framebuffer,
@@ -612,6 +614,7 @@ _cg_primitive_draw(cg_primitive_t *primitive,
                                         primitive->n_vertices,
                                         primitive->attributes,
                                         primitive->n_attributes,
+                                        n_instances,
                                         flags);
 }
 
@@ -620,5 +623,15 @@ cg_primitive_draw(cg_primitive_t *primitive,
                   cg_framebuffer_t *framebuffer,
                   cg_pipeline_t *pipeline)
 {
-    _cg_primitive_draw(primitive, framebuffer, pipeline, 0 /* flags */);
+    _cg_primitive_draw(primitive, framebuffer, pipeline, 1, 0 /* flags */);
+}
+
+void
+cg_primitive_draw_instances(cg_primitive_t *primitive,
+                            cg_framebuffer_t *framebuffer,
+                            cg_pipeline_t *pipeline,
+                            int n_instances)
+{
+    _cg_primitive_draw(primitive, framebuffer, pipeline,
+                       n_instances, 0 /* flags */);
 }

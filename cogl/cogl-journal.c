@@ -326,6 +326,7 @@ _cg_journal_flush_modelview_and_entries(
                                         batch_len * 4,
                                         attributes,
                                         state->attributes->len,
+                                        1, /* one instance */
                                         draw_flags);
     } else
 #endif /* HAVE_CG_GL */
@@ -341,6 +342,7 @@ _cg_journal_flush_modelview_and_entries(
                                                     state->indices,
                                                     attributes,
                                                     state->attributes->len,
+                                                    1, /* one instance */
                                                     draw_flags);
         } else {
             _cg_framebuffer_draw_attributes(framebuffer,
@@ -350,6 +352,7 @@ _cg_journal_flush_modelview_and_entries(
                                             4,
                                             attributes,
                                             state->attributes->len,
+                                            1, /* one instance */
                                             draw_flags);
         }
     }
@@ -392,7 +395,8 @@ _cg_journal_flush_modelview_and_entries(
                                             4 * i + state->current_vertex,
                                             4,
                                             loop_attributes,
-                                            1,
+                                            1, /* one attribute */
+                                            1, /* one instance */
                                             draw_flags);
 
         /* Go to the next color */

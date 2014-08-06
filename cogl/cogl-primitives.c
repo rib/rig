@@ -692,7 +692,8 @@ _cg_rectangle_immediate(cg_framebuffer_t *framebuffer,
                                     0, /* first_index */
                                     4, /* n_vertices */
                                     attributes,
-                                    1,
+                                    1, /* n attributes */
+                                    1, /* n instances */
                                     CG_DRAW_SKIP_JOURNAL_FLUSH |
                                     CG_DRAW_SKIP_PIPELINE_VALIDATION |
                                     CG_DRAW_SKIP_FRAMEBUFFER_FLUSH);

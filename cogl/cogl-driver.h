@@ -85,6 +85,7 @@ struct _cg_driver_vtable_t {
                                         int n_vertices,
                                         cg_attribute_t **attributes,
                                         int n_attributes,
+                                        int n_instances,
                                         cg_draw_flags_t flags);
 
     void (*framebuffer_draw_indexed_attributes)(cg_framebuffer_t *framebuffer,
@@ -95,6 +96,7 @@ struct _cg_driver_vtable_t {
                                                 cg_indices_t *indices,
                                                 cg_attribute_t **attributes,
                                                 int n_attributes,
+                                                int n_instances,
                                                 cg_draw_flags_t flags);
 
     bool (*framebuffer_read_pixels_into_bitmap)(cg_framebuffer_t *framebuffer,

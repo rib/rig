@@ -205,6 +205,7 @@ paint_primitive_silhouette(cg_framebuffer_t *framebuffer,
     _cg_primitive_draw(user_data,
                        framebuffer,
                        pipeline,
+                       1,
                        CG_DRAW_SKIP_JOURNAL_FLUSH |
                        CG_DRAW_SKIP_PIPELINE_VALIDATION |
                        CG_DRAW_SKIP_FRAMEBUFFER_FLUSH);

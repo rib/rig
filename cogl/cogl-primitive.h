@@ -850,6 +850,28 @@ void cg_primitive_draw(cg_primitive_t *primitive,
                        cg_framebuffer_t *framebuffer,
                        cg_pipeline_t *pipeline);
 
+/**
+ * cg_primitive_draw_instances:
+ * @primitive: A #cg_primitive_t geometry object
+ * @framebuffer: A destination #cg_framebuffer_t
+ * @pipeline: A #cg_pipeline_t state object
+ * @n_instances: The number of instances of @primitive to draw
+ *
+ * Draws the given @primitive geometry to the specified destination
+ * @framebuffer @n_instances times using the graphics processing state
+ * described by @pipeline.
+ *
+ * This drawing api doesn't support high-level meta texture types such
+ * as #cg_texture_2d_sliced_t so it is the user's responsibility to
+ * ensure that only low-level textures that can be directly sampled by
+ * a GPU such as #cg_texture_2d_t or #cg_texture_3d_t are associated with
+ * layers of the given @pipeline.
+ */
+void cg_primitive_draw_instances(cg_primitive_t *primitive,
+                                 cg_framebuffer_t *framebuffer,
+                                 cg_pipeline_t *pipeline,
+                                 int n_instances);
+
 CG_END_DECLS
 
 #endif /* __CG_PRIMITIVE_H__ */

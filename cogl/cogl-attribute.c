@@ -228,6 +228,8 @@ cg_attribute_new(cg_attribute_buffer_t *attribute_buffer,
     attribute->d.buffered.n_components = n_components;
     attribute->d.buffered.type = type;
 
+    attribute->instance_stride = 0;
+
     attribute->immutable_ref = 0;
 
     if (attribute->name_state->name_id != CG_ATTRIBUTE_NAME_ID_CUSTOM_ARRAY) {
@@ -461,6 +463,25 @@ cg_attribute_set_normalized(cg_attribute_t *attribute, bool normalized)
         warn_about_midscene_changes();
 
     attribute->normalized = normalized;
+}
+
+void
+cg_attribute_set_instance_stride(cg_attribute_t *attribute, int stride)
+{
+    c_return_if_fail(cg_is_attribute(attribute));
+
+    if (C_UNLIKELY(attribute->immutable_ref))
+        warn_about_midscene_changes();
+
+    attribute->instance_stride = stride;
+}
+
+int
+cg_attribute_get_instance_stride(cg_attribute_t *attribute)
+{
+    c_return_val_if_fail(cg_is_attribute(attribute), 0);
+
+    return attribute->instance_stride;
 }
 
 cg_attribute_buffer_t *

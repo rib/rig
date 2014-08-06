@@ -1080,13 +1080,20 @@ _cg_framebuffer_gl_draw_attributes(cg_framebuffer_t *framebuffer,
                                    int n_vertices,
                                    cg_attribute_t **attributes,
                                    int n_attributes,
+                                   int n_instances,
                                    cg_draw_flags_t flags)
 {
     _cg_flush_attributes_state(
         framebuffer, pipeline, flags, attributes, n_attributes);
 
-    GE(framebuffer->dev,
-       glDrawArrays((GLenum)mode, first_vertex, n_vertices));
+    if (framebuffer->dev->glDrawArraysInstanced) {
+        GE(framebuffer->dev,
+           glDrawArraysInstanced((GLenum)mode, first_vertex,
+                                 n_vertices, n_instances));
+    } else {
+        GE(framebuffer->dev,
+           glDrawArrays((GLenum)mode, first_vertex, n_vertices));
+    }
 }
 
 static size_t
@@ -1112,6 +1119,7 @@ _cg_framebuffer_gl_draw_indexed_attributes(cg_framebuffer_t *framebuffer,
                                            cg_indices_t *indices,
                                            cg_attribute_t **attributes,
                                            int n_attributes,
+                                           int n_instances,
                                            cg_draw_flags_t flags)
 {
     cg_buffer_t *buffer;
@@ -1146,11 +1154,20 @@ _cg_framebuffer_gl_draw_indexed_attributes(cg_framebuffer_t *framebuffer,
         break;
     }
 
-    GE(framebuffer->dev,
-       glDrawElements((GLenum)mode,
-                      n_vertices,
-                      indices_gl_type,
-                      base + buffer_offset + index_size * first_vertex));
+    if (framebuffer->dev->glDrawElementsInstanced) {
+        GE(framebuffer->dev,
+           glDrawElementsInstanced((GLenum)mode,
+                                   n_vertices,
+                                   indices_gl_type,
+                                   base + buffer_offset + index_size * first_vertex,
+                                   n_instances));
+    } else {
+        GE(framebuffer->dev,
+           glDrawElements((GLenum)mode,
+                          n_vertices,
+                          indices_gl_type,
+                          base + buffer_offset + index_size * first_vertex));
+    }
 
     _cg_buffer_gl_unbind(buffer);
 }

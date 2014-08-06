@@ -66,6 +66,7 @@ void _cg_framebuffer_gl_draw_attributes(cg_framebuffer_t *framebuffer,
                                         int n_vertices,
                                         cg_attribute_t **attributes,
                                         int n_attributes,
+                                        int n_instances,
                                         cg_draw_flags_t flags);
 
 void _cg_framebuffer_gl_draw_indexed_attributes(cg_framebuffer_t *framebuffer,
@@ -76,6 +77,7 @@ void _cg_framebuffer_gl_draw_indexed_attributes(cg_framebuffer_t *framebuffer,
                                                 cg_indices_t *indices,
                                                 cg_attribute_t **attributes,
                                                 int n_attributes,
+                                                int n_instances,
                                                 cg_draw_flags_t flags);
 
 bool _cg_framebuffer_gl_read_pixels_into_bitmap(cg_framebuffer_t *framebuffer,

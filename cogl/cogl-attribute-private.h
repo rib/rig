@@ -61,9 +61,6 @@ struct _cg_attribute_t {
     cg_object_t _parent;
 
     const cg_attribute_name_state_t *name_state;
-    bool normalized;
-
-    bool is_buffered;
 
     union {
         struct {
@@ -80,6 +77,10 @@ struct _cg_attribute_t {
     } d;
 
     int immutable_ref;
+    int instance_stride;
+
+    unsigned int normalized : 1;
+    unsigned int is_buffered : 1;
 };
 
 typedef enum {

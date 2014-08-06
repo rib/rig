@@ -266,6 +266,8 @@ bool cg_is_device(void *object);
  *     the depth buffer to a texture.
  * @CG_FEATURE_ID_PRESENTATION_TIME: Whether frame presentation
  *    time stamps will be recorded in #cg_frame_info_t objects.
+ * @CG_FEATURE_ID_INSTANCES: Whether #cg_primitive_draw_instances() is
+ *    supported.
  *
  * All the capabilities that can vary between different GPUs supported
  * by Cogl. Applications that depend on any of these features should explicitly
@@ -294,6 +296,7 @@ typedef enum _cg_feature_id_t {
     CG_FEATURE_ID_FENCE,
     CG_FEATURE_ID_PER_VERTEX_POINT_SIZE,
     CG_FEATURE_ID_TEXTURE_RG,
+    CG_FEATURE_ID_INSTANCES,
 
     /*< private >*/
     _CG_N_FEATURE_IDS /*< skip >*/

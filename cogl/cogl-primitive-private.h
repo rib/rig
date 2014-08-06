@@ -63,6 +63,7 @@ void _cg_primitive_immutable_unref(cg_primitive_t *primitive);
 void _cg_primitive_draw(cg_primitive_t *primitive,
                         cg_framebuffer_t *framebuffer,
                         cg_pipeline_t *pipeline,
+                        int n_instances,
                         cg_draw_flags_t flags);
 
 #endif /* __CG_PRIMITIVE_PRIVATE_H */

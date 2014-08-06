@@ -309,3 +309,16 @@ CG_EXT_BEGIN(
     draw_buffers, 2, 0, CG_EXT_IN_GLES3, "ARB\0EXT\0", "draw_buffers\0")
 CG_EXT_FUNCTION(void, glDrawBuffers, (GLsizei n, const GLenum *bufs))
 CG_EXT_END()
+
+
+CG_EXT_BEGIN(instanced_arrays, 3, 1, CG_EXT_IN_GLES3, "ANGLE\0ARB\0EXT\0", "instanced_arrays\0")
+CG_EXT_FUNCTION(void, glVertexAttribDivisor, (GLuint index, GLuint divisor))
+CG_EXT_FUNCTION(void, glDrawArraysInstanced,
+                (GLenum mode, GLint first, GLsizei count, GLsizei primcount))
+CG_EXT_FUNCTION(void, glDrawElementsInstanced,
+                (GLenum mode,
+                 GLsizei count,
+                 GLenum type,
+                 const GLvoid *indices,
+                 GLsizei primcount))
+CG_EXT_END()

@@ -111,6 +111,12 @@ setup_generic_buffered_attribute(cg_device_t *dev,
                              attribute->normalized,
                              attribute->d.buffered.stride,
                              base + attribute->d.buffered.offset));
+
+    if (attribute->instance_stride) {
+        GE(dev,
+           glVertexAttribDivisor(attrib_location, attribute->instance_stride));
+    }
+
     _cg_bitmask_set(
         &dev->enable_custom_attributes_tmp, attrib_location, true);
 }

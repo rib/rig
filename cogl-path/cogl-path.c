@@ -346,7 +346,7 @@ _cg_path_fill_nodes(cg_path_t *path,
 
         primitive = _cg_path_get_fill_primitive(path);
 
-        _cg_primitive_draw(primitive, framebuffer, pipeline, flags);
+        _cg_primitive_draw(primitive, framebuffer, pipeline, 1, flags);
     }
 }
 

@@ -1964,6 +1964,7 @@ draw_wireframe(cg_device_t *dev,
                                             wire_indices,
                                             attributes,
                                             n_attributes,
+                                            1,
                                             flags);
 
     cg_object_unref(wire_indices);
@@ -1981,6 +1982,7 @@ _cg_framebuffer_draw_attributes(cg_framebuffer_t *framebuffer,
                                 int n_vertices,
                                 cg_attribute_t **attributes,
                                 int n_attributes,
+                                int n_instances,
                                 cg_draw_flags_t flags)
 {
 #ifdef CG_ENABLE_DEBUG
@@ -2010,6 +2012,7 @@ _cg_framebuffer_draw_attributes(cg_framebuffer_t *framebuffer,
                                                         n_vertices,
                                                         attributes,
                                                         n_attributes,
+                                                        n_instances,
                                                         flags);
     }
 }
@@ -2023,6 +2026,7 @@ _cg_framebuffer_draw_indexed_attributes(cg_framebuffer_t *framebuffer,
                                         cg_indices_t *indices,
                                         cg_attribute_t **attributes,
                                         int n_attributes,
+                                        int n_instances,
                                         cg_draw_flags_t flags)
 {
 #ifdef CG_ENABLE_DEBUG
@@ -2053,6 +2057,7 @@ _cg_framebuffer_draw_indexed_attributes(cg_framebuffer_t *framebuffer,
                                                                 indices,
                                                                 attributes,
                                                                 n_attributes,
+                                                                n_instances,
                                                                 flags);
     }
 }
