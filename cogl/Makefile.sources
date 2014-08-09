@@ -279,6 +279,9 @@ cogl_sources_c = \
 cogl_glib_sources_h = cogl-glib-source.h
 cogl_glib_sources_c = cogl-glib-source.c
 
+cogl_uv_sources_h = cogl-uv.h
+cogl_uv_sources_c = cogl-uv.c cogl-uv-private.h
+
 cogl_xlib_sources_h = \
 	cogl-xlib-renderer.h \
 	winsys/cogl-texture-pixmap-x11.h \

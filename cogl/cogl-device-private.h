@@ -31,6 +31,10 @@
 #ifndef __CG_DEVICE_PRIVATE_H
 #define __CG_DEVICE_PRIVATE_H
 
+#ifdef USE_UV
+#include <uv.h>
+#endif
+
 #include "cogl-device.h"
 #include "cogl-winsys-private.h"
 #include "cogl-flags.h"
@@ -99,6 +103,16 @@ struct _cg_device_t {
     unsigned long features[CG_FLAGS_N_LONGS_FOR_SIZE(_CG_N_FEATURE_IDS)];
     unsigned long private_features
     [CG_FLAGS_N_LONGS_FOR_SIZE(CG_N_PRIVATE_FEATURES)];
+
+#ifdef USE_UV
+    uv_loop_t *uv_mainloop;
+    uv_prepare_t uv_mainloop_prepare;
+    uv_timer_t uv_mainloop_timer;
+    uv_check_t uv_mainloop_check;
+    cg_list_t uv_poll_sources;
+    int uv_poll_sources_age;
+    c_array_t *uv_poll_fds;
+#endif
 
     bool needs_viewport_scissor_workaround;
     cg_framebuffer_t *viewport_scissor_workaround_framebuffer;

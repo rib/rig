@@ -126,6 +126,13 @@ AC_DEFUN([AM_COGL],
           COGL_PKG_REQUIRES="$COGL_PKG_REQUIRES gobject-2.0 gmodule-no-export-2.0"
         ])
 
+  AM_CONDITIONAL([COGL_USE_UV], [test "x$enable_uv" = "xyes"])
+
+  AS_IF([test "x$enable_uv" = "xyes"],
+        [
+          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS CG_HAS_UV_SUPPORT"
+          COGL_PKG_REQUIRES="$COGL_PKG_REQUIRES libuv"
+        ])
 
   dnl     ============================================================
   dnl     Should cogl-pango be built?

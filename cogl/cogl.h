@@ -104,6 +104,9 @@
 #ifdef CG_HAS_GLIB_SUPPORT
 #include <cogl/cogl-glib-source.h>
 #endif
+#ifdef CG_HAS_UV_SUPPORT
+#include <cogl/cogl-uv.h>
+#endif
 
 /* The gobject introspection scanner seems to parse public headers in
  * isolation which means we need to be extra careful about how we

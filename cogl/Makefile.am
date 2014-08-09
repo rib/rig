@@ -69,6 +69,11 @@ cogl_public_h += $(cogl_glib_sources_h)
 cogl_sources_c += $(cogl_glib_sources_c)
 endif
 
+if COGL_USE_UV
+cogl_public_h += $(cogl_uv_sources_h)
+cogl_sources_c += $(cogl_uv_sources_c)
+endif
+
 if COGL_SUPPORT_XLIB
 cogl_public_h += $(cogl_xlib_sources_h)
 cogl_sources_c += $(cogl_xlib_sources_c)

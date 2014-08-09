@@ -55,6 +55,10 @@
 #include "cogl-config-private.h"
 #include "cogl-error-private.h"
 
+#ifdef USE_UV
+#include "cogl-uv-private.h"
+#endif
+
 #include <string.h>
 #include <stdlib.h>
 
@@ -488,6 +492,10 @@ _cg_device_free(cg_device_t *dev)
     c_array_free(dev->attribute_name_index_map, true);
 
     c_byte_array_free(dev->buffer_map_fallback_array, true);
+
+#ifdef USE_UV
+    _cg_uv_cleanup(dev);
+#endif
 
     cg_object_unref(dev->display);
     cg_object_unref(dev->renderer);
