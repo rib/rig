@@ -215,7 +215,7 @@ compile_code(const char *code, char **tmp_object_file)
 }
 
 static char *
-link(char *tmp_object_file, uint8_t **dso_data_out, size_t *dso_len_out)
+llvm_link(char *tmp_object_file, uint8_t **dso_data_out, size_t *dso_len_out)
 {
     void *handle;
     binding_sym_t binding_sym;
@@ -262,13 +262,11 @@ link(char *tmp_object_file, uint8_t **dso_data_out, size_t *dso_len_out)
                              (gsize *)dso_len_out,
                              &error)) {
         g_warning("Failed to read DSO");
-        return false;
+        return NULL;
     }
 
     return g_strdup(tmp_filename.c_str());
 }
-
-G_BEGIN_DECLS
 
 struct _rig_llvm_module_t {
     rut_object_base_t _base;
@@ -306,6 +304,8 @@ _rig_llvm_module_new(llvm::Module *mod)
     return module;
 }
 
+extern "C" {
+
 /* When we're connected to a slave device we write a native dso for
  * the slave that can be sent over the wire, written and then opened.
  */
@@ -323,7 +323,7 @@ rig_llvm_compile_to_dso(const char *code,
     if (mod) {
         ret = _rig_llvm_module_new(mod);
 
-        *dso_filename_out = link(tmp_object_file, dso_data_out, dso_len_out);
+        *dso_filename_out = llvm_link(tmp_object_file, dso_data_out, dso_len_out);
         if (!*dso_filename_out) {
             /* Note: we shouldn't just avoid calling
              * _rig_llvm_module_new in this case otherwise we won't
@@ -354,4 +354,4 @@ rig_llvm_compile_for_jit(const char *code)
         return NULL;
 }
 
-G_END_DECLS
+} /* extern "C" */
