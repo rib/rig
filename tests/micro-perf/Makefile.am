@@ -20,6 +20,8 @@ if COGL_USE_GLIB
 noinst_PROGRAMS += test-journal
 endif
 
+noinst_PROGRAMS += test-instancing
+
 AM_CFLAGS = $(COGL_DEP_CFLAGS) $(COGL_EXTRA_CFLAGS)
 
 common_ldadd = \
@@ -30,3 +32,6 @@ common_ldadd = \
 
 test_journal_SOURCES = test-journal.c
 test_journal_LDADD = $(common_ldadd)
+
+test_instancing_SOURCES = test-instancing.c
+test_instancing_LDADD = $(common_ldadd)
