@@ -119,6 +119,9 @@ cg_poll_renderer_dispatch(cg_renderer_t *renderer,
                 break;
             }
         }
+
+        if (i == n_poll_fds)
+            source->dispatch(source->user_data, 0);
     }
 }
 
