@@ -7,7 +7,7 @@
 #include "cogl/cogl-profile.h"
 
 #define FRAMEBUFFER_WIDTH 800
-#define FRAMEBUFFER_HEIGHT 600
+#define FRAMEBUFFER_HEIGHT 500
 
 bool run_all = FALSE;
 
@@ -66,14 +66,14 @@ test_rectangles (Data *data)
           cg_framebuffer_translate (data->fb, x, y, 0);
           cg_framebuffer_rotate (data->fb, 45, 0, 0, 1);
 
-          cg_pipeline_set_color4f (data->pipeline,
-                                     1,
-                                     (1.0f/FRAMEBUFFER_WIDTH)*y,
-                                     (1.0f/FRAMEBUFFER_HEIGHT)*x,
-                                     1);
+          cg_pipeline_set_color4ub(data->pipeline,
+                                   0xff,
+                                   (255 * y/FRAMEBUFFER_WIDTH),
+                                   (255 * x/FRAMEBUFFER_WIDTH),
+                                   0xff);
           cg_framebuffer_draw_rectangle (data->fb,
-                                           data->pipeline,
-                                           0, 0, RECT_WIDTH, RECT_HEIGHT);
+                                         data->pipeline,
+                                         0, 0, RECT_WIDTH, RECT_HEIGHT);
 
           cg_framebuffer_pop_matrix (data->fb);
         }
@@ -86,14 +86,14 @@ test_rectangles (Data *data)
           cg_framebuffer_push_matrix (data->fb);
           cg_framebuffer_translate (data->fb, x, y, 0);
 
-          cg_pipeline_set_color4f (data->alpha_pipeline,
-                                     1,
-                                     (1.0f/FRAMEBUFFER_WIDTH)*x,
-                                     (1.0f/FRAMEBUFFER_HEIGHT)*y,
-                                     (1.0f/FRAMEBUFFER_WIDTH)*x);
+          cg_pipeline_set_color4ub(data->alpha_pipeline,
+                                   0xff,
+                                   (255 * y/FRAMEBUFFER_WIDTH),
+                                   (255 * x/FRAMEBUFFER_WIDTH),
+                                   (255 * x/FRAMEBUFFER_WIDTH));
           cg_framebuffer_draw_rectangle (data->fb,
-                                           data->alpha_pipeline,
-                                           0, 0, RECT_WIDTH, RECT_HEIGHT);
+                                         data->alpha_pipeline,
+                                         0, 0, RECT_WIDTH, RECT_HEIGHT);
 
           cg_framebuffer_pop_matrix (data->fb);
         }
