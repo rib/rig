@@ -10,9 +10,7 @@
 #include <ctype.h>
 #include <limits.h>
 #include <float.h>
-
-// TODO: remove (for temporary compatibility)
-#include <glib.h>
+#include <netinet/in.h>
 
 #ifdef _MSC_VER
 #pragma include_alias(< clib - config.h >, < clib - config.hw > )
@@ -119,6 +117,9 @@ typedef uint32_t c_codepoint_t;
 #define C_CONST_RETURN const
 
 #define C_BYTE_ORDER C_LITTLE_ENDIAN
+
+#define C_UINT32_FROM_BE(X) ntohl(X)
+#define C_UINT32_TO_BE(X) htonl(X)
 
 #if defined(__GNUC__)
 #define C_GNUC_GNUSED __attribute__((__unused__))
