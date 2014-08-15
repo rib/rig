@@ -327,20 +327,22 @@ dnl ================================================================
 dnl Check for dependency packages.
 dnl ================================================================
 
+RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES icu-uc harfbuzz harfbuzz-icu fontconfig freetype2 libprotobuf-c sdl2-rig libuv"
+
+AM_CONDITIONAL([USE_UV], [true])
+AC_DEFINE([USE_UV], [1], [Use libuv])
+
 dnl     ============================================================
 dnl     Check glib dependencies
 dnl     ============================================================
 AM_PATH_GLIB_2_0([glib_req_version],
                  [have_glib=yes], [have_glib=no],
                  [gobject gthread gmodule-no-export])
-AS_IF([test "x$have_glib" = "xno"], AC_MSG_ERROR([glib-2.0 is required]))
-AM_CONDITIONAL([USE_GLIB], [true])
-AC_DEFINE([USE_GLIB], [1], [Use Glib])
-
-RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES freetype2 pangocairo glib-2.0 gio-2.0 libprotobuf-c gdk-pixbuf-2.0 sdl2-rig libuv"
-
-AM_CONDITIONAL([USE_UV], [true])
-AC_DEFINE([USE_UV], [1], [Use libuv])
+AS_IF([test x"$enable_editor" = xyes],
+    RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES pangocairo glib-2.0 gio-2.0 gdk-pixbuf-2.0"
+    AC_DEFINE([USE_GLIB], [1], [Use Glib])
+)
+AM_CONDITIONAL([USE_GLIB], ["x$enable_editor" = xyes])
 
 have_gstreamer=no
 PKG_CHECK_EXISTS([gstreamer-1.0], [have_gstreamer=yes])
@@ -428,10 +430,12 @@ AC_DEFINE([USE_SDL], [1], [Defined if SDL should be used])
 
 case "$host" in
   *-linux*)
-    CheckForGtk
-    RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES avahi-glib avahi-client avahi-core"
-    AC_DEFINE([USE_AVAHI], [1], [Defined if Avahi should be used])
-    avahi_enabled=yes
+    AS_IF([test x"$enable_editor" = xyes],
+        CheckForGtk
+        RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES avahi-glib avahi-client avahi-core"
+        AC_DEFINE([USE_AVAHI], [1], [Defined if Avahi should be used])
+        avahi_enabled=yes
+    )
     ;;
   *-darwin*)
     RIG_EXTRA_LDFLAGS="$RIG_EXTRA_LDFLAGS -lobjc -Wl,-framework,Cocoa"
