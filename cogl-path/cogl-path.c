@@ -511,8 +511,8 @@ _cg_path_arc(cg_path_t *path,
 
     a = angle_1;
     while (a != angle_2) {
-        cosa = cosf(a * (G_PI / 180.0));
-        sina = sinf(a * (G_PI / 180.0));
+        cosa = cosf(a * (C_PI / 180.0));
+        sina = sinf(a * (C_PI / 180.0));
 
         px = center_x + (cosa * radius_x);
         py = center_y + (sina * radius_y);
@@ -522,7 +522,7 @@ _cg_path_arc(cg_path_t *path,
         else
             cg_path_line_to(path, px, py);
 
-        if (G_LIKELY(angle_2 > angle_1)) {
+        if (C_LIKELY(angle_2 > angle_1)) {
             a += angle_step;
             if (a > angle_2)
                 a = angle_2;
@@ -535,8 +535,8 @@ _cg_path_arc(cg_path_t *path,
 
     /* Make sure the final point is drawn */
 
-    cosa = cosf(angle_2 * (G_PI / 180.0));
-    sina = sinf(angle_2 * (G_PI / 180.0));
+    cosa = cosf(angle_2 * (C_PI / 180.0));
+    sina = sinf(angle_2 * (C_PI / 180.0));
 
     px = center_x + (cosa * radius_x);
     py = center_y + (sina * radius_y);
@@ -1053,7 +1053,7 @@ _cg_path_tesselator_vertex(void *vertex_data,
 {
     int vertex_index;
 
-    vertex_index = GPOINTER_TO_INT(vertex_data);
+    vertex_index = C_POINTER_TO_INT(vertex_data);
 
     /* This tries to convert all of the primitives into GL_TRIANGLES
        with indices to share vertices */
@@ -1106,7 +1106,7 @@ _cg_path_tesselator_vertex(void *vertex_data,
 static void
 _cg_path_tesselator_end(cg_path_tesselator_t *tess)
 {
-    tess->primitive_type = FALSE;
+    tess->primitive_type = false;
 }
 
 static void
@@ -1126,7 +1126,7 @@ _cg_path_tesselator_combine(double coords[3],
                             cg_path_tesselator_vertex_t,
                             tess->vertices->len - 1);
     /* The data is just the index to the vertex */
-    *out_data = GINT_TO_POINTER(tess->vertices->len - 1);
+    *out_data = C_INT_TO_POINTER(tess->vertices->len - 1);
     /* Set the coordinates of the new vertex */
     vertex->x = coords[0];
     vertex->y = coords[1];
@@ -1138,7 +1138,7 @@ _cg_path_tesselator_combine(double coords[3],
         cg_path_tesselator_vertex_t *old_vertex =
             &c_array_index(tess->vertices,
                            cg_path_tesselator_vertex_t,
-                           GPOINTER_TO_INT(vertex_data[i]));
+                           C_POINTER_TO_INT(vertex_data[i]));
         vertex->s += old_vertex->s * weight[i];
         vertex->t += old_vertex->t * weight[i];
     }
@@ -1255,7 +1255,7 @@ _cg_path_build_fill_attribute_buffer(cg_path_t *path)
         for (i = 0; i < node->path_size; i++) {
             double vertex[3] = { node[i].x, node[i].y, 0.0 };
             gluTessVertex(
-                tess.glc_tess, vertex, GINT_TO_POINTER(i + path_start));
+                tess.glc_tess, vertex, C_INT_TO_POINTER(i + path_start));
         }
 
         gluTessEndContour(tess.glc_tess);
@@ -1277,14 +1277,14 @@ _cg_path_build_fill_attribute_buffer(cg_path_t *path)
         cg_attribute_new(data->fill_attribute_buffer,
                          "cg_position_in",
                          sizeof(cg_path_tesselator_vertex_t),
-                         G_STRUCT_OFFSET(cg_path_tesselator_vertex_t, x),
+                         C_STRUCT_OFFSET(cg_path_tesselator_vertex_t, x),
                          2, /* n_components */
                          CG_ATTRIBUTE_TYPE_FLOAT);
     data->fill_attributes[1] =
         cg_attribute_new(data->fill_attribute_buffer,
                          "cg_tex_coord0_in",
                          sizeof(cg_path_tesselator_vertex_t),
-                         G_STRUCT_OFFSET(cg_path_tesselator_vertex_t, s),
+                         C_STRUCT_OFFSET(cg_path_tesselator_vertex_t, s),
                          2, /* n_components */
                          CG_ATTRIBUTE_TYPE_FLOAT);
 

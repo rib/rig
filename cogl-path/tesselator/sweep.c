@@ -259,7 +259,7 @@ IsWindingInside(GLUtesselator *tess, int n)
     /*LINTED*/
     assert(false);
     /*NOTREACHED*/
-    return FALSE; /* avoid compiler complaints */
+    return false; /* avoid compiler complaints */
 }
 
 static void
