@@ -465,7 +465,6 @@ AM_CONDITIONAL([HAVE_AVAHI], [test "x$avahi_enabled" = "xyes"])
 AC_SUBST(RIG_PKG_REQUIRES)
 PKG_CHECK_MODULES(RIG_DEP, [$RIG_PKG_REQUIRES])
 
-PKG_CHECK_MODULES(RIG_CLANG, ["mclinker"])
 dnl LLVM_COMPONENTS="jit interpreter nativecodegen bitreader bitwriter ipo selectiondag asmparser"
 LLVM_COMPONENTS="all"
 dnl Note empty "" implies 'all' but explicitly passing 'all' seems to confuse llvm-config

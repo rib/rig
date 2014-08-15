@@ -56,6 +56,7 @@
 #include <clang/Basic/TargetInfo.h>
 #include <clang/FrontendTool/Utils.h>
 
+#if 0
 #include <mcld/Environment.h>
 #include <mcld/Module.h>
 #include <mcld/InputTree.h>
@@ -65,6 +66,7 @@
 #include <mcld/LinkerScript.h>
 
 #include <mcld/Support/Path.h>
+#endif
 
 #include <llvm/ADT/OwningPtr.h>
 #include <llvm/IR/Module.h>
@@ -217,6 +219,10 @@ compile_code(const char *code, char **tmp_object_file)
 static char *
 llvm_link(char *tmp_object_file, uint8_t **dso_data_out, size_t *dso_len_out)
 {
+    *dso_data_out = NULL;
+    return NULL;
+
+#if 0
     void *handle;
     binding_sym_t binding_sym;
     GError *error;
@@ -266,6 +272,7 @@ llvm_link(char *tmp_object_file, uint8_t **dso_data_out, size_t *dso_len_out)
     }
 
     return c_strdup(tmp_filename.c_str());
+#endif
 }
 
 struct _rig_llvm_module_t {
