@@ -325,14 +325,14 @@ verify_bits(const CoglBitmask *bitmask, ...)
     int i;
 
     va_start(ap, bitmask);
-    G_VA_COPY(ap_copy, ap);
+    C_VA_COPY(ap_copy, ap);
 
     for (data.n_bits = 0; va_arg(ap, int)!= -1; data.n_bits++)
         ;
 
     data.bits = alloca(data.n_bits * (sizeof(int)));
 
-    G_VA_COPY(ap, ap_copy);
+    C_VA_COPY(ap, ap_copy);
 
     for (i = 0; i < data.n_bits; i++)
         data.bits[i] = va_arg(ap, int);
@@ -348,7 +348,7 @@ verify_bits(const CoglBitmask *bitmask, ...)
         int upto_popcount = 0;
         int j;
 
-        G_VA_COPY(ap, ap_copy);
+        C_VA_COPY(ap, ap_copy);
 
         for (j = 0; j < data.n_bits; j++)
             if (va_arg(ap, int)< i)
@@ -357,7 +357,7 @@ verify_bits(const CoglBitmask *bitmask, ...)
         c_assert_cmpint(
             _cg_bitmask_popcount_upto(bitmask, i), ==, upto_popcount);
 
-        G_VA_COPY(ap, ap_copy);
+        C_VA_COPY(ap, ap_copy);
 
         for (j = 0; j < data.n_bits; j++)
             if (va_arg(ap, int)== i)

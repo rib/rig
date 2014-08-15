@@ -231,8 +231,8 @@ dump_pipeline_cb(cg_node_t *node, void *user_data)
     }
 
     if (layers) {
-        c_list_foreach(
-            pipeline->layer_differences, (GFunc)dump_layer_ref_cb, state);
+        c_list_foreach(pipeline->layer_differences,
+                       (c_iter_func_t)dump_layer_ref_cb, state);
     }
 
     state_out.parent_id = pipeline_id;

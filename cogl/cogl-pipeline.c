@@ -436,8 +436,8 @@ _cg_pipeline_free(cg_pipeline_t *pipeline)
     }
 
     if (pipeline->differences & CG_PIPELINE_STATE_LAYERS) {
-        c_list_foreach(
-            pipeline->layer_differences, (GFunc)cg_object_unref, NULL);
+        c_list_foreach(pipeline->layer_differences,
+                       (c_iter_func_t)cg_object_unref, NULL);
         c_list_free(pipeline->layer_differences);
     }
 
@@ -825,8 +825,8 @@ _cg_pipeline_copy_differences(cg_pipeline_t *dest,
 
         if (dest->differences & CG_PIPELINE_STATE_LAYERS &&
             dest->layer_differences) {
-            c_list_foreach(
-                dest->layer_differences, (GFunc)cg_object_unref, NULL);
+            c_list_foreach(dest->layer_differences,
+                           (c_iter_func_t)cg_object_unref, NULL);
             c_list_free(dest->layer_differences);
         }
 

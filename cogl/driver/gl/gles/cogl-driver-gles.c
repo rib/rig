@@ -216,7 +216,7 @@ _cg_get_gl_version(cg_device_t *dev, int *major_out, int *minor_out)
     if ((version_string = _cg_device_get_gl_version(dev)) == NULL)
         return false;
 
-    if (!g_str_has_prefix(version_string, "OpenGL ES "))
+    if (!c_str_has_prefix(version_string, "OpenGL ES "))
         return false;
 
     return _cg_gl_util_parse_gl_version(
