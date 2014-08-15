@@ -38,7 +38,7 @@ struct particle {
 };
 
 struct particle_swarm_priv {
-	GTimer *timer;
+	c_timer_t *timer;
 	gdouble current_time;
 	gdouble accumulator;
 
@@ -88,7 +88,7 @@ struct particle_swarm* particle_swarm_new(CoglContext *ctx,
 	priv->ctx = cogl_object_ref(ctx);
 	priv->fb = cogl_object_ref(fb);
 
-	priv->timer = g_timer_new();
+	priv->timer = c_timer_new();
 	priv->rand = g_rand_new();
 
 	swarm->priv = priv;
@@ -104,7 +104,7 @@ void particle_swarm_free(struct particle_swarm *swarm)
 	cogl_object_unref(priv->fb);
 
 	g_rand_free(priv->rand);
-	g_timer_destroy(priv->timer);
+	c_timer_destroy(priv->timer);
 
 	particle_engine_free(priv->engine);
 
@@ -433,7 +433,7 @@ void particle_swarm_paint(struct particle_swarm *swarm)
 	engine = priv->engine;
 
 	/* Update the clocks */
-	time = g_timer_elapsed(priv->timer, NULL);
+	time = c_timer_elapsed(priv->timer, NULL);
 	frame_time = time - priv->current_time;
 	priv->current_time = time;
 

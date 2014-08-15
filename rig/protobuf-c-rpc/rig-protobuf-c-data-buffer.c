@@ -150,7 +150,7 @@ verify_buffer(const protobuf_c_data_buffer_t *buffer)
         total += frag->buf_length;
     return total == buffer->size;
 }
-#define CHECK_INTEGRITY(buffer) g_assert(verify_buffer(buffer))
+#define CHECK_INTEGRITY(buffer) c_assert(verify_buffer(buffer))
 #else
 #define CHECK_INTEGRITY(buffer)
 #endif

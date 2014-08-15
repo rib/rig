@@ -163,7 +163,7 @@ void rut_property_destroy(rut_property_t *property);
 void rut_property_set_binding(rut_property_t *property,
                               rut_binding_callback_t callback,
                               void *user_data,
-                              ...) G_GNUC_NULL_TERMINATED;
+                              ...) C_GNUC_NULL_TERMINATED;
 
 void _rut_property_set_binding_full_array(
     rut_property_t *property,
@@ -177,13 +177,13 @@ void rut_property_set_binding_full(rut_property_t *property,
                                    rut_binding_callback_t callback,
                                    void *user_data,
                                    rut_binding_destroy_notify_t destroy_notify,
-                                   ...) G_GNUC_NULL_TERMINATED;
+                                   ...) C_GNUC_NULL_TERMINATED;
 
 void rut_property_set_binding_by_name(rut_object_t *object,
                                       const char *name,
                                       rut_binding_callback_t callback,
                                       void *user_data,
-                                      ...) G_GNUC_NULL_TERMINATED;
+                                      ...) C_GNUC_NULL_TERMINATED;
 
 void rut_property_set_binding_full_by_name(
     rut_object_t *object,
@@ -191,7 +191,7 @@ void rut_property_set_binding_full_by_name(
     rut_binding_callback_t callback,
     void *user_data,
     rut_binding_destroy_notify_t destroy_notify,
-    ...) G_GNUC_NULL_TERMINATED;
+    ...) C_GNUC_NULL_TERMINATED;
 
 /**
  * rut_property_set_copy_binding:
@@ -271,7 +271,7 @@ rut_property_closure_t *
 rut_property_connect_callback_full(rut_property_t *property,
                                    rut_binding_callback_t callback,
                                    void *user_data,
-                                   GDestroyNotify destroy_notify);
+                                   c_destroy_func_t destroy_notify);
 
 rut_property_closure_t *rut_property_connect_callback(
     rut_property_t *property, rut_binding_callback_t callback, void *user_data);
@@ -415,7 +415,7 @@ struct _rut_property_t
     /* This is the list of properties that depend on this property and
      * should be prompted for an update whenever this property changes.
      */
-    GSList *dependants;
+    c_slist_t *dependants;
 
     /* Callbacks typed according to the property::type for setting and
      * getting the property value. These may be NULL if direct access

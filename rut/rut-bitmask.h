@@ -87,11 +87,11 @@ typedef struct _rut_bitmask_imaginary_type_t *RutBitmask;
  * zero
  */
 #define _rut_bitmask_init(bitmask)                                             \
-    G_STMT_START                                                               \
+    C_STMT_START                                                               \
     {                                                                          \
         *(bitmask) = _rut_bitmask_from_bits(0);                                \
     }                                                                          \
-    G_STMT_END
+    C_STMT_END
 
 void _rut_bitmask_init_from_bitmask(RutBitmask *bitmask, const RutBitmask *src);
 

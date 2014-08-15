@@ -34,7 +34,7 @@ typedef struct _Data
     cg_attribute_buffer_t *attrib_buffer;
     cg_attribute_t *attribs[N_ATTRIBS];
     cg_primitive_t *rect_prim;
-    GTimer *timer;
+    c_timer_t *timer;
     int frame;
 } Data;
 
@@ -162,10 +162,10 @@ paint_cb(uv_idle_t *handle)
 
     cg_onscreen_swap_buffers(data->fb);
 
-    elapsed = g_timer_elapsed(data->timer, NULL);
+    elapsed = c_timer_elapsed(data->timer, NULL);
     if (elapsed > 1.0) {
         c_print("fps = %f\n", data->frame / elapsed);
-        g_timer_start(data->timer);
+        c_timer_start(data->timer);
         data->frame = 0;
     }
 
@@ -307,8 +307,8 @@ main(int argc, char **argv)
     uv_idle_start(&idle_handle, paint_cb);
 
     data.frame = 0;
-    data.timer = g_timer_new();
-    g_timer_start(data.timer);
+    data.timer = c_timer_new();
+    c_timer_start(data.timer);
 
     CG_TIMER_START(uprof_get_mainloop_context(), mainloop_timer);
     uv_run(uv_default_loop(), UV_RUN_DEFAULT);

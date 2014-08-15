@@ -92,7 +92,7 @@ struct _rig_entity_t {
     float scale; /* uniform scaling only */
     cg_matrix_t transform;
 
-    GPtrArray *components;
+    c_ptr_array_t *components;
 
     void *renderer_priv;
 

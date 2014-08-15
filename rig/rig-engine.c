@@ -28,8 +28,6 @@
 
 #include <config.h>
 
-#include <clib.h>
-#include <gio/gio.h>
 #include <sys/stat.h>
 #include <math.h>
 #include <sys/types.h>
@@ -39,10 +37,15 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
-#include <glib-object.h>
-
 #include <cogl/cogl.h>
 #include <cogl/cogl-sdl.h>
+
+#ifdef USE_GTK
+#include <glib-object.h>
+#include <gtk/gtk.h>
+#endif
+
+#include <clib.h>
 
 #include <rut.h>
 #include <rut-bin.h>
@@ -56,7 +59,6 @@
 #include "rig-osx.h"
 #ifdef USE_GTK
 #include "rig-application.h"
-#include <gtk/gtk.h>
 #endif /* USE_GTK */
 #include "rig-split-view.h"
 #include "rig-rpc-network.h"
@@ -408,7 +410,7 @@ ensure_shadow_map(rig_engine_t *engine)
 
     /* Setup the shadow map */
 
-    g_warn_if_fail(engine->shadow_color == NULL);
+    c_warn_if_fail(engine->shadow_color == NULL);
 
     color_buffer = cg_texture_2d_new_with_size(engine->ctx->cg_device,
                                                engine->device_width * 2,
@@ -416,17 +418,17 @@ ensure_shadow_map(rig_engine_t *engine)
 
     engine->shadow_color = color_buffer;
 
-    g_warn_if_fail(engine->shadow_fb == NULL);
+    c_warn_if_fail(engine->shadow_fb == NULL);
 
     /* XXX: Right now there's no way to avoid allocating a color buffer. */
     engine->shadow_fb = cg_offscreen_new_with_texture(color_buffer);
     if (engine->shadow_fb == NULL)
-        g_critical("could not create offscreen buffer");
+        c_critical("could not create offscreen buffer");
 
     /* retrieve the depth texture */
     cg_framebuffer_set_depth_texture_enabled(engine->shadow_fb, true);
 
-    g_warn_if_fail(engine->shadow_map == NULL);
+    c_warn_if_fail(engine->shadow_map == NULL);
 
     engine->shadow_map = cg_framebuffer_get_depth_texture(engine->shadow_fb);
 }
@@ -459,7 +461,7 @@ _rig_engine_free(void *object)
         if (engine->frontend_id == RIG_FRONTEND_ID_EDITOR) {
             int i;
 
-            for (i = 0; i < G_N_ELEMENTS(engine->splits); i++)
+            for (i = 0; i < C_N_ELEMENTS(engine->splits); i++)
                 rut_object_unref(engine->splits[i]);
 
             rut_object_unref(engine->top_vbox);

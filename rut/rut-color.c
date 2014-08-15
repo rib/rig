@@ -44,7 +44,7 @@
 static inline void
 skip_whitespace(char **str)
 {
-    while (g_ascii_isspace(**str))
+    while (c_ascii_isspace(**str))
         *str += 1;
 }
 
@@ -56,7 +56,7 @@ parse_rgb_value(char *str, float *color, char **endp)
 
     skip_whitespace(&str);
 
-    number = g_ascii_strtod(str, endp);
+    number = c_ascii_strtod(str, endp);
 
     p = *endp;
 
@@ -70,8 +70,8 @@ parse_rgb_value(char *str, float *color, char **endp)
         *color = CLAMP(number, 0.0, 1.0);
 }
 
-static gboolean
-parse_rgba(cg_color_t *color, char *str, gboolean has_alpha)
+static bool
+parse_rgba(cg_color_t *color, char *str, bool has_alpha)
 {
     float red, green, blue, alpha;
 
@@ -113,7 +113,7 @@ parse_rgba(cg_color_t *color, char *str, gboolean has_alpha)
         str += 1;
 
         skip_whitespace(&str);
-        alpha = g_ascii_strtod(str, &str);
+        alpha = c_ascii_strtod(str, &str);
         alpha = CLAMP(alpha, 0.0, 1.0);
     } else
         alpha = 1.0;
@@ -179,8 +179,8 @@ rut_color_init_from_hls(cg_color_t *color,
     color->alpha = 1.0;
 }
 
-static gboolean
-parse_hsla(cg_color_t *color, char *str, gboolean has_alpha)
+static bool
+parse_hsla(cg_color_t *color, char *str, bool has_alpha)
 {
     float number;
     float h, l, s, a;
@@ -197,7 +197,7 @@ parse_hsla(cg_color_t *color, char *str, gboolean has_alpha)
     /* we don't do any angle normalization here because
      * rut_color_from_hls() will do it for us
      */
-    number = g_ascii_strtod(str, &str);
+    number = c_ascii_strtod(str, &str);
     skip_whitespace(&str);
     if (*str != ',')
         return false;
@@ -208,7 +208,7 @@ parse_hsla(cg_color_t *color, char *str, gboolean has_alpha)
 
     /* saturation */
     skip_whitespace(&str);
-    number = g_ascii_strtod(str, &str);
+    number = c_ascii_strtod(str, &str);
     skip_whitespace(&str);
     if (*str != '%')
         return false;
@@ -224,7 +224,7 @@ parse_hsla(cg_color_t *color, char *str, gboolean has_alpha)
 
     /* luminance */
     skip_whitespace(&str);
-    number = g_ascii_strtod(str, &str);
+    number = c_ascii_strtod(str, &str);
     skip_whitespace(&str);
     if (*str != '%')
         return false;
@@ -245,7 +245,7 @@ parse_hsla(cg_color_t *color, char *str, gboolean has_alpha)
         str += 1;
 
         skip_whitespace(&str);
-        number = g_ascii_strtod(str, &str);
+        number = c_ascii_strtod(str, &str);
 
         a = CLAMP(number, 0.0, 1.0);
     } else
@@ -273,7 +273,7 @@ rut_color_init_from_string(rut_context_t *ctx,
 
     if (strncmp(str, "rgb", 3) == 0) {
         char *s = (char *)str;
-        gboolean res;
+        bool res;
 
         if (strncmp(str, "rgba", 4) == 0)
             res = parse_rgba(color, s + 4, true);
@@ -285,7 +285,7 @@ rut_color_init_from_string(rut_context_t *ctx,
 
     if (strncmp(str, "hsl", 3) == 0) {
         char *s = (char *)str;
-        gboolean res;
+        bool res;
 
         if (strncmp(str, "hsla", 4) == 0)
             res = parse_hsla(color, s + 4, true);
@@ -301,7 +301,7 @@ rut_color_init_from_string(rut_context_t *ctx,
      * Pango can't retrieve.
      */
     if (str[0] == '#' && str[1] != '\0') {
-        guint8 red, green, blue, alpha;
+        uint8_t red, green, blue, alpha;
         size_t length = strlen(str + 1);
         unsigned int result;
 
@@ -373,24 +373,24 @@ rut_color_init_from_string(rut_context_t *ctx,
     if (!ctx->colors_hash) {
         int i, n_colors;
 
-        ctx->colors_hash = g_hash_table_new(g_direct_hash, g_int_equal);
+        ctx->colors_hash = c_hash_table_new(c_direct_hash, c_direct_equal);
 
-        n_colors = G_N_ELEMENTS(color_names);
+        n_colors = C_N_ELEMENTS(color_names);
         for (i = 0; i < n_colors; i++) {
-            const char *interned = g_intern_string(color_names[i]);
-            g_hash_table_insert(
-                ctx->colors_hash, (gpointer)interned, GINT_TO_POINTER(i + 1));
+            const char *interned = c_intern_string(color_names[i]);
+            c_hash_table_insert(ctx->colors_hash, (void *)interned,
+                                C_INT_TO_POINTER(i + 1));
         }
     }
 
     color_index_ptr =
-        g_hash_table_lookup(ctx->colors_hash, g_intern_string(str));
+        c_hash_table_lookup(ctx->colors_hash, c_intern_string(str));
     if (color_index_ptr) {
         /* Since we can't store 0 in the hash table without creating an
          * ambiguity
          * when retrieving the value back the indices stored are all offset by
          * one. */
-        int color_index = GPOINTER_TO_INT(color_index_ptr) - 1;
+        int color_index = C_POINTER_TO_INT(color_index_ptr) - 1;
         cg_color_init_from_4ub(color,
                                color_entries[color_index].red,
                                color_entries[color_index].green,
@@ -563,7 +563,7 @@ rut_color_shade(const cg_color_t *color, float factor, cg_color_t *result)
     result->alpha = color->alpha;
 }
 
-gchar *
+char *
 rut_color_to_string(const cg_color_t *color)
 {
     c_return_val_if_fail(color != NULL, NULL);

@@ -78,8 +78,8 @@ struct _rig_editor_t {
      * object into a corresponding play-mode object so we can make best
      * effort attempts to apply edit operations to the play-mode ui.
      */
-    GHashTable *edit_to_play_object_map;
-    GHashTable *play_to_edit_object_map;
+    c_hash_table_t *edit_to_play_object_map;
+    c_hash_table_t *play_to_edit_object_map;
 
     rut_queue_t *edit_ops;
 
@@ -145,7 +145,7 @@ lookup_play_mode_object_cb(uint64_t edit_mode_id, void *user_data)
 {
     rig_editor_t *editor = user_data;
     void *edit_mode_object = (void *)(intptr_t)edit_mode_id;
-    return g_hash_table_lookup(editor->edit_to_play_object_map,
+    return c_hash_table_lookup(editor->edit_to_play_object_map,
                                edit_mode_object);
 }
 
@@ -160,9 +160,9 @@ register_play_mode_object(rig_editor_t *editor,
 
     void *edit_mode_object = (void *)(intptr_t)edit_mode_id;
 
-    g_hash_table_insert(
+    c_hash_table_insert(
         editor->edit_to_play_object_map, edit_mode_object, play_mode_object);
-    g_hash_table_insert(
+    c_hash_table_insert(
         editor->play_to_edit_object_map, play_mode_object, edit_mode_object);
 }
 
@@ -180,7 +180,7 @@ edit_id_to_play_id(rig_editor_t *editor, uint64_t edit_id)
 {
     void *ptr_edit_id = (void *)(intptr_t)edit_id;
     void *ptr_play_id =
-        g_hash_table_lookup(editor->edit_to_play_object_map, ptr_edit_id);
+        c_hash_table_lookup(editor->edit_to_play_object_map, ptr_edit_id);
 
     return (uint64_t)(intptr_t)ptr_play_id;
 }
@@ -213,16 +213,16 @@ derive_play_mode_ui(rig_editor_t *editor)
 
     rig_engine_set_play_mode_ui(engine, NULL);
 
-    g_warn_if_fail(editor->edit_to_play_object_map == NULL ||
-                   g_hash_table_size(editor->edit_to_play_object_map) == 0);
-    g_warn_if_fail(editor->play_to_edit_object_map == NULL ||
-                   g_hash_table_size(editor->play_to_edit_object_map) == 0);
+    c_warn_if_fail(editor->edit_to_play_object_map == NULL ||
+                   c_hash_table_size(editor->edit_to_play_object_map) == 0);
+    c_warn_if_fail(editor->play_to_edit_object_map == NULL ||
+                   c_hash_table_size(editor->play_to_edit_object_map) == 0);
 
     editor->edit_to_play_object_map =
-        g_hash_table_new(NULL, /* direct hash */
+        c_hash_table_new(NULL, /* direct hash */
                          NULL); /* direct key equal */
     editor->play_to_edit_object_map =
-        g_hash_table_new(NULL, /* direct hash */
+        c_hash_table_new(NULL, /* direct hash */
                          NULL); /* direct key equal */
 
     /* For simplicity we use a serializer and unserializer to
@@ -277,20 +277,20 @@ delete_object_cb(rut_object_t *object, void *user_data)
     void *play_mode_object;
 
     edit_mode_object =
-        g_hash_table_lookup(editor->play_to_edit_object_map, object);
+        c_hash_table_lookup(editor->play_to_edit_object_map, object);
     if (edit_mode_object)
         play_mode_object = object;
     else {
         play_mode_object =
-            g_hash_table_lookup(editor->edit_to_play_object_map, object);
+            c_hash_table_lookup(editor->edit_to_play_object_map, object);
 
-        g_warn_if_fail(play_mode_object);
+        c_warn_if_fail(play_mode_object);
 
         edit_mode_object = object;
     }
 
-    g_hash_table_remove(editor->edit_to_play_object_map, edit_mode_object);
-    g_hash_table_remove(editor->play_to_edit_object_map, play_mode_object);
+    c_hash_table_remove(editor->edit_to_play_object_map, edit_mode_object);
+    c_hash_table_remove(editor->play_to_edit_object_map, play_mode_object);
 }
 
 #ifdef RIG_ENABLE_DEBUG
@@ -317,10 +317,10 @@ reset_play_mode_ui(rig_editor_t *editor)
 
 #ifdef RIG_ENABLE_DEBUG
     if (editor->edit_to_play_object_map &&
-        G_UNLIKELY(g_hash_table_size(editor->edit_to_play_object_map))) {
+        C_UNLIKELY(c_hash_table_size(editor->edit_to_play_object_map))) {
         c_warning("BUG: The following objects weren't properly unregistered "
                   "by reset_play_mode_ui():");
-        g_hash_table_foreach(
+        c_hash_table_foreach(
             editor->edit_to_play_object_map, dump_left_over_object_cb, NULL);
     }
 #endif
@@ -899,7 +899,7 @@ add_matching_entity_cb(rut_object_t *object, int depth, void *user_data)
             state->found = true;
             add_search_result(state->engine, entity);
         } else if (entity->label && strncmp(entity->label, "rig:", 4) != 0) {
-            char *entity_label = g_ascii_strdown(entity->label, -1);
+            char *entity_label = c_ascii_strdown(entity->label, -1);
 #warning "FIXME: handle utf8 string comparisons!"
 
             if (strstr(entity_label, state->search)) {
@@ -917,7 +917,7 @@ static void
 add_matching_controller(rig_controller_t *controller,
                         search_state_t *state)
 {
-    char *controller_label = g_ascii_strdown(controller->label, -1);
+    char *controller_label = c_ascii_strdown(controller->label, -1);
 #warning "FIXME: handle utf8 string comparisons!"
 
     if (state->search == NULL || strstr(controller_label, state->search)) {
@@ -954,7 +954,7 @@ asset_matches_search(rig_engine_t *engine,
         return true;
 
     inferred_tags = rig_asset_get_inferred_tags(asset);
-    tags = g_strsplit_set(search, " \t", 0);
+    tags = c_strsplit_set(search, " \t", 0);
 
     path = rig_asset_get_path(asset);
     if (path) {
@@ -974,12 +974,12 @@ asset_matches_search(rig_engine_t *engine,
         }
 
         if (!found) {
-            g_strfreev(tags);
+            c_strfreev(tags);
             return false;
         }
     }
 
-    g_strfreev(tags);
+    c_strfreev(tags);
     return true;
 }
 
@@ -994,7 +994,7 @@ rig_search_with_text(rig_engine_t *engine, const char *user_search)
     char *search;
 
     if (user_search)
-        search = g_ascii_strdown(user_search, -1);
+        search = c_ascii_strdown(user_search, -1);
     else
         search = NULL;
 #warning "FIXME: handle non-ascii searches!"
@@ -1105,7 +1105,7 @@ copy_tags (c_list_t *tags)
     c_list_t *l, *copy = NULL;
     for (l = tags; l; l = l->next)
     {
-        char *tag = g_intern_string (l->data);
+        char *tag = c_intern_string (l->data);
         copy = c_list_prepend (copy, tag);
     }
     return copy;
@@ -1345,18 +1345,18 @@ add_light_handle(rig_engine_t *engine, rig_ui_t *ui)
 {
     // rig_camera_t *camera =
     //  rig_entity_get_component (ui->light, RUT_COMPONENT_TYPE_CAMERA);
-    rut_ply_attribute_status_t padding_status[G_N_ELEMENTS(ply_attributes)];
+    rut_ply_attribute_status_t padding_status[C_N_ELEMENTS(ply_attributes)];
     char *full_path = rut_find_data_file("light.ply");
-    GError *error = NULL;
+    c_error_t *error = NULL;
     rut_mesh_t *mesh;
 
     if (full_path == NULL)
-        g_critical("could not find model \"light.ply\"");
+        c_critical("could not find model \"light.ply\"");
 
     mesh = rut_mesh_new_from_ply(engine->ctx,
                                  full_path,
                                  ply_attributes,
-                                 G_N_ELEMENTS(ply_attributes),
+                                 C_N_ELEMENTS(ply_attributes),
                                  padding_status,
                                  &error);
     if (mesh) {
@@ -1377,8 +1377,10 @@ add_light_handle(rig_engine_t *engine, rig_ui_t *ui)
 
         rut_object_unref(model);
         rut_object_unref(material);
-    } else
-        g_critical("could not load model %s: %s", full_path, error->message);
+    } else {
+        c_critical("could not load model %s: %s", full_path, error->message);
+        c_error_free(error);
+    }
 
     c_free(full_path);
 }
@@ -1386,26 +1388,26 @@ add_light_handle(rig_engine_t *engine, rig_ui_t *ui)
 static void
 add_play_camera_handle(rig_engine_t *engine, rig_ui_t *ui)
 {
-    rut_ply_attribute_status_t padding_status[G_N_ELEMENTS(ply_attributes)];
+    rut_ply_attribute_status_t padding_status[C_N_ELEMENTS(ply_attributes)];
     char *model_path;
     rut_mesh_t *mesh;
-    GError *error = NULL;
+    c_error_t *error = NULL;
 
     model_path = rut_find_data_file("camera-model.ply");
     if (model_path == NULL) {
-        g_error("could not find model \"camera-model.ply\"");
+        c_error("could not find model \"camera-model.ply\"");
         return;
     }
 
     mesh = rut_mesh_new_from_ply(engine->ctx,
                                  model_path,
                                  ply_attributes,
-                                 G_N_ELEMENTS(ply_attributes),
+                                 C_N_ELEMENTS(ply_attributes),
                                  padding_status,
                                  &error);
     if (mesh == NULL) {
-        g_critical("could not load model %s: %s", model_path, error->message);
-        g_clear_error(&error);
+        c_critical("could not load model %s: %s", model_path, error->message);
+        c_clear_error(&error);
     } else {
 /* XXX: we'd like to show a model for the camera that
  * can be used as a handle to select the camera in the
@@ -1493,14 +1495,14 @@ static rig_nine_slice_t *
 load_gradient_image(rut_context_t *ctx,
                     const char *filename)
 {
-    GError *error = NULL;
+    c_error_t *error = NULL;
     cg_texture_t *gradient =
         rut_load_texture_from_data_file(ctx, filename, &error);
     if (gradient) {
         return rig_nine_slice_new(ctx, gradient, 0, 0, 0, 0, 0, 0);
     } else {
-        g_error("Failed to load gradient %s: %s", filename, error->message);
-        g_error_free(error);
+        c_error("Failed to load gradient %s: %s", filename, error->message);
+        c_error_free(error);
         return NULL;
     }
 }
@@ -2018,14 +2020,14 @@ init_resize_handle(rig_engine_t *engine)
 {
 #ifdef __APPLE__
     cg_texture_t *resize_handle_texture;
-    GError *error = NULL;
+    c_error_t *error = NULL;
 
     resize_handle_texture = rut_load_texture_from_data_file(
         engine->ctx, "resize-handle.png", &error);
 
     if (resize_handle_texture == NULL) {
         c_warning("Failed to load resize-handle.png: %s", error->message);
-        g_error_free(error);
+        c_error_free(error);
     } else {
         rut_image_t *resize_handle;
 
@@ -2046,14 +2048,14 @@ init_resize_handle(rig_engine_t *engine)
 static rut_image_t *
 load_transparency_grid(rut_context_t *ctx)
 {
-    GError *error = NULL;
+    c_error_t *error = NULL;
     cg_texture_t *texture =
         rut_load_texture_from_data_file(ctx, "transparency-grid.png", &error);
     rut_image_t *ret;
 
     if (texture == NULL) {
         c_warning("Failed to load transparency-grid.png: %s", error->message);
-        g_error_free(error);
+        c_error_free(error);
     } else {
         ret = rut_image_new(ctx, texture);
 
@@ -2595,16 +2597,16 @@ rig_editor_new(const char *filename)
 
     if (getenv("RIG_SLAVE_ADDRESS")) {
         const char *slave_addr = getenv("RIG_SLAVE_ADDRESS");
-        char **slave_addrv = g_strsplit(slave_addr, ":", 2);
+        char **slave_addrv = c_strsplit(slave_addr, ":", 2);
         if (slave_addrv[0] && slave_addrv[1]) {
             rig_slave_address_t *slave_address = rig_slave_address_new_tcp(
                 slave_addrv[0], /* name */
                 slave_addrv[0], /* address */
-                g_ascii_strtoull(slave_addrv[1], NULL, 10)); /* port */
+                c_ascii_strtoull(slave_addrv[1], NULL, 10)); /* port */
             engine->slave_addresses =
                 c_list_prepend(engine->slave_addresses, slave_address);
         }
-        g_strfreev(slave_addrv);
+        c_strfreev(slave_addrv);
     }
 
     rut_shell_add_input_callback(
@@ -2639,7 +2641,7 @@ object_deleted_cb (uint63_t id, void *user_data)
     rig_engine_t *engine = user_data;
     void *object (void *) (intptr_t) id;
 
-    g_hash_table_remove (engine->edit_to_play_object_map, object);
+    c_hash_table_remove (engine->edit_to_play_object_map, object);
 }
 #endif
 
@@ -2767,7 +2769,7 @@ create_components_inspector(rig_engine_t *engine,
     if (strncmp(name, "Rig", 3) == 0)
         name += 3;
 
-    label = g_strconcat(name, " Component", NULL);
+    label = c_strconcat(name, " Component", NULL);
 
     fold = rut_fold_new(engine->ctx, label);
 
@@ -2937,7 +2939,7 @@ static void
 _rig_objects_selection_cancel(rut_object_t *object)
 {
     rig_objects_selection_t *selection = object;
-    c_list_free_full(selection->objects, (GDestroyNotify)rut_object_unref);
+    c_list_free_full(selection->objects, (c_destroy_func_t)rut_object_unref);
     selection->objects = NULL;
 }
 
@@ -2996,13 +2998,13 @@ _rig_objects_selection_delete(rut_object_t *object)
             /* XXX: make sure that
              * rig_undo_journal_delete_entity () doesn't change
              * the selection, since it used to. */
-            g_warn_if_fail(len == c_list_length(selection->objects));
+            c_warn_if_fail(len == c_list_length(selection->objects));
         }
 
-        c_list_free_full(selection->objects, (GDestroyNotify)rut_object_unref);
+        c_list_free_full(selection->objects, (c_destroy_func_t)rut_object_unref);
         selection->objects = NULL;
 
-        g_warn_if_fail(selection->objects == NULL);
+        c_warn_if_fail(selection->objects == NULL);
     }
 }
 
@@ -3204,11 +3206,11 @@ void
 rig_editor_print_mappings(rig_editor_t *editor)
 {
     c_print("Edit to play mode mappings:\n");
-    g_hash_table_foreach(
+    c_hash_table_foreach(
         editor->edit_to_play_object_map, print_mapping_cb, NULL);
 
     c_print("\n\n");
     c_print("Play to edit mode mappings:\n");
-    g_hash_table_foreach(
+    c_hash_table_foreach(
         editor->play_to_edit_object_map, print_mapping_cb, NULL);
 }

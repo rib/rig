@@ -304,7 +304,7 @@ drop_region_input_cb(rut_input_region_t *region,
 
         /* We should be able to assume a _DROP_OFFER was accepted before
          * we'll be sent a _DROP */
-        g_warn_if_fail(binding_view->preview_dependency_prop);
+        c_warn_if_fail(binding_view->preview_dependency_prop);
 
         remove_dependency(binding_view, binding_view->preview_dependency_prop);
         binding_view->preview_dependency_prop = NULL;

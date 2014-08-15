@@ -35,7 +35,7 @@
 #include <avahi-client/lookup.h>
 #endif
 
-#include <gmodule.h>
+#include <cmodule.h>
 #include <gio/gio.h>
 
 #include <rut.h>
@@ -111,7 +111,7 @@ struct _rig_engine_t {
     cg_texture_t *gradient;
 
     /* TODO: Move to rig_frontend_t */
-    GHashTable *image_source_wrappers;
+    c_hash_table_t *image_source_wrappers;
 
     /* TODO: Move to rig_frontend_t */
     cg_pipeline_t *shadow_color_tex;
@@ -157,7 +157,7 @@ struct _rig_engine_t {
 #endif
 
     rig_code_node_t *code_graph;
-    GModule *code_dso_module;
+    c_module_t *code_dso_module;
 
     rut_object_t *renderer;
 

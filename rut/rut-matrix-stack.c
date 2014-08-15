@@ -472,7 +472,7 @@ initialized:
     entry->composite_gets++;
 #endif
 
-    children = g_alloca(sizeof(rut_matrix_entry_t) * depth);
+    children = c_alloca(sizeof(rut_matrix_entry_t) * depth);
 
     /* We need walk the list of entries from the init/load/save entry
      * back towards the leaf node but the nodes don't link to their
@@ -591,7 +591,7 @@ rut_matrix_stack_new(rut_context_t *ctx)
                                                   &rut_matrix_stack_type,
                                                   _rut_matrix_stack_init_type);
 
-    if (G_UNLIKELY(rut_matrix_stack_magazine == NULL)) {
+    if (C_UNLIKELY(rut_matrix_stack_magazine == NULL)) {
         rut_matrix_stack_magazine =
             rut_magazine_new(sizeof(rut_matrix_entry_full_t), 20);
         rut_matrix_stack_matrices_magazine =
@@ -626,15 +626,15 @@ rut_matrix_entry_calculate_translation(rut_matrix_entry_t *entry0,
                                        float *y,
                                        float *z)
 {
-    GSList *head0 = NULL;
-    GSList *head1 = NULL;
+    c_slist_t *head0 = NULL;
+    c_slist_t *head1 = NULL;
     rut_matrix_entry_t *node0;
     rut_matrix_entry_t *node1;
     int len0 = 0;
     int len1 = 0;
     int count;
-    GSList *common_ancestor0;
-    GSList *common_ancestor1;
+    c_slist_t *common_ancestor0;
+    c_slist_t *common_ancestor1;
 
     /* Algorithm:
      *
@@ -658,12 +658,12 @@ rut_matrix_entry_calculate_translation(rut_matrix_entry_t *entry0,
      */
 
     for (node0 = entry0; node0; node0 = node0->parent) {
-        GSList *link;
+        c_slist_t *link;
 
         if (node0->op == RUT_MATRIX_OP_SAVE)
             continue;
 
-        link = alloca(sizeof(GSList));
+        link = alloca(sizeof(c_slist_t));
         link->next = head0;
         link->data = node0;
         head0 = link;
@@ -673,12 +673,12 @@ rut_matrix_entry_calculate_translation(rut_matrix_entry_t *entry0,
             break;
     }
     for (node1 = entry1; node1; node1 = node1->parent) {
-        GSList *link;
+        c_slist_t *link;
 
         if (node1->op == RUT_MATRIX_OP_SAVE)
             continue;
 
-        link = alloca(sizeof(GSList));
+        link = alloca(sizeof(c_slist_t));
         link->next = head1;
         link->data = node1;
         head1 = link;
@@ -852,7 +852,7 @@ rut_debug_matrix_entry_print(rut_matrix_entry_t *entry)
     for (depth = 0, e = entry; e; e = e->parent)
         depth++;
 
-    children = g_alloca(sizeof(rut_matrix_entry_t) * depth);
+    children = c_alloca(sizeof(rut_matrix_entry_t) * depth);
 
     for (i = depth - 1, e = entry; i >= 0 && e; i--, e = e->parent) {
         children[i] = e;

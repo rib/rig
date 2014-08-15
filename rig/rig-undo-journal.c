@@ -565,7 +565,7 @@ rig_undo_journal_log_add_controller(rig_undo_journal_t *journal,
 
     add_controller->controller = rut_object_ref(controller);
 
-    g_warn_if_fail(rig_controller_get_active(controller) == false);
+    c_warn_if_fail(rig_controller_get_active(controller) == false);
 
     /* We assume there are no controller references to this controller
      * currently */
@@ -1616,7 +1616,7 @@ rig_undo_journal_insert(rig_undo_journal_t *journal,
          * node can be re-added later, but until we have saved that
          * value we can't invert the operation */
         inverse = undo_redo_invert (undo_redo);
-        g_warn_if_fail (inverse != NULL);
+        c_warn_if_fail (inverse != NULL);
 
         if (inverse)
         {

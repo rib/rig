@@ -87,12 +87,12 @@ struct particle_engine *particle_engine_new(CoglContext *ctx,
 		cogl_primitive_new_with_attributes(COGL_VERTICES_MODE_POINTS,
 						   engine->particle_count,
 						   attributes,
-						   G_N_ELEMENTS(attributes));
+						   C_N_ELEMENTS(attributes));
 
 	cogl_pipeline_set_point_size(engine->pipeline, engine->particle_size);
 	cogl_primitive_set_n_vertices(engine->primitive, engine->particle_count);
 
-	for (i = 0; i < G_N_ELEMENTS(attributes); i++)
+	for (i = 0; i < C_N_ELEMENTS(attributes); i++)
 		cogl_object_unref(attributes[i]);
 
 	return engine;

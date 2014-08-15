@@ -154,7 +154,7 @@
                 /* expanding the stack is marked unlikely,         */          \
                 /* since in the case it matters (where the number  */          \
                 /* of elements is big), the stack rarely grows.    */          \
-                if (G_UNLIKELY(_gsk_i == _gsk_stack_size)) {                   \
+                if (C_UNLIKELY(_gsk_i == _gsk_stack_size)) {                   \
                     _gsk_stack[_gsk_stack_size++] = _gsk_cur_list;             \
                     break;                                                     \
                 } else if (_gsk_stack[_gsk_i] == NULL) {                       \

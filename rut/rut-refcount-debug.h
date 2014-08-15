@@ -54,32 +54,32 @@ void _rut_refcount_debug_release(void *object, void *owner);
  * code so that it won't be a performance burden */
 
 #define _rut_refcount_debug_object_created(o)                                  \
-    G_STMT_START                                                               \
+    C_STMT_START                                                               \
     {                                                                          \
     }                                                                          \
-    G_STMT_END
+    C_STMT_END
 
 #define _rut_refcount_debug_ref(o)                                             \
-    G_STMT_START                                                               \
+    C_STMT_START                                                               \
     {                                                                          \
     }                                                                          \
-    G_STMT_END
+    C_STMT_END
 #define _rut_refcount_debug_claim(o, owner)                                    \
-    G_STMT_START                                                               \
+    C_STMT_START                                                               \
     {                                                                          \
     }                                                                          \
-    G_STMT_END
+    C_STMT_END
 
 #define _rut_refcount_debug_unref(o)                                           \
-    G_STMT_START                                                               \
+    C_STMT_START                                                               \
     {                                                                          \
     }                                                                          \
-    G_STMT_END
+    C_STMT_END
 #define _rut_refcount_debug_release(o, owner)                                  \
-    G_STMT_START                                                               \
+    C_STMT_START                                                               \
     {                                                                          \
     }                                                                          \
-    G_STMT_END
+    C_STMT_END
 
 #endif /* RUT_ENABLE_REFCOUNT_DEBUG */
 

@@ -255,7 +255,7 @@ rig_application_startup(GApplication *application)
 
     g_action_map_add_action_entries(G_ACTION_MAP(application),
                                     app_entries,
-                                    G_N_ELEMENTS(app_entries),
+                                    C_N_ELEMENTS(app_entries),
                                     application);
 
     priv->dbus_connection = g_application_get_dbus_connection(application);

@@ -31,6 +31,7 @@
 
 #include <dlfcn.h>
 #include <clib.h>
+#include <cmodule.h>
 
 #include <rut.h>
 
@@ -150,24 +151,24 @@ void
 rig_code_update_dso(rig_engine_t *engine, uint8_t *data, int len)
 {
     char *tmp_filename;
-    GError *error = NULL;
+    c_error_t *error = NULL;
     int dso_fd;
     rut_exception_t *e = NULL;
-    GModule *module;
+    c_module_t *module;
 
     if (engine->code_dso_module) {
-        g_module_close(engine->code_dso_module);
+        c_module_close(engine->code_dso_module);
         engine->code_dso_module = NULL;
     }
 
     if (!data)
         return;
 
-    dso_fd = g_file_open_tmp(NULL, &tmp_filename, &error);
+    dso_fd = c_file_open_tmp(NULL, &tmp_filename, &error);
     if (dso_fd == -1) {
         c_warning("Failed to open a temporary file for shared object: %s",
                   error->message);
-        g_error_free(error);
+        c_error_free(error);
         return;
     }
 
@@ -177,9 +178,9 @@ rig_code_update_dso(rig_engine_t *engine, uint8_t *data, int len)
         return;
     }
 
-    module = g_module_open(tmp_filename, G_MODULE_BIND_LAZY);
+    module = c_module_open(tmp_filename, C_MODULE_BIND_LAZY);
     if (!module) {
-        g_module_close(module);
+        c_module_close(module);
         c_warning("Failed to open shared object");
         return;
     }
@@ -308,7 +309,7 @@ rig_code_resolve_symbol(rig_engine_t *engine, const char *name)
 {
     if (engine->code_dso_module) {
         void *sym;
-        if (g_module_symbol(engine->code_dso_module, name, &sym))
+        if (c_module_symbol(engine->code_dso_module, name, &sym))
             return sym;
         else
             return NULL;
@@ -356,5 +357,5 @@ _rig_code_fini(rig_engine_t *engine)
     engine->code_graph = NULL;
 
     if (engine->code_dso_module)
-        g_module_close(engine->code_dso_module);
+        c_module_close(engine->code_dso_module);
 }

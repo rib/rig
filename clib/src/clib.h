@@ -101,9 +101,10 @@ typedef uint32_t c_codepoint_t;
 #define C_STMT_END while (0)
 
 #define C_USEC_PER_SEC 1000000
-#define C_PI 3.141592653589793238462643383279502884L
+#define C_PI   3.141592653589793238462643383279502884L
 #define C_PI_2 1.570796326794896619231321691639751442L
 #define C_PI_4 0.785398163397448309615660845819875721L
+#define C_E    2.718281828459045235360287471352662497L
 
 #define C_INT64_CONSTANT(val) (val##LL)
 #define C_UINT64_CONSTANT(val) (val##UL)
@@ -141,6 +142,13 @@ typedef uint32_t c_codepoint_t;
 #define C_GNUC_PRINTF(format_idx, arg_idx)
 #define C_GNUC_NULL_TERMINATED
 #define C_GNUC_DEPRECATED
+#endif
+
+#ifdef C_HAVE_STATIC_ASSERT
+#define C_STATIC_ASSERT(EXPRESSION, MESSAGE) \
+    _Static_assert(EXPRESSION, MESSAGE);
+#else
+#define C_STATIC_ASSERT(EXPRESSION, MESSAGE)
 #endif
 
 #if defined(__GNUC__)
@@ -1228,7 +1236,7 @@ typedef enum {
     C_FILE_ERROR_PERM,
     C_FILE_ERROR_NOSYS,
     C_FILE_ERROR_FAILED
-} UFileError;
+} c_file_error_t;
 
 typedef enum {
     C_FILE_TEST_IS_REGULAR = 1 << 0,
@@ -1236,7 +1244,7 @@ typedef enum {
     C_FILE_TEST_IS_DIR = 1 << 2,
     C_FILE_TEST_IS_EXECUTABLE = 1 << 3,
     C_FILE_TEST_EXISTS = 1 << 4
-} UFileTest;
+} c_file_test_t;
 
 bool c_file_set_contents(const char *filename,
                          const char *contents,
@@ -1246,9 +1254,9 @@ bool c_file_get_contents(const char *filename,
                          char **contents,
                          size_t *length,
                          c_error_t **error);
-UFileError c_file_error_from_errno(int err_no);
+c_file_error_t c_file_error_from_errno(int err_no);
 int c_file_open_tmp(const char *tmpl, char **name_used, c_error_t **error);
-bool c_file_test(const char *filename, UFileTest test);
+bool c_file_test(const char *filename, c_file_test_t test);
 
 #define c_open open
 #define c_rename rename

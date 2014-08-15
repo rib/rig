@@ -103,7 +103,7 @@ struct _rig_controller_t {
     rut_timeline_t *timeline;
     double elapsed;
 
-    GHashTable *properties;
+    c_hash_table_t *properties;
 
     rut_list_t operation_cb_list;
 

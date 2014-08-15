@@ -25,7 +25,10 @@ AM_CFLAGS = \
 
 lib_LTLIBRARIES = librig_clang.la
 noinst_LTLIBRARIES = librig.la
-bin_PROGRAMS = rig rig-slave rig-device rig-simulator
+bin_PROGRAMS = rig-device rig-simulator
+if EDITOR_ENABLED
+bin_PROGRAMS += rig rig-slave
+endif
 
 %.pb-c.c %.pb-c.h: %.proto
 	protoc-c --c_out=$(top_builddir)/rig $(srcdir)/$(*).proto
@@ -111,9 +114,11 @@ common_ldadd = \
 
 librig_la_LIBS = $(common_ldadd)
 
+if EDITOR_ENABLED
 rig_SOURCES = \
 	rig-editor-main.c
 rig_LDADD = $(common_ldadd)
+endif
 
 rig_slave_SOURCES = \
 	$(rig_slave_sources) \

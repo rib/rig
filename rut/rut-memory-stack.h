@@ -75,7 +75,7 @@ rut_memory_stack_memalign(rut_memory_stack_t *stack,
     size_t offset =
         _rut_memory_stack_align(stack->sub_stack->offset, alignment);
 
-    if (G_LIKELY(sub_stack->bytes - offset >= bytes)) {
+    if (C_LIKELY(sub_stack->bytes - offset >= bytes)) {
         void *ret = sub_stack->data + offset;
         stack->sub_stack->offset = offset + bytes;
         return ret;
@@ -89,7 +89,7 @@ rut_memory_stack_alloc(rut_memory_stack_t *stack,
 {
     rut_memory_sub_stack_t *sub_stack = stack->sub_stack;
 
-    if (G_LIKELY(sub_stack->bytes - stack->sub_stack->offset >= bytes)) {
+    if (C_LIKELY(sub_stack->bytes - stack->sub_stack->offset >= bytes)) {
         void *ret = sub_stack->data + stack->sub_stack->offset;
         stack->sub_stack->offset += bytes;
         return ret;

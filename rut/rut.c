@@ -45,7 +45,7 @@
 #include "rut-global.h"
 #include "rut-context.h"
 #include "rut-transform-private.h"
-#include "rut-text.h"
+//#include "rut-text.h"
 #include "rut-timeline.h"
 #include "rut-text-buffer.h"
 #include "rut-geometry.h"
@@ -53,7 +53,7 @@
 
 typedef struct _rut_texture_cache_entry_t {
     rut_context_t *ctx;
-    GQuark filename_quark;
+    c_quark_t filename_quark;
     cg_texture_t *texture;
 } rut_texture_cache_entry_t;
 #define RUT_TEXTURE_CACHE_ENTRY(X) ((rut_texture_cache_entry_t *)X)
@@ -79,7 +79,7 @@ rut_ui_enum_t _rut_projection_ui_enum = {
 
 typedef struct _settings_changed_callback_state_t {
     rut_settings_changed_callback_t callback;
-    GDestroyNotify destroy_notify;
+    c_destroy_func_t destroy_notify;
     void *user_data;
 } settings_changed_callback_state_t;
 
@@ -106,7 +106,7 @@ rut_settings_new(void)
 void
 rut_settings_add_changed_callback(rut_settings_t *settings,
                                   rut_settings_changed_callback_t callback,
-                                  GDestroyNotify destroy_notify,
+                                  c_destroy_func_t destroy_notify,
                                   void *user_data)
 {
     c_list_t *l;
@@ -175,7 +175,7 @@ _rut_context_free(void *object)
     pango_font_description_free(ctx->pango_font_desc);
 #endif
 
-    g_hash_table_destroy(ctx->texture_cache);
+    c_hash_table_destroy(ctx->texture_cache);
 
     if (rut_cg_context == ctx->cg_device) {
         cg_object_unref(rut_cg_context);
@@ -214,20 +214,40 @@ texture_destroyed_cb(void *user_data)
 {
     rut_texture_cache_entry_t *entry = user_data;
 
-    g_hash_table_remove(entry->ctx->texture_cache,
-                        GUINT_TO_POINTER(entry->filename_quark));
+    c_hash_table_remove(entry->ctx->texture_cache,
+                        C_UINT_TO_POINTER(entry->filename_quark));
+}
+
+static const char *const *
+get_system_data_dirs(void)
+{
+#ifdef USE_GLIB
+    return g_get_system_data_dirs();
+#elif defined(linux) && !defined(__ANDROID__)
+    static char **dirs = NULL;
+    if (!dirs) {
+        const char *dirs_var = getenv("XDG_DATA_DIRS");
+        if (dirs_var)
+            dirs = c_strsplit(dirs_var, C_SEARCHPATH_SEPARATOR_S, -1);
+        else
+            dirs = c_malloc0(sizeof(void *));
+    }
+    return (const char *const *)dirs;
+#else
+#error "FIXME: Missing platform specific code to locate system data directories"
+#endif
 }
 
 char *
 rut_find_data_file(const char *base_filename)
 {
-    const gchar *const *dirs = g_get_system_data_dirs();
-    const gchar *const *dir;
+    const char *const *dirs = get_system_data_dirs();
+    const char *const *dir;
 
     for (dir = dirs; *dir; dir++) {
-        char *full_path = g_build_filename(*dir, "rig", base_filename, NULL);
+        char *full_path = c_build_filename(*dir, "rig", base_filename, NULL);
 
-        if (g_file_test(full_path, G_FILE_TEST_EXISTS))
+        if (c_file_test(full_path, C_FILE_TEST_EXISTS))
             return full_path;
 
         c_free(full_path);
@@ -237,20 +257,26 @@ rut_find_data_file(const char *base_filename)
 }
 
 cg_texture_t *
-rut_load_texture(rut_context_t *ctx, const char *filename, cg_error_t **error)
+rut_load_texture(rut_context_t *ctx, const char *filename, c_error_t **error)
 {
-    GQuark filename_quark = g_quark_from_string(filename);
-    rut_texture_cache_entry_t *entry = g_hash_table_lookup(
-        ctx->texture_cache, GUINT_TO_POINTER(filename_quark));
+    c_quark_t filename_quark = c_quark_from_string(filename);
+    rut_texture_cache_entry_t *entry = c_hash_table_lookup(
+        ctx->texture_cache, C_UINT_TO_POINTER(filename_quark));
     cg_texture_t *texture;
+    cg_error_t *catch = NULL;
 
     if (entry)
         return cg_object_ref(entry->texture);
 
-    texture = (cg_texture_t *)cg_texture_2d_new_from_file(
-        ctx->cg_device, filename, error);
-    if (!texture)
+    texture = (cg_texture_t *)cg_texture_2d_new_from_file(ctx->cg_device,
+                                                          filename, &catch);
+    if (!texture) {
+        *error = c_error_new(C_FILE_ERROR,
+                             C_FILE_ERROR_FAILED,
+                             catch->message);
+        cg_error_free(catch);
         return NULL;
+    }
 
     entry = c_slice_new0(rut_texture_cache_entry_t);
     entry->ctx = ctx;
@@ -264,8 +290,8 @@ rut_load_texture(rut_context_t *ctx, const char *filename, cg_error_t **error)
     cg_object_set_user_data(
         texture, &texture_cache_key, entry, texture_destroyed_cb);
 
-    g_hash_table_insert(
-        ctx->texture_cache, GUINT_TO_POINTER(filename_quark), entry);
+    c_hash_table_insert(
+        ctx->texture_cache, C_UINT_TO_POINTER(filename_quark), entry);
 
     return texture;
 }
@@ -273,22 +299,19 @@ rut_load_texture(rut_context_t *ctx, const char *filename, cg_error_t **error)
 cg_texture_t *
 rut_load_texture_from_data_file(rut_context_t *ctx,
                                 const char *filename,
-                                GError **error)
+                                c_error_t **error)
 {
     char *full_path = rut_find_data_file(filename);
     cg_texture_t *tex;
 
     if (full_path == NULL) {
-        g_set_error(error, G_FILE_ERROR, G_FILE_ERROR_NOENT, "File not found");
+        *error = c_error_new(C_FILE_ERROR,
+                             C_FILE_ERROR_EXIST,
+                             "File not found");
         return NULL;
     }
 
-#ifndef CG_HAS_GLIB_SUPPORT
-#warning                                                                       \
-    "Rig relies on Cogl being built with glib support, assuming cg_error_t == GError"
-#endif
-    tex = rut_load_texture(ctx, full_path, (cg_error_t **)error);
-
+    tex = rut_load_texture(ctx, full_path, error);
     c_free(full_path);
 
     return tex;
@@ -332,8 +355,8 @@ rut_context_new(rut_shell_t *shell)
             rut_cg_context = cg_object_ref(context->cg_device);
 
         context->texture_cache =
-            g_hash_table_new_full(g_direct_hash,
-                                  g_direct_equal,
+            c_hash_table_new_full(c_direct_hash,
+                                  c_direct_equal,
                                   NULL,
                                   _rut_texture_cache_entry_destroy_cb);
 
@@ -373,7 +396,7 @@ rut_context_new(rut_shell_t *shell)
 
         context->fc_config = FcInitLoadConfigAndFonts();
         if (FT_Init_FreeType(&context->ft_library)) {
-            g_critical("Failed to initialize freetype");
+            c_critical("Failed to initialize freetype");
         }
     }
 

@@ -50,7 +50,7 @@ rut_magazine_t *rut_magazine_new(size_t chunk_size, int initial_chunk_count);
 static inline void *
 rut_magazine_chunk_alloc(rut_magazine_t *magazine)
 {
-    if (G_LIKELY(magazine->head)) {
+    if (C_LIKELY(magazine->head)) {
         rut_magazine_chunk_t *chunk = magazine->head;
         magazine->head = chunk->next;
         return chunk;

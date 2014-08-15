@@ -98,7 +98,7 @@ void fuzzy_vector_get_real_value(struct fuzzy_vector *variance,
 	switch (variance->type) {
 
 	case VECTOR_VARIANCE_LINEAR:
-		for (i = 0; i < G_N_ELEMENTS(variance->value); i++) {
+		for (i = 0; i < C_N_ELEMENTS(variance->value); i++) {
 			float v = variance->variance[i] / 2;
 
 			value[i] = (float)g_rand_double_range(rand,
@@ -107,7 +107,7 @@ void fuzzy_vector_get_real_value(struct fuzzy_vector *variance,
 		}
 		break;
 	case VECTOR_VARIANCE_PROPORTIONAL:
-		for (i = 0; i < G_N_ELEMENTS(variance->value); i++) {
+		for (i = 0; i < C_N_ELEMENTS(variance->value); i++) {
 			float v = variance->value[i] * variance->variance[i];
 
 			value[i] = (float)g_rand_double_range(rand,
@@ -116,7 +116,7 @@ void fuzzy_vector_get_real_value(struct fuzzy_vector *variance,
 		}
 		break;
 	case VECTOR_VARIANCE_IRWIN_HALL:
-		for(i = 0; i < G_N_ELEMENTS(variance->value); i++) {
+		for(i = 0; i < C_N_ELEMENTS(variance->value); i++) {
 			int j, n = 12;
 			float u = 0, v;
 
@@ -134,7 +134,7 @@ void fuzzy_vector_get_real_value(struct fuzzy_vector *variance,
 		break;
 	case VECTOR_VARIANCE_NONE:
 	default:
-		for (i = 0; i < G_N_ELEMENTS(variance->value); i++)
+		for (i = 0; i < C_N_ELEMENTS(variance->value); i++)
 			value[i] = variance->value[i];
 		break;
 	}

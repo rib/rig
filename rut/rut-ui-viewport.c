@@ -920,7 +920,7 @@ preferred_size_change_cb(rut_object_t *child, void *user_data)
 {
     rut_ui_viewport_t *ui_viewport = user_data;
 
-    g_warn_if_fail(ui_viewport->sync_widget == child);
+    c_warn_if_fail(ui_viewport->sync_widget == child);
 
     preferred_size_changed(ui_viewport);
     queue_allocation(ui_viewport);

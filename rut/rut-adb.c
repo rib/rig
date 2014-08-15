@@ -308,7 +308,7 @@ rut_adb_run_shell_cmd(const char *serial,
 char *
 rut_adb_getprop(const char *serial, const char *property, rut_exception_t **e)
 {
-    char *command = g_strconcat("shell:getprop ", property, NULL);
+    char *command = c_strconcat("shell:getprop ", property, NULL);
     char *result = rut_adb_run_shell_cmd(serial, e, command);
     c_free(command);
 
@@ -332,7 +332,7 @@ handle_devices_update_cb(void *user_data, int fd, int revents)
     if (!reply)
         return;
 
-    lines = g_strsplit(reply, "\n", -1);
+    lines = c_strsplit(reply, "\n", -1);
 
     for (i = 0; lines[i]; i++)
         ;
@@ -352,7 +352,7 @@ handle_devices_update_cb(void *user_data, int fd, int revents)
             serials_vec, i, tracker->devices_update_data);
     }
 
-    g_strfreev(lines);
+    c_strfreev(lines);
 
     /* XXX: We only rely on host:track-devices for notifications of
      * device changes, but since we want the device qualifier info

@@ -25,7 +25,7 @@ struct demo {
 
 	struct particle_emitter *emitter[3];
 
-	GTimer *timer;
+	c_timer_t *timer;
 	gdouble spin_rate;
 	gdouble angle_between_emitters;
 
@@ -40,7 +40,7 @@ static void paint_cb(struct demo *demo) {
 				 COGL_BUFFER_BIT_COLOR | COGL_BUFFER_BIT_DEPTH,
 				 0, 0, 0, 1);
 
-	for (i = 0; i < G_N_ELEMENTS(demo->emitter); i++)
+	for (i = 0; i < C_N_ELEMENTS(demo->emitter); i++)
 		particle_emitter_paint(demo->emitter[i]);
 }
 
@@ -54,13 +54,13 @@ static void frame_event_cb(CoglOnscreen *onscreen, CoglFrameEvent event,
 
 static void update_catherine_wheel(struct demo *demo) {
 	unsigned int i;
-	gdouble elapsed_time = g_timer_elapsed(demo->timer, NULL);
+	gdouble elapsed_time = c_timer_elapsed(demo->timer, NULL);
 	gdouble spin = demo->spin_rate * elapsed_time;
 
 	if (demo->spin_rate < RATE_MAX)
 		demo->spin_rate += RATE_INC;
 
-	for (i = 0; i < G_N_ELEMENTS(demo->emitter); i++) {
+	for (i = 0; i < C_N_ELEMENTS(demo->emitter); i++) {
 		gdouble x = i * demo->angle_between_emitters + spin;
 		gdouble x_cos = cos(x);
 		gdouble x_sin = sin(x);
@@ -106,7 +106,7 @@ static void init_particle_emitters(struct demo *demo)
 {
 	unsigned int i;
 
-	for (i = 0; i < G_N_ELEMENTS(demo->emitter); i++) {
+	for (i = 0; i < C_N_ELEMENTS(demo->emitter); i++) {
 		demo->emitter[i] = particle_emitter_new(demo->ctx, demo->fb);
 		demo->emitter[i]->particle_count = 80000;
 		demo->emitter[i]->particle_size = 1.0f;
@@ -186,9 +186,9 @@ int main(int argc, char **argv)
 
 	init_particle_emitters(&demo);
 
-	demo.timer = g_timer_new();
+	demo.timer = c_timer_new();
 	demo.spin_rate = 0;
-	demo.angle_between_emitters = 2 * M_PI / G_N_ELEMENTS(demo.emitter);
+	demo.angle_between_emitters = 2 * M_PI / C_N_ELEMENTS(demo.emitter);
 
 	g_idle_add(update_cb, &demo);
 	loop = g_main_loop_new (NULL, TRUE);

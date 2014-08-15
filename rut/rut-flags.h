@@ -69,14 +69,14 @@ C_BEGIN_DECLS
 /* The expectation here is that @value will be constant so the if
    statement will be optimised out */
 #define RUT_FLAGS_SET(array, flag, value)                                      \
-    G_STMT_START                                                               \
+    C_STMT_START                                                               \
     {                                                                          \
         if (value)                                                             \
             ((array)[RUT_FLAGS_GET_INDEX(flag)] |= RUT_FLAGS_GET_MASK(flag));  \
         else                                                                   \
             ((array)[RUT_FLAGS_GET_INDEX(flag)] &= ~RUT_FLAGS_GET_MASK(flag)); \
     }                                                                          \
-    G_STMT_END
+    C_STMT_END
 
 /* Macros to help iterate an array of flags. It should be used like
  * this:
@@ -92,7 +92,7 @@ C_BEGIN_DECLS
  * RUT_FLAGS_FOREACH_END;
  */
 #define RUT_FLAGS_FOREACH_START(array, n_longs, bit)                           \
-    G_STMT_START                                                               \
+    C_STMT_START                                                               \
     {                                                                          \
         const unsigned long *_p = (array);                                     \
         int _n_longs = (n_longs);                                              \
@@ -117,8 +117,8 @@ C_BEGIN_DECLS
     }                                                                          \
     }                                                                          \
     }                                                                          \
-    G_STMT_END
+    C_STMT_END
 
-    G_END_DECLS
+C_END_DECLS
 
 #endif /* __RUT_FLAGS_H */

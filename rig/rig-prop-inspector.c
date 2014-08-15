@@ -223,7 +223,7 @@ create_widget_for_property(rut_context_t *context,
     case RUT_PROPERTY_TYPE_INTEGER: {
         rut_number_slider_t *slider = rut_number_slider_new(context);
         float min = -G_MAXFLOAT, max = G_MAXFLOAT;
-        char *label = g_strconcat(name, ": ", NULL);
+        char *label = c_strconcat(name, ": ", NULL);
 
         rut_number_slider_set_markup_label(slider, label);
         c_free(label);
@@ -272,7 +272,7 @@ create_widget_for_property(rut_context_t *context,
             for (n_values = 0; ui_enum->values[n_values].nick; n_values++)
                 ;
 
-            values = g_alloca(sizeof(rut_drop_down_value_t) * n_values);
+            values = c_alloca(sizeof(rut_drop_down_value_t) * n_values);
 
             for (i = 0; i < n_values; i++) {
                 values[i].name =

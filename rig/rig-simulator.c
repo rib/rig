@@ -120,7 +120,7 @@ static rut_object_t *
 lookup_object(rig_simulator_t *simulator, uint64_t id)
 {
     void *id_ptr = (void *)(intptr_t)id;
-    return g_hash_table_lookup(simulator->id_to_object_map, id_ptr);
+    return c_hash_table_lookup(simulator->id_to_object_map, id_ptr);
 }
 
 static void
@@ -146,28 +146,28 @@ register_object_cb(void *object, uint64_t id, void *user_data)
 
     id_ptr = (void *)(intptr_t)id;
 
-    g_hash_table_insert(simulator->object_to_id_map, object, id_ptr);
-    g_hash_table_insert(simulator->id_to_object_map, id_ptr, object);
+    c_hash_table_insert(simulator->object_to_id_map, object, id_ptr);
+    c_hash_table_insert(simulator->id_to_object_map, id_ptr, object);
 }
 
 static void
 unregister_object_cb(void *object, void *user_data)
 {
     rig_simulator_t *simulator = user_data;
-    void *id_ptr = g_hash_table_lookup(simulator->object_to_id_map, object);
+    void *id_ptr = c_hash_table_lookup(simulator->object_to_id_map, object);
 
-    g_hash_table_remove(simulator->object_to_id_map, object);
-    g_hash_table_remove(simulator->id_to_object_map, id_ptr);
+    c_hash_table_remove(simulator->object_to_id_map, object);
+    c_hash_table_remove(simulator->id_to_object_map, id_ptr);
 }
 
 static void *
 unregister_id(rig_simulator_t *simulator, uint64_t id)
 {
     void *id_ptr = (void *)(uintptr_t)id;
-    void *object = g_hash_table_lookup(simulator->id_to_object_map, id_ptr);
+    void *object = c_hash_table_lookup(simulator->id_to_object_map, id_ptr);
 
-    g_hash_table_remove(simulator->object_to_id_map, object);
-    g_hash_table_remove(simulator->id_to_object_map, id_ptr);
+    c_hash_table_remove(simulator->object_to_id_map, object);
+    c_hash_table_remove(simulator->id_to_object_map, id_ptr);
 
     return object;
 }
@@ -207,7 +207,7 @@ simulator__load(Rig__Simulator_Service *service,
 
     ui = rig_pb_unserialize_ui(simulator->ui_unserializer, pb_ui);
 
-    g_warn_if_fail(pb_ui->has_mode);
+    c_warn_if_fail(pb_ui->has_mode);
     if (pb_ui->mode == RIG__UI__MODE__EDIT)
         rig_engine_set_edit_mode_ui(engine, ui);
     else
@@ -397,7 +397,7 @@ simulator__run_frame(Rig__Simulator_Service *service,
                                       &simulator->apply_op_ctx,
                                       setup->edit);
 
-        g_warn_if_fail(status);
+        c_warn_if_fail(status);
     }
 
     rut_shell_queue_redraw_real(engine->shell);
@@ -509,7 +509,7 @@ temporarily_register_object_cb(void *object, void *user_data)
 
     register_object_cb(object, id, simulator);
 
-    // g_hash_table_insert (simulator->object_to_tmp_id_map, object, id_ptr);
+    // c_hash_table_insert (simulator->object_to_tmp_id_map, object, id_ptr);
 
     return id;
 }
@@ -517,9 +517,9 @@ temporarily_register_object_cb(void *object, void *user_data)
 static uint64_t
 lookup_object_id(rig_simulator_t *simulator, void *object)
 {
-    void *id_ptr = g_hash_table_lookup(simulator->object_to_id_map, object);
+    void *id_ptr = c_hash_table_lookup(simulator->object_to_id_map, object);
 
-    if (G_UNLIKELY(id_ptr == NULL)) {
+    if (C_UNLIKELY(id_ptr == NULL)) {
         const char *label = "";
         if (rut_object_is(object, RUT_TRAIT_ID_INTROSPECTABLE)) {
             rut_property_t *label_prop =
@@ -546,11 +546,11 @@ _rig_simulator_free(void *object)
 
     rig_pb_unserializer_destroy(simulator->ui_unserializer);
 
-    g_hash_table_destroy(simulator->object_to_id_map);
+    c_hash_table_destroy(simulator->object_to_id_map);
 
-    g_hash_table_destroy(simulator->id_to_object_map);
+    c_hash_table_destroy(simulator->id_to_object_map);
 
-    // g_hash_table_destroy (simulator->object_to_tmp_id_map);
+    // c_hash_table_destroy (simulator->object_to_tmp_id_map);
 
     rig_engine_op_apply_context_destroy(&simulator->apply_op_ctx);
 
@@ -642,10 +642,10 @@ rig_simulator_new(rig_frontend_id_t frontend_id, int fd)
      * the frontend which has to be running on the same machine.
      */
 
-    simulator->object_to_id_map = g_hash_table_new(NULL, /* direct hash */
+    simulator->object_to_id_map = c_hash_table_new(NULL, /* direct hash */
                                                    NULL); /* direct key equal */
 
-    simulator->id_to_object_map = g_hash_table_new(NULL, /* direct hash */
+    simulator->id_to_object_map = c_hash_table_new(NULL, /* direct hash */
                                                    NULL); /* direct key equal */
 
 #if 0
@@ -653,7 +653,7 @@ rig_simulator_new(rig_frontend_id_t frontend_id, int fd)
      * temporary ID that we know won't collide with IDs from the
      * frontend... */
     simulator->object_to_tmp_id_map =
-        g_hash_table_new (NULL, /* direct hash */
+        c_hash_table_new (NULL, /* direct hash */
                           NULL); /* direct key equal */
 #endif
 
@@ -977,7 +977,7 @@ rig_simulator_queue_redraw_hook(rut_shell_t *shell, void *user_data)
 }
 
 static void
-print_id_to_obj_mapping_cb(gpointer key, gpointer value, gpointer user_data)
+print_id_to_obj_mapping_cb(void *key, void *value, void *user_data)
 {
     void *id_ptr = (void *)(uintptr_t)key;
     char *obj = rig_engine_get_object_debug_name(value);
@@ -988,7 +988,7 @@ print_id_to_obj_mapping_cb(gpointer key, gpointer value, gpointer user_data)
 }
 
 static void
-print_obj_to_id_mapping_cb(gpointer key, gpointer value, gpointer user_data)
+print_obj_to_id_mapping_cb(void *key, void *value, void *user_data)
 {
     char *obj = rig_engine_get_object_debug_name(key);
     void *id_ptr = (void *)(uintptr_t)value;
@@ -1002,11 +1002,11 @@ void
 rig_simulator_print_mappings(rig_simulator_t *simulator)
 {
     c_print("ID to object map:\n");
-    g_hash_table_foreach(
+    c_hash_table_foreach(
         simulator->id_to_object_map, print_id_to_obj_mapping_cb, NULL);
 
     c_print("\n\n");
     c_print("Object to ID map:\n");
-    g_hash_table_foreach(
+    c_hash_table_foreach(
         simulator->object_to_id_map, print_obj_to_id_mapping_cb, NULL);
 }

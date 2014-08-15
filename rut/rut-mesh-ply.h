@@ -103,7 +103,7 @@ rut_mesh_new_from_ply(rut_context_t *ctx,
                       rut_ply_attribute_t *attributes,
                       int n_attributes,
                       rut_ply_attribute_status_t *attribute_status_out,
-                      GError **error);
+                      c_error_t **error);
 
 rut_mesh_t *rut_mesh_new_from_ply_data(rut_context_t *ctx,
                                        const uint8_t *data,
@@ -111,7 +111,7 @@ rut_mesh_t *rut_mesh_new_from_ply_data(rut_context_t *ctx,
                                        rut_ply_attribute_t *attributes,
                                        int n_attributes,
                                        rut_ply_attribute_status_t *load_status,
-                                       GError **error);
+                                       c_error_t **error);
 
 C_END_DECLS
 

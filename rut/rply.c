@@ -7,9 +7,7 @@
  * at the end of this file.
  * ---------------------------------------------------------------------- */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include <clib.h>
 #include <stdio.h>
@@ -1564,9 +1562,9 @@ oascii_float32(p_ply ply, double value)
     char buf[C_ASCII_DTOSTR_BUF_SIZE];
     if (value < -FLT_MAX || value > FLT_MAX)
         return 0;
-    return fprintf(ply->fp,
-                   "%s ",
-                   g_ascii_formatd(buf, sizeof(buf), "%g", (float)value)) > 0;
+
+    c_ascii_snprintf(buf, sizeof(buf), "%g", (float)value);
+    return fprintf(ply->fp, "%s ", buf) > 0;
 }
 
 static int
@@ -1575,9 +1573,9 @@ oascii_float64(p_ply ply, double value)
     char buf[C_ASCII_DTOSTR_BUF_SIZE];
     if (value < -DBL_MAX || value > DBL_MAX)
         return 0;
-    return fprintf(ply->fp,
-                   "%s ",
-                   g_ascii_formatd(buf, sizeof(buf), "%g", value)) > 0;
+
+    c_ascii_snprintf(buf, sizeof(buf), "%g", value);
+    return fprintf(ply->fp, "%s ", buf) > 0;
 }
 
 static int
@@ -1730,7 +1728,7 @@ iascii_float32(p_ply ply, double *value)
     char *end;
     if (!ply_read_word(ply))
         return 0;
-    *value = g_ascii_strtod(BWORD(ply), &end);
+    *value = c_ascii_strtod(BWORD(ply), &end);
     if (*end || *value < -FLT_MAX || *value > FLT_MAX)
         return 0;
     return 1;
@@ -1742,7 +1740,7 @@ iascii_float64(p_ply ply, double *value)
     char *end;
     if (!ply_read_word(ply))
         return 0;
-    *value = g_ascii_strtod(BWORD(ply), &end);
+    *value = c_ascii_strtod(BWORD(ply), &end);
     if (*end || *value < -DBL_MAX || *value > DBL_MAX)
         return 0;
     return 1;

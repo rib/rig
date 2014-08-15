@@ -128,6 +128,10 @@ AC_DEFUN([AM_CLIB],
                                      [(void) 0])],
                     [AC_DEFINE([HAVE_STATIC_ASSERT], [1],
                                [Whether _Static_assert can be used or not])
+                     HAVE_STATIC_ASSERT=1
                      AC_MSG_RESULT([yes])],
-                    [AC_MSG_RESULT([no])])
+                    [AC_MSG_RESULT([no])]
+                     HAVE_STATIC_ASSERT=0
+                    )
+  AC_SUBST(HAVE_STATIC_ASSERT)
 ])

@@ -1336,12 +1336,12 @@ rig_model_new_from_asset_mesh(rut_context_t *ctx,
 
     attribute = rut_mesh_find_attribute(model->mesh, "cg_position_in");
 
-    model->min_x = G_MAXFLOAT;
-    model->max_x = -G_MAXFLOAT;
-    model->min_y = G_MAXFLOAT;
-    model->max_y = -G_MAXFLOAT;
-    model->min_z = G_MAXFLOAT;
-    model->max_z = -G_MAXFLOAT;
+    model->min_x = FLT_MAX;
+    model->max_x = -FLT_MAX;
+    model->min_y = FLT_MAX;
+    model->max_y = -FLT_MAX;
+    model->min_z = FLT_MAX;
+    model->max_z = -FLT_MAX;
 
     model->builtin_normals = !needs_normals;
     model->builtin_tex_coords = !needs_tex_coords;
@@ -1381,7 +1381,7 @@ rig_model_new_from_asset_mesh(rut_context_t *ctx,
      * set of texture coodinates and so all the remaining sets of
      * texture coordinates will simply be an alias of those...
      */
-    attributes = g_alloca(sizeof(rut_attribute_t *) * mesh->n_attributes + 4);
+    attributes = c_alloca(sizeof(rut_attribute_t *) * mesh->n_attributes + 4);
 
     tex_attrib = NULL;
     for (i = 0; i < mesh->n_attributes; i++) {
@@ -1424,7 +1424,7 @@ rig_model_new_from_asset_mesh(rut_context_t *ctx,
 
     /* NB: Don't just append extra attributes here without allocating a
      * larger array above... */
-    g_assert(i == mesh->n_attributes + 4);
+    c_assert(i == mesh->n_attributes + 4);
 
     rut_mesh_set_attributes(model->mesh, attributes, i);
 

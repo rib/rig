@@ -263,7 +263,7 @@ const cg_matrix_t *
 rig_camera_get_projection(rut_object_t *object)
 {
     rig_camera_t *camera = object;
-    if (G_UNLIKELY(camera->props.projection_cache_age !=
+    if (C_UNLIKELY(camera->props.projection_cache_age !=
                    camera->props.projection_age)) {
         cg_matrix_init_identity(&camera->props.projection);
 
@@ -668,7 +668,7 @@ void
 rig_camera_end_frame(rut_object_t *object)
 {
     rig_camera_t *camera = object;
-    if (G_UNLIKELY(camera->props.in_frame != true))
+    if (C_UNLIKELY(camera->props.in_frame != true))
         c_warning("Un-balanced rig_camera_flush/end frame calls. "
                   "_end before _flush");
     camera->props.in_frame = false;
@@ -885,12 +885,12 @@ rig_camera_create_frustum_primitive(rut_object_t *object)
     indices = cg_indices_new(dev,
                              CG_INDICES_TYPE_UNSIGNED_BYTE,
                              indices_data,
-                             G_N_ELEMENTS(indices_data));
+                             C_N_ELEMENTS(indices_data));
 
     primitive = cg_primitive_new_with_attributes(
         CG_VERTICES_MODE_LINES, 8, attributes, 1);
 
-    cg_primitive_set_indices(primitive, indices, G_N_ELEMENTS(indices_data));
+    cg_primitive_set_indices(primitive, indices, C_N_ELEMENTS(indices_data));
 
     cg_object_unref(attribute_buffer);
     cg_object_unref(attributes[0]);

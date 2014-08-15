@@ -62,7 +62,7 @@ main(int argc, char **argv)
 #endif
 
     if (!frontend) {
-        g_error("Failed to determine frontend via _RIG_FRONTEND "
+        c_error("Failed to determine frontend via _RIG_FRONTEND "
                 "environment variable");
         return EXIT_FAILURE;
     }
@@ -74,7 +74,7 @@ main(int argc, char **argv)
     else if (strcmp(frontend, "device") == 0)
         frontend_id = RIG_FRONTEND_ID_DEVICE;
     else {
-        g_error("Spurious _RIG_FRONTEND environment variable value");
+        c_error("Spurious _RIG_FRONTEND environment variable value");
         return EXIT_FAILURE;
     }
 
@@ -113,7 +113,7 @@ main(int argc, char **argv)
 #endif
 
         if (!ipc_fd_str) {
-            g_error("Failed to find ipc file descriptor via _RIG_IPC_FD "
+            c_error("Failed to find ipc file descriptor via _RIG_IPC_FD "
                     "environment variable");
             return EXIT_FAILURE;
         }

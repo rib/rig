@@ -121,10 +121,10 @@
     GSK_RBTREE_INFIMUM_COMPARATOR_(tree, key, key_comparator, out)
 
 #if 1
-#undef G_STMT_START
-#define G_STMT_START do
-#undef G_STMT_END
-#define G_STMT_END while (0)
+#undef C_STMT_START
+#define C_STMT_START do
+#undef C_STMT_END
+#define C_STMT_END while (0)
 #endif
 
 #define GSK_RBTREE_INSERT_(top,                                                \
@@ -137,7 +137,7 @@
                            comparator,                                         \
                            node,                                               \
                            collision_node)                                     \
-    G_STMT_START                                                               \
+    C_STMT_START                                                               \
     {                                                                          \
         type _gsk_last = NULL;                                                 \
         type _gsk_at = (top);                                                  \
@@ -225,7 +225,7 @@
             set_is_red((top), 0);                                              \
         }                                                                      \
     }                                                                          \
-    G_STMT_END
+    C_STMT_END
 
 #define GSK_RBTREE_REMOVE_(top,                                                \
                            type,                                               \
@@ -236,7 +236,7 @@
                            right,                                              \
                            comparator,                                         \
                            node) /* Algorithms:273. */                         \
-    G_STMT_START                                                               \
+    C_STMT_START                                                               \
     {                                                                          \
         type _gsk_rb_del_z = (node);                                           \
         type _gsk_rb_del_x;                                                    \
@@ -398,7 +398,7 @@
         _gsk_rb_del_z->right = NULL;                                           \
         _gsk_rb_del_z->parent = NULL;                                          \
     }                                                                          \
-    G_STMT_END
+    C_STMT_END
 
 #define GSK_RBTREE_LOOKUP_COMPARATOR_(top,                                     \
                                       type,                                    \
@@ -411,7 +411,7 @@
                                       key,                                     \
                                       key_comparator,                          \
                                       out)                                     \
-    G_STMT_START                                                               \
+    C_STMT_START                                                               \
     {                                                                          \
         type _gsk_lookup_at = (top);                                           \
         while (_gsk_lookup_at) {                                               \
@@ -426,7 +426,7 @@
         }                                                                      \
         out = _gsk_lookup_at;                                                  \
     }                                                                          \
-    G_STMT_END
+    C_STMT_END
 /* see comments for 'SUPREMUM'; it is the same with the sense of the comparators
  * and left,right reversed. */
 #define GSK_RBTREE_INFIMUM_COMPARATOR_(top,                                    \
@@ -440,7 +440,7 @@
                                        key,                                    \
                                        key_comparator,                         \
                                        out)                                    \
-    G_STMT_START                                                               \
+    C_STMT_START                                                               \
     {                                                                          \
         type _gsk_lookup_at = (top);                                           \
         type _gsk_lookup_rv = NULL;                                            \
@@ -455,7 +455,7 @@
         }                                                                      \
         out = _gsk_lookup_rv;                                                  \
     }                                                                          \
-    G_STMT_END
+    C_STMT_END
 /* see introductory comments for a less mathematical
  * definition.  but what 'supremum' computes is:
  * sup(tree, key) = min S(tree,key) or NULL if S(tree, key)
@@ -501,7 +501,7 @@
                                         key,                                   \
                                         key_comparator,                        \
                                         out)                                   \
-    G_STMT_START                                                               \
+    C_STMT_START                                                               \
     {                                                                          \
         type _gsk_lookup_at = (top);                                           \
         type _gsk_lookup_rv = NULL;                                            \
@@ -516,7 +516,7 @@
         }                                                                      \
         out = _gsk_lookup_rv;                                                  \
     }                                                                          \
-    G_STMT_END
+    C_STMT_END
 #define GSK_RBTREE_LOOKUP_(                                                    \
         top, type, is_red, set_is_red, parent, left, right, comparator, key, out)  \
     GSK_RBTREE_LOOKUP_COMPARATOR_(top,                                         \
@@ -562,7 +562,7 @@
 #define GSK_RBTREE_ROTATE_RIGHT(top, type, parent, left, right, node)          \
     GSK_RBTREE_ROTATE_LEFT(top, type, parent, right, left, node)
 #define GSK_RBTREE_ROTATE_LEFT(top, type, parent, left, right, node)           \
-    G_STMT_START                                                               \
+    C_STMT_START                                                               \
     {                                                                          \
         type _gsk_rot_x = (node);                                              \
         type _gsk_rot_y = _gsk_rot_x->right;                                   \
@@ -580,12 +580,12 @@
         _gsk_rot_y->left = _gsk_rot_x;                                         \
         _gsk_rot_x->parent = _gsk_rot_y;                                       \
     }                                                                          \
-    G_STMT_END
+    C_STMT_END
 
 /* iteration */
 #define GSK_RBTREE_NEXT_(                                                      \
         top, type, is_red, set_is_red, parent, left, right, comparator, in, out)   \
-    G_STMT_START                                                               \
+    C_STMT_START                                                               \
     {                                                                          \
         type _gsk_next_at = (in);                                              \
         protobuf_c_assert(_gsk_next_at != NULL);                               \
@@ -604,7 +604,7 @@
             out = _gsk_next_parent;                                            \
         }                                                                      \
     }                                                                          \
-    G_STMT_END
+    C_STMT_END
 
 /* prev is just next with left/right child reversed. */
 #define GSK_RBTREE_PREV_(                                                      \
@@ -622,7 +622,7 @@
 
 #define GSK_RBTREE_FIRST_(                                                     \
         top, type, is_red, set_is_red, parent, left, right, comparator, out)       \
-    G_STMT_START                                                               \
+    C_STMT_START                                                               \
     {                                                                          \
         type _gsk_first_at = (top);                                            \
         if (_gsk_first_at != NULL)                                             \
@@ -630,7 +630,7 @@
                 _gsk_first_at = _gsk_first_at->left;                           \
         out = _gsk_first_at;                                                   \
     }                                                                          \
-    G_STMT_END
+    C_STMT_END
 #define GSK_RBTREE_LAST_(                                                      \
         top, type, is_red, set_is_red, parent, left, right, comparator, out)       \
     GSK_RBTREE_FIRST_(                                                         \
@@ -665,10 +665,10 @@
     GSK_RBCTREE_GET_NODE_INDEX_(tree, node, index_out)
 
 #if 1
-#undef G_STMT_START
-#define G_STMT_START do
-#undef G_STMT_END
-#define G_STMT_END while (0)
+#undef C_STMT_START
+#define C_STMT_START do
+#undef C_STMT_END
+#define C_STMT_END while (0)
 #endif
 
 #define GSK_RBCTREE_INSERT_(top,                                               \
@@ -683,7 +683,7 @@
                             comparator,                                        \
                             node,                                              \
                             collision_node)                                    \
-    G_STMT_START                                                               \
+    C_STMT_START                                                               \
     {                                                                          \
         type _gsk_last = NULL;                                                 \
         type _gsk_at = (top);                                                  \
@@ -795,7 +795,7 @@
             set_is_red((top), 0);                                              \
         }                                                                      \
     }                                                                          \
-    G_STMT_END
+    C_STMT_END
 
 #define GSK_RBCTREE_REMOVE_(top,                                               \
                             type,                                              \
@@ -808,7 +808,7 @@
                             right,                                             \
                             comparator,                                        \
                             node) /* Algorithms:273. */                        \
-    G_STMT_START                                                               \
+    C_STMT_START                                                               \
     {                                                                          \
         type _gsk_rb_del_z = (node);                                           \
         type _gsk_rb_del_x;                                                    \
@@ -998,7 +998,7 @@
         _gsk_rb_del_z->right = NULL;                                           \
         _gsk_rb_del_z->parent = NULL;                                          \
     }                                                                          \
-    G_STMT_END
+    C_STMT_END
 
 #define GSK_RBCTREE_LOOKUP_COMPARATOR_(top,                                    \
                                        type,                                   \
@@ -1214,7 +1214,7 @@
                                   comparator,                                  \
                                   index,                                       \
                                   out)                                         \
-    G_STMT_START                                                               \
+    C_STMT_START                                                               \
     {                                                                          \
         if (top == NULL || (index) >= get_count(top))                          \
             out = NULL;                                                        \
@@ -1232,7 +1232,7 @@
                                                 index,                         \
                                                 out);                          \
     }                                                                          \
-    G_STMT_END
+    C_STMT_END
 #define GSK_RBCTREE_GET_BY_INDEX_UNCHECKED_(top,                               \
                                             type,                              \
                                             is_red,                            \
@@ -1245,7 +1245,7 @@
                                             comparator,                        \
                                             index,                             \
                                             out)                               \
-    G_STMT_START                                                               \
+    C_STMT_START                                                               \
     {                                                                          \
         type _gsk_at = (top);                                                  \
         guint _gsk_index = (index);                                            \
@@ -1263,7 +1263,7 @@
         }                                                                      \
         out = _gsk_at;                                                         \
     }                                                                          \
-    G_STMT_END
+    C_STMT_END
 
 #define GSK_RBCTREE_GET_NODE_INDEX_(top,                                       \
                                     type,                                      \
@@ -1277,7 +1277,7 @@
                                     comparator,                                \
                                     node,                                      \
                                     index_out)                                 \
-    G_STMT_START                                                               \
+    C_STMT_START                                                               \
     {                                                                          \
         type _gsk_at = (node);                                                 \
         guint _gsk_rv = _gsk_at->left ? get_count(_gsk_at->left) : 0;          \
@@ -1293,7 +1293,7 @@
         }                                                                      \
         index_out = _gsk_rv;                                                   \
     }                                                                          \
-    G_STMT_END
+    C_STMT_END
 
 #define GSK_RBCTREE_ROTATE_RIGHT(                                              \
         top, type, parent, left, right, get_count, set_count, node)                \
@@ -1301,7 +1301,7 @@
         top, type, parent, right, left, get_count, set_count, node)
 #define GSK_RBCTREE_ROTATE_LEFT(                                               \
         top, type, parent, left, right, get_count, set_count, node)                \
-    G_STMT_START                                                               \
+    C_STMT_START                                                               \
     {                                                                          \
         type _gsk_rot_x = (node);                                              \
         type _gsk_rot_y = _gsk_rot_x->right;                                   \
@@ -1346,12 +1346,12 @@
             set_count(_gsk_rot_y, _gsk_rot_n0);                                \
         }                                                                      \
     }                                                                          \
-    G_STMT_END
+    C_STMT_END
 
 /* utility: recompute node's count, based on count of its children */
 #define _GSK_RBCTREE_FIX_COUNT(                                                \
         type, parent, left, right, get_count, set_count, node)                     \
-    G_STMT_START                                                               \
+    C_STMT_START                                                               \
     {                                                                          \
         guint _gsk_fixcount_count = 1;                                         \
         if ((node)->left != NULL)                                              \
@@ -1360,12 +1360,12 @@
             _gsk_fixcount_count += get_count((node)->right);                   \
         set_count((node), _gsk_fixcount_count);                                \
     }                                                                          \
-    G_STMT_END
+    C_STMT_END
 
 /* utility: recompute node's count, based on count of its children */
 #define _GSK_RBCTREE_FIX_COUNT_AND_UP(                                         \
         type, parent, left, right, get_count, set_count, node)                     \
-    G_STMT_START                                                               \
+    C_STMT_START                                                               \
     {                                                                          \
         type _tmp_fix_count_up;                                                \
         for (_tmp_fix_count_up = (node); _tmp_fix_count_up != NULL;            \
@@ -1378,6 +1378,6 @@
                                    set_count,                                  \
                                    _tmp_fix_count_up);                         \
     }                                                                          \
-    G_STMT_END
+    C_STMT_END
 
 #endif

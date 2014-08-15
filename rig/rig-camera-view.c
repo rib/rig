@@ -442,7 +442,7 @@ matrix_view_2d_in_perspective(cg_matrix_t *matrix,
                               float width_2d,
                               float height_2d)
 {
-    float top = z_near * tan(fov_y * G_PI / 360.0);
+    float top = z_near * tan(fov_y * C_PI / 360.0);
 
     matrix_view_2d_in_frustum(matrix,
                               -top * aspect,
@@ -479,7 +479,7 @@ get_entity_transform_for_2d_view(float fov_y,
                                  cg_quaternion_t *rotation,
                                  float *scale)
 {
-    float top = z_near * tan(fov_y * G_PI / 360.0);
+    float top = z_near * tan(fov_y * C_PI / 360.0);
     float left = -top * aspect;
     float right = top * aspect;
 
@@ -1479,7 +1479,7 @@ pick(rig_camera_view_t *view,
     pick_ctx.matrix_stack = view->matrix_stack;
     pick_ctx.x = x;
     pick_ctx.y = y;
-    pick_ctx.selected_distance = -G_MAXFLOAT;
+    pick_ctx.selected_distance = -FLT_MAX;
     pick_ctx.selected_entity = NULL;
     pick_ctx.ray_origin = ray_origin;
     pick_ctx.ray_direction = ray_direction;

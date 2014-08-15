@@ -43,7 +43,7 @@
 #include <dlfcn.h>
 #include <unistd.h>
 
-#include <glib.h>
+#include <clib.h>
 
 #include <clang/CodeGen/CodeGenAction.h>
 #include <clang/Basic/DiagnosticOptions.h>
@@ -98,7 +98,7 @@ compile_code(const char *code, char **tmp_object_file)
     OwningPtr<clang::CompilerInvocation> CI(new clang::CompilerInvocation);
     CI->getFrontendOpts().Inputs.push_back(file);
 
-    char *clang_resourcedir = g_build_filename(
+    char *clang_resourcedir = c_build_filename(
         RIG_LLVM_PREFIX, "lib", "clang", RIG_LLVM_VERSION, NULL);
 
     CI->getHeaderSearchOpts().ResourceDir = clang_resourcedir;
@@ -108,21 +108,21 @@ compile_code(const char *code, char **tmp_object_file)
     CI->getHeaderSearchOpts().UseStandardSystemIncludes = false;
 
     char *clang_system_includedir =
-        g_build_filename(clang_resourcedir, "include", NULL);
+        c_build_filename(clang_resourcedir, "include", NULL);
 
     CI->getHeaderSearchOpts().AddPath(
         clang_system_includedir, frontend::System, false, true);
 
-    g_free(clang_system_includedir);
+    c_free(clang_system_includedir);
 
-    g_free(clang_resourcedir);
+    c_free(clang_resourcedir);
 
     CI->getHeaderSearchOpts().Verbose = true;
 
     char *includedir = rut_find_data_file("codegen_includes");
     CI->getHeaderSearchOpts().AddPath(
         includedir, frontend::System, false, true);
-    g_free(includedir);
+    c_free(includedir);
 
     CI->getPreprocessorOpts().Includes.push_back("stdint.h");
     CI->getPreprocessorOpts().Includes.push_back("stdbool.h");
@@ -179,7 +179,7 @@ compile_code(const char *code, char **tmp_object_file)
      */
     OwningPtr<clang::CodeGenAction> Act(new clang::EmitObjAction);
     if (!Clang.ExecuteAction(*Act)) {
-        g_print("Failed to execute action\n");
+        c_print("Failed to execute action\n");
     }
 
     TextDiagnosticBuffer::const_iterator diag_iterator;
@@ -187,13 +187,13 @@ compile_code(const char *code, char **tmp_object_file)
     for (diag_iterator = diagnostics_buff->warn_begin();
          diag_iterator != diagnostics_buff->warn_end();
          ++diag_iterator)
-        g_print("Buffer Diangostics: warning: %s\n",
+        c_print("Buffer Diangostics: warning: %s\n",
                 (*diag_iterator).second.c_str());
 
     for (diag_iterator = diagnostics_buff->err_begin();
          diag_iterator != diagnostics_buff->err_end();
          ++diag_iterator)
-        g_print("Buffer Diangostics: error: %s\n",
+        c_print("Buffer Diangostics: error: %s\n",
                 (*diag_iterator).second.c_str());
 
     /* XXX: I think this now means we need to explicitly delete mod
@@ -209,7 +209,7 @@ compile_code(const char *code, char **tmp_object_file)
      * it again */
     // llvm::llvm_shutdown();
 
-    *tmp_object_file = g_strdup(tmp_filename.c_str());
+    *tmp_object_file = c_strdup(tmp_filename.c_str());
 
     return mod;
 }
@@ -257,15 +257,15 @@ llvm_link(char *tmp_object_file, uint8_t **dso_data_out, size_t *dso_len_out)
     mcld::Finalize();
 
     error = NULL;
-    if (!g_file_get_contents(tmp_filename.c_str(),
-                             (gchar **)dso_data_out,
-                             (gsize *)dso_len_out,
+    if (!c_file_get_contents(tmp_filename.c_str(),
+                             (char **)dso_data_out,
+                             (size_t *)dso_len_out,
                              &error)) {
-        g_warning("Failed to read DSO");
+        c_warning("Failed to read DSO");
         return NULL;
     }
 
-    return g_strdup(tmp_filename.c_str());
+    return c_strdup(tmp_filename.c_str());
 }
 
 struct _rig_llvm_module_t {
@@ -332,7 +332,7 @@ rig_llvm_compile_to_dso(const char *code,
             ret = NULL;
         }
 
-        g_free(tmp_object_file);
+        c_free(tmp_object_file);
     }
 
     return ret;

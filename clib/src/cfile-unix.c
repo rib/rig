@@ -39,7 +39,7 @@
 #endif
 
 bool
-c_file_test(const char *filename, UFileTest test)
+c_file_test(const char *filename, c_file_test_t test)
 {
     struct stat st;
     bool have_stat;

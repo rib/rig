@@ -47,10 +47,10 @@
 #endif
 
 #define RUT_NOTE(type, ...)                                                    \
-    G_STMT_START                                                               \
+    C_STMT_START                                                               \
     {                                                                          \
     }                                                                          \
-    G_STMT_END
+    C_STMT_END
 
 #ifdef __COUNTER__
 #define RUT_STATIC_TIMER(A, B, C, D, E)                                        \
@@ -64,25 +64,25 @@
     extern void G_PASTE(_rut_dummy_decl, __LINE__) (void)
 #endif
 #define RUT_COUNTER_INC(A, B)                                                  \
-    G_STMT_START                                                               \
+    C_STMT_START                                                               \
     {                                                                          \
     }                                                                          \
-    G_STMT_END
+    C_STMT_END
 #define RUT_COUNTER_DEC(A, B)                                                  \
-    G_STMT_START                                                               \
+    C_STMT_START                                                               \
     {                                                                          \
     }                                                                          \
-    G_STMT_END
+    C_STMT_END
 #define RUT_TIMER_START(A, B)                                                  \
-    G_STMT_START                                                               \
+    C_STMT_START                                                               \
     {                                                                          \
     }                                                                          \
-    G_STMT_END
+    C_STMT_END
 #define RUT_TIMER_STOP(A, B)                                                   \
-    G_STMT_START                                                               \
+    C_STMT_START                                                               \
     {                                                                          \
     }                                                                          \
-    G_STMT_END
+    C_STMT_END
 
 /* cursor width in pixels */
 #define DEFAULT_CURSOR_SIZE 2
@@ -647,7 +647,7 @@ rut_text_get_display_text(rut_text_t *text)
     if (text_str[0] == '\0')
         return c_strdup("");
 
-    if (G_LIKELY(text->password_char == 0))
+    if (C_LIKELY(text->password_char == 0))
         return c_strdup(text_str);
     else {
         c_string_t *str;
@@ -1294,13 +1294,13 @@ rut_text_set_markup_internal(rut_text_t *text,
     PangoAttrList *attrs = NULL;
     bool res;
 
-    g_assert(str != NULL);
+    c_assert(str != NULL);
 
     error = NULL;
     res = pango_parse_markup(str, -1, 0, &attrs, &stripped_text, NULL, &error);
 
     if (!res) {
-        if (G_LIKELY(error != NULL)) {
+        if (C_LIKELY(error != NULL)) {
             c_warning("Failed to set the markup of rut_text_t object %p: %s",
                       text,
                       error->message);
@@ -2233,7 +2233,7 @@ rut_text_handle_key_event(rut_text_t *text, rut_input_event_t *event)
      * event handler, so they can do whatever they want there
      */
     pool = rut_binding_pool_find (g_type_name (RUT_TYPE_TEXT));
-    g_assert (pool != NULL);
+    c_assert (pool != NULL);
 
     /* we allow passing synthetic events that only contain
      * the Unicode value and not the key symbol
@@ -2317,7 +2317,7 @@ rut_text_handle_text_event(rut_text_t *text, rut_input_event_t *event)
 {
     const char *text_str = rut_text_event_get_text(event);
     const char *next;
-    char *text_buf = g_alloca(strlen(text_str) + 1);
+    char *text_buf = c_alloca(strlen(text_str) + 1);
     char *p;
 
     /* Ignore text events when the control key is down */

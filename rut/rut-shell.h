@@ -304,7 +304,7 @@ struct _rut_shell_t {
     rut_shell_grab_t *next_grab;
 
     rut_object_t *keyboard_focus_object;
-    GDestroyNotify keyboard_ungrab_cb;
+    c_destroy_func_t keyboard_ungrab_cb;
 
     rut_object_t *clipboard;
 
@@ -514,7 +514,7 @@ void rut_shell_grab_pointer(rut_shell_t *shell,
  */
 void rut_shell_grab_key_focus(rut_shell_t *shell,
                               rut_object_t *inputable,
-                              GDestroyNotify ungrab_callback);
+                              c_destroy_func_t ungrab_callback);
 
 void rut_shell_ungrab_key_focus(rut_shell_t *shell);
 

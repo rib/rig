@@ -38,7 +38,7 @@
 #include "rut-exception.h"
 
 static rut_exception_t *
-exception_new_valist(GQuark domain, int code, const char *format, va_list ap)
+exception_new_valist(c_quark_t domain, int code, const char *format, va_list ap)
 {
     rut_exception_t *err = c_new(rut_exception_t, 1);
 
@@ -60,7 +60,7 @@ rut_throw(rut_exception_t **err, int domain, int code, const char *format, ...)
     if (err)
         *err = exception_new_valist(domain, code, format, args);
     else
-        g_logv(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, format, args);
+        c_logv(C_LOG_DOMAIN, C_LOG_LEVEL_ERROR, format, args);
 
     va_end(args);
 }

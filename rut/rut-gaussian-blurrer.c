@@ -47,8 +47,8 @@
 static float
 gaussian(float sigma, float x)
 {
-    return 1 / (sigma * sqrtf(2 * G_PI)) *
-           powf(G_E, -(x * x) / (2 * sigma * sigma));
+    return 1 / (sigma * sqrtf(2 * C_PI)) *
+           powf(C_E, -(x * x) / (2 * sigma * sigma));
 }
 
 /* http://theinstructionlimit.com/gaussian-blur-revisited-part-two */
@@ -64,7 +64,7 @@ static cg_pipeline_t *
 create_1d_gaussian_blur_pipeline(rut_context_t *ctx,
                                  int n_taps)
 {
-    static GHashTable *pipeline_cache = NULL;
+    static c_hash_table_t *pipeline_cache = NULL;
     cg_pipeline_t *pipeline;
     cg_snippet_t *snippet;
     c_string_t *shader;
@@ -74,14 +74,14 @@ create_1d_gaussian_blur_pipeline(rut_context_t *ctx,
     /* initialize the pipeline cache. The shaders are only dependent on the
      * number of taps, not the sigma, so we cache the corresponding pipelines
      * in a hash table 'n_taps' => 'pipeline' */
-    if (G_UNLIKELY(pipeline_cache == NULL)) {
-        pipeline_cache = g_hash_table_new_full(g_direct_hash,
-                                               g_direct_equal,
+    if (C_UNLIKELY(pipeline_cache == NULL)) {
+        pipeline_cache = c_hash_table_new_full(c_direct_hash,
+                                               c_direct_equal,
                                                NULL, /* key destroy notify */
-                                               (GDestroyNotify)cg_object_unref);
+                                               (c_destroy_func_t)cg_object_unref);
     }
 
-    pipeline = g_hash_table_lookup(pipeline_cache, GINT_TO_POINTER(n_taps));
+    pipeline = c_hash_table_lookup(pipeline_cache, C_INT_TO_POINTER(n_taps));
     if (pipeline)
         return cg_object_ref(pipeline);
 
@@ -141,7 +141,7 @@ create_1d_gaussian_blur_pipeline(rut_context_t *ctx,
     cg_depth_state_set_test_enabled(&depth_state, false);
     cg_pipeline_set_depth_state(pipeline, &depth_state, NULL);
 
-    g_hash_table_insert(pipeline_cache, GINT_TO_POINTER(n_taps), pipeline);
+    c_hash_table_insert(pipeline_cache, C_INT_TO_POINTER(n_taps), pipeline);
 
     return pipeline;
 }
@@ -157,7 +157,7 @@ set_blurrer_pipeline_factors(cg_pipeline_t *pipeline, int n_taps)
 
     radius = n_taps / 2; /* which is (n_taps - 1) / 2 as well */
 
-    factors = g_alloca(n_taps * sizeof(float));
+    factors = c_alloca(n_taps * sizeof(float));
     sigma = n_taps_to_sigma(n_taps);
 
     sum = 0;
@@ -195,7 +195,7 @@ set_blurrer_pipeline_texture(cg_pipeline_t *pipeline,
     pixel_step[1] = y_pixel_step;
     pixel_step_location =
         cg_pipeline_get_uniform_location(pipeline, "pixel_step");
-    g_assert(pixel_step_location);
+    c_assert(pixel_step_location);
     cg_pipeline_set_uniform_float(pipeline,
                                   pixel_step_location,
                                   2, /* n_components */
@@ -211,9 +211,9 @@ rut_gaussian_blurrer_new(rut_context_t *ctx, int n_taps)
 
     /* validation */
     if (n_taps < 5 || n_taps > 17 || n_taps % 2 == 0) {
-        g_critical("blur: the numbers of taps must belong to the {5, 7, 9, "
+        c_critical("blur: the numbers of taps must belong to the {5, 7, 9, "
                    "11, 13, 14, 17, 19} set");
-        g_assert_not_reached();
+        c_assert_not_reached();
         return NULL;
     }
 

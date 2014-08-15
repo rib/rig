@@ -74,7 +74,7 @@ static void *
 lookup_object_cb(uint64_t id, void *user_data)
 {
     rig_slave_t *slave = user_data;
-    return g_hash_table_lookup(slave->edit_id_to_play_object_map, &id);
+    return c_hash_table_lookup(slave->edit_id_to_play_object_map, &id);
 }
 
 static void *
@@ -90,7 +90,7 @@ register_object_cb(void *object, uint64_t edit_mode_id, void *user_data)
     uint64_t *object_id;
 
     if (lookup_object(slave, edit_mode_id)) {
-        g_critical("Tried to re-register object");
+        c_critical("Tried to re-register object");
         return;
     }
 
@@ -101,8 +101,8 @@ register_object_cb(void *object, uint64_t edit_mode_id, void *user_data)
     object_id = rut_magazine_chunk_alloc(_rig_slave_object_id_magazine);
     *object_id = edit_mode_id;
 
-    g_hash_table_insert(slave->edit_id_to_play_object_map, object_id, object);
-    g_hash_table_insert(slave->play_object_to_edit_id_map, object, object_id);
+    c_hash_table_insert(slave->edit_id_to_play_object_map, object_id, object);
+    c_hash_table_insert(slave->play_object_to_edit_id_map, object, object_id);
 }
 
 static void
@@ -120,15 +120,15 @@ load_ui(rig_slave_t *slave)
     if (slave->edit_id_to_play_object_map) {
         rig_engine_set_play_mode_ui(engine, NULL);
 
-        g_hash_table_destroy(slave->edit_id_to_play_object_map);
+        c_hash_table_destroy(slave->edit_id_to_play_object_map);
         slave->edit_id_to_play_object_map = NULL;
-        g_hash_table_destroy(slave->play_object_to_edit_id_map);
+        c_hash_table_destroy(slave->play_object_to_edit_id_map);
         slave->play_object_to_edit_id_map = NULL;
     }
 
     slave->edit_id_to_play_object_map =
-        g_hash_table_new_full(g_int64_hash,
-                              g_int64_equal, /* key equal */
+        c_hash_table_new_full(c_int64_hash,
+                              c_int64_equal, /* key equal */
                               free_object_id, /* key destroy */
                               NULL); /* value destroy */
 
@@ -136,7 +136,7 @@ load_ui(rig_slave_t *slave)
      * share object_ids between both hash-tables and need to be
      * careful not to double free them. */
     slave->play_object_to_edit_id_map =
-        g_hash_table_new(NULL, /* direct hash */
+        c_hash_table_new(NULL, /* direct hash */
                          NULL); /* direct key equal */
 
     unserializer = rig_pb_unserializer_new(engine);
@@ -461,11 +461,11 @@ object_delete_cb(rut_object_t *object, void *user_data)
 {
     rig_slave_t *slave = user_data;
     uint64_t *object_id =
-        g_hash_table_lookup(slave->play_object_to_edit_id_map, object);
+        c_hash_table_lookup(slave->play_object_to_edit_id_map, object);
 
     if (object_id) {
-        g_hash_table_remove(slave->edit_id_to_play_object_map, object_id);
-        g_hash_table_remove(slave->play_object_to_edit_id_map, object);
+        c_hash_table_remove(slave->edit_id_to_play_object_map, object_id);
+        c_hash_table_remove(slave->play_object_to_edit_id_map, object);
     }
 }
 
@@ -670,11 +670,11 @@ void
 rig_slave_print_mappings(rig_slave_t *slave)
 {
     c_print("Edit ID to play object mappings:\n");
-    g_hash_table_foreach(
+    c_hash_table_foreach(
         slave->edit_id_to_play_object_map, print_id_to_obj_mapping_cb, NULL);
 
     c_print("\n\n");
     c_print("Play object to edit ID mappings:\n");
-    g_hash_table_foreach(
+    c_hash_table_foreach(
         slave->play_object_to_edit_id_map, print_obj_to_id_mapping_cb, NULL);
 }

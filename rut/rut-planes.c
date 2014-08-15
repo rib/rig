@@ -57,7 +57,7 @@ rut_get_eye_planes_for_screen_poly(float *polygon,
     float c[3];
     int count;
 
-    tmp_poly = g_alloca (sizeof (vector4_t) * n_vertices * 2);
+    tmp_poly = c_alloca (sizeof (vector4_t) * n_vertices * 2);
 
 #define DEPTH -50
 
@@ -147,7 +147,7 @@ rut_get_eye_planes_for_screen_poly(float *polygon,
     float c[3];
     int count;
 
-    tmp_poly = g_alloca(sizeof(vector4_t) * n_vertices * 2);
+    tmp_poly = c_alloca(sizeof(vector4_t) * n_vertices * 2);
 
 #define DEPTH -50
 

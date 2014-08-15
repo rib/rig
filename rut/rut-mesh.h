@@ -165,13 +165,13 @@ void rut_mesh_foreach_vertex(rut_mesh_t *mesh,
                              void *user_data,
                              const char *first_attribute_name,
                              ...);
-G_GNUC_NULL_TERMINATED
+C_GNUC_NULL_TERMINATED
 
 void rut_mesh_foreach_index(rut_mesh_t *mesh,
                             rut_mesh_tvertex_callback_t callback,
                             void *user_data,
                             const char *first_attribute_name,
-                            ...) G_GNUC_NULL_TERMINATED;
+                            ...) C_GNUC_NULL_TERMINATED;
 
 typedef bool (*rut_mesh_triangle_callback_t)(void **attribute_data_v0,
                                              void **attribute_data_v1,
@@ -185,6 +185,6 @@ void rut_mesh_foreach_triangle(rut_mesh_t *mesh,
                                rut_mesh_triangle_callback_t callback,
                                void *user_data,
                                const char *first_attribute,
-                               ...) G_GNUC_NULL_TERMINATED;
+                               ...) C_GNUC_NULL_TERMINATED;
 
 #endif /* _RUT_MESH_H_ */

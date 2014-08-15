@@ -104,12 +104,12 @@ _assert_list_is (c_list_t *list, unsigned int length, unsigned int value)
 {
     c_list_t *l;
 
-    g_assert (list->prev == NULL);
-    g_assert_cmpuint (c_list_length (list), ==, length);
+    c_assert (list->prev == NULL);
+    c_assert_cmpuint (c_list_length (list), ==, length);
 
     for (l = c_list_last (list); l; l = l->prev)
     {
-        g_assert_cmpuint (GPOINTER_TO_UINT (l->data), ==, value % 10);
+        c_assert_cmpuint (GPOINTER_TO_UINT (l->data), ==, value % 10);
         value /= 10;
     }
 }
@@ -121,20 +121,20 @@ _rut_test_list_splice (void)
     c_list_t *l0_tail, *l1_tail, *l2_tail;
     c_list_t *list = NULL;
 
-    l0 = c_list_append (l0, GUINT_TO_POINTER (1));
-    l0 = c_list_append (l0, GUINT_TO_POINTER (2));
-    l0 = c_list_append (l0, GUINT_TO_POINTER (3));
+    l0 = c_list_append (l0, C_UINT_TO_POINTER (1));
+    l0 = c_list_append (l0, C_UINT_TO_POINTER (2));
+    l0 = c_list_append (l0, C_UINT_TO_POINTER (3));
     l0_tail = c_list_last (l0);
     _assert_list_is (l0, 3, 123);
 
-    l1 = c_list_append (l1, GUINT_TO_POINTER (4));
-    l1 = c_list_append (l1, GUINT_TO_POINTER (5));
-    l1 = c_list_append (l1, GUINT_TO_POINTER (6));
+    l1 = c_list_append (l1, C_UINT_TO_POINTER (4));
+    l1 = c_list_append (l1, C_UINT_TO_POINTER (5));
+    l1 = c_list_append (l1, C_UINT_TO_POINTER (6));
     l1_tail = c_list_last (l1);
     _assert_list_is (l1, 3, 456);
 
-    l2 = c_list_append (l2, GUINT_TO_POINTER (7));
-    l2 = c_list_append (l2, GUINT_TO_POINTER (8));
+    l2 = c_list_append (l2, C_UINT_TO_POINTER (7));
+    l2 = c_list_append (l2, C_UINT_TO_POINTER (8));
     l2_tail = c_list_last (l2);
     _assert_list_is (l2, 2, 78);
 
@@ -205,7 +205,7 @@ void
 rut_display_list_unsplice(rut_display_list_t *list)
 {
     if (list->head->prev)
-        g_assert(list_unsplice((void *)0xDEADBEEF, list->head, list->tail) ==
+        c_assert(list_unsplice((void *)0xDEADBEEF, list->head, list->tail) ==
                  (c_list_t *)0xDEADBEEF);
 }
 
@@ -213,7 +213,7 @@ void
 rut_display_list_splice(c_list_t *after, rut_display_list_t *sub_list)
 {
     rut_display_list_unsplice(sub_list);
-    g_assert(list_splice(after, after, sub_list->head, sub_list->tail) ==
+    c_assert(list_splice(after, after, sub_list->head, sub_list->tail) ==
              after);
 }
 
@@ -228,7 +228,7 @@ rut_display_list_append(rut_display_list_t *list, void *data)
     if (list->tail)
         list->tail->next = link;
     else {
-        g_assert(list->head == NULL);
+        c_assert(list->head == NULL);
         list->head = link;
     }
     list->tail = link;

@@ -42,7 +42,7 @@ c_file_error_quark(void)
     return c_quark_from_static_string("g-file-error-quark");
 }
 
-UFileError
+c_file_error_t
 c_file_error_from_errno(int err_no)
 {
     switch (err_no) {

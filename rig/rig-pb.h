@@ -82,7 +82,7 @@ struct _rig_pb_serializer_t {
     void **properties_out;
 
     int next_id;
-    GHashTable *object_to_id_map;
+    c_hash_table_t *object_to_id_map;
 };
 
 typedef void (*pb_message_init_func_t)(void *message);
@@ -235,7 +235,7 @@ struct _rig_pb_un_serializer_t {
     rig_entity_t *light;
     c_list_t *controllers;
 
-    GHashTable *id_to_object_map;
+    c_hash_table_t *id_to_object_map;
 };
 
 rig_pb_un_serializer_t *rig_pb_unserializer_new(rig_engine_t *engine);

@@ -41,7 +41,8 @@
 
 /* This code assumes that we can cast an unsigned long to a pointer
    and back without losing any data */
-G_STATIC_ASSERT(sizeof(unsigned long) <= sizeof(void *));
+C_STATIC_ASSERT(sizeof(unsigned long) <= sizeof(void *),
+                "Size of unsigned long larger than size of pointer!");
 
 #define ARRAY_INDEX(bit_num) ((bit_num) / (sizeof(unsigned long) * 8))
 #define BIT_INDEX(bit_num) ((bit_num) & (sizeof(unsigned long) * 8 - 1))

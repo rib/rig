@@ -326,7 +326,7 @@ rut_os_listen_on_tcp_socket(int port, rut_exception_t **e)
         } else {
             int port = ntohs(addr_in.sin_port);
             const uint8_t *ip = (const uint8_t *)&(addr_in.sin_addr);
-            g_message("Listening on socket: %u.%u.%u.%u:%d",
+            c_message("Listening on socket: %u.%u.%u.%u:%d",
                       ip[0],
                       ip[1],
                       ip[2],

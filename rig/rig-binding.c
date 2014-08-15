@@ -305,7 +305,7 @@ rig_binding_activate(rig_binding_t *binding)
     }
 
     n_dependencies = c_list_length(binding->dependencies);
-    dependencies = g_alloca(sizeof(rut_property_t *) * n_dependencies);
+    dependencies = c_alloca(sizeof(rut_property_t *) * n_dependencies);
 
     for (l = binding->dependencies, i = 0; l; l = l->next, i++) {
         dependency_t *dependency = l->data;

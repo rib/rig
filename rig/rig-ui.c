@@ -207,7 +207,7 @@ initialise_play_camera_position(rig_engine_t *engine, rig_ui_t *ui)
     /* Initialise the camera to the center of the device with a z
      * position that will give it pixel aligned coordinates at the
      * origin */
-    top = z_near * tanf(fov_y * G_PI / 360.0);
+    top = z_near * tanf(fov_y * C_PI / 360.0);
     left = -top * aspect;
     right = top * aspect;
 

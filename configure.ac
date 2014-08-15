@@ -200,7 +200,7 @@ AS_IF([test "x$enable_refcount_debug" = "xyes"],
       [have_backtrace=no])
 
 AS_IF([test "x$have_backtrace" = "xyes"],
-      [AC_DEFINE([RUT_ENABLE_BACKTRACE],
+      [AC_DEFINE([HAVE_BACKTRACE],
                  [1],
                  [Define if backtracing is available])])
 
@@ -300,6 +300,7 @@ AC_ARG_ENABLE(editor,
 AS_IF([test x"$enable_editor" = xyes],
       [
 	AC_DEFINE(RIG_EDITOR_ENABLED, [1], [Whether to build the editor or not])
+	AC_DEFINE(RUT_EDITOR_ENABLED, [1], [Whether to build the editor or not])
       ])
 AM_CONDITIONAL(EDITOR_ENABLED, test "x$enable_editor" = "xyes")
 
@@ -342,6 +343,7 @@ AS_IF([test x"$enable_editor" = xyes],
     RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES pangocairo glib-2.0 gio-2.0 gdk-pixbuf-2.0"
     AC_DEFINE([USE_GLIB], [1], [Use Glib])
     AC_DEFINE([USE_PANGO], [1], [Use Pango])
+    AC_DEFINE([USE_GDK_PIXBUF], [1], [Use GDK Pixbuf])
 )
 AM_CONDITIONAL([USE_GLIB], ["x$enable_editor" = xyes])
 
@@ -350,10 +352,13 @@ PKG_CHECK_EXISTS([gstreamer-1.0], [have_gstreamer=yes])
 AC_ARG_ENABLE(
   [gstreamer],
   [AC_HELP_STRING([--enable-gstreamer=@<:@no/yes@:>@],
-                  [Enable gstreamer support @<:@default=]default[@:>@])],
+                  [Enable gstreamer support @<:@default=auto@:>@])],
   [enable_gstreamer="$enableval"],
-  [enable_gstreamer="$have_gstreamer"]
-)
+  [
+    AS_IF([test "x$enable_editor" != "xyes"],
+          [ enable_gstreamer="$have_gstreamer"].
+          [ enable_gstreamer="no"])
+])
 AS_IF([test "x$enable_gstreamer" = "xyes"],
       [
        enable_cogl_gst=yes

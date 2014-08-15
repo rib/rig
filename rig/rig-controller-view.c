@@ -201,7 +201,7 @@ struct _rig_nodes_selection_t {
      * create our own mapping from Nodes to node_group_ts and
      * to Markers.
      */
-    GHashTable *node_map;
+    c_hash_table_t *node_map;
 };
 
 struct _rig_controller_view_t {
@@ -353,7 +353,7 @@ _rig_node_marker_set_selected(rig_node_marker_t *marker,
 static bool
 unselect_node(rig_nodes_selection_t *selection, rig_node_t *node)
 {
-    node_mapping_t *mapping = g_hash_table_lookup(selection->node_map, node);
+    node_mapping_t *mapping = c_hash_table_lookup(selection->node_map, node);
     node_group_t *node_group;
     c_list_t *l;
 
@@ -378,7 +378,7 @@ unselect_node(rig_nodes_selection_t *selection, rig_node_t *node)
 
     _rig_node_marker_set_selected(mapping->marker, false);
 
-    g_hash_table_remove(selection->node_map, node);
+    c_hash_table_remove(selection->node_map, node);
 
     return true;
 }
@@ -401,7 +401,7 @@ _rig_nodes_selection_cancel(rut_object_t *object)
         }
     }
 
-    g_warn_if_fail(selection->node_groups == NULL);
+    c_warn_if_fail(selection->node_groups == NULL);
 }
 
 static void
@@ -435,7 +435,7 @@ grouped:
     mapping->marker = rut_object_ref(marker);
     mapping->node_group = node_group;
 
-    g_hash_table_insert(selection->node_map, marker->node, mapping);
+    c_hash_table_insert(selection->node_map, marker->node, mapping);
 
     _rig_node_marker_set_selected(marker, true);
 }
@@ -517,7 +517,7 @@ translate_node_marker_cb(rig_node_t *node,
 {
     float dx = *(float *)user_data;
     rig_nodes_selection_t *selection = node_group->selection;
-    node_mapping_t *mapping = g_hash_table_lookup(selection->node_map, node);
+    node_mapping_t *mapping = c_hash_table_lookup(selection->node_map, node);
     rig_node_marker_t *marker = mapping->marker;
     rut_transform_t *transform = rut_graphable_get_parent(marker);
 
@@ -549,7 +549,7 @@ copy_nodes_cb(rig_node_t *node, node_group_t *node_group, void *user_data)
 {
     move_nodes_state_t *state = user_data;
     node_mapping_t *mapping =
-        g_hash_table_lookup(state->selection->node_map, node);
+        c_hash_table_lookup(state->selection->node_map, node);
     rig_node_marker_t *marker = mapping->marker;
     rig_path_view_t *path_view = marker->path_view;
 
@@ -598,7 +598,7 @@ apply_node_translations(rig_controller_view_t *view,
         view->nodes_selection, count_nodes_cb, &n_nodes);
 
     state.selection = view->nodes_selection;
-    state.tmp_nodes = g_alloca(sizeof(tmp_node_t) * n_nodes);
+    state.tmp_nodes = c_alloca(sizeof(tmp_node_t) * n_nodes);
     state.length = length;
 
     /* Copy nodes */
@@ -654,7 +654,7 @@ apply_node_translations(rig_controller_view_t *view,
         rig_node_marker_t *marker =
             rig_path_view_find_node_marker(path_view, node);
 
-        g_warn_if_fail(marker != NULL && marker->selected == false);
+        c_warn_if_fail(marker != NULL && marker->selected == false);
 
         _rig_controller_view_select_marker(
             view, marker, RUT_SELECT_ACTION_TOGGLE);
@@ -747,7 +747,7 @@ find_unselected_neighbour(rig_controller_view_t *view,
 
         /* Ignore this node if it is also selected */
         mapping =
-            g_hash_table_lookup(view->nodes_selection->node_map, next_node);
+            c_hash_table_lookup(view->nodes_selection->node_map, next_node);
         if (mapping)
             goto node_is_selected;
 
@@ -977,7 +977,7 @@ _rig_nodes_selection_delete(rut_object_t *object)
             for (l2 = node_group->nodes; l2; l2 = next2) {
                 rig_node_t *node = l2->data;
                 node_mapping_t *mapping =
-                    g_hash_table_lookup(selection->node_map, node);
+                    c_hash_table_lookup(selection->node_map, node);
                 rut_property_t *property =
                     mapping->marker->path_view->prop_view->prop_data->property;
 
@@ -993,7 +993,7 @@ _rig_nodes_selection_delete(rut_object_t *object)
             /* XXX: make sure that
              * rig_undo_journal_delete_path_node () doesn't change
              * the selection. */
-            g_warn_if_fail(n_nodes == c_list_length(node_group->nodes));
+            c_warn_if_fail(n_nodes == c_list_length(node_group->nodes));
         }
 
         subjournal = rig_editor_pop_undo_subjournal(engine);
@@ -1005,11 +1005,11 @@ _rig_nodes_selection_delete(rut_object_t *object)
         /* XXX: make sure that
          * rig_undo_journal_delete_path_node () doesn't change
          * the selection. */
-        g_warn_if_fail(len == c_list_length(selection->node_groups));
+        c_warn_if_fail(len == c_list_length(selection->node_groups));
     }
 
     c_list_free_full(selection->node_groups,
-                     (GDestroyNotify)destroy_node_group);
+                     (c_destroy_func_t)destroy_node_group);
     selection->node_groups = NULL;
 }
 
@@ -1020,7 +1020,7 @@ _rig_nodes_selection_free(void *object)
 
     _rig_nodes_selection_cancel(selection);
 
-    g_hash_table_destroy(selection->node_map);
+    c_hash_table_destroy(selection->node_map);
     rut_object_free(rig_nodes_selection_t, selection);
 }
 
@@ -1073,10 +1073,10 @@ _rig_nodes_selection_new(rig_controller_view_t *view)
     selection->node_groups = NULL;
 
     selection->node_map =
-        g_hash_table_new_full(g_direct_hash,
-                              g_direct_equal,
+        c_hash_table_new_full(c_direct_hash,
+                              c_direct_equal,
                               NULL, /* key destroy func */
-                              (GDestroyNotify)destroy_node_mapping);
+                              (c_destroy_func_t)destroy_node_mapping);
 
     return selection;
 }
@@ -3217,7 +3217,7 @@ rig_controller_view_create_dots_pipeline (rig_controller_view_t *view)
 static void
 rig_controller_view_create_separator_pipeline(rig_controller_view_t *view)
 {
-    GError *error = NULL;
+    c_error_t *error = NULL;
     cg_texture_t *texture;
 
     texture = rut_load_texture_from_data_file(
@@ -3243,7 +3243,7 @@ rig_controller_view_create_separator_pipeline(rig_controller_view_t *view)
         cg_object_unref(texture);
     } else {
         c_warning("%s", error->message);
-        g_error_free(error);
+        c_error_free(error);
     }
 }
 
@@ -3258,7 +3258,7 @@ rig_controller_view_get_time_from_event (rig_controller_view_t *view,
     float y = rut_motion_event_get_y (event);
 
     if (!rut_motion_event_unproject (event, view, &x, &y))
-        g_error ("Failed to get inverse transform");
+        c_error ("Failed to get inverse transform");
 
     if (time)
         *time = (x - view->nodes_x) / view->nodes_width;
@@ -3305,7 +3305,7 @@ rig_controller_view_find_node (rig_controller_view_t *view,
 
     if (!rut_motion_event_unproject (event, view, &x, &y))
     {
-        g_error ("Failed to get inverse transform");
+        c_error ("Failed to get inverse transform");
         return false;
     }
 
@@ -3484,7 +3484,7 @@ rig_controller_view_commit_dragged_nodes (rig_controller_view_t *view)
 
     n_nodes = rut_list_length (&view->selected_nodes);
 
-    nodes = g_alloca (sizeof (rig_undo_journal_path_node_t) * n_nodes);
+    nodes = c_alloca (sizeof (rig_undo_journal_path_node_t) * n_nodes);
 
     i = 0;
     rut_list_for_each (selected_node, &view->selected_nodes, list_node)
@@ -3605,7 +3605,7 @@ rig_controller_view_grab_input_cb (rut_input_event_t *event,
         {
         case RIG_CONTROLLER_VIEW_GRAB_STATE_NO_GRAB:
         case RIG_CONTROLLER_VIEW_GRAB_STATE_UNDECIDED:
-            g_assert_not_reached ();
+            c_assert_not_reached ();
 
         case RIG_CONTROLLER_VIEW_GRAB_STATE_DRAGGING_NODES:
             rig_controller_view_drag_nodes (view, event);
@@ -3629,7 +3629,7 @@ rig_controller_view_grab_input_cb (rut_input_event_t *event,
         switch (view->grab_state)
         {
         case RIG_CONTROLLER_VIEW_GRAB_STATE_NO_GRAB:
-            g_assert_not_reached ();
+            c_assert_not_reached ();
             break;
 
         case RIG_CONTROLLER_VIEW_GRAB_STATE_MOVING_TIMELINE:
@@ -4143,7 +4143,7 @@ _rig_controller_view_foreach_node(rig_controller_view_t *view,
                 rig_path_view_t *path_view = prop_view->columns[2].control;
                 rig_node_t *node;
 
-                g_assert(rut_object_get_type(path_view) == &rig_path_view_type);
+                c_assert(rut_object_get_type(path_view) == &rig_path_view_type);
 
                 rut_list_for_each(node, &path_view->path->nodes, list_node)
                 callback(path_view, node, user_data);

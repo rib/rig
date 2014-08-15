@@ -428,7 +428,7 @@ set_state_connected(pb_rpc__client_t *client)
         client->allocator->alloc(client->allocator, sizeof(closure_t));
     client->info.connected.closures[0].closure = NULL;
     client->info.connected.closures[0].response_type = NULL;
-    client->info.connected.closures[0].closure_data = GUINT_TO_POINTER(0);
+    client->info.connected.closures[0].closure_data = C_UINT_TO_POINTER(0);
 
     if (client->connect_handler)
         client->connect_handler(client, client->connect_handler_data);
@@ -646,10 +646,10 @@ grow_closure_array(pb_rpc__client_t *client)
     for (i = old_size; i < new_size - 1; i++) {
         new_closures[i].response_type = NULL;
         new_closures[i].closure = NULL;
-        new_closures[i].closure_data = GUINT_TO_POINTER(i + 2);
+        new_closures[i].closure_data = C_UINT_TO_POINTER(i + 2);
     }
     new_closures[i].closure_data =
-        GUINT_TO_POINTER(client->info.connected.first_free_request_id);
+        C_UINT_TO_POINTER(client->info.connected.first_free_request_id);
     new_closures[i].response_type = NULL;
     new_closures[i].closure = NULL;
     client->info.connected.first_free_request_id = old_size + 1;
@@ -688,7 +688,7 @@ enqueue_request(pb_rpc__client_t *client,
     request_id = client->info.connected.first_free_request_id;
     cl = client->info.connected.closures + (request_id - 1);
     client->info.connected.first_free_request_id =
-        GPOINTER_TO_UINT(cl->closure_data);
+        C_POINTER_TO_UINT(cl->closure_data);
 
     /* Pack message */
     packed_size = protobuf_c_message_get_packed_size(input);
@@ -699,7 +699,7 @@ enqueue_request(pb_rpc__client_t *client,
     protobuf_c_message_pack(input, packed_data);
 
     /* Append to buffer */
-    g_assert(sizeof(header) == 12);
+    c_assert(sizeof(header) == 12);
     header.method_index = uint32_to_le(method_index);
     header.packed_size = uint32_to_le(packed_size);
     header.request_id = request_id;
@@ -955,7 +955,7 @@ _rig_pb_rpc_server_free(void *object)
 
     /* We assume that a server service is declared statically with no
      * destroy callback... */
-    g_warn_if_fail(server->service->destroy == NULL);
+    c_warn_if_fail(server->service->destroy == NULL);
 
     while (server->first_connection != NULL) {
         server_connection_close(server->first_connection);
@@ -1259,7 +1259,7 @@ read_client_reply(pb_rpc__client_t *client,
     closure->response_type = NULL;
     closure->closure = NULL;
     closure->closure_data =
-        GUINT_TO_POINTER(client->info.connected.first_free_request_id);
+        C_UINT_TO_POINTER(client->info.connected.first_free_request_id);
     client->info.connected.first_free_request_id = request_id;
 
     /* clean up */
@@ -1752,7 +1752,7 @@ handle_peer_connect_idle(rig_protobuf_c_dispatch_t *dispatch,
 
     server_add_connection_with_stream(server, stream);
 
-    g_warn_if_fail(client->state == PB_RPC_CLIENT_STATE_INIT);
+    c_warn_if_fail(client->state == PB_RPC_CLIENT_STATE_INIT);
     set_state_connected(client);
 
     peer->idle = NULL;

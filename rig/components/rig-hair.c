@@ -86,20 +86,20 @@ _get_interpolated_value(float fmin, float fmax, float min, float max, float x)
 }
 
 static float
-_get_fuzzy_float(GRand *rand, float value, float variance)
+_get_fuzzy_float(c_rand_t *rand, float value, float variance)
 {
     float v = variance / 2.0;
 
-    return (float)g_rand_double_range(rand, value - v, value + v);
+    return (float)c_rand_double_range(rand, value - v, value + v);
 }
 
 static void
-init_hair_particle(hair_particle_t *particle, GRand *rand, float diameter)
+init_hair_particle(hair_particle_t *particle, c_rand_t *rand, float diameter)
 {
     float magnitude, speed;
-    float follicle_x = g_rand_double_range(rand, -1, 1);
+    float follicle_x = c_rand_double_range(rand, -1, 1);
     float follicle_y = 0;
-    float follicle_z = g_rand_double_range(rand, -1, 1);
+    float follicle_z = c_rand_double_range(rand, -1, 1);
 
     particle->lifetime = _get_fuzzy_float(rand, 0.75, 0.5);
     particle->diameter = diameter;
@@ -378,7 +378,7 @@ _rig_hair_draw_shell_texture(rig_hair_t *hair,
 static void
 _rig_hair_generate_shell_textures(rig_hair_t *hair)
 {
-    GRand *rand = g_rand_new();
+    c_rand_t *rand = c_rand_new();
     int num_particles = hair->particles->len;
     int num_textures = hair->shell_textures->len;
     int i;
@@ -394,7 +394,7 @@ _rig_hair_generate_shell_textures(rig_hair_t *hair)
     } else if (hair->density < num_particles)
         c_array_set_size(hair->particles, hair->density);
 
-    g_rand_free(rand);
+    c_rand_free(rand);
 
     if (hair->n_shells > num_textures) {
         c_array_set_size(hair->shell_textures, hair->n_shells);

@@ -53,7 +53,9 @@
 #endif
 
 #include <clib.h>
+#ifdef USE_GLIB
 #include <gio/gio.h>
+#endif
 
 #include <cogl/cogl.h>
 #include <cogl/cogl-sdl.h>
@@ -868,7 +870,7 @@ cancel_current_drop_offer_taker(rut_shell_t *shell)
 
     status = rut_inputable_handle_event(shell->drop_offer_taker, &drop_cancel);
 
-    g_warn_if_fail(status == RUT_INPUT_EVENT_STATUS_HANDLED);
+    c_warn_if_fail(status == RUT_INPUT_EVENT_STATUS_HANDLED);
 
     rut_object_unref(shell->drop_offer_taker);
     shell->drop_offer_taker = NULL;
@@ -1083,7 +1085,7 @@ rut_shell_new(bool headless,
         rut_object_alloc0(rut_shell_t, &rut_shell_type, _rut_shell_init_type);
     rut_frame_info_t *frame_info;
 
-    if (G_UNLIKELY(initialized == false)) {
+    if (C_UNLIKELY(initialized == false)) {
 #ifdef USE_GSTREAMER
         if (!headless) {
             gst_element_register(NULL, "memsrc", 0, gst_mem_src_get_type());
@@ -1183,7 +1185,7 @@ signal_handler (int sig)
     }
 }
 
-gboolean
+bool
 dispatch_signal_source (GSource *source,
                         GSourceFunc callback,
                         void *user_data)
@@ -1225,19 +1227,19 @@ glib_log_level_to_android_priority(GLogLevelFlags flags)
     guint i;
     static long levels[8] = { 0, /* (unused) ANDROID_LOG_UNKNOWN */
                               0, /* (unused) ANDROID_LOG_DEFAULT */
-                              G_LOG_LEVEL_MESSAGE, /* ANDROID_LOG_VERBOSE */
-                              G_LOG_LEVEL_DEBUG, /* ANDROID_LOG_DEBUG */
-                              G_LOG_LEVEL_INFO, /* ANDROID_LOG_INFO */
-                              G_LOG_LEVEL_WARNING, /* ANDROID_LOG_WARN */
-                              G_LOG_LEVEL_CRITICAL, /* ANDROID_LOG_ERROR */
-                              G_LOG_LEVEL_ERROR /* ANDROID_LOG_FATAL */
+                              C_LOG_LEVEL_MESSAGE, /* ANDROID_LOG_VERBOSE */
+                              C_LOG_LEVEL_DEBUG, /* ANDROID_LOG_DEBUG */
+                              C_LOG_LEVEL_INFO, /* ANDROID_LOG_INFO */
+                              C_LOG_LEVEL_WARNING, /* ANDROID_LOG_WARN */
+                              C_LOG_LEVEL_CRITICAL, /* ANDROID_LOG_ERROR */
+                              C_LOG_LEVEL_ERROR /* ANDROID_LOG_FATAL */
     };
 
-    for (i = 3; i < G_N_ELEMENTS(levels); i++)
+    for (i = 3; i < C_N_ELEMENTS(levels); i++)
         if (flags & levels[i])
             break;
 
-    if (i >= G_N_ELEMENTS(levels))
+    if (i >= C_N_ELEMENTS(levels))
         return ANDROID_LOG_INFO;
 
     return i;
@@ -1249,7 +1251,7 @@ android_glib_log_handler(const gchar *log_domain,
                          const gchar *message,
                          gpointer user_data)
 {
-    gboolean is_fatal = (log_level & G_LOG_FLAG_FATAL);
+    bool is_fatal = (log_level & C_LOG_FLAG_FATAL);
     android_LogPriority android_level;
 
     if (is_fatal)
@@ -1323,7 +1325,7 @@ rut_shell_set_window_camera(rut_shell_t *shell,
 void
 rut_shell_grab_key_focus(rut_shell_t *shell,
                          rut_object_t *inputable,
-                         GDestroyNotify ungrab_callback)
+                         c_destroy_func_t ungrab_callback)
 {
     c_return_if_fail(rut_object_is(inputable, RUT_TRAIT_ID_INPUTABLE));
 
@@ -1457,7 +1459,7 @@ sort_pre_paint_callbacks(rut_shell_t *shell)
         n_entries++;
     }
 
-    entry_ptrs = g_alloca(sizeof(rut_shell_pre_paint_entry_t *) * n_entries);
+    entry_ptrs = c_alloca(sizeof(rut_shell_pre_paint_entry_t *) * n_entries);
 
     rut_list_for_each(entry, &shell->pre_paint_callbacks, list_node)
     entry_ptrs[i++] = entry;
@@ -1512,7 +1514,7 @@ rut_shell_start_redraw(rut_shell_t *shell)
 void
 rut_shell_update_timelines(rut_shell_t *shell)
 {
-    GSList *l;
+    c_slist_t *l;
 
     for (l = shell->rut_ctx->timelines; l; l = l->next)
         _rut_timeline_update(l->data);
@@ -1557,7 +1559,7 @@ rut_shell_dispatch_input_events(rut_shell_t *shell)
         }
     }
 
-    g_warn_if_fail(input_queue->n_events == 0);
+    c_warn_if_fail(input_queue->n_events == 0);
 }
 
 rut_input_queue_t *
@@ -1692,7 +1694,7 @@ rut_shell_run_post_paint_callbacks(rut_shell_t *shell)
 bool
 rut_shell_check_timelines(rut_shell_t *shell)
 {
-    GSList *l;
+    c_slist_t *l;
 
     for (l = shell->rut_ctx->timelines; l; l = l->next)
         if (rut_timeline_is_running(l->data))
@@ -2001,7 +2003,7 @@ rut_shell_grab_pointer(rut_shell_t *shell,
         Display *dpy = shell_onscreen->sdl_info.info.x11.display;
         Window win = shell_onscreen->sdl_info.info.x11.window;
 
-        g_warn_if_fail (shell->x11_grabbed == false);
+        c_warn_if_fail (shell->x11_grabbed == false);
 
         if (XGrabPointer (dpy, win, False,
                           PointerMotionMask|ButtonPressMask|ButtonReleaseMask,
@@ -2071,8 +2073,8 @@ rut_shell_add_pre_paint_callback(rut_shell_t *shell,
         rut_list_for_each(entry, &shell->pre_paint_callbacks, list_node)
         {
             if (entry->graphable == graphable) {
-                g_warn_if_fail(entry->callback == callback);
-                g_warn_if_fail(entry->user_data == user_data);
+                c_warn_if_fail(entry->callback == callback);
+                c_warn_if_fail(entry->user_data == user_data);
                 return;
             }
         }
@@ -2210,7 +2212,7 @@ rut_shell_drop(rut_shell_t *shell)
 
     status = rut_inputable_handle_event(shell->drop_offer_taker, &drop_event);
 
-    g_warn_if_fail(status == RUT_INPUT_EVENT_STATUS_HANDLED);
+    c_warn_if_fail(status == RUT_INPUT_EVENT_STATUS_HANDLED);
 
     rut_shell_cancel_drag(shell);
 }

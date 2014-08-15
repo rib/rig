@@ -45,7 +45,7 @@ struct particle {
 };
 
 struct particle_emitter_priv {
-	GTimer *timer;
+	c_timer_t *timer;
 	gdouble current_time;
 	gdouble last_update_time;
 
@@ -175,7 +175,7 @@ static void tick(struct particle_emitter *emitter)
 
 	/* Update the clocks */
 	priv->last_update_time = priv->current_time;
-	priv->current_time = g_timer_elapsed(priv->timer, NULL);
+	priv->current_time = c_timer_elapsed(priv->timer, NULL);
 
 	tick_time = priv->current_time - priv->last_update_time;
 
@@ -244,7 +244,7 @@ struct particle_emitter* particle_emitter_new(CoglContext *ctx,
 	priv->ctx = cogl_object_ref(ctx);
 	priv->fb = cogl_object_ref(fb);
 
-	priv->timer = g_timer_new();
+	priv->timer = c_timer_new();
 	priv->rand = g_rand_new();
 
 	emitter->priv = priv;
@@ -260,7 +260,7 @@ void particle_emitter_free(struct particle_emitter *emitter)
 	cogl_object_unref(priv->fb);
 
 	g_rand_free(priv->rand);
-	g_timer_destroy(priv->timer);
+	c_timer_destroy(priv->timer);
 
 	particle_engine_free(priv->engine);
 

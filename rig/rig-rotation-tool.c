@@ -41,7 +41,7 @@ rotation_tool_grab_cb(rut_input_event_t *event,
     rig_rotation_tool_t *tool = user_data;
     rut_motion_event_action_t action;
 
-    g_warn_if_fail(tool->button_down);
+    c_warn_if_fail(tool->button_down);
 
     if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_KEY &&
         rut_key_event_get_keysym(event) == RUT_KEY_Escape) {

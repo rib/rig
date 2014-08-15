@@ -97,7 +97,7 @@ _rut_stack_free(void *object)
     rut_shell_remove_pre_paint_callback_by_graphable(stack->ctx->shell, stack);
 
     /* Destroying the graphable state should remove all the children */
-    g_warn_if_fail(rut_list_empty(&stack->children));
+    c_warn_if_fail(rut_list_empty(&stack->children));
 
     rut_object_free(rut_stack_t, stack);
 }

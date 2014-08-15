@@ -26,13 +26,10 @@
  * SOFTWARE.
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include <string.h>
 
-#include <glib-object.h>
 #include <math.h>
 #include <cogl/cogl.h>
 
@@ -110,7 +107,7 @@ rut_volume_copy(const rut_volume_t *volume)
 void
 _rut_volume_set_from_volume(rut_volume_t *volume, const rut_volume_t *src)
 {
-    gboolean is_static = volume->is_static;
+    bool is_static = volume->is_static;
     memcpy(volume, src, sizeof(rut_volume_t));
     volume->is_static = is_static;
 }
@@ -120,7 +117,7 @@ rut_volume_free(rut_volume_t *volume)
 {
     c_return_if_fail(volume != NULL);
 
-    if (G_LIKELY(volume->is_static))
+    if (C_LIKELY(volume->is_static))
         return;
 
     c_slice_free(rut_volume_t, volume);
@@ -452,7 +449,7 @@ _rut_volume_complete(rut_volume_t *volume)
     volume->vertices[2].y = volume->vertices[3].y + dy_l2r;
     volume->vertices[2].z = volume->vertices[3].z + dz_l2r;
 
-    if (G_UNLIKELY(!volume->is_2d)) {
+    if (C_UNLIKELY(!volume->is_2d)) {
         /* back-top-right */
         volume->vertices[5].x = volume->vertices[4].x + dx_l2r;
         volume->vertices[5].y = volume->vertices[4].y + dy_l2r;
@@ -515,7 +512,7 @@ _rut_volume_get_bounding_box(rut_volume_t *volume, rut_box_t *box)
 
     /* Assuming that most objects are 2D we only have to look at the front 4
      * vertices of the volume... */
-    if (G_LIKELY(volume->is_2d))
+    if (C_LIKELY(volume->is_2d))
         count = 4;
     else
         count = 8;
@@ -563,7 +560,7 @@ _rut_volume_project(rut_volume_t *volume,
 
     /* Most actors are 2D so we only have to transform the front 4
      * vertices of the volume... */
-    if (G_LIKELY(volume->is_2d))
+    if (C_LIKELY(volume->is_2d))
         transform_count = 4;
     else
         transform_count = 8;
@@ -600,7 +597,7 @@ _rut_volume_transform(rut_volume_t *volume, const cg_matrix_t *matrix)
 
     /* Most actors are 2D so we only have to transform the front 4
      * vertices of the volume... */
-    if (G_LIKELY(volume->is_2d))
+    if (C_LIKELY(volume->is_2d))
         transform_count = 4;
     else
         transform_count = 8;
@@ -634,10 +631,10 @@ rut_volume_axis_align(rut_volume_t *volume)
     if (volume->is_empty)
         return;
 
-    if (G_LIKELY(volume->is_axis_aligned))
+    if (C_LIKELY(volume->is_axis_aligned))
         return;
 
-    if (G_LIKELY(volume->vertices[0].x == volume->vertices[1].x &&
+    if (C_LIKELY(volume->vertices[0].x == volume->vertices[1].x &&
                  volume->vertices[0].y == volume->vertices[3].y &&
                  volume->vertices[0].z == volume->vertices[4].y)) {
         volume->is_axis_aligned = true;
@@ -699,7 +696,7 @@ rut_volume_cull(rut_volume_t *volume,
 {
     int vertex_count;
     rut_vector3_t *vertices = volume->vertices;
-    gboolean partial = false;
+    bool partial = false;
     int i;
     int j;
 
@@ -712,7 +709,7 @@ rut_volume_cull(rut_volume_t *volume,
 
     /* Most actors are 2D so we only have to transform the front 4
      * vertices of the volume... */
-    if (G_LIKELY(volume->is_2d))
+    if (C_LIKELY(volume->is_2d))
         vertex_count = 4;
     else
         vertex_count = 8;

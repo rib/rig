@@ -16,7 +16,7 @@ struct demo {
 
 	struct particle_swarm *swarm;
 
-	GTimer *timer;
+	c_timer_t *timer;
 
 	bool swap_ready;
 	GMainLoop *main_loop;
@@ -148,7 +148,7 @@ int main(int argc, char **argv)
 
 	init_particle_swarm(&demo);
 
-	demo.timer = g_timer_new();
+	demo.timer = c_timer_new();
 
 	g_idle_add(update_cb, &demo);
 	loop = g_main_loop_new (NULL, TRUE);

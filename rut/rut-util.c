@@ -63,7 +63,7 @@ rut_util_fully_transform_vertices(const cg_matrix_t *modelview,
     vertex4_t *vertices_tmp;
     int i;
 
-    vertices_tmp = g_alloca(sizeof(vertex4_t) * n_vertices);
+    vertices_tmp = c_alloca(sizeof(vertex4_t) * n_vertices);
 
     if (n_vertices >= 4) {
         /* XXX: we should find a way to cache this per actor */
@@ -333,7 +333,7 @@ rut_util_intersect_mesh(rut_mesh_t *mesh,
 
     state.ray_origin = ray_origin;
     state.ray_direction = ray_direction;
-    state.min_t = G_MAXFLOAT;
+    state.min_t = FLT_MAX;
     state.found = false;
     state.index = 0;
 
@@ -480,7 +480,7 @@ rut_util_distribute_natural_allocation(int extra_space,
      */
 
     /* Sort descending by gap and position. */
-    g_qsort_with_data(
+    c_qsort_with_data(
         spreading, n_requested_sizes, sizeof(unsigned int), compare_gap, sizes);
 
     /* Distribute available space.
@@ -514,16 +514,16 @@ rut_util_is_boolean_env_set(const char *variable)
     if (!val)
         return false;
 
-    if (g_ascii_strcasecmp(val, "1") == 0 ||
-        g_ascii_strcasecmp(val, "on") == 0 ||
-        g_ascii_strcasecmp(val, "true") == 0)
+    if (c_ascii_strcasecmp(val, "1") == 0 ||
+        c_ascii_strcasecmp(val, "on") == 0 ||
+        c_ascii_strcasecmp(val, "true") == 0)
         ret = true;
-    else if (g_ascii_strcasecmp(val, "0") == 0 ||
-             g_ascii_strcasecmp(val, "off") == 0 ||
-             g_ascii_strcasecmp(val, "false") == 0)
+    else if (c_ascii_strcasecmp(val, "0") == 0 ||
+             c_ascii_strcasecmp(val, "off") == 0 ||
+             c_ascii_strcasecmp(val, "false") == 0)
         ret = false;
     else {
-        g_critical("Spurious boolean environment variable value (%s=%s)",
+        c_critical("Spurious boolean environment variable value (%s=%s)",
                    variable,
                    val);
         ret = true;
@@ -540,7 +540,7 @@ rut_util_matrix_scaled_perspective(cg_matrix_t *matrix,
                                    float z_far,
                                    float scale)
 {
-    float ymax = z_near * tanf(fov_y * G_PI / 360.0);
+    float ymax = z_near * tanf(fov_y * C_PI / 360.0);
     float inverse_scale = 1.0 / scale;
 
     cg_matrix_frustum(matrix,

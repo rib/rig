@@ -122,7 +122,7 @@ _rig_controller_free(rut_object_t *object)
 
     rut_introspectable_destroy(controller);
 
-    g_hash_table_destroy(controller->properties);
+    c_hash_table_destroy(controller->properties);
 
     rut_object_unref(controller->context);
 
@@ -197,8 +197,8 @@ rig_controller_new(rig_engine_t *engine, const char *label)
     rut_introspectable_init(
         controller, _rig_controller_prop_specs, controller->props);
 
-    controller->properties = g_hash_table_new_full(g_direct_hash,
-                                                   g_direct_equal,
+    controller->properties = c_hash_table_new_full(c_direct_hash,
+                                                   c_direct_equal,
                                                    NULL, /* key_destroy */
                                                    free_prop_data_cb);
 
@@ -555,7 +555,7 @@ rig_controller_prop_data_t *
 rig_controller_find_prop_data_for_property(rig_controller_t *controller,
                                            rut_property_t *property)
 {
-    return g_hash_table_lookup(controller->properties, property);
+    return c_hash_table_lookup(controller->properties, property);
 }
 
 rig_path_t *
@@ -670,7 +670,7 @@ rig_controller_foreach_property(rig_controller_t *controller,
     foreach_data.callback = callback;
     foreach_data.user_data = user_data;
 
-    g_hash_table_foreach(
+    c_hash_table_foreach(
         controller->properties, foreach_path_cb, &foreach_data);
 }
 
@@ -702,7 +702,7 @@ rig_controller_add_property(rig_controller_t *controller,
 
     rut_property_box(property, &prop_data->constant_value);
 
-    g_hash_table_insert(controller->properties, property, prop_data);
+    c_hash_table_insert(controller->properties, property, prop_data);
 
     if (effective_active(controller))
         activate_property_binding(prop_data, controller);
@@ -731,7 +731,7 @@ rig_controller_remove_property(rig_controller_t *controller,
                                 RIG_CONTROLLER_OPERATION_REMOVED,
                                 prop_data);
 
-        g_hash_table_remove(controller->properties, property);
+        c_hash_table_remove(controller->properties, property);
     }
 }
 

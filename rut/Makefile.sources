@@ -51,10 +51,6 @@ rut_common_sources = \
     rut-util.c \
     rut-timeline.h \
     rut-timeline.c \
-    rut-text-buffer.h \
-    rut-text-buffer.c \
-    rut-text.h \
-    rut-text.c \
     rut-geometry.h \
     rut-geometry.c \
     rut-paintable.h \
@@ -67,8 +63,6 @@ rut_common_sources = \
     rut-gaussian-blurrer.c \
     rut-mesh.h \
     rut-mesh.c \
-    rut-mesh-ply.h \
-    rut-mesh-ply.c \
     rut-ui-viewport.h \
     rut-ui-viewport.c \
     rut-scroll-bar.h \
@@ -87,12 +81,8 @@ rut_common_sources = \
     rut-transform.c \
     rut-rectangle.h \
     rut-rectangle.c \
-    rut-scale.h \
-    rut-scale.c \
     rut-fixed.h \
     rut-fixed.c \
-    rut-fold.h \
-    rut-fold.c \
     rut-refcount-debug.h \
     rut-refcount-debug.c \
     rut-composite-sizable.h \
@@ -113,6 +103,10 @@ rut_common_sources = \
 rut_editor_sources = \
     rply.c \
     rply.h \
+    rut-text-buffer.h \
+    rut-text-buffer.c \
+    rut-text.h \
+    rut-text.c \
     rut-number-slider.h \
     rut-number-slider.c \
     rut-vec3-slider.h \
@@ -131,10 +125,14 @@ rut_editor_sources = \
     rut-icon.c \
     rut-flow-layout.h \
     rut-flow-layout.c \
+    rut-fold.h \
+    rut-fold.c \
     rut-button.h \
     rut-button.c \
     rut-slider.h \
     rut-slider.c \
+    rut-scale.h \
+    rut-scale.c \
     rut-icon-button.h \
     rut-icon-button.c \
     rut-drag-bin.h \
@@ -145,6 +143,8 @@ rut_editor_sources = \
     rut-icon-toggle-set.c \
     rut-rotation-inspector.h \
     rut-rotation-inspector.c \
+    rut-mesh-ply.h \
+    rut-mesh-ply.c \
     rut-adb.h \
     rut-adb.c
 

@@ -46,7 +46,7 @@ _rut_object_alloc(size_t bytes, rut_type_t *type, rut_type_init_t type_init)
 {
     rut_object_t *object;
 
-    if (G_UNLIKELY(type->name == NULL))
+    if (C_UNLIKELY(type->name == NULL))
         type_init();
 
     if (type->magazine)
@@ -64,7 +64,7 @@ _rut_object_alloc0(size_t bytes, rut_type_t *type, rut_type_init_t type_init)
 {
     rut_object_t *object = c_slice_alloc0(bytes);
 
-    if (G_UNLIKELY(type->name == NULL))
+    if (C_UNLIKELY(type->name == NULL))
         type_init();
 
     rut_object_init(object, type);

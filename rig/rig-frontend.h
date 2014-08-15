@@ -92,7 +92,7 @@ struct _rig_frontend_t {
     uint8_t *pending_dso_data;
     size_t pending_dso_len;
 
-    GHashTable *tmp_id_to_object_map;
+    c_hash_table_t *tmp_id_to_object_map;
 };
 
 rig_frontend_t *

@@ -37,6 +37,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#if defined(USE_GLIB) && defined(HAVE_BACKTRACE)
+#define RUT_ENABLE_BACKTRACE
+#endif
+
 #ifdef RUT_ENABLE_BACKTRACE
 #include <execinfo.h>
 #include <unistd.h>
@@ -49,7 +53,7 @@
 
 typedef struct {
     bool enabled;
-    GHashTable *hash;
+    c_hash_table_t *hash;
     c_list_t *owners;
     int backtrace_level;
 } rut_refcount_debug_state_t;
@@ -186,8 +190,8 @@ get_state(void)
     if (state == NULL) {
         state = c_new0(rut_refcount_debug_state_t, 1);
 
-        state->hash = g_hash_table_new_full(g_direct_hash,
-                                            g_direct_equal,
+        state->hash = c_hash_table_new_full(c_direct_hash,
+                                            c_direct_equal,
                                             NULL, /* key destroy */
                                             object_data_destroy_cb);
 
@@ -196,7 +200,7 @@ get_state(void)
 
 #ifdef RUT_ENABLE_BACKTRACE
         {
-            const char *backtrace_level = g_getenv("RUT_BACKTRACE_LEVEL");
+            const char *backtrace_level = c_getenv("RUT_BACKTRACE_LEVEL");
 
             if (backtrace_level) {
                 state->backtrace_level = atoi(backtrace_level);
@@ -216,7 +220,7 @@ get_state(void)
     return state;
 }
 
-#if RUT_ENABLE_BACKTRACE
+#ifdef RUT_ENABLE_BACKTRACE
 
 static char *
 readlink_alloc(const char *linkname)
@@ -241,7 +245,7 @@ readlink_alloc(const char *linkname)
 }
 
 static bool
-resolve_addresses_addr2line(GHashTable *hash_table,
+resolve_addresses_addr2line(c_hash_table_t *hash_table,
                             int n_addresses,
                             void *const *addresses)
 {
@@ -249,12 +253,12 @@ resolve_addresses_addr2line(GHashTable *hash_table,
     char *addr_out;
     char **argv;
     int exit_status;
-    int extra_args = G_N_ELEMENTS(base_args);
+    int extra_args = C_N_ELEMENTS(base_args);
     int address_args = extra_args + 1;
     bool ret = true;
     int i;
 
-    argv = g_alloca(sizeof(char *) * (n_addresses + address_args + 1));
+    argv = c_alloca(sizeof(char *) * (n_addresses + address_args + 1));
     memcpy(argv, base_args, sizeof(base_args));
 
     argv[extra_args] = readlink_alloc("/proc/self/exe");
@@ -277,16 +281,16 @@ resolve_addresses_addr2line(GHashTable *hash_table,
                          NULL /* error */) &&
             exit_status == 0) {
             int addr_num;
-            char **lines = g_strsplit(addr_out, "\n", 0);
+            char **lines = c_strsplit(addr_out, "\n", 0);
             char **line;
 
             for (line = lines, addr_num = 0; line[0] && line[1];
                  line += 2, addr_num++) {
                 char *result = c_strdup_printf("%s (%s)", line[1], line[0]);
-                g_hash_table_insert(hash_table, addresses[addr_num], result);
+                c_hash_table_insert(hash_table, addresses[addr_num], result);
             }
 
-            g_strfreev(lines);
+            c_strfreev(lines);
         } else
             ret = false;
 
@@ -299,7 +303,7 @@ resolve_addresses_addr2line(GHashTable *hash_table,
 }
 
 static bool
-resolve_addresses_backtrace(GHashTable *hash_table,
+resolve_addresses_backtrace(c_hash_table_t *hash_table,
                             int n_addresses,
                             void *const *addresses)
 {
@@ -309,7 +313,7 @@ resolve_addresses_backtrace(GHashTable *hash_table,
     symbols = backtrace_symbols(addresses, n_addresses);
 
     for (i = 0; i < n_addresses; i++)
-        g_hash_table_insert(hash_table, addresses[i], c_strdup(symbols[i]));
+        c_hash_table_insert(hash_table, addresses[i], c_strdup(symbols[i]));
 
     free(symbols);
 
@@ -319,7 +323,7 @@ resolve_addresses_backtrace(GHashTable *hash_table,
 static void
 add_addresses_cb(void *key, void *value, void *user_data)
 {
-    GHashTable *hash_table = user_data;
+    c_hash_table_t *hash_table = user_data;
     rut_refcount_debug_object_t *object_data = value;
     rut_refcount_debug_action_t *action;
 
@@ -328,7 +332,7 @@ add_addresses_cb(void *key, void *value, void *user_data)
         int i;
 
         for (i = 0; i < action->n_backtrace_addresses; i++)
-            g_hash_table_insert(
+            c_hash_table_insert(
                 hash_table, action->backtrace_addresses[i], NULL);
     }
 }
@@ -341,27 +345,27 @@ get_addresses_cb(void *key, void *value, void *user_data)
     *((*addr_p)++) = key;
 }
 
-static GHashTable *
+static c_hash_table_t *
 resolve_addresses(rut_refcount_debug_state_t *state)
 {
-    GHashTable *hash_table;
+    c_hash_table_t *hash_table;
     int n_addresses;
 
-    hash_table = g_hash_table_new_full(g_direct_hash,
-                                       g_direct_equal,
+    hash_table = c_hash_table_new_full(c_direct_hash,
+                                       c_direct_equal,
                                        NULL, /* key destroy */
                                        c_free /* value destroy */);
 
-    g_hash_table_foreach(state->hash, add_addresses_cb, hash_table);
+    c_hash_table_foreach(state->hash, add_addresses_cb, hash_table);
 
-    n_addresses = g_hash_table_size(hash_table);
+    n_addresses = c_hash_table_size(hash_table);
 
     if (n_addresses >= 1) {
         void **addresses = c_malloc(sizeof(void *) * n_addresses);
         void **addr_p = addresses;
         bool resolve_ret;
 
-        g_hash_table_foreach(hash_table, get_addresses_cb, &addr_p);
+        c_hash_table_foreach(hash_table, get_addresses_cb, &addr_p);
 
         resolve_ret =
             (resolve_addresses_addr2line(hash_table, n_addresses, addresses) ||
@@ -370,7 +374,7 @@ resolve_addresses(rut_refcount_debug_state_t *state)
         c_free(addresses);
 
         if (!resolve_ret) {
-            g_hash_table_destroy(hash_table);
+            c_hash_table_destroy(hash_table);
             return NULL;
         }
     }
@@ -383,7 +387,7 @@ resolve_addresses(rut_refcount_debug_state_t *state)
 typedef struct {
     rut_refcount_debug_state_t *state;
     FILE *out_file;
-    GHashTable *address_table;
+    c_hash_table_t *address_table;
 } dump_object_callback_data_t;
 
 static void
@@ -402,7 +406,7 @@ dump_object_cb(rut_refcount_debug_object_t *object_data,
 
     fputc('\n', data->out_file);
 
-#if RUT_ENABLE_BACKTRACE
+#ifdef RUT_ENABLE_BACKTRACE
     if (data->address_table) {
         rut_refcount_debug_action_t *action;
         int ref_count = 0;
@@ -447,7 +451,7 @@ dump_object_cb(rut_refcount_debug_object_t *object_data,
             fputc('\n', data->out_file);
 
             for (i = 0; i < action->n_backtrace_addresses; i++) {
-                char *addr = g_hash_table_lookup(
+                char *addr = c_hash_table_lookup(
                     data->address_table, action->backtrace_addresses[i]);
                 fprintf(data->out_file, "  %s\n", addr);
             }
@@ -466,14 +470,14 @@ static void
 destroy_tls_state_cb(void *tls_data)
 {
     rut_refcount_debug_state_t *state = tls_data;
-    int size = g_hash_table_size(state->hash);
+    int size = c_hash_table_size(state->hash);
 
     if (size > 0) {
         // char *thread_name = SDL_GetThreadName ();
         char *thread_name = c_strdup_printf("thread-%lu", SDL_ThreadID());
         char *filename =
-            g_strconcat("rut-object-log-", thread_name, ".txt", NULL);
-        char *out_name = g_build_filename(g_get_tmp_dir(), filename, NULL);
+            c_strconcat("rut-object-log-", thread_name, ".txt", NULL);
+        char *out_name = c_build_filename(c_get_tmp_dir(), filename, NULL);
         dump_object_callback_data_t data;
 
         if (size == 1)
@@ -494,11 +498,11 @@ destroy_tls_state_cb(void *tls_data)
 #endif
             data.address_table = NULL;
 
-            g_hash_table_foreach(state->hash, dump_hash_object_cb, &data);
-            c_list_foreach(state->owners, (GFunc)dump_object_cb, &data);
+            c_hash_table_foreach(state->hash, dump_hash_object_cb, &data);
+            c_list_foreach(state->owners, (c_iter_func_t)dump_object_cb, &data);
 
             if (data.address_table)
-                g_hash_table_destroy(data.address_table);
+                c_hash_table_destroy(data.address_table);
 
             if (ferror(data.out_file))
                 c_warning("Error saving refcount log: %s", strerror(errno));
@@ -516,10 +520,10 @@ destroy_tls_state_cb(void *tls_data)
         c_free(out_name);
     }
 
-    c_list_foreach(state->owners, (GFunc)object_data_unref, NULL);
+    c_list_foreach(state->owners, (c_iter_func_t)object_data_unref, NULL);
     c_list_free(state->owners);
 
-    g_hash_table_destroy(state->hash);
+    c_hash_table_destroy(state->hash);
     c_free(state);
 }
 
@@ -531,7 +535,7 @@ _rut_refcount_debug_object_created(void *object)
     if (!state->enabled)
         return;
 
-    if (g_hash_table_contains(state->hash, object))
+    if (c_hash_table_contains(state->hash, object))
         c_warning("Address of existing object reused for newly created object");
     else {
         rut_refcount_debug_object_t *object_data =
@@ -557,7 +561,7 @@ _rut_refcount_debug_object_created(void *object)
         rut_list_init(&object_data->actions);
         log_action(object_data, RUT_REFCOUNT_DEBUG_ACTION_TYPE_CREATE, NULL);
 
-        g_hash_table_insert(state->hash, object, object_data);
+        c_hash_table_insert(state->hash, object, object_data);
         object_data_ref(object_data);
     }
 }
@@ -571,7 +575,7 @@ _rut_refcount_debug_claim(void *object, void *owner)
     if (!state->enabled)
         return;
 
-    object_data = g_hash_table_lookup(state->hash, object);
+    object_data = c_hash_table_lookup(state->hash, object);
 
     if (object_data == NULL) {
         c_warning("Reference taken on object that does not exist");
@@ -580,7 +584,7 @@ _rut_refcount_debug_claim(void *object, void *owner)
 
     if (owner) {
         rut_refcount_debug_object_t *owner_data =
-            g_hash_table_lookup(state->hash, owner);
+            c_hash_table_lookup(state->hash, owner);
 
         if (owner_data == NULL)
             c_warning("Reference claimed by object that does not exist");
@@ -614,7 +618,7 @@ _rut_refcount_debug_release(void *object, void *owner)
     if (!state->enabled)
         return;
 
-    object_data = g_hash_table_lookup(state->hash, object);
+    object_data = c_hash_table_lookup(state->hash, object);
 
     if (object_data == NULL) {
         c_warning("Reference removed on object that does not exist");
@@ -629,11 +633,11 @@ _rut_refcount_debug_release(void *object, void *owner)
         }
         log_action(object_data, RUT_REFCOUNT_DEBUG_ACTION_TYPE_FREE, NULL);
         object_data->object = NULL;
-        g_hash_table_remove(state->hash, object);
+        c_hash_table_remove(state->hash, object);
     } else {
         if (owner) {
             rut_refcount_debug_object_t *owner_data =
-                g_hash_table_lookup(state->hash, object);
+                c_hash_table_lookup(state->hash, object);
 
             if (owner_data) {
                 owner_data->n_claims--;
@@ -670,7 +674,7 @@ rut_object_dump_refs(void *object)
     if (!state->enabled)
         return;
 
-    object_data = g_hash_table_lookup(state->hash, object);
+    object_data = c_hash_table_lookup(state->hash, object);
     if (object_data == NULL) {
         c_print("No reference information tracked for object %p\n", object);
         return;

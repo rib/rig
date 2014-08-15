@@ -42,7 +42,7 @@ typedef enum _rut_exception_domain_t {
 } rut_exception_domain_t;
 
 typedef struct _rut_exception_t {
-    GQuark domain;
+    c_quark_t domain;
     int code;
     char *message;
     // TODO: char *backtrace;

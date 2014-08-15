@@ -237,7 +237,7 @@ _apply_op_add_entity(rig_engine_op_apply_context_t *ctx,
     rig_entity_t *parent = NULL;
     rig_entity_t *entity;
 
-    g_warn_if_fail(add_entity->entity->has_parent_id == false);
+    c_warn_if_fail(add_entity->entity->has_parent_id == false);
 
     if (add_entity->parent_entity_id) {
         parent = (void *)(intptr_t)add_entity->parent_entity_id;

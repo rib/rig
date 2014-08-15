@@ -567,7 +567,7 @@ static void
 create_dot_pipeline(rut_color_picker_t *picker)
 {
     cg_texture_t *texture;
-    GError *error = NULL;
+    c_error_t *error = NULL;
 
     picker->dot_pipeline = cg_pipeline_new(picker->context->cg_device);
 
@@ -577,6 +577,7 @@ create_dot_pipeline(rut_color_picker_t *picker)
     if (texture == NULL) {
         picker->dot_width = 8;
         picker->dot_height = 8;
+        c_error_free(error);
     } else {
         picker->dot_width = cg_texture_get_width(texture);
         picker->dot_height = cg_texture_get_height(texture);

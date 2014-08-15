@@ -85,7 +85,7 @@ rut_closure_t *rut_closure_list_add(rut_list_t *list,
  * manually iterate the list and invoke the callbacks yourself.
  */
 #define rut_closure_list_invoke(list, cb_type, ...)                            \
-    G_STMT_START                                                               \
+    C_STMT_START                                                               \
     {                                                                          \
         rut_closure_t *_c, *_tmp;                                              \
                                                                                \
@@ -95,10 +95,10 @@ rut_closure_t *rut_closure_list_add(rut_list_t *list,
             _cb(__VA_ARGS__, _c->user_data);                                   \
         }                                                                      \
     }                                                                          \
-    G_STMT_END
+    C_STMT_END
 
 #define rut_closure_list_invoke_no_args(list)                                  \
-    G_STMT_START                                                               \
+    C_STMT_START                                                               \
     {                                                                          \
         rut_closure_t *_c, *_tmp;                                              \
                                                                                \
@@ -108,6 +108,6 @@ rut_closure_t *rut_closure_list_add(rut_list_t *list,
             _cb(_c->user_data);                                                \
         }                                                                      \
     }                                                                          \
-    G_STMT_END
+    C_STMT_END
 
 #endif /* _RUT_CLOSURE_LIST_H_ */

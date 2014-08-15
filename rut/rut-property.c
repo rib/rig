@@ -68,10 +68,10 @@ rut_property_init(rut_property_t *property,
                   uint8_t id)
 {
     /* If the property is readable there should be some way to read it */
-    g_warn_if_fail((spec->flags & RUT_PROPERTY_FLAG_READABLE) == 0 ||
+    c_warn_if_fail((spec->flags & RUT_PROPERTY_FLAG_READABLE) == 0 ||
                    spec->data_offset != 0 || spec->getter.any_type);
     /* Same for writable properties */
-    g_warn_if_fail((spec->flags & RUT_PROPERTY_FLAG_WRITABLE) == 0 ||
+    c_warn_if_fail((spec->flags & RUT_PROPERTY_FLAG_WRITABLE) == 0 ||
                    spec->data_offset != 0 || spec->setter.any_type);
 
     property->spec = spec;
@@ -97,7 +97,7 @@ _rut_property_destroy_binding(rut_property_t *property)
         for (i = 0; binding->dependencies[i]; i++) {
             rut_property_t *dependency = binding->dependencies[i];
             dependency->dependants =
-                g_slist_remove(dependency->dependants, property);
+                c_slist_remove(dependency->dependants, property);
         }
 
         c_slice_free1(sizeof(rut_property_binding_t) + sizeof(void *) * (i + 1),
@@ -110,7 +110,7 @@ _rut_property_destroy_binding(rut_property_t *property)
 void
 rut_property_destroy(rut_property_t *property)
 {
-    GSList *l;
+    c_slist_t *l;
 
     _rut_property_destroy_binding(property);
 
@@ -241,7 +241,7 @@ _rut_property_set_binding_full_array(
     for (i = 0; i < n_dependencies; i++) {
         rut_property_t *dependency = dependencies[i];
         dependency->dependants =
-            g_slist_prepend(dependency->dependants, property);
+            c_slist_prepend(dependency->dependants, property);
     }
 
     property->binding = binding;
@@ -437,7 +437,7 @@ static rut_property_spec_t dummy_property_spec = {
 struct _rut_property_closure_t {
     rut_property_t dummy_prop;
     rut_binding_callback_t callback;
-    GDestroyNotify destroy_notify;
+    c_destroy_func_t destroy_notify;
     void *user_data;
 };
 
@@ -467,7 +467,7 @@ rut_property_closure_t *
 rut_property_connect_callback_full(rut_property_t *property,
                                    rut_binding_callback_t callback,
                                    void *user_data,
-                                   GDestroyNotify destroy_notify)
+                                   c_destroy_func_t destroy_notify)
 {
     rut_property_closure_t *closure;
 
@@ -505,8 +505,8 @@ rut_property_closure_destroy(rut_property_closure_t *closure)
 void
 rut_property_dirty(rut_property_context_t *ctx, rut_property_t *property)
 {
-    GSList *l;
-    GSList *next;
+    c_slist_t *l;
+    c_slist_t *next;
 
     if (ctx->log) {
         rut_object_t *object = property->object;
@@ -658,7 +658,7 @@ case RUT_PROPERTY_TYPE_##TYPE: {                                           \
 #undef COMPOSITE_TYPE
 #undef SCALAR_TYPE
 
-    g_assert_not_reached();
+    c_assert_not_reached();
 }
 
 void

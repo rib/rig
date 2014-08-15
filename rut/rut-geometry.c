@@ -49,7 +49,7 @@ rut_create_circle_fan_p2(rut_context_t *ctx, int subdivisions, int *n_verts_ret)
     int i;
     cg_attribute_buffer_t *attribute_buffer;
     cg_attribute_t *attribute;
-    float angle_division = 2.0f * (float)G_PI * (1.0f / (float)subdivisions);
+    float angle_division = 2.0f * (float)C_PI * (1.0f / (float)subdivisions);
 
     verts = alloca(buffer_size);
 
@@ -180,7 +180,7 @@ rut_tesselate_circle_with_line_indices(cg_vertex_p3c4_t *buffer,
     cg_vertex_p3c4_t *vertex;
     uint8_t i;
 
-    increment = 2 * G_PI / n_vertices;
+    increment = 2 * C_PI / n_vertices;
 
     for (i = 0, angle = 0.f; i < n_vertices; i++, angle += increment) {
         vertex = &buffer[i];
@@ -228,7 +228,7 @@ rut_create_rotation_tool_mesh(uint8_t n_vertices)
     uint8_t *indices_data;
     int vertex_buffer_size;
 
-    g_assert(n_vertices < 255 / 3);
+    c_assert(n_vertices < 255 / 3);
 
     vertex_buffer_size = n_vertices * sizeof(cg_vertex_p3c4_t) * 3;
     buffer = rut_buffer_new(vertex_buffer_size);

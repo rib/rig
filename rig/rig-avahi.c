@@ -132,7 +132,7 @@ create_service(rig_engine_t *engine)
         if (strcmp(user, "Unknown") == 0)
             user = g_get_user_name();
 
-        user_name = g_strconcat("user=", user, NULL);
+        user_name = c_strconcat("user=", user, NULL);
 
         g_message("Adding Avahi service '%s'\n", engine->avahi_service_name);
 

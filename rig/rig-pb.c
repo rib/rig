@@ -283,7 +283,7 @@ rig_pb_property_value_init(rig_pb_serializer_t *serializer,
             uint64_t id = rig_pb_serializer_lookup_object_id(
                 serializer, value->d.asset_val);
 
-            g_warn_if_fail(id != 0);
+            c_warn_if_fail(id != 0);
 
             pb_value->asset_value = id;
         } else
@@ -298,7 +298,7 @@ rig_pb_property_value_init(rig_pb_serializer_t *serializer,
             uint64_t id = rig_pb_serializer_lookup_object_id(
                 serializer, value->d.object_val);
 
-            g_warn_if_fail(id != 0);
+            c_warn_if_fail(id != 0);
 
             pb_value->object_value = id;
         } else
@@ -484,7 +484,7 @@ rig_pb_serialize_component(rig_pb_serializer_t *serializer,
             serializer, rig_model_get_asset(model));
 
         /* XXX: we don't support serializing a model loaded from a rut_mesh_t */
-        g_warn_if_fail(asset_id != 0);
+        c_warn_if_fail(asset_id != 0);
 
         pb_component->type = RIG__ENTITY__COMPONENT__TYPE__MODEL;
         pb_component->model = rig_pb_new(serializer,
@@ -727,7 +727,7 @@ serialize_binding_dep_cb(rig_binding_t *binding,
     uint64_t id = rig_pb_serializer_lookup_object_id(state->serializer,
                                                      dependency->object);
 
-    g_warn_if_fail(id != 0);
+    c_warn_if_fail(id != 0);
 
     rig__controller__property__dependency__init(pb_dependency);
 
@@ -828,16 +828,16 @@ default_serializer_register_object_cb(void *object,
 
     if (!serializer->object_to_id_map) {
         serializer->object_to_id_map =
-            g_hash_table_new(NULL, /* direct hash */
+            c_hash_table_new(NULL, /* direct hash */
                              NULL); /* direct key equal */
     }
 
-    if (g_hash_table_lookup(serializer->object_to_id_map, object)) {
-        g_critical("Duplicate save object id %p", id_ptr);
+    if (c_hash_table_lookup(serializer->object_to_id_map, object)) {
+        c_critical("Duplicate save object id %p", id_ptr);
         return 0;
     }
 
-    g_hash_table_insert(serializer->object_to_id_map, object, id_ptr);
+    c_hash_table_insert(serializer->object_to_id_map, object, id_ptr);
 
     return (uint64_t)(intptr_t)id_ptr;
 }
@@ -865,7 +865,7 @@ default_serializer_lookup_object_id_cb(void *object, void *user_data)
 
     c_return_val_if_fail(object, 0);
 
-    id_ptr = g_hash_table_lookup(serializer->object_to_id_map, object);
+    id_ptr = c_hash_table_lookup(serializer->object_to_id_map, object);
 
     c_return_val_if_fail(id_ptr, 0);
 
@@ -1001,7 +1001,7 @@ rig_pb_serializer_destroy(rig_pb_serializer_t *serializer)
         c_list_free(serializer->required_assets);
 
     if (serializer->object_to_id_map)
-        g_hash_table_destroy(serializer->object_to_id_map);
+        c_hash_table_destroy(serializer->object_to_id_map);
 
     c_slice_free(rig_pb_serializer_t, serializer);
 }
@@ -1057,8 +1057,8 @@ serialize_mesh_asset(rig_pb_serializer_t *serializer,
                                   sizeof(void *) * (mesh->n_attributes + 1),
                                   RUT_UTIL_ALIGNOF(void *));
 
-    buffers = g_alloca(sizeof(void *) * mesh->n_attributes);
-    attribute_buffers_map = g_alloca(sizeof(void *) * mesh->n_attributes);
+    buffers = c_alloca(sizeof(void *) * mesh->n_attributes);
+    attribute_buffers_map = c_alloca(sizeof(void *) * mesh->n_attributes);
 
     /* NB:
      * attributes may refer to shared buffers so we need to first
@@ -1200,14 +1200,14 @@ serialize_asset_file(Rig__Asset *pb_asset, rig_asset_t *asset)
 {
     rut_context_t *ctx = rig_asset_get_context(asset);
     const char *path = rig_asset_get_path(asset);
-    char *full_path = g_build_filename(ctx->assets_location, path, NULL);
-    GError *error = NULL;
+    char *full_path = c_build_filename(ctx->assets_location, path, NULL);
+    c_error_t *error = NULL;
     char *contents;
     size_t len;
 
-    if (!g_file_get_contents(full_path, &contents, &len, &error)) {
+    if (!c_file_get_contents(full_path, &contents, &len, &error)) {
         c_warning("Failed to read contents of asset: %s", error->message);
-        g_error_free(error);
+        c_error_free(error);
         c_free(full_path);
         return false;
     }
@@ -1633,7 +1633,7 @@ unserializer_find_object(rig_pb_un_serializer_t *unserializer, uint64_t id)
         void *user_data = unserializer->id_to_object_data;
         ret = unserializer->id_to_object_callback(id, user_data);
     } else if (unserializer->id_to_object_map)
-        ret = g_hash_table_lookup(unserializer->id_to_object_map, &id);
+        ret = c_hash_table_lookup(unserializer->id_to_object_map, &id);
     else
         ret = NULL;
 
@@ -1733,7 +1733,7 @@ rig_pb_unserializer_collect_error(rig_pb_un_serializer_t *unserializer,
      * realize that their document may be corrupt.
      */
 
-    g_logv(G_LOG_DOMAIN, G_LOG_LEVEL_WARNING, format, ap);
+    c_logv(C_LOG_DOMAIN, C_LOG_LEVEL_WARNING, format, ap);
 
     va_end(ap);
 }
@@ -1743,7 +1743,7 @@ default_unserializer_unregister_object_cb(uint64_t id,
                                           void *user_data)
 {
     rig_pb_un_serializer_t *unserializer = user_data;
-    if (!g_hash_table_remove(unserializer->id_to_object_map, &id))
+    if (!c_hash_table_remove(unserializer->id_to_object_map, &id))
         c_warning(
             "Tried to unregister an id that wasn't previously registered");
 }
@@ -1767,7 +1767,7 @@ default_unserializer_register_object_cb(void *object,
     if (!unserializer->id_to_object_map) {
         /* This hash table maps from uint64_t ids to objects while loading */
         unserializer->id_to_object_map =
-            g_hash_table_new(g_int64_hash, g_int64_equal);
+            c_hash_table_new(c_int64_hash, c_int64_equal);
     }
 
     key = rut_memory_stack_memalign(
@@ -1777,7 +1777,7 @@ default_unserializer_register_object_cb(void *object,
 
     c_return_if_fail(id != 0);
 
-    if (g_hash_table_lookup(unserializer->id_to_object_map, key)) {
+    if (c_hash_table_lookup(unserializer->id_to_object_map, key)) {
         rig_pb_unserializer_collect_error(unserializer,
                                           "Duplicate unserializer "
                                           "object id %ld",
@@ -1785,7 +1785,7 @@ default_unserializer_register_object_cb(void *object,
         return;
     }
 
-    g_hash_table_insert(unserializer->id_to_object_map, key, object);
+    c_hash_table_insert(unserializer->id_to_object_map, key, object);
 }
 
 void
@@ -2971,7 +2971,7 @@ void
 rig_pb_unserializer_destroy(rig_pb_un_serializer_t *unserializer)
 {
     if (unserializer->id_to_object_map)
-        g_hash_table_destroy(unserializer->id_to_object_map);
+        c_hash_table_destroy(unserializer->id_to_object_map);
 }
 
 rig_ui_t *

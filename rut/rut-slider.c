@@ -226,7 +226,7 @@ rut_slider_new(
         rut_slider_t, &rut_slider_type, _rut_slider_init_type);
     cg_texture_t *bg_texture;
     cg_texture_t *handle_texture;
-    GError *error = NULL;
+    c_error_t *error = NULL;
     // PangoRectangle label_size;
     float width;
     float height;
@@ -246,14 +246,14 @@ rut_slider_new(
         rut_load_texture_from_data_file(ctx, "slider-background.png", &error);
     if (!bg_texture) {
         c_warning("Failed to load slider-background.png: %s", error->message);
-        g_error_free(error);
+        c_error_free(error);
     }
 
     handle_texture =
         rut_load_texture_from_data_file(ctx, "slider-handle.png", &error);
     if (!handle_texture) {
         c_warning("Failed to load slider-handle.png: %s", error->message);
-        g_error_free(error);
+        c_error_free(error);
     }
 
     if (axis == RUT_AXIS_X) {

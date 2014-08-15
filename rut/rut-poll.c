@@ -457,7 +457,7 @@ glib_uv_poll_cb(uv_poll_t *poll, int status, int events)
     GPollFD *pollfd =
         &g_array_index(shell->pollfds, GPollFD, glib_poll->pollfd_index);
 
-    g_warn_if_fail((events & ~(UV_READABLE | UV_WRITABLE)) == 0);
+    c_warn_if_fail((events & ~(UV_READABLE | UV_WRITABLE)) == 0);
 
     pollfd->revents = 0;
     if (events & UV_READABLE)
@@ -499,7 +499,7 @@ glib_uv_prepare_cb(uv_prepare_t *prepare)
         uv_poll_init(shell->uv_loop, &glib_poll->poll_handle, pollfds[i].fd);
         glib_poll->pollfd_index = i;
 
-        g_warn_if_fail((pollfds[i].events & ~(G_IO_IN | G_IO_OUT)) == 0);
+        c_warn_if_fail((pollfds[i].events & ~(G_IO_IN | G_IO_OUT)) == 0);
 
         if (pollfds[i].events & G_IO_IN)
             events |= UV_READABLE;

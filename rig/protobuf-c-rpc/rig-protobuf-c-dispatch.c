@@ -175,14 +175,14 @@ rig_protobuf_c_dispatch_add_timer_millis(
     rig_protobuf_c_dispatch_timer_func_t func,
     void *func_data)
 {
-    g_error("FIXME: implement rig_protobuf_c_dispatch_add_timer_millis");
+    c_error("FIXME: implement rig_protobuf_c_dispatch_add_timer_millis");
     return NULL;
 }
 
 void
 rig_protobuf_c_dispatch_remove_timer(rig_protobuf_c_dispatch_timer_t *timer)
 {
-    g_error("TODO: implement rig_protobuf_c_dispatch_remove_timer");
+    c_error("TODO: implement rig_protobuf_c_dispatch_remove_timer");
 }
 
 static void

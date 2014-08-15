@@ -28,39 +28,39 @@
 
 #include <config.h>
 
-#include <glib.h>
+#include <clib.h>
 
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/message.h>
-G_BEGIN_DECLS
+C_BEGIN_DECLS
 #define _Static_assert(X, Y)
 #include <rig.pb-c.h>
 #undef _Static_assert
-G_END_DECLS
+C_END_DECLS
 
 #include <rig.pb.h>
 
-G_BEGIN_DECLS
+C_BEGIN_DECLS
 
 void
 rig_pb_print_ui(const Rig__UI *pb_ui)
 {
     size_t len = protobuf_c_message_get_packed_size((ProtobufCMessage *)pb_ui);
-    unsigned char *buf = (unsigned char *)g_malloc(len);
+    unsigned char *buf = (unsigned char *)c_malloc(len);
     protobuf_c_message_pack((ProtobufCMessage *)pb_ui, buf);
 
     rig::UI ui;
     if (!ui.ParseFromArray(buf, len)) {
-        g_warning("Failed to parse UI for printing");
+        c_warning("Failed to parse UI for printing");
         return;
     }
 
     std::string ui_str;
     google::protobuf::TextFormat::PrintToString(ui, &ui_str);
 
-    g_print(ui_str.c_str());
+    c_print(ui_str.c_str());
 
-    g_free(buf);
+    c_free(buf);
 }
 
 void
@@ -68,21 +68,21 @@ rig_pb_print_frame_setup(const Rig__FrameSetup *pb_frame_setup)
 {
     size_t len =
         protobuf_c_message_get_packed_size((ProtobufCMessage *)pb_frame_setup);
-    unsigned char *buf = (unsigned char *)g_malloc(len);
+    unsigned char *buf = (unsigned char *)c_malloc(len);
     protobuf_c_message_pack((ProtobufCMessage *)pb_frame_setup, buf);
 
     rig::FrameSetup frame_setup;
     if (!frame_setup.ParseFromArray(buf, len)) {
-        g_warning("Failed to parse FrameSetup for printing");
+        c_warning("Failed to parse FrameSetup for printing");
         return;
     }
 
     std::string ui_str;
     google::protobuf::TextFormat::PrintToString(frame_setup, &ui_str);
 
-    g_print(ui_str.c_str());
+    c_print(ui_str.c_str());
 
-    g_free(buf);
+    c_free(buf);
 }
 
 void
@@ -90,21 +90,21 @@ rig_pb_print_ui_diff(const Rig__UIDiff *pb_ui_diff)
 {
     size_t len =
         protobuf_c_message_get_packed_size((ProtobufCMessage *)pb_ui_diff);
-    unsigned char *buf = (unsigned char *)g_malloc(len);
+    unsigned char *buf = (unsigned char *)c_malloc(len);
     protobuf_c_message_pack((ProtobufCMessage *)pb_ui_diff, buf);
 
     rig::UIDiff ui_diff;
     if (!ui_diff.ParseFromArray(buf, len)) {
-        g_warning("Failed to parse FrameSetup for printing");
+        c_warning("Failed to parse FrameSetup for printing");
         return;
     }
 
     std::string ui_str;
     google::protobuf::TextFormat::PrintToString(ui_diff, &ui_str);
 
-    g_print(ui_str.c_str());
+    c_print(ui_str.c_str());
 
-    g_free(buf);
+    c_free(buf);
 }
 
-G_END_DECLS
+C_END_DECLS

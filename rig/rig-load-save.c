@@ -28,7 +28,6 @@
 
 #include <config.h>
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -122,8 +121,8 @@ rig_load(rig_engine_t *engine, const char *file)
     int fd;
     uint8_t *contents;
     size_t len;
-    GError *error = NULL;
-    gboolean needs_munmap = false;
+    c_error_t *error = NULL;
+    bool needs_munmap = false;
     rig_pb_un_serializer_t *unserializer;
     Rig__UI *pb_ui;
     rig_ui_t *ui;
@@ -131,7 +130,7 @@ rig_load(rig_engine_t *engine, const char *file)
     /* We use a special allocator while unpacking protocol buffers
      * that lets us use the frame_stack. This means much
      * less mucking about with the heap since the frame_stack
-     * is a persistant, growable stack which we can just rewind
+     * is a persistent, growable stack which we can just rewind
      * very cheaply before unpacking */
     ProtobufCAllocator protobuf_c_allocator = {
         stack_alloc,        ignore_free, stack_alloc, /* tmp_alloc */
@@ -142,7 +141,7 @@ rig_load(rig_engine_t *engine, const char *file)
     /* Simulators shouldn't be trying to load UIs directly */
     c_return_val_if_fail(engine->frontend, NULL);
 
-    if (g_str_has_suffix(file, ".xml")) {
+    if (c_str_has_suffix(file, ".xml")) {
         c_warning("Loading xml UI descriptions in Rig is no longer "
                   "supported, only .rig files can be loaded");
         return NULL;
@@ -153,8 +152,9 @@ rig_load(rig_engine_t *engine, const char *file)
         (contents = mmap(NULL, sb.st_size, PROT_READ, MAP_PRIVATE, fd, 0))) {
         len = sb.st_size;
         needs_munmap = true;
-    } else if (!g_file_get_contents(file, (gchar **)&contents, &len, &error)) {
+    } else if (!c_file_get_contents(file, (char **)&contents, &len, &error)) {
         c_warning("Failed to load ui description: %s", error->message);
+        c_error_free(error);
         return NULL;
     }
 

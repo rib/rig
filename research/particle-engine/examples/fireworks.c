@@ -86,7 +86,7 @@ static void paint_cb(struct demo *demo) {
 				 COGL_BUFFER_BIT_COLOR | COGL_BUFFER_BIT_DEPTH,
 				 0.0f, 0.0f, 0.1f, 1);
 
-	for (i = 0; i < G_N_ELEMENTS(demo->emitter); i++)
+	for (i = 0; i < C_N_ELEMENTS(demo->emitter); i++)
 		particle_emitter_paint(demo->emitter[i]);
 }
 
@@ -103,7 +103,7 @@ static gboolean timeout_cb(gpointer data)
 	struct demo *demo = data;
 	unsigned int i;
 
-	for (i = 0; i < G_N_ELEMENTS(demo->emitter); i++) {
+	for (i = 0; i < C_N_ELEMENTS(demo->emitter); i++) {
 		if (i != demo->last_active) {
 			ignite_firework(demo, i);
 			demo->last_active = i;
@@ -180,7 +180,7 @@ int main(int argc, char **argv)
 					 frame_event_cb, &demo, NULL);
 
 
-	for (i = 0; i < G_N_ELEMENTS(demo.emitter); i++) {
+	for (i = 0; i < C_N_ELEMENTS(demo.emitter); i++) {
 		demo.emitter[i] = particle_emitter_new(demo.ctx, demo.fb);
 		demo.emitter[i]->active = FALSE;
 		demo.emitter[i]->particle_count = 10000;

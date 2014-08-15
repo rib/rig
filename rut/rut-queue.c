@@ -37,7 +37,7 @@ static rut_magazine_t *_rut_queue_magazine;
 static rut_queue_item_t *
 alloc_item(void)
 {
-    if (G_UNLIKELY(_rut_queue_magazine == NULL)) {
+    if (C_UNLIKELY(_rut_queue_magazine == NULL)) {
         _rut_queue_magazine = rut_magazine_new(sizeof(rut_queue_item_t), 1000);
     }
 

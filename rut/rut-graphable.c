@@ -54,7 +54,7 @@ rut_graphable_destroy(rut_object_t *object)
 
     /* The node shouldn't have a parent, because if it did then it would
      * still have a reference and it shouldn't be being destroyed */
-    g_warn_if_fail(props->parent == NULL);
+    c_warn_if_fail(props->parent == NULL);
 
     rut_graphable_remove_all_children(object);
 }
@@ -357,7 +357,7 @@ rut_graphable_apply_transform(rut_object_t *graphable,
         node = graphable_priv->parent;
     } while (node);
 
-    transform_nodes = g_alloca(sizeof(rut_object_t *) * depth);
+    transform_nodes = c_alloca(sizeof(rut_object_t *) * depth);
 
     node = graphable;
     i = 0;

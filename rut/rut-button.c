@@ -399,7 +399,7 @@ rut_button_new(rut_context_t *ctx, const char *label)
 {
     rut_button_t *button = rut_object_alloc0(
         rut_button_t, &rut_button_type, _rut_button_init_type);
-    GError *error = NULL;
+    c_error_t *error = NULL;
     float text_width, text_height;
 
     rut_list_init(&button->on_click_cb_list);
@@ -424,7 +424,7 @@ rut_button_new(rut_context_t *ctx, const char *label)
                                                        button->height);
     } else {
         c_warning("Failed to load button texture: %s", error->message);
-        g_error_free(error);
+        c_error_free(error);
     }
 
     button->hover_texture =
@@ -440,7 +440,7 @@ rut_button_new(rut_context_t *ctx, const char *label)
                                                       button->height);
     } else {
         c_warning("Failed to load button-hover texture: %s", error->message);
-        g_error_free(error);
+        c_error_free(error);
     }
 
     button->active_texture =
@@ -456,7 +456,7 @@ rut_button_new(rut_context_t *ctx, const char *label)
                                                        button->height);
     } else {
         c_warning("Failed to load button-active texture: %s", error->message);
-        g_error_free(error);
+        c_error_free(error);
     }
 
     button->disabled_texture =
@@ -473,7 +473,7 @@ rut_button_new(rut_context_t *ctx, const char *label)
                                button->height);
     } else {
         c_warning("Failed to load button-disabled texture: %s", error->message);
-        g_error_free(error);
+        c_error_free(error);
     }
 
     button->text = rut_text_new_with_text(ctx, NULL, label);

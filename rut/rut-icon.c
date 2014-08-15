@@ -141,7 +141,7 @@ rut_icon_new(rut_context_t *ctx, const char *filename)
     rut_icon_t *icon =
         rut_object_alloc0(rut_icon_t, &rut_icon_type, _rut_icon_init_type);
     cg_texture_t *texture;
-    GError *error = NULL;
+    c_error_t *error = NULL;
 
     icon->context = rut_object_ref(ctx);
 
@@ -155,7 +155,7 @@ rut_icon_new(rut_context_t *ctx, const char *filename)
         rut_object_unref(icon->image);
     } else {
         c_warning("Failed to load icon %s: %s", filename, error->message);
-        g_error_free(error);
+        c_error_free(error);
         rut_icon_set_size(icon, 100, 100);
     }
 

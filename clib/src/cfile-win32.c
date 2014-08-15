@@ -79,7 +79,7 @@ mkstemp(char *tmp_template)
 #endif
 
 bool
-c_file_test(const char *filename, UFileTest test)
+c_file_test(const char *filename, c_file_test_t test)
 {
     c_utf16_t *utf16_filename = NULL;
     DWORD attr;

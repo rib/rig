@@ -44,7 +44,7 @@ static rut_property_spec_t _rig_diamond_prop_specs[] = {
     { .name = "size",
       .nick = "Size",
       .type = RUT_PROPERTY_TYPE_FLOAT,
-      .data_offset = G_STRUCT_OFFSET(rig_diamond_t, size),
+      .data_offset = C_STRUCT_OFFSET(rig_diamond_t, size),
       .setter.float_type = rig_diamond_set_size,
       .flags = RUT_PROPERTY_FLAG_READWRITE, },
     { NULL }
@@ -265,7 +265,7 @@ diamond_slice_new(float size, int tex_width, int tex_height)
         {
             float s_scale = 1.0, t_scale = 1.0;
             float s0, t0;
-            float diagonal_size_scale = 1.0 / (sinf(G_PI_4) * 2.0);
+            float diagonal_size_scale = 1.0 / (sinf(C_PI_4) * 2.0);
 
             tex_aspect = (float)tex_width / (float)tex_height;
 

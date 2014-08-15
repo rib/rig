@@ -17,7 +17,7 @@ typedef struct _Data
   cg_framebuffer_t *fb;
   cg_pipeline_t *pipeline;
   cg_pipeline_t *alpha_pipeline;
-  GTimer *timer;
+  c_timer_t *timer;
   int frame;
 } Data;
 
@@ -114,11 +114,11 @@ paint_cb (void *user_data)
 
   cg_onscreen_swap_buffers (CG_ONSCREEN (data->fb));
 
-  elapsed = g_timer_elapsed (data->timer, NULL);
+  elapsed = c_timer_elapsed (data->timer, NULL);
   if (elapsed > 1.0)
     {
       c_print ("fps = %f\n", data->frame / elapsed);
-      g_timer_start (data->timer);
+      c_timer_start (data->timer);
       data->frame = 0;
     }
 
@@ -179,8 +179,8 @@ main (int argc, char **argv)
   g_idle_add (paint_cb, &data);
 
   data.frame = 0;
-  data.timer = g_timer_new ();
-  g_timer_start (data.timer);
+  data.timer = c_timer_new ();
+  c_timer_start (data.timer);
 
   loop = g_main_loop_new (NULL, TRUE);
   CG_TIMER_START (uprof_get_mainloop_context (), mainloop_timer);

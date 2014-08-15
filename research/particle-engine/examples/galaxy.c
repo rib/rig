@@ -18,7 +18,7 @@ struct demo {
 
 	struct particle_system *system;
 
-	GTimer *timer;
+	c_timer_t *timer;
 
 	bool swap_ready;
 	GMainLoop *main_loop;
@@ -27,7 +27,7 @@ struct demo {
 static void paint_cb(struct demo *demo) {
 	float rotation;
 
-	rotation = g_timer_elapsed (demo->timer, NULL) * 2.0f;
+	rotation = c_timer_elapsed (demo->timer, NULL) * 2.0f;
 
 	cogl_framebuffer_clear4f(demo->fb,
 				 COGL_BUFFER_BIT_COLOR | COGL_BUFFER_BIT_DEPTH,
@@ -147,7 +147,7 @@ int main(int argc, char **argv)
 
 	init_particle_system(&demo);
 
-	demo.timer = g_timer_new();
+	demo.timer = c_timer_new();
 
 	g_idle_add(update_cb, &demo);
 	loop = g_main_loop_new (NULL, TRUE);

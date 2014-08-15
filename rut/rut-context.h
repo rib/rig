@@ -92,13 +92,13 @@ struct _rut_context_t {
 
     char *assets_location;
 
-    GHashTable *texture_cache;
+    c_hash_table_t *texture_cache;
 
     cg_indices_t *nine_slice_indices;
 
     cg_texture_t *circle_texture;
 
-    GHashTable *colors_hash;
+    c_hash_table_t *colors_hash;
 
 #ifdef USE_PANGO
     CgPangoFontMap *pango_font_map;
@@ -110,7 +110,7 @@ struct _rut_context_t {
 
     cg_pipeline_t *single_texture_2d_template;
 
-    GSList *timelines;
+    c_slist_t *timelines;
 };
 
 C_BEGIN_DECLS
@@ -129,7 +129,7 @@ typedef void (*rut_settings_changed_callback_t)(rut_settings_t *settings,
 
 void rut_settings_add_changed_callback(rut_settings_t *settings,
                                        rut_settings_changed_callback_t callback,
-                                       GDestroyNotify destroy_notify,
+                                       c_destroy_func_t destroy_notify,
                                        void *user_data);
 
 void
@@ -141,11 +141,11 @@ unsigned int rut_settings_get_password_hint_time(rut_settings_t *settings);
 char *rut_settings_get_font_name(rut_settings_t *settings);
 
 cg_texture_t *
-rut_load_texture(rut_context_t *ctx, const char *filename, cg_error_t **error);
+rut_load_texture(rut_context_t *ctx, const char *filename, c_error_t **error);
 
 cg_texture_t *rut_load_texture_from_data_file(rut_context_t *ctx,
                                               const char *filename,
-                                              GError **error);
+                                              c_error_t **error);
 
 char *rut_find_data_file(const char *base_filename);
 

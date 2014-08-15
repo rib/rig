@@ -77,9 +77,9 @@ _rig_entity_free(void *object)
 
     while (entity->components->len)
         rig_entity_remove_component(entity,
-                                    g_ptr_array_index(entity->components, 0));
+                                    c_ptr_array_index(entity->components, 0));
 
-    g_ptr_array_free(entity->components, true);
+    c_ptr_array_free(entity->components, true);
 
     rut_graphable_destroy(entity);
 
@@ -97,7 +97,7 @@ rig_entity_reap(rig_entity_t *entity, rig_engine_t *engine)
     int i;
 
     for (i = 0; i < entity->components->len; i++) {
-        rut_object_t *component = g_ptr_array_index(entity->components, i);
+        rut_object_t *component = c_ptr_array_index(entity->components, i);
         rut_componentable_props_t *componentable =
             rut_object_get_properties(component, RUT_TRAIT_ID_COMPONENTABLE);
 
@@ -114,7 +114,7 @@ rig_entity_reap(rig_entity_t *entity, rig_engine_t *engine)
 
         rig_engine_queue_delete(engine, component);
     }
-    g_ptr_array_set_size(entity->components, 0);
+    c_ptr_array_set_size(entity->components, 0);
 
     rig_engine_queue_delete(engine, entity);
 }
@@ -141,7 +141,7 @@ rig_entity_add_component(rig_entity_t *entity, rut_object_t *object)
         c_return_if_fail(component->entity == NULL);
 
         for (i = 0; i < entity->components->len; i++) {
-            rut_object_t *existing = g_ptr_array_index(entity->components, i);
+            rut_object_t *existing = c_ptr_array_index(entity->components, i);
 
             rut_componentable_props_t *existing_component =
                 rut_object_get_properties(existing, RUT_TRAIT_ID_COMPONENTABLE);
@@ -155,7 +155,7 @@ rig_entity_add_component(rig_entity_t *entity, rut_object_t *object)
     component->entity = entity;
 
     rut_object_claim(object, entity);
-    g_ptr_array_add(entity->components, object);
+    c_ptr_array_add(entity->components, object);
 
     if (entity->renderer_priv) {
         rut_object_t *renderer = *(rut_object_t **)entity->renderer_priv;
@@ -175,9 +175,9 @@ rig_entity_remove_component(rig_entity_t *entity, rut_object_t *object)
     component->entity = NULL;
     rut_object_release(object, entity);
 
-    status = g_ptr_array_remove_fast(entity->components, object);
+    status = c_ptr_array_remove_fast(entity->components, object);
 
-    g_warn_if_fail(status);
+    c_warn_if_fail(status);
 
     if (entity->renderer_priv) {
         rut_object_t *renderer = *(rut_object_t **)entity->renderer_priv;
@@ -244,7 +244,7 @@ rig_entity_new(rut_context_t *ctx)
 
     cg_quaternion_init_identity(&entity->rotation);
     cg_matrix_init_identity(&entity->transform);
-    entity->components = g_ptr_array_new();
+    entity->components = c_ptr_array_new();
 
     rut_graphable_init(entity);
 
@@ -406,7 +406,7 @@ rig_entity_apply_rotations(rut_object_t *entity,
         node = graphable_priv->parent;
     } while (node);
 
-    entity_nodes = g_alloca(sizeof(rut_object_t *) * depth);
+    entity_nodes = c_alloca(sizeof(rut_object_t *) * depth);
 
     node = entity;
     i = 0;
@@ -570,7 +570,7 @@ rig_entity_get_component(rig_entity_t *entity,
     int i;
 
     for (i = 0; i < entity->components->len; i++) {
-        rut_object_t *component = g_ptr_array_index(entity->components, i);
+        rut_object_t *component = c_ptr_array_index(entity->components, i);
         rut_componentable_props_t *component_props =
             rut_object_get_properties(component, RUT_TRAIT_ID_COMPONENTABLE);
 
@@ -590,7 +590,7 @@ rig_entity_foreach_component_safe(rig_entity_t *entity,
     int i;
     int n_components = entity->components->len;
     size_t size = sizeof(void *) * n_components;
-    void **components = g_alloca(size);
+    void **components = c_alloca(size);
     bool cont = true;
 
     memcpy(components, entity->components->pdata, size);
@@ -608,15 +608,15 @@ rig_entity_foreach_component(rig_entity_t *entity,
     int i;
     bool cont = true;
     for (i = 0; cont && i < entity->components->len; i++)
-        cont = callback(g_ptr_array_index(entity->components, i), user_data);
+        cont = callback(c_ptr_array_index(entity->components, i), user_data);
 }
 
 rig_entity_t *
 rig_entity_copy(rig_entity_t *entity)
 {
     rig_entity_t *copy = rig_entity_new(entity->ctx);
-    GPtrArray *entity_components = entity->components;
-    GPtrArray *copy_components;
+    c_ptr_array_t *entity_components = entity->components;
+    c_ptr_array_t *copy_components;
     rut_graphable_props_t *graph_props =
         rut_object_get_properties(entity, RUT_TRAIT_ID_GRAPHABLE);
     int i;
@@ -630,11 +630,11 @@ rig_entity_copy(rig_entity_t *entity)
     copy->transform = entity->transform;
     copy->dirty = false;
 
-    copy_components = g_ptr_array_sized_new(entity_components->len);
+    copy_components = c_ptr_array_sized_new(entity_components->len);
     copy->components = copy_components;
 
     for (i = 0; i < entity_components->len; i++) {
-        rut_object_t *component = g_ptr_array_index(entity_components, i);
+        rut_object_t *component = c_ptr_array_index(entity_components, i);
         rut_componentable_vtable_t *componentable =
             rut_object_get_vtable(component, RUT_TRAIT_ID_COMPONENTABLE);
         rut_object_t *component_copy = componentable->copy(component);

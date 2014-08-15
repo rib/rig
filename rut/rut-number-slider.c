@@ -440,7 +440,7 @@ rut_number_slider_set_value(rut_object_t *obj, float value)
 
     value = CLAMP(value, slider->min_value, slider->max_value);
 
-    g_assert(!isnan(value));
+    c_assert(!isnan(value));
 
     if (value == slider->value)
         return;

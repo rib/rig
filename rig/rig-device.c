@@ -36,13 +36,14 @@
 #ifdef USE_GSTREAMER
 #include <cogl-gst/cogl-gst.h>
 #endif
+#if USE_GLIB
+#include <glib.h>
+#endif
 
 #include "rig-frontend.h"
 #include "rig-engine.h"
 #include "rig-pb.h"
 #include "rig.pb-c.h"
-
-static char **_rig_device_remaining_args = NULL;
 
 typedef struct _rig_device_t {
     rut_object_base_t _base;
@@ -56,11 +57,15 @@ typedef struct _rig_device_t {
 
 } rig_device_t;
 
+#if USE_GLIB
+static char **_rig_device_remaining_args = NULL;
+
 static const GOptionEntry _rig_device_entries[] = {
     { G_OPTION_REMAINING,        0,                           0,
       G_OPTION_ARG_STRING_ARRAY, &_rig_device_remaining_args, "Project" },
     { 0 }
 };
+#endif
 
 static void
 rig_device_redraw(rut_shell_t *shell, void *user_data)
@@ -183,7 +188,7 @@ rig_device_new(const char *filename)
 
     rut_context_init(device->ctx);
 
-    assets_location = g_path_get_dirname(device->ui_filename);
+    assets_location = c_path_get_dirname(device->ui_filename);
     rut_set_assets_location(device->ctx, assets_location);
     c_free(assets_location);
 
@@ -215,9 +220,11 @@ rig_device_new(const char *filename)
 int
 main(int argc, char **argv)
 {
+#if USE_GLIB
     GOptionContext *context = g_option_context_new(NULL);
-    rig_device_t *device;
     GError *error = NULL;
+#endif
+    rig_device_t *device;
 
     rut_init_tls_state();
 
@@ -225,21 +232,25 @@ main(int argc, char **argv)
     gst_init(&argc, &argv);
 #endif
 
+#if USE_GLIB
     g_option_context_add_main_entries(context, _rig_device_entries, NULL);
 
     if (!g_option_context_parse(context, &argc, &argv, &error)) {
-        g_error("Option parsing failed: %s\n", error->message);
+        c_error("Option parsing failed: %s\n", error->message);
         return EXIT_FAILURE;
     }
 
     if (_rig_device_remaining_args == NULL ||
         _rig_device_remaining_args[0] == NULL) {
-        g_error("A filename argument for the UI description file is "
+        c_error("A filename argument for the UI description file is "
                 "required. Pass a non-existing file to create it.\n");
         return EXIT_FAILURE;
     }
 
     device = rig_device_new(_rig_device_remaining_args[0]);
+#else
+    device = rig_device_new(argv[1]);
+#endif
 
     rut_shell_main(device->shell);
 

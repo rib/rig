@@ -38,7 +38,10 @@
 #include <cogl-gst/cogl-gst.h>
 #endif
 
+#ifdef USE_GDK_PIXBUF
 #include <gdk-pixbuf/gdk-pixbuf.h>
+#endif
+
 #include <math.h>
 
 #include <rut.h>
@@ -298,7 +301,7 @@ generate_video_thumbnail(rig_asset_t *asset)
     generator->pipeline = gst_pipeline_new("thumbnailer");
     generator->bin = gst_element_factory_make("playbin", NULL);
 
-    filename = g_build_filename(ctx->assets_location, asset->path, NULL);
+    filename = c_build_filename(ctx->assets_location, asset->path, NULL);
     uri = gst_filename_to_uri(filename, NULL);
     c_free(filename);
 
@@ -525,7 +528,7 @@ rig_asset_new_full(rut_context_t *ctx,
         if (full_path == NULL)
             full_path = c_strdup(path);
     } else
-        full_path = g_build_filename(ctx->assets_location, path, NULL);
+        full_path = c_build_filename(ctx->assets_location, path, NULL);
     real_path = full_path;
 #else
     real_path = path;
@@ -545,7 +548,7 @@ rig_asset_new_full(rut_context_t *ctx,
     case RIG_ASSET_TYPE_TEXTURE:
     case RIG_ASSET_TYPE_NORMAL_MAP:
     case RIG_ASSET_TYPE_ALPHA_MASK: {
-        cg_error_t *error = NULL;
+        c_error_t *error = NULL;
 
         if (!asset->is_video)
             asset->texture = rut_load_texture(ctx, real_path, &error);
@@ -556,7 +559,7 @@ rig_asset_new_full(rut_context_t *ctx,
         if (!asset->texture) {
             rut_object_free(rig_asset_t, asset);
             c_warning("Failed to load asset texture: %s", error->message);
-            cg_error_free(error);
+            c_error_free(error);
             asset = NULL;
             goto DONE;
         }
@@ -564,20 +567,20 @@ rig_asset_new_full(rut_context_t *ctx,
         break;
     }
     case RIG_ASSET_TYPE_MESH: {
-        rut_ply_attribute_status_t padding_status[G_N_ELEMENTS(ply_attributes)];
-        GError *error = NULL;
+        rut_ply_attribute_status_t padding_status[C_N_ELEMENTS(ply_attributes)];
+        c_error_t *error = NULL;
 
         asset->mesh = rut_mesh_new_from_ply(ctx,
                                             real_path,
                                             ply_attributes,
-                                            G_N_ELEMENTS(ply_attributes),
+                                            C_N_ELEMENTS(ply_attributes),
                                             padding_status,
                                             &error);
 
         if (!asset->mesh) {
             rut_object_free(rig_asset_t, asset);
             c_warning("could not load model %s: %s", path, error->message);
-            g_error_free(error);
+            c_error_free(error);
             asset = NULL;
             goto DONE;
         }
@@ -597,14 +600,14 @@ rig_asset_new_full(rut_context_t *ctx,
         break;
     }
     case RIG_ASSET_TYPE_FONT: {
-        cg_error_t *error = NULL;
+        c_error_t *error = NULL;
         asset->texture =
             rut_load_texture(ctx, rut_find_data_file("fonts.png"), &error);
         if (!asset->texture) {
             rut_object_free(rig_asset_t, asset);
             asset = NULL;
             c_warning("Failed to load font icon: %s", error->message);
-            cg_error_free(error);
+            c_error_free(error);
             goto DONE;
         }
 
@@ -624,6 +627,7 @@ DONE:
     return asset;
 }
 
+#ifdef USE_GDK_PIXBUF
 static cg_bitmap_t *
 bitmap_new_from_pixbuf(cg_device_t *dev, GdkPixbuf *pixbuf)
 {
@@ -648,12 +652,12 @@ bitmap_new_from_pixbuf(cg_device_t *dev, GdkPixbuf *pixbuf)
 
     /* According to current docs this should be true and so
      * the translation to cogl pixel format below valid */
-    g_assert(bits_per_sample == 8);
+    c_assert(bits_per_sample == 8);
 
     if (has_alpha)
-        g_assert(n_channels == 4);
+        c_assert(n_channels == 4);
     else
-        g_assert(n_channels == 3);
+        c_assert(n_channels == 3);
 
     /* Translate to cogl pixel format */
     switch (color_space) {
@@ -681,6 +685,7 @@ bitmap_new_from_pixbuf(cg_device_t *dev, GdkPixbuf *pixbuf)
 
     return bmp;
 }
+#endif /* USE_GDK_PIXBUF */
 
 rig_asset_t *
 rig_asset_new_from_image_data(rut_context_t *ctx,
@@ -702,9 +707,10 @@ rig_asset_new_from_image_data(rut_context_t *ctx,
 
     asset->is_video = is_video;
     if (is_video) {
-        asset->data = g_memdup(data, len);
+        asset->data = c_memdup(data, len);
         asset->data_len = len;
     } else {
+#ifdef USE_GDK_PIXBUF
         GInputStream *istream =
             g_memory_input_stream_new_from_data(data, len, NULL);
         GError *error = NULL;
@@ -747,6 +753,15 @@ rig_asset_new_from_image_data(rut_context_t *ctx,
             cg_error_free(cg_error);
             return NULL;
         }
+#else
+#warning "Missing platform support for loading an image from data!"
+        rut_throw(e,
+                  RUT_IO_EXCEPTION,
+                  RUT_IO_EXCEPTION_IO,
+                  "Failed to load image asset from data");
+        return NULL;
+#endif
+
     }
 
     return asset;
@@ -765,12 +780,13 @@ rig_asset_new_from_font_data(rut_context_t *ctx,
 
     asset->type = RIG_ASSET_TYPE_FONT;
 
-    asset->data = g_memdup(data, len);
+    asset->data = c_memdup(data, len);
     asset->data_len = len;
 
     return asset;
 }
 
+#if defined(RIG_EDITOR_ENABLED) && defined(USE_GLIB)
 rig_asset_t *
 rig_asset_new_from_file(rig_engine_t *engine,
                         GFileInfo *info,
@@ -821,6 +837,7 @@ rig_asset_new_from_file(rig_engine_t *engine,
 
     return asset;
 }
+#endif /* RIG_EDITOR_ENABLED + USE_GLIB */
 
 rig_asset_t *
 rig_asset_new_from_pb_asset(rig_pb_un_serializer_t *unserializer,
@@ -871,8 +888,10 @@ rig_asset_new_from_pb_asset(rig_pb_un_serializer_t *unserializer,
         asset = rig_asset_new_from_mesh(engine->ctx, mesh);
         rut_object_unref(mesh);
         return asset;
-    } else if (pb_asset->path && unserializer->engine->ctx->assets_location) {
-        char *full_path = g_build_filename(
+    }
+#if defined(RIG_EDITOR_ENABLED) && defined(USE_GLIB)
+    else if (pb_asset->path && unserializer->engine->ctx->assets_location) {
+        char *full_path = c_build_filename(
             unserializer->engine->ctx->assets_location, pb_asset->path, NULL);
         GFile *asset_file = g_file_new_for_path(full_path);
         GFileInfo *info = g_file_query_info(
@@ -893,6 +912,7 @@ rig_asset_new_from_pb_asset(rig_pb_un_serializer_t *unserializer,
 
         return asset;
     }
+#endif /* RIG_EDITOR_ENABLED + USE_GLIB */
 
     rut_throw(e, RUT_IO_EXCEPTION, RUT_IO_EXCEPTION_IO, "Missing asset data");
 
@@ -1052,7 +1072,7 @@ copy_tags(const c_list_t *tags)
     const c_list_t *l;
     c_list_t *copy = NULL;
     for (l = tags; l; l = l->next) {
-        const char *tag = g_intern_string(l->data);
+        const char *tag = c_intern_string(l->data);
         copy = c_list_prepend(copy, (char *)tag);
     }
     return copy;
@@ -1083,6 +1103,7 @@ rig_asset_has_tag(rig_asset_t *asset, const char *tag)
     return false;
 }
 
+#if defined(RIG_EDITOR_ENABLED) && defined(USE_GLIB)
 static const char *
 get_extension(const char *path)
 {
@@ -1131,7 +1152,7 @@ rut_infer_asset_tags(rut_context_t *ctx, GFileInfo *info, GFile *asset_file)
     while (dir && !g_file_equal(assets_dir, dir)) {
         basename = g_file_get_basename(dir);
         inferred_tags =
-            c_list_prepend(inferred_tags, (char *)g_intern_string(basename));
+            c_list_prepend(inferred_tags, (char *)c_intern_string(basename));
         c_free(basename);
         dir = g_file_get_parent(dir);
     }
@@ -1139,37 +1160,37 @@ rut_infer_asset_tags(rut_context_t *ctx, GFileInfo *info, GFile *asset_file)
     if (mime_type) {
         if (strncmp(mime_type, "image/", 6) == 0)
             inferred_tags =
-                c_list_prepend(inferred_tags, (char *)g_intern_string("image"));
+                c_list_prepend(inferred_tags, (char *)c_intern_string("image"));
         else if (strncmp(mime_type, "video/", 6) == 0)
             inferred_tags =
-                c_list_prepend(inferred_tags, (char *)g_intern_string("video"));
+                c_list_prepend(inferred_tags, (char *)c_intern_string("video"));
         else if (strcmp(mime_type, "application/x-font-ttf") == 0)
             inferred_tags =
-                c_list_prepend(inferred_tags, (char *)g_intern_string("font"));
+                c_list_prepend(inferred_tags, (char *)c_intern_string("font"));
     }
 
     if (rut_util_find_tag(inferred_tags, "image")) {
         inferred_tags =
-            c_list_prepend(inferred_tags, (char *)g_intern_string("img"));
+            c_list_prepend(inferred_tags, (char *)c_intern_string("img"));
     }
 
     if (rut_util_find_tag(inferred_tags, "image") ||
         rut_util_find_tag(inferred_tags, "video")) {
         inferred_tags =
-            c_list_prepend(inferred_tags, (char *)g_intern_string("texture"));
+            c_list_prepend(inferred_tags, (char *)c_intern_string("texture"));
 
         if (rut_util_find_tag(inferred_tags, "normal-maps")) {
             inferred_tags =
-                c_list_prepend(inferred_tags, (char *)g_intern_string("map"));
+                c_list_prepend(inferred_tags, (char *)c_intern_string("map"));
             inferred_tags = c_list_prepend(
-                inferred_tags, (char *)g_intern_string("normal-map"));
+                inferred_tags, (char *)c_intern_string("normal-map"));
             inferred_tags = c_list_prepend(inferred_tags,
-                                           (char *)g_intern_string("bump-map"));
+                                           (char *)c_intern_string("bump-map"));
         } else if (rut_util_find_tag(inferred_tags, "alpha-masks")) {
             inferred_tags = c_list_prepend(
-                inferred_tags, (char *)g_intern_string("alpha-mask"));
+                inferred_tags, (char *)c_intern_string("alpha-mask"));
             inferred_tags =
-                c_list_prepend(inferred_tags, (char *)g_intern_string("mask"));
+                c_list_prepend(inferred_tags, (char *)c_intern_string("mask"));
         }
     }
 
@@ -1177,15 +1198,15 @@ rut_infer_asset_tags(rut_context_t *ctx, GFileInfo *info, GFile *asset_file)
     ext = get_extension(basename);
     if (ext && strcmp(ext, "ply") == 0) {
         inferred_tags =
-            c_list_prepend(inferred_tags, (char *)g_intern_string("ply"));
+            c_list_prepend(inferred_tags, (char *)c_intern_string("ply"));
         inferred_tags =
-            c_list_prepend(inferred_tags, (char *)g_intern_string("mesh"));
+            c_list_prepend(inferred_tags, (char *)c_intern_string("mesh"));
         inferred_tags =
-            c_list_prepend(inferred_tags, (char *)g_intern_string("model"));
+            c_list_prepend(inferred_tags, (char *)c_intern_string("model"));
         inferred_tags =
-            c_list_prepend(inferred_tags, (char *)g_intern_string("geometry"));
+            c_list_prepend(inferred_tags, (char *)c_intern_string("geometry"));
         inferred_tags =
-            c_list_prepend(inferred_tags, (char *)g_intern_string("geom"));
+            c_list_prepend(inferred_tags, (char *)c_intern_string("geom"));
     }
     c_free(basename);
 
@@ -1196,7 +1217,7 @@ void
 rig_asset_add_inferred_tag(rig_asset_t *asset, const char *tag)
 {
     asset->inferred_tags =
-        c_list_prepend(asset->inferred_tags, (char *)g_intern_string(tag));
+        c_list_prepend(asset->inferred_tags, (char *)c_intern_string(tag));
 }
 
 bool
@@ -1222,12 +1243,12 @@ rig_asset_thumbnail(rig_asset_t *asset,
 
     /* Make sure the thumnail wasn't simply generated synchronously to
      * make sure the closure is still valid. */
-    g_warn_if_fail(!rut_list_empty(&asset->thumbnail_cb_list));
+    c_warn_if_fail(!rut_list_empty(&asset->thumbnail_cb_list));
 
     return closure;
 #else
     c_return_val_if_fail(rig_asset_needs_thumbnail(asset), NULL);
-    g_error("FIXME: add non gstreamer based video thumbnailing support");
+    c_error("FIXME: add non gstreamer based video thumbnailing support");
 #endif
 }
 

@@ -46,7 +46,7 @@ typedef struct _rig_slave_master_t {
     rig_slave_address_t *slave_address;
     rig_rpc_client_t *rpc_client;
     bool connected;
-    GHashTable *registry;
+    c_hash_table_t *registry;
 
 } rig_slave_master_t;
 

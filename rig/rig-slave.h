@@ -46,8 +46,8 @@ typedef struct _rig_slave_t {
     rig_frontend_t *frontend;
     rig_engine_t *engine;
 
-    GHashTable *edit_id_to_play_object_map;
-    GHashTable *play_object_to_edit_id_map;
+    c_hash_table_t *edit_id_to_play_object_map;
+    c_hash_table_t *play_object_to_edit_id_map;
 
     rig_pb_un_serializer_t *ui_unserializer;
 

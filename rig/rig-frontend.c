@@ -79,7 +79,7 @@ register_object_cb(void *object, uint64_t id, void *user_data)
      * we need to be able map... */
     if (id & 1) {
         void *id_ptr = (void *)(uintptr_t)id;
-        g_hash_table_insert(frontend->tmp_id_to_object_map, id_ptr, object);
+        c_hash_table_insert(frontend->tmp_id_to_object_map, id_ptr, object);
     }
 }
 
@@ -90,7 +90,7 @@ lookup_object(rig_frontend_t *frontend, uint64_t id)
      * needs mapping... */
     if (id & 1) {
         void *id_ptr = (void *)(uintptr_t)id;
-        return g_hash_table_lookup(frontend->tmp_id_to_object_map, id_ptr);
+        return c_hash_table_lookup(frontend->tmp_id_to_object_map, id_ptr);
     } else /* Otherwise we can assume the ID corresponds to an object pointer */
         return (void *)(intptr_t)id;
 }
@@ -154,7 +154,7 @@ unregister_id_cb(uint64_t id, void *user_data)
         void *id_ptr = (void *)(uintptr_t)id;
 
         /* Remove the mapping immediately */
-        g_hash_table_remove(frontend->tmp_id_to_object_map, id_ptr);
+        c_hash_table_remove(frontend->tmp_id_to_object_map, id_ptr);
     }
 }
 
@@ -469,8 +469,8 @@ typedef struct _registration_state_t {
     Rig__ObjectRegistration **object_registrations;
 } registration_state_t;
 
-static gboolean
-register_temporary_cb(gpointer key, gpointer value, gpointer user_data)
+static bool
+register_temporary_cb(void *key, void *value, void *user_data)
 {
     registration_state_t *state = user_data;
     Rig__ObjectRegistration *pb_registration =
@@ -508,7 +508,7 @@ rig_frontend_run_simulator_frame(rig_frontend_t *frontend,
      * next simulator frame we send it back the real IDs that have been
      * registered to replace those temporary IDs...
      */
-    n_temps = g_hash_table_size(frontend->tmp_id_to_object_map);
+    n_temps = c_hash_table_size(frontend->tmp_id_to_object_map);
     if (n_temps) {
         registration_state_t state;
 
@@ -525,7 +525,7 @@ rig_frontend_run_simulator_frame(rig_frontend_t *frontend,
             sizeof(Rig__ObjectRegistration) * n_temps,
             RUT_UTIL_ALIGNOF(Rig__ObjectRegistration));
 
-        g_hash_table_foreach_remove(
+        c_hash_table_foreach_remove(
             frontend->tmp_id_to_object_map, register_temporary_cb, &state);
     }
 
@@ -567,7 +567,7 @@ _rig_frontend_free(void *object)
 
     rut_object_unref(frontend->engine);
 
-    g_hash_table_destroy(frontend->tmp_id_to_object_map);
+    c_hash_table_destroy(frontend->tmp_id_to_object_map);
 
     rut_object_free(rig_frontend_t, object);
 }
@@ -579,6 +579,8 @@ _rig_frontend_init_type(void)
 {
     rut_type_init(&rig_frontend_type, "rig_frontend_t", _rig_frontend_free);
 }
+
+#ifdef RIG_EDITOR_ENABLED
 
 #if !defined(__ANDROID__) && (defined(linux) || defined(__APPLE__))
 static void
@@ -613,7 +615,7 @@ fork_simulator(rut_shell_t *shell, rig_frontend_t *frontend)
      */
 
     if (socketpair(AF_UNIX, SOCK_STREAM, 0, sp) < 0)
-        g_error("Failed to open simulator ipc");
+        c_error("Failed to open simulator ipc");
 
     pid = fork();
     if (pid == 0) {
@@ -624,7 +626,7 @@ fork_simulator(rut_shell_t *shell, rig_frontend_t *frontend)
         close(sp[0]);
 
         if (snprintf(fd_str, sizeof(fd_str), "%d", sp[1]) >= sizeof(fd_str))
-            g_error("Failed to setup environment for simulator process");
+            c_error("Failed to setup environment for simulator process");
 
         setenv("_RIG_IPC_FD", fd_str, true);
 
@@ -645,7 +647,7 @@ fork_simulator(rut_shell_t *shell, rig_frontend_t *frontend)
 
 #ifdef RIG_ENABLE_DEBUG
         if (execlp("libtool", "libtool", "e", path, NULL) < 0)
-            g_error("Failed to run simulator process via libtool");
+            c_error("Failed to run simulator process via libtool");
 
 #if 0
         if (execlp ("libtool", "libtool", "e", "valgrind", path, NULL))
@@ -654,7 +656,7 @@ fork_simulator(rut_shell_t *shell, rig_frontend_t *frontend)
 
 #else
         if (execl(path, path, NULL) < 0)
-            g_error("Failed to run simulator process");
+            c_error("Failed to run simulator process");
 #endif
 
         return;
@@ -668,8 +670,9 @@ fork_simulator(rut_shell_t *shell, rig_frontend_t *frontend)
 
     frontend_start_service(shell, frontend);
 }
-#endif /* !defined (__ANDROID__) && (defined (linux) || defined (__APPLE__)) \
-        */
+#endif /* !defined (__ANDROID__) && (defined (linux) || defined (__APPLE__)) */
+
+#endif /* RIG_EDITOR_ENABLED */
 
 typedef struct _thread_setup_t {
     rig_frontend_t *frontend;
@@ -684,7 +687,9 @@ run_simulator(void *user_data)
     int fd = setup->fd;
     rig_simulator_t *simulator;
 
+#ifdef USE_GLIB
     g_main_context_push_thread_default(g_main_context_new());
+#endif
 
     simulator = rig_simulator_new(frontend->id, fd);
 
@@ -705,7 +710,7 @@ create_simulator_thread(rut_shell_t *shell,
     c_return_if_fail(frontend->connected == false);
 
     if (socketpair(AF_UNIX, SOCK_STREAM, 0, sp) < 0)
-        g_error("Failed to open simulator ipc socketpair");
+        c_error("Failed to open simulator ipc socketpair");
 
     setup.frontend = frontend;
     setup.fd = sp[1];
@@ -727,14 +732,14 @@ handle_simulator_connect_cb(void *user_data, int fd, int revents)
 
     c_return_if_fail(revents & RUT_POLL_FD_EVENT_IN);
 
-    g_message("Simulator connect request received!");
+    c_message("Simulator connect request received!");
 
     frontend->fd = accept(frontend->listen_fd, &addr, &addr_len);
     if (frontend->fd != -1) {
-        g_message("Simulator connected!");
+        c_message("Simulator connected!");
         frontend_start_service(frontend->engine->shell, frontend);
     } else
-        g_message("Failed to accept simulator connection: %s!",
+        c_message("Failed to accept simulator connection: %s!",
                   strerror(errno));
 }
 
@@ -746,7 +751,7 @@ bind_to_abstract_socket(rut_shell_t *shell,
     int fd = rut_os_listen_on_abstract_socket("rig-simulator", &catch);
 
     if (fd < 0) {
-        g_critical("Failed to listen on abstract \"rig-simulator\" socket: %s",
+        c_critical("Failed to listen on abstract \"rig-simulator\" socket: %s",
                    catch->message);
         return false;
     }
@@ -760,11 +765,13 @@ bind_to_abstract_socket(rut_shell_t *shell,
                           handle_simulator_connect_cb, /* dispatch */
                           frontend);
 
-    g_message("Waiting for simulator to connect...");
+    c_message("Waiting for simulator to connect...");
 
     return true;
 }
 #endif /* linux */
+
+#ifdef RIG_EDITOR_ENABLED
 
 static void
 spawn_simulator(rut_shell_t *shell, rig_frontend_t *frontend)
@@ -788,6 +795,16 @@ spawn_simulator(rut_shell_t *shell, rig_frontend_t *frontend)
 #error "Platform needs some way of connecting to a simulator"
 #endif
 }
+
+#else /* RIG_EDITOR_ENABLED */
+
+static void
+spawn_simulator(rut_shell_t *shell, rig_frontend_t *frontend)
+{
+    create_simulator_thread(shell, frontend);
+}
+
+#endif /* RIG_EDITOR_ENABLED */
 
 static uint64_t
 map_id_cb(uint64_t simulator_id, void *user_data)
@@ -910,7 +927,7 @@ rig_frontend_new(rut_shell_t *shell, rig_frontend_id_t id, bool play_mode)
 
     frontend->pending_play_mode_enabled = play_mode;
 
-    frontend->tmp_id_to_object_map = g_hash_table_new(NULL, NULL);
+    frontend->tmp_id_to_object_map = c_hash_table_new(NULL, NULL);
 
     rut_list_init(&frontend->ui_update_cb_list);
 

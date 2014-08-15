@@ -95,7 +95,7 @@ struct _rut_drop_down_t {
      * within the button */
     bool highlighted;
 
-    gboolean selector_shown;
+    bool selector_shown;
     int selector_x;
     int selector_y;
     int selector_width;
@@ -158,7 +158,7 @@ rut_drop_down_create_bg_pipeline(rut_context_t *context)
         cg_pipeline_t *pipeline = cg_pipeline_new(context->cg_device);
         static cg_user_data_key_t bg_pipeline_destroy_key;
         cg_texture_t *bg_texture;
-        GError *error = NULL;
+        c_error_t *error = NULL;
 
         bg_texture = rut_load_texture_from_data_file(
             context, "drop-down-background.png", &error);
@@ -177,7 +177,7 @@ rut_drop_down_create_bg_pipeline(rut_context_t *context)
         } else {
             c_warning("Failed to load drop-down-background.png: %s",
                       error->message);
-            g_error_free(error);
+            c_error_free(error);
         }
 
         /* When the last drop down is destroyed the pipeline will be
@@ -477,7 +477,7 @@ rut_drop_down_paint_button(rut_drop_down_t *drop,
         fb,
         drop->highlighted ? drop->highlighted_bg_pipeline : drop->bg_pipeline,
         (float *)coords,
-        G_N_ELEMENTS(coords));
+        C_N_ELEMENTS(coords));
 
     rut_drop_down_ensure_layouts(drop);
 
@@ -948,7 +948,7 @@ rut_drop_down_set_values(rut_drop_down_t *drop, ...)
         n_values++;
     }
 
-    values = g_alloca(sizeof(rut_drop_down_value_t) * n_values);
+    values = c_alloca(sizeof(rut_drop_down_value_t) * n_values);
 
     while ((name = va_arg(ap2, const char *))) {
         values[i].name = name;

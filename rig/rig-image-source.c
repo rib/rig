@@ -61,7 +61,7 @@ typedef struct _image_source_wrappers_t {
 } image_source_wrappers_t;
 
 static void
-destroy_source_wrapper(gpointer data)
+destroy_source_wrapper(void *data)
 {
     image_source_wrappers_t *wrapper = data;
 
@@ -82,8 +82,8 @@ void
 _rig_init_image_source_wrappers_cache(rig_engine_t *engine)
 {
     engine->image_source_wrappers =
-        g_hash_table_new_full(g_direct_hash,
-                              g_direct_equal,
+        c_hash_table_new_full(c_direct_hash,
+                              c_direct_equal,
                               NULL, /* key destroy */
                               destroy_source_wrapper);
 }
@@ -91,15 +91,15 @@ _rig_init_image_source_wrappers_cache(rig_engine_t *engine)
 void
 _rig_destroy_image_source_wrappers(rig_engine_t *engine)
 {
-    g_hash_table_destroy(engine->image_source_wrappers);
+    c_hash_table_destroy(engine->image_source_wrappers);
 }
 
 static image_source_wrappers_t *
 get_image_source_wrappers(rig_engine_t *engine,
                           int layer_index)
 {
-    image_source_wrappers_t *wrappers = g_hash_table_lookup(
-        engine->image_source_wrappers, GUINT_TO_POINTER(layer_index));
+    image_source_wrappers_t *wrappers = c_hash_table_lookup(
+        engine->image_source_wrappers, C_UINT_TO_POINTER(layer_index));
     char *wrapper;
 
     if (wrappers)
@@ -144,8 +144,8 @@ get_image_source_wrappers(rig_engine_t *engine,
 
     c_free(wrapper);
 
-    g_hash_table_insert(
-        engine->image_source_wrappers, GUINT_TO_POINTER(layer_index), wrappers);
+    c_hash_table_insert(
+        engine->image_source_wrappers, C_UINT_TO_POINTER(layer_index), wrappers);
 
     return wrappers;
 }
@@ -201,7 +201,7 @@ _rig_image_source_video_play(rig_image_source_t *source,
     if (data && len)
         uri = c_strdup_printf("mem://%p:%lu", data, (unsigned long)len);
     else {
-        filename = g_build_filename(engine->ctx->assets_location, path, NULL);
+        filename = c_build_filename(engine->ctx->assets_location, path, NULL);
         uri = gst_filename_to_uri(filename, NULL);
     }
 
@@ -291,7 +291,7 @@ rig_image_source_new(rig_engine_t *engine,
         g_signal_connect(
             source->sink, "new_frame", (GCallback)new_frame_cb, source);
 #else
-        g_error("FIXME: missing video support on this platform");
+        c_error("FIXME: missing video support on this platform");
 #endif
     } else if (rig_asset_get_texture(asset))
         source->texture = rig_asset_get_texture(asset);
@@ -389,7 +389,7 @@ rig_image_source_setup_pipeline(rig_image_source_t *source,
         vertex_snippet = wrappers->video_source_vertex_wrapper;
         fragment_snippet = wrappers->video_source_fragment_wrapper;
 #else
-        g_error("FIXME: missing video support for this platform");
+        c_error("FIXME: missing video support for this platform");
 #endif
     }
 
@@ -411,7 +411,7 @@ rig_image_source_attach_frame(rig_image_source_t *source,
         cg_gst_video_sink_attach_frame(rig_image_source_get_sink(source),
                                        pipeline);
 #else
-        g_error("FIXME: missing video support for this platform");
+        c_error("FIXME: missing video support for this platform");
 #endif
     }
 }
@@ -425,7 +425,7 @@ rig_image_source_get_natural_size(rig_image_source_t *source,
 #ifdef USE_GSTREAMER
         cg_gst_video_sink_get_natural_size(source->sink, width, height);
 #else
-        g_error("FIXME: missing video support for this platform");
+        c_error("FIXME: missing video support for this platform");
 #endif
     } else {
         cg_texture_t *texture = rig_image_source_get_texture(source);

@@ -24,7 +24,7 @@ struct demo {
 
 	struct particle_emitter *emitter;
 
-	GTimer *timer;
+	c_timer_t *timer;
 
 	gdouble snow_rate;
 
@@ -57,7 +57,7 @@ static gboolean update_cb(gpointer data)
 
 	/* Change the direction and velocity of wind over time */
 	demo->emitter->acceleration[0] = 0.3 *
-		sin(0.25 * g_timer_elapsed(demo->timer, NULL));
+		sin(0.25 * c_timer_elapsed(demo->timer, NULL));
 
 	/* Change the rate at which new snow appears over time */
 	demo->snow_rate += g_random_double_range(0, 0.005);
@@ -156,7 +156,7 @@ int main(int argc, char **argv)
 
 	init_particle_emitter(&demo);
 
-	demo.timer = g_timer_new();
+	demo.timer = c_timer_new();
 	demo.snow_rate = 0;
 
 	g_idle_add(update_cb, &demo);

@@ -111,7 +111,7 @@ get_label_step(rut_scale_t *scale, int *precision)
             scale_10 *= 10;
         }
 
-        for (i = 0; i < G_N_ELEMENTS(large_factors); i++) {
+        for (i = 0; i < C_N_ELEMENTS(large_factors); i++) {
             if (large_factors[i] >= step) {
                 step = large_factors[i];
                 break;
@@ -128,7 +128,7 @@ get_label_step(rut_scale_t *scale, int *precision)
             (*precision)++;
         }
 
-        for (i = 0; i < G_N_ELEMENTS(small_factors); i++) {
+        for (i = 0; i < C_N_ELEMENTS(small_factors); i++) {
             if (small_factors[i] >= step) {
                 step = small_factors[i];
                 if (step == 1)

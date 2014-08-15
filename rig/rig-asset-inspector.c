@@ -246,7 +246,7 @@ input_cb(rut_input_region_t *region, rut_input_event_t *event, void *user_data)
         }
     } else if (rut_input_event_get_type(event) ==
                RUT_INPUT_EVENT_TYPE_DROP_CANCEL) {
-        g_warn_if_fail(asset_inspector->drop_preview);
+        c_warn_if_fail(asset_inspector->drop_preview);
         rut_graphable_remove_child(asset_inspector->drop_preview);
         rut_graphable_remove_child(asset_inspector->drop_preview_overlay);
         return RUT_INPUT_EVENT_STATUS_HANDLED;

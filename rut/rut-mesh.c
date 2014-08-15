@@ -282,7 +282,7 @@ foreach_vertex(rut_mesh_t *mesh,
         int i;
         int v;
 
-        data = g_alloca(sizeof(void *) * n_attributes);
+        data = c_alloca(sizeof(void *) * n_attributes);
 
         for (i = 0; i < mesh->n_indices; i++) {
             int j;
@@ -368,8 +368,8 @@ rut_mesh_foreach_vertex(rut_mesh_t *mesh,
     } while (va_arg(ap, const char *));
     va_end(ap);
 
-    bases = g_alloca(sizeof(void *) * n_attributes);
-    strides = g_alloca(sizeof(int) * n_attributes);
+    bases = c_alloca(sizeof(void *) * n_attributes);
+    strides = c_alloca(sizeof(int) * n_attributes);
 
     va_start(ap, first_attribute);
     ready = collect_attribute_state(mesh, bases, strides, first_attribute, ap);
@@ -400,8 +400,8 @@ rut_mesh_foreach_index(rut_mesh_t *mesh,
     } while (va_arg(ap, const char *));
     va_end(ap);
 
-    bases = g_alloca(sizeof(void *) * n_attributes);
-    strides = g_alloca(sizeof(int) * n_attributes);
+    bases = c_alloca(sizeof(void *) * n_attributes);
+    strides = c_alloca(sizeof(int) * n_attributes);
 
     va_start(ap, first_attribute);
     ready = collect_attribute_state(mesh, bases, strides, first_attribute, ap);
@@ -493,11 +493,11 @@ rut_mesh_foreach_triangle(rut_mesh_t *mesh,
     } while (va_arg(ap, const char *));
     va_end(ap);
 
-    bases = g_alloca(sizeof(void *) * n_attributes);
-    strides = g_alloca(sizeof(int) * n_attributes);
-    data0 = g_alloca(sizeof(void *) * n_attributes);
-    data1 = g_alloca(sizeof(void *) * n_attributes);
-    data2 = g_alloca(sizeof(void *) * n_attributes);
+    bases = c_alloca(sizeof(void *) * n_attributes);
+    strides = c_alloca(sizeof(int) * n_attributes);
+    data0 = c_alloca(sizeof(void *) * n_attributes);
+    data1 = c_alloca(sizeof(void *) * n_attributes);
+    data2 = c_alloca(sizeof(void *) * n_attributes);
 
     tri_v[0] = data0;
     tri_v[1] = data1;
@@ -649,9 +649,9 @@ rut_mesh_create_primitive(rut_context_t *ctx, rut_mesh_t *mesh)
     cg_primitive_t *primitive;
     int i;
 
-    buffers = g_alloca(sizeof(void *) * mesh->n_attributes);
-    attribute_buffers = g_alloca(sizeof(void *) * mesh->n_attributes);
-    attribute_buffers_map = g_alloca(sizeof(void *) * mesh->n_attributes);
+    buffers = c_alloca(sizeof(void *) * mesh->n_attributes);
+    attribute_buffers = c_alloca(sizeof(void *) * mesh->n_attributes);
+    attribute_buffers_map = c_alloca(sizeof(void *) * mesh->n_attributes);
 
     /* NB:
      * attributes may refer to shared buffers so we need to first
@@ -678,7 +678,7 @@ rut_mesh_create_primitive(rut_context_t *ctx, rut_mesh_t *mesh)
         }
     }
 
-    attributes = g_alloca(sizeof(void *) * mesh->n_attributes);
+    attributes = c_alloca(sizeof(void *) * mesh->n_attributes);
     for (i = 0; i < mesh->n_attributes; i++) {
         cg_attribute_type_t type =
             get_cg_attribute_type(mesh->attributes[i]->type);
@@ -740,9 +740,9 @@ rut_mesh_copy(rut_mesh_t *mesh)
     rut_mesh_t *copy;
     int i;
 
-    buffers = g_alloca(sizeof(void *) * mesh->n_attributes);
-    attribute_buffers = g_alloca(sizeof(void *) * mesh->n_attributes);
-    attribute_buffers_map = g_alloca(sizeof(void *) * mesh->n_attributes);
+    buffers = c_alloca(sizeof(void *) * mesh->n_attributes);
+    attribute_buffers = c_alloca(sizeof(void *) * mesh->n_attributes);
+    attribute_buffers_map = c_alloca(sizeof(void *) * mesh->n_attributes);
 
     /* NB:
      * attributes may refer to shared buffers so we need to first
@@ -770,7 +770,7 @@ rut_mesh_copy(rut_mesh_t *mesh)
         }
     }
 
-    attributes = g_alloca(sizeof(void *) * mesh->n_attributes);
+    attributes = c_alloca(sizeof(void *) * mesh->n_attributes);
     for (i = 0; i < mesh->n_attributes; i++) {
         attributes[i] = rut_attribute_new(attribute_buffers_map[i],
                                           mesh->attributes[i]->name,

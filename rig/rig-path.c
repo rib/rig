@@ -103,10 +103,10 @@ rig_path_find_control_points2(rig_path_t *path,
 {
     rig_node_t *pos;
 
-    if (G_UNLIKELY(rut_list_empty(&path->nodes)))
+    if (C_UNLIKELY(rut_list_empty(&path->nodes)))
         return false;
 
-    if (G_UNLIKELY(path->pos == NULL))
+    if (C_UNLIKELY(path->pos == NULL))
         path->pos = rut_container_of(path->nodes.next, path->pos, list_node);
 
     pos = path->pos;
@@ -292,7 +292,7 @@ rig_path_find_node(rig_path_t *path, float t)
 rig_node_t *
 rig_path_find_nearest(rig_path_t *path, float t)
 {
-    float min_dt = G_MAXFLOAT;
+    float min_dt = FLT_MAX;
     rig_node_t *min_dt_node = NULL;
     rig_node_t *node;
 
