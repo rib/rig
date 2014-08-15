@@ -26,64 +26,64 @@ check_flags(TestFlags flags, cg_renderer_t *renderer)
     if (flags & TEST_REQUIREMENT_GL &&
         cg_renderer_get_driver(renderer) != CG_DRIVER_GL &&
         cg_renderer_get_driver(renderer) != CG_DRIVER_GL3) {
-        return FALSE;
+        return false;
     }
 
     if (flags & TEST_REQUIREMENT_NPOT &&
         !cg_has_feature(test_dev, CG_FEATURE_ID_TEXTURE_NPOT)) {
-        return FALSE;
+        return false;
     }
 
     if (flags & TEST_REQUIREMENT_TEXTURE_3D &&
         !cg_has_feature(test_dev, CG_FEATURE_ID_TEXTURE_3D)) {
-        return FALSE;
+        return false;
     }
 
     if (flags & TEST_REQUIREMENT_TEXTURE_RG &&
         !cg_has_feature(test_dev, CG_FEATURE_ID_TEXTURE_RG)) {
-        return FALSE;
+        return false;
     }
 
     if (flags & TEST_REQUIREMENT_POINT_SPRITE &&
         !cg_has_feature(test_dev, CG_FEATURE_ID_POINT_SPRITE)) {
-        return FALSE;
+        return false;
     }
 
     if (flags & TEST_REQUIREMENT_PER_VERTEX_POINT_SIZE &&
         !cg_has_feature(test_dev, CG_FEATURE_ID_PER_VERTEX_POINT_SIZE)) {
-        return FALSE;
+        return false;
     }
 
     if (flags & TEST_REQUIREMENT_GLES2_CONTEXT &&
         !cg_has_feature(test_dev, CG_FEATURE_ID_GLES2_CONTEXT)) {
-        return FALSE;
+        return false;
     }
 
     if (flags & TEST_REQUIREMENT_MAP_WRITE &&
         !cg_has_feature(test_dev, CG_FEATURE_ID_MAP_BUFFER_FOR_WRITE)) {
-        return FALSE;
+        return false;
     }
 
     if (flags & TEST_REQUIREMENT_GLSL &&
         !cg_has_feature(test_dev, CG_FEATURE_ID_GLSL)) {
-        return FALSE;
+        return false;
     }
 
     if (flags & TEST_REQUIREMENT_OFFSCREEN &&
         !cg_has_feature(test_dev, CG_FEATURE_ID_OFFSCREEN)) {
-        return FALSE;
+        return false;
     }
 
     if (flags & TEST_REQUIREMENT_FENCE &&
         !cg_has_feature(test_dev, CG_FEATURE_ID_FENCE)) {
-        return FALSE;
+        return false;
     }
 
     if (flags & TEST_KNOWN_FAILURE) {
-        return FALSE;
+        return false;
     }
 
-    return TRUE;
+    return true;
 }
 
 bool
@@ -93,21 +93,21 @@ is_boolean_env_set(const char *variable)
     bool ret;
 
     if (!val)
-        return FALSE;
+        return false;
 
-    if (g_ascii_strcasecmp(val, "1") == 0 ||
-        g_ascii_strcasecmp(val, "on") == 0 ||
-        g_ascii_strcasecmp(val, "true") == 0)
-        ret = TRUE;
-    else if (g_ascii_strcasecmp(val, "0") == 0 ||
-             g_ascii_strcasecmp(val, "off") == 0 ||
-             g_ascii_strcasecmp(val, "false") == 0)
-        ret = FALSE;
+    if (c_ascii_strcasecmp(val, "1") == 0 ||
+        c_ascii_strcasecmp(val, "on") == 0 ||
+        c_ascii_strcasecmp(val, "true") == 0)
+        ret = true;
+    else if (c_ascii_strcasecmp(val, "0") == 0 ||
+             c_ascii_strcasecmp(val, "off") == 0 ||
+             c_ascii_strcasecmp(val, "false") == 0)
+        ret = false;
     else {
-        g_critical("Spurious boolean environment variable value (%s=%s)",
+        c_critical("Spurious boolean environment variable value (%s=%s)",
                    variable,
                    val);
-        ret = TRUE;
+        ret = true;
     }
 
     return ret;
@@ -125,7 +125,7 @@ test_utils_init(TestFlags requirement_flags, TestFlags known_failure_flags)
     bool known_failure;
 
     if (counter != 0)
-        g_critical("We don't support running more than one test at a time\n"
+        c_critical("We don't support running more than one test at a time\n"
                    "in a single test run due to the state leakage that can\n"
                    "cause subsequent tests to fail.\n"
                    "\n"
@@ -134,19 +134,19 @@ test_utils_init(TestFlags requirement_flags, TestFlags known_failure_flags)
     counter++;
 
     if (is_boolean_env_set("CG_TEST_VERBOSE") || is_boolean_env_set("V"))
-        cg_test_is_verbose = TRUE;
+        cg_test_is_verbose = true;
 
     /* NB: This doesn't have any effect since commit 47444dac of glib
      * because the environment variable is read in a magic constructor
      * so it is too late to set them here */
-    if (g_getenv("G_DEBUG")) {
-        char *debug = g_strconcat(g_getenv("G_DEBUG"), ",fatal-warnings", NULL);
-        g_setenv("G_DEBUG", debug, TRUE);
-        g_free(debug);
+    if (c_getenv("G_DEBUG")) {
+        char *debug = c_strconcat(c_getenv("G_DEBUG"), ",fatal-warnings", NULL);
+        c_setenv("G_DEBUG", debug, true);
+        c_free(debug);
     } else
-        g_setenv("G_DEBUG", "fatal-warnings", TRUE);
+        c_setenv("G_DEBUG", "fatal-warnings", true);
 
-    g_setenv("CG_X11_SYNC", "1", 0);
+    c_setenv("CG_X11_SYNC", "1", 0);
 
     renderer = cg_renderer_new();
 
@@ -181,7 +181,7 @@ test_utils_init(TestFlags requirement_flags, TestFlags known_failure_flags)
     }
 
     if (!cg_framebuffer_allocate(test_fb, &error))
-        g_critical("Failed to allocate framebuffer: %s", error->message);
+        c_critical("Failed to allocate framebuffer: %s", error->message);
 
     if (onscreen)
         cg_onscreen_show(onscreen);
@@ -195,9 +195,9 @@ test_utils_init(TestFlags requirement_flags, TestFlags known_failure_flags)
                            1);
 
     if (missing_requirement)
-        g_print("WARNING: Missing required feature[s] for this test\n");
+        c_print("WARNING: Missing required feature[s] for this test\n");
     else if (known_failure)
-        g_print("WARNING: Test is known to fail\n");
+        c_print("WARNING: Test is known to fail\n");
 }
 
 void
@@ -225,14 +225,14 @@ test_utils_compare_pixel_and_alpha(const uint8_t *screen_pixel,
         !compare_component(screen_pixel[1], (expected_pixel >> 16) & 0xff) ||
         !compare_component(screen_pixel[2], (expected_pixel >> 8) & 0xff) ||
         !compare_component(screen_pixel[3], (expected_pixel >> 0) & 0xff)) {
-        uint32_t screen_pixel_num = GUINT32_FROM_BE(*(uint32_t *)screen_pixel);
-        char *screen_pixel_string = g_strdup_printf("#%08x", screen_pixel_num);
-        char *expected_pixel_string = g_strdup_printf("#%08x", expected_pixel);
+        uint32_t screen_pixel_num = C_UINT32_FROM_BE(*(uint32_t *)screen_pixel);
+        char *screen_pixel_string = c_strdup_printf("#%08x", screen_pixel_num);
+        char *expected_pixel_string = c_strdup_printf("#%08x", expected_pixel);
 
-        g_assert_cmpstr(screen_pixel_string, ==, expected_pixel_string);
+        c_assert_cmpstr(screen_pixel_string, ==, expected_pixel_string);
 
-        g_free(screen_pixel_string);
-        g_free(expected_pixel_string);
+        c_free(screen_pixel_string);
+        c_free(expected_pixel_string);
     }
 }
 
@@ -244,16 +244,16 @@ test_utils_compare_pixel(const uint8_t *screen_pixel,
     if (!compare_component(screen_pixel[0], expected_pixel >> 24) ||
         !compare_component(screen_pixel[1], (expected_pixel >> 16) & 0xff) ||
         !compare_component(screen_pixel[2], (expected_pixel >> 8) & 0xff)) {
-        uint32_t screen_pixel_num = GUINT32_FROM_BE(*(uint32_t *)screen_pixel);
+        uint32_t screen_pixel_num = C_UINT32_FROM_BE(*(uint32_t *)screen_pixel);
         char *screen_pixel_string =
-            g_strdup_printf("#%06x", screen_pixel_num >> 8);
+            c_strdup_printf("#%06x", screen_pixel_num >> 8);
         char *expected_pixel_string =
-            g_strdup_printf("#%06x", expected_pixel >> 8);
+            c_strdup_printf("#%06x", expected_pixel >> 8);
 
-        g_assert_cmpstr(screen_pixel_string, ==, expected_pixel_string);
+        c_assert_cmpstr(screen_pixel_string, ==, expected_pixel_string);
 
-        g_free(screen_pixel_string);
-        g_free(expected_pixel_string);
+        c_free(screen_pixel_string);
+        c_free(expected_pixel_string);
     }
 }
 
@@ -302,7 +302,7 @@ test_utils_check_region(cg_framebuffer_t *fb,
 {
     uint8_t *pixels, *p;
 
-    pixels = p = g_malloc(width * height * 4);
+    pixels = p = c_malloc(width * height * 4);
     cg_framebuffer_read_pixels(
         fb, x, y, width, height, CG_PIXEL_FORMAT_RGBA_8888, p);
 
@@ -313,7 +313,7 @@ test_utils_check_region(cg_framebuffer_t *fb,
             p += 4;
         }
 
-    g_free(pixels);
+    c_free(pixels);
 }
 
 cg_texture_t *
@@ -322,7 +322,7 @@ test_utils_create_color_texture(cg_device_t *dev,
 {
     cg_texture_2d_t *tex_2d;
 
-    color = GUINT32_TO_BE(color);
+    color = C_UINT32_TO_BE(color);
 
     tex_2d = cg_texture_2d_new_from_data(dev,
                                          1,
@@ -348,7 +348,7 @@ set_auto_mipmap_cb(cg_texture_t *sub_texture,
                    void *user_data)
 {
     cg_primitive_texture_set_auto_mipmap(CG_PRIMITIVE_TEXTURE(sub_texture),
-                                         FALSE);
+                                         false);
 }
 
 cg_texture_t *
@@ -444,7 +444,7 @@ test_utils_texture_new_from_bitmap(cg_bitmap_t *bitmap,
 
         if (cg_error_matches(
                 internal_error, CG_SYSTEM_ERROR, CG_SYSTEM_ERROR_NO_MEMORY)) {
-            g_assert_not_reached();
+            c_assert_not_reached();
             return NULL;
         }
 
@@ -495,14 +495,14 @@ test_utils_texture_new_from_data(cg_device_t *ctx,
     cg_bitmap_t *bmp;
     cg_texture_t *tex;
 
-    g_assert_cmpint(format, !=, CG_PIXEL_FORMAT_ANY);
-    g_assert(data != NULL);
+    c_assert_cmpint(format, !=, CG_PIXEL_FORMAT_ANY);
+    c_assert(data != NULL);
 
     /* Wrap the data into a bitmap */
     bmp = cg_bitmap_new_for_data(
         ctx, width, height, format, rowstride, (uint8_t *)data);
 
-    tex = test_utils_texture_new_from_bitmap(bmp, flags, TRUE);
+    tex = test_utils_texture_new_from_bitmap(bmp, flags, true);
 
     cg_object_unref(bmp);
 
