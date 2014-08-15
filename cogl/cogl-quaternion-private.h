@@ -38,7 +38,7 @@
 #define _CG_QUATERNION_NORM(Q)                                                 \
     ((Q)->x *(Q)->x + (Q)->y *(Q)->y + (Q)->z *(Q)->z + (Q)->w *(Q)->w)
 
-#define _CG_QUATERNION_DEGREES_TO_RADIANS (G_PI / 180.0f)
-#define _CG_QUATERNION_RADIANS_TO_DEGREES (180.0f / G_PI)
+#define _CG_QUATERNION_DEGREES_TO_RADIANS (C_PI / 180.0f)
+#define _CG_QUATERNION_RADIANS_TO_DEGREES (180.0f / C_PI)
 
 #endif /* __CG_QUATERNION_PRIVATE_H__ */

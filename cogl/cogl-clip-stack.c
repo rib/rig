@@ -104,8 +104,8 @@ static void
 _cg_clip_stack_entry_set_bounds(cg_clip_stack_t *entry,
                                 float *transformed_corners)
 {
-    float min_x = G_MAXFLOAT, min_y = G_MAXFLOAT;
-    float max_x = -G_MAXFLOAT, max_y = -G_MAXFLOAT;
+    float min_x = FLT_MAX, min_y = FLT_MAX;
+    float max_x = -FLT_MAX, max_y = -FLT_MAX;
     int i;
 
     for (i = 0; i < 4; i++) {
@@ -362,8 +362,8 @@ _cg_clip_stack_get_bounds(cg_clip_stack_t *stack,
 
     *scissor_x0 = 0;
     *scissor_y0 = 0;
-    *scissor_x1 = G_MAXINT;
-    *scissor_y1 = G_MAXINT;
+    *scissor_x1 = INT_MAX;
+    *scissor_y1 = INT_MAX;
 
     for (entry = stack; entry; entry = entry->parent) {
         /* Get the intersection of the current scissor and the bounding

@@ -48,7 +48,7 @@ const char *_cg_gl_error_to_string(GLenum error_code);
         (ctx)->x;                                                              \
         while ((__err = (ctx)->glGetError()) != GL_NO_ERROR) {                 \
             c_warning("%s: GL error (%d): %s\n",                               \
-                      G_STRLOC,                                                \
+                      C_STRLOC,                                                \
                       __err,                                                   \
                       _cg_gl_error_to_string(__err));                          \
         }                                                                      \
@@ -62,7 +62,7 @@ const char *_cg_gl_error_to_string(GLenum error_code);
         ret = (ctx)->x;                                                        \
         while ((__err = (ctx)->glGetError()) != GL_NO_ERROR) {                 \
             c_warning("%s: GL error (%d): %s\n",                               \
-                      G_STRLOC,                                                \
+                      C_STRLOC,                                                \
                       __err,                                                   \
                       _cg_gl_error_to_string(__err));                          \
         }                                                                      \

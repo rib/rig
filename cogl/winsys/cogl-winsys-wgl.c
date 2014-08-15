@@ -103,7 +103,7 @@ typedef struct _cg_onscreen_wgl_t {
     static const cg_feature_function_t cg_wgl_feature_##name##_funcs[] = {
 #define CG_WINSYS_FEATURE_FUNCTION(ret, name, args)                            \
     {                                                                          \
-        G_STRINGIFY(name), C_STRUCT_OFFSET(cg_renderer_wgl_t, pf_##name)       \
+        C_STRINGIFY(name), C_STRUCT_OFFSET(cg_renderer_wgl_t, pf_##name)       \
     }                                                                          \
     ,
 #define CG_WINSYS_FEATURE_END()                                                \

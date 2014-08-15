@@ -112,7 +112,7 @@ typedef struct _cg_texture_pixmap_glx_t {
     static const cg_feature_function_t cg_glx_feature_##name##_funcs[] = {
 #define CG_WINSYS_FEATURE_FUNCTION(ret, name, args)                            \
     {                                                                          \
-        G_STRINGIFY(name), C_STRUCT_OFFSET(cg_glx_renderer_t, name)            \
+        C_STRINGIFY(name), C_STRUCT_OFFSET(cg_glx_renderer_t, name)            \
     }                                                                          \
     ,
 #define CG_WINSYS_FEATURE_END()                                                \

@@ -106,7 +106,7 @@ shader_data_unref(cg_gles2_context_t *context,
     if (--shader_data->ref_count < 1)
         /* Removing the hash table entry should also destroy the data */
         c_hash_table_remove(context->shader_map,
-                            GINT_TO_POINTER(shader_data->object_id));
+                            C_INT_TO_POINTER(shader_data->object_id));
 }
 
 static void
@@ -115,7 +115,7 @@ program_data_unref(cg_gles2_program_data_t *program_data)
     if (--program_data->ref_count < 1)
         /* Removing the hash table entry should also destroy the data */
         c_hash_table_remove(program_data->context->program_map,
-                            GINT_TO_POINTER(program_data->object_id));
+                            C_INT_TO_POINTER(program_data->object_id));
 }
 
 static void
@@ -654,7 +654,7 @@ gl_create_shader_wrapper(GLenum type)
         data->ref_count = 1;
         data->deleted = false;
 
-        c_hash_table_insert(gles2_ctx->shader_map, GINT_TO_POINTER(id), data);
+        c_hash_table_insert(gles2_ctx->shader_map, C_INT_TO_POINTER(id), data);
     }
 
     return id;
@@ -667,7 +667,7 @@ gl_delete_shader_wrapper(GLuint shader)
     cg_gles2_shader_data_t *shader_data;
 
     if ((shader_data = c_hash_table_lookup(gles2_ctx->shader_map,
-                                           GINT_TO_POINTER(shader))) &&
+                                           C_INT_TO_POINTER(shader))) &&
         !shader_data->deleted) {
         shader_data->deleted = true;
         shader_data_unref(gles2_ctx, shader_data);
@@ -695,7 +695,7 @@ gl_create_program_wrapper(void)
         data->flip_vector_location = 0;
         data->flip_vector_state = CG_GLES2_FLIP_STATE_UNKNOWN;
 
-        c_hash_table_insert(gles2_ctx->program_map, GINT_TO_POINTER(id), data);
+        c_hash_table_insert(gles2_ctx->program_map, C_INT_TO_POINTER(id), data);
     }
 
     return id;
@@ -708,7 +708,7 @@ gl_delete_program_wrapper(GLuint program)
     cg_gles2_program_data_t *program_data;
 
     if ((program_data = c_hash_table_lookup(gles2_ctx->program_map,
-                                            GINT_TO_POINTER(program))) &&
+                                            C_INT_TO_POINTER(program))) &&
         !program_data->deleted) {
         program_data->deleted = true;
         program_data_unref(program_data);
@@ -724,7 +724,7 @@ gl_use_program_wrapper(GLuint program)
     cg_gles2_program_data_t *program_data;
 
     program_data =
-        c_hash_table_lookup(gles2_ctx->program_map, GINT_TO_POINTER(program));
+        c_hash_table_lookup(gles2_ctx->program_map, C_INT_TO_POINTER(program));
 
     if (program_data)
         program_data->ref_count++;
@@ -744,9 +744,9 @@ gl_attach_shader_wrapper(GLuint program, GLuint shader)
     cg_gles2_shader_data_t *shader_data;
 
     if ((program_data = c_hash_table_lookup(gles2_ctx->program_map,
-                                            GINT_TO_POINTER(program))) &&
+                                            C_INT_TO_POINTER(program))) &&
         (shader_data = c_hash_table_lookup(gles2_ctx->shader_map,
-                                           GINT_TO_POINTER(shader))) &&
+                                           C_INT_TO_POINTER(shader))) &&
         /* Ignore attempts to attach a shader that is already attached */
         c_list_find(program_data->attached_shaders, shader_data) == NULL) {
         shader_data->ref_count++;
@@ -765,9 +765,9 @@ gl_detach_shader_wrapper(GLuint program, GLuint shader)
     cg_gles2_shader_data_t *shader_data;
 
     if ((program_data = c_hash_table_lookup(gles2_ctx->program_map,
-                                            GINT_TO_POINTER(program))) &&
+                                            C_INT_TO_POINTER(program))) &&
         (shader_data = c_hash_table_lookup(gles2_ctx->shader_map,
-                                           GINT_TO_POINTER(shader))))
+                                           C_INT_TO_POINTER(shader))))
         detach_shader(program_data, shader_data);
 
     gles2_ctx->dev->glDetachShader(program, shader);
@@ -783,7 +783,7 @@ gl_shader_source_wrapper(GLuint shader,
     cg_gles2_shader_data_t *shader_data;
 
     if ((shader_data = c_hash_table_lookup(gles2_ctx->shader_map,
-                                           GINT_TO_POINTER(shader))) &&
+                                           C_INT_TO_POINTER(shader))) &&
         shader_data->type == GL_VERTEX_SHADER) {
         char **string_copy = c_alloca((count + 1) * sizeof(char *));
         int *length_copy = c_alloca((count + 1) * sizeof(int));
@@ -838,7 +838,7 @@ gl_get_shader_source_wrapper(GLuint shader,
     gles2_ctx->dev->glGetShaderSource(shader, buf_size, &length, source);
 
     if ((shader_data = c_hash_table_lookup(gles2_ctx->shader_map,
-                                           GINT_TO_POINTER(shader))) &&
+                                           C_INT_TO_POINTER(shader))) &&
         shader_data->type == GL_VERTEX_SHADER) {
         GLsizei copy_length = MIN(length, buf_size - 1);
         static const char wrapper_marker[] = MAIN_WRAPPER_BEGIN;
@@ -872,7 +872,7 @@ gl_link_program_wrapper(GLuint program)
     gles2_ctx->dev->glLinkProgram(program);
 
     program_data =
-        c_hash_table_lookup(gles2_ctx->program_map, GINT_TO_POINTER(program));
+        c_hash_table_lookup(gles2_ctx->program_map, C_INT_TO_POINTER(program));
 
     if (program_data) {
         GLint status;

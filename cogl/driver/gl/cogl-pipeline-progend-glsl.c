@@ -536,7 +536,7 @@ _cg_pipeline_progend_glsl_flush_uniforms(cg_device_t *dev,
         memset(data.uniform_differences,
                0xff,
                n_uniform_longs * sizeof(unsigned long));
-        data.n_differences = G_MAXINT;
+        data.n_differences = INT_MAX;
     } else if (program_state->last_used_for_pipeline) {
         int i;
 

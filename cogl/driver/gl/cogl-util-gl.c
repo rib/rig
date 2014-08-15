@@ -88,7 +88,7 @@ _cg_gl_util_catch_out_of_memory(cg_device_t *dev, cg_error_t **error)
 #ifdef CG_GL_DEBUG
         else {
             c_warning("%s: GL error (%d): %s\n",
-                      G_STRLOC,
+                      C_STRLOC,
                       gl_error,
                       _cg_gl_error_to_string(gl_error));
         }

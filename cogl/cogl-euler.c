@@ -128,9 +128,9 @@ cg_euler_init_from_matrix(cg_euler_t *euler, const cg_matrix_t *matrix)
      * might occur due to previous imprecision in manipulating the
      * matrix. */
     if (sinP <= -1.0f)
-        P = -G_PI_2;
+        P = -C_PI_2;
     else if (sinP >= 1.0f)
-        P = G_PI_2;
+        P = C_PI_2;
     else
         P = asinf(sinP);
 

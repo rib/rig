@@ -166,7 +166,7 @@ error:
     static const cg_feature_function_t cg_ext_##name##_funcs[] = {
 #define CG_EXT_FUNCTION(ret, name, args)                                       \
     {                                                                          \
-        G_STRINGIFY(name), C_STRUCT_OFFSET(cg_device_t, name)                 \
+        C_STRINGIFY(name), C_STRUCT_OFFSET(cg_device_t, name)                 \
     }                                                                          \
     ,
 #define CG_EXT_END()                                                           \

@@ -691,7 +691,7 @@ output_free(int fd, cg_output_kms_t *output)
                                      1,
                                      &output->saved_crtc->mode);
             if (ret)
-                c_warning(G_STRLOC ": Error restoring saved CRTC");
+                c_warning(C_STRLOC ": Error restoring saved CRTC");
         }
         drmModeFreeConnector(output->connector);
     }

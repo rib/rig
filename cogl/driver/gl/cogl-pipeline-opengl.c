@@ -291,7 +291,7 @@ flush_depth_state(cg_device_t *dev, cg_depth_state_t *depth_state)
     }
 
     if (dev->depth_writing_enabled_cache != depth_writing_enabled) {
-        GE(dev, glDepthMask(depth_writing_enabled ? GL_TRUE : FALSE));
+        GE(dev, glDepthMask(depth_writing_enabled ? GL_TRUE : GL_FALSE));
         dev->depth_writing_enabled_cache = depth_writing_enabled;
     }
 
@@ -1076,7 +1076,7 @@ _cg_pipeline_flush_gl_state(cg_device_t *dev,
 
     /* Since the NOP progend will claim to handle anything we should
      * never fall through without finding a suitable progend */
-    g_assert(i != CG_PIPELINE_N_PROGENDS);
+    c_assert(i != CG_PIPELINE_N_PROGENDS);
 
     /* FIXME: This reference is actually resulting in lots of
      * copy-on-write reparenting because one-shot pipelines end up

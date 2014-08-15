@@ -47,7 +47,7 @@
     (((b) * ((1 << (sizeof(component_type) * 8)) - 1) + 511) / 1023)
 
 inline static void
-G_PASTE(_cg_unpack_a_8_, component_size) (const uint8_t *src,
+C_PASTE(_cg_unpack_a_8_, component_size) (const uint8_t *src,
                                           component_type *dst,
                                           int width)
 {
@@ -62,7 +62,7 @@ G_PASTE(_cg_unpack_a_8_, component_size) (const uint8_t *src,
 }
 
 inline static void
-G_PASTE(_cg_unpack_rg_88_,
+C_PASTE(_cg_unpack_rg_88_,
         component_size) (const uint8_t *src, component_type *dst, int width)
 {
     while (width-- > 0) {
@@ -76,7 +76,7 @@ G_PASTE(_cg_unpack_rg_88_,
 }
 
 inline static void
-G_PASTE(_cg_unpack_rgb_888_,
+C_PASTE(_cg_unpack_rgb_888_,
         component_size) (const uint8_t *src, component_type *dst, int width)
 {
     while (width-- > 0) {
@@ -90,7 +90,7 @@ G_PASTE(_cg_unpack_rgb_888_,
 }
 
 inline static void
-G_PASTE(_cg_unpack_bgr_888_,
+C_PASTE(_cg_unpack_bgr_888_,
         component_size) (const uint8_t *src, component_type *dst, int width)
 {
     while (width-- > 0) {
@@ -104,7 +104,7 @@ G_PASTE(_cg_unpack_bgr_888_,
 }
 
 inline static void
-G_PASTE(_cg_unpack_bgra_8888_,
+C_PASTE(_cg_unpack_bgra_8888_,
         component_size) (const uint8_t *src, component_type *dst, int width)
 {
     while (width-- > 0) {
@@ -118,7 +118,7 @@ G_PASTE(_cg_unpack_bgra_8888_,
 }
 
 inline static void
-G_PASTE(_cg_unpack_argb_8888_,
+C_PASTE(_cg_unpack_argb_8888_,
         component_size) (const uint8_t *src, component_type *dst, int width)
 {
     while (width-- > 0) {
@@ -132,7 +132,7 @@ G_PASTE(_cg_unpack_argb_8888_,
 }
 
 inline static void
-G_PASTE(_cg_unpack_abgr_8888_,
+C_PASTE(_cg_unpack_abgr_8888_,
         component_size) (const uint8_t *src, component_type *dst, int width)
 {
     while (width-- > 0) {
@@ -146,7 +146,7 @@ G_PASTE(_cg_unpack_abgr_8888_,
 }
 
 inline static void
-G_PASTE(_cg_unpack_rgba_8888_,
+C_PASTE(_cg_unpack_rgba_8888_,
         component_size) (const uint8_t *src, component_type *dst, int width)
 {
     while (width-- > 0) {
@@ -160,7 +160,7 @@ G_PASTE(_cg_unpack_rgba_8888_,
 }
 
 inline static void
-G_PASTE(_cg_unpack_rgb_565_,
+C_PASTE(_cg_unpack_rgb_565_,
         component_size) (const uint8_t *src, component_type *dst, int width)
 {
     while (width-- > 0) {
@@ -176,7 +176,7 @@ G_PASTE(_cg_unpack_rgb_565_,
 }
 
 inline static void
-G_PASTE(_cg_unpack_rgba_4444_,
+C_PASTE(_cg_unpack_rgba_4444_,
         component_size) (const uint8_t *src, component_type *dst, int width)
 {
     while (width-- > 0) {
@@ -192,7 +192,7 @@ G_PASTE(_cg_unpack_rgba_4444_,
 }
 
 inline static void
-G_PASTE(_cg_unpack_rgba_5551_,
+C_PASTE(_cg_unpack_rgba_5551_,
         component_size) (const uint8_t *src, component_type *dst, int width)
 {
     while (width-- > 0) {
@@ -208,7 +208,7 @@ G_PASTE(_cg_unpack_rgba_5551_,
 }
 
 inline static void
-G_PASTE(_cg_unpack_rgba_1010102_,
+C_PASTE(_cg_unpack_rgba_1010102_,
         component_size) (const uint8_t *src, component_type *dst, int width)
 {
     while (width-- > 0) {
@@ -224,7 +224,7 @@ G_PASTE(_cg_unpack_rgba_1010102_,
 }
 
 inline static void
-G_PASTE(_cg_unpack_bgra_1010102_,
+C_PASTE(_cg_unpack_bgra_1010102_,
         component_size) (const uint8_t *src, component_type *dst, int width)
 {
     while (width-- > 0) {
@@ -240,7 +240,7 @@ G_PASTE(_cg_unpack_bgra_1010102_,
 }
 
 inline static void
-G_PASTE(_cg_unpack_argb_2101010_,
+C_PASTE(_cg_unpack_argb_2101010_,
         component_size) (const uint8_t *src, component_type *dst, int width)
 {
     while (width-- > 0) {
@@ -256,7 +256,7 @@ G_PASTE(_cg_unpack_argb_2101010_,
 }
 
 inline static void
-G_PASTE(_cg_unpack_abgr_2101010_,
+C_PASTE(_cg_unpack_abgr_2101010_,
         component_size) (const uint8_t *src, component_type *dst, int width)
 {
     while (width-- > 0) {
@@ -279,7 +279,7 @@ G_PASTE(_cg_unpack_abgr_2101010_,
 #undef UNPACK_10
 
 inline static void
-G_PASTE(_cg_unpack_,
+C_PASTE(_cg_unpack_,
         component_size) (cg_pixel_format_t format,
                          const uint8_t *src,
                          component_type *dst,
@@ -287,59 +287,59 @@ G_PASTE(_cg_unpack_,
 {
     switch (format) {
     case CG_PIXEL_FORMAT_A_8:
-        G_PASTE(_cg_unpack_a_8_, component_size) (src, dst, width);
+        C_PASTE(_cg_unpack_a_8_, component_size) (src, dst, width);
         break;
     case CG_PIXEL_FORMAT_RG_88:
-        G_PASTE(_cg_unpack_rg_88_, component_size) (src, dst, width);
+        C_PASTE(_cg_unpack_rg_88_, component_size) (src, dst, width);
         break;
     case CG_PIXEL_FORMAT_RGB_888:
-        G_PASTE(_cg_unpack_rgb_888_, component_size) (src, dst, width);
+        C_PASTE(_cg_unpack_rgb_888_, component_size) (src, dst, width);
         break;
     case CG_PIXEL_FORMAT_BGR_888:
-        G_PASTE(_cg_unpack_bgr_888_, component_size) (src, dst, width);
+        C_PASTE(_cg_unpack_bgr_888_, component_size) (src, dst, width);
         break;
     case CG_PIXEL_FORMAT_RGBA_8888:
     case CG_PIXEL_FORMAT_RGBA_8888_PRE:
-        G_PASTE(_cg_unpack_rgba_8888_, component_size) (src, dst, width);
+        C_PASTE(_cg_unpack_rgba_8888_, component_size) (src, dst, width);
         break;
     case CG_PIXEL_FORMAT_BGRA_8888:
     case CG_PIXEL_FORMAT_BGRA_8888_PRE:
-        G_PASTE(_cg_unpack_bgra_8888_, component_size) (src, dst, width);
+        C_PASTE(_cg_unpack_bgra_8888_, component_size) (src, dst, width);
         break;
     case CG_PIXEL_FORMAT_ARGB_8888:
     case CG_PIXEL_FORMAT_ARGB_8888_PRE:
-        G_PASTE(_cg_unpack_argb_8888_, component_size) (src, dst, width);
+        C_PASTE(_cg_unpack_argb_8888_, component_size) (src, dst, width);
         break;
     case CG_PIXEL_FORMAT_ABGR_8888:
     case CG_PIXEL_FORMAT_ABGR_8888_PRE:
-        G_PASTE(_cg_unpack_abgr_8888_, component_size) (src, dst, width);
+        C_PASTE(_cg_unpack_abgr_8888_, component_size) (src, dst, width);
         break;
     case CG_PIXEL_FORMAT_RGB_565:
-        G_PASTE(_cg_unpack_rgb_565_, component_size) (src, dst, width);
+        C_PASTE(_cg_unpack_rgb_565_, component_size) (src, dst, width);
         break;
     case CG_PIXEL_FORMAT_RGBA_4444:
     case CG_PIXEL_FORMAT_RGBA_4444_PRE:
-        G_PASTE(_cg_unpack_rgba_4444_, component_size) (src, dst, width);
+        C_PASTE(_cg_unpack_rgba_4444_, component_size) (src, dst, width);
         break;
     case CG_PIXEL_FORMAT_RGBA_5551:
     case CG_PIXEL_FORMAT_RGBA_5551_PRE:
-        G_PASTE(_cg_unpack_rgba_5551_, component_size) (src, dst, width);
+        C_PASTE(_cg_unpack_rgba_5551_, component_size) (src, dst, width);
         break;
     case CG_PIXEL_FORMAT_RGBA_1010102:
     case CG_PIXEL_FORMAT_RGBA_1010102_PRE:
-        G_PASTE(_cg_unpack_rgba_1010102_, component_size) (src, dst, width);
+        C_PASTE(_cg_unpack_rgba_1010102_, component_size) (src, dst, width);
         break;
     case CG_PIXEL_FORMAT_BGRA_1010102:
     case CG_PIXEL_FORMAT_BGRA_1010102_PRE:
-        G_PASTE(_cg_unpack_bgra_1010102_, component_size) (src, dst, width);
+        C_PASTE(_cg_unpack_bgra_1010102_, component_size) (src, dst, width);
         break;
     case CG_PIXEL_FORMAT_ARGB_2101010:
     case CG_PIXEL_FORMAT_ARGB_2101010_PRE:
-        G_PASTE(_cg_unpack_argb_2101010_, component_size) (src, dst, width);
+        C_PASTE(_cg_unpack_argb_2101010_, component_size) (src, dst, width);
         break;
     case CG_PIXEL_FORMAT_ABGR_2101010:
     case CG_PIXEL_FORMAT_ABGR_2101010_PRE:
-        G_PASTE(_cg_unpack_abgr_2101010_, component_size) (src, dst, width);
+        C_PASTE(_cg_unpack_abgr_2101010_, component_size) (src, dst, width);
         break;
     case CG_PIXEL_FORMAT_DEPTH_16:
     case CG_PIXEL_FORMAT_DEPTH_32:
@@ -364,7 +364,7 @@ G_PASTE(_cg_unpack_,
 #define PACK_10(b) PACK_SIZE(b, 1023)
 
 inline static void
-G_PASTE(_cg_pack_a_8_,
+C_PASTE(_cg_pack_a_8_,
         component_size) (const component_type *src, uint8_t *dst, int width)
 {
     while (width-- > 0) {
@@ -375,7 +375,7 @@ G_PASTE(_cg_pack_a_8_,
 }
 
 inline static void
-G_PASTE(_cg_pack_rg_88_,
+C_PASTE(_cg_pack_rg_88_,
         component_size) (const component_type *src, uint8_t *dst, int width)
 {
     while (width-- > 0) {
@@ -387,7 +387,7 @@ G_PASTE(_cg_pack_rg_88_,
 }
 
 inline static void
-G_PASTE(_cg_pack_rgb_888_,
+C_PASTE(_cg_pack_rgb_888_,
         component_size) (const component_type *src, uint8_t *dst, int width)
 {
     while (width-- > 0) {
@@ -400,7 +400,7 @@ G_PASTE(_cg_pack_rgb_888_,
 }
 
 inline static void
-G_PASTE(_cg_pack_bgr_888_,
+C_PASTE(_cg_pack_bgr_888_,
         component_size) (const component_type *src, uint8_t *dst, int width)
 {
     while (width-- > 0) {
@@ -413,7 +413,7 @@ G_PASTE(_cg_pack_bgr_888_,
 }
 
 inline static void
-G_PASTE(_cg_pack_bgra_8888_,
+C_PASTE(_cg_pack_bgra_8888_,
         component_size) (const component_type *src, uint8_t *dst, int width)
 {
     while (width-- > 0) {
@@ -427,7 +427,7 @@ G_PASTE(_cg_pack_bgra_8888_,
 }
 
 inline static void
-G_PASTE(_cg_pack_argb_8888_,
+C_PASTE(_cg_pack_argb_8888_,
         component_size) (const component_type *src, uint8_t *dst, int width)
 {
     while (width-- > 0) {
@@ -441,7 +441,7 @@ G_PASTE(_cg_pack_argb_8888_,
 }
 
 inline static void
-G_PASTE(_cg_pack_abgr_8888_,
+C_PASTE(_cg_pack_abgr_8888_,
         component_size) (const component_type *src, uint8_t *dst, int width)
 {
     while (width-- > 0) {
@@ -455,7 +455,7 @@ G_PASTE(_cg_pack_abgr_8888_,
 }
 
 inline static void
-G_PASTE(_cg_pack_rgba_8888_,
+C_PASTE(_cg_pack_rgba_8888_,
         component_size) (const component_type *src, uint8_t *dst, int width)
 {
     while (width-- > 0) {
@@ -469,7 +469,7 @@ G_PASTE(_cg_pack_rgba_8888_,
 }
 
 inline static void
-G_PASTE(_cg_pack_rgb_565_,
+C_PASTE(_cg_pack_rgb_565_,
         component_size) (const component_type *src, uint8_t *dst, int width)
 {
     while (width-- > 0) {
@@ -482,7 +482,7 @@ G_PASTE(_cg_pack_rgb_565_,
 }
 
 inline static void
-G_PASTE(_cg_pack_rgba_4444_,
+C_PASTE(_cg_pack_rgba_4444_,
         component_size) (const component_type *src, uint8_t *dst, int width)
 {
     while (width-- > 0) {
@@ -496,7 +496,7 @@ G_PASTE(_cg_pack_rgba_4444_,
 }
 
 inline static void
-G_PASTE(_cg_pack_rgba_5551_,
+C_PASTE(_cg_pack_rgba_5551_,
         component_size) (const component_type *src, uint8_t *dst, int width)
 {
     while (width-- > 0) {
@@ -510,7 +510,7 @@ G_PASTE(_cg_pack_rgba_5551_,
 }
 
 inline static void
-G_PASTE(_cg_pack_rgba_1010102_,
+C_PASTE(_cg_pack_rgba_1010102_,
         component_size) (const component_type *src, uint8_t *dst, int width)
 {
     while (width-- > 0) {
@@ -524,7 +524,7 @@ G_PASTE(_cg_pack_rgba_1010102_,
 }
 
 inline static void
-G_PASTE(_cg_pack_bgra_1010102_,
+C_PASTE(_cg_pack_bgra_1010102_,
         component_size) (const component_type *src, uint8_t *dst, int width)
 {
     while (width-- > 0) {
@@ -538,7 +538,7 @@ G_PASTE(_cg_pack_bgra_1010102_,
 }
 
 inline static void
-G_PASTE(_cg_pack_argb_2101010_,
+C_PASTE(_cg_pack_argb_2101010_,
         component_size) (const component_type *src, uint8_t *dst, int width)
 {
     while (width-- > 0) {
@@ -552,7 +552,7 @@ G_PASTE(_cg_pack_argb_2101010_,
 }
 
 inline static void
-G_PASTE(_cg_pack_abgr_2101010_,
+C_PASTE(_cg_pack_abgr_2101010_,
         component_size) (const component_type *src, uint8_t *dst, int width)
 {
     while (width-- > 0) {
@@ -574,66 +574,66 @@ G_PASTE(_cg_pack_abgr_2101010_,
 #undef PACK_10
 
 inline static void
-G_PASTE(_cg_pack_, component_size) (cg_pixel_format_t format,
+C_PASTE(_cg_pack_, component_size) (cg_pixel_format_t format,
                                     const component_type *src,
                                     uint8_t *dst,
                                     int width)
 {
     switch (format) {
     case CG_PIXEL_FORMAT_A_8:
-        G_PASTE(_cg_pack_a_8_, component_size) (src, dst, width);
+        C_PASTE(_cg_pack_a_8_, component_size) (src, dst, width);
         break;
     case CG_PIXEL_FORMAT_RG_88:
-        G_PASTE(_cg_pack_rg_88_, component_size) (src, dst, width);
+        C_PASTE(_cg_pack_rg_88_, component_size) (src, dst, width);
         break;
     case CG_PIXEL_FORMAT_RGB_888:
-        G_PASTE(_cg_pack_rgb_888_, component_size) (src, dst, width);
+        C_PASTE(_cg_pack_rgb_888_, component_size) (src, dst, width);
         break;
     case CG_PIXEL_FORMAT_BGR_888:
-        G_PASTE(_cg_pack_bgr_888_, component_size) (src, dst, width);
+        C_PASTE(_cg_pack_bgr_888_, component_size) (src, dst, width);
         break;
     case CG_PIXEL_FORMAT_RGBA_8888:
     case CG_PIXEL_FORMAT_RGBA_8888_PRE:
-        G_PASTE(_cg_pack_rgba_8888_, component_size) (src, dst, width);
+        C_PASTE(_cg_pack_rgba_8888_, component_size) (src, dst, width);
         break;
     case CG_PIXEL_FORMAT_BGRA_8888:
     case CG_PIXEL_FORMAT_BGRA_8888_PRE:
-        G_PASTE(_cg_pack_bgra_8888_, component_size) (src, dst, width);
+        C_PASTE(_cg_pack_bgra_8888_, component_size) (src, dst, width);
         break;
     case CG_PIXEL_FORMAT_ARGB_8888:
     case CG_PIXEL_FORMAT_ARGB_8888_PRE:
-        G_PASTE(_cg_pack_argb_8888_, component_size) (src, dst, width);
+        C_PASTE(_cg_pack_argb_8888_, component_size) (src, dst, width);
         break;
     case CG_PIXEL_FORMAT_ABGR_8888:
     case CG_PIXEL_FORMAT_ABGR_8888_PRE:
-        G_PASTE(_cg_pack_abgr_8888_, component_size) (src, dst, width);
+        C_PASTE(_cg_pack_abgr_8888_, component_size) (src, dst, width);
         break;
     case CG_PIXEL_FORMAT_RGB_565:
-        G_PASTE(_cg_pack_rgb_565_, component_size) (src, dst, width);
+        C_PASTE(_cg_pack_rgb_565_, component_size) (src, dst, width);
         break;
     case CG_PIXEL_FORMAT_RGBA_4444:
     case CG_PIXEL_FORMAT_RGBA_4444_PRE:
-        G_PASTE(_cg_pack_rgba_4444_, component_size) (src, dst, width);
+        C_PASTE(_cg_pack_rgba_4444_, component_size) (src, dst, width);
         break;
     case CG_PIXEL_FORMAT_RGBA_5551:
     case CG_PIXEL_FORMAT_RGBA_5551_PRE:
-        G_PASTE(_cg_pack_rgba_5551_, component_size) (src, dst, width);
+        C_PASTE(_cg_pack_rgba_5551_, component_size) (src, dst, width);
         break;
     case CG_PIXEL_FORMAT_RGBA_1010102:
     case CG_PIXEL_FORMAT_RGBA_1010102_PRE:
-        G_PASTE(_cg_pack_rgba_1010102_, component_size) (src, dst, width);
+        C_PASTE(_cg_pack_rgba_1010102_, component_size) (src, dst, width);
         break;
     case CG_PIXEL_FORMAT_BGRA_1010102:
     case CG_PIXEL_FORMAT_BGRA_1010102_PRE:
-        G_PASTE(_cg_pack_bgra_1010102_, component_size) (src, dst, width);
+        C_PASTE(_cg_pack_bgra_1010102_, component_size) (src, dst, width);
         break;
     case CG_PIXEL_FORMAT_ARGB_2101010:
     case CG_PIXEL_FORMAT_ARGB_2101010_PRE:
-        G_PASTE(_cg_pack_argb_2101010_, component_size) (src, dst, width);
+        C_PASTE(_cg_pack_argb_2101010_, component_size) (src, dst, width);
         break;
     case CG_PIXEL_FORMAT_ABGR_2101010:
     case CG_PIXEL_FORMAT_ABGR_2101010_PRE:
-        G_PASTE(_cg_pack_abgr_2101010_, component_size) (src, dst, width);
+        C_PASTE(_cg_pack_abgr_2101010_, component_size) (src, dst, width);
         break;
     case CG_PIXEL_FORMAT_DEPTH_16:
     case CG_PIXEL_FORMAT_DEPTH_32:

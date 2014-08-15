@@ -114,7 +114,7 @@ enum cg_matrix_type_t {
     CG_MATRIX_N_TYPES
 };
 
-#define DEG2RAD (G_PI / 180.0)
+#define DEG2RAD (C_PI / 180.0)
 
 /* Dot product of two 2-element vectors */
 #define DOT2(A, B) ((A)[0] * (B)[0] + (A)[1] * (B)[1])
@@ -1419,7 +1419,7 @@ void
 cg_matrix_perspective(
     cg_matrix_t *matrix, float fov_y, float aspect, float z_near, float z_far)
 {
-    float ymax = z_near * tan(fov_y * G_PI / 360.0);
+    float ymax = z_near * tan(fov_y * C_PI / 360.0);
 
     cg_matrix_frustum(matrix,
                       -ymax * aspect, /* left */
@@ -1711,9 +1711,9 @@ void
 cg_matrix_init_from_euler(cg_matrix_t *matrix, const cg_euler_t *euler)
 {
     /* Convert angles to radians */
-    float heading_rad = euler->heading / 180.0f * G_PI;
-    float pitch_rad = euler->pitch / 180.0f * G_PI;
-    float roll_rad = euler->roll / 180.0f * G_PI;
+    float heading_rad = euler->heading / 180.0f * C_PI;
+    float pitch_rad = euler->pitch / 180.0f * C_PI;
+    float roll_rad = euler->roll / 180.0f * C_PI;
     /* Pre-calculate the sin and cos */
     float sin_heading = sinf(heading_rad);
     float cos_heading = cosf(heading_rad);
@@ -1852,7 +1852,7 @@ cg_matrix_view_2d_in_perspective(cg_matrix_t *matrix,
                                  float width_2d,
                                  float height_2d)
 {
-    float top = z_near * tan(fov_y * G_PI / 360.0);
+    float top = z_near * tan(fov_y * C_PI / 360.0);
     cg_matrix_view_2d_in_frustum(matrix,
                                  -top * aspect,
                                  top * aspect,

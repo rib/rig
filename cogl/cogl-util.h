@@ -221,7 +221,7 @@ _cg_util_pixel_format_from_masks(unsigned long r_mask,
 #define _CG_TYPEDEF_ASSERT(EXPRESSION)                                         \
     typedef struct {                                                           \
         char Compile_Time_Assertion[(EXPRESSION) ? 1 : -1];                    \
-    } G_PASTE (_GStaticAssert_, __LINE__)
+    } C_PASTE (_GStaticAssert_, __LINE__)
 
 /* _CG_STATIC_ASSERT:
  * @expression: An expression to assert evaluates to true at compile

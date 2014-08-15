@@ -90,7 +90,7 @@ struct _cg_object_t {
 
 #define _CG_OBJECT_DEBUG_NEW(type_name, obj)                                   \
     CG_NOTE(OBJECT,                                                            \
-            "COGL cg_" G_STRINGIFY(type_name) "_t NEW   %p %i",                \
+            "COGL cg_" C_STRINGIFY(type_name) "_t NEW   %p %i",                \
             (obj),                                                             \
             (obj)->ref_count)
 

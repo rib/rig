@@ -269,7 +269,7 @@ cg_bitmap_new_from_buffer(cg_buffer_t *buffer,
                                  rowstride, NULL /* data */);
 
     bmp->buffer = cg_object_ref(buffer);
-    bmp->data = GINT_TO_POINTER(offset);
+    bmp->data = C_INT_TO_POINTER(offset);
 
     return bmp;
 }
@@ -394,7 +394,7 @@ _cg_bitmap_map(cg_bitmap_t *bitmap,
         if (data) {
             bitmap->mapped = true;
 
-            return data + GPOINTER_TO_INT(bitmap->data);
+            return data + C_POINTER_TO_INT(bitmap->data);
         } else
             return NULL;
     } else {
@@ -471,7 +471,7 @@ _cg_bitmap_gl_bind(cg_bitmap_t *bitmap,
     bitmap->bound = true;
 
     /* The data pointer actually stores the offset */
-    return ptr + GPOINTER_TO_INT(bitmap->data);
+    return ptr + C_POINTER_TO_INT(bitmap->data);
 }
 
 void

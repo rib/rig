@@ -2721,13 +2721,13 @@ cg_pipeline_get_uniform_location(cg_pipeline_t *pipeline,
     /* Look for an existing uniform with this name */
     if (c_hash_table_lookup_extended(
             dev->uniform_name_hash, uniform_name, NULL, &location_ptr))
-        return GPOINTER_TO_INT(location_ptr);
+        return C_POINTER_TO_INT(location_ptr);
 
     uniform_name_copy = c_strdup(uniform_name);
     c_ptr_array_add(dev->uniform_names, uniform_name_copy);
     c_hash_table_insert(dev->uniform_name_hash,
                         uniform_name_copy,
-                        GINT_TO_POINTER(dev->n_uniform_names));
+                        C_INT_TO_POINTER(dev->n_uniform_names));
 
     return dev->n_uniform_names++;
 }

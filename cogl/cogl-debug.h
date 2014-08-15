@@ -95,7 +95,7 @@ CG_EXPORT extern unsigned long _cg_debug_flags[CG_DEBUG_N_LONGS];
     C_STMT_START                                                               \
     {                                                                          \
         if (C_UNLIKELY(CG_DEBUG_ENABLED(CG_DEBUG_##type))) {                   \
-            _cg_profile_trace_message("[" #type "] " G_STRLOC " & " x, ##a);   \
+            _cg_profile_trace_message("[" #type "] " C_STRLOC " & " x, ##a);   \
         }                                                                      \
     }                                                                          \
     C_STMT_END
@@ -106,7 +106,7 @@ CG_EXPORT extern unsigned long _cg_debug_flags[CG_DEBUG_N_LONGS];
     {                                                                          \
         if (C_UNLIKELY(CG_DEBUG_ENABLED(CG_DEBUG_##type))) {                   \
             char *_fmt = c_strdup_printf(__VA_ARGS__);                         \
-            _cg_profile_trace_message("[" #type "] " G_STRLOC " & %s", _fmt);  \
+            _cg_profile_trace_message("[" #type "] " C_STRLOC " & %s", _fmt);  \
             c_free(_fmt);                                                      \
         }                                                                      \
     }                                                                          \

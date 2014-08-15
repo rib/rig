@@ -40,7 +40,7 @@ CG_BEGIN_DECLS
 
 #define _CG_MATRIX_DEBUG_PRINT(MATRIX)                                         \
     if (C_UNLIKELY(CG_DEBUG_ENABLED(CG_DEBUG_MATRICES))) {                     \
-        c_print("%s:\n", G_STRFUNC);                                           \
+        c_print("%s:\n", C_STRFUNC);                                           \
         cg_debug_matrix_print(MATRIX);                                         \
     }
 

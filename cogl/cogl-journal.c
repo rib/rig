@@ -756,10 +756,10 @@ can_software_clip_entry(cg_journal_entry_t *journal_entry,
     cg_pipeline_t *pipeline = journal_entry->pipeline;
     cg_clip_stack_t *clip_entry;
 
-    clip_bounds_out->x_1 = -G_MAXFLOAT;
-    clip_bounds_out->y_1 = -G_MAXFLOAT;
-    clip_bounds_out->x_2 = G_MAXFLOAT;
-    clip_bounds_out->y_2 = G_MAXFLOAT;
+    clip_bounds_out->x_1 = -FLT_MAX;
+    clip_bounds_out->y_1 = -FLT_MAX;
+    clip_bounds_out->x_2 = FLT_MAX;
+    clip_bounds_out->y_2 = FLT_MAX;
 
     /* Check the pipeline is usable. We can short-cut here for
        entries using the same pipeline as the previous entry */

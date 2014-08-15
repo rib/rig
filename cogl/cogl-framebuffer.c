@@ -1466,7 +1466,7 @@ cg_framebuffer_perspective(cg_framebuffer_t *framebuffer,
                            float z_near,
                            float z_far)
 {
-    float ymax = z_near * tanf(fov_y * G_PI / 360.0);
+    float ymax = z_near * tanf(fov_y * C_PI / 360.0);
 
     cg_framebuffer_frustum(framebuffer,
                            -ymax * aspect, /* left */
