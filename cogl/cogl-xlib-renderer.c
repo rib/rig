@@ -29,9 +29,7 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "cogl-xlib-renderer.h"
 #include "cogl-util.h"
@@ -330,7 +328,8 @@ next:
     XFree(resources);
 
     if (!error) {
-        new_outputs = c_list_sort(new_outputs, (GCompareFunc)compare_outputs);
+        new_outputs = c_list_sort(new_outputs,
+                                  (c_compare_func_t)compare_outputs);
 
         l = new_outputs;
         m = renderer->outputs;

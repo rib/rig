@@ -528,7 +528,7 @@ try_creating_renderbuffers(cg_device_t *dev,
                                      gl_depth_stencil_handle));
 #endif
         renderbuffers = c_list_prepend(
-            renderbuffers, GUINT_TO_POINTER(gl_depth_stencil_handle));
+            renderbuffers, C_UINT_TO_POINTER(gl_depth_stencil_handle));
     }
 
     if (flags & CG_OFFSCREEN_ALLOCATE_FLAG_DEPTH) {
@@ -556,7 +556,7 @@ try_creating_renderbuffers(cg_device_t *dev,
                                      GL_RENDERBUFFER,
                                      gl_depth_handle));
         renderbuffers =
-            c_list_prepend(renderbuffers, GUINT_TO_POINTER(gl_depth_handle));
+            c_list_prepend(renderbuffers, C_UINT_TO_POINTER(gl_depth_handle));
     }
 
     if (flags & CG_OFFSCREEN_ALLOCATE_FLAG_STENCIL) {
@@ -582,7 +582,7 @@ try_creating_renderbuffers(cg_device_t *dev,
                                      GL_RENDERBUFFER,
                                      gl_stencil_handle));
         renderbuffers =
-            c_list_prepend(renderbuffers, GUINT_TO_POINTER(gl_stencil_handle));
+            c_list_prepend(renderbuffers, C_UINT_TO_POINTER(gl_stencil_handle));
     }
 
     return renderbuffers;
@@ -594,7 +594,7 @@ delete_renderbuffers(cg_device_t *dev, c_list_t *renderbuffers)
     c_list_t *l;
 
     for (l = renderbuffers; l; l = l->next) {
-        GLuint renderbuffer = GPOINTER_TO_UINT(l->data);
+        GLuint renderbuffer = C_POINTER_TO_UINT(l->data);
         GE(dev, glDeleteRenderbuffers(1, &renderbuffer));
     }
 

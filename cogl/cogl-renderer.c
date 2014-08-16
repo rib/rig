@@ -223,8 +223,8 @@ _cg_renderer_free(cg_renderer_t *renderer)
         c_module_close(renderer->libgl_module);
 #endif
 
-    c_slist_foreach(
-        renderer->event_filters, (GFunc)native_filter_closure_free, NULL);
+    c_slist_foreach(renderer->event_filters,
+                    (c_iter_func_t)native_filter_closure_free, NULL);
     c_slist_free(renderer->event_filters);
 
     c_array_free(renderer->poll_fds, true);
@@ -423,7 +423,7 @@ satisfy_constraints(cg_driver_description_t *description,
     c_list_t *l;
 
     for (l = state->constraints; l; l = l->next) {
-        cg_renderer_constraint_t constraint = GPOINTER_TO_UINT(l->data);
+        cg_renderer_constraint_t constraint = C_POINTER_TO_UINT(l->data);
 
         /* Most of the constraints only affect the winsys selection so
          * we'll filter them out */
@@ -581,7 +581,7 @@ cg_renderer_connect(cg_renderer_t *renderer, cg_error_t **error)
         }
 
         for (l = renderer->constraints; l; l = l->next) {
-            cg_renderer_constraint_t constraint = GPOINTER_TO_UINT(l->data);
+            cg_renderer_constraint_t constraint = C_POINTER_TO_UINT(l->data);
             if (!(winsys->constraints & constraint)) {
                 skip_due_to_constraints = true;
                 break;
@@ -739,7 +739,7 @@ cg_renderer_add_constraint(cg_renderer_t *renderer,
 {
     c_return_if_fail(!renderer->connected);
     renderer->constraints =
-        c_list_prepend(renderer->constraints, GUINT_TO_POINTER(constraint));
+        c_list_prepend(renderer->constraints, C_UINT_TO_POINTER(constraint));
 }
 
 void
@@ -748,7 +748,7 @@ cg_renderer_remove_constraint(cg_renderer_t *renderer,
 {
     c_return_if_fail(!renderer->connected);
     renderer->constraints =
-        c_list_remove(renderer->constraints, GUINT_TO_POINTER(constraint));
+        c_list_remove(renderer->constraints, C_UINT_TO_POINTER(constraint));
 }
 
 void

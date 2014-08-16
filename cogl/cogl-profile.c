@@ -15,14 +15,14 @@ UProfContext *_cg_uprof_context;
 static bool
 debug_option_getter(void *user_data)
 {
-    unsigned int shift = GPOINTER_TO_UINT(user_data);
+    unsigned int shift = C_POINTER_TO_UINT(user_data);
     return CG_DEBUG_ENABLED(shift);
 }
 
 static void
 debug_option_setter(bool value, void *user_data)
 {
-    unsigned int shift = GPOINTER_TO_UINT(user_data);
+    unsigned int shift = C_POINTER_TO_UINT(user_data);
 
     if (value)
         CG_DEBUG_SET_FLAG(shift);
@@ -101,7 +101,7 @@ _cg_uprof_init(void)
                                          _(DESCRIPTION),                       \
                                          debug_option_getter,                  \
                                          debug_option_setter,                  \
-                                         GUINT_TO_POINTER(shift));             \
+                                         C_UINT_TO_POINTER(shift));             \
     }                                                                          \
     C_STMT_END;
 

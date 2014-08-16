@@ -208,7 +208,7 @@ ensure_ust_type(cg_renderer_t *renderer, GLXDrawable drawable)
     /* This is the time source that existing (buggy) linux drm drivers
      * use */
     gettimeofday(&tv, NULL);
-    current_system_time = (tv.tv_sec * G_GINT64_CONSTANT(1000000)) + tv.tv_usec;
+    current_system_time = (tv.tv_sec * C_INT64_CONSTANT(1000000)) + tv.tv_usec;
 
     if (current_system_time > ust - 1000000 &&
         current_system_time < ust + 1000000) {
@@ -219,8 +219,8 @@ ensure_ust_type(cg_renderer_t *renderer, GLXDrawable drawable)
     /* This is the time source that the newer (fixed) linux drm
      * drivers use (Linux >= 3.8) */
     clock_gettime(CLOCK_MONOTONIC, &ts);
-    current_monotonic_time = (ts.tv_sec * G_GINT64_CONSTANT(1000000)) +
-                             (ts.tv_nsec / G_GINT64_CONSTANT(1000));
+    current_monotonic_time = (ts.tv_sec * C_INT64_CONSTANT(1000000)) +
+                             (ts.tv_nsec / C_INT64_CONSTANT(1000));
 
     if (current_monotonic_time > ust - 1000000 &&
         current_monotonic_time < ust + 1000000) {
@@ -288,14 +288,14 @@ _cg_winsys_get_clock_time(cg_device_t *dev)
         struct timeval tv;
 
         gettimeofday(&tv, NULL);
-        return tv.tv_sec * G_GINT64_CONSTANT(1000000000) +
-               tv.tv_usec * G_GINT64_CONSTANT(1000);
+        return tv.tv_sec * C_INT64_CONSTANT(1000000000) +
+               tv.tv_usec * C_INT64_CONSTANT(1000);
     }
     case CG_GLX_UST_IS_MONOTONIC_TIME: {
         struct timespec ts;
 
         clock_gettime(CLOCK_MONOTONIC, &ts);
-        return ts.tv_sec * G_GINT64_CONSTANT(1000000000) + ts.tv_nsec;
+        return ts.tv_sec * C_INT64_CONSTANT(1000000000) + ts.tv_nsec;
     }
     }
 
@@ -1550,7 +1550,7 @@ _cg_winsys_wait_for_vblank(cg_onscreen_t *onscreen)
 
             clock_gettime(CLOCK_MONOTONIC, &ts);
             info->presentation_time =
-                ts.tv_sec * G_GINT64_CONSTANT(1000000000) + ts.tv_nsec;
+                ts.tv_sec * C_INT64_CONSTANT(1000000000) + ts.tv_nsec;
         }
     }
 }
@@ -2023,8 +2023,8 @@ get_fbconfig_for_depth(cg_device_t *dev,
     fbconfigs =
         glx_renderer->glXGetFBConfigs(dpy, DefaultScreen(dpy), &n_elements);
 
-    db = G_MAXSHORT;
-    stencil = G_MAXSHORT;
+    db = INT_MAX;
+    stencil = INT_MAX;
     mipmap = 0;
     rgba = 0;
 

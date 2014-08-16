@@ -31,8 +31,6 @@
 #ifndef _CG_ATLAS_SET_PRIVATE_H_
 #define _CG_ATLAS_SET_PRIVATE_H_
 
-#include <glib.h>
-
 #include "cogl-atlas.h"
 #include "cogl-atlas-set.h"
 #include "cogl-list.h"

@@ -31,7 +31,7 @@
 #ifndef _CG_I18N_PRIVATE_H_
 #define _CG_I18N_PRIVATE_H_
 
-#ifdef ENABLE_NLS
+#if defined(ENABLE_NLS) && defined(USE_GLIB)
 #include <glib/gi18n-lib.h>
 #else
 #define _(X) X

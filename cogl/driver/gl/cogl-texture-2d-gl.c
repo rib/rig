@@ -96,8 +96,8 @@ _cg_texture_2d_gl_init(cg_texture_2d_t *tex_2d)
     tex_2d->gl_legacy_texobj_mag_filter = GL_LINEAR;
 
     /* Wrap mode not yet set */
-    tex_2d->gl_legacy_texobj_wrap_mode_s = FALSE;
-    tex_2d->gl_legacy_texobj_wrap_mode_t = FALSE;
+    tex_2d->gl_legacy_texobj_wrap_mode_s = false;
+    tex_2d->gl_legacy_texobj_wrap_mode_t = false;
 }
 
 static bool
@@ -311,7 +311,7 @@ allocate_from_gl_foreign(cg_texture_2d_t *tex_2d,
     cg_device_t *dev = tex->dev;
     cg_pixel_format_t format = loader->src.gl_foreign.format;
     GLenum gl_error = 0;
-    GLint gl_compressed = FALSE;
+    GLint gl_compressed = false;
     GLenum gl_int_format = 0;
 
     /* Make sure binding succeeds */
@@ -396,8 +396,8 @@ allocate_from_gl_foreign(cg_texture_2d_t *tex_2d,
     tex_2d->gl_internal_format = gl_int_format;
 
     /* Unknown filter */
-    tex_2d->gl_legacy_texobj_min_filter = FALSE;
-    tex_2d->gl_legacy_texobj_mag_filter = FALSE;
+    tex_2d->gl_legacy_texobj_min_filter = false;
+    tex_2d->gl_legacy_texobj_mag_filter = false;
 
     tex_2d->internal_format = format;
 
@@ -586,7 +586,7 @@ _cg_texture_2d_gl_generate_mipmap(cg_texture_2d_t *tex_2d)
                            tex_2d->first_pixel.gl_format,
                            tex_2d->first_pixel.gl_type,
                            tex_2d->first_pixel.data));
-        GE(dev, glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, FALSE));
+        GE(dev, glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, false));
     }
 #endif
 }

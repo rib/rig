@@ -208,13 +208,13 @@ set_texture_object_data(cg_gles2_context_t *gles2_ctx,
     /* We want to keep track of all texture objects where the data is
      * created by this context so that we can delete them later */
     texture_object = c_hash_table_lookup(gles2_ctx->texture_object_map,
-                                         GUINT_TO_POINTER(texture_id));
+                                         C_UINT_TO_POINTER(texture_id));
     if (texture_object == NULL) {
         texture_object = c_slice_new0(cg_gles2_texture_object_data_t);
         texture_object->object_id = texture_id;
 
         c_hash_table_insert(gles2_ctx->texture_object_map,
-                            GUINT_TO_POINTER(texture_id),
+                            C_UINT_TO_POINTER(texture_id),
                             texture_object);
     }
 
@@ -260,7 +260,7 @@ copy_flipped_texture(cg_gles2_context_t *gles2_ctx,
     cg_pixel_format_t internal_format;
 
     tex_object_data = c_hash_table_lookup(gles2_ctx->texture_object_map,
-                                          GUINT_TO_POINTER(tex_id));
+                                          C_UINT_TO_POINTER(tex_id));
 
     /* We can't do anything if the application hasn't set a level 0
      * image on this texture object */
@@ -1266,7 +1266,7 @@ gl_delete_textures_wrapper(GLsizei n, const GLuint *textures)
          * shader objects the deletion isn't delayed until the object is
          * unbound */
         c_hash_table_remove(gles2_ctx->texture_object_map,
-                            GUINT_TO_POINTER(textures[texture_index]));
+                            C_UINT_TO_POINTER(textures[texture_index]));
     }
 }
 

@@ -167,7 +167,7 @@ _cg_init(void)
     static bool initialized = false;
 
     if (initialized == false) {
-#ifdef ENABLE_NLS
+#if defined(ENABLE_NLS) && defined(USE_GLIB)
         bindtextdomain(GETTEXT_PACKAGE, CG_LOCALEDIR);
         bind_textdomain_codeset(GETTEXT_PACKAGE, "UTF-8");
 #endif

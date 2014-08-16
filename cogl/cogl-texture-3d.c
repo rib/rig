@@ -141,9 +141,9 @@ _cg_texture_3d_create_base(cg_device_t *dev,
     tex_3d->gl_legacy_texobj_mag_filter = GL_LINEAR;
 
     /* Wrap mode not yet set */
-    tex_3d->gl_legacy_texobj_wrap_mode_s = FALSE;
-    tex_3d->gl_legacy_texobj_wrap_mode_t = FALSE;
-    tex_3d->gl_legacy_texobj_wrap_mode_p = FALSE;
+    tex_3d->gl_legacy_texobj_wrap_mode_s = false;
+    tex_3d->gl_legacy_texobj_wrap_mode_t = false;
+    tex_3d->gl_legacy_texobj_wrap_mode_p = false;
 
     return _cg_texture_3d_object_new(tex_3d);
 }
