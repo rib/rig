@@ -62,7 +62,7 @@ typedef enum e_ply_type {
  *
  * message: error message
  * ---------------------------------------------------------------------- */
-typedef void (*p_ply_error_cb)(const char *message, gpointer data);
+typedef void (*p_ply_error_cb)(const char *message, void *data);
 
 /* ----------------------------------------------------------------------
  * Opens a ply file for reading (fails if file is not a ply file)
@@ -72,7 +72,7 @@ typedef void (*p_ply_error_cb)(const char *message, gpointer data);
  *
  * Returns 1 if successful, 0 otherwise
  * ---------------------------------------------------------------------- */
-p_ply ply_open(const char *name, p_ply_error_cb error_cb, gpointer cb_data);
+p_ply ply_open(const char *name, p_ply_error_cb error_cb, void *cb_data);
 
 /* ----------------------------------------------------------------------
  * Prepare a ply buffer for reading (fails if buffer is not in ply format)
@@ -87,7 +87,7 @@ p_ply ply_open(const char *name, p_ply_error_cb error_cb, gpointer cb_data);
 p_ply ply_start(const void *buf,
                 size_t size,
                 p_ply_error_cb error_cb,
-                gpointer cb_data);
+                void *cb_data);
 
 /* ----------------------------------------------------------------------
  * Reads and parses the header of a ply file returned by ply_open
@@ -138,7 +138,7 @@ long ply_set_read_cb(p_ply ply,
  * ---------------------------------------------------------------------- */
 int ply_get_argument_element(p_ply_argument argument,
                              p_ply_element *element,
-                             gint32 *instance_index);
+                             int32_t *instance_index);
 
 /* ----------------------------------------------------------------------
  * Returns information about the property originating a callback
@@ -152,8 +152,8 @@ int ply_get_argument_element(p_ply_argument argument,
  * ---------------------------------------------------------------------- */
 int ply_get_argument_property(p_ply_argument argument,
                               p_ply_property *property,
-                              gint32 *length,
-                              gint32 *value_index);
+                              int32_t *length,
+                              int32_t *value_index);
 
 /* ----------------------------------------------------------------------
  * Returns user data associated with callback
@@ -229,7 +229,7 @@ const char *ply_get_next_obj_info(p_ply ply, const char *last);
  * ---------------------------------------------------------------------- */
 int ply_get_element_info(p_ply_element element,
                          const char **name,
-                         gint32 *ninstances);
+                         int32_t *ninstances);
 
 /* ----------------------------------------------------------------------
  * Iterates over all properties by returning the next property.
@@ -273,7 +273,7 @@ int ply_get_property_info(p_ply_property property,
 p_ply ply_create(const char *name,
                  e_ply_storage_mode storage_mode,
                  p_ply_error_cb error_cb,
-                 gpointer cb_data);
+                 void *cb_data);
 
 /* ----------------------------------------------------------------------
  * Adds a new element to the ply file created by ply_create
@@ -284,7 +284,7 @@ p_ply ply_create(const char *name,
  *
  * Returns 1 if successfull, 0 otherwise
  * ---------------------------------------------------------------------- */
-int ply_add_element(p_ply ply, const char *name, gint32 ninstances);
+int ply_add_element(p_ply ply, const char *name, int32_t ninstances);
 
 /* ----------------------------------------------------------------------
  * Adds a new property to the last element added by ply_add_element
