@@ -33,7 +33,9 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
+#ifdef USE_PANGO
 #include <cogl-pango/cogl-pango.h>
+#endif
 
 #include "rut-object.h"
 #include "rut-shell.h"
@@ -98,9 +100,11 @@ struct _rut_context_t {
 
     GHashTable *colors_hash;
 
+#ifdef USE_PANGO
     CgPangoFontMap *pango_font_map;
     PangoContext *pango_context;
     PangoFontDescription *pango_font_desc;
+#endif
 
     rut_property_context_t property_ctx;
 

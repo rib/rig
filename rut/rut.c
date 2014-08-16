@@ -37,7 +37,9 @@
 
 #include <cogl/cogl.h>
 #include <cogl/cogl-sdl.h>
+#ifdef USE_PANGO
 #include <cogl-pango/cogl-pango.h>
+#endif
 
 #include "rut-bitmask.h"
 #include "rut-global.h"
@@ -167,9 +169,11 @@ _rut_context_free(void *object)
 
     rut_property_context_destroy(&ctx->property_ctx);
 
+#ifdef USE_PANGO
     g_object_unref(ctx->pango_context);
     g_object_unref(ctx->pango_font_map);
     pango_font_description_free(ctx->pango_font_desc);
+#endif
 
     g_hash_table_destroy(ctx->texture_cache);
 
@@ -352,6 +356,7 @@ rut_context_new(rut_shell_t *shell)
 
         cg_matrix_init_identity(&context->identity_matrix);
 
+#ifdef USE_PANGO
         context->pango_font_map =
             CG_PANGO_FONT_MAP(cg_pango_font_map_new(context->cg_device));
 
@@ -364,6 +369,7 @@ rut_context_new(rut_shell_t *shell)
         pango_font_description_set_family(context->pango_font_desc, "Sans");
         pango_font_description_set_size(context->pango_font_desc,
                                         14 * PANGO_SCALE);
+#endif
 
         context->fc_config = FcInitLoadConfigAndFonts();
         if (FT_Init_FreeType(&context->ft_library)) {

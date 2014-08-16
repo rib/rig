@@ -341,6 +341,7 @@ AM_PATH_GLIB_2_0([glib_req_version],
 AS_IF([test x"$enable_editor" = xyes],
     RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES pangocairo glib-2.0 gio-2.0 gdk-pixbuf-2.0"
     AC_DEFINE([USE_GLIB], [1], [Use Glib])
+    AC_DEFINE([USE_PANGO], [1], [Use Pango])
 )
 AM_CONDITIONAL([USE_GLIB], ["x$enable_editor" = xyes])
 
@@ -419,7 +420,7 @@ dnl Check requirements for our GPU utility api
 dnl ================================================================
 enable_glib=$enable_editor
 enable_cogl_path=yes
-enable_cogl_pango=yes
+enable_cogl_pango=$enable_editor
 enable_sdl2=yes
 enable_uv=yes
 enable_gles2=yes
