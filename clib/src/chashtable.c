@@ -360,6 +360,12 @@ c_hash_table_lookup_extended(c_hash_table_t *hash,
     return false;
 }
 
+bool
+c_hash_table_contains(c_hash_table_t *hash, const void *key)
+{
+    return c_hash_table_lookup_extended(hash, key, NULL, NULL);
+}
+
 void
 c_hash_table_foreach(c_hash_table_t *hash,
                      c_hash_iter_func_t func,

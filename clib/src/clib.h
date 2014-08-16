@@ -610,6 +610,7 @@ bool c_hash_table_lookup_extended(c_hash_table_t *hash,
                                   const void *key,
                                   void **orig_key,
                                   void **value);
+bool c_hash_table_contains(c_hash_table_t *hash, const void *key);
 void c_hash_table_foreach(c_hash_table_t *hash,
                           c_hash_iter_func_t func,
                           void *user_data);
