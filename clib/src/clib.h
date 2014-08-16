@@ -88,6 +88,8 @@ typedef uint32_t c_codepoint_t;
 #define C_MAXUINT64 UINT64_MAX
 #define C_MAXFLOAT FLT_MAX
 
+#define C_ASCII_DTOSTR_BUF_SIZE 40
+
 #define C_UINT64_FORMAT PRIu64
 #define C_INT64_FORMAT PRId64
 #define C_UINT32_FORMAT PRIu32
