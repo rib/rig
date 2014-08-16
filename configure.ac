@@ -417,7 +417,7 @@ AM_CLIB
 dnl ================================================================
 dnl Check requirements for our GPU utility api
 dnl ================================================================
-enable_glib=yes
+enable_glib=$enable_editor
 enable_cogl_path=yes
 enable_cogl_pango=yes
 enable_sdl2=yes
