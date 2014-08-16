@@ -126,14 +126,18 @@ typedef uint32_t c_codepoint_t;
 #define C_GNUC_NORETURN __attribute__((__noreturn__))
 #define C_LIKELY(expr) (__builtin_expect((expr) != 0, 1))
 #define C_UNLIKELY(expr) (__builtin_expect((expr) != 0, 0))
-#define C_GNUC_PRINTF(format_idx, arg_idx)                                     \
+#define C_GNUC_PRINTF(format_idx, arg_idx) \
     __attribute__((__format__(__printf__, format_idx, arg_idx)))
+#define C_GNUC_NULL_TERMINATED __attribute__((__sentinel__))
+#define C_GNUC_DEPRECATED __attribute__((__deprecated__))
 #else
 #define C_GNUC_GNUSED
 #define C_GNUC_NORETURN
 #define C_LIKELY(expr) (expr)
 #define C_UNLIKELY(expr) (expr)
 #define C_GNUC_PRINTF(format_idx, arg_idx)
+#define C_GNUC_NULL_TERMINATED
+#define C_GNUC_DEPRECATED
 #endif
 
 #if defined(__GNUC__)
