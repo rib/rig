@@ -327,6 +327,8 @@ typedef uint32_t c_quark_t;
 
 c_quark_t c_quark_from_static_string(const char *string);
 c_quark_t c_quark_from_string(const char *string);
+const char *c_intern_static_string(const char *string);
+const char *c_intern_string(const char *string);
 
 /*
  * Errors

@@ -75,3 +75,49 @@ c_quark_from_string(const char *string)
     } else
         return C_POINTER_TO_UINT(quark_ptr);
 }
+
+const char *
+c_intern_static_string(const char *string)
+{
+    void *quark_key;
+    void *quark_ptr;
+    bool found;
+
+    ensure_quark_hash_table();
+
+    found = c_hash_table_lookup_extended(_quark_hash_table,
+                                         string,
+                                         &quark_key,
+                                         &quark_ptr);
+    if (!found) {
+        c_quark_t new_quark = _next_quark++;
+        quark_key = (void *)string;
+        c_hash_table_insert(_quark_hash_table, quark_key,
+                            C_UINT_TO_POINTER(new_quark));
+    }
+
+    return quark_key;
+}
+
+const char *
+c_intern_string(const char *string)
+{
+    void *quark_key;
+    void *quark_ptr;
+    bool found;
+
+    ensure_quark_hash_table();
+
+    found = c_hash_table_lookup_extended(_quark_hash_table,
+                                         string,
+                                         &quark_key,
+                                         &quark_ptr);
+    if (!found) {
+        c_quark_t new_quark = _next_quark++;
+        quark_key = c_strdup(string);
+        c_hash_table_insert(_quark_hash_table, quark_key,
+                            C_UINT_TO_POINTER(new_quark));
+    }
+
+    return quark_key;
+}
