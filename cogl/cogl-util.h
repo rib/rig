@@ -214,15 +214,6 @@ _cg_util_pixel_format_from_masks(unsigned long r_mask,
                                  int bpp,
                                  bool byte_order_is_lsb_first);
 
-/* Since we can't rely on _Static_assert always being available for
- * all compilers we have limited static assert that can be used in
- * C code but not in headers.
- */
-#define _CG_TYPEDEF_ASSERT(EXPRESSION)                                         \
-    typedef struct {                                                           \
-        char Compile_Time_Assertion[(EXPRESSION) ? 1 : -1];                    \
-    } C_PASTE (_GStaticAssert_, __LINE__)
-
 /* _CG_STATIC_ASSERT:
  * @expression: An expression to assert evaluates to true at compile
  *              time.
