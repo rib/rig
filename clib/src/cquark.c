@@ -33,21 +33,44 @@
 static c_hash_table_t *_quark_hash_table;
 static uint32_t _next_quark;
 
+static void
+ensure_quark_hash_table(void)
+{
+    if (C_UNLIKELY(_quark_hash_table == NULL)) {
+        _quark_hash_table = c_hash_table_new(c_str_hash, c_str_equal);
+        _next_quark++;
+    }
+}
+
 c_quark_t
 c_quark_from_static_string(const char *string)
 {
     void *quark_ptr;
 
-    if (C_UNLIKELY(_quark_hash_table == NULL)) {
-        _quark_hash_table = c_hash_table_new(c_str_hash, c_str_equal);
-        _next_quark++;
-    }
+    ensure_quark_hash_table();
 
     quark_ptr = c_hash_table_lookup(_quark_hash_table, string);
     if (!quark_ptr) {
         c_quark_t new_quark = _next_quark++;
-        c_hash_table_insert(
-            _quark_hash_table, (void *)string, C_UINT_TO_POINTER(new_quark));
+        c_hash_table_insert(_quark_hash_table, (void *)string,
+                            C_UINT_TO_POINTER(new_quark));
+        return new_quark;
+    } else
+        return C_POINTER_TO_UINT(quark_ptr);
+}
+
+c_quark_t
+c_quark_from_string(const char *string)
+{
+    void *quark_ptr;
+
+    ensure_quark_hash_table();
+
+    quark_ptr = c_hash_table_lookup(_quark_hash_table, string);
+    if (!quark_ptr) {
+        c_quark_t new_quark = _next_quark++;
+        c_hash_table_insert(_quark_hash_table, (void *)c_strdup(string),
+                            C_UINT_TO_POINTER(new_quark));
         return new_quark;
     } else
         return C_POINTER_TO_UINT(quark_ptr);
