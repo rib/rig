@@ -58,9 +58,6 @@ struct _cg_texture_driver_t {
      * This uploads a sub-region from source_bmp to a single GL texture
      * handle (i.e a single cg_texture_t slice)
      *
-     * It also updates the array of tex->first_pixels[slice_index] if
-     * dst_{x,y} == 0
-     *
      * The driver abstraction is in place because GLES doesn't support the pixel
      * store options required to source from a subregion, so for GLES we have
      * to manually create a transient source bitmap.

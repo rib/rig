@@ -584,6 +584,15 @@ _cg_driver_update_features(cg_device_t *dev, cg_error_t **error)
         return false;
     }
 
+    if (!CG_FLAGS_GET(dev->features, CG_FEATURE_ID_OFFSCREEN)) {
+        _cg_set_error(error,
+                      CG_DRIVER_ERROR,
+                      CG_DRIVER_ERROR_NO_SUITABLE_DRIVER_FOUND,
+                      "Cogl requires framebuffer object support "
+                      "to use the GL driver");
+        return false;
+    }
+
     return true;
 }
 

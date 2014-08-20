@@ -62,7 +62,6 @@ struct _cg_texture_2d_t {
     GLenum gl_legacy_texobj_mag_filter;
     GLint gl_legacy_texobj_wrap_mode_s;
     GLint gl_legacy_texobj_wrap_mode_t;
-    cg_texture_pixel_t first_pixel;
 };
 
 #if defined(CG_HAS_EGL_SUPPORT) && defined(EGL_KHR_image_base)

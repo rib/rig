@@ -211,32 +211,6 @@ allocate_from_bitmap(cg_texture_2d_t *tex_2d,
     dev->driver_vtable->pixel_format_to_gl(dev, internal_format,
                                            &gl_intformat, NULL, NULL);
 
-    /* Keep a copy of the first pixel so that if glGenerateMipmap isn't
-       supported we can fallback to using GL_GENERATE_MIPMAP */
-    if (!cg_has_feature(dev, CG_FEATURE_ID_OFFSCREEN)) {
-        cg_error_t *ignore = NULL;
-        uint8_t *data =
-            _cg_bitmap_map(upload_bmp, CG_BUFFER_ACCESS_READ, 0, &ignore);
-        cg_pixel_format_t format = cg_bitmap_get_format(upload_bmp);
-
-        tex_2d->first_pixel.gl_format = gl_format;
-        tex_2d->first_pixel.gl_type = gl_type;
-
-        if (data) {
-            memcpy(tex_2d->first_pixel.data,
-                   data,
-                   _cg_pixel_format_get_bytes_per_pixel(format));
-            _cg_bitmap_unmap(upload_bmp);
-        } else {
-            c_warning("Failed to read first pixel of bitmap for "
-                      "glGenerateMipmap fallback");
-            cg_error_free(ignore);
-            memset(tex_2d->first_pixel.data,
-                   0,
-                   _cg_pixel_format_get_bytes_per_pixel(format));
-        }
-    }
-
     tex_2d->gl_texture =
         dev->texture_driver->gen(dev, GL_TEXTURE_2D, internal_format);
     if (!dev->texture_driver->upload_to_gl(dev,
@@ -563,32 +537,7 @@ _cg_texture_2d_gl_get_gl_handle(cg_texture_2d_t *tex_2d)
 void
 _cg_texture_2d_gl_generate_mipmap(cg_texture_2d_t *tex_2d)
 {
-    cg_device_t *dev = CG_TEXTURE(tex_2d)->dev;
-
-    /* glGenerateMipmap is defined in the FBO extension. If it's not
-       available we'll fallback to temporarily enabling
-       GL_GENERATE_MIPMAP and reuploading the first pixel */
-    if (cg_has_feature(dev, CG_FEATURE_ID_OFFSCREEN))
-        _cg_texture_gl_generate_mipmaps(CG_TEXTURE(tex_2d));
-#if defined(HAVE_CG_GL)
-    else {
-        _cg_bind_gl_texture_transient(
-            GL_TEXTURE_2D, tex_2d->gl_texture, tex_2d->is_foreign);
-
-        GE(dev, glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE));
-        GE(dev,
-           glTexSubImage2D(GL_TEXTURE_2D,
-                           0,
-                           0,
-                           0,
-                           1,
-                           1,
-                           tex_2d->first_pixel.gl_format,
-                           tex_2d->first_pixel.gl_type,
-                           tex_2d->first_pixel.data));
-        GE(dev, glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, false));
-    }
-#endif
+    _cg_texture_gl_generate_mipmaps(CG_TEXTURE(tex_2d));
 }
 
 bool
@@ -626,32 +575,6 @@ _cg_texture_2d_gl_copy_from_bitmap(cg_texture_2d_t *tex_2d,
                                            NULL, /* internal format */
                                            &gl_format,
                                            &gl_type);
-
-    /* If this touches the first pixel then we'll update our copy */
-    if (dst_x == 0 && dst_y == 0 &&
-        !cg_has_feature(dev, CG_FEATURE_ID_OFFSCREEN)) {
-        cg_error_t *ignore = NULL;
-        uint8_t *data =
-            _cg_bitmap_map(upload_bmp, CG_BUFFER_ACCESS_READ, 0, &ignore);
-        cg_pixel_format_t bpp =
-            _cg_pixel_format_get_bytes_per_pixel(upload_format);
-
-        tex_2d->first_pixel.gl_format = gl_format;
-        tex_2d->first_pixel.gl_type = gl_type;
-
-        if (data) {
-            memcpy(tex_2d->first_pixel.data,
-                   (data + cg_bitmap_get_rowstride(upload_bmp) * src_y +
-                    bpp * src_x),
-                   bpp);
-            _cg_bitmap_unmap(bmp);
-        } else {
-            c_warning("Failed to read first bitmap pixel for "
-                      "glGenerateMipmap fallback");
-            cg_error_free(ignore);
-            memset(tex_2d->first_pixel.data, 0, bpp);
-        }
-    }
 
     status = dev->texture_driver->upload_subregion_to_gl(dev,
                                                          tex,

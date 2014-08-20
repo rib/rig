@@ -59,7 +59,6 @@ struct _cg_texture_3d_t {
     GLint gl_legacy_texobj_wrap_mode_s;
     GLint gl_legacy_texobj_wrap_mode_t;
     GLint gl_legacy_texobj_wrap_mode_p;
-    cg_texture_pixel_t first_pixel;
 };
 
 #endif /* __CG_TEXTURE_3D_PRIVATE_H */

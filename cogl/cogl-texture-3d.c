@@ -29,9 +29,7 @@
  *  Neil Roberts   <neil@linux.intel.com>
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "cogl-private.h"
 #include "cogl-util.h"
@@ -415,31 +413,6 @@ allocate_from_bitmap(cg_texture_3d_t *tex_3d,
     dev->driver_vtable->pixel_format_to_gl(dev, internal_format,
                                            &gl_intformat, NULL, NULL);
 
-    /* Keep a copy of the first pixel so that if glGenerateMipmap isn't
-       supported we can fallback to using GL_GENERATE_MIPMAP */
-    if (!cg_has_feature(dev, CG_FEATURE_ID_OFFSCREEN)) {
-        cg_error_t *ignore = NULL;
-        uint8_t *data =
-            _cg_bitmap_map(upload_bmp, CG_BUFFER_ACCESS_READ, 0, &ignore);
-
-        tex_3d->first_pixel.gl_format = gl_format;
-        tex_3d->first_pixel.gl_type = gl_type;
-
-        if (data) {
-            memcpy(tex_3d->first_pixel.data,
-                   data,
-                   _cg_pixel_format_get_bytes_per_pixel(upload_format));
-            _cg_bitmap_unmap(upload_bmp);
-        } else {
-            c_warning("Failed to read first pixel of bitmap for "
-                      "glGenerateMipmap fallback");
-            cg_error_free(ignore);
-            memset(tex_3d->first_pixel.data,
-                   0,
-                   _cg_pixel_format_get_bytes_per_pixel(upload_format));
-        }
-    }
-
     tex_3d->gl_texture =
         dev->texture_driver->gen(dev, GL_TEXTURE_3D, internal_format);
 
@@ -571,17 +544,12 @@ _cg_texture_3d_pre_paint(cg_texture_t *tex,
                          cg_texture_pre_paint_flags_t flags)
 {
     cg_texture_3d_t *tex_3d = CG_TEXTURE_3D(tex);
-    cg_device_t *dev = tex->dev;
 
     /* Only update if the mipmaps are dirty */
     if ((flags & CG_TEXTURE_NEEDS_MIPMAP) && tex_3d->auto_mipmap &&
-        tex_3d->mipmaps_dirty) {
-        /* glGenerateMipmap is defined in the FBO extension. If it's not
-           available we'll fallback to temporarily enabling
-           GL_GENERATE_MIPMAP and reuploading the first pixel */
-        if (cg_has_feature(dev, CG_FEATURE_ID_OFFSCREEN))
-            _cg_texture_gl_generate_mipmaps(tex);
-
+        tex_3d->mipmaps_dirty)
+    {
+        _cg_texture_gl_generate_mipmaps(tex);
         tex_3d->mipmaps_dirty = false;
     }
 }
