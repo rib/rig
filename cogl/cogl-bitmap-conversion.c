@@ -55,8 +55,8 @@
 
 #define component_type uint16_t
 #define component_size 16
-#define UNPACK_BYTE(b) (((b) * 65535 + 127) / 255)
-#define PACK_BYTE(b) (((b) * 255 + 32767) / 65535)
+#define UNPACK_BYTE(b) (((b) * 257)
+#define PACK_BYTE(b) ((((uint32_t)(b)) + 128) / 257)
 #include "cogl-bitmap-packing.h"
 #undef PACK_BYTE
 #undef UNPACK_BYTE
