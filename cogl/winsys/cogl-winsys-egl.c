@@ -30,9 +30,7 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "cogl-i18n-private.h"
 #include "cogl-util.h"
@@ -307,7 +305,7 @@ _cg_winsys_egl_make_current(cg_display_t *display,
 }
 
 static void
-cleanup_context(cg_display_t *display)
+cleanup_device(cg_display_t *display)
 {
     cg_renderer_t *renderer = display->renderer;
     cg_display_egl_t *egl_display = display->winsys;
@@ -320,8 +318,8 @@ cleanup_context(cg_display_t *display)
         egl_display->egl_context = EGL_NO_CONTEXT;
     }
 
-    if (egl_renderer->platform_vtable->cleanup_context)
-        egl_renderer->platform_vtable->cleanup_context(display);
+    if (egl_renderer->platform_vtable->cleanup_device)
+        egl_renderer->platform_vtable->cleanup_device(display);
 }
 
 static bool
@@ -388,8 +386,8 @@ try_create_context(cg_display_t *display, cg_error_t **error)
         goto fail;
     }
 
-    if (egl_renderer->platform_vtable->dev_created &&
-        !egl_renderer->platform_vtable->dev_created(display, error))
+    if (egl_renderer->platform_vtable->device_created &&
+        !egl_renderer->platform_vtable->device_created(display, error))
         return false;
 
     return true;
@@ -401,7 +399,7 @@ fail:
                   "%s",
                   error_message);
 
-    cleanup_context(display);
+    cleanup_device(display);
 
     return false;
 }
@@ -414,7 +412,7 @@ _cg_winsys_display_destroy(cg_display_t *display)
 
     c_return_if_fail(egl_display != NULL);
 
-    cleanup_context(display);
+    cleanup_device(display);
 
     if (egl_renderer->platform_vtable->display_destroy)
         egl_renderer->platform_vtable->display_destroy(display);
@@ -464,7 +462,7 @@ error:
 }
 
 static bool
-_cg_winsys_context_init(cg_device_t *dev, cg_error_t **error)
+_cg_winsys_device_init(cg_device_t *dev, cg_error_t **error)
 {
     cg_renderer_t *renderer = dev->display->renderer;
     cg_display_egl_t *egl_display = dev->display->winsys;
@@ -504,21 +502,21 @@ _cg_winsys_context_init(cg_device_t *dev, cg_error_t **error)
         dev->driver == CG_DRIVER_GLES2)
         CG_FLAGS_SET(dev->features, CG_FEATURE_ID_GLES2_CONTEXT, true);
 
-    if (egl_renderer->platform_vtable->dev_init &&
-        !egl_renderer->platform_vtable->dev_init(dev, error))
+    if (egl_renderer->platform_vtable->device_init &&
+        !egl_renderer->platform_vtable->device_init(dev, error))
         return false;
 
     return true;
 }
 
 static void
-_cg_winsys_context_deinit(cg_device_t *dev)
+_cg_winsys_device_deinit(cg_device_t *dev)
 {
     cg_renderer_t *renderer = dev->display->renderer;
     cg_renderer_egl_t *egl_renderer = renderer->winsys;
 
-    if (egl_renderer->platform_vtable->dev_deinit)
-        egl_renderer->platform_vtable->dev_deinit(dev);
+    if (egl_renderer->platform_vtable->device_deinit)
+        egl_renderer->platform_vtable->device_deinit(dev);
 
     c_free(dev->winsys);
 }
@@ -529,8 +527,8 @@ typedef struct _cg_gles2_context_egl_t {
 } cg_gles2_context_egl_t;
 
 static void *
-_cg_winsys_context_create_gles2_context(cg_device_t *dev,
-                                        cg_error_t **error)
+_cg_winsys_device_create_gles2_context(cg_device_t *dev,
+                                       cg_error_t **error)
 {
     cg_renderer_egl_t *egl_renderer = dev->display->renderer->winsys;
     cg_display_egl_t *egl_display = dev->display->winsys;
@@ -560,7 +558,7 @@ _cg_winsys_context_create_gles2_context(cg_device_t *dev,
 static void
 _cg_winsys_destroy_gles2_context(cg_gles2_context_t *gles2_ctx)
 {
-    cg_device_t *dev = gles2_ctx->context;
+    cg_device_t *dev = gles2_ctx->dev;
     cg_display_t *display = dev->display;
     cg_display_egl_t *egl_display = display->winsys;
     cg_renderer_t *renderer = display->renderer;
@@ -651,8 +649,7 @@ _cg_winsys_onscreen_deinit(cg_onscreen_t *onscreen)
                                         egl_display->current_context);
         }
 
-        if (eglDestroySurface(egl_renderer->edpy, egl_onscreen->egl_surface) ==
-            EFALSE)
+        if (!eglDestroySurface(egl_renderer->edpy, egl_onscreen->egl_surface))
             c_warning("Failed to destroy EGL surface");
         egl_onscreen->egl_surface = EGL_NO_SURFACE;
     }
@@ -758,10 +755,10 @@ _cg_winsys_onscreen_swap_region(cg_onscreen_t *onscreen,
                                 CG_FRAMEBUFFER(onscreen),
                                 CG_FRAMEBUFFER_STATE_BIND);
 
-    if (egl_renderer->pf_eglSwapBuffersRegion(egl_renderer->edpy,
-                                              egl_onscreen->egl_surface,
-                                              n_rectangles,
-                                              rectangles) == EFALSE)
+    if (!egl_renderer->pf_eglSwapBuffersRegion(egl_renderer->edpy,
+                                               egl_onscreen->egl_surface,
+                                               n_rectangles,
+                                               rectangles))
         c_warning("Error reported by eglSwapBuffersRegion");
 }
 
@@ -796,10 +793,10 @@ _cg_winsys_onscreen_swap_buffers_with_damage(
             flip_rect[1] = fb->height - rect[1] - rect[3];
         }
 
-        if (egl_renderer->pf_eglSwapBuffersWithDamage(egl_renderer->edpy,
-                                                      egl_onscreen->egl_surface,
-                                                      flipped,
-                                                      n_rectangles) == EFALSE)
+        if (!egl_renderer->pf_eglSwapBuffersWithDamage(egl_renderer->edpy,
+                                                       egl_onscreen->egl_surface,
+                                                       flipped,
+                                                       n_rectangles))
             c_warning("Error reported by eglSwapBuffersWithDamage");
     } else
         eglSwapBuffers(egl_renderer->edpy, egl_onscreen->egl_surface);
@@ -821,7 +818,7 @@ _cg_winsys_onscreen_update_swap_throttled(cg_onscreen_t *onscreen)
 }
 
 static EGLDisplay
-_cg_winsys_context_egl_get_egl_display(cg_device_t *dev)
+_cg_winsys_device_egl_get_egl_display(cg_device_t *dev)
 {
     cg_renderer_egl_t *egl_renderer = dev->display->renderer->winsys;
 
@@ -829,7 +826,7 @@ _cg_winsys_context_egl_get_egl_display(cg_device_t *dev)
 }
 
 static void
-_cg_winsys_save_context(cg_device_t *dev)
+_cg_winsys_save_device(cg_device_t *dev)
 {
     cg_device_egl_t *egl_context = dev->winsys;
     cg_display_egl_t *egl_display = dev->display->winsys;
@@ -842,7 +839,7 @@ static bool
 _cg_winsys_set_gles2_context(cg_gles2_context_t *gles2_ctx,
                              cg_error_t **error)
 {
-    cg_device_t *dev = gles2_ctx->context;
+    cg_device_t *dev = gles2_ctx->dev;
     cg_display_egl_t *egl_display = dev->display->winsys;
     bool status;
 
@@ -925,10 +922,10 @@ static cg_winsys_vtable_t _cg_winsys_vtable = {
     .renderer_disconnect = _cg_winsys_renderer_disconnect,
     .display_setup = _cg_winsys_display_setup,
     .display_destroy = _cg_winsys_display_destroy,
-    .context_init = _cg_winsys_context_init,
-    .context_deinit = _cg_winsys_context_deinit,
-    .context_egl_get_egl_display = _cg_winsys_context_egl_get_egl_display,
-    .context_create_gles2_context = _cg_winsys_context_create_gles2_context,
+    .device_init = _cg_winsys_device_init,
+    .device_deinit = _cg_winsys_device_deinit,
+    .device_egl_get_egl_display = _cg_winsys_device_egl_get_egl_display,
+    .device_create_gles2_context = _cg_winsys_device_create_gles2_context,
     .destroy_gles2_context = _cg_winsys_destroy_gles2_context,
     .onscreen_init = _cg_winsys_onscreen_init,
     .onscreen_deinit = _cg_winsys_onscreen_deinit,
@@ -940,7 +937,7 @@ static cg_winsys_vtable_t _cg_winsys_vtable = {
     .onscreen_update_swap_throttled = _cg_winsys_onscreen_update_swap_throttled,
 
     /* cg_gles2_context_t related methods */
-    .save_context = _cg_winsys_save_context,
+    .save_device = _cg_winsys_save_device,
     .set_gles2_context = _cg_winsys_set_gles2_context,
     .restore_context = _cg_winsys_restore_context,
 

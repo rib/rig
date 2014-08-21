@@ -31,6 +31,8 @@
 #ifndef __CG_EGL_H__
 #define __CG_EGL_H__
 
+#include "cogl-defines.h"
+
 #ifdef CG_HAS_EGL_SUPPORT
 
 #include "cogl-egl-defines.h"

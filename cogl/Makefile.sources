@@ -135,6 +135,8 @@ cogl_sources_c = \
 	cogl-display.c			\
 	cogl-driver.h				\
 	cogl.c				\
+	cogl-pixel-format-private.h		\
+	cogl-pixel-format.c			\
 	cogl-object-private.h			\
 	cogl-object.h				\
 	cogl-object.c				\
@@ -143,7 +145,9 @@ cogl_sources_c = \
 	cogl-bitmap-private.h 		\
 	cogl-bitmap.c 			\
 	cogl-bitmap-conversion.c 		\
-	cogl-bitmap-packing.h			\
+	cogl-bitmap-unpack-unsigned-normalized.h \
+	cogl-bitmap-unpack-fallback.h		\
+	cogl-bitmap-pack.h			\
 	cogl-primitives-private.h 		\
 	cogl-primitives.c 			\
 	cogl-bitmap-pixbuf.c 			\

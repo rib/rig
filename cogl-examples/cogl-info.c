@@ -29,8 +29,6 @@ struct {
       "CG_FEATURE_ID_TEXTURE_NPOT_MIPMAP and "
       "CG_FEATURE_ID_TEXTURE_NPOT_REPEAT features combined." },
     { CG_FEATURE_ID_TEXTURE_3D, "3D texture support", "3D texture support" },
-    { CG_FEATURE_ID_OFFSCREEN, "Offscreen rendering support",
-      "Offscreen rendering support" },
     { CG_FEATURE_ID_OFFSCREEN_MULTISAMPLE,
       "Offscreen rendering with multisampling support",
       "Offscreen rendering with multisampling support" },

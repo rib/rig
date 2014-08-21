@@ -422,6 +422,8 @@ enable_cogl_path=yes
 enable_cogl_pango=yes
 enable_sdl2=yes
 enable_uv=yes
+enable_gles2=yes
+enable_xlib_egl_platform=yes
 AM_COGL
 
 

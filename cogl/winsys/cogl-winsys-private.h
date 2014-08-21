@@ -124,7 +124,7 @@ typedef struct _cg_winsys_vtable_t {
     int (*onscreen_get_buffer_age)(cg_onscreen_t *onscreen);
 
 #ifdef CG_HAS_EGL_SUPPORT
-    EGLDisplay (*context_egl_get_egl_display)(cg_device_t *dev);
+    EGLDisplay (*device_egl_get_egl_display)(cg_device_t *dev);
 #endif
 
 #ifdef CG_HAS_XLIB_SUPPORT
@@ -151,7 +151,7 @@ typedef struct _cg_winsys_vtable_t {
         cg_texture_pixmap_x11_t *tex_pixmap);
 #endif
 
-    void (*save_context)(cg_device_t *dev);
+    void (*save_device)(cg_device_t *dev);
 
     bool (*set_gles2_context)(cg_gles2_context_t *gles2_ctx,
                               cg_error_t **error);

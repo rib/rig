@@ -28,9 +28,7 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include <string.h>
 
@@ -683,14 +681,6 @@ cg_framebuffer_allocate(cg_framebuffer_t *framebuffer, cg_error_t **error)
             _cg_onscreen_queue_full_dirty(onscreen);
     } else {
         cg_offscreen_t *offscreen = CG_OFFSCREEN(framebuffer);
-
-        if (!cg_has_feature(dev, CG_FEATURE_ID_OFFSCREEN)) {
-            _cg_set_error(error,
-                          CG_SYSTEM_ERROR,
-                          CG_SYSTEM_ERROR_UNSUPPORTED,
-                          "Offscreen framebuffers not supported by system");
-            return false;
-        }
 
         if (!cg_texture_allocate(offscreen->texture, error))
             return false;

@@ -287,7 +287,7 @@ _cg_winsys_egl_display_destroy(cg_display_t *display)
 }
 
 static bool
-_cg_winsys_egl_context_init(cg_device_t *dev,
+_cg_winsys_egl_device_init(cg_device_t *dev,
                             cg_error_t **error)
 {
     cg_xlib_renderer_add_filter(dev->display->renderer, event_filter_cb, dev);
@@ -305,7 +305,7 @@ _cg_winsys_egl_context_init(cg_device_t *dev,
 }
 
 static void
-_cg_winsys_egl_context_deinit(cg_device_t *dev)
+_cg_winsys_egl_device_deinit(cg_device_t *dev)
 {
     cg_xlib_renderer_remove_filter(dev->display->renderer, event_filter_cb,
                                    dev);
@@ -540,7 +540,7 @@ _cg_winsys_onscreen_x11_get_window_xid(cg_onscreen_t *onscreen)
 }
 
 static bool
-_cg_winsys_egl_context_created(cg_display_t *display,
+_cg_winsys_egl_device_created(cg_display_t *display,
                                cg_error_t **error)
 {
     cg_renderer_t *renderer = display->renderer;
@@ -619,7 +619,7 @@ fail:
 }
 
 static void
-_cg_winsys_egl_cleanup_context(cg_display_t *display)
+_cg_winsys_egl_cleanup_device(cg_display_t *display)
 {
     cg_display_egl_t *egl_display = display->winsys;
     cg_display_xlib_t *xlib_display = egl_display->platform;
@@ -757,10 +757,10 @@ _cg_winsys_texture_pixmap_x11_get_texture(cg_texture_pixmap_x11_t *tex_pixmap)
 static const cg_winsys_egl_vtable_t _cg_winsys_egl_vtable = {
     .display_setup = _cg_winsys_egl_display_setup,
     .display_destroy = _cg_winsys_egl_display_destroy,
-    .context_created = _cg_winsys_egl_context_created,
-    .cleanup_context = _cg_winsys_egl_cleanup_context,
-    .context_init = _cg_winsys_egl_context_init,
-    .context_deinit = _cg_winsys_egl_context_deinit,
+    .device_created = _cg_winsys_egl_device_created,
+    .cleanup_device = _cg_winsys_egl_cleanup_device,
+    .device_init = _cg_winsys_egl_device_init,
+    .device_deinit = _cg_winsys_egl_device_deinit,
     .onscreen_init = _cg_winsys_egl_onscreen_init,
     .onscreen_deinit = _cg_winsys_egl_onscreen_deinit
 };

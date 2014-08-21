@@ -31,9 +31,7 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "cogl-util.h"
 #include "cogl-device-private.h"
@@ -110,9 +108,12 @@ _cg_pipeline_layer_has_alpha(cg_pipeline_layer_t *layer)
      */
     tex_authority = _cg_pipeline_layer_get_authority(
         layer, CG_PIPELINE_LAYER_STATE_TEXTURE_DATA);
-    if (tex_authority->texture &&
-        _cg_texture_get_format(tex_authority->texture) & CG_A_BIT) {
-        return true;
+    if (tex_authority->texture) {
+        cg_pixel_format_t authority_tex_format =
+            _cg_texture_get_format(tex_authority->texture);
+
+        if (_cg_pixel_format_has_alpha(authority_tex_format))
+            return true;
     }
 
     /* All bets are off if the layer contains any snippets */

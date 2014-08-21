@@ -28,9 +28,7 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include <string.h>
 
@@ -66,6 +64,207 @@ _cg_driver_pixel_format_from_gl_internal(cg_device_t *dev,
     return true;
 }
 
+static GLenum
+_cg_pixel_format_get_gl_type(cg_pixel_format_t format)
+{
+    switch (format) {
+    case CG_PIXEL_FORMAT_A_8:
+    case CG_PIXEL_FORMAT_RG_88:
+    case CG_PIXEL_FORMAT_RGB_888:
+    case CG_PIXEL_FORMAT_BGR_888:
+    case CG_PIXEL_FORMAT_RGBA_8888:
+    case CG_PIXEL_FORMAT_BGRA_8888:
+    case CG_PIXEL_FORMAT_ARGB_8888:
+    case CG_PIXEL_FORMAT_ABGR_8888:
+    case CG_PIXEL_FORMAT_RGBA_8888_PRE:
+    case CG_PIXEL_FORMAT_BGRA_8888_PRE:
+    case CG_PIXEL_FORMAT_ARGB_8888_PRE:
+    case CG_PIXEL_FORMAT_ABGR_8888_PRE:
+        return GL_UNSIGNED_BYTE;
+
+    case CG_PIXEL_FORMAT_A_8SN:
+    case CG_PIXEL_FORMAT_RG_88SN:
+    case CG_PIXEL_FORMAT_RGB_888SN:
+    case CG_PIXEL_FORMAT_BGR_888SN:
+    case CG_PIXEL_FORMAT_RGBA_8888SN:
+    case CG_PIXEL_FORMAT_BGRA_8888SN:
+        return GL_BYTE;
+
+    case CG_PIXEL_FORMAT_A_16U:
+    case CG_PIXEL_FORMAT_RG_1616U:
+    case CG_PIXEL_FORMAT_RGB_161616U:
+    case CG_PIXEL_FORMAT_BGR_161616U:
+    case CG_PIXEL_FORMAT_RGBA_16161616U:
+    case CG_PIXEL_FORMAT_BGRA_16161616U:
+        return GL_UNSIGNED_SHORT;
+
+    case CG_PIXEL_FORMAT_A_16F:
+    case CG_PIXEL_FORMAT_RG_1616F:
+    case CG_PIXEL_FORMAT_RGB_161616F:
+    case CG_PIXEL_FORMAT_BGR_161616F:
+    case CG_PIXEL_FORMAT_RGBA_16161616F:
+    case CG_PIXEL_FORMAT_BGRA_16161616F:
+    case CG_PIXEL_FORMAT_RGBA_16161616F_PRE:
+    case CG_PIXEL_FORMAT_BGRA_16161616F_PRE:
+        return GL_HALF_FLOAT;
+
+    case CG_PIXEL_FORMAT_A_32U:
+    case CG_PIXEL_FORMAT_RG_3232U:
+    case CG_PIXEL_FORMAT_RGB_323232U:
+    case CG_PIXEL_FORMAT_BGR_323232U:
+    case CG_PIXEL_FORMAT_RGBA_32323232U:
+    case CG_PIXEL_FORMAT_BGRA_32323232U:
+        return GL_UNSIGNED_INT;
+
+    case CG_PIXEL_FORMAT_A_32F:
+    case CG_PIXEL_FORMAT_RG_3232F:
+    case CG_PIXEL_FORMAT_RGB_323232F:
+    case CG_PIXEL_FORMAT_BGR_323232F:
+    case CG_PIXEL_FORMAT_RGBA_32323232F:
+    case CG_PIXEL_FORMAT_BGRA_32323232F:
+    case CG_PIXEL_FORMAT_RGBA_32323232F_PRE:
+    case CG_PIXEL_FORMAT_BGRA_32323232F_PRE:
+        return GL_FLOAT;
+
+    case CG_PIXEL_FORMAT_RGB_565:
+    case CG_PIXEL_FORMAT_RGBA_4444:
+    case CG_PIXEL_FORMAT_RGBA_4444_PRE:
+    case CG_PIXEL_FORMAT_RGBA_5551:
+    case CG_PIXEL_FORMAT_RGBA_5551_PRE:
+    case CG_PIXEL_FORMAT_RGBA_1010102:
+    case CG_PIXEL_FORMAT_BGRA_1010102:
+    case CG_PIXEL_FORMAT_ARGB_2101010:
+    case CG_PIXEL_FORMAT_ABGR_2101010:
+    case CG_PIXEL_FORMAT_RGBA_1010102_PRE:
+    case CG_PIXEL_FORMAT_BGRA_1010102_PRE:
+    case CG_PIXEL_FORMAT_ARGB_2101010_PRE:
+    case CG_PIXEL_FORMAT_ABGR_2101010_PRE:
+    case CG_PIXEL_FORMAT_DEPTH_16:
+    case CG_PIXEL_FORMAT_DEPTH_32:
+    case CG_PIXEL_FORMAT_DEPTH_24_STENCIL_8:
+    case CG_PIXEL_FORMAT_ANY:
+
+        /* These should be handled carefully */
+        c_assert_not_reached();
+        return 0;
+    }
+
+    c_assert_not_reached();
+    return 0;
+}
+
+static GLenum
+_cg_pixel_format_get_internal_gles3_format(cg_pixel_format_t format)
+{
+    switch (format) {
+    case CG_PIXEL_FORMAT_A_8:
+        return GL_R8;
+    case CG_PIXEL_FORMAT_A_8SN:
+        return GL_R8_SNORM;
+    case CG_PIXEL_FORMAT_A_16U:
+        return GL_R16UI;
+    case CG_PIXEL_FORMAT_A_16F:
+        return GL_R16F;
+    case CG_PIXEL_FORMAT_A_32U:
+        return GL_R32UI;
+    case CG_PIXEL_FORMAT_A_32F:
+        return GL_R32F;
+    case CG_PIXEL_FORMAT_RG_88:
+        return GL_RG8;
+    case CG_PIXEL_FORMAT_RG_88SN:
+        return GL_RG8_SNORM;
+    case CG_PIXEL_FORMAT_RG_1616U:
+        return GL_RG16UI;
+    case CG_PIXEL_FORMAT_RG_1616F:
+        return GL_RG16F;
+    case CG_PIXEL_FORMAT_RG_3232U:
+        return GL_RG32UI;
+    case CG_PIXEL_FORMAT_RG_3232F:
+        return GL_RG32F;
+    case CG_PIXEL_FORMAT_RGB_888:
+        return GL_RGB8;
+    case CG_PIXEL_FORMAT_RGB_888SN:
+        return GL_RGB8_SNORM;
+    case CG_PIXEL_FORMAT_RGB_161616U:
+        return GL_RGB16UI;
+    case CG_PIXEL_FORMAT_RGB_161616F:
+        return GL_RGB16F;
+    case CG_PIXEL_FORMAT_RGB_323232U:
+        return GL_RGB32UI;
+    case CG_PIXEL_FORMAT_RGB_323232F:
+        return GL_RGB32F;
+    case CG_PIXEL_FORMAT_BGR_888:
+        return GL_RGB8;
+    case CG_PIXEL_FORMAT_BGR_888SN:
+        return GL_RGB8_SNORM;
+    case CG_PIXEL_FORMAT_BGR_161616U:
+        return GL_RGB16UI;
+    case CG_PIXEL_FORMAT_BGR_161616F:
+        return GL_RGB16F;
+    case CG_PIXEL_FORMAT_BGR_323232U:
+        return GL_RGB32F;
+    case CG_PIXEL_FORMAT_BGR_323232F:
+        return GL_RGB32F;
+    case CG_PIXEL_FORMAT_RGBA_8888:
+    case CG_PIXEL_FORMAT_RGBA_8888_PRE:
+        return GL_RGBA8;
+    case CG_PIXEL_FORMAT_RGBA_8888SN:
+        return GL_RGBA8_SNORM;
+    case CG_PIXEL_FORMAT_RGBA_16161616U:
+        return GL_RGBA16UI;
+    case CG_PIXEL_FORMAT_RGBA_16161616F:
+    case CG_PIXEL_FORMAT_RGBA_16161616F_PRE:
+        return GL_RGBA16F;
+    case CG_PIXEL_FORMAT_RGBA_32323232U:
+        return GL_RGBA32UI;
+    case CG_PIXEL_FORMAT_RGBA_32323232F:
+    case CG_PIXEL_FORMAT_RGBA_32323232F_PRE:
+        return GL_RGBA32F;
+    case CG_PIXEL_FORMAT_BGRA_8888:
+    case CG_PIXEL_FORMAT_BGRA_8888_PRE:
+        return GL_RGBA8;
+    case CG_PIXEL_FORMAT_BGRA_8888SN:
+        return GL_RGBA8_SNORM;
+    case CG_PIXEL_FORMAT_BGRA_16161616U:
+        return GL_RGBA16UI;
+    case CG_PIXEL_FORMAT_BGRA_16161616F:
+    case CG_PIXEL_FORMAT_BGRA_16161616F_PRE:
+        return GL_RGBA16F;
+    case CG_PIXEL_FORMAT_BGRA_32323232U:
+        return GL_RGBA32UI;
+    case CG_PIXEL_FORMAT_BGRA_32323232F:
+    case CG_PIXEL_FORMAT_BGRA_32323232F_PRE:
+        return GL_RGBA32F;
+
+    case CG_PIXEL_FORMAT_RGB_565:
+    case CG_PIXEL_FORMAT_RGBA_4444:
+    case CG_PIXEL_FORMAT_RGBA_4444_PRE:
+    case CG_PIXEL_FORMAT_RGBA_5551:
+    case CG_PIXEL_FORMAT_RGBA_5551_PRE:
+    case CG_PIXEL_FORMAT_ARGB_8888:
+    case CG_PIXEL_FORMAT_ABGR_8888:
+    case CG_PIXEL_FORMAT_ARGB_8888_PRE:
+    case CG_PIXEL_FORMAT_ABGR_8888_PRE:
+    case CG_PIXEL_FORMAT_RGBA_1010102:
+    case CG_PIXEL_FORMAT_BGRA_1010102:
+    case CG_PIXEL_FORMAT_ARGB_2101010:
+    case CG_PIXEL_FORMAT_ABGR_2101010:
+    case CG_PIXEL_FORMAT_RGBA_1010102_PRE:
+    case CG_PIXEL_FORMAT_BGRA_1010102_PRE:
+    case CG_PIXEL_FORMAT_ARGB_2101010_PRE:
+    case CG_PIXEL_FORMAT_ABGR_2101010_PRE:
+    case CG_PIXEL_FORMAT_DEPTH_16:
+    case CG_PIXEL_FORMAT_DEPTH_32:
+    case CG_PIXEL_FORMAT_DEPTH_24_STENCIL_8:
+    case CG_PIXEL_FORMAT_ANY:
+        /* These formats need to be handled carefully */
+        c_assert_not_reached();
+    }
+
+    c_assert_not_reached();
+    return GL_RGBA;
+}
+
 static cg_pixel_format_t
 _cg_driver_pixel_format_to_gl(cg_device_t *dev,
                               cg_pixel_format_t format,
@@ -83,30 +282,141 @@ _cg_driver_pixel_format_to_gl(cg_device_t *dev,
     /* Find GL equivalents */
     switch (format) {
     case CG_PIXEL_FORMAT_A_8:
-        glintformat = GL_ALPHA;
-        glformat = GL_ALPHA;
-        gltype = GL_UNSIGNED_BYTE;
+    case CG_PIXEL_FORMAT_A_8SN:
+    case CG_PIXEL_FORMAT_A_16U:
+    case CG_PIXEL_FORMAT_A_16F:
+    case CG_PIXEL_FORMAT_A_32U:
+    case CG_PIXEL_FORMAT_A_32F:
+
+        if (dev->driver == CG_DRIVER_GLES2) {
+            glformat = GL_ALPHA;
+            glintformat = GL_ALPHA;
+            gltype = GL_UNSIGNED_BYTE;
+            required_format = CG_PIXEL_FORMAT_A_8;
+        } else {
+            /* We emulate alpha textures as red component textures with
+             * a swizzle */
+            glformat = GL_RED;
+            glintformat = _cg_pixel_format_get_internal_gles3_format(format);
+            gltype = _cg_pixel_format_get_gl_type(format);
+        }
         break;
 
     case CG_PIXEL_FORMAT_RG_88:
-        if (cg_has_feature(dev, CG_FEATURE_ID_TEXTURE_RG)) {
-            glintformat = GL_RG8;
-            glformat = GL_RG;
+    case CG_PIXEL_FORMAT_RG_88SN:
+    case CG_PIXEL_FORMAT_RG_1616U:
+    case CG_PIXEL_FORMAT_RG_1616F:
+    case CG_PIXEL_FORMAT_RG_3232U:
+    case CG_PIXEL_FORMAT_RG_3232F:
+
+        if (dev->driver == CG_DRIVER_GLES2) {
+            if (cg_has_feature(dev, CG_FEATURE_ID_TEXTURE_RG)) {
+                glformat = GL_RG;
+                glintformat = GL_RG;
+                required_format = CG_PIXEL_FORMAT_RG_88;
+            } else {
+                /* If red-green textures aren't supported then we'll use RGB
+                 * as an internal format. Note this should only end up
+                 * mattering for downloading the data because Cogl will
+                 * refuse to allocate a texture with RG components if RG
+                 * textures aren't supported */
+                glintformat = GL_RGB;
+                glformat = GL_RGB;
+                required_format = CG_PIXEL_FORMAT_RGB_888;
+            }
+            gltype = GL_UNSIGNED_BYTE;
         } else {
-            /* If red-green textures aren't supported then we'll use RGB
-             * as an internal format. Note this should only end up
-             * mattering for downloading the data because Cogl will
-             * refuse to allocate a texture with RG components if RG
-             * textures aren't supported */
-            glintformat = GL_RGB;
-            glformat = GL_RGB;
-            required_format = CG_PIXEL_FORMAT_RGB_888;
+            glformat = GL_RG;
+            glintformat = _cg_pixel_format_get_internal_gles3_format(format);
+            gltype = _cg_pixel_format_get_gl_type(format);
         }
-        gltype = GL_UNSIGNED_BYTE;
+        break;
+
+    case CG_PIXEL_FORMAT_RGB_565:
+        glintformat = GL_RGB;
+        glformat = GL_RGB;
+        gltype = GL_UNSIGNED_SHORT_5_6_5;
+        break;
+
+    case CG_PIXEL_FORMAT_RGB_888:
+    case CG_PIXEL_FORMAT_RGB_888SN:
+    case CG_PIXEL_FORMAT_RGB_161616U:
+    case CG_PIXEL_FORMAT_RGB_161616F:
+    case CG_PIXEL_FORMAT_RGB_323232U:
+    case CG_PIXEL_FORMAT_RGB_323232F:
+
+        if (dev->driver == CG_DRIVER_GLES2) {
+            glformat = GL_RGB;
+            glintformat = GL_RGB;
+            gltype = GL_UNSIGNED_BYTE;
+            required_format = CG_PIXEL_FORMAT_RGB_888;
+        } else {
+            glformat = GL_RGB;
+            glintformat = _cg_pixel_format_get_internal_gles3_format(format);
+            gltype = _cg_pixel_format_get_gl_type(format);
+        }
+        break;
+
+    case CG_PIXEL_FORMAT_BGR_888:
+    case CG_PIXEL_FORMAT_BGR_888SN:
+    case CG_PIXEL_FORMAT_BGR_161616U:
+    case CG_PIXEL_FORMAT_BGR_161616F:
+    case CG_PIXEL_FORMAT_BGR_323232U:
+    case CG_PIXEL_FORMAT_BGR_323232F:
+
+        if (dev->driver == CG_DRIVER_GLES2) {
+            /* Just one 24-bit ordering supported */
+            glformat = GL_RGB;
+            glintformat = GL_RGB;
+            gltype = GL_UNSIGNED_BYTE;
+            required_format = CG_PIXEL_FORMAT_RGB_888;
+        } else {
+            /* Only RGB order accepted by gles */
+            glformat = GL_RGB;
+            required_format = _cg_pixel_format_flip_rgb_order(format);
+            glintformat = _cg_pixel_format_get_internal_gles3_format(required_format);
+            gltype = _cg_pixel_format_get_gl_type(required_format);
+        }
+        break;
+
+    case CG_PIXEL_FORMAT_RGBA_4444:
+    case CG_PIXEL_FORMAT_RGBA_4444_PRE:
+        glintformat = GL_RGBA;
+        glformat = GL_RGBA;
+        gltype = GL_UNSIGNED_SHORT_4_4_4_4;
+        break;
+    case CG_PIXEL_FORMAT_RGBA_5551:
+    case CG_PIXEL_FORMAT_RGBA_5551_PRE:
+        glintformat = GL_RGBA;
+        glformat = GL_RGBA;
+        gltype = GL_UNSIGNED_SHORT_5_5_5_1;
+        break;
+
+    case CG_PIXEL_FORMAT_RGBA_8888:
+    case CG_PIXEL_FORMAT_RGBA_8888_PRE:
+    case CG_PIXEL_FORMAT_RGBA_8888SN:
+    case CG_PIXEL_FORMAT_RGBA_16161616U:
+    case CG_PIXEL_FORMAT_RGBA_16161616F:
+    case CG_PIXEL_FORMAT_RGBA_16161616F_PRE:
+    case CG_PIXEL_FORMAT_RGBA_32323232U:
+    case CG_PIXEL_FORMAT_RGBA_32323232F:
+    case CG_PIXEL_FORMAT_RGBA_32323232F_PRE:
+
+        if (dev->driver == CG_DRIVER_GLES2) {
+            glintformat = GL_RGBA;
+            glformat = GL_RGBA;
+            gltype = GL_UNSIGNED_BYTE;
+            required_format = CG_PIXEL_FORMAT_RGBA_8888;
+        } else {
+            glformat = GL_RGBA;
+            glintformat = _cg_pixel_format_get_internal_gles3_format(format);
+            gltype = _cg_pixel_format_get_gl_type(format);
+        }
         break;
 
     case CG_PIXEL_FORMAT_BGRA_8888:
     case CG_PIXEL_FORMAT_BGRA_8888_PRE:
+
         /* There is an extension to support this format */
         if (_cg_has_private_feature(dev, CG_PRIVATE_FEATURE_TEXTURE_FORMAT_BGRA8888)) {
             /* For some reason the extension says you have to specify
@@ -114,23 +424,33 @@ _cg_driver_pixel_format_to_gl(cg_device_t *dev,
             glintformat = GL_BGRA_EXT;
             glformat = GL_BGRA_EXT;
             gltype = GL_UNSIGNED_BYTE;
-            required_format = format;
             break;
         }
-    /* flow through */
 
-    /* Just one 24-bit ordering supported */
-    case CG_PIXEL_FORMAT_RGB_888:
-    case CG_PIXEL_FORMAT_BGR_888:
-        glintformat = GL_RGB;
-        glformat = GL_RGB;
-        gltype = GL_UNSIGNED_BYTE;
-        required_format = CG_PIXEL_FORMAT_RGB_888;
+        /* fall through */
+
+    case CG_PIXEL_FORMAT_BGRA_8888SN:
+    case CG_PIXEL_FORMAT_BGRA_16161616U:
+    case CG_PIXEL_FORMAT_BGRA_16161616F:
+    case CG_PIXEL_FORMAT_BGRA_16161616F_PRE:
+    case CG_PIXEL_FORMAT_BGRA_32323232U:
+    case CG_PIXEL_FORMAT_BGRA_32323232F:
+    case CG_PIXEL_FORMAT_BGRA_32323232F_PRE:
+
+        if (dev->driver == CG_DRIVER_GLES2) {
+            glintformat = GL_RGBA;
+            glformat = GL_RGBA;
+            gltype = GL_UNSIGNED_BYTE;
+            required_format = CG_PIXEL_FORMAT_RGBA_8888;
+        } else {
+            /* Only RGBA order accepted by gles */
+            glformat = GL_RGBA;
+            required_format = _cg_pixel_format_flip_rgb_order(format);
+            glintformat = _cg_pixel_format_get_internal_gles3_format(required_format);
+            gltype = _cg_pixel_format_get_gl_type(required_format);
+        }
         break;
 
-    /* Just one 32-bit ordering supported */
-    case CG_PIXEL_FORMAT_RGBA_8888:
-    case CG_PIXEL_FORMAT_RGBA_8888_PRE:
     case CG_PIXEL_FORMAT_ARGB_8888:
     case CG_PIXEL_FORMAT_ARGB_8888_PRE:
     case CG_PIXEL_FORMAT_ABGR_8888:
@@ -147,28 +467,6 @@ _cg_driver_pixel_format_to_gl(cg_device_t *dev,
         glformat = GL_RGBA;
         gltype = GL_UNSIGNED_BYTE;
         required_format = CG_PIXEL_FORMAT_RGBA_8888;
-        required_format |= (format & CG_PREMULT_BIT);
-        break;
-
-    /* The following three types of channel ordering
-     * are always defined using system word byte
-     * ordering (even according to GLES spec) */
-    case CG_PIXEL_FORMAT_RGB_565:
-        glintformat = GL_RGB;
-        glformat = GL_RGB;
-        gltype = GL_UNSIGNED_SHORT_5_6_5;
-        break;
-    case CG_PIXEL_FORMAT_RGBA_4444:
-    case CG_PIXEL_FORMAT_RGBA_4444_PRE:
-        glintformat = GL_RGBA;
-        glformat = GL_RGBA;
-        gltype = GL_UNSIGNED_SHORT_4_4_4_4;
-        break;
-    case CG_PIXEL_FORMAT_RGBA_5551:
-    case CG_PIXEL_FORMAT_RGBA_5551_PRE:
-        glintformat = GL_RGBA;
-        glformat = GL_RGBA;
-        gltype = GL_UNSIGNED_SHORT_5_5_5_1;
         break;
 
     case CG_PIXEL_FORMAT_DEPTH_16:
@@ -191,6 +489,14 @@ _cg_driver_pixel_format_to_gl(cg_device_t *dev,
     case CG_PIXEL_FORMAT_ANY:
         c_assert_not_reached();
         break;
+    }
+
+    /* Preserve the premult status of @format */
+    if (_cg_pixel_format_can_be_premultiplied(required_format))
+    {
+        required_format = _cg_pixel_format_premult_stem(required_format);
+        if (_cg_pixel_format_is_premultiplied(format))
+            required_format = _cg_pixel_format_premultiply(required_format);
     }
 
     /* All of the pixel formats are handled above so if this hits then
@@ -272,19 +578,16 @@ _cg_driver_update_features(cg_device_t *dev,
 
     _cg_feature_check_ext_functions(dev, gl_major, gl_minor, gl_extensions);
 
-    if (dev->driver == CG_DRIVER_GLES2) {
-        /* Note GLES 2 core doesn't support mipmaps for npot textures or
-         * repeat modes other than CLAMP_TO_EDGE. */
-        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_GLSL, true);
-        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_OFFSCREEN, true);
-        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_TEXTURE_NPOT_BASIC, true);
-        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_DEPTH_RANGE, true);
-        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_MIRRORED_REPEAT, true);
-        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_PER_VERTEX_POINT_SIZE,
-                     true);
+    /* Note GLES 2 core doesn't support mipmaps for npot textures or
+     * repeat modes other than CLAMP_TO_EDGE. */
+    CG_FLAGS_SET(dev->features, CG_FEATURE_ID_GLSL, true);
+    CG_FLAGS_SET(dev->features, CG_FEATURE_ID_TEXTURE_NPOT_BASIC, true);
+    CG_FLAGS_SET(dev->features, CG_FEATURE_ID_DEPTH_RANGE, true);
+    CG_FLAGS_SET(dev->features, CG_FEATURE_ID_MIRRORED_REPEAT, true);
+    CG_FLAGS_SET(dev->features, CG_FEATURE_ID_PER_VERTEX_POINT_SIZE,
+                 true);
 
-        CG_FLAGS_SET(private_features, CG_PRIVATE_FEATURE_BLEND_CONSTANT, true);
-    }
+    CG_FLAGS_SET(private_features, CG_PRIVATE_FEATURE_BLEND_CONSTANT, true);
 
     CG_FLAGS_SET(private_features, CG_PRIVATE_FEATURE_VBOS, true);
     CG_FLAGS_SET(private_features, CG_PRIVATE_FEATURE_ANY_GL, true);
@@ -292,9 +595,6 @@ _cg_driver_update_features(cg_device_t *dev,
 
     /* GLES 2.0 supports point sprites in core */
     CG_FLAGS_SET(dev->features, CG_FEATURE_ID_POINT_SPRITE, true);
-
-    if (dev->glGenRenderbuffers)
-        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_OFFSCREEN, true);
 
     if (dev->glBlitFramebuffer)
         CG_FLAGS_SET(private_features, CG_PRIVATE_FEATURE_OFFSCREEN_BLIT, true);

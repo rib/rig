@@ -28,9 +28,7 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include <string.h>
 
@@ -192,7 +190,7 @@ _cg_util_pixel_format_from_masks_real(unsigned long r_mask,
                                                   true,
                                                   recursion_depth + 1);
         if (image_format)
-            return image_format ^ CG_BGR_BIT;
+            return _cg_pixel_format_flip_rgb_order(image_format);
     }
 
     /* Check for alpha in the least significant bits if we still
@@ -210,7 +208,7 @@ _cg_util_pixel_format_from_masks_real(unsigned long r_mask,
                                                   false,
                                                   recursion_depth + 1);
         if (image_format)
-            return image_format ^ CG_AFIRST_BIT;
+            return _cg_pixel_format_flip_alpha_position(image_format);
     }
 
     return 0;
@@ -245,9 +243,9 @@ _cg_util_pixel_format_from_masks(unsigned long r_mask,
        reversed */
     if (byte_order_is_lsb_first &&
         _cg_pixel_format_is_endian_dependant(image_format)) {
-        image_format ^= CG_BGR_BIT;
-        if (image_format & CG_A_BIT)
-            image_format ^= CG_AFIRST_BIT;
+        image_format = _cg_pixel_format_flip_rgb_order(image_format);
+        if (_cg_pixel_format_has_alpha(image_format))
+            image_format = _cg_pixel_format_flip_alpha_position(image_format);
     }
 
     return image_format;

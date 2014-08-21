@@ -150,11 +150,7 @@ _cg_blit_framebuffer_begin(cg_blit_data_t *data)
     cg_framebuffer_t *dst_fb, *src_fb;
     cg_error_t *ignore_error = NULL;
 
-    /* We can only blit between FBOs if both textures are the same
-       format and the blit framebuffer extension is supported */
-    if ((_cg_texture_get_format(data->src_tex) & ~CG_A_BIT) !=
-        (_cg_texture_get_format(data->dst_tex) & ~CG_A_BIT) ||
-        !_cg_has_private_feature(dev, CG_PRIVATE_FEATURE_OFFSCREEN_BLIT))
+    if (!_cg_has_private_feature(dev, CG_PRIVATE_FEATURE_OFFSCREEN_BLIT))
         return false;
 
     dst_offscreen = _cg_offscreen_new_with_texture_full(

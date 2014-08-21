@@ -28,9 +28,7 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "cogl-util.h"
 #include "cogl-debug.h"
@@ -69,17 +67,21 @@ _cg_bitmap_convert_premult_status(cg_bitmap_t *bmp,
                                   cg_error_t **error)
 {
     /* Do we need to unpremultiply? */
-    if ((bmp->format & CG_PREMULT_BIT) > 0 &&
-        (dst_format & CG_PREMULT_BIT) == 0 &&
-        CG_PIXEL_FORMAT_CAN_HAVE_PREMULT(dst_format))
+    if (_cg_pixel_format_is_premultiplied(bmp->format) &&
+        !_cg_pixel_format_is_premultiplied(dst_format) &&
+        _cg_pixel_format_can_be_premultiplied(dst_format))
+    {
         return _cg_bitmap_unpremult(bmp, error);
+    }
 
     /* Do we need to premultiply? */
-    if ((bmp->format & CG_PREMULT_BIT) == 0 &&
-        CG_PIXEL_FORMAT_CAN_HAVE_PREMULT(bmp->format) &&
-        (dst_format & CG_PREMULT_BIT) > 0)
+    if (!_cg_pixel_format_is_premultiplied(bmp->format) &&
+        _cg_pixel_format_can_be_premultiplied(bmp->format) &&
+        _cg_pixel_format_is_premultiplied(dst_format))
+    {
         /* Try premultiplying using imaging library */
         return _cg_bitmap_premult(bmp, error);
+    }
 
     return true;
 }
@@ -131,8 +133,8 @@ _cg_bitmap_copy_subregion(cg_bitmap_t *src,
     bool succeeded = false;
 
     /* Intended only for fast copies when format is equal! */
-    c_return_val_if_fail((src->format & ~CG_PREMULT_BIT) ==
-                           (dst->format & ~CG_PREMULT_BIT),
+    c_return_val_if_fail(_cg_pixel_format_premult_stem(src->format) ==
+                           _cg_pixel_format_premult_stem(dst->format),
                            false);
 
     bpp = _cg_pixel_format_get_bytes_per_pixel(src->format);

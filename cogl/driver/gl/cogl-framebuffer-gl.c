@@ -28,9 +28,7 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "cogl-device-private.h"
 #include "cogl-util-gl-private.h"
@@ -245,10 +243,10 @@ _cg_framebuffer_gl_bind(cg_framebuffer_t *framebuffer, GLenum target)
     } else {
         const cg_winsys_vtable_t *winsys =
             _cg_framebuffer_get_winsys(framebuffer);
+
         winsys->onscreen_bind(CG_ONSCREEN(framebuffer));
-        /* glBindFramebuffer is an an extension with OpenGL ES 1.1 */
-        if (cg_has_feature(dev, CG_FEATURE_ID_OFFSCREEN))
-            GE(dev, glBindFramebuffer(target, 0));
+
+        GE(dev, glBindFramebuffer(target, 0));
 
         /* Initialise the glDrawBuffer state the first time the context
          * is bound to the default framebuffer. If the winsys is using a
@@ -1288,7 +1286,7 @@ _cg_framebuffer_gl_read_pixels_into_bitmap(cg_framebuffer_t *framebuffer,
     if ((dev->gpu.driver_bugs &
          CG_GPU_INFO_DRIVER_BUG_MESA_46631_SLOW_READ_PIXELS) &&
         (width > 8 || height > 8) &&
-        (format & ~CG_PREMULT_BIT) == CG_PIXEL_FORMAT_BGRA_8888 &&
+        _cg_pixel_format_premult_stem(format) == CG_PIXEL_FORMAT_BGRA_8888 &&
         cg_bitmap_get_buffer(bitmap) == NULL) {
         cg_error_t *ignore_error = NULL;
 
@@ -1340,7 +1338,7 @@ _cg_framebuffer_gl_read_pixels_into_bitmap(cg_framebuffer_t *framebuffer,
                                   CG_PRIVATE_FEATURE_READ_PIXELS_ANY_FORMAT) &&
          (gl_format != GL_RGBA || gl_type != GL_UNSIGNED_BYTE ||
           cg_bitmap_get_rowstride(bitmap) != 4 * width)) ||
-        (required_format & ~CG_PREMULT_BIT) != (format & ~CG_PREMULT_BIT)) {
+        _cg_pixel_format_premult_stem(required_format) != _cg_pixel_format_premult_stem(format)) {
         cg_bitmap_t *tmp_bmp;
         cg_pixel_format_t read_format;
         int bpp, rowstride;
@@ -1356,9 +1354,12 @@ _cg_framebuffer_gl_read_pixels_into_bitmap(cg_framebuffer_t *framebuffer,
             gl_type = GL_UNSIGNED_BYTE;
         }
 
-        if (CG_PIXEL_FORMAT_CAN_HAVE_PREMULT(read_format))
-            read_format = ((read_format & ~CG_PREMULT_BIT) |
-                           (framebuffer->internal_format & CG_PREMULT_BIT));
+        if (_cg_pixel_format_can_be_premultiplied(read_format)) {
+            read_format = _cg_pixel_format_premult_stem(read_format);
+
+            if (_cg_pixel_format_is_premultiplied(framebuffer->internal_format))
+                read_format = _cg_pixel_format_premultiply(read_format);
+        }
 
         tmp_bmp = _cg_bitmap_new_with_malloc_buffer(dev, width, height,
                                                     read_format, error);
@@ -1401,10 +1402,11 @@ _cg_framebuffer_gl_read_pixels_into_bitmap(cg_framebuffer_t *framebuffer,
         /* We match the premultiplied state of the target buffer to the
          * premultiplied state of the framebuffer so that it will get
          * converted to the right format below */
-        if (CG_PIXEL_FORMAT_CAN_HAVE_PREMULT(format))
-            bmp_format = ((format & ~CG_PREMULT_BIT) |
-                          (framebuffer->internal_format & CG_PREMULT_BIT));
-        else
+        if (_cg_pixel_format_can_be_premultiplied(format)) {
+            bmp_format = _cg_pixel_format_premult_stem(format);
+            if (_cg_pixel_format_is_premultiplied(framebuffer->internal_format))
+                bmp_format = _cg_pixel_format_premultiply(bmp_format);
+        }else
             bmp_format = format;
 
         if (bmp_format != format)

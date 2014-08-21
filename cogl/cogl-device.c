@@ -529,9 +529,9 @@ cg_egl_context_get_egl_display(cg_device_t *dev)
     const cg_winsys_vtable_t *winsys = _cg_device_get_winsys(dev);
 
     /* This should only be called for EGL contexts */
-    c_return_val_if_fail(winsys->dev_egl_get_egl_display != NULL, NULL);
+    c_return_val_if_fail(winsys->device_egl_get_egl_display != NULL, NULL);
 
-    return winsys->dev_egl_get_egl_display(dev);
+    return winsys->device_egl_get_egl_display(dev);
 }
 #endif
 

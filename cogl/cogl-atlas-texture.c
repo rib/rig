@@ -486,8 +486,10 @@ _cg_atlas_texture_convert_bitmap_for_upload(cg_atlas_texture_t *atlas_tex,
        images are all stored in the original premult format of the
        orignal format so we do need to trigger the conversion */
 
-    internal_format =
-        (CG_PIXEL_FORMAT_RGBA_8888 | (internal_format & CG_PREMULT_BIT));
+    if (_cg_pixel_format_is_premultiplied(internal_format))
+        internal_format = CG_PIXEL_FORMAT_RGBA_8888_PRE;
+    else
+        internal_format = CG_PIXEL_FORMAT_RGBA_8888;
 
     upload_bmp = _cg_bitmap_convert_for_upload(
         bmp, internal_format, can_convert_in_place, error);
@@ -499,8 +501,7 @@ _cg_atlas_texture_convert_bitmap_for_upload(cg_atlas_texture_t *atlas_tex,
        to the atlas texture won't trigger the conversion again */
 
     override_bmp = _cg_bitmap_new_shared(upload_bmp,
-                                         cg_bitmap_get_format(upload_bmp) &
-                                         ~CG_PREMULT_BIT,
+                                         _cg_pixel_format_premult_stem(cg_bitmap_get_format(upload_bmp)),
                                          cg_bitmap_get_width(upload_bmp),
                                          cg_bitmap_get_height(upload_bmp),
                                          cg_bitmap_get_rowstride(upload_bmp));
@@ -592,15 +593,23 @@ _cg_atlas_texture_get_gl_format(cg_texture_t *tex)
 static bool
 _cg_atlas_texture_can_use_format(cg_pixel_format_t format)
 {
+    cg_texture_components_t components = _cg_pixel_format_get_components(format);
+    int bpp = _cg_pixel_format_get_bytes_per_pixel(format);
+
     /* We don't care about the ordering or the premult status and we can
        accept RGBA or RGB textures. Although we could also accept
        luminance and alpha only textures or 16-bit formats it seems that
        if the application is explicitly using these formats then they've
        got a reason to want the lower memory requirements so putting
        them in the atlas might not be a good idea */
-    format &= ~(CG_PREMULT_BIT | CG_BGR_BIT | CG_AFIRST_BIT);
-    return (format == CG_PIXEL_FORMAT_RGB_888 ||
-            format == CG_PIXEL_FORMAT_RGBA_8888);
+
+    if ((components == CG_TEXTURE_COMPONENTS_RGB && bpp == 24) ||
+        (components == CG_TEXTURE_COMPONENTS_RGBA && bpp == 32))
+    {
+        return true;
+    }
+    else
+        return false;
 }
 
 void
@@ -703,17 +712,6 @@ allocate_space(cg_atlas_texture_t *atlas_tex,
                       CG_TEXTURE_ERROR,
                       CG_TEXTURE_ERROR_FORMAT,
                       "Texture format unsuitable for atlasing");
-        return false;
-    }
-
-    /* If we can't use FBOs then it will be too slow to migrate textures
-       and we shouldn't use the atlas */
-    if (!cg_has_feature(dev, CG_FEATURE_ID_OFFSCREEN)) {
-        _cg_set_error(error,
-                      CG_SYSTEM_ERROR,
-                      CG_SYSTEM_ERROR_UNSUPPORTED,
-                      "Atlasing disabled because migrations "
-                      "would be too slow");
         return false;
     }
 

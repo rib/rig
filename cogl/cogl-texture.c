@@ -36,6 +36,10 @@
 
 #include <config.h>
 
+#include <string.h>
+#include <stdlib.h>
+#include <math.h>
+
 #include "cogl-util.h"
 #include "cogl-bitmap.h"
 #include "cogl-bitmap-private.h"
@@ -58,10 +62,7 @@
 #include "cogl-sub-texture.h"
 #include "cogl-primitive-texture.h"
 #include "cogl-error-private.h"
-
-#include <string.h>
-#include <stdlib.h>
-#include <math.h>
+#include "cogl-pixel-format-private.h"
 
 /* This isn't defined in the GLES headers */
 #ifndef GL_RED
@@ -180,10 +181,12 @@ bool
 _cg_texture_needs_premult_conversion(cg_pixel_format_t src_format,
                                      cg_pixel_format_t dst_format)
 {
-    return ((src_format & dst_format & CG_A_BIT) &&
-            src_format != CG_PIXEL_FORMAT_A_8 &&
+    return (src_format != CG_PIXEL_FORMAT_A_8 &&
             dst_format != CG_PIXEL_FORMAT_A_8 &&
-            (src_format & CG_PREMULT_BIT) != (dst_format & CG_PREMULT_BIT));
+            _cg_pixel_format_has_alpha(src_format) &&
+            _cg_pixel_format_has_alpha(dst_format) &&
+            (_cg_pixel_format_is_premultiplied(src_format) !=
+             _cg_pixel_format_is_premultiplied(dst_format)));
 }
 
 bool
@@ -613,7 +616,8 @@ cg_texture_draw_and_read_to_bitmap(cg_texture_t *texture,
      *
      * TODO: verify if this is still an issue
      */
-    if ((_cg_texture_get_format(texture) & CG_A_BIT) /* && a_bits == 0*/) {
+#if 0
+    if (_cg_pixel_format_has_alpha(_cg_texture_get_format(texture))) {
         uint8_t *srcdata;
         uint8_t *dstdata;
         uint8_t *srcpixel;
@@ -683,10 +687,11 @@ cg_texture_draw_and_read_to_bitmap(cg_texture_t *texture,
 
         cg_object_unref(alpha_bmp);
     }
+#endif
 
     status = true;
 
-EXIT:
+//EXIT:
     /* Restore old state */
     cg_framebuffer_pop_matrix(framebuffer);
     _cg_framebuffer_pop_projection(framebuffer);
@@ -717,9 +722,6 @@ get_texture_bits_via_offscreen(cg_texture_t *meta_texture,
     bool ret;
     cg_error_t *ignore_error = NULL;
     cg_pixel_format_t real_format;
-
-    if (!cg_has_feature(dev, CG_FEATURE_ID_OFFSCREEN))
-        return false;
 
     offscreen = _cg_offscreen_new_with_texture_full(
         sub_texture, CG_OFFSCREEN_DISABLE_DEPTH_AND_STENCIL, 0);
@@ -930,9 +932,12 @@ cg_texture_get_data(cg_texture_t *texture,
 
     /* We can assume that whatever data GL gives us will have the
        premult status of the original texture */
-    if (CG_PIXEL_FORMAT_CAN_HAVE_PREMULT(closest_format))
-        closest_format = ((closest_format & ~CG_PREMULT_BIT) |
-                          (texture_format & CG_PREMULT_BIT));
+    if (_cg_pixel_format_can_be_premultiplied(closest_format)) {
+        closest_format = _cg_pixel_format_premult_stem(closest_format);
+
+        if (_cg_pixel_format_is_premultiplied(texture_format))
+            closest_format = _cg_pixel_format_premultiply(closest_format);
+    }
 
     /* If the application is requesting a conversion from a
      * component-alpha texture and the driver doesn't support them
@@ -1240,22 +1245,91 @@ _cg_texture_set_internal_format(cg_texture_t *texture,
     if (internal_format == CG_PIXEL_FORMAT_ANY)
         internal_format = CG_PIXEL_FORMAT_RGBA_8888_PRE;
 
-    if (internal_format == CG_PIXEL_FORMAT_A_8) {
+    switch (internal_format) {
+    case CG_PIXEL_FORMAT_A_8:
+    case CG_PIXEL_FORMAT_A_8SN:
+    case CG_PIXEL_FORMAT_A_16U:
+    case CG_PIXEL_FORMAT_A_16F:
+    case CG_PIXEL_FORMAT_A_32U:
+    case CG_PIXEL_FORMAT_A_32F:
         texture->components = CG_TEXTURE_COMPONENTS_A;
-        return;
-    } else if (internal_format == CG_PIXEL_FORMAT_RG_88) {
+        break;
+
+    case CG_PIXEL_FORMAT_RG_88:
+    case CG_PIXEL_FORMAT_RG_88SN:
+    case CG_PIXEL_FORMAT_RG_1616U:
+    case CG_PIXEL_FORMAT_RG_1616F:
+    case CG_PIXEL_FORMAT_RG_3232U:
+    case CG_PIXEL_FORMAT_RG_3232F:
         texture->components = CG_TEXTURE_COMPONENTS_RG;
-        return;
-    } else if (internal_format & CG_DEPTH_BIT) {
-        texture->components = CG_TEXTURE_COMPONENTS_DEPTH;
-        return;
-    } else if (internal_format & CG_A_BIT) {
-        texture->components = CG_TEXTURE_COMPONENTS_RGBA;
-        if (internal_format & CG_PREMULT_BIT)
-            texture->premultiplied = true;
-        return;
-    } else
+        break;
+
+    case CG_PIXEL_FORMAT_RGB_565:
+    case CG_PIXEL_FORMAT_RGB_888:
+    case CG_PIXEL_FORMAT_BGR_888:
+    case CG_PIXEL_FORMAT_RGB_888SN:
+    case CG_PIXEL_FORMAT_BGR_888SN:
+    case CG_PIXEL_FORMAT_RGB_161616U:
+    case CG_PIXEL_FORMAT_BGR_161616U:
+    case CG_PIXEL_FORMAT_RGB_161616F:
+    case CG_PIXEL_FORMAT_BGR_161616F:
+    case CG_PIXEL_FORMAT_RGB_323232U:
+    case CG_PIXEL_FORMAT_BGR_323232U:
+    case CG_PIXEL_FORMAT_BGR_323232F:
+    case CG_PIXEL_FORMAT_RGB_323232F:
         texture->components = CG_TEXTURE_COMPONENTS_RGB;
+        break;
+
+    case CG_PIXEL_FORMAT_RGBA_4444:
+    case CG_PIXEL_FORMAT_RGBA_5551:
+    case CG_PIXEL_FORMAT_RGBA_8888:
+    case CG_PIXEL_FORMAT_BGRA_8888:
+    case CG_PIXEL_FORMAT_ARGB_8888:
+    case CG_PIXEL_FORMAT_ABGR_8888:
+    case CG_PIXEL_FORMAT_RGBA_8888SN:
+    case CG_PIXEL_FORMAT_BGRA_8888SN:
+    case CG_PIXEL_FORMAT_RGBA_1010102:
+    case CG_PIXEL_FORMAT_BGRA_1010102:
+    case CG_PIXEL_FORMAT_ARGB_2101010:
+    case CG_PIXEL_FORMAT_ABGR_2101010:
+    case CG_PIXEL_FORMAT_RGBA_16161616U:
+    case CG_PIXEL_FORMAT_BGRA_16161616U:
+    case CG_PIXEL_FORMAT_RGBA_16161616F:
+    case CG_PIXEL_FORMAT_BGRA_16161616F:
+    case CG_PIXEL_FORMAT_RGBA_32323232U:
+    case CG_PIXEL_FORMAT_BGRA_32323232U:
+    case CG_PIXEL_FORMAT_RGBA_32323232F:
+    case CG_PIXEL_FORMAT_BGRA_32323232F:
+        texture->components = CG_TEXTURE_COMPONENTS_RGBA;
+        break;
+
+    case CG_PIXEL_FORMAT_RGBA_4444_PRE:
+    case CG_PIXEL_FORMAT_RGBA_5551_PRE:
+    case CG_PIXEL_FORMAT_RGBA_8888_PRE:
+    case CG_PIXEL_FORMAT_BGRA_8888_PRE:
+    case CG_PIXEL_FORMAT_ARGB_8888_PRE:
+    case CG_PIXEL_FORMAT_ABGR_8888_PRE:
+    case CG_PIXEL_FORMAT_RGBA_1010102_PRE:
+    case CG_PIXEL_FORMAT_BGRA_1010102_PRE:
+    case CG_PIXEL_FORMAT_ARGB_2101010_PRE:
+    case CG_PIXEL_FORMAT_ABGR_2101010_PRE:
+    case CG_PIXEL_FORMAT_RGBA_16161616F_PRE:
+    case CG_PIXEL_FORMAT_BGRA_16161616F_PRE:
+    case CG_PIXEL_FORMAT_RGBA_32323232F_PRE:
+    case CG_PIXEL_FORMAT_BGRA_32323232F_PRE:
+        texture->components = CG_TEXTURE_COMPONENTS_RGBA;
+        texture->premultiplied = true;
+        break;
+
+    case CG_PIXEL_FORMAT_DEPTH_16:
+    case CG_PIXEL_FORMAT_DEPTH_32:
+    case CG_PIXEL_FORMAT_DEPTH_24_STENCIL_8:
+        texture->components = CG_TEXTURE_COMPONENTS_DEPTH;
+        break;
+
+    case CG_PIXEL_FORMAT_ANY:
+        c_assert_not_reached();
+    }
 }
 
 cg_pixel_format_t
@@ -1266,9 +1340,11 @@ _cg_texture_derive_format(cg_device_t *dev,
 {
     switch (components) {
     case CG_TEXTURE_COMPONENTS_DEPTH:
-        if (src_format & CG_DEPTH_BIT)
+        if (src_format != CG_PIXEL_FORMAT_ANY &&
+            _cg_pixel_format_has_depth(src_format))
+        {
             return src_format;
-        else {
+        } else {
             if (_cg_has_private_feature(dev, CG_PRIVATE_FEATURE_EXT_PACKED_DEPTH_STENCIL) ||
                 _cg_has_private_feature(dev, CG_PRIVATE_FEATURE_OES_PACKED_DEPTH_STENCIL)) {
                 return CG_PIXEL_FORMAT_DEPTH_24_STENCIL_8;
@@ -1276,32 +1352,84 @@ _cg_texture_derive_format(cg_device_t *dev,
                 return CG_PIXEL_FORMAT_DEPTH_16;
         }
     case CG_TEXTURE_COMPONENTS_A:
+    case CG_TEXTURE_COMPONENTS_A8:
         return CG_PIXEL_FORMAT_A_8;
+    case CG_TEXTURE_COMPONENTS_A8_SNORM:
+        return CG_PIXEL_FORMAT_A_8SN;
+    case CG_TEXTURE_COMPONENTS_A16U:
+        return CG_PIXEL_FORMAT_A_16U;
+    case CG_TEXTURE_COMPONENTS_A16F:
+        return CG_PIXEL_FORMAT_A_16F;
+    case CG_TEXTURE_COMPONENTS_A32U:
+        return CG_PIXEL_FORMAT_A_32U;
+    case CG_TEXTURE_COMPONENTS_A32F:
+        return CG_PIXEL_FORMAT_A_32F;
     case CG_TEXTURE_COMPONENTS_RG:
+    case CG_TEXTURE_COMPONENTS_RG8:
         return CG_PIXEL_FORMAT_RG_88;
+    case CG_TEXTURE_COMPONENTS_RG8_SNORM:
+        return CG_PIXEL_FORMAT_RG_88SN;
+    case CG_TEXTURE_COMPONENTS_RG16U:
+        return CG_PIXEL_FORMAT_RG_1616U;
+    case CG_TEXTURE_COMPONENTS_RG16F:
+        return CG_PIXEL_FORMAT_RG_1616F;
+    case CG_TEXTURE_COMPONENTS_RG32U:
+        return CG_PIXEL_FORMAT_RG_3232U;
+    case CG_TEXTURE_COMPONENTS_RG32F:
+        return CG_PIXEL_FORMAT_RG_3232F;
     case CG_TEXTURE_COMPONENTS_RGB:
-        if (src_format != CG_PIXEL_FORMAT_ANY && !(src_format & CG_A_BIT) &&
-            !(src_format & CG_DEPTH_BIT))
+        if (src_format != CG_PIXEL_FORMAT_ANY && !_cg_pixel_format_has_alpha(src_format) &&
+            !_cg_pixel_format_has_depth(src_format))
             return src_format;
         else
             return CG_PIXEL_FORMAT_RGB_888;
+    case CG_TEXTURE_COMPONENTS_RGB8:
+        return CG_PIXEL_FORMAT_RGB_888;
+    case CG_TEXTURE_COMPONENTS_RGB8_SNORM:
+        return CG_PIXEL_FORMAT_RGB_888SN;
+    case CG_TEXTURE_COMPONENTS_RGB16U:
+        return CG_PIXEL_FORMAT_RGB_161616U;
+    case CG_TEXTURE_COMPONENTS_RGB16F:
+        return CG_PIXEL_FORMAT_RGB_161616F;
+    case CG_TEXTURE_COMPONENTS_RGB32U:
+        return CG_PIXEL_FORMAT_RGB_323232U;
+    case CG_TEXTURE_COMPONENTS_RGB32F:
+        return CG_PIXEL_FORMAT_RGB_323232F;
     case CG_TEXTURE_COMPONENTS_RGBA: {
         cg_pixel_format_t format;
 
-        if (src_format != CG_PIXEL_FORMAT_ANY && (src_format & CG_A_BIT) &&
+        if (src_format != CG_PIXEL_FORMAT_ANY && _cg_pixel_format_has_alpha(src_format) &&
             src_format != CG_PIXEL_FORMAT_A_8)
             format = src_format;
         else
             format = CG_PIXEL_FORMAT_RGBA_8888;
 
         if (premultiplied) {
-            if (CG_PIXEL_FORMAT_CAN_HAVE_PREMULT(format))
-                return format |= CG_PREMULT_BIT;
+            if (_cg_pixel_format_can_be_premultiplied(format))
+                return _cg_pixel_format_premultiply(format);
             else
                 return CG_PIXEL_FORMAT_RGBA_8888_PRE;
         } else
-            return format & ~CG_PREMULT_BIT;
+            return _cg_pixel_format_premult_stem(format);
     }
+    case CG_TEXTURE_COMPONENTS_RGBA8:
+        return premultiplied ?
+            CG_PIXEL_FORMAT_RGBA_8888_PRE : CG_PIXEL_FORMAT_RGBA_8888;
+    case CG_TEXTURE_COMPONENTS_RGBA8_SNORM:
+        c_return_val_if_fail(!premultiplied, CG_PIXEL_FORMAT_RGBA_8888_PRE);
+        return CG_PIXEL_FORMAT_RGBA_8888SN;
+    case CG_TEXTURE_COMPONENTS_RGBA16U:
+        c_return_val_if_fail(!premultiplied, CG_PIXEL_FORMAT_RGBA_8888_PRE);
+        return CG_PIXEL_FORMAT_RGBA_16161616U;
+    case CG_TEXTURE_COMPONENTS_RGBA16F:
+        return premultiplied ?
+            CG_PIXEL_FORMAT_RGBA_16161616F_PRE : CG_PIXEL_FORMAT_RGBA_16161616F;
+    case CG_TEXTURE_COMPONENTS_RGBA32U:
+        c_return_val_if_fail(!premultiplied, CG_PIXEL_FORMAT_RGBA_8888_PRE);
+        return CG_PIXEL_FORMAT_RGBA_32323232U;
+    case CG_TEXTURE_COMPONENTS_RGBA32F:
+        return premultiplied ?
+            CG_PIXEL_FORMAT_RGBA_32323232F_PRE : CG_PIXEL_FORMAT_RGBA_32323232F;
     }
 
     c_return_val_if_reached(CG_PIXEL_FORMAT_RGBA_8888_PRE);

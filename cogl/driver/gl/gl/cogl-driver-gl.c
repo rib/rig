@@ -28,9 +28,7 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include <string.h>
 
@@ -103,6 +101,207 @@ _cg_driver_pixel_format_from_gl_internal(cg_device_t *dev,
     return false;
 }
 
+static GLenum
+_cg_pixel_format_get_gl_type(cg_pixel_format_t format)
+{
+    switch (format) {
+    case CG_PIXEL_FORMAT_A_8:
+    case CG_PIXEL_FORMAT_RG_88:
+    case CG_PIXEL_FORMAT_RGB_888:
+    case CG_PIXEL_FORMAT_BGR_888:
+    case CG_PIXEL_FORMAT_RGBA_8888:
+    case CG_PIXEL_FORMAT_BGRA_8888:
+    case CG_PIXEL_FORMAT_ARGB_8888:
+    case CG_PIXEL_FORMAT_ABGR_8888:
+    case CG_PIXEL_FORMAT_RGBA_8888_PRE:
+    case CG_PIXEL_FORMAT_BGRA_8888_PRE:
+    case CG_PIXEL_FORMAT_ARGB_8888_PRE:
+    case CG_PIXEL_FORMAT_ABGR_8888_PRE:
+        return GL_UNSIGNED_BYTE;
+
+    case CG_PIXEL_FORMAT_A_8SN:
+    case CG_PIXEL_FORMAT_RG_88SN:
+    case CG_PIXEL_FORMAT_RGB_888SN:
+    case CG_PIXEL_FORMAT_BGR_888SN:
+    case CG_PIXEL_FORMAT_RGBA_8888SN:
+    case CG_PIXEL_FORMAT_BGRA_8888SN:
+        return GL_BYTE;
+
+    case CG_PIXEL_FORMAT_A_16U:
+    case CG_PIXEL_FORMAT_RG_1616U:
+    case CG_PIXEL_FORMAT_RGB_161616U:
+    case CG_PIXEL_FORMAT_BGR_161616U:
+    case CG_PIXEL_FORMAT_RGBA_16161616U:
+    case CG_PIXEL_FORMAT_BGRA_16161616U:
+        return GL_UNSIGNED_SHORT;
+
+    case CG_PIXEL_FORMAT_A_16F:
+    case CG_PIXEL_FORMAT_RG_1616F:
+    case CG_PIXEL_FORMAT_RGB_161616F:
+    case CG_PIXEL_FORMAT_BGR_161616F:
+    case CG_PIXEL_FORMAT_RGBA_16161616F:
+    case CG_PIXEL_FORMAT_BGRA_16161616F:
+    case CG_PIXEL_FORMAT_RGBA_16161616F_PRE:
+    case CG_PIXEL_FORMAT_BGRA_16161616F_PRE:
+        return GL_HALF_FLOAT;
+
+    case CG_PIXEL_FORMAT_A_32U:
+    case CG_PIXEL_FORMAT_RG_3232U:
+    case CG_PIXEL_FORMAT_RGB_323232U:
+    case CG_PIXEL_FORMAT_BGR_323232U:
+    case CG_PIXEL_FORMAT_RGBA_32323232U:
+    case CG_PIXEL_FORMAT_BGRA_32323232U:
+        return GL_UNSIGNED_INT;
+
+    case CG_PIXEL_FORMAT_A_32F:
+    case CG_PIXEL_FORMAT_RG_3232F:
+    case CG_PIXEL_FORMAT_RGB_323232F:
+    case CG_PIXEL_FORMAT_BGR_323232F:
+    case CG_PIXEL_FORMAT_RGBA_32323232F:
+    case CG_PIXEL_FORMAT_BGRA_32323232F:
+    case CG_PIXEL_FORMAT_RGBA_32323232F_PRE:
+    case CG_PIXEL_FORMAT_BGRA_32323232F_PRE:
+        return GL_FLOAT;
+
+    case CG_PIXEL_FORMAT_RGB_565:
+    case CG_PIXEL_FORMAT_RGBA_4444:
+    case CG_PIXEL_FORMAT_RGBA_4444_PRE:
+    case CG_PIXEL_FORMAT_RGBA_5551:
+    case CG_PIXEL_FORMAT_RGBA_5551_PRE:
+    case CG_PIXEL_FORMAT_RGBA_1010102:
+    case CG_PIXEL_FORMAT_BGRA_1010102:
+    case CG_PIXEL_FORMAT_ARGB_2101010:
+    case CG_PIXEL_FORMAT_ABGR_2101010:
+    case CG_PIXEL_FORMAT_RGBA_1010102_PRE:
+    case CG_PIXEL_FORMAT_BGRA_1010102_PRE:
+    case CG_PIXEL_FORMAT_ARGB_2101010_PRE:
+    case CG_PIXEL_FORMAT_ABGR_2101010_PRE:
+    case CG_PIXEL_FORMAT_DEPTH_16:
+    case CG_PIXEL_FORMAT_DEPTH_32:
+    case CG_PIXEL_FORMAT_DEPTH_24_STENCIL_8:
+    case CG_PIXEL_FORMAT_ANY:
+
+        /* These should be handled carefully */
+        c_assert_not_reached();
+        return 0;
+    }
+
+    c_assert_not_reached();
+    return 0;
+}
+
+static GLenum
+_cg_pixel_format_get_internal_gl_format(cg_pixel_format_t format)
+{
+    switch (format) {
+    case CG_PIXEL_FORMAT_A_8:
+        return GL_R8;
+    case CG_PIXEL_FORMAT_A_8SN:
+        return GL_R8_SNORM;
+    case CG_PIXEL_FORMAT_A_16U:
+        return GL_R16UI;
+    case CG_PIXEL_FORMAT_A_16F:
+        return GL_R16F;
+    case CG_PIXEL_FORMAT_A_32U:
+        return GL_R32UI;
+    case CG_PIXEL_FORMAT_A_32F:
+        return GL_R32F;
+    case CG_PIXEL_FORMAT_RG_88:
+        return GL_RG8;
+    case CG_PIXEL_FORMAT_RG_88SN:
+        return GL_RG8_SNORM;
+    case CG_PIXEL_FORMAT_RG_1616U:
+        return GL_RG16UI;
+    case CG_PIXEL_FORMAT_RG_1616F:
+        return GL_RG16F;
+    case CG_PIXEL_FORMAT_RG_3232U:
+        return GL_RG32UI;
+    case CG_PIXEL_FORMAT_RG_3232F:
+        return GL_RG32F;
+    case CG_PIXEL_FORMAT_RGB_888:
+        return GL_RGB8;
+    case CG_PIXEL_FORMAT_RGB_888SN:
+        return GL_RGB8_SNORM;
+    case CG_PIXEL_FORMAT_RGB_161616U:
+        return GL_RGB16UI;
+    case CG_PIXEL_FORMAT_RGB_161616F:
+        return GL_RGB16F;
+    case CG_PIXEL_FORMAT_RGB_323232U:
+        return GL_RGB32UI;
+    case CG_PIXEL_FORMAT_RGB_323232F:
+        return GL_RGB32F;
+    case CG_PIXEL_FORMAT_BGR_888:
+        return GL_RGB8;
+    case CG_PIXEL_FORMAT_BGR_888SN:
+        return GL_RGB8_SNORM;
+    case CG_PIXEL_FORMAT_BGR_161616U:
+        return GL_RGB16UI;
+    case CG_PIXEL_FORMAT_BGR_161616F:
+        return GL_RGB16F;
+    case CG_PIXEL_FORMAT_BGR_323232U:
+        return GL_RGB32F;
+    case CG_PIXEL_FORMAT_BGR_323232F:
+        return GL_RGB32F;
+    case CG_PIXEL_FORMAT_RGBA_8888:
+    case CG_PIXEL_FORMAT_RGBA_8888_PRE:
+        return GL_RGBA8;
+    case CG_PIXEL_FORMAT_RGBA_8888SN:
+        return GL_RGBA8_SNORM;
+    case CG_PIXEL_FORMAT_RGBA_16161616U:
+        return GL_RGBA16UI;
+    case CG_PIXEL_FORMAT_RGBA_16161616F:
+    case CG_PIXEL_FORMAT_RGBA_16161616F_PRE:
+        return GL_RGBA16F;
+    case CG_PIXEL_FORMAT_RGBA_32323232U:
+        return GL_RGBA32UI;
+    case CG_PIXEL_FORMAT_RGBA_32323232F:
+    case CG_PIXEL_FORMAT_RGBA_32323232F_PRE:
+        return GL_RGBA32F;
+    case CG_PIXEL_FORMAT_BGRA_8888:
+    case CG_PIXEL_FORMAT_BGRA_8888_PRE:
+        return GL_RGBA8;
+    case CG_PIXEL_FORMAT_BGRA_8888SN:
+        return GL_RGBA8_SNORM;
+    case CG_PIXEL_FORMAT_BGRA_16161616U:
+        return GL_RGBA16UI;
+    case CG_PIXEL_FORMAT_BGRA_16161616F:
+    case CG_PIXEL_FORMAT_BGRA_16161616F_PRE:
+        return GL_RGBA16F;
+    case CG_PIXEL_FORMAT_BGRA_32323232U:
+        return GL_RGBA32UI;
+    case CG_PIXEL_FORMAT_BGRA_32323232F:
+    case CG_PIXEL_FORMAT_BGRA_32323232F_PRE:
+        return GL_RGBA32F;
+
+    case CG_PIXEL_FORMAT_RGB_565:
+    case CG_PIXEL_FORMAT_RGBA_4444:
+    case CG_PIXEL_FORMAT_RGBA_4444_PRE:
+    case CG_PIXEL_FORMAT_RGBA_5551:
+    case CG_PIXEL_FORMAT_RGBA_5551_PRE:
+    case CG_PIXEL_FORMAT_ARGB_8888:
+    case CG_PIXEL_FORMAT_ABGR_8888:
+    case CG_PIXEL_FORMAT_ARGB_8888_PRE:
+    case CG_PIXEL_FORMAT_ABGR_8888_PRE:
+    case CG_PIXEL_FORMAT_RGBA_1010102:
+    case CG_PIXEL_FORMAT_BGRA_1010102:
+    case CG_PIXEL_FORMAT_ARGB_2101010:
+    case CG_PIXEL_FORMAT_ABGR_2101010:
+    case CG_PIXEL_FORMAT_RGBA_1010102_PRE:
+    case CG_PIXEL_FORMAT_BGRA_1010102_PRE:
+    case CG_PIXEL_FORMAT_ARGB_2101010_PRE:
+    case CG_PIXEL_FORMAT_ABGR_2101010_PRE:
+    case CG_PIXEL_FORMAT_DEPTH_16:
+    case CG_PIXEL_FORMAT_DEPTH_32:
+    case CG_PIXEL_FORMAT_DEPTH_24_STENCIL_8:
+    case CG_PIXEL_FORMAT_ANY:
+        /* These formats need to be handled carefully */
+        c_assert_not_reached();
+    }
+
+    c_assert_not_reached();
+    return GL_RGBA;
+}
+
 static cg_pixel_format_t
 _cg_driver_pixel_format_to_gl(cg_device_t *dev,
                               cg_pixel_format_t format,
@@ -120,58 +319,98 @@ _cg_driver_pixel_format_to_gl(cg_device_t *dev,
     /* Find GL equivalents */
     switch (format) {
     case CG_PIXEL_FORMAT_A_8:
-        /* If the driver doesn't natively support alpha textures then we
-         * will use a red component texture with a swizzle to implement
-         * the texture */
-        if (_cg_has_private_feature(dev,
-                                    CG_PRIVATE_FEATURE_ALPHA_TEXTURES) == 0) {
-            glintformat = GL_RED;
-            glformat = GL_RED;
-        } else {
-            glintformat = GL_ALPHA;
-            glformat = GL_ALPHA;
-        }
-        gltype = GL_UNSIGNED_BYTE;
+    case CG_PIXEL_FORMAT_A_8SN:
+    case CG_PIXEL_FORMAT_A_16U:
+    case CG_PIXEL_FORMAT_A_16F:
+    case CG_PIXEL_FORMAT_A_32U:
+    case CG_PIXEL_FORMAT_A_32F:
+
+        /* We emulate alpha textures as red component textures with
+         * a swizzle */
+        glformat = GL_RED;
+        glintformat = _cg_pixel_format_get_internal_gl_format(format);
+        gltype = _cg_pixel_format_get_gl_type(format);
         break;
 
     case CG_PIXEL_FORMAT_RG_88:
-        if (cg_has_feature(dev, CG_FEATURE_ID_TEXTURE_RG)) {
-            glintformat = GL_RG;
-            glformat = GL_RG;
-        } else {
-            /* If red-green textures aren't supported then we'll use RGB
-             * as an internal format. Note this should only end up
-             * mattering for downloading the data because Cogl will
-             * refuse to allocate a texture with RG components if RG
-             * textures aren't supported */
-            glintformat = GL_RGB;
-            glformat = GL_RGB;
-            required_format = CG_PIXEL_FORMAT_RGB_888;
-        }
-        gltype = GL_UNSIGNED_BYTE;
+    case CG_PIXEL_FORMAT_RG_88SN:
+    case CG_PIXEL_FORMAT_RG_1616U:
+    case CG_PIXEL_FORMAT_RG_1616F:
+    case CG_PIXEL_FORMAT_RG_3232U:
+    case CG_PIXEL_FORMAT_RG_3232F:
+        glformat = GL_RG;
+        glintformat = _cg_pixel_format_get_internal_gl_format(format);
+        gltype = _cg_pixel_format_get_gl_type(format);
+        break;
+
+    case CG_PIXEL_FORMAT_RGB_565:
+        glintformat = GL_RGB;
+        glintformat = _cg_pixel_format_get_internal_gl_format(format);
+        gltype = GL_UNSIGNED_SHORT_5_6_5;
         break;
 
     case CG_PIXEL_FORMAT_RGB_888:
-        glintformat = GL_RGB;
+    case CG_PIXEL_FORMAT_RGB_888SN:
+    case CG_PIXEL_FORMAT_RGB_161616U:
+    case CG_PIXEL_FORMAT_RGB_161616F:
+    case CG_PIXEL_FORMAT_RGB_323232U:
+    case CG_PIXEL_FORMAT_RGB_323232F:
         glformat = GL_RGB;
-        gltype = GL_UNSIGNED_BYTE;
+        glintformat = _cg_pixel_format_get_internal_gl_format(format);
+        gltype = _cg_pixel_format_get_gl_type(format);
         break;
+
     case CG_PIXEL_FORMAT_BGR_888:
-        glintformat = GL_RGB;
+    case CG_PIXEL_FORMAT_BGR_888SN:
+    case CG_PIXEL_FORMAT_BGR_161616U:
+    case CG_PIXEL_FORMAT_BGR_161616F:
+    case CG_PIXEL_FORMAT_BGR_323232U:
+    case CG_PIXEL_FORMAT_BGR_323232F:
         glformat = GL_BGR;
-        gltype = GL_UNSIGNED_BYTE;
+        glintformat = _cg_pixel_format_get_internal_gl_format(format);
+        gltype = _cg_pixel_format_get_gl_type(format);
         break;
-    case CG_PIXEL_FORMAT_RGBA_8888:
-    case CG_PIXEL_FORMAT_RGBA_8888_PRE:
+
+    case CG_PIXEL_FORMAT_RGBA_4444:
+    case CG_PIXEL_FORMAT_RGBA_4444_PRE:
         glintformat = GL_RGBA;
         glformat = GL_RGBA;
-        gltype = GL_UNSIGNED_BYTE;
+        gltype = GL_UNSIGNED_SHORT_4_4_4_4;
         break;
+
+    case CG_PIXEL_FORMAT_RGBA_5551:
+    case CG_PIXEL_FORMAT_RGBA_5551_PRE:
+        glintformat = GL_RGBA;
+        glformat = GL_RGBA;
+        gltype = GL_UNSIGNED_SHORT_5_5_5_1;
+        break;
+
+    case CG_PIXEL_FORMAT_RGBA_8888:
+    case CG_PIXEL_FORMAT_RGBA_8888_PRE:
+    case CG_PIXEL_FORMAT_RGBA_8888SN:
+    case CG_PIXEL_FORMAT_RGBA_16161616U:
+    case CG_PIXEL_FORMAT_RGBA_16161616F:
+    case CG_PIXEL_FORMAT_RGBA_16161616F_PRE:
+    case CG_PIXEL_FORMAT_RGBA_32323232U:
+    case CG_PIXEL_FORMAT_RGBA_32323232F:
+    case CG_PIXEL_FORMAT_RGBA_32323232F_PRE:
+        glformat = GL_RGBA;
+        glintformat = _cg_pixel_format_get_internal_gl_format(format);
+        gltype = _cg_pixel_format_get_gl_type(format);
+        break;
+
     case CG_PIXEL_FORMAT_BGRA_8888:
     case CG_PIXEL_FORMAT_BGRA_8888_PRE:
-        glintformat = GL_RGBA;
+    case CG_PIXEL_FORMAT_BGRA_8888SN:
+    case CG_PIXEL_FORMAT_BGRA_16161616U:
+    case CG_PIXEL_FORMAT_BGRA_16161616F:
+    case CG_PIXEL_FORMAT_BGRA_16161616F_PRE:
+    case CG_PIXEL_FORMAT_BGRA_32323232U:
+    case CG_PIXEL_FORMAT_BGRA_32323232F:
+    case CG_PIXEL_FORMAT_BGRA_32323232F_PRE:
         glformat = GL_BGRA;
-        gltype = GL_UNSIGNED_BYTE;
+        glintformat = _cg_pixel_format_get_internal_gl_format(format);
+        gltype = _cg_pixel_format_get_gl_type(format);
         break;
 
     /* The following two types of channel ordering
@@ -227,27 +466,6 @@ _cg_driver_pixel_format_to_gl(cg_device_t *dev,
         gltype = GL_UNSIGNED_INT_2_10_10_10_REV;
         break;
 
-    /* The following three types of channel ordering
-     * are always defined using system word byte
-     * ordering (even according to GLES spec) */
-    case CG_PIXEL_FORMAT_RGB_565:
-        glintformat = GL_RGB;
-        glformat = GL_RGB;
-        gltype = GL_UNSIGNED_SHORT_5_6_5;
-        break;
-    case CG_PIXEL_FORMAT_RGBA_4444:
-    case CG_PIXEL_FORMAT_RGBA_4444_PRE:
-        glintformat = GL_RGBA;
-        glformat = GL_RGBA;
-        gltype = GL_UNSIGNED_SHORT_4_4_4_4;
-        break;
-    case CG_PIXEL_FORMAT_RGBA_5551:
-    case CG_PIXEL_FORMAT_RGBA_5551_PRE:
-        glintformat = GL_RGBA;
-        glformat = GL_RGBA;
-        gltype = GL_UNSIGNED_SHORT_5_5_5_1;
-        break;
-
     case CG_PIXEL_FORMAT_DEPTH_16:
         glintformat = GL_DEPTH_COMPONENT16;
         glformat = GL_DEPTH_COMPONENT;
@@ -268,6 +486,14 @@ _cg_driver_pixel_format_to_gl(cg_device_t *dev,
     case CG_PIXEL_FORMAT_ANY:
         c_assert_not_reached();
         break;
+    }
+
+    /* Preserve the premult status of @format */
+    if (_cg_pixel_format_can_be_premultiplied(required_format))
+    {
+        required_format = _cg_pixel_format_premult_stem(required_format);
+        if (_cg_pixel_format_is_premultiplied(format))
+            required_format = _cg_pixel_format_premultiply(required_format);
     }
 
     /* All of the pixel formats are handled above so if this hits then
@@ -437,11 +663,16 @@ _cg_driver_update_features(cg_device_t *dev, cg_error_t **error)
         CG_FLAGS_SET(
             private_features, CG_PRIVATE_FEATURE_MESA_PACK_INVERT, true);
 
-    if (dev->glGenRenderbuffers) {
-        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_OFFSCREEN, true);
-        CG_FLAGS_SET(
-            private_features, CG_PRIVATE_FEATURE_QUERY_FRAMEBUFFER_BITS, true);
+    if (!dev->glGenRenderbuffers) {
+        _cg_set_error(error,
+                      CG_DRIVER_ERROR,
+                      CG_DRIVER_ERROR_NO_SUITABLE_DRIVER_FOUND,
+                      "Framebuffer Object support is required to "
+                      "use the OpenGL driver");
+        return false;
     }
+    CG_FLAGS_SET(
+        private_features, CG_PRIVATE_FEATURE_QUERY_FRAMEBUFFER_BITS, true);
 
     if (dev->glBlitFramebuffer)
         CG_FLAGS_SET(private_features, CG_PRIVATE_FEATURE_OFFSCREEN_BLIT, true);
@@ -462,35 +693,14 @@ _cg_driver_update_features(cg_device_t *dev, cg_error_t **error)
         _cg_check_extension("GL_EXT_blend_color", gl_extensions))
         CG_FLAGS_SET(private_features, CG_PRIVATE_FEATURE_BLEND_CONSTANT, true);
 
-    if (dev->glCreateProgram)
-        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_GLSL, true);
-    else {
-        /* If all of the old GLSL extensions are available then we can fake
-        * the GL 2.0 GLSL support by diverting to the old function names */
-        if (dev->glCreateProgramObject && /* GL_ARB_shader_objects */
-            dev->glVertexAttribPointer && /* GL_ARB_vertex_shader */
-            _cg_check_extension("GL_ARB_fragment_shader", gl_extensions)) {
-            dev->glCreateShader = dev->glCreateShaderObject;
-            dev->glCreateProgram = dev->glCreateProgramObject;
-            dev->glDeleteShader = dev->glDeleteObject;
-            dev->glDeleteProgram = dev->glDeleteObject;
-            dev->glAttachShader = dev->glAttachObject;
-            dev->glUseProgram = dev->glUseProgramObject;
-            dev->glGetProgramInfoLog = dev->glGetInfoLog;
-            dev->glGetShaderInfoLog = dev->glGetInfoLog;
-            dev->glGetShaderiv = dev->glGetObjectParameteriv;
-            dev->glGetProgramiv = dev->glGetObjectParameteriv;
-            dev->glDetachShader = dev->glDetachObject;
-            dev->glGetAttachedShaders = dev->glGetAttachedObjects;
-            /* FIXME: there doesn't seem to be an equivalent for glIsShader
-             * and glIsProgram. This doesn't matter for now because Cogl
-             * doesn't use these but if we add support for simulating a
-             * GLES2 context on top of regular GL then we'll need to do
-             * something here */
-
-            CG_FLAGS_SET(dev->features, CG_FEATURE_ID_GLSL, true);
-        }
+    if (!dev->glCreateProgram) {
+        _cg_set_error(error,
+                      CG_DRIVER_ERROR,
+                      CG_DRIVER_ERROR_NO_SUITABLE_DRIVER_FOUND,
+                      "GLSL support is required to use the OpenGL driver");
+        return false;
     }
+    CG_FLAGS_SET(dev->features, CG_FEATURE_ID_GLSL, true);
 
     if ((CG_CHECK_GL_VERSION(gl_major, gl_minor, 2, 0) ||
          _cg_check_extension("GL_ARB_point_sprite", gl_extensions)) &&
@@ -523,15 +733,28 @@ _cg_driver_update_features(cg_device_t *dev, cg_error_t **error)
                      CG_PRIVATE_FEATURE_EXT_PACKED_DEPTH_STENCIL,
                      true);
 
-    if (dev->glGenSamplers)
-        CG_FLAGS_SET(
-            private_features, CG_PRIVATE_FEATURE_SAMPLER_OBJECTS, true);
+    if (!dev->glGenSamplers) {
+        _cg_set_error(error,
+                      CG_DRIVER_ERROR,
+                      CG_DRIVER_ERROR_NO_SUITABLE_DRIVER_FOUND,
+                      "Sampler Object support is required to use the "
+                      "OpenGL driver");
+        return false;
+    }
+    CG_FLAGS_SET(private_features, CG_PRIVATE_FEATURE_SAMPLER_OBJECTS, true);
 
-    if (CG_CHECK_GL_VERSION(gl_major, gl_minor, 3, 3) ||
-        _cg_check_extension("GL_ARB_texture_swizzle", gl_extensions) ||
-        _cg_check_extension("GL_EXT_texture_swizzle", gl_extensions))
-        CG_FLAGS_SET(
-            private_features, CG_PRIVATE_FEATURE_TEXTURE_SWIZZLE, true);
+    if (!CG_CHECK_GL_VERSION(gl_major, gl_minor, 3, 3) &&
+        !(_cg_check_extension("GL_ARB_texture_swizzle", gl_extensions) ||
+         _cg_check_extension("GL_EXT_texture_swizzle", gl_extensions)))
+    {
+        _cg_set_error(error,
+                      CG_DRIVER_ERROR,
+                      CG_DRIVER_ERROR_NO_SUITABLE_DRIVER_FOUND,
+                      "The GL_ARB_texture_swizzle or GL_EXT_texture_swizzle "
+                      "extension is required to use the OpenGL driver");
+        return false;
+    }
+    CG_FLAGS_SET(private_features, CG_PRIVATE_FEATURE_TEXTURE_SWIZZLE, true);
 
     /* The per-vertex point size is only available via GLSL with the
      * gl_PointSize builtin. This is only available in GL 2.0 (not the
@@ -545,9 +768,8 @@ _cg_driver_update_features(cg_device_t *dev, cg_error_t **error)
     }
 
     if (dev->driver == CG_DRIVER_GL) {
-        /* Features which are not available in GL 3 */
+        /* Not available in GL 3 */
         CG_FLAGS_SET(private_features, CG_PRIVATE_FEATURE_QUADS, true);
-        CG_FLAGS_SET(private_features, CG_PRIVATE_FEATURE_ALPHA_TEXTURES, true);
     }
 
     CG_FLAGS_SET(
@@ -564,34 +786,22 @@ _cg_driver_update_features(cg_device_t *dev, cg_error_t **error)
     if (dev->glFenceSync)
         CG_FLAGS_SET(dev->features, CG_FEATURE_ID_FENCE, true);
 
-    if (CG_CHECK_GL_VERSION(gl_major, gl_minor, 3, 0) ||
-        _cg_check_extension("GL_ARB_texture_rg", gl_extensions))
-        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_TEXTURE_RG, true);
+    if (!CG_CHECK_GL_VERSION(gl_major, gl_minor, 3, 0) &&
+        !_cg_check_extension("GL_ARB_texture_rg", gl_extensions))
+    {
+        _cg_set_error(error,
+                      CG_DRIVER_ERROR,
+                      CG_DRIVER_ERROR_NO_SUITABLE_DRIVER_FOUND,
+                      "The GL_ARB_texture_rg extension is required "
+                      "to use the OpenGL driver");
+        return false;
+    }
 
     /* Cache features */
     for (i = 0; i < C_N_ELEMENTS(private_features); i++)
         dev->private_features[i] |= private_features[i];
 
     c_strfreev(gl_extensions);
-
-    if (!CG_FLAGS_GET(private_features, CG_PRIVATE_FEATURE_ALPHA_TEXTURES) &&
-        !CG_FLAGS_GET(private_features, CG_PRIVATE_FEATURE_TEXTURE_SWIZZLE)) {
-        _cg_set_error(error,
-                      CG_DRIVER_ERROR,
-                      CG_DRIVER_ERROR_NO_SUITABLE_DRIVER_FOUND,
-                      "The GL_ARB_texture_swizzle extension is required "
-                      "to use the GL3 driver");
-        return false;
-    }
-
-    if (!CG_FLAGS_GET(dev->features, CG_FEATURE_ID_OFFSCREEN)) {
-        _cg_set_error(error,
-                      CG_DRIVER_ERROR,
-                      CG_DRIVER_ERROR_NO_SUITABLE_DRIVER_FOUND,
-                      "Cogl requires framebuffer object support "
-                      "to use the GL driver");
-        return false;
-    }
 
     return true;
 }

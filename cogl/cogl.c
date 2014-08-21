@@ -28,9 +28,7 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include <string.h>
 #include <math.h>
@@ -176,16 +174,4 @@ _cg_init(void)
         _cg_debug_check_environment();
         initialized = true;
     }
-}
-
-int
-_cg_pixel_format_get_bytes_per_pixel(cg_pixel_format_t format)
-{
-    return format & CG_PIXEL_FORMAT_BPP_MASK;
-}
-
-bool
-_cg_pixel_format_is_endian_dependant(cg_pixel_format_t format)
-{
-    return !(format & CG_BITWISE_BIT);
 }

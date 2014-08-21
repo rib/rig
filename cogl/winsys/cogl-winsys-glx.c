@@ -30,9 +30,7 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "cogl-i18n-private.h"
 #include "cogl-util.h"
@@ -2089,16 +2087,12 @@ get_fbconfig_for_depth(cg_device_t *dev,
 
         stencil = value;
 
-        /* glGenerateMipmap is defined in the offscreen extension */
-        if (cg_has_feature(dev, CG_FEATURE_ID_OFFSCREEN)) {
-            glx_renderer->glXGetFBConfigAttrib(
-                dpy, fbconfigs[i], GLX_BIND_TO_MIPMAP_TEXTURE_EXT, &value);
+        glx_renderer->glXGetFBConfigAttrib(dpy, fbconfigs[i],
+                                           GLX_BIND_TO_MIPMAP_TEXTURE_EXT, &value);
+        if (value < mipmap)
+            continue;
 
-            if (value < mipmap)
-                continue;
-
-            mipmap = value;
-        }
+        mipmap = value;
 
         *fbconfig_ret = fbconfigs[i];
         *can_mipmap_ret = mipmap;

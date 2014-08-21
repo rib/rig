@@ -33,9 +33,7 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include <string.h>
 
@@ -1578,7 +1576,7 @@ _cg_gles2_offscreen_allocate(cg_offscreen_t *offscreen,
     }
 
     winsys = _cg_framebuffer_get_winsys(framebuffer);
-    winsys->save_context(framebuffer->dev);
+    winsys->save_device(framebuffer->dev);
     if (!winsys->set_gles2_context(gles2_context, &internal_error)) {
         winsys->restore_context(framebuffer->dev);
 
@@ -1663,7 +1661,7 @@ cg_push_gles2_context(cg_device_t *dev,
         _cg_journal_flush(read_buffer->journal);
         if (write_buffer != read_buffer)
             _cg_journal_flush(write_buffer->journal);
-        winsys->save_context(dev);
+        winsys->save_device(dev);
     } else
         gles2_ctx->vtable->glFlush();
 

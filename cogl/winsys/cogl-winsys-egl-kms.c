@@ -720,7 +720,7 @@ _cg_winsys_egl_display_destroy(cg_display_t *display)
 }
 
 static bool
-_cg_winsys_egl_context_created(cg_display_t *display,
+_cg_winsys_egl_device_created(cg_display_t *display,
                                cg_error_t **error)
 {
     cg_display_egl_t *egl_display = display->winsys;
@@ -774,7 +774,7 @@ _cg_winsys_egl_context_created(cg_display_t *display,
 }
 
 static void
-_cg_winsys_egl_cleanup_context(cg_display_t *display)
+_cg_winsys_egl_cleanup_device(cg_display_t *display)
 {
     cg_display_egl_t *egl_display = display->winsys;
     cg_display_kms_t *kms_display = egl_display->platform;
@@ -870,7 +870,7 @@ _cg_winsys_onscreen_swap_buffers_with_damage(
 }
 
 static bool
-_cg_winsys_egl_context_init(cg_device_t *dev,
+_cg_winsys_egl_device_init(cg_device_t *dev,
                             cg_error_t **error)
 {
     CG_FLAGS_SET(dev->winsys_features,
@@ -992,9 +992,9 @@ _cg_winsys_onscreen_deinit(cg_onscreen_t *onscreen)
 static const cg_winsys_egl_vtable_t _cg_winsys_egl_vtable = {
     .display_setup = _cg_winsys_egl_display_setup,
     .display_destroy = _cg_winsys_egl_display_destroy,
-    .context_created = _cg_winsys_egl_context_created,
-    .cleanup_context = _cg_winsys_egl_cleanup_context,
-    .context_init = _cg_winsys_egl_context_init
+    .device_created = _cg_winsys_egl_device_created,
+    .cleanup_device = _cg_winsys_egl_cleanup_device,
+    .device_init = _cg_winsys_egl_device_init
 };
 
 const cg_winsys_vtable_t *

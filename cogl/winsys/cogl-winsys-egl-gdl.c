@@ -122,7 +122,7 @@ error:
 }
 
 static bool
-_cg_winsys_egl_context_created(cg_display_t *display,
+_cg_winsys_egl_device_created(cg_display_t *display,
                                cg_error_t **error)
 {
     cg_renderer_t *renderer = display->renderer;
@@ -277,7 +277,7 @@ _cg_winsys_egl_display_destroy(cg_display_t *display)
 }
 
 static void
-_cg_winsys_egl_cleanup_context(cg_display_t *display)
+_cg_winsys_egl_cleanup_device(cg_display_t *display)
 {
     cg_renderer_t *renderer = display->renderer;
     cg_renderer_egl_t *egl_renderer = renderer->winsys;
@@ -338,8 +338,8 @@ _cg_winsys_egl_add_config_attributes(cg_display_t *display,
 static const cg_winsys_egl_vtable_t _cg_winsys_egl_vtable = {
     .display_setup = _cg_winsys_egl_display_setup,
     .display_destroy = _cg_winsys_egl_display_destroy,
-    .context_created = _cg_winsys_egl_context_created,
-    .cleanup_context = _cg_winsys_egl_cleanup_context,
+    .device_created = _cg_winsys_egl_device_created,
+    .cleanup_device = _cg_winsys_egl_cleanup_device,
     .onscreen_init = _cg_winsys_egl_onscreen_init,
     .add_config_attributes = _cg_winsys_egl_add_config_attributes
 };

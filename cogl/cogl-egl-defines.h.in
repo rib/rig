@@ -28,13 +28,13 @@
  *
  */
 
-#ifndef __COGL_EGL_DEFINES_H__
-#define __COGL_EGL_DEFINES_H__
+#ifndef __CG_EGL_DEFINES_H__
+#define __CG_EGL_DEFINES_H__
 
-#ifdef COGL_HAS_EGL_SUPPORT
+#ifdef CG_HAS_EGL_SUPPORT
 
 @COGL_EGL_INCLUDES@
 
-#endif /* COGL_HAS_EGL_SUPPORT */
+#endif /* CG_HAS_EGL_SUPPORT */
 
 #endif

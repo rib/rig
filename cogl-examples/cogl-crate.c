@@ -147,6 +147,7 @@ main(int argc, char **argv)
     PangoRectangle hello_label_size;
     float fovy, aspect, z_near, z_2d, z_far;
     cg_depth_state_t depth_state;
+    cg_bitmap_t *bitmap;
 
     dev = cg_device_new();
     if (!cg_device_connect(dev, &error)) {
@@ -218,9 +219,14 @@ main(int argc, char **argv)
     /* Load a jpeg crate texture from a file */
     printf("crate.jpg (CC by-nc-nd http://bit.ly/9kP45T) ShadowRunner27 "
            "http://bit.ly/m1YXLh\n");
-    data.texture =
-        cg_texture_2d_new_from_file(dev, CG_EXAMPLES_DATA "crate.jpg",
-                                    &error);
+    bitmap = cg_bitmap_new_from_file(dev, CG_EXAMPLES_DATA "crate.jpg", &error);
+    if (!bitmap)
+        g_error("Failed to load texture: %s", error->message);
+
+    data.texture = cg_texture_2d_new_from_bitmap(bitmap);
+    cg_texture_set_components(data.texture, CG_TEXTURE_COMPONENTS_RGBA32F);
+    cg_texture_allocate(data.texture, &error);
+
     if (!data.texture)
         g_error("Failed to load texture: %s", error->message);
 

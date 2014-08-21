@@ -62,13 +62,13 @@ typedef struct _cg_winsys_egl_vtable_t {
     bool (*display_setup)(cg_display_t *display, cg_error_t **error);
     void (*display_destroy)(cg_display_t *display);
 
-    bool (*context_created)(cg_display_t *display, cg_error_t **error);
+    bool (*device_created)(cg_display_t *display, cg_error_t **error);
 
-    void (*cleanup_context)(cg_display_t *display);
+    void (*cleanup_device)(cg_display_t *display);
 
-    bool (*context_init)(cg_device_t *dev, cg_error_t **error);
+    bool (*device_init)(cg_device_t *dev, cg_error_t **error);
 
-    void (*context_deinit)(cg_device_t *dev);
+    void (*device_deinit)(cg_device_t *dev);
 
     bool (*onscreen_init)(cg_onscreen_t *onscreen,
                           EGLConfig config,

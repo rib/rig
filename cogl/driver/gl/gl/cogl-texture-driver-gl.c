@@ -33,9 +33,7 @@
  *  Robert Bragg   <robert@linux.intel.com>
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "cogl-private.h"
 #include "cogl-util.h"
@@ -417,7 +415,7 @@ _cg_texture_driver_gl_get_tex_image(cg_device_t *dev,
 static bool
 _cg_texture_driver_size_supported_3d(cg_device_t *dev,
                                      GLenum gl_target,
-                                     GLenum gl_format,
+                                     GLenum gl_internal_format,
                                      GLenum gl_type,
                                      int width,
                                      int height,
@@ -436,12 +434,12 @@ _cg_texture_driver_size_supported_3d(cg_device_t *dev,
     GE(dev,
        glTexImage3D(proxy_target,
                     0,
-                    GL_RGBA,
+                    gl_internal_format,
                     width,
                     height,
                     depth,
                     0 /* border */,
-                    gl_format,
+                    GL_RGBA,
                     gl_type,
                     NULL));
 

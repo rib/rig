@@ -96,7 +96,7 @@ error:
 }
 
 static bool
-_cg_winsys_egl_context_created(cg_display_t *display,
+_cg_winsys_egl_device_created(cg_display_t *display,
                                cg_error_t **error)
 {
     cg_renderer_t *renderer = display->renderer;
@@ -224,7 +224,7 @@ cg_android_onscreen_update_size(cg_onscreen_t *onscreen, int width, int height)
 static const cg_winsys_egl_vtable_t _cg_winsys_egl_vtable = {
     .display_setup = _cg_winsys_egl_display_setup,
     .display_destroy = _cg_winsys_egl_display_destroy,
-    .context_created = _cg_winsys_egl_context_created,
+    .device_created = _cg_winsys_egl_device_created,
     .onscreen_init = _cg_winsys_egl_onscreen_init,
 };
 

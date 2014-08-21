@@ -117,159 +117,77 @@ typedef struct _cg_color_t cg_color_t;
 /* Enum declarations */
 
 /**
- * CG_BITWISE_BIT:
- *
- * A flag that can be masked with a #cg_pixel_format_t to determine if
- * the format should be accessed with bitwise operations. If the flag
- * is set then all of the bytes representing a pixel should
- * interpreted as a single integer stored in the native endianness of
- * the CPU. The order of the components in the name of the format
- * represent the bits within that integer in order of decreasing
- * significance. For example, the bytes for a pixel in the format
- * RGB_565 should be interpreted as a 16-bit integer, with the red
- * component in the most significant 5 bits, green in the next 6 bits
- * and so on.
- *
- * If the flag is not set then each component is byte aligned and is
- * stored in order of increasing memory addresses. For example, in
- * RGB_888, there are 24 bits per pixel with the red component stored
- * in the byte with the lowest address and so on.
- */
-#define CG_BITWISE_BIT (1 << 5)
-
-/**
- * CG_A_BIT:
- *
- * A flag that can be masked with a #cg_pixel_format_t to determine if
- * the format has an alpha component.
- */
-#define CG_A_BIT (1 << 6)
-
-/**
- * CG_BGR_BIT:
- *
- * A flag that can be masked with a #cg_pixel_format_t to determine if
- * the color components are ordered Blue, followed by Green followed
- * by Red.
- *
- * (Note: it depends on the %CG_BITWISE_BIT flag whether the order
- * relates to the order of bits or to memory address order)
- */
-#define CG_BGR_BIT (1 << 7)
-
-/**
- * CG_AFIRST_BIT:
- *
- * A flag that can be masked with a #cg_pixel_format_t to determine if
- * an alpha component is in front of the first color component.
- *
- * (Note: it depends on the %CG_BITWISE_BIT flag whether "first"
- * means first in terms of bits or first in memory address order)
- */
-#define CG_AFIRST_BIT (1 << 8)
-
-/**
- * CG_PREMULT_BIT:
- *
- * A flag that can be masked with a #cg_pixel_format_t to determine if
- * it represents a pre-multiplied alpha format.
- */
-#define CG_PREMULT_BIT (1 << 9)
-
-/**
- * CG_PIXEL_FORMAT_BPP_MASK:
- *
- * Masks out the bytes per pixel for the given format
- */
-#define CG_PIXEL_FORMAT_BPP_MASK (0x3f)
-
-/* FIXME: Add a separate CoglInternalFormat enum to handle these */
-#define CG_DEPTH_BIT (1 << 10)
-#define CG_STENCIL_BIT (1 << 11)
-
-#define CG_FORMAT_ENUM(X) ((X) << 24)
-
-/* XXX: Notes to those adding new formats here...
- *
- * First this diagram outlines how we allocate the 32bits of a
- * cg_pixel_format_t currently...
- *
- *                            7 bits for flags
- *                       |------|
- *  enum        unused             6 bits for the bytes-per-pixel
- *  |------| |----------|        |----|
- *  00000000 xxxxxxxx xxxSDPFB ABxxxxxx
- *                       ^ stencil
- *                        ^ depth
- *                         ^ premult
- *                          ^ alpha first
- *                           ^ bgr order
- *                             ^ has alpha
- *                              ^ bitwise
- *                               ^^^^^^ bpp
- *
- * Since we don't want to waste bits adding more and more flags, we'd
- * like to see most new pixel formats that can't be represented
- * uniquely with the existing flags in the least significant bits
- * simply be enumerated with sequential values in the most significant
- * enum byte (though still set the flags as appropriate too).
- *
- * Note: Cogl avoids exposing any padded XRGB or RGBX formats and
- * instead we leave it up to applications to decided whether they
- * consider the A component as padding or valid data. We shouldn't
- * change this policy without good reasoning.
- *
- * So to add a new format:
- * 1) OR in the CG_BITWISE_BIT, CG_A_BIT, CG_BGR_BIT,
- *    CG_AFIRST_BIT and CG_PREMULT_BIT, flags as appropriate.
- * 2) If the result is not yet unique then also combine with an
- *    increment of the last sequence number in the most significant
- *    byte.
- *
- * The last sequence number used was 1
- *
- * Update this note whenever a new sequence number is used.
- */
-/**
  * cg_pixel_format_t:
  * @CG_PIXEL_FORMAT_ANY: Any format
- * @CG_PIXEL_FORMAT_A_8: 8 bits alpha mask
- * @CG_PIXEL_FORMAT_RG_88: RG, 16 bits. Note that red-green textures
- *   are only available if %CG_FEATURE_ID_TEXTURE_RG is advertised.
- *   See cg_texture_set_components() for details.
+ * @CG_PIXEL_FORMAT_A_8: 8 bit, unsigned, normalized [0,1] component
+ * @CG_PIXEL_FORMAT_A_8SN: 8 bit, signed, normalized [-1,1] component
+ * @CG_PIXEL_FORMAT_A_16U: 16 bit unsigned integer component
+ * @CG_PIXEL_FORMAT_A_16F: 16 bit half-float component
+ * @CG_PIXEL_FORMAT_A_32U: 32 bit unsigned integer component
+ * @CG_PIXEL_FORMAT_A_32F: 32 bit float component
+ * @CG_PIXEL_FORMAT_RG_88: RG, 8 bit, unsigned, normalized [0,1] value per component
+ * @CG_PIXEL_FORMAT_RG_88SN: RG, 8 bit, signed, normalized [-1,1] value per component
+ * @CG_PIXEL_FORMAT_RG_1616U: RG, 16 bit unsigned integer per component
+ * @CG_PIXEL_FORMAT_RG_1616F: RG, 16 bit half-float per component
+ * @CG_PIXEL_FORMAT_RG_3232U: RG, 32 bit unsigned integer per component
+ * @CG_PIXEL_FORMAT_RG_3232F: RG, 32 bit float per component
  * @CG_PIXEL_FORMAT_RGB_565: RGB, 16 bits
+ * @CG_PIXEL_FORMAT_RGB_888: RGB, 24 bits: 8 bit unsigned normalized [0,1]
+ *                           value per component
+ * @CG_PIXEL_FORMAT_BGR_888: BGR, 24 bits: 8 bit unsigned normalized [0,1]
+ *                           value per component
+ * @CG_PIXEL_FORMAT_RGB_161616U: RGB, 16 bit shorts per component
+ * @CG_PIXEL_FORMAT_BGR_161616U: BGR, 16 bit shorts per component
+ * @CG_PIXEL_FORMAT_RGB_161616F: RGB, 16 bit half-floats per component
+ * @CG_PIXEL_FORMAT_BGR_161616F: BGR, 16 bit half-floats per component
+ * @CG_PIXEL_FORMAT_RGB_323232U: RGB, 32 bit unsigned ints per component
+ * @CG_PIXEL_FORMAT_BGR_323232U: BGR, 32 bit unsigned ints per component
+ * @CG_PIXEL_FORMAT_RGB_323232F: RGB, 32 bit floats per component
+ * @CG_PIXEL_FORMAT_BGR_323232F: BGR, 32 bit floats per component
  * @CG_PIXEL_FORMAT_RGBA_4444: RGBA, 16 bits
  * @CG_PIXEL_FORMAT_RGBA_5551: RGBA, 16 bits
- * @CG_PIXEL_FORMAT_RGB_888: RGB, 24 bits
- * @CG_PIXEL_FORMAT_BGR_888: BGR, 24 bits
- * @CG_PIXEL_FORMAT_RGBA_8888: RGBA, 32 bits
- * @CG_PIXEL_FORMAT_BGRA_8888: BGRA, 32 bits
- * @CG_PIXEL_FORMAT_ARGB_8888: ARGB, 32 bits
- * @CG_PIXEL_FORMAT_ABGR_8888: ABGR, 32 bits
- * @CG_PIXEL_FORMAT_RGBA_1010102 : RGBA, 32 bits, 10 bpc
- * @CG_PIXEL_FORMAT_BGRA_1010102 : BGRA, 32 bits, 10 bpc
- * @CG_PIXEL_FORMAT_ARGB_2101010 : ARGB, 32 bits, 10 bpc
- * @CG_PIXEL_FORMAT_ABGR_2101010 : ABGR, 32 bits, 10 bpc
+ * @CG_PIXEL_FORMAT_RGBA_4444_PRE: Premultiplied RGBA, 16 bits
+ * @CG_PIXEL_FORMAT_RGBA_5551_PRE: Premultiplied RGBA, 16 bits
+ * @CG_PIXEL_FORMAT_RGBA_8888: RGBA, 8 bit, unsigned, normalized [0,1] component
+ * @CG_PIXEL_FORMAT_BGRA_8888: BGRA, 8 bit, unsigned, normalized [0,1] component
+ * @CG_PIXEL_FORMAT_ARGB_8888: ARGB, 8 bit, unsigned, normalized [0,1] component
+ * @CG_PIXEL_FORMAT_ABGR_8888: ABGR, 8 bit, unsigned, normalized [0,1] component
  * @CG_PIXEL_FORMAT_RGBA_8888_PRE: Premultiplied RGBA, 32 bits
  * @CG_PIXEL_FORMAT_BGRA_8888_PRE: Premultiplied BGRA, 32 bits
  * @CG_PIXEL_FORMAT_ARGB_8888_PRE: Premultiplied ARGB, 32 bits
  * @CG_PIXEL_FORMAT_ABGR_8888_PRE: Premultiplied ABGR, 32 bits
- * @CG_PIXEL_FORMAT_RGBA_4444_PRE: Premultiplied RGBA, 16 bits
- * @CG_PIXEL_FORMAT_RGBA_5551_PRE: Premultiplied RGBA, 16 bits
+ * @CG_PIXEL_FORMAT_RGBA_8888SN: RGBA, 8 bit, signed, normalized [-1,1] value per component
+ * @CG_PIXEL_FORMAT_BGRA_8888SN: BGRA, 8 bit, signed, normalized [-1,1] value per component
+ * @CG_PIXEL_FORMAT_RGBA_1010102 : RGBA, 10 bit, unsigned, normalized [0,1] RGB components, 2 bit alpha
+ * @CG_PIXEL_FORMAT_BGRA_1010102 : BGRA, 10 bit, unsigned, normalized [0,1] RGB components, 2 bit alpha
+ * @CG_PIXEL_FORMAT_ARGB_2101010 : ARGB, 10 bit, unsigned, normalized [0,1] RGB components, 2 bit alpha
+ * @CG_PIXEL_FORMAT_ABGR_2101010 : ABGR, 10 bit, unsigned, normalized [0,1] RGB components, 2 bit alpha
  * @CG_PIXEL_FORMAT_RGBA_1010102_PRE: Premultiplied RGBA, 32 bits, 10 bpc
  * @CG_PIXEL_FORMAT_BGRA_1010102_PRE: Premultiplied BGRA, 32 bits, 10 bpc
  * @CG_PIXEL_FORMAT_ARGB_2101010_PRE: Premultiplied ARGB, 32 bits, 10 bpc
  * @CG_PIXEL_FORMAT_ABGR_2101010_PRE: Premultiplied ABGR, 32 bits, 10 bpc
+ * @CG_PIXEL_FORMAT_RGBA_16161616U: 16 bit unsigned ints per component
+ * @CG_PIXEL_FORMAT_BGRA_16161616U: 16 bit unsigned ints per component
+ * @CG_PIXEL_FORMAT_RGBA_16161616F: 16 bit half-floats per component
+ * @CG_PIXEL_FORMAT_BGRA_16161616F: 16 bit half-floats per component
+ * @CG_PIXEL_FORMAT_RGBA_16161616F_PRE: Premultiplied RGBA, 16 bit half-floats per component
+ * @CG_PIXEL_FORMAT_BGRA_16161616F_PRE: Premultiplied BGRA, 16 bit half-floats per component
+ * @CG_PIXEL_FORMAT_RGBA_32323232U: 32 bit unsigned ints per component
+ * @CG_PIXEL_FORMAT_BGRA_32323232U: 32 bit unsigned ints per component
+ * @CG_PIXEL_FORMAT_RGBA_32323232F: 32 bit floats per component
+ * @CG_PIXEL_FORMAT_BGRA_32323232F: 32 bit floats per component
+ * @CG_PIXEL_FORMAT_RGBA_32323232F_PRE: Premultiplied RGBA, 32 bit floats per component
+ * @CG_PIXEL_FORMAT_BGRA_32323232F_PRE: Premultiplied BGRA, 32 bit floats per component
  * @CG_PIXEL_FORMAT_DEPTH_16: Depth, 16 bits
  * @CG_PIXEL_FORMAT_DEPTH_32: Depth, 32 bits
  * @CG_PIXEL_FORMAT_DEPTH_24_STENCIL_8: Depth/Stencil, 24/8 bits
  *
- * Pixel formats used by Cogl. For the formats with a byte per
+ * Pixel formats used by Cogl. For the formats with byte aligned
  * component, the order of the components specify the order in
  * increasing memory addresses. So for example
- * %CG_PIXEL_FORMAT_RGB_888 would have the red component in the
- * lowest address, green in the next address and blue after that
- * regardless of the endianness of the system.
+ * %CG_PIXEL_FORMAT_RGB_888 would have the red component in the lowest
+ * address, green in the next address and blue after that regardless
+ * of the endianness of the system.
  *
  * For the formats with non byte aligned components the component
  * order specifies the order within a 16-bit or 32-bit number from
@@ -279,69 +197,75 @@ typedef struct _cg_color_t cg_color_t;
  * would be in 1-5. Therefore the order in memory depends on the
  * endianness of the system.
  *
+ * Note that red-green textures are only available if
+ * %CG_FEATURE_ID_TEXTURE_RG is advertised. See
+ * cg_texture_set_components() for details.
  */
 typedef enum { /*< prefix=CG_PIXEL_FORMAT >*/
-    CG_PIXEL_FORMAT_ANY = 0,
-    CG_PIXEL_FORMAT_A_8 = (1 | CG_A_BIT),
-    CG_PIXEL_FORMAT_RG_88 = 2,
-    CG_PIXEL_FORMAT_RGB_565 = (2 | CG_BITWISE_BIT),
-    CG_PIXEL_FORMAT_RGBA_4444 = (2 | CG_BITWISE_BIT | CG_A_BIT),
-    CG_PIXEL_FORMAT_RGBA_4444_PRE =
-        (2 | CG_PIXEL_FORMAT_RGBA_4444 | CG_PREMULT_BIT),
-    CG_PIXEL_FORMAT_RGBA_5551 =
-        (2 | CG_BITWISE_BIT | CG_A_BIT | CG_FORMAT_ENUM(1)),
-    CG_PIXEL_FORMAT_RGBA_5551_PRE =
-        (2 | CG_PIXEL_FORMAT_RGBA_5551 | CG_PREMULT_BIT),
-    CG_PIXEL_FORMAT_RGB_888 = 3,
-    CG_PIXEL_FORMAT_BGR_888 = (3 | CG_BGR_BIT),
-    CG_PIXEL_FORMAT_RGBA_8888 = (4 | CG_A_BIT),
-    CG_PIXEL_FORMAT_BGRA_8888 = (4 | CG_A_BIT | CG_BGR_BIT),
-    CG_PIXEL_FORMAT_ARGB_8888 = (4 | CG_A_BIT | CG_AFIRST_BIT),
-    CG_PIXEL_FORMAT_ABGR_8888 =
-        (4 | CG_A_BIT | CG_BGR_BIT | CG_AFIRST_BIT),
-    CG_PIXEL_FORMAT_RGBA_8888_PRE = (4 | CG_A_BIT | CG_PREMULT_BIT),
-    CG_PIXEL_FORMAT_BGRA_8888_PRE =
-        (4 | CG_A_BIT | CG_BGR_BIT | CG_PREMULT_BIT),
-    CG_PIXEL_FORMAT_ARGB_8888_PRE =
-        (4 | CG_A_BIT | CG_AFIRST_BIT | CG_PREMULT_BIT),
-    CG_PIXEL_FORMAT_ABGR_8888_PRE =
-        (4 | CG_A_BIT | CG_BGR_BIT | CG_AFIRST_BIT | CG_PREMULT_BIT),
-    CG_PIXEL_FORMAT_RGBA_1010102 = (4 | CG_A_BIT | CG_BITWISE_BIT),
-    CG_PIXEL_FORMAT_BGRA_1010102 =
-        (4 | CG_A_BIT | CG_BITWISE_BIT | CG_BGR_BIT),
-    CG_PIXEL_FORMAT_ARGB_2101010 =
-        (4 | CG_A_BIT | CG_BITWISE_BIT | CG_AFIRST_BIT),
-    CG_PIXEL_FORMAT_ABGR_2101010 =
-        (4 | CG_A_BIT | CG_BITWISE_BIT | CG_BGR_BIT | CG_AFIRST_BIT),
-    CG_PIXEL_FORMAT_RGBA_1010102_PRE =
-        (4 | CG_A_BIT | CG_BITWISE_BIT | CG_PREMULT_BIT),
-    CG_PIXEL_FORMAT_BGRA_1010102_PRE =
-        (4 | CG_A_BIT | CG_BITWISE_BIT | CG_BGR_BIT |
-         CG_PREMULT_BIT),
-    CG_PIXEL_FORMAT_ARGB_2101010_PRE =
-        (4 | CG_A_BIT | CG_BITWISE_BIT | CG_AFIRST_BIT |
-         CG_PREMULT_BIT),
-    CG_PIXEL_FORMAT_ABGR_2101010_PRE =
-        (4 | CG_A_BIT | CG_BITWISE_BIT | CG_BGR_BIT | CG_AFIRST_BIT |
-         CG_PREMULT_BIT),
-    CG_PIXEL_FORMAT_DEPTH_16 = (2 | CG_DEPTH_BIT),
-    CG_PIXEL_FORMAT_DEPTH_32 = (4 | CG_DEPTH_BIT),
-    CG_PIXEL_FORMAT_DEPTH_24_STENCIL_8 =
-        (4 | CG_DEPTH_BIT | CG_STENCIL_BIT)
+    CG_PIXEL_FORMAT_ANY,
+    CG_PIXEL_FORMAT_A_8,
+    CG_PIXEL_FORMAT_A_8SN,
+    CG_PIXEL_FORMAT_A_16U,
+    CG_PIXEL_FORMAT_A_16F,
+    CG_PIXEL_FORMAT_A_32U,
+    CG_PIXEL_FORMAT_A_32F,
+    CG_PIXEL_FORMAT_RG_88,
+    CG_PIXEL_FORMAT_RG_88SN,
+    CG_PIXEL_FORMAT_RG_1616U,
+    CG_PIXEL_FORMAT_RG_1616F,
+    CG_PIXEL_FORMAT_RG_3232U,
+    CG_PIXEL_FORMAT_RG_3232F,
+    CG_PIXEL_FORMAT_RGB_565,
+    CG_PIXEL_FORMAT_RGB_888,
+    CG_PIXEL_FORMAT_BGR_888,
+    CG_PIXEL_FORMAT_RGB_888SN,
+    CG_PIXEL_FORMAT_BGR_888SN,
+    CG_PIXEL_FORMAT_RGB_161616U,
+    CG_PIXEL_FORMAT_BGR_161616U,
+    CG_PIXEL_FORMAT_RGB_161616F,
+    CG_PIXEL_FORMAT_BGR_161616F,
+    CG_PIXEL_FORMAT_RGB_323232U,
+    CG_PIXEL_FORMAT_BGR_323232U,
+    CG_PIXEL_FORMAT_RGB_323232F,
+    CG_PIXEL_FORMAT_BGR_323232F,
+    CG_PIXEL_FORMAT_RGBA_4444,
+    CG_PIXEL_FORMAT_RGBA_4444_PRE,
+    CG_PIXEL_FORMAT_RGBA_5551,
+    CG_PIXEL_FORMAT_RGBA_5551_PRE,
+    CG_PIXEL_FORMAT_RGBA_8888,
+    CG_PIXEL_FORMAT_BGRA_8888,
+    CG_PIXEL_FORMAT_ARGB_8888,
+    CG_PIXEL_FORMAT_ABGR_8888,
+    CG_PIXEL_FORMAT_RGBA_8888_PRE,
+    CG_PIXEL_FORMAT_BGRA_8888_PRE,
+    CG_PIXEL_FORMAT_ARGB_8888_PRE,
+    CG_PIXEL_FORMAT_ABGR_8888_PRE,
+    CG_PIXEL_FORMAT_RGBA_8888SN,
+    CG_PIXEL_FORMAT_BGRA_8888SN,
+    CG_PIXEL_FORMAT_RGBA_1010102,
+    CG_PIXEL_FORMAT_BGRA_1010102,
+    CG_PIXEL_FORMAT_ARGB_2101010,
+    CG_PIXEL_FORMAT_ABGR_2101010,
+    CG_PIXEL_FORMAT_RGBA_1010102_PRE,
+    CG_PIXEL_FORMAT_BGRA_1010102_PRE,
+    CG_PIXEL_FORMAT_ARGB_2101010_PRE,
+    CG_PIXEL_FORMAT_ABGR_2101010_PRE,
+    CG_PIXEL_FORMAT_RGBA_16161616U,
+    CG_PIXEL_FORMAT_BGRA_16161616U,
+    CG_PIXEL_FORMAT_RGBA_16161616F,
+    CG_PIXEL_FORMAT_BGRA_16161616F,
+    CG_PIXEL_FORMAT_RGBA_16161616F_PRE,
+    CG_PIXEL_FORMAT_BGRA_16161616F_PRE,
+    CG_PIXEL_FORMAT_RGBA_32323232U,
+    CG_PIXEL_FORMAT_BGRA_32323232U,
+    CG_PIXEL_FORMAT_RGBA_32323232F,
+    CG_PIXEL_FORMAT_BGRA_32323232F,
+    CG_PIXEL_FORMAT_RGBA_32323232F_PRE,
+    CG_PIXEL_FORMAT_BGRA_32323232F_PRE,
+    CG_PIXEL_FORMAT_DEPTH_16,
+    CG_PIXEL_FORMAT_DEPTH_32,
+    CG_PIXEL_FORMAT_DEPTH_24_STENCIL_8
 } cg_pixel_format_t;
-
-/**
- * cg_buffer_target_t:
- * @CG_WINDOW_BUFFER: FIXME
- * @CG_OFFSCREEN_BUFFER: FIXME
- *
- * Target flags for FBOs.
- *
- */
-typedef enum {
-    CG_WINDOW_BUFFER = (1 << 1),
-    CG_OFFSCREEN_BUFFER = (1 << 2)
-} cg_buffer_target_t;
 
 /**
  * cg_color_t:

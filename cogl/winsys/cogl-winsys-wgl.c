@@ -685,7 +685,7 @@ update_winsys_features(cg_device_t *dev, cg_error_t **error)
 }
 
 static bool
-_cg_winsys_context_init(cg_device_t *dev, cg_error_t **error)
+_cg_winsys_device_init(cg_device_t *dev, cg_error_t **error)
 {
     dev->winsys = c_new0(cg_device_wgl_t, 1);
 
@@ -696,7 +696,7 @@ _cg_winsys_context_init(cg_device_t *dev, cg_error_t **error)
 }
 
 static void
-_cg_winsys_context_deinit(cg_device_t *dev)
+_cg_winsys_device_deinit(cg_device_t *dev)
 {
     cg_win32_renderer_remove_filter(dev->display->renderer,
                                     win32_event_filter_cb, dev);
@@ -928,8 +928,8 @@ _cg_winsys_wgl_get_vtable(void)
         vtable.renderer_disconnect = _cg_winsys_renderer_disconnect;
         vtable.display_setup = _cg_winsys_display_setup;
         vtable.display_destroy = _cg_winsys_display_destroy;
-        vtable.context_init = _cg_winsys_context_init;
-        vtable.context_deinit = _cg_winsys_context_deinit;
+        vtable.device_init = _cg_winsys_device_init;
+        vtable.device_deinit = _cg_winsys_device_deinit;
         vtable.onscreen_init = _cg_winsys_onscreen_init;
         vtable.onscreen_deinit = _cg_winsys_onscreen_deinit;
         vtable.onscreen_bind = _cg_winsys_onscreen_bind;

@@ -100,7 +100,7 @@ _cg_winsys_display_setup(cg_display_t *display, cg_error_t **error)
 }
 
 static bool
-_cg_winsys_context_init(cg_device_t *dev, cg_error_t **error)
+_cg_winsys_device_init(cg_device_t *dev, cg_error_t **error)
 {
     dev->winsys = &_cg_winsys_stub_dummy_ptr;
 
@@ -113,7 +113,7 @@ _cg_winsys_context_init(cg_device_t *dev, cg_error_t **error)
 }
 
 static void
-_cg_winsys_context_deinit(cg_device_t *dev)
+_cg_winsys_device_deinit(cg_device_t *dev)
 {
     dev->winsys = NULL;
 }
@@ -173,8 +173,8 @@ _cg_winsys_stub_get_vtable(void)
         vtable.renderer_disconnect = _cg_winsys_renderer_disconnect;
         vtable.display_setup = _cg_winsys_display_setup;
         vtable.display_destroy = _cg_winsys_display_destroy;
-        vtable.device_init = _cg_winsys_context_init;
-        vtable.device_deinit = _cg_winsys_context_deinit;
+        vtable.device_init = _cg_winsys_device_init;
+        vtable.device_deinit = _cg_winsys_device_deinit;
 
         vtable.onscreen_init = _cg_winsys_onscreen_init;
         vtable.onscreen_deinit = _cg_winsys_onscreen_deinit;

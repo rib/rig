@@ -356,7 +356,7 @@ fail:
 }
 
 static bool
-_cg_winsys_egl_context_created(cg_display_t *display,
+_cg_winsys_egl_device_created(cg_display_t *display,
                                cg_error_t **error)
 {
     cg_renderer_t *renderer = display->renderer;
@@ -383,7 +383,7 @@ _cg_winsys_egl_context_created(cg_display_t *display,
 }
 
 static void
-_cg_winsys_egl_cleanup_context(cg_display_t *display)
+_cg_winsys_egl_cleanup_device(cg_display_t *display)
 {
     cg_renderer_t *renderer = display->renderer;
     cg_renderer_egl_t *egl_renderer = renderer->winsys;
@@ -407,7 +407,7 @@ _cg_winsys_egl_cleanup_context(cg_display_t *display)
 }
 
 static bool
-_cg_winsys_egl_context_init(cg_device_t *dev,
+_cg_winsys_egl_device_init(cg_device_t *dev,
                             cg_error_t **error)
 {
     CG_FLAGS_SET(dev->features, CG_FEATURE_ID_ONSCREEN_MULTIPLE, true);
@@ -746,9 +746,9 @@ cg_wayland_onscreen_resize(
 static const cg_winsys_egl_vtable_t _cg_winsys_egl_vtable = {
     .display_setup = _cg_winsys_egl_display_setup,
     .display_destroy = _cg_winsys_egl_display_destroy,
-    .context_created = _cg_winsys_egl_context_created,
-    .cleanup_context = _cg_winsys_egl_cleanup_context,
-    .context_init = _cg_winsys_egl_context_init,
+    .device_created = _cg_winsys_egl_device_created,
+    .cleanup_device = _cg_winsys_egl_cleanup_device,
+    .device_init = _cg_winsys_egl_device_init,
     .onscreen_init = _cg_winsys_egl_onscreen_init,
     .onscreen_deinit = _cg_winsys_egl_onscreen_deinit
 };

@@ -240,7 +240,6 @@ bool cg_is_device(void *object);
  *    %CG_TEXTURE_COMPONENTS_RG as the internal components of a
  *    texture.
  * @CG_FEATURE_ID_TEXTURE_3D: 3D texture support
- * @CG_FEATURE_ID_OFFSCREEN: Offscreen rendering support
  * @CG_FEATURE_ID_OFFSCREEN_MULTISAMPLE: Multisample support for
  *    offscreen framebuffers
  * @CG_FEATURE_ID_ONSCREEN_MULTIPLE: Multiple onscreen framebuffers
@@ -281,7 +280,6 @@ typedef enum _cg_feature_id_t {
     CG_FEATURE_ID_TEXTURE_NPOT,
     CG_FEATURE_ID_TEXTURE_3D,
     CG_FEATURE_ID_GLSL,
-    CG_FEATURE_ID_OFFSCREEN,
     CG_FEATURE_ID_OFFSCREEN_MULTISAMPLE,
     CG_FEATURE_ID_ONSCREEN_MULTIPLE,
     CG_FEATURE_ID_UNSIGNED_INT_INDICES,

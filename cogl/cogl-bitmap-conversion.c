@@ -3,7 +3,7 @@
  *
  * A Low-Level GPU Graphics and Utilities API
  *
- * Copyright (C) 2007,2008,2009 Intel Corporation.
+ * Copyright (C) 2007,2008,2009,2014 Intel Corporation.
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -28,40 +28,138 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "cogl-private.h"
 #include "cogl-bitmap-private.h"
 #include "cogl-device-private.h"
 #include "cogl-texture-private.h"
+#include "cogl-error-private.h"
 
 #include <string.h>
 
-#define component_type uint8_t
-#define component_size 8
-/* We want to specially optimise the packing when we are converting
-   to/from an 8-bit type so that it won't do anything. That way for
-   example if we are just doing a swizzle conversion then the inner
-   loop for the conversion will be really simple */
-#define UNPACK_BYTE(b) (b)
-#define PACK_BYTE(b) (b)
-#include "cogl-bitmap-packing.h"
-#undef PACK_BYTE
-#undef UNPACK_BYTE
-#undef component_type
-#undef component_size
 
-#define component_type uint16_t
-#define component_size 16
-#define UNPACK_BYTE(b) (((b) * 257)
-#define PACK_BYTE(b) ((((uint32_t)(b)) + 128) / 257)
-#include "cogl-bitmap-packing.h"
-#undef PACK_BYTE
-#undef UNPACK_BYTE
+/* These are generalized descriptions of component mappings
+ * so that we have less macros to re-define for the variations
+ * we want.
+ */
+
+#define X_FROM_1_BIT(b)   X_FROM_NORMALIZED_RANGE(b, 1)
+#define X_FROM_2_BITS(b)  X_FROM_NORMALIZED_RANGE(b, 3)
+#define X_FROM_4_BITS(b)  X_FROM_NORMALIZED_RANGE(b, 15)
+#define X_FROM_UN8(b)     X_FROM_NORMALIZED_RANGE(b, 255)
+
+/* XXX: Note: The maximum values for 5/6/10 bits don't factor as
+ * nicely so to round-to-nearest we + 0.5 before dividing */
+#define X_FROM_5_BITS(b)  X_FROM_NORMALIZED_RANGE_NEAREST(b, 31)
+#define X_FROM_6_BITS(b)  X_FROM_NORMALIZED_RANGE_NEAREST(b, 63)
+#define X_FROM_10_BITS(b) X_FROM_NORMALIZED_RANGE_NEAREST(b, 1023)
+
+#define X_TO_1_BIT(x)   X_TO_NORMALIZED_RANGE(x, 1)
+#define X_TO_2_BITS(x)  X_TO_NORMALIZED_RANGE(x, 3)
+#define X_TO_4_BITS(x)  X_TO_NORMALIZED_RANGE(x, 15)
+#define X_TO_5_BITS(x)  X_TO_NORMALIZED_RANGE(x, 31)
+#define X_TO_6_BITS(x)  X_TO_NORMALIZED_RANGE(x, 63)
+#define X_TO_UN8(x)     X_TO_NORMALIZED_RANGE(x, 255)
+#define X_TO_10_BITS(x) ((uint16_t)(X_TO_FLOAT(x) * 1023))
+
+
+
+/*
+ * unsigned 8 bit, normalized mappings
+ */
+#define X_FROM_NORMALIZED_RANGE(b, max)         ((b) * (255 / max))
+#define X_FROM_NORMALIZED_RANGE_NEAREST(b, max) ((b) * ((uint16_t)255 + (max / 2)) / max)
+
+#define X_FROM_SN8(s)     ((int8_t)(s) <= 0 ? 0 : (uint8_t)(((int8_t)(s)) * (255.0f/127.0f) + 0.5))
+#define X_FROM_S16(s)     ((s) >= 1 ? 255 : 0)
+#define X_FROM_U16(u)     ((u) >= 1 ? 255 : 0)
+#define X_FROM_U32(u)     ((u) >= 1 ? 255 : 0)
+#define X_FROM_S32(s)     ((s) >= 1 ? 255 : 0)
+#define X_FROM_FLOAT(f)   CLAMP((((f) * 255.0f) + 0.5f), 0, 255)
+
+#define X_TO_NORMALIZED_RANGE(x, max) \
+    ((((uint16_t)(x)) + ((255 / max) / 2)) / (255 / max))
+#define X_TO_SN8(x)     ((int8_t)(((x) * (127.0f/255.0f)) + 0.5))
+#define X_TO_U16(x)     ((x) < (255 / 2) ? 0 : 1)
+#define X_TO_S16(x)     ((x) < (255 / 2) ? 0 : 1)
+#define X_TO_U32(x)     ((x) < (255 / 2) ? 0 : 1)
+#define X_TO_S32(x)     ((x) < (255 / 2) ? 0 : 1)
+#define X_TO_FLOAT(x)   ((x) / 255.0f)
+
+#define X_ONE 255
+
+#define COMPONENT_UNSIGNED
+#define component_type  uint8_t
+#define component_size  8
+#include "cogl-bitmap-unpack-unsigned-normalized.h"
+#include "cogl-bitmap-pack.h"
+#undef component_size
+#undef component_type
+#undef COMPONENT_UNSIGNED
+
+#undef X_ONE
+
+#undef X_TO_NORMALIZED_RANGE
+#undef X_TO_SN8
+#undef X_TO_U16
+#undef X_TO_S16
+#undef X_TO_U32
+#undef X_TO_S32
+#undef X_TO_FLOAT
+
+#undef X_FROM_SN8
+#undef X_FROM_U16
+#undef X_FROM_S16
+#undef X_FROM_U32
+#undef X_FROM_S32
+#undef X_FROM_FLOAT
+
+#undef X_FROM_NORMALIZED_RANGE
+#undef X_FROM_NORMALIZED_RANGE_NEAREST
+
+
+
+/*
+ * double precision, floating point, un-normalized mappings
+ */
+
+#define X_FROM_NORMALIZED_RANGE(u, max)         ((u) * (1.0f / max))
+#define X_FROM_NORMALIZED_RANGE_NEAREST(u, max) ((u) * (1.0f / max))
+
+/* Equation taken from GL spec... */
+#define X_FROM_SN8(s)     MAX(((int8_t)(s)) / 127.0, -1.0)
+
+#define X_FROM_U16(u)     (u)
+#define X_FROM_S16(s)     (s)
+#define X_FROM_U32(u)     (u)
+#define X_FROM_S32(s)     (s)
+#define X_FROM_FLOAT(f)   (f)
+
+/* XXX: Note the GL spec doesn't round to nearest, maybe we shouldn't either? */
+#define X_TO_NORMALIZED_RANGE(x, max)   (uint16_t)((CLAMP(x, 0, 1) * (double)max) + 0.5)
+#define X_TO_SN8(x)                     ((int8_t)CG_UTIL_NEARBYINT(CLAMP(x, -1, 1) * 127.0))
+#define X_TO_U16(x)                     ((uint16_t)((x) + 0.5))
+#define X_TO_S16(x)                     ((uint16_t)(CG_UTIL_NEARBYINT(x)))
+#define X_TO_U32(x)                     ((uint32_t)((x) + 0.5))
+#define X_TO_S32(x)                     ((uint32_t)(CG_UTIL_NEARBYINT(x)))
+#define X_TO_FLOAT(x)                   (x)
+
+#define X_ONE 1.0
+
+#define COMPONENT_SIGNED
+#define component_type  double
+#define component_size  64
+#include "cogl-bitmap-unpack-fallback.h"
+#include "cogl-bitmap-unpack-unsigned-normalized.h"
+#include "cogl-bitmap-pack.h"
 #undef component_type
 #undef component_size
+#undef COMPONENT_SIGNED
+
+
+/* XXX: How should we handle signed int components and half-float
+ * components? */
 
 /* (Un)Premultiplication */
 
@@ -147,8 +245,7 @@ inline static void
 _cg_premult_alpha_last_four_pixels_sse2(uint8_t *p)
 {
     /* 8 copies of 128 used below */
-    static const int16_t eight_halves[8] __attribute__((
-                                                           aligned(16))) = { 128, 128, 128, 128, 128, 128, 128, 128 };
+    static const int16_t eight_halves[8] __attribute__((aligned(16))) = { 128, 128, 128, 128, 128, 128, 128, 128 };
     /* Mask of the rgb components of the four pixels */
     static const int8_t just_rgb[16]
     __attribute__((aligned(16))) = { 0xff, 0xff, 0xff, 0x00, 0xff, 0xff,
@@ -257,37 +354,39 @@ _cg_bitmap_unpremult_unpacked_span_8(uint8_t *data, int width)
 }
 
 static void
-_cg_bitmap_unpremult_unpacked_span_16(uint16_t *data, int width)
+_cg_bitmap_premult_unpacked_span_64f(double *data, int width)
 {
     while (width-- > 0) {
-        uint16_t alpha = data[3];
+        double alpha = data[3];
 
-        if (alpha == 0)
-            memset(data, 0, sizeof(uint16_t) * 3);
-        else {
-            data[0] = (data[0] * 65535) / alpha;
-            data[1] = (data[1] * 65535) / alpha;
-            data[2] = (data[2] * 65535) / alpha;
-        }
+        data[0] *= alpha;
+        data[1] *= alpha;
+        data[2] *= alpha;
+        data += 4;
     }
 }
 
 static void
-_cg_bitmap_premult_unpacked_span_16(uint16_t *data, int width)
+_cg_bitmap_unpremult_unpacked_span_64f(double *data, int width)
 {
     while (width-- > 0) {
-        uint16_t alpha = data[3];
+        double alpha = data[3];
 
-        data[0] = (data[0] * alpha) / 65535;
-        data[1] = (data[1] * alpha) / 65535;
-        data[2] = (data[2] * alpha) / 65535;
+        if (alpha == 0)
+            memset(data, 0, sizeof(double) * 3);
+        else {
+            data[0] /= alpha;
+            data[1] /= alpha;
+            data[2] /= alpha;
+        }
+        data += 4;
     }
 }
 
 static bool
 _cg_bitmap_can_fast_premult(cg_pixel_format_t format)
 {
-    switch (format & ~CG_PREMULT_BIT) {
+    switch (_cg_pixel_format_premult_stem(format)) {
     case CG_PIXEL_FORMAT_RGBA_8888:
     case CG_PIXEL_FORMAT_BGRA_8888:
     case CG_PIXEL_FORMAT_ARGB_8888:
@@ -299,21 +398,26 @@ _cg_bitmap_can_fast_premult(cg_pixel_format_t format)
     }
 }
 
-static bool
-_cg_bitmap_needs_short_temp_buffer(cg_pixel_format_t format)
+enum tmp_fmt_t {
+    _TMP_FMT_NONE,
+    _TMP_FMT_8,
+    _TMP_FMT_DOUBLE
+};
+
+static enum tmp_fmt_t
+get_tmp_fmt(cg_pixel_format_t format)
 {
-    /* If the format is using more than 8 bits per component then we'll
-       unpack into a 16-bit per component buffer instead of 8-bit so we
-       won't lose as much precision. If we ever add support for formats
-       with more than 16 bits for at least one of the components then we
-       should probably do something else here, maybe convert to
-       floats */
+    /* If the format is using more than 8 bits per component or isn't
+     * normalized [0,1] then we'll unpack into a double per component
+     * buffer instead so we won't lose precision. */
+
     switch (format) {
     case CG_PIXEL_FORMAT_DEPTH_16:
     case CG_PIXEL_FORMAT_DEPTH_32:
     case CG_PIXEL_FORMAT_DEPTH_24_STENCIL_8:
     case CG_PIXEL_FORMAT_ANY:
         c_assert_not_reached();
+        return _TMP_FMT_NONE;
 
     case CG_PIXEL_FORMAT_A_8:
     case CG_PIXEL_FORMAT_RG_88:
@@ -332,8 +436,30 @@ _cg_bitmap_needs_short_temp_buffer(cg_pixel_format_t format)
     case CG_PIXEL_FORMAT_ABGR_8888_PRE:
     case CG_PIXEL_FORMAT_RGBA_4444_PRE:
     case CG_PIXEL_FORMAT_RGBA_5551_PRE:
-        return false;
+        return _TMP_FMT_8;
 
+    case CG_PIXEL_FORMAT_A_8SN:
+    case CG_PIXEL_FORMAT_A_16U:
+    case CG_PIXEL_FORMAT_A_16F:
+    case CG_PIXEL_FORMAT_A_32U:
+    case CG_PIXEL_FORMAT_A_32F:
+    case CG_PIXEL_FORMAT_RG_88SN:
+    case CG_PIXEL_FORMAT_RG_1616U:
+    case CG_PIXEL_FORMAT_RG_1616F:
+    case CG_PIXEL_FORMAT_RG_3232U:
+    case CG_PIXEL_FORMAT_RG_3232F:
+    case CG_PIXEL_FORMAT_RGB_888SN:
+    case CG_PIXEL_FORMAT_BGR_888SN:
+    case CG_PIXEL_FORMAT_RGB_161616U:
+    case CG_PIXEL_FORMAT_BGR_161616U:
+    case CG_PIXEL_FORMAT_RGB_161616F:
+    case CG_PIXEL_FORMAT_BGR_161616F:
+    case CG_PIXEL_FORMAT_RGB_323232U:
+    case CG_PIXEL_FORMAT_BGR_323232U:
+    case CG_PIXEL_FORMAT_RGB_323232F:
+    case CG_PIXEL_FORMAT_BGR_323232F:
+    case CG_PIXEL_FORMAT_RGBA_8888SN:
+    case CG_PIXEL_FORMAT_BGRA_8888SN:
     case CG_PIXEL_FORMAT_RGBA_1010102:
     case CG_PIXEL_FORMAT_BGRA_1010102:
     case CG_PIXEL_FORMAT_ARGB_2101010:
@@ -342,10 +468,105 @@ _cg_bitmap_needs_short_temp_buffer(cg_pixel_format_t format)
     case CG_PIXEL_FORMAT_BGRA_1010102_PRE:
     case CG_PIXEL_FORMAT_ARGB_2101010_PRE:
     case CG_PIXEL_FORMAT_ABGR_2101010_PRE:
-        return true;
+    case CG_PIXEL_FORMAT_RGBA_16161616U:
+    case CG_PIXEL_FORMAT_BGRA_16161616U:
+    case CG_PIXEL_FORMAT_RGBA_16161616F:
+    case CG_PIXEL_FORMAT_BGRA_16161616F:
+    case CG_PIXEL_FORMAT_RGBA_16161616F_PRE:
+    case CG_PIXEL_FORMAT_BGRA_16161616F_PRE:
+    case CG_PIXEL_FORMAT_RGBA_32323232U:
+    case CG_PIXEL_FORMAT_BGRA_32323232U:
+    case CG_PIXEL_FORMAT_RGBA_32323232F:
+    case CG_PIXEL_FORMAT_BGRA_32323232F:
+    case CG_PIXEL_FORMAT_RGBA_32323232F_PRE:
+    case CG_PIXEL_FORMAT_BGRA_32323232F_PRE:
+        return _TMP_FMT_DOUBLE;
     }
 
     c_assert_not_reached();
+    return _TMP_FMT_NONE;
+}
+
+static bool
+uses_half_floats(cg_pixel_format_t format)
+{
+    switch (format) {
+    case CG_PIXEL_FORMAT_A_16F:
+    case CG_PIXEL_FORMAT_RG_1616F:
+    case CG_PIXEL_FORMAT_RGB_161616F:
+    case CG_PIXEL_FORMAT_BGR_161616F:
+    case CG_PIXEL_FORMAT_RGBA_16161616F:
+    case CG_PIXEL_FORMAT_BGRA_16161616F:
+    case CG_PIXEL_FORMAT_RGBA_16161616F_PRE:
+    case CG_PIXEL_FORMAT_BGRA_16161616F_PRE:
+        return true;
+
+    case CG_PIXEL_FORMAT_A_8:
+    case CG_PIXEL_FORMAT_A_8SN:
+    case CG_PIXEL_FORMAT_A_16U:
+    case CG_PIXEL_FORMAT_A_32U:
+    case CG_PIXEL_FORMAT_A_32F:
+    case CG_PIXEL_FORMAT_RG_88:
+    case CG_PIXEL_FORMAT_RG_88SN:
+    case CG_PIXEL_FORMAT_RG_1616U:
+    case CG_PIXEL_FORMAT_RG_3232U:
+    case CG_PIXEL_FORMAT_RG_3232F:
+    case CG_PIXEL_FORMAT_RGB_565:
+    case CG_PIXEL_FORMAT_RGB_888:
+    case CG_PIXEL_FORMAT_BGR_888:
+    case CG_PIXEL_FORMAT_RGB_888SN:
+    case CG_PIXEL_FORMAT_BGR_888SN:
+    case CG_PIXEL_FORMAT_RGB_161616U:
+    case CG_PIXEL_FORMAT_BGR_161616U:
+    case CG_PIXEL_FORMAT_RGB_323232U:
+    case CG_PIXEL_FORMAT_BGR_323232U:
+    case CG_PIXEL_FORMAT_RGB_323232F:
+    case CG_PIXEL_FORMAT_BGR_323232F:
+    case CG_PIXEL_FORMAT_RGBA_8888SN:
+    case CG_PIXEL_FORMAT_BGRA_8888SN:
+    case CG_PIXEL_FORMAT_RGBA_4444:
+    case CG_PIXEL_FORMAT_RGBA_4444_PRE:
+    case CG_PIXEL_FORMAT_RGBA_5551:
+    case CG_PIXEL_FORMAT_RGBA_5551_PRE:
+    case CG_PIXEL_FORMAT_RGBA_8888:
+    case CG_PIXEL_FORMAT_BGRA_8888:
+    case CG_PIXEL_FORMAT_ARGB_8888:
+    case CG_PIXEL_FORMAT_ABGR_8888:
+    case CG_PIXEL_FORMAT_RGBA_8888_PRE:
+    case CG_PIXEL_FORMAT_BGRA_8888_PRE:
+    case CG_PIXEL_FORMAT_ARGB_8888_PRE:
+    case CG_PIXEL_FORMAT_ABGR_8888_PRE:
+    case CG_PIXEL_FORMAT_RGBA_1010102:
+    case CG_PIXEL_FORMAT_BGRA_1010102:
+    case CG_PIXEL_FORMAT_ARGB_2101010:
+    case CG_PIXEL_FORMAT_ABGR_2101010:
+    case CG_PIXEL_FORMAT_RGBA_1010102_PRE:
+    case CG_PIXEL_FORMAT_BGRA_1010102_PRE:
+    case CG_PIXEL_FORMAT_ARGB_2101010_PRE:
+    case CG_PIXEL_FORMAT_ABGR_2101010_PRE:
+    case CG_PIXEL_FORMAT_RGBA_16161616U:
+    case CG_PIXEL_FORMAT_BGRA_16161616U:
+    case CG_PIXEL_FORMAT_RGBA_32323232U:
+    case CG_PIXEL_FORMAT_BGRA_32323232U:
+    case CG_PIXEL_FORMAT_RGBA_32323232F:
+    case CG_PIXEL_FORMAT_BGRA_32323232F:
+    case CG_PIXEL_FORMAT_RGBA_32323232F_PRE:
+    case CG_PIXEL_FORMAT_BGRA_32323232F_PRE:
+    case CG_PIXEL_FORMAT_DEPTH_16:
+    case CG_PIXEL_FORMAT_DEPTH_32:
+    case CG_PIXEL_FORMAT_DEPTH_24_STENCIL_8:
+    case CG_PIXEL_FORMAT_ANY:
+        return false;
+    }
+
+    c_assert_not_reached();
+    return false;
+}
+static bool
+involves_half_floats(cg_pixel_format_t src_format,
+                     cg_pixel_format_t dst_format)
+{
+    return uses_half_floats(src_format) || uses_half_floats(dst_format);
 }
 
 bool
@@ -364,8 +585,8 @@ _cg_bitmap_convert_into_bitmap(cg_bitmap_t *src_bmp,
     int width, height;
     cg_pixel_format_t src_format;
     cg_pixel_format_t dst_format;
-    bool use_16;
-    bool need_premult;
+    bool need_multiply;
+    bool ret = true;
 
     src_format = cg_bitmap_get_format(src_bmp);
     src_rowstride = cg_bitmap_get_rowstride(src_bmp);
@@ -377,16 +598,18 @@ _cg_bitmap_convert_into_bitmap(cg_bitmap_t *src_bmp,
     c_return_val_if_fail(width == cg_bitmap_get_width(dst_bmp), false);
     c_return_val_if_fail(height == cg_bitmap_get_height(dst_bmp), false);
 
-    need_premult =
-        ((src_format & CG_PREMULT_BIT) != (dst_format & CG_PREMULT_BIT) &&
+    need_multiply =
+        (_cg_pixel_format_has_alpha(src_format) &&
+         _cg_pixel_format_has_alpha(dst_format) &&
          src_format != CG_PIXEL_FORMAT_A_8 &&
          dst_format != CG_PIXEL_FORMAT_A_8 &&
-         (src_format & dst_format & CG_A_BIT));
+         (_cg_pixel_format_is_premultiplied(src_format) !=
+          _cg_pixel_format_is_premultiplied(dst_format)));
 
     /* If the base format is the same then we can just copy the bitmap
        instead */
-    if ((src_format & ~CG_PREMULT_BIT) == (dst_format & ~CG_PREMULT_BIT) &&
-        (!need_premult || _cg_bitmap_can_fast_premult(dst_format))) {
+    if (_cg_pixel_format_premult_stem(src_format) == _cg_pixel_format_premult_stem(dst_format) &&
+        (!need_multiply || _cg_bitmap_can_fast_premult(dst_format))) {
         if (!_cg_bitmap_copy_subregion(src_bmp,
                                        dst_bmp,
                                        0,
@@ -398,8 +621,8 @@ _cg_bitmap_convert_into_bitmap(cg_bitmap_t *src_bmp,
                                        error))
             return false;
 
-        if (need_premult) {
-            if ((dst_format & CG_PREMULT_BIT)) {
+        if (need_multiply) {
+            if (_cg_pixel_format_is_premultiplied(dst_format)) {
                 if (!_cg_bitmap_premult(dst_bmp, error))
                     return false;
             } else {
@@ -409,6 +632,14 @@ _cg_bitmap_convert_into_bitmap(cg_bitmap_t *src_bmp,
         }
 
         return true;
+    }
+
+    if (involves_half_floats(src_format, dst_format)) {
+        _cg_set_error(error,
+                      CG_SYSTEM_ERROR,
+                      CG_SYSTEM_ERROR_UNSUPPORTED,
+                      "Failed to convert to/from half-float format");
+        return false;
     }
 
     src_data = _cg_bitmap_map(src_bmp, CG_BUFFER_ACCESS_READ, 0, error);
@@ -421,41 +652,49 @@ _cg_bitmap_convert_into_bitmap(cg_bitmap_t *src_bmp,
         return false;
     }
 
-    use_16 = _cg_bitmap_needs_short_temp_buffer(dst_format);
+    switch (get_tmp_fmt(dst_format))
+    {
+    case _TMP_FMT_8:
+        tmp_row = c_malloc(width * 4);
+        for (y = 0; y < height; y++) {
+            src = src_data + y * src_rowstride;
+            dst = dst_data + y * dst_rowstride;
 
-    /* Allocate a buffer to hold a temporary RGBA row */
-    tmp_row =
-        c_malloc(width * (use_16 ? sizeof(uint16_t) : sizeof(uint8_t)) * 4);
-
-    /* FIXME: Optimize */
-    for (y = 0; y < height; y++) {
-        src = src_data + y * src_rowstride;
-        dst = dst_data + y * dst_rowstride;
-
-        if (use_16)
-            _cg_unpack_16(src_format, src, tmp_row, width);
-        else
             _cg_unpack_8(src_format, src, tmp_row, width);
 
-        /* Handle premultiplication */
-        if (need_premult) {
-            if (dst_format & CG_PREMULT_BIT) {
-                if (use_16)
-                    _cg_bitmap_premult_unpacked_span_16(tmp_row, width);
-                else
+            /* Handle premultiplication */
+            if (need_multiply) {
+                if (_cg_pixel_format_is_premultiplied(dst_format))
                     _cg_bitmap_premult_unpacked_span_8(tmp_row, width);
-            } else {
-                if (use_16)
-                    _cg_bitmap_unpremult_unpacked_span_16(tmp_row, width);
                 else
                     _cg_bitmap_unpremult_unpacked_span_8(tmp_row, width);
             }
-        }
 
-        if (use_16)
-            _cg_pack_16(dst_format, tmp_row, dst, width);
-        else
             _cg_pack_8(dst_format, tmp_row, dst, width);
+        }
+        break;
+    case _TMP_FMT_DOUBLE:
+        tmp_row = c_malloc(width * 8 * 4);
+        for (y = 0; y < height; y++) {
+            src = src_data + y * src_rowstride;
+            dst = dst_data + y * dst_rowstride;
+
+            _cg_unpack_64(src_format, src, tmp_row, width);
+
+            /* Handle premultiplication */
+            if (need_multiply) {
+                if (_cg_pixel_format_is_premultiplied(dst_format))
+                    _cg_bitmap_premult_unpacked_span_64f(tmp_row, width);
+                else
+                    _cg_bitmap_unpremult_unpacked_span_64f(tmp_row, width);
+            }
+
+            _cg_pack_64(dst_format, tmp_row, dst, width);
+        }
+        break;
+    case _TMP_FMT_NONE:
+        c_assert_not_reached();
+        break;
     }
 
     _cg_bitmap_unmap(src_bmp);
@@ -463,7 +702,7 @@ _cg_bitmap_convert_into_bitmap(cg_bitmap_t *src_bmp,
 
     c_free(tmp_row);
 
-    return true;
+    return ret;
 }
 
 cg_bitmap_t *
@@ -544,15 +783,16 @@ _cg_bitmap_convert_for_upload(cg_bitmap_t *src_bmp,
         /* If the source format does not have the same premult flag as the
            internal_format then we need to copy and convert it */
         if (_cg_texture_needs_premult_conversion(src_format, internal_format)) {
+            cg_pixel_format_t toggled =
+                _cg_pixel_format_toggle_premult_status(src_format);
+
             if (can_convert_in_place) {
-                if (_cg_bitmap_convert_premult_status(
-                        src_bmp, (src_format ^ CG_PREMULT_BIT), error)) {
+                if (_cg_bitmap_convert_premult_status(src_bmp, toggled, error)) {
                     dst_bmp = cg_object_ref(src_bmp);
                 } else
                     return NULL;
             } else {
-                dst_bmp = _cg_bitmap_convert(
-                    src_bmp, src_format ^ CG_PREMULT_BIT, error);
+                dst_bmp = _cg_bitmap_convert(src_bmp, toggled, error);
                 if (dst_bmp == NULL)
                     return NULL;
             }
@@ -580,7 +820,6 @@ bool
 _cg_bitmap_unpremult(cg_bitmap_t *bmp, cg_error_t **error)
 {
     uint8_t *p, *data;
-    uint16_t *tmp_row;
     int x, y;
     cg_pixel_format_t format;
     int width, height;
@@ -591,45 +830,49 @@ _cg_bitmap_unpremult(cg_bitmap_t *bmp, cg_error_t **error)
     height = cg_bitmap_get_height(bmp);
     rowstride = cg_bitmap_get_rowstride(bmp);
 
-    if ((data = _cg_bitmap_map(
-             bmp, CG_BUFFER_ACCESS_READ | CG_BUFFER_ACCESS_WRITE, 0, error)) ==
-        NULL)
+    data = _cg_bitmap_map(bmp, (CG_BUFFER_ACCESS_READ |
+                                CG_BUFFER_ACCESS_WRITE), 0, error);
+    if (data == NULL)
         return false;
 
-    /* If we can't directly unpremult the data inline then we'll
-       allocate a temporary row and unpack the data. This assumes if we
-        can fast premult then we can also fast unpremult */
-    if (_cg_bitmap_can_fast_premult(format))
-        tmp_row = NULL;
-    else
-        tmp_row = c_malloc(sizeof(uint16_t) * 4 * width);
+    switch (_cg_pixel_format_premult_stem(format)) {
+    case CG_PIXEL_FORMAT_RGBA_8888:
+    case CG_PIXEL_FORMAT_BGRA_8888:
+        for (y = 0; y < height; y++)
+            _cg_bitmap_unpremult_unpacked_span_8(data + y * rowstride, width);
+        break;
+    case CG_PIXEL_FORMAT_ARGB_8888:
+    case CG_PIXEL_FORMAT_ABGR_8888:
+        for (y = 0; y < height; y++) {
+            p = data + y * rowstride;
 
-    for (y = 0; y < height; y++) {
-        p = (uint8_t *)data + y * rowstride;
-
-        if (tmp_row) {
-            _cg_unpack_16(format, p, tmp_row, width);
-            _cg_bitmap_unpremult_unpacked_span_16(tmp_row, width);
-            _cg_pack_16(format, tmp_row, p, width);
-        } else {
-            if (format & CG_AFIRST_BIT) {
-                for (x = 0; x < width; x++) {
-                    if (p[0] == 0)
-                        _cg_unpremult_alpha_0(p);
-                    else
-                        _cg_unpremult_alpha_first(p);
-                    p += 4;
-                }
-            } else
-                _cg_bitmap_unpremult_unpacked_span_8(p, width);
+            for (x = 0; x < width; x++) {
+                if (p[0] == 0)
+                    _cg_unpremult_alpha_0(p);
+                else
+                    _cg_unpremult_alpha_first(p);
+                p += 4;
+            }
         }
-    }
+        break;
+    default: {
+        double *tmp_row = c_malloc(sizeof(*tmp_row) * 4 * width);
 
-    c_free(tmp_row);
+        for (y = 0; y < height; y++) {
+            p = data + y * rowstride;
+
+            _cg_unpack_64(format, p, tmp_row, width);
+            _cg_bitmap_unpremult_unpacked_span_64f(tmp_row, width);
+            _cg_pack_64(format, tmp_row, p, width);
+        }
+
+        c_free(tmp_row);
+    }
+    }
 
     _cg_bitmap_unmap(bmp);
 
-    _cg_bitmap_set_format(bmp, format & ~CG_PREMULT_BIT);
+    _cg_bitmap_set_format(bmp, _cg_pixel_format_premult_stem(format));
 
     return true;
 }
@@ -638,7 +881,6 @@ bool
 _cg_bitmap_premult(cg_bitmap_t *bmp, cg_error_t **error)
 {
     uint8_t *p, *data;
-    uint16_t *tmp_row;
     int x, y;
     cg_pixel_format_t format;
     int width, height;
@@ -649,41 +891,47 @@ _cg_bitmap_premult(cg_bitmap_t *bmp, cg_error_t **error)
     height = cg_bitmap_get_height(bmp);
     rowstride = cg_bitmap_get_rowstride(bmp);
 
-    if ((data = _cg_bitmap_map(
-             bmp, CG_BUFFER_ACCESS_READ | CG_BUFFER_ACCESS_WRITE, 0, error)) ==
-        NULL)
+    data = _cg_bitmap_map(bmp,
+                          CG_BUFFER_ACCESS_READ | CG_BUFFER_ACCESS_WRITE,
+                          0, error);
+    if (data == NULL)
         return false;
 
-    /* If we can't directly premult the data inline then we'll allocate
-       a temporary row and unpack the data. */
-    if (_cg_bitmap_can_fast_premult(format))
-        tmp_row = NULL;
-    else
-        tmp_row = c_malloc(sizeof(uint16_t) * 4 * width);
+    switch (_cg_pixel_format_premult_stem(format)) {
+    case CG_PIXEL_FORMAT_RGBA_8888:
+    case CG_PIXEL_FORMAT_BGRA_8888:
+        for (y = 0; y < height; y++)
+            _cg_bitmap_premult_unpacked_span_8(data + y * rowstride, width);
+        break;
+    case CG_PIXEL_FORMAT_ARGB_8888:
+    case CG_PIXEL_FORMAT_ABGR_8888:
+        for (y = 0; y < height; y++) {
+            p = data + y * rowstride;
 
-    for (y = 0; y < height; y++) {
-        p = (uint8_t *)data + y * rowstride;
-
-        if (tmp_row) {
-            _cg_unpack_16(format, p, tmp_row, width);
-            _cg_bitmap_premult_unpacked_span_16(tmp_row, width);
-            _cg_pack_16(format, tmp_row, p, width);
-        } else {
-            if (format & CG_AFIRST_BIT) {
-                for (x = 0; x < width; x++) {
-                    _cg_premult_alpha_first(p);
-                    p += 4;
-                }
-            } else
-                _cg_bitmap_premult_unpacked_span_8(p, width);
+            for (x = 0; x < width; x++) {
+                _cg_premult_alpha_first(p);
+                p += 4;
+            }
         }
-    }
+        break;
+    default: {
+        double *tmp_row = c_malloc(sizeof(*tmp_row) * 4 * width);
 
-    c_free(tmp_row);
+        for (y = 0; y < height; y++) {
+            p = data + y * rowstride;
+
+            _cg_unpack_64(format, p, tmp_row, width);
+            _cg_bitmap_premult_unpacked_span_64f(tmp_row, width);
+            _cg_pack_64(format, tmp_row, p, width);
+        }
+
+        c_free(tmp_row);
+    }
+    }
 
     _cg_bitmap_unmap(bmp);
 
-    _cg_bitmap_set_format(bmp, format | CG_PREMULT_BIT);
+    _cg_bitmap_set_format(bmp, _cg_pixel_format_premultiply(format));
 
     return true;
 }
