@@ -39,9 +39,6 @@ struct {
     { CG_FEATURE_ID_UNSIGNED_INT_INDICES, "Unsigned integer indices",
       "CG_RENDERER_INDICES_TYPE_UNSIGNED_INT is supported in "
       "cg_indices_new()." },
-    { CG_FEATURE_ID_DEPTH_RANGE,
-      "cg_pipeline_set_depth_range() support",
-      "cg_pipeline_set_depth_range() support", },
     { CG_FEATURE_ID_POINT_SPRITE, "Point sprite coordinates",
       "cg_pipeline_set_layer_point_sprite_coords_enabled() is supported" },
     { CG_FEATURE_ID_MAP_BUFFER_FOR_READ, "Mapping buffers for reading",

@@ -582,7 +582,6 @@ _cg_driver_update_features(cg_device_t *dev,
      * repeat modes other than CLAMP_TO_EDGE. */
     CG_FLAGS_SET(dev->features, CG_FEATURE_ID_GLSL, true);
     CG_FLAGS_SET(dev->features, CG_FEATURE_ID_TEXTURE_NPOT_BASIC, true);
-    CG_FLAGS_SET(dev->features, CG_FEATURE_ID_DEPTH_RANGE, true);
     CG_FLAGS_SET(dev->features, CG_FEATURE_ID_MIRRORED_REPEAT, true);
     CG_FLAGS_SET(dev->features, CG_FEATURE_ID_PER_VERTEX_POINT_SIZE,
                  true);

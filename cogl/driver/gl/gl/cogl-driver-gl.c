@@ -644,7 +644,6 @@ _cg_driver_update_features(cg_device_t *dev, cg_error_t **error)
     dev->glsl_version_to_use = min_glsl_major * 100 + min_glsl_minor * 10;
 
     CG_FLAGS_SET(dev->features, CG_FEATURE_ID_UNSIGNED_INT_INDICES, true);
-    CG_FLAGS_SET(dev->features, CG_FEATURE_ID_DEPTH_RANGE, true);
 
     if (CG_CHECK_GL_VERSION(gl_major, gl_minor, 1, 4))
         CG_FLAGS_SET(dev->features, CG_FEATURE_ID_MIRRORED_REPEAT, true);

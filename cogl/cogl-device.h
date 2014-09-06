@@ -248,7 +248,6 @@ bool cg_is_device(void *object);
  * @CG_FEATURE_ID_UNSIGNED_INT_INDICES: Set if
  *     %CG_INDICES_TYPE_UNSIGNED_INT is supported in
  *     cg_indices_new().
- * @CG_FEATURE_ID_DEPTH_RANGE: cg_pipeline_set_depth_range() support
  * @CG_FEATURE_ID_POINT_SPRITE: Whether
  *     cg_pipeline_set_layer_point_sprite_coords_enabled() is supported.
  * @CG_FEATURE_ID_PER_VERTEX_POINT_SIZE: Whether cg_point_size_in
@@ -283,7 +282,6 @@ typedef enum _cg_feature_id_t {
     CG_FEATURE_ID_OFFSCREEN_MULTISAMPLE,
     CG_FEATURE_ID_ONSCREEN_MULTIPLE,
     CG_FEATURE_ID_UNSIGNED_INT_INDICES,
-    CG_FEATURE_ID_DEPTH_RANGE,
     CG_FEATURE_ID_POINT_SPRITE,
     CG_FEATURE_ID_MAP_BUFFER_FOR_READ,
     CG_FEATURE_ID_MAP_BUFFER_FOR_WRITE,
