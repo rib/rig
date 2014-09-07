@@ -404,6 +404,8 @@ char *c_ascii_strup(const char *str, c_ssize_t len);
 int c_ascii_strncasecmp(const char *s1, const char *s2, size_t n);
 int c_ascii_strcasecmp(const char *s1, const char *s2);
 int c_ascii_xdigit_value(char c);
+int c_ascii_snprintf(char *, size_t, const char *, ...);
+double c_ascii_strtod(const char *nptr, char **endptr);
 #define c_ascii_isspace(c) (isspace(c) != 0)
 #define c_ascii_isalpha(c) (isalpha(c) != 0)
 #define c_ascii_isprint(c) (isprint(c) != 0)
@@ -1255,7 +1257,6 @@ bool c_file_test(const char *filename, UFileTest test);
 #define c_rmdir rmdir
 #define c_mkstemp mkstemp
 #define c_ascii_isdigit isdigit
-#define c_ascii_strtod strtod
 #define c_ascii_isalnum isalnum
 
 /*

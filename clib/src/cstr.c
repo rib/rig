@@ -27,9 +27,12 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include <config.h>
+
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <locale.h>
+
 #include <clib.h>
 
 /* This is not a macro, because I dont want to put _GNC_SOURCE in the glib.h
@@ -951,4 +954,14 @@ c_strcmp0(const char *str1, const char *str2)
         return 1;
 
     return strcmp(str1, str2);
+}
+
+double
+c_ascii_strtod(const char *nptr, char **endptr)
+{
+    char *saved_locale = setlocale(LC_NUMERIC, "C");
+    double ret = strtod(nptr, endptr);
+    setlocale(LC_NUMERIC, saved_locale);
+
+    return ret;
 }

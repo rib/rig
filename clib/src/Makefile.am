@@ -54,6 +54,7 @@ libclib_la_SOURCES = \
 	cnicode-data.h	\
 	crbtree.h	\
 	crbtree.c	\
+	ascii_snprintf.c \
 	$(os_files)	\
 	$(vasprintf_files)
 
