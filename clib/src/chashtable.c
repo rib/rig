@@ -692,6 +692,18 @@ c_int_hash(const void *v1)
 }
 
 bool
+c_int64_equal(const void *v1, const void *v2)
+{
+    return *(int64_t *)v1 == *(int64_t *)v2;
+}
+
+unsigned int
+c_int64_hash(const void *v1)
+{
+    return (unsigned int)*(int64_t *)v1;
+}
+
+bool
 c_str_equal(const void *v1, const void *v2)
 {
     return strcmp(v1, v2) == 0;

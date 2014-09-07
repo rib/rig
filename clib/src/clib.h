@@ -647,6 +647,8 @@ bool c_direct_equal(const void *v1, const void *v2);
 unsigned int c_direct_hash(const void *v1);
 bool c_int_equal(const void *v1, const void *v2);
 unsigned int c_int_hash(const void *v1);
+bool c_int64_equal(const void *v1, const void *v2);
+unsigned int c_int64_hash(const void *v1);
 bool c_str_equal(const void *v1, const void *v2);
 unsigned int c_str_hash(const void *v1);
 
