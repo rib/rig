@@ -414,7 +414,6 @@ CheckForGtk()
           [AC_MSG_ERROR([Invalid value for --enable-gtk])])
 }
 
-
 dnl ================================================================
 dnl Check requirements for our C utility api
 dnl ================================================================
@@ -465,19 +464,49 @@ AM_CONDITIONAL([HAVE_AVAHI], [test "x$avahi_enabled" = "xyes"])
 AC_SUBST(RIG_PKG_REQUIRES)
 PKG_CHECK_MODULES(RIG_DEP, [$RIG_PKG_REQUIRES])
 
-dnl LLVM_COMPONENTS="jit interpreter nativecodegen bitreader bitwriter ipo selectiondag asmparser"
-LLVM_COMPONENTS="all"
-dnl Note empty "" implies 'all' but explicitly passing 'all' seems to confuse llvm-config
-dnl LLVM_COMPONENTS="support jit interpreter nativecodegen bitreader bitwriter codegen ipo linker selectiondag asmparser instrumentation irreeader"
-RIG_DEP_CFLAGS="$RIG_DEP_CFLAGS `llvm-config --cflags`"
-RIG_CLANG_LIBS="$RIG_CLANG_LIBS -lclangFrontendTool -lclangFrontend -lclangSerialization -lclangDriver -lclangCodeGen -lclangParse -lclangSema -lclangStaticAnalyzerFrontend -lclangStaticAnalyzerCheckers -lclangStaticAnalyzerCore -lclangAnalysis -lclangARCMigrate -lclangRewriteFrontend -lclangRewriteCore -lclangEdit -lclangAST -lclangLex -lclangBasic"
-RIG_CLANG_LIBS="$RIG_CLANG_LIBS `llvm-config --ldflags`"
-RIG_CLANG_LIBS="$RIG_CLANG_LIBS `llvm-config --libs $LLVM_COMPONENTS`"
 
-RIG_LLVM_PREFIX="`llvm-config --prefix`"
+dnl ============================================================
+dnl Optional LLVM Enable
+dnl ============================================================
+dnl
+dnl LLVM is pretty unwieldy so for now we default to not require it
+dnl
+dnl Note: Handled after pkg-config check so we can append to
+dnl RIG_DEP_ vars
+dnl
+RIG_LLVM_PREFIX=""
+RIG_LLVM_VERSION=""
+AC_ARG_ENABLE(
+  [llvm],
+  [AC_HELP_STRING([--enable-llvm=@<:@no/yes@:>@],
+                  [Enable tracking refcounts @<:@default=no@:>@])],
+  [enable_llvm="$enableval"],
+  [enable_llvm="no"]
+)
+AS_CASE(
+  [$enable_llvm],
+  [yes],
+  [
+    AC_DEFINE([USE_LLVM], [1], [Define LLVM integration])
+    dnl LLVM_COMPONENTS="jit interpreter nativecodegen bitreader bitwriter ipo selectiondag asmparser"
+    LLVM_COMPONENTS="all"
+    dnl Note empty "" implies 'all' but explicitly passing 'all' seems to confuse llvm-config
+    dnl LLVM_COMPONENTS="support jit interpreter nativecodegen bitreader bitwriter codegen ipo linker selectiondag asmparser instrumentation irreeader"
+    RIG_DEP_CFLAGS="$RIG_DEP_CFLAGS `llvm-config --cflags`"
+    RIG_CLANG_LIBS="$RIG_CLANG_LIBS -lclangFrontendTool -lclangFrontend -lclangSerialization -lclangDriver -lclangCodeGen -lclangParse -lclangSema -lclangStaticAnalyzerFrontend -lclangStaticAnalyzerCheckers -lclangStaticAnalyzerCore -lclangAnalysis -lclangARCMigrate -lclangRewriteFrontend -lclangRewriteCore -lclangEdit -lclangAST -lclangLex -lclangBasic"
+    RIG_CLANG_LIBS="$RIG_CLANG_LIBS `llvm-config --ldflags`"
+    RIG_CLANG_LIBS="$RIG_CLANG_LIBS `llvm-config --libs $LLVM_COMPONENTS`"
+
+    RIG_LLVM_PREFIX="`llvm-config --prefix`"
+    RIG_LLVM_VERSION="`llvm-config --version`"
+  ],
+  [no], [],
+  [AC_MSG_ERROR([Unknown argument for --enable-llvm])]
+)
+AM_CONDITIONAL([USE_LLVM], [test "x$enable_llvm" = "xyes"])
 AC_SUBST(RIG_LLVM_PREFIX)
-RIG_LLVM_VERSION="`llvm-config --version`"
 AC_SUBST(RIG_LLVM_VERSION)
+
 
 dnl ================================================================
 dnl Misc program dependencies.

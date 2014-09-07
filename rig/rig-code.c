@@ -36,7 +36,9 @@
 #include <rut.h>
 
 #include "rig-code.h"
+#if defined(RIG_EDITOR_ENABLED) && defined(USE_LLVM)
 #include "rig-llvm.h"
+#endif
 
 struct _rig_code_node_t {
     rut_object_base_t _base;
@@ -193,7 +195,7 @@ rig_code_update_dso(rig_engine_t *engine, uint8_t *data, int len)
                            NULL);
 }
 
-#ifdef RIG_EDITOR_ENABLED
+#if defined(RIG_EDITOR_ENABLED) && defined(USE_LLVM)
 static void
 recompile(rig_engine_t *engine)
 {
@@ -233,7 +235,7 @@ recompile_pre_paint_callback(rut_object_t *_null_graphable,
 {
     recompile(user_data);
 }
-#endif /* RIG_EDITOR_ENABLED */
+#endif /* RIG_EDITOR_ENABLED && USE_LLVM */
 
 static void
 queue_recompile(rig_engine_t *engine)
@@ -241,7 +243,7 @@ queue_recompile(rig_engine_t *engine)
     c_return_if_fail(engine->frontend &&
                      engine->frontend_id == RIG_FRONTEND_ID_EDITOR);
 
-#ifdef RIG_EDITOR_ENABLED
+#if defined(RIG_EDITOR_ENABLED) && defined(USE_LLVM)
     if (engine->need_recompile)
         return;
 
@@ -320,7 +322,7 @@ rig_code_resolve_symbol(rig_engine_t *engine, const char *name)
 void
 _rig_code_init(rig_engine_t *engine)
 {
-#ifdef RIG_EDITOR_ENABLED
+#if defined(RIG_EDITOR_ENABLED) && defined(USE_LLVM)
     engine->code_string = c_string_new("");
     engine->codegen_string0 = c_string_new("");
     engine->codegen_string1 = c_string_new("");
@@ -336,7 +338,7 @@ _rig_code_init(rig_engine_t *engine)
 void
 _rig_code_fini(rig_engine_t *engine)
 {
-#ifdef RIG_EDITOR_ENABLED
+#if defined(RIG_EDITOR_ENABLED) && defined(USE_LLVM)
     c_string_free(engine->code_string, true);
     engine->code_string = NULL;
 
