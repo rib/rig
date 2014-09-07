@@ -69,11 +69,6 @@ check_flags(TestFlags flags, cg_renderer_t *renderer)
         return false;
     }
 
-    if (flags & TEST_REQUIREMENT_OFFSCREEN &&
-        !cg_has_feature(test_dev, CG_FEATURE_ID_OFFSCREEN)) {
-        return false;
-    }
-
     if (flags & TEST_REQUIREMENT_FENCE &&
         !cg_has_feature(test_dev, CG_FEATURE_ID_FENCE)) {
         return false;
