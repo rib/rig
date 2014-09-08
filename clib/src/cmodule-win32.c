@@ -1,5 +1,5 @@
 /*
- * gmodule.c: dl* functions, glib style
+ * cmodule.c: dl* functions, glib style
  *
  * Author:
  *   Gonzalo Paniagua Javier (gonzalo@novell.com)
@@ -32,23 +32,23 @@
 #include <config.h>
 
 #include <clib.h>
-#include <gmodule.h>
+#include <cmodule.h>
 #include <windows.h>
 #include <psapi.h>
 
 #define LIBSUFFIX ".dll"
 #define LIBPREFIX ""
 
-struct _UModule {
+struct _c_module_t {
     HMODULE handle;
     int main_module;
 };
 
-UModule *
-c_module_open(const char *file, UModuleFlags flags)
+c_module_t *
+c_module_open(const char *file, u_module_flags_t flags)
 {
-    UModule *module;
-    module = c_malloc(sizeof(UModule));
+    c_module_t *module;
+    module = c_malloc(sizeof(c_module_t));
     if (module == NULL)
         return NULL;
 
@@ -119,7 +119,7 @@ w32_find_symbol(const char *symbol_name)
 }
 
 bool
-c_module_symbol(UModule *module, const char *symbol_name, void **symbol)
+c_module_symbol(c_module_t *module, const char *symbol_name, void **symbol)
 {
     if (module == NULL || symbol_name == NULL || symbol == NULL)
         return false;
@@ -160,7 +160,7 @@ c_module_error(void)
 }
 
 bool
-c_module_close(UModule *module)
+c_module_close(c_module_t *module)
 {
     HMODULE handle;
     int main_module;
