@@ -1212,6 +1212,7 @@ rut_infer_asset_tags(rut_context_t *ctx, GFileInfo *info, GFile *asset_file)
 
     return inferred_tags;
 }
+#endif /* RIG_EDITOR_ENABLED && USE_GLIB */
 
 void
 rig_asset_add_inferred_tag(rig_asset_t *asset, const char *tag)

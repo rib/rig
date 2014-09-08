@@ -30,7 +30,10 @@
 #define _RIG_ASSET_H_
 
 #include <stdbool.h>
+
+#if USE_GLIB
 #include <gio/gio.h>
+#endif
 
 #include <rut.h>
 
@@ -68,8 +71,6 @@ typedef struct _rig_asset_t rig_asset_t;
 
 void _rig_asset_type_init(void);
 
-bool rut_file_info_is_asset(GFileInfo *info, const char *name);
-
 rig_asset_t *rig_asset_new_builtin(rut_context_t *ctx, const char *icon_path);
 
 rig_asset_t *rig_asset_new_texture(rut_context_t *ctx,
@@ -92,10 +93,17 @@ rig_asset_t *rig_asset_new_font(rut_context_t *ctx,
                                 const char *path,
                                 const c_list_t *inferred_tags);
 
+#if defined(RIG_EDITOR_ENABLED) && defined(USE_GLIB)
 rig_asset_t *rig_asset_new_from_file(rig_engine_t *engine,
                                      GFileInfo *info,
                                      GFile *asset_file,
                                      rut_exception_t **e);
+
+bool rut_file_info_is_asset(GFileInfo *info, const char *name);
+
+c_list_t *
+rut_infer_asset_tags(rut_context_t *ctx, GFileInfo *info, GFile *asset_file);
+#endif
 
 rig_asset_t *rig_asset_new_from_data(rut_context_t *ctx,
                                      const char *path,
@@ -128,9 +136,6 @@ void rig_asset_set_inferred_tags(rig_asset_t *asset,
 const c_list_t *rig_asset_get_inferred_tags(rig_asset_t *asset);
 
 bool rig_asset_has_tag(rig_asset_t *asset, const char *tag);
-
-c_list_t *
-rut_infer_asset_tags(rut_context_t *ctx, GFileInfo *info, GFile *asset_file);
 
 void rig_asset_add_inferred_tag(rig_asset_t *asset, const char *tag);
 
