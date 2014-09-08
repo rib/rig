@@ -36,7 +36,6 @@
 #endif
 
 #include <cmodule.h>
-#include <gio/gio.h>
 
 #include <rut.h>
 
@@ -345,9 +344,6 @@ void rig_engine_set_play_mode_ui(rig_engine_t *engine, rig_ui_t *ui);
 void rig_register_asset(rig_engine_t *engine, rig_asset_t *asset);
 
 rig_asset_t *rig_lookup_asset(rig_engine_t *engine, const char *path);
-
-rig_asset_t *
-rig_load_asset(rig_engine_t *engine, GFileInfo *info, GFile *asset_file);
 
 typedef void (*rig_tool_changed_callback_t)(rig_engine_t *engine,
                                             rig_tool_id_t tool_id,
