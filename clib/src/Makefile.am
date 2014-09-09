@@ -1,3 +1,5 @@
+EXTRA_DIST =
+
 noinst_LTLIBRARIES = libclib.la libclib-static.la
 
 win_files  = \
@@ -22,6 +24,25 @@ os_files = $(win_files)
 else
 os_files = $(unix_files)
 endif
+
+# SIMD-oriented Fast Mersenne Twist Random
+# Number Generator...
+sfmt_source = \
+	sfmt/SFMT.h \
+	sfmt/SFMT.c \
+	sfmt/SFMT-common.h \
+	sfmt/SFMT-params4253.h \
+	sfmt/SFMT-params19937.h \
+	sfmt/SFMT-params44497.h \
+	sfmt/SFMT-params216091.h \
+	sfmt/SFMT-params86243.h \
+	sfmt/SFMT-params2281.h \
+	sfmt/SFMT-params1279.h \
+	sfmt/SFMT-params607.h \
+	sfmt/.SFMT.h.swp \
+	sfmt/SFMT-params.h \
+	sfmt/SFMT-params11213.h
+EXTRA_DIST += sfmt/README.txt sfmt/LICENSE.txt
 
 libclib_la_SOURCES = \
 	sort.frag.h	\
@@ -55,16 +76,20 @@ libclib_la_SOURCES = \
 	crbtree.h	\
 	crbtree.c	\
 	ascii_snprintf.c \
+	crand.c		\
+	$(sfmt_source)	\
 	$(os_files)	\
 	$(vasprintf_files)
 
-AM_CPPFLAGS =			\
-	-I$(top_builddir)	\
-	-I$(top_srcdir)		\
-	-I$(srcdir)		\
-	-Wall			\
+AM_CPPFLAGS = \
+	-I$(top_builddir) \
+	-I$(top_srcdir) \
+	-I$(srcdir) \
+	-I$(srcdir)/sfmt \
+	-Wall \
 	$(RIG_DEP_CFLAGS) \
 	$(RIG_EXTRA_CPPFLAGS) \
+	-DSFMT_MEXP=19937 \
 	$(NULL)
 
 #libclib_la_CFLAGS = -g -Wall -D_FORTIFY_SOURCE=2

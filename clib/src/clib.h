@@ -1434,6 +1434,28 @@ long c_utf8_pointer_to_offset(const char *str, const char *pos);
      (a == _CLIB_MAJOR &&(b < _CLIB_MIDDLE ||                                  \
                           (b == _CLIB_MIDDLE &&c <= _CLIB_MINOR))))
 
+/*
+ * Random numbers
+ */
+typedef struct _c_rand_t c_rand_t;
+
+c_rand_t *c_rand_new(void);
+c_rand_t *c_rand_new_with_seed_array(uint32_t *array, int len);
+c_rand_t *c_rand_new_with_seed(uint32_t seed);
+void c_rand_free(c_rand_t *rand);
+double c_rand_double(c_rand_t *rand);
+double c_rand_double_range(c_rand_t *rand, double begin, double end);
+uint32_t c_rand_uint32(c_rand_t *rand);
+int32_t c_rand_int32_range(c_rand_t *rand, int32_t begin, int32_t end);
+bool c_rand_boolean(c_rand_t *rand);
+
+/* XXX: Not thread safe!!! */
+double c_random_double(void);
+double c_random_double_range(double begin, double end);
+uint32_t c_random_uint32(void);
+int32_t c_random_int32_range(int32_t begin, int32_t end);
+bool c_random_boolean(void);
+
 C_END_DECLS
 
 #include <crbtree.h>
