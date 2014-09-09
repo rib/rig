@@ -1,7 +1,7 @@
 #include <cogl/cogl.h>
 #include <cogl/cogl-xlib.h>
 #include <cogl/winsys/cogl-texture-pixmap-x11.h>
-#include <glib.h>
+#include <clib.h>
 #include <stdio.h>
 
 #include <X11/Xlib.h>
@@ -192,10 +192,10 @@ main(int argc, char **argv)
             cg_xlib_renderer_handle_event(renderer, &event);
         }
 
-        pixel = c_random_int_range(0, 255) << 24 |
-                c_random_int_range(0, 255) << 16 |
-                c_random_int_range(0, 255) << 8;
-        c_random_int_range(0, 255);
+        pixel = c_random_int32_range(0, 255) << 24 |
+                c_random_int32_range(0, 255) << 16 |
+                c_random_int32_range(0, 255) << 8;
+        c_random_int32_range(0, 255);
         XSetForeground(xdpy, gc, pixel);
         XFillRectangle(
             xdpy, tfp_xwin, gc, 0, 0, TFP_XWIN_WIDTH, TFP_XWIN_HEIGHT);

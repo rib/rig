@@ -110,10 +110,10 @@ paint(Data *data)
             /* Pick a random color out of six */
             if (c_random_boolean()) {
                 memset(&firework->color, 0, sizeof(Color));
-                ((uint8_t *)&firework->color)[c_random_int_range(0, 3)] = 255;
+                ((uint8_t *)&firework->color)[c_random_int32_range(0, 3)] = 255;
             } else {
                 memset(&firework->color, 255, sizeof(Color));
-                ((uint8_t *)&firework->color)[c_random_int_range(0, 3)] = 0;
+                ((uint8_t *)&firework->color)[c_random_int32_range(0, 3)] = 0;
             }
             firework->color.alpha = 255;
 
