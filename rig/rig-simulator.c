@@ -1152,6 +1152,9 @@ rig_simulator_parse_option(const char *option, void (*usage)(void))
     } else if (strcmp(strv[0], "thread") == 0) {
         rig_simulator_run_mode_option =
             RIG_SIMULATOR_RUN_MODE_THREADED;
+    } else if (strcmp(strv[0], "process") == 0) {
+        rig_simulator_run_mode_option =
+            RIG_SIMULATOR_RUN_MODE_PROCESS;
     } else {
         fprintf(stderr, "Unsupported -m,--simulator= mode \"%s\"\n", option);
         usage();

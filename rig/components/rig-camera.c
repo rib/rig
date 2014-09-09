@@ -54,17 +54,42 @@ rut_ui_enum_t _rut_projection_ui_enum = {
 
 static cg_user_data_key_t fb_camera_key;
 
+/* This structure delimits the state that will be copied
+ * between cameras during _rig_camera_copy()... */
+struct camera_properties
+{
+    rut_camera_props_t base;
+
+    cg_matrix_t projection;
+    unsigned int projection_age;
+    unsigned int projection_cache_age;
+
+    cg_matrix_t inverse_projection;
+    unsigned int inverse_projection_age;
+
+    unsigned int view_age;
+
+    cg_matrix_t inverse_view;
+    unsigned int inverse_view_age;
+
+    unsigned int transform_age;
+    unsigned int at_suspend_transform_age;
+};
+
 struct _rig_camera_t {
     rut_object_base_t _base;
 
+    rut_componentable_props_t component;
+
     rig_engine_t *engine;
 
-    rut_camera_props_t props;
-
-    rut_componentable_props_t component;
+    struct camera_properties props;
 
     rut_introspectable_props_t introspectable;
     rut_property_t properties[RIG_CAMERA_N_PROPS];
+
+    unsigned int in_frame : 1;
+    unsigned int suspended : 1;
 };
 
 typedef struct _camera_flush_state_t {
@@ -86,22 +111,13 @@ _rig_camera_copy(rut_object_t *obj)
     rig_camera_t *copy = rig_camera_new(camera->engine,
                                         -1, /* ortho/vp width */
                                         -1, /* ortho/vp height */
-                                        camera->props.fb); /* may be NULL */
+                                        camera->props.base.fb); /* may be NULL */
 
-    copy->props.clear_fb = camera->props.clear_fb;
+    copy->props = camera->props;
 
-    copy->props.x1 = camera->props.x1;
-    copy->props.y1 = camera->props.y1;
-    copy->props.x2 = camera->props.x2;
-    copy->props.y2 = camera->props.y2;
-    copy->props.orthographic = camera->props.orthographic;
-
-    copy->props.view = camera->props.view;
-
+    copy->props.base.input_regions = NULL;
     /* TODO: copy input regions */
-
-    rut_introspectable_copy_properties(
-        &camera->engine->shell->property_ctx, camera, copy);
+#warning "TODO: _rig_camera_copy() should copy input regions"
 
     return copy;
 }
@@ -111,7 +127,7 @@ rig_camera_set_background_color4f(
     rut_object_t *object, float red, float green, float blue, float alpha)
 {
     rig_camera_t *camera = object;
-    cg_color_init_from_4f(&camera->props.bg_color, red, green, blue, alpha);
+    cg_color_init_from_4f(&camera->props.base.bg_color, red, green, blue, alpha);
     rut_property_dirty(&camera->engine->shell->property_ctx,
                        &camera->properties[RIG_CAMERA_PROP_BG_COLOR]);
 }
@@ -121,7 +137,7 @@ rig_camera_set_background_color(rut_object_t *obj, const cg_color_t *color)
 {
     rig_camera_t *camera = obj;
 
-    camera->props.bg_color = *color;
+    camera->props.base.bg_color = *color;
     rut_property_dirty(&camera->engine->shell->property_ctx,
                        &camera->properties[RIG_CAMERA_PROP_BG_COLOR]);
 }
@@ -131,7 +147,7 @@ rig_camera_get_background_color(rut_object_t *obj)
 {
     rig_camera_t *camera = obj;
 
-    return &camera->props.bg_color;
+    return &camera->props.base.bg_color;
 }
 
 void
@@ -139,16 +155,16 @@ rig_camera_set_clear(rut_object_t *object, bool clear)
 {
     rig_camera_t *camera = object;
     if (clear)
-        camera->props.clear_fb = true;
+        camera->props.base.clear_fb = true;
     else
-        camera->props.clear_fb = false;
+        camera->props.base.clear_fb = false;
 }
 
 cg_framebuffer_t *
 rig_camera_get_framebuffer(rut_object_t *object)
 {
     rig_camera_t *camera = object;
-    return camera->props.fb;
+    return camera->props.base.fb;
 }
 
 void
@@ -156,13 +172,13 @@ rig_camera_set_framebuffer(rut_object_t *object,
                            cg_framebuffer_t *framebuffer)
 {
     rig_camera_t *camera = object;
-    if (camera->props.fb == framebuffer)
+    if (camera->props.base.fb == framebuffer)
         return;
 
-    if (camera->props.fb)
-        cg_object_unref(camera->props.fb);
+    if (camera->props.base.fb)
+        cg_object_unref(camera->props.base.fb);
 
-    camera->props.fb = cg_object_ref(framebuffer);
+    camera->props.base.fb = cg_object_ref(framebuffer);
 }
 
 static void
@@ -170,22 +186,22 @@ _rig_camera_set_viewport(
     rut_object_t *object, float x, float y, float width, float height)
 {
     rig_camera_t *camera = object;
-    if (camera->props.viewport[0] == x && camera->props.viewport[1] == y &&
-        camera->props.viewport[2] == width &&
-        camera->props.viewport[3] == height)
+    if (camera->props.base.viewport[0] == x && camera->props.base.viewport[1] == y &&
+        camera->props.base.viewport[2] == width &&
+        camera->props.base.viewport[3] == height)
         return;
 
     /* If the aspect ratio changes we may need to update the projection
      * matrix... */
-    if ((!camera->props.orthographic) &&
-        (camera->props.viewport[2] / camera->props.viewport[3]) !=
+    if (camera->props.base.mode == RUT_PROJECTION_PERSPECTIVE &&
+        (camera->props.base.viewport[2] / camera->props.base.viewport[3]) !=
         (width / height))
         camera->props.projection_age++;
 
-    camera->props.viewport[0] = x;
-    camera->props.viewport[1] = y;
-    camera->props.viewport[2] = width;
-    camera->props.viewport[3] = height;
+    camera->props.base.viewport[0] = x;
+    camera->props.base.viewport[1] = y;
+    camera->props.base.viewport[2] = width;
+    camera->props.base.viewport[3] = height;
 
     camera->props.transform_age++;
 }
@@ -213,9 +229,9 @@ rig_camera_set_viewport_x(rut_object_t *obj, float x)
 
     _rig_camera_set_viewport(camera,
                              x,
-                             camera->props.viewport[1],
-                             camera->props.viewport[2],
-                             camera->props.viewport[3]);
+                             camera->props.base.viewport[1],
+                             camera->props.base.viewport[2],
+                             camera->props.base.viewport[3]);
     rut_property_dirty(&camera->engine->shell->property_ctx,
                        &camera->properties[RIG_CAMERA_PROP_VIEWPORT_X]);
 }
@@ -226,10 +242,10 @@ rig_camera_set_viewport_y(rut_object_t *obj, float y)
     rig_camera_t *camera = obj;
 
     _rig_camera_set_viewport(camera,
-                             camera->props.viewport[0],
+                             camera->props.base.viewport[0],
                              y,
-                             camera->props.viewport[2],
-                             camera->props.viewport[3]);
+                             camera->props.base.viewport[2],
+                             camera->props.base.viewport[3]);
     rut_property_dirty(&camera->engine->shell->property_ctx,
                        &camera->properties[RIG_CAMERA_PROP_VIEWPORT_Y]);
 }
@@ -240,10 +256,10 @@ rig_camera_set_viewport_width(rut_object_t *obj, float width)
     rig_camera_t *camera = obj;
 
     _rig_camera_set_viewport(camera,
-                             camera->props.viewport[0],
-                             camera->props.viewport[1],
+                             camera->props.base.viewport[0],
+                             camera->props.base.viewport[1],
                              width,
-                             camera->props.viewport[3]);
+                             camera->props.base.viewport[3]);
     rut_property_dirty(&camera->engine->shell->property_ctx,
                        &camera->properties[RIG_CAMERA_PROP_VIEWPORT_WIDTH]);
 }
@@ -254,9 +270,9 @@ rig_camera_set_viewport_height(rut_object_t *obj, float height)
     rig_camera_t *camera = obj;
 
     _rig_camera_set_viewport(camera,
-                             camera->props.viewport[0],
-                             camera->props.viewport[1],
-                             camera->props.viewport[2],
+                             camera->props.base.viewport[0],
+                             camera->props.base.viewport[1],
+                             camera->props.base.viewport[2],
                              height);
     rut_property_dirty(&camera->engine->shell->property_ctx,
                        &camera->properties[RIG_CAMERA_PROP_VIEWPORT_HEIGHT]);
@@ -266,7 +282,7 @@ const float *
 rig_camera_get_viewport(rut_object_t *object)
 {
     rig_camera_t *camera = object;
-    return camera->props.viewport;
+    return camera->props.base.viewport;
 }
 
 const cg_matrix_t *
@@ -277,53 +293,88 @@ rig_camera_get_projection(rut_object_t *object)
                    camera->props.projection_age)) {
         cg_matrix_init_identity(&camera->props.projection);
 
-        if (camera->props.orthographic) {
-            float x1, x2, y1, y2;
+        switch (camera->props.base.mode)
+        {
+        case RUT_PROJECTION_ORTHOGRAPHIC:
+            {
+                float x1, x2, y1, y2;
 
-            if (camera->props.zoom != 1) {
-                float center_x = camera->props.x1 +
-                                 (camera->props.x2 - camera->props.x1) / 2.0;
-                float center_y = camera->props.y1 +
-                                 (camera->props.y2 - camera->props.y1) / 2.0;
-                float inverse_scale = 1.0 / camera->props.zoom;
-                float dx = (camera->props.x2 - center_x) * inverse_scale;
-                float dy = (camera->props.y2 - center_y) * inverse_scale;
+                if (camera->props.base.zoom != 1) {
+                    float center_x = camera->props.base.ortho.x1 +
+                        (camera->props.base.ortho.x2 - camera->props.base.ortho.x1) / 2.0;
+                    float center_y = camera->props.base.ortho.y1 +
+                        (camera->props.base.ortho.y2 - camera->props.base.ortho.y1) / 2.0;
+                    float inverse_scale = 1.0 / camera->props.base.zoom;
+                    float dx = (camera->props.base.ortho.x2 - center_x) * inverse_scale;
+                    float dy = (camera->props.base.ortho.y2 - center_y) * inverse_scale;
 
-                camera->props.x1 = center_x - dx;
-                camera->props.x2 = center_x + dx;
-                camera->props.y1 = center_y - dy;
-                camera->props.y2 = center_y + dy;
-            } else {
-                x1 = camera->props.x1;
-                x2 = camera->props.x2;
-                y1 = camera->props.y1;
-                y2 = camera->props.y2;
+                    camera->props.base.ortho.x1 = center_x - dx;
+                    camera->props.base.ortho.x2 = center_x + dx;
+                    camera->props.base.ortho.y1 = center_y - dy;
+                    camera->props.base.ortho.y2 = center_y + dy;
+                } else {
+                    x1 = camera->props.base.ortho.x1;
+                    x2 = camera->props.base.ortho.x2;
+                    y1 = camera->props.base.ortho.y1;
+                    y2 = camera->props.base.ortho.y2;
+                }
+
+                cg_matrix_orthographic(&camera->props.projection,
+                                       x1,
+                                       y1,
+                                       x2,
+                                       y2,
+                                       camera->props.base.near,
+                                       camera->props.base.far);
+
+                break;
+            }
+        case RUT_PROJECTION_PERSPECTIVE:
+            {
+                float aspect_ratio =
+                    camera->props.base.viewport[2] / camera->props.base.viewport[3];
+                rut_util_matrix_scaled_perspective(&camera->props.projection,
+                                                   camera->props.base.perspective.fov,
+                                                   aspect_ratio,
+                                                   camera->props.base.near,
+                                                   camera->props.base.far,
+                                                   camera->props.base.zoom);
+#if 0
+                c_debug ("fov=%f, aspect=%f, near=%f, far=%f, zoom=%f\n",
+                         camera->props.base.perspective.fov,
+                         aspect_ratio,
+                         camera->props.base.near,
+                         camera->props.base.far,
+                         camera->props.base.zoom);
+#endif
+                break;
             }
 
-            cg_matrix_orthographic(&camera->props.projection,
-                                   x1,
-                                   y1,
-                                   x2,
-                                   y2,
-                                   camera->props.near,
-                                   camera->props.far);
-        } else {
-            float aspect_ratio =
-                camera->props.viewport[2] / camera->props.viewport[3];
-            rut_util_matrix_scaled_perspective(&camera->props.projection,
-                                               camera->props.fov,
-                                               aspect_ratio,
-                                               camera->props.near,
-                                               camera->props.far,
-                                               camera->props.zoom);
-#if 0
-            c_debug ("fov=%f, aspect=%f, near=%f, far=%f, zoom=%f\n",
-                     camera->props.fov,
-                     aspect_ratio,
-                     camera->props.near,
-                     camera->props.far,
-                     camera->props.zoom);
-#endif
+        case RUT_PROJECTION_ASYMMETRIC_PERSPECTIVE:
+            {
+#define D_TO_R(X) (X *(C_PI / 180.0f))
+                float near = camera->props.base.near;
+                float left = -tanf(D_TO_R(camera->props.base.asymmetric_perspective.left_fov)) * near;
+                float right = tanf(D_TO_R(camera->props.base.asymmetric_perspective.right_fov)) * near;
+                float bottom = -tanf(D_TO_R(camera->props.base.asymmetric_perspective.bottom_fov)) * near;
+                float top = tanf(D_TO_R(camera->props.base.asymmetric_perspective.top_fov)) * near;
+#undef D_TO_R
+
+                rut_util_matrix_scaled_frustum(&camera->props.projection,
+                                               left,
+                                               right,
+                                               bottom,
+                                               top,
+                                               camera->props.base.near,
+                                               camera->props.base.far,
+                                               camera->props.base.zoom);
+                break;
+            }
+        case RUT_PROJECTION_NDC:
+            {
+                cg_matrix_init_identity(&camera->props.projection);
+                break;
+            }
         }
 
         camera->props.projection_cache_age = camera->props.projection_age;
@@ -337,10 +388,10 @@ rig_camera_set_near_plane(rut_object_t *obj, float near)
 {
     rig_camera_t *camera = obj;
 
-    if (camera->props.near == near)
+    if (camera->props.base.near == near)
         return;
 
-    camera->props.near = near;
+    camera->props.base.near = near;
     rut_property_dirty(&camera->engine->shell->property_ctx,
                        &camera->properties[RIG_CAMERA_PROP_NEAR]);
     camera->props.projection_age++;
@@ -352,7 +403,7 @@ rig_camera_get_near_plane(rut_object_t *obj)
 {
     rig_camera_t *camera = obj;
 
-    return camera->props.near;
+    return camera->props.base.near;
 }
 
 void
@@ -360,10 +411,10 @@ rig_camera_set_far_plane(rut_object_t *obj, float far)
 {
     rig_camera_t *camera = obj;
 
-    if (camera->props.far == far)
+    if (camera->props.base.far == far)
         return;
 
-    camera->props.far = far;
+    camera->props.base.far = far;
     rut_property_dirty(&camera->engine->shell->property_ctx,
                        &camera->properties[RIG_CAMERA_PROP_FAR]);
     camera->props.projection_age++;
@@ -375,17 +426,14 @@ rig_camera_get_far_plane(rut_object_t *obj)
 {
     rig_camera_t *camera = obj;
 
-    return camera->props.far;
+    return camera->props.base.far;
 }
 
 rut_projection_t
 rig_camera_get_projection_mode(rut_object_t *object)
 {
     rig_camera_t *camera = object;
-    if (camera->props.orthographic)
-        return RUT_PROJECTION_ORTHOGRAPHIC;
-    else
-        return RUT_PROJECTION_PERSPECTIVE;
+    return camera->props.base.mode;
 }
 
 void
@@ -393,20 +441,15 @@ rig_camera_set_projection_mode(rut_object_t *object,
                                rut_projection_t projection)
 {
     rig_camera_t *camera = object;
-    bool orthographic;
 
-    if (projection == RUT_PROJECTION_ORTHOGRAPHIC)
-        orthographic = true;
-    else
-        orthographic = false;
+    if (camera->props.base.mode == projection)
+        return;
 
-    if (orthographic != camera->props.orthographic) {
-        camera->props.orthographic = orthographic;
-        rut_property_dirty(&camera->engine->shell->property_ctx,
-                           &camera->properties[RIG_CAMERA_PROP_MODE]);
-        camera->props.projection_age++;
-        camera->props.transform_age++;
-    }
+    camera->props.base.mode = projection;
+    rut_property_dirty(&camera->engine->shell->property_ctx,
+                       &camera->properties[RIG_CAMERA_PROP_MODE]);
+    camera->props.projection_age++;
+    camera->props.transform_age++;
 }
 
 void
@@ -414,13 +457,13 @@ rig_camera_set_field_of_view(rut_object_t *obj, float fov)
 {
     rig_camera_t *camera = obj;
 
-    if (camera->props.fov == fov)
+    if (camera->props.base.perspective.fov == fov)
         return;
 
-    camera->props.fov = fov;
+    camera->props.base.perspective.fov = fov;
     rut_property_dirty(&camera->engine->shell->property_ctx,
                        &camera->properties[RIG_CAMERA_PROP_FOV]);
-    if (!camera->props.orthographic) {
+    if (camera->props.base.mode == RUT_PROJECTION_PERSPECTIVE) {
         camera->props.projection_age++;
         camera->props.transform_age++;
     }
@@ -431,7 +474,35 @@ rig_camera_get_field_of_view(rut_object_t *obj)
 {
     rig_camera_t *camera = obj;
 
-    return camera->props.fov;
+    return camera->props.base.perspective.fov;
+}
+
+void
+rig_camera_set_asymmetric_field_of_view(rut_object_t *object,
+                                        float left_fov,
+                                        float right_fov,
+                                        float bottom_fov,
+                                        float top_fov)
+{
+    rig_camera_t *camera = object;
+
+    if (camera->props.base.asymmetric_perspective.left_fov == left_fov &&
+        camera->props.base.asymmetric_perspective.right_fov == right_fov &&
+        camera->props.base.asymmetric_perspective.bottom_fov == bottom_fov &&
+        camera->props.base.asymmetric_perspective.top_fov == top_fov)
+    {
+        return;
+    }
+
+    camera->props.base.asymmetric_perspective.left_fov = left_fov;
+    camera->props.base.asymmetric_perspective.right_fov = right_fov;
+    camera->props.base.asymmetric_perspective.bottom_fov = bottom_fov;
+    camera->props.base.asymmetric_perspective.top_fov = top_fov;
+
+    if (camera->props.base.mode == RUT_PROJECTION_ASYMMETRIC_PERSPECTIVE) {
+        camera->props.projection_age++;
+        camera->props.transform_age++;
+    }
 }
 
 void
@@ -439,16 +510,16 @@ rig_camera_set_orthographic_coordinates(
     rut_object_t *object, float x1, float y1, float x2, float y2)
 {
     rig_camera_t *camera = object;
-    if (camera->props.x1 == x1 && camera->props.y1 == y1 &&
-        camera->props.x2 == x2 && camera->props.y2 == y2)
+    if (camera->props.base.ortho.x1 == x1 && camera->props.base.ortho.y1 == y1 &&
+        camera->props.base.ortho.x2 == x2 && camera->props.base.ortho.y2 == y2)
         return;
 
-    camera->props.x1 = x1;
-    camera->props.y1 = y1;
-    camera->props.x2 = x2;
-    camera->props.y2 = y2;
+    camera->props.base.ortho.x1 = x1;
+    camera->props.base.ortho.y1 = y1;
+    camera->props.base.ortho.x2 = x2;
+    camera->props.base.ortho.y2 = y2;
 
-    if (camera->props.orthographic)
+    if (camera->props.base.mode == RUT_PROJECTION_ORTHOGRAPHIC)
         camera->props.projection_age++;
 }
 
@@ -475,7 +546,7 @@ rig_camera_set_view_transform(rut_object_t *object,
                               const cg_matrix_t *view)
 {
     rig_camera_t *camera = object;
-    camera->props.view = *view;
+    camera->props.base.view = *view;
 
     camera->props.view_age++;
     camera->props.transform_age++;
@@ -483,25 +554,26 @@ rig_camera_set_view_transform(rut_object_t *object,
     /* XXX: we have no way to assert that we are at the bottom of the
      * matrix stack at this point, so this might do bad things...
      */
-    // cg_framebuffer_set_modelview_matrix (camera->props.fb,
-    //                                       &camera->props.view);
+    // cg_framebuffer_set_modelview_matrix (camera->props.base.fb,
+    //                                       &camera->props.base.view);
 }
 
 const cg_matrix_t *
 rig_camera_get_view_transform(rut_object_t *object)
 {
     rig_camera_t *camera = object;
-    return &camera->props.view;
+    return &camera->props.base.view;
 }
 
 const cg_matrix_t *
 rig_camera_get_inverse_view_transform(rut_object_t *object)
 {
     rig_camera_t *camera = object;
+
     if (camera->props.inverse_view_age == camera->props.view_age)
         return &camera->props.inverse_view;
 
-    if (!cg_matrix_get_inverse(&camera->props.view,
+    if (!cg_matrix_get_inverse(&camera->props.base.view,
                                &camera->props.inverse_view))
         return NULL;
 
@@ -514,7 +586,7 @@ rig_camera_set_input_transform(rut_object_t *object,
                                const cg_matrix_t *input_transform)
 {
     rig_camera_t *camera = object;
-    camera->props.input_transform = *input_transform;
+    camera->props.base.input_transform = *input_transform;
 }
 
 void
@@ -522,12 +594,12 @@ rig_camera_add_input_region(rut_object_t *object,
                             rut_input_region_t *region)
 {
     rig_camera_t *camera = object;
-    if (c_llist_find(camera->props.input_regions, region))
+    if (c_llist_find(camera->props.base.input_regions, region))
         return;
 
     rut_object_ref(region);
-    camera->props.input_regions =
-        c_llist_prepend(camera->props.input_regions, region);
+    camera->props.base.input_regions =
+        c_llist_prepend(camera->props.base.input_regions, region);
 }
 
 void
@@ -535,11 +607,11 @@ rig_camera_remove_input_region(rut_object_t *object,
                                rut_input_region_t *region)
 {
     rig_camera_t *camera = object;
-    c_llist_t *link = c_llist_find(camera->props.input_regions, region);
+    c_llist_t *link = c_llist_find(camera->props.base.input_regions, region);
     if (link) {
         rut_object_unref(region);
-        camera->props.input_regions =
-            c_llist_delete_link(camera->props.input_regions, link);
+        camera->props.base.input_regions =
+            c_llist_delete_link(camera->props.base.input_regions, link);
     }
 }
 
@@ -547,7 +619,7 @@ bool
 rig_camera_transform_window_coordinate(rut_object_t *object, float *x, float *y)
 {
     rig_camera_t *camera = object;
-    float *viewport = camera->props.viewport;
+    float *viewport = camera->props.base.viewport;
     *x -= viewport[0];
     *y -= viewport[1];
 
@@ -618,12 +690,12 @@ static void
 _rig_camera_flush_transforms(rig_camera_t *camera)
 {
     const cg_matrix_t *projection;
-    cg_framebuffer_t *fb = camera->props.fb;
+    cg_framebuffer_t *fb = camera->props.base.fb;
     camera_flush_state_t *state;
 
     /* While a camera is in a suspended state then we don't expect to
      * _flush() and use that camera before it is restored. */
-    c_return_if_fail(camera->props.suspended == false);
+    c_return_if_fail(camera->suspended == false);
 
     state = cg_object_get_user_data(fb, &fb_camera_key);
     if (!state) {
@@ -634,27 +706,27 @@ _rig_camera_flush_transforms(rig_camera_t *camera)
                camera->props.transform_age == state->transform_age)
         goto done;
 
-    if (camera->props.in_frame) {
+    if (camera->in_frame) {
         c_warning("Un-balanced rig_camera_flush/_end calls: "
                   "repeat _flush() calls before _end()");
     }
 
     cg_framebuffer_set_viewport(fb,
-                                camera->props.viewport[0],
-                                camera->props.viewport[1],
-                                camera->props.viewport[2],
-                                camera->props.viewport[3]);
+                                camera->props.base.viewport[0],
+                                camera->props.base.viewport[1],
+                                camera->props.base.viewport[2],
+                                camera->props.base.viewport[3]);
 
     projection = rig_camera_get_projection(camera);
     cg_framebuffer_set_projection_matrix(fb, projection);
 
-    cg_framebuffer_set_modelview_matrix(fb, &camera->props.view);
+    cg_framebuffer_set_modelview_matrix(fb, &camera->props.base.view);
 
     state->current_camera = camera;
     state->transform_age = camera->props.transform_age;
 
 done:
-    camera->props.in_frame = true;
+    camera->in_frame = true;
 }
 
 void
@@ -663,14 +735,14 @@ rig_camera_flush(rut_object_t *object)
     rig_camera_t *camera = object;
     _rig_camera_flush_transforms(camera);
 
-    if (camera->props.clear_fb) {
-        cg_framebuffer_clear4f(camera->props.fb,
+    if (camera->props.base.clear_fb) {
+        cg_framebuffer_clear4f(camera->props.base.fb,
                                CG_BUFFER_BIT_COLOR | CG_BUFFER_BIT_DEPTH |
                                CG_BUFFER_BIT_STENCIL,
-                               camera->props.bg_color.red,
-                               camera->props.bg_color.green,
-                               camera->props.bg_color.blue,
-                               camera->props.bg_color.alpha);
+                               camera->props.base.bg_color.red,
+                               camera->props.base.bg_color.green,
+                               camera->props.base.bg_color.blue,
+                               camera->props.base.bg_color.alpha);
     }
 }
 
@@ -678,10 +750,10 @@ void
 rig_camera_end_frame(rut_object_t *object)
 {
     rig_camera_t *camera = object;
-    if (C_UNLIKELY(camera->props.in_frame != true))
+    if (C_UNLIKELY(camera->in_frame != true))
         c_warning("Un-balanced rig_camera_flush/end frame calls. "
                   "_end before _flush");
-    camera->props.in_frame = false;
+    camera->in_frame = false;
 }
 
 void
@@ -689,10 +761,10 @@ rig_camera_set_focal_distance(rut_object_t *obj, float focal_distance)
 {
     rig_camera_t *camera = obj;
 
-    if (camera->props.focal_distance == focal_distance)
+    if (camera->props.base.focal_distance == focal_distance)
         return;
 
-    camera->props.focal_distance = focal_distance;
+    camera->props.base.focal_distance = focal_distance;
 
     rut_shell_queue_redraw(camera->engine->shell);
 
@@ -705,7 +777,7 @@ rig_camera_get_focal_distance(rut_object_t *obj)
 {
     rig_camera_t *camera = obj;
 
-    return camera->props.focal_distance;
+    return camera->props.base.focal_distance;
 }
 
 void
@@ -713,10 +785,10 @@ rig_camera_set_depth_of_field(rut_object_t *obj, float depth_of_field)
 {
     rig_camera_t *camera = obj;
 
-    if (camera->props.depth_of_field == depth_of_field)
+    if (camera->props.base.depth_of_field == depth_of_field)
         return;
 
-    camera->props.depth_of_field = depth_of_field;
+    camera->props.base.depth_of_field = depth_of_field;
 
     rut_shell_queue_redraw(camera->engine->shell);
 
@@ -729,7 +801,7 @@ rig_camera_get_depth_of_field(rut_object_t *obj)
 {
     rig_camera_t *camera = obj;
 
-    return camera->props.depth_of_field;
+    return camera->props.base.depth_of_field;
 }
 
 void
@@ -739,11 +811,11 @@ rig_camera_suspend(rut_object_t *object)
     camera_flush_state_t *state;
 
     /* There's not point suspending a frame that hasn't been flushed */
-    c_return_if_fail(camera->props.in_frame == true);
+    c_return_if_fail(camera->in_frame == true);
 
-    c_return_if_fail(camera->props.suspended == false);
+    c_return_if_fail(camera->suspended == false);
 
-    state = cg_object_get_user_data(camera->props.fb, &fb_camera_key);
+    state = cg_object_get_user_data(camera->props.base.fb, &fb_camera_key);
 
     /* We only expect to be saving a camera that has been flushed */
     c_return_if_fail(state != NULL);
@@ -758,10 +830,10 @@ rig_camera_suspend(rut_object_t *object)
      * projection and viewport transforms. The easiest way for us to
      * handle restoring the modelview is to use the framebuffer's
      * matrix stack... */
-    cg_framebuffer_push_matrix(camera->props.fb);
+    cg_framebuffer_push_matrix(camera->props.base.fb);
 
-    camera->props.suspended = true;
-    camera->props.in_frame = false;
+    camera->suspended = true;
+    camera->in_frame = false;
 }
 
 void
@@ -769,10 +841,10 @@ rig_camera_resume(rut_object_t *object)
 {
     rig_camera_t *camera = object;
     camera_flush_state_t *state;
-    cg_framebuffer_t *fb = camera->props.fb;
+    cg_framebuffer_t *fb = camera->props.base.fb;
 
-    c_return_if_fail(camera->props.in_frame == false);
-    c_return_if_fail(camera->props.suspended == true);
+    c_return_if_fail(camera->in_frame == false);
+    c_return_if_fail(camera->suspended == true);
 
     /* While a camera is in a suspended state we don't expect the camera
      * to be touched so its transforms shouldn't have changed... */
@@ -793,10 +865,10 @@ rig_camera_resume(rut_object_t *object)
         goto done;
 
     cg_framebuffer_set_viewport(fb,
-                                camera->props.viewport[0],
-                                camera->props.viewport[1],
-                                camera->props.viewport[2],
-                                camera->props.viewport[3]);
+                                camera->props.base.viewport[0],
+                                camera->props.base.viewport[1],
+                                camera->props.base.viewport[2],
+                                camera->props.base.viewport[3]);
 
     cg_framebuffer_set_projection_matrix(fb, &camera->props.projection);
 
@@ -804,8 +876,8 @@ rig_camera_resume(rut_object_t *object)
     state->transform_age = camera->props.transform_age;
 
 done:
-    camera->props.in_frame = true;
-    camera->props.suspended = false;
+    camera->in_frame = true;
+    camera->suspended = false;
 }
 
 void
@@ -813,10 +885,10 @@ rig_camera_set_zoom(rut_object_t *object, float zoom)
 {
     rig_camera_t *camera = object;
 
-    if (camera->props.zoom == zoom)
+    if (camera->props.base.zoom == zoom)
         return;
 
-    camera->props.zoom = zoom;
+    camera->props.base.zoom = zoom;
 
     rut_shell_queue_redraw(camera->engine->shell);
 
@@ -832,7 +904,7 @@ rig_camera_get_zoom(rut_object_t *object)
 {
     rig_camera_t *camera = object;
 
-    return camera->props.zoom;
+    return camera->props.base.zoom;
 }
 
 rut_shell_t *
@@ -922,12 +994,12 @@ _rig_camera_free(void *object)
     }
 #endif
 
-    if (camera->props.fb)
-        cg_object_unref(camera->props.fb);
+    if (camera->props.base.fb)
+        cg_object_unref(camera->props.base.fb);
 
-    while (camera->props.input_regions)
+    while (camera->props.base.input_regions)
         rig_camera_remove_input_region(camera,
-                                       camera->props.input_regions->data);
+                                       camera->props.base.input_regions->data);
 
     rut_introspectable_destroy(camera);
 
@@ -946,25 +1018,25 @@ static rut_property_spec_t _rig_camera_prop_specs[] = {
       .nick = "Viewport X",
       .flags = RUT_PROPERTY_FLAG_READWRITE,
       .type = RUT_PROPERTY_TYPE_FLOAT,
-      .data_offset = offsetof(rig_camera_t, props.viewport[0]),
+      .data_offset = offsetof(rig_camera_t, props.base.viewport[0]),
       .setter.float_type = rig_camera_set_viewport_x },
     { .name = "viewport_y",
       .nick = "Viewport Y",
       .flags = RUT_PROPERTY_FLAG_READWRITE,
       .type = RUT_PROPERTY_TYPE_FLOAT,
-      .data_offset = offsetof(rig_camera_t, props.viewport[1]),
+      .data_offset = offsetof(rig_camera_t, props.base.viewport[1]),
       .setter.float_type = rig_camera_set_viewport_y },
     { .name = "viewport_width",
       .nick = "Viewport Width",
       .flags = RUT_PROPERTY_FLAG_READWRITE,
       .type = RUT_PROPERTY_TYPE_FLOAT,
-      .data_offset = offsetof(rig_camera_t, props.viewport[2]),
+      .data_offset = offsetof(rig_camera_t, props.base.viewport[2]),
       .setter.float_type = rig_camera_set_viewport_width },
     { .name = "viewport_height",
       .nick = "Viewport Height",
       .flags = RUT_PROPERTY_FLAG_READWRITE,
       .type = RUT_PROPERTY_TYPE_FLOAT,
-      .data_offset = offsetof(rig_camera_t, props.viewport[3]),
+      .data_offset = offsetof(rig_camera_t, props.base.viewport[3]),
       .setter.float_type = rig_camera_set_viewport_height },
     { .name = "fov",
       .nick = "Field Of View",
@@ -992,7 +1064,7 @@ static rut_property_spec_t _rig_camera_prop_specs[] = {
       .nick = "Zoom",
       .flags = RUT_PROPERTY_FLAG_READWRITE,
       .type = RUT_PROPERTY_TYPE_FLOAT,
-      .data_offset = offsetof(rig_camera_t, props.zoom),
+      .data_offset = offsetof(rig_camera_t, props.base.zoom),
       .setter.float_type = rig_camera_set_zoom },
     { .name = "background_color",
       .nick = "Background Color",
@@ -1005,14 +1077,14 @@ static rut_property_spec_t _rig_camera_prop_specs[] = {
       .nick = "Focal Distance",
       .type = RUT_PROPERTY_TYPE_FLOAT,
       .setter.float_type = rig_camera_set_focal_distance,
-      .data_offset = offsetof(rig_camera_t, props.focal_distance),
+      .data_offset = offsetof(rig_camera_t, props.base.focal_distance),
       .flags = RUT_PROPERTY_FLAG_READWRITE,
       .animatable = true },
     { .name = "depth_of_field",
       .nick = "Depth Of Field",
       .type = RUT_PROPERTY_TYPE_FLOAT,
       .setter.float_type = rig_camera_set_depth_of_field,
-      .data_offset = offsetof(rig_camera_t, props.depth_of_field),
+      .data_offset = offsetof(rig_camera_t, props.base.depth_of_field),
       .flags = RUT_PROPERTY_FLAG_READWRITE,
       .animatable = true },
 
@@ -1051,6 +1123,7 @@ _rig_camera_init_type(void)
         .get_projection_mode = rig_camera_get_projection_mode,
         .set_projection_mode = rig_camera_set_projection_mode,
         .set_field_of_view = rig_camera_set_field_of_view,
+        .set_asymmetric_field_of_view = rig_camera_set_asymmetric_field_of_view,
         .set_orthographic_coordinates = rig_camera_set_orthographic_coordinates,
         .get_inverse_projection = rig_camera_get_inverse_projection,
         .set_view_transform = rig_camera_set_view_transform,
@@ -1104,45 +1177,45 @@ rig_camera_new(rig_engine_t *engine,
     camera->component.type = RUT_COMPONENT_TYPE_CAMERA;
 
     rig_camera_set_background_color4f(camera, 0, 0, 0, 1);
-    camera->props.clear_fb = true;
+    camera->props.base.clear_fb = true;
 
     // rut_graphable_init (camera);
 
-    camera->props.orthographic = true;
-    camera->props.x1 = 0;
-    camera->props.y1 = 0;
-    camera->props.x2 = width;
-    camera->props.y2 = height;
+    camera->props.base.mode = RUT_PROJECTION_ORTHOGRAPHIC;
+    camera->props.base.ortho.x1 = 0;
+    camera->props.base.ortho.y1 = 0;
+    camera->props.base.ortho.x2 = width;
+    camera->props.base.ortho.y2 = height;
 
-    camera->props.viewport[2] = width;
-    camera->props.viewport[3] = height;
+    camera->props.base.viewport[2] = width;
+    camera->props.base.viewport[3] = height;
 
-    camera->props.near = -1;
-    camera->props.far = 100;
+    camera->props.base.near = -1;
+    camera->props.base.far = 100;
 
-    camera->props.zoom = 1;
+    camera->props.base.zoom = 1;
 
-    camera->props.focal_distance = 30;
-    camera->props.depth_of_field = 3;
+    camera->props.base.focal_distance = 30;
+    camera->props.base.depth_of_field = 3;
 
     camera->props.projection_cache_age = -1;
     camera->props.inverse_projection_age = -1;
 
-    cg_matrix_init_identity(&camera->props.view);
+    cg_matrix_init_identity(&camera->props.base.view);
     camera->props.inverse_view_age = -1;
 
     camera->props.transform_age = 0;
 
-    cg_matrix_init_identity(&camera->props.input_transform);
+    cg_matrix_init_identity(&camera->props.base.input_transform);
 
     if (framebuffer) {
         int width = cg_framebuffer_get_width(framebuffer);
         int height = cg_framebuffer_get_height(framebuffer);
-        camera->props.fb = cg_object_ref(framebuffer);
-        camera->props.viewport[2] = width;
-        camera->props.viewport[3] = height;
-        camera->props.x2 = width;
-        camera->props.y2 = height;
+        camera->props.base.fb = cg_object_ref(framebuffer);
+        camera->props.base.viewport[2] = width;
+        camera->props.base.viewport[3] = height;
+        camera->props.base.ortho.x2 = width;
+        camera->props.base.ortho.y2 = height;
     }
 
     return camera;

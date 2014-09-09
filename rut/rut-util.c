@@ -459,6 +459,28 @@ rut_util_is_boolean_env_set(const char *variable)
 }
 
 void
+rut_util_matrix_scaled_frustum(cg_matrix_t *matrix,
+                               float left,
+                               float right,
+                               float bottom,
+                               float top,
+                               float z_near,
+                               float z_far,
+                               float scale)
+
+{
+    float inverse_scale = 1.0 / scale;
+
+    cg_matrix_frustum(matrix,
+                      left * inverse_scale, /* left */
+                      right * inverse_scale, /* right */
+                      top * inverse_scale, /* bottom */
+                      bottom * inverse_scale, /* top */
+                      z_near,
+                      z_far);
+}
+
+void
 rut_util_matrix_scaled_perspective(cg_matrix_t *matrix,
                                    float fov_y,
                                    float aspect,
@@ -467,15 +489,15 @@ rut_util_matrix_scaled_perspective(cg_matrix_t *matrix,
                                    float scale)
 {
     float ymax = z_near * tanf(fov_y * C_PI / 360.0);
-    float inverse_scale = 1.0 / scale;
 
-    cg_matrix_frustum(matrix,
-                      -ymax * aspect * inverse_scale, /* left */
-                      ymax * aspect * inverse_scale, /* right */
-                      -ymax * inverse_scale, /* bottom */
-                      ymax * inverse_scale, /* top */
-                      z_near,
-                      z_far);
+    rut_util_matrix_scaled_frustum(matrix,
+                                   -ymax * aspect,
+                                   ymax * aspect,
+                                   -ymax,
+                                   ymax,
+                                   z_near,
+                                   z_far,
+                                   scale);
 }
 
 /* XXX: The vertices must be 4 components: [x, y, z, w] */

@@ -51,7 +51,9 @@ typedef struct _rut_ui_enum_t {
 
 typedef enum {
     RUT_PROJECTION_PERSPECTIVE,
-    RUT_PROJECTION_ORTHOGRAPHIC
+    RUT_PROJECTION_ASYMMETRIC_PERSPECTIVE,
+    RUT_PROJECTION_ORTHOGRAPHIC,
+    RUT_PROJECTION_NDC
 } rut_projection_t;
 
 /* XXX: Update this in rig.c if rut_projection_t is changed! */
