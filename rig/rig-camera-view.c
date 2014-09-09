@@ -1732,7 +1732,8 @@ input_region_cb(rut_input_region_t *region,
         return RUT_INPUT_EVENT_STATUS_HANDLED;
     } else if (view->play_mode) {
         /* While in play mode then we do picking in the simulator */
-        return input_cb(event, user_data);
+        /* FIXME!!! */
+        //return input_cb(event, user_data);
         // return device_mode_input_cb (event, user_data);
     }
     // else
