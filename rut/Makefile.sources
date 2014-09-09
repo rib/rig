@@ -63,6 +63,10 @@ rut_common_sources = \
     rut-gaussian-blurrer.c \
     rut-mesh.h \
     rut-mesh.c \
+    rply.c \
+    rply.h \
+    rut-mesh-ply.h \
+    rut-mesh-ply.c \
     rut-ui-viewport.h \
     rut-ui-viewport.c \
     rut-scroll-bar.h \
@@ -101,8 +105,6 @@ rut_common_sources = \
     rut-sdl-keysyms.h
 
 rut_editor_sources = \
-    rply.c \
-    rply.h \
     rut-text-buffer.h \
     rut-text-buffer.c \
     rut-text.h \
@@ -143,8 +145,6 @@ rut_editor_sources = \
     rut-icon-toggle-set.c \
     rut-rotation-inspector.h \
     rut-rotation-inspector.c \
-    rut-mesh-ply.h \
-    rut-mesh-ply.c \
     rut-adb.h \
     rut-adb.c
 
