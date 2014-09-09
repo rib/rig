@@ -220,9 +220,9 @@ initialise_play_camera_position(rig_engine_t *engine, rig_ui_t *ui)
 
     width_scale = width_2d_start / engine->device_width;
 
-    position[0] = engine->device_width / 2.0f;
-    position[1] = engine->device_height / 2.0f;
-    position[2] = z_2d / width_scale;
+    position[0] = 0;//engine->device_width / 2.0f;
+    position[1] = 0;//engine->device_height / 2.0f;
+    position[2] = 100;//z_2d / width_scale;
 
     rig_entity_set_position(ui->play_camera, position);
 }
@@ -232,7 +232,7 @@ initialise_play_camera_component(rut_object_t *camera_component)
 {
     rut_camera_set_projection_mode(camera_component, RUT_PROJECTION_PERSPECTIVE);
     rut_camera_set_field_of_view(camera_component, 10);
-    rut_camera_set_near_plane(camera_component, 1000);
+    rut_camera_set_near_plane(camera_component, 10);
     rut_camera_set_far_plane(camera_component, 10000);
 }
 
@@ -332,8 +332,11 @@ rig_ui_prepare(rig_ui_t *ui)
          * in the scene graph */
         ui->play_camera = rig_ui_find_entity(ui, "play-camera");
 
-        if (ui->play_camera)
+        if (ui->play_camera) {
             rut_object_ref(ui->play_camera);
+#warning "HACK"
+            initialise_play_camera_position(engine, ui);
+        }
         else {
             ui->play_camera = rig_entity_new(engine->shell);
             rig_entity_set_label(ui->play_camera, "play-camera");
@@ -348,8 +351,11 @@ rig_ui_prepare(rig_ui_t *ui)
         ui->play_camera_component = rig_entity_get_component(
             ui->play_camera, RUT_COMPONENT_TYPE_CAMERA);
 
-        if (ui->play_camera_component)
+        if (ui->play_camera_component) {
             rut_object_ref(ui->play_camera_component);
+#warning "HACK"
+            initialise_play_camera_component(ui->play_camera_component);
+        }
         else {
             ui->play_camera_component = rig_camera_new(engine,
                                                        -1, /* ortho/vp width */

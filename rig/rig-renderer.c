@@ -66,6 +66,8 @@ struct _rig_renderer_t {
 
     rig_depth_of_field_t *dof;
 
+    rig_camera_t *composite_camera;
+
     cg_snippet_t *alpha_mask_snippet;
     cg_snippet_t *alpha_mask_video_snippet;
     cg_snippet_t *lighting_vertex_snippet;
@@ -1059,11 +1061,18 @@ rig_renderer_init(rig_renderer_t *renderer)
     init_dof_unshaped_pipeline(renderer);
 
     init_dof_pipeline(renderer);
+
+    renderer->composite_camera = rig_camera_new(renderer->engine,
+                                                1, 1, /* ortho w/h */
+                                                NULL); /* fb */
+    rut_camera_set_clear(renderer->composite_camera, false);
 }
 
 void
 rig_renderer_fini(rig_renderer_t *renderer)
 {
+    rut_object_unref(renderer->composite_camera);
+
     cg_object_unref(renderer->dof_pipeline_template);
     renderer->dof_pipeline_template = NULL;
 
@@ -2201,41 +2210,15 @@ rig_renderer_paint_camera(rig_paint_context_t *paint_ctx,
                                 save_viewport_x, save_viewport_y,
                                 width, height);
 
+        rut_camera_set_framebuffer(renderer->composite_camera, fb);
+        rut_camera_set_viewport(renderer->composite_camera,
+                                save_viewport_x, save_viewport_y,
+                                width, height);
 
-        /* XXX: This is a pretty fugly /ridiculous way of temporarily
-         * switching to an orthographic projection!
-         *
-         * Either we should setup a separate camera for this or create
-         * some utility api for saving + reseting the state of a
-         * camera so we don't need to worry about having to update
-         * this to save/restore extended camera state in the future.
-         *
-         * Leaving as is for now since it's likely the way we deal
-         * with cameras is going to change quite significantly
-         * soon.
-         */
-
-        saved_view = *rut_camera_get_view_transform(camera);
-        saved_near = rut_camera_get_near_plane(camera);
-        saved_far = rut_camera_get_far_plane(camera);
-
-        c_warn_if_fail(rut_camera_get_projection_mode(camera) ==
-                       RUT_PROJECTION_PERSPECTIVE);
-
-        rut_camera_set_view_transform(camera, &engine->identity);
-        rut_camera_set_projection_mode(camera, RUT_PROJECTION_ORTHOGRAPHIC);
-        rut_camera_set_orthographic_coordinates(camera, 0, 0, 1, 1);
-        rut_camera_set_near_plane(camera, -1);
-        rut_camera_set_far_plane(camera, 100);
-
-        rut_camera_flush(camera);
+        rut_camera_flush(renderer->composite_camera);
         rig_dof_effect_draw_rectangle(dof, fb, 0, 0, 1, 1);
-        rut_camera_end_frame(camera);
+        rut_camera_end_frame(renderer->composite_camera);
 
-        rut_camera_set_projection_mode(camera, RUT_PROJECTION_PERSPECTIVE);
-        rut_camera_set_near_plane(camera, saved_near);
-        rut_camera_set_far_plane(camera, saved_far);
-        rut_camera_set_view_transform(camera, &saved_view);
     } else {
         paint_ctx->pass = RIG_PASS_COLOR_UNBLENDED;
         paint_camera_entity_pass(paint_ctx, camera_entity);
