@@ -33,7 +33,7 @@ paint_cb(void *user_data)
 
     /* Clear offscreen framebuffer with a random color */
     gles2->glClearColor(
-        g_random_double(), g_random_double(), g_random_double(), 1.0f);
+        c_random_double(), c_random_double(), c_random_double(), 1.0f);
     gles2->glClear(GL_COLOR_BUFFER_BIT);
 
     cg_pop_gles2_context(data->dev);

@@ -100,25 +100,25 @@ paint(Data *data)
 
         if ((fabsf(firework->x - firework->start_x) > 2.0f) ||
             firework->y < -1.0f) {
-            firework->size = g_random_double_range(0.001f, 0.1f);
+            firework->size = c_random_double_range(0.001f, 0.1f);
             firework->start_x = 1.0f + firework->size;
             firework->start_y = -1.0f;
-            firework->initial_x_velocity = g_random_double_range(-0.1f, -2.0f);
-            firework->initial_y_velocity = g_random_double_range(0.1f, 4.0f);
+            firework->initial_x_velocity = c_random_double_range(-0.1f, -2.0f);
+            firework->initial_y_velocity = c_random_double_range(0.1f, 4.0f);
             g_timer_reset(firework->timer);
 
             /* Pick a random color out of six */
-            if (g_random_boolean()) {
+            if (c_random_boolean()) {
                 memset(&firework->color, 0, sizeof(Color));
-                ((uint8_t *)&firework->color)[g_random_int_range(0, 3)] = 255;
+                ((uint8_t *)&firework->color)[c_random_int_range(0, 3)] = 255;
             } else {
                 memset(&firework->color, 255, sizeof(Color));
-                ((uint8_t *)&firework->color)[g_random_int_range(0, 3)] = 0;
+                ((uint8_t *)&firework->color)[c_random_int_range(0, 3)] = 0;
             }
             firework->color.alpha = 255;
 
             /* Fire some of the fireworks from the other side */
-            if (g_random_boolean()) {
+            if (c_random_boolean()) {
                 firework->start_x = -firework->start_x;
                 firework->initial_x_velocity = -firework->initial_x_velocity;
             }
@@ -142,10 +142,10 @@ paint(Data *data)
             Firework *firework = data->fireworks + i;
 
             spark->x =
-                (firework->x + g_random_double_range(-firework->size / 2.0f,
+                (firework->x + c_random_double_range(-firework->size / 2.0f,
                                                      firework->size / 2.0f));
             spark->y =
-                (firework->y + g_random_double_range(-firework->size / 2.0f,
+                (firework->y + c_random_double_range(-firework->size / 2.0f,
                                                      firework->size / 2.0f));
             spark->base_color = firework->color;
 

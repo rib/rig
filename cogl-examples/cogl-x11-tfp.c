@@ -192,10 +192,10 @@ main(int argc, char **argv)
             cg_xlib_renderer_handle_event(renderer, &event);
         }
 
-        pixel = g_random_int_range(0, 255) << 24 |
-                g_random_int_range(0, 255) << 16 |
-                g_random_int_range(0, 255) << 8;
-        g_random_int_range(0, 255);
+        pixel = c_random_int_range(0, 255) << 24 |
+                c_random_int_range(0, 255) << 16 |
+                c_random_int_range(0, 255) << 8;
+        c_random_int_range(0, 255);
         XSetForeground(xdpy, gc, pixel);
         XFillRectangle(
             xdpy, tfp_xwin, gc, 0, 0, TFP_XWIN_WIDTH, TFP_XWIN_HEIGHT);
