@@ -1384,6 +1384,7 @@ char *c_convert(const char *str,
                 size_t *bytes_read,
                 size_t *bytes_written,
                 c_error_t **error);
+char *c_filename_display_name(const char *filename);
 
 /*
  * Unicode manipulation

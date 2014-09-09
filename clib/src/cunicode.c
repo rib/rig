@@ -273,3 +273,32 @@ c_locale_from_utf8(const char *utf8string,
     return c_convert(
         utf8string, len, my_charset, "UTF-8", bytes_read, bytes_written, error);
 }
+
+char *
+c_filename_display_name(const char *filename)
+{
+    const char *start;
+    const char *end;
+    char *name;
+
+    if (c_utf8_validate(filename, -1, NULL))
+        return c_strdup(filename);
+
+    name = c_locale_to_utf8(filename, -1, NULL, NULL, NULL);
+    if (name)
+        return name;
+
+    c_string_t *str = c_string_new("");
+
+    for (start = filename; true; start = end + 1)
+    {
+        c_utf8_validate(start, -1, &end);
+        if (end != start)
+            c_string_append_len(str, start, end - start);
+        if (*end == '\0')
+            break;
+        c_string_append_unichar(str, 0xFFFD /* unicode "REPLACEMENT CHARACTER" */);
+    }
+
+    return c_string_free(str, false);
+}
