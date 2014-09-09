@@ -79,7 +79,7 @@ struct _cg_renderer_t {
     unsigned long private_features
     [CG_FLAGS_N_LONGS_FOR_SIZE(CG_N_PRIVATE_FEATURES)];
 #ifndef HAVE_DIRECTLY_LINKED_GL_LIBRARY
-    UModule *libgl_module;
+    c_module_t *libgl_module;
 #endif
 
 #if defined(CG_HAS_EGL_PLATFORM_WAYLAND_SUPPORT)

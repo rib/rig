@@ -151,7 +151,7 @@ _cg_winsys_renderer_get_proc_address(
         ptr = eglGetProcAddress(name);
 
     /* eglGetProcAddress doesn't support fetching core API so we need to
-       get that separately with UModule */
+       get that separately with c_module_t */
     if (ptr == NULL)
         c_module_symbol(renderer->libgl_module, name, &ptr);
 

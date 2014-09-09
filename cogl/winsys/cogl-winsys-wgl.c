@@ -56,7 +56,7 @@
 #define WIN32_MSG_HANDLE 19981206
 
 typedef struct _cg_renderer_wgl_t {
-    UModule *gl_module;
+    c_module_t *gl_module;
 
 /* Function pointers for GLX specific extensions */
 #define CG_WINSYS_FEATURE_BEGIN(a, b, c, d, e)

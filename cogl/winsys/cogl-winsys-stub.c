@@ -55,7 +55,7 @@ static cg_func_ptr_t
 _cg_winsys_renderer_get_proc_address(
     cg_renderer_t *renderer, const char *name, bool in_core)
 {
-    static UModule *module = NULL;
+    static c_module_t *module = NULL;
 
     /* this should find the right function if the program is linked against a
      * library providing it */

@@ -56,8 +56,8 @@ typedef struct _cg_glx_renderer_t {
         CG_GLX_UST_IS_OTHER
     } ust_type;
 
-    /* UModule pointing to libGL which we use to get glX functions out of */
-    UModule *libgl_module;
+    /* c_module_t pointing to libGL which we use to get glX functions out of */
+    c_module_t *libgl_module;
 
     cg_closure_t *flush_notifications_idle;
 
