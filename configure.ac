@@ -534,6 +534,9 @@ data/Info.plist
 rig/Makefile
 rig/rig-defines.h
 tools/Makefile
+research/particle-engine/Makefile
+research/particle-engine/pe/Makefile
+research/particle-engine/examples/Makefile
 tests/Makefile
 tests/config.env
 tests/conform/Makefile

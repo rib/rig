@@ -1,14 +1,14 @@
 AM_CFLAGS = \
-	$(COGL_CFLAGS)			\
-	$(GLIB_CFLAGS)			\
-	-I$(top_srcdir)			\
-	-Wall				\
-	-Wextra				\
-	-Wstrict-prototypes		\
-	-O0 -g				\
-	$(NULL)
+	$(COGL_DEP_CFLAGS) \
+	-I$(top_srcdir) \
+	-I$(top_srcdir)/clib/src \
+	-I$(top_builddir)/clib/src
 
-LDADD = $(COGL_LIBS) $(GLIB_LIBS) -lm
+LDADD = \
+	$(COGL_DEP_LIBS) \
+	$(top_builddir)/cogl/libcogl2.la \
+	$(top_builddir)/clib/src/libclib.la \
+	-lm
 
 particle_engine_sources = fuzzy.c particle-engine.c
 particle_emitter_sources = particle-emitter.c

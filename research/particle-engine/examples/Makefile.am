@@ -1,22 +1,18 @@
 noinst_PROGRAMS =
 
 AM_CFLAGS = \
-	$(COGL_CFLAGS)			\
-	$(GLIB_CFLAGS)			\
-	-I$(top_srcdir)			\
-	-I$(top_srcdir)/pe		\
-	-Wall				\
-	-Wextra				\
-	-Wstrict-prototypes		\
-	-Wno-unused-parameter		\
-	$(NULL)
+	$(COGL_DEP_CFLAGS) \
+	-I$(top_srcdir) \
+	-I$(top_srcdir)/clib/src \
+	-I$(top_builddir)/clib/src \
+	-I$(top_srcdir)/research/particle-engine/pe
 
-LDADD = 				\
-	$(top_srcdir)/pe/.libs/libpe.la \
-	$(COGL_LIBS) 			\
-	$(GLIB_LIBS)			\
-	-lm				\
-	$(NULL)
+LDADD = \
+	$(COGL_DEP_LIBS) \
+	$(top_builddir)/cogl/libcogl2.la \
+	$(top_builddir)/research/particle-engine/pe/libpe.la \
+	$(top_builddir)/clib/src/libclib.la \
+	-lm
 
 EXTRA_DIST = run-demos.sh
 

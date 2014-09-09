@@ -98,7 +98,7 @@ struct particle_emitter {
 	struct particle_emitter_priv *priv;
 };
 
-struct particle_emitter *particle_emitter_new(CoglContext *ctx, CoglFramebuffer *fb);
+struct particle_emitter *particle_emitter_new(cg_device_t *dev, cg_framebuffer_t *fb);
 
 void particle_emitter_free(struct particle_emitter *emitter);
 

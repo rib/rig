@@ -101,7 +101,7 @@ struct particle_swarm {
 	struct particle_swarm_priv *priv;
 };
 
-struct particle_swarm *particle_swarm_new(CoglContext *ctx, CoglFramebuffer *fb);
+struct particle_swarm *particle_swarm_new(cg_device_t *dev, cg_framebuffer_t *fb);
 
 void particle_swarm_free(struct particle_swarm *swarm);
 

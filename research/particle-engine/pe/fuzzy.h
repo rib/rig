@@ -60,13 +60,13 @@
  *
  *    fuzzy_<type>_get_real_value(<type> variance, rand, [out-values])
  *
- * If you would like reproducible fuzziness, then use a GRand with a known seed.
+ * If you would like reproducible fuzziness, then use a c_rand_t with a known seed.
  */
-#ifndef _VARIANCE_H
-#define _VARIANCE_H
+#ifndef _FUZZY_H
+#define _FUZZY_H
 
 #include <cogl/cogl.h>
-#include <glib.h>
+#include <clib.h>
 
 struct fuzzy_float {
 	float value;
@@ -80,7 +80,7 @@ struct fuzzy_float {
 };
 
 float fuzzy_float_get_real_value(struct fuzzy_float *variance,
-				 GRand *rand);
+				 c_rand_t *rand);
 
 /*
  * A double precision value.
@@ -96,7 +96,7 @@ struct fuzzy_double {
 };
 
 gdouble fuzzy_double_get_real_value(struct fuzzy_double *variance,
-				    GRand *rand);
+				    c_rand_t *rand);
 
 /*
  * A 3D vector, can be used for introducing fuzziness to positions, velocities
@@ -114,7 +114,7 @@ struct fuzzy_vector {
 };
 
 void fuzzy_vector_get_real_value(struct fuzzy_vector *variance,
-				 GRand *rand, float *value);
+				 c_rand_t *rand, float *value);
 
 struct fuzzy_color {
 	struct fuzzy_float hue;
@@ -122,10 +122,10 @@ struct fuzzy_color {
 	struct fuzzy_float luminance;
 };
 
-void fuzzy_color_get_real_value(struct fuzzy_color *fuzzy_color, GRand *rand,
+void fuzzy_color_get_real_value(struct fuzzy_color *fuzzy_color, c_rand_t *rand,
 				float *hue, float *saturation, float *luminance);
 
-void fuzzy_color_get_cogl_color(struct fuzzy_color *fuzzy_color, GRand *rand,
-				CoglColor *color);
+void fuzzy_color_get_cg_color(struct fuzzy_color *fuzzy_color, c_rand_t *rand,
+				cg_color_t *color);
 
-#endif /* _VARIANCE_H */
+#endif /* _FUZZY_H */

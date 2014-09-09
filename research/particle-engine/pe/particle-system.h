@@ -70,7 +70,7 @@ struct particle_system {
 	struct particle_system_priv *priv;
 };
 
-struct particle_system *particle_system_new(CoglContext *ctx, CoglFramebuffer *fb);
+struct particle_system *particle_system_new(cg_device_t *dev, cg_framebuffer_t *fb);
 
 void particle_system_free(struct particle_system *system);
 

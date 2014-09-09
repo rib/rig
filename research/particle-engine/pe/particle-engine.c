@@ -20,131 +20,135 @@
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#include "config.h"
+
 #include "particle-engine.h"
 
+#include <clib.h>
+
 struct particle_engine {
-	CoglContext *ctx;
-	CoglFramebuffer *fb;
-	CoglPipeline *pipeline;
-	CoglPrimitive *primitive;
-	CoglAttributeBuffer *attribute_buffer;
+    cg_device_t *dev;
+    cg_framebuffer_t *fb;
+    cg_pipeline_t *pipeline;
+    cg_primitive_t *primitive;
+    cg_attribute_buffer_t *attribute_buffer;
 
-	struct vertex *vertices;
+    struct vertex *vertices;
 
-	/* The number of particles in the engine. */
-	int particle_count;
+    /* The number of particles in the engine. */
+    int particle_count;
 
-	/* The size (in pixels) of particles. Each particle is represented by a
-	 * rectangular point of dimensions particle_size × particle_size. */
-	float particle_size;
+    /* The size (in pixels) of particles. Each particle is represented by a
+     * rectangular point of dimensions particle_size × particle_size. */
+    float particle_size;
 };
 
 struct vertex {
-	float position[3];
-	CoglColor color;
+    float position[3];
+    cg_color_t color;
 };
 
-struct particle_engine *particle_engine_new(CoglContext *ctx,
-					    CoglFramebuffer *fb,
-					    int particle_count,
-					    float particle_size)
+struct particle_engine *particle_engine_new(cg_device_t *dev,
+                                            cg_framebuffer_t *fb,
+                                            int particle_count,
+                                            float particle_size)
 {
-	struct particle_engine *engine;
-	CoglAttribute *attributes[2];
-	unsigned int i;
+    struct particle_engine *engine;
+    cg_attribute_t *attributes[2];
+    unsigned int i;
 
-	engine = g_slice_new0(struct particle_engine);
+    engine = g_slice_new0(struct particle_engine);
 
-	engine->particle_count = particle_count;
-	engine->particle_size = particle_size;
+    engine->particle_count = particle_count;
+    engine->particle_size = particle_size;
 
-	engine->ctx = cogl_object_ref(ctx);
-	engine->fb = cogl_object_ref(fb);
+    engine->dev = cg_object_ref(dev);
+    engine->fb = cg_object_ref(fb);
 
-	engine->pipeline = cogl_pipeline_new(engine->ctx);
-	engine->vertices = g_new0(struct vertex, engine->particle_count);
+    engine->pipeline = cg_pipeline_new(engine->dev);
+    engine->vertices = g_new0(struct vertex, engine->particle_count);
 
-	engine->attribute_buffer =
-		cogl_attribute_buffer_new(engine->ctx,
-					  sizeof(struct vertex) *
-					  engine->particle_count, engine->vertices);
+    engine->attribute_buffer =
+        cg_attribute_buffer_new(engine->dev,
+                                sizeof(struct vertex) *
+                                engine->particle_count, engine->vertices);
 
-	attributes[0] = cogl_attribute_new(engine->attribute_buffer,
-					   "cogl_position_in",
-					   sizeof(struct vertex),
-					   G_STRUCT_OFFSET(struct vertex,
-							   position),
-					   3, COGL_ATTRIBUTE_TYPE_FLOAT);
+    attributes[0] = cg_attribute_new(engine->attribute_buffer,
+                                     "cg_position_in",
+                                     sizeof(struct vertex),
+                                     G_STRUCT_OFFSET(struct vertex,
+                                                     position),
+                                     3, CG_ATTRIBUTE_TYPE_FLOAT);
 
-	attributes[1] = cogl_attribute_new(engine->attribute_buffer,
-					   "cogl_color_in",
-					   sizeof(struct vertex),
-					   G_STRUCT_OFFSET(struct vertex,
-							   color),
-					   4, COGL_ATTRIBUTE_TYPE_FLOAT);
+    attributes[1] = cg_attribute_new(engine->attribute_buffer,
+                                     "cg_color_in",
+                                     sizeof(struct vertex),
+                                     G_STRUCT_OFFSET(struct vertex,
+                                                     color),
+                                     4, CG_ATTRIBUTE_TYPE_FLOAT);
 
-	engine->primitive =
-		cogl_primitive_new_with_attributes(COGL_VERTICES_MODE_POINTS,
-						   engine->particle_count,
-						   attributes,
-						   C_N_ELEMENTS(attributes));
+    engine->primitive =
+        cg_primitive_new_with_attributes(CG_VERTICES_MODE_POINTS,
+                                         engine->particle_count,
+                                         attributes,
+                                         C_N_ELEMENTS(attributes));
 
-	cogl_pipeline_set_point_size(engine->pipeline, engine->particle_size);
-	cogl_primitive_set_n_vertices(engine->primitive, engine->particle_count);
+    cg_pipeline_set_point_size(engine->pipeline, engine->particle_size);
+    cg_primitive_set_n_vertices(engine->primitive, engine->particle_count);
 
-	for (i = 0; i < C_N_ELEMENTS(attributes); i++)
-		cogl_object_unref(attributes[i]);
+    for (i = 0; i < C_N_ELEMENTS(attributes); i++)
+        cg_object_unref(attributes[i]);
 
-	return engine;
+    return engine;
 }
 
 void particle_engine_free(struct particle_engine *engine)
 {
-	cogl_object_unref(engine->ctx);
-	cogl_object_unref(engine->fb);
-	cogl_object_unref(engine->pipeline);
-	cogl_object_unref(engine->primitive);
-	cogl_object_unref(engine->attribute_buffer);
+    cg_object_unref(engine->dev);
+    cg_object_unref(engine->fb);
+    cg_object_unref(engine->pipeline);
+    cg_object_unref(engine->primitive);
+    cg_object_unref(engine->attribute_buffer);
 
-	g_free(engine->vertices);
-	g_free(engine);
+    g_free(engine->vertices);
+    g_free(engine);
 }
 
 inline void particle_engine_push_buffer(struct particle_engine *engine,
-					CoglBufferAccess access,
-					CoglBufferMapHint hints)
+                                        cg_buffer_access_t access,
+                                        cg_buffer_map_hint_t hints)
 {
-	CoglError *error = NULL;
+    cg_error_t *error = NULL;
 
-	engine->vertices = cogl_buffer_map(engine->attribute_buffer,
-					   access, hints, &error);
+    engine->vertices = cg_buffer_map(engine->attribute_buffer,
+                                     access, hints, &error);
 
-	if (error != NULL) {
-		g_error(G_STRLOC " failed to map buffer: %s", error->message);
-		return;
-	}
+    if (error != NULL) {
+        g_error(G_STRLOC " failed to map buffer: %s", error->message);
+        return;
+    }
 }
 
 inline void particle_engine_pop_buffer(struct particle_engine *engine)
 {
-	cogl_buffer_unmap(engine->attribute_buffer);
+    cg_buffer_unmap(engine->attribute_buffer);
 }
 
 inline float *particle_engine_get_particle_position(struct particle_engine *engine,
-						    int index)
+                                                    int index)
 {
-	return &engine->vertices[index].position[0];
+    return &engine->vertices[index].position[0];
 }
 
-inline CoglColor *particle_engine_get_particle_color(struct particle_engine *engine,
-						     int index)
+inline cg_color_t *particle_engine_get_particle_color(struct particle_engine *engine,
+                                                      int index)
 {
-	return &engine->vertices[index].color;
+    return &engine->vertices[index].color;
 }
 
 void particle_engine_paint(struct particle_engine *engine)
 {
-	cogl_primitive_draw(engine->primitive,
-			    engine->fb,
-			    engine->pipeline);
+    cg_primitive_draw(engine->primitive,
+                      engine->fb,
+                      engine->pipeline);
 }
