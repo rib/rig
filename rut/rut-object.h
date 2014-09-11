@@ -128,10 +128,10 @@ rut_object_unref(void *object)
 {
     rut_object_base_t *base = (rut_object_base_t *)object;
 
-    _rut_refcount_debug_unref(object);
-
     if (--(base->ref_count) < 1)
         base->type->free(object);
+
+    _rut_refcount_debug_unref(object);
 }
 
 /* Wherever possible it is recommended that you use rut_object_claim()
@@ -159,10 +159,10 @@ rut_object_release(void *object, void *owner)
 {
     rut_object_base_t *base = (rut_object_base_t *)object;
 
-    _rut_refcount_debug_release(object, owner);
-
     if (--(base->ref_count) < 1)
         base->type->free(object);
+
+    _rut_refcount_debug_release(object, owner);
 }
 
 C_END_DECLS
