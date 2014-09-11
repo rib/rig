@@ -2173,7 +2173,7 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
         rig_asset_t *asset = NULL;
         rig_shape_t *shape;
         bool shaped = false;
-        int width, height;
+        int width = 100, height = 100;
 
         /* XXX: Only for compaibility... */
         if (!pb_component->n_properties) {
