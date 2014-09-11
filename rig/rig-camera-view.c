@@ -1559,6 +1559,11 @@ input_cb(rut_input_event_t *event,
     rig_camera_view_t *view = user_data;
     rig_engine_t *engine = view->engine;
 
+    /* It's possible that no UI has been loaded yet and to avoid various
+     * NULL pointer dereferencing risks we can bail immediately... */
+    if (!view->ui)
+        return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+
     if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_MOTION) {
         rut_motion_event_action_t action = rut_motion_event_get_action(event);
         rut_modifier_state_t modifiers =
