@@ -76,7 +76,9 @@ _rig_bindinc_free(void *object)
 
     c_free(binding->function_name);
 
+#ifdef USE_LLVM
     rut_graphable_remove_child(binding->function_node);
+#endif
 
     rut_object_free(rig_binding_t, binding);
 }
@@ -104,7 +106,7 @@ find_dependency(rig_binding_t *binding,
     return NULL;
 }
 
-#ifdef RIG_EDITOR_ENABLED
+#if defined (RIG_EDITOR_ENABLED) && defined (USE_LLVM)
 static void
 get_property_codegen_info(rut_property_t *property,
                           const char **type_name,
@@ -278,6 +280,7 @@ codegen_function_node(rig_binding_t *binding)
 }
 #endif /* RIG_EDITOR_ENABLED */
 
+#ifdef USE_LLVM
 void
 rig_binding_activate(rig_binding_t *binding)
 {
@@ -303,7 +306,6 @@ rig_binding_activate(rig_binding_t *binding)
                   binding->function_name);
         return;
     }
-
     n_dependencies = c_list_length(binding->dependencies);
     dependencies = c_alloca(sizeof(rut_property_t *) * n_dependencies);
 
@@ -319,9 +321,27 @@ rig_binding_activate(rig_binding_t *binding)
         NULL, /* destroy */
         dependencies,
         n_dependencies);
+
     binding->active = true;
 }
 
+#else /* USE_LLVM */
+
+void
+rig_binding_activate(rig_binding_t *binding)
+{
+    rig_engine_t *engine = binding->engine;
+
+    c_return_if_fail(!binding->active);
+
+    if (binding->dependencies) {
+        rut_property_set_copy_binding(&engine->ctx->property_ctx,
+                                      binding->property,
+                                      binding->dependencies->data);
+    }
+}
+
+#endif /* USE_LLVM */
 void
 rig_binding_deactivate(rig_binding_t *binding)
 {
@@ -332,6 +352,7 @@ rig_binding_deactivate(rig_binding_t *binding)
     binding->active = false;
 }
 
+#ifdef USE_LLVM
 static void
 binding_relink_cb(rig_code_node_t *node, void *user_data)
 {
@@ -363,6 +384,7 @@ generate_function_node(rig_binding_t *binding)
         codegen_function_node(binding);
 #endif
 }
+#endif /* USE_LLVM */
 
 void
 rig_binding_remove_dependency(rig_binding_t *binding,
@@ -375,7 +397,7 @@ rig_binding_remove_dependency(rig_binding_t *binding,
     c_free(dependency->variable_name);
     c_slice_free(dependency_t, dependency);
 
-#ifdef RIG_EDITOR_ENABLED
+#if defined (RIG_EDITOR_ENABLED) && defined (USE_LLVM)
     if (!binding->engine->simulator)
         codegen_function_node(binding);
 #endif
@@ -398,7 +420,7 @@ rig_binding_add_dependency(rig_binding_t *binding,
 
     binding->dependencies = c_list_prepend(binding->dependencies, dependency);
 
-#ifdef RIG_EDITOR_ENABLED
+#if defined (RIG_EDITOR_ENABLED) && defined (USE_LLVM)
     if (!binding->engine->simulator)
         codegen_function_node(binding);
 #endif
@@ -407,7 +429,7 @@ rig_binding_add_dependency(rig_binding_t *binding,
 char *
 rig_binding_get_expression(rig_binding_t *binding)
 {
-    return binding->expression;
+    return binding->expression ? binding->expression : "";
 }
 
 void
@@ -415,6 +437,7 @@ rig_binding_set_expression(rig_binding_t *binding, const char *expression)
 {
     c_return_if_fail(expression);
 
+#ifdef USE_LLVM
     if ((binding->expression && strcmp(binding->expression, expression) == 0))
         return;
 
@@ -430,7 +453,6 @@ rig_binding_set_expression(rig_binding_t *binding, const char *expression)
     rig_code_node_add_child(binding->function_node, binding->expression_node);
     rut_object_unref(binding->expression_node);
 
-#ifdef RIG_EDITOR_ENABLED
     if (!binding->engine->simulator)
         codegen_function_node(binding);
 #endif
@@ -449,7 +471,7 @@ rig_binding_set_dependency_name(rig_binding_t *binding,
 
     dependency->variable_name = c_strdup(name);
 
-#ifdef RIG_EDITOR_ENABLED
+#if defined (RIG_EDITOR_ENABLED) && defined (USE_LLVM)
     if (!binding->engine->simulator)
         codegen_function_node(binding);
 #endif
@@ -466,7 +488,9 @@ rig_binding_new(rig_engine_t *engine, rut_property_t *property, int binding_id)
     binding->function_name = c_strdup_printf("_binding%d", binding_id);
     binding->binding_id = binding_id;
 
+#ifdef USE_LLVM
     generate_function_node(binding);
+#endif
 
     return binding;
 }
