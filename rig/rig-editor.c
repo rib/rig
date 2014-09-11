@@ -2311,8 +2311,6 @@ _rig_editor_free(rut_object_t *object)
     rut_queue_clear(editor->edit_ops);
     rut_queue_free(editor->edit_ops);
 
-    rut_object_unref(editor->engine);
-
     rut_object_unref(editor->frontend);
     rut_object_unref(editor->ctx);
     rut_object_unref(editor->shell);
