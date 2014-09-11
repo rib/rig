@@ -354,19 +354,14 @@ rig_engine_set_edit_mode_ui(rig_engine_t *engine, rig_ui_t *ui)
         rig_ui_reap(engine->edit_mode_ui);
         rut_object_release(engine->edit_mode_ui, engine);
     }
-    engine->edit_mode_ui = rut_object_claim(ui, engine);
 
-    // if (engine->edit_mode_ui == NULL && engine->play_mode_ui == NULL)
-    //  free_shared_ui_state (engine);
+    if (ui)
+        engine->edit_mode_ui = rut_object_claim(ui, engine);
 
     rig_engine_set_current_ui(engine, engine->edit_mode_ui);
-    rig_ui_resume(ui);
 
-// if (!ui)
-//  return;
-
-// if (first_ui)
-//  setup_shared_ui_state (engine);
+    if (ui)
+        rig_ui_resume(ui);
 
 #endif /* RIG_EDITOR_ENABLED */
 }
