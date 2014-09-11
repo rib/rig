@@ -958,8 +958,14 @@ _rig_pb_rpc_server_free(void *object)
     c_warn_if_fail(server->service->destroy == NULL);
 
     while (server->first_connection != NULL) {
-        server_connection_close(server->first_connection);
-        rut_object_unref(server->first_connection);
+        /* server_connection_close() will remove the connection from the
+         * server's connection list so we need to keep our own pointer
+         * to unref the connection... */
+        pb_rpc__server_connection_t *first_connection = server->first_connection;
+
+        server_connection_close(first_connection);
+
+        rut_object_unref(first_connection);
     }
 
     server->allocator->free(server->allocator, server->bind_name);
