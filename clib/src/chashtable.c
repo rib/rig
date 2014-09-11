@@ -625,6 +625,18 @@ c_hash_table_print_stats(c_hash_table_t *table)
            max_chain_index);
 }
 
+static void
+print_key_value_cb (void *key, void *value, void *user_data)
+{
+    printf("key = %p, value = %p\n", key, value);
+}
+
+void
+c_hash_table_print(c_hash_table_t *table)
+{
+    c_hash_table_foreach(table, print_key_value_cb, NULL);
+}
+
 void
 c_hash_table_iter_init(c_hash_table_iter_t *it, c_hash_table_t *hash_table)
 {

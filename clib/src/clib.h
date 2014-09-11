@@ -632,6 +632,7 @@ unsigned int c_hash_table_foreach_steal(c_hash_table_t *hash,
                                         void *user_data);
 void c_hash_table_destroy(c_hash_table_t *hash);
 void c_hash_table_print_stats(c_hash_table_t *table);
+void c_hash_table_print(c_hash_table_t *table);
 
 void c_hash_table_iter_init(c_hash_table_iter_t *iter,
                             c_hash_table_t *hash_table);
