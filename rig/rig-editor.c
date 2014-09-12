@@ -306,6 +306,10 @@ reset_play_mode_ui(rig_editor_t *editor)
 {
     rig_engine_t *engine = editor->engine;
     rig_ui_t *play_mode_ui;
+    rut_object_t *play_scene = NULL;
+
+    if (engine->play_mode_ui)
+        play_scene = engine->play_mode_ui->scene;
 
     /* First make sure to cleanup the current ui  */
     rig_engine_set_play_mode_ui(engine, NULL);
@@ -314,6 +318,11 @@ reset_play_mode_ui(rig_editor_t *editor)
      * replaced are unregistered before before we load the new UI.
      */
     rig_engine_garbage_collect(engine, delete_object_cb, editor);
+
+    /* As a special case; unregister an object id mapping for the
+     * root of the scenegraph (if there was one)... */
+    if (play_scene)
+        delete_object_cb (play_scene, editor);
 
 #ifdef RIG_ENABLE_DEBUG
     if (editor->edit_to_play_object_map &&
