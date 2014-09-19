@@ -424,6 +424,8 @@ enable_sdl2=yes
 enable_uv=yes
 enable_gles2=yes
 enable_xlib_egl_platform=yes
+enable_wayland_egl_platform=yes
+enable_wayland_egl_server=yes
 AM_COGL
 
 
