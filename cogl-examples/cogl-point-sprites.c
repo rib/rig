@@ -3,7 +3,7 @@
 #include <string.h>
 
 #include <cogl/cogl.h>
-#include <glib.h>
+#include <clib.h>
 
 #define N_FIREWORKS 32
 /* Units per second per second */
@@ -28,7 +28,7 @@ typedef struct {
     float initial_x_velocity;
     float initial_y_velocity;
 
-    GTimer *timer;
+    c_timer_t *timer;
 } Firework;
 
 typedef struct {
@@ -42,7 +42,7 @@ typedef struct {
 
     int next_spark_num;
     Spark sparks[N_SPARKS];
-    GTimer *last_spark_time;
+    c_timer_t *last_spark_time;
 
     cg_device_t *dev;
     cg_framebuffer_t *fb;
@@ -58,7 +58,7 @@ generate_round_texture(cg_device_t *dev)
     int x, y;
     cg_texture_2d_t *tex;
 
-    p = data = g_malloc(TEXTURE_SIZE * TEXTURE_SIZE * 4);
+    p = data = c_malloc(TEXTURE_SIZE * TEXTURE_SIZE * 4);
 
     /* Generate a white circle which gets transparent towards the edges */
     for (y = 0; y < TEXTURE_SIZE; y++)
@@ -83,7 +83,7 @@ generate_round_texture(cg_device_t *dev)
                                       data,
                                       NULL /* error */);
 
-    g_free(data);
+    c_free(data);
 
     return tex;
 }
@@ -103,9 +103,9 @@ paint(Data *data)
             firework->size = c_random_double_range(0.001f, 0.1f);
             firework->start_x = 1.0f + firework->size;
             firework->start_y = -1.0f;
-            firework->initial_x_velocity = c_random_double_range(-0.1f, -2.0f);
+            firework->initial_x_velocity = c_random_double_range(-2.0f, -0.1f);
             firework->initial_y_velocity = c_random_double_range(0.1f, 4.0f);
-            g_timer_reset(firework->timer);
+            c_timer_start(firework->timer);
 
             /* Pick a random color out of six */
             if (c_random_boolean()) {
@@ -124,7 +124,7 @@ paint(Data *data)
             }
         }
 
-        diff_time = g_timer_elapsed(firework->timer, NULL);
+        diff_time = c_timer_elapsed(firework->timer, NULL);
 
         firework->x =
             (firework->start_x + firework->initial_x_velocity * diff_time);
@@ -134,7 +134,7 @@ paint(Data *data)
                        firework->start_y);
     }
 
-    diff_time = g_timer_elapsed(data->last_spark_time, NULL);
+    diff_time = c_timer_elapsed(data->last_spark_time, NULL);
     if (diff_time < 0.0f || diff_time >= TIME_PER_SPARK) {
         /* Add a new spark for each firework, overwriting the oldest ones */
         for (i = 0; i < N_FIREWORKS; i++) {
@@ -167,7 +167,7 @@ paint(Data *data)
             spark->color.alpha = 255.0f * color_value;
         }
 
-        g_timer_reset(data->last_spark_time);
+        c_timer_start(data->last_spark_time);
     }
 
     cg_buffer_set_data(data->attribute_buffer,
@@ -234,17 +234,17 @@ main(int argc, char *argv[])
 {
     cg_texture_t *tex;
     cg_onscreen_t *onscreen;
-    GSource *cg_source;
-    GMainLoop *loop;
     Data data;
     int i;
 
     data.dev = cg_device_new();
 
+    cg_device_connect(data.dev, NULL);
+
     create_primitive(&data);
 
     data.pipeline = cg_pipeline_new(data.dev);
-    data.last_spark_time = g_timer_new();
+    data.last_spark_time = c_timer_new();
     data.next_spark_num = 0;
     cg_pipeline_set_point_size(data.pipeline, TEXTURE_SIZE);
 
@@ -261,7 +261,7 @@ main(int argc, char *argv[])
         data.fireworks[i].x = -FLT_MAX;
         data.fireworks[i].y = FLT_MAX;
         data.fireworks[i].size = 0.0f;
-        data.fireworks[i].timer = g_timer_new();
+        data.fireworks[i].timer = c_timer_new();
     }
 
     for (i = 0; i < N_SPARKS; i++) {
@@ -273,22 +273,13 @@ main(int argc, char *argv[])
     cg_onscreen_show(onscreen);
     data.fb = onscreen;
 
-    cg_source = cg_glib_source_new(data.dev, G_PRIORITY_DEFAULT);
-
-    g_source_attach(cg_source, NULL);
-
     cg_onscreen_add_frame_callback(
         onscreen, frame_event_cb, &data, NULL /* destroy notify */);
 
-    loop = g_main_loop_new(NULL, TRUE);
-
     paint(&data);
 
-    g_main_loop_run(loop);
-
-    g_main_loop_unref(loop);
-
-    g_source_destroy(cg_source);
+    cg_uv_set_mainloop(data.dev, uv_default_loop());
+    uv_run(uv_default_loop(), UV_RUN_DEFAULT);
 
     cg_object_unref(data.pipeline);
     cg_object_unref(data.attribute_buffer);
@@ -296,10 +287,10 @@ main(int argc, char *argv[])
     cg_object_unref(onscreen);
     cg_object_unref(data.dev);
 
-    g_timer_destroy(data.last_spark_time);
+    c_timer_destroy(data.last_spark_time);
 
     for (i = 0; i < N_FIREWORKS; i++)
-        g_timer_destroy(data.fireworks[i].timer);
+        c_timer_destroy(data.fireworks[i].timer);
 
     return 0;
 }

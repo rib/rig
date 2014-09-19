@@ -1,3 +1,4 @@
+#include <clib.h>
 #include <cogl/cogl.h>
 #include <cogl-pango/cogl-pango.h>
 
@@ -22,7 +23,7 @@ typedef struct _Data {
     int hello_label_width;
     int hello_label_height;
 
-    GTimer *timer;
+    c_timer_t *timer;
 
     bool swap_ready;
 
@@ -95,7 +96,7 @@ paint(Data *data)
     /* Update the rotation based on the time the application has been
        running so that we get a linear animation regardless of the frame
        rate */
-    rotation = g_timer_elapsed(data->timer, NULL) * 60.0f;
+    rotation = c_timer_elapsed(data->timer, NULL) * 60.0f;
 
     /* Rotate the cube separately around each axis.
      *
@@ -161,7 +162,7 @@ main(int argc, char **argv)
     data.framebuffer_width = cg_framebuffer_get_width(fb);
     data.framebuffer_height = cg_framebuffer_get_height(fb);
 
-    data.timer = g_timer_new();
+    data.timer = c_timer_new();
 
     cg_onscreen_show(onscreen);
 

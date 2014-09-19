@@ -35,9 +35,7 @@
  * Jul 13, 2010
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #define GL_GLEXT_PROTOTYPES
 
@@ -47,10 +45,15 @@
 #include <string.h>
 #include <sys/time.h>
 #include <unistd.h>
+
+#include <uv.h>
+
 #include <GLES2/gl2.h>
+
 #include <cogl/cogl.h>
 #include <cogl/cogl-gles2.h>
-#include <glib.h>
+
+#include <clib.h>
 
 #define STRIPS_PER_TOOTH 7
 #define VERTICES_PER_TOOTH 34
@@ -58,11 +61,14 @@
 
 typedef struct _Data {
     cg_device_t *dev;
+
+    uv_idle_t idle;
+
     cg_framebuffer_t *fb;
 
     cg_gles2_context_t *gles2_ctx;
 
-    GTimer *timer;
+    c_timer_t *timer;
     int frames;
     double last_elapsed;
 } Data;
@@ -576,25 +582,26 @@ gears_draw(void)
     draw_gear(gear3, transform, -3.1, 4.2, -2 * angle - 25.0, blue);
 }
 
-static gboolean
-paint_cb(void *user_data)
+static void
+paint_cb(uv_idle_t *idle)
 {
-    Data *data = user_data;
-    double elapsed = g_timer_elapsed(data->timer, NULL);
+    Data *data = idle->data;
+    double elapsed = c_timer_elapsed(data->timer, NULL);
     double dt = elapsed - data->last_elapsed;
     cg_error_t *error = NULL;
 
     /* Draw scene with GLES2 */
-    if (!cg_push_gles2_context(
-            data->dev, data->gles2_ctx, data->fb, data->fb, &error)) {
-        g_error("Failed to push gles2 context: %s\n", error->message);
+    if (!cg_push_gles2_context(data->dev, data->gles2_ctx,
+                               data->fb, data->fb, &error))
+    {
+        c_error("Failed to push gles2 context: %s\n", error->message);
     }
 
     gears_draw();
 
     cg_pop_gles2_context(data->dev);
 
-    cg_onscreen_swap_buffers(CG_ONSCREEN(data->fb));
+    cg_onscreen_swap_buffers(data->fb);
 
     /* advance rotation for next frame */
     angle += 70.0 * dt; /* 70 degrees per second */
@@ -609,13 +616,13 @@ paint_cb(void *user_data)
                data->frames,
                elapsed,
                fps);
-        g_timer_reset(data->timer);
+        c_timer_reset(data->timer);
         data->last_elapsed = 0;
         data->frames = 0;
     } else
         data->last_elapsed = elapsed;
 
-    return FALSE; /* remove the callback */
+    uv_idle_stop(&data->idle);
 }
 
 static void
@@ -624,8 +631,10 @@ frame_event_cb(cg_onscreen_t *onscreen,
                cg_frame_info_t *info,
                void *user_data)
 {
-    if (event == CG_FRAME_EVENT_SYNC)
-        paint_cb(user_data);
+    if (event == CG_FRAME_EVENT_SYNC) {
+        Data *data = user_data;
+        paint_cb(&data->idle);
+    }
 }
 
 /**
@@ -772,10 +781,10 @@ main(int argc, char **argv)
     Data data;
     cg_onscreen_t *onscreen;
     cg_error_t *error = NULL;
-    GSource *cg_source;
-    GMainLoop *loop;
+    uv_loop_t *loop = uv_default_loop();
     cg_renderer_t *renderer;
     cg_display_t *display;
+    cg_error_t *error = NULL;
 
     renderer = cg_renderer_new();
     cg_renderer_add_constraint(renderer,
@@ -783,6 +792,11 @@ main(int argc, char **argv)
     display = cg_display_new(renderer, NULL);
     data.dev = cg_device_new();
     cg_device_set_display(data.dev, display);
+
+    if (!cg_device_connect(data.dev, &error)) {
+        c_error("%s", error->message);
+        exit(1);
+    }
 
     onscreen = cg_onscreen_new(data.dev, 300, 300);
     cg_onscreen_show(onscreen);
@@ -806,21 +820,19 @@ main(int argc, char **argv)
 
     cg_pop_gles2_context(data.dev);
 
-    cg_source = cg_glib_source_new(data.dev, G_PRIORITY_DEFAULT);
-
-    g_source_attach(cg_source, NULL);
-
     cg_onscreen_add_frame_callback(
         CG_ONSCREEN(data.fb), frame_event_cb, &data, NULL); /* destroy notify */
 
-    g_idle_add(paint_cb, &data);
+    uv_idle_init(loop, &data.idle);
+    data.idle.data = &data;
+    uv_idle_start(&data.idle, paint_cb);
 
-    data.timer = g_timer_new();
+    data.timer = c_timer_new();
     data.frames = 0;
     data.last_elapsed = 0;
 
-    loop = g_main_loop_new(NULL, TRUE);
-    g_main_loop_run(loop);
+    cg_uv_set_mainloop(data.dev, loop);
+    uv_run(loop, UV_RUN_DEFAULT);
 
     return 0;
 }

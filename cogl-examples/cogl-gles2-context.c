@@ -1,13 +1,18 @@
+#include <stdio.h>
+
+#include <uv.h>
+
 #include <cogl/cogl.h>
 #include <cogl/cogl-gles2.h>
-#include <glib.h>
-#include <stdio.h>
+
+#include <clib.h>
 
 #define OFFSCREEN_WIDTH 100
 #define OFFSCREEN_HEIGHT 100
 
 typedef struct _Data {
     cg_device_t *dev;
+    uv_idle_t idle;
     cg_framebuffer_t *fb;
     cg_primitive_t *triangle;
     cg_pipeline_t *pipeline;
@@ -18,10 +23,10 @@ typedef struct _Data {
     const cg_gles2_vtable_t *gles2_vtable;
 } Data;
 
-static gboolean
-paint_cb(void *user_data)
+static void
+paint_cb(uv_idle_t *idle)
 {
-    Data *data = user_data;
+    Data *data = idle->data;
     cg_error_t *error = NULL;
     const cg_gles2_vtable_t *gles2 = data->gles2_vtable;
 
@@ -43,7 +48,7 @@ paint_cb(void *user_data)
 
     cg_onscreen_swap_buffers(CG_ONSCREEN(data->fb));
 
-    return FALSE; /* remove the callback */
+    uv_idle_stop(&data->idle);
 }
 
 static void
@@ -52,8 +57,10 @@ frame_event_cb(cg_onscreen_t *onscreen,
                cg_frame_info_t *info,
                void *user_data)
 {
-    if (event == CG_FRAME_EVENT_SYNC)
-        paint_cb(user_data);
+    if (event == CG_FRAME_EVENT_SYNC){
+        Data *data = user_data;
+        paint_cb(&data->idle);
+    }
 }
 
 int
@@ -67,17 +74,27 @@ main(int argc, char **argv)
         { -0.7, -0.7, 0x00, 0xff, 0x00, 0xff },
         { 0.7, -0.7, 0x00, 0x00, 0xff, 0xff }
     };
-    GSource *cg_source;
-    GMainLoop *loop;
     cg_renderer_t *renderer;
     cg_display_t *display;
+    uv_loop_t *loop = uv_default_loop();
 
     renderer = cg_renderer_new();
     cg_renderer_add_constraint(renderer,
                                CG_RENDERER_CONSTRAINT_SUPPORTS_CG_GLES2);
+
+    if (!cg_renderer_connect(renderer, &error)) {
+        c_error("%s", error->message);
+        exit(1);
+    }
+
     display = cg_display_new(renderer, NULL);
     data.dev = cg_device_new();
     cg_device_set_display(data.dev, display);
+
+    if (!cg_device_connect(data.dev, &error)) {
+        c_error("%s", error->message);
+        exit(1);
+    }
 
     onscreen = cg_onscreen_new(data.dev, 640, 480);
     cg_onscreen_show(onscreen);
@@ -107,17 +124,15 @@ main(int argc, char **argv)
 
     cg_pop_gles2_context(data.dev);
 
-    cg_source = cg_glib_source_new(data.dev, G_PRIORITY_DEFAULT);
-
-    g_source_attach(cg_source, NULL);
-
     cg_onscreen_add_frame_callback(
         CG_ONSCREEN(data.fb), frame_event_cb, &data, NULL); /* destroy notify */
 
-    g_idle_add(paint_cb, &data);
+    uv_idle_init(loop, &data.idle);
+    data.idle.data = &data;
+    uv_idle_start(&data.idle, paint_cb);
 
-    loop = g_main_loop_new(NULL, TRUE);
-    g_main_loop_run(loop);
+    cg_uv_set_mainloop(data.dev, loop);
+    uv_run(loop, UV_RUN_DEFAULT);
 
     return 0;
 }

@@ -1,25 +1,27 @@
-#include <cogl/cogl.h>
-#include <cogl/cogl-wayland-server.h>
-#include <glib.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
 #include <string.h>
+#include <getopt.h>
+
+#include <cogl/cogl.h>
+#include <cogl/cogl-wayland-server.h>
+
+#include <clib.h>
 
 #include <wayland-server.h>
 
-typedef struct _CoglandCompositor CoglandCompositor;
-
-typedef struct {
+struct cogland_region {
     int x1, y1, x2, y2;
-} CoglandRegion;
+};
 
-typedef struct {
+struct cogland_shared_region {
     struct wl_resource *resource;
-    CoglandRegion region;
-} CoglandSharedRegion;
+    struct cogland_region region;
+};
 
-typedef struct {
+struct cogland_buffer {
     struct wl_resource *resource;
     struct wl_signal destroy_signal;
     struct wl_listener destroy_listener;
@@ -31,20 +33,20 @@ typedef struct {
 
     int32_t width, height;
     uint32_t busy_count;
-} CoglandBuffer;
+};
 
-typedef struct {
-    CoglandBuffer *buffer;
+struct cogland_buffer_reference{
+    struct cogland_buffer *buffer;
     struct wl_listener destroy_listener;
-} CoglandBufferReference;
+};
 
-typedef struct {
-    CoglandCompositor *compositor;
+struct cogland_surface {
+    struct cogland_compositor *compositor;
 
     struct wl_resource *resource;
     int x;
     int y;
-    CoglandBufferReference buffer_ref;
+    struct cogland_buffer_reference buffer_ref;
     cg_texture_2d_t *texture;
 
     bool has_shell_surface;
@@ -55,33 +57,33 @@ typedef struct {
     struct {
         /* wl_surface.attach */
         bool newly_attached;
-        CoglandBuffer *buffer;
+        struct cogland_buffer *buffer;
         struct wl_listener buffer_destroy_listener;
         int32_t sx;
         int32_t sy;
 
         /* wl_surface.damage */
-        CoglandRegion damage;
+        struct cogland_region damage;
 
         /* wl_surface.frame */
         struct wl_list frame_callback_list;
     } pending;
-} CoglandSurface;
+};
 
-typedef struct {
-    CoglandSurface *surface;
+struct cogland_shell_surface {
+    struct cogland_surface *surface;
     struct wl_resource *resource;
     struct wl_listener surface_destroy_listener;
-} CoglandShellSurface;
+};
 
-typedef struct {
+struct cogland_mode {
     uint32_t flags;
     int width;
     int height;
     int refresh;
-} CoglandMode;
+};
 
-typedef struct {
+struct cogland_output {
     struct wl_object wayland_output;
 
     int32_t x;
@@ -91,77 +93,72 @@ typedef struct {
 
     cg_onscreen_t *onscreen;
 
-    GList *modes;
+    c_list_t *modes;
 
-} CoglandOutput;
+};
 
-typedef struct {
-    GSource source;
-    GPollFD pfd;
-    struct wl_display *display;
-} WaylandEventSource;
-
-struct _CoglandCompositor {
+struct cogland_compositor {
     struct wl_display *wayland_display;
     struct wl_event_loop *wayland_loop;
 
     cg_device_t *dev;
 
+    uv_prepare_t main_prepare;
+    uv_poll_t poll;
+    uv_idle_t idle;
+
     int virtual_width;
     int virtual_height;
-    GList *outputs;
+    c_list_t *outputs;
 
     struct wl_list frame_callbacks;
 
     cg_primitive_t *triangle;
     cg_pipeline_t *triangle_pipeline;
 
-    GSource *wayland_event_source;
-
-    GList *surfaces;
+    c_list_t *surfaces;
 
     unsigned int redraw_idle;
 };
 
-static bool option_multiple_outputs = FALSE;
+static bool option_multiple_outputs = false;
+static bool verbose = false;
 
-static GOptionEntry options[] = {
-    { "multiple",               'm',
-      0,                        G_OPTION_ARG_NONE,
-      &option_multiple_outputs, "Split the compositor into four outputs",
-      NULL },
-    { NULL, 0, 0, 0, NULL, NULL, NULL }
-};
-
-static bool
-process_arguments(int *argc, char ***argv, GError **error)
+static void
+help(const char *name)
 {
-    GOptionContext *context;
-    bool ret;
-    GOptionGroup *group;
+    fprintf(stderr, "Usage: %s [args...]\n", name);
+    fprintf(stderr, "  -p, --port      Port to bind too\n");
+    fprintf(stderr, "  -d, --directory Directory of files to server\n");
+    fprintf(stderr, "  -v, --verbose   Be verbose\n");
+    fprintf(stderr, "  -h, --help      Display this help message\n");
+    exit(EXIT_FAILURE);
+}
 
-    group = g_option_group_new(NULL, /* name */
-                               NULL, /* description */
-                               NULL, /* help_description */
-                               NULL, /* user_data */
-                               NULL /* destroy notify */);
-    g_option_group_add_entries(group, options);
-    context =
-        g_option_context_new("- An example Wayland compositor using Cogl");
-    g_option_context_set_main_group(context, group);
-    ret = g_option_context_parse(context, argc, argv, error);
-    g_option_context_free(context);
+static void
+process_arguments(int argc, char **argv)
+{
+    struct option opts[] = {
+        { "multiple",   no_argument, NULL, 'm' },
+        { "verbose",    no_argument, NULL, 'v' },
+        { "help",       no_argument, NULL, 'h' },
+        { 0,            0,           NULL,  0  }
+    };
+    int c;
+    int i;
 
-    if (ret && *argc > 1) {
-        g_set_error(error,
-                    G_OPTION_ERROR,
-                    G_OPTION_ERROR_UNKNOWN_OPTION,
-                    "Unknown option '%s'",
-                    (*argv)[1]);
-        ret = FALSE;
+    while ((c = getopt_long(argc, argv, "mvh", opts, &i)) != -1) {
+        switch (c) {
+            case 'm':
+                option_multiple_outputs = true;
+                break;
+            case 'v':
+                verbose = true;
+                break;
+            case 'h':
+                help("cogland");
+        }
     }
-
-    return ret;
 }
 
 static uint32_t
@@ -173,19 +170,19 @@ get_time(void)
 }
 
 static void
-region_init(CoglandRegion *region)
+region_init(struct cogland_region *region)
 {
     memset(region, 0, sizeof(*region));
 }
 
 static bool
-region_is_empty(const CoglandRegion *region)
+region_is_empty(const struct cogland_region *region)
 {
     return region->x1 == region->x2 || region->y1 == region->y2;
 }
 
 static void
-region_add(CoglandRegion *region, int x, int y, int w, int h)
+region_add(struct cogland_region *region, int x, int y, int w, int h)
 {
     if (region_is_empty(region)) {
         region->x1 = x;
@@ -205,77 +202,25 @@ region_add(CoglandRegion *region, int x, int y, int w, int h)
 }
 
 static void
-region_subtract(CoglandRegion *region, int x, int y, int w, int h)
+region_subtract(struct cogland_region *region, int x, int y, int w, int h)
 {
     /* FIXME */
-}
-
-static bool
-wayland_event_source_prepare(GSource *base, int *timeout)
-{
-    WaylandEventSource *source = (WaylandEventSource *)base;
-
-    *timeout = -1;
-
-    wl_display_flush_clients(source->display);
-
-    return FALSE;
-}
-
-static bool
-wayland_event_source_check(GSource *base)
-{
-    WaylandEventSource *source = (WaylandEventSource *)base;
-
-    return source->pfd.revents;
-}
-
-static bool
-wayland_event_source_dispatch(GSource *base, GSourceFunc callback, void *data)
-{
-    WaylandEventSource *source = (WaylandEventSource *)base;
-    struct wl_event_loop *loop = wl_display_get_event_loop(source->display);
-
-    wl_event_loop_dispatch(loop, 0);
-
-    return TRUE;
-}
-
-static GSourceFuncs wayland_event_source_funcs = {
-    wayland_event_source_prepare,  wayland_event_source_check,
-    wayland_event_source_dispatch, NULL
-};
-
-static GSource *
-wayland_event_source_new(struct wl_display *display)
-{
-    WaylandEventSource *source;
-    struct wl_event_loop *loop = wl_display_get_event_loop(display);
-
-    source = (WaylandEventSource *)g_source_new(&wayland_event_source_funcs,
-                                                sizeof(WaylandEventSource));
-    source->display = display;
-    source->pfd.fd = wl_event_loop_get_fd(loop);
-    source->pfd.events = G_IO_IN | G_IO_ERR;
-    g_source_add_poll(&source->source, &source->pfd);
-
-    return &source->source;
 }
 
 static void
 cogland_buffer_destroy_handler(struct wl_listener *listener,
                                void *data)
 {
-    CoglandBuffer *buffer = wl_container_of(listener, buffer, destroy_listener);
+    struct cogland_buffer *buffer = wl_container_of(listener, buffer, destroy_listener);
 
     wl_signal_emit(&buffer->destroy_signal, buffer);
-    g_slice_free(CoglandBuffer, buffer);
+    g_slice_free(struct cogland_buffer, buffer);
 }
 
-static CoglandBuffer *
+static struct cogland_buffer *
 cogland_buffer_from_resource(struct wl_resource *resource)
 {
-    CoglandBuffer *buffer;
+    struct cogland_buffer *buffer;
     struct wl_listener *listener;
 
     listener = wl_resource_get_destroy_listener(resource,
@@ -284,7 +229,7 @@ cogland_buffer_from_resource(struct wl_resource *resource)
     if (listener) {
         buffer = wl_container_of(listener, buffer, destroy_listener);
     } else {
-        buffer = g_slice_new0(CoglandBuffer);
+        buffer = g_slice_new0(struct cogland_buffer);
 
         buffer->resource = resource;
         wl_signal_init(&buffer->destroy_signal);
@@ -299,7 +244,7 @@ static void
 cogland_buffer_reference_handle_destroy(struct wl_listener *listener,
                                         void *data)
 {
-    CoglandBufferReference *ref =
+    struct cogland_buffer_reference *ref =
         wl_container_of(listener, ref, destroy_listener);
 
     g_assert(data == ref->buffer);
@@ -308,8 +253,8 @@ cogland_buffer_reference_handle_destroy(struct wl_listener *listener,
 }
 
 static void
-cogland_buffer_reference(CoglandBufferReference *ref,
-                         CoglandBuffer *buffer)
+cogland_buffer_reference(struct cogland_buffer_reference *ref,
+                         struct cogland_buffer *buffer)
 {
     if (ref->buffer && buffer != ref->buffer) {
         ref->buffer->busy_count--;
@@ -335,21 +280,21 @@ typedef struct _CoglandFrameCallback {
     struct wl_list link;
 
     /* Pointer back to the compositor */
-    CoglandCompositor *compositor;
+    struct cogland_compositor *compositor;
 
     struct wl_resource *resource;
 } CoglandFrameCallback;
 
-static bool
-paint_cb(void *user_data)
+static void
+paint_cb(uv_idle_t *idle)
 {
-    CoglandCompositor *compositor = user_data;
-    GList *l;
+    struct cogland_compositor *compositor = idle->data;
+    c_list_t *l;
 
     for (l = compositor->outputs; l; l = l->next) {
-        CoglandOutput *output = l->data;
+        struct cogland_output *output = l->data;
         cg_framebuffer_t *fb = output->onscreen;
-        GList *l2;
+        c_list_t *l2;
 
         cg_framebuffer_clear4f(fb, CG_BUFFER_BIT_COLOR, 0, 0, 0, 1);
 
@@ -357,12 +302,12 @@ paint_cb(void *user_data)
             compositor->triangle, fb, compositor->triangle_pipeline);
 
         for (l2 = compositor->surfaces; l2; l2 = l2->next) {
-            CoglandSurface *surface = l2->data;
+            struct cogland_surface *surface = l2->data;
 
             if (surface->texture) {
                 cg_texture_2d_t *texture = surface->texture;
                 cg_pipeline_t *pipeline =
-                    cg_pipeline_new(compositor->cg_device);
+                    cg_pipeline_new(compositor->dev);
                 cg_pipeline_set_layer_texture(pipeline, 0, texture);
                 cg_framebuffer_draw_rectangle(fb, pipeline, -1, 1, 1, -1);
                 cg_object_unref(pipeline);
@@ -381,18 +326,17 @@ paint_cb(void *user_data)
 
     compositor->redraw_idle = 0;
 
-    return G_SOURCE_REMOVE;
+    uv_idle_stop(&compositor->idle);
 }
 
 static void
-cogland_queue_redraw(CoglandCompositor *compositor)
+cogland_queue_redraw(struct cogland_compositor *compositor)
 {
-    if (compositor->redraw_idle == 0)
-        compositor->redraw_idle = g_idle_add(paint_cb, compositor);
+    uv_idle_start(&compositor->idle, paint_cb);
 }
 
 static void
-surface_damaged(CoglandSurface *surface,
+surface_damaged(struct cogland_surface *surface,
                 int32_t x,
                 int32_t y,
                 int32_t width,
@@ -432,9 +376,9 @@ cogland_surface_attach(struct wl_client *wayland_client,
                        int32_t sx,
                        int32_t sy)
 {
-    CoglandSurface *surface =
+    struct cogland_surface *surface =
         wl_resource_get_user_data(wayland_surface_resource);
-    CoglandBuffer *buffer;
+    struct cogland_buffer *buffer;
 
     if (wayland_buffer_resource)
         buffer = cogland_buffer_from_resource(wayland_buffer_resource);
@@ -448,7 +392,7 @@ cogland_surface_attach(struct wl_client *wayland_client,
     surface->pending.sx = sx;
     surface->pending.sy = sy;
     surface->pending.buffer = buffer;
-    surface->pending.newly_attached = TRUE;
+    surface->pending.newly_attached = true;
 
     if (buffer)
         wl_signal_add(&buffer->destroy_signal,
@@ -463,7 +407,7 @@ cogland_surface_damage(struct wl_client *client,
                        int32_t width,
                        int32_t height)
 {
-    CoglandSurface *surface = wl_resource_get_user_data(resource);
+    struct cogland_surface *surface = wl_resource_get_user_data(resource);
 
     region_add(&surface->pending.damage, x, y, width, height);
 }
@@ -484,7 +428,7 @@ cogland_surface_frame(struct wl_client *client,
                       uint32_t callback_id)
 {
     CoglandFrameCallback *callback;
-    CoglandSurface *surface = wl_resource_get_user_data(surface_resource);
+    struct cogland_surface *surface = wl_resource_get_user_data(surface_resource);
 
     callback = g_slice_new0(CoglandFrameCallback);
     callback->compositor = surface->compositor;
@@ -516,8 +460,8 @@ static void
 cogland_surface_commit(struct wl_client *client,
                        struct wl_resource *resource)
 {
-    CoglandSurface *surface = wl_resource_get_user_data(resource);
-    CoglandCompositor *compositor = surface->compositor;
+    struct cogland_surface *surface = wl_resource_get_user_data(resource);
+    struct cogland_compositor *compositor = surface->compositor;
 
     /* wl_surface.attach */
     if (surface->pending.newly_attached &&
@@ -536,10 +480,10 @@ cogland_surface_commit(struct wl_client *client,
                 surface->pending.buffer->resource;
 
             surface->texture = cg_wayland_texture_2d_new_from_buffer(
-                compositor->cg_device, buffer_resource, &error);
+                compositor->dev, buffer_resource, &error);
 
             if (!surface->texture) {
-                g_error("Failed to create texture_2d from wayland buffer: %s",
+                c_error("Failed to create texture_2d from wayland buffer: %s",
                         error->message);
                 cg_error_free(error);
             }
@@ -551,12 +495,12 @@ cogland_surface_commit(struct wl_client *client,
     }
     surface->pending.sx = 0;
     surface->pending.sy = 0;
-    surface->pending.newly_attached = FALSE;
+    surface->pending.newly_attached = false;
 
     /* wl_surface.damage */
     if (surface->buffer_ref.buffer && surface->texture &&
         !region_is_empty(&surface->pending.damage)) {
-        CoglandRegion *region = &surface->pending.damage;
+        struct cogland_region *region = &surface->pending.damage;
         cg_texture_t *texture = surface->texture;
 
         if (region->x2 > cg_texture_get_width(texture))
@@ -597,14 +541,14 @@ const struct wl_surface_interface cogland_surface_interface = {
 };
 
 static void
-cogland_surface_free(CoglandSurface *surface)
+cogland_surface_free(struct cogland_surface *surface)
 {
-    CoglandCompositor *compositor = surface->compositor;
+    struct cogland_compositor *compositor = surface->compositor;
     CoglandFrameCallback *cb, *next;
 
     wl_signal_emit(&surface->destroy_signal, &surface->resource);
 
-    compositor->surfaces = g_list_remove(compositor->surfaces, surface);
+    compositor->surfaces = c_list_remove(compositor->surfaces, surface);
 
     cogland_buffer_reference(&surface->buffer_ref, NULL);
     if (surface->texture)
@@ -616,7 +560,7 @@ cogland_surface_free(CoglandSurface *surface)
     wl_list_for_each_safe(cb, next, &surface->pending.frame_callback_list, link)
     wl_resource_destroy(cb->resource);
 
-    g_slice_free(CoglandSurface, surface);
+    g_slice_free(struct cogland_surface, surface);
 
     cogland_queue_redraw(compositor);
 }
@@ -624,7 +568,7 @@ cogland_surface_free(CoglandSurface *surface)
 static void
 cogland_surface_resource_destroy_cb(struct wl_resource *resource)
 {
-    CoglandSurface *surface = wl_resource_get_user_data(resource);
+    struct cogland_surface *surface = wl_resource_get_user_data(resource);
     cogland_surface_free(surface);
 }
 
@@ -632,7 +576,7 @@ static void
 surface_handle_pending_buffer_destroy(struct wl_listener *listener,
                                       void *data)
 {
-    CoglandSurface *surface =
+    struct cogland_surface *surface =
         wl_container_of(listener, surface, pending.buffer_destroy_listener);
 
     surface->pending.buffer = NULL;
@@ -644,9 +588,9 @@ cogland_compositor_create_surface(
     struct wl_resource *wayland_compositor_resource,
     uint32_t id)
 {
-    CoglandCompositor *compositor =
+    struct cogland_compositor *compositor =
         wl_resource_get_user_data(wayland_compositor_resource);
-    CoglandSurface *surface = g_slice_new0(CoglandSurface);
+    struct cogland_surface *surface = g_slice_new0(struct cogland_surface);
 
     surface->compositor = compositor;
 
@@ -665,7 +609,7 @@ cogland_compositor_create_surface(
     wl_list_init(&surface->pending.frame_callback_list);
     region_init(&surface->pending.damage);
 
-    compositor->surfaces = g_list_prepend(compositor->surfaces, surface);
+    compositor->surfaces = c_list_prepend(compositor->surfaces, surface);
 }
 
 static void
@@ -683,7 +627,7 @@ cogland_region_add(struct wl_client *client,
                    int32_t width,
                    int32_t height)
 {
-    CoglandSharedRegion *shared_region = wl_resource_get_user_data(resource);
+    struct cogland_shared_region *shared_region = wl_resource_get_user_data(resource);
 
     region_add(&shared_region->region, x, y, width, height);
 }
@@ -696,7 +640,7 @@ cogland_region_subtract(struct wl_client *client,
                         int32_t width,
                         int32_t height)
 {
-    CoglandSharedRegion *shared_region = wl_resource_get_user_data(resource);
+    struct cogland_shared_region *shared_region = wl_resource_get_user_data(resource);
 
     region_subtract(&shared_region->region, x, y, width, height);
 }
@@ -708,9 +652,9 @@ const struct wl_region_interface cogland_region_interface = {
 static void
 cogland_region_resource_destroy_cb(struct wl_resource *resource)
 {
-    CoglandSharedRegion *region = wl_resource_get_user_data(resource);
+    struct cogland_shared_region *region = wl_resource_get_user_data(resource);
 
-    g_slice_free(CoglandSharedRegion, region);
+    g_slice_free(struct cogland_shared_region, region);
 }
 
 static void
@@ -718,7 +662,7 @@ cogland_compositor_create_region(struct wl_client *wayland_client,
                                  struct wl_resource *compositor_resource,
                                  uint32_t id)
 {
-    CoglandSharedRegion *region = g_slice_new0(CoglandSharedRegion);
+    struct cogland_shared_region *region = g_slice_new0(struct cogland_shared_region);
 
     region->resource = wl_client_add_object(wayland_client,
                                             &wl_region_interface,
@@ -734,10 +678,10 @@ cogland_compositor_create_region(struct wl_client *wayland_client,
 static void
 bind_output(struct wl_client *client, void *data, uint32_t version, uint32_t id)
 {
-    CoglandOutput *output = data;
+    struct cogland_output *output = data;
     struct wl_resource *resource =
         wl_client_add_object(client, &wl_output_interface, NULL, id, data);
-    GList *l;
+    c_list_t *l;
 
     wl_resource_post_event(resource,
                            WL_OUTPUT_GEOMETRY,
@@ -750,7 +694,7 @@ bind_output(struct wl_client *client, void *data, uint32_t version, uint32_t id)
                            "unknown"); /* model */
 
     for (l = output->modes; l; l = l->next) {
-        CoglandMode *mode = l->data;
+        struct cogland_mode *mode = l->data;
         wl_resource_post_event(resource,
                                WL_OUTPUT_MODE,
                                mode->flags,
@@ -765,19 +709,19 @@ dirty_cb(cg_onscreen_t *onscreen,
          const cg_onscreen_dirty_info_t *info,
          void *user_data)
 {
-    CoglandCompositor *compositor = user_data;
+    struct cogland_compositor *compositor = user_data;
 
     cogland_queue_redraw(compositor);
 }
 
 static void
 cogland_compositor_create_output(
-    CoglandCompositor *compositor, int x, int y, int width_mm, int height_mm)
+    struct cogland_compositor *compositor, int x, int y, int width_mm, int height_mm)
 {
-    CoglandOutput *output = g_slice_new0(CoglandOutput);
+    struct cogland_output *output = g_slice_new0(struct cogland_output);
     cg_framebuffer_t *fb;
     cg_error_t *error = NULL;
-    CoglandMode *mode;
+    struct cogland_mode *mode;
 
     output->x = x;
     output->y = y;
@@ -790,12 +734,12 @@ cogland_compositor_create_output(
         compositor->wayland_display, &wl_output_interface, output, bind_output);
 
     output->onscreen =
-        cg_onscreen_new(compositor->cg_device, width_mm, height_mm);
+        cg_onscreen_new(compositor->dev, width_mm, height_mm);
     /* Eventually there will be an implicit allocate on first use so this
      * will become optional... */
     fb = output->onscreen;
     if (!cg_framebuffer_allocate(fb, &error))
-        g_error("Failed to allocate framebuffer: %s\n", error->message);
+        c_error("Failed to allocate framebuffer: %s\n", error->message);
 
     cg_onscreen_add_dirty_callback(
         output->onscreen, dirty_cb, compositor, NULL /* destroy */);
@@ -804,15 +748,15 @@ cogland_compositor_create_output(
     cg_framebuffer_set_viewport(
         fb, -x, -y, compositor->virtual_width, compositor->virtual_height);
 
-    mode = g_slice_new0(CoglandMode);
+    mode = g_slice_new0(struct cogland_mode);
     mode->flags = 0;
     mode->width = width_mm;
     mode->height = height_mm;
     mode->refresh = 60;
 
-    output->modes = g_list_prepend(output->modes, mode);
+    output->modes = c_list_prepend(output->modes, mode);
 
-    compositor->outputs = g_list_prepend(compositor->outputs, output);
+    compositor->outputs = c_list_prepend(compositor->outputs, output);
 }
 
 const static struct wl_compositor_interface cogland_compositor_interface = {
@@ -825,7 +769,7 @@ compositor_bind(struct wl_client *client,
                 uint32_t version,
                 uint32_t id)
 {
-    CoglandCompositor *compositor = data;
+    struct cogland_compositor *compositor = data;
 
     wl_client_add_object(client,
                          &wl_compositor_interface,
@@ -925,15 +869,15 @@ static const struct wl_shell_surface_interface cg_shell_surface_interface = {
 };
 
 static void
-destroy_shell_surface(CoglandShellSurface *shell_surface)
+destroy_shell_surface(struct cogland_shell_surface *shell_surface)
 {
     /* In case cleaning up a dead client destroys shell_surface first */
     if (shell_surface->surface) {
         wl_list_remove(&shell_surface->surface_destroy_listener.link);
-        shell_surface->surface->has_shell_surface = FALSE;
+        shell_surface->surface->has_shell_surface = false;
     }
 
-    g_free(shell_surface);
+    c_free(shell_surface);
 }
 
 static void
@@ -946,10 +890,10 @@ static void
 shell_handle_surface_destroy(struct wl_listener *listener,
                              void *data)
 {
-    CoglandShellSurface *shell_surface =
+    struct cogland_shell_surface *shell_surface =
         wl_container_of(listener, shell_surface, surface_destroy_listener);
 
-    shell_surface->surface->has_shell_surface = FALSE;
+    shell_surface->surface->has_shell_surface = false;
     shell_surface->surface = NULL;
 
     if (shell_surface->resource)
@@ -964,8 +908,8 @@ get_shell_surface(struct wl_client *client,
                   uint32_t id,
                   struct wl_resource *surface_resource)
 {
-    CoglandSurface *surface = wl_resource_get_user_data(surface_resource);
-    CoglandShellSurface *shell_surface;
+    struct cogland_surface *surface = wl_resource_get_user_data(surface_resource);
+    struct cogland_shell_surface *shell_surface;
 
     if (surface->has_shell_surface) {
         wl_resource_post_error(surface_resource,
@@ -974,7 +918,7 @@ get_shell_surface(struct wl_client *client,
         return;
     }
 
-    shell_surface = g_new0(CoglandShellSurface, 1);
+    shell_surface = c_new0(struct cogland_shell_surface, 1);
 
     shell_surface->surface = surface;
     shell_surface->surface_destroy_listener.notify =
@@ -982,7 +926,7 @@ get_shell_surface(struct wl_client *client,
     wl_signal_add(&surface->destroy_signal,
                   &shell_surface->surface_destroy_listener);
 
-    surface->has_shell_surface = TRUE;
+    surface->has_shell_surface = true;
 
     shell_surface->resource = wl_client_add_object(client,
                                                    &wl_shell_surface_interface,
@@ -1005,7 +949,7 @@ bind_shell(struct wl_client *client, void *data, uint32_t version, uint32_t id)
 }
 
 static cg_device_t *
-create_cg_device(CoglandCompositor *compositor,
+create_cg_device(struct cogland_compositor *compositor,
                   bool use_egl_constraint,
                   cg_error_t **error)
 {
@@ -1027,7 +971,7 @@ create_cg_device(CoglandCompositor *compositor,
 
     dev = cg_device_new();
     cg_device_set_display(dev, display);
-    cg_device_connect(error);
+    cg_device_connect(dev, error);
 
     cg_object_unref(renderer);
     cg_object_unref(display);
@@ -1035,30 +979,41 @@ create_cg_device(CoglandCompositor *compositor,
     return dev;
 }
 
+static void
+cogland_main_prepare_cb(uv_prepare_t *prepare)
+{
+    struct cogland_compositor *compositor = prepare->data;
+
+    wl_display_flush_clients(compositor->wayland_display);
+}
+
+static void
+cogland_main_dispatch_cb(uv_poll_t *poll, int status, int events)
+{
+    struct cogland_compositor *compositor = poll->data;
+
+    wl_event_loop_dispatch(compositor->wayland_loop, 0);
+}
+
 int
 main(int argc, char **argv)
 {
-    CoglandCompositor compositor;
-    GMainLoop *loop;
+    struct cogland_compositor compositor;
     cg_error_t *error = NULL;
-    GError *gerror = NULL;
     cg_vertex_p2c4_t triangle_vertices[] = {
         { 0, 0.7, 0xff, 0x00, 0x00, 0xff },
         { -0.7, -0.7, 0x00, 0xff, 0x00, 0xff },
         { 0.7, -0.7, 0x00, 0x00, 0xff, 0xff }
     };
-    GSource *cg_source;
+    uv_loop_t *loop = uv_default_loop();
 
-    if (!process_arguments(&argc, &argv, &gerror)) {
-        fprintf(stderr, "%s\n", gerror->message);
-        return EXIT_FAILURE;
-    }
+    process_arguments(argc, argv);
 
     memset(&compositor, 0, sizeof(compositor));
 
     compositor.wayland_display = wl_display_create();
     if (compositor.wayland_display == NULL)
-        g_error("failed to create wayland display");
+        c_error("failed to create wayland display");
 
     wl_list_init(&compositor.frame_callbacks);
 
@@ -1066,37 +1021,34 @@ main(int argc, char **argv)
                                &wl_compositor_interface,
                                &compositor,
                                compositor_bind))
-        g_error("Failed to register wayland compositor object");
+        c_error("Failed to register wayland compositor object");
 
     wl_display_init_shm(compositor.wayland_display);
 
-    loop = g_main_loop_new(NULL, FALSE);
-    compositor.wayland_loop =
-        wl_display_get_event_loop(compositor.wayland_display);
-    compositor.wayland_event_source =
-        wayland_event_source_new(compositor.wayland_display);
-    g_source_attach(compositor.wayland_event_source, NULL);
-
     /* We want Cogl to use an EGL renderer because otherwise it won't
      * set up the wl_drm object and only SHM buffers will work. */
-    compositor.cg_device =
-        create_cg_device(&compositor, TRUE /* use EGL constraint */, &error);
-    if (compositor.cg_device == NULL) {
+    compositor.dev = create_cg_device(&compositor,
+                                            true /* use EGL constraint */,
+                                            &error);
+    if (!compositor.dev) {
         /* If we couldn't get an EGL context then try any type of
          * context */
         cg_error_free(error);
         error = NULL;
 
-        compositor.cg_device =
+        compositor.dev =
             create_cg_device(&compositor,
-                              FALSE, /* don't set EGL constraint */
+                              false, /* don't set EGL constraint */
                               &error);
 
-        if (compositor.cg_device)
-            g_warning("Failed to create context with EGL constraint, "
+        if (compositor.dev)
+            c_warning("Failed to create context with EGL constraint, "
                       "falling back");
         else
-            g_error("Failed to create a Cogl context: %s\n", error->message);
+            c_error("Failed to create a Cogl context: %s\n", error->message);
+
+        cg_error_free(error);
+        error = NULL;
     }
 
     compositor.virtual_width = 800;
@@ -1122,22 +1074,35 @@ main(int argc, char **argv)
                               &wl_shell_interface,
                               &compositor,
                               bind_shell) == NULL)
-        g_error("Failed to register a global shell object");
+        c_error("Failed to register a global shell object");
 
     if (wl_display_add_socket(compositor.wayland_display, "wayland-0"))
-        g_error("Failed to create socket");
+        c_error("Failed to create socket");
 
-    compositor.triangle = cg_primitive_new_p2c4(compositor.cg_device,
+    compositor.triangle = cg_primitive_new_p2c4(compositor.dev,
                                                 CG_VERTICES_MODE_TRIANGLES,
                                                 3,
                                                 triangle_vertices);
-    compositor.triangle_pipeline = cg_pipeline_new(compositor.cg_device);
+    compositor.triangle_pipeline = cg_pipeline_new(compositor.dev);
 
-    cg_source = cg_glib_source_new(compositor.cg_device, G_PRIORITY_DEFAULT);
+    compositor.wayland_loop =
+        wl_display_get_event_loop(compositor.wayland_display);
 
-    g_source_attach(cg_source, NULL);
+    uv_prepare_init(loop, &compositor.main_prepare);
+    compositor.main_prepare.data = &compositor;
+    uv_prepare_start(&compositor.main_prepare, cogland_main_prepare_cb);
 
-    g_main_loop_run(loop);
+    uv_poll_init(loop, &compositor.poll,
+                 wl_event_loop_get_fd(compositor.wayland_loop));
+    compositor.poll.data = &compositor;
+    uv_poll_start(&compositor.poll, UV_READABLE | UV_WRITABLE,
+                  cogland_main_dispatch_cb);
+
+    uv_idle_init(loop, &compositor.idle);
+    compositor.idle.data = &compositor;
+
+    cg_uv_set_mainloop(compositor.dev, loop);
+    uv_run(loop, UV_RUN_DEFAULT);
 
     return 0;
 }
