@@ -768,6 +768,7 @@ update_winsys_features(cg_device_t *dev, cg_error_t **error)
     cg_glx_display_t *glx_display = dev->display->winsys;
     cg_glx_renderer_t *glx_renderer = dev->display->renderer->winsys;
 
+    c_return_val_if_fail(glx_display, false);
     c_return_val_if_fail(glx_display->glx_context, false);
 
     if (!_cg_device_update_features(dev, error))
