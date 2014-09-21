@@ -30,6 +30,8 @@
 #include <unistd.h>
 #endif
 
+#include <math.h>
+
 #include <clib.h>
 
 #include "SFMT.h"
@@ -103,7 +105,9 @@ c_rand_double(c_rand_t *rand)
 double
 c_rand_double_range(c_rand_t *rand, double begin, double end)
 {
-    c_return_val_if_fail(begin < end, c_rand_double_range(rand, end, begin));
+    c_return_val_if_fail(!isnan(begin), c_rand_double_range(rand, end, end));
+    c_return_val_if_fail(!isnan(end), c_rand_double_range(rand, begin, begin));
+    c_return_val_if_fail(begin <= end, c_rand_double_range(rand, end, begin));
 
     /* XXX: We are careful here to avoid overflow to avoid a bug like this:
      *
@@ -125,7 +129,7 @@ c_rand_int32_range(c_rand_t *rand,
                    int32_t begin,
                    int32_t end)
 {
-    c_return_val_if_fail(begin < end, c_rand_int32_range(rand, end, begin));
+    c_return_val_if_fail(begin <= end, c_rand_int32_range(rand, end, begin));
 
     /* If this is a performance problem then instead aim to use
      * c_rand_uint32() with a power-of-two range mask. */
