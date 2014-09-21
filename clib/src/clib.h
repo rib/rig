@@ -1443,6 +1443,8 @@ c_rand_t *c_rand_new(void);
 c_rand_t *c_rand_new_with_seed_array(uint32_t *array, int len);
 c_rand_t *c_rand_new_with_seed(uint32_t seed);
 void c_rand_free(c_rand_t *rand);
+float c_rand_float(c_rand_t *rand);
+float c_rand_float_range(c_rand_t *rand, float begin, float end);
 double c_rand_double(c_rand_t *rand);
 double c_rand_double_range(c_rand_t *rand, double begin, double end);
 uint32_t c_rand_uint32(c_rand_t *rand);
@@ -1450,6 +1452,8 @@ int32_t c_rand_int32_range(c_rand_t *rand, int32_t begin, int32_t end);
 bool c_rand_boolean(c_rand_t *rand);
 
 /* XXX: Not thread safe!!! */
+float c_random_float(void);
+float c_random_float_range(float begin, float end);
 double c_random_double(void);
 double c_random_double_range(double begin, double end);
 uint32_t c_random_uint32(void);

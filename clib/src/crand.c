@@ -118,6 +118,25 @@ c_rand_double_range(c_rand_t *rand, double begin, double end)
     return v * end - (v - 1) * begin;
 }
 
+float
+c_rand_float(c_rand_t *rand)
+{
+    uint32_t ui = sfmt_genrand_uint32(&rand->sfmt);
+    return ui * (1.0f/4294967296.0f);
+}
+
+float
+c_rand_float_range(c_rand_t *rand, float begin, float end)
+{
+    c_return_val_if_fail(!isnan(begin), c_rand_float_range(rand, end, end));
+    c_return_val_if_fail(!isnan(end), c_rand_float_range(rand, begin, begin));
+    c_return_val_if_fail(begin <= end, c_rand_float_range(rand, end, begin));
+
+    float f = c_rand_float(rand);
+
+    return f * end - (f - 1) * begin;
+}
+
 uint32_t
 c_rand_uint32(c_rand_t *rand)
 {
@@ -147,6 +166,22 @@ c_rand_boolean(c_rand_t *rand)
  */
 
 static c_rand_t *global_rand = NULL;
+
+float
+c_random_float(void)
+{
+    if (!global_rand)
+        global_rand = c_rand_new();
+    return c_rand_float(global_rand);
+}
+
+float
+c_random_float_range(float begin, float end)
+{
+    if (!global_rand)
+        global_rand = c_rand_new();
+    return c_rand_float_range(global_rand, begin, end);
+}
 
 double
 c_random_double(void)
