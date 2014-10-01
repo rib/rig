@@ -1,4 +1,4 @@
-#include <glib.h>
+#include <clib.h>
 #include <cogl/cogl.h>
 #include <math.h>
 
@@ -207,7 +207,7 @@ main(int argc, char **argv)
 
     onscreen = cg_onscreen_new(data.dev,
                                FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT);
-    cg_onscreen_set_swap_throttled(onscreen, FALSE);
+    cg_onscreen_set_swap_throttled(onscreen, false);
     cg_onscreen_show(onscreen);
 
     data.fb = onscreen;
