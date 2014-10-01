@@ -40,7 +40,7 @@ struct particle {
     float speed;
 
     /* The orbital period offset, in seconds. */
-    gdouble t_offset;
+    double t_offset;
 
     /* Longitude of ascending node, in radians. */
     float ascending_node;
@@ -52,8 +52,8 @@ struct particle {
 
 struct particle_system_priv {
     c_timer_t *timer;
-    gdouble current_time;
-    gdouble last_update_time;
+    double current_time;
+    double last_update_time;
 
     c_rand_t *rand;
 
@@ -150,7 +150,7 @@ static void create_resources(struct particle_system *system)
                                        system->particle_count,
                                        system->particle_size);
 
-    priv->particles = g_new0(struct particle, system->particle_count);
+    priv->particles = c_new0(struct particle, system->particle_count);
 
     particle_engine_push_buffer(priv->engine,
                                 CG_BUFFER_ACCESS_READ_WRITE, 0);
@@ -189,7 +189,7 @@ static void update_particle(struct particle_system *system,
             break;
         }
     default:
-        g_warning(G_STRLOC "Unrecognised particle system type %d",
+        c_warning(C_STRLOC "Unrecognised particle system type %d",
                   system->type);
         x = y = z = 0;
         break;

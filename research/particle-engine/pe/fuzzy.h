@@ -86,8 +86,8 @@ float fuzzy_float_get_real_value(struct fuzzy_float *variance,
  * A double precision value.
  */
 struct fuzzy_double {
-	gdouble value;
-	gdouble variance;
+	double value;
+	double variance;
 	enum {
 		DOUBLE_VARIANCE_NONE,
 		DOUBLE_VARIANCE_LINEAR,
@@ -95,7 +95,7 @@ struct fuzzy_double {
 	} type;
 };
 
-gdouble fuzzy_double_get_real_value(struct fuzzy_double *variance,
+double fuzzy_double_get_real_value(struct fuzzy_double *variance,
 				    c_rand_t *rand);
 
 /*

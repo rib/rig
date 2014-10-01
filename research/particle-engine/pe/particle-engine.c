@@ -57,7 +57,7 @@ struct particle_engine *particle_engine_new(cg_device_t *dev,
     cg_attribute_t *attributes[2];
     unsigned int i;
 
-    engine = g_slice_new0(struct particle_engine);
+    engine = c_slice_new0(struct particle_engine);
 
     engine->particle_count = particle_count;
     engine->particle_size = particle_size;
@@ -66,7 +66,7 @@ struct particle_engine *particle_engine_new(cg_device_t *dev,
     engine->fb = cg_object_ref(fb);
 
     engine->pipeline = cg_pipeline_new(engine->dev);
-    engine->vertices = g_new0(struct vertex, engine->particle_count);
+    engine->vertices = c_new0(struct vertex, engine->particle_count);
 
     engine->attribute_buffer =
         cg_attribute_buffer_new(engine->dev,
@@ -76,14 +76,14 @@ struct particle_engine *particle_engine_new(cg_device_t *dev,
     attributes[0] = cg_attribute_new(engine->attribute_buffer,
                                      "cg_position_in",
                                      sizeof(struct vertex),
-                                     G_STRUCT_OFFSET(struct vertex,
+                                     C_STRUCT_OFFSET(struct vertex,
                                                      position),
                                      3, CG_ATTRIBUTE_TYPE_FLOAT);
 
     attributes[1] = cg_attribute_new(engine->attribute_buffer,
                                      "cg_color_in",
                                      sizeof(struct vertex),
-                                     G_STRUCT_OFFSET(struct vertex,
+                                     C_STRUCT_OFFSET(struct vertex,
                                                      color),
                                      4, CG_ATTRIBUTE_TYPE_FLOAT);
 
@@ -110,8 +110,8 @@ void particle_engine_free(struct particle_engine *engine)
     cg_object_unref(engine->primitive);
     cg_object_unref(engine->attribute_buffer);
 
-    g_free(engine->vertices);
-    g_free(engine);
+    c_free(engine->vertices);
+    c_free(engine);
 }
 
 inline void particle_engine_push_buffer(struct particle_engine *engine,
@@ -124,7 +124,7 @@ inline void particle_engine_push_buffer(struct particle_engine *engine,
                                      access, hints, &error);
 
     if (error != NULL) {
-        g_error(G_STRLOC " failed to map buffer: %s", error->message);
+        c_error(C_STRLOC " failed to map buffer: %s", error->message);
         return;
     }
 }

@@ -85,8 +85,8 @@ struct particle_swarm_priv {
 struct particle_swarm* particle_swarm_new(cg_device_t *dev,
                                           cg_framebuffer_t *fb)
 {
-    struct particle_swarm *swarm = g_slice_new0(struct particle_swarm);
-    struct particle_swarm_priv *priv = g_slice_new0(struct particle_swarm_priv);
+    struct particle_swarm *swarm = c_slice_new0(struct particle_swarm);
+    struct particle_swarm_priv *priv = c_slice_new0(struct particle_swarm_priv);
 
     priv->dev = cg_object_ref(dev);
     priv->fb = cg_object_ref(fb);
@@ -111,8 +111,8 @@ void particle_swarm_free(struct particle_swarm *swarm)
 
     particle_engine_free(priv->engine);
 
-    g_slice_free(struct particle_swarm_priv, priv);
-    g_slice_free(struct particle_swarm, swarm);
+    c_slice_free(struct particle_swarm_priv, priv);
+    c_slice_free(struct particle_swarm, swarm);
 }
 
 static void create_particle(struct particle_swarm *swarm,
@@ -153,7 +153,7 @@ static void create_resources(struct particle_swarm *swarm)
                                        swarm->particle_count,
                                        swarm->particle_size);
 
-    priv->particles = g_new0(struct particle, swarm->particle_count);
+    priv->particles = c_new0(struct particle, swarm->particle_count);
 
     priv->boundary[0] = swarm->width;
     priv->boundary[1] = swarm->height;

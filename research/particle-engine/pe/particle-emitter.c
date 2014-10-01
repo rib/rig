@@ -68,7 +68,7 @@ static void create_resources(struct particle_emitter *emitter)
 
     priv->active_particles_count = 0;
 
-    priv->particles = g_new0(struct particle, emitter->particle_count);
+    priv->particles = c_new0(struct particle, emitter->particle_count);
 
     priv->engine = particle_engine_new(priv->dev, priv->fb,
                                        emitter->particle_count,
@@ -115,7 +115,7 @@ static void create_particle(struct particle_emitter *emitter,
     particle->max_age = fuzzy_double_get_real_value(&emitter->particle_lifespan,
                                                     emitter->priv->rand);
     particle->ttl = particle->max_age;
-    particle->active = TRUE;
+    particle->active = true;
 }
 
 static void destroy_particle(struct particle_emitter *emitter,
@@ -128,7 +128,7 @@ static void destroy_particle(struct particle_emitter *emitter,
     cg_color_t *color = particle_engine_get_particle_color(priv->engine,
                                                            index);
 
-    particle->active = FALSE;
+    particle->active = false;
 
     /* Zero the particle */
     memset(position, 0, sizeof(float) * 3);
@@ -242,7 +242,7 @@ struct particle_emitter* particle_emitter_new(cg_device_t *dev,
     struct particle_emitter *emitter = c_slice_new0(struct particle_emitter);
     struct particle_emitter_priv *priv = c_slice_new0(struct particle_emitter_priv);
 
-    emitter->active = TRUE;
+    emitter->active = true;
 
     priv->dev = cg_object_ref(dev);
     priv->fb = cg_object_ref(fb);

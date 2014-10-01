@@ -122,7 +122,7 @@ static void init_particle_emitters(struct demo *demo)
     demo->emitter[4]->particle_position.value[0] = (float)WIDTH;
 
     /* Central fountain */
-    demo->emitter[0]->active = FALSE;
+    demo->emitter[0]->active = false;
     demo->emitter[0]->particle_speed.value = 16.0f;
     demo->emitter[0]->particle_speed.type = FLOAT_VARIANCE_LINEAR;
     demo->emitter[0]->particle_direction.variance[0] = 0.3f;
