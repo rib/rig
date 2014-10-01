@@ -1,5 +1,4 @@
 #include <cogl/cogl.h>
-#include <glib.h>
 #include <stdio.h>
 
 struct {
@@ -63,7 +62,7 @@ get_winsys_name_for_id(cg_winsys_id_t winsys_id)
 {
     switch (winsys_id) {
     case CG_WINSYS_ID_ANY:
-        g_return_val_if_reached("ERROR");
+        return "BUG";
     case CG_WINSYS_ID_STUB:
         return "Stub";
     case CG_WINSYS_ID_GLX:
@@ -85,7 +84,8 @@ get_winsys_name_for_id(cg_winsys_id_t winsys_id)
     case CG_WINSYS_ID_SDL:
         return "EGL + SDL platform";
     }
-    g_return_val_if_reached("Unknown");
+
+    return "Unknown";
 }
 
 static void
@@ -177,12 +177,12 @@ main(int argc, char **argv)
     renderer = cg_display_get_renderer(display);
     winsys_id = cg_renderer_get_winsys_id(renderer);
     winsys_name = get_winsys_name_for_id(winsys_id);
-    g_print("Renderer: %s\n\n", winsys_name);
+    printf("Renderer: %s\n\n", winsys_name);
 
-    g_print("Features:\n");
+    printf("Features:\n");
     cg_foreach_feature(dev, feature_cb, NULL);
 
-    g_print("Outputs:\n");
+    printf("Outputs:\n");
     output_state.id = 0;
     cg_renderer_foreach_output(renderer, output_cb, &output_state);
     if (output_state.id == 0)

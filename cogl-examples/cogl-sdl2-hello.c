@@ -39,7 +39,7 @@ dirty_cb(cg_onscreen_t *onscreen,
 {
     Data *data = user_data;
 
-    data->redraw_queued = TRUE;
+    data->redraw_queued = true;
 }
 
 static void
@@ -49,7 +49,7 @@ handle_event(Data *data, SDL_Event *event)
     case SDL_WINDOWEVENT:
         switch (event->window.event) {
         case SDL_WINDOWEVENT_CLOSE:
-            data->quit = TRUE;
+            data->quit = true;
             break;
         }
         break;
@@ -61,11 +61,11 @@ handle_event(Data *data, SDL_Event *event)
         data->center_x = event->motion.x * 2.0f / width - 1.0f;
         data->center_y = event->motion.y * 2.0f / height - 1.0f;
 
-        data->redraw_queued = TRUE;
+        data->redraw_queued = true;
     } break;
 
     case SDL_QUIT:
-        data->quit = TRUE;
+        data->quit = true;
         break;
     }
 }
@@ -79,7 +79,7 @@ frame_cb(cg_onscreen_t *onscreen,
     Data *data = user_data;
 
     if (event == CG_FRAME_EVENT_SYNC)
-        data->ready_to_draw = TRUE;
+        data->ready_to_draw = true;
 }
 
 int
@@ -112,11 +112,11 @@ main(int argc, char **argv)
 
     data.center_x = 0.0f;
     data.center_y = 0.0f;
-    data.quit = FALSE;
+    data.quit = false;
 
     /* In SDL2, setting resizable only works before allocating the
      * onscreen */
-    cg_onscreen_set_resizable(onscreen, TRUE);
+    cg_onscreen_set_resizable(onscreen, true);
 
     cg_onscreen_show(onscreen);
 
@@ -124,15 +124,15 @@ main(int argc, char **argv)
                                           triangle_vertices);
     data.pipeline = cg_pipeline_new(dev);
 
-    data.redraw_queued = FALSE;
-    data.ready_to_draw = TRUE;
+    data.redraw_queued = false;
+    data.ready_to_draw = true;
 
     while (!data.quit) {
         if (!SDL_PollEvent(&event)) {
             if (data.redraw_queued && data.ready_to_draw) {
                 redraw(&data);
-                data.redraw_queued = FALSE;
-                data.ready_to_draw = FALSE;
+                data.redraw_queued = false;
+                data.ready_to_draw = false;
                 continue;
             }
 
