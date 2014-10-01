@@ -22,10 +22,10 @@ typedef enum _MakeTextureFlags
   TEXTURE_FLAG_SET_UNPREMULTIPLIED = 1<<1,
 } MakeTextureFlags;
 
-static guchar *
+static uint8_t *
 gen_tex_data (uint32_t color)
 {
-  guchar *tex_data, *p;
+  uint8_t *tex_data, *p;
   uint8_t r = MASK_RED (color);
   uint8_t g = MASK_GREEN (color);
   uint8_t b = MASK_BLUE (color);
@@ -50,7 +50,7 @@ make_texture (uint32_t color,
               MakeTextureFlags flags)
 {
   cg_texture_2d_t *tex_2d;
-  guchar *tex_data = gen_tex_data (color);
+  uint8_t *tex_data = gen_tex_data (color);
   cg_bitmap_t *bmp = cg_bitmap_new_for_data (test_dev,
                                               QUAD_WIDTH,
                                               QUAD_WIDTH,
@@ -61,12 +61,12 @@ make_texture (uint32_t color,
   tex_2d = cg_texture_2d_new_from_bitmap (bmp);
 
   if (flags & TEXTURE_FLAG_SET_PREMULTIPLIED)
-    cg_texture_set_premultiplied (tex_2d, TRUE);
+    cg_texture_set_premultiplied (tex_2d, true);
   else if (flags & TEXTURE_FLAG_SET_UNPREMULTIPLIED)
-    cg_texture_set_premultiplied (tex_2d, FALSE);
+    cg_texture_set_premultiplied (tex_2d, false);
 
   cg_object_unref (bmp);
-  g_free (tex_data);
+  c_free (tex_data);
 
   return tex_2d;
 }
@@ -76,7 +76,7 @@ set_region (cg_texture_t *tex,
 	    uint32_t color,
 	    cg_pixel_format_t format)
 {
-  guchar *tex_data = gen_tex_data (color);
+  uint8_t *tex_data = gen_tex_data (color);
 
   cg_texture_set_region (tex,
                            QUAD_WIDTH, QUAD_WIDTH, /* height */

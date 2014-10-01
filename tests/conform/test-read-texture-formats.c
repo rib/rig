@@ -22,7 +22,7 @@ test_read_byte (cg_texture_2d_t *tex_2d,
                          1, /* rowstride */
                          &received_byte);
 
-  g_assert_cmpint (expected_byte, ==, received_byte);
+  c_assert_cmpint (expected_byte, ==, received_byte);
 }
 
 static void
@@ -57,11 +57,11 @@ test_read_short (cg_texture_2d_t *tex_2d,
 
   va_end (ap);
 
-  received_value_str = g_strdup_printf ("0x%04x", received_value);
-  expected_value_str = g_strdup_printf ("0x%04x", expected_value);
-  g_assert_cmpstr (received_value_str, ==, expected_value_str);
-  g_free (received_value_str);
-  g_free (expected_value_str);
+  received_value_str = c_strdup_printf ("0x%04x", received_value);
+  expected_value_str = c_strdup_printf ("0x%04x", expected_value);
+  c_assert_cmpstr (received_value_str, ==, expected_value_str);
+  c_free (received_value_str);
+  c_free (expected_value_str);
 }
 
 static void
@@ -110,13 +110,13 @@ test_read_8888 (cg_texture_2d_t *tex_2d,
                          4, /* rowstride */
                          (uint8_t *) &received_pixel);
 
-  received_pixel = GUINT32_FROM_BE (received_pixel);
+  received_pixel = C_UINT32_FROM_BE (received_pixel);
 
-  received_value_str = g_strdup_printf ("0x%08x", received_pixel);
-  expected_value_str = g_strdup_printf ("0x%08x", expected_pixel);
-  g_assert_cmpstr (received_value_str, ==, expected_value_str);
-  g_free (received_value_str);
-  g_free (expected_value_str);
+  received_value_str = c_strdup_printf ("0x%08x", received_pixel);
+  expected_value_str = c_strdup_printf ("0x%08x", expected_pixel);
+  c_assert_cmpstr (received_value_str, ==, expected_value_str);
+  c_free (received_value_str);
+  c_free (expected_value_str);
 }
 
 static void
@@ -151,11 +151,11 @@ test_read_int (cg_texture_2d_t *tex_2d,
 
   va_end (ap);
 
-  received_value_str = g_strdup_printf ("0x%08x", received_value);
-  expected_value_str = g_strdup_printf ("0x%08x", expected_value);
-  g_assert_cmpstr (received_value_str, ==, expected_value_str);
-  g_free (received_value_str);
-  g_free (expected_value_str);
+  received_value_str = c_strdup_printf ("0x%08x", received_value);
+  expected_value_str = c_strdup_printf ("0x%08x", expected_value);
+  c_assert_cmpstr (received_value_str, ==, expected_value_str);
+  c_free (received_value_str);
+  c_free (expected_value_str);
 }
 
 void

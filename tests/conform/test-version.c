@@ -72,12 +72,12 @@ _CG_STATIC_ASSERT (CG_VERSION_CHECK (CG_VERSION_MAJOR - 1,
 void
 test_version (void)
 {
-  const char *version = g_strdup_printf ("version = %i.%i.%i",
+  const char *version = c_strdup_printf ("version = %i.%i.%i",
                                          CG_VERSION_MAJOR,
                                          CG_VERSION_MINOR,
                                          CG_VERSION_MICRO);
 
-  g_assert_cmpstr (version, ==, "version = " CG_VERSION_STRING);
+  c_assert_cmpstr (version, ==, "version = " CG_VERSION_STRING);
 
   if (cg_test_verbose ())
     c_print ("OK\n");

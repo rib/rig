@@ -84,7 +84,7 @@ test_blend (TestState *state,
        * driver to test this blend string. */
       if (cg_test_verbose ())
 	{
-	  g_debug ("Failed to test blend string %s: %s",
+	  c_debug ("Failed to test blend string %s: %s",
 		   blend_string, error->message);
 	  c_print ("Skipping\n");
 	}
@@ -125,7 +125,7 @@ test_blend (TestState *state,
 static cg_texture_t *
 make_texture (uint32_t color)
 {
-  guchar *tex_data, *p;
+  uint8_t *tex_data, *p;
   uint8_t r = MASK_RED (color);
   uint8_t g = MASK_GREEN (color);
   uint8_t b = MASK_BLUE (color);
@@ -152,7 +152,7 @@ make_texture (uint32_t color)
                                           QUAD_WIDTH * 4,
                                           tex_data);
 
-  g_free (tex_data);
+  c_free (tex_data);
 
   return tex;
 }
@@ -202,7 +202,7 @@ test_tex_combine (TestState *state,
     {
       /* It's not strictly a test failure; you need a more capable GPU or
        * driver to test this texture combine string. */
-      g_debug ("Failed to test texture combine string %s: %s",
+      c_debug ("Failed to test texture combine string %s: %s",
                combine_string, error->message);
     }
 

@@ -46,8 +46,8 @@ paint (TestState *state)
                                         "RGBA=REPLACE(TEXTURE)",
                                         &error))
     {
-      g_warning ("Error setting layer combine: %s", error->message);
-      g_assert_not_reached ();
+      c_warning ("Error setting layer combine: %s", error->message);
+      c_assert_not_reached ();
     }
 
   /* Set up a dummy vertex shader that does nothing but the usual

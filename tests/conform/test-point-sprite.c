@@ -54,8 +54,8 @@ do_test (bool check_orientation,
                                           6, /* row stride */
                                           tex_data,
                                           &error);
-  g_assert (tex_2d != NULL);
-  g_assert (error == NULL);
+  c_assert (tex_2d != NULL);
+  c_assert (error == NULL);
 
   pipeline = cg_pipeline_new (test_dev);
   cg_pipeline_set_layer_texture (pipeline, 0, tex_2d);
@@ -96,10 +96,10 @@ do_test (bool check_orientation,
                                                              /* layer_index */
                                                              0,
                                                              /* enable */
-                                                             TRUE,
+                                                             true,
                                                              &error);
-      g_assert (res == TRUE);
-      g_assert (error == NULL);
+      c_assert (res == true);
+      c_assert (error == NULL);
 
       solid_pipeline = cg_pipeline_copy (pipeline);
 
@@ -108,11 +108,11 @@ do_test (bool check_orientation,
                                                              /* layer_index */
                                                              0,
                                                              /* enable */
-                                                             FALSE,
+                                                             false,
                                                              &error);
 
-      g_assert (res == TRUE);
-      g_assert (error == NULL);
+      c_assert (res == true);
+      c_assert (error == NULL);
     }
 
   prim = cg_primitive_new_p2t2 (test_dev,
@@ -175,20 +175,20 @@ do_test (bool check_orientation,
 void
 test_point_sprite (void)
 {
-  do_test (FALSE /* don't check orientation */,
-           FALSE /* don't use GLSL */);
+  do_test (false /* don't check orientation */,
+           false /* don't use GLSL */);
 }
 
 void
 test_point_sprite_orientation (void)
 {
-  do_test (TRUE /* check orientation */,
-           FALSE /* don't use GLSL */);
+  do_test (true /* check orientation */,
+           false /* don't use GLSL */);
 }
 
 void
 test_point_sprite_glsl (void)
 {
-  do_test (FALSE /* don't check orientation */,
-           TRUE /* use GLSL */);
+  do_test (false /* don't check orientation */,
+           true /* use GLSL */);
 }

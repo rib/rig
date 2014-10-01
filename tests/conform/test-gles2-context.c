@@ -34,7 +34,7 @@ test_push_pop_single_context (void)
 
   gles2_ctx = cg_gles2_context_new (test_dev, &error);
   if (!gles2_ctx)
-    g_error ("Failed to create GLES2 context: %s\n", error->message);
+    c_error ("Failed to create GLES2 context: %s\n", error->message);
 
   gles2 = cg_gles2_context_get_vtable (gles2_ctx);
 
@@ -46,7 +46,7 @@ test_push_pop_single_context (void)
                                 test_fb,
                                 &error))
     {
-      g_error ("Failed to push gles2 context: %s\n", error->message);
+      c_error ("Failed to push gles2 context: %s\n", error->message);
     }
 
   gles2->glClearColor (1, 1, 0, 1);
@@ -70,7 +70,7 @@ test_push_pop_single_context (void)
                                 offscreen,
                                 &error))
     {
-      g_error ("Failed to push gles2 context: %s\n", error->message);
+      c_error ("Failed to push gles2 context: %s\n", error->message);
     }
 
   gles2->glClearColor (1, 0, 0, 1);
@@ -97,7 +97,7 @@ test_push_pop_single_context (void)
                                 offscreen,
                                 &error))
     {
-      g_error ("Failed to push gles2 context: %s\n", error->message);
+      c_error ("Failed to push gles2 context: %s\n", error->message);
     }
 
   gles2->glClearColor (0, 0, 1, 1);
@@ -121,7 +121,7 @@ test_push_pop_single_context (void)
                                 test_fb,
                                 &error))
     {
-      g_error ("Failed to push gles2 context: %s\n", error->message);
+      c_error ("Failed to push gles2 context: %s\n", error->message);
     }
 
   gles2->glClearColor (1, 0, 1, 1);
@@ -157,7 +157,7 @@ create_gles2_context (cg_texture_t **offscreen_texture,
 
   *gles2_ctx = cg_gles2_context_new (test_dev, &error);
   if (!*gles2_ctx)
-    g_error ("Failed to create GLES2 context: %s\n", error->message);
+    c_error ("Failed to create GLES2 context: %s\n", error->message);
 
   *gles2 = cg_gles2_context_get_vtable (*gles2_ctx);
 }
@@ -197,7 +197,7 @@ test_push_pop_multi_context (void)
                                 offscreen0,
                                 &error))
     {
-      g_error ("Failed to push gles2 context 0: %s\n", error->message);
+      c_error ("Failed to push gles2 context 0: %s\n", error->message);
     }
 
   gles20->glClearColor (1, 0, 0, 1);
@@ -209,7 +209,7 @@ test_push_pop_multi_context (void)
                                 offscreen1,
                                 &error))
     {
-      g_error ("Failed to push gles2 context 1: %s\n", error->message);
+      c_error ("Failed to push gles2 context 1: %s\n", error->message);
     }
 
   gles21->glClearColor (0, 1, 0, 1);
@@ -292,7 +292,7 @@ test_gles2_read_pixels (void)
                                 offscreen,
                                 &error))
     {
-      g_error ("Failed to push gles2 context: %s\n", error->message);
+      c_error ("Failed to push gles2 context: %s\n", error->message);
     }
 
   gles2->glClearColor (1, 0, 0, 1);
@@ -330,7 +330,7 @@ test_gles2_read_pixels (void)
                                 test_fb,
                                 &error))
     {
-      g_error ("Failed to push gles2 context: %s\n", error->message);
+      c_error ("Failed to push gles2 context: %s\n", error->message);
     }
 
   gles2->glReadPixels (0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
@@ -350,7 +350,7 @@ test_gles2_read_pixels (void)
                                 offscreen,
                                 &error))
     {
-      g_error ("Failed to push gles2 context: %s\n", error->message);
+      c_error ("Failed to push gles2 context: %s\n", error->message);
     }
 
   gles2->glReadPixels (0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
@@ -391,7 +391,7 @@ create_shader (const cg_gles2_vtable_t *gles2,
 
       gles2->glGetShaderInfoLog (shader, sizeof (buf), NULL, buf);
 
-      g_error ("Shader compilation failed:\n%s", buf);
+      c_error ("Shader compilation failed:\n%s", buf);
     }
 
   return shader;
@@ -423,7 +423,7 @@ create_program (const cg_gles2_vtable_t *gles2,
 
       gles2->glGetProgramInfoLog (program, sizeof (buf), NULL, buf);
 
-      g_error ("Program linking failed:\n%s", buf);
+      c_error ("Program linking failed:\n%s", buf);
     }
 
   return program;
@@ -523,10 +523,10 @@ paint_viewport (PaintData *data)
   gles2->glDrawArrays (GL_TRIANGLE_STRIP, 0, 4);
 
   gles2->glGetIntegerv (GL_VIEWPORT, viewport);
-  g_assert_cmpint (viewport[0], ==, 0.0f);
-  g_assert_cmpint (viewport[1], ==, 0.0f);
-  g_assert_cmpint (viewport[2], ==, data->fb_width);
-  g_assert_cmpint (viewport[3], ==, data->fb_height / 2);
+  c_assert_cmpint (viewport[0], ==, 0.0f);
+  c_assert_cmpint (viewport[1], ==, 0.0f);
+  c_assert_cmpint (viewport[2], ==, data->fb_width);
+  c_assert_cmpint (viewport[3], ==, data->fb_height / 2);
 }
 
 static void
@@ -549,10 +549,10 @@ paint_scissor (PaintData *data)
   gles2->glClear (GL_COLOR_BUFFER_BIT);
 
   gles2->glGetFloatv (GL_SCISSOR_BOX, scissor);
-  g_assert_cmpfloat (scissor[0], ==, 0.0f);
-  g_assert_cmpfloat (scissor[1], ==, 0.0f);
-  g_assert_cmpfloat (scissor[2], ==, data->fb_width);
-  g_assert_cmpfloat (scissor[3], ==, data->fb_height / 2);
+  c_assert_cmpfloat (scissor[0], ==, 0.0f);
+  c_assert_cmpfloat (scissor[1], ==, 0.0f);
+  c_assert_cmpfloat (scissor[2], ==, data->fb_width);
+  c_assert_cmpfloat (scissor[3], ==, data->fb_height / 2);
 }
 
 static void
@@ -572,7 +572,7 @@ paint_cull (PaintData *data)
                       1.0f, 0.0f, 0.0f, 1.0f);
 
   gles2->glGetIntegerv (GL_FRONT_FACE, &front_face);
-  g_assert_cmpint (front_face, ==, GL_CCW);
+  c_assert_cmpint (front_face, ==, GL_CCW);
 
   for (i = 0; i < 2; i++)
     {
@@ -601,7 +601,7 @@ paint_cull (PaintData *data)
                           0.0f, 0.0f, 1.0f, 1.0f);
 
       gles2->glGetIntegerv (GL_FRONT_FACE, &front_face);
-      g_assert_cmpint (front_face, ==, GL_CW);
+      c_assert_cmpint (front_face, ==, GL_CW);
     }
 }
 
@@ -627,7 +627,7 @@ verify_read_pixels (const PaintData *data)
                             data->fb_height * 3 / 4 * stride,
                             0xff0000ff);
 
-  g_free (buf);
+  c_free (buf);
 }
 
 void
@@ -683,7 +683,7 @@ test_gles2_context_fbo (void)
                                     offscreen,
                                     offscreen,
                                     &error))
-        g_error ("Failed to push gles2 context: %s\n", error->message);
+        c_error ("Failed to push gles2 context: %s\n", error->message);
 
       program = create_program (data.gles2,
                                 vertex_shader_source,
@@ -696,11 +696,11 @@ test_gles2_context_fbo (void)
 
       data.color_location = data.gles2->glGetUniformLocation (program, "color");
       if (data.color_location == -1)
-        g_error ("Couldn't find ‘color’ uniform");
+        c_error ("Couldn't find ‘color’ uniform");
 
       data.pos_location = data.gles2->glGetAttribLocation (program, "pos");
       if (data.pos_location == -1)
-        g_error ("Couldn't find ‘pos’ attribute");
+        c_error ("Couldn't find ‘pos’ attribute");
 
       paint_methods[i] (&data);
 
@@ -759,7 +759,7 @@ verify_region (const cg_gles2_vtable_t *gles2,
   for (p = buf + width * height * 4; p > buf; p -= 4)
     test_utils_compare_pixel (p - 4, expected_pixel);
 
-  g_free (buf);
+  c_free (buf);
 }
 
 void
@@ -818,7 +818,7 @@ test_gles2_context_copy_tex_image (void)
                                 offscreen,
                                 offscreen,
                                 &error))
-    g_error ("Failed to push gles2 context: %s\n", error->message);
+    c_error ("Failed to push gles2 context: %s\n", error->message);
 
   gles2->glClearColor (1.0, 1.0, 0.0, 1.0);
   gles2->glClear (GL_COLOR_BUFFER_BIT);
@@ -890,17 +890,17 @@ test_gles2_context_copy_tex_image (void)
   pos_location =
     gles2->glGetAttribLocation (program, "pos");
   if (pos_location == -1)
-    g_error ("Couldn't find ‘pos’ attribute");
+    c_error ("Couldn't find ‘pos’ attribute");
 
   tex_coord_location =
     gles2->glGetAttribLocation (program, "tex_coord_attrib");
   if (tex_coord_location == -1)
-    g_error ("Couldn't find ‘tex_coord_attrib’ attribute");
+    c_error ("Couldn't find ‘tex_coord_attrib’ attribute");
 
   tex_uniform_location =
     gles2->glGetUniformLocation (program, "tex");
   if (tex_uniform_location == -1)
-    g_error ("Couldn't find ‘tex’ uniform");
+    c_error ("Couldn't find ‘tex’ uniform");
 
   gles2->glUseProgram (program);
 
@@ -911,14 +911,14 @@ test_gles2_context_copy_tex_image (void)
   gles2->glVertexAttribPointer (pos_location,
                                 2, /* n_components */
                                 GL_FLOAT,
-                                FALSE, /* normalized */
+                                false, /* normalized */
                                 sizeof (float) * 4,
                                 verts);
   gles2->glEnableVertexAttribArray (tex_coord_location);
   gles2->glVertexAttribPointer (tex_coord_location,
                                 2, /* n_components */
                                 GL_FLOAT,
-                                FALSE, /* normalized */
+                                false, /* normalized */
                                 sizeof (float) * 4,
                                 verts + 2);
 

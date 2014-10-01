@@ -77,7 +77,7 @@ make_texture (void)
                    : TEXTURE_SIZE - PART_SIZE * (PARTS - 1));
 
           while (width-- > 0)
-            *(p++) = GUINT32_TO_BE (color);
+            *(p++) = C_UINT32_TO_BE (color);
         }
 
       while (--height > 0)
@@ -95,7 +95,7 @@ make_texture (void)
                                           TEXTURE_SIZE * 4,
                                           tex_data);
 
-  g_free (tex_data);
+  c_free (tex_data);
 
   if (cg_test_verbose ())
     {
@@ -106,7 +106,7 @@ make_texture (void)
     }
 
   /* The texture should be sliced unless NPOTs are supported */
-  g_assert (cg_has_feature (test_dev, CG_FEATURE_ID_TEXTURE_NPOT)
+  c_assert (cg_has_feature (test_dev, CG_FEATURE_ID_TEXTURE_NPOT)
             ? !cg_texture_is_sliced (tex)
             : cg_texture_is_sliced (tex));
 

@@ -63,7 +63,7 @@ create_texture (int size)
                                               size * 4,
                                               data);
 
-  g_free (data);
+  c_free (data);
 
   return texture;
 }
@@ -102,13 +102,13 @@ verify_texture (cg_texture_t *texture, int size)
                                     (real_color.green << 16) |
                                     (real_color.blue << 8) |
                                     opacity);
-          g_assert_cmpint (p[3], ==, opacity);
+          c_assert_cmpint (p[3], ==, opacity);
 
           p += 4;
         }
     }
 
-  g_free (data);
+  c_free (data);
 }
 
 void

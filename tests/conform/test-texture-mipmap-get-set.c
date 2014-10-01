@@ -34,9 +34,9 @@ make_texture (void)
                                           TEXTURE_SIZE * 4,
                                           tex_data);
 
-  cg_primitive_texture_set_auto_mipmap (tex, FALSE);
+  cg_primitive_texture_set_auto_mipmap (tex, false);
 
-  g_free (tex_data);
+  c_free (tex_data);
 
   return tex;
 }
@@ -94,7 +94,7 @@ update_mipmap_levels (cg_texture_t *tex)
                            0, /* dest y */
                            2, /* mipmap level */
                            NULL);
-  g_free (tex_data);
+  c_free (tex_data);
 }
 
 static void

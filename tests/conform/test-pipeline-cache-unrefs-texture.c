@@ -17,7 +17,7 @@ free_texture_cb (void *user_data)
 static cg_texture_t *
 create_texture (void)
 {
-  static const guint8 data[] =
+  static const uint8_t data[] =
     { 0xff, 0xff, 0xff, 0xff };
   static cg_user_data_key_t texture_data_key;
   cg_texture_2d_t *tex_2d;
@@ -33,7 +33,7 @@ create_texture (void)
    * been destroyed */
   cg_object_set_user_data (CG_OBJECT (tex_2d),
                              &texture_data_key,
-                             GINT_TO_POINTER (1),
+                             C_INT_TO_POINTER (1),
                              free_texture_cb);
 
   return tex_2d;
@@ -78,13 +78,13 @@ test_pipeline_cache_unrefs_texture (void)
   cg_framebuffer_finish (test_fb);
   cg_object_unref (simple_pipeline);
 
-  g_assert_cmpint (destroyed_texture_count, ==, 0);
+  c_assert_cmpint (destroyed_texture_count, ==, 0);
 
   /* Destroy the pipeline. This should immediately cause the textures
    * to be freed */
   cg_object_unref (pipeline);
 
-  g_assert_cmpint (destroyed_texture_count, ==, N_TEXTURES);
+  c_assert_cmpint (destroyed_texture_count, ==, N_TEXTURES);
 
   if (cg_test_verbose ())
     c_print ("OK\n");

@@ -58,7 +58,7 @@ draw_rectangle (TestState *state,
   if (!cg_pipeline_set_depth_state (pipeline, &depth_state, NULL))
     {
       cg_object_unref (pipeline);
-      return FALSE;
+      return false;
     }
 
   cg_pipeline_set_color4ub (pipeline, Cr, Cg, Cb, Ca);
@@ -76,7 +76,7 @@ draw_rectangle (TestState *state,
 
   cg_object_unref (pipeline);
 
-  return TRUE;
+  return true;
 }
 
 static void
@@ -88,7 +88,7 @@ test_depth (TestState *state,
             TestDepthState *rect2_state,
             uint32_t expected_result)
 {
-  bool missing_feature = FALSE;
+  bool missing_feature = false;
 
   if (rect0_state)
     missing_feature |= !draw_rectangle (state, x, y, rect0_state);
@@ -119,30 +119,30 @@ paint (TestState *state)
     TestDepthState rect0_state = {
       0xff0000ff, /* rgba color */
       -10, /* depth */
-      FALSE, /* depth test enable */
+      false, /* depth test enable */
       CG_DEPTH_TEST_FUNCTION_ALWAYS,
-      TRUE, /* depth write enable */
-      TRUE, /* FB depth write enable */
+      true, /* depth write enable */
+      true, /* FB depth write enable */
       0, 1 /* depth range */
     };
     /* Furthest */
     TestDepthState rect1_state = {
       0x00ff00ff, /* rgba color */
       -70, /* depth */
-      TRUE, /* depth test enable */
+      true, /* depth test enable */
       CG_DEPTH_TEST_FUNCTION_ALWAYS,
-      TRUE, /* depth write enable */
-      TRUE, /* FB depth write enable */
+      true, /* depth write enable */
+      true, /* FB depth write enable */
       0, 1 /* depth range */
     };
     /* In the middle */
     TestDepthState rect2_state = {
       0x0000ffff, /* rgba color */
       -20, /* depth */
-      TRUE, /* depth test enable */
+      true, /* depth test enable */
       CG_DEPTH_TEST_FUNCTION_NEVER,
-      TRUE, /* depth write enable */
-      TRUE, /* FB depth write enable */
+      true, /* depth write enable */
+      true, /* FB depth write enable */
       0, 1 /* depth range */
     };
 
@@ -165,21 +165,21 @@ paint (TestState *state)
                 &rect0_state, &rect1_state, &rect2_state,
                 0x00ff00ff); /* expected */
 
-    rect0_state.test_enable = TRUE;
-    rect1_state.write_enable = FALSE;
+    rect0_state.test_enable = true;
+    rect1_state.write_enable = false;
     test_depth (state, 4, 0, /* position */
                 &rect0_state, &rect1_state, &rect2_state,
                 0x0000ffff); /* expected */
 
-    rect1_state.write_enable = TRUE;
-    rect1_state.fb_write_enable = FALSE;
+    rect1_state.write_enable = true;
+    rect1_state.fb_write_enable = false;
     test_depth (state, 4, 0, /* position */
                 &rect0_state, &rect1_state, &rect2_state,
                 0x0000ffff); /* expected */
 
     /* Re-enable FB depth writing to verify state flush */
-    rect1_state.write_enable = TRUE;
-    rect1_state.fb_write_enable = TRUE;
+    rect1_state.write_enable = true;
+    rect1_state.fb_write_enable = true;
     test_depth (state, 4, 0, /* position */
                 &rect0_state, &rect1_state, &rect2_state,
                 0x00ff00ff); /* expected */
@@ -193,20 +193,20 @@ paint (TestState *state)
     TestDepthState rect0_state = {
       0xff0000ff, /* rgba color */
       -10, /* depth */
-      TRUE, /* depth test enable */
+      true, /* depth test enable */
       CG_DEPTH_TEST_FUNCTION_ALWAYS,
-      TRUE, /* depth write enable */
-      TRUE, /* FB depth write enable */
+      true, /* depth write enable */
+      true, /* FB depth write enable */
       0.5, 1 /* depth range */
     };
     /* Furthest by depth, nearest by depth range */
     TestDepthState rect1_state = {
       0x00ff00ff, /* rgba color */
       -70, /* depth */
-      TRUE, /* depth test enable */
+      true, /* depth test enable */
       CG_DEPTH_TEST_FUNCTION_GREATER,
-      TRUE, /* depth write enable */
-      TRUE, /* FB depth write enable */
+      true, /* depth write enable */
+      true, /* FB depth write enable */
       0, 0.5 /* depth range */
     };
 

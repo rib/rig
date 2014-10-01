@@ -59,12 +59,12 @@ create_texture_3d (cg_device_t *dev)
 
   if (tex == NULL)
     {
-      g_assert (error != NULL);
-      g_warning ("Failed to create 3D texture: %s", error->message);
-      g_assert_not_reached ();
+      c_assert (error != NULL);
+      c_warning ("Failed to create 3D texture: %s", error->message);
+      c_assert_not_reached ();
     }
 
-  g_free (data);
+  c_free (data);
 
   return tex;
 }
@@ -96,7 +96,7 @@ draw_frame (TestState *state)
 
   /* Render all of the images in the texture using coordinates from a
      cg_primitive_t */
-  v = verts = g_new (Vert, 4 * TEX_DEPTH);
+  v = verts = c_new (Vert, 4 * TEX_DEPTH);
   for (i = 0; i < TEX_DEPTH; i++)
     {
       float r = (i + 0.5f) / TEX_DEPTH;
@@ -157,7 +157,7 @@ draw_frame (TestState *state)
 
   cg_primitive_draw (primitive, test_fb, pipeline);
 
-  g_free (verts);
+  c_free (verts);
 
   cg_object_unref (primitive);
   cg_object_unref (attributes[0]);

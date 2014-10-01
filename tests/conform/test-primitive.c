@@ -212,7 +212,7 @@ get_attributes_cb (cg_primitive_t *prim,
 {
   cg_attribute_t ***p = user_data;
   *((* p)++) = attrib;
-  return TRUE;
+  return true;
 }
 
 static int
@@ -244,14 +244,14 @@ test_copy (TestState *state)
 
   for (i = 0; i < N_ATTRIBS; i++)
     {
-      char *name = g_strdup_printf ("foo_%i", i);
+      char *name = c_strdup_printf ("foo_%i", i);
       attributes[i] = cg_attribute_new (buffer,
                                           name,
                                           16, /* stride */
                                           16, /* offset */
                                           2, /* components */
                                           CG_ATTRIBUTE_TYPE_FLOAT);
-      g_free (name);
+      c_free (name);
     }
 
   prim_a = cg_primitive_new_with_attributes (CG_VERTICES_MODE_TRIANGLES,
@@ -273,32 +273,32 @@ test_copy (TestState *state)
   cg_primitive_foreach_attribute (prim_a,
                                     get_attributes_cb,
                                     &p);
-  g_assert_cmpint (p - attributes_a, ==, N_ATTRIBS);
+  c_assert_cmpint (p - attributes_a, ==, N_ATTRIBS);
 
   p = attributes_b;
   cg_primitive_foreach_attribute (prim_b,
                                     get_attributes_cb,
                                     &p);
-  g_assert_cmpint (p - attributes_b, ==, N_ATTRIBS);
+  c_assert_cmpint (p - attributes_b, ==, N_ATTRIBS);
 
   qsort (attributes_a, N_ATTRIBS, sizeof (cg_attribute_t *), compare_pointers);
   qsort (attributes_b, N_ATTRIBS, sizeof (cg_attribute_t *), compare_pointers);
 
-  g_assert (memcmp (attributes_a, attributes_b, sizeof (attributes_a)) == 0);
+  c_assert (memcmp (attributes_a, attributes_b, sizeof (attributes_a)) == 0);
 
-  g_assert_cmpint (cg_primitive_get_first_vertex (prim_a),
+  c_assert_cmpint (cg_primitive_get_first_vertex (prim_a),
                    ==,
                    cg_primitive_get_first_vertex (prim_b));
 
-  g_assert_cmpint (cg_primitive_get_n_vertices (prim_a),
+  c_assert_cmpint (cg_primitive_get_n_vertices (prim_a),
                    ==,
                    cg_primitive_get_n_vertices (prim_b));
 
-  g_assert_cmpint (cg_primitive_get_mode (prim_a),
+  c_assert_cmpint (cg_primitive_get_mode (prim_a),
                    ==,
                    cg_primitive_get_mode (prim_b));
 
-  g_assert (cg_primitive_get_indices (prim_a) ==
+  c_assert (cg_primitive_get_indices (prim_a) ==
             cg_primitive_get_indices (prim_b));
 
   cg_object_unref (prim_a);

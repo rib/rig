@@ -41,11 +41,11 @@ create_bitmap (void)
                                       CG_PIXEL_FORMAT_RGBA_8888);
   buffer = cg_bitmap_get_buffer (bitmap);
 
-  g_assert (cg_is_pixel_buffer (buffer));
-  g_assert (cg_is_buffer (buffer));
+  c_assert (cg_is_pixel_buffer (buffer));
+  c_assert (cg_is_buffer (buffer));
 
   cg_buffer_set_update_hint (buffer, CG_BUFFER_UPDATE_HINT_DYNAMIC);
-  g_assert_cmpint (cg_buffer_get_update_hint (buffer),
+  c_assert_cmpint (cg_buffer_get_update_hint (buffer),
                    ==,
                    CG_BUFFER_UPDATE_HINT_DYNAMIC);
 
@@ -66,7 +66,7 @@ create_and_fill_bitmap (void)
                          CG_BUFFER_ACCESS_WRITE,
                          CG_BUFFER_MAP_HINT_DISCARD,
                          NULL); /* don't catch errors */
-  g_assert (map);
+  c_assert (map);
 
   generate_bitmap_data (map, stride);
 
@@ -82,7 +82,7 @@ create_texture_from_bitmap (cg_bitmap_t *bitmap)
 
   texture = cg_texture_2d_new_from_bitmap (bitmap);
 
-  g_assert (texture != NULL);
+  c_assert (texture != NULL);
 
   return texture;
 }
@@ -186,7 +186,7 @@ test_pixel_buffer_set_data (void)
                         BITMAP_SIZE * 4,
                         NULL /* don't catch errors */);
 
-  g_free (data);
+  c_free (data);
 
   texture = create_texture_from_bitmap (bitmap);
   pipeline = create_pipeline_from_texture (texture);
@@ -225,7 +225,7 @@ create_white_texture (void)
                                            data,
                                            NULL); /* don't catch errors */
 
-  g_free (data);
+  c_free (data);
 
   return texture;
 }

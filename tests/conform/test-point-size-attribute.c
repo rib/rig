@@ -28,7 +28,7 @@ calc_coord_offset (int pos, int pos_index, int point_size)
     case 3: return pos + point_size / 2 + 2;
     }
 
-  g_assert_not_reached ();
+  c_assert_not_reached ();
 }
 
 static void
@@ -119,7 +119,7 @@ do_test (const char *attribute_name,
   primitive = create_primitive (attribute_name);
   pipeline = cg_pipeline_new (test_dev);
   cg_pipeline_set_color4ub (pipeline, 0x00, 0xff, 0x00, 0xff);
-  cg_pipeline_set_per_vertex_point_size (pipeline, TRUE, NULL);
+  cg_pipeline_set_per_vertex_point_size (pipeline, true, NULL);
   if (pipeline_setup_func)
     pipeline_setup_func (pipeline);
   cg_primitive_draw (primitive, test_fb, pipeline);

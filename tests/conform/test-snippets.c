@@ -142,10 +142,10 @@ lots_snippets (TestState *state)
   for (i = 0; i < 3; i++)
     {
       char letter = 'x' + i;
-      char *uniform_name = g_strdup_printf ("%c_value", letter);
-      char *declarations = g_strdup_printf ("uniform float %s;\n",
+      char *uniform_name = c_strdup_printf ("%c_value", letter);
+      char *declarations = c_strdup_printf ("uniform float %s;\n",
                                             uniform_name);
-      char *code = g_strdup_printf ("cg_color_out.%c = %s;\n",
+      char *code = c_strdup_printf ("cg_color_out.%c = %s;\n",
                                     letter,
                                     uniform_name);
 
@@ -158,9 +158,9 @@ lots_snippets (TestState *state)
       cg_pipeline_add_snippet (pipeline, snippet);
       cg_object_unref (snippet);
 
-      g_free (code);
-      g_free (uniform_name);
-      g_free (declarations);
+      c_free (code);
+      c_free (uniform_name);
+      c_free (declarations);
     }
 
   cg_framebuffer_draw_rectangle (test_fb, pipeline, 30, 0, 40, 10);
@@ -209,7 +209,7 @@ test_pipeline_caching (TestState *state)
      generated twice */
   snippet = cg_snippet_new (CG_SNIPPET_HOOK_FRAGMENT,
                               "/* This comment should only be seen ONCE\n"
-                              "   when CG_DEBUG=show-source is TRUE\n"
+                              "   when CG_DEBUG=show-source is true\n"
                               "   even though it is used in two different\n"
                               "   unrelated pipelines */",
                               "cg_color_out = vec4 (0.0, 1.0, 0.0, 1.0);\n");
@@ -506,7 +506,7 @@ test_vertex_transform_hook (TestState *state)
                                     location,
                                     4, /* dimensions */
                                     1, /* count */
-                                    FALSE, /* don't transpose */
+                                    false, /* don't transpose */
                                     cg_matrix_get_array (&matrix));
 
   /* Replace the real projection matrix with the identity. This should
@@ -708,36 +708,36 @@ test_snippet_properties (TestState *state)
 
   /* Sanity check modifying the snippet */
   snippet = cg_snippet_new (CG_SNIPPET_HOOK_FRAGMENT, "foo", "bar");
-  g_assert_cmpstr (cg_snippet_get_declarations (snippet), ==, "foo");
-  g_assert_cmpstr (cg_snippet_get_post (snippet), ==, "bar");
-  g_assert_cmpstr (cg_snippet_get_replace (snippet), ==, NULL);
-  g_assert_cmpstr (cg_snippet_get_pre (snippet), ==, NULL);
+  c_assert_cmpstr (cg_snippet_get_declarations (snippet), ==, "foo");
+  c_assert_cmpstr (cg_snippet_get_post (snippet), ==, "bar");
+  c_assert_cmpstr (cg_snippet_get_replace (snippet), ==, NULL);
+  c_assert_cmpstr (cg_snippet_get_pre (snippet), ==, NULL);
 
   cg_snippet_set_declarations (snippet, "fu");
-  g_assert_cmpstr (cg_snippet_get_declarations (snippet), ==, "fu");
-  g_assert_cmpstr (cg_snippet_get_post (snippet), ==, "bar");
-  g_assert_cmpstr (cg_snippet_get_replace (snippet), ==, NULL);
-  g_assert_cmpstr (cg_snippet_get_pre (snippet), ==, NULL);
+  c_assert_cmpstr (cg_snippet_get_declarations (snippet), ==, "fu");
+  c_assert_cmpstr (cg_snippet_get_post (snippet), ==, "bar");
+  c_assert_cmpstr (cg_snippet_get_replace (snippet), ==, NULL);
+  c_assert_cmpstr (cg_snippet_get_pre (snippet), ==, NULL);
 
   cg_snippet_set_post (snippet, "ba");
-  g_assert_cmpstr (cg_snippet_get_declarations (snippet), ==, "fu");
-  g_assert_cmpstr (cg_snippet_get_post (snippet), ==, "ba");
-  g_assert_cmpstr (cg_snippet_get_replace (snippet), ==, NULL);
-  g_assert_cmpstr (cg_snippet_get_pre (snippet), ==, NULL);
+  c_assert_cmpstr (cg_snippet_get_declarations (snippet), ==, "fu");
+  c_assert_cmpstr (cg_snippet_get_post (snippet), ==, "ba");
+  c_assert_cmpstr (cg_snippet_get_replace (snippet), ==, NULL);
+  c_assert_cmpstr (cg_snippet_get_pre (snippet), ==, NULL);
 
   cg_snippet_set_pre (snippet, "fuba");
-  g_assert_cmpstr (cg_snippet_get_declarations (snippet), ==, "fu");
-  g_assert_cmpstr (cg_snippet_get_post (snippet), ==, "ba");
-  g_assert_cmpstr (cg_snippet_get_replace (snippet), ==, NULL);
-  g_assert_cmpstr (cg_snippet_get_pre (snippet), ==, "fuba");
+  c_assert_cmpstr (cg_snippet_get_declarations (snippet), ==, "fu");
+  c_assert_cmpstr (cg_snippet_get_post (snippet), ==, "ba");
+  c_assert_cmpstr (cg_snippet_get_replace (snippet), ==, NULL);
+  c_assert_cmpstr (cg_snippet_get_pre (snippet), ==, "fuba");
 
   cg_snippet_set_replace (snippet, "baba");
-  g_assert_cmpstr (cg_snippet_get_declarations (snippet), ==, "fu");
-  g_assert_cmpstr (cg_snippet_get_post (snippet), ==, "ba");
-  g_assert_cmpstr (cg_snippet_get_replace (snippet), ==, "baba");
-  g_assert_cmpstr (cg_snippet_get_pre (snippet), ==, "fuba");
+  c_assert_cmpstr (cg_snippet_get_declarations (snippet), ==, "fu");
+  c_assert_cmpstr (cg_snippet_get_post (snippet), ==, "ba");
+  c_assert_cmpstr (cg_snippet_get_replace (snippet), ==, "baba");
+  c_assert_cmpstr (cg_snippet_get_pre (snippet), ==, "fuba");
 
-  g_assert_cmpint (cg_snippet_get_hook (snippet),
+  c_assert_cmpint (cg_snippet_get_hook (snippet),
                    ==,
                    CG_SNIPPET_HOOK_FRAGMENT);
 }

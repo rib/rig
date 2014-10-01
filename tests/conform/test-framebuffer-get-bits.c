@@ -23,15 +23,15 @@ test_framebuffer_get_bits (void)
   cg_framebuffer_allocate (fb_a, NULL);
   cg_framebuffer_allocate (fb_rgba, NULL);
 
-  g_assert_cmpint (cg_framebuffer_get_red_bits (fb_a), ==, 0);
-  g_assert_cmpint (cg_framebuffer_get_green_bits (fb_a), ==, 0);
-  g_assert_cmpint (cg_framebuffer_get_blue_bits (fb_a), ==, 0);
-  g_assert_cmpint (cg_framebuffer_get_alpha_bits (fb_a), >=, 1);
+  c_assert_cmpint (cg_framebuffer_get_red_bits (fb_a), ==, 0);
+  c_assert_cmpint (cg_framebuffer_get_green_bits (fb_a), ==, 0);
+  c_assert_cmpint (cg_framebuffer_get_blue_bits (fb_a), ==, 0);
+  c_assert_cmpint (cg_framebuffer_get_alpha_bits (fb_a), >=, 1);
 
-  g_assert_cmpint (cg_framebuffer_get_red_bits (fb_rgba), >=, 1);
-  g_assert_cmpint (cg_framebuffer_get_green_bits (fb_rgba), >=, 1);
-  g_assert_cmpint (cg_framebuffer_get_blue_bits (fb_rgba), >=, 1);
-  g_assert_cmpint (cg_framebuffer_get_alpha_bits (fb_rgba), >=, 1);
+  c_assert_cmpint (cg_framebuffer_get_red_bits (fb_rgba), >=, 1);
+  c_assert_cmpint (cg_framebuffer_get_green_bits (fb_rgba), >=, 1);
+  c_assert_cmpint (cg_framebuffer_get_blue_bits (fb_rgba), >=, 1);
+  c_assert_cmpint (cg_framebuffer_get_alpha_bits (fb_rgba), >=, 1);
 
   cg_object_unref (fb_rgba);
   cg_object_unref (tex_rgba);

@@ -20,7 +20,7 @@ calc_coord_offset (int pos, int pos_index, int point_size)
     case 3: return pos + point_size / 2 + 2;
     }
 
-  g_assert_not_reached ();
+  c_assert_not_reached ();
 }
 
 static void

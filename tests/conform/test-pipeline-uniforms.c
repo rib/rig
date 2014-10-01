@@ -63,8 +63,8 @@ int_fragment_source =
 
 static const char *
 long_declarations =
-  "uniform int long_array[" G_STRINGIFY (LONG_ARRAY_SIZE) "];\n"
-  "const int last_index = " G_STRINGIFY (LONG_ARRAY_SIZE) " - 1;\n";
+  "uniform int long_array[" C_STRINGIFY (LONG_ARRAY_SIZE) "];\n"
+  "const int last_index = " C_STRINGIFY (LONG_ARRAY_SIZE) " - 1;\n";
 
 static const char *
 long_fragment_source =
@@ -143,11 +143,11 @@ init_long_pipeline_state (TestState *state)
      single long so that it has to resort to allocating it */
   for (i = 0; i < LONG_ARRAY_SIZE; i++)
     {
-      char *uniform_name = g_strdup_printf ("long_array[%i]", i);
+      char *uniform_name = c_strdup_printf ("long_array[%i]", i);
       state->long_uniform_locations[i] =
         cg_pipeline_get_uniform_location (state->long_pipeline,
                                             uniform_name);
-      g_free (uniform_name);
+      c_free (uniform_name);
     }
 }
 
@@ -243,7 +243,7 @@ paint_matrix_pipeline (cg_pipeline_t *pipeline)
                                     uniform_location,
                                     4, /* dimensions */
                                     3, /* count */
-                                    FALSE, /* not transposed */
+                                    false, /* not transposed */
                                     matrix_floats);
 
   /* Set the last matrix as untransposed */
@@ -253,7 +253,7 @@ paint_matrix_pipeline (cg_pipeline_t *pipeline)
                                     uniform_location,
                                     4, /* dimensions */
                                     1, /* count */
-                                    TRUE, /* transposed */
+                                    true, /* transposed */
                                     matrix_floats + 16 * 3);
 
   paint_pipeline (pipeline, 12);

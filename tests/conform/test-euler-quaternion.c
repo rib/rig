@@ -5,13 +5,13 @@
 #include "test-utils.h"
 
 /* Macros are used here instead of functions so that the
- * g_assert_cmpfloat will give a more interesting message when it
+ * c_assert_cmpfloat will give a more interesting message when it
  * fails */
 
 #define COMPARE_FLOATS(a, b)                    \
   do {                                          \
     if (fabsf ((a) - (b)) >= 0.0001f)           \
-      g_assert_cmpfloat ((a), ==, (b));         \
+      c_assert_cmpfloat ((a), ==, (b));         \
   } while (0)
 
 #define COMPARE_MATRICES(a, b) \

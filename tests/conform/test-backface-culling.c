@@ -125,23 +125,23 @@ validate_result (cg_framebuffer_t *framebuffer, int y_offset)
       switch (cull_mode)
         {
         case CG_PIPELINE_CULL_FACE_MODE_NONE:
-          cull_front = FALSE;
-          cull_back = FALSE;
+          cull_front = false;
+          cull_back = false;
           break;
 
         case CG_PIPELINE_CULL_FACE_MODE_FRONT:
-          cull_front = TRUE;
-          cull_back = FALSE;
+          cull_front = true;
+          cull_back = false;
           break;
 
         case CG_PIPELINE_CULL_FACE_MODE_BACK:
-          cull_front = FALSE;
-          cull_back = TRUE;
+          cull_front = false;
+          cull_back = true;
           break;
 
         case CG_PIPELINE_CULL_FACE_MODE_BOTH:
-          cull_front = TRUE;
-          cull_back = TRUE;
+          cull_front = true;
+          cull_back = true;
           break;
         }
 
@@ -197,7 +197,7 @@ paint (TestState *state)
 static cg_texture_t *
 make_texture (void)
 {
-  guchar *tex_data, *p;
+  uint8_t *tex_data, *p;
   cg_texture_t *tex;
 
   tex_data = c_malloc (TEXTURE_SIZE * TEXTURE_SIZE * 4);
@@ -218,7 +218,7 @@ make_texture (void)
                                           TEXTURE_SIZE * 4,
                                           tex_data);
 
-  g_free (tex_data);
+  c_free (tex_data);
 
   return tex;
 }

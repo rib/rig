@@ -30,7 +30,7 @@ check_texture (int width, int height, TestUtilsTextureFlags flags)
                                   data);
 
   tex = test_utils_texture_new_from_bitmap (bmp, flags,
-                                            FALSE);
+                                            false);
 
   /* Replace the bottom right quarter of the data with negated data to
      test set_region */
@@ -61,7 +61,7 @@ check_texture (int width, int height, TestUtilsTextureFlags flags)
 
   /* Check passing a NULL pointer and a zero rowstride. The texture
      should calculate the needed data size and return it */
-  g_assert_cmpint (cg_texture_get_data (tex, CG_PIXEL_FORMAT_ANY, 0, NULL),
+  c_assert_cmpint (cg_texture_get_data (tex, CG_PIXEL_FORMAT_ANY, 0, NULL),
                    ==,
                    width * height * 4);
 
@@ -79,15 +79,15 @@ check_texture (int width, int height, TestUtilsTextureFlags flags)
       {
         if (x >= width / 2 && y >= height / 2)
           {
-            g_assert_cmpint (p[0], ==, ~x & 0xff);
-            g_assert_cmpint (p[1], ==, ~y & 0xff);
-            g_assert_cmpint (p[2], ==, ~128 & 0xff);
+            c_assert_cmpint (p[0], ==, ~x & 0xff);
+            c_assert_cmpint (p[1], ==, ~y & 0xff);
+            c_assert_cmpint (p[2], ==, ~128 & 0xff);
           }
         else
           {
-            g_assert_cmpint (p[0], ==, x & 0xff);
-            g_assert_cmpint (p[1], ==, y & 0xff);
-            g_assert_cmpint (p[2], ==, 128);
+            c_assert_cmpint (p[0], ==, x & 0xff);
+            c_assert_cmpint (p[1], ==, y & 0xff);
+            c_assert_cmpint (p[2], ==, 128);
           }
         p += 3;
       }
@@ -107,23 +107,23 @@ check_texture (int width, int height, TestUtilsTextureFlags flags)
       {
         if (x >= width / 2 && y >= height / 2)
           {
-            g_assert_cmpint (p[0], ==, ~x & 0xff);
-            g_assert_cmpint (p[1], ==, ~y & 0xff);
-            g_assert_cmpint (p[2], ==, ~128 & 0xff);
-            g_assert_cmpint (p[3], ==, ~(x ^ y) & 0xff);
+            c_assert_cmpint (p[0], ==, ~x & 0xff);
+            c_assert_cmpint (p[1], ==, ~y & 0xff);
+            c_assert_cmpint (p[2], ==, ~128 & 0xff);
+            c_assert_cmpint (p[3], ==, ~(x ^ y) & 0xff);
           }
         else
           {
-            g_assert_cmpint (p[0], ==, x & 0xff);
-            g_assert_cmpint (p[1], ==, y & 0xff);
-            g_assert_cmpint (p[2], ==, 128);
-            g_assert_cmpint (p[3], ==, (x ^ y) & 0xff);
+            c_assert_cmpint (p[0], ==, x & 0xff);
+            c_assert_cmpint (p[1], ==, y & 0xff);
+            c_assert_cmpint (p[2], ==, 128);
+            c_assert_cmpint (p[3], ==, (x ^ y) & 0xff);
           }
         p += 4;
       }
 
   cg_object_unref (tex);
-  g_free (data);
+  c_free (data);
 }
 
 void

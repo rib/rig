@@ -41,7 +41,7 @@ test_texture_rg (void)
 
   tex = make_texture ();
 
-  g_assert (cg_texture_get_components (tex) == CG_TEXTURE_COMPONENTS_RG);
+  c_assert (cg_texture_get_components (tex) == CG_TEXTURE_COMPONENTS_RG);
 
   pipeline = cg_pipeline_new (test_dev);
 

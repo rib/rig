@@ -71,7 +71,7 @@ test_write_bytes (cg_pixel_format_t format,
 {
   cg_texture_t *texture = test_utils_create_color_texture (test_dev, 0);
 
-  value = GUINT32_TO_BE (value);
+  value = C_UINT32_TO_BE (value);
 
   cg_texture_set_region (texture,
                            1, 1, /* width / height */

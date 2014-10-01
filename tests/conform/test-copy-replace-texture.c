@@ -18,7 +18,7 @@ static int alive_texture_mask = 0;
 static void
 free_texture_cb (void *user_data)
 {
-  int texture_num = GPOINTER_TO_INT (user_data);
+  int texture_num = C_POINTER_TO_INT (user_data);
 
   alive_texture_mask &= ~(1 << texture_num);
 }
@@ -26,7 +26,7 @@ free_texture_cb (void *user_data)
 static cg_texture_t *
 create_texture (void)
 {
-  static const guint8 data[] =
+  static const uint8_t data[] =
     { 0xff, 0xff, 0xff, 0xff };
   static cg_user_data_key_t texture_data_key;
   cg_texture_2d_t *tex_2d;
@@ -45,7 +45,7 @@ create_texture (void)
    * been destroyed */
   cg_object_set_user_data (CG_OBJECT (tex_2d),
                              &texture_data_key,
-                             GINT_TO_POINTER (texture_num),
+                             C_INT_TO_POINTER (texture_num),
                              free_texture_cb);
 
   texture_num++;
@@ -105,7 +105,7 @@ test_copy_replace_texture (void)
    * state so that it can set it to 2. If there are more textures then
    * it means the pipeline isn't correctly pruning redundant
    * ancestors */
-  g_assert_cmpint (alive_texture_mask & ~FIRST_PIPELINE_MASK,
+  c_assert_cmpint (alive_texture_mask & ~FIRST_PIPELINE_MASK,
                    ==,
                    LAST_PIPELINE_MASK);
 
@@ -113,7 +113,7 @@ test_copy_replace_texture (void)
   cg_object_unref (pipelines[N_PIPELINES - 1]);
 
   /* That should get rid of the last of the textures */
-  g_assert_cmpint (alive_texture_mask, ==, 0);
+  c_assert_cmpint (alive_texture_mask, ==, 0);
 
   if (cg_test_verbose ())
     c_print ("OK\n");

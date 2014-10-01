@@ -33,7 +33,7 @@ create_texture (TestUtilsTextureFlags flags)
                                           CG_PIXEL_FORMAT_RGBA_8888_PRE,
                                           TEX_SIZE * 4,
                                           data);
-  g_free (data);
+  c_free (data);
 
   return tex;
 }
@@ -144,9 +144,9 @@ validate_set (TestState *state, int offset)
             else
               blue = ((TEX_SIZE - 1) & 1) * 255;
 
-            g_assert_cmpint (p[0], ==, 0);
-            g_assert_cmpint (p[1], ==, green);
-            g_assert_cmpint (p[2], ==, blue);
+            c_assert_cmpint (p[0], ==, 0);
+            c_assert_cmpint (p[1], ==, green);
+            c_assert_cmpint (p[2], ==, blue);
 
             p += 4;
           }

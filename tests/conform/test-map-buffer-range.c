@@ -67,7 +67,7 @@ test_map_buffer_range (void)
                                 CG_BUFFER_ACCESS_WRITE,
                                 CG_BUFFER_MAP_HINT_DISCARD_RANGE,
                                 NULL); /* don't catch errors */
-  g_assert (data != NULL);
+  c_assert (data != NULL);
 
   data->x = vertex_data[2].x;
   data->y = vertex_data[2].y;

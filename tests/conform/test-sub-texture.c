@@ -45,7 +45,7 @@ create_source (TestState *state)
           {
             for (x = 0; x < DIVISION_WIDTH; x++)
               {
-                uint32_t color = GUINT32_FROM_BE (corner_colors[dx + dy * SOURCE_DIVISIONS_X]);
+                uint32_t color = C_UINT32_FROM_BE (corner_colors[dx + dy * SOURCE_DIVISIONS_X]);
                 memcpy (p, &color, 4);
                 p += 4;
               }
@@ -89,7 +89,7 @@ create_test_texture (TestState *state)
                                        256 * 4,
                                        data,
                                        NULL);
-  g_free (data);
+  c_free (data);
 
   return tex;
 }
@@ -220,11 +220,11 @@ validate_result (TestState *state)
   for (y = 0; y < 10; y++)
     for (x = 0; x < 10; x++)
       {
-        g_assert (*(p++) == x + 40);
-        g_assert (*(p++) == y + 20);
+        c_assert (*(p++) == x + 40);
+        c_assert (*(p++) == y + 20);
         p += 2;
       }
-  g_free (texture_data);
+  c_free (texture_data);
 
   /* Try reading back the texture data */
   sub_texture = cg_sub_texture_new (test_dev,
@@ -248,11 +248,11 @@ validate_result (TestState *state)
         int div_y = ((y * SOURCE_SIZE / 2 / tex_height + SOURCE_SIZE / 4) /
                      DIVISION_HEIGHT);
         uint32_t reference = corner_colors[div_x + div_y * SOURCE_DIVISIONS_X] >> 8;
-        uint32_t color = GUINT32_FROM_BE (*((uint32_t *)p)) >> 8;
-        g_assert (color == reference);
+        uint32_t color = C_UINT32_FROM_BE (*((uint32_t *)p)) >> 8;
+        c_assert (color == reference);
         p += 4;
       }
-  g_free (texture_data);
+  c_free (texture_data);
   cg_object_unref (sub_texture);
 
   /* Create a 256x256 test texture */
@@ -272,7 +272,7 @@ validate_result (TestState *state)
                            0, /* level */
                            NULL); /* don't catch errors */
 
-  g_free (texture_data);
+  c_free (texture_data);
   cg_object_unref (sub_texture);
   /* Get the texture data */
   p = texture_data = c_malloc (256 * 256 * 4);
@@ -287,20 +287,20 @@ validate_result (TestState *state)
         /* If we're in the center quarter */
         if (x >= 96 && x < 160 && y >= 96 && y < 160)
           {
-            g_assert ((*p++) == 0);
-            g_assert ((*p++) == 0);
-            g_assert ((*p++) == x - 96);
-            g_assert ((*p++) == y - 96);
+            c_assert ((*p++) == 0);
+            c_assert ((*p++) == 0);
+            c_assert ((*p++) == x - 96);
+            c_assert ((*p++) == y - 96);
           }
         else
           {
-            g_assert ((*p++) == x);
-            g_assert ((*p++) == y);
-            g_assert ((*p++) == 255);
-            g_assert ((*p++) == 255);
+            c_assert ((*p++) == x);
+            c_assert ((*p++) == y);
+            c_assert ((*p++) == 255);
+            c_assert ((*p++) == 255);
           }
       }
-  g_free (texture_data);
+  c_free (texture_data);
   cg_object_unref (test_tex);
 }
 

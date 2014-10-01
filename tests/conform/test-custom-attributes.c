@@ -119,7 +119,7 @@ test_byte_verts (TestState *state, int offset_x, int offset_y)
                                       C_STRUCT_OFFSET (ByteVert, r),
                                       4, /* n_components */
                                       CG_ATTRIBUTE_TYPE_UNSIGNED_BYTE);
-  cg_attribute_set_normalized (attributes[1], TRUE);
+  cg_attribute_set_normalized (attributes[1], true);
 
   cg_framebuffer_push_matrix (test_fb);
   cg_framebuffer_translate (test_fb, offset_x, offset_y, 0.0f);
@@ -200,7 +200,7 @@ test_short_verts (TestState *state, int offset_x, int offset_y)
                                       C_STRUCT_OFFSET (ShortVert, r),
                                       4, /* n_components */
                                       CG_ATTRIBUTE_TYPE_UNSIGNED_SHORT);
-  cg_attribute_set_normalized (attributes[1], TRUE);
+  cg_attribute_set_normalized (attributes[1], true);
 
   cg_framebuffer_push_matrix (test_fb);
   cg_framebuffer_translate (test_fb,
