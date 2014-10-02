@@ -776,9 +776,7 @@ bind_to_abstract_socket(rut_shell_t *shell,
 static void
 spawn_simulator(rut_shell_t *shell, rig_frontend_t *frontend)
 {
-#ifdef __ANDROID__
-    create_simulator_thread(shell, frontend);
-#elif defined(linux)
+#if defined(linux)
     if (getenv("_RIG_USE_ABSTRACT_SOCKET"))
         bind_to_abstract_socket(shell,
                                 frontend /* FIXME: give application name */);
