@@ -51,26 +51,11 @@ struct _closure_t {
     void *closure_data;
 };
 
-typedef struct _stream_t {
-    rut_object_base_t _base;
-
-    rig_protobuf_c_dispatch_t *dispatch;
-
-    int fd;
-
-    protobuf_c_data_buffer_t incoming;
-    protobuf_c_data_buffer_t outgoing;
-
-    pb_rpc__server_connection_t *conn;
-    pb_rpc__client_t *client;
-
-} stream_t;
-
 struct _pb_rpc__client_t {
     rut_object_base_t _base;
 
     ProtobufCService service;
-    stream_t *stream;
+    rig_pb_stream_t *stream;
     ProtobufCAllocator *allocator;
     rig_protobuf_c_dispatch_t *dispatch;
     PB_RPC_AddressType address_type;
@@ -135,7 +120,7 @@ struct _server_request_t {
 };
 
 struct _pb_rpc__server_connection_t {
-    stream_t *stream;
+    rig_pb_stream_t *stream;
 
     pb_rpc__server_t *server;
     pb_rpc__server_connection_t *prev, *next;
@@ -197,7 +182,7 @@ struct _pb_rpc__server_t {
 struct _pb_rpc__peer_t {
     rut_object_base_t _base;
 
-    stream_t *stream;
+    rig_pb_stream_t *stream;
 
     pb_rpc__server_t *server;
     pb_rpc__client_t *client;
@@ -207,7 +192,8 @@ struct _pb_rpc__peer_t {
 
 static void begin_name_lookup(pb_rpc__client_t *client);
 
-static void handle_stream_fd_events(int fd, unsigned events, void *data);
+static void handle_fd_stream_events(int fd, unsigned events, void *data);
+static void handle_data_buffer_stream_idle(rig_protobuf_c_dispatch_t *dispatch, void *data);
 
 static uint32_t
 uint32_to_le(uint32_t le)
@@ -435,7 +421,7 @@ set_state_connected(pb_rpc__client_t *client)
 }
 
 static rig_protobuf_c_dispatch_t *
-stream_get_dispatch(stream_t *stream)
+stream_get_dispatch(rig_pb_stream_t *stream)
 {
     if (stream->conn)
         return stream->conn->server->dispatch;
@@ -444,18 +430,34 @@ stream_get_dispatch(stream_t *stream)
 }
 
 static void
-update_stream_fd_watch(stream_t *stream)
+update_stream_fd_watch(rig_pb_stream_t *stream)
 {
-    unsigned events = PROTOBUF_C_EVENT_READABLE;
     rig_protobuf_c_dispatch_t *dispatch = stream_get_dispatch(stream);
 
-    c_return_if_fail(stream->fd >= 0);
+    if (stream->type == STREAM_TYPE_BUFFER)
+    {
+        if(stream->outgoing.size > 0 &&
+           !stream->other_end->read_idle)
+        {
+            stream->other_end->read_idle =
+                rig_protobuf_c_dispatch_add_idle(dispatch,
+                                                 handle_data_buffer_stream_idle,
+                                                 stream->other_end);
+        }
+    }
+    else
+    {
+        unsigned events = PROTOBUF_C_EVENT_READABLE;
 
-    if (stream->outgoing.size > 0)
-        events |= PROTOBUF_C_EVENT_WRITABLE;
+        c_return_if_fail(stream->type == STREAM_TYPE_FD);
+        c_return_if_fail(stream->fd >= 0);
 
-    rig_protobuf_c_dispatch_watch_fd(
-        dispatch, stream->fd, events, handle_stream_fd_events, stream);
+        if (stream->outgoing.size > 0)
+            events |= PROTOBUF_C_EVENT_WRITABLE;
+
+        rig_protobuf_c_dispatch_watch_fd(dispatch, stream->fd, events,
+                                         handle_fd_stream_events, stream);
+    }
 }
 
 static void
@@ -765,7 +767,7 @@ trivial_sync_libc_resolver(rig_protobuf_c_dispatch_t *dispatch,
 pb_rpc__client_t *
 client_new(const ProtobufCServiceDescriptor *descriptor,
            rig_protobuf_c_dispatch_t *dispatch,
-           stream_t *stream)
+           rig_pb_stream_t *stream)
 {
     pb_rpc__client_t *client = rut_object_alloc0(pb_rpc__client_t,
                                                  &rig_pb_rpc_client_type,
@@ -790,62 +792,13 @@ client_new(const ProtobufCServiceDescriptor *descriptor,
     return client;
 }
 
-static void
-_stream_free(void *object)
-{
-    stream_t *stream = object;
-
-#warning "track whether stream->fd is foreign"
-    if (stream->fd != -1)
-        rig_protobuf_c_dispatch_close_fd(stream->dispatch, stream->fd);
-
-    rig_protobuf_c_data_buffer_clear(&stream->incoming);
-    rig_protobuf_c_data_buffer_clear(&stream->outgoing);
-
-    c_slice_free(stream_t, stream);
-}
-
-static rut_type_t stream_type;
-
-static void
-_stream_init_type(void)
-{
-    rut_type_t *type = &stream_type;
-#define TYPE stream_t
-
-    rut_type_init(type, C_STRINGIFY(TYPE), _stream_free);
-
-#undef TYPE
-}
-
-stream_t *
-stream_new(rig_protobuf_c_dispatch_t *dispatch, int fd)
-{
-    ProtobufCAllocator *allocator =
-        rig_protobuf_c_dispatch_peek_allocator(dispatch);
-    stream_t *stream =
-        rut_object_alloc0(stream_t, &stream_type, _stream_init_type);
-
-    /* We have to explicitly track the dispatch with the stream since
-     * it may be referenced when freeing the stream after any client
-     * or server connection have been disassociated from the stream.
-     */
-    stream->dispatch = dispatch;
-
-    stream->fd = fd;
-    rig_protobuf_c_data_buffer_init(&stream->incoming, allocator);
-    rig_protobuf_c_data_buffer_init(&stream->outgoing, allocator);
-
-    return stream;
-}
-
 pb_rpc__client_t *
 rig_pb_rpc_client_new(PB_RPC_AddressType type,
                       const char *name,
                       const ProtobufCServiceDescriptor *descriptor,
                       rig_protobuf_c_dispatch_t *dispatch)
 {
-    stream_t *stream = stream_new(dispatch, -1);
+    rig_pb_stream_t *stream = rig_pb_stream_new(dispatch, -1);
     pb_rpc__client_t *client = client_new(descriptor, dispatch, stream);
 
     /* After calling client_new() the client will have taken ownership
@@ -1323,9 +1276,79 @@ read_server_request(pb_rpc__server_connection_t *conn,
 }
 
 static void
-handle_stream_fd_events(int fd, unsigned events, void *data)
+read_incoming_messages(rig_pb_stream_t *stream)
 {
-    stream_t *stream = data;
+    /* NB: A stream may represent a server connection, a client or
+     * both and it's only once we've read the header for any messages
+     * that we can determine whether we are dealing with a request to
+     * the server or a reply back to the client....
+     */
+
+    pb_rpc__server_connection_t *conn = stream->conn;
+    pb_rpc__client_t *client = stream->client;
+
+    while (stream->incoming.size >= 12) {
+        uint32_t header[3];
+        uint32_t method_index, message_length, request_id;
+
+        rig_protobuf_c_data_buffer_peek(&stream->incoming, header, 12);
+        method_index = uint32_from_le(header[0]);
+        message_length = uint32_from_le(header[1]);
+        request_id =
+            header[2]; /* store in whatever endianness it comes in */
+
+        if (stream->incoming.size < 12 + message_length)
+            break;
+
+        /* XXX: it's possible we were sent a mallformed message
+         * that looks like it's for a client or server but the
+         * corresponding object is NULL...
+         */
+
+        if (client && method_index == ~0) {
+            read_client_reply(client, method_index, message_length, request_id);
+        } else if (conn && method_index != ~0) {
+            read_server_request(conn, method_index, message_length, request_id);
+        } else {
+            if (conn) {
+                server_connection_failed(conn,
+                                         PB_RPC_ERROR_CODE_BAD_REQUEST,
+                                         "bad method_index %u",
+                                         method_index);
+            } else {
+                client_failed(client,
+                              PB_RPC_ERROR_CODE_BAD_REQUEST,
+                              "bad method_index in response from server: %d",
+                              method_index);
+            }
+        }
+    }
+}
+
+static void
+handle_data_buffer_stream_idle(rig_protobuf_c_dispatch_t *dispatch, void *data)
+{
+    rig_pb_stream_t *stream = data;
+
+    stream->read_idle = NULL;
+
+    /* We need to be careful not to start trying to read data
+     * before either end has finished being initialised... */
+    if (stream->client->state != PB_RPC_CLIENT_STATE_CONNECTED ||
+        stream->other_end->client->state != PB_RPC_CLIENT_STATE_CONNECTED)
+        return;
+
+    /* Move all data from outgoing => incoming (zero copy) */
+    rig_protobuf_c_data_buffer_drain(&stream->incoming,
+                                     &stream->other_end->outgoing);
+
+    read_incoming_messages(stream);
+}
+
+static void
+handle_fd_stream_events(int fd, unsigned events, void *data)
+{
+    rig_pb_stream_t *stream = data;
 
     /* NB: A stream may represent a server connection, a client or both
      * and it's only once we've read the header for any messages that
@@ -1385,45 +1408,7 @@ handle_stream_fd_events(int fd, unsigned events, void *data)
 
             return;
         } else
-            while (stream->incoming.size >= 12) {
-                uint32_t header[3];
-                uint32_t method_index, message_length, request_id;
-
-                rig_protobuf_c_data_buffer_peek(&stream->incoming, header, 12);
-                method_index = uint32_from_le(header[0]);
-                message_length = uint32_from_le(header[1]);
-                request_id =
-                    header[2]; /* store in whatever endianness it comes in */
-
-                if (stream->incoming.size < 12 + message_length)
-                    break;
-
-                /* XXX: it's possible if we were sent a mallformed message
-                 * that looks like it's for a client or server but the
-                 * corresponding object is NULL...
-                 */
-
-                if (client && method_index == ~0) {
-                    read_client_reply(
-                        client, method_index, message_length, request_id);
-                } else if (conn && method_index != ~0) {
-                    read_server_request(
-                        conn, method_index, message_length, request_id);
-                } else {
-                    if (conn) {
-                        server_connection_failed(conn,
-                                                 PB_RPC_ERROR_CODE_BAD_REQUEST,
-                                                 "bad method_index %u",
-                                                 method_index);
-                    } else {
-                        client_failed(
-                            client,
-                            PB_RPC_ERROR_CODE_BAD_REQUEST,
-                            "bad method_index in response from server: %d",
-                            method_index);
-                    }
-                }
-            }
+            read_incoming_messages(stream);
     }
 
     if ((events & PROTOBUF_C_EVENT_WRITABLE) != 0 &&
@@ -1476,7 +1461,7 @@ _server_connection_init_type(void)
 }
 
 static pb_rpc__server_connection_t *
-server_connection_new(pb_rpc__server_t *server, stream_t *stream)
+server_connection_new(pb_rpc__server_t *server, rig_pb_stream_t *stream)
 {
     pb_rpc__server_connection_t *conn =
         rut_object_alloc0(pb_rpc__server_connection_t,
@@ -1492,7 +1477,7 @@ server_connection_new(pb_rpc__server_t *server, stream_t *stream)
 }
 
 static pb_rpc__server_connection_t *
-server_add_connection_with_stream(pb_rpc__server_t *server, stream_t *stream)
+server_add_connection_with_stream(pb_rpc__server_t *server, rig_pb_stream_t *stream)
 {
     pb_rpc__server_connection_t *conn = server_connection_new(server, stream);
 
@@ -1515,7 +1500,7 @@ handle_server_listener_readable(int fd, unsigned events, void *data)
     struct sockaddr addr;
     socklen_t addr_len = sizeof(addr);
     int new_fd = accept(fd, &addr, &addr_len);
-    stream_t *stream;
+    rig_pb_stream_t *stream;
 
     if (new_fd < 0) {
         if (errno_is_ignorable(errno))
@@ -1525,7 +1510,7 @@ handle_server_listener_readable(int fd, unsigned events, void *data)
         return;
     }
 
-    stream = stream_new(server->dispatch, new_fd);
+    stream = rig_pb_stream_new(server->dispatch, new_fd);
 
     server_add_connection_with_stream(server, stream);
 
@@ -1752,7 +1737,7 @@ handle_peer_connect_idle(rig_protobuf_c_dispatch_t *dispatch,
                          void *data)
 {
     pb_rpc__peer_t *peer = data;
-    stream_t *stream = peer->stream;
+    rig_pb_stream_t *stream = peer->stream;
     pb_rpc__server_t *server = peer->server;
     pb_rpc__client_t *client = peer->client;
 
@@ -1762,10 +1747,12 @@ handle_peer_connect_idle(rig_protobuf_c_dispatch_t *dispatch,
     set_state_connected(client);
 
     peer->idle = NULL;
+
+    handle_data_buffer_stream_idle(dispatch, stream);
 }
 
 pb_rpc__peer_t *
-rig_pb_rpc_peer_new(int fd,
+rig_pb_rpc_peer_new(rig_pb_stream_t *stream,
                     ProtobufCService *server_service,
                     const ProtobufCServiceDescriptor *client_descriptor,
                     rig_protobuf_c_dispatch_t *dispatch)
@@ -1773,7 +1760,7 @@ rig_pb_rpc_peer_new(int fd,
     pb_rpc__peer_t *peer = rut_object_alloc0(
         pb_rpc__peer_t, &rig_pb_rpc_peer_type, _rig_pb_rpc_peer_init_type);
 
-    peer->stream = stream_new(dispatch, fd);
+    peer->stream = rut_object_ref(stream);
 
     peer->server = server_new(server_service, dispatch);
     peer->client = client_new(client_descriptor, dispatch, peer->stream);
@@ -1783,10 +1770,17 @@ rig_pb_rpc_peer_new(int fd,
      * configure them such as by setting _connect_handlers...
      */
 
-    peer->idle = rig_protobuf_c_dispatch_add_idle(
-        dispatch, handle_peer_connect_idle, peer);
+    peer->idle = rig_protobuf_c_dispatch_add_idle(dispatch,
+                                                  handle_peer_connect_idle,
+                                                  peer);
 
     return peer;
+}
+
+rig_pb_stream_t *
+rig_pb_rpc_peer_get_stream(pb_rpc__peer_t *peer)
+{
+    return peer->stream;
 }
 
 pb_rpc__server_t *

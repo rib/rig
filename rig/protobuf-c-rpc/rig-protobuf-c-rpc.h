@@ -13,7 +13,15 @@
  *         message_length            32-bit little-endian
  *         request_id                32-bit any-endian
  */
+
+/* Forward declarations, since they are used in -c-stream.h
+ * which has a circular dependency a.t.m
+ */
+typedef struct _pb_rpc__server_connection_t pb_rpc__server_connection_t;
+typedef struct _pb_rpc__client_t pb_rpc__client_t;
+
 #include "rig-protobuf-c-dispatch.h"
+#include "rig-protobuf-c-stream.h"
 
 typedef enum {
     PROTOBUF_C_RPC_ADDRESS_LOCAL, /* unix-domain socket */
@@ -42,8 +50,6 @@ typedef void (*PB_RPC_Error_Func)(PB_RPC_Error_Code code,
                                   void *error_func_data);
 
 /* --- Client API --- */
-typedef struct _pb_rpc__client_t pb_rpc__client_t;
-
 pb_rpc__client_t *
 rig_pb_rpc_client_new(PB_RPC_AddressType type,
                       const char *name,
@@ -105,8 +111,6 @@ pb_rpc__server_t *rig_pb_rpc_server_new(const char *bind_name,
 
 /* May return -1 if not listening */
 int rig_pb_rpc_server_get_listening_fd(pb_rpc__server_t *server);
-
-typedef struct _pb_rpc__server_connection_t pb_rpc__server_connection_t;
 
 typedef void (*pb_rpc__client_t_Connect_Func)(pb_rpc__server_t *server,
                                               pb_rpc__server_connection_t *conn,
@@ -184,10 +188,12 @@ void *rig_pb_rpc_closure_get_connection_data(void *closure_data);
 typedef struct _pb_rpc__peer_t pb_rpc__peer_t;
 
 pb_rpc__peer_t *
-rig_pb_rpc_peer_new(int fd,
+rig_pb_rpc_peer_new(rig_pb_stream_t *stream,
                     ProtobufCService *server_service,
                     const ProtobufCServiceDescriptor *client_descriptor,
                     rig_protobuf_c_dispatch_t *dispatch);
+
+rig_pb_stream_t *rig_pb_rpc_peer_get_stream(pb_rpc__peer_t *peer);
 
 pb_rpc__server_t *rig_pb_rpc_peer_get_server(pb_rpc__peer_t *peer);
 

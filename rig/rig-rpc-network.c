@@ -258,6 +258,7 @@ rig_rpc_peer_new(rut_shell_t *shell,
     rig_rpc_peer_t *rpc_peer = rut_object_alloc0(
         rig_rpc_peer_t, &rig_rpc_peer_type, _rig_rpc_peer_init_type);
     rig_protobuf_c_dispatch_t *dispatch;
+    rig_pb_stream_t *stream;
     pb_rpc__peer_t *pb_peer;
 
     rpc_peer->fd = fd;
@@ -265,8 +266,10 @@ rig_rpc_peer_new(rut_shell_t *shell,
     dispatch =
         rig_protobuf_c_dispatch_new(shell, &protobuf_c_default_allocator);
 
-    pb_peer =
-        rig_pb_rpc_peer_new(fd, server_service, client_descriptor, dispatch);
+    stream = rig_pb_stream_new(dispatch, fd);
+    pb_peer = rig_pb_rpc_peer_new(stream, server_service,
+                                  client_descriptor, dispatch);
+    rut_object_unref(stream);
     rpc_peer->pb_rpc_peer = pb_peer;
 
     rpc_peer->pb_rpc_client = rig_pb_rpc_peer_get_client(pb_peer);
