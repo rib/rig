@@ -64,6 +64,7 @@ rig_protobuf_c_data_buffer_fragment_end(protobuf_c_data_buffer_fragment_t *frag)
 #if BUFFER_RECYCLING
 static int num_recycled = 0;
 static protobuf_c_data_buffer_fragment_t *recycling_stack = 0;
+static bool recycling_stack_frozen = false;
 #endif
 
 static protobuf_c_data_buffer_fragment_t *
@@ -74,6 +75,8 @@ new_native_fragment(ProtobufCAllocator *allocator)
     frag = (protobuf_c_data_buffer_fragment_t *)allocator->alloc(
         allocator, BUF_CHUNK_SIZE);
 #else /* optimized (?) */
+    c_return_val_if_fail(recycling_stack_frozen, NULL);
+
     if (recycling_stack) {
         frag = recycling_stack;
         recycling_stack = recycling_stack->next;
@@ -90,10 +93,13 @@ new_native_fragment(ProtobufCAllocator *allocator)
 #if GSK_DEBUG_BUFFER_ALLOCATIONS || !BUFFER_RECYCLING
 #define recycle(allocator, frag) allocator->free(allocator, frag)
 #else /* optimized (?) */
+#define RECYCLING_ENABLED
 static void
 recycle(protobuf_c_data_buffer_fragment_t *frag,
         ProtobufCAllocator *allocator)
 {
+    c_return_if_fail(!recycling_stack_frozen);
+
     frag->next = recycling_stack;
     recycling_stack = frag;
     num_recycled++;
@@ -111,6 +117,8 @@ void
 rig_protobuf_c_data_buffer_cleanup_recycling_bin()
 {
 #if !GSK_DEBUG_BUFFER_ALLOCATIONS && BUFFER_RECYCLING
+    c_warn_if_fail(recycling_stack_frozen);
+
     G_LOCK(recycling_stack);
     while (recycling_stack != NULL) {
         protobuf_c_data_buffer_fragment_t *next;
@@ -122,6 +130,30 @@ rig_protobuf_c_data_buffer_cleanup_recycling_bin()
     G_UNLOCK(recycling_stack);
 #endif
 }
+
+/* The _read_direct() api may return pointers to fragments that have
+ * been recycled and to make sure that the fragment's contents aren't
+ * trashed early the api implicitly freezes the fragment bin, which
+ * must be explicitly unfrozen before reading or writting more data to
+ * the buffer.
+ */
+void
+rig_protobuf_c_data_buffer_recycling_bin_thaw(void)
+{
+#if BUFFER_RECYCLING
+    recycling_stack_frozen = false;
+#endif
+}
+
+#if BUFFER_RECYCLING
+static void
+_recycling_bin_freeze(void)
+{
+    c_return_if_fail(!recycling_stack_frozen);
+
+    recycling_stack_frozen = true;
+}
+#endif
 
 /* --- Public methods --- */
 /**
@@ -339,6 +371,55 @@ rig_protobuf_c_data_buffer_read(protobuf_c_data_buffer_t *buffer,
     assert(rv == orig_max_length || buffer->size == 0);
     CHECK_INTEGRITY(buffer);
     return rv;
+}
+
+/**
+ * rig_protobuf_c_data_buffer_read_direct:
+ *
+ * If the data we want to read is not split over multiple fragments then
+ * this returns a pointer into buffer->first_frag, otherwise it returns
+ * NULL.
+ */
+void *
+rig_protobuf_c_data_buffer_read_direct(protobuf_c_data_buffer_t *buffer,
+                                       size_t len)
+{
+    /* This optimisation relies on us being able to return pointers to
+     * fragments that may be recycled before returning so we only
+     * use it when we are managing the stack for recycling buffers
+     * and know the buffers contents wont immediately be */
+#ifdef RECYCLING_ENABLED
+    protobuf_c_data_buffer_fragment_t *first;
+
+    CHECK_INTEGRITY(buffer);
+
+    first = buffer->first_frag;
+    if (!first)
+        return NULL;
+
+    if (first->buf_length >= len) {
+        void *ret = rig_protobuf_c_data_buffer_fragment_start(first);
+        first->buf_length -= len;
+        first->buf_start += len;
+        buffer->size -= len;
+
+        if (first->buf_length == len) {
+            buffer->first_frag = first->next;
+            if (!buffer->first_frag)
+                buffer->last_frag = NULL;
+            recycle(buffer->allocator, first);
+        }
+
+        CHECK_INTEGRITY(buffer);
+
+        _recycling_bin_freeze();
+
+        return ret;
+    } else
+        return NULL;
+#else
+    return NULL;
+#endif
 }
 
 /**

@@ -69,6 +69,9 @@ void rig_protobuf_c_data_buffer_reset(protobuf_c_data_buffer_t *buffer);
 size_t rig_protobuf_c_data_buffer_read(protobuf_c_data_buffer_t *buffer,
                                        void *data,
                                        size_t max_length);
+void *rig_protobuf_c_data_buffer_read_direct(protobuf_c_data_buffer_t *buffer,
+                                             size_t len);
+void rig_protobuf_c_data_buffer_recycling_bin_thaw(void);
 size_t rig_protobuf_c_data_buffer_peek(const protobuf_c_data_buffer_t *buffer,
                                        void *data,
                                        size_t max_length);

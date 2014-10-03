@@ -1181,6 +1181,7 @@ read_client_reply(pb_rpc__client_t *client,
     closure_t *closure;
     uint8_t *packed_data;
     ProtobufCMessage *msg;
+    bool needs_thaw = false;
 
     c_return_if_fail(client->state == PB_RPC_CLIENT_STATE_CONNECTED);
 
@@ -1198,9 +1199,20 @@ read_client_reply(pb_rpc__client_t *client,
 
     /* read message and unpack */
     rig_protobuf_c_data_buffer_discard(&client->stream->incoming, 12);
-    packed_data = client->allocator->alloc(client->allocator, message_length);
-    rig_protobuf_c_data_buffer_read(
-        &client->stream->incoming, packed_data, message_length);
+
+    /* See if we can read the data without copying it first... */
+    packed_data =
+        rig_protobuf_c_data_buffer_read_direct(&client->stream->incoming,
+                                               message_length);
+    if (packed_data)
+        needs_thaw = true;
+    else {
+        /* If the data is split over multiple fragments then copy it out... */
+        packed_data = client->allocator->alloc(client->allocator,
+                                               message_length);
+        rig_protobuf_c_data_buffer_read(&client->stream->incoming,
+                                        packed_data, message_length);
+    }
 
     /* TODO: use fast temporary allocator */
     msg = protobuf_c_message_unpack(
@@ -1223,7 +1235,11 @@ read_client_reply(pb_rpc__client_t *client,
 
     /* clean up */
     protobuf_c_message_free_unpacked(msg, client->allocator);
-    client->allocator->free(client->allocator, packed_data);
+
+    if (needs_thaw)
+        rig_protobuf_c_data_buffer_recycling_bin_thaw();
+    else
+        client->allocator->free(client->allocator, packed_data);
 }
 
 static void
