@@ -23,6 +23,9 @@ typedef struct _pb_rpc__client_t pb_rpc__client_t;
 #include "rig-protobuf-c-dispatch.h"
 #include "rig-protobuf-c-stream.h"
 
+#define RIG_PB_RPC_SERVER_ERROR rig_pb_rpc_server_error_quark()
+#define RIG_PB_RPC_CLIENT_ERROR rig_pb_rpc_client_error_quark()
+
 typedef enum {
     PROTOBUF_C_RPC_ADDRESS_LOCAL, /* unix-domain socket */
     PROTOBUF_C_RPC_ADDRESS_TCP /* host/port tcp socket */

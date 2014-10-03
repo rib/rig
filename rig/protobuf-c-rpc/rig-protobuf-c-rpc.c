@@ -31,6 +31,18 @@
 
 #define MAX_FAILED_MSG_LENGTH 512
 
+c_quark_t
+rig_pb_rpc_server_error_quark(void)
+{
+    return c_quark_from_static_string("rig-pb-rpc-server-error-quark");
+}
+
+c_quark_t
+rig_pb_rpc_client_error_quark(void)
+{
+    return c_quark_from_static_string("rig-pb-rpc-client-error-quark");
+}
+
 typedef enum {
     PB_RPC_CLIENT_STATE_INIT,
     PB_RPC_CLIENT_STATE_NAME_LOOKUP,
@@ -1172,28 +1184,31 @@ retry_write:
     PROTOBUF_C_BUFFER_SIMPLE_CLEAR(&buffer_simple);
 }
 
-static void
+static bool
 read_client_reply(pb_rpc__client_t *client,
                   uint32_t method_index,
                   uint32_t message_length,
-                  uint32_t request_id)
+                  uint32_t request_id,
+                  c_error_t **error)
 {
     closure_t *closure;
     uint8_t *packed_data;
     ProtobufCMessage *msg;
     bool needs_thaw = false;
 
-    c_return_if_fail(client->state == PB_RPC_CLIENT_STATE_CONNECTED);
+    c_return_val_if_fail(client->state == PB_RPC_CLIENT_STATE_CONNECTED, false);
 
     /* lookup request by id */
     if (request_id > client->info.connected.closures_alloced ||
         request_id == 0 ||
-        client->info.connected.closures[request_id - 1].response_type == NULL) {
-        client_failed(client,
-                      PB_RPC_ERROR_CODE_BAD_REQUEST,
-                      "bad request-id in response from server: %d",
-                      request_id);
-        return;
+        client->info.connected.closures[request_id - 1].response_type == NULL)
+    {
+        c_set_error(error,
+                    RIG_PB_RPC_CLIENT_ERROR,
+                    PB_RPC_ERROR_CODE_BAD_REQUEST,
+                    "bad request-id in response from server: %d",
+                    request_id);
+        return false;
     }
     closure = client->info.connected.closures + (request_id - 1);
 
@@ -1215,14 +1230,17 @@ read_client_reply(pb_rpc__client_t *client,
     }
 
     /* TODO: use fast temporary allocator */
-    msg = protobuf_c_message_unpack(
-        closure->response_type, client->allocator, message_length, packed_data);
+    msg = protobuf_c_message_unpack(closure->response_type,
+                                    client->allocator,
+                                    message_length, packed_data);
     if (msg == NULL) {
-        fprintf(stderr, "unable to unpack msg of length %u", message_length);
-        client_failed(
-            client, PB_RPC_ERROR_CODE_UNPACK_ERROR, "failed to unpack message");
+        c_set_error(error,
+                    RIG_PB_RPC_CLIENT_ERROR,
+                    PB_RPC_ERROR_CODE_UNPACK_ERROR,
+                    "failed to unpack message of length %u",
+                    message_length);
         client->allocator->free(client->allocator, packed_data);
-        return;
+        return false;
     }
 
     /* invoke closure */
@@ -1240,13 +1258,16 @@ read_client_reply(pb_rpc__client_t *client,
         rig_protobuf_c_data_buffer_recycling_bin_thaw();
     else
         client->allocator->free(client->allocator, packed_data);
+
+    return true;
 }
 
-static void
+static bool
 read_server_request(pb_rpc__server_connection_t *conn,
                     uint32_t method_index,
                     uint32_t message_length,
-                    uint32_t request_id)
+                    uint32_t request_id,
+                    c_error_t **error)
 {
     ProtobufCService *service = conn->server->service;
     ProtobufCAllocator *allocator = conn->server->allocator;
@@ -1255,11 +1276,12 @@ read_server_request(pb_rpc__server_connection_t *conn,
     server_request_t *server_request;
 
     if ((method_index >= conn->server->service->descriptor->n_methods)) {
-        server_connection_failed(conn,
-                                 PB_RPC_ERROR_CODE_BAD_REQUEST,
-                                 "bad method_index %u",
-                                 method_index);
-        return;
+        c_set_error(error,
+                    RIG_PB_RPC_SERVER_ERROR,
+                    PB_RPC_ERROR_CODE_BAD_REQUEST,
+                    "bad method_index %u",
+                    method_index);
+        return false;
     }
 
     /* Read message */
@@ -1276,9 +1298,11 @@ read_server_request(pb_rpc__server_connection_t *conn,
         packed_data);
     allocator->free(allocator, packed_data);
     if (message == NULL) {
-        server_connection_failed(
-            conn, PB_RPC_ERROR_CODE_BAD_REQUEST, "error unpacking message");
-        return;
+        c_set_error(error,
+                    RIG_PB_RPC_SERVER_ERROR,
+                    PB_RPC_ERROR_CODE_BAD_REQUEST,
+                    "error unpacking message");
+        return false;
     }
 
     /* Invoke service (note that it may call back immediately) */
@@ -1289,10 +1313,13 @@ read_server_request(pb_rpc__server_connection_t *conn,
                     message,
                     server_connection_response_closure,
                     server_request);
+
+    return true;
 }
 
-static void
-read_incoming_messages(rig_pb_stream_t *stream)
+static bool
+read_incoming_messages(rig_pb_stream_t *stream,
+                       c_error_t **error)
 {
     /* NB: A stream may represent a server connection, a client or
      * both and it's only once we've read the header for any messages
@@ -1310,8 +1337,7 @@ read_incoming_messages(rig_pb_stream_t *stream)
         rig_protobuf_c_data_buffer_peek(&stream->incoming, header, 12);
         method_index = uint32_from_le(header[0]);
         message_length = uint32_from_le(header[1]);
-        request_id =
-            header[2]; /* store in whatever endianness it comes in */
+        request_id = header[2]; /* store in whatever endianness it comes in */
 
         if (stream->incoming.size < 12 + message_length)
             break;
@@ -1322,29 +1348,41 @@ read_incoming_messages(rig_pb_stream_t *stream)
          */
 
         if (client && method_index == ~0) {
-            read_client_reply(client, method_index, message_length, request_id);
+            if (!read_client_reply(client, method_index,
+                                   message_length, request_id,
+                                   error))
+                return false;
         } else if (conn && method_index != ~0) {
-            read_server_request(conn, method_index, message_length, request_id);
+            if (!read_server_request(conn, method_index,
+                                     message_length, request_id,
+                                     error))
+                return false;
         } else {
             if (conn) {
-                server_connection_failed(conn,
-                                         PB_RPC_ERROR_CODE_BAD_REQUEST,
-                                         "bad method_index %u",
-                                         method_index);
+                c_set_error(error,
+                            RIG_PB_RPC_SERVER_ERROR,
+                            PB_RPC_ERROR_CODE_BAD_REQUEST,
+                            "bad method_index %u",
+                            method_index);
             } else {
-                client_failed(client,
-                              PB_RPC_ERROR_CODE_BAD_REQUEST,
-                              "bad method_index in response from server: %d",
-                              method_index);
+                c_set_error(error,
+                            RIG_PB_RPC_CLIENT_ERROR,
+                            PB_RPC_ERROR_CODE_BAD_REQUEST,
+                            "bad method_index in response from server: %d",
+                            method_index);
             }
+            return false;
         }
     }
+
+    return true;
 }
 
 static void
 handle_data_buffer_stream_idle(rig_protobuf_c_dispatch_t *dispatch, void *data)
 {
     rig_pb_stream_t *stream = data;
+    c_error_t *error = NULL;
 
     stream->read_idle = NULL;
 
@@ -1358,7 +1396,22 @@ handle_data_buffer_stream_idle(rig_protobuf_c_dispatch_t *dispatch, void *data)
     rig_protobuf_c_data_buffer_drain(&stream->incoming,
                                      &stream->other_end->outgoing);
 
-    read_incoming_messages(stream);
+    if (!read_incoming_messages(stream, &error)) {
+
+        if (error->domain == RIG_PB_RPC_SERVER_ERROR) {
+            pb_rpc__server_connection_t *conn = stream->conn;
+            server_connection_failed(conn,
+                                     error->code,
+                                     error->message);
+        } else {
+            pb_rpc__client_t *client = stream->client;
+            client_failed(client,
+                          error->code,
+                          error->message);
+        }
+
+        c_error_free(error);
+    }
 }
 
 static void
@@ -1423,8 +1476,25 @@ handle_fd_stream_events(int fd, unsigned events, void *data)
             }
 
             return;
-        } else
-            read_incoming_messages(stream);
+        } else {
+            c_error_t *error = NULL;
+
+            read_incoming_messages(stream, &error);
+
+            if (!read_incoming_messages(stream, &error)) {
+
+                if (error->domain == RIG_PB_RPC_SERVER_ERROR) {
+                    server_connection_failed(conn,
+                                             error->code,
+                                             error->message);
+                } else {
+                    client_failed(client,
+                                  error->code,
+                                  error->message);
+                }
+                c_error_free(error);
+            }
+        }
     }
 
     if ((events & PROTOBUF_C_EVENT_WRITABLE) != 0 &&
