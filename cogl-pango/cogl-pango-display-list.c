@@ -340,7 +340,7 @@ emit_vertex_buffer_geometry(cg_framebuffer_t *fb,
                                                 attributes,
                                                 2 /* n_attributes */);
 
-#ifdef CLUTTER_CG_HAS_GL
+#ifdef CG_HAS_GL
         if (_cg_has_private_feature(dev, CG_PRIVATE_FEATURE_QUADS))
             cg_primitive_set_mode(prim, GL_QUADS);
         else
