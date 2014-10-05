@@ -266,8 +266,6 @@ AC_DEFUN([AM_COGL],
 
           cogl_gl_headers="GLES2/gl2.h GLES2/gl2ext.h"
           AC_DEFINE([HAVE_CG_GLES2], 1, [Have GLES 2.0 for rendering])
-          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS CG_HAS_GLES CLUTTER_CG_HAS_GLES"
-          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS CG_HAS_GLES2"
           HAVE_GLES2=1
 
           AS_IF([test "x$enable_emscripten" = "xyes"],
@@ -350,7 +348,6 @@ AC_DEFUN([AM_COGL],
           AC_DEFINE([HAVE_CG_GL], [1], [Have GL for rendering])
 
           COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS CG_HAS_GL"
-          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS CLUTTER_CG_HAS_GL"
           HAVE_GL=1
         ])
 
