@@ -18,6 +18,6 @@
 #define C_HAVE_STATIC_ASSERT
 #endif
 
-typedef @PIDTYPE@ UPid;
+typedef @PIDTYPE@ c_pid_t;
 
 #endif
