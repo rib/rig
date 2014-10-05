@@ -3,7 +3,7 @@
 # Please read the README before running this script!
 
 set -e
-set -x
+#set -x
 
 UNSET_VARS=(
     LD_LIBRARY_PATH
@@ -248,6 +248,7 @@ function build_source ()
     local prefix
     local branch
     local config_name="configure"
+    local top_srcdir="."
     local is_autotools=1
     local is_cmake
     local cmake_args=""
@@ -269,6 +270,7 @@ function build_source ()
 	    -unpackdir) shift; unpack_dir="$1"; shift ;;
 	    -branch) shift; branch="$1"; shift ;;
 	    -configure) shift; config_name="$1"; shift ;;
+	    -top_srcdir) shift; top_srcdir="$1"; shift ;;
             -not_autotools) shift; unset is_autotools ;;
             -cmake) shift; unset is_autotools; is_cmake=1 ;;
             -cmake_arg) shift; cmake_args="$cmake_args $1"; shift ;;
@@ -333,7 +335,7 @@ function build_source ()
         apply_patches "$PATCHES_DIR/$project_name" "$BUILD_DIR/$build_dir"
     fi
 
-    cd "$BUILD_DIR/$build_dir"
+    cd "$BUILD_DIR/$build_dir/$top_srcdir"
 
     for i in $config_guess_dirs
     do
@@ -455,7 +457,7 @@ fi
 RIG_SRC_DIR=`realpath $1`
 RIG_BUILD_META_DIR=$RIG_SRC_DIR/build/linux-android
 
-if ! test -f $RIG_BUILD_META_DIR/makefiles/cogl-Android.mk; then
+if ! test -f $RIG_BUILD_META_DIR/makefiles/icu-Android.mk; then
     echo "Could not find Rig source at $1"
     usage
 fi
@@ -563,20 +565,6 @@ build_tool -retool_cmd "./bootstrap" \
     "git://git.savannah.gnu.org/libtool.git"
 build_tool "http://pkgconfig.freedesktop.org/releases/pkg-config-0.27.1.tar.gz" \
     --with-internal-glib
-build_tool "https://download.gnome.org/sources/gtk-doc/1.20/gtk-doc-1.20.tar.xz"
-
-# The Android NDK comes with a small cpu-features api that is used by pixman
-# which, as a special case, needs to be build via ndk-build...
-if ! test -d $BUILD_DIR/cpufeatures; then
-    mkdir $BUILD_DIR/cpufeatures
-    cd $BUILD_DIR/cpufeatures
-    ln -s $ANDROID_NDK_DIR/sources/android/cpufeatures jni
-    ndk-build APP_MODULES=cpufeatures
-    find ./obj -iname libcpufeatures.a -exec mv {} . \;
-else
-    echo "Skipping cpufeatures as it is already built"
-fi
-
 
 export gl_cv_header_working_stdint_h=yes
 
@@ -601,28 +589,8 @@ build_dep -module gettext -dep libiconv -autotools_dir ./build-aux \
 
 #make -C gettext-tools/intl install
 
-export glib_cv_stack_grows=no
-export glib_cv_uscore=no
-export ac_cv_func_posix_getpwuid_r=no
-export ac_cv_func_posix_getgrgid_r=no
-
-#export ACLOCAL_INCLUDES="-I $MODULES_DIR/glib/share/aclocal $ACLOCAL_INCLUDES"
-prev_CFLAGS="$CFLAGS"
-export CFLAGS="$prev_CFLAGS -g3 -O0"
-build_dep -module glib \
-    -dep libiconv -dep gettext -dep libffi \
-    -branch origin/android \
-    -retool \
-    "https://github.com/djdeath/glib.git" \
-    --with-libiconv=gnu \
-    --disable-modular-tests
-CFLAGS=$prev_CFLAGS
-
-rm -fr $MODULES_DIR/glib/bin
-rm -fr $MODULES_DIR/glib/share/gtk-doc
-
 build_dep -module libpng -retool -retool_cmd "autoreconf -v" \
-    "http://downloads.sourceforge.net/project/libpng/libpng16/1.6.9/libpng-1.6.9.tar.gz"
+    "http://downloads.sourceforge.net/project/libpng/libpng16/1.6.13/libpng-1.6.13.tar.gz"
 export LIBPNG_CFLAGS="-I$MODULES_DIR/libpng/include"
 export LIBPNG_LDFLAGS="-L$MODULES_DIR/libpng/lib -lpng16"
 
@@ -633,16 +601,6 @@ build_dep -module libjpeg -retool \
 
 build_dep -module freetype -retool \
     "http://download.savannah.gnu.org/releases/freetype/freetype-2.5.2.tar.bz2"
-
-prev_CFLAGS="$CFLAGS"
-export CFLAGS="$prev_CFLAGS -I$BUILD_DIR/cpufeatures/jni"
-prev_LDFLAGS="$LDFLAGS"
-export LDFLAGS="-L$BUILD_DIR/cpufeatures -lcpufeatures"
-build_dep -module pixman -retool \
-    "http://www.cairographics.org/releases/pixman-0.32.4.tar.gz" \
-    --disable-gtk
-CFLAGS=$prev_CFLAGS
-LDFLAGS=$prev_LDFLAGS
 
 build_dep -module libxml2 -retool \
     "ftp://xmlsoft.org/libxml2/libxml2-2.9.0.tar.gz" \
@@ -655,33 +613,23 @@ build_dep -module fontconfig -retool \
     --disable-docs \
     --enable-libxml2
 
-build_dep -module cairo -dep freetype -dep gettext -make_arg V=1 -retool \
-    "http://www.cairographics.org/releases/cairo-1.12.16.tar.xz" \
-    --disable-xlib \
-    --disable-trace
+build_tool -branch origin/rig \
+    -top_srcdir "source" \
+    -retool \
+    "https://github.com/rig-project/icu.git" \
+    --disable-samples \
+    --disable-tests \
+    --disable-extras
 
-prev_CFLAGS="$CFLAGS"
-export CFLAGS="\
- -DU_USING_ICU_NAMESPACE=0 \
- -DU_CHARSET_IS_UTF8=1 \
- -DUNISTR_FROM_CHAR_EXPLICIT=explicit \
- -DUNISTR_FROM_STRING_EXPLICIT=explicit \
- -DU_NO_DEFAULT_INCLUDE_UTF_HEADERS"
-build_tool -unpackdir icu -configure source/configure \
-  "http://download.icu-project.org/files/icu4c/53.1/icu4c-53_1-src.tgz"
-CFLAGS=$prev_CFLAGS
-
-prev_CFLAGS="$CFLAGS"
-export CFLAGS="\
- -DU_USING_ICU_NAMESPACE=0 \
- -DU_CHARSET_IS_UTF8=1 \
- -DUNISTR_FROM_CHAR_EXPLICIT=explicit \
- -DUNISTR_FROM_STRING_EXPLICIT=explicit \
- -DU_NO_DEFAULT_INCLUDE_UTF_HEADERS"
-build_dep -module icu -unpackdir icu -configure source/configure \
-  "http://download.icu-project.org/files/icu4c/53.1/icu4c-53_1-src.tgz" \
-  --with-cross-build=$BUILD_DIR/tool-icu
-CFLAGS=$prev_CFLAGS
+build_dep -module icu -branch origin/rig \
+    -top_srcdir "source" \
+    -retool \
+    "https://github.com/rig-project/icu.git" \
+    --disable-tools \
+    --disable-data \
+    --disable-samples \
+    --disable-tests \
+    --disable-extras
 
 #We don't want modules picking up the native build of ICU
 rm -f $TOOLS_PREFIX/lib/pkg-config/icu*
@@ -689,32 +637,6 @@ rm -f $TOOLS_PREFIX/lib/pkg-config/icu*
 build_dep -module harfbuzz -dep gettext -dep icu -dep freetype -retool \
     "http://www.freedesktop.org/software/harfbuzz/release/harfbuzz-0.9.26.tar.bz2" \
     --with-icu=yes
-
-#XXX: the freetype check is blocked by the fontconfig check, is blocked by the harfbuzz check!
-build_dep -module pango -dep glib -dep harfbuzz -dep fontconfig -dep freetype -dep cairo -dep gettext -retool \
-    "http://ftp.gnome.org/pub/GNOME/sources/pango/1.36/pango-1.36.2.tar.xz" \
-    --disable-introspection \
-    --with-included-modules=yes \
-    --without-dynamic-modules \
-    --without-x
-
-build_dep -module gdk-pixbuf -dep glib -dep libpng -dep tiff -dep libjpeg -dep gettext -retool \
-    "http://ftp.gnome.org/pub/GNOME/sources/gdk-pixbuf/2.28/gdk-pixbuf-2.28.2.tar.xz" \
-    --disable-introspection \
-    --disable-glibtest \
-    --disable-modules \
-    --without-gdiplus \
-    --with-included-loaders=png,jpeg,tiff \
-    --disable-gio-sniffing
-
-build_dep -module glib-android -dep glib -dep gettext -retool -retool_cmd "autoreconf -fvi" \
-    "https://github.com/dlespiau/glib-android.git"
-
-prev_CFLAGS="$CFLAGS"
-export CFLAGS="$prev_CFLAGS -g3 -O0"
-build_dep -module sdl2 -branch origin/android -retool -retool_cmd "libtoolize; ./autogen.sh" \
-    "https://github.com/rig-project/sdl.git"
-CFLAGS=$prev_CFLAGS
 
 build_dep -module libuv \
     "https://github.com/joyent/libuv.git"
@@ -726,18 +648,6 @@ build_dep -module libuv \
 #    -cmake_arg -D -cmake_arg CMAKE_TOOLCHAIN_FILE=$BUILD_DIR/opencv/platforms/android/android.toolchain.cmake \
 #    "https://github.com/Itseez/opencv.git"
 #ANDROID_NDK=$save_ANDROID_NDK
-
-prev_CFLAGS="$CFLAGS"
-export CFLAGS="$prev_CFLAGS -g3 -O0"
-build_dep -module cogl -branch origin/rig -dep glib -dep gdk-pixbuf -dep libiconv -dep gettext -retool \
-    "https://github.com/rig-project/cogl.git" \
-    --disable-gl \
-    --disable-gles1 \
-    --enable-gles2 \
-    --enable-sdl2 \
-    --disable-android-egl-platform \
-    --enable-debug
-CFLAGS=$prev_CFLAGS
 
 build_tool "http://protobuf.googlecode.com/files/protobuf-2.5.0.tar.gz"
 
@@ -773,7 +683,6 @@ fi
 
 exit 0
 
-
 if test -z $RIG_COMMIT; then
     build_dep -d rig "$RIG_GITDIR"
 else
@@ -787,55 +696,21 @@ cp -v "$STAGING_PREFIX/bin/rig" "$PKG_RELEASEDIR/rig-bin"
 mkdir -p "$PKG_LIBDIR"
 
 for lib in \
-    libSDL2 \
     libasprintf \
-    libavahi-client \
-    libavahi-common \
-    libavahi-core \
-    libavahi-glib \
     libbz2 \
-    libcairo \
-    libcogl-gst \
-    libcogl-pango2 \
-    libcogl-path \
-    libcogl2 \
     libdaemon \
     libdbus-1 \
     libffi \
     libfontconfig \
     libfreetype \
-    libgdk_pixbuf-2.0 \
     libgettextlib-0.18.2 \
     libgettextlib \
     libgettextpo \
     libgettextsrc-0.18.2 \
     libgettextsrc \
-    libgio-2.0 \
-    libglib-2.0 \
-    libgmodule-2.0 \
-    libgobject-2.0 \
-    libgthread-2.0 \
-    libgstfft-1.0 \
-    libgstaudio-1.0 \
-    libgstvideo-1.0 \
-    libgsttag-1.0 \
-    libgstcontroller-1.0 \
-    libgstbase-1.0 \
-    libgstreamer-1.0 \
-    libgstfft-1.0 \
-    libgstaudio-1.0 \
-    libgstvideo-1.0 \
-    libgstbase-1.0 \
-    libgsttag-1.0 \
-    libgstcontroller-1.0 \
-    libgstreamer-1.0 \
     libharfbuzz \
     libjpeg \
     liblzma \
-    libpango-1.0 \
-    libpangocairo-1.0 \
-    libpangoft2-1.0 \
-    libpixman-1 \
     libpng \
     libpng16 \
     libprotobuf-c \
@@ -846,9 +721,6 @@ for lib in \
 do
     cp -av $STAGING_PREFIX/lib/$lib*.so* "$PKG_LIBDIR"
 done
-
-mkdir -p "$PKG_LIBDIR"/gio
-cp -av $STAGING_PREFIX/lib/gio/modules "$PKG_LIBDIR"/gio
 
 cp -av "$BUILD_DATA_DIR/scripts/"{auto-update.sh,rig-wrapper.sh} \
     "$BUILD_DIR/rig/tools/rig-check-signature" \

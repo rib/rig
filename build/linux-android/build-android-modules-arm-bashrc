@@ -2,7 +2,7 @@ if test -z $RIG_SRC_DIR; then
     RIG_SRC_DIR=$PWD
 fi
 
-export ANDROID_NDK_DIR="$HOME/src/android/android-ndk-r9d"
+export ANDROID_NDK_DIR="$HOME/src/android/android-ndk-r10b"
 export ANDROID_NDK_TOOLCHAIN="$HOME/local/android-toolchain_arm"
 export ANDROID_SDK_DIR="$HOME/src/android-sdk-linux"
 export ANDROID_HOST_TRIPPLE=arm-linux-androideabi

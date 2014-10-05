@@ -1,0 +1,53 @@
+Download and unpack the latest android SDK
+Download and unpack ndk r10b
+
+Follow the NDK docs on building a standalone toolchain, E.g.:
+
+build/tools/make-standalone-toolchain.sh --platform=android-18 --install-dir=$HOME/local/android-toolchain
+
+Edit the build-android-modules-arm-bashrc file in this directory to
+point to the locations for the Android SDK and NDK.
+
+Source the bashrc file into your shell. (Further notes assume they can
+refer to these variables.)
+
+source build-android-modules-arm-bashrc
+
+Build the modules:
+
+./build-android-modules.sh
+
+Build Rig itself:
+
+cd ../android/project
+
+android list targets
+
+Then run:
+
+android update project -p . -t <TARGET_ID>
+
+NDK_DEBUG=1 ndk-build
+
+Then build an apk using:
+
+ant debug
+
+Connect to a device via a usb cable
+
+Install the apk:
+$ adb install bin/RigSlave-debug.apk
+
+Get a shell on the device and run the test:
+adb shell am start -a android.intent.action.MAIN -n org.rig.app.RigSlave/android.app.NativeActivity
+
+ndk-gdb
+NB: you may need to switch thread once connected via gdb
+
+To rebuild and re-install do something like:
+rm -fr bin libs obj && NDK_DEBUG=1 ndk-build -B && ant debug && adb install -r bin/RigSlave-debug.apk
+
+It shouldn't be necessary to scrap everything for each re-build but
+I've been finding that the tools don't always notice when things have
+changed and don't rebuild things when you want them too. For now I've
+resorted to scrapping everthing each re-build just to be sure.
