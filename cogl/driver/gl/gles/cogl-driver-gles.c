@@ -55,6 +55,9 @@
 #ifndef GL_RG8
 #define GL_RG8 0x822B
 #endif
+#ifndef GL_BGRA_EXT
+#define GL_BGRA_EXT 0x80E1
+#endif
 
 static bool
 _cg_driver_pixel_format_from_gl_internal(cg_device_t *dev,
