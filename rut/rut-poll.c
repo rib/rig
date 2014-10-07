@@ -40,6 +40,7 @@
 #include <cogl/cogl.h>
 #ifdef USE_SDL
 #include <cogl/cogl-sdl.h>
+#include "rut-sdl-shell.h"
 #endif
 
 #include "rut-poll.h"
@@ -384,7 +385,7 @@ dispatch_sdl_pipe_events(void *user_data, int revents)
     while (SDL_PollEvent(&event)) {
         cg_sdl_handle_event(shell->rut_ctx->cg_device, &event);
 
-        rut_shell_handle_sdl_event(shell, &event);
+        rut_sdl_shell_handle_sdl_event(shell, &event);
     }
 }
 
@@ -434,7 +435,7 @@ dispatch_sdl_busy_wait(void *user_data, int fd, int revents)
     while (SDL_PollEvent(&event)) {
         cg_sdl_handle_event(shell->rut_ctx->cg_device, &event);
 
-        rut_shell_handle_sdl_event(shell, &event);
+        rut_sdl_shell_handle_sdl_event(shell, &event);
     }
 }
 

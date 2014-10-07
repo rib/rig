@@ -175,6 +175,24 @@ typedef struct {
 typedef void (*RutPrePaintCallback)(rut_object_t *graphable, void *user_data);
 
 typedef struct {
+    rut_list_t link;
+
+    cg_onscreen_t *onscreen;
+
+    rut_cursor_t current_cursor;
+    /* This is used to record whether anything set a cursor while
+     * handling a mouse motion event. If nothing sets one then the shell
+     * will put the cursor back to the default pointer. */
+    bool cursor_set;
+
+#if defined(USE_SDL)
+    SDL_SysWMinfo sdl_info;
+    SDL_Window *sdl_window;
+    SDL_Cursor *cursor_image;
+#endif
+} rut_shell_onscreen_t;
+
+typedef struct {
     rut_list_t list_node;
 
     int depth;
@@ -183,27 +201,6 @@ typedef struct {
     RutPrePaintCallback callback;
     void *user_data;
 } rut_shell_pre_paint_entry_t;
-
-#ifdef USE_SDL
-typedef struct _rut_sdl_event_t {
-    SDL_Event sdl_event;
-
-    /* SDL uses global state to report keyboard modifier and button states
-     * which is a pain if events are being batched before processing them
-     * on a per-frame basis since we want to be able to track how this
-     * state changes relative to events. */
-    SDL_Keymod mod_state;
-
-    /* It could be nice if SDL_MouseButtonEvents had a buttons member
-     * that had the full state of buttons as returned by
-     * SDL_GetMouseState () */
-    uint32_t buttons;
-} rut_sdl_event_t;
-
-typedef void (*rut_sdl_event_handler_t)(rut_shell_t *shell,
-                                        SDL_Event *event,
-                                        void *user_data);
-#endif
 
 typedef struct _rut_input_queue_t {
     rut_shell_t *shell;
@@ -337,6 +334,27 @@ struct _rut_shell_t {
     rut_list_t onscreens;
 
     rut_object_t *selection;
+
+    struct {
+        cg_onscreen_t *(*input_event_get_onscreen)(rut_input_event_t *event);
+
+        int32_t (*key_event_get_keysym)(rut_input_event_t *event);
+        rut_key_event_action_t (*key_event_get_action)(rut_input_event_t *event);
+        rut_modifier_state_t (*key_event_get_modifier_state)(rut_input_event_t *event);
+
+        rut_motion_event_action_t (*motion_event_get_action)(rut_input_event_t *event);
+        rut_button_state_t (*motion_event_get_button)(rut_input_event_t *event);
+        rut_button_state_t (*motion_event_get_button_state)(rut_input_event_t *event);
+        rut_modifier_state_t (*motion_event_get_modifier_state)(rut_input_event_t *event);
+        void (*motion_event_get_transformed_xy)(rut_input_event_t *event,
+                                                float *x,
+                                                float *y);
+
+        const char *(*text_event_get_text)(rut_input_event_t *event);
+
+        void (*free_input_event)(rut_input_event_t *event);
+
+    } platform;
 };
 
 typedef enum _rut_input_transform_type_t {

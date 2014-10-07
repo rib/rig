@@ -58,7 +58,9 @@
 #endif
 
 #include <cogl/cogl.h>
+#ifdef USE_SDL
 #include <cogl/cogl-sdl.h>
+#endif
 
 #include "rut-transform-private.h"
 #include "rut-shell.h"
@@ -77,9 +79,8 @@
 #include "rut-camera.h"
 #include "rut-poll.h"
 
-#if defined(USE_SDL)
-#include "rut-sdl-keysyms.h"
-#include "SDL_syswm.h"
+#ifdef USE_SDL
+#include "rut-sdl-shell.h"
 #endif
 
 #ifdef USE_GSTREAMER
@@ -93,24 +94,6 @@
 #ifdef __ANDROID__
 #include <android/log.h>
 #endif
-
-typedef struct {
-    rut_list_t link;
-
-    cg_onscreen_t *onscreen;
-
-    rut_cursor_t current_cursor;
-    /* This is used to record whether anything set a cursor while
-     * handling a mouse motion event. If nothing sets one then the shell
-     * will put the cursor back to the default pointer. */
-    bool cursor_set;
-
-#if defined(USE_SDL)
-    SDL_SysWMinfo sdl_info;
-    SDL_Window *sdl_window;
-    SDL_Cursor *cursor_image;
-#endif
-} rut_shell_onscreen_t;
 
 rut_context_t *
 rut_shell_get_context(rut_shell_t *shell)
@@ -216,62 +199,11 @@ rut_input_event_get_onscreen(rut_input_event_t *event)
     if (shell->headless)
         return NULL;
 
-#if defined(USE_SDL)
+    if (shell->platform.input_event_get_onscreen)
+        return shell->platform.input_event_get_onscreen(event);
 
-    {
-        rut_shell_onscreen_t *shell_onscreen;
-        rut_sdl_event_t *rut_sdl_event = event->native;
-        SDL_Event *sdl_event = &rut_sdl_event->sdl_event;
-        Uint32 window_id;
-
-        switch ((SDL_EventType)sdl_event->type) {
-        case SDL_KEYDOWN:
-        case SDL_KEYUP:
-            window_id = sdl_event->key.windowID;
-            break;
-
-        case SDL_TEXTEDITING:
-            window_id = sdl_event->edit.windowID;
-            break;
-
-        case SDL_TEXTINPUT:
-            window_id = sdl_event->text.windowID;
-            break;
-
-        case SDL_MOUSEMOTION:
-            window_id = sdl_event->motion.windowID;
-            break;
-
-        case SDL_MOUSEBUTTONDOWN:
-        case SDL_MOUSEBUTTONUP:
-            window_id = sdl_event->button.windowID;
-            break;
-
-        case SDL_MOUSEWHEEL:
-            window_id = sdl_event->wheel.windowID;
-            break;
-
-        default:
-            return NULL;
-        }
-
-        rut_list_for_each(shell_onscreen, &shell->onscreens, link)
-        {
-            SDL_Window *sdl_window =
-                cg_sdl_onscreen_get_window(shell_onscreen->onscreen);
-
-            if (SDL_GetWindowID(sdl_window) == window_id)
-                return shell_onscreen->onscreen;
-        }
-
-        return NULL;
-    }
-
-#else
-
-    /* If there is only onscreen then we'll assume that all events are
-     * related to that. This will be the case when using Android or
-     * SDL1 */
+    /* If there is only one onscreen then we'll assume that all events are
+     * related to that. E.g. this will be the case when using Android */
     if (shell->onscreens.next != &shell->onscreens &&
         shell->onscreens.next->next == &shell->onscreens) {
         rut_shell_onscreen_t *shell_onscreen =
@@ -279,8 +211,6 @@ rut_input_event_get_onscreen(rut_input_event_t *event)
         return shell_onscreen->onscreen;
     } else
         return NULL;
-
-#endif
 }
 
 int32_t
@@ -299,16 +229,7 @@ rut_key_event_get_keysym(rut_input_event_t *event)
         }
     }
 
-#if defined(USE_SDL)
-    {
-        rut_sdl_event_t *rut_sdl_event = event->native;
-        SDL_Event *sdl_event = &rut_sdl_event->sdl_event;
-
-        return _rut_keysym_from_sdl_keysym(sdl_event->key.keysym.sym);
-    }
-#else
-#error "Unknown input system"
-#endif
+    return shell->platform.key_event_get_keysym(event);
 }
 
 rut_key_event_action_t
@@ -328,23 +249,7 @@ rut_key_event_get_action(rut_input_event_t *event)
         }
     }
 
-#if defined(USE_SDL)
-    {
-        rut_sdl_event_t *rut_sdl_event = event->native;
-        SDL_Event *sdl_event = &rut_sdl_event->sdl_event;
-        switch (sdl_event->type) {
-        case SDL_KEYUP:
-            return RUT_KEY_EVENT_ACTION_UP;
-        case SDL_KEYDOWN:
-            return RUT_KEY_EVENT_ACTION_DOWN;
-        default:
-            c_warn_if_reached();
-            return RUT_KEY_EVENT_ACTION_UP;
-        }
-    }
-#else
-#error "Unknown input system"
-#endif
+    return shell->platform.key_event_get_action(event);
 }
 
 rut_motion_event_action_t
@@ -367,25 +272,7 @@ rut_motion_event_get_action(rut_input_event_t *event)
         }
     }
 
-#if defined(USE_SDL)
-    {
-        rut_sdl_event_t *rut_sdl_event = event->native;
-        SDL_Event *sdl_event = &rut_sdl_event->sdl_event;
-        switch (sdl_event->type) {
-        case SDL_MOUSEBUTTONDOWN:
-            return RUT_MOTION_EVENT_ACTION_DOWN;
-        case SDL_MOUSEBUTTONUP:
-            return RUT_MOTION_EVENT_ACTION_UP;
-        case SDL_MOUSEMOTION:
-            return RUT_MOTION_EVENT_ACTION_MOVE;
-        default:
-            c_warn_if_reached(); /* Not a motion event */
-            return RUT_MOTION_EVENT_ACTION_MOVE;
-        }
-    }
-#else
-#error "Unknown input system"
-#endif
+    return shell->platform.motion_event_get_action(event);
 }
 
 rut_button_state_t
@@ -406,47 +293,8 @@ rut_motion_event_get_button(rut_input_event_t *event)
         }
     }
 
-#if defined(USE_SDL)
-    {
-        rut_sdl_event_t *rut_sdl_event = event->native;
-        SDL_Event *sdl_event = &rut_sdl_event->sdl_event;
-
-        c_return_val_if_fail((sdl_event->type == SDL_MOUSEBUTTONUP ||
-                              sdl_event->type == SDL_MOUSEBUTTONDOWN),
-                             RUT_BUTTON_STATE_1);
-
-        switch (sdl_event->button.button) {
-        case SDL_BUTTON_LEFT:
-            return RUT_BUTTON_STATE_1;
-        case SDL_BUTTON_MIDDLE:
-            return RUT_BUTTON_STATE_2;
-        case SDL_BUTTON_RIGHT:
-            return RUT_BUTTON_STATE_3;
-        default:
-            c_warn_if_reached();
-            return RUT_BUTTON_STATE_1;
-        }
-    }
-#else
-#error "Unknown input system"
-#endif
+    return shell->platform.motion_event_get_button(event);
 }
-#ifdef USE_SDL
-static rut_button_state_t
-rut_button_state_for_sdl_state(SDL_Event *event,
-                               uint8_t sdl_state)
-{
-    rut_button_state_t rut_state = 0;
-    if (sdl_state & SDL_BUTTON(1))
-        rut_state |= RUT_BUTTON_STATE_1;
-    if (sdl_state & SDL_BUTTON(2))
-        rut_state |= RUT_BUTTON_STATE_2;
-    if (sdl_state & SDL_BUTTON(3))
-        rut_state |= RUT_BUTTON_STATE_3;
-
-    return rut_state;
-}
-#endif /* USE_SDL */
 
 rut_button_state_t
 rut_motion_event_get_button_state(rut_input_event_t *event)
@@ -468,76 +316,8 @@ rut_motion_event_get_button_state(rut_input_event_t *event)
         }
     }
 
-#if defined(USE_SDL)
-    {
-        rut_sdl_event_t *rut_sdl_event = event->native;
-        SDL_Event *sdl_event = &rut_sdl_event->sdl_event;
-
-        return rut_button_state_for_sdl_state(sdl_event,
-                                              rut_sdl_event->buttons);
-    }
-#if 0
-    /* FIXME: we need access to the rut_context_t here so that
-     * we can statefully track the changes to the button
-     * mask because the button up and down events don't
-     * tell you what other buttons are currently down they
-     * only tell you what button changed.
-     */
-
-    switch (sdl_event->type)
-    {
-    case SDL_MOUSEBUTTONDOWN:
-    case SDL_MOUSEBUTTONUP:
-        switch (sdl_event->motion.button)
-        {
-        case 1:
-            return RUT_BUTTON_STATE_1;
-        case 2:
-            return RUT_BUTTON_STATE_2;
-        case 3:
-            return RUT_BUTTON_STATE_3;
-        default:
-            c_warning ("Out of range SDL button number");
-            return 0;
-        }
-    case SDL_MOUSEMOTION:
-        return rut_button_state_for_sdl_state (sdl_event->button.state);
-    default:
-        c_warn_if_reached (); /* Not a motion event */
-        return 0;
-    }
-#endif
-#else
-#error "Unknown input system"
-#endif
+    return shell->platform.motion_event_get_button_state(event);
 }
-
-#ifdef USE_SDL
-static rut_modifier_state_t
-rut_modifier_state_for_sdl_state(SDL_Keymod mod)
-{
-    rut_modifier_state_t rut_state = 0;
-
-    if (mod & KMOD_LSHIFT)
-        rut_state |= RUT_MODIFIER_LEFT_SHIFT_ON;
-    if (mod & KMOD_RSHIFT)
-        rut_state |= RUT_MODIFIER_RIGHT_SHIFT_ON;
-    if (mod & KMOD_LCTRL)
-        rut_state |= RUT_MODIFIER_LEFT_CTRL_ON;
-    if (mod & KMOD_RCTRL)
-        rut_state |= RUT_MODIFIER_RIGHT_CTRL_ON;
-    if (mod & KMOD_LALT)
-        rut_state |= RUT_MODIFIER_LEFT_ALT_ON;
-    if (mod & KMOD_RALT)
-        rut_state |= RUT_MODIFIER_RIGHT_ALT_ON;
-    if (mod & KMOD_NUM)
-        rut_state |= RUT_MODIFIER_NUM_LOCK_ON;
-    if (mod & KMOD_CAPS)
-        rut_state |= RUT_MODIFIER_CAPS_LOCK_ON;
-
-    return rut_state;
-}
-#endif
 
 rut_modifier_state_t
 rut_key_event_get_modifier_state(rut_input_event_t *event)
@@ -556,29 +336,14 @@ rut_key_event_get_modifier_state(rut_input_event_t *event)
         }
     }
 
-#if defined(USE_SDL)
-    {
-        rut_sdl_event_t *rut_sdl_event = event->native;
-        return rut_modifier_state_for_sdl_state(rut_sdl_event->mod_state);
-    }
-#else
-#error "Unknown input system"
-    return 0;
-#endif
+    return shell->platform.key_event_get_modifier_state(event);
 }
 
 rut_modifier_state_t
 rut_motion_event_get_modifier_state(rut_input_event_t *event)
 {
-#if defined(USE_SDL)
-    {
-        rut_sdl_event_t *rut_sdl_event = event->native;
-        return rut_modifier_state_for_sdl_state(rut_sdl_event->mod_state);
-    }
-#else
-#error "Unknown input system"
-    return 0;
-#endif
+#warning "xxx: check if we need to handle the headless case here"
+    return event->shell->platform.motion_event_get_modifier_state(event);
 }
 
 static void
@@ -604,30 +369,8 @@ rut_motion_event_get_transformed_xy(rut_input_event_t *event,
         default:
             c_warn_if_reached();
         }
-    } else {
-#if defined(USE_SDL)
-        {
-            rut_sdl_event_t *rut_sdl_event = event->native;
-            SDL_Event *sdl_event = &rut_sdl_event->sdl_event;
-            switch (sdl_event->type) {
-            case SDL_MOUSEBUTTONDOWN:
-            case SDL_MOUSEBUTTONUP:
-                *x = sdl_event->button.x;
-                *y = sdl_event->button.y;
-                break;
-            case SDL_MOUSEMOTION:
-                *x = sdl_event->motion.x;
-                *y = sdl_event->motion.y;
-                break;
-            default:
-                c_warn_if_reached(); /* Not a motion event */
-                return;
-            }
-        }
-#else
-#error "Unknown input system"
-#endif
-    }
+    } else
+        shell->platform.motion_event_get_transformed_xy(event, x, y);
 
     if (transform) {
         *x = transform->xx * *x + transform->xy * *y + transform->xw;
@@ -691,16 +434,7 @@ rut_drop_offer_event_get_payload(rut_input_event_t *event)
 const char *
 rut_text_event_get_text(rut_input_event_t *event)
 {
-#if defined(USE_SDL)
-
-    rut_sdl_event_t *rut_sdl_event = event->native;
-    SDL_Event *sdl_event = &rut_sdl_event->sdl_event;
-
-    return sdl_event->text.text;
-
-#else
-#error "Unknown input system"
-#endif
+    return event->shell->platform.text_event_get_text(event);
 }
 
 static void
@@ -1223,10 +957,7 @@ dispatch_signal_source (GSource *source,
 void
 _rut_shell_init(rut_shell_t *shell)
 {
-#ifdef USE_SDL
-    shell->sdl_keymod = SDL_GetModState();
-    shell->sdl_buttons = SDL_GetMouseState(NULL, NULL);
-#endif
+    rut_sdl_shell_init(shell);
 
 /* XXX: for some reason handling SGICHLD like this interferes
  * with GApplication... */
@@ -1479,14 +1210,10 @@ free_input_event(rut_shell_t *shell, rut_input_event_t *event)
     if (shell->headless) {
         c_slice_free(rut_stream_event_t, event->native);
         c_slice_free(rut_input_event_t, event);
-    } else {
-#ifdef USE_SDL
-        c_slice_free1(sizeof(rut_input_event_t) + sizeof(rut_sdl_event_t),
-                      event);
-#else
+    } else if (shell->platform.free_input_event)
+        shell->platform.free_input_event(event);
+    else
         c_slice_free(rut_input_event_t, event);
-#endif
-    }
 }
 
 void
@@ -1661,148 +1388,6 @@ _rut_shell_paint(rut_shell_t *shell)
 {
     shell->paint_cb(shell, shell->user_data);
 }
-
-#ifdef USE_SDL
-
-void
-rut_shell_handle_sdl_event(rut_shell_t *shell, SDL_Event *sdl_event)
-{
-    rut_input_event_t *event = NULL;
-    rut_sdl_event_t *rut_sdl_event;
-
-    switch (sdl_event->type) {
-    case SDL_WINDOWEVENT:
-        switch (sdl_event->window.event) {
-        case SDL_WINDOWEVENT_EXPOSED:
-            rut_shell_queue_redraw(shell);
-            break;
-
-        case SDL_WINDOWEVENT_CLOSE:
-            rut_shell_quit(shell);
-            break;
-        }
-        return;
-
-    case SDL_MOUSEMOTION:
-    case SDL_MOUSEBUTTONDOWN:
-    case SDL_MOUSEBUTTONUP:
-    case SDL_KEYUP:
-    case SDL_KEYDOWN:
-    case SDL_TEXTINPUT:
-
-        /* We queue input events to be handled on a per-frame
-         * basis instead of dispatching them immediately...
-         */
-
-        event =
-            c_slice_alloc(sizeof(rut_input_event_t) + sizeof(rut_sdl_event_t));
-        rut_sdl_event = (void *)event->data;
-        rut_sdl_event->sdl_event = *sdl_event;
-
-        memcpy(event->data, sdl_event, sizeof(SDL_Event));
-        event->native = event->data;
-
-        event->shell = shell;
-        event->input_transform = NULL;
-        break;
-    default:
-        break;
-    }
-
-    if (event) {
-        switch (sdl_event->type) {
-
-        case SDL_MOUSEMOTION:
-            event->type = RUT_INPUT_EVENT_TYPE_MOTION;
-            shell->sdl_buttons = sdl_event->motion.state;
-            break;
-        case SDL_MOUSEBUTTONDOWN:
-            event->type = RUT_INPUT_EVENT_TYPE_MOTION;
-            shell->sdl_buttons |= sdl_event->button.button;
-            break;
-        case SDL_MOUSEBUTTONUP:
-            event->type = RUT_INPUT_EVENT_TYPE_MOTION;
-            shell->sdl_buttons &= ~sdl_event->button.button;
-            break;
-
-        case SDL_KEYDOWN:
-
-            event->type = RUT_INPUT_EVENT_TYPE_KEY;
-            shell->sdl_keymod = sdl_event->key.keysym.mod;
-
-            /* Copied from from SDL_keyboard.c: SDL_SendKeyboardKey()
-             * since we want to track the modifier state in relation to
-             * events instead of globally and we can't simply use
-             * sdl_event->key.keysym.mod because if the button being
-             * pressed is itself a modifier then SDL doesn't reflect
-             * that in the modifier state for the event.
-             */
-            switch (sdl_event->key.keysym.scancode) {
-            case SDL_SCANCODE_NUMLOCKCLEAR:
-                shell->sdl_keymod ^= KMOD_NUM;
-                break;
-            case SDL_SCANCODE_CAPSLOCK:
-                shell->sdl_keymod ^= KMOD_CAPS;
-                break;
-            case SDL_SCANCODE_LCTRL:
-                shell->sdl_keymod |= KMOD_LCTRL;
-                break;
-            case SDL_SCANCODE_RCTRL:
-                shell->sdl_keymod |= KMOD_RCTRL;
-                break;
-            case SDL_SCANCODE_LSHIFT:
-                shell->sdl_keymod |= KMOD_LSHIFT;
-                break;
-            case SDL_SCANCODE_RSHIFT:
-                shell->sdl_keymod |= KMOD_RSHIFT;
-                break;
-            case SDL_SCANCODE_LALT:
-                shell->sdl_keymod |= KMOD_LALT;
-                break;
-            case SDL_SCANCODE_RALT:
-                shell->sdl_keymod |= KMOD_RALT;
-                break;
-            case SDL_SCANCODE_LGUI:
-                shell->sdl_keymod |= KMOD_LGUI;
-                break;
-            case SDL_SCANCODE_RGUI:
-                shell->sdl_keymod |= KMOD_RGUI;
-                break;
-            case SDL_SCANCODE_MODE:
-                shell->sdl_keymod |= KMOD_MODE;
-                break;
-            default:
-                break;
-            }
-            break;
-
-        case SDL_KEYUP:
-
-            event->type = RUT_INPUT_EVENT_TYPE_KEY;
-            shell->sdl_keymod = sdl_event->key.keysym.mod;
-            break;
-
-        case SDL_TEXTINPUT:
-            event->type = RUT_INPUT_EVENT_TYPE_TEXT;
-            break;
-
-        case SDL_QUIT:
-            rut_shell_quit(shell);
-            break;
-        }
-
-        rut_sdl_event->buttons = shell->sdl_buttons;
-        rut_sdl_event->mod_state = shell->sdl_keymod;
-
-        rut_input_queue_append(shell->input_queue, event);
-
-        /* FIXME: we need a separate status so we can trigger a new
-         * frame, but if the input doesn't affect anything then we
-         * want to avoid any actual rendering. */
-        rut_shell_queue_redraw(shell);
-    }
-}
-#endif
 
 static void
 destroy_onscreen_cb(void *user_data)
