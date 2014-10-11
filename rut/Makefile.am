@@ -9,6 +9,11 @@ runtime_headers_DATA = $(runtime_headers)
 librut_la_SOURCES = \
     $(rut_common_sources)
 
+if USE_SDL
+librut_la_SOURCES += \
+	$(rut_sdl_sources)
+endif
+
 if EDITOR_ENABLED
 librut_la_SOURCES += \
 	$(rut_editor_sources)
