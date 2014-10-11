@@ -427,6 +427,7 @@ AM_COGL
 
 dnl SDL is currently used on all platform...
 AC_DEFINE([USE_SDL], [1], [Defined if SDL should be used])
+AM_CONDITIONAL([USE_SDL], [true])
 
 case "$host" in
   *-linux*)
