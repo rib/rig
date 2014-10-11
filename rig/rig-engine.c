@@ -38,7 +38,9 @@
 #include <sys/un.h>
 
 #include <cogl/cogl.h>
+#ifdef USE_SDL
 #include <cogl/cogl-sdl.h>
+#endif
 
 #ifdef USE_GTK
 #include <glib-object.h>

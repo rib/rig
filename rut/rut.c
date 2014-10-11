@@ -36,7 +36,9 @@
 #include <clib.h>
 
 #include <cogl/cogl.h>
+#ifdef USE_SDL
 #include <cogl/cogl-sdl.h>
+#endif
 #ifdef USE_PANGO
 #include <cogl-pango/cogl-pango.h>
 #endif
