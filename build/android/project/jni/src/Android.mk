@@ -63,6 +63,7 @@ LOCAL_SRC_FILES := \
     $(filter-out %.h, \
 	$(subst $(LOCAL_PATH)/,, \
 	    $(addprefix $(RIG_PATH)/rut/,$(rut_common_sources)) \
+	    $(addprefix $(RIG_PATH)/rut/,fmemopen.c) \
 	 ) \
      )
 
@@ -78,7 +79,7 @@ RIG_PATH := $(LOCAL_PATH)/../../../../..
 
 LOCAL_MODULE := rig-slave
 LOCAL_C_INCLUDES := $(RIG_PATH) $(RIG_PATH)/clib/src $(RIG_PATH)/rut $(RIG_PATH)/rig $(RIG_PATH)/rig/protobuf-c-rpc
-LOCAL_CFLAGS := -DRIG_ENABLE_DEBUG
+LOCAL_CFLAGS := -DRIG_ENABLE_DEBUG -DICU_DATA_DIR=\"/icu\" -DU_DISABLE_RENAMING=1
 LOCAL_SRC_FILES := \
 	$(filter-out %.h, \
 	    $(subst $(LOCAL_PATH)/,, \
