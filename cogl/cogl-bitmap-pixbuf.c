@@ -419,6 +419,7 @@ _cg_android_bitmap_new_from_asset(cg_device_t *dev,
                               CG_BITMAP_ERROR,
                               CG_BITMAP_ERROR_FAILED,
                               "Failed to ::getBuffer from asset");
+        AAsset_close(asset);
         return NULL;
     }
 
