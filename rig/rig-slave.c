@@ -325,7 +325,7 @@ new_client_handler(pb_rpc__server_t *server,
 
     rig_pb_rpc_server_connection_set_data(conn, slave);
 
-    g_message("slave master connected %p", conn);
+    c_message("slave master connected %p", conn);
 }
 
 static void
@@ -647,7 +647,7 @@ rig_slave_run(rig_slave_t *slave)
 }
 
 static void
-print_id_to_obj_mapping_cb(gpointer key, gpointer value, gpointer user_data)
+print_id_to_obj_mapping_cb(void *key, void *value, void *user_data)
 {
     char *obj = rig_engine_get_object_debug_name(value);
 
@@ -657,7 +657,7 @@ print_id_to_obj_mapping_cb(gpointer key, gpointer value, gpointer user_data)
 }
 
 static void
-print_obj_to_id_mapping_cb(gpointer key, gpointer value, gpointer user_data)
+print_obj_to_id_mapping_cb(void *key, void *value, void *user_data)
 {
     char *obj = rig_engine_get_object_debug_name(key);
 
