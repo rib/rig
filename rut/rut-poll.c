@@ -575,30 +575,21 @@ rut_poll_init(rut_shell_t *shell)
     uv_idle_init(shell->uv_loop, &shell->uv_idle);
     shell->uv_idle.data = shell;
 
-    /* XXX: On Android we know that SDL events are queued up from a
-     * separate thread so we can use an event watch as a means to wake
-     * up the mainloop... */
     if (!shell->headless) {
-/* XXX: SDL doesn't give us a portable way of blocking for
- * events that is compatible with us polling for other file
- * descriptor events outside of SDL which means we normally
- * resort to busily polling SDL for events.
- *
- * Luckily on Android though we know that events are delivered
- * to SDL in a separate thread which we can monitor and using a
- * pipe we are able to wake up our own polling mainloop. This
- * means we can allow the Glib mainloop to block on Android...
- *
- * TODO: On X11 use XConnectionNumber(sdl_info.info.x11.display)
- * so we can also poll for events on X. One caveat would
- * probably be that we'd subvert SDL being able to specify a
- * timeout for polling.
- */
+        /* XXX: SDL doesn't give us a portable way of blocking for
+         * events that is compatible with us polling for other file
+         * descriptor events outside of SDL which means we resort to
+         * busily polling SDL for events.
+         *
+         * TODO: On X11 use
+         * XConnectionNumber(sdl_info.info.x11.display) so we can also
+         * poll for events on X. One caveat would probably be that
+         * we'd subvert SDL being able to specify a timeout for
+         * polling.
+         */
 #ifndef RIG_SIMULATOR_ONLY
 
-#ifdef __ANDROID__
-        integrate_sdl_events_via_pipe(shell);
-#else
+#ifdef USE_SDL
         integrate_sdl_events_via_busy_wait(shell);
 #endif
 
