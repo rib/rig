@@ -114,7 +114,7 @@ AC_DEFUN([AM_COGL],
   dnl Check for dependency packages.
   dnl ================================================================
 
-  AM_PATH_GLIB_2_0([glib_req_version],
+  AM_PATH_GLIB_2_0([2.26.0],
                    [have_glib=yes], [have_glib=no],
                    [gobject gthread gmodule-no-export])
 

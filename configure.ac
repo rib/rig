@@ -52,15 +52,6 @@ dnl ================================================================
 # updating the version number in advance of a release.
 m4_define([release_status], [git])
 
-
-dnl ================================================================
-dnl Required versions for dependencies
-dnl ================================================================
-m4_define([glib_req_version],           [2.26.0])
-m4_define([gi_req_version],             [0.9.5])
-m4_define([gtk_doc_req_version],        [1.13])
-
-
 AC_INIT(rig, [rig_version])
 AC_CONFIG_SRCDIR(rut/rut.c)
 AC_CONFIG_AUX_DIR([build])
@@ -336,7 +327,7 @@ AC_DEFINE([USE_UV], [1], [Use libuv])
 dnl     ============================================================
 dnl     Check glib dependencies
 dnl     ============================================================
-AM_PATH_GLIB_2_0([glib_req_version],
+AM_PATH_GLIB_2_0([2.26.0],
                  [have_glib=yes], [have_glib=no],
                  [gobject gthread gmodule-no-export])
 AS_IF([test x"$enable_editor" = xyes],
