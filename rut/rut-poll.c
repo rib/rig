@@ -38,7 +38,9 @@
 #endif
 
 #include <cogl/cogl.h>
+#ifdef USE_SDL
 #include <cogl/cogl-sdl.h>
+#endif
 
 #include "rut-poll.h"
 #include "rut-shell.h"
@@ -338,6 +340,7 @@ rut_poll_shell_remove_idle(rut_shell_t *shell, rut_closure_t *idle)
         uv_idle_stop(&shell->uv_idle);
 }
 
+#ifdef USE_SDL
 #ifdef __ANDROID__
 int
 sdl_android_event_filter_cb(void *user_data, SDL_Event *event)
@@ -441,6 +444,7 @@ integrate_sdl_events_via_busy_wait(rut_shell_t *shell)
     rut_poll_shell_add_source(
         shell, prepare_sdl_busy_wait, dispatch_sdl_busy_wait, shell);
 }
+#endif /* USE_SDL */
 
 #ifdef USE_GLIB
 typedef struct _uv_glib_poll_t {
