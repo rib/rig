@@ -674,17 +674,22 @@ fork_simulator(rut_shell_t *shell, rig_frontend_t *frontend)
 
 #endif /* RIG_EDITOR_ENABLED */
 
-typedef struct _thread_setup_t {
+typedef struct _thread_state_t {
+    pthread_t thread_id;
+    const char *name;
+    void (*start)(void *start_data);
+    void *start_data;
+
     rig_frontend_t *frontend;
     int fd;
-} thread_setup_t;
+} thread_state_t;
 
 static int
 run_simulator(void *user_data)
 {
-    thread_setup_t *setup = user_data;
-    rig_frontend_t *frontend = setup->frontend;
-    int fd = setup->fd;
+    thread_state_t *state = user_data;
+    rig_frontend_t *frontend = state->frontend;
+    int fd = state->fd;
     rig_simulator_t *simulator;
 
 #ifdef USE_GLIB
@@ -700,11 +705,57 @@ run_simulator(void *user_data)
     return 0;
 }
 
+static void *
+start_thread_cb(void *start_data)
+{
+    thread_state_t *state = start_data;
+
+    pthread_setname_np(state->thread_id, state->name);
+
+    state->start(state->start_data);
+
+    return NULL;
+}
+
+#define THREAD_ERROR c_quark_from_static_string("rig-frontend-thread")
+
+static bool
+create_posix_thread(thread_state_t *state,
+                    const char *name,
+                    void (*start)(void *),
+                    void *start_data,
+                    c_error_t **error)
+{
+    int ret;
+    pthread_attr_t attr;
+
+    state->name = name;
+    state->start = start;
+    state->start_data = start_data;
+
+    pthread_attr_init(&attr);
+    ret = pthread_create(&state->thread_id, &attr,
+                         start_thread_cb, state);
+    if (ret != 0) {
+        c_set_error(error,
+                    THREAD_ERROR,
+                    0,
+                    "Failed to start a new thread: %s",
+                    strerror(errno));
+        return false;
+    }
+
+    pthread_attr_destroy(&attr);
+
+    return true;
+}
+
 static void
 create_simulator_thread(rut_shell_t *shell,
                         rig_frontend_t *frontend)
 {
-    thread_setup_t setup;
+    thread_state_t state;
+    c_error_t *error = NULL;
     int sp[2];
 
     c_return_if_fail(frontend->connected == false);
@@ -712,10 +763,23 @@ create_simulator_thread(rut_shell_t *shell,
     if (socketpair(AF_UNIX, SOCK_STREAM, 0, sp) < 0)
         c_error("Failed to open simulator ipc socketpair");
 
-    setup.frontend = frontend;
-    setup.fd = sp[1];
+    state.frontend = frontend;
+    state.fd = sp[1];
 
-    SDL_CreateThread(run_simulator, "Simulator", &setup);
+#ifdef USE_SDL
+    SDL_CreateThread(run_simulator, "Simulator", &state);
+#elif defined(__linux__)
+    if (!create_posix_thread(&state,
+                             "Simulator",
+                             run_simulator,
+                             &state,
+                             &error))
+    {
+        c_error("%s", error->message);
+    }
+#else
+#error "Missing platform api to create a thread"
+#endif
 
     frontend->fd = sp[0];
 
