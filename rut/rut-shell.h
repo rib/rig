@@ -233,7 +233,9 @@ struct _rut_shell_t {
     int event_pipe_read;
     int event_pipe_write;
     bool wake_queued;
+#endif
 
+#ifndef RIG_SIMULATOR_ONLY
     c_array_t *cg_poll_fds;
     int cg_poll_fds_age;
 #endif
@@ -258,6 +260,10 @@ struct _rut_shell_t {
     uv_prepare_t cg_prepare;
     uv_timer_t cg_timer;
     uv_check_t cg_check;
+#ifdef __ANDROID__
+    int uv_ready;
+    bool quit;
+#endif
 #ifdef USE_GLIB
     GMainContext *glib_main_ctx;
     uv_prepare_t glib_uv_prepare;

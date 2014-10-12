@@ -1220,59 +1220,12 @@ dispatch_signal_source (GSource *source,
 }
 #endif
 
-#ifdef __ANDROID__
-static android_LogPriority
-glib_log_level_to_android_priority(GLogLevelFlags flags)
-{
-    guint i;
-    static long levels[8] = { 0, /* (unused) ANDROID_LOG_UNKNOWN */
-                              0, /* (unused) ANDROID_LOG_DEFAULT */
-                              C_LOG_LEVEL_MESSAGE, /* ANDROID_LOG_VERBOSE */
-                              C_LOG_LEVEL_DEBUG, /* ANDROID_LOG_DEBUG */
-                              C_LOG_LEVEL_INFO, /* ANDROID_LOG_INFO */
-                              C_LOG_LEVEL_WARNING, /* ANDROID_LOG_WARN */
-                              C_LOG_LEVEL_CRITICAL, /* ANDROID_LOG_ERROR */
-                              C_LOG_LEVEL_ERROR /* ANDROID_LOG_FATAL */
-    };
-
-    for (i = 3; i < C_N_ELEMENTS(levels); i++)
-        if (flags & levels[i])
-            break;
-
-    if (i >= C_N_ELEMENTS(levels))
-        return ANDROID_LOG_INFO;
-
-    return i;
-}
-
-static void
-android_glib_log_handler(const gchar *log_domain,
-                         GLogLevelFlags log_level,
-                         const gchar *message,
-                         gpointer user_data)
-{
-    bool is_fatal = (log_level & C_LOG_FLAG_FATAL);
-    android_LogPriority android_level;
-
-    if (is_fatal)
-        android_level = ANDROID_LOG_FATAL;
-    else
-        android_level = glib_log_level_to_android_priority(log_level);
-
-    __android_log_write(android_level, log_domain, message);
-}
-#endif /* __ANDROID__ */
-
 void
 _rut_shell_init(rut_shell_t *shell)
 {
 #ifdef USE_SDL
     shell->sdl_keymod = SDL_GetModState();
     shell->sdl_buttons = SDL_GetMouseState(NULL, NULL);
-#endif
-
-#ifdef __ANDROID__
-    g_log_set_default_handler(android_glib_log_handler, NULL);
 #endif
 
 /* XXX: for some reason handling SGICHLD like this interferes
