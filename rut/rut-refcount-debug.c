@@ -174,18 +174,37 @@ object_data_destroy_cb(void *data)
     object_data_unref(data);
 }
 
+#ifdef USE_SDL
 static SDL_TLSID tls;
+#elif defined(__linux__)
+static pthread_key_t tls;
+#else
+#error "Missing TLS support"
+#endif
+
 
 void
 rut_refcount_debug_init(void)
 {
+#ifdef USE_SDL
     tls = SDL_TLSCreate();
+#elif defined(__linux__)
+    pthread_key_create(&tls, destroy_tls_state_cb);
+#else
+#error "Missing TLS support"
+#endif
 }
 
 static rut_refcount_debug_state_t *
 get_state(void)
 {
+#ifdef USE_SDL
     rut_refcount_debug_state_t *state = SDL_TLSGet(tls);
+#elif defined(__linux__)
+    rut_refcount_debug_state_t *state = pthread_getspecific(tls);
+#else
+#error "Missing TLS support"
+#endif
 
     if (state == NULL) {
         state = c_new0(rut_refcount_debug_state_t, 1);
@@ -214,7 +233,14 @@ get_state(void)
         }
 #endif /* RUT_ENABLE_BACKTRACE */
 
+#ifdef USE_SDL
         SDL_TLSSet(tls, state, destroy_tls_state_cb);
+#elif defined(__linux__)
+        pthread_setspecific(tls, state);
+#else
+#error "Missing TLS support"
+#endif
+
     }
 
     return state;
@@ -474,7 +500,14 @@ destroy_tls_state_cb(void *tls_data)
 
     if (size > 0) {
         // char *thread_name = SDL_GetThreadName ();
+#ifdef USE_SDL
         char *thread_name = c_strdup_printf("thread-%lu", SDL_ThreadID());
+#elif defined(__linux__)
+        char *thread_name =
+            c_strdup_printf("thread-%lu", (unsigned long)pthread_self());
+#else
+#error "Missing platform support for querying thread id"
+#endif
         char *filename =
             c_strconcat("rut-object-log-", thread_name, ".txt", NULL);
         char *out_name = c_build_filename(c_get_tmp_dir(), filename, NULL);
