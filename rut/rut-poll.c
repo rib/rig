@@ -616,10 +616,10 @@ rut_poll_init(rut_shell_t *shell)
 #endif
 }
 
-void
-rut_poll_run(rut_shell_t *shell)
-{
 #ifdef USE_GLIB
+static void
+rut_glib_poll_run(rut_shell_t *shell)
+{
     GMainContext *ctx = g_main_context_get_thread_default();
 
     if (!ctx)
@@ -635,14 +635,79 @@ rut_poll_run(rut_shell_t *shell)
     uv_run(shell->uv_loop, UV_RUN_DEFAULT);
 
     g_main_context_release(shell->glib_main_ctx);
-#else
+}
+#endif /* USE_GLIB */
 
-    uv_run(shell->uv_loop, UV_RUN_DEFAULT);
+#ifdef __ANDROID__
+static int
+looper_uv_event_cb(int fd, int events, void *data)
+{
+    shell->uv_ready = uv_run(shell->uv_loop, UV_RUN_NOWAIT);
+
+    return 1; /* don't unregister */
+}
+
+static void
+rut_android_poll_run(rut_shell_t *shell)
+{
+    int backend_fd = uv_backend_fd(shell->uv_loop);
+    ALooper *looper = ALooper_forThread();
+
+    if (!looper)
+        looper = ALooper_prepare(0);
+
+    ALooper_addFd(looper, backend_fd, 0, /* ident */
+                  ALOOPER_EVENT_INPUT,
+                  looper_uv_event_cb,
+                  shell);
+
+    shell->quit = false;
+    shell->uv_ready = 1;
+
+    while (!shell->quit) {
+        int status;
+        int poll_events;
+        void *user_data;
+        bool ready = shell->uv_ready;
+
+        shell->uv_ready = false;
+
+        status = ALooper_pollAll(ready ? 0 : -1, NULL,
+                                 &poll_events, &user_data);
+        switch (status)
+        {
+        case ALOOPER_POLL_WAKE:
+            continue;
+        case ALOOPER_POLL_TIMEOUT:
+            c_warning("Spurious timeout for ALooper_pollAll");
+            continue;
+        case ALOOPER_POLL_ERROR:
+            c_error("Spurious error for ALooper_pollAll");
+            break;
+        default:
+            c_warning("Unknown ALooper_pollAll status: %d", status);
+            continue;
+        }
+    }
+}
+#endif /* __ANDROID__ */
+
+void
+rut_poll_run(rut_shell_t *shell)
+{
+#if defined(USE_GLIB)
+    rut_glib_poll_run(shell);
+#elif defined(__ANDROID__)
+    rut_android_poll_run(shell);
 #endif
 }
 
 void
 rut_poll_quit(rut_shell_t *shell)
 {
+#if defined(USE_GLIB)
     uv_stop(shell->uv_loop);
+#elif defined(__ANDROID__)
+    shell->quit = true;
+#endif
 }
