@@ -700,6 +700,8 @@ rut_poll_run(rut_shell_t *shell)
     rut_glib_poll_run(shell);
 #elif defined(__ANDROID__)
     rut_android_poll_run(shell);
+#else
+    uv_run(shell->uv_loop, UV_RUN_DEFAULT);
 #endif
 }
 
