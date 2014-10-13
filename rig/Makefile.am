@@ -109,11 +109,14 @@ common_ldadd = \
 	$(top_builddir)/rut/librut.la \
 	$(top_builddir)/cogl/libcogl2.la \
 	$(top_builddir)/cogl-path/libcogl-path.la \
-	$(top_builddir)/cogl-gst/libcogl-gst.la \
 	$(RIG_DEP_LIBS)
 
 if EDITOR_ENABLED
 common_ldadd += $(top_builddir)/cogl-pango/libcogl-pango2.la
+endif
+
+if USE_GSTREAMER
+common_ldadd += $(top_builddir)/cogl-gst/libcogl-gst.la
 endif
 
 if USE_LLVM
