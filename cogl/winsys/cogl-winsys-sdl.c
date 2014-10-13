@@ -295,10 +295,6 @@ _cg_winsys_device_init(cg_device_t *dev, cg_error_t **error)
 {
     cg_renderer_t *renderer = dev->display->renderer;
 
-    if (C_UNLIKELY(renderer->sdl_event_type_set == false))
-        c_error("cg_sdl_renderer_set_event_type() or cg_sdl_device_new() "
-                "must be called during initialization");
-
     _cg_renderer_add_native_filter(
         renderer, (cg_native_filter_func_t)sdl_event_filter_cb, dev);
 

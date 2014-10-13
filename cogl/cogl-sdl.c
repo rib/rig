@@ -92,9 +92,13 @@ cg_sdl_handle_event(cg_device_t *dev, SDL_Event *event)
 static void
 _cg_sdl_push_wakeup_event(cg_device_t *dev)
 {
+    cg_renderer_t *renderer = dev->display->renderer;
     SDL_Event wakeup_event;
 
-    wakeup_event.type = dev->display->renderer->sdl_event_type;
+    if (renderer->sdl_event_type_set)
+        wakeup_event.type = renderer->sdl_event_type;
+    else
+        wakeup_event.type = SDL_USEREVENT;
 
     SDL_PushEvent(&wakeup_event);
 }

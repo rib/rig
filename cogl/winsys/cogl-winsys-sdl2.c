@@ -363,18 +363,6 @@ _cg_winsys_device_init(cg_device_t *dev, cg_error_t **error)
 
     dev->winsys = c_new0(cg_device_sdl2_t, 1);
 
-    if (C_UNLIKELY(renderer->sdl_event_type_set == false)) {
-        _cg_set_error(error,
-                      CG_WINSYS_ERROR,
-                      CG_WINSYS_ERROR_INIT,
-                      "The SDL2 winsys backend requires "
-                      "cg_sdl_device_new() to be used to "
-                      "create a context, or "
-                      "cg_sdl_renderer_set_event_type() to be "
-                      "called before cg_device_new()");
-        return false;
-    }
-
     if (!_cg_device_update_features(dev, error))
         return false;
 

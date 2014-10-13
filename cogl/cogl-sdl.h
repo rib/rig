@@ -170,6 +170,8 @@ cg_device_t *cg_sdl_device_new(int type, cg_error_t **error);
  * #cg_renderer_t and #cg_display_t objects during
  * initialization.</note>
  *
+ * By default Cogl will assume it can use %SDL_USEREVENT
+ *
  * Stability: unstable
  */
 void cg_sdl_renderer_set_event_type(cg_renderer_t *renderer, int type);
@@ -182,6 +184,8 @@ void cg_sdl_renderer_set_event_type(cg_renderer_t *renderer, int type);
  * interrupt SDL_WaitEvent(). This is set either using
  * cg_sdl_device_new or by using
  * cg_sdl_renderer_set_event_type().
+ *
+ * By default Cogl will assume it can use %SDL_USEREVENT
  *
  * Stability: unstable
  */
