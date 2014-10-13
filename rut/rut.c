@@ -340,19 +340,24 @@ rut_context_new(rut_shell_t *shell)
     context->settings = rut_settings_new();
 
     if (!context->headless) {
-        context->cg_device = cg_device_new();
 
 #ifdef USE_SDL
-        cg_renderer_t *renderer = cg_renderer_new();
+        cg_renderer_t *renderer;
+
+        context->cg_device = cg_device_new();
+
+        renderer = cg_renderer_new();
 
         cg_renderer_set_winsys_id(renderer, CG_WINSYS_ID_SDL);
         if (cg_renderer_connect(renderer, &error))
             cg_device_set_renderer(context->cg_device, renderer);
         else {
             cg_error_free(error);
-            fprintf(stderr, "Failed to setup SDL renderer; "
-                    "falling back to default\n");
+            c_warning("Failed to setup SDL renderer; "
+                      "falling back to default\n");
         }
+#else
+        context->cg_device = cg_device_new();
 #endif
 
         cg_device_connect(context->cg_device, &error);
