@@ -1,7 +1,6 @@
 rut_common_sources = \
     rut-types.h \
     rut-keysyms.h \
-    rut-global.h \
     rut-context.h \
     color-table.h \
     rut.h \

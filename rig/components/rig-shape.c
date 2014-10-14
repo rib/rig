@@ -31,7 +31,6 @@
 #include <math.h>
 
 #include "rig-shape.h"
-#include "rut-global.h"
 #include "rut-meshable.h"
 
 #define MESA_CONST_ATTRIB_BUG_WORKAROUND

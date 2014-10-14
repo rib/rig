@@ -44,7 +44,6 @@
 #endif
 
 #include "rut-bitmask.h"
-#include "rut-global.h"
 #include "rut-context.h"
 #include "rut-transform-private.h"
 //#include "rut-text.h"
@@ -59,8 +58,6 @@ typedef struct _rut_texture_cache_entry_t {
     cg_texture_t *texture;
 } rut_texture_cache_entry_t;
 #define RUT_TEXTURE_CACHE_ENTRY(X) ((rut_texture_cache_entry_t *)X)
-
-cg_device_t *rut_cg_context;
 
 static cg_user_data_key_t texture_cache_key;
 
@@ -178,11 +175,6 @@ _rut_context_free(void *object)
 #endif
 
     c_hash_table_destroy(ctx->texture_cache);
-
-    if (rut_cg_context == ctx->cg_device) {
-        cg_object_unref(rut_cg_context);
-        rut_cg_context = NULL;
-    }
 
     cg_object_unref(ctx->cg_device);
 
@@ -366,11 +358,6 @@ rut_context_new(rut_shell_t *shell)
             c_free(context);
             return NULL;
         }
-
-        /* We set up the first created rut_context_t as a global default context
-         */
-        if (rut_cg_context == NULL)
-            rut_cg_context = cg_object_ref(context->cg_device);
 
         context->texture_cache =
             c_hash_table_new_full(c_direct_hash,

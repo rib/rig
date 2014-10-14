@@ -31,7 +31,6 @@
 #include <math.h>
 
 #include "rig-diamond.h"
-#include "rut-global.h"
 #include "rut-meshable.h"
 
 static rig_diamond_t *_rig_diamond_new_with_slice(rut_context_t *ctx,

@@ -69,7 +69,6 @@
 #include "rut-inputable.h"
 #include "rut-pickable.h"
 #include "rut-timeline.h"
-#include "rut-global.h"
 #include "rut-paintable.h"
 #include "rut-transform.h"
 #include "rut-input-region.h"

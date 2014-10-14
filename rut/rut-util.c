@@ -31,7 +31,6 @@
 #include <clib.h>
 #include <cogl/cogl.h>
 
-#include "rut-global.h"
 #include "rut-mesh.h"
 #include "rut-util.h"
 
