@@ -96,4 +96,8 @@ rig_rpc_peer_t *rig_rpc_peer_new(rut_shell_t *shell,
                                  PB_RPC_Connect_Func connect_handler,
                                  void *user_data);
 
+void
+rig_rpc_peer_set_other_end(rig_rpc_peer_t *peer,
+                           rig_rpc_peer_t *other_end);
+
 #endif /* _RIG_RPC_NETWORK_H_ */

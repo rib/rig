@@ -247,6 +247,11 @@ struct _rut_shell_t {
     rut_list_t signal_cb_list;
 #endif
 
+    /* When running multiple shells in one thread we define one shell
+     * as the "main" shell which owns the mainloop.
+     */
+    rut_shell_t *main_shell;
+
 #ifdef USE_GLIB
     GMainLoop *main_loop;
 #endif
@@ -387,6 +392,11 @@ rut_shell_t *rut_shell_new(bool headless,
                            rut_shell_fini_callback_t fini,
                            rut_shell_paint_callback_t paint,
                            void *user_data);
+
+/* When running multiple shells in one thread we define one
+ * shell as the "main" shell which owns the mainloop.
+ */
+void rut_shell_set_main_shell(rut_shell_t *shell, rut_shell_t *main_shell);
 
 bool rut_shell_get_headless(rut_shell_t *shell);
 

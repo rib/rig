@@ -855,6 +855,12 @@ rut_shell_new(bool headless,
     return shell;
 }
 
+void
+rut_shell_set_main_shell(rut_shell_t *shell, rut_shell_t *main_shell)
+{
+    shell->main_shell = main_shell;
+}
+
 rut_frame_info_t *
 rut_shell_get_frame_info(rut_shell_t *shell)
 {

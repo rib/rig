@@ -289,3 +289,14 @@ rig_rpc_peer_new(rut_shell_t *shell,
 
     return rpc_peer;
 }
+
+void
+rig_rpc_peer_set_other_end(rig_rpc_peer_t *peer,
+                           rig_rpc_peer_t *other_end)
+{
+    rig_pb_stream_t *stream = rig_pb_rpc_peer_get_stream(peer->pb_rpc_peer);
+    rig_pb_stream_t *other_end_stream =
+        rig_pb_rpc_peer_get_stream(other_end->pb_rpc_peer);
+
+    rig_pb_stream_set_other_end(stream, other_end_stream);
+}

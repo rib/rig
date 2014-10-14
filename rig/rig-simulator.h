@@ -96,7 +96,9 @@ struct _rig_simulator_t {
 
 extern rut_type_t rig_simulator_type;
 
-rig_simulator_t *rig_simulator_new(rig_frontend_id_t frontend_id, int fd);
+rig_simulator_t *rig_simulator_new(rig_frontend_id_t frontend_id,
+                                   rut_shell_t *main_shell,
+                                   int fd);
 
 void rig_simulator_run(rig_simulator_t *simulator);
 

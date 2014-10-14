@@ -595,7 +595,9 @@ direct_object_id_cb(void *object, void *user_data)
 }
 
 rig_simulator_t *
-rig_simulator_new(rig_frontend_id_t frontend_id, int fd)
+rig_simulator_new(rig_frontend_id_t frontend_id,
+                  rut_shell_t *main_shell,
+                  int fd)
 {
     rig_simulator_t *simulator = rut_object_alloc0(
         rig_simulator_t, &rig_simulator_type, _rig_simulator_init_type);
@@ -623,6 +625,9 @@ rig_simulator_new(rig_frontend_id_t frontend_id, int fd)
                                      NULL, /* no fini callback */
                                      rig_simulator_run_frame,
                                      simulator);
+
+    if (main_shell)
+        rut_shell_set_main_shell(simulator->shell, main_shell);
 
     rut_shell_set_queue_redraw_callback(
         simulator->shell, rig_simulator_queue_redraw_hook, simulator);

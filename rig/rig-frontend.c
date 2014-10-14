@@ -684,26 +684,31 @@ typedef struct _thread_state_t {
     int fd;
 } thread_state_t;
 
-static int
-run_simulator(void *user_data)
+static void
+run_simulator_thread(void *user_data)
 {
     thread_state_t *state = user_data;
-    rig_frontend_t *frontend = state->frontend;
-    int fd = state->fd;
-    rig_simulator_t *simulator;
+    rig_simulator_t *simulator =
+        rig_simulator_new(state->frontend->id, NULL, state->fd);
 
 #ifdef USE_GLIB
     g_main_context_push_thread_default(g_main_context_new());
 #endif
 
-    simulator = rig_simulator_new(frontend->id, fd);
-
     rig_simulator_run(simulator);
 
     rut_object_unref(simulator);
+}
+
+#if !defined(__linux__) && defined(USE_SDL)
+static int
+run_sdl_simulator_thread(void *user_data)
+{
+    run_simulator_thread(user_data);
 
     return 0;
 }
+#endif
 
 static void *
 start_thread_cb(void *start_data)
@@ -719,6 +724,7 @@ start_thread_cb(void *start_data)
 
 #define THREAD_ERROR c_quark_from_static_string("rig-frontend-thread")
 
+#if defined(__linux__)
 static bool
 create_posix_thread(thread_state_t *state,
                     const char *name,
@@ -749,34 +755,37 @@ create_posix_thread(thread_state_t *state,
 
     return true;
 }
+#endif /* __linux__ */
 
-static void
+static thread_state_t *
 create_simulator_thread(rut_shell_t *shell,
                         rig_frontend_t *frontend)
 {
-    thread_state_t state;
+    thread_state_t *state = c_new0(thread_state_t, 1);
+#if defined(__linux__)
     c_error_t *error = NULL;
+#endif
     int sp[2];
 
-    c_return_if_fail(frontend->connected == false);
+    c_return_val_if_fail(frontend->connected == false, NULL);
 
     if (socketpair(AF_UNIX, SOCK_STREAM, 0, sp) < 0)
         c_error("Failed to open simulator ipc socketpair");
 
-    state.frontend = frontend;
-    state.fd = sp[1];
+    state->frontend = frontend;
+    state->fd = sp[1];
 
-#ifdef USE_SDL
-    SDL_CreateThread(run_simulator, "Simulator", &state);
-#elif defined(__linux__)
-    if (!create_posix_thread(&state,
+#if defined(__linux__)
+    if (!create_posix_thread(state,
                              "Simulator",
-                             run_simulator,
-                             &state,
+                             run_simulator_thread,
+                             state,
                              &error))
     {
         c_error("%s", error->message);
     }
+#elif defined(USE_SDL)
+    SDL_CreateThread(run_sdl_simulator_thread, "Simulator", state);
 #else
 #error "Missing platform api to create a thread"
 #endif
@@ -784,6 +793,8 @@ create_simulator_thread(rut_shell_t *shell,
     frontend->fd = sp[0];
 
     frontend_start_service(shell, frontend);
+
+    return state;
 }
 
 #ifdef linux
@@ -835,38 +846,51 @@ bind_to_abstract_socket(rut_shell_t *shell,
 }
 #endif /* linux */
 
-#ifdef RIG_EDITOR_ENABLED
+static void
+run_simulator_in_process(rut_shell_t *shell, rig_frontend_t *frontend)
+{
+    rig_simulator_t *simulator = rig_simulator_new(frontend->id, shell, -1);
+
+    /* N.B. This won't block running the mainloop since rut-poll
+     * will see that simulator->shell isn't the main shell. */
+    rig_simulator_run(simulator);
+
+    frontend->fd = -1;
+    frontend_start_service(shell, frontend);
+
+    rig_rpc_peer_set_other_end(frontend->frontend_peer,
+                               simulator->simulator_peer);
+    rig_rpc_peer_set_other_end(simulator->simulator_peer,
+                               frontend->frontend_peer);
+}
 
 static void
 spawn_simulator(rut_shell_t *shell, rig_frontend_t *frontend)
 {
-#if defined(linux)
-    if (getenv("_RIG_USE_ABSTRACT_SOCKET"))
-        bind_to_abstract_socket(shell,
-                                frontend /* FIXME: give application name */);
+#if defined(RIG_ENABLE_DEBUG)
+
+# if defined(__linux__)
+    if (getenv("_RIG_USE_ABSTRACT_SOCKET")) {
+        /* TODO: give application name, for socket name */
+        bind_to_abstract_socket(shell, frontend);
+    } else
+# endif
+    if (getenv("_RIG_USE_SINGLE_PROCESS"))
+        run_simulator_in_process(shell, frontend);
     else if (getenv("_RIG_USE_SIMULATOR_THREAD"))
         create_simulator_thread(shell, frontend);
     else
+#endif /* RIG_ENABLE_DEBUG */
+    {
+#if defined(RIG_EDITOR_ENABLED)
         fork_simulator(shell, frontend);
-#elif defined(__APPLE__)
-    if (getenv("_RIG_USE_SIMULATOR_THREAD"))
-        create_simulator_thread(shell, frontend);
-    else
-        fork_simulator(shell, frontend);
+#elif defined(__ANDROID__)
+        run_simulator_in_process(shell, frontend);
 #else
-#error "Platform needs some way of connecting to a simulator"
+        create_simulator_thread(shell, frontend);
 #endif
+    }
 }
-
-#else /* RIG_EDITOR_ENABLED */
-
-static void
-spawn_simulator(rut_shell_t *shell, rig_frontend_t *frontend)
-{
-    create_simulator_thread(shell, frontend);
-}
-
-#endif /* RIG_EDITOR_ENABLED */
 
 static uint64_t
 map_id_cb(uint64_t simulator_id, void *user_data)
@@ -993,9 +1017,9 @@ rig_frontend_new(rut_shell_t *shell, rig_frontend_id_t id, bool play_mode)
 
     rut_list_init(&frontend->ui_update_cb_list);
 
-    spawn_simulator(shell, frontend);
-
     frontend->engine = rig_engine_new_for_frontend(shell, frontend);
+
+    spawn_simulator(shell, frontend);
 
     rig_engine_op_map_context_init(
         &frontend->map_op_ctx, frontend->engine, map_id_cb, frontend);

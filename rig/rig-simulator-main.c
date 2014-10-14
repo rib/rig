@@ -122,7 +122,7 @@ main(int argc, char **argv)
         fd = strtol(ipc_fd_str, NULL, 10);
     }
 
-    simulator = rig_simulator_new(frontend_id, fd);
+    simulator = rig_simulator_new(frontend_id, NULL, fd);
 
     rig_simulator_run(simulator);
 

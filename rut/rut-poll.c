@@ -571,7 +571,11 @@ rut_poll_init(rut_shell_t *shell)
     rut_list_init(&shell->idle_closures);
 
 #ifdef USE_UV
-    shell->uv_loop = uv_loop_new();
+
+    if (shell->main_shell)
+        shell->uv_loop = shell->main_shell->uv_loop;
+    else
+        shell->uv_loop = uv_loop_new();
 
     uv_idle_init(shell->uv_loop, &shell->uv_idle);
     shell->uv_idle.data = shell;
@@ -696,6 +700,9 @@ rut_android_poll_run(rut_shell_t *shell)
 void
 rut_poll_run(rut_shell_t *shell)
 {
+    if (shell->main_shell)
+        return;
+
 #if defined(USE_GLIB)
     rut_glib_poll_run(shell);
 #elif defined(__ANDROID__)
@@ -708,9 +715,12 @@ rut_poll_run(rut_shell_t *shell)
 void
 rut_poll_quit(rut_shell_t *shell)
 {
-#if defined(USE_GLIB)
-    uv_stop(shell->uv_loop);
-#elif defined(__ANDROID__)
+    if (shell->main_shell)
+        return;
+
+#if defined(__ANDROID__)
     shell->quit = true;
+#else
+    uv_stop(shell->uv_loop);
 #endif
 }
