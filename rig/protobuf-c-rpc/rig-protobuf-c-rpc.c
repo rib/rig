@@ -1834,7 +1834,8 @@ handle_peer_connect_idle(rig_protobuf_c_dispatch_t *dispatch,
 
     peer->idle = NULL;
 
-    handle_data_buffer_stream_idle(dispatch, stream);
+    if (stream->type == STREAM_TYPE_BUFFER)
+        handle_data_buffer_stream_idle(dispatch, stream);
 }
 
 pb_rpc__peer_t *
