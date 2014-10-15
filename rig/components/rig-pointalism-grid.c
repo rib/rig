@@ -368,10 +368,10 @@ _rig_pointalism_grid_copy(rut_object_t *object)
 {
     rig_pointalism_grid_t *grid = object;
     rig_pointalism_grid_t *copy =
-        rig_pointalism_grid_new(grid->ctx, grid->cell_size);
+        rig_pointalism_grid_new(grid->shell, grid->cell_size);
     rig_pointalism_grid_set_image_size(copy, grid->tex_width, grid->tex_height);
 
-    rut_introspectable_copy_properties(&grid->ctx->property_ctx, grid, copy);
+    rut_introspectable_copy_properties(&grid->shell->property_ctx, grid, copy);
 
     return copy;
 }
@@ -428,7 +428,7 @@ _rig_pointalism_grid_init_type(void)
 }
 
 rig_pointalism_grid_t *
-rig_pointalism_grid_new(rut_context_t *ctx, float size)
+rig_pointalism_grid_new(rut_shell_t *shell, float size)
 {
     rig_pointalism_grid_t *grid =
         rut_object_alloc0(rig_pointalism_grid_t,
@@ -437,7 +437,7 @@ rig_pointalism_grid_new(rut_context_t *ctx, float size)
 
     grid->component.type = RUT_COMPONENT_TYPE_GEOMETRY;
 
-    grid->ctx = rut_object_ref(ctx);
+    grid->shell = rut_object_ref(shell);
 
     rut_list_init(&grid->updated_cb_list);
 
@@ -465,7 +465,7 @@ rig_pointalism_grid_get_primitive(rut_object_t *object)
     if (!grid->mesh)
         create_meshes(grid);
 
-    return rut_mesh_create_primitive(grid->ctx, grid->mesh);
+    return rut_mesh_create_primitive(grid->shell, grid->mesh);
 }
 
 rut_mesh_t *
@@ -492,7 +492,7 @@ rig_pointalism_grid_set_scale(rut_object_t *obj, float scale)
 {
     rig_pointalism_grid_t *grid = RIG_POINTALISM_GRID(obj);
     rig_entity_t *entity;
-    rut_context_t *ctx;
+    rut_property_context_t *prop_ctx;
 
     if (scale == grid->pointalism_scale)
         return;
@@ -500,8 +500,8 @@ rig_pointalism_grid_set_scale(rut_object_t *obj, float scale)
     grid->pointalism_scale = scale;
 
     entity = grid->component.entity;
-    ctx = rig_entity_get_context(entity);
-    rut_property_dirty(&ctx->property_ctx,
+    prop_ctx = rig_entity_get_property_context(entity);
+    rut_property_dirty(prop_ctx,
                        &grid->properties[RIG_POINTALISM_GRID_PROP_SCALE]);
 }
 
@@ -518,7 +518,7 @@ rig_pointalism_grid_set_z(rut_object_t *obj, float z)
 {
     rig_pointalism_grid_t *grid = RIG_POINTALISM_GRID(obj);
     rig_entity_t *entity;
-    rut_context_t *ctx;
+    rut_property_context_t *prop_ctx;
 
     if (z == grid->pointalism_z)
         return;
@@ -526,8 +526,8 @@ rig_pointalism_grid_set_z(rut_object_t *obj, float z)
     grid->pointalism_z = z;
 
     entity = grid->component.entity;
-    ctx = rig_entity_get_context(entity);
-    rut_property_dirty(&ctx->property_ctx,
+    prop_ctx = rig_entity_get_property_context(entity);
+    rut_property_dirty(prop_ctx,
                        &grid->properties[RIG_POINTALISM_GRID_PROP_Z]);
 }
 
@@ -544,7 +544,7 @@ rig_pointalism_grid_set_lighter(rut_object_t *obj, bool lighter)
 {
     rig_pointalism_grid_t *grid = RIG_POINTALISM_GRID(obj);
     rig_entity_t *entity;
-    rut_context_t *ctx;
+    rut_property_context_t *prop_ctx;
 
     if (lighter == grid->pointalism_lighter)
         return;
@@ -552,8 +552,8 @@ rig_pointalism_grid_set_lighter(rut_object_t *obj, bool lighter)
     grid->pointalism_lighter = lighter;
 
     entity = grid->component.entity;
-    ctx = rig_entity_get_context(entity);
-    rut_property_dirty(&ctx->property_ctx,
+    prop_ctx = rig_entity_get_property_context(entity);
+    rut_property_dirty(prop_ctx,
                        &grid->properties[RIG_POINTALISM_GRID_PROP_LIGHTER]);
 }
 
@@ -570,7 +570,7 @@ rig_pointalism_grid_set_cell_size(rut_object_t *obj, float cell_size)
 {
     rig_pointalism_grid_t *grid = RIG_POINTALISM_GRID(obj);
     rig_entity_t *entity;
-    rut_context_t *ctx;
+    rut_property_context_t *prop_ctx;
 
     if (cell_size == grid->cell_size)
         return;
@@ -578,11 +578,11 @@ rig_pointalism_grid_set_cell_size(rut_object_t *obj, float cell_size)
     grid->cell_size = cell_size;
 
     entity = grid->component.entity;
-    ctx = rig_entity_get_context(entity);
+    prop_ctx = rig_entity_get_property_context(entity);
 
     free_meshes(grid);
 
-    rut_property_dirty(&ctx->property_ctx,
+    rut_property_dirty(prop_ctx,
                        &grid->properties[RIG_POINTALISM_GRID_PROP_CELL_SIZE]);
 
     rut_closure_list_invoke(

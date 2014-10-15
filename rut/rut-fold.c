@@ -37,6 +37,7 @@
 #include "rut-fold.h"
 #include "rut-composite-sizable.h"
 #include "rut-input-region.h"
+#include "rut-texture-cache.h"
 
 static rut_property_spec_t _rut_fold_prop_specs[] = {
     { .name = "label",
@@ -119,7 +120,7 @@ input_cb(rut_input_region_t *region, rut_input_event_t *event, void *user_data)
 }
 
 rut_fold_t *
-rut_fold_new(rut_context_t *ctx, const char *label)
+rut_fold_new(rut_shell_t *shell, const char *label)
 {
     rut_fold_t *fold =
         rut_object_alloc0(rut_fold_t, &rut_fold_type, _rut_fold_init_type);
@@ -131,36 +132,38 @@ rut_fold_new(rut_context_t *ctx, const char *label)
     cg_texture_t *texture;
     cg_color_t black;
 
-    fold->context = ctx;
+    fold->shell = shell;
 
     rut_graphable_init(fold);
 
     rut_introspectable_init(fold, _rut_fold_prop_specs, fold->properties);
 
-    fold->vbox = rut_box_layout_new(ctx, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
+    fold->vbox = rut_box_layout_new(shell,
+                                    RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
 
-    header_hbox = rut_box_layout_new(ctx, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
+    header_hbox = rut_box_layout_new(shell,
+                                     RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
     rut_box_layout_add(fold->vbox, false, header_hbox);
     rut_object_unref(header_hbox);
 
-    left_header_stack = rut_stack_new(ctx, 0, 0);
+    left_header_stack = rut_stack_new(shell, 0, 0);
     rut_box_layout_add(header_hbox, true, left_header_stack);
     rut_object_unref(left_header_stack);
 
     left_header_hbox =
-        rut_box_layout_new(ctx, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
+        rut_box_layout_new(shell, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
     rut_stack_add(left_header_stack, left_header_hbox);
     rut_object_unref(left_header_hbox);
 
-    fold_icon_align = rut_bin_new(ctx);
+    fold_icon_align = rut_bin_new(shell);
     rut_bin_set_x_position(fold_icon_align, RUT_BIN_POSITION_BEGIN);
     rut_bin_set_y_position(fold_icon_align, RUT_BIN_POSITION_CENTER);
     rut_bin_set_right_padding(fold_icon_align, 10);
     rut_box_layout_add(left_header_hbox, false, fold_icon_align);
     rut_object_unref(fold_icon_align);
 
-    texture = rut_load_texture_from_data_file(ctx, "tri-fold-up.png", NULL);
-    fold->fold_up_icon = rut_nine_slice_new(ctx,
+    texture = rut_load_texture_from_data_file(shell, "tri-fold-up.png", NULL);
+    fold->fold_up_icon = rut_nine_slice_new(shell,
                                             texture,
                                             0,
                                             0,
@@ -170,8 +173,9 @@ rut_fold_new(rut_context_t *ctx, const char *label)
                                             cg_texture_get_height(texture));
     cg_object_unref(texture);
 
-    texture = rut_load_texture_from_data_file(ctx, "tri-fold-down.png", NULL);
-    fold->fold_down_icon = rut_nine_slice_new(ctx,
+    texture = rut_load_texture_from_data_file(shell, "tri-fold-down.png",
+                                              NULL);
+    fold->fold_down_icon = rut_nine_slice_new(shell,
                                               texture,
                                               0,
                                               0,
@@ -181,8 +185,8 @@ rut_fold_new(rut_context_t *ctx, const char *label)
                                               cg_texture_get_height(texture));
     cg_object_unref(texture);
 
-    fold->fold_icon_shim = rut_fixed_new(
-        ctx, cg_texture_get_width(texture), cg_texture_get_height(texture));
+    fold->fold_icon_shim = rut_fixed_new(shell, cg_texture_get_width(texture),
+                                         cg_texture_get_height(texture));
     rut_bin_set_child(fold_icon_align, fold->fold_icon_shim);
     rut_object_unref(fold->fold_icon_shim);
 
@@ -191,17 +195,17 @@ rut_fold_new(rut_context_t *ctx, const char *label)
     /* NB: we keep references to the icons so they can be swapped
      * without getting disposed. */
 
-    label_bin = rut_bin_new(ctx);
+    label_bin = rut_bin_new(shell);
     rut_bin_set_y_position(label_bin, RUT_BIN_POSITION_CENTER);
     rut_box_layout_add(left_header_hbox, false, label_bin);
     rut_object_unref(label_bin);
 
-    fold->label = rut_text_new_with_text(ctx, NULL, label);
+    fold->label = rut_text_new_with_text(shell, NULL, label);
     rut_bin_set_child(label_bin, fold->label);
     rut_object_unref(fold->label);
 
     fold->header_hbox_right =
-        rut_box_layout_new(ctx, RUT_BOX_LAYOUT_PACKING_RIGHT_TO_LEFT);
+        rut_box_layout_new(shell, RUT_BOX_LAYOUT_PACKING_RIGHT_TO_LEFT);
     rut_box_layout_add(header_hbox, true, fold->header_hbox_right);
     rut_object_unref(fold->header_hbox_right);
 
@@ -276,7 +280,7 @@ rut_fold_set_folded(rut_fold_t *fold, bool folded)
 
     fold->folded = folded;
 
-    rut_shell_queue_redraw(fold->context->shell);
+    rut_shell_queue_redraw(fold->shell);
 }
 
 void
@@ -309,9 +313,9 @@ rut_fold_set_label(rut_object_t *object, const char *label)
 
     rut_text_set_text(fold->label, label);
 
-    rut_property_dirty(&fold->context->property_ctx,
+    rut_property_dirty(&fold->shell->property_ctx,
                        &fold->properties[RUT_FOLD_PROP_LABEL]);
-    rut_shell_queue_redraw(fold->context->shell);
+    rut_shell_queue_redraw(fold->shell);
 }
 
 const char *

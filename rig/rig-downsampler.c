@@ -43,7 +43,7 @@ rig_downsampler_new(rig_engine_t *engine)
 
     downsampler->engine = engine;
 
-    pipeline = cg_pipeline_new(engine->ctx->cg_device);
+    pipeline = cg_pipeline_new(engine->shell->cg_device);
     cg_pipeline_set_layer_texture(pipeline, 0, NULL);
     cg_pipeline_set_blend(pipeline, "RGBA=ADD(SRC_COLOR, 0)", NULL);
 
@@ -117,7 +117,7 @@ rig_downsampler_downsample(rig_downsampler_t *downsampler,
         cg_texture_get_components(downsampler->dest) != components) {
         cg_offscreen_t *offscreen;
         cg_texture_2d_t *texture_2d = cg_texture_2d_new_with_size(
-            downsampler->engine->ctx->cg_device, dest_width, dest_height);
+            downsampler->engine->shell->cg_device, dest_width, dest_height);
 
         cg_texture_set_components(texture_2d, components);
 

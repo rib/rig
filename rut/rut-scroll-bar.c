@@ -29,7 +29,7 @@
 
 #include <config.h>
 
-#include "rut-context.h"
+#include "rut-shell.h"
 #include "rut-shell.h"
 #include "rut-interfaces.h"
 #include "rut-paintable.h"
@@ -53,7 +53,7 @@ enum {
 struct _rut_scroll_bar_t {
     rut_object_base_t _base;
 
-    rut_context_t *ctx;
+    rut_shell_t *shell;
 
     cg_color_t color;
 
@@ -200,7 +200,7 @@ _rut_scroll_bar_grab_input_cb(rut_input_event_t *event, void *user_data)
     rut_scroll_bar_t *scroll_bar = user_data;
 
     if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_MOTION) {
-        rut_shell_t *shell = scroll_bar->ctx->shell;
+        rut_shell_t *shell = scroll_bar->shell;
         if (rut_motion_event_get_action(event) == RUT_MOTION_EVENT_ACTION_UP) {
             rut_shell_ungrab_input(
                 shell, _rut_scroll_bar_grab_input_cb, user_data);
@@ -254,7 +254,7 @@ _rut_scroll_bar_input_cb(
                 scroll_bar->grab_y = rut_motion_event_get_y(event);
                 scroll_bar->grab_offset = scroll_bar->offset;
 
-                rut_shell_grab_input(scroll_bar->ctx->shell,
+                rut_shell_grab_input(scroll_bar->shell,
                                      rut_input_event_get_camera(event),
                                      _rut_scroll_bar_grab_input_cb,
                                      scroll_bar);
@@ -291,7 +291,7 @@ update_handle_position(rut_scroll_bar_t *scroll_bar)
          (scroll_bar->virtual_length - scroll_bar->viewport_length)) *
         scroll_bar->trough_range;
 
-    rut_shell_queue_redraw(scroll_bar->ctx->shell);
+    rut_shell_queue_redraw(scroll_bar->shell);
 }
 
 static void
@@ -329,11 +329,11 @@ update_geometry(rut_scroll_bar_t *scroll_bar)
 
     update_handle_position(scroll_bar);
 
-    rut_shell_queue_redraw(scroll_bar->ctx->shell);
+    rut_shell_queue_redraw(scroll_bar->shell);
 }
 
 rut_scroll_bar_t *
-rut_scroll_bar_new(rut_context_t *ctx,
+rut_scroll_bar_new(rut_shell_t *shell,
                    rut_axis_t axis,
                    float length,
                    float virtual_length,
@@ -345,7 +345,7 @@ rut_scroll_bar_new(rut_context_t *ctx,
     rut_introspectable_init(
         scroll_bar, _rut_scroll_bar_prop_specs, scroll_bar->properties);
 
-    scroll_bar->ctx = ctx;
+    scroll_bar->shell = shell;
 
     rut_graphable_init(scroll_bar);
     rut_paintable_init(scroll_bar);
@@ -360,12 +360,12 @@ rut_scroll_bar_new(rut_context_t *ctx,
 
     scroll_bar->thickness = THICKNESS;
 
-    scroll_bar->rect_pipeline = cg_pipeline_new(ctx->cg_device);
+    scroll_bar->rect_pipeline = cg_pipeline_new(shell->cg_device);
     cg_pipeline_set_color(scroll_bar->rect_pipeline, &scroll_bar->color);
 
     scroll_bar->rounded_pipeline = cg_pipeline_copy(scroll_bar->rect_pipeline);
     cg_pipeline_set_layer_texture(
-        scroll_bar->rounded_pipeline, 0, ctx->circle_texture);
+        scroll_bar->rounded_pipeline, 0, shell->circle_texture);
 
     scroll_bar->input_region = rut_input_region_new_rectangle(
         0, 0, 1, 1, _rut_scroll_bar_input_cb, scroll_bar);
@@ -412,7 +412,7 @@ reclamp_offset(rut_scroll_bar_t *scroll_bar)
 
         scroll_bar->offset = offset;
 
-        rut_property_dirty(&scroll_bar->ctx->property_ctx, property);
+        rut_property_dirty(&scroll_bar->shell->property_ctx, property);
     }
 }
 
@@ -462,7 +462,7 @@ rut_scroll_bar_set_virtual_offset(rut_object_t *obj, float viewport_offset)
     update_handle_position(scroll_bar);
 
     rut_property_dirty(
-        &scroll_bar->ctx->property_ctx,
+        &scroll_bar->shell->property_ctx,
         &scroll_bar->properties[RUT_SCROLL_BAR_PROP_VIRTUAL_OFFSET]);
 }
 

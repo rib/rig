@@ -30,11 +30,11 @@
 #ifndef __RUT_GRAPH_H__
 #define __RUT_GRAPH_H__
 
-#include <rut-context.h>
+#include <rut-shell.h>
 
 typedef struct _rut_graph_t rut_graph_t;
 extern rut_type_t rut_graph_type;
 
-rut_graph_t *rut_graph_new(rut_context_t *ctx);
+rut_graph_t *rut_graph_new(rut_shell_t *shell);
 
 #endif /* __RUT_GRAPH_H__ */

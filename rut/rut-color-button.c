@@ -51,7 +51,7 @@ enum {
 struct _rut_color_button_t {
     rut_object_base_t _base;
 
-    rut_context_t *context;
+    rut_shell_t *shell;
 
     rut_graphable_props_t graphable;
     rut_paintable_props_t paintable;
@@ -116,7 +116,7 @@ _rut_color_button_free(void *object)
     rut_graphable_remove_child(button->input_region);
     rut_object_unref(button->input_region);
 
-    rut_object_unref(button->context);
+    rut_object_unref(button->shell);
 
     rut_introspectable_destroy(button);
     rut_graphable_destroy(button);
@@ -228,7 +228,7 @@ rut_color_button_set_size(rut_object_t *object, float width, float height)
 {
     rut_color_button_t *button = object;
 
-    rut_shell_queue_redraw(button->context->shell);
+    rut_shell_queue_redraw(button->shell);
 
     button->width = width;
     button->height = height;
@@ -381,7 +381,7 @@ remove_picker(rut_color_button_t *button)
         rut_property_remove_binding(button_color_prop);
 
         rut_shell_ungrab_input(
-            button->context->shell, picker_grab_input_cb, button);
+            button->shell, picker_grab_input_cb, button);
 
         rut_graphable_remove_child(button->picker_input_region);
         rut_object_unref(button->picker_input_region);
@@ -394,7 +394,7 @@ remove_picker(rut_color_button_t *button)
 
         button->picker = NULL;
 
-        rut_shell_queue_redraw(button->context->shell);
+        rut_shell_queue_redraw(button->shell);
     }
 }
 
@@ -421,7 +421,7 @@ show_picker(rut_color_button_t *button, rut_object_t *camera)
 
     c_return_if_fail(button->picker == NULL);
 
-    button->picker = rut_color_picker_new(button->context);
+    button->picker = rut_color_picker_new(button->shell);
 
     rut_color_picker_set_color(button->picker, &button->color);
 
@@ -437,7 +437,7 @@ show_picker(rut_color_button_t *button, rut_object_t *camera)
         rut_property_t *button_color_prop =
             &button->properties[RUT_COLOR_BUTTON_PROP_COLOR];
 
-        rut_property_set_copy_binding(&button->context->property_ctx,
+        rut_property_set_copy_binding(&button->shell->property_ctx,
                                       button_color_prop,
                                       picker_color_prop);
     }
@@ -453,7 +453,7 @@ show_picker(rut_color_button_t *button, rut_object_t *camera)
 
     rut_sizable_set_size(button->picker, picker_width, picker_height);
 
-    button->picker_transform = rut_transform_new(button->context);
+    button->picker_transform = rut_transform_new(button->shell);
     rut_graphable_add_child(button->picker_transform, button->picker);
 
     rut_graphable_get_transform(button, &model_transform);
@@ -502,7 +502,7 @@ show_picker(rut_color_button_t *button, rut_object_t *camera)
     rut_graphable_add_child(root, button->picker_transform);
 
     rut_shell_grab_input(
-        button->context->shell, camera, picker_grab_input_cb, button);
+        button->shell, camera, picker_grab_input_cb, button);
 }
 
 static rut_input_event_status_t
@@ -537,7 +537,7 @@ button_grab_input_cb(rut_input_event_t *event,
 
     if (depressed != button->depressed) {
         button->depressed = depressed;
-        rut_shell_queue_redraw(button->context->shell);
+        rut_shell_queue_redraw(button->shell);
     }
 
     return RUT_INPUT_EVENT_STATUS_HANDLED;
@@ -548,7 +548,7 @@ ungrab(rut_color_button_t *button)
 {
     if (button->have_button_grab) {
         rut_shell_ungrab_input(
-            button->context->shell, button_grab_input_cb, button);
+            button->shell, button_grab_input_cb, button);
         button->have_button_grab = false;
     }
 }
@@ -569,9 +569,9 @@ button_input_region_cb(
         button->depressed = true;
 
         rut_shell_grab_input(
-            button->context->shell, camera, button_grab_input_cb, button);
+            button->shell, camera, button_grab_input_cb, button);
 
-        rut_shell_queue_redraw(button->context->shell);
+        rut_shell_queue_redraw(button->shell);
 
         return RUT_INPUT_EVENT_STATUS_HANDLED;
     }
@@ -580,24 +580,24 @@ button_input_region_cb(
 }
 
 rut_color_button_t *
-rut_color_button_new(rut_context_t *context)
+rut_color_button_new(rut_shell_t *shell)
 {
     rut_color_button_t *button = rut_object_alloc0(rut_color_button_t,
                                                    &rut_color_button_type,
                                                    _rut_color_button_init_type);
 
-    button->context = rut_object_ref(context);
+    button->shell = rut_object_ref(shell);
 
     cg_color_init_from_4ub(&button->color, 0, 0, 0, 255);
 
     button->dark_edge_pipeline =
-        create_color_pipeline(context->cg_device, 0x000000ff);
+        create_color_pipeline(shell->cg_device, 0x000000ff);
     button->light_edge_pipeline =
-        create_color_pipeline(context->cg_device, 0xdadadaff);
+        create_color_pipeline(shell->cg_device, 0xdadadaff);
     button->padding_pipeline =
-        create_color_pipeline(context->cg_device, 0x919191ff);
+        create_color_pipeline(shell->cg_device, 0x919191ff);
     button->color_pipeline =
-        create_color_pipeline(context->cg_device, 0x000000ff);
+        create_color_pipeline(shell->cg_device, 0x000000ff);
 
     rut_paintable_init(button);
     rut_graphable_init(button);
@@ -625,10 +625,10 @@ rut_color_button_set_color(rut_object_t *obj, const cg_color_t *color)
 
         button->color_pipeline_dirty = true;
 
-        rut_property_dirty(&button->context->property_ctx,
+        rut_property_dirty(&button->shell->property_ctx,
                            &button->properties[RUT_COLOR_BUTTON_PROP_COLOR]);
 
-        rut_shell_queue_redraw(button->context->shell);
+        rut_shell_queue_redraw(button->shell);
     }
 }
 

@@ -75,7 +75,7 @@ _rut_transform_init_type(void)
 }
 
 rut_transform_t *
-rut_transform_new(rut_context_t *ctx)
+rut_transform_new(rut_shell_t *shell)
 {
     rut_transform_t *transform = rut_object_alloc0(
         rut_transform_t, &rut_transform_type, _rut_transform_init_type);

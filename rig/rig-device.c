@@ -49,7 +49,6 @@ typedef struct _rig_device_t {
     rut_object_base_t _base;
 
     rut_shell_t *shell;
-    rut_context_t *ctx;
     rig_frontend_t *frontend;
     rig_engine_t *engine;
 
@@ -154,7 +153,7 @@ _rig_device_free(void *object)
 
     rut_object_unref(device->engine);
 
-    rut_object_unref(device->ctx);
+    rut_object_unref(device->shell);
     rut_object_unref(device->shell);
 
     rut_object_free(rig_device_t, device);
@@ -184,12 +183,10 @@ rig_device_new(const char *filename)
                                   rig_device_redraw,
                                   device);
 
-    device->ctx = rut_context_new(device->shell);
-
-    rut_context_init(device->ctx);
+    rut_shell_init(device->shell);
 
     assets_location = c_path_get_dirname(device->ui_filename);
-    rut_set_assets_location(device->ctx, assets_location);
+    rut_shell_set_assets_location(device->shell, assets_location);
     c_free(assets_location);
 
     device->frontend = rig_frontend_new(

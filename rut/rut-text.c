@@ -626,9 +626,9 @@ rut_text_clear_selection(rut_text_t *text)
 {
     if (text->selection_bound != text->position) {
         text->selection_bound = text->position;
-        rut_property_dirty(&text->ctx->property_ctx,
+        rut_property_dirty(&text->shell->property_ctx,
                            &text->properties[RUT_TEXT_PROP_SELECTION_BOUND]);
-        rut_shell_queue_redraw(text->ctx->shell);
+        rut_shell_queue_redraw(text->shell);
     }
 }
 
@@ -737,7 +737,7 @@ rut_text_ensure_hint_text_layout(rut_text_t *text)
     if (text->hint_text_layout)
         return text->hint_text_layout;
 
-    layout = pango_layout_new(text->ctx->pango_context);
+    layout = pango_layout_new(text->shell->pango_context);
     pango_layout_set_font_description(layout, text->font_desc);
     pango_layout_set_single_paragraph_mode(layout, true);
     pango_layout_set_text(layout, text->hint_text, -1);
@@ -760,7 +760,7 @@ rut_text_create_layout_no_cache(
 
     RUT_TIMER_START(_rut_uprof_context, text_layout_timer);
 
-    layout = pango_layout_new(text->ctx->pango_context);
+    layout = pango_layout_new(text->shell->pango_context);
     pango_layout_set_font_description(layout, text->font_desc);
 
     contents = rut_text_get_display_text(text);
@@ -878,7 +878,7 @@ rut_text_set_font_description_internal(rut_text_t *text,
     if (rut_text_buffer_get_length(get_buffer(text)) != 0)
         rut_text_notify_preferred_size_changed(text);
 
-    rut_property_dirty(&text->ctx->property_ctx,
+    rut_property_dirty(&text->shell->property_ctx,
                        &text->properties[RUT_TEXT_PROP_FONT_DESCRIPTION]);
 }
 
@@ -890,7 +890,7 @@ rut_text_settings_changed_cb(rut_settings_t *settings,
     unsigned int password_hint_time = 0;
 
     password_hint_time =
-        rut_settings_get_password_hint_time(text->ctx->settings);
+        rut_settings_get_password_hint_time(text->shell->settings);
 
     text->show_password_hint = password_hint_time > 0;
     text->password_hint_timeout = password_hint_time;
@@ -899,7 +899,7 @@ rut_text_settings_changed_cb(rut_settings_t *settings,
         PangoFontDescription *font_desc;
         char *font_name = NULL;
 
-        font_name = rut_settings_get_font_name(text->ctx->settings);
+        font_name = rut_settings_get_font_name(text->shell->settings);
 
         RUT_NOTE(
             ACTOR, "Text[%p]: default font changed to '%s'", text, font_name);
@@ -1264,11 +1264,11 @@ rut_text_delete_selection(rut_text_t *text)
 
     /* Not required to be guarded by g_object_freeze/thaw_notify */
     if (text->position != old_position)
-        rut_property_dirty(&text->ctx->property_ctx,
+        rut_property_dirty(&text->shell->property_ctx,
                            &text->properties[RUT_TEXT_PROP_POSITION]);
 
     if (text->selection_bound != old_selection)
-        rut_property_dirty(&text->ctx->property_ctx,
+        rut_property_dirty(&text->shell->property_ctx,
                            &text->properties[RUT_TEXT_PROP_SELECTION_BOUND]);
 
     return true;
@@ -1350,7 +1350,7 @@ _rut_text_free(void *object)
     /* get rid of the entire cache */
     rut_text_dirty_cache(text);
 
-    rut_settings_remove_changed_callback(text->ctx->settings,
+    rut_settings_remove_changed_callback(text->shell->settings,
                                          rut_text_settings_changed_cb);
 
     if (text->password_hint_id) {
@@ -1504,7 +1504,7 @@ selection_paint(rut_text_t *text, rut_paint_context_t *paint_ctx)
         position = text->position;
 
         if (position == text->selection_bound) {
-            cg_pipeline_t *pipeline = cg_pipeline_new(text->ctx->cg_device);
+            cg_pipeline_t *pipeline = cg_pipeline_new(text->shell->cg_device);
 
             /* No selection, just draw the cursor */
             if (text->cursor_color_set)
@@ -1528,9 +1528,9 @@ selection_paint(rut_text_t *text, rut_paint_context_t *paint_ctx)
         } else {
             /* Paint selection background first */
             PangoLayout *layout = rut_text_get_layout(text);
-            cg_path_t *selection_path = cg_path_new(text->ctx->cg_device);
+            cg_path_t *selection_path = cg_path_new(text->shell->cg_device);
             cg_color_t cg_color = { 0, };
-            cg_pipeline_t *pipeline = cg_pipeline_new(text->ctx->cg_device);
+            cg_pipeline_t *pipeline = cg_pipeline_new(text->shell->cg_device);
 
             /* Paint selection background */
             if (text->selection_color_set)
@@ -2068,13 +2068,13 @@ rut_text_motion_grab(rut_input_event_t *event,
 
         if (text->selectable) {
             rut_text_set_cursor_position(text, offset);
-            rut_shell_set_selection(text->ctx->shell, text);
+            rut_shell_set_selection(text->shell, text);
         } else
             rut_text_set_positions(text, offset, offset);
     } else if (rut_motion_event_get_action(event) ==
                RUT_MOTION_EVENT_ACTION_UP) {
         rut_shell_ungrab_input(
-            text->ctx->shell, rut_text_motion_grab, user_data);
+            text->shell, rut_text_motion_grab, user_data);
         text->in_select_drag = false;
         return RUT_INPUT_EVENT_STATUS_HANDLED;
     }
@@ -2091,7 +2091,7 @@ rut_text_remove_password_hint(void *data)
     text->password_hint_id = 0;
 
     rut_text_dirty_cache(data);
-    rut_shell_queue_redraw(text->ctx->shell);
+    rut_shell_queue_redraw(text->shell);
 
     return G_SOURCE_REMOVE;
 }
@@ -2183,7 +2183,7 @@ rut_text_button_press(rut_text_t *text,
 
     /* grab the pointer */
     text->in_select_drag = true;
-    rut_shell_grab_input(text->ctx->shell, camera, rut_text_motion_grab, text);
+    rut_shell_grab_input(text->shell, camera, rut_text_motion_grab, text);
 
     return RUT_INPUT_EVENT_STATUS_HANDLED;
 }
@@ -2394,8 +2394,8 @@ rut_text_grab_key_focus(rut_text_t *text)
          * other
          * parts of the UI.
          */
-        rut_shell_grab_input(text->ctx->shell, NULL, rut_text_key_press, text);
-        rut_shell_queue_redraw(text->ctx->shell);
+        rut_shell_grab_input(text->shell, NULL, rut_text_key_press, text);
+        rut_shell_queue_redraw(text->shell);
     }
 }
 
@@ -2403,9 +2403,9 @@ void
 rut_text_ungrab_key_focus(rut_text_t *text)
 {
     if (text->has_focus) {
-        rut_shell_ungrab_input(text->ctx->shell, rut_text_key_press, text);
+        rut_shell_ungrab_input(text->shell, rut_text_key_press, text);
         text->has_focus = false;
-        rut_shell_queue_redraw(text->ctx->shell);
+        rut_shell_queue_redraw(text->shell);
     }
 }
 
@@ -2749,9 +2749,9 @@ _rut_text_set_size(rut_object_t *object, float width, float height)
     pick_vertices[5].x = width;
     pick_vertices[5].y = 0;
 
-    rut_property_dirty(&text->ctx->property_ctx,
+    rut_property_dirty(&text->shell->property_ctx,
                        &text->properties[RUT_TEXT_PROP_WIDTH]);
-    rut_property_dirty(&text->ctx->property_ctx,
+    rut_property_dirty(&text->shell->property_ctx,
                        &text->properties[RUT_TEXT_PROP_HEIGHT]);
 }
 
@@ -2920,7 +2920,7 @@ _rut_text_init_type(void)
 }
 
 rut_text_t *
-rut_text_new_full(rut_context_t *ctx,
+rut_text_new_full(rut_shell_t *shell,
                   const char *font_name,
                   const char *text_str,
                   rut_text_buffer_t *buffer)
@@ -2948,7 +2948,7 @@ rut_text_new_full(rut_context_t *ctx,
 
     rut_introspectable_init(text, _rut_text_prop_specs, text->properties);
 
-    text->ctx = ctx;
+    text->shell = shell;
 
     text->alignment = PANGO_ALIGN_LEFT;
     text->wrap = false;
@@ -2975,19 +2975,19 @@ rut_text_new_full(rut_context_t *ctx,
     rut_color_init_from_uint32(&text->selected_text_color,
                                default_selected_text_color);
 
-    text->direction = rut_get_text_direction(ctx);
+    text->direction = rut_shell_get_text_direction(shell);
 
     /* get the default font name from the context; we don't use
      * set_font_description() here because we are initializing
      * the Text and we don't need notifications and sanity checks
      */
     password_hint_time =
-        rut_settings_get_password_hint_time(text->ctx->settings);
+        rut_settings_get_password_hint_time(text->shell->settings);
 
     text->font_name =
         font_name ? c_strdup(font_name)
         : rut_settings_get_font_name(
-            text->ctx->settings);             /* font_name is allocated */
+            text->shell->settings);             /* font_name is allocated */
     text->font_desc = pango_font_description_from_string(text->font_name);
     text->is_default_font = true;
 
@@ -3014,8 +3014,9 @@ rut_text_new_full(rut_context_t *ctx,
     text->cursor_size = DEFAULT_CURSOR_SIZE;
     memset(&text->cursor_pos, 0, sizeof(rut_rectangle_int_t));
 
-    rut_settings_add_changed_callback(
-        ctx->settings, rut_text_settings_changed_cb, NULL, text);
+    rut_settings_add_changed_callback(shell->settings,
+                                      rut_text_settings_changed_cb, NULL,
+                                      text);
 
     rut_text_set_text(text, text_str);
 
@@ -3029,17 +3030,17 @@ rut_text_new_full(rut_context_t *ctx,
 }
 
 rut_text_t *
-rut_text_new(rut_context_t *ctx)
+rut_text_new(rut_shell_t *shell)
 {
-    return rut_text_new_full(ctx, NULL, "", NULL);
+    return rut_text_new_full(shell, NULL, "", NULL);
 }
 
 rut_text_t *
-rut_text_new_with_text(rut_context_t *ctx,
+rut_text_new_with_text(rut_shell_t *shell,
                        const char *font_name,
                        const char *text)
 {
-    return rut_text_new_full(ctx, font_name, text, NULL);
+    return rut_text_new_full(shell, font_name, text, NULL);
 }
 
 static rut_text_buffer_t *
@@ -3047,7 +3048,7 @@ get_buffer(rut_text_t *text)
 {
     if (text->buffer == NULL) {
         rut_text_buffer_t *buffer;
-        buffer = rut_text_buffer_new(text->ctx);
+        buffer = rut_text_buffer_new(text->shell);
         rut_text_set_buffer(text, buffer);
         rut_object_unref(buffer);
     }
@@ -3139,10 +3140,10 @@ text_property_binding_cb(rut_property_t *target_property,
     rut_closure_list_invoke(
         &text->text_changed_cb_list, rut_text_changed_callback_t, text);
 
-    rut_property_dirty(&text->ctx->property_ctx,
+    rut_property_dirty(&text->shell->property_ctx,
                        &text->properties[RUT_TEXT_PROP_TEXT]);
 
-    rut_shell_queue_redraw(text->ctx->shell);
+    rut_shell_queue_redraw(text->shell);
 }
 
 static void
@@ -3150,7 +3151,7 @@ max_length_property_binding_cb(rut_property_t *target_property,
                                void *user_data)
 {
     rut_text_t *text = user_data;
-    rut_property_dirty(&text->ctx->property_ctx,
+    rut_property_dirty(&text->shell->property_ctx,
                        &text->properties[RUT_TEXT_PROP_MAX_LENGTH]);
 }
 
@@ -3194,10 +3195,10 @@ buffer_disconnect_signals(rut_text_t *text)
 }
 
 rut_text_t *
-rut_text_new_with_buffer(rut_context_t *ctx,
+rut_text_new_with_buffer(rut_shell_t *shell,
                          rut_text_buffer_t *buffer)
 {
-    return rut_text_new_full(ctx, NULL, "", buffer);
+    return rut_text_new_full(shell, NULL, "", buffer);
 }
 
 rut_object_t *
@@ -3226,11 +3227,11 @@ rut_text_set_buffer(rut_object_t *obj, rut_object_t *buffer)
     if (text->buffer)
         buffer_connect_signals(text);
 
-    rut_property_dirty(&text->ctx->property_ctx,
+    rut_property_dirty(&text->shell->property_ctx,
                        &text->properties[RUT_TEXT_PROP_BUFFER]);
-    rut_property_dirty(&text->ctx->property_ctx,
+    rut_property_dirty(&text->shell->property_ctx,
                        &text->properties[RUT_TEXT_PROP_TEXT]);
-    rut_property_dirty(&text->ctx->property_ctx,
+    rut_property_dirty(&text->shell->property_ctx,
                        &text->properties[RUT_TEXT_PROP_MAX_LENGTH]);
 }
 
@@ -3253,9 +3254,9 @@ rut_text_set_editable(rut_object_t *obj, bool editable)
 
         add_remove_input_region(text);
 
-        rut_shell_queue_redraw(text->ctx->shell);
+        rut_shell_queue_redraw(text->shell);
 
-        rut_property_dirty(&text->ctx->property_ctx,
+        rut_property_dirty(&text->shell->property_ctx,
                            &text->properties[RUT_TEXT_PROP_EDITABLE]);
     }
 }
@@ -3278,9 +3279,9 @@ rut_text_set_selectable(rut_object_t *obj, bool selectable)
 
         add_remove_input_region(text);
 
-        rut_shell_queue_redraw(text->ctx->shell);
+        rut_shell_queue_redraw(text->shell);
 
-        rut_property_dirty(&text->ctx->property_ctx,
+        rut_property_dirty(&text->shell->property_ctx,
                            &text->properties[RUT_TEXT_PROP_SELECTABLE]);
     }
 }
@@ -3301,9 +3302,9 @@ rut_text_set_activatable(rut_object_t *obj, bool activatable)
     if (text->activatable != activatable) {
         text->activatable = activatable;
 
-        rut_shell_queue_redraw(text->ctx->shell);
+        rut_shell_queue_redraw(text->shell);
 
-        rut_property_dirty(&text->ctx->property_ctx,
+        rut_property_dirty(&text->shell->property_ctx,
                            &text->properties[RUT_TEXT_PROP_ACTIVATABLE]);
     }
 }
@@ -3338,9 +3339,9 @@ rut_text_set_cursor_visible(rut_object_t *obj, bool cursor_visible)
     if (text->cursor_visible != cursor_visible) {
         text->cursor_visible = cursor_visible;
 
-        rut_shell_queue_redraw(text->ctx->shell);
+        rut_shell_queue_redraw(text->shell);
 
-        rut_property_dirty(&text->ctx->property_ctx,
+        rut_property_dirty(&text->shell->property_ctx,
                            &text->properties[RUT_TEXT_PROP_CURSOR_VISIBLE]);
     }
 }
@@ -3364,11 +3365,11 @@ rut_text_set_cursor_color(rut_object_t *obj, const cg_color_t *color)
     } else
         text->cursor_color_set = false;
 
-    rut_shell_queue_redraw(text->ctx->shell);
+    rut_shell_queue_redraw(text->shell);
 
-    rut_property_dirty(&text->ctx->property_ctx,
+    rut_property_dirty(&text->shell->property_ctx,
                        &text->properties[RUT_TEXT_PROP_CURSOR_COLOR]);
-    rut_property_dirty(&text->ctx->property_ctx,
+    rut_property_dirty(&text->shell->property_ctx,
                        &text->properties[RUT_TEXT_PROP_CURSOR_COLOR_SET]);
 }
 
@@ -3458,9 +3459,9 @@ rut_text_set_selection_bound(rut_object_t *obj, int selection_bound)
         else
             text->selection_bound = selection_bound;
 
-        rut_shell_queue_redraw(text->ctx->shell);
+        rut_shell_queue_redraw(text->shell);
 
-        rut_property_dirty(&text->ctx->property_ctx,
+        rut_property_dirty(&text->shell->property_ctx,
                            &text->properties[RUT_TEXT_PROP_SELECTION_BOUND]);
     }
 }
@@ -3484,11 +3485,11 @@ rut_text_set_selection_color(rut_object_t *obj, const cg_color_t *color)
     } else
         text->selection_color_set = false;
 
-    rut_shell_queue_redraw(text->ctx->shell);
+    rut_shell_queue_redraw(text->shell);
 
-    rut_property_dirty(&text->ctx->property_ctx,
+    rut_property_dirty(&text->shell->property_ctx,
                        &text->properties[RUT_TEXT_PROP_SELECTION_COLOR]);
-    rut_property_dirty(&text->ctx->property_ctx,
+    rut_property_dirty(&text->shell->property_ctx,
                        &text->properties[RUT_TEXT_PROP_SELECTION_COLOR_SET]);
 }
 
@@ -3529,12 +3530,12 @@ rut_text_set_selected_text_color(rut_object_t *obj,
     } else
         text->selected_text_color_set = false;
 
-    rut_shell_queue_redraw(text->ctx->shell);
+    rut_shell_queue_redraw(text->shell);
 
-    rut_property_dirty(&text->ctx->property_ctx,
+    rut_property_dirty(&text->shell->property_ctx,
                        &text->properties[RUT_TEXT_PROP_SELECTED_TEXT_COLOR]);
     rut_property_dirty(
-        &text->ctx->property_ctx,
+        &text->shell->property_ctx,
         &text->properties[RUT_TEXT_PROP_SELECTED_TEXT_COLOR_SET]);
 }
 
@@ -3598,7 +3599,7 @@ rut_text_set_font_name(rut_object_t *obj, const char *font_name)
     if (font_name == NULL || font_name[0] == '\0') {
         char *default_font_name = NULL;
 
-        default_font_name = rut_settings_get_font_name(text->ctx->settings);
+        default_font_name = rut_settings_get_font_name(text->shell->settings);
 
         if (default_font_name != NULL)
             font_name = default_font_name;
@@ -3626,7 +3627,7 @@ rut_text_set_font_name(rut_object_t *obj, const char *font_name)
     rut_text_set_font_description_internal(text, desc);
     text->is_default_font = is_default_font;
 
-    rut_property_dirty(&text->ctx->property_ctx,
+    rut_property_dirty(&text->shell->property_ctx,
                        &text->properties[RUT_TEXT_PROP_FONT_NAME]);
 
 out:
@@ -3662,7 +3663,7 @@ rut_text_set_use_markup_internal(rut_text_t *text,
             text->markup_attrs = NULL;
         }
 
-        rut_property_dirty(&text->ctx->property_ctx,
+        rut_property_dirty(&text->shell->property_ctx,
                            &text->properties[RUT_TEXT_PROP_USE_MARKUP]);
     }
 }
@@ -3706,9 +3707,9 @@ rut_text_set_hint_text(rut_object_t *obj, const char *hint_str)
 
     if (!text->has_focus &&
         (text->buffer == NULL || rut_text_buffer_get_length(text->buffer) == 0))
-        rut_shell_queue_redraw(text->ctx->shell);
+        rut_shell_queue_redraw(text->shell);
 
-    rut_property_dirty(&text->ctx->property_ctx,
+    rut_property_dirty(&text->shell->property_ctx,
                        &text->properties[RUT_TEXT_PROP_HINT_TEXT]);
 }
 
@@ -3744,9 +3745,9 @@ rut_text_set_color(rut_object_t *obj, const cg_color_t *color)
 
     text->text_color = *color;
 
-    rut_shell_queue_redraw(text->ctx->shell);
+    rut_shell_queue_redraw(text->shell);
 
-    rut_property_dirty(&text->ctx->property_ctx,
+    rut_property_dirty(&text->shell->property_ctx,
                        &text->properties[RUT_TEXT_PROP_COLOR]);
 }
 
@@ -3780,7 +3781,7 @@ rut_text_set_ellipsize(rut_text_t *text, PangoEllipsizeMode mode)
 
         rut_text_notify_preferred_size_changed(text);
 
-        rut_property_dirty(&text->ctx->property_ctx,
+        rut_property_dirty(&text->shell->property_ctx,
                            &text->properties[RUT_TEXT_PROP_ELLIPSIZE]);
     }
 }
@@ -3811,7 +3812,7 @@ rut_text_set_line_wrap(rut_object_t *obj, bool line_wrap)
 
         rut_text_notify_preferred_size_changed(text);
 
-        rut_property_dirty(&text->ctx->property_ctx,
+        rut_property_dirty(&text->shell->property_ctx,
                            &text->properties[RUT_TEXT_PROP_LINE_WRAP]);
     }
 }
@@ -3826,7 +3827,7 @@ rut_text_set_line_wrap_mode(rut_text_t *text, PangoWrapMode wrap_mode)
 
         rut_text_notify_preferred_size_changed(text);
 
-        rut_property_dirty(&text->ctx->property_ctx,
+        rut_property_dirty(&text->shell->property_ctx,
                            &text->properties[RUT_TEXT_PROP_LINE_WRAP_MODE]);
     }
 }
@@ -3857,7 +3858,7 @@ rut_text_set_attributes(rut_text_t *text, PangoAttrList *attrs)
 
     rut_text_dirty_cache(text);
 
-    rut_property_dirty(&text->ctx->property_ctx,
+    rut_property_dirty(&text->shell->property_ctx,
                        &text->properties[RUT_TEXT_PROP_ATTRIBUTES]);
 
     rut_text_notify_preferred_size_changed(text);
@@ -3879,7 +3880,7 @@ rut_text_set_line_alignment(rut_text_t *text, PangoAlignment alignment)
 
         rut_text_notify_preferred_size_changed(text);
 
-        rut_property_dirty(&text->ctx->property_ctx,
+        rut_property_dirty(&text->shell->property_ctx,
                            &text->properties[RUT_TEXT_PROP_LINE_ALIGNMENT]);
     }
 }
@@ -3928,7 +3929,7 @@ rut_text_set_justify(rut_object_t *obj, bool justify)
 
         rut_text_notify_preferred_size_changed(text);
 
-        rut_property_dirty(&text->ctx->property_ctx,
+        rut_property_dirty(&text->shell->property_ctx,
                            &text->properties[RUT_TEXT_PROP_JUSTIFY]);
     }
 }
@@ -3969,9 +3970,9 @@ rut_text_set_cursor_position(rut_object_t *obj, int position)
        time the cursor is moved up or down */
     text->x_pos = -1;
 
-    rut_shell_queue_redraw(text->ctx->shell);
+    rut_shell_queue_redraw(text->shell);
 
-    rut_property_dirty(&text->ctx->property_ctx,
+    rut_property_dirty(&text->shell->property_ctx,
                        &text->properties[RUT_TEXT_PROP_POSITION]);
 }
 
@@ -3986,9 +3987,9 @@ rut_text_set_cursor_size(rut_object_t *obj, int size)
 
         text->cursor_size = size;
 
-        rut_shell_queue_redraw(text->ctx->shell);
+        rut_shell_queue_redraw(text->shell);
 
-        rut_property_dirty(&text->ctx->property_ctx,
+        rut_property_dirty(&text->shell->property_ctx,
                            &text->properties[RUT_TEXT_PROP_CURSOR_SIZE]);
     }
 }
@@ -4013,7 +4014,7 @@ rut_text_set_password_char(rut_object_t *obj, uint32_t wc)
 
         rut_text_notify_preferred_size_changed(text);
 
-        rut_property_dirty(&text->ctx->property_ctx,
+        rut_property_dirty(&text->shell->property_ctx,
                            &text->properties[RUT_TEXT_PROP_PASSWORD_CHAR]);
     }
 }
@@ -4113,14 +4114,14 @@ rut_text_set_single_line_mode(rut_object_t *obj, bool single_line)
         if (text->single_line_mode) {
             text->activatable = true;
 
-            rut_property_dirty(&text->ctx->property_ctx,
+            rut_property_dirty(&text->shell->property_ctx,
                                &text->properties[RUT_TEXT_PROP_ACTIVATABLE]);
         }
 
         rut_text_dirty_cache(text);
         rut_text_notify_preferred_size_changed(text);
 
-        rut_property_dirty(&text->ctx->property_ctx,
+        rut_property_dirty(&text->shell->property_ctx,
                            &text->properties[RUT_TEXT_PROP_SINGLE_LINE_MODE]);
     }
 }
@@ -4252,12 +4253,6 @@ rut_text_direction_t
 rut_text_get_direction(rut_text_t *text)
 {
     return text->direction;
-}
-
-rut_context_t *
-rut_text_get_context(rut_text_t *text)
-{
-    return text->ctx;
 }
 
 rut_mesh_t *

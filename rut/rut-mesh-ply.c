@@ -56,7 +56,7 @@ typedef struct _loader_property_t {
 } loader_property_t;
 
 typedef struct _loader_t {
-    rut_context_t *ctx;
+    rut_shell_t *shell;
     p_ply ply;
     c_error_t *error;
 
@@ -282,7 +282,7 @@ init_indices_array(loader_t *loader, int n_vertices, c_error_t **error)
     } else if (n_vertices <= 0x10000) {
         loader->indices_type = CG_INDICES_TYPE_UNSIGNED_SHORT;
         loader->faces = c_array_new(false, false, sizeof(uint16_t));
-    } else if (cg_has_feature(loader->ctx->cg_device,
+    } else if (cg_has_feature(loader->shell->cg_device,
                               CG_FEATURE_ID_UNSIGNED_INT_INDICES)) {
         loader->indices_type = CG_INDICES_TYPE_UNSIGNED_INT;
         loader->faces = c_array_new(false, false, sizeof(uint32_t));
@@ -299,7 +299,7 @@ init_indices_array(loader_t *loader, int n_vertices, c_error_t **error)
 }
 
 static rut_mesh_t *
-_rut_mesh_new_from_p_ply(rut_context_t *ctx,
+_rut_mesh_new_from_p_ply(rut_shell_t *shell,
                          loader_t *loader,
                          p_ply ply,
                          const char *display_name,
@@ -322,7 +322,7 @@ _rut_mesh_new_from_p_ply(rut_context_t *ctx,
 
     memset(rut_attributes, 0, sizeof(void *) * n_attributes);
 
-    loader->ctx = ctx;
+    loader->shell = shell;
     loader->loader_attributes = loader_attributes;
     loader->loader_properties = loader_properties;
 
@@ -576,7 +576,7 @@ EXIT:
 }
 
 rut_mesh_t *
-rut_mesh_new_from_ply(rut_context_t *ctx,
+rut_mesh_new_from_ply(rut_shell_t *shell,
                       const char *filename,
                       rut_ply_attribute_t *attributes,
                       int n_attributes,
@@ -597,7 +597,7 @@ rut_mesh_new_from_ply(rut_context_t *ctx,
 
     display_name = c_filename_display_name(filename);
 
-    mesh = _rut_mesh_new_from_p_ply(ctx,
+    mesh = _rut_mesh_new_from_p_ply(shell,
                                     &loader,
                                     ply,
                                     display_name,
@@ -612,7 +612,7 @@ rut_mesh_new_from_ply(rut_context_t *ctx,
 }
 
 rut_mesh_t *
-rut_mesh_new_from_ply_data(rut_context_t *ctx,
+rut_mesh_new_from_ply_data(rut_shell_t *shell,
                            const uint8_t *data,
                            size_t len,
                            rut_ply_attribute_t *attributes,
@@ -634,7 +634,7 @@ rut_mesh_new_from_ply_data(rut_context_t *ctx,
 
     display_name = c_strdup_printf("<serialized asset %p>", data);
 
-    mesh = _rut_mesh_new_from_p_ply(ctx,
+    mesh = _rut_mesh_new_from_p_ply(shell,
                                     &loader,
                                     ply,
                                     display_name,

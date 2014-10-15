@@ -38,6 +38,8 @@
 #include "rut-input-region.h"
 #include "rut-introspectable.h"
 #include "rut-camera.h"
+#include "rut-texture-cache.h"
+#include "rut-util.h"
 
 #define RUT_TOGGLE_BOX_WIDTH 15
 #define RUT_TOGGLE_BOX_RIGHT_PAD 5
@@ -59,7 +61,7 @@ enum {
 struct _rut_toggle_t {
     rut_object_base_t _base;
 
-    rut_context_t *ctx;
+    rut_shell_t *shell;
 
     bool state;
     bool enabled;
@@ -346,7 +348,7 @@ _rut_toggle_grab_input_cb(rut_input_event_t *event, void *user_data)
     rut_toggle_t *toggle = state->toggle;
 
     if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_MOTION) {
-        rut_shell_t *shell = toggle->ctx->shell;
+        rut_shell_t *shell = toggle->shell;
         if (rut_motion_event_get_action(event) == RUT_MOTION_EVENT_ACTION_UP) {
             float x = rut_motion_event_get_x(event);
             float y = rut_motion_event_get_y(event);
@@ -369,7 +371,7 @@ _rut_toggle_grab_input_cb(rut_input_event_t *event, void *user_data)
 
                 c_slice_free(toggle_grab_state_t, state);
 
-                rut_shell_queue_redraw(toggle->ctx->shell);
+                rut_shell_queue_redraw(toggle->shell);
 
                 toggle->tentative_set = false;
             }
@@ -389,7 +391,7 @@ _rut_toggle_grab_input_cb(rut_input_event_t *event, void *user_data)
             else
                 toggle->tentative_set = false;
 
-            rut_shell_queue_redraw(toggle->ctx->shell);
+            rut_shell_queue_redraw(toggle->shell);
 
             return RUT_INPUT_EVENT_STATUS_HANDLED;
         }
@@ -409,7 +411,7 @@ _rut_toggle_input_cb(rut_input_region_t *region,
 
     if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_MOTION &&
         rut_motion_event_get_action(event) == RUT_MOTION_EVENT_ACTION_DOWN) {
-        rut_shell_t *shell = toggle->ctx->shell;
+        rut_shell_t *shell = toggle->shell;
         toggle_grab_state_t *state = c_slice_new(toggle_grab_state_t);
 
         state->toggle = toggle;
@@ -421,7 +423,7 @@ _rut_toggle_input_cb(rut_input_region_t *region,
 
         toggle->tentative_set = true;
 
-        rut_shell_queue_redraw(toggle->ctx->shell);
+        rut_shell_queue_redraw(toggle->shell);
 
         return RUT_INPUT_EVENT_STATUS_HANDLED;
     }
@@ -490,7 +492,7 @@ _rut_toggle_update_colours(rut_toggle_t *toggle)
 }
 
 rut_toggle_t *
-rut_toggle_new_with_icons(rut_context_t *ctx,
+rut_toggle_new_with_icons(rut_shell_t *shell,
                           const char *unselected_icon,
                           const char *selected_icon,
                           const char *label)
@@ -508,18 +510,18 @@ rut_toggle_new_with_icons(rut_context_t *ctx,
 
     rut_introspectable_init(toggle, _rut_toggle_prop_specs, toggle->properties);
 
-    toggle->ctx = ctx;
+    toggle->shell = shell;
 
     toggle->state = true;
     toggle->enabled = true;
 
     if (selected_icon) {
-        toggle->selected_icon = rut_load_texture(ctx, selected_icon, NULL);
+        toggle->selected_icon = rut_load_texture(shell, selected_icon, NULL);
         if (toggle->selected_icon && unselected_icon)
             toggle->unselected_icon =
-                rut_load_texture(ctx, unselected_icon, NULL);
+                rut_load_texture(shell, unselected_icon, NULL);
         if (toggle->unselected_icon) {
-            toggle->pipeline_selected_icon = cg_pipeline_new(ctx->cg_device);
+            toggle->pipeline_selected_icon = cg_pipeline_new(shell->cg_device);
             cg_pipeline_set_layer_texture(
                 toggle->pipeline_selected_icon, 0, toggle->selected_icon);
             toggle->pipeline_unselected_icon =
@@ -538,17 +540,18 @@ rut_toggle_new_with_icons(rut_context_t *ctx,
     }
 
     if (!toggle->selected_icon) {
-        toggle->tick = pango_layout_new(ctx->pango_context);
-        pango_layout_set_font_description(toggle->tick, ctx->pango_font_desc);
+        toggle->tick = pango_layout_new(shell->pango_context);
+        pango_layout_set_font_description(toggle->tick,
+                                          shell->pango_font_desc);
         pango_layout_set_text(toggle->tick, "✔", -1);
     }
 
     font_name =
-        rut_settings_get_font_name(ctx->settings); /* font_name is allocated */
+        rut_settings_get_font_name(shell->settings); /* font_name is allocated */
     font_desc = pango_font_description_from_string(font_name);
     c_free(font_name);
 
-    toggle->label = pango_layout_new(ctx->pango_context);
+    toggle->label = pango_layout_new(shell->pango_context);
     pango_layout_set_font_description(toggle->label, font_desc);
     pango_layout_set_text(toggle->label, label, -1);
 
@@ -562,8 +565,8 @@ rut_toggle_new_with_icons(rut_context_t *ctx,
         toggle->label_width + RUT_TOGGLE_BOX_RIGHT_PAD + RUT_TOGGLE_BOX_WIDTH;
     toggle->height = toggle->label_height + RUT_TOGGLE_LABEL_VPAD;
 
-    toggle->pipeline_border = cg_pipeline_new(ctx->cg_device);
-    toggle->pipeline_box = cg_pipeline_new(ctx->cg_device);
+    toggle->pipeline_border = cg_pipeline_new(shell->cg_device);
+    toggle->pipeline_box = cg_pipeline_new(shell->cg_device);
 
     _rut_toggle_update_colours(toggle);
 
@@ -581,9 +584,9 @@ rut_toggle_new_with_icons(rut_context_t *ctx,
 }
 
 rut_toggle_t *
-rut_toggle_new(rut_context_t *ctx, const char *label)
+rut_toggle_new(rut_shell_t *shell, const char *label)
 {
-    return rut_toggle_new_with_icons(ctx, NULL, NULL, label);
+    return rut_toggle_new_with_icons(shell, NULL, NULL, label);
 }
 
 rut_closure_t *
@@ -607,9 +610,9 @@ rut_toggle_set_enabled(rut_object_t *obj, bool enabled)
         return;
 
     toggle->enabled = enabled;
-    rut_property_dirty(&toggle->ctx->property_ctx,
+    rut_property_dirty(&toggle->shell->property_ctx,
                        &toggle->properties[RUT_TOGGLE_PROP_ENABLED]);
-    rut_shell_queue_redraw(toggle->ctx->shell);
+    rut_shell_queue_redraw(toggle->shell);
 }
 
 void
@@ -621,9 +624,9 @@ rut_toggle_set_state(rut_object_t *obj, bool state)
         return;
 
     toggle->state = state;
-    rut_property_dirty(&toggle->ctx->property_ctx,
+    rut_property_dirty(&toggle->shell->property_ctx,
                        &toggle->properties[RUT_TOGGLE_PROP_STATE]);
-    rut_shell_queue_redraw(toggle->ctx->shell);
+    rut_shell_queue_redraw(toggle->shell);
 }
 
 rut_property_t *
@@ -638,7 +641,7 @@ rut_toggle_set_tick(rut_object_t *obj, const char *tick)
     rut_toggle_t *toggle = obj;
 
     pango_layout_set_text(toggle->tick, tick, -1);
-    rut_shell_queue_redraw(toggle->ctx->shell);
+    rut_shell_queue_redraw(toggle->shell);
 }
 
 const char *
@@ -655,7 +658,7 @@ rut_toggle_set_tick_color(rut_object_t *obj, const cg_color_t *color)
     rut_toggle_t *toggle = obj;
 
     toggle->tick_color = *color;
-    rut_shell_queue_redraw(toggle->ctx->shell);
+    rut_shell_queue_redraw(toggle->shell);
 }
 
 const cg_color_t *

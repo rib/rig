@@ -30,12 +30,12 @@
 #define _RUT_VEC3_SLIDER_H_
 
 #include "rut-object.h"
-#include "rut-context.h"
+#include "rut-shell.h"
 
 extern rut_type_t rut_vec3_slider_type;
 typedef struct _rut_vec3_slider_t rut_vec3_slider_t;
 
-rut_vec3_slider_t *rut_vec3_slider_new(rut_context_t *ctx);
+rut_vec3_slider_t *rut_vec3_slider_new(rut_shell_t *shell);
 
 void rut_vec3_slider_set_min_value(rut_vec3_slider_t *slider, float min_value);
 

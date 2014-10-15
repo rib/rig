@@ -125,7 +125,6 @@ struct _rig_engine_t {
     cg_pipeline_t *dof_unshaped_pipeline;
 
     rut_shell_t *shell;
-    rut_context_t *ctx;
 
     /* TODO: Move to rig_frontend_t */
     cg_onscreen_t *onscreen;

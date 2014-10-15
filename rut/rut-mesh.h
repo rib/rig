@@ -37,7 +37,7 @@ typedef struct _rut_buffer_t rut_buffer_t;
 typedef struct _rut_attribute_t rut_attribute_t;
 typedef struct _rut_mesh_t rut_mesh_t;
 
-#include "rut-context.h"
+#include "rut-shell.h"
 #include "rut-list.h"
 
 typedef struct _rut_edit_attribute_t {
@@ -151,7 +151,8 @@ void rut_mesh_set_indices(rut_mesh_t *mesh,
 /* Performs a deep copy of all the buffers */
 rut_mesh_t *rut_mesh_copy(rut_mesh_t *mesh);
 
-cg_primitive_t *rut_mesh_create_primitive(rut_context_t *ctx, rut_mesh_t *mesh);
+cg_primitive_t *rut_mesh_create_primitive(rut_shell_t *shell,
+					  rut_mesh_t *mesh);
 
 rut_attribute_t *rut_mesh_find_attribute(rut_mesh_t *mesh,
                                          const char *attribute_name);

@@ -247,4 +247,9 @@ void rut_util_fully_transform_points(const cg_matrix_t *modelview,
 #define RUT_UTIL_ALIGNOF(x) 8
 #endif
 
+#define RUT_UINT32_RED_AS_FLOAT(COLOR) (((COLOR & 0xff000000) >> 24) / 255.0)
+#define RUT_UINT32_GREEN_AS_FLOAT(COLOR) (((COLOR & 0xff0000) >> 16) / 255.0)
+#define RUT_UINT32_BLUE_AS_FLOAT(COLOR) (((COLOR & 0xff00) >> 8) / 255.0)
+#define RUT_UINT32_ALPHA_AS_FLOAT(COLOR) ((COLOR & 0xff) / 255.0)
+
 #endif /* _RUT_UTIL_H_ */

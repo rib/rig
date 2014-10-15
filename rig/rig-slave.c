@@ -603,7 +603,7 @@ _rig_slave_free(void *object)
     if (slave->frontend)
         rut_object_unref(slave->frontend);
 
-    rut_object_unref(slave->ctx);
+    rut_object_unref(slave->shell);
     rut_object_unref(slave->shell);
 
     rut_object_free(rig_slave_t, slave);
@@ -633,9 +633,7 @@ rig_slave_new(int width, int height, int scale)
                                  rig_slave_paint,
                                  slave);
 
-    slave->ctx = rut_context_new(slave->shell);
-
-    rut_context_init(slave->ctx);
+    rut_shell_init(slave->shell);
 
     return slave;
 }

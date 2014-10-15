@@ -32,12 +32,12 @@
 #include <cogl/cogl.h>
 
 #include "rut-object.h"
-#include "rut-context.h"
+#include "rut-shell.h"
 
 extern rut_type_t rut_rotation_inspector_type;
 typedef struct _rut_rotation_inspector_t rut_rotation_inspector_t;
 
-rut_rotation_inspector_t *rut_rotation_inspector_new(rut_context_t *ctx);
+rut_rotation_inspector_t *rut_rotation_inspector_new(rut_shell_t *shell);
 
 void rut_rotation_inspector_set_value(rut_object_t *slider,
                                       const cg_quaternion_t *value);

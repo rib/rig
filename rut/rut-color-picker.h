@@ -35,7 +35,7 @@ extern rut_type_t rut_color_picker_type;
 
 typedef struct _rut_color_picker_t rut_color_picker_t;
 
-rut_color_picker_t *rut_color_picker_new(rut_context_t *ctx);
+rut_color_picker_t *rut_color_picker_new(rut_shell_t *shell);
 
 void rut_color_picker_set_color(rut_object_t *picker, const cg_color_t *color);
 

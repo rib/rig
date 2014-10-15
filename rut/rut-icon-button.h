@@ -40,7 +40,7 @@ typedef enum {
 } rut_icon_button_position_t;
 
 rut_icon_button_t *
-rut_icon_button_new(rut_context_t *ctx,
+rut_icon_button_new(rut_shell_t *shell,
                     const char *label,
                     rut_icon_button_position_t label_position,
                     const char *normal_icon,

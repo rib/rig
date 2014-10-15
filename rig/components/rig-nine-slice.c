@@ -51,7 +51,7 @@ enum {
 struct _rig_nine_slice_t {
     rut_object_base_t _base;
 
-    rut_context_t *ctx;
+    rut_shell_t *shell;
 
     rut_componentable_props_t component;
 
@@ -439,7 +439,7 @@ _rig_nine_slice_copy(rut_object_t *object)
 {
     rig_nine_slice_t *nine_slice = object;
 
-    return rig_nine_slice_new(nine_slice->ctx,
+    return rig_nine_slice_new(nine_slice->shell,
                               nine_slice->texture,
                               nine_slice->top,
                               nine_slice->right,
@@ -527,7 +527,7 @@ _rig_nine_slice_init_type(void)
 }
 
 rig_nine_slice_t *
-rig_nine_slice_new(rut_context_t *ctx,
+rig_nine_slice_new(rut_shell_t *shell,
                    cg_texture_t *texture,
                    float top,
                    float right,
@@ -539,7 +539,7 @@ rig_nine_slice_new(rut_context_t *ctx,
     rig_nine_slice_t *nine_slice = rut_object_alloc0(
         rig_nine_slice_t, &rig_nine_slice_type, _rig_nine_slice_init_type);
 
-    nine_slice->ctx = ctx;
+    nine_slice->shell = shell;
 
     nine_slice->component.type = RUT_COMPONENT_TYPE_GEOMETRY;
 
@@ -593,7 +593,7 @@ rig_nine_slice_set_texture(rig_nine_slice_t *nine_slice,
         cg_object_unref(nine_slice->pipeline);
 
     nine_slice->pipeline =
-        cg_pipeline_copy(nine_slice->ctx->single_texture_2d_template);
+        cg_pipeline_copy(nine_slice->shell->single_texture_2d_template);
 
     if (texture) {
         nine_slice->tex_width = cg_texture_get_width(texture);
@@ -639,9 +639,9 @@ rig_nine_slice_set_size(rut_object_t *self, float width, float height)
     nine_slice->width = width;
     nine_slice->height = height;
 
-    rut_property_dirty(&nine_slice->ctx->property_ctx,
+    rut_property_dirty(&nine_slice->shell->property_ctx,
                        &nine_slice->properties[RIG_NINE_SLICE_PROP_WIDTH]);
-    rut_property_dirty(&nine_slice->ctx->property_ctx,
+    rut_property_dirty(&nine_slice->shell->property_ctx,
                        &nine_slice->properties[RIG_NINE_SLICE_PROP_HEIGHT]);
 
     rut_closure_list_invoke(&nine_slice->updated_cb_list,
@@ -671,7 +671,7 @@ rig_nine_slice_get_primitive(rut_object_t *object)
     if (!nine_slice->mesh)
         create_mesh(nine_slice);
 
-    return rut_mesh_create_primitive(nine_slice->ctx, nine_slice->mesh);
+    return rut_mesh_create_primitive(nine_slice->shell, nine_slice->mesh);
 }
 
 rut_mesh_t *
@@ -705,7 +705,7 @@ rig_nine_slice_add_update_callback(rig_nine_slice_t *nine_slice,
         nine_slice->PROP_LC = PROP_LC;                                         \
         free_mesh(nine_slice);                                                 \
         rut_property_dirty(                                                    \
-            &nine_slice->ctx->property_ctx,                                    \
+            &nine_slice->shell->property_ctx,                                  \
             &nine_slice->properties[RIG_NINE_SLICE_PROP_##PROP_UC]);           \
         rut_closure_list_invoke(&nine_slice->updated_cb_list,                  \
                                 rig_nine_slice_update_callback_t,              \

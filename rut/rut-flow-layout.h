@@ -113,14 +113,14 @@ typedef enum { /*< prefix=RUT_FLOW >*/
 
 /**
  * rut_flow_layout_new:
- * @ctx: A #rut_context_t
+ * @shell: A #rut_shell_t
  * @packing: the packing direction of the flow layout
  *
  * Creates a new #rut_flow_layout_t with the given @packing direction
  *
  * Return value: the newly created #rut_flow_layout_t
  */
-rut_flow_layout_t *rut_flow_layout_new(rut_context_t *ctx,
+rut_flow_layout_t *rut_flow_layout_new(rut_shell_t *shell,
                                        rut_flow_layout_packing_t packing);
 
 void rut_flow_layout_add(rut_flow_layout_t *flow, rut_object_t *child_widget);

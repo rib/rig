@@ -40,7 +40,7 @@ typedef struct _rut_ui_viewport_t rut_ui_viewport_t;
 extern rut_type_t rut_ui_viewport_type;
 
 rut_ui_viewport_t *
-rut_ui_viewport_new(rut_context_t *ctx, float width, float height);
+rut_ui_viewport_new(rut_shell_t *shell, float width, float height);
 
 void rut_ui_viewport_add(rut_ui_viewport_t *ui_viewport, rut_object_t *child);
 

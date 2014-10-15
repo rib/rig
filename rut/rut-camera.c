@@ -30,13 +30,13 @@
 
 #include "rut-camera.h"
 
-rut_context_t *
-rut_camera_get_context(rut_object_t *object)
+rut_shell_t *
+rut_camera_get_shell(rut_object_t *object)
 {
     rut_camera_vtable_t *vtable =
         rut_object_get_vtable(object, RUT_TRAIT_ID_CAMERA);
 
-    return vtable->get_context(object);
+    return vtable->get_shell(object);
 }
 
 void

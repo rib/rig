@@ -53,6 +53,7 @@
 #endif
 
 #include <clib.h>
+
 #ifdef USE_GLIB
 #include <gio/gio.h>
 #endif
@@ -77,6 +78,7 @@
 #include "rut-nine-slice.h"
 #include "rut-camera.h"
 #include "rut-poll.h"
+#include "rut-geometry.h"
 
 #ifdef USE_SDL
 #include "rut-sdl-shell.h"
@@ -94,16 +96,10 @@
 #include <android/log.h>
 #endif
 
-rut_context_t *
-rut_shell_get_context(rut_shell_t *shell)
-{
-    return shell->rut_ctx;
-}
-
 static void
 _rut_shell_fini(rut_shell_t *shell)
 {
-    rut_object_unref(shell->rut_ctx);
+    rut_object_unref(shell);
 }
 
 rut_closure_t *
@@ -795,6 +791,18 @@ _rut_shell_free(void *object)
 
     _rut_shell_fini(shell);
 
+    rut_property_context_destroy(&shell->property_ctx);
+
+#ifdef USE_PANGO
+    g_object_unref(shell->pango_context);
+    g_object_unref(shell->pango_font_map);
+    pango_font_description_free(shell->pango_font_desc);
+#endif
+
+    cg_object_unref(shell->cg_device);
+
+    rut_settings_destroy(shell->settings);
+
     rut_object_free(rut_shell_t, shell);
 }
 
@@ -834,6 +842,10 @@ rut_shell_new(bool headless,
     rut_list_init(&shell->input_cb_list);
     rut_list_init(&shell->grabs);
     rut_list_init(&shell->onscreens);
+
+    rut_property_context_init(&shell->property_ctx);
+
+    _rut_matrix_entry_identity_init(&shell->identity_entry);
 
     shell->init_cb = init;
     shell->fini_cb = fini;
@@ -902,14 +914,6 @@ rut_shell_get_headless(rut_shell_t *shell)
     return shell->headless;
 }
 
-/* Note: we don't take a reference on the context so we don't
- * introduce a circular reference. */
-void
-_rut_shell_associate_context(rut_shell_t *shell, rut_context_t *context)
-{
-    shell->rut_ctx = context;
-}
-
 #if 0
 static int signal_write_fd;
 
@@ -960,8 +964,75 @@ dispatch_signal_source (GSource *source,
 #endif
 
 void
-_rut_shell_init(rut_shell_t *shell)
+rut_shell_init(rut_shell_t *shell)
 {
+    shell->settings = rut_settings_new();
+
+    if (!shell->headless) {
+
+#ifdef USE_SDL
+        cg_renderer_t *renderer;
+        cg_error_t *error = NULL;
+
+        shell->cg_device = cg_device_new();
+
+        renderer = cg_renderer_new();
+
+        cg_renderer_set_winsys_id(renderer, CG_WINSYS_ID_SDL);
+        if (cg_renderer_connect(renderer, &error))
+            cg_device_set_renderer(shell->cg_device, renderer);
+        else {
+            cg_error_free(error);
+            c_warning("Failed to setup SDL renderer; "
+                      "falling back to default\n");
+        }
+#else
+        shell->cg_device = cg_device_new();
+#endif
+
+        cg_device_connect(shell->cg_device, &error);
+        if (!shell->cg_device) {
+            c_warning("Failed to create Cogl Context: %s", error->message);
+            c_free(shell);
+            return;
+        }
+
+        shell->nine_slice_indices =
+            cg_indices_new(shell->cg_device,
+                           CG_INDICES_TYPE_UNSIGNED_BYTE,
+                           _rut_nine_slice_indices_data,
+                           sizeof(_rut_nine_slice_indices_data) /
+                           sizeof(_rut_nine_slice_indices_data[0]));
+
+        shell->single_texture_2d_template =
+            cg_pipeline_new(shell->cg_device);
+        cg_pipeline_set_layer_null_texture(
+            shell->single_texture_2d_template, 0, CG_TEXTURE_TYPE_2D);
+
+        shell->circle_texture =
+            rut_create_circle_texture(shell,
+                                      CIRCLE_TEX_RADIUS /* radius */,
+                                      CIRCLE_TEX_PADDING /* padding */);
+
+        cg_matrix_init_identity(&shell->identity_matrix);
+
+#ifdef USE_PANGO
+        shell->pango_font_map =
+            CG_PANGO_FONT_MAP(cg_pango_font_map_new(shell->cg_device));
+
+        cg_pango_font_map_set_use_mipmapping(shell->pango_font_map, true);
+
+        shell->pango_context = pango_font_map_create_context(
+            PANGO_FONT_MAP(shell->pango_font_map));
+
+        shell->pango_font_desc = pango_font_description_new();
+        pango_font_description_set_family(shell->pango_font_desc, "Sans");
+        pango_font_description_set_size(shell->pango_font_desc,
+                                        14 * PANGO_SCALE);
+#endif
+    }
+
+
     rut_sdl_shell_init(shell);
 
 /* XXX: for some reason handling SGICHLD like this interferes
@@ -994,7 +1065,7 @@ _rut_shell_init(rut_shell_t *shell)
             /* Actually we don't care about the callback, we just want to
              * pass some data to the dispatch callback... */
             g_source_set_callback (source, NULL, shell, NULL);
-            g_source_attach (source, g_main_context_get_thread_default ());
+            g_source_attach (source, g_main_shell_get_thread_default ());
 
             rut_list_init (&shell->signal_cb_list);
         }
@@ -1205,7 +1276,7 @@ rut_shell_update_timelines(rut_shell_t *shell)
 {
     c_slist_t *l;
 
-    for (l = shell->rut_ctx->timelines; l; l = l->next)
+    for (l = shell->timelines; l; l = l->next)
         _rut_timeline_update(l->data);
 }
 
@@ -1381,7 +1452,7 @@ rut_shell_check_timelines(rut_shell_t *shell)
 {
     c_slist_t *l;
 
-    for (l = shell->rut_ctx->timelines; l; l = l->next)
+    for (l = shell->timelines; l; l = l->next)
         if (rut_timeline_is_running(l->data))
             return true;
 
@@ -2020,3 +2091,68 @@ rut_shell_add_signal_callback (rut_shell_t *shell,
                                  destroy_cb);
 }
 #endif
+
+rut_text_direction_t
+rut_shell_get_text_direction(rut_shell_t *shell)
+{
+    return RUT_TEXT_DIRECTION_LEFT_TO_RIGHT;
+}
+
+void
+rut_shell_set_assets_location(rut_shell_t *shell,
+                        const char *assets_location)
+{
+    shell->assets_location = c_strdup(assets_location);
+}
+
+static const char *const *
+get_system_data_dirs(void)
+{
+#ifdef USE_GLIB
+    return g_get_system_data_dirs();
+#elif defined(linux) && !defined(__ANDROID__)
+    static char **dirs = NULL;
+    if (!dirs) {
+        const char *dirs_var = getenv("XDG_DATA_DIRS");
+        if (dirs_var)
+            dirs = c_strsplit(dirs_var, C_SEARCHPATH_SEPARATOR_S, -1);
+        else
+            dirs = c_malloc0(sizeof(void *));
+    }
+    return (const char *const *)dirs;
+#elif defined (__ANDROID__)
+    static const char *dirs[] = {
+        "/data",
+        NULL
+    };
+    return dirs;
+#else
+#error "FIXME: Missing platform specific code to locate system data directories"
+#endif
+}
+
+char *
+rut_find_data_file(const char *base_filename)
+{
+    const char *const *dirs = get_system_data_dirs();
+    const char *const *dir;
+
+    for (dir = dirs; *dir; dir++) {
+        char *full_path = c_build_filename(*dir, "rig", base_filename, NULL);
+
+        if (c_file_test(full_path, C_FILE_TEST_EXISTS))
+            return full_path;
+
+        c_free(full_path);
+    }
+
+    return NULL;
+}
+
+void
+rut_init_tls_state(void)
+{
+#ifdef RUT_ENABLE_REFCOUNT_DEBUG
+    rut_refcount_debug_init();
+#endif
+}

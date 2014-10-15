@@ -35,7 +35,7 @@
 
 #include "rut-object.h"
 #include "rut-interfaces.h"
-#include "rut-context.h"
+#include "rut-shell.h"
 
 typedef struct _rut_camera_props_t {
     cg_color_t bg_color;
@@ -83,7 +83,7 @@ typedef struct _rut_camera_props_t {
 } rut_camera_props_t;
 
 typedef struct _rut_camera_vtable_t {
-    rut_context_t *(*get_context)(rut_object_t *camera);
+    rut_shell_t *(*get_shell)(rut_object_t *camera);
 
     void (*set_background_color4f)(
         rut_object_t *camera, float red, float green, float blue, float alpha);
@@ -167,7 +167,7 @@ typedef struct _rut_camera_vtable_t {
 
 } rut_camera_vtable_t;
 
-rut_context_t *rut_camera_get_context(rut_object_t *camera);
+rut_shell_t *rut_camera_get_shell(rut_object_t *camera);
 
 void rut_camera_set_background_color4f(
     rut_object_t *camera, float red, float green, float blue, float alpha);

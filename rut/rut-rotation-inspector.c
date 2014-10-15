@@ -51,7 +51,7 @@ typedef struct {
 struct _rut_rotation_inspector_t {
     rut_object_base_t _base;
 
-    rut_context_t *context;
+    rut_shell_t *shell;
 
     rut_graphable_props_t graphable;
 
@@ -208,7 +208,7 @@ set_value(rut_rotation_inspector_t *inspector,
     }
 
     rut_property_dirty(
-        &inspector->context->property_ctx,
+        &inspector->shell->property_ctx,
         &inspector->properties[RUT_ROTATION_INSPECTOR_PROP_VALUE]);
 }
 
@@ -240,7 +240,7 @@ rut_rotation_inspector_property_changed_cb(rut_property_t *target_property,
 }
 
 rut_rotation_inspector_t *
-rut_rotation_inspector_new(rut_context_t *context)
+rut_rotation_inspector_new(rut_shell_t *shell)
 {
     rut_rotation_inspector_t *inspector =
         rut_object_alloc0(rut_rotation_inspector_t,
@@ -249,7 +249,7 @@ rut_rotation_inspector_new(rut_context_t *context)
     rut_text_t *text;
     int i;
 
-    inspector->context = context;
+    inspector->shell = shell;
 
     inspector->user_axis_magnitude = 1;
 
@@ -268,7 +268,7 @@ rut_rotation_inspector_new(rut_context_t *context)
         inspector, _rut_rotation_inspector_prop_specs, inspector->properties);
 
     inspector->hbox =
-        rut_box_layout_new(context, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
+        rut_box_layout_new(shell, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
     rut_graphable_add_child(inspector, inspector->hbox);
     rut_object_unref(inspector->hbox);
 
@@ -276,12 +276,12 @@ rut_rotation_inspector_new(rut_context_t *context)
      * Axis
      */
 
-    text = rut_text_new_with_text(context, NULL, "(");
+    text = rut_text_new_with_text(shell, NULL, "(");
     rut_box_layout_add(inspector->hbox, false, text);
     rut_object_unref(text);
 
     for (i = 0; i < 3; i++) {
-        inspector->components[i].slider = rut_number_slider_new(context);
+        inspector->components[i].slider = rut_number_slider_new(shell);
         rut_box_layout_add(
             inspector->hbox, false, inspector->components[i].slider);
         rut_object_unref(inspector->components[i].slider);
@@ -292,7 +292,7 @@ rut_rotation_inspector_new(rut_context_t *context)
                                         G_MAXFLOAT);
 
         if (i != 2) {
-            text = rut_text_new_with_text(context, NULL, ", ");
+            text = rut_text_new_with_text(shell, NULL, ", ");
             rut_box_layout_add(inspector->hbox, false, text);
             rut_object_unref(text);
         }
@@ -301,7 +301,7 @@ rut_rotation_inspector_new(rut_context_t *context)
             inspector->components[i].slider, "value");
     }
 
-    text = rut_text_new_with_text(context, NULL, ") ");
+    text = rut_text_new_with_text(shell, NULL, ") ");
     rut_box_layout_add(inspector->hbox, false, text);
     rut_object_unref(text);
 
@@ -316,7 +316,7 @@ rut_rotation_inspector_new(rut_context_t *context)
      * Angle
      */
 
-    inspector->components[3].slider = rut_number_slider_new(context);
+    inspector->components[3].slider = rut_number_slider_new(shell);
 
     rut_number_slider_set_min_value(inspector->components[i].slider, 0);
     rut_number_slider_set_max_value(inspector->components[i].slider, 360);
@@ -330,7 +330,7 @@ rut_rotation_inspector_new(rut_context_t *context)
     inspector->components[3].property = rut_introspectable_lookup_property(
         inspector->components[3].slider, "value");
 
-    text = rut_text_new_with_text(context, NULL, "°");
+    text = rut_text_new_with_text(shell, NULL, "°");
     rut_box_layout_add(inspector->hbox, false, text);
     rut_object_unref(text);
 

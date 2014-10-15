@@ -98,7 +98,7 @@ set_property_apply_real(rig_engine_op_apply_context_t *ctx,
                         rut_property_t *property,
                         rut_boxed_t *value)
 {
-    rut_property_set_boxed(&ctx->engine->ctx->property_ctx, property, value);
+    rut_property_set_boxed(&ctx->engine->shell->property_ctx, property, value);
 }
 
 void

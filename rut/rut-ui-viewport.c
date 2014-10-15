@@ -31,7 +31,7 @@
 
 #include <math.h>
 
-#include "rut-context.h"
+#include "rut-shell.h"
 #include "rut-interfaces.h"
 #include "rut-ui-viewport.h"
 #include "rut-scroll-bar.h"
@@ -58,7 +58,7 @@ enum {
 struct _rut_ui_viewport_t {
     rut_object_base_t _base;
 
-    rut_context_t *ctx;
+    rut_shell_t *shell;
 
     rut_graphable_props_t graphable;
 
@@ -168,7 +168,7 @@ _rut_ui_viewport_free(void *object)
     rut_introspectable_destroy(ui_viewport);
     rut_graphable_destroy(ui_viewport);
 
-    rut_shell_remove_pre_paint_callback_by_graphable(ui_viewport->ctx->shell,
+    rut_shell_remove_pre_paint_callback_by_graphable(ui_viewport->shell,
                                                      ui_viewport);
 
     rut_object_free(rut_ui_viewport_t, object);
@@ -374,13 +374,13 @@ ui_viewport_grab_input_cb(rut_input_event_t *event, void *user_data)
                 rut_ui_viewport_set_doc_y(
                     ui_viewport, ui_viewport->grab_doc_y + (dy * inv_y_scale));
 
-            rut_shell_queue_redraw(ui_viewport->ctx->shell);
+            rut_shell_queue_redraw(ui_viewport->shell);
             return RUT_INPUT_EVENT_STATUS_HANDLED;
         }
     } else if (rut_motion_event_get_action(event) ==
                RUT_MOTION_EVENT_ACTION_UP) {
         rut_shell_ungrab_input(
-            ui_viewport->ctx->shell, ui_viewport_grab_input_cb, user_data);
+            ui_viewport->shell, ui_viewport_grab_input_cb, user_data);
         return RUT_INPUT_EVENT_STATUS_HANDLED;
     }
 
@@ -409,7 +409,7 @@ _rut_ui_viewport_input_cb(rut_input_event_t *event, void *user_data)
                 /* TODO: Add rut_shell_implicit_grab_input() that handles
                  * releasing
                  * the grab for you */
-                rut_shell_grab_input(ui_viewport->ctx->shell,
+                rut_shell_grab_input(ui_viewport->shell,
                                      rut_input_event_get_camera(event),
                                      ui_viewport_grab_input_cb,
                                      ui_viewport);
@@ -615,7 +615,7 @@ allocate_cb(rut_object_t *graphable, void *user_data)
 static void
 queue_allocation(rut_ui_viewport_t *ui_viewport)
 {
-    rut_shell_add_pre_paint_callback(ui_viewport->ctx->shell,
+    rut_shell_add_pre_paint_callback(ui_viewport->shell,
                                      ui_viewport,
                                      allocate_cb,
                                      NULL /* user_data */);
@@ -630,12 +630,12 @@ update_doc_xy_cb(rut_property_t *target_property, void *user_data)
 }
 
 rut_ui_viewport_t *
-rut_ui_viewport_new(rut_context_t *ctx, float width, float height)
+rut_ui_viewport_new(rut_shell_t *shell, float width, float height)
 {
     rut_ui_viewport_t *ui_viewport = rut_object_alloc0(
         rut_ui_viewport_t, &rut_ui_viewport_type, _rut_ui_viewport_init_type);
 
-    ui_viewport->ctx = ctx;
+    ui_viewport->shell = shell;
 
     rut_introspectable_init(
         ui_viewport, _rut_ui_viewport_prop_specs, ui_viewport->properties);
@@ -654,8 +654,8 @@ rut_ui_viewport_new(rut_context_t *ctx, float width, float height)
     ui_viewport->x_pannable = true;
     ui_viewport->y_pannable = true;
 
-    ui_viewport->scroll_bar_x_transform = rut_transform_new(ctx);
-    ui_viewport->scroll_bar_x = rut_scroll_bar_new(ctx,
+    ui_viewport->scroll_bar_x_transform = rut_transform_new(shell);
+    ui_viewport->scroll_bar_x = rut_scroll_bar_new(shell,
                                                    RUT_AXIS_X,
                                                    width, /* len */
                                                    width * 2, /* virtual len */
@@ -663,8 +663,8 @@ rut_ui_viewport_new(rut_context_t *ctx, float width, float height)
     rut_graphable_add_child(ui_viewport->scroll_bar_x_transform,
                             ui_viewport->scroll_bar_x);
 
-    ui_viewport->scroll_bar_y_transform = rut_transform_new(ctx);
-    ui_viewport->scroll_bar_y = rut_scroll_bar_new(ctx,
+    ui_viewport->scroll_bar_y_transform = rut_transform_new(shell);
+    ui_viewport->scroll_bar_y = rut_scroll_bar_new(shell,
                                                    RUT_AXIS_Y,
                                                    height, /* len */
                                                    height * 2, /* virtual len */
@@ -687,7 +687,7 @@ rut_ui_viewport_new(rut_context_t *ctx, float width, float height)
                                            "virtual_offset"),
         NULL);
 
-    ui_viewport->doc_transform = rut_transform_new(ctx);
+    ui_viewport->doc_transform = rut_transform_new(shell);
     rut_graphable_add_child(ui_viewport, ui_viewport->doc_transform);
 
     _rut_ui_viewport_update_doc_matrix(ui_viewport);
@@ -742,9 +742,9 @@ _rut_ui_viewport_set_size(rut_object_t *object, float width, float height)
 
     queue_allocation(ui_viewport);
 
-    rut_property_dirty(&ui_viewport->ctx->property_ctx,
+    rut_property_dirty(&ui_viewport->shell->property_ctx,
                        &ui_viewport->properties[RUT_UI_VIEWPORT_PROP_WIDTH]);
-    rut_property_dirty(&ui_viewport->ctx->property_ctx,
+    rut_property_dirty(&ui_viewport->shell->property_ctx,
                        &ui_viewport->properties[RUT_UI_VIEWPORT_PROP_HEIGHT]);
 }
 
@@ -784,7 +784,7 @@ rut_ui_viewport_set_doc_width(rut_object_t *obj, float doc_width)
         queue_allocation(ui_viewport);
 
     rut_property_dirty(
-        &ui_viewport->ctx->property_ctx,
+        &ui_viewport->shell->property_ctx,
         &ui_viewport->properties[RUT_UI_VIEWPORT_PROP_DOC_WIDTH]);
 }
 
@@ -799,7 +799,7 @@ rut_ui_viewport_set_doc_height(rut_object_t *obj, float doc_height)
         queue_allocation(ui_viewport);
 
     rut_property_dirty(
-        &ui_viewport->ctx->property_ctx,
+        &ui_viewport->shell->property_ctx,
         &ui_viewport->properties[RUT_UI_VIEWPORT_PROP_DOC_HEIGHT]);
 }
 
@@ -953,7 +953,7 @@ rut_ui_viewport_set_sync_widget(rut_object_t *obj, rut_object_t *widget)
     ui_viewport->sync_widget_preferred_size_closure = preferred_size_closure;
     ui_viewport->sync_widget = widget;
 
-    rut_property_dirty(&ui_viewport->ctx->property_ctx, property);
+    rut_property_dirty(&ui_viewport->shell->property_ctx, property);
 }
 
 void

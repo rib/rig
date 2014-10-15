@@ -159,7 +159,7 @@ update_labels(rut_scale_t *scale)
         float length = MAX(scale->natural_length, scale->length);
         scale->default_scale = scale->width / length;
         scale->pixel_scale = scale->default_scale * scale->user_scale;
-        rut_property_dirty(&scale->ctx->property_ctx,
+        rut_property_dirty(&scale->shell->property_ctx,
                            &scale->properties[RUT_SCALE_PROP_PIXEL_SCALE]);
     }
 
@@ -176,9 +176,9 @@ update_labels(rut_scale_t *scale)
         for (i = scale->labels->len; i < n_labels; i++) {
             label_t label;
 
-            label.transform = rut_transform_new(scale->ctx);
+            label.transform = rut_transform_new(scale->shell);
 
-            label.text = rut_text_new(scale->ctx);
+            label.text = rut_text_new(scale->shell);
             rut_text_set_editable(label.text, false);
             rut_text_set_selectable(label.text, false);
             rut_graphable_add_child(label.transform, label.text);
@@ -404,11 +404,11 @@ rut_scale_set_length(rut_object_t *object, float length)
     scale->length = length;
     scale->changed = true;
 
-    rut_property_dirty(&scale->ctx->property_ctx,
+    rut_property_dirty(&scale->shell->property_ctx,
                        &scale->properties[RUT_SCALE_PROP_LENGTH]);
 
     preferred_size_changed(scale);
-    rut_shell_queue_redraw(scale->ctx->shell);
+    rut_shell_queue_redraw(scale->shell);
 }
 
 float
@@ -430,13 +430,13 @@ _rut_scale_set_user_scale(rut_object_t *object, float factor)
 
     scale->changed = true;
 
-    rut_property_dirty(&scale->ctx->property_ctx,
+    rut_property_dirty(&scale->shell->property_ctx,
                        &scale->properties[RUT_SCALE_PROP_USER_SCALE]);
-    rut_property_dirty(&scale->ctx->property_ctx,
+    rut_property_dirty(&scale->shell->property_ctx,
                        &scale->properties[RUT_SCALE_PROP_PIXEL_SCALE]);
 
     preferred_size_changed(scale);
-    rut_shell_queue_redraw(scale->ctx->shell);
+    rut_shell_queue_redraw(scale->shell);
 }
 
 void
@@ -453,11 +453,11 @@ rut_scale_set_offset(rut_object_t *object, float offset)
     scale->start_offset = offset;
     scale->changed = true;
 
-    rut_property_dirty(&scale->ctx->property_ctx,
+    rut_property_dirty(&scale->shell->property_ctx,
                        &scale->properties[RUT_SCALE_PROP_OFFSET]);
 
     preferred_size_changed(scale);
-    rut_shell_queue_redraw(scale->ctx->shell);
+    rut_shell_queue_redraw(scale->shell);
 }
 
 float
@@ -479,10 +479,10 @@ rut_scale_set_focus(rut_object_t *object, float offset)
 
     scale->focus_offset = offset;
 
-    rut_property_dirty(&scale->ctx->property_ctx,
+    rut_property_dirty(&scale->shell->property_ctx,
                        &scale->properties[RUT_SCALE_PROP_FOCUS]);
 
-    rut_shell_queue_redraw(scale->ctx->shell);
+    rut_shell_queue_redraw(scale->shell);
 }
 
 float
@@ -554,11 +554,11 @@ _rut_scale_grab_input_cb(rut_input_event_t *event, void *user_data)
     rut_scale_t *scale = state->scale;
 
     if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_MOTION) {
-        rut_shell_t *shell = scale->ctx->shell;
+        rut_shell_t *shell = scale->shell;
 
         if (rut_motion_event_get_action(event) == RUT_MOTION_EVENT_ACTION_UP) {
             rut_graphable_remove_child(scale->select_transform);
-            rut_shell_queue_redraw(scale->ctx->shell);
+            rut_shell_queue_redraw(scale->shell);
 
             rut_shell_ungrab_input(shell, _rut_scale_grab_input_cb, user_data);
             c_slice_free(grab_state_t, state);
@@ -602,7 +602,7 @@ _rut_scale_grab_input_cb(rut_input_event_t *event, void *user_data)
                 rut_sizable_set_size(
                     scale->select_rect, end_x - start_x, height);
 
-                rut_shell_queue_redraw(scale->ctx->shell);
+                rut_shell_queue_redraw(scale->shell);
 
                 rut_closure_list_invoke(&scale->select_cb_list,
                                         rut_scale_select_callback_t,
@@ -702,7 +702,7 @@ _rut_scale_input_cb(rut_input_region_t *region,
             state->grab_offset = scale->focus_offset;
 
         rut_shell_grab_input(
-            scale->ctx->shell, state->camera, _rut_scale_grab_input_cb, state);
+            scale->shell, state->camera, _rut_scale_grab_input_cb, state);
     } else if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_KEY &&
                rut_key_event_get_action(event) == RUT_KEY_EVENT_ACTION_DOWN) {
         switch (rut_key_event_get_keysym(event)) {
@@ -724,12 +724,12 @@ _rut_scale_input_cb(rut_input_region_t *region,
 }
 
 rut_scale_t *
-rut_scale_new(rut_context_t *ctx, float length, float natural_length)
+rut_scale_new(rut_shell_t *shell, float length, float natural_length)
 {
     rut_scale_t *scale =
         rut_object_alloc0(rut_scale_t, &rut_scale_type, _rut_scale_init_type);
 
-    scale->ctx = ctx;
+    scale->shell = shell;
 
     rut_graphable_init(scale);
     rut_paintable_init(scale);
@@ -751,17 +751,18 @@ rut_scale_new(rut_context_t *ctx, float length, float natural_length)
 
     scale->labels = c_array_new(false, false, sizeof(label_t));
 
-    scale->bg = rut_rectangle_new4f(ctx, 1, 1, 0.8, 0.8, 0.8, 1);
+    scale->bg = rut_rectangle_new4f(shell, 1, 1, 0.8, 0.8, 0.8, 1);
     rut_graphable_add_child(scale, scale->bg);
     rut_object_unref(scale->bg);
 
-    scale->select_transform = rut_transform_new(ctx);
+    scale->select_transform = rut_transform_new(shell);
 
-    scale->select_rect = rut_rectangle_new4f(ctx, 1, 1, 0.9, 0.9, 0.8, 1);
+    scale->select_rect = rut_rectangle_new4f(shell, 1, 1, 0.9, 0.9, 0.8,
+                                             1);
     rut_graphable_add_child(scale->select_transform, scale->select_rect);
     rut_object_unref(scale->select_rect);
 
-    scale->pipeline = cg_pipeline_new(ctx->cg_device);
+    scale->pipeline = cg_pipeline_new(shell->cg_device);
     cg_pipeline_set_color4f(scale->pipeline, 1, 0, 0, 1);
 
     scale->input_region =
@@ -821,5 +822,5 @@ rut_scale_set_natural_length(rut_scale_t *scale, float natural_length)
     scale->natural_length = natural_length;
 
     preferred_size_changed(scale);
-    rut_shell_queue_redraw(scale->ctx->shell);
+    rut_shell_queue_redraw(scale->shell);
 }

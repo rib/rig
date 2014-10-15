@@ -91,7 +91,7 @@ struct _rig_controller_t {
     rut_object_base_t _base;
 
     rig_engine_t *engine;
-    rut_context_t *context;
+    rut_shell_t *shell;
 
     char *label;
 

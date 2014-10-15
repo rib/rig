@@ -30,7 +30,7 @@
 #define _RUT_BIN_H_
 
 #include "rut-object.h"
-#include "rut-context.h"
+#include "rut-shell.h"
 
 extern rut_type_t rut_bin_type;
 
@@ -45,7 +45,7 @@ typedef enum {
     RUT_BIN_POSITION_EXPAND
 } rut_bin_position_t;
 
-rut_bin_t *rut_bin_new(rut_context_t *ctx);
+rut_bin_t *rut_bin_new(rut_shell_t *shell);
 
 void rut_bin_set_child(rut_bin_t *bin, rut_object_t *child);
 

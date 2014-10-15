@@ -234,14 +234,14 @@ rig_ui_prepare(rig_ui_t *ui)
     c_list_t *l;
 
     if (!ui->scene)
-        ui->scene = rut_graph_new(engine->ctx);
+        ui->scene = rut_graph_new(engine->shell);
 
     if (!ui->light) {
         rig_light_t *light;
         float vector3[3];
         cg_color_t color;
 
-        ui->light = rig_entity_new(engine->ctx);
+        ui->light = rig_entity_new(engine->shell);
         rig_entity_set_label(ui->light, "light");
 
         vector3[0] = 0;
@@ -252,7 +252,7 @@ rig_ui_prepare(rig_ui_t *ui)
         rig_entity_rotate_x_axis(ui->light, 20);
         rig_entity_rotate_y_axis(ui->light, -20);
 
-        light = rig_light_new(engine->ctx);
+        light = rig_light_new(engine->shell);
         cg_color_init_from_4f(&color, .2f, .2f, .2f, 1.f);
         rig_light_set_ambient(light, &color);
         cg_color_init_from_4f(&color, .6f, .6f, .6f, 1.f);
@@ -317,7 +317,7 @@ rig_ui_prepare(rig_ui_t *ui)
         if (ui->play_camera)
             ui->play_camera = rut_object_ref(ui->play_camera);
         else {
-            ui->play_camera = rig_entity_new(engine->ctx);
+            ui->play_camera = rig_entity_new(engine->shell);
             rig_entity_set_label(ui->play_camera, "play-camera");
 
             initialise_play_camera_position(engine, ui);

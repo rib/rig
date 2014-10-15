@@ -35,7 +35,7 @@ extern rut_type_t rig_asset_inspector_type;
 
 typedef struct _rig_asset_inspector_t rig_asset_inspector_t;
 
-rig_asset_inspector_t *rig_asset_inspector_new(rut_context_t *ctx,
+rig_asset_inspector_t *rig_asset_inspector_new(rut_shell_t *shell,
                                                rig_asset_type_t asset_type);
 
 rut_object_t *rig_asset_inspector_get_asset(rut_object_t *object);

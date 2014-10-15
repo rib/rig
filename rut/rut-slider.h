@@ -30,14 +30,14 @@
 #ifndef __RUT_SLIDER_H__
 #define __RUT_SLIDER_H__
 
-#include "rut-context.h"
+#include "rut-shell.h"
 
 typedef struct _rut_slider_t rut_slider_t;
 
 extern rut_type_t rut_slider_type;
 
-rut_slider_t *rut_slider_new(
-    rut_context_t *ctx, rut_axis_t axis, float min, float max, float length);
+rut_slider_t *rut_slider_new(rut_shell_t *shell, rut_axis_t axis, float min,
+			     float max, float length);
 
 void rut_slider_set_range(rut_slider_t *slider, float min, float max);
 

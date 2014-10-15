@@ -33,17 +33,17 @@
 #include <rut-mesh.h>
 
 cg_attribute_t *
-rut_create_circle_fan_p2(rut_context_t *ctx, int subdivisions, int *n_verts);
+rut_create_circle_fan_p2(rut_shell_t *shell, int subdivisions, int *n_verts);
 
-cg_primitive_t *rut_create_circle_fan_primitive(rut_context_t *ctx,
+cg_primitive_t *rut_create_circle_fan_primitive(rut_shell_t *shell,
                                                 int subdivisions);
 
 rut_mesh_t *rut_create_circle_outline_mesh(uint8_t n_vertices);
 
-cg_primitive_t *rut_create_circle_outline_primitive(rut_context_t *ctx,
+cg_primitive_t *rut_create_circle_outline_primitive(rut_shell_t *shell,
                                                     uint8_t n_vertices);
 
-cg_texture_t *rut_create_circle_texture(rut_context_t *ctx,
+cg_texture_t *rut_create_circle_texture(rut_shell_t *shell,
                                         int radius_texels,
                                         int padding_texels);
 
@@ -58,10 +58,10 @@ void rut_tesselate_circle_with_line_indices(cg_vertex_p3c4_t *buffer,
 
 rut_mesh_t *rut_create_rotation_tool_mesh(uint8_t n_vertices);
 
-cg_primitive_t *rut_create_rotation_tool_primitive(rut_context_t *ctx,
+cg_primitive_t *rut_create_rotation_tool_primitive(rut_shell_t *shell,
                                                    uint8_t n_vertices);
 
-cg_primitive_t *rut_create_create_grid(rut_context_t *ctx,
+cg_primitive_t *rut_create_create_grid(rut_shell_t *shell,
                                        float width,
                                        float height,
                                        float x_space,

@@ -174,7 +174,7 @@ mesh_new_p2t2t2(cg_vertices_mode_t mode,
 }
 
 static rig_shape_model_t *
-shape_model_new(rut_context_t *ctx, bool shaped, float width, float height)
+shape_model_new(rut_shell_t *shell, bool shaped, float width, float height)
 {
     rig_shape_model_t *shape_model = rut_object_alloc0(
         rig_shape_model_t, &rig_shape_model_type, _rig_shape_model_init_type);
@@ -276,8 +276,8 @@ shape_model_new(rut_context_t *ctx, bool shaped, float width, float height)
             mesh_new_p2t2t2(CG_VERTICES_MODE_TRIANGLES, n_vertices, vertices);
     }
 
-    if (!ctx->headless)
-        shape_model->shape_texture = cg_object_ref(ctx->circle_texture);
+    if (!shell->headless)
+        shape_model->shape_texture = cg_object_ref(shell->circle_texture);
 
     pick_vertices[0].x = -half_size_x;
     pick_vertices[0].y = -half_size_y;
@@ -326,7 +326,7 @@ _rig_shape_copy(rut_object_t *object)
 {
     rig_shape_t *shape = object;
     rig_shape_t *copy =
-        rig_shape_new(shape->ctx, shape->shaped, shape->width, shape->height);
+        rig_shape_new(shape->shell, shape->shaped, shape->width, shape->height);
 
     if (shape->model)
         copy->model = rut_object_ref(shape->model);
@@ -390,14 +390,14 @@ _rig_shape_init_type(void)
 }
 
 rig_shape_t *
-rig_shape_new(rut_context_t *ctx, bool shaped, int width, int height)
+rig_shape_new(rut_shell_t *shell, bool shaped, int width, int height)
 {
     rig_shape_t *shape =
         rut_object_alloc0(rig_shape_t, &rig_shape_type, _rig_shape_init_type);
 
     shape->component.type = RUT_COMPONENT_TYPE_GEOMETRY;
 
-    shape->ctx = rut_object_ref(ctx);
+    shape->shell = rut_object_ref(shell);
 
     shape->width = width;
     shape->height = height;
@@ -415,7 +415,7 @@ rig_shape_get_model(rig_shape_t *shape)
 {
     if (!shape->model) {
         shape->model = shape_model_new(
-            shape->ctx, shape->shaped, shape->width, shape->height);
+            shape->shell, shape->shaped, shape->width, shape->height);
     }
 
     return shape->model;
@@ -427,7 +427,7 @@ rig_shape_get_primitive(rut_object_t *object)
     rig_shape_t *shape = object;
     rig_shape_model_t *model = rig_shape_get_model(shape);
     cg_primitive_t *primitive =
-        rut_mesh_create_primitive(shape->ctx, model->shape_mesh);
+        rut_mesh_create_primitive(shape->shell, model->shape_mesh);
 
     return primitive;
 }
@@ -472,7 +472,7 @@ rig_shape_set_shaped(rut_object_t *obj, bool shaped)
     rut_closure_list_invoke(
         &shape->reshaped_cb_list, rig_shape_re_shaped_callback_t, shape);
 
-    rut_property_dirty(&shape->ctx->property_ctx,
+    rut_property_dirty(&shape->shell->property_ctx,
                        &shape->properties[RIG_SHAPE_PROP_SHAPED]);
 }
 
@@ -499,7 +499,7 @@ void
 rig_shape_set_size(rut_object_t *self, float width, float height)
 {
     rig_shape_t *shape = self;
-    rut_context_t *ctx = shape->ctx;
+    rut_shell_t *shell = shape->shell;
 
     if (shape->width == width && shape->height == height)
         return;
@@ -507,9 +507,9 @@ rig_shape_set_size(rut_object_t *self, float width, float height)
     shape->width = width;
     shape->height = height;
 
-    rut_property_dirty(&ctx->property_ctx,
+    rut_property_dirty(&shell->property_ctx,
                        &shape->properties[RIG_SHAPE_PROP_WIDTH]);
-    rut_property_dirty(&ctx->property_ctx,
+    rut_property_dirty(&shell->property_ctx,
                        &shape->properties[RIG_SHAPE_PROP_HEIGHT]);
 
     free_model(shape);
@@ -534,7 +534,7 @@ rig_shape_set_width(rut_object_t *obj, float width)
         return;
     shape->width = width;
     free_model(shape);
-    rut_property_dirty(&shape->ctx->property_ctx,
+    rut_property_dirty(&shape->shell->property_ctx,
                        &shape->properties[RIG_SHAPE_PROP_WIDTH]);
     rut_closure_list_invoke(
         &shape->reshaped_cb_list, rig_shape_re_shaped_callback_t, shape);
@@ -548,7 +548,7 @@ rig_shape_set_height(rut_object_t *obj, float height)
         return;
     shape->height = height;
     free_model(shape);
-    rut_property_dirty(&shape->ctx->property_ctx,
+    rut_property_dirty(&shape->shell->property_ctx,
                        &shape->properties[RIG_SHAPE_PROP_HEIGHT]);
     rut_closure_list_invoke(
         &shape->reshaped_cb_list, rig_shape_re_shaped_callback_t, shape);

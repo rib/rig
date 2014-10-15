@@ -41,7 +41,7 @@ typedef enum _rut_icon_toggle_set_packing_t {
 } rut_icon_toggle_set_packing_t;
 
 rut_icon_toggle_set_t *
-rut_icon_toggle_set_new(rut_context_t *ctx,
+rut_icon_toggle_set_new(rut_shell_t *shell,
                         rut_icon_toggle_set_packing_t packing);
 
 typedef void (*rut_icon_toggle_set_changed_callback_t)(

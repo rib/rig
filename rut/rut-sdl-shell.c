@@ -211,7 +211,7 @@ rut_sdl_motion_event_get_button_state(rut_input_event_t *event)
     return button_state_for_sdl_state(sdl_event,
                                           rut_sdl_event->buttons);
 #if 0
-    /* FIXME: we need access to the rut_context_t here so that
+    /* FIXME: we need access to the rut_shell_t here so that
      * we can statefully track the changes to the button
      * mask because the button up and down events don't
      * tell you what other buttons are currently down they

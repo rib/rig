@@ -37,7 +37,6 @@ typedef struct _rig_slave_t {
     rut_object_base_t _base;
 
     rut_shell_t *shell;
-    rut_context_t *ctx;
 
     int request_width;
     int request_height;

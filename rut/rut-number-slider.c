@@ -48,7 +48,7 @@ enum {
 struct _rut_number_slider_t {
     rut_object_base_t _base;
 
-    rut_context_t *context;
+    rut_shell_t *shell;
 
     rut_graphable_props_t graphable;
 
@@ -149,7 +149,7 @@ end_text_edit(edit_state_t *state)
     update_text(slider);
 
     rut_shell_ungrab_input(
-        slider->context->shell, rut_number_slider_text_grab_cb, state);
+        slider->shell, rut_number_slider_text_grab_cb, state);
 
     c_slice_free(edit_state_t, state);
 }
@@ -231,12 +231,12 @@ start_text_edit(edit_state_t *state)
                                        state,
                                        NULL /* destroy_cb */);
 
-    rut_shell_grab_input(slider->context->shell,
+    rut_shell_grab_input(slider->shell,
                          state->camera,
                          rut_number_slider_text_grab_cb,
                          state);
 
-    rut_shell_queue_redraw(slider->context->shell);
+    rut_shell_queue_redraw(slider->shell);
 }
 
 static rut_input_event_status_t
@@ -274,7 +274,7 @@ rut_number_slider_grab_input_cb(rut_input_event_t *event, void *user_data)
         else
             c_slice_free(edit_state_t, state);
 
-        rut_shell_queue_redraw(slider->context->shell);
+        rut_shell_queue_redraw(slider->shell);
     }
 
     return RUT_INPUT_EVENT_STATUS_HANDLED;
@@ -299,12 +299,12 @@ rut_number_slider_input_region_cb(
         state->button_x = rut_motion_event_get_x(event);
         state->button_y = rut_motion_event_get_y(event);
 
-        rut_shell_grab_pointer(slider->context->shell,
+        rut_shell_grab_pointer(slider->shell,
                                state->camera,
                                rut_number_slider_grab_input_cb,
                                state);
 
-        rut_shell_queue_redraw(slider->context->shell);
+        rut_shell_queue_redraw(slider->shell);
 
         return RUT_INPUT_EVENT_STATUS_HANDLED;
     }
@@ -370,14 +370,14 @@ _rut_number_slider_init_type(void)
 }
 
 rut_number_slider_t *
-rut_number_slider_new(rut_context_t *context)
+rut_number_slider_new(rut_shell_t *shell)
 {
     rut_number_slider_t *slider =
         rut_object_alloc0(rut_number_slider_t,
                           &rut_number_slider_type,
                           _rut_number_slider_init_type);
 
-    slider->context = context;
+    slider->shell = shell;
     slider->step = 1.0f;
     slider->decimal_places = 2;
 
@@ -388,7 +388,7 @@ rut_number_slider_new(rut_context_t *context)
     rut_introspectable_init(
         slider, _rut_number_slider_prop_specs, slider->properties);
 
-    slider->text = rut_text_new(context);
+    slider->text = rut_text_new(shell);
     rut_text_set_use_markup(slider->text, true);
     rut_text_set_editable(slider->text, false);
     rut_text_set_activatable(slider->text, true);
@@ -449,10 +449,10 @@ rut_number_slider_set_value(rut_object_t *obj, float value)
 
     update_text(slider);
 
-    rut_property_dirty(&slider->context->property_ctx,
+    rut_property_dirty(&slider->shell->property_ctx,
                        &slider->properties[RUT_NUMBER_SLIDER_PROP_VALUE]);
 
-    rut_shell_queue_redraw(slider->context->shell);
+    rut_shell_queue_redraw(slider->shell);
 }
 
 float
@@ -477,7 +477,7 @@ void
 rut_number_slider_set_decimal_places(rut_number_slider_t *slider,
                                      int decimal_places)
 {
-    rut_shell_queue_redraw(slider->context->shell);
+    rut_shell_queue_redraw(slider->shell);
 
     slider->decimal_places = decimal_places;
     update_text(slider);

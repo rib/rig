@@ -36,9 +36,9 @@
 #include "rut-transform.h"
 #include "rut-input-region.h"
 #include "rut-button.h"
-
 #include "rut-camera.h"
 #include "rut-nine-slice.h"
+#include "rut-texture-cache.h"
 
 #define BUTTON_HPAD 10
 #define BUTTON_VPAD 23
@@ -54,7 +54,7 @@ typedef enum _button_state_t {
 struct _rut_button_t {
     rut_object_base_t _base;
 
-    rut_context_t *ctx;
+    rut_shell_t *shell;
 
     button_state_t state;
 
@@ -145,7 +145,7 @@ _rut_button_free(void *object)
 
     rut_graphable_destroy(button);
 
-    rut_shell_remove_pre_paint_callback_by_graphable(button->ctx->shell,
+    rut_shell_remove_pre_paint_callback_by_graphable(button->shell,
                                                      button);
 
     rut_object_free(rut_button_t, object);
@@ -272,7 +272,7 @@ _rut_button_grab_input_cb(rut_input_event_t *event, void *user_data)
     rut_button_t *button = state->button;
 
     if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_MOTION) {
-        rut_shell_t *shell = button->ctx->shell;
+        rut_shell_t *shell = button->shell;
         if (rut_motion_event_get_action(event) == RUT_MOTION_EVENT_ACTION_UP) {
             rut_shell_ungrab_input(shell, _rut_button_grab_input_cb, user_data);
 
@@ -282,7 +282,7 @@ _rut_button_grab_input_cb(rut_input_event_t *event, void *user_data)
             c_slice_free(Buttongrab_state_t, state);
 
             button->state = BUTTON_STATE_NORMAL;
-            rut_shell_queue_redraw(button->ctx->shell);
+            rut_shell_queue_redraw(button->shell);
 
             return RUT_INPUT_EVENT_STATUS_HANDLED;
         } else if (rut_motion_event_get_action(event) ==
@@ -303,7 +303,7 @@ _rut_button_grab_input_cb(rut_input_event_t *event, void *user_data)
             else
                 button->state = BUTTON_STATE_ACTIVE;
 
-            rut_shell_queue_redraw(button->ctx->shell);
+            rut_shell_queue_redraw(button->shell);
 
             return RUT_INPUT_EVENT_STATUS_HANDLED;
         }
@@ -321,7 +321,7 @@ _rut_button_input_cb(rut_input_region_t *region,
 
     if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_MOTION &&
         rut_motion_event_get_action(event) == RUT_MOTION_EVENT_ACTION_DOWN) {
-        rut_shell_t *shell = button->ctx->shell;
+        rut_shell_t *shell = button->shell;
         Buttongrab_state_t *state = c_slice_new(Buttongrab_state_t);
         const cg_matrix_t *view;
 
@@ -343,7 +343,7 @@ _rut_button_input_cb(rut_input_region_t *region,
         // button->grab_y = rut_motion_event_get_y (event);
 
         button->state = BUTTON_STATE_ACTIVE;
-        rut_shell_queue_redraw(button->ctx->shell);
+        rut_shell_queue_redraw(button->shell);
 
         return RUT_INPUT_EVENT_STATUS_HANDLED;
     }
@@ -388,14 +388,14 @@ _rut_button_allocate_cb(rut_object_t *graphable, void *user_data)
 static void
 queue_allocation(rut_button_t *button)
 {
-    rut_shell_add_pre_paint_callback(button->ctx->shell,
+    rut_shell_add_pre_paint_callback(button->shell,
                                      button,
                                      _rut_button_allocate_cb,
                                      NULL /* user_data */);
 }
 
 rut_button_t *
-rut_button_new(rut_context_t *ctx, const char *label)
+rut_button_new(rut_shell_t *shell, const char *label)
 {
     rut_button_t *button = rut_object_alloc0(
         rut_button_t, &rut_button_type, _rut_button_init_type);
@@ -407,14 +407,14 @@ rut_button_new(rut_context_t *ctx, const char *label)
     rut_graphable_init(button);
     rut_paintable_init(button);
 
-    button->ctx = ctx;
+    button->shell = shell;
 
     button->state = BUTTON_STATE_NORMAL;
 
     button->normal_texture =
-        rut_load_texture_from_data_file(ctx, "button.png", &error);
+        rut_load_texture_from_data_file(shell, "button.png", &error);
     if (button->normal_texture) {
-        button->background_normal = rut_nine_slice_new(ctx,
+        button->background_normal = rut_nine_slice_new(shell,
                                                        button->normal_texture,
                                                        11,
                                                        5,
@@ -428,9 +428,9 @@ rut_button_new(rut_context_t *ctx, const char *label)
     }
 
     button->hover_texture =
-        rut_load_texture_from_data_file(ctx, "button-hover.png", &error);
+        rut_load_texture_from_data_file(shell, "button-hover.png", &error);
     if (button->hover_texture) {
-        button->background_hover = rut_nine_slice_new(ctx,
+        button->background_hover = rut_nine_slice_new(shell,
                                                       button->hover_texture,
                                                       11,
                                                       5,
@@ -444,9 +444,9 @@ rut_button_new(rut_context_t *ctx, const char *label)
     }
 
     button->active_texture =
-        rut_load_texture_from_data_file(ctx, "button-active.png", &error);
+        rut_load_texture_from_data_file(shell, "button-active.png", &error);
     if (button->active_texture) {
-        button->background_active = rut_nine_slice_new(ctx,
+        button->background_active = rut_nine_slice_new(shell,
                                                        button->active_texture,
                                                        11,
                                                        5,
@@ -460,10 +460,10 @@ rut_button_new(rut_context_t *ctx, const char *label)
     }
 
     button->disabled_texture =
-        rut_load_texture_from_data_file(ctx, "button-disabled.png", &error);
+        rut_load_texture_from_data_file(shell, "button-disabled.png", &error);
     if (button->disabled_texture) {
         button->background_disabled =
-            rut_nine_slice_new(ctx,
+            rut_nine_slice_new(shell,
                                button->disabled_texture,
                                11,
                                5,
@@ -476,8 +476,8 @@ rut_button_new(rut_context_t *ctx, const char *label)
         c_error_free(error);
     }
 
-    button->text = rut_text_new_with_text(ctx, NULL, label);
-    button->text_transform = rut_transform_new(ctx);
+    button->text = rut_text_new_with_text(shell, NULL, label);
+    button->text_transform = rut_transform_new(shell);
     rut_graphable_add_child(button, button->text_transform);
     rut_graphable_add_child(button->text_transform, button->text);
 

@@ -43,7 +43,7 @@ typedef enum {
     RUT_BOX_LAYOUT_PACKING_BOTTOM_TO_TOP
 } rut_box_layout_packing_t;
 
-rut_box_layout_t *rut_box_layout_new(rut_context_t *ctx,
+rut_box_layout_t *rut_box_layout_new(rut_shell_t *shell,
                                      rut_box_layout_packing_t packing);
 
 void

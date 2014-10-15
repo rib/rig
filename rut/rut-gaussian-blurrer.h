@@ -31,10 +31,10 @@
 
 #include <cogl/cogl.h>
 
-#include "rut-context.h"
+#include "rut-shell.h"
 
 typedef struct _rut_gaussian_blurrer_t {
-    rut_context_t *ctx;
+    rut_shell_t *shell;
 
     int n_taps;
 
@@ -51,7 +51,7 @@ typedef struct _rut_gaussian_blurrer_t {
     cg_pipeline_t *y_pass_pipeline;
 } rut_gaussian_blurrer_t;
 
-rut_gaussian_blurrer_t *rut_gaussian_blurrer_new(rut_context_t *ctx,
+rut_gaussian_blurrer_t *rut_gaussian_blurrer_new(rut_shell_t *shell,
                                                  int n_taps);
 
 void rut_gaussian_blurrer_free(rut_gaussian_blurrer_t *blurrer);

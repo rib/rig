@@ -35,7 +35,7 @@ typedef struct _rut_type_t rut_type_t;
 
 typedef void rut_object_t;
 
-typedef struct _rut_context_t rut_context_t;
+typedef struct _rut_shell_t rut_shell_t;
 
 typedef struct _rut_ui_enum_t rut_ui_enum_t;
 

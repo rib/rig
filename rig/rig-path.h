@@ -38,7 +38,7 @@ typedef struct _rig_path_t rig_path_t;
 struct _rig_path_t {
     rut_object_base_t _base;
 
-    rut_context_t *ctx;
+    rut_shell_t *shell;
     rut_property_type_t type;
     rut_list_t nodes;
     int length;
@@ -59,11 +59,9 @@ typedef void (*rig_path_operation_callback_t)(rig_path_t *path,
 
 extern rut_type_t rig_path_type;
 
-#define RIG_PATH(x) ((rig_path_t *)x)
-
 rut_property_t *rig_path_get_property(rig_path_t *path);
 
-rig_path_t *rig_path_new(rut_context_t *ctx, rut_property_type_t type);
+rig_path_t *rig_path_new(rut_shell_t *shell, rut_property_type_t type);
 
 rig_path_t *rig_path_copy(rig_path_t *path);
 

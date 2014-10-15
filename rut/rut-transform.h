@@ -32,12 +32,12 @@
 
 #include <cogl/cogl.h>
 
-#include <rut-context.h>
+#include <rut-shell.h>
 
 typedef struct _rut_transform_t rut_transform_t;
 extern rut_type_t rut_transform_type;
 
-rut_transform_t *rut_transform_new(rut_context_t *ctx);
+rut_transform_t *rut_transform_new(rut_shell_t *shell);
 
 void
 rut_transform_translate(rut_transform_t *transform, float x, float y, float z);

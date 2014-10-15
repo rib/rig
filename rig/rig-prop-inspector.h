@@ -45,8 +45,7 @@ typedef void (*rig_prop_inspector_controlled_callback_t)(rut_property_t *propert
                                                        bool value,
                                                        void *user_data);
 
-rig_prop_inspector_t *rig_prop_inspector_new(
-    rut_context_t *ctx,
+rig_prop_inspector_t *rig_prop_inspector_new(rut_shell_t *shell,
     rut_property_t *property,
     rig_prop_inspector_callback_t property_changed_cb,
     rig_prop_inspector_controlled_callback_t controlled_changed_cb,

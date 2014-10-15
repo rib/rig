@@ -44,7 +44,7 @@ _rig_path_free(void *object)
     rut_list_for_each_safe(node, t, &path->nodes, list_node)
     rig_node_free(node);
 
-    rut_object_unref(path->ctx);
+    rut_object_unref(path->shell);
     c_slice_free(rig_path_t, path);
 }
 
@@ -57,12 +57,12 @@ _rig_path_init_type(void)
 }
 
 rig_path_t *
-rig_path_new(rut_context_t *ctx, rut_property_type_t type)
+rig_path_new(rut_shell_t *shell, rut_property_type_t type)
 {
     rig_path_t *path =
         rut_object_alloc0(rig_path_t, &rig_path_type, _rig_path_init_type);
 
-    path->ctx = rut_object_ref(ctx);
+    path->shell = rut_object_ref(shell);
 
     path->type = type;
 
@@ -78,7 +78,7 @@ rig_path_new(rut_context_t *ctx, rut_property_type_t type)
 rig_path_t *
 rig_path_copy(rig_path_t *old_path)
 {
-    rig_path_t *new_path = rig_path_new(old_path->ctx, old_path->type);
+    rig_path_t *new_path = rig_path_new(old_path->shell, old_path->type);
     rig_node_t *node;
 
     rut_list_for_each(node, &old_path->nodes, list_node)
@@ -556,52 +556,52 @@ rig_path_lerp_property(rig_path_t *path, rut_property_t *property, float t)
         float value;
 
         rig_node_float_lerp(n0, n1, t, &value);
-        rut_property_set_float(&path->ctx->property_ctx, property, value);
+        rut_property_set_float(&path->shell->property_ctx, property, value);
         break;
     }
     case RUT_PROPERTY_TYPE_DOUBLE: {
         double value;
 
         rig_node_double_lerp(n0, n1, t, &value);
-        rut_property_set_double(&path->ctx->property_ctx, property, value);
+        rut_property_set_double(&path->shell->property_ctx, property, value);
         break;
     }
     case RUT_PROPERTY_TYPE_INTEGER: {
         int value;
 
         rig_node_integer_lerp(n0, n1, t, &value);
-        rut_property_set_integer(&path->ctx->property_ctx, property, value);
+        rut_property_set_integer(&path->shell->property_ctx, property, value);
         break;
     }
     case RUT_PROPERTY_TYPE_UINT32: {
         uint32_t value;
 
         rig_node_uint32_lerp(n0, n1, t, &value);
-        rut_property_set_uint32(&path->ctx->property_ctx, property, value);
+        rut_property_set_uint32(&path->shell->property_ctx, property, value);
         break;
     }
     case RUT_PROPERTY_TYPE_VEC3: {
         float value[3];
         rig_node_vec3_lerp(n0, n1, t, value);
-        rut_property_set_vec3(&path->ctx->property_ctx, property, value);
+        rut_property_set_vec3(&path->shell->property_ctx, property, value);
         break;
     }
     case RUT_PROPERTY_TYPE_VEC4: {
         float value[4];
         rig_node_vec4_lerp(n0, n1, t, value);
-        rut_property_set_vec4(&path->ctx->property_ctx, property, value);
+        rut_property_set_vec4(&path->shell->property_ctx, property, value);
         break;
     }
     case RUT_PROPERTY_TYPE_COLOR: {
         cg_color_t value;
         rig_node_color_lerp(n0, n1, t, &value);
-        rut_property_set_color(&path->ctx->property_ctx, property, &value);
+        rut_property_set_color(&path->shell->property_ctx, property, &value);
         break;
     }
     case RUT_PROPERTY_TYPE_QUATERNION: {
         cg_quaternion_t value;
         rig_node_quaternion_lerp(n0, n1, t, &value);
-        rut_property_set_quaternion(&path->ctx->property_ctx, property, &value);
+        rut_property_set_quaternion(&path->shell->property_ctx, property, &value);
         break;
     }
 
@@ -610,31 +610,31 @@ rig_path_lerp_property(rig_path_t *path, rut_property_t *property, float t)
     case RUT_PROPERTY_TYPE_ENUM: {
         int value;
         rig_node_enum_lerp(n0, n1, t, &value);
-        rut_property_set_enum(&path->ctx->property_ctx, property, value);
+        rut_property_set_enum(&path->shell->property_ctx, property, value);
         break;
     }
     case RUT_PROPERTY_TYPE_BOOLEAN: {
         bool value;
         rig_node_boolean_lerp(n0, n1, t, &value);
-        rut_property_set_boolean(&path->ctx->property_ctx, property, value);
+        rut_property_set_boolean(&path->shell->property_ctx, property, value);
         break;
     }
     case RUT_PROPERTY_TYPE_TEXT: {
         const char *value;
         rig_node_text_lerp(n0, n1, t, &value);
-        rut_property_set_text(&path->ctx->property_ctx, property, value);
+        rut_property_set_text(&path->shell->property_ctx, property, value);
         break;
     }
     case RUT_PROPERTY_TYPE_ASSET: {
         rig_asset_t *value;
         rig_node_asset_lerp(n0, n1, t, &value);
-        rut_property_set_asset(&path->ctx->property_ctx, property, value);
+        rut_property_set_asset(&path->shell->property_ctx, property, value);
         break;
     }
     case RUT_PROPERTY_TYPE_OBJECT: {
         rut_object_t *value;
         rig_node_object_lerp(n0, n1, t, &value);
-        rut_property_set_object(&path->ctx->property_ctx, property, value);
+        rut_property_set_object(&path->shell->property_ctx, property, value);
         break;
     }
     case RUT_PROPERTY_TYPE_POINTER:

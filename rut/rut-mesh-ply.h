@@ -98,14 +98,14 @@ typedef enum _rut_ply_attribute_status_t {
 } rut_ply_attribute_status_t;
 
 rut_mesh_t *
-rut_mesh_new_from_ply(rut_context_t *ctx,
+rut_mesh_new_from_ply(rut_shell_t *shell,
                       const char *filename,
                       rut_ply_attribute_t *attributes,
                       int n_attributes,
                       rut_ply_attribute_status_t *attribute_status_out,
                       c_error_t **error);
 
-rut_mesh_t *rut_mesh_new_from_ply_data(rut_context_t *ctx,
+rut_mesh_t *rut_mesh_new_from_ply_data(rut_shell_t *shell,
                                        const uint8_t *data,
                                        size_t len,
                                        rut_ply_attribute_t *attributes,

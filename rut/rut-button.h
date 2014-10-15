@@ -33,7 +33,7 @@
 typedef struct _rut_button_t rut_button_t;
 extern rut_type_t rut_button_type;
 
-rut_button_t *rut_button_new(rut_context_t *ctx, const char *label);
+rut_button_t *rut_button_new(rut_shell_t *shell, const char *label);
 
 typedef void (*rut_button_click_callback_t)(rut_button_t *button,
                                             void *user_data);

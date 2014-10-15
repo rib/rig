@@ -43,7 +43,7 @@ typedef struct {
     int value;
 } rut_drop_down_value_t;
 
-rut_drop_down_t *rut_drop_down_new(rut_context_t *ctx);
+rut_drop_down_t *rut_drop_down_new(rut_shell_t *shell);
 
 void rut_drop_down_set_value(rut_object_t *slider, int value);
 

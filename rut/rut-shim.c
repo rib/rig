@@ -37,7 +37,7 @@
 struct _rut_shim_t {
     rut_object_base_t _base;
 
-    rut_context_t *context;
+    rut_shell_t *shell;
 
     rut_list_t preferred_size_cb_list;
 
@@ -77,7 +77,7 @@ static void
 queue_allocation(rut_shim_t *shim)
 {
     rut_shell_add_pre_paint_callback(
-        shim->context->shell, shim, allocate_cb, NULL /* user_data */);
+        shim->shell, shim, allocate_cb, NULL /* user_data */);
 }
 
 static void
@@ -164,12 +164,12 @@ _rut_shim_init_type(void)
 }
 
 rut_shim_t *
-rut_shim_new(rut_context_t *ctx, float width, float height)
+rut_shim_new(rut_shell_t *shell, float width, float height)
 {
     rut_shim_t *shim =
         rut_object_alloc0(rut_shim_t, &rut_shim_type, _rut_shim_init_type);
 
-    shim->context = ctx;
+    shim->shell = shell;
 
     rut_list_init(&shim->preferred_size_cb_list);
 
@@ -261,7 +261,7 @@ rut_shim_set_child(rut_shim_t *shim, rut_object_t *child)
     } else
         shim->child = NULL;
 
-    rut_shell_queue_redraw(shim->context->shell);
+    rut_shell_queue_redraw(shim->shell);
 }
 
 void

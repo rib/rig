@@ -45,7 +45,7 @@
 
 #include "rut-poll.h"
 #include "rut-shell.h"
-#include "rut-context.h"
+#include "rut-shell.h"
 #include "rut-os.h"
 
 struct _rut_poll_source_t {
@@ -88,7 +88,7 @@ on_cg_event_cb(void *user_data, int fd, int revents)
 {
     rut_shell_t *shell = user_data;
     cg_renderer_t *renderer =
-        cg_device_get_renderer(shell->rut_ctx->cg_device);
+        cg_device_get_renderer(shell->cg_device);
 
     cg_poll_renderer_dispatch_fd(renderer, fd, revents);
 }
@@ -97,7 +97,7 @@ static void
 update_cg_sources(rut_shell_t *shell)
 {
     cg_renderer_t *renderer =
-        cg_device_get_renderer(shell->rut_ctx->cg_device);
+        cg_device_get_renderer(shell->cg_device);
     cg_poll_fd_t *poll_fds;
     int n_poll_fds;
     int64_t cg_timeout;
@@ -433,7 +433,7 @@ dispatch_sdl_busy_wait(void *user_data, int fd, int revents)
     SDL_Event event;
 
     while (SDL_PollEvent(&event)) {
-        cg_sdl_handle_event(shell->rut_ctx->cg_device, &event);
+        cg_sdl_handle_event(shell->cg_device, &event);
 
         rut_sdl_shell_handle_sdl_event(shell, &event);
     }
@@ -545,7 +545,7 @@ cg_prepare_cb(uv_prepare_t *prepare)
 {
     rut_shell_t *shell = prepare->data;
     cg_renderer_t *renderer =
-        cg_device_get_renderer(shell->rut_ctx->cg_device);
+        cg_device_get_renderer(shell->cg_device);
 
     cg_poll_renderer_dispatch(renderer, NULL, 0);
 

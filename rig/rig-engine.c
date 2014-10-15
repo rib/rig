@@ -215,7 +215,7 @@ rig_engine_set_current_ui(rig_engine_t *engine, rig_ui_t *ui)
 {
     rig_camera_view_set_ui(engine->main_camera_view, ui);
     engine->current_ui = ui;
-    rut_shell_queue_redraw(engine->ctx->shell);
+    rut_shell_queue_redraw(engine->shell);
 }
 
 void
@@ -261,9 +261,9 @@ rig_engine_resize(rig_engine_t *engine, int width, int height)
     engine->window_width = width;
     engine->window_height = height;
 
-    rut_property_dirty(&engine->ctx->property_ctx,
+    rut_property_dirty(&engine->shell->property_ctx,
                        &engine->properties[RIG_ENGINE_PROP_WIDTH]);
-    rut_property_dirty(&engine->ctx->property_ctx,
+    rut_property_dirty(&engine->shell->property_ctx,
                        &engine->properties[RIG_ENGINE_PROP_HEIGHT]);
 
     rig_engine_allocate(engine);
@@ -409,7 +409,7 @@ ensure_shadow_map(rig_engine_t *engine)
 
     c_warn_if_fail(engine->shadow_color == NULL);
 
-    color_buffer = cg_texture_2d_new_with_size(engine->ctx->cg_device,
+    color_buffer = cg_texture_2d_new_with_size(engine->shell->cg_device,
                                                engine->device_width * 2,
                                                engine->device_height * 2);
 
@@ -630,9 +630,8 @@ _rig_engine_new_full(rut_shell_t *shell,
         rig_engine_t, &rig_engine_type, _rig_engine_init_type);
 
     engine->shell = shell;
-    engine->ctx = rut_shell_get_context(shell);
 
-    engine->headless = engine->ctx->headless;
+    engine->headless = engine->shell->headless;
 
     if (frontend) {
         engine->frontend_id = frontend->id;
@@ -688,9 +687,9 @@ _rig_engine_new_full(rut_shell_t *shell,
     /*
      * Setup the 2D widget scenegraph
      */
-    engine->root = rut_graph_new(engine->ctx);
+    engine->root = rut_graph_new(engine->shell);
 
-    engine->top_stack = rut_stack_new(engine->ctx, 1, 1);
+    engine->top_stack = rut_stack_new(engine->shell, 1, 1);
     rut_graphable_add_child(engine->root, engine->top_stack);
     rut_object_unref(engine->top_stack);
 

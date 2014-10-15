@@ -32,11 +32,11 @@
 
 #include <cogl/cogl.h>
 
-#include <rut-context.h>
+#include <rut-shell.h>
 
 typedef struct _rig_button_input_t rig_button_input_t;
 extern rut_type_t rig_button_input_type;
 
-rig_button_input_t *rig_button_input_new(rut_context_t *ctx);
+rig_button_input_t *rig_button_input_new(rut_shell_t *shell);
 
 #endif /* __RIG_BUTTON_INPUT_H__ */

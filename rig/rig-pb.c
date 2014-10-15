@@ -1198,9 +1198,9 @@ serialize_mesh_asset(rig_pb_serializer_t *serializer,
 static bool
 serialize_asset_file(Rig__Asset *pb_asset, rig_asset_t *asset)
 {
-    rut_context_t *ctx = rig_asset_get_context(asset);
+    rut_shell_t *shell = rig_asset_get_shell(asset);
     const char *path = rig_asset_get_path(asset);
-    char *full_path = c_build_filename(ctx->assets_location, path, NULL);
+    char *full_path = c_build_filename(shell->assets_location, path, NULL);
     c_error_t *error = NULL;
     char *contents;
     size_t len;
@@ -1570,10 +1570,10 @@ rig_pb_serialize_ops_queue(rig_pb_serializer_t *serializer,
 }
 
 static void
-pb_init_color(rut_context_t *ctx, cg_color_t *color, Rig__Color *pb_color)
+pb_init_color(rut_shell_t *shell, cg_color_t *color, Rig__Color *pb_color)
 {
     if (pb_color && pb_color->hex)
-        rut_color_init_from_string(ctx, color, pb_color->hex);
+        rut_color_init_from_string(shell, color, pb_color->hex);
     else
         cg_color_init_from_4f(color, 0, 0, 0, 1);
 }
@@ -1691,7 +1691,7 @@ rig_pb_init_boxed_value(rig_pb_un_serializer_t *unserializer,
         break;
 
     case RUT_PROPERTY_TYPE_COLOR:
-        pb_init_color(unserializer->engine->ctx,
+        pb_init_color(unserializer->engine->shell,
                       &boxed->d.color_val,
                       pb_value->color_value);
         break;
@@ -1865,7 +1865,7 @@ set_property_from_pb_boxed(rig_pb_un_serializer_t *unserializer,
     rig_pb_init_boxed_value(unserializer, &boxed, type, pb_boxed->value);
 
     rut_property_set_boxed(
-        &unserializer->engine->ctx->property_ctx, property, &boxed);
+        &unserializer->engine->shell->property_ctx, property, &boxed);
 }
 
 static void
@@ -1914,7 +1914,7 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
         Rig__Entity__Component__Light *pb_light = pb_component->light;
         rig_light_t *light;
 
-        light = rig_light_new(unserializer->engine->ctx);
+        light = rig_light_new(unserializer->engine->shell);
 
         /* XXX: This is only for backwards compatibility... */
         if (pb_light) {
@@ -1923,11 +1923,11 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
             cg_color_t specular;
 
             pb_init_color(
-                unserializer->engine->ctx, &ambient, pb_light->ambient);
+                unserializer->engine->shell, &ambient, pb_light->ambient);
             pb_init_color(
-                unserializer->engine->ctx, &diffuse, pb_light->diffuse);
+                unserializer->engine->shell, &diffuse, pb_light->diffuse);
             pb_init_color(
-                unserializer->engine->ctx, &specular, pb_light->specular);
+                unserializer->engine->shell, &specular, pb_light->specular);
 
             rig_light_set_ambient(light, &ambient);
             rig_light_set_diffuse(light, &diffuse);
@@ -1956,7 +1956,7 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
         cg_color_t specular;
         rig_asset_t *asset;
 
-        material = rig_material_new(unserializer->engine->ctx, NULL);
+        material = rig_material_new(unserializer->engine->shell, NULL);
 
         rig_entity_add_component(entity, material);
         rut_object_unref(material);
@@ -2002,11 +2002,11 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
             }
 
             pb_init_color(
-                unserializer->engine->ctx, &ambient, pb_material->ambient);
+                unserializer->engine->shell, &ambient, pb_material->ambient);
             pb_init_color(
-                unserializer->engine->ctx, &diffuse, pb_material->diffuse);
+                unserializer->engine->shell, &diffuse, pb_material->diffuse);
             pb_init_color(
-                unserializer->engine->ctx, &specular, pb_material->specular);
+                unserializer->engine->shell, &specular, pb_material->specular);
 
             rig_material_set_ambient(material, &ambient);
             rig_material_set_diffuse(material, &diffuse);
@@ -2051,7 +2051,7 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
             return NULL;
         }
 
-        model = rig_model_new_from_asset(unserializer->engine->ctx, asset);
+        model = rig_model_new_from_asset(unserializer->engine->shell, asset);
         if (model) {
             rig_entity_add_component(entity, model);
             rut_object_unref(model);
@@ -2068,11 +2068,11 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
     case RIG__ENTITY__COMPONENT__TYPE__TEXT: {
         Rig__Entity__Component__Text *pb_text = pb_component->text;
         rut_text_t *text = rut_text_new_with_text(
-            unserializer->engine->ctx, pb_text->font, pb_text->text);
+            unserializer->engine->shell, pb_text->font, pb_text->text);
 
         if (pb_text->color) {
             cg_color_t color;
-            pb_init_color(unserializer->engine->ctx, &color, pb_text->color);
+            pb_init_color(unserializer->engine->shell, &color, pb_text->color);
             rut_text_set_color(text, &color);
         }
 
@@ -2141,7 +2141,7 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
         if (pb_camera->background) {
             cg_color_t color;
             pb_init_color(
-                unserializer->engine->ctx, &color, pb_camera->background);
+                unserializer->engine->shell, &color, pb_camera->background);
             rut_camera_set_background_color(camera, &color);
         }
 
@@ -2153,7 +2153,7 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
     }
     case RIG__ENTITY__COMPONENT__TYPE__BUTTON_INPUT: {
         rig_button_input_t *button_input =
-            rig_button_input_new(unserializer->engine->ctx);
+            rig_button_input_new(unserializer->engine->shell);
 
         set_properties_from_pb_boxed_values(unserializer,
                                             button_input,
@@ -2191,7 +2191,7 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
             rig_asset_get_image_size(asset, &width, &height);
         }
 
-        shape = rig_shape_new(unserializer->engine->ctx, shaped, width, height);
+        shape = rig_shape_new(unserializer->engine->shell, shaped, width, height);
 
         set_properties_from_pb_boxed_values(unserializer,
                                             shape,
@@ -2207,7 +2207,7 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
     }
     case RIG__ENTITY__COMPONENT__TYPE__NINE_SLICE: {
         rig_nine_slice_t *nine_slice =
-            rig_nine_slice_new(unserializer->engine->ctx,
+            rig_nine_slice_new(unserializer->engine->shell,
                                NULL,
                                0,
                                0,
@@ -2236,7 +2236,7 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
         if (pb_diamond && pb_diamond->has_size)
             diamond_size = pb_diamond->size;
 
-        diamond = rig_diamond_new(unserializer->engine->ctx, diamond_size);
+        diamond = rig_diamond_new(unserializer->engine->shell, diamond_size);
 
         rig_entity_add_component(entity, diamond);
         rut_object_unref(diamond);
@@ -2259,7 +2259,7 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
         if (pb_grid && pb_grid->has_cell_size)
             cell_size = pb_grid->cell_size;
 
-        grid = rig_pointalism_grid_new(unserializer->engine->ctx, cell_size);
+        grid = rig_pointalism_grid_new(unserializer->engine->shell, cell_size);
 
         rig_entity_add_component(entity, grid);
         rut_object_unref(grid);
@@ -2285,7 +2285,7 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
         return grid;
     }
     case RIG__ENTITY__COMPONENT__TYPE__HAIR: {
-        rig_hair_t *hair = rig_hair_new(unserializer->engine->ctx);
+        rig_hair_t *hair = rig_hair_new(unserializer->engine->shell);
         rut_object_t *geom;
 
         rig_entity_add_component(entity, hair);
@@ -2373,7 +2373,7 @@ unserialize_components(rig_pb_un_serializer_t *unserializer,
     if (force_material &&
         !rig_entity_get_component(entity, RUT_COMPONENT_TYPE_MATERIAL)) {
         rig_material_t *material =
-            rig_material_new(unserializer->engine->ctx, NULL);
+            rig_material_new(unserializer->engine->shell, NULL);
 
         rig_entity_add_component(entity, material);
 
@@ -2430,7 +2430,7 @@ rig_pb_unserialize_entity(rig_pb_un_serializer_t *unserializer,
         return NULL;
     }
 
-    entity = rig_entity_new(unserializer->engine->ctx);
+    entity = rig_entity_new(unserializer->engine->shell);
 
     if (pb_entity->has_parent_id) {
         uint64_t parent_id = pb_entity->parent_id;
@@ -2599,7 +2599,7 @@ unserialize_path_nodes(rig_pb_un_serializer_t *unserializer,
         case RUT_PROPERTY_TYPE_COLOR: {
             cg_color_t color;
             pb_init_color(
-                unserializer->engine->ctx, &color, pb_value->color_value);
+                unserializer->engine->shell, &color, pb_value->color_value);
             rig_path_insert_color(path, t, &color);
             break;
         }
@@ -2721,7 +2721,7 @@ rig_pb_unserialize_controller_properties(rig_pb_un_serializer_t *unserializer,
         if (pb_property->path) {
             Rig__Path *pb_path = pb_property->path;
             rig_path_t *path =
-                rig_path_new(unserializer->engine->ctx, property->spec->type);
+                rig_path_new(unserializer->engine->shell, property->spec->type);
 
             unserialize_path_nodes(
                 unserializer, path, pb_path->n_nodes, pb_path->nodes);
@@ -2989,7 +2989,7 @@ rig_pb_unserialize_ui(rig_pb_un_serializer_t *unserializer,
     unserialize_controllers(
         unserializer, pb_ui->n_controllers, pb_ui->controllers);
 
-    ui->scene = rut_graph_new(engine->ctx);
+    ui->scene = rut_graph_new(engine->shell);
 
     if (pb_ui->has_scene_root_id) {
         rig_pb_unserializer_register_object(

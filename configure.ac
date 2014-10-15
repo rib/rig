@@ -53,7 +53,7 @@ dnl ================================================================
 m4_define([release_status], [git])
 
 AC_INIT(rig, [rig_version])
-AC_CONFIG_SRCDIR(rut/rut.c)
+AC_CONFIG_SRCDIR(rut/rut-shell.c)
 AC_CONFIG_AUX_DIR([build])
 AC_CONFIG_MACRO_DIR([build/autotools])
 AC_CONFIG_HEADERS(config.h)

@@ -33,7 +33,7 @@ extern rut_type_t rut_timeline_type;
 
 typedef struct _rut_timeline_t rut_timeline_t;
 
-rut_timeline_t *rut_timeline_new(rut_context_t *ctx, float length);
+rut_timeline_t *rut_timeline_new(rut_shell_t *shell, float length);
 
 void rut_timeline_start(rut_timeline_t *timeline);
 

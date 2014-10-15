@@ -34,7 +34,7 @@
 extern rut_type_t rut_stack_type;
 typedef struct _rut_stack_t rut_stack_t;
 
-rut_stack_t *rut_stack_new(rut_context_t *context, float width, float height);
+rut_stack_t *rut_stack_new(rut_shell_t *shell, float width, float height);
 
 void rut_stack_add(rut_stack_t *stack, rut_object_t *child);
 

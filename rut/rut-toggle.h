@@ -30,16 +30,16 @@
 #ifndef _RUT_TOGGLE_H_
 #define _RUT_TOGGLE_H_
 
-#include "rut-context.h"
+#include "rut-shell.h"
 #include "rut-types.h"
 
 extern rut_type_t rut_toggle_type;
 
 typedef struct _rut_toggle_t rut_toggle_t;
 
-rut_toggle_t *rut_toggle_new(rut_context_t *ctx, const char *label);
+rut_toggle_t *rut_toggle_new(rut_shell_t *shell, const char *label);
 
-rut_toggle_t *rut_toggle_new_with_icons(rut_context_t *ctx,
+rut_toggle_t *rut_toggle_new_with_icons(rut_shell_t *shell,
                                         const char *unselected_icon,
                                         const char *selected_icon,
                                         const char *label);

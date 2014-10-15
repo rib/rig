@@ -32,12 +32,12 @@
 
 #include <cogl/cogl.h>
 
-#include <rut-context.h>
+#include <rut-shell.h>
 
 typedef struct _rut_shim_t rut_shim_t;
 extern rut_type_t rut_shim_type;
 
-rut_shim_t *rut_shim_new(rut_context_t *ctx, float width, float height);
+rut_shim_t *rut_shim_new(rut_shell_t *shell, float width, float height);
 
 void rut_shim_set_width(rut_shim_t *shim, float width);
 

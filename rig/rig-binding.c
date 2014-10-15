@@ -317,7 +317,7 @@ rig_binding_activate(rig_binding_t *binding)
     _rut_property_set_binding_full_array(
         binding->property,
         callback,
-        &engine->ctx->property_ctx, /* user data */
+        &engine->shell->property_ctx, /* user data */
         NULL, /* destroy */
         dependencies,
         n_dependencies);
@@ -335,7 +335,7 @@ rig_binding_activate(rig_binding_t *binding)
     c_return_if_fail(!binding->active);
 
     if (binding->dependencies) {
-        rut_property_set_copy_binding(&engine->ctx->property_ctx,
+        rut_property_set_copy_binding(&engine->shell->property_ctx,
                                       binding->property,
                                       binding->dependencies->data);
     }

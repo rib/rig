@@ -484,7 +484,7 @@ static void
 log_op_cb(Rig__Operation *pb_op, void *user_data)
 {
     rig_simulator_t *simulator = user_data;
-    rut_property_context_t *prop_ctx = &simulator->engine->ctx->property_ctx;
+    rut_property_context_t *prop_ctx = &simulator->engine->shell->property_ctx;
 
     /* We sequence all operations relative to the property updates that
      * are being logged, so that the frontend will be able to replay
@@ -558,7 +558,7 @@ _rig_simulator_free(void *object)
 
     rut_object_unref(simulator->simulator_peer);
 
-    rut_object_unref(simulator->ctx);
+    rut_object_unref(simulator->shell);
     rut_object_unref(simulator->shell);
 
     rut_object_free(rig_simulator_t, simulator);
@@ -632,9 +632,7 @@ rig_simulator_new(rig_frontend_id_t frontend_id,
     rut_shell_set_queue_redraw_callback(
         simulator->shell, rig_simulator_queue_redraw_hook, simulator);
 
-    simulator->ctx = rut_context_new(simulator->shell);
-
-    rut_context_init(simulator->ctx);
+    rut_shell_init(simulator->shell);
 
     simulator->redraw_queued = false;
 
@@ -795,7 +793,7 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
     ProtobufCService *frontend_service =
         rig_pb_rpc_client_get_service(simulator->simulator_peer->pb_rpc_client);
     Rig__UIDiff ui_diff;
-    rut_property_context_t *prop_ctx = &engine->ctx->property_ctx;
+    rut_property_context_t *prop_ctx = &engine->shell->property_ctx;
     int n_changes;
     rig_pb_serializer_t *serializer;
 
@@ -803,7 +801,7 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
 
     /* Setup the property context to log all property changes so they
      * can be sent back to the frontend process each frame. */
-    simulator->ctx->property_ctx.log = true;
+    simulator->shell->property_ctx.log = true;
 
     // c_print ("Simulator: Start Frame\n");
     rut_shell_start_redraw(shell);
@@ -836,7 +834,7 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
                                         scale_prop,
                                         &boxed);
 #else
-            rut_property_set_float (&engine->ctx->property_ctx,
+            rut_property_set_float (&engine->shell->property_ctx,
                                     scale_prop,
                                     counter);
 #endif
@@ -950,7 +948,7 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
     rut_property_context_clear_log(prop_ctx);
 
     /* Stop logging property changes until the next frame. */
-    simulator->ctx->property_ctx.log = false;
+    simulator->shell->property_ctx.log = false;
 
     rut_shell_run_post_paint_callbacks(shell);
 

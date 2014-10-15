@@ -55,7 +55,7 @@ enum {
 struct _rut_icon_toggle_set_t {
     rut_object_base_t _base;
 
-    rut_context_t *ctx;
+    rut_shell_t *shell;
 
     rut_box_layout_t *layout;
 
@@ -151,7 +151,7 @@ _rut_icon_toggle_set_init_type(void)
 }
 
 rut_icon_toggle_set_t *
-rut_icon_toggle_set_new(rut_context_t *ctx,
+rut_icon_toggle_set_new(rut_shell_t *shell,
                         rut_icon_toggle_set_packing_t packing)
 {
     rut_icon_toggle_set_t *toggle_set =
@@ -168,7 +168,7 @@ rut_icon_toggle_set_new(rut_context_t *ctx,
     rut_introspectable_init(
         toggle_set, _rut_icon_toggle_set_prop_specs, toggle_set->properties);
 
-    toggle_set->ctx = ctx;
+    toggle_set->shell = shell;
 
     switch (packing) {
     case RUT_ICON_TOGGLE_SET_PACKING_LEFT_TO_RIGHT:
@@ -185,7 +185,7 @@ rut_icon_toggle_set_new(rut_context_t *ctx,
         break;
     }
 
-    toggle_set->layout = rut_box_layout_new(ctx, box_packing);
+    toggle_set->layout = rut_box_layout_new(shell, box_packing);
     rut_graphable_add_child(toggle_set, toggle_set->layout);
     rut_object_unref(toggle_set->layout);
 
@@ -330,7 +330,7 @@ rut_icon_toggle_set_set_selection(rut_object_t *object,
     rut_icon_toggle_set_state(toggle_set->current_toggle_state->toggle, true);
 
     rut_property_dirty(
-        &toggle_set->ctx->property_ctx,
+        &toggle_set->shell->property_ctx,
         &toggle_set->properties[RUT_ICON_TOGGLE_SET_PROP_SELECTION]);
 
     rut_closure_list_invoke(&toggle_set->on_change_cb_list,

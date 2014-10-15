@@ -59,7 +59,7 @@ struct _rig_pointalism_grid_t {
 
     rut_componentable_props_t component;
 
-    rut_context_t *ctx;
+    rut_shell_t *shell;
 
     rut_list_t updated_cb_list;
 
@@ -79,7 +79,7 @@ struct _rig_pointalism_grid_t {
 
 void _rig_pointalism_grid_init_type(void);
 
-rig_pointalism_grid_t *rig_pointalism_grid_new(rut_context_t *ctx, float size);
+rig_pointalism_grid_t *rig_pointalism_grid_new(rut_shell_t *shell, float size);
 
 cg_primitive_t *rig_pointalism_grid_get_primitive(rut_object_t *object);
 

@@ -37,7 +37,7 @@
 struct _rut_fixed_t {
     rut_object_base_t _base;
 
-    rut_context_t *context;
+    rut_shell_t *shell;
 
     rut_list_t preferred_size_cb_list;
 
@@ -121,12 +121,12 @@ _rut_fixed_init_type(void)
 }
 
 rut_fixed_t *
-rut_fixed_new(rut_context_t *ctx, float width, float height)
+rut_fixed_new(rut_shell_t *shell, float width, float height)
 {
     rut_fixed_t *fixed =
         rut_object_alloc0(rut_fixed_t, &rut_fixed_type, _rut_fixed_init_type);
 
-    fixed->context = ctx;
+    fixed->shell = shell;
 
     rut_list_init(&fixed->preferred_size_cb_list);
 

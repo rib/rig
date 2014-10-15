@@ -227,12 +227,12 @@ _rig_entity_init_type(void)
 }
 
 rig_entity_t *
-rig_entity_new(rut_context_t *ctx)
+rig_entity_new(rut_shell_t *shell)
 {
     rig_entity_t *entity = rut_object_alloc0(
         rig_entity_t, &rig_entity_type, _rig_entity_init_type);
 
-    entity->ctx = ctx;
+    entity->shell = shell;
 
     rut_introspectable_init(entity, _rig_entity_prop_specs, entity->properties);
 
@@ -251,10 +251,10 @@ rig_entity_new(rut_context_t *ctx)
     return entity;
 }
 
-rut_context_t *
-rig_entity_get_context(rig_entity_t *entity)
+rut_property_context_t *
+rig_entity_get_property_context(rig_entity_t *entity)
 {
-    return entity->ctx;
+    return &entity->shell->property_ctx;
 }
 
 void
@@ -264,7 +264,7 @@ rig_entity_set_label(rut_object_t *obj, const char *label)
 
     c_free(entity->label);
     entity->label = c_strdup(label);
-    rut_property_dirty(&entity->ctx->property_ctx,
+    rut_property_dirty(&entity->shell->property_ctx,
                        &entity->properties[RUT_ENTITY_PROP_LABEL]);
 }
 
@@ -297,7 +297,7 @@ rig_entity_set_position(rut_object_t *obj, const float position[3])
     entity->position[2] = position[2];
     entity->dirty = true;
 
-    rut_property_dirty(&entity->ctx->property_ctx,
+    rut_property_dirty(&entity->shell->property_ctx,
                        &entity->properties[RUT_ENTITY_PROP_POSITION]);
 }
 
@@ -384,7 +384,7 @@ rig_entity_set_rotation(rut_object_t *obj, const cg_quaternion_t *rotation)
     entity->rotation = *rotation;
     entity->dirty = true;
 
-    rut_property_dirty(&entity->ctx->property_ctx,
+    rut_property_dirty(&entity->shell->property_ctx,
                        &entity->properties[RUT_ENTITY_PROP_ROTATION]);
 }
 
@@ -466,7 +466,7 @@ rig_entity_set_scale(rut_object_t *obj, float scale)
     entity->scale = scale;
     entity->dirty = true;
 
-    rut_property_dirty(&entity->ctx->property_ctx,
+    rut_property_dirty(&entity->shell->property_ctx,
                        &entity->properties[RUT_ENTITY_PROP_SCALE]);
 }
 
@@ -531,7 +531,7 @@ rig_entity_rotate_x_axis(rig_entity_t *entity, float x_angle)
 
     entity->dirty = true;
 
-    rut_property_dirty(&entity->ctx->property_ctx,
+    rut_property_dirty(&entity->shell->property_ctx,
                        &entity->properties[RUT_ENTITY_PROP_ROTATION]);
 }
 
@@ -545,7 +545,7 @@ rig_entity_rotate_y_axis(rig_entity_t *entity, float y_angle)
 
     entity->dirty = true;
 
-    rut_property_dirty(&entity->ctx->property_ctx,
+    rut_property_dirty(&entity->shell->property_ctx,
                        &entity->properties[RUT_ENTITY_PROP_ROTATION]);
 }
 
@@ -559,7 +559,7 @@ rig_entity_rotate_z_axis(rig_entity_t *entity, float z_angle)
 
     entity->dirty = true;
 
-    rut_property_dirty(&entity->ctx->property_ctx,
+    rut_property_dirty(&entity->shell->property_ctx,
                        &entity->properties[RUT_ENTITY_PROP_ROTATION]);
 }
 
@@ -614,7 +614,7 @@ rig_entity_foreach_component(rig_entity_t *entity,
 rig_entity_t *
 rig_entity_copy(rig_entity_t *entity)
 {
-    rig_entity_t *copy = rig_entity_new(entity->ctx);
+    rig_entity_t *copy = rig_entity_new(entity->shell);
     c_ptr_array_t *entity_components = entity->components;
     c_ptr_array_t *copy_components;
     rut_graphable_props_t *graph_props =

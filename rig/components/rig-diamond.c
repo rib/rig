@@ -33,7 +33,7 @@
 #include "rig-diamond.h"
 #include "rut-meshable.h"
 
-static rig_diamond_t *_rig_diamond_new_with_slice(rut_context_t *ctx,
+static rig_diamond_t *_rig_diamond_new_with_slice(rut_shell_t *shell,
                                                   float size,
                                                   int tex_width,
                                                   int tex_height,
@@ -356,7 +356,7 @@ static rut_object_t *
 _rig_diamond_copy(rut_object_t *object)
 {
     rig_diamond_t *diamond = object;
-    return _rig_diamond_new_with_slice(diamond->ctx,
+    return _rig_diamond_new_with_slice(diamond->shell,
                                        diamond->size,
                                        diamond->tex_width,
                                        diamond->tex_height,
@@ -414,7 +414,7 @@ _rig_diamond_init_type(void)
 }
 
 static rig_diamond_t *
-_rig_diamond_new_with_slice(rut_context_t *ctx,
+_rig_diamond_new_with_slice(rut_shell_t *shell,
                             float size,
                             int tex_width,
                             int tex_height,
@@ -427,7 +427,7 @@ _rig_diamond_new_with_slice(rut_context_t *ctx,
 
     diamond->component.type = RUT_COMPONENT_TYPE_GEOMETRY;
 
-    diamond->ctx = ctx;
+    diamond->shell = shell;
 
     diamond->size = size;
     diamond->tex_width = tex_width;
@@ -443,13 +443,13 @@ _rig_diamond_new_with_slice(rut_context_t *ctx,
 }
 
 rig_diamond_t *
-rig_diamond_new(rut_context_t *ctx, float size)
+rig_diamond_new(rut_shell_t *shell, float size)
 {
     /* Initially we just specify an arbitrary texture width/height
      * which should be updated by the time we create the
      * diamond_slice geometry */
     rig_diamond_t *diamond =
-        _rig_diamond_new_with_slice(ctx, size, 640, 480, NULL);
+        _rig_diamond_new_with_slice(shell, size, 640, 480, NULL);
 
     return diamond;
 }
@@ -475,7 +475,7 @@ rig_diamond_set_size(rut_object_t *object, float size)
 
     diamond->size = size;
 
-    rut_property_dirty(&diamond->ctx->property_ctx,
+    rut_property_dirty(&diamond->shell->property_ctx,
                        &diamond->properties[RIG_DIAMOND_PROP_SIZE]);
 
     rut_closure_list_invoke(
@@ -493,14 +493,14 @@ rig_diamond_get_primitive(rut_object_t *object)
         diamond->slice = diamond_slice_new(
             diamond->size, diamond->tex_width, diamond->tex_height);
 
-    return rut_mesh_create_primitive(diamond->ctx, diamond->slice->mesh);
+    return rut_mesh_create_primitive(diamond->shell, diamond->slice->mesh);
 }
 
 void
 rig_diamond_apply_mask(rig_diamond_t *diamond, cg_pipeline_t *pipeline)
 {
-    rut_context_t *ctx = diamond->ctx;
-    cg_pipeline_set_layer_texture(pipeline, 0, ctx->circle_texture);
+    cg_pipeline_set_layer_texture(pipeline, 0,
+                                  diamond->shell->circle_texture);
 }
 
 rut_mesh_t *

@@ -46,7 +46,7 @@
 struct _rut_icon_toggle_t {
     rut_object_base_t _base;
 
-    rut_context_t *ctx;
+    rut_shell_t *shell;
 
     bool visual_state;
     bool real_state;
@@ -195,7 +195,7 @@ _rut_icon_toggle_grab_input_cb(rut_input_event_t *event, void *user_data)
     rut_icon_toggle_t *toggle = state->toggle;
 
     if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_MOTION) {
-        rut_shell_t *shell = toggle->ctx->shell;
+        rut_shell_t *shell = toggle->shell;
         if (rut_motion_event_get_action(event) == RUT_MOTION_EVENT_ACTION_UP) {
             rut_shell_ungrab_input(
                 shell, _rut_icon_toggle_grab_input_cb, user_data);
@@ -249,7 +249,7 @@ _rut_icon_toggle_input_cb(
 
     if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_MOTION &&
         rut_motion_event_get_action(event) == RUT_MOTION_EVENT_ACTION_DOWN) {
-        rut_shell_t *shell = toggle->ctx->shell;
+        rut_shell_t *shell = toggle->shell;
         Icontoggle_grab_state_t *state = c_slice_new(Icontoggle_grab_state_t);
         const cg_matrix_t *view;
 
@@ -278,7 +278,7 @@ _rut_icon_toggle_input_cb(
 }
 
 rut_icon_toggle_t *
-rut_icon_toggle_new(rut_context_t *ctx,
+rut_icon_toggle_new(rut_shell_t *shell,
                     const char *set_icon,
                     const char *unset_icon)
 {
@@ -290,18 +290,18 @@ rut_icon_toggle_new(rut_context_t *ctx,
 
     rut_graphable_init(toggle);
 
-    toggle->ctx = ctx;
+    toggle->shell = shell;
 
     toggle->interactive_unset_enabled = true;
 
     toggle->real_state = false;
     toggle->visual_state = false;
 
-    toggle->stack = rut_stack_new(ctx, 1, 1);
+    toggle->stack = rut_stack_new(shell, 1, 1);
     rut_graphable_add_child(toggle, toggle->stack);
     rut_object_unref(toggle->stack);
 
-    toggle->bin = rut_bin_new(ctx);
+    toggle->bin = rut_bin_new(shell);
     rut_stack_add(toggle->stack, toggle->bin);
     rut_object_unref(toggle->bin);
 
@@ -345,7 +345,7 @@ set_icon(rut_icon_toggle_t *toggle, rut_icon_t **icon, const char *icon_name)
         }
     }
 
-    *icon = rut_icon_new(toggle->ctx, icon_name);
+    *icon = rut_icon_new(toggle->shell, icon_name);
     update_current_icon(toggle);
 }
 

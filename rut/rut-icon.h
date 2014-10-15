@@ -37,6 +37,6 @@ typedef struct _rut_icon_t rut_icon_t;
 
 #define RUT_ICON(x) ((rut_icon_t *)x)
 
-rut_icon_t *rut_icon_new(rut_context_t *ctx, const char *filename);
+rut_icon_t *rut_icon_new(rut_shell_t *shell, const char *filename);
 
 #endif /* _RUT_ICON_H_ */

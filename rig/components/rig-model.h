@@ -50,7 +50,7 @@ typedef enum _rig_model_type_t {
 struct _rig_model_t {
     rut_object_base_t _base;
 
-    rut_context_t *ctx;
+    rut_shell_t *shell;
 
     rut_componentable_props_t component;
 
@@ -92,12 +92,12 @@ void _rig_model_init_type(void);
  * there should be no need to derive missing attributes at
  * runtime.
  */
-rig_model_t *rig_model_new_from_asset_mesh(rut_context_t *ctx,
+rig_model_t *rig_model_new_from_asset_mesh(rut_shell_t *shell,
                                            rut_mesh_t *mesh,
                                            bool needs_normals,
                                            bool needs_tex_coords);
 
-rig_model_t *rig_model_new_from_asset(rut_context_t *ctx, rig_asset_t *asset);
+rig_model_t *rig_model_new_from_asset(rut_shell_t *shell, rig_asset_t *asset);
 
 rig_model_t *rig_model_new_for_hair(rig_model_t *base);
 

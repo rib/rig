@@ -84,8 +84,8 @@ rig_save(rig_engine_t *engine, const char *path)
 
     buffered_file.fp = fp;
 
-    if (stat(engine->ctx->assets_location, &sb) == -1)
-        mkdir(engine->ctx->assets_location, 0777);
+    if (stat(engine->shell->assets_location, &sb) == -1)
+        mkdir(engine->shell->assets_location, 0777);
 
     serializer = rig_pb_serializer_new(engine);
 

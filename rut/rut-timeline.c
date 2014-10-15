@@ -30,7 +30,7 @@
 
 #include <cogl/cogl.h>
 
-#include "rut-context.h"
+#include "rut-shell.h"
 #include "rut-introspectable.h"
 #include "rut-timeline.h"
 
@@ -46,7 +46,7 @@ enum {
 struct _rut_timeline_t {
     rut_object_base_t _base;
 
-    rut_context_t *ctx;
+    rut_shell_t *shell;
 
     float length;
 
@@ -100,9 +100,9 @@ _rut_timeline_free(void *object)
 {
     rut_timeline_t *timeline = object;
 
-    timeline->ctx->timelines =
-        c_slist_remove(timeline->ctx->timelines, timeline);
-    rut_object_unref(timeline->ctx);
+    timeline->shell->timelines =
+        c_slist_remove(timeline->shell->timelines, timeline);
+    rut_object_unref(timeline->shell);
 
     c_timer_destroy(timeline->gtimer);
 
@@ -130,7 +130,7 @@ _rut_timeline_init_type(void)
 }
 
 rut_timeline_t *
-rut_timeline_new(rut_context_t *ctx, float length)
+rut_timeline_new(rut_shell_t *shell, float length)
 {
     rut_timeline_t *timeline = rut_object_alloc0(
         rut_timeline_t, &rut_timeline_type, _rut_timeline_init_type);
@@ -146,8 +146,8 @@ rut_timeline_new(rut_context_t *ctx, float length)
     rut_introspectable_init(
         timeline, _rut_timeline_prop_specs, timeline->properties);
 
-    timeline->ctx = rut_object_ref(ctx);
-    ctx->timelines = c_slist_prepend(ctx->timelines, timeline);
+    timeline->shell = rut_object_ref(shell);
+    shell->timelines = c_slist_prepend(shell->timelines, timeline);
 
     return timeline;
 }
@@ -169,7 +169,7 @@ rut_timeline_set_running(rut_object_t *object, bool running)
 
     timeline->running = running;
 
-    rut_property_dirty(&timeline->ctx->property_ctx,
+    rut_property_dirty(&timeline->shell->property_ctx,
                        &timeline->properties[RUT_TIMELINE_PROP_RUNNING]);
 }
 
@@ -287,9 +287,9 @@ rut_timeline_set_elapsed(rut_object_t *obj, double elapsed)
 
     if (elapsed != timeline->elapsed) {
         timeline->elapsed = elapsed;
-        rut_property_dirty(&timeline->ctx->property_ctx,
+        rut_property_dirty(&timeline->shell->property_ctx,
                            &timeline->properties[RUT_TIMELINE_PROP_ELAPSED]);
-        rut_property_dirty(&timeline->ctx->property_ctx,
+        rut_property_dirty(&timeline->shell->property_ctx,
                            &timeline->properties[RUT_TIMELINE_PROP_PROGRESS]);
     }
 }
@@ -324,7 +324,7 @@ rut_timeline_set_length(rut_object_t *obj, float length)
 
     timeline->length = length;
 
-    rut_property_dirty(&timeline->ctx->property_ctx,
+    rut_property_dirty(&timeline->shell->property_ctx,
                        &timeline->properties[RUT_TIMELINE_PROP_LENGTH]);
 
     rut_timeline_set_elapsed(timeline, timeline->elapsed);
@@ -348,7 +348,7 @@ rut_timeline_set_loop_enabled(rut_object_t *object, bool enabled)
 
     timeline->loop_enabled = enabled;
 
-    rut_property_dirty(&timeline->ctx->property_ctx,
+    rut_property_dirty(&timeline->shell->property_ctx,
                        &timeline->properties[RUT_TIMELINE_PROP_LOOP]);
 }
 
@@ -385,9 +385,9 @@ _rut_timeline_update(rut_timeline_t *timeline)
 
     if (elapsed != timeline->elapsed) {
         timeline->elapsed = elapsed;
-        rut_property_dirty(&timeline->ctx->property_ctx,
+        rut_property_dirty(&timeline->shell->property_ctx,
                            &timeline->properties[RUT_TIMELINE_PROP_ELAPSED]);
-        rut_property_dirty(&timeline->ctx->property_ctx,
+        rut_property_dirty(&timeline->shell->property_ctx,
                            &timeline->properties[RUT_TIMELINE_PROP_PROGRESS]);
     }
 }

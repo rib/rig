@@ -31,7 +31,7 @@
 
 #include <cogl/cogl.h>
 
-#include "rut-context.h"
+#include "rut-shell.h"
 
 /**
  * SECTION:rut-matrix-stack
@@ -268,7 +268,7 @@ typedef union _rut_matrix_entry_full_t {
 struct _rut_matrix_stack_t {
     rut_object_base_t _base;
 
-    rut_context_t *context;
+    rut_shell_t *shell;
 
     rut_matrix_entry_t *last_entry;
 };
@@ -297,7 +297,7 @@ void _rut_matrix_entry_cache_destroy(rut_matrix_entry_cache_t *cache);
 
 /**
  * rut_matrix_stack_new:
- * @ctx: A #rut_context_t
+ * @shell: A #rut_shell_t
  *
  * Allocates a new #rut_matrix_stack_t that can be used to build up
  * transformations relating to objects in a scenegraph like hierarchy.
@@ -323,7 +323,7 @@ void _rut_matrix_entry_cache_destroy(rut_matrix_entry_cache_t *cache);
  *
  * Return value: (transfer full): A newly allocated #rut_matrix_stack_t
  */
-rut_matrix_stack_t *rut_matrix_stack_new(rut_context_t *ctx);
+rut_matrix_stack_t *rut_matrix_stack_new(rut_shell_t *shell);
 
 /**
  * rut_matrix_stack_push:

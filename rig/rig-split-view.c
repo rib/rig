@@ -51,7 +51,7 @@ enum {
 struct _rig_split_view_t {
     rut_object_base_t _base;
 
-    rut_context_t *ctx;
+    rut_shell_t *shell;
 
     rut_graphable_props_t graphable;
 
@@ -285,8 +285,8 @@ static void
 queue_allocation(rig_split_view_t *split_view)
 {
     rut_shell_add_pre_paint_callback(
-        split_view->ctx->shell, split_view, allocate_cb, NULL /* user_data */);
-    rut_shell_queue_redraw(split_view->ctx->shell);
+        split_view->shell, split_view, allocate_cb, NULL /* user_data */);
+    rut_shell_queue_redraw(split_view->shell);
 }
 
 void
@@ -302,9 +302,9 @@ rig_split_view_set_size(rut_object_t *object, float width, float height)
 
     queue_allocation(split_view);
 
-    rut_property_dirty(&split_view->ctx->property_ctx,
+    rut_property_dirty(&split_view->shell->property_ctx,
                        &split_view->properties[RIG_SPLIT_VIEW_PROP_WIDTH]);
-    rut_property_dirty(&split_view->ctx->property_ctx,
+    rut_property_dirty(&split_view->shell->property_ctx,
                        &split_view->properties[RIG_SPLIT_VIEW_PROP_HEIGHT]);
 }
 
@@ -367,7 +367,7 @@ rig_split_view_new(rig_engine_t *engine,
                    float width,
                    float height)
 {
-    rut_context_t *context = engine->ctx;
+    rut_shell_t *shell = engine->shell;
     rig_split_view_t *split_view = rut_object_alloc0(
         rig_split_view_t, &rig_split_view_type, _rig_split_view_init_type);
 
@@ -376,14 +376,14 @@ rig_split_view_new(rig_engine_t *engine,
 
     rut_graphable_init(split_view);
 
-    split_view->ctx = context;
+    split_view->shell = shell;
 
     split_view->width = width;
     split_view->height = height;
 
     split_view->split = split;
 
-    split_view->child1_transform = rut_transform_new(context);
+    split_view->child1_transform = rut_transform_new(shell);
     rut_graphable_add_child(split_view, split_view->child1_transform);
 
     queue_allocation(split_view);

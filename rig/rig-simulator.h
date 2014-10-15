@@ -63,7 +63,6 @@ struct _rig_simulator_t {
     bool editable;
 
     rut_shell_t *shell;
-    rut_context_t *ctx;
     rig_engine_t *engine;
 
     int fd;

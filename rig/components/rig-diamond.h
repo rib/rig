@@ -61,7 +61,7 @@ struct _rig_diamond_t {
 
     rut_componentable_props_t component;
 
-    rut_context_t *ctx;
+    rut_shell_t *shell;
 
     rut_list_t updated_cb_list;
 
@@ -77,7 +77,7 @@ struct _rig_diamond_t {
 
 void _rig_diamond_init_type(void);
 
-rig_diamond_t *rig_diamond_new(rut_context_t *ctx, float size);
+rig_diamond_t *rig_diamond_new(rut_shell_t *shell, float size);
 
 float rig_diamond_get_size(rig_diamond_t *diamond);
 

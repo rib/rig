@@ -33,7 +33,7 @@
 
 #include "rut-list.h"
 #include "rut-closure.h"
-#include "rut-context.h"
+#include "rut-shell.h"
 #include "rut-interfaces.h"
 #include "rut-flow-layout.h"
 #include "rut-transform.h"
@@ -88,7 +88,7 @@ typedef struct {
 struct _rut_flow_layout_t {
     rut_object_base_t _base;
 
-    rut_context_t *ctx;
+    rut_shell_t *shell;
 
     float width, height;
 
@@ -246,7 +246,7 @@ _rut_flow_layout_free(void *object)
         rut_flow_layout_remove_child(flow, child);
     }
 
-    rut_shell_remove_pre_paint_callback_by_graphable(flow->ctx->shell, flow);
+    rut_shell_remove_pre_paint_callback_by_graphable(flow->shell, flow);
 
     rut_introspectable_destroy(flow);
 
@@ -552,7 +552,7 @@ static void
 queue_allocation(rut_flow_layout_t *flow)
 {
     rut_shell_add_pre_paint_callback(
-        flow->ctx->shell, flow, allocate_cb, NULL /* user_data */);
+        flow->shell, flow, allocate_cb, NULL /* user_data */);
 }
 
 static void
@@ -668,7 +668,7 @@ _rut_flow_layout_init_type(void)
 }
 
 rut_flow_layout_t *
-rut_flow_layout_new(rut_context_t *ctx,
+rut_flow_layout_new(rut_shell_t *shell,
                     rut_flow_layout_packing_t packing)
 {
     rut_flow_layout_t *flow = rut_object_alloc0(
@@ -682,7 +682,7 @@ rut_flow_layout_new(rut_context_t *ctx,
     rut_introspectable_init(
         flow, _rut_flow_layout_prop_specs, flow->properties);
 
-    flow->ctx = ctx;
+    flow->shell = shell;
     flow->packing = packing;
 
     flow->x_padding = 0;
@@ -721,7 +721,7 @@ rut_flow_layout_add(rut_flow_layout_t *flow, rut_object_t *child_widget)
 {
     rut_flow_layout_child_t *child = c_slice_new(rut_flow_layout_child_t);
 
-    child->transform = rut_transform_new(flow->ctx);
+    child->transform = rut_transform_new(flow->shell);
     rut_graphable_add_child(flow, child->transform);
     rut_object_unref(child->transform);
 
@@ -769,7 +769,7 @@ rut_flow_layout_set_packing(rut_flow_layout_t *flow,
     queue_allocation(flow);
     preferred_size_changed(flow);
 
-    rut_property_dirty(&flow->ctx->property_ctx,
+    rut_property_dirty(&flow->shell->property_ctx,
                        &flow->properties[RUT_FLOW_LAYOUT_PROP_PACKING]);
 }
 
@@ -790,7 +790,7 @@ rut_flow_layout_set_x_padding(rut_flow_layout_t *flow, int padding)
     queue_allocation(flow);
     preferred_size_changed(flow);
 
-    rut_property_dirty(&flow->ctx->property_ctx,
+    rut_property_dirty(&flow->shell->property_ctx,
                        &flow->properties[RUT_FLOW_LAYOUT_PROP_X_PADDING]);
 }
 
@@ -811,7 +811,7 @@ rut_flow_layout_set_y_padding(rut_flow_layout_t *flow, int padding)
     queue_allocation(flow);
     preferred_size_changed(flow);
 
-    rut_property_dirty(&flow->ctx->property_ctx,
+    rut_property_dirty(&flow->shell->property_ctx,
                        &flow->properties[RUT_FLOW_LAYOUT_PROP_Y_PADDING]);
 }
 
@@ -832,7 +832,7 @@ rut_flow_layout_set_min_child_width(rut_flow_layout_t *flow, int min_width)
     queue_allocation(flow);
     preferred_size_changed(flow);
 
-    rut_property_dirty(&flow->ctx->property_ctx,
+    rut_property_dirty(&flow->shell->property_ctx,
                        &flow->properties[RUT_FLOW_LAYOUT_PROP_MIN_CHILD_WIDTH]);
 }
 
@@ -853,7 +853,7 @@ rut_flow_layout_set_max_child_width(rut_flow_layout_t *flow, int max_width)
     queue_allocation(flow);
     preferred_size_changed(flow);
 
-    rut_property_dirty(&flow->ctx->property_ctx,
+    rut_property_dirty(&flow->shell->property_ctx,
                        &flow->properties[RUT_FLOW_LAYOUT_PROP_MAX_CHILD_WIDTH]);
 }
 
@@ -876,7 +876,7 @@ rut_flow_layout_set_min_child_height(rut_flow_layout_t *flow,
     preferred_size_changed(flow);
 
     rut_property_dirty(
-        &flow->ctx->property_ctx,
+        &flow->shell->property_ctx,
         &flow->properties[RUT_FLOW_LAYOUT_PROP_MIN_CHILD_HEIGHT]);
 }
 
@@ -899,7 +899,7 @@ rut_flow_layout_set_max_child_height(rut_flow_layout_t *flow,
     preferred_size_changed(flow);
 
     rut_property_dirty(
-        &flow->ctx->property_ctx,
+        &flow->shell->property_ctx,
         &flow->properties[RUT_FLOW_LAYOUT_PROP_MAX_CHILD_HEIGHT]);
 }
 

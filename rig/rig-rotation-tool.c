@@ -48,7 +48,7 @@ rotation_tool_grab_cb(rut_input_event_t *event,
         tool->button_down = false;
 
         rut_shell_ungrab_input(
-            tool->view->context->shell, rotation_tool_grab_cb, tool);
+            tool->view->shell, rotation_tool_grab_cb, tool);
 
         rut_closure_list_invoke(&tool->rotation_event_cb_list,
                                 rig_rotation_tool_event_callback_t,
@@ -107,7 +107,7 @@ rotation_tool_grab_cb(rut_input_event_t *event,
                 tool->button_down = false;
 
                 rut_shell_ungrab_input(
-                    tool->ctx->shell, rotation_tool_grab_cb, tool);
+                    tool->shell, rotation_tool_grab_cb, tool);
             }
         } else
             status = RUT_INPUT_EVENT_STATUS_HANDLED;
@@ -143,7 +143,7 @@ on_rotation_tool_clicked(
         float x = rut_motion_event_get_x(event);
         float y = rut_motion_event_get_y(event);
 
-        rut_shell_grab_input(tool->ctx->shell,
+        rut_shell_grab_input(tool->shell,
                              rut_input_event_get_camera(event),
                              rotation_tool_grab_cb,
                              tool);
@@ -257,10 +257,10 @@ rig_rotation_tool_t *
 rig_rotation_tool_new(rig_camera_view_t *view)
 {
     rig_rotation_tool_t *tool = c_slice_new0(rig_rotation_tool_t);
-    rut_context_t *ctx = view->context;
+    rut_shell_t *shell = view->shell;
 
     tool->view = view;
-    tool->ctx = ctx;
+    tool->shell = shell;
 
     tool->camera = view->view_camera;
     tool->camera_component =
@@ -269,13 +269,13 @@ rig_rotation_tool_new(rig_camera_view_t *view)
     rut_list_init(&tool->rotation_event_cb_list);
 
     /* pipeline to draw the tool */
-    tool->default_pipeline = cg_pipeline_new(ctx->cg_device);
+    tool->default_pipeline = cg_pipeline_new(shell->cg_device);
 
     /* rotation tool */
-    tool->rotation_tool = rut_create_rotation_tool_primitive(ctx, 64);
+    tool->rotation_tool = rut_create_rotation_tool_primitive(shell, 64);
 
     /* rotation tool handle circle */
-    tool->rotation_tool_handle = rut_create_circle_outline_primitive(ctx, 64);
+    tool->rotation_tool_handle = rut_create_circle_outline_primitive(shell, 64);
 
     tool->rotation_circle =
         rut_input_region_new_circle(0, 0, 0, on_rotation_tool_clicked, tool);
@@ -508,7 +508,7 @@ rig_rotation_tool_destroy(rig_rotation_tool_t *tool)
     rut_object_unref(tool->rotation_circle);
 
     if (tool->button_down)
-        rut_shell_ungrab_input(tool->ctx->shell, rotation_tool_grab_cb, tool);
+        rut_shell_ungrab_input(tool->shell, rotation_tool_grab_cb, tool);
 
     c_slice_free(rig_rotation_tool_t, tool);
 }

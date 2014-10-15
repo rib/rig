@@ -54,7 +54,7 @@ typedef enum _icon_button_state_t {
 struct _rut_icon_button_t {
     rut_object_base_t _base;
 
-    rut_context_t *ctx;
+    rut_shell_t *shell;
 
     icon_button_state_t state;
 
@@ -212,7 +212,7 @@ _rut_icon_button_grab_input_cb(rut_input_event_t *event, void *user_data)
     rut_icon_button_t *button = state->button;
 
     if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_MOTION) {
-        rut_shell_t *shell = button->ctx->shell;
+        rut_shell_t *shell = button->shell;
         if (rut_motion_event_get_action(event) == RUT_MOTION_EVENT_ACTION_UP) {
             rut_shell_ungrab_input(
                 shell, _rut_icon_button_grab_input_cb, user_data);
@@ -267,7 +267,7 @@ _rut_icon_button_input_cb(
 
     if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_MOTION &&
         rut_motion_event_get_action(event) == RUT_MOTION_EVENT_ACTION_DOWN) {
-        rut_shell_t *shell = button->ctx->shell;
+        rut_shell_t *shell = button->shell;
         icon_button_grab_state_t *state = c_slice_new(icon_button_grab_state_t);
         const cg_matrix_t *view;
 
@@ -307,7 +307,7 @@ update_layout(rut_icon_button_t *button)
         packing = RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM;
         break;
     case RUT_ICON_BUTTON_POSITION_SIDE: {
-        rut_text_direction_t dir = rut_get_text_direction(button->ctx);
+        rut_text_direction_t dir = rut_shell_get_text_direction(button->shell);
         if (dir == RUT_TEXT_DIRECTION_LEFT_TO_RIGHT)
             packing = RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT;
         else
@@ -320,7 +320,7 @@ update_layout(rut_icon_button_t *button)
 }
 
 rut_icon_button_t *
-rut_icon_button_new(rut_context_t *ctx,
+rut_icon_button_new(rut_shell_t *shell,
                     const char *label,
                     rut_icon_button_position_t label_position,
                     const char *normal_icon,
@@ -336,31 +336,31 @@ rut_icon_button_new(rut_context_t *ctx,
 
     rut_graphable_init(button);
 
-    button->ctx = ctx;
+    button->shell = shell;
 
     button->state = ICON_BUTTON_STATE_NORMAL;
 
-    button->stack = rut_stack_new(ctx, 100, 100);
+    button->stack = rut_stack_new(shell, 100, 100);
     rut_graphable_add_child(button, button->stack);
     rut_object_unref(button->stack);
 
     button->layout =
-        rut_box_layout_new(ctx, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
+        rut_box_layout_new(shell, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
     rut_stack_add(button->stack, button->layout);
     rut_object_unref(button->layout);
 
-    button->bin = rut_bin_new(ctx);
+    button->bin = rut_bin_new(shell);
     rut_box_layout_add(button->layout, true, button->bin);
     rut_object_unref(button->bin);
 
     button->label_position = label_position;
 
     if (label) {
-        rut_bin_t *bin = rut_bin_new(ctx);
+        rut_bin_t *bin = rut_bin_new(shell);
 
         rut_bin_set_x_position(bin, RUT_BIN_POSITION_CENTER);
 
-        button->label = rut_text_new_with_text(ctx, NULL, label);
+        button->label = rut_text_new_with_text(shell, NULL, label);
         rut_bin_set_child(bin, button->label);
         rut_object_unref(button->label);
 
@@ -411,7 +411,7 @@ set_icon(rut_icon_button_t *button, rut_icon_t **icon, const char *icon_name)
         }
     }
 
-    *icon = rut_icon_new(button->ctx, icon_name);
+    *icon = rut_icon_new(button->shell, icon_name);
     update_current_icon(button);
 }
 

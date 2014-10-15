@@ -140,11 +140,11 @@ _rut_input_region_pick(rut_object_t *inputable,
     const cg_matrix_t *view = rut_camera_get_view_transform(camera);
 
 /* XXX: if we get rid of hud mode we can also avoid needing
- * a pointer to a rut_context_t */
+ * a pointer to a rut_shell_t */
 #warning "todo: simplify rut_input_region_t by removing ::hud_mode"
     if (region->hud_mode) {
-        rut_context_t *ctx = rut_camera_get_context(camera);
-        modelview = &ctx->identity_matrix;
+        rut_shell_t *shell = rut_camera_get_shell(camera);
+        modelview = &shell->identity_matrix;
     } else {
         if (graphable_modelview)
             modelview = graphable_modelview;

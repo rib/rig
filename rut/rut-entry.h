@@ -35,7 +35,7 @@
 extern rut_type_t rut_entry_type;
 typedef struct _rut_entry_t rut_entry_t;
 
-rut_entry_t *rut_entry_new(rut_context_t *context);
+rut_entry_t *rut_entry_new(rut_shell_t *shell);
 
 void rut_entry_set_size(rut_object_t *entry, float width, float height);
 

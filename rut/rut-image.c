@@ -55,7 +55,7 @@ struct _rut_image_t {
     float fit_x1, fit_y1;
     float fit_x2, fit_y2;
 
-    rut_context_t *context;
+    rut_shell_t *shell;
 
     rut_paintable_props_t paintable;
     rut_graphable_props_t graphable;
@@ -193,7 +193,7 @@ rut_image_set_size(void *object, float width, float height)
         }
     }
 
-    rut_shell_queue_redraw(image->context->shell);
+    rut_shell_queue_redraw(image->shell);
 }
 
 static void
@@ -354,16 +354,16 @@ _rut_image_init_type(void)
 }
 
 rut_image_t *
-rut_image_new(rut_context_t *ctx, cg_texture_t *texture)
+rut_image_new(rut_shell_t *shell, cg_texture_t *texture)
 {
     rut_image_t *image =
         rut_object_alloc0(rut_image_t, &rut_image_type, _rut_image_init_type);
 
-    image->context = ctx;
+    image->shell = shell;
 
     rut_list_init(&image->preferred_size_cb_list);
 
-    image->pipeline = cg_pipeline_new(ctx->cg_device);
+    image->pipeline = cg_pipeline_new(shell->cg_device);
     cg_pipeline_set_layer_texture(image->pipeline,
                                   0, /* layer_num */
                                   texture);
@@ -429,7 +429,7 @@ rut_image_set_draw_mode(rut_image_t *image,
                                       min_filter,
                                       mag_filter);
 
-        rut_property_dirty(&image->context->property_ctx,
+        rut_property_dirty(&image->shell->property_ctx,
                            &image->properties[RUT_IMAGE_PROP_DRAW_MODE]);
     }
 }

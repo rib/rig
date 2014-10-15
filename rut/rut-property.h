@@ -142,7 +142,7 @@ flibble_set_x (flibble_t *flibble, float x)
 
     flibble->x = x;
 
-    rut_property_dirty (flibble->ctx, &flibble->properties[FLIBBLE_PROP_X]);
+    rut_property_dirty (flibble->shell, &flibble->properties[FLIBBLE_PROP_X]);
 }
 
 float

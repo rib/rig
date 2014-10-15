@@ -48,13 +48,13 @@ struct _rig_light_t {
     cg_color_t diffuse;
     cg_color_t specular;
 
-    rut_context_t *context;
+    rut_shell_t *shell;
 
     rut_introspectable_props_t introspectable;
     rut_property_t properties[RIG_LIGHT_N_PROPS];
 };
 
-rig_light_t *rig_light_new(rut_context_t *context);
+rig_light_t *rig_light_new(rut_shell_t *shell);
 
 void rig_light_free(rig_light_t *light);
 

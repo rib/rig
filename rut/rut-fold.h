@@ -45,7 +45,7 @@ enum {
 typedef struct _rut_fold_t {
     rut_object_base_t _base;
 
-    rut_context_t *context;
+    rut_shell_t *shell;
 
     rut_box_layout_t *vbox;
     rut_box_layout_t *header_hbox_right;
@@ -69,7 +69,7 @@ typedef struct _rut_fold_t {
 
 } rut_fold_t;
 
-rut_fold_t *rut_fold_new(rut_context_t *ctx, const char *label);
+rut_fold_t *rut_fold_new(rut_shell_t *shell, const char *label);
 
 void rut_fold_set_child(rut_fold_t *fold, rut_object_t *child);
 

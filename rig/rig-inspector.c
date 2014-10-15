@@ -57,7 +57,7 @@ typedef struct {
 struct _rig_inspector_t {
     rut_object_base_t _base;
 
-    rut_context_t *context;
+    rut_shell_t *shell;
     c_list_t *objects;
 
     rut_graphable_props_t graphable;
@@ -223,20 +223,20 @@ create_property_controls(rig_inspector_t *inspector)
 
         prop_data->inspector = inspector;
 
-        prop_data->stack = rut_stack_new(inspector->context, 1, 1);
+        prop_data->stack = rut_stack_new(inspector->shell, 1, 1);
         rut_box_layout_add(inspector->vbox, false, prop_data->stack);
         rut_object_unref(prop_data->stack);
 
-        prop_data->drag_bin = rut_drag_bin_new(inspector->context);
+        prop_data->drag_bin = rut_drag_bin_new(inspector->shell);
         rut_graphable_add_child(prop_data->stack, prop_data->drag_bin);
         rut_object_unref(prop_data->drag_bin);
 
-        bin = rut_bin_new(inspector->context);
+        bin = rut_bin_new(inspector->shell);
         rut_bin_set_bottom_padding(bin, 5);
         rut_drag_bin_set_child(prop_data->drag_bin, bin);
         rut_object_unref(bin);
 
-        control = rig_prop_inspector_new(inspector->context,
+        control = rig_prop_inspector_new(inspector->shell,
                                          prop_data->target_prop,
                                          property_changed_cb,
                                          controlled_changed_cb,
@@ -255,7 +255,7 @@ create_property_controls(rig_inspector_t *inspector)
 }
 
 rig_inspector_t *
-rig_inspector_new(rut_context_t *context,
+rig_inspector_new(rut_shell_t *shell,
                   c_list_t *objects,
                   rig_inspector_callback_t user_property_changed_cb,
                   rig_inspector_controlled_callback_t user_controlled_changed_cb,
@@ -264,7 +264,7 @@ rig_inspector_new(rut_context_t *context,
     rig_inspector_t *inspector = rut_object_alloc0(
         rig_inspector_t, &rig_inspector_type, _rig_inspector_init_type);
 
-    inspector->context = context;
+    inspector->shell = shell;
     inspector->objects = c_list_copy(objects);
 
     c_list_foreach(objects, (GFunc)rut_object_ref, NULL);
@@ -276,7 +276,7 @@ rig_inspector_new(rut_context_t *context,
     rut_graphable_init(inspector);
 
     inspector->vbox =
-        rut_box_layout_new(context, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
+        rut_box_layout_new(shell, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
     rut_graphable_add_child(inspector, inspector->vbox);
     rut_object_unref(inspector->vbox);
 

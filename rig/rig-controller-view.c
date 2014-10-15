@@ -208,7 +208,7 @@ struct _rig_controller_view_t {
     rut_object_base_t _base;
 
     rig_engine_t *engine;
-    rut_context_t *context;
+    rut_shell_t *shell;
 
     rut_graphable_props_t graphable;
 
@@ -446,7 +446,7 @@ _rig_controller_view_select_marker(rig_controller_view_t *view,
                                    rut_select_action_t action)
 {
     rig_nodes_selection_t *selection = view->nodes_selection;
-    rut_shell_t *shell = view->context->shell;
+    rut_shell_t *shell = view->shell;
 
     switch (action) {
     case RUT_SELECT_ACTION_REPLACE: {
@@ -670,8 +670,7 @@ marker_grab_input_cb(rut_input_event_t *event,
     rig_controller_view_t *view = marker->path_view->prop_view->object->view;
 
     if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_MOTION) {
-        rut_context_t *ctx = view->context;
-        rut_shell_t *shell = ctx->shell;
+        rut_shell_t *shell = view->shell;
         rut_object_t *camera = state->camera;
         float x = rut_motion_event_get_x(event);
         float y = rut_motion_event_get_y(event);
@@ -698,7 +697,7 @@ marker_grab_input_cb(rut_input_event_t *event,
                 view->nodes_selection, translate_node_marker_cb, &dx);
             state->current_dx = dx;
 
-            rut_shell_queue_redraw(view->context->shell);
+            rut_shell_queue_redraw(view->shell);
         } else if (rut_motion_event_get_action(event) ==
                    RUT_MOTION_EVENT_ACTION_UP) {
             rut_shell_ungrab_input(shell, marker_grab_input_cb, user_data);
@@ -822,11 +821,10 @@ marker_input_cb(rut_input_region_t *region,
                 void *user_data)
 {
     rig_node_marker_t *marker = user_data;
-    rut_context_t *ctx = marker->path_view->prop_view->object->view->context;
+    rut_shell_t *shell = marker->path_view->prop_view->object->view->shell;
 
     if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_MOTION &&
         rut_motion_event_get_action(event) == RUT_MOTION_EVENT_ACTION_DOWN) {
-        rut_shell_t *shell = ctx->shell;
         marker_grab_state_t *state = c_slice_new(marker_grab_state_t);
         rig_controller_view_t *view =
             marker->path_view->prop_view->object->view;
@@ -890,7 +888,7 @@ _rig_node_marker_new(rig_path_view_t *path_view,
 {
     rig_node_marker_t *marker = rut_object_alloc0(
         rig_node_marker_t, &rig_node_marker_type, _rig_node_marker_init_type);
-    rut_context_t *ctx = path_view->prop_view->object->view->context;
+    rut_shell_t *shell = path_view->prop_view->object->view->shell;
     cg_texture_t *tex;
 
     rut_graphable_init(marker);
@@ -899,9 +897,9 @@ _rig_node_marker_new(rig_path_view_t *path_view,
     marker->path = path;
     marker->node = node;
 
-    tex = rut_load_texture_from_data_file(ctx, "dot.png", NULL);
+    tex = rut_load_texture_from_data_file(shell, "dot.png", NULL);
 
-    marker->rect = rut_nine_slice_new(ctx, tex, 0, 0, 0, 0, 10, 10);
+    marker->rect = rut_nine_slice_new(shell, tex, 0, 0, 0, 0, 10, 10);
     rut_graphable_add_child(marker, marker->rect);
     rut_object_unref(marker->rect);
 
@@ -1109,7 +1107,7 @@ _rig_path_view_free(void *object)
 
     rut_graphable_destroy(path_view);
 
-    rut_shell_remove_pre_paint_callback_by_graphable(view->context->shell,
+    rut_shell_remove_pre_paint_callback_by_graphable(view->shell,
                                                      path_view);
 
     rut_object_free(rig_path_view_t, path_view);
@@ -1149,7 +1147,7 @@ _rig_path_view_allocate_cb(rut_object_t *object, void *user_data)
         rut_transform_translate(transform, t_px, 0, 0);
     }
 
-    rut_shell_queue_redraw(view->context->shell);
+    rut_shell_queue_redraw(view->shell);
 }
 
 static void
@@ -1157,7 +1155,7 @@ _rig_path_view_queue_allocate(rig_path_view_t *path_view)
 {
     rig_controller_view_t *view = path_view->prop_view->object->view;
 
-    rut_shell_add_pre_paint_callback(view->context->shell,
+    rut_shell_add_pre_paint_callback(view->shell,
                                      path_view,
                                      _rig_path_view_allocate_cb,
                                      NULL /* user_data */);
@@ -1241,9 +1239,9 @@ draw_timeline_background(rig_path_view_t *path_view,
         cg_texture_t *texture;
         uint8_t *tex_data;
 
-        pipeline = cg_pipeline_new(view->context->cg_device);
+        pipeline = cg_pipeline_new(view->shell->cg_device);
 
-        bitmap = cg_bitmap_new_with_size(view->context->cg_device,
+        bitmap = cg_bitmap_new_with_size(view->shell->cg_device,
                                          tex_width,
                                          tex_height,
                                          CG_PIXEL_FORMAT_RGB_888);
@@ -1359,8 +1357,8 @@ static rig_node_marker_t *
 rig_path_view_add_node(rig_path_view_t *path_view,
                        rig_node_t *node)
 {
-    rut_context_t *ctx = path_view->prop_view->object->view->context;
-    rut_transform_t *transform = rut_transform_new(ctx);
+    rut_shell_t *shell = path_view->prop_view->object->view->shell;
+    rut_transform_t *transform = rut_transform_new(shell);
     rig_node_marker_t *marker;
 
     rut_graphable_add_child(path_view->markers, transform);
@@ -1417,13 +1415,13 @@ path_operation_cb(rig_path_t *path,
     switch (op) {
     case RIG_PATH_OPERATION_MODIFIED:
 
-        rut_shell_queue_redraw(view->context->shell);
+        rut_shell_queue_redraw(view->shell);
         break;
 
     case RIG_PATH_OPERATION_ADDED:
         add_path_marker_cb(node, path_view);
 
-        rut_shell_queue_redraw(view->context->shell);
+        rut_shell_queue_redraw(view->shell);
         break;
 
     case RIG_PATH_OPERATION_REMOVED: {
@@ -1437,7 +1435,7 @@ path_operation_cb(rig_path_t *path,
         rut_graphable_remove_child(transform);
     }
 
-        rut_shell_queue_redraw(view->context->shell);
+        rut_shell_queue_redraw(view->shell);
         break;
     }
 }
@@ -1465,8 +1463,7 @@ path_view_grab_input_cb(rut_input_event_t *event, void *user_data)
     rig_controller_view_t *view = state->view;
 
     if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_MOTION) {
-        rut_context_t *ctx = view->context;
-        rut_shell_t *shell = ctx->shell;
+        rut_shell_t *shell = view->shell;
         rut_object_t *camera = state->camera;
         float x = rut_motion_event_get_x(event);
         float y = rut_motion_event_get_y(event);
@@ -1494,11 +1491,10 @@ path_view_input_region_cb(
     rut_input_region_t *region, rut_input_event_t *event, void *user_data)
 {
     rig_path_view_t *path_view = user_data;
-    rut_context_t *ctx = path_view->prop_view->object->view->context;
+    rut_shell_t *shell = path_view->prop_view->object->view->shell;
 
     if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_MOTION &&
         rut_motion_event_get_action(event) == RUT_MOTION_EVENT_ACTION_DOWN) {
-        rut_shell_t *shell = ctx->shell;
         path_view_grab_state_t *state = c_slice_new(path_view_grab_state_t);
         rig_controller_view_t *view = path_view->prop_view->object->view;
         float x = rut_motion_event_get_x(event);
@@ -1573,7 +1569,7 @@ rig_path_view_new(rig_controller_property_view_t *prop_view, rig_path_t *path)
 
     rut_list_init(&path_view->preferred_size_cb_list);
 
-    path_view->ui_viewport = rut_ui_viewport_new(view->context, 1, 1);
+    path_view->ui_viewport = rut_ui_viewport_new(view->shell, 1, 1);
     rut_graphable_add_child(path_view, path_view->ui_viewport);
     rut_object_unref(path_view->ui_viewport);
 
@@ -1587,7 +1583,7 @@ rig_path_view_new(rig_controller_property_view_t *prop_view, rig_path_t *path)
     rut_graphable_add_child(path_view->ui_viewport, path_view->input_region);
     rut_object_unref(path_view->input_region);
 
-    path_view->markers = rut_transform_new(view->context);
+    path_view->markers = rut_transform_new(view->shell);
     rut_graphable_add_child(path_view->ui_viewport, path_view->markers);
     rut_object_unref(path_view->markers);
 
@@ -1629,7 +1625,7 @@ _rig_controller_property_view_free(void *object)
     rut_graphable_destroy(prop_view);
 
     rut_shell_remove_pre_paint_callback_by_graphable(
-        prop_view->object->view->context->shell, prop_view);
+        prop_view->object->view->shell, prop_view);
 
     rut_object_free(rig_controller_property_view_t, prop_view);
 }
@@ -1739,7 +1735,7 @@ _rig_controller_property_view_allocate_cb(rut_object_t *graphable,
 
     rut_sizable_set_size(prop_view->stack, prop_view->width, prop_view->height);
 
-    rut_shell_queue_redraw(view->context->shell);
+    rut_shell_queue_redraw(view->shell);
 }
 
 static void
@@ -1748,7 +1744,7 @@ _rig_controller_property_view_queue_allocate(
 {
     rig_controller_view_t *view = prop_view->object->view;
 
-    rut_shell_add_pre_paint_callback(view->context->shell,
+    rut_shell_add_pre_paint_callback(view->shell,
                                      prop_view,
                                      _rig_controller_property_view_allocate_cb,
                                      NULL /* user_data */);
@@ -1885,9 +1881,9 @@ setup_label_column(rig_controller_property_view_t *prop_view,
 {
     rig_controller_view_column_t *column = &prop_view->columns[0];
     rig_controller_view_t *view = prop_view->object->view;
-    rut_context_t *ctx = view->context;
-    rut_bin_t *bin = rut_bin_new(ctx);
-    rut_text_t *label = rut_text_new(ctx);
+    rut_shell_t *shell = view->shell;
+    rut_bin_t *bin = rut_bin_new(shell);
+    rut_text_t *label = rut_text_new(shell);
 
     rut_bin_set_left_padding(bin, 20);
     rut_bin_set_child(bin, label);
@@ -1898,7 +1894,7 @@ setup_label_column(rig_controller_property_view_t *prop_view,
 
     rut_text_set_color_u32(label, 0xffffffff);
 
-    column->transform = rut_transform_new(ctx);
+    column->transform = rut_transform_new(shell);
     rut_graphable_add_child(prop_view->columns_parent, column->transform);
     rut_object_unref(column->transform);
 
@@ -1923,11 +1919,11 @@ static void
 update_method_control(rig_controller_property_view_t *prop_view)
 {
     rig_controller_view_t *view = prop_view->object->view;
-    rut_context_t *ctx = view->context;
+    rut_shell_t *shell = view->shell;
     rig_controller_view_column_t *column = &prop_view->columns[2];
 
     if (!column->transform) {
-        column->transform = rut_transform_new(ctx);
+        column->transform = rut_transform_new(shell);
         rut_graphable_add_child(prop_view->columns_parent, column->transform);
         rut_object_unref(column->transform);
     }
@@ -1939,7 +1935,7 @@ update_method_control(rig_controller_property_view_t *prop_view)
 
     switch (prop_view->prop_data->method) {
     case RIG_CONTROLLER_METHOD_CONSTANT:
-        column->control = rig_prop_inspector_new(ctx,
+        column->control = rig_prop_inspector_new(shell,
                                                  prop_view->prop_data->property,
                                                  const_property_changed_cb,
                                                  NULL, /* controlled changed */
@@ -2036,15 +2032,15 @@ static void
 setup_method_drop_down(rig_controller_property_view_t *prop_view)
 {
     rig_controller_view_t *view = prop_view->object->view;
-    rut_context_t *ctx = view->context;
+    rut_shell_t *shell = view->shell;
     rig_controller_view_column_t *column = &prop_view->columns[1];
     rut_drop_down_value_t values[] = {
         { "Const", RIG_CONTROLLER_METHOD_CONSTANT },
         { "Path", RIG_CONTROLLER_METHOD_PATH },
         { "Bind", RIG_CONTROLLER_METHOD_BINDING }
     };
-    rut_bin_t *bin = rut_bin_new(ctx);
-    rut_drop_down_t *drop_down = rut_drop_down_new(ctx);
+    rut_bin_t *bin = rut_bin_new(shell);
+    rut_drop_down_t *drop_down = rut_drop_down_new(shell);
     rut_property_t *drop_property;
 
     prop_view->method_drop_down = drop_down;
@@ -2056,7 +2052,7 @@ setup_method_drop_down(rig_controller_property_view_t *prop_view)
     rut_bin_set_left_padding(bin, 5);
     rut_bin_set_right_padding(bin, 5);
 
-    column->transform = rut_transform_new(ctx);
+    column->transform = rut_transform_new(shell);
     rut_graphable_add_child(prop_view->columns_parent, column->transform);
     rut_object_unref(column->transform);
 
@@ -2133,15 +2129,15 @@ rig_controller_property_view_new(rig_controller_view_t *view,
     prop_view->prop_data->property = property;
     prop_view->internal_method_change = false;
 
-    prop_view->stack = rut_stack_new(view->context, 1, 1);
+    prop_view->stack = rut_stack_new(view->shell, 1, 1);
     rut_graphable_add_child(prop_view, prop_view->stack);
     rut_object_unref(prop_view->stack);
 
-    prop_view->bg = rut_rectangle_new4f(view->context, 1, 1, 0.5, 0.5, 0.5, 1);
+    prop_view->bg = rut_rectangle_new4f(view->shell, 1, 1, 0.5, 0.5, 0.5, 1);
     rut_stack_add(prop_view->stack, prop_view->bg);
     rut_object_unref(prop_view->bg);
 
-    prop_view->columns_parent = rut_transform_new(view->context);
+    prop_view->columns_parent = rut_transform_new(view->shell);
     rut_stack_add(prop_view->stack, prop_view->columns_parent);
     rut_object_unref(prop_view->columns_parent);
 
@@ -2327,7 +2323,7 @@ update_object_label_cb(rut_property_t *target_property,
     if (label == NULL || *label == 0)
         label = "Object";
 
-    rut_property_set_text(&view->context->property_ctx, target_property, label);
+    rut_property_set_text(&view->shell->property_ctx, target_property, label);
 
     _rig_controller_view_sort_objects(view);
 }
@@ -2350,20 +2346,20 @@ rig_controller_object_view_new(rig_controller_view_t *view,
     object_view->object = object;
     object_view->view = view;
 
-    object_view->stack = rut_stack_new(view->context, 1, 1);
+    object_view->stack = rut_stack_new(view->shell, 1, 1);
     rut_graphable_add_child(object_view, object_view->stack);
     rut_object_unref(object_view->stack);
 
-    object_view->fold = rut_fold_new(view->context, "<Object>");
+    object_view->fold = rut_fold_new(view->shell, "<Object>");
     rut_fold_set_font_name(object_view->fold, "Sans Bold");
     rut_stack_add(object_view->stack, object_view->fold);
 
 #if 0
-    hbox = rut_box_layout_new (view->context, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
+    hbox = rut_box_layout_new (view->shell, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
     rut_fold_set_header_child (object_view->fold, hbox);
     rut_object_unref (hbox);
 
-    eye_toggle = rut_icon_toggle_new (view->context,
+    eye_toggle = rut_icon_toggle_new (view->shell,
                                       "eye-white.png",
                                       "eye.png");
     rut_box_layout_add (hbox, false, eye_toggle);
@@ -2387,7 +2383,7 @@ rig_controller_object_view_new(rig_controller_view_t *view,
     }
 
     object_view->properties_vbox =
-        rut_box_layout_new(view->context, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
+        rut_box_layout_new(view->shell, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
     rut_fold_set_child(object_view->fold, object_view->properties_vbox);
 
     return object_view;
@@ -2399,7 +2395,7 @@ rig_controller_view_ungrab_input (rig_controller_view_t *view)
 {
     if (view->grab_state != RIG_CONTROLLER_VIEW_GRAB_STATE_NO_GRAB)
     {
-        rut_shell_ungrab_input (view->context->shell,
+        rut_shell_ungrab_input (view->shell,
                                 rig_controller_view_grab_input_cb,
                                 view);
         view->grab_state = RIG_CONTROLLER_VIEW_GRAB_STATE_NO_GRAB;
@@ -2467,7 +2463,7 @@ _rig_controller_view_free(void *object)
 
     rig_controller_view_clear_object_views(view);
 
-    rut_shell_remove_pre_paint_callback_by_graphable(view->context->shell,
+    rut_shell_remove_pre_paint_callback_by_graphable(view->shell,
                                                      view);
 
     rut_graphable_destroy(view);
@@ -2481,7 +2477,7 @@ rig_controller_view_create_dots_buffer (rig_controller_view_t *view)
 {
     size_t size = MAX (8, view->n_dots) * sizeof (rig_controller_view_dot_vertex_t);
 
-    return cg_attribute_buffer_new_with_size (view->context->cg_device,
+    return cg_attribute_buffer_new_with_size (view->shell->cg_device,
                                               size);
 }
 #endif
@@ -2656,13 +2652,13 @@ rig_controller_view_draw_box (rig_controller_view_t *view,
 {
     if (view->box_pipeline == NULL)
     {
-        view->box_pipeline = cg_pipeline_new (view->context->cg_device);
+        view->box_pipeline = cg_pipeline_new (view->shell->cg_device);
         cg_pipeline_set_color4ub (view->box_pipeline, 0, 0, 0, 255);
     }
 
     if (view->box_path == NULL)
     {
-        view->box_path = cg_path_new (view->context->cg_device);
+        view->box_path = cg_path_new (view->shell->cg_device);
         cg_path_rectangle (view->box_path,
                            view->nodes_x + view->box_x1 * view->nodes_width,
                            view->box_y1 * view->row_height,
@@ -3132,14 +3128,14 @@ rig_controller_view_property_removed(rig_controller_view_t *view,
         rut_box_layout_remove(view->properties_vbox, object_view);
     }
 
-    rut_shell_queue_redraw(view->context->shell);
+    rut_shell_queue_redraw(view->shell);
 }
 
 #if 0
 static cg_pipeline_t *
 rig_controller_view_create_dots_pipeline (rig_controller_view_t *view)
 {
-    cg_pipeline_t *pipeline = cg_pipeline_new (view->context->cg_device);
+    cg_pipeline_t *pipeline = cg_pipeline_new (view->shell->cg_device);
     char *dot_filename;
     cg_bitmap_t *bitmap;
     cg_error_t *error = NULL;
@@ -3153,7 +3149,7 @@ rig_controller_view_create_dots_pipeline (rig_controller_view_t *view)
     }
     else
     {
-        bitmap = cg_bitmap_new_from_file (view->context->cg_device,
+        bitmap = cg_bitmap_new_from_file (view->shell->cg_device,
                                           dot_filename,
                                           &error);
         c_free (dot_filename);
@@ -3221,10 +3217,10 @@ rig_controller_view_create_separator_pipeline(rig_controller_view_t *view)
     cg_texture_t *texture;
 
     texture = rut_load_texture_from_data_file(
-        view->context, "controller-view-separator.png", &error);
+        view->shell, "controller-view-separator.png", &error);
 
     if (texture) {
-        cg_pipeline_t *pipeline = cg_pipeline_new(view->context->cg_device);
+        cg_pipeline_t *pipeline = cg_pipeline_new(view->shell->cg_device);
 
         view->separator_pipeline = pipeline;
         view->separator_width = cg_texture_get_width(texture);
@@ -3273,7 +3269,7 @@ rig_controller_view_update_timeline_progress (rig_controller_view_t *view,
     float progress;
     rig_controller_view_get_time_from_event (view, event, &progress, NULL);
     rut_timeline_set_progress (view->timeline, progress);
-    rut_shell_queue_redraw (view->context->shell);
+    rut_shell_queue_redraw (view->shell);
 }
 
 static rig_node_t *
@@ -3377,7 +3373,7 @@ rig_controller_view_handle_select_event (rig_controller_view_t *view,
 
         rut_timeline_set_progress (view->timeline, node->t);
 
-        rut_shell_queue_redraw (view->context->shell);
+        rut_shell_queue_redraw (view->shell);
     }
     else
     {
@@ -3425,7 +3421,7 @@ rig_controller_view_decide_grab_state (rig_controller_view_t *view,
 
         rig_controller_view_calculate_drag_offset_range (view);
 
-        rut_shell_queue_redraw (view->context->shell);
+        rut_shell_queue_redraw (view->shell);
 
         view->grab_state = RIG_CONTROLLER_VIEW_GRAB_STATE_DRAGGING_NODES;
     }
@@ -3523,7 +3519,7 @@ rig_controller_view_update_box (rig_controller_view_t *view,
         view->box_path = NULL;
     }
 
-    rut_shell_queue_redraw (view->context->shell);
+    rut_shell_queue_redraw (view->shell);
 }
 #endif
 
@@ -3582,7 +3578,7 @@ rig_controller_view_commit_box (rig_controller_view_t *view)
         }
     }
 
-    rut_shell_queue_redraw (view->context->shell);
+    rut_shell_queue_redraw (view->shell);
 }
 #endif
 
@@ -3711,7 +3707,7 @@ rig_controller_view_input_region_cb (rut_input_region_t *region,
              * things depending on whether the next event is a move or a
              * release */
             view->grab_state = RIG_CONTROLLER_VIEW_GRAB_STATE_UNDECIDED;
-            rut_shell_grab_input (view->context->shell,
+            rut_shell_grab_input (view->shell,
                                   rut_input_event_get_camera (event),
                                   rig_controller_view_grab_input_cb,
                                   view);
@@ -3859,7 +3855,7 @@ rig_controller_view_set_controller(rig_controller_view_t *view,
 
         controller_len_prop =
             rut_introspectable_lookup_property(controller, "length");
-        rut_property_set_copy_binding(&view->engine->ctx->property_ctx,
+        rut_property_set_copy_binding(&view->engine->shell->property_ctx,
                                       scale_len_prop,
                                       controller_len_prop);
 
@@ -3995,31 +3991,31 @@ rig_controller_view_new(rig_engine_t *engine,
     rut_graphable_init(view);
 
     view->engine = engine;
-    view->context = engine->ctx;
+    view->shell = engine->shell;
     view->controller = NULL;
     view->undo_journal = undo_journal;
 
     rut_list_init(&view->controller_changed_cb_list);
 
     view->vbox =
-        rut_box_layout_new(engine->ctx, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
+        rut_box_layout_new(engine->shell, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
     rut_graphable_add_child(view, view->vbox);
     rut_object_unref(view->vbox);
 
-    top_stack = rut_stack_new(engine->ctx, 0, 0);
+    top_stack = rut_stack_new(engine->shell, 0, 0);
     rut_box_layout_add(view->vbox, false, top_stack);
     rut_object_unref(top_stack);
 
-    bg = rut_rectangle_new4f(engine->ctx, 0, 0, 0.65, 0.65, 0.65, 1);
+    bg = rut_rectangle_new4f(engine->shell, 0, 0, 0.65, 0.65, 0.65, 1);
     rut_stack_add(top_stack, bg);
     rut_object_unref(bg);
 
     selector_hbox =
-        rut_box_layout_new(engine->ctx, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
+        rut_box_layout_new(engine->shell, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
     rut_stack_add(top_stack, selector_hbox);
     rut_object_unref(selector_hbox);
 
-    controller_selector = rut_drop_down_new(engine->ctx);
+    controller_selector = rut_drop_down_new(engine->shell);
     view->controller_selector = controller_selector;
     value_prop =
         rut_introspectable_lookup_property(controller_selector, "value");
@@ -4027,7 +4023,7 @@ rig_controller_view_new(rig_engine_t *engine,
     rut_box_layout_add(selector_hbox, false, controller_selector);
     rut_object_unref(controller_selector);
 
-    add_button = rut_icon_button_new(engine->ctx,
+    add_button = rut_icon_button_new(engine->shell,
                                      NULL, /* label */
                                      0, /* ignore label position */
                                      "add.png", /* normal */
@@ -4041,7 +4037,7 @@ rig_controller_view_new(rig_engine_t *engine,
                                           view,
                                           NULL); /* destroy notify */
 
-    delete_button = rut_icon_button_new(engine->ctx,
+    delete_button = rut_icon_button_new(engine->shell,
                                         NULL, /* label */
                                         0, /* ignore label position */
                                         "delete.png", /* normal */
@@ -4056,40 +4052,40 @@ rig_controller_view_new(rig_engine_t *engine,
                                           NULL); /* destroy notify */
 
     view->header_hbox =
-        rut_box_layout_new(engine->ctx, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
+        rut_box_layout_new(engine->shell, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
     rut_box_layout_add(view->vbox, false, view->header_hbox);
     rut_object_unref(view->header_hbox);
 
-    view->properties_label_shim = rut_shim_new(engine->ctx, 1, 1);
+    view->properties_label_shim = rut_shim_new(engine->shell, 1, 1);
     rut_shim_set_shim_axis(view->properties_label_shim, RUT_SHIM_AXIS_X);
     rut_box_layout_add(view->header_hbox, false, view->properties_label_shim);
     rut_object_unref(view->properties_label_shim);
 
-    label = rut_text_new_with_text(engine->ctx, NULL, "Properties");
+    label = rut_text_new_with_text(engine->shell, NULL, "Properties");
     rut_shim_set_child(view->properties_label_shim, label);
     rut_object_unref(label);
 
-    view->scale = rut_scale_new(engine->ctx, 0, 10);
+    view->scale = rut_scale_new(engine->shell, 0, 10);
     rut_box_layout_add(view->header_hbox, true, view->scale);
 
     rut_scale_add_select_callback(
         view->scale, on_scale_select_cb, view, NULL); /* destroy notify */
 
-    stack = rut_stack_new(engine->ctx, 0, 0);
+    stack = rut_stack_new(engine->shell, 0, 0);
     rut_box_layout_add(view->vbox, true, stack);
     rut_object_unref(stack);
 
-    bg = rut_rectangle_new4f(engine->ctx, 0, 0, 0.52, 0.52, 0.52, 1);
+    bg = rut_rectangle_new4f(engine->shell, 0, 0, 0.52, 0.52, 0.52, 1);
     rut_stack_add(stack, bg);
     rut_object_unref(bg);
 
-    view->properties_vp = rut_ui_viewport_new(engine->ctx, 0, 0);
+    view->properties_vp = rut_ui_viewport_new(engine->shell, 0, 0);
     rut_ui_viewport_set_x_pannable(view->properties_vp, false);
     rut_stack_add(stack, view->properties_vp);
     rut_object_unref(view->properties_vp);
 
     view->properties_vbox =
-        rut_box_layout_new(view->context, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
+        rut_box_layout_new(view->shell, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
 
     rut_ui_viewport_add(view->properties_vp, view->properties_vbox);
     rut_ui_viewport_set_sync_widget(view->properties_vp, view->properties_vbox);

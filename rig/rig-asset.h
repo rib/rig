@@ -71,25 +71,25 @@ typedef struct _rig_asset_t rig_asset_t;
 
 void _rig_asset_type_init(void);
 
-rig_asset_t *rig_asset_new_builtin(rut_context_t *ctx, const char *icon_path);
+rig_asset_t *rig_asset_new_builtin(rut_shell_t *shell, const char *icon_path);
 
-rig_asset_t *rig_asset_new_texture(rut_context_t *ctx,
+rig_asset_t *rig_asset_new_texture(rut_shell_t *shell,
                                    const char *path,
                                    const c_list_t *inferred_tags);
 
-rig_asset_t *rig_asset_new_normal_map(rut_context_t *ctx,
+rig_asset_t *rig_asset_new_normal_map(rut_shell_t *shell,
                                       const char *path,
                                       const c_list_t *inferred_tags);
 
-rig_asset_t *rig_asset_new_alpha_mask(rut_context_t *ctx,
+rig_asset_t *rig_asset_new_alpha_mask(rut_shell_t *shell,
                                       const char *path,
                                       const c_list_t *inferred_tags);
 
-rig_asset_t *rig_asset_new_ply_model(rut_context_t *ctx,
+rig_asset_t *rig_asset_new_ply_model(rut_shell_t *shell,
                                      const char *path,
                                      const c_list_t *inferred_tags);
 
-rig_asset_t *rig_asset_new_font(rut_context_t *ctx,
+rig_asset_t *rig_asset_new_font(rut_shell_t *shell,
                                 const char *path,
                                 const c_list_t *inferred_tags);
 
@@ -102,17 +102,17 @@ rig_asset_t *rig_asset_new_from_file(rig_engine_t *engine,
 bool rut_file_info_is_asset(GFileInfo *info, const char *name);
 
 c_list_t *
-rut_infer_asset_tags(rut_context_t *ctx, GFileInfo *info, GFile *asset_file);
+rut_infer_asset_tags(rut_shell_t *shell, GFileInfo *info, GFile *asset_file);
 #endif
 
-rig_asset_t *rig_asset_new_from_data(rut_context_t *ctx,
+rig_asset_t *rig_asset_new_from_data(rut_shell_t *shell,
                                      const char *path,
                                      rig_asset_type_t type,
                                      bool is_video,
                                      const uint8_t *data,
                                      size_t len);
 
-rig_asset_t *rig_asset_new_from_mesh(rut_context_t *ctx, rut_mesh_t *mesh);
+rig_asset_t *rig_asset_new_from_mesh(rut_shell_t *shell, rut_mesh_t *mesh);
 
 rig_asset_t *rig_asset_new_from_pb_asset(rig_pb_un_serializer_t *unserializer,
                                          Rig__Asset *pb_asset,
@@ -122,7 +122,7 @@ rig_asset_type_t rig_asset_get_type(rig_asset_t *asset);
 
 const char *rig_asset_get_path(rig_asset_t *asset);
 
-rut_context_t *rig_asset_get_context(rig_asset_t *asset);
+rut_shell_t *rig_asset_get_shell(rig_asset_t *asset);
 
 cg_texture_t *rig_asset_get_texture(rig_asset_t *asset);
 

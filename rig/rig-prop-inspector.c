@@ -49,7 +49,7 @@ struct _rig_prop_inspector_t {
 
     float width, height;
 
-    rut_context_t *context;
+    rut_shell_t *shell;
 
     rut_graphable_props_t graphable;
 
@@ -160,7 +160,7 @@ set_disabled(rig_prop_inspector_t *inspector,
 }
 
 static rut_object_t *
-create_widget_for_property(rut_context_t *context,
+create_widget_for_property(rut_shell_t *shell,
                            rut_property_t *prop,
                            rut_property_t **control_prop,
                            const char **label_text)
@@ -181,14 +181,14 @@ create_widget_for_property(rut_context_t *context,
         char *unselected_icon = rut_find_data_file("toggle-unselected.png");
         char *selected_icon = rut_find_data_file("toggle-selected.png");
         rut_toggle_t *toggle = rut_toggle_new_with_icons(
-            context, unselected_icon, selected_icon, name);
+            shell, unselected_icon, selected_icon, name);
 
         *control_prop = rut_introspectable_lookup_property(toggle, "state");
         return toggle;
     }
 
     case RUT_PROPERTY_TYPE_VEC3: {
-        rut_vec3_slider_t *slider = rut_vec3_slider_new(context);
+        rut_vec3_slider_t *slider = rut_vec3_slider_new(shell);
         float min = -G_MAXFLOAT, max = G_MAXFLOAT;
 
         if ((spec->flags & RUT_PROPERTY_FLAG_VALIDATE)) {
@@ -211,7 +211,7 @@ create_widget_for_property(rut_context_t *context,
 
     case RUT_PROPERTY_TYPE_QUATERNION: {
         rut_rotation_inspector_t *inspector =
-            rut_rotation_inspector_new(context);
+            rut_rotation_inspector_new(shell);
 
         *control_prop = rut_introspectable_lookup_property(inspector, "value");
 
@@ -221,7 +221,7 @@ create_widget_for_property(rut_context_t *context,
     case RUT_PROPERTY_TYPE_DOUBLE:
     case RUT_PROPERTY_TYPE_FLOAT:
     case RUT_PROPERTY_TYPE_INTEGER: {
-        rut_number_slider_t *slider = rut_number_slider_new(context);
+        rut_number_slider_t *slider = rut_number_slider_new(shell);
         float min = -G_MAXFLOAT, max = G_MAXFLOAT;
         char *label = c_strconcat(name, ": ", NULL);
 
@@ -264,7 +264,7 @@ create_widget_for_property(rut_context_t *context,
         /* If the enum isn't validated then we can't get the value
          * names so we can't make a useful control */
         if ((spec->flags & RUT_PROPERTY_FLAG_VALIDATE)) {
-            rut_drop_down_t *drop = rut_drop_down_new(context);
+            rut_drop_down_t *drop = rut_drop_down_new(shell);
             int n_values, i;
             const rut_ui_enum_t *ui_enum = spec->validation.ui_enum;
             rut_drop_down_value_t *values;
@@ -291,7 +291,7 @@ create_widget_for_property(rut_context_t *context,
         break;
 
     case RUT_PROPERTY_TYPE_TEXT: {
-        rut_entry_t *entry = rut_entry_new(context);
+        rut_entry_t *entry = rut_entry_new(shell);
         rut_text_t *text = rut_entry_get_text(entry);
 
         rut_text_set_single_line_mode(text, true);
@@ -302,7 +302,7 @@ create_widget_for_property(rut_context_t *context,
     } break;
 
     case RUT_PROPERTY_TYPE_COLOR: {
-        rut_color_button_t *button = rut_color_button_new(context);
+        rut_color_button_t *button = rut_color_button_new(shell);
 
         *control_prop = rut_introspectable_lookup_property(button, "color");
         *label_text = name;
@@ -312,7 +312,7 @@ create_widget_for_property(rut_context_t *context,
 
     case RUT_PROPERTY_TYPE_ASSET: {
         rig_asset_inspector_t *asset_inspector =
-            rig_asset_inspector_new(context, spec->validation.asset.type);
+            rig_asset_inspector_new(shell, spec->validation.asset.type);
 
         *control_prop =
             rut_introspectable_lookup_property(asset_inspector, "asset");
@@ -325,7 +325,7 @@ create_widget_for_property(rut_context_t *context,
         break;
     }
 
-    label = rut_text_new(context);
+    label = rut_text_new(shell);
 
     rut_text_set_text(label, name);
 
@@ -371,13 +371,13 @@ add_controlled_toggle(rig_prop_inspector_t *inspector,
     rut_bin_t *bin;
     rut_icon_toggle_t *toggle;
 
-    bin = rut_bin_new(inspector->context);
+    bin = rut_bin_new(inspector->shell);
     rut_bin_set_right_padding(bin, 5);
     rut_box_layout_add(inspector->top_hbox, false, bin);
     rut_object_unref(bin);
 
     toggle = rut_icon_toggle_new(
-        inspector->context, "record-button-selected.png", "record-button.png");
+        inspector->shell, "record-button-selected.png", "record-button.png");
 
     rut_icon_toggle_set_state(toggle, false);
 
@@ -400,13 +400,13 @@ add_control(rig_prop_inspector_t *inspector,
     const char *label_text;
 
     widget = create_widget_for_property(
-        inspector->context, prop, &widget_prop, &label_text);
+        inspector->shell, prop, &widget_prop, &label_text);
 
     if (!widget)
         return;
 
     if (with_label && label_text) {
-        rut_text_t *label = rut_text_new_with_text(inspector->context,
+        rut_text_t *label = rut_text_new_with_text(inspector->shell,
                                                    NULL, /* font_name */
                                                    label_text);
         rut_text_set_selectable(label, false);
@@ -457,7 +457,7 @@ block_input_cb(rut_input_region_t *region,
 
 rig_prop_inspector_t *
 rig_prop_inspector_new(
-    rut_context_t *ctx,
+    rut_shell_t *shell,
     rut_property_t *property,
     rig_prop_inspector_callback_t inspector_property_changed_cb,
     rig_prop_inspector_controlled_callback_t inspector_controlled_cb,
@@ -470,7 +470,7 @@ rig_prop_inspector_new(
                           _rig_prop_inspector_init_type);
     rut_bin_t *grab_padding;
 
-    inspector->context = ctx;
+    inspector->shell = shell;
 
     rut_graphable_init(inspector);
 
@@ -479,19 +479,19 @@ rig_prop_inspector_new(
     inspector->controlled_changed_cb = inspector_controlled_cb;
     inspector->user_data = user_data;
 
-    inspector->top_stack = rut_stack_new(ctx, 1, 1);
+    inspector->top_stack = rut_stack_new(shell, 1, 1);
     rut_graphable_add_child(inspector, inspector->top_stack);
     rut_object_unref(inspector->top_stack);
 
     inspector->top_hbox =
-        rut_box_layout_new(ctx, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
+        rut_box_layout_new(shell, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
     rut_stack_add(inspector->top_stack, inspector->top_hbox);
     rut_object_unref(inspector->top_hbox);
 
     /* XXX: Hack for now, to make sure its possible to drag and drop any
      * property without inadvertanty manipulating the property value...
      */
-    grab_padding = rut_bin_new(inspector->context);
+    grab_padding = rut_bin_new(inspector->shell);
     rut_bin_set_right_padding(grab_padding, 15);
     rut_box_layout_add(inspector->top_hbox, false, grab_padding);
     rut_object_unref(grab_padding);
@@ -499,17 +499,17 @@ rig_prop_inspector_new(
     if (inspector->controlled_changed_cb && property->spec->animatable)
         add_controlled_toggle(inspector, property);
 
-    inspector->widget_stack = rut_stack_new(ctx, 1, 1);
+    inspector->widget_stack = rut_stack_new(shell, 1, 1);
     rut_box_layout_add(inspector->top_hbox, true, inspector->widget_stack);
     rut_object_unref(inspector->widget_stack);
 
     inspector->widget_hbox = rut_box_layout_new(
-        inspector->context, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
+        inspector->shell, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
     rut_stack_add(inspector->widget_stack, inspector->widget_hbox);
     rut_object_unref(inspector->widget_hbox);
 
     inspector->disabled_overlay =
-        rut_rectangle_new4f(ctx, 1, 1, 0.5, 0.5, 0.5, 0.5);
+        rut_rectangle_new4f(shell, 1, 1, 0.5, 0.5, 0.5, 0.5);
     inspector->input_region =
         rut_input_region_new_rectangle(0, 0, 1, 1, block_input_cb, NULL);
 
@@ -537,11 +537,11 @@ rig_prop_inspector_reload_property(rig_prop_inspector_t *inspector)
             if (inspector->target_prop->spec->type !=
                 inspector->widget_prop->spec->type) {
                 rut_property_cast_scalar_value(
-                    &inspector->context->property_ctx,
+                    &inspector->shell->property_ctx,
                     inspector->widget_prop,
                     inspector->target_prop);
             } else
-                rut_property_copy_value(&inspector->context->property_ctx,
+                rut_property_copy_value(&inspector->shell->property_ctx,
                                         inspector->widget_prop,
                                         inspector->target_prop);
         }

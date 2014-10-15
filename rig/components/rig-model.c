@@ -84,7 +84,7 @@ struct _rig_model_private_t {
 /* Some convinient constants */
 static float flat_normal[3] = { 0, 0, 1 };
 
-static rig_model_t *_rig_model_new(rut_context_t *ctx);
+static rig_model_t *_rig_model_new(rut_shell_t *shell);
 
 cg_primitive_t *
 rig_model_get_primitive(rut_object_t *object)
@@ -94,7 +94,7 @@ rig_model_get_primitive(rut_object_t *object)
     if (!model->primitive) {
         if (model->mesh) {
             model->primitive =
-                rut_mesh_create_primitive(model->ctx, model->mesh);
+                rut_mesh_create_primitive(model->shell, model->mesh);
         }
     }
 
@@ -149,7 +149,7 @@ static rut_object_t *
 _rig_model_copy(rut_object_t *object)
 {
     rig_model_t *model = object;
-    rig_model_t *copy = _rig_model_new(model->ctx);
+    rig_model_t *copy = _rig_model_new(model->shell);
 
     copy->type = model->type;
     copy->mesh = rut_object_ref(model->mesh);
@@ -220,14 +220,14 @@ _rig_model_init_type(void)
 }
 
 static rig_model_t *
-_rig_model_new(rut_context_t *ctx)
+_rig_model_new(rut_shell_t *shell)
 {
     rig_model_t *model;
 
     model =
         rut_object_alloc0(rig_model_t, &rig_model_type, _rig_model_init_type);
     model->component.type = RUT_COMPONENT_TYPE_GEOMETRY;
-    model->ctx = ctx;
+    model->shell = shell;
 
     return model;
 }
@@ -1303,7 +1303,7 @@ create_fin_mesh_from_model(rut_object_t *object)
 }
 
 rig_model_t *
-rig_model_new_from_asset_mesh(rut_context_t *ctx,
+rig_model_new_from_asset_mesh(rut_shell_t *shell,
                               rut_mesh_t *mesh,
                               bool needs_normals,
                               bool needs_tex_coords)
@@ -1315,7 +1315,7 @@ rig_model_new_from_asset_mesh(rut_context_t *ctx,
     int i;
     rut_attribute_t *tex_attrib;
 
-    model = _rig_model_new(ctx);
+    model = _rig_model_new(shell);
     model->type = RIG_MODEL_TYPE_FILE;
     model->mesh = rut_mesh_copy(mesh);
 
@@ -1432,7 +1432,7 @@ rig_model_new_from_asset_mesh(rut_context_t *ctx,
 }
 
 rig_model_t *
-rig_model_new_from_asset(rut_context_t *ctx, rig_asset_t *asset)
+rig_model_new_from_asset(rut_shell_t *shell, rig_asset_t *asset)
 {
     rut_mesh_t *mesh = rig_asset_get_mesh(asset);
     rig_model_t *model;
@@ -1442,8 +1442,8 @@ rig_model_new_from_asset(rut_context_t *ctx, rig_asset_t *asset)
     if (!mesh)
         return NULL;
 
-    model = rig_model_new_from_asset_mesh(
-        ctx, mesh, needs_normals, needs_tex_coords);
+    model = rig_model_new_from_asset_mesh(shell, mesh, needs_normals,
+                                          needs_tex_coords);
     model->asset = rut_object_ref(asset);
 
     return model;
@@ -1513,7 +1513,7 @@ rig_model_new_for_hair(rig_model_t *base)
     model->fin_mesh = create_fin_mesh_from_model(model);
 
     model->fin_primitive =
-        rut_mesh_create_primitive(model->ctx, model->fin_mesh);
+        rut_mesh_create_primitive(model->shell, model->fin_mesh);
 
     rut_object_unref(model->mesh);
     model->mesh = model->patched_mesh;

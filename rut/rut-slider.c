@@ -36,6 +36,7 @@
 #include "rut-transform.h"
 #include "rut-nine-slice.h"
 #include "rut-paintable.h"
+#include "rut-texture-cache.h"
 
 enum {
     RUT_SLIDER_PROP_PROGRESS,
@@ -47,7 +48,7 @@ struct _rut_slider_t {
 
     /* FIXME: It doesn't seem right that we should have to save a
      * pointer to the context for input here... */
-    rut_context_t *ctx;
+    rut_shell_t *shell;
 
     /* FIXME: It also doesn't seem right to have to save a pointer
      * to the camera here so we can queue a redraw */
@@ -167,7 +168,7 @@ _rut_slider_grab_input_cb(rut_input_event_t *event, void *user_data)
     rut_slider_t *slider = user_data;
 
     if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_MOTION) {
-        rut_shell_t *shell = slider->ctx->shell;
+        rut_shell_t *shell = slider->shell;
         if (rut_motion_event_get_action(event) == RUT_MOTION_EVENT_ACTION_UP) {
             rut_shell_ungrab_input(shell, _rut_slider_grab_input_cb, user_data);
             return RUT_INPUT_EVENT_STATUS_HANDLED;
@@ -204,7 +205,7 @@ _rut_slider_input_cb(rut_input_region_t *region,
 
     if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_MOTION &&
         rut_motion_event_get_action(event) == RUT_MOTION_EVENT_ACTION_DOWN) {
-        rut_shell_t *shell = slider->ctx->shell;
+        rut_shell_t *shell = slider->shell;
         rut_shell_grab_input(shell,
                              rut_input_event_get_camera(event),
                              _rut_slider_grab_input_cb,
@@ -219,8 +220,8 @@ _rut_slider_input_cb(rut_input_region_t *region,
 }
 
 rut_slider_t *
-rut_slider_new(
-    rut_context_t *ctx, rut_axis_t axis, float min, float max, float length)
+rut_slider_new(rut_shell_t *shell, rut_axis_t axis, float min, float max,
+               float length)
 {
     rut_slider_t *slider = rut_object_alloc0(
         rut_slider_t, &rut_slider_type, _rut_slider_init_type);
@@ -234,7 +235,7 @@ rut_slider_new(
     rut_graphable_init(slider);
     rut_paintable_init(slider);
 
-    slider->ctx = ctx;
+    slider->shell = shell;
 
     slider->axis = axis;
     slider->range_min = min;
@@ -243,14 +244,15 @@ rut_slider_new(
     slider->progress = 0;
 
     bg_texture =
-        rut_load_texture_from_data_file(ctx, "slider-background.png", &error);
+        rut_load_texture_from_data_file(shell, "slider-background.png",
+                                        &error);
     if (!bg_texture) {
         c_warning("Failed to load slider-background.png: %s", error->message);
         c_error_free(error);
     }
 
     handle_texture =
-        rut_load_texture_from_data_file(ctx, "slider-handle.png", &error);
+        rut_load_texture_from_data_file(shell, "slider-handle.png", &error);
     if (!handle_texture) {
         c_warning("Failed to load slider-handle.png: %s", error->message);
         c_error_free(error);
@@ -265,16 +267,17 @@ rut_slider_new(
     }
 
     slider->background =
-        rut_nine_slice_new(ctx, bg_texture, 2, 3, 3, 3, width, height);
+        rut_nine_slice_new(shell, bg_texture, 2, 3, 3, 3, width, height);
 
     if (axis == RUT_AXIS_X)
         width = 20;
     else
         height = 20;
 
-    slider->handle_transform = rut_transform_new(ctx);
+    slider->handle_transform = rut_transform_new(shell);
     slider->handle =
-        rut_nine_slice_new(ctx, handle_texture, 4, 5, 6, 5, width, height);
+        rut_nine_slice_new(shell, handle_texture, 4, 5, 6, 5, width,
+                           height);
     rut_graphable_add_child(slider->handle_transform, slider->handle);
     rut_graphable_add_child(slider, slider->handle_transform);
 
@@ -312,7 +315,7 @@ rut_slider_set_progress(rut_object_t *obj, float progress)
         return;
 
     slider->progress = progress;
-    rut_property_dirty(&slider->ctx->property_ctx,
+    rut_property_dirty(&slider->shell->property_ctx,
                        &slider->properties[RUT_SLIDER_PROP_PROGRESS]);
 
     translation = (slider->length - 20) * slider->progress;
@@ -324,7 +327,7 @@ rut_slider_set_progress(rut_object_t *obj, float progress)
     else
         rut_transform_translate(slider->handle_transform, 0, translation, 0);
 
-    rut_shell_queue_redraw(slider->ctx->shell);
+    rut_shell_queue_redraw(slider->shell);
 
     // c_print ("progress = %f\n", slider->progress);
 }

@@ -30,7 +30,7 @@
 
 #include <cogl/cogl.h>
 
-#include "rut-context.h"
+#include "rut-shell.h"
 #include "rut-object.h"
 #include "rut-magazine.h"
 #include "rut-matrix-stack.h"
@@ -585,7 +585,7 @@ _rut_matrix_stack_init_type(void)
 }
 
 rut_matrix_stack_t *
-rut_matrix_stack_new(rut_context_t *ctx)
+rut_matrix_stack_new(rut_shell_t *shell)
 {
     rut_matrix_stack_t *stack = rut_object_alloc0(rut_matrix_stack_t,
                                                   &rut_matrix_stack_type,
@@ -598,11 +598,11 @@ rut_matrix_stack_new(rut_context_t *ctx)
             rut_magazine_new(sizeof(cg_matrix_t), 20);
     }
 
-    stack->context = ctx;
+    stack->shell = shell;
     stack->last_entry = NULL;
 
-    rut_matrix_entry_ref(&ctx->identity_entry);
-    _rut_matrix_stack_push_entry(stack, &ctx->identity_entry);
+    rut_matrix_entry_ref(&shell->identity_entry);
+    _rut_matrix_stack_push_entry(stack, &shell->identity_entry);
 
     return stack;
 }

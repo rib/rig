@@ -26,9 +26,7 @@
  * SOFTWARE.
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include <string.h>
 #include <stdio.h>
@@ -38,7 +36,8 @@
 #include <cogl/cogl.h>
 
 #include "color-table.h"
-#include "rut-context.h"
+#include "rut-util.h"
+#include "rut-shell.h"
 #include "rut-color.h"
 
 static inline void
@@ -262,7 +261,7 @@ parse_hsla(cg_color_t *color, char *str, bool has_alpha)
 }
 
 bool
-rut_color_init_from_string(rut_context_t *ctx,
+rut_color_init_from_string(rut_shell_t *shell,
                            cg_color_t *color,
                            const char *str)
 {
@@ -370,21 +369,21 @@ rut_color_init_from_string(rut_context_t *ctx,
      *   http://en.wikipedia.org/wiki/X11_color_names
      */
 
-    if (!ctx->colors_hash) {
+    if (!shell->colors_hash) {
         int i, n_colors;
 
-        ctx->colors_hash = c_hash_table_new(c_direct_hash, c_direct_equal);
+        shell->colors_hash = c_hash_table_new(c_direct_hash, c_direct_equal);
 
         n_colors = C_N_ELEMENTS(color_names);
         for (i = 0; i < n_colors; i++) {
             const char *interned = c_intern_string(color_names[i]);
-            c_hash_table_insert(ctx->colors_hash, (void *)interned,
+            c_hash_table_insert(shell->colors_hash, (void *)interned,
                                 C_INT_TO_POINTER(i + 1));
         }
     }
 
     color_index_ptr =
-        c_hash_table_lookup(ctx->colors_hash, c_intern_string(str));
+        c_hash_table_lookup(shell->colors_hash, c_intern_string(str));
     if (color_index_ptr) {
         /* Since we can't store 0 in the hash table without creating an
          * ambiguity

@@ -50,7 +50,7 @@ typedef struct {
 struct _rut_vec3_slider_t {
     rut_object_base_t _base;
 
-    rut_context_t *context;
+    rut_shell_t *shell;
 
     rut_graphable_props_t graphable;
 
@@ -144,13 +144,13 @@ rut_vec3_slider_property_changed_cb(rut_property_t *target_property,
 }
 
 rut_vec3_slider_t *
-rut_vec3_slider_new(rut_context_t *context)
+rut_vec3_slider_new(rut_shell_t *shell)
 {
     rut_vec3_slider_t *slider = rut_object_alloc0(
         rut_vec3_slider_t, &rut_vec3_slider_type, _rut_vec3_slider_init_type);
     int i;
 
-    slider->context = context;
+    slider->shell = shell;
 
     rut_graphable_init(slider);
 
@@ -158,19 +158,19 @@ rut_vec3_slider_new(rut_context_t *context)
         slider, _rut_vec3_slider_prop_specs, slider->properties);
 
     slider->hbox =
-        rut_box_layout_new(context, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
+        rut_box_layout_new(shell, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
     rut_graphable_add_child(slider, slider->hbox);
     rut_object_unref(slider->hbox);
 
     for (i = 0; i < 3; i++) {
         rut_text_t *text;
 
-        slider->components[i].slider = rut_number_slider_new(context);
+        slider->components[i].slider = rut_number_slider_new(shell);
         rut_box_layout_add(slider->hbox, false, slider->components[i].slider);
         rut_object_unref(slider->components[i].slider);
 
         if (i != 2) {
-            text = rut_text_new_with_text(context, NULL, ", ");
+            text = rut_text_new_with_text(shell, NULL, ", ");
             rut_box_layout_add(slider->hbox, false, text);
             rut_object_unref(text);
         }
@@ -245,7 +245,7 @@ rut_vec3_slider_set_value(rut_object_t *obj, const float *value)
 
     slider->in_set_value = false;
 
-    rut_property_dirty(&slider->context->property_ctx,
+    rut_property_dirty(&slider->shell->property_ctx,
                        &slider->properties[RUT_VEC3_SLIDER_PROP_VALUE]);
 }
 

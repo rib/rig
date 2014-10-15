@@ -77,7 +77,7 @@ control_point_grab_cb(rut_input_event_t *event,
     if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_KEY &&
         rut_key_event_get_keysym(event) == RUT_KEY_Escape) {
         rut_shell_ungrab_input(
-            tool->view->context->shell, control_point_grab_cb, state);
+            tool->view->shell, control_point_grab_cb, state);
 
         c_slice_free(grab_state_t, state);
 
@@ -101,7 +101,7 @@ control_point_grab_cb(rut_input_event_t *event,
                 status = RUT_INPUT_EVENT_STATUS_HANDLED;
 
                 rut_shell_ungrab_input(
-                    tool->ctx->shell, control_point_grab_cb, state);
+                    tool->shell, control_point_grab_cb, state);
 
                 c_slice_free(grab_state_t, state);
             }
@@ -138,7 +138,7 @@ control_point_input_cb(
         state->entity_state = entity_state;
         state->point = point;
 
-        rut_shell_grab_input(tool->ctx->shell,
+        rut_shell_grab_input(tool->shell,
                              rut_input_event_get_camera(event),
                              control_point_grab_cb,
                              state);
@@ -154,7 +154,7 @@ create_dummy_control_points(entity_state_t *entity_state)
 {
     rig_selection_tool_t *tool = entity_state->tool;
     cg_texture_t *tex =
-        rut_load_texture_from_data_file(tool->ctx, "dot.png", NULL);
+        rut_load_texture_from_data_file(tool->shell, "dot.png", NULL);
     control_point_t *point;
 
     point = c_slice_new0(control_point_t);
@@ -163,11 +163,11 @@ create_dummy_control_points(entity_state_t *entity_state)
     point->y = 0;
     point->z = 0;
 
-    point->transform = rut_transform_new(tool->ctx);
+    point->transform = rut_transform_new(tool->shell);
     rut_graphable_add_child(tool->tool_overlay, point->transform);
     rut_object_unref(point->transform);
 
-    point->marker = rut_nine_slice_new(tool->ctx, tex, 0, 0, 0, 0, 10, 10);
+    point->marker = rut_nine_slice_new(tool->shell, tex, 0, 0, 0, 0, 10, 10);
     rut_graphable_add_child(point->transform, point->marker);
     rut_object_unref(point->marker);
 
@@ -184,11 +184,11 @@ create_dummy_control_points(entity_state_t *entity_state)
     point->y = 0;
     point->z = 0;
 
-    point->transform = rut_transform_new(tool->ctx);
+    point->transform = rut_transform_new(tool->shell);
     rut_graphable_add_child(tool->tool_overlay, point->transform);
     rut_object_unref(point->transform);
 
-    point->marker = rut_nine_slice_new(tool->ctx, tex, 0, 0, 0, 0, 10, 10);
+    point->marker = rut_nine_slice_new(tool->shell, tex, 0, 0, 0, 0, 10, 10);
     rut_graphable_add_child(point->transform, point->marker);
     rut_object_unref(point->marker);
 
@@ -207,7 +207,7 @@ create_box_control(entity_state_t *entity_state, float x, float y, float z)
 {
     rig_selection_tool_t *tool = entity_state->tool;
     cg_texture_t *tex =
-        rut_load_texture_from_data_file(tool->ctx, "dot.png", NULL);
+        rut_load_texture_from_data_file(tool->shell, "dot.png", NULL);
     control_point_t *point;
 
     point = c_slice_new0(control_point_t);
@@ -216,11 +216,11 @@ create_box_control(entity_state_t *entity_state, float x, float y, float z)
     point->y = y;
     point->z = z;
 
-    point->transform = rut_transform_new(tool->ctx);
+    point->transform = rut_transform_new(tool->shell);
     rut_graphable_add_child(tool->tool_overlay, point->transform);
     rut_object_unref(point->transform);
 
-    point->marker = rut_nine_slice_new(tool->ctx, tex, 0, 0, 0, 0, 10, 10);
+    point->marker = rut_nine_slice_new(tool->shell, tex, 0, 0, 0, 0, 10, 10);
     rut_graphable_add_child(point->transform, point->marker);
     rut_object_unref(point->marker);
 
@@ -343,10 +343,10 @@ rig_selection_tool_new(rig_camera_view_t *view,
                        rut_object_t *overlay)
 {
     rig_selection_tool_t *tool = c_slice_new0(rig_selection_tool_t);
-    rut_context_t *ctx = view->context;
+    rut_shell_t *shell = view->shell;
 
     tool->view = view;
-    tool->ctx = ctx;
+    tool->shell = shell;
 
     /* Note: we don't take a reference on this overlay to avoid creating
      * a circular reference. */
@@ -359,7 +359,7 @@ rig_selection_tool_new(rig_camera_view_t *view,
     rut_list_init(&tool->selection_event_cb_list);
 
     /* pipeline to draw the tool */
-    tool->default_pipeline = cg_pipeline_new(ctx->cg_device);
+    tool->default_pipeline = cg_pipeline_new(shell->cg_device);
 
     return tool;
 }

@@ -39,7 +39,7 @@
 #include "rig-entity.h"
 
 typedef struct _rig_selection_tool_t {
-    rut_context_t *ctx;
+    rut_shell_t *shell;
 
     rig_camera_view_t *view;
 

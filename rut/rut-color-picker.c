@@ -32,7 +32,7 @@
 #include <cogl/cogl.h>
 #include <math.h>
 
-#include "rut-context.h"
+#include "rut-shell.h"
 #include "rut-interfaces.h"
 #include "rut-paintable.h"
 #include "rut-property.h"
@@ -40,6 +40,7 @@
 #include "rut-color-picker.h"
 #include "rut-introspectable.h"
 #include "rut-camera.h"
+#include "rut-texture-cache.h"
 
 enum {
     RUT_COLOR_PICKER_PROP_COLOR,
@@ -55,7 +56,7 @@ typedef enum {
 struct _rut_color_picker_t {
     rut_object_base_t _base;
 
-    rut_context_t *context;
+    rut_shell_t *shell;
 
     rut_graphable_props_t graphable;
     rut_paintable_props_t paintable;
@@ -140,7 +141,7 @@ _rut_color_picker_free(void *object)
     rut_graphable_remove_child(picker->input_region);
     rut_object_unref(picker->input_region);
 
-    rut_object_unref(picker->context);
+    rut_object_unref(picker->shell);
 
     rut_introspectable_destroy(picker);
     rut_graphable_destroy(picker);
@@ -265,7 +266,7 @@ ensure_hs_pipeline(rut_color_picker_t *picker)
     if (!picker->hs_pipeline_dirty)
         return;
 
-    bitmap = cg_bitmap_new_with_size(picker->context->cg_device,
+    bitmap = cg_bitmap_new_with_size(picker->shell->cg_device,
                                      RUT_COLOR_PICKER_HS_SIZE,
                                      RUT_COLOR_PICKER_HS_SIZE,
                                      CG_PIXEL_FORMAT_RGBA_8888_PRE);
@@ -355,7 +356,7 @@ ensure_v_pipeline(rut_color_picker_t *picker)
     if (!picker->v_pipeline_dirty)
         return;
 
-    bitmap = cg_bitmap_new_with_size(picker->context->cg_device,
+    bitmap = cg_bitmap_new_with_size(picker->shell->cg_device,
                                      1, /* width */
                                      RUT_COLOR_PICKER_V_HEIGHT,
                                      CG_PIXEL_FORMAT_RGB_888);
@@ -461,7 +462,7 @@ rut_color_picker_set_size(rut_object_t *object, float width, float height)
 {
     rut_color_picker_t *picker = object;
 
-    rut_shell_queue_redraw(picker->context->shell);
+    rut_shell_queue_redraw(picker->shell);
 
     picker->width = width;
     picker->height = height;
@@ -569,10 +570,10 @@ create_dot_pipeline(rut_color_picker_t *picker)
     cg_texture_t *texture;
     c_error_t *error = NULL;
 
-    picker->dot_pipeline = cg_pipeline_new(picker->context->cg_device);
+    picker->dot_pipeline = cg_pipeline_new(picker->shell->cg_device);
 
     texture = rut_load_texture_from_data_file(
-        picker->context, "color-picker-dot.png", &error);
+        picker->shell, "color-picker-dot.png", &error);
 
     if (texture == NULL) {
         picker->dot_width = 8;
@@ -626,10 +627,10 @@ set_color_hsv(rut_color_picker_t *picker, const float hsv[3])
 {
     hsv_to_rgb(hsv, &picker->color.red);
 
-    rut_property_dirty(&picker->context->property_ctx,
+    rut_property_dirty(&picker->shell->property_ctx,
                        &picker->properties[RUT_COLOR_PICKER_PROP_COLOR]);
 
-    rut_shell_queue_redraw(picker->context->shell);
+    rut_shell_queue_redraw(picker->shell);
 }
 
 static void
@@ -713,7 +714,7 @@ static void
 ungrab(rut_color_picker_t *picker)
 {
     if (picker->grab != RUT_COLOR_PICKER_GRAB_NONE) {
-        rut_shell_ungrab_input(picker->context->shell, grab_input_cb, picker);
+        rut_shell_ungrab_input(picker->shell, grab_input_cb, picker);
 
         picker->grab = RUT_COLOR_PICKER_GRAB_NONE;
     }
@@ -740,7 +741,7 @@ input_region_cb(rut_input_region_t *region,
             y < RUT_COLOR_PICKER_V_Y + RUT_COLOR_PICKER_V_HEIGHT) {
             picker->grab = RUT_COLOR_PICKER_GRAB_V;
             rut_shell_grab_input(
-                picker->context->shell, camera, grab_input_cb, picker);
+                picker->shell, camera, grab_input_cb, picker);
 
             update_v_from_event(picker, event);
 
@@ -754,7 +755,7 @@ input_region_cb(rut_input_region_t *region,
                 picker->grab = RUT_COLOR_PICKER_GRAB_HS;
 
                 rut_shell_grab_input(
-                    picker->context->shell, camera, grab_input_cb, picker);
+                    picker->shell, camera, grab_input_cb, picker);
 
                 update_hs_from_event(picker, event);
 
@@ -767,17 +768,17 @@ input_region_cb(rut_input_region_t *region,
 }
 
 rut_color_picker_t *
-rut_color_picker_new(rut_context_t *context)
+rut_color_picker_new(rut_shell_t *shell)
 {
     rut_color_picker_t *picker = rut_object_alloc0(rut_color_picker_t,
                                                    &rut_color_picker_type,
                                                    _rut_color_picker_init_type);
 
-    picker->context = rut_object_ref(context);
+    picker->shell = rut_object_ref(shell);
 
     cg_color_init_from_4ub(&picker->color, 0, 0, 0, 255);
 
-    picker->hs_pipeline = create_hs_pipeline(context->cg_device);
+    picker->hs_pipeline = create_hs_pipeline(shell->cg_device);
     picker->hs_pipeline_dirty = true;
 
     picker->v_pipeline = cg_pipeline_copy(picker->hs_pipeline);
@@ -785,7 +786,7 @@ rut_color_picker_new(rut_context_t *context)
 
     create_dot_pipeline(picker);
 
-    picker->bg_pipeline = create_bg_pipeline(context->cg_device);
+    picker->bg_pipeline = create_bg_pipeline(shell->cg_device);
 
     rut_paintable_init(picker);
     rut_graphable_init(picker);
@@ -829,10 +830,10 @@ rut_color_picker_set_color(rut_object_t *obj, const cg_color_t *color)
         set_hue_saturation(picker, hsv[0], hsv[1]);
         set_value(picker, hsv[2]);
 
-        rut_property_dirty(&picker->context->property_ctx,
+        rut_property_dirty(&picker->shell->property_ctx,
                            &picker->properties[RUT_COLOR_PICKER_PROP_COLOR]);
 
-        rut_shell_queue_redraw(picker->context->shell);
+        rut_shell_queue_redraw(picker->shell);
     }
 }
 

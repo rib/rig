@@ -50,7 +50,7 @@ typedef struct {
 struct _rut_box_layout_t {
     rut_object_base_t _base;
 
-    rut_context_t *ctx;
+    rut_shell_t *shell;
 
     rut_list_t preferred_size_cb_list;
     rut_list_t children;
@@ -111,9 +111,9 @@ _rut_box_layout_free(void *object)
         rut_box_layout_remove(box, child->widget);
     }
 
-    rut_shell_remove_pre_paint_callback_by_graphable(box->ctx->shell, box);
+    rut_shell_remove_pre_paint_callback_by_graphable(box->shell, box);
 
-    rut_object_unref(box->ctx);
+    rut_object_unref(box->shell);
 
     rut_graphable_destroy(box);
 
@@ -152,7 +152,7 @@ allocate_cb(rut_object_t *graphable, void *user_data)
         horizontal = true;
         child_y = 0;
         child_height = box->height;
-        if (rut_get_text_direction(box->ctx) ==
+        if (rut_shell_get_text_direction(box->shell) ==
             RUT_TEXT_DIRECTION_RIGHT_TO_LEFT) {
             if (packing == RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT)
                 packing = RUT_BOX_LAYOUT_PACKING_RIGHT_TO_LEFT;
@@ -286,7 +286,7 @@ static void
 queue_allocation(rut_box_layout_t *box)
 {
     rut_shell_add_pre_paint_callback(
-        box->ctx->shell, box, allocate_cb, NULL /* user_data */);
+        box->shell, box, allocate_cb, NULL /* user_data */);
 }
 
 static void
@@ -502,13 +502,13 @@ _rut_box_layout_init_type(void)
 }
 
 rut_box_layout_t *
-rut_box_layout_new(rut_context_t *ctx,
+rut_box_layout_new(rut_shell_t *shell,
                    rut_box_layout_packing_t packing)
 {
     rut_box_layout_t *box = rut_object_alloc0(
         rut_box_layout_t, &rut_box_layout_type, _rut_box_layout_init_type);
 
-    box->ctx = rut_object_ref(ctx);
+    box->shell = rut_object_ref(shell);
     box->packing = packing;
 
     rut_list_init(&box->preferred_size_cb_list);
@@ -541,7 +541,7 @@ rut_box_layout_add(rut_box_layout_t *box,
 
     c_return_if_fail(rut_object_get_type(box) == &rut_box_layout_type);
 
-    child->transform = rut_transform_new(box->ctx);
+    child->transform = rut_transform_new(box->shell);
     rut_graphable_add_child(box, child->transform);
     rut_object_unref(child->transform);
 
@@ -606,7 +606,7 @@ rut_box_layout_set_homogeneous(rut_object_t *obj, bool homogeneous)
 
     box->homogeneous = homogeneous;
 
-    rut_property_dirty(&box->ctx->property_ctx,
+    rut_property_dirty(&box->shell->property_ctx,
                        &box->properties[RUT_BOX_LAYOUT_PROP_HOMOGENEOUS]);
 
     queue_allocation(box);
@@ -630,7 +630,7 @@ rut_box_layout_set_spacing(rut_object_t *obj, int spacing)
 
     box->spacing = spacing;
 
-    rut_property_dirty(&box->ctx->property_ctx,
+    rut_property_dirty(&box->shell->property_ctx,
                        &box->properties[RUT_BOX_LAYOUT_PROP_SPACING]);
 
     queue_allocation(box);
@@ -654,7 +654,7 @@ rut_box_layout_set_packing(rut_object_t *obj,
 
     box->packing = packing;
 
-    rut_property_dirty(&box->ctx->property_ctx,
+    rut_property_dirty(&box->shell->property_ctx,
                        &box->properties[RUT_BOX_LAYOUT_PROP_PACKING]);
 
     queue_allocation(box);

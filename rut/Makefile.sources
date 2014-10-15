@@ -1,10 +1,7 @@
 rut_common_sources = \
     rut-types.h \
     rut-keysyms.h \
-    rut-context.h \
     color-table.h \
-    rut.h \
-    rut.c \
     rut-exception.h \
     rut-exception.c \
     rut-os.h \
@@ -35,6 +32,10 @@ rut_common_sources = \
     rut-planes.c \
     rut-shell.h \
     rut-shell.c \
+    rut-settings.h \
+    rut-settings.c \
+    rut-texture-cache.h \
+    rut-texture-cache.c \
     rut-bitmask.h \
     rut-bitmask.c \
     rut-flags.h \

@@ -30,12 +30,12 @@
 #define _RUT_NUMBER_SLIDER_H_
 
 #include "rut-object.h"
-#include "rut-context.h"
+#include "rut-shell.h"
 
 extern rut_type_t rut_number_slider_type;
 typedef struct _rut_number_slider_t rut_number_slider_t;
 
-rut_number_slider_t *rut_number_slider_new(rut_context_t *ctx);
+rut_number_slider_t *rut_number_slider_new(rut_shell_t *shell);
 
 void rut_number_slider_set_markup_label(rut_number_slider_t *slider,
                                         const char *markup);

@@ -56,7 +56,7 @@ struct _rig_hair_t {
     rut_object_base_t _base;
 
     rut_componentable_props_t component;
-    rut_context_t *ctx;
+    rut_shell_t *shell;
     cg_texture_t *circle;
     cg_texture_t *fin_texture;
     float *shell_positions;
@@ -80,7 +80,7 @@ struct _rig_hair_t {
 
 void _rig_hair_init_type(void);
 
-rig_hair_t *rig_hair_new(rut_context_t *ctx);
+rig_hair_t *rig_hair_new(rut_shell_t *shell);
 
 float rig_hair_get_length(rut_object_t *obj);
 

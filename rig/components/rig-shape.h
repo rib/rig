@@ -66,7 +66,7 @@ struct _rig_shape_t {
 
     rut_componentable_props_t component;
 
-    rut_context_t *ctx;
+    rut_shell_t *shell;
 
     float width;
     float height;
@@ -85,7 +85,7 @@ struct _rig_shape_t {
 void _rig_shape_init_type(void);
 
 rig_shape_t *
-rig_shape_new(rut_context_t *ctx, bool shaped, int width, int height);
+rig_shape_new(rut_shell_t *shell, bool shaped, int width, int height);
 
 cg_primitive_t *rig_shape_get_primitive(rut_object_t *object);
 

@@ -61,7 +61,7 @@ struct _rig_camera_view_t {
 
     rig_engine_t *engine;
 
-    rut_context_t *context;
+    rut_shell_t *shell;
 
     rig_ui_t *ui;
 

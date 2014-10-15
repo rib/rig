@@ -32,12 +32,12 @@
 
 #include <cogl/cogl.h>
 
-#include <rut-context.h>
+#include <rut-shell.h>
 
 typedef struct _rut_fixed_t rut_fixed_t;
 extern rut_type_t rut_fixed_type;
 
-rut_fixed_t *rut_fixed_new(rut_context_t *ctx, float width, float height);
+rut_fixed_t *rut_fixed_new(rut_shell_t *shell, float width, float height);
 
 void rut_fixed_set_width(rut_fixed_t *fixed, float width);
 

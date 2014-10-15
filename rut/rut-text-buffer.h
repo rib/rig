@@ -63,7 +63,7 @@ void _rut_text_buffer_init_type(void);
  * Return value: A new rut_text_buffer_t object.
  *
  */
-rut_text_buffer_t *rut_text_buffer_new(rut_context_t *ctx);
+rut_text_buffer_t *rut_text_buffer_new(rut_shell_t *shell);
 
 /**
  * rut_text_buffer_new_with_text:
@@ -74,7 +74,7 @@ rut_text_buffer_t *rut_text_buffer_new(rut_context_t *ctx);
  *
  * Return value: A new rut_text_buffer_t object.
  */
-rut_text_buffer_t *rut_text_buffer_new_with_text(rut_context_t *ctx,
+rut_text_buffer_t *rut_text_buffer_new_with_text(rut_shell_t *shell,
                                                  const char *text,
                                                  int text_len);
 

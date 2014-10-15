@@ -30,13 +30,13 @@
 #define _RUT_COLOR_BUTTON_H_
 
 #include "rut-object.h"
-#include "rut-context.h"
+#include "rut-shell.h"
 
 extern rut_type_t rut_color_button_type;
 
 typedef struct _rut_color_button_t rut_color_button_t;
 
-rut_color_button_t *rut_color_button_new(rut_context_t *ctx);
+rut_color_button_t *rut_color_button_new(rut_shell_t *shell);
 
 void rut_color_button_set_color(rut_object_t *picker, const cg_color_t *color);
 

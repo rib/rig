@@ -194,14 +194,14 @@ _rig_image_source_video_play(rig_image_source_t *source,
 
     _rig_image_source_video_stop(source);
 
-    source->sink = cg_gst_video_sink_new(engine->ctx->cg_device);
+    source->sink = cg_gst_video_sink_new(engine->shell->cg_device);
     source->pipeline = gst_pipeline_new("renderer");
     source->bin = gst_element_factory_make("playbin", NULL);
 
     if (data && len)
         uri = c_strdup_printf("mem://%p:%lu", data, (unsigned long)len);
     else {
-        filename = c_build_filename(engine->ctx->assets_location, path, NULL);
+        filename = c_build_filename(engine->shell->assets_location, path, NULL);
         uri = gst_filename_to_uri(filename, NULL);
     }
 

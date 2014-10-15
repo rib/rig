@@ -80,7 +80,7 @@ enum {
 struct _rig_entity_t {
     rut_object_base_t _base;
 
-    rut_context_t *ctx;
+    rut_shell_t *shell;
 
     char *label;
 
@@ -104,11 +104,11 @@ struct _rig_entity_t {
 
 void _rig_entity_init_type(void);
 
-rig_entity_t *rig_entity_new(rut_context_t *ctx);
+rig_entity_t *rig_entity_new(rut_shell_t *shell);
 
 rig_entity_t *rig_entity_copy(rig_entity_t *entity);
 
-rut_context_t *rig_entity_get_context(rig_entity_t *entity);
+rut_property_context_t *rig_entity_get_property_context(rig_entity_t *entity);
 
 const char *rig_entity_get_label(rut_object_t *entity);
 

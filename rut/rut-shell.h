@@ -42,7 +42,12 @@
 #endif
 
 #include <cogl/cogl.h>
+#ifdef USE_PANGO
+#include <cogl-pango/cogl-pango.h>
+#endif
 
+#include "rut-settings.h"
+#include "rut-matrix-stack.h"
 #include "rut-keysyms.h"
 #include "rut-object.h"
 #include "rut-types.h"
@@ -278,12 +283,37 @@ struct _rut_shell_t {
 #endif
 #endif
 
+    rut_settings_t *settings;
+
+    cg_device_t *cg_device;
+
+    rut_matrix_entry_t identity_entry;
+    cg_matrix_t identity_matrix;
+
+    char *assets_location;
+
+    c_hash_table_t *texture_cache;
+    cg_pipeline_t *single_texture_2d_template;
+    cg_texture_t *circle_texture;
+
+    cg_indices_t *nine_slice_indices;
+
+    c_hash_table_t *colors_hash;
+
+#ifdef USE_PANGO
+    CgPangoFontMap *pango_font_map;
+    PangoContext *pango_context;
+    PangoFontDescription *pango_font_desc;
+#endif
+
+    rut_property_context_t property_ctx;
+
+    c_slist_t *timelines;
+
     rut_closure_t *paint_idle;
 
     rut_input_queue_t *input_queue;
     int input_queue_len;
-
-    rut_context_t *rut_ctx;
 
     rut_shell_init_callback_t init_cb;
     rut_shell_fini_callback_t fini_cb;
@@ -411,12 +441,7 @@ bool rut_shell_get_headless(rut_shell_t *shell);
 void rut_shell_set_window_camera(rut_shell_t *shell,
                                  rut_object_t *window_camera);
 
-/* PRIVATE */
-void _rut_shell_associate_context(rut_shell_t *shell, rut_context_t *context);
-
-void _rut_shell_init(rut_shell_t *shell);
-
-rut_context_t *rut_shell_get_context(rut_shell_t *shell);
+void rut_shell_init(rut_shell_t *shell);
 
 void rut_shell_main(rut_shell_t *shell);
 
@@ -796,5 +821,18 @@ rut_shell_add_signal_callback (rut_shell_t *shell,
 #ifdef USE_SDL
 void rut_shell_handle_sdl_event(rut_shell_t *shell, SDL_Event *sdl_event);
 #endif
+
+
+/* XXX: Find a better place for this to live... */
+extern uint8_t _rut_nine_slice_indices_data[54];
+
+rut_text_direction_t rut_shell_get_text_direction(rut_shell_t *shell);
+
+void rut_shell_set_assets_location(rut_shell_t *shell,
+                                   const char *assets_location);
+
+char *rut_find_data_file(const char *base_filename);
+
+void rut_init_tls_state(void);
 
 #endif /* _RUT_SHELL_H_ */

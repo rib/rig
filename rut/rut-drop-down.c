@@ -41,6 +41,7 @@
 #include "rut-inputable.h"
 #include "rut-pickable.h"
 #include "rut-input-region.h"
+#include "rut-texture-cache.h"
 
 #include "rut-camera.h"
 
@@ -63,7 +64,7 @@ typedef struct {
 struct _rut_drop_down_t {
     rut_object_base_t _base;
 
-    rut_context_t *context;
+    rut_shell_t *shell;
 
     rut_graphable_props_t graphable;
     rut_paintable_props_t paintable;
@@ -127,15 +128,15 @@ static rut_property_spec_t _rut_drop_down_prop_specs[] = {
 };
 
 static rut_drop_down_context_data_t *
-rut_drop_down_get_context_data(rut_context_t *context)
+rut_drop_down_get_context_data(rut_shell_t *shell)
 {
     static cg_user_data_key_t context_data_key;
     rut_drop_down_context_data_t *context_data = cg_object_get_user_data(
-        CG_OBJECT(context->cg_device), &context_data_key);
+        CG_OBJECT(shell->cg_device), &context_data_key);
 
     if (context_data == NULL) {
         context_data = c_new0(rut_drop_down_context_data_t, 1);
-        cg_object_set_user_data(CG_OBJECT(context->cg_device),
+        cg_object_set_user_data(CG_OBJECT(shell->cg_device),
                                 &context_data_key,
                                 context_data,
                                 c_free);
@@ -145,23 +146,24 @@ rut_drop_down_get_context_data(rut_context_t *context)
 }
 
 static cg_pipeline_t *
-rut_drop_down_create_bg_pipeline(rut_context_t *context)
+rut_drop_down_create_bg_pipeline(rut_shell_t *shell)
 {
     rut_drop_down_context_data_t *context_data =
-        rut_drop_down_get_context_data(context);
+        rut_drop_down_get_context_data(shell);
 
     /* The pipeline is cached so that if multiple drop downs are created
      * they will share a reference to the same pipeline */
     if (context_data->bg_pipeline)
         return cg_object_ref(context_data->bg_pipeline);
     else {
-        cg_pipeline_t *pipeline = cg_pipeline_new(context->cg_device);
+        cg_pipeline_t *pipeline = cg_pipeline_new(shell->cg_device);
         static cg_user_data_key_t bg_pipeline_destroy_key;
         cg_texture_t *bg_texture;
         c_error_t *error = NULL;
 
-        bg_texture = rut_load_texture_from_data_file(
-            context, "drop-down-background.png", &error);
+        bg_texture = rut_load_texture_from_data_file(shell,
+                                                     "drop-down-background.png",
+                                                     &error);
         if (bg_texture) {
             const cg_pipeline_wrap_mode_t wrap_mode =
                 CG_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE;
@@ -196,17 +198,17 @@ rut_drop_down_create_bg_pipeline(rut_context_t *context)
 }
 
 static cg_pipeline_t *
-rut_drop_down_create_highlighted_bg_pipeline(rut_context_t *context)
+rut_drop_down_create_highlighted_bg_pipeline(rut_shell_t *shell)
 {
     rut_drop_down_context_data_t *context_data =
-        rut_drop_down_get_context_data(context);
+        rut_drop_down_get_context_data(shell);
 
     /* The pipeline is cached so that if multiple drop downs are created
      * they will share a reference to the same pipeline */
     if (context_data->highlighted_bg_pipeline)
         return cg_object_ref(context_data->highlighted_bg_pipeline);
     else {
-        cg_pipeline_t *bg_pipeline = rut_drop_down_create_bg_pipeline(context);
+        cg_pipeline_t *bg_pipeline = rut_drop_down_create_bg_pipeline(shell);
         cg_pipeline_t *pipeline = cg_pipeline_copy(bg_pipeline);
         static cg_user_data_key_t pipeline_destroy_key;
 
@@ -273,7 +275,7 @@ _rut_drop_down_free(void *object)
 {
     rut_drop_down_t *drop = object;
 
-    rut_object_unref(drop->context);
+    rut_object_unref(drop->shell);
     cg_object_unref(drop->bg_pipeline);
     cg_object_unref(drop->highlighted_bg_pipeline);
 
@@ -286,7 +288,7 @@ _rut_drop_down_free(void *object)
 
     rut_introspectable_destroy(drop);
 
-    rut_shell_remove_pre_paint_callback_by_graphable(drop->context->shell,
+    rut_shell_remove_pre_paint_callback_by_graphable(drop->shell,
                                                      drop);
     rut_graphable_destroy(drop);
 
@@ -327,7 +329,7 @@ rut_drop_down_ensure_layouts(rut_drop_down_t *drop)
         for (i = 0; i < drop->n_values; i++) {
             rut_drop_down_layout_t *layout = drop->layouts + i;
 
-            layout->layout = pango_layout_new(drop->context->pango_context);
+            layout->layout = pango_layout_new(drop->shell->pango_context);
 
             pango_layout_set_text(layout->layout, drop->values[i].name, -1);
 
@@ -553,7 +555,7 @@ rut_drop_down_selector_grab_cb(rut_input_event_t *event, void *user_data)
 
         if (selector_value != drop->selector_value) {
             drop->selector_value = selector_value;
-            rut_shell_queue_redraw(drop->context->shell);
+            rut_shell_queue_redraw(drop->shell);
         }
 
         /* If this is a click then commit the chosen value */
@@ -641,18 +643,18 @@ rut_drop_down_handle_click(rut_drop_down_t *drop,
 
     if (drop->selector_outline_pipeline == NULL) {
         drop->selector_outline_pipeline =
-            cg_pipeline_new(drop->context->cg_device);
+            cg_pipeline_new(drop->shell->cg_device);
         cg_pipeline_set_color4ub(drop->selector_outline_pipeline, 0, 0, 0, 255);
     }
 
-    drop->selector_outline_path = cg_path_new(drop->context->cg_device);
+    drop->selector_outline_path = cg_path_new(drop->shell->cg_device);
     cg_path_rectangle(drop->selector_outline_path,
                       drop->selector_x,
                       drop->selector_y,
                       drop->selector_x + drop->selector_width,
                       drop->selector_y + drop->selector_height);
 
-    rut_shell_grab_input(drop->context->shell,
+    rut_shell_grab_input(drop->shell,
                          rut_input_event_get_camera(event),
                          rut_drop_down_selector_grab_cb,
                          drop);
@@ -660,7 +662,7 @@ rut_drop_down_handle_click(rut_drop_down_t *drop,
     drop->selector_shown = true;
     drop->selector_value = -1;
 
-    rut_shell_queue_redraw(drop->context->shell);
+    rut_shell_queue_redraw(drop->shell);
 }
 
 static rut_input_event_status_t
@@ -680,7 +682,7 @@ rut_drop_down_input_cb(rut_input_event_t *event,
     if ((rut_motion_event_get_button_state(event) & RUT_BUTTON_STATE_1) == 0) {
         drop->button_down = false;
         rut_shell_ungrab_input(
-            drop->context->shell, rut_drop_down_input_cb, user_data);
+            drop->shell, rut_drop_down_input_cb, user_data);
 
         /* If we the pointer is still over the widget then treat it as a
          * click */
@@ -700,7 +702,7 @@ rut_drop_down_input_cb(rut_input_event_t *event,
 
     if (highlighted != drop->highlighted) {
         drop->highlighted = highlighted;
-        rut_shell_queue_redraw(drop->context->shell);
+        rut_shell_queue_redraw(drop->shell);
     }
 
     return RUT_INPUT_EVENT_STATUS_UNHANDLED;
@@ -722,9 +724,9 @@ rut_drop_down_input_region_cb(
         drop->highlighted = true;
 
         rut_shell_grab_input(
-            drop->context->shell, camera, rut_drop_down_input_cb, drop);
+            drop->shell, camera, rut_drop_down_input_cb, drop);
 
-        rut_shell_queue_redraw(drop->context->shell);
+        rut_shell_queue_redraw(drop->shell);
 
         return RUT_INPUT_EVENT_STATUS_HANDLED;
     }
@@ -738,10 +740,10 @@ rut_drop_down_hide_selector(rut_drop_down_t *drop)
     if (drop->selector_shown) {
         cg_object_unref(drop->selector_outline_path);
         drop->selector_shown = false;
-        rut_shell_queue_redraw(drop->context->shell);
+        rut_shell_queue_redraw(drop->shell);
 
         rut_shell_ungrab_input(
-            drop->context->shell, rut_drop_down_selector_grab_cb, drop);
+            drop->shell, rut_drop_down_selector_grab_cb, drop);
     }
 }
 
@@ -750,7 +752,7 @@ rut_drop_down_set_size(rut_object_t *object, float width, float height)
 {
     rut_drop_down_t *drop = object;
 
-    rut_shell_queue_redraw(drop->context->shell);
+    rut_shell_queue_redraw(drop->shell);
     drop->width = width;
     drop->height = height;
     rut_input_region_set_rectangle(drop->input_region,
@@ -866,12 +868,12 @@ _rut_drop_down_init_type(void)
 }
 
 rut_drop_down_t *
-rut_drop_down_new(rut_context_t *context)
+rut_drop_down_new(rut_shell_t *shell)
 {
     rut_drop_down_t *drop = rut_object_alloc0(
         rut_drop_down_t, &rut_drop_down_type, _rut_drop_down_init_type);
 
-    drop->context = rut_object_ref(context);
+    drop->shell = rut_object_ref(shell);
 
     /* Set a dummy value so we can assume that value_index is always a
      * valid index */
@@ -886,9 +888,9 @@ rut_drop_down_new(rut_context_t *context)
 
     rut_introspectable_init(drop, _rut_drop_down_prop_specs, drop->properties);
 
-    drop->bg_pipeline = rut_drop_down_create_bg_pipeline(context);
+    drop->bg_pipeline = rut_drop_down_create_bg_pipeline(shell);
     drop->highlighted_bg_pipeline =
-        rut_drop_down_create_highlighted_bg_pipeline(context);
+        rut_drop_down_create_highlighted_bg_pipeline(shell);
 
     drop->input_region = rut_input_region_new_rectangle(
         0, 0, 0, 0, rut_drop_down_input_region_cb, drop);
@@ -913,10 +915,10 @@ rut_drop_down_set_value(rut_object_t *obj, int value)
         if (drop->values[i].value == value) {
             drop->value_index = i;
 
-            rut_property_dirty(&drop->context->property_ctx,
+            rut_property_dirty(&drop->shell->property_ctx,
                                &drop->properties[RUT_DROP_DOWN_PROP_VALUE]);
 
-            rut_shell_queue_redraw(drop->context->shell);
+            rut_shell_queue_redraw(drop->shell);
             return;
         }
 
@@ -990,5 +992,5 @@ rut_drop_down_set_values_array(rut_drop_down_t *drop,
 
     drop->value_index = old_value_index;
 
-    rut_shell_queue_redraw(drop->context->shell);
+    rut_shell_queue_redraw(drop->shell);
 }

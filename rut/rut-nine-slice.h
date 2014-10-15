@@ -32,13 +32,13 @@
 
 #include <cogl/cogl.h>
 
-#include <rut-context.h>
+#include <rut-shell.h>
 #include <rut-mesh.h>
 
 typedef struct _rut_nine_slice_t rut_nine_slice_t;
 extern rut_type_t rut_nine_slice_type;
 
-rut_nine_slice_t *rut_nine_slice_new(rut_context_t *ctx,
+rut_nine_slice_t *rut_nine_slice_new(rut_shell_t *shell,
                                      cg_texture_t *texture,
                                      float top,
                                      float right,

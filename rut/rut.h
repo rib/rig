@@ -47,7 +47,7 @@
 #include "rut-meshable.h"
 #include "rut-inputable.h"
 #include "rut-pickable.h"
-#include "rut-context.h"
+#include "rut-shell.h"
 #include "rut-shell.h"
 #include "rut-os.h"
 #include "rut-bitmask.h"
@@ -77,6 +77,8 @@
 #include "rut-mimable.h"
 #include "rut-color-button.h"
 #include "rut-poll.h"
+#include "rut-texture-cache.h"
+#include "rut-settings.h"
 
 
 #ifdef RUT_EDITOR_ENABLED

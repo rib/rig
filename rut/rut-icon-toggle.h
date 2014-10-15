@@ -33,7 +33,7 @@
 typedef struct _rut_icon_toggle_t rut_icon_toggle_t;
 extern rut_type_t rut_icon_toggle_type;
 
-rut_icon_toggle_t *rut_icon_toggle_new(rut_context_t *ctx,
+rut_icon_toggle_t *rut_icon_toggle_new(rut_shell_t *shell,
                                        const char *set_icon,
                                        const char *unset_icon);
 

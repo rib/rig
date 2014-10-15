@@ -180,7 +180,7 @@ add_dependency(rig_binding_view_t *binding_view,
     rut_bin_t *bin;
     const char *component_str = NULL;
     const char *label_str;
-    rut_context_t *ctx = binding_view->engine->ctx;
+    rut_shell_t *shell = binding_view->engine->shell;
 
     dependency->object = rut_object_ref(object);
     dependency->binding_view = binding_view;
@@ -190,11 +190,11 @@ add_dependency(rig_binding_view_t *binding_view,
     dependency->preview = drag_preview;
 
     dependency->hbox =
-        rut_box_layout_new(ctx, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
+        rut_box_layout_new(shell, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
 
     if (!drag_preview) {
         rut_icon_button_t *delete_button =
-            rut_icon_button_new(ctx,
+            rut_icon_button_new(shell,
                                 NULL, /* label */
                                 0, /* ignore label position */
                                 "delete-white.png", /* normal */
@@ -240,19 +240,19 @@ add_dependency(rig_binding_view_t *binding_view,
             c_strdup_printf("%s::%s", label_str, property->spec->name);
     }
 
-    dependency->label = rut_text_new_with_text(ctx, NULL, dependency_label);
+    dependency->label = rut_text_new_with_text(shell, NULL, dependency_label);
     c_free(dependency_label);
     rut_box_layout_add(dependency->hbox, false, dependency->label);
     rut_object_unref(dependency->label);
 
-    bin = rut_bin_new(ctx);
+    bin = rut_bin_new(shell);
     rut_bin_set_left_padding(bin, 20);
     rut_box_layout_add(dependency->hbox, false, bin);
     rut_object_unref(bin);
 
     /* TODO: Check if the name is unique for the current binding... */
     dependency->variable_name_label =
-        rut_text_new_with_text(ctx, NULL, property->spec->name);
+        rut_text_new_with_text(shell, NULL, property->spec->name);
     rut_text_set_editable(dependency->variable_name_label, true);
     rut_bin_set_child(bin, dependency->variable_name_label);
     rut_object_unref(dependency->variable_name_label);
@@ -283,7 +283,7 @@ drop_region_input_cb(rut_input_region_t *region,
                      void *user_data)
 {
     rig_binding_view_t *binding_view = user_data;
-    rut_context_t *ctx = binding_view->engine->ctx;
+    rut_shell_t *shell = binding_view->engine->shell;
 
     if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_DROP_OFFER) {
         rut_object_t *payload = rut_drop_offer_event_get_payload(event);
@@ -296,7 +296,7 @@ drop_region_input_cb(rut_input_region_t *region,
             binding_view->preview_dependency_prop = property;
             add_dependency(binding_view, property, true);
 
-            rut_shell_take_drop_offer(ctx->shell, binding_view->drop_region);
+            rut_shell_take_drop_offer(shell, binding_view->drop_region);
             return RUT_INPUT_EVENT_STATUS_HANDLED;
         }
     } else if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_DROP) {
@@ -344,7 +344,7 @@ rig_binding_view_new(rig_engine_t *engine,
                      rut_property_t *property,
                      rig_binding_t *binding)
 {
-    rut_context_t *ctx = engine->ctx;
+    rut_shell_t *shell = engine->shell;
     rig_binding_view_t *binding_view =
         rut_object_alloc0(rig_binding_view_t,
                           &rig_binding_view_type,
@@ -359,21 +359,21 @@ rig_binding_view_new(rig_engine_t *engine,
 
     binding_view->binding = rut_object_ref(binding);
 
-    binding_view->top_stack = rut_stack_new(ctx, 1, 1);
+    binding_view->top_stack = rut_stack_new(shell, 1, 1);
     rut_graphable_add_child(binding_view, binding_view->top_stack);
     rut_object_unref(binding_view->top_stack);
 
     binding_view->vbox =
-        rut_box_layout_new(ctx, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
+        rut_box_layout_new(shell, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
     rut_stack_add(binding_view->top_stack, binding_view->vbox);
     rut_object_unref(binding_view->vbox);
 
-    binding_view->drop_stack = rut_stack_new(ctx, 1, 1);
+    binding_view->drop_stack = rut_stack_new(shell, 1, 1);
     rut_box_layout_add(binding_view->vbox, false, binding_view->drop_stack);
     rut_object_unref(binding_view->drop_stack);
 
     binding_view->drop_label =
-        rut_text_new_with_text(ctx, NULL, "Dependencies...");
+        rut_text_new_with_text(shell, NULL, "Dependencies...");
     rut_stack_add(binding_view->drop_stack, binding_view->drop_label);
     rut_object_unref(binding_view->drop_label);
 
@@ -382,25 +382,25 @@ rig_binding_view_new(rig_engine_t *engine,
     rut_stack_add(binding_view->drop_stack, binding_view->drop_region);
     rut_object_unref(binding_view->drop_region);
 
-    dependencies_indent = rut_bin_new(ctx);
+    dependencies_indent = rut_bin_new(shell);
     rut_box_layout_add(binding_view->vbox, false, dependencies_indent);
     rut_object_unref(dependencies_indent);
     rut_bin_set_left_padding(dependencies_indent, 10);
 
     binding_view->dependencies_vbox =
-        rut_box_layout_new(ctx, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
+        rut_box_layout_new(shell, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
     rut_bin_set_child(dependencies_indent, binding_view->dependencies_vbox);
     rut_object_unref(binding_view->dependencies_vbox);
 
-    hbox = rut_box_layout_new(ctx, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
+    hbox = rut_box_layout_new(shell, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
     rut_box_layout_add(binding_view->vbox, false, hbox);
     rut_object_unref(hbox);
 
-    equals = rut_text_new_with_text(ctx, "bold", "=");
+    equals = rut_text_new_with_text(shell, "bold", "=");
     rut_box_layout_add(hbox, false, equals);
     rut_object_unref(equals);
 
-    binding_view->code_view = rut_text_new_with_text(ctx, "monospace", "");
+    binding_view->code_view = rut_text_new_with_text(shell, "monospace", "");
     rut_text_set_hint_text(binding_view->code_view, "Expression...");
     rut_text_set_editable(binding_view->code_view, true);
     rut_box_layout_add(hbox, false, binding_view->code_view);

@@ -61,7 +61,7 @@ n_taps_to_sigma(int n_taps)
 }
 
 static cg_pipeline_t *
-create_1d_gaussian_blur_pipeline(rut_context_t *ctx,
+create_1d_gaussian_blur_pipeline(rut_shell_t *shell,
                                  int n_taps)
 {
     static c_hash_table_t *pipeline_cache = NULL;
@@ -97,7 +97,7 @@ create_1d_gaussian_blur_pipeline(rut_context_t *ctx,
 
     c_string_set_size(shader, 0);
 
-    pipeline = cg_pipeline_new(ctx->cg_device);
+    pipeline = cg_pipeline_new(shell->cg_device);
     cg_pipeline_set_layer_null_texture(pipeline,
                                        0, /* layer_num */
                                        CG_TEXTURE_TYPE_2D);
@@ -204,7 +204,7 @@ set_blurrer_pipeline_texture(cg_pipeline_t *pipeline,
 }
 
 rut_gaussian_blurrer_t *
-rut_gaussian_blurrer_new(rut_context_t *ctx, int n_taps)
+rut_gaussian_blurrer_new(rut_shell_t *shell, int n_taps)
 {
     rut_gaussian_blurrer_t *blurrer = c_slice_new0(rut_gaussian_blurrer_t);
     cg_pipeline_t *base_pipeline;
@@ -217,10 +217,10 @@ rut_gaussian_blurrer_new(rut_context_t *ctx, int n_taps)
         return NULL;
     }
 
-    blurrer->ctx = ctx;
+    blurrer->shell = shell;
     blurrer->n_taps = n_taps;
 
-    base_pipeline = create_1d_gaussian_blur_pipeline(ctx, n_taps);
+    base_pipeline = create_1d_gaussian_blur_pipeline(shell, n_taps);
 
     blurrer->x_pass_pipeline = cg_pipeline_copy(base_pipeline);
     set_blurrer_pipeline_factors(blurrer->x_pass_pipeline, n_taps);
@@ -282,7 +282,7 @@ rut_gaussian_blurrer_blur(rut_gaussian_blurrer_t *blurrer,
     if (!blurrer->x_pass) {
         cg_error_t *error = NULL;
         cg_texture_2d_t *texture_2d =
-            cg_texture_2d_new_with_size(blurrer->ctx->cg_device, src_w, src_h);
+            cg_texture_2d_new_with_size(blurrer->shell->cg_device, src_w, src_h);
 
         cg_texture_set_components(texture_2d, components);
 
@@ -305,7 +305,7 @@ rut_gaussian_blurrer_blur(rut_gaussian_blurrer_t *blurrer,
     if (!blurrer->y_pass) {
         /* create the second FBO (final destination) to render the y pass */
         cg_texture_2d_t *texture_2d =
-            cg_texture_2d_new_with_size(blurrer->ctx->cg_device, src_w, src_h);
+            cg_texture_2d_new_with_size(blurrer->shell->cg_device, src_w, src_h);
 
         cg_texture_set_components(texture_2d, components);
 

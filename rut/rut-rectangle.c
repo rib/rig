@@ -119,7 +119,7 @@ _rut_rectangle_init_type(void)
 }
 
 rut_rectangle_t *
-rut_rectangle_new4f(rut_context_t *ctx,
+rut_rectangle_new4f(rut_shell_t *shell,
                     float width,
                     float height,
                     float red,
@@ -136,7 +136,7 @@ rut_rectangle_new4f(rut_context_t *ctx,
     rectangle->width = width;
     rectangle->height = height;
 
-    rectangle->pipeline = cg_pipeline_new(ctx->cg_device);
+    rectangle->pipeline = cg_pipeline_new(shell->cg_device);
     cg_pipeline_set_color4f(rectangle->pipeline, red, green, blue, alpha);
 
     return rectangle;

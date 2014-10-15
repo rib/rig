@@ -26,7 +26,7 @@
 #define __RUT_TEXT_H__
 
 #include "rut-types.h"
-#include "rut-context.h"
+#include "rut-shell.h"
 #include "rut-interfaces.h"
 #include "rut-text-buffer.h"
 #include "rut-closure.h"
@@ -118,7 +118,7 @@ enum {
 struct _rut_text_t {
     rut_object_base_t _base;
 
-    rut_context_t *ctx;
+    rut_shell_t *shell;
 
     float width;
     float height;
@@ -241,8 +241,6 @@ struct _rut_text_t {
     unsigned int password_hint_visible : 1;
 };
 
-rut_context_t *rut_text_get_context(rut_text_t *text);
-
 rut_text_direction_t rut_text_get_direction(rut_text_t *text);
 
 void rut_text_set_direction(rut_text_t *text, rut_text_direction_t direction);
@@ -363,7 +361,7 @@ rut_text_add_text_deleted_callback(rut_text_t *text,
  *
  * Return value: the newly created #rut_text_t actor
  */
-rut_text_t *rut_text_new(rut_context_t *ctx);
+rut_text_t *rut_text_new(rut_shell_t *shell);
 
 /**
  * rut_text_new_full:
@@ -381,7 +379,7 @@ rut_text_t *rut_text_new(rut_context_t *ctx);
  *
  * Return value: the newly created #rut_text_t actor
  */
-rut_text_t *rut_text_new_full(rut_context_t *ctx,
+rut_text_t *rut_text_new_full(rut_shell_t *shell,
                               const char *font_name,
                               const char *text,
                               rut_text_buffer_t *buffer);
@@ -399,7 +397,7 @@ rut_text_t *rut_text_new_full(rut_context_t *ctx,
  *
  * Return value: the newly created #rut_text_t actor
  */
-rut_text_t *rut_text_new_with_text(rut_context_t *ctx,
+rut_text_t *rut_text_new_with_text(rut_shell_t *shell,
                                    const char *font_name,
                                    const char *text);
 
@@ -411,7 +409,7 @@ rut_text_t *rut_text_new_with_text(rut_context_t *ctx,
  *
  * Return value: a new #rut_text_t
  */
-rut_text_t *rut_text_new_with_buffer(rut_context_t *ctx,
+rut_text_t *rut_text_new_with_buffer(rut_shell_t *shell,
                                      rut_text_buffer_t *buffer);
 
 /**

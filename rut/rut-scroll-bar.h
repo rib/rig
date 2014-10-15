@@ -30,7 +30,7 @@
 #ifndef _RUT_SCROLL_BAR_H_
 #define _RUT_SCROLL_BAR_H_
 
-#include "rut-context.h"
+#include "rut-shell.h"
 #include "rut-types.h"
 
 typedef struct _rut_scroll_bar_t rut_scroll_bar_t;
@@ -40,7 +40,7 @@ extern rut_type_t rut_scroll_bar_type;
 
 void _rut_scroll_bar_init_type(void);
 
-rut_scroll_bar_t *rut_scroll_bar_new(rut_context_t *ctx,
+rut_scroll_bar_t *rut_scroll_bar_new(rut_shell_t *shell,
                                      rut_axis_t axis,
                                      float length,
                                      float virtual_length,

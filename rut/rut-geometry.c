@@ -34,12 +34,13 @@
 
 #include <cogl/cogl.h>
 
-#include "rut-context.h"
+#include "rut-shell.h"
 #include "rut-geometry.h"
 #include "rut-interfaces.h"
 
 cg_attribute_t *
-rut_create_circle_fan_p2(rut_context_t *ctx, int subdivisions, int *n_verts_ret)
+rut_create_circle_fan_p2(rut_shell_t *shell, int subdivisions,
+                         int *n_verts_ret)
 {
     int n_verts = subdivisions + 2;
     struct CircleVert {
@@ -66,7 +67,7 @@ rut_create_circle_fan_p2(rut_context_t *ctx, int subdivisions, int *n_verts_ret)
     *n_verts_ret = n_verts;
 
     attribute_buffer =
-        cg_attribute_buffer_new(ctx->cg_device, buffer_size, verts);
+        cg_attribute_buffer_new(shell->cg_device, buffer_size, verts);
 
     attribute = cg_attribute_new(attribute_buffer,
                                  "cg_position_in",
@@ -78,12 +79,12 @@ rut_create_circle_fan_p2(rut_context_t *ctx, int subdivisions, int *n_verts_ret)
 }
 
 cg_primitive_t *
-rut_create_circle_fan_primitive(rut_context_t *ctx,
+rut_create_circle_fan_primitive(rut_shell_t *shell,
                                 int subdivisions)
 {
     int n_verts;
     cg_attribute_t *attribute =
-        rut_create_circle_fan_p2(ctx, subdivisions, &n_verts);
+        rut_create_circle_fan_p2(shell, subdivisions, &n_verts);
 
     return cg_primitive_new_with_attributes(
         CG_VERTICES_MODE_TRIANGLE_FAN, n_verts, &attribute, 1);
@@ -114,17 +115,17 @@ rut_create_circle_outline_mesh(uint8_t n_vertices)
 }
 
 cg_primitive_t *
-rut_create_circle_outline_primitive(rut_context_t *ctx,
+rut_create_circle_outline_primitive(rut_shell_t *shell,
                                     uint8_t n_vertices)
 {
     rut_mesh_t *mesh = rut_create_circle_outline_mesh(n_vertices);
-    cg_primitive_t *primitive = rut_mesh_create_primitive(ctx, mesh);
+    cg_primitive_t *primitive = rut_mesh_create_primitive(shell, mesh);
     rut_object_unref(mesh);
     return primitive;
 }
 
 cg_texture_t *
-rut_create_circle_texture(rut_context_t *ctx,
+rut_create_circle_texture(rut_shell_t *shell,
                           int radius_texels,
                           int padding_texels)
 {
@@ -136,11 +137,11 @@ rut_create_circle_texture(rut_context_t *ctx,
     int half_size = radius_texels + padding_texels;
     int size = half_size * 2;
 
-    tex2d = cg_texture_2d_new_with_size(ctx->cg_device, size, size);
+    tex2d = cg_texture_2d_new_with_size(shell->cg_device, size, size);
     offscreen = cg_offscreen_new_with_texture(tex2d);
     fb = offscreen;
 
-    circle = rut_create_circle_fan_primitive(ctx, 360);
+    circle = rut_create_circle_fan_primitive(shell, 360);
 
     cg_framebuffer_clear4f(fb, CG_BUFFER_BIT_COLOR, 0, 0, 0, 0);
 
@@ -150,7 +151,7 @@ rut_create_circle_texture(rut_context_t *ctx,
     cg_framebuffer_translate(fb, half_size, half_size, 0);
     cg_framebuffer_scale(fb, radius_texels, radius_texels, 1);
 
-    white_pipeline = cg_pipeline_new(ctx->cg_device);
+    white_pipeline = cg_pipeline_new(shell->cg_device);
     cg_pipeline_set_color4f(white_pipeline, 1, 1, 1, 1);
 
     cg_primitive_draw(circle, fb, white_pipeline);
@@ -281,19 +282,19 @@ rut_create_rotation_tool_mesh(uint8_t n_vertices)
 }
 
 cg_primitive_t *
-rut_create_rotation_tool_primitive(rut_context_t *ctx,
+rut_create_rotation_tool_primitive(rut_shell_t *shell,
                                    uint8_t n_vertices)
 {
     rut_mesh_t *mesh = rut_create_rotation_tool_mesh(n_vertices);
-    cg_primitive_t *primitive = rut_mesh_create_primitive(ctx, mesh);
+    cg_primitive_t *primitive = rut_mesh_create_primitive(shell, mesh);
     rut_object_unref(mesh);
 
     return primitive;
 }
 
 cg_primitive_t *
-rut_create_create_grid(
-    rut_context_t *ctx, float width, float height, float x_space, float y_space)
+rut_create_create_grid(rut_shell_t *shell, float width, float height,
+                       float x_space, float y_space)
 {
     c_array_t *lines = c_array_new(false, false, sizeof(cg_vertex_p2_t));
     float x, y;
@@ -311,7 +312,7 @@ rut_create_create_grid(
         n_lines++;
     }
 
-    return cg_primitive_new_p2(ctx->cg_device,
+    return cg_primitive_new_p2(shell->cg_device,
                                CG_VERTICES_MODE_LINES,
                                n_lines * 2,
                                (cg_vertex_p2_t *)lines->data);

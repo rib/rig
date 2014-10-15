@@ -42,14 +42,14 @@
 #include "rut-inputable.h"
 #include "rut-pickable.h"
 #include "rut-input-region.h"
-
 #include "rut-nine-slice.h"
 #include "rut-camera.h"
+#include "rut-texture-cache.h"
 
 struct _rut_drag_bin_t {
     rut_object_base_t _base;
 
-    rut_context_t *ctx;
+    rut_shell_t *shell;
 
     rut_object_t *child;
     rut_object_t *payload;
@@ -84,7 +84,7 @@ _rut_drag_bin_free(void *object)
         rut_object_unref(bin->transform);
     }
 
-    rut_shell_remove_pre_paint_callback_by_graphable(bin->ctx->shell, bin);
+    rut_shell_remove_pre_paint_callback_by_graphable(bin->shell, bin);
 
     rut_graphable_destroy(bin);
 
@@ -191,8 +191,8 @@ start_drag(rut_drag_bin_t *bin)
     root = rut_graphable_get_root(bin);
     rut_stack_add(root, bin->transform);
 
-    rut_shell_start_drag(bin->ctx->shell, bin->payload);
-    rut_shell_queue_redraw(bin->ctx->shell);
+    rut_shell_start_drag(bin->shell, bin->payload);
+    rut_shell_queue_redraw(bin->shell);
     bin->in_drag = true;
 }
 
@@ -205,8 +205,8 @@ cancel_drag(rut_drag_bin_t *bin)
     rut_graphable_remove_child(bin->drag_overlay);
     rut_graphable_remove_child(bin->transform);
 
-    rut_shell_cancel_drag(bin->ctx->shell);
-    rut_shell_queue_redraw(bin->ctx->shell);
+    rut_shell_cancel_drag(bin->shell);
+    rut_shell_queue_redraw(bin->shell);
     bin->in_drag = false;
 }
 
@@ -226,12 +226,12 @@ _rut_drag_bin_grab_input_cb(rut_input_event_t *event, void *user_data)
     if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_MOTION) {
         if (rut_motion_event_get_action(event) == RUT_MOTION_EVENT_ACTION_UP) {
             rut_shell_ungrab_input(
-                bin->ctx->shell, _rut_drag_bin_grab_input_cb, state);
+                bin->shell, _rut_drag_bin_grab_input_cb, state);
 
             c_slice_free(drag_state_t, state);
 
             if (bin->in_drag) {
-                rut_shell_drop(bin->ctx->shell);
+                rut_shell_drop(bin->shell);
                 cancel_drag(bin);
                 return RUT_INPUT_EVENT_STATUS_HANDLED;
             } else
@@ -256,7 +256,7 @@ _rut_drag_bin_grab_input_cb(rut_input_event_t *event, void *user_data)
             } else
                 cancel_drag(bin);
 
-            rut_shell_queue_redraw(bin->ctx->shell);
+            rut_shell_queue_redraw(bin->shell);
 
             return RUT_INPUT_EVENT_STATUS_HANDLED;
         }
@@ -282,7 +282,7 @@ _rut_drag_bin_input_cb(
             state->press_x = rut_motion_event_get_x(event);
             state->press_y = rut_motion_event_get_y(event);
 
-            rut_shell_grab_input(bin->ctx->shell,
+            rut_shell_grab_input(bin->shell,
                                  rut_input_event_get_camera(event),
                                  _rut_drag_bin_grab_input_cb,
                                  state);
@@ -295,34 +295,34 @@ _rut_drag_bin_input_cb(
 }
 
 rut_drag_bin_t *
-rut_drag_bin_new(rut_context_t *ctx)
+rut_drag_bin_new(rut_shell_t *shell)
 {
     rut_drag_bin_t *bin = rut_object_alloc0(
         rut_drag_bin_t, &rut_drag_bin_type, _rut_drag_bin_init_type);
 
-    bin->ctx = ctx;
+    bin->shell = shell;
 
     rut_graphable_init(bin);
 
     bin->in_drag = false;
 
-    bin->stack = rut_stack_new(ctx, 1, 1);
+    bin->stack = rut_stack_new(shell, 1, 1);
     rut_graphable_add_child(bin, bin->stack);
     rut_object_unref(bin->stack);
 
     bin->input_region =
         rut_input_region_new_rectangle(0, 0, 1, 1, _rut_drag_bin_input_cb, bin);
 
-    bin->bin = rut_bin_new(ctx);
+    bin->bin = rut_bin_new(shell);
     rut_stack_add(bin->stack, bin->bin);
     rut_object_unref(bin->bin);
 
-    bin->drag_overlay = rut_rectangle_new4f(ctx, 1, 1, 0.5, 0.5, 0.5, 0.5);
+    bin->drag_overlay = rut_rectangle_new4f(shell, 1, 1, 0.5, 0.5, 0.5,
+                                            0.5);
 
-    bin->transform = rut_transform_new(ctx);
-    bin->drag_icon = rut_nine_slice_new(
-        ctx,
-        rut_load_texture_from_data_file(ctx, "transparency-grid.png", NULL),
+    bin->transform = rut_transform_new(shell);
+    bin->drag_icon = rut_nine_slice_new(shell,
+        rut_load_texture_from_data_file(shell, "transparency-grid.png", NULL),
         0,
         0,
         0,
@@ -356,7 +356,7 @@ rut_drag_bin_set_child(rut_drag_bin_t *bin, rut_object_t *child_widget)
         rut_object_ref(child_widget);
     }
 
-    rut_shell_queue_redraw(bin->ctx->shell);
+    rut_shell_queue_redraw(bin->shell);
 }
 
 void

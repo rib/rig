@@ -33,9 +33,9 @@
 
 #include <cogl/cogl.h>
 
-#include "rut-context.h"
+#include "rut-shell.h"
 
-bool rut_color_init_from_string(rut_context_t *ctx,
+bool rut_color_init_from_string(rut_shell_t *shell,
                                 cg_color_t *color,
                                 const char *str);
 

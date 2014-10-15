@@ -31,9 +31,6 @@
 
 #include "rut-type.h"
 
-typedef struct _rut_context_t rut_context_t;
-extern rut_type_t rut_context_type;
-
 typedef struct _rut_shell_t rut_shell_t;
 extern rut_type_t rut_shell_type;
 

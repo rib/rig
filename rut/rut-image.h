@@ -35,8 +35,6 @@ extern rut_type_t rut_image_type;
 
 typedef struct _rut_image_t rut_image_t;
 
-#define RUT_IMAGE(x) ((rut_image_t *)x)
-
 typedef enum {
     /* Don't scale the image */
     RUT_IMAGE_DRAW_MODE_1_TO_1,
@@ -49,7 +47,7 @@ typedef enum {
     RUT_IMAGE_DRAW_MODE_SCALE_WITH_ASPECT_RATIO
 } rut_image_draw_mode_t;
 
-rut_image_t *rut_image_new(rut_context_t *ctx, cg_texture_t *texture);
+rut_image_t *rut_image_new(rut_shell_t *shell, cg_texture_t *texture);
 
 void rut_image_set_draw_mode(rut_image_t *image,
                              rut_image_draw_mode_t draw_mode);

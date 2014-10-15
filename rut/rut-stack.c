@@ -33,7 +33,7 @@
 #include <string.h>
 #include <math.h>
 
-#include "rut-context.h"
+#include "rut-shell.h"
 #include "rut-closure.h"
 #include "rut-interfaces.h"
 #include "rut-introspectable.h"
@@ -57,7 +57,7 @@ typedef struct {
 struct _rut_stack_t {
     rut_object_base_t _base;
 
-    rut_context_t *ctx;
+    rut_shell_t *shell;
 
     rut_graphable_props_t graphable;
 
@@ -94,7 +94,7 @@ _rut_stack_free(void *object)
     rut_introspectable_destroy(stack);
     rut_graphable_destroy(stack);
 
-    rut_shell_remove_pre_paint_callback_by_graphable(stack->ctx->shell, stack);
+    rut_shell_remove_pre_paint_callback_by_graphable(stack->shell, stack);
 
     /* Destroying the graphable state should remove all the children */
     c_warn_if_fail(rut_list_empty(&stack->children));
@@ -120,7 +120,7 @@ static void
 queue_allocation(rut_stack_t *stack)
 {
     rut_shell_add_pre_paint_callback(
-        stack->ctx->shell, stack, allocate_cb, NULL /* user_data */);
+        stack->shell, stack, allocate_cb, NULL /* user_data */);
 }
 
 static void
@@ -311,9 +311,9 @@ rut_stack_set_size(rut_object_t *self, float width, float height)
     stack->width = width;
     stack->height = height;
 
-    rut_property_dirty(&stack->ctx->property_ctx,
+    rut_property_dirty(&stack->shell->property_ctx,
                        &stack->properties[RUT_STACK_PROP_WIDTH]);
-    rut_property_dirty(&stack->ctx->property_ctx,
+    rut_property_dirty(&stack->shell->property_ctx,
                        &stack->properties[RUT_STACK_PROP_HEIGHT]);
 
     queue_allocation(stack);
@@ -345,12 +345,12 @@ rut_stack_get_size(rut_object_t *self, float *width, float *height)
 }
 
 rut_stack_t *
-rut_stack_new(rut_context_t *context, float width, float height)
+rut_stack_new(rut_shell_t *shell, float width, float height)
 {
     rut_stack_t *stack =
         rut_object_alloc0(rut_stack_t, &rut_stack_type, _rut_stack_init_type);
 
-    stack->ctx = context;
+    stack->shell = shell;
 
     rut_list_init(&stack->children);
     rut_list_init(&stack->preferred_size_cb_list);

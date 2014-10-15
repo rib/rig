@@ -73,7 +73,7 @@ _rut_graph_init_type(void)
 }
 
 rut_graph_t *
-rut_graph_new(rut_context_t *ctx)
+rut_graph_new(rut_shell_t *shell)
 {
     rut_graph_t *graph =
         rut_object_alloc(rut_graph_t, &rut_graph_type, _rut_graph_init_type);

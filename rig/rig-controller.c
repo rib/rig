@@ -124,7 +124,7 @@ _rig_controller_free(rut_object_t *object)
 
     c_hash_table_destroy(controller->properties);
 
-    rut_object_unref(controller->context);
+    rut_object_unref(controller->shell);
 
     c_free(controller->label);
 
@@ -187,8 +187,8 @@ rig_controller_new(rig_engine_t *engine, const char *label)
     controller->label = c_strdup(label);
 
     controller->engine = engine;
-    controller->context = engine->ctx;
-    timeline = rut_timeline_new(engine->ctx, 0);
+    controller->shell = engine->shell;
+    timeline = rut_timeline_new(engine->shell, 0);
     rut_timeline_stop(timeline);
     controller->timeline = timeline;
 
@@ -203,12 +203,12 @@ rig_controller_new(rig_engine_t *engine, const char *label)
                                                    free_prop_data_cb);
 
     rut_property_set_copy_binding(
-        &engine->ctx->property_ctx,
+        &engine->shell->property_ctx,
         &controller->props[RIG_CONTROLLER_PROP_PROGRESS],
         rut_introspectable_lookup_property(timeline, "progress"));
 
     rut_property_set_copy_binding(
-        &engine->ctx->property_ctx,
+        &engine->shell->property_ctx,
         &controller->props[RIG_CONTROLLER_PROP_ELAPSED],
         rut_introspectable_lookup_property(timeline, "elapsed"));
 
@@ -225,7 +225,7 @@ rig_controller_set_label(rut_object_t *object, const char *label)
 
     c_free(controller->label);
     controller->label = c_strdup(label);
-    rut_property_dirty(&controller->context->property_ctx,
+    rut_property_dirty(&controller->shell->property_ctx,
                        &controller->props[RIG_CONTROLLER_PROP_LABEL]);
 }
 
@@ -298,7 +298,7 @@ activate_property_binding(rig_controller_prop_data_t *prop_data,
                                  active_prop,
                                  NULL); /* sentinal */
 
-        rut_property_set_boxed(&controller->context->property_ctx,
+        rut_property_set_boxed(&controller->shell->property_ctx,
                                property,
                                &prop_data->constant_value);
         break;
@@ -374,7 +374,7 @@ rig_controller_set_active(rut_object_t *object, bool active)
 
     update_effective_active_state(controller);
 
-    rut_property_dirty(&controller->context->property_ctx,
+    rut_property_dirty(&controller->shell->property_ctx,
                        &controller->props[RIG_CONTROLLER_PROP_ACTIVE]);
 }
 
@@ -398,7 +398,7 @@ rig_controller_set_suspended(rut_object_t *object, bool suspended)
 
     update_effective_active_state(controller);
 
-    rut_property_dirty(&controller->context->property_ctx,
+    rut_property_dirty(&controller->shell->property_ctx,
                        &controller->props[RIG_CONTROLLER_PROP_SUSPENDED]);
 }
 
@@ -421,7 +421,7 @@ rig_controller_set_auto_deactivate(rut_object_t *object,
 
     controller->auto_deactivate = auto_deactivate;
 
-    rut_property_dirty(&controller->context->property_ctx,
+    rut_property_dirty(&controller->shell->property_ctx,
                        &controller->props[RIG_CONTROLLER_PROP_AUTO_DEACTIVATE]);
 }
 
@@ -443,7 +443,7 @@ rig_controller_set_loop(rut_object_t *object, bool loop)
 
     rut_timeline_set_loop_enabled(controller->timeline, loop);
 
-    rut_property_dirty(&controller->context->property_ctx,
+    rut_property_dirty(&controller->shell->property_ctx,
                        &controller->props[RIG_CONTROLLER_PROP_LOOP]);
 }
 
@@ -465,7 +465,7 @@ rig_controller_set_running(rut_object_t *object, bool running)
 
     rut_timeline_set_running(controller->timeline, running);
 
-    rut_property_dirty(&controller->context->property_ctx,
+    rut_property_dirty(&controller->shell->property_ctx,
                        &controller->props[RIG_CONTROLLER_PROP_RUNNING]);
 }
 
@@ -487,7 +487,7 @@ rig_controller_set_length(rut_object_t *object, float length)
 
     rut_timeline_set_length(controller->timeline, length);
 
-    rut_property_dirty(&controller->context->property_ctx,
+    rut_property_dirty(&controller->shell->property_ctx,
                        &controller->props[RIG_CONTROLLER_PROP_LENGTH]);
 }
 
@@ -520,9 +520,9 @@ rig_controller_set_elapsed(rut_object_t *object, double elapsed)
     if (controller->elapsed == prev_elapsed)
         return;
 
-    rut_property_dirty(&controller->context->property_ctx,
+    rut_property_dirty(&controller->shell->property_ctx,
                        &controller->props[RIG_CONTROLLER_PROP_ELAPSED]);
-    rut_property_dirty(&controller->context->property_ctx,
+    rut_property_dirty(&controller->shell->property_ctx,
                        &controller->props[RIG_CONTROLLER_PROP_PROGRESS]);
 }
 
@@ -576,7 +576,7 @@ rig_controller_get_path_for_prop_data(rig_controller_t *controller,
 {
     if (prop_data->path == NULL) {
         rig_path_t *path =
-            rig_path_new(controller->context, prop_data->property->spec->type);
+            rig_path_new(controller->shell, prop_data->property->spec->type);
         rig_controller_set_property_path(controller, prop_data->property, path);
     }
 
@@ -780,7 +780,7 @@ rig_controller_set_property_constant(rig_controller_t *controller,
 
     if (effective_active(controller) &&
         prop_data->method == RIG_CONTROLLER_METHOD_CONSTANT) {
-        rut_property_set_boxed(&controller->context->property_ctx,
+        rut_property_set_boxed(&controller->shell->property_ctx,
                                prop_data->property,
                                boxed_value);
     }

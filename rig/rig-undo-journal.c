@@ -1203,7 +1203,7 @@ undo_redo_add_entity_apply(rig_undo_journal_t *journal,
                                   &controller_state->properties);
     }
 
-    rut_shell_queue_redraw(journal->engine->ctx->shell);
+    rut_shell_queue_redraw(journal->engine->shell);
 }
 
 static undo_redo_t *

@@ -38,7 +38,7 @@
 struct _rut_bin_t {
     rut_object_base_t _base;
 
-    rut_context_t *context;
+    rut_shell_t *shell;
 
     rut_list_t preferred_size_cb_list;
 
@@ -67,7 +67,7 @@ _rut_bin_free(void *object)
 
     rut_bin_set_child(bin, NULL);
 
-    rut_shell_remove_pre_paint_callback_by_graphable(bin->context->shell, bin);
+    rut_shell_remove_pre_paint_callback_by_graphable(bin->shell, bin);
 
     rut_graphable_destroy(bin);
 
@@ -152,7 +152,7 @@ static void
 queue_allocation(rut_bin_t *bin)
 {
     rut_shell_add_pre_paint_callback(
-        bin->context->shell, bin, allocate_cb, NULL /* user_data */);
+        bin->shell, bin, allocate_cb, NULL /* user_data */);
 }
 
 static void
@@ -301,12 +301,12 @@ _rut_bin_init_type(void)
 }
 
 rut_bin_t *
-rut_bin_new(rut_context_t *ctx)
+rut_bin_new(rut_shell_t *shell)
 {
     rut_bin_t *bin =
         rut_object_alloc0(rut_bin_t, &rut_bin_type, _rut_bin_init_type);
 
-    bin->context = ctx;
+    bin->shell = shell;
 
     bin->x_position = RUT_BIN_POSITION_EXPAND;
     bin->y_position = RUT_BIN_POSITION_EXPAND;
@@ -315,7 +315,7 @@ rut_bin_new(rut_context_t *ctx)
 
     rut_graphable_init(bin);
 
-    bin->child_transform = rut_transform_new(ctx);
+    bin->child_transform = rut_transform_new(shell);
     rut_graphable_add_child(bin, bin->child_transform);
     rut_object_unref(bin->child_transform);
 
@@ -360,7 +360,7 @@ rut_bin_set_child(rut_bin_t *bin, rut_object_t *child_widget)
     }
 
     preferred_size_changed(bin);
-    rut_shell_queue_redraw(bin->context->shell);
+    rut_shell_queue_redraw(bin->shell);
 }
 
 rut_object_t *

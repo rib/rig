@@ -38,11 +38,12 @@
 #include "rut-icon.h"
 #include "rut-image.h"
 #include "rut-camera.h"
+#include "rut-texture-cache.h"
 
 struct _rut_icon_t {
     rut_object_base_t _base;
 
-    rut_context_t *context;
+    rut_shell_t *shell;
 
     rut_image_t *image;
 
@@ -56,7 +57,7 @@ _rut_icon_free(void *object)
 {
     rut_icon_t *icon = object;
 
-    rut_object_unref(icon->context);
+    rut_object_unref(icon->shell);
 
     rut_graphable_destroy(icon);
 
@@ -136,20 +137,20 @@ _rut_icon_init_type(void)
 }
 
 rut_icon_t *
-rut_icon_new(rut_context_t *ctx, const char *filename)
+rut_icon_new(rut_shell_t *shell, const char *filename)
 {
     rut_icon_t *icon =
         rut_object_alloc0(rut_icon_t, &rut_icon_type, _rut_icon_init_type);
     cg_texture_t *texture;
     c_error_t *error = NULL;
 
-    icon->context = rut_object_ref(ctx);
+    icon->shell = rut_object_ref(shell);
 
     rut_graphable_init(icon);
 
-    texture = rut_load_texture_from_data_file(ctx, filename, &error);
+    texture = rut_load_texture_from_data_file(shell, filename, &error);
     if (texture) {
-        icon->image = rut_image_new(ctx, texture);
+        icon->image = rut_image_new(shell, texture);
         rut_image_set_draw_mode(icon->image, RUT_IMAGE_DRAW_MODE_1_TO_1);
         rut_graphable_add_child(icon, icon->image);
         rut_object_unref(icon->image);

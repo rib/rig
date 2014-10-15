@@ -32,12 +32,12 @@
 
 #include <cogl/cogl.h>
 
-#include <rut-context.h>
+#include <rut-shell.h>
 
 typedef struct _rut_rectangle_t rut_rectangle_t;
 extern rut_type_t rut_rectangle_type;
 
-rut_rectangle_t *rut_rectangle_new4f(rut_context_t *ctx,
+rut_rectangle_t *rut_rectangle_new4f(rut_shell_t *shell,
                                      float width,
                                      float height,
                                      float red,

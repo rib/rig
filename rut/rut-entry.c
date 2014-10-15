@@ -36,8 +36,8 @@
 #include "rut-interfaces.h"
 #include "rut-transform.h"
 #include "rut-entry.h"
-
 #include "rut-nine-slice.h"
+#include "rut-texture-cache.h"
 
 enum {
     RUT_ENTRY_PROP_WIDTH,
@@ -48,7 +48,7 @@ enum {
 struct _rut_entry_t {
     rut_object_base_t _base;
 
-    rut_context_t *ctx;
+    rut_shell_t *shell;
 
     rut_graphable_props_t graphable;
 
@@ -100,7 +100,7 @@ _rut_entry_free(void *object)
 {
     rut_entry_t *entry = object;
 
-    rut_object_unref(entry->ctx);
+    rut_object_unref(entry->shell);
 
     remove_icon(entry);
 
@@ -136,7 +136,7 @@ create_entry_prim (rut_entry_t *entry)
         {0, 0, 0x80, 0x80, 0x80, 0x80},
     };
 
-    return cg_primitive_new_p2c4 (entry->ctx->cg_device,
+    return cg_primitive_new_p2c4 (entry->shell->cg_device,
                                   CG_VERTICES_MODE_LINES,
                                   8,
                                   lines);
@@ -181,9 +181,9 @@ rut_entry_set_size(rut_object_t *object, float width, float height)
 
     allocate(entry);
 
-    rut_property_dirty(&entry->ctx->property_ctx,
+    rut_property_dirty(&entry->shell->property_ctx,
                        &entry->properties[RUT_ENTRY_PROP_WIDTH]);
-    rut_property_dirty(&entry->ctx->property_ctx,
+    rut_property_dirty(&entry->shell->property_ctx,
                        &entry->properties[RUT_ENTRY_PROP_HEIGHT]);
 }
 
@@ -306,31 +306,33 @@ rut_entry_set_height(rut_object_t *obj, float height)
 }
 
 rut_entry_t *
-rut_entry_new(rut_context_t *ctx)
+rut_entry_new(rut_shell_t *shell)
 {
     rut_entry_t *entry =
         rut_object_alloc0(rut_entry_t, &rut_entry_type, _rut_entry_init_type);
     float width, height;
     cg_texture_t *bg_texture;
 
-    entry->ctx = rut_object_ref(ctx);
+    entry->shell = rut_object_ref(shell);
 
     rut_introspectable_init(entry, _rut_entry_prop_specs, entry->properties);
 
     rut_graphable_init(entry);
 
-    bg_texture = rut_load_texture_from_data_file(
-        ctx, "number-slider-background.png", NULL);
+    bg_texture = rut_load_texture_from_data_file(shell,
+                                                 "number-slider-background.png",
+                                                 NULL);
 
-    entry->background = rut_nine_slice_new(ctx, bg_texture, 7, 7, 7, 7, 0, 0);
+    entry->background = rut_nine_slice_new(shell, bg_texture, 7, 7, 7, 7,
+                                           0, 0);
     cg_object_unref(bg_texture);
     rut_graphable_add_child(entry, entry->background);
     rut_object_unref(entry->background);
 
-    entry->text = rut_text_new(ctx);
+    entry->text = rut_text_new(shell);
     rut_text_set_editable(entry->text, true);
 
-    entry->text_transform = rut_transform_new(ctx);
+    entry->text_transform = rut_transform_new(shell);
     rut_graphable_add_child(entry->text_transform, entry->text);
 
     rut_graphable_add_child(entry, entry->text_transform);
@@ -367,7 +369,7 @@ rut_entry_set_icon(rut_entry_t *entry, rut_icon_t *icon)
          * icon and icon transform other than those for adding
          * them to the scene graph... */
 
-        entry->icon_transform = rut_transform_new(entry->ctx);
+        entry->icon_transform = rut_transform_new(entry->shell);
         rut_graphable_add_child(entry, entry->icon_transform);
         rut_object_unref(entry->icon_transform);
 
@@ -377,5 +379,5 @@ rut_entry_set_icon(rut_entry_t *entry, rut_icon_t *icon)
         allocate(entry);
     }
 
-    rut_shell_queue_redraw(entry->ctx->shell);
+    rut_shell_queue_redraw(entry->shell);
 }

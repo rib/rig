@@ -44,7 +44,7 @@ enum {
 struct _rig_asset_inspector_t {
     rut_object_base_t _base;
 
-    rut_context_t *ctx;
+    rut_shell_t *shell;
 
     rig_asset_type_t asset_type;
     rig_asset_t *asset;
@@ -91,7 +91,7 @@ _rig_asset_inspector_set_selected(rig_asset_inspector_t *asset_inspector,
 
     asset_inspector->selected = selected;
 
-    rut_shell_queue_redraw(asset_inspector->ctx->shell);
+    rut_shell_queue_redraw(asset_inspector->shell);
 }
 
 static void
@@ -118,7 +118,7 @@ _rig_asset_inspector_cancel_selection(rut_object_t *object)
     rig_asset_inspector_t *asset_inspector = object;
 
     rut_graphable_remove_child(asset_inspector->highlight);
-    rut_shell_queue_redraw(asset_inspector->ctx->shell);
+    rut_shell_queue_redraw(asset_inspector->shell);
 }
 
 static rut_object_t *
@@ -195,7 +195,7 @@ input_cb(rut_input_region_t *region, rut_input_event_t *event, void *user_data)
     if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_MOTION &&
         rut_motion_event_get_action(event) == RUT_MOTION_EVENT_ACTION_UP) {
         _rig_asset_inspector_set_selected(asset_inspector, true);
-        rut_shell_set_selection(asset_inspector->ctx->shell, asset_inspector);
+        rut_shell_set_selection(asset_inspector->shell, asset_inspector);
         return RUT_INPUT_EVENT_STATUS_HANDLED;
     } else if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_KEY &&
                (rut_key_event_get_keysym(event) == RUT_KEY_Delete ||
@@ -221,7 +221,7 @@ input_cb(rut_input_region_t *region, rut_input_event_t *event, void *user_data)
             _rig_asset_inspector_set_selected(asset_inspector, false);
 
             asset_inspector->drop_preview =
-                rut_nine_slice_new(asset_inspector->ctx,
+                rut_nine_slice_new(asset_inspector->shell,
                                    rig_asset_get_texture(asset),
                                    0,
                                    0,
@@ -234,14 +234,14 @@ input_cb(rut_input_region_t *region, rut_input_event_t *event, void *user_data)
             rut_object_unref(asset_inspector->drop_preview);
 
             asset_inspector->drop_preview_overlay = rut_rectangle_new4f(
-                asset_inspector->ctx, 1, 1, 0.5, 0.5, 0.5, 0.5);
+                asset_inspector->shell, 1, 1, 0.5, 0.5, 0.5, 0.5);
             rut_stack_add(asset_inspector->stack,
                           asset_inspector->drop_preview_overlay);
             rut_object_unref(asset_inspector->drop_preview_overlay);
 
             _rig_asset_inspector_set_selected(asset_inspector, save_selected);
 
-            rut_shell_take_drop_offer(asset_inspector->ctx->shell,
+            rut_shell_take_drop_offer(asset_inspector->shell,
                                       asset_inspector->input_region);
         }
     } else if (rut_input_event_get_type(event) ==
@@ -256,16 +256,17 @@ input_cb(rut_input_region_t *region, rut_input_event_t *event, void *user_data)
 }
 
 static rut_nine_slice_t *
-create_highlight_nine_slice(rut_context_t *ctx)
+create_highlight_nine_slice(rut_shell_t *shell)
 {
     cg_texture_t *texture =
-        rut_load_texture_from_data_file(ctx, "highlight.png", NULL);
+        rut_load_texture_from_data_file(shell, "highlight.png", NULL);
     int width = cg_texture_get_width(texture);
     int height = cg_texture_get_height(texture);
     rut_nine_slice_t *highlight;
     cg_pipeline_t *pipeline;
 
-    highlight = rut_nine_slice_new(ctx, texture, 15, 15, 15, 15, width, height);
+    highlight = rut_nine_slice_new(shell, texture, 15, 15, 15, 15, width,
+                                   height);
     cg_object_unref(texture);
 
     pipeline = rut_nine_slice_get_pipeline(highlight);
@@ -276,7 +277,7 @@ create_highlight_nine_slice(rut_context_t *ctx)
 }
 
 rig_asset_inspector_t *
-rig_asset_inspector_new(rut_context_t *ctx,
+rig_asset_inspector_new(rut_shell_t *shell,
                         rig_asset_type_t asset_type)
 {
     rig_asset_inspector_t *asset_inspector =
@@ -286,7 +287,7 @@ rig_asset_inspector_new(rut_context_t *ctx,
     rut_shim_t *shim;
     rut_stack_t *stack;
 
-    asset_inspector->ctx = ctx;
+    asset_inspector->shell = shell;
 
     rut_introspectable_init(asset_inspector,
                             _rig_asset_inspector_prop_specs,
@@ -296,18 +297,18 @@ rig_asset_inspector_new(rut_context_t *ctx,
 
     asset_inspector->asset_type = asset_type;
 
-    shim = rut_shim_new(asset_inspector->ctx, 100, 100);
+    shim = rut_shim_new(asset_inspector->shell, 100, 100);
     rut_graphable_add_child(asset_inspector, shim);
     asset_inspector->shim = shim;
     rut_object_unref(shim);
 
-    stack = rut_stack_new(asset_inspector->ctx, 0, 0);
+    stack = rut_stack_new(asset_inspector->shell, 0, 0);
     rut_shim_set_child(shim, stack);
     asset_inspector->stack = stack;
     rut_object_unref(stack);
 
     asset_inspector->highlight =
-        create_highlight_nine_slice(asset_inspector->ctx);
+        create_highlight_nine_slice(asset_inspector->shell);
 
     asset_inspector->input_region =
         rut_input_region_new_rectangle(0, 0, 0, 0, input_cb, asset_inspector);
@@ -355,7 +356,7 @@ rig_asset_inspector_set_asset(rut_object_t *object,
         texture = rig_asset_get_texture(asset);
         if (texture) {
             asset_inspector->image =
-                rut_image_new(asset_inspector->ctx, texture);
+                rut_image_new(asset_inspector->shell, texture);
             rut_stack_add(asset_inspector->stack, asset_inspector->image);
         }
     }
@@ -363,6 +364,6 @@ rig_asset_inspector_set_asset(rut_object_t *object,
     _rig_asset_inspector_set_selected(asset_inspector, save_selected);
 
     rut_property_dirty(
-        &asset_inspector->ctx->property_ctx,
+        &asset_inspector->shell->property_ctx,
         &asset_inspector->properties[RIG_ASSET_INSPECTOR_PROP_ASSET]);
 }

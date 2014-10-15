@@ -23,7 +23,7 @@
 
 #include <config.h>
 
-#include "rut-context.h"
+#include "rut-shell.h"
 #include "rut-property.h"
 #include "rut-introspectable.h"
 #include "rut-text-buffer.h"
@@ -43,7 +43,7 @@ enum {
 struct _rut_text_buffer_t {
     rut_object_base_t _base;
 
-    rut_context_t *ctx;
+    rut_shell_t *shell;
 
     int max_length;
 
@@ -96,9 +96,9 @@ _rut_text_buffer_notify_inserted_text(rut_text_buffer_t *buffer,
                             chars,
                             n_chars);
 
-    rut_property_dirty(&buffer->ctx->property_ctx,
+    rut_property_dirty(&buffer->shell->property_ctx,
                        &buffer->properties[PROP_TEXT]);
-    rut_property_dirty(&buffer->ctx->property_ctx,
+    rut_property_dirty(&buffer->shell->property_ctx,
                        &buffer->properties[PROP_LENGTH]);
 }
 
@@ -113,9 +113,9 @@ _rut_text_buffer_notify_deleted_text(rut_text_buffer_t *buffer,
                             position,
                             n_chars);
 
-    rut_property_dirty(&buffer->ctx->property_ctx,
+    rut_property_dirty(&buffer->shell->property_ctx,
                        &buffer->properties[PROP_TEXT]);
-    rut_property_dirty(&buffer->ctx->property_ctx,
+    rut_property_dirty(&buffer->shell->property_ctx,
                        &buffer->properties[PROP_LENGTH]);
 }
 
@@ -283,7 +283,7 @@ _rut_text_buffer_free(void *object)
 
     rut_introspectable_destroy(buffer);
 
-    rut_object_unref(buffer->ctx);
+    rut_object_unref(buffer->shell);
 
     rut_object_free(rut_text_buffer_t, buffer);
 }
@@ -307,7 +307,7 @@ _rut_text_buffer_init_type(void)
 }
 
 rut_text_buffer_t *
-rut_text_buffer_new(rut_context_t *ctx)
+rut_text_buffer_new(rut_shell_t *shell)
 {
     rut_text_buffer_t *buffer;
 
@@ -317,7 +317,7 @@ rut_text_buffer_new(rut_context_t *ctx)
     rut_list_init(&buffer->insert_text_cb_list);
     rut_list_init(&buffer->delete_text_cb_list);
 
-    buffer->ctx = rut_object_ref(ctx);
+    buffer->shell = rut_object_ref(shell);
 
     buffer->simple_text = NULL;
     buffer->simple_text_chars = 0;
@@ -331,11 +331,11 @@ rut_text_buffer_new(rut_context_t *ctx)
 }
 
 rut_text_buffer_t *
-rut_text_buffer_new_with_text(rut_context_t *ctx,
+rut_text_buffer_new_with_text(rut_shell_t *shell,
                               const char *text,
                               int text_len)
 {
-    rut_text_buffer_t *buffer = rut_text_buffer_new(ctx);
+    rut_text_buffer_t *buffer = rut_text_buffer_new(shell);
     rut_text_buffer_set_text_with_length(buffer, text, text_len);
     return buffer;
 }
@@ -393,7 +393,7 @@ rut_text_buffer_set_max_length(rut_object_t *obj, int max_length)
         rut_text_buffer_delete_text(buffer, max_length, -1);
 
     buffer->max_length = max_length;
-    rut_property_dirty(&buffer->ctx->property_ctx,
+    rut_property_dirty(&buffer->shell->property_ctx,
                        &buffer->properties[PROP_MAX_LENGTH]);
 }
 

@@ -37,7 +37,7 @@
 struct _rig_view_t {
     rut_object_base_t _base;
 
-    rut_context_t *context;
+    rut_shell_t *shell;
 
     rut_list_t preferred_size_cb_list;
 
@@ -59,10 +59,8 @@ _rig_view_free(void *object)
 
     // rig_view_set_child (view, NULL);
 
-    rut_shell_remove_pre_paint_callback_by_graphable(view->context->shell,
+    rut_shell_remove_pre_paint_callback_by_graphable(view->shell,
                                                      view);
-
-    rut_object_unref(view->context);
 
     rut_graphable_destroy(view);
 
@@ -83,7 +81,7 @@ static void
 queue_allocation(rig_view_t *view)
 {
     rut_shell_add_pre_paint_callback(
-        view->context->shell, view, allocate_cb, NULL /* user_data */);
+        view->shell, view, allocate_cb, NULL /* user_data */);
 }
 
 static void
@@ -180,20 +178,20 @@ _rig_view_init_type(void)
 rig_view_t *
 rig_view_new(rig_engine_t *engine)
 {
-    rut_context_t *ctx = engine->ctx;
+    rut_shell_t *shell = engine->shell;
     rig_view_t *view =
         rut_object_alloc0(rig_view_t, &rig_view_type, _rig_view_init_type);
 
-    view->context = rut_object_ref(ctx);
+    view->shell = shell;
 
     rut_list_init(&view->preferred_size_cb_list);
 
     rut_graphable_init(view);
 
-    view->vbox = rut_box_layout_new(ctx, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
+    view->vbox = rut_box_layout_new(shell, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
     rut_graphable_add_child(view, view->vbox);
     rut_object_unref(view->vbox);
-    view->hbox = rut_box_layout_new(ctx, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
+    view->hbox = rut_box_layout_new(shell, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
     rut_graphable_add_child(view->vbox, view->hbox);
     rut_object_unref(view->hbox);
 

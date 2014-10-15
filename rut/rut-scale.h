@@ -32,7 +32,7 @@
 
 #include <stdbool.h>
 
-#include <rut-context.h>
+#include <rut-shell.h>
 #include "rut-paintable.h"
 #include "rut-rectangle.h"
 
@@ -50,7 +50,7 @@ enum {
 typedef struct _rut_scale_t {
     rut_object_base_t _base;
 
-    rut_context_t *ctx;
+    rut_shell_t *shell;
 
     float width;
     float height;
@@ -93,7 +93,7 @@ typedef struct _rut_scale_t {
 
 } rut_scale_t;
 
-rut_scale_t *rut_scale_new(rut_context_t *ctx,
+rut_scale_t *rut_scale_new(rut_shell_t *shell,
                            float length, /* actual length */
                            float natural_length); /* initial visual length */
 

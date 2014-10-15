@@ -121,7 +121,7 @@ static rut_object_t *
 _rig_light_copy(rut_object_t *object)
 {
     rig_light_t *light = object;
-    rig_light_t *copy = rig_light_new(light->context);
+    rig_light_t *copy = rig_light_new(light->shell);
 
     copy->ambient = light->ambient;
     copy->diffuse = light->diffuse;
@@ -156,7 +156,7 @@ _rig_light_init_type(void)
 }
 
 rig_light_t *
-rig_light_new(rut_context_t *context)
+rig_light_new(rut_shell_t *shell)
 {
     rig_light_t *light;
 
@@ -164,7 +164,7 @@ rig_light_new(rut_context_t *context)
         rut_object_alloc0(rig_light_t, &rig_light_type, _rig_light_init_type);
 
     light->component.type = RUT_COMPONENT_TYPE_LIGHT;
-    light->context = rut_object_ref(context);
+    light->shell = rut_object_ref(shell);
 
     rut_introspectable_init(light, _rig_light_prop_specs, light->properties);
 
@@ -178,7 +178,7 @@ rig_light_new(rut_context_t *context)
 void
 rig_light_free(rig_light_t *light)
 {
-    rut_object_unref(light->context);
+    rut_object_unref(light->shell);
 
     rut_introspectable_destroy(light);
 
@@ -192,7 +192,7 @@ rig_light_set_ambient(rut_object_t *obj, const cg_color_t *ambient)
 
     light->ambient = *ambient;
 
-    rut_property_dirty(&light->context->property_ctx,
+    rut_property_dirty(&light->shell->property_ctx,
                        &light->properties[RIG_LIGHT_PROP_AMBIENT]);
 }
 
@@ -211,7 +211,7 @@ rig_light_set_diffuse(rut_object_t *obj, const cg_color_t *diffuse)
 
     light->diffuse = *diffuse;
 
-    rut_property_dirty(&light->context->property_ctx,
+    rut_property_dirty(&light->shell->property_ctx,
                        &light->properties[RIG_LIGHT_PROP_DIFFUSE]);
 }
 
@@ -228,7 +228,7 @@ rig_light_set_specular(rut_object_t *obj, const cg_color_t *specular)
 
     light->specular = *specular;
 
-    rut_property_dirty(&light->context->property_ctx,
+    rut_property_dirty(&light->shell->property_ctx,
                        &light->properties[RIG_LIGHT_PROP_SPECULAR]);
 }
 

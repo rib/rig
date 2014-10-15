@@ -59,7 +59,7 @@ typedef enum _button_state_t {
 struct _rig_button_input_t {
     rut_object_base_t _base;
 
-    rut_context_t *ctx;
+    rut_shell_t *shell;
 
     rut_componentable_props_t component;
 
@@ -93,7 +93,7 @@ static void
 set_state(rig_button_input_t *button_input, button_state_t state)
 {
     button_state_t prev_state = button_input->state;
-    rut_context_t *ctx;
+    rut_property_context_t *prop_ctx;
     int prev_prop;
 
     if (prev_state == state)
@@ -102,10 +102,10 @@ set_state(rig_button_input_t *button_input, button_state_t state)
     button_input->state = state;
 
     prev_prop = get_prop_for_state(prev_state);
-    ctx = button_input->ctx;
-    rut_property_dirty(&ctx->property_ctx,
+    prop_ctx = &button_input->shell->property_ctx;
+    rut_property_dirty(prop_ctx,
                        &button_input->properties[prev_prop]);
-    rut_property_dirty(&ctx->property_ctx,
+    rut_property_dirty(prop_ctx,
                        &button_input->properties[get_prop_for_state(state)]);
 }
 
@@ -264,7 +264,7 @@ _rig_button_input_copy(rut_object_t *object)
 {
     rig_button_input_t *button_input = object;
 
-    return rig_button_input_new(button_input->ctx);
+    return rig_button_input_new(button_input->shell);
 }
 
 typedef struct _Buttongrab_state_t {
@@ -281,8 +281,7 @@ _rig_button_input_grab_input_cb(rut_input_event_t *event, void *user_data)
     rig_button_input_t *button_input = state->button_input;
 
     if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_MOTION) {
-        rut_context_t *ctx = button_input->ctx;
-        rut_shell_t *shell = ctx->shell;
+        rut_shell_t *shell = button_input->shell;
         if (rut_motion_event_get_action(event) == RUT_MOTION_EVENT_ACTION_UP) {
             rut_shell_ungrab_input(
                 shell, _rig_button_input_grab_input_cb, user_data);
@@ -290,11 +289,11 @@ _rig_button_input_grab_input_cb(rut_input_event_t *event, void *user_data)
 
             button_input->press_counter++;
             rut_property_dirty(
-                &ctx->property_ctx,
+                &shell->property_ctx,
                 &button_input->properties[RIG_BUTTON_INPUT_PROP_PRESS_COUNT]);
 
             set_state(button_input, BUTTON_STATE_NORMAL);
-            rut_shell_queue_redraw(button_input->ctx->shell);
+            rut_shell_queue_redraw(button_input->shell);
 
             return RUT_INPUT_EVENT_STATUS_HANDLED;
         } else if (rut_motion_event_get_action(event) ==
@@ -320,7 +319,7 @@ _rig_button_input_grab_input_cb(rut_input_event_t *event, void *user_data)
             else
                 button_input->state = BUTTON_STATE_ACTIVE;
 
-            rut_shell_queue_redraw (button_input->ctx->shell);
+            rut_shell_queue_redraw (button_input->shell);
 #endif
             return RUT_INPUT_EVENT_STATUS_HANDLED;
         }
@@ -337,7 +336,7 @@ _rig_button_input_handle_event(rut_object_t *inputable,
 
     if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_MOTION &&
         rut_motion_event_get_action(event) == RUT_MOTION_EVENT_ACTION_DOWN) {
-        rut_shell_t *shell = button_input->ctx->shell;
+        rut_shell_t *shell = button_input->shell;
         Buttongrab_state_t *state = c_slice_new(Buttongrab_state_t);
         const cg_matrix_t *view;
 
@@ -364,7 +363,7 @@ _rig_button_input_handle_event(rut_object_t *inputable,
 
         set_state(button_input, BUTTON_STATE_ACTIVE);
 
-        rut_shell_queue_redraw(button_input->ctx->shell);
+        rut_shell_queue_redraw(button_input->shell);
 
         return RUT_INPUT_EVENT_STATUS_HANDLED;
     }
@@ -406,14 +405,14 @@ _rig_button_input_init_type(void)
 }
 
 rig_button_input_t *
-rig_button_input_new(rut_context_t *ctx)
+rig_button_input_new(rut_shell_t *shell)
 {
     rig_button_input_t *button_input =
         rut_object_alloc0(rig_button_input_t,
                           &rig_button_input_type,
                           _rig_button_input_init_type);
 
-    button_input->ctx = ctx;
+    button_input->shell = shell;
 
     button_input->component.type = RUT_COMPONENT_TYPE_INPUT;
 
