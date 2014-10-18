@@ -56,6 +56,9 @@ cogl_nodist_experimental_h = \
 
 include $(srcdir)/Makefile.sources
 
+cogl_public_h = $(cogl_base_public_h)
+cogl_sources_c = $(cogl_base_sources_c)
+
 if COGL_DRIVER_GL_SUPPORTED
 cogl_sources_c += $(cogl_driver_gl_sources)
 endif
@@ -136,3 +139,6 @@ libcogl2_la_LIBADD += $(top_builddir)/test-fixtures/libtest-fixtures.la
 endif
 libcogl2_la_LDFLAGS = -static
 libcogl2_la_SOURCES = $(cogl_sources_c)
+
+android_moduledir = $(datadir)/android_modules/cogl
+nobase_android_module_DATA = $(cogl_android_sources) Android.mk

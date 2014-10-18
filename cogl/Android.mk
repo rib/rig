@@ -8,10 +8,9 @@ LOCAL_CFLAGS := -DHAVE_CONFIG_H -DCG_COMPILATION -DCG_GLES2_LIBNAME=\"libGLESv3.
 LOCAL_SRC_FILES := \
     $(wildcard $(LOCAL_PATH)/*.c) \
     $(wildcard $(LOCAL_PATH)/winsys/*.c) \
-    $(wildcard $(LOCAL_PATH)/drivers/nop/*.c) \
-    $(wildcard $(LOCAL_PATH)/drivers/gl/*.c) \
-    $(wildcard $(LOCAL_PATH)/drivers/gl/gl/*.c) \
-    $(wildcard $(LOCAL_PATH)/drivers/gl/gles*.c)
+    $(wildcard $(LOCAL_PATH)/driver/nop/*.c) \
+    $(wildcard $(LOCAL_PATH)/driver/gl/*.c) \
+    $(wildcard $(LOCAL_PATH)/driver/gl/gles/*.c)
 
 LOCAL_EXPORT_CFLAGS := -I$(LOCAL_PATH)/../
 

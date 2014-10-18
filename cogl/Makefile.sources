@@ -1,5 +1,5 @@
 # public api headers
-cogl_public_h = \
+cogl_base_public_h = \
 	cogl-attribute-buffer.h 	\
 	cogl-attribute.h 		\
 	cogl-bitmap.h 		\
@@ -113,7 +113,7 @@ cogl_winsys_common_sources = \
 	winsys/cogl-winsys.c
 
 # sources
-cogl_sources_c = \
+cogl_base_sources_c = \
 	$(cogl_driver_sources)				\
 	$(cogl_winsys_common_sources)			\
 	cogl-private.h			\
@@ -361,3 +361,15 @@ cogl_sdl2_sources_c = \
        winsys/cogl-winsys-sdl-private.h \
        winsys/cogl-winsys-sdl2.c \
        cogl-sdl.c
+
+cogl_android_sources = \
+	$(cogl_base_public_h) \
+	$(cogl_base_sources_c) \
+	$(cogl_uv_sources_h) \
+	$(cogl_uv_sources_c) \
+	$(cogl_driver_gles_sources) \
+	$(cogl_egl_sources_h) \
+	$(cogl_egl_sources_c) \
+	$(cogl_egl_android_sources_c) \
+	stb_image.c
+
