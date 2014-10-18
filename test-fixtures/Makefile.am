@@ -22,3 +22,5 @@ libtest_fixtures_la_SOURCES = \
 	test-utils.h \
 	test-utils.c
 
+android_modulesdir = $(datadir)/android_modules/test-fixtures/
+android_modules_DATA = $(libtest_fixtures_la_SOURCES)
