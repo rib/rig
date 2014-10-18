@@ -51,3 +51,14 @@ xmldocs.make
 /rig/jni/rig-defines.h
 /tools/rig-bump-map-gen
 /tools/rig-check-signature
+/cogl-examples/cogl-basic-video-player
+/cogl-examples/cogl-crate
+/cogl-examples/cogl-gles2-context
+/cogl-examples/cogl-hello
+/cogl-examples/cogl-info
+/cogl-examples/cogl-msaa
+/cogl-examples/cogl-point-sprites
+/cogl-examples/cogl-sdl2-hello
+/cogl-examples/cogl-x11-foreign
+/cogl-examples/cogl-x11-tfp
+/cogl-examples/cogland
