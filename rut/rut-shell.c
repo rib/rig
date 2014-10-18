@@ -815,27 +815,12 @@ _rut_shell_init_type(void)
 }
 
 rut_shell_t *
-rut_shell_new(bool headless,
-              rut_shell_init_callback_t init,
-              rut_shell_fini_callback_t fini,
-              rut_shell_paint_callback_t paint,
+rut_shell_new(rut_shell_paint_callback_t paint,
               void *user_data)
 {
-    static bool initialized = false;
     rut_shell_t *shell =
         rut_object_alloc0(rut_shell_t, &rut_shell_type, _rut_shell_init_type);
     rut_frame_info_t *frame_info;
-
-    if (C_UNLIKELY(initialized == false)) {
-#ifdef USE_GSTREAMER
-        if (!headless) {
-            gst_element_register(NULL, "memsrc", 0, gst_mem_src_get_type());
-        }
-#endif
-        initialized = true;
-    }
-
-    shell->headless = headless;
 
     shell->input_queue = rut_input_queue_new(shell);
 
@@ -847,8 +832,6 @@ rut_shell_new(bool headless,
 
     _rut_matrix_entry_identity_init(&shell->identity_entry);
 
-    shell->init_cb = init;
-    shell->fini_cb = fini;
     shell->paint_cb = paint;
     shell->user_data = user_data;
 
@@ -867,10 +850,43 @@ rut_shell_new(bool headless,
 }
 
 void
+rut_shell_set_is_headless(rut_shell_t *shell, bool headless)
+{
+    shell->headless = headless;
+}
+
+void
+rut_shell_set_on_run_callback(rut_shell_t *shell,
+                              void (*callback)(rut_shell_t *shell, void *data),
+                              void *user_data)
+{
+    shell->on_run_cb = callback;
+    shell->on_run_data = user_data;
+}
+
+void
+rut_shell_set_on_quit_callback(rut_shell_t *shell,
+                               void (*callback)(rut_shell_t *shell, void *data),
+                               void *user_data)
+{
+    shell->on_quit_cb = callback;
+    shell->on_quit_data = user_data;
+}
+
+void
 rut_shell_set_main_shell(rut_shell_t *shell, rut_shell_t *main_shell)
 {
     shell->main_shell = main_shell;
 }
+
+#ifdef __ANDROID__
+void
+rut_android_shell_set_application(rut_shell_t *shell,
+                                  struct android_app *application)
+{
+    shell->android_application = application;
+}
+#endif
 
 rut_frame_info_t *
 rut_shell_get_frame_info(rut_shell_t *shell)
@@ -963,16 +979,23 @@ dispatch_signal_source (GSource *source,
 }
 #endif
 
-void
-rut_shell_init(rut_shell_t *shell)
+static void
+_rut_shell_init(rut_shell_t *shell)
 {
+    static bool initialized_once = false;
+
     shell->settings = rut_settings_new();
 
     if (!shell->headless) {
+        cg_error_t *error = NULL;
+
+#ifdef USE_GSTREAMER
+        if (C_UNLIKELY(initialized_once == false))
+            gst_element_register(NULL, "memsrc", 0, gst_mem_src_get_type());
+#endif
 
 #ifdef USE_SDL
         cg_renderer_t *renderer;
-        cg_error_t *error = NULL;
 
         shell->cg_device = cg_device_new();
 
@@ -1030,49 +1053,17 @@ rut_shell_init(rut_shell_t *shell)
         pango_font_description_set_size(shell->pango_font_desc,
                                         14 * PANGO_SCALE);
 #endif
-    }
 
-
-    rut_sdl_shell_init(shell);
-
-/* XXX: for some reason handling SGICHLD like this interferes
- * with GApplication... */
-#if 0
-    {
-        int fds[2];
-        if (pipe (fds) == 0)
-        {
-            struct sigaction act = {
-                .sa_handler = signal_handler,
-                .sa_flags = SA_NOCLDSTOP,
-            };
-            GSourceFuncs funcs = {
-                .prepare = NULL,
-                .check = NULL,
-                .dispatch = dispatch_signal_source,
-                .finalize = NULL
-            };
-            GSource *source;
-
-            shell->signal_read_fd = fds[0];
-            signal_write_fd = fds[1];
-
-            sigemptyset (&act.sa_mask);
-            sigaction (SIGCHLD, &act, NULL);
-
-            source = g_source_new (&funcs, sizeof (GSource));
-            g_source_add_unix_fd (source, fds[0], G_IO_IN);
-            /* Actually we don't care about the callback, we just want to
-             * pass some data to the dispatch callback... */
-            g_source_set_callback (source, NULL, shell, NULL);
-            g_source_attach (source, g_main_shell_get_thread_default ());
-
-            rut_list_init (&shell->signal_cb_list);
-        }
-    }
+#ifdef USE_SDL
+        rut_sdl_shell_init(shell);
+#elif defined(__ANDROID__)
+        rut_android_shell_init(shell);
 #endif
+    }
 
     rut_poll_init(shell);
+
+    initialized_once = true;
 }
 
 void
@@ -1500,13 +1491,12 @@ rut_shell_add_onscreen(rut_shell_t *shell, cg_onscreen_t *onscreen)
 void
 rut_shell_main(rut_shell_t *shell)
 {
-    if (shell->init_cb)
-        shell->init_cb(shell, shell->user_data);
+    _rut_shell_init(shell);
 
     rut_poll_run(shell);
 
-    if (shell->fini_cb)
-        shell->fini_cb(shell, shell->user_data);
+    if (shell->on_quit_cb)
+        shell->on_quit_cb(shell, shell->on_quit_data);
 }
 
 void

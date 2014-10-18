@@ -2526,29 +2526,11 @@ adb_devices_cb(const char **serials, int n_devices, void *user_data)
     }
 }
 
-rig_editor_t *
-rig_editor_new(const char *filename)
+static void
+rig_editor_init(rut_shell_t *shell, void *user_data)
 {
-    rig_editor_t *editor = rut_object_alloc0(
-        rig_editor_t, &rig_editor_type, _rig_editor_init_type);
-    char *assets_location;
+    rig_editor_t *editor = user_data;
     rig_engine_t *engine;
-
-    editor->shell = rut_shell_new(false, /* not headless */
-                                  NULL, /* shell init */
-                                  NULL, /* shell fini */
-                                  rig_editor_redraw,
-                                  editor);
-
-    rut_shell_init(editor->shell);
-
-    editor->ui_filename = c_strdup(filename);
-
-    assets_location = g_path_get_dirname(editor->ui_filename);
-    rut_shell_set_assets_location(editor->shell, assets_location);
-    c_free(assets_location);
-
-    editor->edit_ops = rut_queue_new();
 
     /* TODO: rig_frontend_t should be a trait of the engine */
     editor->frontend = rig_frontend_new(
@@ -2622,6 +2604,29 @@ rig_editor_new(const char *filename)
 
     rut_shell_add_input_callback(
         editor->shell, rig_engine_input_handler, engine, NULL);
+}
+
+rig_editor_t *
+rig_editor_new(const char *filename)
+{
+    rig_editor_t *editor = rut_object_alloc0(
+        rig_editor_t, &rig_editor_type, _rig_editor_init_type);
+    char *assets_location;
+
+    editor->shell = rut_shell_new(rig_editor_redraw,
+                                  editor);
+
+    rut_shell_set_on_run_callback(editor->shell,
+                                  rig_editor_init,
+                                  editor);
+
+    editor->ui_filename = c_strdup(filename);
+
+    assets_location = c_path_get_dirname(editor->ui_filename);
+    rut_shell_set_assets_location(editor->shell, assets_location);
+    c_free(assets_location);
+
+    editor->edit_ops = rut_queue_new();
 
     return editor;
 }

@@ -39,7 +39,9 @@
 
 #include "rig-slave.h"
 #include "rig-engine.h"
+#ifdef HAVE_AVAHI
 #include "rig-avahi.h"
+#endif
 #include "rig-rpc-network.h"
 #include "rig-pb.h"
 
@@ -627,13 +629,15 @@ rig_slave_new(int width, int height, int scale)
     slave->request_height = height;
     slave->request_scale = scale;
 
-    slave->shell = rut_shell_new(false, /* not headless */
-                                 rig_slave_init,
-                                 rig_slave_fini,
-                                 rig_slave_paint,
+    slave->shell = rut_shell_new(rig_slave_paint,
                                  slave);
 
-    rut_shell_init(slave->shell);
+    rut_shell_set_on_run_callback(slave->shell,
+                                  rig_slave_init,
+                                  slave);
+    rut_shell_set_on_quit_callback(slave->shell,
+                                   rig_slave_fini,
+                                   slave);
 
     return slave;
 }

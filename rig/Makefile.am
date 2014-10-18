@@ -144,3 +144,6 @@ rig_device_LDADD = $(common_ldadd)
 rig_simulator_SOURCES = \
 	rig-simulator-main.c
 rig_simulator_LDADD = $(common_ldadd)
+
+rig_android_moduledir = $(datadir)/android_modules/rig/
+nobase_rig_android_module_DATA = $(rig_common_sources) $(rig_slave_sources) Android.mk

@@ -32,7 +32,6 @@
 
 #include "rig-engine.h"
 #include "rig-pb.h"
-#include "rig-slave-master.h"
 #include "rig-engine-op.h"
 
 #include "rig.pb-c.h"

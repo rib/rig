@@ -29,6 +29,9 @@
 #ifndef _RIG_ENGINE_OP_H_
 #define _RIG_ENGINE_OP_H_
 
+#include "rig.pb-c.h"
+#include "rig-pb.h"
+
 typedef enum _rig_engine_op_type_t {
     // RIG_ENGINE_OP_TYPE_REGISTER_OBJECT=1,
     RIG_ENGINE_OP_TYPE_SET_PROPERTY = 1,

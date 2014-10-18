@@ -237,6 +237,10 @@ struct _rut_shell_t {
     bool wake_queued;
 #endif
 
+#ifdef __ANDROID__
+    struct android_app *android_application;
+#endif
+
 #ifndef RIG_SIMULATOR_ONLY
     c_array_t *cg_poll_fds;
     int cg_poll_fds_age;
@@ -315,8 +319,11 @@ struct _rut_shell_t {
     rut_input_queue_t *input_queue;
     int input_queue_len;
 
-    rut_shell_init_callback_t init_cb;
-    rut_shell_fini_callback_t fini_cb;
+    void (*on_run_cb)(rut_shell_t *shell, void *user_data);
+    void *on_run_data;
+    void (*on_quit_cb)(rut_shell_t *shell, void *user_data);
+    void *on_quit_data;
+
     rut_shell_paint_callback_t paint_cb;
     void *user_data;
 
@@ -417,16 +424,29 @@ typedef union _rut_input_transform_t {
     rut_input_transform_graphable_t graphable;
 } rut_input_transform_t;
 
-rut_shell_t *rut_shell_new(bool headless,
-                           rut_shell_init_callback_t init,
-                           rut_shell_fini_callback_t fini,
-                           rut_shell_paint_callback_t paint,
+rut_shell_t *rut_shell_new(rut_shell_paint_callback_t paint,
                            void *user_data);
+
+/* When running a shell for a simulator we don't need any graphics support... */
+void rut_shell_set_is_headless(rut_shell_t *shell, bool headless);
+
+void rut_shell_set_on_run_callback(rut_shell_t *shell,
+                                   void (*callback)(rut_shell_t *shell, void *data),
+                                   void *user_data);
+
+void rut_shell_set_on_quit_callback(rut_shell_t *shell,
+                                    void (*callback)(rut_shell_t *shell, void *data),
+                                    void *user_data);
 
 /* When running multiple shells in one thread we define one
  * shell as the "main" shell which owns the mainloop.
  */
 void rut_shell_set_main_shell(rut_shell_t *shell, rut_shell_t *main_shell);
+
+#ifdef __ANDROID__
+void rut_android_shell_set_application(rut_shell_t *shell,
+                                       struct android_app *application);
+#endif
 
 bool rut_shell_get_headless(rut_shell_t *shell);
 
@@ -440,8 +460,6 @@ bool rut_shell_get_headless(rut_shell_t *shell);
  */
 void rut_shell_set_window_camera(rut_shell_t *shell,
                                  rut_object_t *window_camera);
-
-void rut_shell_init(rut_shell_t *shell);
 
 void rut_shell_main(rut_shell_t *shell);
 

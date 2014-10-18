@@ -62,17 +62,21 @@ typedef struct _rig_entites_selection_t {
     rut_list_t selection_events_cb_list;
 } rig_objects_selection_t;
 
+#ifdef HAVE_OSX
+#include "rig-osx.h"
+#endif
+
+#ifdef RIG_EDITOR_ENABLED
 #include "rig-editor.h"
-#include "rig-image-source.h"
-
-#include "rig-protobuf-c-rpc.h"
-#include "rig-rpc-network.h"
-
-#include "rig-controller.h"
 #include "rig-controller-view.h"
 #include "rig-undo-journal.h"
+#endif
+
+#include "rig-image-source.h"
+#include "rig-protobuf-c-rpc.h"
+#include "rig-rpc-network.h"
+#include "rig-controller.h"
 #include "rut-box-layout.h"
-#include "rig-osx.h"
 #include "rig-split-view.h"
 #include "rig-camera-view.h"
 #include "rig-frontend.h"
@@ -161,7 +165,9 @@ struct _rig_engine_t {
 
     /* XXX: Move to rig_editor_t */
     c_list_t *undo_journal_stack;
+#ifdef RIG_EDITOR_ENABLED
     rig_undo_journal_t *undo_journal;
+#endif
 
     /* shadow mapping */
     cg_offscreen_t *shadow_fb;
@@ -214,8 +220,10 @@ struct _rig_engine_t {
     rut_object_t *inspector;
     c_list_t *all_inspectors;
 
+#ifdef RIG_EDITOR_ENABLED
     /* XXX: Move to rig_editor_t */
     rig_controller_view_t *controller_view;
+#endif
 
     cg_matrix_t main_view;
     float z_2d;
@@ -273,7 +281,9 @@ struct _rig_engine_t {
      */
     rig_frontend_t *
     frontend; /* NULL if engine not acting as a frontend process */
+#ifdef RIG_EDITOR_ENABLED
     rig_editor_t *editor; /* NULL if frontend isn't an editor */
+#endif
     rig_simulator_t *simulator; /* NULL if engine not acting as a simulator */
 
     rig_rpc_server_t *slave_service;

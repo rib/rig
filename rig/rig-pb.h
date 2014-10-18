@@ -38,6 +38,7 @@ typedef struct _rig_pb_un_serializer_t rig_pb_un_serializer_t;
 #include "rig-ui.h"
 #include "rig.pb-c.h"
 #include "rig-entity.h"
+#include "rig-controller.h"
 
 #include "components/rig-camera.h"
 #include "components/rig-light.h"

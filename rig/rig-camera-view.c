@@ -33,11 +33,14 @@
 
 #include <rut.h>
 
+#ifdef RIG_EDITOR_ENABLED
+#include "rig-selection-tool.h"
+#include "rig-rotation-tool.h"
+#endif
+
 #include "rig-engine.h"
 #include "rig-view.h"
 #include "rig-renderer.h"
-#include "rig-selection-tool.h"
-#include "rig-rotation-tool.h"
 #include "rig-dof-effect.h"
 
 #include "components/rig-camera.h"

@@ -41,7 +41,6 @@
 #include "rut-transform-private.h"
 //#include "rut-text.h"
 #include "rut-timeline.h"
-#include "rut-text-buffer.h"
 #include "rut-geometry.h"
 #include "rut-scroll-bar.h"
 

@@ -33,6 +33,11 @@
 #include <uv.h>
 #endif
 
+#ifdef __ANDROID__
+#include <android_native_app_glue.h>
+#include "rut-android-shell.h"
+#endif
+
 #ifdef USE_GLIB
 #include <glib.h>
 #endif
@@ -559,6 +564,9 @@ rut_glib_poll_run(rut_shell_t *shell)
     } else
         c_warning("Failed to acquire glib context");
 
+    if (shell->on_run_cb)
+        shell->on_run_cb(shell, shell->on_run_data);
+
     uv_run(shell->uv_loop, UV_RUN_DEFAULT);
 
     g_main_context_release(shell->glib_main_ctx);
@@ -569,6 +577,8 @@ rut_glib_poll_run(rut_shell_t *shell)
 static int
 looper_uv_event_cb(int fd, int events, void *data)
 {
+    rut_shell_t *shell = data;
+
     shell->uv_ready = uv_run(shell->uv_loop, UV_RUN_NOWAIT);
 
     return 1; /* don't unregister */
@@ -578,10 +588,7 @@ static void
 rut_android_poll_run(rut_shell_t *shell)
 {
     int backend_fd = uv_backend_fd(shell->uv_loop);
-    ALooper *looper = ALooper_forThread();
-
-    if (!looper)
-        looper = ALooper_prepare(0);
+    ALooper *looper = shell->android_application->looper;
 
     ALooper_addFd(looper, backend_fd, 0, /* ident */
                   ALOOPER_EVENT_INPUT,
@@ -592,28 +599,48 @@ rut_android_poll_run(rut_shell_t *shell)
     shell->uv_ready = 1;
 
     while (!shell->quit) {
-        int status;
+        int ident;
         int poll_events;
         void *user_data;
         bool ready = shell->uv_ready;
 
         shell->uv_ready = false;
 
-        status = ALooper_pollAll(ready ? 0 : -1, NULL,
-                                 &poll_events, &user_data);
-        switch (status)
+        ident = ALooper_pollAll(ready ? 0 : -1, NULL,
+                                &poll_events, &user_data);
+        switch (ident)
         {
         case ALOOPER_POLL_WAKE:
-            continue;
+            break;
         case ALOOPER_POLL_TIMEOUT:
             c_warning("Spurious timeout for ALooper_pollAll");
-            continue;
+            break;
         case ALOOPER_POLL_ERROR:
             c_error("Spurious error for ALooper_pollAll");
+            return;
+        case LOOPER_ID_MAIN: {
+            struct android_poll_source *source = user_data;
+            source->process(shell->android_application, source);
             break;
+        }
+        case LOOPER_ID_INPUT: {
+            struct android_app *app = shell->android_application;
+            struct android_poll_source *source = user_data;
+            AInputEvent* event = NULL;
+
+            while (AInputQueue_getEvent(app->inputQueue, &event) >= 0) {
+                int32_t handled = 0;
+
+                if (AInputQueue_preDispatchEvent(app->inputQueue, event))
+                    continue;
+
+                rut_android_shell_handle_input(shell, event);
+            }
+            break;
+        }
         default:
-            c_warning("Unknown ALooper_pollAll status: %d", status);
-            continue;
+            c_warning("Unknown ALooper_pollAll event identity: %d", ident);
+            break;
         }
     }
 }
@@ -622,14 +649,22 @@ rut_android_poll_run(rut_shell_t *shell)
 void
 rut_poll_run(rut_shell_t *shell)
 {
-    if (shell->main_shell)
+    if (shell->main_shell) {
+
+        if (shell->on_run_cb)
+            shell->on_run_cb(shell, shell->on_run_data);
+
         return;
+    }
 
 #if defined(USE_GLIB)
     rut_glib_poll_run(shell);
 #elif defined(__ANDROID__)
     rut_android_poll_run(shell);
 #else
+    if (shell->on_run_cb)
+        shell->on_run_cb(shell, shell->on_run_data);
+
     uv_run(shell->uv_loop, UV_RUN_DEFAULT);
 #endif
 }

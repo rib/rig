@@ -594,45 +594,12 @@ direct_object_id_cb(void *object, void *user_data)
     return (uint64_t)(uintptr_t)object;
 }
 
-rig_simulator_t *
-rig_simulator_new(rig_frontend_id_t frontend_id,
-                  rut_shell_t *main_shell,
-                  int fd)
+static void
+rig_simulator_init(rut_shell_t *shell, void *user_data)
 {
-    rig_simulator_t *simulator = rut_object_alloc0(
-        rig_simulator_t, &rig_simulator_type, _rig_simulator_init_type);
+    rig_simulator_t *simulator = user_data;
     rig_pb_un_serializer_t *ui_unserializer;
     rig_engine_t *engine;
-
-    simulator->frontend_id = frontend_id;
-
-    switch (frontend_id) {
-    case RIG_FRONTEND_ID_EDITOR:
-        simulator->editable = true;
-        break;
-    case RIG_FRONTEND_ID_SLAVE:
-        simulator->editable = true;
-        break;
-    case RIG_FRONTEND_ID_DEVICE:
-        simulator->editable = false;
-        break;
-    }
-
-    simulator->fd = fd;
-
-    simulator->shell = rut_shell_new(true, /* headless */
-                                     NULL, /* no init callback */
-                                     NULL, /* no fini callback */
-                                     rig_simulator_run_frame,
-                                     simulator);
-
-    if (main_shell)
-        rut_shell_set_main_shell(simulator->shell, main_shell);
-
-    rut_shell_set_queue_redraw_callback(
-        simulator->shell, rig_simulator_queue_redraw_hook, simulator);
-
-    rut_shell_init(simulator->shell);
 
     simulator->redraw_queued = false;
 
@@ -715,6 +682,49 @@ rig_simulator_new(rig_frontend_id_t frontend_id,
         engine->ops_serializer, temporarily_register_object_cb, simulator);
     rig_pb_serializer_set_object_to_id_callback(
         engine->ops_serializer, direct_object_id_cb, simulator);
+}
+
+rig_simulator_t *
+rig_simulator_new(rig_frontend_id_t frontend_id,
+                  rut_shell_t *main_shell,
+                  int fd)
+{
+    rig_simulator_t *simulator = rut_object_alloc0(
+        rig_simulator_t, &rig_simulator_type, _rig_simulator_init_type);
+
+    simulator->frontend_id = frontend_id;
+
+    switch (frontend_id) {
+    case RIG_FRONTEND_ID_EDITOR:
+        simulator->editable = true;
+        break;
+    case RIG_FRONTEND_ID_SLAVE:
+        simulator->editable = true;
+        break;
+    case RIG_FRONTEND_ID_DEVICE:
+        simulator->editable = false;
+        break;
+    }
+
+    simulator->fd = fd;
+
+    simulator->shell = rut_shell_new(rig_simulator_run_frame,
+                                     simulator);
+
+    rut_shell_set_is_headless(simulator->shell, true);
+
+    /* On platforms where we must run everything in a single thread
+     * we may need to associate the simulator's shell with the
+     * frontend shell whose mainloop we will share... */
+    if (main_shell)
+        rut_shell_set_main_shell(simulator->shell, main_shell);
+
+    rut_shell_set_queue_redraw_callback(
+        simulator->shell, rig_simulator_queue_redraw_hook, simulator);
+
+    rut_shell_set_on_run_callback(simulator->shell,
+                                  rig_simulator_init,
+                                  simulator);
 
     return simulator;
 }

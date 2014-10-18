@@ -167,27 +167,11 @@ _rig_device_init_type(void)
     rut_type_init(&rig_device_type, "rig_device_t", _rig_device_free);
 }
 
-static rig_device_t *
-rig_device_new(const char *filename)
+static void
+rig_device_init(rut_shell_t *shell, void *user_data)
 {
-    rig_device_t *device = rut_object_alloc0(
-        rig_device_t, &rig_device_type, _rig_device_init_type);
+    rig_device_t *device = user_data;
     rig_engine_t *engine;
-    char *assets_location;
-
-    device->ui_filename = c_strdup(filename);
-
-    device->shell = rut_shell_new(false, /* not headless */
-                                  NULL, /* no init func */
-                                  NULL, /* no fini func */
-                                  rig_device_redraw,
-                                  device);
-
-    rut_shell_init(device->shell);
-
-    assets_location = c_path_get_dirname(device->ui_filename);
-    rut_shell_set_assets_location(device->shell, assets_location);
-    c_free(assets_location);
 
     device->frontend = rig_frontend_new(
         device->shell, RIG_FRONTEND_ID_DEVICE, true /* start in play mode */);
@@ -210,6 +194,27 @@ rig_device_new(const char *filename)
 
     rut_shell_add_input_callback(
         device->shell, rig_engine_input_handler, device->engine, NULL);
+}
+
+static rig_device_t *
+rig_device_new(const char *filename)
+{
+    rig_device_t *device = rut_object_alloc0(
+        rig_device_t, &rig_device_type, _rig_device_init_type);
+    char *assets_location;
+
+    device->ui_filename = c_strdup(filename);
+
+    device->shell = rut_shell_new(rig_device_redraw,
+                                  device);
+
+    rut_shell_set_on_run_callback(device->shell,
+                                  rig_device_init,
+                                  device);
+
+    assets_location = c_path_get_dirname(device->ui_filename);
+    rut_shell_set_assets_location(device->shell, assets_location);
+    c_free(assets_location);
 
     return device;
 }

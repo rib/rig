@@ -52,24 +52,29 @@
 #include <rut.h>
 #include <rut-bin.h>
 
+#ifdef RIG_EDITOR_ENABLED
+#include "rig-undo-journal.h"
+#include "rig-slave-master.h"
+#include "rig-editor.h"
+#endif
+
 #include "rig-engine.h"
 #include "rig-controller.h"
 #include "rig-load-save.h"
-#include "rig-undo-journal.h"
 #include "rig-renderer.h"
 #include "rig-defines.h"
+#ifdef HAVE_OSX
 #include "rig-osx.h"
+#endif
 #ifdef USE_GTK
 #include "rig-application.h"
 #endif /* USE_GTK */
 #include "rig-split-view.h"
 #include "rig-rpc-network.h"
 #include "rig.pb-c.h"
-#include "rig-slave-master.h"
 #include "rig-frontend.h"
 #include "rig-simulator.h"
 #include "rig-image-source.h"
-#include "rig-editor.h"
 
 #include "components/rig-camera.h"
 

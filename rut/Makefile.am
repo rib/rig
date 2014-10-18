@@ -52,3 +52,13 @@ librut_la_CPPFLAGS = \
 
 # rut_headersdir =  $(includedir)/rut
 # rut_headers_DATA = $(source_h)
+
+rut_android_moduledir = $(datadir)/android_modules/rut/
+rut_android_module_DATA = \
+	$(rut_common_sources) \
+	rut-android-shell.h \
+	rut-android-shell.c \
+	$(runtime_headers) \
+	fmemopen.h \
+	fmemopen.c \
+	Android.mk

@@ -72,6 +72,7 @@ rig_common_sources = \
 	rig-rpc-network.c \
 	rig-slave-address.h \
 	rig-slave-address.c \
+	rig.pb-c.h \
 	rig.pb-c.c \
 	rig-simulator.h \
 	rig-simulator.c \

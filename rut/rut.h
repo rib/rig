@@ -75,7 +75,6 @@
 #include "rut-composite-sizable.h"
 #include "rut-shim.h"
 #include "rut-mimable.h"
-#include "rut-color-button.h"
 #include "rut-poll.h"
 #include "rut-texture-cache.h"
 #include "rut-settings.h"
