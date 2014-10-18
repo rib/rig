@@ -15,8 +15,6 @@ unix_files = \
 # used by eglib, use provided implementation instead
 if NEED_VASPRINTF
 vasprintf_files = vasprintf.c
-else
-vaprinttf_files = foo.c
 endif
 
 if OS_WIN32
@@ -39,12 +37,11 @@ sfmt_source = \
 	sfmt/SFMT-params2281.h \
 	sfmt/SFMT-params1279.h \
 	sfmt/SFMT-params607.h \
-	sfmt/.SFMT.h.swp \
 	sfmt/SFMT-params.h \
 	sfmt/SFMT-params11213.h
 EXTRA_DIST += sfmt/README.txt sfmt/LICENSE.txt
 
-libclib_la_SOURCES = \
+clib_common_source = \
 	sort.frag.h	\
 	clib.h	     	\
 	cdebugkey.c	\
@@ -72,13 +69,16 @@ libclib_la_SOURCES = \
 	cfile-posix.c	\
 	cutf8.c		\
 	cunicode.c	\
-	cnicode-data.h	\
+	unicode-data.h	\
 	crbtree.h	\
 	crbtree.c	\
 	ascii_snprintf.c \
-	crand.c		\
-	$(sfmt_source)	\
-	$(os_files)	\
+	crand.c
+
+libclib_la_SOURCES = \
+	$(clib_common_source) \
+	$(sfmt_source) \
+	$(os_files) \
 	$(vasprintf_files)
 
 AM_CPPFLAGS = \
@@ -106,4 +106,13 @@ libclib_static_la_LDFLAGS = -static
 
 MAINTAINERCLEANFILES = Makefile.in
 
-EXTRA_DIST = clib-config.h.in $(win_files) $(unix_files)
+EXTRA_DIST += clib-config.h.in $(win_files) $(unix_files)
+
+android_moduledir = $(datadir)/android_modules/clib
+android_module_DATA = \
+	$(clib_common_source) \
+	$(sfmt_source) \
+	$(unix_files) \
+	vasprintf.c \
+	Android.mk \
+	android/clib-config.h
