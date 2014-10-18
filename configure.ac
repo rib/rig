@@ -564,6 +564,7 @@ tests/unit/Makefile
 tests/micro-perf/Makefile
 tests/data/Makefile
 po/Makefile.in
+android/Makefile
 )
 
 echo ""

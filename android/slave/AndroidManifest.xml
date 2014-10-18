@@ -11,10 +11,13 @@
                  android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
                  android:hardwareAccelerated="true"
                  android:debuggable="true">
-        <activity android:name="RigSlave"
+        <activity android:name="RigSlaveActivity"
                   android:label="@string/slave_name"
                   android:configChanges="keyboardHidden|orientation"
                   >
+            <!-- Tell NativeActivity the name of our .so -->
+            <meta-data android:name="android.app.lib_name"
+                       android:value="rig-slave" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
