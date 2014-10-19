@@ -35,10 +35,12 @@
 
 #include <rut.h>
 
+typedef struct _rig_selection_tool_t rig_selection_tool_t;
+
 #include "rig-camera-view.h"
 #include "rig-entity.h"
 
-typedef struct _rig_selection_tool_t {
+struct _rig_selection_tool_t {
     rut_shell_t *shell;
 
     rig_camera_view_t *view;
@@ -56,7 +58,7 @@ typedef struct _rig_selection_tool_t {
     cg_pipeline_t *default_pipeline;
 
     rut_list_t selection_event_cb_list;
-} rig_selection_tool_t;
+};
 
 typedef enum {
     RIG_SELECTION_TOOL_DRAG,
