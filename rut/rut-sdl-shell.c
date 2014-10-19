@@ -39,7 +39,7 @@
 #include "rut-sdl-shell.h"
 #include "rut-sdl-keysyms.h"
 
-cg_onscreen_t *
+static cg_onscreen_t *
 rut_sdl_input_event_get_onscreen(rut_input_event_t *event)
 {
     rut_shell_t *shell = event->shell;
@@ -90,7 +90,7 @@ rut_sdl_input_event_get_onscreen(rut_input_event_t *event)
     return NULL;
 }
 
-int32_t
+static int32_t
 rut_sdl_key_event_get_keysym(rut_input_event_t *event)
 {
     rut_sdl_event_t *rut_sdl_event = event->native;
@@ -99,7 +99,7 @@ rut_sdl_key_event_get_keysym(rut_input_event_t *event)
     return _rut_keysym_from_sdl_keysym(sdl_event->key.keysym.sym);
 }
 
-rut_key_event_action_t
+static rut_key_event_action_t
 rut_sdl_key_event_get_action(rut_input_event_t *event)
 {
     rut_sdl_event_t *rut_sdl_event = event->native;
@@ -140,13 +140,14 @@ modifier_state_for_sdl_state(SDL_Keymod mod)
     return rut_state;
 }
 
-rut_modifier_state_t
+static rut_modifier_state_t
 rut_sdl_key_event_get_modifier_state(rut_input_event_t *event)
 {
     rut_sdl_event_t *rut_sdl_event = event->native;
     return modifier_state_for_sdl_state(rut_sdl_event->mod_state);
 }
-rut_motion_event_action_t
+
+static rut_motion_event_action_t
 rut_sdl_motion_event_get_action(rut_input_event_t *event)
 {
     rut_sdl_event_t *rut_sdl_event = event->native;
@@ -164,7 +165,7 @@ rut_sdl_motion_event_get_action(rut_input_event_t *event)
     }
 }
 
-rut_button_state_t
+static rut_button_state_t
 rut_sdl_motion_event_get_button(rut_input_event_t *event)
 {
     rut_sdl_event_t *rut_sdl_event = event->native;
@@ -202,7 +203,7 @@ button_state_for_sdl_state(SDL_Event *event,
     return rut_state;
 }
 
-rut_button_state_t
+static rut_button_state_t
 rut_sdl_motion_event_get_button_state(rut_input_event_t *event)
 {
     rut_sdl_event_t *rut_sdl_event = event->native;
@@ -243,14 +244,14 @@ rut_sdl_motion_event_get_button_state(rut_input_event_t *event)
 #endif
 }
 
-rut_modifier_state_t
+static rut_modifier_state_t
 rut_sdl_motion_event_get_modifier_state(rut_input_event_t *event)
 {
     rut_sdl_event_t *rut_sdl_event = event->native;
     return modifier_state_for_sdl_state(rut_sdl_event->mod_state);
 }
 
-void
+static void
 rut_sdl_motion_event_get_transformed_xy(rut_input_event_t *event,
                                         float *x,
                                         float *y)
@@ -273,7 +274,7 @@ rut_sdl_motion_event_get_transformed_xy(rut_input_event_t *event,
     }
 }
 
-const char *
+static const char *
 rut_sdl_text_event_get_text(rut_input_event_t *event)
 {
     rut_sdl_event_t *rut_sdl_event = event->native;
@@ -421,7 +422,7 @@ rut_sdl_shell_handle_sdl_event(rut_shell_t *shell, SDL_Event *sdl_event)
     }
 }
 
-void
+static void
 rut_sdl_free_input_event(rut_input_event_t *event)
 {
     c_slice_free1(sizeof(rut_input_event_t) + sizeof(rut_sdl_event_t),
