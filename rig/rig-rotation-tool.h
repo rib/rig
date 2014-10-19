@@ -36,6 +36,7 @@
 #include <rut.h>
 
 #include "rig-camera-view.h"
+#include "rig-entity.h"
 
 typedef struct _rig_rotation_tool_t {
     rut_shell_t *shell;
