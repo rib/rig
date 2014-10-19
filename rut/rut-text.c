@@ -2260,8 +2260,8 @@ rut_text_handle_key_event(rut_text_t *text, rut_input_event_t *event)
     case RUT_KEY_KP_Left:
         handled = rut_text_real_move_left(text, event);
         break;
-    case RUT_KEY_Rutht:
-    case RUT_KEY_KP_Rutht:
+    case RUT_KEY_Right:
+    case RUT_KEY_KP_Right:
         handled = rut_text_real_move_right(text, event);
         break;
     case RUT_KEY_Up:

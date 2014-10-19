@@ -334,7 +334,7 @@ _rut_keysym_from_sdl_keysym(RutSDLKeycode sdl_keysym)
     case SDLK_DOWN:
         return RUT_KEY_Down;
     case SDLK_RIGHT:
-        return RUT_KEY_Rutht;
+        return RUT_KEY_Right;
     case SDLK_LEFT:
         return RUT_KEY_Left;
     case SDLK_INSERT:
