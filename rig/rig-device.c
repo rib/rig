@@ -29,16 +29,14 @@
 #include <config.h>
 
 #include <stdlib.h>
+#include <getopt.h>
 
-#include <clib.h>
-
-#include <rut.h>
 #ifdef USE_GSTREAMER
 #include <cogl-gst/cogl-gst.h>
 #endif
-#if USE_GLIB
-#include <glib.h>
-#endif
+
+#include <clib.h>
+#include <rut.h>
 
 #include "rig-frontend.h"
 #include "rig-engine.h"
@@ -55,16 +53,6 @@ typedef struct _rig_device_t {
     char *ui_filename;
 
 } rig_device_t;
-
-#if USE_GLIB
-static char **_rig_device_remaining_args = NULL;
-
-static const GOptionEntry _rig_device_entries[] = {
-    { G_OPTION_REMAINING,        0,                           0,
-      G_OPTION_ARG_STRING_ARRAY, &_rig_device_remaining_args, "Project" },
-    { 0 }
-};
-#endif
 
 static void
 rig_device_redraw(rut_shell_t *shell, void *user_data)
@@ -219,14 +207,23 @@ rig_device_new(const char *filename)
     return device;
 }
 
+static void
+usage(void)
+{
+    fprintf(stderr, "Usage: rig-device [UI.rig]\n");
+    fprintf(stderr, "  -h,--help    Display this help message\n");
+    exit(1);
+}
+
 int
 main(int argc, char **argv)
 {
-#if USE_GLIB
-    GOptionContext *context = g_option_context_new(NULL);
-    GError *error = NULL;
-#endif
     rig_device_t *device;
+    struct option opts[] = {
+        { "help",    no_argument,       NULL, 'h' },
+        { 0,         0,                 NULL,  0  }
+    };
+    int c;
 
     rut_init_tls_state();
 
@@ -234,25 +231,17 @@ main(int argc, char **argv)
     gst_init(&argc, &argv);
 #endif
 
-#if USE_GLIB
-    g_option_context_add_main_entries(context, _rig_device_entries, NULL);
-
-    if (!g_option_context_parse(context, &argc, &argv, &error)) {
-        c_error("Option parsing failed: %s\n", error->message);
-        return EXIT_FAILURE;
+    while ((c = getopt_long(argc, argv, "h", opts, NULL)) != -1) {
+        /* only one option a.t.m... */
+        usage();
     }
 
-    if (_rig_device_remaining_args == NULL ||
-        _rig_device_remaining_args[0] == NULL) {
-        c_error("A filename argument for the UI description file is "
-                "required. Pass a non-existing file to create it.\n");
-        return EXIT_FAILURE;
+    if (optind > argc || !argv[optind]) {
+        fprintf(stderr, "Needs a UI.rig filename\n\n");
+        usage();
     }
 
-    device = rig_device_new(_rig_device_remaining_args[0]);
-#else
-    device = rig_device_new(argv[1]);
-#endif
+    device = rig_device_new(argv[optind]);
 
     rut_shell_main(device->shell);
 

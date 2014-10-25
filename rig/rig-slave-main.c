@@ -29,6 +29,7 @@
 #include <config.h>
 
 #include <stdlib.h>
+#include <getopt.h>
 #include <clib.h>
 
 #ifdef USE_GSTREAMER
@@ -45,31 +46,33 @@
 
 #include "rig.pb-c.h"
 
-static int option_width;
-static int option_height;
-static double option_scale;
-
-static const GOptionEntry rig_slave_entries[] = {
-    { "width",       'w',                     0,   G_OPTION_ARG_INT,
-      &option_width, "Width of slave window", NULL },
-    { "height",      'h',                      0,   G_OPTION_ARG_INT,
-      &option_width, "Height of slave window", NULL },
-    { "scale",
-      's',
-      0,
-      G_OPTION_ARG_DOUBLE,
-      &option_scale,
-      "Scale factor for slave window based on default device dimensions",
-      NULL },
-    { 0 }
-};
+static void
+usage(void)
+{
+    fprintf(stderr, "Usage: rig-slave [OPTIONS]\n");
+    fprintf(stderr, "\n");
+    fprintf(stderr, "     --width=WIDTH     Width of slave window\n");
+    fprintf(stderr, "     --height=HEIGHT   Height of slave window\n");
+    fprintf(stderr, "  -s,--scale=SCALE     Device pixel scale factor\n");
+    fprintf(stderr, "  -h,--help            Display this help message\n");
+    exit(1);
+}
 
 int
 main(int argc, char **argv)
 {
     rig_slave_t *slave;
-    GOptionContext *context = g_option_context_new(NULL);
-    GError *error = NULL;
+    int option_width = 0;
+    int option_height = 0;
+    double option_scale = 0;
+    struct option opts[] = {
+        { "width",   required_argument, NULL, 'W' },
+        { "height",  required_argument, NULL, 'H' },
+        { "scale",   required_argument, NULL, 's' },
+        { "help",    no_argument,       NULL, 'h' },
+        { 0,         0,                 NULL,  0  }
+    };
+    int c;
 
     rut_init_tls_state();
 
@@ -77,11 +80,20 @@ main(int argc, char **argv)
     gst_init(&argc, &argv);
 #endif
 
-    g_option_context_add_main_entries(context, rig_slave_entries, NULL);
-
-    if (!g_option_context_parse(context, &argc, &argv, &error)) {
-        fprintf(stderr, "option parsing failed: %s\n", error->message);
-        exit(EXIT_FAILURE);
+    while ((c = getopt_long(argc, argv, "h", opts, NULL)) != -1) {
+        switch(c) {
+        case 'W':
+            option_width = strtoul(optarg, NULL, 10);
+            break;
+        case 'H':
+            option_height = strtoul(optarg, NULL, 10);
+            break;
+        case 's':
+            option_scale = strtod(optarg, NULL);
+            break;
+        default:
+            usage();
+        }
     }
 
     slave = rig_slave_new(option_width, option_height, option_scale);

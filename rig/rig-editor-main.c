@@ -29,6 +29,7 @@
 #include <config.h>
 
 #include <stdlib.h>
+#include <getopt.h>
 #include <clib.h>
 
 #include <rut.h>
@@ -38,20 +39,23 @@
 
 #include "rig-editor.h"
 
-static char **_rig_editor_remaining_args = NULL;
-
-static const GOptionEntry _rig_editor_entries[] = {
-    { G_OPTION_REMAINING,        0,                           0,
-      G_OPTION_ARG_STRING_ARRAY, &_rig_editor_remaining_args, "Project" },
-    { 0 }
-};
+static void
+usage(void)
+{
+    fprintf(stderr, "Usage: rig [UI.rig]\n");
+    fprintf(stderr, "  -h,--help    Display this help message\n");
+    exit(1);
+}
 
 int
 main(int argc, char **argv)
 {
-    GOptionContext *context = g_option_context_new(NULL);
     rig_editor_t *editor;
-    GError *error = NULL;
+    struct option opts[] = {
+        { "help",    no_argument,       NULL, 'h' },
+        { 0,         0,                 NULL,  0  }
+    };
+    int c;
 
     rut_init_tls_state();
 
@@ -59,22 +63,17 @@ main(int argc, char **argv)
     gst_init(&argc, &argv);
 #endif
 
-    g_option_context_add_main_entries(context, _rig_editor_entries, NULL);
-
-    if (!g_option_context_parse(context, &argc, &argv, &error)) {
-        fprintf(stderr, "option parsing failed: %s\n", error->message);
-        exit(EXIT_FAILURE);
+    while ((c = getopt_long(argc, argv, "h", opts, NULL)) != -1) {
+        /* only one option a.t.m... */
+        usage();
     }
 
-    if (_rig_editor_remaining_args == NULL ||
-        _rig_editor_remaining_args[0] == NULL) {
-        fprintf(stderr,
-                "A filename argument for the UI description file is required. "
-                "Pass a non-existing file to create it.\n");
-        exit(EXIT_FAILURE);
+    if (optind > argc || !argv[optind]) {
+        fprintf(stderr, "Needs a UI.rig filename\n\n");
+        usage();
     }
 
-    editor = rig_editor_new(_rig_editor_remaining_args[0]);
+    editor = rig_editor_new(argv[optind]);
 
     rig_editor_run(editor);
 

@@ -50,18 +50,6 @@ main(int argc, char **argv)
 
     rut_init_tls_state();
 
-#if 0
-    GOptionContext *context = g_option_context_new (NULL);
-
-    g_option_context_add_main_entries (context, rut_editor_entries, NULL);
-
-    if (!g_option_context_parse (context, &argc, &argv, &error))
-    {
-        g_error ("Option parsing failed: %s\n", error->message);
-        return EXIT_FAILURE;
-    }
-#endif
-
     if (!frontend) {
         c_error("Failed to determine frontend via _RIG_FRONTEND "
                 "environment variable");
