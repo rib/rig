@@ -60,7 +60,7 @@ rut_throw(rut_exception_t **err, int domain, int code, const char *format, ...)
     if (err)
         *err = exception_new_valist(domain, code, format, args);
     else
-        c_logv(C_LOG_DOMAIN, C_LOG_LEVEL_ERROR, format, args);
+        c_logv(NULL, C_LOG_DOMAIN, C_LOG_LEVEL_ERROR, format, args);
 
     va_end(args);
 }
