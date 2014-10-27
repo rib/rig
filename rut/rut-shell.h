@@ -443,6 +443,10 @@ void rut_shell_set_on_quit_callback(rut_shell_t *shell,
  */
 void rut_shell_set_main_shell(rut_shell_t *shell, rut_shell_t *main_shell);
 
+#ifdef USE_UV
+uv_loop_t *rut_uv_shell_get_loop(rut_shell_t *shell);
+#endif
+
 #ifdef __ANDROID__
 void rut_android_shell_set_application(rut_shell_t *shell,
                                        struct android_app *application);

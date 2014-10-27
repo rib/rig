@@ -118,6 +118,8 @@ void rut_poll_shell_remove_idle(rut_shell_t *shell, rut_closure_t *idle);
 
 void rut_poll_init(rut_shell_t *shell);
 
+void rut_poll_sources_init(rut_shell_t *shell);
+
 void rut_poll_run(rut_shell_t *shell);
 
 void rut_poll_quit(rut_shell_t *shell);

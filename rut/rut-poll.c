@@ -262,6 +262,7 @@ rut_poll_shell_add_fd(rut_shell_t *shell,
                       void *user_data)
 {
     rut_poll_source_t *source;
+    uv_loop_t *loop;
 
     if (fd > 0)
         rut_poll_shell_remove_fd(shell, fd);
@@ -272,11 +273,12 @@ rut_poll_shell_add_fd(rut_shell_t *shell,
     source->dispatch = dispatch;
     source->user_data = user_data;
 
-    uv_timer_init(shell->uv_loop, &source->uv_timer);
-    uv_check_init(shell->uv_loop, &source->uv_check);
+    loop = rut_uv_shell_get_loop(shell);
+    uv_timer_init(loop, &source->uv_timer);
+    uv_check_init(loop, &source->uv_check);
 
     if (prepare) {
-        uv_prepare_init(shell->uv_loop, &source->uv_prepare);
+        uv_prepare_init(loop, &source->uv_prepare);
         source->uv_prepare.data = source;
         uv_prepare_start(&source->uv_prepare, source_prepare_cb);
     }
@@ -284,7 +286,7 @@ rut_poll_shell_add_fd(rut_shell_t *shell,
     if (fd > 0) {
         enum uv_poll_event uv_events = poll_fd_events_to_uv_events(events);
 
-        uv_poll_init(shell->uv_loop, &source->uv_poll, fd);
+        uv_poll_init(loop, &source->uv_poll, fd);
         source->uv_poll.data = source;
         uv_poll_start(&source->uv_poll, uv_events, source_poll_cb);
     }
@@ -403,10 +405,13 @@ glib_uv_prepare_cb(uv_prepare_t *prepare)
 {
     rut_shell_t *shell = prepare->data;
     GMainContext *ctx = shell->glib_main_ctx;
+    uv_loop_t *loop;
     GPollFD *pollfds;
     int priority;
     int timeout;
     int i;
+
+    loop = rut_uv_shell_get_loop(shell);
 
     if (g_main_context_prepare(ctx, &priority))
         g_main_context_dispatch(ctx);
@@ -428,7 +433,7 @@ glib_uv_prepare_cb(uv_prepare_t *prepare)
             &g_array_index(shell->glib_polls, uv_glib_poll_t, i);
 
         glib_poll->shell = shell;
-        uv_poll_init(shell->uv_loop, &glib_poll->poll_handle, pollfds[i].fd);
+        uv_poll_init(loop, &glib_poll->poll_handle, pollfds[i].fd);
         glib_poll->pollfd_index = i;
 
         c_warn_if_fail((pollfds[i].events & ~(G_IO_IN | G_IO_OUT)) == 0);
@@ -482,13 +487,15 @@ cg_prepare_cb(uv_prepare_t *prepare)
 static void
 integrate_cg_events(rut_shell_t *shell)
 {
-    uv_timer_init(shell->uv_loop, &shell->cg_timer);
+    uv_loop_t *loop = rut_uv_shell_get_loop(shell);
 
-    uv_prepare_init(shell->uv_loop, &shell->cg_prepare);
+    uv_timer_init(loop, &shell->cg_timer);
+
+    uv_prepare_init(loop, &shell->cg_prepare);
     shell->cg_prepare.data = shell;
     uv_prepare_start(&shell->cg_prepare, cg_prepare_cb);
 
-    uv_check_init(shell->uv_loop, &shell->cg_check);
+    uv_check_init(loop, &shell->cg_check);
 }
 
 void
@@ -496,15 +503,15 @@ rut_poll_init(rut_shell_t *shell)
 {
     rut_list_init(&shell->poll_sources);
     rut_list_init(&shell->idle_closures);
+}
 
+void
+rut_poll_sources_init(rut_shell_t *shell)
+{
 #ifdef USE_UV
+    uv_loop_t *loop = rut_uv_shell_get_loop(shell);
 
-    if (shell->main_shell)
-        shell->uv_loop = shell->main_shell->uv_loop;
-    else
-        shell->uv_loop = uv_loop_new();
-
-    uv_idle_init(shell->uv_loop, &shell->uv_idle);
+    uv_idle_init(loop, &shell->uv_idle);
     shell->uv_idle.data = shell;
 
     if (!shell->headless) {
@@ -528,30 +535,32 @@ rut_poll_init(rut_shell_t *shell)
         integrate_cg_events(shell);
 #endif /* RIG_SIMULATOR_ONLY */
     }
-#endif /* USE_UV */
 
 #ifdef USE_GLIB
-    uv_prepare_init(shell->uv_loop, &shell->glib_uv_prepare);
+    uv_prepare_init(loop, &shell->glib_uv_prepare);
     shell->glib_uv_prepare.data = shell;
 
-    uv_check_init(shell->uv_loop, &shell->glib_uv_check);
+    uv_check_init(loop, &shell->glib_uv_check);
     shell->glib_uv_check.data = shell;
 
-    uv_timer_init(shell->uv_loop, &shell->glib_uv_timer);
-    uv_check_init(shell->uv_loop, &shell->glib_uv_timer_check);
+    uv_timer_init(loop, &shell->glib_uv_timer);
+    uv_check_init(loop, &shell->glib_uv_timer_check);
     shell->glib_uv_timer_check.data = &shell->glib_uv_timer;
 
     shell->n_pollfds = 0;
     shell->pollfds = g_array_sized_new(false, false, sizeof(GPollFD), 5);
     shell->glib_polls =
         g_array_sized_new(false, false, sizeof(uv_glib_poll_t), 5);
-#endif
+#endif /* USE_GLIB */
+
+#endif /* USE_UV */
 }
 
 #ifdef USE_GLIB
 static void
 rut_glib_poll_run(rut_shell_t *shell)
 {
+    uv_loop_t *loop = rut_uv_shell_get_loop(shell);
     GMainContext *ctx = g_main_context_get_thread_default();
 
     if (!ctx)
@@ -567,7 +576,7 @@ rut_glib_poll_run(rut_shell_t *shell)
     if (shell->on_run_cb)
         shell->on_run_cb(shell, shell->on_run_data);
 
-    uv_run(shell->uv_loop, UV_RUN_DEFAULT);
+    uv_run(loop, UV_RUN_DEFAULT);
 
     g_main_context_release(shell->glib_main_ctx);
 }
@@ -578,8 +587,9 @@ static int
 looper_uv_event_cb(int fd, int events, void *data)
 {
     rut_shell_t *shell = data;
+    uv_loop_t *loop = rut_uv_shell_get_loop(shell);
 
-    shell->uv_ready = uv_run(shell->uv_loop, UV_RUN_NOWAIT);
+    shell->uv_ready = uv_run(loop, UV_RUN_NOWAIT);
 
     return 1; /* don't unregister */
 }
@@ -587,7 +597,8 @@ looper_uv_event_cb(int fd, int events, void *data)
 static void
 rut_android_poll_run(rut_shell_t *shell)
 {
-    int backend_fd = uv_backend_fd(shell->uv_loop);
+    uv_loop_t *loop = rut_uv_shell_get_loop(shell);
+    int backend_fd = uv_backend_fd(loop);
     ALooper *looper = shell->android_application->looper;
 
     ALooper_addFd(looper, backend_fd, 0, /* ident */
@@ -662,10 +673,14 @@ rut_poll_run(rut_shell_t *shell)
 #elif defined(__ANDROID__)
     rut_android_poll_run(shell);
 #else
-    if (shell->on_run_cb)
-        shell->on_run_cb(shell, shell->on_run_data);
+    {
+        uv_loop_t *loop = rut_uv_shell_get_loop(shell);
 
-    uv_run(shell->uv_loop, UV_RUN_DEFAULT);
+        if (shell->on_run_cb)
+            shell->on_run_cb(shell, shell->on_run_data);
+
+        uv_run(loop, UV_RUN_DEFAULT);
+    }
 #endif
 }
 
@@ -678,6 +693,9 @@ rut_poll_quit(rut_shell_t *shell)
 #if defined(__ANDROID__)
     shell->quit = true;
 #else
-    uv_stop(shell->uv_loop);
+    {
+        uv_loop_t *loop = rut_uv_shell_get_loop(shell);
+        uv_stop(loop);
+    }
 #endif
 }

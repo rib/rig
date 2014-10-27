@@ -846,6 +846,8 @@ rut_shell_new(rut_shell_paint_callback_t paint,
     rut_list_init(&frame_info->frame_callbacks);
     rut_list_insert(shell->frame_infos.prev, &frame_info->list_node);
 
+    rut_poll_init(shell);
+
     return shell;
 }
 
@@ -878,6 +880,22 @@ rut_shell_set_main_shell(rut_shell_t *shell, rut_shell_t *main_shell)
 {
     shell->main_shell = main_shell;
 }
+
+#ifdef USE_UV
+uv_loop_t *
+rut_uv_shell_get_loop(rut_shell_t *shell)
+{
+    if (shell->uv_loop)
+        return shell->uv_loop;
+
+    if (shell->main_shell)
+        shell->uv_loop = shell->main_shell->uv_loop;
+    else
+        shell->uv_loop = uv_loop_new();
+
+    return shell->uv_loop;
+}
+#endif
 
 #ifdef __ANDROID__
 void
@@ -1061,7 +1079,7 @@ _rut_shell_init(rut_shell_t *shell)
 #endif
     }
 
-    rut_poll_init(shell);
+    rut_poll_sources_init(shell);
 
     initialized_once = true;
 }
