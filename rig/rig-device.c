@@ -41,6 +41,8 @@
 #include "rig-frontend.h"
 #include "rig-engine.h"
 #include "rig-pb.h"
+#include "rig-curses-debug.h"
+
 #include "rig.pb-c.h"
 
 typedef struct _rig_device_t {
@@ -167,6 +169,8 @@ rig_device_init(rut_shell_t *shell, void *user_data)
     engine = device->frontend->engine;
     device->engine = engine;
 
+    rig_curses_set_frontend(device->frontend);
+
     /* Finish the slave specific engine setup...
      */
     engine->main_camera_view = rig_camera_view_new(engine);
@@ -195,6 +199,8 @@ rig_device_new(const char *filename)
 
     device->shell = rut_shell_new(rig_device_redraw,
                                   device);
+
+    rig_curses_add_to_shell(device->shell);
 
     rut_shell_set_on_run_callback(device->shell,
                                   rig_device_init,
@@ -225,6 +231,7 @@ main(int argc, char **argv)
     };
     int c;
 
+    rig_curses_init();
     rut_init_tls_state();
 
 #ifdef USE_GSTREAMER

@@ -103,6 +103,12 @@ librig_la_SOURCES += \
 	rig-application.c
 endif
 
+if USE_NCURSES
+librig_la_SOURCES += \
+	rig-curses-debug.h \
+	rig-curses-debug.c
+endif
+
 common_ldadd = \
 	$(RIG_EXTRA_LDFLAGS) \
 	librig.la \
@@ -121,6 +127,10 @@ endif
 
 if USE_LLVM
 common_ldadd += -lrig_clang
+endif
+
+if USE_NCURSES
+common_ldadd += -lncursesw
 endif
 
 librig_la_LIBS = $(common_ldadd)

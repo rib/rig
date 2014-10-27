@@ -388,6 +388,11 @@ PKG_CHECK_MODULES([LIBCRYPTO],
                   [have_libcrypto=no])
 AM_CONDITIONAL([HAVE_LIBCRYPTO], [test "x$have_libcrypto" = "xyes"])
 
+AC_CHECK_LIB(ncursesw, [subwin],
+             [HAVE_NCURSES=yes],
+             [HAVE_NCURSES=no])
+AM_CONDITIONAL([USE_NCURSES], [test "x$HAVE_NCURSES" = "xyes"])
+
 CheckForGtk()
 {
   PKG_CHECK_EXISTS([gtk], [have_gtk=yes], [have_gtk=no])
