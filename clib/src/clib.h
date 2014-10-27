@@ -805,11 +805,20 @@ void c_printerr(const char *format, ...);
 c_log_level_flags_t c_log_set_always_fatal(c_log_level_flags_t fatal_mask);
 c_log_level_flags_t c_log_set_fatal_mask(const char *log_domain,
                                          c_log_level_flags_t fatal_mask);
-void c_logv(const char *log_domain,
+
+typedef struct _c_log_context c_log_context_t;
+
+extern void (*c_log_hook)(c_log_context_t *lctx,
+                          const char *log_domain,
+                          c_log_level_flags_t log_level,
+                          const char *message);
+void c_logv(c_log_context_t *lctx,
+            const char *log_domain,
             c_log_level_flags_t log_level,
             const char *format,
             va_list args);
-void c_log(const char *log_domain,
+void c_log(c_log_context_t *lctx,
+           const char *log_domain,
            c_log_level_flags_t log_level,
            const char *format,
            ...);
@@ -819,29 +828,29 @@ void c_assertion_message(const char *format, ...) C_GNUC_NORETURN;
 /* The for (;;) tells gc thats c_error () doesn't return, avoiding warnings */
 #define c_error(format, ...)                                                   \
     do {                                                                       \
-        c_log(C_LOG_DOMAIN, C_LOG_LEVEL_ERROR, format, __VA_ARGS__);           \
+        c_log(NULL, C_LOG_DOMAIN, C_LOG_LEVEL_ERROR, format, __VA_ARGS__);      \
         for (;; )                                                               \
             ;                                                                  \
     } while (0)
 #define c_critical(format, ...)                                                \
-    c_log(C_LOG_DOMAIN, C_LOG_LEVEL_CRITICAL, format, __VA_ARGS__)
+    c_log(NULL, C_LOG_DOMAIN, C_LOG_LEVEL_CRITICAL, format, __VA_ARGS__)
 #define c_warning(format, ...)                                                 \
-    c_log(C_LOG_DOMAIN, C_LOG_LEVEL_WARNING, format, __VA_ARGS__)
+    c_log(NULL, C_LOG_DOMAIN, C_LOG_LEVEL_WARNING, format, __VA_ARGS__)
 #define c_message(format, ...)                                                 \
-    c_log(C_LOG_DOMAIN, C_LOG_LEVEL_MESSAGE, format, __VA_ARGS__)
+    c_log(NULL, C_LOG_DOMAIN, C_LOG_LEVEL_MESSAGE, format, __VA_ARGS__)
 #define c_debug(format, ...)                                                   \
-    c_log(C_LOG_DOMAIN, C_LOG_LEVEL_DEBUG, format, __VA_ARGS__)
+    c_log(NULL, C_LOG_DOMAIN, C_LOG_LEVEL_DEBUG, format, __VA_ARGS__)
 #else /* HAVE_C99_SUPPORT */
 #define c_error(...)                                                           \
     do {                                                                       \
-        c_log(C_LOG_DOMAIN, C_LOG_LEVEL_ERROR, __VA_ARGS__);                   \
+        c_log(NULL, C_LOG_DOMAIN, C_LOG_LEVEL_ERROR, __VA_ARGS__);             \
         for (;; )                                                               \
             ;                                                                  \
     } while (0)
-#define c_critical(...) c_log(C_LOG_DOMAIN, C_LOG_LEVEL_CRITICAL, __VA_ARGS__)
-#define c_warning(...) c_log(C_LOG_DOMAIN, C_LOG_LEVEL_WARNING, __VA_ARGS__)
-#define c_message(...) c_log(C_LOG_DOMAIN, C_LOG_LEVEL_MESSAGE, __VA_ARGS__)
-#define c_debug(...) c_log(C_LOG_DOMAIN, C_LOG_LEVEL_DEBUG, __VA_ARGS__)
+#define c_critical(...) c_log(NULL, C_LOG_DOMAIN, C_LOG_LEVEL_CRITICAL, __VA_ARGS__)
+#define c_warning(...) c_log(NULL, C_LOG_DOMAIN, C_LOG_LEVEL_WARNING, __VA_ARGS__)
+#define c_message(...) c_log(NULL, C_LOG_DOMAIN, C_LOG_LEVEL_MESSAGE, __VA_ARGS__)
+#define c_debug(...) c_log(NULL, C_LOG_DOMAIN, C_LOG_LEVEL_DEBUG, __VA_ARGS__)
 #endif /* ndef HAVE_C99_SUPPORT */
 #define c_log_set_handler(a, b, c, d)
 

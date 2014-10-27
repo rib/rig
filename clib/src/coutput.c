@@ -147,8 +147,14 @@ c_log_set_fatal_mask(const char *log_domain,
     return fatal_mask;
 }
 
+void (*c_log_hook)(c_log_context_t *lctx,
+                   const char *log_domain,
+                   c_log_level_flags_t log_level,
+                   const char *message);
+
 void
-c_logv(const char *log_domain,
+c_logv(c_log_context_t *lctx,
+       const char *log_domain,
        c_log_level_flags_t log_level,
        const char *format,
        va_list args)
@@ -163,6 +169,11 @@ c_logv(const char *log_domain,
 
     if (vasprintf(&msg, format, args) < 0)
         return;
+
+    if (c_log_hook) {
+        c_log_hook(lctx, log_domain, log_level, msg);
+        goto logged;
+    }
 
 #ifdef C_OS_WIN32
     printf("%s%s%s\n",
@@ -182,19 +193,21 @@ c_logv(const char *log_domain,
             log_domain != NULL ? ": " : "",
             msg);
 #endif
+
+logged:
     free(msg);
     if (log_level & fatal) {
         fflush(stdout);
         fflush(stderr);
     }
 #endif
-    if (log_level & fatal) {
+    if (log_level & fatal)
         abort();
-    }
 }
 
 void
-c_log(const char *log_domain,
+c_log(c_log_context_t *lctx,
+      const char *log_domain,
       c_log_level_flags_t log_level,
       const char *format,
       ...)
@@ -202,7 +215,7 @@ c_log(const char *log_domain,
     va_list args;
 
     va_start(args, format);
-    c_logv(log_domain, log_level, format, args);
+    c_logv(lctx, log_domain, log_level, format, args);
     va_end(args);
 }
 
@@ -212,7 +225,7 @@ c_assertion_message(const char *format, ...)
     va_list args;
 
     va_start(args, format);
-    c_logv(C_LOG_DOMAIN, C_LOG_LEVEL_ERROR, format, args);
+    c_logv(NULL, C_LOG_DOMAIN, C_LOG_LEVEL_ERROR, format, args);
     va_end(args);
     abort();
 }
