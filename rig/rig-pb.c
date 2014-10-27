@@ -1733,7 +1733,7 @@ rig_pb_unserializer_collect_error(rig_pb_un_serializer_t *unserializer,
      * realize that their document may be corrupt.
      */
 
-    c_logv(C_LOG_DOMAIN, C_LOG_LEVEL_WARNING, format, ap);
+    c_logv(NULL, C_LOG_DOMAIN, C_LOG_LEVEL_WARNING, format, ap);
 
     va_end(ap);
 }
