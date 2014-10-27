@@ -117,7 +117,7 @@ _cg_profile_trace_message(const char *format, ...)
     va_list ap;
 
     va_start(ap, format);
-    c_logv(G_LOG_DOMAIN, G_LOG_LEVEL_MESSAGE, format, ap);
+    c_logv(NULL, G_LOG_DOMAIN, G_LOG_LEVEL_MESSAGE, format, ap);
     va_end(ap);
 
     if (_cg_uprof_context)

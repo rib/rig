@@ -91,7 +91,7 @@ _cg_set_error(
     va_start(args, format);
 
     if (error == NULL) {
-        c_logv(C_LOG_DOMAIN, C_LOG_LEVEL_ERROR, format, args);
+        c_logv(NULL, C_LOG_DOMAIN, C_LOG_LEVEL_ERROR, format, args);
         va_end(args);
         return;
     }
@@ -120,7 +120,7 @@ _cg_propagate_error(cg_error_t **dest, cg_error_t *src)
     c_return_if_fail(src != NULL);
 
     if (dest == NULL) {
-        c_log(C_LOG_DOMAIN, C_LOG_LEVEL_ERROR, "%s", src->message);
+        c_log(NULL, C_LOG_DOMAIN, C_LOG_LEVEL_ERROR, "%s", src->message);
         cg_error_free(src);
     } else if (*dest)
         c_warning(ERROR_OVERWRITTEN_WARNING, src->message);
