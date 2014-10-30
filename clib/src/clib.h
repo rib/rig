@@ -1428,8 +1428,10 @@ long c_utf8_pointer_to_offset(const char *str, const char *pos);
 #define C_PRIORITY_DEFAULT_IDLE 200
 
 #if defined(HAVE_PTHREADS)
+typedef pthread_mutex_t c_mutex_t;
 typedef pthread_key_t c_tls_t;
 #elif defined(WIN32)
+typedef CRITICAL_SECTION c_mutex_t;
 typedef struct {
     DWORD key;
     void (void *tls_data);
@@ -1472,6 +1474,13 @@ c_tls_get(c_tls_t *tls)
     return TlsGetValue(tls->key);
 }
 #endif
+
+/* N.B This is a recursive mutex */
+void c_mutex_init(c_mutex_t *mutex);
+void c_mutex_destroy(c_mutex_t *mutex);
+void c_mutex_lock(c_mutex_t *mutex);
+void c_mutex_unlock(c_mutex_t *mutex);
+bool c_mutex_trylock(c_mutex_t *mutex);
 
 #define _CLIB_MAJOR 2
 #define _CLIB_MIDDLE 4
