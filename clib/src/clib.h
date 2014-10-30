@@ -11,6 +11,9 @@
 #include <limits.h>
 #include <float.h>
 #include <netinet/in.h>
+#ifdef HAVE_PTHREADS
+#include <pthread.h>
+#endif
 
 #ifdef _MSC_VER
 #pragma include_alias(< clib - config.h >, < clib - config.hw > )
@@ -1424,25 +1427,51 @@ long c_utf8_pointer_to_offset(const char *str, const char *pos);
 #define C_PRIORITY_DEFAULT 0
 #define C_PRIORITY_DEFAULT_IDLE 200
 
-/*
- * Empty thread functions, not used by eglib
- */
-#define c_thread_supported() true
-#define c_thread_init(x)                                                       \
-    C_STMT_START                                                               \
-    {                                                                          \
-        if (x != NULL) {                                                       \
-            c_error("No vtable supported in c_thread_init");                   \
-        }                                                                      \
-    }                                                                          \
-    C_STMT_END
+#if defined(HAVE_PTHREADS)
+typedef pthread_key_t c_tls_t;
+#elif defined(WIN32)
+typedef struct {
+    DWORD key;
+    void (void *tls_data);
+    rut_list_t link;
+} c_tls_t;
+#else
+#error "missing threads support for platform"
+#endif
 
-#define C_LOCK_DEFINE(name) int name;
-#define C_LOCK_DEFINE_STATIC(name) static int name;
-#define C_LOCK_EXTERN(name)
-#define C_LOCK(name)
-#define C_TRYLOCK(name)
-#define C_UNLOCK(name)
+/* Note: it's the caller's responsibility to ensure c_tls_init() is
+ * only called once per c_tls_t */
+void c_tls_init(c_tls_t *tls, void (*destroy)(void *data));
+
+#if defined(HAVE_PTHREADS)
+static inline void
+c_tls_set(c_tls_t *tls, void *data)
+{
+    pthread_key_t key = *(pthread_key_t *)tls;
+    pthread_setspecific(key, data);
+}
+
+static inline void *
+c_tls_get(c_tls_t *tls)
+{
+    pthread_key_t key = *(pthread_key_t *)tls;
+    return pthread_getspecific(key);
+}
+
+#elif defined(WIN32)
+
+static inline void
+c_tls_set(c_tls_t *tls, void *data)
+{
+    TlsSetValue(tls->key, data);
+}
+
+static inline void *
+c_tls_get(c_tls_t *tls)
+{
+    return TlsGetValue(tls->key);
+}
+#endif
 
 #define _CLIB_MAJOR 2
 #define _CLIB_MIDDLE 4

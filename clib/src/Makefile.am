@@ -73,7 +73,8 @@ clib_common_source = \
 	crbtree.h	\
 	crbtree.c	\
 	ascii_snprintf.c \
-	crand.c
+	crand.c		\
+	ctls.c
 
 libclib_la_SOURCES = \
 	$(clib_common_source) \
