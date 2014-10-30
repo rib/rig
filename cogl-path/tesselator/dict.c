@@ -32,6 +32,8 @@
 **
 */
 
+#include "config.h"
+
 #include <stddef.h>
 #include "dict-list.h"
 #include "memalloc.h"

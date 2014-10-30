@@ -32,6 +32,8 @@
 **
 */
 
+#include "config.h"
+
 #include "gluos.h"
 #include <stddef.h>
 #include <assert.h>
