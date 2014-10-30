@@ -27,6 +27,8 @@
  *
  */
 
+#include "config.h"
+
 #include "rut-type.h"
 #include "rut-mimable.h"
 
