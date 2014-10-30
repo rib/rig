@@ -86,6 +86,13 @@ AC_DEFUN([AM_CLIB],
   AC_CHECK_HEADERS(fcntl.h limits.h unistd.h stdarg.h stddef.h stdint.h stdlib.h)
   AC_CHECK_FUNCS(strlcpy stpcpy strtok_r rewinddir vasprintf)
 
+  AC_CHECK_LIB(pthread, pthread_create,
+               [
+                   have_pthreads=yes
+                   AC_DEFINE(HAVE_PTHREADS,1,[Have pthreads])
+               ], [have_pthreads=no])
+  AM_CONDITIONAL(USE_PTHREADS, [test "x$have_pthreads" = "xyes"])
+
   #
   # iOS detection of strndup and getpwuid_r is faulty for some reason
   # so simply avoid it
