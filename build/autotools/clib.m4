@@ -88,10 +88,11 @@ AC_DEFUN([AM_CLIB],
 
   AC_CHECK_LIB(pthread, pthread_create,
                [
-                   have_pthreads=yes
+                   HAVE_PTHREADS=1
                    AC_DEFINE(HAVE_PTHREADS,1,[Have pthreads])
-               ], [have_pthreads=no])
-  AM_CONDITIONAL(USE_PTHREADS, [test "x$have_pthreads" = "xyes"])
+               ], [HAVE_PTHREADS=0])
+  AM_CONDITIONAL(USE_PTHREADS, [test "x$HAVE_PTHREADS" = "x1"])
+  AC_SUBST(HAVE_PTHREADS)
 
   #
   # iOS detection of strndup and getpwuid_r is faulty for some reason
