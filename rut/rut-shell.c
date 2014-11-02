@@ -79,6 +79,7 @@
 #include "rut-camera.h"
 #include "rut-poll.h"
 #include "rut-geometry.h"
+#include "rut-texture-cache.h"
 
 #ifdef USE_SDL
 #include "rut-sdl-shell.h"
@@ -1046,6 +1047,8 @@ _rut_shell_init(rut_shell_t *shell)
                            _rut_nine_slice_indices_data,
                            sizeof(_rut_nine_slice_indices_data) /
                            sizeof(_rut_nine_slice_indices_data[0]));
+
+        rut_texture_cache_init(shell);
 
         shell->single_texture_2d_template =
             cg_pipeline_new(shell->cg_device);
