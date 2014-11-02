@@ -165,7 +165,7 @@ free_source(rut_poll_source_t *source)
     uv_timer_stop(&source->uv_timer);
     uv_prepare_stop(&source->uv_prepare);
 
-    if (source->fd > 0)
+    if (source->fd >= 0)
         uv_poll_stop(&source->uv_poll);
 
     uv_check_stop(&source->uv_check);
@@ -274,7 +274,7 @@ rut_poll_shell_add_fd(rut_shell_t *shell,
     rut_poll_source_t *source;
     uv_loop_t *loop;
 
-    if (fd > 0)
+    if (fd >= 0)
         rut_poll_shell_remove_fd(shell, fd);
 
     source = c_slice_new0(rut_poll_source_t);
@@ -294,7 +294,7 @@ rut_poll_shell_add_fd(rut_shell_t *shell,
         uv_prepare_start(&source->uv_prepare, source_prepare_cb);
     }
 
-    if (fd > 0) {
+    if (fd >= 0) {
         enum uv_poll_event uv_events = poll_fd_events_to_uv_events(events);
 
         uv_poll_init(loop, &source->uv_poll, fd);
