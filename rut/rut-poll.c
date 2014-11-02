@@ -56,6 +56,7 @@
 struct _rut_poll_source_t {
     rut_list_t link;
 
+    rut_shell_t *shell;
     int fd;
     int64_t (*prepare)(void *user_data);
     void (*dispatch)(void *user_data, int fd, int revents);
@@ -216,9 +217,14 @@ static void
 source_poll_cb(uv_poll_t *poll, int status, int events)
 {
     rut_poll_source_t *source = poll->data;
+    rut_poll_fd_event_t poll_fd_events;
 
-    rut_poll_fd_event_t poll_fd_events = uv_events_to_poll_fd_events(events);
+    rut_set_thread_current_shell(source->shell);
+
+    poll_fd_events = uv_events_to_poll_fd_events(events);
     source->dispatch(source->user_data, source->fd, poll_fd_events);
+
+    rut_set_thread_current_shell(NULL);
 }
 
 void
@@ -241,6 +247,8 @@ source_prepare_cb(uv_prepare_t *prepare)
     rut_poll_source_t *source = prepare->data;
     int64_t timeout = source->prepare(source->user_data);
 
+    rut_set_thread_current_shell(source->shell);
+
     if (timeout == 0)
         source->dispatch(source->user_data, source->fd, 0);
 
@@ -251,6 +259,8 @@ source_prepare_cb(uv_prepare_t *prepare)
         source->uv_check.data = &source->uv_timer;
         uv_check_start(&source->uv_check, dummy_timer_check_cb);
     }
+
+    rut_set_thread_current_shell(NULL);
 }
 
 rut_poll_source_t *
@@ -268,6 +278,7 @@ rut_poll_shell_add_fd(rut_shell_t *shell,
         rut_poll_shell_remove_fd(shell, fd);
 
     source = c_slice_new0(rut_poll_source_t);
+    source->shell = shell;
     source->fd = fd;
     source->prepare = prepare;
     source->dispatch = dispatch;
@@ -325,7 +336,11 @@ dispatch_idles_cb(uv_idle_t *idle)
 {
     rut_shell_t *shell = idle->data;
 
+    rut_set_thread_current_shell(shell);
+
     rut_closure_list_invoke_no_args(&shell->idle_closures);
+
+    rut_set_thread_current_shell(NULL);
 }
 
 rut_closure_t *
