@@ -1013,19 +1013,21 @@ _rut_shell_init(rut_shell_t *shell)
 #endif
 
 #ifdef USE_SDL
-        cg_renderer_t *renderer;
+        {
+            cg_renderer_t *renderer;
 
-        shell->cg_device = cg_device_new();
+            shell->cg_device = cg_device_new();
 
-        renderer = cg_renderer_new();
+            renderer = cg_renderer_new();
 
-        cg_renderer_set_winsys_id(renderer, CG_WINSYS_ID_SDL);
-        if (cg_renderer_connect(renderer, &error))
-            cg_device_set_renderer(shell->cg_device, renderer);
-        else {
-            cg_error_free(error);
-            c_warning("Failed to setup SDL renderer; "
-                      "falling back to default\n");
+            cg_renderer_set_winsys_id(renderer, CG_WINSYS_ID_SDL);
+            if (cg_renderer_connect(renderer, &error))
+                cg_device_set_renderer(shell->cg_device, renderer);
+            else {
+                cg_error_free(error);
+                c_warning("Failed to setup SDL renderer; "
+                          "falling back to default\n");
+            }
         }
 #else
         shell->cg_device = cg_device_new();
