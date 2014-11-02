@@ -18,6 +18,10 @@
 #define C_HAVE_STATIC_ASSERT
 #endif
 
+#if @HAVE_PTHREADS@
+#define C_HAVE_PTHREADS
+#endif
+
 typedef @PIDTYPE@ c_pid_t;
 
 #endif
