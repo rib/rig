@@ -78,8 +78,9 @@ cg_texture_t *
 rut_load_texture(rut_shell_t *shell, const char *filename, c_error_t **error)
 {
     c_quark_t filename_quark = c_quark_from_string(filename);
-    rut_texture_cache_entry_t *entry = c_hash_table_lookup(shell->texture_cache,
-                                                           C_UINT_TO_POINTER(filename_quark));
+    rut_texture_cache_entry_t *entry =
+        c_hash_table_lookup(shell->texture_cache,
+                            C_UINT_TO_POINTER(filename_quark));
     cg_texture_t *texture;
     cg_error_t *catch = NULL;
 
