@@ -1471,7 +1471,7 @@ rig_pb_serialize_input_events(rig_pb_serializer_t *serializer,
 
             switch (action) {
             case RUT_MOTION_EVENT_ACTION_MOVE:
-                c_print("Serialize move\n");
+                c_debug("Serialize move\n");
                 pb_event->type = RIG__EVENT__TYPE__POINTER_MOVE;
                 pb_event->pointer_move =
                     rig_pb_new(serializer,
@@ -1484,11 +1484,11 @@ rig_pb_serialize_input_events(rig_pb_serializer_t *serializer,
                 pb_event->pointer_move->y = rut_motion_event_get_y(event);
                 break;
             case RUT_MOTION_EVENT_ACTION_DOWN:
-                c_print("Serialize pointer down\n");
+                c_debug("Serialize pointer down\n");
                 pb_event->type = RIG__EVENT__TYPE__POINTER_DOWN;
                 break;
             case RUT_MOTION_EVENT_ACTION_UP:
-                c_print("Serialize pointer up\n");
+                c_debug("Serialize pointer up\n");
                 pb_event->type = RIG__EVENT__TYPE__POINTER_UP;
                 break;
             }
@@ -1514,11 +1514,11 @@ rig_pb_serialize_input_events(rig_pb_serializer_t *serializer,
 
             switch (action) {
             case RUT_KEY_EVENT_ACTION_DOWN:
-                c_print("Serialize key down\n");
+                c_debug("Serialize key down\n");
                 pb_event->type = RIG__EVENT__TYPE__KEY_DOWN;
                 break;
             case RUT_KEY_EVENT_ACTION_UP:
-                c_print("Serialize key up\n");
+                c_debug("Serialize key up\n");
                 pb_event->type = RIG__EVENT__TYPE__KEY_UP;
                 break;
             }
@@ -2997,14 +2997,14 @@ rig_pb_unserialize_ui(rig_pb_un_serializer_t *unserializer,
     }
 
     for (l = unserializer->entities; l; l = l->next) {
-        // c_print ("unserialized entiy %p\n", l->data);
+        // c_debug ("unserialized entiy %p\n", l->data);
         if (rut_graphable_get_parent(l->data) == NULL) {
             rut_graphable_add_child(ui->scene, l->data);
 
             /* Now that the entity has a parent we can drop our
              * reference on it... */
             rut_object_unref(l->data);
-            // c_print ("%p added to scene %p\n", l->data, ui->scene);
+            // c_debug ("%p added to scene %p\n", l->data, ui->scene);
         }
     }
     unserializer->entities = NULL;
@@ -3015,7 +3015,7 @@ rig_pb_unserialize_ui(rig_pb_un_serializer_t *unserializer,
     ui->controllers = unserializer->controllers;
     unserializer->controllers = NULL;
 
-    c_print("unserialized ui assets list  %p\n", unserializer->assets);
+    c_debug("unserialized ui assets list  %p\n", unserializer->assets);
     ui->assets = unserializer->assets;
     unserializer->assets = NULL;
 

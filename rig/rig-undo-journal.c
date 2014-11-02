@@ -77,7 +77,7 @@ dump_op(undo_redo_t *op, int indent)
         char *v1_string = rut_boxed_to_string(
             &op->d.set_property.value1, op->d.set_property.property->spec);
 
-        c_print("%*sproperty (\"%s\") change: %s → %s\n",
+        c_debug("%*sproperty (\"%s\") change: %s → %s\n",
                 indent,
                 "",
                 op->d.set_property.property->spec->name,
@@ -96,7 +96,7 @@ dump_op(undo_redo_t *op, int indent)
             rut_boxed_to_string(&op->d.set_controller_const.value1,
                                 op->d.set_controller_const.property->spec);
 
-        c_print(
+        c_debug(
             "%*scontroller (\"%s\") const property (\"%s\") change: %s → %s\n",
             indent,
             "",
@@ -107,42 +107,42 @@ dump_op(undo_redo_t *op, int indent)
         break;
     }
     case UNDO_REDO_SET_CONTROLLED_OP:
-        c_print("%*scontrolled=%s\n",
+        c_debug("%*scontrolled=%s\n",
                 indent,
                 "",
                 op->d.set_controlled.value ? "yes" : "no");
         break;
 
     case UNDO_REDO_PATH_ADD_OP:
-        c_print("%*spath add\n", indent, "");
+        c_debug("%*spath add\n", indent, "");
         break;
     case UNDO_REDO_PATH_MODIFY_OP:
-        c_print("%*spath modify\n", indent, "");
+        c_debug("%*spath modify\n", indent, "");
         break;
     case UNDO_REDO_PATH_REMOVE_OP:
-        c_print("%*sremove path\n", indent, "");
+        c_debug("%*sremove path\n", indent, "");
         break;
     case UNDO_REDO_SET_CONTROL_METHOD_OP:
-        c_print("%*sset control method\n", indent, "");
+        c_debug("%*sset control method\n", indent, "");
         break;
     case UNDO_REDO_ADD_ENTITY_OP:
-        c_print("%*sadd entity\n", indent, "");
+        c_debug("%*sadd entity\n", indent, "");
         break;
     case UNDO_REDO_DELETE_ENTITY_OP:
-        c_print("%*sdelete entity\n", indent, "");
+        c_debug("%*sdelete entity\n", indent, "");
         break;
     case UNDO_REDO_ADD_COMPONENT_OP:
-        c_print("%*sadd component\n", indent, "");
+        c_debug("%*sadd component\n", indent, "");
         break;
     case UNDO_REDO_DELETE_COMPONENT_OP:
-        c_print("%*sdelete component\n", indent, "");
+        c_debug("%*sdelete component\n", indent, "");
         break;
     case UNDO_REDO_SUBJOURNAL_OP:
-        c_print("%*ssub-journal %p\n", indent, "", op->d.subjournal);
+        c_debug("%*ssub-journal %p\n", indent, "", op->d.subjournal);
         dump_journal(op->d.subjournal, indent + 5);
         break;
     default:
-        c_print("%*sTODO\n", indent, "");
+        c_debug("%*sTODO\n", indent, "");
         break;
     }
 }
@@ -152,16 +152,16 @@ dump_journal(rig_undo_journal_t *journal, int indent)
 {
     undo_redo_t *undo_redo;
 
-    c_print("\n\n%*sJournal %p\n", indent, "", journal);
+    c_debug("\n\n%*sJournal %p\n", indent, "", journal);
     indent += 2;
 
     if (!rut_list_empty(&journal->redo_ops)) {
         rut_list_for_each(undo_redo, &journal->redo_ops, list_node)
         dump_op(undo_redo, indent);
 
-        c_print("%*s %25s REDO OPS\n", indent, "", "");
-        c_print("%*s %25s <-----\n", indent, "", "");
-        c_print("%*s %25s UNDO OPS\n", indent, "", "");
+        c_debug("%*s %25s REDO OPS\n", indent, "", "");
+        c_debug("%*s %25s <-----\n", indent, "", "");
+        c_debug("%*s %25s UNDO OPS\n", indent, "", "");
     }
 
     rut_list_for_each_reverse(undo_redo, &journal->undo_ops, list_node)

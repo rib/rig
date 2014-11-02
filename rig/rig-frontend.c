@@ -65,7 +65,7 @@ frontend__test(Rig__Frontend_Service *service,
 
     c_return_if_fail(query != NULL);
 
-    // c_print ("Frontend Service: Test Query\n");
+    // c_debug ("Frontend Service: Test Query\n");
 
     closure(&result, closure_data);
 }
@@ -120,7 +120,7 @@ apply_property_change(rig_frontend_t *frontend,
     object = lookup_object(frontend, pb_change->object_id);
 
 #if 0
-    c_print ("Frontend: PropertyChange: %p(%s) prop_id=%d\n",
+    c_debug ("Frontend: PropertyChange: %p(%s) prop_id=%d\n",
              object,
              rut_object_get_type_name (object),
              pb_change->property_id);
@@ -190,7 +190,7 @@ frontend__update_ui(Rig__Frontend_Service *service,
                              frontend);
     return;
 #endif
-    // c_print ("Frontend: Update UI Request\n");
+    // c_debug ("Frontend: Update UI Request\n");
 
     frontend->ui_update_pending = false;
 
@@ -269,7 +269,7 @@ static void
 handle_simulator_test_response (const Rig__TestResult *result,
                                 void *closure_data)
 {
-    c_print ("Simulator test response received\n");
+    c_debug ("Simulator test response received\n");
 }
 #endif
 
@@ -297,7 +297,7 @@ asset_filter_cb(rig_asset_t *asset, void *user_data)
         return false; /* these assets aren't needed in the simulator */
     case RIG_ASSET_TYPE_MESH:
         return true; /* keep mesh assets for picking */
-        // c_print ("Serialization requires asset %s\n",
+        // c_debug ("Serialization requires asset %s\n",
         //         rig_asset_get_path (asset));
         break;
     }
@@ -310,7 +310,7 @@ static void
 handle_load_response(const Rig__LoadResult *result,
                      void *closure_data)
 {
-    // c_print ("Frontend: UI loaded response received from simulator\n");
+    // c_debug ("Frontend: UI loaded response received from simulator\n");
 }
 
 void
@@ -380,7 +380,7 @@ frontend_peer_connected(pb_rpc__client_t *pb_client,
                           handle_simulator_test_response, NULL);
 #endif
 
-    // c_print ("Frontend peer connected\n");
+    // c_debug ("Frontend peer connected\n");
 }
 
 static void
@@ -460,7 +460,7 @@ frame_running_ack(const Rig__RunFrameAck *ack, void *closure_data)
                                          frontend->pending_play_mode_enabled);
     }
 
-    // c_print ("Frontend: Run Frame ACK received from simulator\n");
+    // c_debug ("Frontend: Run Frame ACK received from simulator\n");
 }
 
 typedef struct _registration_state_t {
@@ -591,7 +591,7 @@ simulator_sigchild_cb(GPid pid, int status, void *user_data)
 
     frontend_stop_service(frontend);
 
-    c_print("SIGCHLD received: Simulator Gone!");
+    c_debug("SIGCHLD received: Simulator Gone!");
 
     if (frontend->id == RIG_FRONTEND_ID_EDITOR) {
         if (engine->play_mode) {

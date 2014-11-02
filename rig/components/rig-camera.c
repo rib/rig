@@ -317,7 +317,7 @@ rig_camera_get_projection(rut_object_t *object)
                                                camera->props.far,
                                                camera->props.zoom);
 #if 0
-            c_print ("fov=%f, aspect=%f, near=%f, far=%f, zoom=%f\n",
+            c_debug ("fov=%f, aspect=%f, near=%f, far=%f, zoom=%f\n",
                      camera->props.fov,
                      aspect_ratio,
                      camera->props.near,

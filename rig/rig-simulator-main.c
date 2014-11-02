@@ -74,7 +74,7 @@ main(int argc, char **argv)
                -1) {
             static bool seen = false;
             if (seen)
-                c_print("Waiting for frontend...");
+                c_debug("Waiting for frontend...");
             else
                 seen = true;
 

@@ -358,7 +358,7 @@ resolve_callback(AvahiServiceResolver *resolver,
 
         for (l = engine->slave_addresses; l; l = l->next) {
             rig_slave_address_t *address = l->data;
-            c_print("Slave = %s\n", address->hostname);
+            c_debug("Slave = %s\n", address->hostname);
         }
     }
     }

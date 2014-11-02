@@ -59,7 +59,7 @@ slave__test(Rig__Slave_Service *service,
 
     c_return_if_fail(query != NULL);
 
-    c_print("Test Query\n");
+    c_debug("Test Query\n");
 
     closure(&result, closure_data);
 }
@@ -216,7 +216,7 @@ slave__load(Rig__Slave_Service *service,
     rig_frontend_t *frontend = slave->frontend;
     rut_queue_item_t *item;
 
-    c_print("Slave: UI Load Request\n");
+    c_debug("Slave: UI Load Request\n");
 
     /* Discard any previous pending ui load, since it's now redundant */
     if (slave->pending_ui_load) {
@@ -282,7 +282,7 @@ slave__edit(Rig__Slave_Service *service,
     pending_edit_t *pending_edit = c_slice_new0(pending_edit_t);
     rig_frontend_t *frontend = slave->frontend;
 
-    c_print("Slave: UI Edit Request\n");
+    c_debug("Slave: UI Edit Request\n");
 
     pending_edit->slave = slave;
     pending_edit->edit = (Rig__UIEdit *)pb_ui_edit;
@@ -653,7 +653,7 @@ print_id_to_obj_mapping_cb(void *key, void *value, void *user_data)
 {
     char *obj = rig_engine_get_object_debug_name(value);
 
-    c_print("  [%llx] -> [%50s]\n", *(uint64_t *)key, obj);
+    c_debug("  [%llx] -> [%50s]\n", *(uint64_t *)key, obj);
 
     c_free(obj);
 }
@@ -663,7 +663,7 @@ print_obj_to_id_mapping_cb(void *key, void *value, void *user_data)
 {
     char *obj = rig_engine_get_object_debug_name(key);
 
-    c_print("  [%50s] -> [%llx]\n", obj, *(uint64_t *)key);
+    c_debug("  [%50s] -> [%llx]\n", obj, *(uint64_t *)key);
 
     c_free(obj);
 }
@@ -671,12 +671,12 @@ print_obj_to_id_mapping_cb(void *key, void *value, void *user_data)
 void
 rig_slave_print_mappings(rig_slave_t *slave)
 {
-    c_print("Edit ID to play object mappings:\n");
+    c_debug("Edit ID to play object mappings:\n");
     c_hash_table_foreach(
         slave->edit_id_to_play_object_map, print_id_to_obj_mapping_cb, NULL);
 
-    c_print("\n\n");
-    c_print("Play object to edit ID mappings:\n");
+    c_debug("\n\n");
+    c_debug("Play object to edit ID mappings:\n");
     c_hash_table_foreach(
         slave->play_object_to_edit_id_map, print_obj_to_id_mapping_cb, NULL);
 }

@@ -113,7 +113,7 @@ scenegraph_pre_paint_cb(rut_object_t *object, int depth, void *user_data)
 #if 0
     if (rut_object_get_type (object) == &rut_camera_type)
     {
-        c_print ("%*sCamera = %p\n", depth, "", object);
+        c_debug ("%*sCamera = %p\n", depth, "", object);
         rut_camera_flush (RUT_CAMERA (object));
         return RUT_TRAVERSE_VISIT_CONTINUE;
     }
@@ -123,7 +123,7 @@ scenegraph_pre_paint_cb(rut_object_t *object, int depth, void *user_data)
     if (rut_object_get_type(object) == &rut_ui_viewport_type) {
         rut_ui_viewport_t *ui_viewport = RUT_UI_VIEWPORT(object);
 #if 0
-        c_print ("%*sPushing clip = %f %f\n",
+        c_debug ("%*sPushing clip = %f %f\n",
                  depth, "",
                  rut_ui_viewport_get_width (ui_viewport),
                  rut_ui_viewport_get_height (ui_viewport));
@@ -137,7 +137,7 @@ scenegraph_pre_paint_cb(rut_object_t *object, int depth, void *user_data)
     }
 
     if (rut_object_is(object, RUT_TRAIT_ID_TRANSFORMABLE)) {
-        // c_print ("%*sTransformable = %p\n", depth, "", object);
+        // c_debug ("%*sTransformable = %p\n", depth, "", object);
         const cg_matrix_t *matrix = rut_transformable_get_matrix(object);
         // cg_debug_matrix_print (matrix);
         cg_framebuffer_push_matrix(fb);
@@ -821,7 +821,7 @@ add_light_cb (rut_input_region_t *region,
     {
         if (rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN)
         {
-            c_print ("Add light!\n");
+            c_debug ("Add light!\n");
             return RUT_INPUT_EVENT_STATUS_HANDLED;
         }
     }

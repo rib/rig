@@ -226,17 +226,17 @@ rig_path_print(rig_path_t *path)
     rut_property_type_t type = path->type;
     rig_node_t *node;
 
-    c_print("path=%p\n", path);
+    c_debug("path=%p\n", path);
     rut_list_for_each(node, &path->nodes, list_node)
     {
         switch (type) {
         case RUT_PROPERTY_TYPE_FLOAT: {
-            c_print(" t = %f value = %f\n", node->t, node->boxed.d.float_val);
+            c_debug(" t = %f value = %f\n", node->t, node->boxed.d.float_val);
             break;
         }
 
         case RUT_PROPERTY_TYPE_VEC3: {
-            c_print(" t = %f value.x = %f .y = %f .z = %f\n",
+            c_debug(" t = %f value.x = %f .y = %f .z = %f\n",
                     node->t,
                     node->boxed.d.vec3_val[0],
                     node->boxed.d.vec3_val[1],
@@ -246,7 +246,7 @@ rig_path_print(rig_path_t *path)
 
         case RUT_PROPERTY_TYPE_QUATERNION: {
             const cg_quaternion_t *q = &node->boxed.d.quaternion_val;
-            c_print(
+            c_debug(
                 " t = %f [%f (%f, %f, %f)]\n", node->t, q->w, q->x, q->y, q->z);
             break;
         }

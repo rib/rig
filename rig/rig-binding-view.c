@@ -291,7 +291,7 @@ drop_region_input_cb(rut_input_region_t *region,
         if (rut_object_get_type(payload) == &rig_prop_inspector_type) {
             rut_property_t *property = rig_prop_inspector_get_property(payload);
 
-            c_print("Drop Offer\n");
+            c_debug("Drop Offer\n");
 
             binding_view->preview_dependency_prop = property;
             add_dependency(binding_view, property, true);

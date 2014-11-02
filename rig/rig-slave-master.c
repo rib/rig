@@ -46,7 +46,7 @@ static void
 handle_load_response(const Rig__LoadResult *result,
                      void *closure_data)
 {
-    c_print("UI loaded by slave\n");
+    c_debug("UI loaded by slave\n");
 }
 
 void
@@ -58,7 +58,7 @@ slave_master_connected(pb_rpc__client_t *pb_client, void *user_data)
 
     rig_slave_master_reload_ui(master);
 
-    c_print("XXXXXXXXXXXX Slave Connected and serialized UI sent!");
+    c_debug("XXXXXXXXXXXX Slave Connected and serialized UI sent!");
 }
 
 static void
@@ -214,7 +214,7 @@ static void
 handle_edit_response(const Rig__UIEditResult *result,
                      void *closure_data)
 {
-    c_print("UI edited by slave\n");
+    c_debug("UI edited by slave\n");
 }
 
 void

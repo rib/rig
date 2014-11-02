@@ -399,7 +399,7 @@ print_component_cb(rut_object_t *component, void *user_data)
 {
     int depth = *(int *)user_data;
     char *name = rig_engine_get_object_debug_name(component);
-    c_print("%*s%s\n", depth + 2, " ", name);
+    c_debug("%*s%s\n", depth + 2, " ", name);
     c_free(name);
 
     return true; /* continue */
@@ -409,7 +409,7 @@ static rut_traverse_visit_flags_t
 print_entity_cb(rut_object_t *object, int depth, void *user_data)
 {
     char *name = rig_engine_get_object_debug_name(object);
-    c_print("%*s%s\n", depth, " ", name);
+    c_debug("%*s%s\n", depth, " ", name);
 
     if (rut_object_get_type(object) == &rig_entity_type) {
         rig_entity_foreach_component_safe(object, print_component_cb, &depth);
@@ -425,24 +425,24 @@ rig_ui_print(rig_ui_t *ui)
 {
     c_list_t *l;
 
-    c_print("Scenegraph:\n");
+    c_debug("Scenegraph:\n");
     rut_graphable_traverse(ui->scene,
                            RUT_TRAVERSE_DEPTH_FIRST,
                            print_entity_cb,
                            NULL, /* post paint */
                            NULL); /* user data */
 
-    c_print("Controllers:\n");
+    c_debug("Controllers:\n");
     for (l = ui->controllers; l; l = l->next) {
         char *name = rig_engine_get_object_debug_name(l->data);
-        c_print("  %s\n", name);
+        c_debug("  %s\n", name);
         c_free(name);
     }
 
-    c_print("Assets:\n");
+    c_debug("Assets:\n");
     for (l = ui->assets; l; l = l->next) {
         char *name = rig_engine_get_object_debug_name(l->data);
-        c_print("  %s\n", name);
+        c_debug("  %s\n", name);
         c_free(name);
     }
 }

@@ -77,7 +77,7 @@ simulator__test(Rig__Simulator_Service *service,
 
     c_return_if_fail(query != NULL);
 
-    c_print("Simulator Service: Test Query\n");
+    c_debug("Simulator Service: Test Query\n");
 
     closure(&result, closure_data);
 }
@@ -192,7 +192,7 @@ simulator__load(Rig__Simulator_Service *service,
 
     c_return_if_fail(pb_ui != NULL);
 
-    // c_print ("Simulator: UI Load Request\n");
+    // c_debug ("Simulator: UI Load Request\n");
 
     /* First make sure to cleanup the current ui  */
     if (pb_ui->mode == RIG__UI__MODE__EDIT)
@@ -257,7 +257,7 @@ simulator__run_frame(Rig__Simulator_Service *service,
         rig_code_update_dso(engine, setup->dso.data, setup->dso.len);
     }
 
-    // c_print ("Simulator: Run Frame Request: n_events = %d\n",
+    // c_debug ("Simulator: Run Frame Request: n_events = %d\n",
     //         setup->n_events);
 
     if (setup->has_view_width && setup->has_view_height &&
@@ -351,28 +351,28 @@ simulator__run_frame(Rig__Simulator_Service *service,
             simulator->last_pointer_x = event->pointer_move.x;
             simulator->last_pointer_y = event->pointer_move.y;
 
-            // c_print ("Simulator: Read Event: Pointer move (%f, %f)\n",
+            // c_debug ("Simulator: Read Event: Pointer move (%f, %f)\n",
             //         event->pointer_move.x, event->pointer_move.y);
             break;
         case RIG__EVENT__TYPE__POINTER_DOWN:
             event->type = RUT_STREAM_EVENT_POINTER_DOWN;
             simulator->button_state |= event->pointer_button.button;
             event->pointer_button.state |= event->pointer_button.button;
-            // c_print ("Simulator: Read Event: Pointer down\n");
+            // c_debug ("Simulator: Read Event: Pointer down\n");
             break;
         case RIG__EVENT__TYPE__POINTER_UP:
             event->type = RUT_STREAM_EVENT_POINTER_UP;
             simulator->button_state &= ~event->pointer_button.button;
             event->pointer_button.state &= ~event->pointer_button.button;
-            // c_print ("Simulator: Read Event: Pointer up\n");
+            // c_debug ("Simulator: Read Event: Pointer up\n");
             break;
         case RIG__EVENT__TYPE__KEY_DOWN:
             event->type = RUT_STREAM_EVENT_KEY_DOWN;
-            // c_print ("Simulator: Read Event: Key down\n");
+            // c_debug ("Simulator: Read Event: Key down\n");
             break;
         case RIG__EVENT__TYPE__KEY_UP:
             event->type = RUT_STREAM_EVENT_KEY_UP;
-            // c_print ("Simulator: Read Event: Key up\n");
+            // c_debug ("Simulator: Read Event: Key up\n");
             break;
         }
 
@@ -427,7 +427,7 @@ static void
 handle_frontend_test_response(const Rig__TestResult *result,
                               void *closure_data)
 {
-    // c_print ("Renderer test response received\n");
+    // c_debug ("Renderer test response received\n");
 }
 
 static void
@@ -440,7 +440,7 @@ simulator_peer_connected(pb_rpc__client_t *pb_client,
 
     rig__frontend__test(
         frontend_service, &query, handle_frontend_test_response, NULL);
-    // c_print ("Simulator peer connected\n");
+    // c_debug ("Simulator peer connected\n");
 }
 
 static void
@@ -739,7 +739,7 @@ static void
 handle_update_ui_ack(const Rig__UpdateUIAck *result,
                      void *closure_data)
 {
-    // c_print ("Simulator: UI Update ACK received\n");
+    // c_debug ("Simulator: UI Update ACK received\n");
 }
 
 typedef struct _serialize_changes_state_t {
@@ -760,7 +760,7 @@ stack_region_cb(uint8_t *data, size_t bytes, void *user_data)
     size_t offset;
     int i;
 
-    // c_print ("Properties changed log %d bytes:\n", bytes);
+    // c_debug ("Properties changed log %d bytes:\n", bytes);
 
     for (i = state->i, offset = 0;
          i < state->n_changes && (offset + step) <= bytes;
@@ -780,7 +780,7 @@ stack_region_cb(uint8_t *data, size_t bytes, void *user_data)
         rig_pb_property_value_init(state->serializer, pb_value, &change->boxed);
 
 #if 1
-        c_print(
+        c_debug(
             "> %d: base = %p, offset = %d, obj id=%llu:%p:%s, prop id = %d\n",
             i,
             data,
@@ -813,7 +813,7 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
      * can be sent back to the frontend process each frame. */
     simulator->shell->property_ctx.log = true;
 
-    // c_print ("Simulator: Start Frame\n");
+    // c_debug ("Simulator: Start Frame\n");
     rut_shell_start_redraw(shell);
 
     rut_shell_update_timelines(shell);
@@ -850,14 +850,14 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
 #endif
         }
 
-        c_print ("Frame = %d\n", counter);
+        c_debug ("Frame = %d\n", counter);
 #endif
     }
 
     if (rut_shell_check_timelines(shell))
         rut_shell_queue_redraw(shell);
 
-    // c_print ("Simulator: Sending UI Update\n");
+    // c_debug ("Simulator: Sending UI Update\n");
 
     n_changes = prop_ctx->log_len;
     serializer = rig_pb_serializer_new(engine);
@@ -995,7 +995,7 @@ print_id_to_obj_mapping_cb(void *key, void *value, void *user_data)
     void *id_ptr = (void *)(uintptr_t)key;
     char *obj = rig_engine_get_object_debug_name(value);
 
-    c_print("  [%p] -> [%50s]\n", id_ptr, obj);
+    c_debug("  [%p] -> [%50s]\n", id_ptr, obj);
 
     c_free(obj);
 }
@@ -1006,7 +1006,7 @@ print_obj_to_id_mapping_cb(void *key, void *value, void *user_data)
     char *obj = rig_engine_get_object_debug_name(key);
     void *id_ptr = (void *)(uintptr_t)value;
 
-    c_print("  [%50s] -> [%p]\n", obj, id_ptr);
+    c_debug("  [%50s] -> [%p]\n", obj, id_ptr);
 
     c_free(obj);
 }
@@ -1014,12 +1014,12 @@ print_obj_to_id_mapping_cb(void *key, void *value, void *user_data)
 void
 rig_simulator_print_mappings(rig_simulator_t *simulator)
 {
-    c_print("ID to object map:\n");
+    c_debug("ID to object map:\n");
     c_hash_table_foreach(
         simulator->id_to_object_map, print_id_to_obj_mapping_cb, NULL);
 
-    c_print("\n\n");
-    c_print("Object to ID map:\n");
+    c_debug("\n\n");
+    c_debug("Object to ID map:\n");
     c_hash_table_foreach(
         simulator->object_to_id_map, print_obj_to_id_mapping_cb, NULL);
 }

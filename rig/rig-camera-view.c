@@ -994,7 +994,7 @@ update_grab_closure_vectors(entity_translate_grab_closure_t *closure)
     cg_matrix_transform_point(
         &parent_transform, &entity_x, &entity_y, &entity_z, &w);
 
-    // c_print ("Entity origin in eye coords: %f %f %f\n", entity_x, entity_y,
+    // c_debug ("Entity origin in eye coords: %f %f %f\n", entity_x, entity_y,
     // entity_z);
 
     /* Convert unit x and y vectors in screen coordinate
@@ -1008,7 +1008,7 @@ update_grab_closure_vectors(entity_translate_grab_closure_t *closure)
                            &origin[0],
                            &origin[1]);
     origin[2] = entity_z;
-    // c_print ("eye origin: %f %f %f\n", origin[0], origin[1], origin[2]);
+    // c_debug ("eye origin: %f %f %f\n", origin[0], origin[1], origin[2]);
 
     unproject_window_coord(camera,
                            &engine->identity,
@@ -1017,7 +1017,7 @@ update_grab_closure_vectors(entity_translate_grab_closure_t *closure)
                            &unit_x[0],
                            &unit_x[1]);
     unit_x[2] = entity_z;
-    // c_print ("eye unit_x: %f %f %f\n", unit_x[0], unit_x[1], unit_x[2]);
+    // c_debug ("eye unit_x: %f %f %f\n", unit_x[0], unit_x[1], unit_x[2]);
 
     unproject_window_coord(camera,
                            &engine->identity,
@@ -1026,7 +1026,7 @@ update_grab_closure_vectors(entity_translate_grab_closure_t *closure)
                            &unit_y[0],
                            &unit_y[1]);
     unit_y[2] = entity_z;
-    // c_print ("eye unit_y: %f %f %f\n", unit_y[0], unit_y[1], unit_y[2]);
+    // c_debug ("eye unit_y: %f %f %f\n", unit_y[0], unit_y[1], unit_y[2]);
 
     /* Transform our points from eye coordinates into entity
      * coordinates and convert into input mapping vectors */
@@ -1045,7 +1045,7 @@ update_grab_closure_vectors(entity_translate_grab_closure_t *closure)
     x_vec[1] = unit_x[1] - origin[1];
     x_vec[2] = unit_x[2] - origin[2];
 
-    // c_print (" =========================== Entity coords: x_vec = %f, %f,
+    // c_debug (" =========================== Entity coords: x_vec = %f, %f,
     // %f\n",
     //         x_vec[0], x_vec[1], x_vec[2]);
 
@@ -1053,7 +1053,7 @@ update_grab_closure_vectors(entity_translate_grab_closure_t *closure)
     y_vec[1] = unit_y[1] - origin[1];
     y_vec[2] = unit_y[2] - origin[2];
 
-    // c_print (" =========================== Entity coords: y_vec = %f, %f,
+    // c_debug (" =========================== Entity coords: y_vec = %f, %f,
     // %f\n",
     //         y_vec[0], y_vec[1], y_vec[2]);
 
@@ -1147,7 +1147,7 @@ print_quaternion (const cg_quaternion_t *q,
     float angle = cg_quaternion_get_rotation_angle (q);
     float axis[3];
     cg_quaternion_get_rotation_axis (q, axis);
-    c_print ("%s: [%f (%f, %f, %f)]\n", label, angle, axis[0], axis[1], axis[2]);
+    c_debug ("%s: [%f (%f, %f, %f)]\n", label, angle, axis[0], axis[1], axis[2]);
 }
 #endif
 
@@ -1327,7 +1327,7 @@ entitygraph_pre_pick_cb(rut_object_t *object, int depth, void *user_data)
                       transformed_ray_direction);
 
 #if 0
-        c_print ("transformed ray %f,%f,%f %f,%f,%f\n",
+        c_debug ("transformed ray %f,%f,%f %f,%f,%f\n",
                  transformed_ray_origin[0],
                  transformed_ray_origin[1],
                  transformed_ray_origin[2],
@@ -1611,7 +1611,7 @@ input_cb(rut_input_event_t *event,
         inverse_projection =
             rut_camera_get_inverse_projection(camera_component);
 
-// c_print ("Camera inverse projection: %p\n", engine->simulator);
+// c_debug ("Camera inverse projection: %p\n", engine->simulator);
 // cg_debug_matrix_print (inverse_projection);
 
 #if 0
@@ -1620,12 +1620,12 @@ input_cb(rut_input_event_t *event,
         camera_view = rut_camera_get_view_transform(camera_component);
         cg_matrix_get_inverse(camera_view, &camera_transform);
 #endif
-        // c_print ("Camera transform:\n");
+        // c_debug ("Camera transform:\n");
         // cg_debug_matrix_print (&camera_transform);
 
         screen_pos[0] = x;
         screen_pos[1] = y;
-        // c_print ("screen pos x=%f, y=%f\n", x, y);
+        // c_debug ("screen pos x=%f, y=%f\n", x, y);
 
         rut_util_create_pick_ray(viewport,
                                  inverse_projection,
@@ -1635,7 +1635,7 @@ input_cb(rut_input_event_t *event,
                                  ray_direction);
 
 #if 0
-        c_print ("ray pos %f,%f,%f dir %f,%f,%f\n",
+        c_debug ("ray pos %f,%f,%f dir %f,%f,%f\n",
                  ray_position[0],
                  ray_position[1],
                  ray_position[2],
@@ -1674,7 +1674,7 @@ input_cb(rut_input_event_t *event,
             rut_property_t *label =
                 rut_introspectable_lookup_property (picked_entity, "label");
 
-            c_print ("Entity picked: %s\n", rut_property_get_text (label));
+            c_debug ("Entity picked: %s\n", rut_property_get_text (label));
         }
 #endif
 
@@ -1687,7 +1687,7 @@ input_cb(rut_input_event_t *event,
                     picked_entity, RUT_COMPONENT_TYPE_INPUT);
                 // rut_property_t *label =
                 //  rut_introspectable_lookup_property (picked_entity, "label");
-                // c_print ("Entity picked: %s\n", rut_property_get_text
+                // c_debug ("Entity picked: %s\n", rut_property_get_text
                 // (label));
 
                 if (inputable)
@@ -1695,7 +1695,7 @@ input_cb(rut_input_event_t *event,
                 else
                     return RUT_INPUT_EVENT_STATUS_UNHANDLED;
             } else {
-                // c_print ("No entity picked\n");
+                // c_debug ("No entity picked\n");
                 return RUT_INPUT_EVENT_STATUS_UNHANDLED;
             }
         } else if (action == RUT_MOTION_EVENT_ACTION_DOWN &&
@@ -1736,7 +1736,7 @@ input_cb(rut_input_event_t *event,
             // rut_arcball_mouse_down (&view->arcball, engine->width - x, y);
             rut_arcball_mouse_down(
                 &view->arcball, view->width - x, view->height - y);
-            // c_print ("Arcball init, mouse = (%d, %d)\n", (int)(engine->width
+            // c_debug ("Arcball init, mouse = (%d, %d)\n", (int)(engine->width
             // - x), (int)(engine->height - y));
 
             // print_quaternion (&view->saved_rotation, "Saved Quaternion");
@@ -1790,7 +1790,7 @@ input_cb(rut_input_event_t *event,
                 rut_graphable_get_transform (view->view_camera, &transform);
                 cg_debug_matrix_print (&transform);
             }
-            c_print (" =========================== x_vec = %f, %f, %f\n",
+            c_debug (" =========================== x_vec = %f, %f, %f\n",
                      x_vec[0], x_vec[1], x_vec[2]);
 
             y_vec[0] = origin[0] - unit_y[0];
@@ -1816,7 +1816,7 @@ input_cb(rut_input_event_t *event,
 
             update_camera_position (engine);
 
-            c_print ("Translate %f %f dx=%f, dy=%f\n",
+            c_debug ("Translate %f %f dx=%f, dy=%f\n",
                      x - engine->grab_x,
                      y - engine->grab_y,
                      dx, dy);
@@ -1834,7 +1834,7 @@ input_cb(rut_input_event_t *event,
             rut_arcball_mouse_motion(
                 &view->arcball, view->width - x, view->height - y);
 #if 0
-            c_print ("Arcball motion, center=%f,%f mouse = (%f, %f)\n",
+            c_debug ("Arcball motion, center=%f,%f mouse = (%f, %f)\n",
                      view->arcball.center[0],
                      view->arcball.center[1],
                      x, y);

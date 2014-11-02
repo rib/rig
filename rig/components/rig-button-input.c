@@ -299,7 +299,7 @@ _rig_button_input_grab_input_cb(rut_input_event_t *event, void *user_data)
         } else if (rut_motion_event_get_action(event) ==
                    RUT_MOTION_EVENT_ACTION_MOVE) {
 #warning "fixme: pick during button input grab to handle ACTIVE_CANCEL state"
-            c_print("TODO: rig_button_input_t - pick during motion to handle "
+            c_debug("TODO: rig_button_input_t - pick during motion to handle "
                     "ACTIVE_CANCEL state\n");
 #if 0
             float x = rut_motion_event_get_x (event);

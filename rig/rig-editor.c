@@ -3213,7 +3213,7 @@ print_mapping_cb(gpointer key, gpointer value, gpointer user_data)
     char *a = rig_engine_get_object_debug_name(key);
     char *b = rig_engine_get_object_debug_name(value);
 
-    c_print("  [%50s] -> [%50s]\n", a, b);
+    c_debug("  [%50s] -> [%50s]\n", a, b);
 
     c_free(a);
     c_free(b);
@@ -3222,12 +3222,12 @@ print_mapping_cb(gpointer key, gpointer value, gpointer user_data)
 void
 rig_editor_print_mappings(rig_editor_t *editor)
 {
-    c_print("Edit to play mode mappings:\n");
+    c_debug("Edit to play mode mappings:\n");
     c_hash_table_foreach(
         editor->edit_to_play_object_map, print_mapping_cb, NULL);
 
-    c_print("\n\n");
-    c_print("Play to edit mode mappings:\n");
+    c_debug("\n\n");
+    c_debug("Play to edit mode mappings:\n");
     c_hash_table_foreach(
         editor->play_to_edit_object_map, print_mapping_cb, NULL);
 }
