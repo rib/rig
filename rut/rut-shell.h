@@ -857,4 +857,7 @@ char *rut_find_data_file(const char *base_filename);
 
 void rut_init_tls_state(void);
 
+void rut_set_thread_current_shell(rut_shell_t *shell);
+rut_shell_t *rut_get_thread_current_shell(void);
+
 #endif /* _RUT_SHELL_H_ */

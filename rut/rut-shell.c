@@ -97,6 +97,10 @@
 #include <android/log.h>
 #endif
 
+/* Mainly for logging/debugging purposes, we keep track of a
+ * per-thread current shell */
+static c_tls_t rut_shell_tls;
+
 static void
 _rut_shell_fini(rut_shell_t *shell)
 {
@@ -2163,9 +2167,23 @@ rut_find_data_file(const char *base_filename)
 }
 
 void
+rut_set_thread_current_shell(rut_shell_t *shell)
+{
+    c_tls_set(&rut_shell_tls, shell);
+}
+
+rut_shell_t *
+rut_get_thread_current_shell(void)
+{
+    return c_tls_get(&rut_shell_tls);
+}
+
+void
 rut_init_tls_state(void)
 {
 #ifdef RUT_ENABLE_REFCOUNT_DEBUG
     rut_refcount_debug_init();
 #endif
+
+    c_tls_init(&rut_shell_tls, NULL /* destroy */);
 }
