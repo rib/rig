@@ -882,12 +882,13 @@ spawn_simulator(rut_shell_t *shell, rig_frontend_t *frontend)
     else
 #endif /* RIG_ENABLE_DEBUG */
     {
-#if defined(RIG_EDITOR_ENABLED)
-        fork_simulator(shell, frontend);
-#elif defined(__ANDROID__)
+#if defined(__ANDROID__)
         run_simulator_in_process(shell, frontend);
 #else
-        create_simulator_thread(shell, frontend);
+        if (frontend->id == RIG_FRONTEND_ID_EDITOR)
+            fork_simulator(shell, frontend);
+        else
+            create_simulator_thread(shell, frontend);
 #endif
     }
 }
