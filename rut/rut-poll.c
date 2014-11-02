@@ -428,18 +428,17 @@ glib_uv_prepare_cb(uv_prepare_t *prepare)
 
     loop = rut_uv_shell_get_loop(shell);
 
-    if (g_main_context_prepare(ctx, &priority))
-        g_main_context_dispatch(ctx);
+    g_main_context_prepare(ctx, &priority);
 
     pollfds = (GPollFD *)shell->pollfds->data;
     shell->n_pollfds = g_main_context_query(
-        ctx, INT_MIN, &timeout, pollfds, shell->pollfds->len);
+        ctx, INT_MAX, &timeout, pollfds, shell->pollfds->len);
 
     if (shell->n_pollfds > shell->pollfds->len) {
         g_array_set_size(shell->pollfds, shell->n_pollfds);
         g_array_set_size(shell->glib_polls, shell->n_pollfds);
         g_main_context_query(
-            ctx, INT_MIN, &timeout, pollfds, shell->pollfds->len);
+            ctx, INT_MAX, &timeout, pollfds, shell->pollfds->len);
     }
 
     for (i = 0; i < shell->n_pollfds; i++) {
@@ -448,6 +447,7 @@ glib_uv_prepare_cb(uv_prepare_t *prepare)
             &g_array_index(shell->glib_polls, uv_glib_poll_t, i);
 
         glib_poll->shell = shell;
+        glib_poll->poll_handle.data = glib_poll;
         uv_poll_init(loop, &glib_poll->poll_handle, pollfds[i].fd);
         glib_poll->pollfd_index = i;
 
@@ -474,7 +474,7 @@ glib_uv_check_cb(uv_check_t *check)
     int i;
 
     g_main_context_check(shell->glib_main_ctx,
-                         INT_MIN,
+                         INT_MAX,
                          (GPollFD *)shell->pollfds->data,
                          shell->n_pollfds);
 
@@ -484,6 +484,8 @@ glib_uv_check_cb(uv_check_t *check)
         uv_poll_stop(&glib_poll->poll_handle);
     }
     shell->n_pollfds = 0;
+
+    g_main_context_dispatch(shell->glib_main_ctx);
 }
 #endif /* USE_GLIB */
 
