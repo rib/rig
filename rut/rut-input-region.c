@@ -169,14 +169,14 @@ _rut_input_region_pick(rut_object_t *inputable,
             poly_init_from_rectangle(poly, &region->shape.rectangle);
 
 #if 0
-        c_print ("transformed input region\n");
+        c_debug ("transformed input region\n");
         for (i = 0; i < 4; i++)
         {
             float *p = poly + 4 * i;
-            c_print ("poly[].x=%f\n", p[0]);
-            c_print ("poly[].y=%f\n", p[1]);
+            c_debug ("poly[].x=%f\n", p[0]);
+            c_debug ("poly[].y=%f\n", p[1]);
         }
-        c_print ("x=%f y=%f\n", x, y);
+        c_debug ("x=%f y=%f\n", x, y);
 #endif
         if (rut_util_point_in_screen_poly(x, y, poly, sizeof(float) * 4, 4))
             return true;

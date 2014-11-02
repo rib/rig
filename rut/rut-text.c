@@ -2043,7 +2043,7 @@ rut_text_motion_grab(rut_input_event_t *event,
     if (rut_input_event_get_type(event) != RUT_INPUT_EVENT_TYPE_MOTION)
         return RUT_INPUT_EVENT_STATUS_UNHANDLED;
 
-    c_print("Grab\n");
+    c_debug("Grab\n");
     if (rut_motion_event_get_action(event) == RUT_MOTION_EVENT_ACTION_MOVE) {
         const cg_matrix_t *view = rut_camera_get_view_transform(camera);
 
@@ -2051,7 +2051,7 @@ rut_text_motion_grab(rut_input_event_t *event,
         rut_graphable_apply_transform(text, &transform);
 
         if (!cg_matrix_get_inverse(&transform, &inverse_transform)) {
-            c_print("Failed to get inverse\n");
+            c_debug("Failed to get inverse\n");
             return RUT_INPUT_EVENT_STATUS_UNHANDLED;
         }
 
@@ -2060,7 +2060,7 @@ rut_text_motion_grab(rut_input_event_t *event,
         rut_camera_unproject_coord(
             camera, &transform, &inverse_transform, 0, &x, &y);
 
-        c_print("Grab x=%f y=%f\n", x, y);
+        c_debug("Grab x=%f y=%f\n", x, y);
 
         index_ = rut_text_coords_to_position(text, x, y);
         text_str = rut_text_buffer_get_text(get_buffer(text));
@@ -2107,7 +2107,7 @@ rut_text_button_press(rut_text_t *text,
     cg_matrix_t inverse_transform;
     rut_object_t *camera;
 
-    c_print("rut_text_t Button Press!\n");
+    c_debug("rut_text_t Button Press!\n");
     /* we'll steal keyfocus if we need it */
     if (text->editable || text->selectable)
         rut_text_grab_key_focus(text);
@@ -2129,7 +2129,7 @@ rut_text_button_press(rut_text_t *text,
          * to grab a scrollbar when typing then they would have to click
          * the scrollbar twice, once to drop the text entry grab and
          * then again to actually grab the scrollbar. */
-        c_print("Ungrab\n");
+        c_debug("Ungrab\n");
         return RUT_INPUT_EVENT_STATUS_UNHANDLED;
     }
 

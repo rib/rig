@@ -201,7 +201,7 @@ _rut_slider_input_cb(rut_input_region_t *region,
 {
     rut_slider_t *slider = user_data;
 
-    // c_print ("Slider input\n");
+    // c_debug ("Slider input\n");
 
     if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_MOTION &&
         rut_motion_event_get_action(event) == RUT_MOTION_EVENT_ACTION_DOWN) {
@@ -329,5 +329,5 @@ rut_slider_set_progress(rut_object_t *obj, float progress)
 
     rut_shell_queue_redraw(slider->shell);
 
-    // c_print ("progress = %f\n", slider->progress);
+    // c_debug ("progress = %f\n", slider->progress);
 }

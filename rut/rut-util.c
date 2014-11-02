@@ -112,7 +112,7 @@ rut_util_print_quaternion(const char *prefix,
     cg_quaternion_get_rotation_axis(quaternion, axis);
     angle = cg_quaternion_get_rotation_angle(quaternion);
 
-    c_print("%saxis: (%.2f,%.2f,%.2f) angle: %.2f\n",
+    c_debug("%saxis: (%.2f,%.2f,%.2f) angle: %.2f\n",
             prefix,
             axis[0],
             axis[1],

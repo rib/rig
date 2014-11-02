@@ -513,7 +513,7 @@ rut_property_dirty(rut_property_context_t *ctx, rut_property_t *property)
         if (object != &dummy_object) {
             rut_property_change_t *change;
 
-            c_print(
+            c_debug(
                 "Log %d: base=%p, offset=%d: obj = %p(%s), prop id=%d(%s)\n",
                 ctx->log_len,
                 ctx->change_log_stack->sub_stack->data,

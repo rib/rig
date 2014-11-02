@@ -858,19 +858,19 @@ rut_debug_matrix_entry_print(rut_matrix_entry_t *entry)
         children[i] = e;
     }
 
-    c_print("MatrixEntry %p =\n", entry);
+    c_debug("MatrixEntry %p =\n", entry);
 
     for (i = 0; i < depth; i++) {
         entry = children[i];
 
         switch (entry->op) {
         case RUT_MATRIX_OP_LOAD_IDENTITY:
-            c_print("  LOAD IDENTITY\n");
+            c_debug("  LOAD IDENTITY\n");
             continue;
         case RUT_MATRIX_OP_TRANSLATE: {
             rut_matrix_entry_translate_t *translate =
                 (rut_matrix_entry_translate_t *)entry;
-            c_print("  TRANSLATE X=%f Y=%f Z=%f\n",
+            c_debug("  TRANSLATE X=%f Y=%f Z=%f\n",
                     translate->x,
                     translate->y,
                     translate->z);
@@ -879,7 +879,7 @@ rut_debug_matrix_entry_print(rut_matrix_entry_t *entry)
         case RUT_MATRIX_OP_ROTATE: {
             rut_matrix_entry_rotate_t *rotate =
                 (rut_matrix_entry_rotate_t *)entry;
-            c_print("  ROTATE ANGLE=%f X=%f Y=%f Z=%f\n",
+            c_debug("  ROTATE ANGLE=%f X=%f Y=%f Z=%f\n",
                     rotate->angle,
                     rotate->x,
                     rotate->y,
@@ -889,7 +889,7 @@ rut_debug_matrix_entry_print(rut_matrix_entry_t *entry)
         case RUT_MATRIX_OP_ROTATE_QUATERNION: {
             rut_matrix_entry_rotate_quaternion_t *rotate =
                 (rut_matrix_entry_rotate_quaternion_t *)entry;
-            c_print("  ROTATE QUATERNION w=%f x=%f y=%f z=%f\n",
+            c_debug("  ROTATE QUATERNION w=%f x=%f y=%f z=%f\n",
                     rotate->values[0],
                     rotate->values[1],
                     rotate->values[2],
@@ -899,7 +899,7 @@ rut_debug_matrix_entry_print(rut_matrix_entry_t *entry)
         case RUT_MATRIX_OP_ROTATE_EULER: {
             rut_matrix_entry_rotate_euler_t *rotate =
                 (rut_matrix_entry_rotate_euler_t *)entry;
-            c_print("  ROTATE EULER heading=%f pitch=%f roll=%f\n",
+            c_debug("  ROTATE EULER heading=%f pitch=%f roll=%f\n",
                     rotate->heading,
                     rotate->pitch,
                     rotate->roll);
@@ -907,26 +907,26 @@ rut_debug_matrix_entry_print(rut_matrix_entry_t *entry)
         }
         case RUT_MATRIX_OP_SCALE: {
             rut_matrix_entry_scale_t *scale = (rut_matrix_entry_scale_t *)entry;
-            c_print("  SCALE X=%f Y=%f Z=%f\n", scale->x, scale->y, scale->z);
+            c_debug("  SCALE X=%f Y=%f Z=%f\n", scale->x, scale->y, scale->z);
             continue;
         }
         case RUT_MATRIX_OP_MULTIPLY: {
             rut_matrix_entry_multiply_t *mult =
                 (rut_matrix_entry_multiply_t *)entry;
-            c_print("  MULT:\n");
+            c_debug("  MULT:\n");
             cg_debug_matrix_print(mult->matrix);
             //_cg_matrix_prefix_print ("    ", mult->matrix);
             continue;
         }
         case RUT_MATRIX_OP_LOAD: {
             rut_matrix_entry_load_t *load = (rut_matrix_entry_load_t *)entry;
-            c_print("  LOAD:\n");
+            c_debug("  LOAD:\n");
             cg_debug_matrix_print(load->matrix);
             //_cg_matrix_prefix_print ("    ", load->matrix);
             continue;
         }
         case RUT_MATRIX_OP_SAVE:
-            c_print("  SAVE\n");
+            c_debug("  SAVE\n");
         }
     }
 }

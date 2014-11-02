@@ -260,9 +260,9 @@ _rut_scroll_bar_input_cb(
                                      scroll_bar);
             }
         } else if (pos < scroll_bar->handle_pos) {
-            // c_print ("Scroll Bar: In front of handle\n");
+            // c_debug ("Scroll Bar: In front of handle\n");
         } else {
-            // c_print ("Scroll Bar: After handle\n");
+            // c_debug ("Scroll Bar: After handle\n");
         }
     }
 

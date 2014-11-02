@@ -990,7 +990,7 @@ dispatch_signal_source (GSource *source,
             }
         }
 
-        c_print ("Signal received: %d\n", sig);
+        c_debug ("Signal received: %d\n", sig);
 
         rut_closure_list_invoke (&shell->signal_cb_list,
                                  rut_shell_signal_callback_t,
@@ -1359,11 +1359,11 @@ rut_input_queue_append(rut_input_queue_t *queue, rut_input_event_t *event)
 {
     if (queue->shell->headless) {
 #if 0
-        c_print ("input_queue_append %p %d\n", event, event->type);
+        c_debug ("input_queue_append %p %d\n", event, event->type);
         if (event->type == RUT_INPUT_EVENT_TYPE_KEY)
-            c_print ("> is key\n");
+            c_debug ("> is key\n");
         else
-            c_print ("> not key\n");
+            c_debug ("> not key\n");
 #endif
     }
     rut_list_insert(queue->events.prev, &event->list_node);

@@ -683,7 +683,7 @@ rut_object_dump_refs(void *object)
 
     object_data = c_hash_table_lookup(state->hash, object);
     if (object_data == NULL) {
-        c_print("No reference information tracked for object %p\n", object);
+        c_debug("No reference information tracked for object %p\n", object);
         return;
     }
 

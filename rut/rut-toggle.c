@@ -367,7 +367,7 @@ _rut_toggle_grab_input_cb(rut_input_event_t *event, void *user_data)
                                         toggle,
                                         toggle->state);
 
-                c_print("Toggle click\n");
+                c_debug("Toggle click\n");
 
                 c_slice_free(toggle_grab_state_t, state);
 
@@ -407,7 +407,7 @@ _rut_toggle_input_cb(rut_input_region_t *region,
 {
     rut_toggle_t *toggle = user_data;
 
-    c_print("Toggle input\n");
+    c_debug("Toggle input\n");
 
     if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_MOTION &&
         rut_motion_event_get_action(event) == RUT_MOTION_EVENT_ACTION_DOWN) {

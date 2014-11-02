@@ -375,7 +375,7 @@ _rut_timeline_update(rut_timeline_t *timeline)
     elapsed = _rut_timeline_validate_elapsed(
         timeline, elapsed, &should_stop, &should_restart_with_offset);
 
-    c_print("elapsed = %f\n", elapsed);
+    c_debug("elapsed = %f\n", elapsed);
     if (should_stop)
         c_timer_stop(timeline->gtimer);
     else if (should_restart_with_offset) {
