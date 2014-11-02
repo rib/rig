@@ -1427,10 +1427,10 @@ long c_utf8_pointer_to_offset(const char *str, const char *pos);
 #define C_PRIORITY_DEFAULT 0
 #define C_PRIORITY_DEFAULT_IDLE 200
 
-#if defined(HAVE_PTHREADS)
+#if defined(C_HAVE_PTHREADS)
 typedef pthread_mutex_t c_mutex_t;
 typedef pthread_key_t c_tls_t;
-#elif defined(WIN32)
+#elif defined(C_OS_WIN32)
 typedef CRITICAL_SECTION c_mutex_t;
 typedef struct {
     DWORD key;
