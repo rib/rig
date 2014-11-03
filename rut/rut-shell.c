@@ -342,7 +342,22 @@ rut_key_event_get_modifier_state(rut_input_event_t *event)
 rut_modifier_state_t
 rut_motion_event_get_modifier_state(rut_input_event_t *event)
 {
-#warning "xxx: check if we need to handle the headless case here"
+    rut_shell_t *shell = event->shell;
+
+    if (shell->headless) {
+        rut_stream_event_t *stream_event = event->native;
+        switch (stream_event->type) {
+        case RUT_STREAM_EVENT_POINTER_MOVE:
+            return stream_event->pointer_move.mod_state;
+        case RUT_STREAM_EVENT_POINTER_DOWN:
+        case RUT_STREAM_EVENT_POINTER_UP:
+            return stream_event->pointer_button.mod_state;
+        default:
+            c_warn_if_reached();
+            return 0;
+        }
+    }
+
     return event->shell->platform.motion_event_get_modifier_state(event);
 }
 

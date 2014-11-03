@@ -151,12 +151,14 @@ typedef struct _rut_stream_event_t {
     union {
         struct {
             rut_button_state_t state;
+            rut_modifier_state_t mod_state;
             float x;
             float y;
         } pointer_move;
         struct {
             rut_button_state_t state;
             rut_button_state_t button;
+            rut_modifier_state_t mod_state;
             float x;
             float y;
         } pointer_button;
