@@ -590,8 +590,12 @@ rut_glib_poll_run(rut_shell_t *shell)
     } else
         c_warning("Failed to acquire glib context");
 
+    rut_set_thread_current_shell(shell);
+
     if (shell->on_run_cb)
         shell->on_run_cb(shell, shell->on_run_data);
+
+    rut_set_thread_current_shell(NULL);
 
     uv_run(loop, UV_RUN_DEFAULT);
 
