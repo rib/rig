@@ -383,11 +383,13 @@ message Event
     {
       optional float x=1;
       optional float y=2;
+      optional sint32 mod_state=3;
     }
   message PointerButton
     {
       optional uint32 button=1;
       repeated bool buttons=2;
+      optional sint32 mod_state=3;
     }
   message Key
     {
