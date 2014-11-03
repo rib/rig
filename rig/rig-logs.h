@@ -26,15 +26,43 @@
  * SOFTWARE.
  */
 
-#ifndef _RIG_CURSES_DEBUG_H_
-#define _RIG_CURSES_DEBUG_H_
+#ifndef _RIG_LOGS_H_
+#define _RIG_LOGS_H_
 
 #include <rut.h>
 
-void
-rig_curses_init(void);
+#include "rig-frontend.h"
+#include "rig-simulator.h"
 
-void
-rig_curses_add_to_shell(rut_shell_t *shell);
+struct rig_log_entry
+{
+    rut_list_t link;
 
-#endif /* _RIG_CURSES_DEBUG_H_ */
+    c_quark_t log_domain;
+    c_log_level_flags_t log_level;
+    char *message;
+};
+
+struct rig_log
+{
+    rut_shell_t *shell;
+
+    rut_list_t log;
+    int len;
+};
+
+void rig_logs_init(void (*log_notify)(struct rig_log *log));
+
+void rig_logs_set_frontend(rig_frontend_t *frontend);
+void rig_logs_set_simulator(rig_simulator_t *simulator);
+
+void rig_logs_resolve(struct rig_log **frontend_log,
+                      struct rig_log **simulator_log);
+
+void rig_logs_log_from_remote(c_log_level_flags_t log_level,
+                              const char *message);
+
+void rig_logs_fini(void);
+
+#endif /* _RIG_LOGS_H_ */
+

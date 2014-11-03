@@ -48,7 +48,7 @@
 #include "rig-frontend.h"
 #include "rig-renderer.h"
 #include "rig-pb.h"
-#include "rig-curses-debug.h"
+#include "rig-logs.h"
 
 #include "rig.pb-c.h"
 
@@ -69,6 +69,26 @@ frontend__test(Rig__Frontend_Service *service,
     // c_debug ("Frontend Service: Test Query\n");
 
     closure(&result, closure_data);
+}
+
+static void
+frontend__forward_log(Rig__Frontend_Service *service,
+                      const Rig__Log *log,
+                      Rig__LogAck_Closure closure,
+                      void *closure_data)
+{
+    Rig__LogAck ack = RIG__LOG_ACK__INIT;
+    int i;
+
+    c_return_if_fail(log != NULL);
+
+    for (i = 0; i < log->n_log; i++) {
+        Rig__LogEntry *entry = log->log[i];
+
+        rig_logs_log_from_remote(entry->log_level, entry->log_message);
+    }
+
+    closure(&ack, closure_data);
 }
 
 static void
@@ -691,8 +711,6 @@ run_simulator_thread(void *user_data)
     thread_state_t *state = user_data;
     rig_simulator_t *simulator =
         rig_simulator_new(state->frontend->id, NULL, state->fd);
-
-    rig_curses_set_simulator(simulator);
 
 #ifdef USE_GLIB
     g_main_context_push_thread_default(g_main_context_new());

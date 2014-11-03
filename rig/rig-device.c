@@ -42,6 +42,7 @@
 #include "rig-engine.h"
 #include "rig-pb.h"
 #include "rig-curses-debug.h"
+#include "rig-logs.h"
 
 #include "rig.pb-c.h"
 
@@ -169,7 +170,7 @@ rig_device_init(rut_shell_t *shell, void *user_data)
     engine = device->frontend->engine;
     device->engine = engine;
 
-    rig_curses_set_frontend(device->frontend);
+    rig_logs_set_frontend(device->frontend);
 
     /* Finish the slave specific engine setup...
      */

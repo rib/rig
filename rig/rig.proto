@@ -656,6 +656,24 @@ message SimulatorAction
   optional ReportEditFailure report_edit_failure=3;
 }
 
+message LogEntry
+{
+  enum Level { DEBUG=1; INFO=2; MESSAGE=3; WARNING=4; CRITICAL=5; ERROR=6; }
+
+  optional Level log_level = 1;
+  optional string log_message = 2;
+  optional uint64 timestamp = 3;
+}
+
+message Log
+{
+  repeated LogEntry log = 1;
+}
+
+message LogAck
+{
+}
+
 message UIDiff
 {
   optional uint64 frame_id=1;
@@ -681,6 +699,8 @@ message UpdateUIAck
 // The frontend service as used from the simulator
 service Frontend {
   rpc UpdateUI (UIDiff) returns (UpdateUIAck);
+
+  rpc ForwardLog (Log) returns (LogAck);
 
   rpc Test (Query) returns (TestResult);
 }

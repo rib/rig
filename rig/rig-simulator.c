@@ -726,6 +726,8 @@ rig_simulator_new(rig_frontend_id_t frontend_id,
                                   rig_simulator_init,
                                   simulator);
 
+    rig_logs_set_simulator(simulator);
+
     return simulator;
 }
 

@@ -35,39 +35,11 @@
 
 #include <rut.h>
 
+#include "rig-logs.h"
 #include "rig-curses-debug.h"
-
-struct log_entry
-{
-    rut_list_t link;
-
-    rut_shell_t *shell;
-    c_quark_t log_domain;
-    c_log_level_flags_t log_level;
-    char *message;
-};
-
-c_mutex_t log_lock;
-
-struct shell_log
-{
-    rut_shell_t *shell;
-    rut_list_t log;
-    int len;
-};
 
 struct curses_state
 {
-    bool enabled;
-
-    /* We maintain two parallel logs so we can show
-     * the frontend and simulator logs side-by-side
-     */
-    struct shell_log logs[2];
-
-    rig_frontend_t *frontend;
-    rig_simulator_t *simulator;
-
     int hscroll_pos;
     int vscroll_pos;
 
@@ -93,7 +65,6 @@ enum {
 };
 
 #define PAGE_COUNT 1
-#define MAX_LOG_LEN 10000
 
 static void
 destroy_windows (void)
@@ -113,36 +84,14 @@ destroy_windows (void)
 }
 
 static void
-resolve_logs(struct shell_log **frontend_log,
-             struct shell_log **simulator_log)
-{
-    struct curses_state *state = &curses_state;
-
-    *frontend_log = NULL;
-    *simulator_log = NULL;
-
-    if (state->frontend &&
-        state->frontend->engine->shell == state->logs[0].shell)
-    {
-        *frontend_log = &state->logs[0];
-        if (state->simulator)
-            *simulator_log = &state->logs[1];
-    } else {
-        *frontend_log = &state->logs[1];
-        if (state->simulator)
-            *simulator_log = &state->logs[0];
-    }
-}
-
-static void
 print_log(WINDOW *log_window,
           int log_win_width,
           int log_win_height,
           const char *header,
-          struct shell_log *log)
+          struct rig_log *log)
 {
     struct curses_state *state = &curses_state;
-    struct log_entry *entry;
+    struct rig_log_entry *entry;
     int max_lines = log_win_height - 1;
     int pos = 0;
     int i = 0;
@@ -222,8 +171,8 @@ redraw_cb(void *user_data)
 {
     rut_shell_t *shell = user_data;
     struct curses_state *state = &curses_state;
-    struct shell_log *frontend_log;
-    struct shell_log *simulator_log;
+    struct rig_log *frontend_log;
+    struct rig_log *simulator_log;
     int log0_win_width;
 
     destroy_windows();
@@ -266,7 +215,7 @@ redraw_cb(void *user_data)
                state->screen_width, 1, 0);
 #endif
 
-    resolve_logs(&frontend_log, &simulator_log);
+    rig_logs_resolve(&frontend_log, &simulator_log);
 
     if (frontend_log && simulator_log)
         log0_win_width = state->screen_width / 2;
@@ -321,83 +270,25 @@ queue_redraw(rut_shell_t *shell)
 }
 
 static void
-curses_log_hook(c_log_context_t *lctx,
-                const char *log_domain,
-                c_log_level_flags_t log_level,
-                const char *message)
-{
-    struct log_entry *entry = c_slice_new(struct log_entry);
-    struct shell_log *log;
-    struct curses_state *state = &curses_state;
-
-    entry->shell = rut_get_thread_current_shell();
-    entry->log_domain = c_quark_from_string(log_domain ? log_domain : "");
-    entry->log_level = log_level;
-    entry->message = c_strdup(message);
-
-    c_mutex_lock(&log_lock);
-
-    /* We maintain two separate logs so we can show the frontend
-     * and simulator logs side by side.
-     *
-     * XXX: instead of allocating log indices on a first come first
-     * server basis we should consistently give the frontend slot
-     * 0 and the simulator slot 1.
-     */
-
-    if (state->logs[0].shell == NULL)
-        state->logs[0].shell = entry->shell;
-
-    if (state->logs[0].shell != entry->shell &&
-        state->logs[1].shell == NULL)
-    {
-        state->logs[1].shell = entry->shell;
-    }
-
-    if (state->logs[0].shell == entry->shell)
-        log = &state->logs[0];
-    else if (state->logs[1].shell == entry->shell)
-        log = &state->logs[1];
-    else
-        log = &state->logs[0];
-
-    rut_list_insert(&log->log, &entry->link);
-    if (log->len++ > MAX_LOG_LEN)
-        rut_list_remove(log->log.prev);
-
-    if (state->logs[0].shell)
-        queue_redraw(state->logs[0].shell);
-
-    c_mutex_unlock(&log_lock);
-
-#if 0
-    fprintf(stderr,
-            "%s%s%s\n",
-            log_domain != NULL ? log_domain : "",
-            log_domain != NULL ? ": " : "",
-            message);
-#endif
-}
-
-static void
 deinit_curses(void)
 {
-    struct log_entry *entry;
-    struct shell_log *frontend_log;
-    struct shell_log *simulator_log;
-
     destroy_windows();
     endwin();
 
-    c_log_hook = NULL;
+    rig_logs_fini();
+}
 
-    resolve_logs(&frontend_log, &simulator_log);
+/* XXX: called with logs locked */
+static void
+log_cb(struct rig_log *log)
+{
+    struct rig_log *frontend_log;
+    struct rig_log *simulator_log;
 
-    fprintf(stderr, "Final logs...\n");
-    rut_list_for_each(entry, &frontend_log->log, link)
-        fprintf(stderr, "FE: %s\n", entry->message);
-    rut_list_for_each(entry, &simulator_log->log, link)
-        fprintf(stderr, "SIM: %s\n", entry->message);
+    rig_logs_resolve(&frontend_log, &simulator_log);
+
+    if (frontend_log && frontend_log == log)
+        queue_redraw(log->shell);
 }
 
 void
@@ -405,10 +296,11 @@ rig_curses_init(void)
 {
     struct curses_state *state = &curses_state;
 
-    c_mutex_init(&log_lock);
+    rig_logs_init(log_cb);
 
     state->current_page = 0;
 
+    /* XXX: we're assuming we'll get a utf8 locale */
     setlocale(LC_ALL, "");
 
     initscr();
@@ -430,13 +322,6 @@ rig_curses_init(void)
 #if 0
     init_pair(RIG_KEY_LABEL_COLOR, COLOR_WHITE, COLOR_GREEN);
 #endif
-
-    rut_list_init(&state->logs[0].log);
-    rut_list_init(&state->logs[1].log);
-
-    curses_state.enabled = true;
-
-    c_log_hook = curses_log_hook;
 
     atexit(deinit_curses);
 }
@@ -492,16 +377,4 @@ rig_curses_add_to_shell(rut_shell_t *shell)
                           NULL, /* prepare */
                           handle_input_cb,
                           shell);
-}
-
-void
-rig_curses_set_frontend(rig_frontend_t *frontend)
-{
-    curses_state.frontend = frontend;
-}
-
-void
-rig_curses_set_simulator(rig_simulator_t *simulator)
-{
-    curses_state.simulator = simulator;
 }
