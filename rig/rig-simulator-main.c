@@ -38,6 +38,7 @@
 #include <rut.h>
 
 #include "rig-simulator.h"
+#include "rig-logs.h"
 
 int
 main(int argc, char **argv)
@@ -48,6 +49,7 @@ main(int argc, char **argv)
     rig_frontend_id_t frontend_id;
     int fd;
 
+    rig_simulator_logs_init();
     rut_init_tls_state();
 
     if (!frontend) {

@@ -68,6 +68,9 @@ struct _rig_simulator_t {
     int fd;
     rig_rpc_peer_t *simulator_peer;
 
+    rig_pb_serializer_t *log_serializer;
+    rut_memory_stack_t *log_serializer_stack;
+
     float view_x;
     float view_y;
 
@@ -106,5 +109,7 @@ void rig_simulator_run_frame(rut_shell_t *shell, void *user_data);
 void rig_simulator_queue_redraw_hook(rut_shell_t *shell, void *user_data);
 
 void rig_simulator_print_mappings(rig_simulator_t *simulator);
+
+void rig_simulator_forward_log(rig_simulator_t *simulator);
 
 #endif /* _RIG_SIMULATOR_H_ */

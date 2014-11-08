@@ -40,6 +40,7 @@
 #include "rig-engine-op.h"
 #include "rig-pb.h"
 #include "rig-ui.h"
+#include "rig-logs.h"
 
 #include "rig.pb-c.h"
 
@@ -561,6 +562,11 @@ _rig_simulator_free(void *object)
     rut_object_unref(simulator->shell);
     rut_object_unref(simulator->shell);
 
+    if (simulator->log_serializer) {
+        rig_pb_serializer_destroy(simulator->log_serializer);
+        rut_memory_stack_free(simulator->log_serializer_stack);
+    }
+
     rut_object_free(rig_simulator_t, simulator);
 }
 
@@ -1024,4 +1030,61 @@ rig_simulator_print_mappings(rig_simulator_t *simulator)
     c_debug("Object to ID map:\n");
     c_hash_table_foreach(
         simulator->object_to_id_map, print_obj_to_id_mapping_cb, NULL);
+}
+
+static void
+handle_forward_log_ack(const Rig__LogAck *ack,
+                       void *closure_data)
+{
+}
+
+void
+rig_simulator_forward_log(rig_simulator_t *simulator)
+{
+    ProtobufCService *frontend_service =
+        rig_pb_rpc_client_get_service(simulator->simulator_peer->pb_rpc_client);
+    rig_pb_serializer_t *serializer;
+    struct rig_log *simulator_log;
+    struct rig_log_entry *tmp;
+    struct rig_log_entry *entry;
+    Rig__Log *pb_log;
+    int i;
+
+    if (!simulator->engine)
+        return;
+
+    if (!simulator->log_serializer) {
+        simulator->log_serializer_stack = rut_memory_stack_new(8192);
+
+        simulator->log_serializer = rig_pb_serializer_new (simulator->engine);
+        rig_pb_serializer_set_stack(simulator->log_serializer,
+                                    simulator->log_serializer_stack);
+    }
+
+    simulator_log = rig_logs_get_simulator_log();
+
+    serializer = simulator->log_serializer;
+
+    rig_logs_lock();
+    pb_log = rig_pb_new(serializer, Rig__Log, rig__log__init);
+    pb_log->type = RIG__LOG__LOG_TYPE__SIMULATOR;
+    pb_log->log = rut_memory_stack_memalign(serializer->stack,
+                                            sizeof(void *) * simulator_log->len,
+                                            RUT_UTIL_ALIGNOF(void *));
+    i = 0;
+    rut_list_for_each_safe(tmp, entry, &simulator_log->entries, link) {
+        pb_log->log[i++] = rig_pb_new(serializer,
+                                      Rig__LogEntry,
+                                      rig__log_entry__init);
+
+        rut_list_remove(&entry->link);
+        rig_logs_entry_free(entry);
+    }
+    rig_logs_unlock();
+
+    rig__frontend__forward_log(frontend_service,
+                               pb_log,
+                               handle_forward_log_ack, NULL);
+
+    rut_memory_stack_rewind(simulator->log_serializer_stack);
 }

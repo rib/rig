@@ -667,7 +667,10 @@ message LogEntry
 
 message Log
 {
-  repeated LogEntry log = 1;
+  enum LogType { FRONTEND=1; SIMULATOR=2; }
+
+  optional LogType type = 1;
+  repeated LogEntry log = 2;
 }
 
 message LogAck

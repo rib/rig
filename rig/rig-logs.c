@@ -237,3 +237,37 @@ rig_logs_set_simulator(rig_simulator_t *simulator)
     log_state.simulator = simulator;
     log_state.logs[1].shell = simulator->shell;
 }
+
+static void
+forward_simulator_logs_idle_cb(void *user_data)
+{
+    struct log_state *state = &log_state;
+
+    rut_poll_shell_remove_idle(state->simulator->shell,
+                               state->simulator_log_idle);
+    state->simulator_log_idle = NULL;
+
+    rig_simulator_forward_log(user_data);
+}
+
+static void
+simulator_log_notify_cb(struct rig_log *log)
+{
+    struct log_state *state = &log_state;
+
+    if (state->simulator_log_idle == NULL &&
+        state->simulator)
+    {
+        state->simulator_log_idle =
+            rut_poll_shell_add_idle(state->simulator->shell,
+                                    forward_simulator_logs_idle_cb,
+                                    NULL, /* user_data */
+                                    NULL /* destroy */);
+    }
+}
+
+void
+rig_simulator_logs_init(void)
+{
+    rig_logs_init(simulator_log_notify_cb);
+}
