@@ -170,8 +170,6 @@ rig_device_init(rut_shell_t *shell, void *user_data)
     engine = device->frontend->engine;
     device->engine = engine;
 
-    rig_logs_set_frontend(device->frontend);
-
     /* Finish the slave specific engine setup...
      */
     engine->main_camera_view = rig_camera_view_new(engine);

@@ -1041,6 +1041,8 @@ rig_frontend_new(rut_shell_t *shell, rig_frontend_id_t id, bool play_mode)
 
     frontend->engine = rig_engine_new_for_frontend(shell, frontend);
 
+    rig_logs_set_frontend(frontend);
+
     spawn_simulator(shell, frontend);
 
     rig_engine_op_map_context_init(
