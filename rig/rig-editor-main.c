@@ -38,6 +38,7 @@
 #endif
 
 #include "rig-editor.h"
+#include "rig-curses-debug.h"
 
 static void
 usage(void)
@@ -57,6 +58,7 @@ main(int argc, char **argv)
     };
     int c;
 
+    rig_curses_init();
     rut_init_tls_state();
 
 #ifdef USE_GSTREAMER

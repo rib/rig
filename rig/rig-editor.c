@@ -39,6 +39,7 @@
 #include "rig-avahi.h"
 #include "rig-slave-master.h"
 #include "rig-inspector.h"
+#include "rig-curses-debug.h"
 
 #include "rig.pb-c.h"
 
@@ -2615,6 +2616,8 @@ rig_editor_new(const char *filename)
 
     editor->shell = rut_shell_new(rig_editor_redraw,
                                   editor);
+
+    rig_curses_add_to_shell(editor->shell);
 
     rut_shell_set_on_run_callback(editor->shell,
                                   rig_editor_init,
