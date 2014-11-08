@@ -175,10 +175,10 @@ redraw_cb(void *user_data)
     struct rig_log *simulator_log;
     int log0_win_width;
 
-    destroy_windows();
-
     rut_poll_shell_remove_idle(shell, state->redraw_closure);
     state->redraw_closure = NULL;
+
+    destroy_windows();
 
     getmaxyx(stdscr, state->screen_height, state->screen_width);
 
@@ -252,7 +252,7 @@ redraw_cb(void *user_data)
                   simulator_log);
     }
 
-    refresh();
+    redrawwin(stdscr);
 }
 
 /* NB: make sure to hold the log_lock when calling. */
