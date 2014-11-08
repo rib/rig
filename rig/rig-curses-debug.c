@@ -103,7 +103,7 @@ print_log(WINDOW *log_window,
     werase(log_window);
     mvwprintw(log_window, 0, 0, header);
 
-    rut_list_for_each(entry, &log->log, link) {
+    rut_list_for_each(entry, &log->entries, link) {
         const char *line;
         const char *next;
 
