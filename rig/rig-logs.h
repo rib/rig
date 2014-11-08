@@ -47,7 +47,7 @@ struct rig_log
 {
     rut_shell_t *shell;
 
-    rut_list_t log;
+    rut_list_t entries;
     int len;
 };
 
@@ -62,7 +62,14 @@ void rig_logs_resolve(struct rig_log **frontend_log,
 void rig_logs_log_from_remote(c_log_level_flags_t log_level,
                               const char *message);
 
+void rig_logs_entry_free(struct rig_log_entry *entry);
+
+void rig_logs_lock(void);
+void rig_logs_unlock(void);
+
 void rig_logs_fini(void);
+
+void rig_simulator_logs_init(void);
 
 #endif /* _RIG_LOGS_H_ */
 
