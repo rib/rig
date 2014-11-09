@@ -215,12 +215,15 @@ redraw_cb(void *user_data)
                state->screen_width, 1, 0);
 #endif
 
-    rig_logs_resolve(&frontend_log, &simulator_log);
+    frontend_log = rig_logs_get_frontend_log();
+    simulator_log = rig_logs_get_simulator_log();
 
     if (frontend_log && simulator_log)
         log0_win_width = state->screen_width / 2;
-    else
+    else if (frontend_log)
         log0_win_width = state->screen_width;
+    else
+        log0_win_width = 0;
 
     if (frontend_log) {
         int log_win_height = state->screen_height - 1;
@@ -252,7 +255,9 @@ redraw_cb(void *user_data)
                   simulator_log);
     }
 
-    redrawwin(stdscr);
+
+    redrawwin(stdscr); /* make whole window invalid */
+    wrefresh(stdscr);
 }
 
 /* NB: make sure to hold the log_lock when calling. */
@@ -282,12 +287,7 @@ deinit_curses(void)
 static void
 log_cb(struct rig_log *log)
 {
-    struct rig_log *frontend_log;
-    struct rig_log *simulator_log;
-
-    rig_logs_resolve(&frontend_log, &simulator_log);
-
-    if (frontend_log && frontend_log == log)
+    if (log->shell)
         queue_redraw(log->shell);
 }
 
