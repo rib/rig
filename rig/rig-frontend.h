@@ -95,6 +95,20 @@ struct _rig_frontend_t {
     c_hash_table_t *tmp_id_to_object_map;
 };
 
+#ifdef linux
+extern const char *rig_abstract_socket_name_option;
+#endif
+
+enum rig_simulator_run_mode {
+    RIG_SIMULATOR_RUN_MODE_MAINLOOP,
+    RIG_SIMULATOR_RUN_MODE_THREADED,
+    RIG_SIMULATOR_RUN_MODE_PROCESS,
+#ifdef linux
+    RIG_SIMULATOR_RUN_MODE_CONNECT_ABSTRACT_SOCKET,
+#endif
+};
+extern enum rig_simulator_run_mode rig_simulator_run_mode_option;
+
 rig_frontend_t *
 rig_frontend_new(rut_shell_t *shell, rig_frontend_id_t id, bool play_mode);
 

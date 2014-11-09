@@ -35,6 +35,7 @@
 
 #include "rig-slave.h"
 #include "rig-engine.h"
+#include "rig-frontend.h"
 #include "rig-rpc-network.h"
 #include "rig-pb.h"
 
@@ -46,6 +47,8 @@ main(int argc, char **argv)
     rig_slave_t *slave;
 
     rut_init_tls_state();
+
+    rig_simulator_run_mode_option = RIG_SIMULATOR_RUN_MODE_MAINLOOP;
 
     slave = rig_slave_new(1080, 1920, 1);
 

@@ -216,7 +216,17 @@ static void
 usage(void)
 {
     fprintf(stderr, "Usage: rig-device [UI.rig]\n");
-    fprintf(stderr, "  -h,--help    Display this help message\n");
+    fprintf(stderr, "\n");
+#ifdef RIG_ENABLE_DEBUG
+#ifdef linux
+    fprintf(stderr, "  -a,--abstract-socket=NAME            Listen on abstract socket for simulator\n");
+#endif
+    fprintf(stderr, "  -f,--fork-simulator                  Run simulator in a separate process\n");
+    fprintf(stderr, "  -m,--mainloop-simulator              Run simulator in the same mainloop as frontend\n");
+    fprintf(stderr, "                                       (Simulator runs in separate thread by default)\n");
+    fprintf(stderr, "\n");
+#endif
+    fprintf(stderr, "  -h,--help                            Display this help message\n");
     exit(1);
 }
 
@@ -224,28 +234,69 @@ int
 main(int argc, char **argv)
 {
     rig_device_t *device;
-    struct option opts[] = {
-        { "help",    no_argument,       NULL, 'h' },
-        { 0,         0,                 NULL,  0  }
+    struct option long_opts[] = {
+
+#ifdef RIG_ENABLE_DEBUG
+#ifdef linux
+        { "abstract-socket",    required_argument, NULL, 'a' },
+#endif
+        { "fork-simulator",     no_argument,       NULL, 'f' },
+        { "mainloop-simulator", no_argument,       NULL, 'm' },
+#endif /* RIG_ENABLE_DEBUG */
+
+        { "help",               no_argument,       NULL, 'h' },
+        { 0,                    0,                 NULL,  0  }
     };
+
+#ifdef RIG_ENABLE_DEBUG
+# ifdef linux
+    const char *short_opts = "a:fmh";
+# else
+    const char *short_opts = "a:fmh";
+# endif
+#else
+    const char *short_opts = "h";
+#endif
+
     int c;
 
-    rig_curses_init();
     rut_init_tls_state();
 
 #ifdef USE_GSTREAMER
     gst_init(&argc, &argv);
 #endif
 
-    while ((c = getopt_long(argc, argv, "h", opts, NULL)) != -1) {
-        /* only one option a.t.m... */
-        usage();
+    rig_simulator_run_mode_option = RIG_SIMULATOR_RUN_MODE_THREADED;
+
+    while ((c = getopt_long(argc, argv, short_opts, long_opts, NULL)) != -1) {
+        switch(c) {
+#ifdef RIG_ENABLE_DEBUG
+#ifdef linux
+        case 'a':
+            rig_simulator_run_mode_option =
+                RIG_SIMULATOR_RUN_MODE_CONNECT_ABSTRACT_SOCKET;
+            rig_abstract_socket_name_option = optarg;
+            break;
+#endif
+        case 'f':
+            rig_simulator_run_mode_option = RIG_SIMULATOR_RUN_MODE_PROCESS;
+            break;
+        case 'm':
+            rig_simulator_run_mode_option = RIG_SIMULATOR_RUN_MODE_MAINLOOP;
+            break;
+#endif /* RIG_ENABLE_DEBUG */
+
+        default:
+            usage();
+        }
     }
 
     if (optind > argc || !argv[optind]) {
         fprintf(stderr, "Needs a UI.rig filename\n\n");
         usage();
     }
+
+    rig_curses_init();
 
     device = rig_device_new(argv[optind]);
 

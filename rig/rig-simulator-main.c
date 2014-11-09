@@ -32,6 +32,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
+#include <getopt.h>
 
 #include <clib.h>
 
@@ -40,43 +41,102 @@
 #include "rig-simulator.h"
 #include "rig-logs.h"
 
+static void
+usage(void)
+{
+    fprintf(stderr, "Usage: rig-simulator\n");
+    fprintf(stderr, "\n");
+    fprintf(stderr, "  -f,--frontend=[editor,device,slave]  The frontend that will be connected\n");
+#ifdef linux
+    fprintf(stderr, "  -a,--abstract-socket=NAME            Connect to named abstract socket\n");
+#endif
+    fprintf(stderr, "  -h,--help                            Display this help message\n");
+    exit(1);
+}
+
+static bool
+frontend_name_to_id(const char *frontend,
+                    rig_frontend_id_t *id)
+{
+    bool ret = true;
+
+    if (strcmp(frontend, "editor") == 0)
+        *id = RIG_FRONTEND_ID_EDITOR;
+    else if (strcmp(frontend, "slave") == 0)
+        *id = RIG_FRONTEND_ID_SLAVE;
+    else if (strcmp(frontend, "device") == 0)
+        *id = RIG_FRONTEND_ID_DEVICE;
+    else
+        ret = false;
+
+    return ret;
+}
+
 int
 main(int argc, char **argv)
 {
     rig_simulator_t *simulator;
     const char *ipc_fd_str = getenv("_RIG_IPC_FD");
     const char *frontend = getenv("_RIG_FRONTEND");
+#ifdef linux
+    const char *abstract_socket = NULL;
+#endif
     rig_frontend_id_t frontend_id;
     int fd;
+    struct option opts[] = {
+        { "frontend",           required_argument, NULL, 'f' },
+#ifdef linux
+        { "abstract-socket",    required_argument, NULL, 'a' },
+#endif
+        { "help",               no_argument,       NULL, 'h' },
+        { 0,                    0,                 NULL,  0  }
+    };
+    int c;
 
-    rig_simulator_logs_init();
     rut_init_tls_state();
 
-    if (!frontend) {
-        c_error("Failed to determine frontend via _RIG_FRONTEND "
-                "environment variable");
-        return EXIT_FAILURE;
+    if (frontend) {
+        if (!frontend_name_to_id(frontend, &frontend_id)) {
+            c_error("Failed to determine frontend via _RIG_FRONTEND "
+                    "environment variable");
+            return EXIT_FAILURE;
+        }
     }
 
-    if (strcmp(frontend, "editor") == 0)
-        frontend_id = RIG_FRONTEND_ID_EDITOR;
-    else if (strcmp(frontend, "slave") == 0)
-        frontend_id = RIG_FRONTEND_ID_SLAVE;
-    else if (strcmp(frontend, "device") == 0)
-        frontend_id = RIG_FRONTEND_ID_DEVICE;
-    else {
-        c_error("Spurious _RIG_FRONTEND environment variable value");
-        return EXIT_FAILURE;
+    while ((c = getopt_long(argc, argv, "f:a:h", opts, NULL)) != -1) {
+
+        if (ipc_fd_str) {
+            c_warning("Ignoring private _RIG_IPC_FD environment variable while running interactively");
+            ipc_fd_str = NULL;
+        }
+
+        switch(c) {
+        case 'f':
+            if (frontend)
+                c_warning("Overriding _RIG_FRONTEND environment variable while running interactively");
+
+            frontend = optarg;
+
+            if (!frontend_name_to_id(frontend, &frontend_id)) {
+                c_warning("Unknown frontend \"%s\"", frontend);
+                usage();
+            }
+
+            break;
+        case 'a':
+            abstract_socket = optarg;
+            break;
+        default:
+            usage();
+        }
     }
 
 #ifdef linux
-    if (getenv("_RIG_USE_ABSTRACT_SOCKET")) {
-        /* FIXME: the name should incorporate the application name! */
-        while ((fd = rut_os_connect_to_abstract_socket("rig-simulator")) ==
-               -1) {
+    if (abstract_socket) {
+        while ((fd = rut_os_connect_to_abstract_socket(abstract_socket) == -1)) {
             static bool seen = false;
             if (seen)
-                c_debug("Waiting for frontend...");
+                c_message("Waiting for frontend...");
             else
                 seen = true;
 
@@ -111,6 +171,8 @@ main(int argc, char **argv)
 
         fd = strtol(ipc_fd_str, NULL, 10);
     }
+
+    rig_simulator_logs_init();
 
     simulator = rig_simulator_new(frontend_id, NULL, fd);
 

@@ -54,6 +54,16 @@
 
 static void spawn_simulator(rut_shell_t *shell, rig_frontend_t *frontend);
 
+/* Common frontend options, either set via environment variables or
+ * command line options...
+ */
+
+#ifdef linux
+const char *rig_abstract_socket_name_option;
+#endif
+enum rig_simulator_run_mode rig_simulator_run_mode_option;
+
+
 static void
 frontend__test(Rig__Frontend_Service *service,
                const Rig__Query *query,
@@ -840,11 +850,11 @@ handle_simulator_connect_cb(void *user_data, int fd, int revents)
 }
 
 static bool
-bind_to_abstract_socket(rut_shell_t *shell,
-                        rig_frontend_t *frontend)
+bind_to_abstract_socket(rut_shell_t *shell, rig_frontend_t *frontend)
 {
     rut_exception_t *catch = NULL;
-    int fd = rut_os_listen_on_abstract_socket("rig-simulator", &catch);
+    int fd = rut_os_listen_on_abstract_socket(rig_abstract_socket_name_option,
+                                              &catch);
 
     if (fd < 0) {
         c_critical("Failed to listen on abstract \"rig-simulator\" socket: %s",
@@ -861,7 +871,8 @@ bind_to_abstract_socket(rut_shell_t *shell,
                           handle_simulator_connect_cb, /* dispatch */
                           frontend);
 
-    c_message("Waiting for simulator to connect...");
+    c_message("Waiting for simulator to connect to abstract socket \"%s\"...",
+              rig_abstract_socket_name_option);
 
     return true;
 }
@@ -888,28 +899,21 @@ run_simulator_in_process(rut_shell_t *shell, rig_frontend_t *frontend)
 static void
 spawn_simulator(rut_shell_t *shell, rig_frontend_t *frontend)
 {
-#if defined(RIG_ENABLE_DEBUG)
-
-# if defined(__linux__)
-    if (getenv("_RIG_USE_ABSTRACT_SOCKET")) {
-        /* TODO: give application name, for socket name */
-        bind_to_abstract_socket(shell, frontend);
-    } else
-# endif
-    if (getenv("_RIG_USE_SINGLE_PROCESS"))
-        run_simulator_in_process(shell, frontend);
-    else if (getenv("_RIG_USE_SIMULATOR_THREAD"))
-        create_simulator_thread(shell, frontend);
-    else
-#endif /* RIG_ENABLE_DEBUG */
+    switch(rig_simulator_run_mode_option)
     {
-#if defined(__ANDROID__)
+    case RIG_SIMULATOR_RUN_MODE_MAINLOOP:
         run_simulator_in_process(shell, frontend);
-#else
-        if (frontend->id == RIG_FRONTEND_ID_EDITOR)
-            fork_simulator(shell, frontend);
-        else
-            create_simulator_thread(shell, frontend);
+        break;
+    case RIG_SIMULATOR_RUN_MODE_THREADED:
+        create_simulator_thread(shell, frontend);
+        break;
+    case RIG_SIMULATOR_RUN_MODE_PROCESS:
+        fork_simulator(shell, frontend);
+        break;
+#ifdef linux
+    case RIG_SIMULATOR_RUN_MODE_CONNECT_ABSTRACT_SOCKET:
+        bind_to_abstract_socket(shell, frontend);
+        break;
 #endif
     }
 }
