@@ -58,18 +58,21 @@
  * to the frontend/simulator.
  *
  */
+#define MAX_LOGS 2 /* frontend + simulator */
 struct log_state
 {
     void (*log_notify)(struct rig_log *log);
 
-    /* We maintain two parallel logs so we can maintain
-     * the frontend and simulator logs separately.
-     */
-    struct rig_log logs[2];
     c_mutex_t log_lock;
 
+    struct rig_log logs[MAX_LOGS];
+    int n_logs;
+
     rig_frontend_t *frontend;
+    struct rig_log *simulator_log;
+
     rig_simulator_t *simulator;
+    struct rig_log *frontend_log;
     rut_closure_t *simulator_log_idle;
 };
 
@@ -90,20 +93,6 @@ rig_logs_unlock(void)
     c_mutex_unlock(&log_state.log_lock);
 }
 
-static struct rig_log *
-lookup_log(bool remote, rut_shell_t *shell)
-{
-    struct log_state *state = &log_state;
-
-    if (remote)
-        return &state->logs[1];
-
-    if (state->simulator && state->simulator->shell == shell)
-        return &state->logs[1];
-
-    return &state->logs[0];
-}
-
 void
 rig_logs_entry_free(struct rig_log_entry *entry)
 {
@@ -111,13 +100,18 @@ rig_logs_entry_free(struct rig_log_entry *entry)
     c_slice_free(struct rig_log_entry, entry);
 }
 
+enum rig_log_type {
+    RIG_LOG_TYPE_UNKNOWN,
+    RIG_LOG_TYPE_FRONTEND,
+    RIG_LOG_TYPE_SIMULATOR
+};
+
 /* XXX: 'remote' here really just means out-of-thread (whereby we
  * won't have a shell pointer). The log might have come from a
  * simulator running in another process or it could actually be
  * remote. */
 static void
-log_full(rut_shell_t *shell,
-         bool remote,
+log_full(enum rig_log_type type,
          const char *log_domain,
          c_log_level_flags_t log_level,
          const char *message)
@@ -132,7 +126,12 @@ log_full(rut_shell_t *shell,
 
     rig_logs_lock();
 
-    log = lookup_log(remote, shell);
+    if (type == RIG_LOG_TYPE_FRONTEND)
+        log = state->frontend_log;
+    else if (type == RIG_LOG_TYPE_SIMULATOR)
+        log = state->simulator_log;
+    else
+        log = &state->logs[0];
 
     rut_list_insert(&log->entries, &entry->link);
 
@@ -156,19 +155,34 @@ log_hook(c_log_context_t *lctx,
          c_log_level_flags_t log_level,
          const char *message)
 {
-    log_full(rut_get_thread_current_shell(),
-             false, /* remote */
+    struct log_state *state = &log_state;
+    rut_shell_t *shell = rut_get_thread_current_shell();
+    enum rig_log_type type = RIG_LOG_TYPE_UNKNOWN;
+
+    if (state->frontend && state->frontend->engine->shell == shell)
+        type = RIG_LOG_TYPE_FRONTEND;
+    else if (state->simulator && state->simulator->shell == shell)
+        type = RIG_LOG_TYPE_SIMULATOR;
+
+    log_full(type,
              log_domain,
              log_level,
              message);
 }
 
 void
-rig_logs_log_from_remote(c_log_level_flags_t log_level,
-                         const char *message)
+rig_logs_pb_log(Rig__Log__LogType pb_type,
+                c_log_level_flags_t log_level,
+                const char *message)
 {
-    log_full(NULL, /* shell */
-             true, /* remote */
+    enum rig_log_type type = RIG_LOG_TYPE_UNKNOWN;
+
+    if (pb_type == RIG__LOG__LOG_TYPE__FRONTEND)
+        type = RIG_LOG_TYPE_FRONTEND;
+    else if (pb_type == RIG__LOG__LOG_TYPE__SIMULATOR)
+        type = RIG_LOG_TYPE_SIMULATOR;
+
+    log_full(type,
              NULL, /* domain */
              log_level,
              message);
@@ -177,12 +191,14 @@ rig_logs_log_from_remote(c_log_level_flags_t log_level,
 void
 rig_logs_init(void (*notify)(struct rig_log *log))
 {
+    int i;
+
     c_mutex_init(&log_state.log_lock);
 
     log_state.log_notify = notify;
 
-    rut_list_init(&log_state.logs[0].entries);
-    rut_list_init(&log_state.logs[1].entries);
+    for (i = 0; i < MAX_LOGS; i++)
+        rut_list_init(&log_state.logs[i].entries);
 
     c_log_hook = log_hook;
 }
@@ -191,14 +207,19 @@ void
 rig_logs_fini(void)
 {
     struct rig_log_entry *entry;
-    struct rig_log *frontend_log;
-    struct rig_log *simulator_log;
+    struct rig_log *frontend_log = rig_logs_get_frontend_log();
+    struct rig_log *simulator_log = rig_logs_get_simulator_log();
 
     c_log_hook = NULL;
 
-    rig_logs_resolve(&frontend_log, &simulator_log);
-
     fprintf(stderr, "Final logs...\n");
+
+    if (frontend_log == NULL && simulator_log == NULL) {
+        rut_list_for_each(entry, &log_state.logs[0].entries, link)
+            fprintf(stderr, "%s\n", entry->message);
+        return;
+    }
+
     if (frontend_log)
         rut_list_for_each(entry, &frontend_log->entries, link)
             fprintf(stderr, "FE: %s\n", entry->message);
@@ -208,34 +229,46 @@ rig_logs_fini(void)
             fprintf(stderr, "SIM: %s\n", entry->message);
 }
 
-void
-rig_logs_resolve(struct rig_log **frontend_log,
-                 struct rig_log **simulator_log)
+struct rig_log *
+rig_logs_get_frontend_log(void)
 {
     struct log_state *state = &log_state;
 
-    *frontend_log = NULL;
-    *simulator_log = NULL;
+    return state->frontend_log;
+}
 
-    if (state->frontend)
-        *frontend_log = &state->logs[0];
+struct rig_log *
+rig_logs_get_simulator_log(void)
+{
+    struct log_state *state = &log_state;
 
-    if (state->logs[0].len)
-        *simulator_log = &state->logs[1];
+    return state->simulator_log;
 }
 
 void
 rig_logs_set_frontend(rig_frontend_t *frontend)
 {
-    log_state.frontend = frontend;
-    log_state.logs[0].shell = frontend->engine->shell;
+    struct log_state *state = &log_state;
+
+    state->frontend = frontend;
+
+    if (!state->frontend_log) {
+        state->frontend_log = &state->logs[state->n_logs++];
+        state->frontend_log->shell = frontend->engine->shell;
+    }
 }
 
 void
 rig_logs_set_simulator(rig_simulator_t *simulator)
 {
-    log_state.simulator = simulator;
-    log_state.logs[1].shell = simulator->shell;
+    struct log_state *state = &log_state;
+
+    state->simulator = simulator;
+
+    if (!state->simulator_log) {
+        state->simulator_log = &state->logs[state->n_logs++];
+        state->simulator_log->shell = simulator->shell;
+    }
 }
 
 static void
@@ -255,8 +288,8 @@ simulator_log_notify_cb(struct rig_log *log)
 {
     struct log_state *state = &log_state;
 
-    if (state->simulator_log_idle == NULL &&
-        state->simulator)
+    if (state->simulator &&
+        state->simulator_log_idle == NULL)
     {
         state->simulator_log_idle =
             rut_poll_shell_add_idle(state->simulator->shell,

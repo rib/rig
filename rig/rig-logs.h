@@ -56,11 +56,12 @@ void rig_logs_init(void (*log_notify)(struct rig_log *log));
 void rig_logs_set_frontend(rig_frontend_t *frontend);
 void rig_logs_set_simulator(rig_simulator_t *simulator);
 
-void rig_logs_resolve(struct rig_log **frontend_log,
-                      struct rig_log **simulator_log);
+struct rig_log *rig_logs_get_frontend_log(void);
+struct rig_log *rig_logs_get_simulator_log(void);
 
-void rig_logs_log_from_remote(c_log_level_flags_t log_level,
-                              const char *message);
+void rig_logs_pb_log(Rig__Log__LogType pb_type,
+                     c_log_level_flags_t log_level,
+                     const char *message);
 
 void rig_logs_entry_free(struct rig_log_entry *entry);
 

@@ -85,7 +85,7 @@ frontend__forward_log(Rig__Frontend_Service *service,
     for (i = 0; i < log->n_log; i++) {
         Rig__LogEntry *entry = log->log[i];
 
-        rig_logs_log_from_remote(entry->log_level, entry->log_message);
+        rig_logs_pb_log(log->type, entry->log_level, entry->log_message);
     }
 
     closure(&ack, closure_data);
