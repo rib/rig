@@ -38,6 +38,7 @@
 #include <fcntl.h>
 #endif
 
+#include <sys/wait.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -615,10 +616,20 @@ _rig_frontend_init_type(void)
 
 #if !defined(__ANDROID__) && (defined(linux) || defined(__APPLE__))
 static void
-simulator_sigchild_cb(GPid pid, int status, void *user_data)
+simulator_sigchild_cb(void *user_data)
 {
     rig_frontend_t *frontend = user_data;
     rig_engine_t *engine = frontend->engine;
+    pid_t pid;
+    int status;
+
+    pid = waitpid(frontend->simulator_pid, &status, WNOHANG);
+    if (pid < 0) {
+        c_error("Error checking simulator child status: %s", strerror(errno));
+        return;
+    }
+    if (pid != frontend->simulator_pid)
+        return;
 
     frontend_stop_service(frontend);
 
@@ -697,7 +708,9 @@ fork_simulator(rut_shell_t *shell, rig_frontend_t *frontend)
     frontend->fd = sp[0];
 
     if (frontend->id == RIG_FRONTEND_ID_EDITOR)
-        g_child_watch_add(pid, simulator_sigchild_cb, frontend);
+        rut_poll_shell_add_sigchild(shell, simulator_sigchild_cb,
+                                    frontend,
+                                    NULL); /* destroy notify */
 
     frontend_start_service(shell, frontend);
 }
