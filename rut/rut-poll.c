@@ -520,6 +520,30 @@ rut_poll_init(rut_shell_t *shell)
 {
     rut_list_init(&shell->poll_sources);
     rut_list_init(&shell->idle_closures);
+    rut_list_init(&shell->sigchild_closures);
+}
+
+static void
+handle_sigchild(uv_signal_t *handle, int signo)
+{
+    rut_shell_t *shell = handle->data;
+    rut_closure_list_invoke_no_args(&shell->sigchild_closures);
+}
+
+rut_closure_t *
+rut_poll_shell_add_sigchild(rut_shell_t *shell,
+                            void (*sigchild_cb)(void *user_data),
+                            void *user_data,
+                            void (*destroy_cb)(void *user_data))
+{
+    return rut_closure_list_add(
+        &shell->sigchild_closures, sigchild_cb, user_data, destroy_cb);
+}
+
+void
+rut_poll_shell_remove_sigchild(rut_shell_t *shell, rut_closure_t *sigchild)
+{
+    rut_closure_disconnect(sigchild);
 }
 
 void
@@ -530,6 +554,10 @@ rut_poll_sources_init(rut_shell_t *shell)
 
     uv_idle_init(loop, &shell->uv_idle);
     shell->uv_idle.data = shell;
+
+    uv_signal_init(loop, &shell->sigchild_handle);
+    shell->sigchild_handle.data = shell;
+    uv_signal_start(&shell->sigchild_handle, handle_sigchild, SIGCHLD);
 
     if (!shell->headless) {
         /* XXX: SDL doesn't give us a portable way of blocking for

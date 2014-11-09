@@ -116,6 +116,12 @@ rut_closure_t *rut_poll_shell_add_idle(rut_shell_t *shell,
 
 void rut_poll_shell_remove_idle(rut_shell_t *shell, rut_closure_t *idle);
 
+rut_closure_t *rut_poll_shell_add_sigchild(rut_shell_t *shell,
+                                           void (*sigchild_cb)(void *user_data),
+                                           void *user_data,
+                                           void (*destroy_cb)(void *user_data));
+void rut_poll_shell_remove_sigchild(rut_shell_t *shell, rut_closure_t *sigchild);
+
 void rut_poll_init(rut_shell_t *shell);
 
 void rut_poll_sources_init(rut_shell_t *shell);

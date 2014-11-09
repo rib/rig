@@ -273,6 +273,9 @@ struct _rut_shell_t {
     uv_prepare_t cg_prepare;
     uv_timer_t cg_timer;
     uv_check_t cg_check;
+
+    uv_signal_t sigchild_handle;
+    rut_list_t sigchild_closures;
 #ifdef __ANDROID__
     int uv_ready;
     bool quit;
