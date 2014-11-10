@@ -133,7 +133,7 @@ main(int argc, char **argv)
 
 #ifdef linux
     if (abstract_socket) {
-        while ((fd = rut_os_connect_to_abstract_socket(abstract_socket) == -1)) {
+        while ((fd = rut_os_connect_to_abstract_socket(abstract_socket)) == -1) {
             static bool seen = false;
             if (seen)
                 c_message("Waiting for frontend...");
