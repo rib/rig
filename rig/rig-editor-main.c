@@ -54,6 +54,8 @@ usage(void)
     fprintf(stderr, "  -m,--mainloop-simulator              Run simulator in the same mainloop as frontend\n");
     fprintf(stderr, "                                       (Simulator runs in separate process by default)\n");
     fprintf(stderr, "\n");
+    fprintf(stderr, "  -d,--disable-curses                  Disable curses debug console\n");
+    fprintf(stderr, "\n");
 #endif
 
     fprintf(stderr, "  -h,--help    Display this help message\n");
@@ -64,25 +66,32 @@ int
 main(int argc, char **argv)
 {
     rig_editor_t *editor;
-#ifdef RIG_ENABLE_DEBUG
     struct option long_opts[] = {
+
+#ifdef RIG_ENABLE_DEBUG
 #ifdef linux
         { "abstract-socket",    required_argument, NULL, 'a' },
 #endif
         { "thread-simulator",   no_argument,       NULL, 't' },
         { "mainloop-simulator", no_argument,       NULL, 'm' },
+        { "disable-curses",     no_argument,       NULL, 'd' },
+#endif
 
         { "help",               no_argument,       NULL, 'h' },
         { 0,                    0,                 NULL,  0  }
     };
-    const char *short_opts = "a:tmh";
+
+#ifdef RIG_ENABLE_DEBUG
+# ifdef linux
+    const char *short_opts = "a:tmdh";
+# else
+    const char *short_opts = "tmdh";
+# endif
+    bool enable_curses_debug = true;
 #else
-    struct option long_opts[] = {
-        { "help",               no_argument,       NULL, 'h' },
-        { 0,                    0,                 NULL,  0  }
-    };
     const char *short_opts = "h";
 #endif
+
     int c;
 
     rut_init_tls_state();
@@ -107,6 +116,9 @@ main(int argc, char **argv)
         case 'm':
             rig_simulator_run_mode_option = RIG_SIMULATOR_RUN_MODE_MAINLOOP;
             break;
+        case 'd':
+            enable_curses_debug = false;
+            break;
 #endif
         default:
             usage();
@@ -118,7 +130,10 @@ main(int argc, char **argv)
         usage();
     }
 
-    rig_curses_init();
+#ifdef RIG_ENABLE_DEBUG
+    if (enable_curses_debug)
+        rig_curses_init();
+#endif
 
     editor = rig_editor_new(argv[optind]);
 
