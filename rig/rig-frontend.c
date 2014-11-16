@@ -93,11 +93,8 @@ frontend__forward_log(Rig__Frontend_Service *service,
 
     c_return_if_fail(log != NULL);
 
-    for (i = 0; i < log->n_log; i++) {
-        Rig__LogEntry *entry = log->log[i];
-
-        rig_logs_pb_log(log->type, entry->log_level, entry->log_message);
-    }
+    for (i = 0; i < log->n_entries; i++)
+        rig_logs_pb_log(log->type, log->entries[i]);
 
     closure(&ack, closure_data);
 }

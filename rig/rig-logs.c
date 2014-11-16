@@ -181,8 +181,7 @@ log_hook(c_log_context_t *lctx,
 
 void
 rig_logs_pb_log(Rig__Log__LogType pb_type,
-                c_log_level_flags_t log_level,
-                const char *message)
+                Rig__LogEntry *pb_entry)
 {
     enum rig_log_type type = RIG_LOG_TYPE_UNKNOWN;
 
@@ -199,8 +198,8 @@ rig_logs_pb_log(Rig__Log__LogType pb_type,
     log_full(type,
              pb_entry->timestamp,
              NULL, /* domain */
-             log_level,
-             message);
+             pb_entry->log_level,
+             pb_entry->log_message);
 }
 
 void

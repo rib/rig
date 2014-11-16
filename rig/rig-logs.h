@@ -63,8 +63,7 @@ struct rig_log *rig_logs_get_frontend_log(void);
 struct rig_log *rig_logs_get_simulator_log(void);
 
 void rig_logs_pb_log(Rig__Log__LogType pb_type,
-                     c_log_level_flags_t log_level,
-                     const char *message);
+                     Rig__LogEntry *pb_entry);
 
 void rig_logs_entry_free(struct rig_log_entry *entry);
 

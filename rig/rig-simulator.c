@@ -1045,7 +1045,6 @@ rig_simulator_forward_log(rig_simulator_t *simulator)
         rig_pb_rpc_client_get_service(simulator->simulator_peer->pb_rpc_client);
     rig_pb_serializer_t *serializer;
     struct rig_log *simulator_log;
-    struct rig_log_entry *tmp;
     struct rig_log_entry *entry;
     Rig__Log *pb_log;
     int i;
@@ -1067,19 +1066,26 @@ rig_simulator_forward_log(rig_simulator_t *simulator)
 
     rig_logs_lock();
     pb_log = rig_pb_new(serializer, Rig__Log, rig__log__init);
+    pb_log->has_type = true;
     pb_log->type = RIG__LOG__LOG_TYPE__SIMULATOR;
-    pb_log->log = rut_memory_stack_memalign(serializer->stack,
-                                            sizeof(void *) * simulator_log->len,
-                                            RUT_UTIL_ALIGNOF(void *));
-    i = 0;
-    rut_list_for_each_safe(tmp, entry, &simulator_log->entries, link) {
-        pb_log->log[i++] = rig_pb_new(serializer,
-                                      Rig__LogEntry,
-                                      rig__log_entry__init);
+    pb_log->entries = rut_memory_stack_memalign(serializer->stack,
+                                                sizeof(void *) * simulator_log->len,
+                                                RUT_UTIL_ALIGNOF(void *));
+    pb_log->n_entries = simulator_log->len;
 
-        rut_list_remove(&entry->link);
-        rig_logs_entry_free(entry);
+    i = 0;
+    rut_list_for_each(entry, &simulator_log->entries, link) {
+        Rig__LogEntry *pb_entry = rig_pb_new(serializer,
+                                             Rig__LogEntry,
+                                             rig__log_entry__init);
+        pb_entry->log_message = (char *)rig_pb_strdup(serializer, entry->message);
+        pb_entry->has_log_level = true;
+        pb_entry->log_level = entry->log_level;
+        pb_entry->has_timestamp = true;
+        pb_entry->timestamp = entry->timestamp;
+        pb_log->entries[i++] = pb_entry;
     }
+    rig_logs_clear_log(simulator_log);
     rig_logs_unlock();
 
     rig__frontend__forward_log(frontend_service,
