@@ -38,6 +38,7 @@ struct rig_log_entry
 {
     rut_list_t link;
 
+    uint64_t timestamp;
     c_quark_t log_domain;
     c_log_level_flags_t log_level;
     char *message;
@@ -45,6 +46,8 @@ struct rig_log_entry
 
 struct rig_log
 {
+    const char *title;
+
     rut_shell_t *shell;
 
     rut_list_t entries;
@@ -67,6 +70,11 @@ void rig_logs_entry_free(struct rig_log_entry *entry);
 
 void rig_logs_lock(void);
 void rig_logs_unlock(void);
+
+struct rig_log *rig_logs_copy_log(struct rig_log *log);
+void rig_logs_free_copy(struct rig_log *copy);
+
+void rig_logs_clear_log(struct rig_log *log);
 
 void rig_logs_fini(void);
 

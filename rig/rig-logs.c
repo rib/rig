@@ -69,10 +69,10 @@ struct log_state
     int n_logs;
 
     rig_frontend_t *frontend;
-    struct rig_log *simulator_log;
+    struct rig_log *frontend_log;
 
     rig_simulator_t *simulator;
-    struct rig_log *frontend_log;
+    struct rig_log *simulator_log;
     rut_closure_t *simulator_log_idle;
 };
 
@@ -112,6 +112,7 @@ enum rig_log_type {
  * remote. */
 static void
 log_full(enum rig_log_type type,
+         uint64_t timestamp,
          const char *log_domain,
          c_log_level_flags_t log_level,
          const char *message)
@@ -120,6 +121,7 @@ log_full(enum rig_log_type type,
     struct rig_log *log;
     struct log_state *state = &log_state;
 
+    entry->timestamp = timestamp;
     entry->log_domain = c_quark_from_string(log_domain ? log_domain : "");
     entry->log_level = log_level;
     entry->message = c_strdup(message);
@@ -158,13 +160,20 @@ log_hook(c_log_context_t *lctx,
     struct log_state *state = &log_state;
     rut_shell_t *shell = rut_get_thread_current_shell();
     enum rig_log_type type = RIG_LOG_TYPE_UNKNOWN;
+    struct timespec ts;
+    uint64_t timestamp;
 
     if (state->frontend && state->frontend->engine->shell == shell)
         type = RIG_LOG_TYPE_FRONTEND;
     else if (state->simulator && state->simulator->shell == shell)
         type = RIG_LOG_TYPE_SIMULATOR;
 
+#warning "TODO: Add portable monotonic clock api to clib"
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    timestamp = ts.tv_sec * 1000000000ULL + ts.tv_nsec;
+
     log_full(type,
+             timestamp,
              log_domain,
              log_level,
              message);
@@ -177,12 +186,18 @@ rig_logs_pb_log(Rig__Log__LogType pb_type,
 {
     enum rig_log_type type = RIG_LOG_TYPE_UNKNOWN;
 
-    if (pb_type == RIG__LOG__LOG_TYPE__FRONTEND)
+    if (pb_type == RIG__LOG__LOG_TYPE__FRONTEND) {
         type = RIG_LOG_TYPE_FRONTEND;
-    else if (pb_type == RIG__LOG__LOG_TYPE__SIMULATOR)
+        if (!log_state.frontend_log)
+            log_state.frontend_log = &log_state.logs[log_state.n_logs++];
+    } else if (pb_type == RIG__LOG__LOG_TYPE__SIMULATOR) {
         type = RIG_LOG_TYPE_SIMULATOR;
+        if (!log_state.simulator_log)
+            log_state.simulator_log = &log_state.logs[log_state.n_logs++];
+    }
 
     log_full(type,
+             pb_entry->timestamp,
              NULL, /* domain */
              log_level,
              message);
@@ -204,29 +219,79 @@ rig_logs_init(void (*notify)(struct rig_log *log))
 }
 
 void
-rig_logs_fini(void)
+rig_logs_clear_log(struct rig_log *log)
 {
     struct rig_log_entry *entry;
+    struct rig_log_entry *tmp;
+
+    rut_list_for_each_safe(entry, tmp, &log->entries, link) {
+        rut_list_remove(&entry->link);
+        rig_logs_entry_free(entry);
+    }
+    log->len = 0;
+}
+
+void
+rig_logs_free_copy(struct rig_log *copy)
+{
+    rig_logs_clear_log(copy);
+    c_slice_free(struct rig_log, copy);
+}
+
+struct rig_log *
+rig_logs_copy_log(struct rig_log *log)
+{
+    struct rig_log *copy = c_slice_dup(struct rig_log, log);
+    struct rig_log_entry *entry;
+
+    rut_list_init(&copy->entries);
+
+    rut_list_for_each(entry, &log->entries, link) {
+        struct rig_log_entry *entry_copy =
+            c_slice_dup(struct rig_log_entry, entry);
+
+        entry_copy->message = c_strdup(entry->message);
+        rut_list_insert(copy->entries.prev, &entry_copy->link);
+    }
+
+    return copy;
+}
+
+static void
+dump_and_clear_log(const char *prefix, struct rig_log *log)
+{
+    struct rig_log_entry *entry;
+    struct rig_log_entry *tmp;
+
+    rut_list_for_each_safe(entry, tmp, &log->entries, link)
+        fprintf(stderr, "%s%s\n", prefix, entry->message);
+
+    rig_logs_clear_log(log);
+}
+
+void
+rig_logs_fini(void)
+{
     struct rig_log *frontend_log = rig_logs_get_frontend_log();
     struct rig_log *simulator_log = rig_logs_get_simulator_log();
 
     c_log_hook = NULL;
 
-    fprintf(stderr, "Final logs...\n");
-
     if (frontend_log == NULL && simulator_log == NULL) {
-        rut_list_for_each(entry, &log_state.logs[0].entries, link)
-            fprintf(stderr, "%s\n", entry->message);
+        if (log_state.logs[0].len) {
+            fprintf(stderr, "Final logs...\n");
+            dump_and_clear_log("", &log_state.logs[0]);
+        }
         return;
     }
 
+    fprintf(stderr, "Final logs...\n");
+
     if (frontend_log)
-        rut_list_for_each(entry, &frontend_log->entries, link)
-            fprintf(stderr, "FE: %s\n", entry->message);
+        dump_and_clear_log("FE: ", frontend_log);
 
     if (simulator_log)
-        rut_list_for_each(entry, &simulator_log->entries, link)
-            fprintf(stderr, "SIM: %s\n", entry->message);
+        dump_and_clear_log("FE: ", simulator_log);
 }
 
 struct rig_log *
@@ -255,6 +320,7 @@ rig_logs_set_frontend(rig_frontend_t *frontend)
     if (!state->frontend_log) {
         state->frontend_log = &state->logs[state->n_logs++];
         state->frontend_log->shell = frontend->engine->shell;
+        state->frontend_log->title = "[Frontend Log]";
     }
 }
 
@@ -268,6 +334,7 @@ rig_logs_set_simulator(rig_simulator_t *simulator)
     if (!state->simulator_log) {
         state->simulator_log = &state->logs[state->n_logs++];
         state->simulator_log->shell = simulator->shell;
+        state->simulator_log->title = "[Simulator Log]";
     }
 }
 
@@ -280,7 +347,7 @@ forward_simulator_logs_idle_cb(void *user_data)
                                state->simulator_log_idle);
     state->simulator_log_idle = NULL;
 
-    rig_simulator_forward_log(user_data);
+    rig_simulator_forward_log(state->simulator);
 }
 
 static void
