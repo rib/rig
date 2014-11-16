@@ -225,6 +225,8 @@ usage(void)
     fprintf(stderr, "  -m,--mainloop-simulator              Run simulator in the same mainloop as frontend\n");
     fprintf(stderr, "                                       (Simulator runs in separate thread by default)\n");
     fprintf(stderr, "\n");
+    fprintf(stderr, "  -d,--disable-curses                  Disable curses debug console\n");
+    fprintf(stderr, "\n");
 #endif
     fprintf(stderr, "  -h,--help                            Display this help message\n");
     exit(1);
@@ -242,6 +244,7 @@ main(int argc, char **argv)
 #endif
         { "fork-simulator",     no_argument,       NULL, 'f' },
         { "mainloop-simulator", no_argument,       NULL, 'm' },
+        { "disable-curses",     no_argument,       NULL, 'd' },
 #endif /* RIG_ENABLE_DEBUG */
 
         { "help",               no_argument,       NULL, 'h' },
@@ -250,10 +253,11 @@ main(int argc, char **argv)
 
 #ifdef RIG_ENABLE_DEBUG
 # ifdef linux
-    const char *short_opts = "a:fmh";
+    const char *short_opts = "a:fmdh";
 # else
-    const char *short_opts = "a:fmh";
+    const char *short_opts = "fmdh";
 # endif
+    bool enable_curses_debug = true;
 #else
     const char *short_opts = "h";
 #endif
@@ -284,6 +288,9 @@ main(int argc, char **argv)
         case 'm':
             rig_simulator_run_mode_option = RIG_SIMULATOR_RUN_MODE_MAINLOOP;
             break;
+        case 'd':
+            enable_curses_debug = false;
+            break;
 #endif /* RIG_ENABLE_DEBUG */
 
         default:
@@ -296,7 +303,10 @@ main(int argc, char **argv)
         usage();
     }
 
-    rig_curses_init();
+#ifdef RIG_ENABLE_DEBUG
+    if (enable_curses_debug)
+        rig_curses_init();
+#endif
 
     device = rig_device_new(argv[optind]);
 
