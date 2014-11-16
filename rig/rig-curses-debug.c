@@ -40,9 +40,6 @@
 
 struct curses_state
 {
-    int hscroll_pos;
-    int vscroll_pos;
-
     rut_closure_t *redraw_closure;
 
     int screen_width;
@@ -53,8 +50,18 @@ struct curses_state
     //WINDOW *main_window;
     WINDOW *titlebar_window;
     WINDOW *header_window;
+
     WINDOW *log0_window;
     WINDOW *log1_window;
+
+    /* While scrolling we refer to a snapshot of
+     * the logs at the point where scrolling
+     * started...*/
+    struct rig_log *log0_scroll_snapshot;
+    struct rig_log *log1_scroll_snapshot;
+
+    int hscroll_pos;
+    int vscroll_pos;
 
 } curses_state;
 
@@ -167,12 +174,19 @@ print_log(WINDOW *log_window,
 }
 
 static void
+get_logs(struct rig_log **log0, struct rig_log **log1)
+{
+    *log0 = rig_logs_get_frontend_log();
+    *log1 = rig_logs_get_simulator_log();
+}
+
+static void
 redraw_cb(void *user_data)
 {
     rut_shell_t *shell = user_data;
     struct curses_state *state = &curses_state;
-    struct rig_log *frontend_log;
-    struct rig_log *simulator_log;
+    struct rig_log *log0;
+    struct rig_log *log1;
     int log0_win_width;
 
     rut_poll_shell_remove_idle(shell, state->redraw_closure);
@@ -215,17 +229,16 @@ redraw_cb(void *user_data)
                state->screen_width, 1, 0);
 #endif
 
-    frontend_log = rig_logs_get_frontend_log();
-    simulator_log = rig_logs_get_simulator_log();
+    get_logs(&log0, &log1);
 
-    if (frontend_log && simulator_log)
+    if (log0 && log1)
         log0_win_width = state->screen_width / 2;
-    else if (frontend_log)
+    else if (log0)
         log0_win_width = state->screen_width;
     else
         log0_win_width = 0;
 
-    if (frontend_log) {
+    if (log0) {
         int log_win_height = state->screen_height - 1;
 
         state->log0_window =
@@ -234,11 +247,12 @@ redraw_cb(void *user_data)
         print_log(state->log0_window,
                   log0_win_width,
                   log_win_height,
-                  "[Frontend Log]",
-                  frontend_log);
+                  log0->title,
+                  state->vscroll_pos ? state->log0_scroll_snapshot : log0);
+        wnoutrefresh(state->log0_window);
     }
 
-    if (simulator_log) {
+    if (log1) {
         int log_win_height = state->screen_height - 1;
         int log_win_width = state->screen_width - log0_win_width;
 
@@ -251,8 +265,9 @@ redraw_cb(void *user_data)
         print_log(state->log1_window,
                   log_win_width,
                   log_win_height,
-                  "[Simulator Log]",
-                  simulator_log);
+                  log1->title,
+                  state->vscroll_pos ? state->log1_scroll_snapshot : log1);
+        wnoutrefresh(state->log1_window);
     }
 
 
@@ -327,6 +342,32 @@ rig_curses_init(void)
 }
 
 static void
+freeze_logs(struct curses_state *state)
+{
+    struct rig_log *log0, *log1;
+
+    get_logs(&log0, &log1);
+
+    if (log0)
+        state->log0_scroll_snapshot = rig_logs_copy_log(log0);
+    if (log1)
+        state->log1_scroll_snapshot = rig_logs_copy_log(log1);
+}
+
+static void
+thaw_logs(struct curses_state *state)
+{
+    if (state->log0_scroll_snapshot) {
+        rig_logs_free_copy(state->log0_scroll_snapshot);
+        state->log0_scroll_snapshot = NULL;
+    }
+    if (state->log1_scroll_snapshot) {
+        rig_logs_free_copy(state->log1_scroll_snapshot);
+        state->log1_scroll_snapshot = NULL;
+    }
+}
+
+static void
 handle_input_cb(void *user_data, int fd, int revents)
 {
     struct curses_state *state = &curses_state;
@@ -348,15 +389,26 @@ handle_input_cb(void *user_data, int fd, int revents)
         queue_redraw(shell);
         break;
     case KEY_UP:
+        if (state->vscroll_pos == 0)
+            freeze_logs(state);
+
         state->vscroll_pos += 1;
+
         queue_redraw(shell);
         break;
     case KEY_DOWN:
         if (state->vscroll_pos)
             state->vscroll_pos -= 1;
+
+        if (state->vscroll_pos == 0)
+            thaw_logs(state);
+
         queue_redraw(shell);
         break;
     case KEY_PPAGE:
+        if (state->vscroll_pos == 0)
+            freeze_logs(state);
+
         state->vscroll_pos += (state->screen_height - 10);
         queue_redraw(shell);
         break;
@@ -364,6 +416,10 @@ handle_input_cb(void *user_data, int fd, int revents)
         state->vscroll_pos -= (state->screen_height - 10);
         if (state->vscroll_pos < 0)
             state->vscroll_pos = 0;
+
+        if (state->vscroll_pos == 0)
+            thaw_logs(state);
+
         queue_redraw(shell);
         break;
     }
