@@ -44,7 +44,7 @@
 static void
 usage(void)
 {
-    fprintf(stderr, "Usage: rig-simulator\n");
+    fprintf(stderr, "Usage: rig-simulator --frontend=[editor,device,slave] [OPTION]...\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "  -f,--frontend=[editor,device,slave]  The frontend that will be connected\n");
 #ifdef linux
@@ -129,6 +129,11 @@ main(int argc, char **argv)
         default:
             usage();
         }
+    }
+
+    if (!frontend) {
+        c_warning("The frontend type must be specified with --frontend=[editor,device,slave]");
+        usage();
     }
 
 #ifdef linux
