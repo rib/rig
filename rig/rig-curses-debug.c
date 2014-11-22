@@ -40,6 +40,8 @@
 
 struct curses_state
 {
+    rut_shell_t *shell;
+
     rut_closure_t *redraw_closure;
 
     int screen_width;
@@ -91,86 +93,184 @@ destroy_windows (void)
 }
 
 static void
-print_log(WINDOW *log_window,
-          int log_win_width,
-          int log_win_height,
-          const char *header,
-          struct rig_log *log)
+print_message(WINDOW *log_window,
+              const char *message,
+              int hscroll_pos,
+              int vscroll_pos,
+              int max_lines,
+              int *pos,
+              int *n_lines)
+{
+    const char *run;
+    const char *next_run;
+    C_GNUC_UNUSED int log_win_width;
+    int log_win_height;
+
+    getmaxyx(log_window, log_win_height, log_win_width);
+
+    for (run = message;
+         *n_lines < max_lines && run && run[0] != '\0';
+         run = next_run)
+    {
+        char buf[1024];
+        int len = -1;
+
+        next_run = strstr(run, "\n");
+        if (next_run) {
+            len = MIN(next_run - run, sizeof(buf) - 1);
+            next_run++;
+        }
+
+        if ((*pos)++ >= vscroll_pos) {
+            const char *ptr;
+            int cursor_y = log_win_height - 1 - *n_lines;
+            int j;
+
+            if (len == -1)
+                len = MIN(strlen(run), sizeof(buf) - 1);
+
+            /* Copy string so we can NULL terminate
+             *
+             * N.B. we are only doing this because the docs for
+              * mvwaddnstr() imply we have to pass a len of -1 if
+             * we want it to stop when it reaches the edge of the
+             * window, otherwise we'd just pass len to
+             * mvwaddnstr()
+             */
+            strncpy(buf, run, len);
+            buf[len] = '\0';
+
+            if (hscroll_pos) {
+                for (j = 0, ptr = buf;
+                     j < hscroll_pos && ptr < buf + len;
+                     j++)
+                    ptr = c_utf8_next_char(ptr);
+            } else
+                ptr = buf;
+
+            wmove(log_window, cursor_y, 0);
+            while (*ptr) {
+                int y;
+
+                waddnstr(log_window, ptr, 1);
+                y = getcury(log_window);
+                if (y > cursor_y)
+                    break;
+
+                ptr = c_utf8_next_char(ptr);
+            }
+            (*n_lines)++;
+        }
+    }
+}
+
+static void
+print_synchronised_logs(struct rig_log *log0,
+                        WINDOW *log0_window,
+                        struct rig_log *log1,
+                        WINDOW *log1_window,
+                        int hscroll_pos,
+                        int vscroll_pos)
+{
+    int height;
+    C_GNUC_UNUSED int log0_width;
+    int max_lines;
+    int pos = 0;
+    int n_lines = 0;
+    struct rig_log_entry *entry0;
+    struct rig_log_entry *entry1;
+
+    getmaxyx(log0_window, height, log0_width);
+
+    max_lines = height - 1;
+
+    werase(log0_window);
+    werase(log1_window);
+
+    wattrset(log0_window, COLOR_PAIR (RIG_DEFAULT_COLOR));
+    wbkgd(log0_window, COLOR_PAIR (RIG_DEFAULT_COLOR));
+
+    wattrset(log1_window, COLOR_PAIR (RIG_DEFAULT_COLOR));
+    wbkgd(log1_window, COLOR_PAIR (RIG_DEFAULT_COLOR));
+
+    mvwprintw(log0_window, 0, 0, log0->title);
+    mvwprintw(log1_window, 0, 0, log1->title);
+
+    entry0 = rut_container_of(log0->entries.next, entry0, link);
+    entry1 = rut_container_of(log1->entries.next, entry1, link);
+
+    while (&entry0->link != &log0->entries || &entry1->link != &log1->entries) {
+        for (;
+             (
+              &entry0->link != &log0->entries &&
+              (&entry1->link == &log1->entries ||
+               entry0->timestamp >= entry1->timestamp)
+             );
+             entry0 = rut_container_of(entry0->link.next, entry0, link)) {
+
+            print_message(log0_window, entry0->message,
+                          hscroll_pos, vscroll_pos,
+                          max_lines, &pos, &n_lines);
+
+            if (n_lines >= max_lines)
+                goto done;
+        }
+
+        for (;
+             (
+              &entry1->link != &log1->entries &&
+              (&entry0->link == &log0->entries ||
+               entry1->timestamp > entry0->timestamp)
+              );
+             entry1 = rut_container_of(entry1->link.next, entry1, link)) {
+
+            print_message(log1_window, entry1->message,
+                          hscroll_pos, vscroll_pos,
+                          max_lines, &pos, &n_lines);
+
+            if (n_lines >= max_lines)
+                goto done;
+        }
+    }
+
+done:
+
+    wnoutrefresh(log0_window);
+    wnoutrefresh(log1_window);
+}
+
+static void
+print_log(struct rig_log *log, WINDOW *log_window)
 {
     struct curses_state *state = &curses_state;
+    C_GNUC_UNUSED int log_win_width;
+    int log_win_height;
     struct rig_log_entry *entry;
-    int max_lines = log_win_height - 1;
+    int max_lines;
     int pos = 0;
-    int i = 0;
+    int n_lines = 0;
+
+    getmaxyx(log_window, log_win_height, log_win_width);
+    max_lines = log_win_height - 1;
 
     wattrset(log_window, COLOR_PAIR (RIG_DEFAULT_COLOR));
     wbkgd(log_window, COLOR_PAIR (RIG_DEFAULT_COLOR));
     //scrollok(state->log0_window, true);
 
     werase(log_window);
-    mvwprintw(log_window, 0, 0, header);
+    mvwprintw(log_window, 0, 0, log->title);
 
     rut_list_for_each(entry, &log->entries, link) {
-        const char *line;
-        const char *next;
 
-        for (line = entry->message;
-             i < max_lines && line && line[0] != '\0';
-             line = next)
-        {
-            char buf[1024];
-            int len = -1;
+        print_message(log_window, entry->message,
+                      state->hscroll_pos, state->vscroll_pos,
+                      max_lines, &pos, &n_lines);
 
-            next = strstr(line, "\n");
-            if (next) {
-                len = MIN(next - line, sizeof(buf) - 1);
-                next++;
-            }
-
-            if (pos++ >= state->vscroll_pos) {
-                const char *ptr;
-                int cursor_y = log_win_height - 1 - i;
-                int j;
-
-                if (len == -1)
-                    len = MIN(strlen(line), sizeof(buf) - 1);
-
-                /* Copy string so we can NULL terminate
-                 *
-                 * N.B. we are only doing this because the docs for
-                 * mvwaddnstr() imply we have to pass a len of -1 if
-                 * we want it to stop when it reaches the edge of the
-                 * window, otherwise we'd just pass len to
-                 * mvwaddnstr()
-                 */
-                strncpy(buf, line, len);
-                buf[len] = '\0';
-
-                if (state->hscroll_pos) {
-                    for (j = 0, ptr = buf;
-                         j < state->hscroll_pos && ptr < buf + len;
-                         j++)
-                        ptr = c_utf8_next_char(ptr);
-                } else
-                    ptr = buf;
-
-                wmove(log_window, cursor_y, 0);
-                while (*ptr) {
-                    int y;
-
-                    waddnstr(log_window, ptr, 1);
-                    y = getcury(log_window);
-                    if (y > cursor_y)
-                        break;
-
-                    ptr = c_utf8_next_char(ptr);
-                }
-                i++;
-            }
-        }
-        if (i >= max_lines)
+        if (n_lines >= max_lines)
             break;
     }
+
+    wnoutrefresh(log_window);
 }
 
 static void
@@ -187,7 +287,7 @@ redraw_cb(void *user_data)
     struct curses_state *state = &curses_state;
     struct rig_log *log0;
     struct rig_log *log1;
-    int log0_win_width;
+    int log_win_height;
 
     rut_poll_shell_remove_idle(shell, state->redraw_closure);
     state->redraw_closure = NULL;
@@ -195,6 +295,7 @@ redraw_cb(void *user_data)
     destroy_windows();
 
     getmaxyx(stdscr, state->screen_height, state->screen_width);
+    log_win_height = state->screen_height - 1;
 
     werase(stdscr);
 
@@ -231,45 +332,46 @@ redraw_cb(void *user_data)
 
     get_logs(&log0, &log1);
 
-    if (log0 && log1)
-        log0_win_width = state->screen_width / 2;
-    else if (log0)
-        log0_win_width = state->screen_width;
-    else
-        log0_win_width = 0;
+    rig_logs_lock();
 
-    if (log0) {
-        int log_win_height = state->screen_height - 1;
+    if (log0 && log1) {
+        int log0_win_width = state->screen_width / 2;
+        int log1_win_width = state->screen_width - log0_win_width - 1;
 
         state->log0_window =
             subwin(stdscr, log_win_height, log0_win_width, 1, 0);
 
-        print_log(state->log0_window,
-                  log0_win_width,
-                  log_win_height,
-                  log0->title,
-                  state->vscroll_pos ? state->log0_scroll_snapshot : log0);
-        wnoutrefresh(state->log0_window);
-    }
-
-    if (log1) {
-        int log_win_height = state->screen_height - 1;
-        int log_win_width = state->screen_width - log0_win_width;
-
         state->log1_window =
             subwin(stdscr,
                    log_win_height,
-                   log_win_width,
-                   1, log0_win_width);
+                   log1_win_width,
+                   1, log0_win_width + 1);
 
-        print_log(state->log1_window,
-                  log_win_width,
-                  log_win_height,
-                  log1->title,
-                  state->vscroll_pos ? state->log1_scroll_snapshot : log1);
-        wnoutrefresh(state->log1_window);
+        print_synchronised_logs(state->vscroll_pos ? state->log0_scroll_snapshot : log0,
+                                state->log0_window,
+                                state->vscroll_pos ? state->log1_scroll_snapshot : log1,
+                                state->log1_window,
+                                state->hscroll_pos,
+                                state->vscroll_pos);
+    } else if (log0) {
+        int log0_win_width = state->screen_width;
+
+        state->log0_window =
+            subwin(stdscr, log_win_height, log0_win_width, 1, 0);
+
+        print_log(state->vscroll_pos ? state->log0_scroll_snapshot : log0,
+                  state->log0_window);
+    } else if (log1) {
+        int log1_win_width = state->screen_width;
+
+        state->log1_window =
+            subwin(stdscr, log_win_height, log1_win_width, 1, 0);
+
+        print_log(state->vscroll_pos ? state->log1_scroll_snapshot : log1,
+                  state->log1_window);
     }
 
+    rig_logs_unlock();
 
     redrawwin(stdscr); /* make whole window invalid */
     wrefresh(stdscr);
@@ -302,8 +404,10 @@ deinit_curses(void)
 static void
 log_cb(struct rig_log *log)
 {
-    if (log->shell)
-        queue_redraw(log->shell);
+    struct curses_state *state = &curses_state;
+
+    if (state->shell)
+        queue_redraw(state->shell);
 }
 
 void
@@ -428,6 +532,8 @@ handle_input_cb(void *user_data, int fd, int revents)
 void
 rig_curses_add_to_shell(rut_shell_t *shell)
 {
+    curses_state.shell = shell;
+
     rut_poll_shell_add_fd(shell, 0,
                           RUT_POLL_FD_EVENT_IN,
                           NULL, /* prepare */
