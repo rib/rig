@@ -129,7 +129,7 @@ typedef uint32_t c_codepoint_t;
 #define C_UINT32_TO_BE(X) htonl(X)
 
 #if defined(__GNUC__)
-#define C_GNUC_GNUSED __attribute__((__unused__))
+#define C_GNUC_UNUSED __attribute__((__unused__))
 #define C_GNUC_NORETURN __attribute__((__noreturn__))
 #define C_LIKELY(expr) (__builtin_expect((expr) != 0, 1))
 #define C_UNLIKELY(expr) (__builtin_expect((expr) != 0, 0))
