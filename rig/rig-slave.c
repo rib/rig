@@ -305,6 +305,18 @@ slave__edit(Rig__Slave_Service *service,
     }
 }
 
+static void
+slave__debug_control(Rig__Slave_Service *service,
+                     const Rig__DebugConfig *pb_debug_config,
+                     Rig__DebugConfigAck_Closure closure,
+                     void *closure_data)
+{
+    //rig_slave_t *slave = rig_pb_rpc_closure_get_connection_data(closure_data);
+    Rig__DebugConfigAck ack = RIG__DEBUG_CONFIG_ACK__INIT;
+
+    closure(&ack, closure_data);
+}
+
 static Rig__Slave_Service rig_slave_service = RIG__SLAVE__INIT(slave__);
 
 static void

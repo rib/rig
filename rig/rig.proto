@@ -588,12 +588,47 @@ message UIEditResult
   optional bool status=1;
 }
 
+message DebugConfig
+{
+  optional bool forward_logs=1; /* whether to forward logs to
+                                   slave-master */
+}
+
+message DebugConfigAck
+{
+}
+
 service Slave {
   rpc Edit (UIEdit) returns (UIEditResult);
   rpc Load (UI) returns (LoadResult);
+  rpc DebugControl (DebugConfig) returns (DebugConfigAck);
   rpc Test (Query) returns (TestResult);
 }
 
+message LogEntry
+{
+  enum Level { DEBUG=1; INFO=2; MESSAGE=3; WARNING=4; CRITICAL=5; ERROR=6; }
+
+  optional Level log_level = 1;
+  optional string log_message = 2;
+  optional uint64 timestamp = 3;
+}
+
+message Log
+{
+  enum LogType { FRONTEND=1; SIMULATOR=2; }
+
+  optional LogType type = 1;
+  repeated LogEntry entries = 2;
+}
+
+message LogAck
+{
+}
+
+service SlaveMaster {
+  rpc ForwardLog (Log) returns (LogAck);
+}
 
 message RunFrameAck
 {
@@ -654,27 +689,6 @@ message SimulatorAction
   {
   }
   optional ReportEditFailure report_edit_failure=3;
-}
-
-message LogEntry
-{
-  enum Level { DEBUG=1; INFO=2; MESSAGE=3; WARNING=4; CRITICAL=5; ERROR=6; }
-
-  optional Level log_level = 1;
-  optional string log_message = 2;
-  optional uint64 timestamp = 3;
-}
-
-message Log
-{
-  enum LogType { FRONTEND=1; SIMULATOR=2; }
-
-  optional LogType type = 1;
-  repeated LogEntry entries = 2;
-}
-
-message LogAck
-{
 }
 
 message UIDiff
