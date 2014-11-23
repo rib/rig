@@ -792,15 +792,15 @@ void c_queue_clear(c_queue_t *queue);
 #endif
 
 typedef enum {
-    C_LOG_FLAC_RECURSION = 1 << 0,
-    C_LOG_FLAC_FATAL = 1 << 1,
+    C_LOG_FLAG_RECURSION = 1 << 0,
+    C_LOG_FLAG_FATAL = 1 << 1,
     C_LOG_LEVEL_ERROR = 1 << 2,
     C_LOG_LEVEL_CRITICAL = 1 << 3,
     C_LOG_LEVEL_WARNING = 1 << 4,
     C_LOG_LEVEL_MESSAGE = 1 << 5,
     C_LOG_LEVEL_INFO = 1 << 6,
     C_LOG_LEVEL_DEBUG = 1 << 7,
-    C_LOG_LEVEL_MASK = ~(C_LOG_FLAC_RECURSION | C_LOG_FLAC_FATAL)
+    C_LOG_LEVEL_MASK = ~(C_LOG_FLAG_RECURSION | C_LOG_FLAG_FATAL)
 } c_log_level_flags_t;
 
 void c_print(const char *format, ...);
