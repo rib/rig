@@ -472,8 +472,7 @@ simulator_start_service(rut_shell_t *shell,
                         rig_simulator_t *simulator)
 {
     simulator->simulator_peer = rig_rpc_peer_new(
-        shell,
-        simulator->fd,
+        simulator->stream,
         &rig_simulator_service.base,
         (ProtobufCServiceDescriptor *)&rig__frontend__descriptor,
         simulator_peer_error_handler,
@@ -558,8 +557,8 @@ _rig_simulator_free(void *object)
     rut_object_unref(simulator->engine);
 
     rut_object_unref(simulator->simulator_peer);
+    rut_object_unref(simulator->stream);
 
-    rut_object_unref(simulator->shell);
     rut_object_unref(simulator->shell);
 
     if (simulator->log_serializer) {
@@ -692,8 +691,7 @@ rig_simulator_init(rut_shell_t *shell, void *user_data)
 
 rig_simulator_t *
 rig_simulator_new(rig_frontend_id_t frontend_id,
-                  rut_shell_t *main_shell,
-                  int fd)
+                  rut_shell_t *main_shell)
 {
     rig_simulator_t *simulator = rut_object_alloc0(
         rig_simulator_t, &rig_simulator_type, _rig_simulator_init_type);
@@ -711,8 +709,6 @@ rig_simulator_new(rig_frontend_id_t frontend_id,
         simulator->editable = false;
         break;
     }
-
-    simulator->fd = fd;
 
     simulator->shell = rut_shell_new(rig_simulator_run_frame,
                                      simulator);
@@ -732,9 +728,17 @@ rig_simulator_new(rig_frontend_id_t frontend_id,
                                   rig_simulator_init,
                                   simulator);
 
+    simulator->stream = rig_pb_stream_new(simulator->shell);
+
     rig_logs_set_simulator(simulator);
 
     return simulator;
+}
+
+void
+rig_simulator_set_frontend_fd(rig_simulator_t *simulator, int fd)
+{
+    rig_pb_stream_set_fd_transport(simulator->stream, fd);
 }
 
 void

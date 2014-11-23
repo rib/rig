@@ -179,7 +179,8 @@ main(int argc, char **argv)
 
     rig_simulator_logs_init();
 
-    simulator = rig_simulator_new(frontend_id, NULL, fd);
+    simulator = rig_simulator_new(frontend_id, NULL);
+    rig_simulator_set_frontend_fd(simulator, fd);
 
     rig_simulator_run(simulator);
 

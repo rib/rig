@@ -116,13 +116,11 @@ rig_rpc_server_new(rut_shell_t *shell,
 {
     rig_rpc_server_t *server = rut_object_alloc0(
         rig_rpc_server_t, &rig_rpc_server_type, _rig_rpc_server_init_type);
-    rig_protobuf_c_dispatch_t *dispatch =
-        rig_protobuf_c_dispatch_new(shell, &protobuf_c_default_allocator);
     struct sockaddr_in addr;
     socklen_t addr_len = sizeof(addr);
 
     server->pb_rpc_server =
-        rig_pb_rpc_server_new(name, listening_fd, service, dispatch);
+        rig_pb_rpc_server_new(shell, name, listening_fd, service);
 
     getsockname(listening_fd, (struct sockaddr *)&addr, &addr_len);
 
@@ -178,17 +176,18 @@ rig_rpc_client_new(rut_shell_t *shell,
     rig_rpc_client_t *rpc_client = rut_object_alloc0(
         rig_rpc_client_t, &rig_rpc_client_type, _rig_rpc_client_init_type);
     char *addr_str = c_strdup_printf("%s:%d", hostname, port);
-    rig_protobuf_c_dispatch_t *dispatch;
+    rig_pb_stream_t *stream = rig_pb_stream_new(shell);
     pb_rpc__client_t *pb_client;
 
     rpc_client->hostname = c_strdup(hostname);
     rpc_client->port = port;
 
-    dispatch =
-        rig_protobuf_c_dispatch_new(shell, &protobuf_c_default_allocator);
+    pb_client = rig_pb_rpc_client_new(stream,
+                                      PROTOBUF_C_RPC_ADDRESS_TCP,
+                                      addr_str,
+                                      descriptor);
 
-    pb_client = (pb_rpc__client_t *)rig_pb_rpc_client_new(
-        PROTOBUF_C_RPC_ADDRESS_TCP, addr_str, descriptor, dispatch);
+    rut_object_unref(stream);
 
     rig_pb_rpc_client_set_connect_handler(
         pb_client, connect_handler, user_data);
@@ -221,6 +220,8 @@ _rig_rpc_peer_free(void *object)
 
     rut_object_unref(rpc_peer->pb_rpc_peer);
 
+    rut_object_unref(rpc_peer->stream);
+
     rut_object_free(rig_rpc_peer_t, rpc_peer);
 }
 
@@ -247,8 +248,7 @@ server_connect_handler(pb_rpc__server_t *server,
 }
 
 rig_rpc_peer_t *
-rig_rpc_peer_new(rut_shell_t *shell,
-                 int fd,
+rig_rpc_peer_new(rig_pb_stream_t *stream,
                  ProtobufCService *server_service,
                  ProtobufCServiceDescriptor *client_descriptor,
                  PB_RPC_Error_Func peer_error_handler,
@@ -257,19 +257,12 @@ rig_rpc_peer_new(rut_shell_t *shell,
 {
     rig_rpc_peer_t *rpc_peer = rut_object_alloc0(
         rig_rpc_peer_t, &rig_rpc_peer_type, _rig_rpc_peer_init_type);
-    rig_protobuf_c_dispatch_t *dispatch;
-    rig_pb_stream_t *stream;
     pb_rpc__peer_t *pb_peer;
 
-    rpc_peer->fd = fd;
+    rpc_peer->stream = rut_object_ref(stream);
 
-    dispatch =
-        rig_protobuf_c_dispatch_new(shell, &protobuf_c_default_allocator);
-
-    stream = rig_pb_stream_new(dispatch, fd);
     pb_peer = rig_pb_rpc_peer_new(stream, server_service,
-                                  client_descriptor, dispatch);
-    rut_object_unref(stream);
+                                  client_descriptor);
     rpc_peer->pb_rpc_peer = pb_peer;
 
     rpc_peer->pb_rpc_client = rig_pb_rpc_peer_get_client(pb_peer);
@@ -288,15 +281,4 @@ rig_rpc_peer_new(rut_shell_t *shell,
         rpc_peer->pb_rpc_server, server_connect_handler, user_data);
 
     return rpc_peer;
-}
-
-void
-rig_rpc_peer_set_other_end(rig_rpc_peer_t *peer,
-                           rig_rpc_peer_t *other_end)
-{
-    rig_pb_stream_t *stream = rig_pb_rpc_peer_get_stream(peer->pb_rpc_peer);
-    rig_pb_stream_t *other_end_stream =
-        rig_pb_rpc_peer_get_stream(other_end->pb_rpc_peer);
-
-    rig_pb_stream_set_other_end(stream, other_end_stream);
 }

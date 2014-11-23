@@ -81,23 +81,18 @@ void rig_rpc_client_disconnect(rig_rpc_client_t *rpc_client);
 struct _rig_rpc_peer_t {
     rut_object_base_t _base;
 
-    int fd;
+    rig_pb_stream_t *stream;
 
     pb_rpc__peer_t *pb_rpc_peer;
     pb_rpc__server_t *pb_rpc_server;
     pb_rpc__client_t *pb_rpc_client;
 };
 
-rig_rpc_peer_t *rig_rpc_peer_new(rut_shell_t *shell,
-                                 int fd,
+rig_rpc_peer_t *rig_rpc_peer_new(rig_pb_stream_t *stream,
                                  ProtobufCService *server_service,
-                                 ProtobufCServiceDescriptor *client_service,
+                                 ProtobufCServiceDescriptor *client_descriptor,
                                  PB_RPC_Error_Func peer_error_handler,
                                  PB_RPC_Connect_Func connect_handler,
                                  void *user_data);
-
-void
-rig_rpc_peer_set_other_end(rig_rpc_peer_t *peer,
-                           rig_rpc_peer_t *other_end);
 
 #endif /* _RIG_RPC_NETWORK_H_ */

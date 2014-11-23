@@ -66,7 +66,7 @@ struct _rig_frontend_t {
 #ifdef linux
     int listen_fd;
 #endif
-    int fd;
+    rig_pb_stream_t *stream;
     rig_rpc_peer_t *frontend_peer;
     bool connected;
 

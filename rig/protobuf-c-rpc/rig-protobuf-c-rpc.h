@@ -54,10 +54,10 @@ typedef void (*PB_RPC_Error_Func)(PB_RPC_Error_Code code,
 
 /* --- Client API --- */
 pb_rpc__client_t *
-rig_pb_rpc_client_new(PB_RPC_AddressType type,
+rig_pb_rpc_client_new(rig_pb_stream_t *stream,
+                      PB_RPC_AddressType type,
                       const char *name,
-                      const ProtobufCServiceDescriptor *descriptor,
-                      rig_protobuf_c_dispatch_t *dispatch);
+                      const ProtobufCServiceDescriptor *descriptor);
 
 ProtobufCService *rig_pb_rpc_client_get_service(pb_rpc__client_t *client);
 
@@ -107,10 +107,10 @@ bool rig_pb_rpc_client_is_connected(pb_rpc__client_t *client);
 
 /* --- Server API --- */
 typedef struct _pb_rpc__server_t pb_rpc__server_t;
-pb_rpc__server_t *rig_pb_rpc_server_new(const char *bind_name,
+pb_rpc__server_t *rig_pb_rpc_server_new(rut_shell_t *shell,
+                                        const char *bind_name,
                                         ProtobufC_FD listening_fd,
-                                        ProtobufCService *service,
-                                        rig_protobuf_c_dispatch_t *dispatch);
+                                        ProtobufCService *service);
 
 /* May return -1 if not listening */
 int rig_pb_rpc_server_get_listening_fd(pb_rpc__server_t *server);
@@ -193,8 +193,7 @@ typedef struct _pb_rpc__peer_t pb_rpc__peer_t;
 pb_rpc__peer_t *
 rig_pb_rpc_peer_new(rig_pb_stream_t *stream,
                     ProtobufCService *server_service,
-                    const ProtobufCServiceDescriptor *client_descriptor,
-                    rig_protobuf_c_dispatch_t *dispatch);
+                    const ProtobufCServiceDescriptor *client_descriptor);
 
 rig_pb_stream_t *rig_pb_rpc_peer_get_stream(pb_rpc__peer_t *peer);
 

@@ -65,7 +65,7 @@ struct _rig_simulator_t {
     rut_shell_t *shell;
     rig_engine_t *engine;
 
-    int fd;
+    rig_pb_stream_t *stream;
     rig_rpc_peer_t *simulator_peer;
 
     rig_pb_serializer_t *log_serializer;
@@ -99,8 +99,9 @@ struct _rig_simulator_t {
 extern rut_type_t rig_simulator_type;
 
 rig_simulator_t *rig_simulator_new(rig_frontend_id_t frontend_id,
-                                   rut_shell_t *main_shell,
-                                   int fd);
+                                   rut_shell_t *main_shell);
+
+void rig_simulator_set_frontend_fd(rig_simulator_t *simulator, int fd);
 
 void rig_simulator_run(rig_simulator_t *simulator);
 

@@ -162,6 +162,8 @@ struct _proxy_response_t {
 struct _pb_rpc__server_t {
     rut_object_base_t _base;
 
+    rut_shell_t *shell;
+
     rig_protobuf_c_dispatch_t *dispatch;
     ProtobufCAllocator *allocator;
     ProtobufCService *service;
@@ -634,7 +636,7 @@ begin_name_lookup(pb_rpc__client_t *client)
 }
 
 static void
-handle_init_idle(rig_protobuf_c_dispatch_t *dispatch, void *data)
+start_client_connect_idle(rig_protobuf_c_dispatch_t *dispatch, void *data)
 {
     pb_rpc__client_t *client = data;
 
@@ -778,12 +780,12 @@ trivial_sync_libc_resolver(rig_protobuf_c_dispatch_t *dispatch,
 
 pb_rpc__client_t *
 client_new(const ProtobufCServiceDescriptor *descriptor,
-           rig_protobuf_c_dispatch_t *dispatch,
            rig_pb_stream_t *stream)
 {
     pb_rpc__client_t *client = rut_object_alloc0(pb_rpc__client_t,
                                                  &rig_pb_rpc_client_type,
                                                  _rig_pb_rpc_client_init_type);
+    rig_protobuf_c_dispatch_t *dispatch = stream->dispatch;
 
     client->service.descriptor = descriptor;
     client->service.invoke = invoke_client_rpc;
@@ -805,23 +807,18 @@ client_new(const ProtobufCServiceDescriptor *descriptor,
 }
 
 pb_rpc__client_t *
-rig_pb_rpc_client_new(PB_RPC_AddressType type,
+rig_pb_rpc_client_new(rig_pb_stream_t *stream,
+                      PB_RPC_AddressType type,
                       const char *name,
-                      const ProtobufCServiceDescriptor *descriptor,
-                      rig_protobuf_c_dispatch_t *dispatch)
+                      const ProtobufCServiceDescriptor *descriptor)
 {
-    rig_pb_stream_t *stream = rig_pb_stream_new(dispatch, -1);
-    pb_rpc__client_t *client = client_new(descriptor, dispatch, stream);
-
-    /* After calling client_new() the client will have taken ownership
-     * of the stream */
-    rut_object_unref(stream);
+    pb_rpc__client_t *client = client_new(descriptor, stream);
 
     client->address_type = type;
     client->name = c_strdup(name);
 
     client->info.init.idle = rig_protobuf_c_dispatch_add_idle(
-        client->dispatch, handle_init_idle, client);
+        client->dispatch, start_client_connect_idle, client);
 
     return client;
 }
@@ -1596,7 +1593,8 @@ handle_server_listener_readable(int fd, unsigned events, void *data)
         return;
     }
 
-    stream = rig_pb_stream_new(server->dispatch, new_fd);
+    stream = rig_pb_stream_new(server->shell);
+    rig_pb_stream_set_fd_transport(stream, new_fd);
 
     server_add_connection_with_stream(server, stream);
 
@@ -1606,13 +1604,15 @@ handle_server_listener_readable(int fd, unsigned events, void *data)
 }
 
 static pb_rpc__server_t *
-server_new(ProtobufCService *service,
+server_new(rut_shell_t *shell,
+           ProtobufCService *service,
            rig_protobuf_c_dispatch_t *dispatch)
 {
     pb_rpc__server_t *server = rut_object_alloc0(pb_rpc__server_t,
                                                  &rig_pb_rpc_server_type,
                                                  _rig_pb_rpc_server_init_type);
 
+    server->shell = shell;
     server->dispatch = dispatch;
     server->allocator = rig_protobuf_c_dispatch_peek_allocator(dispatch);
     server->service = service;
@@ -1627,13 +1627,15 @@ server_new(ProtobufCService *service,
 }
 
 pb_rpc__server_t *
-rig_pb_rpc_server_new(const char *bind_name,
+rig_pb_rpc_server_new(rut_shell_t *shell,
+                      const char *bind_name,
                       ProtobufC_FD listening_fd,
-                      ProtobufCService *service,
-                      rig_protobuf_c_dispatch_t *dispatch)
+                      ProtobufCService *service)
 {
-    pb_rpc__server_t *server = server_new(service, dispatch);
-    ProtobufCAllocator *allocator = server->allocator;
+    ProtobufCAllocator *allocator = &protobuf_c_default_allocator;
+    rig_protobuf_c_dispatch_t *dispatch =
+        rig_protobuf_c_dispatch_new(shell, allocator);
+    pb_rpc__server_t *server = server_new(shell, service, dispatch);
 
     server->bind_name = allocator->alloc(allocator, strlen(bind_name) + 1);
     strcpy(server->bind_name, bind_name);
@@ -1641,7 +1643,7 @@ rig_pb_rpc_server_new(const char *bind_name,
     server->listening_fd = listening_fd;
     set_fd_nonblocking(listening_fd);
 
-    rig_protobuf_c_dispatch_watch_fd(server->dispatch,
+    rig_protobuf_c_dispatch_watch_fd(dispatch,
                                      listening_fd,
                                      PROTOBUF_C_EVENT_READABLE,
                                      handle_server_listener_readable,
@@ -1841,23 +1843,22 @@ handle_peer_connect_idle(rig_protobuf_c_dispatch_t *dispatch,
 pb_rpc__peer_t *
 rig_pb_rpc_peer_new(rig_pb_stream_t *stream,
                     ProtobufCService *server_service,
-                    const ProtobufCServiceDescriptor *client_descriptor,
-                    rig_protobuf_c_dispatch_t *dispatch)
+                    const ProtobufCServiceDescriptor *client_descriptor)
 {
     pb_rpc__peer_t *peer = rut_object_alloc0(
         pb_rpc__peer_t, &rig_pb_rpc_peer_type, _rig_pb_rpc_peer_init_type);
 
     peer->stream = rut_object_ref(stream);
 
-    peer->server = server_new(server_service, dispatch);
-    peer->client = client_new(client_descriptor, dispatch, peer->stream);
+    peer->server = server_new(stream->shell, server_service, stream->dispatch);
+    peer->client = client_new(client_descriptor, peer->stream);
 
     /* Note: we actually defer connecting the server and client to an
      * idle handler because we want to give a chance for the user to
      * configure them such as by setting _connect_handlers...
      */
 
-    peer->idle = rig_protobuf_c_dispatch_add_idle(dispatch,
+    peer->idle = rig_protobuf_c_dispatch_add_idle(stream->dispatch,
                                                   handle_peer_connect_idle,
                                                   peer);
 

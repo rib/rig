@@ -36,26 +36,37 @@ typedef struct _rig_pb_stream_t rig_pb_stream_t;
 #include "rig-protobuf-c-rpc.h"
 
 enum stream_type {
-    STREAM_TYPE_FD = 1,
+    STREAM_TYPE_DISCONNECTED,
+    STREAM_TYPE_FD,
+#ifdef USE_UV
+    STREAM_TYPE_UV,
+#endif
     STREAM_TYPE_BUFFER,
 };
 
 struct _rig_pb_stream_t {
     rut_object_base_t _base;
 
+    rut_shell_t *shell;
     rig_protobuf_c_dispatch_t *dispatch;
 
-    /* XXX: The "remote" end of a stream is sometimes in the same
-     * address space and instead of polling a file descriptor we
-     * simply queue idle callbacks when we write to either end of
-     * a stream...
-     */
     enum stream_type type;
 
     /* STREAM_TYPE_FD... */
     int fd;
 
+    /* STREAM_TYPE_UV... */
+#ifdef USE_UV
+    uv_stream_t *uv_in_stream;
+    uv_stream_t *uv_out_stream;
+#endif
+
     /* STREAM_TYPE_BUFFER... */
+    /* XXX: The "remote" end of a stream is sometimes in the same
+     * address space and instead of polling a file descriptor we
+     * simply queue idle callbacks when we write to either end of
+     * a stream...
+     */
     rig_pb_stream_t *other_end;
     rig_protobuf_c_dispatch_idle_t *read_idle;
 
@@ -67,7 +78,17 @@ struct _rig_pb_stream_t {
 };
 
 rig_pb_stream_t *
-rig_pb_stream_new(rig_protobuf_c_dispatch_t *dispatch, int fd);
+rig_pb_stream_new(rut_shell_t *shell);
+
+void
+rig_pb_stream_set_fd_transport(rig_pb_stream_t *stream, int fd);
+
+#ifdef USE_UV
+void
+rig_pb_stream_set_uv_streams_transport(rig_pb_stream_t *stream,
+                                       uv_stream_t *in_stream,
+                                       uv_stream_t *out_stream);
+#endif
 
 /* So we can support having both ends of a connection in the same
  * process without using file descriptors and polling to communicate
@@ -77,7 +98,7 @@ rig_pb_stream_new(rig_protobuf_c_dispatch_t *dispatch, int fd);
  * Note: This mechanism is *not* currently threadsafe.
  */
 void
-rig_pb_stream_set_other_end(rig_pb_stream_t *stream,
-                            rig_pb_stream_t *other_end);
+rig_pb_stream_set_in_thread_direct_transport(rig_pb_stream_t *stream,
+                                             rig_pb_stream_t *other_end);
 
 #endif

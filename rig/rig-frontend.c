@@ -417,6 +417,9 @@ frontend_stop_service(rig_frontend_t *frontend)
 {
     rut_object_unref(frontend->frontend_peer);
     frontend->frontend_peer = NULL;
+    rut_object_unref(frontend->stream);
+    frontend->stream = NULL;
+
     frontend->connected = false;
     frontend->ui_update_pending = false;
 }
@@ -434,11 +437,13 @@ frontend_peer_error_handler(PB_RPC_Error_Code code,
 }
 
 static void
-frontend_start_service(rut_shell_t *shell, rig_frontend_t *frontend)
+frontend_start_service(rut_shell_t *shell,
+                       rig_frontend_t *frontend,
+                       rig_pb_stream_t *stream)
 {
+    frontend->stream = rut_object_ref(stream);
     frontend->frontend_peer = rig_rpc_peer_new(
-        shell,
-        frontend->fd,
+        stream,
         &rig_frontend_service.base,
         (ProtobufCServiceDescriptor *)&rig__simulator__descriptor,
         frontend_peer_error_handler,
@@ -646,6 +651,7 @@ fork_simulator(rut_shell_t *shell, rig_frontend_t *frontend)
 {
     pid_t pid;
     int sp[2];
+    rig_pb_stream_t *stream;
 
     c_return_if_fail(frontend->connected == false);
 
@@ -702,14 +708,19 @@ fork_simulator(rut_shell_t *shell, rig_frontend_t *frontend)
     }
 
     frontend->simulator_pid = pid;
-    frontend->fd = sp[0];
 
     if (frontend->id == RIG_FRONTEND_ID_EDITOR)
         rut_poll_shell_add_sigchild(shell, simulator_sigchild_cb,
                                     frontend,
                                     NULL); /* destroy notify */
 
-    frontend_start_service(shell, frontend);
+    stream = rig_pb_stream_new(shell);
+    rig_pb_stream_set_fd_transport(stream, sp[0]);
+
+    frontend_start_service(shell, frontend, stream);
+
+    /* frontend_start_service will take ownership of the stream */
+    rut_object_unref (stream);
 }
 #endif /* !defined (__ANDROID__) && (defined (linux) || defined (__APPLE__)) */
 
@@ -730,7 +741,9 @@ run_simulator_thread(void *user_data)
 {
     thread_state_t *state = user_data;
     rig_simulator_t *simulator =
-        rig_simulator_new(state->frontend->id, NULL, state->fd);
+        rig_simulator_new(state->frontend->id, NULL);
+
+    rig_simulator_set_frontend_fd(simulator, state->fd);
 
 #ifdef USE_GLIB
     g_main_context_push_thread_default(g_main_context_new());
@@ -807,6 +820,7 @@ create_simulator_thread(rut_shell_t *shell,
     c_error_t *error = NULL;
 #endif
     int sp[2];
+    rig_pb_stream_t *stream;
 
     c_return_val_if_fail(frontend->connected == false, NULL);
 
@@ -831,29 +845,47 @@ create_simulator_thread(rut_shell_t *shell,
 #error "Missing platform api to create a thread"
 #endif
 
-    frontend->fd = sp[0];
+    stream = rig_pb_stream_new(shell);
+    rig_pb_stream_set_fd_transport(stream, sp[0]);
 
-    frontend_start_service(shell, frontend);
+    frontend_start_service(shell, frontend, stream);
+
+    /* frontend_start_service will take ownership of the stream */
+    rut_object_unref(stream);
 
     return state;
 }
 
 #ifdef linux
 static void
-handle_simulator_connect_cb(void *user_data, int fd, int revents)
+handle_simulator_connect_cb(void *user_data, int listen_fd, int revents)
 {
     rig_frontend_t *frontend = user_data;
     struct sockaddr addr;
     socklen_t addr_len = sizeof(addr);
+    int fd;
 
     c_return_if_fail(revents & RUT_POLL_FD_EVENT_IN);
 
     c_message("Simulator connect request received!");
 
-    frontend->fd = accept(frontend->listen_fd, &addr, &addr_len);
-    if (frontend->fd != -1) {
+    if (frontend->connected) {
+        c_warning("Ignoring simulator connection while there's already one connected");
+        return;
+    }
+
+    fd = accept(frontend->listen_fd, &addr, &addr_len);
+    if (fd != -1) {
+        rig_pb_stream_t *stream = rig_pb_stream_new(frontend->engine->shell);
+
+        rig_pb_stream_set_fd_transport(stream, fd);
+
         c_message("Simulator connected!");
-        frontend_start_service(frontend->engine->shell, frontend);
+
+        frontend_start_service(frontend->engine->shell, frontend, stream);
+
+        /* frontend_start_service will take ownership of the stream */
+        rut_object_unref(stream);
     } else
         c_message("Failed to accept simulator connection: %s!",
                   strerror(errno));
@@ -891,19 +923,24 @@ bind_to_abstract_socket(rut_shell_t *shell, rig_frontend_t *frontend)
 static void
 run_simulator_in_process(rut_shell_t *shell, rig_frontend_t *frontend)
 {
-    rig_simulator_t *simulator = rig_simulator_new(frontend->id, shell, -1);
+    rig_simulator_t *simulator = rig_simulator_new(frontend->id, shell);
+    rig_pb_stream_t *stream;
 
     /* N.B. This won't block running the mainloop since rut-poll
      * will see that simulator->shell isn't the main shell. */
     rig_simulator_run(simulator);
 
-    frontend->fd = -1;
-    frontend_start_service(shell, frontend);
+    stream = rig_pb_stream_new(shell);
 
-    rig_rpc_peer_set_other_end(frontend->frontend_peer,
-                               simulator->simulator_peer);
-    rig_rpc_peer_set_other_end(simulator->simulator_peer,
-                               frontend->frontend_peer);
+    frontend_start_service(shell, frontend, stream);
+
+    /* frontend_start_service will take ownership of the stream */
+    rut_object_unref (stream);
+
+    rig_pb_stream_set_in_thread_direct_transport(stream,
+                                                 simulator->stream);
+    rig_pb_stream_set_in_thread_direct_transport(simulator->stream,
+                                                 stream);
 }
 
 static void
