@@ -70,7 +70,9 @@ struct curses_state
 enum {
     RIG_DEFAULT_COLOR,
     RIG_HEADER_COLOR,
-    RIG_WARNING_COLOR
+    RIG_ERROR_COLOR,
+    RIG_CRITICAL_COLOR,
+    RIG_WARNING_COLOR,
 };
 
 #define PAGE_COUNT 1
@@ -94,6 +96,7 @@ destroy_windows (void)
 
 static void
 print_message(WINDOW *log_window,
+              c_log_level_flags_t level,
               const char *message,
               int hscroll_pos,
               int vscroll_pos,
@@ -105,8 +108,27 @@ print_message(WINDOW *log_window,
     const char *next_run;
     C_GNUC_UNUSED int log_win_width;
     int log_win_height;
+    chtype color_pair;
 
     getmaxyx(log_window, log_win_height, log_win_width);
+
+    switch(level)
+    {
+    case C_LOG_LEVEL_ERROR:
+        color_pair = COLOR_PAIR(RIG_ERROR_COLOR);
+        break;
+    case C_LOG_LEVEL_CRITICAL:
+        color_pair = COLOR_PAIR(RIG_CRITICAL_COLOR);
+        break;
+    case C_LOG_LEVEL_WARNING:
+        color_pair = COLOR_PAIR(RIG_WARNING_COLOR);
+        break;
+    default:
+        color_pair = COLOR_PAIR(RIG_DEFAULT_COLOR);
+    }
+
+    wattrset(log_window, color_pair);
+    wbkgd(log_window, color_pair);
 
     for (run = message;
          *n_lines < max_lines && run && run[0] != '\0';
@@ -208,7 +230,7 @@ print_synchronised_logs(struct rig_log *log0,
              );
              entry0 = rut_container_of(entry0->link.next, entry0, link)) {
 
-            print_message(log0_window, entry0->message,
+            print_message(log0_window, entry0->log_level, entry0->message,
                           hscroll_pos, vscroll_pos,
                           max_lines, &pos, &n_lines);
 
@@ -224,7 +246,7 @@ print_synchronised_logs(struct rig_log *log0,
               );
              entry1 = rut_container_of(entry1->link.next, entry1, link)) {
 
-            print_message(log1_window, entry1->message,
+            print_message(log1_window, entry1->log_level, entry1->message,
                           hscroll_pos, vscroll_pos,
                           max_lines, &pos, &n_lines);
 
@@ -262,7 +284,7 @@ print_log(struct rig_log *log, WINDOW *log_window)
 
     rut_list_for_each(entry, &log->entries, link) {
 
-        print_message(log_window, entry->message,
+        print_message(log_window, entry->log_level, entry->message,
                       state->hscroll_pos, state->vscroll_pos,
                       max_lines, &pos, &n_lines);
 
@@ -437,6 +459,8 @@ rig_curses_init(void)
 
     init_pair(RIG_DEFAULT_COLOR, COLOR_WHITE, COLOR_BLACK);
     init_pair(RIG_HEADER_COLOR, COLOR_WHITE, COLOR_GREEN);
+    init_pair(RIG_ERROR_COLOR, COLOR_RED, COLOR_YELLOW);
+    init_pair(RIG_CRITICAL_COLOR, COLOR_RED, COLOR_YELLOW);
     init_pair(RIG_WARNING_COLOR, COLOR_YELLOW, COLOR_BLACK);
 #if 0
     init_pair(RIG_KEY_LABEL_COLOR, COLOR_WHITE, COLOR_GREEN);
