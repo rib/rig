@@ -38,6 +38,13 @@ typedef struct _rig_slave_t {
 
     rut_shell_t *shell;
 
+#ifdef linux
+    int listen_fd;
+#endif
+    rig_pb_stream_t *stream;
+    rig_rpc_peer_t *slave_peer;
+    bool connected;
+
     int request_width;
     int request_height;
     int request_scale;

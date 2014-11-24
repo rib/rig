@@ -389,7 +389,7 @@ rig_frontend_reload_simulator_ui(rig_frontend_t *frontend,
 }
 
 static void
-frontend_peer_connected(pb_rpc__client_t *pb_client,
+frontend_peer_connected(rig_pb_rpc_client_t *pb_client,
                         void *user_data)
 {
     rig_frontend_t *frontend = user_data;
@@ -415,8 +415,21 @@ frontend_peer_connected(pb_rpc__client_t *pb_client,
 static void
 frontend_stop_service(rig_frontend_t *frontend)
 {
-    rut_object_unref(frontend->frontend_peer);
+    rig_rpc_peer_t *peer = frontend->frontend_peer;
+
+    if (!peer)
+        return;
+
+    /* Avoid recursion, in case freeing the peer results in any
+     * callbacks that also try to stop the frontend service.
+     *
+     * XXX: maybe we should update the rpc layer to avoid synchronous
+     * callbacks and instead always defer work to the mainloop.
+     */
     frontend->frontend_peer = NULL;
+
+    rut_object_unref(peer);
+
     rut_object_unref(frontend->stream);
     frontend->stream = NULL;
 
@@ -425,7 +438,7 @@ frontend_stop_service(rig_frontend_t *frontend)
 }
 
 static void
-frontend_peer_error_handler(PB_RPC_Error_Code code,
+frontend_peer_error_handler(rig_pb_rpc_error_code_t code,
                             const char *message,
                             void *user_data)
 {

@@ -29,36 +29,45 @@
 #ifndef _RIG_PB_RPC_STREAM_H_
 #define _RIG_PB_RPC_STREAM_H_
 
+#include <uv.h>
+
+#include <rut.h>
+
 typedef struct _rig_pb_stream_t rig_pb_stream_t;
 
-#include "rig-protobuf-c-dispatch.h"
-#include "rig-protobuf-c-data-buffer.h"
 #include "rig-protobuf-c-rpc.h"
 
 enum stream_type {
     STREAM_TYPE_DISCONNECTED,
-    STREAM_TYPE_FD,
 #ifdef USE_UV
-    STREAM_TYPE_UV,
+    STREAM_TYPE_FD,
 #endif
     STREAM_TYPE_BUFFER,
+};
+
+typedef struct _rig_pb_stream_write_closure rig_pb_stream_write_closure_t;
+
+struct _rig_pb_stream_write_closure
+{
+#ifdef USE_UV
+    uv_write_t write_req;
+#endif
+    uv_buf_t buf;
+    void (*done_callback)(rig_pb_stream_write_closure_t *closure);
 };
 
 struct _rig_pb_stream_t {
     rut_object_base_t _base;
 
     rut_shell_t *shell;
-    rig_protobuf_c_dispatch_t *dispatch;
+
+    ProtobufCAllocator *allocator;
 
     enum stream_type type;
 
     /* STREAM_TYPE_FD... */
-    int fd;
-
-    /* STREAM_TYPE_UV... */
 #ifdef USE_UV
-    uv_stream_t *uv_in_stream;
-    uv_stream_t *uv_out_stream;
+    uv_pipe_t uv_fd_pipe;
 #endif
 
     /* STREAM_TYPE_BUFFER... */
@@ -68,26 +77,51 @@ struct _rig_pb_stream_t {
      * a stream...
      */
     rig_pb_stream_t *other_end;
-    rig_protobuf_c_dispatch_idle_t *read_idle;
+    rut_closure_t *connect_idle;
+    rut_closure_t *read_idle;
 
-    protobuf_c_data_buffer_t incoming;
-    protobuf_c_data_buffer_t outgoing;
+    /* writes from the other end are queued in incoming_write_closures
+     * and once they have been handled they get moved to
+     * finished_write_closures so the other end can free the closures
+     *
+     * TODO: allow pivoting these safely with atomic ops so we can use
+     * this mechanism between threads.
+     */
+    c_array_t *incoming_write_closures;
+    c_array_t *finished_write_closures;
 
-    pb_rpc__server_connection_t *conn;
-    pb_rpc__client_t *client;
+    /* Common */
+
+    rut_list_t on_connect_closures;
+    rut_list_t on_error_closures;
+
+    void (*read_callback)(rig_pb_stream_t *stream,
+                          uint8_t *buf,
+                          size_t len,
+                          void *user_data);
+    void *read_data;
 };
 
 rig_pb_stream_t *
 rig_pb_stream_new(rut_shell_t *shell);
 
-void
-rig_pb_stream_set_fd_transport(rig_pb_stream_t *stream, int fd);
+typedef void (*rig_pb_stream_callback_t)(rig_pb_stream_t *stream, void *user_data);
+
+rut_closure_t *
+rig_pb_stream_add_on_connect_callback(rig_pb_stream_t *stream,
+                                      rig_pb_stream_callback_t callback,
+                                      void *user_data,
+                                      rut_closure_destroy_callback_t destroy);
+
+rut_closure_t *
+rig_pb_stream_add_on_error_callback(rig_pb_stream_t *stream,
+                                    rig_pb_stream_callback_t callback,
+                                    void *user_data,
+                                    rut_closure_destroy_callback_t destroy);
 
 #ifdef USE_UV
 void
-rig_pb_stream_set_uv_streams_transport(rig_pb_stream_t *stream,
-                                       uv_stream_t *in_stream,
-                                       uv_stream_t *out_stream);
+rig_pb_stream_set_fd_transport(rig_pb_stream_t *stream, int fd);
 #endif
 
 /* So we can support having both ends of a connection in the same
@@ -100,5 +134,21 @@ rig_pb_stream_set_uv_streams_transport(rig_pb_stream_t *stream,
 void
 rig_pb_stream_set_in_thread_direct_transport(rig_pb_stream_t *stream,
                                              rig_pb_stream_t *other_end);
+
+
+void
+rig_pb_stream_set_read_callback(rig_pb_stream_t *stream,
+                                void (*read_callback)(rig_pb_stream_t *stream,
+                                                      uint8_t *buf,
+                                                      size_t len,
+                                                      void *user_data),
+                                void *user_data);
+
+void
+rig_pb_stream_write(rig_pb_stream_t *stream,
+                    rig_pb_stream_write_closure_t *closure);
+
+void
+rig_pb_stream_disconnect(rig_pb_stream_t *stream);
 
 #endif

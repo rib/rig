@@ -78,6 +78,7 @@
 #include "rut-poll.h"
 #include "rut-texture-cache.h"
 #include "rut-settings.h"
+#include "rut-closure.h"
 
 
 #ifdef RUT_EDITOR_ENABLED

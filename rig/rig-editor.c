@@ -110,6 +110,8 @@ struct _rig_editor_t {
 
     rut_adb_device_tracker_t *adb_tracker;
     int next_forward_port;
+
+    c_list_t *slave_masters;
 };
 
 static void
@@ -909,8 +911,7 @@ add_matching_entity_cb(rut_object_t *object, int depth, void *user_data)
             state->found = true;
             add_search_result(state->engine, entity);
         } else if (entity->label && strncmp(entity->label, "rig:", 4) != 0) {
-            char *entity_label = c_ascii_strdown(entity->label, -1);
-#warning "FIXME: handle utf8 string comparisons!"
+            char *entity_label = c_utf8_strdown(entity->label, -1);
 
             if (strstr(entity_label, state->search)) {
                 state->found = true;
@@ -927,8 +928,7 @@ static void
 add_matching_controller(rig_controller_t *controller,
                         search_state_t *state)
 {
-    char *controller_label = c_ascii_strdown(controller->label, -1);
-#warning "FIXME: handle utf8 string comparisons!"
+    char *controller_label = c_utf8_strdown(controller->label, -1);
 
     if (state->search == NULL || strstr(controller_label, state->search)) {
         state->found = true;
@@ -1004,10 +1004,9 @@ rig_search_with_text(rig_engine_t *engine, const char *user_search)
     char *search;
 
     if (user_search)
-        search = c_ascii_strdown(user_search, -1);
+        search = c_utf8_strdown(user_search, -1);
     else
         search = NULL;
-#warning "FIXME: handle non-ascii searches!"
 
     rig_editor_clear_search_results(editor);
 
@@ -1521,18 +1520,54 @@ load_gradient_image(rut_shell_t *shell,
 }
 
 static void
-connect_pressed_cb(rut_icon_button_t *button, void *user_data)
+on_slave_connect_cb(rig_slave_master_t *slave_master,
+                    void *user_data)
 {
-    rig_engine_t *engine = user_data;
-    c_list_t *l;
+    //rig_editor_t *editor = user_data;
 
-    for (l = engine->slave_addresses; l; l = l->next)
-        rig_connect_to_slave(engine, l->data);
+    /* TODO: update the UI in some way to indicate the connection */
 }
 
 static void
-create_top_bar(rig_engine_t *engine)
+on_slave_error_cb(rig_slave_master_t *slave_master,
+                  void *user_data)
 {
+    rig_editor_t *editor = user_data;
+
+    editor->slave_masters = c_list_remove(editor->slave_masters, slave_master);
+    rut_object_unref(slave_master);
+}
+
+static void
+connect_pressed_cb(rut_icon_button_t *button, void *user_data)
+{
+    rig_editor_t *editor = user_data;
+    rig_engine_t *engine = editor->engine;
+    c_list_t *l;
+
+    /* TODO: move engine->slave_addresses to editor->slave_addresses */
+    for (l = engine->slave_addresses; l; l = l->next) {
+        rig_slave_master_t *slave_master =
+            rig_slave_master_new(engine, l->data);
+
+        editor->slave_masters = c_list_prepend(editor->slave_masters, slave_master);
+
+        rig_slave_master_add_on_connect_callback(slave_master,
+                                                 on_slave_connect_cb,
+                                                 editor,
+                                                 NULL); /* destroy notify */
+
+        rig_slave_master_add_on_error_callback(slave_master,
+                                               on_slave_error_cb,
+                                               editor,
+                                               NULL); /* destroy notify */
+    }
+}
+
+static void
+create_top_bar(rig_editor_t *editor)
+{
+    rig_engine_t *engine = editor->engine;
     rut_stack_t *top_bar_stack = rut_stack_new(engine->shell, 123, 0);
     rut_icon_button_t *connect_button =
         rut_icon_button_new(engine->shell,
@@ -1567,7 +1602,7 @@ create_top_bar(rig_engine_t *engine)
 
     rut_icon_button_add_on_click_callback(connect_button,
                                           connect_pressed_cb,
-                                          engine,
+                                          editor,
                                           NULL); /* destroy callback */
     rut_box_layout_add(engine->top_bar_hbox_ltr, false, connect_button);
     rut_object_unref(connect_button);
@@ -2114,7 +2149,7 @@ create_ui(rig_editor_t *editor)
 
     engine->top_vbox =
         rut_box_layout_new(engine->shell, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
-    create_top_bar(engine);
+    create_top_bar(editor);
 
     /* FIXME: originally I'd wanted to make this a RIGHT_TO_LEFT box
      * layout but it didn't work so I guess I guess there is a bug
@@ -2162,7 +2197,6 @@ handle_edit_operations(rig_editor_t *editor,
                        rig_pb_serializer_t *serializer,
                        Rig__FrameSetup *pb_frame_setup)
 {
-    rig_engine_t *engine = editor->engine;
     Rig__UIEdit *play_edits;
     c_list_t *l;
 
@@ -2209,7 +2243,7 @@ handle_edit_operations(rig_editor_t *editor,
     }
 
     /* Forward edits to all slaves... */
-    for (l = engine->slave_masters; l; l = l->next)
+    for (l = editor->slave_masters; l; l = l->next)
         rig_slave_master_forward_pb_ui_edit(l->data, pb_frame_setup->edit);
 
     rut_queue_clear(editor->edit_ops);

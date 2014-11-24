@@ -49,12 +49,16 @@ handle_load_response(const Rig__LoadResult *result,
     c_debug("UI loaded by slave\n");
 }
 
-void
-slave_master_connected(pb_rpc__client_t *pb_client, void *user_data)
+static void
+master_peer_connected(rig_pb_rpc_client_t *pb_client, void *user_data)
 {
     rig_slave_master_t *master = user_data;
 
     master->connected = true;
+
+    rut_closure_list_invoke(&master->on_connect_closures,
+                            rig_slave_master_connected_func_t,
+                            master);
 
     rig_slave_master_reload_ui(master);
 
@@ -62,44 +66,59 @@ slave_master_connected(pb_rpc__client_t *pb_client, void *user_data)
 }
 
 static void
-destroy_slave_master(rig_slave_master_t *master)
+master_stop_service(rig_slave_master_t *master)
 {
-    rig_engine_t *engine = master->engine;
-
-    if (!master->rpc_client)
-        return;
-
-    rig_rpc_client_disconnect(master->rpc_client);
-    rut_object_unref(master->rpc_client);
-    master->rpc_client = NULL;
+    rut_object_unref(master->peer);
+    master->peer = NULL;
+    rut_object_unref(master->stream);
+    master->stream = NULL;
 
     master->connected = false;
 
-    engine->slave_masters = c_list_remove(engine->slave_masters, master);
-
-    rut_object_unref(master);
+    rut_closure_list_invoke(&master->on_error_closures,
+                            rig_slave_master_error_func_t,
+                            master);
 }
 
 static void
-client_error_handler(PB_RPC_Error_Code code,
-                     const char *message,
-                     void *user_data)
+master_peer_error_handler(rig_pb_rpc_error_code_t code,
+                          const char *message,
+                          void *user_data)
 {
     rig_slave_master_t *master = user_data;
 
-    c_return_if_fail(master->rpc_client);
+    c_warning("Slave connection error: %s", message);
 
-    c_warning("RPC Client error: %s", message);
-
-    destroy_slave_master(master);
+    master_stop_service(master);
 }
+
+static void
+master__forward_log(Rig__SlaveMaster_Service *service,
+                    const Rig__Log *pb_log,
+                    Rig__LogAck_Closure closure,
+                    void *closure_data)
+{
+    Rig__LogAck ack = RIG__LOG_ACK__INIT;
+    //rig_slave_master_t *master =
+    //    rig_pb_rpc_closure_get_connection_data(closure_data);
+
+#warning "TODO: handle logs forwarded from a slave device"
+
+    closure(&ack, closure_data);
+}
+
+static Rig__SlaveMaster_Service rig_slave_master_service =
+    RIG__SLAVE_MASTER__INIT(master__);
 
 static void
 _rig_slave_master_free(void *object)
 {
     rig_slave_master_t *master = object;
 
-    destroy_slave_master(master);
+    master_stop_service(master);
+
+    rut_closure_list_disconnect_all(&master->on_connect_closures);
+    rut_closure_list_disconnect_all(&master->on_error_closures);
 
     rut_object_free(rig_slave_master_t, master);
 }
@@ -113,7 +132,34 @@ _rig_slave_master_init_type(void)
         &rig_slave_master_type, C_STRINGIFY(TYPE), _rig_slave_master_free);
 }
 
-static rig_slave_master_t *
+static void
+start_connect_on_idle_cb(void *user_data)
+{
+    rig_slave_master_t *master = user_data;
+    int fd;
+
+    rut_poll_shell_remove_idle(master->engine->shell, master->connect_idle);
+    master->connect_idle = NULL;
+
+    /* XXX: The plan is add tcp support back after switching the rpc
+     * layer over to using libuv streams. */
+#warning "FIXME: restore ability to connect to slaves via tcp"
+    fd = rut_os_connect_to_abstract_socket("rig-slave");
+    if (fd != -1) {
+        master->stream = rig_pb_stream_new(master->engine->shell);
+        rig_pb_stream_set_fd_transport(master->stream, fd);
+
+        master->peer = rig_rpc_peer_new(
+            master->stream,
+            &rig_slave_master_service.base,
+            (ProtobufCServiceDescriptor *)&rig__slave__descriptor,
+            master_peer_error_handler,
+            master_peer_connected,
+            master);
+    }
+}
+
+rig_slave_master_t *
 rig_slave_master_new(rig_engine_t *engine, rig_slave_address_t *slave_address)
 {
     rig_slave_master_t *master = rut_object_alloc0(rig_slave_master_t,
@@ -121,6 +167,9 @@ rig_slave_master_new(rig_engine_t *engine, rig_slave_address_t *slave_address)
                                                    _rig_slave_master_init_type);
 
     master->engine = engine;
+
+    rut_list_init(&master->on_connect_closures);
+    rut_list_init(&master->on_error_closures);
 
     master->slave_address = rut_object_ref(slave_address);
 
@@ -151,33 +200,48 @@ rig_slave_master_new(rig_engine_t *engine, rig_slave_address_t *slave_address)
         }
 
         /* Give the app a bit of time to start before trying to connect... */
+        /* FIXME: don't sleep synchronously here!
+         * TODO: implement a rut_poll_shell_add_timeout api
+         */
         spec.tv_sec = 0;
         spec.tv_nsec = 500000000;
         nanosleep(&spec, NULL);
     }
 
-    master->rpc_client = rig_rpc_client_new(
-        engine->shell,
-        slave_address->hostname,
-        slave_address->port,
-        (ProtobufCServiceDescriptor *)&rig__slave__descriptor,
-        client_error_handler,
-        slave_master_connected,
-        master);
-
-    master->connected = false;
+    /* Defer starting to connect to an idle handler to give an
+     * opportunity to register on_connect and on_error callbacks
+     */
+    master->connect_idle =
+        rut_poll_shell_add_idle(engine->shell,
+                                start_connect_on_idle_cb,
+                                master,
+                                NULL); /* destroy */
 
     return master;
 }
 
-void
-rig_connect_to_slave(rig_engine_t *engine,
-                     rig_slave_address_t *slave_address)
+rut_closure_t *
+rig_slave_master_add_on_connect_callback(rig_slave_master_t *master,
+                                         rig_slave_master_connected_func_t callback,
+                                         void *user_data,
+                                         rut_closure_destroy_callback_t destroy)
 {
-    rig_slave_master_t *slave_master =
-        rig_slave_master_new(engine, slave_address);
+    return rut_closure_list_add(&master->on_connect_closures,
+                                callback,
+                                user_data,
+                                destroy);
+}
 
-    engine->slave_masters = c_list_prepend(engine->slave_masters, slave_master);
+rut_closure_t *
+rig_slave_master_add_on_error_callback(rig_slave_master_t *master,
+                                       rig_slave_master_error_func_t callback,
+                                       void *user_data,
+                                       rut_closure_destroy_callback_t destroy)
+{
+    return rut_closure_list_add(&master->on_error_closures,
+                                callback,
+                                user_data,
+                                destroy);
 }
 
 void
@@ -186,7 +250,7 @@ rig_slave_master_reload_ui(rig_slave_master_t *master)
     rig_pb_serializer_t *serializer;
     rig_engine_t *engine = master->engine;
     ProtobufCService *service =
-        rig_pb_rpc_client_get_service(master->rpc_client->pb_rpc_client);
+        rig_pb_rpc_client_get_service(master->peer->pb_rpc_client);
     Rig__UI *pb_ui;
 
     if (!master->connected)
@@ -222,7 +286,7 @@ rig_slave_master_forward_pb_ui_edit(rig_slave_master_t *master,
                                     Rig__UIEdit *pb_ui_edit)
 {
     ProtobufCService *service =
-        rig_pb_rpc_client_get_service(master->rpc_client->pb_rpc_client);
+        rig_pb_rpc_client_get_service(master->peer->pb_rpc_client);
 
     if (!master->connected)
         return;

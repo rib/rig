@@ -432,7 +432,7 @@ handle_frontend_test_response(const Rig__TestResult *result,
 }
 
 static void
-simulator_peer_connected(pb_rpc__client_t *pb_client,
+simulator_peer_connected(rig_pb_rpc_client_t *pb_client,
                          void *user_data)
 {
     ProtobufCService *frontend_service =
@@ -456,7 +456,7 @@ simulator_stop_service(rig_simulator_t *simulator)
 }
 
 static void
-simulator_peer_error_handler(PB_RPC_Error_Code code,
+simulator_peer_error_handler(rig_pb_rpc_error_code_t code,
                              const char *message,
                              void *user_data)
 {

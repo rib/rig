@@ -1,13 +1,8 @@
 rig_protobuf_c_rpc_sources = \
-	protobuf-c-rpc/rig-protobuf-c-dispatch.h \
-	protobuf-c-rpc/rig-protobuf-c-dispatch.c \
-	protobuf-c-rpc/rig-protobuf-c-data-buffer.h \
-	protobuf-c-rpc/rig-protobuf-c-data-buffer.c \
 	protobuf-c-rpc/rig-protobuf-c-stream.h \
 	protobuf-c-rpc/rig-protobuf-c-stream.c \
 	protobuf-c-rpc/rig-protobuf-c-rpc.h \
-	protobuf-c-rpc/rig-protobuf-c-rpc.c \
-	protobuf-c-rpc/gsklistmacros.h
+	protobuf-c-rpc/rig-protobuf-c-rpc.c
 
 rig_common_sources = \
 	$(rig_protobuf_c_rpc_sources) \

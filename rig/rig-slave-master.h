@@ -44,14 +44,40 @@ typedef struct _rig_slave_master_t {
     rig_engine_t *engine;
 
     rig_slave_address_t *slave_address;
-    rig_rpc_client_t *rpc_client;
+
+    rig_pb_stream_t *stream;
+    rig_rpc_peer_t *peer;
     bool connected;
+
+    rut_list_t on_connect_closures;
+    rut_list_t on_error_closures;
+
+    rut_closure_t *connect_idle;
+
     c_hash_table_t *registry;
 
 } rig_slave_master_t;
 
-void rig_connect_to_slave(rig_engine_t *engine,
-                          rig_slave_address_t *slave_address);
+rig_slave_master_t *
+rig_slave_master_new(rig_engine_t *engine, rig_slave_address_t *slave_address);
+
+typedef void (*rig_slave_master_connected_func_t)(rig_slave_master_t *master,
+                                                  void *user_data);
+
+rut_closure_t *
+rig_slave_master_add_on_connect_callback(rig_slave_master_t *master,
+                                         rig_slave_master_connected_func_t callback,
+                                         void *user_data,
+                                         rut_closure_destroy_callback_t destroy);
+
+typedef void (*rig_slave_master_error_func_t)(rig_slave_master_t *master,
+                                              void *user_data);
+
+rut_closure_t *
+rig_slave_master_add_on_error_callback(rig_slave_master_t *master,
+                                       rig_slave_master_error_func_t callback,
+                                       void *user_data,
+                                       rut_closure_destroy_callback_t destroy);
 
 void rig_slave_master_reload_ui(rig_slave_master_t *master);
 

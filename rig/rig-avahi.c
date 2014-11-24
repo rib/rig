@@ -144,7 +144,7 @@ create_service(rig_engine_t *engine)
                                             "_rig._tcp",
                                             NULL,
                                             NULL,
-                                            engine->slave_service->port,
+                                            rig_rpc_peer_get_port(engine->slave_service),
                                             "version=1.0",
                                             user_name,
                                             NULL);

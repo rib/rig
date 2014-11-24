@@ -320,46 +320,59 @@ slave__debug_control(Rig__Slave_Service *service,
 static Rig__Slave_Service rig_slave_service = RIG__SLAVE__INIT(slave__);
 
 static void
-client_close_handler(pb_rpc__server_connection_t *conn,
-                     void *user_data)
-{
-    c_warning("slave master disconnected %p", conn);
-}
-
-static void
-new_client_handler(pb_rpc__server_t *server,
-                   pb_rpc__server_connection_t *conn,
-                   void *user_data)
-{
-    rig_slave_t *slave = user_data;
-    // rig_engine_t *engine = slave->engine;
-
-    rig_pb_rpc_server_connection_set_close_handler(
-        conn, client_close_handler, slave);
-
-    rig_pb_rpc_server_connection_set_data(conn, slave);
-
-    c_message("slave master connected %p", conn);
-}
-
-static void
-server_error_handler(PB_RPC_Error_Code code,
-                     const char *message,
+slave_peer_connected(rig_pb_rpc_client_t *pb_client,
                      void *user_data)
 {
     rig_slave_t *slave = user_data;
-    rig_engine_t *engine = slave->engine;
 
-    c_warning("Server error: %s", message);
+    slave->connected = true;
 
-#ifdef USE_AVAHI
-    rig_avahi_unregister_service(engine);
+#if 0
+    if (slave->editor_connected_callback) {
+        void *user_data = slave->editor_connected_data;
+        slave->editor_connected_callback(user_data);
+    }
 #endif
 
-    rig_rpc_server_shutdown(engine->slave_service);
+    c_debug("Slave peer connected\n");
+}
 
-    rut_object_unref(engine->slave_service);
-    engine->slave_service = NULL;
+static void
+slave_stop_service(rig_slave_t *slave)
+{
+    rut_object_unref(slave->slave_peer);
+    slave->slave_peer = NULL;
+    rut_object_unref(slave->stream);
+    slave->stream = NULL;
+
+    slave->connected = false;
+}
+
+static void
+slave_peer_error_handler(rig_pb_rpc_error_code_t code,
+                         const char *message,
+                         void *user_data)
+{
+    rig_slave_t *slave = user_data;
+
+    c_warning("Slave peer error: %s", message);
+
+    slave_stop_service(slave);
+}
+
+static void
+slave_start_service(rut_shell_t *shell,
+                    rig_slave_t *slave,
+                    rig_pb_stream_t *stream)
+{
+    slave->stream = rut_object_ref(stream);
+    slave->slave_peer = rig_rpc_peer_new(
+        stream,
+        &rig_slave_service.base,
+        (ProtobufCServiceDescriptor *)&rig__slave_master__descriptor,
+        slave_peer_error_handler,
+        slave_peer_connected,
+        slave);
 }
 
 static uint64_t
@@ -369,12 +382,77 @@ map_edit_id_to_play_object_cb(uint64_t edit_id, void *user_data)
     return (uint64_t)(uintptr_t)play_object;
 }
 
+#ifdef linux
+static void
+handle_connect_cb(void *user_data, int listen_fd, int revents)
+{
+    rig_slave_t *slave = user_data;
+    struct sockaddr addr;
+    socklen_t addr_len = sizeof(addr);
+    int fd;
+
+    c_return_if_fail(revents & RUT_POLL_FD_EVENT_IN);
+
+    c_message("Editor connect request received!");
+
+    if (slave->connected) {
+        c_warning("Ignoring editor connection while there's already one connected");
+        return;
+    }
+
+    fd = accept(slave->listen_fd, &addr, &addr_len);
+    if (fd != -1) {
+        rig_pb_stream_t *stream = rig_pb_stream_new(slave->engine->shell);
+
+        rig_pb_stream_set_fd_transport(stream, fd);
+
+        c_message("Editor connected!");
+
+        slave_start_service(slave->engine->shell, slave, stream);
+
+        /* slave_start_service will take ownership of the stream */
+        rut_object_unref(stream);
+    } else
+        c_message("Failed to accept editor connection: %s!",
+                  strerror(errno));
+}
+
+static bool
+bind_to_abstract_socket(rut_shell_t *shell,
+                        const char *name,
+                        rig_slave_t *slave)
+{
+    rut_exception_t *catch = NULL;
+    int fd = rut_os_listen_on_abstract_socket(name, &catch);
+
+    if (fd < 0) {
+        c_critical("Failed to listen on abstract \"%s\" socket: %s",
+                   name,
+                   catch->message);
+        return false;
+    }
+
+    slave->listen_fd = fd;
+
+    rut_poll_shell_add_fd(shell,
+                          slave->listen_fd,
+                          RUT_POLL_FD_EVENT_IN,
+                          NULL, /* prepare */
+                          handle_connect_cb, /* dispatch */
+                          slave);
+
+    c_message("Waiting for simulator to connect to abstract socket \"%s\"...",
+              name);
+
+    return true;
+}
+#endif /* linux */
+
 static void
 rig_slave_init(rut_shell_t *shell, void *user_data)
 {
     rig_slave_t *slave = user_data;
     rig_engine_t *engine;
-    int listening_fd;
 
     slave->ui_update_closure = NULL;
 
@@ -410,20 +488,15 @@ rig_slave_init(rut_shell_t *shell, void *user_data)
     slave->pending_edits = rut_queue_new();
 
 #ifdef __ANDROID__
-    listening_fd = rut_os_listen_on_abstract_socket("rig-slave", NULL);
+    bind_to_abstract_socket(engine->shell, "rig-slave", slave);
 #else
-    listening_fd = rut_os_listen_on_tcp_socket(0, NULL);
+#warning "FIXME: re-enable tcp based transport for slaves + ZeroConf"
+    /* The plan is to re-add tcp support once we've switched over to
+     * using libuv streams for rpc transport */
+    bind_to_abstract_socket(engine->shell, "rig-slave", slave);
 #endif
 
-    engine->slave_service = rig_rpc_server_new(engine->shell,
-                                               "Slave",
-                                               listening_fd,
-                                               &rig_slave_service.base,
-                                               server_error_handler,
-                                               new_client_handler,
-                                               slave);
-
-#ifdef USE_AVAHI
+#if 0 //def USE_AVAHI
     rig_avahi_register_service(engine);
 #endif
 
@@ -435,8 +508,15 @@ static void
 rig_slave_fini(rut_shell_t *shell, void *user_data)
 {
     rig_slave_t *slave = user_data;
-    rig_engine_t *engine = slave->engine;
+    //rig_engine_t *engine = slave->engine;
     rut_queue_item_t *item;
+
+    slave_stop_service(slave);
+
+#if 0 //def USE_AVAHI
+    /* TODO: move to frontend */
+    rig_avahi_unregister_service(engine);
+#endif
 
     if (slave->ui_update_closure) {
         rut_closure_disconnect(slave->ui_update_closure);
@@ -449,13 +529,6 @@ rig_slave_fini(rut_shell_t *shell, void *user_data)
 
     rig_engine_op_map_context_destroy(&slave->map_op_ctx);
     rig_engine_op_apply_context_destroy(&slave->apply_op_ctx);
-
-#ifdef USE_AVAHI
-    /* TODO: move to frontend */
-    rig_avahi_unregister_service(engine);
-#endif
-
-    rig_rpc_server_shutdown(engine->slave_service);
 
     slave->engine = NULL;
 

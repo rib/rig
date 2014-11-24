@@ -286,7 +286,7 @@ struct _rig_engine_t {
 #endif
     rig_simulator_t *simulator; /* NULL if engine not acting as a simulator */
 
-    rig_rpc_server_t *slave_service;
+    rig_rpc_peer_t *slave_service;
 
 #ifdef USE_AVAHI
     const AvahiPoll *avahi_poll_api;
@@ -296,9 +296,8 @@ struct _rig_engine_t {
     AvahiServiceBrowser *avahi_browser;
 #endif
 
+    /* TODO: move to rig_editor_t */
     c_list_t *slave_addresses;
-
-    c_list_t *slave_masters;
 
     rig_ui_t *edit_mode_ui;
     rig_ui_t *play_mode_ui;
