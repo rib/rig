@@ -255,7 +255,7 @@ c_shell_unquote(const char *quoted_string, c_error_t **error)
 
 #if JOINT_TEST
 /*
- * This test is designed to be built with the 2 glib/eglib to compare
+ * This test is designed to be built with the 2 glib/cglib to compare
  */
 
 char *args[] = {

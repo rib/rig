@@ -1,5 +1,5 @@
 /*
- * ghashtable.c: Hashtable implementation
+ * Hashtable implementation
  *
  * Author:
  *   Miguel de Icaza (miguel@novell.com)

@@ -1,5 +1,5 @@
 /*
- * gslist.c: Singly-linked list implementation
+ * Singly-linked list implementation
  *
  * Authors:
  *   Duncan Mak (duncan@novell.com)

@@ -1,5 +1,5 @@
 /*
- * gdate-unix.c: Date and time utility functions.
+ * Date and time utility functions.
  *
  * Author:
  *   Gonzalo Paniagua Javier (gonzalo@novell.com

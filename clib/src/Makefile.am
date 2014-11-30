@@ -12,7 +12,6 @@ unix_files = \
 	cmodule-unix.c ctimer-unix.c
 
 # some unices and windows do not have an implementation of vasprintf
-# used by eglib, use provided implementation instead
 if NEED_VASPRINTF
 vasprintf_files = vasprintf.c
 endif

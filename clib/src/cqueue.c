@@ -1,5 +1,5 @@
 /*
- * gqueue.c: Queue
+ * Queue
  *
  * Author:
  *   Duncan Mak (duncan@novell.com)

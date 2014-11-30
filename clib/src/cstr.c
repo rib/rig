@@ -1,5 +1,5 @@
 /*
- * gstr.c: String Utility Functions.
+ * String Utility Functions.
  *
  * Author:
  *   Miguel de Icaza (miguel@novell.com)
@@ -573,7 +573,7 @@ c_filename_to_uri(const char *filename, const char *hostname, c_error_t **error)
     c_return_val_if_fail(filename != NULL, NULL);
 
     if (hostname != NULL)
-        c_warning("%s", "eglib: c_filename_to_uri: hostname not handled");
+        c_warning("%s", "c_filename_to_uri: hostname not handled");
 
     if (!c_path_is_absolute(filename)) {
         if (error != NULL) {
@@ -641,7 +641,7 @@ c_filename_from_uri(const char *uri, char **hostname, c_error_t **error)
     c_return_val_if_fail(uri != NULL, NULL);
 
     if (hostname != NULL)
-        c_warning("%s", "eglib: c_filename_from_uri: hostname not handled");
+        c_warning("%s", "c_filename_from_uri: hostname not handled");
 
     if (strncmp(uri, "file:///", 8) != 0) {
         if (error != NULL) {

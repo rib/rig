@@ -1,5 +1,5 @@
 /*
- * gerror.c: Error support.
+ * Error support.
  *
  * Author:
  *   Miguel de Icaza (miguel@novell.com)

@@ -1,5 +1,5 @@
 /*
- * glist.c: Doubly-linked list implementation
+ * Doubly-linked list implementation
  *
  * Authors:
  *   Duncan Mak (duncan@novell.com)

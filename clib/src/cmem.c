@@ -1,5 +1,5 @@
 /*
- * gmem.c: memory utility functions
+ * memory utility functions
  *
  * Author:
  *      Gonzalo Paniagua Javier (gonzalo@novell.com)

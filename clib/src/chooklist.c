@@ -1,5 +1,5 @@
 /*
- * ghooklist.c: API for manipulating a list of hook functions
+ * API for manipulating a list of hook functions
  *
  * Copyright (C) 2014 Intel Corporation.
  *

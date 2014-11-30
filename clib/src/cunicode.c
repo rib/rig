@@ -1,5 +1,5 @@
 /*
- * gunicode.c: Some Unicode routines
+ * Some Unicode routines
  *
  * Author:
  *   Miguel de Icaza (miguel@novell.com)
@@ -195,8 +195,7 @@ c_codepoint_isspace(c_codepoint_t c)
 }
 
 /*
- * This is broken, and assumes an UTF8 system, but will do for eglib's first
- * user
+ * FIXME: This is broken, and assumes an UTF8 system
  */
 char *
 c_filename_from_utf8(const char *utf8string,

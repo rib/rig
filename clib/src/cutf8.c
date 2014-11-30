@@ -1,5 +1,5 @@
 /*
- * gutf8.c: UTF-8 conversion
+ * UTF-8 conversion
  *
  * Author:
  *   Atsushi Enomoto  <atsushi@ximian.com>

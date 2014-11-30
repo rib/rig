@@ -1,5 +1,5 @@
 /*
- * gmisc.c: Misc functions with no place to go (right now)
+ * Misc functions with no place to go (right now)
  *
  * Author:
  *   Aaron Bockover (abockover@novell.com)
