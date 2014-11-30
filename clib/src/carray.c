@@ -52,9 +52,9 @@ ensure_capacity(c_array_priv_t *priv, unsigned int capacity)
     if (capacity <= priv->capacity)
         return;
 
-    for (new_capacity = MAX(INITIAL_CAPACITY, priv->capacity * 2);
+    for (new_capacity = MAX(INITIAL_CAPACITY, priv->capacity * 1.5);
          new_capacity < capacity;
-         new_capacity *= 2)
+         new_capacity *= 1.5)
         ;
 
     priv->array.data =
