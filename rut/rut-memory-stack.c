@@ -131,7 +131,7 @@ _rut_memory_stack_alloc_in_next_sub_stack(rut_memory_stack_t *stack,
 
     sub_stack = rut_container_of(stack->sub_stacks.prev, sub_stack, list_node);
 
-    rut_memory_stack_add_sub_stack(stack, MAX(sub_stack->bytes, bytes) * 2);
+    rut_memory_stack_add_sub_stack(stack, MAX(sub_stack->bytes, bytes) * 1.5);
 
     sub_stack = rut_container_of(stack->sub_stacks.prev, sub_stack, list_node);
 
