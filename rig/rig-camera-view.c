@@ -1497,8 +1497,8 @@ pick(rig_camera_view_t *view,
 #if 0
     if (pick_ctx.selected_entity)
     {
-        g_message ("Hit entity, triangle #%d, distance %.2f",
-                   pick_ctx.selected_index, pick_ctx.selected_distance);
+        c_message("Hit entity, triangle #%d, distance %.2f",
+                  pick_ctx.selected_index, pick_ctx.selected_distance);
     }
 #endif
 

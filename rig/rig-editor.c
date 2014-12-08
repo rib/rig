@@ -2526,7 +2526,7 @@ adb_devices_cb(const char **serials, int n_devices, void *user_data)
 
     editor->next_forward_port = 64872;
 
-    g_message("ADB devices update:");
+    c_message("ADB devices update:");
     for (i = 0; i < n_devices; i++) {
         rig_slave_address_t *slave_address;
         char *model = rut_adb_getprop(serials[i], "ro.product.model", &catch);
@@ -2552,7 +2552,7 @@ adb_devices_cb(const char **serials, int n_devices, void *user_data)
         engine->slave_addresses =
             c_list_prepend(engine->slave_addresses, slave_address);
 
-        g_message("  serial=%s model=\"%s\" abi=%s/%s local port=%d",
+        c_message("  serial=%s model=\"%s\" abi=%s/%s local port=%d",
                   serials[i],
                   model,
                   abi,

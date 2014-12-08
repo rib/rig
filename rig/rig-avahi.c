@@ -59,7 +59,7 @@ entry_group_callback(AvahiEntryGroup *group,
     case AVAHI_ENTRY_GROUP_ESTABLISHED:
 
         /* The entry group has been established successfully */
-        g_message("Service '%s' successfully established.\n",
+        c_message("Service '%s' successfully established.\n",
                   engine->avahi_service_name);
         break;
 
@@ -134,7 +134,7 @@ create_service(rig_engine_t *engine)
 
         user_name = c_strconcat("user=", user, NULL);
 
-        g_message("Adding Avahi service '%s'\n", engine->avahi_service_name);
+        c_message("Adding Avahi service '%s'\n", engine->avahi_service_name);
 
         ret = avahi_entry_group_add_service(engine->avahi_group,
                                             AVAHI_IF_UNSPEC,
@@ -209,7 +209,7 @@ service_client_callback(AvahiClient *client,
 
     case AVAHI_CLIENT_FAILURE:
 
-        g_message("Avahi client failure: %s",
+        c_message("Avahi client failure: %s",
                   avahi_strerror(avahi_client_errno(client)));
 
         /* XXX: what should we do?
@@ -325,12 +325,12 @@ resolve_callback(AvahiServiceResolver *resolver,
         rig_slave_address_t *slave_address;
         c_list_t *l;
 
-        g_message(
+        c_message(
             "Service '%s' of type '%s' in domain '%s':\n", name, type, domain);
 
         avahi_address_snprint(a, sizeof(a), address);
         t = avahi_string_list_to_string(txt);
-        g_message("\t%s:%u (%s)\n"
+        c_message("\t%s:%u (%s)\n"
                   "\tTXT=%s\n"
                   "\tcookie is %u\n"
                   "\tis_local: %i\n"
@@ -389,7 +389,7 @@ browse_callback(AvahiServiceBrowser *browser,
 
     case AVAHI_BROWSER_NEW:
 
-        g_message("(Browser) NEW: service '%s' of type '%s' in domain '%s'\n",
+        c_message("(Browser) NEW: service '%s' of type '%s' in domain '%s'\n",
                   name,
                   type,
                   domain);
@@ -425,7 +425,7 @@ browse_callback(AvahiServiceBrowser *browser,
                 rut_object_unref(slave_address);
                 engine->slave_addresses =
                     c_list_remove_link(engine->slave_addresses, l);
-                g_message("(Browser) REMOVE: service '%s' of type '%s' "
+                c_message("(Browser) REMOVE: service '%s' of type '%s' "
                           "in domain '%s'\n",
                           name,
                           type,
@@ -438,7 +438,7 @@ browse_callback(AvahiServiceBrowser *browser,
 
     case AVAHI_BROWSER_ALL_FOR_NOW:
     case AVAHI_BROWSER_CACHE_EXHAUSTED:
-        g_message("(Browser) %s\n",
+        c_message("(Browser) %s\n",
                   event == AVAHI_BROWSER_CACHE_EXHAUSTED ? "CACHE_EXHAUSTED"
                   : "ALL_FOR_NOW");
         break;
