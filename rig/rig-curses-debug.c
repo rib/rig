@@ -128,7 +128,7 @@ print_message(WINDOW *log_window,
     }
 
     wattrset(log_window, color_pair);
-    wbkgd(log_window, color_pair);
+    wbkgdset(log_window, color_pair);
 
     for (run = message;
          *n_lines < max_lines && run && run[0] != '\0';
