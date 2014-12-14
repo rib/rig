@@ -40,6 +40,8 @@ typedef struct _rig_editor_t rig_editor_t;
 
 #include "rig.pb-c.h"
 
+extern c_list_t *rig_editor_slave_address_options;
+
 extern rut_type_t rig_editor_type;
 
 rig_editor_t *rig_editor_new(const char *filename);

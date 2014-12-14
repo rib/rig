@@ -113,4 +113,6 @@ void rig_simulator_print_mappings(rig_simulator_t *simulator);
 
 void rig_simulator_forward_log(rig_simulator_t *simulator);
 
+void rig_simulator_parse_option(const char *option, void (*usage)(void));
+
 #endif /* _RIG_SIMULATOR_H_ */

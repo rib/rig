@@ -107,6 +107,7 @@ create_service(rig_engine_t *engine)
     int ret;
 
     c_return_if_fail(client);
+    c_return_if_fail(engine->slave != NULL);
 
     /* If this is the first time we're called, let's create a new entry group if
      * necessary */
@@ -144,7 +145,7 @@ create_service(rig_engine_t *engine)
                                             "_rig._tcp",
                                             NULL,
                                             NULL,
-                                            rig_rpc_peer_get_port(engine->slave_service),
+                                            engine->slave->listening_port,
                                             "version=1.0",
                                             user_name,
                                             NULL);
@@ -358,7 +359,21 @@ resolve_callback(AvahiServiceResolver *resolver,
 
         for (l = engine->slave_addresses; l; l = l->next) {
             rig_slave_address_t *address = l->data;
-            c_debug("Slave = %s\n", address->hostname);
+
+            switch(address->type) {
+            case RIG_SLAVE_ADDRESS_TYPE_TCP:
+                c_debug("Slave = tcp:%s%d\n",
+                        address->tcp.hostname, address->tcp.port);
+                break;
+            case RIG_SLAVE_ADDRESS_TYPE_ADB_SERIAL:
+                c_debug("Slave = adb:%s (localhost:%d)\n",
+                        address->adb.serial, address->tcp.port);
+                break;
+            case RIG_SLAVE_ADDRESS_TYPE_ABSTRACT:
+                c_debug("Slave = abstract:%s\n",
+                        address->abstract.socket_name);
+                break;
+            }
         }
     }
     }

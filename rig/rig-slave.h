@@ -31,16 +31,44 @@
 
 #include <rut.h>
 
+typedef struct _rig_slave_t rig_slave_t;
+
 #include "rig-frontend.h"
 
-typedef struct _rig_slave_t {
+enum rig_slave_connect_mode {
+#ifdef USE_UV
+    RIG_SLAVE_CONNECT_MODE_TCP,
+#endif
+#ifdef linux
+    RIG_SLAVE_CONNECT_MODE_ABSTRACT_SOCKET,
+#endif
+};
+
+extern enum rig_slave_connect_mode rig_slave_connect_mode_option;
+
+#ifdef __linux__
+extern const char *rig_slave_abstract_socket_option;
+#endif
+
+extern const char *rig_slave_address_option;
+extern int rig_slave_port_option;
+
+struct _rig_slave_t {
     rut_object_base_t _base;
 
     rut_shell_t *shell;
 
 #ifdef linux
+    /* abstract socket */
     int listen_fd;
 #endif
+
+#ifdef USE_UV
+    uv_tcp_t listening_socket;
+    char *listening_address;
+    int listening_port;
+#endif
+
     rig_pb_stream_t *stream;
     rig_rpc_peer_t *slave_peer;
     bool connected;
@@ -67,8 +95,7 @@ typedef struct _rig_slave_t {
     const Rig__UI *pending_ui_load;
     Rig__LoadResult_Closure pending_ui_load_closure;
     void *pending_ui_load_closure_data;
-
-} rig_slave_t;
+};
 
 rig_slave_t *rig_slave_new(int width, int height, int scale);
 

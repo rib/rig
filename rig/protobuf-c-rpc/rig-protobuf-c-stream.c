@@ -53,12 +53,17 @@ drain_finished_write_closures(rig_pb_stream_t *stream)
 void
 rig_pb_stream_disconnect(rig_pb_stream_t *stream)
 {
-    switch(stream->type)
+    switch (stream->type)
     {
 #ifdef USE_UV
     case STREAM_TYPE_FD:
         uv_read_stop((uv_stream_t *)&stream->uv_fd_pipe);
         uv_close((uv_handle_t *)&stream->uv_fd_pipe,
+                 NULL /* closed callback */);
+        break;
+    case STREAM_TYPE_TCP:
+        uv_read_stop((uv_stream_t *)&stream->socket);
+        uv_close((uv_handle_t *)&stream->socket,
                  NULL /* closed callback */);
         break;
 #endif
@@ -95,6 +100,14 @@ rig_pb_stream_disconnect(rig_pb_stream_t *stream)
         }
         break;
     case STREAM_TYPE_DISCONNECTED:
+
+#ifdef USE_UV
+        if (stream->resolving)
+            uv_cancel((uv_req_t *)&stream->resolver);
+        if (stream->connecting)
+            uv_cancel((uv_req_t *)&stream->connection_request);
+#endif
+
         return;
     }
 
@@ -110,6 +123,11 @@ _stream_free(void *object)
 {
     rig_pb_stream_t *stream = object;
 
+    /* resolve and connect requests take a reference on the stream so
+     * we should never try and free a stream in these cases... */
+    c_return_if_fail(stream->resolving == false);
+    c_return_if_fail(stream->connecting == false);
+
     rig_pb_stream_disconnect(stream);
 
     if (stream->connect_idle) {
@@ -119,6 +137,9 @@ _stream_free(void *object)
 
     rut_closure_list_disconnect_all(&stream->on_connect_closures);
     rut_closure_list_disconnect_all(&stream->on_error_closures);
+
+    c_free(stream->hostname);
+    c_free(stream->port);
 
     c_slice_free(rig_pb_stream_t, stream);
 }
@@ -203,7 +224,166 @@ rig_pb_stream_set_fd_transport(rig_pb_stream_t *stream, int fd)
 
     set_connected(stream);
 }
-#endif
+
+static void
+on_connect(uv_connect_t *connection_request, int status)
+{
+    rig_pb_stream_t *stream = connection_request->data;
+
+    c_return_if_fail(stream->connecting);
+
+    stream->connecting = false;
+
+    if (status < 0) {
+        c_warning("Failed to connect to %s:%s - %s",
+                  stream->hostname,
+                  stream->port,
+                  uv_strerror(status));
+
+        rut_closure_list_invoke(&stream->on_error_closures,
+                                rig_pb_stream_callback_t,
+                                stream);
+        goto exit;
+    }
+
+    stream->type = STREAM_TYPE_TCP;
+    set_connected(stream);
+
+exit:
+    /* NB: we were at least keeping the stream alive while
+     * waiting for the connection request to finish... */
+    stream->connecting = false;
+    rut_object_unref(stream);
+}
+
+static void
+on_address_resolved(uv_getaddrinfo_t *resolver,
+                    int status,
+                    struct addrinfo *result)
+{
+    rig_pb_stream_t *stream = rut_container_of(resolver, stream, resolver);
+    uv_loop_t *loop = rut_uv_shell_get_loop(stream->shell);
+    char ip_address[17] = {'\0'};
+
+    c_return_if_fail(stream->resolving);
+
+    if (status < 0) {
+        c_warning("Failed to resolve slave address \"%s\": %s",
+                  stream->hostname, uv_strerror(status));
+
+        rut_closure_list_invoke(&stream->on_error_closures,
+                                rig_pb_stream_callback_t,
+                                stream);
+
+        /* NB: we were at least keeping the stream alive while
+         * waiting for the resolve request to finish... */
+        stream->resolving = false;
+        rut_object_unref(stream);
+
+        return;
+    }
+
+    uv_ip4_name((struct sockaddr_in*)result->ai_addr, ip_address, 16);
+    c_message("stream: Resolved address of \"%s\" = %s",
+              stream->hostname, ip_address);
+
+    uv_tcp_init(loop, &stream->socket);
+    stream->socket.data = stream;
+
+    /* NB: we took a reference to keep the stream alive while
+     * resolving the address, so conceptually we are now handing
+     * the reference over to keep the stream alive while waiting
+     * for it to connect... */
+    stream->resolving = false;
+    stream->connecting = true;
+
+    stream->connection_request.data = stream;
+    uv_tcp_connect(&stream->connection_request,
+                   &stream->socket,
+                   result->ai_addr,
+                   on_connect);
+
+    uv_freeaddrinfo(result);
+}
+
+void
+rig_pb_stream_set_tcp_transport(rig_pb_stream_t *stream,
+                                const char *hostname,
+                                const char *port)
+{
+    uv_loop_t *loop = rut_uv_shell_get_loop(stream->shell);
+    struct addrinfo hints;
+
+    c_return_if_fail(stream->type == STREAM_TYPE_DISCONNECTED);
+    c_return_if_fail(stream->hostname == NULL);
+    c_return_if_fail(stream->port == NULL);
+    c_return_if_fail(stream->resolving == false);
+
+    hints.ai_family = PF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
+    hints.ai_flags = 0;
+
+    stream->hostname = c_strdup(hostname);
+    stream->port = c_strdup(port);
+
+    rut_object_ref(stream); /* keep alive during resolve request */
+    stream->resolving = true;
+    uv_getaddrinfo(loop, &stream->resolver, on_address_resolved,
+                   hostname, port, &hints);
+}
+
+void
+rig_pb_stream_accept_tcp_connection(rig_pb_stream_t *stream,
+                                    uv_tcp_t *server)
+{
+    uv_loop_t *loop = rut_uv_shell_get_loop(stream->shell);
+    struct sockaddr name;
+    int namelen;
+    int err;
+
+    c_return_if_fail(stream->type == STREAM_TYPE_DISCONNECTED);
+    c_return_if_fail(stream->hostname == NULL);
+    c_return_if_fail(stream->port == NULL);
+    c_return_if_fail(stream->resolving == false);
+
+    uv_tcp_init(loop, &stream->socket);
+    stream->socket.data = stream;
+
+    err = uv_accept((uv_stream_t *)server, (uv_stream_t *)&stream->socket);
+    if (err != 0) {
+        c_warning("Failed to accept tcp connection: %s", uv_strerror(err));
+        uv_close((uv_handle_t *)&stream->socket, NULL);
+        return;
+    }
+
+    err = uv_tcp_getpeername(&stream->socket, &name, &namelen);
+    if (err != 0) {
+        c_warning("Failed to query peer address of tcp socket: %s",
+                  uv_strerror(err));
+
+        stream->hostname = c_strdup("unknown");
+        stream->port = c_strdup("0");
+    } else if (name.sa_family != AF_INET) {
+        c_warning("Accepted connection isn't ipv4");
+
+        stream->hostname = c_strdup("unknown");
+        stream->port = c_strdup("0");
+    } else {
+        struct sockaddr_in *addr = (struct sockaddr_in *)&name;
+        char ip_address[17] = {'\0'};
+
+        uv_ip4_name(addr, ip_address, 16);
+
+        stream->hostname = c_strdup(ip_address);
+        stream->port = c_strdup_printf("%u", ntohs(addr->sin_port));
+    }
+
+    stream->type = STREAM_TYPE_TCP;
+    set_connected(stream);
+}
+
+#endif /* USE_UV */
 
 static void
 data_buffer_stream_read_idle(void *user_data)
@@ -340,19 +520,28 @@ rig_pb_stream_set_read_callback(rig_pb_stream_t *stream,
     stream->read_callback = read_callback;
     stream->read_data = user_data;
 
-    if (stream->type == STREAM_TYPE_BUFFER) {
+    switch (stream->type)
+    {
+#ifdef USE_UV
+    case STREAM_TYPE_FD:
+        uv_read_start((uv_stream_t *)&stream->uv_fd_pipe,
+                      read_buf_alloc_cb, read_cb);
+        break;
+    case STREAM_TYPE_TCP:
+        uv_read_start((uv_stream_t *)&stream->socket,
+                      read_buf_alloc_cb, read_cb);
+        break;
+#endif
+    case STREAM_TYPE_BUFFER:
         c_return_if_fail(stream->other_end != NULL);
         c_return_if_fail(stream->other_end->type == STREAM_TYPE_BUFFER);
 
         if (stream->incoming_write_closures->len)
             queue_data_buffer_stream_read(stream);
+        break;
+    case STREAM_TYPE_DISCONNECTED:
+        break;
     }
-#ifdef USE_UV
-    else {
-        uv_read_start((uv_stream_t *)&stream->uv_fd_pipe,
-                      read_buf_alloc_cb, read_cb);
-    }
-#endif
 }
 
 static void

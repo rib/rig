@@ -81,6 +81,7 @@ typedef struct _rig_entites_selection_t {
 #include "rig-camera-view.h"
 #include "rig-frontend.h"
 #include "rig-simulator.h"
+#include "rig-slave.h"
 #include "rig-code.h"
 #include "rig-image-source.h"
 
@@ -276,18 +277,20 @@ struct _rig_engine_t {
     cg_snippet_t *hair_vertex_snippet;
     cg_snippet_t *hair_fin_snippet;
 
-    /* TODO: The frontend, editor and simulator should be accessed as
-     * traits of the engine.
+    /* XXX: The object/type composition we use here isn't very
+     * clean...
+     *
+     * TODO: The frontend, editor, simulator and slave state should be
+     * accessed as traits of the engine.
      */
-    rig_frontend_t *
-    frontend; /* NULL if engine not acting as a frontend process */
+    rig_frontend_t *frontend; /* NULL if engine not acting as a frontend process */
+    rig_simulator_t *simulator; /* NULL if engine not acting as a simulator */
 #ifdef RIG_EDITOR_ENABLED
     rig_editor_t *editor; /* NULL if frontend isn't an editor */
 #endif
-    rig_simulator_t *simulator; /* NULL if engine not acting as a simulator */
+    rig_slave_t *slave; /* NULL if engine not acting as a slave */
 
-    rig_rpc_peer_t *slave_service;
-
+    /* TODO: move to rig_editor_t */
 #ifdef USE_AVAHI
     const AvahiPoll *avahi_poll_api;
     char *avahi_service_name;

@@ -34,6 +34,7 @@
 #include <rut.h>
 
 #include "protobuf-c-rpc/rig-protobuf-c-rpc.h"
+#include "protobuf-c-rpc/rig-protobuf-c-stream.h"
 
 #include "rig-slave-master.h"
 #include "rig-slave-address.h"
@@ -141,14 +142,33 @@ start_connect_on_idle_cb(void *user_data)
     rut_poll_shell_remove_idle(master->engine->shell, master->connect_idle);
     master->connect_idle = NULL;
 
-    /* XXX: The plan is add tcp support back after switching the rpc
-     * layer over to using libuv streams. */
-#warning "FIXME: restore ability to connect to slaves via tcp"
-    fd = rut_os_connect_to_abstract_socket("rig-slave");
-    if (fd != -1) {
-        master->stream = rig_pb_stream_new(master->engine->shell);
-        rig_pb_stream_set_fd_transport(master->stream, fd);
+    c_return_if_fail(master->stream == NULL);
+    c_return_if_fail(master->peer == NULL);
 
+    switch(master->slave_address->type)
+    {
+    case RIG_SLAVE_ADDRESS_TYPE_TCP:
+        master->stream = rig_pb_stream_new(master->engine->shell);
+        rig_pb_stream_set_tcp_transport(master->stream,
+                                        master->slave_address->tcp.hostname,
+                                        master->slave_address->tcp.port);
+        break;
+    case RIG_SLAVE_ADDRESS_TYPE_ADB_SERIAL:
+        master->stream = rig_pb_stream_new(master->engine->shell);
+        rig_pb_stream_set_tcp_transport(master->stream,
+                                        "127.0.0.1",
+                                        master->slave_address->adb.port);
+        break;
+    case RIG_SLAVE_ADDRESS_TYPE_ABSTRACT:
+        fd = rut_os_connect_to_abstract_socket(master->slave_address->abstract.socket_name);
+        if (fd != -1) {
+            master->stream = rig_pb_stream_new(master->engine->shell);
+            rig_pb_stream_set_fd_transport(master->stream, fd);
+        }
+        break;
+    }
+
+    if (master->stream) {
         master->peer = rig_rpc_peer_new(
             master->stream,
             &rig_slave_master_service.base,
@@ -177,24 +197,24 @@ rig_slave_master_new(rig_engine_t *engine, rig_slave_address_t *slave_address)
         rut_exception_t *catch = NULL;
         struct timespec spec;
 
-        if (!rut_adb_run_shell_cmd(slave_address->serial,
+        if (!rut_adb_run_shell_cmd(slave_address->adb.serial,
                                    &catch,
                                    "shell:am force-stop org.rig.app")) {
             c_warning(
                 "Failed to force stop of Rig slave application on Android "
                 "device %s",
-                slave_address->serial);
+                slave_address->adb.serial);
             rut_exception_free(catch);
             catch = NULL;
         }
 
-        if (!rut_adb_run_shell_cmd(slave_address->serial,
+        if (!rut_adb_run_shell_cmd(slave_address->adb.serial,
                                    &catch,
                                    "shell:am start -n "
                                    "org.rig.app/org.rig.app.rig_slave_t")) {
             c_warning("Failed to start Rig slave application on Android "
                       "device %s",
-                      slave_address->serial);
+                      slave_address->adb.serial);
             rut_exception_free(catch);
             catch = NULL;
         }

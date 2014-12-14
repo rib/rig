@@ -59,10 +59,14 @@ static void spawn_simulator(rut_shell_t *shell, rig_frontend_t *frontend);
  * command line options...
  */
 
-#ifdef linux
-const char *rig_abstract_socket_name_option;
-#endif
 enum rig_simulator_run_mode rig_simulator_run_mode_option;
+
+#ifdef linux
+const char *rig_simulator_abstract_socket_option;
+#endif
+
+const char *rig_simulator_address_option;
+int rig_simulator_port_option;
 
 
 static void
@@ -908,7 +912,7 @@ static bool
 bind_to_abstract_socket(rut_shell_t *shell, rig_frontend_t *frontend)
 {
     rut_exception_t *catch = NULL;
-    int fd = rut_os_listen_on_abstract_socket(rig_abstract_socket_name_option,
+    int fd = rut_os_listen_on_abstract_socket(rig_simulator_abstract_socket_option,
                                               &catch);
 
     if (fd < 0) {
@@ -927,11 +931,80 @@ bind_to_abstract_socket(rut_shell_t *shell, rig_frontend_t *frontend)
                           frontend);
 
     c_message("Waiting for simulator to connect to abstract socket \"%s\"...",
-              rig_abstract_socket_name_option);
+              rig_simulator_abstract_socket_option);
 
     return true;
 }
 #endif /* linux */
+
+#ifdef USE_UV
+static void
+handle_tcp_connect_cb(uv_stream_t *server, int status)
+{
+    rig_frontend_t *frontend = server->data;
+    rig_pb_stream_t *stream;
+
+    if (status != 0) {
+        c_warning("Connection failure: %s", uv_strerror(status));
+        return;
+    }
+
+    c_message("Simulator tcp connect request received!");
+
+    if (frontend->connected) {
+        c_warning("Ignoring simulator connection while there's already one connected");
+        return;
+    }
+
+    stream = rig_pb_stream_new(frontend->engine->shell);
+    rig_pb_stream_accept_tcp_connection(stream, &frontend->listening_socket);
+
+    c_message("Simulator connected!");
+    frontend_start_service(frontend->engine->shell, frontend, stream);
+
+    /* frontend_start_service will take ownership of the stream */
+    rut_object_unref(stream);
+}
+
+static void
+bind_to_tcp_socket(rut_shell_t *shell, rig_frontend_t *frontend)
+{
+    uv_loop_t *loop = rut_uv_shell_get_loop(shell);
+    struct sockaddr_in bind_addr;
+    struct sockaddr name;
+    int namelen;
+    int err;
+
+    uv_tcp_init(loop, &frontend->listening_socket);
+    frontend->listening_socket.data = frontend;
+
+    uv_ip4_addr(rig_simulator_address_option,
+                rig_simulator_port_option, &bind_addr);
+    uv_tcp_bind(&frontend->listening_socket, (struct sockaddr *)&bind_addr, 0);
+    err = uv_listen((uv_stream_t*)&frontend->listening_socket,
+                    128, handle_tcp_connect_cb);
+    if (err < 0) {
+        c_critical("Failed to starting listening for simulator connection: %s",
+                   uv_strerror(err));
+        return;
+    }
+
+    err = uv_tcp_getsockname(&frontend->listening_socket, &name, &namelen);
+    if (err != 0) {
+        c_critical("Failed to query peer address of listening tcp socket");
+        return;
+    } else {
+        struct sockaddr_in *addr = (struct sockaddr_in *)&name;
+        char ip_address[17] = {'\0'};
+
+        c_return_if_fail(name.sa_family == AF_INET);
+
+        uv_ip4_name(addr, ip_address, 16);
+        frontend->listening_address = c_strdup(ip_address);
+        frontend->listening_port = ntohs(addr->sin_port);
+    }
+}
+#endif /* USE_UV */
 
 static void
 run_simulator_in_process(rut_shell_t *shell, rig_frontend_t *frontend)
@@ -975,6 +1048,9 @@ spawn_simulator(rut_shell_t *shell, rig_frontend_t *frontend)
         bind_to_abstract_socket(shell, frontend);
         break;
 #endif
+    case RIG_SIMULATOR_RUN_MODE_CONNECT_TCP:
+        bind_to_tcp_socket(shell, frontend);
+        break;
     }
 }
 

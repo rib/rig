@@ -41,6 +41,7 @@
 #include "rig-pb.h"
 #include "rig-ui.h"
 #include "rig-logs.h"
+#include "rig-frontend.h"
 
 #include "rig.pb-c.h"
 
@@ -1097,4 +1098,63 @@ rig_simulator_forward_log(rig_simulator_t *simulator)
                                handle_forward_log_ack, NULL);
 
     rut_memory_stack_rewind(simulator->log_serializer_stack);
+}
+
+void
+rig_simulator_parse_option(const char *option, void (*usage)(void))
+{
+    char **strv = c_strsplit(option, ":", -1);
+
+    if (!strv[0]) {
+        usage();
+        goto exit;
+    }
+
+    if (strcmp(strv[0], "tcp") == 0) {
+        char *address;
+        int port;
+
+        rig_simulator_run_mode_option =
+            RIG_SIMULATOR_RUN_MODE_CONNECT_TCP;
+
+        if (!strv[1]) {
+            fprintf(stderr, "Missing tcp address in form \"tcp:address\" or \"tcp:address:port\"\n");
+            usage();
+            goto exit;
+        }
+
+        address = c_strdup(strv[1]);
+        port = strv[2] ? strtoul(strv[2], NULL, 10) : 0;
+
+        rig_simulator_address_option = address;
+        rig_simulator_port_option = port;
+
+    } else if (strcmp(strv[0], "abstract") == 0) {
+#ifdef __linux__
+        rig_simulator_run_mode_option =
+            RIG_SIMULATOR_RUN_MODE_CONNECT_ABSTRACT_SOCKET;
+        if (strv[1])
+            rig_simulator_abstract_socket_option = c_strdup(strv[1]);
+        else {
+            fprintf(stderr, "Missing abstract socket name in form \"abstract:my_socket_name\"\n");
+            usage();
+            goto exit;
+        }
+#else
+        c_critical("Abstract sockets are only supported on Linux");
+#endif
+    } else if (strcmp(strv[0], "mainloop") == 0) {
+        rig_simulator_run_mode_option =
+            RIG_SIMULATOR_RUN_MODE_MAINLOOP;
+    } else if (strcmp(strv[0], "thread") == 0) {
+        rig_simulator_run_mode_option =
+            RIG_SIMULATOR_RUN_MODE_THREADED;
+    } else {
+        fprintf(stderr, "Unsupported -m,--simulator= mode \"%s\"\n", option);
+        usage();
+        goto exit;
+    }
+
+exit:
+    c_strfreev(strv);
 }

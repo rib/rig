@@ -51,20 +51,21 @@ usage(void)
 {
     fprintf(stderr, "Usage: rig-slave [OPTIONS]\n");
     fprintf(stderr, "\n");
-    fprintf(stderr, "     --width=WIDTH             Width of slave window\n");
-    fprintf(stderr, "     --height=HEIGHT           Height of slave window\n");
-    fprintf(stderr, "  -s,--scale=SCALE             Device pixel scale factor\n");
+    fprintf(stderr, "  -W,--width=WIDTH                         Width of slave window\n");
+    fprintf(stderr, "  -H,--height=HEIGHT                       Height of slave window\n");
+    fprintf(stderr, "  -S,--scale=SCALE                         Device pixel scale factor\n");
+    fprintf(stderr, "\n");
+    fprintf(stderr, "  -l,--listen={tcp:<address>[:port],       Specify how to listen for an editor connection\n");
+    fprintf(stderr, "               abstract:<name>}            (listens on free tcp/ipv4 port by default)\n");
+    fprintf(stderr, "\n");
 #ifdef RIG_ENABLE_DEBUG
-    fprintf(stderr, "\n");
-#ifdef linux
-    fprintf(stderr, "  -a,--abstract-socket=NAME    Listen on abstract socket for simulator\n");
-#endif
-    fprintf(stderr, "  -f,--fork-simulator          Run simulator in a separate process\n");
-    fprintf(stderr, "  -m,--mainloop-simulator      Run simulator in the same mainloop as frontend\n");
-    fprintf(stderr, "                               (Simulator runs in separate thread by default)\n");
+    fprintf(stderr, "  -m,--simulator={tcp:<address>[:port],    Specify how to listen for a simulator connection\n");
+    fprintf(stderr, "                  abstract:<name>,         (Simulator runs in a separate thread by default)\n");
+    fprintf(stderr, "                  mainloop,\n");
+    fprintf(stderr, "                  thread}\n");
 #endif
     fprintf(stderr, "\n");
-    fprintf(stderr, "  -h,--help                    Display this help message\n");
+    fprintf(stderr, "  -h,--help                                Display this help message\n");
     exit(1);
 }
 
@@ -78,28 +79,21 @@ main(int argc, char **argv)
     struct option long_opts[] = {
         { "width",   required_argument, NULL, 'W' },
         { "height",  required_argument, NULL, 'H' },
-        { "scale",   required_argument, NULL, 's' },
+        { "scale",   required_argument, NULL, 'S' },
 
+        { "listen",                 required_argument, NULL, 'l' },
 #ifdef RIG_ENABLE_DEBUG
-#ifdef linux
-        { "abstract-socket",    required_argument, NULL, 'a' },
-#endif
-        { "fork-simulator",     no_argument,       NULL, 'f' },
-        { "mainloop-simulator", no_argument,       NULL, 'm' },
+        { "simulator",              required_argument, NULL, 'm' },
 #endif /* RIG_ENABLE_DEBUG */
 
-        { "help",    no_argument,       NULL, 'h' },
-        { 0,         0,                 NULL,  0  }
+        { "help",    no_argument,   NULL, 'h' },
+        { 0,         0,             NULL,  0  }
     };
 
 #ifdef RIG_ENABLE_DEBUG
-# ifdef linux
-    const char *short_opts = "s:afmh";
-# else
-    const char *short_opts = "s:fmh";
-# endif
+    const char *short_opts = "W:H:S:l:m:h";
 #else
-    const char *short_opts = "s:h";
+    const char *short_opts = "W:H:S:l:h";
 #endif
 
     int c;
@@ -110,6 +104,9 @@ main(int argc, char **argv)
     gst_init(&argc, &argv);
 #endif
 
+    rig_simulator_run_mode_option = RIG_SIMULATOR_RUN_MODE_THREADED;
+    rig_slave_connect_mode_option = RIG_SLAVE_CONNECT_MODE_TCP;
+
     while ((c = getopt_long(argc, argv, short_opts, long_opts, NULL)) != -1) {
         switch(c) {
         case 'W':
@@ -118,24 +115,59 @@ main(int argc, char **argv)
         case 'H':
             option_height = strtoul(optarg, NULL, 10);
             break;
-        case 's':
+        case 'S':
             option_scale = strtod(optarg, NULL);
             break;
 
-#ifdef RIG_ENABLE_DEBUG
-#ifdef linux
-        case 'a':
-            rig_simulator_run_mode_option =
-                RIG_SIMULATOR_RUN_MODE_CONNECT_ABSTRACT_SOCKET;
-            rig_abstract_socket_name_option = optarg;
-            break;
+        case 'l': {
+            char **strv = c_strsplit(optarg, ":", -1);
+
+            if (strv[0]) {
+                if (strcmp(strv[0], "tcp") == 0) {
+                    char *address;
+                    int port;
+
+                    rig_slave_connect_mode_option = RIG_SLAVE_CONNECT_MODE_TCP;
+
+                    if (!strv[1]) {
+                        address = c_strdup("0.0.0.0");
+                        port = 0;
+                    } else {
+                        address = c_strdup(strv[1]);
+                        port = strv[2] ? strtoul(strv[2], NULL, 10) : 0;
+                    }
+
+                    rig_slave_address_option = address;
+                    rig_slave_port_option = port;
+                } else if (strcmp(strv[0], "abstract") == 0) {
+#ifdef __linux__
+                    rig_slave_connect_mode_option =
+                        RIG_SLAVE_CONNECT_MODE_ABSTRACT_SOCKET;
+                    if (strv[1])
+                        rig_slave_abstract_socket_option = c_strdup(strv[1]);
+                    else {
+                        fprintf(stderr, "Missing abstract socket name in form \"abstract:my_socket_name\"\n");
+                        usage();
+                    }
+#else
+                    c_critical("Abstract sockets are only supported on Linux");
 #endif
-        case 'f':
-            rig_simulator_run_mode_option = RIG_SIMULATOR_RUN_MODE_PROCESS;
+                } else {
+                    fprintf(stderr, "Unsupported -l,--listen= mode \"%s\"\n", optarg);
+                    usage();
+                }
+            } else
+                usage();
+
+            c_strfreev(strv);
             break;
-        case 'm':
-            rig_simulator_run_mode_option = RIG_SIMULATOR_RUN_MODE_MAINLOOP;
+
+        }
+#ifdef RIG_ENABLE_DEBUG
+        case 'm': {
+            rig_simulator_parse_option(optarg, usage);
             break;
+        }
 #endif /* RIG_ENABLE_DEBUG */
 
         default:

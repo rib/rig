@@ -41,6 +41,7 @@ enum stream_type {
     STREAM_TYPE_DISCONNECTED,
 #ifdef USE_UV
     STREAM_TYPE_FD,
+    STREAM_TYPE_TCP,
 #endif
     STREAM_TYPE_BUFFER,
 };
@@ -65,30 +66,52 @@ struct _rig_pb_stream_t {
 
     enum stream_type type;
 
-    /* STREAM_TYPE_FD... */
+    /* These are only relevent for setting up TCP streams but we keep
+     * them out of the following union because they are used while
+     * stream->type is still _DISCONNECTED when we don't know which
+     * members of the union are safe to reference. */
 #ifdef USE_UV
-    uv_pipe_t uv_fd_pipe;
+    char *hostname;
+    char *port;
+    uv_getaddrinfo_t resolver;
+    bool resolving;
+    uv_connect_t connection_request;
+    bool connecting;
 #endif
 
-    /* STREAM_TYPE_BUFFER... */
-    /* XXX: The "remote" end of a stream is sometimes in the same
-     * address space and instead of polling a file descriptor we
-     * simply queue idle callbacks when we write to either end of
-     * a stream...
-     */
-    rig_pb_stream_t *other_end;
-    rut_closure_t *connect_idle;
-    rut_closure_t *read_idle;
+    union {
 
-    /* writes from the other end are queued in incoming_write_closures
-     * and once they have been handled they get moved to
-     * finished_write_closures so the other end can free the closures
-     *
-     * TODO: allow pivoting these safely with atomic ops so we can use
-     * this mechanism between threads.
-     */
-    c_array_t *incoming_write_closures;
-    c_array_t *finished_write_closures;
+#ifdef USE_UV
+        /* STREAM_TYPE_FD... */
+        uv_pipe_t uv_fd_pipe;
+
+        /* STREAM_TYPE_TCP... */
+        uv_tcp_t socket;
+#endif
+
+        /* STREAM_TYPE_BUFFER... */
+        struct {
+            /* XXX: The "remote" end of a stream is sometimes in the
+             * same address space and instead of polling a file
+             * descriptor we simply queue idle callbacks when we write
+             * to either end of a stream...
+             */
+            rig_pb_stream_t *other_end;
+            rut_closure_t *connect_idle;
+            rut_closure_t *read_idle;
+
+            /* writes from the other end are queued in
+             * incoming_write_closures and once they have been handled
+             * they get moved to finished_write_closures so the other
+             * end can free the closures
+             *
+             * TODO: allow pivoting these safely with atomic ops so we
+             * can use this mechanism between threads.
+             */
+            c_array_t *incoming_write_closures;
+            c_array_t *finished_write_closures;
+        };
+    };
 
     /* Common */
 
@@ -122,6 +145,15 @@ rig_pb_stream_add_on_error_callback(rig_pb_stream_t *stream,
 #ifdef USE_UV
 void
 rig_pb_stream_set_fd_transport(rig_pb_stream_t *stream, int fd);
+
+void
+rig_pb_stream_set_tcp_transport(rig_pb_stream_t *stream,
+                                const char *hostname,
+                                const char *port);
+
+void
+rig_pb_stream_accept_tcp_connection(rig_pb_stream_t *stream,
+                                    uv_tcp_t *server);
 #endif
 
 /* So we can support having both ends of a connection in the same

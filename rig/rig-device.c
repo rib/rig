@@ -279,7 +279,7 @@ main(int argc, char **argv)
         case 'a':
             rig_simulator_run_mode_option =
                 RIG_SIMULATOR_RUN_MODE_CONNECT_ABSTRACT_SOCKET;
-            rig_abstract_socket_name_option = optarg;
+            rig_simulator_abstract_socket_option = optarg;
             break;
 #endif
         case 'f':

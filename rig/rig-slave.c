@@ -29,6 +29,11 @@
 #include <config.h>
 
 #include <stdlib.h>
+
+#ifdef USE_UV
+#include <uv.h>
+#endif
+
 #include <clib.h>
 
 #ifdef USE_GSTREAMER
@@ -39,13 +44,22 @@
 
 #include "rig-slave.h"
 #include "rig-engine.h"
-#ifdef HAVE_AVAHI
+#ifdef USE_AVAHI
 #include "rig-avahi.h"
 #endif
 #include "rig-rpc-network.h"
 #include "rig-pb.h"
 
 #include "rig.pb-c.h"
+
+enum rig_slave_connect_mode rig_slave_connect_mode_option;
+
+#ifdef __linux__
+const char *rig_slave_abstract_socket_option;
+#endif
+
+const char *rig_slave_address_option;
+int rig_slave_port_option;
 
 static void
 slave__test(Rig__Slave_Service *service,
@@ -382,9 +396,9 @@ map_edit_id_to_play_object_cb(uint64_t edit_id, void *user_data)
     return (uint64_t)(uintptr_t)play_object;
 }
 
-#ifdef linux
+#ifdef __linux__
 static void
-handle_connect_cb(void *user_data, int listen_fd, int revents)
+handle_abstract_connect_cb(void *user_data, int listen_fd, int revents)
 {
     rig_slave_t *slave = user_data;
     struct sockaddr addr;
@@ -393,7 +407,7 @@ handle_connect_cb(void *user_data, int listen_fd, int revents)
 
     c_return_if_fail(revents & RUT_POLL_FD_EVENT_IN);
 
-    c_message("Editor connect request received!");
+    c_message("Editor abstract socket connect request received!");
 
     if (slave->connected) {
         c_warning("Ignoring editor connection while there's already one connected");
@@ -438,7 +452,7 @@ bind_to_abstract_socket(rut_shell_t *shell,
                           slave->listen_fd,
                           RUT_POLL_FD_EVENT_IN,
                           NULL, /* prepare */
-                          handle_connect_cb, /* dispatch */
+                          handle_abstract_connect_cb, /* dispatch */
                           slave);
 
     c_message("Waiting for simulator to connect to abstract socket \"%s\"...",
@@ -446,7 +460,76 @@ bind_to_abstract_socket(rut_shell_t *shell,
 
     return true;
 }
-#endif /* linux */
+#endif /* __linux__ */
+
+#ifdef USE_UV
+static void
+handle_tcp_connect_cb(uv_stream_t *server, int status)
+{
+    rig_slave_t *slave = server->data;
+    rig_pb_stream_t *stream;
+
+    if (status != 0) {
+        c_warning("Connection failure: %s", uv_strerror(status));
+        return;
+    }
+
+    c_message("Editor tcp connect request received!");
+
+    if (slave->connected) {
+        c_warning("Ignoring editor connection while there's already one connected");
+        return;
+    }
+
+    stream = rig_pb_stream_new(slave->engine->shell);
+    rig_pb_stream_accept_tcp_connection(stream, &slave->listening_socket);
+
+    c_message("Editor connected!");
+    slave_start_service(slave->engine->shell, slave, stream);
+
+    /* slave_start_service will take ownership of the stream */
+    rut_object_unref(stream);
+}
+
+static void
+bind_to_tcp_socket(rig_slave_t *slave)
+{
+    uv_loop_t *loop = rut_uv_shell_get_loop(slave->shell);
+    struct sockaddr_in bind_addr;
+    struct sockaddr name;
+    int namelen;
+    int err;
+
+    uv_tcp_init(loop, &slave->listening_socket);
+    slave->listening_socket.data = slave;
+
+    uv_ip4_addr(rig_slave_address_option, rig_slave_port_option, &bind_addr);
+    uv_tcp_bind(&slave->listening_socket, (struct sockaddr *)&bind_addr, 0);
+    err = uv_listen((uv_stream_t*)&slave->listening_socket,
+                    128, handle_tcp_connect_cb);
+    if (err < 0) {
+        c_critical("Failed to starting listening for slave connections: %s",
+                   uv_strerror(err));
+        return;
+    }
+
+    namelen = sizeof(name);
+    err = uv_tcp_getsockname(&slave->listening_socket, &name, &namelen);
+    if (err != 0) {
+        c_critical("Failed to query peer address of listening tcp socket");
+        return;
+    } else {
+        struct sockaddr_in *addr = (struct sockaddr_in *)&name;
+        char ip_address[17] = {'\0'};
+
+        c_return_if_fail(name.sa_family == AF_INET);
+
+        uv_ip4_name(addr, ip_address, 16);
+        slave->listening_address = c_strdup(ip_address);
+        slave->listening_port = ntohs(addr->sin_port);
+    }
+}
+#endif /* USE_UV */
 
 static void
 rig_slave_init(rut_shell_t *shell, void *user_data)
@@ -461,6 +544,9 @@ rig_slave_init(rut_shell_t *shell, void *user_data)
 
     engine = slave->frontend->engine;
     slave->engine = engine;
+
+    /* TODO: rig_slave_t should be a trait of the engine */
+    engine->slave = slave;
 
     /* Finish the slave specific engine setup...
      */
@@ -487,18 +573,23 @@ rig_slave_init(rut_shell_t *shell, void *user_data)
 
     slave->pending_edits = rut_queue_new();
 
-#ifdef __ANDROID__
-    bind_to_abstract_socket(engine->shell, "rig-slave", slave);
-#else
-#warning "FIXME: re-enable tcp based transport for slaves + ZeroConf"
-    /* The plan is to re-add tcp support once we've switched over to
-     * using libuv streams for rpc transport */
-    bind_to_abstract_socket(engine->shell, "rig-slave", slave);
+    switch (rig_slave_connect_mode_option) {
+#ifdef __linux__
+    case RIG_SLAVE_CONNECT_MODE_ABSTRACT_SOCKET:
+        bind_to_abstract_socket(engine->shell,
+                                rig_slave_abstract_socket_option, slave);
+        break;
 #endif
+#ifdef USE_UV
+    case RIG_SLAVE_CONNECT_MODE_TCP:
+        bind_to_tcp_socket(slave);
 
-#if 0 //def USE_AVAHI
-    rig_avahi_register_service(engine);
+#ifdef USE_AVAHI
+        rig_avahi_register_service(engine);
 #endif
+        break;
+#endif
+    }
 
     rut_shell_add_input_callback(
         slave->shell, rig_engine_input_handler, engine, NULL);
@@ -508,12 +599,12 @@ static void
 rig_slave_fini(rut_shell_t *shell, void *user_data)
 {
     rig_slave_t *slave = user_data;
-    //rig_engine_t *engine = slave->engine;
+    rig_engine_t *engine = slave->engine;
     rut_queue_item_t *item;
 
     slave_stop_service(slave);
 
-#if 0 //def USE_AVAHI
+#ifdef USE_AVAHI
     /* TODO: move to frontend */
     rig_avahi_unregister_service(engine);
 #endif

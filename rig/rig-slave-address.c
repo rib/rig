@@ -40,11 +40,22 @@ _rig_slave_address_free(void *object)
 {
     rig_slave_address_t *slave_address = object;
 
-    if (slave_address->serial)
-        c_free(slave_address->serial);
-
     c_free(slave_address->name);
-    c_free(slave_address->hostname);
+
+    switch (slave_address->type)
+    {
+    case RIG_SLAVE_ADDRESS_TYPE_ADB_SERIAL:
+        c_free(slave_address->adb.serial);
+        c_free(slave_address->adb.port);
+        break;
+    case RIG_SLAVE_ADDRESS_TYPE_ABSTRACT:
+        c_free(slave_address->abstract.socket_name);
+        break;
+    case RIG_SLAVE_ADDRESS_TYPE_TCP:
+        c_free(slave_address->tcp.hostname);
+        c_free(slave_address->tcp.port);
+        break;
+    }
 
     rut_object_free(rig_slave_address_t, slave_address);
 }
@@ -60,7 +71,8 @@ _rig_slave_address_init_type(void)
 }
 
 rig_slave_address_t *
-rig_slave_address_new_tcp(const char *name, const char *hostname, int port)
+rig_slave_address_new_tcp(const char *name,
+                          const char *hostname, int port)
 {
     rig_slave_address_t *slave_address =
         rut_object_alloc0(rig_slave_address_t,
@@ -70,8 +82,24 @@ rig_slave_address_new_tcp(const char *name, const char *hostname, int port)
     slave_address->type = RIG_SLAVE_ADDRESS_TYPE_TCP;
 
     slave_address->name = c_strdup(name);
-    slave_address->hostname = c_strdup(hostname);
-    slave_address->port = port;
+    slave_address->tcp.hostname = c_strdup(hostname);
+    slave_address->tcp.port = c_strdup_printf("%u", port);
+
+    return slave_address;
+}
+
+rig_slave_address_t *
+rig_slave_address_new_abstract(const char *name, const char *socket_name)
+{
+    rig_slave_address_t *slave_address =
+        rut_object_alloc0(rig_slave_address_t,
+                          &rig_slave_address_type,
+                          _rig_slave_address_init_type);
+
+    slave_address->type = RIG_SLAVE_ADDRESS_TYPE_ABSTRACT;
+
+    slave_address->name = c_strdup(name);
+    slave_address->abstract.socket_name = c_strdup(socket_name);
 
     return slave_address;
 }
@@ -87,9 +115,8 @@ rig_slave_address_new_adb(const char *name, const char *serial, int port)
     slave_address->type = RIG_SLAVE_ADDRESS_TYPE_ADB_SERIAL;
 
     slave_address->name = c_strdup(name);
-    slave_address->serial = c_strdup(serial);
-    slave_address->hostname = c_strdup("127.0.0.1");
-    slave_address->port = port;
+    slave_address->adb.serial = c_strdup(serial);
+    slave_address->adb.port = c_strdup_printf("%u", port);
 
     return slave_address;
 }

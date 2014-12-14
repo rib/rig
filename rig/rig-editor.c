@@ -54,14 +54,6 @@
 #include "components/rig-pointalism-grid.h"
 #include "components/rig-shape.h"
 
-static char **_rig_editor_remaining_args = NULL;
-
-static const GOptionEntry _rig_editor_entries[] = {
-    { G_OPTION_REMAINING,        0,                           0,
-      G_OPTION_ARG_STRING_ARRAY, &_rig_editor_remaining_args, "Project" },
-    { 0 }
-};
-
 struct _rig_editor_t {
     rut_object_base_t _base;
 
@@ -113,6 +105,8 @@ struct _rig_editor_t {
 
     c_list_t *slave_masters;
 };
+
+c_list_t *rig_editor_slave_address_options;
 
 static void
 nop_register_id_cb(void *object, uint64_t id, void *user_data)
@@ -2566,6 +2560,7 @@ rig_editor_init(rut_shell_t *shell, void *user_data)
 {
     rig_editor_t *editor = user_data;
     rig_engine_t *engine;
+    c_list_t *l;
 
     /* TODO: rig_frontend_t should be a trait of the engine */
     editor->frontend = rig_frontend_new(
@@ -2623,17 +2618,36 @@ rig_editor_init(rut_shell_t *shell, void *user_data)
     editor->adb_tracker =
         rut_adb_device_tracker_new(editor->shell, adb_devices_cb, editor);
 
-    if (getenv("RIG_SLAVE_ADDRESS")) {
-        const char *slave_addr = getenv("RIG_SLAVE_ADDRESS");
+    for (l = rig_editor_slave_address_options; l; l = l->next) {
+        const char *slave_addr = l->data;
         char **slave_addrv = c_strsplit(slave_addr, ":", 2);
-        if (slave_addrv[0] && slave_addrv[1]) {
+
+        if (!slave_addrv[0]) {
+            c_error("Unknown slave address \"%s\"; should be in form \"tcp:<ip>:<port>\" or \"abstract:<name>\"",
+                    slave_addr);
+            c_strfreev(slave_addrv);
+            continue;
+        }
+
+        if (strcmp(slave_addrv[0], "tcp") == 0 &&
+            slave_addrv[1] && slave_addrv[2])
+        {
             rig_slave_address_t *slave_address = rig_slave_address_new_tcp(
-                slave_addrv[0], /* name */
-                slave_addrv[0], /* address */
-                c_ascii_strtoull(slave_addrv[1], NULL, 10)); /* port */
+                slave_addrv[1], /* name */
+                slave_addrv[1], /* address */
+                c_ascii_strtoull(slave_addrv[2], NULL, 10)); /* port */
             engine->slave_addresses =
                 c_list_prepend(engine->slave_addresses, slave_address);
-        }
+        } else if (strcmp(slave_addrv[0], "abstract") == 0 && slave_addrv[1]) {
+            rig_slave_address_t *slave_address = rig_slave_address_new_abstract(
+                slave_addrv[1], /* name */
+                slave_addrv[1]); /* address */
+            engine->slave_addresses =
+                c_list_prepend(engine->slave_addresses, slave_address);
+        } else
+            c_error("Unknown slave address \"%s\"; should be in form \"tcp:<ip>:<port>\" or \"abstract:<name>\"",
+                    slave_addr);
+
         c_strfreev(slave_addrv);
     }
 
@@ -3010,8 +3024,7 @@ _rig_objects_selection_copy(rut_object_t *object)
             copy->objects =
                 c_list_prepend(copy->objects, rig_entity_copy(l->data));
         } else {
-#warning                                                                       \
-            "todo: Create a copyable interface for anything that can be selected for copy and paste"
+#warning "todo: Create a copyable interface for anything that can be selected for copy and paste"
             c_warn_if_reached();
         }
     }

@@ -63,9 +63,18 @@ struct _rig_frontend_t {
 
     pid_t simulator_pid;
 
+    /* When listening for an out of process simulator
+     * to connect (for debugging)...
+     */
 #ifdef linux
     int listen_fd;
 #endif
+#ifdef USE_UV
+    uv_tcp_t listening_socket;
+    char *listening_address;
+    int listening_port;
+#endif
+
     rig_pb_stream_t *stream;
     rig_rpc_peer_t *frontend_peer;
     bool connected;
@@ -95,10 +104,6 @@ struct _rig_frontend_t {
     c_hash_table_t *tmp_id_to_object_map;
 };
 
-#ifdef linux
-extern const char *rig_abstract_socket_name_option;
-#endif
-
 enum rig_simulator_run_mode {
     RIG_SIMULATOR_RUN_MODE_MAINLOOP,
     RIG_SIMULATOR_RUN_MODE_THREADED,
@@ -106,8 +111,16 @@ enum rig_simulator_run_mode {
 #ifdef linux
     RIG_SIMULATOR_RUN_MODE_CONNECT_ABSTRACT_SOCKET,
 #endif
+    RIG_SIMULATOR_RUN_MODE_CONNECT_TCP,
 };
 extern enum rig_simulator_run_mode rig_simulator_run_mode_option;
+
+#ifdef linux
+extern const char *rig_simulator_abstract_socket_option;
+#endif
+
+const char *rig_simulator_address_option;
+int rig_simulator_port_option;
 
 rig_frontend_t *
 rig_frontend_new(rut_shell_t *shell, rig_frontend_id_t id, bool play_mode);

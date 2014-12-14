@@ -46,19 +46,25 @@ usage(void)
     fprintf(stderr, "Usage: rig [UI.rig]\n");
     fprintf(stderr, "\n");
 
-#ifdef RIG_ENABLE_DEBUG
-#ifdef linux
-    fprintf(stderr, "  -a,--abstract-socket=NAME            Listen on abstract socket for simulator\n");
-#endif
-    fprintf(stderr, "  -t,--thread-simulator                Run simulator in a separate thread\n");
-    fprintf(stderr, "  -m,--mainloop-simulator              Run simulator in the same mainloop as frontend\n");
-    fprintf(stderr, "                                       (Simulator runs in separate process by default)\n");
+    fprintf(stderr, "  -s,--slave={tcp:<hostname>[:port],       Connect to specified slave device\n");
+    fprintf(stderr, "              abstract:<name>}\n");
+    fprintf(stderr, "E.g:\n");
     fprintf(stderr, "\n");
-    fprintf(stderr, "  -d,--disable-curses                  Disable curses debug console\n");
+    fprintf(stderr, "  --slave=tcp:<ip>[:<port>]                Connect to a slave device via tcp \n");
+    fprintf(stderr, "  --slave=\"abstract:my_slave\"            Connection to a slave device via an abstract socket\n");
+    fprintf(stderr, "\n");
+
+#ifdef RIG_ENABLE_DEBUG
+    fprintf(stderr, "  -m,--simulator={tcp:<address>[:port],    Specify how to listen for a simulator connection\n");
+    fprintf(stderr, "                  abstract:<name>,         (Simulator runs in a separate thread by default)\n");
+    fprintf(stderr, "                  mainloop,\n");
+    fprintf(stderr, "                  thread}\n");
+    fprintf(stderr, "\n");
+    fprintf(stderr, "  -d,--disable-curses                      Disable curses debug console\n");
     fprintf(stderr, "\n");
 #endif
 
-    fprintf(stderr, "  -h,--help    Display this help message\n");
+    fprintf(stderr, "  -h,--help                                Display this help message\n");
     exit(1);
 }
 
@@ -69,27 +75,20 @@ main(int argc, char **argv)
     struct option long_opts[] = {
 
 #ifdef RIG_ENABLE_DEBUG
-#ifdef linux
-        { "abstract-socket",    required_argument, NULL, 'a' },
+        { "simulator",      required_argument, NULL, 'm' },
+        { "disable-curses", no_argument,       NULL, 'd' },
 #endif
-        { "thread-simulator",   no_argument,       NULL, 't' },
-        { "mainloop-simulator", no_argument,       NULL, 'm' },
-        { "disable-curses",     no_argument,       NULL, 'd' },
-#endif
+        { "slave",          required_argument, NULL, 's' },
 
-        { "help",               no_argument,       NULL, 'h' },
-        { 0,                    0,                 NULL,  0  }
+        { "help",           no_argument,       NULL, 'h' },
+        { 0,                0,                 NULL,  0  }
     };
 
 #ifdef RIG_ENABLE_DEBUG
-# ifdef linux
-    const char *short_opts = "a:tmdh";
-# else
-    const char *short_opts = "tmdh";
-# endif
+    const char *short_opts = "m:ds:h";
     bool enable_curses_debug = true;
 #else
-    const char *short_opts = "h";
+    const char *short_opts = "s:h";
 #endif
 
     int c;
@@ -105,21 +104,18 @@ main(int argc, char **argv)
     while ((c = getopt_long(argc, argv, short_opts, long_opts, NULL)) != -1) {
         switch(c) {
 #ifdef RIG_ENABLE_DEBUG
-        case 'a':
-            rig_simulator_run_mode_option =
-                RIG_SIMULATOR_RUN_MODE_CONNECT_ABSTRACT_SOCKET;
-            rig_abstract_socket_name_option = optarg;
+        case 'm': {
+            rig_simulator_parse_option(optarg, usage);
             break;
-        case 't':
-            rig_simulator_run_mode_option = RIG_SIMULATOR_RUN_MODE_THREADED;
-            break;
-        case 'm':
-            rig_simulator_run_mode_option = RIG_SIMULATOR_RUN_MODE_MAINLOOP;
-            break;
+        }
         case 'd':
             enable_curses_debug = false;
             break;
 #endif
+        case 's':
+            rig_editor_slave_address_options =
+                c_list_prepend(rig_editor_slave_address_options, optarg);
+            break;
         default:
             usage();
         }

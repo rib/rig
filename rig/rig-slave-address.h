@@ -32,7 +32,8 @@
 
 typedef enum _rig_slave_address_type_t {
     RIG_SLAVE_ADDRESS_TYPE_TCP = 1,
-    RIG_SLAVE_ADDRESS_TYPE_ADB_SERIAL
+    RIG_SLAVE_ADDRESS_TYPE_ADB_SERIAL,
+    RIG_SLAVE_ADDRESS_TYPE_ABSTRACT
 } rig_slave_address_type_t;
 
 typedef struct _rig_slave_address_t {
@@ -42,11 +43,25 @@ typedef struct _rig_slave_address_t {
 
     char *name;
 
-    /* adb serial */
-    char *serial;
+    union {
+        /* adb (127.0.0.1:<port>) */
+        struct {
+            char *serial;
+            char *port;
+        } adb;
 
-    char *hostname;
-    int port;
+        /* tcp */
+        struct {
+            char *hostname;
+            char *port;
+        } tcp;
+
+        /* abstract socket */
+        struct {
+            char *socket_name;
+        } abstract;
+    };
+
 } rig_slave_address_t;
 
 rig_slave_address_t *
@@ -54,5 +69,8 @@ rig_slave_address_new_tcp(const char *name, const char *hostname, int port);
 
 rig_slave_address_t *
 rig_slave_address_new_adb(const char *name, const char *serial, int port);
+
+rig_slave_address_t *
+rig_slave_address_new_abstract(const char *name, const char *socket_name);
 
 #endif /* __RIG_SLAVE_ADDRESS_H__ */

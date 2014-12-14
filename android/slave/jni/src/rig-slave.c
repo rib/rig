@@ -49,6 +49,8 @@ main(int argc, char **argv)
     rut_init_tls_state();
 
     rig_simulator_run_mode_option = RIG_SIMULATOR_RUN_MODE_MAINLOOP;
+    rig_slave_connect_mode_option = RIG_SLAVE_CONNECT_MODE_ABSTRACT_SOCKET;
+    rig_slave_abstract_socket_option = "rig-slave";
 
     slave = rig_slave_new(1080, 1920, 1);
 
