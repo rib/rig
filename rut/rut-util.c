@@ -1,26 +1,30 @@
 /*
  * Rut
  *
- * Copyright (C) 2012,2013  Intel Corporation
- * Copyright (C) 2010 Openismus GmbH
+ * Rig Utilities
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * Copyright (C) 2012-2014 Intel Corporation.
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use, copy,
+ * modify, merge, publish, distribute, sublicense, and/or sell copies
+ * of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library. If not, see
- * <http://www.gnu.org/licenses/>.
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
  *
- * Note: rut_util_distribute_natural_allocation() is taken from gtk
- * and was implemented by:
- *   Tristan Van Berkom <tristan.van.berkom@gmail.com>
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ *
  */
 
 #include <config.h>
@@ -425,83 +429,6 @@ rut_util_find_tag(const c_list_t *tags, const char *tag)
             return true;
     }
     return false;
-}
-
-/* Pulled from gtksizerequest.c from Gtk+ */
-static int
-compare_gap(const void *p1, const void *p2, void *data)
-{
-    rut_preferred_size_t *sizes = data;
-    const unsigned int *c1 = p1;
-    const unsigned int *c2 = p2;
-
-    const int d1 = MAX(sizes[*c1].natural_size - sizes[*c1].minimum_size, 0);
-    const int d2 = MAX(sizes[*c2].natural_size - sizes[*c2].minimum_size, 0);
-
-    int delta = (d2 - d1);
-
-    if (0 == delta)
-        delta = (*c2 - *c1);
-
-    return delta;
-}
-
-int
-rut_util_distribute_natural_allocation(int extra_space,
-                                       unsigned int n_requested_sizes,
-                                       rut_preferred_size_t *sizes)
-{
-    unsigned int *spreading;
-    int i;
-
-    c_return_val_if_fail(extra_space >= 0, 0);
-
-    spreading = c_newa(unsigned int, n_requested_sizes);
-
-    for (i = 0; i < n_requested_sizes; i++)
-        spreading[i] = i;
-
-    /* Distribute the container's extra space c_gap. We want to assign
-     * this space such that the sum of extra space assigned to children
-     * (c^i_gap) is equal to c_cap. The case that there's not enough
-     * space for all children to take their natural size needs some
-     * attention. The goals we want to achieve are:
-     *
-     *   a) Maximize number of children taking their natural size.
-     *   b) The allocated size of children should be a continuous
-     *   function of c_gap.  That is, increasing the container size by
-     *   one pixel should never make drastic changes in the distribution.
-     *   c) If child i takes its natural size and child j doesn't,
-     *   child j should have received at least as much gap as child i.
-     *
-     * The following code distributes the additional space by following
-     * these rules.
-     */
-
-    /* Sort descending by gap and position. */
-    c_qsort_with_data(
-        spreading, n_requested_sizes, sizeof(unsigned int), compare_gap, sizes);
-
-    /* Distribute available space.
-     * This master piece of a loop was conceived by Behdad Esfahbod.
-     */
-    for (i = n_requested_sizes - 1; extra_space > 0 && i >= 0; --i) {
-        /* Divide remaining space by number of remaining children.
-         * Sort order and reducing remaining space by assigned space
-         * ensures that space is distributed equally.
-         */
-        int glue = (extra_space + i) / (i + 1);
-        int gap = sizes[(spreading[i])].natural_size -
-                  sizes[(spreading[i])].minimum_size;
-
-        int extra = MIN(glue, gap);
-
-        sizes[spreading[i]].minimum_size += extra;
-
-        extra_space -= extra;
-    }
-
-    return extra_space;
 }
 
 bool

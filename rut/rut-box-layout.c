@@ -1,28 +1,30 @@
 /*
- * Rig
+ * Rut
  *
- * Copyright (C) 2012 Intel Corporation.
+ * Rig Utilities
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2 of the License, or (at your option) any later version.
+ * Copyright (C) 2012-2014 Intel Corporation.
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use, copy,
+ * modify, merge, publish, distribute, sublicense, and/or sell copies
+ * of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library. If not, see
- * <http://www.gnu.org/licenses/>.
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
  *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  *
- * Note: Part of the allocate_cb code was initially based on gtkbox.c,
- * although the final implementation did end up being quite different.
- * We should re-write allocate_cb() without using
- * rut_util_distribute_natural_allocation() before re-licensing this
- * file under the MIT license.
  */
 
 #include <config.h>
@@ -34,8 +36,6 @@
 
 enum {
     RUT_BOX_LAYOUT_PROP_PACKING,
-    RUT_BOX_LAYOUT_PROP_HOMOGENEOUS,
-    RUT_BOX_LAYOUT_PROP_SPACING,
     RUT_BOX_LAYOUT_N_PROPS
 };
 
@@ -44,7 +44,21 @@ typedef struct {
     rut_object_t *transform;
     rut_object_t *widget;
     rut_closure_t *preferred_size_closure;
-    bool expand;
+
+    float flex_grow;
+    float flex_shrink;
+
+    /* The allocation algorithm needs to repeatedly iterate over
+     * 'flexible' children to resolve their size based on the
+     * flex_grow/shrink weights of all other flexible children
+     * but without violating the minimum size constraints of
+     * any of the children.
+     */
+    rut_list_t flexible_link;
+
+    float main_size;
+    float min_size;
+
 } rut_box_layout_child_t;
 
 struct _rut_box_layout_t {
@@ -56,9 +70,9 @@ struct _rut_box_layout_t {
     rut_list_t children;
     int n_children;
 
+    bool in_allocate;
+
     rut_box_layout_packing_t packing;
-    int spacing;
-    bool homogeneous;
 
     float width, height;
 
@@ -77,21 +91,6 @@ static rut_property_spec_t _rut_box_layout_prop_specs[] = {
       .blurb = "The packing direction",
       .flags = RUT_PROPERTY_FLAG_READWRITE,
       .default_value = { .integer = RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT } },
-    { .name = "homogeneous",
-      .type = RUT_PROPERTY_TYPE_BOOLEAN,
-      .getter.boolean_type = rut_box_layout_get_homogeneous,
-      .setter.boolean_type = rut_box_layout_set_homogeneous,
-      .nick = "Homogeneous",
-      .blurb = "Pack children with the same size",
-      .flags = RUT_PROPERTY_FLAG_READWRITE,
-      .default_value = { .boolean = false } },
-    { .name = "spacing",
-      .type = RUT_PROPERTY_TYPE_INTEGER,
-      .getter.integer_type = rut_box_layout_get_spacing,
-      .setter.integer_type = rut_box_layout_set_spacing,
-      .nick = "Spacing",
-      .blurb = "The spacing between children",
-      .flags = RUT_PROPERTY_FLAG_READWRITE },
     { 0 }
 };
 
@@ -120,166 +119,165 @@ _rut_box_layout_free(void *object)
     rut_object_free(rut_box_layout_t, box);
 }
 
+
+struct allocate_state
+{
+    void (*get_child_main_size)(void *sizable,
+                                float for_b,
+                                float *min_size_p,
+                                float *natural_size_p);
+
+    float main_size;
+    float cross_size;
+
+    rut_list_t flexible;
+};
+
 static void
 allocate_cb(rut_object_t *graphable, void *user_data)
 {
     rut_box_layout_t *box = graphable;
-    rut_box_layout_child_t *child;
-    rut_box_layout_packing_t packing = box->packing;
-    bool horizontal;
+    struct allocate_state state;
     int n_children = box->n_children;
-    int n_expand_children;
+    rut_box_layout_child_t *child;
+    float total_main_size = 0;
+    float main_offset = 0;
 
-    int child_x, child_y, child_width, child_height;
-    int child_size;
-    rut_preferred_size_t *sizes;
-
-    int size;
-    int extra;
-    int n_extra_px_widgets;
-    int pos;
-    int i;
-
-    if (!n_children)
+    if (n_children == 0)
         return;
 
-    sizes = c_newa(rut_preferred_size_t, n_children);
+    box->in_allocate = true;
 
-    switch (packing) {
+    switch (box->packing) {
     case RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT:
     case RUT_BOX_LAYOUT_PACKING_RIGHT_TO_LEFT:
-        size = box->width - (n_children - 1) * box->spacing;
-        horizontal = true;
-        child_y = 0;
-        child_height = box->height;
-        if (rut_shell_get_text_direction(box->shell) ==
-            RUT_TEXT_DIRECTION_RIGHT_TO_LEFT) {
-            if (packing == RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT)
-                packing = RUT_BOX_LAYOUT_PACKING_RIGHT_TO_LEFT;
-            else
-                packing = RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT;
-        }
+        state.get_child_main_size = rut_sizable_get_preferred_width;
+        state.main_size = box->width;
+        state.cross_size = box->height;
         break;
     case RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM:
     case RUT_BOX_LAYOUT_PACKING_BOTTOM_TO_TOP:
-        size = box->height - (n_children - 1) * box->spacing;
-        horizontal = false;
-        child_x = 0;
-        child_width = box->width;
+        state.get_child_main_size = rut_sizable_get_preferred_height;
+        state.main_size = box->height;
+        state.cross_size = box->width;
         break;
     }
 
-    /* Allocate the children using the calculated max size */
-    i = 0;
-    n_expand_children = 0;
-    rut_list_for_each(child, &box->children, link)
-    {
-        rut_transform_init_identity(child->transform);
+    rut_list_for_each(child, &box->children, link) {
+        state.get_child_main_size(child->widget,
+                                  state.cross_size,
+                                  &child->min_size,
+                                  &child->main_size);
 
-        if (horizontal) {
-            rut_sizable_get_preferred_width(child->widget,
-                                            box->height, /* for_height */
-                                            &sizes[i].minimum_size,
-                                            &sizes[i].natural_size);
-        } else {
-            rut_sizable_get_preferred_height(child->widget,
-                                             box->width, /* for_width */
-                                             &sizes[i].minimum_size,
-                                             &sizes[i].natural_size);
-        }
-
-        if (child->expand)
-            n_expand_children++;
-
-        size -= sizes[i].minimum_size;
-        i++;
+        total_main_size += child->main_size;
     }
 
-    if (box->homogeneous) {
-        /* If were homogenous we still need to run the above loop to get the
-         * minimum sizes for children that are not going to fill
-         */
-        if (horizontal)
-            size = box->width - (n_children - 1) * box->spacing;
-        else
-            size = box->height - (n_children - 1) * box->spacing;
+    if (total_main_size > state.main_size) {
+        float current_size = total_main_size;
+        bool hit_constraint = true;
 
-        extra = size / n_children;
-        n_extra_px_widgets = size % n_children;
-    } else {
-        /* Bring children up to size first */
-        size = rut_util_distribute_natural_allocation(
-            MAX(0, size), n_children, sizes);
+        /* shrink */
 
-        /* Calculate space which hasn't distributed yet,
-         * and is available for expanding children.
-         */
-        if (n_expand_children > 0) {
-            extra = size / n_expand_children;
-            n_extra_px_widgets = size % n_expand_children;
-        } else {
-            extra = 0;
-            n_extra_px_widgets = 0;
+        rut_list_init(&state.flexible);
+
+        rut_list_for_each(child, &box->children, link) {
+            if (child->flex_shrink)
+                rut_list_insert(state.flexible.prev, &child->flexible_link);
         }
-    }
 
-    /* Allocate child positions. */
+        /* We shrink iteratively because we might reach the minimum
+         * size of some children and therefore one iteration might
+         * not shrink as much as is required. */
+        while (!rut_list_empty(&state.flexible) && hit_constraint) {
+            rut_box_layout_child_t *tmp;
+            float total_shrink_size = current_size - state.main_size;
+            float weights_total = 0;
 
-    i = pos = 0;
-    rut_list_for_each(child, &box->children, link)
-    {
-        /* Assign the child's size. */
-        if (box->homogeneous) {
-            child_size = extra;
+            rut_list_for_each(child, &state.flexible, flexible_link)
+                weights_total += child->flex_shrink;
 
-            if (n_extra_px_widgets > 0) {
-                child_size++;
-                n_extra_px_widgets--;
-            }
-        } else {
-            child_size = sizes[i].minimum_size;
+            hit_constraint = false;
+            rut_list_for_each_safe(child, tmp, &state.flexible, flexible_link) {
+                float proportion = child->flex_shrink / weights_total;
+                float shrink_size = total_shrink_size * proportion;
 
-            if (child->expand) {
-                child_size += extra;
+                child->main_size -= shrink_size;
+                current_size -= shrink_size;
 
-                if (n_extra_px_widgets > 0) {
-                    child_size++;
-                    n_extra_px_widgets--;
+                /* Check if we've broken a minimum size constraint.. */
+                if (child->main_size < child->min_size) {
+                    current_size += (child->min_size - child->main_size);
+                    child->main_size = child->min_size;
+
+                    /* This child should no longer flex */
+                    rut_list_remove(&child->flexible_link);
+
+                    hit_constraint = true;
                 }
             }
         }
 
-        /* Assign the child's position. */
+    } else if (total_main_size < state.main_size) {
 
-        child_size = MAX(1, child_size);
+        /* grow */
 
-        switch (packing) {
-        case RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT:
-            child_x = pos;
-            child_width = child_size;
-            break;
-        case RUT_BOX_LAYOUT_PACKING_RIGHT_TO_LEFT:
-            child_x = box->width - pos - child_size;
-            child_width = child_size;
-            break;
-        case RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM:
-            child_y = pos;
-            child_height = child_size;
-            break;
-        case RUT_BOX_LAYOUT_PACKING_BOTTOM_TO_TOP:
-            child_y = box->height - pos - child_size;
-            child_height = child_size;
-            break;
+        float total_grow_size = state.main_size - total_main_size;
+        float weights_total = 0;
+
+        rut_list_init(&state.flexible);
+
+        rut_list_for_each(child, &box->children, link) {
+            if (child->flex_grow) {
+                rut_list_insert(state.flexible.prev, &child->flexible_link);
+                weights_total += child->flex_grow;
+            }
         }
 
-        pos += child_size + box->spacing;
+        /* XXX: when growing we will never reach a maximum size
+         * constraint for a child, so we don't need to worry about
+         * flexing iteratively like we do when shrinking. */
 
-        rut_sizable_set_size(child->widget, child_width, child_height);
-        rut_transform_init_identity(child->transform);
-        rut_transform_translate(child->transform, child_x, child_y, 0.0f);
+        rut_list_for_each(child, &state.flexible, flexible_link) {
+            float proportion = child->flex_grow / weights_total;
 
-        i++;
+            child->main_size += total_grow_size * proportion;
+        }
     }
+
+    rut_list_for_each(child, &box->children, link) {
+        float x = 0, y = 0, width, height;
+
+        switch (box->packing) {
+            case RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT:
+                width = child->main_size;
+                height = state.cross_size;
+                x = main_offset;
+                break;
+            case RUT_BOX_LAYOUT_PACKING_RIGHT_TO_LEFT:
+                width = child->main_size;
+                height = state.cross_size;
+                x = state.main_size - main_offset - child->main_size;
+                break;
+            case RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM:
+                width = state.cross_size;
+                height = child->main_size;
+                y = main_offset;
+                break;
+            case RUT_BOX_LAYOUT_PACKING_BOTTOM_TO_TOP:
+                width = state.cross_size;
+                height = child->main_size;
+                y = state.main_size - main_offset - child->main_size;
+                break;
+        }
+
+        rut_sizable_set_size(child->widget, width, height);
+        rut_transform_init_identity(child->transform);
+        rut_transform_translate(child->transform, x, y, 0);
+
+        main_offset += child->main_size;
+    }
+
+    box->in_allocate = false;
 }
 
 static void
@@ -311,18 +309,18 @@ rut_box_layout_set_size(void *object, float width, float height)
 }
 
 static void
-get_main_preferred_size(rut_box_layout_t *box,
+get_preferred_main_size(rut_box_layout_t *box,
                         float for_size,
                         float *min_size_p,
                         float *natural_size_p)
 {
-    float total_min_size = 0.0f;
-    float total_natural_size = 0.0f;
+    float total_min_size = 0;
+    float total_natural_size = 0;
     rut_box_layout_child_t *child;
 
     rut_list_for_each(child, &box->children, link)
     {
-        float min_size = 0.0f, natural_size = 0.0f;
+        float min_size = 0, natural_size = 0;
 
         switch (box->packing) {
         case RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT:
@@ -355,7 +353,7 @@ get_main_preferred_size(rut_box_layout_t *box,
 }
 
 static void
-get_other_preferred_size(rut_box_layout_t *box,
+get_preferred_cross_size(rut_box_layout_t *box,
                          float for_size,
                          float *min_size_p,
                          float *natural_size_p)
@@ -411,12 +409,12 @@ rut_box_layout_get_preferred_width(void *sizable,
     switch (box->packing) {
     case RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT:
     case RUT_BOX_LAYOUT_PACKING_RIGHT_TO_LEFT:
-        get_main_preferred_size(box, for_height, min_width_p, natural_width_p);
+        get_preferred_main_size(box, for_height, min_width_p, natural_width_p);
         break;
 
     case RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM:
     case RUT_BOX_LAYOUT_PACKING_BOTTOM_TO_TOP:
-        get_other_preferred_size(box, for_height, min_width_p, natural_width_p);
+        get_preferred_cross_size(box, for_height, min_width_p, natural_width_p);
         break;
     }
 }
@@ -432,13 +430,13 @@ rut_box_layout_get_preferred_height(void *sizable,
     switch (box->packing) {
     case RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT:
     case RUT_BOX_LAYOUT_PACKING_RIGHT_TO_LEFT:
-        get_other_preferred_size(
+        get_preferred_cross_size(
             box, for_width, min_height_p, natural_height_p);
         break;
 
     case RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM:
     case RUT_BOX_LAYOUT_PACKING_BOTTOM_TO_TOP:
-        get_main_preferred_size(box, for_width, min_height_p, natural_height_p);
+        get_preferred_main_size(box, for_width, min_height_p, natural_height_p);
         break;
     }
 }
@@ -528,6 +526,8 @@ child_preferred_size_cb(rut_object_t *sizable, void *user_data)
 {
     rut_box_layout_t *box = user_data;
 
+    c_return_if_fail(!box->in_allocate);
+
     preferred_size_changed(box);
     queue_allocation(box);
 }
@@ -548,7 +548,11 @@ rut_box_layout_add(rut_box_layout_t *box,
     child->widget = child_widget;
     rut_graphable_add_child(child->transform, child_widget);
 
-    child->expand = expand;
+    child->flex_grow = 1;
+    child->flex_shrink = 1;
+
+    if (!expand)
+        child->flex_grow = 0;
 
     box->n_children++;
 
@@ -587,53 +591,6 @@ rut_box_layout_remove(rut_box_layout_t *box, rut_object_t *child_widget)
             break;
         }
     }
-}
-
-bool
-rut_box_layout_get_homogeneous(rut_object_t *obj)
-{
-    rut_box_layout_t *box = obj;
-    return box->homogeneous;
-}
-
-void
-rut_box_layout_set_homogeneous(rut_object_t *obj, bool homogeneous)
-{
-    rut_box_layout_t *box = obj;
-
-    if (box->homogeneous == homogeneous)
-        return;
-
-    box->homogeneous = homogeneous;
-
-    rut_property_dirty(&box->shell->property_ctx,
-                       &box->properties[RUT_BOX_LAYOUT_PROP_HOMOGENEOUS]);
-
-    queue_allocation(box);
-}
-
-int
-rut_box_layout_get_spacing(rut_object_t *obj)
-{
-    rut_box_layout_t *box = obj;
-
-    return box->spacing;
-}
-
-void
-rut_box_layout_set_spacing(rut_object_t *obj, int spacing)
-{
-    rut_box_layout_t *box = obj;
-
-    if (box->spacing == spacing)
-        return;
-
-    box->spacing = spacing;
-
-    rut_property_dirty(&box->shell->property_ctx,
-                       &box->properties[RUT_BOX_LAYOUT_PROP_SPACING]);
-
-    queue_allocation(box);
 }
 
 int

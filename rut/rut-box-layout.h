@@ -51,14 +51,6 @@ rut_box_layout_add(rut_box_layout_t *box, bool expand, rut_object_t *child);
 
 void rut_box_layout_remove(rut_box_layout_t *box, rut_object_t *child);
 
-bool rut_box_layout_get_homogeneous(rut_object_t *obj);
-
-void rut_box_layout_set_homogeneous(rut_object_t *obj, bool homogeneous);
-
-int rut_box_layout_get_spacing(rut_object_t *obj);
-
-void rut_box_layout_set_spacing(rut_object_t *obj, int spacing);
-
 int rut_box_layout_get_packing(rut_object_t *obj);
 
 void rut_box_layout_set_packing(rut_object_t *obj,

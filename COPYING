@@ -131,8 +131,6 @@ rut/rut-text.c
 rut/rut-text.h
 rut/rut-text-buffer.c
 rut/rut-text-buffer.h
-rut/rut-utils.c
-rut/rut-box-layout.c
 rut/gstmemsrc.c
 
 For reference; we are working to replace this code with code licensed
