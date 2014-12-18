@@ -526,7 +526,10 @@ child_preferred_size_cb(rut_object_t *sizable, void *user_data)
 {
     rut_box_layout_t *box = user_data;
 
-    c_return_if_fail(!box->in_allocate);
+    /* The change in preference will be because we just changed the
+     * child's size... */
+    if (box->in_allocate)
+        return;
 
     preferred_size_changed(box);
     queue_allocation(box);

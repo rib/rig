@@ -66,6 +66,8 @@ struct _rut_stack_t {
 
     rut_list_t children;
 
+    bool in_allocate;
+
     rut_list_t preferred_size_cb_list;
 
     rut_introspectable_props_t introspectable;
@@ -108,12 +110,15 @@ allocate_cb(rut_object_t *graphable, void *user_data)
     rut_stack_t *stack = graphable;
     rut_stack_child_t *child_data;
 
-    rut_list_for_each(child_data, &stack->children, list_node)
-    {
+    stack->in_allocate = true;
+
+    rut_list_for_each(child_data, &stack->children, list_node) {
         rut_object_t *child = child_data->child;
         if (rut_object_is(child, RUT_TRAIT_ID_SIZABLE))
             rut_sizable_set_size(child, stack->width, stack->height);
     }
+
+    stack->in_allocate = false;
 }
 
 static void
@@ -163,6 +168,11 @@ static void
 child_preferred_size_cb(rut_object_t *sizable, void *user_data)
 {
     rut_stack_t *stack = user_data;
+
+    /* The change in preference will be because we just changed the
+     * child's size... */
+    if (stack->in_allocate)
+        return;
 
     preferred_size_changed(stack);
     queue_allocation(stack);

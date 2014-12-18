@@ -49,6 +49,8 @@ struct _rut_shim_t {
     rut_object_t *child;
     rut_closure_t *child_preferred_size_closure;
 
+    bool in_allocate;
+
     rut_graphable_props_t graphable;
 };
 
@@ -69,8 +71,14 @@ allocate_cb(rut_object_t *graphable, void *user_data)
 {
     rut_shim_t *shim = graphable;
 
-    if (shim->child)
-        rut_sizable_set_size(shim->child, shim->width, shim->height);
+    if (!shim->child)
+        return;
+
+    shim->in_allocate = true;
+
+    rut_sizable_set_size(shim->child, shim->width, shim->height);
+
+    shim->in_allocate = false;
 }
 
 static void
@@ -227,6 +235,11 @@ static void
 child_preferred_size_cb(rut_object_t *sizable, void *user_data)
 {
     rut_shim_t *shim = user_data;
+
+    /* The change in preference will be because we just changed the
+     * child's size... */
+    if (shim->in_allocate)
+        return;
 
     if (shim->axis == RUT_SHIM_AXIS_XY)
         return;

@@ -98,6 +98,8 @@ struct _rut_flow_layout_t {
     rut_list_t children;
     int n_children;
 
+    bool in_allocate;
+
     rut_flow_layout_packing_t packing;
 
     int x_padding;
@@ -536,6 +538,8 @@ allocate_cb(rut_object_t *graphable, void *user_data)
     if (flow->n_children == 0)
         return;
 
+    flow->in_allocate = true;
+
     init_reflow_state(&state, flow, flow->width, flow->height);
 
     /* Since it's quite likely we will be allocated according to a
@@ -546,6 +550,8 @@ allocate_cb(rut_object_t *graphable, void *user_data)
         reflow(flow, &state, &length_ignore);
 
     flush_allocations(flow);
+
+    flow->in_allocate = false;
 }
 
 static void
@@ -711,6 +717,11 @@ static void
 child_preferred_size_cb(rut_object_t *sizable, void *user_data)
 {
     rut_flow_layout_t *flow = user_data;
+
+    /* The change in preference will be because we just changed the
+     * child's size... */
+    if (flow->in_allocate)
+        return;
 
     preferred_size_changed(flow);
     queue_allocation(flow);

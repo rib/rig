@@ -47,6 +47,8 @@ struct _rut_bin_t {
     rut_object_t *child;
     rut_closure_t *child_preferred_size_closure;
 
+    bool in_allocate;
+
     float left_padding, right_padding;
     float top_padding, bottom_padding;
 
@@ -78,25 +80,28 @@ static void
 allocate_cb(rut_object_t *graphable, void *user_data)
 {
     rut_bin_t *bin = graphable;
+    float child_width, child_height;
+    float child_x = bin->left_padding;
+    float child_y = bin->top_padding;
+    float available_width =
+        bin->width - bin->left_padding - bin->right_padding;
+    float available_height =
+        bin->height - bin->top_padding - bin->bottom_padding;
 
-    if (bin->child) {
-        float child_width, child_height;
-        float child_x = bin->left_padding;
-        float child_y = bin->top_padding;
-        float available_width =
-            bin->width - bin->left_padding - bin->right_padding;
-        float available_height =
-            bin->height - bin->top_padding - bin->bottom_padding;
+    if (!bin->child)
+        return;
 
-        rut_sizable_get_preferred_width(bin->child,
-                                        -1, /* for_height */
-                                        NULL, /* min_width_p */
-                                        &child_width);
+    bin->in_allocate = true;
 
-        if (child_width > available_width)
-            child_width = available_width;
+    rut_sizable_get_preferred_width(bin->child,
+                                    -1, /* for_height */
+                                    NULL, /* min_width_p */
+                                    &child_width);
 
-        switch (bin->x_position) {
+    if (child_width > available_width)
+        child_width = available_width;
+
+    switch (bin->x_position) {
         case RUT_BIN_POSITION_BEGIN:
             break;
 
@@ -113,17 +118,17 @@ allocate_cb(rut_object_t *graphable, void *user_data)
         case RUT_BIN_POSITION_EXPAND:
             child_width = available_width;
             break;
-        }
+    }
 
-        rut_sizable_get_preferred_height(bin->child,
-                                         child_width, /* for_width */
-                                         NULL, /* min_height_p */
-                                         &child_height);
+    rut_sizable_get_preferred_height(bin->child,
+                                     child_width, /* for_width */
+                                     NULL, /* min_height_p */
+                                     &child_height);
 
-        if (child_height > available_height)
-            child_height = available_height;
+    if (child_height > available_height)
+        child_height = available_height;
 
-        switch (bin->y_position) {
+    switch (bin->y_position) {
         case RUT_BIN_POSITION_BEGIN:
             break;
 
@@ -140,12 +145,13 @@ allocate_cb(rut_object_t *graphable, void *user_data)
         case RUT_BIN_POSITION_EXPAND:
             child_height = available_height;
             break;
-        }
-
-        rut_transform_init_identity(bin->child_transform);
-        rut_transform_translate(bin->child_transform, child_x, child_y, 0.0f);
-        rut_sizable_set_size(bin->child, child_width, child_height);
     }
+
+    rut_transform_init_identity(bin->child_transform);
+    rut_transform_translate(bin->child_transform, child_x, child_y, 0.0f);
+    rut_sizable_set_size(bin->child, child_width, child_height);
+
+    bin->in_allocate = false;
 }
 
 static void
@@ -326,6 +332,11 @@ static void
 child_preferred_size_cb(rut_object_t *sizable, void *user_data)
 {
     rut_bin_t *bin = user_data;
+
+    /* The change in preference will be because we just changed the
+     * child's size... */
+    if (bin->in_allocate)
+        return;
 
     preferred_size_changed(bin);
     queue_allocation(bin);
