@@ -84,6 +84,9 @@
 #ifdef USE_SDL
 #include "rut-sdl-shell.h"
 #endif
+#ifdef USE_X11
+#include "rut-x11-shell.h"
+#endif
 
 #ifdef USE_GSTREAMER
 #include "gstmemsrc.h"
@@ -191,32 +194,16 @@ rut_input_event_get_type(rut_input_event_t *event)
     return event->type;
 }
 
-cg_onscreen_t *
+rut_shell_onscreen_t *
 rut_input_event_get_onscreen(rut_input_event_t *event)
 {
-    rut_shell_t *shell = event->shell;
-
-    if (shell->headless)
-        return NULL;
-
-    if (shell->platform.input_event_get_onscreen)
-        return shell->platform.input_event_get_onscreen(event);
-
-    /* If there is only one onscreen then we'll assume that all events are
-     * related to that. E.g. this will be the case when using Android */
-    if (shell->onscreens.next != &shell->onscreens &&
-        shell->onscreens.next->next == &shell->onscreens) {
-        rut_shell_onscreen_t *shell_onscreen =
-            rut_container_of(shell->onscreens.next, shell_onscreen, link);
-        return shell_onscreen->onscreen;
-    } else
-        return NULL;
+    return event->onscreen;
 }
 
 int32_t
 rut_key_event_get_keysym(rut_input_event_t *event)
 {
-    rut_shell_t *shell = event->shell;
+    rut_shell_t *shell = event->onscreen->shell;
 
     if (shell->headless) {
         rut_stream_event_t *stream_event = event->native;
@@ -235,7 +222,7 @@ rut_key_event_get_keysym(rut_input_event_t *event)
 rut_key_event_action_t
 rut_key_event_get_action(rut_input_event_t *event)
 {
-    rut_shell_t *shell = event->shell;
+    rut_shell_t *shell = event->onscreen->shell;
 
     if (shell->headless) {
         rut_stream_event_t *stream_event = event->native;
@@ -255,7 +242,7 @@ rut_key_event_get_action(rut_input_event_t *event)
 rut_motion_event_action_t
 rut_motion_event_get_action(rut_input_event_t *event)
 {
-    rut_shell_t *shell = event->shell;
+    rut_shell_t *shell = event->onscreen->shell;
 
     if (shell->headless) {
         rut_stream_event_t *stream_event = event->native;
@@ -278,7 +265,7 @@ rut_motion_event_get_action(rut_input_event_t *event)
 rut_button_state_t
 rut_motion_event_get_button(rut_input_event_t *event)
 {
-    rut_shell_t *shell = event->shell;
+    rut_shell_t *shell = event->onscreen->shell;
 
     if (shell->headless) {
         rut_stream_event_t *stream_event = event->native;
@@ -299,7 +286,7 @@ rut_motion_event_get_button(rut_input_event_t *event)
 rut_button_state_t
 rut_motion_event_get_button_state(rut_input_event_t *event)
 {
-    rut_shell_t *shell = event->shell;
+    rut_shell_t *shell = event->onscreen->shell;
 
     if (shell->headless) {
         rut_stream_event_t *stream_event = event->native;
@@ -322,7 +309,7 @@ rut_motion_event_get_button_state(rut_input_event_t *event)
 rut_modifier_state_t
 rut_key_event_get_modifier_state(rut_input_event_t *event)
 {
-    rut_shell_t *shell = event->shell;
+    rut_shell_t *shell = event->onscreen->shell;
 
     if (shell->headless) {
         rut_stream_event_t *stream_event = event->native;
@@ -342,7 +329,7 @@ rut_key_event_get_modifier_state(rut_input_event_t *event)
 rut_modifier_state_t
 rut_motion_event_get_modifier_state(rut_input_event_t *event)
 {
-    rut_shell_t *shell = event->shell;
+    rut_shell_t *shell = event->onscreen->shell;
 
     if (shell->headless) {
         rut_stream_event_t *stream_event = event->native;
@@ -358,7 +345,7 @@ rut_motion_event_get_modifier_state(rut_input_event_t *event)
         }
     }
 
-    return event->shell->platform.motion_event_get_modifier_state(event);
+    return shell->platform.motion_event_get_modifier_state(event);
 }
 
 static void
@@ -367,7 +354,7 @@ rut_motion_event_get_transformed_xy(rut_input_event_t *event,
                                     float *y)
 {
     const cg_matrix_t *transform = event->input_transform;
-    rut_shell_t *shell = event->shell;
+    rut_shell_t *shell = event->onscreen->shell;
 
     if (shell->headless) {
         rut_stream_event_t *stream_event = event->native;
@@ -443,13 +430,13 @@ rut_motion_event_unproject(rut_input_event_t *event,
 rut_object_t *
 rut_drop_offer_event_get_payload(rut_input_event_t *event)
 {
-    return event->shell->drag_payload;
+    return event->onscreen->shell->drag_payload;
 }
 
 const char *
 rut_text_event_get_text(rut_input_event_t *event)
 {
-    return event->shell->platform.text_event_get_text(event);
+    return event->onscreen->shell->platform.text_event_get_text(event);
 }
 
 static void
@@ -603,8 +590,9 @@ _rut_shell_get_scenegraph_event_target(rut_shell_t *shell,
 }
 
 static void
-cancel_current_drop_offer_taker(rut_shell_t *shell)
+cancel_current_drop_offer_taker(rut_shell_onscreen_t *onscreen)
 {
+    rut_shell_t *shell = onscreen->shell;
     rut_input_event_t drop_cancel;
     rut_input_event_status_t status;
 
@@ -612,7 +600,7 @@ cancel_current_drop_offer_taker(rut_shell_t *shell)
         return;
 
     drop_cancel.type = RUT_INPUT_EVENT_TYPE_DROP_CANCEL;
-    drop_cancel.shell = shell;
+    drop_cancel.onscreen = onscreen;
     drop_cancel.native = NULL;
     drop_cancel.camera = NULL;
     drop_cancel.input_transform = NULL;
@@ -625,34 +613,15 @@ cancel_current_drop_offer_taker(rut_shell_t *shell)
     shell->drop_offer_taker = NULL;
 }
 
-static rut_shell_onscreen_t *
-get_shell_onscreen(rut_shell_t *shell,
-                   cg_onscreen_t *onscreen)
-{
-    rut_shell_onscreen_t *shell_onscreen;
-
-    rut_list_for_each(shell_onscreen, &shell->onscreens, link)
-    if (shell_onscreen->onscreen == onscreen)
-        return shell_onscreen;
-
-    return NULL;
-}
-
 rut_input_event_status_t
 rut_shell_dispatch_input_event(rut_shell_t *shell, rut_input_event_t *event)
 {
     rut_input_event_status_t status = RUT_INPUT_EVENT_STATUS_UNHANDLED;
+    rut_shell_onscreen_t *onscreen = rut_input_event_get_onscreen(event);
     c_list_t *l;
     rut_closure_t *c, *tmp;
     rut_object_t *target;
     rut_shell_grab_t *grab;
-    cg_onscreen_t *onscreen = NULL;
-    rut_shell_onscreen_t *shell_onscreen = NULL;
-
-    onscreen = rut_input_event_get_onscreen(event);
-
-    if (onscreen)
-        shell_onscreen = get_shell_onscreen(shell, onscreen);
 
     /* Keep track of the last known position of the mouse so that we can
      * send key events to whatever is under the mouse when there is no
@@ -663,8 +632,8 @@ rut_shell_dispatch_input_event(rut_shell_t *shell, rut_input_event_t *event)
 
         /* Keep track of whether any handlers set a cursor in response to
          * the motion event */
-        if (shell_onscreen)
-            shell_onscreen->cursor_set = false;
+        if (onscreen)
+            onscreen->cursor_set = false;
 
         if (shell->drag_payload) {
             event->type = RUT_INPUT_EVENT_TYPE_DROP_OFFER;
@@ -673,7 +642,7 @@ rut_shell_dispatch_input_event(rut_shell_t *shell, rut_input_event_t *event)
         }
     } else if (rut_input_event_get_type(event) ==
                RUT_INPUT_EVENT_TYPE_DROP_OFFER)
-        cancel_current_drop_offer_taker(shell);
+        cancel_current_drop_offer_taker(onscreen);
     else if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_DROP) {
         if (shell->drop_offer_taker) {
             rut_input_event_status_t status =
@@ -765,8 +734,8 @@ handled:
     /* If nothing set a cursor in response to the motion event then
      * we'll reset it back to the default pointer */
     if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_MOTION &&
-        shell_onscreen && !shell_onscreen->cursor_set)
-        rut_shell_set_cursor(shell, onscreen, RUT_CURSOR_ARROW);
+        onscreen && !onscreen->cursor_set)
+        rut_shell_onscreen_set_cursor(onscreen, RUT_CURSOR_ARROW);
 
     return status;
 }
@@ -818,6 +787,11 @@ _rut_shell_free(void *object)
     g_object_unref(shell->pango_font_map);
     pango_font_description_free(shell->pango_font_desc);
 #endif
+
+    if (shell->headless_onscreen) {
+        rut_object_unref(shell->headless_onscreen);
+        shell->headless_onscreen = NULL;
+    }
 
     cg_object_unref(shell->cg_device);
 
@@ -1025,40 +999,18 @@ _rut_shell_init(rut_shell_t *shell)
     shell->settings = rut_settings_new();
 
     if (!shell->headless) {
-        cg_error_t *error = NULL;
-
 #ifdef USE_GSTREAMER
         if (C_UNLIKELY(initialized_once == false))
             gst_element_register(NULL, "memsrc", 0, gst_mem_src_get_type());
 #endif
 
 #ifdef USE_SDL
-        {
-            cg_renderer_t *renderer;
-
-            shell->cg_device = cg_device_new();
-
-            renderer = cg_renderer_new();
-
-            cg_renderer_set_winsys_id(renderer, CG_WINSYS_ID_SDL);
-            if (cg_renderer_connect(renderer, &error))
-                cg_device_set_renderer(shell->cg_device, renderer);
-            else {
-                cg_error_free(error);
-                c_warning("Failed to setup SDL renderer; "
-                          "falling back to default\n");
-            }
-        }
-#else
-        shell->cg_device = cg_device_new();
+        rut_sdl_shell_init(shell);
+#elif defined(USE_X11)
+        rut_x11_shell_init(shell);
+#elif defined(__ANDROID__)
+        rut_android_shell_init(shell);
 #endif
-
-        cg_device_connect(shell->cg_device, &error);
-        if (!shell->cg_device) {
-            c_warning("Failed to create Cogl Context: %s", error->message);
-            c_free(shell);
-            return;
-        }
 
         shell->nine_slice_indices =
             cg_indices_new(shell->cg_device,
@@ -1096,11 +1048,6 @@ _rut_shell_init(rut_shell_t *shell)
                                         14 * PANGO_SCALE);
 #endif
 
-#ifdef USE_SDL
-        rut_sdl_shell_init(shell);
-#elif defined(__ANDROID__)
-        rut_android_shell_init(shell);
-#endif
     }
 
     rut_poll_sources_init(shell);
@@ -1153,66 +1100,31 @@ rut_shell_ungrab_key_focus(rut_shell_t *shell)
 }
 
 void
-rut_shell_set_cursor(rut_shell_t *shell,
-                     cg_onscreen_t *onscreen,
-                     rut_cursor_t cursor)
+rut_shell_onscreen_set_cursor(rut_shell_onscreen_t *onscreen,
+                              rut_cursor_t cursor)
 {
-    rut_shell_onscreen_t *shell_onscreen;
+    c_return_if_fail(onscreen != NULL);
 
-    shell_onscreen = get_shell_onscreen(shell, onscreen);
-
-    if (shell_onscreen == NULL)
+    if (onscreen->current_cursor == cursor)
         return;
 
-    if (shell_onscreen->current_cursor != cursor) {
-#if defined(USE_SDL)
-        SDL_Cursor *cursor_image;
-        SDL_SystemCursor system_cursor;
+    if (onscreen->current_cursor != cursor) {
+        rut_shell_t *shell = onscreen->shell;
 
-        switch (cursor) {
-        case RUT_CURSOR_ARROW:
-            system_cursor = SDL_SYSTEM_CURSOR_ARROW;
-            break;
-        case RUT_CURSOR_IBEAM:
-            system_cursor = SDL_SYSTEM_CURSOR_IBEAM;
-            break;
-        case RUT_CURSOR_WAIT:
-            system_cursor = SDL_SYSTEM_CURSOR_WAIT;
-            break;
-        case RUT_CURSOR_CROSSHAIR:
-            system_cursor = SDL_SYSTEM_CURSOR_CROSSHAIR;
-            break;
-        case RUT_CURSOR_SIZE_WE:
-            system_cursor = SDL_SYSTEM_CURSOR_SIZEWE;
-            break;
-        case RUT_CURSOR_SIZE_NS:
-            system_cursor = SDL_SYSTEM_CURSOR_SIZENS;
-            break;
-        }
+        if (shell->platform.onscreen_set_cursor)
+            shell->platform.onscreen_set_cursor(onscreen, cursor);
 
-        cursor_image = SDL_CreateSystemCursor(system_cursor);
-        SDL_SetCursor(cursor_image);
-
-        if (shell_onscreen->cursor_image)
-            SDL_FreeCursor(shell_onscreen->cursor_image);
-        shell_onscreen->cursor_image = cursor_image;
-#endif
-
-        shell_onscreen->current_cursor = cursor;
+        onscreen->current_cursor = cursor;
     }
 
-    shell_onscreen->cursor_set = true;
+    onscreen->cursor_set = true;
 }
 
 void
-rut_shell_set_title(rut_shell_t *shell,
-                    cg_onscreen_t *onscreen,
-                    const char *title)
+rut_shell_onscreen_set_title(rut_shell_onscreen_t *onscreen,
+                             const char *title)
 {
-#if defined(USE_SDL)
-    SDL_Window *window = cg_sdl_onscreen_get_window(onscreen);
-    SDL_SetWindowTitle(window, title);
-#endif /* USE_SDL */
+    onscreen->shell->platform.onscreen_set_title(onscreen, title);
 }
 
 static void
@@ -1428,7 +1340,14 @@ rut_shell_handle_stream_event(rut_shell_t *shell,
     event->native = stream_event;
 
     event->type = 0;
-    event->shell = shell;
+
+    /* We make a dummy onscreen to associate with headless events
+     * for consistency and so we can always map an event to a
+     * shell via event->onscreen->shell. */
+    if (!shell->headless_onscreen)
+        shell->headless_onscreen = rut_shell_onscreen_new(shell, 100, 100);
+
+    event->onscreen = shell->headless_onscreen;
     event->input_transform = NULL;
 
     switch (stream_event->type) {
@@ -1499,35 +1418,122 @@ _rut_shell_paint(rut_shell_t *shell)
 }
 
 static void
-destroy_onscreen_cb(void *user_data)
+_rut_shell_onscreen_free(void *object)
 {
-    rut_shell_onscreen_t *shell_onscreen = user_data;
+    rut_shell_onscreen_t *onscreen = object;
 
-    rut_list_remove(&shell_onscreen->link);
+    rut_list_remove(&onscreen->link);
+
+    rut_object_free(rut_shell_onscreen_t, object);
+}
+
+rut_type_t rut_shell_onscreen_type;
+
+static void
+_rut_shell_onscreen_init_type(void)
+{
+    rut_type_init(&rut_shell_onscreen_type,
+                  "rut_shell_onscreen_t", _rut_shell_onscreen_free);
+}
+
+rut_shell_onscreen_t *
+rut_shell_onscreen_new(rut_shell_t *shell,
+                       int width, int height)
+{
+    rut_shell_onscreen_t *onscreen =
+        rut_object_alloc0(rut_shell_onscreen_t, &rut_shell_onscreen_type,
+                          _rut_shell_onscreen_init_type);
+
+    onscreen->shell = shell;
+
+    onscreen->width = width;
+    onscreen->height = height;
+    onscreen->is_ready = true;
+
+    rut_list_insert(&shell->onscreens, &onscreen->link);
+
+    return onscreen;
+}
+
+
+static void
+onscreen_maybe_queue_redraw(rut_shell_onscreen_t *onscreen)
+{
+    if (onscreen->is_dirty && onscreen->is_ready)
+        rut_shell_queue_redraw_real(onscreen->shell);
+}
+
+static void
+onscreen_frame_event_cb(cg_onscreen_t *cg_onscreen,
+                        cg_frame_event_t event,
+                        cg_frame_info_t *info,
+                        void *user_data)
+{
+    rut_shell_onscreen_t *onscreen = user_data;
+
+    if (event == CG_FRAME_EVENT_SYNC) {
+        onscreen->is_ready = true;
+        onscreen_maybe_queue_redraw(onscreen);
+    }
+}
+
+static void
+onscreen_dirty_cb(cg_onscreen_t *cg_onscreen,
+                  const cg_onscreen_dirty_info_t *info,
+                  void *user_data)
+{
+    rut_shell_onscreen_t *onscreen = user_data;
+
+    onscreen->is_dirty = true;
+
+    onscreen_maybe_queue_redraw(onscreen);
+}
+
+bool
+rut_shell_onscreen_allocate(rut_shell_onscreen_t *onscreen)
+{
+    onscreen->cg_onscreen =
+        onscreen->shell->platform.allocate_onscreen(onscreen);
+
+    if (!onscreen->cg_onscreen)
+        return false;
+
+    cg_onscreen_set_resizable(onscreen->cg_onscreen,
+                              onscreen->resizable);
+
+    cg_onscreen_add_dirty_callback(onscreen->cg_onscreen,
+                                   onscreen_dirty_cb,
+                                   onscreen, /* user data */
+                                   NULL); /* destroy notify */
+    cg_onscreen_add_frame_callback(onscreen->cg_onscreen,
+                                   onscreen_frame_event_cb,
+                                   onscreen, /* user data */
+                                   NULL); /* destroy notify */
+
+    return true;
 }
 
 void
-rut_shell_add_onscreen(rut_shell_t *shell, cg_onscreen_t *onscreen)
+rut_shell_onscreen_set_resizable(rut_shell_onscreen_t *onscreen,
+                                 bool resizable)
 {
-    rut_shell_onscreen_t *shell_onscreen = c_slice_new0(rut_shell_onscreen_t);
-    static cg_user_data_key_t data_key;
+    c_return_if_fail(onscreen->cg_onscreen == NULL);
 
-    shell_onscreen->onscreen = onscreen;
-    cg_object_set_user_data(
-        CG_OBJECT(onscreen), &data_key, shell_onscreen, destroy_onscreen_cb);
-    rut_list_insert(&shell->onscreens, &shell_onscreen->link);
+    onscreen->resizable = resizable;
+}
 
-#ifdef USE_SDL
-    {
-        SDL_Window *sdl_window =
-            cg_sdl_onscreen_get_window(shell_onscreen->onscreen);
+void
+rut_shell_onscreen_resize(rut_shell_onscreen_t *onscreen,
+                          int width,
+                          int height)
+{
+    onscreen->shell->platform.onscreen_resize(onscreen, width, height);
+}
 
-        SDL_VERSION(&shell_onscreen->sdl_info.version);
-        SDL_GetWindowWMInfo(sdl_window, &shell_onscreen->sdl_info);
-
-        shell->sdl_subsystem = shell_onscreen->sdl_info.subsystem;
-    }
-#endif
+void
+rut_shell_onscreen_show(rut_shell_onscreen_t *onscreen)
+{
+    cg_onscreen_show(onscreen->cg_onscreen);
 }
 
 void
@@ -1674,6 +1680,12 @@ rut_shell_grab_pointer(rut_shell_t *shell,
 static void
 paint_idle_cb(void *user_data)
 {
+    rut_shell_t *shell = user_data;
+    rut_shell_onscreen_t *onscreen;
+
+    rut_list_for_each(onscreen, &shell->onscreens, link)
+        onscreen->is_dirty = false;
+
     _rut_shell_paint(user_data);
 }
 
@@ -1681,8 +1693,9 @@ void
 rut_shell_queue_redraw_real(rut_shell_t *shell)
 {
     if (!shell->paint_idle) {
-        shell->paint_idle = rut_poll_shell_add_idle(
-            shell, paint_idle_cb, shell, NULL); /* destroy notify */
+        shell->paint_idle =
+            rut_poll_shell_add_idle(shell, paint_idle_cb, shell,
+                                    NULL); /* destroy notify */
     }
 }
 
@@ -1691,8 +1704,24 @@ rut_shell_queue_redraw(rut_shell_t *shell)
 {
     if (shell->queue_redraw_callback)
         shell->queue_redraw_callback(shell, shell->queue_redraw_data);
-    else
+    else {
+        rut_shell_onscreen_t *first_onscreen =
+            rut_container_of(shell->onscreens.next, first_onscreen, link);
+
+        /* We throttle rendering according to the first onscreen */
+        if (first_onscreen) {
+            first_onscreen->is_dirty = true;
+
+            /* If we're still waiting for a previous redraw to complete
+             * then we can rely on onscreen_frame_event_cb() to
+             * re-attempt queueing this redraw later, now that
+             * first_onscreen has been marked as dirty. */
+            if (!first_onscreen->is_ready)
+                return;
+        }
+
         rut_shell_queue_redraw_real(shell);
+    }
 }
 
 void
@@ -1826,12 +1855,13 @@ rut_shell_quit(rut_shell_t *shell)
 }
 
 static void
-_rut_shell_paste(rut_shell_t *shell, rut_object_t *data)
+_rut_shell_onscreen_paste(rut_shell_onscreen_t *onscreen, rut_object_t *data)
 {
+    rut_shell_t *shell = onscreen->shell;
     rut_input_event_t drop_event;
 
     drop_event.type = RUT_INPUT_EVENT_TYPE_DROP;
-    drop_event.shell = shell;
+    drop_event.onscreen = onscreen;
     drop_event.native = data;
     drop_event.camera = NULL;
     drop_event.input_transform = NULL;
@@ -1842,8 +1872,9 @@ _rut_shell_paste(rut_shell_t *shell, rut_object_t *data)
 }
 
 void
-rut_shell_drop(rut_shell_t *shell)
+rut_shell_onscreen_drop(rut_shell_onscreen_t *onscreen)
 {
+    rut_shell_t *shell = onscreen->shell;
     rut_input_event_t drop_event;
     rut_input_event_status_t status;
 
@@ -1851,7 +1882,7 @@ rut_shell_drop(rut_shell_t *shell)
         return;
 
     drop_event.type = RUT_INPUT_EVENT_TYPE_DROP;
-    drop_event.shell = shell;
+    drop_event.onscreen = onscreen;
     drop_event.native = shell->drag_payload;
     drop_event.camera = NULL;
     drop_event.input_transform = NULL;
@@ -1860,7 +1891,7 @@ rut_shell_drop(rut_shell_t *shell)
 
     c_warn_if_fail(status == RUT_INPUT_EVENT_STATUS_HANDLED);
 
-    rut_shell_cancel_drag(shell);
+    rut_shell_onscreen_cancel_drag(onscreen);
 }
 
 rut_object_t *
@@ -1952,13 +1983,13 @@ clipboard_input_grab_cb(rut_input_event_t *event, void *user_data)
         rut_key_event_get_action(event) == RUT_KEY_EVENT_ACTION_UP) {
         if (rut_key_event_get_keysym(event) == RUT_KEY_v &&
             (rut_key_event_get_modifier_state(event) & RUT_MODIFIER_CTRL_ON)) {
-            rut_shell_t *shell = event->shell;
+            rut_shell_t *shell = event->onscreen->shell;
             rut_object_t *data = shell->clipboard;
             rut_mimable_vtable_t *mimable =
                 rut_object_get_vtable(data, RUT_TRAIT_ID_MIMABLE);
             rut_object_t *copy = mimable->copy(data);
 
-            _rut_shell_paste(shell, copy);
+            _rut_shell_onscreen_paste(event->onscreen, copy);
 
             return RUT_INPUT_EVENT_STATUS_HANDLED;
         }
@@ -2077,27 +2108,38 @@ rut_shell_get_selection(rut_shell_t *shell)
 }
 
 void
-rut_shell_start_drag(rut_shell_t *shell, rut_object_t *payload)
+rut_shell_onscreen_start_drag(rut_shell_onscreen_t *onscreen,
+                              rut_object_t *payload)
 {
+    rut_shell_t *shell = onscreen->shell;
+
     c_return_if_fail(shell->drag_payload == NULL);
 
-    if (payload)
+    if (payload) {
         shell->drag_payload = rut_object_ref(payload);
-}
-
-void
-rut_shell_cancel_drag(rut_shell_t *shell)
-{
-    if (shell->drag_payload) {
-        cancel_current_drop_offer_taker(shell);
-        rut_object_unref(shell->drag_payload);
-        shell->drag_payload = NULL;
+        shell->drag_onscreen = onscreen;
     }
 }
 
 void
-rut_shell_take_drop_offer(rut_shell_t *shell, rut_object_t *taker)
+rut_shell_onscreen_cancel_drag(rut_shell_onscreen_t *onscreen)
 {
+    rut_shell_t *shell = onscreen->shell;
+
+    if (shell->drag_payload) {
+        cancel_current_drop_offer_taker(onscreen);
+        rut_object_unref(shell->drag_payload);
+        shell->drag_payload = NULL;
+        shell->drag_onscreen = NULL;
+    }
+}
+
+void
+rut_shell_onscreen_take_drop_offer(rut_shell_onscreen_t *onscreen,
+                                   rut_object_t *taker)
+{
+    rut_shell_t *shell = onscreen->shell;
+
     c_return_if_fail(rut_object_is(taker, RUT_TRAIT_ID_INPUTABLE));
 
     /* shell->drop_offer_taker is always canceled at the start of
@@ -2142,7 +2184,7 @@ get_system_data_dirs(void)
 {
 #ifdef USE_GLIB
     return g_get_system_data_dirs();
-#elif defined(linux) && !defined(__ANDROID__)
+#elif defined(__linux__) && !defined(__ANDROID__)
     static char **dirs = NULL;
     if (!dirs) {
         const char *dirs_var = getenv("XDG_DATA_DIRS");

@@ -27,34 +27,43 @@
  *
  */
 
-#ifndef _RUT_OS_H_
-#define _RUT_OS_H_
+#ifndef _RUT_X11_SHELL_H_
+#define _RUT_X11_SHELL_H_
 
-#include <stdint.h>
-#include <string.h>
+#include "rut-shell.h"
 
-#include "rut-exception.h"
+typedef struct _rut_x11_event_t {
+    XGenericEventCookie xcookie;
 
-typedef enum _rut_io_exception_t {
-    RUT_IO_EXCEPTION_BAD_VALUE = 1,
-    RUT_IO_EXCEPTION_NO_SPACE,
-    RUT_IO_EXCEPTION_IO,
-} rut_io_exception_t;
+#if 0
+    /* We track keyboard state via libxkbcommon's struct xkb_state api
+     * but since we currently update the keyboard state immediatly
+     * when recieve events, not synchronised with the deferred
+     * processing of events we query the modifier state up-front and
+     * save it in the event for processing later...
+     */
+#endif
+    /* Just to avoid repeatedly calling into libxkbcommon and also
+     * iterating the modifiers to map from xkb modifier indices to
+     * rut_modifier_state_t bits we just resolve the modifiers once...
+     */
+    rut_modifier_state_t mod_state;
 
-bool rut_os_read(int fd, void *data, int *len, rut_exception_t **e);
+    xkb_keysym_t keysym;
 
-/* Doesn't give up until it's read the expected amount of data... */
-bool rut_os_read_len(int fd, void *data, int len, rut_exception_t **e);
+    char *text;
+} rut_x11_event_t;
 
-bool rut_os_write(int fd, void *data, int len, rut_exception_t **e);
+#if 0
+typedef void (*rut_x11_event_handler_t)(rut_shell_t *shell,
+                                        XEvent *xevent,
+                                        void *user_data);
+#endif
 
-#ifdef __linux__
-int rut_os_listen_on_abstract_socket(const char *socket_name,
-                                     rut_exception_t **e);
+bool
+rut_x11_shell_init(rut_shell_t *shell);
 
-int rut_os_connect_to_abstract_socket(const char *socket_name);
-#endif /* linux */
+void
+rut_x11_shell_handle_x11_event(rut_shell_t *shell, XEvent *xevent);
 
-int rut_os_listen_on_tcp_socket(int port, rut_exception_t **e);
-
-#endif /* _RUT_OS_H_ */
+#endif /* _RUT_X11_SHELL_H_ */

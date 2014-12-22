@@ -131,9 +131,6 @@ struct _rig_engine_t {
 
     rut_shell_t *shell;
 
-    /* TODO: Move to rig_frontend_t */
-    cg_onscreen_t *onscreen;
-
     rig_pb_serializer_t *ops_serializer;
     rut_memory_stack_t *frame_stack;
     rut_magazine_t *object_id_magazine;

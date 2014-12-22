@@ -556,7 +556,11 @@ AC_DEFUN([AM_COGL],
     [wayland-egl-platform],
     [AC_HELP_STRING([--enable-wayland-egl-platform=@<:@no/yes@:>@], [Enable support for the Wayland egl platform @<:@default=no@:>@])],
     [],
-    enable_wayland_egl_platform=no
+    [
+        enable_wayland_egl_platform=no
+        PKG_CHECK_EXISTS([wayland-egl >= wayland_req_version wayland-client >= wayland_req_version],
+                         [enable_wayland_egl_platform=yes])
+    ]
   )
   AS_IF([test "x$enable_wayland_egl_platform" = "xyes"],
         [
@@ -578,7 +582,10 @@ AC_DEFUN([AM_COGL],
     [kms-egl-platform],
     [AC_HELP_STRING([--enable-kms-egl-platform=@<:@no/yes@:>@], [Enable support for the KMS egl platform @<:@default=no@:>@])],
     [],
-    enable_kms_egl_platform=no
+    [
+        enable_kms_egl_platform=no
+        PKG_CHECK_EXISTS([egl gbm libdrm], [enable_kms_egl_platform=yes])
+    ]
   )
   AS_IF([test "x$enable_kms_egl_platform" = "xyes"],
         [
@@ -611,7 +618,11 @@ AC_DEFUN([AM_COGL],
     [wayland-egl-server],
     [AC_HELP_STRING([--enable-wayland-egl-server=@<:@no/yes@:>@], [Enable server side wayland support @<:@default=no@:>@])],
     [],
-    enable_wayland_egl_server=no
+    [
+        enable_wayland_egl_server=no
+        PKG_CHECK_EXISTS([egl wayland-server >= wayland_server_req_version],
+                         [enable_wayland_egl_server=yes])
+    ]
   )
   AS_IF([test "x$enable_wayland_egl_server" = "xyes"],
         [

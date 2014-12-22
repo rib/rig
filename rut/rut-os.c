@@ -40,7 +40,7 @@
 #include <netinet/in.h>
 #endif
 
-#ifdef linux
+#ifdef __linux__
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <errno.h>
@@ -147,7 +147,7 @@ rut_os_write(int fd, void *data, int len, rut_exception_t **e)
     return true;
 }
 
-#ifdef linux
+#ifdef __linux__
 int
 rut_os_connect_to_abstract_socket(const char *socket_name)
 {

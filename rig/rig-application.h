@@ -67,7 +67,7 @@ GType rig_application_get_type(void) G_GNUC_CONST;
 rig_application_t *rig_application_new(rig_engine_t *engine);
 
 void rig_application_add_onscreen(rig_application_t *app,
-                                  cg_onscreen_t *onscreen);
+                                  rut_shell_onscreen_t *onscreen);
 
 C_END_DECLS
 

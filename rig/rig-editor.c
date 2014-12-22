@@ -2610,7 +2610,7 @@ rig_editor_init(rut_shell_t *shell, void *user_data)
                                      register_play_mode_object_cb,
                                      NULL, /* unregister id */
                                      editor); /* user data */
-#ifdef linux
+#ifdef __linux__
     /* TODO move into editor */
     rig_avahi_run_browser(engine);
 #endif

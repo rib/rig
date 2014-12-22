@@ -130,8 +130,8 @@ open_activated(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 
     /* Listen to the realize so we can set our GdkWindow to be transient
      * for Rig's GdkWindow */
-    g_signal_connect_after(
-        dialog, "realize", G_CALLBACK(dialog_realized_cb), engine->onscreen);
+    g_signal_connect_after(dialog, "realize", G_CALLBACK(dialog_realized_cb),
+                           engine->frontend->onscreen->cg_onscreen);
 
     if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
         char *filename =
@@ -215,7 +215,7 @@ destroy_onscreen_cb(void *user_data)
 
 void
 rig_application_add_onscreen(rig_application_t *app,
-                             cg_onscreen_t *onscreen)
+                             rut_shell_onscreen_t *onscreen)
 {
     rig_application_private_t *priv = app->priv;
     static cg_user_data_key_t data_key;
@@ -224,8 +224,8 @@ rig_application_add_onscreen(rig_application_t *app,
     /* The GApplication will be held while there are onscreens in a
      * similar way to how GTK works */
     g_application_hold(G_APPLICATION(app));
-    cg_object_set_user_data(
-        CG_OBJECT(onscreen), &data_key, app, destroy_onscreen_cb);
+    cg_object_set_user_data(CG_OBJECT(onscreen->cg_onscreen),
+                            &data_key, app, destroy_onscreen_cb);
 
     /* These properties are copied from what GtkApplicationWindow sets */
     value = g_application_get_application_id(G_APPLICATION(app));

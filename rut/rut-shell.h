@@ -37,6 +37,15 @@
 #include "SDL_syswm.h"
 #endif
 
+#if defined(USE_X11)
+#include <X11/Xlib.h>
+#include <X11/extensions/XKB.h>
+#include <X11/extensions/XInput2.h>
+#include <X11/Xlib-xcb.h>
+#include <xkbcommon/xkbcommon-x11.h>
+#include <xkbcommon/xkbcommon-compose.h>
+#endif
+
 #ifdef USE_UV
 #include <uv.h>
 #endif
@@ -58,6 +67,51 @@ typedef void (*rut_shell_init_callback_t)(rut_shell_t *shell, void *user_data);
 typedef void (*rut_shell_fini_callback_t)(rut_shell_t *shell, void *user_data);
 typedef void (*rut_shell_paint_callback_t)(rut_shell_t *shell, void *user_data);
 
+typedef enum {
+    RUT_CURSOR_ARROW,
+    RUT_CURSOR_IBEAM,
+    RUT_CURSOR_WAIT,
+    RUT_CURSOR_CROSSHAIR,
+    RUT_CURSOR_SIZE_WE,
+    RUT_CURSOR_SIZE_NS
+} rut_cursor_t;
+
+typedef struct {
+    rut_list_t link;
+
+    rut_shell_t *shell;
+
+    int width;
+    int height;
+    bool resizable;
+
+    cg_onscreen_t *cg_onscreen;
+
+    bool is_dirty;
+    bool is_ready;
+
+    rut_cursor_t current_cursor;
+    /* This is used to record whether anything set a cursor while
+     * handling a mouse motion event. If nothing sets one then the shell
+     * will put the cursor back to the default pointer. */
+    bool cursor_set;
+
+    union {
+#ifdef USE_SDL
+        struct {
+            SDL_SysWMinfo sdl_info;
+            SDL_Window *sdl_window;
+            SDL_Cursor *sdl_cursor_image;
+        } sdl;
+#endif
+#ifdef USE_X11
+        struct {
+            Window *xwindow;
+        } x11;
+#endif
+    };
+} rut_shell_onscreen_t;
+
 typedef enum _rut_input_event_type_t {
     RUT_INPUT_EVENT_TYPE_MOTION = 1,
     RUT_INPUT_EVENT_TYPE_KEY,
@@ -78,42 +132,24 @@ typedef enum _rut_motion_event_action_t {
     RUT_MOTION_EVENT_ACTION_MOVE,
 } rut_motion_event_action_t;
 
+/* XXX: Note the X11 shell backend at least currently
+ * relies on the bit mask corresponding to 1 << button number
+ */
 typedef enum _rut_button_state_t {
-    RUT_BUTTON_STATE_1 = 1 << 0,
-    RUT_BUTTON_STATE_2 = 1 << 1,
-    RUT_BUTTON_STATE_3 = 1 << 2,
+    RUT_BUTTON_STATE_1 = 1 << 1,
+    RUT_BUTTON_STATE_2 = 1 << 2,
+    RUT_BUTTON_STATE_3 = 1 << 3,
 } rut_button_state_t;
 
 typedef enum _rut_modifier_state_t {
-    RUT_MODIFIER_LEFT_ALT_ON = 1 << 0,
-    RUT_MODIFIER_RIGHT_ALT_ON = 1 << 1,
-    RUT_MODIFIER_LEFT_SHIFT_ON = 1 << 2,
-    RUT_MODIFIER_RIGHT_SHIFT_ON = 1 << 3,
-    RUT_MODIFIER_LEFT_CTRL_ON = 1 << 4,
-    RUT_MODIFIER_RIGHT_CTRL_ON = 1 << 5,
-    RUT_MODIFIER_LEFT_META_ON = 1 << 6,
-    RUT_MODIFIER_RIGHT_META_ON = 1 << 7,
-    RUT_MODIFIER_NUM_LOCK_ON = 1 << 8,
-    RUT_MODIFIER_CAPS_LOCK_ON = 1 << 9
+    RUT_MODIFIER_SHIFT_ON = 1 << 0,
+    RUT_MODIFIER_CTRL_ON = 1 << 1,
+    RUT_MODIFIER_ALT_ON = 1 << 2,
+    RUT_MODIFIER_NUM_LOCK_ON = 1 << 3,
+    RUT_MODIFIER_CAPS_LOCK_ON = 1 << 4
 } rut_modifier_state_t;
 
-typedef enum {
-    RUT_CURSOR_ARROW,
-    RUT_CURSOR_IBEAM,
-    RUT_CURSOR_WAIT,
-    RUT_CURSOR_CROSSHAIR,
-    RUT_CURSOR_SIZE_WE,
-    RUT_CURSOR_SIZE_NS
-} rut_cursor_t;
-
-#define RUT_MODIFIER_ALT_ON                                                    \
-    (RUT_MODIFIER_LEFT_ALT_ON | RUT_MODIFIER_RIGHT_ALT_ON)
-#define RUT_MODIFIER_SHIFT_ON                                                  \
-    (RUT_MODIFIER_LEFT_SHIFT_ON | RUT_MODIFIER_RIGHT_SHIFT_ON)
-#define RUT_MODIFIER_CTRL_ON                                                   \
-    (RUT_MODIFIER_LEFT_CTRL_ON | RUT_MODIFIER_RIGHT_CTRL_ON)
-#define RUT_MODIFIER_META_ON                                                   \
-    (RUT_MODIFIER_LEFT_META_ON | RUT_MODIFIER_RIGHT_META_ON)
+#define RUT_N_MODIFIERS 5
 
 typedef enum _rut_input_event_status_t {
     RUT_INPUT_EVENT_STATUS_UNHANDLED,
@@ -123,7 +159,7 @@ typedef enum _rut_input_event_status_t {
 typedef struct _rut_input_event_t {
     rut_list_t list_node;
     rut_input_event_type_t type;
-    rut_shell_t *shell;
+    rut_shell_onscreen_t *onscreen;
     rut_object_t *camera;
     const cg_matrix_t *input_transform;
 
@@ -182,24 +218,6 @@ typedef struct {
 typedef void (*RutPrePaintCallback)(rut_object_t *graphable, void *user_data);
 
 typedef struct {
-    rut_list_t link;
-
-    cg_onscreen_t *onscreen;
-
-    rut_cursor_t current_cursor;
-    /* This is used to record whether anything set a cursor while
-     * handling a mouse motion event. If nothing sets one then the shell
-     * will put the cursor back to the default pointer. */
-    bool cursor_set;
-
-#if defined(USE_SDL)
-    SDL_SysWMinfo sdl_info;
-    SDL_Window *sdl_window;
-    SDL_Cursor *cursor_image;
-#endif
-} rut_shell_onscreen_t;
-
-typedef struct {
     rut_list_t list_node;
 
     int depth;
@@ -215,12 +233,22 @@ typedef struct _rut_input_queue_t {
     int n_events;
 } rut_input_queue_t;
 
+#ifdef USE_X11
+struct rut_mod_index_mapping
+{
+    rut_modifier_state_t mod;
+    int mod_index;
+};
+#endif
+
 struct _rut_shell_t {
     rut_object_base_t _base;
 
     /* If true then this process does not handle input events directly
      * or output graphics directly. */
     bool headless;
+    rut_shell_onscreen_t *headless_onscreen;
+
 #ifdef USE_SDL
     SDL_SYSWM_TYPE sdl_subsystem;
     SDL_Keymod sdl_keymod;
@@ -237,6 +265,40 @@ struct _rut_shell_t {
     int event_pipe_read;
     int event_pipe_write;
     bool wake_queued;
+#endif
+
+#ifdef USE_X11
+    Display *xdpy;
+    xcb_connection_t *xcon;
+
+    int xi2_opcode;
+    int xi2_event;
+    int xi2_error;
+    int xi2_major;
+    int xi2_minor;
+
+    int xkb_opcode;
+    int xkb_event;
+    int xkb_error;
+    int xkb_major;
+    int xkb_minor;
+    //XkbDesc *xkb_desc;
+    uint32_t xkb_core_device_id;
+    struct xkb_context *xkb_ctx;
+    struct xkb_keymap *xkb_keymap;
+    struct xkb_state *xkb_state;
+    struct xkb_compose_state *xkb_compose_state;
+    //unsigned int xkb_mod_state_event_serial;
+    //rut_modifier_state_t xkb_mod_state_cached;
+    struct rut_mod_index_mapping xkb_mod_index_map[RUT_N_MODIFIERS];
+
+#if 0
+    int x11_min_keycode;
+    int x11_max_keycode;
+    XModifierKeymap *x11_mod_map;
+    KeySym *x11_keymap;
+    int x11_keysyms_per_keycode;
+#endif
 #endif
 
 #ifdef __ANDROID__
@@ -294,6 +356,7 @@ struct _rut_shell_t {
 
     rut_settings_t *settings;
 
+    cg_renderer_t *cg_renderer;
     cg_device_t *cg_device;
 
     rut_matrix_entry_t identity_entry;
@@ -344,6 +407,7 @@ struct _rut_shell_t {
 
     rut_object_t *drag_payload;
     rut_object_t *drop_offer_taker;
+    rut_shell_onscreen_t *drag_onscreen;
 
     /* List of grabs that are currently in place. This are in order from
      * highest to lowest priority. */
@@ -383,7 +447,13 @@ struct _rut_shell_t {
     rut_object_t *selection;
 
     struct {
-        cg_onscreen_t *(*input_event_get_onscreen)(rut_input_event_t *event);
+        cg_onscreen_t *(*allocate_onscreen)(rut_shell_onscreen_t *onscreen);
+        void (*onscreen_resize)(rut_shell_onscreen_t *onscreen,
+                                int width, int height);
+        void (*onscreen_set_title)(rut_shell_onscreen_t *onscreen,
+                                   const char *title);
+        void (*onscreen_set_cursor)(rut_shell_onscreen_t *onscreen,
+                                    rut_cursor_t cursor);
 
         int32_t (*key_event_get_keysym)(rut_input_event_t *event);
         rut_key_event_action_t (*key_event_get_action)(rut_input_event_t *event);
@@ -628,7 +698,7 @@ rut_input_event_type_t rut_input_event_get_type(rut_input_event_t *event);
  * Return value: the onscreen window that this event was generated for
  *   or %NULL if the event does not correspond to a window.
  */
-cg_onscreen_t *rut_input_event_get_onscreen(rut_input_event_t *event);
+rut_shell_onscreen_t *rut_input_event_get_onscreen(rut_input_event_t *event);
 
 rut_key_event_action_t rut_key_event_get_action(rut_input_event_t *event);
 
@@ -760,15 +830,22 @@ void rut_shell_remove_pre_paint_callback(rut_shell_t *shell,
                                          RutPrePaintCallback callback,
                                          void *user_data);
 
-/**
- * rut_shell_add_onscreen:
- * @shell: The #rut_shell_t
- * @onscreen: A #cg_onscreen_t
- *
- * This should be called for everything onscreen that is going to be
- * used by the shell so that Rut can keep track of them.
- */
-void rut_shell_add_onscreen(rut_shell_t *shell, cg_onscreen_t *onscreen);
+rut_shell_onscreen_t *
+rut_shell_onscreen_new(rut_shell_t *shell,
+                       int width, int height);
+
+/* TODO: accept rut_exception_t */
+bool
+rut_shell_onscreen_allocate(rut_shell_onscreen_t *onscreen);
+
+void
+rut_shell_onscreen_set_resizable(rut_shell_onscreen_t *onscreen,
+                                 bool resizable);
+
+void
+rut_shell_onscreen_resize(rut_shell_onscreen_t *onscreen,
+                          int width,
+                          int height);
 
 /**
  * rut_shell_set_cursor:
@@ -783,13 +860,13 @@ void rut_shell_add_onscreen(rut_shell_t *shell, cg_onscreen_t *onscreen);
  * motion events and always change the cursor when the pointer is over
  * a certain area.
  */
-void rut_shell_set_cursor(rut_shell_t *shell,
-                          cg_onscreen_t *onscreen,
-                          rut_cursor_t cursor);
+void rut_shell_onscreen_set_cursor(rut_shell_onscreen_t *onscreen,
+                                   rut_cursor_t cursor);
 
-void rut_shell_set_title(rut_shell_t *shell,
-                         cg_onscreen_t *onscreen,
-                         const char *title);
+void rut_shell_onscreen_set_title(rut_shell_onscreen_t *onscreen,
+                                  const char *title);
+
+void rut_shell_onscreen_show(rut_shell_onscreen_t *onscreen);
 
 /**
  * rut_shell_quit:
@@ -825,13 +902,15 @@ typedef struct _rut_text_blob_t rut_text_blob_t;
 
 rut_text_blob_t *rut_text_blob_new(const char *text);
 
-void rut_shell_start_drag(rut_shell_t *shell, rut_object_t *payload);
+void rut_shell_onscreen_start_drag(rut_shell_onscreen_t *onscreen,
+                                   rut_object_t *payload);
 
-void rut_shell_cancel_drag(rut_shell_t *shell);
+void rut_shell_onscreen_cancel_drag(rut_shell_onscreen_t *onscreen);
 
-void rut_shell_drop(rut_shell_t *shell);
+void rut_shell_onscreen_drop(rut_shell_onscreen_t *onscreen);
 
-void rut_shell_take_drop_offer(rut_shell_t *shell, rut_object_t *taker);
+void rut_shell_onscreen_take_drop_offer(rut_shell_onscreen_t *onscreen,
+                                        rut_object_t *taker);
 
 #if 0
 typedef void (*rut_shell_signal_callback_t) (rut_shell_t *shell,

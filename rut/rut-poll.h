@@ -67,7 +67,7 @@ C_BEGIN_DECLS
  * Since: 1.10
  * Stability: unstable
  */
-#if defined(linux) || defined(__APPLE__)
+#if defined(__linux__) || defined(__APPLE__)
 #include <poll.h>
 typedef enum {
     RUT_POLL_FD_EVENT_IN = POLLIN,

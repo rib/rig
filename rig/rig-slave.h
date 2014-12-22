@@ -39,7 +39,7 @@ enum rig_slave_connect_mode {
 #ifdef USE_UV
     RIG_SLAVE_CONNECT_MODE_TCP,
 #endif
-#ifdef linux
+#ifdef __linux__
     RIG_SLAVE_CONNECT_MODE_ABSTRACT_SOCKET,
 #endif
 };
@@ -58,7 +58,7 @@ struct _rig_slave_t {
 
     rut_shell_t *shell;
 
-#ifdef linux
+#ifdef __linux__
     /* abstract socket */
     int listen_fd;
 #endif

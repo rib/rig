@@ -47,7 +47,7 @@ usage(void)
     fprintf(stderr, "Usage: rig-simulator --frontend=[editor,device,slave] [OPTION]...\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "  -f,--frontend=[editor,device,slave]  The frontend that will be connected\n");
-#ifdef linux
+#ifdef __linux__
     fprintf(stderr, "  -a,--abstract-socket=NAME            Connect to named abstract socket\n");
 #endif
     fprintf(stderr, "  -h,--help                            Display this help message\n");
@@ -78,14 +78,14 @@ main(int argc, char **argv)
     rig_simulator_t *simulator;
     const char *ipc_fd_str = getenv("_RIG_IPC_FD");
     const char *frontend = getenv("_RIG_FRONTEND");
-#ifdef linux
+#ifdef __linux__
     const char *abstract_socket = NULL;
 #endif
     rig_frontend_id_t frontend_id;
     int fd;
     struct option opts[] = {
         { "frontend",           required_argument, NULL, 'f' },
-#ifdef linux
+#ifdef __linux__
         { "abstract-socket",    required_argument, NULL, 'a' },
 #endif
         { "help",               no_argument,       NULL, 'h' },
@@ -136,7 +136,7 @@ main(int argc, char **argv)
         usage();
     }
 
-#ifdef linux
+#ifdef __linux__
     if (abstract_socket) {
         while ((fd = rut_os_connect_to_abstract_socket(abstract_socket)) == -1) {
             static bool seen = false;
@@ -150,7 +150,7 @@ main(int argc, char **argv)
     } else
 #endif /* linux */
     {
-#if defined(linux) || defined(__APPLE__)
+#if defined(__linux__) || defined(__APPLE__)
         /* Block SIGINT so that when we are interactively debugging the
          * frontend process with gdb, we don't kill the simulator
          * whenever we interupt the frontend process.

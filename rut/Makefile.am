@@ -14,6 +14,12 @@ librut_la_SOURCES += \
 	$(rut_sdl_sources)
 endif
 
+if COGL_SUPPORT_GLX
+librut_la_SOURCES += \
+	rut-x11-shell.h \
+	rut-x11-shell.c
+endif
+
 if EDITOR_ENABLED
 librut_la_SOURCES += \
 	$(rut_editor_sources)

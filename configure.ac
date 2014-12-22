@@ -110,6 +110,7 @@ AC_C_CONST
 AC_PROG_OBJC
 AC_PROG_CXX
 
+RIG_EXTRA_CFLAGS="-std=c11"
 
 dnl ================================================================
 dnl Libtool stuff.
@@ -208,7 +209,6 @@ AC_ARG_ENABLE(
 MAINTAINER_COMPILER_FLAGS="-Wall -Wcast-align -Wuninitialized
                            -Wno-strict-aliasing -Wempty-body -Wformat
                            -Wformat-security -Winit-self
-                           -Wdeclaration-after-statement
                            -Wpointer-arith"
 
 AS_CASE(
@@ -319,7 +319,7 @@ dnl ================================================================
 dnl Check for dependency packages.
 dnl ================================================================
 
-RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES icu-uc harfbuzz harfbuzz-icu fontconfig freetype2 libprotobuf-c sdl2-rig libuv"
+RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES icu-uc harfbuzz harfbuzz-icu fontconfig freetype2 libprotobuf-c libuv"
 
 AM_CONDITIONAL([USE_UV], [true])
 AC_DEFINE([USE_UV], [1], [Use libuv])
@@ -418,21 +418,41 @@ AM_CLIB
 dnl ================================================================
 dnl Check requirements for our GPU utility api
 dnl ================================================================
-enable_glib=$enable_editor
-enable_cogl_path=yes
-enable_cogl_pango=$enable_editor
-enable_sdl2=yes
-enable_uv=yes
-enable_gles2=yes
-enable_xlib_egl_platform=yes
-enable_wayland_egl_platform=yes
-enable_wayland_egl_server=yes
+
+case "$host" in
+  *-linux*)
+    enable_glib=$enable_editor
+    enable_cogl_path=yes
+    enable_cogl_pango=$enable_editor
+    enable_uv=yes
+    enable_gles2=yes
+    enable_glx=yes
+    enable_xlib_egl_platform=yes
+    ;;
+  *)
+    enable_cogl_path=yes
+    enable_cogl_pango=$enable_editor
+    enable_sdl2=yes
+    enable_uv=yes
+    enable_gles2=yes
+  ;;
+esac
+
 AM_COGL
 
 
-dnl SDL is currently used on all platform...
-AC_DEFINE([USE_SDL], [1], [Defined if SDL should be used])
-AM_CONDITIONAL([USE_SDL], [true])
+AS_IF([test x"$enable_glx" = xyes],
+      [
+        RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES xkbcommon-x11"
+        RIG_EXTRA_LDFLAGS="$RIG_EXTRA_LDFLAGS -lXi"
+        AC_DEFINE([USE_X11], [1], [Defined if X11 should be used])
+      ],
+      [
+        AC_DEFINE([USE_SDL], [1], [Defined if SDL should be used])
+        RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES sdl2-rig"
+      ])
+AM_CONDITIONAL([USE_X11], [x$SUPPORT_GLX = xyes])
+AM_CONDITIONAL([USE_SDL], [x$SUPPORT_GLX != xyes])
 
 case "$host" in
   *-linux*)

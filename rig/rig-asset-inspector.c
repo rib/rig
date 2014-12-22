@@ -241,7 +241,7 @@ input_cb(rut_input_region_t *region, rut_input_event_t *event, void *user_data)
 
             _rig_asset_inspector_set_selected(asset_inspector, save_selected);
 
-            rut_shell_take_drop_offer(asset_inspector->shell,
+            rut_shell_onscreen_take_drop_offer(rut_input_event_get_onscreen(event),
                                       asset_inspector->input_region);
         }
     } else if (rut_input_event_get_type(event) ==

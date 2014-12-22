@@ -97,6 +97,10 @@ rut_android_shell_handle_input(rut_shell_t *shell,
         event->native = android_event;
         event->shell = shell;
         event->input_transform = NULL;
+
+        /* We assume there's only one onscreen... */
+        event->onscreen =
+            rut_container_of(shell->onscreens.next, event->onscreen, link);
     default:
         break;
     }
@@ -384,15 +388,20 @@ modifier_state_for_android_meta (int32_t meta)
 {
   rut_modifier_state_t rut_state = 0;
 
-  if (meta & AMETA_ALT_LEFT_ON)
-    rut_state |= RUT_MODIFIER_LEFT_ALT_ON;
-  if (meta & AMETA_ALT_RIGHT_ON)
-    rut_state |= RUT_MODIFIER_RIGHT_ALT_ON;
+  if (meta & AMETA_SHIFT_ON)
+    rut_state |= RUT_MODIFIER_SHIFT_ON;
 
-  if (meta & AMETA_SHIFT_LEFT_ON)
-    rut_state |= RUT_MODIFIER_LEFT_SHIFT_ON;
-  if (meta & AMETA_SHIFT_RIGHT_ON)
-    rut_state |= RUT_MODIFIER_RIGHT_SHIFT_ON;
+  if (meta & AMETA_CTRL_ON)
+    rut_state |= RUT_MODIFIER_CTRL_ON;
+
+  if (meta & AMETA_ALT_ON)
+    rut_state |= RUT_MODIFIER_ALT_ON;
+
+  if (meta & AMETA_CAPS_LOCK_ON)
+    rut_state |= RUT_MODIFIER_CAPS_LOCK_ON;
+
+  if (meta & AMETA_NUM_LOCK_ON)
+    rut_state |= RUT_MODIFIER_NUM_LOCK_ON;
 
   return rut_state;
 }
@@ -480,10 +489,19 @@ rut_android_free_input_event(rut_input_event_t *event)
     c_slice_free1(sizeof(rut_input_event_t), event);
 }
 
-void
+bool
 rut_android_shell_init(rut_shell_t *shell)
 {
     struct android_app *application = shell->android_application;
+    cg_error_t *error = NULL;
+
+    shell->cg_device = cg_device_new();
+    cg_device_connect(shell->cg_device, &error);
+    if (!shell->cg_device) {
+        c_warning("Failed to create Cogl Context: %s", error->message);
+        cg_error_free(error);
+        return false;
+    }
 
     application->userData = shell;
     application->onAppCmd = android_handle_cmd;
@@ -501,4 +519,6 @@ rut_android_shell_init(rut_shell_t *shell)
     shell->platform.text_event_get_text = rut_android_text_event_get_text;
 
     shell->platform.free_input_event = rut_android_free_input_event;
+
+    return true;
 }

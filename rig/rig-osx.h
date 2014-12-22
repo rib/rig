@@ -32,7 +32,7 @@
 #include <cogl/cogl.h>
 #include "rig-types.h"
 
-typedef struct _rig_osx_data_t rig_osx_data_t;
+typedef struct _rig_osx_engine_t rig_osx_engine_t;
 
 void rig_osx_init(rig_engine_t *engine);
 

@@ -188,14 +188,13 @@ scenegraph_post_paint_cb(rut_object_t *object, int depth, void *user_data)
 void
 rig_engine_paint(rig_engine_t *engine)
 {
-    cg_framebuffer_t *fb = engine->onscreen;
+    cg_framebuffer_t *fb = engine->frontend->onscreen->cg_onscreen;
     rig_paint_context_t paint_ctx;
     rut_paint_context_t *rut_paint_ctx = &paint_ctx._parent;
 
     rut_camera_set_framebuffer(engine->camera_2d, fb);
 
-#warning                                                                       \
-    "FIXME: avoid clear overdraw between engine_paint and camera_view_paint"
+#warning "FIXME: avoid clear overdraw between engine_paint and camera_view_paint"
     cg_framebuffer_clear4f(
         fb, CG_BUFFER_BIT_COLOR | CG_BUFFER_BIT_DEPTH, 0.9, 0.9, 0.9, 1);
 
@@ -388,15 +387,12 @@ rig_engine_set_onscreen_size(rig_engine_t *engine, int width, int height)
     if (engine->window_width == width && engine->window_height == height)
         return;
 
-#ifdef USE_SDL
-    /* FIXME: This should probably be rut_shell api instead */
-    {
-        SDL_Window *sdl_window = cg_sdl_onscreen_get_window(engine->onscreen);
-        SDL_SetWindowSize(sdl_window, width, height);
-    }
-#else
-#warning "rig_engine_set_onscreen_size unsupported without SDL2"
-#endif
+    /* XXX: We should be able to have multiple onscreens per
+     * engine that may be associated with different cameras
+     */
+#warning "FIXME: remove engine->window_width/height state"
+    rut_shell_onscreen_resize(engine->frontend->onscreen,
+                              width, height);
 }
 
 static void
@@ -486,8 +482,6 @@ _rig_engine_free(void *object)
         cg_object_unref(engine->circle_node_attribute);
 
         free_shadow_map(engine);
-
-        cg_object_unref(engine->onscreen);
 
         cg_object_unref(engine->default_pipeline);
 

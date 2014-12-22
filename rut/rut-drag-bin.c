@@ -179,7 +179,7 @@ _rut_drag_bin_init_type(void)
 }
 
 static void
-start_drag(rut_drag_bin_t *bin)
+start_drag(rut_shell_onscreen_t *onscreen, rut_drag_bin_t *bin)
 {
     rut_object_t *root;
 
@@ -191,13 +191,13 @@ start_drag(rut_drag_bin_t *bin)
     root = rut_graphable_get_root(bin);
     rut_stack_add(root, bin->transform);
 
-    rut_shell_start_drag(bin->shell, bin->payload);
+    rut_shell_onscreen_start_drag(onscreen, bin->payload);
     rut_shell_queue_redraw(bin->shell);
     bin->in_drag = true;
 }
 
 static void
-cancel_drag(rut_drag_bin_t *bin)
+cancel_drag(rut_shell_onscreen_t *onscreen, rut_drag_bin_t *bin)
 {
     if (!bin->in_drag)
         return;
@@ -205,7 +205,7 @@ cancel_drag(rut_drag_bin_t *bin)
     rut_graphable_remove_child(bin->drag_overlay);
     rut_graphable_remove_child(bin->transform);
 
-    rut_shell_cancel_drag(bin->shell);
+    rut_shell_onscreen_cancel_drag(onscreen);
     rut_shell_queue_redraw(bin->shell);
     bin->in_drag = false;
 }
@@ -225,14 +225,16 @@ _rut_drag_bin_grab_input_cb(rut_input_event_t *event, void *user_data)
 
     if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_MOTION) {
         if (rut_motion_event_get_action(event) == RUT_MOTION_EVENT_ACTION_UP) {
-            rut_shell_ungrab_input(
-                bin->shell, _rut_drag_bin_grab_input_cb, state);
+            rut_shell_ungrab_input(bin->shell,
+                                   _rut_drag_bin_grab_input_cb, state);
 
             c_slice_free(drag_state_t, state);
 
             if (bin->in_drag) {
-                rut_shell_drop(bin->shell);
-                cancel_drag(bin);
+                rut_shell_onscreen_t *onscreen =
+                    rut_input_event_get_onscreen(event);
+                rut_shell_onscreen_drop(onscreen);
+                cancel_drag(onscreen, bin);
                 return RUT_INPUT_EVENT_STATUS_HANDLED;
             } else
                 return RUT_INPUT_EVENT_STATUS_UNHANDLED;
@@ -245,7 +247,7 @@ _rut_drag_bin_grab_input_cb(rut_input_event_t *event, void *user_data)
             if (dist > 20) {
                 cg_matrix_t transform;
 
-                start_drag(bin);
+                start_drag(rut_input_event_get_onscreen(event), bin);
 
                 rut_graphable_get_transform(bin, &transform);
 
@@ -254,7 +256,7 @@ _rut_drag_bin_grab_input_cb(rut_input_event_t *event, void *user_data)
 
                 rut_transform_translate(bin->transform, dx, dy, 0);
             } else
-                cancel_drag(bin);
+                cancel_drag(rut_input_event_get_onscreen(event), bin);
 
             rut_shell_queue_redraw(bin->shell);
 
@@ -266,8 +268,9 @@ _rut_drag_bin_grab_input_cb(rut_input_event_t *event, void *user_data)
 }
 
 static rut_input_event_status_t
-_rut_drag_bin_input_cb(
-    rut_input_region_t *region, rut_input_event_t *event, void *user_data)
+_rut_drag_bin_input_cb(rut_input_region_t *region,
+                       rut_input_event_t *event,
+                       void *user_data)
 {
     rut_drag_bin_t *bin = user_data;
 

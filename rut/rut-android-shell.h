@@ -32,7 +32,7 @@
 
 #include "rut-shell.h"
 
-void
+bool
 rut_android_shell_init(rut_shell_t *shell);
 
 void

@@ -283,7 +283,6 @@ drop_region_input_cb(rut_input_region_t *region,
                      void *user_data)
 {
     rig_binding_view_t *binding_view = user_data;
-    rut_shell_t *shell = binding_view->engine->shell;
 
     if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_DROP_OFFER) {
         rut_object_t *payload = rut_drop_offer_event_get_payload(event);
@@ -296,7 +295,8 @@ drop_region_input_cb(rut_input_region_t *region,
             binding_view->preview_dependency_prop = property;
             add_dependency(binding_view, property, true);
 
-            rut_shell_take_drop_offer(shell, binding_view->drop_region);
+            rut_shell_onscreen_take_drop_offer(rut_input_event_get_onscreen(event),
+                                               binding_view->drop_region);
             return RUT_INPUT_EVENT_STATUS_HANDLED;
         }
     } else if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_DROP) {

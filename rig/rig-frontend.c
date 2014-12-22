@@ -31,7 +31,7 @@
 #include <stdlib.h>
 #include <sys/socket.h>
 
-#ifdef linux
+#ifdef __linux__
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <errno.h>
@@ -61,7 +61,7 @@ static void spawn_simulator(rut_shell_t *shell, rig_frontend_t *frontend);
 
 enum rig_simulator_run_mode rig_simulator_run_mode_option;
 
-#ifdef linux
+#ifdef __linux__
 const char *rig_simulator_abstract_socket_option;
 #endif
 
@@ -616,6 +616,8 @@ _rig_frontend_free(void *object)
 
     frontend_stop_service(frontend);
 
+    cg_object_unref(frontend->onscreen);
+
     rut_object_unref(frontend->engine);
 
     c_hash_table_destroy(frontend->tmp_id_to_object_map);
@@ -633,7 +635,7 @@ _rig_frontend_init_type(void)
 
 #ifdef RIG_EDITOR_ENABLED
 
-#if !defined(__ANDROID__) && (defined(linux) || defined(__APPLE__))
+#if !defined(__ANDROID__) && (defined(__linux__) || defined(__APPLE__))
 static void
 simulator_sigchild_cb(void *user_data)
 {
@@ -873,7 +875,7 @@ create_simulator_thread(rut_shell_t *shell,
     return state;
 }
 
-#ifdef linux
+#ifdef __linux__
 static void
 handle_simulator_connect_cb(void *user_data, int listen_fd, int revents)
 {
@@ -1043,7 +1045,7 @@ spawn_simulator(rut_shell_t *shell, rig_frontend_t *frontend)
     case RIG_SIMULATOR_RUN_MODE_PROCESS:
         fork_simulator(shell, frontend);
         break;
-#ifdef linux
+#ifdef __linux__
     case RIG_SIMULATOR_RUN_MODE_CONNECT_ABSTRACT_SOCKET:
         bind_to_abstract_socket(shell, frontend);
         break;
@@ -1066,11 +1068,9 @@ on_onscreen_resize(cg_onscreen_t *onscreen,
                    int height,
                    void *user_data)
 {
-    rig_engine_t *engine = user_data;
+    rig_frontend_t *frontend = user_data;
 
-    c_return_if_fail(engine->simulator == NULL);
-
-    rig_engine_resize(engine, width, height);
+    rig_engine_resize(frontend->engine, width, height);
 }
 
 /* TODO: move this state into rig_frontend_t */
@@ -1079,9 +1079,11 @@ rig_frontend_post_init_engine(rig_frontend_t *frontend,
                               const char *ui_filename)
 {
     rig_engine_t *engine = frontend->engine;
+    rut_shell_t *shell = engine->shell;
+    rut_shell_onscreen_t *onscreen;
     cg_framebuffer_t *fb;
 
-    engine->default_pipeline = cg_pipeline_new(engine->shell->cg_device);
+    engine->default_pipeline = cg_pipeline_new(shell->cg_device);
 
     engine->circle_node_attribute =
         rut_create_circle_fan_p2(engine->shell, 20, &engine->circle_node_n_verts);
@@ -1105,29 +1107,30 @@ rig_frontend_post_init_engine(rig_frontend_t *frontend,
 
 #ifdef RIG_EDITOR_ENABLED
     if (engine->frontend_id == RIG_FRONTEND_ID_EDITOR) {
-        engine->onscreen = cg_onscreen_new(engine->shell->cg_device, 1000, 700);
-        cg_onscreen_set_resizable(engine->onscreen, true);
+        onscreen = rut_shell_onscreen_new(shell, 1000, 700);
+        rut_shell_onscreen_set_resizable(onscreen, true);
     } else
 #endif
-    engine->onscreen = cg_onscreen_new(engine->shell->cg_device,
-                                       engine->device_width / 2,
-                                       engine->device_height / 2);
+    onscreen = rut_shell_onscreen_new(engine->shell,
+                                      engine->device_width / 2,
+                                      engine->device_height / 2);
 
-    cg_onscreen_add_resize_callback(
-        engine->onscreen, on_onscreen_resize, engine, NULL);
+    rut_shell_onscreen_allocate(onscreen);
 
-    cg_framebuffer_allocate(engine->onscreen, NULL);
+    cg_onscreen_add_resize_callback(onscreen->cg_onscreen,
+                                    on_onscreen_resize, frontend,
+                                    NULL); /* destroy notify */
 
-    fb = engine->onscreen;
+    /* FIXME: we should be able to have more than one onscreen! */
+    frontend->onscreen = onscreen;
+
+    fb = onscreen->cg_onscreen;
     engine->window_width = cg_framebuffer_get_width(fb);
     engine->window_height = cg_framebuffer_get_height(fb);
 
-    /* FIXME: avoid poking into engine->frontend here... */
-    engine->frontend->has_resized = true;
-    engine->frontend->pending_width = engine->window_width;
-    engine->frontend->pending_height = engine->window_height;
-
-    rut_shell_add_onscreen(engine->shell, engine->onscreen);
+    frontend->has_resized = true;
+    frontend->pending_width = engine->window_width;
+    frontend->pending_height = engine->window_height;
 
 #ifdef USE_GTK
     {
@@ -1148,7 +1151,7 @@ rig_frontend_post_init_engine(rig_frontend_t *frontend,
             /* Another instance of the application is already running */
             rut_shell_quit(shell);
 
-        rig_application_add_onscreen(application, engine->onscreen);
+        rig_application_add_onscreen(application, onscreen);
     }
 #endif
 
@@ -1156,10 +1159,9 @@ rig_frontend_post_init_engine(rig_frontend_t *frontend,
     rig_osx_init(engine);
 #endif
 
-    rut_shell_set_title(
-        engine->shell, engine->onscreen, "Rig " C_STRINGIFY(RIG_VERSION));
+    rut_shell_onscreen_set_title(onscreen, "Rig " C_STRINGIFY(RIG_VERSION));
 
-    cg_onscreen_show(engine->onscreen);
+    rut_shell_onscreen_show(onscreen);
 
     rig_engine_allocate(engine);
 }

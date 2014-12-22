@@ -51,7 +51,7 @@ typedef void (*rut_sdl_event_handler_t)(rut_shell_t *shell,
                                         SDL_Event *event,
                                         void *user_data);
 
-void
+bool
 rut_sdl_shell_init(rut_shell_t *shell);
 
 void

@@ -1725,7 +1725,7 @@ input_cb(rut_input_event_t *event,
             return RUT_INPUT_EVENT_STATUS_HANDLED;
         } else if (action == RUT_MOTION_EVENT_ACTION_DOWN &&
                    state == RUT_BUTTON_STATE_2 &&
-                   ((modifiers & RUT_MODIFIER_SHIFT_ON) == 0)) {
+                   (!(modifiers & RUT_MODIFIER_SHIFT_ON))) {
             // view->saved_rotation = *rig_entity_get_rotation
             // (view->view_camera);
             view->saved_rotation =
@@ -1824,7 +1824,7 @@ input_cb(rut_input_event_t *event,
             return RUT_INPUT_EVENT_STATUS_HANDLED;
         } else if (action == RUT_MOTION_EVENT_ACTION_MOVE &&
                    state == RUT_BUTTON_STATE_2 &&
-                   ((modifiers & RUT_MODIFIER_SHIFT_ON) == 0)) {
+                   (!(modifiers & RUT_MODIFIER_SHIFT_ON))) {
             cg_quaternion_t new_rotation;
 
             // if (!engine->button_down)

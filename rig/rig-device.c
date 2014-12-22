@@ -218,7 +218,7 @@ usage(void)
     fprintf(stderr, "Usage: rig-device [UI.rig]\n");
     fprintf(stderr, "\n");
 #ifdef RIG_ENABLE_DEBUG
-#ifdef linux
+#ifdef __linux__
     fprintf(stderr, "  -a,--abstract-socket=NAME            Listen on abstract socket for simulator\n");
 #endif
     fprintf(stderr, "  -f,--fork-simulator                  Run simulator in a separate process\n");
@@ -239,7 +239,7 @@ main(int argc, char **argv)
     struct option long_opts[] = {
 
 #ifdef RIG_ENABLE_DEBUG
-#ifdef linux
+#ifdef __linux__
         { "abstract-socket",    required_argument, NULL, 'a' },
 #endif
         { "fork-simulator",     no_argument,       NULL, 'f' },
@@ -252,7 +252,7 @@ main(int argc, char **argv)
     };
 
 #ifdef RIG_ENABLE_DEBUG
-# ifdef linux
+# ifdef __linux__
     const char *short_opts = "a:fmdh";
 # else
     const char *short_opts = "fmdh";
@@ -275,7 +275,7 @@ main(int argc, char **argv)
     while ((c = getopt_long(argc, argv, short_opts, long_opts, NULL)) != -1) {
         switch(c) {
 #ifdef RIG_ENABLE_DEBUG
-#ifdef linux
+#ifdef __linux__
         case 'a':
             rig_simulator_run_mode_option =
                 RIG_SIMULATOR_RUN_MODE_CONNECT_ABSTRACT_SOCKET;

@@ -39,57 +39,6 @@
 #include "rut-sdl-shell.h"
 #include "rut-sdl-keysyms.h"
 
-static cg_onscreen_t *
-rut_sdl_input_event_get_onscreen(rut_input_event_t *event)
-{
-    rut_shell_t *shell = event->shell;
-    rut_shell_onscreen_t *shell_onscreen;
-    rut_sdl_event_t *rut_sdl_event = event->native;
-    SDL_Event *sdl_event = &rut_sdl_event->sdl_event;
-    Uint32 window_id;
-
-    switch ((SDL_EventType)sdl_event->type) {
-    case SDL_KEYDOWN:
-    case SDL_KEYUP:
-        window_id = sdl_event->key.windowID;
-        break;
-
-    case SDL_TEXTEDITING:
-        window_id = sdl_event->edit.windowID;
-        break;
-
-    case SDL_TEXTINPUT:
-        window_id = sdl_event->text.windowID;
-        break;
-
-    case SDL_MOUSEMOTION:
-        window_id = sdl_event->motion.windowID;
-        break;
-
-    case SDL_MOUSEBUTTONDOWN:
-    case SDL_MOUSEBUTTONUP:
-        window_id = sdl_event->button.windowID;
-        break;
-
-    case SDL_MOUSEWHEEL:
-        window_id = sdl_event->wheel.windowID;
-        break;
-
-    default:
-        return NULL;
-    }
-
-    rut_list_for_each(shell_onscreen, &shell->onscreens, link) {
-        SDL_Window *sdl_window =
-            cg_sdl_onscreen_get_window(shell_onscreen->onscreen);
-
-        if (SDL_GetWindowID(sdl_window) == window_id)
-            return shell_onscreen->onscreen;
-    }
-
-    return NULL;
-}
-
 static int32_t
 rut_sdl_key_event_get_keysym(rut_input_event_t *event)
 {
@@ -120,18 +69,12 @@ modifier_state_for_sdl_state(SDL_Keymod mod)
 {
     rut_modifier_state_t rut_state = 0;
 
-    if (mod & KMOD_LSHIFT)
-        rut_state |= RUT_MODIFIER_LEFT_SHIFT_ON;
-    if (mod & KMOD_RSHIFT)
-        rut_state |= RUT_MODIFIER_RIGHT_SHIFT_ON;
-    if (mod & KMOD_LCTRL)
-        rut_state |= RUT_MODIFIER_LEFT_CTRL_ON;
-    if (mod & KMOD_RCTRL)
-        rut_state |= RUT_MODIFIER_RIGHT_CTRL_ON;
-    if (mod & KMOD_LALT)
-        rut_state |= RUT_MODIFIER_LEFT_ALT_ON;
-    if (mod & KMOD_RALT)
-        rut_state |= RUT_MODIFIER_RIGHT_ALT_ON;
+    if (mod & KMOD_LSHIFT || mod & KMOD_RSHIFT)
+        rut_state |= RUT_MODIFIER_SHIFT_ON;
+    if (mod & KMOD_LCTRL || mod & KMOD_RCTL)
+        rut_state |= RUT_MODIFIER_CTRL_ON;
+    if (mod & KMOD_LALT || mod & KMOD_RALT)
+        rut_state |= RUT_MODIFIER_ALT_ON;
     if (mod & KMOD_NUM)
         rut_state |= RUT_MODIFIER_NUM_LOCK_ON;
     if (mod & KMOD_CAPS)
@@ -283,6 +226,57 @@ rut_sdl_text_event_get_text(rut_input_event_t *event)
     return sdl_event->text.text;
 }
 
+static rut_shell_onscreen_t *
+get_onscreen_for_sdl_event(rut_shell_t *shell, SDL_Event *sdl_event)
+{
+    rut_shell_onscreen_t *onscreen;
+    rut_sdl_event_t *rut_sdl_event = event->native;
+    Uint32 window_id;
+
+    switch ((SDL_EventType)sdl_event->type) {
+    case SDL_KEYDOWN:
+    case SDL_KEYUP:
+        window_id = sdl_event->key.windowID;
+        break;
+
+    case SDL_TEXTEDITING:
+        window_id = sdl_event->edit.windowID;
+        break;
+
+    case SDL_TEXTINPUT:
+        window_id = sdl_event->text.windowID;
+        break;
+
+    case SDL_MOUSEMOTION:
+        window_id = sdl_event->motion.windowID;
+        break;
+
+    case SDL_MOUSEBUTTONDOWN:
+    case SDL_MOUSEBUTTONUP:
+        window_id = sdl_event->button.windowID;
+        break;
+
+    case SDL_MOUSEWHEEL:
+        window_id = sdl_event->wheel.windowID;
+        break;
+
+    default:
+        c_warn_if_reached();
+        return NULL;
+    }
+
+    rut_list_for_each(onscreen, &shell->onscreens, link) {
+        SDL_Window *sdl_window =
+            cg_sdl_onscreen_get_window(onscreen->onscreen);
+
+        if (SDL_GetWindowID(sdl_window) == window_id)
+            return onscreen;
+    }
+
+    c_warn_if_reached();
+    return NULL;
+}
+
 void
 rut_sdl_shell_handle_sdl_event(rut_shell_t *shell, SDL_Event *sdl_event)
 {
@@ -313,16 +307,15 @@ rut_sdl_shell_handle_sdl_event(rut_shell_t *shell, SDL_Event *sdl_event)
          * basis instead of dispatching them immediately...
          */
 
-        event =
-            c_slice_alloc(sizeof(rut_input_event_t) + sizeof(rut_sdl_event_t));
-        rut_sdl_event = (void *)event->data;
-        rut_sdl_event->sdl_event = *sdl_event;
+        event = c_slice_alloc(sizeof(rut_input_event_t) +
+                              sizeof(rut_sdl_event_t));
 
-        memcpy(event->data, sdl_event, sizeof(SDL_Event));
+        event->onscreen = get_onscreen_for_sdl_event(shell, sdl_event);
+        event->input_transform = NULL;
         event->native = event->data;
 
-        event->shell = shell;
-        event->input_transform = NULL;
+        rut_sdl_event = (void *)event->data;
+        rut_sdl_event->sdl_event = *sdl_event;
         break;
     default:
         break;
@@ -429,13 +422,117 @@ rut_sdl_free_input_event(rut_input_event_t *event)
                   event);
 }
 
-void
+static cg_onscreen_t *
+rut_sdl_allocate_onscreen(rut_shell_onscreen_t *onscreen)
+{
+    cg_onscreen_t *cg_onscreen;
+    SDL_Window *sdl_window;
+    cg_error_t *ignore = NULL;
+
+    cg_onscreen = cg_onscreen_new(engine->shell->cg_device,
+                                  onscreen->width,
+                                  onscreen->height);
+
+    if (!cg_framebuffer_allocate(cg_onscreen, &ignore)) {
+        cg_error_free(ignore);
+        return NULL;
+    }
+
+    sdl_window = cg_sdl_onscreen_get_window(shell_onscreen->onscreen);
+
+    SDL_VERSION(&shell_onscreen->sdl.sdl_info.version);
+    SDL_GetWindowWMInfo(sdl_window, &shell_onscreen->sdl.sdl_info);
+
+    shell->sdl_subsystem = onscreen->sdl.sdl_info.subsystem;
+
+    return cg_onscreen;
+}
+
+static void
+rut_sdl_onscreen_resize(rut_shell_onscreen_t *onscreen,
+                        int width,
+                        int height)
+{
+    SDL_Window *sdl_window = cg_sdl_onscreen_get_window(onscreen->cg_onscreen);
+    SDL_SetWindowSize(sdl_window, width, height);
+}
+
+static void
+rut_sdl_onscreen_set_title(rut_shell_onscreen_t *onscreen,
+                           const char *title)
+{
+    SDL_Window *window = cg_sdl_onscreen_get_window(onscreen);
+    SDL_SetWindowTitle(window, title);
+}
+
+static void
+rut_sdl_onscreen_set_cursor(rut_shell_onscreen_t *onscreen,
+                            rut_cursor_t cursor)
+{
+    SDL_Cursor *cursor_image;
+    SDL_SystemCursor system_cursor;
+
+    switch (cursor) {
+    case RUT_CURSOR_ARROW:
+        system_cursor = SDL_SYSTEM_CURSOR_ARROW;
+        break;
+    case RUT_CURSOR_IBEAM:
+        system_cursor = SDL_SYSTEM_CURSOR_IBEAM;
+        break;
+    case RUT_CURSOR_WAIT:
+        system_cursor = SDL_SYSTEM_CURSOR_WAIT;
+        break;
+    case RUT_CURSOR_CROSSHAIR:
+        system_cursor = SDL_SYSTEM_CURSOR_CROSSHAIR;
+        break;
+    case RUT_CURSOR_SIZE_WE:
+        system_cursor = SDL_SYSTEM_CURSOR_SIZEWE;
+        break;
+    case RUT_CURSOR_SIZE_NS:
+        system_cursor = SDL_SYSTEM_CURSOR_SIZENS;
+        break;
+    }
+
+    cursor_image = SDL_CreateSystemCursor(system_cursor);
+    SDL_SetCursor(cursor_image);
+
+    if (onscreen->sdl.sdl_cursor_image)
+        SDL_FreeCursor(shell_onscreen->sdl.sdl_cursor_image);
+    onscreen->sdl.sdl_cursor_image = cursor_image;
+}
+
+bool
 rut_sdl_shell_init(rut_shell_t *shell)
 {
+    cg_error_t *error = NULL;
+
+    shell->cg_renderer = cg_renderer_new();
+    shell->cg_device = cg_device_new();
+
+    cg_renderer_set_winsys_id(shell->cg_renderer, CG_WINSYS_ID_SDL);
+    if (cg_renderer_connect(shell->cg_renderer, &error))
+        cg_device_set_renderer(shell->cg_device, shell->cg_renderer);
+    else {
+        cg_error_free(error);
+        c_warning("Failed to setup SDL renderer; "
+                  "falling back to default\n");
+    }
+
+    cg_device_connect(shell->cg_device, &error);
+    if (!shell->cg_device) {
+        c_warning("Failed to create Cogl Context: %s", error->message);
+        cg_error_free(error);
+        c_free(shell);
+        return false;
+    }
+
     shell->sdl_keymod = SDL_GetModState();
     shell->sdl_buttons = SDL_GetMouseState(NULL, NULL);
 
-    shell->platform.input_event_get_onscreen = rut_sdl_input_event_get_onscreen;
+    shell->platform.allocate_onscreen = rut_sdl_allocate_onscreen;
+    shell->platform.onscreen_resize = rut_sdl_onscreen_resize;
+    shell->platform.onscreen_set_title = rut_sdl_onscreen_set_title;
+    shell->platform.onscreen_set_cursor = rut_sdl_onscreen_set_cursor;
 
     shell->platform.key_event_get_keysym = rut_sdl_key_event_get_keysym;
     shell->platform.key_event_get_action = rut_sdl_key_event_get_action;
@@ -450,4 +547,6 @@ rut_sdl_shell_init(rut_shell_t *shell)
     shell->platform.text_event_get_text = rut_sdl_text_event_get_text;
 
     shell->platform.free_input_event = rut_sdl_free_input_event;
+
+    return true;
 }

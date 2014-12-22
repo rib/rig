@@ -66,7 +66,7 @@ struct _rig_frontend_t {
     /* When listening for an out of process simulator
      * to connect (for debugging)...
      */
-#ifdef linux
+#ifdef __linux__
     int listen_fd;
 #endif
 #ifdef USE_UV
@@ -78,6 +78,8 @@ struct _rig_frontend_t {
     rig_pb_stream_t *stream;
     rig_rpc_peer_t *frontend_peer;
     bool connected;
+
+    rut_shell_onscreen_t *onscreen;
 
     bool has_resized;
     int pending_width;
@@ -108,14 +110,14 @@ enum rig_simulator_run_mode {
     RIG_SIMULATOR_RUN_MODE_MAINLOOP,
     RIG_SIMULATOR_RUN_MODE_THREADED,
     RIG_SIMULATOR_RUN_MODE_PROCESS,
-#ifdef linux
+#ifdef __linux__
     RIG_SIMULATOR_RUN_MODE_CONNECT_ABSTRACT_SOCKET,
 #endif
     RIG_SIMULATOR_RUN_MODE_CONNECT_TCP,
 };
 extern enum rig_simulator_run_mode rig_simulator_run_mode_option;
 
-#ifdef linux
+#ifdef __linux__
 extern const char *rig_simulator_abstract_socket_option;
 #endif
 

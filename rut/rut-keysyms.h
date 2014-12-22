@@ -28,10 +28,7 @@
  */
 
 /*
- * File auto-generated from script at:
- *  http://git.clutter-project.org/clutter/plain/clutter/clutter-keysyms-update.pl
- *
- * using the input files:
+ * Originally generated from:
  *  http://cgit.freedesktop.org/xorg/proto/x11proto/plain/keysymdef.h
  * and
  *  http://cgit.freedesktop.org/xorg/proto/x11proto/plain/XF86keysym.h
