@@ -1,0 +1,19 @@
+if test -z $RIG_SRC_DIR; then
+    RIG_SRC_DIR=$PWD
+fi
+
+export ANDROID_NDK_DIR="$HOME/src/android/android-ndk-r9d"
+export ANDROID_NDK_TOOLCHAIN="$HOME/local/android-toolchain_x86"
+export ANDROID_SDK_DIR="$HOME/src/android-sdk-linux"
+export ANDROID_HOST_TRIPPLE=i686-android-modules
+
+PATH="$PATH:$ANDROID_NDK_DIR:$ANDROID_NDK_TOOLCHAIN/bin"
+PATH="$PATH:$ANDROID_SDK_DIR/tools/:$ANDROID_SDK_DIR/platform-tools"
+
+export DOWNLOAD_DIR="$RIG_SRC_DIR/build/android-modules/downloads"
+export PKG_DIR="$RIG_SRC_DIR/build/android-modules/android-x86/pkg"
+export MODULES_DIR="$RIG_SRC_DIR/build/android-modules/android-x86/modules"
+export TOOLS_PREFIX="$RIG_SRC_DIR/build/android-modules/android-x86/tools"
+export BUILD_DIR="$RIG_SRC_DIR/build/android-modules/android-x86/build"
+
+export NDK_MODULE_PATH=$MODULES_DIR
