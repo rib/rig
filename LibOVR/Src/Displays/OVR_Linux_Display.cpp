@@ -27,7 +27,7 @@ limitations under the License.
 #include "OVR_Linux_Display.h"
 #include "../Kernel/OVR_Log.h"
 
-#include "../../../3rdParty/EDID/edid.h"
+#include "edid.h"
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
