@@ -36,10 +36,6 @@ libOVR_la_SOURCES = \
 	$(srcdir)/Src/CAPI/CAPI_HMDRenderState.cpp \
 	$(srcdir)/Src/CAPI/CAPI_HMDState.cpp \
 	$(srcdir)/Src/CAPI/CAPI_LatencyStatistics.cpp \
-	$(srcdir)/Src/CAPI/GL/CAPI_GL_DistortionRenderer.cpp \
-	$(srcdir)/Src/CAPI/GL/CAPI_GL_HSWDisplay.cpp \
-	$(srcdir)/Src/CAPI/GL/CAPI_GL_Util.cpp \
-	$(srcdir)/Src/CAPI/GL/CAPI_GLE.cpp \
 	$(srcdir)/Src/Kernel/OVR_Alg.cpp \
 	$(srcdir)/Src/Kernel/OVR_Allocator.cpp \
 	$(srcdir)/Src/Kernel/OVR_Atomic.cpp \
@@ -72,3 +68,9 @@ libOVR_la_SOURCES = \
 	$(srcdir)/Src/OVR_JSON.cpp \
 	$(srcdir)/Src/OVR_Profile.cpp \
 	$(srcdir)/Src/OVR_Stereo.cpp
+
+gl_specific_source = \
+	$(srcdir)/Src/CAPI/GL/CAPI_GL_DistortionRenderer.cpp \
+	$(srcdir)/Src/CAPI/GL/CAPI_GL_HSWDisplay.cpp \
+	$(srcdir)/Src/CAPI/GL/CAPI_GL_Util.cpp \
+	$(srcdir)/Src/CAPI/GL/CAPI_GLE.cpp
