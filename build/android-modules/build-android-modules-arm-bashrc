@@ -5,15 +5,15 @@ fi
 export ANDROID_NDK_DIR="$HOME/src/android/android-ndk-r10b"
 export ANDROID_NDK_TOOLCHAIN="$HOME/local/android-toolchain_arm"
 export ANDROID_SDK_DIR="$HOME/src/android-sdk-linux"
-export ANDROID_HOST_TRIPPLE=arm-linux-androideabi
+export ANDROID_HOST_TRIPPLE=arm-android-moduleseabi
 
 PATH="$PATH:$ANDROID_NDK_DIR:$ANDROID_NDK_TOOLCHAIN/bin"
 PATH="$PATH:$ANDROID_SDK_DIR/tools/:$ANDROID_SDK_DIR/platform-tools"
 
-export DOWNLOAD_DIR="$RIG_SRC_DIR/build/linux-android/downloads"
-export PKG_DIR="$RIG_SRC_DIR/build/linux-android/arm/pkg"
-export MODULES_DIR="$RIG_SRC_DIR/build/linux-android/arm/modules"
-export TOOLS_PREFIX="$RIG_SRC_DIR/build/linux-android/arm/android-tools"
-export BUILD_DIR="$RIG_SRC_DIR/build/linux-android/arm/android-build"
+export DOWNLOAD_DIR="$RIG_SRC_DIR/build/android-modules/downloads"
+export PKG_DIR="$RIG_SRC_DIR/build/android-modules/arm/pkg"
+export MODULES_DIR="$RIG_SRC_DIR/build/android-modules/arm/modules"
+export TOOLS_PREFIX="$RIG_SRC_DIR/build/android-modules/arm/android-tools"
+export BUILD_DIR="$RIG_SRC_DIR/build/android-modules/arm/android-build"
 
 export NDK_MODULE_PATH=$MODULES_DIR

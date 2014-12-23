@@ -3,9 +3,10 @@
 # Please read the README before running this script!
 
 set -e
-#set -x
+set -x
 
 UNSET_VARS=(
+    ACLOCAL
     LD_LIBRARY_PATH
     PKG_CONFIG_PATH
     PKG_CONFIG
@@ -264,7 +265,7 @@ function build_source ()
 
     while true; do
         case "$1" in
-	    -module) shift; prefix="$MODULES_DIR/$1"; module="$1"; shift ;;
+	    -module) shift; shift ;;
 	    -dep) shift; deps="$deps $1"; shift ;;
 	    -prefix) shift; prefix="$1"; shift ;;
 	    -unpackdir) shift; unpack_dir="$1"; shift ;;
@@ -346,18 +347,6 @@ function build_source ()
     save_CFLAGS=$CFLAGS
     save_LDFLAGS=$LDFLAGS
 
-    for dep in $deps
-    do
-	export CPPFLAGS="-I$MODULES_DIR/$dep/include $CPPFLAGS"
-	export CFLAGS="-I$MODULES_DIR/$dep/include $CFLAGS"
-	export LDFLAGS="-L$MODULES_DIR/$dep/lib $LDFLAGS"
-	if test -d $MODULES_DIR/$dep/share/aclocal; then
-	    export ACLOCAL_FLAGS="-I $MODULES_DIR/$dep/share/aclocal $ACLOCAL_FLAGS"
-	fi
-    done
-    export CFLAGS="$CFLAGS $ANDROID_CFLAGS"
-    export LDFLAGS="$LDFLAGS $ANDROID_LDFLAGS"
-
     if ! test -e ./"$config_name"; then
         retool=yes
     fi
@@ -375,6 +364,8 @@ function build_source ()
         unset NOCONFIGURE
     fi
 
+    echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+    echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH"
     #Note we have to pass $@ first since we need to pass a special
     #Linux option as the first argument to the icu configure script
     if test -n "$is_autotools"; then
@@ -407,7 +398,7 @@ function build_source ()
 
 function build_bzip2 ()
 {
-    local prefix="$MODULES_DIR/bzip2"
+    local prefix="$STAGING_PREFIX"
     local source="$1"; shift;
     local tarfile=`basename "$source"`
     local unpack_dir=`echo "$tarfile" | sed -e 's/\.tar\.[0-9a-z]*$//' -e 's/\.tgz$//' -e 's/\.git$//'`
@@ -428,6 +419,7 @@ function build_bzip2 ()
 
     make -f Makefile-libbz2_so
     ln -sf libbz2.so.1.0.6 libbz2.so
+    mkdir -p "$prefix/lib/"
     cp -av libbz2.so* "$prefix/lib/"
 
     echo "$unpack_dir" >> "$BUILD_DIR/installed-projects.txt"
@@ -435,7 +427,7 @@ function build_bzip2 ()
 
 function build_dep ()
 {
-    build_source "$@" --host=$ANDROID_HOST_TRIPPLE
+    build_source -prefix "$STAGING_PREFIX" "$@"
 }
 
 function build_tool ()
@@ -455,9 +447,9 @@ if test $# -ne 2; then
 fi
 
 RIG_SRC_DIR=`realpath $1`
-RIG_BUILD_META_DIR=$RIG_SRC_DIR/build/linux-android
+RIG_BUILD_META_DIR=$RIG_SRC_DIR/build/linux
 
-if ! test -f $RIG_BUILD_META_DIR/makefiles/icu-Android.mk; then
+if ! test -d $RIG_BUILD_META_DIR/patches; then
     echo "Could not find Rig source at $1"
     usage
 fi
@@ -482,7 +474,7 @@ BUILD_DATA_DIR=$PWD
 
 RIG_GITDIR=`cd $BUILD_DATA_DIR/../../.git && pwd`
 
-PATCHES_DIR=$BUILD_DATA_DIR/android-patches
+PATCHES_DIR=$BUILD_DATA_DIR/patches
 PATCHES_DIR=`cd $PATCHES_DIR && pwd`
 
 # If a download directory hasn't been specified then try to guess one
@@ -492,17 +484,15 @@ guess_dir DOWNLOAD_DIR "downloads" \
 
 DOWNLOAD_PROG=curl
 
-# If a download directory hasn't been specified then try to guess one
-# but ask for confirmation first
-guess_dir MODULES_DIR "modules" \
-    "the directory to create android ndk modules in" "Modules directory";
+guess_dir STAGING_PREFIX "local" \
+    "the staging prefix for installing package dependencies" "Staging dir";
 
-guess_dir TOOLS_PREFIX "android-tools" \
+guess_dir TOOLS_PREFIX "tools" \
     "the install prefix for internal build dependencies" "Tools dir";
 
 # If a build directory hasn't been specified then try to guess one
 # but ask for confirmation first
-guess_dir BUILD_DIR "android-build" \
+guess_dir BUILD_DIR "build" \
     "the directory to build source dependencies in" "Build directory";
 
 for dep in "${GL_HEADER_URLS[@]}"; do
@@ -527,26 +517,14 @@ cat > "$RUN_PKG_CONFIG" <<EOF
 # PKG_CONFIG_LIBDIR variable so that it won't pick up the local system
 # .pc files.
 
-export PKG_CONFIG_LIBDIR="/invalid/too/path"
+export PKG_CONFIG_LIBDIR="/invalid/foo/path"
 
 exec pkg-config "\$@"
 EOF
 
-CMAKE_TOOLCHAIN_SCRIPT="$BUILD_DIR/cmake-toolchain-script"
-
-echo "Generating $CMAKE_TOOLCHAIN_SCRIPT"
-
-cat > "$CMAKE_TOOLCHAIN_SCRIPT" <<EOF
-SET(CMAKE_SYSTEM_NAME Linux)  # Tell CMake we're cross-compiling
-include(CMakeForceCompiler)
-# Prefix detection only works with compiler id "GNU"
-# CMake will look for prefixed g++, cpp, ld, etc. automatically
-CMAKE_FORCE_C_COMPILER($ANDROID_HOST_TRIPPLE-gcc GNU)
-SET(ANDROID TRUE)
-EOF
-
 chmod a+x "$RUN_PKG_CONFIG";
 
+add_prefix "$STAGING_PREFIX"
 add_prefix "$TOOLS_PREFIX"
 
 PKG_CONFIG="$RUN_PKG_CONFIG"
@@ -556,41 +534,46 @@ export "${EXPORT_VARS[@]}"
 download_file "http://git.savannah.gnu.org/gitweb/?p=automake.git;a=blob_plain;f=lib/config.guess" "config.guess";
 download_file "http://git.savannah.gnu.org/gitweb/?p=automake.git;a=blob_plain;f=lib/config.sub" "config.sub";
 
-build_tool "http://ftp.gnu.org/gnu/m4/m4-1.4.17.tar.gz"
-build_tool "http://ftp.gnu.org/gnu/autoconf/autoconf-2.69.tar.gz"
-build_tool "http://ftp.gnu.org/gnu/automake/automake-1.14.1.tar.gz"
-build_tool "http://ftp.gnu.org/gnu/help2man/help2man-1.45.1.tar.xz"
-#Libtool's Android support is only available from git :-/
-build_tool -retool_cmd "./bootstrap" \
-    "git://git.savannah.gnu.org/libtool.git"
-build_tool "http://pkgconfig.freedesktop.org/releases/pkg-config-0.27.1.tar.gz" \
-    --with-internal-glib
+#build_dep "ftp://xmlsoft.org/libxml2/libxml2-2.9.0.tar.gz"
+#build_tool "http://tukaani.org/xz/xz-5.0.4.tar.gz"
 
-export gl_cv_header_working_stdint_h=yes
+if gcc -dumpmachine|grep -q x86_64; then
+    openssl_target=linux-x86_64
+else
+    openssl_target=linux-elf
+fi
+build_tool -configure Configure -not_autotools -j 1 -install_target install_sw \
+    "http://mirrors.ibiblio.org/openssl/source/openssl-1.0.1j.tar.gz" \
+    $openssl_target \
+    no-shared
 
-#XXX: Note re-autotooling libiconv is awkward so instead of getting
-#     it to use a newer version of libtool with Android support, we
-#     patch it to use -avoid-version for a pristine soname that
-#     Android can cope with.
+build_bzip2 "http://www.bzip.org/1.0.6/bzip2-1.0.6.tar.gz"
+
 build_dep -module libiconv -autotools_dir ./build-aux -autotools_dir ./libcharset/build-aux \
     "http://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.14.tar.gz"
 
 build_dep -module libffi -retool_cmd "autoreconf -fvi" -retool \
     "ftp://sourceware.org/pub/libffi/libffi-3.0.13.tar.gz"
 
-#XXX: Note re-autotooling gettext is awkward so instead of getting
-#     it to use a newer version of libtool with Android support, we
-#     patch it to use -avoid-version for a pristine soname that
-#     Android can cope with.
-build_dep -module gettext -dep libiconv -autotools_dir ./build-aux \
+build_dep -dep libiconv -autotools_dir ./build-aux \
     -make_arg -C -make_arg gettext-tools/intl \
     "http://ftp.gnu.org/gnu/gettext/gettext-0.18.3.2.tar.gz" \
     --without-included-regex --disable-java --disable-openmp --without-libiconv-prefix --without-libintl-prefix --without-libglib-2.0-prefix --without-libcroco-0.6-prefix --with-included-libxml --without-libncurses-prefix --without-libtermcap-prefix --without-libcurses-prefix --without-libexpat-prefix --without-emacs
 
-#make -C gettext-tools/intl install
+prev_CFLAGS="$CFLAGS"
+export CFLAGS="$prev_CFLAGS -g3 -O0"
+build_dep -dep libiconv -dep gettext -retool \
+    "ftp://ftp.gnome.org/pub/gnome/sources/glib/2.38/glib-2.38.2.tar.xz" \
+    --with-libiconv=gnu
+CFLAGS=$prev_CFLAGS
+
+build_dep "ftp://xmlsoft.org/libxml2/libxml2-2.9.0.tar.gz"
+
+# The makefile for this package seems to choke on paralell builds
+build_dep -j 1 "http://freedesktop.org/~hadess/shared-mime-info-1.0.tar.xz"
 
 build_dep -module libpng -retool -retool_cmd "autoreconf -v" \
-    "http://downloads.sourceforge.net/project/libpng/libpng16/1.6.13/libpng-1.6.13.tar.gz"
+    "http://downloads.sourceforge.net/project/libpng/libpng16/1.6.15/libpng-1.6.15.tar.gz"
 export LIBPNG_CFLAGS="-I$MODULES_DIR/libpng/include"
 export LIBPNG_LDFLAGS="-L$MODULES_DIR/libpng/lib -lpng16"
 
@@ -602,14 +585,22 @@ build_dep -module libjpeg -retool \
 build_dep -module freetype -retool \
     "http://download.savannah.gnu.org/releases/freetype/freetype-2.5.2.tar.bz2"
 
-build_dep -module libxml2 -retool \
-    "ftp://xmlsoft.org/libxml2/libxml2-2.9.0.tar.gz" \
-    --without-python --without-debug --without-legacy --without-catalog \
-    --without-docbook --with-c14n --with-gnu-ld --disable-tests
+
+prev_CFLAGS=$CFLAGS
+prev_CPPFLAGS=$CPPFLAGS
+export CFLAGS="-g3 -O0"
+export CPPFLAGS="-I$STAGING_PREFIX/include"
+build_dep \
+    "http://ftp.gnome.org/pub/GNOME/sources/gdk-pixbuf/2.28/gdk-pixbuf-2.28.2.tar.xz" \
+    --disable-modules \
+    --with-included-loaders=png,jpeg,tiff \
+    --disable-glibtest \
+    --disable-introspection
+CFLAGS=$prev_CFLAGS
+CPPFLAGS=$prev_CPPFLAGS
 
 build_dep -module fontconfig -retool \
     "http://www.freedesktop.org/software/fontconfig/release/fontconfig-2.10.95.tar.bz2" \
-    --with-default-fonts=/system/fonts \
     --disable-docs \
     --enable-libxml2
 
@@ -639,55 +630,90 @@ build_dep -module harfbuzz -dep gettext -dep icu -dep freetype -retool \
     --with-icu=yes
 
 build_dep -module libuv \
-    "https://github.com/joyent/libuv.git"
-
-#save_ANDROID_NDK=$ANDROID_NDK
-#unset ANDROID_NDK
-#export ANDROID_STANDALONE_TOOLCHAIN=$ANDROID_NDK_TOOLCHAIN
-#build_dep -module opencv -cmake \
-#    -cmake_arg -D -cmake_arg CMAKE_TOOLCHAIN_FILE=$BUILD_DIR/opencv/platforms/android/android.toolchain.cmake \
-#    "https://github.com/Itseez/opencv.git"
-#ANDROID_NDK=$save_ANDROID_NDK
+    "https://github.com/libuv/libuv.git"
 
 build_tool "http://protobuf.googlecode.com/files/protobuf-2.5.0.tar.gz"
 
-# We have to build protobuf-c twice; once to build the protoc-c tool
-# and then again to cross-compile libprotobuf-c.so
-build_tool -branch origin/rig \
-  "https://github.com/rig-project/protobuf-c.git" \
-  --enable-protoc-c
-
 #export CXXFLAGS="-I$STAGING_PREFIX/include"
-build_dep -module protobuf-c -branch origin/rig \
-  "https://github.com/rig-project/protobuf-c.git" \
-  --disable-protoc-c
+build_dep -module protobuf-c \
+    -branch origin/rig \
+    "https://github.com/rig-project/protobuf-c.git"
 #unset CXXFLAGS
 
-#prev_CPPFLAGS="$CPPFLAGS"
-#export CPPFLAGS="$prev_CPPFLAGS -DANDROID_HARDWARE_generic"
-#build_dep -module valgrind -retool_cmd "autoreconf -fvi" \
-#    "https://github.com/svn2github/valgrind.git" \
-#    AR=$ANDROID_HOST_TRIPPLE-ar \
-#    LD=$ANDROID_HOST_TRIPPLE-ld \
-#    CC=$ANDROID_HOST_TRIPPLE-gcc \
-#    --host=armv7-unknown-linux
-#CPPFLAGS="$prev_CPPFLAGS"
 
-versioned_sonames=`$ANDROID_HOST_TRIPPLE-readelf -d $MODULES_DIR/*/lib/*.so|grep 'soname:'|grep -v '.so]$'|awk '{print $5}'`
-if test -n "$versioned_sonames"; then
-    echo "WARNING: The following versioned module sonames were found, but Android doesn't support library versioning:"
-    echo ""
-    echo "$versioned_sonames"
-    exit 1
-fi
+build_dep -module pixman \
+    "http://www.cairographics.org/releases/pixman-0.32.4.tar.gz" \
+    --disable-gtk
 
-exit 0
+prev_CFLAGS=$CFLAGS
+export CFLAGS="-Os"  # cairo is using _FORTIFY_SOURCE but gcc
+                     # complains if this is used without optimisations
+#NB: we make sure to build cairo after freetype/fontconfig so we have support for these backends
+build_dep -module cairo \
+    "http://www.cairographics.org/releases/cairo-1.12.18.tar.xz" \
+    --enable-xlib
+CFLAGS=$prev_CFLAGS
 
-if test -z $RIG_COMMIT; then
-    build_dep -d rig "$RIG_GITDIR"
-else
-    build_dep -d rig -c "$RIG_COMMIT" "$RIG_GITDIR"
-fi
+build_dep -module pango \
+    "http://ftp.gnome.org/pub/GNOME/sources/pango/1.36/pango-1.36.2.tar.xz" \
+    --disable-introspection \
+    --with-included-modules=yes \
+    --without-dynamic-modules
+
+#build_dep -cmake "https://github.com/Itseez/opencv.git"
+
+build_dep -module gdbm \
+    "http://ftp.gnu.org/gnu/gdbm/gdbm-1.10.tar.gz"
+
+build_dep -module dbus \
+    "http://dbus.freedesktop.org/releases/dbus/dbus-1.7.2.tar.gz"
+
+build_dep -module libdaemon \
+    "http://0pointer.de/lennart/projects/libdaemon/libdaemon-0.14.tar.gz"
+
+export CPPFLAGS="-I$STAGING_PREFIX/include"
+build_dep -module avahi \
+    "http://avahi.org/download/avahi-0.6.31.tar.gz" \
+  --disable-qt3 \
+  --disable-qt4 \
+  --disable-gtk \
+  --disable-gtk3 \
+  --disable-python \
+  --disable-mono \
+  --disable-introspection
+unset CPPFLAGS
+
+build_dep -module gstreamer \
+    "http://gstreamer.freedesktop.org/src/gstreamer/gstreamer-1.2.3.tar.xz"
+build_dep -module gst-plugins \
+    "http://gstreamer.freedesktop.org/src/gst-plugins-base/gst-plugins-base-1.2.3.tar.xz"
+
+prev_CFLAGS=$CFLAGS
+git_clone -name llvm -url "https://github.com/rig-project/llvm.git" -branch origin/rig
+git_clone -name clang -url "https://github.com/rig-project/clang.git" -branch origin/rig -build_dir "$BUILD_DIR/llvm/tools"
+build_dep -onlybuild "llvm" \
+    --enable-targets=x86,x86_64,arm \
+    --enable-debug-runtime \
+    --enable-debug-symbols \
+    --enable-shared \
+    --enable-keep-symbols \
+    --with-python=`which python2`
+
+#mclinker needs bison >= 2.5.4 and < 3.0.1
+build_tool "http://ftp.gnu.org/gnu/bison/bison-2.7.1.tar.xz"
+
+build_dep -branch origin/rig \
+    "https://github.com/rig-project/mclinker.git" \
+    --with-llvm-config=$STAGING_PREFIX/bin/llvm-config
+
+#build_dep -module rig "$RIG_GITDIR" CFLAGS="-g3 -O0"
+
+build_dep -module rig -unpackdir rig -branch wip/next \
+    "$RIG_GITDIR" \
+    --enable-debug \
+    --enable-editor \
+    --enable-gstreamer \
+    CFLAGS="-g3 -O0"
 
 mkdir -p "$PKG_RELEASEDIR"
 
@@ -696,21 +722,43 @@ cp -v "$STAGING_PREFIX/bin/rig" "$PKG_RELEASEDIR/rig-bin"
 mkdir -p "$PKG_LIBDIR"
 
 for lib in \
-    libasprintf \
+    libavahi-client \
+    libavahi-common \
+    libavahi-core \
+    libavahi-glib \
     libbz2 \
+    libcairo \
     libdaemon \
     libdbus-1 \
     libffi \
     libfontconfig \
     libfreetype \
-    libgettextlib-0.18.2 \
-    libgettextlib \
-    libgettextpo \
-    libgettextsrc-0.18.2 \
-    libgettextsrc \
+    libgdk_pixbuf-2.0 \
+    libgio-2.0 \
+    libglib-2.0 \
+    libgmodule-2.0 \
+    libgobject-2.0 \
+    libgthread-2.0 \
+    libgstfft-1.0 \
+    libgstaudio-1.0 \
+    libgstvideo-1.0 \
+    libgsttag-1.0 \
+    libgstcontroller-1.0 \
+    libgstbase-1.0 \
+    libgstreamer-1.0 \
+    libgstfft-1.0 \
+    libgstaudio-1.0 \
+    libgstvideo-1.0 \
+    libgstbase-1.0 \
+    libgsttag-1.0 \
+    libgstcontroller-1.0 \
+    libgstreamer-1.0 \
     libharfbuzz \
     libjpeg \
-    liblzma \
+    libpango-1.0 \
+    libpangocairo-1.0 \
+    libpangoft2-1.0 \
+    libpixman-1 \
     libpng \
     libpng16 \
     libprotobuf-c \
@@ -721,6 +769,9 @@ for lib in \
 do
     cp -av $STAGING_PREFIX/lib/$lib*.so* "$PKG_LIBDIR"
 done
+
+mkdir -p "$PKG_LIBDIR"/gio
+cp -av $STAGING_PREFIX/lib/gio/modules "$PKG_LIBDIR"/gio
 
 cp -av "$BUILD_DATA_DIR/scripts/"{auto-update.sh,rig-wrapper.sh} \
     "$BUILD_DIR/rig/tools/rig-check-signature" \
