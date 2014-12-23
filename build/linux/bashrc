@@ -1,0 +1,5 @@
+DOWNLOAD_DIR="$RIG_SRC_DIR/build/linux/downloads"
+PKG_DIR="$RIG_SRC_DIR/build/linux/linux-x86/pkg"
+STAGING_PREFIX="$RIG_SRC_DIR/build/linux/linux-x86/staging"
+TOOLS_PREFIX="$RIG_SRC_DIR/build/linux/linux-x86/tools"
+BUILD_DIR="$RIG_SRC_DIR/build/linux/linux-x86/build"
