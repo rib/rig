@@ -594,6 +594,7 @@ tests/conform/Makefile
 tests/unit/Makefile
 tests/micro-perf/Makefile
 tests/data/Makefile
+LibOVR/Makefile
 po/Makefile.in
 android/Makefile
 )
