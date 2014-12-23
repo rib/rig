@@ -426,6 +426,7 @@ tests/unit/Makefile
 tests/micro-perf/Makefile
 tests/data/Makefile
 h2o/Makefile
+LibOVR/Makefile
 po/Makefile.in
 android/Makefile
 )
