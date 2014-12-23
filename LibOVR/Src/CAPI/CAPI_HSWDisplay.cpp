@@ -444,9 +444,11 @@ OVR::CAPI::HSWDisplay* OVR::CAPI::HSWDisplay::Factory(ovrRenderAPIType apiType, 
             pHSWDisplay = new OVR::CAPI::HSWDisplay(apiType, hmd, renderState);
             break;
 
+#if 0
         case ovrRenderAPI_OpenGL:
             pHSWDisplay = new OVR::CAPI::GL::HSWDisplay(apiType, hmd, renderState);
             break;
+#endif
 
     #if defined(OVR_OS_WIN32)
         case ovrRenderAPI_D3D9:

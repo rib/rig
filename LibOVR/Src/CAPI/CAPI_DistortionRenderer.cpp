@@ -43,7 +43,9 @@ limitations under the License.
 
 #endif
 
+#if 0
 #include "GL/CAPI_GL_DistortionRenderer.h"
+#endif
 
 namespace OVR { namespace CAPI {
 
@@ -55,7 +57,7 @@ namespace OVR { namespace CAPI {
 DistortionRenderer::CreateFunc DistortionRenderer::APICreateRegistry[ovrRenderAPI_Count] =
 {
     0, // None
-    &GL::DistortionRenderer::Create,
+    0, // &GL::DistortionRenderer::Create,
     0, // Android_GLES
 #if defined (OVR_OS_WIN32)
     &D3D9::DistortionRenderer::Create,
