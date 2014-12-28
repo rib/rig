@@ -212,6 +212,26 @@ typedef uint32_t c_codepoint_t;
  */
 #define c_nearbyint(x) ((int)((x) < 0.0f ? (x) - 0.5f : (x) + 0.5f))
 
+/* _C_STATIC_ASSERT:
+ * @expression: An expression to assert evaluates to true at compile
+ *              time.
+ * @message: A message to print to the console if the assertion fails
+ *           at compile time.
+ *
+ * Allows you to assert that an expression evaluates to true at
+ * compile time and aborts compilation if not. If possible message
+ * will also be printed if the assertion fails.
+ *
+ * Note: Only Gcc >= 4.6 supports the c11 _Static_assert which lets us
+ * print a nice message if the compile time assertion fails.
+ */
+#ifdef HAVE_STATIC_ASSERT
+#define _C_STATIC_ASSERT(EXPRESSION, MESSAGE) \
+    _Static_assert(EXPRESSION, MESSAGE);
+#else
+#define _C_STATIC_ASSERT(EXPRESSION, MESSAGE)
+#endif
+
 /*
  * Allocation
  */
