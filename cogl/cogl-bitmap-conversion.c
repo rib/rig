@@ -138,11 +138,11 @@
 
 /* XXX: Note the GL spec doesn't round to nearest, maybe we shouldn't either? */
 #define X_TO_NORMALIZED_RANGE(x, max)   (uint16_t)((CLAMP(x, 0, 1) * (double)max) + 0.5)
-#define X_TO_SN8(x)                     ((int8_t)CG_UTIL_NEARBYINT(CLAMP(x, -1, 1) * 127.0))
+#define X_TO_SN8(x)                     ((int8_t)c_nearbyint(CLAMP(x, -1, 1) * 127.0))
 #define X_TO_U16(x)                     ((uint16_t)((x) + 0.5))
-#define X_TO_S16(x)                     ((uint16_t)(CG_UTIL_NEARBYINT(x)))
+#define X_TO_S16(x)                     ((uint16_t)(c_nearbyint(x)))
 #define X_TO_U32(x)                     ((uint32_t)((x) + 0.5))
-#define X_TO_S32(x)                     ((uint32_t)(CG_UTIL_NEARBYINT(x)))
+#define X_TO_S32(x)                     ((uint32_t)(c_nearbyint(x)))
 #define X_TO_FLOAT(x)                   (x)
 
 #define X_ONE 1.0

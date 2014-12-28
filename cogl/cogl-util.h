@@ -92,14 +92,6 @@ cg_util_float_signbit(float x)
 }
 #endif
 
-/* This is a replacement for the nearbyint function which always
-   rounds to the nearest integer. nearbyint is apparently a C99
-   function so it might not always be available but also it seems in
-   glibc it is defined as a function call so this macro could end up
-   faster anyway. We can't just add 0.5f because it will break for
-   negative numbers. */
-#define CG_UTIL_NEARBYINT(x) ((int)((x) < 0.0f ? (x) - 0.5f : (x) + 0.5f))
-
 /* Returns whether the given integer is a power of two */
 static inline bool
 _cg_util_is_pot(unsigned int num)

@@ -81,10 +81,10 @@ _cg_util_point_in_screen_poly(
         float vert_yj =
             *(float *)((uint8_t *)vertices + j * stride + sizeof(float));
 
-        vert_xi = CG_UTIL_NEARBYINT(vert_xi);
-        vert_xj = CG_UTIL_NEARBYINT(vert_xj);
-        vert_yi = CG_UTIL_NEARBYINT(vert_yi);
-        vert_yj = CG_UTIL_NEARBYINT(vert_yj);
+        vert_xi = c_nearbyint(vert_xi);
+        vert_xj = c_nearbyint(vert_xj);
+        vert_yi = c_nearbyint(vert_yi);
+        vert_yj = c_nearbyint(vert_yj);
 
         if (((vert_yi > point_y) != (vert_yj > point_y)) &&
             (point_x <

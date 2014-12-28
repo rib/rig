@@ -224,10 +224,10 @@ _cg_clip_stack_push_rectangle(cg_clip_stack_t *stack,
             SWAP(y_1, y_2);
 #undef SWAP
 
-        base_entry->bounds_x0 = CG_UTIL_NEARBYINT(x_1);
-        base_entry->bounds_y0 = CG_UTIL_NEARBYINT(y_1);
-        base_entry->bounds_x1 = CG_UTIL_NEARBYINT(x_2);
-        base_entry->bounds_y1 = CG_UTIL_NEARBYINT(y_2);
+        base_entry->bounds_x0 = c_nearbyint(x_1);
+        base_entry->bounds_y0 = c_nearbyint(y_1);
+        base_entry->bounds_x1 = c_nearbyint(x_2);
+        base_entry->bounds_y1 = c_nearbyint(y_2);
         entry->can_be_scissor = true;
     }
 
