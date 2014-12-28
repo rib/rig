@@ -206,26 +206,6 @@ _cg_util_pixel_format_from_masks(unsigned long r_mask,
                                  int bpp,
                                  bool byte_order_is_lsb_first);
 
-/* _CG_STATIC_ASSERT:
- * @expression: An expression to assert evaluates to true at compile
- *              time.
- * @message: A message to print to the console if the assertion fails
- *           at compile time.
- *
- * Allows you to assert that an expression evaluates to true at
- * compile time and aborts compilation if not. If possible message
- * will also be printed if the assertion fails.
- *
- * Note: Only Gcc >= 4.6 supports the c11 _Static_assert which lets us
- * print a nice message if the compile time assertion fails.
- */
-#ifdef HAVE_STATIC_ASSERT
-#define _CG_STATIC_ASSERT(EXPRESSION, MESSAGE)                                 \
-    _Static_assert(EXPRESSION, MESSAGE);
-#else
-#define _CG_STATIC_ASSERT(EXPRESSION, MESSAGE)
-#endif
-
 #ifdef HAVE_MEMMEM
 #define _cg_util_memmem memmem
 #else

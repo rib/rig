@@ -2316,7 +2316,7 @@ _cg_pipeline_init_layer_state_hash_functions(void)
 
     {
         /* So we get a big error if we forget to update this code! */
-        _CG_STATIC_ASSERT(CG_PIPELINE_LAYER_STATE_SPARSE_COUNT == 9,
+        _C_STATIC_ASSERT(CG_PIPELINE_LAYER_STATE_SPARSE_COUNT == 9,
                           "Don't forget to install a hash function for new "
                           "pipeline state and update assert at end of "
                           "_cg_pipeline_init_state_hash_functions");
@@ -2421,7 +2421,7 @@ _cg_pipeline_init_state_hash_functions(void)
 
     {
         /* So we get a big error if we forget to update this code! */
-        _CG_STATIC_ASSERT(CG_PIPELINE_STATE_SPARSE_COUNT == 15,
+        _C_STATIC_ASSERT(CG_PIPELINE_STATE_SPARSE_COUNT == 15,
                           "Make sure to install a hash function for "
                           "newly added pipeline state and update assert "
                           "in _cg_pipeline_init_state_hash_functions");

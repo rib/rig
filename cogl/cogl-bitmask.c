@@ -44,7 +44,7 @@
 
 /* This code assumes that we can cast an unsigned long to a pointer
    and back without losing any data */
-_CG_STATIC_ASSERT(sizeof(unsigned long) <= sizeof(void *),
+_C_STATIC_ASSERT(sizeof(unsigned long) <= sizeof(void *),
                   "This toolchain breaks Cogl's assumption that it can "
                   "safely cast an unsigned long to a pointer without "
                   "loosing data");
