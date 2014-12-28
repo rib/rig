@@ -201,6 +201,17 @@ typedef uint32_t c_codepoint_t;
     (((a) < (low)) ? (low) : (((a) > (high)) ? (high) : (a)))
 #endif
 
+/* This is a replacement for the nearbyint function which always
+ * rounds to the nearest integer without referring to the
+ * fesetround(3) state as the c99 nearbyint does. Also it seems in
+ * glibc nearbyint is defined as a function call so this macro could
+ * end up faster too.
+ *
+ * NB: We can't just add 0.5f because it will break for negative
+ * numbers.
+ */
+#define c_nearbyint(x) ((int)((x) < 0.0f ? (x) - 0.5f : (x) + 0.5f))
+
 /*
  * Allocation
  */
