@@ -68,7 +68,7 @@ typedef struct _cg_index_buffer_t cg_index_buffer_t;
  *
  * Stability: Unstable
  */
-cg_index_buffer_t *cg_index_buffer_new(cg_device_t *context, size_t bytes);
+cg_index_buffer_t *cg_index_buffer_new(cg_device_t *dev, size_t bytes);
 
 /**
  * cg_is_index_buffer:
