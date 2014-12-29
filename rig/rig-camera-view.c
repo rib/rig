@@ -458,6 +458,7 @@ matrix_view_2d_in_perspective(cg_matrix_t *matrix,
                               height_2d);
 }
 
+#if 0
 /* Assuming a symmetric perspective matrix is being used for your
  * projective transform then for a given z_2d distance within the
  * projective frustrum this convenience function determines how
@@ -503,6 +504,7 @@ get_entity_transform_for_2d_view(float fov_y,
 
     cg_quaternion_init_from_z_rotation(rotation, 180);
 }
+#endif
 
 static void
 update_view_and_projection(rig_camera_view_t *view)
@@ -514,8 +516,6 @@ update_view_and_projection(rig_camera_view_t *view)
     float z_far = 100; /* distance to far clipping plane */
     float x = 0, y = 0, z_2d = 30, w = 1;
     cg_matrix_t inverse;
-    float dx, dy, dz, scale;
-    cg_quaternion_t rotation;
 
     cg_matrix_init_identity(&engine->main_view);
     matrix_view_2d_in_perspective(&engine->main_view,
@@ -541,22 +541,6 @@ update_view_and_projection(rig_camera_view_t *view)
     view->view_camera_z = z_2d / view->device_scale;
     rig_entity_set_translate(
         view->view_camera_armature, 0, 0, view->view_camera_z);
-    // rig_entity_set_translate (view->view_camera_armature, 0, 0, 0);
-
-    get_entity_transform_for_2d_view(fovy,
-                                     aspect,
-                                     z_near,
-                                     z_2d,
-                                     view->width,
-                                     &dx,
-                                     &dy,
-                                     &dz,
-                                     &rotation,
-                                     &scale);
-
-    // rig_entity_set_translate (view->view_camera_2d_view, -dx, -dy, -dz);
-    // rig_entity_set_rotation (view->view_camera_2d_view, &rotation);
-    // rig_entity_set_scale (view->view_camera_2d_view, 1.0 / scale);
 }
 
 static void
