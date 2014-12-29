@@ -6,8 +6,11 @@ AM_CPPFLAGS = \
 	-I$(top_builddir)/rut \
 	-I$(top_srcdir)/libuv/include \
 	-I$(top_srcdir)/clib/src \
-	-I$(top_builddir)/clib/src \
-	-I$(top_srcdir)/LibOVR/Src
+	-I$(top_builddir)/clib/src
+
+if OCULUS_RIFT
+AM_CPPFLAGS += -I$(top_srcdir)/LibOVR/Src
+endif
 
 AM_CFLAGS = \
 	$(COGL_DEP_CFLAGS) \
@@ -34,6 +37,9 @@ if USE_GSTREAMER
 common_ldadd += $(top_builddir)/cogl-gst/libcogl-gst.la
 endif
 
+if OCULUS_RIFT
+common_ldadd += $(top_builddir)/LibOVR/libOVR.la
+endif
 
 programs = cogl-info
 
@@ -41,7 +47,7 @@ cogl_info_SOURCES = cogl-info.c
 cogl_info_LDADD = $(common_ldadd)
 
 if USE_UV
-programs += cogl-hello cogl-gles2-context cogl-point-sprites
+programs += cogl-hello cogl-gles2-context cogl-point-sprites vr-test
 endif
 examples_datadir = $(pkgdatadir)/examples-data
 examples_data_DATA =
@@ -97,6 +103,9 @@ programs += cogl-sdl2-hello
 cogl_sdl2_hello_SOURCES = cogl-sdl2-hello.c
 cogl_sdl2_hello_LDADD = $(common_ldadd)
 endif
+
+vr_test_SOURCES = vr-test.c
+vr_test_LDADD = $(common_ldadd)
 
 if EMSCRIPTEN
 %.html: %.o $(top_builddir)/cogl/.libs/libcogl2.so $(top_builddir)/clib/src/.libs/libclib.a
