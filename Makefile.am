@@ -12,7 +12,7 @@ if BUILD_COGL_PATH
 SUBDIRS += cogl-path
 endif
 
-SUBDIRS += rut data rig tests cogl-examples po android
+SUBDIRS += rut data rig tests toys po android
 
 if USE_GLIB
 SUBDIRS += tools
