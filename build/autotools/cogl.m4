@@ -915,7 +915,6 @@ AC_DEFUN([AM_COGL],
   cogl-pango/Makefile
   cogl-path/Makefile
   cogl-gst/Makefile
-  cogl-examples/Makefile
   )
 
   dnl ================================================================
