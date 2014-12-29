@@ -33,7 +33,7 @@ programs = cogl-info
 cogl_info_SOURCES = cogl-info.c
 cogl_info_LDADD = $(common_ldadd)
 
-programs += cogl-hello cogl-msaa cogl-gles2-context cogl-point-sprites
+programs += cogl-hello cogl-maze cogl-msaa cogl-gles2-context cogl-point-sprites
 examples_datadir = $(pkgdatadir)/examples-data
 examples_data_DATA =
 
@@ -43,6 +43,10 @@ cogl_msaa_SOURCES = cogl-msaa.c
 cogl_msaa_LDADD = $(common_ldadd)
 cogl_point_sprites_SOURCES = cogl-point-sprites.c
 cogl_point_sprites_LDADD = $(common_ldadd)
+
+cogl_maze_SOURCES = cogl-maze.c
+cogl_maze_LDADD = $(common_ldadd)
+cogl_maze_CFLAGS = $(AM_CPPFLAGS) $(COGL_PANGO_DEP_CFLAGS)
 
 if BUILD_COGL_PANGO
 programs += cogl-crate
