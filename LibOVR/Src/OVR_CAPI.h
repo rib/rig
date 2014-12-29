@@ -832,6 +832,9 @@ OVR_EXPORT const char*  ovrHmd_GetLatencyTestResult(ovrHmd hmd);
 /// Returns false if this feature is disabled or not-applicable (e.g. using a DK1)
 OVR_EXPORT ovrBool      ovrHmd_GetLatencyTest2DrawColor(ovrHmd hmddesc, unsigned char rgbColorOut[3]);
 
+// Returns the measured post present latency
+OVR_EXPORT double	ovrHmd_GetMeasuredLatencyTest2(ovrHmd hmddesc);
+
 //-------------------------------------------------------------------------------------
 // ***** Health and Safety Warning Display interface
 //
