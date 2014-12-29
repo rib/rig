@@ -206,7 +206,6 @@ struct _rig_engine_t {
 #endif
 
     cg_matrix_t main_view;
-    float z_2d;
 
 /* XXX: Move to rig_editor_t */
 #ifdef RIG_EDITOR_ENABLED
