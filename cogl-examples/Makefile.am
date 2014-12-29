@@ -2,8 +2,11 @@ include $(top_srcdir)/build/autotools/Makefile.am.silent
 
 AM_CPPFLAGS = \
 	-I$(top_srcdir) \
+	-I$(top_srcdir)/rut \
+	-I$(top_builddir)/rut \
 	-I$(top_srcdir)/clib/src \
-	-I$(top_builddir)/clib/src
+	-I$(top_builddir)/clib/src \
+	-I$(top_srcdir)/LibOVR/Src
 
 AM_CFLAGS = \
 	$(COGL_DEP_CFLAGS) \
@@ -12,9 +15,17 @@ AM_CFLAGS = \
 AM_CFLAGS += -DCG_EXAMPLES_DATA=\""$(abs_top_srcdir)/cogl-examples/"\"
 
 common_ldadd = \
-	$(COGL_DEP_LIBS) \
+	$(RIG_EXTRA_LDFLAGS) \
+	$(top_builddir)/rut/librut.la \
 	$(top_builddir)/cogl/libcogl2.la \
+	$(top_builddir)/cogl-path/libcogl-path.la \
+	$(top_builddir)/cogl-pango/libcogl-pango2.la \
+	$(top_builddir)/cogl-gst/libcogl-gst.la \
+	$(top_builddir)/LibOVR/libOVR.la \
+	$(RIG_DEP_LIBS) \
+	$(COGL_DEP_LIBS) \
 	$(top_builddir)/clib/src/libclib.la \
+	-lstdc++ \
 	$(LIBM)
 
 programs = cogl-info
