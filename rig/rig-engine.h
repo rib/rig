@@ -112,22 +112,9 @@ struct _rig_engine_t {
     cg_matrix_t identity;
 
     /* TODO: Move to rig_frontend_t */
-    cg_texture_t *gradient;
-
-    /* TODO: Move to rig_frontend_t */
     c_hash_table_t *image_source_wrappers;
 
-    /* TODO: Move to rig_frontend_t */
-    cg_pipeline_t *shadow_color_tex;
-    cg_pipeline_t *shadow_map_tex;
-
     cg_pipeline_t *default_pipeline;
-
-    /* TODO: Move to rig_frontend_t */
-    cg_pipeline_t *dof_pipeline_template;
-    cg_pipeline_t *dof_pipeline;
-    cg_pipeline_t *dof_diamond_pipeline;
-    cg_pipeline_t *dof_unshaped_pipeline;
 
     rut_shell_t *shell;
 
@@ -166,11 +153,6 @@ struct _rig_engine_t {
 #ifdef RIG_EDITOR_ENABLED
     rig_undo_journal_t *undo_journal;
 #endif
-
-    /* shadow mapping */
-    cg_offscreen_t *shadow_fb;
-    cg_texture_2d_t *shadow_color;
-    cg_texture_t *shadow_map;
 
     rut_stack_t *top_stack;
     rig_camera_view_t *main_camera_view;
@@ -249,30 +231,6 @@ struct _rig_engine_t {
 #ifdef __APPLE__
     rig_osx_data_t *osx_data;
 #endif
-
-    cg_snippet_t *alpha_mask_snippet;
-    cg_snippet_t *alpha_mask_video_snippet;
-    cg_snippet_t *lighting_vertex_snippet;
-    cg_snippet_t *normal_map_vertex_snippet;
-    cg_snippet_t *shadow_mapping_vertex_snippet;
-    cg_snippet_t *blended_discard_snippet;
-    cg_snippet_t *unblended_discard_snippet;
-    cg_snippet_t *premultiply_snippet;
-    cg_snippet_t *unpremultiply_snippet;
-    cg_snippet_t *normal_map_fragment_snippet;
-    cg_snippet_t *normal_map_video_snippet;
-    cg_snippet_t *material_lighting_snippet;
-    cg_snippet_t *simple_lighting_snippet;
-    cg_snippet_t *shadow_mapping_fragment_snippet;
-    cg_snippet_t *pointalism_vertex_snippet;
-    cg_snippet_t *pointalism_video_snippet;
-    cg_snippet_t *pointalism_halo_snippet;
-    cg_snippet_t *pointalism_opaque_snippet;
-    cg_snippet_t *cache_position_snippet;
-    cg_snippet_t *hair_simple_snippet;
-    cg_snippet_t *hair_material_snippet;
-    cg_snippet_t *hair_vertex_snippet;
-    cg_snippet_t *hair_fin_snippet;
 
     /* XXX: The object/type composition we use here isn't very
      * clean...

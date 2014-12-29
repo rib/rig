@@ -54,6 +54,7 @@ extern const char *rig_slave_address_option;
 extern int rig_slave_port_option;
 
 extern bool rig_slave_fullscreen_option;
+extern bool rig_slave_oculus_option;
 
 struct _rig_slave_t {
     rut_object_base_t _base;

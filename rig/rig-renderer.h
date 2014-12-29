@@ -66,8 +66,12 @@ void rig_paint_camera_entity(rig_entity_t *view_camera,
 
 void rig_renderer_dirty_entity_state(rig_entity_t *entity);
 
-void rig_renderer_init(rig_engine_t *engine);
+void rig_renderer_init(rig_renderer_t *renderer);
 
-void rig_renderer_fini(rig_engine_t *engine);
+void rig_renderer_fini(rig_renderer_t *renderer);
+
+/* TODO: remove this; it's just a stop-gap for rig-ui.c to be able
+ * to setup the viewport for the light camera... */
+cg_framebuffer_t *rig_renderer_get_shadow_fb(rig_renderer_t *renderer);
 
 #endif /* _RIG_RENDERER_H_ */

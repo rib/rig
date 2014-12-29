@@ -1091,7 +1091,7 @@ rig_frontend_post_init_engine(rig_frontend_t *frontend,
     _rig_init_image_source_wrappers_cache(engine);
 
     engine->renderer = rig_renderer_new(engine);
-    rig_renderer_init(engine);
+    rig_renderer_init(engine->renderer);
 
 #ifndef __ANDROID__
     if (ui_filename) {
