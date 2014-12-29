@@ -396,59 +396,6 @@ rig_engine_set_onscreen_size(rig_engine_t *engine, int width, int height)
 }
 
 static void
-ensure_shadow_map(rig_engine_t *engine)
-{
-    cg_texture_2d_t *color_buffer;
-    // rig_ui_t *ui = engine->edit_mode_ui ?
-    //  engine->edit_mode_ui : engine->play_mode_ui;
-
-    /*
-     * Shadow mapping
-     */
-
-    /* Setup the shadow map */
-
-    c_warn_if_fail(engine->shadow_color == NULL);
-
-    color_buffer = cg_texture_2d_new_with_size(engine->shell->cg_device,
-                                               engine->device_width * 2,
-                                               engine->device_height * 2);
-
-    engine->shadow_color = color_buffer;
-
-    c_warn_if_fail(engine->shadow_fb == NULL);
-
-    /* XXX: Right now there's no way to avoid allocating a color buffer. */
-    engine->shadow_fb = cg_offscreen_new_with_texture(color_buffer);
-    if (engine->shadow_fb == NULL)
-        c_critical("could not create offscreen buffer");
-
-    /* retrieve the depth texture */
-    cg_framebuffer_set_depth_texture_enabled(engine->shadow_fb, true);
-
-    c_warn_if_fail(engine->shadow_map == NULL);
-
-    engine->shadow_map = cg_framebuffer_get_depth_texture(engine->shadow_fb);
-}
-
-static void
-free_shadow_map(rig_engine_t *engine)
-{
-    if (engine->shadow_map) {
-        cg_object_unref(engine->shadow_map);
-        engine->shadow_map = NULL;
-    }
-    if (engine->shadow_fb) {
-        cg_object_unref(engine->shadow_fb);
-        engine->shadow_fb = NULL;
-    }
-    if (engine->shadow_color) {
-        cg_object_unref(engine->shadow_color);
-        engine->shadow_color = NULL;
-    }
-}
-
-static void
 _rig_engine_free(void *object)
 {
     rig_engine_t *engine = object;
@@ -477,11 +424,10 @@ _rig_engine_free(void *object)
 #endif
         _rig_code_fini(engine);
 
-        rig_renderer_fini(engine);
+        rig_renderer_fini(engine->renderer);
+        rut_object_unref(engine->renderer);
 
         cg_object_unref(engine->circle_node_attribute);
-
-        free_shadow_map(engine);
 
         cg_object_unref(engine->default_pipeline);
 
@@ -679,9 +625,6 @@ _rig_engine_new_full(rut_shell_t *shell,
 
     engine->device_width = DEVICE_WIDTH;
     engine->device_height = DEVICE_HEIGHT;
-
-    if (engine->frontend)
-        ensure_shadow_map(engine);
 
     /*
      * Setup the 2D widget scenegraph

@@ -2370,32 +2370,6 @@ _rig_editor_init_type(void)
 }
 
 static void
-create_debug_gradient(rig_engine_t *engine)
-{
-    cg_vertex_p2c4_t quad[] = { { 0, 0, 0xff, 0x00, 0x00, 0xff },
-                                { 0, 200, 0x00, 0xff, 0x00, 0xff },
-                                { 200, 200, 0x00, 0x00, 0xff, 0xff },
-                                { 200, 0, 0xff, 0xff, 0xff, 0xff } };
-    cg_offscreen_t *offscreen;
-    cg_primitive_t *prim = cg_primitive_new_p2c4(
-        engine->shell->cg_device, CG_VERTICES_MODE_TRIANGLE_FAN, 4, quad);
-    cg_pipeline_t *pipeline = cg_pipeline_new(engine->shell->cg_device);
-
-    engine->gradient =
-        cg_texture_2d_new_with_size(engine->shell->cg_device, 200, 200);
-
-    offscreen = cg_offscreen_new_with_texture(engine->gradient);
-
-    cg_framebuffer_orthographic(offscreen, 0, 0, 200, 200, -1, 100);
-    cg_framebuffer_clear4f(
-        offscreen, CG_BUFFER_BIT_COLOR | CG_BUFFER_BIT_DEPTH, 0, 0, 0, 1);
-    cg_primitive_draw(prim, offscreen, pipeline);
-
-    cg_object_unref(prim);
-    cg_object_unref(offscreen);
-}
-
-static void
 load_builtin_assets(rig_editor_t *editor)
 {
     editor->nine_slice_builtin_asset =
@@ -2477,13 +2451,6 @@ init_editor_engine(rig_editor_t *editor)
     /* NB: in device mode we assume all inputs need to got to the
      * simulator and we don't need a separate queue. */
     engine->simulator_input_queue = rut_input_queue_new(engine->shell);
-
-    /* Create a color gradient texture that can be used for debugging
-     * shadow mapping.
-     *
-     * XXX: This should probably simply be #ifdef DEBUG code.
-     */
-    create_debug_gradient(engine);
 
     load_builtin_assets(editor);
 

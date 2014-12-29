@@ -50,6 +50,44 @@
 struct _rig_renderer_t {
     rut_object_base_t _base;
 
+    rig_engine_t *engine;
+
+    /* shadow mapping */
+    cg_offscreen_t *shadow_fb;
+    cg_texture_2d_t *shadow_color;
+    cg_texture_t *shadow_map;
+
+    cg_texture_t *gradient;
+
+    cg_pipeline_t *dof_pipeline_template;
+    cg_pipeline_t *dof_pipeline;
+    cg_pipeline_t *dof_diamond_pipeline;
+    cg_pipeline_t *dof_unshaped_pipeline;
+
+    cg_snippet_t *alpha_mask_snippet;
+    cg_snippet_t *alpha_mask_video_snippet;
+    cg_snippet_t *lighting_vertex_snippet;
+    cg_snippet_t *normal_map_vertex_snippet;
+    cg_snippet_t *shadow_mapping_vertex_snippet;
+    cg_snippet_t *blended_discard_snippet;
+    cg_snippet_t *unblended_discard_snippet;
+    cg_snippet_t *premultiply_snippet;
+    cg_snippet_t *unpremultiply_snippet;
+    cg_snippet_t *normal_map_fragment_snippet;
+    cg_snippet_t *normal_map_video_snippet;
+    cg_snippet_t *material_lighting_snippet;
+    cg_snippet_t *simple_lighting_snippet;
+    cg_snippet_t *shadow_mapping_fragment_snippet;
+    cg_snippet_t *pointalism_vertex_snippet;
+    cg_snippet_t *pointalism_video_snippet;
+    cg_snippet_t *pointalism_halo_snippet;
+    cg_snippet_t *pointalism_opaque_snippet;
+    cg_snippet_t *cache_position_snippet;
+    cg_snippet_t *hair_simple_snippet;
+    cg_snippet_t *hair_material_snippet;
+    cg_snippet_t *hair_vertex_snippet;
+    cg_snippet_t *hair_fin_snippet;
+
     c_array_t *journal;
 };
 
@@ -303,6 +341,8 @@ rig_renderer_new(rig_engine_t *engine)
     rig_renderer_t *renderer = rut_object_alloc0(
         rig_renderer_t, &rig_renderer_type, _rig_renderer_init_type);
 
+    renderer->engine = engine;
+
     renderer->journal = c_array_new(false, false, sizeof(rig_journal_entry_t));
 
     return renderer;
@@ -408,8 +448,9 @@ set_focal_parameters(cg_pipeline_t *pipeline,
 }
 
 static void
-init_dof_pipeline_template(rig_engine_t *engine)
+init_dof_pipeline_template(rig_renderer_t *renderer)
 {
+    rig_engine_t *engine = renderer->engine;
     cg_pipeline_t *pipeline;
     cg_depth_state_t depth_state;
     cg_snippet_t *snippet;
@@ -439,7 +480,7 @@ init_dof_pipeline_template(rig_engine_t *engine)
         "dof_blur = 1.0 - clamp (abs (world_pos.z - dof_focal_distance) /\n"
         "                  dof_depth_of_field, 0.0, 1.0);\n");
 
-    cg_pipeline_add_snippet(pipeline, engine->cache_position_snippet);
+    cg_pipeline_add_snippet(pipeline, renderer->cache_position_snippet);
     cg_pipeline_add_snippet(pipeline, snippet);
     cg_object_unref(snippet);
 
@@ -463,18 +504,19 @@ init_dof_pipeline_template(rig_engine_t *engine)
     cg_object_unref (snippet);
 #endif
 
-    engine->dof_pipeline_template = pipeline;
+    renderer->dof_pipeline_template = pipeline;
 }
 
 static void
-init_dof_diamond_pipeline(rig_engine_t *engine)
+init_dof_diamond_pipeline(rig_renderer_t *renderer)
 {
+    rig_engine_t *engine = renderer->engine;
     cg_pipeline_t *dof_diamond_pipeline =
-        cg_pipeline_copy(engine->dof_pipeline_template);
+        cg_pipeline_copy(renderer->dof_pipeline_template);
     cg_snippet_t *snippet;
 
-    cg_pipeline_set_layer_texture(
-        dof_diamond_pipeline, 0, engine->shell->circle_texture);
+    cg_pipeline_set_layer_texture(dof_diamond_pipeline, 0,
+                                  engine->shell->circle_texture);
 
     snippet = cg_snippet_new(CG_SNIPPET_HOOK_FRAGMENT,
                              /* declarations */
@@ -489,14 +531,14 @@ init_dof_diamond_pipeline(rig_engine_t *engine)
     cg_pipeline_add_snippet(dof_diamond_pipeline, snippet);
     cg_object_unref(snippet);
 
-    engine->dof_diamond_pipeline = dof_diamond_pipeline;
+    renderer->dof_diamond_pipeline = dof_diamond_pipeline;
 }
 
 static void
-init_dof_unshaped_pipeline(rig_engine_t *engine)
+init_dof_unshaped_pipeline(rig_renderer_t *renderer)
 {
     cg_pipeline_t *dof_unshaped_pipeline =
-        cg_pipeline_copy(engine->dof_pipeline_template);
+        cg_pipeline_copy(renderer->dof_pipeline_template);
     cg_snippet_t *snippet;
 
     snippet = cg_snippet_new(CG_SNIPPET_HOOK_FRAGMENT,
@@ -512,14 +554,14 @@ init_dof_unshaped_pipeline(rig_engine_t *engine)
     cg_pipeline_add_snippet(dof_unshaped_pipeline, snippet);
     cg_object_unref(snippet);
 
-    engine->dof_unshaped_pipeline = dof_unshaped_pipeline;
+    renderer->dof_unshaped_pipeline = dof_unshaped_pipeline;
 }
 
 static void
-init_dof_pipeline(rig_engine_t *engine)
+init_dof_pipeline(rig_renderer_t *renderer)
 {
     cg_pipeline_t *dof_pipeline =
-        cg_pipeline_copy(engine->dof_pipeline_template);
+        cg_pipeline_copy(renderer->dof_pipeline_template);
     cg_snippet_t *snippet;
 
     /* store the bluriness in the alpha channel */
@@ -529,19 +571,111 @@ init_dof_pipeline(rig_engine_t *engine)
     cg_pipeline_add_snippet(dof_pipeline, snippet);
     cg_object_unref(snippet);
 
-    engine->dof_pipeline = dof_pipeline;
+    renderer->dof_pipeline = dof_pipeline;
+}
+
+static void
+create_debug_gradient(rig_renderer_t *renderer)
+{
+    cg_vertex_p2c4_t quad[] = { { 0,   0,   0xff, 0x00, 0x00, 0xff },
+                                { 0,   200, 0x00, 0xff, 0x00, 0xff },
+                                { 200, 200, 0x00, 0x00, 0xff, 0xff },
+                                { 200, 0,   0xff, 0xff, 0xff, 0xff } };
+    cg_offscreen_t *offscreen;
+    cg_device_t *dev = renderer->engine->shell->cg_device;
+    cg_primitive_t *prim =
+        cg_primitive_new_p2c4(dev, CG_VERTICES_MODE_TRIANGLE_FAN, 4, quad);
+    cg_pipeline_t *pipeline = cg_pipeline_new(dev);
+
+    renderer->gradient = cg_texture_2d_new_with_size(dev, 200, 200);
+
+    offscreen = cg_offscreen_new_with_texture(renderer->gradient);
+
+    cg_framebuffer_orthographic(offscreen, 0, 0, 200, 200, -1, 100);
+    cg_framebuffer_clear4f(offscreen, CG_BUFFER_BIT_COLOR | CG_BUFFER_BIT_DEPTH,
+                           0, 0, 0, 1);
+    cg_primitive_draw(prim, offscreen, pipeline);
+
+    cg_object_unref(prim);
+    cg_object_unref(offscreen);
+}
+
+static void
+ensure_shadow_map(rig_renderer_t *renderer)
+{
+    rig_engine_t *engine = renderer->engine;
+    cg_texture_2d_t *color_buffer;
+    // rig_ui_t *ui = engine->edit_mode_ui ?
+    //  engine->edit_mode_ui : engine->play_mode_ui;
+
+    /*
+     * Shadow mapping
+     */
+
+    /* Setup the shadow map */
+
+    c_warn_if_fail(renderer->shadow_color == NULL);
+
+    color_buffer = cg_texture_2d_new_with_size(engine->shell->cg_device,
+                                               engine->device_width * 2,
+                                               engine->device_height * 2);
+
+    renderer->shadow_color = color_buffer;
+
+    c_warn_if_fail(renderer->shadow_fb == NULL);
+
+    /* XXX: Right now there's no way to avoid allocating a color buffer. */
+    renderer->shadow_fb = cg_offscreen_new_with_texture(color_buffer);
+    if (renderer->shadow_fb == NULL) {
+        c_warning("could not create offscreen buffer");
+        cg_object_unref(color_buffer);
+        return;
+    }
+
+    /* retrieve the depth texture */
+    cg_framebuffer_set_depth_texture_enabled(renderer->shadow_fb, true);
+
+    c_warn_if_fail(renderer->shadow_map == NULL);
+
+    renderer->shadow_map = cg_framebuffer_get_depth_texture(renderer->shadow_fb);
+
+    /* Create a color gradient texture that can be used for debugging
+     * shadow mapping.
+     *
+     * XXX: This should probably simply be #ifdef DEBUG code.
+     */
+    create_debug_gradient(renderer);
+}
+
+static void
+free_shadow_map(rig_renderer_t *renderer)
+{
+    if (renderer->shadow_map) {
+        cg_object_unref(renderer->shadow_map);
+        renderer->shadow_map = NULL;
+    }
+    if (renderer->shadow_fb) {
+        cg_object_unref(renderer->shadow_fb);
+        renderer->shadow_fb = NULL;
+    }
+    if (renderer->shadow_color) {
+        cg_object_unref(renderer->shadow_color);
+        renderer->shadow_color = NULL;
+    }
 }
 
 void
-rig_renderer_init(rig_engine_t *engine)
+rig_renderer_init(rig_renderer_t *renderer)
 {
+    ensure_shadow_map(renderer);
+
     /* We always want to use exactly the same snippets when creating
      * similar pipelines so that we can take advantage of Cogl's program
      * caching. The program cache only compares the snippet pointers,
      * not the contents of the snippets. Therefore we just create the
      * snippets we're going to use upfront and retain them */
 
-    engine->alpha_mask_snippet =
+    renderer->alpha_mask_snippet =
         cg_snippet_new(CG_SNIPPET_HOOK_FRAGMENT,
                        /* definitions */
                        "uniform float material_alpha_threshold;\n",
@@ -551,7 +685,7 @@ rig_renderer_init(rig_engine_t *engine)
                        "    material_alpha_threshold)\n"
                        "  discard;\n");
 
-    engine->lighting_vertex_snippet =
+    renderer->lighting_vertex_snippet =
         cg_snippet_new(CG_SNIPPET_HOOK_VERTEX,
                        /* definitions */
                        "uniform mat3 normal_matrix;\n"
@@ -562,7 +696,7 @@ rig_renderer_init(rig_engine_t *engine)
                        "eye_direction = -vec3(cg_modelview_matrix *\n"
                        "                      pos);\n");
 
-    engine->normal_map_vertex_snippet =
+    renderer->normal_map_vertex_snippet =
         cg_snippet_new(CG_SNIPPET_HOOK_VERTEX,
                        /* definitions */
                        "uniform vec3 light0_direction_norm;\n"
@@ -585,12 +719,12 @@ rig_renderer_init(rig_engine_t *engine)
                        "v.z = dot (eye_direction, normal);\n"
                        "eye_direction = normalize (v);\n");
 
-    engine->cache_position_snippet =
+    renderer->cache_position_snippet =
         cg_snippet_new(CG_SNIPPET_HOOK_VERTEX_TRANSFORM,
                        "out vec4 pos;\n",
                        "pos = cg_position_in;\n");
 
-    engine->pointalism_vertex_snippet = cg_snippet_new(
+    renderer->pointalism_vertex_snippet = cg_snippet_new(
         CG_SNIPPET_HOOK_VERTEX_TRANSFORM,
         "in vec2 cell_xy;\n"
         "in vec4 cell_st;\n"
@@ -620,7 +754,7 @@ rig_renderer_init(rig_engine_t *engine)
         "pos.y += cell_xy.y;\n"
         "cg_position_out = cg_modelview_projection_matrix * pos;\n");
 
-    engine->shadow_mapping_vertex_snippet =
+    renderer->shadow_mapping_vertex_snippet =
         cg_snippet_new(CG_SNIPPET_HOOK_VERTEX,
 
                        /* definitions */
@@ -631,7 +765,7 @@ rig_renderer_init(rig_engine_t *engine)
                        "shadow_coords = light_shadow_matrix *\n"
                        "                pos;\n");
 
-    engine->blended_discard_snippet = cg_snippet_new(
+    renderer->blended_discard_snippet = cg_snippet_new(
         CG_SNIPPET_HOOK_FRAGMENT,
         /* definitions */
         NULL,
@@ -641,7 +775,7 @@ rig_renderer_init(rig_engine_t *engine)
         "    cg_color_out.a >= " C_STRINGIFY(OPAQUE_THRESHOLD) ")\n"
         "  discard;\n");
 
-    engine->unblended_discard_snippet = cg_snippet_new(
+    renderer->unblended_discard_snippet = cg_snippet_new(
         CG_SNIPPET_HOOK_FRAGMENT,
         /* definitions */
         NULL,
@@ -650,7 +784,7 @@ rig_renderer_init(rig_engine_t *engine)
         "if (cg_color_out.a < " C_STRINGIFY(OPAQUE_THRESHOLD) ")\n"
         "  discard;\n");
 
-    engine->premultiply_snippet =
+    renderer->premultiply_snippet =
         cg_snippet_new(CG_SNIPPET_HOOK_FRAGMENT,
                        /* definitions */
                        NULL,
@@ -661,7 +795,7 @@ rig_renderer_init(rig_engine_t *engine)
                         * blend mode instead which should be more efficient */
                        "cg_color_out.rgb *= cg_color_out.a;\n");
 
-    engine->unpremultiply_snippet =
+    renderer->unpremultiply_snippet =
         cg_snippet_new(CG_SNIPPET_HOOK_FRAGMENT,
                        /* definitions */
                        NULL,
@@ -675,7 +809,7 @@ rig_renderer_init(rig_engine_t *engine)
                         * load for example. */
                        "cg_color_out.rgb /= cg_color_out.a;\n");
 
-    engine->normal_map_fragment_snippet = cg_snippet_new(
+    renderer->normal_map_fragment_snippet = cg_snippet_new(
         CG_SNIPPET_HOOK_FRAGMENT,
         /* definitions */
         "uniform vec4 light0_ambient, light0_diffuse, light0_specular;\n"
@@ -705,7 +839,7 @@ rig_renderer_init(rig_engine_t *engine)
         "}\n"
         "cg_color_out.rgb = final_color.rgb;\n");
 
-    engine->material_lighting_snippet = cg_snippet_new(
+    renderer->material_lighting_snippet = cg_snippet_new(
         CG_SNIPPET_HOOK_FRAGMENT,
         /* definitions */
         "/* material lighting declarations */\n"
@@ -735,7 +869,7 @@ rig_renderer_init(rig_engine_t *engine)
         "}\n"
         "cg_color_out.rgb = final_color.rgb;\n");
 
-    engine->simple_lighting_snippet = cg_snippet_new(
+    renderer->simple_lighting_snippet = cg_snippet_new(
         CG_SNIPPET_HOOK_FRAGMENT,
         /* definitions */
         "/* simple lighting declarations */\n"
@@ -761,7 +895,7 @@ rig_renderer_init(rig_engine_t *engine)
         "}\n"
         "cg_color_out.rgb = final_color.rgb;\n");
 
-    engine->shadow_mapping_fragment_snippet =
+    renderer->shadow_mapping_fragment_snippet =
         cg_snippet_new(CG_SNIPPET_HOOK_FRAGMENT,
                        /* declarations */
                        "in vec4 shadow_coords;\n",
@@ -779,7 +913,7 @@ rig_renderer_init(rig_engine_t *engine)
                        "    shadow = 0.5;\n"
                        "  cg_color_out.rgb = shadow * cg_color_out.rgb;\n");
 
-    engine->pointalism_halo_snippet =
+    renderer->pointalism_halo_snippet =
         cg_snippet_new(CG_SNIPPET_HOOK_FRAGMENT,
                        /* declarations */
                        "in vec4 av_color;\n",
@@ -796,7 +930,7 @@ rig_renderer_init(rig_engine_t *engine)
                        "  if (cg_color_out.a > 0.90 || cg_color_out.a <= 0.0)\n"
                        "    discard;\n");
 
-    engine->pointalism_opaque_snippet = cg_snippet_new(
+    renderer->pointalism_opaque_snippet = cg_snippet_new(
         CG_SNIPPET_HOOK_FRAGMENT,
         /* declarations */
         "in vec4 av_color;\n",
@@ -809,7 +943,7 @@ rig_renderer_init(rig_engine_t *engine)
         "  if (cg_color_out.a < 0.90)\n"
         "    discard;\n");
 
-    engine->hair_simple_snippet = cg_snippet_new(
+    renderer->hair_simple_snippet = cg_snippet_new(
         CG_SNIPPET_HOOK_FRAGMENT,
         /* declarations */
         "/* hair simple declarations */\n"
@@ -848,7 +982,7 @@ rig_renderer_init(rig_engine_t *engine)
         "  vec3 color = Ka + Kd + Ks;\n"
         "  cg_color_out.rgb *= color;\n");
 
-    engine->hair_material_snippet = cg_snippet_new(
+    renderer->hair_material_snippet = cg_snippet_new(
         CG_SNIPPET_HOOK_FRAGMENT,
         /* declarations */
         "/* hair material declarations */\n"
@@ -894,7 +1028,7 @@ rig_renderer_init(rig_engine_t *engine)
         "  vec3 color = Ka + Kd + Ks;\n"
         "  cg_color_out.rgb *= color;\n");
 
-    engine->hair_vertex_snippet = cg_snippet_new(
+    renderer->hair_vertex_snippet = cg_snippet_new(
         CG_SNIPPET_HOOK_VERTEX,
         /* declarations */
         "uniform float hair_pos;\n",
@@ -903,7 +1037,7 @@ rig_renderer_init(rig_engine_t *engine)
         "displace.xyz = cg_normal_in * hair_pos + displace.xyz;\n"
         "cg_position_out = cg_modelview_projection_matrix * displace;\n");
 
-    engine->hair_fin_snippet = cg_snippet_new(
+    renderer->hair_fin_snippet = cg_snippet_new(
         CG_SNIPPET_HOOK_VERTEX,
         "uniform float length;\n",
         "vec4 displace = pos;\n"
@@ -911,39 +1045,46 @@ rig_renderer_init(rig_engine_t *engine)
         "displace.xyz += cg_normal_in * length;\n"
         "cg_position_out = cg_modelview_projection_matrix * displace;\n");
 
-    init_dof_pipeline_template(engine);
+    init_dof_pipeline_template(renderer);
 
-    init_dof_diamond_pipeline(engine);
+    init_dof_diamond_pipeline(renderer);
 
-    init_dof_unshaped_pipeline(engine);
+    init_dof_unshaped_pipeline(renderer);
 
-    init_dof_pipeline(engine);
+    init_dof_pipeline(renderer);
 }
 
 void
-rig_renderer_fini(rig_engine_t *engine)
+rig_renderer_fini(rig_renderer_t *renderer)
 {
-    cg_object_unref(engine->alpha_mask_snippet);
-    cg_object_unref(engine->lighting_vertex_snippet);
-    cg_object_unref(engine->normal_map_vertex_snippet);
-    cg_object_unref(engine->shadow_mapping_vertex_snippet);
-    cg_object_unref(engine->blended_discard_snippet);
-    cg_object_unref(engine->unblended_discard_snippet);
-    cg_object_unref(engine->premultiply_snippet);
-    cg_object_unref(engine->unpremultiply_snippet);
-    cg_object_unref(engine->normal_map_fragment_snippet);
-    cg_object_unref(engine->material_lighting_snippet);
-    cg_object_unref(engine->simple_lighting_snippet);
-    cg_object_unref(engine->shadow_mapping_fragment_snippet);
-    cg_object_unref(engine->pointalism_vertex_snippet);
-    cg_object_unref(engine->pointalism_halo_snippet);
-    cg_object_unref(engine->pointalism_opaque_snippet);
-    cg_object_unref(engine->cache_position_snippet);
+    cg_object_unref(renderer->dof_pipeline_template);
+    cg_object_unref(renderer->dof_pipeline);
+    cg_object_unref(renderer->dof_diamond_pipeline);
+    cg_object_unref(renderer->dof_unshaped_pipeline);
+
+    cg_object_unref(renderer->alpha_mask_snippet);
+    cg_object_unref(renderer->lighting_vertex_snippet);
+    cg_object_unref(renderer->normal_map_vertex_snippet);
+    cg_object_unref(renderer->shadow_mapping_vertex_snippet);
+    cg_object_unref(renderer->blended_discard_snippet);
+    cg_object_unref(renderer->unblended_discard_snippet);
+    cg_object_unref(renderer->premultiply_snippet);
+    cg_object_unref(renderer->unpremultiply_snippet);
+    cg_object_unref(renderer->normal_map_fragment_snippet);
+    cg_object_unref(renderer->material_lighting_snippet);
+    cg_object_unref(renderer->simple_lighting_snippet);
+    cg_object_unref(renderer->shadow_mapping_fragment_snippet);
+    cg_object_unref(renderer->pointalism_vertex_snippet);
+    cg_object_unref(renderer->pointalism_halo_snippet);
+    cg_object_unref(renderer->pointalism_opaque_snippet);
+    cg_object_unref(renderer->cache_position_snippet);
+
+    free_shadow_map(renderer);
 }
 
 static void
 add_material_for_mask(cg_pipeline_t *pipeline,
-                      rig_engine_t *engine,
+                      rig_renderer_t *renderer,
                       rig_material_t *material,
                       rig_image_source_t **sources)
 {
@@ -953,7 +1094,7 @@ add_material_for_mask(cg_pipeline_t *pipeline,
         if (!rig_image_source_get_is_video(sources[SOURCE_TYPE_ALPHA_MASK])) {
             rig_image_source_setup_pipeline(sources[SOURCE_TYPE_ALPHA_MASK],
                                             pipeline);
-            cg_pipeline_add_snippet(pipeline, engine->alpha_mask_snippet);
+            cg_pipeline_add_snippet(pipeline, renderer->alpha_mask_snippet);
         }
     }
 
@@ -962,7 +1103,7 @@ add_material_for_mask(cg_pipeline_t *pipeline,
 }
 
 static cg_pipeline_t *
-get_entity_mask_pipeline(rig_engine_t *engine,
+get_entity_mask_pipeline(rig_renderer_t *renderer,
                          rig_entity_t *entity,
                          rut_object_t *geometry,
                          rig_material_t *material,
@@ -1017,13 +1158,13 @@ get_entity_mask_pipeline(rig_engine_t *engine,
     }
 
     if (rut_object_get_type(geometry) == &rig_diamond_type) {
-        pipeline = cg_object_ref(engine->dof_diamond_pipeline);
+        pipeline = cg_object_ref(renderer->dof_diamond_pipeline);
         rig_diamond_apply_mask(geometry, pipeline);
 
         if (material)
-            add_material_for_mask(pipeline, engine, material, sources);
+            add_material_for_mask(pipeline, renderer, material, sources);
     } else if (rut_object_get_type(geometry) == &rig_shape_type) {
-        pipeline = cg_pipeline_copy(engine->dof_unshaped_pipeline);
+        pipeline = cg_pipeline_copy(renderer->dof_unshaped_pipeline);
 
         if (rig_shape_get_shaped(geometry)) {
             cg_texture_t *shape_texture = rig_shape_get_shape_texture(geometry);
@@ -1032,14 +1173,14 @@ get_entity_mask_pipeline(rig_engine_t *engine,
         }
 
         if (material)
-            add_material_for_mask(pipeline, engine, material, sources);
+            add_material_for_mask(pipeline, renderer, material, sources);
     } else if (rut_object_get_type(geometry) == &rig_nine_slice_type) {
-        pipeline = cg_pipeline_copy(engine->dof_unshaped_pipeline);
+        pipeline = cg_pipeline_copy(renderer->dof_unshaped_pipeline);
 
         if (material)
-            add_material_for_mask(pipeline, engine, material, sources);
+            add_material_for_mask(pipeline, renderer, material, sources);
     } else if (rut_object_get_type(geometry) == &rig_pointalism_grid_type) {
-        pipeline = cg_pipeline_copy(engine->dof_diamond_pipeline);
+        pipeline = cg_pipeline_copy(renderer->dof_diamond_pipeline);
 
         if (material) {
             if (sources[SOURCE_TYPE_COLOR]) {
@@ -1049,7 +1190,7 @@ get_entity_mask_pipeline(rig_engine_t *engine,
                 rig_image_source_setup_pipeline(sources[SOURCE_TYPE_COLOR],
                                                 pipeline);
                 cg_pipeline_add_snippet(pipeline,
-                                        engine->pointalism_vertex_snippet);
+                                        renderer->pointalism_vertex_snippet);
             }
 
             if (sources[SOURCE_TYPE_ALPHA_MASK]) {
@@ -1059,11 +1200,11 @@ get_entity_mask_pipeline(rig_engine_t *engine,
                                                     false);
                 rig_image_source_setup_pipeline(sources[SOURCE_TYPE_COLOR],
                                                 pipeline);
-                cg_pipeline_add_snippet(pipeline, engine->alpha_mask_snippet);
+                cg_pipeline_add_snippet(pipeline, renderer->alpha_mask_snippet);
             }
         }
     } else
-        pipeline = cg_object_ref(engine->dof_pipeline);
+        pipeline = cg_object_ref(renderer->dof_pipeline);
 
     set_entity_pipeline_cache(entity, CACHE_SLOT_SHADOW, pipeline);
 
@@ -1104,7 +1245,7 @@ image_source_changed_cb(rig_image_source_t *source, void *user_data)
 }
 
 static cg_pipeline_t *
-get_entity_color_pipeline(rig_engine_t *engine,
+get_entity_color_pipeline(rig_renderer_t *renderer,
                           rig_entity_t *entity,
                           rut_object_t *geometry,
                           rig_material_t *material,
@@ -1112,13 +1253,14 @@ get_entity_color_pipeline(rig_engine_t *engine,
                           get_pipeline_flags_t flags,
                           bool blended)
 {
+    rig_engine_t *engine = renderer->engine;
     rig_renderer_priv_t *priv = entity->renderer_priv;
     cg_depth_state_t depth_state;
     cg_pipeline_t *pipeline;
     cg_pipeline_t *fin_pipeline;
     cg_framebuffer_t *shadow_fb;
-    cg_snippet_t *blend = engine->blended_discard_snippet;
-    cg_snippet_t *unblend = engine->unblended_discard_snippet;
+    cg_snippet_t *blend = renderer->blended_discard_snippet;
+    cg_snippet_t *unblend = renderer->unblended_discard_snippet;
     rut_object_t *hair;
     int i;
 
@@ -1169,18 +1311,18 @@ get_entity_color_pipeline(rig_engine_t *engine,
 
     cg_pipeline_set_depth_state(pipeline, &depth_state, NULL);
 
-    cg_pipeline_add_snippet(pipeline, engine->cache_position_snippet);
+    cg_pipeline_add_snippet(pipeline, renderer->cache_position_snippet);
 
     /* vertex_t shader setup for lighting */
 
-    cg_pipeline_add_snippet(pipeline, engine->lighting_vertex_snippet);
+    cg_pipeline_add_snippet(pipeline, renderer->lighting_vertex_snippet);
 
     if (sources[SOURCE_TYPE_NORMAL_MAP])
-        cg_pipeline_add_snippet(pipeline, engine->normal_map_vertex_snippet);
+        cg_pipeline_add_snippet(pipeline, renderer->normal_map_vertex_snippet);
 
     if (rig_material_get_receive_shadow(material))
         cg_pipeline_add_snippet(pipeline,
-                                engine->shadow_mapping_vertex_snippet);
+                                renderer->shadow_mapping_vertex_snippet);
 
     if (rut_object_get_type(geometry) == &rig_nine_slice_type &&
         !priv->nine_slice_closure) {
@@ -1219,15 +1361,15 @@ get_entity_color_pipeline(rig_engine_t *engine,
                                       CG_PIPELINE_FILTER_LINEAR_MIPMAP_LINEAR,
                                       CG_PIPELINE_FILTER_LINEAR);
 
-        cg_pipeline_add_snippet(pipeline, engine->pointalism_vertex_snippet);
+        cg_pipeline_add_snippet(pipeline, renderer->pointalism_vertex_snippet);
 
-        blend = engine->pointalism_halo_snippet;
-        unblend = engine->pointalism_opaque_snippet;
+        blend = renderer->pointalism_halo_snippet;
+        unblend = renderer->pointalism_opaque_snippet;
     }
 
     /*if (hair)
        {
-        cg_pipeline_add_snippet (pipeline, engine->hair_fin_snippet);
+        cg_pipeline_add_snippet (pipeline, renderer->hair_fin_snippet);
         rig_hair_set_uniform_location (hair, pipeline,
                                        blended ? RIG_HAIR_SHELL_POSITION_BLENDED
        :
@@ -1243,21 +1385,21 @@ get_entity_color_pipeline(rig_engine_t *engine,
      */
     cg_pipeline_add_snippet(pipeline, blended ? blend : unblend);
 
-    cg_pipeline_add_snippet(pipeline, engine->unpremultiply_snippet);
+    cg_pipeline_add_snippet(pipeline, renderer->unpremultiply_snippet);
 
     if (hair) {
         if (sources[SOURCE_TYPE_COLOR] || sources[SOURCE_TYPE_ALPHA_MASK] ||
             sources[SOURCE_TYPE_NORMAL_MAP]) {
-            cg_pipeline_add_snippet(pipeline, engine->hair_material_snippet);
+            cg_pipeline_add_snippet(pipeline, renderer->hair_material_snippet);
         } else
-            cg_pipeline_add_snippet(pipeline, engine->hair_simple_snippet);
+            cg_pipeline_add_snippet(pipeline, renderer->hair_simple_snippet);
 
         cg_pipeline_set_layer_combine(
             pipeline, 11, "RGBA=REPLACE(PREVIOUS)", NULL);
 
         fin_pipeline = cg_pipeline_copy(pipeline);
-        cg_pipeline_add_snippet(fin_pipeline, engine->hair_fin_snippet);
-        cg_pipeline_add_snippet(pipeline, engine->hair_vertex_snippet);
+        cg_pipeline_add_snippet(fin_pipeline, renderer->hair_fin_snippet);
+        cg_pipeline_add_snippet(pipeline, renderer->hair_vertex_snippet);
         rig_hair_set_uniform_location(hair,
                                       pipeline,
                                       blended
@@ -1267,24 +1409,24 @@ get_entity_color_pipeline(rig_engine_t *engine,
     } else if (sources[SOURCE_TYPE_COLOR] || sources[SOURCE_TYPE_ALPHA_MASK] ||
                sources[SOURCE_TYPE_NORMAL_MAP]) {
         if (sources[SOURCE_TYPE_ALPHA_MASK])
-            cg_pipeline_add_snippet(pipeline, engine->alpha_mask_snippet);
+            cg_pipeline_add_snippet(pipeline, renderer->alpha_mask_snippet);
 
         if (sources[SOURCE_TYPE_NORMAL_MAP])
             cg_pipeline_add_snippet(pipeline,
-                                    engine->normal_map_fragment_snippet);
+                                    renderer->normal_map_fragment_snippet);
         else
             cg_pipeline_add_snippet(pipeline,
-                                    engine->material_lighting_snippet);
+                                    renderer->material_lighting_snippet);
     } else
-        cg_pipeline_add_snippet(pipeline, engine->simple_lighting_snippet);
+        cg_pipeline_add_snippet(pipeline, renderer->simple_lighting_snippet);
 
     if (rig_material_get_receive_shadow(material)) {
         /* Hook the shadow map sampling */
 
-        cg_pipeline_set_layer_texture(pipeline, 10, engine->shadow_map);
+        cg_pipeline_set_layer_texture(pipeline, 10, renderer->shadow_map);
         /* For debugging the shadow mapping... */
-        // cg_pipeline_set_layer_texture (pipeline, 7, engine->shadow_color);
-        // cg_pipeline_set_layer_texture (pipeline, 7, engine->gradient);
+        // cg_pipeline_set_layer_texture (pipeline, 7, renderer->shadow_color);
+        // cg_pipeline_set_layer_texture (pipeline, 7, renderer->gradient);
 
         /* We don't want this layer to be automatically modulated with the
          * previous layers so we set its combine mode to "REPLACE" so it
@@ -1294,13 +1436,13 @@ get_entity_color_pipeline(rig_engine_t *engine,
 
         /* Handle shadow mapping */
         cg_pipeline_add_snippet(pipeline,
-                                engine->shadow_mapping_fragment_snippet);
+                                renderer->shadow_mapping_fragment_snippet);
     }
 
-    cg_pipeline_add_snippet(pipeline, engine->premultiply_snippet);
+    cg_pipeline_add_snippet(pipeline, renderer->premultiply_snippet);
 
     if (hair)
-        cg_pipeline_add_snippet(fin_pipeline, engine->premultiply_snippet);
+        cg_pipeline_add_snippet(fin_pipeline, renderer->premultiply_snippet);
 
     if (!blended) {
         cg_pipeline_set_blend(pipeline, "RGBA = ADD (SRC_COLOR, 0)", NULL);
@@ -1321,7 +1463,7 @@ get_entity_color_pipeline(rig_engine_t *engine,
 FOUND:
 
     /* FIXME: there's lots to optimize about this! */
-    shadow_fb = engine->shadow_fb;
+    shadow_fb = renderer->shadow_fb;
 
     /* update uniforms in pipelines */
     {
@@ -1393,11 +1535,12 @@ image_source_ready_cb(rig_image_source_t *source, void *user_data)
 }
 
 static cg_pipeline_t *
-get_entity_pipeline(rig_engine_t *engine,
+get_entity_pipeline(rig_renderer_t *renderer,
                     rig_entity_t *entity,
                     rut_component_t *geometry,
                     rig_pass_t pass)
 {
+    rig_engine_t *engine = renderer->engine;
     rig_material_t *material =
         rig_entity_get_component(entity, RUT_COMPONENT_TYPE_MATERIAL);
     rig_image_source_t *sources[3];
@@ -1431,8 +1574,7 @@ get_entity_pipeline(rig_engine_t *engine,
 
         set_entity_image_source_cache(
             entity, SOURCE_TYPE_COLOR, sources[SOURCE_TYPE_COLOR]);
-#warning                                                                       \
-        "FIXME: we need to track this as renderer priv since we're leaking closures a.t.m"
+#warning "FIXME: we need to track this as renderer priv since we're leaking closures a.t.m"
         rig_image_source_add_ready_callback(
             sources[SOURCE_TYPE_COLOR], image_source_ready_cb, entity, NULL);
         rig_image_source_add_on_changed_callback(
@@ -1448,8 +1590,7 @@ get_entity_pipeline(rig_engine_t *engine,
 
         set_entity_image_source_cache(
             entity, 1, sources[SOURCE_TYPE_ALPHA_MASK]);
-#warning                                                                       \
-        "FIXME: we need to track this as renderer priv since we're leaking closures a.t.m"
+#warning "FIXME: we need to track this as renderer priv since we're leaking closures a.t.m"
         rig_image_source_add_ready_callback(sources[SOURCE_TYPE_ALPHA_MASK],
                                             image_source_ready_cb,
                                             entity,
@@ -1472,8 +1613,7 @@ get_entity_pipeline(rig_engine_t *engine,
 
         set_entity_image_source_cache(
             entity, 2, sources[SOURCE_TYPE_NORMAL_MAP]);
-#warning                                                                       \
-        "FIXME: we need to track this as renderer priv since we're leaking closures a.t.m"
+#warning "FIXME: we need to track this as renderer priv since we're leaking closures a.t.m"
         rig_image_source_add_ready_callback(sources[SOURCE_TYPE_NORMAL_MAP],
                                             image_source_ready_cb,
                                             entity,
@@ -1490,14 +1630,14 @@ get_entity_pipeline(rig_engine_t *engine,
     }
 
     if (pass == RIG_PASS_COLOR_UNBLENDED)
-        return get_entity_color_pipeline(
-            engine, entity, geometry, material, sources, flags, false);
+        return get_entity_color_pipeline(renderer, entity, geometry, material,
+                                         sources, flags, false);
     else if (pass == RIG_PASS_COLOR_BLENDED)
-        return get_entity_color_pipeline(
-            engine, entity, geometry, material, sources, flags, true);
+        return get_entity_color_pipeline(renderer, entity, geometry, material,
+                                         sources, flags, true);
     else if (pass == RIG_PASS_DOF_DEPTH || pass == RIG_PASS_SHADOW)
-        return get_entity_mask_pipeline(
-            engine, entity, geometry, material, sources, flags);
+        return get_entity_mask_pipeline(renderer, entity, geometry, material,
+                                        sources, flags);
 
     c_warn_if_reached();
     return NULL;
@@ -1603,8 +1743,8 @@ rig_renderer_flush_journal(rig_renderer_t *renderer,
          * Setup Pipelines...
          */
 
-        pipeline = get_entity_pipeline(
-            paint_ctx->engine, entity, geometry, paint_ctx->pass);
+        pipeline =
+            get_entity_pipeline(renderer, entity, geometry, paint_ctx->pass);
 
         material =
             rig_entity_get_component(entity, RUT_COMPONENT_TYPE_MATERIAL);
@@ -1973,4 +2113,12 @@ rig_paint_camera_entity(rig_entity_t *view_camera,
     rut_camera_end_frame(camera);
 
     rut_paint_ctx->camera = saved_camera;
+}
+
+/* TODO: remove this; it's just a stop-gap for rig-ui.c to be able
+ * to setup the viewport for the light camera... */
+cg_framebuffer_t *
+rig_renderer_get_shadow_fb(rig_renderer_t *renderer)
+{
+    return renderer->shadow_fb;
 }

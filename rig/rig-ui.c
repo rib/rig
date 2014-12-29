@@ -36,6 +36,8 @@
 #include "rig-code.h"
 #include "rig-entity.h"
 
+#include "rig-renderer.h"
+
 static void
 _rig_ui_free(void *object)
 {
@@ -284,10 +286,17 @@ rig_ui_prepare(rig_ui_t *ui)
         rig_entity_add_component(ui->light, light_camera);
     }
 
-    if (engine->frontend) {
-        cg_framebuffer_t *fb = engine->shadow_fb;
-        int width = cg_framebuffer_get_width(fb);
-        int height = cg_framebuffer_get_height(fb);
+    if (engine->renderer) {
+        cg_framebuffer_t *fb;
+        int width, height;
+
+#warning "FIXME: rig-ui.c shouldn't make any assumptions about the renderer in use"
+        c_warn_if_fail(rut_object_get_type(engine->renderer) == &rig_renderer_type);
+
+        fb = rig_renderer_get_shadow_fb(engine->renderer);
+        width = cg_framebuffer_get_width(fb);
+        height = cg_framebuffer_get_height(fb);
+
         rut_camera_set_framebuffer(light_camera, fb);
         rut_camera_set_viewport(light_camera, 0, 0, width, height);
     }
