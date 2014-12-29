@@ -54,6 +54,7 @@ usage(void)
     fprintf(stderr, "  -W,--width=WIDTH                         Width of slave window\n");
     fprintf(stderr, "  -H,--height=HEIGHT                       Height of slave window\n");
     fprintf(stderr, "  -S,--scale=SCALE                         Device pixel scale factor\n");
+    fprintf(stderr, "  -f,--fullscreen                          Run fullscreen\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "  -l,--listen={tcp:<address>[:port],       Specify how to listen for an editor connection\n");
     fprintf(stderr, "               abstract:<name>}            (listens on free tcp/ipv4 port by default)\n");
@@ -77,23 +78,24 @@ main(int argc, char **argv)
     int option_height = 0;
     double option_scale = 0;
     struct option long_opts[] = {
-        { "width",   required_argument, NULL, 'W' },
-        { "height",  required_argument, NULL, 'H' },
-        { "scale",   required_argument, NULL, 'S' },
+        { "width",      required_argument, NULL, 'W' },
+        { "height",     required_argument, NULL, 'H' },
+        { "scale",      required_argument, NULL, 'S' },
+        { "fullscreen", no_argument,       NULL, 'f' },
 
-        { "listen",                 required_argument, NULL, 'l' },
+        { "listen",     required_argument, NULL, 'l' },
 #ifdef RIG_ENABLE_DEBUG
-        { "simulator",              required_argument, NULL, 'm' },
+        { "simulator",  required_argument, NULL, 'm' },
 #endif /* RIG_ENABLE_DEBUG */
 
-        { "help",    no_argument,   NULL, 'h' },
-        { 0,         0,             NULL,  0  }
+        { "help",       no_argument,   NULL, 'h' },
+        { 0,            0,             NULL,  0  }
     };
 
 #ifdef RIG_ENABLE_DEBUG
-    const char *short_opts = "W:H:S:l:m:h";
+    const char *short_opts = "W:H:S:fl:m:h";
 #else
-    const char *short_opts = "W:H:S:l:h";
+    const char *short_opts = "W:H:S:fl:h";
 #endif
 
     int c;
@@ -117,6 +119,9 @@ main(int argc, char **argv)
             break;
         case 'S':
             option_scale = strtod(optarg, NULL);
+            break;
+        case 'f':
+            rig_slave_fullscreen_option = true;
             break;
 
         case 'l': {

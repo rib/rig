@@ -28,7 +28,11 @@
 
 #include "config.h"
 
+#include <unistd.h>
+
 #include <X11/Xlib.h>
+#include <X11/Xutil.h>
+#include <X11/Xatom.h>
 #include <X11/XKBlib.h>
 #include <X11/Xlib-xcb.h>
 #include <X11/cursorfont.h>
@@ -252,9 +256,21 @@ keymap_error:
 }
 
 static rut_shell_onscreen_t *
-get_onscreen_for_xi2_event(rut_shell_t *shell, XIEvent *xi2event)
+get_onscreen_for_xwindow(rut_shell_t *shell, Window xwindow)
 {
     rut_shell_onscreen_t *onscreen;
+
+    rut_list_for_each(onscreen, &shell->onscreens, link) {
+        if(cg_x11_onscreen_get_window_xid(onscreen->cg_onscreen) == xwindow)
+            return onscreen;
+    }
+
+    return NULL;
+}
+
+static rut_shell_onscreen_t *
+get_onscreen_for_xi2_event(rut_shell_t *shell, XIEvent *xi2event)
+{
     XIDeviceEvent *xi2_dev_event;
     Window event_xwindow = None;
 
@@ -276,14 +292,7 @@ get_onscreen_for_xi2_event(rut_shell_t *shell, XIEvent *xi2event)
     if (!event_xwindow)
         return NULL;
 
-    rut_list_for_each(onscreen, &shell->onscreens, link) {
-        Window xwindow = cg_x11_onscreen_get_window_xid(onscreen->cg_onscreen);
-
-        if (event_xwindow == xwindow)
-            return onscreen;
-    }
-
-    return NULL;
+    return get_onscreen_for_xwindow(shell, event_xwindow);
 }
 
 static void
@@ -387,11 +396,58 @@ set_xkb_modifier_state_from_xi2_dev_event(rut_shell_t *shell,
                           xi2_dev_event->group.locked);
 }
 
+static void
+handle_client_message(rut_shell_t *shell, XEvent *xevent)
+{
+    XClientMessageEvent *msg = &xevent->xclient;
+    rut_shell_onscreen_t *onscreen =
+        get_onscreen_for_xwindow(shell, msg->window);
+
+    if (!onscreen) {
+        c_warning("Ignoring spurious client message that couldn't be mapped to an onscreen window");
+        return;
+    }
+
+    if (msg->message_type == XInternAtom(shell->xdpy, "WM_PROTOCOLS", False)) {
+        Atom protocol = msg->data.l[0];
+
+        if (protocol == XInternAtom(shell->xdpy, "WM_DELETE_WINDOW", False)) {
+
+            /* FIXME: we should eventually support multiple windows and
+             * we should be able close windows individually. */
+            rut_shell_quit(shell);
+        } else if (protocol == XInternAtom(shell->xdpy, "WM_TAKE_FOCUS", False)) {
+            XSetInputFocus(shell->xdpy,
+                           msg->window,
+                           RevertToParent,
+                           CurrentTime);
+        } else if (protocol == XInternAtom(shell->xdpy, "_NET_WM_PING", False)) {
+            msg->window = DefaultRootWindow(shell->xdpy);
+            XSendEvent(shell->xdpy, DefaultRootWindow(shell->xdpy), False,
+                       SubstructureRedirectMask | SubstructureNotifyMask, xevent);
+        } else {
+            char *name = XGetAtomName(shell->xdpy, protocol);
+            c_warning("Unknown X client WM_PROTOCOLS message recieved (%s)\n",
+                      name);
+            XFree(name);
+        }
+    } else {
+        char *name = XGetAtomName(shell->xdpy, xevent->xclient.message_type);
+        c_warning("Unknown X client message recieved (%s)\n", name);
+        XFree(name);
+    }
+}
+
 void
 rut_x11_shell_handle_x11_event(rut_shell_t *shell, XEvent *xevent)
 {
     rut_input_event_t *event = NULL;
     rut_x11_event_t *rut_x11_event;
+
+    if (xevent->type == ClientMessage) {
+        handle_client_message(shell, xevent);
+        return;
+    }
 
     if (xevent->type == shell->xkb_event) {
         XkbEvent *xkbevent = (void *)xevent;
@@ -532,8 +588,17 @@ rut_x11_allocate_onscreen(rut_shell_onscreen_t *onscreen)
 {
     rut_shell_t *shell = onscreen->shell;
     cg_onscreen_t *cg_onscreen;
-    Window xwin;
     cg_error_t *ignore = NULL;
+    Window xwin;
+    Atom window_type_atom = XInternAtom(shell->xdpy, "_NET_WM_WINDOW_TYPE", False);
+    Atom normal_atom = XInternAtom(shell->xdpy, "_NET_WM_WINDOW_TYPE_NORMAL", False);
+    Atom net_wm_pid_atom = XInternAtom(shell->xdpy, "_NET_WM_PID", False);
+    Atom wm_protocols[] = {
+        XInternAtom(shell->xdpy, "WM_DELETE_WINDOW", False),
+        XInternAtom(shell->xdpy, "WM_TAKE_FOCUS", False),
+        XInternAtom(shell->xdpy, "_NET_WM_PING", False),
+    };
+    uint32_t pid;
     XIEventMask evmask;
 
     cg_onscreen = cg_onscreen_new(shell->cg_device,
@@ -546,6 +611,40 @@ rut_x11_allocate_onscreen(rut_shell_onscreen_t *onscreen)
     }
 
     xwin = cg_x11_onscreen_get_window_xid(cg_onscreen);
+
+    /* XXX: we are only calling this for the convenience that
+     * it will set the WM_CLIENT_MACHINE property which is
+     * a requirement before we can set _NET_WM_PID */
+    XSetWMProperties(shell->xdpy, xwin,
+                     NULL, /* window name */
+                     NULL, /* icon name */
+                     NULL, /* argv */
+                     0, /* argc */
+                     NULL, /* normal hints */
+                     NULL, /* wm hints */
+                     NULL); /* class hints */
+
+    XSetWMProtocols(shell->xdpy, xwin, wm_protocols,
+                    sizeof(wm_protocols) / sizeof(Atom));
+
+    pid = getpid();
+    XChangeProperty(shell->xdpy,
+                    xwin,
+                    net_wm_pid_atom,
+                    XA_CARDINAL,
+                    32, /* format */
+                    PropModeReplace,
+                    (unsigned char *)&pid,
+                    1); /* n elements */
+
+    XChangeProperty(shell->xdpy,
+                    xwin,
+                    window_type_atom,
+                    XA_ATOM,
+                    32, /* format */
+                    PropModeReplace,
+                    (unsigned char *)&normal_atom,
+                    1); /* n elements */
 
     evmask.deviceid = XIAllDevices;
     evmask.mask_len = XIMaskLen(XI_LASTEVENT);
@@ -582,8 +681,19 @@ rut_x11_onscreen_set_title(rut_shell_onscreen_t *onscreen,
 {
     rut_shell_t *shell = onscreen->shell;
     Window xwindow = cg_x11_onscreen_get_window_xid(onscreen->cg_onscreen);
+    Atom net_wm_name = XInternAtom(shell->xdpy, "_NET_WM_NAME", False);
+    Atom utf8_string= XInternAtom(shell->xdpy, "UTF8_STRING", False);
 
     XStoreName(shell->xdpy, xwindow, title);
+
+    XChangeProperty(shell->xdpy,
+                    xwindow,
+                    net_wm_name,
+                    utf8_string,
+                    8, /* format */
+                    PropModeReplace,
+                    (unsigned char *)title,
+                    strlen(title));
 }
 
 static void
@@ -619,6 +729,30 @@ rut_x11_onscreen_set_cursor(rut_shell_onscreen_t *onscreen,
     xcursor = XCreateFontCursor(shell->xdpy, shape);
     XDefineCursor(shell->xdpy, xwindow, xcursor);
     XFreeCursor(shell->xdpy, xcursor);
+}
+
+void
+rut_x11_onscreen_set_fullscreen(rut_shell_onscreen_t *onscreen,
+                                bool fullscreen)
+{
+    rut_shell_t *shell = onscreen->shell;
+    Window xwindow = cg_x11_onscreen_get_window_xid(onscreen->cg_onscreen);
+    Atom net_wm_state_atom = XInternAtom(shell->xdpy, "_NET_WM_STATE", False);
+    Atom fullscreen_atom = XInternAtom(shell->xdpy,
+                                       "_NET_WM_STATE_FULLSCREEN", False);
+    XEvent msg;
+
+    memset(&msg, 0, sizeof(msg));
+    msg.type = ClientMessage;
+    msg.xclient.window = xwindow;
+    msg.xclient.message_type = net_wm_state_atom;
+    msg.xclient.format = 32;
+    msg.xclient.data.l[0] = fullscreen ? 1 : 0;
+    msg.xclient.data.l[1] = fullscreen_atom;
+    msg.xclient.data.l[2] = 0;
+
+    XSendEvent(shell->xdpy, DefaultRootWindow(shell->xdpy), False,
+               SubstructureRedirectMask | SubstructureNotifyMask, &msg);
 }
 
 static void
@@ -744,6 +878,7 @@ rut_x11_shell_init(rut_shell_t *shell)
     shell->platform.onscreen_resize = rut_x11_onscreen_resize;
     shell->platform.onscreen_set_title = rut_x11_onscreen_set_title;
     shell->platform.onscreen_set_cursor = rut_x11_onscreen_set_cursor;
+    shell->platform.onscreen_set_fullscreen = rut_x11_onscreen_set_fullscreen;
 
     shell->platform.key_event_get_keysym = rut_x11_key_event_get_keysym;
     shell->platform.key_event_get_action = rut_x11_key_event_get_action;

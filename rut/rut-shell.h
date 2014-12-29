@@ -454,6 +454,8 @@ struct _rut_shell_t {
                                    const char *title);
         void (*onscreen_set_cursor)(rut_shell_onscreen_t *onscreen,
                                     rut_cursor_t cursor);
+        void (*onscreen_set_fullscreen)(rut_shell_onscreen_t *onscreen,
+                                        bool fullscreen);
 
         int32_t (*key_event_get_keysym)(rut_input_event_t *event);
         rut_key_event_action_t (*key_event_get_action)(rut_input_event_t *event);
@@ -865,6 +867,9 @@ void rut_shell_onscreen_set_cursor(rut_shell_onscreen_t *onscreen,
 
 void rut_shell_onscreen_set_title(rut_shell_onscreen_t *onscreen,
                                   const char *title);
+
+void rut_shell_onscreen_set_fullscreen(rut_shell_onscreen_t *onscreen,
+                                       bool fullscreen);
 
 void rut_shell_onscreen_show(rut_shell_onscreen_t *onscreen);
 
