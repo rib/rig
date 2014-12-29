@@ -517,14 +517,12 @@ update_view_and_projection(rig_camera_view_t *view)
     float dx, dy, dz, scale;
     cg_quaternion_t rotation;
 
-    engine->z_2d = z_2d; /* position to 2d plane */
-
     cg_matrix_init_identity(&engine->main_view);
     matrix_view_2d_in_perspective(&engine->main_view,
                                   fovy,
                                   aspect,
                                   z_near,
-                                  engine->z_2d,
+                                  z_2d,
                                   view->width,
                                   view->height);
 
@@ -548,7 +546,7 @@ update_view_and_projection(rig_camera_view_t *view)
     get_entity_transform_for_2d_view(fovy,
                                      aspect,
                                      z_near,
-                                     engine->z_2d,
+                                     z_2d,
                                      view->width,
                                      &dx,
                                      &dy,
