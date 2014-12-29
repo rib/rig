@@ -61,6 +61,8 @@ const char *rig_slave_abstract_socket_option;
 const char *rig_slave_address_option;
 int rig_slave_port_option;
 
+bool rig_slave_fullscreen_option;
+
 static void
 slave__test(Rig__Slave_Service *service,
             const Rig__Query *query,
@@ -557,6 +559,11 @@ rig_slave_init(rut_shell_t *shell, void *user_data)
     rig_engine_set_play_mode_enabled(engine, true /* start in play mode */);
 
     rig_frontend_post_init_engine(slave->frontend, NULL /* no ui to load */);
+
+    if (rig_slave_fullscreen_option) {
+        rut_shell_onscreen_t *onscreen = slave->frontend->onscreen;
+        rut_shell_onscreen_set_fullscreen(onscreen, true);
+    }
 
     _rig_slave_object_id_magazine = engine->object_id_magazine;
 

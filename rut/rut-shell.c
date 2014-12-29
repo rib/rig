@@ -1124,7 +1124,16 @@ void
 rut_shell_onscreen_set_title(rut_shell_onscreen_t *onscreen,
                              const char *title)
 {
-    onscreen->shell->platform.onscreen_set_title(onscreen, title);
+    if (onscreen->shell->platform.onscreen_set_title)
+        onscreen->shell->platform.onscreen_set_title(onscreen, title);
+}
+
+void
+rut_shell_onscreen_set_fullscreen(rut_shell_onscreen_t *onscreen,
+                                  bool fullscreen)
+{
+    if (onscreen->shell->platform.onscreen_set_fullscreen)
+        onscreen->shell->platform.onscreen_set_fullscreen(onscreen, fullscreen);
 }
 
 static void
