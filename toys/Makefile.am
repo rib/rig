@@ -33,7 +33,7 @@ programs = cogl-info
 cogl_info_SOURCES = cogl-info.c
 cogl_info_LDADD = $(common_ldadd)
 
-programs += cogl-hello cogl-maze cogl-msaa cogl-gles2-context cogl-point-sprites
+programs += cogl-hello cogl-maze cogl-msaa cogl-gles2-context cogl-point-sprites vr-test
 examples_datadir = $(pkgdatadir)/examples-data
 examples_data_DATA =
 
@@ -105,6 +105,9 @@ programs += cogl-sdl2-hello
 cogl_sdl2_hello_SOURCES = cogl-sdl2-hello.c
 cogl_sdl2_hello_LDADD = $(common_ldadd)
 endif
+
+vr_test_SOURCES = vr-test.c
+vr_test_LDADD = $(common_ldadd)
 
 if EMSCRIPTEN
 %.html: %.o $(top_builddir)/cogl/.libs/libcogl2.so $(top_builddir)/clib/src/.libs/libclib.a
