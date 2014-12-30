@@ -205,8 +205,6 @@ struct _rig_engine_t {
     rig_controller_view_t *controller_view;
 #endif
 
-    cg_matrix_t main_view;
-
 /* XXX: Move to rig_editor_t */
 #ifdef RIG_EDITOR_ENABLED
     rig_entity_t *light_handle;

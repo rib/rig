@@ -227,6 +227,15 @@ initialise_play_camera_position(rig_engine_t *engine, rig_ui_t *ui)
     rig_entity_set_position(ui->play_camera, position);
 }
 
+static void
+initialise_play_camera_component(rut_object_t *camera_component)
+{
+    rut_camera_set_projection_mode(camera_component, RUT_PROJECTION_PERSPECTIVE);
+    rut_camera_set_field_of_view(camera_component, 10);
+    rut_camera_set_near_plane(camera_component, 1000);
+    rut_camera_set_far_plane(camera_component, 10000);
+}
+
 void
 rig_ui_prepare(rig_ui_t *ui)
 {
@@ -324,7 +333,7 @@ rig_ui_prepare(rig_ui_t *ui)
         ui->play_camera = rig_ui_find_entity(ui, "play-camera");
 
         if (ui->play_camera)
-            ui->play_camera = rut_object_ref(ui->play_camera);
+            rut_object_ref(ui->play_camera);
         else {
             ui->play_camera = rig_entity_new(engine->shell);
             rig_entity_set_label(ui->play_camera, "play-camera");
@@ -346,6 +355,8 @@ rig_ui_prepare(rig_ui_t *ui)
                                                        -1, /* ortho/vp width */
                                                        -1, /* ortho/vp height */
                                                        engine->frontend->onscreen);
+
+            initialise_play_camera_component(ui->play_camera_component);
 
             rig_entity_add_component(ui->play_camera,
                                      ui->play_camera_component);
