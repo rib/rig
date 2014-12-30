@@ -91,14 +91,6 @@ update_grab_closure_vectors(entity_translate_grab_closure_t *closure);
 #endif
 
 static void
-unref_device_transforms(rig_camera_view_device_transforms_t *transforms)
-{
-    rut_object_unref(transforms->origin_offset);
-    rut_object_unref(transforms->dev_scale);
-    rut_object_unref(transforms->screen_pos);
-}
-
-static void
 _rig_camera_view_free(void *object)
 {
     rig_camera_view_t *view = object;
@@ -112,19 +104,8 @@ _rig_camera_view_free(void *object)
 
     rut_graphable_destroy(view);
 
-    rut_object_unref(view->view_camera_to_origin);
-    rut_object_unref(view->view_camera_rotate);
-    rut_object_unref(view->view_camera_armature);
-    // rut_object_unref (view->view_camera_2d_view);
     rut_object_unref(view->view_camera);
     rut_object_unref(view->view_camera_component);
-    unref_device_transforms(&view->view_device_transforms);
-
-    rut_object_unref(view->play_dummy_entity);
-    unref_device_transforms(&view->play_device_transforms);
-
-    if (view->dof)
-        rig_dof_effect_free(view->dof);
 
 #ifdef RIG_EDITOR_ENABLED
     if (view->selection_tool)
@@ -215,49 +196,6 @@ paint_overlays(rig_camera_view_t *view,
 }
 
 static void
-copy_device_transforms(rig_camera_view_device_transforms_t *dst,
-                       rig_camera_view_device_transforms_t *src)
-{
-    rig_entity_set_position(dst->origin_offset,
-                            rig_entity_get_position(src->origin_offset));
-    rig_entity_set_scale(dst->dev_scale, rig_entity_get_scale(src->dev_scale));
-    rig_entity_set_position(dst->screen_pos,
-                            rig_entity_get_position(src->screen_pos));
-}
-
-static void
-prepare_play_camera_for_view(rig_camera_view_t *view)
-{
-    rut_object_t *play_camera = view->play_camera_component;
-    rut_object_t *view_camera = view->view_camera_component;
-
-    rut_camera_set_projection_mode(play_camera, RUT_PROJECTION_PERSPECTIVE);
-    rut_camera_set_field_of_view(play_camera,
-                                 rut_camera_get_field_of_view(view_camera));
-    rut_camera_set_near_plane(play_camera,
-                              rut_camera_get_near_plane(view_camera));
-    rut_camera_set_far_plane(play_camera,
-                             rut_camera_get_far_plane(view_camera));
-
-    copy_device_transforms(&view->play_device_transforms,
-                           &view->view_device_transforms);
-
-    /* Temporarily move the play camera component to our dummy entity so
-     * that it will be positioned with the device transforms after the
-     * camera entity's transform */
-    rig_entity_remove_component(view->play_camera, play_camera);
-    rig_entity_add_component(view->play_dummy_entity, play_camera);
-}
-
-static void
-reset_play_camera(rig_camera_view_t *view)
-{
-    rig_entity_remove_component(view->play_dummy_entity,
-                                view->play_camera_component);
-    rig_entity_add_component(view->play_camera, view->play_camera_component);
-}
-
-static void
 update_camera_viewport(rig_camera_view_t *view,
                        rut_object_t *window_camera,
                        rut_object_t *camera)
@@ -267,12 +205,13 @@ update_camera_viewport(rig_camera_view_t *view,
     x = y = z = 0;
     rut_graphable_fully_transform_point(view, window_camera, &x, &y, &z);
 
-    x = RUT_UTIL_NEARBYINT(x);
-    y = RUT_UTIL_NEARBYINT(y);
+    x = c_nearbyint(x);
+    y = c_nearbyint(y);
 
     /* XXX: if the viewport width/height get changed during allocation
      * then we should probably use a dirty flag so we can defer
      * the viewport update to here. */
+
     if (camera != view->view_camera_component)
         rut_camera_set_viewport(camera, x, y, view->width, view->height);
     else if (view->last_viewport_x != x || view->last_viewport_y != y ||
@@ -286,6 +225,44 @@ update_camera_viewport(rig_camera_view_t *view,
 }
 
 static void
+initialize_view_camera(rig_camera_view_t *view)
+{
+    rig_entity_t *view_camera = view->view_camera;
+    rut_object_t *view_camera_comp = view->view_camera_component;
+    rig_entity_t *play_camera = view->play_camera;
+    rut_object_t *play_camera_comp = view->play_camera_component;
+
+    rut_projection_t mode = rut_camera_get_projection_mode(play_camera_comp);
+
+
+    rut_camera_set_projection_mode(view_camera_comp, mode);
+    if (mode == RUT_PROJECTION_PERSPECTIVE) {
+        rut_camera_set_field_of_view(view_camera_comp,
+                                     rut_camera_get_field_of_view(play_camera_comp));
+        rut_camera_set_near_plane(view_camera_comp,
+                                  rut_camera_get_near_plane(play_camera_comp));
+        rut_camera_set_far_plane(view_camera_comp,
+                                 rut_camera_get_far_plane(play_camera_comp));
+    } else {
+        float x1, y1, x2, y2;
+
+        rut_camera_get_orthographic_coordinates(play_camera_comp,
+                                                &x1, &y1, &x2, &y2);
+        rut_camera_set_orthographic_coordinates(view_camera_comp,
+                                                x1, y1, x2, y2);
+    }
+
+    rut_camera_set_zoom(view_camera_comp,
+                        rut_camera_get_zoom(play_camera_comp));
+
+    rig_entity_set_position(view_camera, rig_entity_get_position(play_camera));
+    rig_entity_set_scale(view_camera, rig_entity_get_scale(play_camera));
+    rig_entity_set_rotation(view_camera, rig_entity_get_rotation(play_camera));
+
+    rut_shell_queue_redraw(view->shell);
+}
+
+static void
 _rut_camera_view_paint(rut_object_t *object,
                        rut_paint_context_t *paint_ctx)
 {
@@ -296,13 +273,9 @@ _rut_camera_view_paint(rut_object_t *object,
     cg_framebuffer_t *fb = rut_camera_get_framebuffer(paint_ctx->camera);
     rig_entity_t *camera;
     rut_object_t *camera_component;
-    bool need_play_camera_reset = false;
-    rig_ui_t *ui;
 
     if (view->ui == NULL)
         return;
-
-    ui = view->ui;
 
 #ifdef RIG_EDITOR_ENABLED
     if (!view->play_mode) {
@@ -314,276 +287,29 @@ _rut_camera_view_paint(rut_object_t *object,
         if (view->play_camera == NULL)
             return;
 
-        prepare_play_camera_for_view(view);
-
-        camera = view->play_dummy_entity;
+        camera = view->play_camera;
         camera_component = view->play_camera_component;
-        need_play_camera_reset = true;
     }
 
-    rut_camera_set_framebuffer(camera_component, fb);
     if (engine->frontend && engine->frontend_id == RIG_FRONTEND_ID_EDITOR) {
         cg_framebuffer_draw_rectangle(
             fb, view->bg_pipeline, 0, 0, view->width, view->height);
     }
 
     rut_camera_suspend(suspended_camera);
+    paint_ctx->camera = camera_component;
 
-    rig_paint_ctx->pass = RIG_PASS_SHADOW;
-    rig_camera_update_view(engine, ui->light, true);
-    rig_paint_camera_entity(ui->light, rig_paint_ctx, NULL);
+    rut_camera_set_framebuffer(camera_component, fb);
+    update_camera_viewport(view, engine->camera_2d, camera_component);
+    rig_entity_set_camera_view_from_transform(camera, false /* y-flip */);
 
-    update_camera_viewport(view, paint_ctx->camera, camera_component);
+    rig_paint_ctx->enable_dof = view->enable_dof;
+    rig_renderer_paint_camera(rig_paint_ctx, camera);
 
-    rig_camera_update_view(engine, camera, false);
-
-    if (view->enable_dof) {
-        const float *viewport = rut_camera_get_viewport(camera_component);
-        int width = viewport[2];
-        int height = viewport[3];
-        int save_viewport_x = viewport[0];
-        int save_viewport_y = viewport[1];
-        cg_framebuffer_t *pass_fb;
-        const cg_color_t *bg_color;
-
-        rig_dof_effect_set_framebuffer_size(view->dof, width, height);
-
-        pass_fb = rig_dof_effect_get_depth_pass_fb(view->dof);
-        rut_camera_set_framebuffer(camera_component, pass_fb);
-        rut_camera_set_viewport(camera_component, 0, 0, width, height);
-
-        rut_camera_flush(camera_component);
-        cg_framebuffer_clear4f(
-            pass_fb, CG_BUFFER_BIT_COLOR | CG_BUFFER_BIT_DEPTH, 1, 1, 1, 1);
-        rut_camera_end_frame(camera_component);
-
-        rig_paint_ctx->pass = RIG_PASS_DOF_DEPTH;
-        rig_paint_camera_entity(camera, rig_paint_ctx, NULL);
-
-        pass_fb = rig_dof_effect_get_color_pass_fb(view->dof);
-        rut_camera_set_framebuffer(camera_component, pass_fb);
-
-        rut_camera_flush(camera_component);
-        bg_color = rut_camera_get_background_color(camera_component);
-        cg_framebuffer_clear4f(pass_fb,
-                               CG_BUFFER_BIT_COLOR | CG_BUFFER_BIT_DEPTH,
-                               bg_color->red,
-                               bg_color->green,
-                               bg_color->blue,
-                               bg_color->alpha);
-        rut_camera_end_frame(camera_component);
-
-        rig_paint_ctx->pass = RIG_PASS_COLOR_UNBLENDED;
-        rig_paint_camera_entity(camera, rig_paint_ctx, NULL);
-
-        rig_paint_ctx->pass = RIG_PASS_COLOR_BLENDED;
-        rig_paint_camera_entity(camera, rig_paint_ctx, NULL);
-
-        rut_camera_set_framebuffer(camera_component, fb);
-        rut_camera_set_viewport(
-            camera_component, save_viewport_x, save_viewport_y, width, height);
-
-        rut_camera_resume(suspended_camera);
-        rig_dof_effect_draw_rectangle(
-            view->dof, fb, 0, 0, view->width, view->height);
-    } else {
-        rig_paint_ctx->pass = RIG_PASS_COLOR_UNBLENDED;
-        rig_paint_camera_entity(
-            camera, rig_paint_ctx, view->play_camera_component);
-
-        rig_paint_ctx->pass = RIG_PASS_COLOR_BLENDED;
-        rig_paint_camera_entity(
-            camera, rig_paint_ctx, view->play_camera_component);
-        rut_camera_resume(suspended_camera);
-    }
-
-    /* XXX: At this point the original, suspended, camera has been resumed */
+    rut_camera_resume(suspended_camera);
+    paint_ctx->camera = suspended_camera;
 
     paint_overlays(view, paint_ctx);
-
-    if (need_play_camera_reset)
-        reset_play_camera(view);
-}
-
-static void
-matrix_view_2d_in_frustum(cg_matrix_t *matrix,
-                          float left,
-                          float right,
-                          float bottom,
-                          float top,
-                          float z_near,
-                          float z_2d,
-                          float width_2d,
-                          float height_2d)
-{
-    float left_2d_plane = left / z_near * z_2d;
-    float right_2d_plane = right / z_near * z_2d;
-    float bottom_2d_plane = bottom / z_near * z_2d;
-    float top_2d_plane = top / z_near * z_2d;
-
-    float width_2d_start = right_2d_plane - left_2d_plane;
-    float height_2d_start = top_2d_plane - bottom_2d_plane;
-
-    /* Factors to scale from framebuffer geometry to frustum
-     * cross-section geometry. */
-    float width_scale = width_2d_start / width_2d;
-    float height_scale = height_2d_start / height_2d;
-
-    // cg_matrix_translate (matrix,
-    //                       left_2d_plane, top_2d_plane, -z_2d);
-    cg_matrix_translate(matrix, left_2d_plane, top_2d_plane, 0);
-
-    cg_matrix_scale(matrix, width_scale, -height_scale, width_scale);
-}
-
-static void
-matrix_view_2d_in_perspective(cg_matrix_t *matrix,
-                              float fov_y,
-                              float aspect,
-                              float z_near,
-                              float z_2d,
-                              float width_2d,
-                              float height_2d)
-{
-    float top = z_near * tan(fov_y * C_PI / 360.0);
-
-    matrix_view_2d_in_frustum(matrix,
-                              -top * aspect,
-                              top * aspect,
-                              -top,
-                              top,
-                              z_near,
-                              z_2d,
-                              width_2d,
-                              height_2d);
-}
-
-#if 0
-/* Assuming a symmetric perspective matrix is being used for your
- * projective transform then for a given z_2d distance within the
- * projective frustrum this convenience function determines how
- * we can use an entity transform to move from a normalized coordinate
- * space with (0,0) in the center of the screen to a non-normalized
- * 2D coordinate space with (0,0) at the top-left of the screen.
- *
- * Note: It assumes the viewport aspect ratio matches the desired
- * aspect ratio of the 2d coordinate space which is why we only
- * need to know the width of the 2d coordinate space.
- *
- */
-void
-get_entity_transform_for_2d_view(float fov_y,
-                                 float aspect,
-                                 float z_near,
-                                 float z_2d,
-                                 float width_2d,
-                                 float *dx,
-                                 float *dy,
-                                 float *dz,
-                                 cg_quaternion_t *rotation,
-                                 float *scale)
-{
-    float top = z_near * tan(fov_y * C_PI / 360.0);
-    float left = -top * aspect;
-    float right = top * aspect;
-
-    float left_2d_plane = left / z_near * z_2d;
-    float right_2d_plane = right / z_near * z_2d;
-    float top_2d_plane = top / z_near * z_2d;
-
-    float width_2d_start = right_2d_plane - left_2d_plane;
-
-    *dx = left_2d_plane;
-    *dy = top_2d_plane;
-    *dz = 0;
-    //*dz = -z_2d;
-
-    /* Factors to scale from framebuffer geometry to frustum
-     * cross-section geometry. */
-    *scale = width_2d_start / width_2d;
-
-    cg_quaternion_init_from_z_rotation(rotation, 180);
-}
-#endif
-
-static void
-update_view_and_projection(rig_camera_view_t *view)
-{
-    rig_engine_t *engine = view->engine;
-    float fovy = 10; /* y-axis field of view */
-    float aspect = (float)view->width / (float)view->height;
-    float z_near = 10; /* distance to near clipping plane */
-    float z_far = 100; /* distance to far clipping plane */
-    float x = 0, y = 0, z_2d = 30, w = 1;
-    cg_matrix_t inverse;
-
-    cg_matrix_init_identity(&engine->main_view);
-    matrix_view_2d_in_perspective(&engine->main_view,
-                                  fovy,
-                                  aspect,
-                                  z_near,
-                                  z_2d,
-                                  view->width,
-                                  view->height);
-
-    rut_camera_set_projection_mode(view->view_camera_component,
-                                   RUT_PROJECTION_PERSPECTIVE);
-    rut_camera_set_field_of_view(view->view_camera_component, fovy);
-    rut_camera_set_near_plane(view->view_camera_component, z_near);
-    rut_camera_set_far_plane(view->view_camera_component, z_far);
-
-    /* Handle the z_2d translation by changing the length of the
-     * camera's armature.
-     */
-    cg_matrix_get_inverse(&engine->main_view, &inverse);
-    cg_matrix_transform_point(&inverse, &x, &y, &z_2d, &w);
-
-    view->view_camera_z = z_2d / view->device_scale;
-    rig_entity_set_translate(
-        view->view_camera_armature, 0, 0, view->view_camera_z);
-}
-
-static void
-update_device_transforms(rig_camera_view_t *view)
-{
-    rig_engine_t *engine = view->engine;
-    float screen_aspect;
-    float main_aspect;
-
-    screen_aspect = engine->device_width / engine->device_height;
-    main_aspect = view->width / view->height;
-
-    if (screen_aspect <
-        main_aspect) /* screen is slimmer and taller than the main area */
-    {
-        engine->screen_area_height = view->height;
-        engine->screen_area_width = engine->screen_area_height * screen_aspect;
-
-        rig_entity_set_translate(view->view_device_transforms.screen_pos,
-                                 -(view->width / 2.0) +
-                                 (engine->screen_area_width / 2.0),
-                                 0,
-                                 0);
-    } else {
-        engine->screen_area_width = view->width;
-        engine->screen_area_height = engine->screen_area_width / screen_aspect;
-
-        rig_entity_set_translate(view->view_device_transforms.screen_pos,
-                                 0,
-                                 -(view->height / 2.0) +
-                                 (engine->screen_area_height / 2.0),
-                                 0);
-    }
-
-    /* NB: We know the screen area matches the device aspect ratio so we can use
-     * a uniform scale here... */
-    view->device_scale = engine->screen_area_width / engine->device_width;
-
-    rig_entity_set_scale(view->view_device_transforms.dev_scale,
-                         1.0 / view->device_scale);
-
-    /* Setup projection for main content view */
-    update_view_and_projection(view);
 }
 
 static void
@@ -592,8 +318,6 @@ allocate_cb(rut_object_t *graphable, void *user_data)
     rig_camera_view_t *view = graphable;
     rig_engine_t *engine = view->engine;
 
-    update_device_transforms(view);
-
     if (view->input_region) {
         rut_input_region_set_rectangle(
             view->input_region, 0, 0, view->width, view->height);
@@ -601,19 +325,14 @@ allocate_cb(rut_object_t *graphable, void *user_data)
 
 #ifdef RIG_EDITOR_ENABLED
     if (engine->frontend && engine->frontend_id == RIG_FRONTEND_ID_EDITOR) {
-        rut_arcball_init(
-            &view->arcball,
-            view->width / 2,
-            view->height / 2,
-            sqrtf(view->width * view->width + view->height * view->height) / 2);
-
         if (view->entities_translate_grab_closure) {
             c_list_t *l;
 
-            update_camera_viewport(
-                view, engine->camera_2d, view->view_camera_component);
+            update_camera_viewport(view, engine->camera_2d,
+                                   view->view_camera_component);
 
-            rig_camera_update_view(engine, view->view_camera, false);
+            rig_entity_set_camera_view_from_transform(view->view_camera,
+                                                      false /* y-flip */);
 
             for (l = view->entities_translate_grab_closure->entity_closures; l;
                  l = l->next)
@@ -732,18 +451,33 @@ _rig_camera_view_init_type(void)
 #undef TYPE
 }
 
+#ifdef RIG_EDITOR_ENABLED
 static void
-update_camera_position(rig_camera_view_t *view)
+scene_translate_done_cb(rig_entity_t *entity,
+                        bool moved,
+                        float start[3],
+                        float rel[3],
+                        void *user_data)
 {
-    rig_entity_set_position(view->view_camera_to_origin, view->origin);
+    rig_camera_view_t *view = user_data;
+    float pos[3] = {
+        start[0] - rel[0],
+        start[1] - rel[1],
+        start[2] - rel[2]
+    };
 
-    rig_entity_set_translate(
-        view->view_camera_armature, 0, 0, view->view_camera_z);
+    view->origin[0] -= rel[0];
+    view->origin[1] -= rel[1];
+    view->origin[2] -= rel[2];
 
-    rut_shell_queue_redraw(view->shell);
+    /* If the entity hasn't actually moved then we'll ignore it. It
+     * that case the user is presumably just trying to select the
+     * entity and we don't want it to modify the controller
+     */
+
+    rig_entity_set_position(view->view_camera, pos);
 }
 
-#ifdef RIG_EDITOR_ENABLED
 static void
 scene_translate_cb(rig_entity_t *entity,
                    float start[3],
@@ -751,12 +485,13 @@ scene_translate_cb(rig_entity_t *entity,
                    void *user_data)
 {
     rig_camera_view_t *view = user_data;
+    float pos[3] = {
+        start[0] - rel[0],
+        start[1] - rel[1],
+        start[2] - rel[2]
+    };
 
-    view->origin[0] = start[0] - rel[0];
-    view->origin[1] = start[1] - rel[1];
-    view->origin[2] = start[2] - rel[2];
-
-    update_camera_position(view);
+    rig_entity_set_position(view->view_camera, pos);
 }
 
 static void
@@ -1382,61 +1117,31 @@ move_entity_to_camera(rig_camera_view_t *view, rig_entity_t *entity)
 {
     rig_engine_t *engine = view->engine;
     rig_undo_journal_t *sub_journal;
-    float camera_position[3];
-    cg_matrix_t parent_transform;
-    cg_matrix_t inverse_parent_transform;
-    cg_quaternion_t camera_rotation;
+    const float *camera_position;
+    rut_property_t *position_prop =
+        &entity->properties[RUT_ENTITY_PROP_POSITION];
+    rut_boxed_t boxed_position;
+    const cg_quaternion_t *camera_rotation;
     rut_property_t *rotation_property =
-        rut_introspectable_lookup_property(entity, "rotation");
+        &entity->properties[RUT_ENTITY_PROP_ROTATION];
     rut_boxed_t boxed_rotation;
-    rut_object_t *parent;
 
-    /* Get the world position of the view camera */
-    memset(camera_position, 0, sizeof(camera_position));
-    rig_entity_get_transformed_position(view->view_camera_armature,
-                                        camera_position);
+    camera_position = rig_entity_get_position(view->view_camera);
 
-    /* Get the transform of the parent of the entity so we can calculate
-     * a position relative to the parent */
-    cg_matrix_init_identity(&parent_transform);
-    parent = rut_graphable_get_parent(entity);
-    if (parent)
-        rut_graphable_apply_transform(parent, &parent_transform);
+    boxed_position.type = RUT_PROPERTY_TYPE_VEC3;
+    boxed_position.d.vec3_val[0] = camera_position[0];
+    boxed_position.d.vec3_val[1] = camera_position[1];
+    boxed_position.d.vec3_val[2] = camera_position[2];
 
-    /* Transform the camera position by the inverse of the entity's
-     * parent transform so that we will have a position in the
-     * coordinate space of the entity */
-    if (cg_matrix_get_inverse(&parent_transform, &inverse_parent_transform)) {
-        rut_property_t *position_prop =
-            &entity->properties[RUT_ENTITY_PROP_POSITION];
-        rut_boxed_t boxed_position;
+    rig_controller_view_edit_property(engine->controller_view,
+                                      false, /* mergable */
+                                      position_prop,
+                                      &boxed_position);
 
-        cg_matrix_transform_points(&inverse_parent_transform,
-                                   3, /* n_components */
-                                   sizeof(float) * 3, /* stride_in */
-                                   camera_position, /* points_in */
-                                   sizeof(float) * 3, /* stride_out */
-                                   camera_position, /* points_out */
-                                   1 /* n_points */);
-
-        boxed_position.type = RUT_PROPERTY_TYPE_VEC3;
-        boxed_position.d.vec3_val[0] = camera_position[0];
-        boxed_position.d.vec3_val[1] = camera_position[1];
-        boxed_position.d.vec3_val[2] = camera_position[2];
-
-        rig_controller_view_edit_property(engine->controller_view,
-                                          false, /* mergable */
-                                          position_prop,
-                                          &boxed_position);
-    }
-
-    /* Copy the camera's rotation. FIXME: this should probably also try
-     * to counteract the entity's parent rotations to match what it does
-     * for the positioning */
-    rig_entity_get_rotations(view->view_camera_armature, &camera_rotation);
+    camera_rotation = rig_entity_get_rotation(view->view_camera);
 
     boxed_rotation.type = RUT_PROPERTY_TYPE_QUATERNION;
-    boxed_rotation.d.quaternion_val = camera_rotation;
+    boxed_rotation.d.quaternion_val = *camera_rotation;
 
     rig_controller_view_edit_property(engine->controller_view,
                                       false, /* mergable */
@@ -1487,54 +1192,90 @@ pick(rig_camera_view_t *view,
     return pick_ctx.selected_entity;
 }
 
-static void
-initialize_navigation_camera(rig_camera_view_t *view)
-{
-    rig_engine_t *engine = view->engine;
-    cg_quaternion_t no_rotation;
-
-    view->origin[0] = engine->device_width / 2;
-    view->origin[1] = engine->device_height / 2;
-    view->origin[2] = 0;
-
-    rig_entity_set_translate(view->view_camera_to_origin,
-                             view->origin[0],
-                             view->origin[1],
-                             view->origin[2]);
-
-    cg_quaternion_init_identity(&no_rotation);
-    rig_entity_set_rotation(view->view_camera_rotate, &no_rotation);
-
-    rut_camera_set_zoom(view->view_camera_component, 1);
-
-    rig_entity_set_translate(view->view_device_transforms.origin_offset,
-                             -engine->device_width / 2,
-                             -(engine->device_height / 2),
-                             0);
-
-    view->view_camera_z = 10.f;
-
-    update_camera_position(view);
-
-    update_device_transforms(view);
-}
-
 void
 rig_camera_view_set_play_mode_enabled(rig_camera_view_t *view,
                                       bool enabled)
 {
-    rig_engine_t *engine = view->engine;
-
     view->play_mode = enabled;
 
     if (enabled) {
         /* depth of field effect */
-        if (!engine->headless && !view->dof)
-            view->dof = rig_dof_effect_new(engine);
         view->enable_dof = true;
     } else {
         view->enable_dof = false;
     }
+}
+
+struct scene_rot_grab_state {
+    rut_object_t *camera;
+    rig_camera_view_t *view;
+    cg_matrix_t transform;
+    cg_matrix_t inverse_transform;
+
+    rut_arcball_t arcball;
+    cg_quaternion_t saved_camera_rotation;
+    float saved_camera_pos[3];
+};
+
+static rut_input_event_status_t
+scene_rotate_grab_input_cb(rut_input_event_t *event, void *user_data)
+{
+    struct scene_rot_grab_state *state = user_data;
+    rig_camera_view_t *view = state->view;
+    rut_shell_onscreen_t *onscreen = event->onscreen;
+    rut_shell_t *shell = onscreen->shell;
+
+    if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_MOTION) {
+        if (rut_motion_event_get_action(event) == RUT_MOTION_EVENT_ACTION_UP) {
+            rut_shell_ungrab_input(shell, scene_rotate_grab_input_cb, user_data);
+            c_slice_free(struct scene_rot_grab_state, state);
+            return RUT_INPUT_EVENT_STATUS_HANDLED;
+        } else if (rut_motion_event_get_action(event) ==
+                   RUT_MOTION_EVENT_ACTION_MOVE) {
+            float x = rut_motion_event_get_x(event);
+            float y = rut_motion_event_get_y(event);
+            rut_object_t *camera = state->camera;
+            cg_quaternion_t new_rotation;
+            cg_matrix_t rot_matrix;
+            float pos[3];
+            float w = 1;
+
+            rut_camera_unproject_coord(camera,
+                                       &state->transform,
+                                       &state->inverse_transform,
+                                       0,
+                                       &x,
+                                       &y);
+
+            rut_arcball_mouse_motion(&state->arcball, view->width - x, y);
+
+            pos[0] = state->saved_camera_pos[0] - view->origin[0];
+            pos[1] = state->saved_camera_pos[1] - view->origin[1];
+            pos[2] = state->saved_camera_pos[2] - view->origin[2];
+
+            cg_matrix_init_from_quaternion(&rot_matrix, &state->arcball.q_drag);
+
+            cg_matrix_transform_point(&rot_matrix, &pos[0], &pos[1], &pos[2], &w);
+
+            pos[0] += view->origin[0];
+            pos[1] += view->origin[1];
+            pos[2] += view->origin[2];
+
+            rig_entity_set_position(view->view_camera, pos);
+
+            cg_quaternion_multiply(&new_rotation,
+                                   &state->arcball.q_drag,
+                                   &state->saved_camera_rotation
+                                   );
+            rig_entity_set_rotation(view->view_camera, &new_rotation);
+
+            rut_shell_queue_redraw(shell);
+
+            return RUT_INPUT_EVENT_STATUS_HANDLED;
+        }
+    }
+
+    return RUT_INPUT_EVENT_STATUS_UNHANDLED;
 }
 
 #ifdef RIG_EDITOR_ENABLED
@@ -1566,26 +1307,18 @@ input_cb(rut_input_event_t *event,
         rut_object_t *picked_entity;
         rig_entity_t *camera;
         rut_object_t *camera_component;
-        bool need_play_camera_reset = false;
 
         /* XXX: Simplify since this api is now never used in play mode */
         if (!view->play_mode) {
             camera = view->view_camera;
             camera_component = view->view_camera_component;
-
-            /* With the editor, the camera view may be offset within a
-             * window... */
-            rut_camera_transform_window_coordinate(camera_component, &x, &y);
         } else {
-            prepare_play_camera_for_view(view);
-
-            camera = view->play_dummy_entity;
+            camera = view->play_camera;
             camera_component = view->play_camera_component;
-            need_play_camera_reset = true;
         }
 
         update_camera_viewport(view, engine->camera_2d, camera_component);
-        rig_camera_update_view(engine, camera, false);
+        rig_entity_set_camera_view_from_transform(camera, false /* y-flip */);
 
         state = rut_motion_event_get_button_state(event);
 
@@ -1604,6 +1337,10 @@ input_cb(rut_input_event_t *event,
 #endif
         // c_debug ("Camera transform:\n");
         // cg_debug_matrix_print (&camera_transform);
+
+        /* With the editor, the camera view may be offset within a
+         * window... */
+        rut_camera_transform_window_coordinate(camera_component, &x, &y);
 
         screen_pos[0] = x;
         screen_pos[1] = y;
@@ -1660,9 +1397,6 @@ input_cb(rut_input_event_t *event,
         }
 #endif
 
-        if (need_play_camera_reset)
-            reset_play_camera(view);
-
         if (view->play_mode) {
             if (picked_entity) {
                 rut_object_t *inputable = rig_entity_get_component(
@@ -1708,34 +1442,64 @@ input_cb(rut_input_event_t *event,
         } else if (action == RUT_MOTION_EVENT_ACTION_DOWN &&
                    state == RUT_BUTTON_STATE_2 &&
                    (!(modifiers & RUT_MODIFIER_SHIFT_ON))) {
-            // view->saved_rotation = *rig_entity_get_rotation
-            // (view->view_camera);
-            view->saved_rotation =
-                *rig_entity_get_rotation(view->view_camera_rotate);
+            struct scene_rot_grab_state *state = c_slice_new(struct scene_rot_grab_state);
+            float view_x = rut_motion_event_get_x(event);
+            float view_y = rut_motion_event_get_y(event);
 
-            cg_quaternion_init_identity(&view->arcball.q_drag);
+            state->view = view;
+            state->camera = rut_input_event_get_camera(event);
+            state->transform = *rut_camera_get_view_transform(state->camera);
+            rut_graphable_apply_transform(view, &state->transform);
+            if (!cg_matrix_get_inverse(&state->transform,
+                                       &state->inverse_transform)) {
+                c_warning("Failed to calculate inverse of camera view transform\n");
+                c_slice_free(struct rot_grab_grab_state, state);
+                return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+            }
+
+            rut_camera_unproject_coord(state->camera,
+                                       &state->transform,
+                                       &state->inverse_transform,
+                                       0,
+                                       &view_x,
+                                       &view_y);
+
+            rut_arcball_init(&state->arcball,
+                             view->width / 2, view->height / 2,
+                             sqrtf(view->width * view->width +
+                                   view->height * view->height) / 2);
+            rut_arcball_mouse_down(&state->arcball, view->width - view_x, view_y);
+
+            state->saved_camera_rotation =
+                *rig_entity_get_rotation(view->view_camera);
+
+            memcpy(state->saved_camera_pos,
+                   rig_entity_get_position(view->view_camera),
+                   sizeof(state->saved_camera_pos));
+
+            //cg_quaternion_init_identity(&state->arcball.q_drag);
+
 
             // rut_arcball_mouse_down (&view->arcball, engine->width - x, y);
-            rut_arcball_mouse_down(
-                &view->arcball, view->width - x, view->height - y);
             // c_debug ("Arcball init, mouse = (%d, %d)\n", (int)(engine->width
             // - x), (int)(engine->height - y));
 
-            // print_quaternion (&view->saved_rotation, "Saved Quaternion");
             // print_quaternion (&view->arcball.q_drag, "Arcball Initial
             // Quaternion");
             // engine->button_down = true;
 
-            engine->grab_x = x;
-            engine->grab_y = y;
             // memcpy (view->saved_origin, view->origin, sizeof (view->origin));
+
+            rut_shell_grab_input(engine->shell, state->camera,
+                                 scene_rotate_grab_input_cb, state);
 
             return RUT_INPUT_EVENT_STATUS_HANDLED;
         } else if (action == RUT_MOTION_EVENT_ACTION_MOVE &&
                    state == RUT_BUTTON_STATE_2 &&
                    modifiers & RUT_MODIFIER_SHIFT_ON) {
             c_list_t link;
-            link.data = view->view_camera_to_origin;
+
+            link.data = view->view_camera;
             link.next = NULL;
 
             if (!translate_grab_entities(view,
@@ -1743,97 +1507,9 @@ input_cb(rut_input_event_t *event,
                                          rut_motion_event_get_x(event),
                                          rut_motion_event_get_y(event),
                                          scene_translate_cb,
-                                         NULL,
+                                         scene_translate_done_cb,
                                          view))
                 return RUT_INPUT_EVENT_STATUS_UNHANDLED;
-#if 0
-            float origin[3] = {0, 0, 0};
-            float unit_x[3] = {1, 0, 0};
-            float unit_y[3] = {0, 1, 0};
-            float x_vec[3];
-            float y_vec[3];
-            float dx;
-            float dy;
-            float translation[3];
-
-            rig_entity_get_transformed_position (view->view_camera,
-                                                 origin);
-            rig_entity_get_transformed_position (view->view_camera,
-                                                 unit_x);
-            rig_entity_get_transformed_position (view->view_camera,
-                                                 unit_y);
-
-            x_vec[0] = origin[0] - unit_x[0];
-            x_vec[1] = origin[1] - unit_x[1];
-            x_vec[2] = origin[2] - unit_x[2];
-
-            {
-                cg_matrix_t transform;
-                rut_graphable_get_transform (view->view_camera, &transform);
-                cg_debug_matrix_print (&transform);
-            }
-            c_debug (" =========================== x_vec = %f, %f, %f\n",
-                     x_vec[0], x_vec[1], x_vec[2]);
-
-            y_vec[0] = origin[0] - unit_y[0];
-            y_vec[1] = origin[1] - unit_y[1];
-            y_vec[2] = origin[2] - unit_y[2];
-
-            //dx = (x - engine->grab_x) * (view->view_camera_z / 100.0f);
-            //dy = -(y - engine->grab_y) * (view->view_camera_z / 100.0f);
-            dx = (x - engine->grab_x);
-            dy = -(y - engine->grab_y);
-
-            translation[0] = dx * x_vec[0];
-            translation[1] = dx * x_vec[1];
-            translation[2] = dx * x_vec[2];
-
-            translation[0] += dy * y_vec[0];
-            translation[1] += dy * y_vec[1];
-            translation[2] += dy * y_vec[2];
-
-            view->origin[0] = engine->saved_origin[0] + translation[0];
-            view->origin[1] = engine->saved_origin[1] + translation[1];
-            view->origin[2] = engine->saved_origin[2] + translation[2];
-
-            update_camera_position (engine);
-
-            c_debug ("Translate %f %f dx=%f, dy=%f\n",
-                     x - engine->grab_x,
-                     y - engine->grab_y,
-                     dx, dy);
-#endif
-            return RUT_INPUT_EVENT_STATUS_HANDLED;
-        } else if (action == RUT_MOTION_EVENT_ACTION_MOVE &&
-                   state == RUT_BUTTON_STATE_2 &&
-                   (!(modifiers & RUT_MODIFIER_SHIFT_ON))) {
-            cg_quaternion_t new_rotation;
-
-            // if (!engine->button_down)
-            //  break;
-
-            // rut_arcball_mouse_motion (&view->arcball, engine->width - x, y);
-            rut_arcball_mouse_motion(
-                &view->arcball, view->width - x, view->height - y);
-#if 0
-            c_debug ("Arcball motion, center=%f,%f mouse = (%f, %f)\n",
-                     view->arcball.center[0],
-                     view->arcball.center[1],
-                     x, y);
-#endif
-
-            cg_quaternion_multiply(
-                &new_rotation, &view->saved_rotation, &view->arcball.q_drag);
-
-            // rig_entity_set_rotation (view->view_camera, &new_rotation);
-            rig_entity_set_rotation(view->view_camera_rotate, &new_rotation);
-
-            // print_quaternion (&new_rotation, "New Rotation");
-
-            // print_quaternion (&view->arcball.q_drag, "Arcball Quaternion");
-
-            rut_shell_queue_redraw(engine->shell);
-
             return RUT_INPUT_EVENT_STATUS_HANDLED;
         }
 
@@ -1876,7 +1552,7 @@ input_cb(rut_input_event_t *event,
                 }
                 break;
             case RUT_KEY_0:
-                initialize_navigation_camera(view);
+                initialize_view_camera(view);
                 break;
             }
         } else if (rut_input_event_get_type(event) ==
@@ -2047,30 +1723,6 @@ input_region_cb(rut_input_region_t *region,
     return RUT_INPUT_EVENT_STATUS_HANDLED;
 }
 
-static void
-init_device_transforms(rut_shell_t *shell,
-                       rig_camera_view_device_transforms_t *transforms)
-{
-    /* It simplifies things if all the viewport setup for the
-     * camera is handled using entity transformations as opposed to
-     * mixing entity transforms with manual camera view transforms.
-     *
-     * The same chain of transforms is used for the play camera and the
-     * view camera so it is encapsulated in a separate struct.
-     */
-
-    transforms->origin_offset = rig_entity_new(shell);
-    rig_entity_set_label(transforms->origin_offset, "rig:camera_origin_offset");
-
-    transforms->dev_scale = rig_entity_new(shell);
-    rut_graphable_add_child(transforms->origin_offset, transforms->dev_scale);
-    rig_entity_set_label(transforms->dev_scale, "rig:camera_dev_scale");
-
-    transforms->screen_pos = rig_entity_new(shell);
-    rut_graphable_add_child(transforms->dev_scale, transforms->screen_pos);
-    rig_entity_set_label(transforms->screen_pos, "rig:camera_screen_pos");
-}
-
 #ifdef RIG_EDITOR_ENABLED
 static void
 tool_changed_cb(rig_engine_t *engine, rig_tool_id_t tool_id, void *user_data)
@@ -2118,42 +1770,8 @@ rig_camera_view_new(rig_engine_t *engine)
 
     view->matrix_stack = rut_matrix_stack_new(shell);
 
-    /* Conceptually we rig the camera to an armature with a pivot fixed
-     * at the current origin. This setup makes it straight forward to
-     * model user navigation by letting us change the length of the
-     * armature to handle zoom, rotating the armature to handle
-     * middle-click rotating the scene with the mouse and moving the
-     * position of the armature for shift-middle-click translations with
-     * the mouse.
-     */
-    view->view_camera_to_origin = rig_entity_new(engine->shell);
-    rig_entity_set_label(view->view_camera_to_origin, "rig:camera_to_origin");
-
-    view->view_camera_rotate = rig_entity_new(engine->shell);
-    rut_graphable_add_child(view->view_camera_to_origin,
-                            view->view_camera_rotate);
-    rig_entity_set_label(view->view_camera_rotate, "rig:camera_rotate");
-
-    view->view_camera_armature = rig_entity_new(engine->shell);
-    rut_graphable_add_child(view->view_camera_rotate,
-                            view->view_camera_armature);
-    rig_entity_set_label(view->view_camera_armature, "rig:camera_armature");
-
-    init_device_transforms(shell, &view->view_device_transforms);
-    rut_graphable_add_child(view->view_camera_armature,
-                            view->view_device_transforms.origin_offset);
-
     view->view_camera = rig_entity_new(engine->shell);
-    // rut_graphable_add_child (view->view_camera_2d_view, view->view_camera);
-    // FIXME
-    rut_graphable_add_child(view->view_device_transforms.screen_pos,
-                            view->view_camera);
     rig_entity_set_label(view->view_camera, "rig:camera");
-
-    // view->view_camera_2d_view = rig_entity_new (engine->shell);
-    // rut_graphable_add_child (view->view_camera_screen_pos,
-    // view->view_camera_2d_view); FIXME
-    // rig_entity_set_label (view->view_camera_2d_view, "rig:camera_2d_view");
 
     view->view_camera_component = rig_camera_new(engine,
                                                  -1, /* ortho/vp width */
@@ -2161,12 +1779,6 @@ rig_camera_view_new(rig_engine_t *engine)
                                                  NULL);
     rut_camera_set_clear(view->view_camera_component, false);
     rig_entity_add_component(view->view_camera, view->view_camera_component);
-
-    init_device_transforms(shell, &view->play_device_transforms);
-    view->play_dummy_entity = rig_entity_new(shell);
-    rig_entity_set_label(view->play_dummy_entity, "rig:play_dummy_entity");
-    rut_graphable_add_child(view->play_device_transforms.screen_pos,
-                            view->play_dummy_entity);
 
 #ifdef RIG_EDITOR_ENABLED
     if (engine->frontend && engine->frontend_id == RIG_FRONTEND_ID_EDITOR) {
@@ -2193,34 +1805,29 @@ set_play_camera(rig_camera_view_t *view, rig_entity_t *play_camera)
         return;
 
     if (view->play_camera) {
-        rut_graphable_remove_child(view->play_device_transforms.origin_offset);
         rut_object_unref(view->play_camera);
+        view->play_camera = NULL;
         rut_object_unref(view->play_camera_component);
+        view->play_camera_component = NULL;
     }
 
     if (play_camera) {
         view->play_camera = rut_object_ref(play_camera);
-
-        rut_graphable_add_child(play_camera,
-                                view->play_device_transforms.origin_offset);
-
         view->play_camera_component =
             rig_entity_get_component(play_camera, RUT_COMPONENT_TYPE_CAMERA);
         rut_object_ref(view->play_camera_component);
-    } else
-        view->play_camera_component = NULL;
+    }
 }
 
 void
 rig_camera_view_set_ui(rig_camera_view_t *view, rig_ui_t *ui)
 {
-    rig_entity_t *play_camera;
-
     if (view->ui == ui)
         return;
 
     if (view->ui) {
-        rut_graphable_remove_child(view->view_camera_to_origin);
+        set_play_camera(view, NULL);
+        rut_graphable_remove_child(view->view_camera);
         rut_shell_remove_input_camera(
             view->shell, view->view_camera_component, view->ui->scene);
     }
@@ -2230,12 +1837,16 @@ rig_camera_view_set_ui(rig_camera_view_t *view, rig_ui_t *ui)
     view->ui = ui;
 
     if (ui) {
-        rut_graphable_add_child(ui->scene, view->view_camera_to_origin);
+        rig_engine_t *engine = view->engine;
+
         rut_shell_add_input_camera(
             view->shell, view->view_camera_component, ui->scene);
-        initialize_navigation_camera(view);
-    }
+        set_play_camera(view, ui->play_camera);
+        rut_graphable_add_child(ui->scene, view->view_camera);
+        initialize_view_camera(view);
 
-    play_camera = ui ? ui->play_camera : NULL;
-    set_play_camera(view, play_camera);
+        view->origin[0] = engine->device_width / 2;
+        view->origin[1] = engine->device_height / 2;
+        view->origin[2] = 0;
+    }
 }

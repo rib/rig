@@ -505,8 +505,7 @@ rig_entity_get_transform(rut_object_t *self)
                                entity->position[2]);
     cg_matrix_init_from_quaternion(&rotation, &entity->rotation);
     cg_matrix_multiply(&entity->transform, &entity->transform, &rotation);
-    cg_matrix_scale(
-        &entity->transform, entity->scale, entity->scale, entity->scale);
+    cg_matrix_scale(&entity->transform, entity->scale, entity->scale, entity->scale);
 
     entity->dirty = false;
 

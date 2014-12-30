@@ -46,6 +46,8 @@ typedef struct _rig_paint_context_t {
 
     rig_pass_t pass;
 
+    bool enable_dof;
+
 } rig_paint_context_t;
 
 typedef struct _rig_renderer_t rig_renderer_t;
@@ -56,19 +58,18 @@ rig_renderer_t *rig_renderer_new(rig_engine_t *engine);
 
 c_array_t *rig_journal_new(void);
 
-void rig_camera_update_view(rig_engine_t *engine,
-                            rig_entity_t *camera,
-                            bool shadow_pass);
-
-void rig_paint_camera_entity(rig_entity_t *view_camera,
-                             rig_paint_context_t *paint_ctx,
-                             rut_object_t *play_camera);
+void
+paint_camera_entity_pass(rig_paint_context_t *paint_ctx,
+                         rig_entity_t *camera_entity);
 
 void rig_renderer_dirty_entity_state(rig_entity_t *entity);
 
 void rig_renderer_init(rig_renderer_t *renderer);
 
 void rig_renderer_fini(rig_renderer_t *renderer);
+
+void rig_renderer_paint_camera(rig_paint_context_t *paint_ctx,
+                               rig_entity_t *camera_entity);
 
 /* TODO: remove this; it's just a stop-gap for rig-ui.c to be able
  * to setup the viewport for the light camera... */

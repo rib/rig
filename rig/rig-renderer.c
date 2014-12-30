@@ -64,6 +64,8 @@ struct _rig_renderer_t {
     cg_pipeline_t *dof_diamond_pipeline;
     cg_pipeline_t *dof_unshaped_pipeline;
 
+    rig_depth_of_field_t *dof;
+
     cg_snippet_t *alpha_mask_snippet;
     cg_snippet_t *alpha_mask_video_snippet;
     cg_snippet_t *lighting_vertex_snippet;
@@ -1058,26 +1060,70 @@ void
 rig_renderer_fini(rig_renderer_t *renderer)
 {
     cg_object_unref(renderer->dof_pipeline_template);
+    renderer->dof_pipeline_template = NULL;
+
     cg_object_unref(renderer->dof_pipeline);
+    renderer->dof_pipeline = NULL;
+
     cg_object_unref(renderer->dof_diamond_pipeline);
+    renderer->dof_diamond_pipeline = NULL;
+
     cg_object_unref(renderer->dof_unshaped_pipeline);
+    renderer->dof_unshaped_pipeline = NULL;
+
+
+    if (renderer->dof) {
+        rig_dof_effect_free(renderer->dof);
+        renderer->dof = NULL;
+    }
 
     cg_object_unref(renderer->alpha_mask_snippet);
+    renderer->alpha_mask_snippet = NULL;
+
     cg_object_unref(renderer->lighting_vertex_snippet);
+    renderer->lighting_vertex_snippet = NULL;
+
     cg_object_unref(renderer->normal_map_vertex_snippet);
+    renderer->normal_map_vertex_snippet = NULL;
+
     cg_object_unref(renderer->shadow_mapping_vertex_snippet);
+    renderer->shadow_mapping_vertex_snippet = NULL;
+
     cg_object_unref(renderer->blended_discard_snippet);
+    renderer->blended_discard_snippet = NULL;
+
     cg_object_unref(renderer->unblended_discard_snippet);
+    renderer->unblended_discard_snippet = NULL;
+
     cg_object_unref(renderer->premultiply_snippet);
+    renderer->premultiply_snippet = NULL;
+
     cg_object_unref(renderer->unpremultiply_snippet);
+    renderer->unpremultiply_snippet = NULL;
+
     cg_object_unref(renderer->normal_map_fragment_snippet);
+    renderer->normal_map_fragment_snippet = NULL;
+
     cg_object_unref(renderer->material_lighting_snippet);
+    renderer->material_lighting_snippet = NULL;
+
     cg_object_unref(renderer->simple_lighting_snippet);
+    renderer->simple_lighting_snippet = NULL;
+
     cg_object_unref(renderer->shadow_mapping_fragment_snippet);
+    renderer->shadow_mapping_fragment_snippet = NULL;
+
     cg_object_unref(renderer->pointalism_vertex_snippet);
+    renderer->pointalism_vertex_snippet = NULL;
+
     cg_object_unref(renderer->pointalism_halo_snippet);
+    renderer->pointalism_halo_snippet = NULL;
+
     cg_object_unref(renderer->pointalism_opaque_snippet);
+    renderer->pointalism_opaque_snippet = NULL;
+
     cg_object_unref(renderer->cache_position_snippet);
+    renderer->cache_position_snippet = NULL;
 
     free_shadow_map(renderer);
 }
@@ -1900,38 +1946,6 @@ rig_renderer_flush_journal(rig_renderer_t *renderer,
     c_array_set_size(journal, 0);
 }
 
-void
-rig_camera_update_view(rig_engine_t *engine,
-                       rig_entity_t *camera,
-                       bool shadow_pass)
-{
-    rut_object_t *camera_component =
-        rig_entity_get_component(camera, RUT_COMPONENT_TYPE_CAMERA);
-    cg_matrix_t transform;
-    cg_matrix_t inverse_transform;
-    cg_matrix_t view;
-
-    /* translate to z_2d and scale */
-    if (!shadow_pass)
-        view = engine->main_view;
-    else
-        view = engine->identity;
-
-    /* apply the camera viewing transform */
-    rut_graphable_get_transform(camera, &transform);
-    cg_matrix_get_inverse(&transform, &inverse_transform);
-    cg_matrix_multiply(&view, &view, &inverse_transform);
-
-    if (shadow_pass) {
-        cg_matrix_t flipped_view;
-        cg_matrix_init_identity(&flipped_view);
-        cg_matrix_scale(&flipped_view, 1, -1, 1);
-        cg_matrix_multiply(&flipped_view, &flipped_view, &view);
-        rut_camera_set_view_transform(camera_component, &flipped_view);
-    } else
-        rut_camera_set_view_transform(camera_component, &view);
-}
-
 static void
 draw_entity_camera_frustum(rig_engine_t *engine,
                            rig_entity_t *entity,
@@ -2061,44 +2075,43 @@ entitygraph_post_paint_cb(rut_object_t *object, int depth, void *user_data)
     return RUT_TRAVERSE_VISIT_CONTINUE;
 }
 
-/* The view camera is the entity associated with the camera we will
- * actually be rendering for.
- *
- * While editing then @play_camera will represent the camera we want
- * to represent, even though we are rendering using the editor's
- * view camera. For example we will refer to the background color
- * of the play camera to visualize while rendering the view camera.
- */
 void
-rig_paint_camera_entity(rig_entity_t *view_camera,
-                        rig_paint_context_t *paint_ctx,
-                        rut_object_t *play_camera)
+paint_camera_entity_pass(rig_paint_context_t *paint_ctx,
+                         rig_entity_t *camera_entity)
 {
     rut_paint_context_t *rut_paint_ctx = &paint_ctx->_parent;
     rut_object_t *saved_camera = rut_paint_ctx->camera;
     rut_object_t *camera =
-        rig_entity_get_component(view_camera, RUT_COMPONENT_TYPE_CAMERA);
+        rig_entity_get_component(camera_entity, RUT_COMPONENT_TYPE_CAMERA);
+    cg_framebuffer_t *fb = rut_camera_get_framebuffer(camera);
     rig_renderer_t *renderer = paint_ctx->renderer;
     rig_engine_t *engine = paint_ctx->engine;
     cg_device_t *dev = engine->shell->cg_device;
-    cg_framebuffer_t *fb = rut_camera_get_framebuffer(camera);
+    rig_ui_t *ui = engine->current_ui;
 
     rut_paint_ctx->camera = camera;
 
     rut_camera_flush(camera);
 
-    if (paint_ctx->pass == RIG_PASS_COLOR_UNBLENDED && play_camera &&
-        camera != play_camera) {
+    /* Note: if we are rendering with the real ui->play_camera (i.e.
+     * not a viewing camera then we don't clear the background with
+     * a rectangle like this, we can just clear the framebuffer...
+     */
+    if (paint_ctx->pass == RIG_PASS_COLOR_UNBLENDED &&
+        camera != ui->play_camera)
+    {
         cg_pipeline_t *pipeline = cg_pipeline_new(dev);
         const cg_color_t *bg_color =
-            rut_camera_get_background_color(play_camera);
+            rut_camera_get_background_color(ui->play_camera_component);
         cg_pipeline_set_color4f(pipeline,
                                 bg_color->red,
                                 bg_color->green,
                                 bg_color->blue,
                                 bg_color->alpha);
-        cg_framebuffer_draw_rectangle(
-            fb, pipeline, 0, 0, engine->device_width, engine->device_height);
+        cg_framebuffer_draw_rectangle(fb, pipeline,
+                                      0, 0,
+                                      engine->device_width,
+                                      engine->device_height);
         cg_object_unref(pipeline);
     }
 
@@ -2113,6 +2126,117 @@ rig_paint_camera_entity(rig_entity_t *view_camera,
     rut_camera_end_frame(camera);
 
     rut_paint_ctx->camera = saved_camera;
+}
+
+void
+rig_renderer_paint_camera(rig_paint_context_t *paint_ctx,
+                          rig_entity_t *camera_entity)
+{
+    rut_object_t *camera =
+        rig_entity_get_component(camera_entity, RUT_COMPONENT_TYPE_CAMERA);
+    cg_framebuffer_t *fb = rut_camera_get_framebuffer(camera);
+    rig_renderer_t *renderer = paint_ctx->renderer;
+    rig_engine_t *engine = paint_ctx->engine;
+    rig_ui_t *ui = engine->current_ui;
+
+    paint_ctx->pass = RIG_PASS_SHADOW;
+    rig_entity_set_camera_view_from_transform(ui->light, true /* y-flip */);
+    paint_camera_entity_pass(paint_ctx, ui->light);
+
+    if (paint_ctx->enable_dof) {
+        const float *viewport = rut_camera_get_viewport(camera);
+        int width = viewport[2];
+        int height = viewport[3];
+        int save_viewport_x = viewport[0];
+        int save_viewport_y = viewport[1];
+        cg_framebuffer_t *pass_fb;
+        const cg_color_t *bg_color;
+        rig_depth_of_field_t *dof = renderer->dof;
+
+        if (!dof)
+            renderer->dof = dof = rig_dof_effect_new(engine);
+
+        rig_dof_effect_set_framebuffer_size(dof, width, height);
+
+        pass_fb = rig_dof_effect_get_depth_pass_fb(dof);
+        rut_camera_set_framebuffer(camera, pass_fb);
+        rut_camera_set_viewport(camera, 0, 0, width, height);
+
+        rut_camera_flush(camera);
+        cg_framebuffer_clear4f(pass_fb,
+                               CG_BUFFER_BIT_COLOR | CG_BUFFER_BIT_DEPTH,
+                               1, 1, 1, 1);
+        rut_camera_end_frame(camera);
+
+        paint_ctx->pass = RIG_PASS_DOF_DEPTH;
+        paint_camera_entity_pass(paint_ctx, camera_entity);
+
+        pass_fb = rig_dof_effect_get_color_pass_fb(dof);
+        rut_camera_set_framebuffer(camera, pass_fb);
+
+        rut_camera_flush(camera);
+        bg_color = rut_camera_get_background_color(camera);
+        cg_framebuffer_clear4f(pass_fb,
+                               CG_BUFFER_BIT_COLOR | CG_BUFFER_BIT_DEPTH,
+                               bg_color->red,
+                               bg_color->green,
+                               bg_color->blue,
+                               bg_color->alpha);
+        rut_camera_end_frame(camera);
+
+        paint_ctx->pass = RIG_PASS_COLOR_UNBLENDED;
+        paint_camera_entity_pass(paint_ctx, camera_entity);
+
+        paint_ctx->pass = RIG_PASS_COLOR_BLENDED;
+        paint_camera_entity_pass(paint_ctx, camera_entity);
+
+        rut_camera_set_framebuffer(camera, fb);
+        rut_camera_set_viewport(camera,
+                                save_viewport_x, save_viewport_y,
+                                width, height);
+
+
+        /* XXX: This is a pretty fugly /ridiculous way of temporarily
+         * switching to an orthographic projection!
+         *
+         * Either we should setup a separate camera for this or create
+         * some utility api for saving + reseting the state of a
+         * camera so we don't need to worry about having to update
+         * this to save/restore extended camera state in the future.
+         *
+         * Leaving as is for now since it's likely the way we deal
+         * with cameras is going to change quite significantly
+         * soon.
+         */
+
+        saved_view = *rut_camera_get_view_transform(camera);
+        saved_near = rut_camera_get_near_plane(camera);
+        saved_far = rut_camera_get_far_plane(camera);
+
+        c_warn_if_fail(rut_camera_get_projection_mode(camera) ==
+                       RUT_PROJECTION_PERSPECTIVE);
+
+        rut_camera_set_view_transform(camera, &engine->identity);
+        rut_camera_set_projection_mode(camera, RUT_PROJECTION_ORTHOGRAPHIC);
+        rut_camera_set_orthographic_coordinates(camera, 0, 0, 1, 1);
+        rut_camera_set_near_plane(camera, -1);
+        rut_camera_set_far_plane(camera, 100);
+
+        rut_camera_flush(camera);
+        rig_dof_effect_draw_rectangle(dof, fb, 0, 0, 1, 1);
+        rut_camera_end_frame(camera);
+
+        rut_camera_set_projection_mode(camera, RUT_PROJECTION_PERSPECTIVE);
+        rut_camera_set_near_plane(camera, saved_near);
+        rut_camera_set_far_plane(camera, saved_far);
+        rut_camera_set_view_transform(camera, &saved_view);
+    } else {
+        paint_ctx->pass = RIG_PASS_COLOR_UNBLENDED;
+        paint_camera_entity_pass(paint_ctx, camera_entity);
+
+        paint_ctx->pass = RIG_PASS_COLOR_BLENDED;
+        paint_camera_entity_pass(paint_ctx, camera_entity);
+    }
 }
 
 /* TODO: remove this; it's just a stop-gap for rig-ui.c to be able

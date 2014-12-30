@@ -85,26 +85,13 @@ struct _rig_camera_view_t {
     cg_pipeline_t *bg_pipeline;
 
     float origin[3];
-    // float saved_origin[3];
 
     float device_scale;
 
     entities_translate_grab_closure_t *entities_translate_grab_closure;
 
-    rig_entity_t *view_camera_to_origin; /* move to origin */
-    rig_entity_t *view_camera_rotate; /* armature rotate rotate */
-    rig_entity_t *view_camera_armature; /* armature length */
-    rig_entity_t *view_camera_2d_view; /* setup 2d view, origin top-left */
-    rig_camera_view_device_transforms_t view_device_transforms;
-
     rig_entity_t *play_camera;
     rut_object_t *play_camera_component;
-    rig_camera_view_device_transforms_t play_device_transforms;
-    /* This entity is added as a child of all of the play device
-     * transforms. During paint the camera component is temporarily
-     * stolen from the play camera entity so that it can be transformed
-     * with the device transforms */
-    rig_entity_t *play_dummy_entity;
 
 #ifdef RIG_EDITOR_ENABLED
     rig_entity_t *play_camera_handle;
@@ -113,15 +100,10 @@ struct _rig_camera_view_t {
     rig_entity_t *current_camera;
     rut_object_t *current_camera_component;
 
-    rig_depth_of_field_t *dof;
     bool enable_dof;
-
-    rut_arcball_t arcball;
-    cg_quaternion_t saved_rotation;
 
     rig_entity_t *view_camera;
     rut_object_t *view_camera_component;
-    float view_camera_z;
     rut_input_region_t *input_region;
 
     float last_viewport_x;
