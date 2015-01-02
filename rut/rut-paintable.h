@@ -62,8 +62,6 @@ typedef struct _rut_paint_context_t {
     rut_list_t paint_queue;
 } rut_paint_context_t;
 
-#define RUT_PAINT_CONTEXT(X) ((rut_paint_context_t *)X)
-
 typedef struct _rut_paintable_vtable_t {
     void (*paint)(rut_object_t *object, rut_paint_context_t *paint_ctx);
 } rut_paintable_vtable_t;
