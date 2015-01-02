@@ -258,17 +258,17 @@ _rut_button_init_type(void)
 #undef TYPE
 }
 
-typedef struct _Buttongrab_state_t {
+struct grab_state {
     rut_object_t *camera;
     rut_button_t *button;
     cg_matrix_t transform;
     cg_matrix_t inverse_transform;
-} Buttongrab_state_t;
+};
 
 static rut_input_event_status_t
 _rut_button_grab_input_cb(rut_input_event_t *event, void *user_data)
 {
-    Buttongrab_state_t *state = user_data;
+    struct grab_state *state = user_data;
     rut_button_t *button = state->button;
 
     if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_MOTION) {
@@ -279,7 +279,7 @@ _rut_button_grab_input_cb(rut_input_event_t *event, void *user_data)
             rut_closure_list_invoke(
                 &button->on_click_cb_list, rut_button_click_callback_t, button);
 
-            c_slice_free(Buttongrab_state_t, state);
+            c_slice_free(struct grab_state, state);
 
             button->state = BUTTON_STATE_NORMAL;
             rut_shell_queue_redraw(button->shell);
@@ -322,7 +322,7 @@ _rut_button_input_cb(rut_input_region_t *region,
     if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_MOTION &&
         rut_motion_event_get_action(event) == RUT_MOTION_EVENT_ACTION_DOWN) {
         rut_shell_t *shell = button->shell;
-        Buttongrab_state_t *state = c_slice_new(Buttongrab_state_t);
+        struct grab_state *state = c_slice_new(struct grab_state);
         const cg_matrix_t *view;
 
         state->button = button;
@@ -333,7 +333,7 @@ _rut_button_input_cb(rut_input_region_t *region,
         if (!cg_matrix_get_inverse(&state->transform,
                                    &state->inverse_transform)) {
             c_warning("Failed to calculate inverse of button transform\n");
-            c_slice_free(Buttongrab_state_t, state);
+            c_slice_free(struct grab_state, state);
             return RUT_INPUT_EVENT_STATUS_UNHANDLED;
         }
 
