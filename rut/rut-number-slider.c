@@ -151,6 +151,7 @@ end_text_edit(edit_state_t *state)
     rut_shell_ungrab_input(
         slider->shell, rut_number_slider_text_grab_cb, state);
 
+    rut_object_unref(slider);
     c_slice_free(edit_state_t, state);
 }
 
@@ -271,8 +272,10 @@ rut_number_slider_grab_input_cb(rut_input_event_t *event, void *user_data)
          * click somewhere on the widget */
         if (!state->button_drag)
             start_text_edit(state);
-        else
+        else {
+            rut_object_unref(slider);
             c_slice_free(edit_state_t, state);
+        }
 
         rut_shell_queue_redraw(slider->shell);
     }
@@ -291,7 +294,7 @@ rut_number_slider_input_region_cb(
         rut_motion_event_get_button_state(event) & RUT_BUTTON_STATE_1) {
         edit_state_t *state = c_slice_new0(edit_state_t);
 
-        state->slider = slider;
+        state->slider = rut_object_ref(slider);
         state->camera = rut_input_event_get_camera(event);
         state->button_down = true;
         state->button_drag = false;
