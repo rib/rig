@@ -97,9 +97,6 @@ struct _rig_camera_view_t {
     rig_entity_t *play_camera_handle;
 #endif
 
-    rig_entity_t *current_camera;
-    rut_object_t *current_camera_component;
-
     bool enable_dof;
 
     rig_entity_t *view_camera;
