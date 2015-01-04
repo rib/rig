@@ -60,6 +60,8 @@ typedef struct _rig_device_t {
 
 } rig_device_t;
 
+bool rig_device_fullscreen_option;
+
 static void
 rig_device_redraw(rut_shell_t *shell, void *user_data)
 {
@@ -183,6 +185,11 @@ rig_device_init(rut_shell_t *shell, void *user_data)
 
     rig_frontend_post_init_engine(engine->frontend, device->ui_filename);
 
+    if (rig_device_fullscreen_option) {
+        rut_shell_onscreen_t *onscreen = device->frontend->onscreen;
+        rut_shell_onscreen_set_fullscreen(onscreen, true);
+    }
+
     rig_frontend_set_simulator_connected_callback(
         device->frontend, simulator_connected_cb, device);
 }
@@ -217,18 +224,19 @@ usage(void)
 {
     fprintf(stderr, "Usage: rig-device [UI.rig]\n");
     fprintf(stderr, "\n");
+    fprintf(stderr, "  -f,--fullscreen                          Run fullscreen\n");
+    fprintf(stderr, "\n");
 #ifdef RIG_ENABLE_DEBUG
-#ifdef __linux__
-    fprintf(stderr, "  -a,--abstract-socket=NAME            Listen on abstract socket for simulator\n");
-#endif
-    fprintf(stderr, "  -f,--fork-simulator                  Run simulator in a separate process\n");
-    fprintf(stderr, "  -m,--mainloop-simulator              Run simulator in the same mainloop as frontend\n");
-    fprintf(stderr, "                                       (Simulator runs in separate thread by default)\n");
+    fprintf(stderr, "  -m,--simulator={tcp:<address>[:port],    Specify how to listen for a simulator connection\n");
+    fprintf(stderr, "                  abstract:<name>,         (Simulator runs in a separate thread by default)\n");
+    fprintf(stderr, "                  mainloop,\n");
+    fprintf(stderr, "                  thread,\n");
+    fprintf(stderr, "                  process}\n");
     fprintf(stderr, "\n");
-    fprintf(stderr, "  -d,--disable-curses                  Disable curses debug console\n");
+    fprintf(stderr, "  -d,--disable-curses                      Disable curses debug console\n");
     fprintf(stderr, "\n");
 #endif
-    fprintf(stderr, "  -h,--help                            Display this help message\n");
+    fprintf(stderr, "  -h,--help                                Display this help message\n");
     exit(1);
 }
 
@@ -238,12 +246,10 @@ main(int argc, char **argv)
     rig_device_t *device;
     struct option long_opts[] = {
 
+        { "fullscreen",         no_argument,       NULL, 'f' },
+
 #ifdef RIG_ENABLE_DEBUG
-#ifdef __linux__
-        { "abstract-socket",    required_argument, NULL, 'a' },
-#endif
-        { "fork-simulator",     no_argument,       NULL, 'f' },
-        { "mainloop-simulator", no_argument,       NULL, 'm' },
+        { "simulator",          required_argument, NULL, 'm' },
         { "disable-curses",     no_argument,       NULL, 'd' },
 #endif /* RIG_ENABLE_DEBUG */
 
@@ -252,14 +258,10 @@ main(int argc, char **argv)
     };
 
 #ifdef RIG_ENABLE_DEBUG
-# ifdef __linux__
-    const char *short_opts = "a:fmdh";
-# else
     const char *short_opts = "fmdh";
-# endif
     bool enable_curses_debug = true;
 #else
-    const char *short_opts = "h";
+    const char *short_opts = "fh";
 #endif
 
     int c;
@@ -274,20 +276,14 @@ main(int argc, char **argv)
 
     while ((c = getopt_long(argc, argv, short_opts, long_opts, NULL)) != -1) {
         switch(c) {
-#ifdef RIG_ENABLE_DEBUG
-#ifdef __linux__
-        case 'a':
-            rig_simulator_run_mode_option =
-                RIG_SIMULATOR_RUN_MODE_CONNECT_ABSTRACT_SOCKET;
-            rig_simulator_abstract_socket_option = optarg;
-            break;
-#endif
         case 'f':
-            rig_simulator_run_mode_option = RIG_SIMULATOR_RUN_MODE_PROCESS;
+            rig_device_fullscreen_option = true;
             break;
-        case 'm':
-            rig_simulator_run_mode_option = RIG_SIMULATOR_RUN_MODE_MAINLOOP;
+#ifdef RIG_ENABLE_DEBUG
+        case 'm': {
+            rig_simulator_parse_option(optarg, usage);
             break;
+        }
         case 'd':
             enable_curses_debug = false;
             break;

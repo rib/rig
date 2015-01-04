@@ -127,6 +127,10 @@ struct _rig_engine_t {
 
     rut_object_t *renderer;
 
+    /* FIXME: HACK */
+    void (*swap_buffers_hook)(cg_framebuffer_t *fb, void *data);
+    void *swap_buffers_hook_data;
+
     rut_stack_t *top_stack;
     rig_camera_view_t *main_camera_view;
 
