@@ -148,6 +148,15 @@ bool rut_util_intersect_mesh(rut_mesh_t *mesh,
 
 bool rut_util_is_boolean_env_set(const char *variable);
 
+void rut_util_matrix_scaled_frustum(cg_matrix_t *matrix,
+                                    float left,
+                                    float right,
+                                    float bottom,
+                                    float top,
+                                    float z_near,
+                                    float z_far,
+                                    float scale);
+
 void rut_util_matrix_scaled_perspective(cg_matrix_t *matrix,
                                         float fov_y,
                                         float aspect,

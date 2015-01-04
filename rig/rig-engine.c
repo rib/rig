@@ -203,7 +203,10 @@ rig_engine_paint(rig_engine_t *engine)
                                 rut_paint_ctx);
     rut_camera_end_frame(engine->camera_2d);
 
-    cg_onscreen_swap_buffers(CG_ONSCREEN(fb));
+    if (engine->swap_buffers_hook)
+        engine->swap_buffers_hook(fb, engine->swap_buffers_hook_data);
+    else
+        cg_onscreen_swap_buffers(fb);
 }
 
 static void

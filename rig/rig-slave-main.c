@@ -56,8 +56,6 @@ usage(void)
     fprintf(stderr, "  -S,--scale=SCALE                         Device pixel scale factor\n");
     fprintf(stderr, "  -f,--fullscreen                          Run fullscreen\n");
     fprintf(stderr, "\n");
-    fprintf(stderr, "  -o,--oculus                              Run in Oculus Rift mode\n");
-    fprintf(stderr, "\n");
     fprintf(stderr, "  -l,--listen={tcp:<address>[:port],       Specify how to listen for an editor connection\n");
     fprintf(stderr, "               abstract:<name>}            (listens on free tcp/ipv4 port by default)\n");
     fprintf(stderr, "\n");
@@ -65,7 +63,8 @@ usage(void)
     fprintf(stderr, "  -m,--simulator={tcp:<address>[:port],    Specify how to listen for a simulator connection\n");
     fprintf(stderr, "                  abstract:<name>,         (Simulator runs in a separate thread by default)\n");
     fprintf(stderr, "                  mainloop,\n");
-    fprintf(stderr, "                  thread}\n");
+    fprintf(stderr, "                  thread,\n");
+    fprintf(stderr, "                  process}\n");
 #endif
     fprintf(stderr, "\n");
     fprintf(stderr, "  -h,--help                                Display this help message\n");
@@ -95,9 +94,9 @@ main(int argc, char **argv)
     };
 
 #ifdef RIG_ENABLE_DEBUG
-    const char *short_opts = "W:H:S:fol:m:h";
+    const char *short_opts = "W:H:S:fl:m:h";
 #else
-    const char *short_opts = "W:H:S:fol:h";
+    const char *short_opts = "W:H:S:fl:h";
 #endif
 
     int c;

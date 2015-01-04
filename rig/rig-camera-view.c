@@ -198,70 +198,51 @@ paint_overlays(rig_camera_view_t *view,
 }
 
 static void
-update_camera_viewport(rig_camera_view_t *view,
-                       rut_object_t *window_camera,
-                       rut_object_t *camera)
+update_allocated_fb_position(rig_camera_view_t *view,
+                             rut_object_t *window_camera)
 {
-    float x, y, z;
+    float x = 0, y = 0, z = 0;
 
-    x = y = z = 0;
     rut_graphable_fully_transform_point(view, window_camera, &x, &y, &z);
 
-    x = c_nearbyint(x);
-    y = c_nearbyint(y);
-
-    /* XXX: if the viewport width/height get changed during allocation
-     * then we should probably use a dirty flag so we can defer
-     * the viewport update to here. */
-
-    if (camera != view->view_camera_component)
-        rut_camera_set_viewport(camera, x, y, view->width, view->height);
-    else if (view->last_viewport_x != x || view->last_viewport_y != y ||
-             view->dirty_viewport_size) {
-        rut_camera_set_viewport(camera, x, y, view->width, view->height);
-
-        view->last_viewport_x = x;
-        view->last_viewport_y = y;
-        view->dirty_viewport_size = false;
-    }
+    view->fb_x = c_nearbyint(x);
+    view->fb_y = c_nearbyint(y);
 }
 
 static void
-initialize_view_camera(rig_camera_view_t *view)
+init_camera_from_camera(rig_entity_t *dst_camera, rig_entity_t *src_camera)
 {
-    rig_entity_t *view_camera = view->view_camera;
-    rut_object_t *view_camera_comp = view->view_camera_component;
-    rig_entity_t *play_camera = view->play_camera;
-    rut_object_t *play_camera_comp = view->play_camera_component;
+    rut_object_t *dst_camera_comp =
+        rig_entity_get_component(dst_camera, RUT_COMPONENT_TYPE_CAMERA);
+    rut_object_t *src_camera_comp =
+        rig_entity_get_component(src_camera, RUT_COMPONENT_TYPE_CAMERA);
 
-    rut_projection_t mode = rut_camera_get_projection_mode(play_camera_comp);
+    rut_projection_t mode = rut_camera_get_projection_mode(src_camera_comp);
 
 
-    rut_camera_set_projection_mode(view_camera_comp, mode);
+    rut_camera_set_projection_mode(dst_camera_comp, mode);
     if (mode == RUT_PROJECTION_PERSPECTIVE) {
-        rut_camera_set_field_of_view(view_camera_comp,
-                                     rut_camera_get_field_of_view(play_camera_comp));
-        rut_camera_set_near_plane(view_camera_comp,
-                                  rut_camera_get_near_plane(play_camera_comp));
-        rut_camera_set_far_plane(view_camera_comp,
-                                 rut_camera_get_far_plane(play_camera_comp));
+        rut_camera_set_field_of_view(dst_camera_comp,
+                                     rut_camera_get_field_of_view(src_camera_comp));
+        rut_camera_set_near_plane(dst_camera_comp,
+                                  rut_camera_get_near_plane(src_camera_comp));
+        rut_camera_set_far_plane(dst_camera_comp,
+                                 rut_camera_get_far_plane(src_camera_comp));
     } else {
         float x1, y1, x2, y2;
 
-        rut_camera_get_orthographic_coordinates(play_camera_comp,
+        rut_camera_get_orthographic_coordinates(src_camera_comp,
                                                 &x1, &y1, &x2, &y2);
-        rut_camera_set_orthographic_coordinates(view_camera_comp,
+        rut_camera_set_orthographic_coordinates(dst_camera_comp,
                                                 x1, y1, x2, y2);
     }
 
-    rut_camera_set_zoom(view_camera_comp,
-                        rut_camera_get_zoom(play_camera_comp));
+    rut_camera_set_zoom(dst_camera_comp,
+                        rut_camera_get_zoom(src_camera_comp));
 
-    rig_entity_set_position(view_camera, rig_entity_get_position(play_camera));
-    rig_entity_set_scale(view_camera, rig_entity_get_scale(play_camera));
-    rig_entity_set_rotation(view_camera, rig_entity_get_rotation(play_camera));
-
-    rut_shell_queue_redraw(view->shell);
+    rig_entity_set_position(dst_camera, rig_entity_get_position(src_camera));
+    rig_entity_set_scale(dst_camera, rig_entity_get_scale(src_camera));
+    rig_entity_set_rotation(dst_camera, rig_entity_get_rotation(src_camera));
 }
 
 static void
@@ -275,6 +256,7 @@ _rut_camera_view_paint(rut_object_t *object,
     cg_framebuffer_t *fb = rut_camera_get_framebuffer(paint_ctx->camera);
     rig_entity_t *camera;
     rut_object_t *camera_component;
+    int i;
 
     if (view->ui == NULL)
         return;
@@ -301,17 +283,22 @@ _rut_camera_view_paint(rut_object_t *object,
     rut_camera_suspend(suspended_camera);
     paint_ctx->camera = camera_component;
 
-    rut_camera_set_framebuffer(camera_component, fb);
-    update_camera_viewport(view, engine->camera_2d, camera_component);
-    rig_entity_set_camera_view_from_transform(camera);
+    update_allocated_fb_position(view, engine->camera_2d); //XXX: this should be redundant!
 
     rig_paint_ctx->enable_dof = view->enable_dof;
+    //rig_paint_ctx->enable_dof = false;
+
+    rut_camera_set_framebuffer(camera_component, fb);
+    rut_camera_set_viewport(camera_component,
+                            view->fb_x, view->fb_y,
+                            view->width, view->height);
+    rig_entity_set_camera_view_from_transform(camera);
     rig_renderer_paint_camera(rig_paint_ctx, camera);
 
     rut_camera_resume(suspended_camera);
     paint_ctx->camera = suspended_camera;
 
-    paint_overlays(view, paint_ctx);
+    //paint_overlays(view, paint_ctx);
 }
 
 static void
@@ -330,8 +317,11 @@ allocate_cb(rut_object_t *graphable, void *user_data)
         if (view->entities_translate_grab_closure) {
             c_llist_t *l;
 
-            update_camera_viewport(view, engine->camera_2d,
-                                   view->view_camera_component);
+            update_allocated_fb_position(view, engine->camera_2d);
+
+            rut_camera_set_viewport(view->view_camera_component,
+                                    view->fb_x, view->fb_y,
+                                    view->width, view->height);
 
             rig_entity_set_camera_view_from_transform(view->view_camera);
 
@@ -361,8 +351,6 @@ rig_camera_view_set_size(void *object, float width, float height)
 
     view->width = width;
     view->height = height;
-
-    view->dirty_viewport_size = true;
 
     if (engine->frontend) {
         engine->frontend->has_resized = true;
@@ -1325,7 +1313,10 @@ input_cb(rut_input_event_t *event,
             camera_component = view->play_camera_component;
         }
 
-        update_camera_viewport(view, engine->camera_2d, camera_component);
+        rut_camera_set_viewport(camera_component,
+                                view->fb_x, view->fb_y,
+                                view->width, view->height);
+
         rig_entity_set_camera_view_from_transform(camera);
 
         state = rut_motion_event_get_button_state(event);
@@ -1554,6 +1545,22 @@ input_cb(rut_input_event_t *event,
 
                 break;
             }
+
+            /* XXX: NAVIGATION HACK */
+#ifdef RIG_ENABLE_DEBUG
+            case RUT_KEY_w:
+                rig_entity_translate(view->play_mode ? view->play_camera : view->view_camera, 0, 0, -100);
+                break;
+            case RUT_KEY_a:
+                rig_entity_translate(view->play_mode ? view->play_camera : view->view_camera, -100, 0, 0);
+                break;
+            case RUT_KEY_s:
+                rig_entity_translate(view->play_mode ? view->play_camera : view->view_camera, 0, 0, 100);
+                break;
+            case RUT_KEY_d:
+                rig_entity_translate(view->play_mode ? view->play_camera : view->view_camera, 100, 0, 0);
+                break;
+#endif
             case RUT_KEY_j:
                 if ((rut_key_event_get_modifier_state(event) &
                      RUT_MODIFIER_CTRL_ON)) {
@@ -1569,7 +1576,8 @@ input_cb(rut_input_event_t *event,
                 }
                 break;
             case RUT_KEY_0:
-                initialize_view_camera(view);
+                init_camera_from_camera(view->view_camera, view->play_camera);
+                rut_shell_queue_redraw(view->shell);
                 break;
             }
         } else if (rut_input_event_get_type(event) ==
@@ -1862,10 +1870,12 @@ rig_camera_view_set_ui(rig_camera_view_t *view, rig_ui_t *ui)
             view->shell, view->view_camera_component, ui->scene);
         set_play_camera(view, ui->play_camera);
         rut_graphable_add_child(ui->scene, view->view_camera);
-        initialize_view_camera(view);
+        init_camera_from_camera(view->view_camera, view->play_camera);
 
-        view->origin[0] = engine->device_width / 2;
-        view->origin[1] = engine->device_height / 2;
+        view->origin[0] = 0;//engine->device_width / 2;
+        view->origin[1] = 0;//engine->device_height / 2;
         view->origin[2] = 0;
     }
+
+    rut_shell_queue_redraw(view->shell);
 }

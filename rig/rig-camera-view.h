@@ -44,6 +44,8 @@ typedef struct _rig_camera_view_t rig_camera_view_t;
 #include "rig-ui.h"
 #include "rig-dof-effect.h"
 
+#include "components/rig-camera.h"
+
 typedef struct _entity_translate_grab_closure_t entity_translate_grab_closure_t;
 typedef struct _entities_translate_grab_closure_t
     entities_translate_grab_closure_t;
@@ -58,6 +60,18 @@ typedef enum _rig_camera_view_mode_t {
     RIG_CAMERA_VIEW_MODE_PLAY = 1,
     RIG_CAMERA_VIEW_MODE_EDIT,
 } rig_camera_view_mode_t;
+
+enum eye_type {
+    RIG_EYE_LEFT = 0,
+    RIG_EYE_RIGHT = 1,
+};
+
+struct eye_frustum {
+    float up_tangent;
+    float down_tangent;
+    float left_tangent;
+    float right_tangent;
+};
 
 struct _rig_camera_view_t {
     rut_object_base_t _base;
@@ -99,13 +113,14 @@ struct _rig_camera_view_t {
 
     bool enable_dof;
 
+    int fb_x;
+    int fb_y;
+
     rig_entity_t *view_camera;
     rut_object_t *view_camera_component;
     rut_input_region_t *input_region;
 
-    float last_viewport_x;
-    float last_viewport_y;
-    bool dirty_viewport_size;
+    rig_camera_t *composite_camera;
 
 #ifdef RIG_EDITOR_ENABLED
     rut_graph_t *tool_overlay;

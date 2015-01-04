@@ -230,7 +230,40 @@ rut_camera_get_field_of_view(rut_object_t *object)
     rut_camera_props_t *camera =
         rut_object_get_properties(object, RUT_TRAIT_ID_CAMERA);
 
-    return camera->fov;
+    return camera->perspective.fov;
+}
+
+void
+rut_camera_set_asymmetric_field_of_view(rut_object_t *object,
+                                        float left_fov,
+                                        float right_fov,
+                                        float bottom_fov,
+                                        float top_fov)
+{
+    rut_camera_vtable_t *vtable =
+        rut_object_get_vtable(object, RUT_TRAIT_ID_CAMERA);
+
+    vtable->set_asymmetric_field_of_view(object,
+                                         left_fov,
+                                         right_fov,
+                                         bottom_fov,
+                                         top_fov);
+}
+
+void
+rut_camera_get_asymmetric_field_of_view(rut_object_t *object,
+                                        float *left_fov,
+                                        float *right_fov,
+                                        float *bottom_fov,
+                                        float *top_fov)
+{
+    rut_camera_props_t *camera =
+        rut_object_get_properties(object, RUT_TRAIT_ID_CAMERA);
+
+    *left_fov = camera->asymmetric_perspective.left_fov;
+    *right_fov = camera->asymmetric_perspective.right_fov;
+    *bottom_fov = camera->asymmetric_perspective.bottom_fov;
+    *top_fov = camera->asymmetric_perspective.top_fov;
 }
 
 void
@@ -250,10 +283,10 @@ rut_camera_get_orthographic_coordinates(
     rut_camera_props_t *camera =
         rut_object_get_properties(object, RUT_TRAIT_ID_CAMERA);
 
-    *x1 = camera->x1;
-    *y1 = camera->y1;
-    *x2 = camera->x2;
-    *y2 = camera->y2;
+    *x1 = camera->ortho.x1;
+    *y1 = camera->ortho.y1;
+    *x2 = camera->ortho.x2;
+    *y2 = camera->ortho.y2;
 }
 
 const cg_matrix_t *

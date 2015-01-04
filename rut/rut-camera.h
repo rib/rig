@@ -38,6 +38,9 @@
 #include "rut-shell.h"
 
 typedef struct _rut_camera_props_t {
+
+    rut_projection_t mode;
+
     cg_color_t bg_color;
     bool clear_fb;
 
@@ -45,41 +48,31 @@ typedef struct _rut_camera_props_t {
 
     float near, far;
 
-    float fov; /* perspective */
-
-    float x1, y1, x2, y2; /* orthographic */
+    struct {
+        float fov;
+    } perspective;
+    struct {
+        float left_fov;
+        float right_fov;
+        float bottom_fov;
+        float top_fov;
+    } asymmetric_perspective;
+    struct {
+        float x1, y1, x2, y2;
+    } ortho;
 
     float zoom;
 
     float focal_distance;
     float depth_of_field;
 
-    cg_matrix_t projection;
-    unsigned int projection_age;
-    unsigned int projection_cache_age;
-
-    cg_matrix_t inverse_projection;
-    unsigned int inverse_projection_age;
-
     cg_matrix_t view;
-    unsigned int view_age;
-
-    cg_matrix_t inverse_view;
-    unsigned int inverse_view_age;
-
-    unsigned int transform_age;
-    unsigned int at_suspend_transform_age;
 
     cg_framebuffer_t *fb;
-
-    rut_graphable_props_t graphable;
 
     cg_matrix_t input_transform;
     c_llist_t *input_regions;
 
-    unsigned int orthographic : 1;
-    unsigned int in_frame : 1;
-    unsigned int suspended : 1;
 } rut_camera_props_t;
 
 typedef struct _rut_camera_vtable_t {
@@ -118,6 +111,12 @@ typedef struct _rut_camera_vtable_t {
                                 rut_projection_t projection);
 
     void (*set_field_of_view)(rut_object_t *camera, float fov);
+
+    void (*set_asymmetric_field_of_view)(rut_object_t *object,
+                                         float left_fov,
+                                         float right_fov,
+                                         float bottom_fov,
+                                         float top_fov);
 
     void (*set_orthographic_coordinates)(
         rut_object_t *camera, float x1, float y1, float x2, float y2);
@@ -215,6 +214,18 @@ void rut_camera_set_projection_mode(rut_object_t *camera,
 void rut_camera_set_field_of_view(rut_object_t *camera, float fov);
 
 float rut_camera_get_field_of_view(rut_object_t *camera);
+
+void rut_camera_get_asymmetric_field_of_view(rut_object_t *object,
+                                             float *left_fov,
+                                             float *right_fov,
+                                             float *bottom_fov,
+                                             float *top_fov);
+
+void rut_camera_set_asymmetric_field_of_view(rut_object_t *object,
+                                             float left_fov,
+                                             float right_fov,
+                                             float bottom_fov,
+                                             float top_fov);
 
 void rut_camera_set_orthographic_coordinates(
     rut_object_t *camera, float x1, float y1, float x2, float y2);
