@@ -156,6 +156,8 @@ rut_x11_motion_event_get_button_state(rut_input_event_t *event)
 
     if (xi2event->evtype == XI_ButtonPress)
         rut_state |= rut_x11_motion_event_get_button(event);
+    if (xi2event->evtype == XI_ButtonRelease)
+        rut_state &= ~rut_x11_motion_event_get_button(event);
 
     return rut_state;
 }
