@@ -276,7 +276,6 @@ struct _rut_matrix_stack_t {
 typedef struct _rut_matrix_entry_cache_t {
     rut_matrix_entry_t *entry;
     bool flushed_identity;
-    bool flipped;
 } rut_matrix_entry_cache_t;
 
 void _rut_matrix_entry_identity_init(rut_matrix_entry_t *entry);
@@ -290,8 +289,7 @@ typedef enum {
 void _rut_matrix_entry_cache_init(rut_matrix_entry_cache_t *cache);
 
 bool _rut_matrix_entry_cache_maybe_update(rut_matrix_entry_cache_t *cache,
-                                          rut_matrix_entry_t *entry,
-                                          bool flip);
+                                          rut_matrix_entry_t *entry);
 
 void _rut_matrix_entry_cache_destroy(rut_matrix_entry_cache_t *cache);
 

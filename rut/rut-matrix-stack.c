@@ -936,23 +936,16 @@ _rut_matrix_entry_cache_init(rut_matrix_entry_cache_t *cache)
 {
     cache->entry = NULL;
     cache->flushed_identity = false;
-    cache->flipped = false;
 }
 
 /* NB: This function can report false negatives since it never does a
  * deep comparison of the stack matrices. */
 bool
 _rut_matrix_entry_cache_maybe_update(rut_matrix_entry_cache_t *cache,
-                                     rut_matrix_entry_t *entry,
-                                     bool flip)
+                                     rut_matrix_entry_t *entry)
 {
     bool is_identity;
     bool updated = false;
-
-    if (cache->flipped != flip) {
-        cache->flipped = flip;
-        updated = true;
-    }
 
     is_identity = (entry->op == RUT_MATRIX_OP_LOAD_IDENTITY);
     if (cache->flushed_identity != is_identity) {
