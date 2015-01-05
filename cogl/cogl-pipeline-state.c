@@ -678,6 +678,10 @@ void
 cg_pipeline_set_blend_constant(cg_pipeline_t *pipeline,
                                const cg_color_t *constant_color)
 {
+    cg_pipeline_state_t state = CG_PIPELINE_STATE_BLEND;
+    cg_pipeline_t *authority;
+    cg_pipeline_blend_state_t *blend_state;
+
     _CG_GET_DEVICE(dev, NO_RETVAL);
 
     c_return_if_fail(cg_is_pipeline(pipeline));
@@ -685,34 +689,26 @@ cg_pipeline_set_blend_constant(cg_pipeline_t *pipeline,
     if (!_cg_has_private_feature(dev, CG_PRIVATE_FEATURE_BLEND_CONSTANT))
         return;
 
-#if defined(HAVE_CG_GLES2) || defined(HAVE_CG_GL)
-    {
-        cg_pipeline_state_t state = CG_PIPELINE_STATE_BLEND;
-        cg_pipeline_t *authority;
-        cg_pipeline_blend_state_t *blend_state;
+    authority = _cg_pipeline_get_authority(pipeline, state);
 
-        authority = _cg_pipeline_get_authority(pipeline, state);
+    blend_state = &authority->big_state->blend_state;
+    if (cg_color_equal(constant_color, &blend_state->blend_constant))
+        return;
 
-        blend_state = &authority->big_state->blend_state;
-        if (cg_color_equal(constant_color, &blend_state->blend_constant))
-            return;
+    /* - Flush journal primitives referencing the current state.
+     * - Make sure the pipeline has no dependants so it may be modified.
+     * - If the pipeline isn't currently an authority for the state being
+     *   changed, then initialize that state from the current authority.
+     */
+    _cg_pipeline_pre_change_notify(pipeline, state, NULL, false);
 
-        /* - Flush journal primitives referencing the current state.
-         * - Make sure the pipeline has no dependants so it may be modified.
-         * - If the pipeline isn't currently an authority for the state being
-         *   changed, then initialize that state from the current authority.
-         */
-        _cg_pipeline_pre_change_notify(pipeline, state, NULL, false);
+    blend_state = &pipeline->big_state->blend_state;
+    blend_state->blend_constant = *constant_color;
 
-        blend_state = &pipeline->big_state->blend_state;
-        blend_state->blend_constant = *constant_color;
+    _cg_pipeline_update_authority(
+        pipeline, authority, state, _cg_pipeline_blend_state_equal);
 
-        _cg_pipeline_update_authority(
-            pipeline, authority, state, _cg_pipeline_blend_state_equal);
-
-        pipeline->dirty_real_blend_enable = true;
-    }
-#endif
+    pipeline->dirty_real_blend_enable = true;
 }
 
 bool
