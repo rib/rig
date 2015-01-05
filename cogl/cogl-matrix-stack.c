@@ -919,23 +919,16 @@ _cg_matrix_entry_cache_init(cg_matrix_entry_cache_t *cache)
 {
     cache->entry = NULL;
     cache->flushed_identity = false;
-    cache->flipped = false;
 }
 
 /* NB: This function can report false negatives since it never does a
  * deep comparison of the stack matrices. */
 bool
 _cg_matrix_entry_cache_maybe_update(cg_matrix_entry_cache_t *cache,
-                                    cg_matrix_entry_t *entry,
-                                    bool flip)
+                                    cg_matrix_entry_t *entry)
 {
     bool is_identity;
     bool updated = false;
-
-    if (cache->flipped != flip) {
-        cache->flipped = flip;
-        updated = true;
-    }
 
     is_identity = (entry->op == CG_MATRIX_OP_LOAD_IDENTITY);
     if (cache->flushed_identity != is_identity) {

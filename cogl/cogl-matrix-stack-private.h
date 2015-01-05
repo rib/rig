@@ -154,7 +154,6 @@ struct _cg_matrix_stack_t {
 typedef struct _cg_matrix_entry_cache_t {
     cg_matrix_entry_t *entry;
     bool flushed_identity;
-    bool flipped;
 } cg_matrix_entry_cache_t;
 
 void _cg_matrix_entry_identity_init(cg_matrix_entry_t *entry);
@@ -162,8 +161,7 @@ void _cg_matrix_entry_identity_init(cg_matrix_entry_t *entry);
 void _cg_matrix_entry_cache_init(cg_matrix_entry_cache_t *cache);
 
 bool _cg_matrix_entry_cache_maybe_update(cg_matrix_entry_cache_t *cache,
-                                         cg_matrix_entry_t *entry,
-                                         bool flip);
+                                         cg_matrix_entry_t *entry);
 
 void _cg_matrix_entry_cache_destroy(cg_matrix_entry_cache_t *cache);
 

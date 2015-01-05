@@ -116,6 +116,8 @@ typedef struct {
     GLint mvp_uniform;
 
     cg_matrix_entry_cache_t projection_cache;
+    bool projection_was_flipped;
+
     cg_matrix_entry_cache_t modelview_cache;
 
     /* We need to track the last pipeline that the program was used with
@@ -242,6 +244,7 @@ program_state_new(cg_device_t *dev, int n_layers,
     program_state->cache_entry = cache_entry;
     _cg_matrix_entry_cache_init(&program_state->modelview_cache);
     _cg_matrix_entry_cache_init(&program_state->projection_cache);
+    program_state->projection_was_flipped = false;
 
     return program_state;
 }
@@ -823,16 +826,16 @@ _cg_pipeline_progend_glsl_pre_paint(cg_pipeline_t *pipeline,
 
     needs_flip = cg_is_offscreen(dev->current_draw_buffer);
 
-    projection_changed = _cg_matrix_entry_cache_maybe_update(
+    projection_changed = (program_state->flip_uniform == -1 &&
+                          program_state->projection_was_flipped == needs_flip);
+
+    projection_changed |= _cg_matrix_entry_cache_maybe_update(
         &program_state->projection_cache,
-        projection_entry,
-        (needs_flip && program_state->flip_uniform == -1));
+        projection_entry);
 
     modelview_changed =
         _cg_matrix_entry_cache_maybe_update(&program_state->modelview_cache,
-                                            modelview_entry,
-                                            /* never flip modelview */
-                                            false);
+                                            modelview_entry);
 
     if (modelview_changed || projection_changed) {
         if (program_state->mvp_uniform != -1)
