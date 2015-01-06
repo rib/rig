@@ -1136,6 +1136,12 @@ rut_shell_onscreen_set_fullscreen(rut_shell_onscreen_t *onscreen,
         onscreen->shell->platform.onscreen_set_fullscreen(onscreen, fullscreen);
 }
 
+bool
+rut_shell_onscreen_get_fullscreen(rut_shell_onscreen_t *onscreen)
+{
+    return onscreen->fullscreen;
+}
+
 static void
 update_pre_paint_entry_depth(rut_shell_pre_paint_entry_t *entry)
 {
