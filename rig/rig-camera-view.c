@@ -301,7 +301,7 @@ _rut_camera_view_paint(rut_object_t *object,
 
     rut_camera_set_framebuffer(camera_component, fb);
     update_camera_viewport(view, engine->camera_2d, camera_component);
-    rig_entity_set_camera_view_from_transform(camera, false /* y-flip */);
+    rig_entity_set_camera_view_from_transform(camera);
 
     rig_paint_ctx->enable_dof = view->enable_dof;
     rig_renderer_paint_camera(rig_paint_ctx, camera);
@@ -331,8 +331,7 @@ allocate_cb(rut_object_t *graphable, void *user_data)
             update_camera_viewport(view, engine->camera_2d,
                                    view->view_camera_component);
 
-            rig_entity_set_camera_view_from_transform(view->view_camera,
-                                                      false /* y-flip */);
+            rig_entity_set_camera_view_from_transform(view->view_camera);
 
             for (l = view->entities_translate_grab_closure->entity_closures; l;
                  l = l->next)
@@ -1318,7 +1317,7 @@ input_cb(rut_input_event_t *event,
         }
 
         update_camera_viewport(view, engine->camera_2d, camera_component);
-        rig_entity_set_camera_view_from_transform(camera, false /* y-flip */);
+        rig_entity_set_camera_view_from_transform(camera);
 
         state = rut_motion_event_get_button_state(event);
 

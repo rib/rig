@@ -190,7 +190,6 @@ void rig_component_reap(rut_object_t *component, rig_engine_t *engine);
 /* Assuming the given entity has an associated camera component this
  * updates the camera component's view transform according to the
  * current transformation of the entity. */
-void rig_entity_set_camera_view_from_transform(rig_entity_t *camera,
-                                               bool y_flip);
+void rig_entity_set_camera_view_from_transform(rig_entity_t *camera);
 
 #endif /* __RUT_ENTITY_H__ */

@@ -667,8 +667,7 @@ rig_entity_notify_changed(rig_entity_t *entity)
 }
 
 void
-rig_entity_set_camera_view_from_transform(rig_entity_t *camera,
-                                          bool y_flip)
+rig_entity_set_camera_view_from_transform(rig_entity_t *camera)
 {
     rut_object_t *camera_component =
         rig_entity_get_component(camera, RUT_COMPONENT_TYPE_CAMERA);
@@ -678,13 +677,6 @@ rig_entity_set_camera_view_from_transform(rig_entity_t *camera,
     rut_graphable_get_transform(camera, &transform);
     cg_matrix_get_inverse(&transform, &view);
 
-    if (y_flip) {
-        cg_matrix_t flipped_view;
-        cg_matrix_init_identity(&flipped_view);
-        cg_matrix_scale(&flipped_view, 1, -1, 1);
-        cg_matrix_multiply(&flipped_view, &flipped_view, &view);
-        rut_camera_set_view_transform(camera_component, &flipped_view);
-    } else
-        rut_camera_set_view_transform(camera_component, &view);
+    rut_camera_set_view_transform(camera_component, &view);
 }
 
