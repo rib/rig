@@ -96,6 +96,8 @@ typedef struct {
      * will put the cursor back to the default pointer. */
     bool cursor_set;
 
+    bool fullscreen;
+
     union {
 #ifdef USE_SDL
         struct {
@@ -870,6 +872,8 @@ void rut_shell_onscreen_set_title(rut_shell_onscreen_t *onscreen,
 
 void rut_shell_onscreen_set_fullscreen(rut_shell_onscreen_t *onscreen,
                                        bool fullscreen);
+
+bool rut_shell_onscreen_get_fullscreen(rut_shell_onscreen_t *onscreen);
 
 void rut_shell_onscreen_show(rut_shell_onscreen_t *onscreen);
 

@@ -440,6 +440,64 @@ handle_client_message(rut_shell_t *shell, XEvent *xevent)
     }
 }
 
+static void
+handle_property_notify(rut_shell_t *shell, XEvent *xevent)
+{
+    XPropertyEvent *event = &xevent->xproperty;
+    Atom net_wm_state_atom;
+    rut_shell_onscreen_t *onscreen =
+        get_onscreen_for_xwindow(shell, event->window);
+
+    if (!onscreen)
+        return;
+
+    net_wm_state_atom = XInternAtom(shell->xdpy, "_NET_WM_STATE", False);
+
+    if (event->atom == net_wm_state_atom) {
+        Atom actual_type;
+        int actual_format;
+        Atom *atoms;
+        unsigned long n_atoms;
+        unsigned long remaining;
+        unsigned char *data;
+        int status;
+
+        status = XGetWindowProperty(shell->xdpy,
+                                    event->window,
+                                    net_wm_state_atom,
+                                    0, /* offset */
+                                    LONG_MAX,
+                                    False, /* delete */
+                                    XA_ATOM, /* expected type */
+                                    &actual_type,
+                                    &actual_format,
+                                    &n_atoms,
+                                    &remaining,
+                                    &data);
+
+        if (status == Success) {
+            Atom net_wm_state_fullscreen =
+                XInternAtom(shell->xdpy, "_NET_WM_STATE_FULLSCREEN", False);
+            bool fullscreen = false;
+            int i;
+
+            c_warn_if_fail(remaining == 0);
+            c_warn_if_fail(actual_type == XA_ATOM);
+            c_warn_if_fail(actual_format == 32);
+
+            atoms = (Atom *)data;
+            for (i = 0; i < n_atoms; i++) {
+                if (atoms[i] == net_wm_state_fullscreen)
+                    fullscreen = true;
+            }
+
+            XFree(data);
+
+            onscreen->fullscreen = fullscreen;
+        }
+    }
+}
+
 void
 rut_x11_shell_handle_x11_event(rut_shell_t *shell, XEvent *xevent)
 {
@@ -448,6 +506,11 @@ rut_x11_shell_handle_x11_event(rut_shell_t *shell, XEvent *xevent)
 
     if (xevent->type == ClientMessage) {
         handle_client_message(shell, xevent);
+        return;
+    }
+
+    if (xevent->type == PropertyNotify) {
+        handle_property_notify(shell, xevent);
         return;
     }
 
@@ -647,6 +710,10 @@ rut_x11_allocate_onscreen(rut_shell_onscreen_t *onscreen)
                     PropModeReplace,
                     (unsigned char *)&normal_atom,
                     1); /* n elements */
+
+    XSelectInput(shell->xdpy, xwin,
+                 StructureNotifyMask | ExposureMask | /* needed by cogl */
+                 PropertyChangeMask);
 
     evmask.deviceid = XIAllDevices;
     evmask.mask_len = XIMaskLen(XI_LASTEVENT);
