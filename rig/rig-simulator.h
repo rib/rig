@@ -64,6 +64,7 @@ enum rig_simulator_run_mode {
 #include "rig-rpc-network.h"
 #include "rig-pb.h"
 #include "rig-frontend.h"
+#include "rig-js.h"
 
 /*
  * Simulator actions are sent back as requests to the frontend at the
@@ -145,6 +146,8 @@ struct _rig_simulator_t {
     void (*connected_callback)(rig_simulator_t *simulator,
                                void *user_data);
     void *connected_data;
+
+    rig_js_runtime_t *js;
 };
 
 extern rut_type_t rig_simulator_type;

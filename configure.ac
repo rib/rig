@@ -175,7 +175,7 @@ AM_CONDITIONAL(EDITOR_ENABLED, test "x$enable_editor" = "xyes")
 dnl Check for dependency packages.
 dnl ================================================================
 
-RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES icu-uc harfbuzz harfbuzz-icu fontconfig freetype2 libprotobuf-c"
+RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES icu-uc harfbuzz harfbuzz-icu fontconfig freetype2 libprotobuf-c mozjs-24"
 
 dnl libuv...
 AM_CONDITIONAL([USE_UV], [true])

@@ -45,6 +45,7 @@
 #include "rig-load-save.h"
 #include "rig-frontend.h"
 #include "rig-code-module.h"
+#include "rig-js.h"
 
 #include "rig.pb-c.h"
 
@@ -475,6 +476,10 @@ _rig_simulator_free(void *object)
 {
     rig_simulator_t *simulator = object;
 
+#ifdef USE_MOZJS
+    rut_object_unref(simulator->js);
+#endif
+
     clear_actions(simulator);
 
     rig_pb_unserializer_destroy(simulator->ui_unserializer);
@@ -645,6 +650,10 @@ rig_simulator_new(rut_shell_t *main_shell,
 
     if (ui_filename)
         simulator->ui_filename = c_strdup(ui_filename);
+
+#ifdef USE_MOZJS
+    simulator->js = rig_js_runtime_new(simulator);
+#endif
 
     return simulator;
 }

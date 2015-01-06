@@ -103,6 +103,12 @@ librig_la_SOURCES += \
 	components/rig-native-module.c
 endif
 
+if USE_MOZJS
+librig_la_SOURCES += \
+	rig-js.h \
+	rig-js.cpp
+endif
+
 if RIG_DEBUG
 librig_la_SOURCES += $(rig_debug_sources)
 endif
@@ -215,6 +221,7 @@ dist_source = \
 	$(rig_common_sources) \
 	$(rig_debug_sources) \
 	rig.h \
+	rig-js.h \
 	rig-c.h \
 	$(runtime_headers) \
 	$(librig_simulator_archive_la_SOURCES) \
