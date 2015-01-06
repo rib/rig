@@ -543,6 +543,26 @@ bind_to_tcp_socket(rig_slave_t *slave)
 }
 #endif /* USE_UV */
 
+static rut_input_event_status_t
+slave_grab_input_cb(rut_input_event_t *event, void *user_data)
+{
+    //rig_slave_t *slave = user_data;
+    rut_shell_onscreen_t *onscreen = rut_input_event_get_onscreen(event);
+
+    if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_KEY &&
+        rut_key_event_get_action(event) == RUT_KEY_EVENT_ACTION_DOWN) {
+
+        switch(rut_key_event_get_keysym(event)) {
+        case RUT_KEY_F11:
+            rut_shell_onscreen_set_fullscreen(onscreen,
+                                              !onscreen->fullscreen);
+            return RUT_INPUT_EVENT_STATUS_HANDLED;
+        }
+    }
+
+    return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+}
+
 static void
 rig_slave_init(rut_shell_t *shell, void *user_data)
 {
@@ -573,6 +593,11 @@ rig_slave_init(rut_shell_t *shell, void *user_data)
     }
 
     _rig_slave_object_id_magazine = engine->object_id_magazine;
+
+    rut_shell_grab_input(shell,
+                         NULL, /* camera */
+                         slave_grab_input_cb,
+                         slave);
 
     rig_engine_op_map_context_init(&slave->map_op_ctx,
                                    engine,
@@ -615,6 +640,8 @@ rig_slave_fini(rut_shell_t *shell, void *user_data)
     rig_slave_t *slave = user_data;
     rig_engine_t *engine = slave->engine;
     rut_queue_item_t *item;
+
+    rut_shell_ungrab_input(shell, slave_grab_input_cb, slave);
 
     slave_stop_service(slave);
 
