@@ -128,11 +128,6 @@ static rut_property_spec_t _rig_nine_slice_prop_specs[] = {
 
 typedef struct _vertex_p2t2t2_t {
     float x, y, s0, t0, s1, t1;
-
-    /* TODO: support constant attributes in rut_mesh_t, and also ensure
-     * Mesa'a support for constant attributes gets fixed */
-    float Nx, Ny, Nz;
-    float Tx, Ty, Tz;
 } vertex_p2t2t2_t;
 
 static rut_mesh_t *
@@ -144,6 +139,8 @@ mesh_new_p2t2t2(cg_vertices_mode_t mode,
     rut_attribute_t *attributes[8];
     rut_buffer_t *vertex_buffer;
     rut_buffer_t *index_buffer;
+    float normal[3] = { 0, 0, 1 };
+    float tangent[3] = { 1, 0, 0 };
 
     vertex_buffer = rut_buffer_new(sizeof(vertex_p2t2t2_t) * n_vertices);
     memcpy(vertex_buffer->data, vertices, sizeof(vertex_p2t2t2_t) * n_vertices);
@@ -194,19 +191,17 @@ mesh_new_p2t2t2(cg_vertices_mode_t mode,
                                       2,
                                       RUT_ATTRIBUTE_TYPE_FLOAT);
 
-    attributes[6] = rut_attribute_new(vertex_buffer,
-                                      "cg_normal_in",
-                                      sizeof(vertex_p2t2t2_t),
-                                      offsetof(vertex_p2t2t2_t, Nx),
-                                      3,
-                                      RUT_ATTRIBUTE_TYPE_FLOAT);
+    attributes[6] = rut_attribute_new_const("cg_normal_in",
+                                            3, /* n components */
+                                            1, /* n columns */
+                                            false, /* no transpose */
+                                            normal);
 
-    attributes[7] = rut_attribute_new(vertex_buffer,
-                                      "tangent_in",
-                                      sizeof(vertex_p2t2t2_t),
-                                      offsetof(vertex_p2t2t2_t, Tx),
-                                      3,
-                                      RUT_ATTRIBUTE_TYPE_FLOAT);
+    attributes[7] = rut_attribute_new_const("tangent_in",
+                                            3, /* n components */
+                                            1, /* n columns */
+                                            false, /* no transpose */
+                                            tangent);
 
     mesh = rut_mesh_new(mode, n_vertices, attributes, 8);
     rut_mesh_set_indices(mesh,
@@ -250,8 +245,6 @@ create_mesh(rig_nine_slice_t *nine_slice)
     float s1_0 = (width - right) / width;
     float t1_0 = (height - bottom) / height;
 
-    int i;
-
     /*
      * 0,0      x0,0      x1,0      width,0
      * 0,0      s0,0      s1,0      1,0
@@ -287,18 +280,7 @@ create_mesh(rig_nine_slice_t *nine_slice)
                                    { x1, height, s1_0, 1, s1_1, 1 },
                                    { width, height, 1, 1, 1, 1 }, };
 
-    /* TODO: support constant attributes in rut_mesh_t, and also ensure
-     * Mesa'a support for constant attributes gets fixed */
     n_vertices = sizeof(vertices) / sizeof(vertex_p2t2t2_t);
-    for (i = 0; i < n_vertices; i++) {
-        vertices[i].Nx = 0;
-        vertices[i].Ny = 0;
-        vertices[i].Nz = 1;
-
-        vertices[i].Tx = 1;
-        vertices[i].Ty = 0;
-        vertices[i].Tz = 0;
-    }
 
     nine_slice->mesh =
         mesh_new_p2t2t2(CG_VERTICES_MODE_TRIANGLES, n_vertices, vertices);
