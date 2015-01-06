@@ -33,6 +33,8 @@
 #ifndef _RUT_INTROSPECTABLE_H_
 #define _RUT_INTROSPECTABLE_H_
 
+C_BEGIN_DECLS
+
 typedef struct _rut_introspectable_props_t {
     rut_property_t *first_property;
     int n_properties;
@@ -74,12 +76,14 @@ rut_introspectable_get_property_id (rut_object_t *object,
 static inline rut_property_t *
 rut_introspectable_get_property(rut_object_t *object, int id)
 {
-    rut_introspectable_props_t *introspectable =
+    rut_introspectable_props_t *introspectable = (rut_introspectable_props_t *)
         rut_object_get_properties(object, RUT_TRAIT_ID_INTROSPECTABLE);
 
     c_return_val_if_fail(id < introspectable->n_properties, NULL);
 
     return &introspectable->first_property[id];
 }
+
+C_END_DECLS
 
 #endif /* _RUT_INTROSPECTABLE_H_ */

@@ -118,7 +118,7 @@ bool rut_util_intersect_model(const void *vertices,
 static inline unsigned int
 rut_util_one_at_a_time_hash(unsigned int hash, const void *key, size_t bytes)
 {
-    const unsigned char *p = key;
+    const unsigned char *p = (const unsigned char *)key;
     int i;
 
     for (i = 0; i < bytes; i++) {

@@ -64,10 +64,10 @@ rut_object_t *
 _rut_object_alloc0(size_t bytes, rut_type_t *type, rut_type_init_t type_init);
 
 #define rut_object_alloc(TYPE, TYPE_PTR, TYPE_INIT_FUNC)                       \
-    _rut_object_alloc(sizeof(TYPE), TYPE_PTR, TYPE_INIT_FUNC)
+    (TYPE *)_rut_object_alloc(sizeof(TYPE), TYPE_PTR, TYPE_INIT_FUNC)
 
 #define rut_object_alloc0(TYPE, TYPE_PTR, TYPE_INIT_FUNC)                      \
-    _rut_object_alloc0(sizeof(TYPE), TYPE_PTR, TYPE_INIT_FUNC)
+    (TYPE *)_rut_object_alloc0(sizeof(TYPE), TYPE_PTR, TYPE_INIT_FUNC)
 
 void _rut_object_free(size_t bytes, void *object);
 

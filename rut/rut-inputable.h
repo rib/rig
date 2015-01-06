@@ -43,7 +43,7 @@ typedef struct _rut_inputable_vtable_t {
 static inline rut_input_event_status_t
 rut_inputable_handle_event(rut_object_t *inputable, rut_input_event_t *event)
 {
-    rut_inputable_vtable_t *vtable =
+    rut_inputable_vtable_t *vtable = (rut_inputable_vtable_t *)
         rut_object_get_vtable(inputable, RUT_TRAIT_ID_INPUTABLE);
 
     return vtable->handle_event(inputable, event);
