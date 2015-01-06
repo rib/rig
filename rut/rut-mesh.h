@@ -40,20 +40,6 @@ typedef struct _rut_mesh_t rut_mesh_t;
 #include "rut-shell.h"
 #include "rut-list.h"
 
-typedef struct _rut_edit_attribute_t {
-    int name_id;
-    float value;
-} rut_edit_attribute_t;
-
-typedef struct _RutEditvertex_t {
-    rut_list_t attributes;
-} RutEditvertex_t;
-
-/* This kind of mesh is optimized for random editing */
-typedef struct _rut_edit_mesh_t {
-    rut_list_t vertices;
-} rut_edit_mesh_t;
-
 typedef enum {
     RUT_ATTRIBUTE_TYPE_BYTE,
     RUT_ATTRIBUTE_TYPE_UNSIGNED_BYTE,
