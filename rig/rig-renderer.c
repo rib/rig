@@ -1268,9 +1268,12 @@ get_light_modelviewprojection(const cg_matrix_t *model_transform,
 
     /* TODO: cache the bias * light_projection * light_view matrix! */
 
-    /* Move the unit engine from [-1,1] to [0,1], column major order */
-    float bias[16] = { .5f, .0f, .0f, .0f, .0f, .5f, .0f, .0f,
-                       .0f, .0f, .5f, .0f, .5f, .5f, .5f, 1.f };
+    /* Transform from NDC coords to texture coords (with 0,0)
+     * top-left. (column major order) */
+    float bias[16] = { .5f,  .0f, .0f, .0f,
+                       .0f, -.5f, .0f, .0f,
+                       .0f,  .0f, .5f, .0f,
+                       .5f,  .5f, .5f, 1.f };
 
     light_transform = rig_entity_get_transform(light);
     cg_matrix_get_inverse(light_transform, &light_view);
@@ -2140,7 +2143,7 @@ rig_renderer_paint_camera(rig_paint_context_t *paint_ctx,
     rig_ui_t *ui = engine->current_ui;
 
     paint_ctx->pass = RIG_PASS_SHADOW;
-    rig_entity_set_camera_view_from_transform(ui->light, true /* y-flip */);
+    rig_entity_set_camera_view_from_transform(ui->light);
     paint_camera_entity_pass(paint_ctx, ui->light);
 
     if (paint_ctx->enable_dof) {
