@@ -317,7 +317,7 @@ dnl ================================================================
 dnl Check for dependency packages.
 dnl ================================================================
 
-RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES icu-uc harfbuzz harfbuzz-icu fontconfig freetype2 libprotobuf-c"
+RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES icu-uc harfbuzz harfbuzz-icu fontconfig freetype2 libprotobuf-c mozjs-24"
 
 AM_CONDITIONAL([USE_UV], [true])
 AC_DEFINE([USE_UV], [1], [Use libuv])

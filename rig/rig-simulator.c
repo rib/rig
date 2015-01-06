@@ -42,6 +42,7 @@
 #include "rig-ui.h"
 #include "rig-logs.h"
 #include "rig-frontend.h"
+#include "rig-js.h"
 
 #include "rig.pb-c.h"
 
@@ -541,6 +542,10 @@ _rig_simulator_free(void *object)
 {
     rig_simulator_t *simulator = object;
 
+#ifdef USE_MOZJS
+    rut_object_unref(simulator->js);
+#endif
+
     clear_actions(simulator);
 
     rig_pb_unserializer_destroy(simulator->ui_unserializer);
@@ -731,6 +736,10 @@ rig_simulator_new(rig_frontend_id_t frontend_id,
     simulator->stream = rig_pb_stream_new(simulator->shell);
 
     rig_logs_set_simulator(simulator);
+
+#ifdef USE_MOZJS
+    simulator->js = rig_js_runtime_new(simulator);
+#endif
 
     return simulator;
 }
