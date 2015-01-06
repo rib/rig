@@ -150,6 +150,14 @@ message OrthoCoords
   required float y1=4;
 }
 
+message AsymmetricPerspective
+{
+  required float left_field_of_view=1;
+  required float right_field_of_view=2;
+  required float bottom_field_of_view=3;
+  required float top_field_of_view=4;
+}
+
 enum PropertyType { FLOAT=1;
                     DOUBLE=2;
                     INTEGER=3;
@@ -247,12 +255,19 @@ message Entity
           enum ProjectionMode {
               ORTHOGRAPHIC=1;
               PERSPECTIVE=2;
+              ASYMMETRIC_PERSPECTIVE=3;
+              NDC=4;
           }
 
           optional ProjectionMode projection_mode=1;
 
+          //Perspective
           optional float field_of_view=2;
 
+          //Asymmetric perspective
+          optional AsymmetricPerspective asymmetric_perspective=11;
+
+          //Orthographic
           optional OrthoCoords ortho=3;
 
           optional Viewport viewport=4;
