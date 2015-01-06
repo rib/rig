@@ -74,13 +74,28 @@ struct _rut_buffer_t {
 struct _rut_attribute_t {
     rut_object_base_t _base;
 
-    rut_buffer_t *buffer;
     const char *name;
-    bool normalized;
-    size_t stride;
-    size_t offset;
-    int n_components;
-    rut_attribute_type_t type;
+
+    union {
+        struct {
+            rut_buffer_t *buffer;
+            size_t stride;
+            size_t offset;
+            int n_components;
+            rut_attribute_type_t type;
+        } buffered;
+        struct {
+            int n_components;
+            int n_columns;
+            bool transpose;
+            float value[16];
+        } constant;
+    };
+
+    int instance_stride;
+
+    unsigned int normalized : 1;
+    unsigned int is_buffered : 1;
 };
 
 extern rut_type_t rut_mesh_type;
@@ -118,7 +133,15 @@ rut_attribute_t *rut_attribute_new(rut_buffer_t *buffer,
                                    int n_components,
                                    rut_attribute_type_t type);
 
+rut_attribute_t *rut_attribute_new_const(const char *name,
+                                         int n_components,
+                                         int n_columns,
+                                         bool transpose,
+                                         const float *value);
+
 void rut_attribute_set_normalized(rut_attribute_t *attribute, bool normalized);
+
+void rut_attribute_set_instance_stride(rut_attribute_t *attribute, int stride);
 
 void _rut_mesh_init_type(void);
 
