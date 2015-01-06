@@ -296,6 +296,18 @@ error:
 }
 
 cg_attribute_t *
+cg_attribute_new_const(cg_device_t *dev,
+                        const char *name,
+                        int n_components,
+                        int n_columns,
+                        bool transpose,
+                        const float *value)
+{
+    return _cg_attribute_new_const(dev, name, n_components, n_columns,
+                                   transpose, value);
+}
+
+cg_attribute_t *
 cg_attribute_new_const_1f(cg_device_t *dev, const char *name, float value)
 {
     return _cg_attribute_new_const(dev,

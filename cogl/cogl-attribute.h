@@ -153,6 +153,28 @@ cg_attribute_t *cg_attribute_new(cg_attribute_buffer_t *attribute_buffer,
                                  cg_attribute_type_t type);
 
 /**
+ * cg_attribute_new_const:
+ * @dev: A #cg_device_t
+ * @name: The name of the attribute (used to reference it from GLSL)
+ * @n_components: The number of vector components for the attribute value
+ * @n_columns: The number of column vectors for the attribute value
+ * @value: The constant value for the attribute, in column-major order
+ *
+ * Creates a new attribute whose value remains constant across all the
+ * vertices of a primitive without needing to duplicate the value for
+ * each vertex.
+ *
+ * Return value: (transfer full): A newly allocated #cg_attribute_t
+ *          representing the given constant @value.
+ */
+cg_attribute_t *cg_attribute_new_const(cg_device_t *dev,
+                                       const char *name,
+                                       int n_components,
+                                       int n_columns,
+                                       bool transpose,
+                                       const float *value);
+
+/**
  * cg_attribute_new_const_1f:
  * @dev: A #cg_device_t
  * @name: The name of the attribute (used to reference it from GLSL)
