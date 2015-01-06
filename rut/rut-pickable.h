@@ -50,7 +50,7 @@ rut_pickable_pick(rut_object_t *pickable,
                   float x,
                   float y)
 {
-    rut_pickable_vtable_t *vtable =
+    rut_pickable_vtable_t *vtable = (rut_pickable_vtable_t *)
         rut_object_get_vtable(pickable, RUT_TRAIT_ID_PICKABLE);
 
     return vtable->pick(pickable, camera, graphable_modelview, x, y);

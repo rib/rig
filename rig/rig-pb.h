@@ -95,7 +95,7 @@ _rig_pb_new(rig_pb_serializer_t *serializer,
             void *_message_init)
 {
     rut_memory_stack_t *stack = serializer->stack;
-    pb_message_init_func_t message_init = _message_init;
+    pb_message_init_func_t message_init = (pb_message_init_func_t)_message_init;
 
     void *msg = rut_memory_stack_memalign(stack, size, alignment);
     message_init(msg);
@@ -113,7 +113,7 @@ _rig_pb_dup(rig_pb_serializer_t *serializer,
             void *src)
 {
     rut_memory_stack_t *stack = serializer->stack;
-    pb_message_init_func_t message_init = _message_init;
+    pb_message_init_func_t message_init = (pb_message_init_func_t)_message_init;
 
     void *msg = rut_memory_stack_memalign(stack, size, alignment);
     message_init(msg);
