@@ -1514,7 +1514,7 @@ input_cb(rut_input_event_t *event,
 
     } else if (engine->frontend_id == RIG_FRONTEND_ID_EDITOR) {
         if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_KEY &&
-            rut_key_event_get_action(event) == RUT_KEY_EVENT_ACTION_UP) {
+            rut_key_event_get_action(event) == RUT_KEY_EVENT_ACTION_DOWN) {
             switch (rut_key_event_get_keysym(event)) {
             case RUT_KEY_minus: {
                 float zoom = rut_camera_get_zoom(view->view_camera_component);
