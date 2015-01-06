@@ -543,6 +543,21 @@ rig_pb_serialize_component(rig_pb_serializer_t *serializer,
             pb_camera->has_field_of_view = true;
             pb_camera->field_of_view = rut_camera_get_field_of_view(camera);
             break;
+        case RUT_PROJECTION_ASYMMETRIC_PERSPECTIVE:
+            pb_camera->projection_mode =
+                RIG__ENTITY__COMPONENT__CAMERA__PROJECTION_MODE__ASYMMETRIC_PERSPECTIVE;
+            pb_camera->asymmetric_perspective = rig_pb_new(
+                serializer, Rig__AsymmetricPerspective, rig__asymmetric_perspective__init);
+            rut_camera_get_asymmetric_field_of_view(camera,
+                                                    &pb_camera->asymmetric_perspective->left_field_of_view,
+                                                    &pb_camera->asymmetric_perspective->right_field_of_view,
+                                                    &pb_camera->asymmetric_perspective->bottom_field_of_view,
+                                                    &pb_camera->asymmetric_perspective->top_field_of_view);
+            break;
+        case RUT_PROJECTION_NDC:
+            pb_camera->projection_mode =
+                RIG__ENTITY__COMPONENT__CAMERA__PROJECTION_MODE__NDC;
+            break;
         }
 
         pb_camera->viewport =
@@ -2138,6 +2153,13 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
                 rut_camera_set_projection_mode(camera,
                                                RUT_PROJECTION_PERSPECTIVE);
                 break;
+            case RIG__ENTITY__COMPONENT__CAMERA__PROJECTION_MODE__ASYMMETRIC_PERSPECTIVE:
+                rut_camera_set_projection_mode(camera,
+                                               RUT_PROJECTION_ASYMMETRIC_PERSPECTIVE);
+                break;
+            case RIG__ENTITY__COMPONENT__CAMERA__PROJECTION_MODE__NDC:
+                rut_camera_set_projection_mode(camera, RUT_PROJECTION_NDC);
+                break;
             }
         }
 
@@ -2147,6 +2169,14 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
                                                     pb_camera->ortho->y0,
                                                     pb_camera->ortho->x1,
                                                     pb_camera->ortho->y1);
+        }
+
+        if (pb_camera->asymmetric_perspective) {
+            rut_camera_set_asymmetric_field_of_view(camera,
+                                                    pb_camera->asymmetric_perspective->left_field_of_view,
+                                                    pb_camera->asymmetric_perspective->right_field_of_view,
+                                                    pb_camera->asymmetric_perspective->bottom_field_of_view,
+                                                    pb_camera->asymmetric_perspective->top_field_of_view);
         }
 
         if (pb_camera->has_field_of_view)
