@@ -148,8 +148,13 @@ typedef uint32_t c_codepoint_t;
 #endif
 
 #ifdef C_HAVE_STATIC_ASSERT
-#define C_STATIC_ASSERT(EXPRESSION, MESSAGE) \
-    _Static_assert(EXPRESSION, MESSAGE);
+#  ifdef __cplusplus
+#    define C_STATIC_ASSERT(EXPRESSION, MESSAGE) \
+        static_assert(EXPRESSION, MESSAGE);
+#  else
+#    define C_STATIC_ASSERT(EXPRESSION, MESSAGE) \
+        _Static_assert(EXPRESSION, MESSAGE);
+#  endif
 #else
 #define C_STATIC_ASSERT(EXPRESSION, MESSAGE)
 #endif
