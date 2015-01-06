@@ -35,6 +35,7 @@ typedef struct _rig_simulator_t rig_simulator_t;
 #include "rig-engine.h"
 #include "rig-engine-op.h"
 #include "rig-pb.h"
+#include "rig-js.h"
 
 /*
  * Simulator actions are sent back as requests to the frontend at the
@@ -94,6 +95,8 @@ struct _rig_simulator_t {
     int n_actions;
 
     rut_queue_t *ops;
+
+    rig_js_runtime_t *js;
 };
 
 extern rut_type_t rig_simulator_type;

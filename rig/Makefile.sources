@@ -91,7 +91,9 @@ rig_common_sources = \
 	rig-text-engine-private.h \
 	rig-text-engine.c \
 	rig-text-renderer.h \
-	rig-text-renderer.c
+	rig-text-renderer.c \
+	rig-js.h \
+	rig-js.cpp
 
 rig_avahi_sources = \
 	rig-avahi.h \
