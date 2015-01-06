@@ -64,7 +64,7 @@ static void
 _rut_attribute_free(rut_object_t *object)
 {
     rut_attribute_t *attribute = object;
-    rut_object_unref(attribute->buffer);
+    rut_object_unref(attribute->buffered.buffer);
     rut_object_free(rut_attribute_t, attribute);
 }
 
@@ -74,6 +74,29 @@ void
 _rut_attribute_init_type(void)
 {
     rut_type_init(&rut_attribute_type, "rut_attribute_t", _rut_attribute_free);
+}
+
+rut_attribute_t *
+rut_attribute_new_const(const char *name,
+                        int n_components,
+                        int n_columns,
+                        bool transpose,
+                        const float *value)
+{
+    rut_attribute_t *attribute = rut_object_alloc0(
+        rut_attribute_t, &rut_attribute_type, _rut_attribute_init_type);
+    int n_floats = n_components * n_columns;
+
+    attribute->name = c_strdup(name);
+    attribute->is_buffered = false;
+    attribute->normalized = false;
+
+    attribute->constant.n_components = n_components;
+    attribute->constant.n_columns = n_columns;
+    attribute->constant.transpose = transpose;
+    memcpy(attribute->constant.value, value, n_floats * sizeof(float));
+
+    return attribute;
 }
 
 rut_attribute_t *
@@ -87,12 +110,13 @@ rut_attribute_new(rut_buffer_t *buffer,
     rut_attribute_t *attribute = rut_object_alloc0(
         rut_attribute_t, &rut_attribute_type, _rut_attribute_init_type);
 
-    attribute->buffer = rut_object_ref(buffer);
     attribute->name = c_strdup(name);
-    attribute->stride = stride;
-    attribute->offset = offset;
-    attribute->n_components = n_components;
-    attribute->type = type;
+    attribute->is_buffered = true;
+    attribute->buffered.buffer = rut_object_ref(buffer);
+    attribute->buffered.stride = stride;
+    attribute->buffered.offset = offset;
+    attribute->buffered.n_components = n_components;
+    attribute->buffered.type = type;
 
     return attribute;
 }
@@ -278,36 +302,56 @@ foreach_vertex(rut_mesh_t *mesh,
     if (mesh->indices_buffer && !ignore_indices) {
         void *indices_data = mesh->indices_buffer->data;
         cg_indices_type_t indices_type = mesh->indices_type;
-        void **data;
+        int n_indices = mesh->n_indices;
+        void **data = c_alloca(sizeof(void *) * n_attributes);
         int i;
-        int v;
 
-        data = c_alloca(sizeof(void *) * n_attributes);
+        switch (indices_type) {
+        case CG_INDICES_TYPE_UNSIGNED_BYTE:
 
-        for (i = 0; i < mesh->n_indices; i++) {
-            int j;
+            for (i = 0; i < n_indices; i++) {
+                int v = ((uint8_t *)indices_data)[i];
+                int j;
 
-            switch (indices_type) {
-            case CG_INDICES_TYPE_UNSIGNED_BYTE:
-                v = ((uint8_t *)indices_data)[i];
-                break;
-            case CG_INDICES_TYPE_UNSIGNED_SHORT:
-                v = ((uint16_t *)indices_data)[i];
-                break;
-            case CG_INDICES_TYPE_UNSIGNED_INT:
-                v = ((uint32_t *)indices_data)[i];
-                break;
+                for (j = 0; j < n_attributes; j++)
+                    data[j] = bases[j] + v * strides[j];
+
+                callback(data, v, user_data);
             }
 
-            for (j = 0; j < n_attributes; j++)
-                data[j] = bases[j] + v * strides[j];
+            break;
+        case CG_INDICES_TYPE_UNSIGNED_SHORT:
 
-            callback(data, v, user_data);
+            for (i = 0; i < n_indices; i++) {
+                int v = ((uint16_t *)indices_data)[i];
+                int j;
+
+                for (j = 0; j < n_attributes; j++)
+                    data[j] = bases[j] + v * strides[j];
+
+                callback(data, v, user_data);
+            }
+
+            break;
+        case CG_INDICES_TYPE_UNSIGNED_INT:
+
+            for (i = 0; i < n_indices; i++) {
+                int v = ((uint32_t *)indices_data)[i];
+                int j;
+
+                for (j = 0; j < n_attributes; j++)
+                    data[j] = bases[j] + v * strides[j];
+
+                callback(data, v, user_data);
+            }
+
+            break;
         }
     } else {
+        int n_vertices = mesh->n_vertices;
         int i;
 
-        for (i = 0; i < mesh->n_vertices; i++) {
+        for (i = 0; i < n_vertices; i++) {
             int j;
 
             callback((void **)bases, i, user_data);
@@ -333,9 +377,19 @@ collect_attribute_state(rut_mesh_t *mesh,
 
         for (j = 0; j < mesh->n_attributes; j++) {
             if (strcmp(mesh->attributes[j]->name, attribute_name) == 0) {
-                bases[i] = mesh->attributes[j]->buffer->data +
-                           mesh->attributes[j]->offset;
-                strides[i] = mesh->attributes[j]->stride;
+                if (mesh->attributes[j]->is_buffered)
+                {
+                    bases[i] = mesh->attributes[j]->buffered.buffer->data +
+                        mesh->attributes[j]->buffered.offset;
+
+                    if (mesh->attributes[j]->instance_stride == 0)
+                        strides[i] = mesh->attributes[j]->buffered.stride;
+                    else
+                        strides[i] = 0;
+                } else {
+                    bases[i] = (uint8_t *)mesh->attributes[j]->constant.value;
+                    strides[i] = 0;
+                }
                 break;
             }
         }
@@ -641,6 +695,7 @@ get_cg_attribute_type(rut_attribute_type_t type)
 cg_primitive_t *
 rut_mesh_create_primitive(rut_shell_t *shell, rut_mesh_t *mesh)
 {
+    int n_attributes = mesh->n_attributes;
     rut_buffer_t **buffers;
     int n_buffers = 0;
     cg_attribute_buffer_t **attribute_buffers;
@@ -649,20 +704,23 @@ rut_mesh_create_primitive(rut_shell_t *shell, rut_mesh_t *mesh)
     cg_primitive_t *primitive;
     int i;
 
-    buffers = c_alloca(sizeof(void *) * mesh->n_attributes);
-    attribute_buffers = c_alloca(sizeof(void *) * mesh->n_attributes);
-    attribute_buffers_map = c_alloca(sizeof(void *) * mesh->n_attributes);
+    buffers = c_alloca(sizeof(void *) * n_attributes);
+    attribute_buffers = c_alloca(sizeof(void *) * n_attributes);
+    attribute_buffers_map = c_alloca(sizeof(void *) * n_attributes);
 
     /* NB:
      * attributes may refer to shared buffers so we need to first
      * figure out how many unique buffers the mesh refers too...
      */
 
-    for (i = 0; i < mesh->n_attributes; i++) {
+    for (i = 0; i < n_attributes; i++) {
         int j;
 
+        if (!mesh->attributes[i]->is_buffered)
+            continue;
+
         for (j = 0; i < n_buffers; j++)
-            if (buffers[j] == mesh->attributes[i]->buffer)
+            if (buffers[j] == mesh->attributes[i]->buffered.buffer)
                 break;
 
         if (j < n_buffers)
@@ -670,28 +728,37 @@ rut_mesh_create_primitive(rut_shell_t *shell, rut_mesh_t *mesh)
         else {
             attribute_buffers[n_buffers] =
                 cg_attribute_buffer_new(shell->cg_device,
-                                        mesh->attributes[i]->buffer->size,
-                                        mesh->attributes[i]->buffer->data);
+                                        mesh->attributes[i]->buffered.buffer->size,
+                                        mesh->attributes[i]->buffered.buffer->data);
 
             attribute_buffers_map[i] = attribute_buffers[n_buffers];
-            buffers[n_buffers++] = mesh->attributes[i]->buffer;
+            buffers[n_buffers++] = mesh->attributes[i]->buffered.buffer;
         }
     }
 
     attributes = c_alloca(sizeof(void *) * mesh->n_attributes);
-    for (i = 0; i < mesh->n_attributes; i++) {
-        cg_attribute_type_t type =
-            get_cg_attribute_type(mesh->attributes[i]->type);
+    for (i = 0; i < n_attributes; i++) {
+        if (mesh->attributes[i]->is_buffered) {
+            cg_attribute_type_t type =
+                get_cg_attribute_type(mesh->attributes[i]->buffered.type);
 
-        attributes[i] = cg_attribute_new(attribute_buffers_map[i],
-                                         mesh->attributes[i]->name,
-                                         mesh->attributes[i]->stride,
-                                         mesh->attributes[i]->offset,
-                                         mesh->attributes[i]->n_components,
-                                         type);
+            attributes[i] = cg_attribute_new(attribute_buffers_map[i],
+                                             mesh->attributes[i]->name,
+                                             mesh->attributes[i]->buffered.stride,
+                                             mesh->attributes[i]->buffered.offset,
+                                             mesh->attributes[i]->buffered.n_components,
+                                             type);
+        } else {
+            attributes[i] = cg_attribute_new_const(shell->cg_device,
+                                                   mesh->attributes[i]->name,
+                                                   mesh->attributes[i]->constant.n_components,
+                                                   mesh->attributes[i]->constant.n_columns,
+                                                   mesh->attributes[i]->constant.transpose,
+                                                   mesh->attributes[i]->constant.value);
+        }
 
-        if (mesh->attributes[i]->normalized)
-            cg_attribute_set_normalized(attributes[i], true);
+        cg_attribute_set_normalized(attributes[i], mesh->attributes[i]->normalized);
+        cg_attribute_set_instance_stride(attributes[i], mesh->attributes[i]->instance_stride);
     }
 
     for (i = 0; i < n_buffers; i++)
@@ -700,7 +767,7 @@ rut_mesh_create_primitive(rut_shell_t *shell, rut_mesh_t *mesh)
     primitive = cg_primitive_new_with_attributes(
         mesh->mode, mesh->n_vertices, attributes, mesh->n_attributes);
 
-    for (i = 0; i < mesh->n_attributes; i++)
+    for (i = 0; i < n_attributes; i++)
         cg_object_unref(attributes[i]);
 
     if (mesh->indices_buffer) {
@@ -753,35 +820,45 @@ rut_mesh_copy(rut_mesh_t *mesh)
         int j;
 
         for (j = 0; i < n_buffers; j++)
-            if (buffers[j] == mesh->attributes[i]->buffer)
+            if (buffers[j] == mesh->attributes[i]->buffered.buffer)
                 break;
 
         if (j < n_buffers)
             attribute_buffers_map[i] = attribute_buffers[j];
         else {
             attribute_buffers[n_buffers] =
-                rut_buffer_new(mesh->attributes[i]->buffer->size);
+                rut_buffer_new(mesh->attributes[i]->buffered.buffer->size);
             memcpy(attribute_buffers[n_buffers]->data,
-                   mesh->attributes[i]->buffer->data,
-                   mesh->attributes[i]->buffer->size);
+                   mesh->attributes[i]->buffered.buffer->data,
+                   mesh->attributes[i]->buffered.buffer->size);
 
             attribute_buffers_map[i] = attribute_buffers[n_buffers];
-            buffers[n_buffers++] = mesh->attributes[i]->buffer;
+            buffers[n_buffers++] = mesh->attributes[i]->buffered.buffer;
         }
     }
 
     attributes = c_alloca(sizeof(void *) * mesh->n_attributes);
     for (i = 0; i < mesh->n_attributes; i++) {
-        attributes[i] = rut_attribute_new(attribute_buffers_map[i],
-                                          mesh->attributes[i]->name,
-                                          mesh->attributes[i]->stride,
-                                          mesh->attributes[i]->offset,
-                                          mesh->attributes[i]->n_components,
-                                          mesh->attributes[i]->type);
+        if (mesh->attributes[i]->is_buffered) {
+            attributes[i] = rut_attribute_new(attribute_buffers_map[i],
+                                              mesh->attributes[i]->name,
+                                              mesh->attributes[i]->buffered.stride,
+                                              mesh->attributes[i]->buffered.offset,
+                                              mesh->attributes[i]->buffered.n_components,
+                                              mesh->attributes[i]->buffered.type);
+        } else {
+            attributes[i] = rut_attribute_new_const(mesh->attributes[i]->name,
+                                                    mesh->attributes[i]->constant.n_components,
+                                                    mesh->attributes[i]->constant.n_columns,
+                                                    mesh->attributes[i]->constant.transpose,
+                                                    mesh->attributes[i]->constant.value);
+        }
+        attributes[i]->normalized = mesh->attributes[i]->normalized;
+        attributes[i]->instance_stride = mesh->attributes[i]->instance_stride;
     }
 
-    copy = rut_mesh_new(
-        mesh->mode, mesh->n_vertices, attributes, mesh->n_attributes);
+    copy = rut_mesh_new(mesh->mode, mesh->n_vertices,
+                        attributes, mesh->n_attributes);
 
     for (i = 0; i < mesh->n_attributes; i++)
         rut_object_unref(attributes[i]);

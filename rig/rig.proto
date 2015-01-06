@@ -35,13 +35,21 @@ message Attribute
 {
   enum Type { BYTE=1; UNSIGNED_BYTE=2; SHORT=3; UNSIGNED_SHORT=4; FLOAT=5; }
 
-  optional sint64 buffer_id=1;
   optional string name=2;
   optional bool normalized=3;
+  optional uint32 instance_stride=11;
+
+  //buffered
+  optional sint64 buffer_id=1;
   optional uint32 stride=4;
   optional uint32 offset=5;
   optional uint32 n_components=6;
   optional Type type=7;
+
+  //constant
+  optional uint32 n_columns=8;
+  optional bool transpose=9;
+  repeated float floats=10;
 }
 
 message Mesh

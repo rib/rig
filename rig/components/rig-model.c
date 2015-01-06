@@ -1335,6 +1335,7 @@ rig_model_new_from_asset_mesh(rut_shell_t *shell,
 #endif
 
     attribute = rut_mesh_find_attribute(model->mesh, "cg_position_in");
+    c_return_val_if_fail(attribute->is_buffered, NULL);
 
     model->min_x = FLT_MAX;
     model->max_x = -FLT_MAX;
@@ -1346,14 +1347,14 @@ rig_model_new_from_asset_mesh(rut_shell_t *shell,
     model->builtin_normals = !needs_normals;
     model->builtin_tex_coords = !needs_tex_coords;
 
-    if (attribute->n_components == 1) {
+    if (attribute->buffered.n_components == 1) {
         model->min_y = model->max_y = 0;
         model->min_z = model->max_z = 0;
         measure_callback = measure_mesh_x_cb;
-    } else if (attribute->n_components == 2) {
+    } else if (attribute->buffered.n_components == 2) {
         model->min_z = model->max_z = 0;
         measure_callback = measure_mesh_xy_cb;
-    } else if (attribute->n_components == 3)
+    } else if (attribute->buffered.n_components == 3)
         measure_callback = measure_mesh_xyz_cb;
 
     rut_mesh_foreach_vertex(model->mesh,
@@ -1393,32 +1394,33 @@ rig_model_new_from_asset_mesh(rut_shell_t *shell,
     }
 
     c_return_val_if_fail(tex_attrib != NULL, NULL);
+    c_return_val_if_fail(tex_attrib->is_buffered, NULL);
 
-    attributes[i++] = rut_attribute_new(tex_attrib->buffer,
+    attributes[i++] = rut_attribute_new(tex_attrib->buffered.buffer,
                                         "cg_tex_coord1_in",
-                                        tex_attrib->stride,
-                                        tex_attrib->offset,
+                                        tex_attrib->buffered.stride,
+                                        tex_attrib->buffered.offset,
                                         2,
                                         RUT_ATTRIBUTE_TYPE_FLOAT);
 
-    attributes[i++] = rut_attribute_new(tex_attrib->buffer,
+    attributes[i++] = rut_attribute_new(tex_attrib->buffered.buffer,
                                         "cg_tex_coord4_in",
-                                        tex_attrib->stride,
-                                        tex_attrib->offset,
+                                        tex_attrib->buffered.stride,
+                                        tex_attrib->buffered.offset,
                                         2,
                                         RUT_ATTRIBUTE_TYPE_FLOAT);
 
-    attributes[i++] = rut_attribute_new(tex_attrib->buffer,
+    attributes[i++] = rut_attribute_new(tex_attrib->buffered.buffer,
                                         "cg_tex_coord7_in",
-                                        tex_attrib->stride,
-                                        tex_attrib->offset,
+                                        tex_attrib->buffered.stride,
+                                        tex_attrib->buffered.offset,
                                         2,
                                         RUT_ATTRIBUTE_TYPE_FLOAT);
 
-    attributes[i++] = rut_attribute_new(tex_attrib->buffer,
+    attributes[i++] = rut_attribute_new(tex_attrib->buffered.buffer,
                                         "cg_tex_coord11_in",
-                                        tex_attrib->stride,
-                                        tex_attrib->offset,
+                                        tex_attrib->buffered.stride,
+                                        tex_attrib->buffered.offset,
                                         2,
                                         RUT_ATTRIBUTE_TYPE_FLOAT);
 

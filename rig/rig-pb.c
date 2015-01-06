@@ -1068,20 +1068,23 @@ serialize_mesh_asset(rig_pb_serializer_t *serializer,
     for (i = 0; i < mesh->n_attributes; i++) {
         int j;
 
+        if (!mesh->attributes[i]->is_buffered)
+            continue;
+
         for (j = 0; i < n_buffers; j++)
-            if (buffers[j] == mesh->attributes[i]->buffer)
+            if (buffers[j] == mesh->attributes[i]->buffered.buffer)
                 break;
 
         if (j < n_buffers)
             attribute_buffers_map[i] = pb_buffers[j];
         else {
             Rig__Buffer *pb_buffer =
-                serialize_buffer(serializer, mesh->attributes[i]->buffer);
+                serialize_buffer(serializer, mesh->attributes[i]->buffered.buffer);
 
             pb_buffers[n_buffers] = pb_buffer;
 
             attribute_buffers_map[i] = pb_buffer;
-            buffers[n_buffers++] = mesh->attributes[i]->buffer;
+            buffers[n_buffers++] = mesh->attributes[i]->buffered.buffer;
         }
     }
 
@@ -1099,37 +1102,58 @@ serialize_mesh_asset(rig_pb_serializer_t *serializer,
             rig_pb_new(serializer, Rig__Attribute, rig__attribute__init);
         Rig__Attribute__Type type;
 
-        pb_attribute->has_buffer_id = true;
-        pb_attribute->buffer_id = attribute_buffers_map[i]->id;
-
         pb_attribute->name = (char *)mesh->attributes[i]->name;
+        pb_attribute->has_normalized = true;
+        pb_attribute->normalized = mesh->attributes[i]->normalized;
 
-        pb_attribute->has_stride = true;
-        pb_attribute->stride = mesh->attributes[i]->stride;
-        pb_attribute->has_offset = true;
-        pb_attribute->offset = mesh->attributes[i]->offset;
-        pb_attribute->has_n_components = true;
-        pb_attribute->n_components = mesh->attributes[i]->n_components;
-        pb_attribute->has_type = true;
-
-        switch (mesh->attributes[i]->type) {
-        case RUT_ATTRIBUTE_TYPE_BYTE:
-            type = RIG__ATTRIBUTE__TYPE__BYTE;
-            break;
-        case RUT_ATTRIBUTE_TYPE_UNSIGNED_BYTE:
-            type = RIG__ATTRIBUTE__TYPE__UNSIGNED_BYTE;
-            break;
-        case RUT_ATTRIBUTE_TYPE_SHORT:
-            type = RIG__ATTRIBUTE__TYPE__SHORT;
-            break;
-        case RUT_ATTRIBUTE_TYPE_UNSIGNED_SHORT:
-            type = RIG__ATTRIBUTE__TYPE__UNSIGNED_SHORT;
-            break;
-        case RUT_ATTRIBUTE_TYPE_FLOAT:
-            type = RIG__ATTRIBUTE__TYPE__FLOAT;
-            break;
+        if (mesh->attributes[i]->instance_stride) {
+            pb_attribute->has_instance_stride = true;
+            pb_attribute->instance_stride = mesh->attributes[i]->instance_stride;
         }
-        pb_attribute->type = type;
+
+        if (mesh->attributes[i]->is_buffered) {
+            pb_attribute->has_buffer_id = true;
+            pb_attribute->buffer_id = attribute_buffers_map[i]->id;
+
+            pb_attribute->has_stride = true;
+            pb_attribute->stride = mesh->attributes[i]->buffered.stride;
+            pb_attribute->has_offset = true;
+            pb_attribute->offset = mesh->attributes[i]->buffered.offset;
+            pb_attribute->has_n_components = true;
+            pb_attribute->n_components = mesh->attributes[i]->buffered.n_components;
+
+            switch (mesh->attributes[i]->buffered.type) {
+                case RUT_ATTRIBUTE_TYPE_BYTE:
+                    type = RIG__ATTRIBUTE__TYPE__BYTE;
+                    break;
+                case RUT_ATTRIBUTE_TYPE_UNSIGNED_BYTE:
+                    type = RIG__ATTRIBUTE__TYPE__UNSIGNED_BYTE;
+                    break;
+                case RUT_ATTRIBUTE_TYPE_SHORT:
+                    type = RIG__ATTRIBUTE__TYPE__SHORT;
+                    break;
+                case RUT_ATTRIBUTE_TYPE_UNSIGNED_SHORT:
+                    type = RIG__ATTRIBUTE__TYPE__UNSIGNED_SHORT;
+                    break;
+                case RUT_ATTRIBUTE_TYPE_FLOAT:
+                    type = RIG__ATTRIBUTE__TYPE__FLOAT;
+                    break;
+            }
+            pb_attribute->has_type = true;
+            pb_attribute->type = type;
+        } else {
+            pb_attribute->has_n_components = true;
+            pb_attribute->n_components = mesh->attributes[i]->constant.n_components;
+            pb_attribute->has_n_columns = true;
+            pb_attribute->n_columns = mesh->attributes[i]->constant.n_columns;
+            pb_attribute->has_transpose = true;
+            pb_attribute->transpose = mesh->attributes[i]->constant.transpose;
+
+            pb_attribute->n_floats = pb_attribute->n_components * pb_attribute->n_columns;
+            /* XXX: we assume the mesh will stay valid/constant and
+             * avoid copying the data... */
+            pb_attribute->floats = mesh->attributes[i]->constant.value;
+        }
 
         attributes[i] = pb_attribute;
     }
@@ -3068,51 +3092,80 @@ rig_pb_unserialize_mesh(rig_pb_un_serializer_t *unserializer,
 
     for (i = 0; i < pb_mesh->n_attributes; i++) {
         Rig__Attribute *pb_attribute = pb_mesh->attributes[i];
-        rut_buffer_t *buffer = NULL;
-        rut_attribute_type_t type;
-        int j;
 
-        if (!pb_attribute->has_buffer_id || !pb_attribute->name ||
-            !pb_attribute->has_stride || !pb_attribute->has_offset ||
-            !pb_attribute->has_n_components || !pb_attribute->has_type) {
+        if (!pb_attribute->name)
             goto ERROR;
-        }
 
-        for (j = 0; j < pb_mesh->n_buffers; j++) {
-            if (named_buffers[j].id == pb_attribute->buffer_id) {
-                buffer = named_buffers[j].buffer;
-                break;
+        if (pb_attribute->has_buffer_id) {
+            rut_buffer_t *buffer = NULL;
+            rut_attribute_type_t type;
+            int j;
+
+            if (!pb_attribute->has_stride || !pb_attribute->has_offset ||
+                !pb_attribute->has_n_components || !pb_attribute->has_type)
+            {
+                goto ERROR;
             }
-        }
-        if (!buffer)
-            goto ERROR;
 
-        switch (pb_attribute->type) {
-        case RIG__ATTRIBUTE__TYPE__BYTE:
-            type = RUT_ATTRIBUTE_TYPE_BYTE;
-            break;
-        case RIG__ATTRIBUTE__TYPE__UNSIGNED_BYTE:
-            type = RUT_ATTRIBUTE_TYPE_UNSIGNED_BYTE;
-            break;
-        case RIG__ATTRIBUTE__TYPE__SHORT:
-            type = RUT_ATTRIBUTE_TYPE_SHORT;
-            break;
-        case RIG__ATTRIBUTE__TYPE__UNSIGNED_SHORT:
-            type = RUT_ATTRIBUTE_TYPE_UNSIGNED_SHORT;
-            break;
-        case RIG__ATTRIBUTE__TYPE__FLOAT:
-            type = RUT_ATTRIBUTE_TYPE_FLOAT;
-            break;
+            for (j = 0; j < pb_mesh->n_buffers; j++) {
+                if (named_buffers[j].id == pb_attribute->buffer_id) {
+                    buffer = named_buffers[j].buffer;
+                    break;
+                }
+            }
+            if (!buffer)
+                goto ERROR;
+
+            switch (pb_attribute->type) {
+                case RIG__ATTRIBUTE__TYPE__BYTE:
+                    type = RUT_ATTRIBUTE_TYPE_BYTE;
+                    break;
+                case RIG__ATTRIBUTE__TYPE__UNSIGNED_BYTE:
+                    type = RUT_ATTRIBUTE_TYPE_UNSIGNED_BYTE;
+                    break;
+                case RIG__ATTRIBUTE__TYPE__SHORT:
+                    type = RUT_ATTRIBUTE_TYPE_SHORT;
+                    break;
+                case RIG__ATTRIBUTE__TYPE__UNSIGNED_SHORT:
+                    type = RUT_ATTRIBUTE_TYPE_UNSIGNED_SHORT;
+                    break;
+                case RIG__ATTRIBUTE__TYPE__FLOAT:
+                    type = RUT_ATTRIBUTE_TYPE_FLOAT;
+                    break;
+            }
+
+            attributes[i] = rut_attribute_new(buffer,
+                                              pb_attribute->name,
+                                              pb_attribute->stride,
+                                              pb_attribute->offset,
+                                              pb_attribute->n_components,
+                                              type);
+
+        } else {
+            int n_floats;
+
+            if (!pb_attribute->has_n_components || !pb_attribute->has_n_columns ||
+                !pb_attribute->has_transpose)
+            {
+                goto ERROR;
+            }
+
+            n_floats = pb_attribute->n_components * pb_attribute->n_columns;
+            if (pb_attribute->n_floats != n_floats)
+                goto ERROR;
+
+            attributes[i] = rut_attribute_new_const(pb_attribute->name,
+                                                    pb_attribute->n_components,
+                                                    pb_attribute->n_columns,
+                                                    pb_attribute->transpose,
+                                                    pb_attribute->floats);
         }
 
-        attributes[i] = rut_attribute_new(buffer,
-                                          pb_attribute->name,
-                                          pb_attribute->stride,
-                                          pb_attribute->offset,
-                                          pb_attribute->n_components,
-                                          type);
         if (pb_attribute->has_normalized && pb_attribute->normalized)
             rut_attribute_set_normalized(attributes[i], true);
+
+        if (pb_attribute->has_instance_stride)
+            rut_attribute_set_normalized(attributes[i], pb_attribute->instance_stride);
 
         n_attributes++;
     }
