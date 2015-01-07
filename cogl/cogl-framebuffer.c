@@ -52,6 +52,7 @@
 #include "cogl-primitives-private.h"
 #include "cogl-error-private.h"
 #include "cogl-texture-gl-private.h"
+#include "cogl-primitive-texture.h"
 
 extern cg_object_class_t _cg_onscreen_class;
 
@@ -2052,84 +2053,361 @@ _cg_framebuffer_draw_indexed_attributes(cg_framebuffer_t *framebuffer,
     }
 }
 
+/* These rectangle drawing apis are horribly in-efficient but simple
+ * and are only providing a stop-gap while we strip out the journal
+ * from cogl.
+ */
 void
-cg_framebuffer_draw_rectangle(cg_framebuffer_t *framebuffer,
+cg_framebuffer_draw_rectangle(cg_framebuffer_t *fb,
                               cg_pipeline_t *pipeline,
-                              float x_1,
-                              float y_1,
-                              float x_2,
-                              float y_2)
+                              float x1,
+                              float y1,
+                              float x2,
+                              float y2)
 {
-    const float position[4] = { x_1, y_1, x_2, y_2 };
-    cg_multi_textured_rect_t rect;
+    cg_vertex_p2_t verts[4] = {
+        { x1, y1 },
+        { x1, y2 },
+        { x2, y2 },
+        { x2, y1 }
+    };
+    cg_primitive_t *prim;
 
-    /* XXX: All the _*_rectangle* APIs normalize their input into an array of
-     * _cg_multi_textured_rect_t rectangles and pass these on to our work horse;
-     * _cg_framebuffer_draw_multitextured_rectangles.
-     */
+    if (cg_pipeline_get_n_layers(pipeline)) {
+        cg_framebuffer_draw_textured_rectangle(fb, pipeline,
+                                               x1, y1, x2, y2,
+                                               0, 0, 1, 1);
+        return;
+    }
 
-    rect.position = position;
-    rect.tex_coords = NULL;
-    rect.tex_coords_len = 0;
+    prim = cg_primitive_new_p2(fb->dev,
+                               CG_VERTICES_MODE_TRIANGLE_FAN,
+                               4,
+                               verts);
 
-    _cg_framebuffer_draw_multitextured_rectangles(
-        framebuffer, pipeline, &rect, 1);
+    cg_primitive_draw(prim, fb, pipeline);
+    cg_object_unref(prim);
 }
 
+static void
+_cg_framebuffer_draw_textured_rectangle(cg_framebuffer_t *fb,
+                                        cg_pipeline_t *pipeline,
+                                        float x1,
+                                        float y1,
+                                        float x2,
+                                        float y2,
+                                        float tx1,
+                                        float ty1,
+                                        float tx2,
+                                        float ty2)
+{
+    int n_layers = MAX(MIN(cg_pipeline_get_n_layers(pipeline), 8), 1);
+    const char *tex_attrib_names[] = {
+        "cg_tex_coord0_in",
+        "cg_tex_coord1_in",
+        "cg_tex_coord2_in",
+        "cg_tex_coord3_in",
+        "cg_tex_coord4_in",
+        "cg_tex_coord5_in",
+        "cg_tex_coord6_in",
+        "cg_tex_coord7_in",
+    };
+    int vert_n_floats = 2 + 2 * n_layers;
+    int rect_n_floats = vert_n_floats * 4;
+    float *rect = c_alloca(rect_n_floats * sizeof(float));
+    cg_attribute_buffer_t *attribute_buffer;
+    int n_attributes = n_layers + 1;
+    cg_attribute_t *attributes[n_attributes];
+    float *vert;
+    int i;
+
+    vert = rect;
+    vert[0] = x1;
+    vert[1] = y1;
+    vert[2] = tx1;
+    vert[3] = ty1;
+
+    vert += vert_n_floats;
+    vert[0] = x1;
+    vert[1] = y2;
+    vert[2] = tx1;
+    vert[3] = ty2;
+
+    vert += vert_n_floats;
+    vert[0] = x2;
+    vert[1] = y2;
+    vert[2] = tx2;
+    vert[3] = ty2;
+
+    vert += vert_n_floats;
+    vert[0] = x2;
+    vert[1] = y1;
+    vert[2] = tx2;
+    vert[3] = ty1;
+
+    vert += vert_n_floats;
+    vert[0] = tx1;
+    vert[1] = ty1;
+    vert[2] = tx2;
+    vert[3] = ty2;
+
+    for (i = 1; i < n_layers; i++) {
+        vert = rect + 4;
+
+        vert[0] = 0;
+        vert[1] = 0;
+        vert += vert_n_floats;
+        vert[0] = 0;
+        vert[1] = 1;
+        vert += vert_n_floats;
+        vert[0] = 1;
+        vert[1] = 1;
+        vert += vert_n_floats;
+        vert[0] = 1;
+        vert[1] = 0;
+    }
+
+    attribute_buffer = cg_attribute_buffer_new(fb->dev,
+                                               rect_n_floats * sizeof(float),
+                                               rect);
+
+    attributes[0] = cg_attribute_new(attribute_buffer,
+                                     "cg_position_in",
+                                     vert_n_floats * sizeof(float),
+                                     0, /* offset */
+                                     2, /* n components */
+                                     CG_ATTRIBUTE_TYPE_FLOAT);
+
+    for (i = 0; i < n_layers; i++) {
+        attributes[i + 1] = cg_attribute_new(attribute_buffer,
+                                             tex_attrib_names[i],
+                                             vert_n_floats * sizeof(float),
+                                             sizeof(float) * 2 + sizeof(float) * 2 * i,
+                                             2, /* n components */
+                                             CG_ATTRIBUTE_TYPE_FLOAT);
+    }
+
+    cg_object_unref(attribute_buffer);
+
+    _cg_framebuffer_draw_attributes(fb,
+                                    pipeline,
+                                    CG_VERTICES_MODE_TRIANGLE_FAN,
+                                    0, /* first_index */
+                                    4, /* n_vertices */
+                                    attributes,
+                                    n_attributes,
+                                    1, /* n instances */
+                                    0); /* flags */
+
+    for (i = 0; i < n_attributes; i++)
+        cg_object_unref(attributes[i]);
+}
+
+struct foreach_state {
+    cg_framebuffer_t *framebuffer;
+    cg_pipeline_t *pipeline;
+    float tex_virtual_origin_x;
+    float tex_virtual_origin_y;
+    float quad_origin_x;
+    float quad_origin_y;
+    float v_to_q_scale_x;
+    float v_to_q_scale_y;
+    float quad_len_x;
+    float quad_len_y;
+    bool flipped_x;
+    bool flipped_y;
+};
+
+static void
+draw_rectangle_region_cb(cg_texture_t *texture,
+                         const float *subtexture_coords,
+                         const float *virtual_coords,
+                         void *user_data)
+{
+    struct foreach_state *state = user_data;
+    cg_framebuffer_t *framebuffer = state->framebuffer;
+    cg_pipeline_t *override_pipeline = cg_pipeline_copy(state->pipeline);
+    float quad_coords[4];
+
+#define TEX_VIRTUAL_TO_QUAD(V, Q, AXIS)                                        \
+    do {                                                                       \
+        Q = V - state->tex_virtual_origin_##AXIS;                              \
+        Q *= state->v_to_q_scale_##AXIS;                                       \
+        if (state->flipped_##AXIS)                                             \
+            Q = state->quad_len_##AXIS - Q;                                    \
+        Q += state->quad_origin_##AXIS;                                        \
+    } while (0);
+
+    TEX_VIRTUAL_TO_QUAD(virtual_coords[0], quad_coords[0], x);
+    TEX_VIRTUAL_TO_QUAD(virtual_coords[1], quad_coords[1], y);
+
+    TEX_VIRTUAL_TO_QUAD(virtual_coords[2], quad_coords[2], x);
+    TEX_VIRTUAL_TO_QUAD(virtual_coords[3], quad_coords[3], y);
+
+#undef TEX_VIRTUAL_TO_QUAD
+
+    cg_pipeline_set_layer_texture(override_pipeline, 0, texture);
+
+    _cg_framebuffer_draw_textured_rectangle(framebuffer,
+                                            override_pipeline,
+                                            quad_coords[0],
+                                            quad_coords[1],
+                                            quad_coords[2],
+                                            quad_coords[3],
+                                            subtexture_coords[0],
+                                            subtexture_coords[1],
+                                            subtexture_coords[2],
+                                            subtexture_coords[3]);
+
+    cg_object_unref(override_pipeline);
+}
+
+static bool
+update_layer_storage_cb(cg_pipeline_t *pipeline,
+                        int layer_index,
+                        void *user_data)
+{
+    _cg_pipeline_pre_paint_for_layer(pipeline, layer_index);
+    return true; /* continue */
+}
+
+/* XXX: this one is a bit of faff because users expect to draw with
+ * more than one layer and assume the additional layers will have
+ * default texture coordinates of (0,0) (1,1) and this api also needs
+ * to work with highlevel meta textures such as sliced textures or
+ * sub-textures */
 void
-cg_framebuffer_draw_textured_rectangle(cg_framebuffer_t *framebuffer,
+cg_framebuffer_draw_textured_rectangle(cg_framebuffer_t *fb,
                                        cg_pipeline_t *pipeline,
-                                       float x_1,
-                                       float y_1,
-                                       float x_2,
-                                       float y_2,
-                                       float s_1,
-                                       float t_1,
-                                       float s_2,
-                                       float t_2)
+                                       float x1,
+                                       float y1,
+                                       float x2,
+                                       float y2,
+                                       float tx_1,
+                                       float ty_1,
+                                       float tx_2,
+                                       float ty_2)
 {
-    const float position[4] = { x_1, y_1, x_2, y_2 };
-    const float tex_coords[4] = { s_1, t_1, s_2, t_2 };
-    cg_multi_textured_rect_t rect;
+    cg_texture_t *tex0;
 
-    /* XXX: All the _*_rectangle* APIs normalize their input into an array of
-     * cg_multi_textured_rect_t rectangles and pass these on to our work horse;
-     * _cg_framebuffer_draw_multitextured_rectangles.
-     */
+    /* Treat layer 0 specially and allow it to reference a highlevel,
+     * meta texture (such as a sliced texture or sub-texture from a
+     * texture atlas) */
+    tex0 = cg_pipeline_get_layer_texture(pipeline, 0);
+    if (!cg_is_primitive_texture(tex0)) {
+        cg_pipeline_t *override_pipeline = NULL;
+        cg_pipeline_wrap_mode_t clamp_to_edge = CG_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE;
+        cg_pipeline_wrap_mode_t wrap_s;
+        cg_pipeline_wrap_mode_t wrap_t;
+        struct foreach_state state;
+        bool tex_virtual_flipped_x;
+        bool tex_virtual_flipped_y;
+        bool quad_flipped_x;
+        bool quad_flipped_y;
 
-    rect.position = position;
-    rect.tex_coords = tex_coords;
-    rect.tex_coords_len = 4;
+        /* We don't support multi-texturing with meta textures. */
+        c_return_if_fail(cg_pipeline_get_n_layers(pipeline) == 1);
 
-    _cg_framebuffer_draw_multitextured_rectangles(
-        framebuffer, pipeline, &rect, 1);
+        /* Before we can map the user's texture coordinates to
+         * primitive texture coordinates we need to give the meta
+         * texture an opportunity to update its internal storage based
+         * on the pipeline we're going to use.
+         *
+         * For example if the pipeline requires a valid mipmap then
+         * the atlas-texture backend actually migrates the texture
+         * out of the atlas, instead of updating the mipmap for
+         * the whole atlas and because it avoids the need for
+         * significant padding between textures within an atlas to
+         * avoid bleeding as the layers are scaled down.
+         */
+        cg_pipeline_foreach_layer(pipeline, update_layer_storage_cb, NULL);
+
+        /* We can't use hardware repeat so we need to set clamp to edge
+         * otherwise it might pull in edge pixels from the other side. By
+         * default WRAP_MODE_AUTOMATIC becomes CLAMP_TO_EDGE so we only need
+         * to override if the wrap mode isn't already automatic or
+         * clamp_to_edge.
+         */
+        wrap_s = cg_pipeline_get_layer_wrap_mode_s(pipeline, 0);
+        if (wrap_s != CG_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE &&
+            wrap_s != CG_PIPELINE_WRAP_MODE_AUTOMATIC) {
+            override_pipeline = cg_pipeline_copy(pipeline);
+            cg_pipeline_set_layer_wrap_mode_s(override_pipeline, 0, clamp_to_edge);
+        }
+
+        wrap_t = cg_pipeline_get_layer_wrap_mode_t(pipeline, 0);
+        if (wrap_t != CG_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE &&
+            wrap_t != CG_PIPELINE_WRAP_MODE_AUTOMATIC) {
+            if (!override_pipeline)
+                override_pipeline = cg_pipeline_copy(pipeline);
+            cg_pipeline_set_layer_wrap_mode_t(override_pipeline, 0, clamp_to_edge);
+        }
+
+        state.framebuffer = fb;
+        state.pipeline = override_pipeline ? override_pipeline : pipeline;
+
+        /* Get together the data we need to transform the virtual
+         * texture coordinates of each slice into quad coordinates...
+         *
+         * NB: We need to consider that the quad coordinates and the
+         * texture coordinates may be inverted along the x or y axis,
+         * and must preserve the inversions when we emit the final
+         * geometry.
+         */
+
+        tex_virtual_flipped_x = (tx_1 > tx_2) ? true : false;
+        tex_virtual_flipped_y = (ty_1 > ty_2) ? true : false;
+        state.tex_virtual_origin_x = tex_virtual_flipped_x ? tx_2 : tx_1;
+        state.tex_virtual_origin_y = tex_virtual_flipped_y ? ty_2 : ty_1;
+
+        quad_flipped_x = (x1 > x2) ? true : false;
+        quad_flipped_y = (y1 > y2) ? true : false;
+        state.quad_origin_x = quad_flipped_x ? x2 : x1;
+        state.quad_origin_y = quad_flipped_y ? y2 : y1;
+
+        /* flatten the two forms of coordinate inversion into one... */
+        state.flipped_x = tex_virtual_flipped_x ^ quad_flipped_x;
+        state.flipped_y = tex_virtual_flipped_y ^ quad_flipped_y;
+
+        /* We use the _len_AXIS naming here instead of _width and
+         * _height because draw_rectangle_region_cb uses a macro with
+         * symbol concatenation to handle both axis, so this is more
+         * convenient... */
+        state.quad_len_x = fabsf(x2 - x1);
+        state.quad_len_y = fabsf(y2 - y1);
+
+        state.v_to_q_scale_x = fabsf(state.quad_len_x / (tx_2 - tx_1));
+        state.v_to_q_scale_y = fabsf(state.quad_len_y / (ty_2 - ty_1));
+
+        /* For backwards compatablity the default wrap mode is
+         * _REPEAT... */
+        if (wrap_s == CG_PIPELINE_WRAP_MODE_AUTOMATIC)
+            wrap_s = CG_PIPELINE_WRAP_MODE_REPEAT;
+        if (wrap_t == CG_PIPELINE_WRAP_MODE_AUTOMATIC)
+            wrap_t = CG_PIPELINE_WRAP_MODE_REPEAT;
+
+        cg_meta_texture_foreach_in_region((cg_meta_texture_t *)tex0,
+                                          tx_1,
+                                          ty_1,
+                                          tx_2,
+                                          ty_2,
+                                          wrap_s,
+                                          wrap_t,
+                                          draw_rectangle_region_cb,
+                                          &state);
+
+        if (override_pipeline)
+            cg_object_unref(override_pipeline);
+
+        return;
+    }
+
+    _cg_framebuffer_draw_textured_rectangle(fb,
+                                            pipeline,
+                                            x1, y1, x2, y2,
+                                            tx_1, ty_1, tx_2, ty_2);
 }
 
-void
-cg_framebuffer_draw_multitextured_rectangle(cg_framebuffer_t *framebuffer,
-                                            cg_pipeline_t *pipeline,
-                                            float x_1,
-                                            float y_1,
-                                            float x_2,
-                                            float y_2,
-                                            const float *tex_coords,
-                                            int tex_coords_len)
-{
-    const float position[4] = { x_1, y_1, x_2, y_2 };
-    cg_multi_textured_rect_t rect;
-
-    /* XXX: All the _*_rectangle* APIs normalize their input into an array of
-     * cg_multi_textured_rect_t rectangles and pass these on to our work horse;
-     * _cg_framebuffer_draw_multitextured_rectangles.
-     */
-
-    rect.position = position;
-    rect.tex_coords = tex_coords;
-    rect.tex_coords_len = tex_coords_len;
-
-    _cg_framebuffer_draw_multitextured_rectangles(
-        framebuffer, pipeline, &rect, 1);
-}
 
 void
 cg_framebuffer_draw_rectangles(cg_framebuffer_t *framebuffer,
@@ -2137,24 +2415,39 @@ cg_framebuffer_draw_rectangles(cg_framebuffer_t *framebuffer,
                                const float *coordinates,
                                unsigned int n_rectangles)
 {
-    cg_multi_textured_rect_t *rects;
+    cg_vertex_p2_t *verts = c_alloca(n_rectangles * sizeof(cg_vertex_p2_t) * 4);
     int i;
 
-    /* XXX: All the _*_rectangle* APIs normalize their input into an array of
-     * cg_multi_textured_rect_t rectangles and pass these on to our work horse;
-     * _cg_framebuffer_draw_multitextured_rectangles.
-     */
-
-    rects = c_alloca(n_rectangles * sizeof(cg_multi_textured_rect_t));
+    c_warn_if_fail(cg_pipeline_get_n_layers(pipeline) == 0);
 
     for (i = 0; i < n_rectangles; i++) {
-        rects[i].position = &coordinates[i * 4];
-        rects[i].tex_coords = NULL;
-        rects[i].tex_coords_len = 0;
+        const float *pos = &coordinates[i * 4];
+        cg_vertex_p2_t *rect = verts + 4 * i;
+
+        rect[0].x = pos[0]; /* x1 */
+        rect[0].y = pos[1]; /* y1 */
+
+        rect[1].x = pos[0]; /* x1 */
+        rect[1].y = pos[3]; /* y2 */
+
+        rect[2].x = pos[2]; /* x2 */
+        rect[2].y = pos[3]; /* y2 */
+
+        rect[3].x = pos[2]; /* x2 */
+        rect[3].y = pos[1]; /* y1 */
     }
 
-    _cg_framebuffer_draw_multitextured_rectangles(
-        framebuffer, pipeline, rects, n_rectangles);
+#warning "FIXME: cg_framebuffer_draw_rectangles shouldn't need to create a cg_primitive_t"
+    cg_primitive_t *prim = cg_primitive_new_p2(framebuffer->dev,
+                                               CG_VERTICES_MODE_TRIANGLES,
+                                               4 * n_rectangles,
+                                               verts);
+    cg_primitive_set_indices(prim,
+                             cg_get_rectangle_indices(framebuffer->dev,
+                                                      n_rectangles),
+                             n_rectangles * 6);
+    cg_primitive_draw(prim, framebuffer, pipeline);
+    cg_object_unref(prim);
 }
 
 void
@@ -2163,22 +2456,52 @@ cg_framebuffer_draw_textured_rectangles(cg_framebuffer_t *framebuffer,
                                         const float *coordinates,
                                         unsigned int n_rectangles)
 {
-    cg_multi_textured_rect_t *rects;
+    cg_vertex_p2t2_t *verts = c_alloca(n_rectangles * sizeof(cg_vertex_p2t2_t) * 4);
     int i;
 
-    /* XXX: All the _*_rectangle* APIs normalize their input into an array of
-     * _cg_multi_textured_rect_t rectangles and pass these on to our work horse;
-     * _cg_framebuffer_draw_multitextured_rectangles.
-     */
-
-    rects = c_alloca(n_rectangles * sizeof(cg_multi_textured_rect_t));
+    c_warn_if_fail(cg_pipeline_get_n_layers(pipeline) == 1);
 
     for (i = 0; i < n_rectangles; i++) {
-        rects[i].position = &coordinates[i * 8];
-        rects[i].tex_coords = &coordinates[i * 8 + 4];
-        rects[i].tex_coords_len = 4;
+        const float *pos = &coordinates[i * 8];
+        const float *tex_coords = &coordinates[i * 8 + 4];
+        cg_vertex_p2t2_t *rect = verts + 4 * i;
+
+        rect[0].x = pos[0];
+        rect[0].y = pos[1];
+        rect[0].s = tex_coords[0];
+        rect[0].t = tex_coords[1];
+
+        rect[1].x = pos[0];
+        rect[1].y = pos[3];
+        rect[1].s = tex_coords[0];
+        rect[1].t = tex_coords[3];
+
+        rect[2].x = pos[2];
+        rect[2].y = pos[3];
+        rect[2].s = tex_coords[2];
+        rect[2].t = tex_coords[3];
+
+        rect[3].x = pos[2];
+        rect[3].y = pos[1];
+        rect[3].s = tex_coords[2];
+        rect[3].t = tex_coords[1];
     }
 
-    _cg_framebuffer_draw_multitextured_rectangles(
-        framebuffer, pipeline, rects, n_rectangles);
+#warning "FIXME: cg_framebuffer_draw_textured_rectangles shouldn't need to create a cg_primitive_t"
+    cg_primitive_t *prim = cg_primitive_new_p2t2(framebuffer->dev,
+                                                 CG_VERTICES_MODE_TRIANGLES,
+                                                 4 * n_rectangles,
+                                                 verts);
+    cg_primitive_set_indices(prim,
+                             cg_get_rectangle_indices(framebuffer->dev,
+                                                      n_rectangles),
+                             n_rectangles * 6);
+    cg_primitive_draw(prim, framebuffer, pipeline);
+    cg_object_unref(prim);
+}
+
+cg_device_t *
+cg_framebuffer_get_device(cg_framebuffer_t *fb)
+{
+    return fb->dev;
 }
