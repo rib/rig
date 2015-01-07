@@ -48,16 +48,6 @@ OPT(BLEND_STRINGS,
     "blend-strings",
     N_("Trace Blend Strings"),
     N_("Debug CoglBlendString parsing"))
-OPT(JOURNAL,
-    N_("Cogl Tracing"),
-    "journal",
-    N_("Trace Journal"),
-    N_("View all the geometry passing through the journal"))
-OPT(BATCHING,
-    N_("Cogl Tracing"),
-    "batching",
-    N_("Trace Batching"),
-    N_("Show how geometry is being batched in the journal"))
 OPT(MATRICES,
     N_("Cogl Tracing"),
     "matrices",

@@ -991,10 +991,10 @@ cg_texture_get_data(cg_texture_t *texture,
         tg_data.error = NULL;
         tg_data.success = true;
 
-        /* If there are any dependent framebuffers on the texture then we
-           need to flush their journals so the texture contents will be
-           up-to-date */
-        _cg_texture_flush_journal_rendering(texture);
+        /* If there are any dependent framebuffers on the texture then
+         * we need to flush them so the texture contents will be
+         * up-to-date */
+        _cg_texture_flush_batched_rendering(texture);
 
         /* Iterating through the subtextures allows piecing together
          * the data for a sliced texture, and allows us to do the
@@ -1083,15 +1083,12 @@ _cg_texture_get_associated_framebuffers(cg_texture_t *texture)
 }
 
 void
-_cg_texture_flush_journal_rendering(cg_texture_t *texture)
+_cg_texture_flush_batched_rendering(cg_texture_t *texture)
 {
     c_list_t *l;
 
-    /* It could be that a referenced texture is part of a framebuffer
-     * which has an associated journal that must be flushed before it
-     * can be sampled from by the current primitive... */
     for (l = texture->framebuffers; l; l = l->next)
-        _cg_framebuffer_flush_journal(l->data);
+        _cg_framebuffer_flush(l->data);
 }
 
 /* This function lets you define a meta texture as a grid of textures

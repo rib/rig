@@ -341,9 +341,8 @@ _cg_pipeline_layer_pre_change_notify(cg_pipeline_t *required_owner,
 
     /* Chain up:
      * A modification of a layer is indirectly also a modification of
-     * its owner so first make sure to flush the journal of any
-     * references to the current owner state and if necessary perform
-     * a copy-on-write for the required_owner if it has dependants.
+     * its owner so first make sure to perform any copy-on-write
+     * if necessary for the required_owner if it has dependants.
      */
     _cg_pipeline_pre_change_notify(
         required_owner, CG_PIPELINE_STATE_LAYERS, NULL, true);

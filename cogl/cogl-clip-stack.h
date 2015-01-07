@@ -128,11 +128,7 @@ struct _cg_clip_stack_rect_t {
     /* If this is true then the clip for this rectangle is entirely
        described by the scissor bounds. This implies that the rectangle
        is screen aligned and we don't need to use the stencil buffer to
-       set the clip. We keep the entry as a rect entry rather than a
-       window rect entry so that it will be easier to detect if the
-       modelview matrix is that same as when a rectangle is added to the
-       journal. In that case we can use the original clip coordinates
-       and modify the rectangle instead. */
+       set the clip. */
     bool can_be_scissor;
 };
 

@@ -31,9 +31,7 @@
  *  Neil Roberts   <neil@linux.intel.com>
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "cogl-util.h"
 #include "cogl-texture-private.h"
@@ -283,8 +281,6 @@ _cg_sub_texture_transform_quad_coords_to_gl(cg_texture_t *tex, float *coords)
     cg_sub_texture_t *sub_tex = CG_SUB_TEXTURE(tex);
     int i;
 
-    /* We can't support repeating with this method. In this case
-       cogl-primitives will resort to manual repeating */
     for (i = 0; i < 4; i++)
         if (coords[i] < 0.0f || coords[i] > 1.0f)
             return CG_TRANSFORM_SOFTWARE_REPEAT;

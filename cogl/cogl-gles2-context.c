@@ -349,7 +349,7 @@ copy_flipped_texture(cg_gles2_context_t *gles2_ctx,
                                                s_2,
                                                t_2);
 
-        _cg_framebuffer_flush_journal(CG_FRAMEBUFFER(offscreen));
+        _cg_framebuffer_flush(CG_FRAMEBUFFER(offscreen));
 
         /* We need to make sure the rendering is complete before the
          * blit will be ready in the GLES2 context */
@@ -1658,9 +1658,9 @@ cg_push_gles2_context(cg_device_t *dev,
     }
 
     if (dev->gles2_context_stack.length == 0) {
-        _cg_journal_flush(read_buffer->journal);
+        _cg_framebuffer_flush(read_buffer);
         if (write_buffer != read_buffer)
-            _cg_journal_flush(write_buffer->journal);
+            _cg_framebuffer_flush(write_buffer);
         winsys->save_device(dev);
     } else
         gles2_ctx->vtable->glFlush();

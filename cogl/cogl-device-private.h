@@ -163,13 +163,7 @@ struct _cg_device_t {
     cg_texture_2d_t *default_gl_texture_2d_tex;
     cg_texture_3d_t *default_gl_texture_3d_tex;
 
-    /* Central list of all framebuffers so all journals can be flushed
-     * at any time. */
     c_list_t *framebuffers;
-
-    /* Global journal buffers */
-    c_array_t *journal_flush_attributes_array;
-    c_array_t *journal_clip_bounds;
 
     /* Some simple caching, to minimize state changes... */
     cg_pipeline_t *current_pipeline;
@@ -222,12 +216,6 @@ struct _cg_device_t {
     cg_pipeline_t *blit_texture_pipeline;
 
     cg_atlas_set_t *atlas_set;
-
-    /* This debugging variable is used to pick a colour for visually
-       displaying the quad batches. It needs to be global so that it can
-       be reset by cg_clear. It needs to be reset to increase the
-       chances of getting the same colour during an animation */
-    uint8_t journal_rectangles_color;
 
     /* Cached values for GL_MAX_TEXTURE_[IMAGE_]UNITS to avoid calling
        glGetInteger too often */

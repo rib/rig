@@ -43,7 +43,6 @@
 #include "cogl-object-private.h"
 #include "cogl-texture-driver.h"
 #include "cogl-rectangle-map.h"
-#include "cogl-journal-private.h"
 #include "cogl-pipeline-opengl-private.h"
 #include "cogl-atlas-set-private.h"
 #include "cogl-atlas-private.h"
@@ -115,12 +114,18 @@ _cg_atlas_texture_pre_reorganize_cb(cg_atlas_t *atlas,
 {
     cg_device_t *dev = user_data;
 
-    /* We don't know if any journal entries currently depend on OpenGL
+    /* We don't know if any batched rendering currently depend on
      * texture coordinates that would be invalidated by reorganizing
-     * this atlas so we flush all journals before migrating.
+     * this atlas so we flush everything.
      *
      * We are assuming that texture atlas migration never happens
      * during a flush so we don't have to consider recursion here.
+     */
+#warning "XXX: it looks like we might need to fully sync with the gpu before allowing cogl atlas reorgs"
+    /* On the other hand if we know the reorganisation itself will
+     * be implicitly synchronized with prior work since the reorg
+     * will be handled via render to texture commands then maybe
+     * we don't even need a flush?
      */
     _cg_flush(dev);
 
@@ -314,10 +319,9 @@ _cg_atlas_texture_migrate_out_of_atlas(cg_atlas_texture_t *atlas_tex)
 
     CG_NOTE(ATLAS, "Migrating texture out of the atlas");
 
-    /* We don't know if any journal entries currently depend on
-     * OpenGL texture coordinates that would be invalidated by
-     * migrating textures in this atlas so we flush all journals
-     * before migrating.
+    /* We don't know if any batched rendering currently depend on
+     * texture coordinates that would be invalidated by migrating
+     * textures in this atlas so we flush everything before migrating.
      *
      * We are assuming that texture atlas migration never happens
      * during a flush so we don't have to consider recursion here.

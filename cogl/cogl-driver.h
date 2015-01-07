@@ -179,7 +179,7 @@ struct _cg_driver_vtable_t {
                                 int rowstride,
                                 uint8_t *data);
 
-    /* Prepares for drawing by flushing the journal, framebuffer state,
+    /* Prepares for drawing by flushing the framebuffer state,
      * pipeline state and attribute state.
      */
     void (*flush_attributes_state)(cg_framebuffer_t *framebuffer,

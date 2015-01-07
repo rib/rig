@@ -41,7 +41,6 @@
 #include "cogl-texture-driver.h"
 #include "cogl-device-private.h"
 #include "cogl-object-private.h"
-#include "cogl-journal-private.h"
 #include "cogl-pipeline-opengl-private.h"
 #include "cogl-framebuffer-private.h"
 #include "cogl-error-private.h"

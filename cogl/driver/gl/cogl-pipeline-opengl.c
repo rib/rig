@@ -319,7 +319,7 @@ UNIT_TEST(check_gl_blend_enable,
     c_assert_cmpint(test_dev->gl_blend_enable_cache, ==, 0);
 
     cg_framebuffer_draw_rectangle(test_fb, pipeline, 0, 0, 1, 1);
-    _cg_framebuffer_flush_journal(test_fb);
+    _cg_framebuffer_flush(test_fb);
 
     /* After drawing an opaque rectangle blending should still be
      * disabled */
@@ -327,14 +327,14 @@ UNIT_TEST(check_gl_blend_enable,
 
     cg_pipeline_set_color4f(pipeline, 0, 0, 0, 0);
     cg_framebuffer_draw_rectangle(test_fb, pipeline, 0, 0, 1, 1);
-    _cg_framebuffer_flush_journal(test_fb);
+    _cg_framebuffer_flush(test_fb);
 
     /* After drawing a transparent rectangle blending should be enabled */
     c_assert_cmpint(test_dev->gl_blend_enable_cache, ==, 1);
 
     cg_pipeline_set_blend(pipeline, "RGBA=ADD(SRC_COLOR, 0)", NULL);
     cg_framebuffer_draw_rectangle(test_fb, pipeline, 0, 0, 1, 1);
-    _cg_framebuffer_flush_journal(test_fb);
+    _cg_framebuffer_flush(test_fb);
 
     /* After setting a blend string that effectively disables blending
      * then blending should be disabled */
@@ -694,20 +694,9 @@ _cg_pipeline_layer_forward_wrap_modes(cg_pipeline_layer_t *layer,
        will break if the application tries to use different modes in
        different layers using the same texture. */
 
-    if (wrap_mode_s == CG_SAMPLER_CACHE_WRAP_MODE_AUTOMATIC)
-        gl_wrap_mode_s = GL_CLAMP_TO_EDGE;
-    else
-        gl_wrap_mode_s = wrap_mode_s;
-
-    if (wrap_mode_t == CG_SAMPLER_CACHE_WRAP_MODE_AUTOMATIC)
-        gl_wrap_mode_t = GL_CLAMP_TO_EDGE;
-    else
-        gl_wrap_mode_t = wrap_mode_t;
-
-    if (wrap_mode_p == CG_SAMPLER_CACHE_WRAP_MODE_AUTOMATIC)
-        gl_wrap_mode_p = GL_CLAMP_TO_EDGE;
-    else
-        gl_wrap_mode_p = wrap_mode_p;
+    gl_wrap_mode_s = wrap_mode_s;
+    gl_wrap_mode_t = wrap_mode_t;
+    gl_wrap_mode_p = wrap_mode_p;
 
     _cg_texture_gl_flush_legacy_texobj_wrap_modes(
         texture, gl_wrap_mode_s, gl_wrap_mode_t, gl_wrap_mode_p);

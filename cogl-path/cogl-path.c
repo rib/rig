@@ -42,13 +42,11 @@
 #include "cogl-util.h"
 #include "cogl-object.h"
 #include "cogl-device-private.h"
-#include "cogl-journal-private.h"
 #include "cogl-pipeline-private.h"
 #include "cogl-framebuffer-private.h"
 #include "cogl-path.h"
 #include "cogl-path-private.h"
 #include "cogl-texture-private.h"
-#include "cogl-primitives-private.h"
 #include "cogl-private.h"
 #include "cogl-attribute-private.h"
 #include "cogl-primitive-private.h"
@@ -248,7 +246,7 @@ cg_path_stroke(cg_path_t *path,
         cg_object_unref(copy);
 }
 
-void
+static void
 _cg_path_get_bounds(
     cg_path_t *path, float *min_x, float *min_y, float *max_x, float *max_y)
 {
@@ -314,19 +312,20 @@ validate_layer_cb(cg_pipeline_layer_t *layer, void *user_data)
 }
 
 void
-_cg_path_fill_nodes(cg_path_t *path,
-                    cg_framebuffer_t *framebuffer,
-                    cg_pipeline_t *pipeline,
-                    cg_draw_flags_t flags)
+cg_path_fill(cg_path_t *path,
+             cg_framebuffer_t *framebuffer,
+             cg_pipeline_t *pipeline)
 {
+    c_return_if_fail(cg_is_path(path));
+    c_return_if_fail(cg_is_framebuffer(framebuffer));
+    c_return_if_fail(cg_is_pipeline(pipeline));
+
     if (path->data->path_nodes->len == 0)
         return;
 
     /* If the path is a simple rectangle then we can divert to using
-       cg_framebuffer_draw_rectangle which should be faster because it
-       can go through the journal instead of uploading the geometry just
-       for two triangles */
-    if (path->data->is_rectangle && flags == 0) {
+     * cg_framebuffer_draw_rectangle which may be more optimal */
+    if (path->data->is_rectangle) {
         float x_1, y_1, x_2, y_2;
 
         _cg_path_get_bounds(path, &x_1, &y_1, &x_2, &y_2);
@@ -346,20 +345,8 @@ _cg_path_fill_nodes(cg_path_t *path,
 
         primitive = _cg_path_get_fill_primitive(path);
 
-        _cg_primitive_draw(primitive, framebuffer, pipeline, 1, flags);
+        _cg_primitive_draw(primitive, framebuffer, pipeline, 1, 0 /* flags */);
     }
-}
-
-void
-cg_path_fill(cg_path_t *path,
-             cg_framebuffer_t *framebuffer,
-             cg_pipeline_t *pipeline)
-{
-    c_return_if_fail(cg_is_path(path));
-    c_return_if_fail(cg_is_framebuffer(framebuffer));
-    c_return_if_fail(cg_is_pipeline(pipeline));
-
-    _cg_path_fill_nodes(path, framebuffer, pipeline, 0 /* flags */);
 }
 
 void

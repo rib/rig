@@ -309,7 +309,7 @@ void _cg_texture_associate_framebuffer(cg_texture_t *texture,
 
 const c_list_t *_cg_texture_get_associated_framebuffers(cg_texture_t *texture);
 
-void _cg_texture_flush_journal_rendering(cg_texture_t *texture);
+void _cg_texture_flush_batched_rendering(cg_texture_t *texture);
 
 void _cg_texture_spans_foreach_in_region(cg_span_t *x_spans,
                                          int n_x_spans,

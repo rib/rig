@@ -43,7 +43,6 @@
 #include "cogl-winsys-private.h"
 #include "cogl-framebuffer-private.h"
 #include "cogl-matrix-private.h"
-#include "cogl-journal-private.h"
 #include "cogl-bitmap-private.h"
 #include "cogl-texture-private.h"
 #include "cogl-texture-driver.h"
@@ -104,7 +103,7 @@ _cg_flush(cg_device_t *dev)
     c_list_t *l;
 
     for (l = dev->framebuffers; l; l = l->next)
-        _cg_framebuffer_flush_journal(l->data);
+        _cg_framebuffer_flush(l->data);
 }
 
 uint32_t

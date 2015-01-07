@@ -269,11 +269,6 @@ struct _cg_pipeline_t {
      * private data is passed to the above callback */
     void *destroy_data;
 
-    /* We need to track if a pipeline is referenced in the journal
-     * because we can't allow modification to these pipelines without
-     * flushing the journal first */
-    unsigned int journal_ref_count;
-
     /* A mask of which sparse state groups are different in this
      * pipeline in comparison to its parent. */
     unsigned int differences;
@@ -373,6 +368,12 @@ struct _cg_pipeline_t {
      * cg_pipeline_t that are bundled under a "progend". This identifies
      * the backend being used for the pipeline. */
     unsigned int progend : 3;
+
+    /* We are moving towards Cogl considering pipelines to be
+     * immutable once they get used so we can remove the
+     * copy-on-write complexity. For now this is just used
+     * for debugging... */
+    unsigned int immutable : 1;
 };
 
 typedef struct _cg_pipeline_fragend_t {
@@ -704,10 +705,6 @@ unsigned int _cg_pipeline_hash(cg_pipeline_t *pipeline,
 cg_pipeline_t *_cg_pipeline_deep_copy(cg_pipeline_t *pipeline,
                                       unsigned long differences,
                                       unsigned long layer_differences);
-
-cg_pipeline_t *_cg_pipeline_journal_ref(cg_pipeline_t *pipeline);
-
-void _cg_pipeline_journal_unref(cg_pipeline_t *pipeline);
 
 void _cg_pipeline_texture_storage_change_notify(cg_texture_t *texture);
 

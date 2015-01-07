@@ -42,9 +42,7 @@
 #define GL_MIRRORED_REPEAT 0x8370
 #endif
 
-/* GL_ALWAYS is just used here as a value that is known not to clash
- * with any valid GL wrap modes.
- *
+/*
  * XXX: keep the values in sync with the cg_pipeline_wrap_mode_t enum
  * so no conversion is actually needed.
  */
@@ -53,7 +51,6 @@ typedef enum _cg_sampler_cache_wrap_mode_t {
     CG_SAMPLER_CACHE_WRAP_MODE_MIRRORED_REPEAT = GL_MIRRORED_REPEAT,
     CG_SAMPLER_CACHE_WRAP_MODE_CLAMP_TO_EDGE = GL_CLAMP_TO_EDGE,
     CG_SAMPLER_CACHE_WRAP_MODE_CLAMP_TO_BORDER = GL_CLAMP_TO_BORDER,
-    CG_SAMPLER_CACHE_WRAP_MODE_AUTOMATIC = GL_ALWAYS
 } cg_sampler_cache_wrap_mode_t;
 
 typedef struct _cg_sampler_cache_t cg_sampler_cache_t;
