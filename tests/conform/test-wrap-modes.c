@@ -70,12 +70,6 @@ wrap_modes[] =
 
     CG_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE,
     CG_PIPELINE_WRAP_MODE_REPEAT,
-
-    CG_PIPELINE_WRAP_MODE_AUTOMATIC,
-    CG_PIPELINE_WRAP_MODE_AUTOMATIC,
-
-    CG_PIPELINE_WRAP_MODE_AUTOMATIC,
-    CG_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE
   };
 
 static void
@@ -130,16 +124,12 @@ validate_set (TestState *state, int offset)
           {
             uint8_t green, blue;
 
-            if (x < TEX_SIZE ||
-                wrap_mode_s == CG_PIPELINE_WRAP_MODE_REPEAT ||
-                wrap_mode_s == CG_PIPELINE_WRAP_MODE_AUTOMATIC)
+            if (x < TEX_SIZE || wrap_mode_s == CG_PIPELINE_WRAP_MODE_REPEAT)
               green = (x & 1) * 255;
             else
               green = ((TEX_SIZE - 1) & 1) * 255;
 
-            if (y < TEX_SIZE ||
-                wrap_mode_t == CG_PIPELINE_WRAP_MODE_REPEAT ||
-                wrap_mode_t == CG_PIPELINE_WRAP_MODE_AUTOMATIC)
+            if (y < TEX_SIZE || wrap_mode_t == CG_PIPELINE_WRAP_MODE_REPEAT)
               blue = (y & 1) * 255;
             else
               blue = ((TEX_SIZE - 1) & 1) * 255;

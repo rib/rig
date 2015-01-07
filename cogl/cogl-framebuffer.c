@@ -42,14 +42,12 @@
 #include "cogl-framebuffer-private.h"
 #include "cogl-onscreen-template-private.h"
 #include "cogl-clip-stack.h"
-#include "cogl-journal-private.h"
 #include "cogl-winsys-private.h"
 #include "cogl-pipeline-state-private.h"
 #include "cogl-matrix-private.h"
 #include "cogl-primitive-private.h"
 #include "cogl-offscreen.h"
 #include "cogl-private.h"
-#include "cogl-primitives-private.h"
 #include "cogl-error-private.h"
 #include "cogl-texture-gl-private.h"
 #include "cogl-primitive-texture.h"
@@ -124,41 +122,6 @@ _cg_framebuffer_init(cg_framebuffer_t *framebuffer,
 
     framebuffer->clip_stack = NULL;
 
-    framebuffer->journal = _cg_journal_new(framebuffer);
-
-    /* Ensure we know the framebuffer->clear_color* members can't be
-     * referenced for our fast-path read-pixel optimization (see
-     * _cg_journal_try_read_pixel()) until some region of the
-     * framebuffer is initialized.
-     */
-    framebuffer->clear_clip_dirty = true;
-
-    /* XXX: We have to maintain a central list of all framebuffers
-     * because at times we need to be able to flush all known journals.
-     *
-     * Examples where we need to flush all journals are:
-     * - because journal entries can reference OpenGL texture
-     *   coordinates that may not survive texture-atlas reorganization
-     *   so we need the ability to flush those entries.
-     * - because although we generally advise against modifying
-     *   pipelines after construction we have to handle that possibility
-     *   and since pipelines may be referenced in journal entries we
-     *   need to be able to flush them before allowing the pipelines to
-     *   be changed.
-     *
-     * Note we don't maintain a list of journals and associate
-     * framebuffers with journals by e.g. having a journal->framebuffer
-     * reference since that would introduce a circular reference.
-     *
-     * Note: As a future change to try and remove the need to index all
-     * journals it might be possible to defer resolving of OpenGL
-     * texture coordinates for rectangle primitives until we come to
-     * flush a journal. This would mean for instance that a single
-     * rectangle entry in a journal could later be expanded into
-     * multiple quad primitives to handle sliced textures but would mean
-     * we don't have to worry about retaining references to OpenGL
-     * texture coordinates that may later become invalid.
-     */
     dev->framebuffers = c_list_prepend(dev->framebuffers, framebuffer);
 }
 
@@ -184,8 +147,6 @@ _cg_framebuffer_free(cg_framebuffer_t *framebuffer)
     cg_object_unref(framebuffer->projection_stack);
     framebuffer->projection_stack = NULL;
 
-    cg_object_unref(framebuffer->journal);
-
     if (dev->viewport_scissor_workaround_framebuffer == framebuffer)
         dev->viewport_scissor_workaround_framebuffer = NULL;
 
@@ -203,10 +164,7 @@ _cg_framebuffer_get_winsys(cg_framebuffer_t *framebuffer)
     return framebuffer->dev->display->renderer->winsys_vtable;
 }
 
-/* This version of cg_clear can be used internally as an alternative
- * to avoid flushing the journal or the framebuffer state. This is
- * needed when doing operations that may be called whiling flushing
- * the journal */
+/* This api bypasses flushing the framebuffer state */
 void
 _cg_framebuffer_clear_without_flush4f(cg_framebuffer_t *framebuffer,
                                       cg_buffer_bit_t buffers,
@@ -233,12 +191,6 @@ _cg_framebuffer_clear_without_flush4f(cg_framebuffer_t *framebuffer,
 }
 
 void
-_cg_framebuffer_mark_clear_clip_dirty(cg_framebuffer_t *framebuffer)
-{
-    framebuffer->clear_clip_dirty = true;
-}
-
-void
 _cg_framebuffer_mark_mid_scene(cg_framebuffer_t *framebuffer)
 {
     framebuffer->mid_scene = true;
@@ -252,91 +204,7 @@ cg_framebuffer_clear4f(cg_framebuffer_t *framebuffer,
                        float blue,
                        float alpha)
 {
-    cg_clip_stack_t *clip_stack = _cg_framebuffer_get_clip_stack(framebuffer);
-    int scissor_x0;
-    int scissor_y0;
-    int scissor_x1;
-    int scissor_y1;
-
-    _cg_clip_stack_get_bounds(
-        clip_stack, &scissor_x0, &scissor_y0, &scissor_x1, &scissor_y1);
-
-    /* NB: the previous clear could have had an arbitrary clip.
-     * NB: everything for the last frame might still be in the journal
-     *     but we can't assume anything about how each entry was
-     *     clipped.
-     * NB: Clutter will scissor its pick renders which would mean all
-     *     journal entries have a common ClipStack entry, but without
-     *     a layering violation Cogl has to explicitly walk the journal
-     *     entries to determine if this is the case.
-     * NB: We have a software only read-pixel optimization in the
-     *     journal that determines the color at a given framebuffer
-     *     coordinate for simple scenes without rendering with the GPU.
-     *     When Clutter is hitting this fast-path we can expect to
-     *     receive calls to clear the framebuffer with an un-flushed
-     *     journal.
-     * NB: To fully support software based picking for Clutter we
-     *     need to be able to reliably detect when the contents of a
-     *     journal can be discarded and when we can skip the call to
-     *     glClear because it matches the previous clear request.
-     */
-
-    /* Note: we don't check for the stencil buffer being cleared here
-     * since there isn't any public cogl api to manipulate the stencil
-     * buffer.
-     *
-     * Note: we check for an exact clip match here because
-     * 1) a smaller clip could mean existing journal entries may
-     *    need to contribute to regions outside the new clear-clip
-     * 2) a larger clip would mean we need to issue a real
-     *    glClear and we only care about cases avoiding a
-     *    glClear.
-     *
-     * Note: Comparing without an epsilon is considered
-     * appropriate here.
-     */
-    if (buffers & CG_BUFFER_BIT_COLOR && buffers & CG_BUFFER_BIT_DEPTH &&
-        !framebuffer->clear_clip_dirty && framebuffer->clear_color_red == red &&
-        framebuffer->clear_color_green == green &&
-        framebuffer->clear_color_blue == blue &&
-        framebuffer->clear_color_alpha == alpha &&
-        scissor_x0 == framebuffer->clear_clip_x0 &&
-        scissor_y0 == framebuffer->clear_clip_y0 &&
-        scissor_x1 == framebuffer->clear_clip_x1 &&
-        scissor_y1 == framebuffer->clear_clip_y1) {
-        /* NB: We only have to consider the clip state of journal
-         * entries if the current clear is clipped since otherwise we
-         * know every pixel of the framebuffer is affected by the clear
-         * and so all journal entries become redundant and can simply be
-         * discarded.
-         */
-        if (clip_stack) {
-            /*
-             * Note: the function for checking the journal entries is
-             * quite strict. It avoids detailed checking of all entry
-             * clip_stacks by only checking the details of the first
-             * entry and then it only verifies that the remaining
-             * entries share the same clip_stack ancestry. This means
-             * it's possible for some false negatives here but that will
-             * just result in us falling back to a real clear.
-             */
-            if (_cg_journal_all_entries_within_bounds(framebuffer->journal,
-                                                      scissor_x0,
-                                                      scissor_y0,
-                                                      scissor_x1,
-                                                      scissor_y1)) {
-                _cg_journal_discard(framebuffer->journal);
-                goto cleared;
-            }
-        } else {
-            _cg_journal_discard(framebuffer->journal);
-            goto cleared;
-        }
-    }
-
     CG_NOTE(DRAW, "Clear begin");
-
-    _cg_framebuffer_flush_journal(framebuffer);
 
     /* NB: _cg_framebuffer_flush_state may disrupt various state (such
      * as the pipeline state) when flushing the clip stack, so should
@@ -347,45 +215,9 @@ cg_framebuffer_clear4f(cg_framebuffer_t *framebuffer,
     _cg_framebuffer_clear_without_flush4f(
         framebuffer, buffers, red, green, blue, alpha);
 
-    /* This is a debugging variable used to visually display the quad
-     * batches from the journal. It is reset here to increase the
-     * chances of getting the same colours for each frame during an
-     * animation */
-    if (C_UNLIKELY(CG_DEBUG_ENABLED(CG_DEBUG_RECTANGLES)) &&
-        buffers & CG_BUFFER_BIT_COLOR) {
-        framebuffer->dev->journal_rectangles_color = 1;
-    }
-
     CG_NOTE(DRAW, "Clear end");
 
-cleared:
-
     _cg_framebuffer_mark_mid_scene(framebuffer);
-    _cg_framebuffer_mark_clear_clip_dirty(framebuffer);
-
-    if (buffers & CG_BUFFER_BIT_COLOR && buffers & CG_BUFFER_BIT_DEPTH) {
-        /* For our fast-path for reading back a single pixel of simple
-         * scenes where the whole frame is in the journal we need to
-         * track the cleared color of the framebuffer in case the point
-         * read doesn't intersect any of the journal rectangles. */
-        framebuffer->clear_clip_dirty = false;
-        framebuffer->clear_color_red = red;
-        framebuffer->clear_color_green = green;
-        framebuffer->clear_color_blue = blue;
-        framebuffer->clear_color_alpha = alpha;
-
-        /* NB: A clear may be scissored so we need to track the extents
-         * that the clear is applicable too... */
-        if (clip_stack) {
-            _cg_clip_stack_get_bounds(clip_stack,
-                                      &framebuffer->clear_clip_x0,
-                                      &framebuffer->clear_clip_y0,
-                                      &framebuffer->clear_clip_x1,
-                                      &framebuffer->clear_clip_y1);
-        } else {
-            /* FIXME: set degenerate clip */
-        }
-    }
 }
 
 /* Note: the 'buffers' and 'color' arguments were switched around on
@@ -472,8 +304,6 @@ cg_framebuffer_set_viewport(
         framebuffer->viewport_width == width &&
         framebuffer->viewport_height == height)
         return;
-
-    _cg_framebuffer_flush_journal(framebuffer);
 
     framebuffer->viewport_x = x;
     framebuffer->viewport_y = y;
@@ -569,24 +399,9 @@ _cg_framebuffer_remove_all_dependencies(cg_framebuffer_t *framebuffer)
 }
 
 void
-_cg_framebuffer_flush_journal(cg_framebuffer_t *framebuffer)
-{
-    _cg_journal_flush(framebuffer->journal);
-}
-
-void
 _cg_framebuffer_flush(cg_framebuffer_t *framebuffer)
 {
-    _cg_framebuffer_flush_journal(framebuffer);
-}
-
-void
-_cg_framebuffer_flush_dependency_journals(cg_framebuffer_t *framebuffer)
-{
-    c_list_t *l;
-    for (l = framebuffer->deps; l; l = l->next)
-        _cg_framebuffer_flush_journal(l->data);
-    _cg_framebuffer_remove_all_dependencies(framebuffer);
+    /* Currently a NOP */
 }
 
 cg_offscreen_t *
@@ -962,9 +777,6 @@ cg_framebuffer_set_color_mask(cg_framebuffer_t *framebuffer,
     if (framebuffer->color_mask == color_mask)
         return;
 
-    /* XXX: Currently color mask changes don't go through the journal */
-    _cg_framebuffer_flush_journal(framebuffer);
-
     framebuffer->color_mask = color_mask;
 
     if (framebuffer->dev->current_draw_buffer == framebuffer)
@@ -985,9 +797,6 @@ cg_framebuffer_set_depth_write_enabled(cg_framebuffer_t *framebuffer,
     if (framebuffer->depth_writing_enabled == depth_write_enabled)
         return;
 
-    /* XXX: Currently depth write changes don't go through the journal */
-    _cg_framebuffer_flush_journal(framebuffer);
-
     framebuffer->depth_writing_enabled = depth_write_enabled;
 
     if (framebuffer->dev->current_draw_buffer == framebuffer)
@@ -1007,8 +816,6 @@ cg_framebuffer_set_dither_enabled(cg_framebuffer_t *framebuffer,
 {
     if (framebuffer->dither_enabled == dither_enabled)
         return;
-
-    _cg_framebuffer_flush_journal(framebuffer);
 
     framebuffer->dither_enabled = dither_enabled;
 
@@ -1110,80 +917,6 @@ cg_framebuffer_get_context(cg_framebuffer_t *framebuffer)
     return framebuffer->dev;
 }
 
-static bool
-_cg_framebuffer_try_fast_read_pixel(cg_framebuffer_t *framebuffer,
-                                    int x,
-                                    int y,
-                                    cg_read_pixels_flags_t source,
-                                    cg_bitmap_t *bitmap)
-{
-    bool found_intersection;
-    cg_pixel_format_t format;
-
-    if (C_UNLIKELY(CG_DEBUG_ENABLED(CG_DEBUG_DISABLE_FAST_READ_PIXEL)))
-        return false;
-
-    if (source != CG_READ_PIXELS_COLOR_BUFFER)
-        return false;
-
-    format = cg_bitmap_get_format(bitmap);
-
-    if (format != CG_PIXEL_FORMAT_RGBA_8888_PRE &&
-        format != CG_PIXEL_FORMAT_RGBA_8888)
-        return false;
-
-    if (!_cg_journal_try_read_pixel(
-            framebuffer->journal, x, y, bitmap, &found_intersection))
-        return false;
-
-    /* If we can't determine the color from the primitives in the
-     * journal then see if we can use the last recorded clear color
-     */
-
-    /* If _cg_journal_try_read_pixel() failed even though there was an
-     * intersection of the given point with a primitive in the journal
-     * then we can't fallback to the framebuffer's last clear color...
-     * */
-    if (found_intersection)
-        return true;
-
-    /* If the framebuffer has been rendered too since it was last
-    * cleared then we can't return the last known clear color. */
-    if (framebuffer->clear_clip_dirty)
-        return false;
-
-    if (x >= framebuffer->clear_clip_x0 && x < framebuffer->clear_clip_x1 &&
-        y >= framebuffer->clear_clip_y0 && y < framebuffer->clear_clip_y1) {
-        uint8_t *pixel;
-        cg_error_t *ignore_error = NULL;
-
-        /* we currently only care about cases where the premultiplied or
-         * unpremultipled colors are equivalent... */
-        if (framebuffer->clear_color_alpha != 1.0)
-            return false;
-
-        pixel = _cg_bitmap_map(bitmap,
-                               CG_BUFFER_ACCESS_WRITE,
-                               CG_BUFFER_MAP_HINT_DISCARD,
-                               &ignore_error);
-        if (pixel == NULL) {
-            cg_error_free(ignore_error);
-            return false;
-        }
-
-        pixel[0] = framebuffer->clear_color_red * 255.0;
-        pixel[1] = framebuffer->clear_color_green * 255.0;
-        pixel[2] = framebuffer->clear_color_blue * 255.0;
-        pixel[3] = framebuffer->clear_color_alpha * 255.0;
-
-        _cg_bitmap_unmap(bitmap);
-
-        return true;
-    }
-
-    return false;
-}
-
 bool
 cg_framebuffer_read_pixels_into_bitmap(cg_framebuffer_t *framebuffer,
                                        int x,
@@ -1192,41 +925,15 @@ cg_framebuffer_read_pixels_into_bitmap(cg_framebuffer_t *framebuffer,
                                        cg_bitmap_t *bitmap,
                                        cg_error_t **error)
 {
-    cg_device_t *dev;
-    int width;
-    int height;
-
     c_return_val_if_fail(source & CG_READ_PIXELS_COLOR_BUFFER, false);
     c_return_val_if_fail(cg_is_framebuffer(framebuffer), false);
 
     if (!cg_framebuffer_allocate(framebuffer, error))
         return false;
 
-    width = cg_bitmap_get_width(bitmap);
-    height = cg_bitmap_get_height(bitmap);
+    _cg_framebuffer_flush(framebuffer);
 
-    if (width == 1 && height == 1 && !framebuffer->clear_clip_dirty) {
-        /* If everything drawn so far for this frame is still in the
-         * Journal then if all of the rectangles only have a flat
-         * opaque color we have a fast-path for reading a single pixel
-         * that avoids the relatively high cost of flushing primitives
-         * to be drawn on the GPU (considering how simple the geometry
-         * is in this case) and then blocking on the long GPU pipelines
-         * for the result.
-         */
-        if (_cg_framebuffer_try_fast_read_pixel(
-                framebuffer, x, y, source, bitmap))
-            return true;
-    }
-
-    dev = cg_framebuffer_get_context(framebuffer);
-
-    /* make sure any batched primitives get emitted to the driver
-     * before issuing our read pixels...
-     */
-    _cg_framebuffer_flush_journal(framebuffer);
-
-    return dev->driver_vtable->framebuffer_read_pixels_into_bitmap(
+    return framebuffer->dev->driver_vtable->framebuffer_read_pixels_into_bitmap(
         framebuffer, x, y, source, bitmap, error);
 }
 
@@ -1330,7 +1037,7 @@ cg_framebuffer_finish(cg_framebuffer_t *framebuffer)
 {
     cg_device_t *dev = framebuffer->dev;
 
-    _cg_framebuffer_flush_journal(framebuffer);
+    _cg_framebuffer_flush(framebuffer);
 
     dev->driver_vtable->framebuffer_finish(framebuffer);
 }
@@ -1484,10 +1191,6 @@ cg_framebuffer_frustum(cg_framebuffer_t *framebuffer,
     cg_matrix_stack_t *projection_stack =
         _cg_framebuffer_get_projection_stack(framebuffer);
 
-    /* XXX: The projection matrix isn't currently tracked in the journal
-     * so we need to flush all journaled primitives first... */
-    _cg_framebuffer_flush_journal(framebuffer);
-
     cg_matrix_stack_load_identity(projection_stack);
 
     cg_matrix_stack_frustum(
@@ -1510,10 +1213,6 @@ cg_framebuffer_orthographic(cg_framebuffer_t *framebuffer,
     cg_matrix_t ortho;
     cg_matrix_stack_t *projection_stack =
         _cg_framebuffer_get_projection_stack(framebuffer);
-
-    /* XXX: The projection matrix isn't currently tracked in the journal
-     * so we need to flush all journaled primitives first... */
-    _cg_framebuffer_flush_journal(framebuffer);
 
     cg_matrix_init_identity(&ortho);
     cg_matrix_orthographic(&ortho, x_1, y_1, x_2, y_2, near, far);
@@ -1589,10 +1288,6 @@ cg_framebuffer_set_projection_matrix(cg_framebuffer_t *framebuffer,
 {
     cg_matrix_stack_t *projection_stack =
         _cg_framebuffer_get_projection_stack(framebuffer);
-
-    /* XXX: The projection matrix isn't currently tracked in the journal
-     * so we need to flush all journaled primitives first... */
-    _cg_framebuffer_flush_journal(framebuffer);
 
     cg_matrix_stack_set(projection_stack, matrix);
 
@@ -1693,26 +1388,6 @@ cg_framebuffer_pop_clip(cg_framebuffer_t *framebuffer)
 void
 _cg_framebuffer_unref(cg_framebuffer_t *framebuffer)
 {
-    /* The journal holds a reference to the framebuffer whenever it is
-       non-empty. Therefore if the journal is non-empty and we will have
-       exactly one reference then we know the journal is the only thing
-       keeping the framebuffer alive. In that case we want to flush the
-       journal and let the framebuffer die. It is fine at this point if
-       flushing the journal causes something else to take a reference to
-       it and it comes back to life */
-    if (framebuffer->journal->entries->len > 0) {
-        unsigned int ref_count = ((cg_object_t *)framebuffer)->ref_count;
-
-        /* There should be at least two references - the one we are
-           about to drop and the one held by the journal */
-        if (ref_count < 2)
-            c_warning("Inconsistent ref count on a framebuffer with journal "
-                      "entries.");
-
-        if (ref_count == 2)
-            _cg_framebuffer_flush_journal(framebuffer);
-    }
-
     /* Chain-up */
     _cg_object_default_unref(framebuffer);
 }
@@ -1762,13 +1437,6 @@ get_line_count(cg_vertices_mode_t mode, int n_vertices)
     } else if (mode == CG_VERTICES_MODE_TRIANGLE_STRIP && n_vertices >= 3) {
         return 2 * n_vertices - 3;
     }
-/* In the journal we are a bit sneaky and actually use GL_QUADS
- * which isn't actually a valid cg_vertices_mode_t! */
-#ifdef HAVE_CG_GL
-    else if (mode == GL_QUADS && (n_vertices % 4) == 0) {
-        return n_vertices;
-    }
-#endif
 
     c_return_val_if_reached(0);
 }
@@ -1835,20 +1503,6 @@ get_wire_line_indices(cg_device_t *dev,
             add_line(line_indices, base, indices, indices_type, i - 2, i, &pos);
         }
     }
-/* In the journal we are a bit sneaky and actually use GL_QUADS
- * which isn't actually a valid cg_vertices_mode_t! */
-#ifdef HAVE_CG_GL
-    else if (mode == GL_QUADS && (n_vertices_in % 4) == 0) {
-        for (i = 0; i < n_vertices_in; i += 4) {
-            add_line(line_indices, base, indices, indices_type, i, i + 1, &pos);
-            add_line(
-                line_indices, base, indices, indices_type, i + 1, i + 2, &pos);
-            add_line(
-                line_indices, base, indices, indices_type, i + 2, i + 3, &pos);
-            add_line(line_indices, base, indices, indices_type, i + 3, i, &pos);
-        }
-    }
-#endif
 
     if (user_indices)
         cg_buffer_unmap(CG_BUFFER(index_buffer));
@@ -1962,8 +1616,7 @@ draw_wireframe(cg_device_t *dev,
 }
 #endif
 
-/* This can be called directly by the cg_journal_t to draw attributes
- * skipping the implicit journal flush, the framebuffer flush and
+/* Drawing with this api will bypass the framebuffer flush and
  * pipeline validation. */
 void
 _cg_framebuffer_draw_attributes(cg_framebuffer_t *framebuffer,
@@ -2057,36 +1710,85 @@ _cg_framebuffer_draw_indexed_attributes(cg_framebuffer_t *framebuffer,
  * and are only providing a stop-gap while we strip out the journal
  * from cogl.
  */
+
+void
+_cg_rectangle_immediate(cg_framebuffer_t *framebuffer,
+                        cg_pipeline_t *pipeline,
+                        float x_1,
+                        float y_1,
+                        float x_2,
+                        float y_2)
+{
+    cg_device_t *dev = framebuffer->dev;
+    float vertices[8] = { x_1, y_1, x_1, y_2, x_2, y_1, x_2, y_2 };
+    cg_attribute_buffer_t *attribute_buffer;
+    cg_attribute_t *attributes[1];
+
+    attribute_buffer = cg_attribute_buffer_new(dev, sizeof(vertices),
+                                               vertices);
+    attributes[0] = cg_attribute_new(attribute_buffer,
+                                     "cg_position_in",
+                                     sizeof(float) * 2, /* stride */
+                                     0, /* offset */
+                                     2, /* n_components */
+                                     CG_ATTRIBUTE_TYPE_FLOAT);
+
+    _cg_framebuffer_draw_attributes(framebuffer,
+                                    pipeline,
+                                    CG_VERTICES_MODE_TRIANGLE_STRIP,
+                                    0, /* first_index */
+                                    4, /* n_vertices */
+                                    attributes,
+                                    1, /* n attributes */
+                                    1, /* n instances */
+                                    CG_DRAW_SKIP_PIPELINE_VALIDATION |
+                                    CG_DRAW_SKIP_FRAMEBUFFER_FLUSH);
+
+    cg_object_unref(attributes[0]);
+    cg_object_unref(attribute_buffer);
+}
+
 void
 cg_framebuffer_draw_rectangle(cg_framebuffer_t *fb,
                               cg_pipeline_t *pipeline,
-                              float x1,
-                              float y1,
-                              float x2,
-                              float y2)
+                              float x_1,
+                              float y_1,
+                              float x_2,
+                              float y_2)
 {
-    cg_vertex_p2_t verts[4] = {
-        { x1, y1 },
-        { x1, y2 },
-        { x2, y2 },
-        { x2, y1 }
-    };
-    cg_primitive_t *prim;
+    cg_device_t *dev = fb->dev;
+    float vertices[8] = { x_1, y_1, x_1, y_2, x_2, y_1, x_2, y_2 };
+    cg_attribute_buffer_t *attribute_buffer;
+    cg_attribute_t *attributes[1];
 
     if (cg_pipeline_get_n_layers(pipeline)) {
         cg_framebuffer_draw_textured_rectangle(fb, pipeline,
-                                               x1, y1, x2, y2,
+                                               x_1, y_1, x_2, y_2,
                                                0, 0, 1, 1);
         return;
     }
 
-    prim = cg_primitive_new_p2(fb->dev,
-                               CG_VERTICES_MODE_TRIANGLE_FAN,
-                               4,
-                               verts);
+    attribute_buffer = cg_attribute_buffer_new(dev, sizeof(vertices),
+                                               vertices);
+    attributes[0] = cg_attribute_new(attribute_buffer,
+                                     "cg_position_in",
+                                     sizeof(float) * 2, /* stride */
+                                     0, /* offset */
+                                     2, /* n_components */
+                                     CG_ATTRIBUTE_TYPE_FLOAT);
 
-    cg_primitive_draw(prim, fb, pipeline);
-    cg_object_unref(prim);
+    _cg_framebuffer_draw_attributes(fb,
+                                    pipeline,
+                                    CG_VERTICES_MODE_TRIANGLE_STRIP,
+                                    0, /* first_index */
+                                    4, /* n_vertices */
+                                    attributes,
+                                    1, /* n attributes */
+                                    1, /* n instances */
+                                    0); /* flags */
+
+    cg_object_unref(attributes[0]);
+    cg_object_unref(attribute_buffer);
 }
 
 static void
@@ -2323,21 +2025,17 @@ cg_framebuffer_draw_textured_rectangle(cg_framebuffer_t *fb,
         cg_pipeline_foreach_layer(pipeline, update_layer_storage_cb, NULL);
 
         /* We can't use hardware repeat so we need to set clamp to edge
-         * otherwise it might pull in edge pixels from the other side. By
-         * default WRAP_MODE_AUTOMATIC becomes CLAMP_TO_EDGE so we only need
-         * to override if the wrap mode isn't already automatic or
-         * clamp_to_edge.
-         */
+         * otherwise it might pull in junk pixels.
+         * cg_meta_texture_foreach_in_region will emulate the original
+         * repeat mode in software. */
         wrap_s = cg_pipeline_get_layer_wrap_mode_s(pipeline, 0);
-        if (wrap_s != CG_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE &&
-            wrap_s != CG_PIPELINE_WRAP_MODE_AUTOMATIC) {
+        if (wrap_s != CG_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE) {
             override_pipeline = cg_pipeline_copy(pipeline);
             cg_pipeline_set_layer_wrap_mode_s(override_pipeline, 0, clamp_to_edge);
         }
 
         wrap_t = cg_pipeline_get_layer_wrap_mode_t(pipeline, 0);
-        if (wrap_t != CG_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE &&
-            wrap_t != CG_PIPELINE_WRAP_MODE_AUTOMATIC) {
+        if (wrap_t != CG_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE) {
             if (!override_pipeline)
                 override_pipeline = cg_pipeline_copy(pipeline);
             cg_pipeline_set_layer_wrap_mode_t(override_pipeline, 0, clamp_to_edge);
@@ -2378,13 +2076,6 @@ cg_framebuffer_draw_textured_rectangle(cg_framebuffer_t *fb,
 
         state.v_to_q_scale_x = fabsf(state.quad_len_x / (tx_2 - tx_1));
         state.v_to_q_scale_y = fabsf(state.quad_len_y / (ty_2 - ty_1));
-
-        /* For backwards compatablity the default wrap mode is
-         * _REPEAT... */
-        if (wrap_s == CG_PIPELINE_WRAP_MODE_AUTOMATIC)
-            wrap_s = CG_PIPELINE_WRAP_MODE_REPEAT;
-        if (wrap_t == CG_PIPELINE_WRAP_MODE_AUTOMATIC)
-            wrap_t = CG_PIPELINE_WRAP_MODE_REPEAT;
 
         cg_meta_texture_foreach_in_region((cg_meta_texture_t *)tex0,
                                           tx_1,

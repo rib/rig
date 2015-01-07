@@ -49,8 +49,6 @@ static const c_debug_key_t cg_log_debug_keys[] = {
     { "slicing", CG_DEBUG_SLICING },
     { "atlas", CG_DEBUG_ATLAS },
     { "blend-strings", CG_DEBUG_BLEND_STRINGS },
-    { "journal", CG_DEBUG_JOURNAL },
-    { "batching", CG_DEBUG_BATCHING },
     { "matrices", CG_DEBUG_MATRICES },
     { "draw", CG_DEBUG_DRAW },
     { "opengl", CG_DEBUG_OPENGL },

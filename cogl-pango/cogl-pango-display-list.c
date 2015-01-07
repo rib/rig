@@ -231,30 +231,11 @@ _cg_pango_display_list_add_trapezoid(cg_pango_display_list_t *dl,
 }
 
 static void
-emit_rectangles_through_journal(cg_framebuffer_t *fb,
-                                cg_pipeline_t *pipeline,
-                                cg_pango_display_list_node_t *node)
-{
-    const float *rectangles = (const float *)node->d.texture.rectangles->data;
-
-    cg_framebuffer_draw_textured_rectangles(
-        fb, pipeline, rectangles, node->d.texture.rectangles->len);
-}
-
-static void
 emit_vertex_buffer_geometry(cg_framebuffer_t *fb,
                             cg_pipeline_t *pipeline,
                             cg_pango_display_list_node_t *node)
 {
     cg_device_t *dev = fb->dev;
-
-    /* It's expensive to go through the Cogl journal for large runs
-     * of text in part because the journal transforms the quads in software
-     * to avoid changing the modelview matrix. So for larger runs of text
-     * we load the vertices into a VBO, and this has the added advantage
-     * that if the text doesn't change from frame to frame the VBO can
-     * be re-used avoiding the repeated cost of validating the data and
-     * mapping it into the GPU... */
 
     if (node->d.texture.primitive == NULL) {
         cg_attribute_buffer_t *buffer;
@@ -340,22 +321,15 @@ emit_vertex_buffer_geometry(cg_framebuffer_t *fb,
                                                 attributes,
                                                 2 /* n_attributes */);
 
-#ifdef CG_HAS_GL
-        if (_cg_has_private_feature(dev, CG_PRIVATE_FEATURE_QUADS))
-            cg_primitive_set_mode(prim, GL_QUADS);
-        else
-#endif
-        {
-            /* GLES doesn't support GL_QUADS so instead we use a VBO
-               with indexed vertices to generate GL_TRIANGLES from the
-               quads */
+        /* GLES doesn't support GL_QUADS so instead we use a VBO
+           with indexed vertices to generate GL_TRIANGLES from the
+           quads */
 
-            cg_indices_t *indices =
-                cg_get_rectangle_indices(dev, node->d.texture.rectangles->len);
+        cg_indices_t *indices =
+            cg_get_rectangle_indices(dev, node->d.texture.rectangles->len);
 
-            cg_primitive_set_indices(
-                prim, indices, node->d.texture.rectangles->len * 6);
-        }
+        cg_primitive_set_indices(prim, indices,
+                                 node->d.texture.rectangles->len * 6);
 
         node->d.texture.primitive = prim;
 
@@ -372,15 +346,7 @@ _cg_framebuffer_draw_display_list_texture(cg_framebuffer_t *fb,
                                           cg_pipeline_t *pipeline,
                                           cg_pango_display_list_node_t *node)
 {
-    /* For small runs of text like icon labels, we can get better performance
-     * going through the Cogl journal since text may then be batched together
-     * with other geometry. */
-    /* FIXME: 25 is a number I plucked out of thin air; it would be good
-     * to determine this empirically! */
-    if (node->d.texture.rectangles->len < 25)
-        emit_rectangles_through_journal(fb, pipeline, node);
-    else
-        emit_vertex_buffer_geometry(fb, pipeline, node);
+    emit_vertex_buffer_geometry(fb, pipeline, node);
 }
 
 void

@@ -248,7 +248,7 @@ cg_onscreen_swap_buffers_with_damage(cg_onscreen_t *onscreen,
     info->frame_counter = onscreen->frame_counter;
     c_queue_push_tail(&onscreen->pending_frame_infos, info);
 
-    _cg_framebuffer_flush_journal(framebuffer);
+    _cg_framebuffer_flush(framebuffer);
 
     winsys = _cg_framebuffer_get_winsys(framebuffer);
     winsys->onscreen_swap_buffers_with_damage(
@@ -295,7 +295,7 @@ cg_onscreen_swap_region(cg_onscreen_t *onscreen,
     info->frame_counter = onscreen->frame_counter;
     c_queue_push_tail(&onscreen->pending_frame_infos, info);
 
-    _cg_framebuffer_flush_journal(framebuffer);
+    _cg_framebuffer_flush(framebuffer);
 
     winsys = _cg_framebuffer_get_winsys(framebuffer);
 

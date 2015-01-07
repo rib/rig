@@ -102,21 +102,4 @@ struct _cg_path_data_t {
     bool is_rectangle;
 };
 
-void
-_cg_add_path_to_stencil_buffer(cg_path_t *path, bool merge, bool need_clear);
-
-void _cg_path_get_bounds(
-    cg_path_t *path, float *min_x, float *min_y, float *max_x, float *max_y);
-
-bool _cg_path_is_rectangle(cg_path_t *path);
-
-void _cg_path_stroke_nodes(cg_path_t *path,
-                           cg_framebuffer_t *framebuffer,
-                           cg_pipeline_t *pipeline);
-
-void _cg_path_fill_nodes(cg_path_t *path,
-                         cg_framebuffer_t *framebuffer,
-                         cg_pipeline_t *pipeline,
-                         cg_draw_flags_t flags);
-
 #endif /* __CG_PATH_PRIVATE_H */

@@ -28,9 +28,7 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include <string.h>
 #include <math.h>
@@ -40,10 +38,8 @@
 #include "cogl-clip-stack.h"
 #include "cogl-device-private.h"
 #include "cogl-framebuffer-private.h"
-#include "cogl-journal-private.h"
 #include "cogl-util.h"
 #include "cogl-matrix-private.h"
-#include "cogl-primitives-private.h"
 #include "cogl-private.h"
 #include "cogl-pipeline-opengl-private.h"
 #include "cogl-attribute-private.h"

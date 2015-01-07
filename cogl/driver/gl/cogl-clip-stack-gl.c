@@ -38,7 +38,6 @@
 
 #include "cogl-device-private.h"
 #include "cogl-util-gl-private.h"
-#include "cogl-primitives-private.h"
 #include "cogl-pipeline-opengl-private.h"
 #include "cogl-clip-stack-gl-private.h"
 #include "cogl-primitive-private.h"
@@ -56,7 +55,7 @@ add_stencil_clip_rectangle(cg_framebuffer_t *framebuffer,
         _cg_framebuffer_get_projection_stack(framebuffer);
     cg_device_t *dev = cg_framebuffer_get_context(framebuffer);
 
-    /* NB: This can be called while flushing the journal so we need
+    /* NB: This can be called while flushing for rendering so we need
      * to be very conservative with what state we change.
      */
 
@@ -121,7 +120,7 @@ add_stencil_clip_silhouette(cg_framebuffer_t *framebuffer,
         _cg_framebuffer_get_projection_stack(framebuffer);
     cg_device_t *dev = cg_framebuffer_get_context(framebuffer);
 
-    /* NB: This can be called while flushing the journal so we need
+    /* NB: This can be called while flushing for rendering so we need
      * to be very conservative with what state we change.
      */
 
@@ -148,8 +147,8 @@ add_stencil_clip_silhouette(cg_framebuffer_t *framebuffer,
                will have set up a scissor for the minimum bounding box of
                all of the clips. That box will likely mean that this
                _cg_clear won't need to clear the entire
-               buffer. _cg_framebuffer_clear_without_flush4f is used instead
-               of cg_clear because it won't try to flush the journal */
+               buffer. _cg_framebuffer_clear_without_flush4f to avoid
+               recursion if we are currently flushing for rendering */
             _cg_framebuffer_clear_without_flush4f(
                 framebuffer, CG_BUFFER_BIT_STENCIL, 0, 0, 0, 0);
         else {
@@ -206,7 +205,6 @@ paint_primitive_silhouette(cg_framebuffer_t *framebuffer,
                        framebuffer,
                        pipeline,
                        1,
-                       CG_DRAW_SKIP_JOURNAL_FLUSH |
                        CG_DRAW_SKIP_PIPELINE_VALIDATION |
                        CG_DRAW_SKIP_FRAMEBUFFER_FLUSH);
 }

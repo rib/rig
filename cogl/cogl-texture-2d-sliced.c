@@ -33,9 +33,7 @@
  *  Robert Bragg   <robert@linux.intel.com>
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "cogl-debug.h"
 #include "cogl-private.h"
@@ -51,7 +49,6 @@
 #include "cogl-device-private.h"
 #include "cogl-object-private.h"
 #include "cogl-spans.h"
-#include "cogl-journal-private.h"
 #include "cogl-pipeline-opengl-private.h"
 #include "cogl-primitive-texture.h"
 #include "cogl-error-private.h"

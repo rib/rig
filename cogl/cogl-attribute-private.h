@@ -84,16 +84,8 @@ struct _cg_attribute_t {
 };
 
 typedef enum {
-    CG_DRAW_SKIP_JOURNAL_FLUSH = 1 << 0,
     CG_DRAW_SKIP_PIPELINE_VALIDATION = 1 << 1,
     CG_DRAW_SKIP_FRAMEBUFFER_FLUSH = 1 << 2,
-    /* By default the vertex attribute drawing code will assume that if
-       there is a color attribute array enabled then we can't determine
-       if the colors will be opaque so we need to enabling
-       blending. However when drawing from the journal we know what the
-       contents of the color array is so we can override this by passing
-       this flag. */
-    CG_DRAW_COLOR_ATTRIBUTE_IS_OPAQUE = 1 << 3,
     /* This forcibly disables the debug option to divert all drawing to
      * wireframes */
     CG_DRAW_SKIP_DEBUG_WIREFRAME = 1 << 4

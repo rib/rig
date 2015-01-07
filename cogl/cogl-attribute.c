@@ -31,14 +31,11 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "cogl-util.h"
 #include "cogl-device-private.h"
 #include "cogl-object-private.h"
-#include "cogl-journal-private.h"
 #include "cogl-attribute.h"
 #include "cogl-attribute-private.h"
 #include "cogl-pipeline.h"
@@ -569,7 +566,7 @@ validate_layer_cb(cg_pipeline_t *pipeline, int layer_index, void *user_data)
     if (texture == NULL)
         goto validated;
 
-    _cg_texture_flush_journal_rendering(texture);
+    _cg_texture_flush_batched_rendering(texture);
 
     /* Give the texture a chance to know that we're rendering
        non-quad shaped primitives. If the texture is in an atlas it
@@ -620,9 +617,6 @@ _cg_flush_attributes_state(cg_framebuffer_t *framebuffer,
     cg_device_t *dev = framebuffer->dev;
     cg_flush_layer_state_t layers_state;
 
-    if (!(flags & CG_DRAW_SKIP_JOURNAL_FLUSH))
-        _cg_journal_flush(framebuffer->journal);
-
     layers_state.unit = 0;
     layers_state.options.flags = 0;
     layers_state.fallback_layers = 0;
@@ -640,12 +634,8 @@ _cg_flush_attributes_state(cg_framebuffer_t *framebuffer,
         _cg_framebuffer_flush_state(
             framebuffer, framebuffer, CG_FRAMEBUFFER_STATE_ALL);
 
-    /* In cg_read_pixels we have a fast-path when reading a single
-     * pixel and the scene is just comprised of simple rectangles still
-     * in the journal. For this optimization to work we need to track
-     * when the framebuffer really does get drawn to. */
+    /* track when the framebuffer is drawn too */
     _cg_framebuffer_mark_mid_scene(framebuffer);
-    _cg_framebuffer_mark_clear_clip_dirty(framebuffer);
 
     dev->driver_vtable->flush_attributes_state(
         framebuffer, pipeline, &layers_state, flags, attributes, n_attributes);

@@ -33,7 +33,6 @@
 
 #include "cogl-object-private.h"
 #include "cogl-matrix-stack-private.h"
-#include "cogl-journal-private.h"
 #include "cogl-winsys-private.h"
 #include "cogl-attribute-private.h"
 #include "cogl-offscreen.h"
@@ -148,30 +147,9 @@ struct _cg_framebuffer_t {
     bool depth_writing_enabled;
     cg_color_mask_t color_mask;
 
-    /* We journal the textured rectangles we want to submit to OpenGL so
-     * we have an oppertunity to batch them together into less draw
-     * calls. */
-    cg_journal_t *journal;
-
     /* The scene of a given framebuffer may depend on images in other
      * framebuffers... */
     c_list_t *deps;
-
-    /* As part of an optimization for reading-back single pixels from a
-     * framebuffer in some simple cases where the geometry is still
-     * available in the journal we need to track the bounds of the last
-     * region cleared, its color and we need to track when something
-     * does in fact draw to that region so it is no longer clear.
-     */
-    float clear_color_red;
-    float clear_color_green;
-    float clear_color_blue;
-    float clear_color_alpha;
-    int clear_clip_x0;
-    int clear_clip_y0;
-    int clear_clip_x1;
-    int clear_clip_y1;
-    bool clear_clip_dirty;
 
     /* Whether something has been drawn to the buffer since the last
      * swap buffers or swap region. */
@@ -240,14 +218,13 @@ void _cg_framebuffer_free(cg_framebuffer_t *framebuffer);
 const cg_winsys_vtable_t *
 _cg_framebuffer_get_winsys(cg_framebuffer_t *framebuffer);
 
+/* This api bypasses flushing the framebuffer state */
 void _cg_framebuffer_clear_without_flush4f(cg_framebuffer_t *framebuffer,
                                            cg_buffer_bit_t buffers,
                                            float red,
                                            float green,
                                            float blue,
                                            float alpha);
-
-void _cg_framebuffer_mark_clear_clip_dirty(cg_framebuffer_t *framebuffer);
 
 void _cg_framebuffer_mark_mid_scene(cg_framebuffer_t *framebuffer);
 
@@ -285,10 +262,6 @@ void _cg_framebuffer_add_dependency(cg_framebuffer_t *framebuffer,
                                     cg_framebuffer_t *dependency);
 
 void _cg_framebuffer_remove_all_dependencies(cg_framebuffer_t *framebuffer);
-
-void _cg_framebuffer_flush_journal(cg_framebuffer_t *framebuffer);
-
-void _cg_framebuffer_flush_dependency_journals(cg_framebuffer_t *framebuffer);
 
 void _cg_framebuffer_flush_state(cg_framebuffer_t *draw_buffer,
                                  cg_framebuffer_t *read_buffer,
@@ -390,8 +363,7 @@ void _cg_framebuffer_restore_clip_stack(cg_framebuffer_t *framebuffer);
 
 void _cg_framebuffer_unref(cg_framebuffer_t *framebuffer);
 
-/* This can be called directly by the cg_journal_t to draw attributes
- * skipping the implicit journal flush, the framebuffer flush and
+/* Drawing with this api will bypass the framebuffer flush and
  * pipeline validation. */
 void _cg_framebuffer_draw_attributes(cg_framebuffer_t *framebuffer,
                                      cg_pipeline_t *pipeline,
@@ -413,6 +385,13 @@ void _cg_framebuffer_draw_indexed_attributes(cg_framebuffer_t *framebuffer,
                                              int n_attributes,
                                              int n_instances,
                                              cg_draw_flags_t flags);
+
+void _cg_rectangle_immediate(cg_framebuffer_t *framebuffer,
+                             cg_pipeline_t *pipeline,
+                             float x_1,
+                             float y_1,
+                             float x_2,
+                             float y_2);
 
 bool _cg_framebuffer_try_creating_gl_fbo(cg_device_t *dev,
                                          cg_texture_t *texture,

@@ -36,21 +36,6 @@
 
 #include "cogl-pipeline-private.h"
 
-/* This is used heavily by the cogl journal when logging quads */
-static inline void
-_cg_pipeline_get_colorubv(cg_pipeline_t *pipeline,
-                          uint8_t *color)
-{
-    cg_pipeline_t *authority =
-        _cg_pipeline_get_authority(pipeline, CG_PIPELINE_STATE_COLOR);
-    const cg_color_t *cg_color = &authority->color;
-
-    color[0] = cg_color->red * 255;
-    color[1] = cg_color->green * 255;
-    color[2] = cg_color->blue * 255;
-    color[3] = cg_color->alpha * 255;
-}
-
 bool _cg_pipeline_has_vertex_snippets(cg_pipeline_t *pipeline);
 
 bool _cg_pipeline_has_fragment_snippets(cg_pipeline_t *pipeline);

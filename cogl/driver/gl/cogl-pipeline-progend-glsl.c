@@ -31,9 +31,7 @@
  *   Neil Roberts <neil@linux.intel.com>
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include <string.h>
 
@@ -874,25 +872,14 @@ _cg_pipeline_progend_glsl_pre_paint(cg_pipeline_t *pipeline,
                                   cg_matrix_get_array(&modelview)));
 
         if (program_state->mvp_uniform != -1) {
-            /* The journal usually uses an identity matrix for the
-               modelview so we can optimise this common case by
-               avoiding the matrix multiplication */
-            if (cg_matrix_entry_is_identity(modelview_entry)) {
-                GE(dev,
-                   glUniformMatrix4fv(program_state->mvp_uniform,
-                                      1, /* count */
-                                      false, /* transpose */
-                                      cg_matrix_get_array(&projection)));
-            } else {
-                cg_matrix_t combined;
+            cg_matrix_t combined;
 
-                cg_matrix_multiply(&combined, &projection, &modelview);
-                GE(dev,
-                   glUniformMatrix4fv(program_state->mvp_uniform,
-                                      1, /* count */
-                                      false, /* transpose */
-                                      cg_matrix_get_array(&combined)));
-            }
+            cg_matrix_multiply(&combined, &projection, &modelview);
+            GE(dev,
+               glUniformMatrix4fv(program_state->mvp_uniform,
+                                  1, /* count */
+                                  false, /* transpose */
+                                  cg_matrix_get_array(&combined)));
         }
     }
 

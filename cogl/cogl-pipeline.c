@@ -43,7 +43,6 @@
 #include "cogl-pipeline-layer-state-private.h"
 #include "cogl-texture-private.h"
 #include "cogl-blend-string.h"
-#include "cogl-journal-private.h"
 #include "cogl-color-private.h"
 #include "cogl-util.h"
 #include "cogl-profile.h"
@@ -140,7 +139,7 @@ _cg_pipeline_init_default_pipeline(void)
     _cg_pipeline_node_init(CG_NODE(pipeline));
 
     pipeline->is_weak = false;
-    pipeline->journal_ref_count = 0;
+    pipeline->immutable = false;
     pipeline->progend = CG_PIPELINE_PROGEND_UNDEFINED;
     pipeline->differences = CG_PIPELINE_STATE_ALL_SPARSE;
 
@@ -317,7 +316,8 @@ _cg_pipeline_copy(cg_pipeline_t *src, bool is_weak)
 
     pipeline->is_weak = is_weak;
 
-    pipeline->journal_ref_count = 0;
+    pipeline->immutable = false;
+    src->immutable = true;
 
     pipeline->differences = 0;
 
@@ -1067,33 +1067,6 @@ _cg_pipeline_pre_change_notify(cg_pipeline_t *pipeline,
 {
     _CG_GET_DEVICE(dev, NO_RETVAL);
 
-    /* If primitives have been logged in the journal referencing the
-     * current state of this pipeline we need to flush the journal
-     * before we can modify it... */
-    if (pipeline->journal_ref_count) {
-        bool skip_journal_flush = false;
-
-        /* XXX: We don't usually need to flush the journal just due to
-         * color changes since pipeline colors are logged in the
-         * journal's vertex buffer. The exception is when the change in
-         * color enables or disables the need for blending. */
-        if (change == CG_PIPELINE_STATE_COLOR) {
-            bool will_need_blending = _cg_pipeline_needs_blending_enabled(
-                pipeline, change, new_color, false);
-            bool blend_enable = pipeline->real_blend_enable ? true : false;
-
-            if (will_need_blending == blend_enable)
-                skip_journal_flush = true;
-        }
-
-        if (!skip_journal_flush) {
-            /* XXX: note we need to use _cg_flush() so we will flush
-             * *all* journals that might reference the current pipeline.
-             */
-            _cg_flush(dev);
-        }
-    }
-
     /* XXX:
      * To simplify things for the vertex, fragment and program backends
      * we are careful about how we report STATE_LAYERS changes.
@@ -1158,6 +1131,9 @@ _cg_pipeline_pre_change_notify(cg_pipeline_t *pipeline,
      * make sure descendants reference this new pipeline instead.
      */
 
+    if (pipeline->immutable && !_cg_list_empty(&CG_NODE(pipeline)->children))
+        c_warning("immutable pipeline %p being modified", pipeline);
+
     /* The simplest descendants to handle are weak pipelines; we simply
      * destroy them if we are modifying a pipeline they depend on. This
      * means weak pipelines never cause us to do a copy-on-write. */
@@ -1177,6 +1153,7 @@ _cg_pipeline_pre_change_notify(cg_pipeline_t *pipeline,
                           0 /* no application private data */);
 
         CG_COUNTER_INC(_cg_uprof_context, pipeline_copy_on_write_counter);
+
 
         new_authority = cg_pipeline_copy(_cg_pipeline_get_parent(pipeline));
 #ifdef CG_DEBUG_ENABLED
@@ -1266,8 +1243,7 @@ _cg_pipeline_add_layer_difference(cg_pipeline_t *pipeline,
     layer->owner = pipeline;
     cg_object_ref(layer);
 
-    /* - Flush journal primitives referencing the current state.
-     * - Make sure the pipeline has no dependants so it may be modified.
+    /* - Make sure the pipeline has no dependants so it may be modified.
      * - If the pipeline isn't currently an authority for the state being
      *   changed, then initialize that state from the current authority.
      */
@@ -1298,8 +1274,7 @@ _cg_pipeline_remove_layer_difference(cg_pipeline_t *pipeline,
                                      cg_pipeline_layer_t *layer,
                                      bool dec_n_layers)
 {
-    /* - Flush journal primitives referencing the current state.
-     * - Make sure the pipeline has no dependants so it may be modified.
+    /* - Make sure the pipeline has no dependants so it may be modified.
      * - If the pipeline isn't currently an authority for the state being
      *   changed, then initialize that state from the current authority.
      */
@@ -1384,10 +1359,7 @@ _cg_pipeline_update_real_blend_enable(cg_pipeline_t *pipeline,
 
     /* Note we don't call _cg_pipeline_pre_change_notify() for this
      * state change because ->real_blend_enable is lazily derived from
-     * other state while flushing the pipeline and we'd need to avoid
-     * recursion problems in cases where _pre_change_notify() flushes
-     * the journal if the pipeline is referenced by a journal.
-     */
+     * other state while flushing the pipeline. */
     pipeline->real_blend_enable = _cg_pipeline_needs_blending_enabled(
         pipeline, differences, NULL, unknown_color_alpha);
     pipeline->dirty_real_blend_enable = false;
@@ -1946,21 +1918,16 @@ _cg_pipeline_resolve_authorities(cg_pipeline_t *pipeline,
  * 2) using the final difference mask to determine which state
  *    groups to compare.
  *
- * This is used, for example, by the Cogl journal to compare pipelines so that
- * it can split up geometry that needs different OpenGL state.
+ * This can be used to compare pipelines so that it can split up
+ * geometry that needs different gpu state.
  *
  * XXX: When comparing texture layers, _cg_pipeline_equal will actually
  * compare the underlying GL texture handle that the Cogl texture uses so that
  * atlas textures and sub textures will be considered equal if they point to
- * the same texture. This is useful for comparing pipelines in the journal but
- * it means that _cg_pipeline_equal doesn't strictly compare whether the
+ * the same texture. This is useful for comparing pipelines for render batching
+ * but it means that _cg_pipeline_equal doesn't strictly compare whether the
  * pipelines are the same. If we needed those semantics we could perhaps add
  * another function or some flags to control the behaviour.
- *
- * XXX: Similarly when comparing the wrap modes,
- * CG_PIPELINE_WRAP_MODE_AUTOMATIC is considered to be the same as
- * CG_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE because once they get to the
- * journal stage they act exactly the same.
  */
 bool
 _cg_pipeline_equal(cg_pipeline_t *pipeline0,
@@ -2249,23 +2216,6 @@ _cg_pipeline_pre_paint_for_layer(cg_pipeline_t *pipeline, int layer_id)
 {
     cg_pipeline_layer_t *layer = _cg_pipeline_get_layer(pipeline, layer_id);
     _cg_pipeline_layer_pre_paint(layer);
-}
-
-/* While a pipeline is referenced by the Cogl journal we can not allow
- * modifications, so this gives us a mechanism to track journal
- * references separately */
-cg_pipeline_t *
-_cg_pipeline_journal_ref(cg_pipeline_t *pipeline)
-{
-    pipeline->journal_ref_count++;
-    return cg_object_ref(pipeline);
-}
-
-void
-_cg_pipeline_journal_unref(cg_pipeline_t *pipeline)
-{
-    pipeline->journal_ref_count--;
-    cg_object_unref(pipeline);
 }
 
 #ifdef CG_DEBUG_ENABLED

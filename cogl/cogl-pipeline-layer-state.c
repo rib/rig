@@ -393,8 +393,8 @@ static cg_pipeline_wrap_mode_t
 internal_to_public_wrap_mode(cg_sampler_cache_wrap_mode_t internal_mode)
 {
     c_return_val_if_fail(internal_mode !=
-                           CG_SAMPLER_CACHE_WRAP_MODE_CLAMP_TO_BORDER,
-                           CG_PIPELINE_WRAP_MODE_AUTOMATIC);
+                         CG_SAMPLER_CACHE_WRAP_MODE_CLAMP_TO_BORDER,
+                         CG_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE);
     return (cg_pipeline_wrap_mode_t)internal_mode;
 }
 

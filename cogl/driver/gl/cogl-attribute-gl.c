@@ -32,9 +32,7 @@
  *  Robert Bragg   <robert@linux.intel.com>
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include <string.h>
 
@@ -210,8 +208,7 @@ _cg_gl_flush_attributes_state(cg_framebuffer_t *framebuffer,
     for (i = 0; i < n_attributes; i++)
         switch (attributes[i]->name_state->name_id) {
         case CG_ATTRIBUTE_NAME_ID_COLOR_ARRAY:
-            if ((flags & CG_DRAW_COLOR_ATTRIBUTE_IS_OPAQUE) == 0 &&
-                _cg_attribute_get_n_components(attributes[i]) == 4)
+            if (_cg_attribute_get_n_components(attributes[i]) == 4)
                 unknown_color_alpha = true;
             with_color_attrib = true;
             break;

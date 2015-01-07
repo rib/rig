@@ -89,16 +89,6 @@ _cg_fence_poll_prepare(void *source)
     cg_device_t *dev = source;
     c_list_t *l;
 
-    /* If there are any pending fences in any of the journals then we
-     * need to flush the journal otherwise the fence will never be
-     * hit and the main loop might block forever */
-    for (l = dev->framebuffers; l; l = l->next) {
-        cg_framebuffer_t *fb = l->data;
-
-        if (!_cg_list_empty(&fb->journal->pending_fences))
-            _cg_framebuffer_flush_journal(fb);
-    }
-
     if (!_cg_list_empty(&dev->fences))
         return FENCE_CHECK_TIMEOUT;
     else
@@ -150,7 +140,6 @@ cg_framebuffer_add_fence_callback(cg_framebuffer_t *framebuffer,
                                   void *user_data)
 {
     cg_device_t *dev = framebuffer->dev;
-    cg_journal_t *journal = framebuffer->journal;
     cg_fence_closure_t *fence;
 
     if (!CG_FLAGS_GET(dev->features, CG_FEATURE_ID_FENCE))
@@ -162,11 +151,7 @@ cg_framebuffer_add_fence_callback(cg_framebuffer_t *framebuffer,
     fence->user_data = user_data;
     fence->fence_obj = NULL;
 
-    if (journal->entries->len) {
-        _cg_list_insert(journal->pending_fences.prev, &fence->link);
-        fence->type = FENCE_TYPE_PENDING;
-    } else
-        _cg_fence_submit(fence);
+    _cg_fence_submit(fence);
 
     return fence;
 }
@@ -200,18 +185,10 @@ cg_framebuffer_cancel_fence_callback(cg_framebuffer_t *framebuffer,
 void
 _cg_fence_cancel_fences_for_framebuffer(cg_framebuffer_t *framebuffer)
 {
-    cg_journal_t *journal = framebuffer->journal;
     cg_device_t *dev = framebuffer->dev;
     cg_fence_closure_t *fence, *tmp;
 
-    while (!_cg_list_empty(&journal->pending_fences)) {
-        fence = _cg_container_of(
-            journal->pending_fences.next, cg_fence_closure_t, link);
-        cg_framebuffer_cancel_fence_callback(framebuffer, fence);
-    }
-
-    _cg_list_for_each_safe(fence, tmp, &dev->fences, link)
-    {
+    _cg_list_for_each_safe(fence, tmp, &dev->fences, link) {
         if (fence->framebuffer == framebuffer)
             cg_framebuffer_cancel_fence_callback(framebuffer, fence);
     }

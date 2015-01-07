@@ -40,7 +40,6 @@
 #include "cogl-util-gl-private.h"
 #include "cogl-display-private.h"
 #include "cogl-renderer-private.h"
-#include "cogl-journal-private.h"
 #include "cogl-texture-private.h"
 #include "cogl-texture-2d-private.h"
 #include "cogl-texture-3d-private.h"
@@ -317,10 +316,6 @@ cg_device_connect(cg_device_t *dev, cg_error_t **error)
 
     c_queue_init(&dev->gles2_context_stack);
 
-    dev->journal_flush_attributes_array =
-        c_array_new(true, false, sizeof(cg_attribute_t *));
-    dev->journal_clip_bounds = NULL;
-
     dev->current_pipeline = NULL;
     dev->current_pipeline_changes_since_flush = 0;
     dev->current_pipeline_with_color_attrib = false;
@@ -444,11 +439,6 @@ _cg_device_free(cg_device_t *dev)
         cg_object_unref(dev->blit_texture_pipeline);
 
     c_warn_if_fail(dev->gles2_context_stack.length == 0);
-
-    if (dev->journal_flush_attributes_array)
-        c_array_free(dev->journal_flush_attributes_array, true);
-    if (dev->journal_clip_bounds)
-        c_array_free(dev->journal_clip_bounds, true);
 
     if (dev->rectangle_byte_indices)
         cg_object_unref(dev->rectangle_byte_indices);

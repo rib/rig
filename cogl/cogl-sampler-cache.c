@@ -61,24 +61,16 @@ struct _cg_sampler_cache_t {
     GLuint next_fake_sampler_object_number;
 };
 
-static cg_sampler_cache_wrap_mode_t
-get_real_wrap_mode(cg_sampler_cache_wrap_mode_t wrap_mode)
-{
-    if (wrap_mode == CG_SAMPLER_CACHE_WRAP_MODE_AUTOMATIC)
-        return CG_SAMPLER_CACHE_WRAP_MODE_CLAMP_TO_EDGE;
-
-    return wrap_mode;
-}
-
 static void
 canonicalize_key(cg_sampler_cache_entry_t *key)
 {
     /* This converts the wrap modes to the enums that will actually be
-       given to GL so that it can be used as a key to get a unique GL
-       sampler object for the state */
-    key->wrap_mode_s = get_real_wrap_mode(key->wrap_mode_s);
-    key->wrap_mode_t = get_real_wrap_mode(key->wrap_mode_t);
-    key->wrap_mode_p = get_real_wrap_mode(key->wrap_mode_p);
+     * given to GL so that it can be used as a key to get a unique GL
+     * sampler object for the state.
+     *
+     * XXX: actually this is a NOP since the cogl wrap mode enum is
+     * based on the GL enum values.
+     */
 }
 
 static bool
@@ -88,7 +80,7 @@ wrap_mode_equal_gl(cg_sampler_cache_wrap_mode_t wrap_mode0,
     /* We want to compare the actual GLenum that will be used so that if
        two different wrap_modes actually use the same GL state we'll
        still use the same sampler object */
-    return get_real_wrap_mode(wrap_mode0) == get_real_wrap_mode(wrap_mode1);
+    return (cg_sampler_cache_wrap_mode_t)(wrap_mode0) == (cg_sampler_cache_wrap_mode_t)(wrap_mode1);
 }
 
 static bool
@@ -111,7 +103,7 @@ hash_wrap_mode_gl(unsigned int hash,
     /* We want to hash the actual GLenum that will be used so that if
        two different wrap_modes actually use the same GL state we'll
        still use the same sampler object */
-    GLenum real_wrap_mode = get_real_wrap_mode(wrap_mode);
+    GLenum real_wrap_mode = (cg_sampler_cache_wrap_mode_t)wrap_mode;
 
     return _cg_util_one_at_a_time_hash(
         hash, &real_wrap_mode, sizeof(real_wrap_mode));
@@ -278,9 +270,9 @@ _cg_sampler_cache_get_default_entry(cg_sampler_cache_t *cache)
 {
     cg_sampler_cache_entry_t key;
 
-    key.wrap_mode_s = CG_SAMPLER_CACHE_WRAP_MODE_AUTOMATIC;
-    key.wrap_mode_t = CG_SAMPLER_CACHE_WRAP_MODE_AUTOMATIC;
-    key.wrap_mode_p = CG_SAMPLER_CACHE_WRAP_MODE_AUTOMATIC;
+    key.wrap_mode_s = CG_SAMPLER_CACHE_WRAP_MODE_REPEAT;
+    key.wrap_mode_t = CG_SAMPLER_CACHE_WRAP_MODE_REPEAT;
+    key.wrap_mode_p = CG_SAMPLER_CACHE_WRAP_MODE_REPEAT;
 
     key.min_filter = GL_LINEAR;
     key.mag_filter = GL_LINEAR;

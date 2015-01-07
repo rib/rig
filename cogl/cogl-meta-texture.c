@@ -452,11 +452,6 @@ cg_meta_texture_foreach_in_region(cg_meta_texture_t *meta_texture,
     float height = cg_texture_get_height(texture);
     normalize_data_t normalize_data;
 
-    if (wrap_s == CG_PIPELINE_WRAP_MODE_AUTOMATIC)
-        wrap_s = CG_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE;
-    if (wrap_t == CG_PIPELINE_WRAP_MODE_AUTOMATIC)
-        wrap_t = CG_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE;
-
     if (wrap_s == CG_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE ||
         wrap_t == CG_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE) {
         bool finished = foreach_clamped_region(meta_texture,

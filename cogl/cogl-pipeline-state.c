@@ -31,9 +31,7 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "cogl-device-private.h"
 #include "cogl-color-private.h"
@@ -336,8 +334,7 @@ cg_pipeline_set_color(cg_pipeline_t *pipeline, const cg_color_t *color)
     if (cg_color_equal(color, &authority->color))
         return;
 
-    /* - Flush journal primitives referencing the current state.
-     * - Make sure the pipeline has no dependants so it may be modified.
+    /* - Make sure the pipeline has no dependants so it may be modified.
      * - If the pipeline isn't currently an authority for the state being
      *   changed, then initialize that state from the current authority.
      */
@@ -407,8 +404,7 @@ _cg_pipeline_set_blend_enabled(cg_pipeline_t *pipeline,
     if (authority->blend_enable == enable)
         return;
 
-    /* - Flush journal primitives referencing the current state.
-     * - Make sure the pipeline has no dependants so it may be modified.
+    /* - Make sure the pipeline has no dependants so it may be modified.
      * - If the pipeline isn't currently an authority for the state being
      *   changed, then initialize that state from the current authority.
      */
@@ -438,8 +434,7 @@ _cg_pipeline_set_alpha_test_function(cg_pipeline_t *pipeline,
     if (alpha_state->alpha_func == alpha_func)
         return;
 
-    /* - Flush journal primitives referencing the current state.
-     * - Make sure the pipeline has no dependants so it may be modified.
+    /* - Make sure the pipeline has no dependants so it may be modified.
      * - If the pipeline isn't currently an authority for the state being
      *   changed, then initialize that state from the current authority.
      */
@@ -468,8 +463,7 @@ _cg_pipeline_set_alpha_test_function_reference(cg_pipeline_t *pipeline,
     if (alpha_state->alpha_func_reference == alpha_reference)
         return;
 
-    /* - Flush journal primitives referencing the current state.
-     * - Make sure the pipeline has no dependants so it may be modified.
+    /* - Make sure the pipeline has no dependants so it may be modified.
      * - If the pipeline isn't currently an authority for the state being
      *   changed, then initialize that state from the current authority.
      */
@@ -631,8 +625,7 @@ cg_pipeline_set_blend(cg_pipeline_t *pipeline,
 
     authority = _cg_pipeline_get_authority(pipeline, state);
 
-    /* - Flush journal primitives referencing the current state.
-     * - Make sure the pipeline has no dependants so it may be modified.
+    /* - Make sure the pipeline has no dependants so it may be modified.
      * - If the pipeline isn't currently an authority for the state being
      *   changed, then initialize that state from the current authority.
      */
@@ -695,8 +688,7 @@ cg_pipeline_set_blend_constant(cg_pipeline_t *pipeline,
     if (cg_color_equal(constant_color, &blend_state->blend_constant))
         return;
 
-    /* - Flush journal primitives referencing the current state.
-     * - Make sure the pipeline has no dependants so it may be modified.
+    /* - Make sure the pipeline has no dependants so it may be modified.
      * - If the pipeline isn't currently an authority for the state being
      *   changed, then initialize that state from the current authority.
      */
@@ -735,8 +727,7 @@ cg_pipeline_set_depth_state(cg_pipeline_t *pipeline,
         orig_state->range_far == depth_state->range_far)
         return true;
 
-    /* - Flush journal primitives referencing the current state.
-     * - Make sure the pipeline has no dependants so it may be modified.
+    /* - Make sure the pipeline has no dependants so it may be modified.
      * - If the pipeline isn't currently an authority for the state being
      *   changed, then initialize that state from the current authority.
      */
@@ -791,8 +782,7 @@ cg_pipeline_set_color_mask(cg_pipeline_t *pipeline,
     if (logic_ops_state->color_mask == color_mask)
         return;
 
-    /* - Flush journal primitives referencing the current state.
-     * - Make sure the pipeline has no dependants so it may be modified.
+    /* - Make sure the pipeline has no dependants so it may be modified.
      * - If the pipeline isn't currently an authority for the state being
      *   changed, then initialize that state from the current authority.
      */
@@ -822,8 +812,7 @@ cg_pipeline_set_cull_face_mode(cg_pipeline_t *pipeline,
     if (cull_face_state->mode == cull_face_mode)
         return;
 
-    /* - Flush journal primitives referencing the current state.
-     * - Make sure the pipeline has no dependants so it may be modified.
+    /* - Make sure the pipeline has no dependants so it may be modified.
      * - If the pipeline isn't currently an authority for the state being
      *   changed, then initialize that state from the current authority.
      */
@@ -852,8 +841,7 @@ cg_pipeline_set_front_face_winding(cg_pipeline_t *pipeline,
     if (cull_face_state->front_winding == front_winding)
         return;
 
-    /* - Flush journal primitives referencing the current state.
-     * - Make sure the pipeline has no dependants so it may be modified.
+    /* - Make sure the pipeline has no dependants so it may be modified.
      * - If the pipeline isn't currently an authority for the state being
      *   changed, then initialize that state from the current authority.
      */
@@ -917,8 +905,7 @@ _cg_pipeline_set_non_zero_point_size(cg_pipeline_t *pipeline,
 
     authority = _cg_pipeline_get_authority(pipeline, state);
 
-    /* - Flush journal primitives referencing the current state.
-     * - Make sure the pipeline has no dependants so it may be modified.
+    /* - Make sure the pipeline has no dependants so it may be modified.
      * - If the pipeline isn't currently an authority for the state being
      *   changed, then initialize that state from the current authority.
      */
@@ -949,8 +936,7 @@ cg_pipeline_set_point_size(cg_pipeline_t *pipeline, float point_size)
     if ((authority->big_state->point_size > 0.0f) != (point_size > 0.0f))
         _cg_pipeline_set_non_zero_point_size(pipeline, point_size > 0.0f);
 
-    /* - Flush journal primitives referencing the current state.
-     * - Make sure the pipeline has no dependants so it may be modified.
+    /* - Make sure the pipeline has no dependants so it may be modified.
      * - If the pipeline isn't currently an authority for the state being
      *   changed, then initialize that state from the current authority.
      */
@@ -989,8 +975,7 @@ cg_pipeline_set_per_vertex_point_size(cg_pipeline_t *pipeline,
         return false;
     }
 
-    /* - Flush journal primitives referencing the current state.
-     * - Make sure the pipeline has no dependants so it may be modified.
+    /* - Make sure the pipeline has no dependants so it may be modified.
      * - If the pipeline isn't currently an authority for the state being
      *   changed, then initialize that state from the current authority.
      */
@@ -1031,8 +1016,7 @@ _cg_pipeline_override_uniform(cg_pipeline_t *pipeline,
     c_return_val_if_fail(location >= 0, NULL);
     c_return_val_if_fail(location < dev->n_uniform_names, NULL);
 
-    /* - Flush journal primitives referencing the current state.
-     * - Make sure the pipeline has no dependants so it may be modified.
+    /* - Make sure the pipeline has no dependants so it may be modified.
      * - If the pipeline isn't currently an authority for the state being
      *   changed, then initialize that state from the current authority.
      */
@@ -1160,8 +1144,7 @@ _cg_pipeline_add_vertex_snippet(cg_pipeline_t *pipeline,
 {
     cg_pipeline_state_t state = CG_PIPELINE_STATE_VERTEX_SNIPPETS;
 
-    /* - Flush journal primitives referencing the current state.
-     * - Make sure the pipeline has no dependants so it may be modified.
+    /* - Make sure the pipeline has no dependants so it may be modified.
      * - If the pipeline isn't currently an authority for the state being
      *   changed, then initialize that state from the current authority.
      */
@@ -1177,8 +1160,7 @@ _cg_pipeline_add_fragment_snippet(cg_pipeline_t *pipeline,
 {
     cg_pipeline_state_t state = CG_PIPELINE_STATE_FRAGMENT_SNIPPETS;
 
-    /* - Flush journal primitives referencing the current state.
-     * - Make sure the pipeline has no dependants so it may be modified.
+    /* - Make sure the pipeline has no dependants so it may be modified.
      * - If the pipeline isn't currently an authority for the state being
      *   changed, then initialize that state from the current authority.
      */

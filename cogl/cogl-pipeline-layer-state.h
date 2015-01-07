@@ -87,14 +87,6 @@ typedef enum {
  *   range 0→1 will sample copies of the edge pixels of the
  *   texture. This is useful to avoid artifacts if only one copy of
  *   the texture is being rendered.
- * @CG_PIPELINE_WRAP_MODE_AUTOMATIC: Cogl will try to automatically
- *   decide which of the above two to use. For
- *   cg_framebuffer_draw_rectangle(), it will use repeat mode if any
- *   of the texture coordinates are outside the range 0→1, otherwise
- *   it will use clamp to edge. For cg_framebuffer_draw_attributes()
- *   or cg_primitive_draw() it will use repeat mode
- *   except for layers that have point sprite coordinate generation
- *   enabled. This is the default value.
  *
  * The wrap mode specifies what happens when texture coordinates
  * outside the range 0→1 are used. Note that if the filter mode is
@@ -106,17 +98,14 @@ typedef enum {
  * merged in if the wrap mode is set to repeat.
  *
  */
-/* GL_ALWAYS is just used here as a value that is known not to clash
- * with any valid GL wrap modes
- *
- * XXX: keep the values in sync with the cg_pipeline_wrap_mode_internal_t
- * enum so no conversion is actually needed.
+/*
+ * XXX: keep the values in sync with the cg_sampler_cache_wrap_mode_t enum
+ * so no conversion is actually needed.
  */
 typedef enum {
     CG_PIPELINE_WRAP_MODE_REPEAT = 0x2901,
     CG_PIPELINE_WRAP_MODE_MIRRORED_REPEAT = 0x8370,
     CG_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE = 0x812F,
-    CG_PIPELINE_WRAP_MODE_AUTOMATIC = 0x0207 /* GL_ALWAYS */
 } cg_pipeline_wrap_mode_t;
 /* NB: these values come from the equivalents in gl.h */
 
