@@ -1400,6 +1400,8 @@ typedef enum { /*< prefix=CG_FRAMEBUFFER_ERROR >*/
  */
 bool cg_is_framebuffer(void *object);
 
+cg_device_t *cg_framebuffer_get_device(cg_framebuffer_t *fb);
+
 CG_END_DECLS
 
 #endif /* __CG_FRAMEBUFFER_H */
