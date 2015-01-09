@@ -6,7 +6,7 @@
 #include <cogl/cogl.h>
 #include <clib.h>
 
-typedef struct _Data {
+struct data {
     cg_device_t *dev;
     uv_idle_t idle;
     cg_framebuffer_t *fb;
@@ -15,12 +15,12 @@ typedef struct _Data {
 
     bool is_dirty;
     bool draw_ready;
-} Data;
+};
 
 static void
 paint_cb(uv_idle_t *idle)
 {
-    Data *data = idle->data;
+    struct data *data = idle->data;
 
     data->is_dirty = false;
     data->draw_ready = false;
@@ -33,7 +33,7 @@ paint_cb(uv_idle_t *idle)
 }
 
 static void
-maybe_redraw(Data *data)
+maybe_redraw(struct data *data)
 {
     if (data->is_dirty && data->draw_ready) {
         /* We'll draw on idle instead of drawing immediately so that
@@ -49,7 +49,7 @@ frame_event_cb(cg_onscreen_t *onscreen,
                cg_frame_info_t *info,
                void *user_data)
 {
-    Data *data = user_data;
+    struct data *data = user_data;
 
     if (event == CG_FRAME_EVENT_SYNC) {
         data->draw_ready = true;
@@ -62,7 +62,7 @@ dirty_cb(cg_onscreen_t *onscreen,
          const cg_onscreen_dirty_info_t *info,
          void *user_data)
 {
-    Data *data = user_data;
+    struct data *data = user_data;
 
     data->is_dirty = true;
     maybe_redraw(data);
@@ -71,7 +71,7 @@ dirty_cb(cg_onscreen_t *onscreen,
 int
 main(int argc, char **argv)
 {
-    Data data;
+    struct data data;
     cg_onscreen_t *onscreen;
     cg_error_t *error = NULL;
     cg_vertex_p2c4_t triangle_vertices[] = {
