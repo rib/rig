@@ -224,39 +224,6 @@ _cg_gl_flush_attributes_state(cg_framebuffer_t *framebuffer,
             pipeline = copy;
         }
         _cg_pipeline_apply_overrides(pipeline, &layers_state->options);
-
-        /* TODO:
-         * overrides = cg_pipeline_get_data (pipeline,
-         *                                     last_overrides_key);
-         * if (overrides)
-         *   {
-         *     age = cg_pipeline_get_age (pipeline);
-         *     XXX: actually we also need to check for legacy_state
-         *     and blending overrides for use of glColorPointer...
-         *     if (overrides->ags != age ||
-         *         memcmp (&overrides->options, &options,
-         *                 sizeof (options) != 0)
-         *       {
-         *         cg_object_unref (overrides->weak_pipeline);
-         *         c_slice_free (Overrides, overrides);
-         *         overrides = NULL;
-         *       }
-         *   }
-         * if (!overrides)
-         *   {
-         *     overrides = c_slice_new (Overrides);
-         *     overrides->weak_pipeline =
-         *       cg_pipeline_weak_copy (pipeline);
-         *     _cg_pipeline_apply_overrides (overrides->weak_pipeline,
-         *                                     &options);
-         *
-         *     cg_pipeline_set_data (pipeline, last_overrides_key,
-         *                             weak_overrides,
-         *                             free_overrides_cb,
-         *                             NULL);
-         *   }
-         * pipeline = overrides->weak_pipeline;
-         */
     }
 
     _cg_pipeline_flush_gl_state(dev, pipeline, framebuffer,
