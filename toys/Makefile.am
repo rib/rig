@@ -12,7 +12,7 @@ AM_CFLAGS = \
 	$(COGL_DEP_CFLAGS) \
 	$(COGL_EXTRA_CFLAGS)
 
-AM_CFLAGS += -DCG_EXAMPLES_DATA=\""$(abs_top_srcdir)/cogl-examples/"\"
+AM_CFLAGS += -DCG_EXAMPLES_DATA=\""$(abs_top_srcdir)/toys/"\"
 
 common_ldadd = \
 	$(RIG_EXTRA_LDFLAGS) \
@@ -104,7 +104,7 @@ endif
 
 if EMSCRIPTEN
 %.html: %.o $(top_builddir)/cogl/.libs/libcogl2.so $(top_builddir)/clib/src/.libs/libclib.a
-	$(CC) $(AM_CFLAGS) $(CFLAGS) --js-library $(top_srcdir)/cogl-examples/emscripten-example-js-library.js -o $@ $^
+	$(CC) $(AM_CFLAGS) $(CFLAGS) --js-library $(top_srcdir)/toys/emscripten-example-js-library.js -o $@ $^
 
 all-local: $(addsuffix .html, $(programs))
 endif
