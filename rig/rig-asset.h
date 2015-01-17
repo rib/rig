@@ -57,6 +57,14 @@
  * only for use in the editor. A Blob can have an optional
  * back-reference to an asset, but when serializing to slaves
  * for example the assets wouldn't be kept.
+ *
+ * ...we can likely avoid having a generic 'blob' type and just have
+ * types and property support for images + models + fonts etc and all
+ * of these types can support a 'derivable' trait that lets the editor
+ * know they where originally created from some particular asset and
+ * so it can e.g. potentially update the object if the asset changes.
+ * When we package things up for distribution though we wont keep the
+ * asset references/state around.
  */
 
 extern rut_type_t rig_asset_type;
