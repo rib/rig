@@ -469,33 +469,6 @@ _cg_texture_2d_can_hardware_repeat(cg_texture_t *tex)
         return false;
 }
 
-static void
-_cg_texture_2d_transform_coords_to_gl(cg_texture_t *tex, float *s, float *t)
-{
-    /* The texture coordinates map directly so we don't need to do
-       anything */
-}
-
-static cg_transform_result_t
-_cg_texture_2d_transform_quad_coords_to_gl(cg_texture_t *tex, float *coords)
-{
-    /* The texture coordinates map directly so we don't need to do
-       anything other than check for repeats */
-
-    int i;
-
-    for (i = 0; i < 4; i++)
-        if (coords[i] < 0.0f || coords[i] > 1.0f) {
-            /* Repeat is needed */
-            return (_cg_texture_2d_can_hardware_repeat(tex)
-                    ? CG_TRANSFORM_HARDWARE_REPEAT
-                    : CG_TRANSFORM_SOFTWARE_REPEAT);
-        }
-
-    /* No repeat is needed */
-    return CG_TRANSFORM_NO_REPEAT;
-}
-
 static bool
 _cg_texture_2d_get_gl_texture(cg_texture_t *tex,
                               GLuint *out_gl_handle,
@@ -535,12 +508,6 @@ _cg_texture_2d_pre_paint(cg_texture_t *tex,
 
         tex_2d->mipmaps_dirty = false;
     }
-}
-
-static void
-_cg_texture_2d_ensure_non_quad_rendering(cg_texture_t *tex)
-{
-    /* Nothing needs to be done */
 }
 
 static bool
@@ -625,12 +592,9 @@ static const cg_texture_vtable_t cg_texture_2d_vtable = {
     NULL, /* foreach_sub_texture_in_region */
     _cg_texture_2d_is_sliced,
     _cg_texture_2d_can_hardware_repeat,
-    _cg_texture_2d_transform_coords_to_gl,
-    _cg_texture_2d_transform_quad_coords_to_gl,
     _cg_texture_2d_get_gl_texture,
     _cg_texture_2d_gl_flush_legacy_texobj_filters,
     _cg_texture_2d_pre_paint,
-    _cg_texture_2d_ensure_non_quad_rendering,
     _cg_texture_2d_gl_flush_legacy_texobj_wrap_modes,
     _cg_texture_2d_get_format,
     _cg_texture_2d_get_gl_format,

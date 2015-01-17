@@ -904,6 +904,9 @@ _cg_pipeline_flush_gl_state(cg_device_t *dev,
 
     CG_TIMER_START(_cg_uprof_context, pipeline_flush_timer);
 
+#warning "HACK"
+    current_pipeline = NULL;
+
     /* Bail out asap if we've been asked to re-flush the already current
      * pipeline and we can see the pipeline hasn't changed */
     if (current_pipeline == pipeline &&

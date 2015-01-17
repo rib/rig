@@ -32,9 +32,7 @@
  *  Robert Bragg   <robert@linux.intel.com>
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "cogl-device-private.h"
 #include "cogl-util-gl-private.h"
@@ -204,8 +202,7 @@ paint_primitive_silhouette(cg_framebuffer_t *framebuffer,
     _cg_primitive_draw(user_data,
                        framebuffer,
                        pipeline,
-                       1,
-                       CG_DRAW_SKIP_PIPELINE_VALIDATION |
+                       1, /* n instances */
                        CG_DRAW_SKIP_FRAMEBUFFER_FLUSH);
 }
 

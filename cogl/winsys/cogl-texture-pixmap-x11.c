@@ -33,9 +33,7 @@
  *  Robert Bragg   <robert@linux.intel.com>
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "cogl-debug.h"
 #include "cogl-util.h"
@@ -814,29 +812,6 @@ _cg_texture_pixmap_x11_can_hardware_repeat(cg_texture_t *tex)
     return _cg_texture_can_hardware_repeat(child_tex);
 }
 
-static void
-_cg_texture_pixmap_x11_transform_coords_to_gl(cg_texture_t *tex,
-                                              float *s,
-                                              float *t)
-{
-    cg_texture_pixmap_x11_t *tex_pixmap = CG_TEXTURE_PIXMAP_X11(tex);
-    cg_texture_t *child_tex = _cg_texture_pixmap_x11_get_texture(tex_pixmap);
-
-    /* Forward on to the child texture */
-    _cg_texture_transform_coords_to_gl(child_tex, s, t);
-}
-
-static cg_transform_result_t
-_cg_texture_pixmap_x11_transform_quad_coords_to_gl(cg_texture_t *tex,
-                                                   float *coords)
-{
-    cg_texture_pixmap_x11_t *tex_pixmap = CG_TEXTURE_PIXMAP_X11(tex);
-    cg_texture_t *child_tex = _cg_texture_pixmap_x11_get_texture(tex_pixmap);
-
-    /* Forward on to the child texture */
-    return _cg_texture_transform_quad_coords_to_gl(child_tex, coords);
-}
-
 static bool
 _cg_texture_pixmap_x11_get_gl_texture(cg_texture_t *tex,
                                       GLuint *out_gl_handle,
@@ -874,16 +849,6 @@ _cg_texture_pixmap_x11_pre_paint(cg_texture_t *tex,
     child_tex = _cg_texture_pixmap_x11_get_texture(tex_pixmap);
 
     _cg_texture_pre_paint(child_tex, flags);
-}
-
-static void
-_cg_texture_pixmap_x11_ensure_non_quad_rendering(cg_texture_t *tex)
-{
-    cg_texture_pixmap_x11_t *tex_pixmap = CG_TEXTURE_PIXMAP_X11(tex);
-    cg_texture_t *child_tex = _cg_texture_pixmap_x11_get_texture(tex_pixmap);
-
-    /* Forward on to the child texture */
-    _cg_texture_ensure_non_quad_rendering(child_tex);
 }
 
 static void
@@ -972,12 +937,9 @@ static const cg_texture_vtable_t cg_texture_pixmap_x11_vtable = {
     _cg_texture_pixmap_x11_foreach_sub_texture_in_region,
     _cg_texture_pixmap_x11_is_sliced,
     _cg_texture_pixmap_x11_can_hardware_repeat,
-    _cg_texture_pixmap_x11_transform_coords_to_gl,
-    _cg_texture_pixmap_x11_transform_quad_coords_to_gl,
     _cg_texture_pixmap_x11_get_gl_texture,
     _cg_texture_pixmap_x11_gl_flush_legacy_texobj_filters,
     _cg_texture_pixmap_x11_pre_paint,
-    _cg_texture_pixmap_x11_ensure_non_quad_rendering,
     _cg_texture_pixmap_x11_gl_flush_legacy_texobj_wrap_modes,
     _cg_texture_pixmap_x11_get_format,
     _cg_texture_pixmap_x11_get_gl_format,

@@ -1706,7 +1706,6 @@ _cg_rectangle_immediate(cg_framebuffer_t *framebuffer,
                                     attributes,
                                     1, /* n attributes */
                                     1, /* n instances */
-                                    CG_DRAW_SKIP_PIPELINE_VALIDATION |
                                     CG_DRAW_SKIP_FRAMEBUFFER_FLUSH);
 
     cg_object_unref(attributes[0]);

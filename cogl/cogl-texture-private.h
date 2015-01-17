@@ -110,10 +110,6 @@ struct _cg_texture_vtable_t {
 
     bool (*can_hardware_repeat)(cg_texture_t *tex);
 
-    void (*transform_coords_to_gl)(cg_texture_t *tex, float *s, float *t);
-    cg_transform_result_t (*transform_quad_coords_to_gl)(cg_texture_t *tex,
-                                                         float *coords);
-
     bool (*get_gl_texture)(cg_texture_t *tex,
                            GLuint *out_gl_handle,
                            GLenum *out_gl_target);
@@ -124,7 +120,6 @@ struct _cg_texture_vtable_t {
                                            GLenum mag_filter);
 
     void (*pre_paint)(cg_texture_t *tex, cg_texture_pre_paint_flags_t flags);
-    void (*ensure_non_quad_rendering)(cg_texture_t *tex);
 
     /* OpenGL driver specific virtual function */
     void (*gl_flush_legacy_texobj_wrap_modes)(cg_texture_t *tex,
@@ -252,15 +247,8 @@ void _cg_texture_register_texture_type(const cg_object_class_t *klass);
 
 bool _cg_texture_can_hardware_repeat(cg_texture_t *texture);
 
-void
-_cg_texture_transform_coords_to_gl(cg_texture_t *texture, float *s, float *t);
-cg_transform_result_t
-_cg_texture_transform_quad_coords_to_gl(cg_texture_t *texture, float *coords);
-
 void _cg_texture_pre_paint(cg_texture_t *texture,
                            cg_texture_pre_paint_flags_t flags);
-
-void _cg_texture_ensure_non_quad_rendering(cg_texture_t *texture);
 
 /*
  * This determines a cg_pixel_format_t according to @components and

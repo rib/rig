@@ -293,22 +293,6 @@ _cg_texture_can_hardware_repeat(cg_texture_t *texture)
         return true;
 }
 
-/* NB: You can't use this with textures comprised of multiple sub textures (use
- * cg_texture_is_sliced() to check) since coordinate transformation for such
- * textures will be different for each slice. */
-void
-_cg_texture_transform_coords_to_gl(cg_texture_t *texture, float *s, float *t)
-{
-    if (texture->vtable->transform_coords_to_gl)
-        texture->vtable->transform_coords_to_gl(texture, s, t);
-}
-
-cg_transform_result_t
-_cg_texture_transform_quad_coords_to_gl(cg_texture_t *texture, float *coords)
-{
-    return texture->vtable->transform_quad_coords_to_gl(texture, coords);
-}
-
 bool
 cg_texture_get_gl_texture(cg_texture_t *texture,
                           GLuint *out_gl_handle,
@@ -346,13 +330,6 @@ _cg_texture_pre_paint(cg_texture_t *texture,
     cg_texture_allocate(texture, NULL);
 
     texture->vtable->pre_paint(texture, flags);
-}
-
-void
-_cg_texture_ensure_non_quad_rendering(cg_texture_t *texture)
-{
-    if (texture->vtable->ensure_non_quad_rendering)
-        texture->vtable->ensure_non_quad_rendering(texture);
 }
 
 bool
