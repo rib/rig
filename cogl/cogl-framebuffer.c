@@ -54,10 +54,6 @@
 
 extern cg_object_class_t _cg_onscreen_class;
 
-#ifdef CG_ENABLE_DEBUG
-static cg_user_data_key_t wire_pipeline_key;
-#endif
-
 static void _cg_offscreen_free(cg_offscreen_t *offscreen);
 
 CG_OBJECT_DEFINE_WITH_CODE(Offscreen,
@@ -1525,29 +1521,6 @@ remove_layer_cb(cg_pipeline_t *pipeline, int layer_index, void *user_data)
 }
 
 static void
-pipeline_destroyed_cb(cg_pipeline_t *weak_pipeline, void *user_data)
-{
-    cg_pipeline_t *original_pipeline = user_data;
-
-    /* XXX: I think we probably need to provide a custom unref function for
-     * cg_pipeline_t because it's possible that we will reach this callback
-     * because original_pipeline is being freed which means cg_object_unref
-     * will have already freed any associated user data.
-     *
-     * Setting more user data here will *probably* succeed but that may allocate
-     * a new user-data array which could be leaked.
-     *
-     * Potentially we could have a _cg_object_free_user_data function so
-     * that a custom unref function could be written that can destroy weak
-     * pipeline children before removing user data.
-     */
-    cg_object_set_user_data(
-        CG_OBJECT(original_pipeline), &wire_pipeline_key, NULL, NULL);
-
-    cg_object_unref(weak_pipeline);
-}
-
-static void
 draw_wireframe(cg_device_t *dev,
                cg_framebuffer_t *framebuffer,
                cg_pipeline_t *pipeline,
@@ -1566,37 +1539,28 @@ draw_wireframe(cg_device_t *dev,
     wire_indices = get_wire_line_indices(dev, mode, first_vertex,
                                          n_vertices, indices, &n_indices);
 
-    wire_pipeline =
-        cg_object_get_user_data(CG_OBJECT(pipeline), &wire_pipeline_key);
+    wire_pipeline = cg_pipeline_copy(pipeline);
 
-    if (!wire_pipeline) {
-        wire_pipeline =
-            _cg_pipeline_weak_copy(pipeline, pipeline_destroyed_cb, NULL);
+    /* If we have glsl then the pipeline may have an associated
+     * vertex program and since we'd like to see the results of the
+     * vertex program in the wireframe we just add a final clobber
+     * of the wire color leaving the rest of the state untouched. */
+    if (cg_has_feature(framebuffer->dev, CG_FEATURE_ID_GLSL)) {
+        static cg_snippet_t *snippet = NULL;
 
-        cg_object_set_user_data(
-            CG_OBJECT(pipeline), &wire_pipeline_key, wire_pipeline, NULL);
-
-        /* If we have glsl then the pipeline may have an associated
-         * vertex program and since we'd like to see the results of the
-         * vertex program in the wireframe we just add a final clobber
-         * of the wire color leaving the rest of the state untouched. */
-        if (cg_has_feature(framebuffer->dev, CG_FEATURE_ID_GLSL)) {
-            static cg_snippet_t *snippet = NULL;
-
-            /* The snippet is cached so that it will reuse the program
-             * from the pipeline cache if possible */
-            if (snippet == NULL) {
-                snippet = cg_snippet_new(CG_SNIPPET_HOOK_FRAGMENT, NULL, NULL);
-                cg_snippet_set_replace(snippet,
-                                       "cg_color_out = "
-                                       "vec4 (0.0, 1.0, 0.0, 1.0);\n");
-            }
-
-            cg_pipeline_add_snippet(wire_pipeline, snippet);
-        } else {
-            cg_pipeline_foreach_layer(wire_pipeline, remove_layer_cb, NULL);
-            cg_pipeline_set_color4f(wire_pipeline, 0, 1, 0, 1);
+        /* The snippet is cached so that it will reuse the program
+         * from the pipeline cache if possible */
+        if (snippet == NULL) {
+            snippet = cg_snippet_new(CG_SNIPPET_HOOK_FRAGMENT, NULL, NULL);
+            cg_snippet_set_replace(snippet,
+                                   "cg_color_out = "
+                                   "vec4 (0.0, 1.0, 0.0, 1.0);\n");
         }
+
+        cg_pipeline_add_snippet(wire_pipeline, snippet);
+    } else {
+        cg_pipeline_foreach_layer(wire_pipeline, remove_layer_cb, NULL);
+        cg_pipeline_set_color4f(wire_pipeline, 0, 1, 0, 1);
     }
 
     /* temporarily disable the wireframe to avoid recursion! */
@@ -1612,6 +1576,7 @@ draw_wireframe(cg_device_t *dev,
                                             1,
                                             flags);
 
+    cg_object_unref(wire_pipeline);
     cg_object_unref(wire_indices);
 }
 #endif
