@@ -42,6 +42,7 @@
 #include "cogl-pipeline-private.h"
 #include "cogl-pipeline-opengl-private.h"
 #include "cogl-texture-private.h"
+#include "cogl-primitive-texture.h"
 #include "cogl-framebuffer-private.h"
 #include "cogl-indices-private.h"
 #ifdef CG_PIPELINE_PROGEND_GLSL
@@ -554,24 +555,20 @@ _cg_attribute_free(cg_attribute_t *attribute)
 }
 
 static bool
-validate_layer_cb(cg_pipeline_t *pipeline, int layer_index, void *user_data)
+prepare_layer_cb(cg_pipeline_t *pipeline, int layer_index, void *user_data)
 {
     cg_texture_t *texture =
         cg_pipeline_get_layer_texture(pipeline, layer_index);
     cg_flush_layer_state_t *state = user_data;
-    bool status = true;
 
     /* invalid textures will be handled correctly in
      * _cg_pipeline_flush_layers_gl_state */
     if (texture == NULL)
-        goto validated;
+        goto done;
+
+    c_warn_if_fail (cg_is_primitive_texture(texture));
 
     _cg_texture_flush_batched_rendering(texture);
-
-    /* Give the texture a chance to know that we're rendering
-       non-quad shaped primitives. If the texture is in an atlas it
-       will be migrated */
-    _cg_texture_ensure_non_quad_rendering(texture);
 
     /* We need to ensure the mipmaps are ready before deciding
      * anything else about the texture because the texture storate
@@ -580,31 +577,9 @@ validate_layer_cb(cg_pipeline_t *pipeline, int layer_index, void *user_data)
      */
     _cg_pipeline_pre_paint_for_layer(pipeline, layer_index);
 
-    if (!_cg_texture_can_hardware_repeat(texture)) {
-        c_warning("Disabling layer %d of the current source material, "
-                  "because texturing with the vertex buffer API is not "
-                  "currently supported using sliced textures, or textures "
-                  "with waste\n",
-                  layer_index);
-
-        /* XXX: maybe we can add a mechanism for users to forcibly use
-         * textures with waste where it would be their responsability to use
-         * texture coords in the range [0,1] such that sampling outside isn't
-         * required. We can then use a texture matrix (or a modification of
-         * the users own matrix) to map 1 to the edge of the texture data.
-         *
-         * Potentially, given the same guarantee as above we could also
-         * support a single sliced layer too. We would have to redraw the
-         * vertices once for each layer, each time with a fiddled texture
-         * matrix.
-         */
-        state->fallback_layers |= (1 << state->unit);
-        state->options.flags |= CG_PIPELINE_FLUSH_FALLBACK_MASK;
-    }
-
-validated:
+done:
     state->unit++;
-    return status;
+    return true;
 }
 
 void
@@ -621,8 +596,7 @@ _cg_flush_attributes_state(cg_framebuffer_t *framebuffer,
     layers_state.options.flags = 0;
     layers_state.fallback_layers = 0;
 
-    if (!(flags & CG_DRAW_SKIP_PIPELINE_VALIDATION))
-        cg_pipeline_foreach_layer(pipeline, validate_layer_cb, &layers_state);
+    cg_pipeline_foreach_layer(pipeline, prepare_layer_cb, &layers_state);
 
     /* NB: _cg_framebuffer_flush_state may disrupt various state (such
      * as the pipeline state) when flushing the clip stack, so should

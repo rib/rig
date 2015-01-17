@@ -296,6 +296,10 @@ _cg_framebuffer_gl_flush_state(cg_framebuffer_t *draw_buffer,
     /* We only need to consider the state we've been asked to flush */
     differences &= state;
 
+#warning "HACK"
+    differences = CG_FRAMEBUFFER_STATE_ALL;
+    dev->current_draw_buffer = NULL;
+
     if (dev->current_draw_buffer != draw_buffer) {
         /* If the previous draw buffer is NULL then we'll assume
            everything has changed. This can happen if a framebuffer is

@@ -84,11 +84,10 @@ struct _cg_attribute_t {
 };
 
 typedef enum {
-    CG_DRAW_SKIP_PIPELINE_VALIDATION = 1 << 1,
-    CG_DRAW_SKIP_FRAMEBUFFER_FLUSH = 1 << 2,
+    CG_DRAW_SKIP_FRAMEBUFFER_FLUSH = 1 << 1,
     /* This forcibly disables the debug option to divert all drawing to
      * wireframes */
-    CG_DRAW_SKIP_DEBUG_WIREFRAME = 1 << 4
+    CG_DRAW_SKIP_DEBUG_WIREFRAME = 1 << 2
 } cg_draw_flags_t;
 
 /* During cg_device_t initialization we register the "cg_color_in"

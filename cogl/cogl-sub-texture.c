@@ -260,37 +260,6 @@ _cg_sub_texture_can_hardware_repeat(cg_texture_t *tex)
             _cg_texture_can_hardware_repeat(sub_tex->full_texture));
 }
 
-static void
-_cg_sub_texture_transform_coords_to_gl(cg_texture_t *tex, float *s, float *t)
-{
-    cg_sub_texture_t *sub_tex = CG_SUB_TEXTURE(tex);
-
-    /* This won't work if the sub texture is not the size of the full
-       texture and the coordinates are outside the range [0,1] */
-    *s = ((*s * tex->width + sub_tex->sub_x) /
-          cg_texture_get_width(sub_tex->full_texture));
-    *t = ((*t * tex->height + sub_tex->sub_y) /
-          cg_texture_get_height(sub_tex->full_texture));
-
-    _cg_texture_transform_coords_to_gl(sub_tex->full_texture, s, t);
-}
-
-static cg_transform_result_t
-_cg_sub_texture_transform_quad_coords_to_gl(cg_texture_t *tex, float *coords)
-{
-    cg_sub_texture_t *sub_tex = CG_SUB_TEXTURE(tex);
-    int i;
-
-    for (i = 0; i < 4; i++)
-        if (coords[i] < 0.0f || coords[i] > 1.0f)
-            return CG_TRANSFORM_SOFTWARE_REPEAT;
-
-    _cg_sub_texture_map_quad(sub_tex, coords);
-
-    return _cg_texture_transform_quad_coords_to_gl(sub_tex->full_texture,
-                                                   coords);
-}
-
 static bool
 _cg_sub_texture_get_gl_texture(cg_texture_t *tex,
                                GLuint *out_gl_handle,
@@ -320,11 +289,6 @@ _cg_sub_texture_pre_paint(cg_texture_t *tex,
     cg_sub_texture_t *sub_tex = CG_SUB_TEXTURE(tex);
 
     _cg_texture_pre_paint(sub_tex->full_texture, flags);
-}
-
-static void
-_cg_sub_texture_ensure_non_quad_rendering(cg_texture_t *tex)
-{
 }
 
 static bool
@@ -397,12 +361,9 @@ static const cg_texture_vtable_t cg_sub_texture_vtable = {
     _cg_sub_texture_foreach_sub_texture_in_region,
     _cg_sub_texture_is_sliced,
     _cg_sub_texture_can_hardware_repeat,
-    _cg_sub_texture_transform_coords_to_gl,
-    _cg_sub_texture_transform_quad_coords_to_gl,
     _cg_sub_texture_get_gl_texture,
     _cg_sub_texture_gl_flush_legacy_texobj_filters,
     _cg_sub_texture_pre_paint,
-    _cg_sub_texture_ensure_non_quad_rendering,
     _cg_sub_texture_gl_flush_legacy_texobj_wrap_modes,
     _cg_sub_texture_get_format,
     _cg_sub_texture_get_gl_format,

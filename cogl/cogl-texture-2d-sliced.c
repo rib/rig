@@ -1110,59 +1110,6 @@ _cg_texture_2d_sliced_can_hardware_repeat(cg_texture_t *tex)
     return _cg_texture_can_hardware_repeat(CG_TEXTURE(slice_tex));
 }
 
-static void
-_cg_texture_2d_sliced_transform_coords_to_gl(cg_texture_t *tex,
-                                             float *s,
-                                             float *t)
-{
-    cg_texture_2d_sliced_t *tex_2ds = CG_TEXTURE_2D_SLICED(tex);
-    cg_span_t *x_span;
-    cg_span_t *y_span;
-    cg_texture_2d_t *slice_tex;
-
-    c_assert(!_cg_texture_2d_sliced_is_sliced(tex));
-
-    /* Don't include the waste in the texture coordinates */
-    x_span = &c_array_index(tex_2ds->slice_x_spans, cg_span_t, 0);
-    y_span = &c_array_index(tex_2ds->slice_y_spans, cg_span_t, 0);
-
-    *s *= tex->width / (float)x_span->size;
-    *t *= tex->height / (float)y_span->size;
-
-    /* Let the child texture further transform the coords */
-    slice_tex = c_array_index(tex_2ds->slice_textures, cg_texture_2d_t *, 0);
-    _cg_texture_transform_coords_to_gl(CG_TEXTURE(slice_tex), s, t);
-}
-
-static cg_transform_result_t
-_cg_texture_2d_sliced_transform_quad_coords_to_gl(cg_texture_t *tex,
-                                                  float *coords)
-{
-    bool need_repeat = false;
-    int i;
-
-    /* This is a bit lazy - in the case where the quad lies entirely
-     * within a single slice we could avoid the fallback. But that
-     * could likely lead to visual inconsistency if the fallback involves
-     * dropping layers, so this might be the right thing to do anyways.
-     */
-    if (_cg_texture_2d_sliced_is_sliced(tex))
-        return CG_TRANSFORM_SOFTWARE_REPEAT;
-
-    for (i = 0; i < 4; i++)
-        if (coords[i] < 0.0f || coords[i] > 1.0f)
-            need_repeat = true;
-
-    if (need_repeat && !_cg_texture_2d_sliced_can_hardware_repeat(tex))
-        return CG_TRANSFORM_SOFTWARE_REPEAT;
-
-    _cg_texture_2d_sliced_transform_coords_to_gl(tex, coords + 0, coords + 1);
-    _cg_texture_2d_sliced_transform_coords_to_gl(tex, coords + 2, coords + 3);
-
-    return (need_repeat ? CG_TRANSFORM_HARDWARE_REPEAT
-            : CG_TRANSFORM_NO_REPEAT);
-}
-
 static bool
 _cg_texture_2d_sliced_get_gl_texture(cg_texture_t *tex,
                                      GLuint *out_gl_handle,
@@ -1218,22 +1165,6 @@ _cg_texture_2d_sliced_pre_paint(cg_texture_t *tex,
         cg_texture_2d_t *slice_tex =
             c_array_index(tex_2ds->slice_textures, cg_texture_2d_t *, i);
         _cg_texture_pre_paint(CG_TEXTURE(slice_tex), flags);
-    }
-}
-
-static void
-_cg_texture_2d_sliced_ensure_non_quad_rendering(cg_texture_t *tex)
-{
-    cg_texture_2d_sliced_t *tex_2ds = CG_TEXTURE_2D_SLICED(tex);
-    int i;
-
-    c_return_if_fail(tex_2ds->slice_textures != NULL);
-
-    /* Pass the call on to every slice */
-    for (i = 0; i < tex_2ds->slice_textures->len; i++) {
-        cg_texture_2d_t *slice_tex =
-            c_array_index(tex_2ds->slice_textures, cg_texture_2d_t *, i);
-        _cg_texture_ensure_non_quad_rendering(CG_TEXTURE(slice_tex));
     }
 }
 
@@ -1311,12 +1242,9 @@ static const cg_texture_vtable_t cg_texture_2d_sliced_vtable = {
     _cg_texture_2d_sliced_foreach_sub_texture_in_region,
     _cg_texture_2d_sliced_is_sliced,
     _cg_texture_2d_sliced_can_hardware_repeat,
-    _cg_texture_2d_sliced_transform_coords_to_gl,
-    _cg_texture_2d_sliced_transform_quad_coords_to_gl,
     _cg_texture_2d_sliced_get_gl_texture,
     _cg_texture_2d_sliced_gl_flush_legacy_texobj_filters,
     _cg_texture_2d_sliced_pre_paint,
-    _cg_texture_2d_sliced_ensure_non_quad_rendering,
     _cg_texture_2d_sliced_gl_flush_legacy_texobj_wrap_modes,
     _cg_texture_2d_sliced_get_format,
     _cg_texture_2d_sliced_get_gl_format,

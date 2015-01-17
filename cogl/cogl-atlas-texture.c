@@ -262,25 +262,6 @@ _cg_atlas_texture_can_hardware_repeat(cg_texture_t *tex)
     return _cg_texture_can_hardware_repeat(atlas_tex->sub_texture);
 }
 
-static void
-_cg_atlas_texture_transform_coords_to_gl(cg_texture_t *tex, float *s, float *t)
-{
-    cg_atlas_texture_t *atlas_tex = CG_ATLAS_TEXTURE(tex);
-
-    /* Forward on to the sub texture */
-    _cg_texture_transform_coords_to_gl(atlas_tex->sub_texture, s, t);
-}
-
-static cg_transform_result_t
-_cg_atlas_texture_transform_quad_coords_to_gl(cg_texture_t *tex, float *coords)
-{
-    cg_atlas_texture_t *atlas_tex = CG_ATLAS_TEXTURE(tex);
-
-    /* Forward on to the sub texture */
-    return _cg_texture_transform_quad_coords_to_gl(atlas_tex->sub_texture,
-                                                   coords);
-}
-
 static bool
 _cg_atlas_texture_get_gl_texture(cg_texture_t *tex,
                                  GLuint *out_gl_handle,
@@ -373,19 +354,6 @@ _cg_atlas_texture_pre_paint(cg_texture_t *tex,
 
     /* Forward on to the sub texture */
     _cg_texture_pre_paint(atlas_tex->sub_texture, flags);
-}
-
-static void
-_cg_atlas_texture_ensure_non_quad_rendering(cg_texture_t *tex)
-{
-    cg_atlas_texture_t *atlas_tex = CG_ATLAS_TEXTURE(tex);
-
-    /* Sub textures can't support non-quad rendering so we'll just
-       migrate the texture out */
-    _cg_atlas_texture_migrate_out_of_atlas(atlas_tex);
-
-    /* Forward on to the sub texture */
-    _cg_texture_ensure_non_quad_rendering(atlas_tex->sub_texture);
 }
 
 static bool
@@ -927,12 +895,9 @@ static const cg_texture_vtable_t cg_atlas_texture_vtable = {
     _cg_atlas_texture_foreach_sub_texture_in_region,
     _cg_atlas_texture_is_sliced,
     _cg_atlas_texture_can_hardware_repeat,
-    _cg_atlas_texture_transform_coords_to_gl,
-    _cg_atlas_texture_transform_quad_coords_to_gl,
     _cg_atlas_texture_get_gl_texture,
     _cg_atlas_texture_gl_flush_legacy_texobj_filters,
     _cg_atlas_texture_pre_paint,
-    _cg_atlas_texture_ensure_non_quad_rendering,
     _cg_atlas_texture_gl_flush_legacy_texobj_wrap_modes,
     _cg_atlas_texture_get_format,
     _cg_atlas_texture_get_gl_format,
