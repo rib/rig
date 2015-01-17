@@ -469,32 +469,40 @@ static void
 rut_sdl_onscreen_set_cursor(rut_shell_onscreen_t *onscreen,
                             rut_cursor_t cursor)
 {
-    SDL_Cursor *cursor_image;
-    SDL_SystemCursor system_cursor;
+    SDL_Cursor *cursor_image = NULL;
 
     switch (cursor) {
+    case RUT_CURSOR_DEFAULT:
+        cursor_image = NULL;
+        break;
+    case RUT_CURSOR_INVISIBLE:
+        SDL_ShowCursor(false);
+        return;
     case RUT_CURSOR_ARROW:
-        system_cursor = SDL_SYSTEM_CURSOR_ARROW;
+        cursor_image = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
         break;
     case RUT_CURSOR_IBEAM:
-        system_cursor = SDL_SYSTEM_CURSOR_IBEAM;
+        cursor_image = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM);
         break;
     case RUT_CURSOR_WAIT:
-        system_cursor = SDL_SYSTEM_CURSOR_WAIT;
+        cursor_image = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_WAIT);
         break;
     case RUT_CURSOR_CROSSHAIR:
-        system_cursor = SDL_SYSTEM_CURSOR_CROSSHAIR;
+        cursor_image = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_CROSSHAIR);
         break;
     case RUT_CURSOR_SIZE_WE:
-        system_cursor = SDL_SYSTEM_CURSOR_SIZEWE;
+        cursor_image = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE);
         break;
     case RUT_CURSOR_SIZE_NS:
-        system_cursor = SDL_SYSTEM_CURSOR_SIZENS;
+        cursor_image = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS);
         break;
     }
 
-    cursor_image = SDL_CreateSystemCursor(system_cursor);
+    if (!cursor_image)
+        cursor_image = SDL_GetDefaultCursor();
+
     SDL_SetCursor(cursor_image);
+    SDL_ShowCursor(true);
 
     if (onscreen->sdl.sdl_cursor_image)
         SDL_FreeCursor(shell_onscreen->sdl.sdl_cursor_image);

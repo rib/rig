@@ -665,6 +665,7 @@ rut_x11_allocate_onscreen(rut_shell_onscreen_t *onscreen)
     };
     uint32_t pid;
     XIEventMask evmask;
+    XSetWindowAttributes attribs;
 
     cg_onscreen = cg_onscreen_new(shell->cg_device,
                                   onscreen->width,
@@ -711,9 +712,25 @@ rut_x11_allocate_onscreen(rut_shell_onscreen_t *onscreen)
                     (unsigned char *)&normal_atom,
                     1); /* n elements */
 
-    XSelectInput(shell->xdpy, xwin,
-                 StructureNotifyMask | ExposureMask | /* needed by cogl */
-                 PropertyChangeMask);
+    attribs.bit_gravity = NorthWestGravity;
+    attribs.event_mask = (StructureNotifyMask | ExposureMask | /* needed by cogl */
+                          PropertyChangeMask);
+    /* Assuming we're creating a top-level window that might not be
+     * re-parented by the window manager (e.g. while fullscreen)
+     * then we don't want input events falling through to the
+     * underlying desktop... */
+    attribs.do_not_propagate_mask = (KeyPressMask | KeyReleaseMask |
+                                     ButtonPressMask | ButtonReleaseMask |
+                                     PointerMotionMask | ButtonMotionMask |
+                                     Button1MotionMask | Button2MotionMask |
+                                     Button3MotionMask | Button4MotionMask |
+                                     Button5MotionMask);
+    attribs.background_pixel = BlackPixel(shell->xdpy,
+                                          DefaultScreen(shell->xdpy));
+
+    XChangeWindowAttributes(shell->xdpy, xwin,
+                            CWBitGravity | CWEventMask | CWDontPropagate | CWBackPixel,
+                            &attribs);
 
     evmask.deviceid = XIAllDevices;
     evmask.mask_len = XIMaskLen(XI_LASTEVENT);
@@ -772,9 +789,26 @@ rut_x11_onscreen_set_cursor(rut_shell_onscreen_t *onscreen,
     rut_shell_t *shell = onscreen->shell;
     Window xwindow = cg_x11_onscreen_get_window_xid(onscreen->cg_onscreen);
     unsigned int shape = XC_arrow;
+    XColor zero = { .pixel = 0, .red = 0, .green = 0, .blue = 0 };
+    Pixmap xpixmap;
     Cursor xcursor;
 
     switch(cursor) {
+    case RUT_CURSOR_DEFAULT:
+        XUndefineCursor(shell->xdpy, xwindow);
+        return;
+    case RUT_CURSOR_INVISIBLE:
+        xpixmap = XCreatePixmap(shell->xdpy, xwindow, 1, 1, 1);
+        xcursor = XCreatePixmapCursor(shell->xdpy,
+                                      xpixmap, /* source */
+                                      xpixmap, /* mask */
+                                      &zero, /* fg */
+                                      &zero, /* bg */
+                                      1, 1); /* hotspot */
+        XFreePixmap(shell->xdpy, xpixmap);
+        XDefineCursor(shell->xdpy, xwindow, xcursor);
+        XFreeCursor(shell->xdpy, xcursor);
+        return;
     case RUT_CURSOR_ARROW:
         shape = XC_left_ptr;
         break;

@@ -68,6 +68,8 @@ typedef void (*rut_shell_fini_callback_t)(rut_shell_t *shell, void *user_data);
 typedef void (*rut_shell_paint_callback_t)(rut_shell_t *shell, void *user_data);
 
 typedef enum {
+    RUT_CURSOR_DEFAULT,
+    RUT_CURSOR_INVISIBLE,
     RUT_CURSOR_ARROW,
     RUT_CURSOR_IBEAM,
     RUT_CURSOR_WAIT,
