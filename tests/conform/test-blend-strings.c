@@ -19,37 +19,37 @@
 #define BLEND_CONSTANT_UNUSED 0xDEADBEEF
 #define TEX_CONSTANT_UNUSED   0xDEADBEEF
 
-typedef struct _TestState
+typedef struct _test_state_t
 {
   int padding;
-} TestState;
+} test_state_t;
 
 
 static void
-test_blend (TestState *state,
-            int x,
-            int y,
-            uint32_t src_color,
-            uint32_t dst_color,
-            const char *blend_string,
-            uint32_t blend_constant,
-            uint32_t expected_result)
+test_blend(test_state_t *state,
+           int x,
+           int y,
+           uint32_t src_color,
+           uint32_t dst_color,
+           const char *blend_string,
+           uint32_t blend_constant,
+           uint32_t expected_result)
 {
   /* src color */
-  uint8_t Sr = MASK_RED (src_color);
-  uint8_t Sg = MASK_GREEN (src_color);
-  uint8_t Sb = MASK_BLUE (src_color);
-  uint8_t Sa = MASK_ALPHA (src_color);
+  uint8_t Sr = MASK_RED(src_color);
+  uint8_t Sg = MASK_GREEN(src_color);
+  uint8_t Sb = MASK_BLUE(src_color);
+  uint8_t Sa = MASK_ALPHA(src_color);
   /* dest color */
-  uint8_t Dr = MASK_RED (dst_color);
-  uint8_t Dg = MASK_GREEN (dst_color);
-  uint8_t Db = MASK_BLUE (dst_color);
-  uint8_t Da = MASK_ALPHA (dst_color);
+  uint8_t Dr = MASK_RED(dst_color);
+  uint8_t Dg = MASK_GREEN(dst_color);
+  uint8_t Db = MASK_BLUE(dst_color);
+  uint8_t Da = MASK_ALPHA(dst_color);
   /* blend constant - when applicable */
-  uint8_t Br = MASK_RED (blend_constant);
-  uint8_t Bg = MASK_GREEN (blend_constant);
-  uint8_t Bb = MASK_BLUE (blend_constant);
-  uint8_t Ba = MASK_ALPHA (blend_constant);
+  uint8_t Br = MASK_RED(blend_constant);
+  uint8_t Bg = MASK_GREEN(blend_constant);
+  uint8_t Bb = MASK_BLUE(blend_constant);
+  uint8_t Ba = MASK_ALPHA(blend_constant);
   cg_color_t blend_const_color;
 
   cg_pipeline_t *pipeline;
@@ -59,47 +59,45 @@ test_blend (TestState *state,
   int x_off;
 
   /* First write out the destination color without any blending... */
-  pipeline = cg_pipeline_new (test_dev);
-  cg_pipeline_set_color4ub (pipeline, Dr, Dg, Db, Da);
-  cg_pipeline_set_blend (pipeline, "RGBA = ADD (SRC_COLOR, 0)", NULL);
-  cg_framebuffer_draw_rectangle (test_fb,
-                                   pipeline,
-                                   x * QUAD_WIDTH,
-                                   y * QUAD_WIDTH,
-                                   x * QUAD_WIDTH + QUAD_WIDTH,
-                                   y * QUAD_WIDTH + QUAD_WIDTH);
-  cg_object_unref (pipeline);
+  pipeline = cg_pipeline_new(test_dev);
+  cg_pipeline_set_color4ub(pipeline, Dr, Dg, Db, Da);
+  cg_pipeline_set_blend(pipeline, "RGBA = ADD (SRC_COLOR, 0)", NULL);
+  cg_framebuffer_draw_rectangle(test_fb,
+                                pipeline,
+                                x * QUAD_WIDTH,
+                                y * QUAD_WIDTH,
+                                x * QUAD_WIDTH + QUAD_WIDTH,
+                                y * QUAD_WIDTH + QUAD_WIDTH);
+  cg_object_unref(pipeline);
 
   /*
    * Now blend a rectangle over our well defined destination:
    */
 
-  pipeline = cg_pipeline_new (test_dev);
-  cg_pipeline_set_color4ub (pipeline, Sr, Sg, Sb, Sa);
+  pipeline = cg_pipeline_new(test_dev);
+  cg_pipeline_set_color4ub(pipeline, Sr, Sg, Sb, Sa);
 
-  status = cg_pipeline_set_blend (pipeline, blend_string, &error);
-  if (!status)
-    {
+  status = cg_pipeline_set_blend(pipeline, blend_string, &error);
+  if (!status) {
       /* It's not strictly a test failure; you need a more capable GPU or
        * driver to test this blend string. */
-      if (cg_test_verbose ())
-	{
-	  c_debug ("Failed to test blend string %s: %s",
-		   blend_string, error->message);
-	  c_print ("Skipping\n");
-	}
+      if (cg_test_verbose ()) {
+          c_debug("Failed to test blend string %s: %s",
+                  blend_string, error->message);
+          c_print("Skipping\n");
+      }
       return;
-    }
+  }
 
-  cg_color_init_from_4ub (&blend_const_color, Br, Bg, Bb, Ba);
-  cg_pipeline_set_blend_constant (pipeline, &blend_const_color);
+  cg_color_init_from_4ub(&blend_const_color, Br, Bg, Bb, Ba);
+  cg_pipeline_set_blend_constant(pipeline, &blend_const_color);
 
-  cg_framebuffer_draw_rectangle (test_fb,
-                                   pipeline,
-                                   x * QUAD_WIDTH,
-                                   y * QUAD_WIDTH,
-                                   x * QUAD_WIDTH + QUAD_WIDTH,
-                                   y * QUAD_WIDTH + QUAD_WIDTH);
+  cg_framebuffer_draw_rectangle(test_fb,
+                                pipeline,
+                                x * QUAD_WIDTH,
+                                y * QUAD_WIDTH,
+                                x * QUAD_WIDTH + QUAD_WIDTH,
+                                y * QUAD_WIDTH + QUAD_WIDTH);
   cg_object_unref (pipeline);
 
   /* See what we got... */
@@ -107,73 +105,71 @@ test_blend (TestState *state,
   y_off = y * QUAD_WIDTH + (QUAD_WIDTH / 2);
   x_off = x * QUAD_WIDTH + (QUAD_WIDTH / 2);
 
-  if (cg_test_verbose ())
-    {
-      c_print ("test_blend (%d, %d):\n%s\n", x, y, blend_string);
-      c_print ("  src color = %02x, %02x, %02x, %02x\n", Sr, Sg, Sb, Sa);
-      c_print ("  dst color = %02x, %02x, %02x, %02x\n", Dr, Dg, Db, Da);
+  if (cg_test_verbose()) {
+      c_print("test_blend (%d, %d):\n%s\n", x, y, blend_string);
+      c_print("  src color = %02x, %02x, %02x, %02x\n", Sr, Sg, Sb, Sa);
+      c_print("  dst color = %02x, %02x, %02x, %02x\n", Dr, Dg, Db, Da);
       if (blend_constant != BLEND_CONSTANT_UNUSED)
-        c_print ("  blend constant = %02x, %02x, %02x, %02x\n",
-                 Br, Bg, Bb, Ba);
+          c_print("  blend constant = %02x, %02x, %02x, %02x\n",
+                  Br, Bg, Bb, Ba);
       else
-        c_print ("  blend constant = UNUSED\n");
-    }
+          c_print("  blend constant = UNUSED\n");
+  }
 
-  test_utils_check_pixel (test_fb, x_off, y_off, expected_result);
+  test_utils_check_pixel(test_fb, x_off, y_off, expected_result);
 }
 
 static cg_texture_t *
-make_texture (uint32_t color)
+make_texture(uint32_t color)
 {
   uint8_t *tex_data, *p;
-  uint8_t r = MASK_RED (color);
-  uint8_t g = MASK_GREEN (color);
-  uint8_t b = MASK_BLUE (color);
-  uint8_t a = MASK_ALPHA (color);
+  uint8_t r = MASK_RED(color);
+  uint8_t g = MASK_GREEN(color);
+  uint8_t b = MASK_BLUE(color);
+  uint8_t a = MASK_ALPHA(color);
   cg_texture_t *tex;
 
-  tex_data = c_malloc (QUAD_WIDTH * QUAD_WIDTH * 4);
+  tex_data = c_malloc(QUAD_WIDTH * QUAD_WIDTH * 4);
 
-  for (p = tex_data + QUAD_WIDTH * QUAD_WIDTH * 4; p > tex_data;)
-    {
+  for (p = tex_data + QUAD_WIDTH * QUAD_WIDTH * 4; p > tex_data;) {
       *(--p) = a;
       *(--p) = b;
       *(--p) = g;
       *(--p) = r;
-    }
+  }
 
   /* Note: we claim that the data is premultiplied so that Cogl won't
    * premultiply the data on upload */
-  tex = test_utils_texture_new_from_data (test_dev,
-                                          QUAD_WIDTH,
-                                          QUAD_WIDTH,
-                                          TEST_UTILS_TEXTURE_NONE,
-                                          CG_PIXEL_FORMAT_RGBA_8888_PRE,
-                                          QUAD_WIDTH * 4,
-                                          tex_data);
+  tex = test_utils_texture_new_from_data(test_dev,
+                                         QUAD_WIDTH,
+                                         QUAD_WIDTH,
+                                         TEST_UTILS_TEXTURE_NONE,
+                                         CG_PIXEL_FORMAT_RGBA_8888_PRE,
+                                         QUAD_WIDTH * 4,
+                                         tex_data);
 
-  c_free (tex_data);
+  c_free(tex_data);
 
   return tex;
 }
 
 static void
-test_tex_combine (TestState *state,
-                  int x,
-                  int y,
-                  uint32_t tex0_color,
-                  uint32_t tex1_color,
-                  uint32_t combine_constant,
-                  const char *combine_string,
-                  uint32_t expected_result)
+test_tex_combine(test_state_t *state,
+                 int x,
+                 int y,
+                 uint32_t tex0_color,
+                 uint32_t tex1_color,
+                 uint32_t combine_constant,
+                 const char *combine_string,
+                 uint32_t expected_result)
 {
   cg_texture_t *tex0, *tex1;
 
   /* combine constant - when applicable */
-  uint8_t Cr = MASK_RED (combine_constant);
-  uint8_t Cg = MASK_GREEN (combine_constant);
-  uint8_t Cb = MASK_BLUE (combine_constant);
-  uint8_t Ca = MASK_ALPHA (combine_constant);
+  uint8_t Cr = MASK_RED(combine_constant);
+  uint8_t Cg = MASK_GREEN(combine_constant);
+  uint8_t Cb = MASK_BLUE(combine_constant);
+  uint8_t Ca = MASK_ALPHA(combine_constant);
   cg_color_t combine_const_color;
 
   cg_pipeline_t *pipeline;
@@ -183,188 +179,185 @@ test_tex_combine (TestState *state,
   int x_off;
 
 
-  tex0 = make_texture (tex0_color);
-  tex1 = make_texture (tex1_color);
+  tex0 = make_texture(tex0_color);
+  tex1 = make_texture(tex1_color);
 
-  pipeline = cg_pipeline_new (test_dev);
+  pipeline = cg_pipeline_new(test_dev);
 
-  cg_pipeline_set_color4ub (pipeline, 0x80, 0x80, 0x80, 0x80);
-  cg_pipeline_set_blend (pipeline, "RGBA = ADD (SRC_COLOR, 0)", NULL);
+  cg_pipeline_set_color4ub(pipeline, 0x80, 0x80, 0x80, 0x80);
+  cg_pipeline_set_blend(pipeline, "RGBA = ADD (SRC_COLOR, 0)", NULL);
 
-  cg_pipeline_set_layer_texture (pipeline, 0, tex0);
-  cg_pipeline_set_layer_combine (pipeline, 0,
-                                   "RGBA = REPLACE (TEXTURE)", NULL);
+  cg_pipeline_set_layer_texture(pipeline, 0, tex0);
+  cg_pipeline_set_layer_combine(pipeline, 0,
+                                "RGBA = REPLACE (TEXTURE)", NULL);
 
-  cg_pipeline_set_layer_texture (pipeline, 1, tex1);
-  status = cg_pipeline_set_layer_combine (pipeline, 1,
-                                            combine_string, &error);
-  if (!status)
-    {
+  cg_pipeline_set_layer_texture(pipeline, 1, tex1);
+  status = cg_pipeline_set_layer_combine(pipeline, 1, combine_string, &error);
+  if (!status) {
       /* It's not strictly a test failure; you need a more capable GPU or
        * driver to test this texture combine string. */
-      c_debug ("Failed to test texture combine string %s: %s",
-               combine_string, error->message);
-    }
+      c_debug("Failed to test texture combine string %s: %s",
+              combine_string, error->message);
+  }
 
-  cg_color_init_from_4ub (&combine_const_color, Cr, Cg, Cb, Ca);
-  cg_pipeline_set_layer_combine_constant (pipeline, 1, &combine_const_color);
+  cg_color_init_from_4ub(&combine_const_color, Cr, Cg, Cb, Ca);
+  cg_pipeline_set_layer_combine_constant(pipeline, 1, &combine_const_color);
 
-  cg_framebuffer_draw_rectangle (test_fb,
-                                   pipeline,
-                                   x * QUAD_WIDTH,
-                                   y * QUAD_WIDTH,
-                                   x * QUAD_WIDTH + QUAD_WIDTH,
-                                   y * QUAD_WIDTH + QUAD_WIDTH);
-  cg_object_unref (pipeline);
-  cg_object_unref (tex0);
-  cg_object_unref (tex1);
+  cg_framebuffer_draw_rectangle(test_fb,
+                                pipeline,
+                                x * QUAD_WIDTH,
+                                y * QUAD_WIDTH,
+                                x * QUAD_WIDTH + QUAD_WIDTH,
+                                y * QUAD_WIDTH + QUAD_WIDTH);
+  cg_object_unref(pipeline);
+  cg_object_unref(tex0);
+  cg_object_unref(tex1);
 
   /* See what we got... */
 
   y_off = y * QUAD_WIDTH + (QUAD_WIDTH / 2);
   x_off = x * QUAD_WIDTH + (QUAD_WIDTH / 2);
 
-  if (cg_test_verbose ())
-    {
-      c_print ("test_tex_combine (%d, %d):\n%s\n", x, y, combine_string);
-      c_print ("  texture 0 color = 0x%08lX\n", (unsigned long)tex0_color);
-      c_print ("  texture 1 color = 0x%08lX\n", (unsigned long)tex1_color);
+  if (cg_test_verbose ()) {
+      c_print("test_tex_combine (%d, %d):\n%s\n", x, y, combine_string);
+      c_print("  texture 0 color = 0x%08lX\n", (unsigned long)tex0_color);
+      c_print("  texture 1 color = 0x%08lX\n", (unsigned long)tex1_color);
       if (combine_constant != TEX_CONSTANT_UNUSED)
-        c_print ("  combine constant = %02x, %02x, %02x, %02x\n",
-                 Cr, Cg, Cb, Ca);
+          c_print("  combine constant = %02x, %02x, %02x, %02x\n",
+                  Cr, Cg, Cb, Ca);
       else
-        c_print ("  combine constant = UNUSED\n");
-    }
+          c_print("  combine constant = UNUSED\n");
+  }
 
   test_utils_check_pixel (test_fb, x_off, y_off, expected_result);
 }
 
 static void
-paint (TestState *state)
+paint(test_state_t *state)
 {
-  test_blend (state, 0, 0, /* position */
-              0xff0000ff, /* src */
-              0xffffffff, /* dst */
-              "RGBA = ADD (SRC_COLOR, 0)",
-              BLEND_CONSTANT_UNUSED,
-              0xff0000ff); /* expected */
+  test_blend(state, 0, 0, /* position */
+             0xff0000ff, /* src */
+             0xffffffff, /* dst */
+             "RGBA = ADD (SRC_COLOR, 0)",
+             BLEND_CONSTANT_UNUSED,
+             0xff0000ff); /* expected */
 
-  test_blend (state, 1, 0, /* position */
-              0x11223344, /* src */
-              0x11223344, /* dst */
-              "RGBA = ADD (SRC_COLOR, DST_COLOR)",
-              BLEND_CONSTANT_UNUSED,
-              0x22446688); /* expected */
+  test_blend(state, 1, 0, /* position */
+             0x11223344, /* src */
+             0x11223344, /* dst */
+             "RGBA = ADD (SRC_COLOR, DST_COLOR)",
+             BLEND_CONSTANT_UNUSED,
+             0x22446688); /* expected */
 
-  test_blend (state, 2, 0, /* position */
-              0x80808080, /* src */
-              0xffffffff, /* dst */
-              "RGBA = ADD (SRC_COLOR * (CONSTANT), 0)",
-              0x80808080, /* constant (RGBA all = 0.5 when normalized) */
-              0x40404040); /* expected */
+  test_blend(state, 2, 0, /* position */
+             0x80808080, /* src */
+             0xffffffff, /* dst */
+             "RGBA = ADD (SRC_COLOR * (CONSTANT), 0)",
+             0x80808080, /* constant (RGBA all = 0.5 when normalized) */
+             0x40404040); /* expected */
 
-  test_blend (state, 3, 0, /* position */
-              0x80000080, /* src (alpha = 0.5 when normalized) */
-              0x40000000, /* dst */
-              "RGBA = ADD (SRC_COLOR * (SRC_COLOR[A]),"
-              "            DST_COLOR * (1-SRC_COLOR[A]))",
-              BLEND_CONSTANT_UNUSED,
-              0x60000040); /* expected */
+  test_blend(state, 3, 0, /* position */
+             0x80000080, /* src (alpha = 0.5 when normalized) */
+             0x40000000, /* dst */
+             "RGBA = ADD (SRC_COLOR * (SRC_COLOR[A]),"
+             "            DST_COLOR * (1-SRC_COLOR[A]))",
+             BLEND_CONSTANT_UNUSED,
+             0x60000040); /* expected */
 
   /* XXX:
    * For all texture combine tests tex0 will use a combine mode of
    * "RGBA = REPLACE (TEXTURE)"
    */
 
-  test_tex_combine (state, 4, 0, /* position */
-                    0x11111111, /* texture 0 color */
-                    0x22222222, /* texture 1 color */
-                    TEX_CONSTANT_UNUSED,
-                    "RGBA = ADD (PREVIOUS, TEXTURE)", /* tex combine */
-                    0x33333333); /* expected */
+  test_tex_combine(state, 4, 0, /* position */
+                   0x11111111, /* texture 0 color */
+                   0x22222222, /* texture 1 color */
+                   TEX_CONSTANT_UNUSED,
+                   "RGBA = ADD (PREVIOUS, TEXTURE)", /* tex combine */
+                   0x33333333); /* expected */
 
-  test_tex_combine (state, 5, 0, /* position */
-                    0x40404040, /* texture 0 color */
-                    0x80808080, /* texture 1 color (RGBA all = 0.5) */
-                    TEX_CONSTANT_UNUSED,
-                    "RGBA = MODULATE (PREVIOUS, TEXTURE)", /* tex combine */
-                    0x20202020); /* expected */
+  test_tex_combine(state, 5, 0, /* position */
+                   0x40404040, /* texture 0 color */
+                   0x80808080, /* texture 1 color (RGBA all = 0.5) */
+                   TEX_CONSTANT_UNUSED,
+                   "RGBA = MODULATE (PREVIOUS, TEXTURE)", /* tex combine */
+                   0x20202020); /* expected */
 
-  test_tex_combine (state, 6, 0, /* position */
-                    0xffffff80, /* texture 0 color (alpha = 0.5) */
-                    0xDEADBE40, /* texture 1 color */
-                    TEX_CONSTANT_UNUSED,
-                    "RGB = REPLACE (PREVIOUS)"
-                    "A = MODULATE (PREVIOUS, TEXTURE)", /* tex combine */
-                    0xffffff20); /* expected */
+  test_tex_combine(state, 6, 0, /* position */
+                   0xffffff80, /* texture 0 color (alpha = 0.5) */
+                   0xDEADBE40, /* texture 1 color */
+                   TEX_CONSTANT_UNUSED,
+                   "RGB = REPLACE (PREVIOUS)"
+                   "A = MODULATE (PREVIOUS, TEXTURE)", /* tex combine */
+                   0xffffff20); /* expected */
 
   /* XXX: we are assuming test_tex_combine creates a pipeline with
    * a color of 0x80808080 (i.e. the "PRIMARY" color) */
-  test_tex_combine (state, 7, 0, /* position */
-                    0xffffff80, /* texture 0 color (alpha = 0.5) */
-                    0xDEADBE20, /* texture 1 color */
-                    TEX_CONSTANT_UNUSED,
-                    "RGB = REPLACE (PREVIOUS)"
-                    "A = MODULATE (PRIMARY, TEXTURE)", /* tex combine */
-                    0xffffff10); /* expected */
+  test_tex_combine(state, 7, 0, /* position */
+                   0xffffff80, /* texture 0 color (alpha = 0.5) */
+                   0xDEADBE20, /* texture 1 color */
+                   TEX_CONSTANT_UNUSED,
+                   "RGB = REPLACE (PREVIOUS)"
+                   "A = MODULATE (PRIMARY, TEXTURE)", /* tex combine */
+                   0xffffff10); /* expected */
 
-  test_tex_combine (state, 8, 0, /* position */
-                    0x11111111, /* texture 0 color */
-                    0x22222222, /* texture 1 color */
-                    TEX_CONSTANT_UNUSED,
-                    "RGBA = ADD (PREVIOUS, 1-TEXTURE)", /* tex combine */
-                    0xeeeeeeee); /* expected */
+  test_tex_combine(state, 8, 0, /* position */
+                   0x11111111, /* texture 0 color */
+                   0x22222222, /* texture 1 color */
+                   TEX_CONSTANT_UNUSED,
+                   "RGBA = ADD (PREVIOUS, 1-TEXTURE)", /* tex combine */
+                   0xeeeeeeee); /* expected */
 
   /* this is again assuming a primary color of 0x80808080 */
-  test_tex_combine (state, 9, 0, /* position */
-                    0x10101010, /* texture 0 color */
-                    0x20202020, /* texture 1 color */
-                    TEX_CONSTANT_UNUSED,
-                    "RGBA = INTERPOLATE (PREVIOUS, TEXTURE, PRIMARY)",
-                    0x18181818); /* expected */
+  test_tex_combine(state, 9, 0, /* position */
+                   0x10101010, /* texture 0 color */
+                   0x20202020, /* texture 1 color */
+                   TEX_CONSTANT_UNUSED,
+                   "RGBA = INTERPOLATE (PREVIOUS, TEXTURE, PRIMARY)",
+                   0x18181818); /* expected */
 
 #if 0 /* using TEXTURE_N appears to be broken in cogl-blend-string.c */
-  test_tex_combine (state, 0, 1, /* position */
-                    0xDEADBEEF, /* texture 0 color (not used) */
-                    0x11223344, /* texture 1 color */
-                    TEX_CONSTANT_UNUSED,
-                    "RGBA = ADD (TEXTURE_1, TEXTURE)", /* tex combine */
-                    0x22446688); /* expected */
+  test_tex_combine(state, 0, 1, /* position */
+                   0xDEADBEEF, /* texture 0 color (not used) */
+                   0x11223344, /* texture 1 color */
+                   TEX_CONSTANT_UNUSED,
+                   "RGBA = ADD (TEXTURE_1, TEXTURE)", /* tex combine */
+                   0x22446688); /* expected */
 #endif
 
-  test_tex_combine (state, 1, 1, /* position */
-                    0x21314151, /* texture 0 color */
-                    0x99999999, /* texture 1 color */
-                    TEX_CONSTANT_UNUSED,
-                    "RGBA = ADD_SIGNED (PREVIOUS, TEXTURE)", /* tex combine */
-                    0x3a4a5a6a); /* expected */
+  test_tex_combine(state, 1, 1, /* position */
+                   0x21314151, /* texture 0 color */
+                   0x99999999, /* texture 1 color */
+                   TEX_CONSTANT_UNUSED,
+                   "RGBA = ADD_SIGNED (PREVIOUS, TEXTURE)", /* tex combine */
+                   0x3a4a5a6a); /* expected */
 
-  test_tex_combine (state, 2, 1, /* position */
-                    0xfedcba98, /* texture 0 color */
-                    0x11111111, /* texture 1 color */
-                    TEX_CONSTANT_UNUSED,
-                    "RGBA = SUBTRACT (PREVIOUS, TEXTURE)", /* tex combine */
-                    0xedcba987); /* expected */
+  test_tex_combine(state, 2, 1, /* position */
+                   0xfedcba98, /* texture 0 color */
+                   0x11111111, /* texture 1 color */
+                   TEX_CONSTANT_UNUSED,
+                   "RGBA = SUBTRACT (PREVIOUS, TEXTURE)", /* tex combine */
+                   0xedcba987); /* expected */
 
-  test_tex_combine (state, 3, 1, /* position */
-                    0x8899aabb, /* texture 0 color */
-                    0xbbaa9988, /* texture 1 color */
-                    TEX_CONSTANT_UNUSED,
-                    "RGB = DOT3_RGBA (PREVIOUS, TEXTURE)"
-                    "A = REPLACE (PREVIOUS)",
-                    0x2a2a2abb); /* expected */
+  test_tex_combine(state, 3, 1, /* position */
+                   0x8899aabb, /* texture 0 color */
+                   0xbbaa9988, /* texture 1 color */
+                   TEX_CONSTANT_UNUSED,
+                   "RGB = DOT3_RGBA (PREVIOUS, TEXTURE)"
+                   "A = REPLACE (PREVIOUS)",
+                   0x2a2a2abb); /* expected */
 }
 
 void
-test_blend_strings (void)
+test_blend_strings(void)
 {
-  TestState state;
+  test_state_t state;
 
-  cg_framebuffer_orthographic (test_fb, 0, 0,
-                                 cg_framebuffer_get_width (test_fb),
-                                 cg_framebuffer_get_height (test_fb),
-                                 -1,
-                                 100);
+  cg_framebuffer_orthographic(test_fb, 0, 0,
+                              cg_framebuffer_get_width (test_fb),
+                              cg_framebuffer_get_height (test_fb),
+                              -1,
+                              100);
 
   paint (&state);
 
