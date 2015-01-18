@@ -7,6 +7,7 @@ AM_CPPFLAGS = \
 	-I$(top_builddir) \
 	-I$(top_srcdir)/clib/src \
 	-I$(top_builddir)/clib/src \
+	-I$(top_srcdir)/xdgmime \
 	-I$(top_srcdir)/rut \
 	-I$(top_builddir)/rut \
 	-I$(top_builddir)/rig \
@@ -112,6 +113,7 @@ endif
 common_ldadd = \
 	$(RIG_EXTRA_LDFLAGS) \
 	librig.la \
+	$(top_builddir)/xdgmime/libxdgmime.la \
 	$(top_builddir)/rut/librut.la \
 	$(top_builddir)/cogl/libcogl2.la \
 	$(top_builddir)/cogl-path/libcogl-path.la \

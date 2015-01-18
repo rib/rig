@@ -12,6 +12,12 @@ if BUILD_COGL_PATH
 SUBDIRS += cogl-path
 endif
 
+if EDITOR_ENABLED
+SUBDIRS += xdgmime
+endif
+
+SUBDIRS += LibOVR
+
 SUBDIRS += rut data rig tests toys po android
 
 if USE_GLIB

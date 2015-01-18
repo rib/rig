@@ -575,6 +575,7 @@ test-fixtures/Makefile
 clib/Makefile
 clib/src/Makefile
 clib/src/clib-config.h
+xdgmime/Makefile
 rut/Makefile
 data/Makefile
 data/Info.plist
