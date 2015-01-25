@@ -711,9 +711,8 @@ c_ascii_tolower(char c)
 }
 
 char *
-c_ascii_strdown(const char *str, c_ssize_t len)
+c_ascii_strdown(char *str, c_ssize_t len)
 {
-    char *ret;
     int i;
 
     c_return_val_if_fail(str != NULL, NULL);
@@ -721,12 +720,10 @@ c_ascii_strdown(const char *str, c_ssize_t len)
     if (len == -1)
         len = strlen(str);
 
-    ret = c_malloc(len + 1);
     for (i = 0; i < len; i++)
-        ret[i] = (unsigned char)c_ascii_tolower(str[i]);
-    ret[i] = 0;
+        str[i] = c_ascii_tolower(str[i]);
 
-    return ret;
+    return str;
 }
 
 char
@@ -736,9 +733,8 @@ c_ascii_toupper(char c)
 }
 
 char *
-c_ascii_strup(const char *str, c_ssize_t len)
+c_ascii_strup(char *str, c_ssize_t len)
 {
-    char *ret;
     int i;
 
     c_return_val_if_fail(str != NULL, NULL);
@@ -746,12 +742,10 @@ c_ascii_strup(const char *str, c_ssize_t len)
     if (len == -1)
         len = strlen(str);
 
-    ret = c_malloc(len + 1);
     for (i = 0; i < len; i++)
-        ret[i] = (unsigned char)c_ascii_toupper(str[i]);
-    ret[i] = 0;
+        str[i] = c_ascii_toupper(str[i]);
 
-    return ret;
+    return str;
 }
 
 int

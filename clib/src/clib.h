@@ -474,8 +474,11 @@ char *c_stpcpy(char *dest, const char *src);
 
 char c_ascii_tolower(char c);
 char c_ascii_toupper(char c);
-char *c_ascii_strdown(const char *str, c_ssize_t len);
-char *c_ascii_strup(const char *str, c_ssize_t len);
+
+/* XXX: unlike glib, these modify the strings in place! */
+char *c_ascii_strdown(char *str, c_ssize_t len);
+char *c_ascii_strup(char *str, c_ssize_t len);
+
 int c_ascii_strncasecmp(const char *s1, const char *s2, size_t n);
 int c_ascii_strcasecmp(const char *s1, const char *s2);
 int c_ascii_xdigit_value(char c);
