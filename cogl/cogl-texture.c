@@ -81,19 +81,19 @@ cg_texture_error_domain(void)
  * abstract class manually.
  */
 
-static c_slist_t *_cg_texture_types;
+static c_sllist_t *_cg_texture_types;
 
 void
 _cg_texture_register_texture_type(const cg_object_class_t *klass)
 {
-    _cg_texture_types = c_slist_prepend(_cg_texture_types, (void *)klass);
+    _cg_texture_types = c_sllist_prepend(_cg_texture_types, (void *)klass);
 }
 
 bool
 cg_is_texture(void *object)
 {
     cg_object_t *obj = (cg_object_t *)object;
-    c_slist_t *l;
+    c_sllist_t *l;
 
     if (object == NULL)
         return false;
@@ -1032,7 +1032,7 @@ _cg_texture_framebuffer_destroy_cb(void *user_data, void *instance)
     cg_texture_t *tex = user_data;
     cg_framebuffer_t *framebuffer = instance;
 
-    tex->framebuffers = c_list_remove(tex->framebuffers, framebuffer);
+    tex->framebuffers = c_llist_remove(tex->framebuffers, framebuffer);
 }
 
 void
@@ -1043,7 +1043,7 @@ _cg_texture_associate_framebuffer(cg_texture_t *texture,
 
     /* Note: we don't take a reference on the framebuffer here because
      * that would introduce a circular reference. */
-    texture->framebuffers = c_list_prepend(texture->framebuffers, framebuffer);
+    texture->framebuffers = c_llist_prepend(texture->framebuffers, framebuffer);
 
     /* Since we haven't taken a reference on the framebuffer we setup
      * some private data so we will be notified if it is destroyed... */
@@ -1053,7 +1053,7 @@ _cg_texture_associate_framebuffer(cg_texture_t *texture,
                              _cg_texture_framebuffer_destroy_cb);
 }
 
-const c_list_t *
+const c_llist_t *
 _cg_texture_get_associated_framebuffers(cg_texture_t *texture)
 {
     return texture->framebuffers;
@@ -1062,7 +1062,7 @@ _cg_texture_get_associated_framebuffers(cg_texture_t *texture)
 void
 _cg_texture_flush_batched_rendering(cg_texture_t *texture)
 {
-    c_list_t *l;
+    c_llist_t *l;
 
     for (l = texture->framebuffers; l; l = l->next)
         _cg_framebuffer_flush(l->data);

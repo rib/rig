@@ -56,15 +56,15 @@ struct _cg_renderer_t {
     const cg_texture_driver_t *texture_driver;
     const cg_winsys_vtable_t *winsys_vtable;
     cg_winsys_id_t winsys_id_override;
-    c_list_t *constraints;
+    c_llist_t *constraints;
 
     c_array_t *poll_fds;
     int poll_fds_age;
-    c_list_t *poll_sources;
+    c_llist_t *poll_sources;
 
     cg_list_t idle_closures;
 
-    c_list_t *outputs;
+    c_llist_t *outputs;
 
 #ifdef CG_HAS_XLIB_SUPPORT
     Display *foreign_xdpy;
@@ -97,7 +97,7 @@ struct _cg_renderer_t {
 #endif
 
     /* List of callback functions that will be given every native event */
-    c_slist_t *event_filters;
+    c_sllist_t *event_filters;
     void *winsys;
 };
 

@@ -114,7 +114,7 @@ main(int argc, char **argv)
 #endif
         case 's':
             rig_editor_slave_address_options =
-                c_list_prepend(rig_editor_slave_address_options, optarg);
+                c_llist_prepend(rig_editor_slave_address_options, optarg);
             break;
         default:
             usage();

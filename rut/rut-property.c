@@ -97,7 +97,7 @@ _rut_property_destroy_binding(rut_property_t *property)
         for (i = 0; binding->dependencies[i]; i++) {
             rut_property_t *dependency = binding->dependencies[i];
             dependency->dependants =
-                c_slist_remove(dependency->dependants, property);
+                c_sllist_remove(dependency->dependants, property);
         }
 
         c_slice_free1(sizeof(rut_property_binding_t) + sizeof(void *) * (i + 1),
@@ -110,7 +110,7 @@ _rut_property_destroy_binding(rut_property_t *property)
 void
 rut_property_destroy(rut_property_t *property)
 {
-    c_slist_t *l;
+    c_sllist_t *l;
 
     _rut_property_destroy_binding(property);
 
@@ -241,7 +241,7 @@ _rut_property_set_binding_full_array(
     for (i = 0; i < n_dependencies; i++) {
         rut_property_t *dependency = dependencies[i];
         dependency->dependants =
-            c_slist_prepend(dependency->dependants, property);
+            c_sllist_prepend(dependency->dependants, property);
     }
 
     property->binding = binding;
@@ -505,8 +505,8 @@ rut_property_closure_destroy(rut_property_closure_t *closure)
 void
 rut_property_dirty(rut_property_context_t *ctx, rut_property_t *property)
 {
-    c_slist_t *l;
-    c_slist_t *next;
+    c_sllist_t *l;
+    c_sllist_t *next;
 
     if (ctx->log) {
         rut_object_t *object = property->object;

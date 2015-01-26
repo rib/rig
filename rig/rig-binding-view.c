@@ -74,7 +74,7 @@ struct _rig_binding_view_t {
     rut_text_t *code_view;
 
     rut_property_t *preview_dependency_prop;
-    c_list_t *dependencies;
+    c_llist_t *dependencies;
 };
 
 static void
@@ -129,7 +129,7 @@ static void
 remove_dependency(rig_binding_view_t *binding_view,
                   rut_property_t *property)
 {
-    c_list_t *l;
+    c_llist_t *l;
 
     for (l = binding_view->dependencies; l; l = l->next) {
         dependency_t *dependency = l->data;
@@ -263,7 +263,7 @@ add_dependency(rig_binding_view_t *binding_view,
                                        NULL); /* destroy notify */
 
     binding_view->dependencies =
-        c_list_prepend(binding_view->dependencies, dependency);
+        c_llist_prepend(binding_view->dependencies, dependency);
 
     rut_box_layout_add(
         binding_view->dependencies_vbox, false, dependency->hbox);

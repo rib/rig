@@ -191,7 +191,7 @@ path_find_control_points4 (rig_path_t *path,
                            rig_node_t **n2,
                            rig_node_t **n3)
 {
-    c_list_t *l1, *l2;
+    c_llist_t *l1, *l2;
 
     if (!path_find_control_links2 (path, t, direction, &l1, &l2))
         return false;

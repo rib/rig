@@ -32,16 +32,16 @@
 #include <stdio.h>
 #include <clib.h>
 
-c_list_t *
-c_list_alloc()
+c_llist_t *
+c_llist_alloc()
 {
-    return c_new0(c_list_t, 1);
+    return c_new0(c_llist_t, 1);
 }
 
-static inline c_list_t *
-new_node(c_list_t *prev, void *data, c_list_t *next)
+static inline c_llist_t *
+new_node(c_llist_t *prev, void *data, c_llist_t *next)
 {
-    c_list_t *node = c_list_alloc();
+    c_llist_t *node = c_llist_alloc();
     node->data = data;
     node->prev = prev;
     node->next = next;
@@ -52,8 +52,8 @@ new_node(c_list_t *prev, void *data, c_list_t *next)
     return node;
 }
 
-static inline c_list_t *
-disconnect_node(c_list_t *node)
+static inline c_llist_t *
+disconnect_node(c_llist_t *node)
 {
     if (node->next)
         node->next->prev = node->prev;
@@ -62,58 +62,58 @@ disconnect_node(c_list_t *node)
     return node;
 }
 
-c_list_t *
-c_list_prepend(c_list_t *list, void *data)
+c_llist_t *
+c_llist_prepend(c_llist_t *list, void *data)
 {
     return new_node(list ? list->prev : NULL, data, list);
 }
 
 void
-c_list_free_1(c_list_t *list)
+c_llist_free_1(c_llist_t *list)
 {
     c_free(list);
 }
 
 void
-c_list_free(c_list_t *list)
+c_llist_free(c_llist_t *list)
 {
     while (list) {
-        c_list_t *next = list->next;
-        c_list_free_1(list);
+        c_llist_t *next = list->next;
+        c_llist_free_1(list);
         list = next;
     }
 }
 
 void
-c_list_free_full(c_list_t *list, c_destroy_func_t free_func)
+c_llist_free_full(c_llist_t *list, c_destroy_func_t free_func)
 {
     while (list) {
-        c_list_t *next = list->next;
+        c_llist_t *next = list->next;
         free_func(list->data);
-        c_list_free_1(list);
+        c_llist_free_1(list);
         list = next;
     }
 }
 
-c_list_t *
-c_list_append(c_list_t *list, void *data)
+c_llist_t *
+c_llist_append(c_llist_t *list, void *data)
 {
-    c_list_t *node = new_node(c_list_last(list), data, NULL);
+    c_llist_t *node = new_node(c_llist_last(list), data, NULL);
     return list ? list : node;
 }
 
-c_list_t *
-c_list_concat(c_list_t *list1, c_list_t *list2)
+c_llist_t *
+c_llist_concat(c_llist_t *list1, c_llist_t *list2)
 {
     if (list1 && list2) {
-        list2->prev = c_list_last(list1);
+        list2->prev = c_llist_last(list1);
         list2->prev->next = list2;
     }
     return list1 ? list1 : list2;
 }
 
 unsigned int
-c_list_length(c_list_t *list)
+c_llist_length(c_llist_t *list)
 {
     unsigned int length = 0;
 
@@ -125,24 +125,24 @@ c_list_length(c_list_t *list)
     return length;
 }
 
-c_list_t *
-c_list_remove(c_list_t *list, const void *data)
+c_llist_t *
+c_llist_remove(c_llist_t *list, const void *data)
 {
-    c_list_t *current = c_list_find(list, data);
+    c_llist_t *current = c_llist_find(list, data);
     if (!current)
         return list;
 
     if (current == list)
         list = list->next;
-    c_list_free_1(disconnect_node(current));
+    c_llist_free_1(disconnect_node(current));
 
     return list;
 }
 
-c_list_t *
-c_list_remove_all(c_list_t *list, const void *data)
+c_llist_t *
+c_llist_remove_all(c_llist_t *list, const void *data)
 {
-    c_list_t *current = c_list_find(list, data);
+    c_llist_t *current = c_llist_find(list, data);
 
     if (!current)
         return list;
@@ -150,16 +150,16 @@ c_list_remove_all(c_list_t *list, const void *data)
     while (current) {
         if (current == list)
             list = list->next;
-        c_list_free_1(disconnect_node(current));
+        c_llist_free_1(disconnect_node(current));
 
-        current = c_list_find(list, data);
+        current = c_llist_find(list, data);
     }
 
     return list;
 }
 
-c_list_t *
-c_list_remove_link(c_list_t *list, c_list_t *link)
+c_llist_t *
+c_llist_remove_link(c_llist_t *list, c_llist_t *link)
 {
     if (list == link)
         list = list->next;
@@ -171,17 +171,17 @@ c_list_remove_link(c_list_t *list, c_list_t *link)
     return list;
 }
 
-c_list_t *
-c_list_delete_link(c_list_t *list, c_list_t *link)
+c_llist_t *
+c_llist_delete_link(c_llist_t *list, c_llist_t *link)
 {
-    list = c_list_remove_link(list, link);
-    c_list_free_1(link);
+    list = c_llist_remove_link(list, link);
+    c_llist_free_1(link);
 
     return list;
 }
 
-c_list_t *
-c_list_find(c_list_t *list, const void *data)
+c_llist_t *
+c_llist_find(c_llist_t *list, const void *data)
 {
     while (list) {
         if (list->data == data)
@@ -193,8 +193,8 @@ c_list_find(c_list_t *list, const void *data)
     return NULL;
 }
 
-c_list_t *
-c_list_find_custom(c_list_t *list, const void *data, c_compare_func_t func)
+c_llist_t *
+c_llist_find_custom(c_llist_t *list, const void *data, c_compare_func_t func)
 {
     if (!func)
         return NULL;
@@ -209,10 +209,10 @@ c_list_find_custom(c_list_t *list, const void *data, c_compare_func_t func)
     return NULL;
 }
 
-c_list_t *
-c_list_reverse(c_list_t *list)
+c_llist_t *
+c_llist_reverse(c_llist_t *list)
 {
-    c_list_t *reverse = NULL;
+    c_llist_t *reverse = NULL;
 
     while (list) {
         reverse = list;
@@ -225,8 +225,8 @@ c_list_reverse(c_list_t *list)
     return reverse;
 }
 
-c_list_t *
-c_list_first(c_list_t *list)
+c_llist_t *
+c_llist_first(c_llist_t *list)
 {
     if (!list)
         return NULL;
@@ -237,8 +237,8 @@ c_list_first(c_list_t *list)
     return list;
 }
 
-c_list_t *
-c_list_last(c_list_t *list)
+c_llist_t *
+c_llist_last(c_llist_t *list)
 {
     if (!list)
         return NULL;
@@ -249,12 +249,12 @@ c_list_last(c_list_t *list)
     return list;
 }
 
-c_list_t *
-c_list_insert_sorted(c_list_t *list, void *data, c_compare_func_t func)
+c_llist_t *
+c_llist_insert_sorted(c_llist_t *list, void *data, c_compare_func_t func)
 {
-    c_list_t *prev = NULL;
-    c_list_t *current;
-    c_list_t *node;
+    c_llist_t *prev = NULL;
+    c_llist_t *current;
+    c_llist_t *node;
 
     if (!func)
         return list;
@@ -270,18 +270,18 @@ c_list_insert_sorted(c_list_t *list, void *data, c_compare_func_t func)
     return list == current ? node : list;
 }
 
-c_list_t *
-c_list_insert_before(c_list_t *list, c_list_t *sibling, void *data)
+c_llist_t *
+c_llist_insert_before(c_llist_t *list, c_llist_t *sibling, void *data)
 {
     if (sibling) {
-        c_list_t *node = new_node(sibling->prev, data, sibling);
+        c_llist_t *node = new_node(sibling->prev, data, sibling);
         return list == sibling ? node : list;
     }
-    return c_list_append(list, data);
+    return c_llist_append(list, data);
 }
 
 void
-c_list_foreach(c_list_t *list, c_iter_func_t func, void *user_data)
+c_llist_foreach(c_llist_t *list, c_iter_func_t func, void *user_data)
 {
     while (list) {
         (*func)(list->data, user_data);
@@ -290,7 +290,7 @@ c_list_foreach(c_list_t *list, c_iter_func_t func, void *user_data)
 }
 
 int
-c_list_index(c_list_t *list, const void *data)
+c_llist_index(c_llist_t *list, const void *data)
 {
     int index = 0;
 
@@ -305,8 +305,8 @@ c_list_index(c_list_t *list, const void *data)
     return -1;
 }
 
-c_list_t *
-c_list_nth(c_list_t *list, unsigned int n)
+c_llist_t *
+c_llist_nth(c_llist_t *list, unsigned int n)
 {
     for (; list; list = list->next) {
         if (n == 0)
@@ -317,19 +317,19 @@ c_list_nth(c_list_t *list, unsigned int n)
 }
 
 void *
-c_list_nth_data(c_list_t *list, unsigned int n)
+c_llist_nth_data(c_llist_t *list, unsigned int n)
 {
-    c_list_t *node = c_list_nth(list, n);
+    c_llist_t *node = c_llist_nth(list, n);
     return node ? node->data : NULL;
 }
 
-c_list_t *
-c_list_copy(c_list_t *list)
+c_llist_t *
+c_llist_copy(c_llist_t *list)
 {
-    c_list_t *copy = NULL;
+    c_llist_t *copy = NULL;
 
     if (list) {
-        c_list_t *tmp = new_node(NULL, list->data, NULL);
+        c_llist_t *tmp = new_node(NULL, list->data, NULL);
         copy = tmp;
 
         for (list = list->next; list; list = list->next)
@@ -339,13 +339,13 @@ c_list_copy(c_list_t *list)
     return copy;
 }
 
-typedef c_list_t list_node;
+typedef c_llist_t list_node;
 #include "sort.frag.h"
 
-c_list_t *
-c_list_sort(c_list_t *list, c_compare_func_t func)
+c_llist_t *
+c_llist_sort(c_llist_t *list, c_compare_func_t func)
 {
-    c_list_t *current;
+    c_llist_t *current;
     if (!list || !list->next)
         return list;
     list = do_sort(list, func);

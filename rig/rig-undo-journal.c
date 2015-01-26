@@ -1061,7 +1061,7 @@ save_controller_properties(rig_engine_t *engine,
                            rut_list_t *controller_properties)
 {
     copy_controller_properties_data_t copy_properties_data;
-    c_list_t *l;
+    c_llist_t *l;
 
     rut_list_init(controller_properties);
 

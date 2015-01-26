@@ -50,7 +50,7 @@ typedef void (*rig_inspector_controlled_callback_t)(rut_property_t *property,
 
 rig_inspector_t *
 rig_inspector_new(rut_shell_t *shell,
-                  c_list_t *objects,
+                  c_llist_t *objects,
                   rig_inspector_callback_t property_changed_cb,
                   rig_inspector_controlled_callback_t controlled_changed_cb,
                   void *user_data);

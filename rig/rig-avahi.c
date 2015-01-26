@@ -324,7 +324,7 @@ resolve_callback(AvahiServiceResolver *resolver,
     case AVAHI_RESOLVER_FOUND: {
         char a[AVAHI_ADDRESS_STR_MAX], *t;
         rig_slave_address_t *slave_address;
-        c_list_t *l;
+        c_llist_t *l;
 
         c_message(
             "Service '%s' of type '%s' in domain '%s':\n", name, type, domain);
@@ -355,7 +355,7 @@ resolve_callback(AvahiServiceResolver *resolver,
         slave_address = rig_slave_address_new_tcp(name, host_name, port);
 
         engine->slave_addresses =
-            c_list_prepend(engine->slave_addresses, slave_address);
+            c_llist_prepend(engine->slave_addresses, slave_address);
 
         for (l = engine->slave_addresses; l; l = l->next) {
             rig_slave_address_t *address = l->data;
@@ -394,7 +394,7 @@ browse_callback(AvahiServiceBrowser *browser,
 {
     rig_engine_t *engine = user_data;
     AvahiClient *client = avahi_service_browser_get_client(browser);
-    c_list_t *l;
+    c_llist_t *l;
 
     switch (event) {
     case AVAHI_BROWSER_FAILURE:
@@ -439,7 +439,7 @@ browse_callback(AvahiServiceBrowser *browser,
             if (strcmp(slave_address->name, name) == 0) {
                 rut_object_unref(slave_address);
                 engine->slave_addresses =
-                    c_list_remove_link(engine->slave_addresses, l);
+                    c_llist_remove_link(engine->slave_addresses, l);
                 c_message("(Browser) REMOVE: service '%s' of type '%s' "
                           "in domain '%s'\n",
                           name,

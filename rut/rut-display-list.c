@@ -33,10 +33,10 @@
 /* Given the @head and @tail for a sub-list contained within another
  * @list this unlinks the sub-list from @list and returns the new
  * head of @list if it has changed. */
-static c_list_t *
-list_unsplice(c_list_t *list, c_list_t *head, c_list_t *tail)
+static c_llist_t *
+list_unsplice(c_llist_t *list, c_llist_t *head, c_llist_t *tail)
 {
-    c_list_t *after;
+    c_llist_t *after;
 
     if (tail->next) {
         after = tail->next;
@@ -64,7 +64,7 @@ list_unsplice(c_list_t *list, c_list_t *head, c_list_t *tail)
  * if it has changed.
  *
  * If @after is NULL the sub-list will be linked in-front of @list. This
- * would have the same result as using c_list_concat (@head, @list)
+ * would have the same result as using c_llist_concat (@head, @list)
  * although in this case there is no need to traverse the first list to
  * find its @tail. If @after is NULL then @list can also be NULL and
  * in that case the function will return @head.
@@ -74,14 +74,14 @@ list_unsplice(c_list_t *list, c_list_t *head, c_list_t *tail)
  * if necessary and this function will assert that head->prev == NULL
  * and tail->next == NULL.
  */
-static c_list_t *
-list_splice(c_list_t *list, c_list_t *after, c_list_t *head, c_list_t *tail)
+static c_llist_t *
+list_splice(c_llist_t *list, c_llist_t *after, c_llist_t *head, c_llist_t *tail)
 {
     c_return_val_if_fail(head->prev == NULL, NULL);
     c_return_val_if_fail(tail->next == NULL, NULL);
 
     if (after) {
-        c_list_t *remainder = after->next;
+        c_llist_t *remainder = after->next;
         after->next = head;
         head->prev = after;
         if (remainder) {
@@ -100,14 +100,14 @@ list_splice(c_list_t *list, c_list_t *after, c_list_t *head, c_list_t *tail)
 
 #if 0
 static void
-_assert_list_is (c_list_t *list, unsigned int length, unsigned int value)
+_assert_list_is (c_llist_t *list, unsigned int length, unsigned int value)
 {
-    c_list_t *l;
+    c_llist_t *l;
 
     c_assert (list->prev == NULL);
-    c_assert_cmpuint (c_list_length (list), ==, length);
+    c_assert_cmpuint (c_llist_length (list), ==, length);
 
-    for (l = c_list_last (list); l; l = l->prev)
+    for (l = c_llist_last (list); l; l = l->prev)
     {
         c_assert_cmpuint (GPOINTER_TO_UINT (l->data), ==, value % 10);
         value /= 10;
@@ -117,25 +117,25 @@ _assert_list_is (c_list_t *list, unsigned int length, unsigned int value)
 static void
 _rut_test_list_splice (void)
 {
-    c_list_t *l0 = NULL, *l1 = NULL, *l2 = NULL;
-    c_list_t *l0_tail, *l1_tail, *l2_tail;
-    c_list_t *list = NULL;
+    c_llist_t *l0 = NULL, *l1 = NULL, *l2 = NULL;
+    c_llist_t *l0_tail, *l1_tail, *l2_tail;
+    c_llist_t *list = NULL;
 
-    l0 = c_list_append (l0, C_UINT_TO_POINTER (1));
-    l0 = c_list_append (l0, C_UINT_TO_POINTER (2));
-    l0 = c_list_append (l0, C_UINT_TO_POINTER (3));
-    l0_tail = c_list_last (l0);
+    l0 = c_llist_append (l0, C_UINT_TO_POINTER (1));
+    l0 = c_llist_append (l0, C_UINT_TO_POINTER (2));
+    l0 = c_llist_append (l0, C_UINT_TO_POINTER (3));
+    l0_tail = c_llist_last (l0);
     _assert_list_is (l0, 3, 123);
 
-    l1 = c_list_append (l1, C_UINT_TO_POINTER (4));
-    l1 = c_list_append (l1, C_UINT_TO_POINTER (5));
-    l1 = c_list_append (l1, C_UINT_TO_POINTER (6));
-    l1_tail = c_list_last (l1);
+    l1 = c_llist_append (l1, C_UINT_TO_POINTER (4));
+    l1 = c_llist_append (l1, C_UINT_TO_POINTER (5));
+    l1 = c_llist_append (l1, C_UINT_TO_POINTER (6));
+    l1_tail = c_llist_last (l1);
     _assert_list_is (l1, 3, 456);
 
-    l2 = c_list_append (l2, C_UINT_TO_POINTER (7));
-    l2 = c_list_append (l2, C_UINT_TO_POINTER (8));
-    l2_tail = c_list_last (l2);
+    l2 = c_llist_append (l2, C_UINT_TO_POINTER (7));
+    l2 = c_llist_append (l2, C_UINT_TO_POINTER (8));
+    l2_tail = c_llist_last (l2);
     _assert_list_is (l2, 2, 78);
 
     list = l0;
@@ -172,8 +172,8 @@ _rut_test_list_splice (void)
 /* A display-list is a list of sequential drawing commands including
  * transformation commands and primitive drawing commands.
  *
- * A display list is currently represented as a linked list of c_list_t nodes
- * although the api we want is a cross between the c_list_ api and the
+ * A display list is currently represented as a linked list of c_llist_t nodes
+ * although the api we want is a cross between the c_llist_ api and the
  * rut_queue_ api so we have a wrapper api instead to make display list
  * manipulation less confusing and error prone.
  *
@@ -206,11 +206,11 @@ rut_display_list_unsplice(rut_display_list_t *list)
 {
     if (list->head->prev)
         c_assert(list_unsplice((void *)0xDEADBEEF, list->head, list->tail) ==
-                 (c_list_t *)0xDEADBEEF);
+                 (c_llist_t *)0xDEADBEEF);
 }
 
 void
-rut_display_list_splice(c_list_t *after, rut_display_list_t *sub_list)
+rut_display_list_splice(c_llist_t *after, rut_display_list_t *sub_list)
 {
     rut_display_list_unsplice(sub_list);
     c_assert(list_splice(after, after, sub_list->head, sub_list->tail) ==
@@ -220,7 +220,7 @@ rut_display_list_splice(c_list_t *after, rut_display_list_t *sub_list)
 void
 rut_display_list_append(rut_display_list_t *list, void *data)
 {
-    c_list_t *link = c_list_alloc();
+    c_llist_t *link = c_llist_alloc();
     link->data = data;
     link->prev = list->tail;
     link->next = NULL;
@@ -234,12 +234,12 @@ rut_display_list_append(rut_display_list_t *list, void *data)
     list->tail = link;
 }
 
-/* Note: unlike the similar c_list_t api this returns the newly inserted
+/* Note: unlike the similar c_llist_t api this returns the newly inserted
  * link not the head of the list. */
-c_list_t *
-rut_display_list_insert_before(c_list_t *sibling, void *data)
+c_llist_t *
+rut_display_list_insert_before(c_llist_t *sibling, void *data)
 {
-    c_list_t *link = c_list_alloc();
+    c_llist_t *link = c_llist_alloc();
     link->data = data;
     link->next = sibling;
     link->prev = sibling->prev;
@@ -250,11 +250,11 @@ rut_display_list_insert_before(c_list_t *sibling, void *data)
 }
 
 void
-rut_display_list_delete_link(c_list_t *link)
+rut_display_list_delete_link(c_llist_t *link)
 {
     link->prev->next = link->next;
     link->next->prev = link->prev;
-    c_list_free_1(link);
+    c_llist_free_1(link);
 }
 
 void
@@ -268,7 +268,7 @@ void
 rut_display_list_destroy(rut_display_list_t *list)
 {
     rut_display_list_unsplice(list);
-    c_list_free(list->head);
+    c_llist_free(list->head);
     list->head = NULL;
     list->tail = NULL;
 }
@@ -277,7 +277,7 @@ void
 rut_display_list_paint(rut_display_list_t *display_list,
                        cg_framebuffer_t *fb)
 {
-    c_list_t *l;
+    c_llist_t *l;
 
     for (l = display_list->head; l; l = l->next) {
         rut_cmd_t *cmd = l->data;

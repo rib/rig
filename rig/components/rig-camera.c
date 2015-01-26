@@ -522,12 +522,12 @@ rig_camera_add_input_region(rut_object_t *object,
                             rut_input_region_t *region)
 {
     rig_camera_t *camera = object;
-    if (c_list_find(camera->props.input_regions, region))
+    if (c_llist_find(camera->props.input_regions, region))
         return;
 
     rut_object_ref(region);
     camera->props.input_regions =
-        c_list_prepend(camera->props.input_regions, region);
+        c_llist_prepend(camera->props.input_regions, region);
 }
 
 void
@@ -535,11 +535,11 @@ rig_camera_remove_input_region(rut_object_t *object,
                                rut_input_region_t *region)
 {
     rig_camera_t *camera = object;
-    c_list_t *link = c_list_find(camera->props.input_regions, region);
+    c_llist_t *link = c_llist_find(camera->props.input_regions, region);
     if (link) {
         rut_object_unref(region);
         camera->props.input_regions =
-            c_list_delete_link(camera->props.input_regions, link);
+            c_llist_delete_link(camera->props.input_regions, link);
     }
 }
 

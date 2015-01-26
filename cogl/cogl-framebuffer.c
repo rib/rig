@@ -118,7 +118,7 @@ _cg_framebuffer_init(cg_framebuffer_t *framebuffer,
 
     framebuffer->clip_stack = NULL;
 
-    dev->framebuffers = c_list_prepend(dev->framebuffers, framebuffer);
+    dev->framebuffers = c_llist_prepend(dev->framebuffers, framebuffer);
 }
 
 void
@@ -146,7 +146,7 @@ _cg_framebuffer_free(cg_framebuffer_t *framebuffer)
     if (dev->viewport_scissor_workaround_framebuffer == framebuffer)
         dev->viewport_scissor_workaround_framebuffer = NULL;
 
-    dev->framebuffers = c_list_remove(dev->framebuffers, framebuffer);
+    dev->framebuffers = c_llist_remove(dev->framebuffers, framebuffer);
 
     if (dev->current_draw_buffer == framebuffer)
         dev->current_draw_buffer = NULL;
@@ -369,7 +369,7 @@ void
 _cg_framebuffer_add_dependency(cg_framebuffer_t *framebuffer,
                                cg_framebuffer_t *dependency)
 {
-    c_list_t *l;
+    c_llist_t *l;
 
     for (l = framebuffer->deps; l; l = l->next) {
         cg_framebuffer_t *existing_dep = l->data;
@@ -381,16 +381,16 @@ _cg_framebuffer_add_dependency(cg_framebuffer_t *framebuffer,
      * cg_object_set_user_data or for pipeline children as a way to
      * avoid quite a lot of mid-scene micro allocations here... */
     framebuffer->deps =
-        c_list_prepend(framebuffer->deps, cg_object_ref(dependency));
+        c_llist_prepend(framebuffer->deps, cg_object_ref(dependency));
 }
 
 void
 _cg_framebuffer_remove_all_dependencies(cg_framebuffer_t *framebuffer)
 {
-    c_list_t *l;
+    c_llist_t *l;
     for (l = framebuffer->deps; l; l = l->next)
         cg_object_unref(l->data);
-    c_list_free(framebuffer->deps);
+    c_llist_free(framebuffer->deps);
     framebuffer->deps = NULL;
 }
 

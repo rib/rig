@@ -93,7 +93,7 @@ struct cogland_output {
 
     cg_onscreen_t *onscreen;
 
-    c_list_t *modes;
+    c_llist_t *modes;
 
 };
 
@@ -109,14 +109,14 @@ struct cogland_compositor {
 
     int virtual_width;
     int virtual_height;
-    c_list_t *outputs;
+    c_llist_t *outputs;
 
     struct wl_list frame_callbacks;
 
     cg_primitive_t *triangle;
     cg_pipeline_t *triangle_pipeline;
 
-    c_list_t *surfaces;
+    c_llist_t *surfaces;
 
     unsigned int redraw_idle;
 };
@@ -289,12 +289,12 @@ static void
 paint_cb(uv_idle_t *idle)
 {
     struct cogland_compositor *compositor = idle->data;
-    c_list_t *l;
+    c_llist_t *l;
 
     for (l = compositor->outputs; l; l = l->next) {
         struct cogland_output *output = l->data;
         cg_framebuffer_t *fb = output->onscreen;
-        c_list_t *l2;
+        c_llist_t *l2;
 
         cg_framebuffer_clear4f(fb, CG_BUFFER_BIT_COLOR, 0, 0, 0, 1);
 
@@ -548,7 +548,7 @@ cogland_surface_free(struct cogland_surface *surface)
 
     wl_signal_emit(&surface->destroy_signal, &surface->resource);
 
-    compositor->surfaces = c_list_remove(compositor->surfaces, surface);
+    compositor->surfaces = c_llist_remove(compositor->surfaces, surface);
 
     cogland_buffer_reference(&surface->buffer_ref, NULL);
     if (surface->texture)
@@ -609,7 +609,7 @@ cogland_compositor_create_surface(
     wl_list_init(&surface->pending.frame_callback_list);
     region_init(&surface->pending.damage);
 
-    compositor->surfaces = c_list_prepend(compositor->surfaces, surface);
+    compositor->surfaces = c_llist_prepend(compositor->surfaces, surface);
 }
 
 static void
@@ -681,7 +681,7 @@ bind_output(struct wl_client *client, void *data, uint32_t version, uint32_t id)
     struct cogland_output *output = data;
     struct wl_resource *resource =
         wl_client_add_object(client, &wl_output_interface, NULL, id, data);
-    c_list_t *l;
+    c_llist_t *l;
 
     wl_resource_post_event(resource,
                            WL_OUTPUT_GEOMETRY,
@@ -754,9 +754,9 @@ cogland_compositor_create_output(
     mode->height = height_mm;
     mode->refresh = 60;
 
-    output->modes = c_list_prepend(output->modes, mode);
+    output->modes = c_llist_prepend(output->modes, mode);
 
-    compositor->outputs = c_list_prepend(compositor->outputs, output);
+    compositor->outputs = c_llist_prepend(compositor->outputs, output);
 }
 
 const static struct wl_compositor_interface cogland_compositor_interface = {

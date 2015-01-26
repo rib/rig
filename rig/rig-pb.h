@@ -66,18 +66,18 @@ struct _rig_pb_serializer_t {
     void *object_to_id_data;
 
     bool only_asset_ids;
-    c_list_t *required_assets;
+    c_llist_t *required_assets;
 
     bool skip_image_data;
 
     int n_pb_entities;
-    c_list_t *pb_entities;
+    c_llist_t *pb_entities;
 
     int n_pb_components;
-    c_list_t *pb_components;
+    c_llist_t *pb_components;
 
     int n_pb_properties;
-    c_list_t *pb_properties;
+    c_llist_t *pb_properties;
 
     int n_properties;
     void **properties_out;
@@ -231,10 +231,10 @@ struct _rig_pb_un_serializer_t {
     rig_pb_un_serializer_asset_callback_t unserialize_asset_callback;
     void *unserialize_asset_data;
 
-    c_list_t *assets;
-    c_list_t *entities;
+    c_llist_t *assets;
+    c_llist_t *entities;
     rig_entity_t *light;
-    c_list_t *controllers;
+    c_llist_t *controllers;
 
     c_hash_table_t *id_to_object_map;
 };

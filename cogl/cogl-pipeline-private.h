@@ -290,7 +290,7 @@ struct _cg_pipeline_t {
      *
      * This is sparse state, ref CG_PIPELINE_STATE_LAYERS */
     unsigned int n_layers;
-    c_list_t *layer_differences;
+    c_llist_t *layer_differences;
 
     /* As a basic way to reduce memory usage we divide the pipeline
      * state into two groups; the minimal state modified in 90% of

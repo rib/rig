@@ -79,7 +79,7 @@ typedef struct {
     GLuint object_id;
 
     /* List of shaders attached to this program */
-    c_list_t *attached_shaders;
+    c_llist_t *attached_shaders;
 
     /* Reference count. There can be up to two references. One of these
      * will exist between glCreateProgram and glDeleteShader, the other

@@ -614,15 +614,15 @@ cg_matrix_entry_calculate_translation(cg_matrix_entry_t *entry0,
                                       float *y,
                                       float *z)
 {
-    c_slist_t *head0 = NULL;
-    c_slist_t *head1 = NULL;
+    c_sllist_t *head0 = NULL;
+    c_sllist_t *head1 = NULL;
     cg_matrix_entry_t *node0;
     cg_matrix_entry_t *node1;
     int len0 = 0;
     int len1 = 0;
     int count;
-    c_slist_t *common_ancestor0;
-    c_slist_t *common_ancestor1;
+    c_sllist_t *common_ancestor0;
+    c_sllist_t *common_ancestor1;
 
     /* Algorithm:
      *
@@ -646,12 +646,12 @@ cg_matrix_entry_calculate_translation(cg_matrix_entry_t *entry0,
      */
 
     for (node0 = entry0; node0; node0 = node0->parent) {
-        c_slist_t *link;
+        c_sllist_t *link;
 
         if (node0->op == CG_MATRIX_OP_SAVE)
             continue;
 
-        link = alloca(sizeof(c_slist_t));
+        link = alloca(sizeof(c_sllist_t));
         link->next = head0;
         link->data = node0;
         head0 = link;
@@ -661,12 +661,12 @@ cg_matrix_entry_calculate_translation(cg_matrix_entry_t *entry0,
             break;
     }
     for (node1 = entry1; node1; node1 = node1->parent) {
-        c_slist_t *link;
+        c_sllist_t *link;
 
         if (node1->op == CG_MATRIX_OP_SAVE)
             continue;
 
-        link = alloca(sizeof(c_slist_t));
+        link = alloca(sizeof(c_sllist_t));
         link->next = head1;
         link->data = node1;
         head1 = link;

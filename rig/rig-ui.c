@@ -42,19 +42,19 @@ static void
 _rig_ui_free(void *object)
 {
     rig_ui_t *ui = object;
-    c_list_t *l;
+    c_llist_t *l;
 
     for (l = ui->suspended_controllers; l; l = l->next)
         rut_object_unref(l->data);
-    c_list_free(ui->suspended_controllers);
+    c_llist_free(ui->suspended_controllers);
 
     for (l = ui->controllers; l; l = l->next)
         rut_object_unref(l->data);
-    c_list_free(ui->controllers);
+    c_llist_free(ui->controllers);
 
     for (l = ui->assets; l; l = l->next)
         rut_object_unref(l->data);
-    c_list_free(ui->assets);
+    c_llist_free(ui->assets);
 
     /* NB: no extra reference is held on ui->light other than the
      * reference for it being in the ->scene. */
@@ -94,7 +94,7 @@ void
 rig_ui_reap(rig_ui_t *ui)
 {
     rig_engine_t *engine = ui->engine;
-    c_list_t *l;
+    c_llist_t *l;
 
     rut_graphable_traverse(ui->scene,
                            RUT_TRAVERSE_DEPTH_FIRST,
@@ -111,7 +111,7 @@ rig_ui_reap(rig_ui_t *ui)
     /* We could potentially leave these to be freed in _free() but it
      * seems a bit ugly to keep the list containing pointers to
      * controllers no longer owned by the ui. */
-    c_list_free(ui->controllers);
+    c_llist_free(ui->controllers);
     ui->controllers = NULL;
 
     for (l = ui->assets; l; l = l->next) {
@@ -123,7 +123,7 @@ rig_ui_reap(rig_ui_t *ui)
     /* We could potentially leave these to be freed in _free() but it
      * seems a bit ugly to keep the list containing pointers to
      * assets no longer owned by the ui. */
-    c_list_free(ui->assets);
+    c_llist_free(ui->assets);
     ui->assets = NULL;
 
     /* XXX: The ui itself is just a normal ref-counted object that
@@ -242,7 +242,7 @@ rig_ui_prepare(rig_ui_t *ui)
     rig_engine_t *engine = ui->engine;
     rig_controller_t *controller;
     rut_object_t *light_camera;
-    c_list_t *l;
+    c_llist_t *l;
 
     if (!ui->scene)
         ui->scene = rut_graph_new(engine->shell);
@@ -313,7 +313,7 @@ rig_ui_prepare(rig_ui_t *ui)
     if (!ui->controllers) {
         controller = rig_controller_new(engine, "Controller 0");
         rig_controller_set_active(controller, true);
-        ui->controllers = c_list_prepend(ui->controllers, controller);
+        ui->controllers = c_llist_prepend(ui->controllers, controller);
     }
 
     /* Explcitly transfer ownership of controllers to the UI for
@@ -371,7 +371,7 @@ rig_ui_prepare(rig_ui_t *ui)
 void
 rig_ui_suspend(rig_ui_t *ui)
 {
-    c_list_t *l;
+    c_llist_t *l;
 
     if (ui->suspended)
         return;
@@ -382,7 +382,7 @@ rig_ui_suspend(rig_ui_t *ui)
         rig_controller_set_suspended(controller, true);
 
         ui->suspended_controllers =
-            c_list_prepend(ui->suspended_controllers, controller);
+            c_llist_prepend(ui->suspended_controllers, controller);
 
         /* We take a reference on all suspended controllers so we
          * don't need to worry if any of the controllers are deleted
@@ -396,7 +396,7 @@ rig_ui_suspend(rig_ui_t *ui)
 void
 rig_ui_resume(rig_ui_t *ui)
 {
-    c_list_t *l;
+    c_llist_t *l;
 
     if (!ui->suspended)
         return;
@@ -408,7 +408,7 @@ rig_ui_resume(rig_ui_t *ui)
         rut_object_unref(controller);
     }
 
-    c_list_free(ui->suspended_controllers);
+    c_llist_free(ui->suspended_controllers);
     ui->suspended_controllers = NULL;
 
     ui->suspended = false;
@@ -443,7 +443,7 @@ print_entity_cb(rut_object_t *object, int depth, void *user_data)
 void
 rig_ui_print(rig_ui_t *ui)
 {
-    c_list_t *l;
+    c_llist_t *l;
 
     c_debug("Scenegraph:\n");
     rut_graphable_traverse(ui->scene,
@@ -470,7 +470,7 @@ rig_ui_print(rig_ui_t *ui)
 void
 rig_ui_add_controller(rig_ui_t *ui, rig_controller_t *controller)
 {
-    ui->controllers = c_list_prepend(ui->controllers, controller);
+    ui->controllers = c_llist_prepend(ui->controllers, controller);
     rut_object_ref(controller);
 
     if (!ui->suspended)
@@ -482,6 +482,6 @@ rig_ui_remove_controller(rig_ui_t *ui, rig_controller_t *controller)
 {
     rig_controller_set_suspended(controller, true);
 
-    ui->controllers = c_list_remove(ui->controllers, controller);
+    ui->controllers = c_llist_remove(ui->controllers, controller);
     rut_object_unref(controller);
 }

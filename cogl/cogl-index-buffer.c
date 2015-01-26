@@ -98,7 +98,7 @@ cg_index_buffer_set_data (cg_index_buffer_t *indices,
                           void *user_indices,
                           int n_indices)
 {
-    c_list_t *l;
+    c_llist_t *l;
 
     for (l = indices->ranges; l; l = l->next)
     {

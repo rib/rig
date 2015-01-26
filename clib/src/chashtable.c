@@ -283,34 +283,34 @@ c_hash_table_insert_replace(c_hash_table_t *hash,
     sanity_check(hash);
 }
 
-c_list_t *
+c_llist_t *
 c_hash_table_get_keys(c_hash_table_t *hash)
 {
     c_hash_table_iter_t iter;
-    c_list_t *rv = NULL;
+    c_llist_t *rv = NULL;
     void *key;
 
     c_hash_table_iter_init(&iter, hash);
 
     while (c_hash_table_iter_next(&iter, &key, NULL))
-        rv = c_list_prepend(rv, key);
+        rv = c_llist_prepend(rv, key);
 
-    return c_list_reverse(rv);
+    return c_llist_reverse(rv);
 }
 
-c_list_t *
+c_llist_t *
 c_hash_table_get_values(c_hash_table_t *hash)
 {
     c_hash_table_iter_t iter;
-    c_list_t *rv = NULL;
+    c_llist_t *rv = NULL;
     void *value;
 
     c_hash_table_iter_init(&iter, hash);
 
     while (c_hash_table_iter_next(&iter, NULL, &value))
-        rv = c_list_prepend(rv, value);
+        rv = c_llist_prepend(rv, value);
 
-    return c_list_reverse(rv);
+    return c_llist_reverse(rv);
 }
 
 unsigned int

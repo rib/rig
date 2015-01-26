@@ -466,14 +466,14 @@ attach_depth_texture(cg_device_t *dev,
     return CG_TEXTURE(depth_texture);
 }
 
-static c_list_t *
+static c_llist_t *
 try_creating_renderbuffers(cg_device_t *dev,
                            int width,
                            int height,
                            cg_offscreen_allocate_flags_t flags,
                            int n_samples)
 {
-    c_list_t *renderbuffers = NULL;
+    c_llist_t *renderbuffers = NULL;
     GLuint gl_depth_stencil_handle;
 
     if (flags & CG_OFFSCREEN_ALLOCATE_FLAG_DEPTH_STENCIL) {
@@ -529,7 +529,7 @@ try_creating_renderbuffers(cg_device_t *dev,
                                      GL_RENDERBUFFER,
                                      gl_depth_stencil_handle));
 #endif
-        renderbuffers = c_list_prepend(
+        renderbuffers = c_llist_prepend(
             renderbuffers, C_UINT_TO_POINTER(gl_depth_stencil_handle));
     }
 
@@ -558,7 +558,7 @@ try_creating_renderbuffers(cg_device_t *dev,
                                      GL_RENDERBUFFER,
                                      gl_depth_handle));
         renderbuffers =
-            c_list_prepend(renderbuffers, C_UINT_TO_POINTER(gl_depth_handle));
+            c_llist_prepend(renderbuffers, C_UINT_TO_POINTER(gl_depth_handle));
     }
 
     if (flags & CG_OFFSCREEN_ALLOCATE_FLAG_STENCIL) {
@@ -584,23 +584,23 @@ try_creating_renderbuffers(cg_device_t *dev,
                                      GL_RENDERBUFFER,
                                      gl_stencil_handle));
         renderbuffers =
-            c_list_prepend(renderbuffers, C_UINT_TO_POINTER(gl_stencil_handle));
+            c_llist_prepend(renderbuffers, C_UINT_TO_POINTER(gl_stencil_handle));
     }
 
     return renderbuffers;
 }
 
 static void
-delete_renderbuffers(cg_device_t *dev, c_list_t *renderbuffers)
+delete_renderbuffers(cg_device_t *dev, c_llist_t *renderbuffers)
 {
-    c_list_t *l;
+    c_llist_t *l;
 
     for (l = renderbuffers; l; l = l->next) {
         GLuint renderbuffer = C_POINTER_TO_UINT(l->data);
         GE(dev, glDeleteRenderbuffers(1, &renderbuffer));
     }
 
-    c_list_free(renderbuffers);
+    c_llist_free(renderbuffers);
 }
 
 /*

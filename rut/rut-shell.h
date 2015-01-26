@@ -384,7 +384,7 @@ struct _rut_shell_t {
 
     rut_property_context_t property_ctx;
 
-    c_slist_t *timelines;
+    c_sllist_t *timelines;
 
     rut_closure_t *paint_idle;
 
@@ -400,7 +400,7 @@ struct _rut_shell_t {
     void *user_data;
 
     rut_list_t input_cb_list;
-    c_list_t *input_cameras;
+    c_llist_t *input_cameras;
 
     /* Used to handle input events in window coordinates */
     rut_object_t *window_camera;

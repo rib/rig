@@ -83,7 +83,7 @@ struct _entity_translate_grab_closure_t {
 #ifdef RIG_EDITOR_ENABLED
 struct _entities_translate_grab_closure_t {
     rig_camera_view_t *view;
-    c_list_t *entity_closures;
+    c_llist_t *entity_closures;
 };
 
 static void
@@ -326,7 +326,7 @@ allocate_cb(rut_object_t *graphable, void *user_data)
 #ifdef RIG_EDITOR_ENABLED
     if (engine->frontend && engine->frontend_id == RIG_FRONTEND_ID_EDITOR) {
         if (view->entities_translate_grab_closure) {
-            c_list_t *l;
+            c_llist_t *l;
 
             update_camera_viewport(view, engine->camera_2d,
                                    view->view_camera_component);
@@ -595,7 +595,7 @@ entities_translate_grab_input_cb(rut_input_event_t *event, void *user_data)
 {
     if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_MOTION) {
         entities_translate_grab_closure_t *closure = user_data;
-        c_list_t *l;
+        c_llist_t *l;
 
         for (l = closure->entity_closures; l; l = l->next)
             handle_entity_translate_grab_motion(event, l->data);
@@ -611,7 +611,7 @@ entities_translate_grab_input_cb(rut_input_event_t *event, void *user_data)
             /* XXX: handle_entity_translate_grab_motion() will free the
              * entity-closures themselves on ACTION_UP so we just need
              * to free the list here. */
-            c_list_free(closure->entity_closures);
+            c_llist_free(closure->entity_closures);
             c_slice_free(entities_translate_grab_closure_t, closure);
         }
 
@@ -814,7 +814,7 @@ translate_grab_entity(rig_camera_view_t *view,
 
 static bool
 translate_grab_entities(rig_camera_view_t *view,
-                        c_list_t *entities,
+                        c_llist_t *entities,
                         float grab_x,
                         float grab_y,
                         entity_translate_callback_t translate_cb,
@@ -823,7 +823,7 @@ translate_grab_entities(rig_camera_view_t *view,
 {
     rut_object_t *camera = view->view_camera_component;
     entities_translate_grab_closure_t *closure;
-    c_list_t *l;
+    c_llist_t *l;
 
     if (view->entities_translate_grab_closure)
         return false;
@@ -837,7 +837,7 @@ translate_grab_entities(rig_camera_view_t *view,
             view, l->data, grab_x, grab_y, translate_cb, done_cb, user_data);
         if (entity_closure)
             closure->entity_closures =
-                c_list_prepend(closure->entity_closures, entity_closure);
+                c_llist_prepend(closure->entity_closures, entity_closure);
     }
 
     if (!closure->entity_closures) {
@@ -1496,7 +1496,7 @@ input_cb(rut_input_event_t *event,
         } else if (action == RUT_MOTION_EVENT_ACTION_MOVE &&
                    state == RUT_BUTTON_STATE_2 &&
                    modifiers & RUT_MODIFIER_SHIFT_ON) {
-            c_list_t link;
+            c_llist_t link;
 
             link.data = view->view_camera;
             link.next = NULL;
@@ -1545,7 +1545,7 @@ input_cb(rut_input_event_t *event,
                 if ((rut_key_event_get_modifier_state(event) &
                      RUT_MODIFIER_CTRL_ON) &&
                     engine->objects_selection->objects) {
-                    c_list_t *l;
+                    c_llist_t *l;
                     for (l = engine->objects_selection->objects; l; l = l->next)
                         move_entity_to_camera(view, l->data);
                 }
@@ -1561,11 +1561,11 @@ input_cb(rut_input_event_t *event,
             if (data &&
                 rut_object_get_type(data) == &rig_objects_selection_type) {
                 rig_objects_selection_t *selection = data;
-                int n_entities = c_list_length(selection->objects);
+                int n_entities = c_llist_length(selection->objects);
 
                 if (n_entities) {
                     rig_entity_t *parent = (rig_entity_t *)view->ui->scene;
-                    c_list_t *l;
+                    c_llist_t *l;
 
                     for (l = selection->objects; l; l = l->next) {
                         rig_undo_journal_add_entity(

@@ -553,78 +553,78 @@ typedef void (*c_free_func_t)(void *data);
 /*
  * Lists
  */
-typedef struct _c_slist_t c_slist_t;
-struct _c_slist_t {
+typedef struct _c_sllist_t c_sllist_t;
+struct _c_sllist_t {
     void *data;
-    c_slist_t *next;
+    c_sllist_t *next;
 };
 
-c_slist_t *c_slist_alloc(void);
-c_slist_t *c_slist_append(c_slist_t *list, void *data);
-c_slist_t *c_slist_prepend(c_slist_t *list, void *data);
-void c_slist_free(c_slist_t *list);
-void c_slist_free_1(c_slist_t *list);
-c_slist_t *c_slist_copy(c_slist_t *list);
-c_slist_t *c_slist_concat(c_slist_t *list1, c_slist_t *list2);
-void c_slist_foreach(c_slist_t *list, c_iter_func_t func, void *user_data);
-c_slist_t *c_slist_last(c_slist_t *list);
-c_slist_t *c_slist_find(c_slist_t *list, const void *data);
-c_slist_t *
-c_slist_find_custom(c_slist_t *list, const void *data, c_compare_func_t func);
-c_slist_t *c_slist_remove(c_slist_t *list, const void *data);
-c_slist_t *c_slist_remove_all(c_slist_t *list, const void *data);
-c_slist_t *c_slist_reverse(c_slist_t *list);
-unsigned int c_slist_length(c_slist_t *list);
-c_slist_t *c_slist_remove_link(c_slist_t *list, c_slist_t *link);
-c_slist_t *c_slist_delete_link(c_slist_t *list, c_slist_t *link);
-c_slist_t *
-c_slist_insert_sorted(c_slist_t *list, void *data, c_compare_func_t func);
-c_slist_t *
-c_slist_insert_before(c_slist_t *list, c_slist_t *sibling, void *data);
-c_slist_t *c_slist_sort(c_slist_t *list, c_compare_func_t func);
-int c_slist_index(c_slist_t *list, const void *data);
-c_slist_t *c_slist_nth(c_slist_t *list, unsigned int n);
-void *c_slist_nth_data(c_slist_t *list, unsigned int n);
+c_sllist_t *c_sllist_alloc(void);
+c_sllist_t *c_sllist_append(c_sllist_t *list, void *data);
+c_sllist_t *c_sllist_prepend(c_sllist_t *list, void *data);
+void c_sllist_free(c_sllist_t *list);
+void c_sllist_free_1(c_sllist_t *list);
+c_sllist_t *c_sllist_copy(c_sllist_t *list);
+c_sllist_t *c_sllist_concat(c_sllist_t *list1, c_sllist_t *list2);
+void c_sllist_foreach(c_sllist_t *list, c_iter_func_t func, void *user_data);
+c_sllist_t *c_sllist_last(c_sllist_t *list);
+c_sllist_t *c_sllist_find(c_sllist_t *list, const void *data);
+c_sllist_t *
+c_sllist_find_custom(c_sllist_t *list, const void *data, c_compare_func_t func);
+c_sllist_t *c_sllist_remove(c_sllist_t *list, const void *data);
+c_sllist_t *c_sllist_remove_all(c_sllist_t *list, const void *data);
+c_sllist_t *c_sllist_reverse(c_sllist_t *list);
+unsigned int c_sllist_length(c_sllist_t *list);
+c_sllist_t *c_sllist_remove_link(c_sllist_t *list, c_sllist_t *link);
+c_sllist_t *c_sllist_delete_link(c_sllist_t *list, c_sllist_t *link);
+c_sllist_t *
+c_sllist_insert_sorted(c_sllist_t *list, void *data, c_compare_func_t func);
+c_sllist_t *
+c_sllist_insert_before(c_sllist_t *list, c_sllist_t *sibling, void *data);
+c_sllist_t *c_sllist_sort(c_sllist_t *list, c_compare_func_t func);
+int c_sllist_index(c_sllist_t *list, const void *data);
+c_sllist_t *c_sllist_nth(c_sllist_t *list, unsigned int n);
+void *c_sllist_nth_data(c_sllist_t *list, unsigned int n);
 
-#define c_slist_next(slist) ((slist) ? (((c_slist_t *)(slist))->next) : NULL)
+#define c_sllist_next(slist) ((slist) ? (((c_sllist_t *)(slist))->next) : NULL)
 
-typedef struct _c_list_t c_list_t;
-struct _c_list_t {
+typedef struct _c_llist_t c_llist_t;
+struct _c_llist_t {
     void *data;
-    c_list_t *next;
-    c_list_t *prev;
+    c_llist_t *next;
+    c_llist_t *prev;
 };
 
-#define c_list_next(list) ((list) ? (((c_list_t *)(list))->next) : NULL)
-#define c_list_previous(list) ((list) ? (((c_list_t *)(list))->prev) : NULL)
+#define c_llist_next(list) ((list) ? (((c_llist_t *)(list))->next) : NULL)
+#define c_llist_previous(list) ((list) ? (((c_llist_t *)(list))->prev) : NULL)
 
-c_list_t *c_list_alloc(void);
-c_list_t *c_list_append(c_list_t *list, void *data);
-c_list_t *c_list_prepend(c_list_t *list, void *data);
-void c_list_free(c_list_t *list);
-void c_list_free_full(c_list_t *list, c_destroy_func_t free_func);
-void c_list_free_1(c_list_t *list);
-c_list_t *c_list_copy(c_list_t *list);
-unsigned int c_list_length(c_list_t *list);
-int c_list_index(c_list_t *list, const void *data);
-c_list_t *c_list_nth(c_list_t *list, unsigned int n);
-void *c_list_nth_data(c_list_t *list, unsigned int n);
-c_list_t *c_list_last(c_list_t *list);
-c_list_t *c_list_concat(c_list_t *list1, c_list_t *list2);
-void c_list_foreach(c_list_t *list, c_iter_func_t func, void *user_data);
-c_list_t *c_list_first(c_list_t *list);
-c_list_t *c_list_find(c_list_t *list, const void *data);
-c_list_t *
-c_list_find_custom(c_list_t *list, const void *data, c_compare_func_t func);
-c_list_t *c_list_remove(c_list_t *list, const void *data);
-c_list_t *c_list_remove_all(c_list_t *list, const void *data);
-c_list_t *c_list_reverse(c_list_t *list);
-c_list_t *c_list_remove_link(c_list_t *list, c_list_t *link);
-c_list_t *c_list_delete_link(c_list_t *list, c_list_t *link);
-c_list_t *
-c_list_insert_sorted(c_list_t *list, void *data, c_compare_func_t func);
-c_list_t *c_list_insert_before(c_list_t *list, c_list_t *sibling, void *data);
-c_list_t *c_list_sort(c_list_t *sort, c_compare_func_t func);
+c_llist_t *c_llist_alloc(void);
+c_llist_t *c_llist_append(c_llist_t *list, void *data);
+c_llist_t *c_llist_prepend(c_llist_t *list, void *data);
+void c_llist_free(c_llist_t *list);
+void c_llist_free_full(c_llist_t *list, c_destroy_func_t free_func);
+void c_llist_free_1(c_llist_t *list);
+c_llist_t *c_llist_copy(c_llist_t *list);
+unsigned int c_llist_length(c_llist_t *list);
+int c_llist_index(c_llist_t *list, const void *data);
+c_llist_t *c_llist_nth(c_llist_t *list, unsigned int n);
+void *c_llist_nth_data(c_llist_t *list, unsigned int n);
+c_llist_t *c_llist_last(c_llist_t *list);
+c_llist_t *c_llist_concat(c_llist_t *list1, c_llist_t *list2);
+void c_llist_foreach(c_llist_t *list, c_iter_func_t func, void *user_data);
+c_llist_t *c_llist_first(c_llist_t *list);
+c_llist_t *c_llist_find(c_llist_t *list, const void *data);
+c_llist_t *
+c_llist_find_custom(c_llist_t *list, const void *data, c_compare_func_t func);
+c_llist_t *c_llist_remove(c_llist_t *list, const void *data);
+c_llist_t *c_llist_remove_all(c_llist_t *list, const void *data);
+c_llist_t *c_llist_reverse(c_llist_t *list);
+c_llist_t *c_llist_remove_link(c_llist_t *list, c_llist_t *link);
+c_llist_t *c_llist_delete_link(c_llist_t *list, c_llist_t *link);
+c_llist_t *
+c_llist_insert_sorted(c_llist_t *list, void *data, c_compare_func_t func);
+c_llist_t *c_llist_insert_before(c_llist_t *list, c_llist_t *sibling, void *data);
+c_llist_t *c_llist_sort(c_llist_t *sort, c_compare_func_t func);
 
 /*
  * HookLists
@@ -685,8 +685,8 @@ void c_hash_table_insert_replace(c_hash_table_t *hash,
                                  void *value,
                                  bool replace);
 unsigned int c_hash_table_size(c_hash_table_t *hash);
-c_list_t *c_hash_table_get_keys(c_hash_table_t *hash);
-c_list_t *c_hash_table_get_values(c_hash_table_t *hash);
+c_llist_t *c_hash_table_get_keys(c_hash_table_t *hash);
+c_llist_t *c_hash_table_get_values(c_hash_table_t *hash);
 void *c_hash_table_lookup(c_hash_table_t *hash, const void *key);
 bool c_hash_table_lookup_extended(c_hash_table_t *hash,
                                   const void *key,
@@ -826,8 +826,8 @@ c_ptr_array_foreach(c_ptr_array_t *array, c_iter_func_t func, void *user_data);
  * Queues
  */
 typedef struct {
-    c_list_t *head;
-    c_list_t *tail;
+    c_llist_t *head;
+    c_llist_t *tail;
     unsigned int length;
 } c_queue_t;
 
@@ -847,7 +847,7 @@ bool c_queue_is_empty(c_queue_t *queue);
 c_queue_t *c_queue_new(void);
 void c_queue_free(c_queue_t *queue);
 void c_queue_foreach(c_queue_t *queue, c_iter_func_t func, void *user_data);
-c_list_t *c_queue_find(c_queue_t *queue, const void *data);
+c_llist_t *c_queue_find(c_queue_t *queue, const void *data);
 void c_queue_clear(c_queue_t *queue);
 
 /*

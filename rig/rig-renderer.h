@@ -42,7 +42,7 @@ typedef struct _rig_paint_context_t {
     rig_engine_t *engine;
     rut_object_t *renderer;
 
-    c_list_t *camera_stack;
+    c_llist_t *camera_stack;
 
     rig_pass_t pass;
 

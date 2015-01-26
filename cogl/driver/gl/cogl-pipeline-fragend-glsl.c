@@ -204,7 +204,7 @@ get_layer_fragment_snippets(cg_pipeline_layer_t *layer)
 static bool
 has_replace_hook(cg_pipeline_layer_t *layer, cg_snippet_hook_t hook)
 {
-    c_list_t *l;
+    c_llist_t *l;
 
     for (l = get_layer_fragment_snippets(layer)->entries; l; l = l->next) {
         cg_snippet_t *snippet = l->data;

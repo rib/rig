@@ -160,7 +160,7 @@ _cg_winsys_renderer_get_proc_address(
 static cg_onscreen_t *
 find_onscreen_for_xid(cg_device_t *dev, uint32_t xid)
 {
-    c_list_t *l;
+    c_llist_t *l;
 
     for (l = dev->framebuffers; l; l = l->next) {
         cg_framebuffer_t *framebuffer = l->data;
@@ -353,7 +353,7 @@ flush_pending_notifications_idle(void *user_data)
     _cg_closure_disconnect(glx_renderer->flush_notifications_idle);
     glx_renderer->flush_notifications_idle = NULL;
 
-    c_list_foreach(dev->framebuffers, flush_pending_notifications_cb, NULL);
+    c_llist_foreach(dev->framebuffers, flush_pending_notifications_cb, NULL);
 }
 
 static void
@@ -570,7 +570,7 @@ _cg_winsys_renderer_disconnect(cg_renderer_t *renderer)
 static bool
 update_all_outputs(cg_renderer_t *renderer)
 {
-    c_list_t *l;
+    c_llist_t *l;
 
     _CG_GET_DEVICE(context, false);
 

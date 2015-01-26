@@ -87,7 +87,7 @@ static int64_t
 _cg_fence_poll_prepare(void *source)
 {
     cg_device_t *dev = source;
-    c_list_t *l;
+    c_llist_t *l;
 
     if (!_cg_list_empty(&dev->fences))
         return FENCE_CHECK_TIMEOUT;

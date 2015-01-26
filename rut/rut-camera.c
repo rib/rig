@@ -368,7 +368,7 @@ rut_camera_remove_input_region(rut_object_t *object,
     vtable->remove_input_region(object, region);
 }
 
-c_list_t *
+c_llist_t *
 rut_camera_get_input_regions(rut_object_t *object)
 {
     rut_camera_props_t *camera =

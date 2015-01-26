@@ -149,7 +149,7 @@ struct _cg_framebuffer_t {
 
     /* The scene of a given framebuffer may depend on images in other
      * framebuffers... */
-    c_list_t *deps;
+    c_llist_t *deps;
 
     /* Whether something has been drawn to the buffer since the last
      * swap buffers or swap region. */
@@ -170,7 +170,7 @@ typedef enum {
 
 typedef struct _cg_gl_framebuffer_t {
     GLuint fbo_handle;
-    c_list_t *renderbuffers;
+    c_llist_t *renderbuffers;
     int samples_per_pixel;
 } cg_gl_framebuffer_t;
 

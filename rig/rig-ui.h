@@ -51,10 +51,10 @@ struct _rig_ui_t {
 
     rig_engine_t *engine;
 
-    c_list_t *assets;
+    c_llist_t *assets;
 
     rut_object_t *scene;
-    c_list_t *controllers;
+    c_llist_t *controllers;
 
     rig_entity_t *light;
     rig_entity_t *play_camera;
@@ -63,7 +63,7 @@ struct _rig_ui_t {
     uint8_t *dso_data;
     int dso_len;
 
-    c_list_t *suspended_controllers;
+    c_llist_t *suspended_controllers;
     bool suspended;
 };
 

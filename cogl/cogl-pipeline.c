@@ -436,9 +436,9 @@ _cg_pipeline_free(cg_pipeline_t *pipeline)
     }
 
     if (pipeline->differences & CG_PIPELINE_STATE_LAYERS) {
-        c_list_foreach(pipeline->layer_differences,
+        c_llist_foreach(pipeline->layer_differences,
                        (c_iter_func_t)cg_object_unref, NULL);
-        c_list_free(pipeline->layer_differences);
+        c_llist_free(pipeline->layer_differences);
     }
 
     if (pipeline->differences & CG_PIPELINE_STATE_VERTEX_SNIPPETS)
@@ -514,7 +514,7 @@ _cg_pipeline_update_layers_cache(cg_pipeline_t *pipeline)
     layers_found = 0;
     for (current = pipeline; _cg_pipeline_get_parent(current);
          current = _cg_pipeline_get_parent(current)) {
-        c_list_t *l;
+        c_llist_t *l;
 
         if (!(current->differences & CG_PIPELINE_STATE_LAYERS))
             continue;
@@ -821,13 +821,13 @@ _cg_pipeline_copy_differences(cg_pipeline_t *dest,
         dest->blend_enable = src->blend_enable;
 
     if (differences & CG_PIPELINE_STATE_LAYERS) {
-        c_list_t *l;
+        c_llist_t *l;
 
         if (dest->differences & CG_PIPELINE_STATE_LAYERS &&
             dest->layer_differences) {
-            c_list_foreach(dest->layer_differences,
+            c_llist_foreach(dest->layer_differences,
                            (c_iter_func_t)cg_object_unref, NULL);
-            c_list_free(dest->layer_differences);
+            c_llist_free(dest->layer_differences);
         }
 
         for (l = src->layer_differences; l; l = l->next) {
@@ -1258,7 +1258,7 @@ _cg_pipeline_add_layer_difference(cg_pipeline_t *pipeline,
     pipeline->differences |= CG_PIPELINE_STATE_LAYERS;
 
     pipeline->layer_differences =
-        c_list_prepend(pipeline->layer_differences, layer);
+        c_llist_prepend(pipeline->layer_differences, layer);
 
     if (inc_n_layers)
         pipeline->n_layers++;
@@ -1298,7 +1298,7 @@ _cg_pipeline_remove_layer_difference(cg_pipeline_t *pipeline,
         cg_object_unref(layer);
 
         pipeline->layer_differences =
-            c_list_remove(pipeline->layer_differences, layer);
+            c_llist_remove(pipeline->layer_differences, layer);
     }
 
     pipeline->differences |= CG_PIPELINE_STATE_LAYERS;
@@ -1392,8 +1392,8 @@ _cg_pipeline_prune_to_n_layers(cg_pipeline_t *pipeline, int n)
     cg_pipeline_t *authority =
         _cg_pipeline_get_authority(pipeline, CG_PIPELINE_STATE_LAYERS);
     cg_pipeline_prune_layers_info_t state;
-    c_list_t *l;
-    c_list_t *next;
+    c_llist_t *l;
+    c_llist_t *next;
 
     if (authority->n_layers <= n)
         return;
@@ -1593,8 +1593,8 @@ void
 _cg_pipeline_prune_empty_layer_difference(cg_pipeline_t *layers_authority,
                                           cg_pipeline_layer_t *layer)
 {
-    /* Find the c_list_t link that references the empty layer */
-    c_list_t *link = c_list_find(layers_authority->layer_differences, layer);
+    /* Find the c_llist_t link that references the empty layer */
+    c_llist_t *link = c_llist_find(layers_authority->layer_differences, layer);
     /* No pipeline directly owns the root node layer so this is safe... */
     cg_pipeline_layer_t *layer_parent = _cg_pipeline_layer_get_parent(layer);
     cg_pipeline_layer_info_t layer_info;
@@ -1811,15 +1811,15 @@ unsigned long
 _cg_pipeline_compare_differences(cg_pipeline_t *pipeline0,
                                  cg_pipeline_t *pipeline1)
 {
-    c_slist_t *head0 = NULL;
-    c_slist_t *head1 = NULL;
+    c_sllist_t *head0 = NULL;
+    c_sllist_t *head1 = NULL;
     cg_pipeline_t *node0;
     cg_pipeline_t *node1;
     int len0 = 0;
     int len1 = 0;
     int count;
-    c_slist_t *common_ancestor0;
-    c_slist_t *common_ancestor1;
+    c_sllist_t *common_ancestor0;
+    c_sllist_t *common_ancestor1;
     unsigned long pipelines_difference = 0;
 
     /* Algorithm:
@@ -1836,14 +1836,14 @@ _cg_pipeline_compare_differences(cg_pipeline_t *pipeline0,
      */
 
     for (node0 = pipeline0; node0; node0 = _cg_pipeline_get_parent(node0)) {
-        c_slist_t *link = alloca(sizeof(c_slist_t));
+        c_sllist_t *link = alloca(sizeof(c_sllist_t));
         link->next = head0;
         link->data = node0;
         head0 = link;
         len0++;
     }
     for (node1 = pipeline1; node1; node1 = _cg_pipeline_get_parent(node1)) {
-        c_slist_t *link = alloca(sizeof(c_slist_t));
+        c_sllist_t *link = alloca(sizeof(c_sllist_t));
         link->next = head1;
         link->data = node1;
         head1 = link;
@@ -2099,7 +2099,7 @@ _cg_pipeline_prune_redundant_ancestry(cg_pipeline_t *pipeline)
      * immediatly bail out.
      */
     if (pipeline->differences & CG_PIPELINE_STATE_LAYERS) {
-        if (pipeline->n_layers != c_list_length(pipeline->layer_differences))
+        if (pipeline->n_layers != c_llist_length(pipeline->layer_differences))
             return;
     }
 

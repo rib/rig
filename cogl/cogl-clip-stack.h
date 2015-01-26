@@ -36,7 +36,7 @@
 #include "cogl-framebuffer.h"
 #include "cogl-matrix-stack.h"
 
-/* The clip stack works like a c_slist_t where only a pointer to the top
+/* The clip stack works like a c_sllist_t where only a pointer to the top
    of the stack is stored. The empty clip stack is represented simply
    by the NULL pointer. When an entry is added to or removed from the
    stack the new top of the stack is returned. When an entry is pushed

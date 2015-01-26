@@ -62,7 +62,7 @@ struct _rig_editor_t {
     rig_frontend_t *frontend;
     rig_engine_t *engine;
 
-    c_list_t *assets;
+    c_llist_t *assets;
 
     char *ui_filename;
 
@@ -97,16 +97,16 @@ struct _rig_editor_t {
     rig_asset_t *pointalism_grid_builtin_asset;
     rig_asset_t *hair_builtin_asset;
     rig_asset_t *button_input_builtin_asset;
-    c_list_t *result_input_closures;
-    c_list_t *asset_enumerators;
+    c_llist_t *result_input_closures;
+    c_llist_t *asset_enumerators;
 
     rut_adb_device_tracker_t *adb_tracker;
     int next_forward_port;
 
-    c_list_t *slave_masters;
+    c_llist_t *slave_masters;
 };
 
-c_list_t *rig_editor_slave_address_options;
+c_llist_t *rig_editor_slave_address_options;
 
 static void
 nop_register_id_cb(void *object, uint64_t id, void *user_data)
@@ -355,11 +355,11 @@ typedef struct _result_input_closure_t {
 void
 rig_editor_free_result_input_closures(rig_editor_t *editor)
 {
-    c_list_t *l;
+    c_llist_t *l;
 
     for (l = editor->result_input_closures; l; l = l->next)
         c_slice_free(result_input_closure_t, l->data);
-    c_list_free(editor->result_input_closures);
+    c_llist_free(editor->result_input_closures);
     editor->result_input_closures = NULL;
 }
 
@@ -653,7 +653,7 @@ result_input_cb(rut_input_region_t *region,
             rig_engine_t *engine = closure->engine;
 
             if (engine->objects_selection->objects) {
-                c_list_foreach(engine->objects_selection->objects,
+                c_llist_foreach(engine->objects_selection->objects,
                                (GFunc)apply_result_input_with_entity,
                                closure);
             } else {
@@ -885,7 +885,7 @@ add_search_result(rig_engine_t *engine, rut_object_t *result)
     /* XXX: It could be nicer to have some form of weak pointer
      * mechanism to manage the lifetime of these closures... */
     editor->result_input_closures =
-        c_list_prepend(editor->result_input_closures, closure);
+        c_llist_prepend(editor->result_input_closures, closure);
 }
 
 typedef struct _search_state_t {
@@ -937,9 +937,9 @@ asset_matches_search(rig_engine_t *engine,
                      rig_asset_t *asset,
                      const char *search)
 {
-    c_list_t *l;
+    c_llist_t *l;
     bool found = false;
-    const c_list_t *inferred_tags;
+    const c_llist_t *inferred_tags;
     char **tags;
     const char *path;
     int i;
@@ -967,7 +967,7 @@ asset_matches_search(rig_engine_t *engine,
     }
 
     for (i = 0; tags[i]; i++) {
-        const c_list_t *l;
+        const c_llist_t *l;
         bool found = false;
 
         for (l = inferred_tags; l; l = l->next) {
@@ -991,7 +991,7 @@ static bool
 rig_search_with_text(rig_engine_t *engine, const char *user_search)
 {
     rig_editor_t *editor = engine->editor;
-    c_list_t *l;
+    c_llist_t *l;
     int i;
     bool found = false;
     search_state_t state;
@@ -1080,7 +1080,7 @@ add_asset(rig_engine_t *engine, GFileInfo *info, GFile *asset_file)
     rig_editor_t *editor = engine->editor;
     GFile *assets_dir = g_file_new_for_path(engine->shell->assets_location);
     char *path = g_file_get_relative_path(assets_dir, asset_file);
-    c_list_t *l;
+    c_llist_t *l;
     rig_asset_t *asset = NULL;
     rut_exception_t *catch = NULL;
 
@@ -1098,19 +1098,19 @@ add_asset(rig_engine_t *engine, GFileInfo *info, GFile *asset_file)
             "Failed to load asset from file %s: %s", path, catch->message);
         rut_exception_free(catch);
     } else {
-        editor->assets = c_list_prepend(editor->assets, asset);
+        editor->assets = c_llist_prepend(editor->assets, asset);
     }
 }
 
 #if 0
-static c_list_t *
-copy_tags (c_list_t *tags)
+static c_llist_t *
+copy_tags (c_llist_t *tags)
 {
-    c_list_t *l, *copy = NULL;
+    c_llist_t *l, *copy = NULL;
     for (l = tags; l; l = l->next)
     {
         char *tag = c_intern_string (l->data);
-        copy = c_list_prepend (copy, tag);
+        copy = c_llist_prepend (copy, tag);
     }
     return copy;
 }
@@ -1151,7 +1151,7 @@ typedef struct _asset_enumerator_state_t {
     GFile *directory;
     GFileEnumerator *enumerator;
     GCancellable *cancellable;
-    c_list_t *tags;
+    c_llist_t *tags;
 } asset_enumerator_state_t;
 
 static void
@@ -1162,10 +1162,10 @@ cleanup_assets_enumerator(asset_enumerator_state_t *state)
 
     g_object_unref(state->cancellable);
     g_object_unref(state->directory);
-    c_list_free(state->tags);
+    c_llist_free(state->tags);
 
     state->engine->asset_enumerators =
-        c_list_remove(state->engine->asset_enumerators, state);
+        c_llist_remove(state->engine->asset_enumerators, state);
 
     c_slice_free(asset_enumerator_state_t, state);
 }
@@ -1174,8 +1174,8 @@ static void
 assets_found_cb(GObject *source_object, GAsyncResult *res, gpointer user_data)
 {
     asset_enumerator_state_t *state = user_data;
-    c_list_t *infos;
-    c_list_t *l;
+    c_llist_t *infos;
+    c_llist_t *l;
 
     infos = g_file_enumerator_next_files_finish(state->enumerator, res, NULL);
     if (!infos) {
@@ -1186,7 +1186,7 @@ assets_found_cb(GObject *source_object, GAsyncResult *res, gpointer user_data)
     for (l = infos; l; l = l->next)
         enumerate_file_info(state->engine, state->directory, l->data);
 
-    c_list_free(infos);
+    c_llist_free(infos);
 
     g_file_enumerator_next_files_async(state->enumerator,
                                        5, /* what's a good number here? */
@@ -1243,7 +1243,7 @@ enumerate_dir_for_assets_async(rig_engine_t *engine,
                                     engine);
 
     engine->asset_enumerators =
-        c_list_prepend(engine->asset_enumerators, state);
+        c_llist_prepend(engine->asset_enumerators, state);
 }
 
 #else /* USE_ASYNC_IO */
@@ -1285,29 +1285,29 @@ load_asset_list(rig_editor_t *editor)
 
     rut_object_ref(editor->nine_slice_builtin_asset);
     editor->assets =
-        c_list_prepend(editor->assets, editor->nine_slice_builtin_asset);
+        c_llist_prepend(editor->assets, editor->nine_slice_builtin_asset);
 
     rut_object_ref(editor->diamond_builtin_asset);
     editor->assets =
-        c_list_prepend(editor->assets, editor->diamond_builtin_asset);
+        c_llist_prepend(editor->assets, editor->diamond_builtin_asset);
 
     rut_object_ref(editor->circle_builtin_asset);
     editor->assets =
-        c_list_prepend(editor->assets, editor->circle_builtin_asset);
+        c_llist_prepend(editor->assets, editor->circle_builtin_asset);
 
     rut_object_ref(editor->pointalism_grid_builtin_asset);
     editor->assets =
-        c_list_prepend(editor->assets, editor->pointalism_grid_builtin_asset);
+        c_llist_prepend(editor->assets, editor->pointalism_grid_builtin_asset);
 
     rut_object_ref(editor->text_builtin_asset);
-    editor->assets = c_list_prepend(editor->assets, editor->text_builtin_asset);
+    editor->assets = c_llist_prepend(editor->assets, editor->text_builtin_asset);
 
     rut_object_ref(editor->hair_builtin_asset);
-    editor->assets = c_list_prepend(editor->assets, editor->hair_builtin_asset);
+    editor->assets = c_llist_prepend(editor->assets, editor->hair_builtin_asset);
 
     rut_object_ref(editor->button_input_builtin_asset);
     editor->assets =
-        c_list_prepend(editor->assets, editor->button_input_builtin_asset);
+        c_llist_prepend(editor->assets, editor->button_input_builtin_asset);
 
     g_object_unref(assets_dir);
 
@@ -1530,7 +1530,7 @@ on_slave_error_cb(rig_slave_master_t *slave_master,
 {
     rig_editor_t *editor = user_data;
 
-    editor->slave_masters = c_list_remove(editor->slave_masters, slave_master);
+    editor->slave_masters = c_llist_remove(editor->slave_masters, slave_master);
     rut_object_unref(slave_master);
 }
 
@@ -1539,14 +1539,14 @@ connect_pressed_cb(rut_icon_button_t *button, void *user_data)
 {
     rig_editor_t *editor = user_data;
     rig_engine_t *engine = editor->engine;
-    c_list_t *l;
+    c_llist_t *l;
 
     /* TODO: move engine->slave_addresses to editor->slave_addresses */
     for (l = engine->slave_addresses; l; l = l->next) {
         rig_slave_master_t *slave_master =
             rig_slave_master_new(engine, l->data);
 
-        editor->slave_masters = c_list_prepend(editor->slave_masters, slave_master);
+        editor->slave_masters = c_llist_prepend(editor->slave_masters, slave_master);
 
         rig_slave_master_add_on_connect_callback(slave_master,
                                                  on_slave_connect_cb,
@@ -1826,10 +1826,10 @@ asset_search_toggle_cb(rut_icon_toggle_t *toggle, bool state, void *user_data)
     rig_engine_t *engine = toggle_state->engine;
 
     if (state) {
-        engine->required_search_tags = c_list_prepend(
+        engine->required_search_tags = c_llist_prepend(
             engine->required_search_tags, toggle_state->required_tag);
     } else {
-        engine->required_search_tags = c_list_remove(
+        engine->required_search_tags = c_llist_remove(
             engine->required_search_tags, toggle_state->required_tag);
     }
 
@@ -1842,7 +1842,7 @@ free_search_toggle_state(void *user_data)
     search_toggle_state_t *state = user_data;
 
     state->engine->required_search_tags =
-        c_list_remove(state->engine->required_search_tags, state->required_tag);
+        c_llist_remove(state->engine->required_search_tags, state->required_tag);
 
     c_free(state->required_tag);
 
@@ -2194,7 +2194,7 @@ handle_edit_operations(rig_editor_t *editor,
                        Rig__FrameSetup *pb_frame_setup)
 {
     Rig__UIEdit *play_edits;
-    c_list_t *l;
+    c_llist_t *l;
 
     if (!editor->edit_ops->len)
         return;
@@ -2466,7 +2466,7 @@ adb_devices_cb(const char **serials, int n_devices, void *user_data)
     rig_engine_t *engine = editor->engine;
     rut_exception_t *catch = NULL;
     int i;
-    c_list_t *l, *next;
+    c_llist_t *l, *next;
 
     for (l = engine->slave_addresses; l; l = next) {
         rig_slave_address_t *slave_address = l->data;
@@ -2475,7 +2475,7 @@ adb_devices_cb(const char **serials, int n_devices, void *user_data)
 
         if (slave_address->type == RIG_SLAVE_ADDRESS_TYPE_ADB_SERIAL) {
             engine->slave_addresses =
-                c_list_delete_link(engine->slave_addresses, l);
+                c_llist_delete_link(engine->slave_addresses, l);
             rut_object_unref(slave_address);
         }
     }
@@ -2513,7 +2513,7 @@ adb_devices_cb(const char **serials, int n_devices, void *user_data)
         slave_address =
             rig_slave_address_new_adb(model, serials[i], forward_port);
         engine->slave_addresses =
-            c_list_prepend(engine->slave_addresses, slave_address);
+            c_llist_prepend(engine->slave_addresses, slave_address);
 
         c_message("  serial=%s model=\"%s\" abi=%s/%s local port=%d",
                   serials[i],
@@ -2529,7 +2529,7 @@ rig_editor_init(rut_shell_t *shell, void *user_data)
 {
     rig_editor_t *editor = user_data;
     rig_engine_t *engine;
-    c_list_t *l;
+    c_llist_t *l;
 
     /* TODO: rig_frontend_t should be a trait of the engine */
     editor->frontend = rig_frontend_new(
@@ -2606,13 +2606,13 @@ rig_editor_init(rut_shell_t *shell, void *user_data)
                 slave_addrv[1], /* address */
                 c_ascii_strtoull(slave_addrv[2], NULL, 10)); /* port */
             engine->slave_addresses =
-                c_list_prepend(engine->slave_addresses, slave_address);
+                c_llist_prepend(engine->slave_addresses, slave_address);
         } else if (strcmp(slave_addrv[0], "abstract") == 0 && slave_addrv[1]) {
             rig_slave_address_t *slave_address = rig_slave_address_new_abstract(
                 slave_addrv[1], /* name */
                 slave_addrv[1]); /* address */
             engine->slave_addresses =
-                c_list_prepend(engine->slave_addresses, slave_address);
+                c_llist_prepend(engine->slave_addresses, slave_address);
         } else
             c_error("Unknown slave address \"%s\"; should be in form \"tcp:<ip>:<port>\" or \"abstract:<name>\"",
                     slave_addr);
@@ -2738,7 +2738,7 @@ init_property_controlled_state_cb(rut_property_t *property,
 
 static rig_inspector_t *
 create_inspector(rig_engine_t *engine,
-                 c_list_t *objects)
+                 c_llist_t *objects)
 {
     rut_object_t *reference_object = objects->data;
     rig_inspector_t *inspector =
@@ -2764,7 +2764,7 @@ create_inspector(rig_engine_t *engine,
 
 typedef struct _delete_button_state_t {
     rig_engine_t *engine;
-    c_list_t *components;
+    c_llist_t *components;
 } delete_button_state_t;
 
 static void
@@ -2772,7 +2772,7 @@ free_delete_button_state(void *user_data)
 {
     delete_button_state_t *state = user_data;
 
-    c_list_free(state->components);
+    c_llist_free(state->components);
     c_slice_free(delete_button_state_t, user_data);
 }
 
@@ -2780,7 +2780,7 @@ static void
 delete_button_click_cb(rut_icon_button_t *button, void *user_data)
 {
     delete_button_state_t *state = user_data;
-    c_list_t *l;
+    c_llist_t *l;
 
     for (l = state->components; l; l = l->next) {
         rig_undo_journal_delete_component(state->engine->undo_journal, l->data);
@@ -2791,7 +2791,7 @@ delete_button_click_cb(rut_icon_button_t *button, void *user_data)
 
 static void
 create_components_inspector(rig_engine_t *engine,
-                            c_list_t *components)
+                            c_llist_t *components)
 {
     rut_component_t *reference_component = components->data;
     rig_inspector_t *inspector = create_inspector(engine, components);
@@ -2829,7 +2829,7 @@ create_components_inspector(rig_engine_t *engine,
                                         "component-delete.png"); /* disabled */
     button_state = c_slice_new(delete_button_state_t);
     button_state->engine = engine;
-    button_state->components = c_list_copy(components);
+    button_state->components = c_llist_copy(components);
     rut_icon_button_add_on_click_callback(
         delete_button,
         delete_button_click_cb,
@@ -2841,7 +2841,7 @@ create_components_inspector(rig_engine_t *engine,
     rut_box_layout_add(engine->inspector_box_layout, false, fold);
     rut_object_unref(fold);
 
-    engine->all_inspectors = c_list_prepend(engine->all_inspectors, inspector);
+    engine->all_inspectors = c_llist_prepend(engine->all_inspectors, inspector);
 }
 
 rut_object_t *
@@ -2863,7 +2863,7 @@ find_component(rig_entity_t *entity, rut_component_type_t type)
 
 typedef struct _match_and_list_state_t {
     rig_engine_t *engine;
-    c_list_t *entities;
+    c_llist_t *entities;
 } match_and_list_state_t;
 
 static bool
@@ -2874,8 +2874,8 @@ match_and_create_components_inspector_cb(rut_object_t *reference_component,
     rut_componentable_props_t *component_props = rut_object_get_properties(
         reference_component, RUT_TRAIT_ID_COMPONENTABLE);
     rut_component_type_t type = component_props->type;
-    c_list_t *l;
-    c_list_t *components = NULL;
+    c_llist_t *l;
+    c_llist_t *components = NULL;
 
     for (l = state->entities; l; l = l->next) {
         /* XXX: we will need to update this if we ever allow attaching
@@ -2893,7 +2893,7 @@ match_and_create_components_inspector_cb(rut_object_t *reference_component,
             rut_object_get_type(reference_component))
             goto EXIT;
 
-        components = c_list_prepend(components, component);
+        components = c_llist_prepend(components, component);
     }
 
     if (components)
@@ -2901,7 +2901,7 @@ match_and_create_components_inspector_cb(rut_object_t *reference_component,
 
 EXIT:
 
-    c_list_free(components);
+    c_llist_free(components);
 
     return true; /* continue */
 }
@@ -2910,7 +2910,7 @@ EXIT:
 void
 rig_editor_update_inspector(rig_engine_t *engine)
 {
-    c_list_t *objects = engine->objects_selection->objects;
+    c_llist_t *objects = engine->objects_selection->objects;
 
     /* This will drop the last reference to any current
      * engine->inspector_box_layout and also any indirect references
@@ -2923,7 +2923,7 @@ rig_editor_update_inspector(rig_engine_t *engine)
     rut_bin_set_child(engine->inspector_bin, engine->inspector_box_layout);
 
     engine->inspector = NULL;
-    c_list_free(engine->all_inspectors);
+    c_llist_free(engine->all_inspectors);
     engine->all_inspectors = NULL;
 
     if (objects) {
@@ -2935,7 +2935,7 @@ rig_editor_update_inspector(rig_engine_t *engine)
         rut_box_layout_add(
             engine->inspector_box_layout, false, engine->inspector);
         engine->all_inspectors =
-            c_list_prepend(engine->all_inspectors, engine->inspector);
+            c_llist_prepend(engine->all_inspectors, engine->inspector);
 
         if (rut_object_get_type(reference_object) == &rig_entity_type) {
             state.engine = engine;
@@ -2954,7 +2954,7 @@ rig_reload_inspector_property(rig_engine_t *engine,
                               rut_property_t *property)
 {
     if (engine->inspector) {
-        c_list_t *l;
+        c_llist_t *l;
 
         for (l = engine->all_inspectors; l; l = l->next)
             rig_inspector_reload_property(l->data, property);
@@ -2976,7 +2976,7 @@ static void
 _rig_objects_selection_cancel(rut_object_t *object)
 {
     rig_objects_selection_t *selection = object;
-    c_list_free_full(selection->objects, (c_destroy_func_t)rut_object_unref);
+    c_llist_free_full(selection->objects, (c_destroy_func_t)rut_object_unref);
     selection->objects = NULL;
 }
 
@@ -2986,12 +2986,12 @@ _rig_objects_selection_copy(rut_object_t *object)
     rig_objects_selection_t *selection = object;
     rig_objects_selection_t *copy =
         _rig_objects_selection_new(selection->engine);
-    c_list_t *l;
+    c_llist_t *l;
 
     for (l = selection->objects; l; l = l->next) {
         if (rut_object_get_type(l->data) == &rig_entity_type) {
             copy->objects =
-                c_list_prepend(copy->objects, rig_entity_copy(l->data));
+                c_llist_prepend(copy->objects, rig_entity_copy(l->data));
         } else {
 #warning "todo: Create a copyable interface for anything that can be selected for copy and paste"
             c_warn_if_reached();
@@ -3020,8 +3020,8 @@ _rig_objects_selection_delete(rut_object_t *object)
          */
 
         if (selection == engine->objects_selection) {
-            c_list_t *l, *next;
-            int len = c_list_length(selection->objects);
+            c_llist_t *l, *next;
+            int len = c_llist_length(selection->objects);
 
             for (l = selection->objects; l; l = next) {
                 next = l->next;
@@ -3034,10 +3034,10 @@ _rig_objects_selection_delete(rut_object_t *object)
             /* XXX: make sure that
              * rig_undo_journal_delete_entity () doesn't change
              * the selection, since it used to. */
-            c_warn_if_fail(len == c_list_length(selection->objects));
+            c_warn_if_fail(len == c_llist_length(selection->objects));
         }
 
-        c_list_free_full(selection->objects, (c_destroy_func_t)rut_object_unref);
+        c_llist_free_full(selection->objects, (c_destroy_func_t)rut_object_unref);
         selection->objects = NULL;
 
         c_warn_if_fail(selection->objects == NULL);
@@ -3148,16 +3148,16 @@ rig_select_object(rig_engine_t *engine,
 
     switch (action) {
     case RUT_SELECT_ACTION_REPLACE: {
-        c_list_t *old = selection->objects;
+        c_llist_t *old = selection->objects;
 
         selection->objects = NULL;
 
-        c_list_foreach(old, (GFunc)remove_selection_cb, selection);
-        c_list_free(old);
+        c_llist_foreach(old, (GFunc)remove_selection_cb, selection);
+        c_llist_free(old);
 
         if (object) {
             selection->objects =
-                c_list_prepend(selection->objects, rut_object_ref(object));
+                c_llist_prepend(selection->objects, rut_object_ref(object));
             rut_closure_list_invoke(&selection->selection_events_cb_list,
                                     rig_objects_selection_event_callback_t,
                                     selection,
@@ -3167,10 +3167,10 @@ rig_select_object(rig_engine_t *engine,
         break;
     }
     case RUT_SELECT_ACTION_TOGGLE: {
-        c_list_t *link = c_list_find(selection->objects, object);
+        c_llist_t *link = c_llist_find(selection->objects, object);
 
         if (link) {
-            selection->objects = c_list_remove_link(selection->objects, link);
+            selection->objects = c_llist_remove_link(selection->objects, link);
 
             rut_closure_list_invoke(&selection->selection_events_cb_list,
                                     rig_objects_selection_event_callback_t,
@@ -3186,7 +3186,7 @@ rig_select_object(rig_engine_t *engine,
                                     object);
 
             rut_object_ref(object);
-            selection->objects = c_list_prepend(selection->objects, object);
+            selection->objects = c_llist_prepend(selection->objects, object);
         }
     } break;
     }
@@ -3208,7 +3208,7 @@ rig_editor_push_undo_subjournal(rig_engine_t *engine)
     rig_undo_journal_set_apply_on_insert(subjournal, true);
 
     engine->undo_journal_stack =
-        c_list_prepend(engine->undo_journal_stack, subjournal);
+        c_llist_prepend(engine->undo_journal_stack, subjournal);
     engine->undo_journal = subjournal;
 }
 
@@ -3217,7 +3217,7 @@ rig_editor_pop_undo_subjournal(rig_engine_t *engine)
 {
     rig_undo_journal_t *head_journal = engine->undo_journal;
 
-    engine->undo_journal_stack = c_list_delete_link(engine->undo_journal_stack,
+    engine->undo_journal_stack = c_llist_delete_link(engine->undo_journal_stack,
                                                     engine->undo_journal_stack);
     c_return_val_if_fail(engine->undo_journal_stack, NULL);
 

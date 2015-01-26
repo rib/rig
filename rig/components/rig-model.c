@@ -61,7 +61,7 @@ typedef struct _polygon_t {
 /* Texture patch structure */
 
 typedef struct _texture_patch_t {
-    c_list_t *polygons;
+    c_llist_t *polygons;
     polygon_t *root;
     float tangent_angle;
     float width;
@@ -69,7 +69,7 @@ typedef struct _texture_patch_t {
 } texture_patch_t;
 
 struct _rig_model_private_t {
-    c_list_t *texture_patches;
+    c_llist_t *texture_patches;
     polygon_t *fin_polygons;
     vertex_t *fin_vertices;
     polygon_t *polygons;
@@ -1094,7 +1094,7 @@ grow_texture_patch(rig_model_t *model, texture_patch_t *patch)
                 position_polygon_at_2D_origin(child);
                 extrude_new_vertex(parent, child);
                 if (extract_texture_coordinates(patch, child)) {
-                    patch->polygons = c_list_prepend(patch->polygons, child);
+                    patch->polygons = c_llist_prepend(patch->polygons, child);
                     rut_queue_push_tail(stack, child);
                     child->uncovered = false;
                 }
@@ -1136,11 +1136,11 @@ create_texture_patch(rig_model_t *model)
     extract_texture_coordinates(patch, root);
     patch->root->uncovered = false;
 
-    patch->polygons = c_list_prepend(patch->polygons, root);
+    patch->polygons = c_llist_prepend(patch->polygons, root);
     grow_texture_patch(model, patch);
 
     model->priv->texture_patches =
-        c_list_prepend(model->priv->texture_patches, patch);
+        c_llist_prepend(model->priv->texture_patches, patch);
 
     return patch;
 }
@@ -1240,7 +1240,7 @@ static rut_mesh_t *
 create_patched_mesh_from_model(rut_object_t *object)
 {
     rig_model_t *model = object;
-    c_list_t *iter;
+    c_llist_t *iter;
 
     if (model->patched_mesh)
         return model->patched_mesh;
@@ -1253,7 +1253,7 @@ create_patched_mesh_from_model(rut_object_t *object)
     for (iter = model->priv->texture_patches; iter; iter = iter->next)
         c_free(iter->data);
 
-    c_list_free(model->priv->texture_patches);
+    c_llist_free(model->priv->texture_patches);
 
     model->patched_mesh =
         create_renderer_mesh_from_vertices(model->priv->vertices,

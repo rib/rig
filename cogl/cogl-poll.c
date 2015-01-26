@@ -52,7 +52,7 @@ cg_poll_renderer_get_info(cg_renderer_t *renderer,
                           int *n_poll_fds,
                           int64_t *timeout)
 {
-    c_list_t *l, *next;
+    c_llist_t *l, *next;
 
     c_return_val_if_fail(cg_is_renderer(renderer), 0);
     c_return_val_if_fail(poll_fds != NULL, 0);
@@ -92,7 +92,7 @@ cg_poll_renderer_dispatch(cg_renderer_t *renderer,
                           const cg_poll_fd_t *poll_fds,
                           int n_poll_fds)
 {
-    c_list_t *l, *next;
+    c_llist_t *l, *next;
 
     c_return_if_fail(cg_is_renderer(renderer));
 
@@ -128,7 +128,7 @@ cg_poll_renderer_dispatch(cg_renderer_t *renderer,
 void
 cg_poll_renderer_dispatch_fd(cg_renderer_t *renderer, int fd, int events)
 {
-    c_list_t *l;
+    c_llist_t *l;
 
     for (l = renderer->poll_sources; l; l = l->next) {
         cg_poll_source_t *source = l->data;
@@ -160,7 +160,7 @@ void
 _cg_poll_renderer_remove_fd(cg_renderer_t *renderer, int fd)
 {
     int i = find_pollfd(renderer, fd);
-    c_list_t *l;
+    c_llist_t *l;
 
     if (i < 0)
         return;
@@ -172,7 +172,7 @@ _cg_poll_renderer_remove_fd(cg_renderer_t *renderer, int fd)
         cg_poll_source_t *source = l->data;
         if (source->fd == fd) {
             renderer->poll_sources =
-                c_list_delete_link(renderer->poll_sources, l);
+                c_llist_delete_link(renderer->poll_sources, l);
             c_slice_free(cg_poll_source_t, source);
             break;
         }
@@ -216,7 +216,7 @@ _cg_poll_renderer_add_fd(cg_renderer_t *renderer,
     source->dispatch = dispatch;
     source->user_data = user_data;
 
-    renderer->poll_sources = c_list_prepend(renderer->poll_sources, source);
+    renderer->poll_sources = c_llist_prepend(renderer->poll_sources, source);
 
     c_array_append_val(renderer->poll_fds, pollfd);
     renderer->poll_fds_age++;
@@ -236,7 +236,7 @@ _cg_poll_renderer_add_source(cg_renderer_t *renderer,
     source->dispatch = dispatch;
     source->user_data = user_data;
 
-    renderer->poll_sources = c_list_prepend(renderer->poll_sources, source);
+    renderer->poll_sources = c_llist_prepend(renderer->poll_sources, source);
 
     return source;
 }
@@ -245,12 +245,12 @@ void
 _cg_poll_renderer_remove_source(cg_renderer_t *renderer,
                                 cg_poll_source_t *source)
 {
-    c_list_t *l;
+    c_llist_t *l;
 
     for (l = renderer->poll_sources; l; l = l->next) {
         if (l->data == source) {
             renderer->poll_sources =
-                c_list_delete_link(renderer->poll_sources, l);
+                c_llist_delete_link(renderer->poll_sources, l);
             c_slice_free(cg_poll_source_t, source);
             break;
         }
