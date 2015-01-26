@@ -1179,7 +1179,7 @@ rig_frontend_new(rut_shell_t *shell, rig_frontend_id_t id, bool play_mode)
 
     frontend->tmp_id_to_object_map = c_hash_table_new(NULL, NULL);
 
-    rut_list_init(&frontend->ui_update_cb_list);
+    c_list_init(&frontend->ui_update_cb_list);
 
     frontend->engine = rig_engine_new_for_frontend(shell, frontend);
 

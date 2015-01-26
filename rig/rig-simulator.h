@@ -90,7 +90,7 @@ struct _rig_simulator_t {
     // c_hash_table_t *object_to_tmp_id_map;
     uint64_t next_tmp_id;
 
-    rut_list_t actions;
+    c_list_t actions;
     int n_actions;
 
     rut_queue_t *ops;

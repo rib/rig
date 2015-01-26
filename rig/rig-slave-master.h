@@ -49,8 +49,8 @@ typedef struct _rig_slave_master_t {
     rig_rpc_peer_t *peer;
     bool connected;
 
-    rut_list_t on_connect_closures;
-    rut_list_t on_error_closures;
+    c_list_t on_connect_closures;
+    c_list_t on_error_closures;
 
     rut_closure_t *connect_idle;
 

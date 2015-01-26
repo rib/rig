@@ -74,7 +74,7 @@ struct _rut_icon_button_t {
 
     rut_input_region_t *input_region;
 
-    rut_list_t on_click_cb_list;
+    c_list_t on_click_cb_list;
 
     rut_graphable_props_t graphable;
 };
@@ -332,7 +332,7 @@ rut_icon_button_new(rut_shell_t *shell,
         rut_icon_button_t, &rut_icon_button_type, _rut_icon_button_init_type);
     float natural_width, natural_height;
 
-    rut_list_init(&button->on_click_cb_list);
+    c_list_init(&button->on_click_cb_list);
 
     rut_graphable_init(button);
 

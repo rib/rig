@@ -116,7 +116,7 @@ typedef struct _undo_redo_set_control_method_t {
 } undo_redo_set_control_method_t;
 
 typedef struct {
-    rut_list_t link;
+    c_list_t link;
 
     rut_property_t *property;
 
@@ -129,24 +129,24 @@ typedef struct _undo_redo_add_delete_entity_t {
     rig_entity_t *parent_entity;
     rig_entity_t *deleted_entity;
     bool saved_controller_properties;
-    rut_list_t controller_properties;
+    c_list_t controller_properties;
 } undo_redo_add_delete_entity_t;
 
 typedef struct _undo_redo_add_delete_component_t {
     rig_entity_t *parent_entity;
     rut_object_t *deleted_component;
     bool saved_controller_properties;
-    rut_list_t controller_properties;
+    c_list_t controller_properties;
 } undo_redo_add_delete_component_t;
 
 typedef struct _undo_redo_add_remove_controller_t {
     rig_controller_t *controller;
     bool saved_controller_properties;
-    rut_list_t controller_properties;
+    c_list_t controller_properties;
 } undo_redo_add_remove_controller_t;
 
 typedef struct _undo_redo_t {
-    rut_list_t list_node;
+    c_list_t list_node;
 
     undo_redo_op_t op;
     bool mergable;
@@ -172,7 +172,7 @@ struct _rig_undo_journal_t {
      * from the earliest added operation to the last added operation.
      * The operations are not stored inverted so each operation
      * represents the action that user made. */
-    rut_list_t undo_ops;
+    c_list_t undo_ops;
 
     /* List of operations that can be redone. As the user presses undo,
      * the operations are added to the tail of this list. Therefore the
@@ -180,7 +180,7 @@ struct _rig_undo_journal_t {
      * The operations represent the original action that the user made
      * so it will not need to be inverted before redoing the
      * operation. */
-    rut_list_t redo_ops;
+    c_list_t redo_ops;
 
     /* Detect recursion on insertion which indicates a bug */
     bool inserting;

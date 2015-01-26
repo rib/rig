@@ -41,7 +41,7 @@ _rig_path_free(void *object)
 
     rut_closure_list_disconnect_all(&path->operation_cb_list);
 
-    rut_list_for_each_safe(node, t, &path->nodes, list_node)
+    c_list_for_each_safe(node, t, &path->nodes, list_node)
     rig_node_free(node);
 
     rut_object_unref(path->shell);
@@ -66,11 +66,11 @@ rig_path_new(rut_shell_t *shell, rut_property_type_t type)
 
     path->type = type;
 
-    rut_list_init(&path->nodes);
+    c_list_init(&path->nodes);
     path->pos = NULL;
     path->length = 0;
 
-    rut_list_init(&path->operation_cb_list);
+    c_list_init(&path->operation_cb_list);
 
     return path;
 }
@@ -81,10 +81,10 @@ rig_path_copy(rig_path_t *old_path)
     rig_path_t *new_path = rig_path_new(old_path->shell, old_path->type);
     rig_node_t *node;
 
-    rut_list_for_each(node, &old_path->nodes, list_node)
+    c_list_for_each(node, &old_path->nodes, list_node)
     {
         rig_node_t *new_node = rig_node_copy(node);
-        rut_list_insert(new_path->nodes.prev, &new_node->list_node);
+        c_list_insert(new_path->nodes.prev, &new_node->list_node);
     }
     new_path->length = old_path->length;
 
@@ -103,7 +103,7 @@ rig_path_find_control_points2(rig_path_t *path,
 {
     rig_node_t *pos;
 
-    if (C_UNLIKELY(rut_list_empty(&path->nodes)))
+    if (C_UNLIKELY(c_list_empty(&path->nodes)))
         return false;
 
     if (C_UNLIKELY(path->pos == NULL))
@@ -227,7 +227,7 @@ rig_path_print(rig_path_t *path)
     rig_node_t *node;
 
     c_debug("path=%p\n", path);
-    rut_list_for_each(node, &path->nodes, list_node)
+    c_list_for_each(node, &path->nodes, list_node)
     {
         switch (type) {
         case RUT_PROPERTY_TYPE_FLOAT: {
@@ -282,7 +282,7 @@ rig_path_find_node(rig_path_t *path, float t)
 {
     rig_node_t *node;
 
-    rut_list_for_each(node, &path->nodes, list_node)
+    c_list_for_each(node, &path->nodes, list_node)
     if (node->t == t)
         return node;
 
@@ -296,7 +296,7 @@ rig_path_find_nearest(rig_path_t *path, float t)
     rig_node_t *min_dt_node = NULL;
     rig_node_t *node;
 
-    rut_list_for_each(node, &path->nodes, list_node)
+    c_list_for_each(node, &path->nodes, list_node)
     {
         float dt = fabs(node->t - t);
         if (dt < min_dt) {
@@ -315,7 +315,7 @@ insert_sorted_node(rig_path_t *path, rig_node_t *node)
 {
     rig_node_t *insertion_point;
 
-    rut_list_for_each(insertion_point, &path->nodes, list_node)
+    c_list_for_each(insertion_point, &path->nodes, list_node)
     if (insertion_point->t >= node->t)
         break;
 
@@ -323,7 +323,7 @@ insert_sorted_node(rig_path_t *path, rig_node_t *node)
      * imaginary node containing the list head which is what we want
      * anyway */
 
-    rut_list_insert(insertion_point->list_node.prev, &node->list_node);
+    c_list_insert(insertion_point->list_node.prev, &node->list_node);
 
     path->length++;
 }
@@ -742,7 +742,7 @@ rig_path_remove_node(rig_path_t *path, rig_node_t *node)
                             path,
                             RIG_PATH_OPERATION_REMOVED,
                             node);
-    rut_list_remove(&node->list_node);
+    c_list_remove(&node->list_node);
     rig_node_free(node);
     path->length--;
 
@@ -767,6 +767,6 @@ rut_path_foreach_node(rig_path_t *path,
 {
     rig_node_t *node;
 
-    rut_list_for_each(node, &path->nodes, list_node)
+    c_list_for_each(node, &path->nodes, list_node)
     callback(node, user_data);
 }

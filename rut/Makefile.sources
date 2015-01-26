@@ -46,8 +46,6 @@ rut_common_sources = \
     rut-magazine.c \
     rut-queue.h \
     rut-queue.c \
-    rut-list.c \
-    rut-list.h \
     rut-util.h \
     rut-util.c \
     rut-timeline.h \

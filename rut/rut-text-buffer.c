@@ -53,8 +53,8 @@ struct _rut_text_buffer_t {
     int simple_text_bytes;
     int simple_text_chars;
 
-    rut_list_t insert_text_cb_list;
-    rut_list_t delete_text_cb_list;
+    c_list_t insert_text_cb_list;
+    c_list_t delete_text_cb_list;
 
     rut_introspectable_props_t introspectable;
     rut_property_t properties[N_PROPS];
@@ -314,8 +314,8 @@ rut_text_buffer_new(rut_shell_t *shell)
     buffer = rut_object_alloc0(
         rut_text_buffer_t, &rut_text_buffer_type, _rut_text_buffer_init_type);
 
-    rut_list_init(&buffer->insert_text_cb_list);
-    rut_list_init(&buffer->delete_text_cb_list);
+    c_list_init(&buffer->insert_text_cb_list);
+    c_list_init(&buffer->delete_text_cb_list);
 
     buffer->shell = rut_object_ref(shell);
 

@@ -32,12 +32,12 @@
 #include <stdbool.h>
 
 typedef struct _rut_queue_item_t {
-    rut_list_t list_node;
+    c_list_t list_node;
     void *data;
 } rut_queue_item_t;
 
 typedef struct _rut_queue_t {
-    rut_list_t items;
+    c_list_t items;
     int len;
 } rut_queue_t;
 
@@ -66,15 +66,15 @@ void rut_queue_free(rut_queue_t *queue);
 static inline void
 rut_queue_init(rut_queue_t *queue)
 {
-    rut_list_init(&queue->items);
+    c_list_init(&queue->items);
     queue->len = 0;
 }
 
 /* Note: we can assume the both lists have at least 1 item in them */
 static inline void
-_rut_queue_merge_sort_items(rut_list_t *sorted,
-                            rut_list_t *sub0,
-                            rut_list_t *sub1,
+_rut_queue_merge_sort_items(c_list_t *sorted,
+                            c_list_t *sub0,
+                            c_list_t *sub1,
                             int (*compare)(void *data0,
                                            void *data1))
 {
@@ -115,11 +115,11 @@ _rut_queue_merge_sort_items(rut_list_t *sorted,
 
 static inline void
 _rut_queue_sort_items(
-    rut_list_t *list, int len, int (*compare)(void *data0, void *data1))
+    c_list_t *list, int len, int (*compare)(void *data0, void *data1))
 {
-    rut_list_t sub0, sub1;
+    c_list_t sub0, sub1;
     int len0;
-    rut_list_t *l;
+    c_list_t *l;
     int i;
 
     if (len < 2)

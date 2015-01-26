@@ -28,17 +28,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "rut-list.h"
+#include "clib.h"
 
 void
-rut_list_init(rut_list_t *list)
+c_list_init(c_list_t *list)
 {
     list->prev = list;
     list->next = list;
 }
 
 void
-rut_list_insert(rut_list_t *list, rut_list_t *elm)
+c_list_insert(c_list_t *list, c_list_t *elm)
 {
     elm->prev = list;
     elm->next = list->next;
@@ -47,7 +47,7 @@ rut_list_insert(rut_list_t *list, rut_list_t *elm)
 }
 
 void
-rut_list_remove(rut_list_t *elm)
+c_list_remove(c_list_t *elm)
 {
     elm->prev->next = elm->next;
     elm->next->prev = elm->prev;
@@ -56,9 +56,9 @@ rut_list_remove(rut_list_t *elm)
 }
 
 int
-rut_list_length(rut_list_t *list)
+c_list_length(c_list_t *list)
 {
-    rut_list_t *e;
+    c_list_t *e;
     int count;
 
     count = 0;
@@ -72,15 +72,15 @@ rut_list_length(rut_list_t *list)
 }
 
 int
-rut_list_empty(rut_list_t *list)
+c_list_empty(c_list_t *list)
 {
     return list->next == list;
 }
 
 void
-rut_list_insert_list(rut_list_t *list, rut_list_t *other)
+c_list_insert_list(c_list_t *list, c_list_t *other)
 {
-    if (rut_list_empty(other))
+    if (c_list_empty(other))
         return;
 
     other->next->prev = list;

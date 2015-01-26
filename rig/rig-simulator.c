@@ -47,7 +47,7 @@
 
 typedef struct _rig_simulator_action_t {
     rig_simulator_action_type_t type;
-    rut_list_t list_node;
+    c_list_t list_node;
     union {
         struct {
             rut_object_t *object;
@@ -91,7 +91,7 @@ rig_simulator_action_report_edit_failure(rig_simulator_t *simulator)
 
     action->type = RIG_SIMULATOR_ACTION_TYPE_REPORT_EDIT_FAILURE;
 
-    rut_list_insert(simulator->actions.prev, &action->list_node);
+    c_list_insert(simulator->actions.prev, &action->list_node);
     simulator->n_actions++;
 }
 
@@ -100,7 +100,7 @@ clear_actions(rig_simulator_t *simulator)
 {
     rig_simulator_action_t *action, *tmp;
 
-    rut_list_for_each_safe(action, tmp, &simulator->actions, list_node)
+    c_list_for_each_safe(action, tmp, &simulator->actions, list_node)
     {
         switch (action->type) {
 #if 0
@@ -111,7 +111,7 @@ clear_actions(rig_simulator_t *simulator)
             break;
         }
 
-        rut_list_remove(&action->list_node);
+        c_list_remove(&action->list_node);
         c_slice_free(rig_simulator_action_t, action);
     }
 
@@ -634,7 +634,7 @@ rig_simulator_init(rut_shell_t *shell, void *user_data)
 
     simulator->ops = rut_queue_new();
 
-    rut_list_init(&simulator->actions);
+    c_list_init(&simulator->actions);
 
     simulator_start_service(simulator->shell, simulator);
 
@@ -937,7 +937,7 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
             RUT_UTIL_ALIGNOF(Rig__SimulatorAction));
 
         i = 0;
-        rut_list_for_each_safe(action, tmp, &simulator->actions, list_node)
+        c_list_for_each_safe(action, tmp, &simulator->actions, list_node)
         {
             Rig__SimulatorAction *pb_action = &pb_actions[i];
 
@@ -1078,7 +1078,7 @@ rig_simulator_forward_log(rig_simulator_t *simulator)
     pb_log->n_entries = simulator_log->len;
 
     i = 0;
-    rut_list_for_each(entry, &simulator_log->entries, link) {
+    c_list_for_each(entry, &simulator_log->entries, link) {
         Rig__LogEntry *pb_entry = rig_pb_new(serializer,
                                              Rig__LogEntry,
                                              rig__log_entry__init);

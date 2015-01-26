@@ -119,8 +119,8 @@ struct _rig_pb_stream_t {
 
     /* Common */
 
-    rut_list_t on_connect_closures;
-    rut_list_t on_error_closures;
+    c_list_t on_connect_closures;
+    c_list_t on_error_closures;
 
     void (*read_callback)(rig_pb_stream_t *stream,
                           uint8_t *buf,

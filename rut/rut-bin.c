@@ -40,7 +40,7 @@ struct _rut_bin_t {
 
     rut_shell_t *shell;
 
-    rut_list_t preferred_size_cb_list;
+    c_list_t preferred_size_cb_list;
 
     rut_object_t *child_transform;
 
@@ -317,7 +317,7 @@ rut_bin_new(rut_shell_t *shell)
     bin->x_position = RUT_BIN_POSITION_EXPAND;
     bin->y_position = RUT_BIN_POSITION_EXPAND;
 
-    rut_list_init(&bin->preferred_size_cb_list);
+    c_list_init(&bin->preferred_size_cb_list);
 
     rut_graphable_init(bin);
 

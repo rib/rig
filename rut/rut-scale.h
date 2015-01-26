@@ -58,7 +58,7 @@ typedef struct _rut_scale_t {
     rut_graphable_props_t graphable;
     rut_paintable_props_t paintable;
 
-    rut_list_t preferred_size_cb_list;
+    c_list_t preferred_size_cb_list;
 
     float natural_length;
     float length;
@@ -86,7 +86,7 @@ typedef struct _rut_scale_t {
     bool initial_view;
     bool changed;
 
-    rut_list_t select_cb_list;
+    c_list_t select_cb_list;
 
     rut_introspectable_props_t introspectable;
     rut_property_t properties[RUT_SCALE_N_PROPS];

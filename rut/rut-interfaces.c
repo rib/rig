@@ -128,14 +128,14 @@ rut_sizable_add_preferred_size_callback(
      * a dummy closure object that will never be invoked so that the
      * rest of the code doesn't need to handle this specially */
     if (sizable->add_preferred_size_callback == NULL) {
-        rut_list_t dummy_list;
+        c_list_t dummy_list;
         rut_closure_t *closure;
 
-        rut_list_init(&dummy_list);
+        c_list_init(&dummy_list);
 
         closure = rut_closure_list_add(&dummy_list, cb, user_data, destroy_cb);
 
-        rut_list_init(&closure->list_node);
+        c_list_init(&closure->list_node);
 
         return closure;
     } else

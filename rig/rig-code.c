@@ -47,7 +47,7 @@ struct _rig_code_node_t {
 
     rut_graphable_props_t graphable;
 
-    rut_list_t link_closures;
+    c_list_t link_closures;
 
     char *pre;
     char *post;
@@ -100,7 +100,7 @@ rig_code_node_new(rig_engine_t *engine, const char *pre, const char *post)
 
     rut_graphable_init(node);
 
-    rut_list_init(&node->link_closures);
+    c_list_init(&node->link_closures);
 
     /* Note: in device mode and in the simulator we avoid
      * tracking any source code. */

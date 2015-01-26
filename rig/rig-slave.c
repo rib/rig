@@ -247,7 +247,7 @@ slave__load(Rig__Slave_Service *service,
     slave->pending_ui_load_closure_data = closure_data;
 
     /* Discard any pending edit, since it's now redundant... */
-    rut_list_for_each(item, &slave->pending_edits->items, list_node)
+    c_list_for_each(item, &slave->pending_edits->items, list_node)
     {
         Rig__UIEditResult result = RIG__UIEDIT_RESULT__INIT;
         pending_edit_t *pending_edit = item->data;
@@ -622,7 +622,7 @@ rig_slave_fini(rut_shell_t *shell, void *user_data)
         slave->ui_update_closure = NULL;
     }
 
-    rut_list_for_each(item, &slave->pending_edits->items, list_node)
+    c_list_for_each(item, &slave->pending_edits->items, list_node)
     c_slice_free(pending_edit_t, item->data);
     rut_queue_free(slave->pending_edits);
 

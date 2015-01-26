@@ -642,7 +642,7 @@ rig_entity_copy(rig_entity_t *entity)
         rut_object_unref(component_copy);
     }
 
-    rut_list_for_each(item, &graph_props->children.items, list_node)
+    c_list_for_each(item, &graph_props->children.items, list_node)
     {
         rut_object_t *child = item->data;
         rut_object_t *child_copy;

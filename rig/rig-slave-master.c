@@ -188,8 +188,8 @@ rig_slave_master_new(rig_engine_t *engine, rig_slave_address_t *slave_address)
 
     master->engine = engine;
 
-    rut_list_init(&master->on_connect_closures);
-    rut_list_init(&master->on_error_closures);
+    c_list_init(&master->on_connect_closures);
+    c_list_init(&master->on_error_closures);
 
     master->slave_address = rut_object_ref(slave_address);
 

@@ -79,7 +79,7 @@ typedef enum {
 } rut_cursor_t;
 
 typedef struct {
-    rut_list_t link;
+    c_list_t link;
 
     rut_shell_t *shell;
 
@@ -161,7 +161,7 @@ typedef enum _rut_input_event_status_t {
 } rut_input_event_status_t;
 
 typedef struct _rut_input_event_t {
-    rut_list_t list_node;
+    c_list_t list_node;
     rut_input_event_type_t type;
     rut_shell_onscreen_t *onscreen;
     rut_object_t *camera;
@@ -213,7 +213,7 @@ typedef rut_input_event_status_t (*rut_input_callback_t)(
     rut_input_event_t *event, void *user_data);
 
 typedef struct {
-    rut_list_t list_node;
+    c_list_t list_node;
     rut_input_callback_t callback;
     rut_object_t *camera;
     void *user_data;
@@ -222,7 +222,7 @@ typedef struct {
 typedef void (*RutPrePaintCallback)(rut_object_t *graphable, void *user_data);
 
 typedef struct {
-    rut_list_t list_node;
+    c_list_t list_node;
 
     int depth;
     rut_object_t *graphable;
@@ -233,7 +233,7 @@ typedef struct {
 
 typedef struct _rut_input_queue_t {
     rut_shell_t *shell;
-    rut_list_t events;
+    c_list_t events;
     int n_events;
 } rut_input_queue_t;
 
@@ -315,13 +315,13 @@ struct _rut_shell_t {
 #endif
 
     int poll_sources_age;
-    rut_list_t poll_sources;
+    c_list_t poll_sources;
 
-    rut_list_t idle_closures;
+    c_list_t idle_closures;
 
 #if 0
     int signal_read_fd;
-    rut_list_t signal_cb_list;
+    c_list_t signal_cb_list;
 #endif
 
     /* When running multiple shells in one thread we define one shell
@@ -341,7 +341,7 @@ struct _rut_shell_t {
     uv_check_t cg_check;
 
     uv_signal_t sigchild_handle;
-    rut_list_t sigchild_closures;
+    c_list_t sigchild_closures;
 #ifdef __ANDROID__
     int uv_ready;
     bool quit;
@@ -399,7 +399,7 @@ struct _rut_shell_t {
     rut_shell_paint_callback_t paint_cb;
     void *user_data;
 
-    rut_list_t input_cb_list;
+    c_list_t input_cb_list;
     c_llist_t *input_cameras;
 
     /* Used to handle input events in window coordinates */
@@ -415,7 +415,7 @@ struct _rut_shell_t {
 
     /* List of grabs that are currently in place. This are in order from
      * highest to lowest priority. */
-    rut_list_t grabs;
+    c_list_t grabs;
     /* A pointer to the next grab to process. This is only used while
      * invoking the grab callbacks so that we can cope with multiple
      * grabs being removed from the list while one is being processed */
@@ -436,17 +436,17 @@ struct _rut_shell_t {
      * need to keep track of hierarchy changes that occur after the
      * pre-paint was queued. This assumes that the depths won't change
      * will the queue is being flushed */
-    rut_list_t pre_paint_callbacks;
+    c_list_t pre_paint_callbacks;
     bool flushing_pre_paints;
 
-    rut_list_t start_paint_callbacks;
-    rut_list_t post_paint_callbacks;
+    c_list_t start_paint_callbacks;
+    c_list_t post_paint_callbacks;
 
     int frame;
-    rut_list_t frame_infos;
+    c_list_t frame_infos;
 
     /* A list of onscreen windows that the shell is manipulating */
-    rut_list_t onscreens;
+    c_list_t onscreens;
 
     rut_object_t *selection;
 
@@ -802,10 +802,10 @@ rut_shell_add_post_paint_callback(rut_shell_t *shell,
                                   rut_closure_destroy_callback_t destroy);
 
 typedef struct _rut_frame_info_t {
-    rut_list_t list_node;
+    c_list_t list_node;
 
     int frame;
-    rut_list_t frame_callbacks;
+    c_list_t frame_callbacks;
 } rut_frame_info_t;
 
 rut_frame_info_t *rut_shell_get_frame_info(rut_shell_t *shell);

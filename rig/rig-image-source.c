@@ -48,8 +48,8 @@ struct _rig_image_source_t {
     int first_layer;
     bool default_sample;
 
-    rut_list_t changed_cb_list;
-    rut_list_t ready_cb_list;
+    c_list_t changed_cb_list;
+    c_list_t ready_cb_list;
 };
 
 typedef struct _image_source_wrappers_t {
@@ -274,8 +274,8 @@ rig_image_source_new(rig_engine_t *engine,
     source->engine = engine;
     source->default_sample = true;
 
-    rut_list_init(&source->changed_cb_list);
-    rut_list_init(&source->ready_cb_list);
+    c_list_init(&source->changed_cb_list);
+    c_list_init(&source->ready_cb_list);
 
     if (rig_asset_get_is_video(asset)) {
 #ifdef USE_GSTREAMER

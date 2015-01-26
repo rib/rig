@@ -40,7 +40,7 @@ typedef struct _rut_paintable_props_t {
 } rut_paintable_props_t;
 
 typedef struct _rut_queued_paint_t {
-    rut_list_t list_node;
+    c_list_t list_node;
     cg_matrix_t modelview;
     rut_object_t *paintable;
 } rut_queued_paint_t;
@@ -59,7 +59,7 @@ typedef struct _rut_paint_context_t {
      * be incremented and everything in the list will be painted again.
      * This will be repeated until the list becomes empty. */
     int layer_number;
-    rut_list_t paint_queue;
+    c_list_t paint_queue;
 } rut_paint_context_t;
 
 typedef struct _rut_paintable_vtable_t {

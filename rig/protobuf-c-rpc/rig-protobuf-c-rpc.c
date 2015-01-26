@@ -55,7 +55,7 @@ typedef enum {
 typedef struct _rig_pb_rpc_request_closure_t rig_pb_rpc_request_closure_t;
 struct _rig_pb_rpc_request_closure_t {
 
-    rut_list_t link;
+    c_list_t link;
 
     uint32_t request_id;
 
@@ -81,7 +81,7 @@ struct _rig_pb_rpc_client_t {
     void *connect_handler_data;
     rig_pb_rpc_client_state_t state;
 
-    rut_list_t request_closures;
+    c_list_t request_closures;
     uint32_t next_request_id;
 };
 
@@ -97,7 +97,7 @@ struct _server_request_t {
 
     rig_pb_stream_write_closure_t response_write_closure;
 
-    rut_list_t link;
+    c_list_t link;
 };
 
 typedef enum {
@@ -115,9 +115,9 @@ struct _rig_pb_rpc_server_connection_t {
 
     rig_pb_stream_t *stream;
 
-    rut_list_t link;
+    c_list_t link;
 
-    rut_list_t pending_requests;
+    c_list_t pending_requests;
 
     rig_pb_rpc_server_connection_t_Close_Func close_handler;
     void *close_handler_data;
@@ -138,7 +138,7 @@ struct _rig_pb_rpc_server_t {
     ProtobufCAllocator *allocator;
     ProtobufCService *service;
 
-    rut_list_t connections;
+    c_list_t connections;
 
     rig_pb_rpc_error_func_t error_handler;
     void *error_handler_data;
@@ -187,8 +187,8 @@ client_discard_request_closures(rig_pb_rpc_client_t *client)
     rig_pb_rpc_request_closure_t *closure;
     rig_pb_rpc_request_closure_t *tmp;
 
-    rut_list_for_each_safe(closure, tmp, &client->request_closures, link) {
-        rut_list_remove(&closure->link);
+    c_list_for_each_safe(closure, tmp, &client->request_closures, link) {
+        c_list_remove(&closure->link);
 
         closure->callback(NULL, closure->user_data);
 
@@ -346,7 +346,7 @@ enqueue_request(rig_pb_rpc_client_t *client,
     closure->callback = closure_callback;
     closure->user_data = closure_user_data;
 
-    rut_list_insert(client->request_closures.prev, &closure->link);
+    c_list_insert(client->request_closures.prev, &closure->link);
 
     stream_write_closure = c_slice_new(rig_pb_stream_write_closure_t);
     stream_write_closure->buf.base = (void *)buf;
@@ -399,7 +399,7 @@ client_new(const ProtobufCServiceDescriptor *descriptor,
     client->error_handler = error_handler;
     client->error_handler_data = "protobuf-c rpc client";
 
-    rut_list_init(&client->request_closures);
+    c_list_init(&client->request_closures);
     client->next_request_id = 1;
 
     return client;
@@ -460,13 +460,13 @@ server_connection_close(rig_pb_rpc_server_connection_t *conn)
     rut_object_unref(stream);
 
     /* disassocate all the requests from the connection */
-    rut_list_for_each_safe(req, tmp, &conn->pending_requests, link) {
-        rut_list_remove(&req->link);
+    c_list_for_each_safe(req, tmp, &conn->pending_requests, link) {
+        c_list_remove(&req->link);
         req->conn = NULL;
     }
 
     /* disassocate the connection from the server */
-    rut_list_remove(&conn->link);
+    c_list_remove(&conn->link);
     conn->server = NULL;
 }
 
@@ -480,7 +480,7 @@ server_shutdown(rig_pb_rpc_server_t *server)
 
     server->has_shutdown = true;
 
-    rut_list_for_each_safe(conn, tmp, &server->connections, link) {
+    c_list_for_each_safe(conn, tmp, &server->connections, link) {
         /* XXX: server_connection_close will unlink the connection
          * and unref it too */
         server_connection_close(conn);
@@ -658,7 +658,7 @@ server_connection_response_closure(const ProtobufCMessage *message,
     rig_pb_stream_write(conn->stream, &request->response_write_closure);
 
     /* disassociate the reqest from the connection */
-    rut_list_remove(&request->link);
+    c_list_remove(&request->link);
     request->conn = NULL;
 }
 
@@ -670,7 +670,7 @@ lookup_request_closure(rig_pb_rpc_client_t *client,
 {
     rig_pb_rpc_request_closure_t *closure;
 
-    rut_list_for_each(closure, &client->request_closures, link) {
+    c_list_for_each(closure, &client->request_closures, link) {
         if (closure->request_id == request_id)
             return closure;
     }
@@ -716,7 +716,7 @@ client_handle_reply(rig_pb_rpc_client_t *client,
         return false;
     }
 
-    rut_list_remove(&closure->link);
+    c_list_remove(&closure->link);
 
     closure->callback(msg, closure->user_data);
 
@@ -773,7 +773,7 @@ server_connection_handle_request(rig_pb_rpc_server_connection_t *conn,
     server_request =
         server_request_create(conn, request_id, method_index, message);
 
-    rut_list_insert(conn->pending_requests.prev, &server_request->link);
+    c_list_insert(conn->pending_requests.prev, &server_request->link);
 
     service->invoke(service,
                     method_index,
@@ -960,7 +960,7 @@ server_connection_new(rig_pb_rpc_server_t *server, rig_pb_stream_t *stream)
     conn->server = server;
     conn->stream = rut_object_ref(stream);
 
-    rut_list_init(&conn->pending_requests);
+    c_list_init(&conn->pending_requests);
 
     return conn;
 }
@@ -970,7 +970,7 @@ server_add_connection_with_stream(rig_pb_rpc_server_t *server, rig_pb_stream_t *
 {
     rig_pb_rpc_server_connection_t *conn = server_connection_new(server, stream);
 
-    rut_list_insert(server->connections.prev, &conn->link);
+    c_list_insert(server->connections.prev, &conn->link);
 
     conn->state = PB_RPC_CONNECTION_STATE_CONNECTED;
 
@@ -998,7 +998,7 @@ server_new(rut_shell_t *shell,
     server->error_handler = error_handler;
     server->error_handler_data = "protobuf-c rpc server";
 
-    rut_list_init(&server->connections);
+    c_list_init(&server->connections);
 
     return server;
 }

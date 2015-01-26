@@ -40,10 +40,10 @@ struct _rig_path_t {
 
     rut_shell_t *shell;
     rut_property_type_t type;
-    rut_list_t nodes;
+    c_list_t nodes;
     int length;
     rig_node_t *pos;
-    rut_list_t operation_cb_list;
+    c_list_t operation_cb_list;
 };
 
 typedef enum {

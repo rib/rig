@@ -54,7 +54,7 @@ rut_queue_t *
 rut_queue_new(void)
 {
     rut_queue_t *queue = c_new(rut_queue_t, 1);
-    rut_list_init(&queue->items);
+    c_list_init(&queue->items);
     queue->len = 0;
     return queue;
 }
@@ -66,7 +66,7 @@ rut_queue_push_tail(rut_queue_t *queue, void *data)
 
     item->data = data;
 
-    rut_list_insert(queue->items.prev, &item->list_node);
+    c_list_insert(queue->items.prev, &item->list_node);
     queue->len++;
 }
 
@@ -75,7 +75,7 @@ rut_queue_peek_tail(rut_queue_t *queue)
 {
     rut_queue_item_t *item;
 
-    if (rut_list_empty(&queue->items))
+    if (c_list_empty(&queue->items))
         return NULL;
 
     item = rut_container_of(queue->items.prev, item, list_node);
@@ -89,11 +89,11 @@ rut_queue_pop_tail(rut_queue_t *queue)
     rut_queue_item_t *item;
     void *ret;
 
-    if (rut_list_empty(&queue->items))
+    if (c_list_empty(&queue->items))
         return NULL;
 
     item = rut_container_of(queue->items.prev, item, list_node);
-    rut_list_remove(&item->list_node);
+    c_list_remove(&item->list_node);
 
     ret = item->data;
 
@@ -109,7 +109,7 @@ rut_queue_peek_head(rut_queue_t *queue)
 {
     rut_queue_item_t *item;
 
-    if (rut_list_empty(&queue->items))
+    if (c_list_empty(&queue->items))
         return NULL;
 
     item = rut_container_of(queue->items.next, item, list_node);
@@ -123,11 +123,11 @@ rut_queue_pop_head(rut_queue_t *queue)
     rut_queue_item_t *item;
     void *ret;
 
-    if (rut_list_empty(&queue->items))
+    if (c_list_empty(&queue->items))
         return NULL;
 
     item = rut_container_of(queue->items.next, item, list_node);
-    rut_list_remove(&item->list_node);
+    c_list_remove(&item->list_node);
 
     ret = item->data;
 
@@ -143,10 +143,10 @@ rut_queue_remove(rut_queue_t *queue, void *data)
 {
     rut_queue_item_t *item;
 
-    rut_list_for_each(item, &queue->items, list_node)
+    c_list_for_each(item, &queue->items, list_node)
     {
         if (item->data == data) {
-            rut_list_remove(&item->list_node);
+            c_list_remove(&item->list_node);
             free_item(item);
             return true;
         }
@@ -161,7 +161,7 @@ rut_queue_peek_nth(rut_queue_t *queue, int n)
     rut_queue_item_t *item;
     int i = 0;
 
-    rut_list_for_each(item, &queue->items, list_node)
+    c_list_for_each(item, &queue->items, list_node)
     {
         if (i++ >= n)
             return item->data;
@@ -175,7 +175,7 @@ rut_queue_clear(rut_queue_t *queue)
 {
     rut_queue_item_t *item, *tmp;
 
-    rut_list_for_each_safe(item, tmp, &queue->items, list_node)
+    c_list_for_each_safe(item, tmp, &queue->items, list_node)
     free_item(item);
     rut_queue_init(queue);
 }

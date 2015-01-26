@@ -403,7 +403,7 @@ rig_shape_new(rut_shell_t *shell, bool shaped, int width, int height)
     shape->height = height;
     shape->shaped = shaped;
 
-    rut_list_init(&shape->reshaped_cb_list);
+    c_list_init(&shape->reshaped_cb_list);
 
     rut_introspectable_init(shape, _rig_shape_prop_specs, shape->properties);
 

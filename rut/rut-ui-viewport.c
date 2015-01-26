@@ -72,7 +72,7 @@ struct _rut_ui_viewport_t {
 
     rut_object_t *sync_widget;
     rut_closure_t *sync_widget_preferred_size_closure;
-    rut_list_t preferred_size_cb_list;
+    c_list_t preferred_size_cb_list;
 
     bool x_pannable;
     bool y_pannable;
@@ -649,7 +649,7 @@ rut_ui_viewport_new(rut_shell_t *shell, float width, float height)
     ui_viewport->doc_scale_x = 1;
     ui_viewport->doc_scale_y = 1;
 
-    rut_list_init(&ui_viewport->preferred_size_cb_list);
+    c_list_init(&ui_viewport->preferred_size_cb_list);
 
     ui_viewport->x_pannable = true;
     ui_viewport->y_pannable = true;

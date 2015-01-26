@@ -96,7 +96,7 @@ struct _rut_toggle_t {
 
     rut_input_region_t *input_region;
 
-    rut_list_t on_toggle_cb_list;
+    c_list_t on_toggle_cb_list;
 
     rut_graphable_props_t graphable;
     rut_paintable_props_t paintable;
@@ -503,7 +503,7 @@ rut_toggle_new_with_icons(rut_shell_t *shell,
     char *font_name;
     PangoFontDescription *font_desc;
 
-    rut_list_init(&toggle->on_toggle_cb_list);
+    c_list_init(&toggle->on_toggle_cb_list);
 
     rut_graphable_init(toggle);
     rut_paintable_init(toggle);

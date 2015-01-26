@@ -58,6 +58,7 @@ clib_common_source = \
 	cslist.c     	\
 	cstring.c    	\
 	cptrarray.c     \
+	clist.c		\
 	cllist.c	\
 	chooklist.c	\
 	cqueue.c	\

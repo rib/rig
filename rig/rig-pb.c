@@ -135,7 +135,7 @@ pb_path_new(rig_pb_serializer_t *serializer, rig_path_t *path)
     pb_path->n_nodes = path->length;
 
     i = 0;
-    rut_list_for_each(node, &path->nodes, list_node)
+    c_list_for_each(node, &path->nodes, list_node)
     {
         Rig__Node *pb_node = rig_pb_new(serializer, Rig__Node, rig__node__init);
 
@@ -1496,7 +1496,7 @@ rig_pb_serialize_input_events(rig_pb_serializer_t *serializer,
         serializer->stack, n_events * sizeof(void *), RUT_UTIL_ALIGNOF(void *));
 
     i = 0;
-    rut_list_for_each_safe(event, tmp, &input_queue->events, list_node)
+    c_list_for_each_safe(event, tmp, &input_queue->events, list_node)
     {
         Rig__Event *pb_event =
             rig_pb_new(serializer, Rig__Event, rig__event__init);
@@ -1605,7 +1605,7 @@ rig_pb_serialize_ops_queue(rig_pb_serializer_t *serializer,
         serializer->stack, sizeof(void *) * ops->len, RUT_UTIL_ALIGNOF(void *));
 
     i = 0;
-    rut_list_for_each(item, &ops->items, list_node)
+    c_list_for_each(item, &ops->items, list_node)
     {
         pb_ops[i++] = item->data;
     }
