@@ -31,12 +31,11 @@
 #include <clib.h>
 #include <uv.h>
 
-#include "cogl-list.h"
 #include "cogl-poll.h"
 #include "cogl-device-private.h"
 
 struct poll_source {
-    cg_list_t link;
+    c_list_t link;
 
     int fd;
     int64_t (*prepare)(void *user_data);
@@ -107,7 +106,7 @@ find_fd_source(cg_device_t *dev, int fd)
 {
     struct poll_source *tmp;
 
-    _cg_list_for_each(tmp, &dev->uv_poll_sources, link) {
+    c_list_for_each(tmp, &dev->uv_poll_sources, link) {
         if (tmp->fd == fd)
             return tmp;
     }
@@ -139,7 +138,7 @@ remove_fd(cg_device_t *dev, int fd)
 
     dev->uv_poll_sources_age++;
 
-    _cg_list_remove(&source->link);
+    c_list_remove(&source->link);
     free_source(source);
 }
 
@@ -206,7 +205,7 @@ add_fd(cg_device_t *dev,
         uv_poll_start(&source->uv_poll, uv_events, source_poll_cb);
     }
 
-    _cg_list_insert(dev->uv_poll_sources.prev, &source->link);
+    c_list_insert(dev->uv_poll_sources.prev, &source->link);
 
     dev->uv_poll_sources_age++;
 
@@ -276,7 +275,7 @@ cg_uv_set_mainloop(cg_device_t *dev, uv_loop_t *loop)
 
     dev->uv_mainloop = loop;
 
-    _cg_list_init(&dev->uv_poll_sources);
+    c_list_init(&dev->uv_poll_sources);
 
     uv_timer_init(loop, &dev->uv_mainloop_timer);
 
@@ -297,7 +296,7 @@ _cg_uv_cleanup(cg_device_t *dev)
     if (dev->uv_poll_fds) {
         struct poll_source *tmp, *source;
 
-        _cg_list_for_each_safe(tmp, source, &dev->uv_poll_sources, link)
+        c_list_for_each_safe(tmp, source, &dev->uv_poll_sources, link)
             remove_fd(dev, source->fd);
 
         c_array_free(dev->uv_poll_fds, true);

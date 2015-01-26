@@ -36,7 +36,7 @@
 void
 _cg_closure_disconnect(cg_closure_t *closure)
 {
-    _cg_list_remove(&closure->link);
+    c_list_remove(&closure->link);
 
     if (closure->destroy_cb)
         closure->destroy_cb(closure->user_data);
@@ -45,16 +45,16 @@ _cg_closure_disconnect(cg_closure_t *closure)
 }
 
 void
-_cg_closure_list_disconnect_all(cg_list_t *list)
+_cg_closure_list_disconnect_all(c_list_t *list)
 {
     cg_closure_t *closure, *next;
 
-    _cg_list_for_each_safe(closure, next, list, link)
+    c_list_for_each_safe(closure, next, list, link)
     _cg_closure_disconnect(closure);
 }
 
 cg_closure_t *
-_cg_closure_list_add(cg_list_t *list,
+_cg_closure_list_add(c_list_t *list,
                      void *function,
                      void *user_data,
                      cg_user_data_destroy_callback_t destroy_cb)
@@ -65,7 +65,7 @@ _cg_closure_list_add(cg_list_t *list,
     closure->user_data = user_data;
     closure->destroy_cb = destroy_cb;
 
-    _cg_list_insert(list, &closure->link);
+    c_list_insert(list, &closure->link);
 
     return closure;
 }

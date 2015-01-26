@@ -1314,7 +1314,7 @@ gl_tex_image_2d_wrapper(GLenum target,
 static void
 _cg_gles2_offscreen_free(cg_gles2_offscreen_t *gles2_offscreen)
 {
-    _cg_list_remove(&gles2_offscreen->link);
+    c_list_remove(&gles2_offscreen->link);
     c_slice_free(cg_gles2_offscreen_t, gles2_offscreen);
 }
 
@@ -1390,8 +1390,8 @@ _cg_gles2_context_free(cg_gles2_context_t *gles2_context)
     winsys = dev->display->renderer->winsys_vtable;
     winsys->destroy_gles2_context(gles2_context);
 
-    while (!_cg_list_empty(&gles2_context->foreign_offscreens)) {
-        cg_gles2_offscreen_t *gles2_offscreen = _cg_container_of(
+    while (!c_list_empty(&gles2_context->foreign_offscreens)) {
+        cg_gles2_offscreen_t *gles2_offscreen = c_container_of(
             gles2_context->foreign_offscreens.next, cg_gles2_offscreen_t, link);
 
         /* Note: this will also indirectly free the gles2_offscreen by
@@ -1447,7 +1447,7 @@ cg_gles2_context_new(cg_device_t *dev, cg_error_t **error)
 
     gles2_ctx->dev = dev;
 
-    _cg_list_init(&gles2_ctx->foreign_offscreens);
+    c_list_init(&gles2_ctx->foreign_offscreens);
 
     winsys = dev->display->renderer->winsys_vtable;
     gles2_ctx->winsys = winsys->device_create_gles2_context(dev, error);
@@ -1569,7 +1569,7 @@ _cg_gles2_offscreen_allocate(cg_offscreen_t *offscreen,
         return NULL;
     }
 
-    _cg_list_for_each(gles2_offscreen, &gles2_context->foreign_offscreens, link)
+    c_list_for_each(gles2_offscreen, &gles2_context->foreign_offscreens, link)
     {
         if (gles2_offscreen->original_offscreen == offscreen)
             return gles2_offscreen;
@@ -1621,7 +1621,7 @@ _cg_gles2_offscreen_allocate(cg_offscreen_t *offscreen,
 
     gles2_offscreen->original_offscreen = offscreen;
 
-    _cg_list_insert(&gles2_context->foreign_offscreens, &gles2_offscreen->link);
+    c_list_insert(&gles2_context->foreign_offscreens, &gles2_offscreen->link);
 
     /* So we avoid building up an ever growing collection of ancillary
      * buffers for wrapped framebuffers, we make sure that the wrappers

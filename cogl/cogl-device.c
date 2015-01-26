@@ -311,8 +311,8 @@ cg_device_connect(cg_device_t *dev, cg_error_t **error)
     dev->current_draw_buffer_state_flushed = 0;
     dev->current_draw_buffer_changes = CG_FRAMEBUFFER_STATE_ALL;
 
-    _cg_list_init(&dev->onscreen_events_queue);
-    _cg_list_init(&dev->onscreen_dirty_queue);
+    c_list_init(&dev->onscreen_events_queue);
+    c_list_init(&dev->onscreen_dirty_queue);
 
     c_queue_init(&dev->gles2_context_stack);
 
@@ -404,7 +404,7 @@ cg_device_connect(cg_device_t *dev, cg_error_t **error)
     dev->buffer_map_fallback_array = c_byte_array_new();
     dev->buffer_map_fallback_in_use = false;
 
-    _cg_list_init(&dev->fences);
+    c_list_init(&dev->fences);
 
     dev->atlas_set = cg_atlas_set_new(dev);
     cg_atlas_set_set_components(dev->atlas_set, CG_TEXTURE_COMPONENTS_RGBA);

@@ -244,7 +244,7 @@ cg_renderer_new(void)
 
     renderer->poll_fds = c_array_new(false, true, sizeof(cg_poll_fd_t));
 
-    _cg_list_init(&renderer->idle_closures);
+    c_list_init(&renderer->idle_closures);
 
 #ifdef CG_HAS_XLIB_SUPPORT
     renderer->xlib_enable_event_retrieval = true;

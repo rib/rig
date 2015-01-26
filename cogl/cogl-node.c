@@ -42,7 +42,7 @@ void
 _cg_pipeline_node_init(cg_node_t *node)
 {
     node->parent = NULL;
-    _cg_list_init(&node->children);
+    c_list_init(&node->children);
 }
 
 void
@@ -65,7 +65,7 @@ _cg_pipeline_node_set_parent_real(cg_node_t *node,
     if (node->parent)
         unparent(node);
 
-    _cg_list_insert(&parent->children, &node->link);
+    c_list_insert(&parent->children, &node->link);
 
     node->parent = parent;
     node->has_parent_reference = take_strong_reference;
@@ -86,9 +86,9 @@ _cg_pipeline_node_unparent_real(cg_node_t *node)
     if (parent == NULL)
         return;
 
-    c_return_if_fail(!_cg_list_empty(&parent->children));
+    c_return_if_fail(!c_list_empty(&parent->children));
 
-    _cg_list_remove(&node->link);
+    c_list_remove(&node->link);
 
     if (node->has_parent_reference)
         cg_object_unref(parent);
@@ -103,6 +103,6 @@ _cg_pipeline_node_foreach_child(cg_node_t *node,
 {
     cg_node_t *child, *next;
 
-    _cg_list_for_each_safe(child, next, &node->children, link)
+    c_list_for_each_safe(child, next, &node->children, link)
     callback(child, user_data);
 }

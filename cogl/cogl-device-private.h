@@ -109,7 +109,7 @@ struct _cg_device_t {
     uv_prepare_t uv_mainloop_prepare;
     uv_timer_t uv_mainloop_timer;
     uv_check_t uv_mainloop_check;
-    cg_list_t uv_poll_sources;
+    c_list_t uv_poll_sources;
     int uv_poll_sources_age;
     c_array_t *uv_poll_fds;
 #endif
@@ -191,8 +191,8 @@ struct _cg_device_t {
     bool have_last_offscreen_allocate_flags;
     cg_offscreen_allocate_flags_t last_offscreen_allocate_flags;
 
-    cg_list_t onscreen_events_queue;
-    cg_list_t onscreen_dirty_queue;
+    c_list_t onscreen_events_queue;
+    c_list_t onscreen_dirty_queue;
     cg_closure_t *onscreen_dispatch_idle;
 
     cg_gles2_context_t *current_gles2_context;
@@ -285,7 +285,7 @@ struct _cg_device_t {
     int n_uniform_names;
 
     cg_poll_source_t *fences_poll_source;
-    cg_list_t fences;
+    c_list_t fences;
 
 /* This defines a list of function pointers that Cogl uses from
    either GL or GLES. All functions are accessed indirectly through

@@ -63,10 +63,10 @@ _cg_atlas_new(cg_device_t *dev,
     atlas->flags = flags;
     atlas->internal_format = internal_format;
 
-    _cg_list_init(&atlas->allocate_closures);
+    c_list_init(&atlas->allocate_closures);
 
-    _cg_list_init(&atlas->pre_reorganize_closures);
-    _cg_list_init(&atlas->post_reorganize_closures);
+    c_list_init(&atlas->pre_reorganize_closures);
+    c_list_init(&atlas->post_reorganize_closures);
 
     return _cg_atlas_object_new(atlas);
 }

@@ -34,8 +34,9 @@
 #ifndef __CG_NODE_PRIVATE_H
 #define __CG_NODE_PRIVATE_H
 
+#include <clib.h>
+
 #include "cogl-object-private.h"
-#include "cogl-list.h"
 
 typedef struct _cg_node_t cg_node_t;
 
@@ -52,10 +53,10 @@ struct _cg_node_t {
     cg_node_t *parent;
 
     /* The list entry here contains pointers to the node's siblings */
-    cg_list_t link;
+    c_list_t link;
 
     /* List of children */
-    cg_list_t children;
+    c_list_t children;
 
     /* true if the node took a strong reference on its parent. Weak
      * pipelines for instance don't take a reference on their parent. */

@@ -79,7 +79,7 @@ _cg_fence_poll_dispatch(void *source, int revents)
     cg_device_t *dev = source;
     cg_fence_closure_t *fence, *tmp;
 
-    _cg_list_for_each_safe(fence, tmp, &dev->fences, link)
+    c_list_for_each_safe(fence, tmp, &dev->fences, link)
         _cg_fence_check(fence);
 }
 
@@ -89,7 +89,7 @@ _cg_fence_poll_prepare(void *source)
     cg_device_t *dev = source;
     c_llist_t *l;
 
-    if (!_cg_list_empty(&dev->fences))
+    if (!c_list_empty(&dev->fences))
         return FENCE_CHECK_TIMEOUT;
     else
         return -1;
@@ -123,7 +123,7 @@ _cg_fence_submit(cg_fence_closure_t *fence)
 #endif
 
 done:
-    _cg_list_insert(dev->fences.prev, &fence->link);
+    c_list_insert(dev->fences.prev, &fence->link);
 
     if (!dev->fences_poll_source) {
         dev->fences_poll_source =
@@ -163,9 +163,9 @@ cg_framebuffer_cancel_fence_callback(cg_framebuffer_t *framebuffer,
     cg_device_t *dev = framebuffer->dev;
 
     if (fence->type == FENCE_TYPE_PENDING) {
-        _cg_list_remove(&fence->link);
+        c_list_remove(&fence->link);
     } else {
-        _cg_list_remove(&fence->link);
+        c_list_remove(&fence->link);
 
         if (fence->type == FENCE_TYPE_WINSYS) {
             const cg_winsys_vtable_t *winsys = _cg_device_get_winsys(dev);
@@ -188,7 +188,7 @@ _cg_fence_cancel_fences_for_framebuffer(cg_framebuffer_t *framebuffer)
     cg_device_t *dev = framebuffer->dev;
     cg_fence_closure_t *fence, *tmp;
 
-    _cg_list_for_each_safe(fence, tmp, &dev->fences, link) {
+    c_list_for_each_safe(fence, tmp, &dev->fences, link) {
         if (fence->framebuffer == framebuffer)
             cg_framebuffer_cancel_fence_callback(framebuffer, fence);
     }

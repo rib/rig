@@ -30,8 +30,9 @@
 #ifndef _CG_CLOSURE_LIST_PRIVATE_H_
 #define _CG_CLOSURE_LIST_PRIVATE_H_
 
+#include <clib.h>
+
 #include "cogl-object.h"
-#include "cogl-list.h"
 
 /*
  * This implements a list of callbacks that can be used a bit like
@@ -50,7 +51,7 @@
  */
 
 typedef struct _cg_closure_t {
-    cg_list_t link;
+    c_list_t link;
 
     void *function;
     void *user_data;
@@ -66,16 +67,16 @@ typedef struct _cg_closure_t {
  * then it will be invoked. */
 void _cg_closure_disconnect(cg_closure_t *closure);
 
-void _cg_closure_list_disconnect_all(cg_list_t *list);
+void _cg_closure_list_disconnect_all(c_list_t *list);
 
-cg_closure_t *_cg_closure_list_add(cg_list_t *list,
+cg_closure_t *_cg_closure_list_add(c_list_t *list,
                                    void *function,
                                    void *user_data,
                                    cg_user_data_destroy_callback_t destroy_cb);
 
 /*
  * _cg_closure_list_invoke:
- * @list: A pointer to a cg_list_t containing cg_closure_ts
+ * @list: A pointer to a c_list_t containing cg_closure_ts
  * @cb_type: The name of a typedef for the closure callback function signature
  * @...: The the arguments to pass to the callback
  *
@@ -94,7 +95,7 @@ cg_closure_t *_cg_closure_list_add(cg_list_t *list,
     {                                                                          \
         cg_closure_t *_c, *_tmp;                                               \
                                                                                \
-        _cg_list_for_each_safe(_c, _tmp, (list), link)                         \
+        c_list_for_each_safe(_c, _tmp, (list), link)                         \
         {                                                                      \
             cb_type _cb = _c->function;                                        \
             _cb(__VA_ARGS__, _c->user_data);                                   \
@@ -107,7 +108,7 @@ cg_closure_t *_cg_closure_list_add(cg_list_t *list,
     {                                                                          \
         cg_closure_t *_c, *_tmp;                                               \
                                                                                \
-        _cg_list_for_each_safe(_c, _tmp, (list), link)                         \
+        c_list_for_each_safe(_c, _tmp, (list), link)                         \
         {                                                                      \
             void (*_cb)(void *) = _c->function;                                \
             _cb(_c->user_data);                                                \

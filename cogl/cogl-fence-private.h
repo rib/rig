@@ -31,8 +31,9 @@
 #ifndef __CG_FENCE_PRIVATE_H__
 #define __CG_FENCE_PRIVATE_H__
 
+#include <clib.h>
+
 #include "cogl-fence.h"
-#include "cogl-list.h"
 #include "cogl-winsys-private.h"
 
 typedef enum {
@@ -45,7 +46,7 @@ typedef enum {
 } cg_fence_type_t;
 
 struct _cg_fence_closure_t {
-    cg_list_t link;
+    c_list_t link;
     cg_framebuffer_t *framebuffer;
 
     cg_fence_type_t type;

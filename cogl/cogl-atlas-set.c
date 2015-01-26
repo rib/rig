@@ -89,7 +89,7 @@ cg_atlas_set_new(cg_device_t *dev)
     set->clear_enabled = false;
     set->migration_enabled = true;
 
-    _cg_list_init(&set->atlas_closures);
+    c_list_init(&set->atlas_closures);
 
     return _cg_atlas_set_object_new(set);
 }

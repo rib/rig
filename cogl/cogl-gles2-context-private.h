@@ -39,10 +39,9 @@
 
 #include "cogl-object-private.h"
 #include "cogl-framebuffer-private.h"
-#include "cogl-list.h"
 
 typedef struct _cg_gles2_offscreen_t {
-    cg_list_t link;
+    c_list_t link;
     cg_offscreen_t *original_offscreen;
     cg_gl_framebuffer_t gl_framebuffer;
 } cg_gles2_offscreen_t;
@@ -138,7 +137,7 @@ struct _cg_gles2_context_t {
 
     GLuint current_fbo_handle;
 
-    cg_list_t foreign_offscreens;
+    c_list_t foreign_offscreens;
 
     cg_gles2_vtable_t *vtable;
 

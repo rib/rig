@@ -54,25 +54,23 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
-
-#include "cogl-memory-stack-private.h"
-#include "cogl-list.h"
 
 #include <stdint.h>
 
 #include <clib.h>
 
+#include "cogl-memory-stack-private.h"
+
+
 typedef struct _cg_memory_sub_stack_t {
-    cg_list_t link;
+    c_list_t link;
     size_t bytes;
     uint8_t *data;
 } cg_memory_sub_stack_t;
 
 struct _cg_memory_stack_t {
-    cg_list_t sub_stacks;
+    c_list_t sub_stacks;
 
     cg_memory_sub_stack_t *sub_stack;
     size_t sub_stack_offset;
@@ -93,7 +91,7 @@ _cg_memory_stack_add_sub_stack(cg_memory_stack_t *stack,
 {
     cg_memory_sub_stack_t *sub_stack =
         _cg_memory_sub_stack_alloc(sub_stack_bytes);
-    _cg_list_insert(stack->sub_stacks.prev, &sub_stack->link);
+    c_list_insert(stack->sub_stacks.prev, &sub_stack->link);
     stack->sub_stack = sub_stack;
     stack->sub_stack_offset = 0;
 }
@@ -103,7 +101,7 @@ _cg_memory_stack_new(size_t initial_size_bytes)
 {
     cg_memory_stack_t *stack = c_slice_new0(cg_memory_stack_t);
 
-    _cg_list_init(&stack->sub_stacks);
+    c_list_init(&stack->sub_stacks);
 
     _cg_memory_stack_add_sub_stack(stack, initial_size_bytes);
 
@@ -127,9 +125,9 @@ _cg_memory_stack_alloc(cg_memory_stack_t *stack, size_t bytes)
      * is made then we may need to skip over one or more of the
      * sub-stacks that are too small for the requested allocation
      * size... */
-    for (_cg_list_set_iterator(sub_stack->link.next, sub_stack, link);
+    for (c_list_set_iterator(sub_stack->link.next, sub_stack, link);
          &sub_stack->link != &stack->sub_stacks;
-         _cg_list_set_iterator(sub_stack->link.next, sub_stack, link)) {
+         c_list_set_iterator(sub_stack->link.next, sub_stack, link)) {
         if (sub_stack->bytes >= bytes) {
             ret = sub_stack->data;
             stack->sub_stack = sub_stack;
@@ -145,12 +143,12 @@ _cg_memory_stack_alloc(cg_memory_stack_t *stack, size_t bytes)
      */
 
     sub_stack =
-        _cg_container_of(stack->sub_stacks.prev, cg_memory_sub_stack_t, link);
+        c_container_of(stack->sub_stacks.prev, cg_memory_sub_stack_t, link);
 
     _cg_memory_stack_add_sub_stack(stack, MAX(sub_stack->bytes, bytes) * 2);
 
     sub_stack =
-        _cg_container_of(stack->sub_stacks.prev, cg_memory_sub_stack_t, link);
+        c_container_of(stack->sub_stacks.prev, cg_memory_sub_stack_t, link);
 
     stack->sub_stack_offset += bytes;
 
@@ -161,7 +159,7 @@ void
 _cg_memory_stack_rewind(cg_memory_stack_t *stack)
 {
     stack->sub_stack =
-        _cg_container_of(stack->sub_stacks.next, cg_memory_sub_stack_t, link);
+        c_container_of(stack->sub_stacks.next, cg_memory_sub_stack_t, link);
     stack->sub_stack_offset = 0;
 }
 
@@ -176,10 +174,10 @@ void
 _cg_memory_stack_free(cg_memory_stack_t *stack)
 {
 
-    while (!_cg_list_empty(&stack->sub_stacks)) {
-        cg_memory_sub_stack_t *sub_stack = _cg_container_of(
+    while (!c_list_empty(&stack->sub_stacks)) {
+        cg_memory_sub_stack_t *sub_stack = c_container_of(
             stack->sub_stacks.next, cg_memory_sub_stack_t, link);
-        _cg_list_remove(&sub_stack->link);
+        c_list_remove(&sub_stack->link);
         _cg_memory_sub_stack_free(sub_stack);
     }
 
