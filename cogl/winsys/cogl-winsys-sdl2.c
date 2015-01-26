@@ -283,7 +283,7 @@ flush_pending_resize_notifications_idle(void *user_data)
     _cg_closure_disconnect(sdl_renderer->resize_notify_idle);
     sdl_renderer->resize_notify_idle = NULL;
 
-    c_list_foreach(dev->framebuffers, flush_pending_notifications_cb, NULL);
+    c_llist_foreach(dev->framebuffers, flush_pending_notifications_cb, NULL);
 }
 
 static cg_filter_return_t

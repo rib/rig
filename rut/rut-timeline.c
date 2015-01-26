@@ -101,7 +101,7 @@ _rut_timeline_free(void *object)
     rut_timeline_t *timeline = object;
 
     timeline->shell->timelines =
-        c_slist_remove(timeline->shell->timelines, timeline);
+        c_sllist_remove(timeline->shell->timelines, timeline);
     rut_object_unref(timeline->shell);
 
     c_timer_destroy(timeline->gtimer);
@@ -147,7 +147,7 @@ rut_timeline_new(rut_shell_t *shell, float length)
         timeline, _rut_timeline_prop_specs, timeline->properties);
 
     timeline->shell = rut_object_ref(shell);
-    shell->timelines = c_slist_prepend(shell->timelines, timeline);
+    shell->timelines = c_sllist_prepend(shell->timelines, timeline);
 
     return timeline;
 }

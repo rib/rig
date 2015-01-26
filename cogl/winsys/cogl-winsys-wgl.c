@@ -179,7 +179,7 @@ static cg_onscreen_t *
 find_onscreen_for_hwnd(cg_device_t *dev, HWND hwnd)
 {
     cg_display_wgl_t *display_wgl = dev->display->winsys;
-    c_list_t *l;
+    c_llist_t *l;
 
     /* If the hwnd has Cogl's window class then we can lookup the
        onscreen pointer directly by reading the extra window data */

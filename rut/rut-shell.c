@@ -139,7 +139,7 @@ rut_shell_add_input_camera(rut_shell_t *shell,
     else
         input_camera->scenegraph = NULL;
 
-    shell->input_cameras = c_list_prepend(shell->input_cameras, input_camera);
+    shell->input_cameras = c_llist_prepend(shell->input_cameras, input_camera);
 }
 
 static void
@@ -156,14 +156,14 @@ rut_shell_remove_input_camera(rut_shell_t *shell,
                               rut_object_t *camera,
                               rut_object_t *scenegraph)
 {
-    c_list_t *l;
+    c_llist_t *l;
 
     for (l = shell->input_cameras; l; l = l->next) {
         input_camera_t *input_camera = l->data;
         if (input_camera->camera == camera &&
             input_camera->scenegraph == scenegraph) {
             input_camera_free(input_camera);
-            shell->input_cameras = c_list_delete_link(shell->input_cameras, l);
+            shell->input_cameras = c_llist_delete_link(shell->input_cameras, l);
             return;
         }
     }
@@ -174,11 +174,11 @@ rut_shell_remove_input_camera(rut_shell_t *shell,
 static void
 _rut_shell_remove_all_input_cameras(rut_shell_t *shell)
 {
-    c_list_t *l;
+    c_llist_t *l;
 
     for (l = shell->input_cameras; l; l = l->next)
         input_camera_free(l->data);
-    c_list_free(shell->input_cameras);
+    c_llist_free(shell->input_cameras);
     shell->input_cameras = NULL;
 }
 
@@ -539,7 +539,7 @@ _rut_shell_get_scenegraph_event_target(rut_shell_t *shell,
 {
     rut_object_t *picked_object = NULL;
     rut_object_t *picked_camera = NULL;
-    c_list_t *l;
+    c_llist_t *l;
 
     /* Key events by default go to the object that has key focus. If
      * there is no object with key focus then we will let them go to
@@ -618,7 +618,7 @@ rut_shell_dispatch_input_event(rut_shell_t *shell, rut_input_event_t *event)
 {
     rut_input_event_status_t status = RUT_INPUT_EVENT_STATUS_UNHANDLED;
     rut_shell_onscreen_t *onscreen = rut_input_event_get_onscreen(event);
-    c_list_t *l;
+    c_llist_t *l;
     rut_closure_t *c, *tmp;
     rut_object_t *target;
     rut_shell_grab_t *grab;
@@ -685,8 +685,8 @@ rut_shell_dispatch_input_event(rut_shell_t *shell, rut_input_event_t *event)
     for (l = shell->input_cameras; l; l = l->next) {
         input_camera_t *input_camera = l->data;
         rut_object_t *camera = input_camera->camera;
-        c_list_t *input_regions = rut_camera_get_input_regions(camera);
-        c_list_t *l2;
+        c_llist_t *input_regions = rut_camera_get_input_regions(camera);
+        c_llist_t *l2;
 
         event->camera = camera;
         event->input_transform = rut_camera_get_input_transform(camera);
@@ -1234,7 +1234,7 @@ rut_shell_start_redraw(rut_shell_t *shell)
 void
 rut_shell_update_timelines(rut_shell_t *shell)
 {
-    c_slist_t *l;
+    c_sllist_t *l;
 
     for (l = shell->timelines; l; l = l->next)
         _rut_timeline_update(l->data);
@@ -1417,7 +1417,7 @@ rut_shell_run_post_paint_callbacks(rut_shell_t *shell)
 bool
 rut_shell_check_timelines(rut_shell_t *shell)
 {
-    c_slist_t *l;
+    c_sllist_t *l;
 
     for (l = shell->timelines; l; l = l->next)
         if (rut_timeline_is_running(l->data))

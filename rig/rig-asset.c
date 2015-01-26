@@ -86,7 +86,7 @@ struct _rig_asset_t {
 
     bool is_video;
 
-    c_list_t *inferred_tags;
+    c_llist_t *inferred_tags;
 
     rut_list_t thumbnail_cb_list;
 };
@@ -514,7 +514,7 @@ generate_mesh_thumbnail(rig_asset_t *asset)
 static rig_asset_t *
 rig_asset_new_full(rut_shell_t *shell,
                    const char *path,
-                   const c_list_t *inferred_tags,
+                   const c_llist_t *inferred_tags,
                    rig_asset_type_t type)
 {
     rig_asset_t *asset =
@@ -797,7 +797,7 @@ rig_asset_new_from_file(rig_engine_t *engine,
     GFile *assets_dir = g_file_new_for_path(engine->shell->assets_location);
     GFile *dir = g_file_get_parent(asset_file);
     char *path = g_file_get_relative_path(assets_dir, asset_file);
-    c_list_t *inferred_tags = NULL;
+    c_llist_t *inferred_tags = NULL;
     rig_asset_t *asset = NULL;
 
     inferred_tags = rut_infer_asset_tags(engine->shell, info, asset_file);
@@ -822,7 +822,7 @@ rig_asset_new_from_file(rig_engine_t *engine,
     }
 #endif
 
-    c_list_free(inferred_tags);
+    c_llist_free(inferred_tags);
 
     g_object_unref(assets_dir);
     g_object_unref(dir);
@@ -970,7 +970,7 @@ rig_asset_new_builtin(rut_shell_t *shell, const char *path)
 rig_asset_t *
 rig_asset_new_texture(rut_shell_t *shell,
                       const char *path,
-                      const c_list_t *inferred_tags)
+                      const c_llist_t *inferred_tags)
 {
     return rig_asset_new_full(shell, path, inferred_tags,
                               RIG_ASSET_TYPE_TEXTURE);
@@ -981,7 +981,7 @@ rig_asset_new_texture(rut_shell_t *shell,
 rig_asset_t *
 rig_asset_new_normal_map(rut_shell_t *shell,
                          const char *path,
-                         const c_list_t *inferred_tags)
+                         const c_llist_t *inferred_tags)
 {
     return rig_asset_new_full(shell, path, inferred_tags,
                               RIG_ASSET_TYPE_NORMAL_MAP);
@@ -992,7 +992,7 @@ rig_asset_new_normal_map(rut_shell_t *shell,
 rig_asset_t *
 rig_asset_new_alpha_mask(rut_shell_t *shell,
                          const char *path,
-                         const c_list_t *inferred_tags)
+                         const c_llist_t *inferred_tags)
 {
     return rig_asset_new_full(shell, path, inferred_tags,
                               RIG_ASSET_TYPE_ALPHA_MASK);
@@ -1001,7 +1001,7 @@ rig_asset_new_alpha_mask(rut_shell_t *shell,
 rig_asset_t *
 rig_asset_new_ply_model(rut_shell_t *shell,
                         const char *path,
-                        const c_list_t *inferred_tags)
+                        const c_llist_t *inferred_tags)
 {
     return rig_asset_new_full(shell, path, inferred_tags,
                               RIG_ASSET_TYPE_MESH);
@@ -1010,7 +1010,7 @@ rig_asset_new_ply_model(rut_shell_t *shell,
 rig_asset_t *
 rig_asset_new_font(rut_shell_t *shell,
                    const char *path,
-                   const c_list_t *inferred_tags)
+                   const c_llist_t *inferred_tags)
 {
     return rig_asset_new_full(shell, path, inferred_tags,
                               RIG_ASSET_TYPE_FONT);
@@ -1070,27 +1070,27 @@ rig_asset_get_image_size(rig_asset_t *asset, int *width, int *height)
     }
 }
 
-static c_list_t *
-copy_tags(const c_list_t *tags)
+static c_llist_t *
+copy_tags(const c_llist_t *tags)
 {
-    const c_list_t *l;
-    c_list_t *copy = NULL;
+    const c_llist_t *l;
+    c_llist_t *copy = NULL;
     for (l = tags; l; l = l->next) {
         const char *tag = c_intern_string(l->data);
-        copy = c_list_prepend(copy, (char *)tag);
+        copy = c_llist_prepend(copy, (char *)tag);
     }
     return copy;
 }
 
 void
 rig_asset_set_inferred_tags(rig_asset_t *asset,
-                            const c_list_t *inferred_tags)
+                            const c_llist_t *inferred_tags)
 {
     asset->inferred_tags =
-        c_list_concat(asset->inferred_tags, copy_tags(inferred_tags));
+        c_llist_concat(asset->inferred_tags, copy_tags(inferred_tags));
 }
 
-const c_list_t *
+const c_llist_t *
 rig_asset_get_inferred_tags(rig_asset_t *asset)
 {
     return asset->inferred_tags;
@@ -1099,7 +1099,7 @@ rig_asset_get_inferred_tags(rig_asset_t *asset)
 bool
 rig_asset_has_tag(rig_asset_t *asset, const char *tag)
 {
-    c_list_t *l;
+    c_llist_t *l;
 
     for (l = asset->inferred_tags; l; l = l->next)
         if (strcmp(tag, l->data) == 0)
@@ -1142,7 +1142,7 @@ rut_file_info_is_asset(GFileInfo *info, const char *name)
     return false;
 }
 
-c_list_t *
+c_llist_t *
 rut_infer_asset_tags(rut_shell_t *shell, GFileInfo *info, GFile *asset_file)
 {
     GFile *assets_dir = g_file_new_for_path(shell->assets_location);
@@ -1151,12 +1151,12 @@ rut_infer_asset_tags(rut_shell_t *shell, GFileInfo *info, GFile *asset_file)
     const char *content_type = g_file_info_get_content_type(info);
     char *mime_type = g_content_type_get_mime_type(content_type);
     const char *ext;
-    c_list_t *inferred_tags = NULL;
+    c_llist_t *inferred_tags = NULL;
 
     while (dir && !g_file_equal(assets_dir, dir)) {
         basename = g_file_get_basename(dir);
         inferred_tags =
-            c_list_prepend(inferred_tags, (char *)c_intern_string(basename));
+            c_llist_prepend(inferred_tags, (char *)c_intern_string(basename));
         c_free(basename);
         dir = g_file_get_parent(dir);
     }
@@ -1164,37 +1164,37 @@ rut_infer_asset_tags(rut_shell_t *shell, GFileInfo *info, GFile *asset_file)
     if (mime_type) {
         if (strncmp(mime_type, "image/", 6) == 0)
             inferred_tags =
-                c_list_prepend(inferred_tags, (char *)c_intern_string("image"));
+                c_llist_prepend(inferred_tags, (char *)c_intern_string("image"));
         else if (strncmp(mime_type, "video/", 6) == 0)
             inferred_tags =
-                c_list_prepend(inferred_tags, (char *)c_intern_string("video"));
+                c_llist_prepend(inferred_tags, (char *)c_intern_string("video"));
         else if (strcmp(mime_type, "application/x-font-ttf") == 0)
             inferred_tags =
-                c_list_prepend(inferred_tags, (char *)c_intern_string("font"));
+                c_llist_prepend(inferred_tags, (char *)c_intern_string("font"));
     }
 
     if (rut_util_find_tag(inferred_tags, "image")) {
         inferred_tags =
-            c_list_prepend(inferred_tags, (char *)c_intern_string("img"));
+            c_llist_prepend(inferred_tags, (char *)c_intern_string("img"));
     }
 
     if (rut_util_find_tag(inferred_tags, "image") ||
         rut_util_find_tag(inferred_tags, "video")) {
         inferred_tags =
-            c_list_prepend(inferred_tags, (char *)c_intern_string("texture"));
+            c_llist_prepend(inferred_tags, (char *)c_intern_string("texture"));
 
         if (rut_util_find_tag(inferred_tags, "normal-maps")) {
             inferred_tags =
-                c_list_prepend(inferred_tags, (char *)c_intern_string("map"));
-            inferred_tags = c_list_prepend(
+                c_llist_prepend(inferred_tags, (char *)c_intern_string("map"));
+            inferred_tags = c_llist_prepend(
                 inferred_tags, (char *)c_intern_string("normal-map"));
-            inferred_tags = c_list_prepend(inferred_tags,
+            inferred_tags = c_llist_prepend(inferred_tags,
                                            (char *)c_intern_string("bump-map"));
         } else if (rut_util_find_tag(inferred_tags, "alpha-masks")) {
-            inferred_tags = c_list_prepend(
+            inferred_tags = c_llist_prepend(
                 inferred_tags, (char *)c_intern_string("alpha-mask"));
             inferred_tags =
-                c_list_prepend(inferred_tags, (char *)c_intern_string("mask"));
+                c_llist_prepend(inferred_tags, (char *)c_intern_string("mask"));
         }
     }
 
@@ -1202,15 +1202,15 @@ rut_infer_asset_tags(rut_shell_t *shell, GFileInfo *info, GFile *asset_file)
     ext = get_extension(basename);
     if (ext && strcmp(ext, "ply") == 0) {
         inferred_tags =
-            c_list_prepend(inferred_tags, (char *)c_intern_string("ply"));
+            c_llist_prepend(inferred_tags, (char *)c_intern_string("ply"));
         inferred_tags =
-            c_list_prepend(inferred_tags, (char *)c_intern_string("mesh"));
+            c_llist_prepend(inferred_tags, (char *)c_intern_string("mesh"));
         inferred_tags =
-            c_list_prepend(inferred_tags, (char *)c_intern_string("model"));
+            c_llist_prepend(inferred_tags, (char *)c_intern_string("model"));
         inferred_tags =
-            c_list_prepend(inferred_tags, (char *)c_intern_string("geometry"));
+            c_llist_prepend(inferred_tags, (char *)c_intern_string("geometry"));
         inferred_tags =
-            c_list_prepend(inferred_tags, (char *)c_intern_string("geom"));
+            c_llist_prepend(inferred_tags, (char *)c_intern_string("geom"));
     }
     c_free(basename);
 
@@ -1222,7 +1222,7 @@ void
 rig_asset_add_inferred_tag(rig_asset_t *asset, const char *tag)
 {
     asset->inferred_tags =
-        c_list_prepend(asset->inferred_tags, (char *)c_intern_string(tag));
+        c_llist_prepend(asset->inferred_tags, (char *)c_intern_string(tag));
 }
 
 bool

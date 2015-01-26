@@ -83,23 +83,23 @@ rig_asset_t *rig_asset_new_builtin(rut_shell_t *shell, const char *icon_path);
 
 rig_asset_t *rig_asset_new_texture(rut_shell_t *shell,
                                    const char *path,
-                                   const c_list_t *inferred_tags);
+                                   const c_llist_t *inferred_tags);
 
 rig_asset_t *rig_asset_new_normal_map(rut_shell_t *shell,
                                       const char *path,
-                                      const c_list_t *inferred_tags);
+                                      const c_llist_t *inferred_tags);
 
 rig_asset_t *rig_asset_new_alpha_mask(rut_shell_t *shell,
                                       const char *path,
-                                      const c_list_t *inferred_tags);
+                                      const c_llist_t *inferred_tags);
 
 rig_asset_t *rig_asset_new_ply_model(rut_shell_t *shell,
                                      const char *path,
-                                     const c_list_t *inferred_tags);
+                                     const c_llist_t *inferred_tags);
 
 rig_asset_t *rig_asset_new_font(rut_shell_t *shell,
                                 const char *path,
-                                const c_list_t *inferred_tags);
+                                const c_llist_t *inferred_tags);
 
 #if defined(RIG_EDITOR_ENABLED) && defined(USE_GLIB)
 rig_asset_t *rig_asset_new_from_file(rig_engine_t *engine,
@@ -109,7 +109,7 @@ rig_asset_t *rig_asset_new_from_file(rig_engine_t *engine,
 
 bool rut_file_info_is_asset(GFileInfo *info, const char *name);
 
-c_list_t *
+c_llist_t *
 rut_infer_asset_tags(rut_shell_t *shell, GFileInfo *info, GFile *asset_file);
 #endif
 
@@ -139,9 +139,9 @@ rut_mesh_t *rig_asset_get_mesh(rig_asset_t *asset);
 bool rig_asset_get_is_video(rig_asset_t *asset);
 
 void rig_asset_set_inferred_tags(rig_asset_t *asset,
-                                 const c_list_t *inferred_tags);
+                                 const c_llist_t *inferred_tags);
 
-const c_list_t *rig_asset_get_inferred_tags(rig_asset_t *asset);
+const c_llist_t *rig_asset_get_inferred_tags(rig_asset_t *asset);
 
 bool rig_asset_has_tag(rig_asset_t *asset, const char *tag);
 

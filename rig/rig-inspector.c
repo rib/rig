@@ -58,7 +58,7 @@ struct _rig_inspector_t {
     rut_object_base_t _base;
 
     rut_shell_t *shell;
-    c_list_t *objects;
+    c_llist_t *objects;
 
     rut_graphable_props_t graphable;
 
@@ -79,8 +79,8 @@ _rig_inspector_free(void *object)
 {
     rig_inspector_t *inspector = object;
 
-    c_list_foreach(inspector->objects, (GFunc)rut_object_unref, NULL);
-    c_list_free(inspector->objects);
+    c_llist_foreach(inspector->objects, (GFunc)rut_object_unref, NULL);
+    c_llist_free(inspector->objects);
     inspector->objects = NULL;
 
     c_free(inspector->prop_data);
@@ -132,7 +132,7 @@ property_changed_cb(rut_property_t *primary_target_prop,
 {
     rig_inspector_property_data_t *prop_data = user_data;
     rig_inspector_t *inspector = prop_data->inspector;
-    c_list_t *l;
+    c_llist_t *l;
     bool mergable;
 
     c_return_if_fail(primary_target_prop == prop_data->target_prop);
@@ -170,7 +170,7 @@ controlled_changed_cb(rut_property_t *primary_property,
 {
     rig_inspector_property_data_t *prop_data = user_data;
     rig_inspector_t *inspector = prop_data->inspector;
-    c_list_t *l;
+    c_llist_t *l;
 
     c_return_if_fail(primary_property == prop_data->target_prop);
 
@@ -256,7 +256,7 @@ create_property_controls(rig_inspector_t *inspector)
 
 rig_inspector_t *
 rig_inspector_new(rut_shell_t *shell,
-                  c_list_t *objects,
+                  c_llist_t *objects,
                   rig_inspector_callback_t user_property_changed_cb,
                   rig_inspector_controlled_callback_t user_controlled_changed_cb,
                   void *user_data)
@@ -265,9 +265,9 @@ rig_inspector_new(rut_shell_t *shell,
         rig_inspector_t, &rig_inspector_type, _rig_inspector_init_type);
 
     inspector->shell = shell;
-    inspector->objects = c_list_copy(objects);
+    inspector->objects = c_llist_copy(objects);
 
-    c_list_foreach(objects, (GFunc)rut_object_ref, NULL);
+    c_llist_foreach(objects, (GFunc)rut_object_ref, NULL);
 
     inspector->property_changed_cb = user_property_changed_cb;
     inspector->controlled_changed_cb = user_controlled_changed_cb;

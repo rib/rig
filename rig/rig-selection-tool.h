@@ -53,7 +53,7 @@ struct _rig_selection_tool_t {
     bool active;
     rut_closure_t *objects_selection_closure;
 
-    c_list_t *selected_entities;
+    c_llist_t *selected_entities;
 
     cg_pipeline_t *default_pipeline;
 

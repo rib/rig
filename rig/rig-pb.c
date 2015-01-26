@@ -620,7 +620,7 @@ serialize_component_cb(rut_object_t *component, void *user_data)
 
     serializer->n_pb_components++;
     serializer->pb_components =
-        c_list_prepend(serializer->pb_components, pb_component);
+        c_llist_prepend(serializer->pb_components, pb_component);
 
     return true; /* continue */
 }
@@ -636,7 +636,7 @@ rig_pb_serialize_entity(rig_pb_serializer_t *serializer,
     const char *label;
     Rig__Vec3 *position;
     float scale;
-    c_list_t *l;
+    c_llist_t *l;
     int i;
 
     pb_entity->has_id = true;
@@ -684,7 +684,7 @@ rig_pb_serialize_entity(rig_pb_serializer_t *serializer,
 
     for (i = 0, l = serializer->pb_components; l; i++, l = l->next)
         pb_entity->components[i] = l->data;
-    c_list_free(serializer->pb_components);
+    c_llist_free(serializer->pb_components);
     serializer->pb_components = NULL;
     serializer->n_pb_components = 0;
 
@@ -720,7 +720,7 @@ _rig_entitygraph_pre_serialize_cb(
 
     serializer->n_pb_entities++;
     serializer->pb_entities =
-        c_list_prepend(serializer->pb_entities, pb_entity);
+        c_llist_prepend(serializer->pb_entities, pb_entity);
 
     return RUT_TRAVERSE_VISIT_CONTINUE;
 }
@@ -766,7 +766,7 @@ serialize_controller_property_cb(rig_controller_prop_data_t *prop_data,
 
     serializer->n_pb_properties++;
     serializer->pb_properties =
-        c_list_prepend(serializer->pb_properties, pb_property);
+        c_llist_prepend(serializer->pb_properties, pb_property);
 
     object = prop_data->property->object;
 
@@ -908,7 +908,7 @@ rig_pb_serializer_lookup_object_id(rig_pb_serializer_t *serializer,
 
         if (need_asset) {
             serializer->required_assets =
-                c_list_prepend(serializer->required_assets, object);
+                c_llist_prepend(serializer->required_assets, object);
         }
     }
 
@@ -1013,7 +1013,7 @@ void
 rig_pb_serializer_destroy(rig_pb_serializer_t *serializer)
 {
     if (serializer->required_assets)
-        c_list_free(serializer->required_assets);
+        c_llist_free(serializer->required_assets);
 
     if (serializer->object_to_id_map)
         c_hash_table_destroy(serializer->object_to_id_map);
@@ -1343,7 +1343,7 @@ rig_pb_serialize_controller(rig_pb_serializer_t *serializer,
 {
     Rig__Controller *pb_controller =
         rig_pb_new(serializer, Rig__Controller, rig__controller__init);
-    c_list_t *l;
+    c_llist_t *l;
     int i;
 
     pb_controller->has_id = true;
@@ -1370,7 +1370,7 @@ rig_pb_serialize_controller(rig_pb_serializer_t *serializer,
                                   RUT_UTIL_ALIGNOF(void *));
     for (i = 0, l = serializer->pb_properties; l; i++, l = l->next)
         pb_controller->properties[i] = l->data;
-    c_list_free(serializer->pb_properties);
+    c_llist_free(serializer->pb_properties);
     serializer->n_pb_properties = 0;
     serializer->pb_properties = NULL;
 
@@ -1382,7 +1382,7 @@ rig_pb_serialize_ui(rig_pb_serializer_t *serializer,
                     bool play_mode,
                     rig_ui_t *ui)
 {
-    c_list_t *l;
+    c_llist_t *l;
     int i;
     Rig__UI *pb_ui;
 
@@ -1416,13 +1416,13 @@ rig_pb_serialize_ui(rig_pb_serializer_t *serializer,
                                   RUT_UTIL_ALIGNOF(void *));
     for (i = 0, l = serializer->pb_entities; l; i++, l = l->next)
         pb_ui->entities[i] = l->data;
-    c_list_free(serializer->pb_entities);
+    c_llist_free(serializer->pb_entities);
     serializer->pb_entities = NULL;
 
     for (i = 0, l = ui->controllers; l; i++, l = l->next)
         rig_pb_serializer_register_object(serializer, l->data);
 
-    pb_ui->n_controllers = c_list_length(ui->controllers);
+    pb_ui->n_controllers = c_llist_length(ui->controllers);
     if (pb_ui->n_controllers) {
         pb_ui->controllers =
             rut_memory_stack_memalign(serializer->stack,
@@ -1438,7 +1438,7 @@ rig_pb_serialize_ui(rig_pb_serializer_t *serializer,
         }
     }
 
-    pb_ui->n_assets = c_list_length(serializer->required_assets);
+    pb_ui->n_assets = c_llist_length(serializer->required_assets);
     if (pb_ui->n_assets) {
         rig_pb_asset_filter_t save_filter = serializer->asset_filter;
         int i;
@@ -2555,7 +2555,7 @@ unserialize_entities(rig_pb_un_serializer_t *unserializer,
         rig_pb_unserializer_register_object(
             unserializer, entity, entities[i]->id);
 
-        unserializer->entities = c_list_prepend(unserializer->entities, entity);
+        unserializer->entities = c_llist_prepend(unserializer->entities, entity);
     }
 }
 
@@ -2598,7 +2598,7 @@ unserialize_assets(rig_pb_un_serializer_t *unserializer,
         }
 
         if (asset) {
-            unserializer->assets = c_list_prepend(unserializer->assets, asset);
+            unserializer->assets = c_llist_prepend(unserializer->assets, asset);
             rig_pb_unserializer_register_object(unserializer, asset, id);
         } else {
             c_warning("Failed to load \"%s\" asset",
@@ -2934,7 +2934,7 @@ unserialize_controllers(rig_pb_un_serializer_t *unserializer,
             rig_pb_unserialize_controller_bare(unserializer, pb_controller);
 
         unserializer->controllers =
-            c_list_prepend(unserializer->controllers, controller);
+            c_llist_prepend(unserializer->controllers, controller);
 
         if (id)
             rig_pb_unserializer_register_object(unserializer, controller, id);
@@ -3039,7 +3039,7 @@ rig_pb_unserialize_ui(rig_pb_un_serializer_t *unserializer,
 {
     rig_ui_t *ui = rig_ui_new(unserializer->engine);
     rig_engine_t *engine = unserializer->engine;
-    c_list_t *l;
+    c_llist_t *l;
 
     unserialize_assets(unserializer, pb_ui->n_assets, pb_ui->assets);
 

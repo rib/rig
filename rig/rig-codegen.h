@@ -51,7 +51,7 @@ typedef struct _rut_memory_stack_t rut_memory_stack_t;
  * GLib and Cogl typedefs that are required in rut-property-bare.h...
  */
 
-typedef struct _c_slist_t c_slist_t;
+typedef struct _c_sllist_t c_sllist_t;
 #define c_return_if_fail(X)
 #define c_return_val_if_fail(X, Y)
 

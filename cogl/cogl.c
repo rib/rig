@@ -100,7 +100,7 @@ cg_foreach_feature(cg_device_t *dev,
 void
 _cg_flush(cg_device_t *dev)
 {
-    c_list_t *l;
+    c_llist_t *l;
 
     for (l = dev->framebuffers; l; l = l->next)
         _cg_framebuffer_flush(l->data);

@@ -51,7 +51,7 @@
 #include <string.h>
 
 static char *_cg_x11_display_name = NULL;
-static c_list_t *_cg_xlib_renderers = NULL;
+static c_llist_t *_cg_xlib_renderers = NULL;
 
 static void
 destroy_xlib_renderer_data(void *user_data)
@@ -86,25 +86,25 @@ _cg_xlib_renderer_get_data(cg_renderer_t *renderer)
 static void
 register_xlib_renderer(cg_renderer_t *renderer)
 {
-    c_list_t *l;
+    c_llist_t *l;
 
     for (l = _cg_xlib_renderers; l; l = l->next)
         if (l->data == renderer)
             return;
 
-    _cg_xlib_renderers = c_list_prepend(_cg_xlib_renderers, renderer);
+    _cg_xlib_renderers = c_llist_prepend(_cg_xlib_renderers, renderer);
 }
 
 static void
 unregister_xlib_renderer(cg_renderer_t *renderer)
 {
-    _cg_xlib_renderers = c_list_remove(_cg_xlib_renderers, renderer);
+    _cg_xlib_renderers = c_llist_remove(_cg_xlib_renderers, renderer);
 }
 
 static cg_renderer_t *
 get_renderer_for_xdisplay(Display *xdpy)
 {
-    c_list_t *l;
+    c_llist_t *l;
 
     for (l = _cg_xlib_renderers; l; l = l->next) {
         cg_renderer_t *renderer = l->data;
@@ -225,8 +225,8 @@ update_outputs(cg_renderer_t *renderer, bool notify)
     XRRScreenResources *resources;
     cg_xlib_trap_state_t state;
     bool error = false;
-    c_list_t *new_outputs = NULL;
-    c_list_t *l, *m;
+    c_llist_t *new_outputs = NULL;
+    c_llist_t *l, *m;
     bool changed = false;
     int i;
 
@@ -315,7 +315,7 @@ update_outputs(cg_renderer_t *renderer, bool notify)
                     subpixel_map[j][output->subpixel_order];
         }
 
-        new_outputs = c_list_prepend(new_outputs, output);
+        new_outputs = c_llist_prepend(new_outputs, output);
 
 next:
         if (crtc_info != NULL)
@@ -328,7 +328,7 @@ next:
     XFree(resources);
 
     if (!error) {
-        new_outputs = c_list_sort(new_outputs,
+        new_outputs = c_llist_sort(new_outputs,
                                   (c_compare_func_t)compare_outputs);
 
         l = new_outputs;
@@ -347,12 +347,12 @@ next:
                 cmp = 1;
 
             if (cmp == 0) {
-                c_list_t *m_next = m->next;
+                c_llist_t *m_next = m->next;
 
                 if (!_cg_output_values_equal(output_l, output_m)) {
                     renderer->outputs =
-                        c_list_remove_link(renderer->outputs, m);
-                    renderer->outputs = c_list_insert_before(
+                        c_llist_remove_link(renderer->outputs, m);
+                    renderer->outputs = c_llist_insert_before(
                         renderer->outputs, m_next, output_l);
                     cg_object_ref(output_l);
 
@@ -363,20 +363,20 @@ next:
                 m = m_next;
             } else if (cmp < 0) {
                 renderer->outputs =
-                    c_list_insert_before(renderer->outputs, m, output_l);
+                    c_llist_insert_before(renderer->outputs, m, output_l);
                 cg_object_ref(output_l);
                 changed = true;
                 l = l->next;
             } else {
-                c_list_t *m_next = m->next;
-                renderer->outputs = c_list_remove_link(renderer->outputs, m);
+                c_llist_t *m_next = m->next;
+                renderer->outputs = c_llist_remove_link(renderer->outputs, m);
                 changed = true;
                 m = m_next;
             }
         }
     }
 
-    c_list_free_full(new_outputs, (c_destroy_func_t)cg_object_unref);
+    c_llist_free_full(new_outputs, (c_destroy_func_t)cg_object_unref);
     _cg_xlib_renderer_untrap_errors(renderer, &state);
 
     if (changed) {
@@ -528,7 +528,7 @@ _cg_xlib_renderer_disconnect(cg_renderer_t *renderer)
 {
     cg_xlib_renderer_t *xlib_renderer = _cg_xlib_renderer_get_data(renderer);
 
-    c_list_free_full(renderer->outputs, (c_destroy_func_t)cg_object_unref);
+    c_llist_free_full(renderer->outputs, (c_destroy_func_t)cg_object_unref);
     renderer->outputs = NULL;
 
     if (!renderer->foreign_xdpy && xlib_renderer->xdpy)
@@ -594,7 +594,7 @@ _cg_xlib_renderer_output_for_rectangle(
 {
     int max_overlap = 0;
     cg_output_t *max_overlapped = NULL;
-    c_list_t *l;
+    c_llist_t *l;
     int xa1 = x, xa2 = x + width;
     int ya1 = y, ya2 = y + height;
 

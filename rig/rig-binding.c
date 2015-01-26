@@ -61,7 +61,7 @@ struct _rig_binding_t {
     rig_code_node_t *function_node;
     rig_code_node_t *expression_node;
 
-    c_list_t *dependencies;
+    c_llist_t *dependencies;
 
     unsigned int active : 1;
 };
@@ -95,7 +95,7 @@ static dependency_t *
 find_dependency(rig_binding_t *binding,
                 rut_property_t *property)
 {
-    c_list_t *l;
+    c_llist_t *l;
 
     for (l = binding->dependencies; l; l = l->next) {
         dependency_t *dependency = l->data;
@@ -217,7 +217,7 @@ codegen_function_node(rig_binding_t *binding)
     const char *out_var_decl_pre;
     const char *out_var_decl_post;
     const char *out_var_get_pre;
-    c_list_t *l;
+    c_llist_t *l;
     int i;
 
     get_property_codegen_info(binding->property,
@@ -288,7 +288,7 @@ rig_binding_activate(rig_binding_t *binding)
     rut_property_t **dependencies;
     rut_binding_callback_t callback;
     int n_dependencies;
-    c_list_t *l;
+    c_llist_t *l;
     int i;
 
     c_return_if_fail(!binding->active);
@@ -306,7 +306,7 @@ rig_binding_activate(rig_binding_t *binding)
                   binding->function_name);
         return;
     }
-    n_dependencies = c_list_length(binding->dependencies);
+    n_dependencies = c_llist_length(binding->dependencies);
     dependencies = c_alloca(sizeof(rut_property_t *) * n_dependencies);
 
     for (l = binding->dependencies, i = 0; l; l = l->next, i++) {
@@ -418,7 +418,7 @@ rig_binding_add_dependency(rig_binding_t *binding,
 
     dependency->variable_name = c_strdup(name);
 
-    binding->dependencies = c_list_prepend(binding->dependencies, dependency);
+    binding->dependencies = c_llist_prepend(binding->dependencies, dependency);
 
 #if defined (RIG_EDITOR_ENABLED) && defined (USE_LLVM)
     if (!binding->engine->simulator)
@@ -504,7 +504,7 @@ rig_binding_get_id(rig_binding_t *binding)
 int
 rig_binding_get_n_dependencies(rig_binding_t *binding)
 {
-    return c_list_length(binding->dependencies);
+    return c_llist_length(binding->dependencies);
 }
 
 void
@@ -514,7 +514,7 @@ rig_binding_foreach_dependency(rig_binding_t *binding,
                                                 void *user_data),
                                void *user_data)
 {
-    c_list_t *l;
+    c_llist_t *l;
 
     for (l = binding->dependencies; l; l = l->next)
         callback(binding, l->data, user_data);

@@ -138,7 +138,7 @@ void rut_util_draw_jittered_primitive3f(cg_framebuffer_t *fb,
                                         float green,
                                         float blue);
 
-bool rut_util_find_tag(const c_list_t *tags, const char *tag);
+bool rut_util_find_tag(const c_llist_t *tags, const char *tag);
 
 bool rut_util_intersect_mesh(rut_mesh_t *mesh,
                              float ray_origin[3],

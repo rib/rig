@@ -39,7 +39,7 @@
 #include "cogl-snippet.h"
 
 typedef struct {
-    c_list_t *entries;
+    c_llist_t *entries;
 } cg_pipeline_snippet_list_t;
 
 /* Arguments to pass to _cg_pipeline_snippet_generate_code() */

@@ -54,7 +54,7 @@
 typedef struct {
     bool enabled;
     c_hash_table_t *hash;
-    c_list_t *owners;
+    c_llist_t *owners;
     int backtrace_level;
 } rut_refcount_debug_state_t;
 
@@ -506,7 +506,7 @@ destroy_tls_state_cb(void *tls_data)
             data.address_table = NULL;
 
             c_hash_table_foreach(state->hash, dump_hash_object_cb, &data);
-            c_list_foreach(state->owners, (c_iter_func_t)dump_object_cb, &data);
+            c_llist_foreach(state->owners, (c_iter_func_t)dump_object_cb, &data);
 
             if (data.address_table)
                 c_hash_table_destroy(data.address_table);
@@ -527,8 +527,8 @@ destroy_tls_state_cb(void *tls_data)
         c_free(out_name);
     }
 
-    c_list_foreach(state->owners, (c_iter_func_t)object_data_unref, NULL);
-    c_list_free(state->owners);
+    c_llist_foreach(state->owners, (c_iter_func_t)object_data_unref, NULL);
+    c_llist_free(state->owners);
 
     c_hash_table_destroy(state->hash);
     c_free(state);
@@ -597,7 +597,7 @@ _rut_refcount_debug_claim(void *object, void *owner)
             c_warning("Reference claimed by object that does not exist");
 
         if (owner_data->n_claims == 0) {
-            state->owners = c_list_prepend(state->owners, owner_data);
+            state->owners = c_llist_prepend(state->owners, owner_data);
             object_data_ref(owner_data);
             owner_data->n_claims++;
         }
@@ -649,7 +649,7 @@ _rut_refcount_debug_release(void *object, void *owner)
             if (owner_data) {
                 owner_data->n_claims--;
                 if (owner_data->n_claims == 0) {
-                    state->owners = c_list_remove(state->owners, owner_data);
+                    state->owners = c_llist_remove(state->owners, owner_data);
                     object_data_unref(owner_data);
                 }
             } else

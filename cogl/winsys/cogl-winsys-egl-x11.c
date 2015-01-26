@@ -74,7 +74,7 @@ typedef struct _cg_texture_pixmap_egl_t {
 static cg_onscreen_t *
 find_onscreen_for_xid(cg_device_t *dev, uint32_t xid)
 {
-    c_list_t *l;
+    c_llist_t *l;
 
     for (l = dev->framebuffers; l; l = l->next) {
         cg_framebuffer_t *framebuffer = l->data;
@@ -121,7 +121,7 @@ flush_pending_resize_notifications_idle(void *user_data)
     _cg_closure_disconnect(egl_renderer->resize_notify_idle);
     egl_renderer->resize_notify_idle = NULL;
 
-    c_list_foreach(dev->framebuffers, flush_pending_resize_notifications_cb,
+    c_llist_foreach(dev->framebuffers, flush_pending_resize_notifications_cb,
                    NULL);
 }
 

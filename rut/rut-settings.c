@@ -57,17 +57,17 @@ typedef struct _settings_changed_callback_state_t {
 } settings_changed_callback_state_t;
 
 struct _rut_settings_t {
-    c_list_t *changed_callbacks;
+    c_llist_t *changed_callbacks;
 };
 
 void
 rut_settings_destroy(rut_settings_t *settings)
 {
-    c_list_t *l;
+    c_llist_t *l;
 
     for (l = settings->changed_callbacks; l; l = l->next)
         c_slice_free(settings_changed_callback_state_t, l->data);
-    c_list_free(settings->changed_callbacks);
+    c_llist_free(settings->changed_callbacks);
 }
 
 rut_settings_t *
@@ -82,7 +82,7 @@ rut_settings_add_changed_callback(rut_settings_t *settings,
                                   c_destroy_func_t destroy_notify,
                                   void *user_data)
 {
-    c_list_t *l;
+    c_llist_t *l;
     settings_changed_callback_state_t *state;
 
     for (l = settings->changed_callbacks; l; l = l->next) {
@@ -101,21 +101,21 @@ rut_settings_add_changed_callback(rut_settings_t *settings,
     state->user_data = user_data;
 
     settings->changed_callbacks =
-        c_list_prepend(settings->changed_callbacks, state);
+        c_llist_prepend(settings->changed_callbacks, state);
 }
 
 void
 rut_settings_remove_changed_callback(rut_settings_t *settings,
                                      rut_settings_changed_callback_t callback)
 {
-    c_list_t *l;
+    c_llist_t *l;
 
     for (l = settings->changed_callbacks; l; l = l->next) {
         settings_changed_callback_state_t *state = l->data;
 
         if (state->callback == callback) {
             settings->changed_callbacks =
-                c_list_delete_link(settings->changed_callbacks, l);
+                c_llist_delete_link(settings->changed_callbacks, l);
             c_slice_free(settings_changed_callback_state_t, state);
             return;
         }

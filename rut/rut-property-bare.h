@@ -240,7 +240,7 @@ typedef struct _rut_property_binding_t {
 
 struct _rut_property_t {
     const rut_property_spec_t *spec;
-    c_slist_t *dependants;
+    c_sllist_t *dependants;
     rut_property_binding_t *binding; /* Maybe make this a list of bindings? */
     void *object;
 

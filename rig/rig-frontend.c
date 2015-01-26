@@ -307,7 +307,7 @@ handle_simulator_test_response (const Rig__TestResult *result,
 #endif
 
 typedef struct _load_state_t {
-    c_list_t *required_assets;
+    c_llist_t *required_assets;
 } load_state_t;
 
 bool

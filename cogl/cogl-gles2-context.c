@@ -120,13 +120,13 @@ static void
 detach_shader(cg_gles2_program_data_t *program_data,
               cg_gles2_shader_data_t *shader_data)
 {
-    c_list_t *l;
+    c_llist_t *l;
 
     for (l = program_data->attached_shaders; l; l = l->next) {
         if (l->data == shader_data) {
             shader_data_unref(program_data->context, shader_data);
             program_data->attached_shaders =
-                c_list_delete_link(program_data->attached_shaders, l);
+                c_llist_delete_link(program_data->attached_shaders, l);
             break;
         }
     }
@@ -746,10 +746,10 @@ gl_attach_shader_wrapper(GLuint program, GLuint shader)
         (shader_data = c_hash_table_lookup(gles2_ctx->shader_map,
                                            C_INT_TO_POINTER(shader))) &&
         /* Ignore attempts to attach a shader that is already attached */
-        c_list_find(program_data->attached_shaders, shader_data) == NULL) {
+        c_llist_find(program_data->attached_shaders, shader_data) == NULL) {
         shader_data->ref_count++;
         program_data->attached_shaders =
-            c_list_prepend(program_data->attached_shaders, shader_data);
+            c_llist_prepend(program_data->attached_shaders, shader_data);
     }
 
     gles2_ctx->dev->glAttachShader(program, shader);
@@ -1352,7 +1352,7 @@ _cg_gles2_context_free(cg_gles2_context_t *gles2_context)
 {
     cg_device_t *dev = gles2_context->dev;
     const cg_winsys_vtable_t *winsys;
-    c_list_t *objects, *l;
+    c_llist_t *objects, *l;
 
     if (gles2_context->current_program)
         program_data_unref(gles2_context->current_program);
@@ -1365,15 +1365,15 @@ _cg_gles2_context_free(cg_gles2_context_t *gles2_context)
     objects = c_hash_table_get_values(gles2_context->program_map);
     for (l = objects; l; l = l->next)
         force_delete_program_object(gles2_context, l->data);
-    c_list_free(objects);
+    c_llist_free(objects);
     objects = c_hash_table_get_values(gles2_context->shader_map);
     for (l = objects; l; l = l->next)
         force_delete_shader_object(gles2_context, l->data);
-    c_list_free(objects);
+    c_llist_free(objects);
     objects = c_hash_table_get_values(gles2_context->texture_object_map);
     for (l = objects; l; l = l->next)
         force_delete_texture_object(gles2_context, l->data);
-    c_list_free(objects);
+    c_llist_free(objects);
 
     /* All of the program and shader objects should now be destroyed */
     if (c_hash_table_size(gles2_context->program_map) > 0)

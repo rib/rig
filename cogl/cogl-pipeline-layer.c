@@ -491,15 +491,15 @@ unsigned long
 _cg_pipeline_layer_compare_differences(cg_pipeline_layer_t *layer0,
                                        cg_pipeline_layer_t *layer1)
 {
-    c_slist_t *head0 = NULL;
-    c_slist_t *head1 = NULL;
+    c_sllist_t *head0 = NULL;
+    c_sllist_t *head1 = NULL;
     cg_pipeline_layer_t *node0;
     cg_pipeline_layer_t *node1;
     int len0 = 0;
     int len1 = 0;
     int count;
-    c_slist_t *common_ancestor0;
-    c_slist_t *common_ancestor1;
+    c_sllist_t *common_ancestor0;
+    c_sllist_t *common_ancestor1;
     unsigned long layers_difference = 0;
 
     /* Algorithm:
@@ -516,14 +516,14 @@ _cg_pipeline_layer_compare_differences(cg_pipeline_layer_t *layer0,
      */
 
     for (node0 = layer0; node0; node0 = _cg_pipeline_layer_get_parent(node0)) {
-        c_slist_t *link = alloca(sizeof(c_slist_t));
+        c_sllist_t *link = alloca(sizeof(c_sllist_t));
         link->next = head0;
         link->data = node0;
         head0 = link;
         len0++;
     }
     for (node1 = layer1; node1; node1 = _cg_pipeline_layer_get_parent(node1)) {
-        c_slist_t *link = alloca(sizeof(c_slist_t));
+        c_sllist_t *link = alloca(sizeof(c_sllist_t));
         link->next = head1;
         link->data = node1;
         head1 = link;

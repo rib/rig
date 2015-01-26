@@ -58,7 +58,7 @@ typedef enum _rut_select_action_t {
 typedef struct _rig_entites_selection_t {
     rut_object_base_t _base;
     rig_engine_t *engine;
-    c_list_t *objects;
+    c_llist_t *objects;
     rut_list_t selection_events_cb_list;
 } rig_objects_selection_t;
 
@@ -130,7 +130,7 @@ struct _rig_engine_t {
 /* XXX: Move to rig_editor_t */
 #ifdef RIG_EDITOR_ENABLED
     rut_text_t *search_text;
-    c_list_t *required_search_tags;
+    c_llist_t *required_search_tags;
 
     rut_list_t tool_changed_cb_list;
 
@@ -149,7 +149,7 @@ struct _rig_engine_t {
     rut_object_t *renderer;
 
     /* XXX: Move to rig_editor_t */
-    c_list_t *undo_journal_stack;
+    c_llist_t *undo_journal_stack;
 #ifdef RIG_EDITOR_ENABLED
     rig_undo_journal_t *undo_journal;
 #endif
@@ -198,7 +198,7 @@ struct _rig_engine_t {
     rut_bin_t *inspector_bin;
     rut_box_layout_t *inspector_box_layout;
     rut_object_t *inspector;
-    c_list_t *all_inspectors;
+    c_llist_t *all_inspectors;
 
 #ifdef RIG_EDITOR_ENABLED
     /* XXX: Move to rig_editor_t */
@@ -252,7 +252,7 @@ struct _rig_engine_t {
 #endif
 
     /* TODO: move to rig_editor_t */
-    c_list_t *slave_addresses;
+    c_llist_t *slave_addresses;
 
     rig_ui_t *edit_mode_ui;
     rig_ui_t *play_mode_ui;

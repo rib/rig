@@ -80,19 +80,19 @@ typedef struct _rut_rectangle_cmd_t {
 
 typedef struct _rut_display_list_t {
     /* PRIVATE */
-    c_list_t *head;
-    c_list_t *tail;
+    c_llist_t *head;
+    c_llist_t *tail;
 } rut_display_list_t;
 
 void rut_display_list_unsplice(rut_display_list_t *list);
 
-void rut_display_list_splice(c_list_t *after, rut_display_list_t *sub_list);
+void rut_display_list_splice(c_llist_t *after, rut_display_list_t *sub_list);
 
 void rut_display_list_append(rut_display_list_t *list, void *data);
 
-c_list_t *rut_display_list_insert_before(c_list_t *sibling, void *data);
+c_llist_t *rut_display_list_insert_before(c_llist_t *sibling, void *data);
 
-void rut_display_list_delete_link(c_list_t *link);
+void rut_display_list_delete_link(c_llist_t *link);
 
 void rut_display_list_init(rut_display_list_t *list);
 

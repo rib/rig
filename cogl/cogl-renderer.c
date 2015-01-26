@@ -223,9 +223,9 @@ _cg_renderer_free(cg_renderer_t *renderer)
         c_module_close(renderer->libgl_module);
 #endif
 
-    c_slist_foreach(renderer->event_filters,
+    c_sllist_foreach(renderer->event_filters,
                     (c_iter_func_t)native_filter_closure_free, NULL);
-    c_slist_free(renderer->event_filters);
+    c_sllist_free(renderer->event_filters);
 
     c_array_free(renderer->poll_fds, true);
 
@@ -411,7 +411,7 @@ driver_id_to_name(cg_driver_t id)
 }
 
 typedef struct _satisfy_constraints_state_t {
-    c_list_t *constraints;
+    c_llist_t *constraints;
     const cg_driver_description_t *driver_description;
 } satisfy_constraints_state_t;
 
@@ -420,7 +420,7 @@ satisfy_constraints(cg_driver_description_t *description,
                     void *user_data)
 {
     satisfy_constraints_state_t *state = user_data;
-    c_list_t *l;
+    c_llist_t *l;
 
     for (l = state->constraints; l; l = l->next) {
         cg_renderer_constraint_t constraint = C_POINTER_TO_UINT(l->data);
@@ -565,7 +565,7 @@ cg_renderer_connect(cg_renderer_t *renderer, cg_error_t **error)
     for (i = 0; i < C_N_ELEMENTS(_cg_winsys_vtable_getters); i++) {
         const cg_winsys_vtable_t *winsys = _cg_winsys_vtable_getters[i]();
         cg_error_t *tmp_error = NULL;
-        c_list_t *l;
+        c_llist_t *l;
         bool skip_due_to_constraints = false;
 
         if (renderer->winsys_id_override != CG_WINSYS_ID_ANY) {
@@ -635,7 +635,7 @@ cg_filter_return_t
 _cg_renderer_handle_native_event(cg_renderer_t *renderer,
                                  void *event)
 {
-    c_slist_t *l, *next;
+    c_sllist_t *l, *next;
 
     /* Pass the event on to all of the registered filters in turn */
     for (l = renderer->event_filters; l; l = next) {
@@ -666,7 +666,7 @@ _cg_renderer_add_native_filter(cg_renderer_t *renderer,
     closure->func = func;
     closure->data = data;
 
-    renderer->event_filters = c_slist_prepend(renderer->event_filters, closure);
+    renderer->event_filters = c_sllist_prepend(renderer->event_filters, closure);
 }
 
 void
@@ -674,7 +674,7 @@ _cg_renderer_remove_native_filter(cg_renderer_t *renderer,
                                   cg_native_filter_func_t func,
                                   void *data)
 {
-    c_slist_t *l, *prev = NULL;
+    c_sllist_t *l, *prev = NULL;
 
     for (l = renderer->event_filters; l; prev = l, l = l->next) {
         cg_native_filter_closure_t *closure = l->data;
@@ -682,10 +682,10 @@ _cg_renderer_remove_native_filter(cg_renderer_t *renderer,
         if (closure->func == func && closure->data == data) {
             native_filter_closure_free(closure);
             if (prev)
-                prev->next = c_slist_delete_link(prev->next, l);
+                prev->next = c_sllist_delete_link(prev->next, l);
             else
                 renderer->event_filters =
-                    c_slist_delete_link(renderer->event_filters, l);
+                    c_sllist_delete_link(renderer->event_filters, l);
             break;
         }
     }
@@ -739,7 +739,7 @@ cg_renderer_add_constraint(cg_renderer_t *renderer,
 {
     c_return_if_fail(!renderer->connected);
     renderer->constraints =
-        c_list_prepend(renderer->constraints, C_UINT_TO_POINTER(constraint));
+        c_llist_prepend(renderer->constraints, C_UINT_TO_POINTER(constraint));
 }
 
 void
@@ -748,7 +748,7 @@ cg_renderer_remove_constraint(cg_renderer_t *renderer,
 {
     c_return_if_fail(!renderer->connected);
     renderer->constraints =
-        c_list_remove(renderer->constraints, C_UINT_TO_POINTER(constraint));
+        c_llist_remove(renderer->constraints, C_UINT_TO_POINTER(constraint));
 }
 
 void
@@ -771,7 +771,7 @@ cg_renderer_foreach_output(cg_renderer_t *renderer,
                            cg_output_callback_t callback,
                            void *user_data)
 {
-    c_list_t *l;
+    c_llist_t *l;
 
     c_return_if_fail(renderer->connected);
     c_return_if_fail(callback != NULL);

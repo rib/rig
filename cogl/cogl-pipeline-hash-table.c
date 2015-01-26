@@ -139,7 +139,7 @@ static void
 prune_old_pipelines(cg_pipeline_hash_table_t *hash)
 {
     c_queue_t entries;
-    c_list_t *l;
+    c_llist_t *l;
     int i;
 
     /* Collect all of the prunable entries into a c_queue_t */
@@ -147,7 +147,7 @@ prune_old_pipelines(cg_pipeline_hash_table_t *hash)
     c_hash_table_foreach(hash->table, collect_prunable_entries_cb, &entries);
 
     /* Sort the entries by increasing order of age */
-    entries.head = c_list_sort(entries.head, compare_pipeline_age_cb);
+    entries.head = c_llist_sort(entries.head, compare_pipeline_age_cb);
 
     /* The +1 is to include the pipeline that we're about to add */
     hash->expected_min_size =
@@ -163,7 +163,7 @@ prune_old_pipelines(cg_pipeline_hash_table_t *hash)
         c_hash_table_remove(hash->table, entry);
     }
 
-    c_list_free(entries.head);
+    c_llist_free(entries.head);
 }
 
 cg_pipeline_cache_entry_t *

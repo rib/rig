@@ -180,7 +180,7 @@ struct _cg_texture_t {
     cg_object_t _parent;
     cg_device_t *dev;
     cg_texture_loader_t *loader;
-    c_list_t *framebuffers;
+    c_llist_t *framebuffers;
     int max_level;
     int width;
     int height;
@@ -295,7 +295,7 @@ bool _cg_texture_is_foreign(cg_texture_t *texture);
 void _cg_texture_associate_framebuffer(cg_texture_t *texture,
                                        cg_framebuffer_t *framebuffer);
 
-const c_list_t *_cg_texture_get_associated_framebuffers(cg_texture_t *texture);
+const c_llist_t *_cg_texture_get_associated_framebuffers(cg_texture_t *texture);
 
 void _cg_texture_flush_batched_rendering(cg_texture_t *texture);
 

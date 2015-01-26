@@ -47,7 +47,7 @@
 void
 _cg_pipeline_snippet_generate_code(const cg_pipeline_snippet_data_t *data)
 {
-    c_list_t *first_snippet, *l;
+    c_llist_t *first_snippet, *l;
     cg_snippet_t *snippet;
     int snippet_num = 0;
     int n_snippets = 0;
@@ -191,7 +191,7 @@ _cg_pipeline_snippet_generate_declarations(c_string_t *declarations_buf,
                                            cg_snippet_hook_t hook,
                                            cg_pipeline_snippet_list_t *snippets)
 {
-    c_list_t *l;
+    c_llist_t *l;
 
     for (l = snippets->entries; l; l = l->next) {
         cg_snippet_t *snippet = l->data;
@@ -208,13 +208,13 @@ _cg_pipeline_snippet_generate_declarations(c_string_t *declarations_buf,
 void
 _cg_pipeline_snippet_list_free(cg_pipeline_snippet_list_t *list)
 {
-    c_list_t *l, *tmp;
+    c_llist_t *l, *tmp;
 
     for (l = list->entries; l; l = tmp) {
         tmp = l->next;
 
         cg_object_unref(l->data);
-        c_list_free_1(l);
+        c_llist_free_1(l);
     }
 }
 
@@ -222,7 +222,7 @@ void
 _cg_pipeline_snippet_list_add(cg_pipeline_snippet_list_t *list,
                               cg_snippet_t *snippet)
 {
-    list->entries = c_list_append(list->entries, cg_object_ref(snippet));
+    list->entries = c_llist_append(list->entries, cg_object_ref(snippet));
 
     _cg_snippet_make_immutable(snippet);
 }
@@ -232,7 +232,7 @@ _cg_pipeline_snippet_list_copy(cg_pipeline_snippet_list_t *dst,
                                const cg_pipeline_snippet_list_t *src)
 {
     c_queue_t queue = C_QUEUE_INIT;
-    const c_list_t *l;
+    const c_llist_t *l;
 
     for (l = src->entries; l; l = l->next)
         c_queue_push_tail(&queue, cg_object_ref(l->data));
@@ -244,7 +244,7 @@ void
 _cg_pipeline_snippet_list_hash(cg_pipeline_snippet_list_t *list,
                                unsigned int *hash)
 {
-    c_list_t *l;
+    c_llist_t *l;
 
     for (l = list->entries; l; l = l->next) {
         cg_snippet_t *snippet = l->data;
@@ -258,7 +258,7 @@ bool
 _cg_pipeline_snippet_list_equal(cg_pipeline_snippet_list_t *list0,
                                 cg_pipeline_snippet_list_t *list1)
 {
-    c_list_t *l0, *l1;
+    c_llist_t *l0, *l1;
 
     for (l0 = list0->entries, l1 = list1->entries; l0 && l1;
          l0 = l0->next, l1 = l1->next)

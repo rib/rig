@@ -120,7 +120,7 @@ struct _rig_controller_object_view_t {
 
     rut_property_t *label_property;
 
-    c_list_t *properties;
+    c_llist_t *properties;
 
     rig_controller_property_view_t *selected_property;
 
@@ -181,7 +181,7 @@ typedef struct _node_group_t {
     rig_nodes_selection_t *selection;
     const rut_property_spec_t *prop_spec;
     rig_path_t *path;
-    c_list_t *nodes;
+    c_llist_t *nodes;
 } node_group_t;
 
 typedef struct _node_mapping_t {
@@ -193,7 +193,7 @@ struct _rig_nodes_selection_t {
     rut_object_base_t _base;
 
     rig_controller_view_t *view;
-    c_list_t *node_groups;
+    c_llist_t *node_groups;
 
     /* Nodes aren't directly connected to markers since Nodes
      * aren't expected to have any associated UI at runtime
@@ -241,7 +241,7 @@ struct _rig_controller_view_t {
     int total_width;
     int total_height;
 
-    c_list_t *object_views;
+    c_llist_t *object_views;
 
     rig_nodes_selection_t *nodes_selection;
 
@@ -316,12 +316,12 @@ _rig_node_marker_init_type(void)
 static void
 destroy_node_group(node_group_t *node_group)
 {
-    c_list_t *l;
+    c_llist_t *l;
 
     if (node_group->nodes) {
         for (l = node_group->nodes; l; l = l->next)
             rig_node_free(l->data);
-        c_list_free(node_group->nodes);
+        c_llist_free(node_group->nodes);
     }
 
     if (node_group->path)
@@ -355,7 +355,7 @@ unselect_node(rig_nodes_selection_t *selection, rig_node_t *node)
 {
     node_mapping_t *mapping = c_hash_table_lookup(selection->node_map, node);
     node_group_t *node_group;
-    c_list_t *l;
+    c_llist_t *l;
 
     if (!mapping)
         return false;
@@ -364,11 +364,11 @@ unselect_node(rig_nodes_selection_t *selection, rig_node_t *node)
 
     for (l = node_group->nodes; l; l = l->next) {
         if (l->data == node) {
-            node_group->nodes = c_list_remove_link(node_group->nodes, l);
+            node_group->nodes = c_llist_remove_link(node_group->nodes, l);
 
             if (node_group->nodes == NULL) {
                 selection->node_groups =
-                    c_list_remove(selection->node_groups, node_group);
+                    c_llist_remove(selection->node_groups, node_group);
                 destroy_node_group(node_group);
             }
 
@@ -387,11 +387,11 @@ static void
 _rig_nodes_selection_cancel(rut_object_t *object)
 {
     rig_nodes_selection_t *selection = object;
-    c_list_t *l, *next;
+    c_llist_t *l, *next;
 
     for (l = selection->node_groups; l; l = next) {
         node_group_t *node_group = l->data;
-        c_list_t *l2, *next2;
+        c_llist_t *l2, *next2;
 
         next = l->next;
 
@@ -408,7 +408,7 @@ static void
 select_marker_node(rig_nodes_selection_t *selection,
                    rig_node_marker_t *marker)
 {
-    c_list_t *l;
+    c_llist_t *l;
     node_group_t *node_group;
     node_mapping_t *mapping;
 
@@ -416,7 +416,7 @@ select_marker_node(rig_nodes_selection_t *selection,
         node_group = l->data;
 
         if (node_group->path == marker->path) {
-            node_group->nodes = c_list_prepend(node_group->nodes, marker->node);
+            node_group->nodes = c_llist_prepend(node_group->nodes, marker->node);
             goto grouped;
         }
     }
@@ -425,9 +425,9 @@ select_marker_node(rig_nodes_selection_t *selection,
     node_group->selection = selection;
     node_group->path = rut_object_ref(marker->path);
     node_group->nodes = NULL;
-    node_group->nodes = c_list_prepend(NULL, marker->node);
+    node_group->nodes = c_llist_prepend(NULL, marker->node);
 
-    selection->node_groups = c_list_prepend(selection->node_groups, node_group);
+    selection->node_groups = c_llist_prepend(selection->node_groups, node_group);
 
 grouped:
 
@@ -495,11 +495,11 @@ _rig_nodes_selection_foreach_node(rig_nodes_selection_t *selection,
                                   rig_node_selection_callback_t callback,
                                   void *user_data)
 {
-    c_list_t *l, *next;
+    c_llist_t *l, *next;
 
     for (l = selection->node_groups; l; l = next) {
         node_group_t *node_group = l->data;
-        c_list_t *l2, *next2;
+        c_llist_t *l2, *next2;
 
         next = l->next;
 
@@ -916,12 +916,12 @@ _rig_nodes_selection_copy(rut_object_t *object)
 {
     rig_nodes_selection_t *selection = object;
     rig_nodes_selection_t *copy = _rig_nodes_selection_new(selection->view);
-    c_list_t *l;
+    c_llist_t *l;
 
     for (l = selection->node_groups; l; l = l->next) {
         node_group_t *node_group = l->data;
         node_group_t *new_node_group = c_slice_new0(node_group_t);
-        c_list_t *l2;
+        c_llist_t *l2;
 
         new_node_group->prop_spec = node_group->prop_spec;
 
@@ -930,7 +930,7 @@ _rig_nodes_selection_copy(rut_object_t *object)
         for (l2 = node_group->nodes; l2; l2 = l2->next) {
             rig_node_t *new_node = rig_node_copy(l2->data);
             new_node_group->nodes =
-                c_list_prepend(new_node_group->nodes, new_node);
+                c_llist_prepend(new_node_group->nodes, new_node);
         }
     }
 
@@ -956,8 +956,8 @@ _rig_nodes_selection_delete(rut_object_t *object)
      */
 
     if (selection == view->nodes_selection) {
-        c_list_t *l, *next;
-        int len = c_list_length(selection->node_groups);
+        c_llist_t *l, *next;
+        int len = c_llist_length(selection->node_groups);
         rig_controller_t *controller = view->controller;
         rig_engine_t *engine = view->engine;
         rig_undo_journal_t *subjournal;
@@ -967,8 +967,8 @@ _rig_nodes_selection_delete(rut_object_t *object)
 
         for (l = selection->node_groups; l; l = next) {
             node_group_t *node_group = l->data;
-            int n_nodes = c_list_length(node_group->nodes);
-            c_list_t *l2, *next2;
+            int n_nodes = c_llist_length(node_group->nodes);
+            c_llist_t *l2, *next2;
 
             next = l->next;
 
@@ -991,7 +991,7 @@ _rig_nodes_selection_delete(rut_object_t *object)
             /* XXX: make sure that
              * rig_undo_journal_delete_path_node () doesn't change
              * the selection. */
-            c_warn_if_fail(n_nodes == c_list_length(node_group->nodes));
+            c_warn_if_fail(n_nodes == c_llist_length(node_group->nodes));
         }
 
         subjournal = rig_editor_pop_undo_subjournal(engine);
@@ -1003,10 +1003,10 @@ _rig_nodes_selection_delete(rut_object_t *object)
         /* XXX: make sure that
          * rig_undo_journal_delete_path_node () doesn't change
          * the selection. */
-        c_warn_if_fail(len == c_list_length(selection->node_groups));
+        c_warn_if_fail(len == c_llist_length(selection->node_groups));
     }
 
-    c_list_free_full(selection->node_groups,
+    c_llist_free_full(selection->node_groups,
                      (c_destroy_func_t)destroy_node_group);
     selection->node_groups = NULL;
 }
@@ -1634,7 +1634,7 @@ float
 calculate_column_width(rig_controller_view_t *view, int column_index)
 {
     float column_width = 0;
-    c_list_t *l, *l2;
+    c_llist_t *l, *l2;
 
     for (l = view->object_views; l; l = l->next) {
         rig_controller_object_view_t *object_view = l->data;
@@ -2181,9 +2181,9 @@ static void
 _rig_controller_object_view_sort_properties(
     rig_controller_object_view_t *object_view)
 {
-    c_list_t *l;
+    c_llist_t *l;
 
-    object_view->properties = c_list_sort(object_view->properties,
+    object_view->properties = c_llist_sort(object_view->properties,
                                           (GCompareFunc)compare_properties_cb);
 
     for (l = object_view->properties; l; l = l->next)
@@ -2199,7 +2199,7 @@ _rig_controller_object_view_add_property(
     rig_controller_property_view_t *prop_view)
 {
     object_view->properties =
-        c_list_prepend(object_view->properties, prop_view);
+        c_llist_prepend(object_view->properties, prop_view);
 
     rut_box_layout_add(object_view->properties_vbox, false, prop_view);
 
@@ -2210,7 +2210,7 @@ static void
 _rig_controller_object_view_free(void *object)
 {
     rig_controller_object_view_t *object_view = object;
-    c_list_t *l, *next;
+    c_llist_t *l, *next;
 
     for (l = object_view->properties; l; l = next) {
         rig_controller_property_view_t *prop_view = l->data;
@@ -2219,7 +2219,7 @@ _rig_controller_object_view_free(void *object)
         rut_box_layout_remove(object_view->properties_vbox, prop_view);
         rut_object_unref(prop_view);
     }
-    c_list_free(object_view->properties);
+    c_llist_free(object_view->properties);
 
     rut_graphable_destroy(object_view);
 
@@ -2297,10 +2297,10 @@ compare_objects_cb(rig_controller_object_view_t *object_a,
 static void
 _rig_controller_view_sort_objects(rig_controller_view_t *view)
 {
-    c_list_t *l;
+    c_llist_t *l;
 
     view->object_views =
-        c_list_sort(view->object_views, (GCompareFunc)compare_objects_cb);
+        c_llist_sort(view->object_views, (GCompareFunc)compare_objects_cb);
 
     for (l = view->object_views; l; l = l->next)
         rut_box_layout_remove(view->properties_vbox, l->data);
@@ -2427,7 +2427,7 @@ rig_controller_view_clear_selected_nodes (rig_controller_view_t *view)
 static void
 rig_controller_view_clear_object_views(rig_controller_view_t *view)
 {
-    c_list_t *l, *next;
+    c_llist_t *l, *next;
 
     for (l = view->object_views; l; l = next) {
         rig_controller_object_view_t *object_view = l->data;
@@ -2437,7 +2437,7 @@ rig_controller_view_clear_object_views(rig_controller_view_t *view)
         rut_box_layout_remove(view->properties_vbox, object_view);
     }
 
-    c_list_free(view->object_views);
+    c_llist_free(view->object_views);
     view->object_views = NULL;
 }
 
@@ -3036,7 +3036,7 @@ rig_controller_view_property_added(rig_controller_view_t *view,
     rig_controller_object_view_t *object_view;
     rig_controller_property_view_t *prop_view;
     rut_object_t *object;
-    c_list_t *l;
+    c_llist_t *l;
 
     object = property->object;
 
@@ -3058,7 +3058,7 @@ rig_controller_view_property_added(rig_controller_view_t *view,
     }
 
     object_view = rig_controller_object_view_new(view, object);
-    view->object_views = c_list_prepend(view->object_views, object_view);
+    view->object_views = c_llist_prepend(view->object_views, object_view);
 
     rut_box_layout_add(view->properties_vbox, false, object_view);
 
@@ -3076,7 +3076,7 @@ rig_controller_view_find_property(rig_controller_view_t *view,
                                   rut_property_t *property)
 {
     rut_object_t *object = property->object;
-    c_list_t *l, *l2;
+    c_llist_t *l, *l2;
 
     /* If the property belongs to a component then it is grouped by
      * component's entity instead */
@@ -3116,14 +3116,14 @@ rig_controller_view_property_removed(rig_controller_view_t *view,
 
     object_view = prop_view->object;
 
-    object_view->properties = c_list_remove(object_view->properties, prop_view);
+    object_view->properties = c_llist_remove(object_view->properties, prop_view);
     rut_object_unref(prop_view);
     rut_box_layout_remove(object_view->properties_vbox, prop_view);
 
     /* If that was the last property on the object then we'll also
      * remove the object */
     if (!object_view->properties) {
-        view->object_views = c_list_remove(view->object_views, object_view);
+        view->object_views = c_llist_remove(view->object_views, object_view);
         rut_object_unref(object_view);
         rut_box_layout_remove(view->properties_vbox, object_view);
     }
@@ -3876,7 +3876,7 @@ controller_select_cb(rut_property_t *value_property,
     rig_engine_t *engine = view->engine;
     int value = rut_property_get_integer(value_property);
     rig_controller_t *controller =
-        c_list_nth_data(engine->edit_mode_ui->controllers, value);
+        c_llist_nth_data(engine->edit_mode_ui->controllers, value);
     rig_controller_view_set_controller(view, controller);
 }
 
@@ -3892,7 +3892,7 @@ on_controller_add_button_click_cb(rut_icon_button_t *button,
 
     for (i = 0; true; i++) {
         bool clash = false;
-        c_list_t *l;
+        c_llist_t *l;
 
         name = c_strdup_printf("Controller %i", i);
 
@@ -4104,10 +4104,10 @@ rig_controller_view_update_controller_list(rig_controller_view_t *view)
     rig_engine_t *engine = view->engine;
     int n_controllers;
     rut_drop_down_value_t *controller_values;
-    c_list_t *l;
+    c_llist_t *l;
     int i;
 
-    n_controllers = c_list_length(engine->edit_mode_ui->controllers);
+    n_controllers = c_llist_length(engine->edit_mode_ui->controllers);
     controller_values = c_malloc(sizeof(rut_drop_down_value_t) * n_controllers);
 
     for (l = engine->edit_mode_ui->controllers, i = 0; l; l = l->next, i++) {
@@ -4127,7 +4127,7 @@ _rig_controller_view_foreach_node(rig_controller_view_t *view,
                                   rig_controller_view_node_callback_t callback,
                                   void *user_data)
 {
-    c_list_t *l, *l2;
+    c_llist_t *l, *l2;
 
     for (l = view->object_views; l; l = l->next) {
         rig_controller_object_view_t *object_view = l->data;

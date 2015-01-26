@@ -75,7 +75,7 @@ typedef struct _rut_camera_props_t {
     rut_graphable_props_t graphable;
 
     cg_matrix_t input_transform;
-    c_list_t *input_regions;
+    c_llist_t *input_regions;
 
     unsigned int orthographic : 1;
     unsigned int in_frame : 1;
@@ -144,7 +144,7 @@ typedef struct _rut_camera_vtable_t {
     void (*remove_input_region)(rut_object_t *camera,
                                 rut_input_region_t *region);
 
-    c_list_t *(*get_input_regions)(rut_object_t *camera);
+    c_llist_t *(*get_input_regions)(rut_object_t *camera);
 
     bool (*transform_window_coordinate)(rut_object_t *camera,
                                         float *x,
@@ -249,7 +249,7 @@ void rut_camera_add_input_region(rut_object_t *camera,
 void rut_camera_remove_input_region(rut_object_t *camera,
                                     rut_input_region_t *region);
 
-c_list_t *rut_camera_get_input_regions(rut_object_t *object);
+c_llist_t *rut_camera_get_input_regions(rut_object_t *object);
 
 bool rut_camera_transform_window_coordinate(rut_object_t *camera,
                                             float *x,

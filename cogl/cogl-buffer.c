@@ -56,19 +56,19 @@
  * abstract class manually.
  */
 
-static c_slist_t *_cg_buffer_types;
+static c_sllist_t *_cg_buffer_types;
 
 void
 _cg_buffer_register_buffer_type(const cg_object_class_t *klass)
 {
-    _cg_buffer_types = c_slist_prepend(_cg_buffer_types, (void *)klass);
+    _cg_buffer_types = c_sllist_prepend(_cg_buffer_types, (void *)klass);
 }
 
 bool
 cg_is_buffer(void *object)
 {
     const cg_object_t *obj = object;
-    c_slist_t *l;
+    c_sllist_t *l;
 
     if (object == NULL)
         return false;

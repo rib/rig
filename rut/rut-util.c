@@ -420,9 +420,9 @@ rut_util_draw_jittered_primitive3f(cg_framebuffer_t *fb,
 }
 
 bool
-rut_util_find_tag(const c_list_t *tags, const char *tag)
+rut_util_find_tag(const c_llist_t *tags, const char *tag)
 {
-    const c_list_t *l;
+    const c_llist_t *l;
 
     for (l = tags; l; l = l->next) {
         if (strcmp(tag, l->data) == 0)

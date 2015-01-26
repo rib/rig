@@ -163,7 +163,7 @@ struct _cg_device_t {
     cg_texture_2d_t *default_gl_texture_2d_tex;
     cg_texture_3d_t *default_gl_texture_3d_tex;
 
-    c_list_t *framebuffers;
+    c_llist_t *framebuffers;
 
     /* Some simple caching, to minimize state changes... */
     cg_pipeline_t *current_pipeline;
@@ -262,7 +262,7 @@ struct _cg_device_t {
 #ifdef CG_HAS_XLIB_SUPPORT
     int damage_base;
     /* List of callback functions that will be given every Xlib event */
-    c_slist_t *event_filters;
+    c_sllist_t *event_filters;
     /* Current top of the XError trap state stack. The actual memory for
        these is expected to be allocated on the stack by the caller */
     cg_xlib_trap_state_t *trap_state;

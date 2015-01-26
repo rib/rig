@@ -174,7 +174,7 @@ update_selection_state(rig_rotation_tool_t *tool)
     rig_objects_selection_t *selection = tool->view->engine->objects_selection;
     rut_object_t *camera = tool->camera_component;
 
-    if (tool->active && c_list_length(selection->objects) == 1 &&
+    if (tool->active && c_llist_length(selection->objects) == 1 &&
         rut_object_get_type(selection->objects->data) == &rig_entity_type) {
         if (!tool->selected_entity)
             rut_camera_add_input_region(camera, tool->rotation_circle);

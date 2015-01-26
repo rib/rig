@@ -415,7 +415,7 @@ struct _rut_property_t
     /* This is the list of properties that depend on this property and
      * should be prompted for an update whenever this property changes.
      */
-    c_slist_t *dependants;
+    c_sllist_t *dependants;
 
     /* Callbacks typed according to the property::type for setting and
      * getting the property value. These may be NULL if direct access

@@ -54,7 +54,7 @@ struct _entity_state_t {
 
     rut_object_t *sizeable;
 
-    c_list_t *control_points;
+    c_llist_t *control_points;
 };
 
 typedef struct _grab_state_t {
@@ -176,7 +176,7 @@ create_dummy_control_points(entity_state_t *entity_state)
     rut_graphable_add_child(tool->tool_overlay, point->input_region);
     rut_object_unref(point->input_region);
     entity_state->control_points =
-        c_list_prepend(entity_state->control_points, point);
+        c_llist_prepend(entity_state->control_points, point);
 
     point = c_slice_new0(control_point_t);
     point->entity_state = entity_state;
@@ -197,7 +197,7 @@ create_dummy_control_points(entity_state_t *entity_state)
     rut_graphable_add_child(tool->tool_overlay, point->input_region);
     rut_object_unref(point->input_region);
     entity_state->control_points =
-        c_list_prepend(entity_state->control_points, point);
+        c_llist_prepend(entity_state->control_points, point);
 
     cg_object_unref(tex);
 }
@@ -229,7 +229,7 @@ create_box_control(entity_state_t *entity_state, float x, float y, float z)
     rut_graphable_add_child(tool->tool_overlay, point->input_region);
     rut_object_unref(point->input_region);
     entity_state->control_points =
-        c_list_prepend(entity_state->control_points, point);
+        c_llist_prepend(entity_state->control_points, point);
 
     cg_object_unref(tex);
 }
@@ -250,7 +250,7 @@ create_sizeable_control_points(entity_state_t *entity_state)
 static void
 entity_state_destroy(entity_state_t *entity_state)
 {
-    c_list_t *l;
+    c_llist_t *l;
 
     for (l = entity_state->control_points; l; l = l->next) {
         control_point_t *point = l->data;
@@ -291,7 +291,7 @@ objects_selection_event_cb(rig_objects_selection_t *selection,
 {
     rig_selection_tool_t *tool = user_data;
     entity_state_t *entity_state;
-    c_list_t *l;
+    c_llist_t *l;
 
     if (!tool->active && event == RIG_OBJECTS_SELECTION_ADD_EVENT)
         return;
@@ -317,7 +317,7 @@ objects_selection_event_cb(rig_objects_selection_t *selection,
         entity_state->control_points = NULL;
 
         tool->selected_entities =
-            c_list_prepend(tool->selected_entities, entity_state);
+            c_llist_prepend(tool->selected_entities, entity_state);
 
         entity_state->sizeable = find_sizeable_component(entity_state->entity);
         if (entity_state->sizeable)
@@ -332,7 +332,7 @@ objects_selection_event_cb(rig_objects_selection_t *selection,
         c_return_if_fail(entity_state != NULL);
 
         tool->selected_entities =
-            c_list_remove(tool->selected_entities, entity_state);
+            c_llist_remove(tool->selected_entities, entity_state);
         entity_state_destroy(entity_state);
         break;
     }
@@ -368,7 +368,7 @@ void
 rig_selection_tool_set_active(rig_selection_tool_t *tool, bool active)
 {
     rig_objects_selection_t *selection = tool->view->engine->objects_selection;
-    c_list_t *l;
+    c_llist_t *l;
 
     if (tool->active == active)
         return;
@@ -449,7 +449,7 @@ update_control_point_positions(rig_selection_tool_t *tool,
                                rut_object_t *paint_camera) /* 2d ui camera */
 {
     rut_object_t *camera = tool->camera_component;
-    c_list_t *l;
+    c_llist_t *l;
 
     for (l = tool->selected_entities; l; l = l->next) {
         entity_state_t *entity_state = l->data;
@@ -457,7 +457,7 @@ update_control_point_positions(rig_selection_tool_t *tool,
         const cg_matrix_t *projection;
         float screen_space[4], x, y;
         const float *viewport;
-        c_list_t *l2;
+        c_llist_t *l2;
 
         get_modelview_matrix(tool->camera, entity_state->entity, &transform);
 
@@ -541,7 +541,7 @@ rig_selection_tool_add_event_callback(
 void
 rig_selection_tool_destroy(rig_selection_tool_t *tool)
 {
-    c_list_t *l;
+    c_llist_t *l;
 
     rut_closure_list_disconnect_all(&tool->selection_event_cb_list);
 
@@ -549,7 +549,7 @@ rig_selection_tool_destroy(rig_selection_tool_t *tool)
 
     for (l = tool->selected_entities; l; l = l->next)
         entity_state_destroy(l->data);
-    c_list_free(tool->selected_entities);
+    c_llist_free(tool->selected_entities);
 
     c_slice_free(rig_selection_tool_t, tool);
 }

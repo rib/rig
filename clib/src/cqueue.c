@@ -52,7 +52,7 @@ void *
 c_queue_pop_head(c_queue_t *queue)
 {
     void *result;
-    c_list_t *old_head;
+    c_llist_t *old_head;
 
     c_return_val_if_fail(queue, NULL);
 
@@ -62,7 +62,7 @@ c_queue_pop_head(c_queue_t *queue)
     result = queue->head->data;
     old_head = queue->head;
     queue->head = old_head->next;
-    c_list_free_1(old_head);
+    c_llist_free_1(old_head);
 
     if (--queue->length)
         queue->head->prev = NULL;
@@ -83,7 +83,7 @@ void *
 c_queue_pop_tail(c_queue_t *queue)
 {
     void *result;
-    c_list_t *old_tail;
+    c_llist_t *old_tail;
 
     c_return_val_if_fail(queue, NULL);
 
@@ -100,7 +100,7 @@ c_queue_pop_tail(c_queue_t *queue)
         queue->head = NULL;
 
     queue->length--;
-    c_list_free_1(old_tail);
+    c_llist_free_1(old_tail);
 
     return result;
 }
@@ -117,7 +117,7 @@ c_queue_push_head(c_queue_t *queue, void *head)
 {
     c_return_if_fail(queue);
 
-    queue->head = c_list_prepend(queue->head, head);
+    queue->head = c_llist_prepend(queue->head, head);
 
     if (!queue->tail)
         queue->tail = queue->head;
@@ -130,7 +130,7 @@ c_queue_push_tail(c_queue_t *queue, void *data)
 {
     c_return_if_fail(queue);
 
-    queue->tail = c_list_append(queue->tail, data);
+    queue->tail = c_llist_append(queue->tail, data);
     if (queue->head == NULL)
         queue->head = queue->tail;
     else
@@ -149,7 +149,7 @@ c_queue_free(c_queue_t *queue)
 {
     c_return_if_fail(queue);
 
-    c_list_free(queue->head);
+    c_llist_free(queue->head);
     c_free(queue);
 }
 
@@ -159,13 +159,13 @@ c_queue_foreach(c_queue_t *queue, c_iter_func_t func, void *user_data)
     c_return_if_fail(queue);
     c_return_if_fail(func);
 
-    c_list_foreach(queue->head, func, user_data);
+    c_llist_foreach(queue->head, func, user_data);
 }
 
-c_list_t *
+c_llist_t *
 c_queue_find(c_queue_t *queue, const void *data)
 {
-    c_list_t *l;
+    c_llist_t *l;
 
     for (l = queue->head; l; l = l->next)
         if (l->data == data)
@@ -179,7 +179,7 @@ c_queue_clear(c_queue_t *queue)
 {
     c_return_if_fail(queue);
 
-    c_list_free(queue->head);
+    c_llist_free(queue->head);
     queue->length = 0;
     queue->head = NULL;
     queue->tail = NULL;

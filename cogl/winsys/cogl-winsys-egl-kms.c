@@ -83,8 +83,8 @@ typedef struct _cg_output_kms_t {
 } cg_output_kms_t;
 
 typedef struct _cg_display_kms_t {
-    c_list_t *outputs;
-    c_list_t *crtcs;
+    c_llist_t *outputs;
+    c_llist_t *crtcs;
 
     int width, height;
     bool pending_set_crtc;
@@ -159,7 +159,7 @@ flush_pending_swap_notify_idle(void *user_data)
     _cg_closure_disconnect(kms_renderer->swap_notify_idle);
     kms_renderer->swap_notify_idle = NULL;
 
-    c_list_foreach(dev->framebuffers, flush_pending_swap_notify_cb, NULL);
+    c_llist_foreach(dev->framebuffers, flush_pending_swap_notify_cb, NULL);
 }
 
 static void
@@ -502,7 +502,7 @@ setup_crtc_modes(cg_display_t *display, int fb_id)
     cg_display_kms_t *kms_display = egl_display->platform;
     cg_renderer_egl_t *egl_renderer = display->renderer->winsys;
     cg_renderer_kms_t *kms_renderer = egl_renderer->platform;
-    c_list_t *l;
+    c_llist_t *l;
 
     for (l = kms_display->crtcs; l; l = l->next) {
         cg_kms_crtc_t *crtc = l->data;
@@ -527,7 +527,7 @@ flip_all_crtcs(cg_display_t *display, cg_flip_kms_t *flip, int fb_id)
     cg_display_kms_t *kms_display = egl_display->platform;
     cg_renderer_egl_t *egl_renderer = display->renderer->winsys;
     cg_renderer_kms_t *kms_renderer = egl_renderer->platform;
-    c_list_t *l;
+    c_llist_t *l;
 
     for (l = kms_display->crtcs; l; l = l->next) {
         cg_kms_crtc_t *crtc = l->data;
@@ -600,7 +600,7 @@ _cg_winsys_egl_display_setup(cg_display_t *display,
                           NULL,
                           0, /* n excluded connectors */
                           error);
-    kms_display->outputs = c_list_append(kms_display->outputs, output0);
+    kms_display->outputs = c_llist_append(kms_display->outputs, output0);
     if (!output0)
         return false;
 
@@ -620,7 +620,7 @@ _cg_winsys_egl_display_setup(cg_display_t *display,
         if (!output1)
             return false;
 
-        kms_display->outputs = c_list_append(kms_display->outputs, output1);
+        kms_display->outputs = c_llist_append(kms_display->outputs, output1);
 
         if (!find_mirror_modes(output0->modes,
                                output0->n_modes,
@@ -647,7 +647,7 @@ _cg_winsys_egl_display_setup(cg_display_t *display,
     crtc0->connectors = c_new(uint32_t, 1);
     crtc0->connectors[0] = output0->connector->connector_id;
     crtc0->count = 1;
-    kms_display->crtcs = c_list_prepend(kms_display->crtcs, crtc0);
+    kms_display->crtcs = c_llist_prepend(kms_display->crtcs, crtc0);
 
     if (output1) {
         crtc1 = c_slice_new(cg_kms_crtc_t);
@@ -658,7 +658,7 @@ _cg_winsys_egl_display_setup(cg_display_t *display,
         crtc1->connectors = c_new(uint32_t, 1);
         crtc1->connectors[0] = output1->connector->connector_id;
         crtc1->count = 1;
-        kms_display->crtcs = c_list_prepend(kms_display->crtcs, crtc1);
+        kms_display->crtcs = c_llist_prepend(kms_display->crtcs, crtc1);
     }
 
     kms_display->width = output0->mode.hdisplay;
@@ -707,14 +707,14 @@ _cg_winsys_egl_display_destroy(cg_display_t *display)
     cg_renderer_t *renderer = display->renderer;
     cg_renderer_egl_t *egl_renderer = renderer->winsys;
     cg_renderer_kms_t *kms_renderer = egl_renderer->platform;
-    c_list_t *l;
+    c_llist_t *l;
 
     for (l = kms_display->outputs; l; l = l->next)
         output_free(kms_renderer->fd, l->data);
-    c_list_free(kms_display->outputs);
+    c_llist_free(kms_display->outputs);
     kms_display->outputs = NULL;
 
-    c_list_free_full(kms_display->crtcs, (c_destroy_func_t)crtc_free);
+    c_llist_free_full(kms_display->crtcs, (c_destroy_func_t)crtc_free);
 
     c_slice_free(cg_display_kms_t, egl_display->platform);
 }
@@ -1076,7 +1076,7 @@ cg_kms_display_set_layout(cg_display_t *display,
     cg_renderer_t *renderer = display->renderer;
     cg_renderer_egl_t *egl_renderer = renderer->winsys;
     cg_renderer_kms_t *kms_renderer = egl_renderer->platform;
-    c_list_t *crtc_list;
+    c_llist_t *crtc_list;
     int i;
 
     if ((width != kms_display->width || height != kms_display->height) &&
@@ -1129,13 +1129,13 @@ cg_kms_display_set_layout(cg_display_t *display,
     kms_display->width = width;
     kms_display->height = height;
 
-    c_list_free_full(kms_display->crtcs, (c_destroy_func_t)crtc_free);
+    c_llist_free_full(kms_display->crtcs, (c_destroy_func_t)crtc_free);
 
     crtc_list = NULL;
     for (i = 0; i < n_crtcs; i++) {
-        crtc_list = c_list_prepend(crtc_list, crtc_copy(crtcs[i]));
+        crtc_list = c_llist_prepend(crtc_list, crtc_copy(crtcs[i]));
     }
-    crtc_list = c_list_reverse(crtc_list);
+    crtc_list = c_llist_reverse(crtc_list);
     kms_display->crtcs = crtc_list;
 
     kms_display->pending_set_crtc = true;
