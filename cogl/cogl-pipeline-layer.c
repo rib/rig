@@ -333,7 +333,7 @@ _cg_pipeline_layer_pre_change_notify(cg_pipeline_t *required_owner,
 
     /* Identify the case where the layer is new with no owner or
      * dependants and so we don't need to do anything. */
-    if (_cg_list_empty(&CG_NODE(layer)->children) && layer->owner == NULL)
+    if (c_list_empty(&CG_NODE(layer)->children) && layer->owner == NULL)
         goto init_layer_state;
 
     /* We only allow a NULL required_owner for new layers */
@@ -351,7 +351,7 @@ _cg_pipeline_layer_pre_change_notify(cg_pipeline_t *required_owner,
      * they have dependants - either direct children, or another
      * pipeline as an owner.
      */
-    if (!_cg_list_empty(&CG_NODE(layer)->children) ||
+    if (!c_list_empty(&CG_NODE(layer)->children) ||
         layer->owner != required_owner) {
         cg_pipeline_layer_t *new = _cg_pipeline_layer_copy(layer);
         if (layer->owner == required_owner)

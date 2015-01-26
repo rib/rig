@@ -31,19 +31,18 @@
 #ifndef __CG_ONSCREEN_PRIVATE_H
 #define __CG_ONSCREEN_PRIVATE_H
 
+#include <clib.h>
+
 #include "cogl-onscreen.h"
 #include "cogl-framebuffer-private.h"
 #include "cogl-closure-list-private.h"
-#include "cogl-list.h"
-
-#include <clib.h>
 
 #ifdef CG_HAS_WIN32_SUPPORT
 #include <windows.h>
 #endif
 
 typedef struct _cg_onscreen_event_t {
-    cg_list_t link;
+    c_list_t link;
 
     cg_onscreen_t *onscreen;
     cg_frame_info_t *info;
@@ -51,7 +50,7 @@ typedef struct _cg_onscreen_event_t {
 } cg_onscreen_event_t;
 
 typedef struct _cg_onscreen_queued_dirty_t {
-    cg_list_t link;
+    c_list_t link;
 
     cg_onscreen_t *onscreen;
     cg_onscreen_dirty_info_t info;
@@ -76,12 +75,12 @@ struct _cg_onscreen_t {
 
     bool swap_throttled;
 
-    cg_list_t frame_closures;
+    c_list_t frame_closures;
 
     bool resizable;
-    cg_list_t resize_closures;
+    c_list_t resize_closures;
 
-    cg_list_t dirty_closures;
+    c_list_t dirty_closures;
 
     int64_t frame_counter;
     int64_t swap_frame_counter; /* frame counter at last all to

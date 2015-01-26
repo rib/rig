@@ -82,11 +82,11 @@ typedef struct _cg_onscreen_wayland_t {
 
     bool shell_surface_type_set;
 
-    cg_list_t frame_callbacks;
+    c_list_t frame_callbacks;
 } cg_onscreen_wayland_t;
 
 typedef struct {
-    cg_list_t link;
+    c_list_t link;
     cg_frame_info_t *frame_info;
     struct wl_callback *callback;
     cg_onscreen_t *onscreen;
@@ -447,7 +447,7 @@ _cg_winsys_egl_onscreen_init(cg_onscreen_t *onscreen,
     wayland_onscreen = c_slice_new0(cg_onscreen_wayland_t);
     egl_onscreen->platform = wayland_onscreen;
 
-    _cg_list_init(&wayland_onscreen->frame_callbacks);
+    c_list_init(&wayland_onscreen->frame_callbacks);
 
     if (onscreen->foreign_surface)
         wayland_onscreen->wayland_surface = onscreen->foreign_surface;
@@ -494,7 +494,7 @@ free_frame_callback_data(frame_callback_data_t *callback_data)
 {
     cg_object_unref(callback_data->frame_info);
     wl_callback_destroy(callback_data->callback);
-    _cg_list_remove(&callback_data->link);
+    c_list_remove(&callback_data->link);
     c_slice_free(frame_callback_data_t, callback_data);
 }
 
@@ -505,7 +505,7 @@ _cg_winsys_egl_onscreen_deinit(cg_onscreen_t *onscreen)
     cg_onscreen_wayland_t *wayland_onscreen = egl_onscreen->platform;
     frame_callback_data_t *frame_callback_data, *tmp;
 
-    _cg_list_for_each_safe(
+    c_list_for_each_safe(
         frame_callback_data, tmp, &wayland_onscreen->frame_callbacks, link)
     free_frame_callback_data(frame_callback_data);
 
@@ -601,7 +601,7 @@ _cg_winsys_onscreen_swap_buffers_with_damage(
     wl_callback_add_listener(
         frame_callback_data->callback, &frame_listener, frame_callback_data);
 
-    _cg_list_insert(&wayland_onscreen->frame_callbacks,
+    c_list_insert(&wayland_onscreen->frame_callbacks,
                     &frame_callback_data->link);
 
     parent_vtable->onscreen_swap_buffers_with_damage(

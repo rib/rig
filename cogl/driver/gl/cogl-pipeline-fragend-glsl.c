@@ -32,11 +32,11 @@
  *   Neil Roberts <neil@linux.intel.com>
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include <string.h>
+
+#include <clib.h>
 
 #include "cogl-device-private.h"
 #include "cogl-util-gl-private.h"
@@ -44,7 +44,6 @@
 #include "cogl-pipeline-layer-private.h"
 #include "cogl-blend-string.h"
 #include "cogl-snippet-private.h"
-#include "cogl-list.h"
 
 #ifdef CG_PIPELINE_FRAGEND_GLSL
 
@@ -53,8 +52,6 @@
 #include "cogl-pipeline-cache.h"
 #include "cogl-pipeline-fragend-glsl-private.h"
 #include "cogl-glsl-shader-private.h"
-
-#include <clib.h>
 
 /*
  * GL/GLES compatability defines for pipeline thingies:
@@ -73,7 +70,7 @@ typedef struct _unit_state_t {
 } unit_state_t;
 
 typedef struct _layer_data_t {
-    cg_list_t link;
+    c_list_t link;
 
     /* Layer index for the for the previous layer. This isn't
        necessarily the same as this layer's index - 1 because the
@@ -95,7 +92,7 @@ typedef struct {
        in reverse order. As soon as we're about to generate code for
        layer we'll remove it from the list so we don't generate it
        again */
-    cg_list_t layers;
+    c_list_t layers;
 
     cg_pipeline_cache_entry_t *cache_entry;
 } cg_pipeline_shader_state_t;
@@ -346,7 +343,7 @@ _cg_pipeline_fragend_glsl_start(cg_pipeline_t *pipeline,
     c_string_set_size(dev->codegen_source_buffer, 0);
     shader_state->header = dev->codegen_header_buffer;
     shader_state->source = dev->codegen_source_buffer;
-    _cg_list_init(&shader_state->layers);
+    c_list_init(&shader_state->layers);
 
     add_layer_declarations(pipeline, shader_state);
     add_global_declarations(pipeline, shader_state);
@@ -811,7 +808,7 @@ generate_layer(cg_pipeline_shader_state_t *shader_state,
     cg_pipeline_snippet_data_t snippet_data;
 
     /* Remove the layer from the list so we don't generate it again */
-    _cg_list_remove(&layer_data->link);
+    c_list_remove(&layer_data->link);
 
     combine_authority = _cg_pipeline_layer_get_authority(
         layer, CG_PIPELINE_LAYER_STATE_COMBINE);
@@ -917,7 +914,7 @@ ensure_layer_generated(cg_pipeline_shader_state_t *shader_state,
     layer_data_t *layer_data;
 
     /* Find the layer that corresponds to this layer_num */
-    _cg_list_for_each(layer_data, &shader_state->layers, link)
+    c_list_for_each(layer_data, &shader_state->layers, link)
     {
         cg_pipeline_layer_t *layer = layer_data->layer;
 
@@ -949,15 +946,15 @@ _cg_pipeline_fragend_glsl_add_layer(cg_pipeline_t *pipeline,
     layer_data = c_slice_new(layer_data_t);
     layer_data->layer = layer;
 
-    if (_cg_list_empty(&shader_state->layers)) {
+    if (c_list_empty(&shader_state->layers)) {
         layer_data->previous_layer_index = -1;
     } else {
         layer_data_t *first =
-            _cg_container_of(shader_state->layers.next, layer_data_t, link);
+            c_container_of(shader_state->layers.next, layer_data_t, link);
         layer_data->previous_layer_index = first->layer->index;
     }
 
-    _cg_list_insert(&shader_state->layers, &layer_data->link);
+    c_list_insert(&shader_state->layers, &layer_data->link);
 
     return true;
 }
@@ -1047,12 +1044,12 @@ _cg_pipeline_fragend_glsl_end(cg_pipeline_t *pipeline,
                           0 /* no application private data */);
         CG_COUNTER_INC(_cg_uprof_context, fragend_glsl_compile_counter);
 
-        if (!_cg_list_empty(&shader_state->layers)) {
+        if (!c_list_empty(&shader_state->layers)) {
             cg_pipeline_layer_t *last_layer;
             layer_data_t *layer_data, *tmp;
 
             layer_data =
-                _cg_container_of(shader_state->layers.next, layer_data_t, link);
+                c_container_of(shader_state->layers.next, layer_data_t, link);
             last_layer = layer_data->layer;
 
             /* Note: generate_layer() works recursively, so if the value
@@ -1067,12 +1064,12 @@ _cg_pipeline_fragend_glsl_end(cg_pipeline_t *pipeline,
 
             /* We now ensure we have code for all remaining layers that may
              * only be referenced by user snippets... */
-            _cg_list_for_each_safe(layer_data, tmp, &shader_state->layers, link)
+            c_list_for_each_safe(layer_data, tmp, &shader_state->layers, link)
             {
                 generate_layer(shader_state, pipeline, layer_data);
             }
 
-            _cg_list_for_each_safe(layer_data, tmp, &shader_state->layers, link)
+            c_list_for_each_safe(layer_data, tmp, &shader_state->layers, link)
             c_slice_free(layer_data_t, layer_data);
         } else
             c_string_append(shader_state->source,

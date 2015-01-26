@@ -61,7 +61,7 @@ cg_poll_renderer_get_info(cg_renderer_t *renderer,
 
     *timeout = -1;
 
-    if (!_cg_list_empty(&renderer->idle_closures))
+    if (!c_list_empty(&renderer->idle_closures))
         *timeout = 0;
 
     /* This loop needs to cope with the prepare callback removing its

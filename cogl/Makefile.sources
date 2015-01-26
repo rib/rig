@@ -245,8 +245,6 @@ cogl_base_sources_c = \
 	cogl-gtype-private.h                  \
 	cogl-point-in-poly-private.h       	\
 	cogl-point-in-poly.c       		\
-	cogl-list.c				\
-	cogl-list.h				\
 	winsys/cogl-winsys-stub-private.h	\
 	winsys/cogl-winsys-stub.c		\
 	cogl-config-private.h			\

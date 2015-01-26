@@ -55,9 +55,9 @@ _cg_onscreen_init_from_template(cg_onscreen_t *onscreen,
 {
     cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
 
-    _cg_list_init(&onscreen->frame_closures);
-    _cg_list_init(&onscreen->resize_closures);
-    _cg_list_init(&onscreen->dirty_closures);
+    c_list_init(&onscreen->frame_closures);
+    c_list_init(&onscreen->resize_closures);
+    c_list_init(&onscreen->dirty_closures);
 
     framebuffer->config = onscreen_template->config;
 }
@@ -129,20 +129,20 @@ static void
 _cg_dispatch_onscreen_cb(cg_device_t *dev)
 {
     cg_onscreen_event_t *event, *tmp;
-    cg_list_t queue;
+    c_list_t queue;
 
     /* Dispatching the event callback may cause another frame to be
      * drawn which in may cause another event to be queued immediately.
      * To make sure this loop will only dispatch one set of events we'll
      * steal the queue and iterate that separately */
-    _cg_list_init(&queue);
-    _cg_list_insert_list(&queue, &dev->onscreen_events_queue);
-    _cg_list_init(&dev->onscreen_events_queue);
+    c_list_init(&queue);
+    c_list_insert_list(&queue, &dev->onscreen_events_queue);
+    c_list_init(&dev->onscreen_events_queue);
 
     _cg_closure_disconnect(dev->onscreen_dispatch_idle);
     dev->onscreen_dispatch_idle = NULL;
 
-    _cg_list_for_each_safe(event, tmp, &queue, link)
+    c_list_for_each_safe(event, tmp, &queue, link)
     {
         cg_onscreen_t *onscreen = event->onscreen;
         cg_frame_info_t *info = event->info;
@@ -155,13 +155,13 @@ _cg_dispatch_onscreen_cb(cg_device_t *dev)
         c_slice_free(cg_onscreen_event_t, event);
     }
 
-    while (!_cg_list_empty(&dev->onscreen_dirty_queue)) {
+    while (!c_list_empty(&dev->onscreen_dirty_queue)) {
         cg_onscreen_queued_dirty_t *qe =
-            _cg_container_of(dev->onscreen_dirty_queue.next,
+            c_container_of(dev->onscreen_dirty_queue.next,
                              cg_onscreen_queued_dirty_t,
                              link);
 
-        _cg_list_remove(&qe->link);
+        c_list_remove(&qe->link);
 
         _cg_closure_list_invoke(&qe->onscreen->dirty_closures,
                                 cg_onscreen_dirty_callback_t,
@@ -196,7 +196,7 @@ _cg_onscreen_queue_dirty(cg_onscreen_t *onscreen,
 
     qe->onscreen = cg_object_ref(onscreen);
     qe->info = *info;
-    _cg_list_insert(dev->onscreen_dirty_queue.prev, &qe->link);
+    c_list_insert(dev->onscreen_dirty_queue.prev, &qe->link);
 
     _cg_onscreen_queue_dispatch_idle(onscreen);
 }
@@ -228,7 +228,7 @@ _cg_onscreen_queue_event(cg_onscreen_t *onscreen,
     event->info = cg_object_ref(info);
     event->type = type;
 
-    _cg_list_insert(dev->onscreen_events_queue.prev, &event->link);
+    c_list_insert(dev->onscreen_events_queue.prev, &event->link);
 
     _cg_onscreen_queue_dispatch_idle(onscreen);
 }

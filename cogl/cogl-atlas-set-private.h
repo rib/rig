@@ -31,9 +31,10 @@
 #ifndef _CG_ATLAS_SET_PRIVATE_H_
 #define _CG_ATLAS_SET_PRIVATE_H_
 
+#include <clib.h>
+
 #include "cogl-atlas.h"
 #include "cogl-atlas-set.h"
-#include "cogl-list.h"
 #include "cogl-object-private.h"
 
 struct _cg_atlas_set_t {
@@ -45,7 +46,7 @@ struct _cg_atlas_set_t {
     cg_texture_components_t components;
     cg_pixel_format_t internal_format;
 
-    cg_list_t atlas_closures;
+    c_list_t atlas_closures;
 
     unsigned int clear_enabled : 1;
     unsigned int premultiplied : 1;

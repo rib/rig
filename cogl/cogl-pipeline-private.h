@@ -34,20 +34,19 @@
 #ifndef __CG_PIPELINE_PRIVATE_H
 #define __CG_PIPELINE_PRIVATE_H
 
+#include <clib.h>
+
 #include "cogl-node-private.h"
 #include "cogl-pipeline-layer-private.h"
 #include "cogl-pipeline.h"
 #include "cogl-matrix.h"
 #include "cogl-object-private.h"
 #include "cogl-profile.h"
-#include "cogl-list.h"
 #include "cogl-boxed-value.h"
 #include "cogl-pipeline-snippet-private.h"
 #include "cogl-pipeline-state.h"
 #include "cogl-framebuffer.h"
 #include "cogl-bitmask.h"
-
-#include <clib.h>
 
 #define CG_PIPELINE_PROGEND_GLSL 0
 #define CG_PIPELINE_PROGEND_NOP 1

@@ -116,6 +116,6 @@ cg_sdl_idle(cg_device_t *dev)
      * to make sure the blocking returns immediately. We'll post our
      * dummy event to make sure that happens
      */
-    if (!_cg_list_empty(&renderer->idle_closures))
+    if (!c_list_empty(&renderer->idle_closures))
         _cg_sdl_push_wakeup_event(dev);
 }

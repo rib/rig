@@ -29,9 +29,10 @@
 #ifndef _CG_ATLAS_PRIVATE_H_
 #define _CG_ATLAS_PRIVATE_H_
 
+#include <clib.h>
+
 #include "cogl-object-private.h"
 #include "cogl-texture.h"
-#include "cogl-list.h"
 #include "cogl-rectangle-map.h"
 #include "cogl-atlas.h"
 
@@ -51,10 +52,10 @@ struct _cg_atlas_t {
     cg_pixel_format_t internal_format;
     cg_atlas_flags_t flags;
 
-    cg_list_t allocate_closures;
+    c_list_t allocate_closures;
 
-    cg_list_t pre_reorganize_closures;
-    cg_list_t post_reorganize_closures;
+    c_list_t pre_reorganize_closures;
+    c_list_t post_reorganize_closures;
 };
 
 cg_atlas_t *_cg_atlas_new(cg_device_t *dev,

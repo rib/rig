@@ -417,7 +417,7 @@ _cg_pipeline_free(cg_pipeline_t *pipeline)
     _cg_pipeline_node_foreach_child(
         CG_NODE(pipeline), destroy_weak_children_cb, NULL);
 
-    c_assert(_cg_list_empty(&CG_NODE(pipeline)->children));
+    c_assert(c_list_empty(&CG_NODE(pipeline)->children));
 
     _cg_pipeline_unparent(CG_NODE(pipeline));
 
@@ -1131,7 +1131,7 @@ _cg_pipeline_pre_change_notify(cg_pipeline_t *pipeline,
      * make sure descendants reference this new pipeline instead.
      */
 
-    if (pipeline->immutable && !_cg_list_empty(&CG_NODE(pipeline)->children))
+    if (pipeline->immutable && !c_list_empty(&CG_NODE(pipeline)->children))
         c_warning("immutable pipeline %p being modified", pipeline);
 
     /* The simplest descendants to handle are weak pipelines; we simply
@@ -1143,7 +1143,7 @@ _cg_pipeline_pre_change_notify(cg_pipeline_t *pipeline,
     /* If there are still children remaining though we'll need to
      * perform a copy-on-write and reparent the dependants as children
      * of the copy. */
-    if (!_cg_list_empty(&CG_NODE(pipeline)->children)) {
+    if (!c_list_empty(&CG_NODE(pipeline)->children)) {
         cg_pipeline_t *new_authority;
 
         CG_STATIC_COUNTER(pipeline_copy_on_write_counter,
