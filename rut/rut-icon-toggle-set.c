@@ -39,7 +39,7 @@
 #include "rut-introspectable.h"
 
 typedef struct _rut_icon_toggle_set_state_t {
-    rut_list_t list_node;
+    c_list_t list_node;
 
     rut_icon_toggle_t *toggle;
     rut_closure_t *on_toggle_closure;
@@ -59,10 +59,10 @@ struct _rut_icon_toggle_set_t {
 
     rut_box_layout_t *layout;
 
-    rut_list_t toggles_list;
+    c_list_t toggles_list;
     rut_icon_toggle_set_state_t *current_toggle_state;
 
-    rut_list_t on_change_cb_list;
+    c_list_t on_change_cb_list;
 
     rut_graphable_props_t graphable;
 
@@ -73,7 +73,7 @@ struct _rut_icon_toggle_set_t {
 static void
 remove_toggle_state(rut_icon_toggle_set_state_t *toggle_state)
 {
-    rut_list_remove(&toggle_state->list_node);
+    c_list_remove(&toggle_state->list_node);
     rut_object_unref(toggle_state->toggle);
     c_slice_free(rut_icon_toggle_set_state_t, toggle_state);
 }
@@ -88,7 +88,7 @@ _rut_icon_toggle_set_free(void *object)
 
     rut_graphable_destroy(toggle_set);
 
-    rut_list_for_each_safe(
+    c_list_for_each_safe(
         toggle_state, tmp, &toggle_set->toggles_list, list_node)
     {
         remove_toggle_state(toggle_state);
@@ -160,8 +160,8 @@ rut_icon_toggle_set_new(rut_shell_t *shell,
                           _rut_icon_toggle_set_init_type);
     rut_box_layout_packing_t box_packing;
 
-    rut_list_init(&toggle_set->on_change_cb_list);
-    rut_list_init(&toggle_set->toggles_list);
+    c_list_init(&toggle_set->on_change_cb_list);
+    c_list_init(&toggle_set->toggles_list);
 
     rut_graphable_init(toggle_set);
 
@@ -212,7 +212,7 @@ find_state_for_value(rut_icon_toggle_set_t *toggle_set, int value)
 {
     rut_icon_toggle_set_state_t *toggle_state;
 
-    rut_list_for_each(toggle_state, &toggle_set->toggles_list, list_node)
+    c_list_for_each(toggle_state, &toggle_set->toggles_list, list_node)
     {
         if (toggle_state->value == value)
             return toggle_state;
@@ -226,7 +226,7 @@ find_state_for_toggle(rut_icon_toggle_set_t *toggle_set,
 {
     rut_icon_toggle_set_state_t *toggle_state;
 
-    rut_list_for_each(toggle_state, &toggle_set->toggles_list, list_node)
+    c_list_for_each(toggle_state, &toggle_set->toggles_list, list_node)
     {
         if (toggle_state->toggle == toggle)
             return toggle_state;
@@ -266,7 +266,7 @@ rut_icon_toggle_set_add(rut_icon_toggle_set_t *toggle_set,
     toggle_state->on_toggle_closure = rut_icon_toggle_add_on_toggle_callback(
         toggle, on_toggle_cb, toggle_set, NULL); /* destroy notify */
     toggle_state->value = value;
-    rut_list_insert(&toggle_set->toggles_list, &toggle_state->list_node);
+    c_list_insert(&toggle_set->toggles_list, &toggle_state->list_node);
 
     rut_box_layout_add(toggle_set->layout, false, toggle);
 }

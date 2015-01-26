@@ -14,14 +14,14 @@ struct particle {
     float y;
 
     bool active;
-    rut_list_t active_link;
+    c_list_t active_link;
 
     float velocity[3];
 
     struct quad_tree *current_quad;
-    rut_list_t quad_link;
+    c_list_t quad_link;
 
-    rut_list_t quad_path;
+    c_list_t quad_path;
 };
 
 /* This simple quad tree is not sparse and has a fixed
@@ -47,7 +47,7 @@ struct quad_tree {
             struct quad_tree *children[4];
         } tree_node;
         struct {
-            rut_list_t particles;
+            c_list_t particles;
         } leaf_node;
     };
 };
@@ -81,7 +81,7 @@ struct data {
 
     struct quad_tree *root;
 
-    rut_list_t active_particles;
+    c_list_t active_particles;
 };
 
 
@@ -136,7 +136,7 @@ allocate_quad_tree_of_depth(float x0, float y0, float x1, float y1, int depth)
         tree->tree_node.children[3] = /* bottom right */
             allocate_quad_tree_of_depth(x0 + half_width, y0 + half_height, x1, y1, depth + 1);
     } else
-        rut_list_init(&tree->leaf_node.particles);
+        c_list_init(&tree->leaf_node.particles);
 
     return tree;
 }
@@ -198,8 +198,8 @@ spawn_particle(struct data *data, float x, float y)
     p->y = y;
 
     p->current_quad = quad;
-    rut_list_insert(quad->leaf_node.particles.prev, &p->quad_link);
-    rut_list_init(&p->quad_path);
+    c_list_insert(quad->leaf_node.particles.prev, &p->quad_link);
+    c_list_init(&p->quad_path);
 
     p->velocity[0] = c_rand_float_range(data->rand, -1, 1);
     p->velocity[1] = c_rand_float_range(data->rand, -1, 1);
@@ -207,7 +207,7 @@ spawn_particle(struct data *data, float x, float y)
     cg_vector3_normalize(p->velocity);
 
     p->active = true;
-    rut_list_insert(data->active_particles.prev, &p->active_link);
+    c_list_insert(data->active_particles.prev, &p->active_link);
 }
 
 static void
@@ -225,7 +225,7 @@ paint_cb(uv_idle_t *idle)
                                            0, 0, 1024, 1024,
                                            0, 0, 1, 1);
 
-    rut_list_for_each(p, &data->active_particles, active_link) {
+    c_list_for_each(p, &data->active_particles, active_link) {
         cg_framebuffer_draw_rectangle(data->fb,
                                       data->particle_pipeline,
                                       p->x - 0.5f, p->y - 0.5f,
@@ -258,7 +258,7 @@ sim_cb(uv_idle_t *idle)
     float step = 1.0f / 600.0f;
     struct particle *p;
 
-    rut_list_for_each(p, &data->active_particles, active_link) {
+    c_list_for_each(p, &data->active_particles, active_link) {
         float dx = p->velocity[0] * step;
         float dy = p->velocity[1] * step;
         float new_x = p->x + dx;
@@ -388,7 +388,7 @@ found_start:
     data.particle_pipeline = cg_pipeline_new(data.dev);
     cg_pipeline_set_color4f(data.particle_pipeline, 1, 0, 0, 1);
 
-    rut_list_init(&data.active_particles);
+    c_list_init(&data.active_particles);
 
     spawn_particle(&data, data.start_x, data.start_y);
 

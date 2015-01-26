@@ -33,7 +33,7 @@
 #include <rut.h>
 
 typedef struct {
-    rut_list_t list_node;
+    c_list_t list_node;
 
     rut_boxed_t boxed;
 
@@ -110,15 +110,15 @@ rig_node_t *rig_node_new_for_object(float t, rut_object_t *value);
 rig_node_t *rig_node_copy(rig_node_t *node);
 
 rig_node_t *
-rig_nodes_find_less_than(rig_node_t *start, rut_list_t *end, float t);
+rig_nodes_find_less_than(rig_node_t *start, c_list_t *end, float t);
 
 rig_node_t *
-rig_nodes_find_less_than_equal(rig_node_t *start, rut_list_t *end, float t);
+rig_nodes_find_less_than_equal(rig_node_t *start, c_list_t *end, float t);
 
 rig_node_t *
-rig_nodes_find_greater_than(rig_node_t *start, rut_list_t *end, float t);
+rig_nodes_find_greater_than(rig_node_t *start, c_list_t *end, float t);
 
 rig_node_t *
-rig_nodes_find_greater_than_equal(rig_node_t *start, rut_list_t *end, float t);
+rig_nodes_find_greater_than_equal(rig_node_t *start, c_list_t *end, float t);
 
 #endif /* _RUT_NODE_H_ */

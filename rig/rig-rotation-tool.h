@@ -64,7 +64,7 @@ typedef struct _rig_rotation_tool_t {
     float screen_pos[2];
     float scale;
 
-    rut_list_t rotation_event_cb_list;
+    c_list_t rotation_event_cb_list;
 } rig_rotation_tool_t;
 
 typedef enum {

@@ -81,7 +81,7 @@ struct _rut_nine_slice_t {
     rut_graphable_props_t graphable;
     rut_paintable_props_t paintable;
 
-    rut_list_t updated_cb_list;
+    c_list_t updated_cb_list;
 
     rut_introspectable_props_t introspectable;
     rut_property_t properties[RUT_NINE_SLICE_N_PROPS];
@@ -493,7 +493,7 @@ rut_nine_slice_new(rut_shell_t *shell,
 
     nine_slice->shell = shell;
 
-    rut_list_init(&nine_slice->updated_cb_list);
+    c_list_init(&nine_slice->updated_cb_list);
 
     rut_graphable_init(nine_slice);
 

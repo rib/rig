@@ -290,7 +290,7 @@ print_log(struct rig_log *log, WINDOW *log_window)
     werase(log_window);
     mvwprintw(log_window, 0, 0, log->title);
 
-    rut_list_for_each(entry, &log->entries, link) {
+    c_list_for_each(entry, &log->entries, link) {
 
         print_message(log_window, entry->log_level, entry->message,
                       state->hscroll_pos, state->vscroll_pos,

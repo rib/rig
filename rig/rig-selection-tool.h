@@ -57,7 +57,7 @@ struct _rig_selection_tool_t {
 
     cg_pipeline_t *default_pipeline;
 
-    rut_list_t selection_event_cb_list;
+    c_list_t selection_event_cb_list;
 };
 
 typedef enum {

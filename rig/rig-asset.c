@@ -88,7 +88,7 @@ struct _rig_asset_t {
 
     c_llist_t *inferred_tags;
 
-    rut_list_t thumbnail_cb_list;
+    c_list_t thumbnail_cb_list;
 };
 
 #if 0
@@ -541,7 +541,7 @@ rig_asset_new_full(rut_shell_t *shell,
     rig_asset_set_inferred_tags(asset, inferred_tags);
     asset->is_video = rut_util_find_tag(inferred_tags, "video");
 
-    rut_list_init(&asset->thumbnail_cb_list);
+    c_list_init(&asset->thumbnail_cb_list);
 
     switch (type) {
     case RIG_ASSET_TYPE_BUILTIN:
@@ -1248,7 +1248,7 @@ rig_asset_thumbnail(rig_asset_t *asset,
 
     /* Make sure the thumnail wasn't simply generated synchronously to
      * make sure the closure is still valid. */
-    c_warn_if_fail(!rut_list_empty(&asset->thumbnail_cb_list));
+    c_warn_if_fail(!c_list_empty(&asset->thumbnail_cb_list));
 
     return closure;
 #else

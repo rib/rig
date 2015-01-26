@@ -64,7 +64,7 @@ rut_paint_context_queue_paint(rut_paint_context_t *paint_ctx,
 
     queue_entry->paintable = paintable;
 
-    rut_list_insert(paint_ctx->paint_queue.prev, &queue_entry->list_node);
+    c_list_insert(paint_ctx->paint_queue.prev, &queue_entry->list_node);
 }
 
 void
@@ -78,7 +78,7 @@ rut_paint_graph_with_layers(rut_object_t *root,
     /* The initial walk of the graph is in layer 0 */
     paint_ctx->layer_number = 0;
 
-    rut_list_init(&paint_ctx->paint_queue);
+    c_list_init(&paint_ctx->paint_queue);
 
     rut_graphable_traverse(root,
                            RUT_TRAVERSE_DEPTH_FIRST,
@@ -87,8 +87,8 @@ rut_paint_graph_with_layers(rut_object_t *root,
                            paint_ctx);
 
     /* Now paint anything that was queued to paint in higher layers */
-    while (!rut_list_empty(&paint_ctx->paint_queue)) {
-        rut_list_t queue;
+    while (!c_list_empty(&paint_ctx->paint_queue)) {
+        c_list_t queue;
         rut_queued_paint_t *node, *tmp;
 
         paint_ctx->layer_number++;
@@ -97,11 +97,11 @@ rut_paint_graph_with_layers(rut_object_t *root,
 
         /* Steal the list so that the widgets can start another layer by
          * adding stuff again */
-        rut_list_init(&queue);
-        rut_list_insert_list(&queue, &paint_ctx->paint_queue);
-        rut_list_init(&paint_ctx->paint_queue);
+        c_list_init(&queue);
+        c_list_insert_list(&queue, &paint_ctx->paint_queue);
+        c_list_init(&paint_ctx->paint_queue);
 
-        rut_list_for_each_safe(node, tmp, &queue, list_node)
+        c_list_for_each_safe(node, tmp, &queue, list_node)
         {
             /* Restore the modelview matrix that was used for this
              * widget */

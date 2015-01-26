@@ -192,7 +192,7 @@ rig_controller_new(rig_engine_t *engine, const char *label)
     rut_timeline_stop(timeline);
     controller->timeline = timeline;
 
-    rut_list_init(&controller->operation_cb_list);
+    c_list_init(&controller->operation_cb_list);
 
     rut_introspectable_init(
         controller, _rig_controller_prop_specs, controller->props);
@@ -849,7 +849,7 @@ prop_data_foreach_node(rig_controller_prop_data_t *prop_data,
         foreach_node_state_t *state = user_data;
         rig_node_t *node;
 
-        rut_list_for_each(node, &prop_data->path->nodes, list_node)
+        c_list_for_each(node, &prop_data->path->nodes, list_node)
         state->callback(node, state->user_data);
     }
 }

@@ -200,7 +200,7 @@ _rut_graphable_traverse_breadth(
                 rut_object_get_properties(graphable, RUT_TRAIT_ID_GRAPHABLE);
             rut_queue_item_t *item;
 
-            rut_list_for_each(item, &props->children.items, list_node)
+            c_list_for_each(item, &props->children.items, list_node)
             {
                 rut_queue_push_tail(&queue, item->data);
             }
@@ -230,7 +230,7 @@ _rut_graphable_traverse_depth(rut_object_t *graphable,
             rut_object_get_properties(graphable, RUT_TRAIT_ID_GRAPHABLE);
         rut_queue_item_t *item, *tmp;
 
-        rut_list_for_each_safe(item, tmp, &props->children.items, list_node)
+        c_list_for_each_safe(item, tmp, &props->children.items, list_node)
         {
             flags = _rut_graphable_traverse_depth(item->data,
                                                   before_children_callback,

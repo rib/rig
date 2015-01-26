@@ -105,7 +105,7 @@ struct _rig_controller_t {
 
     c_hash_table_t *properties;
 
-    rut_list_t operation_cb_list;
+    c_list_t operation_cb_list;
 
     rut_property_t props[RIG_CONTROLLER_N_PROPS];
     rut_introspectable_props_t introspectable;

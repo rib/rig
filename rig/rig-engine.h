@@ -59,7 +59,7 @@ typedef struct _rig_entites_selection_t {
     rut_object_base_t _base;
     rig_engine_t *engine;
     c_llist_t *objects;
-    rut_list_t selection_events_cb_list;
+    c_list_t selection_events_cb_list;
 } rig_objects_selection_t;
 
 #ifdef HAVE_OSX
@@ -132,7 +132,7 @@ struct _rig_engine_t {
     rut_text_t *search_text;
     c_llist_t *required_search_tags;
 
-    rut_list_t tool_changed_cb_list;
+    c_list_t tool_changed_cb_list;
 
     c_string_t *codegen_string0;
     c_string_t *codegen_string1;

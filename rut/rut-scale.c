@@ -734,8 +734,8 @@ rut_scale_new(rut_shell_t *shell, float length, float natural_length)
     rut_graphable_init(scale);
     rut_paintable_init(scale);
 
-    rut_list_init(&scale->preferred_size_cb_list);
-    rut_list_init(&scale->select_cb_list);
+    c_list_init(&scale->preferred_size_cb_list);
+    c_list_init(&scale->select_cb_list);
 
     rut_introspectable_init(scale, _rut_scale_prop_specs, scale->properties);
 

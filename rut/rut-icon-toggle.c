@@ -64,7 +64,7 @@ struct _rut_icon_toggle_t {
 
     bool interactive_unset_enabled;
 
-    rut_list_t on_toggle_cb_list;
+    c_list_t on_toggle_cb_list;
 
     rut_graphable_props_t graphable;
 };
@@ -286,7 +286,7 @@ rut_icon_toggle_new(rut_shell_t *shell,
         rut_icon_toggle_t, &rut_icon_toggle_type, _rut_icon_toggle_init_type);
     float natural_width, natural_height;
 
-    rut_list_init(&toggle->on_toggle_cb_list);
+    c_list_init(&toggle->on_toggle_cb_list);
 
     rut_graphable_init(toggle);
 

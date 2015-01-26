@@ -82,9 +82,9 @@ typedef struct {
     float width;
     float height;
 
-    rut_list_t preferred_size_cb_list;
+    c_list_t preferred_size_cb_list;
 
-    rut_list_t list_node;
+    c_list_t list_node;
 
     /* Pointer back to the parent object */
     rig_controller_object_view_t *object;
@@ -114,7 +114,7 @@ struct _rig_controller_object_view_t {
 
     rut_graphable_props_t graphable;
 
-    rut_list_t list_node;
+    c_list_t list_node;
 
     rut_object_t *object;
 
@@ -145,7 +145,7 @@ typedef struct _rig_path_view_t {
 
     rig_controller_property_view_t *prop_view;
 
-    rut_list_t preferred_size_cb_list;
+    c_list_t preferred_size_cb_list;
 
     rig_path_t *path;
     rut_closure_t *path_operation_closure;
@@ -225,7 +225,7 @@ struct _rig_controller_view_t {
 
     rig_controller_object_view_t *selected_object;
 
-    rut_list_t controller_changed_cb_list;
+    c_list_t controller_changed_cb_list;
 
     /* Position and size of the current bounding box. The x positions
      * are in normalised time and the y positions are an integer row
@@ -258,7 +258,7 @@ struct _rig_controller_view_t {
 };
 
 typedef struct {
-    rut_list_t list_node;
+    c_list_t list_node;
 
     rig_controller_property_view_t *prop_view;
     rig_node_t *node;
@@ -725,12 +725,12 @@ marker_grab_input_cb(rut_input_event_t *event,
 
 static rig_node_t *
 find_unselected_neighbour(rig_controller_view_t *view,
-                          rut_list_t *head,
+                          c_list_t *head,
                           rig_node_t *node,
                           bool direction)
 {
     while (true) {
-        rut_list_t *next_link;
+        c_list_t *next_link;
         rig_node_t *next_node;
         node_mapping_t *mapping;
 
@@ -763,7 +763,7 @@ calculate_drag_offset_range_cb(rig_node_t *node,
                                void *user_data)
 {
     marker_grab_state_t *state = user_data;
-    rut_list_t *node_list = &node_group->path->nodes;
+    c_list_t *node_list = &node_group->path->nodes;
     rig_node_t *next_node;
     float node_min, node_max;
 
@@ -1132,7 +1132,7 @@ _rig_path_view_allocate_cb(rut_object_t *object, void *user_data)
     rut_sizable_set_size(
         path_view->input_region, path_view->width, path_view->height);
 
-    rut_list_for_each(item, &markers_graphable->children.items, list_node)
+    c_list_for_each(item, &markers_graphable->children.items, list_node)
     {
         rut_transform_t *transform = item->data;
         rut_graphable_props_t *transform_graphable =
@@ -1387,7 +1387,7 @@ rig_path_view_find_node_marker(rig_path_view_t *path_view, rig_node_t *node)
         rut_object_get_properties(path_view->markers, RUT_TRAIT_ID_GRAPHABLE);
     rut_queue_item_t *item;
 
-    rut_list_for_each(item, &graphable->children.items, list_node)
+    c_list_for_each(item, &graphable->children.items, list_node)
     {
         rut_transform_t *transform = item->data;
         rut_graphable_props_t *transform_graphable =
@@ -1567,7 +1567,7 @@ rig_path_view_new(rig_controller_property_view_t *prop_view, rig_path_t *path)
 
     path_view->prop_view = prop_view;
 
-    rut_list_init(&path_view->preferred_size_cb_list);
+    c_list_init(&path_view->preferred_size_cb_list);
 
     path_view->ui_viewport = rut_ui_viewport_new(view->shell, 1, 1);
     rut_graphable_add_child(path_view, path_view->ui_viewport);
@@ -2082,7 +2082,7 @@ rig_controller_view_unselect_node (rig_controller_view_t *view,
         rig_controller_view_selected_node_t *selected_node, *tmp;
         bool has_nodes = false;
 
-        rut_list_for_each_safe (selected_node,
+        c_list_for_each_safe (selected_node,
                                 tmp,
                                 &view->selected_nodes,
                                 list_node)
@@ -2091,7 +2091,7 @@ rig_controller_view_unselect_node (rig_controller_view_t *view,
             {
                 if (selected_node->node == node)
                 {
-                    rut_list_remove (&selected_node->list_node);
+                    c_list_remove (&selected_node->list_node);
                     c_slice_free (rig_controller_view_selected_node_t, selected_node);
                     view->dots_dirty = true;
                     /* we don't want to break here because we want to
@@ -2122,7 +2122,7 @@ rig_controller_property_view_new(rig_controller_view_t *view,
 
     rut_graphable_init(prop_view);
 
-    rut_list_init(&prop_view->preferred_size_cb_list);
+    c_list_init(&prop_view->preferred_size_cb_list);
 
     prop_view->object = object_view;
     prop_view->prop_data = prop_data;
@@ -2409,16 +2409,16 @@ rig_controller_view_clear_selected_nodes (rig_controller_view_t *view)
 {
     rig_controller_view_selected_node_t *selected_node, *t;
 
-    if (rut_list_empty (&view->selected_nodes))
+    if (c_list_empty (&view->selected_nodes))
         return;
 
-    rut_list_for_each_safe (selected_node, t, &view->selected_nodes, list_node)
+    c_list_for_each_safe (selected_node, t, &view->selected_nodes, list_node)
     {
         selected_node->prop_view->has_selected_nodes = false;
         c_slice_free (rig_controller_view_selected_node_t, selected_node);
     }
 
-    rut_list_init (&view->selected_nodes);
+    c_list_init (&view->selected_nodes);
 
     view->dots_dirty = true;
 }
@@ -2547,7 +2547,7 @@ rig_controller_view_add_dot_selected (rig_controller_view_dot_data_t *dot_data,
     uint32_t color = RIG_CONTROLLER_VIEW_UNSELECTED_COLOR;
     rig_controller_view_selected_node_t *selected_node;
 
-    rut_list_for_each (selected_node, &dot_data->view->selected_nodes, list_node)
+    c_list_for_each (selected_node, &dot_data->view->selected_nodes, list_node)
     {
         if (selected_node->prop_view == dot_data->prop_view &&
             selected_node->node == node)
@@ -2599,11 +2599,11 @@ rig_controller_view_update_dots_buffer (rig_controller_view_t *view)
     dot_data.v = buffer_data;
     dot_data.row_pos = 0;
 
-    rut_list_for_each (object, &view->object_views, list_node)
+    c_list_for_each (object, &view->object_views, list_node)
     {
         dot_data.row_pos++;
 
-        rut_list_for_each (dot_data.prop_view, &object->properties, list_node)
+        c_list_for_each (dot_data.prop_view, &object->properties, list_node)
         {
             rig_controller_prop_data_t *prop_data = dot_data.prop_view->prop_data;
             rig_path_t *path;
@@ -2619,11 +2619,11 @@ rig_controller_view_update_dots_buffer (rig_controller_view_t *view)
                                                          prop_data->property);
 
             if (dot_data.prop_view->has_selected_nodes)
-                rut_list_for_each (node, &path->nodes, list_node)
+                c_list_for_each (node, &path->nodes, list_node)
                 rig_controller_view_add_dot_selected (&dot_data,
                                                       node);
             else
-                rut_list_for_each (node, &path->nodes, list_node)
+                c_list_for_each (node, &path->nodes, list_node)
                 rig_controller_view_add_dot_unselected (&dot_data,
                                                         node);
 
@@ -2792,7 +2792,7 @@ rig_controller_view_allocate_cb (rut_object_t *graphable,
     /* Everything in a single column will be allocated to the same
     * width and everything will be allocated to the same height */
 
-    rut_list_for_each (object, &view->objects, list_node)
+    c_list_for_each (object, &view->objects, list_node)
     {
         rig_controller_property_view_t *prop_view;
 
@@ -2817,7 +2817,7 @@ rig_controller_view_allocate_cb (rut_object_t *graphable,
                 row_height = height;
         }
 
-        rut_list_for_each (prop_view, &object->properties, list_node)
+        c_list_for_each (prop_view, &object->properties, list_node)
         {
             for (i = 0; i < RIG_CONTROLLER_VIEW_N_PROPERTY_COLUMNS; i++)
             {
@@ -2846,7 +2846,7 @@ rig_controller_view_allocate_cb (rut_object_t *graphable,
 
     row_num = 0;
 
-    rut_list_for_each (object, &view->objects, list_node)
+    c_list_for_each (object, &view->objects, list_node)
     {
         rig_controller_property_view_t *prop_view;
         float x = 0.0f;
@@ -2869,7 +2869,7 @@ rig_controller_view_allocate_cb (rut_object_t *graphable,
             row_num++;
         }
 
-        rut_list_for_each (prop_view, &object->properties, list_node)
+        c_list_for_each (prop_view, &object->properties, list_node)
         {
             x = 0.0f;
 
@@ -3007,7 +3007,7 @@ rig_controller_view_select_node (rig_controller_view_t *view,
     /* Check if the node is already selected */
     if (prop_view->has_selected_nodes)
     {
-        rut_list_for_each (selected_node, &view->selected_nodes, list_node)
+        c_list_for_each (selected_node, &view->selected_nodes, list_node)
         {
             if (selected_node->prop_view == prop_view &&
                 selected_node->node == node)
@@ -3022,7 +3022,7 @@ rig_controller_view_select_node (rig_controller_view_t *view,
     prop_view->has_selected_nodes = true;
     view->dots_dirty = true;
 
-    rut_list_insert (view->selected_nodes.prev, &selected_node->list_node);
+    c_list_insert (view->selected_nodes.prev, &selected_node->list_node);
 
     return false;
 }
@@ -3280,7 +3280,7 @@ rig_controller_view_find_node_in_path (rig_controller_view_t *view,
 {
     rig_node_t *node;
 
-    rut_list_for_each (node, &path->nodes, list_node)
+    c_list_for_each (node, &path->nodes, list_node)
     if (node->t >= min_progress && node->t <= max_progress)
         return node;
 
@@ -3310,13 +3310,13 @@ rig_controller_view_find_node (rig_controller_view_t *view,
     if (progress < 0.0f || progress > 1.0f)
         return false;
 
-    rut_list_for_each (object_view, &view->object_views, list_node)
+    c_list_for_each (object_view, &view->object_views, list_node)
     {
         rig_controller_property_view_t *prop_view;
 
         row_num++;
 
-        rut_list_for_each (prop_view, &object_view->properties, list_node)
+        c_list_for_each (prop_view, &object_view->properties, list_node)
         {
             if (row_num == (int) (y / view->row_height))
             {
@@ -3447,7 +3447,7 @@ rig_controller_view_drag_nodes (rig_controller_view_t *view,
 
     offset = CLAMP (offset, view->min_drag_offset, view->max_drag_offset);
 
-    rut_list_for_each (selected_node, &view->selected_nodes, list_node)
+    c_list_for_each (selected_node, &view->selected_nodes, list_node)
     rig_path_move_node (selected_node->prop_view->path,
                         selected_node->node,
                         selected_node->original_time + offset);
@@ -3456,11 +3456,11 @@ rig_controller_view_drag_nodes (rig_controller_view_t *view,
 
     /* Update all the properties that have selected nodes according to
      * the new node positions */
-    rut_list_for_each (object_view, &view->object_views, list_node)
+    c_list_for_each (object_view, &view->object_views, list_node)
     {
         rig_controller_property_view_t *prop_view;
 
-        rut_list_for_each (prop_view, &object_view->properties, list_node)
+        c_list_for_each (prop_view, &object_view->properties, list_node)
         {
             if (prop_view->has_selected_nodes)
                 rig_controller_update_property (view->controller,
@@ -3478,12 +3478,12 @@ rig_controller_view_commit_dragged_nodes (rig_controller_view_t *view)
     int n_nodes, i;
     rig_undo_journal_path_node_t *nodes;
 
-    n_nodes = rut_list_length (&view->selected_nodes);
+    n_nodes = c_list_length (&view->selected_nodes);
 
     nodes = c_alloca (sizeof (rig_undo_journal_path_node_t) * n_nodes);
 
     i = 0;
-    rut_list_for_each (selected_node, &view->selected_nodes, list_node)
+    c_list_for_each (selected_node, &view->selected_nodes, list_node)
     {
         /* Reset all of the nodes to their original position so that the
          * undo journal can see it */
@@ -3555,11 +3555,11 @@ rig_controller_view_commit_box (rig_controller_view_t *view)
         y2 = view->box_y2;
     }
 
-    rut_list_for_each (object, &view->object_views, list_node)
+    c_list_for_each (object, &view->object_views, list_node)
     {
         row_pos++;
 
-        rut_list_for_each (prop_view, &object->properties, list_node)
+        c_list_for_each (prop_view, &object->properties, list_node)
         {
             if (row_pos >= y1 && row_pos < y2)
             {
@@ -3569,7 +3569,7 @@ rig_controller_view_commit_box (rig_controller_view_t *view)
                     rig_controller_get_path_for_property (view->controller,
                                                           prop_data->property);
 
-                rut_list_for_each (node, &path->nodes, list_node)
+                c_list_for_each (node, &path->nodes, list_node)
                 if (node->t >= x1 && node->t < x2)
                     rig_controller_view_select_node (view, prop_view, node);
             }
@@ -3657,7 +3657,7 @@ rig_controller_view_grab_input_cb (rut_input_event_t *event,
 static void
 rig_controller_view_delete_selected_nodes (rig_controller_view_t *view)
 {
-    if (!rut_list_empty (&view->selected_nodes))
+    if (!c_list_empty (&view->selected_nodes))
     {
         rig_undo_journal_t *journal;
 
@@ -3670,7 +3670,7 @@ rig_controller_view_delete_selected_nodes (rig_controller_view_t *view)
         else
             journal = rig_undo_journal_new (view->undo_journal->engine);
 
-        while (!rut_list_empty (&view->selected_nodes))
+        while (!c_list_empty (&view->selected_nodes))
         {
             rig_controller_view_selected_node_t *node =
                 rut_container_of (view->selected_nodes.next, node, list_node);
@@ -3995,7 +3995,7 @@ rig_controller_view_new(rig_engine_t *engine,
     view->controller = NULL;
     view->undo_journal = undo_journal;
 
-    rut_list_init(&view->controller_changed_cb_list);
+    c_list_init(&view->controller_changed_cb_list);
 
     view->vbox =
         rut_box_layout_new(engine->shell, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
@@ -4141,7 +4141,7 @@ _rig_controller_view_foreach_node(rig_controller_view_t *view,
 
                 c_assert(rut_object_get_type(path_view) == &rig_path_view_type);
 
-                rut_list_for_each(node, &path_view->path->nodes, list_node)
+                c_list_for_each(node, &path_view->path->nodes, list_node)
                 callback(path_view, node, user_data);
             }
         }

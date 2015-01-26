@@ -63,7 +63,7 @@ struct _rig_diamond_t {
 
     rut_shell_t *shell;
 
-    rut_list_t updated_cb_list;
+    c_list_t updated_cb_list;
 
     rig_diamond_slice_t *slice;
 

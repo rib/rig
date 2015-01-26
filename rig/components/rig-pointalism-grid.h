@@ -61,7 +61,7 @@ struct _rig_pointalism_grid_t {
 
     rut_shell_t *shell;
 
-    rut_list_t updated_cb_list;
+    c_list_t updated_cb_list;
 
     rut_mesh_t *pick_mesh;
     rut_mesh_t *mesh;

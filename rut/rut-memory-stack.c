@@ -79,7 +79,7 @@ rut_memory_stack_add_sub_stack(rut_memory_stack_t *stack,
 {
     rut_memory_sub_stack_t *sub_stack =
         rut_memory_sub_stack_alloc(sub_stack_bytes);
-    rut_list_insert(stack->sub_stacks.prev, &sub_stack->list_node);
+    c_list_insert(stack->sub_stacks.prev, &sub_stack->list_node);
     stack->sub_stack = sub_stack;
 }
 
@@ -88,7 +88,7 @@ rut_memory_stack_new(size_t initial_size_bytes)
 {
     rut_memory_stack_t *stack = c_slice_new0(rut_memory_stack_t);
 
-    rut_list_init(&stack->sub_stacks);
+    c_list_init(&stack->sub_stacks);
 
     rut_memory_stack_add_sub_stack(stack, initial_size_bytes);
 
@@ -106,9 +106,9 @@ _rut_memory_stack_alloc_in_next_sub_stack(rut_memory_stack_t *stack,
      * sub-stacks that are too small for the requested allocation
      * size...
      *
-     * XXX: note we don't use rut_list_for_each here because we need to be
+     * XXX: note we don't use c_list_for_each here because we need to be
      * careful to iterate the list starting from our current position, but
-     * stopping if we loop back to the first sub_stack. (NB: A rut_list_t
+     * stopping if we loop back to the first sub_stack. (NB: A c_list_t
      * is a circular list)
      */
     for (sub_stack = rut_container_of(
@@ -147,7 +147,7 @@ rut_memory_stack_foreach_region(rut_memory_stack_t *stack,
 {
     rut_memory_sub_stack_t *sub_stack, *tmp;
 
-    rut_list_for_each_safe(sub_stack, tmp, &stack->sub_stacks, list_node)
+    c_list_for_each_safe(sub_stack, tmp, &stack->sub_stacks, list_node)
     {
         callback(sub_stack->data, sub_stack->offset, user_data);
         if (sub_stack == stack->sub_stack)
@@ -174,7 +174,7 @@ rut_memory_stack_rewind(rut_memory_stack_t *stack)
          sub_stack != last_sub_stack;
          sub_stack =
              rut_container_of(stack->sub_stacks.next, sub_stack, list_node)) {
-        rut_list_remove(&sub_stack->list_node);
+        c_list_remove(&sub_stack->list_node);
         rut_memory_sub_stack_free(sub_stack);
     }
 
@@ -189,7 +189,7 @@ rut_memory_stack_free(rut_memory_stack_t *stack)
 {
     rut_memory_sub_stack_t *sub_stack, *tmp;
 
-    rut_list_for_each_safe(sub_stack, tmp, &stack->sub_stacks, list_node)
+    c_list_for_each_safe(sub_stack, tmp, &stack->sub_stacks, list_node)
     rut_memory_sub_stack_free(sub_stack);
 
     c_slice_free(rut_memory_stack_t, stack);

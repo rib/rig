@@ -36,7 +36,7 @@
 
 struct rig_log_entry
 {
-    rut_list_t link;
+    c_list_t link;
 
     uint64_t timestamp;
     c_quark_t log_domain;
@@ -50,7 +50,7 @@ struct rig_log
 
     rut_shell_t *shell;
 
-    rut_list_t entries;
+    c_list_t entries;
     int len;
 };
 

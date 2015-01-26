@@ -69,7 +69,7 @@ typedef void (*RutTraitDestructor)(void *object);
  */
 typedef struct _rut_trait_implementation_t {
     /* Interfaces with a destructor get linked into rut_type_t::destructors */
-    rut_list_t destructor_link;
+    c_list_t destructor_link;
 
     size_t props_offset;
     void *vtable;
@@ -92,7 +92,7 @@ typedef struct _rut_type_t {
     rut_trait_implementation_t *traits;
     rut_magazine_t *magazine;
     void (*free)(void *object);
-    rut_list_t destructors;
+    c_list_t destructors;
 
     const char *name;
 } rut_type_t;

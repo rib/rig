@@ -135,13 +135,13 @@ log_full(enum rig_log_type type,
     else
         log = &state->logs[0];
 
-    rut_list_insert(&log->entries, &entry->link);
+    c_list_insert(&log->entries, &entry->link);
 
     if (log->len < MAX_LOG_LEN)
         log->len++;
     else {
         entry = rut_container_of(log->entries.prev, entry, link);
-        rut_list_remove(&entry->link);
+        c_list_remove(&entry->link);
         rig_logs_entry_free(entry);
     }
 
@@ -212,7 +212,7 @@ rig_logs_init(void (*notify)(struct rig_log *log))
     log_state.log_notify = notify;
 
     for (i = 0; i < MAX_LOGS; i++)
-        rut_list_init(&log_state.logs[i].entries);
+        c_list_init(&log_state.logs[i].entries);
 
     c_log_hook = log_hook;
 }
@@ -223,8 +223,8 @@ rig_logs_clear_log(struct rig_log *log)
     struct rig_log_entry *entry;
     struct rig_log_entry *tmp;
 
-    rut_list_for_each_safe(entry, tmp, &log->entries, link) {
-        rut_list_remove(&entry->link);
+    c_list_for_each_safe(entry, tmp, &log->entries, link) {
+        c_list_remove(&entry->link);
         rig_logs_entry_free(entry);
     }
     log->len = 0;
@@ -243,14 +243,14 @@ rig_logs_copy_log(struct rig_log *log)
     struct rig_log *copy = c_slice_dup(struct rig_log, log);
     struct rig_log_entry *entry;
 
-    rut_list_init(&copy->entries);
+    c_list_init(&copy->entries);
 
-    rut_list_for_each(entry, &log->entries, link) {
+    c_list_for_each(entry, &log->entries, link) {
         struct rig_log_entry *entry_copy =
             c_slice_dup(struct rig_log_entry, entry);
 
         entry_copy->message = c_strdup(entry->message);
-        rut_list_insert(copy->entries.prev, &entry_copy->link);
+        c_list_insert(copy->entries.prev, &entry_copy->link);
     }
 
     return copy;
@@ -262,7 +262,7 @@ dump_and_clear_log(const char *prefix, struct rig_log *log)
     struct rig_log_entry *entry;
     struct rig_log_entry *tmp;
 
-    rut_list_for_each_safe(entry, tmp, &log->entries, link)
+    c_list_for_each_safe(entry, tmp, &log->entries, link)
         fprintf(stderr, "%s%s\n", prefix, entry->message);
 
     rig_logs_clear_log(log);

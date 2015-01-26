@@ -2934,14 +2934,14 @@ rut_text_new_full(rut_shell_t *shell,
 
     rut_object_unref(mesh_buffer);
 
-    rut_list_init(&text->preferred_size_cb_list);
-    rut_list_init(&text->delete_text_cb_list);
-    rut_list_init(&text->insert_text_cb_list);
-    rut_list_init(&text->activate_cb_list);
-    rut_list_init(&text->cursor_event_cb_list);
-    rut_list_init(&text->text_changed_cb_list);
-    rut_list_init(&text->text_deleted_cb_list);
-    rut_list_init(&text->text_inserted_cb_list);
+    c_list_init(&text->preferred_size_cb_list);
+    c_list_init(&text->delete_text_cb_list);
+    c_list_init(&text->insert_text_cb_list);
+    c_list_init(&text->activate_cb_list);
+    c_list_init(&text->cursor_event_cb_list);
+    c_list_init(&text->text_changed_cb_list);
+    c_list_init(&text->text_deleted_cb_list);
+    c_list_init(&text->text_inserted_cb_list);
 
     rut_graphable_init(text);
     rut_paintable_init(text);

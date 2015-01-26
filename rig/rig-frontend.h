@@ -91,7 +91,7 @@ struct _rig_frontend_t {
 
     bool ui_update_pending;
 
-    rut_list_t ui_update_cb_list;
+    c_list_t ui_update_cb_list;
 
     void (*simulator_connected_callback)(void *user_data);
     void *simulator_connected_data;

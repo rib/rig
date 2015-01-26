@@ -262,7 +262,7 @@ get_onscreen_for_xwindow(rut_shell_t *shell, Window xwindow)
 {
     rut_shell_onscreen_t *onscreen;
 
-    rut_list_for_each(onscreen, &shell->onscreens, link) {
+    c_list_for_each(onscreen, &shell->onscreens, link) {
         if(cg_x11_onscreen_get_window_xid(onscreen->cg_onscreen) == xwindow)
             return onscreen;
     }

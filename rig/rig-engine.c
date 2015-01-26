@@ -793,7 +793,7 @@ rig_engine_garbage_collect(rig_engine_t *engine,
 {
     rut_queue_item_t *item;
 
-    rut_list_for_each(item, &engine->queued_deletes->items, list_node)
+    c_list_for_each(item, &engine->queued_deletes->items, list_node)
     {
         if (object_callback)
             object_callback(item->data, user_data);

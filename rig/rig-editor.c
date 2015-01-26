@@ -2180,7 +2180,7 @@ serialize_ops(rig_editor_t *editor,
         serializer->stack, sizeof(void *) * n_ops, RUT_UTIL_ALIGNOF(void *));
 
     i = 0;
-    rut_list_for_each(item, &editor->edit_ops->items, list_node)
+    c_list_for_each(item, &editor->edit_ops->items, list_node)
     {
         pb_ops[i++] = item->data;
     }
@@ -2446,7 +2446,7 @@ init_editor_engine(rig_editor_t *editor)
 
     engine->objects_selection = _rig_objects_selection_new(engine);
 
-    rut_list_init(&engine->tool_changed_cb_list);
+    c_list_init(&engine->tool_changed_cb_list);
 
     rig_editor_push_undo_subjournal(engine);
 
@@ -3097,7 +3097,7 @@ _rig_objects_selection_new(rig_engine_t *engine)
     selection->engine = engine;
     selection->objects = NULL;
 
-    rut_list_init(&selection->selection_events_cb_list);
+    c_list_init(&selection->selection_events_cb_list);
 
     return selection;
 }

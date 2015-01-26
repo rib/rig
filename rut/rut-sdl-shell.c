@@ -265,7 +265,7 @@ get_onscreen_for_sdl_event(rut_shell_t *shell, SDL_Event *sdl_event)
         return NULL;
     }
 
-    rut_list_for_each(onscreen, &shell->onscreens, link) {
+    c_list_for_each(onscreen, &shell->onscreens, link) {
         SDL_Window *sdl_window =
             cg_sdl_onscreen_get_window(onscreen->onscreen);
 

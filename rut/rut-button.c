@@ -78,7 +78,7 @@ struct _rut_button_t {
 
     rut_input_region_t *input_region;
 
-    rut_list_t on_click_cb_list;
+    c_list_t on_click_cb_list;
 
     rut_graphable_props_t graphable;
     rut_paintable_props_t paintable;
@@ -402,7 +402,7 @@ rut_button_new(rut_shell_t *shell, const char *label)
     c_error_t *error = NULL;
     float text_width, text_height;
 
-    rut_list_init(&button->on_click_cb_list);
+    c_list_init(&button->on_click_cb_list);
 
     rut_graphable_init(button);
     rut_paintable_init(button);

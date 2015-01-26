@@ -439,7 +439,7 @@ rig_pointalism_grid_new(rut_shell_t *shell, float size)
 
     grid->shell = rut_object_ref(shell);
 
-    rut_list_init(&grid->updated_cb_list);
+    c_list_init(&grid->updated_cb_list);
 
     grid->pointalism_scale = 1;
     grid->pointalism_z = 1;

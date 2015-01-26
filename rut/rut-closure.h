@@ -46,7 +46,7 @@
 typedef void (*rut_closure_destroy_callback_t)(void *user_data);
 
 typedef struct {
-    rut_list_t list_node;
+    c_list_t list_node;
 
     void *function;
     void *user_data;
@@ -62,16 +62,16 @@ typedef struct {
  * then it will be invoked. */
 void rut_closure_disconnect(rut_closure_t *closure);
 
-void rut_closure_list_disconnect_all(rut_list_t *list);
+void rut_closure_list_disconnect_all(c_list_t *list);
 
-rut_closure_t *rut_closure_list_add(rut_list_t *list,
+rut_closure_t *rut_closure_list_add(c_list_t *list,
                                     void *function,
                                     void *user_data,
                                     rut_closure_destroy_callback_t destroy_cb);
 
 /**
  * rut_closure_list_invoke:
- * @list: A pointer to a rut_list_t containing rut_closure_ts
+ * @list: A pointer to a c_list_t containing rut_closure_ts
  * @cb_type: The name of a typedef for the closure callback function signature
  * @...: The the arguments to pass to the callback
  *
@@ -89,7 +89,7 @@ rut_closure_t *rut_closure_list_add(rut_list_t *list,
     {                                                                          \
         rut_closure_t *_c, *_tmp;                                              \
                                                                                \
-        rut_list_for_each_safe(_c, _tmp, (list), list_node)                    \
+        c_list_for_each_safe(_c, _tmp, (list), list_node)                    \
         {                                                                      \
             cb_type _cb = _c->function;                                        \
             _cb(__VA_ARGS__, _c->user_data);                                   \
@@ -102,7 +102,7 @@ rut_closure_t *rut_closure_list_add(rut_list_t *list,
     {                                                                          \
         rut_closure_t *_c, *_tmp;                                              \
                                                                                \
-        rut_list_for_each_safe(_c, _tmp, (list), list_node)                    \
+        c_list_for_each_safe(_c, _tmp, (list), list_node)                    \
         {                                                                      \
             void (*_cb)(void *) = _c->function;                                \
             _cb(_c->user_data);                                                \

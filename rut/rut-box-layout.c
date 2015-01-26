@@ -40,7 +40,7 @@ enum {
 };
 
 typedef struct {
-    rut_list_t link;
+    c_list_t link;
     rut_object_t *transform;
     rut_object_t *widget;
     rut_closure_t *preferred_size_closure;
@@ -54,7 +54,7 @@ typedef struct {
      * but without violating the minimum size constraints of
      * any of the children.
      */
-    rut_list_t flexible_link;
+    c_list_t flexible_link;
 
     float main_size;
     float min_size;
@@ -66,8 +66,8 @@ struct _rut_box_layout_t {
 
     rut_shell_t *shell;
 
-    rut_list_t preferred_size_cb_list;
-    rut_list_t children;
+    c_list_t preferred_size_cb_list;
+    c_list_t children;
     int n_children;
 
     bool in_allocate;
@@ -103,7 +103,7 @@ _rut_box_layout_free(void *object)
 
     rut_closure_list_disconnect_all(&box->preferred_size_cb_list);
 
-    while (!rut_list_empty(&box->children)) {
+    while (!c_list_empty(&box->children)) {
         rut_box_layout_child_t *child =
             rut_container_of(box->children.next, child, link);
 
@@ -130,7 +130,7 @@ struct allocate_state
     float main_size;
     float cross_size;
 
-    rut_list_t flexible;
+    c_list_t flexible;
 };
 
 static void
@@ -163,7 +163,7 @@ allocate_cb(rut_object_t *graphable, void *user_data)
         break;
     }
 
-    rut_list_for_each(child, &box->children, link) {
+    c_list_for_each(child, &box->children, link) {
         state.get_child_main_size(child->widget,
                                   state.cross_size,
                                   &child->min_size,
@@ -178,26 +178,26 @@ allocate_cb(rut_object_t *graphable, void *user_data)
 
         /* shrink */
 
-        rut_list_init(&state.flexible);
+        c_list_init(&state.flexible);
 
-        rut_list_for_each(child, &box->children, link) {
+        c_list_for_each(child, &box->children, link) {
             if (child->flex_shrink)
-                rut_list_insert(state.flexible.prev, &child->flexible_link);
+                c_list_insert(state.flexible.prev, &child->flexible_link);
         }
 
         /* We shrink iteratively because we might reach the minimum
          * size of some children and therefore one iteration might
          * not shrink as much as is required. */
-        while (!rut_list_empty(&state.flexible) && hit_constraint) {
+        while (!c_list_empty(&state.flexible) && hit_constraint) {
             rut_box_layout_child_t *tmp;
             float total_shrink_size = current_size - state.main_size;
             float weights_total = 0;
 
-            rut_list_for_each(child, &state.flexible, flexible_link)
+            c_list_for_each(child, &state.flexible, flexible_link)
                 weights_total += child->flex_shrink;
 
             hit_constraint = false;
-            rut_list_for_each_safe(child, tmp, &state.flexible, flexible_link) {
+            c_list_for_each_safe(child, tmp, &state.flexible, flexible_link) {
                 float proportion = child->flex_shrink / weights_total;
                 float shrink_size = total_shrink_size * proportion;
 
@@ -210,7 +210,7 @@ allocate_cb(rut_object_t *graphable, void *user_data)
                     child->main_size = child->min_size;
 
                     /* This child should no longer flex */
-                    rut_list_remove(&child->flexible_link);
+                    c_list_remove(&child->flexible_link);
 
                     hit_constraint = true;
                 }
@@ -224,11 +224,11 @@ allocate_cb(rut_object_t *graphable, void *user_data)
         float total_grow_size = state.main_size - total_main_size;
         float weights_total = 0;
 
-        rut_list_init(&state.flexible);
+        c_list_init(&state.flexible);
 
-        rut_list_for_each(child, &box->children, link) {
+        c_list_for_each(child, &box->children, link) {
             if (child->flex_grow) {
-                rut_list_insert(state.flexible.prev, &child->flexible_link);
+                c_list_insert(state.flexible.prev, &child->flexible_link);
                 weights_total += child->flex_grow;
             }
         }
@@ -237,14 +237,14 @@ allocate_cb(rut_object_t *graphable, void *user_data)
          * constraint for a child, so we don't need to worry about
          * flexing iteratively like we do when shrinking. */
 
-        rut_list_for_each(child, &state.flexible, flexible_link) {
+        c_list_for_each(child, &state.flexible, flexible_link) {
             float proportion = child->flex_grow / weights_total;
 
             child->main_size += total_grow_size * proportion;
         }
     }
 
-    rut_list_for_each(child, &box->children, link) {
+    c_list_for_each(child, &box->children, link) {
         float x = 0, y = 0, width, height;
 
         switch (box->packing) {
@@ -318,7 +318,7 @@ get_preferred_main_size(rut_box_layout_t *box,
     float total_natural_size = 0;
     rut_box_layout_child_t *child;
 
-    rut_list_for_each(child, &box->children, link)
+    c_list_for_each(child, &box->children, link)
     {
         float min_size = 0, natural_size = 0;
 
@@ -362,7 +362,7 @@ get_preferred_cross_size(rut_box_layout_t *box,
     float max_natural_size = 0.0f;
     rut_box_layout_child_t *child;
 
-    rut_list_for_each(child, &box->children, link)
+    c_list_for_each(child, &box->children, link)
     {
         float min_size = 0.0f, natural_size = 0.0f;
 
@@ -509,8 +509,8 @@ rut_box_layout_new(rut_shell_t *shell,
     box->shell = rut_object_ref(shell);
     box->packing = packing;
 
-    rut_list_init(&box->preferred_size_cb_list);
-    rut_list_init(&box->children);
+    c_list_init(&box->preferred_size_cb_list);
+    c_list_init(&box->children);
 
     rut_graphable_init(box);
 
@@ -562,7 +562,7 @@ rut_box_layout_add(rut_box_layout_t *box,
     child->preferred_size_closure = rut_sizable_add_preferred_size_callback(
         child_widget, child_preferred_size_cb, box, NULL /* destroy */);
 
-    rut_list_insert(box->children.prev, &child->link);
+    c_list_insert(box->children.prev, &child->link);
 
     preferred_size_changed(box);
     queue_allocation(box);
@@ -575,7 +575,7 @@ rut_box_layout_remove(rut_box_layout_t *box, rut_object_t *child_widget)
 
     c_return_if_fail(box->n_children > 0);
 
-    rut_list_for_each(child, &box->children, link)
+    c_list_for_each(child, &box->children, link)
     {
         if (child->widget == child_widget) {
             rut_closure_disconnect(child->preferred_size_closure);
@@ -583,7 +583,7 @@ rut_box_layout_remove(rut_box_layout_t *box, rut_object_t *child_widget)
             rut_graphable_remove_child(child->widget);
             rut_graphable_remove_child(child->transform);
 
-            rut_list_remove(&child->link);
+            c_list_remove(&child->link);
             c_slice_free(rut_box_layout_child_t, child);
 
             preferred_size_changed(box);

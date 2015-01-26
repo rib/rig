@@ -72,7 +72,7 @@ rut_trait_set_destructor(rut_type_t *type,
                          RutTraitDestructor trait_destructor)
 {
     type->traits[id].destructor = trait_destructor;
-    rut_list_insert(type->destructors.prev, &type->traits[id].destructor_link);
+    c_list_insert(type->destructors.prev, &type->traits[id].destructor_link);
 }
 
 void
@@ -86,7 +86,7 @@ rut_type_init(rut_type_t *type,
     type->free = destructor;
 
     _rut_bitmask_init(&type->traits_mask);
-    rut_list_init(&type->destructors);
+    c_list_init(&type->destructors);
 }
 
 void

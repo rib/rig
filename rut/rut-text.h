@@ -132,7 +132,7 @@ struct _rut_text_t {
     rut_input_region_t *input_region;
     rut_mesh_t *pick_mesh;
 
-    rut_list_t preferred_size_cb_list;
+    c_list_t preferred_size_cb_list;
 
     rut_introspectable_props_t introspectable;
     rut_property_t properties[RUT_TEXT_N_PROPS];
@@ -206,13 +206,13 @@ struct _rut_text_t {
     unsigned int password_hint_id;
     unsigned int password_hint_timeout;
 
-    rut_list_t delete_text_cb_list;
-    rut_list_t insert_text_cb_list;
-    rut_list_t activate_cb_list;
-    rut_list_t cursor_event_cb_list;
-    rut_list_t text_changed_cb_list;
-    rut_list_t text_deleted_cb_list;
-    rut_list_t text_inserted_cb_list;
+    c_list_t delete_text_cb_list;
+    c_list_t insert_text_cb_list;
+    c_list_t activate_cb_list;
+    c_list_t cursor_event_cb_list;
+    c_list_t text_changed_cb_list;
+    c_list_t text_deleted_cb_list;
+    c_list_t text_inserted_cb_list;
 
     rut_closure_t *buffer_insert_text_closure;
     rut_closure_t *buffer_delete_text_closure;

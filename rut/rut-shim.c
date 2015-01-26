@@ -39,7 +39,7 @@ struct _rut_shim_t {
 
     rut_shell_t *shell;
 
-    rut_list_t preferred_size_cb_list;
+    c_list_t preferred_size_cb_list;
 
     rut_shim_axis_t axis;
 
@@ -179,7 +179,7 @@ rut_shim_new(rut_shell_t *shell, float width, float height)
 
     shim->shell = shell;
 
-    rut_list_init(&shim->preferred_size_cb_list);
+    c_list_init(&shim->preferred_size_cb_list);
 
     rut_graphable_init(shim);
 

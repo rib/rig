@@ -54,7 +54,7 @@
 #include "rut-os.h"
 
 struct _rut_poll_source_t {
-    rut_list_t link;
+    c_list_t link;
 
     rut_shell_t *shell;
     int fd;
@@ -150,7 +150,7 @@ find_fd_source(rut_shell_t *shell, int fd)
 {
     rut_poll_source_t *tmp;
 
-    rut_list_for_each(tmp, &shell->poll_sources, link)
+    c_list_for_each(tmp, &shell->poll_sources, link)
     {
         if (tmp->fd == fd)
             return tmp;
@@ -183,7 +183,7 @@ rut_poll_shell_remove_fd(rut_shell_t *shell, int fd)
 
     shell->poll_sources_age++;
 
-    rut_list_remove(&source->link);
+    c_list_remove(&source->link);
     free_source(source);
 }
 
@@ -302,7 +302,7 @@ rut_poll_shell_add_fd(rut_shell_t *shell,
         uv_poll_start(&source->uv_poll, uv_events, source_poll_cb);
     }
 
-    rut_list_insert(shell->poll_sources.prev, &source->link);
+    c_list_insert(shell->poll_sources.prev, &source->link);
 
     shell->poll_sources_age++;
 
@@ -327,7 +327,7 @@ rut_poll_shell_add_source(
 void
 rut_poll_shell_remove_source(rut_shell_t *shell, rut_poll_source_t *source)
 {
-    rut_list_remove(&source->link);
+    c_list_remove(&source->link);
     free_source(source);
 }
 
@@ -359,7 +359,7 @@ rut_poll_shell_remove_idle(rut_shell_t *shell, rut_closure_t *idle)
 {
     rut_closure_disconnect(idle);
 
-    if (rut_list_empty(&shell->idle_closures))
+    if (c_list_empty(&shell->idle_closures))
         uv_idle_stop(&shell->uv_idle);
 }
 
@@ -518,9 +518,9 @@ integrate_cg_events(rut_shell_t *shell)
 void
 rut_poll_init(rut_shell_t *shell)
 {
-    rut_list_init(&shell->poll_sources);
-    rut_list_init(&shell->idle_closures);
-    rut_list_init(&shell->sigchild_closures);
+    c_list_init(&shell->poll_sources);
+    c_list_init(&shell->idle_closures);
+    c_list_init(&shell->sigchild_closures);
 }
 
 static void

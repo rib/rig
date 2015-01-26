@@ -155,8 +155,8 @@ dump_journal(rig_undo_journal_t *journal, int indent)
     c_debug("\n\n%*sJournal %p\n", indent, "", journal);
     indent += 2;
 
-    if (!rut_list_empty(&journal->redo_ops)) {
-        rut_list_for_each(undo_redo, &journal->redo_ops, list_node)
+    if (!c_list_empty(&journal->redo_ops)) {
+        c_list_for_each(undo_redo, &journal->redo_ops, list_node)
         dump_op(undo_redo, indent);
 
         c_debug("%*s %25s REDO OPS\n", indent, "", "");
@@ -164,7 +164,7 @@ dump_journal(rig_undo_journal_t *journal, int indent)
         c_debug("%*s %25s UNDO OPS\n", indent, "", "");
     }
 
-    rut_list_for_each_reverse(undo_redo, &journal->undo_ops, list_node)
+    c_list_for_each_reverse(undo_redo, &journal->undo_ops, list_node)
     dump_op(undo_redo, indent);
 }
 
@@ -173,7 +173,7 @@ revert_recent_controller_constant_change(rig_undo_journal_t *journal,
                                          rig_controller_t *controller,
                                          rut_property_t *property)
 {
-    if (!rut_list_empty(&journal->undo_ops)) {
+    if (!c_list_empty(&journal->undo_ops)) {
         undo_redo_t *last_op =
             rut_container_of(journal->undo_ops.prev, last_op, list_node);
 
@@ -233,7 +233,7 @@ revert_recent_controller_path_change(rig_undo_journal_t *journal,
                                      float t,
                                      rut_property_t *property)
 {
-    if (!rut_list_empty(&journal->undo_ops)) {
+    if (!c_list_empty(&journal->undo_ops)) {
         undo_redo_t *last_op =
             rut_container_of(journal->undo_ops.prev, last_op, list_node);
 
@@ -394,7 +394,7 @@ static undo_redo_t *
 revert_recent_property_change(rig_undo_journal_t *journal,
                               rut_property_t *property)
 {
-    if (!rut_list_empty(&journal->undo_ops)) {
+    if (!c_list_empty(&journal->undo_ops)) {
         undo_redo_t *last_op =
             rut_container_of(journal->undo_ops.prev, last_op, list_node);
 
@@ -459,7 +459,7 @@ rig_undo_journal_add_entity(rig_undo_journal_t *journal,
 
     /* We assume there aren't currently any controller references to
      * this entity. */
-    rut_list_init(&add_entity->controller_properties);
+    c_list_init(&add_entity->controller_properties);
     add_entity->saved_controller_properties = true;
 
     rig_undo_journal_insert(journal, undo_redo);
@@ -520,7 +520,7 @@ rig_undo_journal_add_component(rig_undo_journal_t *journal,
 
     /* We assume there are no controller references to the entity
      * currently */
-    rut_list_init(&add_component->controller_properties);
+    c_list_init(&add_component->controller_properties);
     add_component->saved_controller_properties = true;
 
     rig_undo_journal_insert(journal, undo_redo);
@@ -569,7 +569,7 @@ rig_undo_journal_log_add_controller(rig_undo_journal_t *journal,
 
     /* We assume there are no controller references to this controller
      * currently */
-    rut_list_init(&add_controller->controller_properties);
+    c_list_init(&add_controller->controller_properties);
     add_controller->saved_controller_properties = true;
 
     rig_undo_journal_insert(journal, undo_redo);
@@ -621,7 +621,7 @@ undo_redo_subjournal_apply(rig_undo_journal_t *journal,
 {
     rig_undo_journal_t *subjournal = undo_redo->d.subjournal;
 
-    rut_list_for_each(undo_redo, &subjournal->undo_ops, list_node)
+    c_list_for_each(undo_redo, &subjournal->undo_ops, list_node)
     undo_redo_apply(journal, undo_redo);
 }
 
@@ -634,12 +634,12 @@ undo_redo_subjournal_invert(undo_redo_t *undo_redo_src)
 
     subjournal_dst = rig_undo_journal_new(subjournal_src->engine);
 
-    rut_list_for_each(sub_undo_redo, &subjournal_src->undo_ops, list_node)
+    c_list_for_each(sub_undo_redo, &subjournal_src->undo_ops, list_node)
     {
         undo_redo_t *subinverse = undo_redo_invert(sub_undo_redo);
         /* Insert at the beginning so that the list will end up in the
          * reverse order */
-        rut_list_insert(&subjournal_dst->undo_ops, &subinverse->list_node);
+        c_list_insert(&subjournal_dst->undo_ops, &subinverse->list_node);
     }
 
     inverse = c_slice_dup(undo_redo_t, undo_redo_src);
@@ -955,11 +955,11 @@ undo_redo_set_control_method_free(undo_redo_t *undo_redo)
 }
 
 static void
-copy_controller_property_list(rut_list_t *src, rut_list_t *dst)
+copy_controller_property_list(c_list_t *src, c_list_t *dst)
 {
     undo_redo_prop_data_t *prop_data;
 
-    rut_list_for_each(prop_data, src, link)
+    c_list_for_each(prop_data, src, link)
     {
         undo_redo_prop_data_t *prop_data_copy =
             c_slice_new(undo_redo_prop_data_t);
@@ -971,26 +971,26 @@ copy_controller_property_list(rut_list_t *src, rut_list_t *dst)
         rut_boxed_copy(&prop_data_copy->constant_value,
                        &prop_data->constant_value);
 
-        rut_list_insert(dst->prev, &prop_data_copy->link);
+        c_list_insert(dst->prev, &prop_data_copy->link);
     }
 }
 
 typedef struct _undo_redo_controller_state_t {
-    rut_list_t link;
+    c_list_t link;
 
     rig_controller_t *controller;
-    rut_list_t properties;
+    c_list_t properties;
 } undo_redo_controller_state_t;
 
 static void
-copy_controller_references(rut_list_t *src_controller_properties,
-                           rut_list_t *dst_controller_properties)
+copy_controller_references(c_list_t *src_controller_properties,
+                           c_list_t *dst_controller_properties)
 {
     undo_redo_controller_state_t *src_controller_state;
 
-    rut_list_init(dst_controller_properties);
+    c_list_init(dst_controller_properties);
 
-    rut_list_for_each(src_controller_state, src_controller_properties, link)
+    c_list_for_each(src_controller_state, src_controller_properties, link)
     {
         undo_redo_controller_state_t *dst_controller_state =
             c_slice_new(undo_redo_controller_state_t);
@@ -998,9 +998,9 @@ copy_controller_references(rut_list_t *src_controller_properties,
         dst_controller_state->controller =
             rut_object_ref(src_controller_state->controller);
 
-        rut_list_init(&dst_controller_state->properties);
+        c_list_init(&dst_controller_state->properties);
 
-        rut_list_insert(dst_controller_properties->prev,
+        c_list_insert(dst_controller_properties->prev,
                         &dst_controller_state->link);
 
         copy_controller_property_list(&src_controller_state->properties,
@@ -1027,7 +1027,7 @@ copy_add_delete_entity(undo_redo_t *undo_redo)
 
 typedef struct {
     rut_object_t *object;
-    rut_list_t *properties;
+    c_list_t *properties;
 } copy_controller_properties_data_t;
 
 static void
@@ -1051,19 +1051,19 @@ copy_controller_property_cb(rig_controller_prop_data_t *prop_data,
             prop_data->path ? rut_object_ref(prop_data->path) : NULL;
         undo_prop_data->property = prop_data->property;
 
-        rut_list_insert(data->properties->prev, &undo_prop_data->link);
+        c_list_insert(data->properties->prev, &undo_prop_data->link);
     }
 }
 
 static void
 save_controller_properties(rig_engine_t *engine,
                            rut_object_t *object,
-                           rut_list_t *controller_properties)
+                           c_list_t *controller_properties)
 {
     copy_controller_properties_data_t copy_properties_data;
     c_llist_t *l;
 
-    rut_list_init(controller_properties);
+    c_list_init(controller_properties);
 
     for (l = engine->edit_mode_ui->controllers; l; l = l->next) {
         rig_controller_t *controller = l->data;
@@ -1072,7 +1072,7 @@ save_controller_properties(rig_engine_t *engine,
 
         /* Grab a copy of the controller data for all the properties of the
          * entity */
-        rut_list_init(&controller_state->properties);
+        c_list_init(&controller_state->properties);
 
         copy_properties_data.object = object;
         copy_properties_data.properties = &controller_state->properties;
@@ -1080,13 +1080,13 @@ save_controller_properties(rig_engine_t *engine,
         rig_controller_foreach_property(
             controller, copy_controller_property_cb, &copy_properties_data);
 
-        if (rut_list_empty(&controller_state->properties)) {
+        if (c_list_empty(&controller_state->properties)) {
             c_slice_free(undo_redo_controller_state_t, controller_state);
             continue;
         }
 
         controller_state->controller = rut_object_ref(controller);
-        rut_list_insert(controller_properties, &controller_state->link);
+        c_list_insert(controller_properties, &controller_state->link);
     }
 }
 
@@ -1108,12 +1108,12 @@ undo_redo_delete_entity_apply(rig_undo_journal_t *journal,
 
     rig_engine_op_delete_entity(engine, delete_entity->deleted_entity);
 
-    rut_list_for_each(
+    c_list_for_each(
         controller_state, &delete_entity->controller_properties, link)
     {
         undo_redo_prop_data_t *prop_data;
 
-        rut_list_for_each(prop_data, &controller_state->properties, link)
+        c_list_for_each(prop_data, &controller_state->properties, link)
         {
             rig_engine_op_controller_remove_property(
                 engine, controller_state->controller, prop_data->property);
@@ -1152,11 +1152,11 @@ add_path_node_callback(rig_node_t *node, void *user_data)
 static void
 add_controller_properties(rig_engine_t *engine,
                           rig_controller_t *controller,
-                          rut_list_t *properties)
+                          c_list_t *properties)
 {
     undo_redo_prop_data_t *undo_prop_data;
 
-    rut_list_for_each(undo_prop_data, properties, link)
+    c_list_for_each(undo_prop_data, properties, link)
     {
         rig_engine_op_controller_add_property(
             engine, controller, undo_prop_data->property);
@@ -1195,7 +1195,7 @@ undo_redo_add_entity_apply(rig_undo_journal_t *journal,
     rig_engine_op_add_entity(
         engine, add_entity->parent_entity, add_entity->deleted_entity);
 
-    rut_list_for_each(
+    c_list_for_each(
         controller_state, &add_entity->controller_properties, link)
     {
         add_controller_properties(engine,
@@ -1217,14 +1217,14 @@ undo_redo_add_entity_invert(undo_redo_t *undo_redo_src)
 }
 
 static void
-free_controller_properties(rut_list_t *controller_properties)
+free_controller_properties(c_list_t *controller_properties)
 {
     undo_redo_controller_state_t *controller_state, *tmp;
 
-    rut_list_for_each_safe(controller_state, tmp, controller_properties, link)
+    c_list_for_each_safe(controller_state, tmp, controller_properties, link)
     {
         undo_redo_prop_data_t *prop_data, *tmp1;
-        rut_list_for_each_safe(
+        c_list_for_each_safe(
             prop_data, tmp1, &controller_state->properties, link)
         {
             if (prop_data->path)
@@ -1286,12 +1286,12 @@ undo_redo_delete_component_apply(rig_undo_journal_t *journal,
         delete_component->saved_controller_properties = true;
     }
 
-    rut_list_for_each(
+    c_list_for_each(
         controller_state, &delete_component->controller_properties, link)
     {
         undo_redo_prop_data_t *prop_data;
 
-        rut_list_for_each(prop_data, &controller_state->properties, link)
+        c_list_for_each(prop_data, &controller_state->properties, link)
         {
             rig_engine_op_controller_remove_property(
                 engine, controller_state->controller, prop_data->property);
@@ -1325,7 +1325,7 @@ undo_redo_add_component_apply(rig_undo_journal_t *journal,
     rig_engine_op_add_component(
         engine, add_component->parent_entity, add_component->deleted_component);
 
-    rut_list_for_each(
+    c_list_for_each(
         controller_state, &add_component->controller_properties, link)
     {
         add_controller_properties(engine,
@@ -1387,7 +1387,7 @@ undo_redo_add_controller_apply(rig_undo_journal_t *journal,
 
     rig_engine_op_add_controller(engine, add_controller->controller);
 
-    rut_list_for_each(
+    c_list_for_each(
         controller_state, &add_controller->controller_properties, link)
     {
         add_controller_properties(engine,
@@ -1430,12 +1430,12 @@ undo_redo_remove_controller_apply(rig_undo_journal_t *journal,
 
     rig_controller_set_suspended(remove_controller->controller, true);
 
-    rut_list_for_each(
+    c_list_for_each(
         controller_state, &remove_controller->controller_properties, link)
     {
         undo_redo_prop_data_t *prop_data;
 
-        rut_list_for_each(prop_data, &controller_state->properties, link)
+        c_list_for_each(prop_data, &controller_state->properties, link)
         {
             rig_engine_op_controller_remove_property(
                 engine, controller_state->controller, prop_data->property);
@@ -1535,33 +1535,33 @@ undo_redo_free(undo_redo_t *undo_redo)
 static void
 rig_undo_journal_flush_redos(rig_undo_journal_t *journal)
 {
-    rut_list_t reversed_operations;
+    c_list_t reversed_operations;
     undo_redo_t *l, *tmp;
 
     /* Build a list of inverted operations out of the redo list. These
      * will be added two the end of the undo list so that the previously
      * undone actions themselves become undoable actions */
-    rut_list_init(&reversed_operations);
+    c_list_init(&reversed_operations);
 
-    rut_list_for_each(l, &journal->redo_ops, list_node)
+    c_list_for_each(l, &journal->redo_ops, list_node)
     {
         undo_redo_t *inverted = undo_redo_invert(l);
 
         /* Add the inverted node to the end so it will keep the same
          * order */
         if (inverted)
-            rut_list_insert(reversed_operations.prev, &inverted->list_node);
+            c_list_insert(reversed_operations.prev, &inverted->list_node);
     }
 
     /* Add all of the redo operations again in reverse order so that if
      * the user undoes past all of the redoes to put them back into the
      * state they were before the undoes, they will be able to continue
      * undoing to undo those actions again */
-    rut_list_for_each_reverse_safe(l, tmp, &journal->redo_ops, list_node)
-    rut_list_insert(journal->undo_ops.prev, &l->list_node);
-    rut_list_init(&journal->redo_ops);
+    c_list_for_each_reverse_safe(l, tmp, &journal->redo_ops, list_node)
+    c_list_insert(journal->undo_ops.prev, &l->list_node);
+    c_list_init(&journal->redo_ops);
 
-    rut_list_insert_list(journal->undo_ops.prev, &reversed_operations);
+    c_list_insert_list(journal->undo_ops.prev, &reversed_operations);
 }
 
 static void
@@ -1627,7 +1627,7 @@ rig_undo_journal_insert(rig_undo_journal_t *journal,
 #endif
     }
 
-    rut_list_insert(journal->undo_ops.prev, &undo_redo->list_node);
+    c_list_insert(journal->undo_ops.prev, &undo_redo->list_node);
 
     dump_journal(journal, 0);
 
@@ -1662,7 +1662,7 @@ rig_undo_journal_revert(rig_undo_journal_t *journal)
         undo_redo_free(inverse);
     }
 
-    rut_list_remove(&op->list_node);
+    c_list_remove(&op->list_node);
 
     return op;
 }
@@ -1675,12 +1675,12 @@ rig_undo_journal_undo(rig_undo_journal_t *journal)
         return false;
     }
 
-    if (!rut_list_empty(&journal->undo_ops)) {
+    if (!c_list_empty(&journal->undo_ops)) {
         undo_redo_t *op = rig_undo_journal_revert(journal);
         if (!op)
             return false;
 
-        rut_list_insert(journal->redo_ops.prev, &op->list_node);
+        c_list_insert(journal->redo_ops.prev, &op->list_node);
 
         rut_shell_queue_redraw(journal->engine->shell);
 
@@ -1701,14 +1701,14 @@ rig_undo_journal_redo(rig_undo_journal_t *journal)
         return false;
     }
 
-    if (rut_list_empty(&journal->redo_ops))
+    if (c_list_empty(&journal->redo_ops))
         return false;
 
     op = rut_container_of(journal->redo_ops.prev, op, list_node);
 
     undo_redo_apply(journal, op);
-    rut_list_remove(&op->list_node);
-    rut_list_insert(journal->undo_ops.prev, &op->list_node);
+    c_list_remove(&op->list_node);
+    c_list_insert(journal->undo_ops.prev, &op->list_node);
 
     rut_shell_queue_redraw(journal->engine->shell);
 
@@ -1723,8 +1723,8 @@ rig_undo_journal_new(rig_engine_t *engine)
     rig_undo_journal_t *journal = c_slice_new0(rig_undo_journal_t);
 
     journal->engine = engine;
-    rut_list_init(&journal->undo_ops);
-    rut_list_init(&journal->redo_ops);
+    c_list_init(&journal->undo_ops);
+    c_list_init(&journal->redo_ops);
 
     return journal;
 }
@@ -1739,8 +1739,8 @@ rig_undo_journal_set_apply_on_insert(rig_undo_journal_t *journal,
 bool
 rig_undo_journal_is_empty(rig_undo_journal_t *journal)
 {
-    return (rut_list_length(&journal->undo_ops) == 0 &&
-            rut_list_length(&journal->redo_ops) == 0);
+    return (c_list_length(&journal->undo_ops) == 0 &&
+            c_list_length(&journal->redo_ops) == 0);
 }
 
 void
@@ -1748,9 +1748,9 @@ rig_undo_journal_free(rig_undo_journal_t *journal)
 {
     undo_redo_t *node, *tmp;
 
-    rut_list_for_each_safe(node, tmp, &journal->undo_ops, list_node)
+    c_list_for_each_safe(node, tmp, &journal->undo_ops, list_node)
     undo_redo_free(node);
-    rut_list_for_each_safe(node, tmp, &journal->redo_ops, list_node)
+    c_list_for_each_safe(node, tmp, &journal->redo_ops, list_node)
     undo_redo_free(node);
 
     c_slice_free(rig_undo_journal_t, journal);

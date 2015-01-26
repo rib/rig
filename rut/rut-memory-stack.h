@@ -43,14 +43,14 @@ typedef struct _rut_memory_stack_t rut_memory_stack_t;
 typedef struct _rut_memory_sub_stack_t rut_memory_sub_stack_t;
 
 struct _rut_memory_sub_stack_t {
-    rut_list_t list_node;
+    c_list_t list_node;
     uint8_t *data;
     size_t bytes;
     size_t offset;
 };
 
 struct _rut_memory_stack_t {
-    rut_list_t sub_stacks;
+    c_list_t sub_stacks;
 
     rut_memory_sub_stack_t *sub_stack;
 };

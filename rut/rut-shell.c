@@ -655,7 +655,7 @@ rut_shell_dispatch_input_event(rut_shell_t *shell, rut_input_event_t *event)
 
     event->camera = shell->window_camera;
 
-    rut_list_for_each_safe(c, tmp, &shell->input_cb_list, list_node)
+    c_list_for_each_safe(c, tmp, &shell->input_cb_list, list_node)
     {
         rut_input_callback_t cb = c->function;
 
@@ -664,7 +664,7 @@ rut_shell_dispatch_input_event(rut_shell_t *shell, rut_input_event_t *event)
             goto handled;
     }
 
-    rut_list_for_each_safe(grab, shell->next_grab, &shell->grabs, list_node)
+    c_list_for_each_safe(grab, shell->next_grab, &shell->grabs, list_node)
     {
         rut_object_t *old_camera = event->camera;
         rut_input_event_status_t grab_status;
@@ -754,7 +754,7 @@ _rut_shell_remove_grab_link(rut_shell_t *shell,
         shell->next_grab =
             rut_container_of(grab->list_node.next, grab, list_node);
 
-    rut_list_remove(&grab->list_node);
+    c_list_remove(&grab->list_node);
 
     c_slice_free(rut_shell_grab_t, grab);
 }
@@ -766,7 +766,7 @@ _rut_shell_free(void *object)
 
     rut_closure_list_disconnect_all(&shell->input_cb_list);
 
-    while (!rut_list_empty(&shell->grabs)) {
+    while (!c_list_empty(&shell->grabs)) {
         rut_shell_grab_t *first_grab =
             rut_container_of(shell->grabs.next, first_grab, list_node);
 
@@ -818,9 +818,9 @@ rut_shell_new(rut_shell_paint_callback_t paint,
 
     shell->input_queue = rut_input_queue_new(shell);
 
-    rut_list_init(&shell->input_cb_list);
-    rut_list_init(&shell->grabs);
-    rut_list_init(&shell->onscreens);
+    c_list_init(&shell->input_cb_list);
+    c_list_init(&shell->grabs);
+    c_list_init(&shell->onscreens);
 
     rut_property_context_init(&shell->property_ctx);
 
@@ -829,16 +829,16 @@ rut_shell_new(rut_shell_paint_callback_t paint,
     shell->paint_cb = paint;
     shell->user_data = user_data;
 
-    rut_list_init(&shell->pre_paint_callbacks);
-    rut_list_init(&shell->start_paint_callbacks);
-    rut_list_init(&shell->post_paint_callbacks);
+    c_list_init(&shell->pre_paint_callbacks);
+    c_list_init(&shell->start_paint_callbacks);
+    c_list_init(&shell->post_paint_callbacks);
     shell->flushing_pre_paints = false;
 
-    rut_list_init(&shell->frame_infos);
+    c_list_init(&shell->frame_infos);
 
     frame_info = c_slice_new0(rut_frame_info_t);
-    rut_list_init(&frame_info->frame_callbacks);
-    rut_list_insert(shell->frame_infos.prev, &frame_info->list_node);
+    c_list_init(&frame_info->frame_callbacks);
+    c_list_insert(shell->frame_infos.prev, &frame_info->list_node);
 
     rut_poll_init(shell);
 
@@ -916,8 +916,8 @@ rut_shell_end_redraw(rut_shell_t *shell)
     shell->frame++;
 
     frame_info->frame = shell->frame;
-    rut_list_init(&frame_info->frame_callbacks);
-    rut_list_insert(shell->frame_infos.prev, &frame_info->list_node);
+    c_list_init(&frame_info->frame_callbacks);
+    c_list_insert(shell->frame_infos.prev, &frame_info->list_node);
 }
 
 void
@@ -926,7 +926,7 @@ rut_shell_finish_frame(rut_shell_t *shell)
     rut_frame_info_t *info =
         rut_container_of(shell->frame_infos.next, info, list_node);
 
-    rut_list_remove(&info->list_node);
+    c_list_remove(&info->list_node);
 
     rut_closure_list_invoke(
         &info->frame_callbacks, rut_shell_frame_callback_t, shell, info);
@@ -1173,7 +1173,7 @@ sort_pre_paint_callbacks(rut_shell_t *shell)
     rut_shell_pre_paint_entry_t *entry;
     int i = 0, n_entries = 0;
 
-    rut_list_for_each(entry, &shell->pre_paint_callbacks, list_node)
+    c_list_for_each(entry, &shell->pre_paint_callbacks, list_node)
     {
         update_pre_paint_entry_depth(entry);
         n_entries++;
@@ -1181,7 +1181,7 @@ sort_pre_paint_callbacks(rut_shell_t *shell)
 
     entry_ptrs = c_alloca(sizeof(rut_shell_pre_paint_entry_t *) * n_entries);
 
-    rut_list_for_each(entry, &shell->pre_paint_callbacks, list_node)
+    c_list_for_each(entry, &shell->pre_paint_callbacks, list_node)
     entry_ptrs[i++] = entry;
 
     qsort(entry_ptrs,
@@ -1190,9 +1190,9 @@ sort_pre_paint_callbacks(rut_shell_t *shell)
           compare_entry_depth_cb);
 
     /* Reconstruct the list from the sorted array */
-    rut_list_init(&shell->pre_paint_callbacks);
+    c_list_init(&shell->pre_paint_callbacks);
     for (i = 0; i < n_entries; i++)
-        rut_list_insert(shell->pre_paint_callbacks.prev,
+        c_list_insert(shell->pre_paint_callbacks.prev,
                         &entry_ptrs[i]->list_node);
 }
 
@@ -1208,11 +1208,11 @@ flush_pre_paint_callbacks(rut_shell_t *shell)
      * will keep the list sorted by depth */
     shell->flushing_pre_paints = true;
 
-    while (!rut_list_empty(&shell->pre_paint_callbacks)) {
+    while (!c_list_empty(&shell->pre_paint_callbacks)) {
         rut_shell_pre_paint_entry_t *entry =
             rut_container_of(shell->pre_paint_callbacks.next, entry, list_node);
 
-        rut_list_remove(&entry->list_node);
+        c_list_remove(&entry->list_node);
 
         entry->callback(entry->graphable, entry->user_data);
 
@@ -1258,7 +1258,7 @@ rut_shell_dispatch_input_events(rut_shell_t *shell)
     rut_input_queue_t *input_queue = shell->input_queue;
     rut_input_event_t *event, *tmp;
 
-    rut_list_for_each_safe(event, tmp, &input_queue->events, list_node)
+    c_list_for_each_safe(event, tmp, &input_queue->events, list_node)
     {
         /* XXX: we remove the event from the queue before dispatching it
          * so that it can potentially be deferred to another input queue
@@ -1290,7 +1290,7 @@ rut_input_queue_new(rut_shell_t *shell)
     rut_input_queue_t *queue = c_slice_new0(rut_input_queue_t);
 
     queue->shell = shell;
-    rut_list_init(&queue->events);
+    c_list_init(&queue->events);
     queue->n_events = 0;
 
     return queue;
@@ -1308,14 +1308,14 @@ rut_input_queue_append(rut_input_queue_t *queue, rut_input_event_t *event)
             c_debug ("> not key\n");
 #endif
     }
-    rut_list_insert(queue->events.prev, &event->list_node);
+    c_list_insert(queue->events.prev, &event->list_node);
     queue->n_events++;
 }
 
 void
 rut_input_queue_remove(rut_input_queue_t *queue, rut_input_event_t *event)
 {
-    rut_list_remove(&event->list_node);
+    c_list_remove(&event->list_node);
     queue->n_events--;
 }
 
@@ -1333,9 +1333,9 @@ rut_input_queue_clear(rut_input_queue_t *input_queue)
     rut_shell_t *shell = input_queue->shell;
     rut_input_event_t *event, *tmp;
 
-    rut_list_for_each_safe(event, tmp, &input_queue->events, list_node)
+    c_list_for_each_safe(event, tmp, &input_queue->events, list_node)
     {
-        rut_list_remove(&event->list_node);
+        c_list_remove(&event->list_node);
         free_input_event(shell, event);
     }
 
@@ -1437,7 +1437,7 @@ _rut_shell_onscreen_free(void *object)
 {
     rut_shell_onscreen_t *onscreen = object;
 
-    rut_list_remove(&onscreen->link);
+    c_list_remove(&onscreen->link);
 
     rut_object_free(rut_shell_onscreen_t, object);
 }
@@ -1465,7 +1465,7 @@ rut_shell_onscreen_new(rut_shell_t *shell,
     onscreen->height = height;
     onscreen->is_ready = true;
 
-    rut_list_insert(&shell->onscreens, &onscreen->link);
+    c_list_insert(&shell->onscreens, &onscreen->link);
 
     return onscreen;
 }
@@ -1578,7 +1578,7 @@ rut_shell_grab_input(rut_shell_t *shell,
     else
         grab->camera = NULL;
 
-    rut_list_insert(&shell->grabs, &grab->list_node);
+    c_list_insert(&shell->grabs, &grab->list_node);
 }
 
 void
@@ -1588,7 +1588,7 @@ rut_shell_ungrab_input(rut_shell_t *shell,
 {
     rut_shell_grab_t *grab;
 
-    rut_list_for_each(grab, &shell->grabs, list_node)
+    c_list_for_each(grab, &shell->grabs, list_node)
     if (grab->callback == callback && grab->user_data == user_data) {
         _rut_shell_remove_grab_link(shell, grab);
         break;
@@ -1698,7 +1698,7 @@ paint_idle_cb(void *user_data)
     rut_shell_t *shell = user_data;
     rut_shell_onscreen_t *onscreen;
 
-    rut_list_for_each(onscreen, &shell->onscreens, link)
+    c_list_for_each(onscreen, &shell->onscreens, link)
         onscreen->is_dirty = false;
 
     _rut_shell_paint(user_data);
@@ -1756,11 +1756,11 @@ rut_shell_add_pre_paint_callback(rut_shell_t *shell,
                                  void *user_data)
 {
     rut_shell_pre_paint_entry_t *entry;
-    rut_list_t *insert_point;
+    c_list_t *insert_point;
 
     if (graphable) {
         /* Don't do anything if the graphable is already queued */
-        rut_list_for_each(entry, &shell->pre_paint_callbacks, list_node)
+        c_list_for_each(entry, &shell->pre_paint_callbacks, list_node)
         {
             if (entry->graphable == graphable) {
                 c_warn_if_fail(entry->callback == callback);
@@ -1787,7 +1787,7 @@ rut_shell_add_pre_paint_callback(rut_shell_t *shell,
 
         update_pre_paint_entry_depth(entry);
 
-        rut_list_for_each(next_entry, &shell->pre_paint_callbacks, list_node)
+        c_list_for_each(next_entry, &shell->pre_paint_callbacks, list_node)
         {
             if (next_entry->depth >= entry->depth) {
                 insert_point = &next_entry->list_node;
@@ -1796,7 +1796,7 @@ rut_shell_add_pre_paint_callback(rut_shell_t *shell,
         }
     }
 
-    rut_list_insert(insert_point->prev, &entry->list_node);
+    c_list_insert(insert_point->prev, &entry->list_node);
 }
 
 void
@@ -1805,10 +1805,10 @@ rut_shell_remove_pre_paint_callback_by_graphable(rut_shell_t *shell,
 {
     rut_shell_pre_paint_entry_t *entry;
 
-    rut_list_for_each(entry, &shell->pre_paint_callbacks, list_node)
+    c_list_for_each(entry, &shell->pre_paint_callbacks, list_node)
     {
         if (entry->graphable == graphable) {
-            rut_list_remove(&entry->list_node);
+            c_list_remove(&entry->list_node);
             c_slice_free(rut_shell_pre_paint_entry_t, entry);
             break;
         }
@@ -1822,10 +1822,10 @@ rut_shell_remove_pre_paint_callback(rut_shell_t *shell,
 {
     rut_shell_pre_paint_entry_t *entry;
 
-    rut_list_for_each(entry, &shell->pre_paint_callbacks, list_node)
+    c_list_for_each(entry, &shell->pre_paint_callbacks, list_node)
     {
         if (entry->callback == callback && entry->user_data == user_data) {
-            rut_list_remove(&entry->list_node);
+            c_list_remove(&entry->list_node);
             c_slice_free(rut_shell_pre_paint_entry_t, entry);
             break;
         }

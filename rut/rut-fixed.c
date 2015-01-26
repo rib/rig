@@ -39,7 +39,7 @@ struct _rut_fixed_t {
 
     rut_shell_t *shell;
 
-    rut_list_t preferred_size_cb_list;
+    c_list_t preferred_size_cb_list;
 
     float width;
     float height;
@@ -128,7 +128,7 @@ rut_fixed_new(rut_shell_t *shell, float width, float height)
 
     fixed->shell = shell;
 
-    rut_list_init(&fixed->preferred_size_cb_list);
+    c_list_init(&fixed->preferred_size_cb_list);
 
     rut_graphable_init(fixed);
 

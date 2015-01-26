@@ -38,7 +38,7 @@
 void
 rut_closure_disconnect(rut_closure_t *closure)
 {
-    rut_list_remove(&closure->list_node);
+    c_list_remove(&closure->list_node);
 
     if (closure->destroy_cb)
         closure->destroy_cb(closure->user_data);
@@ -47,9 +47,9 @@ rut_closure_disconnect(rut_closure_t *closure)
 }
 
 void
-rut_closure_list_disconnect_all(rut_list_t *list)
+rut_closure_list_disconnect_all(c_list_t *list)
 {
-    while (!rut_list_empty(list)) {
+    while (!c_list_empty(list)) {
         rut_closure_t *closure =
             rut_container_of(list->next, closure, list_node);
         rut_closure_disconnect(closure);
@@ -57,7 +57,7 @@ rut_closure_list_disconnect_all(rut_list_t *list)
 }
 
 rut_closure_t *
-rut_closure_list_add(rut_list_t *list,
+rut_closure_list_add(c_list_t *list,
                      void *function,
                      void *user_data,
                      rut_closure_destroy_callback_t destroy_cb)
@@ -68,7 +68,7 @@ rut_closure_list_add(rut_list_t *list,
     closure->user_data = user_data;
     closure->destroy_cb = destroy_cb;
 
-    rut_list_insert(list->prev, &closure->list_node);
+    c_list_insert(list->prev, &closure->list_node);
 
     return closure;
 }

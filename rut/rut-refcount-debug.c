@@ -64,7 +64,7 @@ typedef struct {
     int data_ref;
     int object_ref_count;
     int n_claims;
-    rut_list_t actions;
+    c_list_t actions;
 } rut_refcount_debug_object_t;
 
 typedef enum {
@@ -77,7 +77,7 @@ typedef enum {
 } rut_refcount_debug_action_type_t;
 
 typedef struct {
-    rut_list_t link;
+    c_list_t link;
     rut_refcount_debug_action_type_t type;
 
     /* for _CLAIM/_RELEASE actions... */
@@ -116,7 +116,7 @@ free_action_log(rut_refcount_debug_object_t *object_data)
 {
     rut_refcount_debug_action_t *action, *tmp;
 
-    rut_list_for_each_safe(action, tmp, &object_data->actions, link)
+    c_list_for_each_safe(action, tmp, &object_data->actions, link)
     free_action(action);
 }
 
@@ -165,7 +165,7 @@ log_action(rut_refcount_debug_object_t *object_data,
     }
 #endif /* RUT_ENABLE_BACKTRACE */
 
-    rut_list_insert(object_data->actions.prev, &action->link);
+    c_list_insert(object_data->actions.prev, &action->link);
 }
 
 static void
@@ -327,7 +327,7 @@ add_addresses_cb(void *key, void *value, void *user_data)
     rut_refcount_debug_object_t *object_data = value;
     rut_refcount_debug_action_t *action;
 
-    rut_list_for_each(action, &object_data->actions, link)
+    c_list_for_each(action, &object_data->actions, link)
     {
         int i;
 
@@ -411,7 +411,7 @@ dump_object_cb(rut_refcount_debug_object_t *object_data,
         rut_refcount_debug_action_t *action;
         int ref_count = 0;
 
-        rut_list_for_each(action, &object_data->actions, link)
+        c_list_for_each(action, &object_data->actions, link)
         {
             int i;
 
@@ -565,7 +565,7 @@ _rut_refcount_debug_object_created(void *object)
         object_data->data_ref = 1; /* for the object_data itself */
         object_data->object_ref_count = 1;
         object_data->n_claims = 0;
-        rut_list_init(&object_data->actions);
+        c_list_init(&object_data->actions);
         log_action(object_data, RUT_REFCOUNT_DEBUG_ACTION_TYPE_CREATE, NULL);
 
         c_hash_table_insert(state->hash, object, object_data);

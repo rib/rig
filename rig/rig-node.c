@@ -452,7 +452,7 @@ rig_node_copy(rig_node_t *node)
 }
 
 rig_node_t *
-rig_nodes_find_less_than(rig_node_t *start, rut_list_t *end, float t)
+rig_nodes_find_less_than(rig_node_t *start, c_list_t *end, float t)
 {
     rig_node_t *node;
 
@@ -465,7 +465,7 @@ rig_nodes_find_less_than(rig_node_t *start, rut_list_t *end, float t)
 }
 
 rig_node_t *
-rig_nodes_find_less_than_equal(rig_node_t *start, rut_list_t *end, float t)
+rig_nodes_find_less_than_equal(rig_node_t *start, c_list_t *end, float t)
 {
     rig_node_t *node;
 
@@ -478,7 +478,7 @@ rig_nodes_find_less_than_equal(rig_node_t *start, rut_list_t *end, float t)
 }
 
 rig_node_t *
-rig_nodes_find_greater_than(rig_node_t *start, rut_list_t *end, float t)
+rig_nodes_find_greater_than(rig_node_t *start, c_list_t *end, float t)
 {
     rig_node_t *node;
 
@@ -491,7 +491,7 @@ rig_nodes_find_greater_than(rig_node_t *start, rut_list_t *end, float t)
 }
 
 rig_node_t *
-rig_nodes_find_greater_than_equal(rig_node_t *start, rut_list_t *end, float t)
+rig_nodes_find_greater_than_equal(rig_node_t *start, c_list_t *end, float t)
 {
     rig_node_t *node;
 

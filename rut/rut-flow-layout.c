@@ -53,7 +53,7 @@ enum {
 };
 
 typedef struct {
-    rut_list_t link;
+    c_list_t link;
     rut_object_t *transform;
     rut_object_t *widget;
     rut_closure_t *preferred_size_closure;
@@ -62,7 +62,7 @@ typedef struct {
      * during re-flowing to link the child into the current line being
      * handled...
      */
-    rut_list_t line_link;
+    c_list_t line_link;
 
     /* During re-flowing we track the allocation in normalized
      * coordinates here. 'normalized' means that instead of using x, y,
@@ -94,8 +94,8 @@ struct _rut_flow_layout_t {
 
     rut_graphable_props_t graphable;
 
-    rut_list_t preferred_size_cb_list;
-    rut_list_t children;
+    c_list_t preferred_size_cb_list;
+    c_list_t children;
     int n_children;
 
     bool in_allocate;
@@ -228,7 +228,7 @@ rut_flow_layout_remove_child(rut_flow_layout_t *flow,
     rut_graphable_remove_child(child->widget);
     rut_graphable_remove_child(child->transform);
 
-    rut_list_remove(&child->link);
+    c_list_remove(&child->link);
     c_slice_free(rut_flow_layout_child_t, child);
 
     flow->n_children--;
@@ -241,7 +241,7 @@ _rut_flow_layout_free(void *object)
 
     rut_closure_list_disconnect_all(&flow->preferred_size_cb_list);
 
-    while (!rut_list_empty(&flow->children)) {
+    while (!c_list_empty(&flow->children)) {
         rut_flow_layout_child_t *child =
             rut_container_of(flow->children.next, child, link);
 
@@ -262,71 +262,71 @@ typedef void (*preferred_size_callback_t)(void *sizable,
                                           float *min_size_p,
                                           float *natural_size_p);
 
-typedef void (*flow_line_callback_t)(rut_list_t *line_list,
+typedef void (*flow_line_callback_t)(c_list_t *line_list,
                                      float line_length,
                                      float height);
 
 static void
-flow_horizontal_line_ltr(rut_list_t *line_list, float line_length, float height)
+flow_horizontal_line_ltr(c_list_t *line_list, float line_length, float height)
 {
     rut_flow_layout_child_t *tmp, *child;
 
-    rut_list_for_each_safe(child, tmp, line_list, line_link)
+    c_list_for_each_safe(child, tmp, line_list, line_link)
     {
         child->flow_x = child->a_pos;
         child->flow_y = child->b_pos;
         child->flow_width = child->a_size;
         child->flow_height = height;
 
-        rut_list_remove(&child->line_link);
+        c_list_remove(&child->line_link);
     }
 }
 
 static void
-flow_horizontal_line_rtl(rut_list_t *line_list, float line_length, float height)
+flow_horizontal_line_rtl(c_list_t *line_list, float line_length, float height)
 {
     rut_flow_layout_child_t *tmp, *child;
 
-    rut_list_for_each_safe(child, tmp, line_list, line_link)
+    c_list_for_each_safe(child, tmp, line_list, line_link)
     {
         child->flow_x = line_length - child->a_size - child->a_pos;
         child->flow_y = child->b_pos;
         child->flow_width = child->a_size;
         child->flow_height = height;
 
-        rut_list_remove(&child->line_link);
+        c_list_remove(&child->line_link);
     }
 }
 
 static void
-flow_vertical_line_ttb(rut_list_t *line_list, float line_length, float width)
+flow_vertical_line_ttb(c_list_t *line_list, float line_length, float width)
 {
     rut_flow_layout_child_t *tmp, *child;
 
-    rut_list_for_each_safe(child, tmp, line_list, line_link)
+    c_list_for_each_safe(child, tmp, line_list, line_link)
     {
         child->flow_x = child->b_pos;
         child->flow_y = child->a_pos;
         child->flow_width = width;
         child->flow_height = child->a_size;
 
-        rut_list_remove(&child->line_link);
+        c_list_remove(&child->line_link);
     }
 }
 
 static void
-flow_vertical_line_btt(rut_list_t *line_list, float line_length, float width)
+flow_vertical_line_btt(c_list_t *line_list, float line_length, float width)
 {
     rut_flow_layout_child_t *tmp, *child;
 
-    rut_list_for_each_safe(child, tmp, line_list, line_link)
+    c_list_for_each_safe(child, tmp, line_list, line_link)
     {
         child->flow_x = child->b_pos;
         child->flow_y = line_length - child->a_size - child->a_pos;
         child->flow_width = width;
         child->flow_height = child->a_size;
 
-        rut_list_remove(&child->line_link);
+        c_list_remove(&child->line_link);
     }
 }
 
@@ -448,12 +448,12 @@ reflow(rut_flow_layout_t *flow, re_flow_state_t *reflow_state, float *length_p)
     rut_flow_layout_child_t *child;
     float a_pos = 0;
     float b_pos = 0;
-    rut_list_t line_list;
+    c_list_t line_list;
     float line_max_b_size = 0;
 
-    rut_list_init(&line_list);
+    c_list_init(&line_list);
 
-    rut_list_for_each(child, &flow->children, link)
+    c_list_for_each(child, &flow->children, link)
     {
         float a_size, b_size;
 
@@ -470,7 +470,7 @@ reflow(rut_flow_layout_t *flow, re_flow_state_t *reflow_state, float *length_p)
         /* Check if we need to wrap because we've run out of space for
          * the current line... */
 
-        if (state.line_length >= 0 && !rut_list_empty(&line_list) &&
+        if (state.line_length >= 0 && !c_list_empty(&line_list) &&
             a_size > (state.line_length - a_pos)) {
             state.flow_line(&line_list, state.line_length, line_max_b_size);
 
@@ -494,13 +494,13 @@ reflow(rut_flow_layout_t *flow, re_flow_state_t *reflow_state, float *length_p)
         child->b_pos = b_pos;
         child->a_size = a_size;
 
-        rut_list_insert(&line_list, &child->line_link);
+        c_list_insert(&line_list, &child->line_link);
 
         a_pos += a_size + state.a_pad;
         line_max_b_size = MAX(line_max_b_size, b_size);
     }
 
-    if (!rut_list_empty(&line_list)) {
+    if (!c_list_empty(&line_list)) {
         float line_length =
             state.line_length >= 0 ? state.line_length : a_pos - state.a_pad;
 
@@ -518,7 +518,7 @@ flush_allocations(rut_flow_layout_t *flow)
 {
     rut_flow_layout_child_t *child;
 
-    rut_list_for_each(child, &flow->children, link)
+    c_list_for_each(child, &flow->children, link)
     {
         rut_transform_init_identity(child->transform);
         rut_transform_translate(
@@ -680,8 +680,8 @@ rut_flow_layout_new(rut_shell_t *shell,
     rut_flow_layout_t *flow = rut_object_alloc0(
         rut_flow_layout_t, &rut_flow_layout_type, _rut_flow_layout_init_type);
 
-    rut_list_init(&flow->preferred_size_cb_list);
-    rut_list_init(&flow->children);
+    c_list_init(&flow->preferred_size_cb_list);
+    c_list_init(&flow->children);
 
     rut_graphable_init(flow);
 
@@ -743,7 +743,7 @@ rut_flow_layout_add(rut_flow_layout_t *flow, rut_object_t *child_widget)
     child->preferred_size_closure = rut_sizable_add_preferred_size_callback(
         child_widget, child_preferred_size_cb, flow, NULL /* destroy */);
 
-    rut_list_insert(flow->children.prev, &child->link);
+    c_list_insert(flow->children.prev, &child->link);
 
     preferred_size_changed(flow);
     queue_allocation(flow);
@@ -756,7 +756,7 @@ rut_flow_layout_remove(rut_flow_layout_t *flow, rut_object_t *child_widget)
 
     c_return_if_fail(flow->n_children > 0);
 
-    rut_list_for_each(child, &flow->children, link)
+    c_list_for_each(child, &flow->children, link)
     {
         if (child->widget == child_widget) {
             rut_flow_layout_remove_child(flow, child);

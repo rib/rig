@@ -169,8 +169,8 @@ rig_pb_stream_new(rut_shell_t *shell)
 
     stream->type = STREAM_TYPE_DISCONNECTED;
 
-    rut_list_init(&stream->on_connect_closures);
-    rut_list_init(&stream->on_error_closures);
+    c_list_init(&stream->on_connect_closures);
+    c_list_init(&stream->on_error_closures);
 
     return stream;
 }

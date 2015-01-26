@@ -423,7 +423,7 @@ _rig_diamond_new_with_slice(rut_shell_t *shell,
     rig_diamond_t *diamond = rut_object_alloc0(
         rig_diamond_t, &rig_diamond_type, _rig_diamond_init_type);
 
-    rut_list_init(&diamond->updated_cb_list);
+    c_list_init(&diamond->updated_cb_list);
 
     diamond->component.type = RUT_COMPONENT_TYPE_GEOMETRY;
 

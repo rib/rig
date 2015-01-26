@@ -60,7 +60,7 @@ struct _rut_image_t {
     rut_paintable_props_t paintable;
     rut_graphable_props_t graphable;
 
-    rut_list_t preferred_size_cb_list;
+    c_list_t preferred_size_cb_list;
 
     rut_introspectable_props_t introspectable;
     rut_property_t properties[RUT_IMAGE_N_PROPS];
@@ -361,7 +361,7 @@ rut_image_new(rut_shell_t *shell, cg_texture_t *texture)
 
     image->shell = shell;
 
-    rut_list_init(&image->preferred_size_cb_list);
+    c_list_init(&image->preferred_size_cb_list);
 
     image->pipeline = cg_pipeline_new(shell->cg_device);
     cg_pipeline_set_layer_texture(image->pipeline,

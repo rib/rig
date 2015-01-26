@@ -79,7 +79,7 @@ _rut_object_free(size_t bytes, void *object)
     rut_type_t *type = base->type;
     rut_trait_implementation_t *trait, *tmp;
 
-    rut_list_for_each_safe(trait, tmp, &type->destructors, destructor_link)
+    c_list_for_each_safe(trait, tmp, &type->destructors, destructor_link)
     {
         trait->destructor(object);
     }

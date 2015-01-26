@@ -39,7 +39,7 @@ struct _rig_view_t {
 
     rut_shell_t *shell;
 
-    rut_list_t preferred_size_cb_list;
+    c_list_t preferred_size_cb_list;
 
     rut_box_layout_t *vbox;
     rut_box_layout_t *hbox;
@@ -184,7 +184,7 @@ rig_view_new(rig_engine_t *engine)
 
     view->shell = shell;
 
-    rut_list_init(&view->preferred_size_cb_list);
+    c_list_init(&view->preferred_size_cb_list);
 
     rut_graphable_init(view);
 
