@@ -39,7 +39,7 @@
 typedef struct _cg_pango_glyph_cache_key_t cg_pango_glyph_cache_key_t;
 
 typedef struct _atlas_closure_state_t {
-    cg_list_t list_node;
+    c_list_t list_node;
     cg_atlas_t *atlas;
     cg_atlas_reorganize_closure_t *reorganize_closure;
     cg_atlas_allocate_closure_t *allocate_closure;
@@ -55,7 +55,7 @@ struct _cg_pango_glyph_cache_t {
     /* Set of cg_atlas_tes */
     cg_atlas_set_t *atlas_set;
 
-    cg_list_t atlas_closures;
+    c_list_t atlas_closures;
 
     /* List of callbacks to invoke when an atlas is reorganized */
     GHookList reorganize_callbacks;
@@ -177,7 +177,7 @@ atlas_callback(cg_atlas_set_t *set,
         state->allocate_closure = cg_atlas_add_allocate_callback(
             atlas, allocate_glyph_cb, cache, NULL); /* destroy */
 
-        _cg_list_insert(cache->atlas_closures.prev, &state->list_node);
+        c_list_insert(cache->atlas_closures.prev, &state->list_node);
         break;
     case CG_ATLAS_SET_EVENT_REMOVED:
         break;
@@ -211,7 +211,7 @@ cg_pango_glyph_cache_new(cg_device_t *dev,
         (c_destroy_func_t)cg_pango_glyph_cache_key_free,
         (c_destroy_func_t)cg_pango_glyph_cache_value_free);
 
-    _cg_list_init(&cache->atlas_closures);
+    c_list_init(&cache->atlas_closures);
 
     cache->atlas_set = cg_atlas_set_new(dev);
 
@@ -255,13 +255,13 @@ cg_pango_glyph_cache_free(cg_pango_glyph_cache_t *cache)
 {
     atlas_closure_state_t *state, *tmp;
 
-    _cg_list_for_each_safe(state, tmp, &cache->atlas_closures, list_node)
+    c_list_for_each_safe(state, tmp, &cache->atlas_closures, list_node)
     {
         cg_atlas_remove_post_reorganize_callback(state->atlas,
                                                  state->reorganize_closure);
         cg_atlas_remove_allocate_callback(state->atlas,
                                           state->allocate_closure);
-        _cg_list_remove(&state->list_node);
+        c_list_remove(&state->list_node);
         g_slice_free(atlas_closure_state_t, state);
     }
 
