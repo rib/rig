@@ -3,6 +3,12 @@ AC_DEFUN([AM_CLIB],
   AC_REQUIRE([AC_CANONICAL_SYSTEM])
   AC_REQUIRE([AC_CANONICAL_HOST])
 
+  CLIB_EXTRA_CFLAGS="$CLIB_EXTRA_FLAGS -std=c11"
+
+  if test "x$enable_debug" = "xyes"; then
+    CLIB_EXTRA_CFLAGS="$CLIB_EXTRA_CFLAGS -DC_DEBUG"
+  fi
+
   dnl ================================================================
   dnl See what platform we are building for
   dnl ================================================================
@@ -48,7 +54,7 @@ AC_DEFUN([AM_CLIB],
 
   case $target in
   arm*-darwin*)
-      CFLAGS="$CFLAGS -U_FORTIFY_SOURCE"
+      CLIB_EXTRA_CFLAGS="$CLIB_EXTRA_CFLAGS -U_FORTIFY_SOURCE"
       ;;
   i*86-*-darwin*)
       ORDER=G_LITTLE_ENDIAN
@@ -75,13 +81,6 @@ AC_DEFUN([AM_CLIB],
   fi
   AM_CONDITIONAL(TARGET_IOS, [test "$target_ios" = "yes"])
   AM_CONDITIONAL(TARGET_OSX, [test "$target_osx" = "yes"])
-
-  AC_SUBST(ORDER)
-  AC_SUBST(CFLAGS)
-  AC_SUBST(PATHSEP)
-  AC_SUBST(SEARCHSEP)
-  AC_SUBST(OS)
-  AC_SUBST(PIDTYPE)
 
   AC_CHECK_HEADERS(fcntl.h limits.h unistd.h stdarg.h stddef.h stdint.h stdlib.h)
   AC_CHECK_FUNCS(strlcpy stpcpy strtok_r rewinddir vasprintf)
@@ -142,4 +141,11 @@ AC_DEFUN([AM_CLIB],
                      HAVE_STATIC_ASSERT=0
                     )
   AC_SUBST(HAVE_STATIC_ASSERT)
+
+  AC_SUBST(CLIB_EXTRA_CFLAGS)
+  AC_SUBST(ORDER)
+  AC_SUBST(PATHSEP)
+  AC_SUBST(SEARCHSEP)
+  AC_SUBST(OS)
+  AC_SUBST(PIDTYPE)
 ])

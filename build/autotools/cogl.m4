@@ -7,6 +7,8 @@ AC_DEFUN([AM_COGL],
   AC_REQUIRE([AM_CLIB])
   AC_REQUIRE([AC_PATH_X])
 
+  COGL_EXTRA_CFLAGS="$COGL_EXTRA_CFLAGS $CLIB_EXTRA_CFLAGS"
+  COGL_EXTRA_LDFLAGS="$COGL_EXTRA_CFLAGS $CLIB_EXTRA_LDFLAGS"
 
   dnl ================================================================
   dnl Required versions for dependencies
