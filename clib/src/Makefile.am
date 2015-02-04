@@ -9,7 +9,7 @@ win_files  = \
 
 unix_files = \
 	cdate-unix.c  cdir-unix.c  cfile-unix.c  cmisc-unix.c	\
-	cmodule-unix.c ctimer-unix.c
+	cmodule-unix.c ctimer-unix.c cxdg-unix.c
 
 # some unices and windows do not have an implementation of vasprintf
 if NEED_VASPRINTF
