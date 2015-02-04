@@ -462,7 +462,8 @@ _rig_engine_free(void *object)
     rig_pb_serializer_destroy(engine->ops_serializer);
 
     rut_memory_stack_free(engine->frame_stack);
-    rut_memory_stack_free(engine->sim_frame_stack);
+    if (engine->sim_frame_stack)
+        rut_memory_stack_free(engine->sim_frame_stack);
 
     rut_magazine_free(engine->object_id_magazine);
 
