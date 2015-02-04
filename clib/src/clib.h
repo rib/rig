@@ -175,7 +175,7 @@ typedef uint32_t c_codepoint_t;
 #define C_VA_COPY(dest, src) va_copy(dest, src)
 #endif
 
-#ifdef OS_UNIX
+#ifdef C_OS_UNIX
 #define C_BREAKPOINT()                                                         \
     C_STMT_START                                                               \
     {                                                                          \
@@ -1582,6 +1582,14 @@ double c_random_double_range(double begin, double end);
 uint32_t c_random_uint32(void);
 int32_t c_random_int32_range(int32_t begin, int32_t end);
 bool c_random_boolean(void);
+
+#ifdef C_OS_UNIX
+/* XDG dirs */
+const char *c_get_xdg_data_home(void);
+const char *c_get_xdg_data_dirs(void);
+typedef void (*c_xdg_dir_callback_t)(const char *dir, void *data);
+void c_foreach_xdg_data_dir(c_xdg_dir_callback_t callback, void *user_data);
+#endif
 
 C_END_DECLS
 
