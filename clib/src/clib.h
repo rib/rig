@@ -319,6 +319,7 @@ void c_unsetenv(const char *variable);
 
 char *c_win32_getlocale(void);
 
+#ifdef C_DEBUG
 /*
  * Precondition macros
  */
@@ -371,6 +372,17 @@ char *c_win32_getlocale(void);
         return (e);                                                            \
     }                                                                          \
     C_STMT_END
+
+#else
+
+#define c_warn_if_fail(x)
+#define c_warn_if_reached()
+#define c_return_if_fail(x)
+#define c_return_val_if_fail(x, e)
+#define c_return_if_reached(e) return e
+#define c_return_val_if_reached(e) return e
+
+#endif /* C_DEBUG */
 
 /*
  * DebugKeys
