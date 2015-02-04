@@ -159,59 +159,6 @@ c_path_get_basename(const char *filename)
     return c_strdup(&r[1]);
 }
 
-#ifndef HAVE_STRTOK_R
-// This is from BSD's strtok_r
-
-char *
-strtok_r(char *s, const char *delim, char **last)
-{
-    char *spanp;
-    int c, sc;
-    char *tok;
-
-    if (s == NULL && (s = *last) == NULL)
-        return NULL;
-
-/*
- * Skip (span) leading delimiters (s += strspn(s, delim), sort of).
- */
-cont:
-    c = *s++;
-    for (spanp = (char *)delim; (sc = *spanp++) != 0; ) {
-        if (c == sc)
-            goto cont;
-    }
-
-    if (c == 0) { /* no non-delimiter characters */
-        *last = NULL;
-        return NULL;
-    }
-    tok = s - 1;
-
-    /*
-     * Scan token (scan for delimiters: s += strcspn(s, delim), sort of).
-     * Note that delim must have one NUL; we stop if we see that, too.
-     */
-    for (;; ) {
-        c = *s++;
-        spanp = (char *)delim;
-        do {
-            if ((sc = *spanp++) == c) {
-                if (c == 0)
-                    s = NULL;
-                else {
-                    char *w = s - 1;
-                    *w = '\0';
-                }
-                *last = s;
-                return tok;
-            }
-        } while (sc != 0);
-    }
-    /* NOTREACHED */
-}
-#endif
-
 char *
 c_find_program_in_path(const char *program)
 {
