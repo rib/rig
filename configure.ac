@@ -151,7 +151,7 @@ AS_CASE(
   [yes],
   [
     test "$cflags_set" = set || CFLAGS="$CFLAGS -g -O0"
-    RIG_EXTRA_CPPFLAGS="$RIG_EXTRA_CPPFLAGS -DRIG_ENABLE_DEBUG"
+    RIG_EXTRA_CFLAGS="$RIG_EXTRA_CFLAGS -DRIG_ENABLE_DEBUG"
 
     # We can use libprotobuf for pretty printing protocol buffer streams
     RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES protobuf"
@@ -159,7 +159,7 @@ AS_CASE(
   ],
   [no],
   [
-    RIG_EXTRA_CPPFLAGS="$RIG_EXTRA_CPPFLAGS -DRIG_ENABLE_DEBUG -DG_DISABLE_CHECKS -DG_DISABLE_CAST_CHECKS"
+    RIG_EXTRA_CFLAGS="$RIG_EXTRA_CFLAGS -DRIG_ENABLE_DEBUG -DG_DISABLE_CHECKS -DG_DISABLE_CAST_CHECKS"
   ],
   [AC_MSG_ERROR([Unknown argument for --enable-debug])]
 )
@@ -552,7 +552,6 @@ AC_CHECK_FUNCS(putenv strdup)
 dnl ================================================================
 dnl What needs to be substituted in other files
 dnl ================================================================
-AC_SUBST(RIG_EXTRA_CPPFLAGS)
 AC_SUBST(RIG_EXTRA_CFLAGS)
 AC_SUBST(RIG_EXTRA_CPPFLAGS)
 AC_SUBST(RIG_EXTRA_LDFLAGS)
@@ -606,7 +605,6 @@ echo " • Compiler options:"
 echo "        Rig debug: ${enable_debug}"
 echo "        Refcount debugging: ${enable_refcount_debug}"
 echo "        Compiler flags: ${CFLAGS} ${RIG_EXTRA_CFLAGS}"
-echo "        Preprocessor flags: ${CPPFLAGS} ${RIG_EXTRA_CPPFLAGS}"
 echo "        Linker flags: ${LDFLAGS} ${RIG_EXTRA_LDFLAGS}"
 echo ""
 echo " • Extra:"
