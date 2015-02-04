@@ -1134,12 +1134,14 @@ enumerate_file_info(rig_engine_t *engine, GFile *parent, GFileInfo *info)
 
         g_object_unref(directory);
     } else if (type == G_FILE_TYPE_REGULAR ||
-               type == G_FILE_TYPE_SYMBOLIC_LINK) {
-        if (rut_file_info_is_asset(info, name)) {
-            GFile *image = g_file_get_child(parent, name);
+               type == G_FILE_TYPE_SYMBOLIC_LINK)
+    {
+        GFile *image = g_file_get_child(parent, name);
+
+        if (rig_file_info_is_asset(info, image, name))
             add_asset(engine, info, image);
-            g_object_unref(image);
-        }
+
+        g_object_unref(image);
     }
 }
 
