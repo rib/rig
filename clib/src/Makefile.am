@@ -89,7 +89,7 @@ AM_CPPFLAGS = \
 	-I$(srcdir)/sfmt \
 	-Wall \
 	$(RIG_DEP_CFLAGS) \
-	$(RIG_EXTRA_CPPFLAGS) \
+	$(RIG_EXTRA_CFLAGS) \
 	-DSFMT_MEXP=19937 \
 	$(NULL)
 
