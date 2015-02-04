@@ -255,63 +255,63 @@ _cg_premult_alpha_last_four_pixels_sse2(uint8_t *p)
        with 16-bit intermediate values. We still do four pixels by
        interleaving two registers in the hope that it will pipeline
        better */
-    asm ( /* Load eight_halves into xmm5 for later */
-        "movdqa (%1), %%xmm5\n"
-        /* Clear xmm3 */
-        "pxor %%xmm3, %%xmm3\n"
-        /* Load two pixels from p into the low half of xmm0 */
-        "movlps (%0), %%xmm0\n"
-        /* Load the next set of two pixels from p into the low half of xmm1 */
-        "movlps 8(%0), %%xmm1\n"
-        /* Unpack 8 bytes from the low quad-words in each register to 8
-           16-bit values */
-        "punpcklbw %%xmm3, %%xmm0\n"
-        "punpcklbw %%xmm3, %%xmm1\n"
-        /* Copy alpha values of the first pixel in xmm0 to all
-           components of the first pixel in xmm2 */
-        "pshuflw $255, %%xmm0, %%xmm2\n"
-        /* same for xmm1 and xmm3 */
-        "pshuflw $255, %%xmm1, %%xmm3\n"
-        /* The above also copies the second pixel directly so we now
-           want to replace the RGB components with copies of the alpha
-           components */
-        "pshufhw $255, %%xmm2, %%xmm2\n"
-        "pshufhw $255, %%xmm3, %%xmm3\n"
-        /* Multiply the rgb components by the alpha */
-        "pmullw %%xmm2, %%xmm0\n"
-        "pmullw %%xmm3, %%xmm1\n"
-        /* Add 128 to each component */
-        "paddw %%xmm5, %%xmm0\n"
-        "paddw %%xmm5, %%xmm1\n"
-        /* Copy the results to temporary registers xmm4 and xmm5 */
-        "movdqa %%xmm0, %%xmm4\n"
-        "movdqa %%xmm1, %%xmm5\n"
-        /* Divide the results by 256 */
-        "psrlw $8, %%xmm0\n"
-        "psrlw $8, %%xmm1\n"
-        /* Add the temporaries back in */
-        "paddw %%xmm4, %%xmm0\n"
-        "paddw %%xmm5, %%xmm1\n"
-        /* Divide again */
-        "psrlw $8, %%xmm0\n"
-        "psrlw $8, %%xmm1\n"
-        /* Pack the results back as bytes */
-        "packuswb %%xmm1, %%xmm0\n"
-        /* Load just_rgb into xmm3 for later */
-        "movdqa (%2), %%xmm3\n"
-        /* Reload all four pixels into xmm2 */
-        "movups (%0), %%xmm2\n"
-        /* Mask out the alpha from the results */
-        "andps %%xmm3, %%xmm0\n"
-        /* Mask out the RGB from the original four pixels */
-        "andnps %%xmm2, %%xmm3\n"
-        /* Combine the two to get the right alpha values */
-        "orps %%xmm3, %%xmm0\n"
-        /* Write to memory */
-        "movdqu %%xmm0, (%0)\n"
-        : /* no outputs */
-        : "r" (p), "r" (eight_halves), "r" (just_rgb)
-        : "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5");
+    __asm__( /* Load eight_halves into xmm5 for later */
+            "movdqa (%1), %%xmm5\n"
+            /* Clear xmm3 */
+            "pxor %%xmm3, %%xmm3\n"
+            /* Load two pixels from p into the low half of xmm0 */
+            "movlps (%0), %%xmm0\n"
+            /* Load the next set of two pixels from p into the low half of xmm1 */
+            "movlps 8(%0), %%xmm1\n"
+            /* Unpack 8 bytes from the low quad-words in each register to 8
+               16-bit values */
+            "punpcklbw %%xmm3, %%xmm0\n"
+            "punpcklbw %%xmm3, %%xmm1\n"
+            /* Copy alpha values of the first pixel in xmm0 to all
+               components of the first pixel in xmm2 */
+            "pshuflw $255, %%xmm0, %%xmm2\n"
+            /* same for xmm1 and xmm3 */
+            "pshuflw $255, %%xmm1, %%xmm3\n"
+            /* The above also copies the second pixel directly so we now
+               want to replace the RGB components with copies of the alpha
+               components */
+            "pshufhw $255, %%xmm2, %%xmm2\n"
+            "pshufhw $255, %%xmm3, %%xmm3\n"
+            /* Multiply the rgb components by the alpha */
+            "pmullw %%xmm2, %%xmm0\n"
+            "pmullw %%xmm3, %%xmm1\n"
+            /* Add 128 to each component */
+            "paddw %%xmm5, %%xmm0\n"
+            "paddw %%xmm5, %%xmm1\n"
+            /* Copy the results to temporary registers xmm4 and xmm5 */
+            "movdqa %%xmm0, %%xmm4\n"
+            "movdqa %%xmm1, %%xmm5\n"
+            /* Divide the results by 256 */
+            "psrlw $8, %%xmm0\n"
+            "psrlw $8, %%xmm1\n"
+            /* Add the temporaries back in */
+            "paddw %%xmm4, %%xmm0\n"
+            "paddw %%xmm5, %%xmm1\n"
+            /* Divide again */
+            "psrlw $8, %%xmm0\n"
+            "psrlw $8, %%xmm1\n"
+            /* Pack the results back as bytes */
+            "packuswb %%xmm1, %%xmm0\n"
+            /* Load just_rgb into xmm3 for later */
+            "movdqa (%2), %%xmm3\n"
+            /* Reload all four pixels into xmm2 */
+            "movups (%0), %%xmm2\n"
+            /* Mask out the alpha from the results */
+            "andps %%xmm3, %%xmm0\n"
+            /* Mask out the RGB from the original four pixels */
+            "andnps %%xmm2, %%xmm3\n"
+            /* Combine the two to get the right alpha values */
+            "orps %%xmm3, %%xmm0\n"
+            /* Write to memory */
+            "movdqu %%xmm0, (%0)\n"
+            : /* no outputs */
+            : "r" (p), "r" (eight_halves), "r" (just_rgb)
+            : "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5");
 }
 
 #endif /* CG_USE_PREMULT_SSE2 */
