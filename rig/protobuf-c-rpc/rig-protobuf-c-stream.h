@@ -82,11 +82,15 @@ struct _rig_pb_stream_t {
     union {
 
 #ifdef USE_UV
-        /* STREAM_TYPE_FD... */
-        uv_pipe_t uv_fd_pipe;
+        struct {
+            /* STREAM_TYPE_FD... */
+            uv_pipe_t uv_fd_pipe;
+        } fd;
 
-        /* STREAM_TYPE_TCP... */
-        uv_tcp_t socket;
+        struct {
+            /* STREAM_TYPE_TCP... */
+            uv_tcp_t socket;
+        } tcp;
 #endif
 
         /* STREAM_TYPE_BUFFER... */
@@ -110,7 +114,7 @@ struct _rig_pb_stream_t {
              */
             c_array_t *incoming_write_closures;
             c_array_t *finished_write_closures;
-        };
+        } buffer;
     };
 
     /* Common */
