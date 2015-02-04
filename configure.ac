@@ -413,6 +413,11 @@ dnl Check requirements for our C utility api
 dnl ================================================================
 AM_CLIB
 
+RIG_EXTRA_CFLAGS="$RIG_EXTRA_CFLAGS $CLIB_EXTRA_CFLAGS"
+RIG_EXTRA_LDFLAGS="$RIG_EXTRA_CFLAGS $CLIB_EXTRA_LDFLAGS"
+
+
+
 dnl ================================================================
 dnl Check requirements for our GPU utility api
 dnl ================================================================
