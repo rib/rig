@@ -30,6 +30,10 @@
 
 #include <ncurses.h>
 #include <locale.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include <clib.h>
 
@@ -76,6 +80,10 @@ enum {
 };
 
 #define PAGE_COUNT 1
+
+static int real_stdin;
+static int real_stdout;
+static int real_stderr;
 
 static void
 destroy_windows (void)
@@ -419,6 +427,10 @@ deinit_curses(void)
     destroy_windows();
     endwin();
 
+    dup2(real_stdin, 0);
+    dup2(real_stdout, 1);
+    dup2(real_stderr, 2);
+
     rig_logs_fini();
 }
 
@@ -436,15 +448,33 @@ void
 rig_curses_init(void)
 {
     struct curses_state *state = &curses_state;
+    int nullfd;
+    FILE *infd, *outfd;
+    SCREEN *screen;
 
     rig_logs_init(log_cb);
 
     state->current_page = 0;
 
+    nullfd = open("/dev/null", O_RDWR|O_CLOEXEC);
+
+    real_stdin = dup(0);
+    real_stdout = dup(1);
+    real_stderr = dup(2);
+
+    dup2(nullfd, 0);
+    dup2(nullfd, 1);
+    dup2(nullfd, 2);
+
     /* XXX: we're assuming we'll get a utf8 locale */
     setlocale(LC_ALL, "");
 
-    initscr();
+    infd = fdopen(real_stdin, "r");
+    outfd = fdopen(real_stdout, "w");
+
+    screen = newterm(NULL, outfd, infd);
+    set_term(screen);
+
     nonl();
     intrflush(stdscr, FALSE);
     keypad(stdscr, TRUE); /* enable arrow keys etc */
@@ -558,7 +588,7 @@ rig_curses_add_to_shell(rut_shell_t *shell)
 {
     curses_state.shell = shell;
 
-    rut_poll_shell_add_fd(shell, 0,
+    rut_poll_shell_add_fd(shell, real_stdin,
                           RUT_POLL_FD_EVENT_IN,
                           NULL, /* prepare */
                           handle_input_cb,
