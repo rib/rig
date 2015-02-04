@@ -137,6 +137,7 @@ typedef uint32_t c_codepoint_t;
     __attribute__((__format__(__printf__, format_idx, arg_idx)))
 #define C_GNUC_NULL_TERMINATED __attribute__((__sentinel__))
 #define C_GNUC_DEPRECATED __attribute__((__deprecated__))
+#define C_DEPRECATED(MSG) __attribute__((deprecated(MSG)))
 #else
 #define C_GNUC_GNUSED
 #define C_GNUC_NORETURN
@@ -145,6 +146,7 @@ typedef uint32_t c_codepoint_t;
 #define C_GNUC_PRINTF(format_idx, arg_idx)
 #define C_GNUC_NULL_TERMINATED
 #define C_GNUC_DEPRECATED
+#define C_DEPRECATED(MSG)
 #endif
 
 #ifdef C_HAVE_STATIC_ASSERT
