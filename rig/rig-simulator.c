@@ -451,9 +451,7 @@ simulator_stop_service(rig_simulator_t *simulator)
     rut_object_unref(simulator->simulator_peer);
     simulator->simulator_peer = NULL;
 
-    /* For now we assume we would only stop the service due to an RPC
-     * error and so we should quit this process... */
-    exit(1);
+    rut_shell_quit(simulator->shell);
 }
 
 static void
