@@ -276,6 +276,19 @@ c_strdup(const char *str)
     }
     return NULL;
 }
+
+#if defined(_GNU_SOURCE) && defined(__GNUC__)
+#define c_strdupa(s) strdupa(s)
+#define c_strndupa(s) strndupa(s)
+#else
+#define c_strdupa(const char *str) strcpy(alloca(strlen(str) + 1, str))
+#define c_strndupa(const char *str, size_t n) strncpy(alloca(strnlen(str, n) + 1, str))
+#endif
+
+#ifdef WIN32
+#define strtok_r strtok_s
+#endif
+
 char **c_strdupv(char **str_array);
 int c_strcmp0(const char *str1, const char *str2);
 
