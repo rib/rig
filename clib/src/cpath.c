@@ -27,6 +27,9 @@
  */
 #include <config.h>
 #include <stdio.h>
+
+#include <test-fixtures/test-unit.h>
+
 #include <clib.h>
 #include <errno.h>
 
@@ -86,6 +89,18 @@ c_build_path(const char *separator, const char *first_element, ...)
     va_end(args);
 
     return c_string_free(path, false);
+}
+
+bool
+is_separator(const char c)
+{
+    if (c == C_DIR_SEPARATOR)
+        return true;
+#ifdef C_OS_WIN32
+    if (c == '/')
+        return true;
+#endif
+    return false;
 }
 
 static char *
@@ -157,6 +172,219 @@ c_path_get_basename(const char *filename)
     }
 
     return c_strdup(&r[1]);
+}
+
+static void
+normalize_slashes(char *filename, int len)
+{
+    int i;
+
+    for (i = 0; i < len; i++)
+        if (is_separator(filename[i]))
+            filename[i] = C_DIR_SEPARATOR;
+}
+
+static void
+squash_duplicate_separators(char *filename, int *len_in_out)
+{
+    int len = *len_in_out;
+    int out = 1;
+    int i;
+
+    for (i = 1; i < len; i++) {
+        if (filename[i] == C_DIR_SEPARATOR &&
+            filename[out - 1] == C_DIR_SEPARATOR)
+            continue;
+        else
+            filename[out++] = filename[i];
+    }
+
+    filename[out] = '\0';
+    *len_in_out = out;
+}
+
+static void
+squash_redundant_dot_dirs(char *filename, int *len_in_out)
+{
+    int len = *len_in_out;
+    int out = 0;
+    int i;
+
+    for (i = 0; i < len; ) {
+        if (filename[i] == '.' &&
+            filename[i + 1] == C_DIR_SEPARATOR)
+        {
+            if (out == 0 || filename[out - 1] == C_DIR_SEPARATOR) {
+                i += 2;
+                continue;
+            }
+        } else
+            filename[out++] = filename[i++];
+    }
+
+    if (out > 1 && filename[out - 1] == '.' && filename[out - 2] == C_DIR_SEPARATOR)
+        out--;
+
+    filename[out] = '\0';
+    *len_in_out = out;
+}
+
+static bool
+squash_dotdot_dirs(char *filename, int *len_in_out)
+{
+    int len = *len_in_out;
+    int out = 0;
+    int i;
+
+    for (i = 0; i < len; ) {
+        if (filename[i] == C_DIR_SEPARATOR &&
+            filename[i + 1] == '.' &&
+            filename[i + 2] == '.')
+        {
+            if (out == 0)
+                return false;
+            for (; out >= 0; out--)
+                if (filename[out] == C_DIR_SEPARATOR)
+                    break;
+            if (out < 0)
+                out = 0;
+            i += 3;
+        } else
+            filename[out++] = filename[i++];
+    }
+
+    filename[out] = '\0';
+    *len_in_out = out;
+    return true;
+}
+
+static void
+remove_trailing_slash(char *filename, int *len_in_out)
+{
+    int len = *len_in_out;
+
+    if (len > 1 && filename[len - 1] == C_DIR_SEPARATOR) {
+        filename[len - 1] = '\0';
+        *len_in_out = len - 1;
+    }
+}
+
+static bool
+do_path_normalize(char *filename, int *len_in_out)
+{
+    int len = *len_in_out;
+
+    if (len == 0)
+        return false;
+
+    normalize_slashes(filename, len);
+    squash_duplicate_separators(filename, len_in_out);
+    squash_redundant_dot_dirs(filename, len_in_out);
+    if (!squash_dotdot_dirs(filename, len_in_out))
+        return false;
+    remove_trailing_slash(filename, len_in_out);
+
+    return true;
+}
+
+char *
+c_path_normalize(char *filename, int *len_in_out)
+{
+    int prefix_len = 0;
+    int path_len;
+    bool status;
+
+    if (filename[0] == C_DIR_SEPARATOR && filename[1] == filename[0])
+        prefix_len++;
+    else if (c_ascii_isalpha(filename[0]) && filename[1] == ':')
+        prefix_len += 2;
+
+    path_len = *len_in_out - prefix_len;
+
+    status = do_path_normalize(filename + prefix_len, &path_len);
+    *len_in_out = path_len + prefix_len;
+
+    return status ? filename : NULL;
+}
+
+UNIT_TEST(check_normalize_filename,
+          0, /* requirements */
+          0) /* failure cases */
+{
+    struct {
+        const char *a;
+        const char *b;
+    } tests[] = {
+        { "./test", "test" },
+        { ".///test", "test" },
+        { ".///test///", "test" },
+        { ".///test///a/", "test/a" },
+        { ".///test///a/b///", "test/a/b" },
+        { ".///test//./a/b///", "test/a/b" },
+        { "././/test//./a/b///", "test/a/b" },
+        { "././/test//./a/b///.", "test/a/b" },
+    };
+    int i;
+
+    for (i = 0; i < C_N_ELEMENTS(tests); i++) {
+        char *str = c_strdup(tests[i].a);
+        int len = strlen(str);
+        c_assert_cmpstr(c_path_normalize(str, &len), ==, tests[i].b);
+        c_free(str);
+    }
+}
+
+static bool
+c_path_is_relative(const char *path)
+{
+#ifdef C_OS_WIN32
+    if (path[0] == '/' || path[0] == '\\')
+        return false;
+
+    if (c_ascii_isalpha(path[0]) &&
+        path[1] == ':' &&
+        (path[2] == '/' || path[2] == '\\'))
+        return false;
+#else
+    if (path[0] == '/')
+        return false;
+#endif
+
+    return true;
+}
+
+char *
+c_path_get_relative_path(const char *parent,
+                         const char *descendant)
+{
+    int parent_len = strlen(parent);
+    char *parent_norm = alloca(parent_len + 1);
+    int descendant_len = strlen(descendant);
+    char *descendant_norm = alloca(descendant_len + 1);
+
+    memcpy(parent_norm, parent, parent_len + 1);
+    memcpy(descendant_norm, descendant, descendant_len + 1);
+
+    if (!c_path_normalize(descendant_norm, &descendant_len))
+        return NULL;
+
+    if (c_path_is_relative(descendant_norm))
+        return c_strdup(descendant_norm);
+
+    if (!c_path_normalize(parent_norm, &parent_len))
+        return NULL;
+
+    if (strncmp(parent_norm, descendant_norm, parent_len) == 0) {
+        char *ret = descendant_norm + parent_len;
+        if (ret[0] == '\0')
+            return c_strdup(".");
+        else if (ret[0] != C_DIR_SEPARATOR)
+            return NULL;
+        else
+            return c_strdup(ret + 1);
+    }
+
+    return NULL;
 }
 
 char *

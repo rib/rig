@@ -1255,6 +1255,9 @@ char *c_path_get_basename(const char *filename);
 char *c_find_program_in_path(const char *program);
 char *c_get_current_dir(void);
 bool c_path_is_absolute(const char *filename);
+char *c_path_get_relative_path(const char *parent,
+                               const char *descendant);
+char *c_path_normalize(char *filename, int *len_in_out);
 
 const char *c_get_home_dir(void);
 const char *c_get_tmp_dir(void);
