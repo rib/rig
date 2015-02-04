@@ -555,7 +555,8 @@ _rig_simulator_free(void *object)
 
     rut_object_unref(simulator->engine);
 
-    rut_object_unref(simulator->simulator_peer);
+    if (simulator->simulator_peer)
+        rut_object_unref(simulator->simulator_peer);
     rut_object_unref(simulator->stream);
 
     rut_object_unref(simulator->shell);
