@@ -39,15 +39,15 @@ drain_finished_write_closures(rig_pb_stream_t *stream)
 {
     int i;
 
-    for (i = 0; i < stream->finished_write_closures->len; i++) {
+    for (i = 0; i < stream->buffer.finished_write_closures->len; i++) {
         rig_pb_stream_write_closure_t *closure =
-            c_array_index(stream->finished_write_closures, void *, i);
+            c_array_index(stream->buffer.finished_write_closures, void *, i);
 
         if (closure->done_callback)
             closure->done_callback(closure);
     }
 
-    c_array_set_size(stream->finished_write_closures, 0);
+    c_array_set_size(stream->buffer.finished_write_closures, 0);
 }
 
 void
@@ -57,13 +57,13 @@ rig_pb_stream_disconnect(rig_pb_stream_t *stream)
     {
 #ifdef USE_UV
     case STREAM_TYPE_FD:
-        uv_read_stop((uv_stream_t *)&stream->uv_fd_pipe);
-        uv_close((uv_handle_t *)&stream->uv_fd_pipe,
+        uv_read_stop((uv_stream_t *)&stream->fd.uv_fd_pipe);
+        uv_close((uv_handle_t *)&stream->fd.uv_fd_pipe,
                  NULL /* closed callback */);
         break;
     case STREAM_TYPE_TCP:
-        uv_read_stop((uv_stream_t *)&stream->socket);
-        uv_close((uv_handle_t *)&stream->socket,
+        uv_read_stop((uv_stream_t *)&stream->tcp.socket);
+        uv_close((uv_handle_t *)&stream->tcp.socket,
                  NULL /* closed callback */);
         break;
 #endif
@@ -73,30 +73,30 @@ rig_pb_stream_disconnect(rig_pb_stream_t *stream)
 
             /* Give all incoming write closures back to the other end
              * so they can be freed */
-            for (i = 0; i < stream->incoming_write_closures->len; i++) {
+            for (i = 0; i < stream->buffer.incoming_write_closures->len; i++) {
                 rig_pb_stream_write_closure_t *closure =
-                    c_array_index(stream->incoming_write_closures, void *, i);
+                    c_array_index(stream->buffer.incoming_write_closures, void *, i);
 
-                c_array_append_val(stream->other_end->finished_write_closures,
+                c_array_append_val(stream->buffer.other_end->buffer.finished_write_closures,
                                    closure);
             }
-            c_array_free(stream->incoming_write_closures,
+            c_array_free(stream->buffer.incoming_write_closures,
                          true /* free storage */);
-            stream->incoming_write_closures = NULL;
+            stream->buffer.incoming_write_closures = NULL;
 
             drain_finished_write_closures(stream);
 
-            c_array_free(stream->finished_write_closures,
+            c_array_free(stream->buffer.finished_write_closures,
                          true /* free storage */);
-            stream->finished_write_closures = NULL;
+            stream->buffer.finished_write_closures = NULL;
 
-            stream->other_end->other_end = NULL;
-            stream->other_end = NULL;
+            stream->buffer.other_end->buffer.other_end = NULL;
+            stream->buffer.other_end = NULL;
         }
 
-        if (stream->read_idle) {
-            rut_poll_shell_remove_idle(stream->shell, stream->read_idle);
-            stream->read_idle = NULL;
+        if (stream->buffer.read_idle) {
+            rut_poll_shell_remove_idle(stream->shell, stream->buffer.read_idle);
+            stream->buffer.read_idle = NULL;
         }
         break;
     case STREAM_TYPE_DISCONNECTED:
@@ -130,9 +130,9 @@ _stream_free(void *object)
 
     rig_pb_stream_disconnect(stream);
 
-    if (stream->connect_idle) {
-        rut_poll_shell_remove_idle(stream->shell, stream->connect_idle);
-        stream->connect_idle = NULL;
+    if (stream->type == STREAM_TYPE_BUFFER && stream->buffer.connect_idle) {
+        rut_poll_shell_remove_idle(stream->shell, stream->buffer.connect_idle);
+        stream->buffer.connect_idle = NULL;
     }
 
     rut_closure_list_disconnect_all(&stream->on_connect_closures);
@@ -217,10 +217,10 @@ rig_pb_stream_set_fd_transport(rig_pb_stream_t *stream, int fd)
 
     stream->type = STREAM_TYPE_FD;
 
-    uv_pipe_init(loop, &stream->uv_fd_pipe, true /* enable handle passing */);
-    stream->uv_fd_pipe.data = stream;
+    uv_pipe_init(loop, &stream->fd.uv_fd_pipe, true /* enable handle passing */);
+    stream->fd.uv_fd_pipe.data = stream;
 
-    uv_pipe_open(&stream->uv_fd_pipe, fd);
+    uv_pipe_open(&stream->fd.uv_fd_pipe, fd);
 
     set_connected(stream);
 }
@@ -287,8 +287,8 @@ on_address_resolved(uv_getaddrinfo_t *resolver,
     c_message("stream: Resolved address of \"%s\" = %s",
               stream->hostname, ip_address);
 
-    uv_tcp_init(loop, &stream->socket);
-    stream->socket.data = stream;
+    uv_tcp_init(loop, &stream->tcp.socket);
+    stream->tcp.socket.data = stream;
 
     /* NB: we took a reference to keep the stream alive while
      * resolving the address, so conceptually we are now handing
@@ -299,7 +299,7 @@ on_address_resolved(uv_getaddrinfo_t *resolver,
 
     stream->connection_request.data = stream;
     uv_tcp_connect(&stream->connection_request,
-                   &stream->socket,
+                   &stream->tcp.socket,
                    result->ai_addr,
                    on_connect);
 
@@ -347,17 +347,17 @@ rig_pb_stream_accept_tcp_connection(rig_pb_stream_t *stream,
     c_return_if_fail(stream->port == NULL);
     c_return_if_fail(stream->resolving == false);
 
-    uv_tcp_init(loop, &stream->socket);
-    stream->socket.data = stream;
+    uv_tcp_init(loop, &stream->tcp.socket);
+    stream->tcp.socket.data = stream;
 
-    err = uv_accept((uv_stream_t *)server, (uv_stream_t *)&stream->socket);
+    err = uv_accept((uv_stream_t *)server, (uv_stream_t *)&stream->tcp.socket);
     if (err != 0) {
         c_warning("Failed to accept tcp connection: %s", uv_strerror(err));
-        uv_close((uv_handle_t *)&stream->socket, NULL);
+        uv_close((uv_handle_t *)&stream->tcp.socket, NULL);
         return;
     }
 
-    err = uv_tcp_getpeername(&stream->socket, &name, &namelen);
+    err = uv_tcp_getpeername(&stream->tcp.socket, &name, &namelen);
     if (err != 0) {
         c_warning("Failed to query peer address of tcp socket: %s",
                   uv_strerror(err));
@@ -391,17 +391,17 @@ data_buffer_stream_read_idle(void *user_data)
     rig_pb_stream_t *stream = user_data;
     int i;
 
-    rut_poll_shell_remove_idle(stream->shell, stream->read_idle);
-    stream->read_idle = NULL;
+    rut_poll_shell_remove_idle(stream->shell, stream->buffer.read_idle);
+    stream->buffer.read_idle = NULL;
 
     c_return_if_fail(stream->type == STREAM_TYPE_BUFFER);
-    c_return_if_fail(stream->other_end != NULL);
-    c_return_if_fail(stream->other_end->type == STREAM_TYPE_BUFFER);
+    c_return_if_fail(stream->buffer.other_end != NULL);
+    c_return_if_fail(stream->buffer.other_end->type == STREAM_TYPE_BUFFER);
     c_return_if_fail(stream->read_callback != NULL);
 
-    for (i = 0; i < stream->incoming_write_closures->len; i++) {
+    for (i = 0; i < stream->buffer.incoming_write_closures->len; i++) {
         rig_pb_stream_write_closure_t *closure =
-            c_array_index(stream->incoming_write_closures, void *, i);
+            c_array_index(stream->buffer.incoming_write_closures, void *, i);
 
         stream->read_callback(stream,
                               (uint8_t *)closure->buf.base,
@@ -409,10 +409,10 @@ data_buffer_stream_read_idle(void *user_data)
                               stream->read_data);
 
         /* Give the closure back so it can be freed*/
-        c_array_append_val(stream->other_end->finished_write_closures,
+        c_array_append_val(stream->buffer.other_end->buffer.finished_write_closures,
                            closure);
     }
-    c_array_set_size(stream->incoming_write_closures, 0);
+    c_array_set_size(stream->buffer.incoming_write_closures, 0);
 
     drain_finished_write_closures(stream);
 }
@@ -420,15 +420,15 @@ data_buffer_stream_read_idle(void *user_data)
 static void
 queue_data_buffer_stream_read(rig_pb_stream_t *stream)
 {
-    c_return_if_fail(stream->other_end != NULL);
-    c_return_if_fail(stream->other_end->type == STREAM_TYPE_BUFFER);
-    c_return_if_fail(stream->incoming_write_closures->len);
+    c_return_if_fail(stream->buffer.other_end != NULL);
+    c_return_if_fail(stream->buffer.other_end->type == STREAM_TYPE_BUFFER);
+    c_return_if_fail(stream->buffer.incoming_write_closures->len);
 
     if (!stream->read_callback)
         return;
 
-    if (stream->read_idle == NULL) {
-        stream->read_idle =
+    if (stream->buffer.read_idle == NULL) {
+        stream->buffer.read_idle =
             rut_poll_shell_add_idle(stream->shell,
                                     data_buffer_stream_read_idle,
                                     stream,
@@ -441,8 +441,8 @@ stream_set_connected_idle(void *user_data)
 {
     rig_pb_stream_t *stream = user_data;
 
-    rut_poll_shell_remove_idle(stream->shell, stream->connect_idle);
-    stream->connect_idle = NULL;
+    rut_poll_shell_remove_idle(stream->shell, stream->buffer.connect_idle);
+    stream->buffer.connect_idle = NULL;
 
     set_connected(stream);
 }
@@ -450,9 +450,9 @@ stream_set_connected_idle(void *user_data)
 static void
 queue_set_connected(rig_pb_stream_t *stream)
 {
-    c_return_if_fail(stream->connect_idle == NULL);
+    c_return_if_fail(stream->buffer.connect_idle == NULL);
 
-    stream->connect_idle =
+    stream->buffer.connect_idle =
         rut_poll_shell_add_idle(stream->shell,
                                 stream_set_connected_idle,
                                 stream,
@@ -465,19 +465,19 @@ rig_pb_stream_set_in_thread_direct_transport(rig_pb_stream_t *stream,
 {
     c_return_if_fail(stream->type == STREAM_TYPE_DISCONNECTED);
 
-    stream->incoming_write_closures = c_array_new(false, /* nul terminated */
-                                                  false, /* clear */
-                                                  sizeof(void *));
+    stream->buffer.incoming_write_closures = c_array_new(false, /* nul terminated */
+                                                         false, /* clear */
+                                                         sizeof(void *));
 
-    stream->finished_write_closures = c_array_new(false, /* nul terminated */
-                                                  false, /* clear */
-                                                  sizeof(void *));
+    stream->buffer.finished_write_closures = c_array_new(false, /* nul terminated */
+                                                         false, /* clear */
+                                                         sizeof(void *));
 
-    stream->other_end = other_end;
+    stream->buffer.other_end = other_end;
 
     /* Only consider the streams connected when both ends have been
      * initialised... */
-    if (other_end->other_end == stream) {
+    if (other_end->buffer.other_end == stream) {
         stream->type = STREAM_TYPE_BUFFER;
         other_end->type = STREAM_TYPE_BUFFER;
 
@@ -498,9 +498,18 @@ read_cb(uv_stream_t *uv_stream, ssize_t len, const uv_buf_t *buf)
 {
     rig_pb_stream_t *stream = uv_stream->data;
 
-    if (len == UV_EOF)
+    if (len < 0) {
+        c_warning("stream error: %s", uv_strerror(len));
         rig_pb_stream_disconnect(stream);
-    else if (len > 0)
+        return;
+    }
+
+    if (len == UV_EOF) {
+        rig_pb_stream_disconnect(stream);
+        return;
+    }
+
+    if (len > 0)
         stream->read_callback(stream, (uint8_t *)buf->base, len,
                               stream->read_data);
 
@@ -524,19 +533,19 @@ rig_pb_stream_set_read_callback(rig_pb_stream_t *stream,
     {
 #ifdef USE_UV
     case STREAM_TYPE_FD:
-        uv_read_start((uv_stream_t *)&stream->uv_fd_pipe,
+        uv_read_start((uv_stream_t *)&stream->fd.uv_fd_pipe,
                       read_buf_alloc_cb, read_cb);
         break;
     case STREAM_TYPE_TCP:
-        uv_read_start((uv_stream_t *)&stream->socket,
+        uv_read_start((uv_stream_t *)&stream->tcp.socket,
                       read_buf_alloc_cb, read_cb);
         break;
 #endif
     case STREAM_TYPE_BUFFER:
-        c_return_if_fail(stream->other_end != NULL);
-        c_return_if_fail(stream->other_end->type == STREAM_TYPE_BUFFER);
+        c_return_if_fail(stream->buffer.other_end != NULL);
+        c_return_if_fail(stream->buffer.other_end->type == STREAM_TYPE_BUFFER);
 
-        if (stream->incoming_write_closures->len)
+        if (stream->buffer.incoming_write_closures->len)
             queue_data_buffer_stream_read(stream);
         break;
     case STREAM_TYPE_DISCONNECTED:
@@ -558,17 +567,17 @@ rig_pb_stream_write(rig_pb_stream_t *stream,
     c_return_if_fail(stream->type != STREAM_TYPE_DISCONNECTED);
 
     if (stream->type == STREAM_TYPE_BUFFER) {
-        c_return_if_fail(stream->other_end != NULL);
-        c_return_if_fail(stream->other_end->type == STREAM_TYPE_BUFFER);
+        c_return_if_fail(stream->buffer.other_end != NULL);
+        c_return_if_fail(stream->buffer.other_end->type == STREAM_TYPE_BUFFER);
 
-        c_array_append_val(stream->other_end->incoming_write_closures, closure);
+        c_array_append_val(stream->buffer.other_end->buffer.incoming_write_closures, closure);
 
-        queue_data_buffer_stream_read(stream->other_end);
+        queue_data_buffer_stream_read(stream->buffer.other_end);
     } else {
         closure->write_req.data = closure;
 
         uv_write(&closure->write_req,
-                 (uv_stream_t *)&stream->uv_fd_pipe,
+                 (uv_stream_t *)&stream->fd.uv_fd_pipe,
                  &closure->buf,
                  1, /* n buffers */
                  uv_write_done_cb);
