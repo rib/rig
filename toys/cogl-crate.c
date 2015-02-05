@@ -1,3 +1,5 @@
+#include <config.h>
+
 #include <clib.h>
 #include <cogl/cogl.h>
 #include <cogl-pango/cogl-pango.h>
