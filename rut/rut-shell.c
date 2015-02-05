@@ -54,10 +54,6 @@
 
 #include <clib.h>
 
-#ifdef USE_GLIB
-#include <gio/gio.h>
-#endif
-
 #include <cogl/cogl.h>
 #ifdef USE_SDL
 #include <cogl/cogl-sdl.h>
