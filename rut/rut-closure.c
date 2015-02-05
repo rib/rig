@@ -3,7 +3,7 @@
  *
  * Rig Utilities
  *
- * Copyright (C) 2012 Intel Corporation.
+ * Copyright (C) 2012,2015 Intel Corporation.
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -27,21 +27,61 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include <clib.h>
 
 #include "rut-closure.h"
 
+void rut_closure_list_insert(c_list_t *list, rut_closure_t *closure)
+{
+    if (closure->list_node.next) {
+        c_warn_if_fail(closure->owner == list);
+        return;
+    }
+
+    c_list_insert(list->prev, &closure->list_node);
+
+#ifdef C_DEBUG
+    closure->owner = list;
+#endif
+}
+
+void rut_closure_remove(rut_closure_t *closure)
+{
+    if (closure->list_node.next) {
+        c_list_remove(&closure->list_node);
+
+        if (closure->removed_cb)
+            closure->removed_cb(closure->user_data);
+    }
+
+    c_warn_if_fail(closure->allocated == false);
+}
+
+void rut_closure_list_remove_all(c_list_t *list)
+{
+    while (!c_list_empty(list)) {
+        rut_closure_t *closure =
+            c_container_of(list->next, rut_closure_t, list_node);
+        rut_closure_remove(closure);
+    }
+}
+
+
+/*
+ * XXX: Deprecated apis...
+ */
+
 void
 rut_closure_disconnect(rut_closure_t *closure)
 {
+    c_return_if_fail(closure->allocated);
+
     c_list_remove(&closure->list_node);
 
-    if (closure->destroy_cb)
-        closure->destroy_cb(closure->user_data);
+    if (closure->removed_cb)
+        closure->removed_cb(closure->user_data);
 
     c_slice_free(rut_closure_t, closure);
 }
@@ -51,7 +91,7 @@ rut_closure_list_disconnect_all(c_list_t *list)
 {
     while (!c_list_empty(list)) {
         rut_closure_t *closure =
-            rut_container_of(list->next, closure, list_node);
+            c_container_of(list->next, rut_closure_t, list_node);
         rut_closure_disconnect(closure);
     }
 }
@@ -66,9 +106,14 @@ rut_closure_list_add(c_list_t *list,
 
     closure->function = function;
     closure->user_data = user_data;
-    closure->destroy_cb = destroy_cb;
+    closure->removed_cb = destroy_cb;
 
     c_list_insert(list->prev, &closure->list_node);
+
+#ifdef C_DEBUG
+    closure->allocated = true;
+    closure->owner = list;
+#endif
 
     return closure;
 }
