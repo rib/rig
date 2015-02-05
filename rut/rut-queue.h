@@ -63,6 +63,9 @@ void rut_queue_free(rut_queue_t *queue);
 
 #define rut_queue_is_empty(queue) (!!(queue->len))
 
+/* C++ will gets upset with how c_container_of is implemented */
+#ifndef __cplusplus
+
 static inline void
 rut_queue_init(rut_queue_t *queue)
 {
@@ -150,5 +153,7 @@ rut_queue_sort(rut_queue_t *queue,
 {
     _rut_queue_sort_items(&queue->items, queue->len, compare);
 }
+
+#endif /* __cplusplus */
 
 #endif /* _RUT_QUEUE_H_ */
