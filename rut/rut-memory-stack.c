@@ -96,7 +96,7 @@ _rut_memory_stack_alloc_in_next_sub_stack(rut_memory_stack_t *stack,
 {
     rut_memory_sub_stack_t *sub_stack;
     void *ret;
-    size_t total_size;
+    size_t total_size = 0;
     size_t new_sub_stack_size;
 
     sub_stack = stack->sub_stack;
@@ -161,11 +161,14 @@ rut_memory_stack_rewind(rut_memory_stack_t *stack)
 {
     rut_memory_sub_stack_t *last_sub_stack =
         c_container_of(stack->sub_stacks.prev, rut_memory_sub_stack_t, link);
-    rut_memory_sub_stack_t *sub_stack;
+    rut_memory_sub_stack_t *sub_stack, *tmp;
 
-    for (c_list_set_iterator(stack->sub_stacks.next, sub_stack, link);
+    /* expanded c_list_for_each_safe() so we can we can terminate
+     * before the last element... */
+    for (c_list_set_iterator(stack->sub_stacks.next, sub_stack, link),
+         c_list_set_iterator(sub_stack->link.next, tmp, link);
          sub_stack != last_sub_stack;
-         c_list_set_iterator(sub_stack->link.next, sub_stack, link))
+         sub_stack = tmp, c_list_set_iterator(sub_stack->link.next, tmp, link))
     {
         c_list_remove(&sub_stack->link);
         rut_memory_sub_stack_free(sub_stack);
