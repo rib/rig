@@ -31,7 +31,6 @@
 
 #include <config.h>
 
-#include "rut-list.h"
 #include "rut-closure.h"
 #include "rut-shell.h"
 #include "rut-interfaces.h"
