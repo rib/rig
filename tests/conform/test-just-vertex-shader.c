@@ -1,3 +1,5 @@
+#include <config.h>
+
 #include <cogl/cogl.h>
 
 #include <string.h>

@@ -1,3 +1,5 @@
+#include <config.h>
+
 #undef CG_COMPILATION
 #include <cogl/cogl.h>
 

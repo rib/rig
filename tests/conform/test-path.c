@@ -1,3 +1,5 @@
+#include <config.h>
+
 #include <cogl/cogl.h>
 #include <cogl-path/cogl-path.h>
 
