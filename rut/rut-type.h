@@ -31,8 +31,9 @@
 
 #include <sys/types.h>
 
+#include <clib.h>
+
 #include "rut-bitmask.h"
-#include "rut-list.h"
 #include "rut-magazine.h"
 
 C_BEGIN_DECLS

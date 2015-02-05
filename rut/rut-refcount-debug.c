@@ -47,7 +47,6 @@
 #endif /* RUT_ENABLE_BACKTRACE */
 
 #include "rut-refcount-debug.h"
-#include "rut-list.h"
 #include "rut-object.h"
 #include "rut-util.h"
 

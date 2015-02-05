@@ -32,7 +32,6 @@
 
 #include "rut-object.h"
 #include "rut-types.h"
-#include "rut-list.h"
 #include "rut-interfaces.h"
 
 typedef struct _rut_paintable_props_t {

@@ -37,7 +37,6 @@
 #include "rut-closure.h"
 #include "rut-interfaces.h"
 #include "rut-introspectable.h"
-#include "rut-list.h"
 #include "rut-stack.h"
 
 enum {

@@ -28,11 +28,9 @@
  *
  */
 
-#include <clib.h>
-
 #include <stdint.h>
 
-#include "rut-list.h"
+#include <clib.h>
 
 #ifndef __RUT_MEMORY_STACK__
 #define __RUT_MEMORY_STACK__

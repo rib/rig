@@ -36,7 +36,6 @@
 typedef struct _rig_undo_journal_t rig_undo_journal_t;
 
 #include "rig-types.h"
-#include "rut-list.h"
 #include "rig-node.h"
 #include "rig-path.h"
 #include "rig-controller.h"

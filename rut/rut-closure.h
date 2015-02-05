@@ -29,7 +29,7 @@
 #ifndef _RUT_CLOSURE_LIST_H_
 #define _RUT_CLOSURE_LIST_H_
 
-#include "rut-list.h"
+#include <clib.h>
 
 /*
  * This implements a list of callbacks that can be used like signals

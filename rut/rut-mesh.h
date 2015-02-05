@@ -38,7 +38,6 @@ typedef struct _rut_attribute_t rut_attribute_t;
 typedef struct _rut_mesh_t rut_mesh_t;
 
 #include "rut-shell.h"
-#include "rut-list.h"
 
 typedef enum {
     RUT_ATTRIBUTE_TYPE_BYTE,

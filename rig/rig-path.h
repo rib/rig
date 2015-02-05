@@ -31,7 +31,6 @@
 
 #include <rut.h>
 #include "rig-node.h"
-#include "rut-list.h"
 
 typedef struct _rig_path_t rig_path_t;
 
