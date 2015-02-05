@@ -478,7 +478,7 @@ void
 rig_undo_journal_delete_entity(rig_undo_journal_t *journal,
                                rig_entity_t *entity)
 {
-    rig_undo_journal_t *sub_journal = rig_undo_journal_new(journal->engine);
+    rig_undo_journal_t *sub_journal = rig_undo_journal_new(journal->editor);
     undo_redo_t *undo_redo;
     undo_redo_add_delete_entity_t *delete_entity;
     rig_entity_t *parent = rut_graphable_get_parent(entity);
@@ -632,7 +632,7 @@ undo_redo_subjournal_invert(undo_redo_t *undo_redo_src)
     rig_undo_journal_t *subjournal_dst;
     undo_redo_t *inverse, *sub_undo_redo;
 
-    subjournal_dst = rig_undo_journal_new(subjournal_src->engine);
+    subjournal_dst = rig_undo_journal_new(subjournal_src->editor);
 
     c_list_for_each(sub_undo_redo, &subjournal_src->undo_ops, list_node)
     {
@@ -706,7 +706,7 @@ undo_redo_set_controller_const_apply(rig_undo_journal_t *journal,
                                        set_controller_const->property,
                                        &set_controller_const->value1);
 
-    rig_reload_inspector_property(journal->engine,
+    rig_reload_inspector_property(journal->editor,
                                   set_controller_const->property);
 }
 
@@ -758,7 +758,7 @@ undo_redo_path_add_apply(rig_undo_journal_t *journal,
                                            add_remove->t,
                                            &add_remove->value);
 
-    rig_reload_inspector_property(engine, add_remove->property);
+    rig_reload_inspector_property(journal->editor, add_remove->property);
 }
 
 static undo_redo_t *
@@ -798,7 +798,7 @@ undo_redo_path_remove_apply(rig_undo_journal_t *journal,
     rig_engine_op_controller_path_delete_node(
         engine, add_remove->controller, add_remove->property, add_remove->t);
 
-    rig_reload_inspector_property(engine, add_remove->property);
+    rig_reload_inspector_property(journal->editor, add_remove->property);
 }
 
 static undo_redo_t *
@@ -843,7 +843,7 @@ undo_redo_path_modify_apply(rig_undo_journal_t *journal,
                                            modify->t,
                                            &modify->value1);
 
-    rig_reload_inspector_property(engine, modify->property);
+    rig_reload_inspector_property(journal->editor, modify->property);
 }
 
 static undo_redo_t *
@@ -886,7 +886,7 @@ undo_redo_set_controlled_apply(rig_undo_journal_t *journal,
         rig_engine_op_controller_remove_property(
             engine, set_controlled->controller, set_controlled->property);
 
-    rig_reload_inspector_property(engine, set_controlled->property);
+    rig_reload_inspector_property(journal->editor, set_controlled->property);
 }
 
 static undo_redo_t *
@@ -924,7 +924,7 @@ undo_redo_set_control_method_apply(rig_undo_journal_t *journal,
                                                  set_control_method->property,
                                                  set_control_method->method);
 
-    rig_reload_inspector_property(engine, set_control_method->property);
+    rig_reload_inspector_property(journal->editor, set_control_method->property);
 }
 
 static undo_redo_t *
@@ -1300,7 +1300,7 @@ undo_redo_delete_component_apply(rig_undo_journal_t *journal,
 
     rig_engine_op_delete_component(engine, delete_component->deleted_component);
 
-    rig_editor_update_inspector(journal->engine);
+    rig_editor_update_inspector(journal->editor);
 }
 
 static undo_redo_t *
@@ -1333,7 +1333,7 @@ undo_redo_add_component_apply(rig_undo_journal_t *journal,
                                   &controller_state->properties);
     }
 
-    rig_editor_update_inspector(journal->engine);
+    rig_editor_update_inspector(journal->editor);
 }
 
 static undo_redo_t *
@@ -1384,6 +1384,8 @@ undo_redo_add_controller_apply(rig_undo_journal_t *journal,
         &undo_redo->d.add_remove_controller;
     undo_redo_controller_state_t *controller_state;
     rig_engine_t *engine = journal->engine;
+    rig_controller_view_t *controller_view =
+        rig_editor_get_controller_view(journal->editor);
 
     rig_engine_op_add_controller(engine, add_controller->controller);
 
@@ -1395,9 +1397,9 @@ undo_redo_add_controller_apply(rig_undo_journal_t *journal,
                                   &controller_state->properties);
     }
 
-    rig_controller_view_update_controller_list(engine->controller_view);
+    rig_controller_view_update_controller_list(controller_view);
 
-    rig_controller_view_set_controller(engine->controller_view,
+    rig_controller_view_set_controller(controller_view,
                                        add_controller->controller);
 }
 
@@ -1420,6 +1422,8 @@ undo_redo_remove_controller_apply(rig_undo_journal_t *journal,
     undo_redo_controller_state_t *controller_state;
     rig_engine_t *engine = journal->engine;
     rig_ui_t *edit_mode_ui = engine->edit_mode_ui;
+    rig_controller_view_t *controller_view =
+        rig_editor_get_controller_view(journal->editor);
 
     if (!remove_controller->saved_controller_properties) {
         save_controller_properties(journal->engine,
@@ -1444,11 +1448,11 @@ undo_redo_remove_controller_apply(rig_undo_journal_t *journal,
 
     rig_engine_op_delete_controller(engine, remove_controller->controller);
 
-    rig_controller_view_update_controller_list(engine->controller_view);
+    rig_controller_view_update_controller_list(controller_view);
 
-    if (rig_controller_view_get_controller(engine->controller_view) ==
+    if (rig_controller_view_get_controller(controller_view) ==
         remove_controller->controller) {
-        rig_controller_view_set_controller(engine->controller_view,
+        rig_controller_view_set_controller(controller_view,
                                            edit_mode_ui->controllers->data);
     }
 }
@@ -1718,11 +1722,13 @@ rig_undo_journal_redo(rig_undo_journal_t *journal)
 }
 
 rig_undo_journal_t *
-rig_undo_journal_new(rig_engine_t *engine)
+rig_undo_journal_new(rig_editor_t *editor)
 {
     rig_undo_journal_t *journal = c_slice_new0(rig_undo_journal_t);
 
-    journal->engine = engine;
+    journal->editor = editor;
+    journal->engine = rig_editor_get_engine(editor);
+
     c_list_init(&journal->undo_ops);
     c_list_init(&journal->redo_ops);
 

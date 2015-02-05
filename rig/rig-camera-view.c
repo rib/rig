@@ -174,9 +174,11 @@ paint_overlays(rig_camera_view_t *view,
 
 #ifdef RIG_EDITOR_ENABLED
     if (draw_tools) {
-        if (engine->grid_prim)
-            rut_util_draw_jittered_primitive3f(
-                fb, engine->grid_prim, 0.5, 0.5, 0.5);
+        rig_editor_t *editor = rig_engine_get_editor(engine);
+        cg_primitive_t *grid_prim = rig_editor_get_grid_prim(editor);
+
+        if (grid_prim)
+            rut_util_draw_jittered_primitive3f(fb, grid_prim, 0.5, 0.5, 0.5);
 
         switch (view->tool_id) {
         case RIG_TOOL_ID_SELECTION:
@@ -502,6 +504,9 @@ entity_translate_done_cb(rig_entity_t *entity,
 {
     rig_camera_view_t *view = user_data;
     rig_engine_t *engine = view->engine;
+    rig_editor_t *editor = rig_engine_get_editor(engine);
+    rig_controller_view_t *controller_view =
+        rig_editor_get_controller_view(editor);
 
     /* If the entity hasn't actually moved then we'll ignore it. It that
      * case the user is presumably just trying to select the entity and we
@@ -520,12 +525,12 @@ entity_translate_done_cb(rig_entity_t *entity,
         boxed_position.d.vec3_val[1] = start[1] + rel[1];
         boxed_position.d.vec3_val[2] = start[2] + rel[2];
 
-        rig_controller_view_edit_property(engine->controller_view,
+        rig_controller_view_edit_property(controller_view,
                                           false, /* mergable */
                                           position_prop,
                                           &boxed_position);
 
-        rig_reload_position_inspector(engine, entity);
+        rig_reload_position_inspector(editor, entity);
 
         rut_shell_queue_redraw(engine->shell);
     }
@@ -539,11 +544,12 @@ entity_translate_cb(rig_entity_t *entity,
 {
     rig_camera_view_t *view = user_data;
     rig_engine_t *engine = view->engine;
+    rig_editor_t *editor = rig_engine_get_editor(engine);
 
     rig_entity_set_translate(
         entity, start[0] + rel[0], start[1] + rel[1], start[2] + rel[2]);
 
-    rig_reload_position_inspector(engine, entity);
+    rig_reload_position_inspector(editor, entity);
 
     rut_shell_queue_redraw(engine->shell);
 }
@@ -1124,6 +1130,9 @@ move_entity_to_camera(rig_camera_view_t *view, rig_entity_t *entity)
     rut_property_t *rotation_property =
         &entity->properties[RUT_ENTITY_PROP_ROTATION];
     rut_boxed_t boxed_rotation;
+    rig_editor_t *editor = rig_engine_get_editor(engine);
+    rig_controller_view_t *controller_view =
+        rig_editor_get_controller_view(editor);
 
     camera_position = rig_entity_get_position(view->view_camera);
 
@@ -1132,7 +1141,7 @@ move_entity_to_camera(rig_camera_view_t *view, rig_entity_t *entity)
     boxed_position.d.vec3_val[1] = camera_position[1];
     boxed_position.d.vec3_val[2] = camera_position[2];
 
-    rig_controller_view_edit_property(engine->controller_view,
+    rig_controller_view_edit_property(controller_view,
                                       false, /* mergable */
                                       position_prop,
                                       &boxed_position);
@@ -1142,12 +1151,12 @@ move_entity_to_camera(rig_camera_view_t *view, rig_entity_t *entity)
     boxed_rotation.type = RUT_PROPERTY_TYPE_QUATERNION;
     boxed_rotation.d.quaternion_val = *camera_rotation;
 
-    rig_controller_view_edit_property(engine->controller_view,
+    rig_controller_view_edit_property(controller_view,
                                       false, /* mergable */
                                       rotation_property,
                                       &boxed_rotation);
 
-    sub_journal = rig_editor_pop_undo_subjournal(engine);
+    sub_journal = rig_editor_pop_undo_subjournal(editor);
     rig_undo_journal_log_subjournal(engine->undo_journal, sub_journal);
 }
 #endif /* RIG_EDITOR_ENABLED */
@@ -1415,20 +1424,24 @@ input_cb(rut_input_event_t *event,
             }
         } else if (action == RUT_MOTION_EVENT_ACTION_DOWN &&
                    state == RUT_BUTTON_STATE_1) {
+            rig_editor_t *editor = rig_engine_get_editor(engine);
+            rig_objects_selection_t *selection =
+                rig_editor_get_objects_selection(editor);
+
             if ((rut_motion_event_get_modifier_state(event) &
                  RUT_MODIFIER_SHIFT_ON)) {
                 rig_select_object(
-                    engine, picked_entity, RUT_SELECT_ACTION_TOGGLE);
+                    editor, picked_entity, RUT_SELECT_ACTION_TOGGLE);
             } else
                 rig_select_object(
-                    engine, picked_entity, RUT_SELECT_ACTION_REPLACE);
+                    editor, picked_entity, RUT_SELECT_ACTION_REPLACE);
 
             /* If we have selected an entity then initiate a grab so the
              * entity can be moved with the mouse...
              */
-            if (engine->objects_selection->objects) {
+            if (selection->objects) {
                 if (!translate_grab_entities(view,
-                                             engine->objects_selection->objects,
+                                             selection->objects,
                                              rut_motion_event_get_x(event),
                                              rut_motion_event_get_y(event),
                                              entity_translate_cb,
@@ -1543,11 +1556,16 @@ input_cb(rut_input_event_t *event,
             }
             case RUT_KEY_j:
                 if ((rut_key_event_get_modifier_state(event) &
-                     RUT_MODIFIER_CTRL_ON) &&
-                    engine->objects_selection->objects) {
-                    c_llist_t *l;
-                    for (l = engine->objects_selection->objects; l; l = l->next)
-                        move_entity_to_camera(view, l->data);
+                     RUT_MODIFIER_CTRL_ON)) {
+                    rig_editor_t *editor = rig_engine_get_editor(engine);
+                    rig_objects_selection_t *selection =
+                        rig_editor_get_objects_selection(editor);
+
+                    if (selection->objects) {
+                        c_llist_t *l;
+                        for (l = selection->objects; l; l = l->next)
+                            move_entity_to_camera(view, l->data);
+                    }
                 }
                 break;
             case RUT_KEY_0:
@@ -1724,7 +1742,7 @@ input_region_cb(rut_input_region_t *region,
 
 #ifdef RIG_EDITOR_ENABLED
 static void
-tool_changed_cb(rig_engine_t *engine, rig_tool_id_t tool_id, void *user_data)
+tool_changed_cb(rig_editor_t *editor, rig_tool_id_t tool_id, void *user_data)
 {
     rig_camera_view_t *view = user_data;
 
@@ -1781,6 +1799,8 @@ rig_camera_view_new(rig_engine_t *engine)
 
 #ifdef RIG_EDITOR_ENABLED
     if (engine->frontend && engine->frontend_id == RIG_FRONTEND_ID_EDITOR) {
+        rig_editor_t *editor = rig_engine_get_editor(engine);
+
         view->tool_overlay = rut_graph_new(engine->shell);
         rut_graphable_add_child(view, view->tool_overlay);
         rut_object_unref(view->tool_overlay);
@@ -1788,9 +1808,10 @@ rig_camera_view_new(rig_engine_t *engine)
         view->selection_tool = rig_selection_tool_new(view, view->tool_overlay);
         view->rotation_tool = rig_rotation_tool_new(view);
 
-        rig_add_tool_changed_callback(
-            engine, tool_changed_cb, view, NULL); /* destroy notify */
-        tool_changed_cb(engine, RIG_TOOL_ID_SELECTION, view);
+        rig_add_tool_changed_callback(editor,
+                                      tool_changed_cb, view,
+                                      NULL); /* destroy notify */
+        tool_changed_cb(editor, RIG_TOOL_ID_SELECTION, view);
     }
 #endif /* RIG_EDITOR_ENABLED */
 
@@ -1836,8 +1857,6 @@ rig_camera_view_set_ui(rig_camera_view_t *view, rig_ui_t *ui)
     view->ui = ui;
 
     if (ui) {
-        rig_engine_t *engine = view->engine;
-
         rut_shell_add_input_camera(
             view->shell, view->view_camera_component, ui->scene);
         set_play_camera(view, ui->play_camera);

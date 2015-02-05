@@ -42,11 +42,6 @@
 #include <cogl/cogl-sdl.h>
 #endif
 
-#ifdef USE_GTK
-#include <glib-object.h>
-#include <gtk/gtk.h>
-#endif
-
 #include <clib.h>
 
 #include <rut.h>
@@ -66,9 +61,6 @@
 #ifdef HAVE_OSX
 #include "rig-osx.h"
 #endif
-#ifdef USE_GTK
-#include "rig-application.h"
-#endif /* USE_GTK */
 #include "rig-split-view.h"
 #include "rig-rpc-network.h"
 #include "rig.pb-c.h"
@@ -335,15 +327,7 @@ rig_engine_set_edit_mode_ui(rig_engine_t *engine, rig_ui_t *ui)
     rig_engine_set_play_mode_ui(engine, NULL);
 
     if (engine->frontend) {
-        rig_controller_view_set_controller(engine->controller_view, NULL);
-
-        rig_editor_clear_search_results(engine->editor);
-        rig_editor_free_result_input_closures(engine->editor);
-
-        if (engine->grid_prim) {
-            cg_object_unref(engine->grid_prim);
-            engine->grid_prim = NULL;
-        }
+        rig_editor_reset(engine->editor);
     }
 
     if (engine->play_camera_handle) {
@@ -402,26 +386,6 @@ _rig_engine_free(void *object)
     rut_shell_t *shell = engine->shell;
 
     if (engine->frontend) {
-#ifdef RIG_EDITOR_ENABLED
-        if (engine->frontend_id == RIG_FRONTEND_ID_EDITOR) {
-            int i;
-
-            for (i = 0; i < C_N_ELEMENTS(engine->splits); i++)
-                rut_object_unref(engine->splits[i]);
-
-            rut_object_unref(engine->top_vbox);
-            rut_object_unref(engine->top_hbox);
-            rut_object_unref(engine->asset_panel_hbox);
-            rut_object_unref(engine->properties_hbox);
-
-            if (engine->transparency_grid)
-                rut_object_unref(engine->transparency_grid);
-
-            rut_closure_list_disconnect_all(&engine->tool_changed_cb_list);
-
-            rut_object_unref(engine->objects_selection);
-        }
-#endif
         _rig_code_fini(engine);
 
         rig_renderer_fini(engine->renderer);
@@ -436,13 +400,6 @@ _rig_engine_free(void *object)
 #ifdef __APPLE__
         rig_osx_deinit(engine);
 #endif
-
-#ifdef USE_GTK
-        {
-            GApplication *application = g_application_get_default();
-            g_object_unref(application);
-        }
-#endif /* USE_GTK */
     }
 
     rig_engine_set_edit_mode_ui(engine, NULL);
@@ -669,6 +626,16 @@ rig_engine_new_for_frontend(rut_shell_t *shell,
     return _rig_engine_new_full(shell, frontend, NULL);
 }
 
+rut_object_t *
+rig_engine_get_editor(rig_engine_t *engine)
+{
+#ifdef RIG_EDITOR_ENABLED
+    return engine->editor;
+#else
+    return NULL;
+#endif
+}
+
 rut_input_event_status_t
 rig_engine_input_handler(rut_input_event_t *event,
                          void *user_data)
@@ -722,13 +689,14 @@ rig_engine_input_handler(rut_input_event_t *event,
             case RUT_KEY_r:
                 if ((rut_key_event_get_modifier_state(event) &
                      RUT_MODIFIER_CTRL_ON)) {
+                    rig_editor_t *editor = rig_engine_get_editor(engine);
                     rig_entity_t *play_camera =
                         engine->play_mode ? engine->play_mode_ui->play_camera
                         : engine->edit_mode_ui->play_camera;
 
                     rig_select_object(
-                        engine, play_camera, RUT_SELECT_ACTION_REPLACE);
-                    rig_editor_update_inspector(engine);
+                        editor, play_camera, RUT_SELECT_ACTION_REPLACE);
+                    rig_editor_update_inspector(editor);
                     return RUT_INPUT_EVENT_STATUS_HANDLED;
                 }
                 break;

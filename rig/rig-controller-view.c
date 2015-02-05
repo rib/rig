@@ -99,7 +99,6 @@ typedef struct {
     rut_stack_t *stack;
     rut_rectangle_t *bg;
     rut_transform_t *columns_parent;
-    ;
 
     bool selected;
 
@@ -207,6 +206,7 @@ struct _rig_nodes_selection_t {
 struct _rig_controller_view_t {
     rut_object_base_t _base;
 
+    rig_editor_t *editor;
     rig_engine_t *engine;
     rut_shell_t *shell;
 
@@ -584,6 +584,7 @@ static void
 apply_node_translations(rig_controller_view_t *view,
                         marker_grab_state_t *grab_state)
 {
+    rig_editor_t *editor = view->editor;
     rig_engine_t *engine = view->engine;
     rig_undo_journal_t *subjournal;
     int n_nodes;
@@ -607,7 +608,7 @@ apply_node_translations(rig_controller_view_t *view,
     _rig_nodes_selection_foreach_node(
         view->nodes_selection, copy_nodes_cb, &state);
 
-    rig_editor_push_undo_subjournal(engine);
+    rig_editor_push_undo_subjournal(editor);
 
     /* Remove original nodes */
 
@@ -638,7 +639,7 @@ apply_node_translations(rig_controller_view_t *view,
                                                         prop_data->property);
     }
 
-    subjournal = rig_editor_pop_undo_subjournal(engine);
+    subjournal = rig_editor_pop_undo_subjournal(editor);
     rig_undo_journal_log_subjournal(engine->undo_journal, subjournal);
 
     /* NB: Adding nodes may have changed the length of the controller... */
@@ -959,11 +960,12 @@ _rig_nodes_selection_delete(rut_object_t *object)
         c_llist_t *l, *next;
         int len = c_llist_length(selection->node_groups);
         rig_controller_t *controller = view->controller;
+        rig_editor_t *editor = view->editor;
         rig_engine_t *engine = view->engine;
         rig_undo_journal_t *subjournal;
         float length = rig_controller_get_length(controller);
 
-        rig_editor_push_undo_subjournal(engine);
+        rig_editor_push_undo_subjournal(editor);
 
         for (l = selection->node_groups; l; l = next) {
             node_group_t *node_group = l->data;
@@ -994,7 +996,7 @@ _rig_nodes_selection_delete(rut_object_t *object)
             c_warn_if_fail(n_nodes == c_llist_length(node_group->nodes));
         }
 
-        subjournal = rig_editor_pop_undo_subjournal(engine);
+        subjournal = rig_editor_pop_undo_subjournal(editor);
         rig_undo_journal_log_subjournal(engine->undo_journal, subjournal);
 
         /* NB: that rig_undo_journal_delete_component () will
@@ -1979,6 +1981,7 @@ method_drop_down_change_cb(rut_property_t *value, void *user_data)
     rut_property_t *property = prop_view->prop_data->property;
     rig_controller_method_t method = rut_property_get_integer(value);
     rig_engine_t *engine = view->engine;
+    rig_editor_t *editor = rig_engine_get_editor(engine);
     rig_undo_journal_t *subjournal;
     rig_path_t *path;
 
@@ -1991,7 +1994,7 @@ method_drop_down_change_cb(rut_property_t *value, void *user_data)
         return;
     }
 
-    subjournal = rig_undo_journal_new(engine);
+    subjournal = rig_undo_journal_new(editor);
 
     /* We want the change in control method to be applied immediately
      * here otherwise in the case where we try and add an initial key
@@ -3668,7 +3671,7 @@ rig_controller_view_delete_selected_nodes (rig_controller_view_t *view)
         if (view->selected_nodes.next == view->selected_nodes.prev)
             journal = view->undo_journal;
         else
-            journal = rig_undo_journal_new (view->undo_journal->engine);
+            journal = rig_undo_journal_new (view->undo_journal->editor);
 
         while (!c_list_empty (&view->selected_nodes))
         {
@@ -3865,7 +3868,7 @@ rig_controller_view_set_controller(rig_controller_view_t *view,
             scale_focus_prop, on_scale_focus_change_cb, view);
     }
 
-    rig_editor_update_inspector(view->engine);
+    rig_editor_update_inspector(view->editor);
 }
 
 static void
@@ -3971,13 +3974,14 @@ on_scale_select_cb(rut_scale_t *scale,
 }
 
 rig_controller_view_t *
-rig_controller_view_new(rig_engine_t *engine,
+rig_controller_view_new(rig_editor_t *editor,
                         rig_undo_journal_t *undo_journal)
 {
     rig_controller_view_t *view =
         rut_object_alloc0(rig_controller_view_t,
                           &rig_controller_view_type,
                           _rig_controller_view_init_type);
+    rig_engine_t *engine = rig_editor_get_engine(editor);
     rut_stack_t *top_stack;
     rut_stack_t *stack;
     rut_box_layout_t *selector_hbox;
@@ -3990,6 +3994,7 @@ rig_controller_view_new(rig_engine_t *engine,
 
     rut_graphable_init(view);
 
+    view->editor = editor;
     view->engine = engine;
     view->shell = engine->shell;
     view->controller = NULL;
@@ -4174,8 +4179,7 @@ rig_controller_view_edit_property(rig_controller_view_t *view,
                                                      property);
             break;
         case RIG_CONTROLLER_METHOD_PATH: {
-            float focus_offset =
-                rig_controller_view_get_focus(engine->controller_view);
+            float focus_offset = rig_controller_view_get_focus(view);
 
             rig_undo_journal_set_controller_path_node_value(
                 engine->undo_journal,

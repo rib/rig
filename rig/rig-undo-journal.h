@@ -164,6 +164,7 @@ typedef struct _undo_redo_t {
 } undo_redo_t;
 
 struct _rig_undo_journal_t {
+    rig_editor_t *editor;
     rig_engine_t *engine;
 
     /* List of operations that can be undone. The operations are
@@ -281,7 +282,7 @@ bool rig_undo_journal_undo(rig_undo_journal_t *journal);
 
 bool rig_undo_journal_redo(rig_undo_journal_t *journal);
 
-rig_undo_journal_t *rig_undo_journal_new(rig_engine_t *engine);
+rig_undo_journal_t *rig_undo_journal_new(rig_editor_t *editor);
 
 void rig_undo_journal_set_apply_on_insert(rig_undo_journal_t *journal,
                                           bool apply_on_insert);

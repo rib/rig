@@ -31,7 +31,7 @@
 
 #include <clib.h>
 
-#include "rig-engine.h"
+#include "rig-editor.h"
 
 C_BEGIN_DECLS
 
@@ -64,7 +64,7 @@ struct _rig_application_t {
 
 GType rig_application_get_type(void) G_GNUC_CONST;
 
-rig_application_t *rig_application_new(rig_engine_t *engine);
+rig_application_t *rig_application_new(rig_editor_t *editor);
 
 void rig_application_add_onscreen(rig_application_t *app,
                                   rut_shell_onscreen_t *onscreen);

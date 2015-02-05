@@ -171,7 +171,8 @@ on_rotation_tool_clicked(
 static void
 update_selection_state(rig_rotation_tool_t *tool)
 {
-    rig_objects_selection_t *selection = tool->view->engine->objects_selection;
+    rig_editor_t *editor = rig_engine_get_editor(tool->view->engine);
+    rig_objects_selection_t *selection = rig_editor_get_objects_selection(editor);
     rut_object_t *camera = tool->camera_component;
 
     if (tool->active && c_llist_length(selection->objects) == 1 &&
@@ -211,16 +212,18 @@ tool_event_cb(rig_rotation_tool_t *tool,
               void *user_data)
 {
     rig_engine_t *engine = tool->view->engine;
+    rig_editor_t *editor = rig_engine_get_editor(engine);
+    rig_objects_selection_t *selection = rig_editor_get_objects_selection(editor);
     rig_entity_t *entity;
 
-    c_return_if_fail(engine->objects_selection->objects);
+    c_return_if_fail(selection->objects);
 
     /* XXX: For now we don't do anything clever to handle rotating a
      * set of entityies, since it's ambiguous what origin should be used
      * in this case. In the future the rotation capabilities need to be
      * more capable though and we may intoduce the idea of a 3D cursor
      * for example to define the origin for the set. */
-    entity = engine->objects_selection->objects->data;
+    entity = selection->objects->data;
 
     switch (type) {
     case RIG_ROTATION_TOOL_DRAG:
@@ -232,6 +235,8 @@ tool_event_cb(rig_rotation_tool_t *tool,
         rut_property_t *rotation_prop =
             rut_introspectable_lookup_property(entity, "rotation");
         rut_boxed_t value;
+        rig_controller_view_t *controller_view =
+            rig_editor_get_controller_view(editor);
 
         /* Revert the rotation before logging the new rotation into
          * the journal... */
@@ -240,7 +245,7 @@ tool_event_cb(rig_rotation_tool_t *tool,
         value.type = RUT_PROPERTY_TYPE_QUATERNION;
         value.d.quaternion_val = *new_rotation;
 
-        rig_controller_view_edit_property(engine->controller_view,
+        rig_controller_view_edit_property(controller_view,
                                           false, /* mergable */
                                           rotation_prop,
                                           &value);
@@ -298,8 +303,9 @@ rig_rotation_tool_set_active(rig_rotation_tool_t *tool, bool active)
     tool->active = active;
 
     if (active) {
+        rig_editor_t *editor = rig_engine_get_editor(tool->view->engine);
         rig_objects_selection_t *selection =
-            tool->view->engine->objects_selection;
+            rig_editor_get_objects_selection(editor);
 
         tool->objects_selection_closure =
             rig_objects_selection_add_event_callback(selection,

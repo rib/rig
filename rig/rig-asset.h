@@ -31,10 +31,6 @@
 
 #include <stdbool.h>
 
-#if USE_GLIB
-#include <gio/gio.h>
-#endif
-
 #include <rut.h>
 
 #include "rig-types.h"
@@ -101,16 +97,12 @@ rig_asset_t *rig_asset_new_font(rut_shell_t *shell,
                                 const char *path,
                                 const c_llist_t *inferred_tags);
 
-#if defined(RIG_EDITOR_ENABLED) && defined(USE_GLIB)
+#if defined(RIG_EDITOR_ENABLED)
 rig_asset_t *rig_asset_new_from_file(rig_engine_t *engine,
-                                     GFileInfo *info,
-                                     GFile *asset_file,
+                                     const char *filename,
+                                     const char *mime_type,
                                      rut_exception_t **e);
-
-bool rut_file_info_is_asset(GFileInfo *info, const char *name);
-
-c_llist_t *
-rut_infer_asset_tags(rut_shell_t *shell, GFileInfo *info, GFile *asset_file);
+bool rig_file_is_asset(const char *filename, const char *mime_type);
 #endif
 
 rig_asset_t *rig_asset_new_from_data(rut_shell_t *shell,

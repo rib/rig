@@ -55,13 +55,6 @@ typedef enum _rut_select_action_t {
 
 #include "rig-types.h"
 
-typedef struct _rig_entites_selection_t {
-    rut_object_base_t _base;
-    rig_engine_t *engine;
-    c_llist_t *objects;
-    c_list_t selection_events_cb_list;
-} rig_objects_selection_t;
-
 #ifdef HAVE_OSX
 #include "rig-osx.h"
 #endif
@@ -127,59 +120,14 @@ struct _rig_engine_t {
 
     rut_input_queue_t *simulator_input_queue;
 
-/* XXX: Move to rig_editor_t */
-#ifdef RIG_EDITOR_ENABLED
-    rut_text_t *search_text;
-    c_llist_t *required_search_tags;
-
-    c_list_t tool_changed_cb_list;
-
-    c_string_t *codegen_string0;
-    c_string_t *codegen_string1;
-    int next_code_id;
-
-    c_string_t *code_string;
-    char *code_dso_filename;
-    bool need_recompile;
-#endif
-
     rig_code_node_t *code_graph;
     c_module_t *code_dso_module;
 
     rut_object_t *renderer;
 
-    /* XXX: Move to rig_editor_t */
-    c_llist_t *undo_journal_stack;
-#ifdef RIG_EDITOR_ENABLED
-    rig_undo_journal_t *undo_journal;
-#endif
-
     rut_stack_t *top_stack;
     rig_camera_view_t *main_camera_view;
 
-    /* XXX: Move to rig_editor_t */
-    rut_bin_t *top_bin;
-    rut_box_layout_t *top_vbox;
-    rut_box_layout_t *top_hbox;
-    rut_box_layout_t *top_bar_hbox;
-    rut_box_layout_t *top_bar_hbox_ltr;
-    rut_box_layout_t *top_bar_hbox_rtl;
-    rut_box_layout_t *asset_panel_hbox;
-    rut_box_layout_t *toolbar_vbox;
-    rut_box_layout_t *properties_hbox;
-    rig_split_view_t *splits[1];
-    // RutBevel *main_area_bevel;
-    rut_stack_t *icon_bar_stack;
-    rut_stack_t *left_bar_stack;
-    // rut_transform_t *left_bar_transform;
-    // rut_transform_t *right_bar_transform;
-    rut_stack_t *right_bar_stack;
-    // rut_transform_t *main_transform;
-    rut_stack_t *bottom_bar_stack;
-    // rut_transform_t *bottom_bar_transform;
-    // rut_transform_t *screen_area_transform;
-
-    cg_primitive_t *grid_prim;
     cg_attribute_t *circle_node_attribute;
     int circle_node_n_verts;
 
@@ -193,25 +141,29 @@ struct _rig_engine_t {
     float device_height;
 
     /* XXX: Move to rig_editor_t */
-    rut_ui_viewport_t *tool_vp;
-    rut_ui_viewport_t *properties_vp;
-    rut_bin_t *inspector_bin;
-    rut_box_layout_t *inspector_box_layout;
-    rut_object_t *inspector;
-    c_llist_t *all_inspectors;
-
 #ifdef RIG_EDITOR_ENABLED
-    /* XXX: Move to rig_editor_t */
-    rig_controller_view_t *controller_view;
-#endif
+    c_string_t *codegen_string0;
+    c_string_t *codegen_string1;
+    int next_code_id;
 
-/* XXX: Move to rig_editor_t */
-#ifdef RIG_EDITOR_ENABLED
+    c_string_t *code_string;
+    char *code_dso_filename;
+    bool need_recompile;
+
+    rig_undo_journal_t *undo_journal;
+
     rig_entity_t *light_handle;
     rig_entity_t *play_camera_handle;
-    rig_objects_selection_t *objects_selection;
-    /* The transparency grid widget that is displayed behind the assets list */
-    rut_image_t *transparency_grid;
+
+#ifdef USE_AVAHI
+    const AvahiPoll *avahi_poll_api;
+    char *avahi_service_name;
+    AvahiClient *avahi_client;
+    AvahiEntryGroup *avahi_group;
+    AvahiServiceBrowser *avahi_browser;
+#endif
+
+    c_llist_t *slave_addresses;
 #endif
 
     float grab_x;
@@ -219,9 +171,6 @@ struct _rig_engine_t {
     float entity_grab_pos[3];
     rut_input_callback_t key_focus_callback;
     float grab_progress;
-
-    rig_controller_t *selected_controller;
-    rut_property_closure_t *controller_progress_closure;
 
     rut_transform_t *resize_handle_transform;
 
@@ -241,18 +190,6 @@ struct _rig_engine_t {
     rig_editor_t *editor; /* NULL if frontend isn't an editor */
 #endif
     rig_slave_t *slave; /* NULL if engine not acting as a slave */
-
-    /* TODO: move to rig_editor_t */
-#ifdef USE_AVAHI
-    const AvahiPoll *avahi_poll_api;
-    char *avahi_service_name;
-    AvahiClient *avahi_client;
-    AvahiEntryGroup *avahi_group;
-    AvahiServiceBrowser *avahi_browser;
-#endif
-
-    /* TODO: move to rig_editor_t */
-    c_llist_t *slave_addresses;
 
     rig_ui_t *edit_mode_ui;
     rig_ui_t *play_mode_ui;
@@ -280,13 +217,13 @@ struct _rig_engine_t {
 
 /* FIXME: find a better place to put these prototypes */
 
-extern rut_type_t rig_objects_selection_type;
-
 rig_engine_t *rig_engine_new_for_frontend(rut_shell_t *shell,
                                           rig_frontend_t *frontend);
 
 rig_engine_t *rig_engine_new_for_simulator(rut_shell_t *shell,
                                            rig_simulator_t *simulator);
+
+rut_object_t *rig_engine_get_editor(rig_engine_t *engine);
 
 void rig_engine_load_file(rig_engine_t *engine, const char *filename);
 
@@ -307,16 +244,6 @@ void rig_engine_set_play_mode_ui(rig_engine_t *engine, rig_ui_t *ui);
 void rig_register_asset(rig_engine_t *engine, rig_asset_t *asset);
 
 rig_asset_t *rig_lookup_asset(rig_engine_t *engine, const char *path);
-
-typedef void (*rig_tool_changed_callback_t)(rig_engine_t *engine,
-                                            rig_tool_id_t tool_id,
-                                            void *user_data);
-
-void
-rig_add_tool_changed_callback(rig_engine_t *engine,
-                              rig_tool_changed_callback_t callback,
-                              void *user_data,
-                              rut_closure_destroy_callback_t destroy_notify);
 
 void rig_engine_set_log_op_callback(rig_engine_t *engine,
                                     void (*callback)(Rig__Operation *pb_op,
