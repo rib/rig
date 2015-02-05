@@ -38,8 +38,8 @@ typedef struct _rig_controller_view_t rig_controller_view_t;
 
 extern rut_type_t rig_controller_view_type;
 
-rig_controller_view_t *
-rig_controller_view_new(rig_engine_t *engine, rig_undo_journal_t *undo_journal);
+rig_controller_view_t *rig_controller_view_new(rig_editor_t *editor,
+                                               rig_undo_journal_t *undo_journal);
 
 void rig_controller_view_update_controller_list(rig_controller_view_t *view);
 

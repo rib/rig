@@ -50,7 +50,7 @@ G_DEFINE_TYPE(rig_application_t, rig_application, G_TYPE_APPLICATION);
 #define RIG_APPLICATION_MENU_PATH "/org/zeroone/Rig/rig/menus/appmenu"
 
 struct _rig_application_private_t {
-    rig_engine_t *engine;
+    rig_editor_t *editor;
     GDBusConnection *dbus_connection;
     GMenuModel *menu_model;
     unsigned int export_menu_id;
@@ -116,7 +116,7 @@ static void
 open_activated(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
     rig_application_t *app = user_data;
-    rig_engine_t *engine = app->priv->engine;
+    rig_editor_t *editor = app->priv->editor;
     GtkWidget *dialog;
 
     dialog = gtk_file_chooser_dialoc_new("Open",
@@ -131,13 +131,13 @@ open_activated(GSimpleAction *action, GVariant *parameter, gpointer user_data)
     /* Listen to the realize so we can set our GdkWindow to be transient
      * for Rig's GdkWindow */
     g_signal_connect_after(dialog, "realize", G_CALLBACK(dialog_realized_cb),
-                           engine->frontend->onscreen->cg_onscreen);
+                           editor->frontend->onscreen->cg_onscreen);
 
     if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
         char *filename =
             gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
 
-        rig_engine_load_file(engine, filename);
+        rig_editor_load_file(editor, filename);
     }
 
     gtk_widget_destroy(dialog);
@@ -147,9 +147,9 @@ static void
 save_activated(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
     rig_application_t *app = user_data;
-    rig_engine_t *engine = app->priv->engine;
+    rig_editor_t *editor = app->priv->editor;
 
-    rig_save(engine, engine->ui_filename);
+    rig_editor_save(editor);
 }
 
 static void
@@ -165,7 +165,7 @@ quit_activated(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
     rig_application_t *app = user_data;
 
-    rut_shell_quit(app->priv->engine->shell);
+    rut_shell_quit(app->priv->editor->shell);
 }
 
 static GActionEntry app_entries[] = {
@@ -343,7 +343,7 @@ rig_application_init(rig_application_t *self)
 }
 
 rig_application_t *
-rig_application_new(rig_engine_t *engine)
+rig_application_new(rig_editor_t *editor)
 {
     rig_application_t *self;
 
@@ -352,7 +352,7 @@ rig_application_new(rig_engine_t *engine)
     self = g_object_new(
         RIG_TYPE_APPLICATION, "application-id", "org.zeroone.rig.rig", NULL);
 
-    self->priv->engine = engine;
+    self->priv->editor = editor;
 
     return self;
 }

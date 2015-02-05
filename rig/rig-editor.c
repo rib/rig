@@ -29,17 +29,31 @@
 #include <config.h>
 
 #include <stdlib.h>
+
+#ifdef USE_GTK
+#include <glib-object.h>
+#include <gtk/gtk.h>
+#endif
+
+#include <uv.h>
+
 #include <clib.h>
+
+#include <xdgmime.h>
 
 #include <rut.h>
 
 #include "rut-renderer.h"
 
 #include "rig-engine.h"
+#ifdef USE_GTK
+#include "rig-application.h"
+#endif /* USE_GTK */
 #include "rig-avahi.h"
 #include "rig-slave-master.h"
 #include "rig-inspector.h"
 #include "rig-curses-debug.h"
+#include "rig-load-save.h"
 
 #include "rig.pb-c.h"
 
@@ -62,7 +76,12 @@ struct _rig_editor_t {
     rig_frontend_t *frontend;
     rig_engine_t *engine;
 
-    c_llist_t *assets;
+    c_list_t fs_requests;
+
+    rut_text_t *search_text;
+    c_llist_t *required_search_tags;
+
+    c_hash_table_t *assets;
 
     char *ui_filename;
 
@@ -74,11 +93,33 @@ struct _rig_editor_t {
     c_hash_table_t *play_to_edit_object_map;
 
     rut_queue_t *edit_ops;
+    c_llist_t *undo_journal_stack;
 
     rig_engine_op_apply_context_t apply_op_ctx;
     rig_engine_op_copy_context_t copy_op_ctx;
     rig_engine_op_map_context_t map_op_ctx;
     rig_engine_op_apply_context_t play_apply_op_ctx;
+
+    rig_objects_selection_t *objects_selection;
+
+    c_list_t tool_changed_cb_list;
+
+    rig_controller_t *selected_controller;
+    rut_property_closure_t *controller_progress_closure;
+
+    /* The transparency grid widget that is displayed behind the assets list */
+    rut_image_t *transparency_grid;
+
+    rut_bin_t *top_bin;
+    rut_box_layout_t *top_vbox;
+    rut_box_layout_t *top_hbox;
+    rut_box_layout_t *top_bar_hbox;
+    rut_box_layout_t *top_bar_hbox_ltr;
+    rut_box_layout_t *top_bar_hbox_rtl;
+    rut_box_layout_t *asset_panel_hbox;
+    rut_box_layout_t *toolbar_vbox;
+    rut_box_layout_t *properties_hbox;
+    rig_split_view_t *split;
 
     rut_ui_viewport_t *search_vp;
     rut_fold_t *search_results_fold;
@@ -90,6 +131,14 @@ struct _rig_editor_t {
     rut_flow_layout_t *assets_video_results;
     rut_flow_layout_t *assets_other_results;
 
+    rut_ui_viewport_t *properties_vp;
+    rut_bin_t *inspector_bin;
+    rut_box_layout_t *inspector_box_layout;
+    rut_object_t *inspector;
+    c_llist_t *all_inspectors;
+
+    rig_controller_view_t *controller_view;
+
     rig_asset_t *text_builtin_asset;
     rig_asset_t *circle_builtin_asset;
     rig_asset_t *nine_slice_builtin_asset;
@@ -99,6 +148,8 @@ struct _rig_editor_t {
     rig_asset_t *button_input_builtin_asset;
     c_llist_t *result_input_closures;
     c_llist_t *asset_enumerators;
+
+    cg_primitive_t *grid_prim;
 
     rut_adb_device_tracker_t *adb_tracker;
     int next_forward_port;
@@ -349,7 +400,7 @@ reset_play_mode_ui(rig_editor_t *editor)
 
 typedef struct _result_input_closure_t {
     rut_object_t *result;
-    rig_engine_t *engine;
+    rig_editor_t *editor;
 } result_input_closure_t;
 
 void
@@ -364,17 +415,17 @@ rig_editor_free_result_input_closures(rig_editor_t *editor)
 }
 
 static void
-apply_asset_input_with_entity(rig_engine_t *engine,
+apply_asset_input_with_entity(rig_editor_t *editor,
                               rig_asset_t *asset,
                               rig_entity_t *entity)
 {
-    rig_editor_t *editor = engine->editor;
+    rig_engine_t *engine = editor->engine;
     rig_undo_journal_t *sub_journal;
     rig_asset_type_t type = rig_asset_get_type(asset);
     rig_material_t *material;
     rut_object_t *geom;
 
-    rig_editor_push_undo_subjournal(engine);
+    rig_editor_push_undo_subjournal(editor);
 
     switch (type) {
     case RIG_ASSET_TYPE_TEXTURE:
@@ -618,7 +669,7 @@ apply_asset_input_with_entity(rig_engine_t *engine,
         break;
     }
 
-    sub_journal = rig_editor_pop_undo_subjournal(engine);
+    sub_journal = rig_editor_pop_undo_subjournal(editor);
 
     if (rig_undo_journal_is_empty(sub_journal))
         rig_undo_journal_free(sub_journal);
@@ -631,13 +682,13 @@ apply_result_input_with_entity(rig_entity_t *entity,
                                result_input_closure_t *closure)
 {
     if (rut_object_get_type(closure->result) == &rig_asset_type)
-        apply_asset_input_with_entity(closure->engine, closure->result, entity);
+        apply_asset_input_with_entity(closure->editor, closure->result, entity);
     else if (rut_object_get_type(closure->result) == &rig_entity_type)
         rig_select_object(
-            closure->engine, closure->result, RUT_SELECT_ACTION_REPLACE);
+            closure->editor, closure->result, RUT_SELECT_ACTION_REPLACE);
     else if (rut_object_get_type(closure->result) == &rig_controller_type)
         rig_select_object(
-            closure->engine, closure->result, RUT_SELECT_ACTION_REPLACE);
+            closure->editor, closure->result, RUT_SELECT_ACTION_REPLACE);
 }
 
 static rut_input_event_status_t
@@ -650,22 +701,23 @@ result_input_cb(rut_input_region_t *region,
 
     if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_MOTION) {
         if (rut_motion_event_get_action(event) == RUT_MOTION_EVENT_ACTION_UP) {
-            rig_engine_t *engine = closure->engine;
+            rig_editor_t *editor = closure->editor;
 
-            if (engine->objects_selection->objects) {
-                c_llist_foreach(engine->objects_selection->objects,
+            if (editor->objects_selection->objects) {
+                c_llist_foreach(editor->objects_selection->objects,
                                (GFunc)apply_result_input_with_entity,
                                closure);
             } else {
-                rig_entity_t *entity = rig_entity_new(engine->shell);
-                rig_undo_journal_add_entity(
-                    engine->undo_journal, engine->edit_mode_ui->scene, entity);
-                rig_select_object(engine, entity, RUT_SELECT_ACTION_REPLACE);
+                rig_entity_t *entity = rig_entity_new(editor->shell);
+                rig_undo_journal_add_entity(editor->engine->undo_journal,
+                                            editor->engine->edit_mode_ui->scene,
+                                            entity);
+                rig_select_object(editor, entity, RUT_SELECT_ACTION_REPLACE);
                 apply_result_input_with_entity(entity, closure);
             }
 
-            rig_editor_update_inspector(engine);
-            rut_shell_queue_redraw(engine->shell);
+            rig_editor_update_inspector(editor);
+            rut_shell_queue_redraw(editor->shell);
             status = RUT_INPUT_EVENT_STATUS_HANDLED;
         }
     }
@@ -735,9 +787,9 @@ add_results_flow(rut_shell_t *shell, const char *label,
 }
 
 static void
-add_search_result(rig_engine_t *engine, rut_object_t *result)
+add_search_result(rig_editor_t *editor, rut_object_t *result)
 {
-    rig_editor_t *editor = engine->editor;
+    rig_engine_t *engine = editor->engine;
     result_input_closure_t *closure;
     rut_stack_t *stack;
     rut_bin_t *bin;
@@ -747,7 +799,7 @@ add_search_result(rig_engine_t *engine, rut_object_t *result)
 
     closure = c_slice_new(result_input_closure_t);
     closure->result = result;
-    closure->engine = engine;
+    closure->editor = editor;
 
     bin = rut_bin_new(engine->shell);
 
@@ -889,7 +941,7 @@ add_search_result(rig_engine_t *engine, rut_object_t *result)
 }
 
 typedef struct _search_state_t {
-    rig_engine_t *engine;
+    rig_editor_t *editor;
     const char *search;
     bool found;
 } search_state_t;
@@ -903,13 +955,13 @@ add_matching_entity_cb(rut_object_t *object, int depth, void *user_data)
 
         if (state->search == NULL) {
             state->found = true;
-            add_search_result(state->engine, entity);
+            add_search_result(state->editor, entity);
         } else if (entity->label && strncmp(entity->label, "rig:", 4) != 0) {
             char *entity_label = c_utf8_strdown(entity->label, -1);
 
             if (strstr(entity_label, state->search)) {
                 state->found = true;
-                add_search_result(state->engine, entity);
+                add_search_result(state->editor, entity);
             }
 
             c_free(entity_label);
@@ -926,14 +978,14 @@ add_matching_controller(rig_controller_t *controller,
 
     if (state->search == NULL || strstr(controller_label, state->search)) {
         state->found = true;
-        add_search_result(state->engine, controller);
+        add_search_result(state->editor, controller);
     }
 
     c_free(controller_label);
 }
 
 static bool
-asset_matches_search(rig_engine_t *engine,
+asset_matches_search(rig_editor_t *editor,
                      rig_asset_t *asset,
                      const char *search)
 {
@@ -944,14 +996,14 @@ asset_matches_search(rig_engine_t *engine,
     const char *path;
     int i;
 
-    for (l = engine->required_search_tags; l; l = l->next) {
+    for (l = editor->required_search_tags; l; l = l->next) {
         if (rig_asset_has_tag(asset, l->data)) {
             found = true;
             break;
         }
     }
 
-    if (engine->required_search_tags && found == false)
+    if (editor->required_search_tags && found == false)
         return false;
 
     if (!search)
@@ -987,13 +1039,22 @@ asset_matches_search(rig_engine_t *engine,
     return true;
 }
 
-static bool
-rig_search_with_text(rig_engine_t *engine, const char *user_search)
+static void
+match_asset_cb(void *key, void *value, void *user_data)
 {
-    rig_editor_t *editor = engine->editor;
+    rig_asset_t *asset = value;
+    search_state_t *state = user_data;
+
+    if (asset_matches_search(state->editor, asset, state->search)) {
+        state->found = true;
+        add_search_result(state->editor, asset);
+    }
+}
+
+static bool
+rig_search_with_text(rig_editor_t *editor, const char *user_search)
+{
     c_llist_t *l;
-    int i;
-    bool found = false;
     search_state_t state;
     char *search;
 
@@ -1005,45 +1066,39 @@ rig_search_with_text(rig_engine_t *engine, const char *user_search)
     rig_editor_clear_search_results(editor);
 
     editor->search_results_vbox =
-        rut_box_layout_new(engine->shell,
+        rut_box_layout_new(editor->shell,
                            RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
     rut_fold_set_child(editor->search_results_fold,
                        editor->search_results_vbox);
     rut_object_unref(editor->search_results_vbox);
 
-    for (l = editor->assets, i = 0; l; l = l->next, i++) {
-        rig_asset_t *asset = l->data;
-
-        if (!asset_matches_search(engine, asset, search))
-            continue;
-
-        found = true;
-        add_search_result(engine, asset);
-    }
-
-    state.engine = engine;
+    state.editor = editor;
     state.search = search;
     state.found = false;
 
-    if (!engine->required_search_tags ||
-        rut_util_find_tag(engine->required_search_tags, "entity")) {
-        rut_graphable_traverse(engine->edit_mode_ui->scene,
+    c_hash_table_foreach(editor->assets,
+                         match_asset_cb,
+                         &state);
+
+    if (!editor->required_search_tags ||
+        rut_util_find_tag(editor->required_search_tags, "entity")) {
+        rut_graphable_traverse(editor->engine->edit_mode_ui->scene,
                                RUT_TRAVERSE_DEPTH_FIRST,
                                add_matching_entity_cb,
                                NULL, /* post visit */
                                &state);
     }
 
-    if (!engine->required_search_tags ||
-        rut_util_find_tag(engine->required_search_tags, "controller")) {
-        for (l = engine->edit_mode_ui->controllers; l; l = l->next)
+    if (!editor->required_search_tags ||
+        rut_util_find_tag(editor->required_search_tags, "controller")) {
+        for (l = editor->engine->edit_mode_ui->controllers; l; l = l->next)
             add_matching_controller(l->data, &state);
     }
 
     c_free(search);
 
-    if (!engine->required_search_tags)
-        return found | state.found;
+    if (!editor->required_search_tags)
+        return state.found;
     else {
         /* If the user has toggled on certain search
          * tag constraints then we don't want to
@@ -1056,10 +1111,10 @@ rig_search_with_text(rig_engine_t *engine, const char *user_search)
 }
 
 static void
-rig_run_search(rig_engine_t *engine)
+rig_run_search(rig_editor_t *editor)
 {
-    if (!rig_search_with_text(engine, rut_text_get_text(engine->search_text)))
-        rig_search_with_text(engine, NULL);
+    if (!rig_search_with_text(editor, rut_text_get_text(editor->search_text)))
+        rig_search_with_text(editor, NULL);
 }
 
 void
@@ -1075,30 +1130,40 @@ asset_search_update_cb(rut_text_t *text, void *user_data)
 }
 
 static void
-add_asset(rig_engine_t *engine, GFileInfo *info, GFile *asset_file)
+maybe_add_asset(rig_editor_t *editor,
+                const char *filename,
+                const char *mime_type)
 {
-    rig_editor_t *editor = engine->editor;
-    GFile *assets_dir = g_file_new_for_path(engine->shell->assets_location);
-    char *path = g_file_get_relative_path(assets_dir, asset_file);
-    c_llist_t *l;
+    rig_engine_t *engine = editor->engine;
+    char *path;
     rig_asset_t *asset = NULL;
     rut_exception_t *catch = NULL;
 
-    /* Avoid loading duplicate assets... */
-    for (l = editor->assets; l; l = l->next) {
-        rig_asset_t *existing = l->data;
+    if (!rig_file_is_asset(filename, mime_type))
+        return;
 
-        if (strcmp(rig_asset_get_path(existing), path) == 0)
-            return;
+    path = c_path_get_relative_path(engine->shell->assets_location,
+                                    filename);
+
+    /* Avoid loading duplicate assets... */
+    if (c_hash_table_lookup(editor->assets, path)) {
+        c_free(path);
+        return;
     }
 
-    asset = rig_asset_new_from_file(engine, info, asset_file, &catch);
+    asset = rig_asset_new_from_file(engine, path, mime_type, &catch);
     if (!asset) {
-        c_warning(
-            "Failed to load asset from file %s: %s", path, catch->message);
+        c_warning("Failed to load asset from file %s: %s",
+                  path, catch->message);
         rut_exception_free(catch);
+        c_free(path);
     } else {
-        editor->assets = c_llist_prepend(editor->assets, asset);
+        if (rig_asset_needs_thumbnail(asset))
+            rig_asset_thumbnail(asset, rig_editor_refresh_thumbnails,
+                                editor, NULL);
+
+        c_hash_table_insert(editor->assets, (char *)rig_asset_get_path(asset),
+                            asset);
     }
 }
 
@@ -1116,202 +1181,115 @@ copy_tags (c_llist_t *tags)
 }
 #endif
 
-static void enumerate_dir_for_assets(rig_engine_t *engine, GFile *directory);
-
-void
-enumerate_file_info(rig_engine_t *engine, GFile *parent, GFileInfo *info)
-{
-    GFileType type = g_file_info_get_file_type(info);
-    const char *name = g_file_info_get_name(info);
-
-    if (name[0] == '.')
-        return;
-
-    if (type == G_FILE_TYPE_DIRECTORY) {
-        GFile *directory = g_file_get_child(parent, name);
-
-        enumerate_dir_for_assets(engine, directory);
-
-        g_object_unref(directory);
-    } else if (type == G_FILE_TYPE_REGULAR ||
-               type == G_FILE_TYPE_SYMBOLIC_LINK)
-    {
-        GFile *image = g_file_get_child(parent, name);
-
-        if (rig_file_info_is_asset(info, image, name))
-            add_asset(engine, info, image);
-
-        g_object_unref(image);
-    }
-}
-
-#ifdef USE_ASYNC_IO
-typedef struct _asset_enumerator_state_t {
-    rig_engine_t *engine;
-    GFile *directory;
-    GFileEnumerator *enumerator;
-    GCancellable *cancellable;
-    c_llist_t *tags;
-} asset_enumerator_state_t;
+typedef struct _asset_request_state_t {
+    rig_editor_t *editor;
+    uv_fs_t scandir_req;
+    xdgmime_request_t mime_req;
+    c_list_t link;
+} asset_request_state_t;
 
 static void
-cleanup_assets_enumerator(asset_enumerator_state_t *state)
+asset_request_state_free(asset_request_state_t *state)
 {
-    if (state->enumerator)
-        g_object_unref(state->enumerator);
+    if (state->scandir_req.data)
+        uv_fs_req_cleanup(&state->scandir_req);
+    else
+        xdgmime_request_cleanup(&state->mime_req);
 
-    g_object_unref(state->cancellable);
-    g_object_unref(state->directory);
-    c_llist_free(state->tags);
-
-    state->engine->asset_enumerators =
-        c_llist_remove(state->engine->asset_enumerators, state);
-
-    c_slice_free(asset_enumerator_state_t, state);
+    c_list_remove(&state->link);
+    c_slice_free(asset_request_state_t, state);
 }
 
 static void
-assets_found_cb(GObject *source_object, GAsyncResult *res, gpointer user_data)
+mime_request_cb(xdgmime_request_t *req, const char *mime_type)
 {
-    asset_enumerator_state_t *state = user_data;
-    c_llist_t *infos;
-    c_llist_t *l;
+    asset_request_state_t *state = req->data;
 
-    infos = g_file_enumerator_next_files_finish(state->enumerator, res, NULL);
-    if (!infos) {
-        cleanup_assets_enumerator(state);
+    maybe_add_asset(state->editor, req->filename, mime_type);
+
+    asset_request_state_free(state);
+}
+
+static void
+enumerate_dir_for_assets(rig_editor_t *editor, const char *directory);
+
+static void
+assets_scandir_cb(uv_fs_t *req)
+{
+    asset_request_state_t *dir_state = req->data;
+    uv_dirent_t entry;
+
+    if (req->result < 0) {
+        asset_request_state_free(dir_state);
         return;
     }
 
-    for (l = infos; l; l = l->next)
-        enumerate_file_info(state->engine, state->directory, l->data);
+    while (uv_fs_scandir_next(req, &entry) != UV_EOF) {
+        if (entry.type == UV_DIRENT_FILE || entry.type == UV_DIRENT_LINK) {
+            asset_request_state_t *state = c_slice_new0(asset_request_state_t);
+            char *filename = c_build_filename(req->path, entry.name, NULL);
 
-    c_llist_free(infos);
+            state->editor = dir_state->editor;
+            state->mime_req.data = state;
+            c_list_insert(state->editor->fs_requests.next, &state->link);
 
-    g_file_enumerator_next_files_async(state->enumerator,
-                                       5, /* what's a good number here? */
-                                       G_PRIORITY_DEFAULT,
-                                       state->cancellable,
-                                       asset_found_cb,
-                                       state);
+            xdgmime_request_init(req->loop,
+                                 &state->mime_req);
+            xdgmime_request_start(&state->mime_req,
+                                  filename,
+                                  mime_request_cb);
+            c_free(filename);
+        }
+
+        if (entry.type == UV_DIRENT_DIR || entry.type == UV_DIRENT_LINK) {
+            char *dir = c_build_filename(req->path, entry.name, NULL);
+            enumerate_dir_for_assets(dir_state->editor, dir);
+            c_free(dir);
+        }
+    }
+
+    asset_request_state_free(dir_state);
 }
 
 static void
-assets_enumerator_cb(GObject *source_object,
-                     GAsyncResult *res,
-                     gpointer user_data)
+enumerate_dir_for_assets(rig_editor_t *editor,
+                         const char *directory)
 {
-    asset_enumerator_state_t *state = user_data;
-    GError *error = NULL;
+    asset_request_state_t *state = c_slice_new0(asset_request_state_t);
 
-    state->enumerator =
-        g_file_enumerate_children_finish(state->directory, res, &error);
-    if (!state->enumerator) {
-        c_warning("Error while looking for assets: %s", error->message);
-        g_error_free(error);
-        cleanup_assets_enumerator(state);
-        return;
-    }
+    state->editor = editor;
+    state->scandir_req.data = state;
 
-    g_file_enumerator_next_files_async(state->enumerator,
-                                       5, /* what's a good number here? */
-                                       G_PRIORITY_DEFAULT,
-                                       state->cancellable,
-                                       assets_found_cb,
-                                       state);
+    uv_fs_scandir(editor->shell->uv_loop,
+                  &state->scandir_req,
+                  directory,
+                  0, /* flags */
+                  assets_scandir_cb);
+
+    c_list_insert(editor->fs_requests.next, &state->link);
 }
 
 static void
-enumerate_dir_for_assets_async(rig_engine_t *engine,
-                               GFile *directory)
+index_asset(rig_editor_t *editor, rig_asset_t *asset)
 {
-    asset_enumerator_state_t *state = c_slice_new0(asset_enumerator_state_t);
-
-    state->engine = engine;
-    state->directory = g_object_ref(directory);
-
-    state->cancellable = g_cancellable_new();
-
-    /* NB: we can only use asynchronous IO if we are running with a Glib
-     * mainloop */
-    g_file_enumerate_children_async(file,
-                                    "standard::*",
-                                    G_FILE_QUERY_INFO_NONE,
-                                    G_PRIORITY_DEFAULT,
-                                    state->cancellable,
-                                    assets_enumerator_cb,
-                                    engine);
-
-    engine->asset_enumerators =
-        c_llist_prepend(engine->asset_enumerators, state);
+    rut_object_ref(asset);
+    c_hash_table_insert(editor->assets, (char *)rig_asset_get_path(asset), asset);
 }
-
-#else /* USE_ASYNC_IO */
-
-static void
-enumerate_dir_for_assets(rig_engine_t *engine, GFile *file)
-{
-    GFileEnumerator *enumerator;
-    GError *error = NULL;
-    GFileInfo *file_info;
-
-    enumerator = g_file_enumerate_children(
-        file, "standard::*", G_FILE_QUERY_INFO_NONE, NULL, &error);
-    if (!enumerator) {
-        char *path = g_file_get_path(file);
-        c_warning(
-            "Failed to enumerator assets dir %s: %s", path, error->message);
-        c_free(path);
-        g_error_free(error);
-        return;
-    }
-
-    while (
-        (file_info = g_file_enumerator_next_file(enumerator, NULL, &error))) {
-        enumerate_file_info(engine, file, file_info);
-    }
-
-    g_object_unref(enumerator);
-}
-#endif /* USE_ASYNC_IO */
 
 static void
 load_asset_list(rig_editor_t *editor)
 {
-    rig_engine_t *engine = editor->engine;
-    GFile *assets_dir = g_file_new_for_path(engine->shell->assets_location);
+    enumerate_dir_for_assets(editor, editor->shell->assets_location);
 
-    enumerate_dir_for_assets(engine, assets_dir);
+    index_asset(editor, editor->nine_slice_builtin_asset);
+    index_asset(editor, editor->diamond_builtin_asset);
+    index_asset(editor, editor->circle_builtin_asset);
+    index_asset(editor, editor->pointalism_grid_builtin_asset);
+    index_asset(editor, editor->text_builtin_asset);
+    index_asset(editor, editor->hair_builtin_asset);
+    index_asset(editor, editor->button_input_builtin_asset);
 
-    rut_object_ref(editor->nine_slice_builtin_asset);
-    editor->assets =
-        c_llist_prepend(editor->assets, editor->nine_slice_builtin_asset);
-
-    rut_object_ref(editor->diamond_builtin_asset);
-    editor->assets =
-        c_llist_prepend(editor->assets, editor->diamond_builtin_asset);
-
-    rut_object_ref(editor->circle_builtin_asset);
-    editor->assets =
-        c_llist_prepend(editor->assets, editor->circle_builtin_asset);
-
-    rut_object_ref(editor->pointalism_grid_builtin_asset);
-    editor->assets =
-        c_llist_prepend(editor->assets, editor->pointalism_grid_builtin_asset);
-
-    rut_object_ref(editor->text_builtin_asset);
-    editor->assets = c_llist_prepend(editor->assets, editor->text_builtin_asset);
-
-    rut_object_ref(editor->hair_builtin_asset);
-    editor->assets = c_llist_prepend(editor->assets, editor->hair_builtin_asset);
-
-    rut_object_ref(editor->button_input_builtin_asset);
-    editor->assets =
-        c_llist_prepend(editor->assets, editor->button_input_builtin_asset);
-
-    g_object_unref(assets_dir);
-
-    rig_run_search(engine);
+    rig_run_search(editor);
 }
 
 /* These should be sorted in descending order of size to
@@ -1453,12 +1431,12 @@ on_ui_load_cb(void *user_data)
 
     /* TODO: move controller_view into rig_editor_t */
 
-    rig_controller_view_update_controller_list(engine->controller_view);
+    rig_controller_view_update_controller_list(editor->controller_view);
 
-    rig_controller_view_set_controller(engine->controller_view,
+    rig_controller_view_set_controller(editor->controller_view,
                                        ui->controllers->data);
 
-    engine->grid_prim = rut_create_create_grid(engine->shell,
+    editor->grid_prim = rut_create_create_grid(editor->shell,
                                                engine->device_width,
                                                engine->device_height, 100,
                                                100);
@@ -1577,45 +1555,47 @@ create_top_bar(rig_editor_t *editor)
     rig_nine_slice_t *gradient =
         load_gradient_image(engine->shell, "top-bar-gradient.png");
 
-    rut_box_layout_add(engine->top_vbox, false, top_bar_stack);
+    rut_box_layout_add(editor->top_vbox, false, top_bar_stack);
 
     rut_stack_add(top_bar_stack, gradient);
     rut_object_unref(gradient);
 
-    engine->top_bar_hbox =
+    editor->top_bar_hbox =
         rut_box_layout_new(engine->shell, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
-    engine->top_bar_hbox_ltr =
+    editor->top_bar_hbox_ltr =
         rut_box_layout_new(engine->shell, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
-    rut_box_layout_add(engine->top_bar_hbox, true, engine->top_bar_hbox_ltr);
+    rut_box_layout_add(editor->top_bar_hbox, true, editor->top_bar_hbox_ltr);
 
-    engine->top_bar_hbox_rtl =
+    editor->top_bar_hbox_rtl =
         rut_box_layout_new(engine->shell, RUT_BOX_LAYOUT_PACKING_RIGHT_TO_LEFT);
-    rut_box_layout_add(engine->top_bar_hbox, true, engine->top_bar_hbox_rtl);
+    rut_box_layout_add(editor->top_bar_hbox, true, editor->top_bar_hbox_rtl);
 
-    rut_box_layout_add(engine->top_bar_hbox_rtl, false, icon);
+    rut_box_layout_add(editor->top_bar_hbox_rtl, false, icon);
 
-    rut_stack_add(top_bar_stack, engine->top_bar_hbox);
+    rut_stack_add(top_bar_stack, editor->top_bar_hbox);
 
     rut_icon_button_add_on_click_callback(connect_button,
                                           connect_pressed_cb,
                                           editor,
                                           NULL); /* destroy callback */
-    rut_box_layout_add(engine->top_bar_hbox_ltr, false, connect_button);
+    rut_box_layout_add(editor->top_bar_hbox_ltr, false, connect_button);
     rut_object_unref(connect_button);
 }
+
 static void
-create_camera_view(rig_engine_t *engine)
+create_camera_view(rig_editor_t *editor)
 {
-    rut_stack_t *stack = rut_stack_new(engine->shell, 0, 0);
-    rut_bin_t *bin = rut_bin_new(engine->shell);
+    rig_engine_t *engine = editor->engine;
+    rut_stack_t *stack = rut_stack_new(editor->shell, 0, 0);
+    rut_bin_t *bin = rut_bin_new(editor->shell);
     rig_nine_slice_t *gradient =
-        load_gradient_image(engine->shell, "document-bg-gradient.png");
+        load_gradient_image(editor->shell, "document-bg-gradient.png");
     cg_texture_t *left_drop_shadow;
     cg_texture_t *bottom_drop_shadow;
     rut_box_layout_t *hbox =
-        rut_box_layout_new(engine->shell, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
+        rut_box_layout_new(editor->shell, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
     rut_box_layout_t *vbox =
-        rut_box_layout_new(engine->shell, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
+        rut_box_layout_new(editor->shell, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
     rig_nine_slice_t *left_drop;
     rut_stack_t *left_stack;
     rut_bin_t *left_shim;
@@ -1629,9 +1609,9 @@ create_camera_view(rig_engine_t *engine)
     engine->main_camera_view = rig_camera_view_new(engine);
 
     left_drop_shadow = rut_load_texture_from_data_file(
-        engine->shell, "left-drop-shadow.png", NULL);
+        editor->shell, "left-drop-shadow.png", NULL);
     bottom_drop_shadow = rut_load_texture_from_data_file(
-        engine->shell, "bottom-drop-shadow.png", NULL);
+        editor->shell, "bottom-drop-shadow.png", NULL);
 
     /* Instead of creating one big drop-shadow that extends
      * underneath the document we simply create a thin drop
@@ -1639,7 +1619,7 @@ create_camera_view(rig_engine_t *engine)
      * actually visible...
      */
 
-    left_drop = rig_nine_slice_new(engine->shell,
+    left_drop = rig_nine_slice_new(editor->shell,
                                    left_drop_shadow,
                                    10 /* top */,
                                    0, /* right */
@@ -1647,12 +1627,12 @@ create_camera_view(rig_engine_t *engine)
                                    0, /* left */
                                    0,
                                    0);
-    left_stack = rut_stack_new(engine->shell, 0, 0);
-    left_shim = rut_bin_new(engine->shell);
+    left_stack = rut_stack_new(editor->shell, 0, 0);
+    left_shim = rut_bin_new(editor->shell);
     bottom_drop =
-        rig_nine_slice_new(engine->shell, bottom_drop_shadow, 0, 10, 0, 0, 0, 0);
-    bottom_stack = rut_stack_new(engine->shell, 0, 0);
-    bottom_shim = rut_bin_new(engine->shell);
+        rig_nine_slice_new(editor->shell, bottom_drop_shadow, 0, 10, 0, 0, 0, 0);
+    bottom_stack = rut_stack_new(editor->shell, 0, 0);
+    bottom_shim = rut_bin_new(editor->shell);
 
     rut_bin_set_left_padding(left_shim, 10);
     rut_bin_set_bottom_padding(bottom_shim, 10);
@@ -1672,7 +1652,7 @@ create_camera_view(rig_engine_t *engine)
 
     rut_bin_set_top_padding(bin, 5);
 
-    rut_box_layout_add(engine->asset_panel_hbox, true, stack);
+    rut_box_layout_add(editor->asset_panel_hbox, true, stack);
 
     rut_object_unref(bottom_shim);
     rut_object_unref(bottom_stack);
@@ -1697,31 +1677,31 @@ tool_changed_cb(rut_icon_toggle_set_t *toggle_set,
                 int selection,
                 void *user_data)
 {
-    rig_engine_t *engine = user_data;
-    rut_closure_list_invoke(&engine->tool_changed_cb_list,
+    rig_editor_t *editor = user_data;
+    rut_closure_list_invoke(&editor->tool_changed_cb_list,
                             rig_tool_changed_callback_t,
-                            user_data,
+                            editor,
                             selection);
 }
 
 void
-rig_add_tool_changed_callback(rig_engine_t *engine,
+rig_add_tool_changed_callback(rig_editor_t *editor,
                               rig_tool_changed_callback_t callback,
                               void *user_data,
                               rut_closure_destroy_callback_t destroy_notify)
 {
     rut_closure_list_add(
-        &engine->tool_changed_cb_list, callback, user_data, destroy_notify);
+        &editor->tool_changed_cb_list, callback, user_data, destroy_notify);
 }
 
 static void
-create_toolbar(rig_engine_t *engine)
+create_toolbar(rig_editor_t *editor)
 {
-    rut_stack_t *stack = rut_stack_new(engine->shell, 0, 0);
+    rut_stack_t *stack = rut_stack_new(editor->shell, 0, 0);
     rig_nine_slice_t *gradient =
-        load_gradient_image(engine->shell, "toolbar-bg-gradient.png");
-    rut_icon_t *icon = rut_icon_new(engine->shell, "chevron-icon.png");
-    rut_bin_t *bin = rut_bin_new(engine->shell);
+        load_gradient_image(editor->shell, "toolbar-bg-gradient.png");
+    rut_icon_t *icon = rut_icon_new(editor->shell, "chevron-icon.png");
+    rut_bin_t *bin = rut_bin_new(editor->shell);
     rut_icon_toggle_t *pointer_toggle;
     rut_icon_toggle_t *rotate_toggle;
     rut_icon_toggle_set_t *toggle_set;
@@ -1729,22 +1709,22 @@ create_toolbar(rig_engine_t *engine)
     rut_stack_add(stack, gradient);
     rut_object_unref(gradient);
 
-    engine->toolbar_vbox =
-        rut_box_layout_new(engine->shell, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
-    rut_bin_set_child(bin, engine->toolbar_vbox);
+    editor->toolbar_vbox =
+        rut_box_layout_new(editor->shell, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
+    rut_bin_set_child(bin, editor->toolbar_vbox);
 
     rut_bin_set_left_padding(bin, 5);
     rut_bin_set_right_padding(bin, 5);
     rut_bin_set_top_padding(bin, 5);
 
-    rut_box_layout_add(engine->toolbar_vbox, false, icon);
+    rut_box_layout_add(editor->toolbar_vbox, false, icon);
 
     pointer_toggle =
-        rut_icon_toggle_new(engine->shell, "pointer-white.png", "pointer.png");
+        rut_icon_toggle_new(editor->shell, "pointer-white.png", "pointer.png");
     rotate_toggle =
-        rut_icon_toggle_new(engine->shell, "rotate-white.png", "rotate.png");
+        rut_icon_toggle_new(editor->shell, "rotate-white.png", "rotate.png");
     toggle_set = rut_icon_toggle_set_new(
-        engine->shell, RUT_ICON_TOGGLE_SET_PACKING_TOP_TO_BOTTOM);
+        editor->shell, RUT_ICON_TOGGLE_SET_PACKING_TOP_TO_BOTTOM);
     rut_icon_toggle_set_add(toggle_set, pointer_toggle, RIG_TOOL_ID_SELECTION);
     rut_object_unref(pointer_toggle);
     rut_icon_toggle_set_add(toggle_set, rotate_toggle, RIG_TOOL_ID_ROTATION);
@@ -1753,24 +1733,24 @@ create_toolbar(rig_engine_t *engine)
     rut_icon_toggle_set_set_selection(toggle_set, RIG_TOOL_ID_SELECTION);
 
     rut_icon_toggle_set_add_on_change_callback(
-        toggle_set, tool_changed_cb, engine, NULL); /* destroy notify */
+        toggle_set, tool_changed_cb, editor, NULL); /* destroy notify */
 
-    rut_box_layout_add(engine->toolbar_vbox, false, toggle_set);
+    rut_box_layout_add(editor->toolbar_vbox, false, toggle_set);
     rut_object_unref(toggle_set);
 
     rut_stack_add(stack, bin);
 
-    rut_box_layout_add(engine->top_hbox, false, stack);
+    rut_box_layout_add(editor->top_hbox, false, stack);
 }
 
 static void
-create_properties_bar(rig_engine_t *engine)
+create_properties_bar(rig_editor_t *editor)
 {
-    rut_stack_t *stack0 = rut_stack_new(engine->shell, 0, 0);
-    rut_stack_t *stack1 = rut_stack_new(engine->shell, 0, 0);
-    rut_bin_t *bin = rut_bin_new(engine->shell);
+    rut_stack_t *stack0 = rut_stack_new(editor->shell, 0, 0);
+    rut_stack_t *stack1 = rut_stack_new(editor->shell, 0, 0);
+    rut_bin_t *bin = rut_bin_new(editor->shell);
     rig_nine_slice_t *gradient =
-        load_gradient_image(engine->shell, "document-bg-gradient.png");
+        load_gradient_image(editor->shell, "document-bg-gradient.png");
     rut_ui_viewport_t *properties_vp;
     rut_rectangle_t *bg;
 
@@ -1786,7 +1766,7 @@ create_properties_bar(rig_engine_t *engine)
 
     rut_bin_set_child(bin, stack1);
 
-    bg = rut_rectangle_new4f(engine->shell,
+    bg = rut_rectangle_new4f(editor->shell,
                              0,
                              0, /* size */
                              1,
@@ -1796,8 +1776,8 @@ create_properties_bar(rig_engine_t *engine)
     rut_stack_add(stack1, bg);
     rut_object_unref(bg);
 
-    properties_vp = rut_ui_viewport_new(engine->shell, 0, 0);
-    engine->properties_vp = properties_vp;
+    properties_vp = rut_ui_viewport_new(editor->shell, 0, 0);
+    editor->properties_vp = properties_vp;
 
     rut_stack_add(stack1, properties_vp);
     rut_object_unref(properties_vp);
@@ -1805,17 +1785,17 @@ create_properties_bar(rig_engine_t *engine)
     rut_ui_viewport_set_x_pannable(properties_vp, false);
     rut_ui_viewport_set_y_pannable(properties_vp, true);
 
-    engine->inspector_bin = rut_bin_new(engine->shell);
-    rut_ui_viewport_add(engine->properties_vp, engine->inspector_bin);
+    editor->inspector_bin = rut_bin_new(editor->shell);
+    rut_ui_viewport_add(editor->properties_vp, editor->inspector_bin);
 
-    rut_ui_viewport_set_sync_widget(properties_vp, engine->inspector_bin);
+    rut_ui_viewport_set_sync_widget(properties_vp, editor->inspector_bin);
 
-    rut_box_layout_add(engine->properties_hbox, false, stack0);
+    rut_box_layout_add(editor->properties_hbox, false, stack0);
     rut_object_unref(stack0);
 }
 
 typedef struct _search_toggle_state_t {
-    rig_engine_t *engine;
+    rig_editor_t *editor;
     char *required_tag;
 } search_toggle_state_t;
 
@@ -1823,17 +1803,17 @@ static void
 asset_search_toggle_cb(rut_icon_toggle_t *toggle, bool state, void *user_data)
 {
     search_toggle_state_t *toggle_state = user_data;
-    rig_engine_t *engine = toggle_state->engine;
+    rig_editor_t *editor = toggle_state->editor;
 
     if (state) {
-        engine->required_search_tags = c_llist_prepend(
-            engine->required_search_tags, toggle_state->required_tag);
+        editor->required_search_tags = c_llist_prepend(
+            editor->required_search_tags, toggle_state->required_tag);
     } else {
-        engine->required_search_tags = c_llist_remove(
-            engine->required_search_tags, toggle_state->required_tag);
+        editor->required_search_tags = c_llist_remove(
+            editor->required_search_tags, toggle_state->required_tag);
     }
 
-    rig_run_search(engine);
+    rig_run_search(editor);
 }
 
 static void
@@ -1841,8 +1821,9 @@ free_search_toggle_state(void *user_data)
 {
     search_toggle_state_t *state = user_data;
 
-    state->engine->required_search_tags =
-        c_llist_remove(state->engine->required_search_tags, state->required_tag);
+    state->editor->required_search_tags =
+        c_llist_remove(state->editor->required_search_tags,
+                       state->required_tag);
 
     c_free(state->required_tag);
 
@@ -1850,16 +1831,16 @@ free_search_toggle_state(void *user_data)
 }
 
 static rut_icon_toggle_t *
-create_search_toggle(rig_engine_t *engine,
+create_search_toggle(rig_editor_t *editor,
                      const char *set_icon,
                      const char *unset_icon,
                      const char *required_tag)
 {
     rut_icon_toggle_t *toggle =
-        rut_icon_toggle_new(engine->shell, set_icon, unset_icon);
+        rut_icon_toggle_new(editor->shell, set_icon, unset_icon);
     search_toggle_state_t *state = c_slice_new0(search_toggle_state_t);
 
-    state->engine = engine;
+    state->editor = editor;
     state->required_tag = c_strdup(required_tag);
 
     rut_icon_toggle_add_on_toggle_callback(
@@ -1869,36 +1850,36 @@ create_search_toggle(rig_engine_t *engine,
 }
 
 static void
-create_asset_selectors(rig_engine_t *engine,
+create_asset_selectors(rig_editor_t *editor,
                        rut_stack_t *icons_stack)
 {
     rut_box_layout_t *hbox =
-        rut_box_layout_new(engine->shell,
+        rut_box_layout_new(editor->shell,
                            RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
     rut_icon_toggle_t *toggle;
 
     toggle = create_search_toggle(
-        engine, "geometry-white.png", "geometry.png", "geometry");
+        editor, "geometry-white.png", "geometry.png", "geometry");
     rut_box_layout_add(hbox, false, toggle);
     rut_object_unref(toggle);
 
     toggle =
-        create_search_toggle(engine, "image-white.png", "image.png", "image");
+        create_search_toggle(editor, "image-white.png", "image.png", "image");
     rut_box_layout_add(hbox, false, toggle);
     rut_object_unref(toggle);
 
     toggle =
-        create_search_toggle(engine, "video-white.png", "video.png", "video");
+        create_search_toggle(editor, "video-white.png", "video.png", "video");
     rut_box_layout_add(hbox, false, toggle);
     rut_object_unref(toggle);
 
     toggle = create_search_toggle(
-        engine, "entity-white.png", "entity.png", "entity");
+        editor, "entity-white.png", "entity.png", "entity");
     rut_box_layout_add(hbox, false, toggle);
     rut_object_unref(toggle);
 
     toggle =
-        create_search_toggle(engine, "logic-white.png", "logic.png", "logic");
+        create_search_toggle(editor, "logic-white.png", "logic.png", "logic");
     rut_box_layout_add(hbox, false, toggle);
     rut_object_unref(toggle);
 
@@ -1907,39 +1888,38 @@ create_asset_selectors(rig_engine_t *engine,
 }
 
 static void
-create_assets_view(rig_engine_t *engine)
+create_assets_view(rig_editor_t *editor)
 {
-    rig_editor_t *editor = engine->editor;
     rut_box_layout_t *vbox =
-        rut_box_layout_new(engine->shell, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
-    rut_stack_t *search_stack = rut_stack_new(engine->shell, 0, 0);
-    rut_bin_t *search_bin = rut_bin_new(engine->shell);
-    rut_stack_t *icons_stack = rut_stack_new(engine->shell, 0, 0);
-    rut_stack_t *stack = rut_stack_new(engine->shell, 0, 0);
+        rut_box_layout_new(editor->shell, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
+    rut_stack_t *search_stack = rut_stack_new(editor->shell, 0, 0);
+    rut_bin_t *search_bin = rut_bin_new(editor->shell);
+    rut_stack_t *icons_stack = rut_stack_new(editor->shell, 0, 0);
+    rut_stack_t *stack = rut_stack_new(editor->shell, 0, 0);
     rig_nine_slice_t *gradient =
-        load_gradient_image(engine->shell, "toolbar-bg-gradient.png");
+        load_gradient_image(editor->shell, "toolbar-bg-gradient.png");
     rut_rectangle_t *bg;
     rut_entry_t *entry;
     rut_text_t *text;
     rut_icon_t *search_icon;
     cg_color_t color;
 
-    bg = rut_rectangle_new4f(engine->shell, 0, 0, 0.2, 0.2, 0.2, 1);
+    bg = rut_rectangle_new4f(editor->shell, 0, 0, 0.2, 0.2, 0.2, 1);
     rut_stack_add(search_stack, bg);
     rut_object_unref(bg);
 
-    entry = rut_entry_new(engine->shell);
+    entry = rut_entry_new(editor->shell);
 
     text = rut_entry_get_text(entry);
-    engine->search_text = text;
+    editor->search_text = text;
     rut_text_set_single_line_mode(text, true);
     rut_text_set_hint_text(text, "Search...");
 
-    search_icon = rut_icon_new(engine->shell, "magnifying-glass.png");
+    search_icon = rut_icon_new(editor->shell, "magnifying-glass.png");
     rut_entry_set_icon(entry, search_icon);
 
     rut_text_add_text_changed_callback(
-        text, asset_search_update_cb, engine, NULL);
+        text, asset_search_update_cb, editor, NULL);
 
     rut_bin_set_child(search_bin, entry);
     rut_object_unref(entry);
@@ -1954,11 +1934,11 @@ create_assets_view(rig_engine_t *engine)
     rut_box_layout_add(vbox, false, search_stack);
     rut_object_unref(search_stack);
 
-    bg = rut_rectangle_new4f(engine->shell, 0, 0, 0.57, 0.57, 0.57, 1);
+    bg = rut_rectangle_new4f(editor->shell, 0, 0, 0.57, 0.57, 0.57, 1);
     rut_stack_add(icons_stack, bg);
     rut_object_unref(bg);
 
-    create_asset_selectors(engine, icons_stack);
+    create_asset_selectors(editor, icons_stack);
 
     rut_box_layout_add(vbox, false, icons_stack);
     rut_object_unref(icons_stack);
@@ -1969,10 +1949,10 @@ create_assets_view(rig_engine_t *engine)
     rut_stack_add(stack, gradient);
     rut_object_unref(gradient);
 
-    editor->search_vp = rut_ui_viewport_new(engine->shell, 0, 0);
+    editor->search_vp = rut_ui_viewport_new(editor->shell, 0, 0);
     rut_stack_add(stack, editor->search_vp);
 
-    editor->search_results_fold = rut_fold_new(engine->shell, "Results");
+    editor->search_results_fold = rut_fold_new(editor->shell, "Results");
 
     rut_color_init_from_uint32(&color, 0x79b8b0ff);
     rut_fold_set_label_color(editor->search_results_fold, &color);
@@ -1985,7 +1965,7 @@ create_assets_view(rig_engine_t *engine)
 
     rut_ui_viewport_set_x_pannable(editor->search_vp, false);
 
-    rut_box_layout_add(engine->asset_panel_hbox, false, vbox);
+    rut_box_layout_add(editor->asset_panel_hbox, false, vbox);
     rut_object_unref(vbox);
 }
 
@@ -1993,18 +1973,18 @@ static void
 reload_animated_inspector_properties_cb(rig_controller_prop_data_t *prop_data,
                                         void *user_data)
 {
-    rig_engine_t *engine = user_data;
+    rig_editor_t *editor = user_data;
 
-    rig_reload_inspector_property(engine, prop_data->property);
+    rig_reload_inspector_property(editor, prop_data->property);
 }
 
 static void
-reload_animated_inspector_properties(rig_engine_t *engine)
+reload_animated_inspector_properties(rig_editor_t *editor)
 {
-    if (engine->inspector && engine->selected_controller)
-        rig_controller_foreach_property(engine->selected_controller,
+    if (editor->inspector && editor->selected_controller)
+        rig_controller_foreach_property(editor->selected_controller,
                                         reload_animated_inspector_properties_cb,
-                                        engine);
+                                        editor);
 }
 
 static void
@@ -2015,53 +1995,54 @@ controller_progress_changed_cb(rut_property_t *progress_prop,
 }
 
 static void
-set_selected_controller(rig_engine_t *engine,
+set_selected_controller(rig_editor_t *editor,
                         rig_controller_t *controller)
 {
-    if (engine->selected_controller == controller)
+    if (editor->selected_controller == controller)
         return;
 
-    if (engine->selected_controller) {
-        rut_property_closure_destroy(engine->controller_progress_closure);
-        rut_object_unref(engine->selected_controller);
+    if (editor->selected_controller) {
+        rut_property_closure_destroy(editor->controller_progress_closure);
+        rut_object_unref(editor->selected_controller);
     }
 
-    engine->selected_controller = controller;
+    editor->selected_controller = controller;
 
     if (controller) {
         rut_object_ref(controller);
 
-        engine->controller_progress_closure = rut_property_connect_callback(
+        editor->controller_progress_closure = rut_property_connect_callback(
             &controller->props[RIG_CONTROLLER_PROP_PROGRESS],
             controller_progress_changed_cb,
-            engine);
+            editor);
     }
 }
+
 static void
 controller_changed_cb(rig_controller_view_t *view,
                       rig_controller_t *controller,
                       void *user_data)
 {
-    rig_engine_t *engine = user_data;
+    rig_editor_t *editor = user_data;
 
-    set_selected_controller(engine, controller);
+    set_selected_controller(editor, controller);
 }
 
 static void
-create_controller_view(rig_engine_t *engine)
+create_controller_view(rig_editor_t *editor)
 {
-    engine->controller_view =
-        rig_controller_view_new(engine, engine->undo_journal);
+    editor->controller_view =
+        rig_controller_view_new(editor, editor->engine->undo_journal);
 
     rig_controller_view_add_controller_changed_callback(
-        engine->controller_view, controller_changed_cb, engine, NULL);
+        editor->controller_view, controller_changed_cb, editor, NULL);
 
-    rig_split_view_set_child1(engine->splits[0], engine->controller_view);
-    rut_object_unref(engine->controller_view);
+    rig_split_view_set_child1(editor->split, editor->controller_view);
+    rut_object_unref(editor->controller_view);
 }
 
 static void
-init_resize_handle(rig_engine_t *engine)
+init_resize_handle(rig_editor_t *editor)
 {
 #ifdef __APPLE__
     cg_texture_t *resize_handle_texture;
@@ -2119,49 +2100,49 @@ create_ui(rig_editor_t *editor)
 {
     rig_engine_t *engine = editor->engine;
 
-    engine->properties_hbox =
+    editor->properties_hbox =
         rut_box_layout_new(engine->shell, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
 
     /* controllers on the bottom, everything else above */
-    engine->splits[0] =
+    editor->split =
         rig_split_view_new(engine, RIG_SPLIT_VIEW_SPLIT_HORIZONTAL, 100, 100);
 
     /* assets on the left, main area on the right */
-    engine->asset_panel_hbox =
+    editor->asset_panel_hbox =
         rut_box_layout_new(engine->shell, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
 
-    create_assets_view(engine);
+    create_assets_view(editor);
 
-    create_camera_view(engine);
+    create_camera_view(editor);
 
-    create_controller_view(engine);
+    create_controller_view(editor);
 
-    rig_split_view_set_child0(engine->splits[0], engine->asset_panel_hbox);
+    rig_split_view_set_child0(editor->split, editor->asset_panel_hbox);
 
-    rut_box_layout_add(engine->properties_hbox, true, engine->splits[0]);
-    create_properties_bar(engine);
+    rut_box_layout_add(editor->properties_hbox, true, editor->split);
+    create_properties_bar(editor);
 
-    rig_split_view_set_split_fraction(engine->splits[0], 0.75);
+    rig_split_view_set_split_fraction(editor->split, 0.75);
 
-    engine->top_vbox =
-        rut_box_layout_new(engine->shell, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
+    editor->top_vbox =
+        rut_box_layout_new(editor->shell, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
     create_top_bar(editor);
 
     /* FIXME: originally I'd wanted to make this a RIGHT_TO_LEFT box
      * layout but it didn't work so I guess I guess there is a bug
      * in the box-layout allocate code. */
-    engine->top_hbox =
-        rut_box_layout_new(engine->shell, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
-    rut_box_layout_add(engine->top_vbox, true, engine->top_hbox);
+    editor->top_hbox =
+        rut_box_layout_new(editor->shell, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
+    rut_box_layout_add(editor->top_vbox, true, editor->top_hbox);
 
-    rut_box_layout_add(engine->top_hbox, true, engine->properties_hbox);
-    create_toolbar(engine);
+    rut_box_layout_add(editor->top_hbox, true, editor->properties_hbox);
+    create_toolbar(editor);
 
-    rut_stack_add(engine->top_stack, engine->top_vbox);
+    rut_stack_add(engine->top_stack, editor->top_vbox);
 
-    engine->transparency_grid = load_transparency_grid(engine->shell);
+    editor->transparency_grid = load_transparency_grid(editor->shell);
 
-    init_resize_handle(engine);
+    init_resize_handle(editor);
 }
 
 static Rig__Operation **
@@ -2346,6 +2327,32 @@ _rig_editor_free(rut_object_t *object)
 {
     rig_editor_t *editor = object;
 
+#ifdef USE_GTK
+    {
+        GApplication *application = g_application_get_default();
+        g_object_unref(application);
+    }
+#endif /* USE_GTK */
+
+    rut_object_unref(editor->top_bin);
+    rut_object_unref(editor->top_vbox);
+    rut_object_unref(editor->top_hbox);
+    rut_object_unref(editor->top_bar_hbox);
+    rut_object_unref(editor->top_bar_hbox_ltr);
+    rut_object_unref(editor->top_bar_hbox_rtl);
+    rut_object_unref(editor->asset_panel_hbox);
+    rut_object_unref(editor->toolbar_vbox);
+    rut_object_unref(editor->properties_hbox);
+    rut_object_unref(editor->split);
+
+    rut_object_unref(editor->transparency_grid);
+
+    rut_closure_list_disconnect_all(&editor->tool_changed_cb_list);
+
+    rut_object_unref(editor->objects_selection);
+
+    c_hash_table_destroy(editor->assets);
+
     rig_editor_free_builtin_assets(editor);
 
     rig_engine_op_apply_context_destroy(&editor->apply_op_ctx);
@@ -2444,11 +2451,11 @@ init_editor_engine(rig_editor_t *editor)
 {
     rig_engine_t *engine = editor->engine;
 
-    engine->objects_selection = _rig_objects_selection_new(engine);
+    editor->objects_selection = _rig_objects_selection_new(editor);
 
-    c_list_init(&engine->tool_changed_cb_list);
+    c_list_init(&editor->tool_changed_cb_list);
 
-    rig_editor_push_undo_subjournal(engine);
+    rig_editor_push_undo_subjournal(editor);
 
     /* NB: in device mode we assume all inputs need to got to the
      * simulator and we don't need a separate queue. */
@@ -2540,6 +2547,8 @@ rig_editor_init(rut_shell_t *shell, void *user_data)
 
     /* TODO: rig_editor_t should be a trait of the engine */
     engine->editor = editor;
+
+    c_list_init(&editor->fs_requests);
 
     init_editor_engine(editor);
 
@@ -2646,6 +2655,11 @@ rig_editor_new(const char *filename)
     rut_shell_set_assets_location(editor->shell, assets_location);
     c_free(assets_location);
 
+    editor->assets = c_hash_table_new_full(c_str_hash,
+                                           c_str_equal,
+                                           NULL, /* key destroy */
+                                           rut_object_unref);
+
     editor->edit_ops = rut_queue_new();
 
     return editor;
@@ -2687,13 +2701,15 @@ inspector_property_changed_cb(rut_property_t *inspected_property,
                               bool mergeable,
                               void *user_data)
 {
-    rig_engine_t *engine = user_data;
+    rig_editor_t *editor = user_data;
     rut_boxed_t new_value;
 
     rut_property_box(inspector_property, &new_value);
 
-    rig_controller_view_edit_property(
-        engine->controller_view, mergeable, inspected_property, &new_value);
+    rig_controller_view_edit_property(editor->controller_view,
+                                      mergeable,
+                                      inspected_property,
+                                      &new_value);
 
     rut_boxed_destroy(&new_value);
 }
@@ -2703,14 +2719,15 @@ inspector_controlled_changed_cb(rut_property_t *property,
                                 bool value,
                                 void *user_data)
 {
-    rig_engine_t *engine = user_data;
+    rig_editor_t *editor = user_data;
 
-    rig_undo_journal_set_controlled(
-        engine->undo_journal, engine->selected_controller, property, value);
+    rig_undo_journal_set_controlled(editor->engine->undo_journal,
+                                    editor->selected_controller,
+                                    property, value);
 }
 
 typedef struct {
-    rig_engine_t *engine;
+    rig_editor_t *editor;
     rig_inspector_t *inspector;
 } init_controlled_state_data_t;
 
@@ -2725,7 +2742,7 @@ init_property_controlled_state_cb(rut_property_t *property,
     * property is controlled for some of them, but not all? */
     if (property->spec->animatable) {
         rig_controller_prop_data_t *prop_data;
-        rig_controller_t *controller = data->engine->selected_controller;
+        rig_controller_t *controller = data->editor->selected_controller;
 
         prop_data =
             rig_controller_find_prop_data_for_property(controller, property);
@@ -2737,21 +2754,20 @@ init_property_controlled_state_cb(rut_property_t *property,
 }
 
 static rig_inspector_t *
-create_inspector(rig_engine_t *engine,
-                 c_llist_t *objects)
+create_inspector(rig_editor_t *editor, c_llist_t *objects)
 {
     rut_object_t *reference_object = objects->data;
     rig_inspector_t *inspector =
-        rig_inspector_new(engine->shell,
+        rig_inspector_new(editor->shell,
                           objects,
                           inspector_property_changed_cb,
                           inspector_controlled_changed_cb,
-                          engine);
+                          editor);
 
     if (rut_object_is(reference_object, RUT_TRAIT_ID_INTROSPECTABLE)) {
         init_controlled_state_data_t controlled_data;
 
-        controlled_data.engine = engine;
+        controlled_data.editor = editor;
         controlled_data.inspector = inspector;
 
         rut_introspectable_foreach_property(reference_object,
@@ -2763,7 +2779,7 @@ create_inspector(rig_engine_t *engine,
 }
 
 typedef struct _delete_button_state_t {
-    rig_engine_t *engine;
+    rig_editor_t *editor;
     c_llist_t *components;
 } delete_button_state_t;
 
@@ -2782,19 +2798,19 @@ delete_button_click_cb(rut_icon_button_t *button, void *user_data)
     delete_button_state_t *state = user_data;
     c_llist_t *l;
 
-    for (l = state->components; l; l = l->next) {
-        rig_undo_journal_delete_component(state->engine->undo_journal, l->data);
-    }
+    for (l = state->components; l; l = l->next)
+        rig_undo_journal_delete_component(state->editor->engine->undo_journal,
+                                          l->data);
 
-    rut_shell_queue_redraw(state->engine->shell);
+    rut_shell_queue_redraw(state->editor->shell);
 }
 
 static void
-create_components_inspector(rig_engine_t *engine,
+create_components_inspector(rig_editor_t *editor,
                             c_llist_t *components)
 {
     rut_component_t *reference_component = components->data;
-    rig_inspector_t *inspector = create_inspector(engine, components);
+    rig_inspector_t *inspector = create_inspector(editor, components);
     const char *name = rut_object_get_type_name(reference_component);
     char *label;
     rut_fold_t *fold;
@@ -2807,20 +2823,20 @@ create_components_inspector(rig_engine_t *engine,
 
     label = c_strconcat(name, " Component", NULL);
 
-    fold = rut_fold_new(engine->shell, label);
+    fold = rut_fold_new(editor->shell, label);
 
     c_free(label);
 
     rut_fold_set_child(fold, inspector);
     rut_object_unref(inspector);
 
-    button_bin = rut_bin_new(engine->shell);
+    button_bin = rut_bin_new(editor->shell);
     rut_bin_set_left_padding(button_bin, 10);
     rut_fold_set_header_child(fold, button_bin);
 
     /* FIXME: we need better assets here so we can see a visual change
      * when the button is pressed down */
-    delete_button = rut_icon_button_new(engine->shell,
+    delete_button = rut_icon_button_new(editor->shell,
                                         NULL, /* no label */
                                         RUT_ICON_BUTTON_POSITION_BELOW,
                                         "component-delete.png", /* normal */
@@ -2828,7 +2844,7 @@ create_components_inspector(rig_engine_t *engine,
                                         "component-delete.png", /* active */
                                         "component-delete.png"); /* disabled */
     button_state = c_slice_new(delete_button_state_t);
-    button_state->engine = engine;
+    button_state->editor = editor;
     button_state->components = c_llist_copy(components);
     rut_icon_button_add_on_click_callback(
         delete_button,
@@ -2838,10 +2854,10 @@ create_components_inspector(rig_engine_t *engine,
     rut_bin_set_child(button_bin, delete_button);
     rut_object_unref(delete_button);
 
-    rut_box_layout_add(engine->inspector_box_layout, false, fold);
+    rut_box_layout_add(editor->inspector_box_layout, false, fold);
     rut_object_unref(fold);
 
-    engine->all_inspectors = c_llist_prepend(engine->all_inspectors, inspector);
+    editor->all_inspectors = c_llist_prepend(editor->all_inspectors, inspector);
 }
 
 rut_object_t *
@@ -2862,7 +2878,7 @@ find_component(rig_entity_t *entity, rut_component_type_t type)
 }
 
 typedef struct _match_and_list_state_t {
-    rig_engine_t *engine;
+    rig_editor_t *editor;
     c_llist_t *entities;
 } match_and_list_state_t;
 
@@ -2897,7 +2913,7 @@ match_and_create_components_inspector_cb(rut_object_t *reference_component,
     }
 
     if (components)
-        create_components_inspector(state->engine, components);
+        create_components_inspector(state->editor, components);
 
 EXIT:
 
@@ -2906,39 +2922,38 @@ EXIT:
     return true; /* continue */
 }
 
-/* TODO: Update to take a rig_editor_t */
 void
-rig_editor_update_inspector(rig_engine_t *engine)
+rig_editor_update_inspector(rig_editor_t *editor)
 {
-    c_llist_t *objects = engine->objects_selection->objects;
+    c_llist_t *objects = editor->objects_selection->objects;
 
     /* This will drop the last reference to any current
-     * engine->inspector_box_layout and also any indirect references
+     * editor->inspector_box_layout and also any indirect references
      * to existing rig_inspector_ts */
-    rut_bin_set_child(engine->inspector_bin, NULL);
+    rut_bin_set_child(editor->inspector_bin, NULL);
 
-    engine->inspector_box_layout =
-        rut_box_layout_new(engine->shell,
+    editor->inspector_box_layout =
+        rut_box_layout_new(editor->shell,
                            RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
-    rut_bin_set_child(engine->inspector_bin, engine->inspector_box_layout);
+    rut_bin_set_child(editor->inspector_bin, editor->inspector_box_layout);
 
-    engine->inspector = NULL;
-    c_llist_free(engine->all_inspectors);
-    engine->all_inspectors = NULL;
+    editor->inspector = NULL;
+    c_llist_free(editor->all_inspectors);
+    editor->all_inspectors = NULL;
 
     if (objects) {
         rut_object_t *reference_object = objects->data;
         match_and_list_state_t state;
 
-        engine->inspector = create_inspector(engine, objects);
+        editor->inspector = create_inspector(editor, objects);
 
         rut_box_layout_add(
-            engine->inspector_box_layout, false, engine->inspector);
-        engine->all_inspectors =
-            c_llist_prepend(engine->all_inspectors, engine->inspector);
+            editor->inspector_box_layout, false, editor->inspector);
+        editor->all_inspectors =
+            c_llist_prepend(editor->all_inspectors, editor->inspector);
 
         if (rut_object_get_type(reference_object) == &rig_entity_type) {
-            state.engine = engine;
+            state.editor = editor;
             state.entities = objects;
 
             rig_entity_foreach_component(
@@ -2950,25 +2965,25 @@ rig_editor_update_inspector(rig_engine_t *engine)
 }
 
 void
-rig_reload_inspector_property(rig_engine_t *engine,
+rig_reload_inspector_property(rig_editor_t *editor,
                               rut_property_t *property)
 {
-    if (engine->inspector) {
+    if (editor->inspector) {
         c_llist_t *l;
 
-        for (l = engine->all_inspectors; l; l = l->next)
+        for (l = editor->all_inspectors; l; l = l->next)
             rig_inspector_reload_property(l->data, property);
     }
 }
 
 void
-rig_reload_position_inspector(rig_engine_t *engine, rig_entity_t *entity)
+rig_reload_position_inspector(rig_editor_t *editor, rig_entity_t *entity)
 {
-    if (engine->inspector) {
+    if (editor->inspector) {
         rut_property_t *property =
             rut_introspectable_lookup_property(entity, "position");
 
-        rig_inspector_reload_property(engine->inspector, property);
+        rig_inspector_reload_property(editor->inspector, property);
     }
 }
 
@@ -2985,7 +3000,7 @@ _rig_objects_selection_copy(rut_object_t *object)
 {
     rig_objects_selection_t *selection = object;
     rig_objects_selection_t *copy =
-        _rig_objects_selection_new(selection->engine);
+        _rig_objects_selection_new(selection->editor);
     c_llist_t *l;
 
     for (l = selection->objects; l; l = l->next) {
@@ -3007,10 +3022,10 @@ _rig_objects_selection_delete(rut_object_t *object)
     rig_objects_selection_t *selection = object;
 
     if (selection->objects) {
-        rig_engine_t *engine = selection->engine;
+        rig_editor_t *editor = selection->editor;
 
         /* XXX: It's assumed that a selection either corresponds to
-         * engine->objects_selection or to a derived selection due to
+         * editor->objects_selection or to a derived selection due to
          * the selectable::copy vfunc.
          *
          * A copy should contain deep-copied entities that don't need to
@@ -3019,13 +3034,14 @@ _rig_objects_selection_delete(rut_object_t *object)
          * be part of the scenegraph.
          */
 
-        if (selection == engine->objects_selection) {
+        if (selection == editor->objects_selection) {
             c_llist_t *l, *next;
             int len = c_llist_length(selection->objects);
 
             for (l = selection->objects; l; l = next) {
                 next = l->next;
-                rig_undo_journal_delete_entity(engine->undo_journal, l->data);
+                rig_undo_journal_delete_entity(editor->engine->undo_journal,
+                                               l->data);
             }
 
             /* NB: that rig_undo_journal_delete_component() will
@@ -3087,14 +3103,14 @@ _rig_objects_selection_init_type(void)
 }
 
 rig_objects_selection_t *
-_rig_objects_selection_new(rig_engine_t *engine)
+_rig_objects_selection_new(rig_editor_t *editor)
 {
     rig_objects_selection_t *selection =
         rut_object_alloc0(rig_objects_selection_t,
                           &rig_objects_selection_type,
                           _rig_objects_selection_init_type);
 
-    selection->engine = engine;
+    selection->editor = editor;
     selection->objects = NULL;
 
     c_list_init(&selection->selection_events_cb_list);
@@ -3126,25 +3142,19 @@ remove_selection_cb(rut_object_t *object,
 }
 
 void
-rig_select_object(rig_engine_t *engine,
+rig_select_object(rig_editor_t *editor,
                   rut_object_t *object,
                   rut_select_action_t action)
 {
-    rig_objects_selection_t *selection = engine->objects_selection;
+    rig_objects_selection_t *selection = editor->objects_selection;
+    rig_engine_t *engine = editor->engine;
 
     /* For now we only support selecting multiple entities... */
     if (object && rut_object_get_type(object) != &rig_entity_type)
         action = RUT_SELECT_ACTION_REPLACE;
 
-#if RIG_EDITOR_ENABLED
     if (object == engine->light_handle)
         object = engine->edit_mode_ui->light;
-#endif
-
-#if 0
-    else if (entity == engine->play_camera_handle)
-        entity = engine->play_camera;
-#endif
 
     switch (action) {
     case RUT_SELECT_ACTION_REPLACE: {
@@ -3188,40 +3198,43 @@ rig_select_object(rig_engine_t *engine,
             rut_object_ref(object);
             selection->objects = c_llist_prepend(selection->objects, object);
         }
-    } break;
+        break;
+    }
     }
 
     if (selection->objects)
-        rut_shell_set_selection(engine->shell, engine->objects_selection);
+        rut_shell_set_selection(editor->shell, editor->objects_selection);
 
-    rut_shell_queue_redraw(engine->shell);
+    rut_shell_queue_redraw(editor->shell);
 
-    if (engine->frontend)
-        rig_editor_update_inspector(engine);
+    rig_editor_update_inspector(editor);
 }
 
 void
-rig_editor_push_undo_subjournal(rig_engine_t *engine)
+rig_editor_push_undo_subjournal(rig_editor_t *editor)
 {
-    rig_undo_journal_t *subjournal = rig_undo_journal_new(engine);
+    rig_undo_journal_t *subjournal = rig_undo_journal_new(editor);
 
     rig_undo_journal_set_apply_on_insert(subjournal, true);
 
-    engine->undo_journal_stack =
-        c_llist_prepend(engine->undo_journal_stack, subjournal);
-    engine->undo_journal = subjournal;
+    editor->undo_journal_stack =
+        c_llist_prepend(editor->undo_journal_stack, subjournal);
+
+    /* TODO: move to editor->undo_journal */
+    editor->engine->undo_journal = subjournal;
 }
 
 rig_undo_journal_t *
-rig_editor_pop_undo_subjournal(rig_engine_t *engine)
+rig_editor_pop_undo_subjournal(rig_editor_t *editor)
 {
-    rig_undo_journal_t *head_journal = engine->undo_journal;
+    rig_undo_journal_t *head_journal = editor->engine->undo_journal;
 
-    engine->undo_journal_stack = c_llist_delete_link(engine->undo_journal_stack,
-                                                    engine->undo_journal_stack);
-    c_return_val_if_fail(engine->undo_journal_stack, NULL);
+    editor->undo_journal_stack = c_llist_delete_link(editor->undo_journal_stack,
+                                                     editor->undo_journal_stack);
+    c_return_val_if_fail(editor->undo_journal_stack, NULL);
 
-    engine->undo_journal = engine->undo_journal_stack->data;
+    /* TODO: move to editor->undo_journal */
+    editor->engine->undo_journal = editor->undo_journal_stack->data;
 
     return head_journal;
 }
@@ -3249,4 +3262,49 @@ rig_editor_print_mappings(rig_editor_t *editor)
     c_debug("Play to edit mode mappings:\n");
     c_hash_table_foreach(
         editor->play_to_edit_object_map, print_mapping_cb, NULL);
+}
+
+rig_objects_selection_t *
+rig_editor_get_objects_selection(rig_editor_t *editor)
+{
+    return editor->objects_selection;
+}
+
+void
+rig_editor_save(rig_editor_t *editor)
+{
+    rig_save(editor->engine, editor->engine->ui_filename);
+}
+
+/* prepare for a new ui to be set */
+void
+rig_editor_reset(rig_editor_t *editor)
+{
+    rig_controller_view_set_controller(editor->controller_view, NULL);
+
+    rig_editor_clear_search_results(editor);
+    rig_editor_free_result_input_closures(editor);
+
+    if (editor->grid_prim) {
+        cg_object_unref(editor->grid_prim);
+        editor->grid_prim = NULL;
+    }
+}
+
+cg_primitive_t *
+rig_editor_get_grid_prim(rig_editor_t *editor)
+{
+    return editor->grid_prim;
+}
+
+rig_controller_view_t *
+rig_editor_get_controller_view(rig_editor_t *editor)
+{
+    return editor->controller_view;
+}
+
+rig_engine_t *
+rig_editor_get_engine(rig_editor_t *editor)
+{
+    return editor->engine;
 }
