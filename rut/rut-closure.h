@@ -3,7 +3,7 @@
  *
  * Rig Utilities
  *
- * Copyright (C) 2013,2014  Intel Corporation.
+ * Copyright (C) 2013,2014,2015  Intel Corporation.
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -48,11 +48,72 @@ typedef void (*rut_closure_destroy_callback_t)(void *user_data);
 typedef struct {
     c_list_t list_node;
 
+#ifdef C_DEBUG
+    c_list_t *owner;
+    bool allocated;
+#endif
+
     void *function;
     void *user_data;
-    rut_closure_destroy_callback_t destroy_cb;
+    rut_closure_destroy_callback_t removed_cb;
 } rut_closure_t;
 
+/* XXX: In general these _init, _add_too, _remove and _remove_all apis
+ * should be used over the previous _list_add, _disconnect and
+ * _disconnect_all apis with closure structures that are embedded in
+ * some other structure.
+ *
+ * These apis can't be intermixed; so you can't use _disconnect() a
+ * closure that was passed to _init() or _remove() a closure created
+ * via _list_add().
+ *
+ * XXX: The aim is to phase out and eventually remove all use of the
+ * older closure apis.
+ */
+static inline void
+rut_closure_init(rut_closure_t *closure,
+                 void *function,
+                 void *user_data)
+{
+    c_list_init(&closure->list_node);
+    closure->function = function;
+    closure->user_data = user_data;
+    closure->removed_cb = NULL;
+
+#ifdef C_DEBUG
+    /* Help ensure we don't intermix the new and old closure
+     * apis or accidentally try adding a closure to multiple
+     * lists */
+    closure->allocated = false;
+    closure->owner = NULL;
+#endif
+}
+
+static inline void
+rut_closure_set_finalize(rut_closure_t *closure,
+                         rut_closure_destroy_callback_t removed_cb)
+{
+    closure->removed_cb = removed_cb;
+}
+
+/* Note: it's ok to redundantly re-add a closure to a list without
+ * manually checking for the redundancy, and it will be a nop */
+void rut_closure_list_insert(c_list_t *list,
+                             rut_closure_t *closure);
+/* Note: it's ok to redundantly remove a closure not part of a
+ * list without manually checking for the redundancy, and it will
+ * be a nop */
+void rut_closure_remove(rut_closure_t *closure);
+void rut_closure_list_remove_all(c_list_t *list);
+
+
+/* XXX: The aim is to phase out and eventually remove these older
+ * closure apis...
+ */
+rut_closure_t *rut_closure_list_add(c_list_t *list,
+                                    void *function,
+                                    void *user_data,
+                                    rut_closure_destroy_callback_t destroy_cb) C_DEPRECATED("Use rut_closure_init + rut_closure_list_insert");
 /**
  * rut_closure_disconnect:
  * @closure: A closure connected to a Rut closure list
@@ -60,14 +121,8 @@ typedef struct {
  * Removes the given closure from the callback list it is connected to
  * and destroys it. If the closure was created with a destroy function
  * then it will be invoked. */
-void rut_closure_disconnect(rut_closure_t *closure);
-
-void rut_closure_list_disconnect_all(c_list_t *list);
-
-rut_closure_t *rut_closure_list_add(c_list_t *list,
-                                    void *function,
-                                    void *user_data,
-                                    rut_closure_destroy_callback_t destroy_cb);
+void rut_closure_disconnect(rut_closure_t *closure) C_DEPRECATED("Use rut_closure_remove");
+void rut_closure_list_disconnect_all(c_list_t *list) C_DEPRECATED("Use rut_closure_list_remove_all");
 
 /**
  * rut_closure_list_invoke:
