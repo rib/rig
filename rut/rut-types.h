@@ -103,4 +103,13 @@ typedef struct _rut_preferred_size_t {
     float minimum_size;
 } rut_preferred_size_t;
 
+#ifdef __GNUC__
+#define rut_container_of(ptr, sample, member)                                  \
+    (__typeof__(sample))((char *)(ptr) -                                       \
+                         ((char *)&(sample)->member - (char *)(sample)))
+#else
+#define rut_container_of(ptr, sample, member)                                  \
+    (void *)((char *)(ptr) - ((char *)&(sample)->member - (char *)(sample)))
+#endif
+
 #endif /* _RUT_TYPES_H_ */
