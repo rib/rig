@@ -31,6 +31,7 @@
 #include <stdlib.h>
 
 #include <clib.h>
+#include <xdgmime.h>
 
 #include <cogl/cogl.h>
 
@@ -39,6 +40,7 @@
 #endif
 
 #ifdef USE_GDK_PIXBUF
+#include <gio/gio.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #endif
 
@@ -787,20 +789,127 @@ rig_asset_new_from_font_data(rut_shell_t *shell,
     return asset;
 }
 
-#if defined(RIG_EDITOR_ENABLED) && defined(USE_GLIB)
+#if defined(RIG_EDITOR_ENABLED)
+static const char *
+get_extension(const char *path)
+{
+    const char *ext = strrchr(path, '.');
+    return ext ? ext + 1 : NULL;
+}
+
+bool
+rig_file_is_asset(const char *filename, const char *mime_type)
+{
+    const char *ext;
+
+    if (mime_type) {
+        if (strncmp(mime_type, "image/", 6) == 0)
+            return true;
+        else if (strncmp(mime_type, "video/", 6) == 0)
+            return true;
+        else if (strcmp(mime_type, "application/x-font-ttf") == 0)
+            return true;
+    }
+
+    ext = get_extension(filename);
+    if (ext && strcmp(ext, "ply") == 0)
+        return true;
+
+    return false;
+}
+
+/* XXX: path should be relative to assets_location and should
+ * have been normalized. */
+static c_llist_t *
+infer_asset_tags(rut_shell_t *shell,
+                 const char *path,
+                 const char *mime_type)
+{
+    char *dir = c_path_get_dirname(path);
+    char *basename = c_path_get_basename(path);
+    char *tmp;
+    const char *ext;
+    c_llist_t *inferred_tags = NULL;
+    char *tokenizer;
+    char *subdir;
+
+    ext = get_extension(basename);
+    if (ext && strcmp(ext, "ply") == 0) {
+        inferred_tags =
+            c_llist_prepend(inferred_tags, (char *)c_intern_string("ply"));
+        inferred_tags =
+            c_llist_prepend(inferred_tags, (char *)c_intern_string("mesh"));
+        inferred_tags =
+            c_llist_prepend(inferred_tags, (char *)c_intern_string("model"));
+        inferred_tags =
+            c_llist_prepend(inferred_tags, (char *)c_intern_string("geometry"));
+        inferred_tags =
+            c_llist_prepend(inferred_tags, (char *)c_intern_string("geom"));
+    }
+    c_free(basename);
+
+    tmp = c_strdupa(dir);
+    for (subdir = strtok_r(tmp, C_DIR_SEPARATOR_S, &tokenizer);
+         subdir;
+         subdir = strtok_r(NULL, C_DIR_SEPARATOR_S, &tokenizer)) {
+
+        inferred_tags =
+            c_llist_prepend(inferred_tags, (char *)c_intern_string(subdir));
+    }
+
+    c_free(dir);
+    dir = NULL;
+
+    if (mime_type) {
+        if (strncmp(mime_type, "image/", 6) == 0)
+            inferred_tags =
+                c_llist_prepend(inferred_tags, (char *)c_intern_string("image"));
+        else if (strncmp(mime_type, "video/", 6) == 0)
+            inferred_tags =
+                c_llist_prepend(inferred_tags, (char *)c_intern_string("video"));
+        else if (strcmp(mime_type, "application/x-font-ttf") == 0)
+            inferred_tags =
+                c_llist_prepend(inferred_tags, (char *)c_intern_string("font"));
+    }
+
+    if (rut_util_find_tag(inferred_tags, "image")) {
+        inferred_tags =
+            c_llist_prepend(inferred_tags, (char *)c_intern_string("img"));
+    }
+
+    if (rut_util_find_tag(inferred_tags, "image") ||
+        rut_util_find_tag(inferred_tags, "video")) {
+        inferred_tags =
+            c_llist_prepend(inferred_tags, (char *)c_intern_string("texture"));
+
+        if (rut_util_find_tag(inferred_tags, "normal-maps")) {
+            inferred_tags =
+                c_llist_prepend(inferred_tags, (char *)c_intern_string("map"));
+            inferred_tags = c_llist_prepend(
+                inferred_tags, (char *)c_intern_string("normal-map"));
+            inferred_tags = c_llist_prepend(inferred_tags,
+                                           (char *)c_intern_string("bump-map"));
+        } else if (rut_util_find_tag(inferred_tags, "alpha-masks")) {
+            inferred_tags = c_llist_prepend(
+                inferred_tags, (char *)c_intern_string("alpha-mask"));
+            inferred_tags =
+                c_llist_prepend(inferred_tags, (char *)c_intern_string("mask"));
+        }
+    }
+
+    return inferred_tags;
+}
+
 rig_asset_t *
 rig_asset_new_from_file(rig_engine_t *engine,
-                        GFileInfo *info,
-                        GFile *asset_file,
+                        const char *path,
+                        const char *mime_type,
                         rut_exception_t **e)
 {
-    GFile *assets_dir = g_file_new_for_path(engine->shell->assets_location);
-    GFile *dir = g_file_get_parent(asset_file);
-    char *path = g_file_get_relative_path(assets_dir, asset_file);
     c_llist_t *inferred_tags = NULL;
     rig_asset_t *asset = NULL;
 
-    inferred_tags = rut_infer_asset_tags(engine->shell, info, asset_file);
+    inferred_tags = infer_asset_tags(engine->shell, path, mime_type);
 
     if (rut_util_find_tag(inferred_tags, "image") ||
         rut_util_find_tag(inferred_tags, "video")) {
@@ -815,18 +924,7 @@ rig_asset_new_from_file(rig_engine_t *engine,
     else if (rut_util_find_tag(inferred_tags, "font"))
         asset = rig_asset_new_font(engine->shell, path, inferred_tags);
 
-#ifdef RIG_EDITOR_ENABLED
-    if (engine->frontend && engine->frontend_id == RIG_FRONTEND_ID_EDITOR &&
-        asset && rig_asset_needs_thumbnail(asset)) {
-        rig_asset_thumbnail(asset, rig_editor_refresh_thumbnails, engine, NULL);
-    }
-#endif
-
     c_llist_free(inferred_tags);
-
-    g_object_unref(assets_dir);
-    g_object_unref(dir);
-    c_free(path);
 
     if (!asset) {
         /* TODO: make the constructors above handle throwing exceptions */
@@ -838,7 +936,7 @@ rig_asset_new_from_file(rig_engine_t *engine,
 
     return asset;
 }
-#endif /* RIG_EDITOR_ENABLED + USE_GLIB */
+#endif /* RIG_EDITOR_ENABLED */
 
 rig_asset_t *
 rig_asset_new_from_pb_asset(rig_pb_un_serializer_t *unserializer,
@@ -890,30 +988,6 @@ rig_asset_new_from_pb_asset(rig_pb_un_serializer_t *unserializer,
         rut_object_unref(mesh);
         return asset;
     }
-#if defined(RIG_EDITOR_ENABLED) && defined(USE_GLIB)
-    else if (pb_asset->path && unserializer->engine->shell->assets_location) {
-        char *full_path = c_build_filename(
-            unserializer->engine->shell->assets_location, pb_asset->path, NULL);
-        GFile *asset_file = g_file_new_for_path(full_path);
-        GFileInfo *info = g_file_query_info(
-            asset_file, "standard::*", G_FILE_QUERY_INFO_NONE, NULL, NULL);
-        if (info) {
-            asset = rig_asset_new_from_file(
-                unserializer->engine, info, asset_file, e);
-            g_object_unref(info);
-        } else {
-            rut_throw(e,
-                      RUT_IO_EXCEPTION,
-                      RUT_IO_EXCEPTION_IO,
-                      "Failed to query file info");
-        }
-
-        g_object_unref(asset_file);
-        c_free(full_path);
-
-        return asset;
-    }
-#endif /* RIG_EDITOR_ENABLED + USE_GLIB */
 
     rut_throw(e, RUT_IO_EXCEPTION, RUT_IO_EXCEPTION_IO, "Missing asset data");
 
@@ -1106,117 +1180,6 @@ rig_asset_has_tag(rig_asset_t *asset, const char *tag)
             return true;
     return false;
 }
-
-#if defined(RIG_EDITOR_ENABLED) && defined(USE_GLIB)
-static const char *
-get_extension(const char *path)
-{
-    const char *ext = strrchr(path, '.');
-    return ext ? ext + 1 : NULL;
-}
-
-bool
-rut_file_info_is_asset(GFileInfo *info, const char *name)
-{
-    const char *content_type = g_file_info_get_content_type(info);
-    char *mime_type = g_content_type_get_mime_type(content_type);
-    const char *ext;
-    if (mime_type) {
-        if (strncmp(mime_type, "image/", 6) == 0) {
-            c_free(mime_type);
-            return true;
-        } else if (strncmp(mime_type, "video/", 6) == 0) {
-            c_free(mime_type);
-            return true;
-        } else if (strcmp(mime_type, "application/x-font-ttf") == 0) {
-            c_free(mime_type);
-            return true;
-        }
-        c_free(mime_type);
-    }
-
-    ext = get_extension(name);
-    if (ext && strcmp(ext, "ply") == 0)
-        return true;
-
-    return false;
-}
-
-c_llist_t *
-rut_infer_asset_tags(rut_shell_t *shell, GFileInfo *info, GFile *asset_file)
-{
-    GFile *assets_dir = g_file_new_for_path(shell->assets_location);
-    GFile *dir = g_file_get_parent(asset_file);
-    char *basename;
-    const char *content_type = g_file_info_get_content_type(info);
-    char *mime_type = g_content_type_get_mime_type(content_type);
-    const char *ext;
-    c_llist_t *inferred_tags = NULL;
-
-    while (dir && !g_file_equal(assets_dir, dir)) {
-        basename = g_file_get_basename(dir);
-        inferred_tags =
-            c_llist_prepend(inferred_tags, (char *)c_intern_string(basename));
-        c_free(basename);
-        dir = g_file_get_parent(dir);
-    }
-
-    if (mime_type) {
-        if (strncmp(mime_type, "image/", 6) == 0)
-            inferred_tags =
-                c_llist_prepend(inferred_tags, (char *)c_intern_string("image"));
-        else if (strncmp(mime_type, "video/", 6) == 0)
-            inferred_tags =
-                c_llist_prepend(inferred_tags, (char *)c_intern_string("video"));
-        else if (strcmp(mime_type, "application/x-font-ttf") == 0)
-            inferred_tags =
-                c_llist_prepend(inferred_tags, (char *)c_intern_string("font"));
-    }
-
-    if (rut_util_find_tag(inferred_tags, "image")) {
-        inferred_tags =
-            c_llist_prepend(inferred_tags, (char *)c_intern_string("img"));
-    }
-
-    if (rut_util_find_tag(inferred_tags, "image") ||
-        rut_util_find_tag(inferred_tags, "video")) {
-        inferred_tags =
-            c_llist_prepend(inferred_tags, (char *)c_intern_string("texture"));
-
-        if (rut_util_find_tag(inferred_tags, "normal-maps")) {
-            inferred_tags =
-                c_llist_prepend(inferred_tags, (char *)c_intern_string("map"));
-            inferred_tags = c_llist_prepend(
-                inferred_tags, (char *)c_intern_string("normal-map"));
-            inferred_tags = c_llist_prepend(inferred_tags,
-                                           (char *)c_intern_string("bump-map"));
-        } else if (rut_util_find_tag(inferred_tags, "alpha-masks")) {
-            inferred_tags = c_llist_prepend(
-                inferred_tags, (char *)c_intern_string("alpha-mask"));
-            inferred_tags =
-                c_llist_prepend(inferred_tags, (char *)c_intern_string("mask"));
-        }
-    }
-
-    basename = g_file_get_basename(asset_file);
-    ext = get_extension(basename);
-    if (ext && strcmp(ext, "ply") == 0) {
-        inferred_tags =
-            c_llist_prepend(inferred_tags, (char *)c_intern_string("ply"));
-        inferred_tags =
-            c_llist_prepend(inferred_tags, (char *)c_intern_string("mesh"));
-        inferred_tags =
-            c_llist_prepend(inferred_tags, (char *)c_intern_string("model"));
-        inferred_tags =
-            c_llist_prepend(inferred_tags, (char *)c_intern_string("geometry"));
-        inferred_tags =
-            c_llist_prepend(inferred_tags, (char *)c_intern_string("geom"));
-    }
-    c_free(basename);
-
-    return inferred_tags;
-}
-#endif /* RIG_EDITOR_ENABLED && USE_GLIB */
 
 void
 rig_asset_add_inferred_tag(rig_asset_t *asset, const char *tag)

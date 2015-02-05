@@ -37,6 +37,7 @@ typedef struct _rig_editor_t rig_editor_t;
 #include "rig-entity.h"
 #include "rig-engine.h"
 #include "rig-undo-journal.h"
+#include "rig-controller-view.h"
 
 #include "rig.pb-c.h"
 
@@ -67,19 +68,30 @@ void rig_editor_clear_search_results(rig_editor_t *editor);
 
 void rig_editor_free_result_input_closures(rig_editor_t *editor);
 
-void rig_reload_inspector_property(rig_engine_t *engine,
+void rig_reload_inspector_property(rig_editor_t *editor,
                                    rut_property_t *property);
 
-void rig_reload_position_inspector(rig_engine_t *engine, rig_entity_t *entity);
+void rig_reload_position_inspector(rig_editor_t *editor, rig_entity_t *entity);
 
 /* TODO: Update to take a rig_editor_t */
-void rig_editor_update_inspector(rig_engine_t *engine);
+void rig_editor_update_inspector(rig_editor_t *editor);
 
-void rig_select_object(rig_engine_t *engine,
+void rig_select_object(rig_editor_t *editor,
                        rut_object_t *object,
                        rut_select_action_t action);
 
-rig_objects_selection_t *_rig_objects_selection_new(rig_engine_t *engine);
+extern rut_type_t rig_objects_selection_type;
+
+typedef struct _rig_entites_selection_t {
+    rut_object_base_t _base;
+    rig_editor_t *editor;
+    c_llist_t *objects;
+    c_list_t selection_events_cb_list;
+} rig_objects_selection_t;
+
+rig_objects_selection_t *_rig_objects_selection_new(rig_editor_t *editor);
+
+rig_objects_selection_t *rig_editor_get_objects_selection(rig_editor_t *editor);
 
 typedef enum _rig_objects_selection_event_t {
     RIG_OBJECTS_SELECTION_ADD_EVENT,
@@ -97,13 +109,30 @@ rut_closure_t *rig_objects_selection_add_event_callback(
     rig_objects_selection_event_callback_t callback,
     void *user_data,
     rut_closure_destroy_callback_t destroy_cb);
-/* TODO: Update to take a rig_editor_t */
-void rig_editor_push_undo_subjournal(rig_engine_t *engine);
 
-rig_undo_journal_t *rig_editor_pop_undo_subjournal(rig_engine_t *engine);
+void rig_editor_push_undo_subjournal(rig_editor_t *editor);
+rig_undo_journal_t *rig_editor_pop_undo_subjournal(rig_editor_t *editor);
 
 void rig_editor_free_builtin_assets(rig_editor_t *editor);
 
 void rig_editor_print_mappings(rig_editor_t *editor);
+
+void rig_editor_save(rig_editor_t *editor);
+
+typedef void (*rig_tool_changed_callback_t)(rig_editor_t *editor,
+                                            rig_tool_id_t tool_id,
+                                            void *user_data);
+
+void
+rig_add_tool_changed_callback(rig_editor_t *editor,
+                              rig_tool_changed_callback_t callback,
+                              void *user_data,
+                              rut_closure_destroy_callback_t destroy_notify);
+
+cg_primitive_t *rig_editor_get_grid_prim(rig_editor_t *editor);
+
+rig_controller_view_t *rig_editor_get_controller_view(rig_editor_t *editor);
+
+rig_engine_t *rig_editor_get_engine(rig_editor_t *editor);
 
 #endif /* _RIG_EDITOR_H_ */

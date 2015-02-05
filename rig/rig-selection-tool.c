@@ -367,7 +367,9 @@ rig_selection_tool_new(rig_camera_view_t *view,
 void
 rig_selection_tool_set_active(rig_selection_tool_t *tool, bool active)
 {
-    rig_objects_selection_t *selection = tool->view->engine->objects_selection;
+    rig_editor_t *editor = rig_engine_get_editor(tool->view->engine);
+    rig_objects_selection_t *selection =
+        rig_editor_get_objects_selection(editor);
     c_llist_t *l;
 
     if (tool->active == active)
