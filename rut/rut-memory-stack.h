@@ -99,6 +99,9 @@ typedef void (*rut_memory_stack_region_callback_t)(uint8_t *region,
                                                    size_t bytes,
                                                    void *user_data);
 
+/* C++ will gets upset with how c_list_for_each_safe is implemented */
+#ifndef __cplusplus
+
 static inline void
 rut_memory_stack_foreach_region(rut_memory_stack_t *stack,
                                 rut_memory_stack_region_callback_t callback,
@@ -112,6 +115,7 @@ rut_memory_stack_foreach_region(rut_memory_stack_t *stack,
             return;
     }
 }
+#endif /* __cplusplus */
 
 void rut_memory_stack_rewind(rut_memory_stack_t *stack);
 
