@@ -26,42 +26,37 @@
  * SOFTWARE.
  *
  *
- * rut_memory_stack_t provides a really simple, but lightning fast
- * memory stack allocation strategy:
+ * rut_memory_stack_t provides a really simple, but fast stack
+ * allocation strategy:
  *
  * - The underlying pool of memory is grow-only.
- * - The pool is considered to be a stack which may be comprised
- *   of multiple smaller stacks. Allocation is done as follows:
+ * - The pool is considered to be a stack which may be comprised of
+ *   multiple smaller sub-stacks (such that resizing never involves
+ *   copying existing data) and allocation is done as follows:
+ *
  *    - If there's enough memory in the current sub-stack then the
  *      stack-pointer will be returned as the allocation and the
  *      stack-pointer will be incremented by the allocation size.
- *    - If there isn't enough memory in the current sub-stack
- *      then a new sub-stack is allocated twice as big as the current
- *      sub-stack or twice as big as the requested allocation size if
- *      that's bigger and the stack-pointer is set to the start of the
- *      new sub-stack.
+ *    - If there isn't enough memory in the current sub-stack then
+ *      a new one is allocated such that the overall pool size grows
+ *      exponentially and the stack-pointer is set to the start of
+ *      the new sub-stack.
+ *
  * - Allocations can't be freed in a random-order, you can only
- *   rewind the entire stack back to the start. There is no
- *   the concept of stack frames to allow partial rewinds.
- *
- * For example; we plan to use this in our tesselator which has to
- * allocate lots of small vertex, edge and face structures because
- * when tesselation has been finished we just want to free the whole
- * lot in one go.
- *
- *
- * Authors:
- *   Robert Bragg <robert@linux.intel.com>
+ *   rewind the entire stack back to the start. There is currently no
+ *   concept of stack frames to allow partial rewinds.
+ * - The implementation is not threadsafe, though it doesn't require
+ *   access to any global resources so users could provide their
+ *   own locking if a stack needs to be shared between threads.
  */
 
 #include <config.h>
 
-#include "rut-memory-stack.h"
-#include "rut-list.h"
-
 #include <stdint.h>
 
 #include <clib.h>
+
+#include "rut-memory-stack.h"
 
 static rut_memory_sub_stack_t *
 rut_memory_sub_stack_alloc(size_t bytes)
@@ -79,7 +74,7 @@ rut_memory_stack_add_sub_stack(rut_memory_stack_t *stack,
 {
     rut_memory_sub_stack_t *sub_stack =
         rut_memory_sub_stack_alloc(sub_stack_bytes);
-    c_list_insert(stack->sub_stacks.prev, &sub_stack->list_node);
+    c_list_insert(stack->sub_stacks.prev, &sub_stack->link);
     stack->sub_stack = sub_stack;
 }
 
@@ -100,6 +95,16 @@ _rut_memory_stack_alloc_in_next_sub_stack(rut_memory_stack_t *stack,
                                           size_t bytes)
 {
     rut_memory_sub_stack_t *sub_stack;
+    void *ret;
+    size_t total_size;
+    size_t new_sub_stack_size;
+
+    sub_stack = stack->sub_stack;
+    if (C_LIKELY(sub_stack->bytes - sub_stack->offset >= bytes)) {
+        ret = sub_stack->data + sub_stack->offset;
+        sub_stack->offset += bytes;
+        return ret;
+    }
 
     /* If the stack has been rewound and then a large initial allocation
      * is made then we may need to skip over one or more of the
@@ -111,48 +116,37 @@ _rut_memory_stack_alloc_in_next_sub_stack(rut_memory_stack_t *stack,
      * stopping if we loop back to the first sub_stack. (NB: A c_list_t
      * is a circular list)
      */
-    for (sub_stack = rut_container_of(
-             stack->sub_stack->list_node.next, sub_stack, list_node);
-         &sub_stack->list_node != &stack->sub_stacks;
-         sub_stack = rut_container_of(
-             sub_stack->list_node.next, sub_stack, list_node)) {
+    for (c_list_set_iterator(sub_stack->link.next, sub_stack, link);
+         &sub_stack->link != &stack->sub_stacks;
+         c_list_set_iterator(sub_stack->link.next, sub_stack, link)) {
         if (sub_stack->bytes >= bytes) {
+            ret = sub_stack->data;
             stack->sub_stack = sub_stack;
             sub_stack->offset = bytes;
-            return sub_stack->data;
+            return ret;
         }
     }
 
     /* If we couldn't find a free sub-stack with enough space for the
-     * requested allocation we allocate another sub-stack that's twice
-     * as big as the last sub-stack or twice as big as the requested
-     * allocation if that's bigger.
+     * requested allocation we allocate another sub-stack that's at
+     * least half the current total stack size.
      */
 
-    sub_stack = rut_container_of(stack->sub_stacks.prev, sub_stack, list_node);
+    c_list_for_each(sub_stack, &stack->sub_stacks, link)
+        total_size += sub_stack->bytes;
 
-    rut_memory_stack_add_sub_stack(stack, MAX(sub_stack->bytes, bytes) * 1.5);
+    new_sub_stack_size = total_size / 2;
+    if (new_sub_stack_size < bytes * 2)
+        new_sub_stack_size = bytes * 2;
 
-    sub_stack = rut_container_of(stack->sub_stacks.prev, sub_stack, list_node);
+    rut_memory_stack_add_sub_stack(stack, new_sub_stack_size);
+
+    sub_stack =
+        c_container_of(stack->sub_stacks.prev, rut_memory_sub_stack_t, link);
 
     sub_stack->offset += bytes;
 
     return sub_stack->data;
-}
-
-void
-rut_memory_stack_foreach_region(rut_memory_stack_t *stack,
-                                rut_memory_stack_region_callback_t callback,
-                                void *user_data)
-{
-    rut_memory_sub_stack_t *sub_stack, *tmp;
-
-    c_list_for_each_safe(sub_stack, tmp, &stack->sub_stacks, list_node)
-    {
-        callback(sub_stack->data, sub_stack->offset, user_data);
-        if (sub_stack == stack->sub_stack)
-            return;
-    }
 }
 
 static void
@@ -166,15 +160,14 @@ void
 rut_memory_stack_rewind(rut_memory_stack_t *stack)
 {
     rut_memory_sub_stack_t *last_sub_stack =
-        rut_container_of(stack->sub_stacks.prev, last_sub_stack, list_node);
+        c_container_of(stack->sub_stacks.prev, rut_memory_sub_stack_t, link);
     rut_memory_sub_stack_t *sub_stack;
 
-    for (sub_stack =
-             rut_container_of(stack->sub_stacks.next, sub_stack, list_node);
+    for (c_list_set_iterator(stack->sub_stacks.next, sub_stack, link);
          sub_stack != last_sub_stack;
-         sub_stack =
-             rut_container_of(stack->sub_stacks.next, sub_stack, list_node)) {
-        c_list_remove(&sub_stack->list_node);
+         c_list_set_iterator(sub_stack->link.next, sub_stack, link))
+    {
+        c_list_remove(&sub_stack->link);
         rut_memory_sub_stack_free(sub_stack);
     }
 
@@ -189,7 +182,7 @@ rut_memory_stack_free(rut_memory_stack_t *stack)
 {
     rut_memory_sub_stack_t *sub_stack, *tmp;
 
-    c_list_for_each_safe(sub_stack, tmp, &stack->sub_stacks, list_node)
+    c_list_for_each_safe(sub_stack, tmp, &stack->sub_stacks, link)
     rut_memory_sub_stack_free(sub_stack);
 
     c_slice_free(rut_memory_stack_t, stack);
