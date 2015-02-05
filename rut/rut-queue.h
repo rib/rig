@@ -81,8 +81,8 @@ _rut_queue_merge_sort_items(c_list_t *sorted,
     rut_queue_item_t *pos0;
     rut_queue_item_t *pos1;
 
-    pos0 = rut_container_of(sub0->next, pos0, list_node);
-    pos1 = rut_container_of(sub1->next, pos1, list_node);
+    pos0 = c_container_of(sub0->next, rut_queue_item_t, list_node);
+    pos1 = c_container_of(sub1->next, rut_queue_item_t, list_node);
 
     do {
         if (compare(pos0->data, pos1->data) <= 0) {
@@ -96,7 +96,8 @@ _rut_queue_merge_sort_items(c_list_t *sorted,
             sorted->prev->next = &pos0->list_node;
             sorted->prev = &pos0->list_node;
 
-            pos0 = rut_container_of(pos0->list_node.next, pos0, list_node);
+            pos0 = c_container_of(pos0->list_node.next,
+                                  rut_queue_item_t, list_node);
         } else {
             /* remove */
             pos1->list_node.prev->next = pos1->list_node.next;
@@ -108,7 +109,8 @@ _rut_queue_merge_sort_items(c_list_t *sorted,
             sorted->prev->next = &pos1->list_node;
             sorted->prev = &pos1->list_node;
 
-            pos1 = rut_container_of(pos1->list_node.next, pos1, list_node);
+            pos1 = c_container_of(pos1->list_node.next,
+                                  rut_queue_item_t, list_node);
         }
     } while (&pos0->list_node != sub0 && &pos1->list_node != sub1);
 }

@@ -78,7 +78,7 @@ rut_queue_peek_tail(rut_queue_t *queue)
     if (c_list_empty(&queue->items))
         return NULL;
 
-    item = rut_container_of(queue->items.prev, item, list_node);
+    item = c_container_of(queue->items.prev, rut_queue_item_t, list_node);
 
     return item->data;
 }
@@ -92,7 +92,7 @@ rut_queue_pop_tail(rut_queue_t *queue)
     if (c_list_empty(&queue->items))
         return NULL;
 
-    item = rut_container_of(queue->items.prev, item, list_node);
+    item = c_container_of(queue->items.prev, rut_queue_item_t, list_node);
     c_list_remove(&item->list_node);
 
     ret = item->data;
@@ -112,7 +112,7 @@ rut_queue_peek_head(rut_queue_t *queue)
     if (c_list_empty(&queue->items))
         return NULL;
 
-    item = rut_container_of(queue->items.next, item, list_node);
+    item = c_container_of(queue->items.next, rut_queue_item_t, list_node);
 
     return item->data;
 }
@@ -126,7 +126,7 @@ rut_queue_pop_head(rut_queue_t *queue)
     if (c_list_empty(&queue->items))
         return NULL;
 
-    item = rut_container_of(queue->items.next, item, list_node);
+    item = c_container_of(queue->items.next, rut_queue_item_t, list_node);
     c_list_remove(&item->list_node);
 
     ret = item->data;
