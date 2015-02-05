@@ -41,7 +41,7 @@ typedef struct _rut_memory_stack_t rut_memory_stack_t;
 typedef struct _rut_memory_sub_stack_t rut_memory_sub_stack_t;
 
 struct _rut_memory_sub_stack_t {
-    c_list_t list_node;
+    c_list_t link;
     uint8_t *data;
     size_t bytes;
     size_t offset;
@@ -99,10 +99,19 @@ typedef void (*rut_memory_stack_region_callback_t)(uint8_t *region,
                                                    size_t bytes,
                                                    void *user_data);
 
-void
+static inline void
 rut_memory_stack_foreach_region(rut_memory_stack_t *stack,
                                 rut_memory_stack_region_callback_t callback,
-                                void *user_data);
+                                void *user_data)
+{
+    rut_memory_sub_stack_t *sub_stack, *tmp;
+
+    c_list_for_each_safe(sub_stack, tmp, &stack->sub_stacks, link) {
+        callback(sub_stack->data, sub_stack->offset, user_data);
+        if (sub_stack == stack->sub_stack)
+            return;
+    }
+}
 
 void rut_memory_stack_rewind(rut_memory_stack_t *stack);
 
