@@ -594,6 +594,9 @@ int c_list_length(c_list_t *list);
 int c_list_empty(c_list_t *list);
 void c_list_insert_list(c_list_t *list, c_list_t *other);
 
+/* Only for the cool C programmers... */
+#ifndef __cplusplus
+
 /* This assigns to iterator first so that taking a reference to it
  * later in the second step won't be an undefined operation. It
  * assigns the value of list_node rather than 0 so that it is possible
@@ -631,6 +634,8 @@ void c_list_insert_list(c_list_t *list, c_list_t *other);
          c_list_set_iterator((pos)->member.prev, tmp, member);              \
          &pos->member != (head);                                            \
          pos = tmp, c_list_set_iterator(pos->member.prev, tmp, member))
+
+#endif /* __cplusplus */
 
 /*
  * Link Lists (I.e. these linked list apis allocate separate links
