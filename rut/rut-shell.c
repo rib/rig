@@ -1464,7 +1464,7 @@ rut_shell_onscreen_new(rut_shell_t *shell,
     onscreen->height = height;
     onscreen->is_ready = true;
 
-    c_list_insert(&shell->onscreens, &onscreen->link);
+    c_list_insert(shell->onscreens.prev, &onscreen->link);
 
     return onscreen;
 }
