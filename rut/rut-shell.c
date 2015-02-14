@@ -900,7 +900,7 @@ rut_frame_info_t *
 rut_shell_get_frame_info(rut_shell_t *shell)
 {
     rut_frame_info_t *head =
-        rut_container_of(shell->frame_infos.prev, head, list_node);
+        c_list_last(&shell->frame_infos, rut_frame_info_t, list_node);
     return head;
 }
 
@@ -920,7 +920,9 @@ void
 rut_shell_finish_frame(rut_shell_t *shell)
 {
     rut_frame_info_t *info =
-        rut_container_of(shell->frame_infos.next, info, list_node);
+        c_list_first(&shell->frame_infos, rut_frame_info_t, list_node);
+
+    c_return_if_fail(info);
 
     c_list_remove(&info->list_node);
 
@@ -1206,7 +1208,8 @@ flush_pre_paint_callbacks(rut_shell_t *shell)
 
     while (!c_list_empty(&shell->pre_paint_callbacks)) {
         rut_shell_pre_paint_entry_t *entry =
-            rut_container_of(shell->pre_paint_callbacks.next, entry, list_node);
+            c_list_first(&shell->pre_paint_callbacks,
+                         rut_shell_pre_paint_entry_t, list_node);
 
         c_list_remove(&entry->list_node);
 
@@ -1623,7 +1626,7 @@ pointer_grab_cb(rut_input_event_t *event,
             if (grab->x11_grabbed)
             {
                 rut_shell_onscreen_t *shell_onscreen =
-                    rut_container_of (shell->onscreens.next, shell_onscreen, link);
+                    c_list_first(&shell->onscreens, rut_shell_onscreen_t, link);
                 Display *dpy = shell_onscreen->sdl_info.info.x11.display;
 
                 if (shell->x11_grabbed)
@@ -1662,7 +1665,7 @@ rut_shell_grab_pointer(rut_shell_t *shell,
     if (shell->sdl_subsystem == SDL_SYSWM_X11)
     {
         rut_shell_onscreen_t *shell_onscreen =
-            rut_container_of (shell->onscreens.next, shell_onscreen, link);
+            c_list_first(&shell->onscreens, rut_shell_onscreen_t, link);
         Display *dpy = shell_onscreen->sdl_info.info.x11.display;
         Window win = shell_onscreen->sdl_info.info.x11.window;
 
@@ -1717,7 +1720,7 @@ rut_shell_queue_redraw(rut_shell_t *shell)
         shell->queue_redraw_callback(shell, shell->queue_redraw_data);
     else {
         rut_shell_onscreen_t *first_onscreen =
-            rut_container_of(shell->onscreens.next, first_onscreen, link);
+            c_list_first(&shell->onscreens, rut_shell_onscreen_t, link);
 
         /* We throttle rendering according to the first onscreen */
         if (first_onscreen) {
