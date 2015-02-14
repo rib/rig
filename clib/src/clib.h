@@ -613,6 +613,12 @@ void c_list_insert_list(c_list_t *list, c_list_t *other);
 #define c_container_of(ptr, type, member)                                   \
     (type *)((char *)(ptr) - offsetof(type, member))
 
+#define c_list_first(list, type, member)                                    \
+    c_list_empty(list) ? NULL : c_container_of((list)->next, type, member);
+
+#define c_list_last(list, type, member)                                     \
+    c_list_empty(list) ? NULL : c_container_of((list)->prev, type, member);
+
 #define c_list_for_each(pos, head, member)                                  \
     for (c_list_set_iterator((head)->next, pos, member);                    \
          &pos->member != (head);                                            \
