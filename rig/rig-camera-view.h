@@ -29,6 +29,8 @@
 #ifndef _RIG_CAMERA_VIEW_H_
 #define _RIG_CAMERA_VIEW_H_
 
+#include "OVR_CAPI.h"
+
 #include <rut.h>
 
 /* Forward declare this since there is a circluar header dependency
@@ -73,6 +75,45 @@ struct eye_frustum {
     float right_tangent;
 };
 
+struct eye {
+    enum eye_type type;
+
+
+    cg_texture_2d_t *tex;
+    cg_offscreen_t *fb;
+
+    //struct eye_frustum eye_frustum;
+    ovrFovPort fov;
+
+    rig_entity_t *camera;
+    rut_object_t *camera_component;
+
+    cg_pipeline_t *distort_pipeline;
+    int eye_to_source_uv_scale_loc;
+    int eye_to_source_uv_offset_loc;
+    int eye_rotation_start_loc;
+    int eye_rotation_end_loc;
+
+    ovrEyeRenderDesc render_desc;
+
+    ovrPosef head_pose;
+
+    float eye_to_source_uv_scale[2];
+    float eye_to_source_uv_offset[2];
+
+    cg_attribute_buffer_t *attrib_buf;
+    cg_attribute_t *attribs[6];
+    cg_primitive_t *distortion_prim;
+
+    cg_index_buffer_t *index_buf;
+    cg_indices_t *indices;
+
+    //float x0, y0, x1, y1;
+
+    float viewport[4];
+
+};
+
 struct _rig_camera_view_t {
     rut_object_base_t _base;
 
@@ -110,6 +151,12 @@ struct _rig_camera_view_t {
 #ifdef RIG_EDITOR_ENABLED
     rig_entity_t *play_camera_handle;
 #endif
+
+    ovrHmd hmd;
+    struct eye eyes[2];
+
+    cg_primitive_t *debug_triangle;
+    cg_pipeline_t *debug_pipeline;
 
     bool enable_dof;
 
