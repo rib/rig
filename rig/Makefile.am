@@ -22,6 +22,10 @@ AM_CPPFLAGS = \
 	-DRIG_LLVM_VERSION=\"@RIG_LLVM_VERSION@\" \
 	-DICU_DATA_DIR=\""$(ICU_PREFIX)/share"\"
 
+if OCULUS_RIFT
+AM_CPPFLAGS += -I$(top_srcdir)/LibOVR/Src
+endif
+
 AM_CFLAGS = \
 	$(RIG_EXTRA_CFLAGS)
 
@@ -119,6 +123,10 @@ common_ldadd = \
 	$(top_builddir)/cogl/libcogl2.la \
 	$(top_builddir)/cogl-path/libcogl-path.la \
 	$(RIG_DEP_LIBS)
+
+if OCULUS_RIFT
+common_ldadd += $(top_builddir)/LibOVR/libOVR.la -lstdc++
+endif
 
 if EDITOR_ENABLED
 common_ldadd += $(top_builddir)/cogl-pango/libcogl-pango2.la

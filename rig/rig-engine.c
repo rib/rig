@@ -95,6 +95,8 @@ static rut_property_spec_t _rig_engine_prop_specs[] = {
     { 0 }
 };
 
+bool rig_engine_vr_mode;
+
 static rut_traverse_visit_flags_t
 scenegraph_pre_paint_cb(rut_object_t *object, int depth, void *user_data)
 {

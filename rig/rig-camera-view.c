@@ -31,6 +31,10 @@
 
 #include <math.h>
 
+#ifdef ENABLE_OCULUS_RIFT
+#include "OVR_CAPI.h"
+#endif
+
 #include <rut.h>
 
 #ifdef RIG_EDITOR_ENABLED
@@ -245,6 +249,134 @@ init_camera_from_camera(rig_entity_t *dst_camera, rig_entity_t *src_camera)
     rig_entity_set_rotation(dst_camera, rig_entity_get_rotation(src_camera));
 }
 
+#ifdef ENABLE_OCULUS_RIFT
+static void
+paint_eye(rig_camera_view_t *view,
+          rig_paint_context_t *rig_paint_ctx,
+          rig_entity_t *camera,
+          rig_camera_t *camera_component,
+          struct eye *eye)
+{
+    cg_quaternion_t orientation;
+
+    rut_graphable_add_child(view->ui->scene, eye->camera);
+
+    rut_camera_set_near_plane(eye->camera_component,
+                              rut_camera_get_near_plane(camera_component));
+    rut_camera_set_far_plane(eye->camera_component,
+                             rut_camera_get_far_plane(camera_component));
+
+    rut_camera_set_zoom(eye->camera_component,
+                        rut_camera_get_zoom(camera_component));
+
+    rig_entity_set_position(eye->camera, rig_entity_get_position(camera));
+    rig_entity_set_scale(eye->camera, rig_entity_get_scale(camera));
+    //rig_entity_set_rotation(eye->camera, rig_entity_get_rotation(camera));
+
+    eye->head_pose = ovrHmd_GetHmdPosePerEye(view->hmd, eye->type);
+
+    /* TODO: double check that OVR quaternions are defined in exactly
+     * the same way... */
+    orientation.w = eye->head_pose.Orientation.w;
+    orientation.x = eye->head_pose.Orientation.x;
+    orientation.y = -eye->head_pose.Orientation.y;
+    orientation.z = -eye->head_pose.Orientation.z;
+
+    cg_quaternion_invert(&orientation);
+
+    rig_entity_set_rotation(eye->camera, &orientation);
+
+    /* TODO: apply inter-oculur transform to separate eyes */
+
+    rig_entity_set_camera_view_from_transform(eye->camera);
+
+    rig_paint_ctx->_parent.camera = eye->camera_component;
+
+    cg_framebuffer_clear4f(rut_camera_get_framebuffer(eye->camera_component),
+                           CG_BUFFER_BIT_COLOR | CG_BUFFER_BIT_DEPTH |
+                           CG_BUFFER_BIT_STENCIL,
+                           0, 0, 0, 1);
+#if 0
+    rut_camera_flush(eye->camera_component);
+    cg_primitive_draw(view->debug_triangle,
+                      rut_camera_get_framebuffer(eye->camera_component),
+                      view->debug_pipeline);
+    rut_camera_end_frame(eye->camera_component);
+#endif
+    rig_renderer_paint_camera(rig_paint_ctx, eye->camera);
+}
+
+static void
+composite_eye(rig_camera_view_t *view,
+              cg_framebuffer_t *fb,
+              struct eye *eye)
+{
+    ovrMatrix4f timewarp_matrices[2];
+
+    ovrHmd_GetEyeTimewarpMatrices(view->hmd, eye->type,
+                                  eye->head_pose, timewarp_matrices);
+
+    float identity[] = {
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1
+    };
+    cg_pipeline_set_uniform_matrix(eye->distort_pipeline,
+                                   eye->eye_rotation_start_loc,
+                                   4, /* dimensions */
+                                   1, /* count */
+                                   true, /* transpose as ovr matrics
+                                            are row major */
+                                   //(float *)&timewarp_matrices[0]);
+                                   identity);
+    cg_pipeline_set_uniform_matrix(eye->distort_pipeline,
+                                   eye->eye_rotation_end_loc,
+                                   4, /* dimensions */
+                                   1, /* count */
+                                   true, /* transpose as ovr matrics
+                                            are row major */
+                                   //(float *)&timewarp_matrices[1]);
+                                   identity);
+
+    cg_primitive_draw(eye->distortion_prim, fb, eye->distort_pipeline);
+}
+
+static void
+vr_swap_buffers_hook(cg_framebuffer_t *fb,
+                     void *data)
+{
+    rig_camera_view_t *view = data;
+
+    cg_onscreen_swap_buffers(fb);
+
+    /* FIXME: we should have a more specific way of asserting that we
+     * only call ovrHmd_EndFrameTiming() if once we have started
+     * a frame... */
+    if (!view->ui)
+        return;
+
+    /* XXX: check how this interacts with cogl's frame complete
+     * notifications; we shouldn't need to now wait for a swap notify
+     * from the X server but it wouldn't be surprising if we do in
+     * fact end up delayed waiting for the event from X...
+     *
+     * XXX: check what Begin/EndTiming is assuming about how the
+     * relationship between finishing and the vblank period and
+     * see if we can improve the timing apis...
+     */
+    cg_framebuffer_finish(fb);
+
+    ovrHmd_EndFrameTiming(view->hmd);
+
+    /* XXX: ovrHmd_EndFrame() was a useful starting poiny when determining
+     * how to use the latency testing apis... */
+    ovrHmd_GetMeasuredLatencyTest2(view->hmd);
+
+    rut_shell_queue_redraw(view->engine->shell);
+}
+#endif /* ENABLE_OCULUS_RIFT */
+
 static void
 _rut_camera_view_paint(rut_object_t *object,
                        rut_paint_context_t *paint_ctx)
@@ -288,12 +420,47 @@ _rut_camera_view_paint(rut_object_t *object,
     rig_paint_ctx->enable_dof = view->enable_dof;
     //rig_paint_ctx->enable_dof = false;
 
-    rut_camera_set_framebuffer(camera_component, fb);
-    rut_camera_set_viewport(camera_component,
-                            view->fb_x, view->fb_y,
-                            view->width, view->height);
-    rig_entity_set_camera_view_from_transform(camera);
-    rig_renderer_paint_camera(rig_paint_ctx, camera);
+    if (!rig_engine_vr_mode) {
+
+        rut_camera_set_framebuffer(camera_component, fb);
+        rut_camera_set_viewport(camera_component,
+                                view->fb_x, view->fb_y,
+                                view->width, view->height);
+        rig_entity_set_camera_view_from_transform(camera);
+        rig_renderer_paint_camera(rig_paint_ctx, camera);
+
+    }
+#ifdef ENABLE_OCULUS_RIFT
+    else {
+        ovrFrameTiming frame_timing = ovrHmd_BeginFrameTiming(view->hmd, 0);
+
+        for (i = 0; i < 2; i++) {
+            int eye_idx = view->hmd->EyeRenderOrder[i];
+            struct eye *eye = &view->eyes[eye_idx];
+            paint_eye(view, rig_paint_ctx, camera, camera_component, eye);
+        }
+
+        ovr_WaitTillTime(frame_timing.TimewarpPointSeconds);
+
+        rut_camera_set_framebuffer(view->composite_camera, fb);
+        rut_camera_set_viewport(view->composite_camera,
+                                view->fb_x, view->fb_y,
+                                view->width, view->height);
+
+        paint_ctx->camera = view->composite_camera;
+        rut_camera_flush(view->composite_camera);
+
+#if 1
+        for (i = 0; i < 2; i++) {
+            int eye_idx = view->hmd->EyeRenderOrder[i];
+            struct eye *eye = &view->eyes[eye_idx];
+            composite_eye(view, fb, eye);
+        }
+#endif
+
+        rut_camera_end_frame(view->composite_camera);
+    }
+#endif
 
     rut_camera_resume(suspended_camera);
     paint_ctx->camera = suspended_camera;
@@ -1769,6 +1936,337 @@ tool_changed_cb(rig_editor_t *editor, rig_tool_id_t tool_id, void *user_data)
 }
 #endif /* RIG_EDITOR_ENABLED */
 
+#ifdef ENABLE_OCULUS_RIFT
+static void
+deinit_vr(rig_camera_view_t *view)
+{
+    rut_object_unref(view->composite_camera);
+
+    if (view->hmd)
+        ovrHmd_Destroy(view->hmd);
+    ovr_Shutdown();
+}
+
+static void
+create_eye_distortion_mesh(rig_camera_view_t *view, struct eye *eye)
+{
+    cg_device_t *dev = view->engine->shell->cg_device;
+
+    ovrDistortionMesh mesh_data;
+
+    ovrHmd_CreateDistortionMesh(view->hmd,
+                                eye->type,
+                                eye->fov,
+                                (ovrDistortionCap_Chromatic |
+                                 ovrDistortionCap_TimeWarp),
+                                &mesh_data);
+
+    eye->attrib_buf = cg_attribute_buffer_new(dev,
+                                              (sizeof(ovrDistortionVertex) *
+                                               mesh_data.VertexCount),
+                                              mesh_data.pVertexData);
+
+    eye->attribs[0] = cg_attribute_new(eye->attrib_buf,
+                                       "cg_position_in",
+                                       sizeof(ovrDistortionVertex),
+                                       offsetof(ovrDistortionVertex, ScreenPosNDC),
+                                       2, /* n components */
+                                       CG_ATTRIBUTE_TYPE_FLOAT);
+    eye->attribs[1] = cg_attribute_new(eye->attrib_buf,
+                                       "warp_factor_in",
+                                       sizeof(ovrDistortionVertex),
+                                       offsetof(ovrDistortionVertex, TimeWarpFactor),
+                                       1, /* n components */
+                                       CG_ATTRIBUTE_TYPE_FLOAT);
+    eye->attribs[2] = cg_attribute_new(eye->attrib_buf,
+                                       "vignette_factor_in",
+                                       sizeof(ovrDistortionVertex),
+                                       offsetof(ovrDistortionVertex, VignetteFactor),
+                                       1, /* n components */
+                                       CG_ATTRIBUTE_TYPE_FLOAT);
+    eye->attribs[3] = cg_attribute_new(eye->attrib_buf,
+                                       "tan_eye_angles_r_in",
+                                       sizeof(ovrDistortionVertex),
+                                       offsetof(ovrDistortionVertex, TanEyeAnglesR),
+                                       2, /* n components */
+                                       CG_ATTRIBUTE_TYPE_FLOAT);
+    eye->attribs[4] = cg_attribute_new(eye->attrib_buf,
+                                       "tan_eye_angles_g_in",
+                                       sizeof(ovrDistortionVertex),
+                                       offsetof(ovrDistortionVertex, TanEyeAnglesG),
+                                       2, /* n components */
+                                       CG_ATTRIBUTE_TYPE_FLOAT);
+    eye->attribs[5] = cg_attribute_new(eye->attrib_buf,
+                                       "tan_eye_angles_b_in",
+                                       sizeof(ovrDistortionVertex),
+                                       offsetof(ovrDistortionVertex, TanEyeAnglesB),
+                                       2, /* n components */
+                                       CG_ATTRIBUTE_TYPE_FLOAT);
+
+    eye->index_buf = cg_index_buffer_new(dev, 2 * mesh_data.IndexCount);
+
+    cg_buffer_set_data(eye->index_buf,
+                       0, /* offset */
+                       mesh_data.pIndexData,
+                       2 * mesh_data.IndexCount,
+                       NULL); /* exception */
+
+    eye->indices = cg_indices_new_for_buffer(CG_INDICES_TYPE_UNSIGNED_SHORT,
+                                             eye->index_buf,
+                                             0); /* offset */
+
+    eye->distortion_prim =
+        cg_primitive_new_with_attributes(CG_VERTICES_MODE_TRIANGLES,
+                                         mesh_data.VertexCount,
+                                         eye->attribs,
+                                         6); /* n attributes */
+
+    cg_primitive_set_indices(eye->distortion_prim,
+                             eye->indices,
+                             mesh_data.IndexCount);
+
+    ovrHmd_DestroyDistortionMesh(&mesh_data);
+}
+
+static void
+init_vr(rig_camera_view_t *view)
+{
+    struct eye *left_eye = &view->eyes[RIG_EYE_LEFT];
+    struct eye *right_eye = &view->eyes[RIG_EYE_RIGHT];
+    cg_device_t *dev = view->engine->shell->cg_device;
+    cg_vertex_p3c4_t triangle_vertices[] = {
+        {  0,    500, -500, 0xff, 0x00, 0x00, 0xff },
+        { -500, -500, -500, 0x00, 0xff, 0x00, 0xff },
+        {  500, -500, -500, 0x00, 0x00, 0xff, 0xff }
+    };
+    int i;
+
+    view->engine->swap_buffers_hook = vr_swap_buffers_hook;
+    view->engine->swap_buffers_hook_data = view;
+
+    ovr_Initialize();
+
+    view->hmd = ovrHmd_Create(0);
+
+    if (!view->hmd) {
+        c_warning("Failed to initialize a head mounted display\n"
+                  "Creating dummy DK2 device...");
+
+        view->hmd = ovrHmd_CreateDebug(ovrHmd_DK2);
+        if (!view->hmd) {
+            c_error("Failed to create dummy DK2 device\n");
+            goto cleanup;
+        }
+    }
+
+    c_message("Headset type = %s\n", view->hmd->ProductName);
+
+
+    ovrHmd_SetEnabledCaps(view->hmd,
+                          (ovrHmdCap_DynamicPrediction
+                           //| ovrHmdCap_LowPersistence
+                           ));
+
+    ovrHmd_ConfigureTracking(view->hmd,
+                             ovrTrackingCap_Orientation |
+                             ovrTrackingCap_MagYawCorrection |
+                             ovrTrackingCap_Position, /* supported */
+                             0); /* required */
+
+    view->composite_camera = rig_camera_new(view->engine,
+                                            -1, -1, /* viewport w/h */
+                                            NULL);  /* fb */
+    rut_camera_set_projection_mode(view->composite_camera,
+                                   RUT_PROJECTION_NDC);
+    rut_camera_set_clear(view->composite_camera, false);
+
+    view->debug_triangle = cg_primitive_new_p3c4(
+        dev, CG_VERTICES_MODE_TRIANGLES, 3, triangle_vertices);
+    view->debug_pipeline = cg_pipeline_new(dev);
+    cg_pipeline_set_blend(view->debug_pipeline, "RGBA = ADD(SRC_COLOR, 0)", NULL);
+
+    memset(view->eyes, 0, sizeof(view->eyes));
+
+    left_eye->type = RIG_EYE_LEFT;
+#if 0
+    left_eye->x0 = -1;
+    left_eye->y0 = 1;
+    left_eye->x1 = 0;
+    left_eye->y1 = -1;
+#endif
+    left_eye->viewport[0] = 0;
+    left_eye->viewport[1] = 0;
+    left_eye->viewport[2] = view->hmd->Resolution.w / 2;
+    left_eye->viewport[3] = view->hmd->Resolution.h;
+
+    right_eye->type = RIG_EYE_RIGHT;
+#if 0
+    right_eye->x0 = 0;
+    right_eye->y0 = 1;
+    right_eye->x1 = 1;
+    right_eye->y1 = -1;
+#endif
+    right_eye->viewport[0] = (view->hmd->Resolution.w + 1) / 2;
+    right_eye->viewport[1] = 0;
+    right_eye->viewport[2] = view->hmd->Resolution.w / 2;
+    right_eye->viewport[3] = view->hmd->Resolution.h;
+
+    for (i = 0; i < 2; i++) {
+        struct eye *eye = &view->eyes[i];
+        ovrSizei recommended_size;
+        ovrRecti tex_viewport;
+        ovrVector2f uv_scale_offset[2];
+        cg_snippet_t *snippet;
+
+        eye->fov = view->hmd->DefaultEyeFov[i];
+
+        recommended_size =
+            ovrHmd_GetFovTextureSize(view->hmd, eye->type, eye->fov,
+                                     1.0 /* pixels per display pixel */);
+
+        eye->tex = cg_texture_2d_new_with_size(dev,
+                                               recommended_size.w,
+                                               recommended_size.h);
+        eye->fb = cg_offscreen_new_with_texture(eye->tex);
+        cg_framebuffer_allocate(eye->fb, NULL);
+
+        eye->render_desc = ovrHmd_GetRenderDesc(view->hmd, eye->type, eye->fov);
+
+        tex_viewport.Size = recommended_size;
+        tex_viewport.Pos.x = 0;
+        tex_viewport.Pos.y = 0;
+
+        /* XXX: The size and viewport this api expects are the size of
+         * the eye render target and the viewport used when rendering
+         * the eye. I.e. not the size of the final destination
+         * framebuffer or viewport used when finally compositing the
+         * eyes with mesh distortion. */
+        ovrHmd_GetRenderScaleAndOffset(eye->fov, recommended_size, tex_viewport,
+                                       uv_scale_offset);
+
+        eye->eye_to_source_uv_scale[0] = uv_scale_offset[0].x;
+        eye->eye_to_source_uv_scale[1] = uv_scale_offset[0].y;
+
+        eye->eye_to_source_uv_offset[0] = uv_scale_offset[1].x;
+        eye->eye_to_source_uv_offset[1] = uv_scale_offset[1].y;
+
+        eye->camera_component = rig_camera_new(view->engine,
+                                               recommended_size.w,
+                                               recommended_size.h,
+                                               eye->fb);
+        rut_camera_set_clear(eye->camera_component, false);
+        rut_camera_set_projection_mode(eye->camera_component,
+                                       RUT_PROJECTION_ASYMMETRIC_PERSPECTIVE);
+
+#define R_TO_D(X) ((X)*(180.0f / C_PI))
+        rut_camera_set_asymmetric_field_of_view(eye->camera_component,
+                                                R_TO_D(atanf(eye->fov.LeftTan)),
+                                                R_TO_D(atanf(eye->fov.RightTan)),
+                                                R_TO_D(atanf(eye->fov.DownTan)),
+                                                R_TO_D(atanf(eye->fov.UpTan)));
+#undef R_TO_D
+
+        eye->camera = rig_entity_new(view->engine->shell);
+        rig_entity_add_component(eye->camera, eye->camera_component);
+
+        eye->distort_pipeline = cg_pipeline_new(dev);
+        cg_pipeline_set_layer_texture(eye->distort_pipeline, 0, eye->tex);
+        cg_pipeline_set_blend(eye->distort_pipeline, "RGBA = ADD(SRC_COLOR, 0)", NULL);
+
+        snippet = cg_snippet_new(CG_SNIPPET_HOOK_VERTEX,
+                                 "uniform vec2 eye_to_source_uv_scale;\n"
+                                 "uniform vec2 eye_to_source_uv_offset;\n"
+                                 "uniform mat4 eye_rotation_start;\n"
+                                 "uniform mat4 eye_rotation_end;\n"
+                                 "\n"
+                                 "in vec2 tan_eye_angles_r_in;\n"
+                                 "in vec2 tan_eye_angles_g_in;\n"
+                                 "in vec2 tan_eye_angles_b_in;\n"
+                                 "out vec2 tex_coord_r;\n"
+                                 "out vec2 tex_coord_g;\n"
+                                 "out vec2 tex_coord_b;\n"
+                                 "in float warp_factor_in;\n"
+                                 "in float vignette_factor_in;\n"
+                                 "out float vignette_factor;\n"
+                                 "\n"
+                                 "vec2 timewarp(vec2 coord, mat4 rot)\n"
+                                 "{\n"
+                                 //"  vec3 transformed = (rot * vec4(coord.xy, 1.0, 1.0)).xyz;\n"
+                                 "  vec3 transformed = vec3(coord.xy, 1.0);\n"
+                                 "  vec2 flattened = transformed.xy / transformed.z;\n"
+                                 "\n"
+                                 "  return eye_to_source_uv_scale * flattened + eye_to_source_uv_offset;\n"
+                                 "}\n"
+                                 ,
+                                 NULL); /* post */
+        cg_snippet_set_replace(snippet,
+                               "  mat4 lerped_eye_rot = (eye_rotation_start * (1.0 - warp_factor_in)) + \n"
+                               "                        (eye_rotation_end * warp_factor_in);\n"
+                               "  tex_coord_r = timewarp(tan_eye_angles_r_in, lerped_eye_rot);\n"
+                               "  tex_coord_g = timewarp(tan_eye_angles_g_in, lerped_eye_rot);\n"
+                               "  tex_coord_b = timewarp(tan_eye_angles_b_in, lerped_eye_rot);\n"
+                               //"  tex_coord_r = (cg_position_in.xy * 0.5) + 0.5;\n"
+                               //"  tex_coord_g = (cg_position_in.xy * 0.5) + 1.0;\n"
+                               //"  tex_coord_b = (cg_position_in.xy * 0.5) + 1.0;\n"
+                               //"  tex_coord_g = tan_eye_angles_g_in;\n"
+                               //"  tex_coord_b = tan_eye_angles_b_in;\n"
+                               "  vignette_factor = vignette_factor_in;\n"
+                               "  cg_position_out = vec4(cg_position_in.xy, 0.5, 1.0);\n"
+                              );
+        cg_pipeline_add_snippet(eye->distort_pipeline, snippet);
+        cg_object_unref(snippet);
+
+        snippet = cg_snippet_new(CG_SNIPPET_HOOK_FRAGMENT,
+                                 "in vec2 tex_coord_r;\n"
+                                 "in vec2 tex_coord_g;\n"
+                                 "in vec2 tex_coord_b;\n"
+                                 "in float vignette_factor;\n"
+                                 ,
+                                 NULL); /* post */
+        cg_snippet_set_replace(snippet,
+                               //"  cg_color_out = vec4(texture(cg_sampler0, tex_coord_r).rgb, 1.0);\n"
+                               "  float R = cg_texture_lookup0(cg_sampler0, vec4(tex_coord_r, 0.0, 0.0)).r;\n"
+                               "  float G = cg_texture_lookup0(cg_sampler0, vec4(tex_coord_g, 0.0, 0.0)).g;\n"
+                               "  float B = cg_texture_lookup0(cg_sampler0, vec4(tex_coord_b, 0.0, 0.0)).b;\n"
+                               "  cg_color_out = vignette_factor * vec4(R, G, B, 1.0);\n"
+                               //"  cg_color_out = vec4(R, G, B, 1.0);\n"
+                               //"  cg_color_out = vec4(1.0, 0.0, 0.0, 1.0);\n"
+                               );
+        cg_pipeline_add_snippet(eye->distort_pipeline, snippet);
+        cg_object_unref(snippet);
+
+        eye->eye_to_source_uv_scale_loc =
+            cg_pipeline_get_uniform_location(eye->distort_pipeline, "eye_to_source_uv_scale");
+        eye->eye_to_source_uv_offset_loc =
+            cg_pipeline_get_uniform_location(eye->distort_pipeline, "eye_to_source_uv_offset");
+        eye->eye_rotation_start_loc =
+            cg_pipeline_get_uniform_location(eye->distort_pipeline, "eye_rotation_start");
+        eye->eye_rotation_end_loc =
+            cg_pipeline_get_uniform_location(eye->distort_pipeline, "eye_rotation_end");
+
+        cg_pipeline_set_uniform_float(eye->distort_pipeline,
+                                      eye->eye_to_source_uv_scale_loc,
+                                      2, /* n components */
+                                      1, /* count */
+                                      eye->eye_to_source_uv_scale);
+
+        cg_pipeline_set_uniform_float(eye->distort_pipeline,
+                                      eye->eye_to_source_uv_offset_loc,
+                                      2, /* n components */
+                                      1, /* count */
+                                      eye->eye_to_source_uv_offset);
+
+        create_eye_distortion_mesh(view, eye);
+    }
+
+    return;
+
+cleanup:
+    if (rig_engine_vr_mode)
+        deinit_vr(view);
+}
+#endif /* ENABLE_OCULUS_RIFT */
+
 rig_camera_view_t *
 rig_camera_view_new(rig_engine_t *engine)
 {
@@ -1792,6 +2290,11 @@ rig_camera_view_new(rig_engine_t *engine)
         cg_pipeline_set_color4f(view->picking_ray_color, 1.0, 0.0, 0.0, 1.0);
 
         view->bg_pipeline = cg_pipeline_new(shell->cg_device);
+
+#ifdef ENABLE_OCULUS_RIFT
+        if (rig_engine_vr_mode)
+            init_vr(view);
+#endif
     }
 
     view->matrix_stack = rut_matrix_stack_new(shell);

@@ -221,6 +221,9 @@ struct _rig_engine_t {
     rut_property_t properties[RIG_ENGINE_N_PROPS];
 };
 
+/* XXX HACK */
+extern bool rig_engine_vr_mode;
+
 /* FIXME: find a better place to put these prototypes */
 
 rig_engine_t *rig_engine_new_for_frontend(rut_shell_t *shell,

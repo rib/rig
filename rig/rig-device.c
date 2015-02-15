@@ -61,6 +61,7 @@ typedef struct _rig_device_t {
 } rig_device_t;
 
 bool rig_device_fullscreen_option;
+bool rig_device_oculus_option;
 
 static void
 rig_device_redraw(rut_shell_t *shell, void *user_data)
@@ -226,6 +227,8 @@ usage(void)
     fprintf(stderr, "\n");
     fprintf(stderr, "  -f,--fullscreen                          Run fullscreen\n");
     fprintf(stderr, "\n");
+    fprintf(stderr, "  -o,--oculus                              Run in Oculus Rift mode\n");
+    fprintf(stderr, "\n");
 #ifdef RIG_ENABLE_DEBUG
     fprintf(stderr, "  -m,--simulator={tcp:<address>[:port],    Specify how to listen for a simulator connection\n");
     fprintf(stderr, "                  abstract:<name>,         (Simulator runs in a separate thread by default)\n");
@@ -247,6 +250,7 @@ main(int argc, char **argv)
     struct option long_opts[] = {
 
         { "fullscreen",         no_argument,       NULL, 'f' },
+        { "oculus",             no_argument,       NULL, 'o' },
 
 #ifdef RIG_ENABLE_DEBUG
         { "simulator",          required_argument, NULL, 'm' },
@@ -258,10 +262,10 @@ main(int argc, char **argv)
     };
 
 #ifdef RIG_ENABLE_DEBUG
-    const char *short_opts = "fmdh";
+    const char *short_opts = "fomdh";
     bool enable_curses_debug = true;
 #else
-    const char *short_opts = "fh";
+    const char *short_opts = "foh";
 #endif
 
     int c;
@@ -278,6 +282,9 @@ main(int argc, char **argv)
         switch(c) {
         case 'f':
             rig_device_fullscreen_option = true;
+            break;
+        case 'o':
+            rig_engine_vr_mode = true;
             break;
 #ifdef RIG_ENABLE_DEBUG
         case 'm': {

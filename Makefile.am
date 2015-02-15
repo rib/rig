@@ -17,7 +17,9 @@ if EDITOR_ENABLED
 SUBDIRS += xdgmime
 endif
 
+if OCULUS_RIFT
 SUBDIRS += LibOVR
+endif
 
 SUBDIRS += rut data rig tests toys po android
 
