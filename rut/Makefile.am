@@ -38,17 +38,16 @@ librut_la_SOURCES += \
 endif
 
 librut_la_LIBADD = \
-    @RIG_DEP_LIBS@ \
-    @RIG_EXTRA_LDFLAGS@
+    $(RIG_DEP_LIBS) \
+    $(RIG_EXTRA_LDFLAGS)
 librut_la_LDFLAGS = \
     -no-undefined \
     -version-info @RIG_LT_CURRENT@:@RIG_LT_REVISION@:@RIG_LT_AGE@ \
     -export-dynamic \
     -export-symbols-regex "(^rut.*)|(^_rut.*)"
 librut_la_CFLAGS = \
-    $(RIG_EXTRA_CPPFLAGS) \
-    @RIG_DEP_CFLAGS@ \
-    @RIG_EXTRA_CFLAGS@
+    $(RIG_DEP_CFLAGS) \
+    $(RIG_EXTRA_CFLAGS)
 librut_la_CPPFLAGS = \
     -I$(top_srcdir) \
     -I$(top_builddir) \
