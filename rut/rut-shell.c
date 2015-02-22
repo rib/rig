@@ -1531,7 +1531,7 @@ void
 rut_shell_onscreen_set_resizable(rut_shell_onscreen_t *onscreen,
                                  bool resizable)
 {
-    c_return_if_fail(onscreen->cg_onscreen == NULL);
+    c_return_if_fail(onscreen->cg_onscreen);
 
     onscreen->resizable = resizable;
 }
