@@ -558,7 +558,6 @@ dnl ================================================================
 dnl What needs to be substituted in other files
 dnl ================================================================
 AC_SUBST(RIG_EXTRA_CFLAGS)
-AC_SUBST(RIG_EXTRA_CPPFLAGS)
 AC_SUBST(RIG_EXTRA_LDFLAGS)
 AC_SUBST(RIG_DEP_CFLAGS)
 AC_SUBST(RIG_DEP_LIBS)
