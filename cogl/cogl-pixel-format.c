@@ -349,64 +349,38 @@ _cg_pixel_format_can_be_premultiplied(cg_pixel_format_t format)
 cg_pixel_format_t
 _cg_pixel_format_premult_stem(cg_pixel_format_t format)
 {
+
     switch (format) {
-    case CG_PIXEL_FORMAT_A_8:
-        return CG_PIXEL_FORMAT_A_8;
-    case CG_PIXEL_FORMAT_A_8SN:
-        return CG_PIXEL_FORMAT_A_8SN;
-    case CG_PIXEL_FORMAT_A_16U:
-        return CG_PIXEL_FORMAT_A_16U;
-    case CG_PIXEL_FORMAT_A_16F:
-        return CG_PIXEL_FORMAT_A_16F;
-    case CG_PIXEL_FORMAT_A_32U:
-        return CG_PIXEL_FORMAT_A_32U;
-    case CG_PIXEL_FORMAT_A_32F:
-        return CG_PIXEL_FORMAT_A_32F;
-    case CG_PIXEL_FORMAT_RGBA_4444:
     case CG_PIXEL_FORMAT_RGBA_4444_PRE:
         return CG_PIXEL_FORMAT_RGBA_4444;
-    case CG_PIXEL_FORMAT_RGBA_5551:
     case CG_PIXEL_FORMAT_RGBA_5551_PRE:
         return CG_PIXEL_FORMAT_RGBA_5551;
-    case CG_PIXEL_FORMAT_RGBA_8888:
     case CG_PIXEL_FORMAT_RGBA_8888_PRE:
         return CG_PIXEL_FORMAT_RGBA_8888;
-    case CG_PIXEL_FORMAT_BGRA_8888:
     case CG_PIXEL_FORMAT_BGRA_8888_PRE:
         return CG_PIXEL_FORMAT_BGRA_8888;
-    case CG_PIXEL_FORMAT_ARGB_8888:
     case CG_PIXEL_FORMAT_ARGB_8888_PRE:
         return CG_PIXEL_FORMAT_ARGB_8888;
-    case CG_PIXEL_FORMAT_ABGR_8888:
     case CG_PIXEL_FORMAT_ABGR_8888_PRE:
         return CG_PIXEL_FORMAT_ABGR_8888;
-    case CG_PIXEL_FORMAT_RGBA_1010102:
     case CG_PIXEL_FORMAT_RGBA_1010102_PRE:
         return CG_PIXEL_FORMAT_RGBA_1010102;
-    case CG_PIXEL_FORMAT_BGRA_1010102:
     case CG_PIXEL_FORMAT_BGRA_1010102_PRE:
         return CG_PIXEL_FORMAT_BGRA_1010102;
-    case CG_PIXEL_FORMAT_ARGB_2101010:
     case CG_PIXEL_FORMAT_ARGB_2101010_PRE:
         return CG_PIXEL_FORMAT_ARGB_2101010;
-    case CG_PIXEL_FORMAT_ABGR_2101010:
     case CG_PIXEL_FORMAT_ABGR_2101010_PRE:
         return CG_PIXEL_FORMAT_ABGR_2101010;
-    case CG_PIXEL_FORMAT_RGBA_16161616F:
     case CG_PIXEL_FORMAT_RGBA_16161616F_PRE:
         return CG_PIXEL_FORMAT_RGBA_16161616F;
-    case CG_PIXEL_FORMAT_BGRA_16161616F:
     case CG_PIXEL_FORMAT_BGRA_16161616F_PRE:
         return CG_PIXEL_FORMAT_BGRA_16161616F;
-    case CG_PIXEL_FORMAT_RGBA_32323232F:
     case CG_PIXEL_FORMAT_RGBA_32323232F_PRE:
         return CG_PIXEL_FORMAT_RGBA_32323232F;
-    case CG_PIXEL_FORMAT_BGRA_32323232F:
     case CG_PIXEL_FORMAT_BGRA_32323232F_PRE:
         return CG_PIXEL_FORMAT_BGRA_32323232F;
     default:
-        c_assert_not_reached();
-        return CG_PIXEL_FORMAT_RGBA_8888;
+        return format;
     }
 }
 
