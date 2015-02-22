@@ -31,10 +31,6 @@
 /**
  * SECTION:cogl-color
  * @short_description: A generic color definition
- *
- * #cg_color_t is a simple structure holding the definition of a color such
- * that it can be efficiently used by GL
- *
  */
 
 #if !defined(__CG_H_INSIDE__) && !defined(CG_COMPILATION)
