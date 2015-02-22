@@ -152,7 +152,9 @@ rut_editor_sources = \
     rut-rotation-inspector.h \
     rut-rotation-inspector.c \
     rut-adb.h \
-    rut-adb.c
+    rut-adb.c \
+    rut-gradient.h \
+    rut-gradient.c
 
 #TODO: remove
 rut_unused_sources = \
