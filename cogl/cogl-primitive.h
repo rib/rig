@@ -276,7 +276,7 @@ cg_primitive_t *cg_primitive_new_with_attributes(cg_vertices_mode_t mode,
  * };
  * prim = cg_primitive_new_p2 (CG_VERTICES_MODE_TRIANGLE_FAN,
  *                               3, triangle);
- * cg_primitive_draw (prim);
+ * cg_primitive_draw (prim, fb, pipeline);
  * ]|
  *
  * The value passed as @n_vertices is initially used to determine how
@@ -326,7 +326,7 @@ cg_primitive_t *cg_primitive_new_p2(cg_device_t *dev,
  * };
  * prim = cg_primitive_new_p3 (CG_VERTICES_MODE_TRIANGLE_FAN,
  *                               3, triangle);
- * cg_primitive_draw (prim);
+ * cg_primitive_draw (prim, fb, pipeline);
  * ]|
  *
  * The value passed as @n_vertices is initially used to determine how
@@ -378,7 +378,7 @@ cg_primitive_t *cg_primitive_new_p3(cg_device_t *dev,
  * };
  * prim = cg_primitive_new_p2c4 (CG_VERTICES_MODE_TRIANGLE_FAN,
  *                                 3, triangle);
- * cg_primitive_draw (prim);
+ * cg_primitive_draw (prim, fb, pipeline);
  * ]|
  *
  * The value passed as @n_vertices is initially used to determine how
@@ -430,7 +430,7 @@ cg_primitive_t *cg_primitive_new_p2c4(cg_device_t *dev,
  * };
  * prim = cg_primitive_new_p3c4 (CG_VERTICES_MODE_TRIANGLE_FAN,
  *                                 3, triangle);
- * cg_primitive_draw (prim);
+ * cg_primitive_draw (prim, fb, pipeline);
  * ]|
  *
  * The value passed as @n_vertices is initially used to determine how
@@ -482,7 +482,7 @@ cg_primitive_t *cg_primitive_new_p3c4(cg_device_t *dev,
  * };
  * prim = cg_primitive_new_p2t2 (CG_VERTICES_MODE_TRIANGLE_FAN,
  *                                 3, triangle);
- * cg_primitive_draw (prim);
+ * cg_primitive_draw (prim, fb, pipeline);
  * ]|
  *
  * The value passed as @n_vertices is initially used to determine how
@@ -534,7 +534,7 @@ cg_primitive_t *cg_primitive_new_p2t2(cg_device_t *dev,
  * };
  * prim = cg_primitive_new_p3t2 (CG_VERTICES_MODE_TRIANGLE_FAN,
  *                                 3, triangle);
- * cg_primitive_draw (prim);
+ * cg_primitive_draw (prim, fb, pipeline);
  * ]|
  *
  * The value passed as @n_vertices is initially used to determine how
@@ -586,7 +586,7 @@ cg_primitive_t *cg_primitive_new_p3t2(cg_device_t *dev,
  * };
  * prim = cg_primitive_new_p2t2c4 (CG_VERTICES_MODE_TRIANGLE_FAN,
  *                                   3, triangle);
- * cg_primitive_draw (prim);
+ * cg_primitive_draw (prim, fb, pipeline);
  * ]|
  *
  * The value passed as @n_vertices is initially used to determine how
@@ -638,7 +638,7 @@ cg_primitive_t *cg_primitive_new_p2t2c4(cg_device_t *dev,
  * };
  * prim = cg_primitive_new_p3t2c4 (CG_VERTICES_MODE_TRIANGLE_FAN,
  *                                   3, triangle);
- * cg_primitive_draw (prim);
+ * cg_primitive_draw (prim, fb, pipeline);
  * ]|
  *
  * The value passed as @n_vertices is initially used to determine how
