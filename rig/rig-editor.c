@@ -58,6 +58,7 @@
 #include "rig.pb-c.h"
 
 #include "components/rig-button-input.h"
+#include "components/rig-native-module.h"
 #include "components/rig-camera.h"
 #include "components/rig-diamond.h"
 #include "components/rig-hair.h"
@@ -147,6 +148,7 @@ struct _rig_editor_t {
     rig_asset_t *pointalism_grid_builtin_asset;
     rig_asset_t *hair_builtin_asset;
     rig_asset_t *button_input_builtin_asset;
+    rig_asset_t *native_module_builtin_asset;
     c_llist_t *result_input_closures;
     c_llist_t *asset_enumerators;
 
@@ -449,8 +451,6 @@ apply_asset_input_with_entity(rig_editor_t *editor,
         else if (type == RIG_ASSET_TYPE_ALPHA_MASK)
             rig_material_set_alpha_mask_asset(material, asset);
 
-        rut_renderer_notify_entity_changed(engine->renderer, entity);
-
         geom = rig_entity_get_component(entity, RUT_COMPONENT_TYPE_GEOMETRY);
         if (!geom) {
             int width, height;
@@ -504,9 +504,6 @@ apply_asset_input_with_entity(rig_editor_t *editor,
             max_range = z_range;
 
         rig_entity_set_scale(entity, 200.0 / max_range);
-
-        rut_renderer_notify_entity_changed(engine->renderer, entity);
-
         break;
     }
     case RIG_ASSET_TYPE_BUILTIN:
@@ -534,8 +531,6 @@ apply_asset_input_with_entity(rig_editor_t *editor,
             rig_text_set_text(text, "Text...");
             rig_undo_journal_add_component(engine->undo_journal, entity, text);
             rut_object_unref(text);
-
-            rut_renderer_notify_entity_changed(engine->renderer, entity);
         } else if (asset == editor->circle_builtin_asset) {
             rig_shape_t *shape;
             int tex_width = 200, tex_height = 200;
@@ -562,8 +557,6 @@ apply_asset_input_with_entity(rig_editor_t *editor,
             shape = rig_shape_new(engine->shell, true, tex_width, tex_height);
             rig_undo_journal_add_component(engine->undo_journal, entity, shape);
             rut_object_unref(shape);
-
-            rut_renderer_notify_entity_changed(engine->renderer, entity);
         } else if (asset == editor->diamond_builtin_asset) {
             rig_diamond_t *diamond;
 
@@ -579,8 +572,6 @@ apply_asset_input_with_entity(rig_editor_t *editor,
             rig_undo_journal_add_component(
                 engine->undo_journal, entity, diamond);
             rut_object_unref(diamond);
-
-            rut_renderer_notify_entity_changed(engine->renderer, entity);
         } else if (asset == editor->nine_slice_builtin_asset) {
             rig_nine_slice_t *nine_slice;
             int tex_width = 200, tex_height = 200;
@@ -610,8 +601,6 @@ apply_asset_input_with_entity(rig_editor_t *editor,
             rig_undo_journal_add_component(
                 engine->undo_journal, entity, nine_slice);
             rut_object_unref(nine_slice);
-
-            rut_renderer_notify_entity_changed(engine->renderer, entity);
         } else if (asset == editor->pointalism_grid_builtin_asset) {
             rig_pointalism_grid_t *grid;
 
@@ -628,8 +617,6 @@ apply_asset_input_with_entity(rig_editor_t *editor,
 
             rig_undo_journal_add_component(engine->undo_journal, entity, grid);
             rut_object_unref(grid);
-
-            rut_renderer_notify_entity_changed(engine->renderer, entity);
         } else if (asset == editor->hair_builtin_asset) {
             rig_hair_t *hair =
                 rig_entity_get_component(entity, RUT_COMPONENT_TYPE_HAIR);
@@ -653,8 +640,6 @@ apply_asset_input_with_entity(rig_editor_t *editor,
                     engine->undo_journal, entity, hair_geom);
                 rut_object_unref(hair_geom);
             }
-
-            rut_renderer_notify_entity_changed(engine->renderer, entity);
         } else if (asset == editor->button_input_builtin_asset) {
             rig_button_input_t *button_input =
                 rig_entity_get_component(entity, RUT_COMPONENT_TYPE_INPUT);
@@ -665,8 +650,16 @@ apply_asset_input_with_entity(rig_editor_t *editor,
             rig_undo_journal_add_component(
                 engine->undo_journal, entity, button_input);
             rut_object_unref(button_input);
+        } else if (asset == editor->native_module_builtin_asset) {
+            rig_native_module_t *module =
+                rig_entity_get_component(entity, RUT_COMPONENT_TYPE_CODE);
+            if (module)
+                break;
 
-            rut_renderer_notify_entity_changed(engine->renderer, entity);
+            module = rig_native_module_new(engine);
+            rig_undo_journal_add_component(
+                engine->undo_journal, entity, module);
+            rut_object_unref(module);
         }
         break;
     }
@@ -1294,6 +1287,7 @@ load_asset_list(rig_editor_t *editor)
     index_asset(editor, editor->text_builtin_asset);
     index_asset(editor, editor->hair_builtin_asset);
     index_asset(editor, editor->button_input_builtin_asset);
+    index_asset(editor, editor->native_module_builtin_asset);
 
     rig_run_search(editor);
 }
@@ -1796,7 +1790,7 @@ create_properties_bar(rig_editor_t *editor)
 
     rut_ui_viewport_set_sync_widget(properties_vp, editor->inspector_bin);
 
-    rut_box_layout_add(editor->properties_hbox, false, stack0);
+    rut_box_layout_add(editor->properties_hbox, true, stack0);
     rut_object_unref(stack0);
 }
 
@@ -2437,6 +2431,15 @@ load_builtin_assets(rig_editor_t *editor)
     rig_asset_add_inferred_tag(editor->button_input_builtin_asset, "button");
     rig_asset_add_inferred_tag(editor->button_input_builtin_asset, "builtin");
     rig_asset_add_inferred_tag(editor->button_input_builtin_asset, "input");
+
+    editor->native_module_builtin_asset =
+        rig_asset_new_builtin(editor->shell, "binary64.png");
+    rig_asset_add_inferred_tag(editor->native_module_builtin_asset, "module");
+    rig_asset_add_inferred_tag(editor->native_module_builtin_asset, "so");
+    rig_asset_add_inferred_tag(editor->native_module_builtin_asset, "binary");
+    rig_asset_add_inferred_tag(editor->native_module_builtin_asset, "shared");
+    rig_asset_add_inferred_tag(editor->native_module_builtin_asset, "library");
+
 }
 
 void
@@ -2449,6 +2452,7 @@ rig_editor_free_builtin_assets(rig_editor_t *editor)
     rut_object_unref(editor->text_builtin_asset);
     rut_object_unref(editor->hair_builtin_asset);
     rut_object_unref(editor->button_input_builtin_asset);
+    rut_object_unref(editor->native_module_builtin_asset);
 }
 
 /* TODO: move corresponding state into rig_editor_t */

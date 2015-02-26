@@ -49,6 +49,10 @@
 #include "components/rig-shape.h"
 #include "components/rig-text.h"
 
+#ifdef USE_UV
+#include "components/rig-native-module.h"
+#endif
+
 const char *
 rig_pb_strdup(rig_pb_serializer_t *serializer, const char *string)
 {
@@ -598,6 +602,15 @@ rig_pb_serialize_component(rig_pb_serializer_t *serializer,
                                              (void **)&pb_component->properties,
                                              serializer);
     }
+#ifdef USE_UV
+    else if (type == &rig_native_module_type) {
+        pb_component->type = RIG__ENTITY__COMPONENT__TYPE__NATIVE_MODULE;
+        serialize_instrospectable_properties(component,
+                                             &pb_component->n_properties,
+                                             (void **)&pb_component->properties,
+                                             serializer);
+    }
+#endif
 
     return pb_component;
 }
@@ -1449,12 +1462,14 @@ rig_pb_serialize_ui(rig_pb_serializer_t *serializer,
             rut_memory_stack_memalign(serializer->stack,
                                       pb_ui->n_assets * sizeof(void *),
                                       RUT_UTIL_ALIGNOF(void *));
-        for (i = 0, l = serializer->required_assets; l; i++, l = l->next) {
+        for (i = 0, l = serializer->required_assets; l; l = l->next) {
             rig_asset_t *asset = l->data;
             Rig__Asset *pb_asset = serialize_asset(serializer, asset);
 
-            pb_ui->assets[i] = pb_asset;
+            if (pb_asset)
+                pb_ui->assets[i++] = pb_asset;
         }
+        pb_ui->n_assets = i;
 
         /* restore the asset filter */
         serializer->asset_filter = save_filter;
@@ -2140,6 +2155,28 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
             unserializer, button_input, component_id);
         return button_input;
     }
+    case RIG__ENTITY__COMPONENT__TYPE__NATIVE_MODULE: {
+#ifdef USE_UV
+        rig_native_module_t *module =
+            rig_native_module_new(unserializer->engine);
+
+        set_properties_from_pb_boxed_values(unserializer,
+                                            module,
+                                            pb_component->n_properties,
+                                            pb_component->properties);
+
+        rig_entity_add_component(entity, module);
+        rut_object_unref(module);
+
+        rig_pb_unserializer_register_object(unserializer, module, component_id);
+        return module;
+#else
+        rig_pb_unserializer_collect_error(unserializer,
+                                          "Can't unserialize unsupported native module");
+        c_warn_if_reached();
+        return NULL;
+#endif
+    }
     case RIG__ENTITY__COMPONENT__TYPE__SHAPE: {
         rig_shape_t *shape = rig_shape_new(unserializer->engine->shell,
                                            false, /* shaped */
@@ -2278,7 +2315,8 @@ unserialize_components(rig_pb_un_serializer_t *unserializer,
         case RIG__ENTITY__COMPONENT__TYPE__MODEL:
         case RIG__ENTITY__COMPONENT__TYPE__TEXT:
         case RIG__ENTITY__COMPONENT__TYPE__CAMERA:
-        case RIG__ENTITY__COMPONENT__TYPE__BUTTON_INPUT: {
+        case RIG__ENTITY__COMPONENT__TYPE__BUTTON_INPUT:
+        case RIG__ENTITY__COMPONENT__TYPE__NATIVE_MODULE: {
             rut_component_t *component = rig_pb_unserialize_component(
                 unserializer, entity, pb_component);
             if (!component)
@@ -2338,6 +2376,7 @@ unserialize_components(rig_pb_un_serializer_t *unserializer,
         case RIG__ENTITY__COMPONENT__TYPE__TEXT:
         case RIG__ENTITY__COMPONENT__TYPE__CAMERA:
         case RIG__ENTITY__COMPONENT__TYPE__BUTTON_INPUT:
+        case RIG__ENTITY__COMPONENT__TYPE__NATIVE_MODULE:
             break;
         }
     }
@@ -2931,6 +2970,8 @@ rig_pb_unserialize_ui(rig_pb_un_serializer_t *unserializer,
         // c_debug ("unserialized entiy %p\n", l->data);
         if (rut_graphable_get_parent(l->data) == NULL) {
             rut_graphable_add_child(ui->scene, l->data);
+
+            rig_ui_register_entity(ui, l->data);
 
             /* Now that the entity has a parent we can drop our
              * reference on it... */

@@ -34,7 +34,11 @@ noinst_LTLIBRARIES = librig.la
 bin_PROGRAMS = rig-device rig-simulator
 if EDITOR_ENABLED
 bin_PROGRAMS += rig rig-slave
+lib_LTLIBRARIES += rigeditor2.la
 endif
+
+rig_includedir=$(includedir)/rig
+rig_include_SOURCE=rig-c.h
 
 %.pb-c.c %.pb-c.h: %.proto
 	protoc-c --c_out=$(top_builddir)/rig $(srcdir)/$(*).proto
@@ -150,6 +154,10 @@ if EDITOR_ENABLED
 rig_SOURCES = \
 	rig-editor-main.c
 rig_LDADD = $(common_ldadd)
+
+rigeditor2_la_SOURCES=rig-editor2.c
+rigeditor2_la_LDFLAGS=-module -shared -export-dynamic -avoid-version
+#rigeditor2_la_LIBADD
 endif
 
 rig_slave_SOURCES = \
@@ -163,8 +171,10 @@ rig_device_LDADD = $(common_ldadd)
 
 #TODO: Avoid linking with Cogl and SDL in the simulator...
 rig_simulator_SOURCES = \
-	rig-simulator-main.c
+	rig-simulator-main.c \
+	rig-c.c
 rig_simulator_LDADD = $(common_ldadd)
+rig_simulator_LDFLAGS = -export-dynamic
 
 rig_android_moduledir = $(datadir)/android_modules/rig/
 nobase_rig_android_module_DATA = $(rig_common_sources) $(rig_slave_sources) Android.mk

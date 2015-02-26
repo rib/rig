@@ -35,8 +35,9 @@
 #include "rig-ui.h"
 #include "rig-code.h"
 #include "rig-entity.h"
-
 #include "rig-renderer.h"
+#include "rig-code-module.h"
+#include "rut-renderer.h"
 
 static void
 _rig_ui_free(void *object)
@@ -145,6 +146,8 @@ rig_ui_new(rig_engine_t *engine)
     rig_ui_t *ui = rut_object_alloc0(rig_ui_t, &rig_ui_type, _rig_ui_init_type);
 
     ui->engine = engine;
+
+    c_list_init(&ui->code_modules);
 
     return ui;
 }
@@ -491,3 +494,109 @@ rig_ui_remove_controller(rig_ui_t *ui, rig_controller_t *controller)
     ui->controllers = c_llist_remove(ui->controllers, controller);
     rut_object_unref(controller);
 }
+
+/* These notifications lets us associate entities with particular
+ * sub-systems, such as rendering or physics.
+ *
+ * For now we don't differentiate entities for rendering here and the
+ * renderer code simply traverses the full scenegraph matching
+ * appropriate entities at that point.
+ *
+ * So we don't need to walk through *all* entities each frame to
+ * run any neccesary update() functions, we track components
+ * associated with code in separate list...
+ */
+void
+rig_ui_entity_component_added_notify(rig_ui_t *ui,
+                                     rig_entity_t *entity,
+                                     rut_component_t *component)
+{
+    if (ui->engine->renderer)
+        rut_renderer_notify_entity_changed(ui->engine->renderer, entity);
+
+    if (rut_object_is(component, rig_code_module_trait_id)) {
+        rig_code_module_props_t *module_props =
+            rut_object_get_properties(component, rig_code_module_trait_id);
+
+        c_list_insert(ui->code_modules.prev, &module_props->system_link);
+    }
+}
+
+void
+rig_ui_entity_component_pre_remove_notify(rig_ui_t *ui,
+                                          rig_entity_t *entity,
+                                          rut_component_t *component)
+{
+    if (ui->engine->renderer)
+        rut_renderer_notify_entity_changed(ui->engine->renderer, entity);
+
+    if (rut_object_is(component, rig_code_module_trait_id)) {
+        rig_code_module_props_t *module_props =
+            rut_object_get_properties(component, rig_code_module_trait_id);
+
+        c_list_remove(&module_props->system_link);
+    }
+}
+
+static bool
+register_component_cb(rut_object_t *component, void *user_data)
+{
+    rig_ui_t *ui = user_data;
+    rut_componentable_props_t *component_props =
+        rut_object_get_properties(component, RUT_TRAIT_ID_COMPONENTABLE);
+
+    rig_ui_entity_component_added_notify(ui, component_props->entity, component);
+
+    return true; /* continue */
+}
+
+/* Used when first loading a UI where the entities are registered
+ * at the end of loading with components already added... */
+void
+rig_ui_register_entity(rig_ui_t *ui, rig_entity_t *entity)
+{
+    rig_entity_foreach_component(entity, register_component_cb, ui);
+}
+
+void
+rig_ui_code_modules_load(rig_ui_t *ui)
+{
+    rig_code_module_props_t *module;
+
+    c_list_for_each(module, &ui->code_modules, system_link) {
+        rig_code_module_vtable_t *vtable =
+            rut_object_get_vtable(module->object, rig_code_module_trait_id);
+
+        vtable->load(module->object);
+    }
+}
+
+void
+rig_ui_code_modules_update(rig_ui_t *ui)
+{
+    rig_code_module_props_t *module;
+
+    c_list_for_each(module, &ui->code_modules, system_link) {
+        rig_code_module_vtable_t *vtable =
+            rut_object_get_vtable(module->object, rig_code_module_trait_id);
+
+        if (vtable->update)
+            vtable->update(module->object);
+    }
+}
+
+void
+rig_ui_code_modules_handle_input(rig_ui_t *ui, rut_input_event_t *event)
+{
+    rig_code_module_props_t *module;
+
+    c_list_for_each(module, &ui->code_modules, system_link) {
+        rig_code_module_vtable_t *vtable =
+            rut_object_get_vtable(module->object, rig_code_module_trait_id);
+
+        if (vtable->input)
+            vtable->input(module->object, event);
+    }
+}
+
+

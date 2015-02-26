@@ -67,8 +67,13 @@
 #include "rig-frontend.h"
 #include "rig-simulator.h"
 #include "rig-image-source.h"
+#include "rig-code-module.h"
 
 #include "components/rig-camera.h"
+
+#ifdef USE_UV
+#include "components/rig-native-module.h"
+#endif
 
 //#define DEVICE_WIDTH 480.0
 //#define DEVICE_HEIGHT 800.0
@@ -291,6 +296,7 @@ rig_engine_set_play_mode_ui(rig_engine_t *engine, rig_ui_t *ui)
 
     if (ui) {
         engine->play_mode_ui = rut_object_claim(ui, engine);
+#warning "fixme: shouldn't be loading code dso in frontend"
         rig_code_update_dso(engine, ui->dso_data, ui->dso_len);
     }
 

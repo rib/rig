@@ -63,6 +63,8 @@ struct _rig_ui_t {
     uint8_t *dso_data;
     int dso_len;
 
+    c_list_t code_modules;
+
     c_llist_t *suspended_controllers;
     bool suspended;
 };
@@ -84,5 +86,17 @@ void rig_ui_reap(rig_ui_t *ui);
 void rig_ui_add_controller(rig_ui_t *ui, rig_controller_t *controller);
 
 void rig_ui_remove_controller(rig_ui_t *ui, rig_controller_t *controller);
+
+void rig_ui_entity_component_added_notify(rig_ui_t *ui,
+                                          rig_entity_t *entity,
+                                          rut_component_t *component);
+void rig_ui_entity_component_pre_remove_notify(rig_ui_t *ui,
+                                               rig_entity_t *entity,
+                                               rut_component_t *component);
+void rig_ui_register_entity(rig_ui_t *ui, rig_entity_t *entity);
+
+void rig_ui_code_modules_load(rig_ui_t *ui);
+void rig_ui_code_modules_update(rig_ui_t *ui);
+void rig_ui_code_modules_handle_input(rig_ui_t *ui, rut_input_event_t *event);
 
 #endif /* _RIG_UI_H_ */
