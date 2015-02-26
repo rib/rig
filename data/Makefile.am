@@ -69,7 +69,8 @@ dist_assets_DATA = \
 	add-white.png \
 	add.png \
 	eye-white.png \
-	eye.png
+	eye.png \
+	binary64.png
 
 if HAVE_GTK
 dist_assets_DATA += \

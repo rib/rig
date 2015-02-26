@@ -38,6 +38,7 @@
 #include "rig-entity.h"
 
 #include "components/rig-button-input.h"
+#include "components/rig-native-module.h"
 #include "components/rig-camera.h"
 #include "components/rig-diamond.h"
 #include "components/rig-hair.h"
@@ -593,6 +594,12 @@ rig_pb_serialize_component(rig_pb_serializer_t *serializer,
                                              serializer);
     } else if (type == &rig_button_input_type) {
         pb_component->type = RIG__ENTITY__COMPONENT__TYPE__BUTTON_INPUT;
+        serialize_instrospectable_properties(component,
+                                             &pb_component->n_properties,
+                                             (void **)&pb_component->properties,
+                                             serializer);
+    } else if (type == &rig_native_module_type) {
+        pb_component->type = RIG__ENTITY__COMPONENT__TYPE__NATIVE_MODULE;
         serialize_instrospectable_properties(component,
                                              &pb_component->n_properties,
                                              (void **)&pb_component->properties,
@@ -1444,12 +1451,14 @@ rig_pb_serialize_ui(rig_pb_serializer_t *serializer,
             rut_memory_stack_memalign(serializer->stack,
                                       pb_ui->n_assets * sizeof(void *),
                                       RUT_UTIL_ALIGNOF(void *));
-        for (i = 0, l = serializer->required_assets; l; i++, l = l->next) {
+        for (i = 0, l = serializer->required_assets; l; l = l->next) {
             rig_asset_t *asset = l->data;
             Rig__Asset *pb_asset = serialize_asset(serializer, asset);
 
-            pb_ui->assets[i] = pb_asset;
+            if (pb_asset)
+                pb_ui->assets[i++] = pb_asset;
         }
+        pb_ui->n_assets = i;
 
         /* restore the asset filter */
         serializer->asset_filter = save_filter;
@@ -2214,6 +2223,22 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
             unserializer, button_input, component_id);
         return button_input;
     }
+    case RIG__ENTITY__COMPONENT__TYPE__NATIVE_MODULE: {
+        rig_native_module_t *module =
+            rig_native_module_new(unserializer->engine->shell);
+
+        set_properties_from_pb_boxed_values(unserializer,
+                                            module,
+                                            pb_component->n_properties,
+                                            pb_component->properties);
+
+        rig_entity_add_component(entity, module);
+        rut_object_unref(module);
+
+        rig_pb_unserializer_register_object(unserializer, module, component_id);
+
+        return module;
+    }
     case RIG__ENTITY__COMPONENT__TYPE__SHAPE: {
         Rig__Entity__Component__Shape *pb_shape = pb_component->shape;
         rig_material_t *material;
@@ -2394,7 +2419,8 @@ unserialize_components(rig_pb_un_serializer_t *unserializer,
         case RIG__ENTITY__COMPONENT__TYPE__MODEL:
         case RIG__ENTITY__COMPONENT__TYPE__TEXT:
         case RIG__ENTITY__COMPONENT__TYPE__CAMERA:
-        case RIG__ENTITY__COMPONENT__TYPE__BUTTON_INPUT: {
+        case RIG__ENTITY__COMPONENT__TYPE__BUTTON_INPUT:
+        case RIG__ENTITY__COMPONENT__TYPE__NATIVE_MODULE: {
             rut_component_t *component = rig_pb_unserialize_component(
                 unserializer, entity, pb_component);
             if (!component)
@@ -2454,6 +2480,7 @@ unserialize_components(rig_pb_un_serializer_t *unserializer,
         case RIG__ENTITY__COMPONENT__TYPE__TEXT:
         case RIG__ENTITY__COMPONENT__TYPE__CAMERA:
         case RIG__ENTITY__COMPONENT__TYPE__BUTTON_INPUT:
+        case RIG__ENTITY__COMPONENT__TYPE__NATIVE_MODULE:
             break;
         }
     }

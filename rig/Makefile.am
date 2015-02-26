@@ -33,7 +33,11 @@ noinst_LTLIBRARIES = librig.la
 bin_PROGRAMS = rig-device rig-simulator
 if EDITOR_ENABLED
 bin_PROGRAMS += rig rig-slave
+lib_LTLIBRARIES += rigeditor2.la
 endif
+
+rig_includedir=$(includedir)/rig
+rig_include_SOURCE=rig-c.h
 
 %.pb-c.c %.pb-c.h: %.proto
 	protoc-c --c_out=$(top_builddir)/rig $(srcdir)/$(*).proto
@@ -149,6 +153,10 @@ if EDITOR_ENABLED
 rig_SOURCES = \
 	rig-editor-main.c
 rig_LDADD = $(common_ldadd)
+
+rigeditor2_la_SOURCES=rig-editor2.c
+rigeditor2_la_LDFLAGS=-module -shared -export-dynamic -avoid-version
+#rigeditor2_la_LIBADD
 endif
 
 rig_slave_SOURCES = \
