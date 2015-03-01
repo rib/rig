@@ -1955,28 +1955,9 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
 
     switch (pb_component->type) {
     case RIG__ENTITY__COMPONENT__TYPE__LIGHT: {
-        Rig__Entity__Component__Light *pb_light = pb_component->light;
         rig_light_t *light;
 
         light = rig_light_new(unserializer->engine->shell);
-
-        /* XXX: This is only for backwards compatibility... */
-        if (pb_light) {
-            cg_color_t ambient;
-            cg_color_t diffuse;
-            cg_color_t specular;
-
-            pb_init_color(
-                unserializer->engine->shell, &ambient, pb_light->ambient);
-            pb_init_color(
-                unserializer->engine->shell, &diffuse, pb_light->diffuse);
-            pb_init_color(
-                unserializer->engine->shell, &specular, pb_light->specular);
-
-            rig_light_set_ambient(light, &ambient);
-            rig_light_set_diffuse(light, &diffuse);
-            rig_light_set_specular(light, &specular);
-        }
 
         rig_entity_add_component(entity, light);
         rut_object_unref(light);
@@ -1993,71 +1974,11 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
         return light;
     }
     case RIG__ENTITY__COMPONENT__TYPE__MATERIAL: {
-        Rig__Entity__Component__Material *pb_material = pb_component->material;
-        rig_material_t *material;
-        cg_color_t ambient;
-        cg_color_t diffuse;
-        cg_color_t specular;
-        rig_asset_t *asset;
-
-        material = rig_material_new(unserializer->engine->shell, NULL);
+        rig_material_t *material =
+            rig_material_new(unserializer->engine->shell, NULL);
 
         rig_entity_add_component(entity, material);
         rut_object_unref(material);
-
-#warning "todo: remove Component->Material compatibility"
-        if (pb_material) {
-            if (pb_material->texture && pb_material->texture->has_asset_id) {
-                Rig__Texture *pb_texture = pb_material->texture;
-
-                asset = unserializer_find_object(unserializer,
-                                                 pb_texture->asset_id);
-                if (asset)
-                    rig_material_set_color_source_asset(material, asset);
-                else
-                    rig_pb_unserializer_collect_error(unserializer,
-                                                      "Invalid asset id");
-            }
-
-            if (pb_material->normal_map &&
-                pb_material->normal_map->has_asset_id) {
-                Rig__NormalMap *pb_normal_map = pb_material->normal_map;
-
-                asset = unserializer_find_object(unserializer,
-                                                 pb_normal_map->asset_id);
-                if (asset)
-                    rig_material_set_normal_map_asset(material, asset);
-                else
-                    rig_pb_unserializer_collect_error(unserializer,
-                                                      "Invalid asset id");
-            }
-
-            if (pb_material->alpha_mask &&
-                pb_material->alpha_mask->has_asset_id) {
-                Rig__AlphaMask *pb_alpha_mask = pb_material->alpha_mask;
-
-                asset = unserializer_find_object(unserializer,
-                                                 pb_alpha_mask->asset_id);
-                if (asset)
-                    rig_material_set_alpha_mask_asset(material, asset);
-                else
-                    rig_pb_unserializer_collect_error(unserializer,
-                                                      "Invalid asset id");
-            }
-
-            pb_init_color(
-                unserializer->engine->shell, &ambient, pb_material->ambient);
-            pb_init_color(
-                unserializer->engine->shell, &diffuse, pb_material->diffuse);
-            pb_init_color(
-                unserializer->engine->shell, &specular, pb_material->specular);
-
-            rig_material_set_ambient(material, &ambient);
-            rig_material_set_diffuse(material, &diffuse);
-            rig_material_set_specular(material, &specular);
-            if (pb_material->has_shininess)
-                rig_material_set_shininess(material, pb_material->shininess);
-        }
 
         set_properties_from_pb_boxed_values(unserializer,
                                             material,
@@ -2227,30 +2148,10 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
         return button_input;
     }
     case RIG__ENTITY__COMPONENT__TYPE__SHAPE: {
-        Rig__Entity__Component__Shape *pb_shape = pb_component->shape;
-        rig_material_t *material;
-        rig_asset_t *asset = NULL;
-        rig_shape_t *shape;
-        bool shaped = false;
-        int width = 100, height = 100;
-
-        /* XXX: Only for compaibility... */
-        if (!pb_component->n_properties) {
-            if (pb_shape->has_shaped)
-                shaped = pb_shape->shaped;
-
-            material =
-                rig_entity_get_component(entity, RUT_COMPONENT_TYPE_MATERIAL);
-
-            /* We need to know the size of the texture before we can create
-             * a shape component */
-            if (material)
-                asset = rig_material_get_color_source_asset(material);
-
-            rig_asset_get_image_size(asset, &width, &height);
-        }
-
-        shape = rig_shape_new(unserializer->engine->shell, shaped, width, height);
+        rig_shape_t *shape = rig_shape_new(unserializer->engine->shell,
+                                           false, /* shaped */
+                                           100, /* width */
+                                           100); /* height */
 
         set_properties_from_pb_boxed_values(unserializer,
                                             shape,
@@ -2288,14 +2189,8 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
         return nine_slice;
     }
     case RIG__ENTITY__COMPONENT__TYPE__DIAMOND: {
-        Rig__Entity__Component__Diamond *pb_diamond = pb_component->diamond;
-        float diamond_size = 100;
-        rig_diamond_t *diamond;
-
-        if (pb_diamond && pb_diamond->has_size)
-            diamond_size = pb_diamond->size;
-
-        diamond = rig_diamond_new(unserializer->engine->shell, diamond_size);
+        rig_diamond_t *diamond = rig_diamond_new(unserializer->engine->shell,
+                                                 100);
 
         rig_entity_add_component(entity, diamond);
         rut_object_unref(diamond);
@@ -2311,33 +2206,17 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
         return diamond;
     }
     case RIG__ENTITY__COMPONENT__TYPE__POINTALISM_GRID: {
-        Rig__Entity__Component__PointalismGrid *pb_grid = pb_component->grid;
-        rig_pointalism_grid_t *grid;
-        float cell_size = 20;
-
-        if (pb_grid && pb_grid->has_cell_size)
-            cell_size = pb_grid->cell_size;
-
-        grid = rig_pointalism_grid_new(unserializer->engine->shell, cell_size);
+        rig_pointalism_grid_t *grid =
+            rig_pointalism_grid_new(unserializer->engine->shell,
+                                    20); /* cell size */
 
         rig_entity_add_component(entity, grid);
         rut_object_unref(grid);
 
-        /* XXX: Just for compatability... */
-        if (pb_grid && pb_grid->has_scale) {
-            rig_pointalism_grid_set_scale(grid, pb_grid->scale);
-
-            if (pb_grid->has_z)
-                rig_pointalism_grid_set_z(grid, pb_grid->z);
-
-            if (pb_grid->has_lighter)
-                rig_pointalism_grid_set_lighter(grid, pb_grid->lighter);
-        } else {
-            set_properties_from_pb_boxed_values(unserializer,
-                                                grid,
-                                                pb_component->n_properties,
-                                                pb_component->properties);
-        }
+        set_properties_from_pb_boxed_values(unserializer,
+                                            grid,
+                                            pb_component->n_properties,
+                                            pb_component->properties);
 
         rig_pb_unserializer_register_object(unserializer, grid, component_id);
 
