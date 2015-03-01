@@ -3,7 +3,7 @@
  *
  * UI Engine & Editor
  *
- * Copyright (C) 2015  Intel Corporation.
+ * Copyright (C) 2012  Intel Corporation
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -24,24 +24,29 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
  */
 
-#ifndef __RIG_NATIVE_MODULE_H__
-#define __RIG_NATIVE_MODULE_H__
+#ifndef _RIG_CODE_MODULE_H_
+#define _RIG_CODE_MODULE_H_
+
+#include <clib.h>
 
 #include <rut.h>
 
-#include "rig-engine.h"
+extern int rig_code_module_trait_id;
 
-typedef struct _rig_native_module_t rig_native_module_t;
-extern rut_type_t rig_native_module_type;
+typedef struct _rig_code_module_props {
+    /* To allow code modules to be tracked in list without needing
+     * to traverse the scenegraph to iterate through them... */
+    c_list_t system_link;
 
-rig_native_module_t *rig_native_module_new(rig_engine_t *engine);
-const char *rig_native_module_get_name(rut_object_t *object);
-void rig_native_module_set_name(rut_object_t *object, const char *name);
+    rut_object_t *object; /* back pointer, to access + use
+                             the vtable interface */
+} rig_code_module_props_t;
 
-void rig_native_module_load(rig_native_module_t *module);
-void rig_native_module_update(rig_native_module_t *module);
+typedef struct _rig_code_module_vtable {
+    void (*load)(rut_object_t *object);
+    void (*update)(rut_object_t *object);
+} rig_code_module_vtable_t;
 
-#endif /* __RIG_NATIVE_MODULE_H__ */
+#endif /* _RIG_CODE_MODULE_H_ */

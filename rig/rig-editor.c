@@ -656,7 +656,7 @@ apply_asset_input_with_entity(rig_editor_t *editor,
             if (module)
                 break;
 
-            module = rig_native_module_new(engine->shell);
+            module = rig_native_module_new(engine);
             rig_undo_journal_add_component(
                 engine->undo_journal, entity, module);
             rut_object_unref(module);

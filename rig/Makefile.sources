@@ -83,6 +83,8 @@ rig_common_sources = \
 	rig-ui.c \
 	rig-code.h \
 	rig-code.c \
+	rig-code-module.h \
+	rig-code-module.c \
 	usc_impl.h \
 	usc_impl.c \
 	rig-text-pipeline-cache.h \

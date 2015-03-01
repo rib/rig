@@ -67,6 +67,7 @@
 #include "rig-frontend.h"
 #include "rig-simulator.h"
 #include "rig-image-source.h"
+#include "rig-code-module.h"
 
 #include "components/rig-camera.h"
 #include "components/rig-native-module.h"
@@ -271,27 +272,6 @@ rig_engine_resize(rig_engine_t *engine, int width, int height)
     rig_engine_allocate(engine);
 }
 
-static rut_traverse_visit_flags_t
-load_module_cb(rut_object_t *object, int depth, void *user_data)
-{
-    //rig_engine_t *engine = user_data;
-
-    if (rut_object_get_type(object) == &rig_entity_type) {
-        rut_component_t *component =
-            rig_entity_get_component(object, RUT_COMPONENT_TYPE_CODE);
-
-        if (component &&
-            rut_object_get_type(component) == &rig_native_module_type)
-        {
-            rig_native_module_t *module = (rig_native_module_t *)component;
-
-            rig_native_module_init(module);
-        }
-    }
-
-    return RUT_TRAVERSE_VISIT_CONTINUE;
-}
-
 void
 rig_engine_set_play_mode_ui(rig_engine_t *engine, rig_ui_t *ui)
 {
@@ -312,14 +292,17 @@ rig_engine_set_play_mode_ui(rig_engine_t *engine, rig_ui_t *ui)
     }
 
     if (ui) {
+        rig_code_module_props_t *module;
+
         engine->play_mode_ui = rut_object_claim(ui, engine);
         rig_code_update_dso(engine, ui->dso_data, ui->dso_len);
 
-        rut_graphable_traverse(ui->scene,
-                               RUT_TRAVERSE_DEPTH_FIRST,
-                               load_module_cb,
-                               NULL, /* post callback */
-                               engine);
+        c_list_for_each(module, &ui->code_modules, system_link) {
+            rig_code_module_vtable_t *vtable =
+                rut_object_get_vtable(module, rig_code_module_trait_id);
+
+            vtable->load(module);
+        }
     }
 
     // if (engine->edit_mode_ui == NULL && engine->play_mode_ui == NULL)

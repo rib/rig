@@ -3,7 +3,7 @@
  *
  * UI Engine & Editor
  *
- * Copyright (C) 2015  Intel Corporation.
+ * Copyright (C) 2015  Intel Corporation
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -24,24 +24,10 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
  */
 
-#ifndef __RIG_NATIVE_MODULE_H__
-#define __RIG_NATIVE_MODULE_H__
+#include <config.h>
 
-#include <rut.h>
+#include "rig-code-module.h"
 
-#include "rig-engine.h"
-
-typedef struct _rig_native_module_t rig_native_module_t;
-extern rut_type_t rig_native_module_type;
-
-rig_native_module_t *rig_native_module_new(rig_engine_t *engine);
-const char *rig_native_module_get_name(rut_object_t *object);
-void rig_native_module_set_name(rut_object_t *object, const char *name);
-
-void rig_native_module_load(rig_native_module_t *module);
-void rig_native_module_update(rig_native_module_t *module);
-
-#endif /* __RIG_NATIVE_MODULE_H__ */
+int rig_code_module_trait_id;

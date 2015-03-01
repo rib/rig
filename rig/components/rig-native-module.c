@@ -36,6 +36,8 @@
 #include <rut.h>
 
 #include "rig-native-module.h"
+#include "rig-code-module.h"
+#include "rig-engine.h"
 #include "rig-entity.h"
 
 enum {
@@ -46,13 +48,18 @@ enum {
 struct _rig_native_module_t {
     rut_object_base_t _base;
 
-    rut_shell_t *shell;
+    rig_engine_t *engine;;
 
     rut_componentable_props_t component;
+
+    rig_code_module_props_t code_module;
 
     char *name;
 
     uv_lib_t *lib;
+
+    void (*load)(void);
+    void (*update)(void);
 
     rut_introspectable_props_t introspectable;
     rut_property_t properties[RIG_NATIVE_MODULE_N_PROPS];
@@ -78,7 +85,7 @@ rig_native_module_set_name(rut_object_t *object,
 
     module->name = c_strdup(name ? name : "");
 
-    rut_property_dirty(&module->shell->property_ctx,
+    rut_property_dirty(&module->engine->shell->property_ctx,
                        &module->properties[RIG_NATIVE_MODULE_PROP_NAME]);
 }
 
@@ -123,11 +130,53 @@ static rut_object_t *
 _rig_native_module_copy(rut_object_t *object)
 {
     rig_native_module_t *src_module = object;
-    rig_native_module_t *copy = rig_native_module_new(src_module->shell);
+    rig_native_module_t *copy = rig_native_module_new(src_module->engine);
 
     rig_native_module_set_name(copy, src_module->name);
 
     return copy;
+}
+
+static void
+_rig_native_module_load(rut_object_t *object)
+{
+    rig_native_module_t *module = object;
+
+    if (!module->lib) {
+        int status;
+        struct sym {
+            const char *name;
+            void *addr;
+        } symbols[] = {
+            { "load", &module->load },
+            { "update", &module->update },
+        };
+        int i;
+
+        module->lib = c_malloc(sizeof(uv_lib_t));
+        status = uv_dlopen(module->name, module->lib);
+        if (status) {
+            c_warning("Failed to load native module (%s): %s",
+                      module->name, uv_dlerror(module->lib));
+            c_free(module->lib);
+            module->lib = NULL;
+        }
+
+        for (i = 0; i < C_N_ELEMENTS(symbols); i++)
+            uv_dlsym(module->lib, symbols[i].name, symbols[i].addr);
+
+        if (module->load)
+            module->load();
+    }
+}
+
+static void
+_rig_native_module_update(rut_object_t *object)
+{
+    rig_native_module_t *module = object;
+
+    if (module->update)
+        module->update();
 }
 
 rut_type_t rig_native_module_type;
@@ -137,6 +186,11 @@ _rig_native_module_init_type(void)
 {
     static rut_componentable_vtable_t componentable_vtable = {
         .copy = _rig_native_module_copy
+    };
+
+    static rig_code_module_vtable_t module_vtable = {
+        .load = _rig_native_module_load,
+        .update = _rig_native_module_update,
     };
 
     rut_type_t *type = &rig_native_module_type;
@@ -151,21 +205,28 @@ _rig_native_module_init_type(void)
                        RUT_TRAIT_ID_INTROSPECTABLE,
                        offsetof(TYPE, introspectable),
                        NULL); /* no implied vtable */
+    rut_ensure_trait_id(&rig_code_module_trait_id);
+    rut_type_add_trait(type,
+                       rig_code_module_trait_id,
+                       offsetof(TYPE, code_module),
+                       &module_vtable);
 
 #undef TYPE
 }
 
 rig_native_module_t *
-rig_native_module_new(rut_shell_t *shell)
+rig_native_module_new(rig_engine_t *engine)
 {
     rig_native_module_t *module =
         rut_object_alloc0(rig_native_module_t,
                           &rig_native_module_type,
                           _rig_native_module_init_type);
 
-    module->shell = shell;
+    module->engine = engine;
 
     module->component.type = RUT_COMPONENT_TYPE_CODE;
+
+    module->code_module.object = module;
 
     rut_introspectable_init(
         module, _rig_native_module_prop_specs, module->properties);
@@ -173,33 +234,4 @@ rig_native_module_new(rut_shell_t *shell)
     rig_native_module_set_name(module, NULL);
 
     return module;
-}
-
-void
-rig_native_module_init(rig_native_module_t *module)
-{
-    if (!module->lib) {
-        int status;
-        void (*module_init)(void);
-
-        module->lib = c_malloc(sizeof(uv_lib_t));
-        status = uv_dlopen(module->name, module->lib);
-        if (status) {
-            c_warning("Failed to load native module (%s): %s",
-                      module->name, uv_dlerror(module->lib));
-            c_free(module->lib);
-            module->lib = NULL;
-        }
-
-        status = uv_dlsym(module->lib, "init", &module_init);
-        if (status) {
-            c_warning("Failed to find \"init\" symbol in native module (%s): %s",
-                      module->name, uv_dlerror(module->lib));
-            uv_dlclose(module->lib);
-            c_free(module->lib);
-            module->lib = NULL;
-        }
-
-        module_init();
-    }
 }

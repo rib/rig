@@ -384,6 +384,8 @@ add_component_apply_real(rig_engine_op_apply_context_t *ctx,
     ctx->register_id_cb(component, component_id, ctx->user_data);
 
     rig_entity_add_component(entity, component);
+
+    rig_ui_entity_component_added_notify(ctx->ui, entity, component);
 }
 
 void
@@ -481,6 +483,8 @@ delete_component_apply_real(rig_engine_op_apply_context_t *ctx,
                             rut_component_t *component,
                             uint64_t component_id)
 {
+    rig_ui_entity_component_pre_remove_notify(ctx->ui, entity, component);
+
     rig_component_reap(component, ctx->engine);
 
     rig_entity_remove_component(entity, component);
