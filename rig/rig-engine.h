@@ -229,9 +229,6 @@ void rig_engine_load_file(rig_engine_t *engine, const char *filename);
 
 void rig_engine_load_empty_ui(rig_engine_t *engine);
 
-rut_input_event_status_t rig_engine_input_handler(rut_input_event_t *event,
-                                                  void *user_data);
-
 void rig_engine_paint(rig_engine_t *engine);
 
 void rig_engine_resize(rig_engine_t *engine, int width, int height);

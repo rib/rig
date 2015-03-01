@@ -182,9 +182,6 @@ rig_device_init(rut_shell_t *shell, void *user_data)
 
     rig_frontend_set_simulator_connected_callback(
         device->frontend, simulator_connected_cb, device);
-
-    rut_shell_add_input_callback(
-        device->shell, rig_engine_input_handler, device->engine, NULL);
 }
 
 static rig_device_t *

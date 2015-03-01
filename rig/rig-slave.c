@@ -598,9 +598,6 @@ rig_slave_init(rut_shell_t *shell, void *user_data)
         break;
 #endif
     }
-
-    rut_shell_add_input_callback(
-        slave->shell, rig_engine_input_handler, engine, NULL);
 }
 
 static void

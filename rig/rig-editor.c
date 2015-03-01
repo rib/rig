@@ -2531,6 +2531,86 @@ adb_devices_cb(const char **serials, int n_devices, void *user_data)
     }
 }
 
+static rut_input_event_status_t
+rig_editor_input_handler(rut_input_event_t *event,
+                         void *user_data)
+{
+    rig_editor_t *editor = user_data;
+    rig_engine_t *engine = editor->engine;
+
+#if 0
+    if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
+    {
+        /* Anything that can claim the keyboard focus will do so during
+         * motion events so we clear it before running other input
+         * callbacks */
+        engine->key_focus_callback = NULL;
+    }
+#endif
+
+    switch (rut_input_event_get_type(event)) {
+    case RUT_INPUT_EVENT_TYPE_KEY:
+        if (rut_key_event_get_action(event) == RUT_KEY_EVENT_ACTION_DOWN) {
+            switch (rut_key_event_get_keysym(event)) {
+            case RUT_KEY_s:
+                if ((rut_key_event_get_modifier_state(event) &
+                     RUT_MODIFIER_CTRL_ON)) {
+                    rig_save(engine, engine->edit_mode_ui,
+                             editor->ui_filename);
+                    return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+                }
+                break;
+            case RUT_KEY_z:
+                if ((rut_key_event_get_modifier_state(event) &
+                     RUT_MODIFIER_CTRL_ON)) {
+                    rig_undo_journal_undo(engine->undo_journal);
+                    return RUT_INPUT_EVENT_STATUS_HANDLED;
+                }
+                break;
+            case RUT_KEY_y:
+                if ((rut_key_event_get_modifier_state(event) &
+                     RUT_MODIFIER_CTRL_ON)) {
+                    rig_undo_journal_redo(engine->undo_journal);
+                    return RUT_INPUT_EVENT_STATUS_HANDLED;
+                }
+                break;
+
+#if 1
+            /* HACK: Currently it's quite hard to select the play
+             * camera because it will usually be positioned far away
+             * from the scene. This provides a way to select it by
+             * pressing Ctrl+C. Eventually it should be possible to
+             * select it using a list of entities somewhere */
+            case RUT_KEY_r:
+                if ((rut_key_event_get_modifier_state(event) &
+                     RUT_MODIFIER_CTRL_ON)) {
+                    rig_editor_t *editor = rig_engine_get_editor(engine);
+                    rig_entity_t *play_camera =
+                        engine->play_mode ? engine->play_mode_ui->play_camera
+                        : engine->edit_mode_ui->play_camera;
+
+                    rig_select_object(
+                        editor, play_camera, RUT_SELECT_ACTION_REPLACE);
+                    rig_editor_update_inspector(editor);
+                    return RUT_INPUT_EVENT_STATUS_HANDLED;
+                }
+                break;
+#endif
+            }
+        }
+        break;
+
+    case RUT_INPUT_EVENT_TYPE_MOTION:
+    case RUT_INPUT_EVENT_TYPE_TEXT:
+    case RUT_INPUT_EVENT_TYPE_DROP_OFFER:
+    case RUT_INPUT_EVENT_TYPE_DROP:
+    case RUT_INPUT_EVENT_TYPE_DROP_CANCEL:
+        break;
+    }
+
+    return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+}
+
 static void
 rig_editor_init(rut_shell_t *shell, void *user_data)
 {
@@ -2630,7 +2710,7 @@ rig_editor_init(rut_shell_t *shell, void *user_data)
     }
 
     rut_shell_add_input_callback(
-        editor->shell, rig_engine_input_handler, engine, NULL);
+        editor->shell, rig_editor_input_handler, editor, NULL);
 }
 
 rig_editor_t *
