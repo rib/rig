@@ -972,7 +972,7 @@ static rut_property_spec_t _rig_camera_prop_specs[] = {
       .getter.float_type = rig_camera_get_field_of_view,
       .setter.float_type = rig_camera_set_field_of_view,
       .flags = RUT_PROPERTY_FLAG_READWRITE | RUT_PROPERTY_FLAG_VALIDATE,
-      .validation = { .int_range = { .min = 1, .max = 135 } },
+      .validation = { .float_range = { .min = 1, .max = 135 } },
       .animatable = true },
     { .name = "near",
       .nick = "Near Plane",
