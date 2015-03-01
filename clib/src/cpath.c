@@ -368,11 +368,11 @@ c_path_get_relative_path(const char *parent,
     if (!c_path_normalize(descendant_norm, &descendant_len))
         return NULL;
 
-    if (c_path_is_relative(descendant_norm))
-        return c_strdup(descendant_norm);
-
     if (!c_path_normalize(parent_norm, &parent_len))
         return NULL;
+
+    if (c_path_is_relative(descendant_norm) && strcmp(parent_norm, ".") == 0)
+        return c_strdup(descendant_norm);
 
     if (strncmp(parent_norm, descendant_norm, parent_len) == 0) {
         char *ret = descendant_norm + parent_len;
