@@ -1106,10 +1106,9 @@ rig_frontend_post_init_engine(rig_frontend_t *frontend,
 #endif
 
 #ifdef RIG_EDITOR_ENABLED
-    if (engine->frontend_id == RIG_FRONTEND_ID_EDITOR) {
+    if (engine->frontend_id == RIG_FRONTEND_ID_EDITOR)
         onscreen = rut_shell_onscreen_new(shell, 1000, 700);
-        rut_shell_onscreen_set_resizable(onscreen, true);
-    } else
+    else
 #endif
     onscreen = rut_shell_onscreen_new(engine->shell,
                                       engine->device_width / 2,
@@ -1117,6 +1116,7 @@ rig_frontend_post_init_engine(rig_frontend_t *frontend,
 
     rut_shell_onscreen_allocate(onscreen);
 
+    rut_shell_onscreen_set_resizable(onscreen, true);
     cg_onscreen_add_resize_callback(onscreen->cg_onscreen,
                                     on_onscreen_resize, frontend,
                                     NULL); /* destroy notify */
