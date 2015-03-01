@@ -664,6 +664,10 @@ apply_asset_input_with_entity(rig_editor_t *editor,
         break;
     }
 
+    rut_object_ref(asset);
+    engine->edit_mode_ui->assets =
+        c_llist_prepend(engine->edit_mode_ui->assets, asset);
+
     rut_renderer_notify_entity_changed(engine->renderer, entity);
 
     sub_journal = rig_editor_pop_undo_subjournal(editor);
