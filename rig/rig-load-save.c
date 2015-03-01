@@ -60,42 +60,43 @@ append_to_file(ProtobufCBuffer *buffer,
 }
 
 void
-rig_save(rig_engine_t *engine, const char *path)
+rig_save(rig_engine_t *engine, rig_ui_t *ui, const char *path)
 {
     rig_pb_serializer_t *serializer;
+    char *dir;
     struct stat sb;
-    Rig__UI *ui;
-    char *rig_filename;
+    Rig__UI *pb_ui;
     FILE *fp;
 
     buffered_file_t buffered_file = { { append_to_file },
                                       NULL, /* file pointer */
                                       false };
 
-    rig_filename = c_strdup(path);
-
-    fp = fopen(rig_filename, "w");
-    c_free(rig_filename);
-
+    fp = fopen(path, "w");
     if (!fp) {
-        c_warning("Failed to open %s for saving", rig_filename);
+        c_warning("Failed to open %s for saving", path);
         return;
     }
 
     buffered_file.fp = fp;
 
-    if (stat(engine->shell->assets_location, &sb) == -1)
-        mkdir(engine->shell->assets_location, 0777);
+    dir = c_path_get_dirname(path);
+
+    if (stat(dir, &sb) == -1)
+        mkdir(dir, 0777);
+
+    c_free(dir);
+    dir = NULL;
 
     serializer = rig_pb_serializer_new(engine);
 
-    ui = rig_pb_serialize_ui(serializer,
-                             false, /* edit mode */
-                             engine->edit_mode_ui);
+    pb_ui = rig_pb_serialize_ui(serializer,
+                                false, /* edit mode */
+                                ui);
 
-    rig__ui__pack_to_buffer(ui, &buffered_file.base);
+    rig__ui__pack_to_buffer(pb_ui, &buffered_file.base);
 
-    rig_pb_serialized_ui_destroy(ui);
+    rig_pb_serialized_ui_destroy(pb_ui);
 
     rig_pb_serializer_destroy(serializer);
 

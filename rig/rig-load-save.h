@@ -32,7 +32,7 @@
 #include "rig-engine.h"
 #include "rig-ui.h"
 
-void rig_save(rig_engine_t *engine, const char *path);
+void rig_save(rig_engine_t *engine, rig_ui_t *ui, const char *path);
 
 rig_ui_t *rig_load(rig_engine_t *engine, const char *file);
 
