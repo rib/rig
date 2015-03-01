@@ -3353,7 +3353,7 @@ rig_editor_get_objects_selection(rig_editor_t *editor)
 void
 rig_editor_save(rig_editor_t *editor)
 {
-    rig_save(editor->engine, editor->engine->ui_filename);
+    rig_save(editor->engine, editor->engine->edit_mode_ui, editor->ui_filename);
 }
 
 /* prepare for a new ui to be set */
