@@ -489,8 +489,6 @@ rig_engine_load_file(rig_engine_t *engine, const char *filename)
 
     c_return_if_fail(engine->frontend);
 
-    engine->ui_filename = c_strdup(filename);
-
     ui = rig_load(engine, filename);
 
     if (!ui) {

@@ -96,7 +96,6 @@ struct _rig_engine_t {
     bool headless;
     bool play_mode;
 
-    char *ui_filename;
     rut_closure_t *finish_ui_load_closure;
 
     rut_object_t *camera_2d;
