@@ -207,32 +207,6 @@ message Entity
           TEXT=6; CAMERA=7; POINTALISM_GRID=8; NINE_SLICE=9; HAIR=10;
           BUTTON_INPUT=11; }
 
-      //Deprecated (just rely on boxed properties)
-      message Light
-        {
-          optional Color ambient=1;
-          optional Color diffuse=2;
-          optional Color specular=3;
-        }
-
-      //Deprecated (just rely on boxed properties)
-      message Material
-        {
-          optional Color ambient=1;
-          optional Color diffuse=2;
-          optional Color specular=3;
-          optional float shininess=4;
-          optional Texture texture=5;
-          optional NormalMap normal_map=6;
-          optional AlphaMask alpha_mask=7;
-        }
-
-      //Deprecated (just rely on boxed properties)
-      message Shape
-        {
-          optional bool shaped=2;
-        }
-
       message Diamond
         {
           optional float size=1;
@@ -241,13 +215,6 @@ message Entity
       message Model
         {
           optional sint64 asset_id=1; //XXX ID
-        }
-
-      message Text
-        {
-          optional string text=1;
-          optional string font=2;
-          optional Color color=3;
         }
 
       message Camera
@@ -294,17 +261,9 @@ message Entity
       optional sint64 id=1; //XXX ID
 
       optional Type type=2;
-      optional Light light=3;
 
-      //Deprecated (just use type + boxed properties)
-      optional Material material=4;
-
-      optional Shape shape=5;
-      optional Diamond diamond=6;
       optional Model model=7;
-      optional Text text=8;
       optional Camera camera=9;
-      optional PointalismGrid grid=10;
 
       //introspectable properties...
       repeated Boxed properties=11;
