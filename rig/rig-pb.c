@@ -703,7 +703,12 @@ _rig_entitygraph_pre_serialize_cb(
     const char *label;
 
     if (type != &rig_entity_type) {
-        c_warning("Can't save non-entity graphables\n");
+
+        /* Note: the root of the scenegraph is a rut_graph_t so don't
+         * warn about that... */
+        if (type != &rut_graph_type && rut_graphable_get_parent(object) != NULL)
+            c_warning("Can't save non-entity graphables\n");
+
         return RUT_TRAVERSE_VISIT_CONTINUE;
     }
 
