@@ -135,4 +135,6 @@ rig_controller_view_t *rig_editor_get_controller_view(rig_editor_t *editor);
 
 rig_engine_t *rig_editor_get_engine(rig_editor_t *editor);
 
+void rig_editor_reset(rig_editor_t *editor);
+
 #endif /* _RIG_EDITOR_H_ */

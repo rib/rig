@@ -401,8 +401,6 @@ _rut_camera_view_paint(rut_object_t *object,
 
         camera = view->play_camera;
         camera_component = view->play_camera_component;
-
-        rig_ui_code_modules_update(view->ui);
     }
 
     if (engine->frontend && engine->frontend_id == RIG_FRONTEND_ID_EDITOR) {

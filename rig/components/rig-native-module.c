@@ -72,11 +72,26 @@ rig_native_module_get_name(rut_object_t *object)
     return module->name;
 }
 
+static void
+close_lib(rig_native_module_t *module)
+{
+    if (module->lib) {
+        uv_dlclose(module->lib);
+        c_free(module->lib);
+        module->lib = NULL;
+
+        module->load = NULL;
+        module->update = NULL;
+    }
+}
+
 void
 rig_native_module_set_name(rut_object_t *object,
                            const char *name)
 {
     rig_native_module_t *module = object;
+
+    close_lib(module);
 
     if (module->name) {
         c_free(module->name);
@@ -114,14 +129,10 @@ _rig_native_module_free(void *object)
 
     rut_introspectable_destroy(module);
 
+    close_lib(module);
+
     if (module->name)
         c_free(module->name);
-
-    if (module->lib) {
-        uv_dlclose(module->lib);
-        c_free(module->lib);
-        module->lib = NULL;
-    }
 
     rut_object_free(rig_native_module_t, object);
 }
@@ -142,7 +153,7 @@ _rig_native_module_load(rut_object_t *object)
 {
     rig_native_module_t *module = object;
 
-    if (!module->lib) {
+    if (module->lib == NULL && strcmp(module->name, "") != 0) {
         int status;
         struct sym {
             const char *name;
@@ -158,8 +169,7 @@ _rig_native_module_load(rut_object_t *object)
         if (status) {
             c_warning("Failed to load native module (%s): %s",
                       module->name, uv_dlerror(module->lib));
-            c_free(module->lib);
-            module->lib = NULL;
+            close_lib(module);
         }
 
         for (i = 0; i < C_N_ELEMENTS(symbols); i++)
@@ -170,10 +180,22 @@ _rig_native_module_load(rut_object_t *object)
     }
 }
 
+static bool
+ensure_module_loaded(rig_native_module_t *module)
+{
+    if (!module->load)
+        _rig_native_module_load(module);
+
+    return !!module->load;
+}
+
 static void
 _rig_native_module_update(rut_object_t *object)
 {
     rig_native_module_t *module = object;
+
+    if (!ensure_module_loaded(module))
+        return;
 
     if (module->update)
         module->update();

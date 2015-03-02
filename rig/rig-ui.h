@@ -95,6 +95,7 @@ void rig_ui_entity_component_pre_remove_notify(rig_ui_t *ui,
                                                rut_component_t *component);
 void rig_ui_register_entity(rig_ui_t *ui, rig_entity_t *entity);
 
+void rig_ui_code_modules_load(rig_ui_t *ui);
 void rig_ui_code_modules_update(rig_ui_t *ui);
 
 #endif /* _RIG_UI_H_ */

@@ -37,6 +37,7 @@
 #include "rig-entity.h"
 #include "rig-renderer.h"
 #include "rig-code-module.h"
+#include "rut-renderer.h"
 
 static void
 _rig_ui_free(void *object)
@@ -510,14 +511,15 @@ rig_ui_entity_component_added_notify(rig_ui_t *ui,
                                      rig_entity_t *entity,
                                      rut_component_t *component)
 {
-    rig_code_module_props_t *module_props;
+    if (ui->engine->renderer)
+        rut_renderer_notify_entity_changed(ui->engine->renderer, entity);
 
-    if (!rut_object_is(component, rig_code_module_trait_id))
-        return;
+    if (rut_object_is(component, rig_code_module_trait_id)) {
+        rig_code_module_props_t *module_props =
+            rut_object_get_properties(component, rig_code_module_trait_id);
 
-    module_props = rut_object_get_properties(component, rig_code_module_trait_id);
-
-    c_list_insert(ui->code_modules.prev, &module_props->system_link);
+        c_list_insert(ui->code_modules.prev, &module_props->system_link);
+    }
 }
 
 void
@@ -525,14 +527,15 @@ rig_ui_entity_component_pre_remove_notify(rig_ui_t *ui,
                                           rig_entity_t *entity,
                                           rut_component_t *component)
 {
-    rig_code_module_props_t *module_props;
+    if (ui->engine->renderer)
+        rut_renderer_notify_entity_changed(ui->engine->renderer, entity);
 
-    if (!rut_object_is(component, rig_code_module_trait_id))
-        return;
+    if (rut_object_is(component, rig_code_module_trait_id)) {
+        rig_code_module_props_t *module_props =
+            rut_object_get_properties(component, rig_code_module_trait_id);
 
-    module_props = rut_object_get_properties(component, rig_code_module_trait_id);
-
-    c_list_remove(&module_props->system_link);
+        c_list_remove(&module_props->system_link);
+    }
 }
 
 static bool
@@ -556,14 +559,27 @@ rig_ui_register_entity(rig_ui_t *ui, rig_entity_t *entity)
 }
 
 void
+rig_ui_code_modules_load(rig_ui_t *ui)
+{
+    rig_code_module_props_t *module;
+
+    c_list_for_each(module, &ui->code_modules, system_link) {
+        rig_code_module_vtable_t *vtable =
+            rut_object_get_vtable(module->object, rig_code_module_trait_id);
+
+        vtable->load(module->object);
+    }
+}
+
+void
 rig_ui_code_modules_update(rig_ui_t *ui)
 {
     rig_code_module_props_t *module;
 
     c_list_for_each(module, &ui->code_modules, system_link) {
         rig_code_module_vtable_t *vtable =
-            rut_object_get_vtable(module, rig_code_module_trait_id);
+            rut_object_get_vtable(module->object, rig_code_module_trait_id);
 
-        vtable->update(module);
+        vtable->update(module->object);
     }
 }

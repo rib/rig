@@ -42,6 +42,7 @@
 #include "rig-ui.h"
 #include "rig-logs.h"
 #include "rig-frontend.h"
+#include "rig-code-module.h"
 #include "rig-js.h"
 
 #include "rig.pb-c.h"
@@ -215,6 +216,8 @@ simulator__load(Rig__Simulator_Service *service,
         rig_engine_set_edit_mode_ui(engine, ui);
     else
         rig_engine_set_play_mode_ui(engine, ui);
+
+    rig_ui_code_modules_load(ui);
 
     rut_object_unref(ui);
 
@@ -842,6 +845,7 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
     rut_shell_dispatch_input_events(shell);
 
     if (engine->play_mode) {
+        rig_ui_code_modules_update(engine->current_ui);
 #if 0
         static int counter = 0;
 

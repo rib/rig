@@ -383,8 +383,18 @@ add_component_apply_real(rig_engine_op_apply_context_t *ctx,
 {
     ctx->register_id_cb(component, component_id, ctx->user_data);
 
+    /* XXX: unlike most other operations _apply_op_add_component()
+     * doesn't call into here because the act of unserializing the
+     * given component will also add the component to the entity.
+     *
+     * This means we need to be extra careful to keep any extra
+     * code we add here in sync with what _apply_op_add_component()
+     * does!
+     */
+
     rig_entity_add_component(entity, component);
 
+    /* XXX: also called in _apply_op_add_component() */
     rig_ui_entity_component_added_notify(ctx->ui, entity, component);
 }
 
@@ -436,6 +446,9 @@ _apply_op_add_component(rig_engine_op_apply_context_t *ctx,
 
     if (!component)
         return false;
+
+    /* XXX: also called in add_component_apply_real() */
+    rig_ui_entity_component_added_notify(ctx->ui, entity, component);
 
     ctx->register_id_cb(
         component, pb_op->add_component->component->id, ctx->user_data);

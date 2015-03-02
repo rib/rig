@@ -292,17 +292,9 @@ rig_engine_set_play_mode_ui(rig_engine_t *engine, rig_ui_t *ui)
     }
 
     if (ui) {
-        rig_code_module_props_t *module;
-
         engine->play_mode_ui = rut_object_claim(ui, engine);
+#warning "fixme: shouldn't be loading code dso in frontend"
         rig_code_update_dso(engine, ui->dso_data, ui->dso_len);
-
-        c_list_for_each(module, &ui->code_modules, system_link) {
-            rig_code_module_vtable_t *vtable =
-                rut_object_get_vtable(module, rig_code_module_trait_id);
-
-            vtable->load(module);
-        }
     }
 
     // if (engine->edit_mode_ui == NULL && engine->play_mode_ui == NULL)
