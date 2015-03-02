@@ -605,6 +605,20 @@ direct_object_id_cb(void *object, void *user_data)
     return (uint64_t)(uintptr_t)object;
 }
 
+static rut_input_event_status_t
+rig_simulator_input_handler(rut_input_event_t *event,
+                            void *user_data)
+{
+    rig_simulator_t *simulator = user_data;
+    rig_engine_t *engine = simulator->engine;
+
+    if (engine->play_mode)
+        rig_ui_code_modules_handle_input(engine->play_mode_ui,
+                                         event);
+
+    return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+}
+
 static void
 rig_simulator_init(rut_shell_t *shell, void *user_data)
 {
@@ -693,6 +707,9 @@ rig_simulator_init(rut_shell_t *shell, void *user_data)
         engine->ops_serializer, temporarily_register_object_cb, simulator);
     rig_pb_serializer_set_object_to_id_callback(
         engine->ops_serializer, direct_object_id_cb, simulator);
+
+    rut_shell_add_input_callback(
+        simulator->shell, rig_simulator_input_handler, simulator, NULL);
 }
 
 rig_simulator_t *

@@ -97,5 +97,6 @@ void rig_ui_register_entity(rig_ui_t *ui, rig_entity_t *entity);
 
 void rig_ui_code_modules_load(rig_ui_t *ui);
 void rig_ui_code_modules_update(rig_ui_t *ui);
+void rig_ui_code_modules_handle_input(rig_ui_t *ui, rut_input_event_t *event);
 
 #endif /* _RIG_UI_H_ */

@@ -43,5 +43,7 @@ void rig_native_module_set_name(rut_object_t *object, const char *name);
 
 void rig_native_module_load(rig_native_module_t *module);
 void rig_native_module_update(rig_native_module_t *module);
+void rig_native_module_handle_update(rig_native_module_t *module,
+                                     rut_input_event_t *event);
 
 #endif /* __RIG_NATIVE_MODULE_H__ */

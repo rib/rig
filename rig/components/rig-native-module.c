@@ -40,6 +40,8 @@
 #include "rig-engine.h"
 #include "rig-entity.h"
 
+#include "rig-c.h"
+
 enum {
     RIG_NATIVE_MODULE_PROP_NAME,
     RIG_NATIVE_MODULE_N_PROPS
@@ -58,8 +60,11 @@ struct _rig_native_module_t {
 
     uv_lib_t *lib;
 
-    void (*load)(void);
-    void (*update)(void);
+    struct {
+        void (*load)(void);
+        void (*update)(void);
+        void (*input)(RigInputEvent *event);
+    } symbols;
 
     rut_introspectable_props_t introspectable;
     rut_property_t properties[RIG_NATIVE_MODULE_N_PROPS];
@@ -80,8 +85,7 @@ close_lib(rig_native_module_t *module)
         c_free(module->lib);
         module->lib = NULL;
 
-        module->load = NULL;
-        module->update = NULL;
+        memset(&module->symbols, 0, sizeof(module->symbols));
     }
 }
 
@@ -159,8 +163,9 @@ _rig_native_module_load(rut_object_t *object)
             const char *name;
             void *addr;
         } symbols[] = {
-            { "load", &module->load },
-            { "update", &module->update },
+            { "load", &module->symbols.load },
+            { "update", &module->symbols.update },
+            { "input", &module->symbols.input },
         };
         int i;
 
@@ -175,18 +180,18 @@ _rig_native_module_load(rut_object_t *object)
         for (i = 0; i < C_N_ELEMENTS(symbols); i++)
             uv_dlsym(module->lib, symbols[i].name, symbols[i].addr);
 
-        if (module->load)
-            module->load();
+        if (module->symbols.load)
+            module->symbols.load();
     }
 }
 
 static bool
 ensure_module_loaded(rig_native_module_t *module)
 {
-    if (!module->load)
+    if (!module->symbols.load)
         _rig_native_module_load(module);
 
-    return !!module->load;
+    return !!module->symbols.load;
 }
 
 static void
@@ -197,8 +202,20 @@ _rig_native_module_update(rut_object_t *object)
     if (!ensure_module_loaded(module))
         return;
 
-    if (module->update)
-        module->update();
+    if (module->symbols.update)
+        module->symbols.update();
+}
+
+static void
+_rig_native_module_input(rut_object_t *object, rut_input_event_t *event)
+{
+    rig_native_module_t *module = object;
+
+    if (!ensure_module_loaded(module))
+        return;
+
+    if (module->symbols.input)
+        module->symbols.input((RigInputEvent *)event);
 }
 
 rut_type_t rig_native_module_type;
@@ -213,6 +230,7 @@ _rig_native_module_init_type(void)
     static rig_code_module_vtable_t module_vtable = {
         .load = _rig_native_module_load,
         .update = _rig_native_module_update,
+        .input = _rig_native_module_input,
     };
 
     rut_type_t *type = &rig_native_module_type;

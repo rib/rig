@@ -47,6 +47,7 @@ typedef struct _rig_code_module_props {
 typedef struct _rig_code_module_vtable {
     void (*load)(rut_object_t *object);
     void (*update)(rut_object_t *object);
+    void (*input)(rut_object_t *object, rut_input_event_t *event);
 } rig_code_module_vtable_t;
 
 #endif /* _RIG_CODE_MODULE_H_ */

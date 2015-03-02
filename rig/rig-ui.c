@@ -580,6 +580,23 @@ rig_ui_code_modules_update(rig_ui_t *ui)
         rig_code_module_vtable_t *vtable =
             rut_object_get_vtable(module->object, rig_code_module_trait_id);
 
-        vtable->update(module->object);
+        if (vtable->update)
+            vtable->update(module->object);
     }
 }
+
+void
+rig_ui_code_modules_handle_input(rig_ui_t *ui, rut_input_event_t *event)
+{
+    rig_code_module_props_t *module;
+
+    c_list_for_each(module, &ui->code_modules, system_link) {
+        rig_code_module_vtable_t *vtable =
+            rut_object_get_vtable(module->object, rig_code_module_trait_id);
+
+        if (vtable->input)
+            vtable->input(module->object, event);
+    }
+}
+
+

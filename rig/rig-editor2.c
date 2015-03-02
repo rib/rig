@@ -11,3 +11,9 @@ update(void)
 {
     printf("update\n");
 }
+
+void
+input(void)
+{
+    printf("input\n");
+}
