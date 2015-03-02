@@ -113,7 +113,7 @@ void rut_closure_list_remove_all(c_list_t *list);
 rut_closure_t *rut_closure_list_add(c_list_t *list,
                                     void *function,
                                     void *user_data,
-                                    rut_closure_destroy_callback_t destroy_cb) C_DEPRECATED("Use rut_closure_init + rut_closure_list_insert");
+                                    rut_closure_destroy_callback_t destroy_cb); //C_DEPRECATED("Use rut_closure_init + rut_closure_list_insert");
 /**
  * rut_closure_disconnect:
  * @closure: A closure connected to a Rut closure list
@@ -121,8 +121,8 @@ rut_closure_t *rut_closure_list_add(c_list_t *list,
  * Removes the given closure from the callback list it is connected to
  * and destroys it. If the closure was created with a destroy function
  * then it will be invoked. */
-void rut_closure_disconnect(rut_closure_t *closure) C_DEPRECATED("Use rut_closure_remove");
-void rut_closure_list_disconnect_all(c_list_t *list) C_DEPRECATED("Use rut_closure_list_remove_all");
+void rut_closure_disconnect(rut_closure_t *closure); //C_DEPRECATED("Use rut_closure_remove");
+void rut_closure_list_disconnect_all(c_list_t *list); //C_DEPRECATED("Use rut_closure_list_remove_all");
 
 /**
  * rut_closure_list_invoke:
