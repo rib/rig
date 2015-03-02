@@ -56,9 +56,10 @@ usage(void)
 
 #ifdef RIG_ENABLE_DEBUG
     fprintf(stderr, "  -m,--simulator={tcp:<address>[:port],    Specify how to listen for a simulator connection\n");
-    fprintf(stderr, "                  abstract:<name>,         (Simulator runs in a separate thread by default)\n");
+    fprintf(stderr, "                  abstract:<name>,         (Simulator runs in a separate process by default)\n");
     fprintf(stderr, "                  mainloop,\n");
-    fprintf(stderr, "                  thread}\n");
+    fprintf(stderr, "                  thread,\n");
+    fprintf(stderr, "                  process}\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "  -d,--disable-curses                      Disable curses debug console\n");
     fprintf(stderr, "\n");
