@@ -55,8 +55,8 @@ typedef enum {
 
 typedef struct _rut_componentable_props_t {
     rut_component_type_t type;
-    rig_entity_t *
-    entity; /* back pointer to the entity the component belongs to */
+    rig_entity_t *entity; /* back pointer to the entity the
+                             component belongs to */
 } rut_componentable_props_t;
 
 typedef struct _rut_componentable_vtable_t {
