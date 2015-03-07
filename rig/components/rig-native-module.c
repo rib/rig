@@ -61,9 +61,9 @@ struct _rig_native_module_t {
     uv_lib_t *lib;
 
     struct {
-        void (*load)(void);
-        void (*update)(void);
-        void (*input)(RigInputEvent *event);
+        void (*load)(RModule *module);
+        void (*update)(RModule *module);
+        void (*input)(RModule *module, RInputEvent *event);
     } symbols;
 
     rut_introspectable_props_t introspectable;
@@ -181,7 +181,7 @@ _rig_native_module_load(rut_object_t *object)
             uv_dlsym(module->lib, symbols[i].name, symbols[i].addr);
 
         if (module->symbols.load)
-            module->symbols.load();
+            module->symbols.load((RModule *)module);
     }
 }
 
@@ -203,7 +203,7 @@ _rig_native_module_update(rut_object_t *object)
         return;
 
     if (module->symbols.update)
-        module->symbols.update();
+        module->symbols.update((RModule *)module);
 }
 
 static void
@@ -215,7 +215,7 @@ _rig_native_module_input(rut_object_t *object, rut_input_event_t *event)
         return;
 
     if (module->symbols.input)
-        module->symbols.input((RigInputEvent *)event);
+        module->symbols.input((RModule *)module, (RInputEvent *)event);
 }
 
 rut_type_t rig_native_module_type;

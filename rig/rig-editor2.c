@@ -1,19 +1,29 @@
 #include "rig-c.h"
 
 void
-load(void)
+load(RModule *module)
 {
-    printf("load\n");
+    r_debug(module, "load\n");
 }
 
 void
-update(void)
+update(RModule *module)
 {
-    printf("update\n");
+    r_debug(module, "update\n");
 }
 
 void
-input(void)
+input(RModule *module, RInputEvent *event)
 {
-    printf("input\n");
+    switch(r_input_event_get_type(event)) {
+    case R_INPUT_EVENT_TYPE_MOTION:
+        r_debug(module, "editor: motion event");
+        break;
+    case R_INPUT_EVENT_TYPE_KEY:
+        r_debug(module, "editor: key event");
+        break;
+    case R_INPUT_EVENT_TYPE_TEXT:
+        r_debug(module, "editor: text event");
+        break;
+    }
 }
