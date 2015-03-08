@@ -217,7 +217,7 @@ _rut_graphable_traverse_depth(rut_object_t *graphable,
                               int current_depth,
                               void *user_data)
 {
-    rut_traverse_visit_flags_t flags;
+    rut_traverse_visit_flags_t flags = 0;
 
     if (before_children_callback) {
         flags = before_children_callback(graphable, current_depth, user_data);

@@ -1,0 +1,68 @@
+all::
+
+E=$(if $(V),,@)
+
+export CC=emcc
+top_srcdir=../../src
+srcdir=$(top_srcdir)/rut
+top_builddir=../
+builddir=.
+
+VPATH=$(srcdir):$(builddir)
+
+include $(srcdir)/Makefile.sources
+
+#can be overriden by user...
+CFLAGS=-g -O0
+OBJ_CFLAGS=$(CFLAGS)
+BC_CFLAGS=$(CFLAGS)
+
+_OBJ_CFLAGS=$(OBJ_CFLAGS) \
+	    -I$(top_srcdir) \
+	    -I$(top_srcdir)/clib \
+	    -I$(top_srcdir)/cogl \
+	    -I$(srcdir)
+_BC_CFLAGS=$(BC_CFLAGS) -I$(top_srcdir) -I$(srcdir)
+
+SOURCE=$(filter %.c,$(rut_emscripten_sources))
+OBJECTS=$(patsubst %.c, %.o, $(SOURCE))
+
+precomp_header=rut-config.pch
+builddirs=
+
+all:: Makefile rut.bc
+
+rut-config.h:
+	$(E)echo "#include \"config.h\"" > rut-config.h; \
+	echo "#include \"rut.h\"" >> rut-config.h
+rut-config.pch: $(top_srcdir)/config.h rut-config.h
+
+rut.bc: $(OBJECTS)
+
+
+%.pch: | dirs
+	$(E)echo "(PCH)    $(@)"
+	$(E)$(CC) -x c-header $(*).h -std=c11 -o $@ -MMD -MF .deps/$(@).rules $(_OBJ_CFLAGS)
+
+%.o: $(precomp_header) %.c | dirs
+	$(E)echo "(CC)     $(@)"
+	$(E)$(CC) $(srcdir)/$(*).c -o $@ -MMD -MF .deps/$(@).rules -include rut-config.h $(_OBJ_CFLAGS)
+
+%.bc: rut-config.pch | dirs
+	$(E)echo "(BC)     $(@)"
+	$(E)$(CC) $(_BC_CFLAGS) $(filter %.o %.c,$(^)) -o $@
+
+-include .deps/*.rules
+-include .deps/*/*.rules
+-include .deps/*/*/*.rules
+
+Makefile:
+	$(E)ln -sf $(srcdir)/Makefile.emscripten Makefile
+
+dirs:
+	$(E)mkdir -p $(builddirs) .deps $(addprefix .deps/,$(builddirs))
+
+clean:
+	-rm -f *.o *.bc $(precomp_header)
+
+.PHONY: all clean Makefile dirs

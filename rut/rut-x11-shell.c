@@ -894,7 +894,6 @@ rut_x11_shell_init(rut_shell_t *shell)
     if (!shell->cg_device) {
         c_warning("Failed to create Cogl Context: %s", error->message);
         cg_error_free(error);
-        c_free(shell);
         goto error;
     }
 
@@ -1016,6 +1015,8 @@ error:
         cg_object_unref(shell->cg_renderer);
         shell->cg_renderer = NULL;
     }
+
+    c_free(shell);
 
     return false;
 }

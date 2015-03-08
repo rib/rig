@@ -48,6 +48,10 @@
 #include "rut-sdl-shell.h"
 #endif
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+
 #include "rut-poll.h"
 #include "rut-shell.h"
 #include "rut-shell.h"
@@ -70,6 +74,7 @@ struct _rut_poll_source_t {
 #endif
 };
 
+#ifdef USE_UV
 /* We use dummy timers as a way to affect the timeout value used
  * while polling for events, but rely on the other callbacks
  * to dispatch work.
@@ -96,7 +101,7 @@ on_cg_event_cb(void *user_data, int fd, int revents)
     cg_renderer_t *renderer =
         cg_device_get_renderer(shell->cg_device);
 
-    cg_poll_renderer_dispatch_fd(renderer, fd, revents);
+    cg_loop_dispatch_fd(renderer, fd, revents);
 }
 
 static void
@@ -109,8 +114,7 @@ update_cg_sources(rut_shell_t *shell)
     int64_t cg_timeout;
     int age;
 
-    age = cg_poll_renderer_get_info(
-        renderer, &poll_fds, &n_poll_fds, &cg_timeout);
+    age = cg_loop_get_info(renderer, &poll_fds, &n_poll_fds, &cg_timeout);
 
     if (age != shell->cg_poll_fds_age) {
         int i;
@@ -172,10 +176,12 @@ free_source(rut_poll_source_t *source)
 
     c_slice_free(rut_poll_source_t, source);
 }
+#endif /* USE_UV */
 
 void
 rut_poll_shell_remove_fd(rut_shell_t *shell, int fd)
 {
+#ifdef USE_UV
     rut_poll_source_t *source = find_fd_source(shell, fd);
 
     if (!source)
@@ -185,8 +191,12 @@ rut_poll_shell_remove_fd(rut_shell_t *shell, int fd)
 
     c_list_remove(&source->link);
     free_source(source);
+#else
+    c_return_if_reached();
+#endif
 }
 
+#ifdef USE_UV
 static enum uv_poll_event
 poll_fd_events_to_uv_events(rut_poll_fd_event_t events)
 {
@@ -226,10 +236,12 @@ source_poll_cb(uv_poll_t *poll, int status, int events)
 
     rut_set_thread_current_shell(NULL);
 }
+#endif
 
 void
 rut_poll_shell_modify_fd(rut_shell_t *shell, int fd, rut_poll_fd_event_t events)
 {
+#ifdef USE_UV
     rut_poll_source_t *source = find_fd_source(shell, fd);
     enum uv_poll_event uv_events;
 
@@ -239,8 +251,12 @@ rut_poll_shell_modify_fd(rut_shell_t *shell, int fd, rut_poll_fd_event_t events)
     uv_poll_start(&source->uv_poll, uv_events, source_poll_cb);
 
     shell->poll_sources_age++;
+#else
+    c_return_if_reached();
+#endif
 }
 
+#ifdef USE_UV
 static void
 source_prepare_cb(uv_prepare_t *prepare)
 {
@@ -262,6 +278,7 @@ source_prepare_cb(uv_prepare_t *prepare)
 
     rut_set_thread_current_shell(NULL);
 }
+#endif
 
 rut_poll_source_t *
 rut_poll_shell_add_fd(rut_shell_t *shell,
@@ -271,6 +288,7 @@ rut_poll_shell_add_fd(rut_shell_t *shell,
                       void (*dispatch)(void *user_data, int fd, int revents),
                       void *user_data)
 {
+#ifdef USE_UV
     rut_poll_source_t *source;
     uv_loop_t *loop;
 
@@ -307,39 +325,41 @@ rut_poll_shell_add_fd(rut_shell_t *shell,
     shell->poll_sources_age++;
 
     return source;
-}
-
-rut_poll_source_t *
-rut_poll_shell_add_source(
-    rut_shell_t *shell,
-    int64_t (*prepare)(void *user_data),
-    void (*dispatch)(void *user_data, int fd, int revents),
-    void *user_data)
-{
-    return rut_poll_shell_add_fd(shell,
-                                 -1, /* fd */
-                                 0, /* events */
-                                 prepare,
-                                 dispatch,
-                                 user_data);
+#else
+    c_return_val_if_reached(NULL);
+#endif
 }
 
 void
 rut_poll_shell_remove_source(rut_shell_t *shell, rut_poll_source_t *source)
 {
+#ifdef USE_UV
     c_list_remove(&source->link);
     free_source(source);
+#else
+    c_return_if_reached();
+#endif
 }
 
+#ifdef USE_UV
 static void
-dispatch_idles_cb(uv_idle_t *idle)
+libuv_dispatch_idles_cb(uv_idle_t *idle)
 {
     rut_shell_t *shell = idle->data;
 
     rut_set_thread_current_shell(shell);
-
     rut_closure_list_invoke_no_args(&shell->idle_closures);
+    rut_set_thread_current_shell(NULL);
+}
+#endif
 
+static void
+em_dispatch_idles_cb(void *user_data)
+{
+    rut_shell_t *shell = user_data;
+
+    rut_set_thread_current_shell(shell);
+    rut_closure_list_invoke_no_args(&shell->idle_closures);
     rut_set_thread_current_shell(NULL);
 }
 
@@ -349,7 +369,11 @@ rut_poll_shell_add_idle(rut_shell_t *shell,
                         void *user_data,
                         void (*destroy_cb)(void *user_data))
 {
-    uv_idle_start(&shell->uv_idle, dispatch_idles_cb);
+#ifdef __EMSCRIPTEN__
+    emscripten_async_call(em_dispatch_idles_cb, shell, 0);
+#else
+    uv_idle_start(&shell->uv_idle, libuv_dispatch_idles_cb);
+#endif
     return rut_closure_list_add(
         &shell->idle_closures, idle_cb, user_data, destroy_cb);
 }
@@ -359,8 +383,10 @@ rut_poll_shell_remove_idle(rut_shell_t *shell, rut_closure_t *idle)
 {
     rut_closure_disconnect(idle);
 
+#ifdef USE_UV
     if (c_list_empty(&shell->idle_closures))
         uv_idle_stop(&shell->uv_idle);
+#endif
 }
 
 #ifdef USE_SDL
@@ -386,8 +412,12 @@ dispatch_sdl_busy_wait(void *user_data, int fd, int revents)
 static void
 integrate_sdl_events_via_busy_wait(rut_shell_t *shell)
 {
-    rut_poll_shell_add_source(
-        shell, prepare_sdl_busy_wait, dispatch_sdl_busy_wait, shell);
+    rut_poll_shell_add_fd(shell,
+                          -1, /* fd */
+                          0, /* events */
+                          prepare_sdl_busy_wait,
+                          dispatch_sdl_busy_wait,
+                          shell);
 }
 #endif /* USE_SDL */
 
@@ -489,20 +519,21 @@ glib_uv_check_cb(uv_check_t *check)
 }
 #endif /* USE_GLIB */
 
+#ifdef USE_UV
 static void
-cg_prepare_cb(uv_prepare_t *prepare)
+libuv_cg_prepare_callback(uv_prepare_t *prepare)
 {
     rut_shell_t *shell = prepare->data;
     cg_renderer_t *renderer =
         cg_device_get_renderer(shell->cg_device);
 
-    cg_poll_renderer_dispatch(renderer, NULL, 0);
+    cg_loop_dispatch(renderer, NULL, 0);
 
     update_cg_sources(shell);
 }
 
 static void
-integrate_cg_events(rut_shell_t *shell)
+integrate_cg_events_via_libuv(rut_shell_t *shell)
 {
     uv_loop_t *loop = rut_uv_shell_get_loop(shell);
 
@@ -510,25 +541,30 @@ integrate_cg_events(rut_shell_t *shell)
 
     uv_prepare_init(loop, &shell->cg_prepare);
     shell->cg_prepare.data = shell;
-    uv_prepare_start(&shell->cg_prepare, cg_prepare_cb);
+    uv_prepare_start(&shell->cg_prepare, libuv_cg_prepare_callback);
 
     uv_check_init(loop, &shell->cg_check);
 }
+#endif /* USE_UV */
 
 void
 rut_poll_init(rut_shell_t *shell)
 {
     c_list_init(&shell->poll_sources);
     c_list_init(&shell->idle_closures);
+#ifndef __EMSCRIPTEN__
     c_list_init(&shell->sigchild_closures);
+#endif
 }
 
+#ifdef USE_UV
 static void
 handle_sigchild(uv_signal_t *handle, int signo)
 {
     rut_shell_t *shell = handle->data;
     rut_closure_list_invoke_no_args(&shell->sigchild_closures);
 }
+#endif
 
 rut_closure_t *
 rut_poll_shell_add_sigchild(rut_shell_t *shell,
@@ -536,14 +572,22 @@ rut_poll_shell_add_sigchild(rut_shell_t *shell,
                             void *user_data,
                             void (*destroy_cb)(void *user_data))
 {
+#ifdef USE_UV
     return rut_closure_list_add(
         &shell->sigchild_closures, sigchild_cb, user_data, destroy_cb);
+#else
+    c_return_val_if_reached(NULL);
+#endif
 }
 
 void
 rut_poll_shell_remove_sigchild(rut_shell_t *shell, rut_closure_t *sigchild)
 {
+#ifdef USE_UV
     rut_closure_disconnect(sigchild);
+#else
+    c_return_if_reached();
+#endif
 }
 
 void
@@ -577,7 +621,7 @@ rut_poll_sources_init(rut_shell_t *shell)
         integrate_sdl_events_via_busy_wait(shell);
 #endif
 
-        integrate_cg_events(shell);
+        integrate_cg_events_via_libuv(shell);
 #endif /* RIG_SIMULATOR_ONLY */
     }
 
@@ -622,6 +666,7 @@ rut_glib_poll_run(rut_shell_t *shell)
 
     if (shell->on_run_cb)
         shell->on_run_cb(shell, shell->on_run_data);
+    shell->running = true;
 
     rut_set_thread_current_shell(NULL);
 
@@ -706,6 +751,19 @@ rut_android_poll_run(rut_shell_t *shell)
 }
 #endif /* __ANDROID__ */
 
+#ifdef __EMSCRIPTEN__
+static void
+em_paint_loop(void *user_data)
+{
+    rut_shell_t *shell = user_data;
+
+    emscripten_pause_main_loop();
+    shell->paint_loop_running = false;
+
+    rut_shell_paint(shell);
+}
+#endif
+
 void
 rut_poll_run(rut_shell_t *shell)
 {
@@ -713,6 +771,7 @@ rut_poll_run(rut_shell_t *shell)
 
         if (shell->on_run_cb)
             shell->on_run_cb(shell, shell->on_run_data);
+        shell->running = true;
 
         return;
     }
@@ -721,15 +780,24 @@ rut_poll_run(rut_shell_t *shell)
     rut_glib_poll_run(shell);
 #elif defined(__ANDROID__)
     rut_android_poll_run(shell);
-#else
+#elif defined(__EMSCRIPTEN__)
+    if (shell->on_run_cb)
+        shell->on_run_cb(shell, shell->on_run_data);
+    shell->running = true;
+
+    emscripten_set_main_loop_arg(em_paint_loop, shell, -1, true);
+#elif defined(USE_UV)
     {
         uv_loop_t *loop = rut_uv_shell_get_loop(shell);
 
         if (shell->on_run_cb)
             shell->on_run_cb(shell, shell->on_run_data);
+        shell->running = true;
 
         uv_run(loop, UV_RUN_DEFAULT);
     }
+#else
+#error "No rut_poll_run() mainloop implementation"
 #endif
 }
 
@@ -741,7 +809,7 @@ rut_poll_quit(rut_shell_t *shell)
 
 #if defined(__ANDROID__)
     shell->quit = true;
-#else
+#elif defined(USE_UV)
     {
         uv_loop_t *loop = rut_uv_shell_get_loop(shell);
         uv_stop(loop);
