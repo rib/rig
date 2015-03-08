@@ -59,6 +59,118 @@
 #define GL_BGRA_EXT 0x80E1
 #endif
 
+#ifndef GL_HALF_FLOAT
+#define GL_HALF_FLOAT 0x140B
+#endif
+#ifndef GL_R8
+#define GL_R8 0x8229
+#endif
+#ifndef GL_R8_SNORM
+#define GL_R8_SNORM 0x8F94
+#endif
+#ifndef GL_R16UI
+#define GL_R16UI 0x8234
+#endif
+#ifndef GL_R16F
+#define GL_R16F 0x822D
+#endif
+#ifndef GL_R32UI
+#define GL_R32UI 0x8236
+#endif
+#ifndef GL_R32F
+#define GL_R32F 0x822E
+#endif
+#ifndef GL_RG8_SNORM
+#define GL_RG8_SNORM 0x8F95
+#endif
+#ifndef GL_RG16UI
+#define GL_RG16UI 0x823A
+#endif
+#ifndef GL_RG16F
+#define GL_RG16F 0x822F
+#endif
+#ifndef GL_R32UI
+#define GL_R32UI 0x8236
+#endif
+#ifndef GL_R32F
+#define GL_R32F 0x822E
+#endif
+#ifndef GL_RG8_SNORM
+#define GL_RG8_SNORM 0x8F95
+#endif
+#ifndef GL_RG16UI
+#define GL_RG16UI 0x823A
+#endif
+#ifndef GL_RG16F
+#define GL_RG16F 0x822F
+#endif
+#ifndef GL_RG32UI
+#define GL_RG32UI 0x823C
+#endif
+#ifndef GL_RG32F
+#define GL_RG32F 0x8230
+#endif
+#ifndef GL_RGB8
+#define GL_RGB8 0x8051
+#endif
+#ifndef GL_RGB8_SNORM
+#define GL_RGB8_SNORM 0x8F96
+#endif
+#ifndef GL_RGB16UI
+#define GL_RGB16UI 0x8D77
+#endif
+#ifndef GL_RGB16F
+#define GL_RGB16F 0x881B
+#endif
+#ifndef GL_RGB32UI
+#define GL_RGB32UI 0x8D71
+#endif
+#ifndef GL_RGB32F
+#define GL_RGB32F 0x8815
+#endif
+#ifndef GL_RGB8
+#define GL_RGB8 0x8051
+#endif
+#ifndef GL_RGBA8
+#define GL_RGBA8 0x8058
+#endif
+#ifndef GL_RGBA8_SNORM
+#define GL_RGBA8_SNORM 0x8F97
+#endif
+#ifndef GL_RGBA16UI
+#define GL_RGBA16UI 0x8D76
+#endif
+#ifndef GL_RGBA16F
+#define GL_RGBA16F 0x881A
+#endif
+#ifndef GL_RGBA32UI
+#define GL_RGBA32UI 0x8D70
+#endif
+#ifndef GL_RGBA32F
+#define GL_RGBA32F 0x8814
+#endif
+#ifndef GL_RGBA8
+#define GL_RGBA8 0x8058
+#endif
+#ifndef GL_RGBA8_SNORM
+#define GL_RGBA8_SNORM 0x8F97
+#endif
+#ifndef GL_RGBA16UI
+#define GL_RGBA16UI 0x8D76
+#endif
+#ifndef GL_RGBA16F
+#define GL_RGBA16F 0x881A
+#endif
+#ifndef GL_RGBA32UI
+#define GL_RGBA32UI 0x8D70
+#endif
+#ifndef GL_RGBA32F
+#define GL_RGBA32F 0x8814
+#endif
+#ifndef GL_RED
+#define GL_RED 0x1903
+#endif
+
 static bool
 _cg_driver_pixel_format_from_gl_internal(cg_device_t *dev,
                                          GLenum gl_int_format,
@@ -604,8 +716,13 @@ _cg_driver_update_features(cg_device_t *dev,
     if (_cg_check_extension("GL_OES_element_index_uint", gl_extensions))
         CG_FLAGS_SET(dev->features, CG_FEATURE_ID_UNSIGNED_INT_INDICES, true);
 
+#ifdef HAVE_CG_WEBGL
+    if (_cg_check_extension("GL_WEBGL_depth_texture", gl_extensions))
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_DEPTH_TEXTURE, true);
+#else
     if (_cg_check_extension("GL_OES_depth_texture", gl_extensions))
         CG_FLAGS_SET(dev->features, CG_FEATURE_ID_DEPTH_TEXTURE, true);
+#endif
 
     if (_cg_check_extension("GL_OES_texture_npot", gl_extensions)) {
         CG_FLAGS_SET(dev->features, CG_FEATURE_ID_TEXTURE_NPOT, true);
@@ -651,6 +768,9 @@ _cg_driver_update_features(cg_device_t *dev,
 
     if (_cg_check_extension("GL_EXT_texture_rg", gl_extensions))
         CG_FLAGS_SET(dev->features, CG_FEATURE_ID_TEXTURE_RG, true);
+
+    if (dev->glDrawArraysInstanced)
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_INSTANCES, true);
 
     /* Cache features */
     for (i = 0; i < C_N_ELEMENTS(private_features); i++)

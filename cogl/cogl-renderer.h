@@ -150,6 +150,7 @@ cg_renderer_t *cg_renderer_new(void);
  * @CG_WINSYS_ID_EGL_ANDROID: Use EGL with the Android platform
  * @CG_WINSYS_ID_WGL: Use the Microsoft Windows WGL binding API
  * @CG_WINSYS_ID_SDL: Use the SDL window system
+ * @CG_WINSYS_ID_WEBGL: Use the Emscripten WebGL API
  *
  * Identifies specific window system backends that Cogl supports.
  *
@@ -166,7 +167,8 @@ typedef enum {
     CG_WINSYS_ID_EGL_KMS,
     CG_WINSYS_ID_EGL_ANDROID,
     CG_WINSYS_ID_WGL,
-    CG_WINSYS_ID_SDL
+    CG_WINSYS_ID_SDL,
+    CG_WINSYS_ID_WEBGL
 } cg_winsys_id_t;
 
 /**

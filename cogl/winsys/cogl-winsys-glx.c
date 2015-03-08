@@ -714,7 +714,7 @@ _cg_winsys_renderer_connect(cg_renderer_t *renderer,
     }
 
     glx_renderer->libgl_module =
-        c_module_open(CG_GL_LIBNAME, C_MODULE_BIND_LAZY);
+        c_module_open(CG_GL_LIBNAME);
 
     if (glx_renderer->libgl_module == NULL) {
         _cg_set_error(error,

@@ -29,9 +29,7 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include <stdlib.h>
 #include <string.h>
@@ -50,6 +48,9 @@
 #include "cogl-config-private.h"
 #include "cogl-error-private.h"
 
+#ifdef CG_HAS_WEBGL_SUPPORT
+#include "cogl-winsys-webgl-private.h"
+#endif
 #ifdef CG_HAS_EGL_PLATFORM_XLIB_SUPPORT
 #include "cogl-winsys-egl-x11-private.h"
 #endif
@@ -148,6 +149,9 @@ static cg_driver_description_t _cg_drivers[] = {
 };
 
 static cg_winsys_vtable_getter_t _cg_winsys_vtable_getters[] = {
+#ifdef CG_HAS_WEBGL_SUPPORT
+    _cg_winsys_webgl_get_vtable,
+#endif
 #ifdef CG_HAS_GLX_SUPPORT
     _cg_winsys_glx_get_vtable,
 #endif
@@ -520,7 +524,7 @@ _cg_renderer_choose_driver(cg_renderer_t *renderer,
 #ifndef HAVE_DIRECTLY_LINKED_GL_LIBRARY
 
     if (CG_FLAGS_GET(renderer->private_features, CG_PRIVATE_FEATURE_ANY_GL)) {
-        renderer->libgl_module = c_module_open(libgl_name, C_MODULE_BIND_LAZY);
+        renderer->libgl_module = c_module_open(libgl_name);
 
         if (renderer->libgl_module == NULL) {
             _cg_set_error(error,
