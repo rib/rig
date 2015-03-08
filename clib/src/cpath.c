@@ -33,11 +33,11 @@
 #include <clib.h>
 #include <errno.h>
 
-#ifdef C_OS_WIN32
+#ifdef WIN32
 #include <direct.h>
 #endif
 
-#ifdef HAVE_UNISTD_H
+#ifdef __unix__
 #include <unistd.h>
 #endif
 
@@ -96,7 +96,7 @@ is_separator(const char c)
 {
     if (c == C_DIR_SEPARATOR)
         return true;
-#ifdef C_OS_WIN32
+#ifdef WIN32
     if (c == '/')
         return true;
 #endif
@@ -106,13 +106,13 @@ is_separator(const char c)
 static char *
 strrchr_seperator(const char *filename)
 {
-#ifdef C_OS_WIN32
+#ifdef WIN32
     char *p2;
 #endif
     char *p;
 
     p = strrchr(filename, C_DIR_SEPARATOR);
-#ifdef C_OS_WIN32
+#ifdef WIN32
     p2 = strrchr(filename, '/');
     if (p2 > p)
         p = p2;
@@ -335,7 +335,7 @@ TEST(check_normalize_filename)
 static bool
 c_path_is_relative(const char *path)
 {
-#ifdef C_OS_WIN32
+#ifdef WIN32
     if (path[0] == '/' || path[0] == '\\')
         return false;
 
@@ -392,7 +392,7 @@ c_find_program_in_path(const char *program)
     char *x, *l;
     char *curdir = NULL;
     char *save = NULL;
-#ifdef C_OS_WIN32
+#ifdef WIN32
     char *program_exe;
     char *suffix_list[5] = { ".exe", ".cmd", ".bat", ".com", NULL };
     int listx;
@@ -407,7 +407,7 @@ c_find_program_in_path(const char *program)
         x = curdir;
     }
 
-#ifdef C_OS_WIN32
+#ifdef WIN32
     /* see if program already has a suffix */
     listx = 0;
     hasSuffix = false;
@@ -429,7 +429,7 @@ c_find_program_in_path(const char *program)
         }
         c_free(probe_path);
 
-#ifdef C_OS_WIN32
+#ifdef WIN32
         /* check for program with a suffix attached */
         if (!hasSuffix) {
             listx = 0;

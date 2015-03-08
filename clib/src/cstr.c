@@ -35,6 +35,10 @@
 
 #include <clib.h>
 
+#ifdef C_HAVE_STRLCPY
+#include <bsd/string.h>
+#endif
+
 /* This is not a macro, because I dont want to put _GNC_SOURCE in the glib.h
  * header */
 char *
@@ -564,7 +568,7 @@ c_filename_to_uri(const char *filename, const char *hostname, c_error_t **error)
     size_t n;
     char *ret, *rp;
     const char *p;
-#ifdef C_OS_WIN32
+#ifdef WIN32
     const char *uriPrefix = "file:///";
 #else
     const char *uriPrefix = "file://";
@@ -587,7 +591,7 @@ c_filename_to_uri(const char *filename, const char *hostname, c_error_t **error)
 
     n = strlen(uriPrefix) + 1;
     for (p = filename; *p; p++) {
-#ifdef C_OS_WIN32
+#ifdef WIN32
         if (*p == '\\') {
             n++;
             continue;
@@ -601,7 +605,7 @@ c_filename_to_uri(const char *filename, const char *hostname, c_error_t **error)
     ret = c_malloc(n);
     strcpy(ret, uriPrefix);
     for (p = filename, rp = ret + strlen(ret); *p; p++) {
-#ifdef C_OS_WIN32
+#ifdef WIN32
         if (*p == '\\') {
             *rp++ = '/';
             continue;
@@ -668,14 +672,14 @@ c_filename_from_uri(const char *uri, char **hostname, c_error_t **error)
         }
         flen++;
     }
-#ifndef C_OS_WIN32
+#ifndef WIN32
     flen++;
 #endif
 
     result = c_malloc(flen + 1);
     result[flen] = 0;
 
-#ifndef C_OS_WIN32
+#ifndef WIN32
     *result = '/';
     r = result + 1;
 #else
@@ -808,9 +812,6 @@ c_strdelimit(char *string, const char *delimiters, char new_delimiter)
 size_t
 c_strlcpy(char *dest, const char *src, size_t dest_size)
 {
-#ifdef HAVE_STRLCPY
-    return strlcpy(dest, src, dest_size);
-#else
     char *d;
     const char *s;
     char c;
@@ -838,7 +839,6 @@ c_strlcpy(char *dest, const char *src, size_t dest_size)
     while (*s++)
         ; /* instead of a plain strlen, we use 's' */
     return s - src - 1;
-#endif
 }
 
 char *
