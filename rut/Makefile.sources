@@ -167,3 +167,7 @@ runtime_headers = \
     rut-property-bare.h \
     rut-property-types.h
 
+rut_emscripten_sources = \
+    $(rut_common_sources) \
+    rut-emscripten-shell.h \
+    rut-emscripten-shell.c

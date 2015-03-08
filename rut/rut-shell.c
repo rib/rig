@@ -58,6 +58,9 @@
 #ifdef USE_SDL
 #include <cogl/cogl-sdl.h>
 #endif
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
 
 #include "rut-transform-private.h"
 #include "rut-shell.h"
@@ -82,6 +85,9 @@
 #endif
 #ifdef USE_X11
 #include "rut-x11-shell.h"
+#endif
+#ifdef __EMSCRIPTEN__
+#include "rut-emscripten-shell.h"
 #endif
 
 #ifdef USE_GSTREAMER
@@ -208,7 +214,8 @@ rut_key_event_get_keysym(rut_input_event_t *event)
         case RUT_STREAM_EVENT_KEY_DOWN:
             return stream_event->key.keysym;
         default:
-            c_return_val_if_fail(0, RUT_KEY_Escape);
+            c_warn_if_reached();
+            return 0;
         }
     }
 
@@ -228,7 +235,8 @@ rut_key_event_get_action(rut_input_event_t *event)
         case RUT_STREAM_EVENT_KEY_UP:
             return RUT_KEY_EVENT_ACTION_UP;
         default:
-            c_return_val_if_fail(0, RUT_KEY_EVENT_ACTION_DOWN);
+            c_warn_if_reached();
+            return 0;
         }
     }
 
@@ -251,7 +259,7 @@ rut_motion_event_get_action(rut_input_event_t *event)
             return RUT_MOTION_EVENT_ACTION_MOVE;
         default:
             c_warn_if_reached();
-            return RUT_KEY_EVENT_ACTION_UP;
+            return 0;
         }
     }
 
@@ -272,7 +280,7 @@ rut_motion_event_get_button(rut_input_event_t *event)
             return stream_event->pointer_button.button;
         default:
             c_warn_if_reached();
-            return RUT_BUTTON_STATE_1;
+            return 0;
         }
     }
 
@@ -764,7 +772,7 @@ _rut_shell_free(void *object)
 
     while (!c_list_empty(&shell->grabs)) {
         rut_shell_grab_t *first_grab =
-            rut_container_of(shell->grabs.next, first_grab, list_node);
+            c_container_of(shell->grabs.next, rut_shell_grab_t, list_node);
 
         _rut_shell_remove_grab_link(shell, first_grab);
     }
@@ -1008,6 +1016,8 @@ _rut_shell_init(rut_shell_t *shell)
         rut_x11_shell_init(shell);
 #elif defined(__ANDROID__)
         rut_android_shell_init(shell);
+#elif defined(__EMSCRIPTEN__)
+        rut_emscripten_shell_init(shell);
 #endif
 
         shell->nine_slice_indices =
@@ -1224,10 +1234,12 @@ flush_pre_paint_callbacks(rut_shell_t *shell)
 void
 rut_shell_start_redraw(rut_shell_t *shell)
 {
+#ifdef USE_UV
     c_return_if_fail(shell->paint_idle);
 
     rut_poll_shell_remove_idle(shell, shell->paint_idle);
     shell->paint_idle = NULL;
+#endif
 }
 
 void
@@ -1425,9 +1437,14 @@ rut_shell_check_timelines(rut_shell_t *shell)
     return false;
 }
 
-static void
-_rut_shell_paint(rut_shell_t *shell)
+void
+rut_shell_paint(rut_shell_t *shell)
 {
+    rut_shell_onscreen_t *onscreen;
+
+    c_list_for_each(onscreen, &shell->onscreens, link)
+        onscreen->is_dirty = false;
+
     shell->paint_cb(shell, shell->user_data);
 }
 
@@ -1691,26 +1708,27 @@ rut_shell_grab_pointer(rut_shell_t *shell,
 #endif
 }
 
-static void
-paint_idle_cb(void *user_data)
-{
-    rut_shell_t *shell = user_data;
-    rut_shell_onscreen_t *onscreen;
-
-    c_list_for_each(onscreen, &shell->onscreens, link)
-        onscreen->is_dirty = false;
-
-    _rut_shell_paint(user_data);
-}
-
 void
 rut_shell_queue_redraw_real(rut_shell_t *shell)
 {
+#ifndef __EMSCRIPTEN__
     if (!shell->paint_idle) {
         shell->paint_idle =
-            rut_poll_shell_add_idle(shell, paint_idle_cb, shell,
+            rut_poll_shell_add_idle(shell, rut_shell_paint, shell,
                                     NULL); /* destroy notify */
     }
+#else
+    /* If we haven't called emscripten_set_main_loop_arg() yet then
+     * emscripten will get upset if we try and resume a mainloop
+     * that doesn't exist yet... */
+    if (!shell->running)
+        return;
+
+    if (!shell->paint_loop_running) {
+        emscripten_resume_main_loop();
+        shell->paint_loop_running = true;
+    }
+#endif
 }
 
 void
@@ -2212,6 +2230,11 @@ get_system_data_dirs(void)
     static const char *dirs[] = {
         "/data",
         NULL
+    };
+    return dirs;
+#elif defined(__EMSCRIPTEN__)
+    static const char *dirs[] = {
+        NULL,
     };
     return dirs;
 #else

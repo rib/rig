@@ -3,7 +3,7 @@
  *
  * Rig Utilities
  *
- * Copyright (C) 2014  Intel Corporation
+ * Copyright (C) 2014 Intel Corporation.
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -24,13 +24,35 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
 
-#ifndef _RUT_FMEMOPEN_H_
-#define _RUT_FMEMOPEN_H_
+#ifndef _RUT_X11_SHELL_H_
+#define _RUT_X11_SHELL_H_
 
-#include <stdio.h>
+#include <emscripten.h>
+#include <html5.h>
 
-FILE *fmemopen(void *buf, size_t size, const char *mode);
+#include "rut-shell.h"
 
-#endif /* _RUT_FMEMOPEN_H_ */
+typedef struct _rut_emscripten_event_t {
+    int em_type;
+
+    union {
+        EmscriptenKeyboardEvent key;
+        EmscriptenMouseEvent mouse;
+    };
+
+    const char *text;
+} rut_emscripten_event_t;
+
+#if 0
+typedef void (*rut_x11_event_handler_t)(rut_shell_t *shell,
+                                        XEvent *xevent,
+                                        void *user_data);
+#endif
+
+bool
+rut_emscripten_shell_init(rut_shell_t *shell);
+
+#endif /* _RUT_X11_SHELL_H_ */

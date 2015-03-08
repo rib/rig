@@ -20,6 +20,12 @@ librut_la_SOURCES += \
 	rut-x11-shell.c
 endif
 
+if EMSCRIPTEN
+librut_la_SOURCES += \
+	rut-emscripten-shell.h \
+	rut-emscripten-shell.c
+endif
+
 if EDITOR_ENABLED
 librut_la_SOURCES += \
 	$(rut_editor_sources)
@@ -31,20 +37,19 @@ librut_la_SOURCES += \
     gstmemsrc.c
 endif
 
-if NEED_FMEMOPEN
-librut_la_SOURCES += \
-    fmemopen.h \
-    fmemopen.c
-endif
-
 librut_la_LIBADD = \
     $(RIG_DEP_LIBS) \
     $(RIG_EXTRA_LDFLAGS)
 librut_la_LDFLAGS = \
     -no-undefined \
+    -export-dynamic
+
+if !EMSCRIPTEN
+librut_la_LDFLAGS += \
     -version-info @RIG_LT_CURRENT@:@RIG_LT_REVISION@:@RIG_LT_AGE@ \
-    -export-dynamic \
     -export-symbols-regex "(^rut.*)|(^_rut.*)"
+endif
+
 librut_la_CFLAGS = \
     $(RIG_DEP_CFLAGS) \
     $(RIG_EXTRA_CFLAGS)
@@ -59,12 +64,32 @@ librut_la_CPPFLAGS = \
 # rut_headersdir =  $(includedir)/rut
 # rut_headers_DATA = $(source_h)
 
+if EMSCRIPTEN
+all-local: librut.bc
+librut.bc: $(librut_la_OBJECTS)
+	emcc -o $(builddir)/librut.bc $(patsubst %.lo,.libs/%.o,$(librut_la_OBJECTS)) $(librut_la_CFLAGS) $(librut_la_CPPFLAGS) $(CFLAGS) $(RIG_EXTRA_EMCC_BCFLAGS)
+endif
+
 rut_android_moduledir = $(datadir)/android_modules/rut/
 rut_android_module_DATA = \
 	$(rut_common_sources) \
 	rut-android-shell.h \
 	rut-android-shell.c \
 	$(runtime_headers) \
-	fmemopen.h \
-	fmemopen.c \
 	Android.mk
+
+dist_source_dir = $(datadir)/src/rut
+dist_source = \
+	$(rut_emscripten_sources) \
+	$(runtime_headers) \
+	Makefile.emscripten \
+	Makefile.sources
+
+# Use a custom install-data-local to install the source so that
+# we can preserve the directory structure...
+install-data-local:
+	for f in $(dist_source); do \
+	d=`dirname $$f`; \
+	$(mkinstalldirs) $(DESTDIR)$(dist_source_dir)/$$d; \
+	$(INSTALL_DATA) $(srcdir)/$$f $(DESTDIR)$(dist_source_dir)/$$f; \
+	done
