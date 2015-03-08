@@ -271,7 +271,7 @@ shm_buffer_get_cg_pixel_format(struct wl_shm_buffer *shm_buffer,
     cg_texture_components_t components = CG_TEXTURE_COMPONENTS_RGBA;
 
     switch (wl_shm_buffer_get_format(shm_buffer)) {
-#if G_BYTE_ORDER == G_BIG_ENDIAN
+#if C_BYTE_ORDER == C_BIG_ENDIAN
     case WL_SHM_FORMAT_ARGB8888:
         format = CG_PIXEL_FORMAT_ARGB_8888_PRE;
         break;
@@ -279,7 +279,7 @@ shm_buffer_get_cg_pixel_format(struct wl_shm_buffer *shm_buffer,
         format = CG_PIXEL_FORMAT_ARGB_8888;
         components = CG_TEXTURE_COMPONENTS_RGB;
         break;
-#elif G_BYTE_ORDER == G_LITTLE_ENDIAN
+#elif C_BYTE_ORDER == C_LITTLE_ENDIAN
     case WL_SHM_FORMAT_ARGB8888:
         format = CG_PIXEL_FORMAT_BGRA_8888_PRE;
         break;

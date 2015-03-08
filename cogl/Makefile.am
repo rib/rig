@@ -78,6 +78,11 @@ cogl_public_h += $(cogl_uv_sources_h)
 cogl_sources_c += $(cogl_uv_sources_c)
 endif
 
+if COGL_SUPPORT_WEBGL
+cogl_public_h += $(cogl_webgl_sources_h)
+cogl_sources_c += $(cogl_webgl_sources_c)
+endif
+
 if COGL_SUPPORT_XLIB
 cogl_public_h += $(cogl_xlib_sources_h)
 cogl_sources_c += $(cogl_xlib_sources_c)
@@ -124,19 +129,47 @@ endif
 
 EXTRA_DIST += stb_image.c
 
-if UNIT_TESTS
-lib_LTLIBRARIES += libcogl2.la
+if EMSCRIPTEN
+lib_LTLIBRARIES += libcg.la
+all-local: libcg.bc
 else
-noinst_LTLIBRARIES += libcogl2.la
+if UNIT_TESTS
+lib_LTLIBRARIES += libcg.la
+else
+noinst_LTLIBRARIES += libcg.la
+endif
 endif
 
-libcogl2_la_LIBADD = $(LIBM) $(COGL_DEP_LIBS) $(COGL_EXTRA_LDFLAGS)
-libcogl2_la_LIBADD += $(top_builddir)/clib/src/libclib.la
+libcg_la_LIBADD = $(LIBM) $(COGL_DEP_LIBS) $(COGL_EXTRA_LDFLAGS)
+libcg_la_LIBADD += $(top_builddir)/clib/src/libclib.la
 if UNIT_TESTS
-libcogl2_la_LIBADD += $(top_builddir)/test-fixtures/libtest-fixtures.la
+libcg_la_LIBADD += $(top_builddir)/test-fixtures/libtest-fixtures.la
 endif
-libcogl2_la_LDFLAGS = -static
-libcogl2_la_SOURCES = $(cogl_sources_c)
+#libcg_la_LDFLAGS = -static
+libcg_la_SOURCES = $(cogl_sources_c)
+
+if EMSCRIPTEN
+libcg.bc: $(libcg_la_OBJECTS)
+	emcc -o $(builddir)/libcg.bc $(patsubst %.lo,.libs/%.o,$(libcg_la_OBJECTS)) $(AM_CPPFLAGS) $(CFLAGS) $(RIG_EXTRA_EMCC_BCFLAGS)
+endif
 
 android_moduledir = $(datadir)/android_modules/cogl
 nobase_android_module_DATA = $(cogl_android_sources) Android.mk
+
+dist_source_dir = $(datadir)/src/cogl
+dist_source = \
+	$(cogl_emscripten_sources) \
+	cogl-emscripten-lib.h \
+	cogl-emscripten-lib.js \
+	stb_image.c \
+	Makefile.emscripten \
+	Makefile.sources
+
+# Use a custom install-data-local to install the source so that
+# we can preserve the directory structure...
+install-data-local:
+	for f in $(dist_source); do \
+	d=`dirname $$f`; \
+	$(mkinstalldirs) $(DESTDIR)$(dist_source_dir)/$$d; \
+	$(INSTALL_DATA) $(srcdir)/$$f $(DESTDIR)$(dist_source_dir)/$$f; \
+	done
