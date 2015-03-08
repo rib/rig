@@ -3,7 +3,7 @@
  *
  * A Low-Level GPU Graphics and Utilities API
  *
- * Copyright (C) 2012 Intel Corporation.
+ * Copyright (C) 2012-2015 Intel Corporation.
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -25,13 +25,12 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- *
- * Authors:
- *  Neil Roberts <neil@linux.intel.com>
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
+
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
 #endif
 
 #include "cogl-poll.h"
@@ -257,12 +256,29 @@ _cg_poll_renderer_remove_source(cg_renderer_t *renderer,
     }
 }
 
+#ifdef __EMSCRIPTEN__
+static void
+browser_idle_cb(void *user_data)
+{
+    cg_poll_renderer_dispatch(user_data, NULL /* fds */, 0 /* n fds */);
+}
+#endif
+
 cg_closure_t *
 _cg_poll_renderer_add_idle(cg_renderer_t *renderer,
                            cg_idle_callback_t idle_cb,
                            void *user_data,
                            cg_user_data_destroy_callback_t destroy_cb)
 {
-    return _cg_closure_list_add(
+    cg_closure_t *closure = _cg_closure_list_add(
         &renderer->idle_closures, idle_cb, user_data, destroy_cb);
+
+#ifdef __EMSCRIPTEN__
+    if (!renderer->browser_idle_queued) {
+        emscripten_async_call(browser_idle_cb, renderer, 0 /* timeout */);
+        renderer->browser_idle_queued = true;
+    }
+#endif
+
+    return closure;
 }

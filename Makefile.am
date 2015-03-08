@@ -1,3 +1,7 @@
+if EMSCRIPTEN
+SUBDIRS = clib cogl toys
+
+else
 
 SUBDIRS = clib test-fixtures cogl research/particle-engine
 
@@ -26,6 +30,8 @@ SUBDIRS += rut data rig tests toys po android
 if USE_GLIB
 SUBDIRS += tools
 endif
+
+endif #EMSCRIPTEN
 
 ACLOCAL_AMFLAGS = -I build/autotools ${ACLOCAL_FLAGS}
 

@@ -77,6 +77,11 @@ cogl_public_h += $(cogl_uv_sources_h)
 cogl_sources_c += $(cogl_uv_sources_c)
 endif
 
+if COGL_SUPPORT_WEBGL
+cogl_public_h += $(cogl_webgl_sources_h)
+cogl_sources_c += $(cogl_webgl_sources_c)
+endif
+
 if COGL_SUPPORT_XLIB
 cogl_public_h += $(cogl_xlib_sources_h)
 cogl_sources_c += $(cogl_xlib_sources_c)
@@ -130,14 +135,18 @@ endif
 
 EXTRA_DIST += stb_image.c
 
+if EMSCRIPTEN
+lib_LTLIBRARIES += libcogl2.la
+else
 noinst_LTLIBRARIES += libcogl2.la
+endif
 
 libcogl2_la_LIBADD = $(LIBM) $(COGL_DEP_LIBS) $(COGL_EXTRA_LDFLAGS)
 libcogl2_la_LIBADD += $(top_builddir)/clib/src/libclib.la
 if UNIT_TESTS
 libcogl2_la_LIBADD += $(top_builddir)/test-fixtures/libtest-fixtures.la
 endif
-libcogl2_la_LDFLAGS = -static
+#libcogl2_la_LDFLAGS = -static
 libcogl2_la_SOURCES = $(cogl_sources_c)
 
 android_moduledir = $(datadir)/android_modules/cogl

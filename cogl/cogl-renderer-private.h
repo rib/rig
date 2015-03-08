@@ -62,6 +62,10 @@ struct _cg_renderer_t {
     int poll_fds_age;
     c_llist_t *poll_sources;
 
+#ifdef __EMSCRIPTEN__
+    bool browser_idle_queued;
+#endif
+
     c_list_t idle_closures;
 
     c_llist_t *outputs;

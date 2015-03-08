@@ -180,7 +180,7 @@ rig_code_update_dso(rig_engine_t *engine, uint8_t *data, int len)
         return;
     }
 
-    module = c_module_open(tmp_filename, C_MODULE_BIND_LAZY);
+    module = c_module_open(tmp_filename);
     if (!module) {
         c_module_close(module);
         c_warning("Failed to open shared object");

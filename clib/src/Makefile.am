@@ -1,26 +1,13 @@
 EXTRA_DIST =
 
-noinst_LTLIBRARIES = libclib.la libclib-static.la
-
-win_files  = \
-	clib-config.hw \
-	cdate-win32.c cdir-win32.c cfile-win32.c cmisc-win32.c \
-	cmodule-win32.c ctimer-win32.c
-
-unix_files = \
-	cdate-unix.c  cdir-unix.c  cfile-unix.c  cmisc-unix.c	\
-	cmodule-unix.c ctimer-unix.c cxdg-unix.c
-
-# some unices and windows do not have an implementation of vasprintf
-if NEED_VASPRINTF
-vasprintf_files = vasprintf.c
-endif
-
-if OS_WIN32
-os_files = $(win_files)
+if EMSCRIPTEN
+lib_LTLIBRARIES = libclib.la
 else
-os_files = $(unix_files)
+noinst_LTLIBRARIES = libclib.la
 endif
+
+
+libclib_la_LIBADD = $(CLIB_DEP_LIBS)
 
 # SIMD-oriented Fast Mersenne Twist Random
 # Number Generator...
@@ -52,6 +39,7 @@ clib_common_source = \
 	ciconv.c	\
 	cmem.c       	\
 	cmodule.h	\
+	cmodule.c	\
 	coutput.c    	\
 	cqsort.c	\
 	cstr.c       	\
@@ -73,15 +61,37 @@ clib_common_source = \
 	crbtree.h	\
 	crbtree.c	\
 	ascii_snprintf.c \
-	crand.c		\
-	ctls.c		\
-	cmutex.c
+	crand.c
 
 libclib_la_SOURCES = \
 	$(clib_common_source) \
-	$(sfmt_source) \
-	$(os_files) \
-	$(vasprintf_files)
+	$(sfmt_source)
+
+unix_files = cdate-unix.c  cdir-unix.c  cfile-unix.c  cmisc-unix.c \
+	     ctimer-unix.c cxdg-unix.c
+threads_files = ctls.c cmutex.c
+
+if OS_UNIX
+libclib_la_SOURCES += $(unix_files) $(threads_files)
+endif
+
+if OS_WIN32
+libclib_la_SOURCES += \
+	clib-config.hw \
+	cdate-win32.c cdir-win32.c cfile-win32.c cmisc-win32.c \
+	ctimer-win32.c
+libclib_la_SOURCES += $(threads_files)
+libclib_la_LIBADD += -lm $(LTLIBICONV) -lpsapi
+endif
+
+if OS_WEB
+libclib_la_SOURCES += cmisc-emscripten.c
+endif
+
+# some unices and windows do not have an implementation of vasprintf
+if NEED_VASPRINTF
+libclib_la_SOURCES += = vasprintf.c
+endif
 
 AM_CPPFLAGS = \
 	-I$(top_builddir) \
@@ -89,32 +99,24 @@ AM_CPPFLAGS = \
 	-I$(srcdir) \
 	-I$(srcdir)/sfmt \
 	-Wall \
-	$(RIG_DEP_CFLAGS) \
+	$(CLIB_DEP_CFLAGS) \
 	$(RIG_EXTRA_CFLAGS) \
 	-DSFMT_MEXP=19937 \
 	$(NULL)
 
-#libclib_la_CFLAGS = -g -Wall -D_FORTIFY_SOURCE=2
-#libclib_la_CFLAGS = -g -Wall -D_FORTIFY_SOURCE=2
-libclib_static_la_SOURCES=$(libclib_la_SOURCES)
-libclib_static_la_CFLAGS = $(libclib_la_CFLAGS)
+#libclib_la_LIBADD += $(LTLIBICONV)
+#libclib_la_LDFLAGS = -static
 
-if OS_WIN32
-libclib_la_LIBADD = -lm $(LTLIBICONV) -lpsapi
-endif
+#MAINTAINERCLEANFILES = Makefile.in
 
-libclib_static_la_LIBADD = $(libclib_la_LIBADD) $(LTLIBICONV)
-libclib_static_la_LDFLAGS = -static
-
-MAINTAINERCLEANFILES = Makefile.in
-
-EXTRA_DIST += clib-config.h.in $(win_files) $(unix_files)
+EXTRA_DIST += clib-config.h.in
 
 android_moduledir = $(datadir)/android_modules/clib
 android_module_DATA = \
 	$(clib_common_source) \
 	$(sfmt_source) \
 	$(unix_files) \
+	$(thread_files) \
 	vasprintf.c \
 	Android.mk \
 	android/clib-config.h

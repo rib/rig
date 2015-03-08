@@ -60,7 +60,7 @@ _cg_winsys_renderer_get_proc_address(
     /* this should find the right function if the program is linked against a
      * library providing it */
     if (C_UNLIKELY(module == NULL))
-        module = c_module_open(NULL, 0);
+        module = c_module_open(NULL);
 
     if (module) {
         void *symbol;

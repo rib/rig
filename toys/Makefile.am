@@ -14,6 +14,16 @@ AM_CFLAGS = \
 
 AM_CFLAGS += -DCG_EXAMPLES_DATA=\""$(abs_top_srcdir)/toys/"\"
 
+
+if EMSCRIPTEN
+common_ldadd = \
+	$(RIG_EXTRA_LDFLAGS) \
+	$(top_builddir)/cogl/libcogl2.la \
+	$(RIG_DEP_LIBS) \
+	$(COGL_DEP_LIBS) \
+	$(top_builddir)/clib/src/libclib.la \
+	$(LIBM)
+else
 common_ldadd = \
 	$(RIG_EXTRA_LDFLAGS) \
 	$(top_builddir)/rut/librut.la \
@@ -27,13 +37,16 @@ common_ldadd = \
 	$(top_builddir)/clib/src/libclib.la \
 	-lstdc++ \
 	$(LIBM)
+endif
 
 programs = cogl-info
 
 cogl_info_SOURCES = cogl-info.c
 cogl_info_LDADD = $(common_ldadd)
 
+if USE_UV
 programs += cogl-hello cogl-maze cogl-msaa cogl-gles2-context cogl-point-sprites vr-test
+endif
 examples_datadir = $(pkgdatadir)/examples-data
 examples_data_DATA =
 
@@ -80,25 +93,11 @@ endif
 cogl_gles2_context_SOURCES = cogl-gles2-context.c
 cogl_gles2_context_LDADD = $(common_ldadd)
 
-# XXX although emscripten "supports sdl" we can't build cogl-sdl-hello
-# un-modified for emscripten since emscripten doesn't support
-# SDL_WaitEvent() and we need to use some special emscripten apis
-# to create a mainloop....
-if EMSCRIPTEN
-
-programs += cogl-emscripten-hello
-cogl_emscripten_hello_SOURCES = cogl-emscripten-hello.c
-cogl_emscripten_hello_LDADD = $(common_ldadd)
-
-else # EMSCRIPTEN
-
 if COGL_SUPPORT_SDL
 programs += cogl-sdl-hello
 cogl_sdl_hello_SOURCES = cogl-sdl-hello.c
 cogl_sdl_hello_LDADD = $(common_ldadd)
 endif
-
-endif # EMSCRIPTEN
 
 if COGL_SUPPORT_SDL2
 programs += cogl-sdl2-hello
@@ -110,10 +109,16 @@ vr_test_SOURCES = vr-test.c
 vr_test_LDADD = $(common_ldadd)
 
 if EMSCRIPTEN
-%.html: %.o $(top_builddir)/cogl/.libs/libcogl2.so $(top_builddir)/clib/src/.libs/libclib.a
-	$(CC) $(AM_CFLAGS) $(CFLAGS) --js-library $(top_srcdir)/toys/emscripten-example-js-library.js -o $@ $^
+emscripten_programs = cogl-emscripten-hello
+emscripten_libs = --js-library $(top_srcdir)/cogl/cogl-emscripten-lib.js
+programs += $(emscripten_programs)
+cogl_emscripten_hello_SOURCES = cogl-emscripten-hello.c
+cogl_emscripten_hello_LDADD = $(common_ldadd)
 
-all-local: $(addsuffix .html, $(programs))
+%.html: %.o $(top_builddir)/cogl/.libs/libcogl2.so $(top_builddir)/clib/src/.libs/libclib.so
+	$(CC) $(AM_CFLAGS) $(CFLAGS) $(emscripten_libs) --js-library $(top_srcdir)/toys/emscripten-example-js-library.js -o $@ $^
+
+all-local: $(addsuffix .html, $(emscripten_programs))
 endif
 
 noinst_PROGRAMS = $(programs)

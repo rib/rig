@@ -366,9 +366,11 @@ _cg_winsys_device_init(cg_device_t *dev, cg_error_t **error)
     if (!_cg_device_update_features(dev, error))
         return false;
 
+    CG_FLAGS_SET(dev->features, CG_FEATURE_ID_ONSCREEN_MULTIPLE, true);
+
     if (SDL_GL_GetSwapInterval() != -1)
         CG_FLAGS_SET(dev->winsys_features,
-                     CG_WINSYS_FEATURE_SWAP_REGION_THROTTLE,
+                     CG_WINSYS_FEATURE_SWAP_THROTTLE,
                      true);
 
     /* We'll manually handle queueing dirty events in response to
@@ -416,7 +418,7 @@ _cg_winsys_onscreen_bind(cg_onscreen_t *onscreen)
      * framebuffer is allocated. See the comments in the GLX winsys for
      * more info. */
     if (CG_FLAGS_GET(dev->winsys_features,
-                     CG_WINSYS_FEATURE_SWAP_REGION_THROTTLE)) {
+                     CG_WINSYS_FEATURE_SWAP_THROTTLE)) {
         cg_framebuffer_t *fb = CG_FRAMEBUFFER(onscreen);
 
         SDL_GL_SetSwapInterval(fb->config.swap_throttled ? 1 : 0);

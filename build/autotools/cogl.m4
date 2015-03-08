@@ -67,7 +67,7 @@ AC_DEFUN([AM_COGL],
           enable_cairo=no
           enable_cogl_pango=no
           enable_gdk_pixbuf=no
-         ]
+        ]
   )
 
   dnl     ============================================================
@@ -116,9 +116,12 @@ AC_DEFUN([AM_COGL],
   dnl Check for dependency packages.
   dnl ================================================================
 
-  AM_PATH_GLIB_2_0([2.26.0],
-                   [have_glib=yes], [have_glib=no],
-                   [gobject gthread gmodule-no-export])
+  AS_IF([test "x$emscripten_compiler" != xyes],
+        [
+          AM_PATH_GLIB_2_0([2.26.0],
+                           [have_glib=yes], [have_glib=no],
+                           [gobject gthread gmodule-no-export])
+        ])
 
   AM_CONDITIONAL([COGL_USE_GLIB], [test "x$enable_glib" = "xyes"])
 
@@ -253,12 +256,6 @@ AC_DEFUN([AM_COGL],
   enabled_drivers=""
 
   HAVE_GLES2=0
-  AC_ARG_ENABLE(
-    [gles2],
-    [AC_HELP_STRING([--enable-gles2=@<:@no/yes@:>@], [Enable support for OpenGL-ES 2.0 @<:@default=no@:>@])],
-    [],
-    enable_gles2=no
-  )
   AS_IF([test "x$enable_gles2" = "xyes"],
         [
           AS_IF([test "x$platform_win32" = "xyes"],
@@ -270,7 +267,7 @@ AC_DEFUN([AM_COGL],
           AC_DEFINE([HAVE_CG_GLES2], 1, [Have GLES 2.0 for rendering])
           HAVE_GLES2=1
 
-          AS_IF([test "x$enable_emscripten" = "xyes"],
+          AS_IF([test "x$emscripten_compiler" = "xyes"],
                 [
                   GL_LIBRARY_DIRECTLY_LINKED=yes
                   COGL_GLES2_LIBNAME=""
@@ -300,12 +297,6 @@ AC_DEFUN([AM_COGL],
         ])
 
   HAVE_GL=0
-  AC_ARG_ENABLE(
-    [gl],
-    [AC_HELP_STRING([--enable-gl=@<:@no/yes@:>@], [Enable support for OpenGL @<:@default=yes@:>@])],
-    [],
-    [enable_gl=yes]
-  )
   AS_IF([test "x$enable_gl" = "xyes"],
         [
           enabled_drivers="$enabled_drivers gl"
@@ -353,9 +344,6 @@ AC_DEFUN([AM_COGL],
           HAVE_GL=1
         ])
 
-  AM_CONDITIONAL([COGL_DRIVER_GL_SUPPORTED], [test "x$enable_gl" = "xyes"])
-  AM_CONDITIONAL([COGL_DRIVER_GLES_SUPPORTED], [test "x$enable_gles2" = "xyes"])
-
   dnl Allow the GL library names and default driver to be overridden with configure options
   AC_ARG_WITH([gl-libname],
               [AS_HELP_STRING([--with-gl-libname],
@@ -375,16 +363,29 @@ AC_DEFUN([AM_COGL],
     [ test "x$COGL_DEFAULT_DRIVER" != "x" ])
 
 
+  AS_IF([test "x$emscripten_compiler" = "xyes"],
+        [
+          enabled_drivers="$enabled_drivers webgl"
+          enable_webgl=yes
+          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS CG_HAS_WEBGL_SUPPORT"
+
+          GL_LIBRARY_DIRECTLY_LINKED=yes
+          COGL_GLES2_LIBNAME=""
+          AC_DEFINE([HAVE_CG_WEBGL], 1, [Have WebGL for rendering])
+
+          cogl_gl_headers="GLES2/gl2.h GLES2/gl2ext.h"
+          AC_DEFINE([HAVE_CG_GLES2], 1, [Have GLES 2.0 for rendering])
+          HAVE_GLES2=1
+        ])
+  AM_CONDITIONAL(COGL_SUPPORT_WEBGL, [test "x$enable_webgl" = "xyes" ])
+
+  AM_CONDITIONAL([COGL_DRIVER_GL_SUPPORTED], [test "x$enable_gl" = "xyes"])
+  AM_CONDITIONAL([COGL_DRIVER_GLES_SUPPORTED], [test "x$enable_gles2" = "xyes" -o "x$enable_webgl" = "xyes"])
+
   dnl         ========================================================
   dnl         Check window system integration libraries...
   dnl         ========================================================
 
-  AC_ARG_ENABLE(
-    [glx],
-    [AC_HELP_STRING([--enable-glx=@<:@no/yes@:>@], [Enable support GLX @<:@default=auto@:>@])],
-    [],
-    [AS_IF([test "x$ALLOW_GLX" = "xyes"], [enable_glx=yes], [enable_glx=no])]
-  )
   AS_IF([test "x$enable_glx" = "xyes"],
         [
           AS_IF([test "x$ALLOW_GLX" != "xyes"],
@@ -398,12 +399,6 @@ AC_DEFUN([AM_COGL],
         ])
   AM_CONDITIONAL(COGL_SUPPORT_GLX, [test "x$SUPPORT_GLX" = "xyes"])
 
-  AC_ARG_ENABLE(
-    [wgl],
-    [AC_HELP_STRING([--enable-wgl=@<:@no/yes@:>@], [Enable support for WGL @<:@default=auto@:>@])],
-    [],
-    [AS_IF([test "x$ALLOW_WGL" = "xyes"], [enable_wgl=yes], [enable_wgl=no])]
-  )
   AS_IF([test "x$enable_wgl" = "xyes"],
         [
           AS_IF([test "x$ALLOW_WGL" != "xyes"],
@@ -417,14 +412,9 @@ AC_DEFUN([AM_COGL],
         ])
   AM_CONDITIONAL(COGL_SUPPORT_WGL, [test "x$SUPPORT_WGL" = "xyes"])
 
-  AC_ARG_ENABLE(
-    [sdl],
-    [AC_HELP_STRING([--enable-sdl=@<:@no/yes@:>@], [Enable support SDL @<:@default=no@:>@])],
-    [],
-    [enable_sdl=no])
   AS_IF([test "x$enable_sdl" = "xyes"],
         [
-          AS_IF([test "x$enable_emscripten" = "xno"],
+          AS_IF([test "x$emscripten_compiler" = "xno"],
                 [
                   PKG_CHECK_MODULES([SDL],
                                     [sdl],
@@ -445,7 +435,7 @@ AC_DEFUN([AM_COGL],
 
           dnl If we are building with emscripten then that simply implies we are
           dnl using SDL in conjunction with WebGL (GLES2)
-          AS_IF([test "x$enable_emscripten" = "xyes"],
+          AS_IF([test "x$emscripten_compiler" = "xyes"],
                 [
                   SUPPORTED_SDL_GL_APIS="webgl"
                   SUPPORT_SDL_WEBGL=yes
@@ -480,11 +470,6 @@ AC_DEFUN([AM_COGL],
         [SUPPORT_SDL=no])
   AM_CONDITIONAL(COGL_SUPPORT_SDL, [test "x$SUPPORT_SDL" = "xyes"])
 
-  AC_ARG_ENABLE(
-    [sdl2],
-    [AC_HELP_STRING([--enable-sdl2=@<:@no/yes@:>@], [Enable SDL2 support @<:@default=no@:>@])],
-    [],
-    [enable_sdl2=no])
   AS_IF([test "x$enable_sdl2" = "xyes"],
         [
           PKG_CHECK_MODULES([SDL2],
@@ -668,6 +653,7 @@ AC_DEFUN([AM_COGL],
     [AC_HELP_STRING([--enable-xlib-egl-platform=@<:@no/yes@:>@], [Enable support for the Xlib egl platform @<:@default=auto@:>@])],
     [],
     AS_IF([test "x$enable_gles2" = "xyes" && \
+           test "x$emscripten_compiler" != "xyes" && \
            test "x$SUPPORT_SDL_GLES" != "xyes" && \
            test "x$SUPPORT_SDL_WEBGL" != "xyes" && \
            test "x$SUPPORT_SDL2" != "xyes" && \
@@ -806,7 +792,7 @@ AC_DEFUN([AM_COGL],
   dnl
   dnl XXX: ffs isnt available with the emscripten toolchain currently
   dnl but the check passes so we manually skip the check in this case
-  AS_IF([test "x$enable_emscripten" = "xno"],
+  AS_IF([test "x$emscripten_compiler" = "xno"],
         [AC_CHECK_FUNCS([ffs])])
 
   dnl 'memmem' is a GNU extension but we have a simple fallback
@@ -824,7 +810,7 @@ AC_DEFUN([AM_COGL],
   dnl poll.h is in the toolchain headers so we manually skip the check
   dnl in this case
   have_poll_h=no
-  AS_IF([test "x$enable_emscripten" = "xno"],
+  AS_IF([test "x$emscripten_compiler" = "xno"],
         [
          AC_CHECK_HEADER(poll.h,
                          [
@@ -951,7 +937,7 @@ AC_DEFUN([AM_COGL],
   if test "x$SUPPORT_SDL" = "xyes"; then
   echo "        Supported SDL GL APIs: ${SUPPORTED_SDL_GL_APIS}"
   fi
-  echo "        Building for emscripten environment: $enable_emscripten"
+  echo "        Building for emscripten environment: $emscripten_compiler"
   echo "        Image backend: ${COGL_IMAGE_BACKEND}"
   echo "        Cogl Pango: ${enable_cogl_pango}"
   echo "        Cogl Gstreamer: ${enable_cogl_gst}"

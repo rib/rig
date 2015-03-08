@@ -110,6 +110,8 @@ AC_C_CONST
 AC_PROG_OBJC
 AC_PROG_CXX
 
+AM_EMSCRIPTEN
+
 dnl ================================================================
 dnl Libtool stuff.
 dnl ================================================================
@@ -153,9 +155,12 @@ AS_CASE(
     test "$cflags_set" = set || CFLAGS="$CFLAGS -g -O0"
     RIG_EXTRA_CFLAGS="$RIG_EXTRA_CFLAGS -DRIG_ENABLE_DEBUG"
 
-    # We can use libprotobuf for pretty printing protocol buffer streams
-    RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES protobuf"
-    RIG_EXTRA_LDFLAGS="$RIG_EXTRA_LDFLAGS -lstdc++"
+    AS_IF([test "x$emscripten_compiler" != xyes],
+          [
+            # We can use libprotobuf for pretty printing protocol buffer streams
+            RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES protobuf"
+            RIG_EXTRA_LDFLAGS="$RIG_EXTRA_LDFLAGS -lstdc++"
+          ])
   ],
   [no],
   [
@@ -276,7 +281,7 @@ AC_ARG_ENABLE(uninstalled-build,
               AC_HELP_STRING([--enable-uninstalled-build],
 			     [Search for files in build directory as well]),
 	      enable_uninstalled=yes,)
-if test x"$enable_uninstalled" = xyes; then
+if test "x$enable_uninstalled" = xyes; then
 	AC_DEFINE_UNQUOTED(
         SHARE_UNINSTALLED_DIR,"`pwd`/rig/data",[path to source data dir])
 fi
@@ -286,7 +291,8 @@ AC_ARG_ENABLE(editor,
 			     [Disable building the interactive editor]),
               [],
 	      [enable_editor=yes])
-AS_IF([test x"$enable_editor" = xyes],
+AS_IF([test "x$emscripten_compiler" = xyes], [enable_editor=no])
+AS_IF([test "x$enable_editor" = xyes],
       [
 	AC_DEFINE(RIG_EDITOR_ENABLED, [1], [Whether to build the editor or not])
 	AC_DEFINE(RUT_EDITOR_ENABLED, [1], [Whether to build the editor or not])
@@ -299,6 +305,7 @@ AC_ARG_ENABLE(
   [],
   enable_oculus_rift=yes
 )
+AS_IF([test "x$emscripten_compiler" = xyes], [enable_oculus_rift=no])
 AS_IF([test "x$enable_oculus_rift" = "xyes"],
       [
         AC_DEFINE([ENABLE_OCULUS_RIFT], [1], [Whether to enable Oculus Rift supporta])
@@ -332,18 +339,39 @@ dnl ================================================================
 dnl Check for dependency packages.
 dnl ================================================================
 
-RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES icu-uc harfbuzz harfbuzz-icu fontconfig freetype2 libprotobuf-c libuv mozjs-24"
+RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES icu-uc harfbuzz harfbuzz-icu fontconfig freetype2 libprotobuf-c"
 
-AM_CONDITIONAL([USE_UV], [true])
-AC_DEFINE([USE_UV], [1], [Use libuv])
+dnl libuv...
+use_uv=no
+AS_IF([test "x$emscripten_compiler" != xyes],
+      [
+        use_uv=yes
+        AC_DEFINE([USE_UV], [1], [Use libuv])
+        CLIB_PKG_REQUIRES="$CLIB_PKG_REQUIRES libuv"
+        RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES libuv"
+      ])
+AM_CONDITIONAL([USE_UV], [test "x$use_uv" = xyes])
+
+dnl SpiderMonkey
+have_mozjs=no
+PKG_CHECK_EXISTS([mozjs-24],
+                 [
+                   have_mozjs=yes
+                   AC_DEFINE([USE_MOZJS], [1], [Use Mozilla SpiderMonkey Javascript engine])
+                   RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES mozjs-24"
+                 ])
+AM_CONDITIONAL([USE_MOZJS], [test "x$have_mozjs" = xyes])
 
 dnl     ============================================================
 dnl     Check glib dependencies
 dnl     ============================================================
-AM_PATH_GLIB_2_0([2.26.0],
-                 [have_glib=yes], [have_glib=no],
-                 [gobject gthread gmodule-no-export])
-AS_IF([test x"$enable_editor" = xyes],
+AS_IF([test "x$emscripten_compiler" != xyes],
+      [
+       AM_PATH_GLIB_2_0([2.26.0],
+                        [have_glib=yes], [have_glib=no],
+                        [gobject gthread gmodule-no-export])
+      ])
+AS_IF([test "x$enable_editor" = xyes],
     RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES pangocairo glib-2.0 gio-2.0 gdk-pixbuf-2.0"
     AC_DEFINE([USE_GLIB], [1], [Use Glib])
     AC_DEFINE([USE_PANGO], [1], [Use Pango])
@@ -437,70 +465,72 @@ dnl ================================================================
 dnl Check requirements for our GPU utility api
 dnl ================================================================
 
-case "$host" in
-  *-linux*)
-    enable_glib=$enable_editor
-    enable_cogl_path=yes
-    enable_cogl_pango=$enable_editor
-    enable_uv=yes
-    enable_gles2=yes
-    enable_glx=yes
-    enable_xlib_egl_platform=yes
-    ;;
-  *)
-    enable_cogl_path=yes
-    enable_cogl_pango=$enable_editor
-    enable_sdl2=yes
-    enable_uv=yes
-    enable_gles2=yes
-  ;;
-esac
-
-AM_COGL
-
-
-AS_IF([test x"$enable_glx" = xyes],
+AS_IF([test "x$emscripten_compiler" = xyes],
       [
-        RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES xkbcommon-x11"
-        RIG_EXTRA_LDFLAGS="$RIG_EXTRA_LDFLAGS -lXi"
-        AC_DEFINE([USE_X11], [1], [Defined if X11 should be used])
+        enable_webgl=yes
+        enable_cogl_path=yes
       ],
       [
-        AC_DEFINE([USE_SDL], [1], [Defined if SDL should be used])
-        RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES sdl2-rig"
+        case "$host" in
+          *-linux*)
+            enable_glib=$enable_editor
+            enable_cogl_path=yes
+            enable_cogl_pango=$enable_editor
+            enable_uv=yes
+            enable_gles2=yes
+            enable_glx=yes
+            enable_xlib_egl_platform=yes
+
+            RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES xkbcommon-x11"
+            RIG_EXTRA_LDFLAGS="$RIG_EXTRA_LDFLAGS -lXi"
+            AC_DEFINE([USE_X11], [1], [Defined if X11 should be used])
+
+            AS_IF([test "x$enable_editor" = xyes],
+                  CheckForGtk
+                  RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES avahi-glib avahi-client avahi-core"
+                  AC_DEFINE([USE_AVAHI], [1], [Defined if Avahi should be used])
+                  avahi_enabled=yes
+                  )
+            ;;
+
+          *-darwin*)
+            RIG_EXTRA_LDFLAGS="$RIG_EXTRA_LDFLAGS -lobjc -Wl,-framework,Cocoa"
+            platform=osx
+            ;;
+
+          *)
+            enable_cogl_path=yes
+            enable_cogl_pango=$enable_editor
+            enable_sdl2=yes
+            enable_uv=yes
+            enable_gles2=yes
+
+            AC_DEFINE([USE_SDL], [1], [Defined if SDL should be used])
+            RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES sdl2-rig"
+          ;;
+        esac
       ])
-AM_CONDITIONAL([USE_X11], [x$SUPPORT_GLX = xyes])
-AM_CONDITIONAL([USE_SDL], [x$SUPPORT_GLX != xyes])
 
-case "$host" in
-  *-linux*)
-    AS_IF([test x"$enable_editor" = xyes],
-        CheckForGtk
-        RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES avahi-glib avahi-client avahi-core"
-        AC_DEFINE([USE_AVAHI], [1], [Defined if Avahi should be used])
-        avahi_enabled=yes
-    )
-    ;;
-  *-darwin*)
-    RIG_EXTRA_LDFLAGS="$RIG_EXTRA_LDFLAGS -lobjc -Wl,-framework,Cocoa"
-    platform=osx
-    ;;
-  *-*-cygwin* | *-*-mingw32*)
-    ;;
-  *)
-    AC_MSG_ERROR([Unsupported host: Please add to configure.ac])
-    ;;
-esac
-
+AM_CONDITIONAL([USE_X11], [x$enable_glx = xyes])
+AM_CONDITIONAL([USE_SDL], [x$enable_sdl2 = xyes])
 AM_CONDITIONAL([HAVE_OSX], [test "x$platform" = "xosx"])
 AM_CONDITIONAL([HAVE_GTK], [test "x$enable_gtk" = "xyes"])
 AM_CONDITIONAL([HAVE_AVAHI], [test "x$avahi_enabled" = "xyes"])
 
-AC_SUBST(RIG_PKG_REQUIRES)
-PKG_CHECK_MODULES(RIG_DEP, [$RIG_PKG_REQUIRES])
+AM_COGL
 
-PKG_CHECK_VAR(ICU_PREFIX, icu-uc, prefix, [],
-              [ AC_MSG_ERROR([Could not locate ICU data]) ])
+
+AS_IF([test "x$emscripten_compiler" != xyes],
+      [
+        AC_SUBST(CLIB_PKG_REQUIRES)
+        PKG_CHECK_MODULES(CLIB_DEP, [$CLIB_PKG_REQUIRES])
+
+        AC_SUBST(RIG_PKG_REQUIRES)
+        PKG_CHECK_MODULES(RIG_DEP, [$RIG_PKG_REQUIRES])
+
+        PKG_CHECK_VAR(ICU_PREFIX, icu-uc, prefix, [],
+                      [ AC_MSG_ERROR([Could not locate ICU data]) ])
+      ])
 
 dnl ============================================================
 dnl Optional LLVM Enable
@@ -520,6 +550,7 @@ AC_ARG_ENABLE(
   [enable_llvm="$enableval"],
   [enable_llvm="no"]
 )
+AS_IF([test "x$emscripten_compiler" = xyes], [enable_llvm=no])
 AS_CASE(
   [$enable_llvm],
   [yes],
@@ -548,7 +579,6 @@ AC_SUBST(RIG_LLVM_VERSION)
 dnl ================================================================
 dnl Misc program dependencies.
 dnl ================================================================
-AC_PATH_PROG(GLIB_GENMARSHAL, glib-genmarshal)
 AC_PROG_INSTALL
 
 dnl ================================================================
