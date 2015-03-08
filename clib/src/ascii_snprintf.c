@@ -171,6 +171,8 @@
 
 #include <config.h>
 
+#include <clib.h>
+
 /*
  * We only need an snprintf implementation...
  */

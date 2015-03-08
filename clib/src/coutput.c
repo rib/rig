@@ -29,6 +29,11 @@
 #include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+
 #include <clib.h>
 
 /* The current fatal levels, error is always fatal */
@@ -175,7 +180,7 @@ c_logv(c_log_context_t *lctx,
         goto logged;
     }
 
-#ifdef C_OS_WIN32
+#ifdef WIN32
     printf("%s%s%s\n",
            log_domain != NULL ? log_domain : "",
            log_domain != NULL ? ": " : "",
@@ -201,8 +206,17 @@ logged:
         fflush(stderr);
     }
 #endif
-    if (log_level & fatal)
+    if (log_level & fatal) {
+#ifdef __EMSCRIPTEN__
+#ifdef RIG_ENABLE_DEBUG
+        emscripten_debugger();
+#else
         abort();
+#endif
+#else
+        abort();
+#endif
+    }
 }
 
 void

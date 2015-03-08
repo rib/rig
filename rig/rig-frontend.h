@@ -74,6 +74,9 @@ struct _rig_frontend_t {
     char *listening_address;
     int listening_port;
 #endif
+#ifdef __EMSCRIPTEN__
+    worker_handle sim_worker;
+#endif
 
     rig_pb_stream_t *stream;
     rig_rpc_peer_t *frontend_peer;
@@ -106,14 +109,27 @@ struct _rig_frontend_t {
     c_hash_table_t *tmp_id_to_object_map;
 };
 
+#if !defined(__ANDROID__) && (defined(__linux__) || defined(__APPLE__))
+#define RIG_SUPPORT_SIMULATOR_PROCESS
+#endif
+
 enum rig_simulator_run_mode {
     RIG_SIMULATOR_RUN_MODE_MAINLOOP,
+#ifdef C_SUPPORTS_THREADS
     RIG_SIMULATOR_RUN_MODE_THREADED,
-    RIG_SIMULATOR_RUN_MODE_PROCESS,
-#ifdef __linux__
-    RIG_SIMULATOR_RUN_MODE_CONNECT_ABSTRACT_SOCKET,
 #endif
-    RIG_SIMULATOR_RUN_MODE_CONNECT_TCP,
+#ifdef RIG_SUPPORT_SIMULATOR_PROCESS
+    RIG_SIMULATOR_RUN_MODE_PROCESS,
+#endif
+#ifdef __linux__
+    RIG_SIMULATOR_RUN_MODE_LISTEN_ABSTRACT_SOCKET,
+#endif
+#ifdef USE_UV
+    RIG_SIMULATOR_RUN_MODE_LISTEN_TCP,
+#endif
+#ifdef __EMSCRIPTEN__
+    RIG_SIMULATOR_RUN_MODE_WEB_WORKER,
+#endif
 };
 extern enum rig_simulator_run_mode rig_simulator_run_mode_option;
 

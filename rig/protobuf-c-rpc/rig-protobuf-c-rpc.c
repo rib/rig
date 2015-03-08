@@ -363,7 +363,8 @@ invoke_client_rpc(ProtobufCService *service,
                   ProtobufCClosure closure,
                   void *closure_data)
 {
-    rig_pb_rpc_client_t *client = rut_container_of(service, client, service);
+    rig_pb_rpc_client_t *client =
+        c_container_of(service, rig_pb_rpc_client_t, service);
 
     c_return_if_fail(service->invoke == invoke_client_rpc);
 
@@ -599,7 +600,7 @@ static void
 on_response_write_done_cb(rig_pb_stream_write_closure_t *closure)
 {
     server_request_t *request =
-        rut_container_of(closure, request, response_write_closure);
+        c_container_of(closure, server_request_t, response_write_closure);
 
     /* NB: the write_closure is embedded in the request so don't
      * free the request first. */

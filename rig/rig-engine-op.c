@@ -1469,12 +1469,12 @@ rig_engine_copy_pb_ui_edit(rig_engine_op_copy_context_t *copy_ctx,
     copied_pb_ui_edits->ops =
         rut_memory_stack_memalign(serializer->stack,
                                   sizeof(void *) * copied_pb_ui_edits->n_ops,
-                                  RUT_UTIL_ALIGNOF(void *));
+                                  C_ALIGNOF(void *));
 
     pb_ops = rut_memory_stack_memalign(
         serializer->stack,
         (sizeof(Rig__Operation) * copied_pb_ui_edits->n_ops),
-        RUT_UTIL_ALIGNOF(Rig__Operation));
+        C_ALIGNOF(Rig__Operation));
 
     for (i = 0; i < pb_ui_edit->n_ops; i++) {
         Rig__Operation *src_pb_op = pb_ui_edit->ops[i];

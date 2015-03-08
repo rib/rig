@@ -1,0 +1,11 @@
+if test -z $RIG_SRC_DIR; then
+    RIG_SRC_DIR=$PWD
+fi
+
+export DOWNLOAD_DIR="$RIG_SRC_DIR/build/emscripten/downloads"
+export STAGING_PREFIX="$RIG_SRC_DIR/build/emscripten/deps/staging"
+export TOOLS_PREFIX="/home/bob/local/rig-git-dev0"
+export BUILD_DIR="$RIG_SRC_DIR/build/emscripten/deps/build"
+export INSTALL_PREFIX="/home/bob/local/rig-git-dev0/share/platforms/emscripten/prebuilt"
+
+export NDK_MODULE_PATH=$MODULES_DIR

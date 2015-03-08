@@ -36,15 +36,9 @@
 #include <fcntl.h>
 #include <sys/types.h>
 
-#ifdef C_OS_WIN32
+#ifdef WIN32
 #include <io.h>
 #define open _open
-#ifndef S_ISREG
-#define S_ISREG(x) ((x &_S_IFMT) == _S_IFREG)
-#endif
-#ifndef S_ISDIR
-#define S_ISDIR(x) ((x &_S_IFMT) == _S_IFDIR)
-#endif
 #endif
 
 int
@@ -72,55 +66,4 @@ mkstemp(char *tmp_template)
 
     c_free(utf16_template);
     return fd;
-}
-
-#ifdef _MSC_VER
-#pragma warning(disable : 4701)
-#endif
-
-bool
-c_file_test(const char *filename, c_file_test_t test)
-{
-    c_utf16_t *utf16_filename = NULL;
-    DWORD attr;
-
-    if (filename == NULL || test == 0)
-        return false;
-
-    utf16_filename = u8to16(filename);
-    attr = UetFileAttributesW(utf16_filename);
-    c_free(utf16_filename);
-
-    if (attr == INVALID_FILE_ATTRIBUTES)
-        return false;
-
-    if ((test & C_FILE_TEST_EXISTS) != 0) {
-        return true;
-    }
-
-    if ((test & C_FILE_TEST_IS_EXECUTABLE) != 0) {
-        size_t len = strlen(filename);
-        if (len > 4 && strcmp(filename + len - 3, "exe"))
-            return true;
-
-        return false;
-    }
-
-    if ((test & C_FILE_TEST_IS_REGULAR) != 0) {
-        if (attr & (FILE_ATTRIBUTE_DEVICE | FILE_ATTRIBUTE_DIRECTORY))
-            return false;
-        return true;
-    }
-
-    if ((test & C_FILE_TEST_IS_DIR) != 0) {
-        if (attr & FILE_ATTRIBUTE_DIRECTORY)
-            return true;
-    }
-
-    /* make this last in case it is OR'd with something else */
-    if ((test & C_FILE_TEST_IS_SYMLINK) != 0) {
-        return false;
-    }
-
-    return false;
 }

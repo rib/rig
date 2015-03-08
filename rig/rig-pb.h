@@ -103,7 +103,7 @@ _rig_pb_new(rig_pb_serializer_t *serializer,
 }
 
 #define rig_pb_new(serializer, type, init)                                     \
-    _rig_pb_new(serializer, sizeof(type), RUT_UTIL_ALIGNOF(type), init)
+    _rig_pb_new(serializer, sizeof(type), C_ALIGNOF(type), init)
 
 static inline void *
 _rig_pb_dup(rig_pb_serializer_t *serializer,
@@ -124,7 +124,7 @@ _rig_pb_dup(rig_pb_serializer_t *serializer,
 }
 
 #define rig_pb_dup(serializer, type, init, src)                                \
-    _rig_pb_dup(serializer, sizeof(type), RUT_UTIL_ALIGNOF(type), init, src)
+    _rig_pb_dup(serializer, sizeof(type), C_ALIGNOF(type), init, src)
 
 const char *rig_pb_strdup(rig_pb_serializer_t *serializer, const char *string);
 

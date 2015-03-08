@@ -41,6 +41,26 @@
 #include "rig-simulator.h"
 #include "rig-logs.h"
 
+#ifdef __EMSCRIPTEN__
+
+int
+main(int argc, char **argv)
+{
+    rig_simulator_t *simulator;
+
+    rig_simulator_logs_init();
+
+    simulator = rig_simulator_new(RIG_FRONTEND_ID_DEVICE, NULL);
+
+    rig_simulator_run(simulator);
+
+    rut_object_unref(simulator);
+
+    return 0;
+}
+
+#else /* __EMSCRIPTEN__ */
+
 static void
 usage(void)
 {
@@ -123,9 +143,11 @@ main(int argc, char **argv)
             }
 
             break;
+#ifdef __linux__
         case 'a':
             abstract_socket = optarg;
             break;
+#endif
         default:
             usage();
         }
@@ -188,3 +210,5 @@ main(int argc, char **argv)
 
     return 0;
 }
+
+#endif /* __EMSCRIPTEN__ */

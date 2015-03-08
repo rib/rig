@@ -30,6 +30,10 @@
 #include <unistd.h>
 #endif
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+
 #include <math.h>
 
 #include <clib.h>
@@ -60,10 +64,15 @@ c_rand_new(void)
     c_assert(len == sizeof(seed));
 
     return c_rand_new_with_seed_array(seed, 4);
-#elif defined(C_OS_WIN32)
+#elif defined(WIN32)
     uint32_t seed[4];
     for (int i = 0; i < 4; i++)
         rand_s (&seed[i]);
+    return c_rand_new_with_seed_array(seed, 4);
+#elif defined(__EMSCRIPTEN__)
+    uint32_t seed[4];
+    for (int i = 0; i < 4; i++)
+        seed[i] = emscripten_random() * UINT32_MAX;
     return c_rand_new_with_seed_array(seed, 4);
 #else
 #error "platform missing implementation for generating random seed"

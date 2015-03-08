@@ -80,10 +80,10 @@
 #include "rut-settings.h"
 #include "rut-closure.h"
 #include "rut-gradient.h"
+#include "rut-input-region.h"
 
 
 #ifdef RUT_EDITOR_ENABLED
-#include "rut-input-region.h"
 #include "rut-text-buffer.h"
 #include "rut-text.h"
 #include "rut-number-slider.h"

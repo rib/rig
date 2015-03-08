@@ -26,8 +26,6 @@ rig_common_sources = \
 	components/rig-pointalism-grid.c \
 	components/rig-button-input.h \
 	components/rig-button-input.c \
-	components/rig-native-module.h \
-	components/rig-native-module.c \
 	components/rig-text.h \
 	components/rig-text.c \
 	rig-logs.h \
@@ -73,10 +71,8 @@ rig_common_sources = \
 	rig-rpc-network.c \
 	rig-slave-address.h \
 	rig-slave-address.c \
-	rig.pb-c.h \
-	rig.pb-c.c \
 	rig-simulator.h \
-	rig-simulator.c \
+	rig-simulator-impl.c \
 	rig-frontend.c \
 	rig-frontend.h \
 	rig-ui.h \
@@ -95,9 +91,11 @@ rig_common_sources = \
 	rig-text-engine-private.h \
 	rig-text-engine.c \
 	rig-text-renderer.h \
-	rig-text-renderer.c \
-	rig-js.h \
-	rig-js.cpp
+	rig-text-renderer.c
+
+rig_debug_sources = \
+	rig-pb-debug.h \
+	rig-pb-debug.cpp
 
 rig_avahi_sources = \
 	rig-avahi.h \
@@ -127,4 +125,9 @@ rig_editor_sources = \
 
 rig_slave_sources = \
 	rig-slave.h \
-	rig-slave.c
+	rig-slave-impl.c
+
+rig_device_sources =
+
+rig_simulator_sources = \
+	rig-c.c

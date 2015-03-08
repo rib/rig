@@ -152,7 +152,7 @@ _cg_winsys_renderer_get_proc_address(
 
     if (proc == NULL) {
         if (wgl_renderer->gl_module == NULL)
-            wgl_renderer->gl_module = c_module_open("opengl32", 0);
+            wgl_renderer->gl_module = c_module_open("opengl32");
 
         if (wgl_renderer->gl_module)
             c_module_symbol(wgl_renderer->gl_module, name, &proc);

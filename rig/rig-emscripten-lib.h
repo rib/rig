@@ -1,9 +1,9 @@
 /*
- * Rut
+ * Rig
  *
- * Rig Utilities
+ * UI Engine & Editor
  *
- * Copyright (C) 2014  Intel Corporation
+ * Copyright (C) 2015  Intel Corporation
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -26,11 +26,28 @@
  * SOFTWARE.
  */
 
-#ifndef _RUT_FMEMOPEN_H_
-#define _RUT_FMEMOPEN_H_
+#ifndef _RIG_EMSCRIPTEN_LIB_H_
+#define _RIG_EMSCRIPTEN_LIB_H_
 
-#include <stdio.h>
+#include <emscripten.h>
 
-FILE *fmemopen(void *buf, size_t size, const char *mode);
+typedef int rig_worker_t;
 
-#endif /* _RUT_FMEMOPEN_H_ */
+rig_worker_t rig_emscripten_worker_create(const char *url);
+
+typedef void (*rig_worker_callback_func_t)(void *data, int len, void *user_data);
+
+void rig_emscripten_worker_set_main_onmessage(rig_worker_t worker,
+                                              rig_worker_callback_func_t callback,
+                                              void *user_data);
+
+void rig_emscripten_worker_post(rig_worker_t worker,
+                                const char *function_name,
+                                void *data,
+                                int len);
+
+void rig_emscripten_worker_destroy(rig_worker_t worker);
+
+void rig_emscripten_worker_post_to_main(void *data, int len);
+
+#endif /* _RIG_EMSCRIPTEN_LIB_H_ */

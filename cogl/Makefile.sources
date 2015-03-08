@@ -280,6 +280,12 @@ cogl_glib_sources_c = cogl-glib-source.c
 cogl_uv_sources_h = cogl-uv.h
 cogl_uv_sources_c = cogl-uv.c cogl-uv-private.h
 
+cogl_webgl_sources_h = cogl-webgl.h cogl-webgl-renderer.h
+cogl_webgl_sources_c = \
+	cogl-webgl-renderer.c \
+	winsys/cogl-winsys-webgl-private.h \
+	winsys/cogl-winsys-webgl.c
+
 cogl_xlib_sources_h = \
 	cogl-xlib-renderer.h \
 	winsys/cogl-texture-pixmap-x11.h \
@@ -357,3 +363,9 @@ cogl_android_sources = \
 	$(cogl_egl_android_sources_c) \
 	stb_image.c
 
+cogl_emscripten_sources = \
+	$(cogl_base_public_h) \
+	$(cogl_base_sources_c) \
+	$(cogl_driver_gles_sources) \
+	$(cogl_webgl_sources_h) \
+	$(cogl_webgl_sources_c)

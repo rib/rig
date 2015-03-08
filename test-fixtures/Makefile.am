@@ -27,3 +27,17 @@ libtest_fixtures_la_SOURCES = \
 
 android_modulesdir = $(datadir)/android_modules/test-fixtures/
 android_modules_DATA = $(libtest_fixtures_la_SOURCES)
+
+dist_source_dir = $(datadir)/src/test-fixtures
+dist_source = \
+	$(libtest_fixtures_la_SOURCES) \
+	Makefile.emscripten
+
+# Use a custom install-data-local to install the source so that
+# we can preserve the directory structure...
+install-data-local:
+	for f in $(dist_source); do \
+	d=`dirname $$f`; \
+	$(mkinstalldirs) $(DESTDIR)$(dist_source_dir)/$$d; \
+	$(INSTALL_DATA) $(srcdir)/$$f $(DESTDIR)$(dist_source_dir)/$$f; \
+	done

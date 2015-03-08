@@ -207,7 +207,9 @@ rig_device_new(const char *filename)
     device->shell = rut_shell_new(rig_device_redraw,
                                   device);
 
+#ifdef HAVE_CURSES
     rig_curses_add_to_shell(device->shell);
+#endif
 
     rut_shell_set_on_run_callback(device->shell,
                                   rig_device_init,
@@ -219,6 +221,24 @@ rig_device_new(const char *filename)
 
     return device;
 }
+
+#ifdef __EMSCRIPTEN__
+
+int
+main(int argc, char **argv)
+{
+    rig_device_t *device;
+
+    rig_simulator_run_mode_option = RIG_SIMULATOR_RUN_MODE_WEB_WORKER;
+
+    device = rig_device_new(argv[optind]);
+
+    rut_shell_main(device->shell);
+
+    rut_object_unref(device);
+}
+
+#else /* __EMSCRIPTEN__ */
 
 static void
 usage(void)
@@ -306,7 +326,7 @@ main(int argc, char **argv)
         usage();
     }
 
-#ifdef RIG_ENABLE_DEBUG
+#if defined(RIG_ENABLE_DEBUG) && defined(HAVE_CURSES)
     if (enable_curses_debug)
         rig_curses_init();
 #endif
@@ -319,3 +339,5 @@ main(int argc, char **argv)
 
     return 0;
 }
+
+#endif /* __EMSCRIPTEN__ */

@@ -1297,8 +1297,11 @@ _cg_texture_set_internal_format(cg_texture_t *texture,
 
     case CG_PIXEL_FORMAT_DEPTH_16:
     case CG_PIXEL_FORMAT_DEPTH_32:
-    case CG_PIXEL_FORMAT_DEPTH_24_STENCIL_8:
         texture->components = CG_TEXTURE_COMPONENTS_DEPTH;
+        break;
+
+    case CG_PIXEL_FORMAT_DEPTH_24_STENCIL_8:
+        texture->components = CG_TEXTURE_COMPONENTS_DEPTH_STENCIL;
         break;
 
     case CG_PIXEL_FORMAT_ANY:
@@ -1325,6 +1328,8 @@ _cg_texture_derive_format(cg_device_t *dev,
             } else
                 return CG_PIXEL_FORMAT_DEPTH_16;
         }
+    case CG_TEXTURE_COMPONENTS_DEPTH_STENCIL:
+        return CG_PIXEL_FORMAT_DEPTH_24_STENCIL_8;
     case CG_TEXTURE_COMPONENTS_A:
     case CG_TEXTURE_COMPONENTS_A8:
         return CG_PIXEL_FORMAT_A_8;

@@ -39,7 +39,7 @@
 #include <unicode-data.h>
 #include <errno.h>
 
-#if defined(_MSC_VER) || defined(C_OS_WIN32)
+#if defined(_MSC_VER) || defined(WIN32)
 /* FIXME */
 #define CODESET 1
 #include <windows.h>
@@ -218,7 +218,7 @@ bool
 c_get_charset(C_CONST_RETURN char **charset)
 {
     if (my_charset == NULL) {
-#ifdef C_OS_WIN32
+#ifdef WIN32
         static char buf[14];
         sprintf(buf, "CP%u", UetACP());
         my_charset = buf;

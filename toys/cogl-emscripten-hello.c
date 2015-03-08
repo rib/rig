@@ -1,97 +1,68 @@
 #include <config.h>
 
-#include <cogl/cogl.h>
 #include <stdio.h>
-#include <SDL.h>
+
 #include <emscripten.h>
+
+#include <clib.h>
+#include <cogl/cogl.h>
+
 #include "emscripten-example-js.h"
 
-/* This short example is just to demonstrate using Cogl with
- * Emscripten using SDL to receive input events */
-
-typedef struct Data {
+struct data {
+    cg_device_t *dev;
+    cg_renderer_t *renderer;
+    cg_framebuffer_t *fb;
     cg_primitive_t *triangle;
     cg_pipeline_t *pipeline;
-    float center_x, center_y;
-    cg_framebuffer_t *fb;
-    bool redraw_queued;
-    bool ready_to_draw;
-} Data;
 
-static Data data;
-static cg_device_t *dev;
+    bool paint_queued;
+};
 
 static void
-redraw(Data *data)
+paint(void *user_data)
 {
-    cg_framebuffer_t *fb = data->fb;
+    struct data *data = user_data;
 
-    cg_framebuffer_clear4f(fb, CG_BUFFER_BIT_COLOR, 0, 0, 0, 1);
+    data->paint_queued = false;
 
-    cg_framebuffer_push_matrix(fb);
-    cg_framebuffer_translate(fb, data->center_x, -data->center_y, 0.0f);
+    cg_framebuffer_clear4f(data->fb, CG_BUFFER_BIT_COLOR, 0, 0, 0, 1);
+    cg_primitive_draw(data->triangle, data->fb, data->pipeline);
+    cg_onscreen_swap_buffers(data->fb);
 
-    cg_primitive_draw(data->triangle, fb, data->pipeline);
-    cg_framebuffer_pop_matrix(fb);
-
-    cg_onscreen_swap_buffers(CG_ONSCREEN(fb));
+    c_debug("paint");
 }
 
 static void
-handle_event(Data *data, SDL_Event *event)
+frame_event_cb(cg_onscreen_t *onscreen,
+               cg_frame_event_t event,
+               cg_frame_info_t *info,
+               void *user_data)
 {
-    switch (event->type) {
-    case SDL_MOUSEMOTION: {
-        int width = cg_framebuffer_get_width(CG_FRAMEBUFFER(data->fb));
-        int height = cg_framebuffer_get_height(CG_FRAMEBUFFER(data->fb));
+    struct data *data = user_data;
 
-        data->center_x = event->motion.x * 2.0f / width - 1.0f;
-        data->center_y = event->motion.y * 2.0f / height - 1.0f;
-
-        data->redraw_queued = TRUE;
-    } break;
+    if (event == CG_FRAME_EVENT_SYNC) {
+        data->paint_queued = true;
+        emscripten_resume_main_loop();
     }
 }
 
 static void
-frame_cb(cg_onscreen_t *onscreen,
-         cg_frame_event_t event,
-         cg_frame_info_t *info,
-         void *user_data)
+paint_loop(void *user_data)
 {
-    Data *data = user_data;
+    struct data *data = user_data;
 
-    if (event == CG_FRAME_EVENT_SYNC)
-        data->ready_to_draw = TRUE;
-}
+    paint(data);
 
-static void
-mainloop(void)
-{
-    SDL_Event event;
-
-    while (SDL_PollEvent(&event)) {
-        handle_event(&data, &event);
-        cg_sdl_handle_event(dev, &event);
-    }
-
-    if (data.redraw_queued && data.ready_to_draw) {
-        data.redraw_queued = FALSE;
-        data.ready_to_draw = FALSE;
-        redraw(&data);
-    }
-
-    /* NB: The mainloop will be automatically resumed if user input is received
-     */
-    if (!data.redraw_queued)
+    /* NB: The loop will be automatically resumed if user input is received */
+    if (!data->paint_queued)
         emscripten_pause_main_loop();
-
-    cg_sdl_idle(dev);
 }
 
 int
 main(int argc, char **argv)
 {
+    struct data data;
     cg_onscreen_t *onscreen;
     cg_error_t *error = NULL;
     cg_vertex_p2c4_t triangle_vertices[] = {
@@ -100,42 +71,42 @@ main(int argc, char **argv)
         { 0.7, -0.7, 0x00, 0x00, 0xff, 0xff }
     };
 
-    dev = cg_sdl_context_new(SDL_USEREVENT, &error);
-    if (!dev) {
-        fprintf(stderr, "Failed to create context: %s\n", error->message);
+    data.paint_queued = true;
+
+    data.dev = cg_device_new();
+    if (!cg_device_connect(data.dev, &error)) {
+        cg_object_unref(data.dev);
+        fprintf(stderr, "Failed to create device: %s\n", error->message);
         return 1;
     }
+    data.renderer = cg_device_get_renderer(data.dev);
 
-    onscreen = cg_onscreen_new(dev, 800, 600);
-    data.fb = CG_FRAMEBUFFER(onscreen);
+    onscreen = cg_onscreen_new(data.dev, 640, 480);
+    cg_onscreen_show(onscreen);
+    data.fb = onscreen;
+
+    cg_onscreen_set_resizable(onscreen, true);
+
+    data.triangle = cg_primitive_new_p2c4(
+        data.dev, CG_VERTICES_MODE_TRIANGLES, 3, triangle_vertices);
+    data.pipeline = cg_pipeline_new(data.dev);
 
     cg_onscreen_add_frame_callback(
-        onscreen, frame_cb, &data, NULL /* destroy callback */);
+        data.fb, frame_event_cb, &data, NULL); /* destroy notify */
 
-    data.center_x = 0.0f;
-    data.center_y = 0.0f;
-
-    cg_onscreen_show(onscreen);
-
-    data.triangle = cg_primitive_new_p2c4(dev, CG_VERTICES_MODE_TRIANGLES, 3,
-                                          triangle_vertices);
-    data.pipeline = cg_pipeline_new(dev);
-
-    data.redraw_queued = TRUE;
-    data.ready_to_draw = TRUE;
-
-    /* The emscripten mainloop isn't event driven, it's periodic and so
-     * we aim to pause the emscripten mainlooop whenever we don't have a
-     * redraw queued. What we do instead is hook into the real browser
-     * mainloop using this javascript binding api to add an input event
-     * listener that will resume the emscripten mainloop whenever input
-     * is received.
+    /* XXX: emscripten "main loop" is really just for driving
+     * throttled, rendering based on requestAnimationFrame(). This
+     * mainloop isn't event driven, it's periodic and so we aim to
+     * pause the emscripten mainlooop whenever we don't have a redraw
+     * queued. What we do instead is hook into the real browser
+     * mainloop using this javascript binding api to add an input
+     * event listener that will resume the emscripten mainloop
+     * whenever input is received.
      */
     example_js_add_input_listener();
+    emscripten_set_main_loop_arg(paint_loop, &data, -1, true);
 
-    emscripten_set_main_loop(mainloop, -1, TRUE);
-
-    cg_object_unref(dev);
+    cg_object_unref(data.dev);
 
     return 0;
 }

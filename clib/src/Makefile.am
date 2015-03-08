@@ -1,92 +1,61 @@
+include $(top_srcdir)/build/autotools/Makefile.am.silent
+
+include Makefile.sources
+
 EXTRA_DIST =
 
+if EMSCRIPTEN
+lib_LTLIBRARIES = libclib.la
+all-local: clib.bc
+else
 if UNIT_TESTS
-lib_LTLIBRARIES = libclib.la libclib-static.la
+lib_LTLIBRARIES = libclib.la
 else
-noinst_LTLIBRARIES = libclib.la libclib-static.la
+noinst_LTLIBRARIES = libclib.la
+endif
 endif
 
-win_files  = \
-	clib-config.hw \
-	cdate-win32.c cdir-win32.c cfile-win32.c cmisc-win32.c \
-	cmodule-win32.c
 
-unix_files = \
-	cdate-unix.c  cdir-unix.c  cfile-unix.c  cmisc-unix.c	\
-	cmodule-unix.c cxdg-unix.c
+libclib_la_LIBADD = $(CLIB_DEP_LIBS)
 
-# some unices and windows do not have an implementation of vasprintf
-if NEED_VASPRINTF
-vasprintf_files = vasprintf.c
-endif
-
-if OS_WIN32
-os_files = $(win_files)
-else
-os_files = $(unix_files)
-endif
-
-# SIMD-oriented Fast Mersenne Twist Random
-# Number Generator...
-sfmt_source = \
-	sfmt/SFMT.h \
-	sfmt/SFMT.c \
-	sfmt/SFMT-common.h \
-	sfmt/SFMT-params4253.h \
-	sfmt/SFMT-params19937.h \
-	sfmt/SFMT-params44497.h \
-	sfmt/SFMT-params216091.h \
-	sfmt/SFMT-params86243.h \
-	sfmt/SFMT-params2281.h \
-	sfmt/SFMT-params1279.h \
-	sfmt/SFMT-params607.h \
-	sfmt/SFMT-params.h \
-	sfmt/SFMT-params11213.h
 EXTRA_DIST += sfmt/README.txt sfmt/LICENSE.txt
-
-clib_common_source = \
-	sort.frag.h	\
-	clib.h	     	\
-	cdebugkey.c	\
-	cquark.c	\
-	carray.c	\
-	cbytearray.c	\
-	cerror.c	\
-	chashtable.c 	\
-	ciconv.c	\
-	cmem.c       	\
-	cmodule.h	\
-	coutput.c    	\
-	cqsort.c	\
-	cstr.c       	\
-	cslist.c     	\
-	cstring.c    	\
-	cptrarray.c     \
-	clist.c		\
-	cllist.c	\
-	chooklist.c	\
-	cqueue.c	\
-	cpath.c		\
-	cshell.c	\
-	cspawn.c	\
-	cfile.c		\
-	cfile-posix.c	\
-	cutf8.c		\
-	cunicode.c	\
-	unicode-data.h	\
-	crbtree.h	\
-	crbtree.c	\
-	ascii_snprintf.c \
-	crand.c		\
-	ctls.c		\
-	cmutex.c	\
-	ctimer.c
 
 libclib_la_SOURCES = \
 	$(clib_common_source) \
-	$(sfmt_source) \
-	$(os_files) \
-	$(vasprintf_files)
+	$(sfmt_source)
+
+unix_files = cdate-unix.c cdir-unix.c cmisc-unix.c \
+	     cxdg-unix.c
+threads_files = ctls.c
+
+if OS_UNIX
+libclib_la_SOURCES += $(unix_files) $(threads_files)
+libclib_la_LIBADD += $(top_builddir)/libuv/libuv.la
+endif
+
+if OS_WIN32
+libclib_la_SOURCES += \
+	clib-config.hw \
+	cdate-win32.c cdir-win32.c cmisc-win32.c \
+	mkstemp.c \
+	vasprintf.c \
+	fmemopen.c \
+	memmem.c
+libclib_la_SOURCES += $(threads_files)
+libclib_la_LIBADD += -lm $(LTLIBICONV) -lpsapi
+libclib_la_LIBADD += $(top_builddir)/libuv/libuv.la
+endif
+
+if OS_DARWIN
+libclib_la_SOURCES += \
+	fmemopen.c \
+	memmem.c
+libclib_la_LIBADD += $(top_builddir)/libuv/libuv.la
+endif
+
+if EMSCRIPTEN
+libclib_la_SOURCES += cmisc-emscripten.c
+endif
 
 AM_CPPFLAGS = \
 	-I$(top_builddir) \
@@ -95,34 +64,46 @@ AM_CPPFLAGS = \
 	-I$(srcdir)/sfmt \
 	-I$(top_srcdir)/libuv/include \
 	-Wall \
-	$(RIG_DEP_CFLAGS) \
+	$(CLIB_DEP_CFLAGS) \
 	$(RIG_EXTRA_CFLAGS) \
 	-DSFMT_MEXP=19937 \
 	$(NULL)
 
-#libclib_la_CFLAGS = -g -Wall -D_FORTIFY_SOURCE=2
-#libclib_la_CFLAGS = -g -Wall -D_FORTIFY_SOURCE=2
-libclib_static_la_SOURCES=$(libclib_la_SOURCES)
-libclib_static_la_CFLAGS = $(libclib_la_CFLAGS)
+#libclib_la_LIBADD += $(LTLIBICONV)
+#libclib_la_LDFLAGS = -static
 
-libclib_la_LIBADD = $(top_builddir)/libuv/libuv.la
-
-if OS_WIN32
-libclib_la_LIBADD += -lm $(LTLIBICONV) -lpsapi
+if EMSCRIPTEN
+clib.bc: $(libclib_la_OBJECTS)
+	emcc -o $(builddir)/clib.bc $(patsubst %.lo,.libs/%.o,$(libclib_la_OBJECTS)) $(AM_CPPFLAGS) $(CFLAGS) $(RIG_EXTRA_EMCC_BCFLAGS)
 endif
 
-libclib_static_la_LIBADD = $(libclib_la_LIBADD) $(LTLIBICONV)
-libclib_static_la_LDFLAGS = -static
+#MAINTAINERCLEANFILES = Makefile.in
 
-MAINTAINERCLEANFILES = Makefile.in
-
-EXTRA_DIST += clib-config.h.in $(win_files) $(unix_files)
+EXTRA_DIST += clib-config.h.in
 
 android_moduledir = $(datadir)/android_modules/clib
 android_module_DATA = \
 	$(clib_common_source) \
 	$(sfmt_source) \
 	$(unix_files) \
+	$(threads_files) \
 	vasprintf.c \
 	Android.mk \
 	android/clib-config.h
+
+dist_source_dir = $(datadir)/src/clib
+dist_source = \
+	$(clib_common_source) \
+	$(sfmt_source) \
+	cmisc-emscripten.c \
+	Makefile.sources \
+	Makefile.emscripten
+
+# Use a custom install-data-local to install the source so that
+# we can preserve the directory structure...
+install-data-local:
+	for f in $(dist_source); do \
+	d=`dirname $$f`; \
+	$(mkinstalldirs) $(DESTDIR)$(dist_source_dir)/$$d; \
+	$(INSTALL_DATA) $(srcdir)/$$f $(DESTDIR)$(dist_source_dir)/$$f; \
+	done

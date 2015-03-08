@@ -29,7 +29,12 @@
 #ifndef _RIG_PB_RPC_STREAM_H_
 #define _RIG_PB_RPC_STREAM_H_
 
+#ifdef USE_UV
 #include <uv.h>
+#endif
+#ifdef __EMSCRIPTEN__
+#include "rig-emscripten-lib.h"
+#endif
 
 #include <rut.h>
 
@@ -43,17 +48,29 @@ enum stream_type {
     STREAM_TYPE_FD,
     STREAM_TYPE_TCP,
 #endif
+#ifdef __EMSCRIPTEN__
+    STREAM_TYPE_WORKER_IPC,
+#endif
     STREAM_TYPE_BUFFER,
 };
 
 typedef struct _rig_pb_stream_write_closure rig_pb_stream_write_closure_t;
 
+#ifndef USE_UV
+typedef struct _rig_pb_stream_buf_t {
+  char *base;
+  size_t len;
+} rig_pb_stream_buf_t;
+#endif
+
 struct _rig_pb_stream_write_closure
 {
 #ifdef USE_UV
     uv_write_t write_req;
-#endif
     uv_buf_t buf;
+#else
+    rig_pb_stream_buf_t buf;
+#endif
     void (*done_callback)(rig_pb_stream_write_closure_t *closure);
 };
 
@@ -91,6 +108,12 @@ struct _rig_pb_stream_t {
             /* STREAM_TYPE_TCP... */
             uv_tcp_t socket;
         } tcp;
+#endif
+#ifdef __EMSCRIPTEN__
+        struct {
+            bool in_worker;
+            rig_worker_t worker;
+        } worker_ipc;
 #endif
 
         /* STREAM_TYPE_BUFFER... */
@@ -158,6 +181,15 @@ rig_pb_stream_set_tcp_transport(rig_pb_stream_t *stream,
 void
 rig_pb_stream_accept_tcp_connection(rig_pb_stream_t *stream,
                                     uv_tcp_t *server);
+#endif
+
+#ifdef __EMSCRIPTEN__
+void
+rig_pb_stream_set_in_worker(rig_pb_stream_t *stream, bool in_worker);
+
+void
+rig_pb_stream_set_worker(rig_pb_stream_t *stream,
+                         rig_worker_t worker);
 #endif
 
 /* So we can support having both ends of a connection in the same

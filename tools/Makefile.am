@@ -16,8 +16,10 @@ AM_CFLAGS = \
 common_ldadd = \
 	$(RIG_DEP_LIBS) \
 	$(COGL_DEP_LIBS) \
-	$(top_builddir)/cogl/libcogl2.la \
+	$(top_builddir)/cogl/libcg.la \
 	$(top_builddir)/clib/src/libclib.la
+
+bin_SCRIPTS=rig-package-html5
 
 if USE_GLIB
 bin_PROGRAMS = rig-bump-map-gen

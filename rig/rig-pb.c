@@ -136,7 +136,7 @@ pb_path_new(rig_pb_serializer_t *serializer, rig_path_t *path)
 
     pb_path->nodes = rut_memory_stack_memalign(serializer->stack,
                                                sizeof(void *) * path->length,
-                                               RUT_UTIL_ALIGNOF(void *));
+                                               C_ALIGNOF(void *));
     pb_path->n_nodes = path->length;
 
     i = 0;
@@ -428,7 +428,7 @@ serialize_instrospectable_properties(rut_object_t *object,
     serializer->properties_out = *properties_out =
                                      rut_memory_stack_memalign(serializer->stack,
                                                                sizeof(void *) * serializer->n_properties,
-                                                               RUT_UTIL_ALIGNOF(void *));
+                                                               C_ALIGNOF(void *));
 
     serializer->n_properties = 0;
     rut_introspectable_foreach_property(
@@ -684,7 +684,7 @@ rig_pb_serialize_entity(rig_pb_serializer_t *serializer,
     pb_entity->components =
         rut_memory_stack_memalign(serializer->stack,
                                   sizeof(void *) * pb_entity->n_components,
-                                  RUT_UTIL_ALIGNOF(void *));
+                                  C_ALIGNOF(void *));
 
     for (i = 0, l = serializer->pb_components; l; i++, l = l->next)
         pb_entity->components[i] = l->data;
@@ -819,11 +819,11 @@ serialize_controller_property_cb(rig_controller_prop_data_t *prop_data,
                 rut_memory_stack_memalign(
                     serializer->stack,
                     (sizeof(Rig__Controller__Property__Dependency) * n_deps),
-                    RUT_UTIL_ALIGNOF(Rig__Controller__Property__Dependency));
+                    C_ALIGNOF(Rig__Controller__Property__Dependency));
             pb_property->dependencies =
                 rut_memory_stack_memalign(serializer->stack,
                                           (sizeof(void *) * n_deps),
-                                          RUT_UTIL_ALIGNOF(void *));
+                                          C_ALIGNOF(void *));
 
             for (i = 0; i < n_deps; i++)
                 pb_property->dependencies[i] = &pb_dependencies[i];
@@ -1079,7 +1079,7 @@ serialize_mesh_asset(rig_pb_serializer_t *serializer,
     pb_buffers =
         rut_memory_stack_memalign(serializer->stack,
                                   sizeof(void *) * (mesh->n_attributes + 1),
-                                  RUT_UTIL_ALIGNOF(void *));
+                                  C_ALIGNOF(void *));
 
     buffers = c_alloca(sizeof(void *) * mesh->n_attributes);
     attribute_buffers_map = c_alloca(sizeof(void *) * mesh->n_attributes);
@@ -1120,7 +1120,7 @@ serialize_mesh_asset(rig_pb_serializer_t *serializer,
 
     attributes = rut_memory_stack_memalign(serializer->stack,
                                            sizeof(void *) * mesh->n_attributes,
-                                           RUT_UTIL_ALIGNOF(void *));
+                                           C_ALIGNOF(void *));
     for (i = 0; i < mesh->n_attributes; i++) {
         Rig__Attribute *pb_attribute =
             rig_pb_new(serializer, Rig__Attribute, rig__attribute__init);
@@ -1376,7 +1376,7 @@ rig_pb_serialize_controller(rig_pb_serializer_t *serializer,
     pb_controller->properties =
         rut_memory_stack_memalign(serializer->stack,
                                   sizeof(void *) * pb_controller->n_properties,
-                                  RUT_UTIL_ALIGNOF(void *));
+                                  C_ALIGNOF(void *));
     for (i = 0, l = serializer->pb_properties; l; i++, l = l->next)
         pb_controller->properties[i] = l->data;
     c_llist_free(serializer->pb_properties);
@@ -1422,7 +1422,7 @@ rig_pb_serialize_ui(rig_pb_serializer_t *serializer,
     pb_ui->entities =
         rut_memory_stack_memalign(serializer->stack,
                                   sizeof(void *) * pb_ui->n_entities,
-                                  RUT_UTIL_ALIGNOF(void *));
+                                  C_ALIGNOF(void *));
     for (i = 0, l = serializer->pb_entities; l; i++, l = l->next)
         pb_ui->entities[i] = l->data;
     c_llist_free(serializer->pb_entities);
@@ -1436,7 +1436,7 @@ rig_pb_serialize_ui(rig_pb_serializer_t *serializer,
         pb_ui->controllers =
             rut_memory_stack_memalign(serializer->stack,
                                       sizeof(void *) * pb_ui->n_controllers,
-                                      RUT_UTIL_ALIGNOF(void *));
+                                      C_ALIGNOF(void *));
 
         for (i = 0, l = ui->controllers; l; i++, l = l->next) {
             rig_controller_t *controller = l->data;
@@ -1461,7 +1461,7 @@ rig_pb_serialize_ui(rig_pb_serializer_t *serializer,
         pb_ui->assets =
             rut_memory_stack_memalign(serializer->stack,
                                       pb_ui->n_assets * sizeof(void *),
-                                      RUT_UTIL_ALIGNOF(void *));
+                                      C_ALIGNOF(void *));
         for (i = 0, l = serializer->required_assets; l; l = l->next) {
             rig_asset_t *asset = l->data;
             Rig__Asset *pb_asset = serialize_asset(serializer, asset);
@@ -1504,7 +1504,7 @@ rig_pb_serialize_input_events(rig_pb_serializer_t *serializer,
     int i;
 
     pb_events = rut_memory_stack_memalign(
-        serializer->stack, n_events * sizeof(void *), RUT_UTIL_ALIGNOF(void *));
+        serializer->stack, n_events * sizeof(void *), C_ALIGNOF(void *));
 
     i = 0;
     c_list_for_each_safe(event, tmp, &input_queue->events, list_node)
@@ -1613,7 +1613,7 @@ rig_pb_serialize_ops_queue(rig_pb_serializer_t *serializer,
         return NULL;
 
     pb_ops = rut_memory_stack_memalign(
-        serializer->stack, sizeof(void *) * ops->len, RUT_UTIL_ALIGNOF(void *));
+        serializer->stack, sizeof(void *) * ops->len, C_ALIGNOF(void *));
 
     i = 0;
     c_list_for_each(item, &ops->items, list_node)
@@ -1826,7 +1826,7 @@ default_unserializer_register_object_cb(void *object,
     }
 
     key = rut_memory_stack_memalign(
-        unserializer->stack, sizeof(uint64_t), RUT_UTIL_ALIGNOF(uint64_t));
+        unserializer->stack, sizeof(uint64_t), C_ALIGNOF(uint64_t));
 
     *key = id;
 
@@ -3144,7 +3144,7 @@ rig_pb_unserialize_mesh(rig_pb_un_serializer_t *unserializer,
         mode, pb_mesh->n_vertices, attributes, pb_mesh->n_attributes);
 
     if (pb_mesh->has_indices_buffer_id) {
-        rut_buffer_t *buffer;
+        rut_buffer_t *buffer = NULL;
         cg_indices_type_t indices_type;
         int j;
 

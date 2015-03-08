@@ -38,6 +38,10 @@
 #include <fcntl.h>
 #endif
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -567,14 +571,14 @@ rig_frontend_run_simulator_frame(rig_frontend_t *frontend,
         setup->object_registrations =
             rut_memory_stack_memalign(engine->frame_stack,
                                       sizeof(void *) * n_temps,
-                                      RUT_UTIL_ALIGNOF(void *));
+                                      C_ALIGNOF(void *));
 
         state.index = 0;
         state.object_registrations = setup->object_registrations;
         state.pb_registrations = rut_memory_stack_memalign(
             engine->frame_stack,
             sizeof(Rig__ObjectRegistration) * n_temps,
-            RUT_UTIL_ALIGNOF(Rig__ObjectRegistration));
+            C_ALIGNOF(Rig__ObjectRegistration));
 
         c_hash_table_foreach_remove(
             frontend->tmp_id_to_object_map, register_temporary_cb, &state);
@@ -585,7 +589,7 @@ rig_frontend_run_simulator_frame(rig_frontend_t *frontend,
         setup->dso.len = frontend->pending_dso_len;
         setup->dso.data = rut_memory_stack_memalign(engine->frame_stack,
                                                     frontend->pending_dso_len,
-                                                    RUT_UTIL_ALIGNOF(uint8_t));
+                                                    C_ALIGNOF(uint8_t));
         memcpy(setup->dso.data, frontend->pending_dso_data, setup->dso.len);
     }
 
@@ -633,9 +637,8 @@ _rig_frontend_init_type(void)
     rut_type_init(&rig_frontend_type, "rig_frontend_t", _rig_frontend_free);
 }
 
-#ifdef RIG_EDITOR_ENABLED
+#ifdef RIG_SUPPORT_SIMULATOR_PROCESS
 
-#if !defined(__ANDROID__) && (defined(__linux__) || defined(__APPLE__))
 static void
 simulator_sigchild_cb(void *user_data)
 {
@@ -741,15 +744,19 @@ fork_simulator(rut_shell_t *shell, rig_frontend_t *frontend)
     /* frontend_start_service will take ownership of the stream */
     rut_object_unref (stream);
 }
-#endif /* !defined (__ANDROID__) && (defined (linux) || defined (__APPLE__)) */
+#endif /* RIG_SUPPORT_SIMULATOR_PROCESS */
 
-#endif /* RIG_EDITOR_ENABLED */
+#ifdef C_SUPPORTS_THREADS
 
 typedef struct _thread_state_t {
+#ifdef C_HAVE_PTHREADS
     pthread_t thread_id;
     const char *name;
     void (*start)(void *start_data);
     void *start_data;
+#elif defined(USE_UV)
+    uv_thread_t thread_id;
+#endif
 
     rig_frontend_t *frontend;
     int fd;
@@ -773,16 +780,7 @@ run_simulator_thread(void *user_data)
     rut_object_unref(simulator);
 }
 
-#if !defined(__linux__) && defined(USE_SDL)
-static int
-run_sdl_simulator_thread(void *user_data)
-{
-    run_simulator_thread(user_data);
-
-    return 0;
-}
-#endif
-
+#ifdef C_HAVE_PTHREADS
 static void *
 start_thread_cb(void *start_data)
 {
@@ -795,15 +793,11 @@ start_thread_cb(void *start_data)
     return NULL;
 }
 
-#define THREAD_ERROR c_quark_from_static_string("rig-frontend-thread")
-
-#if defined(__linux__)
 static bool
 create_posix_thread(thread_state_t *state,
                     const char *name,
                     void (*start)(void *),
-                    void *start_data,
-                    c_error_t **error)
+                    void *start_data)
 {
     int ret;
     pthread_attr_t attr;
@@ -815,31 +809,23 @@ create_posix_thread(thread_state_t *state,
     pthread_attr_init(&attr);
     ret = pthread_create(&state->thread_id, &attr,
                          start_thread_cb, state);
-    if (ret != 0) {
-        c_set_error(error,
-                    THREAD_ERROR,
-                    0,
-                    "Failed to start a new thread: %s",
-                    strerror(errno));
-        return false;
-    }
+    if (ret != 0)
+        c_error("%s", "Failed to spawn simulator thread: %s",
+                strerror(errno));
 
     pthread_attr_destroy(&attr);
 
-    return true;
+    return ret == 0;
 }
-#endif /* __linux__ */
+#endif /* C_HAVE_PTHREADS */
 
 static thread_state_t *
 create_simulator_thread(rut_shell_t *shell,
                         rig_frontend_t *frontend)
 {
     thread_state_t *state = c_new0(thread_state_t, 1);
-#if defined(__linux__)
-    c_error_t *error = NULL;
-#endif
-    int sp[2];
     rig_pb_stream_t *stream;
+    int sp[2];
 
     c_return_val_if_fail(frontend->connected == false, NULL);
 
@@ -849,17 +835,18 @@ create_simulator_thread(rut_shell_t *shell,
     state->frontend = frontend;
     state->fd = sp[1];
 
-#if defined(__linux__)
+#ifdef C_HAVE_PTHREADS
     if (!create_posix_thread(state,
                              "Simulator",
                              run_simulator_thread,
-                             state,
-                             &error))
-    {
-        c_error("%s", error->message);
+                             state))
+        return NULL;
+#elif defined(USE_UV)
+    r = uv_thread_create(&state->thread_id, run_simulator_thread, state);
+    if (r) {
+        c_error("Failed to spawn simulator thread");
+        return NULL;
     }
-#elif defined(USE_SDL)
-    SDL_CreateThread(run_sdl_simulator_thread, "Simulator", state);
 #else
 #error "Missing platform api to create a thread"
 #endif
@@ -874,6 +861,8 @@ create_simulator_thread(rut_shell_t *shell,
 
     return state;
 }
+
+#endif /* C_SUPPORTS_THREADS */
 
 #ifdef __linux__
 static void
@@ -1014,7 +1003,7 @@ run_simulator_in_process(rut_shell_t *shell, rig_frontend_t *frontend)
     rig_simulator_t *simulator = rig_simulator_new(frontend->id, shell);
     rig_pb_stream_t *stream;
 
-    /* N.B. This won't block running the mainloop since rut-poll
+    /* N.B. This won't block running the mainloop since rut-loop
      * will see that simulator->shell isn't the main shell. */
     rig_simulator_run(simulator);
 
@@ -1023,13 +1012,30 @@ run_simulator_in_process(rut_shell_t *shell, rig_frontend_t *frontend)
     frontend_start_service(shell, frontend, stream);
 
     /* frontend_start_service will take ownership of the stream */
-    rut_object_unref (stream);
+    rut_object_unref(stream);
 
     rig_pb_stream_set_in_thread_direct_transport(stream,
                                                  simulator->stream);
     rig_pb_stream_set_in_thread_direct_transport(simulator->stream,
                                                  stream);
 }
+
+#ifdef __EMSCRIPTEN__
+static void
+spawn_web_worker(rut_shell_t *shell, rig_frontend_t *frontend)
+{
+    rig_pb_stream_t *stream = rig_pb_stream_new(shell);
+
+    frontend->sim_worker = rig_emscripten_worker_create("rig-simulator-worker.js");
+
+    frontend_start_service(shell, frontend, stream);
+
+    /* frontend_start_service will take ownership of the stream */
+    rut_object_unref(stream);
+
+    rig_pb_stream_set_worker(stream, frontend->sim_worker);
+}
+#endif
 
 static void
 spawn_simulator(rut_shell_t *shell, rig_frontend_t *frontend)
@@ -1039,20 +1045,31 @@ spawn_simulator(rut_shell_t *shell, rig_frontend_t *frontend)
     case RIG_SIMULATOR_RUN_MODE_MAINLOOP:
         run_simulator_in_process(shell, frontend);
         break;
+#ifdef C_SUPPORTS_THREADS
     case RIG_SIMULATOR_RUN_MODE_THREADED:
         create_simulator_thread(shell, frontend);
         break;
+#endif
+#ifdef RIG_SUPPORT_SIMULATOR_PROCESS
     case RIG_SIMULATOR_RUN_MODE_PROCESS:
         fork_simulator(shell, frontend);
         break;
+#endif
 #ifdef __linux__
-    case RIG_SIMULATOR_RUN_MODE_CONNECT_ABSTRACT_SOCKET:
+    case RIG_SIMULATOR_RUN_MODE_LISTEN_ABSTRACT_SOCKET:
         bind_to_abstract_socket(shell, frontend);
         break;
 #endif
-    case RIG_SIMULATOR_RUN_MODE_CONNECT_TCP:
+#ifdef USE_UV
+    case RIG_SIMULATOR_RUN_MODE_LISTEN_TCP:
         bind_to_tcp_socket(shell, frontend);
         break;
+#endif
+#ifdef __EMSCRIPTEN__
+    case RIG_SIMULATOR_RUN_MODE_WEB_WORKER:
+        spawn_web_worker(shell, frontend);
+        break;
+#endif
     }
 }
 

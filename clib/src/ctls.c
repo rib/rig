@@ -35,7 +35,7 @@ static _Atomic c_tls_t *tls_head = NULL;
 void
 c_tls_init(c_tls_t *tls, void (*destroy)(void *data))
 {
-#if defined(HAVE_PTHREADS)
+#if defined(C_HAVE_PTHREADS)
     pthread_key_create((pthread_key_t *)tls, destroy);
 #elif defined(WIN32)
     tls->key = TLSAlloc();

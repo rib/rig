@@ -755,6 +755,10 @@ rig_simulator_new(rig_frontend_id_t frontend_id,
 
     simulator->stream = rig_pb_stream_new(simulator->shell);
 
+#ifdef __EMSCRIPTEN__
+    rig_pb_stream_set_in_worker(simulator->stream, true);
+#endif
+
     rig_logs_set_simulator(simulator);
 
 #ifdef USE_MOZJS
@@ -767,7 +771,11 @@ rig_simulator_new(rig_frontend_id_t frontend_id,
 void
 rig_simulator_set_frontend_fd(rig_simulator_t *simulator, int fd)
 {
+#ifdef __EMSCRIPTEN__
+    c_warn_if_reached();
+#else
     rig_pb_stream_set_fd_transport(simulator->stream, fd);
+#endif
 }
 
 void
@@ -917,11 +925,11 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
         state.pb_changes =
             rut_memory_stack_memalign(engine->frame_stack,
                                       sizeof(Rig__PropertyChange) * n_changes,
-                                      RUT_UTIL_ALIGNOF(Rig__PropertyChange));
+                                      C_ALIGNOF(Rig__PropertyChange));
         state.pb_values =
             rut_memory_stack_memalign(engine->frame_stack,
                                       sizeof(Rig__PropertyValue) * n_changes,
-                                      RUT_UTIL_ALIGNOF(Rig__PropertyValue));
+                                      C_ALIGNOF(Rig__PropertyValue));
 
         state.i = 0;
         state.n_changes = n_changes;
@@ -932,7 +940,7 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
         ui_diff.property_changes =
             rut_memory_stack_memalign(engine->frame_stack,
                                       sizeof(void *) * n_changes,
-                                      RUT_UTIL_ALIGNOF(void *));
+                                      C_ALIGNOF(void *));
 
         for (i = 0; i < n_changes; i++) {
             ui_diff.property_changes[i] = &state.pb_changes[i];
@@ -960,11 +968,11 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
         ui_diff.actions =
             rut_memory_stack_memalign(engine->frame_stack,
                                       sizeof(void *) * ui_diff.n_actions,
-                                      RUT_UTIL_ALIGNOF(void *));
+                                      C_ALIGNOF(void *));
         pb_actions = rut_memory_stack_memalign(
             engine->frame_stack,
             sizeof(Rig__SimulatorAction) * ui_diff.n_actions,
-            RUT_UTIL_ALIGNOF(Rig__SimulatorAction));
+            C_ALIGNOF(Rig__SimulatorAction));
 
         i = 0;
         c_list_for_each_safe(action, tmp, &simulator->actions, list_node)
@@ -1104,7 +1112,7 @@ rig_simulator_forward_log(rig_simulator_t *simulator)
     pb_log->type = RIG__LOG__LOG_TYPE__SIMULATOR;
     pb_log->entries = rut_memory_stack_memalign(serializer->stack,
                                                 sizeof(void *) * simulator_log->len,
-                                                RUT_UTIL_ALIGNOF(void *));
+                                                C_ALIGNOF(void *));
     pb_log->n_entries = simulator_log->len;
 
     i = 0;
@@ -1140,11 +1148,12 @@ rig_simulator_parse_option(const char *option, void (*usage)(void))
     }
 
     if (strcmp(strv[0], "tcp") == 0) {
+#ifdef USE_UV
         char *address;
         int port;
 
         rig_simulator_run_mode_option =
-            RIG_SIMULATOR_RUN_MODE_CONNECT_TCP;
+            RIG_SIMULATOR_RUN_MODE_LISTEN_TCP;
 
         if (!strv[1]) {
             fprintf(stderr, "Missing tcp address in form \"tcp:address\" or \"tcp:address:port\"\n");
@@ -1157,11 +1166,13 @@ rig_simulator_parse_option(const char *option, void (*usage)(void))
 
         rig_simulator_address_option = address;
         rig_simulator_port_option = port;
-
+#else
+        c_critical("TCP/IP sockets not supported");
+#endif
     } else if (strcmp(strv[0], "abstract") == 0) {
 #ifdef __linux__
         rig_simulator_run_mode_option =
-            RIG_SIMULATOR_RUN_MODE_CONNECT_ABSTRACT_SOCKET;
+            RIG_SIMULATOR_RUN_MODE_LISTEN_ABSTRACT_SOCKET;
         if (strv[1])
             rig_simulator_abstract_socket_option = c_strdup(strv[1]);
         else {
@@ -1176,11 +1187,19 @@ rig_simulator_parse_option(const char *option, void (*usage)(void))
         rig_simulator_run_mode_option =
             RIG_SIMULATOR_RUN_MODE_MAINLOOP;
     } else if (strcmp(strv[0], "thread") == 0) {
+#ifdef C_SUPPORTS_THREADS
         rig_simulator_run_mode_option =
             RIG_SIMULATOR_RUN_MODE_THREADED;
+#else
+        c_critical("Platform doesn't support threads");
+#endif
     } else if (strcmp(strv[0], "process") == 0) {
+#ifdef SUPPORT_SIMULATOR_PROCESS
         rig_simulator_run_mode_option =
             RIG_SIMULATOR_RUN_MODE_PROCESS;
+#else
+        c_critical("Platform doesn't support sub-processes");
+#endif
     } else {
         fprintf(stderr, "Unsupported -m,--simulator= mode \"%s\"\n", option);
         usage();

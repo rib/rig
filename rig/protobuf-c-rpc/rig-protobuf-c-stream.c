@@ -28,7 +28,13 @@
 
 #include <config.h>
 
+#ifdef USE_UV
 #include <uv.h>
+#endif
+
+#ifdef __EMSCRIPTEN__
+#include "rig-emscripten-lib.h"
+#endif
 
 #include <rut.h>
 
@@ -99,6 +105,13 @@ rig_pb_stream_disconnect(rig_pb_stream_t *stream)
             stream->buffer.read_idle = NULL;
         }
         break;
+
+#ifdef __EMSCRIPTEN__
+    case STREAM_TYPE_WORKER_IPC:
+        stream->worker_ipc.worker = 0;
+        break;
+#endif
+
     case STREAM_TYPE_DISCONNECTED:
 
 #ifdef USE_UV
@@ -123,10 +136,12 @@ _stream_free(void *object)
 {
     rig_pb_stream_t *stream = object;
 
+#ifdef USE_UV
     /* resolve and connect requests take a reference on the stream so
      * we should never try and free a stream in these cases... */
     c_return_if_fail(stream->resolving == false);
     c_return_if_fail(stream->connecting == false);
+#endif
 
     rig_pb_stream_disconnect(stream);
 
@@ -138,8 +153,10 @@ _stream_free(void *object)
     rut_closure_list_disconnect_all(&stream->on_connect_closures);
     rut_closure_list_disconnect_all(&stream->on_error_closures);
 
+#ifdef USE_UV
     c_free(stream->hostname);
     c_free(stream->port);
+#endif
 
     c_slice_free(rig_pb_stream_t, stream);
 }
@@ -408,7 +425,7 @@ data_buffer_stream_read_idle(void *user_data)
                               closure->buf.len,
                               stream->read_data);
 
-        /* Give the closure back so it can be freed*/
+        /* Give the closure back so it can be freed */
         c_array_append_val(stream->buffer.other_end->buffer.finished_write_closures,
                            closure);
     }
@@ -548,17 +565,38 @@ rig_pb_stream_set_read_callback(rig_pb_stream_t *stream,
         if (stream->buffer.incoming_write_closures->len)
             queue_data_buffer_stream_read(stream);
         break;
+#ifdef __EMSCRIPTEN__
+    case STREAM_TYPE_WORKER_IPC:
+#endif
     case STREAM_TYPE_DISCONNECTED:
         break;
     }
 }
 
+#ifdef USE_UV
 static void
 uv_write_done_cb(uv_write_t *write_req, int status)
 {
     rig_pb_stream_write_closure_t *closure = write_req->data;
     closure->done_callback(closure);
 }
+#endif
+
+#ifdef __EMSCRIPTEN__
+static rig_pb_stream_t *_rig_worker_stream;
+
+void EMSCRIPTEN_KEEPALIVE
+rig_pb_stream_worker_onmessage(char *data, int len)
+{
+    rig_pb_stream_t *stream = _rig_worker_stream;
+
+    if (!stream->read_callback)
+        return;
+
+    stream->read_callback(stream, (uint8_t *)data, len, stream->read_data);
+}
+#endif
+
 
 void
 rig_pb_stream_write(rig_pb_stream_t *stream,
@@ -566,14 +604,21 @@ rig_pb_stream_write(rig_pb_stream_t *stream,
 {
     c_return_if_fail(stream->type != STREAM_TYPE_DISCONNECTED);
 
-    if (stream->type == STREAM_TYPE_BUFFER) {
+    switch (stream->type) {
+    case STREAM_TYPE_BUFFER: {
         c_return_if_fail(stream->buffer.other_end != NULL);
         c_return_if_fail(stream->buffer.other_end->type == STREAM_TYPE_BUFFER);
 
         c_array_append_val(stream->buffer.other_end->buffer.incoming_write_closures, closure);
 
         queue_data_buffer_stream_read(stream->buffer.other_end);
-    } else {
+
+        break;
+    }
+
+#ifdef USE_UV
+    case STREAM_TYPE_FD:
+    case STREAM_TYPE_TCP: {
         closure->write_req.data = closure;
 
         uv_write(&closure->write_req,
@@ -581,5 +626,69 @@ rig_pb_stream_write(rig_pb_stream_t *stream,
                  &closure->buf,
                  1, /* n buffers */
                  uv_write_done_cb);
+        break;
+    }
+#endif
+
+#ifdef __EMSCRIPTEN__
+    case STREAM_TYPE_WORKER_IPC:
+        if (stream->worker_ipc.in_worker)
+            rig_emscripten_worker_post_to_main(closure->buf.base,
+                                               closure->buf.len);
+        else
+            rig_emscripten_worker_post(stream->worker_ipc.worker,
+                                       "rig_pb_stream_worker_onmessage",
+                                       closure->buf.base,
+                                       closure->buf.len);
+
+        closure->done_callback(closure);
+        break;
+#endif
+
+    case STREAM_TYPE_DISCONNECTED:
+        c_warn_if_reached();
+        break;
     }
 }
+
+#ifdef __EMSCRIPTEN__
+void
+rig_pb_stream_set_in_worker(rig_pb_stream_t *stream, bool in_worker)
+{
+    c_return_if_fail(stream->type == STREAM_TYPE_DISCONNECTED);
+
+    stream->type = STREAM_TYPE_WORKER_IPC;
+    stream->worker_ipc.in_worker = in_worker;
+
+    _rig_worker_stream = stream;
+
+    set_connected(stream);
+}
+
+void EMSCRIPTEN_KEEPALIVE
+rig_pb_stream_main_onmessage(void *data, int len, void *user_data)
+{
+    rig_pb_stream_t *stream = user_data;
+
+    if (!stream->read_callback)
+        return;
+
+    stream->read_callback(stream, data, len, stream->read_data);
+}
+
+void
+rig_pb_stream_set_worker(rig_pb_stream_t *stream,
+                         rig_worker_t worker)
+{
+    c_return_if_fail(stream->type == STREAM_TYPE_DISCONNECTED);
+
+    stream->type = STREAM_TYPE_WORKER_IPC;
+    stream->worker_ipc.worker = worker;
+
+    rig_emscripten_worker_set_main_onmessage(worker,
+                                             rig_pb_stream_main_onmessage,
+                                             stream);
+
+    set_connected(stream);
+}
+#endif
