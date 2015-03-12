@@ -1604,9 +1604,13 @@ struct _c_tls_t {
     void (void *tls_data);
     c_tls_t *next;
 };
+#else
+typedef int c_mutex_t;
+typedef struct _c_tls_t {
+    void *data;
+} c_tls_t;
 #endif
 
-#ifdef C_SUPPORTS_THREADS
 /* Note: it's the caller's responsibility to ensure c_tls_init() is
  * only called once per c_tls_t */
 void c_tls_init(c_tls_t *tls, void (*destroy)(void *data));
@@ -1639,6 +1643,20 @@ c_tls_get(c_tls_t *tls)
 {
     return TlsGetValue(tls->key);
 }
+#else
+
+static inline void
+c_tls_set(c_tls_t *tls, void *data)
+{
+    tls->data = data;
+}
+
+static inline void *
+c_tls_get(c_tls_t *tls)
+{
+    return tls->data;
+}
+
 #endif
 
 /* N.B This is a recursive mutex */
@@ -1647,8 +1665,6 @@ void c_mutex_destroy(c_mutex_t *mutex);
 void c_mutex_lock(c_mutex_t *mutex);
 void c_mutex_unlock(c_mutex_t *mutex);
 bool c_mutex_trylock(c_mutex_t *mutex);
-
-#endif /* C_SUPPORTS_THREADS */
 
 #define _CLIB_MAJOR 2
 #define _CLIB_MIDDLE 4

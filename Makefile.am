@@ -1,5 +1,5 @@
 if EMSCRIPTEN
-SUBDIRS = clib cogl toys
+SUBDIRS = clib cogl toys rut
 
 else
 

@@ -118,4 +118,32 @@ c_mutex_trylock(c_mutex_t *mutex)
     return TryEnterCriticalSection((CRITICAL_SECTION *)mutex);
 }
 
+#else
+
+void
+c_mutex_init(c_mutex_t *mutex)
+{
+}
+
+void
+c_mutex_destroy(c_mutex_t *mutex)
+{
+}
+
+void
+c_mutex_lock(c_mutex_t *mutex)
+{
+}
+
+void
+c_mutex_unlock(c_mutex_t *mutex)
+{
+}
+
+bool
+c_mutex_trylock(c_mutex_t *mutex)
+{
+    return true;
+}
+
 #endif

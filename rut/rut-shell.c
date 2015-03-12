@@ -1708,8 +1708,8 @@ rut_shell_queue_redraw_real(rut_shell_t *shell)
 {
     if (!shell->paint_idle) {
         shell->paint_idle =
-            rut_poll_shell_add_idle(shell, paint_idle_cb, shell,
-                                    NULL); /* destroy notify */
+            rut_poll_shell_add_redraw(shell, paint_idle_cb, shell,
+                                      NULL); /* destroy notify */
     }
 }
 
@@ -2212,6 +2212,11 @@ get_system_data_dirs(void)
     static const char *dirs[] = {
         "/data",
         NULL
+    };
+    return dirs;
+#elif defined(__EMSCRIPTEN__)
+    static const char *dirs[] = {
+        NULL,
     };
     return dirs;
 #else

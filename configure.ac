@@ -170,12 +170,21 @@ AS_CASE(
 )
 AM_CONDITIONAL(RIG_DEBUG, [test "$enable_debug" = "yes"])
 
+AC_CHECK_HEADER([execinfo.h], [have_backtrace=yes], [have_backtrace=no])
+AC_CHECK_FUNC([backtrace], [], [have_backtrace=no])
+AC_CHECK_FUNC([backtrace_symbols], [], [have_backtrace=no])
+
+AS_IF([test "x$have_backtrace" = "xyes"],
+      [AC_DEFINE([HAVE_BACKTRACE],
+                 [1],
+                 [Define if backtracing is available])])
+
 AC_ARG_ENABLE(
   [refcount_debug],
   [AC_HELP_STRING([--enable-refcount-debug=@<:@no/yes@:>@],
                   [Enable tracking refcounts @<:@default=]default[@:>@])],
   [enable_refcount_debug="$enableval"],
-  [enable_refcount_debug="$enable_debug"]
+  [enable_refcount_debug="$have_backtrace"]
 )
 AS_CASE(
   [$enable_refcount_debug],
@@ -187,17 +196,6 @@ AS_CASE(
   [no], [],
   [AC_MSG_ERROR([Unknown argument for --enable-refcount-debug])]
 )
-
-AS_IF([test "x$enable_refcount_debug" = "xyes"],
-      [AC_CHECK_HEADER([execinfo.h], [have_backtrace=yes], [have_backtrace=no])
-       AC_CHECK_FUNC([backtrace], [], [have_backtrace=no])
-       AC_CHECK_FUNC([backtrace_symbols], [], [have_backtrace=no])],
-      [have_backtrace=no])
-
-AS_IF([test "x$have_backtrace" = "xyes"],
-      [AC_DEFINE([HAVE_BACKTRACE],
-                 [1],
-                 [Define if backtracing is available])])
 
 # use strict compiler flags only when building from git; the rules for
 # distcheck will take care of turning this on when making a release

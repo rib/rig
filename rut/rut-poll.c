@@ -706,6 +706,16 @@ rut_android_poll_run(rut_shell_t *shell)
 }
 #endif /* __ANDROID__ */
 
+#ifdef __EMSCRIPTEN__
+static void
+emscripten_paint_loop(void *user_data)
+{
+    rut_shell_t *shell = user_data;
+
+    shell->paint_cb(shell);
+}
+#endif
+
 void
 rut_poll_run(rut_shell_t *shell)
 {
@@ -721,7 +731,12 @@ rut_poll_run(rut_shell_t *shell)
     rut_glib_poll_run(shell);
 #elif defined(__ANDROID__)
     rut_android_poll_run(shell);
-#else
+#elif defined(__EMSCRIPTEN__)
+    if (shell->on_run_cb)
+        shell->on_run_cb(shell, shell->on_run_data);
+
+    emscripten_set_main_loop_arg(emscripten_paint_loop, shell, -1, true);
+#elif defined(USE_UV)
     {
         uv_loop_t *loop = rut_uv_shell_get_loop(shell);
 
@@ -730,6 +745,8 @@ rut_poll_run(rut_shell_t *shell)
 
         uv_run(loop, UV_RUN_DEFAULT);
     }
+#else
+#error "No rut_poll_run() mainloop implementation"
 #endif
 }
 
@@ -741,7 +758,7 @@ rut_poll_quit(rut_shell_t *shell)
 
 #if defined(__ANDROID__)
     shell->quit = true;
-#else
+#elif defined(USE_UV)
     {
         uv_loop_t *loop = rut_uv_shell_get_loop(shell);
         uv_stop(loop);
