@@ -44,7 +44,7 @@ struct _c_module_t {
 c_module_t *
 c_module_open(const char *file)
 {
-    module = c_new(c_module_t, 1);
+    c_module_t *module = c_new(c_module_t, 1);
 
     if (uv_dlopen(file, &module->lib)) {
         c_free(module);
