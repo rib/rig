@@ -1361,6 +1361,8 @@ bool c_spawn_async_with_pipes(const char *working_directory,
  */
 typedef struct _c_timer_t c_timer_t;
 
+int64_t c_get_monotonic_time(void);
+
 c_timer_t *c_timer_new(void);
 void c_timer_destroy(c_timer_t *timer);
 double c_timer_elapsed(c_timer_t *timer, unsigned long *microseconds);
