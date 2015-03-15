@@ -58,6 +58,9 @@
 #ifdef USE_SDL
 #include <cogl/cogl-sdl.h>
 #endif
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
 
 #include "rut-transform-private.h"
 #include "rut-shell.h"
@@ -1224,10 +1227,12 @@ flush_pre_paint_callbacks(rut_shell_t *shell)
 void
 rut_shell_start_redraw(rut_shell_t *shell)
 {
+#ifdef USE_UV
     c_return_if_fail(shell->paint_idle);
 
     rut_poll_shell_remove_idle(shell, shell->paint_idle);
     shell->paint_idle = NULL;
+#endif
 }
 
 void
@@ -1425,9 +1430,14 @@ rut_shell_check_timelines(rut_shell_t *shell)
     return false;
 }
 
-static void
-_rut_shell_paint(rut_shell_t *shell)
+void
+rut_shell_paint(rut_shell_t *shell)
 {
+    rut_shell_onscreen_t *onscreen;
+
+    c_list_for_each(onscreen, &shell->onscreens, link)
+        onscreen->is_dirty = false;
+
     shell->paint_cb(shell, shell->user_data);
 }
 
@@ -1691,26 +1701,21 @@ rut_shell_grab_pointer(rut_shell_t *shell,
 #endif
 }
 
-static void
-paint_idle_cb(void *user_data)
-{
-    rut_shell_t *shell = user_data;
-    rut_shell_onscreen_t *onscreen;
-
-    c_list_for_each(onscreen, &shell->onscreens, link)
-        onscreen->is_dirty = false;
-
-    _rut_shell_paint(user_data);
-}
-
 void
 rut_shell_queue_redraw_real(rut_shell_t *shell)
 {
+#ifndef __EMSCRIPTEN__
     if (!shell->paint_idle) {
         shell->paint_idle =
-            rut_poll_shell_add_redraw(shell, paint_idle_cb, shell,
-                                      NULL); /* destroy notify */
+            rut_poll_shell_add_idle(shell, rut_shell_paint, shell,
+                                    NULL); /* destroy notify */
     }
+#else
+    if (!shell->paint_loop_running) {
+        emscripten_resume_main_loop();
+        shell->paint_loop_running = true;
+    }
+#endif
 }
 
 void

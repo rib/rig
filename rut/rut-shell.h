@@ -342,6 +342,7 @@ struct _rut_shell_t {
 
     uv_signal_t sigchild_handle;
     c_list_t sigchild_closures;
+
 #ifdef __ANDROID__
     int uv_ready;
     bool quit;
@@ -386,7 +387,11 @@ struct _rut_shell_t {
 
     c_sllist_t *timelines;
 
+#ifdef __EMSCRIPTEN__
+    bool paint_loop_running;
+#else
     rut_closure_t *paint_idle;
+#endif
 
     rut_input_queue_t *input_queue;
     int input_queue_len;
@@ -954,5 +959,7 @@ void rut_init_tls_state(void);
 
 void rut_set_thread_current_shell(rut_shell_t *shell);
 rut_shell_t *rut_get_thread_current_shell(void);
+
+void rut_shell_paint(rut_shell_t *shell);
 
 #endif /* _RUT_SHELL_H_ */
