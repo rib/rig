@@ -58,6 +58,8 @@ typedef struct _cg_webgl_display_t {
      * framebuffer's per-context... */
 
     int window;
+    char *window_id;
+
     EMSCRIPTEN_WEBGL_CONTEXT_HANDLE context;
 } cg_webgl_display_t;
 
@@ -102,6 +104,8 @@ _cg_winsys_display_destroy(cg_display_t *display)
     if (webgl_display->window > 0)
         Cogl_Emscripten_DestroyWindow(webgl_display->window);
 
+    c_free(webgl_display->window_id);
+
     c_slice_free(cg_webgl_display_t, display->winsys);
     display->winsys = NULL;
 }
@@ -145,10 +149,7 @@ _cg_winsys_display_setup(cg_display_t *display, cg_error_t **error)
     Cogl_Emscripten_HideWindow(window);
 
     id = c_strdup_printf("cogl_window_%d", window);
-
     context = emscripten_webgl_create_context(id, &attribs);
-
-    c_free(id);
 
     if (context < 0) {
         _cg_set_error(error,
@@ -156,6 +157,7 @@ _cg_winsys_display_setup(cg_display_t *display, cg_error_t **error)
                       CG_WINSYS_ERROR_INIT,
                       "create context failed");
         Cogl_Emscripten_DestroyWindow(window);
+        c_free(id);
         return false;
     }
 
@@ -165,6 +167,7 @@ _cg_winsys_display_setup(cg_display_t *display, cg_error_t **error)
     display->winsys = webgl_display;
 
     webgl_display->window = window;
+    webgl_display->window_id = id;
     webgl_display->context = context;
 
     return true;
@@ -262,6 +265,29 @@ _cg_winsys_onscreen_set_visibility(cg_onscreen_t *onscreen,
         Cogl_Emscripten_ShowWindow(webgl_onscreen->window);
     else
         Cogl_Emscripten_HideWindow(webgl_onscreen->window);
+}
+
+const char *
+cg_webgl_onscreen_get_id(cg_onscreen_t *onscreen)
+{
+    cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
+    cg_device_t *dev = framebuffer->dev;
+    cg_display_t *display = dev->display;
+    cg_webgl_display_t *webgl_display = display->winsys;
+
+    return webgl_display->window_id;
+}
+
+void
+cg_webgl_onscreen_resize(cg_onscreen_t *onscreen,
+                         int width,
+                         int height)
+{
+    cg_framebuffer_t *fb = CG_FRAMEBUFFER(onscreen);
+    cg_onscreen_webgl_t *webgl_onscreen = onscreen->winsys;
+
+    Cogl_Emscripten_SetWindowSize(webgl_onscreen->window, width, height);
+    _cg_framebuffer_winsys_update_size(fb, width, height);
 }
 
 const cg_winsys_vtable_t *
