@@ -3,7 +3,7 @@
 #include <cogl/cogl.h>
 #include <string.h>
 
-#include "test-utils.h"
+#include "test-cg-fixtures.h"
 
 typedef struct _TestState
 {
@@ -24,8 +24,8 @@ test_sparse_layer_combine (TestState *state)
      creating a pipeline with very large layer numbers. This should
      end up being mapped to much smaller unit numbers */
 
-  tex1 = test_utils_create_color_texture (test_dev, 0xff0000ff);
-  tex2 = test_utils_create_color_texture (test_dev, 0x00ff00ff);
+  tex1 = test_cg_create_color_texture (test_dev, 0xff0000ff);
+  tex2 = test_cg_create_color_texture (test_dev, 0x00ff00ff);
 
   pipeline = cg_pipeline_new (test_dev);
 
@@ -37,7 +37,7 @@ test_sparse_layer_combine (TestState *state)
 
   cg_framebuffer_draw_rectangle (test_fb, pipeline, -1, -1, 1, 1);
 
-  test_utils_check_pixel (test_fb, 2, 2, 0xffff00ff);
+  test_cg_check_pixel (test_fb, 2, 2, 0xffff00ff);
 
   cg_object_unref (pipeline);
   cg_object_unref (tex1);
@@ -58,7 +58,7 @@ test_sparse_pipeline (void)
      whether using an attribute with sparse texture coordinates will
      work */
 
-  if (cg_test_verbose ())
+  if (test_verbose ())
     c_print ("OK\n");
 }
 

@@ -428,7 +428,7 @@ case "$host" in
     enable_cogl_path=yes
     enable_cogl_pango=$enable_editor
     enable_uv=yes
-    enable_gles2=yes
+    enable_gl=yes
     enable_glx=yes
     enable_xlib_egl_platform=yes
     ;;

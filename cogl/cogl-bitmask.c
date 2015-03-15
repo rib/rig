@@ -36,7 +36,7 @@
 #include <clib.h>
 #include <string.h>
 
-#include <test-fixtures/test-unit.h>
+#include <test-fixtures/test-cg-fixtures.h>
 
 #include "cogl-bitmask.h"
 #include "cogl-util.h"
@@ -367,13 +367,15 @@ verify_bits(const CoglBitmask *bitmask, ...)
     }
 }
 
-UNIT_TEST(check_bitmask_api, 0 /* no requirements */, 0 /* no failure cases */)
+TEST(check_bitmask_api)
 {
     CoglBitmask bitmask;
     CoglBitmask other_bitmask;
     /* A dummy bit to make it use arrays sometimes */
     int dummy_bit;
     int i;
+
+    test_cg_init();
 
     for (dummy_bit = -1; dummy_bit < 256; dummy_bit += 40) {
         _cg_bitmask_init(&bitmask);
@@ -452,4 +454,6 @@ UNIT_TEST(check_bitmask_api, 0 /* no requirements */, 0 /* no failure cases */)
 
     for (i = 0; i < 1024; i++)
         c_assert_cmpint(_cg_bitmask_get(&bitmask, i), ==, (i < 500));
+
+    test_cg_fini();
 }

@@ -4,7 +4,7 @@
 #include <math.h>
 #include <string.h>
 
-#include "test-utils.h"
+#include "test-cg-fixtures.h"
 
 /* Macros are used here instead of functions so that the
  * c_assert_cmpfloat will give a more interesting message when it
@@ -78,6 +78,6 @@ test_euler_quaternion (void)
 
   /* FIXME: This needs a lot more tests! */
 
-  if (cg_test_verbose ())
+  if (test_verbose ())
     c_print ("OK\n");
 }

@@ -2,7 +2,7 @@
 
 #include <cogl/cogl.h>
 
-#include "test-utils.h"
+#include "test-cg-fixtures.h"
 
 /* I'm writing this on the train after having dinner at a churrascuria. */
 #define MAGIC_CHUNK_O_DATA ((void *) 0xdeadbeef)
@@ -24,7 +24,7 @@ callback (cg_fence_t *fence,
   int fb_width = cg_framebuffer_get_width (test_fb);
   int fb_height = cg_framebuffer_get_height (test_fb);
 
-  test_utils_check_pixel (test_fb, fb_width - 1, fb_height - 1, 0x00ff0000);
+  test_cg_check_pixel (test_fb, fb_width - 1, fb_height - 1, 0x00ff0000);
   c_assert (user_data == MAGIC_CHUNK_O_DATA && "callback data not mangled");
 
   g_main_loop_quit (loop);
@@ -55,6 +55,6 @@ test_fence (void)
 
   g_main_loop_run (loop);
 
-  if (cg_test_verbose ())
+  if (test_verbose ())
     c_print ("OK\n");
 }

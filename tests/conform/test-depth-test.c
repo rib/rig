@@ -4,7 +4,7 @@
 
 #include <string.h>
 
-#include "test-utils.h"
+#include "test-cg-fixtures.h"
 
 #define QUAD_WIDTH 20
 
@@ -104,7 +104,7 @@ test_depth (TestState *state,
   if (missing_feature)
     return;
 
-  test_utils_check_pixel (test_fb,
+  test_cg_check_pixel (test_fb,
                           x * QUAD_WIDTH + (QUAD_WIDTH / 2),
                           y * QUAD_WIDTH + (QUAD_WIDTH / 2),
                           expected_result);
@@ -231,7 +231,7 @@ test_depth_test (void)
 
   paint (&state);
 
-  if (cg_test_verbose ())
+  if (test_verbose ())
     c_print ("OK\n");
 }
 

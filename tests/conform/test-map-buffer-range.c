@@ -4,7 +4,7 @@
 
 #include <string.h>
 
-#include "test-utils.h"
+#include "test-cg-fixtures.h"
 
 static uint8_t
 tex_data[2 * 2 * 4] =
@@ -107,11 +107,11 @@ test_map_buffer_range (void)
   cg_object_unref (primitive);
 
   /* Top left pixel should be the one that is replaced to be green */
-  test_utils_check_pixel (test_fb, 1, 1, 0x00ff00ff);
+  test_cg_check_pixel (test_fb, 1, 1, 0x00ff00ff);
   /* The other three corners should be left as red */
-  test_utils_check_pixel (test_fb, fb_width - 2, 1, 0xff0000ff);
-  test_utils_check_pixel (test_fb, 1, fb_height - 2, 0xff0000ff);
-  test_utils_check_pixel (test_fb, fb_width - 2, fb_height - 2, 0xff0000ff);
+  test_cg_check_pixel (test_fb, fb_width - 2, 1, 0xff0000ff);
+  test_cg_check_pixel (test_fb, 1, fb_height - 2, 0xff0000ff);
+  test_cg_check_pixel (test_fb, fb_width - 2, fb_height - 2, 0xff0000ff);
 
   cg_object_unref (buffer);
   cg_object_unref (pos_attribute);
@@ -120,6 +120,6 @@ test_map_buffer_range (void)
   cg_object_unref (pipeline);
   cg_object_unref (tex);
 
-  if (cg_test_verbose ())
+  if (test_verbose ())
     c_print ("OK\n");
 }

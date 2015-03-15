@@ -3,7 +3,7 @@
 #include <cogl/cogl.h>
 #include <string.h>
 
-#include "test-utils.h"
+#include "test-cg-fixtures.h"
 
 #define BITMAP_SIZE 256
 
@@ -112,24 +112,24 @@ check_colours (uint32_t color0,
   int fb_width = cg_framebuffer_get_width (test_fb);
   int fb_height = cg_framebuffer_get_height (test_fb);
 
-  test_utils_check_region (test_fb,
+  test_cg_check_region (test_fb,
                            1, 1, /* x/y */
                            fb_width / 2 - 2, /* width */
                            fb_height / 2 - 2, /* height */
                            color0);
-  test_utils_check_region (test_fb,
+  test_cg_check_region (test_fb,
                            fb_width / 2 + 1, /* x */
                            1, /* y */
                            fb_width / 2 - 2, /* width */
                            fb_height / 2 - 2, /* height */
                            color1);
-  test_utils_check_region (test_fb,
+  test_cg_check_region (test_fb,
                            1, /* x */
                            fb_height / 2 + 1, /* y */
                            fb_width / 2 - 2, /* width */
                            fb_height / 2 - 2, /* height */
                            color2);
-  test_utils_check_region (test_fb,
+  test_cg_check_region (test_fb,
                            fb_width / 2 + 1, /* x */
                            fb_height / 2 + 1, /* y */
                            fb_width / 2 - 2, /* width */
@@ -161,7 +161,7 @@ test_pixel_buffer_map (void)
                  0x00ffffff,
                  0xff0000ff);
 
-  if (cg_test_verbose ())
+  if (test_verbose ())
     c_print ("OK\n");
 }
 
@@ -207,7 +207,7 @@ test_pixel_buffer_set_data (void)
                  0x00ffffff,
                  0xff0000ff);
 
-  if (cg_test_verbose ())
+  if (test_verbose ())
     c_print ("OK\n");
 }
 
@@ -270,6 +270,6 @@ test_pixel_buffer_sub_region (void)
                  0xffffffff,
                  0xffffffff);
 
-  if (cg_test_verbose ())
+  if (test_verbose ())
     c_print ("OK\n");
 }

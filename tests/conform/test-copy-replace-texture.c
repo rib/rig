@@ -3,7 +3,7 @@
 #include <cogl/cogl.h>
 #include <string.h>
 
-#include "test-utils.h"
+#include "test-cg-fixtures.h"
 
 /* Keep track of the number of textures that we've created and are
  * still alive */
@@ -87,7 +87,7 @@ test_copy_replace_texture (void)
   for (pipeline_num = 0; pipeline_num < N_PIPELINES - 1; pipeline_num++)
     cg_object_unref (pipelines[pipeline_num]);
 
-  if (alive_texture_mask && cg_test_verbose ())
+  if (alive_texture_mask && test_verbose ())
     {
       int i;
 
@@ -117,6 +117,6 @@ test_copy_replace_texture (void)
   /* That should get rid of the last of the textures */
   c_assert_cmpint (alive_texture_mask, ==, 0);
 
-  if (cg_test_verbose ())
+  if (test_verbose ())
     c_print ("OK\n");
 }
