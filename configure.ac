@@ -144,9 +144,10 @@ dnl ================================================================
 m4_define([default], [m4_if(release_status, [git], [yes], [no])])
 AC_ARG_ENABLE(
   [debug],
-  [AC_HELP_STRING([--enable-debug=@<:@no/yes@:>@], [Control debugging level @<:@default=]default[@:>@])],
-  [],
-  enable_debug=default
+  [AC_HELP_STRING([--enable-debug=@<:@no/yes@:>@],
+                  [Control debugging level @<:@default=]default[@:>@])],
+  [enable_debug="$enableval"],
+  [enable_debug=default]
 )
 AS_CASE(
   [$enable_debug],
@@ -160,11 +161,14 @@ AS_CASE(
             # We can use libprotobuf for pretty printing protocol buffer streams
             RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES protobuf"
             RIG_EXTRA_LDFLAGS="$RIG_EXTRA_LDFLAGS -lstdc++"
+          ],
+          [
+            RIG_EXTRA_EMCC_JSFLAGS="$RIG_EXTRA_EMCC_JSFLAGS -s ASSERTIONS=2 -g4"
           ])
   ],
   [no],
   [
-    RIG_EXTRA_CFLAGS="$RIG_EXTRA_CFLAGS -DRIG_ENABLE_DEBUG -DG_DISABLE_CHECKS -DG_DISABLE_CAST_CHECKS"
+    RIG_EXTRA_CFLAGS="$RIG_EXTRA_CFLAGS -DG_DISABLE_CHECKS -DG_DISABLE_CAST_CHECKS"
   ],
   [AC_MSG_ERROR([Unknown argument for --enable-debug])]
 )
@@ -265,6 +269,7 @@ AS_IF([test "x$enable_unit_tests" = "xyes"],
         AC_DEFINE([ENABLE_UNIT_TESTS], [1], [Whether to enable building unit tests])
       ]
 )
+AS_IF([test "x$emscripten_compiler" = xyes], [enable_unit_tests=no])
 AM_CONDITIONAL(UNIT_TESTS, test "x$enable_unit_tests" = "xyes")
 
 
@@ -609,6 +614,7 @@ AC_SUBST(RIG_DEP_CFLAGS)
 AC_SUBST(RIG_DEP_LIBS)
 AC_SUBST(RIG_CLANG_CFLAGS)
 AC_SUBST(RIG_CLANG_LIBS)
+AC_SUBST(RIG_EXTRA_EMCC_JSFLAGS)
 
 
 dnl ================================================================
