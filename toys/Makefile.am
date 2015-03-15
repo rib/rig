@@ -10,7 +10,9 @@ AM_CPPFLAGS = \
 
 AM_CFLAGS = \
 	$(COGL_DEP_CFLAGS) \
-	$(COGL_EXTRA_CFLAGS)
+	$(COGL_EXTRA_CFLAGS) \
+	$(COGL_PANGO_DEP_CFLAGS) \
+	$(COGL_GST_DEP_CFLAGS)
 
 AM_CFLAGS += -DCG_EXAMPLES_DATA=\""$(abs_top_srcdir)/toys/"\"
 
@@ -61,21 +63,18 @@ cogl_point_sprites_LDADD = $(common_ldadd)
 
 cogl_maze_SOURCES = cogl-maze.c
 cogl_maze_LDADD = $(common_ldadd)
-cogl_maze_CFLAGS = $(AM_CPPFLAGS) $(COGL_PANGO_DEP_CFLAGS)
 
 if BUILD_COGL_PANGO
 programs += cogl-crate
 cogl_crate_SOURCES = cogl-crate.c
-cogl_crate_LDADD = $(common_ldadd) $(COGL_PANGO_DEP_LIBS) $(top_builddir)/cogl-pango/libcogl-pango2.la
-cogl_crate_CFLAGS = $(AM_CFLAGS) $(COGL_PANGO_DEP_CFLAGS)
+cogl_crate_LDADD = $(common_ldadd)
 examples_data_DATA += crate.jpg
 endif
 
 if BUILD_COGL_GST
 programs += cogl-basic-video-player
 cogl_basic_video_player_SOURCES = cogl-basic-video-player.c
-cogl_basic_video_player_LDADD = $(common_ldadd) $(COGL_GST_DEP_LIBS) $(top_builddir)/cogl-gst/libcogl-gst.la
-cogl_basic_video_player_CFLAGS = $(AM_CFLAGS) $(COGL_GST_DEP_CFLAGS) -I$(top_builddir)/cogl-gst
+cogl_basic_video_player_LDADD = $(common_ldadd)
 endif
 
 if X11_TESTS
