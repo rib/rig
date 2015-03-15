@@ -86,6 +86,9 @@
 #ifdef USE_X11
 #include "rut-x11-shell.h"
 #endif
+#ifdef __EMSCRIPTEN__
+#include "rut-emscripten-shell.h"
+#endif
 
 #ifdef USE_GSTREAMER
 #include "gstmemsrc.h"
@@ -211,7 +214,8 @@ rut_key_event_get_keysym(rut_input_event_t *event)
         case RUT_STREAM_EVENT_KEY_DOWN:
             return stream_event->key.keysym;
         default:
-            c_return_val_if_fail(0, RUT_KEY_Escape);
+            c_warn_if_reached();
+            return 0;
         }
     }
 
@@ -231,7 +235,8 @@ rut_key_event_get_action(rut_input_event_t *event)
         case RUT_STREAM_EVENT_KEY_UP:
             return RUT_KEY_EVENT_ACTION_UP;
         default:
-            c_return_val_if_fail(0, RUT_KEY_EVENT_ACTION_DOWN);
+            c_warn_if_reached();
+            return 0;
         }
     }
 
@@ -254,7 +259,7 @@ rut_motion_event_get_action(rut_input_event_t *event)
             return RUT_MOTION_EVENT_ACTION_MOVE;
         default:
             c_warn_if_reached();
-            return RUT_KEY_EVENT_ACTION_UP;
+            return 0;
         }
     }
 
@@ -275,7 +280,7 @@ rut_motion_event_get_button(rut_input_event_t *event)
             return stream_event->pointer_button.button;
         default:
             c_warn_if_reached();
-            return RUT_BUTTON_STATE_1;
+            return 0;
         }
     }
 
@@ -767,7 +772,7 @@ _rut_shell_free(void *object)
 
     while (!c_list_empty(&shell->grabs)) {
         rut_shell_grab_t *first_grab =
-            rut_container_of(shell->grabs.next, first_grab, list_node);
+            c_container_of(shell->grabs.next, rut_shell_grab_t, list_node);
 
         _rut_shell_remove_grab_link(shell, first_grab);
     }
@@ -1011,6 +1016,8 @@ _rut_shell_init(rut_shell_t *shell)
         rut_x11_shell_init(shell);
 #elif defined(__ANDROID__)
         rut_android_shell_init(shell);
+#elif defined(__EMSCRIPTEN__)
+        rut_emscripten_shell_init(shell);
 #endif
 
         shell->nine_slice_indices =

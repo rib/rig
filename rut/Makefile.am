@@ -20,6 +20,12 @@ librut_la_SOURCES += \
 	rut-x11-shell.c
 endif
 
+if EMSCRIPTEN
+librut_la_SOURCES += \
+	rut-emscripten-shell.h \
+	rut-emscripten-shell.c
+endif
+
 if EDITOR_ENABLED
 librut_la_SOURCES += \
 	$(rut_editor_sources)
