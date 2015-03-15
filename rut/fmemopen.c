@@ -26,6 +26,8 @@
  * SOFTWARE.
  */
 
+#include <config.h>
+
 #include <errno.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -62,7 +64,6 @@ static int
 write_callback(void *cookie_, const char *buf, int len)
 {
     cookie_t *cookie = cookie_;
-    int addnullc;
 
     /* For simplicitly we avoid doing a partial write when there isn't
      * enough space.
@@ -89,11 +90,11 @@ write_callback(void *cookie_, const char *buf, int len)
     return len;
 }
 
-static fpos_t
-seek_callback(void *cookie_, fpos_t pos, int whence)
+static off_t
+seek_callback(void *cookie_, off_t pos, int whence)
 {
     cookie_t *cookie = cookie_;
-    fpos_t new_pos = 0;
+    off_t new_pos = 0;
 
     switch (whence) {
     case SEEK_SET:
