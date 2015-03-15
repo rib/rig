@@ -207,7 +207,7 @@ AC_ARG_ENABLE(
   enable_maintainer_flags=default
 )
 
-MAINTAINER_COMPILER_FLAGS="-Wall -Wcast-align -Wuninitialized
+MAINTAINER_COMPILER_FLAGS="-Wall -Wuninitialized
                            -Wno-strict-aliasing -Wempty-body -Wformat
                            -Wformat-security -Winit-self
                            -Wpointer-arith"
@@ -409,6 +409,7 @@ AC_CHECK_FUNC(fmemopen,
                 have_fmemopen=yes
                 AC_DEFINE([HAVE_FMEMOPEN], [1], [Have fmemopen(3) implementation])
               ], [have_fmemopen=no])
+AS_IF([test "x$emscripten_compiler" = xyes], [have_fmemopen=yes])
 AM_CONDITIONAL([NEED_FMEMOPEN], [test "x$have_fmemopen" = "xno"])
 
 dnl Add the build flags for android_native_app_glue
