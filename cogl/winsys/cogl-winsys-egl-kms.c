@@ -60,7 +60,7 @@
 #include "cogl-kms-display.h"
 #include "cogl-version.h"
 #include "cogl-error-private.h"
-#include "cogl-poll-private.h"
+#include "cogl-loop-private.h"
 
 static const cg_winsys_egl_vtable_t _cg_winsys_egl_vtable;
 
@@ -205,7 +205,7 @@ page_flip_handler(
          * application calls cg_device_dispatch so instead of
          * immediately notifying we queue an idle callback */
         if (!kms_renderer->swap_notify_idle) {
-            kms_renderer->swap_notify_idle = _cg_poll_renderer_add_idle(
+            kms_renderer->swap_notify_idle = _cg_loop_add_idle(
                 renderer, flush_pending_swap_notify_idle, dev, NULL);
         }
 
@@ -303,7 +303,7 @@ _cg_winsys_renderer_connect(cg_renderer_t *renderer,
     if (!_cg_winsys_egl_renderer_connect_common(renderer, error))
         goto egl_terminate;
 
-    _cg_poll_renderer_add_fd(renderer,
+    _cg_loop_add_fd(renderer,
                              kms_renderer->fd,
                              CG_POLL_FD_EVENT_IN,
                              NULL, /* no prepare callback */

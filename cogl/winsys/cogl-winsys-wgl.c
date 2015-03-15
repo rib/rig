@@ -49,7 +49,7 @@
 #include "cogl-win32-renderer.h"
 #include "cogl-winsys-wgl-private.h"
 #include "cogl-error-private.h"
-#include "cogl-poll-private.h"
+#include "cogl-loop-private.h"
 
 /* This magic handle will cause c_poll to wakeup when there is a
  * pending message */
@@ -167,7 +167,7 @@ _cg_winsys_renderer_disconnect(cg_renderer_t *renderer)
     cg_renderer_wgl_t *wgl_renderer = renderer->winsys;
 
     if (renderer->win32_enable_event_retrieval)
-        _cg_poll_renderer_remove_fd(renderer, WIN32_MSG_HANDLE);
+        _cg_loop_remove_fd(renderer, WIN32_MSG_HANDLE);
 
     if (wgl_renderer->gl_module)
         c_module_close(wgl_renderer->gl_module);
@@ -282,7 +282,7 @@ _cg_winsys_renderer_connect(cg_renderer_t *renderer,
          * doesn't work in other cases because the application shouldn't
          * be using the cg_poll_* functions on non-Unix systems
          * anyway */
-        _cg_poll_renderer_add_fd(renderer,
+        _cg_loop_add_fd(renderer,
                                  WIN32_MSG_HANDLE,
                                  CG_POLL_FD_EVENT_IN,
                                  prepare_messages,

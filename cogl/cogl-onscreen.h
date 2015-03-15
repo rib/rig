@@ -666,7 +666,7 @@ bool cg_onscreen_get_resizable(cg_onscreen_t *onscreen);
  *
  * <note>A resize callback will only ever be called while dispatching
  * Cogl events from the system mainloop; so for example during
- * cg_poll_renderer_dispatch(). This is so that callbacks shouldn't
+ * cg_loop_dispatch(). This is so that callbacks shouldn't
  * occur while an application might have arbitrary locks held for
  * example.</note>
  *
@@ -713,7 +713,7 @@ typedef struct _cg_closure_t cg_onscreen_resize_closure_t;
  *
  * <note>A resize callback will only ever be called while dispatching
  * Cogl events from the system mainloop; so for example during
- * cg_poll_renderer_dispatch(). This is so that callbacks shouldn't
+ * cg_loop_dispatch(). This is so that callbacks shouldn't
  * occur while an application might have arbitrary locks held for
  * example.</note>
  *

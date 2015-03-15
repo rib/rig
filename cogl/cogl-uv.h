@@ -49,7 +49,7 @@ CG_BEGIN_DECLS
  * can internally handle some events from the driver. libuv provides
  * an efficient, portable mainloop api that many projects use and
  * so this is a convenience API that can be used instead of the
- * more low level cogl-poll api.
+ * more low level cogl-loop api.
  */
 
 /**

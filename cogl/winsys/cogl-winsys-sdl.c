@@ -44,7 +44,7 @@
 #include "cogl-onscreen-private.h"
 #include "cogl-winsys-sdl-private.h"
 #include "cogl-error-private.h"
-#include "cogl-poll-private.h"
+#include "cogl-loop-private.h"
 
 typedef struct _cg_renderer_sdl_t {
     cg_closure_t *resize_notify_idle;
@@ -266,7 +266,7 @@ sdl_event_filter_cb(SDL_Event *event, void *data)
          * application calls cg_device_dispatch so instead of
          * immediately notifying we queue an idle callback */
         if (!sdl_renderer->resize_notify_idle) {
-            sdl_renderer->resize_notify_idle = _cg_poll_renderer_add_idle(
+            sdl_renderer->resize_notify_idle = _cg_loop_add_idle(
                 renderer,
                 flush_pending_resize_notification_idle,
                 dev,
