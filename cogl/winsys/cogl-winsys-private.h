@@ -48,7 +48,7 @@
 #include "cogl-egl.h"
 #endif
 
-#include "cogl-poll.h"
+#include "cogl-loop.h"
 
 uint32_t _cg_winsys_error_domain(void);
 

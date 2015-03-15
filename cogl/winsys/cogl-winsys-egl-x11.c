@@ -49,7 +49,7 @@
 #include "cogl-texture-pixmap-x11-private.h"
 #include "cogl-texture-2d-private.h"
 #include "cogl-error-private.h"
-#include "cogl-poll-private.h"
+#include "cogl-loop-private.h"
 
 #define CG_ONSCREEN_X11_EVENT_MASK (StructureNotifyMask | ExposureMask)
 
@@ -145,7 +145,7 @@ notify_resize(cg_device_t *dev, Window drawable, int width, int height)
      * application calls cg_device_dispatch so instead of immediately
      * notifying we queue an idle callback */
     if (!egl_renderer->resize_notify_idle) {
-        egl_renderer->resize_notify_idle = _cg_poll_renderer_add_idle(
+        egl_renderer->resize_notify_idle = _cg_loop_add_idle(
             renderer, flush_pending_resize_notifications_idle, dev, NULL);
     }
 

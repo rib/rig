@@ -92,7 +92,7 @@
 #include <cogl/cogl-framebuffer.h>
 #include <cogl/cogl-onscreen.h>
 #include <cogl/cogl-frame-info.h>
-#include <cogl/cogl-poll.h>
+#include <cogl/cogl-loop.h>
 #include <cogl/cogl-fence.h>
 #if defined(CG_HAS_EGL_PLATFORM_KMS_SUPPORT)
 #include <cogl/cogl-kms-renderer.h>

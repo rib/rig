@@ -33,8 +33,8 @@
 #include <emscripten.h>
 #endif
 
-#include "cogl-poll.h"
-#include "cogl-poll-private.h"
+#include "cogl-loop.h"
+#include "cogl-loop-private.h"
 #include "cogl-winsys-private.h"
 #include "cogl-renderer-private.h"
 
@@ -46,16 +46,14 @@ struct _cg_poll_source_t {
 };
 
 int
-cg_poll_renderer_get_info(cg_renderer_t *renderer,
-                          cg_poll_fd_t **poll_fds,
-                          int *n_poll_fds,
-                          int64_t *timeout)
+cg_loop_get_info(cg_renderer_t *renderer,
+                 cg_poll_fd_t **poll_fds,
+                 int *n_poll_fds,
+                 int64_t *timeout)
 {
     c_llist_t *l, *next;
 
     c_return_val_if_fail(cg_is_renderer(renderer), 0);
-    c_return_val_if_fail(poll_fds != NULL, 0);
-    c_return_val_if_fail(n_poll_fds != NULL, 0);
     c_return_val_if_fail(timeout != NULL, 0);
 
     *timeout = -1;
@@ -78,18 +76,24 @@ cg_poll_renderer_get_info(cg_renderer_t *renderer,
         }
     }
 
+    /* We should only be passing NULL for n_poll_fds or poll_fds on
+     * platforms we assume don't support fd polling... */
+    c_return_val_if_fail(n_poll_fds != NULL || renderer->poll_fds->len == 0, 0);
+
     /* This is deliberately set after calling the prepare callbacks in
      * case one of them removes its fd */
-    *poll_fds = (void *)renderer->poll_fds->data;
-    *n_poll_fds = renderer->poll_fds->len;
+    if (poll_fds)
+        *poll_fds = (void *)renderer->poll_fds->data;
+    if (n_poll_fds)
+        *n_poll_fds = renderer->poll_fds->len;
 
     return renderer->poll_fds_age;
 }
 
 void
-cg_poll_renderer_dispatch(cg_renderer_t *renderer,
-                          const cg_poll_fd_t *poll_fds,
-                          int n_poll_fds)
+cg_loop_dispatch(cg_renderer_t *renderer,
+                 const cg_poll_fd_t *poll_fds,
+                 int n_poll_fds)
 {
     c_llist_t *l, *next;
 
@@ -125,7 +129,7 @@ cg_poll_renderer_dispatch(cg_renderer_t *renderer,
 }
 
 void
-cg_poll_renderer_dispatch_fd(cg_renderer_t *renderer, int fd, int events)
+cg_loop_dispatch_fd(cg_renderer_t *renderer, int fd, int events)
 {
     c_llist_t *l;
 
@@ -156,7 +160,7 @@ find_pollfd(cg_renderer_t *renderer, int fd)
 }
 
 void
-_cg_poll_renderer_remove_fd(cg_renderer_t *renderer, int fd)
+_cg_loop_remove_fd(cg_renderer_t *renderer, int fd)
 {
     int i = find_pollfd(renderer, fd);
     c_llist_t *l;
@@ -179,9 +183,9 @@ _cg_poll_renderer_remove_fd(cg_renderer_t *renderer, int fd)
 }
 
 void
-_cg_poll_renderer_modify_fd(cg_renderer_t *renderer,
-                            int fd,
-                            cg_poll_fd_event_t events)
+_cg_loop_modify_fd(cg_renderer_t *renderer,
+                   int fd,
+                   cg_poll_fd_event_t events)
 {
     int fd_index = find_pollfd(renderer, fd);
 
@@ -197,17 +201,17 @@ _cg_poll_renderer_modify_fd(cg_renderer_t *renderer,
 }
 
 void
-_cg_poll_renderer_add_fd(cg_renderer_t *renderer,
-                         int fd,
-                         cg_poll_fd_event_t events,
-                         cg_poll_prepare_callback_t prepare,
-                         cg_poll_dispatch_callback_t dispatch,
-                         void *user_data)
+_cg_loop_add_fd(cg_renderer_t *renderer,
+                int fd,
+                cg_poll_fd_event_t events,
+                cg_poll_prepare_callback_t prepare,
+                cg_poll_dispatch_callback_t dispatch,
+                void *user_data)
 {
     cg_poll_fd_t pollfd = { fd, events };
     cg_poll_source_t *source;
 
-    _cg_poll_renderer_remove_fd(renderer, fd);
+    _cg_loop_remove_fd(renderer, fd);
 
     source = c_slice_new0(cg_poll_source_t);
     source->fd = fd;
@@ -221,11 +225,47 @@ _cg_poll_renderer_add_fd(cg_renderer_t *renderer,
     renderer->poll_fds_age++;
 }
 
+#ifdef __EMSCRIPTEN__
+static void browser_queue_callback(cg_renderer_t *renderer);
+
+static void
+_cg_browser_callback(void *user_data)
+{
+    cg_renderer_t *renderer = user_data;
+
+    cg_loop_dispatch(renderer, NULL /* fds */, 0 /* n fds */);
+
+    browser_queue_callback(renderer);
+}
+
+static void
+browser_queue_callback(cg_renderer_t *renderer)
+{
+    int64_t timeout_us;
+
+    if (renderer->browser_idle_queued)
+        return;
+
+    cg_loop_get_info(renderer, NULL, NULL, &timeout_us);
+
+    if (timeout_us < 0)
+        return;
+
+    if (timeout_us == 0) {
+        emscripten_async_call(_cg_browser_callback, renderer, 0 /* timeout */);
+        renderer->browser_idle_queued = true;
+    } else {
+        int timeout_ms = timeout_us / 1000;
+        emscripten_async_call(_cg_browser_callback, renderer, timeout_ms);
+    }
+}
+#endif
+
 cg_poll_source_t *
-_cg_poll_renderer_add_source(cg_renderer_t *renderer,
-                             cg_poll_prepare_callback_t prepare,
-                             cg_poll_dispatch_callback_t dispatch,
-                             void *user_data)
+_cg_loop_add_source(cg_renderer_t *renderer,
+                    cg_poll_prepare_callback_t prepare,
+                    cg_poll_dispatch_callback_t dispatch,
+                    void *user_data)
 {
     cg_poll_source_t *source;
 
@@ -237,12 +277,16 @@ _cg_poll_renderer_add_source(cg_renderer_t *renderer,
 
     renderer->poll_sources = c_llist_prepend(renderer->poll_sources, source);
 
+#ifdef __EMSCRIPTEN__
+    browser_queue_callback(renderer);
+#endif
+
     return source;
 }
 
 void
-_cg_poll_renderer_remove_source(cg_renderer_t *renderer,
-                                cg_poll_source_t *source)
+_cg_loop_remove_source(cg_renderer_t *renderer,
+                       cg_poll_source_t *source)
 {
     c_llist_t *l;
 
@@ -256,28 +300,17 @@ _cg_poll_renderer_remove_source(cg_renderer_t *renderer,
     }
 }
 
-#ifdef __EMSCRIPTEN__
-static void
-browser_idle_cb(void *user_data)
-{
-    cg_poll_renderer_dispatch(user_data, NULL /* fds */, 0 /* n fds */);
-}
-#endif
-
 cg_closure_t *
-_cg_poll_renderer_add_idle(cg_renderer_t *renderer,
-                           cg_idle_callback_t idle_cb,
-                           void *user_data,
-                           cg_user_data_destroy_callback_t destroy_cb)
+_cg_loop_add_idle(cg_renderer_t *renderer,
+                  cg_idle_callback_t idle_cb,
+                  void *user_data,
+                  cg_user_data_destroy_callback_t destroy_cb)
 {
     cg_closure_t *closure = _cg_closure_list_add(
         &renderer->idle_closures, idle_cb, user_data, destroy_cb);
 
 #ifdef __EMSCRIPTEN__
-    if (!renderer->browser_idle_queued) {
-        emscripten_async_call(browser_idle_cb, renderer, 0 /* timeout */);
-        renderer->browser_idle_queued = true;
-    }
+    browser_queue_callback(renderer);
 #endif
 
     return closure;
