@@ -61,14 +61,15 @@ clib_common_source = \
 	crbtree.h	\
 	crbtree.c	\
 	ascii_snprintf.c \
-	crand.c
+	crand.c		\
+	ctimer.c
 
 libclib_la_SOURCES = \
 	$(clib_common_source) \
 	$(sfmt_source)
 
 unix_files = cdate-unix.c  cdir-unix.c  cfile-unix.c  cmisc-unix.c \
-	     ctimer-unix.c cxdg-unix.c
+	     cxdg-unix.c
 threads_files = ctls.c cmutex.c
 
 if OS_UNIX
@@ -78,8 +79,7 @@ endif
 if OS_WIN32
 libclib_la_SOURCES += \
 	clib-config.hw \
-	cdate-win32.c cdir-win32.c cfile-win32.c cmisc-win32.c \
-	ctimer-win32.c
+	cdate-win32.c cdir-win32.c cfile-win32.c cmisc-win32.c
 libclib_la_SOURCES += $(threads_files)
 libclib_la_LIBADD += -lm $(LTLIBICONV) -lpsapi
 endif
