@@ -2,7 +2,7 @@
 
 #include <cogl/cogl.h>
 
-#include "test-utils.h"
+#include "test-cg-fixtures.h"
 
 #define TEST_SQUARE_SIZE 10
 
@@ -45,7 +45,7 @@ test_color (cg_pipeline_t *pipeline,
                                    0,
                                    pos * TEST_SQUARE_SIZE + TEST_SQUARE_SIZE,
                                    TEST_SQUARE_SIZE);
-  test_utils_check_pixel (test_fb,
+  test_cg_check_pixel (test_fb,
                           pos * TEST_SQUARE_SIZE + TEST_SQUARE_SIZE / 2,
                           TEST_SQUARE_SIZE / 2,
                           color);
@@ -142,6 +142,6 @@ test_layer_remove (void)
   cg_object_unref (pipeline0);
   cg_object_unref (pipeline1);
 
-  if (cg_test_verbose ())
+  if (test_verbose ())
     c_print ("OK\n");
 }

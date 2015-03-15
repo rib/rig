@@ -19,9 +19,13 @@ wrappers: stamp-test-unit
 	@true
 stamp-test-unit: Makefile test-unit$(EXEEXT)
 	@mkdir -p wrappers
+	echo "" > unit-tests; \
+	source $(top_builddir)/clib/src/libclib.la ; \
+	  $(NM) $(top_builddir)/clib/src/.libs/"$$dlname"| \
+	  grep '[DR] _\?test_state_'|sed 's/.\+ [DR] _\?//' >> unit-tests; \
 	source $(top_builddir)/cogl/libcogl2.la ; \
 	  $(NM) $(top_builddir)/cogl/.libs/"$$dlname"| \
-	  grep '[DR] _\?unit_test_'|sed 's/.\+ [DR] _\?//' > unit-tests
+	  grep '[DR] _\?test_state_'|sed 's/.\+ [DR] _\?//' >> unit-tests
 	@chmod +x $(top_srcdir)/tests/test-launcher.sh
 	@( echo "/stamp-test-unit" ; \
 	   echo "/test-unit$(EXEEXT)" ; \
@@ -32,7 +36,7 @@ stamp-test-unit: Makefile test-unit$(EXEEXT)
 	do \
 		unit=`echo $$i | sed -e s/_/-/g | sed s/unit-test-//`; \
 		echo "  GEN    $$unit"; \
-		( echo "#!/bin/sh" ; echo "$(top_srcdir)/tests/test-launcher.sh $(abs_builddir)/test-unit$(EXEEXT) 'unit_test_' '$$i' \"\$$@\"" ) > $$unit$(SHEXT) ; \
+		( echo "#!/bin/sh" ; echo "$(top_srcdir)/tests/test-launcher.sh $(abs_builddir)/test-unit$(EXEEXT) 'test_state_' '$$i' \"\$$@\"" ) > $$unit$(SHEXT) ; \
 		chmod +x $$unit$(SHEXT); \
 		echo "/$$unit$(SHEXT)" >> .gitignore; \
 	done \

@@ -18,9 +18,11 @@ libtest_fixtures_la_CPPFLAGS += \
 libtest_fixtures_la_CFLAGS = -g3 -O0 $(COGL_DEP_CFLAGS) $(COGL_EXTRA_CFLAGS)
 
 libtest_fixtures_la_SOURCES = \
-	test-unit.h \
-	test-utils.h \
-	test-utils.c
+	test.h \
+	test-fixtures.h \
+	test-fixtures.c \
+	test-cg-fixtures.h \
+	test-cg-fixtures.c
 
 android_modulesdir = $(datadir)/android_modules/test-fixtures/
 android_modules_DATA = $(libtest_fixtures_la_SOURCES)

@@ -5,7 +5,7 @@
 
 #include <string.h>
 
-#include "test-utils.h"
+#include "test-cg-fixtures.h"
 
 void
 test_path_clip (void)
@@ -51,19 +51,19 @@ test_path_clip (void)
   cg_object_unref (path);
 
   /* Check each of the four quadrants */
-  test_utils_check_pixel (test_fb,
+  test_cg_check_pixel (test_fb,
                           fb_width / 4, fb_height / 4,
                           0x0000ffff);
-  test_utils_check_pixel (test_fb,
+  test_cg_check_pixel (test_fb,
                           fb_width * 3 / 4, fb_height / 4,
                           0xff0000ff);
-  test_utils_check_pixel (test_fb,
+  test_cg_check_pixel (test_fb,
                           fb_width / 4, fb_height * 3 / 4,
                           0x0000ffff);
-  test_utils_check_pixel (test_fb,
+  test_cg_check_pixel (test_fb,
                           fb_width * 3 / 4, fb_height * 3 / 4,
                           0x0000ffff);
 
-  if (cg_test_verbose ())
+  if (test_verbose ())
     c_print ("OK\n");
 }

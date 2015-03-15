@@ -2,7 +2,7 @@
 
 #include <cogl/cogl.h>
 
-#include "test-utils.h"
+#include "test-cg-fixtures.h"
 
 #define N_TEXTURES 128
 
@@ -55,10 +55,10 @@ create_texture (int size)
         }
     }
 
-  texture = test_utils_texture_new_from_data (test_dev,
+  texture = test_cg_texture_new_from_data (test_dev,
                                               size, /* width */
                                               size, /* height */
-                                              TEST_UTILS_TEXTURE_NONE, /* flags */
+                                              TEST_CG_TEXTURE_NONE, /* flags */
                                               /* format */
                                               CG_PIXEL_FORMAT_RGBA_8888_PRE,
                                               /* rowstride */
@@ -99,7 +99,7 @@ verify_texture (cg_texture_t *texture, int size)
               color->blue * opacity / 255
             };
 
-          test_utils_compare_pixel (p,
+          test_cg_compare_pixel (p,
                                     (real_color.red << 24) |
                                     (real_color.green << 16) |
                                     (real_color.blue << 8) |
@@ -142,6 +142,6 @@ test_atlas_migration (void)
   for (tex_num = 0; tex_num < N_TEXTURES; tex_num++)
     cg_object_unref (textures[tex_num]);
 
-  if (cg_test_verbose ())
+  if (test_verbose ())
     c_print ("OK\n");
 }

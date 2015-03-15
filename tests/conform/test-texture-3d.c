@@ -3,7 +3,7 @@
 #include <cogl/cogl.h>
 #include <string.h>
 
-#include "test-utils.h"
+#include "test-cg-fixtures.h"
 
 #define TEX_WIDTH        4
 #define TEX_HEIGHT       8
@@ -175,7 +175,7 @@ validate_block (int block_x, int block_y, int z)
 
   for (y = 0; y < TEX_HEIGHT; y++)
     for (x = 0; x < TEX_WIDTH; x++)
-      test_utils_check_pixel_rgb (test_fb,
+      test_cg_check_pixel_rgb (test_fb,
                                   block_x * TEX_WIDTH + x,
                                   block_y * TEX_HEIGHT + y,
                                   255 - x * 8,
@@ -245,7 +245,7 @@ test_multi_texture (TestState *state)
 
   cg_framebuffer_draw_rectangle (test_fb, pipeline, 0, 0, 10, 10);
 
-  test_utils_check_pixel (test_fb, 5, 5, 0xffff00ff);
+  test_cg_check_pixel (test_fb, 5, 5, 0xffff00ff);
 
   cg_object_unref (tex_2d);
   cg_object_unref (tex_3d);
@@ -271,6 +271,6 @@ test_texture_3d (void)
 
   test_multi_texture (&state);
 
-  if (cg_test_verbose ())
+  if (test_verbose ())
     c_print ("OK\n");
 }

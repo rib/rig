@@ -5,7 +5,7 @@
 #include <cogl/cogl-gles2.h>
 #include <string.h>
 
-#include "test-utils.h"
+#include "test-cg-fixtures.h"
 
 typedef struct _TestState
 {
@@ -56,7 +56,7 @@ test_push_pop_single_context (void)
 
   cg_pop_gles2_context (test_dev);
 
-  test_utils_check_pixel (test_fb, 0, 0, 0xffff00ff);
+  test_cg_check_pixel (test_fb, 0, 0, 0xffff00ff);
 
   /* Clear offscreen to 0xff0000 using GLES2 and then copy the result
    * onscreen.
@@ -107,7 +107,7 @@ test_push_pop_single_context (void)
 
   cg_pop_gles2_context (test_dev);
 
-  test_utils_check_pixel (test_fb, 0, 0, 0xff0000ff);
+  test_cg_check_pixel (test_fb, 0, 0, 0xff0000ff);
 
   /* Now copy the offscreen blue clear to the onscreen framebufer and
    * check that too */
@@ -115,7 +115,7 @@ test_push_pop_single_context (void)
                                    pipeline,
                                    -1, 1, 1, -1);
 
-  test_utils_check_pixel (test_fb, 0, 0, 0x0000ffff);
+  test_cg_check_pixel (test_fb, 0, 0, 0x0000ffff);
 
   if (!cg_push_gles2_context (test_dev,
                                 gles2_ctx,
@@ -131,7 +131,7 @@ test_push_pop_single_context (void)
 
   cg_pop_gles2_context (test_dev);
 
-  test_utils_check_pixel (test_fb, 0, 0, 0xff00ffff);
+  test_cg_check_pixel (test_fb, 0, 0, 0xff00ffff);
 
 
   cg_object_unref (gles2_ctx);
@@ -220,19 +220,19 @@ test_push_pop_multi_context (void)
   cg_pop_gles2_context (test_dev);
   cg_pop_gles2_context (test_dev);
 
-  test_utils_check_pixel (test_fb, 0, 0, 0xffffffff);
+  test_cg_check_pixel (test_fb, 0, 0, 0xffffffff);
 
   cg_framebuffer_draw_rectangle (test_fb,
                                    pipeline0,
                                    -1, 1, 1, -1);
 
-  test_utils_check_pixel (test_fb, 0, 0, 0xff0000ff);
+  test_cg_check_pixel (test_fb, 0, 0, 0xff0000ff);
 
   cg_framebuffer_draw_rectangle (test_fb,
                                    pipeline1,
                                    -1, 1, 1, -1);
 
-  test_utils_check_pixel (test_fb, 0, 0, 0x00ff00ff);
+  test_cg_check_pixel (test_fb, 0, 0, 0x00ff00ff);
 }
 
 static GLuint
@@ -259,7 +259,7 @@ create_gles2_framebuffer (const cg_gles2_vtable_t *gles2,
                                  GL_TEXTURE_2D, texture_handle, 0);
 
   status = gles2->glCheckFramebufferStatus (GL_FRAMEBUFFER);
-  if (cg_test_verbose ())
+  if (test_verbose ())
     c_print ("status for gles2 framebuffer = 0x%x %s\n",
              status, status == GL_FRAMEBUFFER_COMPLETE ? "(complete)" : "(?)");
 
@@ -301,7 +301,7 @@ test_gles2_read_pixels (void)
   gles2->glClear (GL_COLOR_BUFFER_BIT);
   gles2->glReadPixels (0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
 
-  test_utils_compare_pixel (pixel, 0xff0000ff);
+  test_cg_compare_pixel (pixel, 0xff0000ff);
 
   fbo_handle = create_gles2_framebuffer (gles2, 256, 256);
 
@@ -311,7 +311,7 @@ test_gles2_read_pixels (void)
   gles2->glClear (GL_COLOR_BUFFER_BIT);
   gles2->glReadPixels (0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
 
-  test_utils_compare_pixel (pixel, 0x00ff00ff);
+  test_cg_compare_pixel (pixel, 0x00ff00ff);
 
   gles2->glBindFramebuffer (GL_FRAMEBUFFER, 0);
 
@@ -319,11 +319,11 @@ test_gles2_read_pixels (void)
   gles2->glClear (GL_COLOR_BUFFER_BIT);
   gles2->glReadPixels (0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
 
-  test_utils_compare_pixel (pixel, 0x00ffffff);
+  test_cg_compare_pixel (pixel, 0x00ffffff);
 
   cg_pop_gles2_context (test_dev);
 
-  test_utils_check_pixel (test_fb, 0, 0, 0xffffffff);
+  test_cg_check_pixel (test_fb, 0, 0, 0xffffffff);
 
   /* Bind different read and write buffers */
   if (!cg_push_gles2_context (test_dev,
@@ -337,11 +337,11 @@ test_gles2_read_pixels (void)
 
   gles2->glReadPixels (0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
 
-  test_utils_compare_pixel (pixel, 0x00ffffff);
+  test_cg_compare_pixel (pixel, 0x00ffffff);
 
   cg_pop_gles2_context (test_dev);
 
-  test_utils_check_pixel (test_fb, 0, 0, 0xffffffff);
+  test_cg_check_pixel (test_fb, 0, 0, 0xffffffff);
 
   /* Bind different read and write buffers (the other way around from
    * before so when we test with CG_TEST_ONSCREEN=1 we will read
@@ -357,7 +357,7 @@ test_gles2_read_pixels (void)
 
   gles2->glReadPixels (0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
 
-  test_utils_compare_pixel (pixel, 0xffffffff);
+  test_cg_compare_pixel (pixel, 0xffffffff);
 
   cg_pop_gles2_context (test_dev);
 }
@@ -369,7 +369,7 @@ test_gles2_context (void)
   test_push_pop_multi_context ();
   test_gles2_read_pixels ();
 
-  if (cg_test_verbose ())
+  if (test_verbose ())
     c_print ("OK\n");
 }
 
@@ -621,11 +621,11 @@ verify_read_pixels (const PaintData *data)
 
   /* In GL, the lines earlier in the buffer are the bottom */
   /* Bottom should be blue */
-  test_utils_compare_pixel (buf + data->fb_width / 2 * 4 +
+  test_cg_compare_pixel (buf + data->fb_width / 2 * 4 +
                             data->fb_height / 4 * stride,
                             0x0000ffff);
   /* Top should be red */
-  test_utils_compare_pixel (buf + data->fb_width / 2 * 4 +
+  test_cg_compare_pixel (buf + data->fb_width / 2 * 4 +
                             data->fb_height * 3 / 4 * stride,
                             0xff0000ff);
 
@@ -722,11 +722,11 @@ test_gles2_context_fbo (void)
       cg_object_unref (offscreen_texture);
 
       /* Top half of the framebuffer should be red */
-      test_utils_check_pixel (test_fb,
+      test_cg_check_pixel (test_fb,
                               data.fb_width / 2, data.fb_height / 4,
                               0xff0000ff);
       /* Bottom half should be blue */
-      test_utils_check_pixel (test_fb,
+      test_cg_check_pixel (test_fb,
                               data.fb_width / 2, data.fb_height * 3 / 4,
                               0x0000ffff);
     }
@@ -759,7 +759,7 @@ verify_region (const cg_gles2_vtable_t *gles2,
   gles2->glReadPixels (x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, buf);
 
   for (p = buf + width * height * 4; p > buf; p -= 4)
-    test_utils_compare_pixel (p - 4, expected_pixel);
+    test_cg_compare_pixel (p - 4, expected_pixel);
 
   c_free (buf);
 }

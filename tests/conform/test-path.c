@@ -5,7 +5,7 @@
 
 #include <string.h>
 
-#include "test-utils.h"
+#include "test-cg-fixtures.h"
 
 #define BLOCK_SIZE 16
 
@@ -208,7 +208,7 @@ test_path (void)
   paint (&state);
   validate_result ();
 
-  if (cg_test_verbose ())
+  if (test_verbose ())
     c_print ("OK\n");
 }
 
