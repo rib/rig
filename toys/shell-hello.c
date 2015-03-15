@@ -24,6 +24,8 @@ shell_redraw_cb(rut_shell_t *shell, void *user_data)
     cg_matrix_t identity;
     cg_matrix_init_identity(&identity);
 
+    c_print("Paint\n");
+
     rut_shell_start_redraw(shell);
 
     rut_shell_update_timelines(shell);
@@ -31,6 +33,8 @@ shell_redraw_cb(rut_shell_t *shell, void *user_data)
     rut_shell_run_pre_paint_callbacks(shell);
 
     rut_shell_run_start_paint_callbacks(shell);
+
+    rut_shell_dispatch_input_events(shell);
 
     cg_framebuffer_identity_matrix(data->fb);
     cg_framebuffer_set_projection_matrix(data->fb, &identity);
@@ -76,6 +80,17 @@ on_run_cb(rut_shell_t *shell, void *user_data)
     data->fb = data->shell_onscreen->cg_onscreen;
 }
 
+static rut_input_event_status_t
+input_handler(rut_input_event_t *event,
+              void *user_data)
+{
+    struct data *data = user_data;
+
+    c_print("Event\n");
+
+    return RUT_INPUT_EVENT_STATUS_HANDLED;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -85,6 +100,11 @@ main(int argc, char **argv)
 
     data.shell = rut_shell_new(shell_redraw_cb, &data);
     rut_shell_set_on_run_callback(data.shell, on_run_cb, &data);
+
+    rut_shell_add_input_callback(data.shell,
+                                 input_handler,
+                                 &data,
+                                 NULL);
 
     rut_shell_main(data.shell);
 
