@@ -5,11 +5,11 @@ noinst_LTLIBRARIES = libclib.la libclib-static.la
 win_files  = \
 	clib-config.hw \
 	cdate-win32.c cdir-win32.c cfile-win32.c cmisc-win32.c \
-	cmodule-win32.c ctimer-win32.c
+	cmodule-win32.c
 
 unix_files = \
 	cdate-unix.c  cdir-unix.c  cfile-unix.c  cmisc-unix.c	\
-	cmodule-unix.c ctimer-unix.c cxdg-unix.c
+	cmodule-unix.c cxdg-unix.c
 
 # some unices and windows do not have an implementation of vasprintf
 if NEED_VASPRINTF
@@ -75,7 +75,8 @@ clib_common_source = \
 	ascii_snprintf.c \
 	crand.c		\
 	ctls.c		\
-	cmutex.c
+	cmutex.c	\
+	ctimer.c
 
 libclib_la_SOURCES = \
 	$(clib_common_source) \
