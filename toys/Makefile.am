@@ -18,6 +18,7 @@ AM_CFLAGS += -DCG_EXAMPLES_DATA=\""$(abs_top_srcdir)/toys/"\"
 if EMSCRIPTEN
 common_ldadd = \
 	$(RIG_EXTRA_LDFLAGS) \
+	$(top_builddir)/rut/librut.la \
 	$(top_builddir)/cogl/libcogl2.la \
 	$(RIG_DEP_LIBS) \
 	$(COGL_DEP_LIBS) \
@@ -40,6 +41,7 @@ common_ldadd = \
 endif
 
 programs = cogl-info
+emscripten_programs =
 
 cogl_info_SOURCES = cogl-info.c
 cogl_info_LDADD = $(common_ldadd)
@@ -108,14 +110,21 @@ endif
 vr_test_SOURCES = vr-test.c
 vr_test_LDADD = $(common_ldadd)
 
-if EMSCRIPTEN
-emscripten_programs = cogl-emscripten-hello
-emscripten_libs = --js-library $(top_srcdir)/cogl/cogl-emscripten-lib.js
-programs += $(emscripten_programs)
+programs += shell-hello
+emscripten_programs += shell-hello
+shell_hello_SOURCES = shell-hello.c
+shell_hello_LDADD = $(common_ldadd)
+
+emscripten_programs += cogl-emscripten-hello
 cogl_emscripten_hello_SOURCES = cogl-emscripten-hello.c
 cogl_emscripten_hello_LDADD = $(common_ldadd)
 
-%.html: %.o $(top_builddir)/cogl/.libs/libcogl2.so $(top_builddir)/clib/src/.libs/libclib.so
+if EMSCRIPTEN
+programs += $(emscripten_programs)
+
+emscripten_libs = --js-library $(top_srcdir)/cogl/cogl-emscripten-lib.js
+
+%.html: %.o $(top_builddir)/rut/.libs/librut.so $(top_builddir)/cogl/.libs/libcogl2.so $(top_builddir)/clib/src/.libs/libclib.so
 	$(CC) $(AM_CFLAGS) $(CFLAGS) $(emscripten_libs) --js-library $(top_srcdir)/toys/emscripten-example-js-library.js -o $@ $^
 
 all-local: $(addsuffix .html, $(emscripten_programs))
