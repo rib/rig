@@ -124,7 +124,7 @@ programs += $(emscripten_programs)
 emscripten_libs = --js-library $(top_srcdir)/cogl/cogl-emscripten-lib.js
 
 %.html: %.o $(top_builddir)/rut/.libs/librut.so $(top_builddir)/cogl/.libs/libcogl2.so $(top_builddir)/clib/src/.libs/libclib.so
-	$(CC) $(AM_CFLAGS) $(CFLAGS) $(emscripten_libs) --js-library $(top_srcdir)/toys/emscripten-example-js-library.js -o $@ $^
+	$(CC) $(AM_CFLAGS) $(CFLAGS) $(RIG_EXTRA_EMCC_JSFLAGS) $(emscripten_libs) --js-library $(top_srcdir)/toys/emscripten-example-js-library.js -o $@ $^
 
 all-local: $(addsuffix .html, $(emscripten_programs))
 endif
