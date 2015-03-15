@@ -52,7 +52,7 @@
 #include "cogl-util.h"
 #include "cogl-winsys-glx-private.h"
 #include "cogl-error-private.h"
-#include "cogl-poll-private.h"
+#include "cogl-loop-private.h"
 #include "cogl-version.h"
 
 #include <stdlib.h>
@@ -368,7 +368,7 @@ set_sync_pending(cg_onscreen_t *onscreen)
      * cg_device_dispatch so instead of immediately notifying we
      * queue an idle callback */
     if (!glx_renderer->flush_notifications_idle) {
-        glx_renderer->flush_notifications_idle = _cg_poll_renderer_add_idle(
+        glx_renderer->flush_notifications_idle = _cg_loop_add_idle(
             renderer, flush_pending_notifications_idle, dev, NULL);
     }
 
@@ -387,7 +387,7 @@ set_complete_pending(cg_onscreen_t *onscreen)
      * cg_device_dispatch so instead of immediately notifying we
      * queue an idle callback */
     if (!glx_renderer->flush_notifications_idle) {
-        glx_renderer->flush_notifications_idle = _cg_poll_renderer_add_idle(
+        glx_renderer->flush_notifications_idle = _cg_loop_add_idle(
             renderer, flush_pending_notifications_idle, dev, NULL);
     }
 
@@ -473,7 +473,7 @@ notify_resize(cg_device_t *dev,
      * application calls cg_device_dispatch so instead of immediately
      * notifying we queue an idle callback */
     if (!glx_renderer->flush_notifications_idle) {
-        glx_renderer->flush_notifications_idle = _cg_poll_renderer_add_idle(
+        glx_renderer->flush_notifications_idle = _cg_loop_add_idle(
             renderer, flush_pending_notifications_idle, dev, NULL);
     }
 

@@ -61,10 +61,10 @@ void cg_wayland_renderer_set_foreign_display(cg_renderer_t *renderer,
  *
  * Sets whether Cogl should handle calling wl_display_dispatch() and
  * wl_display_flush() as part of its main loop integration via
- * cg_poll_renderer_get_info() and cg_poll_renderer_dispatch().
+ * cg_loop_get_info() and cg_loop_dispatch().
  * The default value is %true. When it is enabled the application can
  * register listeners for Wayland interfaces and the callbacks will be
- * invoked during cg_poll_renderer_dispatch(). If the application
+ * invoked during cg_loop_dispatch(). If the application
  * wants to integrate with its own code that is already handling
  * reading from the Wayland display socket, it should disable this to
  * avoid having competing code read from the socket.

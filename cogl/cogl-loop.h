@@ -3,7 +3,7 @@
  *
  * A Low-Level GPU Graphics and Utilities API
  *
- * Copyright (C) 2012 Intel Corporation.
+ * Copyright (C) 2012-2015 Intel Corporation.
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -25,17 +25,14 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- *
- * Authors:
- *  Neil Roberts <neil@linux.intel.com>
  */
 
 #if !defined(__CG_H_INSIDE__) && !defined(CG_COMPILATION)
 #error "Only <cogl/cogl.h> can be included directly."
 #endif
 
-#ifndef __CG_POLL_H__
-#define __CG_POLL_H__
+#ifndef __CG_LOOP_H__
+#define __CG_LOOP_H__
 
 #include <cogl/cogl-defines.h>
 #include <cogl/cogl-device.h>
@@ -43,7 +40,7 @@
 CG_BEGIN_DECLS
 
 /**
- * SECTION:cogl-poll
+ * SECTION:cogl-loop
  * @short_description: Functions for integrating Cogl with an
  *   application's main loop
  *
@@ -51,10 +48,24 @@ CG_BEGIN_DECLS
  * can internally handle some events from the driver. All Cogl
  * applications must use these functions. They provide enough
  * information to describe the state that Cogl will need to wake up
- * on. An application using the GLib main loop can instead use
+ * on.
+ *
+ * An application using the libuv main loop can instead use
+ * cg_uv_set_mainloop() as a high level convenience.
+ *
+ * An application using the GLib main loop can instead use
  * cg_glib_source_new() which provides a #GSource ready to be added
  * to the main loop.
  */
+
+#ifndef CG_HAS_POLL_SUPPORT
+#define CG_SYSDEF_POLLIN 1
+#define CG_SYSDEF_POLLPRI 2
+#define CG_SYSDEF_POLLOUT 3
+#define CG_SYSDEF_POLLERR 4
+#define CG_SYSDEF_POLLHUP 5
+#define CG_SYSDEF_POLLNVAL 6
+#endif
 
 /**
  * cg_poll_fd_event_t:
@@ -107,7 +118,7 @@ typedef struct {
 } cg_poll_fd_t;
 
 /**
- * cg_poll_renderer_get_info:
+ * cg_loop_get_info:
  * @renderer: A #cg_renderer_t
  * @poll_fds: A return location for a pointer to an array
  *            of #cg_poll_fd_t<!-- -->s
@@ -134,7 +145,7 @@ typedef struct {
  * there.
  *
  * When the application mainloop returns from calling poll(2) (or its
- * equivalent) then it should call cg_poll_renderer_dispatch()
+ * equivalent) then it should call cg_loop_dispatch()
  * passing a pointer the array of cg_poll_fd_t<!-- -->s with updated
  * revent values.
  *
@@ -158,13 +169,13 @@ typedef struct {
  *
  * Stability: unstable
  */
-int cg_poll_renderer_get_info(cg_renderer_t *renderer,
-                              cg_poll_fd_t **poll_fds,
-                              int *n_poll_fds,
-                              int64_t *timeout);
+int cg_loop_get_info(cg_renderer_t *renderer,
+                     cg_poll_fd_t **poll_fds,
+                     int *n_poll_fds,
+                     int64_t *timeout);
 
 /**
- * cg_poll_renderer_dispatch:
+ * cg_loop_dispatch:
  * @renderer: A #cg_renderer_t
  * @poll_fds: An array of #cg_poll_fd_t<!-- -->s describing the events
  *            that have occurred since the application went idle.
@@ -175,7 +186,7 @@ int cg_poll_renderer_get_info(cg_renderer_t *renderer,
  * list of file descriptors matched with the events that occurred in
  * revents. The events field is ignored. It is safe to pass in extra
  * file descriptors that Cogl didn't request when calling
- * cg_poll_renderer_get_info() or a shorter array missing some file
+ * cg_loop_get_info() or a shorter array missing some file
  * descriptors that Cogl requested.
  *
  * <note>If your application didn't originally create a #cg_renderer_t
@@ -184,34 +195,34 @@ int cg_poll_renderer_get_info(cg_renderer_t *renderer,
  *
  * Stability: unstable
  */
-void cg_poll_renderer_dispatch(cg_renderer_t *renderer,
-                               const cg_poll_fd_t *poll_fds,
-                               int n_poll_fds);
+void cg_loop_dispatch(cg_renderer_t *renderer,
+                      const cg_poll_fd_t *poll_fds,
+                      int n_poll_fds);
 
 /**
- * cg_poll_renderer_dispatch_fd:
+ * cg_loop_dispatch_fd:
  * @renderer: A #cg_renderer_t
  * @fd: One of the file descriptors returned by
- *      cg_poll_renderer_get_info()
+ *      cg_loop_get_info()
  * @events: The events that have been triggered on @fd
  *
  * Dispatches any work associated with a specific file descriptor that
- * was previosly returned by cg_poll_renderer_get_info(). Depending
+ * was previosly returned by cg_loop_get_info(). Depending
  * on how file descriptors are being integrated into an application
  * mainloop it may convenient to handle the dispatching of each file
  * descriptor separately.
  *
  * <note>If this api is used to dispatch work for each file descriptor
  * separately then the application must still call
- * cg_poll_renderer_dispatch() for each iteration of the mainloop
+ * cg_loop_dispatch() for each iteration of the mainloop
  * with a %NULL poll_fds array, with %0 length so that Cogl can run any
  * idle work or other work not associated with a file
  * descriptor.</note>
  *
  * Stability: unstable
  */
-void cg_poll_renderer_dispatch_fd(cg_renderer_t *renderer, int fd, int events);
+void cg_loop_dispatch_fd(cg_renderer_t *renderer, int fd, int events);
 
 CG_END_DECLS
 
-#endif /* __CG_POLL_H__ */
+#endif /* __CG_LOOP_H__ */
