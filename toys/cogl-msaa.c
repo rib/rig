@@ -105,10 +105,10 @@ main(int argc, char **argv)
 
         cg_onscreen_swap_buffers(onscreen);
 
-        cg_poll_renderer_get_info(
+        cg_loop_get_info(
             cg_device_get_renderer(dev), &poll_fds, &n_poll_fds, &timeout);
         g_poll((GPollFD *)poll_fds, n_poll_fds, 0);
-        cg_poll_renderer_dispatch(
+        cg_loop_dispatch(
             cg_device_get_renderer(dev), poll_fds, n_poll_fds);
     }
 
