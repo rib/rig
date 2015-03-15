@@ -47,7 +47,7 @@ CG_BEGIN_DECLS
  *
  * Creates a #GSource which handles Cogl's internal system event
  * processing. This can be used as a convenience instead of
- * cg_poll_renderer_get_info() and cg_poll_renderer_dispatch() in
+ * cg_loop_get_info() and cg_loop_dispatch() in
  * applications that are already using the GLib main loop. After this
  * is called the #GSource should be attached to the main loop using
  * c_source_attach().
@@ -75,7 +75,7 @@ GSource *cg_glib_source_new(cg_device_t *dev, int priority);
  *
  * Creates a #GSource which handles Cogl's internal system event
  * processing. This can be used as a convenience instead of
- * cg_poll_renderer_get_info() and cg_poll_renderer_dispatch() in
+ * cg_loop_get_info() and cg_loop_dispatch() in
  * applications that are already using the GLib main loop. After this
  * is called the #GSource should be attached to the main loop using
  * c_source_attach().

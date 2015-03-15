@@ -108,7 +108,7 @@ cg_sdl_idle(cg_device_t *dev)
 {
     cg_renderer_t *renderer = dev->display->renderer;
 
-    cg_poll_renderer_dispatch(renderer, NULL, 0);
+    cg_loop_dispatch(renderer, NULL, 0);
 
     /* It is expected that this will be called from the application
      * immediately before blocking in SDL_WaitEvent. However,

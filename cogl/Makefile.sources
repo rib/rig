@@ -26,7 +26,7 @@ cogl_base_public_h = \
 	cogl-pipeline-state.h 	\
 	cogl-pipeline.h 		\
 	cogl-pixel-buffer.h		\
-	cogl-poll.h			\
+	cogl-loop.h			\
 	cogl-primitive-texture.h	\
 	cogl-primitive.h 		\
 	cogl-output.h			\
@@ -253,8 +253,8 @@ cogl_base_sources_c = \
 	cogl-boxed-value.c			\
 	cogl-snippet-private.h		\
 	cogl-snippet.c			\
-	cogl-poll-private.h			\
-	cogl-poll.c				\
+	cogl-loop-private.h			\
+	cogl-loop.c				\
 	gl-prototypes/cogl-all-functions.h	\
 	gl-prototypes/cogl-gles2-functions.h	\
 	gl-prototypes/cogl-core-functions.h	\

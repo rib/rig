@@ -124,7 +124,7 @@ done:
 
     if (!dev->fences_poll_source) {
         dev->fences_poll_source =
-            _cg_poll_renderer_add_source(dev->display->renderer,
+            _cg_loop_add_source(dev->display->renderer,
                                          _cg_fence_poll_prepare,
                                          _cg_fence_poll_dispatch,
                                          dev);

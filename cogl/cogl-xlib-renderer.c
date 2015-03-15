@@ -41,7 +41,7 @@
 #include "cogl-x11-renderer-private.h"
 #include "cogl-winsys-private.h"
 #include "cogl-error-private.h"
-#include "cogl-poll-private.h"
+#include "cogl-loop-private.h"
 
 #include <X11/Xlib.h>
 #include <X11/extensions/Xdamage.h>
@@ -502,7 +502,7 @@ _cg_xlib_renderer_connect(cg_renderer_t *renderer, cg_error_t **error)
     xlib_renderer->trap_state = NULL;
 
     if (renderer->xlib_enable_event_retrieval) {
-        _cg_poll_renderer_add_fd(renderer,
+        _cg_loop_add_fd(renderer,
                                  ConnectionNumber(xlib_renderer->xdpy),
                                  CG_POLL_FD_EVENT_IN,
                                  prepare_xlib_events_timeout,

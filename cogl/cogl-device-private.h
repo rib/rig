@@ -61,7 +61,7 @@
 #include "cogl-framebuffer-private.h"
 #include "cogl-onscreen-private.h"
 #include "cogl-fence-private.h"
-#include "cogl-poll-private.h"
+#include "cogl-loop-private.h"
 #include "cogl-private.h"
 
 typedef struct {

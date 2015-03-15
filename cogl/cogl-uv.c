@@ -31,7 +31,7 @@
 #include <clib.h>
 #include <uv.h>
 
-#include "cogl-poll.h"
+#include "cogl-loop.h"
 #include "cogl-device-private.h"
 
 struct poll_source {
@@ -98,7 +98,7 @@ on_event_cb(void *user_data, int fd, int revents)
     cg_device_t *dev = user_data;
     cg_renderer_t *renderer = cg_device_get_renderer(dev);
 
-    cg_poll_renderer_dispatch_fd(renderer, fd, revents);
+    cg_loop_dispatch_fd(renderer, fd, revents);
 }
 
 static struct poll_source *
@@ -221,7 +221,7 @@ update_poll_fds(cg_device_t *dev)
     int64_t timeout;
     int age;
 
-    age = cg_poll_renderer_get_info(renderer, &poll_fds, &n_poll_fds,
+    age = cg_loop_get_info(renderer, &poll_fds, &n_poll_fds,
                                     &timeout);
 
     if (age != dev->uv_poll_sources_age) {
@@ -262,7 +262,7 @@ uv_mainloop_prepare_cb(uv_prepare_t *prepare)
     cg_device_t *dev = prepare->data;
     cg_renderer_t *renderer = cg_device_get_renderer(dev);
 
-    cg_poll_renderer_dispatch(renderer, NULL, 0);
+    cg_loop_dispatch(renderer, NULL, 0);
 
     update_poll_fds(dev);
 }

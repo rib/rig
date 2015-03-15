@@ -40,7 +40,7 @@
 #include "cogl-onscreen-private.h"
 #include "cogl-winsys-webgl-private.h"
 #include "cogl-error-private.h"
-#include "cogl-poll-private.h"
+#include "cogl-loop-private.h"
 #include "cogl-emscripten-lib.h"
 
 typedef struct _cg_device_webgl_t {

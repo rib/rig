@@ -40,7 +40,7 @@
 #include "cogl-device-private.h"
 #include "cogl-object-private.h"
 #include "cogl-closure-list-private.h"
-#include "cogl-poll-private.h"
+#include "cogl-loop-private.h"
 
 static void _cg_onscreen_free(cg_onscreen_t *onscreen);
 
@@ -180,7 +180,7 @@ _cg_onscreen_queue_dispatch_idle(cg_onscreen_t *onscreen)
     cg_device_t *dev = CG_FRAMEBUFFER(onscreen)->dev;
 
     if (!dev->onscreen_dispatch_idle) {
-        dev->onscreen_dispatch_idle = _cg_poll_renderer_add_idle(dev->display->renderer,
+        dev->onscreen_dispatch_idle = _cg_loop_add_idle(dev->display->renderer,
             (cg_idle_callback_t)_cg_dispatch_onscreen_cb,
             dev,
             NULL);

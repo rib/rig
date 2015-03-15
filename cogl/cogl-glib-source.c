@@ -34,7 +34,7 @@
 #include <clib.h>
 
 #include "cogl-glib-source.h"
-#include "cogl-poll.h"
+#include "cogl-loop.h"
 
 typedef struct _cg_glib_source_t {
     GSource source;
@@ -57,7 +57,7 @@ cg_glib_source_prepare(GSource *source, int *timeout)
     int age;
     int i;
 
-    age = cg_poll_renderer_get_info(
+    age = cg_loop_get_info(
         cg_source->renderer, &poll_fds, &n_poll_fds, &cg_timeout);
 
     /* We have to be careful not to call g_source_add/remove_poll unless
@@ -127,7 +127,7 @@ cg_glib_source_dispatch(GSource *source, GSourceFunc callback, void *user_data)
     cg_poll_fd_t *poll_fds =
         (cg_poll_fd_t *)&c_array_index(cg_source->poll_fds, GPollFD, 0);
 
-    cg_poll_renderer_dispatch(
+    cg_loop_dispatch(
         cg_source->renderer, poll_fds, cg_source->poll_fds->len);
 
     return true;

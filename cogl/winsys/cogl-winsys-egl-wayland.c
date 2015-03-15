@@ -46,7 +46,7 @@
 #include "cogl-onscreen-private.h"
 #include "cogl-wayland-renderer.h"
 #include "cogl-error-private.h"
-#include "cogl-poll-private.h"
+#include "cogl-loop-private.h"
 #include "cogl-frame-info-private.h"
 
 static const cg_winsys_egl_vtable_t _cg_winsys_egl_vtable;
@@ -120,7 +120,7 @@ _cg_winsys_renderer_disconnect(cg_renderer_t *renderer)
         eglTerminate(egl_renderer->edpy);
 
     if (wayland_renderer->wayland_display) {
-        _cg_poll_renderer_remove_fd(renderer, wayland_renderer->fd);
+        _cg_loop_remove_fd(renderer, wayland_renderer->fd);
 
         if (renderer->foreign_wayland_display == NULL)
             wl_display_disconnect(wayland_renderer->wayland_display);
@@ -148,7 +148,7 @@ prepare_wayland_display_events(void *user_data)
         /* If the socket buffer became full then we need to wake up the
          * main loop once it is writable again */
         if (errno == EAGAIN) {
-            _cg_poll_renderer_modify_fd(renderer,
+            _cg_loop_modify_fd(renderer,
                                         wayland_renderer->fd,
                                         CG_POLL_FD_EVENT_IN |
                                         CG_POLL_FD_EVENT_OUT);
@@ -159,13 +159,13 @@ prepare_wayland_display_events(void *user_data)
              * application take up 100% CPU. FIXME: it would be nice if
              * there was some way to report this to the application so
              * that it can quit or recover */
-            _cg_poll_renderer_remove_fd(renderer, wayland_renderer->fd);
+            _cg_loop_remove_fd(renderer, wayland_renderer->fd);
         }
     }
 
     /* Calling this here is a bit dodgy because Cogl usually tries to
      * say that it won't do any event processing until
-     * cg_poll_renderer_dispatch is called. However Wayland doesn't
+     * cg_loop_dispatch is called. However Wayland doesn't
      * seem to provide any way to query whether the event queue is empty
      * and we would need to do that in order to force the main loop to
      * wake up to call it from dispatch. */
@@ -196,7 +196,7 @@ dispatch_wayland_display_events(void *user_data, int revents)
         } else {
             /* There is no more data to write so we don't need to wake
              * up when the write buffer is emptied anymore */
-            _cg_poll_renderer_modify_fd(
+            _cg_loop_modify_fd(
                 renderer, wayland_renderer->fd, CG_POLL_FD_EVENT_IN);
         }
     }
@@ -209,7 +209,7 @@ socket_error:
      * descriptor instead of making the application take up 100% CPU.
      * FIXME: it would be nice if there was some way to report this to
      * the application so that it can quit or recover */
-    _cg_poll_renderer_remove_fd(renderer, wayland_renderer->fd);
+    _cg_loop_remove_fd(renderer, wayland_renderer->fd);
 }
 
 static bool
@@ -274,7 +274,7 @@ _cg_winsys_renderer_connect(cg_renderer_t *renderer,
     wayland_renderer->fd = wl_display_get_fd(wayland_renderer->wayland_display);
 
     if (renderer->wayland_enable_event_dispatch)
-        _cg_poll_renderer_add_fd(renderer,
+        _cg_loop_add_fd(renderer,
                                  wayland_renderer->fd,
                                  CG_POLL_FD_EVENT_IN,
                                  prepare_wayland_display_events,
