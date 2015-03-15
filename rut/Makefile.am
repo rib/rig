@@ -42,9 +42,14 @@ librut_la_LIBADD = \
     $(RIG_EXTRA_LDFLAGS)
 librut_la_LDFLAGS = \
     -no-undefined \
+    -export-dynamic
+
+if !EMSCRIPTEN
+librut_la_LDFLAGS += \
     -version-info @RIG_LT_CURRENT@:@RIG_LT_REVISION@:@RIG_LT_AGE@ \
-    -export-dynamic \
     -export-symbols-regex "(^rut.*)|(^_rut.*)"
+endif
+
 librut_la_CFLAGS = \
     $(RIG_DEP_CFLAGS) \
     $(RIG_EXTRA_CFLAGS)
