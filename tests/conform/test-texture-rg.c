@@ -4,7 +4,7 @@
 
 #include <string.h>
 
-#include "test-utils.h"
+#include "test-cg-fixtures.h"
 
 #define TEX_WIDTH 8
 #define TEX_HEIGHT 8
@@ -61,7 +61,7 @@ test_texture_rg (void)
   for (y = 0; y < TEX_HEIGHT; y++)
     for (x = 0; x < TEX_WIDTH; x++)
       {
-        test_utils_check_pixel_rgb (test_fb,
+        test_cg_check_pixel_rgb (test_fb,
                                     x * fb_width / TEX_WIDTH +
                                     fb_width / (TEX_WIDTH * 2),
                                     y * fb_height / TEX_HEIGHT +

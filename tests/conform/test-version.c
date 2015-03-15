@@ -2,7 +2,7 @@
 
 #include <cogl/cogl.h>
 
-#include "test-utils.h"
+#include "test-cg-fixtures.h"
 
 /* So we can use _C_STATIC_ASSERT we include the internal
  * cogl-util.h header. Since internal headers explicitly guard against
@@ -76,7 +76,7 @@ test_version (void)
 
   c_assert_cmpstr (version, ==, "version = " CG_VERSION_STRING);
 
-  if (cg_test_verbose ())
+  if (test_verbose ())
     c_print ("OK\n");
 }
 

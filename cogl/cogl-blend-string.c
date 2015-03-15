@@ -38,7 +38,7 @@
 
 #include <clib.h>
 
-#include <test-fixtures/test-unit.h>
+#include <test-fixtures/test-cg-fixtures.h>
 
 #include "cogl-device-private.h"
 #include "cogl-debug.h"
@@ -839,11 +839,9 @@ error: {
     }
 }
 
-UNIT_TEST(blend_string_parsing,
-          0 /* no requirements */,
-          0 /* no known failures */)
+TEST(blend_string_parsing)
 {
-    struct _TestString {
+    struct {
         const char *string;
         cg_blend_string_context_t context;
         bool should_pass;
@@ -890,6 +888,8 @@ UNIT_TEST(blend_string_parsing,
       { NULL } };
     int i;
 
+    test_cg_init();
+
     cg_error_t *error = NULL;
     for (i = 0; tests[i].string; i++) {
         cg_blend_string_statement_t statements[2];
@@ -907,4 +907,6 @@ UNIT_TEST(blend_string_parsing,
             error = NULL;
         }
     }
+
+    test_cg_fini();
 }

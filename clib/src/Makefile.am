@@ -1,6 +1,10 @@
 EXTRA_DIST =
 
+if UNIT_TESTS
+lib_LTLIBRARIES = libclib.la libclib-static.la
+else
 noinst_LTLIBRARIES = libclib.la libclib-static.la
+endif
 
 win_files  = \
 	clib-config.hw \

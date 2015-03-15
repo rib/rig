@@ -130,7 +130,11 @@ endif
 
 EXTRA_DIST += stb_image.c
 
+if UNIT_TESTS
+lib_LTLIBRARIES += libcogl2.la
+else
 noinst_LTLIBRARIES += libcogl2.la
+endif
 
 libcogl2_la_LIBADD = $(LIBM) $(COGL_DEP_LIBS) $(COGL_EXTRA_LDFLAGS)
 libcogl2_la_LIBADD += $(top_builddir)/clib/src/libclib.la

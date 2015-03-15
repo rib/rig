@@ -2,7 +2,7 @@
 
 #include <cogl/cogl.h>
 
-#include "test-utils.h"
+#include "test-cg-fixtures.h"
 
 #define TEX_SIZE 128
 
@@ -63,7 +63,7 @@ paint (TestState *state)
           { 0x00, 0xff, 0x00, 0xff },
           { 0x00, 0x00, 0xff, 0xff } };
 
-      test_utils_check_pixel_rgb (test_fb,
+      test_cg_check_pixel_rgb (test_fb,
                                   state->width * (i + 0.5f) / NUM_FBOS,
                                   state->height / 2,
                                   expected_colors[i][0],
@@ -83,8 +83,8 @@ test_color_mask (void)
 
   for (i = 0; i < NUM_FBOS; i++)
     {
-      state.tex[i] = test_utils_texture_new_with_size (test_dev, 128, 128,
-                                                 TEST_UTILS_TEXTURE_NO_ATLAS,
+      state.tex[i] = test_cg_texture_new_with_size (test_dev, 128, 128,
+                                                 TEST_CG_TEXTURE_NO_ATLAS,
                                                  CG_TEXTURE_COMPONENTS_RGB);
 
 
@@ -102,7 +102,7 @@ test_color_mask (void)
 
   paint (&state);
 
-  if (cg_test_verbose ())
+  if (test_verbose ())
     c_print ("OK\n");
 }
 

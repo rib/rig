@@ -42,7 +42,7 @@
 #include "cogl-snippet-private.h"
 #include "cogl-error-private.h"
 
-#include <test-fixtures/test-unit.h>
+#include <test-fixtures/test-cg-fixtures.h>
 
 #include "string.h"
 
@@ -1531,14 +1531,16 @@ _cg_pipeline_hash_fragment_snippets_state(cg_pipeline_t *authority,
                                    &state->hash);
 }
 
-UNIT_TEST(check_blend_constant_ancestry,
-          0 /* no requirements */,
-          0 /* no known failures */)
+TEST(check_blend_constant_ancestry)
 {
-    cg_pipeline_t *pipeline = cg_pipeline_new(test_dev);
+    cg_pipeline_t *pipeline;
     cg_node_t *node;
     int pipeline_length = 0;
     int i;
+
+    test_cg_init();
+
+    pipeline = cg_pipeline_new(test_dev);
 
     /* Repeatedly making a copy of a pipeline and changing the same
      * state (in this case the blend constant) shouldn't cause a long
@@ -1562,14 +1564,21 @@ UNIT_TEST(check_blend_constant_ancestry,
     c_assert_cmpint(pipeline_length, <=, 2);
 
     cg_object_unref(pipeline);
+
+    test_cg_fini();
 }
 
-UNIT_TEST(check_uniform_ancestry, 0 /* no requirements */, TEST_KNOWN_FAILURE)
+TEST(check_uniform_ancestry)
 {
-    cg_pipeline_t *pipeline = cg_pipeline_new(test_dev);
+    cg_pipeline_t *pipeline;
     cg_node_t *node;
     int pipeline_length = 0;
     int i;
+
+    test_cg_init();
+    test_allow_failure();
+
+    pipeline = cg_pipeline_new(test_dev);
 
     /* Repeatedly making a copy of a pipeline and changing a uniform
      * shouldn't cause a long chain of pipelines to be created */
@@ -1594,4 +1603,6 @@ UNIT_TEST(check_uniform_ancestry, 0 /* no requirements */, TEST_KNOWN_FAILURE)
     c_assert_cmpint(pipeline_length, <=, 2);
 
     cg_object_unref(pipeline);
+
+    test_cg_fini();
 }

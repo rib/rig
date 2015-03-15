@@ -4,7 +4,7 @@
 
 #include <string.h>
 
-#include "test-utils.h"
+#include "test-cg-fixtures.h"
 
 #define TEXTURE_SIZE  128
 
@@ -28,10 +28,10 @@ make_texture (void)
         }
     }
 
-  tex = test_utils_texture_new_from_data (test_dev,
+  tex = test_cg_texture_new_from_data (test_dev,
                                           TEXTURE_SIZE,
                                           TEXTURE_SIZE,
-                                          TEST_UTILS_TEXTURE_NO_ATLAS,
+                                          TEST_CG_TEXTURE_NO_ATLAS,
                                           CG_PIXEL_FORMAT_RGBA_8888_PRE,
                                           TEXTURE_SIZE * 4,
                                           tex_data);
@@ -102,15 +102,15 @@ update_mipmap_levels (cg_texture_t *tex)
 static void
 validate_results (void)
 {
-  test_utils_check_pixel (test_fb,
+  test_cg_check_pixel (test_fb,
                           TEXTURE_SIZE / 2,
                           TEXTURE_SIZE / 2,
                           0xff0000ff);
-  test_utils_check_pixel (test_fb,
+  test_cg_check_pixel (test_fb,
                           TEXTURE_SIZE + TEXTURE_SIZE / 4,
                           TEXTURE_SIZE / 4,
                           0x00ff00ff);
-  test_utils_check_pixel (test_fb,
+  test_cg_check_pixel (test_fb,
                           TEXTURE_SIZE + TEXTURE_SIZE / 2 + TEXTURE_SIZE / 8,
                           TEXTURE_SIZE / 8,
                           0x0000ffff);
@@ -170,7 +170,7 @@ test_texture_mipmap_get_set (void)
 
   validate_results ();
 
-  if (cg_test_verbose ())
+  if (test_verbose ())
     c_print ("OK\n");
 }
 
