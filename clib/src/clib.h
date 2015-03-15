@@ -1615,9 +1615,10 @@ typedef struct _c_tls_t {
 
 /* Note: it's the caller's responsibility to ensure c_tls_init() is
  * only called once per c_tls_t */
-void c_tls_init(c_tls_t *tls, void (*destroy)(void *data));
 
 #if defined(HAVE_PTHREADS)
+void c_tls_init(c_tls_t *tls, void (*destroy)(void *data));
+
 static inline void
 c_tls_set(c_tls_t *tls, void *data)
 {
@@ -1634,6 +1635,8 @@ c_tls_get(c_tls_t *tls)
 
 #elif defined(WIN32)
 
+void c_tls_init(c_tls_t *tls, void (*destroy)(void *data));
+
 static inline void
 c_tls_set(c_tls_t *tls, void *data)
 {
@@ -1646,6 +1649,9 @@ c_tls_get(c_tls_t *tls)
     return TlsGetValue(tls->key);
 }
 #else
+
+static inline void
+c_tls_init(c_tls_t *tls, void (*destroy)(void *data)) { }
 
 static inline void
 c_tls_set(c_tls_t *tls, void *data)
