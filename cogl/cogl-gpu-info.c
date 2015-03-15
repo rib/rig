@@ -28,14 +28,12 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include <string.h>
 #include <errno.h>
 
-#include <test-fixtures/test-unit.h>
+#include <test-fixtures/test-cg-fixtures.h>
 
 #include "cogl-gpu-info-private.h"
 #include "cogl-device-private.h"
@@ -379,9 +377,7 @@ check_mesa_driver_package(const cg_gpu_info_strings_t *strings,
     return true;
 }
 
-UNIT_TEST(check_mesa_driver_package_parser,
-          0, /* no requirements */
-          0 /* no failure cases */)
+TEST(check_mesa_driver_package_parser)
 {
     /* renderer_string, version_string, vendor_string;*/
     const cg_gpu_info_strings_t test_strings[2] = {
@@ -391,10 +387,14 @@ UNIT_TEST(check_mesa_driver_package_parser,
     int i;
     int version;
 
+    test_cg_init();
+
     for (i = 0; i < C_N_ELEMENTS(test_strings); i++) {
         c_assert(check_mesa_driver_package(&test_strings[i], &version));
         c_assert_cmpint(version, ==, CG_VERSION_ENCODE(9, 2, 0));
     }
+
+    test_cg_fini();
 }
 
 static bool

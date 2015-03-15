@@ -5,7 +5,7 @@
 
 #include <cogl/cogl.h>
 
-#include "test-utils.h"
+#include "test-cg-fixtures.h"
 
 #define cc_assert_float(a, b)         \
   do {                                  \
@@ -42,6 +42,6 @@ test_color_hsl (void)
   cc_assert_float(color.blue, luminance);
   cc_assert_float(color.alpha, 1.0f);
 
-  if (cg_test_verbose ())
+  if (test_verbose ())
     c_print ("OK\n");
 }

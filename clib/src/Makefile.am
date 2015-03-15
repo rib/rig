@@ -3,8 +3,12 @@ EXTRA_DIST =
 if EMSCRIPTEN
 lib_LTLIBRARIES = libclib.la
 else
+if UNIT_TESTS
+lib_LTLIBRARIES = libclib.la
+else
 noinst_LTLIBRARIES = libclib.la
 endif
+endif #EMSCRIPTEN
 
 
 libclib_la_LIBADD = $(CLIB_DEP_LIBS)

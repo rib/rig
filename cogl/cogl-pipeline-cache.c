@@ -3,7 +3,7 @@
  *
  * A Low-Level GPU Graphics and Utilities API
  *
- * Copyright (C) 2011, 2013 Intel Corporation.
+ * Copyright (C) 2011-2015 Intel Corporation.
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -25,17 +25,11 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- *
- * Authors:
- *   Neil Roberts <neil@linux.intel.com>
- *   Robert Bragg <robert@linux.intel.com>
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
-#include <test-fixtures/test-unit.h>
+#include <test-fixtures/test-cg-fixtures.h>
 
 #include "cogl-device-private.h"
 #include "cogl-pipeline-private.h"
@@ -137,21 +131,22 @@ create_pipelines(cg_pipeline_t **pipelines, int n_pipelines)
      * in the cache */
     for (i = 0; i < n_pipelines; i++) {
         cg_framebuffer_draw_rectangle(test_fb, pipelines[i], i, 0, i + 1, 1);
-        test_utils_check_pixel_rgb(test_fb, i, 0, i, 0, 0);
+        test_cg_check_pixel_rgb(test_fb, i, 0, i, 0, 0);
     }
 }
 
-UNIT_TEST(check_pipeline_pruning,
-          TEST_REQUIREMENT_GLSL, /* requirements */
-          0 /* no failure cases */)
+TEST(check_pipeline_pruning)
 {
     cg_pipeline_t *pipelines[18];
     int fb_width, fb_height;
-    cg_pipeline_hash_table_t *fragment_hash =
-        &test_dev->pipeline_cache->fragment_hash;
-    cg_pipeline_hash_table_t *combined_hash =
-        &test_dev->pipeline_cache->combined_hash;
+    cg_pipeline_hash_table_t *fragment_hash;
+    cg_pipeline_hash_table_t *combined_hash;
     int i;
+
+    test_cg_init();
+
+    fragment_hash = &test_dev->pipeline_cache->fragment_hash;
+    combined_hash = &test_dev->pipeline_cache->combined_hash;
 
     fb_width = cg_framebuffer_get_width(test_fb);
     fb_height = cg_framebuffer_get_height(test_fb);
@@ -191,6 +186,8 @@ UNIT_TEST(check_pipeline_pruning,
 
     for (i = 0; i < 18; i++)
         cg_object_unref(pipelines[i]);
+
+    test_cg_fini();
 }
 
 #endif /* ENABLE_UNIT_TESTS */

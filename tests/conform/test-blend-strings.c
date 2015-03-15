@@ -4,7 +4,7 @@
 
 #include <string.h>
 
-#include "test-utils.h"
+#include "test-cg-fixtures.h"
 
 #define QUAD_WIDTH 20
 
@@ -83,7 +83,7 @@ test_blend(test_state_t *state,
   if (!status) {
       /* It's not strictly a test failure; you need a more capable GPU or
        * driver to test this blend string. */
-      if (cg_test_verbose ()) {
+      if (test_verbose ()) {
           c_debug("Failed to test blend string %s: %s",
                   blend_string, error->message);
           c_print("Skipping\n");
@@ -107,7 +107,7 @@ test_blend(test_state_t *state,
   y_off = y * QUAD_WIDTH + (QUAD_WIDTH / 2);
   x_off = x * QUAD_WIDTH + (QUAD_WIDTH / 2);
 
-  if (cg_test_verbose()) {
+  if (test_verbose()) {
       c_print("test_blend (%d, %d):\n%s\n", x, y, blend_string);
       c_print("  src color = %02x, %02x, %02x, %02x\n", Sr, Sg, Sb, Sa);
       c_print("  dst color = %02x, %02x, %02x, %02x\n", Dr, Dg, Db, Da);
@@ -118,7 +118,7 @@ test_blend(test_state_t *state,
           c_print("  blend constant = UNUSED\n");
   }
 
-  test_utils_check_pixel(test_fb, x_off, y_off, expected_result);
+  test_cg_check_pixel(test_fb, x_off, y_off, expected_result);
 }
 
 static cg_texture_t *
@@ -142,10 +142,10 @@ make_texture(uint32_t color)
 
   /* Note: we claim that the data is premultiplied so that Cogl won't
    * premultiply the data on upload */
-  tex = test_utils_texture_new_from_data(test_dev,
+  tex = test_cg_texture_new_from_data(test_dev,
                                          QUAD_WIDTH,
                                          QUAD_WIDTH,
-                                         TEST_UTILS_TEXTURE_NONE,
+                                         TEST_CG_TEXTURE_NONE,
                                          CG_PIXEL_FORMAT_RGBA_8888_PRE,
                                          QUAD_WIDTH * 4,
                                          tex_data);
@@ -220,7 +220,7 @@ test_tex_combine(test_state_t *state,
   y_off = y * QUAD_WIDTH + (QUAD_WIDTH / 2);
   x_off = x * QUAD_WIDTH + (QUAD_WIDTH / 2);
 
-  if (cg_test_verbose ()) {
+  if (test_verbose ()) {
       c_print("test_tex_combine (%d, %d):\n%s\n", x, y, combine_string);
       c_print("  texture 0 color = 0x%08lX\n", (unsigned long)tex0_color);
       c_print("  texture 1 color = 0x%08lX\n", (unsigned long)tex1_color);
@@ -231,7 +231,7 @@ test_tex_combine(test_state_t *state,
           c_print("  combine constant = UNUSED\n");
   }
 
-  test_utils_check_pixel (test_fb, x_off, y_off, expected_result);
+  test_cg_check_pixel (test_fb, x_off, y_off, expected_result);
 }
 
 static void
@@ -363,7 +363,7 @@ test_blend_strings(void)
 
   paint (&state);
 
-  if (cg_test_verbose ())
+  if (test_verbose ())
     c_print ("OK\n");
 }
 

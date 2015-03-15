@@ -28,7 +28,7 @@
 #include <config.h>
 #include <stdio.h>
 
-#include <test-fixtures/test-unit.h>
+#include <test-fixtures/test.h>
 
 #include <clib.h>
 #include <errno.h>
@@ -307,9 +307,7 @@ c_path_normalize(char *filename, int *len_in_out)
     return status ? filename : NULL;
 }
 
-UNIT_TEST(check_normalize_filename,
-          0, /* requirements */
-          0) /* failure cases */
+TEST(check_normalize_filename)
 {
     struct {
         const char *a;

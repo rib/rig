@@ -4,7 +4,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "test-utils.h"
+#include "test-cg-fixtures.h"
 
 typedef struct _TestState
 {
@@ -172,9 +172,9 @@ test_paint (TestState *state)
   tex_data[3] = (TEX_COLOR >> 24) & 0xff;
   tex_data[4] = (TEX_COLOR >> 16) & 0xff;
   tex_data[5] = (TEX_COLOR >> 8) & 0xff;
-  tex = test_utils_texture_new_from_data (test_dev,
+  tex = test_cg_texture_new_from_data (test_dev,
                                           2, 1, /* size */
-                                          TEST_UTILS_TEXTURE_NO_ATLAS,
+                                          TEST_CG_TEXTURE_NO_ATLAS,
                                           CG_PIXEL_FORMAT_RGB_888,
                                           6, /* rowstride */
                                           tex_data);
@@ -199,7 +199,7 @@ test_paint (TestState *state)
       cg_primitive_draw (prim, test_fb, pipeline);
       cg_framebuffer_pop_matrix (test_fb);
 
-      test_utils_check_pixel (test_fb, i * 10 + 2, 2, expected_color);
+      test_cg_check_pixel (test_fb, i * 10 + 2, 2, expected_color);
 
       cg_object_unref (prim);
     }
@@ -331,6 +331,6 @@ test_primitive (void)
   test_paint (&state);
   test_copy (&state);
 
-  if (cg_test_verbose ())
+  if (test_verbose ())
     c_print ("OK\n");
 }

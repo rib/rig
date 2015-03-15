@@ -1,5 +1,5 @@
-#ifndef _TEST_UTILS_H_
-#define _TEST_UTILS_H_
+#ifndef _TEST_CG_FIXTURES_H_
+#define _TEST_CG_FIXTURES_H_
 
 /* NB: This header is for private and public api testing and so
  * we need consider that if we are testing the public api we should
@@ -22,62 +22,59 @@
 
 #include <clib.h>
 
-/* We don't really care about functions that are defined without a
-   header for the unit tests so we can just disable it here */
-#ifdef __GNUC__
-#pragma GCC diagnostic ignored "-Wmissing-declarations"
-#endif
+#include <test-fixtures/test.h>
+#include <test-fixtures/test-fixtures.h>
 
-typedef enum _TestFlags {
-    TEST_KNOWN_FAILURE = 1 << 0,
-    TEST_REQUIREMENT_GL = 1 << 1,
-    TEST_REQUIREMENT_NPOT = 1 << 2,
-    TEST_REQUIREMENT_TEXTURE_3D = 1 << 3,
-    TEST_REQUIREMENT_TEXTURE_RG = 1 << 5,
-    TEST_REQUIREMENT_POINT_SPRITE = 1 << 6,
-    TEST_REQUIREMENT_GLES2_CONTEXT = 1 << 7,
-    TEST_REQUIREMENT_MAP_WRITE = 1 << 8,
-    TEST_REQUIREMENT_GLSL = 1 << 9,
-    TEST_REQUIREMENT_OFFSCREEN = 1 << 10,
-    TEST_REQUIREMENT_FENCE = 1 << 11,
-    TEST_REQUIREMENT_PER_VERTEX_POINT_SIZE = 1 << 12
-} TestFlags;
+typedef enum _test_cg_requirement_t {
+    TEST_CG_REQUIREMENT_GL = 1 << 1,
+    TEST_CG_REQUIREMENT_NPOT = 1 << 2,
+    TEST_CG_REQUIREMENT_TEXTURE_3D = 1 << 3,
+    TEST_CG_REQUIREMENT_TEXTURE_RG = 1 << 5,
+    TEST_CG_REQUIREMENT_POINT_SPRITE = 1 << 6,
+    TEST_CG_REQUIREMENT_GLES2_CONTEXT = 1 << 7,
+    TEST_CG_REQUIREMENT_MAP_WRITE = 1 << 8,
+    TEST_CG_REQUIREMENT_GLSL = 1 << 9,
+    TEST_CG_REQUIREMENT_OFFSCREEN = 1 << 10,
+    TEST_CG_REQUIREMENT_FENCE = 1 << 11,
+    TEST_CG_REQUIREMENT_PER_VERTEX_POINT_SIZE = 1 << 12
+} test_cg_requirement_t;
 
 /**
- * TestUtilsTextureFlags:
- * @TEST_UTILS_TEXTURE_NONE: No flags specified
- * @TEST_UTILS_TEXTURE_NO_AUTO_MIPMAP: Disables the automatic generation of
+ * test_cg_texture_flag_t:
+ * @TEST_CG_TEXTURE_NONE: No flags specified
+ * @TEST_CG_TEXTURE_NO_AUTO_MIPMAP: Disables the automatic generation of
  *   the mipmap pyramid from the base level image whenever it is
  *   updated. The mipmaps are only generated when the texture is
  *   rendered with a mipmap filter so it should be free to leave out
  *   this flag when using other filtering modes
- * @TEST_UTILS_TEXTURE_NO_SLICING: Disables the slicing of the texture
- * @TEST_UTILS_TEXTURE_NO_ATLAS: Disables the insertion of the texture inside
+ * @TEST_CG_TEXTURE_NO_SLICING: Disables the slicing of the texture
+ * @TEST_CG_TEXTURE_NO_ATLAS: Disables the insertion of the texture inside
  *   the texture atlas used by Cogl
  *
- * Flags to pass to the test_utils_texture_new_* family of functions.
+ * Flags to pass to the test_cg_texture_new_* family of functions.
  */
 typedef enum {
-    TEST_UTILS_TEXTURE_NONE = 0,
-    TEST_UTILS_TEXTURE_NO_AUTO_MIPMAP = 1 << 0,
-    TEST_UTILS_TEXTURE_NO_SLICING = 1 << 1,
-    TEST_UTILS_TEXTURE_NO_ATLAS = 1 << 2
-} TestUtilsTextureFlags;
+    TEST_CG_TEXTURE_NONE = 0,
+    TEST_CG_TEXTURE_NO_AUTO_MIPMAP = 1 << 0,
+    TEST_CG_TEXTURE_NO_SLICING = 1 << 1,
+    TEST_CG_TEXTURE_NO_ATLAS = 1 << 2
+} test_cg_texture_flag_t;
 
+extern cg_renderer_t *test_renderer;
 extern cg_device_t *test_dev;
 extern cg_framebuffer_t *test_fb;
 
-void test_utils_init(TestFlags requirement_flags,
-                     TestFlags known_failure_flags);
+void test_cg_init(void);
+void test_cg_fini(void);
 
-void test_utils_fini(void);
+bool test_cg_check_requirements(test_cg_requirement_t requirements);
 
 /*
- * test_utils_texture_new_with_size:
+ * test_cg_texture_new_with_size:
  * @dev: A #cg_device_t
  * @width: width of texture in pixels.
  * @height: height of texture in pixels.
- * @flags: Optional flags for the texture, or %TEST_UTILS_TEXTURE_NONE
+ * @flags: Optional flags for the texture, or %TEST_CG_TEXTURE_NONE
  * @components: What texture components are required
  *
  * Creates a new #cg_texture_t with the specified dimensions and pixel format.
@@ -92,18 +89,18 @@ void test_utils_fini(void);
  * Return value: A newly created #cg_texture_t
  */
 cg_texture_t *
-test_utils_texture_new_with_size(cg_device_t *dev,
-                                 int width,
-                                 int height,
-                                 TestUtilsTextureFlags flags,
-                                 cg_texture_components_t components);
+test_cg_texture_new_with_size(cg_device_t *dev,
+                              int width,
+                              int height,
+                              test_cg_texture_flag_t flags,
+                              cg_texture_components_t components);
 
 /*
- * test_utils_texture_new_from_data:
+ * test_cg_texture_new_from_data:
  * @dev: A #cg_device_t
  * @width: width of texture in pixels
  * @height: height of texture in pixels
- * @flags: Optional flags for the texture, or %TEST_UTILS_TEXTURE_NONE
+ * @flags: Optional flags for the texture, or %TEST_CG_TEXTURE_NONE
  * @format: the #cg_pixel_format_t the buffer is stored in in RAM
  * @rowstride: the memory offset in bytes between the starts of
  *    scanlines in @data
@@ -116,23 +113,23 @@ test_utils_texture_new_with_size(cg_device_t *dev,
  * will be loaded into a premultiplied internal format. If you want
  * to avoid having the source data be premultiplied then you can
  * either specify that the data is already premultiplied or use
- * test_utils_texture_new_from_bitmap which lets you explicitly
+ * test_cg_texture_new_from_bitmap which lets you explicitly
  * request whether the data should internally be premultipled or not.
  *
  * Return value: A newly created #cg_texture_t or %NULL on failure
  */
-cg_texture_t *test_utils_texture_new_from_data(cg_device_t *dev,
-                                               int width,
-                                               int height,
-                                               TestUtilsTextureFlags flags,
-                                               cg_pixel_format_t format,
-                                               int rowstride,
-                                               const uint8_t *data);
+cg_texture_t *test_cg_texture_new_from_data(cg_device_t *dev,
+                                            int width,
+                                            int height,
+                                            test_cg_texture_flag_t flags,
+                                            cg_pixel_format_t format,
+                                            int rowstride,
+                                            const uint8_t *data);
 
 /*
- * test_utils_texture_new_from_bitmap:
+ * test_cg_texture_new_from_bitmap:
  * @bitmap: A #cg_bitmap_t pointer
- * @flags: Optional flags for the texture, or %TEST_UTILS_TEXTURE_NONE
+ * @flags: Optional flags for the texture, or %TEST_CG_TEXTURE_NONE
  * @premultiplied: Whether the texture should hold premultipled data.
  *                 (if the bitmap already holds premultiplied data
  *                 and %TRUE is given then no premultiplication will
@@ -144,12 +141,12 @@ cg_texture_t *test_utils_texture_new_from_data(cg_device_t *dev,
  *
  * Return value: A newly created #cg_texture_t or %NULL on failure
  */
-cg_texture_t *test_utils_texture_new_from_bitmap(cg_bitmap_t *bitmap,
-                                                 TestUtilsTextureFlags flags,
-                                                 bool premultiplied);
+cg_texture_t *test_cg_texture_new_from_bitmap(cg_bitmap_t *bitmap,
+                                              test_cg_texture_flag_t flags,
+                                              bool premultiplied);
 
 /*
- * test_utils_check_pixel:
+ * test_cg_check_pixel:
  * @framebuffer: The #cg_framebuffer_t to read from
  * @x: x co-ordinate of the pixel to test
  * @y: y co-ordinate of the pixel to test
@@ -162,10 +159,10 @@ cg_texture_t *test_utils_texture_new_from_bitmap(cg_bitmap_t *bitmap,
  * with g_assert_cmpstr so that if the comparison fails then the
  * assert will display a meaningful message
  */
-void test_utils_check_pixel(cg_framebuffer_t *framebuffer,
-                            int x,
-                            int y,
-                            uint32_t expected_pixel);
+void test_cg_check_pixel(cg_framebuffer_t *framebuffer,
+                         int x,
+                         int y,
+                         uint32_t expected_pixel);
 
 /**
  * @framebuffer: The #cg_framebuffer_t to read from
@@ -176,18 +173,18 @@ void test_utils_check_pixel(cg_framebuffer_t *framebuffer,
  *
  * This performs reads a pixel on the given cogl @framebuffer and
  * asserts that it matches the given color. The alpha channel is also
- * checked unlike with test_utils_check_pixel(). The pixels are
+ * checked unlike with test_cg_check_pixel(). The pixels are
  * converted to a string and compared with g_assert_cmpstr so that if
  * the comparison fails then the assert will display a meaningful
  * message.
  */
-void test_utils_check_pixel_and_alpha(cg_framebuffer_t *fb,
-                                      int x,
-                                      int y,
-                                      uint32_t expected_pixel);
+void test_cg_check_pixel_and_alpha(cg_framebuffer_t *fb,
+                                   int x,
+                                   int y,
+                                   uint32_t expected_pixel);
 
 /*
- * test_utils_check_pixel:
+ * test_cg_check_pixel:
  * @framebuffer: The #cg_framebuffer_t to read from
  * @x: x co-ordinate of the pixel to test
  * @y: y co-ordinate of the pixel to test
@@ -199,11 +196,11 @@ void test_utils_check_pixel_and_alpha(cg_framebuffer_t *fb,
  * with g_assert_cmpstr so that if the comparison fails then the
  * assert will display a meaningful message
  */
-void test_utils_check_pixel_rgb(
+void test_cg_check_pixel_rgb(
     cg_framebuffer_t *framebuffer, int x, int y, int r, int g, int b);
 
 /*
- * test_utils_check_region:
+ * test_cg_check_region:
  * @framebuffer: The #cg_framebuffer_t to read from
  * @x: x co-ordinate of the region to test
  * @y: y co-ordinate of the region to test
@@ -218,15 +215,15 @@ void test_utils_check_pixel_rgb(
  * string and compared with g_assert_cmpstr so that if the comparison
  * fails then the assert will display a meaningful message
  */
-void test_utils_check_region(cg_framebuffer_t *framebuffer,
-                             int x,
-                             int y,
-                             int width,
-                             int height,
-                             uint32_t expected_rgba);
+void test_cg_check_region(cg_framebuffer_t *framebuffer,
+                          int x,
+                          int y,
+                          int width,
+                          int height,
+                          uint32_t expected_rgba);
 
 /*
- * test_utils_compare_pixel:
+ * test_cg_compare_pixel:
  * @screen_pixel: A pixel stored in memory
  * @expected_pixel: The expected RGBA value
  *
@@ -235,36 +232,30 @@ void test_utils_check_region(cg_framebuffer_t *framebuffer,
  * the comparison fails then the assert will display a meaningful
  * message.
  */
-void test_utils_compare_pixel(const uint8_t *screen_pixel,
-                              uint32_t expected_pixel);
+void test_cg_compare_pixel(const uint8_t *screen_pixel,
+                           uint32_t expected_pixel);
 
 /*
- * test_utils_compare_pixel_and_alpha:
+ * test_cg_compare_pixel_and_alpha:
  * @screen_pixel: A pixel stored in memory
  * @expected_pixel: The expected RGBA value
  *
  * Compares a pixel from a buffer to an expected value. This is
- * similar to test_utils_compare_pixel() except that it doesn't ignore
+ * similar to test_cg_compare_pixel() except that it doesn't ignore
  * the alpha component.
  */
-void test_utils_compare_pixel_and_alpha(const uint8_t *screen_pixel,
-                                        uint32_t expected_pixel);
+void test_cg_compare_pixel_and_alpha(const uint8_t *screen_pixel,
+                                     uint32_t expected_pixel);
 
 /*
- * test_utils_create_color_texture:
+ * test_cg_create_color_texture:
  * @dev: A #cg_device_t
  * @color: A color to put in the texture
  *
  * Creates a 1x1-pixel RGBA texture filled with the given color.
  */
-cg_texture_t *test_utils_create_color_texture(cg_device_t *dev,
-                                              uint32_t color);
-
-/* cg_test_verbose:
- *
- * Queries if the user asked for verbose output or not.
- */
-bool cg_test_verbose(void);
+cg_texture_t *test_cg_create_color_texture(cg_device_t *dev,
+                                           uint32_t color);
 
 /* test_util_is_pot:
  * @number: A number to test
@@ -272,10 +263,10 @@ bool cg_test_verbose(void);
  * Returns whether the given integer is a power of two
  */
 static inline bool
-test_utils_is_pot(unsigned int number)
+test_cg_is_pot(unsigned int number)
 {
     /* Make sure there is only one bit set */
     return (number & (number - 1)) == 0;
 }
 
-#endif /* _TEST_UTILS_H_ */
+#endif /* _TEST_CG_FIXTURES_H_ */

@@ -4,7 +4,7 @@
 
 #include <string.h>
 
-#include "test-utils.h"
+#include "test-cg-fixtures.h"
 
 typedef struct _TestState
 {
@@ -78,8 +78,8 @@ test_float_verts (TestState *state, int offset_x, int offset_y)
   cg_object_unref (attributes[0]);
   cg_object_unref (buffer);
 
-  test_utils_check_pixel (test_fb, offset_x + 5, offset_y + 5, 0xff0000ff);
-  test_utils_check_pixel (test_fb, offset_x + 15, offset_y + 5, 0x00ff00ff);
+  test_cg_check_pixel (test_fb, offset_x + 5, offset_y + 5, 0xff0000ff);
+  test_cg_check_pixel (test_fb, offset_x + 15, offset_y + 5, 0x00ff00ff);
 }
 
 static void
@@ -162,9 +162,9 @@ test_byte_verts (TestState *state, int offset_x, int offset_y)
   cg_object_unref (buffer);
   cg_object_unref (unnorm_buffer);
 
-  test_utils_check_pixel (test_fb, offset_x + 5, offset_y + 5, 0xff0000ff);
-  test_utils_check_pixel (test_fb, offset_x + 15, offset_y + 5, 0x00ff00ff);
-  test_utils_check_pixel (test_fb, offset_x + 25, offset_y + 5, 0x0000ffff);
+  test_cg_check_pixel (test_fb, offset_x + 5, offset_y + 5, 0xff0000ff);
+  test_cg_check_pixel (test_fb, offset_x + 15, offset_y + 5, 0x00ff00ff);
+  test_cg_check_pixel (test_fb, offset_x + 25, offset_y + 5, 0x0000ffff);
 }
 
 static void
@@ -260,8 +260,8 @@ test_short_verts (TestState *state, int offset_x, int offset_y)
   cg_object_unref (pipeline);
   cg_object_unref (buffer);
 
-  test_utils_check_pixel (test_fb, offset_x + 5, offset_y + 5, 0xff0000ff);
-  test_utils_check_pixel (test_fb, offset_x + 15, offset_y + 5, 0x00ff00ff);
+  test_cg_check_pixel (test_fb, offset_x + 5, offset_y + 5, 0xff0000ff);
+  test_cg_check_pixel (test_fb, offset_x + 15, offset_y + 5, 0x00ff00ff);
 }
 
 static void
@@ -298,6 +298,6 @@ test_custom_attributes (void)
   cg_object_unref (state.pipeline);
   cg_object_unref (snippet);
 
-  if (cg_test_verbose ())
+  if (test_verbose ())
     c_print ("OK\n");
 }

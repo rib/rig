@@ -4,7 +4,7 @@
 
 #include <string.h>
 
-#include "test-utils.h"
+#include "test-cg-fixtures.h"
 
 typedef struct _TestState
 {
@@ -18,9 +18,9 @@ create_dummy_texture (void)
      vertex shader */
   static const uint8_t data[4] = { 0x00, 0xff, 0x00, 0xff };
 
-  return test_utils_texture_new_from_data (test_dev,
+  return test_cg_texture_new_from_data (test_dev,
                                            1, 1, /* size */
-                                           TEST_UTILS_TEXTURE_NONE,
+                                           TEST_CG_TEXTURE_NONE,
                                            CG_PIXEL_FORMAT_RGB_888,
                                            4, /* rowstride */
                                            data);
@@ -80,9 +80,9 @@ static void
 validate_result (cg_framebuffer_t *framebuffer)
 {
   /* Non-shader version */
-  test_utils_check_pixel (framebuffer, 25, 25, 0x00ff0000);
+  test_cg_check_pixel (framebuffer, 25, 25, 0x00ff0000);
   /* Shader version */
-  test_utils_check_pixel (framebuffer, 75, 25, 0x00ff0000);
+  test_cg_check_pixel (framebuffer, 75, 25, 0x00ff0000);
 }
 
 void
@@ -100,6 +100,6 @@ test_just_vertex_shader (void)
   paint (&state);
   validate_result (test_fb);
 
-  if (cg_test_verbose ())
+  if (test_verbose ())
     c_print ("OK\n");
 }

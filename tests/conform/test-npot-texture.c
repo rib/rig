@@ -4,7 +4,7 @@
 
 #include <string.h>
 
-#include "test-utils.h"
+#include "test-cg-fixtures.h"
 
 /* Non-power-of-two sized texture that should cause slicing */
 #define TEXTURE_SIZE        384
@@ -35,7 +35,7 @@ validate_part (int xnum,
                int ynum,
                uint32_t color)
 {
-  test_utils_check_region (test_fb,
+  test_cg_check_region (test_fb,
                            xnum * PART_RENDER_SIZE + TEST_INSET,
                            ynum * PART_RENDER_SIZE + TEST_INSET,
                            PART_RENDER_SIZE - TEST_INSET * 2,
@@ -89,17 +89,17 @@ make_texture (void)
         }
     }
 
-  tex = test_utils_texture_new_from_data (test_dev,
+  tex = test_cg_texture_new_from_data (test_dev,
                                           TEXTURE_SIZE,
                                           TEXTURE_SIZE,
-                                          TEST_UTILS_TEXTURE_NO_ATLAS,
+                                          TEST_CG_TEXTURE_NO_ATLAS,
                                           CG_PIXEL_FORMAT_RGBA_8888_PRE,
                                           TEXTURE_SIZE * 4,
                                           tex_data);
 
   c_free (tex_data);
 
-  if (cg_test_verbose ())
+  if (test_verbose ())
     {
       if (cg_texture_is_sliced (tex))
         c_print ("Texture is sliced\n");
@@ -148,7 +148,7 @@ paint (void)
 void
 test_npot_texture (void)
 {
-  if (cg_test_verbose ())
+  if (test_verbose ())
     {
       if (cg_has_feature (test_dev, CG_FEATURE_ID_TEXTURE_NPOT))
         c_print ("NPOT textures are supported\n");
@@ -166,7 +166,7 @@ test_npot_texture (void)
   paint ();
   validate_result ();
 
-  if (cg_test_verbose ())
+  if (test_verbose ())
     c_print ("OK\n");
 }
 

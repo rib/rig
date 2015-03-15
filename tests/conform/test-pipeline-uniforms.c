@@ -4,7 +4,7 @@
 
 #include <string.h>
 
-#include "test-utils.h"
+#include "test-cg-fixtures.h"
 
 #define LONG_ARRAY_SIZE 128
 
@@ -344,7 +344,7 @@ paint (TestState *state)
 static void
 check_pos (int pos, uint32_t color)
 {
-  test_utils_check_pixel (test_fb, pos * 10 + 5, 5, color);
+  test_cg_check_pixel (test_fb, pos * 10 + 5, 5, color);
 }
 
 static void
@@ -403,6 +403,6 @@ test_pipeline_uniforms (void)
 
   destroy_state (&state);
 
-  if (cg_test_verbose ())
+  if (test_verbose ())
     c_print ("OK\n");
 }

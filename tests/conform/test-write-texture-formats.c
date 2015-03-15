@@ -3,7 +3,7 @@
 #include <cogl/cogl.h>
 #include <stdarg.h>
 
-#include "test-utils.h"
+#include "test-cg-fixtures.h"
 
 /*
  * This tests writing data to an RGBA texture in all of the available
@@ -21,7 +21,7 @@ test_color (cg_texture_t *texture,
                          4, /* rowstride */
                          received_pixel);
 
-  test_utils_compare_pixel_and_alpha (received_pixel, expected_pixel);
+  test_cg_compare_pixel_and_alpha (received_pixel, expected_pixel);
 }
 
 static void
@@ -29,7 +29,7 @@ test_write_byte (cg_pixel_format_t format,
                  uint8_t byte,
                  uint32_t expected_pixel)
 {
-  cg_texture_t *texture = test_utils_create_color_texture (test_dev, 0);
+  cg_texture_t *texture = test_cg_create_color_texture (test_dev, 0);
 
   cg_texture_set_region (texture,
                            1, 1, /* width / height */
@@ -50,7 +50,7 @@ test_write_short (cg_pixel_format_t format,
                   uint16_t value,
                   uint32_t expected_pixel)
 {
-  cg_texture_t *texture = test_utils_create_color_texture (test_dev, 0);
+  cg_texture_t *texture = test_cg_create_color_texture (test_dev, 0);
 
   cg_texture_set_region (texture,
                            1, 1, /* width / height */
@@ -71,7 +71,7 @@ test_write_bytes (cg_pixel_format_t format,
                   uint32_t value,
                   uint32_t expected_pixel)
 {
-  cg_texture_t *texture = test_utils_create_color_texture (test_dev, 0);
+  cg_texture_t *texture = test_cg_create_color_texture (test_dev, 0);
 
   value = C_UINT32_TO_BE (value);
 
@@ -98,7 +98,7 @@ test_write_int (cg_pixel_format_t format,
   int bits;
   uint32_t tex_data = 0;
   int bits_sum = 0;
-  cg_texture_t *texture = test_utils_create_color_texture (test_dev, 0);
+  cg_texture_t *texture = test_cg_create_color_texture (test_dev, 0);
 
   va_start (ap, expected_pixel);
 
@@ -167,6 +167,6 @@ test_write_texture_formats (void)
                   2, 0xff, 10, 0x56, 10, 0x34, 10, 0x12,
                   -1);
 
-  if (cg_test_verbose ())
+  if (test_verbose ())
     c_print ("OK\n");
 }

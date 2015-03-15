@@ -4,7 +4,7 @@
 
 #include <string.h>
 
-#include "test-utils.h"
+#include "test-cg-fixtures.h"
 
 /* Size the texture so that it is just off a power of two to encourage
    it so use software tiling when NPOTs aren't available */
@@ -29,7 +29,7 @@ static void
 validate_part (cg_framebuffer_t *framebuffer,
                int xnum, int ynum, bool shown)
 {
-  test_utils_check_region (framebuffer,
+  test_cg_check_region (framebuffer,
                            xnum * TEXTURE_RENDER_SIZE + TEST_INSET,
                            ynum * TEXTURE_RENDER_SIZE + TEST_INSET,
                            TEXTURE_RENDER_SIZE - TEST_INSET * 2,
@@ -212,10 +212,10 @@ make_texture (void)
       *(--p) = 255;
     }
 
-  tex = test_utils_texture_new_from_data (test_dev,
+  tex = test_cg_texture_new_from_data (test_dev,
                                           TEXTURE_SIZE,
                                           TEXTURE_SIZE,
-                                          TEST_UTILS_TEXTURE_NO_ATLAS,
+                                          TEST_CG_TEXTURE_NO_ATLAS,
                                           CG_PIXEL_FORMAT_RGBA_8888,
                                           TEXTURE_SIZE * 4,
                                           tex_data);
@@ -238,9 +238,9 @@ test_backface_culling (void)
 
   state.texture = make_texture ();
 
-  tex = test_utils_texture_new_with_size (test_dev,
+  tex = test_cg_texture_new_with_size (test_dev,
                                           state.width, state.height,
-                                          TEST_UTILS_TEXTURE_NO_SLICING,
+                                          TEST_CG_TEXTURE_NO_SLICING,
                                           CG_TEXTURE_COMPONENTS_RGBA);
   state.offscreen = cg_offscreen_new_with_texture (tex);
   state.offscreen_tex = tex;
@@ -251,7 +251,7 @@ test_backface_culling (void)
   cg_object_unref (state.offscreen_tex);
   cg_object_unref (state.texture);
 
-  if (cg_test_verbose ())
+  if (test_verbose ())
     c_print ("OK\n");
 }
 

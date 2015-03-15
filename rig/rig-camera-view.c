@@ -31,7 +31,9 @@
 
 #include <math.h>
 
+#ifdef ENABLE_OCULUS_RIFT
 #include "OVR_CAPI.h"
+#endif
 
 #include <rut.h>
 
@@ -247,6 +249,7 @@ init_camera_from_camera(rig_entity_t *dst_camera, rig_entity_t *src_camera)
     rig_entity_set_rotation(dst_camera, rig_entity_get_rotation(src_camera));
 }
 
+#ifdef ENABLE_OCULUS_RIFT
 static void
 paint_eye(rig_camera_view_t *view,
           rig_paint_context_t *rig_paint_ctx,
@@ -372,6 +375,7 @@ vr_swap_buffers_hook(cg_framebuffer_t *fb,
 
     rut_shell_queue_redraw(view->engine->shell);
 }
+#endif /* ENABLE_OCULUS_RIFT */
 
 static void
 _rut_camera_view_paint(rut_object_t *object,
@@ -425,7 +429,9 @@ _rut_camera_view_paint(rut_object_t *object,
         rig_entity_set_camera_view_from_transform(camera);
         rig_renderer_paint_camera(rig_paint_ctx, camera);
 
-    } else {
+    }
+#ifdef ENABLE_OCULUS_RIFT
+    else {
         ovrFrameTiming frame_timing = ovrHmd_BeginFrameTiming(view->hmd, 0);
 
         for (i = 0; i < 2; i++) {
@@ -454,6 +460,7 @@ _rut_camera_view_paint(rut_object_t *object,
 
         rut_camera_end_frame(view->composite_camera);
     }
+#endif
 
     rut_camera_resume(suspended_camera);
     paint_ctx->camera = suspended_camera;
@@ -1929,6 +1936,7 @@ tool_changed_cb(rig_editor_t *editor, rig_tool_id_t tool_id, void *user_data)
 }
 #endif /* RIG_EDITOR_ENABLED */
 
+#ifdef ENABLE_OCULUS_RIFT
 static void
 deinit_vr(rig_camera_view_t *view)
 {
@@ -2257,6 +2265,7 @@ cleanup:
     if (rig_engine_vr_mode)
         deinit_vr(view);
 }
+#endif /* ENABLE_OCULUS_RIFT */
 
 rig_camera_view_t *
 rig_camera_view_new(rig_engine_t *engine)
@@ -2282,8 +2291,10 @@ rig_camera_view_new(rig_engine_t *engine)
 
         view->bg_pipeline = cg_pipeline_new(shell->cg_device);
 
+#ifdef ENABLE_OCULUS_RIFT
         if (rig_engine_vr_mode)
             init_vr(view);
+#endif
     }
 
     view->matrix_stack = rut_matrix_stack_new(shell);

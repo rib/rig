@@ -9,79 +9,18 @@
 #include <SDL.h>
 #endif
 
-#include "test-unit.h"
-#include "test-utils.h"
+#include "test.h"
+#include "test-fixtures.h"
+#include "test-cg-fixtures.h"
 
 #define FB_WIDTH 512
 #define FB_HEIGHT 512
 
-static bool cg_test_is_verbose;
-
+cg_renderer_t *test_renderer;
 cg_device_t *test_dev;
 cg_framebuffer_t *test_fb;
 
 static bool
-check_flags(TestFlags flags, cg_renderer_t *renderer)
-{
-    if (flags & TEST_REQUIREMENT_GL &&
-        cg_renderer_get_driver(renderer) != CG_DRIVER_GL &&
-        cg_renderer_get_driver(renderer) != CG_DRIVER_GL3) {
-        return false;
-    }
-
-    if (flags & TEST_REQUIREMENT_NPOT &&
-        !cg_has_feature(test_dev, CG_FEATURE_ID_TEXTURE_NPOT)) {
-        return false;
-    }
-
-    if (flags & TEST_REQUIREMENT_TEXTURE_3D &&
-        !cg_has_feature(test_dev, CG_FEATURE_ID_TEXTURE_3D)) {
-        return false;
-    }
-
-    if (flags & TEST_REQUIREMENT_TEXTURE_RG &&
-        !cg_has_feature(test_dev, CG_FEATURE_ID_TEXTURE_RG)) {
-        return false;
-    }
-
-    if (flags & TEST_REQUIREMENT_POINT_SPRITE &&
-        !cg_has_feature(test_dev, CG_FEATURE_ID_POINT_SPRITE)) {
-        return false;
-    }
-
-    if (flags & TEST_REQUIREMENT_PER_VERTEX_POINT_SIZE &&
-        !cg_has_feature(test_dev, CG_FEATURE_ID_PER_VERTEX_POINT_SIZE)) {
-        return false;
-    }
-
-    if (flags & TEST_REQUIREMENT_GLES2_CONTEXT &&
-        !cg_has_feature(test_dev, CG_FEATURE_ID_GLES2_CONTEXT)) {
-        return false;
-    }
-
-    if (flags & TEST_REQUIREMENT_MAP_WRITE &&
-        !cg_has_feature(test_dev, CG_FEATURE_ID_MAP_BUFFER_FOR_WRITE)) {
-        return false;
-    }
-
-    if (flags & TEST_REQUIREMENT_GLSL &&
-        !cg_has_feature(test_dev, CG_FEATURE_ID_GLSL)) {
-        return false;
-    }
-
-    if (flags & TEST_REQUIREMENT_FENCE &&
-        !cg_has_feature(test_dev, CG_FEATURE_ID_FENCE)) {
-        return false;
-    }
-
-    if (flags & TEST_KNOWN_FAILURE) {
-        return false;
-    }
-
-    return true;
-}
-
-bool
 is_boolean_env_set(const char *variable)
 {
     char *val = getenv(variable);
@@ -109,50 +48,27 @@ is_boolean_env_set(const char *variable)
 }
 
 void
-test_utils_init(TestFlags requirement_flags, TestFlags known_failure_flags)
+test_cg_init(void)
 {
-    static int counter = 0;
     cg_error_t *error = NULL;
     cg_onscreen_t *onscreen = NULL;
     cg_display_t *display;
-    cg_renderer_t *renderer;
-    bool missing_requirement;
-    bool known_failure;
-
-    if (counter != 0)
-        c_critical("We don't support running more than one test at a time\n"
-                   "in a single test run due to the state leakage that can\n"
-                   "cause subsequent tests to fail.\n"
-                   "\n"
-                   "If you want to run all the tests you should run\n"
-                   "$ make test-report");
-    counter++;
 
     if (is_boolean_env_set("CG_TEST_VERBOSE") || is_boolean_env_set("V"))
-        cg_test_is_verbose = true;
-
-    /* NB: This doesn't have any effect since commit 47444dac of glib
-     * because the environment variable is read in a magic constructor
-     * so it is too late to set them here */
-    if (c_getenv("G_DEBUG")) {
-        char *debug = c_strconcat(c_getenv("G_DEBUG"), ",fatal-warnings", NULL);
-        c_setenv("G_DEBUG", debug, true);
-        c_free(debug);
-    } else
-        c_setenv("G_DEBUG", "fatal-warnings", true);
+        _test_is_verbose = true;
 
     c_setenv("CG_X11_SYNC", "1", 0);
 
-    renderer = cg_renderer_new();
+    test_renderer = cg_renderer_new();
 
 #ifdef CG_HAS_SDL_SUPPORT
-    cg_sdl_renderer_set_event_type(renderer, SDL_USEREVENT);
+    cg_sdl_test_renderer_set_event_type(test_renderer, SDL_USEREVENT);
 #endif
 
-    if (!cg_renderer_connect(renderer, &error))
-        c_error("Failed to create a cg_renderer_t: %s", error->message);
+    if (!cg_renderer_connect(test_renderer, &error))
+        c_error("Failed to create a cg_test_renderer_t: %s", error->message);
 
-    display = cg_display_new(renderer, NULL);
+    display = cg_display_new(test_renderer, NULL);
     if (!cg_display_setup(display, &error))
         c_error("Failed to setup a cg_display_t: %s", error->message);
 
@@ -160,9 +76,6 @@ test_utils_init(TestFlags requirement_flags, TestFlags known_failure_flags)
     cg_device_set_display(test_dev, display);
     if (!cg_device_connect(test_dev, &error))
         c_error("Failed to create a cg_device_t: %s", error->message);
-
-    missing_requirement = !check_flags(requirement_flags, renderer);
-    known_failure = !check_flags(known_failure_flags, renderer);
 
     if (is_boolean_env_set("CG_TEST_ONSCREEN")) {
         onscreen = cg_onscreen_new(test_dev, 640, 480);
@@ -188,21 +101,86 @@ test_utils_init(TestFlags requirement_flags, TestFlags known_failure_flags)
                            0,
                            0,
                            1);
+}
 
-    if (missing_requirement)
+static bool
+check_flags(test_cg_requirement_t flags)
+{
+    if (flags & TEST_CG_REQUIREMENT_GL &&
+        cg_renderer_get_driver(test_renderer) != CG_DRIVER_GL &&
+        cg_renderer_get_driver(test_renderer) != CG_DRIVER_GL3) {
+        return false;
+    }
+
+    if (flags & TEST_CG_REQUIREMENT_NPOT &&
+        !cg_has_feature(test_dev, CG_FEATURE_ID_TEXTURE_NPOT)) {
+        return false;
+    }
+
+    if (flags & TEST_CG_REQUIREMENT_TEXTURE_3D &&
+        !cg_has_feature(test_dev, CG_FEATURE_ID_TEXTURE_3D)) {
+        return false;
+    }
+
+    if (flags & TEST_CG_REQUIREMENT_TEXTURE_RG &&
+        !cg_has_feature(test_dev, CG_FEATURE_ID_TEXTURE_RG)) {
+        return false;
+    }
+
+    if (flags & TEST_CG_REQUIREMENT_POINT_SPRITE &&
+        !cg_has_feature(test_dev, CG_FEATURE_ID_POINT_SPRITE)) {
+        return false;
+    }
+
+    if (flags & TEST_CG_REQUIREMENT_PER_VERTEX_POINT_SIZE &&
+        !cg_has_feature(test_dev, CG_FEATURE_ID_PER_VERTEX_POINT_SIZE)) {
+        return false;
+    }
+
+    if (flags & TEST_CG_REQUIREMENT_GLES2_CONTEXT &&
+        !cg_has_feature(test_dev, CG_FEATURE_ID_GLES2_CONTEXT)) {
+        return false;
+    }
+
+    if (flags & TEST_CG_REQUIREMENT_MAP_WRITE &&
+        !cg_has_feature(test_dev, CG_FEATURE_ID_MAP_BUFFER_FOR_WRITE)) {
+        return false;
+    }
+
+    if (flags & TEST_CG_REQUIREMENT_GLSL &&
+        !cg_has_feature(test_dev, CG_FEATURE_ID_GLSL)) {
+        return false;
+    }
+
+    if (flags & TEST_CG_REQUIREMENT_FENCE &&
+        !cg_has_feature(test_dev, CG_FEATURE_ID_FENCE)) {
+        return false;
+    }
+
+    return true;
+}
+
+bool
+test_cg_check_requirements(test_cg_requirement_t requirements)
+{
+    if (!check_flags(requirements)) {
         c_print("WARNING: Missing required feature[s] for this test\n");
-    else if (known_failure)
-        c_print("WARNING: Test is known to fail\n");
+        return false;
+    } else
+        return true;
 }
 
 void
-test_utils_fini(void)
+test_cg_fini(void)
 {
     if (test_fb)
         cg_object_unref(test_fb);
 
     if (test_dev)
         cg_object_unref(test_dev);
+
+    if (test_renderer)
+        cg_object_unref(test_renderer);
 }
 
 static bool
@@ -212,8 +190,8 @@ compare_component(int a, int b)
 }
 
 void
-test_utils_compare_pixel_and_alpha(const uint8_t *screen_pixel,
-                                   uint32_t expected_pixel)
+test_cg_compare_pixel_and_alpha(const uint8_t *screen_pixel,
+                                uint32_t expected_pixel)
 {
     /* Compare each component with a small fuzz factor */
     if (!compare_component(screen_pixel[0], expected_pixel >> 24) ||
@@ -232,8 +210,8 @@ test_utils_compare_pixel_and_alpha(const uint8_t *screen_pixel,
 }
 
 void
-test_utils_compare_pixel(const uint8_t *screen_pixel,
-                         uint32_t expected_pixel)
+test_cg_compare_pixel(const uint8_t *screen_pixel,
+                      uint32_t expected_pixel)
 {
     /* Compare each component with a small fuzz factor */
     if (!compare_component(screen_pixel[0], expected_pixel >> 24) ||
@@ -253,47 +231,47 @@ test_utils_compare_pixel(const uint8_t *screen_pixel,
 }
 
 void
-test_utils_check_pixel(cg_framebuffer_t *fb,
-                       int x,
-                       int y,
-                       uint32_t expected_pixel)
+test_cg_check_pixel(cg_framebuffer_t *fb,
+                    int x,
+                    int y,
+                    uint32_t expected_pixel)
 {
     uint8_t pixel[4];
 
     cg_framebuffer_read_pixels(
         fb, x, y, 1, 1, CG_PIXEL_FORMAT_RGBA_8888_PRE, pixel);
 
-    test_utils_compare_pixel(pixel, expected_pixel);
+    test_cg_compare_pixel(pixel, expected_pixel);
 }
 
 void
-test_utils_check_pixel_and_alpha(cg_framebuffer_t *fb,
-                                 int x,
-                                 int y,
-                                 uint32_t expected_pixel)
+test_cg_check_pixel_and_alpha(cg_framebuffer_t *fb,
+                              int x,
+                              int y,
+                              uint32_t expected_pixel)
 {
     uint8_t pixel[4];
 
     cg_framebuffer_read_pixels(
         fb, x, y, 1, 1, CG_PIXEL_FORMAT_RGBA_8888_PRE, pixel);
 
-    test_utils_compare_pixel_and_alpha(pixel, expected_pixel);
+    test_cg_compare_pixel_and_alpha(pixel, expected_pixel);
 }
 
 void
-test_utils_check_pixel_rgb(
+test_cg_check_pixel_rgb(
     cg_framebuffer_t *fb, int x, int y, int r, int g, int b)
 {
-    test_utils_check_pixel(fb, x, y, (r << 24) | (g << 16) | (b << 8));
+    test_cg_check_pixel(fb, x, y, (r << 24) | (g << 16) | (b << 8));
 }
 
 void
-test_utils_check_region(cg_framebuffer_t *fb,
-                        int x,
-                        int y,
-                        int width,
-                        int height,
-                        uint32_t expected_rgba)
+test_cg_check_region(cg_framebuffer_t *fb,
+                     int x,
+                     int y,
+                     int width,
+                     int height,
+                     uint32_t expected_rgba)
 {
     uint8_t *pixels, *p;
 
@@ -304,7 +282,7 @@ test_utils_check_region(cg_framebuffer_t *fb,
     /* Check whether the center of each division is the right color */
     for (y = 0; y < height; y++)
         for (x = 0; x < width; x++) {
-            test_utils_compare_pixel(p, expected_rgba);
+            test_cg_compare_pixel(p, expected_rgba);
             p += 4;
         }
 
@@ -312,8 +290,7 @@ test_utils_check_region(cg_framebuffer_t *fb,
 }
 
 cg_texture_t *
-test_utils_create_color_texture(cg_device_t *dev,
-                                uint32_t color)
+test_cg_create_color_texture(cg_device_t *dev, uint32_t color)
 {
     cg_texture_2d_t *tex_2d;
 
@@ -330,12 +307,6 @@ test_utils_create_color_texture(cg_device_t *dev,
     return CG_TEXTURE(tex_2d);
 }
 
-bool
-cg_test_verbose(void)
-{
-    return cg_test_is_verbose;
-}
-
 static void
 set_auto_mipmap_cb(cg_texture_t *sub_texture,
                    const float *sub_texture_coords,
@@ -347,16 +318,16 @@ set_auto_mipmap_cb(cg_texture_t *sub_texture,
 }
 
 cg_texture_t *
-test_utils_texture_new_with_size(cg_device_t *dev,
-                                 int width,
-                                 int height,
-                                 TestUtilsTextureFlags flags,
-                                 cg_texture_components_t components)
+test_cg_texture_new_with_size(cg_device_t *dev,
+                              int width,
+                              int height,
+                              test_cg_texture_flag_t flags,
+                              cg_texture_components_t components)
 {
     cg_texture_t *tex;
     cg_error_t *skip_error = NULL;
 
-    if ((test_utils_is_pot(width) && test_utils_is_pot(height)) ||
+    if ((test_cg_is_pot(width) && test_cg_is_pot(height)) ||
         (cg_has_feature(dev, CG_FEATURE_ID_TEXTURE_NPOT_BASIC) &&
          cg_has_feature(dev, CG_FEATURE_ID_TEXTURE_NPOT_MIPMAP))) {
         /* First try creating a fast-path non-sliced texture */
@@ -375,7 +346,7 @@ test_utils_texture_new_with_size(cg_device_t *dev,
     if (!tex) {
         /* If it fails resort to sliced textures */
         int max_waste =
-            flags & TEST_UTILS_TEXTURE_NO_SLICING ? -1 : CG_TEXTURE_MAX_WASTE;
+            flags & TEST_CG_TEXTURE_NO_SLICING ? -1 : CG_TEXTURE_MAX_WASTE;
         cg_texture_2d_sliced_t *tex_2ds =
             cg_texture_2d_sliced_new_with_size(dev, width, height,
                                                max_waste);
@@ -384,7 +355,7 @@ test_utils_texture_new_with_size(cg_device_t *dev,
         cg_texture_set_components(tex, components);
     }
 
-    if (flags & TEST_UTILS_TEXTURE_NO_AUTO_MIPMAP) {
+    if (flags & TEST_CG_TEXTURE_NO_AUTO_MIPMAP) {
         /* To be able to iterate the slices of a #cg_texture_2d_sliced_t we
          * need to ensure the texture is allocated... */
         cg_texture_allocate(tex, NULL); /* don't catch exceptions */
@@ -406,9 +377,9 @@ test_utils_texture_new_with_size(cg_device_t *dev,
 }
 
 cg_texture_t *
-test_utils_texture_new_from_bitmap(cg_bitmap_t *bitmap,
-                                   TestUtilsTextureFlags flags,
-                                   bool premultiplied)
+test_cg_texture_new_from_bitmap(cg_bitmap_t *bitmap,
+                                test_cg_texture_flag_t flags,
+                                bool premultiplied)
 {
     cg_atlas_texture_t *atlas_tex;
     cg_texture_t *tex;
@@ -429,8 +400,8 @@ test_utils_texture_new_from_bitmap(cg_bitmap_t *bitmap,
     }
 
     /* If that doesn't work try a fast path 2D texture */
-    if ((test_utils_is_pot(cg_bitmap_get_width(bitmap)) &&
-         test_utils_is_pot(cg_bitmap_get_height(bitmap))) ||
+    if ((test_cg_is_pot(cg_bitmap_get_width(bitmap)) &&
+         test_cg_is_pot(cg_bitmap_get_height(bitmap))) ||
         (cg_has_feature(test_dev, CG_FEATURE_ID_TEXTURE_NPOT_BASIC) &&
          cg_has_feature(test_dev, CG_FEATURE_ID_TEXTURE_NPOT_MIPMAP))) {
         tex = CG_TEXTURE(cg_texture_2d_new_from_bitmap(bitmap));
@@ -453,7 +424,7 @@ test_utils_texture_new_from_bitmap(cg_bitmap_t *bitmap,
     if (!tex) {
         /* Otherwise create a sliced texture */
         int max_waste =
-            flags & TEST_UTILS_TEXTURE_NO_SLICING ? -1 : CG_TEXTURE_MAX_WASTE;
+            flags & TEST_CG_TEXTURE_NO_SLICING ? -1 : CG_TEXTURE_MAX_WASTE;
         cg_texture_2d_sliced_t *tex_2ds =
             cg_texture_2d_sliced_new_from_bitmap(bitmap, max_waste);
         tex = CG_TEXTURE(tex_2ds);
@@ -461,7 +432,7 @@ test_utils_texture_new_from_bitmap(cg_bitmap_t *bitmap,
         cg_texture_set_premultiplied(tex, premultiplied);
     }
 
-    if (flags & TEST_UTILS_TEXTURE_NO_AUTO_MIPMAP) {
+    if (flags & TEST_CG_TEXTURE_NO_AUTO_MIPMAP) {
         cg_meta_texture_foreach_in_region(CG_META_TEXTURE(tex),
                                           0,
                                           0,
@@ -479,13 +450,13 @@ test_utils_texture_new_from_bitmap(cg_bitmap_t *bitmap,
 }
 
 cg_texture_t *
-test_utils_texture_new_from_data(cg_device_t *ctx,
-                                 int width,
-                                 int height,
-                                 TestUtilsTextureFlags flags,
-                                 cg_pixel_format_t format,
-                                 int rowstride,
-                                 const uint8_t *data)
+test_cg_texture_new_from_data(cg_device_t *ctx,
+                              int width,
+                              int height,
+                              test_cg_texture_flag_t flags,
+                              cg_pixel_format_t format,
+                              int rowstride,
+                              const uint8_t *data)
 {
     cg_bitmap_t *bmp;
     cg_texture_t *tex;
@@ -497,7 +468,7 @@ test_utils_texture_new_from_data(cg_device_t *ctx,
     bmp = cg_bitmap_new_for_data(
         ctx, width, height, format, rowstride, (uint8_t *)data);
 
-    tex = test_utils_texture_new_from_bitmap(bmp, flags, true);
+    tex = test_cg_texture_new_from_bitmap(bmp, flags, true);
 
     cg_object_unref(bmp);
 

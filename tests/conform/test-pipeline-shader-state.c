@@ -4,7 +4,7 @@
 
 #include <string.h>
 
-#include "test-utils.h"
+#include "test-cg-fixtures.h"
 
 void
 test_pipeline_shader_state (void)
@@ -90,6 +90,6 @@ test_pipeline_shader_state (void)
   cg_object_unref (draw_pipeline);
 
 
-  test_utils_check_region (test_fb, 0, 0, width, height,
+  test_cg_check_region (test_fb, 0, 0, width, height,
                            0x0000ffff);
 }

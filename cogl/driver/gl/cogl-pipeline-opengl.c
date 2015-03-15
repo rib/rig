@@ -45,7 +45,7 @@
 
 #include "cogl-pipeline-progend-glsl-private.h"
 
-#include <test-fixtures/test-unit.h>
+#include <test-fixtures/test-cg-fixtures.h>
 
 #include <clib.h>
 #include <string.h>
@@ -309,11 +309,13 @@ flush_depth_state(cg_device_t *dev, cg_depth_state_t *depth_state)
     }
 }
 
-UNIT_TEST(check_gl_blend_enable,
-          0 /* no requirements */,
-          0 /* no failure cases */)
+TEST(check_gl_blend_enable)
 {
-    cg_pipeline_t *pipeline = cg_pipeline_new(test_dev);
+    cg_pipeline_t *pipeline;
+
+    test_cg_init();
+
+    pipeline = cg_pipeline_new(test_dev);
 
     /* By default blending should be disabled */
     c_assert_cmpint(test_dev->gl_blend_enable_cache, ==, 0);
@@ -339,6 +341,8 @@ UNIT_TEST(check_gl_blend_enable,
     /* After setting a blend string that effectively disables blending
      * then blending should be disabled */
     c_assert_cmpint(test_dev->gl_blend_enable_cache, ==, 0);
+
+    test_cg_fini();
 }
 
 static int

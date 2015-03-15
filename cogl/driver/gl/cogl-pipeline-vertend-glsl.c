@@ -31,13 +31,11 @@
  *   Neil Roberts <neil@linux.intel.com>
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include <string.h>
 
-#include <test-fixtures/test-unit.h>
+#include <test-fixtures/test-cg-fixtures.h>
 
 #include "cogl-device-private.h"
 #include "cogl-util-gl-private.h"
@@ -569,13 +567,13 @@ const cg_pipeline_vertend_t _cg_pipeline_glsl_vertend = {
     _cg_pipeline_vertend_glsl_layer_pre_change_notify
 };
 
-UNIT_TEST(check_point_size_shader,
-          0 /* no requirements */,
-          0 /* no failure cases */)
+TEST(check_point_size_shader)
 {
     cg_pipeline_t *pipelines[4];
     cg_pipeline_shader_state_t *shader_states[C_N_ELEMENTS(pipelines)];
     int i;
+
+    test_cg_init();
 
     /* Default pipeline with zero point size */
     pipelines[0] = cg_pipeline_new(test_dev);
@@ -623,6 +621,8 @@ UNIT_TEST(check_point_size_shader,
 
     /* The fourth pipeline should be exactly the same as the first */
     c_assert(shader_states[0] == shader_states[3]);
+
+    test_cg_fini();
 }
 
 #endif /* CG_PIPELINE_VERTEND_GLSL */

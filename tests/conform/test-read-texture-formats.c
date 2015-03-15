@@ -3,7 +3,7 @@
 #include <cogl/cogl.h>
 #include <stdarg.h>
 
-#include "test-utils.h"
+#include "test-cg-fixtures.h"
 
 /*
  * This tests reading back an RGBA texture in all of the available
@@ -78,7 +78,7 @@ test_read_888 (cg_texture_2d_t *tex_2d,
                          4, /* rowstride */
                          pixel);
 
-  test_utils_compare_pixel (pixel, expected_pixel);
+  test_cg_compare_pixel (pixel, expected_pixel);
 }
 
 static void
@@ -95,7 +95,7 @@ test_read_88 (cg_texture_2d_t *tex_2d,
                          2, /* rowstride */
                          pixel);
 
-  test_utils_compare_pixel (pixel, expected_pixel);
+  test_cg_compare_pixel (pixel, expected_pixel);
 }
 
 static void
@@ -212,6 +212,6 @@ test_read_texture_formats (void)
 
   cg_object_unref (tex_2d);
 
-  if (cg_test_verbose ())
+  if (test_verbose ())
     c_print ("OK\n");
 }

@@ -2,7 +2,7 @@
 
 #include <cogl/cogl.h>
 
-#include "test-utils.h"
+#include "test-cg-fixtures.h"
 
 #define RED 0
 #define GREEN 1
@@ -34,7 +34,7 @@ check_quadrant (TestState *state,
   width -= 4;
   height -= 4;
 
-  test_utils_check_region (test_fb, x, y, width, height, expected_rgba);
+  test_cg_check_region (test_fb, x, y, width, height, expected_rgba);
 }
 
 static void
@@ -144,7 +144,7 @@ test_flush (TestState *state)
 
       if (i == 0)
         /* First time check using read pixels on the offscreen */
-        test_utils_check_region (offscreen,
+        test_cg_check_region (offscreen,
                                  1, 1, 15, 15, 0xff0000ff);
       else if (i == 1)
         {
@@ -159,7 +159,7 @@ test_flush (TestState *state)
 
           for (y = 1; y < 15; y++)
             for (x = 1; x < 15; x++)
-              test_utils_compare_pixel (data + x * 4 + y * 16 * 4,
+              test_cg_compare_pixel (data + x * 4 + y * 16 * 4,
                                         0xff0000ff);
         }
 
@@ -172,7 +172,7 @@ test_flush (TestState *state)
                                            textured,
                                            -1, -1, 1, 1);
           cg_object_unref (textured);
-          test_utils_check_region (test_fb,
+          test_cg_check_region (test_fb,
                                    2, 2, /* x/y */
                                    state->fb_width - 4,
                                    state->fb_height - 4,
@@ -195,6 +195,6 @@ test_offscreen (void)
   test_paint (&state);
   test_flush (&state);
 
-  if (cg_test_verbose ())
+  if (test_verbose ())
     c_print ("OK\n");
 }

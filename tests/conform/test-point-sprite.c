@@ -2,7 +2,7 @@
 
 #include <cogl/cogl.h>
 
-#include "test-utils.h"
+#include "test-cg-fixtures.h"
 
 #define POINT_SIZE 8
 
@@ -31,6 +31,8 @@ do_test (bool check_orientation,
   cg_texture_2d_t *tex_2d;
   cg_pipeline_t *pipeline, *solid_pipeline;
   int tex_height;
+
+  test_allow_failure();
 
   cg_framebuffer_orthographic (test_fb,
                                  0, 0, /* x_1, y_1 */
@@ -140,21 +142,21 @@ do_test (bool check_orientation,
   cg_object_unref (pipeline);
   cg_object_unref (tex_2d);
 
-  test_utils_check_pixel (test_fb,
+  test_cg_check_pixel (test_fb,
                           POINT_SIZE - POINT_SIZE / 4,
                           POINT_SIZE - POINT_SIZE / 4,
                           0x0000ffff);
-  test_utils_check_pixel (test_fb,
+  test_cg_check_pixel (test_fb,
                           POINT_SIZE + POINT_SIZE / 4,
                           POINT_SIZE - POINT_SIZE / 4,
                           0x00ff00ff);
-  test_utils_check_pixel (test_fb,
+  test_cg_check_pixel (test_fb,
                           POINT_SIZE - POINT_SIZE / 4,
                           POINT_SIZE + POINT_SIZE / 4,
                           check_orientation ?
                           0x00ffffff :
                           0x0000ffff);
-  test_utils_check_pixel (test_fb,
+  test_cg_check_pixel (test_fb,
                           POINT_SIZE + POINT_SIZE / 4,
                           POINT_SIZE + POINT_SIZE / 4,
                           check_orientation ?
@@ -164,13 +166,13 @@ do_test (bool check_orientation,
   /* When rendering without the point sprites all of the texture
      coordinates should be 0,0 so it should get the top-left texel
      which is blue */
-  test_utils_check_region (test_fb,
+  test_cg_check_region (test_fb,
                            POINT_SIZE * 3 - POINT_SIZE / 2 + 1,
                            POINT_SIZE - POINT_SIZE / 2 + 1,
                            POINT_SIZE - 2, POINT_SIZE - 2,
                            0x0000ffff);
 
-  if (cg_test_verbose ())
+  if (test_verbose ())
     c_print ("OK\n");
 }
 

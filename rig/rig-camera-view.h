@@ -29,7 +29,9 @@
 #ifndef _RIG_CAMERA_VIEW_H_
 #define _RIG_CAMERA_VIEW_H_
 
+#ifdef ENABLE_OCULUS_RIFT
 #include "OVR_CAPI.h"
+#endif
 
 #include <rut.h>
 
@@ -63,6 +65,7 @@ typedef enum _rig_camera_view_mode_t {
     RIG_CAMERA_VIEW_MODE_EDIT,
 } rig_camera_view_mode_t;
 
+#ifdef ENABLE_OCULUS_RIFT
 enum eye_type {
     RIG_EYE_LEFT = 0,
     RIG_EYE_RIGHT = 1,
@@ -113,6 +116,7 @@ struct eye {
     float viewport[4];
 
 };
+#endif /* ENABLE_OCULUS_RIFT */
 
 struct _rig_camera_view_t {
     rut_object_base_t _base;
@@ -152,11 +156,13 @@ struct _rig_camera_view_t {
     rig_entity_t *play_camera_handle;
 #endif
 
+#ifdef ENABLE_OCULUS_RIFT
     ovrHmd hmd;
     struct eye eyes[2];
 
     cg_primitive_t *debug_triangle;
     cg_pipeline_t *debug_pipeline;
+#endif
 
     bool enable_dof;
 

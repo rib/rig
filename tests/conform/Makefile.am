@@ -94,7 +94,7 @@ wrappers: stamp-test-conformance
 	@true
 stamp-test-conformance: Makefile $(srcdir)/test-conform-main.c
 	@mkdir -p wrappers
-	@sed -n -e 's/^ \{1,\}ADD_TEST *( *\([a-zA-Z0-9_]\{1,\}\).*/\1/p' $(srcdir)/test-conform-main.c > unit-tests
+	@sed -n -e 's/^ \{1,\}ADD_CG_TEST *( *\([a-zA-Z0-9_]\{1,\}\).*/\1/p' $(srcdir)/test-conform-main.c > unit-tests
 	@chmod +x $(top_srcdir)/tests/test-launcher.sh
 	@( echo "/stamp-test-conformance" ; \
 	   echo "/test-conformance$(EXEEXT)" ; \

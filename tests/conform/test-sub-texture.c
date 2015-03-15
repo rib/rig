@@ -3,7 +3,7 @@
 #include <cogl/cogl.h>
 #include <string.h>
 
-#include "test-utils.h"
+#include "test-cg-fixtures.h"
 
 #define SOURCE_SIZE        32
 #define SOURCE_DIVISIONS_X 2
@@ -160,7 +160,7 @@ validate_part (int xpos, int ypos,
                int width, int height,
                uint32_t color)
 {
-  test_utils_check_region (test_fb,
+  test_cg_check_region (test_fb,
                            xpos + TEST_INSET,
                            ypos + TEST_INSET,
                            width - TEST_INSET - 2,
@@ -325,7 +325,7 @@ test_sub_texture (void)
 
   cg_object_unref (state.tex);
 
-  if (cg_test_verbose ())
+  if (test_verbose ())
     c_print ("OK\n");
 }
 

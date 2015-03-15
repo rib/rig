@@ -4,7 +4,7 @@
 
 #include <string.h>
 
-#include "test-utils.h"
+#include "test-cg-fixtures.h"
 
 static void
 paint (void)
@@ -46,7 +46,7 @@ paint (void)
   cg_primitive_draw (tri0, test_fb, pipeline);
   cg_primitive_draw (tri1, test_fb, pipeline);
 
-  test_utils_check_pixel_and_alpha (test_fb,
+  test_cg_check_pixel_and_alpha (test_fb,
                                     half_width + 5,
                                     height - 5,
                                     0x80808080);

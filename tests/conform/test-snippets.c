@@ -4,7 +4,7 @@
 
 #include <string.h>
 
-#include "test-utils.h"
+#include "test-cg-fixtures.h"
 
 typedef struct _TestState
 {
@@ -24,9 +24,9 @@ create_texture_pipeline (TestState *state)
       0x00, 0x00, 0xff, 0xff, /* blue */ 0xff, 0xff, 0x00, 0xff, /* yellow */
     };
 
-  tex = test_utils_texture_new_from_data (test_dev,
+  tex = test_cg_texture_new_from_data (test_dev,
                                           2, 2, /* width/height */
-                                          TEST_UTILS_TEXTURE_NO_ATLAS,
+                                          TEST_CG_TEXTURE_NO_ATLAS,
                                           CG_PIXEL_FORMAT_RGBA_8888_PRE,
                                           8, /* rowstride */
                                           tex_data);
@@ -65,7 +65,7 @@ simple_fragment_snippet (TestState *state)
 
   cg_object_unref (pipeline);
 
-  test_utils_check_pixel (test_fb, 5, 5, 0xffff00ff);
+  test_cg_check_pixel (test_fb, 5, 5, 0xffff00ff);
 }
 
 static void
@@ -89,7 +89,7 @@ simple_vertex_snippet (TestState *state)
 
   cg_object_unref (pipeline);
 
-  test_utils_check_pixel (test_fb, 15, 5, 0xff00ffff);
+  test_cg_check_pixel (test_fb, 15, 5, 0xff00ffff);
 }
 
 static void
@@ -125,7 +125,7 @@ shared_uniform (TestState *state)
 
   cg_object_unref (pipeline);
 
-  test_utils_check_pixel (test_fb, 25, 5, 0xff0080ff);
+  test_cg_check_pixel (test_fb, 25, 5, 0xff0080ff);
 }
 
 static void
@@ -169,7 +169,7 @@ lots_snippets (TestState *state)
 
   cg_object_unref (pipeline);
 
-  test_utils_check_pixel (test_fb, 35, 5, 0x19334cff);
+  test_cg_check_pixel (test_fb, 35, 5, 0x19334cff);
 }
 
 static void
@@ -195,7 +195,7 @@ shared_variable_pre_post (TestState *state)
 
   cg_object_unref (pipeline);
 
-  test_utils_check_pixel (test_fb, 45, 5, 0xff0000ff);
+  test_cg_check_pixel (test_fb, 45, 5, 0xff0000ff);
 }
 
 static void
@@ -228,8 +228,8 @@ test_pipeline_caching (TestState *state)
 
   cg_object_unref (snippet);
 
-  test_utils_check_pixel (test_fb, 55, 5, 0x00ff00ff);
-  test_utils_check_pixel (test_fb, 65, 5, 0x00ff00ff);
+  test_cg_check_pixel (test_fb, 55, 5, 0x00ff00ff);
+  test_cg_check_pixel (test_fb, 65, 5, 0x00ff00ff);
 }
 
 static void
@@ -256,7 +256,7 @@ test_replace_string (TestState *state)
 
   cg_object_unref (snippet);
 
-  test_utils_check_pixel (test_fb, 75, 5, 0x808000ff);
+  test_cg_check_pixel (test_fb, 75, 5, 0x808000ff);
 }
 
 static void
@@ -283,7 +283,7 @@ test_texture_lookup_hook (TestState *state)
 
   cg_object_unref (snippet);
 
-  test_utils_check_pixel (test_fb, 85, 5, 0x00ffffff);
+  test_cg_check_pixel (test_fb, 85, 5, 0x00ffffff);
 }
 
 static void
@@ -309,7 +309,7 @@ test_multiple_samples (TestState *state)
 
   cg_object_unref (snippet);
 
-  test_utils_check_pixel (test_fb, 5, 5, 0xffff00ff);
+  test_cg_check_pixel (test_fb, 5, 5, 0xffff00ff);
 }
 
 static void
@@ -332,7 +332,7 @@ test_replace_lookup_hook (TestState *state)
 
   cg_object_unref (snippet);
 
-  test_utils_check_pixel (test_fb, 95, 5, 0x0000ffff);
+  test_cg_check_pixel (test_fb, 95, 5, 0x0000ffff);
 }
 
 static void
@@ -363,7 +363,7 @@ test_replace_snippet (TestState *state)
                                             0, 0, 0, 0);
   cg_object_unref (pipeline);
 
-  test_utils_check_pixel (test_fb, 105, 5, 0xff0000ff);
+  test_cg_check_pixel (test_fb, 105, 5, 0xff0000ff);
 }
 
 static void
@@ -395,7 +395,7 @@ test_replace_fragment_layer (TestState *state)
                                             0, 0, 0, 0);
   cg_object_unref (pipeline);
 
-  test_utils_check_pixel (test_fb, 115, 5, 0xff00ffff);
+  test_cg_check_pixel (test_fb, 115, 5, 0xff00ffff);
 }
 
 static void
@@ -424,7 +424,7 @@ test_modify_fragment_layer (TestState *state)
                                             0, 0, 0, 0);
   cg_object_unref (pipeline);
 
-  test_utils_check_pixel (test_fb, 125, 5, 0xff80ffff);
+  test_cg_check_pixel (test_fb, 125, 5, 0xff80ffff);
 }
 
 static void
@@ -448,7 +448,7 @@ test_modify_vertex_layer (TestState *state)
                                             0, 1, 0, 1);
   cg_object_unref (pipeline);
 
-  test_utils_check_pixel (test_fb, 135, 5, 0xffff00ff);
+  test_cg_check_pixel (test_fb, 135, 5, 0xffff00ff);
 }
 
 static void
@@ -473,7 +473,7 @@ test_replace_vertex_layer (TestState *state)
                                             1, 1, 1, 1);
   cg_object_unref (pipeline);
 
-  test_utils_check_pixel (test_fb, 145, 5, 0x00ff00ff);
+  test_cg_check_pixel (test_fb, 145, 5, 0x00ff00ff);
 }
 
 static void
@@ -521,7 +521,7 @@ test_vertex_transform_hook (TestState *state)
   /* Restore the projection matrix */
   cg_framebuffer_set_projection_matrix (test_fb, &matrix);
 
-  test_utils_check_pixel (test_fb, 155, 5, 0xff00ffff);
+  test_cg_check_pixel (test_fb, 155, 5, 0xff00ffff);
 }
 
 static void
@@ -574,7 +574,7 @@ test_global_vertex_hook (TestState *state)
 
   cg_object_unref (pipeline);
 
-  test_utils_check_pixel (test_fb, 5, 5, 0xff0000ff);
+  test_cg_check_pixel (test_fb, 5, 5, 0xff0000ff);
 }
 
 static void
@@ -624,7 +624,7 @@ test_global_fragment_hook (TestState *state)
 
   cg_object_unref (pipeline);
 
-  test_utils_check_pixel (test_fb, 5, 5, 0xff0000ff);
+  test_cg_check_pixel (test_fb, 5, 5, 0xff0000ff);
 }
 
 static void
@@ -662,7 +662,7 @@ test_snippet_order (TestState *state)
   cg_framebuffer_draw_rectangle (test_fb, pipeline, 160, 0, 170, 10);
   cg_object_unref (pipeline);
 
-  test_utils_check_pixel (test_fb, 165, 5, 0x80ff00ff);
+  test_cg_check_pixel (test_fb, 165, 5, 0x80ff00ff);
 }
 
 static void
@@ -683,8 +683,8 @@ test_naming_texture_units (TestState *state)
                             "texture2D (cg_sampler100, vec2 (0.0, 0.0)) + "
                             "texture2D (cg_sampler200, vec2 (0.0, 0.0));");
 
-  tex1 = test_utils_create_color_texture (test_dev, 0xff0000ff);
-  tex2 = test_utils_create_color_texture (test_dev, 0x00ff00ff);
+  tex1 = test_cg_create_color_texture (test_dev, 0xff0000ff);
+  tex2 = test_cg_create_color_texture (test_dev, 0x00ff00ff);
 
   pipeline = cg_pipeline_new (test_dev);
 
@@ -700,7 +700,7 @@ test_naming_texture_units (TestState *state)
   cg_object_unref (tex1);
   cg_object_unref (tex2);
 
-  test_utils_check_pixel (test_fb, 5, 5, 0xffff00ff);
+  test_cg_check_pixel (test_fb, 5, 5, 0xffff00ff);
 }
 
 static void
@@ -802,6 +802,6 @@ test_snippets (void)
 
   run_tests (&state);
 
-  if (cg_test_verbose ())
+  if (test_verbose ())
     c_print ("OK\n");
 }

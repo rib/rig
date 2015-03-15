@@ -3,7 +3,7 @@
 #include <cogl/cogl.h>
 #include <string.h>
 
-#include "test-utils.h"
+#include "test-cg-fixtures.h"
 
 static cg_texture_2d_t *
 create_texture (cg_device_t *dev)
@@ -54,7 +54,7 @@ test_alpha_test (void)
 
   /* The left side of the framebuffer should use the first pixel from
    * the texture which is red */
-  test_utils_check_region (test_fb,
+  test_cg_check_region (test_fb,
                            2, 2,
                            fb_width / 2 - 4,
                            fb_height - 4,
@@ -62,14 +62,14 @@ test_alpha_test (void)
   /* The right side of the framebuffer should use the clear color
    * because the second pixel from the texture is clipped from the
    * alpha test */
-  test_utils_check_region (test_fb,
+  test_cg_check_region (test_fb,
                            fb_width / 2 + 2,
                            2,
                            fb_width / 2 - 4,
                            fb_height - 4,
                            0x0000ffff);
 
-  if (cg_test_verbose ())
+  if (test_verbose ())
     c_print ("OK\n");
 }
 

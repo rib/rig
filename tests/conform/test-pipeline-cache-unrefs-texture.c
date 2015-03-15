@@ -2,7 +2,7 @@
 
 #include <cogl/cogl.h>
 
-#include "test-utils.h"
+#include "test-cg-fixtures.h"
 
 /* Keep track of the number of textures that we've created and are
  * still alive */
@@ -88,6 +88,6 @@ test_pipeline_cache_unrefs_texture (void)
 
   c_assert_cmpint (destroyed_texture_count, ==, N_TEXTURES);
 
-  if (cg_test_verbose ())
+  if (test_verbose ())
     c_print ("OK\n");
 }

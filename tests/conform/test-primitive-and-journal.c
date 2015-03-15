@@ -2,7 +2,7 @@
 
 #include <cogl/cogl.h>
 
-#include "test-utils.h"
+#include "test-cg-fixtures.h"
 
 typedef cg_vertex_p2c4_t Vertex;
 
@@ -97,28 +97,28 @@ test_primitive_and_journal (void)
   cg_primitive_draw (primitives[1], test_fb, pipeline);
 
   /* Check the three rectangles */
-  test_utils_check_region (test_fb,
+  test_cg_check_region (test_fb,
                            1, 51,
                            98, 48,
                            0xff0000ff);
-  test_utils_check_region (test_fb,
+  test_cg_check_region (test_fb,
                            101, 51,
                            98, 48,
                            0x00ff00ff);
-  test_utils_check_region (test_fb,
+  test_cg_check_region (test_fb,
                            201, 51,
                            98, 48,
                            0x0000ffff);
 
   /* Check that the top half of all of the rectangles was clipped */
-  test_utils_check_region (test_fb,
+  test_cg_check_region (test_fb,
                            1, 1,
                            298, 48,
                            0x000000ff);
 
   cg_framebuffer_pop_clip (test_fb);
 
-  if (cg_test_verbose ())
+  if (test_verbose ())
     c_print ("OK\n");
 }
 

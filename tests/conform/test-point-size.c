@@ -2,7 +2,7 @@
 
 #include <cogl/cogl.h>
 
-#include "test-utils.h"
+#include "test-cg-fixtures.h"
 
 /* This test assumes the GL driver supports point sizes up to 16
    pixels. Cogl should probably have some way of querying the size so
@@ -39,7 +39,7 @@ verify_point_size (cg_framebuffer_t *test_fb,
         bool in_point = x >= 1 && x <= 2 && y >= 1 && y <= 2;
         uint32_t expected_pixel = in_point ? 0x00ff00ff : 0xff0000ff;
 
-        test_utils_check_pixel (test_fb,
+        test_cg_check_pixel (test_fb,
                                 calc_coord_offset (x_pos, x, point_size),
                                 calc_coord_offset (y_pos, y, point_size),
                                 expected_pixel);
@@ -96,6 +96,6 @@ test_point_size (void)
                        POINT_BOX_SIZE / 2,
                        point_size);
 
-  if (cg_test_verbose ())
+  if (test_verbose ())
     c_print ("OK\n");
 }

@@ -4,7 +4,7 @@
 
 #include <string.h>
 
-#include "test-utils.h"
+#include "test-cg-fixtures.h"
 
 static void
 create_pipeline (cg_texture_t **tex_out,
@@ -84,42 +84,42 @@ test_alpha_textures (void)
   cg_object_unref (pipeline2);
 
   /* Unmodified texture */
-  test_utils_check_pixel (test_fb,
+  test_cg_check_pixel (test_fb,
                           fb_width / 4,
                           fb_height / 8,
                           0x000000ff);
-  test_utils_check_pixel (test_fb,
+  test_cg_check_pixel (test_fb,
                           fb_width * 3 / 4,
                           fb_height / 8,
                           0x444444ff);
-  test_utils_check_pixel (test_fb,
+  test_cg_check_pixel (test_fb,
                           fb_width / 4,
                           fb_height * 3 / 8,
                           0x888888ff);
-  test_utils_check_pixel (test_fb,
+  test_cg_check_pixel (test_fb,
                           fb_width * 3 / 4,
                           fb_height * 3 / 8,
                           0xccccccff);
 
   /* Modified texture */
-  test_utils_check_pixel (test_fb,
+  test_cg_check_pixel (test_fb,
                           fb_width / 4,
                           fb_height * 5 / 8,
                           0x000000ff);
-  test_utils_check_pixel (test_fb,
+  test_cg_check_pixel (test_fb,
                           fb_width * 3 / 4,
                           fb_height * 5 / 8,
                           0x444444ff);
-  test_utils_check_pixel (test_fb,
+  test_cg_check_pixel (test_fb,
                           fb_width / 4,
                           fb_height * 7 / 8,
                           0x888888ff);
-  test_utils_check_pixel (test_fb,
+  test_cg_check_pixel (test_fb,
                           fb_width * 3 / 4,
                           fb_height * 7 / 8,
                           0xffffffff);
 
-  if (cg_test_verbose ())
+  if (test_verbose ())
     c_print ("OK\n");
 }
 
