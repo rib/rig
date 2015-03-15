@@ -167,10 +167,10 @@ main(int argc, char **argv)
          * then allow Cogl to dispatch any corresponding event
          * callbacks, such as resize notification callbacks...
          */
-        cg_poll_renderer_get_info(
+        cg_loop_get_info(
             cg_device_get_renderer(dev), &poll_fds, &n_poll_fds, &timeout);
         g_poll((GPollFD *)poll_fds, n_poll_fds, 0);
-        cg_poll_renderer_dispatch(
+        cg_loop_dispatch(
             cg_device_get_renderer(dev), poll_fds, n_poll_fds);
 
         cg_framebuffer_clear4f(fb, CG_BUFFER_BIT_COLOR, 0, 0, 0, 1);
