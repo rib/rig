@@ -59,7 +59,7 @@ AC_DEFUN([AM_CLIB],
      ])
   AM_CONDITIONAL(OS_LINUX, [test "$platform_linux" = "yes"])
   AM_CONDITIONAL(OS_DARWIN, [test "$platform_darwin" = "yes"])
-  AM_CONDITIONAL(OS_UNIX, [test "$platform_linux" = "yes" -o test "$platform_darwin" = "yes"])
+  AM_CONDITIONAL(OS_UNIX, [test "$platform_linux" = "yes" -o "$platform_darwin" = "yes"])
   AM_CONDITIONAL(OS_WIN32, [test "$platform_win32" = "yes"])
   AM_CONDITIONAL(OS_WEB, [test "$platform_web" = "yes"])
 
