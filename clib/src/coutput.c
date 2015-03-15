@@ -29,6 +29,11 @@
 #include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+
 #include <clib.h>
 
 /* The current fatal levels, error is always fatal */
@@ -201,8 +206,17 @@ logged:
         fflush(stderr);
     }
 #endif
-    if (log_level & fatal)
+    if (log_level & fatal) {
+#ifdef __EMSCRIPTEN__
+#ifdef RIG_ENABLE_DEBUG
+        emscripten_debugger();
+#else
         abort();
+#endif
+#else
+        abort();
+#endif
+    }
 }
 
 void
