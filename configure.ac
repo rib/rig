@@ -97,7 +97,6 @@ dnl Export the source code release status
 dnl ================================================================
 AC_SUBST([RIG_RELEASE_STATUS], [release_status])
 
-
 dnl ================================================================
 dnl Compiler stuff.
 dnl ================================================================
@@ -134,8 +133,6 @@ AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE,
                    "$GETTEXT_PACKAGE",
                    [The prefix for our gettext translation domains.])
 AS_ALL_LINGUAS
-
-
 
 dnl ================================================================
 dnl Handle extra configure options
@@ -523,18 +520,17 @@ AM_CONDITIONAL([HAVE_AVAHI], [test "x$avahi_enabled" = "xyes"])
 
 AM_COGL
 
-
-AS_IF([test "x$emscripten_compiler" != xyes],
+AC_SUBST(CLIB_PKG_REQUIRES)
+AS_IF([test -n "$CLIB_PKG_REQUIRES"],
       [
-        AC_SUBST(CLIB_PKG_REQUIRES)
         PKG_CHECK_MODULES(CLIB_DEP, [$CLIB_PKG_REQUIRES])
-
-        AC_SUBST(RIG_PKG_REQUIRES)
-        PKG_CHECK_MODULES(RIG_DEP, [$RIG_PKG_REQUIRES])
-
-        PKG_CHECK_VAR(ICU_PREFIX, icu-uc, prefix, [],
-                      [ AC_MSG_ERROR([Could not locate ICU data]) ])
       ])
+
+AC_SUBST(RIG_PKG_REQUIRES)
+PKG_CHECK_MODULES(RIG_DEP, [$RIG_PKG_REQUIRES])
+
+PKG_CHECK_VAR(ICU_PREFIX, icu-uc, prefix, [],
+              [ AC_MSG_ERROR([Could not locate ICU data]) ])
 
 dnl ============================================================
 dnl Optional LLVM Enable

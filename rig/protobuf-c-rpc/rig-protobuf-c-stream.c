@@ -28,7 +28,9 @@
 
 #include <config.h>
 
+#ifdef USE_UV
 #include <uv.h>
+#endif
 
 #include <rut.h>
 
@@ -123,10 +125,12 @@ _stream_free(void *object)
 {
     rig_pb_stream_t *stream = object;
 
+#ifdef USE_UV
     /* resolve and connect requests take a reference on the stream so
      * we should never try and free a stream in these cases... */
     c_return_if_fail(stream->resolving == false);
     c_return_if_fail(stream->connecting == false);
+#endif
 
     rig_pb_stream_disconnect(stream);
 
@@ -138,8 +142,10 @@ _stream_free(void *object)
     rut_closure_list_disconnect_all(&stream->on_connect_closures);
     rut_closure_list_disconnect_all(&stream->on_error_closures);
 
+#ifdef USE_UV
     c_free(stream->hostname);
     c_free(stream->port);
+#endif
 
     c_slice_free(rig_pb_stream_t, stream);
 }
@@ -408,7 +414,7 @@ data_buffer_stream_read_idle(void *user_data)
                               closure->buf.len,
                               stream->read_data);
 
-        /* Give the closure back so it can be freed*/
+        /* Give the closure back so it can be freed */
         c_array_append_val(stream->buffer.other_end->buffer.finished_write_closures,
                            closure);
     }

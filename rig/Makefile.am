@@ -28,9 +28,21 @@ endif
 AM_CFLAGS = \
 	$(RIG_EXTRA_CFLAGS)
 
-lib_LTLIBRARIES = librig_clang.la
-noinst_LTLIBRARIES = librig.la
+lib_LTLIBRARIES =
+noinst_LTLIBRARIES =
+
+if USE_LLVM
+lib_LTLIBRARIES += librig_clang.la
+endif
+
+if EMSCRIPTEN
+lib_LTLIBRARIES += librig.la
+else
+noinst_LTLIBRARIES += librig.la
+endif
+
 bin_PROGRAMS = rig-device rig-simulator
+
 if EDITOR_ENABLED
 bin_PROGRAMS += rig rig-slave
 lib_LTLIBRARIES += rigeditor2.la

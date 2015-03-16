@@ -29,7 +29,9 @@
 #ifndef _RIG_PB_RPC_STREAM_H_
 #define _RIG_PB_RPC_STREAM_H_
 
+#ifdef USE_UV
 #include <uv.h>
+#endif
 
 #include <rut.h>
 
@@ -52,8 +54,8 @@ struct _rig_pb_stream_write_closure
 {
 #ifdef USE_UV
     uv_write_t write_req;
-#endif
     uv_buf_t buf;
+#endif
     void (*done_callback)(rig_pb_stream_write_closure_t *closure);
 };
 
