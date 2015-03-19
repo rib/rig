@@ -763,7 +763,11 @@ rig_simulator_new(rig_frontend_id_t frontend_id,
 void
 rig_simulator_set_frontend_fd(rig_simulator_t *simulator, int fd)
 {
+#ifdef __EMSCRIPTEN__
+    c_warn_if_reached();
+#else
     rig_pb_stream_set_fd_transport(simulator->stream, fd);
+#endif
 }
 
 void

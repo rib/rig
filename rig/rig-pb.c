@@ -3132,7 +3132,7 @@ rig_pb_unserialize_mesh(rig_pb_un_serializer_t *unserializer,
         mode, pb_mesh->n_vertices, attributes, pb_mesh->n_attributes);
 
     if (pb_mesh->has_indices_buffer_id) {
-        rut_buffer_t *buffer;
+        rut_buffer_t *buffer = NULL;
         cg_indices_type_t indices_type;
         int j;
 

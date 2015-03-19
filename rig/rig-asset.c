@@ -31,7 +31,6 @@
 #include <stdlib.h>
 
 #include <clib.h>
-#include <xdgmime.h>
 
 #include <cogl/cogl.h>
 

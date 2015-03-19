@@ -1294,7 +1294,8 @@ shaped_para_foreach_line(wrap_state_t *wrap_state,
     if (U_FAILURE(uerror))
         return;
 
-    shaped_run = rut_container_of(para->shaped_runs.next, shaped_run, link);
+    shaped_run = c_container_of(para->shaped_runs.next,
+                                rig_shaped_run_t, link);
 
     do {
         int32_t utf16_line_start_pos = utf16_line_end_pos;
@@ -1610,7 +1611,8 @@ wrap_paragraph(rig_text_engine_t *text_engine,
 
     wrap_state.para = para;
 
-    first_run = rut_container_of(para->shaped_runs.next, first_run, link);
+    first_run = c_container_of(para->shaped_runs.next,
+                               rig_shaped_run_t, link);
     wrap_state.default_direction = first_run->direction;
 
     /* For now the only way to affect the alignment is by the initial
@@ -1887,7 +1889,7 @@ mmap_open(const char *filename)
 {
     struct stat st;
     int fd = open(filename, O_RDONLY | O_CLOEXEC);
-    void *common_header;
+    void *common_header = NULL;
 
     if (fd == -1)
         goto error;

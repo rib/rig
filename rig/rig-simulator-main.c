@@ -123,9 +123,11 @@ main(int argc, char **argv)
             }
 
             break;
+#ifdef __linux__
         case 'a':
             abstract_socket = optarg;
             break;
+#endif
         default:
             usage();
         }

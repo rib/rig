@@ -559,12 +559,14 @@ rig_pb_stream_set_read_callback(rig_pb_stream_t *stream,
     }
 }
 
+#ifdef USE_UV
 static void
 uv_write_done_cb(uv_write_t *write_req, int status)
 {
     rig_pb_stream_write_closure_t *closure = write_req->data;
     closure->done_callback(closure);
 }
+#endif
 
 void
 rig_pb_stream_write(rig_pb_stream_t *stream,
@@ -579,7 +581,9 @@ rig_pb_stream_write(rig_pb_stream_t *stream,
         c_array_append_val(stream->buffer.other_end->buffer.incoming_write_closures, closure);
 
         queue_data_buffer_stream_read(stream->buffer.other_end);
-    } else {
+    }
+#ifdef USE_UV
+    else {
         closure->write_req.data = closure;
 
         uv_write(&closure->write_req,
@@ -588,4 +592,5 @@ rig_pb_stream_write(rig_pb_stream_t *stream,
                  1, /* n buffers */
                  uv_write_done_cb);
     }
+#endif
 }

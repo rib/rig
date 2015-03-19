@@ -160,17 +160,14 @@ log_hook(c_log_context_t *lctx,
     struct log_state *state = &log_state;
     rut_shell_t *shell = rut_get_thread_current_shell();
     enum rig_log_type type = RIG_LOG_TYPE_UNKNOWN;
-    struct timespec ts;
-    uint64_t timestamp;
+    int64_t timestamp;
 
     if (state->frontend && state->frontend->engine->shell == shell)
         type = RIG_LOG_TYPE_FRONTEND;
     else if (state->simulator && state->simulator->shell == shell)
         type = RIG_LOG_TYPE_SIMULATOR;
 
-#warning "TODO: Add portable monotonic clock api to clib"
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    timestamp = ts.tv_sec * 1000000000ULL + ts.tv_nsec;
+    timestamp = c_get_monotonic_time();
 
     log_full(type,
              timestamp,

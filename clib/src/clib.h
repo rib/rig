@@ -11,7 +11,7 @@
 #include <limits.h>
 #include <float.h>
 #include <netinet/in.h>
-#ifdef HAVE_PTHREADS
+#ifdef C_HAVE_PTHREADS
 #include <pthread.h>
 #endif
 

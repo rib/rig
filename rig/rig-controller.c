@@ -817,7 +817,7 @@ rig_controller_set_property_binding(rig_controller_t *controller,
 {
     rig_controller_prop_data_t *prop_data =
         rig_controller_find_prop_data_for_property(controller, property);
-    bool need_activate;
+    bool need_activate = false;
 
     c_return_if_fail(prop_data != NULL);
 

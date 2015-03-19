@@ -113,6 +113,7 @@ typedef struct {
             Window *xwindow;
         } x11;
 #endif
+        int dummy;
     };
 } rut_shell_onscreen_t;
 

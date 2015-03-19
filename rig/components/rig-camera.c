@@ -297,8 +297,6 @@ rig_camera_get_projection(rut_object_t *object)
         {
         case RUT_PROJECTION_ORTHOGRAPHIC:
             {
-                float x1, x2, y1, y2;
-
                 if (camera->props.base.zoom != 1) {
                     float center_x = camera->props.base.ortho.x1 +
                         (camera->props.base.ortho.x2 - camera->props.base.ortho.x1) / 2.0;
@@ -312,18 +310,13 @@ rig_camera_get_projection(rut_object_t *object)
                     camera->props.base.ortho.x2 = center_x + dx;
                     camera->props.base.ortho.y1 = center_y - dy;
                     camera->props.base.ortho.y2 = center_y + dy;
-                } else {
-                    x1 = camera->props.base.ortho.x1;
-                    x2 = camera->props.base.ortho.x2;
-                    y1 = camera->props.base.ortho.y1;
-                    y2 = camera->props.base.ortho.y2;
                 }
 
                 cg_matrix_orthographic(&camera->props.projection,
-                                       x1,
-                                       y1,
-                                       x2,
-                                       y2,
+                                       camera->props.base.ortho.x1,
+                                       camera->props.base.ortho.y1,
+                                       camera->props.base.ortho.x2,
+                                       camera->props.base.ortho.y2,
                                        camera->props.base.near,
                                        camera->props.base.far);
 

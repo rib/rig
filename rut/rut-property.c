@@ -38,7 +38,7 @@
 #include "rut-color.h"
 #include "rut-util.h"
 
-static int dummy_object = NULL;
+static int dummy_object;
 
 void
 rut_property_context_init(rut_property_context_t *context)
@@ -815,10 +815,10 @@ rut_boxed_to_string(const rut_boxed_t *boxed,
                                boxed->d.vec3_val[2]);
     case RUT_PROPERTY_TYPE_VEC4:
         return c_strdup_printf("(%.1f, %.1f, %.1f, %.1f)",
-                               boxed->d.vec3_val[0],
-                               boxed->d.vec3_val[1],
-                               boxed->d.vec3_val[2],
-                               boxed->d.vec3_val[3]);
+                               boxed->d.vec4_val[0],
+                               boxed->d.vec4_val[1],
+                               boxed->d.vec4_val[2],
+                               boxed->d.vec4_val[3]);
     case RUT_PROPERTY_TYPE_COLOR:
         return rut_color_to_string(&boxed->d.color_val);
     case RUT_PROPERTY_TYPE_OBJECT:

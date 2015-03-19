@@ -50,11 +50,20 @@ enum stream_type {
 
 typedef struct _rig_pb_stream_write_closure rig_pb_stream_write_closure_t;
 
+#ifndef USE_UV
+typedef struct _rig_pb_stream_buf_t {
+  char* base;
+  size_t len;
+} rig_pb_stream_buf_t;
+#endif
+
 struct _rig_pb_stream_write_closure
 {
 #ifdef USE_UV
     uv_write_t write_req;
     uv_buf_t buf;
+#else
+    rig_pb_stream_buf_t buf;
 #endif
     void (*done_callback)(rig_pb_stream_write_closure_t *closure);
 };

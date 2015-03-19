@@ -59,7 +59,9 @@ rig_include_SOURCE=rig-c.h
 
 PROTOBUF_C_FILES = rig.pb-c.c rig.pb-c.h
 if RIG_DEBUG
+if !EMSCRIPTEN
 PROTOBUF_C_FILES += rig.pb.cc rig.pb.h
+endif
 endif
 
 BUILT_SOURCES = $(PROTOBUF_C_FILES)
@@ -91,14 +93,27 @@ endif
 
 
 librig_la_SOURCES = \
-	$(rig_common_sources)
+	$(rig_common_sources) \
+	$(PROTOBUF_C_FILES)
+
+if !EMSCRIPTEN
+librig_la_SOURCES += \
+	components/rig-native-module.h \
+	components/rig-native-module.c
+endif
+
+if USE_MOZJS
+librig_la_SOURCES += \
+	rig-js.h \
+	rig-js.cpp
+endif
 
 if RIG_DEBUG
+if !EMSCRIPTEN
 librig_la_SOURCES += \
-	rig.pb.h \
-	rig.pb.cc \
 	rig-pb-debug.h \
 	rig-pb-debug.cpp
+endif
 endif
 
 if HAVE_AVAHI
@@ -133,11 +148,14 @@ endif
 common_ldadd = \
 	$(RIG_EXTRA_LDFLAGS) \
 	librig.la \
-	$(top_builddir)/xdgmime/libxdgmime.la \
 	$(top_builddir)/rut/librut.la \
 	$(top_builddir)/cogl/libcogl2.la \
 	$(top_builddir)/cogl-path/libcogl-path.la \
 	$(RIG_DEP_LIBS)
+
+if USE_UV
+common_ldadd += $(top_builddir)/xdgmime/libxdgmime.la
+endif
 
 if OCULUS_RIFT
 common_ldadd += $(top_builddir)/LibOVR/libOVR.la -lstdc++
