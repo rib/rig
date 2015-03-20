@@ -72,7 +72,7 @@ rig_common_sources = \
 	rig-slave-address.h \
 	rig-slave-address.c \
 	rig-simulator.h \
-	rig-simulator.c \
+	rig-simulator-impl.c \
 	rig-frontend.c \
 	rig-frontend.h \
 	rig-ui.h \
@@ -121,4 +121,4 @@ rig_editor_sources = \
 
 rig_slave_sources = \
 	rig-slave.h \
-	rig-slave.c
+	rig-slave-impl.c

@@ -210,7 +210,7 @@ if EMSCRIPTEN
 
 emscripten_libs = --js-library $(top_srcdir)/cogl/cogl-emscripten-lib.js
 
-%.html: $(top_builddir)/rig/.libs/lib%-archive.so $(top_builddir)/rut/.libs/librut.so $(top_builddir)/cogl/.libs/libcogl2.so $(top_builddir)/cogl-path/.libs/libcogl-path.so $(top_builddir)/clib/src/.libs/libclib.so
+%.html: $(top_builddir)/rig/.libs/lib%-archive.so $(top_builddir)/rig/.libs/librig.so $(top_builddir)/rut/.libs/librut.so $(top_builddir)/cogl/.libs/libcogl2.so $(top_builddir)/cogl-path/.libs/libcogl-path.so $(top_builddir)/clib/src/.libs/libclib.so
 	$(CC) $(AM_CFLAGS) $(CFLAGS) $(RIG_EXTRA_EMCC_JSFLAGS) $(emscripten_libs) --js-library $(top_srcdir)/toys/emscripten-example-js-library.js -o $@ $^ -L/home/bob/local/freetype-emcc/lib -lfreetype  -L/home/bob/local/harfbuzz-emcc/lib -lharfbuzz -lharfbuzz-icu -L/home/bob/local/fontconfig-emcc/lib -lfontconfig -L/home/bob/local/icu-emcc/lib -licuuc -licudata -L/home/bob/local/protobuf-c-emcc/lib -lprotobuf-c -L/home/bob/local/libxml2-emcc/lib -lxml2
 
 all-local: $(htmlfiles)
@@ -223,6 +223,7 @@ endif
 rig_device_LDADD = $(common_ldadd) librig-device-archive.la
 #TODO: Avoid linking with Cogl and SDL in the simulator...
 rig_simulator_LDADD = $(common_ldadd) librig-simulator-archive.la
+rig_simulator_LDFLAGS = -export-dynamic
 endif
 
 rig_android_moduledir = $(datadir)/android_modules/rig/
