@@ -399,6 +399,8 @@ struct _rut_shell_t {
 
     void (*on_run_cb)(rut_shell_t *shell, void *user_data);
     void *on_run_data;
+    bool running;
+
     void (*on_quit_cb)(rut_shell_t *shell, void *user_data);
     void *on_quit_data;
 

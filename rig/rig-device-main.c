@@ -204,7 +204,9 @@ rig_device_new(const char *filename)
     device->shell = rut_shell_new(rig_device_redraw,
                                   device);
 
+#ifdef HAVE_CURSES
     rig_curses_add_to_shell(device->shell);
+#endif
 
     rut_shell_set_on_run_callback(device->shell,
                                   rig_device_init,
@@ -273,6 +275,9 @@ main(int argc, char **argv)
     gst_init(&argc, &argv);
 #endif
 
+#ifdef __EMSCRIPTEN__
+    rig_simulator_run_mode_option = RIG_SIMULATOR_RUN_MODE_WEB_WORKER;
+#else
     rig_simulator_run_mode_option = RIG_SIMULATOR_RUN_MODE_THREADED;
 
     while ((c = getopt_long(argc, argv, short_opts, long_opts, NULL)) != -1) {
@@ -302,8 +307,9 @@ main(int argc, char **argv)
         fprintf(stderr, "Needs a UI.rig filename\n\n");
         usage();
     }
+#endif
 
-#ifdef RIG_ENABLE_DEBUG
+#if defined(RIG_ENABLE_DEBUG) && defined(HAVE_CURSES)
     if (enable_curses_debug)
         rig_curses_init();
 #endif

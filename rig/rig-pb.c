@@ -598,13 +598,16 @@ rig_pb_serialize_component(rig_pb_serializer_t *serializer,
                                              &pb_component->n_properties,
                                              (void **)&pb_component->properties,
                                              serializer);
-    } else if (type == &rig_native_module_type) {
+    }
+#ifdef USE_UV
+    else if (type == &rig_native_module_type) {
         pb_component->type = RIG__ENTITY__COMPONENT__TYPE__NATIVE_MODULE;
         serialize_instrospectable_properties(component,
                                              &pb_component->n_properties,
                                              (void **)&pb_component->properties,
                                              serializer);
     }
+#endif
 
     return pb_component;
 }
@@ -2150,6 +2153,7 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
         return button_input;
     }
     case RIG__ENTITY__COMPONENT__TYPE__NATIVE_MODULE: {
+#ifdef USE_UV
         rig_native_module_t *module =
             rig_native_module_new(unserializer->engine);
 
@@ -2162,8 +2166,13 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
         rut_object_unref(module);
 
         rig_pb_unserializer_register_object(unserializer, module, component_id);
-
         return module;
+#else
+        rig_pb_unserializer_collect_error(unserializer,
+                                          "Can't unserialize unsupported native module");
+        c_warn_if_reached();
+        return NULL;
+#endif
     }
     case RIG__ENTITY__COMPONENT__TYPE__SHAPE: {
         rig_shape_t *shape = rig_shape_new(unserializer->engine->shell,

@@ -1718,6 +1718,12 @@ rut_shell_queue_redraw_real(rut_shell_t *shell)
                                     NULL); /* destroy notify */
     }
 #else
+    /* If we haven't called emscripten_set_main_loop_arg() yet then
+     * emscripten will get upset if we try and resume a mainloop
+     * that doesn't exist yet... */
+    if (!shell->running)
+        return;
+
     if (!shell->paint_loop_running) {
         emscripten_resume_main_loop();
         shell->paint_loop_running = true;

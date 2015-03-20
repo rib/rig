@@ -666,6 +666,7 @@ rut_glib_poll_run(rut_shell_t *shell)
 
     if (shell->on_run_cb)
         shell->on_run_cb(shell, shell->on_run_data);
+    shell->running = true;
 
     rut_set_thread_current_shell(NULL);
 
@@ -770,6 +771,7 @@ rut_poll_run(rut_shell_t *shell)
 
         if (shell->on_run_cb)
             shell->on_run_cb(shell, shell->on_run_data);
+        shell->running = true;
 
         return;
     }
@@ -781,6 +783,7 @@ rut_poll_run(rut_shell_t *shell)
 #elif defined(__EMSCRIPTEN__)
     if (shell->on_run_cb)
         shell->on_run_cb(shell, shell->on_run_data);
+    shell->running = true;
 
     emscripten_set_main_loop_arg(em_paint_loop, shell, -1, true);
 #elif defined(USE_UV)
@@ -789,6 +792,7 @@ rut_poll_run(rut_shell_t *shell)
 
         if (shell->on_run_cb)
             shell->on_run_cb(shell, shell->on_run_data);
+        shell->running = true;
 
         uv_run(loop, UV_RUN_DEFAULT);
     }

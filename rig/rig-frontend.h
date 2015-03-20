@@ -114,6 +114,7 @@ enum rig_simulator_run_mode {
     RIG_SIMULATOR_RUN_MODE_CONNECT_ABSTRACT_SOCKET,
 #endif
     RIG_SIMULATOR_RUN_MODE_CONNECT_TCP,
+    RIG_SIMULATOR_RUN_MODE_WEB_WORKER,
 };
 extern enum rig_simulator_run_mode rig_simulator_run_mode_option;
 

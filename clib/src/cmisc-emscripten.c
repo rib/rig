@@ -45,4 +45,32 @@ c_unsetenv(const char *variable)
     c_return_if_reached();
 }
 
+char *
+c_win32_getlocale(void)
+{
+    return NULL;
+}
 
+bool
+c_path_is_absolute(const char *filename)
+{
+    c_return_val_if_reached(false);
+}
+
+const char *
+c_get_home_dir(void)
+{
+    c_return_val_if_reached(NULL);
+}
+
+const char *
+c_get_user_name(void)
+{
+    c_return_val_if_reached(NULL);
+}
+
+const char *
+c_get_tmp_dir(void)
+{
+    c_return_val_if_reached(NULL);
+}

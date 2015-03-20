@@ -160,7 +160,8 @@ AS_CASE(
             RIG_EXTRA_LDFLAGS="$RIG_EXTRA_LDFLAGS -lstdc++"
           ],
           [
-            RIG_EXTRA_EMCC_JSFLAGS="$RIG_EXTRA_EMCC_JSFLAGS -s ASSERTIONS=2 -g4"
+            dnl RIG_EXTRA_EMCC_JSFLAGS="$RIG_EXTRA_EMCC_JSFLAGS -s ASSERTIONS=2 -g4"
+            RIG_EXTRA_EMCC_JSFLAGS="$RIG_EXTRA_EMCC_JSFLAGS -s -g4"
           ])
   ],
   [no],

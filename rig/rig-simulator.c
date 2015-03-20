@@ -545,7 +545,9 @@ _rig_simulator_free(void *object)
 {
     rig_simulator_t *simulator = object;
 
+#ifdef USE_MOZJS
     rut_object_unref(simulator->js);
+#endif
 
     clear_actions(simulator);
 
@@ -755,7 +757,9 @@ rig_simulator_new(rig_frontend_id_t frontend_id,
 
     rig_logs_set_simulator(simulator);
 
+#ifdef USE_MOZJS
     simulator->js = rig_js_runtime_new(simulator);
+#endif
 
     return simulator;
 }

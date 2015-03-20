@@ -66,7 +66,8 @@ clib_common_source = \
 	crbtree.c	\
 	ascii_snprintf.c \
 	crand.c		\
-	ctimer.c
+	ctimer.c	\
+	cmutex.c
 
 libclib_la_SOURCES = \
 	$(clib_common_source) \
@@ -74,7 +75,7 @@ libclib_la_SOURCES = \
 
 unix_files = cdate-unix.c  cdir-unix.c  cfile-unix.c  cmisc-unix.c \
 	     cxdg-unix.c
-threads_files = ctls.c cmutex.c
+threads_files = ctls.c
 
 if OS_UNIX
 libclib_la_SOURCES += $(unix_files) $(threads_files)
@@ -88,8 +89,8 @@ libclib_la_SOURCES += $(threads_files)
 libclib_la_LIBADD += -lm $(LTLIBICONV) -lpsapi
 endif
 
-if OS_WEB
-libclib_la_SOURCES += cmisc-emscripten.c
+if EMSCRIPTEN
+libclib_la_SOURCES += cmisc-emscripten.c cfile-emscripten.c
 endif
 
 # some unices and windows do not have an implementation of vasprintf
@@ -120,7 +121,7 @@ android_module_DATA = \
 	$(clib_common_source) \
 	$(sfmt_source) \
 	$(unix_files) \
-	$(thread_files) \
+	$(threads_files) \
 	vasprintf.c \
 	Android.mk \
 	android/clib-config.h
