@@ -161,7 +161,7 @@ AS_CASE(
           ],
           [
             dnl RIG_EXTRA_EMCC_JSFLAGS="$RIG_EXTRA_EMCC_JSFLAGS -s ASSERTIONS=2 -g4"
-            RIG_EXTRA_EMCC_JSFLAGS="$RIG_EXTRA_EMCC_JSFLAGS -s -g4"
+            RIG_EXTRA_EMCC_JSFLAGS="$RIG_EXTRA_EMCC_JSFLAGS -g4"
           ])
   ],
   [no],
