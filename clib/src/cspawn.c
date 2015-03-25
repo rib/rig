@@ -49,7 +49,7 @@
 #include <sys/wait.h>
 #endif
 
-#ifdef C_OS_WIN32
+#ifdef C_PLATFORM_WIN32
 #include <io.h>
 #include <winsock2.h>
 #define open _open
@@ -105,7 +105,7 @@ c_spawn_error_get_quark(void)
     return c_quark_from_static_string("g-spawn-error-quark");
 }
 
-#ifndef C_OS_WIN32
+#ifndef C_PLATFORM_WIN32
 static int
 safe_read(int fd, char *buffer, int count, c_error_t **error)
 {
@@ -213,7 +213,7 @@ create_pipe(int *fds, c_error_t **error)
     }
     return true;
 }
-#endif /* C_OS_WIN32 */
+#endif /* C_PLATFORM_WIN32 */
 
 static int
 write_all(int fd, const void *vbuf, size_t n)
@@ -243,7 +243,7 @@ c_spawn_command_line_sync(const char *command_line,
                           int *exit_status,
                           c_error_t **error)
 {
-#ifdef C_OS_WIN32
+#ifdef C_PLATFORM_WIN32
 #else
     pid_t pid;
     char **argv;
@@ -345,7 +345,7 @@ c_spawn_async_with_pipes(const char *working_directory,
                          int *standard_error,
                          c_error_t **error)
 {
-#ifdef C_OS_WIN32
+#ifdef C_PLATFORM_WIN32
 #else
     pid_t pid;
     int info_pipe[2];

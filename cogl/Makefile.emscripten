@@ -1,0 +1,64 @@
+include Makefile.source
+
+CC=emcc
+
+srcdir=.
+builddir=.
+top_srcdir=../../
+top_builddir=../../
+
+OBJ_CFLAGS=-g3 -O0 \
+	-I$(top_srcdir)			\
+	-I$(top_builddir)		\
+	-I$(srcdir)/winsys 		\
+	-I$(srcdir)/driver/nop 		\
+	-I$(srcdir)/driver/gl 		\
+	-I$(srcdir)/driver/gl/gl 	\
+	-I$(srcdir)/driver/gl/gles 	\
+	-I$(top_srcdir)/clib/src	\
+	-I$(top_builddir)/clib/src
+
+BC_CFLAGS=-g4 -O0
+
+TOP_HEADER=cogl.h
+
+cogl_SOURCE=$(filter %.c,$(cogl_base_sources_c))
+cogl_OBJECTS=$(patsubst %.c, %.o, $(cogl_SOURCE))
+
+ifdef V
+  	O=
+else
+	O=@
+endif
+
+all: .deps cogl.bc
+.PHONY: .deps .all
+
+cogl-config.pch: $(top_builddir)/config.h
+	$(O)echo "#include \"config.h\"" > cogl-config.h; \
+	echo "#include \"cogl.h\"" >> cogl-config.h; \
+	echo "(PCH): "; \
+	$(CC) cogl-config.h -x c-header -std=c11 -o $@ -MMD -MF $(srcdir)/.deps/$(@).rules $(OBJ_CFLAGS) &>.build-log; \
+	if test $$? -ne 0; then echo "ERROR:"; cat .build-log; fi
+
+%.o: cogl-config.pch %.c
+	$(O)echo "(CC) $(*): "; \
+	$(CC) $(*).c -o $@ -MMD -MF $(srcdir)/.deps/$(@).rules -include cogl-config.h $(OBJ_CFLAGS) &>.build-log; \
+	if test $$? -ne 0; then echo "ERROR:"; cat .build-log; fi
+
+cogl.bc: $(cogl_OBJECTS)
+	emcc $(BC_CFLAGS) $(^) -o $@ -I../../ -I./
+
+-include .deps/*.rules
+-include .deps/sfmt/*.rules
+
+.deps:
+	mkdir -p $(builddir)/.deps
+	mkdir -p $(builddir)/.deps/sfmt
+
+clean:
+	-rm -f $(builddir)/*.o
+	-rm -f cogl-config.pch
+
+distclean: clean
+	-rm -f $(builddir)/.deps

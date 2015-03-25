@@ -64,7 +64,7 @@ c_rand_new(void)
     c_assert(len == sizeof(seed));
 
     return c_rand_new_with_seed_array(seed, 4);
-#elif defined(C_OS_WIN32)
+#elif defined(C_PLATFORM_WIN32)
     uint32_t seed[4];
     for (int i = 0; i < 4; i++)
         rand_s (&seed[i]);

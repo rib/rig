@@ -106,10 +106,6 @@ enum rig_log_type {
     RIG_LOG_TYPE_SIMULATOR
 };
 
-/* XXX: 'remote' here really just means out-of-thread (whereby we
- * won't have a shell pointer). The log might have come from a
- * simulator running in another process or it could actually be
- * remote. */
 static void
 log_full(enum rig_log_type type,
          uint64_t timestamp,

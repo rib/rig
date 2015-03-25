@@ -1,3 +1,5 @@
+include Makefile.sources
+
 EXTRA_DIST =
 
 if EMSCRIPTEN
@@ -13,60 +15,7 @@ endif #EMSCRIPTEN
 
 libclib_la_LIBADD = $(CLIB_DEP_LIBS)
 
-# SIMD-oriented Fast Mersenne Twist Random
-# Number Generator...
-sfmt_source = \
-	sfmt/SFMT.h \
-	sfmt/SFMT.c \
-	sfmt/SFMT-common.h \
-	sfmt/SFMT-params4253.h \
-	sfmt/SFMT-params19937.h \
-	sfmt/SFMT-params44497.h \
-	sfmt/SFMT-params216091.h \
-	sfmt/SFMT-params86243.h \
-	sfmt/SFMT-params2281.h \
-	sfmt/SFMT-params1279.h \
-	sfmt/SFMT-params607.h \
-	sfmt/SFMT-params.h \
-	sfmt/SFMT-params11213.h
 EXTRA_DIST += sfmt/README.txt sfmt/LICENSE.txt
-
-clib_common_source = \
-	sort.frag.h	\
-	clib.h	     	\
-	cdebugkey.c	\
-	cquark.c	\
-	carray.c	\
-	cbytearray.c	\
-	cerror.c	\
-	chashtable.c 	\
-	ciconv.c	\
-	cmem.c       	\
-	cmodule.h	\
-	cmodule.c	\
-	coutput.c    	\
-	cqsort.c	\
-	cstr.c       	\
-	cslist.c     	\
-	cstring.c    	\
-	cptrarray.c     \
-	clist.c		\
-	cllist.c	\
-	chooklist.c	\
-	cqueue.c	\
-	cpath.c		\
-	cshell.c	\
-	cspawn.c	\
-	cfile.c		\
-	cutf8.c		\
-	cunicode.c	\
-	unicode-data.h	\
-	crbtree.h	\
-	crbtree.c	\
-	ascii_snprintf.c \
-	crand.c		\
-	ctimer.c	\
-	cmutex.c
 
 libclib_la_SOURCES = \
 	$(clib_common_source) \

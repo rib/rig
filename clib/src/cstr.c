@@ -564,7 +564,7 @@ c_filename_to_uri(const char *filename, const char *hostname, c_error_t **error)
     size_t n;
     char *ret, *rp;
     const char *p;
-#ifdef C_OS_WIN32
+#ifdef C_PLATFORM_WIN32
     const char *uriPrefix = "file:///";
 #else
     const char *uriPrefix = "file://";
@@ -587,7 +587,7 @@ c_filename_to_uri(const char *filename, const char *hostname, c_error_t **error)
 
     n = strlen(uriPrefix) + 1;
     for (p = filename; *p; p++) {
-#ifdef C_OS_WIN32
+#ifdef C_PLATFORM_WIN32
         if (*p == '\\') {
             n++;
             continue;
@@ -601,7 +601,7 @@ c_filename_to_uri(const char *filename, const char *hostname, c_error_t **error)
     ret = c_malloc(n);
     strcpy(ret, uriPrefix);
     for (p = filename, rp = ret + strlen(ret); *p; p++) {
-#ifdef C_OS_WIN32
+#ifdef C_PLATFORM_WIN32
         if (*p == '\\') {
             *rp++ = '/';
             continue;
@@ -668,14 +668,14 @@ c_filename_from_uri(const char *uri, char **hostname, c_error_t **error)
         }
         flen++;
     }
-#ifndef C_OS_WIN32
+#ifndef C_PLATFORM_WIN32
     flen++;
 #endif
 
     result = c_malloc(flen + 1);
     result[flen] = 0;
 
-#ifndef C_OS_WIN32
+#ifndef C_PLATFORM_WIN32
     *result = '/';
     r = result + 1;
 #else

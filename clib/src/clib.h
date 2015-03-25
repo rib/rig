@@ -46,7 +46,7 @@
 
 C_BEGIN_DECLS
 
-#ifdef C_OS_WIN32
+#ifdef C_PLATFORM_WIN32
 /* MSC and Cross-compilation will use this */
 int vasprintf(char **strp, const char *fmt, va_list ap);
 int mkstemp(char *tmp_template);
@@ -173,22 +173,6 @@ typedef uint32_t c_codepoint_t;
 #define C_VA_COPY(dest, src) va_copy(dest, src)
 #endif
 
-#ifdef C_OS_UNIX
-#define C_BREAKPOINT()                                                         \
-    C_STMT_START                                                               \
-    {                                                                          \
-        raise(SIGTRAP);                                                        \
-    }                                                                          \
-    C_STMT_END
-#else
-#define C_BREAKPOINT()
-#endif
-
-#if defined(__native_client__)
-#undef C_BREAKPOINT
-#define C_BREAKPOINT()
-#endif
-
 #ifndef ABS
 #define ABS(a) ((a) > 0 ? (a) : -(a))
 #endif
@@ -279,8 +263,8 @@ c_strdup(const char *str)
 #define c_strdupa(s) strdupa(s)
 #define c_strndupa(s) strndupa(s)
 #else
-#define c_strdupa(const char *str) strcpy(alloca(strlen(str) + 1, str))
-#define c_strndupa(const char *str, size_t n) strncpy(alloca(strnlen(str, n) + 1, str))
+#define c_strdupa(str) strcpy(alloca(strlen(str) + 1, str))
+#define c_strndupa(str, n) strncpy(alloca(strnlen(str, n) + 1, str))
 #endif
 
 #ifdef WIN32
@@ -1246,7 +1230,7 @@ c_utf16_t *c_ucs4_to_utf16(const c_codepoint_t *str,
 
 #define u8to16(str) c_utf8_to_utf16(str, (long)strlen(str), NULL, NULL, NULL)
 
-#ifdef C_OS_WIN32
+#ifdef C_PLATFORM_WIN32
 #define u16to8(str)                                                            \
     c_utf16_to_utf8(                                                           \
         (c_utf16_t *)(str), (long)wcslen((wchar_t *)(str)), NULL, NULL, NULL)
@@ -1592,12 +1576,10 @@ long c_utf8_pointer_to_offset(const char *str, const char *pos);
 #define C_PRIORITY_DEFAULT_IDLE 200
 
 #if defined(C_HAVE_PTHREADS)
-#define C_SUPPORTS_THREADS 1
-typedef pthread_mutex_t c_mutex_t;
+#  define C_SUPPORTS_THREADS 1
 typedef pthread_key_t c_tls_t;
-#elif defined(C_OS_WIN32)
-#define C_SUPPORTS_THREADS 1
-typedef CRITICAL_SECTION c_mutex_t;
+#  elif defined(C_PLATFORM_WIN32)
+#  define C_SUPPORTS_THREADS 1
 typedef struct _c_tls_t c_tls_t {
 struct _c_tls_t {
     DWORD key;
@@ -1605,7 +1587,6 @@ struct _c_tls_t {
     c_tls_t *next;
 };
 #else
-typedef int c_mutex_t;
 typedef struct _c_tls_t {
     void *data;
 } c_tls_t;
@@ -1665,12 +1646,49 @@ c_tls_get(c_tls_t *tls)
 
 #endif
 
-/* N.B This is a recursive mutex */
-void c_mutex_init(c_mutex_t *mutex);
-void c_mutex_destroy(c_mutex_t *mutex);
-void c_mutex_lock(c_mutex_t *mutex);
-void c_mutex_unlock(c_mutex_t *mutex);
-bool c_mutex_trylock(c_mutex_t *mutex);
+#ifdef USE_UV
+/* N.B This is not a recursive mutex */
+typedef uv_mutex_t c_mutex_t;
+
+static inline void c_mutex_init(c_mutex_t *mutex)
+{
+    int r = uv_mutex_init((uv_mutex_t *)mutex);
+    if (C_UNLIKELY(r))
+        c_error("Failed to initialize mutex: %s", uv_strerror(r));
+}
+
+static inline void c_mutex_destroy(c_mutex_t *mutex)
+{
+    uv_mutex_destroy((uv_mutex_t *)mutex);
+}
+
+static inline void c_mutex_lock(c_mutex_t *mutex)
+{
+    uv_mutex_lock(mutex);
+}
+
+static inline bool c_mutex_trylock(c_mutex_t *mutex)
+{
+    return c_mutex_trylock() == 0;
+}
+
+static inline void c_mutex_unlock(c_mutex_t *mutex)
+{
+    uv_mutex_unlock((uv_mutex_t *)mutex);
+}
+#else
+#  ifndef C_SUPPORTS_THREADS
+typedef int c_mutex_t;
+
+static inline void c_mutex_init(c_mutex_t *mutex) {}
+static inline void c_mutex_destroy(c_mutex_t *mutex) {}
+static inline void c_mutex_lock(c_mutex_t *mutex) {}
+static inline bool c_mutex_trylock(c_mutex_t *mutex) { return true; }
+static inline void c_mutex_unlock(c_mutex_t *mutex) {}
+#  else
+#    error "missing c_mutex_t support without libuv"
+#  endif
+#endif
 
 #define _CLIB_MAJOR 2
 #define _CLIB_MIDDLE 4
@@ -1707,7 +1725,7 @@ uint32_t c_random_uint32(void);
 int32_t c_random_int32_range(int32_t begin, int32_t end);
 bool c_random_boolean(void);
 
-#ifdef C_OS_UNIX
+#ifdef C_PLATFORM_HAS_XDG_DIRS
 /* XDG dirs */
 const char *c_get_xdg_data_home(void);
 const char *c_get_xdg_data_dirs(void);

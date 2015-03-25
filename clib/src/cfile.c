@@ -30,7 +30,7 @@
 
 #include <clib.h>
 
-#ifdef C_OS_UNIX
+#ifdef __unix__
 #include <unistd.h>
 #endif
 
@@ -45,7 +45,7 @@
 #include <fcntl.h>
 #include <errno.h>
 
-#ifdef C_OS_WIN32
+#ifdef WIN32
 #include <io.h>
 #define open _open
 
@@ -124,7 +124,7 @@ c_file_error_from_errno(int err_no)
     }
 }
 
-#ifdef C_OS_WIN32
+#ifdef WIN32
 #define TMP_FILE_FORMAT "%.*s%s.tmp"
 #else
 #define TMP_FILE_FORMAT "%.*s.%s~"
@@ -353,7 +353,7 @@ c_get_current_dir(void)
 #endif
 }
 
-#ifdef C_OS_UNIX
+#ifdef __unix__
 bool
 c_file_test(const char *filename, c_file_test_t test)
 {
@@ -395,7 +395,7 @@ c_file_test(const char *filename, c_file_test_t test)
     return false;
 }
 
-#elif defined(C_OS_WIN32)
+#elif defined(WIN32)
 
 #ifdef _MSC_VER
 #pragma warning(disable : 4701)

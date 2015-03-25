@@ -1,0 +1,53 @@
+include Makefile.source
+
+CC=emcc
+srcdir=.
+builddir=.
+top_srcdir=../../
+top_builddir=../../
+
+OBJ_CFLAGS=-g3 -O0 -I$(top_srcdir) -I$(srcdir) -I$(srcdir)/sfmt -DSFMT_MEXP=19937
+BC_CFLAGS=-g4 -O0
+
+TOP_HEADER=clib.h
+
+clib_SOURCE=$(filter %.c,$(clib_common_source) $(sfmt_source) cmisc-emscripten.c)
+clib_OBJECTS=$(patsubst %.c, %.o, $(clib_SOURCE))
+
+ifdef V
+  	O=
+else
+	O=@
+endif
+
+all: .deps clib.bc
+.PHONY: .deps .all
+
+clib-config.pch: $(top_builddir)/config.h
+	$(O)echo "#include \"config.h\"" > clib-config.h; \
+	echo "#include \"clib.h\"" >> clib-config.h; \
+	echo "(PCH): "; \
+	$(CC) clib-config.h -x c-header -std=c11 -o $@ -MMD -MF $(srcdir)/.deps/$(@).rules $(OBJ_CFLAGS) &>.build-log; \
+	if test $$? -ne 0; then echo "ERROR:"; cat .build-log; fi
+
+%.o: clib-config.pch %.c
+	$(O)echo "(CC) $(*): "; \
+	$(CC) $(*).c -o $@ -MMD -MF $(srcdir)/.deps/$(@).rules -include clib-config.h $(OBJ_CFLAGS) &>.build-log; \
+	if test $$? -ne 0; then echo "ERROR:"; cat .build-log; fi
+
+clib.bc: $(clib_OBJECTS)
+	emcc $(BC_CFLAGS) $(^) -o $@ -I../../ -I./
+
+-include .deps/*.rules
+-include .deps/sfmt/*.rules
+
+.deps:
+	mkdir -p $(builddir)/.deps
+	mkdir -p $(builddir)/.deps/sfmt
+
+clean:
+	-rm -f $(builddir)/*.o
+	-rm -f clib-config.pch
+
+distclean: clean
+	-rm -f $(builddir)/.deps
