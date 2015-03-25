@@ -1,4 +1,4 @@
-include Makefile.source
+include Makefile.sources
 
 CC=emcc
 srcdir=.

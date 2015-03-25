@@ -4,7 +4,7 @@
 #include <clib.h>
 
 #define C_MODULE_IMPORT extern
-#ifdef C_PLATFORM_WIN32
+#ifdef WIN32
 #define C_MODULE_EXPORT __declspec(dllexport)
 #else
 #define C_MODULE_EXPORT

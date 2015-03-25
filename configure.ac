@@ -102,10 +102,6 @@ dnl Compiler stuff.
 dnl ================================================================
 AC_USE_SYSTEM_EXTENSIONS
 AC_PROG_CC
-AC_PROG_CPP
-AM_PROG_CC_C_O
-AC_ISC_POSIX
-AC_C_CONST
 AC_PROG_OBJC
 AC_PROG_CXX
 
@@ -170,7 +166,7 @@ AS_CASE(
   ],
   [AC_MSG_ERROR([Unknown argument for --enable-debug])]
 )
-AM_CONDITIONAL(RIG_DEBUG, [test "$enable_debug" = "yes"])
+CONDITIONAL(RIG_DEBUG, [test "$enable_debug" = "yes"])
 
 AC_CHECK_HEADER([execinfo.h], [have_backtrace=yes], [have_backtrace=no])
 AC_CHECK_FUNC([backtrace], [], [have_backtrace=no])
@@ -253,7 +249,7 @@ AS_IF([test "x$enable_profile" = "xyes"],
                 AC_MSG_ERROR([--enable-profile is currently only supported if using GCC])
               ])
       ])
-AM_CONDITIONAL(PROFILE, test "x$enable_profile" != "xno")
+CONDITIONAL(PROFILE, test "x$enable_profile" != "xno")
 
 
 AC_ARG_ENABLE(
@@ -268,14 +264,14 @@ AS_IF([test "x$enable_unit_tests" = "xyes"],
       ]
 )
 AS_IF([test "x$emscripten_compiler" = xyes], [enable_unit_tests=no])
-AM_CONDITIONAL(UNIT_TESTS, test "x$enable_unit_tests" = "xyes")
+CONDITIONAL(UNIT_TESTS, test "x$enable_unit_tests" = "xyes")
 
 
 AC_ARG_ENABLE(installed_tests,
               AS_HELP_STRING([--enable-installed-tests],
                              [Install test programs (default: no)]),,
               [enable_installed_tests=no])
-AM_CONDITIONAL(ENABLE_INSTALLED_TESTS, test x$enable_installed_tests = xyes)
+CONDITIONAL(ENABLE_INSTALLED_TESTS, test x$enable_installed_tests = xyes)
 
 
 AC_ARG_ENABLE(uninstalled-build,
@@ -298,7 +294,7 @@ AS_IF([test "x$enable_editor" = xyes],
 	AC_DEFINE(RIG_EDITOR_ENABLED, [1], [Whether to build the editor or not])
 	AC_DEFINE(RUT_EDITOR_ENABLED, [1], [Whether to build the editor or not])
       ])
-AM_CONDITIONAL(EDITOR_ENABLED, test "x$enable_editor" = "xyes")
+CONDITIONAL(EDITOR_ENABLED, test "x$enable_editor" = "xyes")
 
 AC_ARG_ENABLE(
   [oculus-rift],
@@ -313,7 +309,7 @@ AS_IF([test "x$enable_oculus_rift" = "xyes"],
         EXTRA_FEATURES="$EXTRA_FEATURES Oculus Rift"
       ]
 )
-AM_CONDITIONAL(OCULUS_RIFT, test "x$enable_oculus_rift" = "xyes")
+CONDITIONAL(OCULUS_RIFT, test "x$enable_oculus_rift" = "xyes")
 
 
 AC_MSG_CHECKING([for alignof])
@@ -351,7 +347,7 @@ AS_IF([test "x$emscripten_compiler" != xyes],
         CLIB_PKG_REQUIRES="$CLIB_PKG_REQUIRES libuv"
         RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES libuv"
       ])
-AM_CONDITIONAL([USE_UV], [test "x$use_uv" = xyes])
+CONDITIONAL([USE_UV], [test "x$use_uv" = xyes])
 
 dnl SpiderMonkey
 have_mozjs=no
@@ -361,7 +357,7 @@ PKG_CHECK_EXISTS([mozjs-24],
                    AC_DEFINE([USE_MOZJS], [1], [Use Mozilla SpiderMonkey Javascript engine])
                    RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES mozjs-24"
                  ])
-AM_CONDITIONAL([USE_MOZJS], [test "x$have_mozjs" = xyes])
+CONDITIONAL([USE_MOZJS], [test "x$have_mozjs" = xyes])
 
 dnl     ============================================================
 dnl     Check glib dependencies
@@ -378,7 +374,7 @@ AS_IF([test "x$enable_editor" = xyes],
     AC_DEFINE([USE_PANGO], [1], [Use Pango])
     AC_DEFINE([USE_GDK_PIXBUF], [1], [Use GDK Pixbuf])
 )
-AM_CONDITIONAL([USE_GLIB], ["x$enable_editor" = xyes])
+CONDITIONAL([USE_GLIB], ["x$enable_editor" = xyes])
 
 have_gstreamer=no
 PKG_CHECK_EXISTS([gstreamer-1.0], [have_gstreamer=yes])
@@ -399,7 +395,7 @@ AS_IF([test "x$enable_gstreamer" = "xyes"],
        AC_DEFINE([USE_GSTREAMER], [1], [Enable gstreamer integration])
        EXTRA_FEATURES="$EXTRA_FEATURES gstreamer"
       ])
-AM_CONDITIONAL([USE_GSTREAMER], [test "x$enable_gstreamer" = "xyes"])
+CONDITIONAL([USE_GSTREAMER], [test "x$enable_gstreamer" = "xyes"])
 
 PKG_CHECK_EXISTS([x11],
                  [
@@ -413,7 +409,7 @@ AC_CHECK_FUNC(fmemopen,
                 AC_DEFINE([HAVE_FMEMOPEN], [1], [Have fmemopen(3) implementation])
               ], [have_fmemopen=no])
 AS_IF([test "x$emscripten_compiler" = xyes], [have_fmemopen=yes])
-AM_CONDITIONAL([NEED_FMEMOPEN], [test "x$have_fmemopen" = "xno"])
+CONDITIONAL([NEED_FMEMOPEN], [test "x$have_fmemopen" = "xno"])
 
 dnl Add the build flags for android_native_app_glue
 AS_IF([test "x$have_android" = "xyes"],
@@ -429,12 +425,12 @@ PKG_CHECK_MODULES([LIBCRYPTO],
                   [libcrypto],
                   [have_libcrypto=yes],
                   [have_libcrypto=no])
-AM_CONDITIONAL([HAVE_LIBCRYPTO], [test "x$have_libcrypto" = "xyes"])
+CONDITIONAL([HAVE_LIBCRYPTO], [test "x$have_libcrypto" = "xyes"])
 
 AC_CHECK_LIB(ncursesw, [subwin],
              [HAVE_NCURSES=yes],
              [HAVE_NCURSES=no])
-AM_CONDITIONAL([USE_NCURSES], [test "x$HAVE_NCURSES" = "xyes"])
+CONDITIONAL([USE_NCURSES], [test "x$HAVE_NCURSES" = "xyes"])
 
 CheckForGtk()
 {
@@ -513,11 +509,11 @@ AS_IF([test "x$emscripten_compiler" = xyes],
         esac
       ])
 
-AM_CONDITIONAL([USE_X11], [x$enable_glx = xyes])
-AM_CONDITIONAL([USE_SDL], [x$enable_sdl2 = xyes])
-AM_CONDITIONAL([HAVE_OSX], [test "x$platform" = "xosx"])
-AM_CONDITIONAL([HAVE_GTK], [test "x$enable_gtk" = "xyes"])
-AM_CONDITIONAL([HAVE_AVAHI], [test "x$avahi_enabled" = "xyes"])
+CONDITIONAL([USE_X11], [x$enable_glx = xyes])
+CONDITIONAL([USE_SDL], [x$enable_sdl2 = xyes])
+CONDITIONAL([HAVE_OSX], [test "x$platform" = "xosx"])
+CONDITIONAL([HAVE_GTK], [test "x$enable_gtk" = "xyes"])
+CONDITIONAL([HAVE_AVAHI], [test "x$avahi_enabled" = "xyes"])
 
 AM_COGL
 
@@ -572,7 +568,7 @@ AS_CASE(
   [no], [],
   [AC_MSG_ERROR([Unknown argument for --enable-llvm])]
 )
-AM_CONDITIONAL([USE_LLVM], [test "x$enable_llvm" = "xyes"])
+CONDITIONAL([USE_LLVM], [test "x$enable_llvm" = "xyes"])
 AC_SUBST(RIG_LLVM_PREFIX)
 AC_SUBST(RIG_LLVM_VERSION)
 
@@ -622,7 +618,6 @@ Makefile
 test-fixtures/Makefile
 clib/Makefile
 clib/src/Makefile
-clib/src/clib-config.h
 xdgmime/Makefile
 rut/Makefile
 data/Makefile

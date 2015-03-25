@@ -180,7 +180,7 @@ c_logv(c_log_context_t *lctx,
         goto logged;
     }
 
-#ifdef C_PLATFORM_WIN32
+#ifdef WIN32
     printf("%s%s%s\n",
            log_domain != NULL ? log_domain : "",
            log_domain != NULL ? ": " : "",

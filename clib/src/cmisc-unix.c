@@ -31,13 +31,9 @@
 #include <clib.h>
 #include <pthread.h>
 
-#ifdef HAVE_PWD_H
 #include <pwd.h>
-#endif
 
-#ifdef HAVE_UNISTD_H
 #include <unistd.h>
-#endif
 
 const char *
 c_getenv(const char *variable)

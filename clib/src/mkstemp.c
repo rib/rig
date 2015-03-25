@@ -36,7 +36,7 @@
 #include <fcntl.h>
 #include <sys/types.h>
 
-#ifdef C_PLATFORM_WIN32
+#ifdef WIN32
 #include <io.h>
 #define open _open
 #endif

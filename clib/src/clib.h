@@ -52,6 +52,10 @@ int vasprintf(char **strp, const char *fmt, va_list ap);
 int mkstemp(char *tmp_template);
 #endif
 
+#ifndef C_HAVE_FMEMOPEN
+FILE *fmemopen(void *buf, size_t size, const char *mode);
+#endif
+
 /*
  * Basic data types
  */

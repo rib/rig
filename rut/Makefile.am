@@ -37,12 +37,6 @@ librut_la_SOURCES += \
     gstmemsrc.c
 endif
 
-if NEED_FMEMOPEN
-librut_la_SOURCES += \
-    fmemopen.h \
-    fmemopen.c
-endif
-
 librut_la_LIBADD = \
     $(RIG_DEP_LIBS) \
     $(RIG_EXTRA_LDFLAGS)

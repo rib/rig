@@ -29,6 +29,13 @@
  * want to support...
  */
 
+#ifndef _ALL_SOURCE
+# define _ALL_SOURCE 1
+#endif
+#ifndef _GNU_SOURCE
+# define _GNU_SOURCE 1
+#endif
+
 #ifdef __unix__
 #  define C_SEARCHPATH_SEPARATOR_S ":"
 #  define C_SEARCHPATH_SEPARATOR   ':'
@@ -36,6 +43,7 @@
 #  define C_DIR_SEPARATOR_S        "/"
 #  define C_PIDTYPE                int
 #  define C_HAVE_ALLOCA_H          1
+#  define C_HAVE_FMEMOPEN          1
 #  define C_BREAKPOINT()    \
     C_STMT_START {          \
         raise(SIGTRAP);     \
@@ -46,6 +54,24 @@
  * not... */
 #define C_HAVE_STATIC_ASSERT     1
 #define C_ALIGNOF(x)            (alignof(x))
+
+/* XXX: old defines that should be removed if we can assume they
+ * are always available... */
+#define HAVE_FFS 1
+#define HAVE_ICONV 1
+#define HAVE_ICONV_H 1
+#define HAVE_INTTYPES_H 1
+#define HAVE_LANGINFO_H 1
+#define HAVE_LIMITS_H 1
+#define HAVE_STPCPY 1
+#define HAVE_STRDUP 1
+#define HAVE_STRNDUP 1
+#define HAVE_STRLCPY 1
+
+/* referenced ascii_snprintf.c */
+#define HAVE_STDARG_H 1
+#define HAVE_STDDEF_H 1
+#define HAVE_STDINT_H 1
 
 #if defined(__ANDROID__)
 
@@ -76,11 +102,11 @@
 #  define C_PLATFORM_DARWIN 1
 #  define C_PLATFORM_HAS_FDS 1
 #  define C_HAVE_PTHREADS 1
+#  undef  C_HAVE_FMEMOPEN
 
 #elif defined(__EMSCRIPTEN__)
 
 #  define C_PLATFORM "Web"
-#  define C_PLATFORM_IS_WEB 1
 #  define C_PLATFORM_WEB 1
 #  undef C_BREAKPOINT
 #  define C_BREAKPOINT() emscripten_breakpoint()
@@ -88,8 +114,8 @@
 #elif defined(WIN32)
 
 #  define C_PLATFORM="Windows"
-#  define C_PLATFORM_IS_WINDOWS 1
 #  define C_PLATFORM_WINDOWS 1
+#  undef  C_HAVE_FMEMOPEN
 
 #  define C_SEARCHPATH_SEPARATOR_S ";"
 #  define C_SEARCHPATH_SEPARATOR   ';'

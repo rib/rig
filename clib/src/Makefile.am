@@ -1,3 +1,5 @@
+include $(top_srcdir)/build/autotools/Makefile.am.silent
+
 include Makefile.sources
 
 EXTRA_DIST =
@@ -34,9 +36,17 @@ libclib_la_SOURCES += \
 	clib-config.hw \
 	cdate-win32.c cdir-win32.c cmisc-win32.c \
 	mkstemp.c \
-	vasprintf.c
+	vasprintf.c \
+	fmemopen.h \
+	fmemopen.c
 libclib_la_SOURCES += $(threads_files)
 libclib_la_LIBADD += -lm $(LTLIBICONV) -lpsapi
+endif
+
+if OS_DARWIN
+libclib_la_SOURCES += \
+	fmemopen.h \
+	fmemopen.c
 endif
 
 if EMSCRIPTEN
