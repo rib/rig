@@ -921,11 +921,11 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
         state.pb_changes =
             rut_memory_stack_memalign(engine->frame_stack,
                                       sizeof(Rig__PropertyChange) * n_changes,
-                                      RUT_UTIL_ALIGNOF(Rig__PropertyChange));
+                                      C_ALIGNOF(Rig__PropertyChange));
         state.pb_values =
             rut_memory_stack_memalign(engine->frame_stack,
                                       sizeof(Rig__PropertyValue) * n_changes,
-                                      RUT_UTIL_ALIGNOF(Rig__PropertyValue));
+                                      C_ALIGNOF(Rig__PropertyValue));
 
         state.i = 0;
         state.n_changes = n_changes;
@@ -936,7 +936,7 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
         ui_diff.property_changes =
             rut_memory_stack_memalign(engine->frame_stack,
                                       sizeof(void *) * n_changes,
-                                      RUT_UTIL_ALIGNOF(void *));
+                                      C_ALIGNOF(void *));
 
         for (i = 0; i < n_changes; i++) {
             ui_diff.property_changes[i] = &state.pb_changes[i];
@@ -964,11 +964,11 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
         ui_diff.actions =
             rut_memory_stack_memalign(engine->frame_stack,
                                       sizeof(void *) * ui_diff.n_actions,
-                                      RUT_UTIL_ALIGNOF(void *));
+                                      C_ALIGNOF(void *));
         pb_actions = rut_memory_stack_memalign(
             engine->frame_stack,
             sizeof(Rig__SimulatorAction) * ui_diff.n_actions,
-            RUT_UTIL_ALIGNOF(Rig__SimulatorAction));
+            C_ALIGNOF(Rig__SimulatorAction));
 
         i = 0;
         c_list_for_each_safe(action, tmp, &simulator->actions, list_node)
@@ -1108,7 +1108,7 @@ rig_simulator_forward_log(rig_simulator_t *simulator)
     pb_log->type = RIG__LOG__LOG_TYPE__SIMULATOR;
     pb_log->entries = rut_memory_stack_memalign(serializer->stack,
                                                 sizeof(void *) * simulator_log->len,
-                                                RUT_UTIL_ALIGNOF(void *));
+                                                C_ALIGNOF(void *));
     pb_log->n_entries = simulator_log->len;
 
     i = 0;

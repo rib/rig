@@ -571,14 +571,14 @@ rig_frontend_run_simulator_frame(rig_frontend_t *frontend,
         setup->object_registrations =
             rut_memory_stack_memalign(engine->frame_stack,
                                       sizeof(void *) * n_temps,
-                                      RUT_UTIL_ALIGNOF(void *));
+                                      C_ALIGNOF(void *));
 
         state.index = 0;
         state.object_registrations = setup->object_registrations;
         state.pb_registrations = rut_memory_stack_memalign(
             engine->frame_stack,
             sizeof(Rig__ObjectRegistration) * n_temps,
-            RUT_UTIL_ALIGNOF(Rig__ObjectRegistration));
+            C_ALIGNOF(Rig__ObjectRegistration));
 
         c_hash_table_foreach_remove(
             frontend->tmp_id_to_object_map, register_temporary_cb, &state);
@@ -589,7 +589,7 @@ rig_frontend_run_simulator_frame(rig_frontend_t *frontend,
         setup->dso.len = frontend->pending_dso_len;
         setup->dso.data = rut_memory_stack_memalign(engine->frame_stack,
                                                     frontend->pending_dso_len,
-                                                    RUT_UTIL_ALIGNOF(uint8_t));
+                                                    C_ALIGNOF(uint8_t));
         memcpy(setup->dso.data, frontend->pending_dso_data, setup->dso.len);
     }
 

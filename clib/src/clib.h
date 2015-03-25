@@ -1,5 +1,8 @@
+
 #ifndef __CLIB_H
 #define __CLIB_H
+
+#include <clib-platform.h>
 
 #include <stdarg.h>
 #include <stdbool.h>
@@ -15,14 +18,8 @@
 #include <pthread.h>
 #endif
 
-#ifdef _MSC_VER
-#pragma include_alias(< clib - config.h >, < clib - config.hw > )
-#endif
-
 #include <stdint.h>
 #include <inttypes.h>
-
-#include <clib-config.h>
 
 #ifdef C_HAVE_ALLOCA_H
 #include <alloca.h>
@@ -50,8 +47,9 @@
 C_BEGIN_DECLS
 
 #ifdef C_OS_WIN32
-/* MSC and Cross-compilatin will use this */
+/* MSC and Cross-compilation will use this */
 int vasprintf(char **strp, const char *fmt, va_list ap);
+int mkstemp(char *tmp_template);
 #endif
 
 /*

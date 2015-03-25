@@ -223,15 +223,6 @@ void rut_util_fully_transform_points(const cg_matrix_t *modelview,
                                      float *verts,
                                      int n_verts);
 
-#if defined(HAVE_ALIGNOF)
-#define RUT_UTIL_ALIGNOF(x) (alignof(x))
-#elif defined(HAVE_ALIGNOF_UNDERSCORE)
-#define RUT_UTIL_ALIGNOF(x) (__alignof__(x))
-#else
-#warning No alignof operator found for this compiler
-#define RUT_UTIL_ALIGNOF(x) 8
-#endif
-
 #define RUT_UINT32_RED_AS_FLOAT(COLOR) (((COLOR & 0xff000000) >> 24) / 255.0)
 #define RUT_UINT32_GREEN_AS_FLOAT(COLOR) (((COLOR & 0xff0000) >> 16) / 255.0)
 #define RUT_UINT32_BLUE_AS_FLOAT(COLOR) (((COLOR & 0xff00) >> 8) / 255.0)

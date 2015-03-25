@@ -2158,7 +2158,7 @@ serialize_ops(rig_editor_t *editor,
         return NULL;
 
     pb_ops = rut_memory_stack_memalign(
-        serializer->stack, sizeof(void *) * n_ops, RUT_UTIL_ALIGNOF(void *));
+        serializer->stack, sizeof(void *) * n_ops, C_ALIGNOF(void *));
 
     i = 0;
     c_list_for_each(item, &editor->edit_ops->items, list_node)

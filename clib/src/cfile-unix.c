@@ -38,43 +38,4 @@
 #include <unistd.h>
 #endif
 
-bool
-c_file_test(const char *filename, c_file_test_t test)
-{
-    struct stat st;
-    bool have_stat;
 
-    if (filename == NULL || test == 0)
-        return false;
-
-    have_stat = false;
-
-    if ((test & C_FILE_TEST_EXISTS) != 0) {
-        if (access(filename, F_OK) == 0)
-            return true;
-    }
-
-    if ((test & C_FILE_TEST_IS_EXECUTABLE) != 0) {
-        if (access(filename, X_OK) == 0)
-            return true;
-    }
-    if ((test & C_FILE_TEST_IS_SYMLINK) != 0) {
-        have_stat = (lstat(filename, &st) == 0);
-        if (have_stat && S_ISLNK(st.st_mode))
-            return true;
-    }
-
-    if ((test & C_FILE_TEST_IS_REGULAR) != 0) {
-        if (!have_stat)
-            have_stat = (stat(filename, &st) == 0);
-        if (have_stat && S_ISREG(st.st_mode))
-            return true;
-    }
-    if ((test & C_FILE_TEST_IS_DIR) != 0) {
-        if (!have_stat)
-            have_stat = (stat(filename, &st) == 0);
-        if (have_stat && S_ISDIR(st.st_mode))
-            return true;
-    }
-    return false;
-}

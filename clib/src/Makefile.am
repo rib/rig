@@ -58,7 +58,6 @@ clib_common_source = \
 	cshell.c	\
 	cspawn.c	\
 	cfile.c		\
-	cfile-posix.c	\
 	cutf8.c		\
 	cunicode.c	\
 	unicode-data.h	\
@@ -73,7 +72,7 @@ libclib_la_SOURCES = \
 	$(clib_common_source) \
 	$(sfmt_source)
 
-unix_files = cdate-unix.c  cdir-unix.c  cfile-unix.c  cmisc-unix.c \
+unix_files = cdate-unix.c cdir-unix.c cmisc-unix.c \
 	     cxdg-unix.c
 threads_files = ctls.c
 
@@ -84,18 +83,15 @@ endif
 if OS_WIN32
 libclib_la_SOURCES += \
 	clib-config.hw \
-	cdate-win32.c cdir-win32.c cfile-win32.c cmisc-win32.c
+	cdate-win32.c cdir-win32.c cmisc-win32.c \
+	mkstemp.c \
+	vasprintf.c
 libclib_la_SOURCES += $(threads_files)
 libclib_la_LIBADD += -lm $(LTLIBICONV) -lpsapi
 endif
 
 if EMSCRIPTEN
-libclib_la_SOURCES += cmisc-emscripten.c cfile-emscripten.c
-endif
-
-# some unices and windows do not have an implementation of vasprintf
-if NEED_VASPRINTF
-libclib_la_SOURCES += = vasprintf.c
+libclib_la_SOURCES += cmisc-emscripten.c
 endif
 
 AM_CPPFLAGS = \
