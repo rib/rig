@@ -46,7 +46,7 @@
 
 C_BEGIN_DECLS
 
-#ifdef C_PLATFORM_WIN32
+#ifdef WIN32
 /* MSC and Cross-compilation will use this */
 int vasprintf(char **strp, const char *fmt, va_list ap);
 int mkstemp(char *tmp_template);
@@ -100,8 +100,6 @@ typedef uint32_t c_codepoint_t;
 #define C_UINT32_FORMAT PRIu32
 #define C_INT32_FORMAT PRId32
 
-#define C_LITTLE_ENDIAN 1234
-#define C_BIC_ENDIAN 4321
 #define C_STMT_START do
 #define C_STMT_END while (0)
 
@@ -1234,7 +1232,7 @@ c_utf16_t *c_ucs4_to_utf16(const c_codepoint_t *str,
 
 #define u8to16(str) c_utf8_to_utf16(str, (long)strlen(str), NULL, NULL, NULL)
 
-#ifdef C_PLATFORM_WIN32
+#ifdef WIN32
 #define u16to8(str)                                                            \
     c_utf16_to_utf8(                                                           \
         (c_utf16_t *)(str), (long)wcslen((wchar_t *)(str)), NULL, NULL, NULL)
@@ -1582,7 +1580,7 @@ long c_utf8_pointer_to_offset(const char *str, const char *pos);
 #if defined(C_HAVE_PTHREADS)
 #  define C_SUPPORTS_THREADS 1
 typedef pthread_key_t c_tls_t;
-#  elif defined(C_PLATFORM_WIN32)
+#  elif defined(WIN32)
 #  define C_SUPPORTS_THREADS 1
 typedef struct _c_tls_t c_tls_t {
 struct _c_tls_t {

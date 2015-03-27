@@ -158,6 +158,7 @@ AS_CASE(
           [
             dnl RIG_EXTRA_EMCC_JSFLAGS="$RIG_EXTRA_EMCC_JSFLAGS -s ASSERTIONS=2 -g4"
             RIG_EXTRA_EMCC_JSFLAGS="$RIG_EXTRA_EMCC_JSFLAGS -g4"
+            RIG_EXTRA_EMCC_BCFLAGS="$RIG_EXTRA_EMCC_BCFLAGS -g4"
           ])
   ],
   [no],
@@ -326,10 +327,6 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([const int thing = __alignof__ (int);],
                              [Whether __alignof__ can be used or not])
                    AC_MSG_RESULT([yes])],
                   [AC_MSG_RESULT([no])])
-
-AC_CHECK_HEADERS(alloca.h)
-AC_CHECK_HEADERS(sys/poll.h)
-AC_CHECK_HEADERS(sys/select.h)
 
 
 dnl ================================================================
@@ -585,20 +582,6 @@ GOBJECT_INTROSPECTION_CHECK([gi_req_version])
 
 
 dnl ================================================================
-dnl Checks for header files.
-dnl ================================================================
-AC_HEADER_STDC
-AC_CHECK_HEADERS(fcntl.h limits.h unistd.h signal.h malloc.h)
-
-
-dnl ================================================================
-dnl Checks for library functions.
-dnl ================================================================
-AC_TYPE_SIGNAL
-AC_CHECK_FUNCS(putenv strdup)
-
-
-dnl ================================================================
 dnl What needs to be substituted in other files
 dnl ================================================================
 AC_SUBST(RIG_EXTRA_CFLAGS)
@@ -608,6 +591,7 @@ AC_SUBST(RIG_DEP_LIBS)
 AC_SUBST(RIG_CLANG_CFLAGS)
 AC_SUBST(RIG_CLANG_LIBS)
 AC_SUBST(RIG_EXTRA_EMCC_JSFLAGS)
+AC_SUBST(RIG_EXTRA_EMCC_BCFLAGS)
 
 
 dnl ================================================================

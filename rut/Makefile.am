@@ -63,12 +63,16 @@ librut_la_CPPFLAGS = \
 # rut_headersdir =  $(includedir)/rut
 # rut_headers_DATA = $(source_h)
 
+if EMSCRIPTEN
+all-local: librut.bc
+librut.bc: $(librut_la_OBJECTS)
+	emcc -o $(builddir)/librut.bc $(patsubst %.lo,.libs/%.o,$(librut_la_OBJECTS)) $(librut_la_CFLAGS) $(librut_la_CPPFLAGS) $(CFLAGS) $(RIG_EXTRA_EMCC_BCFLAGS)
+endif
+
 rut_android_moduledir = $(datadir)/android_modules/rut/
 rut_android_module_DATA = \
 	$(rut_common_sources) \
 	rut-android-shell.h \
 	rut-android-shell.c \
 	$(runtime_headers) \
-	fmemopen.h \
-	fmemopen.c \
 	Android.mk

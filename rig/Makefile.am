@@ -153,7 +153,7 @@ common_ldadd = \
 	$(RIG_EXTRA_LDFLAGS) \
 	librig.la \
 	$(top_builddir)/rut/librut.la \
-	$(top_builddir)/cogl/libcogl2.la \
+	$(top_builddir)/cogl/libcg.la \
 	$(top_builddir)/cogl-path/libcogl-path.la \
 	$(RIG_DEP_LIBS)
 
@@ -210,7 +210,7 @@ if EMSCRIPTEN
 
 emscripten_libs = --js-library $(top_srcdir)/cogl/cogl-emscripten-lib.js
 
-%.html: $(top_builddir)/rig/.libs/lib%-archive.so $(top_builddir)/rig/.libs/librig.so $(top_builddir)/rut/.libs/librut.so $(top_builddir)/cogl/.libs/libcogl2.so $(top_builddir)/cogl-path/.libs/libcogl-path.so $(top_builddir)/clib/src/.libs/libclib.so
+%.html: $(top_builddir)/rig/.libs/lib%-archive.so $(top_builddir)/rig/.libs/librig.so $(top_builddir)/rut/.libs/librut.so $(top_builddir)/cogl/.libs/libcg.so $(top_builddir)/cogl-path/.libs/libcogl-path.so $(top_builddir)/clib/src/.libs/libclib.so
 	$(CC) $(AM_CFLAGS) $(CFLAGS) $(RIG_EXTRA_EMCC_JSFLAGS) $(emscripten_libs) --js-library $(top_srcdir)/toys/emscripten-example-js-library.js -o $@ $^ -L/home/bob/local/freetype-emcc/lib -lfreetype  -L/home/bob/local/harfbuzz-emcc/lib -lharfbuzz -lharfbuzz-icu -L/home/bob/local/fontconfig-emcc/lib -lfontconfig -L/home/bob/local/icu-emcc/lib -licuuc -licudata -L/home/bob/local/protobuf-c-emcc/lib -lprotobuf-c -L/home/bob/local/libxml2-emcc/lib -lxml2
 
 all-local: $(htmlfiles)

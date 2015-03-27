@@ -420,7 +420,7 @@ _cg_driver_pixel_format_to_gl(cg_device_t *dev,
     case CG_PIXEL_FORMAT_ARGB_8888_PRE:
         glintformat = GL_RGBA;
         glformat = GL_BGRA;
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+#if C_BYTE_ORDER == C_LITTLE_ENDIAN
         gltype = GL_UNSIGNED_INT_8_8_8_8;
 #else
         gltype = GL_UNSIGNED_INT_8_8_8_8_REV;
@@ -431,7 +431,7 @@ _cg_driver_pixel_format_to_gl(cg_device_t *dev,
     case CG_PIXEL_FORMAT_ABGR_8888_PRE:
         glintformat = GL_RGBA;
         glformat = GL_RGBA;
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+#if C_BYTE_ORDER == C_LITTLE_ENDIAN
         gltype = GL_UNSIGNED_INT_8_8_8_8;
 #else
         gltype = GL_UNSIGNED_INT_8_8_8_8_REV;
@@ -784,6 +784,9 @@ _cg_driver_update_features(cg_device_t *dev, cg_error_t **error)
 
     if (dev->glFenceSync)
         CG_FLAGS_SET(dev->features, CG_FEATURE_ID_FENCE, true);
+
+    if (dev->glDrawArraysInstanced)
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_INSTANCES, true);
 
     if (!CG_CHECK_GL_VERSION(gl_major, gl_minor, 3, 0) &&
         !_cg_check_extension("GL_ARB_texture_rg", gl_extensions))

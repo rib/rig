@@ -74,7 +74,7 @@ static const char *user_name;
 static void
 get_pw_data(void)
 {
-#ifdef HAVE_UETPWUID_R
+#ifdef C_HAVE_GETPWUID_R
     struct passwd pw;
     struct passwd *result;
     char buf[4096];
@@ -88,7 +88,7 @@ get_pw_data(void)
         pthread_mutex_unlock(&pw_lock);
         return;
     }
-#ifdef HAVE_UETPWUID_R
+#ifdef C_HAVE_GETPWUID_R
     if (getpwuid_r(getuid(), &pw, buf, 4096, &result) == 0) {
         home_dir = c_strdup(pw.pw_dir);
         user_name = c_strdup(pw.pw_name);

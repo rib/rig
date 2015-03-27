@@ -113,7 +113,7 @@ expand_content_files = \
 # e.g. GTKDOC_LIBS=$(top_builddir)/gtk/$(gtktargetlib)
 
 AM_CPPFLAGS=-I$(top_srcdir) -I$(top_builddir)/cogl -DCOGL_ENABLE_EXPERIMENTAL_API $(COGL_DEP_CFLAGS)
-GTKDOC_LIBS=$(top_builddir)/cogl/libcogl2.la $(COGL_DEP_LIBS)
+GTKDOC_LIBS=$(top_builddir)/cogl/libcg.la $(COGL_DEP_LIBS)
 
 # This includes the standard gtk-doc make rules, copied by gtkdocize.
 if BUILD_GTK_DOC

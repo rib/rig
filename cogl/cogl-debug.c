@@ -199,7 +199,11 @@ _cg_debug_check_environment(void)
 {
     const char *env_string;
 
+#ifdef __EMSCRIPTEN__
+    env_string = "all";
+#else
     env_string = c_getenv("CG_DEBUG");
+#endif
     if (env_string != NULL) {
         _cg_parse_debug_string(env_string,
                                true /* enable the flags */,

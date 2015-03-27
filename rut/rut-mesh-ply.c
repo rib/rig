@@ -309,7 +309,7 @@ _rut_mesh_new_from_p_ply(rut_shell_t *shell,
                          c_error_t **error)
 {
     loader_attribute_t loader_attributes[n_attributes];
-    int n_loader_attributes;
+    int n_loader_attributes = 0;
     loader_property_t loader_properties
     [n_attributes * RUT_PLY_MAX_ATTRIBUTE_PROPERTIES];
     rut_attribute_t *rut_attributes[n_attributes];
@@ -354,7 +354,6 @@ _rut_mesh_new_from_p_ply(rut_shell_t *shell,
 
     /* Group properties into attributes */
 
-    n_loader_attributes = 0;
     for (i = 0; i < n_attributes; i++) {
         rut_ply_attribute_t *attribute = &attributes[i];
         int j;

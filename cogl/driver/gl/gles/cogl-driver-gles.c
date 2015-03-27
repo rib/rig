@@ -716,8 +716,13 @@ _cg_driver_update_features(cg_device_t *dev,
     if (_cg_check_extension("GL_OES_element_index_uint", gl_extensions))
         CG_FLAGS_SET(dev->features, CG_FEATURE_ID_UNSIGNED_INT_INDICES, true);
 
+#ifdef HAVE_CG_WEBGL
+    if (_cg_check_extension("GL_WEBGL_depth_texture", gl_extensions))
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_DEPTH_TEXTURE, true);
+#else
     if (_cg_check_extension("GL_OES_depth_texture", gl_extensions))
         CG_FLAGS_SET(dev->features, CG_FEATURE_ID_DEPTH_TEXTURE, true);
+#endif
 
     if (_cg_check_extension("GL_OES_texture_npot", gl_extensions)) {
         CG_FLAGS_SET(dev->features, CG_FEATURE_ID_TEXTURE_NPOT, true);
@@ -763,6 +768,9 @@ _cg_driver_update_features(cg_device_t *dev,
 
     if (_cg_check_extension("GL_EXT_texture_rg", gl_extensions))
         CG_FLAGS_SET(dev->features, CG_FEATURE_ID_TEXTURE_RG, true);
+
+    if (dev->glDrawArraysInstanced)
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_INSTANCES, true);
 
     /* Cache features */
     for (i = 0; i < C_N_ELEMENTS(private_features); i++)

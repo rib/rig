@@ -21,7 +21,7 @@ if EMSCRIPTEN
 common_ldadd = \
 	$(RIG_EXTRA_LDFLAGS) \
 	$(top_builddir)/rut/librut.la \
-	$(top_builddir)/cogl/libcogl2.la \
+	$(top_builddir)/cogl/libcg.la \
 	$(RIG_DEP_LIBS) \
 	$(COGL_DEP_LIBS) \
 	$(top_builddir)/clib/src/libclib.la \
@@ -30,7 +30,7 @@ else
 common_ldadd = \
 	$(RIG_EXTRA_LDFLAGS) \
 	$(top_builddir)/rut/librut.la \
-	$(top_builddir)/cogl/libcogl2.la \
+	$(top_builddir)/cogl/libcg.la \
 	$(top_builddir)/cogl-path/libcogl-path.la \
 	$(top_builddir)/cogl-pango/libcogl-pango2.la \
 	$(top_builddir)/cogl-gst/libcogl-gst.la \
@@ -43,7 +43,7 @@ common_ldadd = \
 endif
 
 programs = cogl-info
-emscripten_programs =
+emscripten_programs = cogl-info
 
 cogl_info_SOURCES = cogl-info.c
 cogl_info_LDADD = $(common_ldadd)
@@ -120,7 +120,7 @@ programs += $(emscripten_programs)
 
 emscripten_libs = --js-library $(top_srcdir)/cogl/cogl-emscripten-lib.js
 
-%.html: %.o $(top_builddir)/rut/.libs/librut.so $(top_builddir)/cogl/.libs/libcogl2.so $(top_builddir)/clib/src/.libs/libclib.so
+%.html: %.o $(top_builddir)/rut/librut.bc $(top_builddir)/cogl/libcg.bc $(top_builddir)/clib/src/clib.bc
 	$(CC) $(AM_CFLAGS) $(CFLAGS) $(RIG_EXTRA_EMCC_JSFLAGS) $(emscripten_libs) --js-library $(top_srcdir)/toys/emscripten-example-js-library.js -o $@ $^
 
 all-local: $(addsuffix .html, $(emscripten_programs))

@@ -412,7 +412,7 @@ create_depth_texture(cg_device_t *dev, int width, int height)
         cg_texture_2d_new_with_size(dev, width, height);
 
     cg_texture_set_components(CG_TEXTURE(depth_texture),
-                              CG_TEXTURE_COMPONENTS_DEPTH);
+                              CG_TEXTURE_COMPONENTS_DEPTH_STENCIL);
 
     return CG_TEXTURE(depth_texture);
 }
@@ -434,6 +434,14 @@ attach_depth_texture(cg_device_t *dev,
         cg_texture_get_gl_texture(
             depth_texture, &tex_gl_handle, &tex_gl_target);
 
+#ifdef HAVE_CG_WEBGL
+        GE(dev,
+           glFramebufferTexture2D(GL_FRAMEBUFFER,
+                                  GL_DEPTH_STENCIL_ATTACHMENT,
+                                  tex_gl_target,
+                                  tex_gl_handle,
+                                  0));
+#else
         GE(dev,
            glFramebufferTexture2D(GL_FRAMEBUFFER,
                                   GL_DEPTH_ATTACHMENT,
@@ -446,6 +454,7 @@ attach_depth_texture(cg_device_t *dev,
                                   tex_gl_target,
                                   tex_gl_handle,
                                   0));
+#endif
     } else if (flags & CG_OFFSCREEN_ALLOCATE_FLAG_DEPTH) {
         /* attach a newly created GL_DEPTH_COMPONENT16 texture to the
          * GL_DEPTH_ATTACHMENT attachement point */
@@ -768,17 +777,17 @@ _cg_offscreen_gl_allocate(cg_offscreen_t *offscreen, cg_error_t **error)
         _cg_texture_associate_framebuffer(offscreen->depth_texture, fb);
     }
 
-    /* XXX: The framebuffer_object spec isn't clear in defining whether
-     * attaching
-     * a texture as a renderbuffer with mipmap filtering enabled while the
-     * mipmaps have not been uploaded should result in an incomplete framebuffer
-     * object. (different drivers make different decisions)
+    /* XXX: The framebuffer_object spec isn't clear in defining
+     * whether attaching a texture as a renderbuffer with mipmap
+     * filtering enabled while the mipmaps have not been uploaded
+     * should result in an incomplete framebuffer object. (different
+     * drivers make different decisions)
      *
-     * To avoid an error with drivers that do consider this a problem we
-     * explicitly set non mipmapped filters here. These will later be reset when
-     * the texture is actually used for rendering according to the filters set
-     * on
-     * the corresponding cg_pipeline_t.
+     * To avoid an error with drivers that do consider this a problem
+     * we explicitly set non mipmapped filters here. These will later
+     * be reset when the texture is actually used for rendering
+     * according to the filters set on the corresponding
+     * cg_pipeline_t.
      */
     _cg_texture_gl_flush_legacy_texobj_filters(
         offscreen->texture, GL_NEAREST, GL_NEAREST);

@@ -6,6 +6,7 @@ EXTRA_DIST =
 
 if EMSCRIPTEN
 lib_LTLIBRARIES = libclib.la
+all-local: clib.bc
 else
 if UNIT_TESTS
 lib_LTLIBRARIES = libclib.la
@@ -37,16 +38,16 @@ libclib_la_SOURCES += \
 	cdate-win32.c cdir-win32.c cmisc-win32.c \
 	mkstemp.c \
 	vasprintf.c \
-	fmemopen.h \
-	fmemopen.c
+	fmemopen.c \
+	memmem.c
 libclib_la_SOURCES += $(threads_files)
 libclib_la_LIBADD += -lm $(LTLIBICONV) -lpsapi
 endif
 
 if OS_DARWIN
 libclib_la_SOURCES += \
-	fmemopen.h \
-	fmemopen.c
+	fmemopen.c \
+	memmem.c
 endif
 
 if EMSCRIPTEN
@@ -66,6 +67,11 @@ AM_CPPFLAGS = \
 
 #libclib_la_LIBADD += $(LTLIBICONV)
 #libclib_la_LDFLAGS = -static
+
+if EMSCRIPTEN
+clib.bc: $(libclib_la_OBJECTS)
+	emcc -o $(builddir)/clib.bc $(patsubst %.lo,.libs/%.o,$(libclib_la_OBJECTS)) $(AM_CPPFLAGS) $(CFLAGS) $(RIG_EXTRA_EMCC_BCFLAGS)
+endif
 
 #MAINTAINERCLEANFILES = Makefile.in
 

@@ -135,6 +135,7 @@ bool cg_is_texture(void *object);
  * @CG_TEXTURE_COMPONENTS_RGB: Red, green and blue components
  * @CG_TEXTURE_COMPONENTS_RGBA: Red, green, blue and alpha components
  * @CG_TEXTURE_COMPONENTS_DEPTH: Only a depth component
+ * @CG_TEXTURE_COMPONENTS_DEPTH_STENCIL: Depth and stencil components
  *
  * See cg_texture_set_components().
  *
@@ -168,7 +169,8 @@ typedef enum _cg_texture_components_t {
     CG_TEXTURE_COMPONENTS_RGBA16F,
     CG_TEXTURE_COMPONENTS_RGBA32U,
     CG_TEXTURE_COMPONENTS_RGBA32F,
-    CG_TEXTURE_COMPONENTS_DEPTH
+    CG_TEXTURE_COMPONENTS_DEPTH,
+    CG_TEXTURE_COMPONENTS_DEPTH_STENCIL
 } cg_texture_components_t;
 
 /**

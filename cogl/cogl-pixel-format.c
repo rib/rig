@@ -105,8 +105,9 @@ _cg_pixel_format_get_components(cg_pixel_format_t format)
 
     case CG_PIXEL_FORMAT_DEPTH_16:
     case CG_PIXEL_FORMAT_DEPTH_32:
-    case CG_PIXEL_FORMAT_DEPTH_24_STENCIL_8:
         return CG_TEXTURE_COMPONENTS_DEPTH;
+    case CG_PIXEL_FORMAT_DEPTH_24_STENCIL_8:
+        return CG_TEXTURE_COMPONENTS_DEPTH_STENCIL;
 
     case CG_PIXEL_FORMAT_ANY:
         c_assert_not_reached();
@@ -337,7 +338,13 @@ _cg_pixel_format_has_alpha(cg_pixel_format_t format)
 bool
 _cg_pixel_format_has_depth(cg_pixel_format_t format)
 {
-    return _cg_pixel_format_get_components(format) == CG_TEXTURE_COMPONENTS_DEPTH;
+    cg_texture_components_t components = _cg_pixel_format_get_components(format);
+
+    if (components == CG_TEXTURE_COMPONENTS_DEPTH ||
+        components == CG_TEXTURE_COMPONENTS_DEPTH_STENCIL)
+        return true;
+    else
+        return false;
 }
 
 bool

@@ -137,22 +137,28 @@ EXTRA_DIST += stb_image.c
 
 
 if EMSCRIPTEN
-lib_LTLIBRARIES += libcogl2.la
+lib_LTLIBRARIES += libcg.la
+all-local: libcg.bc
 else
 if UNIT_TESTS
-lib_LTLIBRARIES += libcogl2.la
+lib_LTLIBRARIES += libcg.la
 else
-noinst_LTLIBRARIES += libcogl2.la
+noinst_LTLIBRARIES += libcg.la
 endif
 endif #EMSCRIPTEN
 
-libcogl2_la_LIBADD = $(LIBM) $(COGL_DEP_LIBS) $(COGL_EXTRA_LDFLAGS)
-libcogl2_la_LIBADD += $(top_builddir)/clib/src/libclib.la
+libcg_la_LIBADD = $(LIBM) $(COGL_DEP_LIBS) $(COGL_EXTRA_LDFLAGS)
+libcg_la_LIBADD += $(top_builddir)/clib/src/libclib.la
 if UNIT_TESTS
-libcogl2_la_LIBADD += $(top_builddir)/test-fixtures/libtest-fixtures.la
+libcg_la_LIBADD += $(top_builddir)/test-fixtures/libtest-fixtures.la
 endif
-#libcogl2_la_LDFLAGS = -static
-libcogl2_la_SOURCES = $(cogl_sources_c)
+#libcg_la_LDFLAGS = -static
+libcg_la_SOURCES = $(cogl_sources_c)
+
+if EMSCRIPTEN
+libcg.bc: $(libcg_la_OBJECTS)
+	emcc -o $(builddir)/libcg.bc $(patsubst %.lo,.libs/%.o,$(libcg_la_OBJECTS)) $(AM_CPPFLAGS) $(CFLAGS) $(RIG_EXTRA_EMCC_BCFLAGS)
+endif
 
 android_moduledir = $(datadir)/android_modules/cogl
 nobase_android_module_DATA = $(cogl_android_sources) Android.mk

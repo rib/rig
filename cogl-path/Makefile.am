@@ -53,7 +53,7 @@ endif
 libcogl_path_la_SOURCES = $(source_c) $(source_h)
 libcogl_path_la_CFLAGS = $(COGL_DEP_CFLAGS) $(COGL_GST_DEP_CFLAGS) $(COGL_EXTRA_CFLAGS) $(MAINTAINER_CFLAGS)
 libcogl_path_la_LIBADD = $(top_builddir)/clib/src/libclib.la
-libcogl_path_la_LIBADD += $(top_builddir)/cogl/libcogl2.la
+libcogl_path_la_LIBADD += $(top_builddir)/cogl/libcg.la
 libcogl_path_la_LIBADD += $(COGL_DEP_LIBS) $(COGL_GST_DEP_LIBS) $(COGL_EXTRA_LDFLAGS)
 if !EMSCRIPTEN
 libcogl_path_la_LDFLAGS = -static

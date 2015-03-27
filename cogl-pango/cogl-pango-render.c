@@ -33,9 +33,7 @@
  *   Matthew Allum  <mallum@openedhand.com>
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #ifndef PANGO_ENABLE_BACKEND
 #define PANGO_ENABLE_BACKEND 1
@@ -520,7 +518,7 @@ cg_pango_renderer_set_dirty_glyph(
    pixel formats specify the actual byte order. Therefore we
    need to use a different format depending on the
    architecture */
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+#if C_BYTE_ORDER == C_LITTLE_ENDIAN
         format_cogl = CG_PIXEL_FORMAT_BGRA_8888_PRE;
 #else
         format_cogl = CG_PIXEL_FORMAT_ARGB_8888_PRE;
