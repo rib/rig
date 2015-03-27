@@ -1148,7 +1148,7 @@ rig_simulator_parse_option(const char *option, void (*usage)(void))
         int port;
 
         rig_simulator_run_mode_option =
-            RIG_SIMULATOR_RUN_MODE_CONNECT_TCP;
+            RIG_SIMULATOR_RUN_MODE_LISTEN_TCP;
 
         if (!strv[1]) {
             fprintf(stderr, "Missing tcp address in form \"tcp:address\" or \"tcp:address:port\"\n");
@@ -1165,7 +1165,7 @@ rig_simulator_parse_option(const char *option, void (*usage)(void))
     } else if (strcmp(strv[0], "abstract") == 0) {
 #ifdef __linux__
         rig_simulator_run_mode_option =
-            RIG_SIMULATOR_RUN_MODE_CONNECT_ABSTRACT_SOCKET;
+            RIG_SIMULATOR_RUN_MODE_LISTEN_ABSTRACT_SOCKET;
         if (strv[1])
             rig_simulator_abstract_socket_option = c_strdup(strv[1]);
         else {

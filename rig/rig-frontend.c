@@ -1044,12 +1044,12 @@ spawn_simulator(rut_shell_t *shell, rig_frontend_t *frontend)
         break;
 #endif
 #ifdef __linux__
-    case RIG_SIMULATOR_RUN_MODE_CONNECT_ABSTRACT_SOCKET:
+    case RIG_SIMULATOR_RUN_MODE_LISTEN_ABSTRACT_SOCKET:
         bind_to_abstract_socket(shell, frontend);
         break;
 #endif
 #ifdef USE_UV
-    case RIG_SIMULATOR_RUN_MODE_CONNECT_TCP:
+    case RIG_SIMULATOR_RUN_MODE_LISTEN_TCP:
         bind_to_tcp_socket(shell, frontend);
         break;
 #endif
