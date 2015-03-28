@@ -1920,6 +1920,10 @@ rig_renderer_flush_journal(rig_renderer_t *renderer,
             else if (paint_ctx->pass == RIG_PASS_DOF_DEPTH ||
                      paint_ctx->pass == RIG_PASS_SHADOW)
                 uniform = RIG_HAIR_SHELL_POSITION_SHADOW;
+            else {
+                c_warn_if_reached();
+                uniform = RIG_HAIR_SHELL_POSITION_BLENDED;
+            }
 
             /* FIXME: only update the hair uniforms when they change! */
             /* FIXME: avoid needing to query the uniform locations by

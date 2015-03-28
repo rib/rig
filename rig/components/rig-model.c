@@ -1356,6 +1356,10 @@ rig_model_new_from_asset_mesh(rut_shell_t *shell,
         measure_callback = measure_mesh_xy_cb;
     } else if (attribute->buffered.n_components == 3)
         measure_callback = measure_mesh_xyz_cb;
+    else {
+        c_warn_if_reached();
+        measure_callback = measure_mesh_xyz_cb;
+    }
 
     rut_mesh_foreach_vertex(model->mesh,
                             measure_callback,

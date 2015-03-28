@@ -219,6 +219,24 @@ rig_device_new(const char *filename)
     return device;
 }
 
+#ifdef __EMSCRIPTEN__
+
+int
+main(int argc, char **argv)
+{
+    rig_device_t *device;
+
+    rig_simulator_run_mode_option = RIG_SIMULATOR_RUN_MODE_WEB_WORKER;
+
+    device = rig_device_new(argv[optind]);
+
+    rut_shell_main(device->shell);
+
+    rut_object_unref(device);
+}
+
+#else /* __EMSCRIPTEN__ */
+
 static void
 usage(void)
 {
@@ -275,9 +293,6 @@ main(int argc, char **argv)
     gst_init(&argc, &argv);
 #endif
 
-#ifdef __EMSCRIPTEN__
-    rig_simulator_run_mode_option = RIG_SIMULATOR_RUN_MODE_WEB_WORKER;
-#else
     rig_simulator_run_mode_option = RIG_SIMULATOR_RUN_MODE_THREADED;
 
     while ((c = getopt_long(argc, argv, short_opts, long_opts, NULL)) != -1) {
@@ -307,7 +322,6 @@ main(int argc, char **argv)
         fprintf(stderr, "Needs a UI.rig filename\n\n");
         usage();
     }
-#endif
 
 #if defined(RIG_ENABLE_DEBUG) && defined(HAVE_CURSES)
     if (enable_curses_debug)
@@ -322,3 +336,5 @@ main(int argc, char **argv)
 
     return 0;
 }
+
+#endif /* __EMSCRIPTEN__ */

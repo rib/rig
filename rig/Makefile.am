@@ -31,6 +31,9 @@ AM_CFLAGS = \
 lib_LTLIBRARIES =
 noinst_LTLIBRARIES =
 bin_PROGRAMS =
+htmlfiles =
+worker_js_files =
+js_files =
 
 if USE_LLVM
 lib_LTLIBRARIES += librig_clang.la
@@ -39,7 +42,6 @@ endif
 if EMSCRIPTEN
 lib_LTLIBRARIES += librig.la
 lib_LTLIBRARIES += librig-device-archive.la librig-simulator-archive.la
-htmlfiles = rig-device.html rig-simulator.html
 else
 noinst_LTLIBRARIES += librig.la
 noinst_LTLIBRARIES += librig-device-archive.la librig-simulator-archive.la
@@ -197,10 +199,12 @@ librig_slave_archive_la_SOURCES = \
 librig_slave_archive_la_LIBADD = $(common_ldadd)
 endif
 
+htmlfiles += rig-device.html
 librig_device_archive_la_SOURCES = \
 	rig-device-main.c
 librig_device_archive_la_LIBADD = $(common_ldadd)
 
+worker_js_files += rig-simulator-worker.js
 librig_simulator_archive_la_SOURCES = \
 	rig-simulator-main.c \
 	rig-c.c
@@ -208,12 +212,17 @@ librig_simulator_archive_la_LIBADD = $(common_ldadd)
 
 if EMSCRIPTEN
 
-emscripten_libs = --js-library $(top_srcdir)/cogl/cogl-emscripten-lib.js
+emscripten_libs = \
+	--js-library $(top_srcdir)/cogl/cogl-emscripten-lib.js \
+	--js-library $(top_srcdir)/rig/rig-emscripten-lib.js
 
 %.html: $(top_builddir)/rig/.libs/lib%-archive.so $(top_builddir)/rig/.libs/librig.so $(top_builddir)/rut/.libs/librut.so $(top_builddir)/cogl/.libs/libcg.so $(top_builddir)/cogl-path/.libs/libcogl-path.so $(top_builddir)/clib/src/.libs/libclib.so
 	$(CC) $(AM_CFLAGS) $(CFLAGS) $(RIG_EXTRA_EMCC_JSFLAGS) $(emscripten_libs) --js-library $(top_srcdir)/toys/emscripten-example-js-library.js -o $@ $^ -L/home/bob/local/freetype-emcc/lib -lfreetype  -L/home/bob/local/harfbuzz-emcc/lib -lharfbuzz -lharfbuzz-icu -L/home/bob/local/fontconfig-emcc/lib -lfontconfig -L/home/bob/local/icu-emcc/lib -licuuc -licudata -L/home/bob/local/protobuf-c-emcc/lib -lprotobuf-c -L/home/bob/local/libxml2-emcc/lib -lxml2
 
-all-local: $(htmlfiles)
+%-worker.js: $(top_builddir)/rig/.libs/lib%-archive.so $(top_builddir)/rig/.libs/librig.so $(top_builddir)/rut/.libs/librut.so $(top_builddir)/cogl/.libs/libcg.so $(top_builddir)/cogl-path/.libs/libcogl-path.so $(top_builddir)/clib/src/.libs/libclib.so
+	$(CC) $(AM_CFLAGS) $(CFLAGS) $(RIG_EXTRA_EMCC_JSFLAGS) $(emscripten_libs) --js-library $(top_srcdir)/toys/emscripten-example-js-library.js -s BUILD_AS_WORKER=1 -o $@ $^ -L/home/bob/local/freetype-emcc/lib -lfreetype  -L/home/bob/local/harfbuzz-emcc/lib -lharfbuzz -lharfbuzz-icu -L/home/bob/local/fontconfig-emcc/lib -lfontconfig -L/home/bob/local/icu-emcc/lib -licuuc -licudata -L/home/bob/local/protobuf-c-emcc/lib -lprotobuf-c -L/home/bob/local/libxml2-emcc/lib -lxml2
+
+all-local: $(js_files) $(worker_js_files) $(htmlfiles)
 else
 
 if EDITOR_ENABLED

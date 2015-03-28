@@ -4,30 +4,7 @@ var LibraryCoglEmscripten = {
     $CoglEmscripten__deps: ['$Browser', '$GL'],
     $CoglEmscripten: {
 
-        counter: 1, //To use as unique handles to pass to native code
-
-        handles: {},
-
-	windows: {},
-
-        // XXX: This trick for keeping the table dense was nabbed from
-        // library_gl.js:
-        //
-        // Get a new ID for images, while keeping the table dense and
-        // fast. Creation is farely rare so it is worth optimizing
-        // lookups later.
-        //
-        // I'm not a js expert but to me this looks like because it
-        // never scans for null entries before incrementing counter
-        // then this table will just continuously grow as IDs are
-        // created and destroyed?
-        getNewId: function (table) {
-            var ret = CoglEmscripten.counter++;
-            for (var i = table.length; i < ret; i++) {
-                table[i] = null;
-            }
-            return ret;
-        },
+	windows: [],
 
         touchX: 0, touchY: 0,
         savedKeydown: null,
@@ -41,7 +18,7 @@ var LibraryCoglEmscripten = {
       canvas.style.left = x + 'px';
       canvas.style.top = y + 'px';
       document.body.appendChild(canvas);
-      var id = CoglEmscripten.getNewId (CoglEmscripten.handles);
+      var id = windows.length;
       canvas.setAttribute("id", "cogl_window_" + id);
       canvas.setAttribute("class", "cogl_window");
       CoglEmscripten.windows[id] = canvas;

@@ -38,6 +38,10 @@
 #include <fcntl.h>
 #endif
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -1008,7 +1012,7 @@ run_simulator_in_process(rut_shell_t *shell, rig_frontend_t *frontend)
     rig_simulator_t *simulator = rig_simulator_new(frontend->id, shell);
     rig_pb_stream_t *stream;
 
-    /* N.B. This won't block running the mainloop since rut-poll
+    /* N.B. This won't block running the mainloop since rut-loop
      * will see that simulator->shell isn't the main shell. */
     rig_simulator_run(simulator);
 
@@ -1017,12 +1021,27 @@ run_simulator_in_process(rut_shell_t *shell, rig_frontend_t *frontend)
     frontend_start_service(shell, frontend, stream);
 
     /* frontend_start_service will take ownership of the stream */
-    rut_object_unref (stream);
+    rut_object_unref(stream);
 
     rig_pb_stream_set_in_thread_direct_transport(stream,
                                                  simulator->stream);
     rig_pb_stream_set_in_thread_direct_transport(simulator->stream,
                                                  stream);
+}
+
+static void
+spawn_web_worker(rut_shell_t *shell, rig_frontend_t *frontend)
+{
+    frontend->sim_worker = emscripten_create_worker("rig-simulator-worker.js");
+
+    stream = rig_pb_stream_new(shell);
+
+    frontend_start_service(shell, frontend, stream);
+
+    /* frontend_start_service will take ownership of the stream */
+    rut_object_unref(stream);
+
+    rig_pb_stream_set_worker_handle(stream, frontend->sim_worker);
 }
 
 static void
@@ -1051,6 +1070,11 @@ spawn_simulator(rut_shell_t *shell, rig_frontend_t *frontend)
 #ifdef USE_UV
     case RIG_SIMULATOR_RUN_MODE_LISTEN_TCP:
         bind_to_tcp_socket(shell, frontend);
+        break;
+#endif
+#ifdef __EMSCRIPTEN__
+    case RIG_SIMULATOR_RUN_MODE_WEB_WORKER:
+        spawn_web_worker(shell, frontend);
         break;
 #endif
     }

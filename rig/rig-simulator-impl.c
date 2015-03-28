@@ -755,6 +755,10 @@ rig_simulator_new(rig_frontend_id_t frontend_id,
 
     simulator->stream = rig_pb_stream_new(simulator->shell);
 
+#ifdef __EMSCRIPTEN__
+    rig_pb_stream_set_in_worker(simulator->stream, true);
+#endif
+
     rig_logs_set_simulator(simulator);
 
 #ifdef USE_MOZJS
@@ -1144,6 +1148,7 @@ rig_simulator_parse_option(const char *option, void (*usage)(void))
     }
 
     if (strcmp(strv[0], "tcp") == 0) {
+#ifdef USE_UV
         char *address;
         int port;
 
@@ -1161,7 +1166,9 @@ rig_simulator_parse_option(const char *option, void (*usage)(void))
 
         rig_simulator_address_option = address;
         rig_simulator_port_option = port;
-
+#else
+        c_critical("TCP/IP sockets not supported");
+#endif
     } else if (strcmp(strv[0], "abstract") == 0) {
 #ifdef __linux__
         rig_simulator_run_mode_option =
@@ -1180,11 +1187,19 @@ rig_simulator_parse_option(const char *option, void (*usage)(void))
         rig_simulator_run_mode_option =
             RIG_SIMULATOR_RUN_MODE_MAINLOOP;
     } else if (strcmp(strv[0], "thread") == 0) {
+#ifdef C_SUPPORTS_THREADS
         rig_simulator_run_mode_option =
             RIG_SIMULATOR_RUN_MODE_THREADED;
+#else
+        c_critical("Platform doesn't support threads");
+#endif
     } else if (strcmp(strv[0], "process") == 0) {
+#ifdef SUPPORT_SIMULATOR_PROCESS
         rig_simulator_run_mode_option =
             RIG_SIMULATOR_RUN_MODE_PROCESS;
+#else
+        c_critical("Platform doesn't support sub-processes");
+#endif
     } else {
         fprintf(stderr, "Unsupported -m,--simulator= mode \"%s\"\n", option);
         usage();
