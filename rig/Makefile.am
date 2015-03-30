@@ -217,10 +217,10 @@ emscripten_libs = \
 	--js-library $(top_srcdir)/rig/rig-emscripten-lib.js
 
 %.html: $(top_builddir)/rig/.libs/lib%-archive.so $(top_builddir)/rig/.libs/librig.so $(top_builddir)/rut/.libs/librut.so $(top_builddir)/cogl/.libs/libcg.so $(top_builddir)/cogl-path/.libs/libcogl-path.so $(top_builddir)/clib/src/.libs/libclib.so
-	$(CC) $(AM_CFLAGS) $(CFLAGS) $(RIG_EXTRA_EMCC_JSFLAGS) $(emscripten_libs) --js-library $(top_srcdir)/toys/emscripten-example-js-library.js -o $@ $^ -L/home/bob/local/freetype-emcc/lib -lfreetype  -L/home/bob/local/harfbuzz-emcc/lib -lharfbuzz -lharfbuzz-icu -L/home/bob/local/fontconfig-emcc/lib -lfontconfig -L/home/bob/local/icu-emcc/lib -licuuc -licudata -L/home/bob/local/protobuf-c-emcc/lib -lprotobuf-c -L/home/bob/local/libxml2-emcc/lib -lxml2
+	$(CC) $(AM_CFLAGS) $(CFLAGS) $(RIG_EXTRA_EMCC_JSFLAGS) -Os $(emscripten_libs) --js-library $(top_srcdir)/toys/emscripten-example-js-library.js -o $@ $^ -L/home/bob/local/freetype-emcc/lib -lfreetype  -L/home/bob/local/harfbuzz-emcc/lib -lharfbuzz -lharfbuzz-icu -L/home/bob/local/fontconfig-emcc/lib -lfontconfig -L/home/bob/local/icu-emcc/lib -licuuc -licudata -L/home/bob/local/protobuf-c-emcc/lib -lprotobuf-c -L/home/bob/local/libxml2-emcc/lib -lxml2
 
 %-worker.js: $(top_builddir)/rig/.libs/lib%-archive.so $(top_builddir)/rig/.libs/librig.so $(top_builddir)/rut/.libs/librut.so $(top_builddir)/cogl/.libs/libcg.so $(top_builddir)/cogl-path/.libs/libcogl-path.so $(top_builddir)/clib/src/.libs/libclib.so
-	$(CC) $(AM_CFLAGS) $(CFLAGS) $(RIG_EXTRA_EMCC_JSFLAGS) $(emscripten_libs) --js-library $(top_srcdir)/toys/emscripten-example-js-library.js -s BUILD_AS_WORKER=1 -o $@ $^ -L/home/bob/local/freetype-emcc/lib -lfreetype  -L/home/bob/local/harfbuzz-emcc/lib -lharfbuzz -lharfbuzz-icu -L/home/bob/local/fontconfig-emcc/lib -lfontconfig -L/home/bob/local/icu-emcc/lib -licuuc -licudata -L/home/bob/local/protobuf-c-emcc/lib -lprotobuf-c -L/home/bob/local/libxml2-emcc/lib -lxml2
+	$(CC) $(AM_CFLAGS) $(CFLAGS) $(RIG_EXTRA_EMCC_JSFLAGS) -Os -s ASSERTIONS=2 $(emscripten_libs) --js-library $(top_srcdir)/toys/emscripten-example-js-library.js -s BUILD_AS_WORKER=1 -o $@ $^ -L/home/bob/local/freetype-emcc/lib -lfreetype  -L/home/bob/local/harfbuzz-emcc/lib -lharfbuzz -lharfbuzz-icu -L/home/bob/local/fontconfig-emcc/lib -lfontconfig -L/home/bob/local/icu-emcc/lib -licuuc -licudata -L/home/bob/local/protobuf-c-emcc/lib -lprotobuf-c -L/home/bob/local/libxml2-emcc/lib -lxml2
 
 all-local: $(js_files) $(worker_js_files) $(htmlfiles)
 else

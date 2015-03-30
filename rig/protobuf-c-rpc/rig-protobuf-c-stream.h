@@ -32,6 +32,9 @@
 #ifdef USE_UV
 #include <uv.h>
 #endif
+#ifdef __EMSCRIPTEN__
+#include "rig-emscripten-lib.h"
+#endif
 
 #include <rut.h>
 
@@ -55,7 +58,7 @@ typedef struct _rig_pb_stream_write_closure rig_pb_stream_write_closure_t;
 
 #ifndef USE_UV
 typedef struct _rig_pb_stream_buf_t {
-  char* base;
+  char *base;
   size_t len;
 } rig_pb_stream_buf_t;
 #endif

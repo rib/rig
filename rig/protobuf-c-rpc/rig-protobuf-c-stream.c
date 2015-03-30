@@ -565,6 +565,7 @@ rig_pb_stream_set_read_callback(rig_pb_stream_t *stream,
         if (stream->buffer.incoming_write_closures->len)
             queue_data_buffer_stream_read(stream);
         break;
+    case STREAM_TYPE_WORKER_IPC:
     case STREAM_TYPE_DISCONNECTED:
         break;
     }
@@ -580,15 +581,17 @@ uv_write_done_cb(uv_write_t *write_req, int status)
 #endif
 
 #ifdef __EMSCRIPTEN__
+static rig_pb_stream_t *_rig_worker_stream;
+
 void EMSCRIPTEN_KEEPALIVE
-rig_pb_stream_worker_onmessage(char *data, int len, void *user_data)
+rig_pb_stream_worker_onmessage(char *data, int len)
 {
-    rig_pb_stream_t *stream = user_data;
+    rig_pb_stream_t *stream = _rig_worker_stream;
 
     if (!stream->read_callback)
         return;
 
-    stream->read_callback(stream, data, len, stream->read_data);
+    stream->read_callback(stream, (uint8_t *)data, len, stream->read_data);
 }
 #endif
 
@@ -628,13 +631,15 @@ rig_pb_stream_write(rig_pb_stream_t *stream,
 #ifdef __EMSCRIPTEN__
     case STREAM_TYPE_WORKER_IPC:
         if (stream->worker_ipc.in_worker)
-            rig_emscripten_worker_post_to_main(closure->buf.data,
+            rig_emscripten_worker_post_to_main(closure->buf.base,
                                                closure->buf.len);
         else
             rig_emscripten_worker_post(stream->worker_ipc.worker,
                                        "rig_pb_stream_worker_onmessage",
-                                       closure->buf.data,
+                                       closure->buf.base,
                                        closure->buf.len);
+
+        closure->done_callback(closure);
         break;
 #endif
 
@@ -652,6 +657,8 @@ rig_pb_stream_set_in_worker(rig_pb_stream_t *stream, bool in_worker)
 
     stream->type = STREAM_TYPE_WORKER_IPC;
     stream->worker_ipc.in_worker = in_worker;
+
+    _rig_worker_stream = stream;
 
     set_connected(stream);
 }

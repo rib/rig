@@ -8,17 +8,17 @@ var LibraryRigEmscripten = {
 
     rig_emscripten_worker_create: function(url) {
         url = Pointer_stringify(url);
-        var id = workers.length;
+        var id = RigEmscripten.workers.length;
         var info = {
             worker: new Worker(url),
-            func = null,
-            func_arg = null
+            func: null,
+            func_arg: null,
             buffer: 0,
             bufferSize: 0,
         };
         info.worker.onmessage = function info_worker_onmessage(msg) {
             if (ABORT) return;
-            var info = workers[id];
+            var info = RigEmscripten.workers[id];
             if (!info) return; // worker was destroyed meanwhile
             if (!info.func) return; // no callback or callback removed meanwhile
             // Don't trash our callback state if we expect additional calls.
@@ -36,29 +36,29 @@ var LibraryRigEmscripten = {
                 info.func(0, 0, info.func_arg);
             }
         };
-        workers.push(info);
+        RigEmscripten.workers.push(info);
         return id;
     },
 
     rig_emscripten_worker_set_main_onmessage: function(id, callback, arg) {
-        var info = workers[id];
+        var info = RigEmscripten.workers[id];
         if (!info) return; // worker was destroyed meanwhile
         info.func = Runtime.getFuncWrapper(callback, 'viii');
         info.func_arg = arg;
     },
 
     rig_emscripten_worker_destroy: function(id) {
-        var info = workers[id];
+        var info = RigEmscripten.workers[id];
         info.worker.terminate();
         if (info.buffer) _free(info.buffer);
-        workers[id] = null;
+        RigEmscripten.workers[id] = null;
     },
 
     rig_emscripten_worker_post: function(id, funcName, data, size) {
         Module['noExitRuntime'] = true; // should we only do this if there is a callback?
 
         funcName = Pointer_stringify(funcName);
-        var info = workers[id];
+        var info = RigEmscripten.workers[id];
         info.worker.postMessage({
             'funcName': funcName,
             'callbackId': -1,

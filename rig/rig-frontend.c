@@ -1032,16 +1032,16 @@ run_simulator_in_process(rut_shell_t *shell, rig_frontend_t *frontend)
 static void
 spawn_web_worker(rut_shell_t *shell, rig_frontend_t *frontend)
 {
-    frontend->sim_worker = emscripten_create_worker("rig-simulator-worker.js");
+    rig_pb_stream_t *stream = rig_pb_stream_new(shell);
 
-    stream = rig_pb_stream_new(shell);
+    frontend->sim_worker = rig_emscripten_worker_create("rig-simulator-worker.js");
 
     frontend_start_service(shell, frontend, stream);
 
     /* frontend_start_service will take ownership of the stream */
     rut_object_unref(stream);
 
-    rig_pb_stream_set_worker_handle(stream, frontend->sim_worker);
+    rig_pb_stream_set_worker(stream, frontend->sim_worker);
 }
 
 static void

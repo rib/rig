@@ -29,9 +29,11 @@
 #ifndef _RIG_EMSCRIPTEN_LIB_H_
 #define _RIG_EMSCRIPTEN_LIB_H_
 
+#include <emscripten.h>
+
 typedef int rig_worker_t;
 
-rig_worker_t rig_emscripten_worker_create(void);
+rig_worker_t rig_emscripten_worker_create(const char *url);
 
 typedef void (*rig_worker_callback_func_t)(void *data, int len, void *user_data);
 

@@ -6,9 +6,6 @@ var LibraryCoglEmscripten = {
 
 	windows: [],
 
-        touchX: 0, touchY: 0,
-        savedKeydown: null,
-
     },
 
     Cogl_Emscripten_CreateWindow: function (width, height, x, y) {
@@ -18,7 +15,7 @@ var LibraryCoglEmscripten = {
       canvas.style.left = x + 'px';
       canvas.style.top = y + 'px';
       document.body.appendChild(canvas);
-      var id = windows.length;
+      var id = CoglEmscripten.windows.length;
       canvas.setAttribute("id", "cogl_window_" + id);
       canvas.setAttribute("class", "cogl_window");
       CoglEmscripten.windows[id] = canvas;
