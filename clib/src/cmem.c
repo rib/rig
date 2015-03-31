@@ -109,3 +109,23 @@ c_try_realloc(void *obj, size_t size)
     }
     return realloc(obj, size);
 }
+
+#ifndef C_HAVE_MEMMEM
+char *
+c_memmem(const void *haystack,
+         size_t haystack_len,
+         const void *needle,
+         size_t needle_len)
+{
+    size_t i;
+
+    if (needle_len > haystack_len)
+        return NULL;
+
+    for (i = 0; i <= haystack_len - needle_len; i++)
+        if (!memcmp((const char *)haystack + i, needle, needle_len))
+            return (char *)haystack + i;
+
+    return NULL;
+}
+#endif
