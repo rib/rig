@@ -809,10 +809,6 @@ AC_DEFUN([AM_COGL],
   AS_IF([test "x$enable_emscripten" = "xno"],
         [AC_CHECK_FUNCS([ffs])])
 
-  dnl 'memmem' is a GNU extension but we have a simple fallback
-  AC_CHECK_FUNCS([memmem])
-
-
   dnl ================================================================
   dnl Platform values
   dnl ================================================================
