@@ -308,6 +308,16 @@ struct _c_mem_chunk_t {
 };
 
 typedef struct _c_mem_chunk_t c_mem_chunk_t;
+
+#ifdef C_HAVE_MEMMEM
+#define c_memmem memmem
+#else
+char *c_memmem(const void *haystack,
+               size_t haystack_len,
+               const void *needle,
+               size_t needle_len);
+#endif
+
 /*
  * Misc.
  */
