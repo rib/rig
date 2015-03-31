@@ -5,8 +5,8 @@ AM_CPPFLAGS = \
 	-I$(top_builddir) \
 	-I$(srcdir)/Include \
 	-I$(srcdir)/Src \
-	-I$(top_srcdir)/edid \
-	-I$(top_srcdir)/tinyxml
+	-I$(srcdir)/edid \
+	-I$(srcdir)/tinyxml
 
 if RIG_DEBUG
 AM_CPPFLAGS += -DDEBUG -DOVR_BUILD_DEBUG
@@ -15,62 +15,62 @@ endif
 noinst_LTLIBRARIES = libOVR.la
 
 libOVR_la_SOURCES = \
-	$(top_srcdir)/edid/edid.cpp \
-	$(top_srcdir)/tinyxml/tinyxml2.cpp \
-	$(srcdir)/Src/Net/OVR_BitStream.cpp \
-	$(srcdir)/Src/Net/OVR_Unix_Socket.cpp \
-	$(srcdir)/Src/Net/OVR_NetworkPlugin.cpp \
-	$(srcdir)/Src/Net/OVR_PacketizedTCPSocket.cpp \
-	$(srcdir)/Src/Net/OVR_RPC1.cpp \
-	$(srcdir)/Src/Net/OVR_Session.cpp \
-	$(srcdir)/Src/Net/OVR_Socket.cpp \
-	$(srcdir)/Src/Service/Service_NetClient.cpp \
-	$(srcdir)/Src/Service/Service_NetSessionCommon.cpp \
-	$(srcdir)/Src/Tracking/Tracking_SensorStateReader.cpp \
-	$(srcdir)/Src/Displays/OVR_Display.cpp \
-	$(srcdir)/Src/Displays/OVR_Linux_Display.cpp \
-	$(srcdir)/Src/Displays/OVR_Linux_SDKWindow.cpp \
-	$(srcdir)/Src/CAPI/CAPI_DistortionRenderer.cpp \
-	$(srcdir)/Src/CAPI/CAPI_HSWDisplay.cpp \
-	$(srcdir)/Src/CAPI/CAPI_FrameTimeManager.cpp \
-	$(srcdir)/Src/CAPI/CAPI_HMDRenderState.cpp \
-	$(srcdir)/Src/CAPI/CAPI_HMDState.cpp \
-	$(srcdir)/Src/CAPI/CAPI_LatencyStatistics.cpp \
-	$(srcdir)/Src/Kernel/OVR_Alg.cpp \
-	$(srcdir)/Src/Kernel/OVR_Allocator.cpp \
-	$(srcdir)/Src/Kernel/OVR_Atomic.cpp \
-	$(srcdir)/Src/Kernel/OVR_CRC32.cpp \
-	$(srcdir)/Src/Kernel/OVR_DebugHelp.cpp \
-	$(srcdir)/Src/Kernel/OVR_File.cpp \
-	$(srcdir)/Src/Kernel/OVR_FileFILE.cpp \
-	$(srcdir)/Src/Kernel/OVR_Lockless.cpp \
-	$(srcdir)/Src/Kernel/OVR_Log.cpp \
-	$(srcdir)/Src/Kernel/OVR_Math.cpp \
-	$(srcdir)/Src/Kernel/OVR_RefCount.cpp \
-	$(srcdir)/Src/Kernel/OVR_SharedMemory.cpp \
-	$(srcdir)/Src/Kernel/OVR_Std.cpp \
-	$(srcdir)/Src/Kernel/OVR_String.cpp \
-	$(srcdir)/Src/Kernel/OVR_String_FormatUtil.cpp \
-	$(srcdir)/Src/Kernel/OVR_String_PathUtil.cpp \
-	$(srcdir)/Src/Kernel/OVR_SysFile.cpp \
-	$(srcdir)/Src/Kernel/OVR_System.cpp \
-	$(srcdir)/Src/Kernel/OVR_ThreadsPthread.cpp \
-	$(srcdir)/Src/Kernel/OVR_ThreadCommandQueue.cpp \
-	$(srcdir)/Src/Kernel/OVR_Timer.cpp \
-	$(srcdir)/Src/Kernel/OVR_UTF8Util.cpp \
-	$(srcdir)/Src/Util/Util_Interface.cpp \
-	$(srcdir)/Src/Util/Util_LatencyTest2Reader.cpp \
-	$(srcdir)/Src/Util/Util_Render_Stereo.cpp \
-	$(srcdir)/Src/Util/Util_SystemInfo.cpp \
-	$(srcdir)/Src/Util/Util_SystemGUI.cpp \
-	$(srcdir)/Src/OVR_CAPI.cpp \
-	$(srcdir)/Src/OVR_SerialFormat.cpp \
-	$(srcdir)/Src/OVR_JSON.cpp \
-	$(srcdir)/Src/OVR_Profile.cpp \
-	$(srcdir)/Src/OVR_Stereo.cpp
+	edid/edid.cpp \
+	tinyxml/tinyxml2.cpp \
+	Src/Net/OVR_BitStream.cpp \
+	Src/Net/OVR_Unix_Socket.cpp \
+	Src/Net/OVR_NetworkPlugin.cpp \
+	Src/Net/OVR_PacketizedTCPSocket.cpp \
+	Src/Net/OVR_RPC1.cpp \
+	Src/Net/OVR_Session.cpp \
+	Src/Net/OVR_Socket.cpp \
+	Src/Service/Service_NetClient.cpp \
+	Src/Service/Service_NetSessionCommon.cpp \
+	Src/Tracking/Tracking_SensorStateReader.cpp \
+	Src/Displays/OVR_Display.cpp \
+	Src/Displays/OVR_Linux_Display.cpp \
+	Src/Displays/OVR_Linux_SDKWindow.cpp \
+	Src/CAPI/CAPI_DistortionRenderer.cpp \
+	Src/CAPI/CAPI_HSWDisplay.cpp \
+	Src/CAPI/CAPI_FrameTimeManager.cpp \
+	Src/CAPI/CAPI_HMDRenderState.cpp \
+	Src/CAPI/CAPI_HMDState.cpp \
+	Src/CAPI/CAPI_LatencyStatistics.cpp \
+	Src/Kernel/OVR_Alg.cpp \
+	Src/Kernel/OVR_Allocator.cpp \
+	Src/Kernel/OVR_Atomic.cpp \
+	Src/Kernel/OVR_CRC32.cpp \
+	Src/Kernel/OVR_DebugHelp.cpp \
+	Src/Kernel/OVR_File.cpp \
+	Src/Kernel/OVR_FileFILE.cpp \
+	Src/Kernel/OVR_Lockless.cpp \
+	Src/Kernel/OVR_Log.cpp \
+	Src/Kernel/OVR_Math.cpp \
+	Src/Kernel/OVR_RefCount.cpp \
+	Src/Kernel/OVR_SharedMemory.cpp \
+	Src/Kernel/OVR_Std.cpp \
+	Src/Kernel/OVR_String.cpp \
+	Src/Kernel/OVR_String_FormatUtil.cpp \
+	Src/Kernel/OVR_String_PathUtil.cpp \
+	Src/Kernel/OVR_SysFile.cpp \
+	Src/Kernel/OVR_System.cpp \
+	Src/Kernel/OVR_ThreadsPthread.cpp \
+	Src/Kernel/OVR_ThreadCommandQueue.cpp \
+	Src/Kernel/OVR_Timer.cpp \
+	Src/Kernel/OVR_UTF8Util.cpp \
+	Src/Util/Util_Interface.cpp \
+	Src/Util/Util_LatencyTest2Reader.cpp \
+	Src/Util/Util_Render_Stereo.cpp \
+	Src/Util/Util_SystemInfo.cpp \
+	Src/Util/Util_SystemGUI.cpp \
+	Src/OVR_CAPI.cpp \
+	Src/OVR_SerialFormat.cpp \
+	Src/OVR_JSON.cpp \
+	Src/OVR_Profile.cpp \
+	Src/OVR_Stereo.cpp
 
 gl_specific_source = \
-	$(srcdir)/Src/CAPI/GL/CAPI_GL_DistortionRenderer.cpp \
-	$(srcdir)/Src/CAPI/GL/CAPI_GL_HSWDisplay.cpp \
-	$(srcdir)/Src/CAPI/GL/CAPI_GL_Util.cpp \
-	$(srcdir)/Src/CAPI/GL/CAPI_GLE.cpp
+	Src/CAPI/GL/CAPI_GL_DistortionRenderer.cpp \
+	Src/CAPI/GL/CAPI_GL_HSWDisplay.cpp \
+	Src/CAPI/GL/CAPI_GL_Util.cpp \
+	Src/CAPI/GL/CAPI_GLE.cpp
