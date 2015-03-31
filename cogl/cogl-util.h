@@ -206,15 +206,6 @@ _cg_util_pixel_format_from_masks(unsigned long r_mask,
                                  int bpp,
                                  bool byte_order_is_lsb_first);
 
-#ifdef HAVE_MEMMEM
-#define _cg_util_memmem memmem
-#else
-char *_cg_util_memmem(const void *haystack,
-                      size_t haystack_len,
-                      const void *needle,
-                      size_t needle_len);
-#endif
-
 static inline void
 _cg_util_scissor_intersect(int rect_x0,
                            int rect_y0,
