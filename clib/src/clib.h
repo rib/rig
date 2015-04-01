@@ -1349,6 +1349,16 @@ typedef enum {
 
 typedef void (*c_spawn_child_setup_func_t)(void *user_data);
 
+bool c_spawn_sync(const char *working_dir,
+                  char **argv,
+                  char **envp,
+                  c_spawn_flags_t flags,
+                  c_spawn_child_setup_func_t child_setup,
+                  void *user_data,
+                  char **standard_output,
+                  char **standard_error,
+                  int *exit_status,
+                  c_error_t **error);
 bool c_spawn_command_line_sync(const char *command_line,
                                char **standard_output,
                                char **standard_error,
