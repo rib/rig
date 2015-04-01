@@ -109,7 +109,7 @@ get_pw_data(void)
     pthread_mutex_unlock(&pw_lock);
 }
 
-/* Uive preference to /etc/passwd than HOME */
+/* Give preference to /etc/passwd than HOME */
 const char *
 c_get_home_dir(void)
 {
