@@ -237,24 +237,24 @@ write_all(int fd, const void *vbuf, size_t n)
 }
 
 bool
-c_spawn_command_line_sync(const char *command_line,
-                          char **standard_output,
-                          char **standard_error,
-                          int *exit_status,
-                          c_error_t **error)
+c_spawn_sync(const char *working_dir,
+             char **argv,
+             char **envp,
+             c_spawn_flags_t flags,
+             c_spawn_child_setup_func_t child_setup,
+             void *user_data,
+             char **standard_output,
+             char **standard_error,
+             int *exit_status,
+             c_error_t **error)
 {
 #ifdef C_OS_WIN32
 #else
     pid_t pid;
-    char **argv;
-    int argc;
     int stdout_pipe[2] = { -1, -1 };
     int stderr_pipe[2] = { -1, -1 };
     int status;
     int res;
-
-    if (!c_shell_parse_argv(command_line, &argc, &argv, error))
-        return false;
 
     if (standard_output && !create_pipe(stdout_pipe, error))
         return false;
@@ -273,18 +273,37 @@ c_spawn_command_line_sync(const char *command_line,
         if (standard_output) {
             close(stdout_pipe[0]);
             dup2(stdout_pipe[1], STDOUT_FILENO);
+        } else if (flags & C_SPAWN_STDOUT_TO_DEV_NULL) {
+            int nullfd = open("/dev/null", O_WRONLY);
+            dup2(nullfd, STDOUT_FILENO);
         }
 
         if (standard_error) {
             close(stderr_pipe[0]);
             dup2(stderr_pipe[1], STDERR_FILENO);
+        } else if (flags & C_SPAWN_STDERR_TO_DEV_NULL) {
+            int nullfd = open("/dev/null", O_WRONLY);
+            dup2(nullfd, STDERR_FILENO);
         }
-        for (i = getdtablesize() - 1; i >= 3; i--)
-            close(i);
 
-        /* C_SPAWN_SEARCH_PATH is always enabled for c_spawn_command_line_sync
-         */
-        if (!c_path_is_absolute(argv[0])) {
+        if (!(flags & C_SPAWN_CHILD_INHERITS_STDIN)) {
+            int nullfd = open("/dev/null", O_RDONLY);
+            dup2(nullfd, STDIN_FILENO);
+        }
+
+        if (!(flags & C_SPAWN_LEAVE_DESCRIPTORS_OPEN))
+            for (i = getdtablesize() - 1; i >= 3; i--)
+                close(i);
+
+        if (working_dir) {
+            if (chdir(working_dir) == -1) {
+                fprintf(stderr, "Failed to change directory to %s: %s",
+                        working_dir, strerror(errno));
+                exit(1);
+            }
+        }
+
+        if (flags & C_SPAWN_SEARCH_PATH && !c_path_is_absolute(argv[0])) {
             char *arg0;
 
             arg0 = c_find_program_in_path(argv[0]);
@@ -294,11 +313,14 @@ c_spawn_command_line_sync(const char *command_line,
             // c_free (argv [0]);
             argv[0] = arg0;
         }
+
+        if (child_setup)
+            child_setup(user_data);
+
         execv(argv[0], argv);
         exit(1); /* TODO: What now? */
     }
 
-    c_strfreev(argv);
     if (standard_output)
         close(stdout_pipe[1]);
 
@@ -325,6 +347,35 @@ c_spawn_command_line_sync(const char *command_line,
     }
 #endif
     return true;
+}
+
+bool
+c_spawn_command_line_sync(const char *command_line,
+                          char **standard_output,
+                          char **standard_error,
+                          int *exit_status,
+                          c_error_t **error)
+{
+    char **argv;
+    int argc;
+    bool status;
+
+    if (!c_shell_parse_argv(command_line, &argc, &argv, error))
+        return false;
+
+    status = c_spawn_sync(NULL, /* inherit working dir */
+                          argv,
+                          NULL, /* env */
+                          C_SPAWN_SEARCH_PATH,
+                          NULL, /* child setup func */
+                          NULL, /* user data */
+                          standard_output,
+                          standard_error,
+                          exit_status,
+                          error);
+    c_strfreev(argv);
+
+    return status;
 }
 
 /*
