@@ -37,7 +37,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#if defined(USE_GLIB) && defined(HAVE_BACKTRACE)
+#if defined(HAVE_BACKTRACE)
 #define RUT_ENABLE_BACKTRACE
 #endif
 
@@ -254,7 +254,7 @@ resolve_addresses_addr2line(c_hash_table_t *hash_table,
     int exit_status;
     int extra_args = C_N_ELEMENTS(base_args);
     int address_args = extra_args + 1;
-    bool ret = true;
+    bool status;
     int i;
 
     argv = c_alloca(sizeof(char *) * (n_addresses + address_args + 1));
@@ -262,43 +262,42 @@ resolve_addresses_addr2line(c_hash_table_t *hash_table,
 
     argv[extra_args] = readlink_alloc("/proc/self/exe");
     if (argv[extra_args] == NULL)
-        ret = false;
-    else {
-        for (i = 0; i < n_addresses; i++)
-            argv[i + address_args] = c_strdup_printf("%p", addresses[i]);
-        argv[address_args + n_addresses] = NULL;
+        return false;
 
-        if (g_spawn_sync(NULL, /* working_directory */
-                         argv,
-                         NULL, /* envp */
-                         G_SPAWN_STDERR_TO_DEV_NULL | G_SPAWN_SEARCH_PATH,
-                         NULL, /* child_setup */
-                         NULL, /* user_data for child_setup */
-                         &addr_out,
-                         NULL, /* standard_error */
-                         &exit_status,
-                         NULL /* error */) &&
-            exit_status == 0) {
-            int addr_num;
-            char **lines = c_strsplit(addr_out, "\n", 0);
-            char **line;
+    for (i = 0; i < n_addresses; i++)
+        argv[i + address_args] = c_strdup_printf("%p", addresses[i]);
+    argv[address_args + n_addresses] = NULL;
 
-            for (line = lines, addr_num = 0; line[0] && line[1];
-                 line += 2, addr_num++) {
-                char *result = c_strdup_printf("%s (%s)", line[1], line[0]);
-                c_hash_table_insert(hash_table, addresses[addr_num], result);
-            }
+    status = c_spawn_sync(NULL, /* working_directory */
+                          argv,
+                          NULL, /* envp */
+                          G_SPAWN_STDERR_TO_DEV_NULL | G_SPAWN_SEARCH_PATH,
+                          NULL, /* child_setup */
+                          NULL, /* user_data for child_setup */
+                          &addr_out,
+                          NULL, /* standard_error */
+                          &exit_status,
+                          NULL /* error */);
 
-            c_strfreev(lines);
-        } else
-            ret = false;
+    if (status && exit_status == 0) {
+        int addr_num;
+        char **lines = c_strsplit(addr_out, "\n", 0);
+        char **line;
 
-        for (i = 0; i < n_addresses; i++)
-            c_free(argv[i + address_args]);
-        c_free(argv[extra_args]);
+        for (line = lines, addr_num = 0; line[0] && line[1];
+             line += 2, addr_num++) {
+            char *result = c_strdup_printf("%s (%s)", line[1], line[0]);
+            c_hash_table_insert(hash_table, addresses[addr_num], result);
+        }
+
+        c_strfreev(lines);
     }
 
-    return ret;
+    for (i = 0; i < n_addresses; i++)
+        c_free(argv[i + address_args]);
+    c_free(argv[extra_args]);
+
+    return status;
 }
 
 static bool
