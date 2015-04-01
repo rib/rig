@@ -1604,9 +1604,11 @@ long c_utf8_pointer_to_offset(const char *str, const char *pos);
 #define C_PRIORITY_DEFAULT_IDLE 200
 
 #if defined(C_HAVE_PTHREADS)
+#define C_SUPPORTS_THREADS 1
 typedef pthread_mutex_t c_mutex_t;
 typedef pthread_key_t c_tls_t;
 #elif defined(C_OS_WIN32)
+#define C_SUPPORTS_THREADS 1
 typedef CRITICAL_SECTION c_mutex_t;
 typedef struct _c_tls_t c_tls_t {
 struct _c_tls_t {
@@ -1614,10 +1616,9 @@ struct _c_tls_t {
     void (void *tls_data);
     c_tls_t *next;
 };
-#else
-#error "missing threads support for platform"
 #endif
 
+#ifdef C_SUPPORTS_THREADS
 /* Note: it's the caller's responsibility to ensure c_tls_init() is
  * only called once per c_tls_t */
 void c_tls_init(c_tls_t *tls, void (*destroy)(void *data));
@@ -1658,6 +1659,8 @@ void c_mutex_destroy(c_mutex_t *mutex);
 void c_mutex_lock(c_mutex_t *mutex);
 void c_mutex_unlock(c_mutex_t *mutex);
 bool c_mutex_trylock(c_mutex_t *mutex);
+
+#endif /* C_SUPPORTS_THREADS */
 
 #define _CLIB_MAJOR 2
 #define _CLIB_MIDDLE 4
