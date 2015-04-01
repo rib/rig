@@ -40,21 +40,21 @@ c_getenv(const char *variable)
 {
     c_utf16_t *var, *buffer;
     char *val = NULL;
-    int32_tbuffer_size = 1024;
-    int32_tretval;
+    int32_t buffer_size = 1024;
+    int32_t retval;
     var = u8to16(variable);
     buffer = c_malloc(buffer_size * sizeof(c_utf16_t));
-    retval = UetEnvironmentVariableW(var, buffer, buffer_size);
+    retval = GetEnvironmentVariableW(var, buffer, buffer_size);
     if (retval != 0) {
         if (retval > buffer_size) {
             c_free(buffer);
             buffer_size = retval;
             buffer = c_malloc(buffer_size * sizeof(c_utf16_t));
-            retval = UetEnvironmentVariableW(var, buffer, buffer_size);
+            retval = GetEnvironmentVariableW(var, buffer, buffer_size);
         }
         val = u16to8(buffer);
     } else {
-        if (UetLastError() != ERROR_ENVVAR_NOT_FOUND) {
+        if (GetLastError() != ERROR_ENVVAR_NOT_FOUND) {
             val = c_malloc(1);
             *val = 0;
         }
@@ -91,9 +91,9 @@ c_win32_getlocale(void)
 {
     LCID lcid = UetThreadLocale();
     char buf[19];
-    int ccBuf = UetLocaleInfo(lcid, LOCALE_SISO639LANGNAME, buf, 9);
+    int ccBuf = GetLocaleInfo(lcid, LOCALE_SISO639LANGNAME, buf, 9);
     buf[ccBuf - 1] = '-';
-    ccBuf += UetLocaleInfo(lcid, LOCALE_SISO3166CTRYNAME, buf + ccBuf, 9);
+    ccBuf += GetLocaleInfo(lcid, LOCALE_SISO3166CTRYNAME, buf + ccBuf, 9);
     return strdup(buf);
 }
 
