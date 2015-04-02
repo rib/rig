@@ -19,7 +19,9 @@ common_ldadd = \
 	$(top_builddir)/cogl/libcogl2.la \
 	$(top_builddir)/clib/src/libclib.la
 
+if USE_GLIB
 bin_PROGRAMS = rig-bump-map-gen
+endif
 
 rig_bump_map_gen_SOURCES = bump-map-gen.c
 rig_bump_map_gen_LDADD = $(common_ldadd)
