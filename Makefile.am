@@ -20,9 +20,7 @@ SUBDIRS += LibOVR
 
 SUBDIRS += rut data rig tests toys po android
 
-if USE_GLIB
 SUBDIRS += tools
-endif
 
 ACLOCAL_AMFLAGS = -I build/autotools ${ACLOCAL_FLAGS}
 
