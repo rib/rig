@@ -36,8 +36,6 @@
 #include "rut-types.h"
 #include "rut-shell.h"
 
-typedef struct _rut_input_region_t rut_input_region_t;
-
 typedef rut_input_event_status_t (*rut_input_region_callback_t)(
     rut_input_region_t *region, rut_input_event_t *event, void *user_data);
 
