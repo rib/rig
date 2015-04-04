@@ -33,6 +33,8 @@
 
 #include "rut.h"
 
+#include "rig-engine.h"
+
 extern rut_type_t rig_split_view_type;
 typedef struct _rig_split_view_t rig_split_view_t;
 
