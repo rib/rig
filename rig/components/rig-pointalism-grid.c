@@ -188,8 +188,8 @@ create_meshes(rig_pointalism_grid_t *grid)
     int tex_width = grid->tex_width;
     int tex_height = grid->tex_height;
     float size = grid->cell_size;
-    int columns = abs(tex_width / size);
-    int rows = abs(tex_height / size);
+    int columns = fabs(tex_width / size);
+    int rows = fabs(tex_height / size);
     int i, j, k, l;
     float cell_s = 1.0 / columns;
     float cell_t = 1.0 / rows;
