@@ -58,9 +58,6 @@ typedef struct _rig_asset_t rig_asset_t;
  * keep includes for runtime compilation down to a minimum. */
 #include "rut-property-bare.h"
 
-typedef void (*rut_property_update_callback_t)(rut_property_t *property,
-                                               void *user_data);
-
 #if 0
 typedef struct _rut_ui_property_t
 {
