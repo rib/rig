@@ -41,8 +41,11 @@
 #include "rig-frontend.h"
 #include "rig-engine.h"
 #include "rig-pb.h"
-#include "rig-curses-debug.h"
 #include "rig-logs.h"
+
+#ifdef USE_NCURSES
+#include "rig-curses-debug.h"
+#endif
 
 #include "rig.pb-c.h"
 
