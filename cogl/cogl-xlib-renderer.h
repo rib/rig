@@ -42,15 +42,8 @@
  * definitions
  */
 #ifndef CG_COMPILATION
-
-/* Note: When building Cogl .gir we explicitly define
- * __CG_H_INSIDE__ */
-#ifndef __CG_H_INSIDE__
 #define __CG_H_INSIDE__
-#define __CG_MUST_UNDEF_CG_H_INSIDE__
 #endif
-
-#endif /* CG_COMPILATION */
 
 #include <cogl/cogl-renderer.h>
 
@@ -162,17 +155,8 @@ Display *cg_xlib_renderer_get_display(cg_renderer_t *renderer);
 
 CG_END_DECLS
 
-/* The gobject introspection scanner seems to parse public headers in
- * isolation which means we need to be extra careful about how we
- * define and undefine __CG_H_INSIDE__ used to detect when internal
- * headers are incorrectly included by developers. In the gobject
- * introspection case we have to manually define __CG_H_INSIDE__ as
- * a commandline argument for the scanner which means we must be
- * careful not to undefine it in a header...
- */
-#ifdef __CG_MUST_UNDEF_CG_H_INSIDE__
+#ifndef CG_COMPILATION
 #undef __CG_H_INSIDE__
-#undef __CG_MUST_UNDEF_CG_H_INSIDE__
 #endif
 
 #endif /* __CG_XLIB_RENDERER_H__ */
