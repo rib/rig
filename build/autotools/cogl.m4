@@ -612,6 +612,7 @@ AC_DEFUN([AM_COGL],
           AC_DEFINE_UNQUOTED([CG_GBM_MICRO], [$GBM_MICRO], [The micro version for libgbm])
 
           COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS CG_HAS_EGL_PLATFORM_KMS_SUPPORT"
+          COGL_PKG_REQUIRES="$COGL_PKG_REQUIRES egl gbm libdrm"
         ])
   AM_CONDITIONAL(COGL_SUPPORT_EGL_PLATFORM_KMS,
                  [test "x$enable_kms_egl_platform" = "xyes"])
