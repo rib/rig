@@ -47,7 +47,7 @@ cogl_info_SOURCES = cogl-info.c
 cogl_info_LDADD = $(common_ldadd)
 
 if USE_UV
-programs += cogl-hello cogl-gles2-context cogl-point-sprites vr-test
+programs += cogl-hello cogl-gles2-context cogl-point-sprites
 endif
 examples_datadir = $(pkgdatadir)/examples-data
 examples_data_DATA =
@@ -104,8 +104,11 @@ cogl_sdl2_hello_SOURCES = cogl-sdl2-hello.c
 cogl_sdl2_hello_LDADD = $(common_ldadd)
 endif
 
+if OCULUS_RIFT
+programs += vr-test
 vr_test_SOURCES = vr-test.c
 vr_test_LDADD = $(common_ldadd)
+endif
 
 if EMSCRIPTEN
 %.html: %.o $(top_builddir)/cogl/.libs/libcogl2.so $(top_builddir)/clib/src/.libs/libclib.a
