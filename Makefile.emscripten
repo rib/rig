@@ -3,7 +3,7 @@ all:
 SUBDIRS = clib cogl rut rig
 
 subdirs: $(SUBDIRS)
-all: subdirs rig-device.js
+all: subdirs rig-device.js rig-simulator-worker.js
 
 CC=emcc
 top_prebuiltdir=./prebuilt
@@ -29,8 +29,11 @@ emscripten_libs = \
 	--js-library $(top_srcdir)/cogl/cogl-emscripten-lib.js \
 	--js-library $(top_srcdir)/rig/rig-emscripten-lib.js
 
-%.js: $(top_builddir)/clib/clib.bc $(top_builddir)/cogl/cogl.bc $(top_builddir)/rut/rut.bc $(top_builddir)/rig/rig.bc $(top_builddir)/rig/%.bc
+%.js: $(top_builddir)/clib/clib.bc $(top_builddir)/cogl/cogl.bc $(top_builddir)/rut/rut.bc $(top_builddir)/rig/rig.bc $(top_builddir)/rig/%.bc | rig
 	$(CC) $(_JSFLAGS) $(emscripten_libs) -o $@ $^ -L$(top_prebuiltdir)/lib -lfreetype -lharfbuzz -lharfbuzz-icu -lfontconfig -licuuc -licudata -lprotobuf-c -lxml2
+
+%-worker.js: $(top_builddir)/clib/clib.bc $(top_builddir)/cogl/cogl.bc $(top_builddir)/rut/rut.bc $(top_builddir)/rig/rig.bc $(top_builddir)/rig/%.bc | rig
+	$(CC) $(_JSFLAGS) -s BUILD_AS_WORKER=1 $(emscripten_libs) -o $@ $^ -L$(top_prebuiltdir)/lib -lfreetype -lharfbuzz -lharfbuzz-icu -lfontconfig -licuuc -licudata -lprotobuf-c -lxml2
 
 
 clean: subdirs

@@ -1,4 +1,4 @@
-all::
+all:
 
 E=$(if $(V),,@)
 
@@ -50,7 +50,7 @@ rig_simulator_OBJECTS=$(patsubst %.c, %.o, $(rig_simulator_SOURCE))
 rig-simulator.bc: $(rig_simulator_OBJECTS) rig-simulator-main.c
 
 
-all:: Makefile rig.bc rig-device.bc rig-simulator.bc
+all: Makefile rig.bc rig-device.bc rig-simulator.bc
 
 rig-config.h:
 	$(E)echo "#include \"config.h\"" > $@
@@ -71,10 +71,10 @@ rig-config.pch: $(top_srcdir)/config.h rig-config.h
 	$(E)$(CC) $(_BC_CFLAGS) $(filter %.o %.c,$(^)) -o $@
 
 %.pb-c.c %.pb-c.h: %.proto
-	protoc-c --c_out=$(top_builddir)/rig --proto_path=$(srcdir)/ $(srcdir)/$(*).proto
+	protoc-c --c_out=$(builddir) --proto_path=$(srcdir)/ $(srcdir)/$(*).proto
 
 %.pb.cc %.pb.h: %.proto
-	protoc --cpp_out=$(top_builddir)/rig --proto_path=$(srcdir)/ $(srcdir)/$(*).proto
+	protoc --cpp_out=$(builddir) --proto_path=$(srcdir)/ $(srcdir)/$(*).proto
 
 -include .deps/*.rules
 -include .deps/*/*.rules
