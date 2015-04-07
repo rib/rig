@@ -44,7 +44,7 @@ rut_linear_gradient_equal(const void *key_a, const void *key_b)
     const rut_linear_gradient_t *b = key_b;
 
     if (a->n_stops != b->n_stops)
-        return FALSE;
+        return false;
 
     return memcmp(a->stops, b->stops, a->n_stops *
                   sizeof(rut_gradient_stop_t)) == 0;
