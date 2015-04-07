@@ -35,7 +35,7 @@ paint_cb(uv_idle_t *idle)
     /* Draw scene with GLES2 */
     if (!cg_push_gles2_context(
             data->dev, data->gles2_ctx, data->fb, data->fb, &error)) {
-        g_error("Failed to push gles2 context: %s\n", error->message);
+        c_error("Failed to push gles2 context: %s\n", error->message);
     }
 
     /* Clear offscreen framebuffer with a random color */
@@ -113,7 +113,7 @@ main(int argc, char **argv)
 
     data.gles2_ctx = cg_gles2_context_new(data.dev, &error);
     if (!data.gles2_ctx) {
-        g_error("Failed to create GLES2 context: %s\n", error->message);
+        c_error("Failed to create GLES2 context: %s\n", error->message);
     }
 
     data.gles2_vtable = cg_gles2_context_get_vtable(data.gles2_ctx);
@@ -121,7 +121,7 @@ main(int argc, char **argv)
     /* Draw scene with GLES2 */
     if (!cg_push_gles2_context(
             data.dev, data.gles2_ctx, data.fb, data.fb, &error)) {
-        g_error("Failed to push gles2 context: %s\n", error->message);
+        c_error("Failed to push gles2 context: %s\n", error->message);
     }
 
     cg_pop_gles2_context(data.dev);
