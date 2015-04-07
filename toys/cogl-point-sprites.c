@@ -256,7 +256,7 @@ main(int argc, char *argv[])
 
     cg_pipeline_set_layer_point_sprite_coords_enabled(data.pipeline,
                                                       0, /* layer */
-                                                      TRUE,
+                                                      true,
                                                       NULL /* error */);
 
     for (i = 0; i < N_FIREWORKS; i++) {
