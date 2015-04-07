@@ -116,6 +116,12 @@ vr_test_SOURCES = vr-test.c
 vr_test_LDADD = $(common_ldadd)
 endif
 
+if USE_UV
+programs += realsense-test
+realsense_test_SOURCES = realsense-test.c
+realsense_test_LDADD = $(common_ldadd)
+endif
+
 programs += shell-hello
 emscripten_programs += shell-hello
 shell_hello_SOURCES = shell-hello.c
