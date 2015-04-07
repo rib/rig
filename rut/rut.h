@@ -79,6 +79,7 @@
 #include "rut-texture-cache.h"
 #include "rut-settings.h"
 #include "rut-closure.h"
+#include "rut-gradient.h"
 
 
 #ifdef RUT_EDITOR_ENABLED
@@ -104,7 +105,6 @@
 #include "rut-icon-toggle-set.h"
 #include "rut-rotation-inspector.h"
 #include "rut-adb.h"
-#include "rut-gradient.h"
 #endif
 
 #endif /* _RUT_H_ */
