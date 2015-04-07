@@ -102,7 +102,9 @@ rut_common_sources = \
     rut-poll.c \
     rut-inputable.h \
     rut-pickable.h \
-    rut-meshable.h
+    rut-meshable.h \
+    rut-gradient.h \
+    rut-gradient.c
 
 rut_sdl_sources = \
     rut-sdl-shell.h \
@@ -152,9 +154,7 @@ rut_editor_sources = \
     rut-rotation-inspector.h \
     rut-rotation-inspector.c \
     rut-adb.h \
-    rut-adb.c \
-    rut-gradient.h \
-    rut-gradient.c
+    rut-adb.c
 
 #TODO: remove
 rut_unused_sources = \
