@@ -271,7 +271,7 @@ resolve_addresses_addr2line(c_hash_table_t *hash_table,
     status = c_spawn_sync(NULL, /* working_directory */
                           argv,
                           NULL, /* envp */
-                          G_SPAWN_STDERR_TO_DEV_NULL | G_SPAWN_SEARCH_PATH,
+                          C_SPAWN_STDERR_TO_DEV_NULL | C_SPAWN_SEARCH_PATH,
                           NULL, /* child_setup */
                           NULL, /* user_data for child_setup */
                           &addr_out,
