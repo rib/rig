@@ -33,14 +33,21 @@ programs = cogl-info
 cogl_info_SOURCES = cogl-info.c
 cogl_info_LDADD = $(common_ldadd)
 
-programs += cogl-hello cogl-msaa cogl-gles2-context cogl-point-sprites
+if USE_UV
+programs += cogl-hello cogl-gles2-context cogl-point-sprites
+endif
 examples_datadir = $(pkgdatadir)/examples-data
 examples_data_DATA =
 
 cogl_hello_SOURCES = cogl-hello.c
 cogl_hello_LDADD = $(common_ldadd)
+
+if USE_GLIB
+programs += cogl-msaa
 cogl_msaa_SOURCES = cogl-msaa.c
 cogl_msaa_LDADD = $(common_ldadd)
+endif
+
 cogl_point_sprites_SOURCES = cogl-point-sprites.c
 cogl_point_sprites_LDADD = $(common_ldadd)
 
