@@ -213,9 +213,9 @@ create_primitive(Data *data)
         cg_primitive_new_with_attributes(CG_VERTICES_MODE_POINTS,
                                          N_SPARKS,
                                          attributes,
-                                         G_N_ELEMENTS(attributes));
+                                         C_N_ELEMENTS(attributes));
 
-    for (i = 0; i < G_N_ELEMENTS(attributes); i++)
+    for (i = 0; i < C_N_ELEMENTS(attributes); i++)
         cg_object_unref(attributes[i]);
 }
 
