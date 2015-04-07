@@ -199,13 +199,13 @@ create_primitive(Data *data)
     attributes[0] = cg_attribute_new(data->attribute_buffer,
                                      "cg_position_in",
                                      sizeof(Spark),
-                                     G_STRUCT_OFFSET(Spark, x),
+                                     C_STRUCT_OFFSET(Spark, x),
                                      2, /* n_components */
                                      CG_ATTRIBUTE_TYPE_FLOAT);
     attributes[1] = cg_attribute_new(data->attribute_buffer,
                                      "cg_color_in",
                                      sizeof(Spark),
-                                     G_STRUCT_OFFSET(Spark, color),
+                                     C_STRUCT_OFFSET(Spark, color),
                                      4, /* n_components */
                                      CG_ATTRIBUTE_TYPE_UNSIGNED_BYTE);
 
