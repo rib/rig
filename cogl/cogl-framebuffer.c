@@ -1960,7 +1960,7 @@ cg_framebuffer_draw_textured_rectangle(cg_framebuffer_t *fb,
      * meta texture (such as a sliced texture or sub-texture from a
      * texture atlas) */
     tex0 = cg_pipeline_get_layer_texture(pipeline, 0);
-    if (!cg_is_primitive_texture(tex0)) {
+    if (tex0 && !cg_is_primitive_texture(tex0)) {
         cg_pipeline_t *override_pipeline = NULL;
         cg_pipeline_wrap_mode_t clamp_to_edge = CG_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE;
         cg_pipeline_wrap_mode_t wrap_s;
