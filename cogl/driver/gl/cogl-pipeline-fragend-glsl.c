@@ -1046,10 +1046,10 @@ _cg_pipeline_fragend_glsl_end(cg_pipeline_t *pipeline,
 
         if (!c_list_empty(&shader_state->layers)) {
             cg_pipeline_layer_t *last_layer;
-            layer_data_t *layer_data, *tmp;
+            layer_data_t *layer_data;
 
-            layer_data =
-                c_container_of(shader_state->layers.next, layer_data_t, link);
+            /* NB: layers are added in reverse order... */
+            layer_data = c_list_first(&shader_state->layers, layer_data_t, link);
             last_layer = layer_data->layer;
 
             /* Note: generate_layer() works recursively, so if the value
@@ -1064,13 +1064,10 @@ _cg_pipeline_fragend_glsl_end(cg_pipeline_t *pipeline,
 
             /* We now ensure we have code for all remaining layers that may
              * only be referenced by user snippets... */
-            c_list_for_each_safe(layer_data, tmp, &shader_state->layers, link)
-            {
+            while (!c_list_empty(&shader_state->layers)) {
+                layer_data = c_list_first(&shader_state->layers, layer_data_t, link);
                 generate_layer(shader_state, pipeline, layer_data);
             }
-
-            c_list_for_each_safe(layer_data, tmp, &shader_state->layers, link)
-            c_slice_free(layer_data_t, layer_data);
         } else
             c_string_append(shader_state->source,
                             "  cg_color_out = cg_color_in;\n");
