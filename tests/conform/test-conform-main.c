@@ -122,7 +122,7 @@ main (int argc, char **argv)
   ADD_CG_TEST(test_euler_quaternion, 0);
   ADD_CG_TEST(test_color_hsl, 0);
 
-#if defined(CG_HAS_GLIB_SUPPORT) || defined(CG_HAS_UV_SUPPORT)
+#if defined(CG_HAS_GLIB_SUPPORT)
   ADD_CG_TEST(test_fence, TEST_CG_REQUIREMENT_FENCE);
 #endif
 
