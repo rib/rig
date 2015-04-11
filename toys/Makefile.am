@@ -66,12 +66,14 @@ cogl_basic_video_player_LDADD = $(common_ldadd) $(COGL_GST_DEP_LIBS) $(top_build
 cogl_basic_video_player_CFLAGS = $(AM_CFLAGS) $(COGL_GST_DEP_CFLAGS) -I$(top_builddir)/cogl-gst
 endif
 
+if USE_GLIB
 if X11_TESTS
 programs += cogl-x11-foreign cogl-x11-tfp
 cogl_x11_foreign_SOURCES = cogl-x11-foreign.c
 cogl_x11_foreign_LDADD = $(common_ldadd)
 cogl_x11_tfp_SOURCES = cogl-x11-tfp.c
 cogl_x11_tfp_LDADD = $(common_ldadd)
+endif
 endif
 
 if COGL_SUPPORT_WAYLAND_EGL_SERVER
