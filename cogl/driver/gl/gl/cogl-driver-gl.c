@@ -345,7 +345,7 @@ _cg_driver_pixel_format_to_gl(cg_device_t *dev,
 
     case CG_PIXEL_FORMAT_RGB_565:
         glintformat = GL_RGB;
-        glintformat = _cg_pixel_format_get_internal_gl_format(format);
+        glformat = GL_RGB;
         gltype = GL_UNSIGNED_SHORT_5_6_5;
         break;
 
