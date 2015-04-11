@@ -216,7 +216,7 @@ cogland_buffer_destroy_handler(struct wl_listener *listener,
     struct cogland_buffer *buffer = wl_container_of(listener, buffer, destroy_listener);
 
     wl_signal_emit(&buffer->destroy_signal, buffer);
-    g_slice_free(struct cogland_buffer, buffer);
+    c_slice_free(struct cogland_buffer, buffer);
 }
 
 static struct cogland_buffer *
@@ -231,7 +231,7 @@ cogland_buffer_from_resource(struct wl_resource *resource)
     if (listener) {
         buffer = wl_container_of(listener, buffer, destroy_listener);
     } else {
-        buffer = g_slice_new0(struct cogland_buffer);
+        buffer = c_slice_new0(struct cogland_buffer);
 
         buffer->resource = resource;
         wl_signal_init(&buffer->destroy_signal);
@@ -249,7 +249,7 @@ cogland_buffer_reference_handle_destroy(struct wl_listener *listener,
     struct cogland_buffer_reference *ref =
         wl_container_of(listener, ref, destroy_listener);
 
-    g_assert(data == ref->buffer);
+    c_assert(data == ref->buffer);
 
     ref->buffer = NULL;
 }
@@ -262,7 +262,7 @@ cogland_buffer_reference(struct cogland_buffer_reference *ref,
         ref->buffer->busy_count--;
 
         if (ref->buffer->busy_count == 0) {
-            g_assert(wl_resource_get_client(ref->buffer->resource));
+            c_assert(wl_resource_get_client(ref->buffer->resource));
             wl_resource_queue_event(ref->buffer->resource, WL_BUFFER_RELEASE);
         }
 
@@ -421,7 +421,7 @@ destroy_frame_callback(struct wl_resource *callback_resource)
         wl_resource_get_user_data(callback_resource);
 
     wl_list_remove(&callback->link);
-    g_slice_free(CoglandFrameCallback, callback);
+    c_slice_free(CoglandFrameCallback, callback);
 }
 
 static void
@@ -432,7 +432,7 @@ cogland_surface_frame(struct wl_client *client,
     CoglandFrameCallback *callback;
     struct cogland_surface *surface = wl_resource_get_user_data(surface_resource);
 
-    callback = g_slice_new0(CoglandFrameCallback);
+    callback = c_slice_new0(CoglandFrameCallback);
     callback->compositor = surface->compositor;
     callback->resource = wl_client_add_object(client,
                                               &wl_callback_interface,
@@ -562,7 +562,7 @@ cogland_surface_free(struct cogland_surface *surface)
     wl_list_for_each_safe(cb, next, &surface->pending.frame_callback_list, link)
     wl_resource_destroy(cb->resource);
 
-    g_slice_free(struct cogland_surface, surface);
+    c_slice_free(struct cogland_surface, surface);
 
     cogland_queue_redraw(compositor);
 }
@@ -592,7 +592,7 @@ cogland_compositor_create_surface(
 {
     struct cogland_compositor *compositor =
         wl_resource_get_user_data(wayland_compositor_resource);
-    struct cogland_surface *surface = g_slice_new0(struct cogland_surface);
+    struct cogland_surface *surface = c_slice_new0(struct cogland_surface);
 
     surface->compositor = compositor;
 
@@ -656,7 +656,7 @@ cogland_region_resource_destroy_cb(struct wl_resource *resource)
 {
     struct cogland_shared_region *region = wl_resource_get_user_data(resource);
 
-    g_slice_free(struct cogland_shared_region, region);
+    c_slice_free(struct cogland_shared_region, region);
 }
 
 static void
@@ -664,7 +664,7 @@ cogland_compositor_create_region(struct wl_client *wayland_client,
                                  struct wl_resource *compositor_resource,
                                  uint32_t id)
 {
-    struct cogland_shared_region *region = g_slice_new0(struct cogland_shared_region);
+    struct cogland_shared_region *region = c_slice_new0(struct cogland_shared_region);
 
     region->resource = wl_client_add_object(wayland_client,
                                             &wl_region_interface,
@@ -720,7 +720,7 @@ static void
 cogland_compositor_create_output(
     struct cogland_compositor *compositor, int x, int y, int width_mm, int height_mm)
 {
-    struct cogland_output *output = g_slice_new0(struct cogland_output);
+    struct cogland_output *output = c_slice_new0(struct cogland_output);
     cg_framebuffer_t *fb;
     cg_error_t *error = NULL;
     struct cogland_mode *mode;
@@ -750,7 +750,7 @@ cogland_compositor_create_output(
     cg_framebuffer_set_viewport(
         fb, -x, -y, compositor->virtual_width, compositor->virtual_height);
 
-    mode = g_slice_new0(struct cogland_mode);
+    mode = c_slice_new0(struct cogland_mode);
     mode->flags = 0;
     mode->width = width_mm;
     mode->height = height_mm;
