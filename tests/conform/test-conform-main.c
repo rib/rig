@@ -18,6 +18,8 @@
         test_cg_init();                                                 \
         if (test_cg_check_requirements(REQUIREMENTS))                   \
             FUNC();                                                     \
+        else                                                            \
+            exit(1);                                                    \
         test_cg_fini();                                                 \
         exit(0);                                                        \
     }                                                                   \
