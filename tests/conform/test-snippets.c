@@ -269,9 +269,15 @@ test_texture_lookup_hook (TestState *state)
   snippet = cg_snippet_new (CG_SNIPPET_HOOK_TEXTURE_LOOKUP,
                               NULL,
                               "cg_texel.b += 1.0;");
+
   /* Flip the texture coordinates around the y axis so that it will
-     get the green texel */
-  cg_snippet_set_pre (snippet, "cg_tex_coord.x = 1.0 - cg_tex_coord.x;");
+   * get the green texel.
+   *
+   * XXX: the - 0.1 to avoid sampling at the texture border since we aren't
+   * sure there won't be some inprecision in flipping the coordinate and we
+   * might sample the wrong texel with the default _REPEAT wrap mode.
+   */
+  cg_snippet_set_pre(snippet, "cg_tex_coord.x = (1.0 - cg_tex_coord.x) - 0.1;");
 
   pipeline = create_texture_pipeline (state);
   cg_pipeline_add_layer_snippet (pipeline, 0, snippet);
