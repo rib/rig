@@ -87,6 +87,7 @@ frame_cb(cg_onscreen_t *onscreen,
 int
 main(int argc, char **argv)
 {
+    cg_renderer_t *renderer;
     cg_device_t *dev;
     cg_onscreen_t *onscreen;
     cg_error_t *error = NULL;
@@ -98,9 +99,15 @@ main(int argc, char **argv)
     Data data;
     SDL_Event event;
 
-    dev = cg_sdl_device_new(SDL_USEREVENT, &error);
-    if (!cg_device_connect(dev, &error)) {
-        fprintf(stderr, "Failed to create context: %s\n", error->message);
+    renderer = cg_renderer_new();
+    dev = cg_device_new();
+
+    cg_renderer_set_winsys_id(renderer, CG_WINSYS_ID_SDL);
+    if (cg_renderer_connect(renderer, &error))
+        cg_device_set_renderer(dev, renderer);
+    else {
+        cg_error_free(error);
+        fprintf(stderr, "Failed to create device: %s\n", error->message);
         return 1;
     }
 

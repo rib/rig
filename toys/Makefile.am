@@ -85,26 +85,6 @@ endif
 cogl_gles2_context_SOURCES = cogl-gles2-context.c
 cogl_gles2_context_LDADD = $(common_ldadd)
 
-# XXX although emscripten "supports sdl" we can't build cogl-sdl-hello
-# un-modified for emscripten since emscripten doesn't support
-# SDL_WaitEvent() and we need to use some special emscripten apis
-# to create a mainloop....
-if EMSCRIPTEN
-
-programs += cogl-emscripten-hello
-cogl_emscripten_hello_SOURCES = cogl-emscripten-hello.c
-cogl_emscripten_hello_LDADD = $(common_ldadd)
-
-else # EMSCRIPTEN
-
-if COGL_SUPPORT_SDL
-programs += cogl-sdl-hello
-cogl_sdl_hello_SOURCES = cogl-sdl-hello.c
-cogl_sdl_hello_LDADD = $(common_ldadd)
-endif
-
-endif # EMSCRIPTEN
-
 if COGL_SUPPORT_SDL2
 programs += cogl-sdl2-hello
 cogl_sdl2_hello_SOURCES = cogl-sdl2-hello.c
