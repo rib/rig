@@ -390,74 +390,6 @@ AC_DEFUN([AM_COGL],
         ])
   AM_CONDITIONAL(COGL_SUPPORT_WGL, [test "x$SUPPORT_WGL" = "xyes"])
 
-  AC_ARG_ENABLE(
-    [sdl],
-    [AC_HELP_STRING([--enable-sdl=@<:@no/yes@:>@], [Enable support SDL @<:@default=no@:>@])],
-    [],
-    [enable_sdl=no])
-  AS_IF([test "x$enable_sdl" = "xyes"],
-        [
-          AS_IF([test "x$enable_emscripten" = "xno"],
-                [
-                  PKG_CHECK_MODULES([SDL],
-                                    [sdl],
-                                    [
-                                     COGL_PKG_REQUIRES="$COGL_PKG_REQUIRES sdl"
-                                    ],
-                                    [
-                                     AC_CHECK_HEADER([SDL/SDL.h],
-                                                     [],
-                                                     [AC_MSG_ERROR([SDL support requested but SDL not found])])
-                                    ])
-                ])
-
-          SUPPORT_SDL=yes
-          GL_WINSYS_APIS="$GL_WINSYS_APIS sdl"
-
-          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS CG_HAS_SDL_SUPPORT"
-
-          dnl If we are building with emscripten then that simply implies we are
-          dnl using SDL in conjunction with WebGL (GLES2)
-          AS_IF([test "x$enable_emscripten" = "xyes"],
-                [
-                  SUPPORTED_SDL_GL_APIS="webgl"
-                  SUPPORT_SDL_WEBGL=yes
-                  SUPPORT_SDL_GLES=no
-                  COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS CG_HAS_SDL_WEBGL_SUPPORT"
-                ],
-                [
-                  dnl WebOS has a specially patched version of SDL to add
-                  dnl support for creating a GLES1/2 context. This tries to
-                  dnl detect that patch so we can use it if the GLES2 driver is
-                  dnl selected.
-                  cogl_save_CPPFLAGS="$CPPFLAGS"
-                  CPPFLAGS="$CPPFLAGS $SDL_CFLAGS"
-                  AC_CHECK_DECL([SDL_OPENGLES],
-                                [SUPPORT_SDL_GLES=yes],
-                                [SUPPORT_SDL_GLES=no],
-                                [#include <SDL.h>])
-                  AC_CHECK_DECL([SDL_GL_CONTEXT_MAJOR_VERSION], [], [SUPPORT_SDL_GLES=no],
-                                [#include <SDL.h>])
-                  AC_CHECK_DECL([SDL_GL_CONTEXT_MINOR_VERSION], [], [SUPPORT_SDL_GLES=no],
-                                [#include <SDL.h>])
-                  CPPFLAGS="$cogl_save_CPPFLAGS"
-
-                  AS_IF([test "x$SUPPORT_SDL_GLES" = "xyes"],
-                        [
-                         SUPPORTED_SDL_GL_APIS="gles2"
-                         COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS CG_HAS_SDL_GLES_SUPPORT"
-                        ],
-                        [ SUPPORTED_SDL_GL_APIS="gl" ])
-                ])
-        ],
-        [SUPPORT_SDL=no])
-  AM_CONDITIONAL(COGL_SUPPORT_SDL, [test "x$SUPPORT_SDL" = "xyes"])
-
-  AC_ARG_ENABLE(
-    [sdl2],
-    [AC_HELP_STRING([--enable-sdl2=@<:@no/yes@:>@], [Enable SDL2 support @<:@default=no@:>@])],
-    [],
-    [enable_sdl2=no])
   AS_IF([test "x$enable_sdl2" = "xyes"],
         [
           PKG_CHECK_MODULES([SDL2],
@@ -642,7 +574,6 @@ AC_DEFUN([AM_COGL],
     [AC_HELP_STRING([--enable-xlib-egl-platform=@<:@no/yes@:>@], [Enable support for the Xlib egl platform @<:@default=auto@:>@])],
     [],
     AS_IF([test "x$enable_gles2" = "xyes" && \
-           test "x$SUPPORT_SDL_GLES" != "xyes" && \
            test "x$SUPPORT_SDL_WEBGL" != "xyes" && \
            test "x$SUPPORT_SDL2" != "xyes" && \
            test $EGL_PLATFORM_COUNT -eq 0],
@@ -917,9 +848,6 @@ AC_DEFUN([AM_COGL],
   if test "x$SUPPORT_EGL" = "xyes"; then
   echo "        EGL Platforms:${EGL_PLATFORMS}"
   echo "        Wayland compositor support: ${enable_wayland_egl_server}"
-  fi
-  if test "x$SUPPORT_SDL" = "xyes"; then
-  echo "        Supported SDL GL APIs: ${SUPPORTED_SDL_GL_APIS}"
   fi
   echo "        Building for emscripten environment: $enable_emscripten"
   echo "        Image backend: ${COGL_IMAGE_BACKEND}"

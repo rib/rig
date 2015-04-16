@@ -344,12 +344,6 @@ cogl_egl_sources_c = \
        winsys/cogl-winsys-egl-feature-functions.h \
        winsys/cogl-winsys-egl-private.h
 
-cogl_sdl_sources_h = cogl-sdl.h
-cogl_sdl_sources_c = \
-       winsys/cogl-winsys-sdl-private.h \
-       winsys/cogl-winsys-sdl.c \
-       cogl-sdl.c
-
 cogl_sdl2_sources_h = cogl-sdl.h
 cogl_sdl2_sources_c = \
        winsys/cogl-winsys-sdl-private.h \

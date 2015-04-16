@@ -164,11 +164,7 @@ main(int argc, char **argv)
     const char *winsys_name;
     OutputState output_state;
 
-#ifdef CG_HAS_EMSCRIPTEN_SUPPORT
-    dev = cg_sdl_context_new(SDL_USEREVENT, &error);
-#else
     dev = cg_device_new();
-#endif
     cg_device_connect(dev, &error);
     if (!dev) {
         fprintf(stderr, "Failed to create context: %s\n", error->message);
