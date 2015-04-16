@@ -52,7 +52,7 @@ common_ldadd += $(top_builddir)/cogl-gst/libcogl-gst.la
 endif
 
 if OCULUS_RIFT
-common_ldadd += $(top_builddir)/LibOVR/libOVR.la
+common_ldadd += $(top_builddir)/LibOVR/libOVR.la -lrt -lm -lX11 -lXrandr -lstdc++
 endif
 
 programs = cogl-info

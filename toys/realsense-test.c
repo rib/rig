@@ -360,7 +360,7 @@ trace_replay(struct data *d)
         fmt.fmt.pix.bytesperline = fmt.fmt.pix.width * 2;
         fmt.fmt.pix.sizeimage = fmt.fmt.pix.width * fmt.fmt.pix.height * 2;
         fmt.fmt.pix.colorspace = 8;
-        fmt.fmt.pix.flags = 0x6c0008c8;//???
+        //fmt.fmt.pix.flags = 0x6c0008c8;//???
 #endif
         xioctl(d->v4l_fd, VIDIOC_S_FMT, &fmt);
 

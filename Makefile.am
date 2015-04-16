@@ -25,9 +25,7 @@ if OCULUS_RIFT
 SUBDIRS += LibOVR
 endif
 
-SUBDIRS += rut data rig tests toys po android
-
-SUBDIRS += tools
+SUBDIRS += rut data toys po
 
 endif #EMSCRIPTEN
 
