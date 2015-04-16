@@ -22,26 +22,22 @@ AC_DEFUN([AM_CLIB],
   AS_IF([test x"$emscripten_compiler" = xyes],
         [
           platform_web=yes
-          OS="WEB"
         ],
         [
           case $host in
             *-*-msdos* | *-*-go32* | *-*-mingw32* | *-*-cygwin* | *-*-windows*)
-              OS="WIN32"
               LDFLAGS="$LDFLAGS -no-undefined"
               platform_win32=yes
               need_vasprintf=yes
               ;;
             *-*darwin*)
               platform_darwin=yes
-              OS="UNIX"
               ;;
             *-*-linux-android*)
               AC_MSG_ERROR([Use build/android/project when building for Android])
               ;;
             *-linux*)
               platform_linux=yes
-              OS="UNIX"
               ;;
             *)
               AC_MSG_ERROR([Unsupported host: Please add to configure.ac])
@@ -53,12 +49,6 @@ AC_DEFUN([AM_CLIB],
   AM_CONDITIONAL(OS_UNIX, [test "$platform_linux" = "yes" -o "$platform_darwin" = "yes"])
   AM_CONDITIONAL(OS_WIN32, [test "$platform_win32" = "yes"])
   AM_CONDITIONAL(OS_WEB, [test "$platform_web" = "yes"])
-
-  case $target in
-  arm*-darwin*)
-      CLIB_EXTRA_CFLAGS="$CLIB_EXTRA_CFLAGS -U_FORTIFY_SOURCE"
-      ;;
-  esac
 
   target_osx=no
   target_ios=no
@@ -75,12 +65,8 @@ AC_DEFUN([AM_CLIB],
   AM_CONDITIONAL(OS_OSX, [test "$target_osx" = "yes"])
 
   AM_CONDITIONAL(NEED_VASPRINTF, test x$need_vasprintf = xyes )
+
   AM_ICONV()
-  AC_SEARCH_LIBS(sqrtf, m)
-
-  # nanosleep may not be part of libc, also search it in other libraries
-  AC_SEARCH_LIBS(nanosleep, rt)
-
   AC_CHECK_HEADERS(langinfo.h iconv.h)
 
   dnl Note we don't simply use AC_CHECK_HEADERS() to check for
