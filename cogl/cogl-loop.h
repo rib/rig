@@ -37,6 +37,10 @@
 #include <cogl/cogl-defines.h>
 #include <cogl/cogl-device.h>
 
+#ifndef CG_HAS_POLL_SUPPORT
+#include <poll.h>
+#endif
+
 CG_BEGIN_DECLS
 
 /**
@@ -58,15 +62,6 @@ CG_BEGIN_DECLS
  * to the main loop.
  */
 
-#ifndef CG_HAS_POLL_SUPPORT
-#define CG_SYSDEF_POLLIN 1
-#define CG_SYSDEF_POLLPRI 2
-#define CG_SYSDEF_POLLOUT 3
-#define CG_SYSDEF_POLLERR 4
-#define CG_SYSDEF_POLLHUP 5
-#define CG_SYSDEF_POLLNVAL 6
-#endif
-
 /**
  * cg_poll_fd_event_t:
  * @CG_POLL_FD_EVENT_IN: there is data to read
@@ -85,12 +80,21 @@ CG_BEGIN_DECLS
  * Stability: unstable
  */
 typedef enum {
-    CG_POLL_FD_EVENT_IN = CG_SYSDEF_POLLIN,
-    CG_POLL_FD_EVENT_PRI = CG_SYSDEF_POLLPRI,
-    CG_POLL_FD_EVENT_OUT = CG_SYSDEF_POLLOUT,
-    CG_POLL_FD_EVENT_ERR = CG_SYSDEF_POLLERR,
-    CG_POLL_FD_EVENT_HUP = CG_SYSDEF_POLLHUP,
-    CG_POLL_FD_EVENT_NVAL = CG_SYSDEF_POLLNVAL
+#ifndef CG_HAS_POLL_SUPPORT
+    CG_POLL_FD_EVENT_IN = POLLIN,
+    CG_POLL_FD_EVENT_PRI = POLLPRI,
+    CG_POLL_FD_EVENT_OUT = POLLOUT,
+    CG_POLL_FD_EVENT_ERR = POLLERR,
+    CG_POLL_FD_EVENT_HUP = POLLHUP,
+    CG_POLL_FD_EVENT_NVAL = POLLNVAL
+#else
+    CG_POLL_FD_EVENT_IN = 1,
+    CG_POLL_FD_EVENT_PRI = 2,
+    CG_POLL_FD_EVENT_OUT = 3,
+    CG_POLL_FD_EVENT_ERR = 4,
+    CG_POLL_FD_EVENT_HUP = 5,
+    CG_POLL_FD_EVENT_NVAL = 6
+#endif
 } cg_poll_fd_event_t;
 
 /**
