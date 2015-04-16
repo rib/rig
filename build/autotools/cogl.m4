@@ -155,9 +155,7 @@ AC_DEFUN([AM_COGL],
   dnl     ============================================================
 
   AS_IF([test "x$enable_cogl_path" = "xyes"],
-        [
-          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS CG_HAS_CG_PATH_SUPPORT"
-        ]
+        [ COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS CG_HAS_CG_PATH_SUPPORT" ]
   )
 
 
@@ -488,8 +486,7 @@ AC_DEFUN([AM_COGL],
           COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS CG_HAS_EGL_PLATFORM_KMS_SUPPORT"
           COGL_PKG_REQUIRES="$COGL_PKG_REQUIRES egl gbm libdrm"
         ])
-  AM_CONDITIONAL(COGL_SUPPORT_EGL_PLATFORM_KMS,
-                 [test "x$enable_kms_egl_platform" = "xyes"])
+  AM_CONDITIONAL(COGL_SUPPORT_EGL_PLATFORM_KMS, [test "x$enable_kms_egl_platform" = "xyes"])
 
   AC_ARG_ENABLE(
     [wayland-egl-server],
@@ -693,46 +690,10 @@ AC_DEFUN([AM_COGL],
   dnl XXX: poll(2) can't currently be used with emscripten even though
   dnl poll.h is in the toolchain headers so we manually skip the check
   dnl in this case
-  have_poll_h=no
   AS_IF([test "x$enable_emscripten" = "xno"],
         [
-         AC_CHECK_HEADER(poll.h,
-                         [
-                          AC_COMPUTE_INT(COGL_SYSDEF_POLLIN, POLLIN, [#include <poll.h>],
-                                         AC_MSG_ERROR([Unable to get value of POLLIN]))
-                          AC_COMPUTE_INT(COGL_SYSDEF_POLLPRI, POLLPRI, [#include <poll.h>],
-                                         AC_MSG_ERROR([Unable to get value of POLLPRI]))
-                          AC_COMPUTE_INT(COGL_SYSDEF_POLLOUT, POLLOUT, [#include <poll.h>],
-                                         AC_MSG_ERROR([Unable to get value of POLLOUT]))
-                          AC_COMPUTE_INT(COGL_SYSDEF_POLLERR, POLLERR, [#include <poll.h>],
-                                         AC_MSG_ERROR([Unable to get value of POLLERR]))
-                          AC_COMPUTE_INT(COGL_SYSDEF_POLLHUP, POLLHUP, [#include <poll.h>],
-                                         AC_MSG_ERROR([Unable to get value of POLLHUP]))
-                          AC_COMPUTE_INT(COGL_SYSDEF_POLLNVAL, POLLNVAL, [#include <poll.h>],
-                                         AC_MSG_ERROR([Unable to get value of POLLNVAL]))
-                          COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS CG_HAS_POLL_SUPPORT"
-                          have_poll_h=yes
-                         ])
+          AC_CHECK_HEADER(poll.h, [ COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS CG_HAS_POLL_SUPPORT" ])
         ])
-
-  AS_IF([test "x$have_poll_h" = "xno"],
-        [
-         COGL_SYSDEF_POLLIN=1
-         COGL_SYSDEF_POLLPRI=2
-         COGL_SYSDEF_POLLOUT=4
-         COGL_SYSDEF_POLLERR=8
-         COGL_SYSDEF_POLLHUP=16
-         COGL_SYSDEF_POLLNVAL=32
-        ])
-
-  COGL_DEFINES_EXTRA="$COGL_DEFINES_EXTRA
-  #define CG_SYSDEF_POLLIN $COGL_SYSDEF_POLLIN
-  #define CG_SYSDEF_POLLPRI $COGL_SYSDEF_POLLPRI
-  #define CG_SYSDEF_POLLOUT $COGL_SYSDEF_POLLOUT
-  #define CG_SYSDEF_POLLERR $COGL_SYSDEF_POLLERR
-  #define CG_SYSDEF_POLLHUP $COGL_SYSDEF_POLLHUP
-  #define CG_SYSDEF_POLLNVAL $COGL_SYSDEF_POLLNVAL
-  "
 
   dnl ================================================================
   dnl What needs to be substituted in other files
