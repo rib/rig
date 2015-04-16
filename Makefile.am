@@ -1,4 +1,4 @@
-SUBDIRS = clib test-fixtures cogl research/particle-engine
+SUBDIRS = libuv clib test-fixtures cogl research/particle-engine
 
 if BUILD_COGL_PANGO
 SUBDIRS += cogl-pango

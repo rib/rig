@@ -317,7 +317,7 @@ dnl ================================================================
 dnl Check for dependency packages.
 dnl ================================================================
 
-RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES icu-uc harfbuzz harfbuzz-icu fontconfig freetype2 libprotobuf-c libuv"
+RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES icu-uc harfbuzz harfbuzz-icu fontconfig freetype2 libprotobuf-c"
 
 AM_CONDITIONAL([USE_UV], [true])
 AC_DEFINE([USE_UV], [1], [Use libuv])
@@ -571,6 +571,7 @@ dnl ================================================================
 AC_OUTPUT(
 Makefile
 test-fixtures/Makefile
+libuv/Makefile
 clib/Makefile
 clib/src/Makefile
 clib/src/clib-config.h

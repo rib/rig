@@ -23,6 +23,7 @@ AM_CPPFLAGS = \
 	-I$(srcdir)/driver/gl 			\
 	-I$(srcdir)/driver/gl/gl 		\
 	-I$(srcdir)/driver/gl/gles 		\
+	-I$(top_srcdir)/libuv/include		\
 	-I$(top_srcdir)/clib/src		\
 	-I$(top_builddir)/clib/src		\
 	$(NULL)
