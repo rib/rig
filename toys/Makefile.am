@@ -20,14 +20,20 @@ common_ldadd = \
 	$(top_builddir)/rut/librut.la \
 	$(top_builddir)/cogl/libcogl2.la \
 	$(top_builddir)/cogl-path/libcogl-path.la \
-	$(top_builddir)/cogl-pango/libcogl-pango2.la \
-	$(top_builddir)/cogl-gst/libcogl-gst.la \
-	$(top_builddir)/LibOVR/libOVR.la \
 	$(RIG_DEP_LIBS) \
 	$(COGL_DEP_LIBS) \
 	$(top_builddir)/clib/src/libclib.la \
 	-lstdc++ \
 	$(LIBM)
+
+if EDITOR_ENABLED
+common_ldadd += $(top_builddir)/cogl-pango/libcogl-pango2.la
+endif
+
+if USE_GSTREAMER
+common_ldadd += $(top_builddir)/cogl-gst/libcogl-gst.la
+endif
+
 
 programs = cogl-info
 
