@@ -329,10 +329,6 @@ cogl_egl_powervr_null_sources_c = \
 	winsys/cogl-winsys-egl-null.c \
 	winsys/cogl-winsys-egl-null-private.h
 
-cogl_egl_gdl_sources_c = \
-	winsys/cogl-winsys-egl-gdl.c \
-	winsys/cogl-winsys-egl-gdl-private.h
-
 cogl_egl_android_sources_c = \
 	winsys/cogl-winsys-egl-android.c \
 	winsys/cogl-winsys-egl-android-private.h

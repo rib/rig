@@ -47,10 +47,6 @@ struct _cg_display_t {
     struct wl_display *wayland_compositor_display;
 #endif
 
-#ifdef CG_HAS_EGL_PLATFORM_GDL_SUPPORT
-    gdl_plane_id_t gdl_plane;
-#endif
-
     void *winsys;
 };
 
