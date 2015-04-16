@@ -353,8 +353,8 @@ trace_replay(struct data *d)
         fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
         fmt.fmt.pix.width=640;
         fmt.fmt.pix.height=240;
-        fmt.fmt.pix.pixelformat=V4L2_PIX_FMT_Z16;
-        //fmt.fmt.pix.pixelformat=0x56595559; //YUYV
+        //fmt.fmt.pix.pixelformat=V4L2_PIX_FMT_YUYV;
+        fmt.fmt.pix.pixelformat=0x56595559; //YUYV
         fmt.fmt.pix.field = V4L2_FIELD_NONE;
 #if 1
         fmt.fmt.pix.bytesperline = fmt.fmt.pix.width * 2;
