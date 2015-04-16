@@ -93,6 +93,7 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir) \
 	-I$(srcdir) \
 	-I$(srcdir)/sfmt \
+	-I$(top_srcdir)/libuv/include \
 	-Wall \
 	$(RIG_DEP_CFLAGS) \
 	$(RIG_EXTRA_CFLAGS) \
@@ -104,8 +105,10 @@ AM_CPPFLAGS = \
 libclib_static_la_SOURCES=$(libclib_la_SOURCES)
 libclib_static_la_CFLAGS = $(libclib_la_CFLAGS)
 
+libclib_la_LIBADD = $(top_builddir)/libuv/libuv.la
+
 if OS_WIN32
-libclib_la_LIBADD = -lm $(LTLIBICONV) -lpsapi
+libclib_la_LIBADD += -lm $(LTLIBICONV) -lpsapi
 endif
 
 libclib_static_la_LIBADD = $(libclib_la_LIBADD) $(LTLIBICONV)
