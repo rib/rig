@@ -145,7 +145,6 @@ cg_renderer_t *cg_renderer_new(void);
  * @CG_WINSYS_ID_GLX: Use the GLX window system binding API
  * @CG_WINSYS_ID_EGL_XLIB: Use EGL with the X window system via XLib
  * @CG_WINSYS_ID_EGL_NULL: Use EGL with the PowerVR NULL window system
- * @CG_WINSYS_ID_EGL_GDL: Use EGL with the GDL platform
  * @CG_WINSYS_ID_EGL_WAYLAND: Use EGL with the Wayland window system
  * @CG_WINSYS_ID_EGL_KMS: Use EGL with the KMS platform
  * @CG_WINSYS_ID_EGL_ANDROID: Use EGL with the Android platform
@@ -163,7 +162,6 @@ typedef enum {
     CG_WINSYS_ID_GLX,
     CG_WINSYS_ID_EGL_XLIB,
     CG_WINSYS_ID_EGL_NULL,
-    CG_WINSYS_ID_EGL_GDL,
     CG_WINSYS_ID_EGL_WAYLAND,
     CG_WINSYS_ID_EGL_KMS,
     CG_WINSYS_ID_EGL_ANDROID,

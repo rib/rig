@@ -108,9 +108,6 @@ endif
 if COGL_SUPPORT_EGL_PLATFORM_POWERVR_NULL
 cogl_sources_c += $(cogl_egl_powervr_null_sources_c)
 endif
-if COGL_SUPPORT_EGL_PLATFORM_GDL
-cogl_sources_c += $(cogl_egl_gdl_sources_c)
-endif
 if COGL_SUPPORT_EGL_PLATFORM_ANDROID
 cogl_sources_c += $(cogl_egl_android_sources_c)
 endif
