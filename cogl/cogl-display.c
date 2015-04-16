@@ -99,10 +99,6 @@ cg_display_new(cg_renderer_t *renderer,
 
     display->setup = false;
 
-#ifdef CG_HAS_EGL_PLATFORM_GDL_SUPPORT
-    display->gdl_plane = GDL_PLANE_ID_UPP_C;
-#endif
-
     display = _cg_display_object_new(display);
 
     cg_display_set_onscreen_template(display, onscreen_template);
@@ -152,16 +148,6 @@ cg_display_setup(cg_display_t *display, cg_error_t **error)
 
     return true;
 }
-
-#ifdef CG_HAS_EGL_PLATFORM_GDL_SUPPORT
-void
-cg_gdl_display_set_plane(cg_display_t *display, gdl_plane_id_t plane)
-{
-    c_return_if_fail(display->setup == false);
-
-    display->gdl_plane = plane;
-}
-#endif
 
 #ifdef CG_HAS_WAYLAND_EGL_SERVER_SUPPORT
 void

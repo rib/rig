@@ -59,9 +59,6 @@
 #ifdef CG_HAS_EGL_PLATFORM_KMS_SUPPORT
 #include "cogl-winsys-egl-kms-private.h"
 #endif
-#ifdef CG_HAS_EGL_PLATFORM_GDL_SUPPORT
-#include "cogl-winsys-egl-gdl-private.h"
-#endif
 #ifdef CG_HAS_EGL_PLATFORM_ANDROID_SUPPORT
 #include "cogl-winsys-egl-android-private.h"
 #endif
@@ -162,9 +159,6 @@ static cg_winsys_vtable_getter_t _cg_winsys_vtable_getters[] = {
 #endif
 #ifdef CG_HAS_EGL_PLATFORM_KMS_SUPPORT
     _cg_winsys_egl_kms_get_vtable,
-#endif
-#ifdef CG_HAS_EGL_PLATFORM_GDL_SUPPORT
-    _cg_winsys_egl_gdl_get_vtable,
 #endif
 #ifdef CG_HAS_EGL_PLATFORM_ANDROID_SUPPORT
     _cg_winsys_egl_android_get_vtable,
