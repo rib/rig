@@ -48,45 +48,18 @@ AC_DEFUN([AM_COGL],
   LT_LIB_M
   AC_SUBST(LIBM)
 
-  dnl ================================================================
-  dnl See what platform we are building for
-  dnl ================================================================
-  AC_CHECK_HEADER([OpenGL/gl.h], [platform_quartz=yes], [platform_quartz=no])
 
   dnl ================================================================
   dnl Handle extra configure options
   dnl ================================================================
 
-
-  dnl     ============================================================
-  dnl     Standalone cogl
-  dnl     ============================================================
-
-  AS_IF([test "x$enable_standalone" = "xyes"],
-        [
-          enable_cairo=no
-          enable_cogl_pango=no
-          enable_gdk_pixbuf=no
-         ]
-  )
-
   dnl     ============================================================
   dnl     Enable debugging
   dnl     ============================================================
-  AS_CASE(
-    [$enable_debug],
-    [yes],
-    [
-      COGL_EXTRA_CFLAGS="$COGL_EXTRA_CFLAGS -DCG_GL_DEBUG -DCG_OBJECT_DEBUG -DCG_ENABLE_DEBUG"
-    ],
-    [no],
-    [
-      COGL_EXTRA_CFLAGS="$COGL_EXTRA_CFLAGS -DG_DISABLE_CHECKS -DG_DISABLE_CAST_CHECKS"
-    ],
-    [AC_MSG_ERROR([Unknown argument for --enable-debug])]
+  AS_IF([test "x$enable_debug" = "xyes"],
+    [ COGL_EXTRA_CFLAGS="$COGL_EXTRA_CFLAGS -DCG_GL_DEBUG -DCG_OBJECT_DEBUG -DCG_ENABLE_DEBUG" ],
+    [ COGL_EXTRA_CFLAGS="$COGL_EXTRA_CFLAGS -DG_DISABLE_CHECKS -DG_DISABLE_CAST_CHECKS" ]
   )
-
-  AC_SUBST(COGL_DEBUG_CFLAGS)
 
   dnl     ============================================================
   dnl     Enable cairo usage for debugging
@@ -314,7 +287,7 @@ AC_DEFUN([AM_COGL],
 
           cogl_gl_headers="GL/gl.h"
 
-          AS_IF([test "x$platform_quartz" = "xyes"],
+          AS_IF([test "x$platform_darwin" = "xyes"],
                 [
                   cogl_gl_headers="OpenGL/gl.h"
                   COGL_EXTRA_LDFLAGS="$COGL_EXTRA_LDFLAGS -framework OpenGL"
