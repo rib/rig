@@ -3,6 +3,7 @@ noinst_PROGRAMS =
 AM_CFLAGS = \
 	$(COGL_DEP_CFLAGS) \
 	-I$(top_srcdir) \
+	-I$(top_srcdir)/libuv/include \
 	-I$(top_srcdir)/clib/src \
 	-I$(top_builddir)/clib/src \
 	-I$(top_srcdir)/research/particle-engine/pe

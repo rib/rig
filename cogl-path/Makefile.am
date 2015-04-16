@@ -56,6 +56,7 @@ libcogl_path_la_LDFLAGS = -static
 AM_CPPFLAGS = \
 	-DCG_COMPILATION \
 	-DG_LOG_DOMAIN=\"CoglPath\" \
+	-I$(top_srcdir)/libuv/include \
 	-I$(top_srcdir)/clib/src \
 	-I$(top_builddir)/clib/src \
 	-I$(srcdir)/tesselator \

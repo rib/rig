@@ -36,6 +36,7 @@ libcogl_pango2_la_LDFLAGS = -static
 AM_CPPFLAGS = \
 	-DCG_COMPILATION \
 	-DG_LOG_DOMAIN=\"CoglPango\" \
+	-I$(top_srcdir)/libuv/include \
 	-I$(top_srcdir)/clib/src \
 	-I$(top_builddir)/clib/src \
 	-I$(top_srcdir)/cogl \
