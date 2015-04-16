@@ -119,10 +119,6 @@ cogl_public_h += $(cogl_egl_sources_h)
 cogl_nodist_experimental_h += $(builddir)/cogl-egl-defines.h
 cogl_sources_c += $(cogl_egl_sources_c)
 endif
-if COGL_SUPPORT_SDL
-cogl_public_h += $(cogl_sdl_sources_h)
-cogl_sources_c += $(cogl_sdl_sources_c)
-endif
 if COGL_SUPPORT_SDL2
 cogl_experimental_h += $(cogl_sdl2_sources_h)
 cogl_sources_c += $(cogl_sdl2_sources_c)
