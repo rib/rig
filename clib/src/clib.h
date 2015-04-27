@@ -805,6 +805,11 @@ void *c_hash_table_find(c_hash_table_t *hash,
                         c_hash_iter_remove_func_t predicate,
                         void *user_data);
 bool c_hash_table_remove(c_hash_table_t *hash, const void *key);
+
+/* assuming a value remains valid to reference after being removed
+ * this allows combining a lookup and removal... */
+void *c_hash_table_remove_value(c_hash_table_t *hash, const void *key);
+
 bool c_hash_table_steal(c_hash_table_t *hash, const void *key);
 void c_hash_table_remove_all(c_hash_table_t *hash);
 unsigned int c_hash_table_foreach_remove(c_hash_table_t *hash,

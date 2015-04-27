@@ -421,8 +421,10 @@ c_hash_table_remove_all(c_hash_table_t *hash)
     }
 }
 
-bool
-c_hash_table_remove(c_hash_table_t *hash, const void *key)
+static bool
+_c_hash_table_remove_value(c_hash_table_t *hash,
+                           const void *key,
+                           void **value)
 {
     c_equal_func_t equal;
     slot_t *s, *last;
@@ -436,10 +438,13 @@ c_hash_table_remove(c_hash_table_t *hash, const void *key)
     last = NULL;
     for (s = hash->table[hashcode]; s != NULL; s = s->next) {
         if ((*equal)(s->key, key)) {
+            *value = s->value;
+
             if (hash->key_destroy_func != NULL)
                 (*hash->key_destroy_func)(s->key);
             if (hash->value_destroy_func != NULL)
                 (*hash->value_destroy_func)(s->value);
+
             if (last == NULL)
                 hash->table[hashcode] = s->next;
             else
@@ -453,6 +458,24 @@ c_hash_table_remove(c_hash_table_t *hash, const void *key)
     }
     sanity_check(hash);
     return false;
+}
+
+bool
+c_hash_table_remove(c_hash_table_t *hash, const void *key)
+{
+    void *value;
+
+    return _c_hash_table_remove_value(hash, key, &value);
+}
+
+void *
+c_hash_table_remove_value(c_hash_table_t *hash, const void *key)
+{
+    void *value = NULL;
+
+    _c_hash_table_remove_value(hash, key, &value);
+
+    return value;
 }
 
 unsigned int
