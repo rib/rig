@@ -117,6 +117,8 @@ rut_sdl_sources = \
 rut_editor_sources = \
     rut-text-buffer.h \
     rut-text-buffer.c \
+    rut-text-blob.h \
+    rut-text-blob.c \
     rut-text.h \
     rut-text.c \
     rut-number-slider.h \
