@@ -35,6 +35,7 @@
 #include <clib.h>
 
 #include <rut.h>
+#include <rut-headless-shell.h>
 
 #include "rig-engine.h"
 #include "rig-engine-op.h"
@@ -378,7 +379,7 @@ simulator__run_frame(Rig__Simulator_Service *service,
             break;
         }
 
-        rut_shell_handle_stream_event(engine->shell, event);
+        rut_headless_shell_handle_stream_event(engine->shell, event);
     }
 
     /*

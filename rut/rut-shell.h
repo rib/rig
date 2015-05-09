@@ -485,6 +485,7 @@ struct _rut_shell_t {
 
         void (*free_input_event)(rut_input_event_t *event);
 
+        void (*cleanup)(rut_shell_t *shell);
     } platform;
 };
 
@@ -594,8 +595,6 @@ void rut_shell_run_pre_paint_callbacks(rut_shell_t *shell);
 
 /* Determines whether any timelines are running */
 bool rut_shell_check_timelines(rut_shell_t *shell);
-
-void rut_shell_handle_stream_event(rut_shell_t *shell, rut_stream_event_t *event);
 
 void rut_shell_run_start_paint_callbacks(rut_shell_t *shell);
 

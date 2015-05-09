@@ -389,38 +389,6 @@ rut_poll_shell_remove_idle(rut_shell_t *shell, rut_closure_t *idle)
 #endif
 }
 
-#ifdef USE_SDL
-static int64_t
-prepare_sdl_busy_wait(void *user_data)
-{
-    return SDL_PollEvent(NULL) ? 0 : 8000;
-}
-
-static void
-dispatch_sdl_busy_wait(void *user_data, int fd, int revents)
-{
-    rut_shell_t *shell = user_data;
-    SDL_Event event;
-
-    while (SDL_PollEvent(&event)) {
-        cg_sdl_handle_event(shell->cg_device, &event);
-
-        rut_sdl_shell_handle_sdl_event(shell, &event);
-    }
-}
-
-static void
-integrate_sdl_events_via_busy_wait(rut_shell_t *shell)
-{
-    rut_poll_shell_add_fd(shell,
-                          -1, /* fd */
-                          0, /* events */
-                          prepare_sdl_busy_wait,
-                          dispatch_sdl_busy_wait,
-                          shell);
-}
-#endif /* USE_SDL */
-
 #ifdef USE_GLIB
 typedef struct _uv_glib_poll_t {
     rut_shell_t *shell;
@@ -532,8 +500,8 @@ libuv_cg_prepare_callback(uv_prepare_t *prepare)
     update_cg_sources(shell);
 }
 
-static void
-integrate_cg_events_via_libuv(rut_shell_t *shell)
+void
+rut_poll_shell_integrate_cg_events_via_libuv(rut_shell_t *shell)
 {
     uv_loop_t *loop = rut_uv_shell_get_loop(shell);
 
@@ -547,16 +515,6 @@ integrate_cg_events_via_libuv(rut_shell_t *shell)
 }
 #endif /* USE_UV */
 
-void
-rut_poll_init(rut_shell_t *shell)
-{
-    c_list_init(&shell->poll_sources);
-    c_list_init(&shell->idle_closures);
-#ifndef __EMSCRIPTEN__
-    c_list_init(&shell->sigchild_closures);
-#endif
-}
-
 #ifdef USE_UV
 static void
 handle_sigchild(uv_signal_t *handle, int signo)
@@ -565,6 +523,45 @@ handle_sigchild(uv_signal_t *handle, int signo)
     rut_closure_list_invoke_no_args(&shell->sigchild_closures);
 }
 #endif
+
+void
+rut_poll_init(rut_shell_t *shell)
+{
+    c_list_init(&shell->poll_sources);
+    c_list_init(&shell->idle_closures);
+#ifndef __EMSCRIPTEN__
+    c_list_init(&shell->sigchild_closures);
+#endif
+
+#ifdef USE_UV
+    uv_loop_t *loop = rut_uv_shell_get_loop(shell);
+
+    uv_idle_init(loop, &shell->uv_idle);
+    shell->uv_idle.data = shell;
+
+    uv_signal_init(loop, &shell->sigchild_handle);
+    shell->sigchild_handle.data = shell;
+    uv_signal_start(&shell->sigchild_handle, handle_sigchild, SIGCHLD);
+
+#ifdef USE_GLIB
+    uv_prepare_init(loop, &shell->glib_uv_prepare);
+    shell->glib_uv_prepare.data = shell;
+
+    uv_check_init(loop, &shell->glib_uv_check);
+    shell->glib_uv_check.data = shell;
+
+    uv_timer_init(loop, &shell->glib_uv_timer);
+    uv_check_init(loop, &shell->glib_uv_timer_check);
+    shell->glib_uv_timer_check.data = &shell->glib_uv_timer;
+
+    shell->n_pollfds = 0;
+    shell->pollfds = g_array_sized_new(false, false, sizeof(GPollFD), 5);
+    shell->glib_polls =
+        g_array_sized_new(false, false, sizeof(uv_glib_poll_t), 5);
+#endif /* USE_GLIB */
+
+#endif /* USE_UV */
+}
 
 rut_closure_t *
 rut_poll_shell_add_sigchild(rut_shell_t *shell,
@@ -588,61 +585,6 @@ rut_poll_shell_remove_sigchild(rut_shell_t *shell, rut_closure_t *sigchild)
 #else
     c_return_if_reached();
 #endif
-}
-
-void
-rut_poll_sources_init(rut_shell_t *shell)
-{
-#ifdef USE_UV
-    uv_loop_t *loop = rut_uv_shell_get_loop(shell);
-
-    uv_idle_init(loop, &shell->uv_idle);
-    shell->uv_idle.data = shell;
-
-    uv_signal_init(loop, &shell->sigchild_handle);
-    shell->sigchild_handle.data = shell;
-    uv_signal_start(&shell->sigchild_handle, handle_sigchild, SIGCHLD);
-
-    if (!shell->headless) {
-        /* XXX: SDL doesn't give us a portable way of blocking for
-         * events that is compatible with us polling for other file
-         * descriptor events outside of SDL which means we resort to
-         * busily polling SDL for events.
-         *
-         * TODO: On X11 use
-         * XConnectionNumber(sdl_info.info.x11.display) so we can also
-         * poll for events on X. One caveat would probably be that
-         * we'd subvert SDL being able to specify a timeout for
-         * polling.
-         */
-#ifndef RIG_SIMULATOR_ONLY
-
-#ifdef USE_SDL
-        integrate_sdl_events_via_busy_wait(shell);
-#endif
-
-        integrate_cg_events_via_libuv(shell);
-#endif /* RIG_SIMULATOR_ONLY */
-    }
-
-#ifdef USE_GLIB
-    uv_prepare_init(loop, &shell->glib_uv_prepare);
-    shell->glib_uv_prepare.data = shell;
-
-    uv_check_init(loop, &shell->glib_uv_check);
-    shell->glib_uv_check.data = shell;
-
-    uv_timer_init(loop, &shell->glib_uv_timer);
-    uv_check_init(loop, &shell->glib_uv_timer_check);
-    shell->glib_uv_timer_check.data = &shell->glib_uv_timer;
-
-    shell->n_pollfds = 0;
-    shell->pollfds = g_array_sized_new(false, false, sizeof(GPollFD), 5);
-    shell->glib_polls =
-        g_array_sized_new(false, false, sizeof(uv_glib_poll_t), 5);
-#endif /* USE_GLIB */
-
-#endif /* USE_UV */
 }
 
 #ifdef USE_GLIB

@@ -79,6 +79,7 @@
 #include "rut-poll.h"
 #include "rut-geometry.h"
 #include "rut-texture-cache.h"
+#include "rut-headless-shell.h"
 
 #ifdef USE_SDL
 #include "rut-sdl-shell.h"
@@ -207,18 +208,6 @@ rut_key_event_get_keysym(rut_input_event_t *event)
 {
     rut_shell_t *shell = event->onscreen->shell;
 
-    if (shell->headless) {
-        rut_stream_event_t *stream_event = event->native;
-        switch (stream_event->type) {
-        case RUT_STREAM_EVENT_KEY_UP:
-        case RUT_STREAM_EVENT_KEY_DOWN:
-            return stream_event->key.keysym;
-        default:
-            c_warn_if_reached();
-            return 0;
-        }
-    }
-
     return shell->platform.key_event_get_keysym(event);
 }
 
@@ -226,19 +215,6 @@ rut_key_event_action_t
 rut_key_event_get_action(rut_input_event_t *event)
 {
     rut_shell_t *shell = event->onscreen->shell;
-
-    if (shell->headless) {
-        rut_stream_event_t *stream_event = event->native;
-        switch (stream_event->type) {
-        case RUT_STREAM_EVENT_KEY_DOWN:
-            return RUT_KEY_EVENT_ACTION_DOWN;
-        case RUT_STREAM_EVENT_KEY_UP:
-            return RUT_KEY_EVENT_ACTION_UP;
-        default:
-            c_warn_if_reached();
-            return 0;
-        }
-    }
 
     return shell->platform.key_event_get_action(event);
 }
@@ -248,21 +224,6 @@ rut_motion_event_get_action(rut_input_event_t *event)
 {
     rut_shell_t *shell = event->onscreen->shell;
 
-    if (shell->headless) {
-        rut_stream_event_t *stream_event = event->native;
-        switch (stream_event->type) {
-        case RUT_STREAM_EVENT_POINTER_DOWN:
-            return RUT_MOTION_EVENT_ACTION_DOWN;
-        case RUT_STREAM_EVENT_POINTER_UP:
-            return RUT_MOTION_EVENT_ACTION_UP;
-        case RUT_STREAM_EVENT_POINTER_MOVE:
-            return RUT_MOTION_EVENT_ACTION_MOVE;
-        default:
-            c_warn_if_reached();
-            return 0;
-        }
-    }
-
     return shell->platform.motion_event_get_action(event);
 }
 
@@ -270,19 +231,6 @@ rut_button_state_t
 rut_motion_event_get_button(rut_input_event_t *event)
 {
     rut_shell_t *shell = event->onscreen->shell;
-
-    if (shell->headless) {
-        rut_stream_event_t *stream_event = event->native;
-        switch (stream_event->type) {
-        case RUT_STREAM_EVENT_POINTER_DOWN:
-            return stream_event->pointer_button.button;
-        case RUT_STREAM_EVENT_POINTER_UP:
-            return stream_event->pointer_button.button;
-        default:
-            c_warn_if_reached();
-            return 0;
-        }
-    }
 
     return shell->platform.motion_event_get_button(event);
 }
@@ -292,21 +240,6 @@ rut_motion_event_get_button_state(rut_input_event_t *event)
 {
     rut_shell_t *shell = event->onscreen->shell;
 
-    if (shell->headless) {
-        rut_stream_event_t *stream_event = event->native;
-
-        switch (stream_event->type) {
-        case RUT_STREAM_EVENT_POINTER_MOVE:
-            return stream_event->pointer_move.state;
-        case RUT_STREAM_EVENT_POINTER_DOWN:
-        case RUT_STREAM_EVENT_POINTER_UP:
-            return stream_event->pointer_button.state;
-        default:
-            c_warn_if_reached();
-            return 0;
-        }
-    }
-
     return shell->platform.motion_event_get_button_state(event);
 }
 
@@ -315,18 +248,6 @@ rut_key_event_get_modifier_state(rut_input_event_t *event)
 {
     rut_shell_t *shell = event->onscreen->shell;
 
-    if (shell->headless) {
-        rut_stream_event_t *stream_event = event->native;
-        switch (stream_event->type) {
-        case RUT_STREAM_EVENT_KEY_DOWN:
-        case RUT_STREAM_EVENT_KEY_UP:
-            return stream_event->key.mod_state;
-        default:
-            c_warn_if_reached();
-            return 0;
-        }
-    }
-
     return shell->platform.key_event_get_modifier_state(event);
 }
 
@@ -334,20 +255,6 @@ rut_modifier_state_t
 rut_motion_event_get_modifier_state(rut_input_event_t *event)
 {
     rut_shell_t *shell = event->onscreen->shell;
-
-    if (shell->headless) {
-        rut_stream_event_t *stream_event = event->native;
-        switch (stream_event->type) {
-        case RUT_STREAM_EVENT_POINTER_MOVE:
-            return stream_event->pointer_move.mod_state;
-        case RUT_STREAM_EVENT_POINTER_DOWN:
-        case RUT_STREAM_EVENT_POINTER_UP:
-            return stream_event->pointer_button.mod_state;
-        default:
-            c_warn_if_reached();
-            return 0;
-        }
-    }
 
     return shell->platform.motion_event_get_modifier_state(event);
 }
@@ -360,23 +267,7 @@ rut_motion_event_get_transformed_xy(rut_input_event_t *event,
     const cg_matrix_t *transform = event->input_transform;
     rut_shell_t *shell = event->onscreen->shell;
 
-    if (shell->headless) {
-        rut_stream_event_t *stream_event = event->native;
-        switch (stream_event->type) {
-        case RUT_STREAM_EVENT_POINTER_MOVE:
-            *x = stream_event->pointer_move.x;
-            *y = stream_event->pointer_move.y;
-            break;
-        case RUT_STREAM_EVENT_POINTER_DOWN:
-        case RUT_STREAM_EVENT_POINTER_UP:
-            *x = stream_event->pointer_button.x;
-            *y = stream_event->pointer_button.y;
-            break;
-        default:
-            c_warn_if_reached();
-        }
-    } else
-        shell->platform.motion_event_get_transformed_xy(event, x, y);
+    shell->platform.motion_event_get_transformed_xy(event, x, y);
 
     if (transform) {
         *x = transform->xx * *x + transform->xy * *y + transform->xw;
@@ -792,10 +683,8 @@ _rut_shell_free(void *object)
     pango_font_description_free(shell->pango_font_desc);
 #endif
 
-    if (shell->headless_onscreen) {
-        rut_object_unref(shell->headless_onscreen);
-        shell->headless_onscreen = NULL;
-    }
+    if (shell->platform.cleanup)
+        shell->platform.cleanup(shell);
 
     cg_object_unref(shell->cg_device);
 
@@ -1000,14 +889,17 @@ dispatch_signal_source (GSource *source,
 static void
 _rut_shell_init(rut_shell_t *shell)
 {
-    static bool initialized_once = false;
+    /* Only initialize once */
+    if (shell->settings)
+        return;
 
     shell->settings = rut_settings_new();
 
-    if (!shell->headless) {
+    if (shell->headless)
+        rut_headless_shell_init(shell);
+    else {
 #ifdef USE_GSTREAMER
-        if (C_UNLIKELY(initialized_once == false))
-            gst_element_register(NULL, "memsrc", 0, gst_mem_src_get_type());
+        gst_element_register(NULL, "memsrc", 0, gst_mem_src_get_type());
 #endif
 
 #ifdef USE_SDL
@@ -1018,6 +910,10 @@ _rut_shell_init(rut_shell_t *shell)
         rut_android_shell_init(shell);
 #elif defined(__EMSCRIPTEN__)
         rut_emscripten_shell_init(shell);
+#endif
+
+#ifdef USE_UV
+        rut_poll_shell_integrate_cg_events_via_libuv(shell);
 #endif
 
         shell->nine_slice_indices =
@@ -1057,10 +953,6 @@ _rut_shell_init(rut_shell_t *shell)
 #endif
 
     }
-
-    rut_poll_sources_init(shell);
-
-    initialized_once = true;
 }
 
 void
@@ -1254,10 +1146,7 @@ rut_shell_update_timelines(rut_shell_t *shell)
 static void
 free_input_event(rut_shell_t *shell, rut_input_event_t *event)
 {
-    if (shell->headless) {
-        c_slice_free(rut_stream_event_t, event->native);
-        c_slice_free(rut_input_event_t, event);
-    } else if (shell->platform.free_input_event)
+    if (shell->platform.free_input_event)
         shell->platform.free_input_event(event);
     else
         c_slice_free(rut_input_event_t, event);
@@ -1310,15 +1199,15 @@ rut_input_queue_new(rut_shell_t *shell)
 void
 rut_input_queue_append(rut_input_queue_t *queue, rut_input_event_t *event)
 {
-    if (queue->shell->headless) {
 #if 0
+    if (queue->shell->headless) {
         c_debug ("input_queue_append %p %d\n", event, event->type);
         if (event->type == RUT_INPUT_EVENT_TYPE_KEY)
             c_debug ("> is key\n");
         else
             c_debug ("> not key\n");
-#endif
     }
+#endif
     c_list_insert(queue->events.prev, &event->list_node);
     queue->n_events++;
 }
@@ -1351,58 +1240,6 @@ rut_input_queue_clear(rut_input_queue_t *input_queue)
     }
 
     input_queue->n_events = 0;
-}
-
-void
-rut_shell_handle_stream_event(rut_shell_t *shell,
-                              rut_stream_event_t *stream_event)
-{
-    /* XXX: it's assumed that any process that's handling stream events
-     * is not handling any other native events. I.e stream events
-     * are effectively the native events.
-     */
-
-    rut_input_event_t *event = c_slice_alloc(sizeof(rut_input_event_t));
-    event->native = stream_event;
-
-    event->type = 0;
-
-    /* We make a dummy onscreen to associate with headless events
-     * for consistency and so we can always map an event to a
-     * shell via event->onscreen->shell. */
-    if (!shell->headless_onscreen)
-        shell->headless_onscreen = rut_shell_onscreen_new(shell, 100, 100);
-
-    event->onscreen = shell->headless_onscreen;
-    event->input_transform = NULL;
-
-    switch (stream_event->type) {
-    case RUT_STREAM_EVENT_POINTER_MOVE:
-    case RUT_STREAM_EVENT_POINTER_DOWN:
-    case RUT_STREAM_EVENT_POINTER_UP:
-        event->type = RUT_INPUT_EVENT_TYPE_MOTION;
-        break;
-    case RUT_STREAM_EVENT_KEY_DOWN:
-    case RUT_STREAM_EVENT_KEY_UP:
-        event->type = RUT_INPUT_EVENT_TYPE_KEY;
-        break;
-    }
-
-    /* Note: we don't use a default: case since we want the
-     * compiler to warn us when we forget to handle a new
-     * enum */
-    if (!event->type) {
-        c_warning("Shell: Spurious stream event type %d\n", stream_event->type);
-        c_slice_free(rut_input_event_t, event);
-        return;
-    }
-
-    rut_input_queue_append(shell->input_queue, event);
-
-    /* FIXME: we need a separate status so we can trigger a new
-     * frame, but if the input doesn't affect anything then we
-     * want to avoid any actual rendering. */
-    rut_shell_queue_redraw(shell);
 }
 
 void
@@ -1714,7 +1551,7 @@ rut_shell_queue_redraw_real(rut_shell_t *shell)
 #ifndef __EMSCRIPTEN__
     if (!shell->paint_idle) {
         shell->paint_idle =
-            rut_poll_shell_add_idle(shell, rut_shell_paint, shell,
+            rut_poll_shell_add_idle(shell, (void *)rut_shell_paint, shell,
                                     NULL); /* destroy notify */
     }
 #else
