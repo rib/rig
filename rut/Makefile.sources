@@ -33,6 +33,8 @@ rut_common_sources = \
     rut-planes.c \
     rut-shell.h \
     rut-shell.c \
+    rut-headless-shell.h \
+    rut-headless-shell.c \
     rut-settings.h \
     rut-settings.c \
     rut-texture-cache.h \

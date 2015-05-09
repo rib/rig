@@ -509,6 +509,47 @@ rut_sdl_onscreen_set_cursor(rut_shell_onscreen_t *onscreen,
     onscreen->sdl.sdl_cursor_image = cursor_image;
 }
 
+static int64_t
+prepare_sdl_busy_wait(void *user_data)
+{
+    return SDL_PollEvent(NULL) ? 0 : 8000;
+}
+
+static void
+dispatch_sdl_busy_wait(void *user_data, int fd, int revents)
+{
+    rut_shell_t *shell = user_data;
+    SDL_Event event;
+
+    while (SDL_PollEvent(&event)) {
+        cg_sdl_handle_event(shell->cg_device, &event);
+
+        rut_sdl_shell_handle_sdl_event(shell, &event);
+    }
+}
+
+/* XXX: SDL doesn't give us a portable way of blocking for
+ * events that is compatible with us polling for other file
+ * descriptor events outside of SDL which means we resort to
+ * busily polling SDL for events.
+ *
+ * TODO: On X11 use
+ * XConnectionNumber(sdl_info.info.x11.display) so we can also
+ * poll for events on X. One caveat would probably be that
+ * we'd subvert SDL being able to specify a timeout for
+ * polling.
+ */
+static void
+integrate_sdl_events_via_busy_wait(rut_shell_t *shell)
+{
+    rut_poll_shell_add_fd(shell,
+                          -1, /* fd */
+                          0, /* events */
+                          prepare_sdl_busy_wait,
+                          dispatch_sdl_busy_wait,
+                          shell);
+}
+
 bool
 rut_sdl_shell_init(rut_shell_t *shell)
 {
@@ -533,6 +574,8 @@ rut_sdl_shell_init(rut_shell_t *shell)
         c_free(shell);
         return false;
     }
+
+    integrate_sdl_events_via_busy_wait(shell);
 
     shell->sdl_keymod = SDL_GetModState();
     shell->sdl_buttons = SDL_GetMouseState(NULL, NULL);
