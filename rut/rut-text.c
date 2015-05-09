@@ -37,6 +37,7 @@
 #include "rut-input-region.h"
 #include "rut-color.h"
 #include "rut-meshable.h"
+#include "rut-text-blob.h"
 
 #include "rut-camera.h"
 
