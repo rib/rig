@@ -155,6 +155,13 @@ _cg_texture_free_loader(cg_texture_t *texture)
         case CG_TEXTURE_SOURCE_TYPE_BITMAP:
             cg_object_unref(loader->src.bitmap.bitmap);
             break;
+        case CG_TEXTURE_SOURCE_TYPE_WEBGL_IMAGE:
+#ifdef CG_HAS_WEBGL_SUPPORT
+            cg_object_unref(loader->src.webgl_image.image);
+#else
+            c_assert_not_reached();
+#endif
+            break;
         }
         c_slice_free(cg_texture_loader_t, loader);
         texture->loader = NULL;

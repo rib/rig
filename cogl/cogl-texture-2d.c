@@ -261,6 +261,30 @@ _cg_egl_texture_2d_new_from_image(cg_device_t *dev,
 }
 #endif /* defined (CG_HAS_EGL_SUPPORT) && defined (EGL_KHR_image_base) */
 
+#ifdef CG_HAS_WEBGL_SUPPORT
+cg_texture_2d_t *
+cg_webgl_texture_2d_new_from_image(cg_device_t *dev, cg_webgl_image_t *image)
+{
+    cg_texture_loader_t *loader;
+    cg_texture_2d_t *tex;
+
+    loader = _cg_texture_create_loader(dev);
+    loader->src_type = CG_TEXTURE_SOURCE_TYPE_WEBGL_IMAGE;
+    loader->src.webgl_image.image = cg_object_ref(image);
+    loader->src.webgl_image.format = CG_PIXEL_FORMAT_RGBA_8888_PRE;
+
+    /* XXX: I don't see any way to determine a format for a
+     * HTMLImageElement so we don't currently seem to have any choice
+     * but to assume it is premultiplied RGBA */
+    tex = _cg_texture_2d_create_base(dev,
+                                     cg_webgl_image_get_width(image),
+                                     cg_webgl_image_get_height(image),
+                                     CG_PIXEL_FORMAT_RGBA_8888_PRE,
+                                     loader);
+    return tex;
+}
+#endif
+
 #ifdef CG_HAS_WAYLAND_EGL_SERVER_SUPPORT
 static void
 shm_buffer_get_cg_pixel_format(struct wl_shm_buffer *shm_buffer,

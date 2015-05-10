@@ -45,6 +45,9 @@
 #include "cogl-pipeline-opengl-private.h"
 #include "cogl-error-private.h"
 #include "cogl-util-gl-private.h"
+#include "cogl-webgl-private.h"
+
+#define GL_UNPACK_PREMULTIPLY_ALPHA_WEBGL 0x9241
 
 void
 _cg_texture_2d_gl_free(cg_texture_2d_t *tex_2d)
@@ -185,6 +188,7 @@ allocate_from_bitmap(cg_texture_2d_t *tex_2d,
     GLenum gl_intformat;
     GLenum gl_format;
     GLenum gl_type;
+    GLenum gl_texture;
 
     internal_format =
         _cg_texture_determine_internal_format(tex, cg_bitmap_get_format(bmp));
@@ -211,11 +215,10 @@ allocate_from_bitmap(cg_texture_2d_t *tex_2d,
     dev->driver_vtable->pixel_format_to_gl(dev, internal_format,
                                            &gl_intformat, NULL, NULL);
 
-    tex_2d->gl_texture =
-        dev->texture_driver->gen(dev, GL_TEXTURE_2D, internal_format);
+    gl_texture = dev->texture_driver->gen(dev, GL_TEXTURE_2D, internal_format);
     if (!dev->texture_driver->upload_to_gl(dev,
                                            GL_TEXTURE_2D,
-                                           tex_2d->gl_texture,
+                                           gl_texture,
                                            false,
                                            upload_bmp,
                                            gl_intformat,
@@ -223,9 +226,11 @@ allocate_from_bitmap(cg_texture_2d_t *tex_2d,
                                            gl_type,
                                            error)) {
         cg_object_unref(upload_bmp);
+        GE(dev, glDeleteTextures(1, &gl_texture));
         return false;
     }
 
+    tex_2d->gl_texture = gl_texture;
     tex_2d->gl_internal_format = gl_intformat;
 
     cg_object_unref(upload_bmp);
@@ -247,10 +252,10 @@ allocate_from_egl_image(cg_texture_2d_t *tex_2d,
     cg_device_t *dev = tex->dev;
     cg_pixel_format_t internal_format = loader->src.egl_image.format;
     GLenum gl_error;
+    GLenum gl_texture;
 
-    tex_2d->gl_texture =
-        dev->texture_driver->gen(dev, GL_TEXTURE_2D, internal_format);
-    _cg_bind_gl_texture_transient(GL_TEXTURE_2D, tex_2d->gl_texture, false);
+    gl_texture = dev->texture_driver->gen(dev, GL_TEXTURE_2D, internal_format);
+    _cg_bind_gl_texture_transient(GL_TEXTURE_2D, gl_texture, false);
 
     while ((gl_error = dev->glGetError()) != GL_NO_ERROR)
         ;
@@ -261,9 +266,11 @@ allocate_from_egl_image(cg_texture_2d_t *tex_2d,
                       CG_TEXTURE_ERROR_BAD_PARAMETER,
                       "Could not create a cg_texture_2d_t from a given "
                       "EGLImage");
-        GE(dev, glDeleteTextures(1, &tex_2d->gl_texture));
+        GE(dev, glDeleteTextures(1, &gl_texture));
         return false;
     }
+
+    tex_2d->gl_texture = gl_texture;
 
     tex_2d->internal_format = internal_format;
 
@@ -271,6 +278,89 @@ allocate_from_egl_image(cg_texture_2d_t *tex_2d,
                               internal_format,
                               loader->src.egl_image.width,
                               loader->src.egl_image.height);
+
+    return true;
+}
+#endif
+
+#ifdef CG_HAS_WEBGL_SUPPORT
+static bool
+allocate_from_webgl_image(cg_texture_2d_t *tex_2d,
+                          cg_texture_loader_t *loader,
+                          cg_error_t **error)
+{
+    cg_texture_t *tex = CG_TEXTURE(tex_2d);
+    cg_device_t *dev = tex->dev;
+    cg_webgl_image_t *image = loader->src.webgl_image.image;
+    cg_pixel_format_t internal_format =
+        _cg_texture_determine_internal_format(tex, loader->src.webgl_image.format);
+    int width = cg_webgl_image_get_width(image);
+    int height = cg_webgl_image_get_height(image);
+    GLenum gl_texture;
+    GLenum gl_error;
+    char *js_error;
+
+    if (!_cg_texture_2d_gl_can_create(dev, width, height, internal_format)) {
+        _cg_set_error(error,
+                      CG_TEXTURE_ERROR,
+                      CG_TEXTURE_ERROR_SIZE,
+                      "Failed to create texture 2d due to size/format"
+                      " constraints");
+        return false;
+    }
+
+    gl_texture = dev->texture_driver->gen(dev, GL_TEXTURE_2D, internal_format);
+    _cg_bind_gl_texture_transient(GL_TEXTURE_2D, gl_texture, false);
+
+    if (_cg_pixel_format_is_premultiplied(internal_format))
+        GE( dev, glPixelStorei(GL_UNPACK_PREMULTIPLY_ALPHA_WEBGL, true));
+    else
+        GE( dev, glPixelStorei(GL_UNPACK_PREMULTIPLY_ALPHA_WEBGL, false));
+
+    /* Setup gl alignment to match rowstride and top-left corner */
+    dev->texture_driver->prep_gl_for_pixels_upload (dev,
+                                                    1 /* fake rowstride */,
+                                                    1 /* fake bpp */);
+
+    while ((gl_error = dev->glGetError()) != GL_NO_ERROR)
+        ;
+
+    js_error = _cg_webgl_tex_image_2d_with_image(GL_TEXTURE_2D,
+                                                 0,
+                                                 GL_RGBA,
+                                                 GL_RGBA,
+                                                 GL_UNSIGNED_BYTE,
+                                                 image->image_handle);
+
+    if (js_error) {
+        _cg_set_error(error,
+                      CG_TEXTURE_ERROR,
+                      CG_TEXTURE_ERROR_BAD_PARAMETER,
+                      "Could not create a cg_texture_2d_t from a given "
+                      "HTMLImageElement: %s", js_error);
+        c_free(js_error);
+        GE(dev, glDeleteTextures(1, &gl_texture));
+        return false;
+    }
+
+    if (dev->glGetError() != GL_NO_ERROR) {
+        _cg_set_error(error,
+                      CG_TEXTURE_ERROR,
+                      CG_TEXTURE_ERROR_BAD_PARAMETER,
+                      "Could not create a cg_texture_2d_t from a given "
+                      "HTMLImageElement");
+        GE(dev, glDeleteTextures(1, &gl_texture));
+        return false;
+    }
+
+    tex_2d->gl_texture = gl_texture;
+
+    tex_2d->internal_format = internal_format;
+
+    _cg_texture_set_allocated(tex,
+                              internal_format,
+                              width,
+                              height);
 
     return true;
 }
@@ -398,6 +488,12 @@ _cg_texture_2d_gl_allocate(cg_texture_t *tex, cg_error_t **error)
     case CG_TEXTURE_SOURCE_TYPE_EGL_IMAGE:
 #if defined(CG_HAS_EGL_SUPPORT) && defined(EGL_KHR_image_base)
         return allocate_from_egl_image(tex_2d, loader, error);
+#else
+        c_return_val_if_reached(false);
+#endif
+    case CG_TEXTURE_SOURCE_TYPE_WEBGL_IMAGE:
+#ifdef CG_HAS_WEBGL_SUPPORT
+        return allocate_from_webgl_image(tex_2d, loader, error);
 #else
         c_return_val_if_reached(false);
 #endif
