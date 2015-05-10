@@ -42,6 +42,10 @@
 #include "cogl-egl-defines.h"
 #endif
 
+#ifdef CG_HAS_WEBGL_SUPPORT
+#include "cogl-webgl.h"
+#endif
+
 typedef struct _cg_texture_vtable_t cg_texture_vtable_t;
 
 /* Encodes three possible result of transforming a quad */
@@ -142,6 +146,7 @@ typedef enum _cg_texture_soure_type_t {
     CG_TEXTURE_SOURCE_TYPE_SIZED = 1,
     CG_TEXTURE_SOURCE_TYPE_BITMAP,
     CG_TEXTURE_SOURCE_TYPE_EGL_IMAGE,
+    CG_TEXTURE_SOURCE_TYPE_WEBGL_IMAGE,
     CG_TEXTURE_SOURCE_TYPE_GL_FOREIGN
 } cg_texture_source_type_t;
 
@@ -166,6 +171,12 @@ typedef struct _cg_texture_loader_t {
             int height;
             cg_pixel_format_t format;
         } egl_image;
+#endif
+#if defined(CG_HAS_WEBGL_SUPPORT)
+        struct {
+            cg_webgl_image_t *image;
+            cg_pixel_format_t format;
+        } webgl_image;
 #endif
         struct {
             int width;

@@ -282,6 +282,8 @@ cogl_uv_sources_c = cogl-uv.c cogl-uv-private.h
 
 cogl_webgl_sources_h = cogl-webgl.h cogl-webgl-renderer.h
 cogl_webgl_sources_c = \
+	cogl-webgl-private.h \
+	cogl-webgl.c \
 	cogl-webgl-renderer.c \
 	winsys/cogl-winsys-webgl-private.h \
 	winsys/cogl-winsys-webgl.c
