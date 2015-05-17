@@ -53,7 +53,11 @@ bin_PROGRAMS += rig-device rig-simulator rig-simulator-server
 if EDITOR_ENABLED
 noinst_LTLIBRARIES += librig-slave-archive.la
 bin_PROGRAMS += rig rig-slave
+lib_LTLIBRARIES += rigeditor2.la
 endif
+
+rig_includedir=$(includedir)/rig
+rig_include_SOURCE=rig-c.h
 
 %.pb-c.c %.pb-c.h: %.proto
 	protoc-c --c_out=$(top_builddir)/rig $(srcdir)/$(*).proto
@@ -157,9 +161,27 @@ endif
 librig_la_LIBS = $(common_ldadd)
 
 if EDITOR_ENABLED
-rig_SOURCES = \
-	rig-editor-main.c
-rig_LDADD = $(common_ldadd)
+rigeditor2_la_SOURCES=rig-editor2.c
+rigeditor2_la_LDFLAGS=-module -shared -export-dynamic -avoid-version
+#rigeditor2_la_LIBADD
+
+if HAVE_AVAHI
+rigeditor2_la_SOURCES += \
+	rig-avahi.h \
+	rig-avahi.c
+endif
+
+if HAVE_OSX
+rigeditor2_la_SOURCES += \
+	rig-osx.h \
+	rig-osx.m
+endif
+
+if HAVE_GTK
+rigeditor2_la_SOURCES += \
+	rig-application.h \
+	rig-application.c
+endif
 
 librig_slave_archive_la_SOURCES = \
 	$(rig_slave_sources) \
