@@ -30,13 +30,13 @@ struct {
       "CG_FEATURE_ID_TEXTURE_NPOT_MIPMAP and "
       "CG_FEATURE_ID_TEXTURE_NPOT_REPEAT features combined." },
     { CG_FEATURE_ID_TEXTURE_3D, "3D texture support", "3D texture support" },
+    { CG_FEATURE_ID_GLSL, "GLSL support", "GLSL support" },
     { CG_FEATURE_ID_OFFSCREEN_MULTISAMPLE,
       "Offscreen rendering with multisampling support",
       "Offscreen rendering with multisampling support" },
     { CG_FEATURE_ID_ONSCREEN_MULTIPLE,
       "Multiple onscreen framebuffers supported",
       "Multiple onscreen framebuffers supported" },
-    { CG_FEATURE_ID_GLSL, "GLSL support", "GLSL support" },
     { CG_FEATURE_ID_UNSIGNED_INT_INDICES, "Unsigned integer indices",
       "CG_RENDERER_INDICES_TYPE_UNSIGNED_INT is supported in "
       "cg_indices_new()." },
@@ -54,9 +54,19 @@ struct {
     { CG_FEATURE_ID_DEPTH_TEXTURE, "Depth Textures",
       "cg_framebuffer_ts can be configured to render their depth buffer into "
       "a texture" },
+    { CG_FEATURE_ID_PRESENTATION_TIME, "Presentation Time",
+      "Can feed back information from a system compositor about when frames "
+      "are presented to a user" },
+    { CG_FEATURE_ID_FENCE, "Fences", "Supports insertion of fences into gpu "
+      "command stream for determining when work on the gpu has completed" },
     { CG_FEATURE_ID_PER_VERTEX_POINT_SIZE, "Per-vertex point size",
       "cg_point_size_in can be used as an attribute to specify a per-vertex "
-      "point size" }
+      "point size" },
+    { CG_FEATURE_ID_TEXTURE_RG, "Red-Green textures",
+      "Supports two component, red and green textures"},
+    { CG_FEATURE_ID_INSTANCES, "Instanced rendering",
+      "cg_primitive_draw_instances() can be used to efficiently draw the same "
+      "primitive multiple times"},
 };
 
 static const char *
@@ -83,6 +93,8 @@ get_winsys_name_for_id(cg_winsys_id_t winsys_id)
         return "EGL + Windows WGL platform";
     case CG_WINSYS_ID_SDL:
         return "EGL + SDL platform";
+    case CG_WINSYS_ID_WEBGL:
+        return "WEBGL";
     }
 
     return "Unknown";
