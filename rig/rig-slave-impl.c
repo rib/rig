@@ -62,6 +62,7 @@ const char *rig_slave_address_option;
 int rig_slave_port_option;
 
 bool rig_slave_fullscreen_option;
+bool rig_slave_oculus_option;
 
 static void
 slave__test(Rig__Slave_Service *service,

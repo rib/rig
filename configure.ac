@@ -288,6 +288,21 @@ AS_IF([test "x$enable_editor" = xyes],
       ])
 AM_CONDITIONAL(EDITOR_ENABLED, test "x$enable_editor" = "xyes")
 
+AC_ARG_ENABLE(
+  [oculus-rift],
+  [AC_HELP_STRING([--enable-oculus-rift=@<:@no/yes@:>@], [Enable Oculus Rift support @<:@default=yes@:>@])],
+  [],
+  enable_oculus_rift=yes
+)
+AS_IF([test "x$enable_oculus_rift" = "xyes"],
+      [
+        AC_DEFINE([ENABLE_OCULUS_RIFT], [1], [Whether to enable Oculus Rift supporta])
+        EXTRA_FEATURES="$EXTRA_FEATURES Oculus Rift"
+      ]
+)
+AM_CONDITIONAL(OCULUS_RIFT, test "x$enable_oculus_rift" = "xyes")
+
+
 AC_MSG_CHECKING([for alignof])
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([const int thing = alignof (int);],
                                    [(void) 0])],
