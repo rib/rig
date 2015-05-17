@@ -200,7 +200,8 @@ _cg_debug_check_environment(void)
     const char *env_string;
 
 #ifdef __EMSCRIPTEN__
-    env_string = "all";
+    //env_string = "all";
+    env_string = NULL;
 #else
     env_string = c_getenv("CG_DEBUG");
 #endif

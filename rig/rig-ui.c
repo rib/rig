@@ -37,6 +37,7 @@
 #include "rig-entity.h"
 
 #include "rig-renderer.h"
+#include "rig-asset.h"
 
 static void
 _rig_ui_free(void *object)
@@ -146,6 +147,9 @@ rig_ui_new(rig_engine_t *engine)
 
     ui->engine = engine;
 
+    if (engine->frontend)
+        ui->renderer = engine->frontend->renderer;
+
     return ui;
 }
 
@@ -196,6 +200,7 @@ rig_ui_find_entity(rig_ui_t *ui, const char *label)
 static void
 initialise_play_camera_position(rig_engine_t *engine, rig_ui_t *ui)
 {
+#if 0
     float fov_y = 10; /* y-axis field of view */
     float aspect = (float)engine->device_width / (float)engine->device_height;
     float z_near = 10; /* distance to near clipping plane */
@@ -220,9 +225,16 @@ initialise_play_camera_position(rig_engine_t *engine, rig_ui_t *ui)
 
     width_scale = width_2d_start / engine->device_width;
 
-    position[0] = 0;//engine->device_width / 2.0f;
-    position[1] = 0;//engine->device_height / 2.0f;
-    position[2] = 100;//z_2d / width_scale;
+    position[0] = engine->device_width / 2.0f;
+    position[1] = engine->device_height / 2.0f;
+    position[2] = z_2d / width_scale;
+#else
+    float position[3];
+
+    position[0] = 0;
+    position[1] = 0;
+    position[2] = 100;
+#endif
 
     rig_entity_set_position(ui->play_camera, position);
 }
@@ -295,14 +307,12 @@ rig_ui_prepare(rig_ui_t *ui)
         rig_entity_add_component(ui->light, light_camera);
     }
 
-    if (engine->renderer) {
+    if (engine->frontend) {
         cg_framebuffer_t *fb;
         int width, height;
 
-#warning "FIXME: rig-ui.c shouldn't make any assumptions about the renderer in use"
-        c_warn_if_fail(rut_object_get_type(engine->renderer) == &rig_renderer_type);
+        fb = rig_renderer_get_shadow_fb(ui->renderer);
 
-        fb = rig_renderer_get_shadow_fb(engine->renderer);
         width = cg_framebuffer_get_width(fb);
         height = cg_framebuffer_get_height(fb);
 

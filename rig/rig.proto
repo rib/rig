@@ -80,10 +80,11 @@ message Asset
   optional sint64 id=1; //XXX ID
 
   optional string path=2;
+  optional string mime_type=9;
 
   optional uint32 type=3;
   optional bytes data=4;
-  optional bool is_video=5;
+  optional bool is_video=5;//TODO remove
 
   //Sometimes we skip serializing the real data of an asset
   //but still need to know some meta data about it...
@@ -555,8 +556,7 @@ message FrameSetup
 
   optional bool play_mode=9;
 
-  optional UIEdit edit=10; //operations for the edit-mode ui
-  optional UIEdit play_edit=11; //operations for the play-mode ui
+  optional UIEdit ui_edit=10; //operations updating simulator ui from frontend
 
   optional bytes dso=13;
 }
@@ -697,6 +697,8 @@ message UpdateUIAck
 
 // The frontend service as used from the simulator
 service Frontend {
+  rpc Load (UI) returns (LoadResult);
+
   rpc UpdateUI (UIDiff) returns (UpdateUIAck);
 
   rpc ForwardLog (Log) returns (LogAck);

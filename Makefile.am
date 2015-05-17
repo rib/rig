@@ -27,3 +27,7 @@ ACLOCAL_AMFLAGS = -I build/autotools ${ACLOCAL_FLAGS}
 EXTRA_DIST = \
 	config-custom.h
 
+emscripten_platformdir = $(datadir)/platforms/emscripten
+emscripten_platform_DATA = \
+	Makefile.emscripten \
+	config.h.emscripten

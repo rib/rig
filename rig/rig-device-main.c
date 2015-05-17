@@ -80,21 +80,10 @@ rig_device_redraw(rut_shell_t *shell, void *user_data)
 
         serializer = rig_pb_serializer_new(engine);
 
-        setup.has_play_mode = true;
-        setup.play_mode = engine->play_mode;
-
         setup.n_events = input_queue->n_events;
         setup.events = rig_pb_serialize_input_events(serializer, input_queue);
 
-        if (frontend->has_resized) {
-            setup.has_view_width = true;
-            setup.view_width = engine->window_width;
-            setup.has_view_height = true;
-            setup.view_height = engine->window_height;
-            frontend->has_resized = false;
-        }
-
-        setup.edit = NULL;
+        setup.ui_edit = NULL;
 
         rig_frontend_run_simulator_frame(frontend, serializer, &setup);
 
@@ -111,11 +100,9 @@ rig_device_redraw(rut_shell_t *shell, void *user_data)
 
     rut_shell_run_start_paint_callbacks(shell);
 
-    rig_engine_paint(engine);
+    rig_frontend_paint(frontend);
 
-    rig_engine_garbage_collect(engine,
-                               NULL, /* callback */
-                               NULL); /* user_data */
+    rig_engine_garbage_collect(engine);
 
     rut_shell_run_post_paint_callbacks(shell);
 
@@ -130,16 +117,6 @@ rig_device_redraw(rut_shell_t *shell, void *user_data)
 
     if (rut_shell_check_timelines(shell))
         rut_shell_queue_redraw(shell);
-}
-
-static void
-simulator_connected_cb(void *user_data)
-{
-    rig_device_t *device = user_data;
-    rig_engine_t *engine = device->engine;
-
-    rig_frontend_reload_simulator_ui(
-        device->frontend, engine->play_mode_ui, true); /* play mode ui */
 }
 
 static void
@@ -169,19 +146,10 @@ rig_device_init(rut_shell_t *shell, void *user_data)
     rig_device_t *device = user_data;
     rig_engine_t *engine;
 
-    device->frontend = rig_frontend_new(
-        device->shell, RIG_FRONTEND_ID_DEVICE, true /* start in play mode */);
+    device->frontend = rig_frontend_new(device->shell);
 
     engine = device->frontend->engine;
     device->engine = engine;
-
-    /* Finish the slave specific engine setup...
-     */
-    engine->main_camera_view = rig_camera_view_new(engine);
-    rut_stack_add(engine->top_stack, engine->main_camera_view);
-
-    /* Initialize the current mode */
-    rig_engine_set_play_mode_enabled(engine, true /* start in play mode */);
 
     rig_frontend_post_init_engine(engine->frontend, device->ui_filename);
 
@@ -190,8 +158,8 @@ rig_device_init(rut_shell_t *shell, void *user_data)
         rut_shell_onscreen_set_fullscreen(onscreen, true);
     }
 
-    rig_frontend_set_simulator_connected_callback(
-        device->frontend, simulator_connected_cb, device);
+    //rig_frontend_set_simulator_connected_callback(
+    //    device->frontend, simulator_connected_cb, device);
 }
 
 static rig_device_t *
@@ -199,39 +167,58 @@ rig_device_new(const char *filename)
 {
     rig_device_t *device = rut_object_alloc0(
         rig_device_t, &rig_device_type, _rig_device_init_type);
-    char *assets_location;
 
     device->ui_filename = c_strdup(filename);
 
     device->shell = rut_shell_new(rig_device_redraw,
                                   device);
 
+#ifdef USE_NCURSES
     rig_curses_add_to_shell(device->shell);
+#endif
 
     rut_shell_set_on_run_callback(device->shell,
                                   rig_device_init,
                                   device);
 
-    assets_location = c_path_get_dirname(device->ui_filename);
-    rut_shell_set_assets_location(device->shell, assets_location);
-    c_free(assets_location);
-
     return device;
 }
+
+#ifdef __EMSCRIPTEN__
+
+int
+main(int argc, char **argv)
+{
+    rig_device_t *device;
+
+    rig_simulator_run_mode_option = RIG_SIMULATOR_RUN_MODE_WEB_SOCKET;
+
+    device = rig_device_new(NULL);
+
+    rut_shell_main(device->shell);
+
+    rut_object_unref(device);
+}
+
+#else /* __EMSCRIPTEN__ */
 
 static void
 usage(void)
 {
-    fprintf(stderr, "Usage: rig-device [UI.rig]\n");
+    fprintf(stderr, "Usage: rig-device [UI.rig] [OPTION]...\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "  -f,--fullscreen                          Run fullscreen\n");
     fprintf(stderr, "\n");
+
 #ifdef RIG_ENABLE_DEBUG
-    fprintf(stderr, "  -m,--simulator={tcp:<address>[:port],    Specify how to listen for a simulator connection\n");
+    fprintf(stderr, "  -s,--simulator={tcp:<address>[:port],    Specify how to spawn or connect to simulator\n");
     fprintf(stderr, "                  abstract:<name>,         (Simulator runs in a separate thread by default)\n");
     fprintf(stderr, "                  mainloop,\n");
     fprintf(stderr, "                  thread,\n");
     fprintf(stderr, "                  process}\n");
+    fprintf(stderr, "  -l,--listen={tcp:<address>[:port],       Specify how to listen for a simulator connection\n");
+    fprintf(stderr, "               abstract:<name>}\n");
+
     fprintf(stderr, "\n");
     fprintf(stderr, "  -d,--disable-curses                      Disable curses debug console\n");
     fprintf(stderr, "\n");
@@ -249,7 +236,8 @@ main(int argc, char **argv)
         { "fullscreen",         no_argument,       NULL, 'f' },
 
 #ifdef RIG_ENABLE_DEBUG
-        { "simulator",          required_argument, NULL, 'm' },
+        { "simulator",          required_argument, NULL, 's' },
+        { "listen",             required_argument, NULL, 'l' },
         { "disable-curses",     no_argument,       NULL, 'd' },
 #endif /* RIG_ENABLE_DEBUG */
 
@@ -258,12 +246,16 @@ main(int argc, char **argv)
     };
 
 #ifdef RIG_ENABLE_DEBUG
-    const char *short_opts = "fmdh";
+    const char *short_opts = "fs:l:dh";
     bool enable_curses_debug = true;
 #else
     const char *short_opts = "fh";
 #endif
 
+    const char *ui_filename = NULL;
+    enum rig_simulator_run_mode mode;
+    char *address;
+    int port;
     int c;
 
     rut_init_tls_state();
@@ -280,10 +272,29 @@ main(int argc, char **argv)
             rig_device_fullscreen_option = true;
             break;
 #ifdef RIG_ENABLE_DEBUG
-        case 'm': {
-            rig_simulator_parse_option(optarg, usage);
+        case 's':
+            rig_simulator_parse_run_mode(optarg,
+                                         usage,
+                                         0, /* flags */
+                                         &mode,
+                                         &address,
+                                         &port);
+            rig_simulator_run_mode_option = mode;
+            rig_simulator_address_option = strdup(address);
+            rig_simulator_port_option = port;
             break;
-        }
+        case 'l':
+            rig_simulator_parse_run_mode(optarg,
+                                         usage,
+                                         RIG_SIMULATOR_LISTEN,
+                                         &mode,
+                                         &address,
+                                         &port);
+            rig_simulator_run_mode_option = mode;
+            rig_simulator_address_option = strdup(address);
+            rig_simulator_port_option = port;
+            break;
+
         case 'd':
             enable_curses_debug = false;
             break;
@@ -294,17 +305,34 @@ main(int argc, char **argv)
         }
     }
 
-    if (optind > argc || !argv[optind]) {
-        fprintf(stderr, "Needs a UI.rig filename\n\n");
-        usage();
+    if (optind <= argc && argv[optind])
+        ui_filename = argv[optind];
+
+    /* We need a UI.rig filename if we have to spawn a simulator */
+    if (mode == RIG_SIMULATOR_RUN_MODE_THREADED ||
+        mode == RIG_SIMULATOR_RUN_MODE_MAINLOOP ||
+        mode == RIG_SIMULATOR_RUN_MODE_PROCESS)
+    {
+        if (!ui_filename) {
+            fprintf(stderr, "Needs a UI.rig filename\n\n");
+            usage();
+        }
     }
 
-#ifdef RIG_ENABLE_DEBUG
+#if defined(RIG_ENABLE_DEBUG) && defined(USE_NCURSES)
     if (enable_curses_debug)
         rig_curses_init();
 #endif
 
-    device = rig_device_new(argv[optind]);
+    device = rig_device_new(ui_filename);
+
+    if (ui_filename) {
+        char *assets_location = c_path_get_dirname(ui_filename);
+
+        rut_shell_set_assets_location(device->shell, assets_location);
+
+        c_free(assets_location);
+    }
 
     rut_shell_main(device->shell);
 
@@ -312,3 +340,5 @@ main(int argc, char **argv)
 
     return 0;
 }
+
+#endif /* __EMSCRIPTEN__ */

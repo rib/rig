@@ -88,7 +88,7 @@
         if ([files count] == 1) {
             NSString *filename = [files objectAtIndex:0];
 
-            rig_engine_load_file(engine, [filename UTF8String]);
+            rig_frontend_load_file(engine->frontend, [filename UTF8String]);
         }
     }
 }

@@ -69,16 +69,18 @@ rig_common_sources = \
 	rig-rpc-network.c \
 	rig-slave-address.h \
 	rig-slave-address.c \
-	rig.pb-c.h \
-	rig.pb-c.c \
 	rig-simulator.h \
-	rig-simulator.c \
+	rig-simulator-impl.c \
 	rig-frontend.c \
 	rig-frontend.h \
 	rig-ui.h \
 	rig-ui.c \
 	rig-code.h \
 	rig-code.c
+
+rig_debug_sources = \
+	rig-pb-debug.h \
+	rig-pb-debug.cpp
 
 rig_avahi_sources = \
 	rig-avahi.h \
@@ -108,4 +110,8 @@ rig_editor_sources = \
 
 rig_slave_sources = \
 	rig-slave.h \
-	rig-slave.c
+	rig-slave-impl.c
+
+rig_device_sources =
+
+rig_simulator_sources =

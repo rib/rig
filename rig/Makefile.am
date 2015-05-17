@@ -16,18 +16,37 @@ AM_CPPFLAGS = \
 	-DG_DISABLE_SINGLE_INCLUDES \
 	-DCOGL_DISABLE_DEPRECATED \
 	$(RIG_DEP_CFLAGS) \
+	$(COGL_DEP_CFLAGS) \
 	-DRIG_BIN_DIR=\"$(bindir)/\" \
 	$(RIG_CLANG_CFLAGS) \
 	-DRIG_LLVM_PREFIX=\"@RIG_LLVM_PREFIX@\" \
 	-DRIG_LLVM_VERSION=\"@RIG_LLVM_VERSION@\"
 
+if USE_UV
+AM_CPPFLAGS += -I$(top_srcdir)/h2o/include
+AM_CPPFLAGS += -I$(top_srcdir)/h2o
+endif
+
 AM_CFLAGS = \
 	$(RIG_EXTRA_CFLAGS)
 
-lib_LTLIBRARIES = librig_clang.la
-noinst_LTLIBRARIES = librig.la
-bin_PROGRAMS = rig-device rig-simulator
+lib_LTLIBRARIES =
+noinst_LTLIBRARIES =
+bin_PROGRAMS =
+htmlfiles =
+worker_js_files =
+js_files =
+
+if USE_LLVM
+lib_LTLIBRARIES += librig_clang.la
+endif
+
+noinst_LTLIBRARIES += librig.la
+noinst_LTLIBRARIES += librig-device-archive.la librig-simulator-archive.la librig-simulator-server-archive.la
+bin_PROGRAMS += rig-device rig-simulator rig-simulator-server
+
 if EDITOR_ENABLED
+noinst_LTLIBRARIES += librig-slave-archive.la
 bin_PROGRAMS += rig rig-slave
 endif
 
@@ -71,37 +90,17 @@ endif
 
 
 librig_la_SOURCES = \
-	$(rig_common_sources)
+	$(rig_common_sources) \
+	$(PROTOBUF_C_FILES)
+
+if USE_UV
+librig_la_SOURCES += \
+	components/rig-native-module.h \
+	components/rig-native-module.c
+endif
 
 if RIG_DEBUG
-librig_la_SOURCES += \
-	rig.pb.h \
-	rig.pb.cc \
-	rig-pb-debug.h \
-	rig-pb-debug.cpp
-endif
-
-if HAVE_AVAHI
-librig_la_SOURCES += \
-	rig-avahi.h \
-	rig-avahi.c
-endif
-
-if EDITOR_ENABLED
-librig_la_SOURCES += \
-	$(rig_editor_sources)
-endif
-
-if HAVE_OSX
-librig_la_SOURCES += \
-	rig-osx.h \
-	rig-osx.m
-endif
-
-if HAVE_GTK
-librig_la_SOURCES += \
-	rig-application.h \
-	rig-application.c
+librig_la_SOURCES += $(rig_debug_sources)
 endif
 
 if USE_NCURSES
@@ -113,11 +112,16 @@ endif
 common_ldadd = \
 	$(RIG_EXTRA_LDFLAGS) \
 	librig.la \
-	$(top_builddir)/xdgmime/libxdgmime.la \
 	$(top_builddir)/rut/librut.la \
-	$(top_builddir)/cogl/libcogl2.la \
+	$(top_builddir)/cogl/libcg.la \
 	$(top_builddir)/cogl-path/libcogl-path.la \
-	$(RIG_DEP_LIBS)
+	$(RIG_DEP_LIBS) \
+	$(COGL_DEP_LIBS)
+
+if USE_UV
+common_ldadd += $(top_builddir)/xdgmime/libxdgmime.la
+common_ldadd += $(top_builddir)/h2o/libh2o.la -lssl -lcrypto
+endif
 
 if EDITOR_ENABLED
 common_ldadd += $(top_builddir)/cogl-pango/libcogl-pango2.la
@@ -141,21 +145,73 @@ if EDITOR_ENABLED
 rig_SOURCES = \
 	rig-editor-main.c
 rig_LDADD = $(common_ldadd)
-endif
 
-rig_slave_SOURCES = \
+librig_slave_archive_la_SOURCES = \
 	$(rig_slave_sources) \
 	rig-slave-main.c
-rig_slave_LDADD = $(common_ldadd)
+librig_slave_archive_la_LIBADD = $(common_ldadd)
+endif
 
-rig_device_SOURCES = \
-	rig-device.c
-rig_device_LDADD = $(common_ldadd)
+htmlfiles += rig-device.html
+librig_device_archive_la_SOURCES = \
+	$(rig_device_sources) \
+	rig-device-main.c
+librig_device_archive_la_LIBADD = $(common_ldadd)
 
-#TODO: Avoid linking with Cogl and SDL in the simulator...
-rig_simulator_SOURCES = \
+worker_js_files += rig-simulator-worker.js
+librig_simulator_archive_la_SOURCES = \
+	$(rig_simulator_sources) \
 	rig-simulator-main.c
-rig_simulator_LDADD = $(common_ldadd)
+librig_simulator_archive_la_LIBADD = $(common_ldadd)
+
+librig_simulator_server_archive_la_SOURCES = \
+	$(rig_simulator_sources) \
+	rig-simulator-server.c
+librig_simulator_server_archive_la_LIBADD = $(common_ldadd)
+
+if EDITOR_ENABLED
+rig_slave_SOURCES =
+rig_slave_LDADD = $(common_ldadd) librig-slave-archive.la
+endif
+
+rig_device_SOURCES =
+rig_device_LDADD = $(common_ldadd) librig-device-archive.la
+
+rig_simulator_SOURCES =
+rig_simulator_LDADD = $(common_ldadd) librig-simulator-archive.la
+rig_simulator_LDFLAGS = -export-dynamic
+
+rig_simulator_server_SOURCES =
+rig_simulator_server_LDADD = $(common_ldadd) librig-simulator-server-archive.la
+rig_simulator_server_LDFLAGS = -export-dynamic
 
 rig_android_moduledir = $(datadir)/android_modules/rig/
 nobase_rig_android_module_DATA = $(rig_common_sources) $(rig_slave_sources) Android.mk
+
+dist_source_dir = $(datadir)/src/rig
+dist_source = \
+	$(rig_common_sources) \
+	$(rig_debug_sources) \
+	rig.h \
+	rig-c.h \
+	$(runtime_headers) \
+	$(librig_simulator_archive_la_SOURCES) \
+	$(librig_device_archive_la_SOURCES) \
+	$(js_files) \
+	$(worker_js_files) \
+	$(rig_slave_sources) \
+	rig-slave-main.c \
+	rig.proto \
+	rig-emscripten-lib.js \
+	rig-emscripten-lib.h \
+	Makefile.emscripten \
+	Makefile.sources
+
+# Use a custom install-data-local to install the source so that
+# we can preserve the directory structure...
+install-data-local:
+	for f in $(dist_source); do \
+	d=`dirname $$f`; \
+	$(mkinstalldirs) $(DESTDIR)$(dist_source_dir)/$$d; \
+	$(INSTALL_DATA) $(srcdir)/$$f $(DESTDIR)$(dist_source_dir)/$$f; \
+	done

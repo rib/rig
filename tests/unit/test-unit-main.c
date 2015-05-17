@@ -27,8 +27,7 @@ main(int argc, char **argv)
           argv[1][i] = '_';
   }
 
-  main_module = c_module_open(NULL, /* use main module */
-                              0 /* flags */);
+  main_module = c_module_open(NULL /* use main module */);
 
   if (!c_module_symbol(main_module, argv[1], (void **) &unit_test)) {
       c_printerr("Unknown test name \"%s\"\n", argv[1]);

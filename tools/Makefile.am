@@ -16,8 +16,10 @@ AM_CFLAGS = \
 common_ldadd = \
 	$(RIG_DEP_LIBS) \
 	$(COGL_DEP_LIBS) \
-	$(top_builddir)/cogl/libcogl2.la \
+	$(top_builddir)/cogl/libcg.la \
 	$(top_builddir)/clib/src/libclib.la
+
+bin_SCRIPTS=rig-package-html5
 
 if USE_GLIB
 bin_PROGRAMS = rig-bump-map-gen
@@ -28,8 +30,10 @@ rig_bump_map_gen_LDADD = $(common_ldadd)
 
 noinst_PROGRAMS =
 
+if USE_GLIB
 if HAVE_LIBCRYPTO
 noinst_PROGRAMS += rig-check-signature
+endif
 endif
 
 rig_check_signature_SOURCES = \

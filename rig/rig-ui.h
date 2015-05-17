@@ -51,6 +51,12 @@ struct _rig_ui_t {
 
     rig_engine_t *engine;
 
+    /* XXX: entity changes within a UI need to notify the renderer so
+     * if this UI is loaded within a frontend then to avoid a bit of
+     * indirection we point to the renderer here.
+     */
+    rut_object_t *renderer;
+
     c_llist_t *assets;
 
     rut_object_t *scene;
@@ -84,5 +90,7 @@ void rig_ui_reap(rig_ui_t *ui);
 void rig_ui_add_controller(rig_ui_t *ui, rig_controller_t *controller);
 
 void rig_ui_remove_controller(rig_ui_t *ui, rig_controller_t *controller);
+
+void rig_ui_print(rig_ui_t *ui);
 
 #endif /* _RIG_UI_H_ */

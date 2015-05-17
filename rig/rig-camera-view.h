@@ -76,11 +76,14 @@ struct eye_frustum {
 struct _rig_camera_view_t {
     rut_object_base_t _base;
 
+    rig_frontend_t *frontend;
     rig_engine_t *engine;
 
     rut_shell_t *shell;
 
     rig_ui_t *ui;
+
+    cg_framebuffer_t *fb;
 
     bool play_mode;
 
@@ -132,11 +135,14 @@ struct _rig_camera_view_t {
 
 extern rut_type_t rig_view_type;
 
-rig_camera_view_t *rig_camera_view_new(rig_engine_t *engine);
+rig_camera_view_t *rig_camera_view_new(rig_frontend_t *frontend);
+
+void rig_camera_view_set_framebuffer(rig_camera_view_t *view,
+                                     cg_framebuffer_t *fb);
 
 void rig_camera_view_set_ui(rig_camera_view_t *view, rig_ui_t *ui);
 
-void rig_camera_view_set_play_mode_enabled(rig_camera_view_t *view,
-                                           bool enabled);
+void rig_camera_view_paint(rig_camera_view_t *view,
+                           rut_object_t *renderer);
 
 #endif /* _RIG_CAMERA_VIEW_H_ */

@@ -37,15 +37,19 @@
 
 typedef struct _rig_image_source_t rig_image_source_t;
 
-#include "rig-engine.h"
-#include "rig-asset.h"
+#include "rig-frontend.h"
 
 extern rut_type_t rig_image_source_type;
 
 void _rig_image_source_init_type(void);
 
-rig_image_source_t *rig_image_source_new(rig_engine_t *engine,
-                                         rig_asset_t *asset);
+rig_image_source_t *rig_image_source_new(rig_frontend_t *frontend,
+                                         const char *mime,
+                                         const char *path,
+                                         const uint8_t *data,
+                                         int len,
+                                         int natural_width,
+                                         int natural_height);
 
 cg_texture_t *rig_image_source_get_texture(rig_image_source_t *source);
 
@@ -85,9 +89,9 @@ void rig_image_source_setup_pipeline(rig_image_source_t *source,
 void rig_image_source_attach_frame(rig_image_source_t *source,
                                    cg_pipeline_t *pipeline);
 
-void _rig_init_image_source_wrappers_cache(rig_engine_t *engine);
+void _rig_init_image_source_wrappers_cache(rig_frontend_t *frontend);
 
-void _rig_destroy_image_source_wrappers(rig_engine_t *engine);
+void _rig_destroy_image_source_wrappers(rig_frontend_t *frontend);
 
 void rig_image_source_get_natural_size(rig_image_source_t *source,
                                        float *width,

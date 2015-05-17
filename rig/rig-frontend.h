@@ -33,17 +33,14 @@
 
 typedef struct _rig_frontend_t rig_frontend_t;
 
-typedef enum _rig_frontend_id_t {
-    RIG_FRONTEND_ID_EDITOR = 1,
-    RIG_FRONTEND_ID_SLAVE,
-    RIG_FRONTEND_ID_DEVICE
-} rig_frontend_id_t;
-
 #include "rig-frontend.h"
 #include "rig-engine.h"
 #include "rig-simulator.h"
 #include "rig-pb.h"
 #include "rig-engine-op.h"
+#include "rig-camera-view.h"
+#include "rig-rpc-network.h"
+#include "protobuf-c-rpc/rig-protobuf-c-stream.h"
 
 #include "rig.pb-c.h"
 
@@ -56,8 +53,6 @@ typedef enum _rig_frontend_id_t {
  */
 struct _rig_frontend_t {
     rut_object_base_t _base;
-
-    rig_frontend_id_t id;
 
     rig_engine_t *engine;
 
@@ -74,6 +69,14 @@ struct _rig_frontend_t {
     char *listening_address;
     int listening_port;
 #endif
+#ifdef __EMSCRIPTEN__
+    worker_handle sim_worker;
+    int sim_fd;
+#endif
+
+    /* Is responsible for creating IDs for objects. If false then
+      the simulator is intead responsible for creating IDs */
+    bool is_master;
 
     rig_pb_stream_t *stream;
     rig_rpc_peer_t *frontend_peer;
@@ -81,14 +84,26 @@ struct _rig_frontend_t {
 
     rut_shell_onscreen_t *onscreen;
 
-    bool has_resized;
-    int pending_width;
-    int pending_height;
+    c_llist_t *camera_views;
 
-    bool pending_play_mode_enabled;
+    cg_pipeline_t *default_pipeline;
+    cg_texture_2d_t *default_tex2d;
+    cg_pipeline_t *default_tex2d_pipeline;
+
+    rut_object_t *renderer;
+
+    cg_attribute_t *circle_node_attribute;
+    int circle_node_n_verts;
+
+    c_hash_table_t *image_source_wrappers;
+
+    /* FIXME: HACK */
+    void (*swap_buffers_hook)(cg_framebuffer_t *fb, void *data);
+    void *swap_buffers_hook_data;
 
     rut_closure_t *simulator_queue_frame_closure;
 
+    rut_closure_t *finish_ui_load_closure;
     bool ui_update_pending;
 
     c_list_t ui_update_cb_list;
@@ -96,25 +111,21 @@ struct _rig_frontend_t {
     void (*simulator_connected_callback)(void *user_data);
     void *simulator_connected_data;
 
-    rig_engine_op_map_context_t map_op_ctx;
+    rig_engine_op_map_context_t map_to_frontend_objects_op_ctx;
     rig_engine_op_apply_context_t apply_op_ctx;
     rig_pb_un_serializer_t *prop_change_unserializer;
 
     uint8_t *pending_dso_data;
     size_t pending_dso_len;
 
-    c_hash_table_t *tmp_id_to_object_map;
+    rig_pb_un_serializer_t *ui_unserializer;
+
+    c_hash_table_t *id_to_object_map;
+    c_hash_table_t *object_to_id_map;
+
+    void (*delete_object)(rig_frontend_t *frontend, void *object);
 };
 
-enum rig_simulator_run_mode {
-    RIG_SIMULATOR_RUN_MODE_MAINLOOP,
-    RIG_SIMULATOR_RUN_MODE_THREADED,
-    RIG_SIMULATOR_RUN_MODE_PROCESS,
-#ifdef __linux__
-    RIG_SIMULATOR_RUN_MODE_CONNECT_ABSTRACT_SOCKET,
-#endif
-    RIG_SIMULATOR_RUN_MODE_CONNECT_TCP,
-};
 extern enum rig_simulator_run_mode rig_simulator_run_mode_option;
 
 #ifdef __linux__
@@ -125,18 +136,14 @@ const char *rig_simulator_address_option;
 int rig_simulator_port_option;
 
 rig_frontend_t *
-rig_frontend_new(rut_shell_t *shell, rig_frontend_id_t id, bool play_mode);
+rig_frontend_new(rut_shell_t *shell);
+
+void rig_frontend_delete_object(rig_frontend_t *frontend, void *object);
+
+void rig_frontend_load_file(rig_frontend_t *frontend, const char *filename);
 
 void rig_frontend_post_init_engine(rig_frontend_t *frontend,
                                    const char *ui_filename);
-
-void rig_frontend_forward_simulator_ui(rig_frontend_t *frontend,
-                                       const Rig__UI *pb_ui,
-                                       bool play_mode);
-
-void rig_frontend_reload_simulator_ui(rig_frontend_t *frontend,
-                                      rig_ui_t *ui,
-                                      bool play_mode);
 
 /* TODO: should support a destroy_notify callback */
 void rig_frontend_sync(rig_frontend_t *frontend,
@@ -173,5 +180,7 @@ void rig_frontend_queue_simulator_frame(rig_frontend_t *frontend);
 void rig_frontend_update_simulator_dso(rig_frontend_t *frontend,
                                        uint8_t *dso,
                                        int len);
+
+void rig_frontend_paint(rig_frontend_t *frontend);
 
 #endif /* _RIG_FRONTEND_H_ */

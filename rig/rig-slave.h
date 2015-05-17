@@ -36,6 +36,7 @@ typedef struct _rig_slave_t rig_slave_t;
 #include "rig-frontend.h"
 
 enum rig_slave_connect_mode {
+    RIG_SLAVE_CONNECT_MODE_NONE,
 #ifdef USE_UV
     RIG_SLAVE_CONNECT_MODE_TCP,
 #endif

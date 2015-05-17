@@ -106,7 +106,18 @@ main(int argc, char **argv)
         switch(c) {
 #ifdef RIG_ENABLE_DEBUG
         case 'm': {
-            rig_simulator_parse_option(optarg, usage);
+            enum rig_simulator_run_mode mode;
+            char *address;
+            int port;
+
+            rig_simulator_parse_run_mode(optarg,
+                                         usage,
+                                         false, /* integrated process (i.e. sim
+                                                   is started by frontend) */
+                                         true, /* listen */
+                                         &mode,
+                                         &address,
+                                         &port);
             break;
         }
         case 'd':

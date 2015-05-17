@@ -23,7 +23,7 @@ stamp-test-unit: Makefile test-unit$(EXEEXT)
 	source $(top_builddir)/clib/src/libclib.la ; \
 	  $(NM) $(top_builddir)/clib/src/.libs/"$$dlname"| \
 	  grep '[DR] _\?test_state_'|sed 's/.\+ [DR] _\?//' >> unit-tests; \
-	source $(top_builddir)/cogl/libcogl2.la ; \
+	source $(top_builddir)/cogl/libcg.la ; \
 	  $(NM) $(top_builddir)/cogl/.libs/"$$dlname"| \
 	  grep '[DR] _\?test_state_'|sed 's/.\+ [DR] _\?//' >> unit-tests
 	@chmod +x $(top_srcdir)/tests/test-launcher.sh
@@ -75,7 +75,7 @@ AM_CPPFLAGS += \
 test_unit_CFLAGS = -g3 -O0 $(COGL_DEP_CFLAGS) $(COGL_EXTRA_CFLAGS)
 test_unit_LDADD = \
 	$(COGL_DEP_LIBS) \
-	$(top_builddir)/cogl/libcogl2.la \
+	$(top_builddir)/cogl/libcg.la \
 	$(LIBM)
 test_unit_LDADD += $(top_builddir)/clib/src/libclib.la
 test_unit_LDFLAGS = -export-dynamic

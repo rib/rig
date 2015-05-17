@@ -29,6 +29,7 @@
 #ifndef _RIG_ENGINE_OP_H_
 #define _RIG_ENGINE_OP_H_
 
+#include "rig-ui.h"
 #include "rig.pb-c.h"
 #include "rig-pb.h"
 
@@ -130,6 +131,7 @@ typedef struct _rig_engine_op_apply_context_t {
     rig_pb_un_serializer_t *unserializer;
     void (*register_id_cb)(void *object, uint64_t id, void *user_data);
     void (*unregister_id_cb)(uint64_t id, void *user_data);
+    void (*id_to_object_map)(uint64_t id, void *user_data);
     void *user_data;
 
     rig_ui_t *ui;
@@ -140,6 +142,7 @@ void rig_engine_op_apply_context_init(
     rig_engine_t *engine,
     void (*register_id_cb)(void *object, uint64_t id, void *user_data),
     void (*unregister_id_cb)(uint64_t id, void *user_data),
+    void *(*id_to_object_cb)(uint64_t id, void *user_data),
     void *user_data);
 
 void rig_engine_op_apply_context_destroy(rig_engine_op_apply_context_t *ctx);

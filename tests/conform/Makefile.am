@@ -137,11 +137,12 @@ AM_CPPFLAGS += \
 	-DCOGL_DISABLE_DEPRECATED \
 	-DTESTS_DATADIR=\""$(top_srcdir)/tests/data"\"
 
-test_conformance_CFLAGS = -g3 -O0 $(RIG_DEP_CFLAGS) $(RIG_EXTRA_CFLAGS)
+test_conformance_CFLAGS = -g3 -O0 $(RIG_DEP_CFLAGS) $(COGL_DEP_CFLAGS) $(RIG_EXTRA_CFLAGS)
 test_conformance_LDADD = \
 	$(RIG_EXTRA_LDFLAGS) \
 	$(RIG_DEP_LIBS) \
-	$(top_builddir)/cogl/libcogl2.la \
+	$(COGL_DEP_LIBS) \
+	$(top_builddir)/cogl/libcg.la \
 	$(LIBM)
 if BUILD_COGL_PATH
 test_conformance_LDADD += $(top_builddir)/cogl-path/libcogl-path.la

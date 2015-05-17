@@ -90,9 +90,7 @@ rig_save(rig_engine_t *engine, rig_ui_t *ui, const char *path)
 
     serializer = rig_pb_serializer_new(engine);
 
-    pb_ui = rig_pb_serialize_ui(serializer,
-                                false, /* edit mode */
-                                ui);
+    pb_ui = rig_pb_serialize_ui(serializer, ui);
 
     rig__ui__pack_to_buffer(pb_ui, &buffered_file.base);
 
@@ -138,9 +136,6 @@ rig_load(rig_engine_t *engine, const char *file)
         8192, /* max_alloca */
         engine->frame_stack /* allocator_data */
     };
-
-    /* Simulators shouldn't be trying to load UIs directly */
-    c_return_val_if_fail(engine->frontend, NULL);
 
     if (c_str_has_suffix(file, ".xml")) {
         c_warning("Loading xml UI descriptions in Rig is no longer "
