@@ -28,7 +28,20 @@
 
 #include <config.h>
 
+#ifdef USE_UV
 #include <uv.h>
+#include <wslay/wslay_event.h>
+#endif
+
+#ifdef __EMSCRIPTEN__
+#include "rig-emscripten-lib.h"
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <errno.h>
+#endif
 
 #include <rut.h>
 
@@ -99,6 +112,26 @@ rig_pb_stream_disconnect(rig_pb_stream_t *stream)
             stream->buffer.read_idle = NULL;
         }
         break;
+
+#ifdef __EMSCRIPTEN__
+    case STREAM_TYPE_WORKER_IPC:
+        stream->worker_ipc.worker = 0;
+        break;
+
+    case STREAM_TYPE_WEBSOCKET_CLIENT:
+        if (stream->websocket_client.socket != -1) {
+            close(stream->websocket_client.socket);
+            stream->websocket_client.socket = -1;
+        }
+        break;
+#endif
+
+#ifdef USE_UV
+    case STREAM_TYPE_WEBSOCKET_SERVER:
+        stream->websocket_server.ctx = NULL;
+        break;
+#endif
+
     case STREAM_TYPE_DISCONNECTED:
 
 #ifdef USE_UV
@@ -123,10 +156,12 @@ _stream_free(void *object)
 {
     rig_pb_stream_t *stream = object;
 
+#ifdef USE_UV
     /* resolve and connect requests take a reference on the stream so
      * we should never try and free a stream in these cases... */
     c_return_if_fail(stream->resolving == false);
     c_return_if_fail(stream->connecting == false);
+#endif
 
     rig_pb_stream_disconnect(stream);
 
@@ -138,8 +173,10 @@ _stream_free(void *object)
     rut_closure_list_disconnect_all(&stream->on_connect_closures);
     rut_closure_list_disconnect_all(&stream->on_error_closures);
 
+#ifdef USE_UV
     c_free(stream->hostname);
     c_free(stream->port);
+#endif
 
     c_slice_free(rig_pb_stream_t, stream);
 }
@@ -408,7 +445,7 @@ data_buffer_stream_read_idle(void *user_data)
                               closure->buf.len,
                               stream->read_data);
 
-        /* Give the closure back so it can be freed*/
+        /* Give the closure back so it can be freed */
         c_array_append_val(stream->buffer.other_end->buffer.finished_write_closures,
                            closure);
     }
@@ -521,7 +558,7 @@ read_cb(uv_stream_t *uv_stream, ssize_t len, const uv_buf_t *buf)
 void
 rig_pb_stream_set_read_callback(rig_pb_stream_t *stream,
                                 void (*read_callback)(rig_pb_stream_t *stream,
-                                                      uint8_t *buf,
+                                                      const uint8_t *buf,
                                                       size_t len,
                                                       void *user_data),
                                 void *user_data)
@@ -540,6 +577,8 @@ rig_pb_stream_set_read_callback(rig_pb_stream_t *stream,
         uv_read_start((uv_stream_t *)&stream->tcp.socket,
                       read_buf_alloc_cb, read_cb);
         break;
+    case STREAM_TYPE_WEBSOCKET_SERVER:
+        break;
 #endif
     case STREAM_TYPE_BUFFER:
         c_return_if_fail(stream->buffer.other_end != NULL);
@@ -548,17 +587,63 @@ rig_pb_stream_set_read_callback(rig_pb_stream_t *stream,
         if (stream->buffer.incoming_write_closures->len)
             queue_data_buffer_stream_read(stream);
         break;
+#ifdef __EMSCRIPTEN__
+    case STREAM_TYPE_WORKER_IPC:
+    case STREAM_TYPE_WEBSOCKET_CLIENT:
+#endif
     case STREAM_TYPE_DISCONNECTED:
         break;
     }
 }
 
+#ifdef USE_UV
 static void
 uv_write_done_cb(uv_write_t *write_req, int status)
 {
     rig_pb_stream_write_closure_t *closure = write_req->data;
     closure->done_callback(closure);
 }
+#endif
+
+#ifdef __EMSCRIPTEN__
+static rig_pb_stream_t *_rig_worker_stream;
+
+void EMSCRIPTEN_KEEPALIVE
+rig_pb_stream_worker_onmessage(char *data, int len)
+{
+    rig_pb_stream_t *stream = _rig_worker_stream;
+
+    if (!stream->read_callback)
+        return;
+
+    stream->read_callback(stream, (uint8_t *)data, len, stream->read_data);
+}
+#endif
+
+#ifdef USE_UV
+static ssize_t
+fragmented_wslay_read_cb(wslay_event_context_ptr ctx,
+                         uint8_t *data, size_t len,
+                         const union wslay_event_msg_source *source,
+                         int *eof,
+                         void *user_data)
+{
+    rig_pb_stream_write_closure_t *closure =
+        (rig_pb_stream_write_closure_t *)source->data;
+    int remaining = closure->buf.len - closure->current_offset;
+    int read_len = MIN(remaining, len);
+
+    memcpy(data, closure->buf.base + closure->current_offset, read_len);
+    closure->current_offset += read_len;
+
+    if(closure->current_offset == closure->buf.len) {
+        *eof = 1;
+        closure->done_callback(closure);
+    }
+
+    return read_len;
+}
+#endif
 
 void
 rig_pb_stream_write(rig_pb_stream_t *stream,
@@ -566,14 +651,21 @@ rig_pb_stream_write(rig_pb_stream_t *stream,
 {
     c_return_if_fail(stream->type != STREAM_TYPE_DISCONNECTED);
 
-    if (stream->type == STREAM_TYPE_BUFFER) {
+    switch (stream->type) {
+    case STREAM_TYPE_BUFFER: {
         c_return_if_fail(stream->buffer.other_end != NULL);
         c_return_if_fail(stream->buffer.other_end->type == STREAM_TYPE_BUFFER);
 
         c_array_append_val(stream->buffer.other_end->buffer.incoming_write_closures, closure);
 
         queue_data_buffer_stream_read(stream->buffer.other_end);
-    } else {
+
+        break;
+    }
+
+#ifdef USE_UV
+    case STREAM_TYPE_FD:
+    case STREAM_TYPE_TCP: {
         closure->write_req.data = closure;
 
         uv_write(&closure->write_req,
@@ -581,5 +673,185 @@ rig_pb_stream_write(rig_pb_stream_t *stream,
                  &closure->buf,
                  1, /* n buffers */
                  uv_write_done_cb);
+        break;
+    }
+    case STREAM_TYPE_WEBSOCKET_SERVER: {
+        struct wslay_event_fragmented_msg arg;
+
+        memset(&arg, 0, sizeof(arg));
+        arg.opcode = WSLAY_BINARY_FRAME;
+        arg.source.data = closure;
+        arg.read_callback = fragmented_wslay_read_cb;
+
+        closure->current_offset = 0;
+
+        wslay_event_queue_fragmented_msg(stream->websocket_server.ctx, &arg);
+        wslay_event_send(stream->websocket_server.ctx);
+        break;
+    }
+#endif
+
+#ifdef __EMSCRIPTEN__
+    case STREAM_TYPE_WORKER_IPC:
+        if (stream->worker_ipc.in_worker)
+            rig_emscripten_worker_post_to_main(closure->buf.base,
+                                               closure->buf.len);
+        else
+            rig_emscripten_worker_post(stream->worker_ipc.worker,
+                                       "rig_pb_stream_worker_onmessage",
+                                       closure->buf.base,
+                                       closure->buf.len);
+
+        closure->done_callback(closure);
+        break;
+
+    case STREAM_TYPE_WEBSOCKET_CLIENT:
+        send(stream->websocket_client.socket,
+             closure->buf.base,
+             closure->buf.len,
+             0 /* flags */);
+
+        closure->done_callback(closure);
+        break;
+#endif
+
+    case STREAM_TYPE_DISCONNECTED:
+        c_warn_if_reached();
+        break;
     }
 }
+
+#ifdef __EMSCRIPTEN__
+void
+rig_pb_stream_set_in_worker(rig_pb_stream_t *stream, bool in_worker)
+{
+    c_return_if_fail(stream->type == STREAM_TYPE_DISCONNECTED);
+
+    stream->type = STREAM_TYPE_WORKER_IPC;
+    stream->worker_ipc.in_worker = in_worker;
+
+    _rig_worker_stream = stream;
+
+    set_connected(stream);
+}
+
+void EMSCRIPTEN_KEEPALIVE
+rig_pb_stream_main_onmessage(void *data, int len, void *user_data)
+{
+    rig_pb_stream_t *stream = user_data;
+
+    if (!stream->read_callback)
+        return;
+
+    stream->read_callback(stream, data, len, stream->read_data);
+}
+
+void
+rig_pb_stream_set_worker(rig_pb_stream_t *stream,
+                         rig_worker_t worker)
+{
+    c_return_if_fail(stream->type == STREAM_TYPE_DISCONNECTED);
+
+    stream->type = STREAM_TYPE_WORKER_IPC;
+    stream->worker_ipc.worker = worker;
+
+    rig_emscripten_worker_set_main_onmessage(worker,
+                                             rig_pb_stream_main_onmessage,
+                                             stream);
+
+    set_connected(stream);
+}
+
+void EMSCRIPTEN_KEEPALIVE
+rig_pb_stream_websocket_error_cb(int fd,
+                                 int error,
+                                 const char *msg,
+                                 void *user_data)
+{
+    rig_pb_stream_t *stream = user_data;
+
+    c_warning("websocket error message: %s\n", msg);
+
+    rig_pb_stream_disconnect(stream);
+}
+
+void EMSCRIPTEN_KEEPALIVE
+rig_pb_stream_websocket_ready_cb(int fd, void *user_data)
+{
+    rig_pb_stream_t *stream = user_data;
+    struct msghdr message;
+    struct iovec buf;
+    uint8_t page[PAGE_SIZE];
+
+    if (!stream->read_callback)
+        return;
+
+    memset(&message, 0, sizeof(message));
+
+    message.msg_iovlen = 1;
+    message.msg_iov = &buf;
+    buf.iov_base = page;
+    buf.iov_len = PAGE_SIZE;
+
+    c_debug("websocket ready callback\n");
+
+    for (;;) {
+        int len = recvmsg(stream->websocket_client.socket, &message, 0 /* flags */);
+
+        if (len > 0) {
+            c_debug("websocket recieved %d bytes\n", len);
+            stream->read_callback(stream, (uint8_t *)page, len,
+                                  stream->read_data);
+        } else
+            break;
+    }
+}
+
+void
+rig_pb_stream_set_websocket_client_fd(rig_pb_stream_t *stream,
+                                      int fd)
+{
+    c_return_if_fail(stream->type == STREAM_TYPE_DISCONNECTED);
+
+    stream->type = STREAM_TYPE_WEBSOCKET_CLIENT;
+    stream->websocket_client.socket = fd;
+
+#warning "FIXME: support multiple websocket based streams"
+    /* XXX: These are global callbacks and so is the user data
+     * so we need some way to lookup a stream based on a
+     * socket fd within the callbacks */
+    emscripten_set_socket_error_callback(stream /* user data */,
+                                         rig_pb_stream_websocket_error_cb);
+    emscripten_set_socket_open_callback(stream /* user data */,
+                                        rig_pb_stream_websocket_ready_cb);
+    emscripten_set_socket_message_callback(stream /* user data */,
+                                           rig_pb_stream_websocket_ready_cb);
+
+    set_connected(stream);
+}
+#endif
+
+#ifdef USE_UV
+void
+rig_pb_stream_set_wslay_server_event_ctx(rig_pb_stream_t *stream,
+                                         struct wslay_event_context *ctx)
+{
+    c_return_if_fail(stream->type == STREAM_TYPE_DISCONNECTED);
+
+    stream->type = STREAM_TYPE_WEBSOCKET_SERVER;
+    stream->websocket_server.ctx = ctx;
+
+    set_connected(stream);
+}
+
+/* Called from rig-simulator-server.c */
+void
+rig_pb_stream_websocket_message(rig_pb_stream_t *stream,
+                                const struct wslay_event_on_msg_recv_arg *arg)
+{
+    stream->read_callback(stream,
+                          arg->msg,
+                          arg->msg_length,
+                          stream->read_data);
+}
+#endif

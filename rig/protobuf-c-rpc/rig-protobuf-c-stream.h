@@ -29,7 +29,13 @@
 #ifndef _RIG_PB_RPC_STREAM_H_
 #define _RIG_PB_RPC_STREAM_H_
 
+#ifdef USE_UV
 #include <uv.h>
+#include <wslay/wslay_event.h>
+#endif
+#ifdef __EMSCRIPTEN__
+#include "rig-emscripten-lib.h"
+#endif
 
 #include <rut.h>
 
@@ -42,18 +48,33 @@ enum stream_type {
 #ifdef USE_UV
     STREAM_TYPE_FD,
     STREAM_TYPE_TCP,
+    STREAM_TYPE_WEBSOCKET_SERVER,
+#endif
+#ifdef __EMSCRIPTEN__
+    STREAM_TYPE_WORKER_IPC,
+    STREAM_TYPE_WEBSOCKET_CLIENT,
 #endif
     STREAM_TYPE_BUFFER,
 };
 
 typedef struct _rig_pb_stream_write_closure rig_pb_stream_write_closure_t;
 
+#ifndef USE_UV
+typedef struct _rig_pb_stream_buf_t {
+  char *base;
+  size_t len;
+} rig_pb_stream_buf_t;
+#endif
+
 struct _rig_pb_stream_write_closure
 {
 #ifdef USE_UV
     uv_write_t write_req;
-#endif
     uv_buf_t buf;
+    int current_offset;
+#else
+    rig_pb_stream_buf_t buf;
+#endif
     void (*done_callback)(rig_pb_stream_write_closure_t *closure);
 };
 
@@ -91,6 +112,20 @@ struct _rig_pb_stream_t {
             /* STREAM_TYPE_TCP... */
             uv_tcp_t socket;
         } tcp;
+
+        struct {
+            struct wslay_event_context *ctx;
+        } websocket_server;
+#endif
+#ifdef __EMSCRIPTEN__
+        struct {
+            bool in_worker;
+            rig_worker_t worker;
+        } worker_ipc;
+
+        struct {
+            int socket;
+        } websocket_client;
 #endif
 
         /* STREAM_TYPE_BUFFER... */
@@ -123,7 +158,7 @@ struct _rig_pb_stream_t {
     c_list_t on_error_closures;
 
     void (*read_callback)(rig_pb_stream_t *stream,
-                          uint8_t *buf,
+                          const uint8_t *buf,
                           size_t len,
                           void *user_data);
     void *read_data;
@@ -160,6 +195,29 @@ rig_pb_stream_accept_tcp_connection(rig_pb_stream_t *stream,
                                     uv_tcp_t *server);
 #endif
 
+#ifdef __EMSCRIPTEN__
+void
+rig_pb_stream_set_in_worker(rig_pb_stream_t *stream, bool in_worker);
+
+void
+rig_pb_stream_set_worker(rig_pb_stream_t *stream,
+                         rig_worker_t worker);
+
+void
+rig_pb_stream_set_websocket_client_fd(rig_pb_stream_t *stream,
+                                      int socket);
+#endif
+
+#ifdef USE_UV
+void
+rig_pb_stream_set_wslay_server_event_ctx(rig_pb_stream_t *stream,
+                                         struct wslay_event_context *ctx);
+
+void
+rig_pb_stream_websocket_message(rig_pb_stream_t *stream,
+                                const struct wslay_event_on_msg_recv_arg *arg);
+#endif
+
 /* So we can support having both ends of a connection in the same
  * process without using file descriptors and polling to communicate
  * this lets us create a stream with a direct pointer to the "remote"
@@ -175,7 +233,7 @@ rig_pb_stream_set_in_thread_direct_transport(rig_pb_stream_t *stream,
 void
 rig_pb_stream_set_read_callback(rig_pb_stream_t *stream,
                                 void (*read_callback)(rig_pb_stream_t *stream,
-                                                      uint8_t *buf,
+                                                      const uint8_t *buf,
                                                       size_t len,
                                                       void *user_data),
                                 void *user_data);
