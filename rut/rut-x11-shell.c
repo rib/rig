@@ -976,6 +976,8 @@ rut_x11_shell_init(rut_shell_t *shell)
                           xlib_dispatch_cb,
                           shell);
 
+    shell->platform.type = RUT_SHELL_X11_PLATFORM;
+
     shell->platform.allocate_onscreen = rut_x11_allocate_onscreen;
     shell->platform.onscreen_resize = rut_x11_onscreen_resize;
     shell->platform.onscreen_set_title = rut_x11_onscreen_set_title;

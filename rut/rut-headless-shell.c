@@ -238,6 +238,8 @@ rut_headless_shell_init(rut_shell_t *shell)
 
     shell->headless_onscreen = rut_shell_onscreen_new(shell, 100, 100);
 
+    shell->platform.type = RUT_SHELL_HEADLESS;
+
     shell->platform.key_event_get_keysym = rut_headless_key_event_get_keysym;
     shell->platform.key_event_get_action = rut_headless_key_event_get_action;
     shell->platform.key_event_get_modifier_state = rut_headless_key_event_get_modifier_state;
