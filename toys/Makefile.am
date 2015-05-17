@@ -9,6 +9,11 @@ AM_CPPFLAGS = \
 	-I$(top_builddir)/clib/src \
 	-I$(top_srcdir)/LibOVR/Src
 
+if USE_UV
+AM_CPPFLAGS += -I$(top_srcdir)/h2o/include
+AM_CPPFLAGS += -I$(top_srcdir)/h2o
+endif
+
 AM_CFLAGS = \
 	$(COGL_DEP_CFLAGS) \
 	$(COGL_EXTRA_CFLAGS) \
@@ -17,17 +22,6 @@ AM_CFLAGS = \
 
 AM_CFLAGS += -DCG_EXAMPLES_DATA=\""$(abs_top_srcdir)/toys/"\"
 
-
-if EMSCRIPTEN
-common_ldadd = \
-	$(RIG_EXTRA_LDFLAGS) \
-	$(top_builddir)/rut/librut.la \
-	$(top_builddir)/cogl/libcg.la \
-	$(RIG_DEP_LIBS) \
-	$(COGL_DEP_LIBS) \
-	$(top_builddir)/clib/src/libclib.la \
-	$(LIBM)
-else
 common_ldadd = \
 	$(RIG_EXTRA_LDFLAGS) \
 	$(top_builddir)/rut/librut.la \
@@ -38,7 +32,6 @@ common_ldadd = \
 	$(top_builddir)/clib/src/libclib.la \
 	-lstdc++ \
 	$(LIBM)
-endif
 
 if EDITOR_ENABLED
 common_ldadd += $(top_builddir)/cogl-pango/libcogl-pango2.la
@@ -120,15 +113,10 @@ emscripten_programs += cogl-emscripten-hello
 cogl_emscripten_hello_SOURCES = cogl-emscripten-hello.c
 cogl_emscripten_hello_LDADD = $(common_ldadd)
 
-if EMSCRIPTEN
-programs += $(emscripten_programs)
-
-emscripten_libs = --js-library $(top_srcdir)/cogl/cogl-emscripten-lib.js
-
-%.html: %.o $(top_builddir)/rut/librut.bc $(top_builddir)/cogl/libcg.bc $(top_builddir)/clib/src/clib.bc
-	$(CC) $(AM_CFLAGS) $(CFLAGS) $(RIG_EXTRA_EMCC_JSFLAGS) $(emscripten_libs) --js-library $(top_srcdir)/toys/emscripten-example-js-library.js -o $@ $^
-
-all-local: $(addsuffix .html, $(emscripten_programs))
+if USE_UV
+programs += websocket
+websocket_SOURCES = websocket.c
+websocket_LDADD = $(common_ldadd) $(top_builddir)/h2o/libh2o.la -lssl -lcrypto
 endif
 
 noinst_PROGRAMS = $(programs)

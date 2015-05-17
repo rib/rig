@@ -4,15 +4,10 @@ include Makefile.sources
 
 EXTRA_DIST =
 
-if EMSCRIPTEN
-lib_LTLIBRARIES = libclib.la
-all-local: clib.bc
-else
 if UNIT_TESTS
 lib_LTLIBRARIES = libclib.la
 else
 noinst_LTLIBRARIES = libclib.la
-endif
 endif
 
 
@@ -53,10 +48,6 @@ libclib_la_SOURCES += \
 libclib_la_LIBADD += $(top_builddir)/libuv/libuv.la
 endif
 
-if EMSCRIPTEN
-libclib_la_SOURCES += cmisc-emscripten.c
-endif
-
 AM_CPPFLAGS = \
 	-I$(top_builddir) \
 	-I$(top_srcdir) \
@@ -71,11 +62,6 @@ AM_CPPFLAGS = \
 
 #libclib_la_LIBADD += $(LTLIBICONV)
 #libclib_la_LDFLAGS = -static
-
-if EMSCRIPTEN
-clib.bc: $(libclib_la_OBJECTS)
-	emcc -o $(builddir)/clib.bc $(patsubst %.lo,.libs/%.o,$(libclib_la_OBJECTS)) $(AM_CPPFLAGS) $(CFLAGS) $(RIG_EXTRA_EMCC_BCFLAGS)
-endif
 
 #MAINTAINERCLEANFILES = Makefile.in
 

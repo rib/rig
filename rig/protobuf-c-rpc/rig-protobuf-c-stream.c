@@ -706,6 +706,7 @@ rig_pb_stream_write(rig_pb_stream_t *stream,
         break;
 
     case STREAM_TYPE_WEBSOCKET_CLIENT:
+        c_debug("stream: websocket send() %d bytes", closure->buf.len);
         send(stream->websocket_client.socket,
              closure->buf.base,
              closure->buf.len,

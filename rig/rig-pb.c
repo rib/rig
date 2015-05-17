@@ -990,7 +990,7 @@ rig_pb_serializer_set_only_asset_ids_enabled(rig_pb_serializer_t *serializer,
 void
 rig_pb_serializer_set_object_register_callback(
     rig_pb_serializer_t *serializer,
-    rig_pb_serializer_objec_register_callback_t callback,
+    rig_pb_serializer_object_register_callback_t callback,
     void *user_data)
 {
     serializer->object_register_callback = callback;
@@ -1249,16 +1249,20 @@ serialize_asset_file(Rig__Asset *pb_asset, rig_asset_t *asset)
     char *contents;
     size_t len;
 
-    if (!c_file_get_contents(full_path, &contents, &len, &error)) {
-        c_warning("Failed to read contents of asset: %s", error->message);
-        c_error_free(error);
-        c_free(full_path);
-        return false;
+    contents = rig_asset_get_data(asset);
+
+    if (contents) {
+        len = rig_asset_get_data_len(asset);
+    } else {
+        if (!c_file_get_contents(full_path, &contents, &len, &error)) {
+            c_warning("Failed to read contents of asset: %s", error->message);
+            c_error_free(error);
+            c_free(full_path);
+            return false;
+        }
     }
 
     c_free(full_path);
-
-    pb_asset->path = (char *)path;
 
     pb_asset->has_data = true;
     pb_asset->data.data = (uint8_t *)contents;
@@ -1299,12 +1303,12 @@ serialize_asset(rig_pb_serializer_t *serializer,
         pb_asset->has_type = true;
         pb_asset->type = rig_asset_get_type(asset);
 
-        pb_asset->has_is_video = true;
-        pb_asset->is_video = rig_asset_get_is_video(asset);
-
         pb_asset->has_width = true;
         pb_asset->has_height = true;
         rig_asset_get_image_size(asset, &pb_asset->width, &pb_asset->height);
+
+        pb_asset->path = (char *)rig_asset_get_path(asset);
+        pb_asset->mime_type = (char *)rig_asset_get_mime_type(asset);
 
         if (!serializer->skip_image_data) {
             if (!serialize_asset_file(pb_asset, asset))
@@ -1319,6 +1323,8 @@ serialize_asset(rig_pb_serializer_t *serializer,
 
         pb_asset->has_type = true;
         pb_asset->type = rig_asset_get_type(asset);
+
+        pb_asset->path = (char *)rig_asset_get_path(asset);
 
         if (!serialize_asset_file(pb_asset, asset))
             return NULL;
@@ -1384,7 +1390,6 @@ rig_pb_serialize_controller(rig_pb_serializer_t *serializer,
 
 Rig__UI *
 rig_pb_serialize_ui(rig_pb_serializer_t *serializer,
-                    bool play_mode,
                     rig_ui_t *ui)
 {
     c_llist_t *l;
@@ -1392,9 +1397,6 @@ rig_pb_serialize_ui(rig_pb_serializer_t *serializer,
     Rig__UI *pb_ui;
 
     pb_ui = rig_pb_new(serializer, Rig__UI, rig__ui__init);
-
-    pb_ui->has_mode = true;
-    pb_ui->mode = play_mode ? RIG__UI__MODE__PLAY : RIG__UI__MODE__EDIT;
 
     /* Register all assets up front, but we only actually serialize those
      * assets that are referenced - indicated by a corresponding id lookup
@@ -3117,7 +3119,7 @@ rig_pb_unserialize_mesh(rig_pb_un_serializer_t *unserializer,
         mode, pb_mesh->n_vertices, attributes, pb_mesh->n_attributes);
 
     if (pb_mesh->has_indices_buffer_id) {
-        rut_buffer_t *buffer;
+        rut_buffer_t *buffer = NULL;
         cg_indices_type_t indices_type;
         int j;
 

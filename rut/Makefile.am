@@ -20,12 +20,6 @@ librut_la_SOURCES += \
 	rut-x11-shell.c
 endif
 
-if EMSCRIPTEN
-librut_la_SOURCES += \
-	rut-emscripten-shell.h \
-	rut-emscripten-shell.c
-endif
-
 if EDITOR_ENABLED
 librut_la_SOURCES += \
 	$(rut_editor_sources)
@@ -39,19 +33,19 @@ endif
 
 librut_la_LIBADD = \
     $(RIG_DEP_LIBS) \
+    $(COGL_DEP_LIBS) \
     $(RIG_EXTRA_LDFLAGS)
 librut_la_LDFLAGS = \
     -no-undefined \
     -export-dynamic
 
-if !EMSCRIPTEN
 librut_la_LDFLAGS += \
     -version-info @RIG_LT_CURRENT@:@RIG_LT_REVISION@:@RIG_LT_AGE@ \
     -export-symbols-regex "(^rut.*)|(^_rut.*)"
-endif
 
 librut_la_CFLAGS = \
     $(RIG_DEP_CFLAGS) \
+    $(COGL_DEP_CFLAGS) \
     $(RIG_EXTRA_CFLAGS)
 librut_la_CPPFLAGS = \
     -I$(top_srcdir) \
@@ -63,12 +57,6 @@ librut_la_CPPFLAGS = \
 
 # rut_headersdir =  $(includedir)/rut
 # rut_headers_DATA = $(source_h)
-
-if EMSCRIPTEN
-all-local: librut.bc
-librut.bc: $(librut_la_OBJECTS)
-	emcc -o $(builddir)/librut.bc $(patsubst %.lo,.libs/%.o,$(librut_la_OBJECTS)) $(librut_la_CFLAGS) $(librut_la_CPPFLAGS) $(CFLAGS) $(RIG_EXTRA_EMCC_BCFLAGS)
-endif
 
 rut_android_moduledir = $(datadir)/android_modules/rut/
 rut_android_module_DATA = \

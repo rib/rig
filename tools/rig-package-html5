@@ -1,0 +1,82 @@
+#!/bin/sh
+
+function usage() {
+  echo "Usage:"
+  echo "  `basename $0` file.rig"
+  exit 1
+}
+
+if test $# -ne 1; then
+  usage
+fi
+
+#FIXME
+RIG_PREFIX=/home/bob/local/rig-git-dev0
+
+RIG_FILE=$1
+if ! test -f $RIG_FILE; then
+  usage
+fi
+
+PROJECT_DIR=`dirname $RIG_FILE`
+
+if ! test -d $PROJECT_DIR/assets; then
+  echo "ERROR: Didn't find expected assets/ directory"
+  usage
+fi
+
+PKG_DIR=$PROJECT_DIR/pkgs/html5
+
+if ! test -d $PKG_DIR/src; then
+  mkdir -p $PKG_DIR/src
+  cp -av $RIG_PREFIX/share/src $PKG_DIR
+  cp -av $RIG_PREFIX/share/platforms/emscripten/prebuilt $PKG_DIR
+  cp -av $RIG_PREFIX/share/platforms/emscripten/Makefile.emscripten $PKG_DIR/Makefile
+  cp -av $RIG_PREFIX/share/platforms/emscripten/config.h.emscripten $PKG_DIR/src/config.h
+
+  cat > $PKG_DIR/src/cogl/cogl-defines.h <<EOF
+#ifndef __CG_DEFINES_H__
+#define __CG_DEFINES_H__
+
+#define CG_HAS_WEBGL_SUPPORT 1
+
+#define CG_VERSION_MAJOR_INTERNAL 2
+#define CG_VERSION_MINOR_INTERNAL 0
+#define CG_VERSION_MICRO_INTERNAL 0
+#define CG_VERSION_STRING_INTERNAL "2.0.0"
+
+#endif
+EOF
+
+  cat > $PKG_DIR/src/cogl/cogl-gl-header.h <<EOF
+#ifndef __CG_GL_HEADER_H__
+#define __CG_GL_HEADER_H__
+
+#include "cogl-defines.h"
+
+#include <GLES2/gl2.h>
+#include <GLES2/gl2ext.h>
+
+#ifndef GL_OES_EGL_image
+#define GLeglImageOES void *
+#endif
+
+#endif /* __CG_GL_HEADER_H__ */
+EOF
+
+
+  cat > $PKG_DIR/src/rig/rig-defines.h <<EOF
+#ifndef _RIG_DEFINES_H_
+#define _RIG_DEFINES_H_
+
+#define RIG_VERSION 2.0.0
+
+#endif /* _RIG_DEFINES_H_ */
+EOF
+
+fi
+
+
+export PATH=$RIG_PREFIX/bin:$PATH
+export LD_LIBRARY_PATH=$RIG_PREFIX/lib:$LD_LIBRARY_PATH
+make -C $PKG_DIR -j -l 2.5 V=1

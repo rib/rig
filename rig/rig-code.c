@@ -180,7 +180,7 @@ rig_code_update_dso(rig_engine_t *engine, uint8_t *data, int len)
         return;
     }
 
-    module = c_module_open(tmp_filename, C_MODULE_BIND_LAZY);
+    module = c_module_open(tmp_filename);
     if (!module) {
         c_module_close(module);
         c_warning("Failed to open shared object");
@@ -240,9 +240,6 @@ recompile_pre_paint_callback(rut_object_t *_null_graphable,
 static void
 queue_recompile(rig_engine_t *engine)
 {
-    c_return_if_fail(engine->frontend &&
-                     engine->frontend_id == RIG_FRONTEND_ID_EDITOR);
-
 #if defined(RIG_EDITOR_ENABLED) && defined(USE_LLVM)
     if (engine->need_recompile)
         return;
@@ -255,6 +252,10 @@ queue_recompile(rig_engine_t *engine)
                                      engine);
 
     rut_shell_queue_redraw(engine->shell);
+#else
+
+    c_error("Runtime code recompilation not enabled");
+
 #endif
 }
 

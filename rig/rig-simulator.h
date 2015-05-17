@@ -32,9 +32,38 @@
 #include <rut.h>
 typedef struct _rig_simulator_t rig_simulator_t;
 
+#if !defined(__ANDROID__) && (defined(__linux__) || defined(__APPLE__))
+#define RIG_SUPPORT_SIMULATOR_PROCESS
+#endif
+
+enum rig_simulator_run_mode {
+    RIG_SIMULATOR_RUN_MODE_MAINLOOP,
+#ifdef C_SUPPORTS_THREADS
+    RIG_SIMULATOR_RUN_MODE_THREADED,
+#endif
+#ifdef RIG_SUPPORT_SIMULATOR_PROCESS
+    RIG_SIMULATOR_RUN_MODE_PROCESS,
+#endif
+#ifdef __linux__
+    RIG_SIMULATOR_RUN_MODE_LISTEN_ABSTRACT_SOCKET,
+    RIG_SIMULATOR_RUN_MODE_CONNECT_ABSTRACT_SOCKET,
+#endif
+#ifdef USE_UV
+    RIG_SIMULATOR_RUN_MODE_LISTEN_TCP,
+    RIG_SIMULATOR_RUN_MODE_CONNECT_TCP,
+#endif
+#ifdef __EMSCRIPTEN__
+    RIG_SIMULATOR_RUN_MODE_WEB_WORKER,
+    RIG_SIMULATOR_RUN_MODE_WEB_SOCKET,
+#endif
+};
+
 #include "rig-engine.h"
 #include "rig-engine-op.h"
+#include "protobuf-c-rpc/rig-protobuf-c-stream.h"
+#include "rig-rpc-network.h"
 #include "rig-pb.h"
+#include "rig-frontend.h"
 
 /*
  * Simulator actions are sent back as requests to the frontend at the
@@ -51,19 +80,32 @@ typedef enum _rig_simulator_action_type_t {
 struct _rig_simulator_t {
     rut_object_base_t _base;
 
-    rig_frontend_id_t frontend_id;
-
     bool redraw_queued;
 
-    /* when running as an editor or slave device then the UI
-     * can be edited at runtime and we handle some things a
-     * bit differently. For example we only need to be able
-     * to map ids to objects to support editing operations.
-     */
-    bool editable;
+    /* Is responsible for creating IDs for objects. If false then
+     * the frontend is intead responsible for creating IDs */
+    bool is_master;
 
     rut_shell_t *shell;
     rig_engine_t *engine;
+
+    char *ui_filename;
+    rut_closure_t *load_idle;
+
+#ifdef __linux__
+    int listen_fd;
+#endif
+#ifdef USE_UV
+    uv_tcp_t listening_socket;
+    char *listening_address;
+    int listening_port;
+#endif
+
+    struct {
+        /* The frontend only needs asset paths and will be responsible
+         * for loading those assets (E.g. browser based frontend) */
+        unsigned image_loader : 1;
+    } frontend_features;
 
     rig_pb_stream_t *stream;
     rig_rpc_peer_t *simulator_peer;
@@ -85,21 +127,30 @@ struct _rig_simulator_t {
     rig_engine_op_map_context_t map_to_sim_objects_op_ctx;
     rig_engine_op_map_context_t map_to_frontend_ids_op_ctx;
 
-    c_hash_table_t *object_to_id_map;
     c_hash_table_t *id_to_object_map;
-    // c_hash_table_t *object_to_tmp_id_map;
-    uint64_t next_tmp_id;
+    c_hash_table_t *object_to_id_map;
+
+    void *(*lookup_object_cb)(uint64_t id, void *user_data);
+    uint64_t (*lookup_object_id)(rig_simulator_t *simulator, void *object);
+    void (*register_object_cb)(void *object, uint64_t id, void *user_data);
+    void (*unregister_object_cb)(void *object, void *user_data);
+    void *(*unregister_id)(rig_simulator_t *simulator, uint64_t id);
 
     c_list_t actions;
     int n_actions;
 
     rut_queue_t *ops;
+
+    bool connected;
+    void (*connected_callback)(rig_simulator_t *simulator,
+                               void *user_data);
+    void *connected_data;
 };
 
 extern rut_type_t rig_simulator_type;
 
-rig_simulator_t *rig_simulator_new(rig_frontend_id_t frontend_id,
-                                   rut_shell_t *main_shell);
+rig_simulator_t *rig_simulator_new(rut_shell_t *main_shell,
+                                   const char *ui_filename);
 
 void rig_simulator_set_frontend_fd(rig_simulator_t *simulator, int fd);
 
@@ -113,6 +164,31 @@ void rig_simulator_print_mappings(rig_simulator_t *simulator);
 
 void rig_simulator_forward_log(rig_simulator_t *simulator);
 
-void rig_simulator_parse_option(const char *option, void (*usage)(void));
+enum rig_simulator_run_flags {
+    RIG_SIMULATOR_LISTEN       = 1<<0, /* implies standalone,
+                                          disallows connect modes,
+                                          ommision disallows listen modes */
+    RIG_SIMULATOR_STANDALONE   = 1<<1  /* disallows thread/mainloop/prcess modes */
+};
+
+bool rig_simulator_parse_run_mode(const char *option,
+                                  void (*usage)(void),
+                                  enum rig_simulator_run_flags flags,
+                                  enum rig_simulator_run_mode *mode,
+                                  char **address,
+                                  int *port);
+
+void rig_simulator_set_connected_callback(rig_simulator_t *simulator,
+                                          void (*callback)(rig_simulator_t *simulator,
+                                                           void *user_data),
+                                          void *user_data);
+
+void rig_simulator_forward_frontend_ui(rig_simulator_t *simulator,
+                                       const Rig__UI *pb_ui);
+
+void rig_simulator_reload_frontend_ui(rig_simulator_t *simulator,
+                                      rig_ui_t *ui);
+
+void rig_simulator_load_file(rig_simulator_t *simulator, const char *filename);
 
 #endif /* _RIG_SIMULATOR_H_ */

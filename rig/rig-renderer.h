@@ -29,6 +29,10 @@
 #ifndef _RIG_RENDERER_H_
 #define _RIG_RENDERER_H_
 
+#include "rig-types.h"
+#include "rig-entity.h"
+#include "rig-frontend.h"
+
 typedef enum _rig_pass_t {
     RIG_PASS_COLOR_UNBLENDED,
     RIG_PASS_COLOR_BLENDED,
@@ -54,7 +58,7 @@ typedef struct _rig_renderer_t rig_renderer_t;
 
 extern rut_type_t rig_renderer_type;
 
-rig_renderer_t *rig_renderer_new(rig_engine_t *engine);
+rig_renderer_t *rig_renderer_new(rig_frontend_t *frontend);
 
 c_array_t *rig_journal_new(void);
 

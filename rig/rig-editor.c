@@ -93,12 +93,26 @@ struct _rig_editor_t {
     c_hash_table_t *play_to_edit_object_map;
 
     rut_queue_t *edit_ops;
+    rig_undo_journal_t *undo_journal;
     c_llist_t *undo_journal_stack;
 
     rig_engine_op_apply_context_t apply_op_ctx;
     rig_engine_op_copy_context_t copy_op_ctx;
     rig_engine_op_map_context_t map_op_ctx;
     rig_engine_op_apply_context_t play_apply_op_ctx;
+
+    rig_entity_t *light_handle;
+    rig_entity_t *play_camera_handle;
+
+#ifdef USE_AVAHI
+    const AvahiPoll *avahi_poll_api;
+    char *avahi_service_name;
+    AvahiClient *avahi_client;
+    AvahiEntryGroup *avahi_group;
+    AvahiServiceBrowser *avahi_browser;
+#endif
+
+    c_llist_t *slave_addresses;
 
     rig_objects_selection_t *objects_selection;
 
@@ -320,6 +334,7 @@ static void
 delete_object_cb(rut_object_t *object, void *user_data)
 {
     rig_editor_t *editor = user_data;
+    rig_frontend_t *frontend = editor->frontend;
     void *edit_mode_object;
     void *play_mode_object;
 
@@ -338,6 +353,8 @@ delete_object_cb(rut_object_t *object, void *user_data)
 
     c_hash_table_remove(editor->edit_to_play_object_map, edit_mode_object);
     c_hash_table_remove(editor->play_to_edit_object_map, play_mode_object);
+
+    frontend->delete_object(frontend, object);
 }
 
 #ifdef RIG_ENABLE_DEBUG
@@ -364,7 +381,7 @@ reset_play_mode_ui(rig_editor_t *editor)
     /* Kick garbage collection now so that all the objects being
      * replaced are unregistered before before we load the new UI.
      */
-    rig_engine_garbage_collect(engine, delete_object_cb, editor);
+    rig_engine_garbage_collect(engine);
 
     /* As a special case; unregister an object id mapping for the
      * root of the scenegraph (if there was one)... */
@@ -2162,7 +2179,7 @@ serialize_ops(rig_editor_t *editor,
         return NULL;
 
     pb_ops = rut_memory_stack_memalign(
-        serializer->stack, sizeof(void *) * n_ops, RUT_UTIL_ALIGNOF(void *));
+        serializer->stack, sizeof(void *) * n_ops, C_ALIGNOF(void *));
 
     i = 0;
     c_list_for_each(item, &editor->edit_ops->items, list_node)
@@ -2309,7 +2326,7 @@ rig_editor_redraw(rut_shell_t *shell, void *user_data)
 
     rig_engine_paint(engine);
 
-    rig_engine_garbage_collect(engine, delete_object_cb, editor);
+    rig_engine_garbage_collect(engine);
 
     rut_shell_run_post_paint_callbacks(shell);
 
@@ -2447,27 +2464,6 @@ rig_editor_free_builtin_assets(rig_editor_t *editor)
     rut_object_unref(editor->text_builtin_asset);
     rut_object_unref(editor->hair_builtin_asset);
     rut_object_unref(editor->button_input_builtin_asset);
-}
-
-/* TODO: move corresponding state into rig_editor_t */
-static void
-init_editor_engine(rig_editor_t *editor)
-{
-    rig_engine_t *engine = editor->engine;
-
-    editor->objects_selection = _rig_objects_selection_new(editor);
-
-    c_list_init(&editor->tool_changed_cb_list);
-
-    rig_editor_push_undo_subjournal(editor);
-
-    /* NB: in device mode we assume all inputs need to got to the
-     * simulator and we don't need a separate queue. */
-    engine->simulator_input_queue = rut_input_queue_new(engine->shell);
-
-    load_builtin_assets(editor);
-
-    create_ui(editor);
 }
 
 static void
@@ -2634,7 +2630,22 @@ rig_editor_init(rut_shell_t *shell, void *user_data)
 
     c_list_init(&editor->fs_requests);
 
-    init_editor_engine(editor);
+    editor->objects_selection = _rig_objects_selection_new(editor);
+
+    c_list_init(&editor->tool_changed_cb_list);
+
+    rig_editor_push_undo_subjournal(editor);
+
+    load_builtin_assets(editor);
+
+    create_ui(editor);
+
+    /* NB: in device mode we assume all inputs need to got to the
+     * simulator and we don't need a separate queue. */
+    engine->simulator_input_queue = rut_input_queue_new(engine->shell);
+
+    engine->garbage_collect_callback = delete_object_cb;
+    engine->garbage_collect_data = editor;
 
     /* Initialize the current mode */
     rig_engine_set_play_mode_enabled(engine, false /* start in edit mode */);
@@ -2671,6 +2682,7 @@ rig_editor_init(rut_shell_t *shell, void *user_data)
                                      engine,
                                      register_play_mode_object_cb,
                                      NULL, /* unregister id */
+                                     NULL, /* simply cast ids to object ptr */
                                      editor); /* user data */
 #ifdef __linux__
     /* TODO move into editor */
@@ -2759,7 +2771,7 @@ rig_editor_load_file(rig_editor_t *editor, const char *filename)
         c_free(editor->ui_filename);
 
     editor->ui_filename = c_strdup(filename);
-    rig_engine_load_file(editor->engine, filename);
+    rig_frontend_load_file(editor->engine, filename);
 }
 
 void

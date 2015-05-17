@@ -45,7 +45,7 @@ typedef struct _rig_pb_un_serializer_t rig_pb_un_serializer_t;
 
 typedef bool (*rig_pb_asset_filter_t)(rig_asset_t *asset, void *user_data);
 
-typedef uint64_t (*rig_pb_serializer_objec_register_callback_t)(
+typedef uint64_t (*rig_pb_serializer_object_register_callback_t)(
     void *object, void *user_data);
 
 typedef uint64_t (*rig_pb_serializer_objec_to_id_callback_t)(void *object,
@@ -59,7 +59,7 @@ struct _rig_pb_serializer_t {
     rig_pb_asset_filter_t asset_filter;
     void *asset_filter_data;
 
-    rig_pb_serializer_objec_register_callback_t object_register_callback;
+    rig_pb_serializer_object_register_callback_t object_register_callback;
     void *object_register_data;
 
     rig_pb_serializer_objec_to_id_callback_t object_to_id_callback;
@@ -103,7 +103,7 @@ _rig_pb_new(rig_pb_serializer_t *serializer,
 }
 
 #define rig_pb_new(serializer, type, init)                                     \
-    _rig_pb_new(serializer, sizeof(type), RUT_UTIL_ALIGNOF(type), init)
+    _rig_pb_new(serializer, sizeof(type), C_ALIGNOF(type), init)
 
 static inline void *
 _rig_pb_dup(rig_pb_serializer_t *serializer,
@@ -124,7 +124,7 @@ _rig_pb_dup(rig_pb_serializer_t *serializer,
 }
 
 #define rig_pb_dup(serializer, type, init, src)                                \
-    _rig_pb_dup(serializer, sizeof(type), RUT_UTIL_ALIGNOF(type), init, src)
+    _rig_pb_dup(serializer, sizeof(type), C_ALIGNOF(type), init, src)
 
 const char *rig_pb_strdup(rig_pb_serializer_t *serializer, const char *string);
 
@@ -150,7 +150,7 @@ rig_pb_serializer_set_only_asset_ids_enabled(rig_pb_serializer_t *serializer,
 
 void rig_pb_serializer_set_object_register_callback(
     rig_pb_serializer_t *serializer,
-    rig_pb_serializer_objec_register_callback_t callback,
+    rig_pb_serializer_object_register_callback_t callback,
     void *user_data);
 
 void rig_pb_serializer_set_object_to_id_callback(
@@ -170,7 +170,6 @@ uint64_t rig_pb_serializer_lookup_object_id(rig_pb_serializer_t *serializer,
 void rig_pb_serializer_destroy(rig_pb_serializer_t *serializer);
 
 Rig__UI *rig_pb_serialize_ui(rig_pb_serializer_t *serializer,
-                             bool play_mode,
                              rig_ui_t *ui);
 
 Rig__Entity *rig_pb_serialize_entity(rig_pb_serializer_t *serializer,

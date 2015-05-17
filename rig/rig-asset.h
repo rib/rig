@@ -75,45 +75,6 @@ typedef struct _rig_asset_t rig_asset_t;
 
 void _rig_asset_type_init(void);
 
-rig_asset_t *rig_asset_new_builtin(rut_shell_t *shell, const char *icon_path);
-
-rig_asset_t *rig_asset_new_texture(rut_shell_t *shell,
-                                   const char *path,
-                                   const c_llist_t *inferred_tags);
-
-rig_asset_t *rig_asset_new_normal_map(rut_shell_t *shell,
-                                      const char *path,
-                                      const c_llist_t *inferred_tags);
-
-rig_asset_t *rig_asset_new_alpha_mask(rut_shell_t *shell,
-                                      const char *path,
-                                      const c_llist_t *inferred_tags);
-
-rig_asset_t *rig_asset_new_ply_model(rut_shell_t *shell,
-                                     const char *path,
-                                     const c_llist_t *inferred_tags);
-
-rig_asset_t *rig_asset_new_font(rut_shell_t *shell,
-                                const char *path,
-                                const c_llist_t *inferred_tags);
-
-#if defined(RIG_EDITOR_ENABLED)
-rig_asset_t *rig_asset_new_from_file(rig_engine_t *engine,
-                                     const char *filename,
-                                     const char *mime_type,
-                                     rut_exception_t **e);
-bool rig_file_is_asset(const char *filename, const char *mime_type);
-#endif
-
-rig_asset_t *rig_asset_new_from_data(rut_shell_t *shell,
-                                     const char *path,
-                                     rig_asset_type_t type,
-                                     bool is_video,
-                                     const uint8_t *data,
-                                     size_t len);
-
-rig_asset_t *rig_asset_new_from_mesh(rut_shell_t *shell, rut_mesh_t *mesh);
-
 rig_asset_t *rig_asset_new_from_pb_asset(rig_pb_un_serializer_t *unserializer,
                                          Rig__Asset *pb_asset,
                                          rut_exception_t **e);
@@ -122,13 +83,34 @@ rig_asset_type_t rig_asset_get_type(rig_asset_t *asset);
 
 const char *rig_asset_get_path(rig_asset_t *asset);
 
+const char *rig_asset_get_mime_type(rig_asset_t *asset);
+
 rut_shell_t *rig_asset_get_shell(rig_asset_t *asset);
 
-cg_texture_t *rig_asset_get_texture(rig_asset_t *asset);
+rig_image_source_t *rig_asset_get_image_source(rig_asset_t *asset);
 
 rut_mesh_t *rig_asset_get_mesh(rig_asset_t *asset);
 
-bool rig_asset_get_is_video(rig_asset_t *asset);
+void *rig_asset_get_data(rig_asset_t *asset);
+
+size_t rig_asset_get_data_len(rig_asset_t *asset);
+
+bool rig_asset_get_mesh_has_tex_coords(rig_asset_t *asset);
+
+bool rig_asset_get_mesh_has_normals(rig_asset_t *asset);
+
+void rig_asset_reap(rig_asset_t *asset, rig_engine_t *engine);
+
+void rig_asset_get_image_size(rig_asset_t *asset, int *width, int *height);
+
+
+#ifdef RIG_EDITOR_ENABLED
+bool rig_file_is_asset(const char *filename, const char *mime_type);
+rig_asset_t *rig_asset_new_builtin(rut_shell_t *shell, const char *icon_path);
+rig_asset_t *rig_asset_new_from_file(rig_engine_t *engine,
+                                     const char *filename,
+                                     const char *mime_type,
+                                     rut_exception_t **e);
 
 void rig_asset_set_inferred_tags(rig_asset_t *asset,
                                  const c_llist_t *inferred_tags);
@@ -148,16 +130,8 @@ rut_closure_t *rig_asset_thumbnail(rig_asset_t *asset,
                                    void *user_data,
                                    rut_closure_destroy_callback_t destroy_cb);
 
-void *rig_asset_get_data(rig_asset_t *asset);
+cg_texture_t *rig_asset_get_texture(rig_asset_t *asset);
 
-size_t rig_asset_get_data_len(rig_asset_t *asset);
-
-bool rig_asset_get_mesh_has_tex_coords(rig_asset_t *asset);
-
-bool rig_asset_get_mesh_has_normals(rig_asset_t *asset);
-
-void rig_asset_reap(rig_asset_t *asset, rig_engine_t *engine);
-
-void rig_asset_get_image_size(rig_asset_t *asset, int *width, int *height);
+#endif /* RIG_EDITOR_ENABLED */
 
 #endif /* _RIG_ASSET_H_ */

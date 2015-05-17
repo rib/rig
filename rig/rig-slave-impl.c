@@ -102,10 +102,10 @@ lookup_object(rig_slave_t *slave, uint64_t id)
 }
 
 static void
-register_object_cb(void *object, uint64_t edit_mode_id, void *user_data)
+register_edit_object_cb(void *object, uint64_t edit_mode_id, void *user_data)
 {
     rig_slave_t *slave = user_data;
-    uint64_t *object_id;
+    uint64_t *id_chunk;
 
     if (lookup_object(slave, edit_mode_id)) {
         c_critical("Tried to re-register object");
@@ -116,11 +116,21 @@ register_object_cb(void *object, uint64_t edit_mode_id, void *user_data)
      * happen as a result of UI logic so we can make sure to unregister
      * objects that might be deleted by UI logic. */
 
-    object_id = rut_magazine_chunk_alloc(_rig_slave_object_id_magazine);
-    *object_id = edit_mode_id;
+    id_chunk = rut_magazine_chunk_alloc(_rig_slave_object_id_magazine);
+    *id_chunk = edit_mode_id;
 
-    c_hash_table_insert(slave->edit_id_to_play_object_map, object_id, object);
-    c_hash_table_insert(slave->play_object_to_edit_id_map, object, object_id);
+    c_hash_table_insert(slave->edit_id_to_play_object_map, id_chunk, object);
+    c_hash_table_insert(slave->play_object_to_edit_id_map, object, id_chunk);
+}
+
+static void
+unregister_edit_id_cb(uint64_t edit_mode_id, void *user_data)
+{
+    void *object = c_hash_table_remove_value(slave->edit_id_to_play_object_map,
+                                             &edit_mode_id);
+
+    if (object)
+        c_hash_table_remove_value(slave->play_object_to_edit_id_map, object);
 }
 
 static void
@@ -160,7 +170,7 @@ load_ui(rig_slave_t *slave)
     unserializer = rig_pb_unserializer_new(engine);
 
     rig_pb_unserializer_set_object_register_callback(
-        unserializer, register_object_cb, slave);
+        unserializer, register_edit_object_cb, slave);
 
     rig_pb_unserializer_set_id_to_object_callback(
         unserializer, lookup_object_cb, slave);
@@ -552,6 +562,10 @@ rig_slave_init(rut_shell_t *shell, void *user_data)
 
     /* Finish the slave specific engine setup...
      */
+
+    engine->garbage_collect_callback = object_delete_cb;
+    engine->garbage_collect_data = slave;
+
     engine->main_camera_view = rig_camera_view_new(engine);
     rut_stack_add(engine->top_stack, engine->main_camera_view);
 
@@ -572,10 +586,13 @@ rig_slave_init(rut_shell_t *shell, void *user_data)
                                    map_edit_id_to_play_object_cb,
                                    slave); /* user data */
 
+    /* Note: We rely on the slave's garbage_collect_callback to
+     * unregister objects instead of passing an unregister id callback
+     * here */
     rig_engine_op_apply_context_init(&slave->apply_op_ctx,
                                      engine,
-                                     register_object_cb,
-                                     NULL, /* unregister id */
+                                     register_edit_object_cb,
+                                     NULL, /* unregister id cb */
                                      slave); /* user data */
 
     slave->pending_edits = rut_queue_new();
@@ -759,7 +776,7 @@ rig_slave_paint(rut_shell_t *shell, void *user_data)
 
     rig_engine_paint(engine);
 
-    rig_engine_garbage_collect(engine, object_delete_cb, slave);
+    rig_engine_garbage_collect(engine);
 
     rut_shell_run_post_paint_callbacks(shell);
 

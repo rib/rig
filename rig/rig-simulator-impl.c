@@ -42,6 +42,7 @@
 #include "rig-pb.h"
 #include "rig-ui.h"
 #include "rig-logs.h"
+#include "rig-load-save.h"
 #include "rig-frontend.h"
 
 #include "rig.pb-c.h"
@@ -119,67 +120,80 @@ clear_actions(rig_simulator_t *simulator)
     simulator->n_actions = 0;
 }
 
+/* ID functions for a 'Master Simulator', which is a simulator that is
+ * responsible for loading a UI and must forward it to a frontend. */
+
 static rut_object_t *
-lookup_object(rig_simulator_t *simulator, uint64_t id)
+simulator_lookup_object(rig_simulator_t *simulator, uint64_t id)
 {
-    void *id_ptr = (void *)(intptr_t)id;
-    return c_hash_table_lookup(simulator->id_to_object_map, id_ptr);
+    return (void *)(intptr_t)id;
+}
+
+static void *
+simulator_lookup_object_cb(uint64_t id, void *user_data)
+{
+    rig_simulator_t *simulator = user_data;
+    return simulator_lookup_object(simulator, id);
+}
+
+static uint64_t
+simulator_lookup_object_id(rig_simulator_t *simulator, void *object)
+{
+    return (intptr_t)object;
+}
+
+static uint64_t
+simulator_map_id_to_sim_object_cb(uint64_t id, void *user_data)
+{
+    rig_simulator_t *simulator = user_data;
+    void *object = simulator_lookup_object(simulator, id);
+    return (uint64_t)(uintptr_t)object;
+}
+
+static uint64_t
+simulator_map_object_to_frontend_id_cb(uint64_t id, void *user_data)
+{
+    rig_simulator_t *simulator = user_data;
+    void *object = (void *)(uintptr_t)id;
+    return simulator_lookup_object_id(simulator, object);
 }
 
 static void
-register_object_cb(void *object, uint64_t id, void *user_data)
+simulator_register_object_cb(void *object, uint64_t id, void *user_data)
 {
-    rig_simulator_t *simulator = user_data;
-    void *id_ptr;
-
     c_return_if_fail(id != 0);
 
-    /* Assets can be shared between edit and play mode UIs so we
-     * don't want to complain if we detect them being registered
-     * multiple times
-     */
-    if (rut_object_get_type(object) == &rig_asset_type &&
-        lookup_object(simulator, id))
-        return;
+    /* We don't expect temp IDs since they are registered via
+     * temporarily_register_object_cb() instead */
+    c_return_if_fail((id & 0x1) == 0);
 
-    /* NB: We can assume that all IDs fit in a native pointer since IDs
-     * sent to a simulator currently always correspond to pointers in
-     * the frontend which has to be running on the same machine.
-     */
-
-    id_ptr = (void *)(intptr_t)id;
-
-    c_hash_table_insert(simulator->object_to_id_map, object, id_ptr);
-    c_hash_table_insert(simulator->id_to_object_map, id_ptr, object);
+    /* NOP */
 }
 
 static void
-unregister_object_cb(void *object, void *user_data)
+simulator_unregister_object_cb(void *object, void *user_data)
 {
-    rig_simulator_t *simulator = user_data;
-    void *id_ptr = c_hash_table_lookup(simulator->object_to_id_map, object);
-
-    c_hash_table_remove(simulator->object_to_id_map, object);
-    c_hash_table_remove(simulator->id_to_object_map, id_ptr);
+    /* NOP */
 }
 
+#if 0
 static void *
-unregister_id(rig_simulator_t *simulator, uint64_t id)
+simulator_unregister_id(rig_simulator_t *simulator, uint64_t id)
 {
-    void *id_ptr = (void *)(uintptr_t)id;
-    void *object = c_hash_table_lookup(simulator->id_to_object_map, id_ptr);
+    /* We don't expect temp IDs since they are registered via
+     * temporarily_register_object_cb() instead */
+    c_return_val_if_fail((id & 0x1) == 0, NULL);
 
-    c_hash_table_remove(simulator->object_to_id_map, object);
-    c_hash_table_remove(simulator->id_to_object_map, id_ptr);
+    return (void *)(intptr_t)id;
+}
+#endif
 
-    return object;
+static uint64_t
+direct_object_id_cb(void *object, void *user_data)
+{
+    return (uint64_t)(uintptr_t)object;
 }
 
-static void *
-lookup_object_cb(uint64_t id, void *user_data)
-{
-    return lookup_object(user_data, id);
-}
 
 static void
 simulator__load(Rig__Simulator_Service *service,
@@ -198,23 +212,16 @@ simulator__load(Rig__Simulator_Service *service,
     // c_debug ("Simulator: UI Load Request\n");
 
     /* First make sure to cleanup the current ui  */
-    if (pb_ui->mode == RIG__UI__MODE__EDIT)
-        rig_engine_set_edit_mode_ui(engine, NULL);
-    else
-        rig_engine_set_play_mode_ui(engine, NULL);
+    rig_engine_set_ui(engine, NULL);
 
     /* Kick garbage collection now so that all the objects being
      * replaced are unregistered before before we load the new UI.
      */
-    rig_engine_garbage_collect(engine, unregister_object_cb, simulator);
+    rig_engine_garbage_collect(engine);
 
     ui = rig_pb_unserialize_ui(simulator->ui_unserializer, pb_ui);
 
-    c_warn_if_fail(pb_ui->has_mode);
-    if (pb_ui->mode == RIG__UI__MODE__EDIT)
-        rig_engine_set_edit_mode_ui(engine, ui);
-    else
-        rig_engine_set_play_mode_ui(engine, ui);
+    rig_engine_set_ui(engine, ui);
 
     rut_object_unref(ui);
 
@@ -233,49 +240,15 @@ simulator__run_frame(Rig__Simulator_Service *service,
     rig_simulator_t *simulator =
         rig_pb_rpc_closure_get_connection_data(closure_data);
     rig_engine_t *engine = simulator->engine;
-    int n_object_registrations;
     int i;
 
     c_return_if_fail(setup != NULL);
 
-    /* Update all of our temporary IDs to real IDs given to us by the
-     * frontend. */
-    n_object_registrations = setup->n_object_registrations;
-    if (n_object_registrations) {
-        for (i = 0; i < n_object_registrations; i++) {
-            Rig__ObjectRegistration *pb_registration =
-                setup->object_registrations[i];
-            void *object = unregister_id(simulator, pb_registration->temp_id);
-            register_object_cb(object, pb_registration->real_id, simulator);
-        }
-    }
-
-    /* Reset our temporary ID counter.
-     *
-     * Note: Since we know that the frontend will always allocate aligned
-     * pointers as IDs we can use any odd number as a temporary ID... */
-    simulator->next_tmp_id = 1;
-
-    if (setup->has_dso) {
+    if (setup->has_dso)
         rig_code_update_dso(engine, setup->dso.data, setup->dso.len);
-    }
 
     // c_debug ("Simulator: Run Frame Request: n_events = %d\n",
     //         setup->n_events);
-
-    if (setup->has_view_width && setup->has_view_height &&
-        (engine->window_width != setup->view_width ||
-         engine->window_height != setup->view_height)) {
-        rig_engine_resize(engine, setup->view_width, setup->view_height);
-    }
-
-    if (setup->has_view_x)
-        simulator->view_x = setup->view_x;
-    if (setup->has_view_y)
-        simulator->view_y = setup->view_y;
-
-    if (setup->has_play_mode)
-        rig_engine_set_play_mode_enabled(engine, setup->play_mode);
 
     for (i = 0; i < setup->n_events; i++) {
         Rig__Event *pb_event = setup->events[i];
@@ -382,26 +355,15 @@ simulator__run_frame(Rig__Simulator_Service *service,
         rut_headless_shell_handle_stream_event(engine->shell, event);
     }
 
-    /*
-     * Apply UI edit operations immediately
-     */
-
-    if (setup->play_edit) {
+#if 0
+    if (setup->ui_edit) {
         if (!rig_engine_map_pb_ui_edit(&simulator->map_to_sim_objects_op_ctx,
                                        &simulator->apply_op_ctx,
-                                       setup->play_edit)) {
+                                       setup->ui_edit)) {
             rig_simulator_action_report_edit_failure(simulator);
         }
     }
-
-    if (setup->edit) {
-        bool status =
-            rig_engine_map_pb_ui_edit(&simulator->map_to_sim_objects_op_ctx,
-                                      &simulator->apply_op_ctx,
-                                      setup->edit);
-
-        c_warn_if_fail(status);
-    }
+#endif
 
     rut_shell_queue_redraw_real(engine->shell);
 
@@ -437,12 +399,19 @@ static void
 simulator_peer_connected(rig_pb_rpc_client_t *pb_client,
                          void *user_data)
 {
+    rig_simulator_t *simulator = user_data;
     ProtobufCService *frontend_service =
         rig_pb_rpc_client_get_service(pb_client);
     Rig__Query query = RIG__QUERY__INIT;
 
     rig__frontend__test(
         frontend_service, &query, handle_frontend_test_response, NULL);
+
+    simulator->connected = true;
+
+    if (simulator->connected_callback)
+        simulator->connected_callback(simulator, simulator->connected_data);
+
     c_debug("Simulator peer connected\n");
 }
 
@@ -496,47 +465,6 @@ log_op_cb(Rig__Operation *pb_op, void *user_data)
     rut_queue_push_tail(simulator->ops, pb_op);
 }
 
-static uint64_t
-temporarily_register_object_cb(void *object, void *user_data)
-{
-    rig_simulator_t *simulator = user_data;
-
-    /* XXX: Since we know that the frontend will always allocate aligned
-     * pointers as IDs we can use any odd number as a temporary ID */
-    uint64_t id = simulator->next_tmp_id += 2;
-
-    // void *id_ptr = (void *)(intptr_t)id;
-
-    register_object_cb(object, id, simulator);
-
-    // c_hash_table_insert (simulator->object_to_tmp_id_map, object, id_ptr);
-
-    return id;
-}
-
-static uint64_t
-lookup_object_id(rig_simulator_t *simulator, void *object)
-{
-    void *id_ptr = c_hash_table_lookup(simulator->object_to_id_map, object);
-
-    if (C_UNLIKELY(id_ptr == NULL)) {
-        const char *label = "";
-        if (rut_object_is(object, RUT_TRAIT_ID_INTROSPECTABLE)) {
-            rut_property_t *label_prop =
-                rut_introspectable_lookup_property(object, "label");
-            if (label_prop)
-                label = rut_property_get_text(label_prop);
-        }
-        c_warning(
-            "Can't find an ID for unregistered object %p(%s,label=\"%s\")",
-            object,
-            rut_object_get_type_name(object),
-            label);
-        return 0;
-    } else
-        return (uint64_t)(uintptr_t)id_ptr;
-}
-
 static void
 _rig_simulator_free(void *object)
 {
@@ -549,8 +477,6 @@ _rig_simulator_free(void *object)
     c_hash_table_destroy(simulator->object_to_id_map);
 
     c_hash_table_destroy(simulator->id_to_object_map);
-
-    // c_hash_table_destroy (simulator->object_to_tmp_id_map);
 
     rig_engine_op_apply_context_destroy(&simulator->apply_op_ctx);
 
@@ -567,6 +493,9 @@ _rig_simulator_free(void *object)
         rut_memory_stack_free(simulator->log_serializer_stack);
     }
 
+    c_free(simulator->ui_filename);
+    simulator->ui_filename = NULL;
+
     rut_object_free(rig_simulator_t, simulator);
 }
 
@@ -578,28 +507,6 @@ _rig_simulator_init_type(void)
     rut_type_init(&rig_simulator_type, "rig_simulator_t", _rig_simulator_free);
 }
 
-static uint64_t
-map_id_to_sim_object_cb(uint64_t id, void *user_data)
-{
-    rig_simulator_t *simulator = user_data;
-    void *object = lookup_object(simulator, id);
-    return (uint64_t)(uintptr_t)object;
-}
-
-static uint64_t
-map_id_to_frontend_id_cb(uint64_t id, void *user_data)
-{
-    rig_simulator_t *simulator = user_data;
-    void *object = (void *)(uintptr_t)id;
-    return lookup_object_id(simulator, object);
-}
-
-static uint64_t
-direct_object_id_cb(void *object, void *user_data)
-{
-    return (uint64_t)(uintptr_t)object;
-}
-
 static void
 rig_simulator_init(rut_shell_t *shell, void *user_data)
 {
@@ -608,30 +515,6 @@ rig_simulator_init(rut_shell_t *shell, void *user_data)
     rig_engine_t *engine;
 
     simulator->redraw_queued = false;
-
-    /* XXX: Since we know that the frontend will always allocate aligned
-     * pointers as IDs we can use any odd number as a temporary ID */
-    simulator->next_tmp_id = 1;
-
-    /* NB: We can assume that all IDs fit in a native pointer since IDs
-     * sent to a simulator currently always correspond to pointers in
-     * the frontend which has to be running on the same machine.
-     */
-
-    simulator->object_to_id_map = c_hash_table_new(NULL, /* direct hash */
-                                                   NULL); /* direct key equal */
-
-    simulator->id_to_object_map = c_hash_table_new(NULL, /* direct hash */
-                                                   NULL); /* direct key equal */
-
-#if 0
-    /* When we create new objects in the simulator they are given a
-     * temporary ID that we know won't collide with IDs from the
-     * frontend... */
-    simulator->object_to_tmp_id_map =
-        c_hash_table_new (NULL, /* direct hash */
-                          NULL); /* direct key equal */
-#endif
 
     simulator->ops = rut_queue_new();
 
@@ -643,73 +526,72 @@ rig_simulator_init(rut_shell_t *shell, void *user_data)
         rig_engine_new_for_simulator(simulator->shell, simulator);
     engine = simulator->engine;
 
+    simulator->object_to_id_map = c_hash_table_new(NULL, /* direct hash */
+                                                   NULL); /* direct key equal */
+
+    simulator->id_to_object_map = c_hash_table_new(NULL, /* direct hash */
+                                                   NULL); /* direct key equal */
+
+    rig_engine_op_map_context_init(&simulator->map_to_sim_objects_op_ctx,
+                                   engine,
+                                   simulator_map_id_to_sim_object_cb,
+                                   simulator); /* user data */
+
+    rig_engine_op_map_context_init(&simulator->map_to_frontend_ids_op_ctx,
+                                   engine,
+                                   simulator_map_object_to_frontend_id_cb,
+                                   simulator); /* user data */
+
     /* Finish the simulator specific engine setup...
      */
-    engine->main_camera_view = rig_camera_view_new(engine);
-    rut_stack_add(engine->top_stack, engine->main_camera_view);
-
-    /* Initialize the current mode */
-    rig_engine_set_play_mode_enabled(engine, false);
+    engine->garbage_collect_callback = simulator_unregister_object_cb;
+    engine->garbage_collect_data = simulator;
 
     /*
      * This unserializer is used to unserialize UIs in simulator__load
      * for example...
      */
     ui_unserializer = rig_pb_unserializer_new(engine);
-    rig_pb_unserializer_set_object_register_callback(
-        ui_unserializer, register_object_cb, simulator);
-    rig_pb_unserializer_set_id_to_object_callback(
-        ui_unserializer, lookup_object_cb, simulator);
+    rig_pb_unserializer_set_object_register_callback(ui_unserializer,
+                                                     simulator_register_object_cb,
+                                                     simulator);
+    rig_pb_unserializer_set_id_to_object_callback(ui_unserializer,
+                                                  simulator_lookup_object_cb,
+                                                  simulator);
     simulator->ui_unserializer = ui_unserializer;
 
+    /* Note: We rely on the simulator's garbage_collect_callback to
+     * unregister objects instead of passing an unregister id callback
+     * here.
+     *
+     * TODO: remove the unregister ID callback which is no longer used
+     * by anything
+     */
     rig_engine_op_apply_context_init(&simulator->apply_op_ctx,
                                      engine,
-                                     register_object_cb,
-                                     NULL, /* unregister id */
+                                     simulator_register_object_cb,
+                                     NULL, /* unregister id callback */
+                                     NULL, /* simply cast ids to object ptr */
                                      simulator); /* user data */
     rig_engine_set_apply_op_context(engine, &simulator->apply_op_ctx);
 
     rig_engine_set_log_op_callback(engine, log_op_cb, simulator);
 
-    rig_engine_op_map_context_init(&simulator->map_to_sim_objects_op_ctx,
-                                   engine,
-                                   map_id_to_sim_object_cb,
-                                   simulator); /* user data */
-
-    rig_engine_op_map_context_init(&simulator->map_to_frontend_ids_op_ctx,
-                                   engine,
-                                   map_id_to_frontend_id_cb,
-                                   simulator); /* user data */
-
     /* The ops_serializer is used to serialize operations generated by
      * UI logic in the simulator that will be forwarded to the frontend.
      */
     rig_pb_serializer_set_object_register_callback(
-        engine->ops_serializer, temporarily_register_object_cb, simulator);
+        engine->ops_serializer, direct_object_id_cb, simulator);
     rig_pb_serializer_set_object_to_id_callback(
         engine->ops_serializer, direct_object_id_cb, simulator);
 }
 
 rig_simulator_t *
-rig_simulator_new(rig_frontend_id_t frontend_id,
-                  rut_shell_t *main_shell)
+rig_simulator_new(rut_shell_t *main_shell,
+                  const char *ui_filename)
 {
     rig_simulator_t *simulator = rut_object_alloc0(
         rig_simulator_t, &rig_simulator_type, _rig_simulator_init_type);
-
-    simulator->frontend_id = frontend_id;
-
-    switch (frontend_id) {
-    case RIG_FRONTEND_ID_EDITOR:
-        simulator->editable = true;
-        break;
-    case RIG_FRONTEND_ID_SLAVE:
-        simulator->editable = true;
-        break;
-    case RIG_FRONTEND_ID_DEVICE:
-        simulator->editable = false;
-        break;
-    }
 
     simulator->shell = rut_shell_new(rig_simulator_run_frame,
                                      simulator);
@@ -731,7 +613,14 @@ rig_simulator_new(rig_frontend_id_t frontend_id,
 
     simulator->stream = rig_pb_stream_new(simulator->shell);
 
+#ifdef __EMSCRIPTEN__
+    rig_pb_stream_set_in_worker(simulator->stream, true);
+#endif
+
     rig_logs_set_simulator(simulator);
+
+    if (ui_filename)
+        simulator->ui_filename = c_strdup(ui_filename);
 
     return simulator;
 }
@@ -739,12 +628,62 @@ rig_simulator_new(rig_frontend_id_t frontend_id,
 void
 rig_simulator_set_frontend_fd(rig_simulator_t *simulator, int fd)
 {
+#ifdef __EMSCRIPTEN__
+    c_warn_if_reached();
+#else
     rig_pb_stream_set_fd_transport(simulator->stream, fd);
+#endif
+}
+
+static void
+load_cb(void *user_data)
+{
+    rig_simulator_t *simulator = user_data;
+
+    rut_poll_shell_remove_idle(simulator->shell, simulator->load_idle);
+    simulator->load_idle = NULL;
+
+    rig_simulator_load_file(simulator, simulator->ui_filename);
+}
+
+static void
+_rig_simulator_queue_ui_load(rig_simulator_t *simulator)
+{
+    if (simulator->load_idle) {
+        rut_poll_shell_remove_idle(simulator->shell, simulator->load_idle);
+        simulator->load_idle = NULL;
+    }
+
+    simulator->load_idle = rut_poll_shell_add_idle(simulator->shell,
+                                                   load_cb,
+                                                   simulator,
+                                                   NULL); /* destroy notify */
+}
+
+void
+rig_simulator_load_file(rig_simulator_t *simulator, const char *filename)
+{
+    rig_engine_t *engine = simulator->engine;
+    rig_ui_t *ui = NULL;
+
+    if (filename)
+        ui = rig_load(engine, filename);
+
+    if (!ui) {
+        ui = rig_ui_new(engine);
+        rig_ui_prepare(ui);
+    }
+
+    rig_engine_set_ui(engine, ui);
+    rut_object_unref(ui);
 }
 
 void
 rig_simulator_run(rig_simulator_t *simulator)
 {
+    if (simulator->ui_filename)
+        _rig_simulator_queue_ui_load(simulator);
+
     rut_shell_main(simulator->shell);
 }
 
@@ -787,7 +726,7 @@ stack_region_cb(uint8_t *data, size_t bytes, void *user_data)
         rig__property_value__init(pb_value);
 
         pb_change->has_object_id = true;
-        pb_change->object_id = lookup_object_id(simulator, change->object);
+        pb_change->object_id = simulator_lookup_object_id(simulator, change->object);
         pb_change->has_property_id = true;
         pb_change->property_id = change->prop_id;
         rig_pb_property_value_init(state->serializer, pb_value, &change->boxed);
@@ -822,7 +761,7 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
 
     simulator->redraw_queued = false;
 
-    if (!simulator->ui)
+    if (!engine->ui)
         return;
 
     /* Setup the property context to log all property changes so they
@@ -840,35 +779,33 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
 
     rut_shell_dispatch_input_events(shell);
 
-    if (engine->play_mode) {
 #if 0
-        static int counter = 0;
+    static int counter = 0;
 
-        if (counter++ > 100)
-        {
-            rut_object_t *entity = rig_ui_find_entity (engine->current_ui,
-                                                       "pinwheel");
-            rut_property_t *scale_prop;
-            rut_boxed_t boxed;
+    if (counter++ > 100)
+    {
+        rut_object_t *entity = rig_ui_find_entity (engine->ui,
+                                                   "pinwheel");
+        rut_property_t *scale_prop;
+        rut_boxed_t boxed;
 
-            scale_prop = rut_introspectable_get_property (entity,
-                                                          RUT_ENTITY_PROP_SCALE);
+        scale_prop = rut_introspectable_get_property (entity,
+                                                      RUT_ENTITY_PROP_SCALE);
 #if 1
-            boxed.type = RUT_PROPERTY_TYPE_FLOAT;
-            boxed.d.float_val = counter;
-            rig_engine_op_set_property (engine,
-                                        scale_prop,
-                                        &boxed);
-#else
-            rut_property_set_float (&engine->shell->property_ctx,
+        boxed.type = RUT_PROPERTY_TYPE_FLOAT;
+        boxed.d.float_val = counter;
+        rig_engine_op_set_property (engine,
                                     scale_prop,
-                                    counter);
-#endif
-        }
-
-        c_debug ("Frame = %d\n", counter);
+                                    &boxed);
+#else
+        rut_property_set_float (&engine->shell->property_ctx,
+                                scale_prop,
+                                counter);
 #endif
     }
+
+    c_debug ("Frame = %d\n", counter);
+#endif
 
     if (rut_shell_check_timelines(shell))
         rut_shell_queue_redraw(shell);
@@ -891,11 +828,11 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
         state.pb_changes =
             rut_memory_stack_memalign(engine->frame_stack,
                                       sizeof(Rig__PropertyChange) * n_changes,
-                                      RUT_UTIL_ALIGNOF(Rig__PropertyChange));
+                                      C_ALIGNOF(Rig__PropertyChange));
         state.pb_values =
             rut_memory_stack_memalign(engine->frame_stack,
                                       sizeof(Rig__PropertyValue) * n_changes,
-                                      RUT_UTIL_ALIGNOF(Rig__PropertyValue));
+                                      C_ALIGNOF(Rig__PropertyValue));
 
         state.i = 0;
         state.n_changes = n_changes;
@@ -906,7 +843,7 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
         ui_diff.property_changes =
             rut_memory_stack_memalign(engine->frame_stack,
                                       sizeof(void *) * n_changes,
-                                      RUT_UTIL_ALIGNOF(void *));
+                                      C_ALIGNOF(void *));
 
         for (i = 0; i < n_changes; i++) {
             ui_diff.property_changes[i] = &state.pb_changes[i];
@@ -934,11 +871,11 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
         ui_diff.actions =
             rut_memory_stack_memalign(engine->frame_stack,
                                       sizeof(void *) * ui_diff.n_actions,
-                                      RUT_UTIL_ALIGNOF(void *));
+                                      C_ALIGNOF(void *));
         pb_actions = rut_memory_stack_memalign(
             engine->frame_stack,
             sizeof(Rig__SimulatorAction) * ui_diff.n_actions,
-            RUT_UTIL_ALIGNOF(Rig__SimulatorAction));
+            C_ALIGNOF(Rig__SimulatorAction));
 
         i = 0;
         c_list_for_each_safe(action, tmp, &simulator->actions, list_node)
@@ -985,7 +922,7 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
      * faster and handle freeing while we wait for new work from the
      * frontend.
      */
-    rig_engine_garbage_collect(engine, unregister_object_cb, simulator);
+    rig_engine_garbage_collect(engine);
 
     rut_memory_stack_rewind(engine->frame_stack);
 
@@ -1003,41 +940,6 @@ rig_simulator_queue_redraw_hook(rut_shell_t *shell, void *user_data)
     rig_simulator_t *simulator = user_data;
 
     simulator->redraw_queued = true;
-}
-
-static void
-print_id_to_obj_mapping_cb(void *key, void *value, void *user_data)
-{
-    void *id_ptr = (void *)(uintptr_t)key;
-    char *obj = rig_engine_get_object_debug_name(value);
-
-    c_debug("  [%p] -> [%50s]\n", id_ptr, obj);
-
-    c_free(obj);
-}
-
-static void
-print_obj_to_id_mapping_cb(void *key, void *value, void *user_data)
-{
-    char *obj = rig_engine_get_object_debug_name(key);
-    void *id_ptr = (void *)(uintptr_t)value;
-
-    c_debug("  [%50s] -> [%p]\n", obj, id_ptr);
-
-    c_free(obj);
-}
-
-void
-rig_simulator_print_mappings(rig_simulator_t *simulator)
-{
-    c_debug("ID to object map:\n");
-    c_hash_table_foreach(
-        simulator->id_to_object_map, print_id_to_obj_mapping_cb, NULL);
-
-    c_debug("\n\n");
-    c_debug("Object to ID map:\n");
-    c_hash_table_foreach(
-        simulator->object_to_id_map, print_obj_to_id_mapping_cb, NULL);
 }
 
 static void
@@ -1078,7 +980,7 @@ rig_simulator_forward_log(rig_simulator_t *simulator)
     pb_log->type = RIG__LOG__LOG_TYPE__SIMULATOR;
     pb_log->entries = rut_memory_stack_memalign(serializer->stack,
                                                 sizeof(void *) * simulator_log->len,
-                                                RUT_UTIL_ALIGNOF(void *));
+                                                C_ALIGNOF(void *));
     pb_log->n_entries = simulator_log->len;
 
     i = 0;
@@ -1103,64 +1005,174 @@ rig_simulator_forward_log(rig_simulator_t *simulator)
     rut_memory_stack_rewind(simulator->log_serializer_stack);
 }
 
-void
-rig_simulator_parse_option(const char *option, void (*usage)(void))
+bool
+rig_simulator_parse_run_mode(const char *option,
+                             void (*usage)(void),
+                             enum rig_simulator_run_flags flags,
+                             enum rig_simulator_run_mode *mode,
+                             char **address_ret,
+                             int *port_ret)
 {
     char **strv = c_strsplit(option, ":", -1);
+    bool listen = flags & RIG_SIMULATOR_LISTEN;
+    bool standalone = (flags & RIG_SIMULATOR_STANDALONE) || listen;
+
+    *address_ret = NULL;
+    *port_ret = 0;
 
     if (!strv[0]) {
         usage();
-        goto exit;
+        return false;
     }
 
     if (strcmp(strv[0], "tcp") == 0) {
-        char *address;
-        int port;
-
-        rig_simulator_run_mode_option =
+#ifdef USE_UV
+        *mode = listen ? RIG_SIMULATOR_RUN_MODE_LISTEN_TCP :
             RIG_SIMULATOR_RUN_MODE_CONNECT_TCP;
 
         if (!strv[1]) {
             fprintf(stderr, "Missing tcp address in form \"tcp:address\" or \"tcp:address:port\"\n");
-            usage();
-            goto exit;
+            goto error;
         }
 
-        address = c_strdup(strv[1]);
-        port = strv[2] ? strtoul(strv[2], NULL, 10) : 0;
-
-        rig_simulator_address_option = address;
-        rig_simulator_port_option = port;
-
+        *address_ret = c_strdup(strv[1]);
+        *port_ret = strv[2] ? strtoul(strv[2], NULL, 10) : 0;
+#else
+        c_critical("TCP/IP sockets not supported");
+        goto error;
+#endif
     } else if (strcmp(strv[0], "abstract") == 0) {
 #ifdef __linux__
-        rig_simulator_run_mode_option =
+        *mode = listen ? RIG_SIMULATOR_RUN_MODE_LISTEN_ABSTRACT_SOCKET :
             RIG_SIMULATOR_RUN_MODE_CONNECT_ABSTRACT_SOCKET;
-        if (strv[1])
-            rig_simulator_abstract_socket_option = c_strdup(strv[1]);
-        else {
+
+        if (strv[1]) {
+            *address_ret = c_strdup(strv[1]);
+            rig_simulator_address_option = strdup(*address_ret);
+        } else {
             fprintf(stderr, "Missing abstract socket name in form \"abstract:my_socket_name\"\n");
-            usage();
-            goto exit;
+            goto error;
         }
 #else
         c_critical("Abstract sockets are only supported on Linux");
+        goto error;
 #endif
-    } else if (strcmp(strv[0], "mainloop") == 0) {
-        rig_simulator_run_mode_option =
-            RIG_SIMULATOR_RUN_MODE_MAINLOOP;
-    } else if (strcmp(strv[0], "thread") == 0) {
-        rig_simulator_run_mode_option =
-            RIG_SIMULATOR_RUN_MODE_THREADED;
-    } else if (strcmp(strv[0], "process") == 0) {
-        rig_simulator_run_mode_option =
-            RIG_SIMULATOR_RUN_MODE_PROCESS;
+    } else if (!standalone) {
+
+        if (strcmp(strv[0], "mainloop") == 0) {
+            *mode = RIG_SIMULATOR_RUN_MODE_MAINLOOP;
+        } else if (strcmp(strv[0], "thread") == 0) {
+#ifdef C_SUPPORTS_THREADS
+            *mode = RIG_SIMULATOR_RUN_MODE_THREADED;
+#else
+            c_critical("Platform doesn't support threads");
+            goto error;
+#endif
+        } else if (strcmp(strv[0], "process") == 0) {
+#ifdef SUPPORT_SIMULATOR_PROCESS
+            *mode = RIG_SIMULATOR_RUN_MODE_PROCESS;
+#else
+            c_critical("Platform doesn't support sub-processes");
+            goto error;
+#endif
+        }
+
     } else {
-        fprintf(stderr, "Unsupported -m,--simulator= mode \"%s\"\n", option);
-        usage();
-        goto exit;
+        fprintf(stderr, "Unsupported simulator mode \"%s\"\n", option);
+        goto error;
     }
 
-exit:
     c_strfreev(strv);
+    return true;
+
+error:
+    c_strfreev(strv);
+    usage();
+    return false;
+}
+
+void
+rig_simulator_set_connected_callback(rig_simulator_t *simulator,
+                                     void (*callback)(rig_simulator_t *simulator,
+                                                      void *user_data),
+                                     void *user_data)
+{
+    simulator->connected_callback = callback;
+    simulator->connected_data = user_data;
+}
+
+static void
+handle_load_response(const Rig__LoadResult *result,
+                     void *closure_data)
+{
+    c_debug ("UI loaded response received from frontend\n");
+}
+
+void
+rig_simulator_forward_frontend_ui(rig_simulator_t *simulator,
+                                  const Rig__UI *pb_ui)
+{
+    ProtobufCService *frontend_service;
+
+    if (!simulator->connected)
+        return;
+
+    frontend_service =
+        rig_pb_rpc_client_get_service(simulator->simulator_peer->pb_rpc_client);
+
+    rig__frontend__load(frontend_service, pb_ui, handle_load_response, NULL);
+}
+
+#if 0
+bool
+asset_filter_cb(rig_asset_t *asset, void *user_data)
+{
+    rig_simulator_t *simulator = user_data;
+
+    switch (rig_asset_get_type(asset)) {
+    case RIG_ASSET_TYPE_BUILTIN:
+    case RIG_ASSET_TYPE_TEXTURE:
+    case RIG_ASSET_TYPE_NORMAL_MAP:
+    case RIG_ASSET_TYPE_ALPHA_MASK:
+        if (simulator->frontend_features.image_loader)
+            return false;
+        else
+            return true;
+    case RIG_ASSET_TYPE_FONT:
+    case RIG_ASSET_TYPE_MESH:
+        return true;
+    }
+
+    c_warn_if_reached();
+    return false;
+}
+#endif
+
+void
+rig_simulator_reload_frontend_ui(rig_simulator_t *simulator,
+                                 rig_ui_t *ui)
+{
+    rig_engine_t *engine;
+    rig_pb_serializer_t *serializer;
+    Rig__UI *pb_ui;
+
+    c_return_if_fail(simulator->connected);
+
+    engine = simulator->engine;
+    serializer = rig_pb_serializer_new(engine);
+
+    rig_pb_serializer_set_use_pointer_ids_enabled(serializer, true);
+    if (simulator->frontend_features.image_loader)
+        rig_pb_serializer_set_skip_image_data(serializer, true);
+    //rig_pb_serializer_set_asset_filter(serializer, asset_filter_cb, simulator);
+
+    pb_ui = rig_pb_serialize_ui(serializer, ui);
+
+    rig_simulator_forward_frontend_ui(simulator, pb_ui);
+
+    rig_pb_serialized_ui_destroy(pb_ui);
+
+    rig_pb_serializer_destroy(serializer);
+
+    rig_engine_op_apply_context_set_ui(&simulator->apply_op_ctx, ui);
 }

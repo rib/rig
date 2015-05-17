@@ -31,17 +31,11 @@
 #include <stdlib.h>
 
 #include <clib.h>
-#include <xdgmime.h>
 
 #include <cogl/cogl.h>
 
 #ifdef USE_GSTREAMER
 #include <cogl-gst/cogl-gst.h>
-#endif
-
-#ifdef USE_GDK_PIXBUF
-#include <gio/gio.h>
-#include <gdk-pixbuf/gdk-pixbuf.h>
 #endif
 
 #include <math.h>
@@ -51,6 +45,7 @@
 #include "components/rig-model.h"
 #include "rig-asset.h"
 #include "rig-engine.h"
+#include "rig-image-source.h"
 
 #if 0
 enum {
@@ -74,23 +69,27 @@ struct _rig_asset_t {
 
     rig_asset_type_t type;
 
-    /* NB: either the path or data will be valid but not both */
     char *path;
+
+    char *mime_type;
 
     uint8_t *data;
     size_t data_len;
 
-    cg_texture_t *texture;
+    int natural_width;
+    int natural_height;
+
+    rig_image_source_t *image_source;
 
     rut_mesh_t *mesh;
     bool has_tex_coords;
     bool has_normals;
 
-    bool is_video;
-
-    c_llist_t *inferred_tags;
-
+#ifdef RIG_EDITOR_ENABLED
+    cg_texture_t *thumbnail;
     c_list_t thumbnail_cb_list;
+    c_llist_t *inferred_tags;
+#endif
 };
 
 #if 0
@@ -107,8 +106,10 @@ _rig_asset_free(void *object)
 {
     rig_asset_t *asset = object;
 
-    if (asset->texture)
-        cg_object_unref(asset->texture);
+#ifdef RIG_EDITOR_ENABLED
+    if (asset->thumbnail)
+        cg_object_unref(asset->thumbnail);
+#endif
 
     if (asset->path)
         c_free(asset->path);
@@ -179,6 +180,277 @@ _rig_asset_init_type(void)
 
 #undef TYPE
 }
+
+#if defined(RIG_EDITOR_ENABLED)
+#endif /* RIG_EDITOR_ENABLED */
+
+static rig_asset_t *
+asset_new_from_image_data(rig_engine_t *engine,
+                          const char *path,
+                          const char *mime_type,
+                          rig_asset_type_t type,
+                          const uint8_t *data,
+                          size_t len,
+                          int natural_width,
+                          int natural_height,
+                          rut_exception_t **e)
+{
+    rig_asset_t *asset =
+        rut_object_alloc0(rig_asset_t, &rig_asset_type, _rig_asset_init_type);
+    rut_shell_t *shell = engine->shell;
+
+    asset->shell = shell;
+
+    asset->type = type;
+
+    asset->path = c_strdup(path);
+    asset->mime_type = c_strdup(mime_type);
+
+    asset->natural_width = natural_width;
+    asset->natural_height = natural_height;
+
+    if (shell->headless) {
+#warning "FIXME: don't keep image data in simulator when running a web application"
+        asset->data = c_memdup(data, len);
+        asset->data_len = len;
+        return asset;
+    }
+
+    asset->image_source = rig_image_source_new(engine->frontend,
+                                               mime_type,
+                                               path,
+                                               data,
+                                               len,
+                                               natural_width,
+                                               natural_height);
+
+    return asset;
+}
+
+
+rig_asset_t *
+asset_new_from_mesh(rut_shell_t *shell, rut_mesh_t *mesh)
+{
+    rig_asset_t *asset =
+        rut_object_alloc0(rig_asset_t, &rig_asset_type, _rig_asset_init_type);
+    int i;
+
+    asset->shell = shell;
+
+    asset->type = RIG_ASSET_TYPE_MESH;
+
+    asset->mesh = rut_object_ref(mesh);
+    asset->has_normals = false;
+    asset->has_tex_coords = false;
+
+    for (i = 0; i < mesh->n_attributes; i++) {
+        if (strcmp(mesh->attributes[i]->name, "cg_normal_in") == 0)
+            asset->has_normals = true;
+        else if (strcmp(mesh->attributes[i]->name, "cg_tex_coord0_in") == 0)
+            asset->has_tex_coords = true;
+    }
+
+/* XXX: for ply mesh handling the needs_normals/tex_coords refers
+ * to needing to initialize these attributes, since we guarantee
+ * that the mesh itself will always have cg_normal_in and
+ * cg_tex_coord0_in attributes.
+ */
+#warning "fixme: not consistent with ply mesh handling where we guarantee at least padded normals/tex_coords"
+
+    return asset;
+}
+
+rig_asset_t *
+asset_new_from_font_data(rut_shell_t *shell,
+                         const uint8_t *data,
+                         size_t len,
+                         rut_exception_t **e)
+{
+    rig_asset_t *asset =
+        rut_object_alloc0(rig_asset_t, &rig_asset_type, _rig_asset_init_type);
+
+    asset->shell = shell;
+
+    asset->type = RIG_ASSET_TYPE_FONT;
+
+    asset->data = c_memdup(data, len);
+    asset->data_len = len;
+
+    return asset;
+}
+
+rig_asset_t *
+rig_asset_new_from_pb_asset(rig_pb_un_serializer_t *unserializer,
+                            Rig__Asset *pb_asset,
+                            rut_exception_t **e)
+{
+    rig_engine_t *engine = unserializer->engine;
+    rut_shell_t *shell = engine->shell;
+    rig_asset_t *asset = NULL;
+
+    switch (pb_asset->type) {
+    case RIG_ASSET_TYPE_TEXTURE:
+    case RIG_ASSET_TYPE_NORMAL_MAP:
+    case RIG_ASSET_TYPE_ALPHA_MASK: {
+        const char *mime_type = pb_asset->mime_type;
+        int width = 640;
+        int height = 480;
+        uint8_t *data = NULL;
+        int data_len = 0;
+
+        if (pb_asset->has_data) {
+            data = pb_asset->data.data;
+            data_len = pb_asset->data.len;
+        }
+
+        /* TODO: eventually remove this compatibility fallback */
+        if (!mime_type) {
+            int len = strlen(pb_asset->path);
+            if (len > 3) {
+                if (strcmp(pb_asset->path + len - 4, ".png") == 0)
+                    mime_type = "image/png";
+                else
+                    mime_type = "image/jpeg";
+            }
+        }
+
+        if (pb_asset->has_width) {
+            width = pb_asset->width;
+            height = pb_asset->height;
+        }
+
+        if (mime_type) {
+            asset = asset_new_from_image_data(unserializer->engine,
+                                              pb_asset->path,
+                                              mime_type,
+                                              pb_asset->type,
+                                              data,
+                                              data_len,
+                                              width, height,
+                                              e);
+        } else {
+            rut_throw(e, RUT_IO_EXCEPTION, RUT_IO_EXCEPTION_IO,
+                      "Missing image mime type for asset %s",
+                      pb_asset->path);
+        }
+
+        return asset;
+    }
+    case RIG_ASSET_TYPE_FONT: {
+        asset = asset_new_from_font_data(
+            shell, pb_asset->data.data, pb_asset->data.len, e);
+        return asset;
+    }
+    case RIG_ASSET_TYPE_MESH:
+        if (pb_asset->mesh) {
+            rut_mesh_t *mesh =
+                rig_pb_unserialize_mesh(unserializer, pb_asset->mesh);
+            if (!mesh) {
+                rut_throw(e,
+                          RUT_IO_EXCEPTION,
+                          RUT_IO_EXCEPTION_IO,
+                          "Error unserializing mesh");
+                return NULL;
+            }
+            asset = asset_new_from_mesh(engine->shell, mesh);
+            rut_object_unref(mesh);
+            return asset;
+        } else {
+            rut_throw(e, RUT_IO_EXCEPTION, RUT_IO_EXCEPTION_IO,
+                      "Missing mesh data");
+            return NULL;
+        }
+
+        return asset;
+    case RIG_ASSET_TYPE_BUILTIN:
+        rut_throw(e,
+                  RUT_IO_EXCEPTION,
+                  RUT_IO_EXCEPTION_IO,
+                  "Can't instantiate a builtin asset from data");
+        return NULL;
+    }
+
+    rut_throw(e, RUT_IO_EXCEPTION, RUT_IO_EXCEPTION_IO, "Unknown asset type");
+
+    return NULL;
+}
+
+rig_asset_type_t
+rig_asset_get_type(rig_asset_t *asset)
+{
+    return asset->type;
+}
+
+const char *
+rig_asset_get_path(rig_asset_t *asset)
+{
+    return asset->path;
+}
+
+const char *
+rig_asset_get_mime_type(rig_asset_t *asset)
+{
+    return asset->mime_type;
+}
+
+rut_shell_t *
+rig_asset_get_shell(rig_asset_t *asset)
+{
+    return asset->shell;
+}
+
+rig_image_source_t *
+rig_asset_get_image_source(rig_asset_t *asset)
+{
+    return asset->image_source;
+}
+
+rut_mesh_t *
+rig_asset_get_mesh(rig_asset_t *asset)
+{
+    return asset->mesh;
+}
+
+void
+rig_asset_get_image_size(rig_asset_t *asset, int *width, int *height)
+{
+    *width = asset->natural_width;
+    *height = asset->natural_height;
+}
+
+void *
+rig_asset_get_data(rig_asset_t *asset)
+{
+    return asset->data;
+}
+
+size_t
+rig_asset_get_data_len(rig_asset_t *asset)
+{
+    return asset->data_len;
+}
+
+bool
+rig_asset_get_mesh_has_tex_coords(rig_asset_t *asset)
+{
+    return asset->has_tex_coords;
+}
+
+bool
+rig_asset_get_mesh_has_normals(rig_asset_t *asset)
+{
+    return asset->has_normals;
+}
+
+
+
+/**
+ * ============================================================================
+ * TODO: split following code into editor
+ * ============================================================================
+ */
+
+#ifdef RIG_EDITOR_ENABLED
 
 /* These should be sorted in descending order of size to
  * avoid gaps due to attributes being naturally aligned. */
@@ -513,283 +785,6 @@ generate_mesh_thumbnail(rig_asset_t *asset)
     return thumbnail;
 }
 
-static rig_asset_t *
-rig_asset_new_full(rut_shell_t *shell,
-                   const char *path,
-                   const c_llist_t *inferred_tags,
-                   rig_asset_type_t type)
-{
-    rig_asset_t *asset =
-        rut_object_alloc0(rig_asset_t, &rig_asset_type, _rig_asset_init_type);
-    const char *real_path;
-    char *full_path;
-
-#ifndef __ANDROID__
-    if (type == RIG_ASSET_TYPE_BUILTIN) {
-        full_path = rut_find_data_file(path);
-        if (full_path == NULL)
-            full_path = c_strdup(path);
-    } else
-        full_path = c_build_filename(shell->assets_location, path, NULL);
-    real_path = full_path;
-#else
-    real_path = path;
-#endif
-
-    asset->shell = shell;
-
-    asset->type = type;
-
-    rig_asset_set_inferred_tags(asset, inferred_tags);
-    asset->is_video = rut_util_find_tag(inferred_tags, "video");
-
-    c_list_init(&asset->thumbnail_cb_list);
-
-    switch (type) {
-    case RIG_ASSET_TYPE_BUILTIN:
-    case RIG_ASSET_TYPE_TEXTURE:
-    case RIG_ASSET_TYPE_NORMAL_MAP:
-    case RIG_ASSET_TYPE_ALPHA_MASK: {
-        c_error_t *error = NULL;
-
-        if (!asset->is_video)
-            asset->texture = rut_load_texture(shell, real_path, &error);
-        else
-            asset->texture = rut_load_texture(shell,
-                                              rut_find_data_file("thumb-video.png"),
-                                              &error);
-
-        if (!asset->texture) {
-            rut_object_free(rig_asset_t, asset);
-            c_warning("Failed to load asset texture: %s", error->message);
-            c_error_free(error);
-            asset = NULL;
-            goto DONE;
-        }
-
-        break;
-    }
-    case RIG_ASSET_TYPE_MESH: {
-        rut_ply_attribute_status_t padding_status[C_N_ELEMENTS(ply_attributes)];
-        c_error_t *error = NULL;
-
-        asset->mesh = rut_mesh_new_from_ply(shell,
-                                            real_path,
-                                            ply_attributes,
-                                            C_N_ELEMENTS(ply_attributes),
-                                            padding_status,
-                                            &error);
-
-        if (!asset->mesh) {
-            rut_object_free(rig_asset_t, asset);
-            c_warning("could not load model %s: %s", path, error->message);
-            c_error_free(error);
-            asset = NULL;
-            goto DONE;
-        }
-
-        if (padding_status[1] == RUT_PLY_ATTRIBUTE_STATUS_PADDED)
-            asset->has_normals = false;
-        else
-            asset->has_normals = true;
-
-        if (padding_status[2] == RUT_PLY_ATTRIBUTE_STATUS_PADDED)
-            asset->has_tex_coords = false;
-        else
-            asset->has_tex_coords = true;
-
-        asset->texture = generate_mesh_thumbnail(asset);
-
-        break;
-    }
-    case RIG_ASSET_TYPE_FONT: {
-        c_error_t *error = NULL;
-        asset->texture =
-            rut_load_texture(shell, rut_find_data_file("fonts.png"), &error);
-        if (!asset->texture) {
-            rut_object_free(rig_asset_t, asset);
-            asset = NULL;
-            c_warning("Failed to load font icon: %s", error->message);
-            c_error_free(error);
-            goto DONE;
-        }
-
-        break;
-    }
-    }
-    asset->path = c_strdup(path);
-
-// rut_introspectable_init (asset);
-
-DONE:
-
-#ifndef __ANDROID__
-    c_free(full_path);
-#endif
-
-    return asset;
-}
-
-#ifdef USE_GDK_PIXBUF
-static cg_bitmap_t *
-bitmap_new_from_pixbuf(cg_device_t *dev, GdkPixbuf *pixbuf)
-{
-    bool has_alpha;
-    GdkColorspace color_space;
-    cg_pixel_format_t pixel_format;
-    int width;
-    int height;
-    int rowstride;
-    int bits_per_sample;
-    int n_channels;
-    cg_bitmap_t *bmp;
-
-    /* Get pixbuf properties */
-    has_alpha = gdk_pixbuf_get_has_alpha(pixbuf);
-    color_space = gdk_pixbuf_get_colorspace(pixbuf);
-    width = gdk_pixbuf_get_width(pixbuf);
-    height = gdk_pixbuf_get_height(pixbuf);
-    rowstride = gdk_pixbuf_get_rowstride(pixbuf);
-    bits_per_sample = gdk_pixbuf_get_bits_per_sample(pixbuf);
-    n_channels = gdk_pixbuf_get_n_channels(pixbuf);
-
-    /* According to current docs this should be true and so
-     * the translation to cogl pixel format below valid */
-    c_assert(bits_per_sample == 8);
-
-    if (has_alpha)
-        c_assert(n_channels == 4);
-    else
-        c_assert(n_channels == 3);
-
-    /* Translate to cogl pixel format */
-    switch (color_space) {
-    case GDK_COLORSPACE_RGB:
-        /* The only format supported by GdkPixbuf so far */
-        pixel_format =
-            has_alpha ? CG_PIXEL_FORMAT_RGBA_8888 : CG_PIXEL_FORMAT_RGB_888;
-        break;
-
-    default:
-        /* Ouch, spec changed! */
-        g_object_unref(pixbuf);
-        return false;
-    }
-
-    /* We just use the data directly from the pixbuf so that we don't
-     * have to copy to a seperate buffer.
-     */
-    bmp = cg_bitmap_new_for_data(dev,
-                                 width,
-                                 height,
-                                 pixel_format,
-                                 rowstride,
-                                 gdk_pixbuf_get_pixels(pixbuf));
-
-    return bmp;
-}
-#endif /* USE_GDK_PIXBUF */
-
-rig_asset_t *
-rig_asset_new_from_image_data(rut_shell_t *shell,
-                              const char *path,
-                              rig_asset_type_t type,
-                              bool is_video,
-                              const uint8_t *data,
-                              size_t len,
-                              rut_exception_t **e)
-{
-    rig_asset_t *asset =
-        rut_object_alloc0(rig_asset_t, &rig_asset_type, _rig_asset_init_type);
-
-    asset->shell = shell;
-
-    asset->type = type;
-
-    asset->path = c_strdup(path);
-
-    asset->is_video = is_video;
-    if (is_video) {
-        asset->data = c_memdup(data, len);
-        asset->data_len = len;
-    } else {
-#ifdef USE_GDK_PIXBUF
-        GInputStream *istream =
-            g_memory_input_stream_new_from_data(data, len, NULL);
-        GError *error = NULL;
-        GdkPixbuf *pixbuf = gdk_pixbuf_new_from_stream(istream, NULL, &error);
-        cg_bitmap_t *bitmap;
-        cg_error_t *cg_error = NULL;
-        bool allocated;
-
-        if (!pixbuf) {
-            rut_object_free(rig_asset_t, asset);
-            rut_throw(e,
-                      RUT_IO_EXCEPTION,
-                      RUT_IO_EXCEPTION_IO,
-                      "Failed to load pixbuf from data: %s",
-                      error->message);
-            g_error_free(error);
-            return NULL;
-        }
-
-        g_object_unref(istream);
-
-        bitmap = bitmap_new_from_pixbuf(shell->cg_device, pixbuf);
-
-        asset->texture = cg_texture_2d_new_from_bitmap(bitmap);
-
-        /* Allocate now so we can simply free the data
-         * TODO: allow asynchronous upload. */
-        allocated = cg_texture_allocate(asset->texture, &cg_error);
-
-        cg_object_unref(bitmap);
-        g_object_unref(pixbuf);
-
-        if (!allocated) {
-            cg_object_unref(asset->texture);
-            rut_throw(e,
-                      RUT_IO_EXCEPTION,
-                      RUT_IO_EXCEPTION_IO,
-                      "Failed to load Cogl texture: %s",
-                      cg_error->message);
-            cg_error_free(cg_error);
-            return NULL;
-        }
-#else
-#warning "Missing platform support for loading an image from data!"
-        rut_throw(e,
-                  RUT_IO_EXCEPTION,
-                  RUT_IO_EXCEPTION_IO,
-                  "Failed to load image asset from data");
-        return NULL;
-#endif
-
-    }
-
-    return asset;
-}
-
-rig_asset_t *
-rig_asset_new_from_font_data(rut_shell_t *shell,
-                             const uint8_t *data,
-                             size_t len,
-                             rut_exception_t **e)
-{
-    rig_asset_t *asset =
-        rut_object_alloc0(rig_asset_t, &rig_asset_type, _rig_asset_init_type);
-
-    asset->shell = shell;
-
-    asset->type = RIG_ASSET_TYPE_FONT;
-
-    asset->data = c_memdup(data, len);
-    asset->data_len = len;
-
-    return asset;
-}
-
-#if defined(RIG_EDITOR_ENABLED)
 static const char *
 get_extension(const char *path)
 {
@@ -901,6 +896,128 @@ infer_asset_tags(rut_shell_t *shell,
 }
 
 rig_asset_t *
+asset_new_from_file(rut_shell_t *shell,
+                    rig_asset_type_t type,
+                    const char *path,
+                    const c_llist_t *inferred_tags,
+                    rig_asset_type_t type)
+{
+    rig_asset_t *asset =
+        rut_object_alloc0(rig_asset_t, &rig_asset_type, _rig_asset_init_type);
+    const char *real_path;
+    char *full_path;
+    const c_llist_t *inferred_tags;
+    bool is_video;
+
+#ifndef __ANDROID__
+    if (type == RIG_ASSET_TYPE_BUILTIN) {
+        full_path = rut_find_data_file(path);
+        if (full_path == NULL)
+            full_path = c_strdup(path);
+    } else
+        full_path = c_build_filename(shell->assets_location, path, NULL);
+    real_path = full_path;
+#else
+    real_path = path;
+#endif
+
+    asset->shell = shell;
+
+    asset->type = type;
+
+    rig_asset_set_inferred_tags(asset, inferred_tags);
+    is_video = rut_util_find_tag(inferred_tags, "video");
+
+    c_list_init(&asset->thumbnail_cb_list);
+
+    switch (type) {
+    case RIG_ASSET_TYPE_BUILTIN:
+    case RIG_ASSET_TYPE_TEXTURE:
+    case RIG_ASSET_TYPE_NORMAL_MAP:
+    case RIG_ASSET_TYPE_ALPHA_MASK: {
+        c_error_t *error = NULL;
+
+        if (is_video)
+            asset->thumbnail = rut_load_texture(shell, real_path, &error);
+
+        if (!asset->thumbnail) {
+            rut_object_free(rig_asset_t, asset);
+            c_warning("Failed to load asset texture: %s", error->message);
+            c_error_free(error);
+            asset = NULL;
+            goto DONE;
+        }
+
+        break;
+    }
+    case RIG_ASSET_TYPE_MESH: {
+        rut_ply_attribute_status_t padding_status[C_N_ELEMENTS(ply_attributes)];
+        c_error_t *error = NULL;
+
+        asset->mesh = rut_mesh_new_from_ply(shell,
+                                            real_path,
+                                            ply_attributes,
+                                            C_N_ELEMENTS(ply_attributes),
+                                            padding_status,
+                                            &error);
+
+        if (!asset->mesh) {
+            rut_object_free(rig_asset_t, asset);
+            c_warning("could not load model %s: %s", path, error->message);
+            c_error_free(error);
+            asset = NULL;
+            goto DONE;
+        }
+
+        if (padding_status[1] == RUT_PLY_ATTRIBUTE_STATUS_PADDED)
+            asset->has_normals = false;
+        else
+            asset->has_normals = true;
+
+        if (padding_status[2] == RUT_PLY_ATTRIBUTE_STATUS_PADDED)
+            asset->has_tex_coords = false;
+        else
+            asset->has_tex_coords = true;
+
+        asset->thumbnail = generate_mesh_thumbnail(asset);
+
+        break;
+    }
+    case RIG_ASSET_TYPE_FONT: {
+        c_error_t *error = NULL;
+        asset->thumbnail =
+            rut_load_texture(shell, rut_find_data_file("fonts.png"), &error);
+        if (!asset->thumbnail) {
+            rut_object_free(rig_asset_t, asset);
+            asset = NULL;
+            c_warning("Failed to load font icon: %s", error->message);
+            c_error_free(error);
+            goto DONE;
+        }
+
+        break;
+    }
+    }
+    asset->path = c_strdup(path);
+
+// rut_introspectable_init (asset);
+
+DONE:
+
+#ifndef __ANDROID__
+    c_free(full_path);
+#endif
+
+    return asset;
+}
+
+rig_asset_t *
+rig_asset_new_builtin(rut_shell_t *shell, const char *icon_path)
+{
+    return asset_new_from_file(shell, RIG_ASSET_TYPE_BUILTIN, path, NULL);
+}
+
+rig_asset_t *
 rig_asset_new_from_file(rig_engine_t *engine,
                         const char *path,
                         const char *mime_type,
@@ -914,15 +1031,15 @@ rig_asset_new_from_file(rig_engine_t *engine,
     if (rut_util_find_tag(inferred_tags, "image") ||
         rut_util_find_tag(inferred_tags, "video")) {
         if (rut_util_find_tag(inferred_tags, "normal-maps"))
-            asset = rig_asset_new_normal_map(engine->shell, path, inferred_tags);
+            asset = asset_new_from_file(engine->shell, RIG_ASSET_TYPE_NORMAL_MAP, path, inferred_tags);
         else if (rut_util_find_tag(inferred_tags, "alpha-masks"))
-            asset = rig_asset_new_alpha_mask(engine->shell, path, inferred_tags);
+            asset = asset_new_from_file(engine->shell, RIG_ASSET_TYPE_ALPHA_MASK, path, inferred_tags);
         else
-            asset = rig_asset_new_texture(engine->shell, path, inferred_tags);
+            asset = asset_new_from_file(engine->shell, RIG_ASSET_TYPE_TEXTURE, path, inferred_tags);
     } else if (rut_util_find_tag(inferred_tags, "ply"))
-        asset = rig_asset_new_ply_model(engine->shell, path, inferred_tags);
+        asset = asset_new_from_file(engine->shell, RIG_ASSET_TYPE_MESH, path, inferred_tags);
     else if (rut_util_find_tag(inferred_tags, "font"))
-        asset = rig_asset_new_font(engine->shell, path, inferred_tags);
+        asset = asset_new_from_file(engine->shell, RIG_ASSET_TYPE_FONT, path, inferred_tags);
 
     c_llist_free(inferred_tags);
 
@@ -936,213 +1053,7 @@ rig_asset_new_from_file(rig_engine_t *engine,
 
     return asset;
 }
-#endif /* RIG_EDITOR_ENABLED */
 
-rig_asset_t *
-rig_asset_new_from_pb_asset(rig_pb_un_serializer_t *unserializer,
-                            Rig__Asset *pb_asset,
-                            rut_exception_t **e)
-{
-    rig_engine_t *engine = unserializer->engine;
-    rut_shell_t *shell = engine->shell;
-    rig_asset_t *asset = NULL;
-
-    if (pb_asset->has_data) {
-        switch (pb_asset->type) {
-        case RIG_ASSET_TYPE_TEXTURE:
-        case RIG_ASSET_TYPE_NORMAL_MAP:
-        case RIG_ASSET_TYPE_ALPHA_MASK: {
-            bool is_video = pb_asset->has_is_video ? pb_asset->is_video : false;
-            asset = rig_asset_new_from_image_data(shell,
-                                                  pb_asset->path,
-                                                  pb_asset->type,
-                                                  is_video,
-                                                  pb_asset->data.data,
-                                                  pb_asset->data.len,
-                                                  e);
-            return asset;
-        }
-        case RIG_ASSET_TYPE_FONT: {
-            asset = rig_asset_new_from_font_data(
-                shell, pb_asset->data.data, pb_asset->data.len, e);
-            return asset;
-        }
-        case RIG_ASSET_TYPE_BUILTIN:
-            rut_throw(e,
-                      RUT_IO_EXCEPTION,
-                      RUT_IO_EXCEPTION_IO,
-                      "Can't instantiate a builtin asset from data");
-            return NULL;
-        }
-    } else if (pb_asset->mesh) {
-        rut_mesh_t *mesh =
-            rig_pb_unserialize_mesh(unserializer, pb_asset->mesh);
-        if (!mesh) {
-            rut_throw(e,
-                      RUT_IO_EXCEPTION,
-                      RUT_IO_EXCEPTION_IO,
-                      "Error unserializing mesh");
-            return NULL;
-        }
-        asset = rig_asset_new_from_mesh(engine->shell, mesh);
-        rut_object_unref(mesh);
-        return asset;
-    }
-
-    rut_throw(e, RUT_IO_EXCEPTION, RUT_IO_EXCEPTION_IO, "Missing asset data");
-
-    return NULL;
-}
-
-rig_asset_t *
-rig_asset_new_from_mesh(rut_shell_t *shell, rut_mesh_t *mesh)
-{
-    rig_asset_t *asset =
-        rut_object_alloc0(rig_asset_t, &rig_asset_type, _rig_asset_init_type);
-    int i;
-
-    asset->shell = shell;
-
-    asset->type = RIG_ASSET_TYPE_MESH;
-
-    asset->mesh = rut_object_ref(mesh);
-    asset->has_normals = false;
-    asset->has_tex_coords = false;
-
-    for (i = 0; i < mesh->n_attributes; i++) {
-        if (strcmp(mesh->attributes[i]->name, "cg_normal_in") == 0)
-            asset->has_normals = true;
-        else if (strcmp(mesh->attributes[i]->name, "cg_tex_coord0_in") == 0)
-            asset->has_tex_coords = true;
-    }
-
-/* XXX: for ply mesh handling the needs_normals/tex_coords refers
- * to needing to initialize these attributes, since we guarantee
- * that the mesh itself will always have cg_normal_in and
- * cg_tex_coord0_in attributes.
- */
-#warning                                                                       \
-    "fixme: not consistent with ply mesh handling where we guarantee at least padded normals/tex_coords"
-
-    /* FIXME: assets should only be used in the Rig editor so we
-     * shouldn't have to consider this... */
-    if (!asset->shell->headless) {
-        asset->texture = generate_mesh_thumbnail(asset);
-    }
-
-    return asset;
-}
-
-rig_asset_t *
-rig_asset_new_builtin(rut_shell_t *shell, const char *path)
-{
-    return rig_asset_new_full(shell, path, NULL, RIG_ASSET_TYPE_BUILTIN);
-}
-
-/* We should possibly report a GError here so we can report human
- * readable errors to the user... */
-rig_asset_t *
-rig_asset_new_texture(rut_shell_t *shell,
-                      const char *path,
-                      const c_llist_t *inferred_tags)
-{
-    return rig_asset_new_full(shell, path, inferred_tags,
-                              RIG_ASSET_TYPE_TEXTURE);
-}
-
-/* We should possibly report a GError here so we can report human
- * readable errors to the user... */
-rig_asset_t *
-rig_asset_new_normal_map(rut_shell_t *shell,
-                         const char *path,
-                         const c_llist_t *inferred_tags)
-{
-    return rig_asset_new_full(shell, path, inferred_tags,
-                              RIG_ASSET_TYPE_NORMAL_MAP);
-}
-
-/* We should possibly report a GError here so we can report human
- * readable errors to the user... */
-rig_asset_t *
-rig_asset_new_alpha_mask(rut_shell_t *shell,
-                         const char *path,
-                         const c_llist_t *inferred_tags)
-{
-    return rig_asset_new_full(shell, path, inferred_tags,
-                              RIG_ASSET_TYPE_ALPHA_MASK);
-}
-
-rig_asset_t *
-rig_asset_new_ply_model(rut_shell_t *shell,
-                        const char *path,
-                        const c_llist_t *inferred_tags)
-{
-    return rig_asset_new_full(shell, path, inferred_tags,
-                              RIG_ASSET_TYPE_MESH);
-}
-
-rig_asset_t *
-rig_asset_new_font(rut_shell_t *shell,
-                   const char *path,
-                   const c_llist_t *inferred_tags)
-{
-    return rig_asset_new_full(shell, path, inferred_tags,
-                              RIG_ASSET_TYPE_FONT);
-}
-
-rig_asset_type_t
-rig_asset_get_type(rig_asset_t *asset)
-{
-    return asset->type;
-}
-
-const char *
-rig_asset_get_path(rig_asset_t *asset)
-{
-    return asset->path;
-}
-
-rut_shell_t *
-rig_asset_get_shell(rig_asset_t *asset)
-{
-    return asset->shell;
-}
-
-cg_texture_t *
-rig_asset_get_texture(rig_asset_t *asset)
-{
-    return asset->texture;
-}
-
-rut_mesh_t *
-rig_asset_get_mesh(rig_asset_t *asset)
-{
-    return asset->mesh;
-}
-
-bool
-rig_asset_get_is_video(rig_asset_t *asset)
-{
-    return asset->is_video;
-}
-
-void
-rig_asset_get_image_size(rig_asset_t *asset, int *width, int *height)
-{
-    if (rig_asset_get_is_video(asset)) {
-#warning                                                                       \
-        "FIXME: rig_asset_get_image_size() should return the correct size of videos"
-        *width = 640;
-        *height = 480;
-    } else {
-        cg_texture_t *texture = rig_asset_get_texture(asset);
-
-        c_return_if_fail(texture);
-
-        *width = cg_texture_get_width(texture);
-        *height = cg_texture_get_height(texture);
-    }
-}
 
 static c_llist_t *
 copy_tags(const c_llist_t *tags)
@@ -1191,7 +1102,10 @@ rig_asset_add_inferred_tag(rig_asset_t *asset, const char *tag)
 bool
 rig_asset_needs_thumbnail(rig_asset_t *asset)
 {
-    return asset->is_video ? true : false;
+    if (strncmp(asset->mime_type, "video/", 6) == 0)
+        return true;
+    else
+        return false;
 }
 
 rut_closure_t *
@@ -1220,26 +1134,11 @@ rig_asset_thumbnail(rig_asset_t *asset,
 #endif
 }
 
-void *
-rig_asset_get_data(rig_asset_t *asset)
+cg_texture_t *
+rig_asset_get_texture(rig_asset_t *asset)
 {
-    return asset->data;
+    return asset->thumbnail;
 }
 
-size_t
-rig_asset_get_data_len(rig_asset_t *asset)
-{
-    return asset->data_len;
-}
 
-bool
-rig_asset_get_mesh_has_tex_coords(rig_asset_t *asset)
-{
-    return asset->has_tex_coords;
-}
-
-bool
-rig_asset_get_mesh_has_normals(rig_asset_t *asset)
-{
-    return asset->has_normals;
-}
+#endif /* RIG_EDITOR_ENABLED */

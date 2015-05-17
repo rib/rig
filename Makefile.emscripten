@@ -1,0 +1,52 @@
+all:
+
+SUBDIRS = clib cogl rut rig
+
+subdirs: $(SUBDIRS)
+all: subdirs rig-device.html rig-simulator-worker.js
+
+CC=emcc
+top_prebuiltdir=./prebuilt
+top_srcdir=./src
+srcdir=./src
+top_builddir=./build
+builddir=./build
+
+JSFLAGS=-g4 -O0
+_JSFLAGS=$(JSFLAGS)
+
+$(SUBDIRS):
+	mkdir -p build/$@
+	$(MAKE) \
+	    top_builddir=../ buildir=. \
+	    top_srcdir=../../src srcdir=../../src/$@ \
+	    -f ../../src/$@/Makefile.emscripten -C build/$@ $(MAKECMDGOALS)
+
+rut: clib
+rig: rut
+
+emscripten_libs = \
+	--js-library $(top_srcdir)/clib/clib-web.js \
+	--js-library $(top_srcdir)/cogl/cogl-emscripten-lib.js \
+	--js-library $(top_srcdir)/rig/rig-emscripten-lib.js
+
+%.js: $(top_builddir)/clib/clib.bc $(top_builddir)/cogl/cogl.bc $(top_builddir)/rut/rut.bc $(top_builddir)/rig/rig.bc $(top_builddir)/rig/%.bc | rig
+	$(CC) $(_JSFLAGS) $(emscripten_libs) -o $@ $^ -L$(top_prebuiltdir)/lib -lfreetype -lharfbuzz -lharfbuzz-icu -lfontconfig -licuuc -licudata -lprotobuf-c -lxml2
+
+%-worker.js: $(top_builddir)/clib/clib.bc $(top_builddir)/cogl/cogl.bc $(top_builddir)/rut/rut.bc $(top_builddir)/rig/rig.bc $(top_builddir)/rig/%.bc | rig
+	$(CC) $(_JSFLAGS) -s BUILD_AS_WORKER=1 $(emscripten_libs) -o $@ $^ -L$(top_prebuiltdir)/lib -lfreetype -lharfbuzz -lharfbuzz-icu -lfontconfig -licuuc -licudata -lprotobuf-c -lxml2
+
+%.html: $(top_builddir)/clib/clib.bc $(top_builddir)/cogl/cogl.bc $(top_builddir)/rut/rut.bc $(top_builddir)/rig/rig.bc $(top_builddir)/rig/%.bc | rig
+	$(CC) $(_JSFLAGS) -s WEBSOCKET_URL="\"ws://127.0.0.1:7890/simulator/\"" $(emscripten_libs) -o $@ $^ -L$(top_prebuiltdir)/lib -lfreetype -lharfbuzz -lharfbuzz-icu -lfontconfig -licuuc -licudata -lprotobuf-c -lxml2
+
+clean: subdirs
+distclean: subdirs
+
+.PHONY: all subdirs $(SUBDIRS) all clean distclean
+
+#LAZY WORK AROUND
+#not quite sure why subdirs as a dep for %.js isn't enough
+#to ensure all subdirs are handled before trying to build
+#js files...
+.NOTPARALLEL:
+

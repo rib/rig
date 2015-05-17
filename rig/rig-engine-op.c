@@ -36,6 +36,18 @@
 
 #include "rig.pb-c.h"
 
+#define apply_id_to_object(ctx, id) ((void *)(uintptr_t)(id))
+#define op_object_to_id(serializer, obj) ((intptr_t)obj)
+
+#if 0
+#define apply_id_to_object(ctx, id) ctx->id_to_object(id, ctx->user_data)
+
+#define op_object_to_id(serializer, obj) \
+    serializer->object_to_id_callback(serializer, \
+                                      obj, \
+                                      serializer->object_to_id_data)
+#endif
+
 static bool
 map_ids(rig_engine_op_map_context_t *ctx, int64_t **id_ptrs)
 {
@@ -115,7 +127,8 @@ rig_engine_op_set_property(rig_engine_t *engine,
                                      Rig__Operation__SetProperty,
                                      rig__operation__set_property__init);
 
-    pb_op->set_property->object_id = (intptr_t)property->object;
+    pb_op->set_property->object_id =
+        op_object_to_id(serializer, property->object);
     pb_op->set_property->property_id = property->id;
     pb_op->set_property->value = pb_property_value_new(serializer, value);
 
@@ -128,7 +141,7 @@ _apply_op_set_property(rig_engine_op_apply_context_t *ctx,
                        Rig__Operation *pb_op)
 {
     Rig__Operation__SetProperty *set_property = pb_op->set_property;
-    rut_object_t *object = (void *)(intptr_t)set_property->object_id;
+    rut_object_t *object = apply_id_to_object(ctx, set_property->object_id);
     rut_property_t *property;
     rut_boxed_t boxed;
 
@@ -218,7 +231,7 @@ rig_engine_op_add_entity(rig_engine_t *engine,
                                    Rig__Operation__AddEntity,
                                    rig__operation__add_entity__init);
 
-    pb_op->add_entity->parent_entity_id = (intptr_t)parent;
+    pb_op->add_entity->parent_entity_id = op_object_to_id(serializer, parent);
     pb_op->add_entity->entity =
         rig_pb_serialize_entity(serializer, NULL, entity);
 
@@ -239,7 +252,7 @@ _apply_op_add_entity(rig_engine_op_apply_context_t *ctx,
     c_warn_if_fail(add_entity->entity->has_parent_id == false);
 
     if (add_entity->parent_entity_id) {
-        parent = (void *)(intptr_t)add_entity->parent_entity_id;
+        parent = apply_id_to_object(ctx, add_entity->parent_entity_id);
         if (!parent)
             return false;
     }
@@ -330,7 +343,7 @@ rig_engine_op_delete_entity(rig_engine_t *engine, rig_entity_t *entity)
                                       Rig__Operation__DeleteEntity,
                                       rig__operation__delete_entity__init);
 
-    pb_op->delete_entity->entity_id = (intptr_t)entity;
+    pb_op->delete_entity->entity_id = op_object_to_id(serializer, entity);
 
     delete_entity_apply_real(
         engine->apply_op_ctx, entity, pb_op->delete_entity->entity_id);
@@ -343,7 +356,7 @@ _apply_op_delete_entity(rig_engine_op_apply_context_t *ctx,
                         Rig__Operation *pb_op)
 {
     uint64_t entity_id = pb_op->delete_entity->entity_id;
-    rig_entity_t *entity = (void *)(uintptr_t)entity_id;
+    rig_entity_t *entity = apply_id_to_object(ctx, entity_id);
 
     delete_entity_apply_real(ctx, entity, entity_id);
 
@@ -401,7 +414,7 @@ rig_engine_op_add_component(rig_engine_t *engine,
                                       Rig__Operation__AddComponent,
                                       rig__operation__add_component__init);
 
-    pb_op->add_component->parent_entity_id = (intptr_t)entity;
+    pb_op->add_component->parent_entity_id = op_object_to_id(serializer, entity);
     pb_op->add_component->component =
         rig_pb_serialize_component(serializer, component);
 
@@ -418,7 +431,7 @@ _apply_op_add_component(rig_engine_op_apply_context_t *ctx,
                         Rig__Operation *pb_op)
 {
     rig_entity_t *entity =
-        (void *)(intptr_t)pb_op->add_component->parent_entity_id;
+        apply_id_to_object(ctx, pb_op->add_component->parent_entity_id);
     rut_component_t *component;
 
     if (!entity)
@@ -507,7 +520,8 @@ rig_engine_op_delete_component(rig_engine_t *engine,
         rig_pb_new(serializer,
                    Rig__Operation__DeleteComponent,
                    rig__operation__delete_component__init);
-    pb_op->delete_component->component_id = (intptr_t)component;
+    pb_op->delete_component->component_id =
+        op_object_to_id(serializer, component);
 
     delete_component_apply_real(engine->apply_op_ctx,
                                 entity,
@@ -522,7 +536,7 @@ _apply_op_delete_component(rig_engine_op_apply_context_t *ctx,
                            Rig__Operation *pb_op)
 {
     rut_component_t *component =
-        (void *)(intptr_t)pb_op->delete_component->component_id;
+        apply_id_to_object(ctx, pb_op->delete_component->component_id);
     rut_componentable_props_t *props;
     rig_entity_t *entity;
 
@@ -677,7 +691,8 @@ rig_engine_op_delete_controller(rig_engine_t *engine,
         rig_pb_new(serializer,
                    Rig__Operation__DeleteController,
                    rig__operation__delete_controller__init);
-    pb_op->delete_controller->controller_id = (intptr_t)controller;
+    pb_op->delete_controller->controller_id =
+        op_object_to_id(serializer, controller);
 
     delete_controller_apply_real(engine->apply_op_ctx,
                                  controller,
@@ -690,7 +705,7 @@ _apply_op_delete_controller(rig_engine_op_apply_context_t *ctx,
                             Rig__Operation *pb_op)
 {
     rig_controller_t *controller =
-        (void *)(intptr_t)pb_op->delete_controller->controller_id;
+        apply_id_to_object(ctx, pb_op->delete_controller->controller_id);
 
     if (!controller)
         return false;
@@ -752,8 +767,10 @@ rig_engine_op_controller_set_const(rig_engine_t *engine,
                    Rig__Operation__ControllerSetConst,
                    rig__operation__controller_set_const__init);
 
-    pb_op->controller_set_const->controller_id = (intptr_t)controller;
-    pb_op->controller_set_const->object_id = (intptr_t)property->object;
+    pb_op->controller_set_const->controller_id =
+        op_object_to_id(serializer, controller);
+    pb_op->controller_set_const->object_id =
+        op_object_to_id(serializer, property->object);
     pb_op->controller_set_const->property_id = property->id;
     pb_op->controller_set_const->value =
         pb_property_value_new(serializer, value);
@@ -768,8 +785,8 @@ _apply_op_controller_set_const(rig_engine_op_apply_context_t *ctx,
                                Rig__Operation *pb_op)
 {
     Rig__Operation__ControllerSetConst *set_const = pb_op->controller_set_const;
-    rig_controller_t *controller = (void *)(intptr_t)set_const->controller_id;
-    rut_object_t *object = (void *)(intptr_t)set_const->object_id;
+    rig_controller_t *controller = apply_id_to_object(ctx, set_const->controller_id);
+    rut_object_t *object = apply_id_to_object(ctx, set_const->object_id);
     rut_property_t *property;
     rut_boxed_t boxed;
 
@@ -847,8 +864,10 @@ rig_engine_op_controller_path_add_node(rig_engine_t *engine,
         rig_pb_new(serializer,
                    Rig__Operation__ControllerPathAddNode,
                    rig__operation__controller_path_add_node__init);
-    pb_op->controller_path_add_node->controller_id = (intptr_t)controller;
-    pb_op->controller_path_add_node->object_id = (intptr_t)property->object;
+    pb_op->controller_path_add_node->controller_id =
+        op_object_to_id(serializer, controller);
+    pb_op->controller_path_add_node->object_id =
+        op_object_to_id(serializer, property->object);
     pb_op->controller_path_add_node->property_id = property->id;
     pb_op->controller_path_add_node->t = t;
     pb_op->controller_path_add_node->value =
@@ -865,8 +884,8 @@ _apply_op_controller_path_add_node(rig_engine_op_apply_context_t *ctx,
 {
     Rig__Operation__ControllerPathAddNode *add_node =
         pb_op->controller_path_add_node;
-    rig_controller_t *controller = (void *)(intptr_t)add_node->controller_id;
-    rut_object_t *object = (void *)(intptr_t)add_node->object_id;
+    rig_controller_t *controller = apply_id_to_object(ctx, add_node->controller_id);
+    rut_object_t *object = apply_id_to_object(ctx, add_node->object_id);
     rut_property_t *property;
     rut_boxed_t boxed;
 
@@ -945,8 +964,10 @@ rig_engine_op_controller_path_delete_node(rig_engine_t *engine,
         rig_pb_new(serializer,
                    Rig__Operation__ControllerPathDeleteNode,
                    rig__operation__controller_path_delete_node__init);
-    pb_op->controller_path_delete_node->controller_id = (intptr_t)controller;
-    pb_op->controller_path_delete_node->object_id = (intptr_t)property->object;
+    pb_op->controller_path_delete_node->controller_id =
+        op_object_to_id(serializer, controller);
+    pb_op->controller_path_delete_node->object_id =
+        op_object_to_id(serializer, property->object);
     pb_op->controller_path_delete_node->property_id = property->id;
     pb_op->controller_path_delete_node->t = t;
 
@@ -961,8 +982,9 @@ _apply_op_controller_path_delete_node(rig_engine_op_apply_context_t *ctx,
 {
     Rig__Operation__ControllerPathDeleteNode *delete_node =
         pb_op->controller_path_delete_node;
-    rig_controller_t *controller = (void *)(intptr_t)delete_node->controller_id;
-    rut_object_t *object = (void *)(intptr_t)delete_node->object_id;
+    rig_controller_t *controller =
+        apply_id_to_object(ctx, delete_node->controller_id);
+    rut_object_t *object = apply_id_to_object(ctx, delete_node->object_id);
     rut_property_t *property;
 
     if (!controller || !object)
@@ -1033,8 +1055,10 @@ rig_engine_op_controller_path_set_node(rig_engine_t *engine,
         rig_pb_new(serializer,
                    Rig__Operation__ControllerPathSetNode,
                    rig__operation__controller_path_set_node__init);
-    pb_op->controller_path_set_node->controller_id = (intptr_t)controller;
-    pb_op->controller_path_set_node->object_id = (intptr_t)property->object;
+    pb_op->controller_path_set_node->controller_id =
+        op_object_to_id(serializer, controller);
+    pb_op->controller_path_set_node->object_id =
+        op_object_to_id(serializer, property->object);
     pb_op->controller_path_set_node->property_id = property->id;
     pb_op->controller_path_set_node->t = t;
     pb_op->controller_path_set_node->value =
@@ -1052,8 +1076,9 @@ _apply_op_controller_path_set_node(rig_engine_op_apply_context_t *ctx,
 {
     Rig__Operation__ControllerPathSetNode *set_node =
         pb_op->controller_path_set_node;
-    rig_controller_t *controller = (void *)(intptr_t)set_node->controller_id;
-    rut_object_t *object = (void *)(intptr_t)set_node->object_id;
+    rig_controller_t *controller =
+        apply_id_to_object(ctx, set_node->controller_id);
+    rut_object_t *object = apply_id_to_object(ctx, set_node->object_id);
     rut_property_t *property;
     rut_boxed_t boxed;
 
@@ -1131,8 +1156,10 @@ rig_engine_op_controller_add_property(rig_engine_t *engine,
         rig_pb_new(serializer,
                    Rig__Operation__ControllerAddProperty,
                    rig__operation__controller_add_property__init);
-    pb_op->controller_add_property->controller_id = (intptr_t)controller;
-    pb_op->controller_add_property->object_id = (intptr_t)property->object;
+    pb_op->controller_add_property->controller_id =
+        op_object_to_id(serializer, controller);
+    pb_op->controller_add_property->object_id =
+        op_object_to_id(serializer, property->object);
     pb_op->controller_add_property->property_id = property->id;
 
     controller_add_property_apply_real(
@@ -1147,8 +1174,8 @@ _apply_op_controller_add_property(rig_engine_op_apply_context_t *ctx,
     Rig__Operation__ControllerAddProperty *add_property =
         pb_op->controller_add_property;
     rig_controller_t *controller =
-        (void *)(intptr_t)add_property->controller_id;
-    rut_object_t *object = (void *)(intptr_t)add_property->object_id;
+        apply_id_to_object(ctx, add_property->controller_id);
+    rut_object_t *object = apply_id_to_object(ctx, add_property->object_id);
     rut_property_t *property;
 
     if (!controller || !object)
@@ -1215,8 +1242,10 @@ rig_engine_op_controller_remove_property(rig_engine_t *engine,
         rig_pb_new(serializer,
                    Rig__Operation__ControllerRemoveProperty,
                    rig__operation__controller_remove_property__init);
-    pb_op->controller_remove_property->controller_id = (intptr_t)controller;
-    pb_op->controller_remove_property->object_id = (intptr_t)property->object;
+    pb_op->controller_remove_property->controller_id =
+        op_object_to_id(serializer, controller);
+    pb_op->controller_remove_property->object_id =
+        op_object_to_id(serializer, property->object);
     pb_op->controller_remove_property->property_id = property->id;
 
     controller_remove_property_apply_real(
@@ -1231,8 +1260,8 @@ _apply_op_controller_remove_property(rig_engine_op_apply_context_t *ctx,
     Rig__Operation__ControllerRemoveProperty *remove_property =
         pb_op->controller_remove_property;
     rig_controller_t *controller =
-        (void *)(intptr_t)remove_property->controller_id;
-    rut_object_t *object = (void *)(intptr_t)remove_property->object_id;
+        apply_id_to_object(ctx, remove_property->controller_id);
+    rut_object_t *object = apply_id_to_object(ctx, remove_property->object_id);
     rut_property_t *property;
 
     if (!controller || !object)
@@ -1301,9 +1330,10 @@ rig_engine_op_controller_property_set_method(rig_engine_t *engine,
         rig_pb_new(serializer,
                    Rig__Operation__ControllerPropertySetMethod,
                    rig__operation__controller_property_set_method__init);
-    pb_op->controller_property_set_method->controller_id = (intptr_t)controller;
+    pb_op->controller_property_set_method->controller_id =
+        op_object_to_id(serializer, controller);
     pb_op->controller_property_set_method->object_id =
-        (intptr_t)property->object;
+        op_object_to_id(serializer, property->object);
     pb_op->controller_property_set_method->property_id = property->id;
     pb_op->controller_property_set_method->method = method;
 
@@ -1318,8 +1348,9 @@ _apply_op_controller_property_set_method(rig_engine_op_apply_context_t *ctx,
 {
     Rig__Operation__ControllerPropertySetMethod *set_method =
         pb_op->controller_property_set_method;
-    rig_controller_t *controller = (void *)(intptr_t)set_method->controller_id;
-    rut_object_t *object = (void *)(intptr_t)set_method->object_id;
+    rig_controller_t *controller =
+        apply_id_to_object(ctx, set_method->controller_id);
+    rut_object_t *object = apply_id_to_object(ctx, set_method->object_id);
     rut_property_t *property;
 
     if (!controller || !object)
@@ -1452,12 +1483,12 @@ rig_engine_copy_pb_ui_edit(rig_engine_op_copy_context_t *copy_ctx,
     copied_pb_ui_edits->ops =
         rut_memory_stack_memalign(serializer->stack,
                                   sizeof(void *) * copied_pb_ui_edits->n_ops,
-                                  RUT_UTIL_ALIGNOF(void *));
+                                  C_ALIGNOF(void *));
 
     pb_ops = rut_memory_stack_memalign(
         serializer->stack,
         (sizeof(Rig__Operation) * copied_pb_ui_edits->n_ops),
-        RUT_UTIL_ALIGNOF(Rig__Operation));
+        C_ALIGNOF(Rig__Operation));
 
     for (i = 0; i < pb_ui_edit->n_ops; i++) {
         Rig__Operation *src_pb_op = pb_ui_edit->ops[i];
@@ -1558,12 +1589,21 @@ nop_unregister_id_cb(uint64_t id, void *user_data)
 {
 }
 
+#if 0
+static void *
+cast_id_to_object_cb(uint64_t id, void *user_data)
+{
+    return (void *)(uintptr_t)id;
+}
+#endif
+
 void
 rig_engine_op_apply_context_init(
     rig_engine_op_apply_context_t *ctx,
     rig_engine_t *engine,
     void (*register_id_cb)(void *object, uint64_t id, void *user_data),
     void (*unregister_id_cb)(uint64_t id, void *user_data),
+    void *(*id_to_object_cb)(uint64_t id, void *user_data),
     void *user_data)
 {
     ctx->engine = engine;
@@ -1573,6 +1613,15 @@ rig_engine_op_apply_context_init(
     ctx->register_id_cb = register_id_cb;
     ctx->unregister_id_cb =
         unregister_id_cb ? unregister_id_cb : nop_unregister_id_cb;
+
+    /* XXX: instead of allowing any complex id -> object mapping with
+     * an apply ctx, we currently assume a map context can be used if
+     * necessary instead. */
+    c_assert(id_to_object_cb == NULL);
+#if 0
+    ctx->id_to_object_cb =
+        id_to_object_cb ? id_to_object_cb : cast_id_to_object_cb;
+#endif
     ctx->user_data = user_data;
 }
 

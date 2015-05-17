@@ -341,12 +341,12 @@ _rig_renderer_init_type(void)
 }
 
 rig_renderer_t *
-rig_renderer_new(rig_engine_t *engine)
+rig_renderer_new(rig_frontend_t *frontend)
 {
     rig_renderer_t *renderer = rut_object_alloc0(
         rig_renderer_t, &rig_renderer_type, _rig_renderer_init_type);
 
-    renderer->engine = engine;
+    renderer->engine = frontend->engine;
 
     renderer->journal = c_array_new(false, false, sizeof(rig_journal_entry_t));
 
@@ -1540,7 +1540,7 @@ FOUND:
         rut_graphable_get_transform(entity, &model_transform);
 
         get_light_modelviewprojection(&model_transform,
-                                      engine->current_ui->light,
+                                      engine->ui->light,
                                       &light_projection,
                                       &light_shadow_matrix);
 
@@ -1631,7 +1631,7 @@ get_entity_pipeline(rig_renderer_t *renderer,
     asset = material->color_source_asset;
 
     if (asset && !sources[SOURCE_TYPE_COLOR]) {
-        sources[SOURCE_TYPE_COLOR] = rig_image_source_new(engine, asset);
+        sources[SOURCE_TYPE_COLOR] = rig_asset_get_image_source(asset);
 
         set_entity_image_source_cache(
             entity, SOURCE_TYPE_COLOR, sources[SOURCE_TYPE_COLOR]);
@@ -1647,7 +1647,7 @@ get_entity_pipeline(rig_renderer_t *renderer,
     asset = material->alpha_mask_asset;
 
     if (asset && !sources[SOURCE_TYPE_ALPHA_MASK]) {
-        sources[SOURCE_TYPE_ALPHA_MASK] = rig_image_source_new(engine, asset);
+        sources[SOURCE_TYPE_ALPHA_MASK] = rig_asset_get_image_source(asset);
 
         set_entity_image_source_cache(
             entity, 1, sources[SOURCE_TYPE_ALPHA_MASK]);
@@ -1670,7 +1670,8 @@ get_entity_pipeline(rig_renderer_t *renderer,
     asset = material->normal_map_asset;
 
     if (asset && !sources[SOURCE_TYPE_NORMAL_MAP]) {
-        sources[SOURCE_TYPE_NORMAL_MAP] = rig_image_source_new(engine, asset);
+        sources[SOURCE_TYPE_NORMAL_MAP] =
+            rig_asset_get_image_source(asset);
 
         set_entity_image_source_cache(
             entity, 2, sources[SOURCE_TYPE_NORMAL_MAP]);
@@ -1839,7 +1840,7 @@ rig_renderer_flush_journal(rig_renderer_t *renderer,
 
         } else if ((paint_ctx->pass == RIG_PASS_COLOR_UNBLENDED ||
                     paint_ctx->pass == RIG_PASS_COLOR_BLENDED)) {
-            rig_ui_t *ui = paint_ctx->engine->current_ui;
+            rig_ui_t *ui = engine->ui;
             rig_light_t *light =
                 rig_entity_get_component(ui->light, RUT_COMPONENT_TYPE_LIGHT);
             int location;
@@ -1914,6 +1915,10 @@ rig_renderer_flush_journal(rig_renderer_t *renderer,
             else if (paint_ctx->pass == RIG_PASS_DOF_DEPTH ||
                      paint_ctx->pass == RIG_PASS_SHADOW)
                 uniform = RIG_HAIR_SHELL_POSITION_SHADOW;
+            else {
+                c_warn_if_reached();
+                uniform = RIG_HAIR_SHELL_POSITION_BLENDED;
+            }
 
             /* FIXME: only update the hair uniforms when they change! */
             /* FIXME: avoid needing to query the uniform locations by
@@ -2032,15 +2037,9 @@ entitygraph_pre_paint_cb(rut_object_t *object, int depth, void *user_data)
             !rig_material_get_cast_shadow(material))
             return RUT_TRAVERSE_VISIT_CONTINUE;
 
-        geometry =
-            rig_entity_get_component(object, RUT_COMPONENT_TYPE_GEOMETRY);
-        if (!geometry) {
-            if (!paint_ctx->engine->play_mode &&
-                object == paint_ctx->engine->current_ui->light) {
-                draw_entity_camera_frustum(paint_ctx->engine, object, fb);
-            }
+        geometry = rig_entity_get_component(object, RUT_COMPONENT_TYPE_GEOMETRY);
+        if (!geometry)
             return RUT_TRAVERSE_VISIT_CONTINUE;
-        }
 
         ensure_renderer_priv(entity, renderer);
         priv = entity->renderer_priv;
@@ -2102,7 +2101,7 @@ paint_camera_entity_pass(rig_paint_context_t *paint_ctx,
     rig_renderer_t *renderer = paint_ctx->renderer;
     rig_engine_t *engine = paint_ctx->engine;
     cg_device_t *dev = engine->shell->cg_device;
-    rig_ui_t *ui = engine->current_ui;
+    rig_ui_t *ui = engine->ui;
 
     rut_paint_ctx->camera = camera;
 
@@ -2130,7 +2129,7 @@ paint_camera_entity_pass(rig_paint_context_t *paint_ctx,
         cg_object_unref(pipeline);
     }
 
-    rut_graphable_traverse(engine->current_ui->scene,
+    rut_graphable_traverse(engine->ui->scene,
                            RUT_TRAVERSE_DEPTH_FIRST,
                            entitygraph_pre_paint_cb,
                            entitygraph_post_paint_cb,
@@ -2152,7 +2151,7 @@ rig_renderer_paint_camera(rig_paint_context_t *paint_ctx,
     cg_framebuffer_t *fb = rut_camera_get_framebuffer(camera);
     rig_renderer_t *renderer = paint_ctx->renderer;
     rig_engine_t *engine = paint_ctx->engine;
-    rig_ui_t *ui = engine->current_ui;
+    rig_ui_t *ui = engine->ui;
 
     paint_ctx->pass = RIG_PASS_SHADOW;
     rig_entity_set_camera_view_from_transform(ui->light);

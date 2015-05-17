@@ -604,12 +604,11 @@ rig_controller_get_binding_for_prop_data(rig_controller_t *controller,
         rig_engine_t *engine = controller->engine;
         rig_binding_t *binding;
 
-        c_return_val_if_fail(engine->frontend &&
-                             engine->frontend_id == RIG_FRONTEND_ID_EDITOR,
-                             NULL);
+        c_return_val_if_fail(engine->frontend, NULL);
+
 #ifdef RIG_EDITOR_ENABLED
-        binding = rig_binding_new(
-            engine, prop_data->property, engine->next_code_id++);
+        binding = rig_binding_new(engine, prop_data->property,
+                                  engine->next_code_id++);
         rig_controller_set_property_binding(
             controller, prop_data->property, binding);
 #endif
@@ -817,7 +816,7 @@ rig_controller_set_property_binding(rig_controller_t *controller,
 {
     rig_controller_prop_data_t *prop_data =
         rig_controller_find_prop_data_for_property(controller, property);
-    bool need_activate;
+    bool need_activate = false;
 
     c_return_if_fail(prop_data != NULL);
 

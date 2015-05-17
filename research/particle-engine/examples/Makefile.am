@@ -10,7 +10,7 @@ AM_CFLAGS = \
 
 LDADD = \
 	$(COGL_DEP_LIBS) \
-	$(top_builddir)/cogl/libcogl2.la \
+	$(top_builddir)/cogl/libcg.la \
 	$(top_builddir)/research/particle-engine/pe/libpe.la \
 	$(top_builddir)/clib/src/libclib.la \
 	-lm

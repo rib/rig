@@ -41,35 +41,175 @@
 #include "rig-simulator.h"
 #include "rig-logs.h"
 
+#ifdef __EMSCRIPTEN__
+
+int
+main(int argc, char **argv)
+{
+    rig_simulator_t *simulator;
+
+    rig_simulator_logs_init();
+
+    simulator = rig_simulator_new(NULL, NULL);
+
+    rig_simulator_run(simulator);
+
+    rut_object_unref(simulator);
+
+    return 0;
+}
+
+#else /* __EMSCRIPTEN__ */
+
 static void
 usage(void)
 {
-    fprintf(stderr, "Usage: rig-simulator --frontend=[editor,device,slave] [OPTION]...\n");
+    fprintf(stderr, "Usage: rig-simulator UI.rig [OPTION]...\n");
     fprintf(stderr, "\n");
-    fprintf(stderr, "  -f,--frontend=[editor,device,slave]  The frontend that will be connected\n");
-#ifdef __linux__
-    fprintf(stderr, "  -a,--abstract-socket=NAME            Connect to named abstract socket\n");
-#endif
-    fprintf(stderr, "  -h,--help                            Display this help message\n");
+    fprintf(stderr, "  -f,--frontend={tcp:<address>[:port],     Specify how to connect to frontend\n");
+    fprintf(stderr, "                 abstract:<name>}\n");
+    fprintf(stderr, "  -l,--listen={tcp:<address>[:port],       Specify how to listen for a frontend\n");
+    fprintf(stderr, "               abstract:<name>}\n");
+    fprintf(stderr, "  -h,--help                                Display this help message\n");
     exit(1);
 }
 
-static bool
-frontend_name_to_id(const char *frontend,
-                    rig_frontend_id_t *id)
+#ifdef USE_UV
+static void
+handle_frontend_tcp_connect_cb(uv_stream_t *server, int status)
 {
-    bool ret = true;
+    rig_frontend_t *frontend = server->data;
+    rig_pb_stream_t *stream;
 
-    if (strcmp(frontend, "editor") == 0)
-        *id = RIG_FRONTEND_ID_EDITOR;
-    else if (strcmp(frontend, "slave") == 0)
-        *id = RIG_FRONTEND_ID_SLAVE;
-    else if (strcmp(frontend, "device") == 0)
-        *id = RIG_FRONTEND_ID_DEVICE;
-    else
-        ret = false;
+    if (status != 0) {
+        c_warning("Connection failure: %s", uv_strerror(status));
+        return;
+    }
 
-    return ret;
+    c_message("Simulator tcp connect request received!");
+
+    if (frontend->connected) {
+        c_warning("Ignoring simulator connection while there's already one connected");
+        return;
+    }
+
+    stream = rig_pb_stream_new(frontend->engine->shell);
+    rig_pb_stream_accept_tcp_connection(stream, &frontend->listening_socket);
+
+    c_message("Simulator connected!");
+
+    /* frontend_start_service will take ownership of the stream */
+    rut_object_unref(stream);
+}
+
+static void
+bind_to_tcp_socket(rig_simulator_t *simulator,
+                   const char *address,
+                   int port)
+{
+    rut_shell_t *shell = simulator->shell;
+    uv_loop_t *loop = rut_uv_shell_get_loop(shell);
+    struct sockaddr_in bind_addr;
+    struct sockaddr name;
+    int namelen;
+    int err;
+
+    uv_tcp_init(loop, &simulator->listening_socket);
+    simulator->listening_socket.data = simulator;
+
+    uv_ip4_addr(address, port, &bind_addr);
+    uv_tcp_bind(&simulator->listening_socket, (struct sockaddr *)&bind_addr, 0);
+    err = uv_listen((uv_stream_t*)&simulator->listening_socket,
+                    128, handle_frontend_tcp_connect_cb);
+    if (err < 0) {
+        c_critical("Failed to starting listening for simulator connection: %s",
+                   uv_strerror(err));
+        return;
+    }
+
+    err = uv_tcp_getsockname(&simulator->listening_socket, &name, &namelen);
+    if (err != 0) {
+        c_critical("Failed to query peer address of listening tcp socket");
+        return;
+    } else {
+        struct sockaddr_in *addr = (struct sockaddr_in *)&name;
+        char ip_address[17] = {'\0'};
+
+        c_return_if_fail(name.sa_family == AF_INET);
+
+        uv_ip4_name(addr, ip_address, 16);
+        simulator->listening_address = c_strdup(ip_address);
+        simulator->listening_port = ntohs(addr->sin_port);
+    }
+}
+#endif /* USE_UV */
+
+#ifdef __linux__
+static void
+handle_frontend_abstract_connect_cb(void *user_data, int listen_fd, int revents)
+{
+    rig_simulator_t *simulator = user_data;
+    struct sockaddr addr;
+    socklen_t addr_len = sizeof(addr);
+    int fd;
+
+    c_return_if_fail(revents & RUT_POLL_FD_EVENT_IN);
+
+    c_message("Frontend connect request received!");
+
+    if (simulator->connected) {
+        c_warning("Ignoring frontend connection while there's already one connected");
+        return;
+    }
+
+    fd = accept(simulator->listen_fd, &addr, &addr_len);
+    if (fd != -1) {
+        rig_pb_stream_set_fd_transport(simulator->stream, fd);
+
+        c_message("Frontend connected!");
+    } else
+        c_message("Failed to accept frontend connection: %s!",
+                  strerror(errno));
+}
+
+static bool
+bind_to_abstract_socket(rig_simulator_t *simulator,
+                        const char *address)
+{
+    rut_exception_t *catch = NULL;
+    int fd = rut_os_listen_on_abstract_socket(address, &catch);
+
+    if (fd < 0) {
+        c_critical("Failed to listen on abstract \"rig-simulator\" socket: %s",
+                   catch->message);
+        return false;
+    }
+
+    simulator->listen_fd = fd;
+
+    rut_poll_shell_add_fd(simulator->shell,
+                          simulator->listen_fd,
+                          RUT_POLL_FD_EVENT_IN,
+                          NULL, /* prepare */
+                          handle_frontend_abstract_connect_cb, /* dispatch */
+                          simulator);
+
+    c_message("Waiting for simulator to connect to abstract socket \"%s\"...",
+              address);
+
+    return true;
+}
+#endif /* linux */
+
+static void
+frontend_connect_cb(rig_simulator_t *simulator,
+                    void *user_data)
+{
+    const char *ui_filename = user_data;
+
+    rig_simulator_load_file(simulator, ui_filename);
+
+    rig_simulator_reload_frontend_ui(simulator, simulator->engine->ui);
 }
 
 int
@@ -77,33 +217,24 @@ main(int argc, char **argv)
 {
     rig_simulator_t *simulator;
     const char *ipc_fd_str = getenv("_RIG_IPC_FD");
-    const char *frontend = getenv("_RIG_FRONTEND");
-#ifdef __linux__
-    const char *abstract_socket = NULL;
-#endif
-    rig_frontend_id_t frontend_id;
     int fd;
     struct option opts[] = {
-        { "frontend",           required_argument, NULL, 'f' },
-#ifdef __linux__
-        { "abstract-socket",    required_argument, NULL, 'a' },
-#endif
-        { "help",               no_argument,       NULL, 'h' },
-        { 0,                    0,                 NULL,  0  }
+        { "frontend",   required_argument, NULL, 'f' },
+        { "listen",     required_argument, NULL, 'l' },
+        { "help",       no_argument,       NULL, 'h' },
+        { 0,            0,                 NULL,  0  }
     };
     int c;
+    char *ui_filename = NULL;
+    enum rig_simulator_run_mode mode;
+    char *address;
+    int port;
 
     rut_init_tls_state();
 
-    if (frontend) {
-        if (!frontend_name_to_id(frontend, &frontend_id)) {
-            c_error("Failed to determine frontend via _RIG_FRONTEND "
-                    "environment variable");
-            return EXIT_FAILURE;
-        }
-    }
+    mode = RIG_SIMULATOR_RUN_MODE_PROCESS;
 
-    while ((c = getopt_long(argc, argv, "f:a:h", opts, NULL)) != -1) {
+    while ((c = getopt_long(argc, argv, "f:l:h", opts, NULL)) != -1) {
 
         if (ipc_fd_str) {
             c_warning("Ignoring private _RIG_IPC_FD environment variable while running interactively");
@@ -112,33 +243,68 @@ main(int argc, char **argv)
 
         switch(c) {
         case 'f':
-            if (frontend)
-                c_warning("Overriding _RIG_FRONTEND environment variable while running interactively");
-
-            frontend = optarg;
-
-            if (!frontend_name_to_id(frontend, &frontend_id)) {
-                c_warning("Unknown frontend \"%s\"", frontend);
-                usage();
-            }
-
+            rig_simulator_parse_run_mode(optarg,
+                                         usage,
+                                         RIG_SIMULATOR_STANDALONE,
+                                         &mode,
+                                         &address,
+                                         &port);
+            rig_simulator_run_mode_option = mode;
+            rig_simulator_address_option = strdup(address);
+            rig_simulator_port_option = port;
             break;
-        case 'a':
-            abstract_socket = optarg;
+        case 'l':
+            rig_simulator_parse_run_mode(optarg,
+                                         usage,
+                                         RIG_SIMULATOR_STANDALONE | RIG_SIMULATOR_LISTEN,
+                                         &mode,
+                                         &address,
+                                         &port);
+            rig_simulator_run_mode_option = mode;
+            rig_simulator_address_option = strdup(address);
+            rig_simulator_port_option = port;
             break;
+
         default:
             usage();
         }
     }
 
-    if (!frontend) {
-        c_warning("The frontend type must be specified with --frontend=[editor,device,slave]");
-        usage();
+
+    if (optind <= argc && argv[optind])
+        ui_filename = argv[optind];
+
+    rig_simulator_logs_init();
+
+    simulator = rig_simulator_new(NULL, ui_filename);
+
+    if (ui_filename) {
+        char *assets_location = c_path_get_dirname(ui_filename);
+
+        rut_shell_set_assets_location(simulator->shell, assets_location);
+
+        c_free(assets_location);
     }
 
+    rig_simulator_set_connected_callback(simulator,
+                                         frontend_connect_cb,
+                                         ui_filename);
+
+    switch (mode) {
+#ifdef USE_UV
+    case RIG_SIMULATOR_RUN_MODE_LISTEN_TCP:
+        bind_to_tcp_socket(simulator, address, port);
+        break;
+    case RIG_SIMULATOR_RUN_MODE_CONNECT_TCP:
+        c_error("TODO: support connecting from a simulator to a frontend via tcp");
+        break;
+#endif
 #ifdef __linux__
-    if (abstract_socket) {
-        while ((fd = rut_os_connect_to_abstract_socket(abstract_socket)) == -1) {
+    case RIG_SIMULATOR_RUN_MODE_LISTEN_ABSTRACT_SOCKET:
+        bind_to_abstract_socket(simulator, address);
+        break;
+    case RIG_SIMULATOR_RUN_MODE_CONNECT_ABSTRACT_SOCKET:
+        while ((fd = rut_os_connect_to_abstract_socket(address)) == -1) {
             static bool seen = false;
             if (seen)
                 c_message("Waiting for frontend...");
@@ -147,25 +313,30 @@ main(int argc, char **argv)
 
             sleep(2);
         }
-    } else
+
+        rig_simulator_set_frontend_fd(simulator, fd);
+        break;
 #endif /* linux */
-    {
+
+    case RIG_SIMULATOR_RUN_MODE_PROCESS:
 #if defined(__linux__) || defined(__APPLE__)
-        /* Block SIGINT so that when we are interactively debugging the
-         * frontend process with gdb, we don't kill the simulator
-         * whenever we interupt the frontend process.
-         */
-        sigset_t set;
+        {
+            /* Block SIGINT so that when we are interactively debugging the
+             * frontend process with gdb, we don't kill the simulator
+             * whenever we interupt the frontend process.
+             */
+            sigset_t set;
 
-        sigemptyset(&set);
-        sigaddset(&set, SIGINT);
+            sigemptyset(&set);
+            sigaddset(&set, SIGINT);
 
-        /* Block SIGINT from terminating the simulator, otherwise it's a
-         * pain to debug the frontend in gdb because when we press Ctrl-C to
-         * interrupt the frontend, gdb only blocks SIGINT from being passed
-         * to the frontend and so we end up terminating the simulator.
-         */
-        pthread_sigmask(SIG_BLOCK, &set, NULL);
+            /* Block SIGINT from terminating the simulator, otherwise it's a
+             * pain to debug the frontend in gdb because when we press Ctrl-C to
+             * interrupt the frontend, gdb only blocks SIGINT from being passed
+             * to the frontend and so we end up terminating the simulator.
+             */
+            pthread_sigmask(SIG_BLOCK, &set, NULL);
+        }
 #endif
 
         if (!ipc_fd_str) {
@@ -175,12 +346,17 @@ main(int argc, char **argv)
         }
 
         fd = strtol(ipc_fd_str, NULL, 10);
+        rig_simulator_set_frontend_fd(simulator, fd);
+
+        break;
+
+    case RIG_SIMULATOR_RUN_MODE_MAINLOOP:
+    case RIG_SIMULATOR_RUN_MODE_THREADED:
+        /* This modes are only possible if the simulator is run
+         * in the same process as the frontend so don't make
+         * sense for a standalone simulator binary */
+        c_assert_not_reached();
     }
-
-    rig_simulator_logs_init();
-
-    simulator = rig_simulator_new(frontend_id, NULL);
-    rig_simulator_set_frontend_fd(simulator, fd);
 
     rig_simulator_run(simulator);
 
@@ -188,3 +364,5 @@ main(int argc, char **argv)
 
     return 0;
 }
+
+#endif /* __EMSCRIPTEN__ */

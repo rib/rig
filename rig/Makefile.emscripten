@@ -1,0 +1,91 @@
+all:
+
+E=$(if $(V),,@)
+
+export CC=emcc
+top_prebuiltdir=../../prebuilt
+top_srcdir=../../src
+srcdir=$(top_srcdir)/rig
+top_builddir=../
+builddir=.
+
+VPATH=$(srcdir):$(builddir)
+
+include $(srcdir)/Makefile.sources
+
+#can be overriden by user...
+CFLAGS=-g -O0
+OBJ_CFLAGS=$(CFLAGS)
+BC_CFLAGS=$(CFLAGS)
+
+_CFLAGS= \
+	-I$(top_prebuiltdir)/include \
+	-I$(top_prebuiltdir)/include/freetype2 \
+	-I$(top_prebuiltdir)/include/harfbuzz \
+	-I$(top_srcdir) \
+	-I$(top_srcdir)/clib \
+	-I$(top_srcdir)/cogl \
+	-I$(top_srcdir)/rut \
+	-I$(srcdir) \
+	-I$(srcdir)/protobuf-c-rpc \
+	-I$(builddir) \
+	-DICU_DATA_DIR=\""fixme"\" \
+	-DU_DISABLE_RENAMING
+_OBJ_CFLAGS=$(_CFLAGS) $(OBJ_CFLAGS)
+_BC_CFLAGS=$(_CFLAGS) $(BC_CFLAGS)
+
+builddirs=protobuf-c-rpc components
+built_source=rig.pb-c.h rig.pb-c.c rig-config.h
+
+rig_SOURCE=$(filter %.c,$(rig_common_sources) $(built_source))
+rig_OBJECTS=$(patsubst %.c, %.o, $(rig_SOURCE))
+rig.bc: $(rig_OBJECTS)
+
+rig_device_SOURCE=$(filter %.c,$(rig_device_sources))
+rig_device_OBJECTS=$(patsubst %.c, %.o, $(rig_device_SOURCE))
+rig-device.bc: $(rig_device_OBJECTS) rig-device-main.c
+
+rig_simulator_SOURCE=$(filter %.c,$(rig_simulator_sources))
+rig_simulator_OBJECTS=$(patsubst %.c, %.o, $(rig_simulator_SOURCE))
+rig-simulator.bc: $(rig_simulator_OBJECTS) rig-simulator-main.c
+
+all: Makefile rig.bc rig-device.bc rig-simulator.bc
+
+rig-config.h:
+	$(E)echo "#include \"config.h\"" > $@
+	$(E)echo "#include \"rig.h\"" >> $@
+rig-config.pch: $(top_srcdir)/config.h rig-config.h
+
+
+%.pch: $(built_source) | dirs
+	$(E)echo "(PCH)    $(@)"
+	$(E)$(CC) -x c-header $(*).h -std=c11 -o $@ -MMD -MF .deps/$(@).rules $(_OBJ_CFLAGS)
+
+%.o: $(built_source) rig-config.pch %.c | dirs
+	$(E)echo "(CC)     $(@)"
+	$(E)$(CC) $(lastword $(filter %.c,$(^))) -o $@ -MMD -MF .deps/$(@).rules -include rig-config.h $(_OBJ_CFLAGS)
+
+%.bc: rig-config.pch | dirs
+	$(E)echo "(BC)     $(@)"
+	$(E)$(CC) $(_BC_CFLAGS) $(filter %.o %.c,$(^)) -o $@
+
+%.pb-c.c %.pb-c.h: %.proto
+	protoc-c --c_out=$(builddir) --proto_path=$(srcdir)/ $(srcdir)/$(*).proto
+
+%.pb.cc %.pb.h: %.proto
+	protoc --cpp_out=$(builddir) --proto_path=$(srcdir)/ $(srcdir)/$(*).proto
+
+-include .deps/*.rules
+-include .deps/*/*.rules
+-include .deps/*/*/*.rules
+
+Makefile:
+	$(E)ln -sf $(srcdir)/Makefile.emscripten Makefile
+
+dirs:
+	$(E)mkdir -p $(builddirs) .deps $(addprefix .deps/,$(builddirs))
+
+clean:
+	-rm -f *.o *.bc $(built_source) rig-config.pch
+
+.PHONY: all clean Makefile dirs

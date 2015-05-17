@@ -28,12 +28,21 @@
 
 #include <config.h>
 
+#include <cogl/cogl.h>
+#include <cogl/cogl-webgl.h>
+
 #include "rig-image-source.h"
+
+#ifdef USE_GDK_PIXBUF
+#include <gio/gio.h>
+#include <gdk-pixbuf/gdk-pixbuf.h>
+#endif
+
 
 struct _rig_image_source_t {
     rut_object_base_t _base;
 
-    rig_engine_t *engine;
+    rig_frontend_t *frontend;
 
     cg_texture_t *texture;
 
@@ -79,9 +88,9 @@ destroy_source_wrapper(void *data)
 }
 
 void
-_rig_init_image_source_wrappers_cache(rig_engine_t *engine)
+_rig_init_image_source_wrappers_cache(rig_frontend_t *frontend)
 {
-    engine->image_source_wrappers =
+    frontend->image_source_wrappers =
         c_hash_table_new_full(c_direct_hash,
                               c_direct_equal,
                               NULL, /* key destroy */
@@ -89,17 +98,17 @@ _rig_init_image_source_wrappers_cache(rig_engine_t *engine)
 }
 
 void
-_rig_destroy_image_source_wrappers(rig_engine_t *engine)
+_rig_destroy_image_source_wrappers(rig_frontend_t *frontend)
 {
-    c_hash_table_destroy(engine->image_source_wrappers);
+    c_hash_table_destroy(frontend->image_source_wrappers);
 }
 
 static image_source_wrappers_t *
-get_image_source_wrappers(rig_engine_t *engine,
+get_image_source_wrappers(rig_frontend_t *frontend,
                           int layer_index)
 {
     image_source_wrappers_t *wrappers = c_hash_table_lookup(
-        engine->image_source_wrappers, C_UINT_TO_POINTER(layer_index));
+        frontend->image_source_wrappers, C_UINT_TO_POINTER(layer_index));
     char *wrapper;
 
     if (wrappers)
@@ -119,6 +128,7 @@ get_image_source_wrappers(rig_engine_t *engine,
                               "  return texture2D(cg_sampler%d, UV);\n"
                               "#endif\n"
                               "}\n",
+                              layer_index,
                               layer_index,
                               layer_index);
 
@@ -144,8 +154,8 @@ get_image_source_wrappers(rig_engine_t *engine,
 
     c_free(wrapper);
 
-    c_hash_table_insert(
-        engine->image_source_wrappers, C_UINT_TO_POINTER(layer_index), wrappers);
+    c_hash_table_insert(frontend->image_source_wrappers,
+                        C_UINT_TO_POINTER(layer_index), wrappers);
 
     return wrappers;
 }
@@ -225,11 +235,16 @@ _rig_image_source_video_play(rig_image_source_t *source,
 static void
 _rig_image_source_free(void *object)
 {
-#ifdef USE_GSTREAMER
     rig_image_source_t *source = object;
 
+#ifdef USE_GSTREAMER
     _rig_image_source_video_stop(source);
 #endif
+
+    if (source->texture) {
+        cg_object_unref(source->texture);
+        source->texture = NULL;
+    }
 }
 
 rut_type_t rig_image_source_type;
@@ -237,8 +252,7 @@ rut_type_t rig_image_source_type;
 void
 _rig_image_source_init_type(void)
 {
-    rut_type_init(
-        &rig_image_source_type, "rig_image_source_t", _rig_image_source_free);
+    rut_type_init(&rig_image_source_type, "rig_image_source_t", _rig_image_source_free);
 }
 
 #ifdef USE_GSTREAMER
@@ -263,27 +277,260 @@ new_frame_cb(gpointer instance, gpointer user_data)
 }
 #endif /* USE_GSTREAMER */
 
+#ifdef USE_GDK_PIXBUF
+static cg_bitmap_t *
+bitmap_new_from_pixbuf(cg_device_t *dev, GdkPixbuf *pixbuf)
+{
+    bool has_alpha;
+    GdkColorspace color_space;
+    cg_pixel_format_t pixel_format;
+    int width;
+    int height;
+    int rowstride;
+    int bits_per_sample;
+    int n_channels;
+    cg_bitmap_t *bmp;
+
+    /* Get pixbuf properties */
+    has_alpha = gdk_pixbuf_get_has_alpha(pixbuf);
+    color_space = gdk_pixbuf_get_colorspace(pixbuf);
+    width = gdk_pixbuf_get_width(pixbuf);
+    height = gdk_pixbuf_get_height(pixbuf);
+    rowstride = gdk_pixbuf_get_rowstride(pixbuf);
+    bits_per_sample = gdk_pixbuf_get_bits_per_sample(pixbuf);
+    n_channels = gdk_pixbuf_get_n_channels(pixbuf);
+
+    /* According to current docs this should be true and so
+     * the translation to cogl pixel format below valid */
+    c_assert(bits_per_sample == 8);
+
+    if (has_alpha)
+        c_assert(n_channels == 4);
+    else
+        c_assert(n_channels == 3);
+
+    /* Translate to cogl pixel format */
+    switch (color_space) {
+    case GDK_COLORSPACE_RGB:
+        /* The only format supported by GdkPixbuf so far */
+        pixel_format =
+            has_alpha ? CG_PIXEL_FORMAT_RGBA_8888 : CG_PIXEL_FORMAT_RGB_888;
+        break;
+
+    default:
+        /* Ouch, spec changed! */
+        g_object_unref(pixbuf);
+        return false;
+    }
+
+    /* We just use the data directly from the pixbuf so that we don't
+     * have to copy to a seperate buffer.
+     */
+    bmp = cg_bitmap_new_for_data(dev,
+                                 width,
+                                 height,
+                                 pixel_format,
+                                 rowstride,
+                                 gdk_pixbuf_get_pixels(pixbuf));
+
+    return bmp;
+}
+
+GdkPixbuf *
+create_gdk_pixbuf_for_data(const uint8_t *data,
+                           size_t len,
+                           rut_exception_t **e)
+{
+    GInputStream *istream =
+        g_memory_input_stream_new_from_data(data, len, NULL);
+    GError *error = NULL;
+    GdkPixbuf *pixbuf = gdk_pixbuf_new_from_stream(istream, NULL, &error);
+
+    if (!pixbuf) {
+        rut_throw(e,
+                  RUT_IO_EXCEPTION,
+                  RUT_IO_EXCEPTION_IO,
+                  "Failed to load pixbuf from data: %s",
+                  error->message);
+        g_error_free(error);
+        return NULL;
+    }
+
+    g_object_unref(istream);
+
+    return pixbuf;
+}
+#endif /* USE_GDK_PIXBUF */
+
+#ifdef CG_HAS_WEBGL_SUPPORT
+
+static inline bool
+is_pot(unsigned int num)
+{
+    /* Make sure there is only one bit set */
+    return (num & (num - 1)) == 0;
+}
+
+static int
+next_p2(int a)
+{
+    int rval = 1;
+
+    while (rval < a)
+        rval <<= 1;
+
+    return rval;
+}
+
+static void
+on_webgl_image_load_cb(cg_webgl_image_t *image, void *user_data)
+{
+    rig_image_source_t *source = user_data;
+    rut_shell_t *shell = source->frontend->engine->shell;
+    cg_texture_2d_t *tex2d =
+        cg_webgl_texture_2d_new_from_image(shell->cg_device, image);
+    int width = cg_webgl_image_get_width(image);
+    int height = cg_webgl_image_get_height(image);
+    int pot_width;
+    int pot_height;
+    cg_error_t *error;
+
+    if (!cg_texture_allocate(tex2d, &error)) {
+        c_warning("Failed to load image source texture: %s", error->message);
+        cg_error_free(error);
+        return;
+    }
+
+    pot_width = is_pot(width) ? width : next_p2(width);
+    pot_height = is_pot(height) ? height : next_p2(height);
+
+    /* XXX: We should warn if we hit this path, since ideally we
+     * should avoid loading assets that require us to rescale on the
+     * fly like this
+     */
+    if (pot_width != width || pot_height != height) {
+        cg_texture_2d_t *pot_tex = cg_texture_2d_new_with_size(shell->cg_device,
+                                                               pot_width,
+                                                               pot_height);
+        cg_pipeline_t *pipeline;
+
+        cg_framebuffer_t *fb = cg_offscreen_new_with_texture(pot_tex);
+
+        if (!cg_framebuffer_allocate(fb, &error)) {
+            c_warning("Failed alloc framebuffer to re-scale image source "
+                      "texture to nearest power-of-two size: %s",
+                      error->message);
+            cg_error_free(error);
+            cg_object_unref(tex2d);
+            return;
+        }
+
+        cg_framebuffer_orthographic(fb, 0, 0, pot_width, pot_height, -1, 100);
+
+        pipeline = cg_pipeline_copy(source->frontend->default_tex2d_pipeline);
+        cg_pipeline_set_layer_texture(pipeline, 0, tex2d);
+
+        /* TODO: It could be good to have a fifo of image scaling work
+         * to throttle how much image scaling we do per-frame */
+        cg_framebuffer_draw_rectangle(fb, pipeline,
+                                      0, 0, pot_width, pot_height);
+
+        cg_object_unref(pipeline);
+        cg_object_unref(fb);
+        cg_object_unref(tex2d);
+
+        source->texture = pot_tex;
+    } else
+        source->texture = tex2d;
+
+    rut_closure_list_invoke(&source->ready_cb_list,
+                            rig_image_source_ready_callback_t, source);
+}
+
+#endif /* CG_HAS_WEBGL_SUPPORT */
+
 rig_image_source_t *
-rig_image_source_new(rig_engine_t *engine,
-                     rig_asset_t *asset)
+rig_image_source_new(rig_frontend_t *frontend,
+                     const char *mime,
+                     const char *path,
+                     const uint8_t *data,
+                     int len,
+                     int natural_width,
+                     int natural_height)
 {
     rig_image_source_t *source = rut_object_alloc0(rig_image_source_t,
                                                    &rig_image_source_type,
                                                    _rig_image_source_init_type);
+    rut_shell_t *shell = frontend->engine->shell;
 
-    source->engine = engine;
+    source->frontend = frontend;
     source->default_sample = true;
 
     c_list_init(&source->changed_cb_list);
     c_list_init(&source->ready_cb_list);
 
-    if (rig_asset_get_is_video(asset)) {
+    if (strcmp(mime, "image/jpeg") || strcmp(mime, "image/png")) {
+
+#ifdef CG_HAS_WEBGL_SUPPORT
+        char *url = c_strdup_printf("assets/%s", path);
+        cg_webgl_image_t *image = cg_webgl_image_new(shell->cg_device, url);
+
+        c_free(url);
+
+        cg_webgl_image_add_onload_callback(image,
+                                           on_webgl_image_load_cb,
+                                           source,
+                                           NULL); /* destroy notify */
+
+        /* Until the image has loaded... */
+        source->texture = cg_object_ref(frontend->default_tex2d);
+
+#elif defined(USE_GDK_PIXBUF)
+        rut_exception_t *e = NULL;
+        GdkPixbuf *pixbuf = create_gdk_pixbuf_for_data(data, len, &e);
+        bool allocated;
+        cg_bitmap_t *bitmap;
+        cg_texture_2d_t *tex2d;
+        cg_error_t *cg_error = NULL;
+
+        if (!pixbuf) {
+            source->texture = cg_object_ref(frontend->default_tex2d);
+            c_warning("%s", e->message);
+            rut_exception_free(e);
+            return source;
+        }
+
+        bitmap = bitmap_new_from_pixbuf(shell->cg_device, pixbuf);
+        tex2d = cg_texture_2d_new_from_bitmap(bitmap);
+
+        /* Allocate now so we can simply free the data
+         * TODO: allow asynchronous upload. */
+        allocated = cg_texture_allocate(tex2d, &cg_error);
+
+        cg_object_unref(bitmap);
+        g_object_unref(pixbuf);
+
+        if (!allocated) {
+            source->texture = cg_object_ref(frontend->default_tex2d);
+            c_warning("Failed to load Cogl texture: %s", cg_error->message);
+            cg_error_free(cg_error);
+            return source;
+        }
+
+        source->texture = tex2d;
+#else
+        source->texture = cg_object_ref(frontend->default_tex2d);
+        c_warning("FIXME: Rig is missing platform support for loading image %s",
+                  path);
+#endif
+
+    } else if (strncmp(mime, "video/", 6) == 0) {
 #ifdef USE_GSTREAMER
         _rig_image_source_video_play(source,
                                      engine,
-                                     rig_asset_get_path(asset),
-                                     rig_asset_get_data(asset),
-                                     rig_asset_get_data_len(asset));
+                                     path,
+                                     data,
+                                     len):
         g_signal_connect(source->sink,
                          "pipeline_ready",
                          (GCallback)pipeline_ready_cb,
@@ -291,10 +538,10 @@ rig_image_source_new(rig_engine_t *engine,
         g_signal_connect(
             source->sink, "new_frame", (GCallback)new_frame_cb, source);
 #else
-        c_error("FIXME: missing video support on this platform");
+        c_warning("FIXME: Rig is missing video support on this platform");
+        source->texture = cg_object_ref(frontend->default_tex2d);
 #endif
-    } else if (rig_asset_get_texture(asset))
-        source->texture = rig_asset_get_texture(asset);
+    }
 
     return source;
 }
@@ -365,7 +612,7 @@ rig_image_source_setup_pipeline(rig_image_source_t *source,
     cg_snippet_t *vertex_snippet;
     cg_snippet_t *fragment_snippet;
     image_source_wrappers_t *wrappers =
-        get_image_source_wrappers(source->engine, source->first_layer);
+        get_image_source_wrappers(source->frontend, source->first_layer);
 
     if (!rig_image_source_get_is_video(source)) {
         cg_texture_t *texture = rig_image_source_get_texture(source);
