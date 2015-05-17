@@ -387,7 +387,10 @@ PKG_CHECK_MODULES([LIBCRYPTO],
 AM_CONDITIONAL([HAVE_LIBCRYPTO], [test "x$have_libcrypto" = "xyes"])
 
 AC_CHECK_LIB(ncursesw, [subwin],
-             [HAVE_NCURSES=yes],
+             [
+               HAVE_NCURSES=yes
+               AC_DEFINE([USE_NCURSES], [1], ["Use ncurses for debugging view"])
+             ],
              [HAVE_NCURSES=no])
 AM_CONDITIONAL([USE_NCURSES], [test "x$HAVE_NCURSES" = "xyes"])
 
