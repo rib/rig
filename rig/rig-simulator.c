@@ -821,6 +821,9 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
 
     simulator->redraw_queued = false;
 
+    if (!simulator->ui)
+        return;
+
     /* Setup the property context to log all property changes so they
      * can be sent back to the frontend process each frame. */
     simulator->shell->property_ctx.log = true;
