@@ -680,7 +680,7 @@ lookup_request_closure(rig_pb_rpc_client_t *client,
 
 static bool
 client_handle_reply(rig_pb_rpc_client_t *client,
-                    uint8_t *buf,
+                    const uint8_t *buf,
                     uint32_t message_length,
                     uint32_t request_id)
 {
@@ -730,7 +730,7 @@ client_handle_reply(rig_pb_rpc_client_t *client,
 
 static bool
 server_connection_handle_request(rig_pb_rpc_server_connection_t *conn,
-                                 uint8_t *buf,
+                                 const uint8_t *buf,
                                  uint32_t method_index,
                                  uint32_t message_length,
                                  uint32_t request_id)
@@ -785,12 +785,12 @@ server_connection_handle_request(rig_pb_rpc_server_connection_t *conn,
 }
 
 static void
-read_message_header(void *message,
+read_message_header(const void *message,
                     uint32_t *method_index,
                     uint32_t *message_length,
                     uint32_t *request_id)
 {
-    uint32_t *header = (uint32_t *)message;
+    const uint32_t *header = (uint32_t *)message;
 
     *method_index = uint32_from_le(header[0]);
     *message_length = uint32_from_le(header[1]);
@@ -799,7 +799,7 @@ read_message_header(void *message,
 
 static void
 handle_read_cb(rig_pb_stream_t *stream,
-               uint8_t *buf,
+               const uint8_t *buf,
                size_t len,
                void *user_data)
 {
