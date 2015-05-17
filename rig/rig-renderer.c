@@ -355,7 +355,7 @@ rig_renderer_new(rig_frontend_t *frontend)
 
     renderer->journal = c_array_new(false, false, sizeof(rig_journal_entry_t));
 
-    renderer->text_state = rig_text_renderer_state_new(engine);
+    renderer->text_state = rig_text_renderer_state_new(frontend);
 
     return renderer;
 }
