@@ -332,6 +332,8 @@ enqueue_request(rig_pb_rpc_client_t *client,
     buf_size = sizeof(*header) + packed_size;
     buf = c_malloc(buf_size);
 
+    c_debug("enqueue %d byte request", buf_size);
+
     header = (void *)buf;
     header->method_index = uint32_to_le(method_index);
     header->message_length = uint32_to_le(packed_size);
@@ -585,6 +587,8 @@ server_request_create(rig_pb_rpc_server_connection_t *conn,
                       ProtobufCMessage *message)
 {
     server_request_t *req = c_slice_new(server_request_t);
+
+    c_debug("Server request: req-id = %" PRIu32 ", method-id=%" PRIu32 "\n");
 
     req->server = rut_object_ref(conn->server);
     req->conn = conn;
