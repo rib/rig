@@ -459,6 +459,14 @@ struct _rut_shell_t {
     rut_object_t *selection;
 
     struct {
+        enum {
+            RUT_SHELL_HEADLESS = 1,
+            RUT_SHELL_X11_PLATFORM,
+            RUT_SHELL_ANDROID_PLATFORM,
+            RUT_SHELL_WEB_PLATFORM,
+            RUT_SHELL_SDL_PLATFORM,
+        } type;
+
         cg_onscreen_t *(*allocate_onscreen)(rut_shell_onscreen_t *onscreen);
         void (*onscreen_resize)(rut_shell_onscreen_t *onscreen,
                                 int width, int height);

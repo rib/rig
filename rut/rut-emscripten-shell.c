@@ -300,6 +300,8 @@ rut_emscripten_shell_init(rut_shell_t *shell)
         goto error;
     }
 
+    shell->platform.type = RUT_SHELL_WEB_PLATFORM;
+
     shell->platform.allocate_onscreen = rut_emscripten_allocate_onscreen;
     shell->platform.onscreen_resize = rut_emscripten_onscreen_resize;
     shell->platform.onscreen_set_title = rut_emscripten_onscreen_set_title;

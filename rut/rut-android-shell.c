@@ -506,6 +506,8 @@ rut_android_shell_init(rut_shell_t *shell)
     application->userData = shell;
     application->onAppCmd = android_handle_cmd;
 
+    shell->platform.type = RUT_SHELL_ANDROID_PLATFORM;
+
     shell->platform.key_event_get_keysym = rut_android_key_event_get_keysym;
     shell->platform.key_event_get_action = rut_android_key_event_get_action;
     shell->platform.key_event_get_modifier_state = rut_android_key_event_get_modifier_state;

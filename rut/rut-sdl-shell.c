@@ -580,6 +580,8 @@ rut_sdl_shell_init(rut_shell_t *shell)
     shell->sdl_keymod = SDL_GetModState();
     shell->sdl_buttons = SDL_GetMouseState(NULL, NULL);
 
+    shell->platform.type = RUT_SHELL_SDL_PLATFORM;
+
     shell->platform.allocate_onscreen = rut_sdl_allocate_onscreen;
     shell->platform.onscreen_resize = rut_sdl_onscreen_resize;
     shell->platform.onscreen_set_title = rut_sdl_onscreen_set_title;
