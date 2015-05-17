@@ -14,6 +14,10 @@ AM_CPPFLAGS += -I$(top_srcdir)/h2o/include
 AM_CPPFLAGS += -I$(top_srcdir)/h2o
 endif
 
+if OCULUS_RIFT
+AM_CPPFLAGS += -I$(top_srcdir)/LibOVR/Src
+endif
+
 AM_CFLAGS = \
 	$(COGL_DEP_CFLAGS) \
 	$(COGL_EXTRA_CFLAGS) \
@@ -41,6 +45,9 @@ if USE_GSTREAMER
 common_ldadd += $(top_builddir)/cogl-gst/libcogl-gst.la
 endif
 
+if OCULUS_RIFT
+common_ldadd += $(top_builddir)/LibOVR/libOVR.la
+endif
 
 programs = cogl-info
 emscripten_programs = cogl-info
@@ -102,6 +109,12 @@ if COGL_SUPPORT_SDL2
 programs += cogl-sdl2-hello
 cogl_sdl2_hello_SOURCES = cogl-sdl2-hello.c
 cogl_sdl2_hello_LDADD = $(common_ldadd)
+endif
+
+if OCULUS_RIFT
+programs += libovr-test
+libovr_test_SOURCES = libovr-test.c
+livovr_test_LDADD = $(common_ldadd)
 endif
 
 programs += shell-hello

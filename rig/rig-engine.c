@@ -86,6 +86,8 @@ static rut_property_spec_t _rig_engine_prop_specs[] = {
     { 0 }
 };
 
+bool rig_engine_vr_mode;
+
 void
 rig_engine_set_ui(rig_engine_t *engine, rig_ui_t *ui)
 {

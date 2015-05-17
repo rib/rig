@@ -27,6 +27,10 @@ AM_CPPFLAGS += -I$(top_srcdir)/h2o/include
 AM_CPPFLAGS += -I$(top_srcdir)/h2o
 endif
 
+if OCULUS_RIFT
+AM_CPPFLAGS += -I$(top_srcdir)/LibOVR/Src
+endif
+
 AM_CFLAGS = \
 	$(RIG_EXTRA_CFLAGS)
 
@@ -131,6 +135,10 @@ common_ldadd = \
 if USE_UV
 common_ldadd += $(top_builddir)/xdgmime/libxdgmime.la
 common_ldadd += $(top_builddir)/h2o/libh2o.la -lssl -lcrypto
+endif
+
+if OCULUS_RIFT
+common_ldadd += $(top_builddir)/LibOVR/libOVR.la -lstdc++
 endif
 
 if EDITOR_ENABLED
