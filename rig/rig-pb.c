@@ -1458,12 +1458,14 @@ rig_pb_serialize_ui(rig_pb_serializer_t *serializer,
             rut_memory_stack_memalign(serializer->stack,
                                       pb_ui->n_assets * sizeof(void *),
                                       RUT_UTIL_ALIGNOF(void *));
-        for (i = 0, l = serializer->required_assets; l; i++, l = l->next) {
+        for (i = 0, l = serializer->required_assets; l; l = l->next) {
             rig_asset_t *asset = l->data;
             Rig__Asset *pb_asset = serialize_asset(serializer, asset);
 
-            pb_ui->assets[i] = pb_asset;
+            if (pb_asset)
+                pb_ui->assets[i++] = pb_asset;
         }
+        pb_ui->n_assets = i;
 
         /* restore the asset filter */
         serializer->asset_filter = save_filter;
