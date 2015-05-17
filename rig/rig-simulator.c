@@ -442,7 +442,7 @@ simulator_peer_connected(rig_pb_rpc_client_t *pb_client,
 
     rig__frontend__test(
         frontend_service, &query, handle_frontend_test_response, NULL);
-    // c_debug ("Simulator peer connected\n");
+    c_debug("Simulator peer connected\n");
 }
 
 static void
