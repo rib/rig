@@ -521,8 +521,8 @@ rig_ui_entity_component_added_notify(rig_ui_t *ui,
                                      rig_entity_t *entity,
                                      rut_component_t *component)
 {
-    if (ui->engine->renderer)
-        rut_renderer_notify_entity_changed(ui->engine->renderer, entity);
+    if (ui->renderer)
+        rut_renderer_notify_entity_changed(ui->renderer, entity);
 
     if (rut_object_is(component, rig_code_module_trait_id)) {
         rig_code_module_props_t *module_props =
@@ -537,8 +537,8 @@ rig_ui_entity_component_pre_remove_notify(rig_ui_t *ui,
                                           rig_entity_t *entity,
                                           rut_component_t *component)
 {
-    if (ui->engine->renderer)
-        rut_renderer_notify_entity_changed(ui->engine->renderer, entity);
+    if (ui->renderer)
+        rut_renderer_notify_entity_changed(ui->renderer, entity);
 
     if (rut_object_is(component, rig_code_module_trait_id)) {
         rig_code_module_props_t *module_props =
