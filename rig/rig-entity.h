@@ -43,13 +43,13 @@ typedef struct _rig_entity_t rig_entity_t;
 extern rut_type_t rig_entity_type;
 
 typedef enum {
-    RUT_COMPONENT_TYPE_ANIMATION_CLIP,
     RUT_COMPONENT_TYPE_CAMERA,
     RUT_COMPONENT_TYPE_LIGHT,
     RUT_COMPONENT_TYPE_GEOMETRY,
     RUT_COMPONENT_TYPE_MATERIAL,
     RUT_COMPONENT_TYPE_HAIR,
     RUT_COMPONENT_TYPE_INPUT,
+    RUT_COMPONENT_TYPE_CODE,
     RUT_N_COMPNONENTS
 } rut_component_type_t;
 

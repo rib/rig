@@ -44,6 +44,7 @@
 #include "rig-logs.h"
 #include "rig-load-save.h"
 #include "rig-frontend.h"
+#include "rig-code-module.h"
 
 #include "rig.pb-c.h"
 
@@ -222,6 +223,8 @@ simulator__load(Rig__Simulator_Service *service,
     ui = rig_pb_unserialize_ui(simulator->ui_unserializer, pb_ui);
 
     rig_engine_set_ui(engine, ui);
+
+    rig_ui_code_modules_load(ui);
 
     rut_object_unref(ui);
 
@@ -507,6 +510,20 @@ _rig_simulator_init_type(void)
     rut_type_init(&rig_simulator_type, "rig_simulator_t", _rig_simulator_free);
 }
 
+static rut_input_event_status_t
+rig_simulator_input_handler(rut_input_event_t *event,
+                            void *user_data)
+{
+    rig_simulator_t *simulator = user_data;
+    rig_engine_t *engine = simulator->engine;
+
+    if (engine->play_mode)
+        rig_ui_code_modules_handle_input(engine->play_mode_ui,
+                                         event);
+
+    return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+}
+
 static void
 rig_simulator_init(rut_shell_t *shell, void *user_data)
 {
@@ -584,6 +601,9 @@ rig_simulator_init(rut_shell_t *shell, void *user_data)
         engine->ops_serializer, direct_object_id_cb, simulator);
     rig_pb_serializer_set_object_to_id_callback(
         engine->ops_serializer, direct_object_id_cb, simulator);
+
+    rut_shell_add_input_callback(
+        simulator->shell, rig_simulator_input_handler, simulator, NULL);
 }
 
 rig_simulator_t *
@@ -779,6 +799,7 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
 
     rut_shell_dispatch_input_events(shell);
 
+    rig_ui_code_modules_update(engine->current_ui);
 #if 0
     static int counter = 0;
 

@@ -61,8 +61,13 @@
 #include "rig-frontend.h"
 #include "rig-simulator.h"
 #include "rig-image-source.h"
+#include "rig-code-module.h"
 
 #include "components/rig-camera.h"
+
+#ifdef USE_UV
+#include "components/rig-native-module.h"
+#endif
 
 //#define DEVICE_WIDTH 480.0
 //#define DEVICE_HEIGHT 800.0

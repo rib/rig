@@ -76,7 +76,9 @@ rig_common_sources = \
 	rig-ui.h \
 	rig-ui.c \
 	rig-code.h \
-	rig-code.c
+	rig-code.c \
+	rig-code-module.h \
+	rig-code-module.c
 
 rig_debug_sources = \
 	rig-pb-debug.h \
@@ -114,4 +116,5 @@ rig_slave_sources = \
 
 rig_device_sources =
 
-rig_simulator_sources =
+rig_simulator_sources = \
+	rig-c.c
