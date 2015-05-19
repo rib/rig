@@ -524,6 +524,8 @@ rig_simulator_input_handler(rut_input_event_t *event,
 
     rig_ui_code_modules_handle_input(engine->ui, event);
 
+    rig_ui_handle_input_event(engine->ui, event);
+
     return RUT_INPUT_EVENT_STATUS_UNHANDLED;
 }
 

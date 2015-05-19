@@ -1513,6 +1513,11 @@ rig_pb_serialize_input_events(rig_pb_serializer_t *serializer,
     {
         Rig__Event *pb_event =
             rig_pb_new(serializer, Rig__Event, rig__event__init);
+        rut_shell_onscreen_t *onscreen = event->onscreen;
+        cg_framebuffer_t *fb = onscreen->cg_onscreen;
+        int width = cg_framebuffer_get_width(fb);
+        int height = cg_framebuffer_get_height(fb);
+        rut_object_t *camera = onscreen->input_camera;
 
         pb_event->has_type = true;
 
@@ -1531,9 +1536,11 @@ rig_pb_serialize_input_events(rig_pb_serializer_t *serializer,
                                rig__event__pointer_move__init);
 
                 pb_event->pointer_move->has_x = true;
-                pb_event->pointer_move->x = rut_motion_event_get_x(event);
+                pb_event->pointer_move->x =
+                    rut_motion_event_get_x(event) / width;
                 pb_event->pointer_move->has_y = true;
-                pb_event->pointer_move->y = rut_motion_event_get_y(event);
+                pb_event->pointer_move->y =
+                    rut_motion_event_get_y(event) / height;
 
                 pb_event->pointer_move->mod_state =
                     rut_motion_event_get_modifier_state(event);
@@ -1593,6 +1600,15 @@ rig_pb_serialize_input_events(rig_pb_serializer_t *serializer,
         case RUT_INPUT_EVENT_TYPE_DROP_CANCEL:
         case RUT_INPUT_EVENT_TYPE_DROP:
             break;
+        }
+
+        if (camera) {
+            uint64_t id = rig_pb_serializer_lookup_object_id(serializer, camera);
+
+            c_warn_if_fail(id != 0);
+
+            pb_event->has_camera_id = true;
+            pb_event->camera_id = id;
         }
 
         pb_events[i] = pb_event;
@@ -1979,9 +1995,6 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
                                             light,
                                             pb_component->n_properties,
                                             pb_component->properties);
-
-        if (unserializer->light == NULL)
-            unserializer->light = rut_object_ref(entity);
 
         rig_pb_unserializer_register_object(unserializer, light, component_id);
         return light;
@@ -2982,9 +2995,6 @@ rig_pb_unserialize_ui(rig_pb_un_serializer_t *unserializer,
         }
     }
     unserializer->entities = NULL;
-
-    ui->light = unserializer->light;
-    unserializer->light = NULL;
 
     ui->controllers = unserializer->controllers;
     unserializer->controllers = NULL;

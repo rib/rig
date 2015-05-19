@@ -40,6 +40,8 @@
 #include "rig-code-module.h"
 #include "rut-renderer.h"
 
+#include "components/rig-material.h"
+
 static void
 _rig_ui_free(void *object)
 {
@@ -58,17 +60,11 @@ _rig_ui_free(void *object)
         rut_object_unref(l->data);
     c_llist_free(ui->assets);
 
-    /* NB: no extra reference is held on ui->light other than the
-     * reference for it being in the ->scene. */
-
     if (ui->scene)
         rut_object_unref(ui->scene);
 
     if (ui->play_camera)
         rut_object_unref(ui->play_camera);
-
-    if (ui->play_camera_component)
-        rut_object_unref(ui->play_camera_component);
 
     if (ui->dso_data)
         c_free(ui->dso_data);
@@ -150,6 +146,8 @@ rig_ui_new(rig_engine_t *engine)
 
     if (engine->frontend)
         ui->renderer = engine->frontend->renderer;
+
+    ui->pick_matrix_stack = rut_matrix_stack_new(engine->shell);
 
     c_list_init(&ui->code_modules);
 
@@ -262,37 +260,44 @@ rig_ui_prepare(rig_ui_t *ui)
     if (!ui->scene)
         ui->scene = rut_graph_new(engine->shell);
 
-    if (!ui->light) {
-        rig_light_t *light;
+    if (!ui->lights) {
+        rig_entity_t *light;
+        rig_light_t *light_component;
         float vector3[3];
         cg_color_t color;
 
-        ui->light = rig_entity_new(engine->shell);
-        rig_entity_set_label(ui->light, "light");
+        light = rig_entity_new(engine->shell);
+        rig_entity_set_label(light, "light");
 
         vector3[0] = 0;
         vector3[1] = 0;
         vector3[2] = 500;
-        rig_entity_set_position(ui->light, vector3);
+        rig_entity_set_position(light, vector3);
 
-        rig_entity_rotate_x_axis(ui->light, 20);
-        rig_entity_rotate_y_axis(ui->light, -20);
+        rig_entity_rotate_x_axis(light, 20);
+        rig_entity_rotate_y_axis(light, -20);
 
-        light = rig_light_new(engine->shell);
+        light_component = rig_light_new(engine->shell);
+
         cg_color_init_from_4f(&color, .2f, .2f, .2f, 1.f);
-        rig_light_set_ambient(light, &color);
+        rig_light_set_ambient(light_component, &color);
         cg_color_init_from_4f(&color, .6f, .6f, .6f, 1.f);
-        rig_light_set_diffuse(light, &color);
+        rig_light_set_diffuse(light_component, &color);
         cg_color_init_from_4f(&color, .4f, .4f, .4f, 1.f);
-        rig_light_set_specular(light, &color);
+        rig_light_set_specular(light_component, &color);
 
-        rig_entity_add_component(ui->light, light);
+        rig_entity_add_component(light, light_component);
 
-        rut_graphable_add_child(ui->scene, ui->light);
+        rut_graphable_add_child(ui->scene, light);
+        ui->lights = c_llist_prepend(ui->lights, light);
     }
+
+    /* TODO: remove limitation that we can only render a single light */
+    ui->light = ui->lights->data;
 
     light_camera =
         rig_entity_get_component(ui->light, RUT_COMPONENT_TYPE_CAMERA);
+
     if (!light_camera) {
         light_camera = rig_camera_new(engine,
                                       1000, /* ortho/vp width */
@@ -310,6 +315,8 @@ rig_ui_prepare(rig_ui_t *ui)
         rig_entity_add_component(ui->light, light_camera);
     }
 
+    /* FIXME: this should be handled by the renderer and should
+     * be triggered via a resize callback */
     if (engine->frontend) {
         cg_framebuffer_t *fb;
         int width, height;
@@ -341,46 +348,34 @@ rig_ui_prepare(rig_ui_t *ui)
     }
 
     if (!ui->play_camera) {
-        /* Check if there is already an entity labelled ‘play-camera’
-         * in the scene graph */
-        ui->play_camera = rig_ui_find_entity(ui, "play-camera");
+        ui->play_camera = rig_entity_new(engine->shell);
+        rig_entity_set_label(ui->play_camera, "play-camera");
 
-        if (ui->play_camera) {
-            rut_object_ref(ui->play_camera);
-#warning "HACK"
-            initialise_play_camera_position(engine, ui);
-        }
-        else {
-            ui->play_camera = rig_entity_new(engine->shell);
-            rig_entity_set_label(ui->play_camera, "play-camera");
+        initialise_play_camera_position(engine, ui);
 
-            initialise_play_camera_position(engine, ui);
+        rut_graphable_add_child(ui->scene, ui->play_camera);
 
-            rut_graphable_add_child(ui->scene, ui->play_camera);
-        }
+        ui->cameras = c_llist_prepend(ui->cameras, ui->play_camera);
     }
+
+    ui->play_camera_component =
+        rig_entity_get_component(ui->play_camera, RUT_COMPONENT_TYPE_CAMERA);
 
     if (!ui->play_camera_component) {
-        ui->play_camera_component = rig_entity_get_component(
-            ui->play_camera, RUT_COMPONENT_TYPE_CAMERA);
+        ui->play_camera_component = rig_camera_new(engine,
+                                                   -1, /* ortho/vp width */
+                                                   -1, /* ortho/vp height */
+                                                   engine->frontend->onscreen);
 
-        if (ui->play_camera_component) {
-            rut_object_ref(ui->play_camera_component);
-#warning "HACK"
-            initialise_play_camera_component(ui->play_camera_component);
-        }
-        else {
-            ui->play_camera_component = rig_camera_new(engine,
-                                                       -1, /* ortho/vp width */
-                                                       -1, /* ortho/vp height */
-                                                       engine->frontend->onscreen);
+        initialise_play_camera_component(ui->play_camera_component);
 
-            initialise_play_camera_component(ui->play_camera_component);
-
-            rig_entity_add_component(ui->play_camera,
-                                     ui->play_camera_component);
-        }
+        rig_entity_add_component(ui->play_camera,
+                                 ui->play_camera_component);
     }
+
+#warning "HACK"
+    initialise_play_camera_position(engine, ui);
+    initialise_play_camera_component(ui->play_camera_component);
 
     rut_camera_set_clear(ui->play_camera_component, false);
 
@@ -524,7 +519,12 @@ rig_ui_entity_component_added_notify(rig_ui_t *ui,
     if (ui->renderer)
         rut_renderer_notify_entity_changed(ui->renderer, entity);
 
-    if (rut_object_is(component, rig_code_module_trait_id)) {
+    if (rut_object_is(component, RUT_TRAIT_ID_CAMERA)) {
+        ui->cameras = c_llist_prepend(ui->cameras, entity);
+
+        if(strcmp("play-camera", rig_entity_get_label(entity)))
+            ui->play_camera = rut_object_ref(entity);
+    } else if (rut_object_is(component, rig_code_module_trait_id)) {
         rig_code_module_props_t *module_props =
             rut_object_get_properties(component, rig_code_module_trait_id);
 
@@ -609,4 +609,345 @@ rig_ui_code_modules_handle_input(rig_ui_t *ui, rut_input_event_t *event)
     }
 }
 
+static void
+transform_ray(cg_matrix_t *transform,
+              bool inverse_transform,
+              float ray_origin[3],
+              float ray_direction[3])
+{
+    cg_matrix_t inverse, normal_matrix, *m;
 
+    m = transform;
+    if (inverse_transform) {
+        cg_matrix_get_inverse(transform, &inverse);
+        m = &inverse;
+    }
+
+    cg_matrix_transform_points(m,
+                               3, /* num components for input */
+                               sizeof(float) * 3, /* input stride */
+                               ray_origin,
+                               sizeof(float) * 3, /* output stride */
+                               ray_origin,
+                               1 /* n_points */);
+
+    cg_matrix_get_inverse(m, &normal_matrix);
+    cg_matrix_transpose(&normal_matrix);
+
+    rut_util_transform_normal(&normal_matrix,
+                              &ray_direction[0],
+                              &ray_direction[1],
+                              &ray_direction[2]);
+}
+
+typedef struct _pick_context_t {
+    rig_ui_t *ui;
+    rig_engine_t *engine;
+    rut_object_t *camera;
+    rut_matrix_stack_t *matrix_stack;
+    float x;
+    float y;
+    float *ray_origin;
+    float *ray_direction;
+    rig_entity_t *selected_entity;
+    float selected_distance;
+    int selected_index;
+} pick_context_t;
+
+static rut_traverse_visit_flags_t
+entitygraph_pre_pick_cb(rut_object_t *object, int depth, void *user_data)
+{
+    pick_context_t *pick_ctx = user_data;
+
+    if (rut_object_is(object, RUT_TRAIT_ID_TRANSFORMABLE)) {
+        const cg_matrix_t *matrix = rut_transformable_get_matrix(object);
+        rut_matrix_stack_push(pick_ctx->matrix_stack);
+        rut_matrix_stack_multiply(pick_ctx->matrix_stack, matrix);
+    }
+
+    if (rut_object_get_type(object) == &rig_entity_type) {
+        rig_entity_t *entity = object;
+        rut_component_t *geometry;
+        rut_mesh_t *mesh;
+        int index;
+        float distance;
+        bool hit;
+        float transformed_ray_origin[3];
+        float transformed_ray_direction[3];
+        cg_matrix_t transform;
+        rut_object_t *input;
+
+        input = rig_entity_get_component(entity, RUT_COMPONENT_TYPE_INPUT);
+
+        if (input) {
+            if (rut_object_is(input, RUT_TRAIT_ID_PICKABLE)) {
+                rut_matrix_stack_get(pick_ctx->matrix_stack, &transform);
+
+                if (rut_pickable_pick(input,
+                                      pick_ctx->camera,
+                                      &transform,
+                                      pick_ctx->x,
+                                      pick_ctx->y)) {
+                    pick_ctx->selected_entity = entity;
+                    return RUT_TRAVERSE_VISIT_BREAK;
+                } else
+                    return RUT_TRAVERSE_VISIT_CONTINUE;
+            } else {
+                geometry = rig_entity_get_component(
+                    entity, RUT_COMPONENT_TYPE_GEOMETRY);
+            }
+        } else {
+#warning "FIXME: shouldn't automatically fall back to pick geometry component"
+            geometry =
+                rig_entity_get_component(entity, RUT_COMPONENT_TYPE_GEOMETRY);
+        }
+
+        /* Get a model we can pick against */
+        if (!(geometry && rut_object_is(geometry, RUT_TRAIT_ID_MESHABLE) &&
+              (mesh = rut_meshable_get_mesh(geometry))))
+            return RUT_TRAVERSE_VISIT_CONTINUE;
+
+        /* transform the ray into the model space */
+        memcpy(transformed_ray_origin, pick_ctx->ray_origin, 3 * sizeof(float));
+        memcpy(transformed_ray_direction,
+               pick_ctx->ray_direction,
+               3 * sizeof(float));
+
+        rut_matrix_stack_get(pick_ctx->matrix_stack, &transform);
+
+        transform_ray(&transform,
+                      true, /* inverse of the transform */
+                      transformed_ray_origin,
+                      transformed_ray_direction);
+
+#if 0
+        c_debug ("transformed ray %f,%f,%f %f,%f,%f\n",
+                 transformed_ray_origin[0],
+                 transformed_ray_origin[1],
+                 transformed_ray_origin[2],
+                 transformed_ray_direction[0],
+                 transformed_ray_direction[1],
+                 transformed_ray_direction[2]);
+#endif
+
+        /* intersect the transformed ray with the model engine */
+        hit = rut_util_intersect_mesh(mesh,
+                                      transformed_ray_origin,
+                                      transformed_ray_direction,
+                                      &index,
+                                      &distance);
+
+        if (hit) {
+            const cg_matrix_t *view =
+                rut_camera_get_view_transform(pick_ctx->camera);
+            float w = 1;
+
+            /* to compare intersection distances we find the actual point of ray
+             * intersection in model coordinates and transform that into eye
+             * coordinates */
+
+            transformed_ray_direction[0] *= distance;
+            transformed_ray_direction[1] *= distance;
+            transformed_ray_direction[2] *= distance;
+
+            transformed_ray_direction[0] += transformed_ray_origin[0];
+            transformed_ray_direction[1] += transformed_ray_origin[1];
+            transformed_ray_direction[2] += transformed_ray_origin[2];
+
+            cg_matrix_transform_point(&transform,
+                                      &transformed_ray_direction[0],
+                                      &transformed_ray_direction[1],
+                                      &transformed_ray_direction[2],
+                                      &w);
+            cg_matrix_transform_point(view,
+                                      &transformed_ray_direction[0],
+                                      &transformed_ray_direction[1],
+                                      &transformed_ray_direction[2],
+                                      &w);
+            distance = transformed_ray_direction[2];
+
+            if (distance > pick_ctx->selected_distance) {
+                pick_ctx->selected_entity = entity;
+                pick_ctx->selected_distance = distance;
+                pick_ctx->selected_index = index;
+            }
+        }
+    }
+
+    return RUT_TRAVERSE_VISIT_CONTINUE;
+}
+
+static rut_traverse_visit_flags_t
+entitygraph_post_pick_cb(rut_object_t *object, int depth, void *user_data)
+{
+    if (rut_object_is(object, RUT_TRAIT_ID_TRANSFORMABLE)) {
+        pick_context_t *pick_ctx = user_data;
+        rut_matrix_stack_pop(pick_ctx->matrix_stack);
+    }
+
+    return RUT_TRAVERSE_VISIT_CONTINUE;
+}
+
+rig_entity_t *
+pick(rig_ui_t *ui,
+     rut_object_t *camera,
+     float x,
+     float y,
+     float ray_origin[3],
+     float ray_direction[3])
+{
+    rig_engine_t *engine = ui->engine;
+    pick_context_t pick_ctx;
+
+    pick_ctx.ui = ui;
+    pick_ctx.engine = engine;
+    pick_ctx.camera = camera;
+    pick_ctx.matrix_stack = ui->pick_matrix_stack;
+    pick_ctx.x = x;
+    pick_ctx.y = y;
+    pick_ctx.selected_distance = -FLT_MAX;
+    pick_ctx.selected_entity = NULL;
+    pick_ctx.ray_origin = ray_origin;
+    pick_ctx.ray_direction = ray_direction;
+
+    rut_graphable_traverse(ui->scene,
+                           RUT_TRAVERSE_DEPTH_FIRST,
+                           entitygraph_pre_pick_cb,
+                           entitygraph_post_pick_cb,
+                           &pick_ctx);
+
+#if 0
+    if (pick_ctx.selected_entity)
+    {
+        c_message("Hit entity, triangle #%d, distance %.2f",
+                  pick_ctx.selected_index, pick_ctx.selected_distance);
+    }
+#endif
+
+    return pick_ctx.selected_entity;
+}
+
+rig_entity_t *
+pick_for_camera(rig_ui_t *ui,
+                rig_entity_t *camera,
+                rut_object_t *camera_component,
+                float x, float y)
+{
+    float ray_position[3], ray_direction[3], screen_pos[2];
+    const float *viewport;
+    const cg_matrix_t *inverse_projection;
+    const cg_matrix_t *camera_view;
+    cg_matrix_t camera_transform;
+    rut_object_t *picked_entity;
+
+    rig_entity_set_camera_view_from_transform(camera);
+
+    viewport = rut_camera_get_viewport(camera_component);
+    inverse_projection = rut_camera_get_inverse_projection(camera_component);
+
+    // c_debug("Camera inverse projection: %p\n", engine->simulator);
+    // cg_debug_matrix_print(inverse_projection);
+
+    camera_view = rut_camera_get_view_transform(camera_component);
+    cg_matrix_get_inverse(camera_view, &camera_transform);
+
+    // c_debug("Camera transform:\n");
+    // cg_debug_matrix_print (&camera_transform);
+
+    rut_camera_transform_window_coordinate(camera_component, &x, &y);
+
+    screen_pos[0] = x;
+    screen_pos[1] = y;
+
+    // c_debug("screen pos x=%f, y=%f\n", x, y);
+
+    rut_util_create_pick_ray(viewport,
+                             inverse_projection,
+                             &camera_transform,
+                             screen_pos,
+                             ray_position,
+                             ray_direction);
+
+#if 0
+    c_debug("ray pos %f,%f,%f dir %f,%f,%f\n",
+            ray_position[0],
+            ray_position[1],
+            ray_position[2],
+            ray_direction[0],
+            ray_direction[1],
+            ray_direction[2]);
+#endif
+
+    picked_entity =
+        pick(ui, camera_component, x, y, ray_position, ray_direction);
+
+#if 0
+    if (picked_entity)
+    {
+        rut_property_t *label =
+            rut_introspectable_lookup_property (picked_entity, "label");
+
+        c_debug ("Entity picked: %s\n", rut_property_get_text (label));
+    }
+#endif
+
+    return picked_entity;
+}
+
+static rut_object_t *
+pick_for_event(rig_ui_t *ui, rut_input_event_t *event)
+{
+    rut_input_event_type_t type = rut_input_event_get_type(event);
+
+    /* TODO: setup up event->camera and don't assume we only have
+     * one camera that can have associated input events */
+    rig_entity_t *camera = ui->play_camera;
+    rut_object_t *camera_component = ui->play_camera_component;
+
+    switch (type) {
+    case RUT_INPUT_EVENT_TYPE_KEY:
+    case RUT_INPUT_EVENT_TYPE_TEXT:
+        return pick_for_camera(ui,
+                               camera,
+                               camera_component,
+                               ui->engine->shell->mouse_x,
+                               ui->engine->shell->mouse_y);
+    case RUT_INPUT_EVENT_TYPE_MOTION:
+        return pick_for_camera(ui,
+                               camera,
+                               camera_component,
+                               rut_motion_event_get_x(event),
+                               rut_motion_event_get_y(event));
+    }
+
+    return NULL;
+}
+
+rut_input_event_status_t
+rig_ui_handle_input_event(rig_ui_t *ui, rut_input_event_t *event)
+{
+    rut_input_event_status_t status = RUT_INPUT_EVENT_STATUS_UNHANDLED;
+    rig_entity_t *entity = pick_for_event(ui, event);
+    rut_object_t *inputable =
+        rig_entity_get_component(entity, RUT_COMPONENT_TYPE_INPUT);
+
+    /* entity should be NULL if we didn't find an inputable */
+    c_return_val_if_fail(inputable, RUT_INPUT_EVENT_STATUS_UNHANDLED);
+
+    while (inputable) {
+
+        status = rut_inputable_handle_event(inputable, event);
+
+        if (status == RUT_INPUT_EVENT_STATUS_HANDLED)
+            break;
+
+#if 0
+        inputable = rut_inputable_get_next(inputable);
+#else
+#warning "TODO: support rut_inputable_get_next()"
+        break;
+#endif
+    }
+
+    return status;
+}
