@@ -70,8 +70,6 @@ struct _rut_input_region_t {
 
     rut_graphable_props_t graphable;
 
-    bool hud_mode;
-
     rut_input_region_callback_t callback;
     void *user_data;
 };
@@ -139,34 +137,23 @@ _rut_input_region_pick(rut_object_t *inputable,
     float poly[16];
     const cg_matrix_t *view = rut_camera_get_view_transform(camera);
 
-/* XXX: if we get rid of hud mode we can also avoid needing
- * a pointer to a rut_shell_t */
-#warning "todo: simplify rut_input_region_t by removing ::hud_mode"
-    if (region->hud_mode) {
-        rut_shell_t *shell = rut_camera_get_shell(camera);
-        modelview = &shell->identity_matrix;
-    } else {
-        if (graphable_modelview)
-            modelview = graphable_modelview;
-        else {
-            matrix = *view;
-            rut_graphable_apply_transform(inputable, &matrix);
-            modelview = &matrix;
-        }
+    if (graphable_modelview)
+        modelview = graphable_modelview;
+    else {
+        matrix = *view;
+        rut_graphable_apply_transform(inputable, &matrix);
+        modelview = &matrix;
     }
 
     switch (region->shape.any.type) {
     case RUT_INPUT_SHAPE_TYPE_RECTANGLE: {
-        if (!region->hud_mode) {
-            const cg_matrix_t *projection = rut_camera_get_projection(camera);
-            const float *viewport = rut_camera_get_viewport(camera);
-            rect_to_screen_polygon(&region->shape.rectangle,
-                                   modelview,
-                                   projection,
-                                   viewport,
-                                   poly);
-        } else
-            poly_init_from_rectangle(poly, &region->shape.rectangle);
+        const cg_matrix_t *projection = rut_camera_get_projection(camera);
+        const float *viewport = rut_camera_get_viewport(camera);
+        rect_to_screen_polygon(&region->shape.rectangle,
+                               modelview,
+                               projection,
+                               viewport,
+                               poly);
 
 #if 0
         c_debug ("transformed input region\n");
@@ -378,8 +365,3 @@ rut_input_region_set_circle(rut_input_region_t *region,
     region->shape.circle.r_squared = radius * radius;
 }
 
-void
-rut_input_region_set_hud_mode(rut_input_region_t *region, bool hud_mode)
-{
-    region->hud_mode = hud_mode;
-}

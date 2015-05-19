@@ -65,11 +65,4 @@ void rut_input_region_set_circle(rut_input_region_t *region,
                                  float y0,
                                  float radius);
 
-/* XXX: Note: the plan is to remove this api at some point
- *
- * If HUD mode is true then the region isn't transformed by the
- * camera's view transform so the region is in window coordinates.
- */
-void rut_input_region_set_hud_mode(rut_input_region_t *region, bool hud_mode);
-
 #endif /* __RUT_INPUT_REGION_H__ */
