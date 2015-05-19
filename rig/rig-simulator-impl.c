@@ -517,9 +517,9 @@ rig_simulator_input_handler(rut_input_event_t *event,
     rig_simulator_t *simulator = user_data;
     rig_engine_t *engine = simulator->engine;
 
-    if (engine->play_mode)
-        rig_ui_code_modules_handle_input(engine->play_mode_ui,
-                                         event);
+    rig_ui_code_modules_handle_input(engine->ui, event);
+
+    rig_ui_handle_input_event(engine->ui, event);
 
     return RUT_INPUT_EVENT_STATUS_UNHANDLED;
 }
@@ -799,7 +799,8 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
 
     rut_shell_dispatch_input_events(shell);
 
-    rig_ui_code_modules_update(engine->current_ui);
+    rig_ui_code_modules_update(engine->ui);
+
 #if 0
     static int counter = 0;
 

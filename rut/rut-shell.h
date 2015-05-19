@@ -100,6 +100,8 @@ typedef struct {
 
     bool fullscreen;
 
+    rut_object_t *input_camera;
+
     union {
 #ifdef USE_SDL
         struct {
@@ -408,10 +410,6 @@ struct _rut_shell_t {
     void *user_data;
 
     c_list_t input_cb_list;
-    c_llist_t *input_cameras;
-
-    /* Used to handle input events in window coordinates */
-    rut_object_t *window_camera;
 
     /* Last known position of the mouse */
     float mouse_x;
@@ -428,9 +426,6 @@ struct _rut_shell_t {
      * invoking the grab callbacks so that we can cope with multiple
      * grabs being removed from the list while one is being processed */
     rut_shell_grab_t *next_grab;
-
-    rut_object_t *keyboard_focus_object;
-    c_destroy_func_t keyboard_ungrab_cb;
 
     rut_object_t *clipboard;
 
@@ -552,17 +547,6 @@ void rut_android_shell_set_application(rut_shell_t *shell,
 
 bool rut_shell_get_headless(rut_shell_t *shell);
 
-/* XXX: Basically just a hack for now to effectively relate input events to
- * a cg_framebuffer_t and so we have a way to consistently associate a
- * camera with all input events.
- *
- * The camera should provide an orthographic projection into input device
- * coordinates and it's assume to be automatically updated according to
- * window resizes.
- */
-void rut_shell_set_window_camera(rut_shell_t *shell,
-                                 rut_object_t *window_camera);
-
 void rut_shell_main(rut_shell_t *shell);
 
 /*
@@ -618,14 +602,6 @@ void rut_shell_end_redraw(rut_shell_t *shell);
  * update, the new frame has been rendered and presented to the user.
  */
 void rut_shell_finish_frame(rut_shell_t *shell);
-
-void rut_shell_add_input_camera(rut_shell_t *shell,
-                                rut_object_t *camera,
-                                rut_object_t *scenegraph);
-
-void rut_shell_remove_input_camera(rut_shell_t *shell,
-                                   rut_object_t *camera,
-                                   rut_object_t *scenegraph);
 
 /**
  * rut_shell_grab_input:
@@ -893,6 +869,11 @@ void rut_shell_onscreen_set_fullscreen(rut_shell_onscreen_t *onscreen,
 bool rut_shell_onscreen_get_fullscreen(rut_shell_onscreen_t *onscreen);
 
 void rut_shell_onscreen_show(rut_shell_onscreen_t *onscreen);
+
+void rut_shell_onscreen_set_input_camera(rut_shell_onscreen_t *onscreen,
+                                         rut_object_t *camera);
+
+rut_object_t *rut_shell_onscreen_get_input_camera(rut_shell_onscreen_t *onscreen);
 
 /**
  * rut_shell_quit:

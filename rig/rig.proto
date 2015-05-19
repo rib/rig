@@ -385,6 +385,7 @@ message Event
   optional PointerMove pointer_move=3;
   optional PointerButton pointer_button=4;
   optional Key key=5;
+  optional sint64 camera_id=6; //XXX ID
 }
 
 message Operation

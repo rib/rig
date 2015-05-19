@@ -123,68 +123,6 @@ rut_shell_add_input_callback(rut_shell_t *shell,
         &shell->input_cb_list, callback, user_data, destroy_cb);
 }
 
-typedef struct _input_camera_t {
-    rut_object_t *camera;
-    rut_object_t *scenegraph;
-} input_camera_t;
-
-void
-rut_shell_add_input_camera(rut_shell_t *shell,
-                           rut_object_t *camera,
-                           rut_object_t *scenegraph)
-{
-    input_camera_t *input_camera = c_slice_new(input_camera_t);
-
-    input_camera->camera = rut_object_ref(camera);
-
-    if (scenegraph)
-        input_camera->scenegraph = rut_object_ref(scenegraph);
-    else
-        input_camera->scenegraph = NULL;
-
-    shell->input_cameras = c_llist_prepend(shell->input_cameras, input_camera);
-}
-
-static void
-input_camera_free(input_camera_t *input_camera)
-{
-    rut_object_unref(input_camera->camera);
-    if (input_camera->scenegraph)
-        rut_object_unref(input_camera->scenegraph);
-    c_slice_free(input_camera_t, input_camera);
-}
-
-void
-rut_shell_remove_input_camera(rut_shell_t *shell,
-                              rut_object_t *camera,
-                              rut_object_t *scenegraph)
-{
-    c_llist_t *l;
-
-    for (l = shell->input_cameras; l; l = l->next) {
-        input_camera_t *input_camera = l->data;
-        if (input_camera->camera == camera &&
-            input_camera->scenegraph == scenegraph) {
-            input_camera_free(input_camera);
-            shell->input_cameras = c_llist_delete_link(shell->input_cameras, l);
-            return;
-        }
-    }
-
-    c_warning("Failed to find input camera to remove from shell");
-}
-
-static void
-_rut_shell_remove_all_input_cameras(rut_shell_t *shell)
-{
-    c_llist_t *l;
-
-    for (l = shell->input_cameras; l; l = l->next)
-        input_camera_free(l->data);
-    c_llist_free(shell->input_cameras);
-    shell->input_cameras = NULL;
-}
-
 rut_object_t *
 rut_input_event_get_camera(rut_input_event_t *event)
 {
@@ -335,156 +273,6 @@ rut_text_event_get_text(rut_input_event_t *event)
 }
 
 static void
-poly_init_from_rectangle(float *poly, float x0, float y0, float x1, float y1)
-{
-    poly[0] = x0;
-    poly[1] = y0;
-    poly[2] = 0;
-    poly[3] = 1;
-
-    poly[4] = x0;
-    poly[5] = y1;
-    poly[6] = 0;
-    poly[7] = 1;
-
-    poly[8] = x1;
-    poly[9] = y1;
-    poly[10] = 0;
-    poly[11] = 1;
-
-    poly[12] = x1;
-    poly[13] = y0;
-    poly[14] = 0;
-    poly[15] = 1;
-}
-
-/* Given an (x0,y0) (x1,y1) rectangle this transforms it into
- * a polygon in window coordinates that can be intersected
- * with input coordinates for picking.
- */
-static void
-rect_to_screen_polygon(float x0,
-                       float y0,
-                       float x1,
-                       float y1,
-                       const cg_matrix_t *modelview,
-                       const cg_matrix_t *projection,
-                       const float *viewport,
-                       float *poly)
-{
-    poly_init_from_rectangle(poly, x0, y0, x1, y1);
-
-    rut_util_fully_transform_points(modelview, projection, viewport, poly, 4);
-}
-
-typedef struct _camera_pick_state_t {
-    rut_object_t *camera;
-    rut_input_event_t *event;
-    float x, y;
-    rut_object_t *picked_object;
-} camera_pick_state_t;
-
-static rut_traverse_visit_flags_t
-camera_pre_pick_region_cb(rut_object_t *object, int depth, void *user_data)
-{
-    camera_pick_state_t *state = user_data;
-
-    if (rut_object_get_type(object) == &rut_ui_viewport_type) {
-        rut_ui_viewport_t *ui_viewport = object;
-        rut_object_t *camera = state->camera;
-        const cg_matrix_t *view = rut_camera_get_view_transform(camera);
-        const cg_matrix_t *projection = rut_camera_get_projection(camera);
-        const float *viewport = rut_camera_get_viewport(camera);
-        rut_object_t *parent = rut_graphable_get_parent(object);
-        cg_matrix_t transform;
-        float poly[16];
-
-        transform = *view;
-        rut_graphable_apply_transform(parent, &transform);
-
-        rect_to_screen_polygon(0,
-                               0,
-                               rut_ui_viewport_get_width(ui_viewport),
-                               rut_ui_viewport_get_height(ui_viewport),
-                               &transform,
-                               projection,
-                               viewport,
-                               poly);
-
-        if (!rut_util_point_in_screen_poly(
-                state->x, state->y, poly, sizeof(float) * 4, 4))
-            return RUT_TRAVERSE_VISIT_SKIP_CHILDREN;
-    }
-
-    if (rut_object_is(object, RUT_TRAIT_ID_PICKABLE) &&
-        rut_pickable_pick(object,
-                          state->camera,
-                          NULL, /* pre-computed modelview */
-                          state->x,
-                          state->y)) {
-        state->picked_object = object;
-    }
-
-    return RUT_TRAVERSE_VISIT_CONTINUE;
-}
-
-static rut_object_t *
-_rut_shell_get_scenegraph_event_target(rut_shell_t *shell,
-                                       rut_input_event_t *event)
-{
-    rut_object_t *picked_object = NULL;
-    rut_object_t *picked_camera = NULL;
-    c_llist_t *l;
-
-    /* Key events by default go to the object that has key focus. If
-     * there is no object with key focus then we will let them go to
-     * whichever object the pointer is over to implement a kind of
-     * sloppy focus as a fallback */
-    if (shell->keyboard_focus_object &&
-        (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_KEY ||
-         rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_TEXT))
-        return shell->keyboard_focus_object;
-
-    for (l = shell->input_cameras; l; l = l->next) {
-        input_camera_t *input_camera = l->data;
-        rut_object_t *camera = input_camera->camera;
-        rut_object_t *scenegraph = input_camera->scenegraph;
-        float x = shell->mouse_x;
-        float y = shell->mouse_y;
-        camera_pick_state_t state;
-
-        event->camera = camera;
-        event->input_transform = rut_camera_get_input_transform(camera);
-
-        if (scenegraph) {
-            state.camera = camera;
-            state.event = event;
-            state.x = x;
-            state.y = y;
-            state.picked_object = NULL;
-
-            rut_graphable_traverse(scenegraph,
-                                   RUT_TRAVERSE_DEPTH_FIRST,
-                                   camera_pre_pick_region_cb,
-                                   NULL, /* post_children_cb */
-                                   &state);
-
-            if (state.picked_object) {
-                picked_object = state.picked_object;
-                picked_camera = camera;
-            }
-        }
-    }
-
-    if (picked_object) {
-        event->camera = picked_camera;
-        event->input_transform = rut_camera_get_input_transform(picked_camera);
-    }
-
-    return picked_object;
-}
-
-static void
 cancel_current_drop_offer_taker(rut_shell_onscreen_t *onscreen)
 {
     rut_shell_t *shell = onscreen->shell;
@@ -513,9 +301,7 @@ rut_shell_dispatch_input_event(rut_shell_t *shell, rut_input_event_t *event)
 {
     rut_input_event_status_t status = RUT_INPUT_EVENT_STATUS_UNHANDLED;
     rut_shell_onscreen_t *onscreen = rut_input_event_get_onscreen(event);
-    c_llist_t *l;
     rut_closure_t *c, *tmp;
-    rut_object_t *target;
     rut_shell_grab_t *grab;
 
     /* Keep track of the last known position of the mouse so that we can
@@ -548,17 +334,6 @@ rut_shell_dispatch_input_event(rut_shell_t *shell, rut_input_event_t *event)
         }
     }
 
-    event->camera = shell->window_camera;
-
-    c_list_for_each_safe(c, tmp, &shell->input_cb_list, list_node)
-    {
-        rut_input_callback_t cb = c->function;
-
-        status = cb(event, c->user_data);
-        if (status == RUT_INPUT_EVENT_STATUS_HANDLED)
-            goto handled;
-    }
-
     c_list_for_each_safe(grab, shell->next_grab, &shell->grabs, list_node)
     {
         rut_object_t *old_camera = event->camera;
@@ -577,51 +352,13 @@ rut_shell_dispatch_input_event(rut_shell_t *shell, rut_input_event_t *event)
         }
     }
 
-    for (l = shell->input_cameras; l; l = l->next) {
-        input_camera_t *input_camera = l->data;
-        rut_object_t *camera = input_camera->camera;
-        c_llist_t *input_regions = rut_camera_get_input_regions(camera);
-        c_llist_t *l2;
+    c_list_for_each_safe(c, tmp, &shell->input_cb_list, list_node)
+    {
+        rut_input_callback_t cb = c->function;
 
-        event->camera = camera;
-        event->input_transform = rut_camera_get_input_transform(camera);
-
-        for (l2 = input_regions; l2; l2 = l2->next) {
-            rut_input_region_t *region = l2->data;
-
-            if (rut_pickable_pick(region,
-                                  camera,
-                                  NULL, /* pre-computed modelview */
-                                  shell->mouse_x,
-                                  shell->mouse_y)) {
-                status = rut_inputable_handle_event(region, event);
-
-                if (status == RUT_INPUT_EVENT_STATUS_HANDLED)
-                    goto handled;
-            }
-        }
-    }
-
-    /* If nothing has handled the event by now we'll try to pick a
-     * single object from the scenegraphs attached to the cameras that
-     * will handle the event */
-    target = _rut_shell_get_scenegraph_event_target(shell, event);
-
-    /* Send the event to the object we found. If it doesn't handle it
-     * then we'll also bubble the event up to any inputable parents of
-     * the object until one of them handles it */
-    while (target) {
-        if (rut_object_is(target, RUT_TRAIT_ID_INPUTABLE)) {
-            status = rut_inputable_handle_event(target, event);
-
-            if (status == RUT_INPUT_EVENT_STATUS_HANDLED)
-                break;
-        }
-
-        if (!rut_object_is(target, RUT_TRAIT_ID_GRAPHABLE))
-            break;
-
-        target = rut_graphable_get_parent(target);
+        status = cb(event, c->user_data);
+        if (status == RUT_INPUT_EVENT_STATUS_HANDLED)
+            goto handled;
     }
 
 handled:
@@ -659,8 +396,6 @@ _rut_shell_free(void *object)
 {
     rut_shell_t *shell = object;
 
-    rut_closure_list_disconnect_all(&shell->input_cb_list);
-
     while (!c_list_empty(&shell->grabs)) {
         rut_shell_grab_t *first_grab =
             c_container_of(shell->grabs.next, rut_shell_grab_t, list_node);
@@ -668,7 +403,7 @@ _rut_shell_free(void *object)
         _rut_shell_remove_grab_link(shell, first_grab);
     }
 
-    _rut_shell_remove_all_input_cameras(shell);
+    rut_closure_list_disconnect_all(&shell->input_cb_list);
 
     rut_closure_list_disconnect_all(&shell->start_paint_callbacks);
     rut_closure_list_disconnect_all(&shell->post_paint_callbacks);
@@ -711,8 +446,8 @@ rut_shell_new(rut_shell_paint_callback_t paint,
 
     shell->input_queue = rut_input_queue_new(shell);
 
-    c_list_init(&shell->input_cb_list);
     c_list_init(&shell->grabs);
+    c_list_init(&shell->input_cb_list);
     c_list_init(&shell->onscreens);
 
     rut_property_context_init(&shell->property_ctx);
@@ -953,50 +688,6 @@ _rut_shell_init(rut_shell_t *shell)
                                         14 * PANGO_SCALE);
 #endif
 
-    }
-}
-
-void
-rut_shell_set_window_camera(rut_shell_t *shell,
-                            rut_object_t *window_camera)
-{
-    shell->window_camera = window_camera;
-}
-
-void
-rut_shell_grab_key_focus(rut_shell_t *shell,
-                         rut_object_t *inputable,
-                         c_destroy_func_t ungrab_callback)
-{
-    c_return_if_fail(rut_object_is(inputable, RUT_TRAIT_ID_INPUTABLE));
-
-    /* If something tries to set the keyboard focus to the same object
-     * then we probably do still want to call the keyboard ungrab
-     * callback for the last object that set it. The code may be
-     * assuming that when this function is called it definetely has the
-     * keyboard focus and that the callback will definetely called at
-     * some point. Otherwise this function is more like a request and it
-     * should have a way of reporting whether the request succeeded */
-
-    rut_object_ref(inputable);
-
-    rut_shell_ungrab_key_focus(shell);
-
-    shell->keyboard_focus_object = inputable;
-    shell->keyboard_ungrab_cb = ungrab_callback;
-}
-
-void
-rut_shell_ungrab_key_focus(rut_shell_t *shell)
-{
-    if (shell->keyboard_focus_object) {
-        if (shell->keyboard_ungrab_cb)
-            shell->keyboard_ungrab_cb(shell->keyboard_focus_object);
-
-        rut_object_unref(shell->keyboard_focus_object);
-
-        shell->keyboard_focus_object = NULL;
-        shell->keyboard_ungrab_cb = NULL;
     }
 }
 
@@ -1403,6 +1094,28 @@ void
 rut_shell_onscreen_show(rut_shell_onscreen_t *onscreen)
 {
     cg_onscreen_show(onscreen->cg_onscreen);
+}
+
+void
+rut_shell_onscreen_set_input_camera(rut_shell_onscreen_t *onscreen,
+                                    rut_object_t *camera)
+{
+    if (onscreen->input_camera == camera)
+        return;
+
+    if (onscreen->input_camera) {
+        rut_object_unref(onscreen->input_camera);
+        onscreen->input_camera = NULL;
+    }
+
+    if (camera)
+        onscreen->input_camera = rut_object_ref(camera);
+}
+
+rut_object_t *
+rut_shell_onscreen_get_input_camera(rut_shell_onscreen_t *onscreen)
+{
+    return onscreen->input_camera;
 }
 
 void

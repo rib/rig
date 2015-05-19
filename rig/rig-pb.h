@@ -232,7 +232,6 @@ struct _rig_pb_un_serializer_t {
 
     c_llist_t *assets;
     c_llist_t *entities;
-    rig_entity_t *light;
     c_llist_t *controllers;
 
     c_hash_table_t *id_to_object_map;

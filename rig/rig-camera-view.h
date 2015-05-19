@@ -87,13 +87,6 @@ struct _rig_camera_view_t {
 
     bool play_mode;
 
-    /* picking ray */
-    cg_pipeline_t *picking_ray_color;
-    cg_primitive_t *picking_ray;
-    bool debug_pick_ray;
-
-    rut_matrix_stack_t *matrix_stack;
-
     rut_graphable_props_t graphable;
     rut_paintable_props_t paintable;
 
@@ -118,10 +111,6 @@ struct _rig_camera_view_t {
 
     int fb_x;
     int fb_y;
-
-    rig_entity_t *view_camera;
-    rut_object_t *view_camera_component;
-    rut_input_region_t *input_region;
 
     rig_camera_t *composite_camera;
 

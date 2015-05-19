@@ -60,11 +60,19 @@ struct _rig_ui_t {
     c_llist_t *assets;
 
     rut_object_t *scene;
+
+    c_llist_t *cameras;
+    c_llist_t *lights;
     c_llist_t *controllers;
 
-    rig_entity_t *light;
+    /* TODO: remove the limitation of just one pov camera */
     rig_entity_t *play_camera;
     rut_object_t *play_camera_component;
+
+    /* TODO: remove the limitation of rendering with only one light */
+    rig_entity_t *light;
+
+    rut_matrix_stack_t *pick_matrix_stack;
 
     uint8_t *dso_data;
     int dso_len;
@@ -106,5 +114,8 @@ void rig_ui_register_entity(rig_ui_t *ui, rig_entity_t *entity);
 void rig_ui_code_modules_load(rig_ui_t *ui);
 void rig_ui_code_modules_update(rig_ui_t *ui);
 void rig_ui_code_modules_handle_input(rig_ui_t *ui, rut_input_event_t *event);
+
+rut_input_event_status_t rig_ui_handle_input_event(rig_ui_t *ui,
+                                                   rut_input_event_t *event);
 
 #endif /* _RIG_UI_H_ */
