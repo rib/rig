@@ -181,9 +181,6 @@ _rig_asset_init_type(void)
 #undef TYPE
 }
 
-#if defined(RIG_EDITOR_ENABLED)
-#endif /* RIG_EDITOR_ENABLED */
-
 static rig_asset_t *
 asset_new_from_image_data(rig_engine_t *engine,
                           const char *path,
