@@ -1132,7 +1132,7 @@ rig_asset_thumbnail(rig_asset_t *asset,
 }
 
 cg_texture_t *
-rig_asset_get_texture(rig_asset_t *asset)
+rig_asset_get_thumbnail(rig_asset_t *asset)
 {
     return asset->thumbnail;
 }

@@ -222,7 +222,7 @@ input_cb(rut_input_region_t *region, rut_input_event_t *event, void *user_data)
 
             asset_inspector->drop_preview =
                 rut_nine_slice_new(asset_inspector->shell,
-                                   rig_asset_get_texture(asset),
+                                   rig_asset_get_thumbnail(asset),
                                    0,
                                    0,
                                    0,
@@ -353,7 +353,7 @@ rig_asset_inspector_set_asset(rut_object_t *object,
     if (asset_object) {
         asset_inspector->asset = rut_object_ref(asset);
 
-        texture = rig_asset_get_texture(asset);
+        texture = rig_asset_get_thumbnail(asset);
         if (texture) {
             asset_inspector->image =
                 rut_image_new(asset_inspector->shell, texture);

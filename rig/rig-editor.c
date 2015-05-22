@@ -834,7 +834,7 @@ add_search_result(rig_editor_t *editor, rut_object_t *result)
     if (rut_object_get_type(result) == &rig_asset_type) {
         rig_asset_t *asset = result;
 
-        texture = rig_asset_get_texture(asset);
+        texture = rig_asset_get_thumbnail(asset);
 
         if (texture) {
             rut_image_t *image = rut_image_new(engine->shell, texture);

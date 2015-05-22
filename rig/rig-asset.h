@@ -130,7 +130,7 @@ rut_closure_t *rig_asset_thumbnail(rig_asset_t *asset,
                                    void *user_data,
                                    rut_closure_destroy_callback_t destroy_cb);
 
-cg_texture_t *rig_asset_get_texture(rig_asset_t *asset);
+cg_texture_t *rig_asset_get_thumbnail(rig_asset_t *asset);
 
 #endif /* RIG_EDITOR_ENABLED */
 
