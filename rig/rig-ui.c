@@ -678,31 +678,25 @@ entitygraph_pre_pick_cb(rut_object_t *object, int depth, void *user_data)
         rut_object_t *input;
 
         input = rig_entity_get_component(entity, RUT_COMPONENT_TYPE_INPUT);
+        if (!input)
+            return RUT_TRAVERSE_VISIT_CONTINUE;
 
-        if (input) {
-            if (rut_object_is(input, RUT_TRAIT_ID_PICKABLE)) {
-                rut_matrix_stack_get(pick_ctx->matrix_stack, &transform);
+        if (rut_object_is(input, RUT_TRAIT_ID_PICKABLE)) {
+            rut_matrix_stack_get(pick_ctx->matrix_stack, &transform);
 
-                if (rut_pickable_pick(input,
-                                      pick_ctx->camera,
-                                      &transform,
-                                      pick_ctx->x,
-                                      pick_ctx->y)) {
-                    pick_ctx->selected_entity = entity;
-                    return RUT_TRAVERSE_VISIT_BREAK;
-                } else
-                    return RUT_TRAVERSE_VISIT_CONTINUE;
-            } else {
-                geometry = rig_entity_get_component(
-                    entity, RUT_COMPONENT_TYPE_GEOMETRY);
-            }
-        } else {
-#warning "FIXME: shouldn't automatically fall back to pick geometry component"
-            geometry =
-                rig_entity_get_component(entity, RUT_COMPONENT_TYPE_GEOMETRY);
+            if (rut_pickable_pick(input,
+                                  pick_ctx->camera,
+                                  &transform,
+                                  pick_ctx->x,
+                                  pick_ctx->y)) {
+                pick_ctx->selected_entity = entity;
+                return RUT_TRAVERSE_VISIT_BREAK;
+            } else
+                return RUT_TRAVERSE_VISIT_CONTINUE;
         }
 
-        /* Get a model we can pick against */
+        geometry = rig_entity_get_component(entity, RUT_COMPONENT_TYPE_GEOMETRY);
+
         if (!(geometry && rut_object_is(geometry, RUT_TRAIT_ID_MESHABLE) &&
               (mesh = rut_meshable_get_mesh(geometry))))
             return RUT_TRAVERSE_VISIT_CONTINUE;
@@ -928,10 +922,14 @@ rig_ui_handle_input_event(rig_ui_t *ui, rut_input_event_t *event)
 {
     rut_input_event_status_t status = RUT_INPUT_EVENT_STATUS_UNHANDLED;
     rig_entity_t *entity = pick_for_event(ui, event);
-    rut_object_t *inputable =
-        rig_entity_get_component(entity, RUT_COMPONENT_TYPE_INPUT);
+    rut_object_t *inputable;
 
-    /* entity should be NULL if we didn't find an inputable */
+    if (!entity)
+        return status;
+
+    inputable = rig_entity_get_component(entity, RUT_COMPONENT_TYPE_INPUT);
+
+    /* entity should only be NULL if we didn't find an inputable */
     c_return_val_if_fail(inputable, RUT_INPUT_EVENT_STATUS_UNHANDLED);
 
     while (inputable) {
