@@ -162,9 +162,6 @@ frontend_connect_cb(rig_simulator_t *simulator,
     const char *ui_filename = user_data;
 
     c_debug("frontend_connect_cb\n");
-    rig_simulator_load_file(simulator, ui_filename);
-
-    rig_simulator_reload_frontend_ui(simulator, simulator->engine->ui);
 }
 
 static void

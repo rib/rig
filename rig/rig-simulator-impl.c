@@ -412,6 +412,8 @@ simulator_peer_connected(rig_pb_rpc_client_t *pb_client,
 
     simulator->connected = true;
 
+    rig_simulator_reload_frontend_ui(simulator, simulator->engine->ui);
+
     if (simulator->connected_callback)
         simulator->connected_callback(simulator, simulator->connected_data);
 
@@ -604,6 +606,8 @@ rig_simulator_init(rut_shell_t *shell, void *user_data)
 
     rut_shell_add_input_callback(
         simulator->shell, rig_simulator_input_handler, simulator, NULL);
+
+    rig_simulator_load_file(simulator, simulator->ui_filename);
 }
 
 rig_simulator_t *
