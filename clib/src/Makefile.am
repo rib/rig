@@ -96,6 +96,8 @@ dist_source = \
 	$(clib_common_source) \
 	$(sfmt_source) \
 	cmisc-emscripten.c \
+	clib-web.js \
+	clib-web.h \
 	Makefile.sources \
 	Makefile.emscripten
 
