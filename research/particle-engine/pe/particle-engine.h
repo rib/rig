@@ -47,25 +47,25 @@ void particle_engine_free(struct particle_engine *engine);
  * This maps the particle's vertices buffer according to the given access
  * flags.
  */
-inline void particle_engine_push_buffer(struct particle_engine *engine,
-					cg_buffer_access_t access,
-					cg_buffer_map_hint_t hints);
+void particle_engine_push_buffer(struct particle_engine *engine,
+                                 cg_buffer_access_t access,
+                                 cg_buffer_map_hint_t hints);
 
 /*
  * This unmaps the internal attribute buffer, writing out any changes made to
  * the particle vertices.
  */
-inline void particle_engine_pop_buffer(struct particle_engine *engine);
+void particle_engine_pop_buffer(struct particle_engine *engine);
 
 /*
  * Returns a pointer to the given particle's position as an array of floats [x, y, z].
  */
-inline float *particle_engine_get_particle_position(struct particle_engine *engine, int index);
+float *particle_engine_get_particle_position(struct particle_engine *engine, int index);
 
 /*
  * Returns a pointer to the given particle's color.
  */
-inline cg_color_t *particle_engine_get_particle_color(struct particle_engine *engine, int index);
+cg_color_t *particle_engine_get_particle_color(struct particle_engine *engine, int index);
 
 /*
  * Paint function.

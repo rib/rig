@@ -114,9 +114,9 @@ void particle_engine_free(struct particle_engine *engine)
     c_free(engine);
 }
 
-inline void particle_engine_push_buffer(struct particle_engine *engine,
-                                        cg_buffer_access_t access,
-                                        cg_buffer_map_hint_t hints)
+void particle_engine_push_buffer(struct particle_engine *engine,
+                                 cg_buffer_access_t access,
+                                 cg_buffer_map_hint_t hints)
 {
     cg_error_t *error = NULL;
 
@@ -129,18 +129,18 @@ inline void particle_engine_push_buffer(struct particle_engine *engine,
     }
 }
 
-inline void particle_engine_pop_buffer(struct particle_engine *engine)
+void particle_engine_pop_buffer(struct particle_engine *engine)
 {
     cg_buffer_unmap(engine->attribute_buffer);
 }
 
-inline float *particle_engine_get_particle_position(struct particle_engine *engine,
+float *particle_engine_get_particle_position(struct particle_engine *engine,
                                                     int index)
 {
     return &engine->vertices[index].position[0];
 }
 
-inline cg_color_t *particle_engine_get_particle_color(struct particle_engine *engine,
+cg_color_t *particle_engine_get_particle_color(struct particle_engine *engine,
                                                       int index)
 {
     return &engine->vertices[index].color;
