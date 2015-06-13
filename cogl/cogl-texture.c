@@ -593,89 +593,8 @@ cg_texture_draw_and_read_to_bitmap(cg_texture_t *texture,
                                   error))
         return false;
 
-    /* XXX: As an alleged PowerVR driver bug workaround where the driver
-     * is apparently not maintaining the alpha component of some
-     * framebuffers we render the alpha component of the texture
-     * separately to be sure we retrieve all components of the texture.
-     *
-     * TODO: verify if this is still an issue
-     */
-#if 0
-    if (_cg_pixel_format_has_alpha(_cg_texture_get_format(texture))) {
-        uint8_t *srcdata;
-        uint8_t *dstdata;
-        uint8_t *srcpixel;
-        uint8_t *dstpixel;
-        int target_width = cg_bitmap_get_width(target_bmp);
-        int target_height = cg_bitmap_get_height(target_bmp);
-        int target_rowstride = cg_bitmap_get_rowstride(target_bmp);
-        int bpp =
-            _cg_pixel_format_get_bytes_per_pixel(CG_PIXEL_FORMAT_RGBA_8888);
-        int alpha_rowstride = bpp * target_width;
-        cg_bitmap_t *alpha_bmp;
-        int x, y;
-
-        if ((dstdata = _cg_bitmap_map(target_bmp,
-                                      CG_BUFFER_ACCESS_WRITE,
-                                      CG_BUFFER_MAP_HINT_DISCARD,
-                                      error)) == NULL)
-            goto EXIT;
-
-        /* Create temp bitmap for alpha values */
-        alpha_bmp = _cg_bitmap_new_with_malloc_buffer(dev, target_width,
-                                                      target_height,
-                                                      CG_PIXEL_FORMAT_RGBA_8888,
-                                                      error);
-        if (!alpha_bmp) {
-            _cg_bitmap_unmap(target_bmp);
-            goto EXIT;
-        }
-
-        /* Draw alpha values into RGB channels */
-        cg_pipeline_set_layer_combine(dev->texture_download_pipeline,
-                                      0, /* layer */
-                                      "RGBA = REPLACE (TEXTURE[A])",
-                                      NULL);
-
-        if (!do_texture_draw_and_read(framebuffer,
-                                      dev->texture_download_pipeline,
-                                      texture,
-                                      alpha_bmp,
-                                      viewport,
-                                      error)) {
-            cg_object_unref(alpha_bmp);
-            _cg_bitmap_unmap(target_bmp);
-            goto EXIT;
-        }
-
-        /* Copy temp R to target A */
-
-        /* Note: we don't try to catch errors since "mapping" an
-         * malloc buffer should never fail */
-        srcdata = _cg_bitmap_map(
-            alpha_bmp, CG_BUFFER_ACCESS_READ, 0 /* hints */, NULL);
-
-        for (y = 0; y < target_height; ++y) {
-            for (x = 0; x < target_width; ++x) {
-                srcpixel = srcdata + x * bpp;
-                dstpixel = dstdata + x * bpp;
-                dstpixel[3] = srcpixel[0];
-            }
-            srcdata += alpha_rowstride;
-            dstdata += target_rowstride;
-        }
-
-        _cg_bitmap_unmap(alpha_bmp);
-
-        _cg_bitmap_unmap(target_bmp);
-
-        cg_object_unref(alpha_bmp);
-    }
-#endif
-
     status = true;
 
-//EXIT:
     /* Restore old state */
     cg_framebuffer_pop_matrix(framebuffer);
     _cg_framebuffer_pop_projection(framebuffer);
