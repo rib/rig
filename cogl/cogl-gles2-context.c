@@ -296,7 +296,7 @@ copy_flipped_texture(cg_gles2_context_t *gles2_ctx,
     /* We need to force Cogl to rebind the texture because according to
      * the GL spec a shared texture isn't guaranteed to be updated until
      * is rebound */
-    _cg_get_texture_unit(0)->dirty_gl_texture = true;
+    _cg_get_texture_unit(dev, 0)->dirty_gl_texture = true;
 
     /* Temporarily switch back to the Cogl context */
     winsys->restore_context(dev);

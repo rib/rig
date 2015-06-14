@@ -473,7 +473,7 @@ _cg_device_free(cg_device_t *dev)
 
     _cg_sampler_cache_free(dev->sampler_cache);
 
-    _cg_destroy_texture_units();
+    _cg_destroy_texture_units(dev);
 
     c_ptr_array_free(dev->uniform_names, true);
     c_hash_table_destroy(dev->uniform_name_hash);

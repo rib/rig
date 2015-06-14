@@ -52,12 +52,11 @@ typedef struct {
     /* The final function to chain on to after all of the snippets code
        has been run */
     const char *chain_function;
+    const char *chain_function_suffix;
 
     /* The name of the final generated function */
-    const char *final_name;
-
-    /* A prefix to insert before each generate function name */
-    const char *function_prefix;
+    const char *final_function;
+    const char *final_function_suffix;
 
     /* The return type of all of the functions, or NULL to use void */
     const char *return_type;

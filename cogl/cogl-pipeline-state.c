@@ -610,7 +610,6 @@ cg_pipeline_set_blend(cg_pipeline_t *pipeline,
 
     count = _cg_blend_string_compile(dev,
                                      blend_description,
-                                     CG_BLEND_STRING_CONTEXT_BLENDING,
                                      statements,
                                      error);
     if (!count)

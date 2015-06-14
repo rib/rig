@@ -39,7 +39,8 @@
 
 extern const cg_pipeline_progend_t _cg_pipeline_glsl_progend;
 
-int _cg_pipeline_progend_glsl_get_attrib_location(cg_pipeline_t *pipeline,
+int _cg_pipeline_progend_glsl_get_attrib_location(cg_device_t *dev,
+                                                  cg_pipeline_t *pipeline,
                                                   int name_index);
 
 #endif /* __CG_PIPELINE_PROGEND_GLSL_PRIVATE_H */

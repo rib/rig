@@ -97,7 +97,8 @@ setup_generic_buffered_attribute(cg_device_t *dev,
 {
     int name_index = attribute->name_state->name_index;
     int attrib_location =
-        _cg_pipeline_progend_glsl_get_attrib_location(pipeline, name_index);
+        _cg_pipeline_progend_glsl_get_attrib_location(dev, pipeline,
+                                                      name_index);
 
     if (attrib_location == -1)
         return;
@@ -126,7 +127,8 @@ setup_generic_const_attribute(cg_device_t *dev,
 {
     int name_index = attribute->name_state->name_index;
     int attrib_location =
-        _cg_pipeline_progend_glsl_get_attrib_location(pipeline, name_index);
+        _cg_pipeline_progend_glsl_get_attrib_location(dev, pipeline,
+                                                      name_index);
     int columns;
     int i;
 

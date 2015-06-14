@@ -57,8 +57,6 @@ typedef enum {
     CG_PIPELINE_LAYER_STATE_TEXTURE_TYPE_INDEX,
     CG_PIPELINE_LAYER_STATE_TEXTURE_DATA_INDEX,
     CG_PIPELINE_LAYER_STATE_SAMPLER_INDEX,
-    CG_PIPELINE_LAYER_STATE_COMBINE_INDEX,
-    CG_PIPELINE_LAYER_STATE_COMBINE_CONSTANT_INDEX,
     CG_PIPELINE_LAYER_STATE_POINT_SPRITE_COORDS_INDEX,
     CG_PIPELINE_LAYER_STATE_VERTEX_SNIPPETS_INDEX,
     CG_PIPELINE_LAYER_STATE_FRAGMENT_SNIPPETS_INDEX,
@@ -83,10 +81,6 @@ typedef enum {
         1L << CG_PIPELINE_LAYER_STATE_TEXTURE_DATA_INDEX,
     CG_PIPELINE_LAYER_STATE_SAMPLER =
         1L << CG_PIPELINE_LAYER_STATE_SAMPLER_INDEX,
-    CG_PIPELINE_LAYER_STATE_COMBINE =
-        1L << CG_PIPELINE_LAYER_STATE_COMBINE_INDEX,
-    CG_PIPELINE_LAYER_STATE_COMBINE_CONSTANT =
-        1L << CG_PIPELINE_LAYER_STATE_COMBINE_CONSTANT_INDEX,
     CG_PIPELINE_LAYER_STATE_POINT_SPRITE_COORDS =
         1L << CG_PIPELINE_LAYER_STATE_POINT_SPRITE_COORDS_INDEX,
     CG_PIPELINE_LAYER_STATE_VERTEX_SNIPPETS =
@@ -106,64 +100,18 @@ typedef enum {
 #define CG_PIPELINE_LAYER_STATE_ALL_SPARSE CG_PIPELINE_LAYER_STATE_ALL
 
 #define CG_PIPELINE_LAYER_STATE_NEEDS_BIG_STATE                                \
-    (CG_PIPELINE_LAYER_STATE_COMBINE |                                         \
-     CG_PIPELINE_LAYER_STATE_COMBINE_CONSTANT |                                \
-     CG_PIPELINE_LAYER_STATE_POINT_SPRITE_COORDS |                             \
+    (CG_PIPELINE_LAYER_STATE_POINT_SPRITE_COORDS |                             \
      CG_PIPELINE_LAYER_STATE_VERTEX_SNIPPETS |                                 \
      CG_PIPELINE_LAYER_STATE_FRAGMENT_SNIPPETS)
 
 #define CG_PIPELINE_LAYER_STATE_MULTI_PROPERTY                                 \
-    (CG_PIPELINE_LAYER_STATE_COMBINE |                                         \
-     CG_PIPELINE_LAYER_STATE_VERTEX_SNIPPETS |                                 \
+    (CG_PIPELINE_LAYER_STATE_VERTEX_SNIPPETS |                                 \
      CG_PIPELINE_LAYER_STATE_FRAGMENT_SNIPPETS)
 
 #define CG_PIPELINE_LAYER_STATE_AFFECTS_VERTEX_CODEGEN                         \
     CG_PIPELINE_LAYER_STATE_VERTEX_SNIPPETS
 
-typedef enum {
-    /* These are the same values as GL */
-    CG_PIPELINE_COMBINE_FUNC_ADD = 0x0104,
-    CG_PIPELINE_COMBINE_FUNC_ADD_SIGNED = 0x8574,
-    CG_PIPELINE_COMBINE_FUNC_SUBTRACT = 0x84E7,
-    CG_PIPELINE_COMBINE_FUNC_INTERPOLATE = 0x8575,
-    CG_PIPELINE_COMBINE_FUNC_REPLACE = 0x1E01,
-    CG_PIPELINE_COMBINE_FUNC_MODULATE = 0x2100,
-    CG_PIPELINE_COMBINE_FUNC_DOT3_RGB = 0x86AE,
-    CG_PIPELINE_COMBINE_FUNC_DOT3_RGBA = 0x86AF
-} cg_pipeline_combine_func_t;
-
-typedef enum {
-    /* Note that these numbers are deliberately not the same as the GL
-       numbers so that we can reserve all numbers > TEXTURE0 to store
-       very large layer numbers */
-    CG_PIPELINE_COMBINE_SOURCE_TEXTURE,
-    CG_PIPELINE_COMBINE_SOURCE_CONSTANT,
-    CG_PIPELINE_COMBINE_SOURCE_PRIMARY_COLOR,
-    CG_PIPELINE_COMBINE_SOURCE_PREVIOUS,
-    CG_PIPELINE_COMBINE_SOURCE_TEXTURE0
-} cg_pipeline_combine_source_t;
-
-typedef enum {
-    /* These are the same values as GL */
-    CG_PIPELINE_COMBINE_OP_SRC_COLOR = 0x0300,
-    CG_PIPELINE_COMBINE_OP_ONE_MINUS_SRC_COLOR = 0x0301,
-    CG_PIPELINE_COMBINE_OP_SRC_ALPHA = 0x0302,
-    CG_PIPELINE_COMBINE_OP_ONE_MINUS_SRC_ALPHA = 0x0303
-} cg_pipeline_combine_op_t;
-
 typedef struct {
-    /* The texture combine state determines how the color of individual
-     * texture fragments are calculated. */
-    cg_pipeline_combine_func_t texture_combine_rgb_func;
-    cg_pipeline_combine_source_t texture_combine_rgb_src[3];
-    cg_pipeline_combine_op_t texture_combine_rgb_op[3];
-
-    cg_pipeline_combine_func_t texture_combine_alpha_func;
-    cg_pipeline_combine_source_t texture_combine_alpha_src[3];
-    cg_pipeline_combine_op_t texture_combine_alpha_op[3];
-
-    float texture_combine_constant[4];
-
     cg_pipeline_snippet_list_t vertex_snippets;
     cg_pipeline_snippet_list_t fragment_snippets;
 

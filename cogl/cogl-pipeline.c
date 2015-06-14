@@ -244,22 +244,6 @@ _cg_pipeline_set_parent(cg_pipeline_t *pipeline,
      * layers could now be invalid so free it... */
     if (pipeline->differences & CG_PIPELINE_STATE_LAYERS)
         recursively_free_layer_caches(pipeline);
-
-    /* If the backends are also caching state along with the pipeline
-     * that depends on the pipeline's ancestry then it may be notified
-     * here...
-     */
-    if (pipeline->progend != CG_PIPELINE_PROGEND_UNDEFINED) {
-        const cg_pipeline_progend_t *progend =
-            _cg_pipeline_progends[pipeline->progend];
-        const cg_pipeline_fragend_t *fragend =
-            _cg_pipeline_fragends[progend->fragend];
-
-        /* Currently only the fragends ever care about reparenting of
-         * pipelines... */
-        if (fragend->pipeline_set_parent_notify)
-            fragend->pipeline_set_parent_notify(pipeline);
-    }
 }
 
 static void
@@ -1104,19 +1088,19 @@ _cg_pipeline_pre_change_notify(cg_pipeline_t *pipeline,
                 _cg_pipeline_fragends[progend->fragend];
 
             if (vertend->pipeline_pre_change_notify)
-                vertend->pipeline_pre_change_notify(
-                    pipeline, change, new_color);
+                vertend->pipeline_pre_change_notify(dev, pipeline, change,
+                                                    new_color);
 
             /* TODO: make the vertend and fragend implementation details
              * of the progend */
 
             if (fragend->pipeline_pre_change_notify)
-                fragend->pipeline_pre_change_notify(
-                    pipeline, change, new_color);
+                fragend->pipeline_pre_change_notify(dev, pipeline, change,
+                                                    new_color);
 
             if (progend->pipeline_pre_change_notify)
-                progend->pipeline_pre_change_notify(
-                    pipeline, change, new_color);
+                progend->pipeline_pre_change_notify(dev, pipeline, change,
+                                                    new_color);
         }
     }
 
@@ -2250,10 +2234,6 @@ _cg_pipeline_init_layer_state_hash_functions(void)
         _cg_pipeline_layer_hash_texture_data_state;
     layer_state_hash_functions[CG_PIPELINE_LAYER_STATE_SAMPLER_INDEX] =
         _cg_pipeline_layer_hash_sampler_state;
-    layer_state_hash_functions[CG_PIPELINE_LAYER_STATE_COMBINE_INDEX] =
-        _cg_pipeline_layer_hash_combine_state;
-    layer_state_hash_functions[CG_PIPELINE_LAYER_STATE_COMBINE_CONSTANT_INDEX] =
-        _cg_pipeline_layer_hash_combine_constant_state;
     _index = CG_PIPELINE_LAYER_STATE_POINT_SPRITE_COORDS_INDEX;
     layer_state_hash_functions[_index] =
         _cg_pipeline_layer_hash_point_sprite_state;
@@ -2288,10 +2268,8 @@ _cg_pipeline_hash_layer_cb(cg_pipeline_layer_t *layer,
 
     /* XXX: we resolve all the authorities here - not just those
      * corresponding to hash_state->layer_differences - because
-     * the hashing of some state groups actually depends on the values
-     * in other groups. For example we don't hash layer combine
-     * constants if they are aren't referenced by the current layer
-     * combine function.
+     * the hashing of some state groups may depend on the state
+     * of other groups.
      */
     mask = CG_PIPELINE_LAYER_STATE_ALL_SPARSE;
     _cg_pipeline_layer_resolve_authorities(layer, mask, authorities);
@@ -2632,8 +2610,7 @@ cg_pipeline_layer_state_t
 _cg_pipeline_get_layer_state_for_fragment_codegen(cg_device_t *dev)
 {
     cg_pipeline_layer_state_t state =
-        (CG_PIPELINE_LAYER_STATE_COMBINE |
-         CG_PIPELINE_LAYER_STATE_TEXTURE_TYPE | CG_PIPELINE_LAYER_STATE_UNIT |
+        (CG_PIPELINE_LAYER_STATE_TEXTURE_TYPE | CG_PIPELINE_LAYER_STATE_UNIT |
          CG_PIPELINE_LAYER_STATE_FRAGMENT_SNIPPETS);
 
     /* If the driver supports GLSL then we might be using gl_PointCoord

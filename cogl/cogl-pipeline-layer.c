@@ -77,34 +77,12 @@ _cg_pipeline_layer_get_unit_index(cg_pipeline_layer_t *layer)
 bool
 _cg_pipeline_layer_has_alpha(cg_pipeline_layer_t *layer)
 {
-    cg_pipeline_layer_t *combine_authority = _cg_pipeline_layer_get_authority(
-        layer, CG_PIPELINE_LAYER_STATE_COMBINE);
-    cg_pipeline_layer_big_state_t *big_state = combine_authority->big_state;
     cg_pipeline_layer_t *tex_authority;
     cg_pipeline_layer_t *snippets_authority;
 
-    /* has_alpha maintains the alpha status for the GL_PREVIOUS layer */
-
-    /* For anything but the default texture combine we currently just
-     * assume it may result in an alpha value < 1
-     *
-     * FIXME: we could do better than this. */
-    if (big_state->texture_combine_alpha_func !=
-        CG_PIPELINE_COMBINE_FUNC_MODULATE ||
-        big_state->texture_combine_alpha_src[0] !=
-        CG_PIPELINE_COMBINE_SOURCE_PREVIOUS ||
-        big_state->texture_combine_alpha_op[0] !=
-        CG_PIPELINE_COMBINE_OP_SRC_ALPHA ||
-        big_state->texture_combine_alpha_src[1] !=
-        CG_PIPELINE_COMBINE_SOURCE_TEXTURE ||
-        big_state->texture_combine_alpha_op[1] !=
-        CG_PIPELINE_COMBINE_OP_SRC_ALPHA) {
-        return true;
-    }
-
-    /* NB: A layer may have a combine mode set on it but not yet
-     * have an associated texture which would mean we'd fallback
-     * to the default texture which doesn't have an alpha component
+    /* NB: If the layer does not yet have an associated texture we'll
+     * fallback to the default texture which doesn't have an alpha
+     * component
      */
     tex_authority = _cg_pipeline_layer_get_authority(
         layer, CG_PIPELINE_LAYER_STATE_TEXTURE_DATA);
@@ -127,25 +105,6 @@ _cg_pipeline_layer_has_alpha(cg_pipeline_layer_t *layer)
         return true;
 
     return false;
-}
-
-unsigned int
-_cg_get_n_args_for_combine_func(cg_pipeline_combine_func_t func)
-{
-    switch (func) {
-    case CG_PIPELINE_COMBINE_FUNC_REPLACE:
-        return 1;
-    case CG_PIPELINE_COMBINE_FUNC_MODULATE:
-    case CG_PIPELINE_COMBINE_FUNC_ADD:
-    case CG_PIPELINE_COMBINE_FUNC_ADD_SIGNED:
-    case CG_PIPELINE_COMBINE_FUNC_SUBTRACT:
-    case CG_PIPELINE_COMBINE_FUNC_DOT3_RGB:
-    case CG_PIPELINE_COMBINE_FUNC_DOT3_RGBA:
-        return 2;
-    case CG_PIPELINE_COMBINE_FUNC_INTERPOLATE:
-        return 3;
-    }
-    return 0;
 }
 
 void
@@ -194,37 +153,6 @@ _cg_pipeline_layer_copy_differences(cg_pipeline_layer_t *dest,
             dest->sampler_cache_entry = src->sampler_cache_entry;
             break;
 
-        case CG_PIPELINE_LAYER_STATE_COMBINE_INDEX: {
-            cg_pipeline_combine_func_t func;
-            int n_args, i;
-
-            func = big_src->texture_combine_rgb_func;
-            big_dest->texture_combine_rgb_func = func;
-            n_args = _cg_get_n_args_for_combine_func(func);
-            for (i = 0; i < n_args; i++) {
-                big_dest->texture_combine_rgb_src[i] =
-                    big_src->texture_combine_rgb_src[i];
-                big_dest->texture_combine_rgb_op[i] =
-                    big_src->texture_combine_rgb_op[i];
-            }
-
-            func = big_src->texture_combine_alpha_func;
-            big_dest->texture_combine_alpha_func = func;
-            n_args = _cg_get_n_args_for_combine_func(func);
-            for (i = 0; i < n_args; i++) {
-                big_dest->texture_combine_alpha_src[i] =
-                    big_src->texture_combine_alpha_src[i];
-                big_dest->texture_combine_alpha_op[i] =
-                    big_src->texture_combine_alpha_op[i];
-            }
-        } break;
-
-        case CG_PIPELINE_LAYER_STATE_COMBINE_CONSTANT_INDEX:
-            memcpy(big_dest->texture_combine_constant,
-                   big_src->texture_combine_constant,
-                   sizeof(big_dest->texture_combine_constant));
-            break;
-
         case CG_PIPELINE_LAYER_STATE_POINT_SPRITE_COORDS_INDEX:
             big_dest->point_sprite_coords = big_src->point_sprite_coords;
             break;
@@ -262,41 +190,9 @@ _cg_pipeline_layer_init_multi_property_sparse_state(
     case CG_PIPELINE_LAYER_STATE_TEXTURE_TYPE:
     case CG_PIPELINE_LAYER_STATE_TEXTURE_DATA:
     case CG_PIPELINE_LAYER_STATE_POINT_SPRITE_COORDS:
-    case CG_PIPELINE_LAYER_STATE_COMBINE_CONSTANT:
     case CG_PIPELINE_LAYER_STATE_SAMPLER:
         c_return_if_reached();
 
-    /* XXX: technically we could probably even consider these as
-     * single property state-groups from the pov that currently the
-     * corresponding property setters always update all of the values
-     * at the same time. */
-    case CG_PIPELINE_LAYER_STATE_COMBINE: {
-        int n_args;
-        int i;
-        cg_pipeline_layer_big_state_t *src_big_state = authority->big_state;
-        cg_pipeline_layer_big_state_t *dest_big_state = layer->big_state;
-        GLint func = src_big_state->texture_combine_rgb_func;
-
-        dest_big_state->texture_combine_rgb_func = func;
-        n_args = _cg_get_n_args_for_combine_func(func);
-        for (i = 0; i < n_args; i++) {
-            dest_big_state->texture_combine_rgb_src[i] =
-                src_big_state->texture_combine_rgb_src[i];
-            dest_big_state->texture_combine_rgb_op[i] =
-                src_big_state->texture_combine_rgb_op[i];
-        }
-
-        func = src_big_state->texture_combine_alpha_func;
-        dest_big_state->texture_combine_alpha_func = func;
-        n_args = _cg_get_n_args_for_combine_func(func);
-        for (i = 0; i < n_args; i++) {
-            dest_big_state->texture_combine_alpha_src[i] =
-                src_big_state->texture_combine_alpha_src[i];
-            dest_big_state->texture_combine_alpha_op[i] =
-                src_big_state->texture_combine_alpha_op[i];
-        }
-        break;
-    }
     case CG_PIPELINE_LAYER_STATE_VERTEX_SNIPPETS:
         _cg_pipeline_snippet_list_copy(&layer->big_state->vertex_snippets,
                                        &authority->big_state->vertex_snippets);
@@ -331,6 +227,8 @@ _cg_pipeline_layer_pre_change_notify(cg_pipeline_t *required_owner,
 {
     cg_texture_unit_t *unit;
 
+    _CG_GET_DEVICE(dev, NULL);
+
     /* Identify the case where the layer is new with no owner or
      * dependants and so we don't need to do anything. */
     if (c_list_empty(&CG_NODE(layer)->children) && layer->owner == NULL)
@@ -344,8 +242,8 @@ _cg_pipeline_layer_pre_change_notify(cg_pipeline_t *required_owner,
      * its owner so first make sure to perform any copy-on-write
      * if necessary for the required_owner if it has dependants.
      */
-    _cg_pipeline_pre_change_notify(
-        required_owner, CG_PIPELINE_STATE_LAYERS, NULL, true);
+    _cg_pipeline_pre_change_notify(required_owner,
+                                   CG_PIPELINE_STATE_LAYERS, NULL, true);
 
     /* Unlike pipelines; layers are simply considered immutable once
      * they have dependants - either direct children, or another
@@ -381,11 +279,11 @@ _cg_pipeline_layer_pre_change_notify(cg_pipeline_t *required_owner,
             _cg_pipeline_vertends[progend->vertend];
 
         if (fragend->layer_pre_change_notify)
-            fragend->layer_pre_change_notify(required_owner, layer, change);
+            fragend->layer_pre_change_notify(dev, required_owner, layer, change);
         if (vertend->layer_pre_change_notify)
-            vertend->layer_pre_change_notify(required_owner, layer, change);
+            vertend->layer_pre_change_notify(dev, required_owner, layer, change);
         if (progend->layer_pre_change_notify)
-            progend->layer_pre_change_notify(required_owner, layer, change);
+            progend->layer_pre_change_notify(dev, required_owner, layer, change);
     }
 
     /* If the layer being changed is the same as the last layer we
@@ -393,7 +291,7 @@ _cg_pipeline_layer_pre_change_notify(cg_pipeline_t *required_owner,
      * the changes so we can try to minimize redundant OpenGL calls if
      * the same layer is flushed again.
      */
-    unit = _cg_get_texture_unit(_cg_pipeline_layer_get_unit_index(layer));
+    unit = _cg_get_texture_unit(dev, _cg_pipeline_layer_get_unit_index(layer));
     if (unit->layer == layer)
         unit->layer_changes_since_flush |= change;
 
@@ -639,20 +537,6 @@ _cg_pipeline_layer_equal(cg_pipeline_layer_t *layer0,
             return false;
     }
 
-    if (layers_difference & CG_PIPELINE_LAYER_STATE_COMBINE &&
-        !layer_state_equal(CG_PIPELINE_LAYER_STATE_COMBINE_INDEX,
-                           authorities0,
-                           authorities1,
-                           _cg_pipeline_layer_combine_state_equal))
-        return false;
-
-    if (layers_difference & CG_PIPELINE_LAYER_STATE_COMBINE_CONSTANT &&
-        !layer_state_equal(CG_PIPELINE_LAYER_STATE_COMBINE_CONSTANT_INDEX,
-                           authorities0,
-                           authorities1,
-                           _cg_pipeline_layer_combine_constant_equal))
-        return false;
-
     if (layers_difference & CG_PIPELINE_LAYER_STATE_SAMPLER &&
         !layer_state_equal(CG_PIPELINE_LAYER_STATE_SAMPLER_INDEX,
                            authorities0,
@@ -732,43 +616,10 @@ _cg_pipeline_init_default_layers(void)
     layer->big_state = big_state;
     layer->has_big_state = true;
 
-    /* Choose the same default combine mode as OpenGL:
-    * RGBA = MODULATE(PREVIOUS[RGBA],TEXTURE[RGBA]) */
-    big_state->texture_combine_rgb_func = CG_PIPELINE_COMBINE_FUNC_MODULATE;
-    big_state->texture_combine_rgb_src[0] = CG_PIPELINE_COMBINE_SOURCE_PREVIOUS;
-    big_state->texture_combine_rgb_src[1] = CG_PIPELINE_COMBINE_SOURCE_TEXTURE;
-    big_state->texture_combine_rgb_op[0] = CG_PIPELINE_COMBINE_OP_SRC_COLOR;
-    big_state->texture_combine_rgb_op[1] = CG_PIPELINE_COMBINE_OP_SRC_COLOR;
-    big_state->texture_combine_alpha_func = CG_PIPELINE_COMBINE_FUNC_MODULATE;
-    big_state->texture_combine_alpha_src[0] =
-        CG_PIPELINE_COMBINE_SOURCE_PREVIOUS;
-    big_state->texture_combine_alpha_src[1] =
-        CG_PIPELINE_COMBINE_SOURCE_TEXTURE;
-    big_state->texture_combine_alpha_op[0] = CG_PIPELINE_COMBINE_OP_SRC_ALPHA;
-    big_state->texture_combine_alpha_op[1] = CG_PIPELINE_COMBINE_OP_SRC_ALPHA;
-
     big_state->point_sprite_coords = false;
 
     dev->default_layer_0 = _cg_pipeline_layer_object_new(layer);
 
-    /* TODO: we should make default_layer_n comprise of two
-     * descendants of default_layer_0:
-     * - the first descendant should change the texture combine
-     *   to what we expect is most commonly used for multitexturing
-     * - the second should revert the above change.
-     *
-     * why? the documentation for how a new layer is initialized
-     * doesn't say that layers > 0 have different defaults so unless
-     * we change the documentation we can't use different defaults,
-     * but if the user does what we expect and changes the
-     * texture combine then we can revert the authority to the
-     * first descendant which means we can maximize the number
-     * of layers with a common ancestor.
-     *
-     * The main problem will be that we'll need to disable the
-     * optimizations for flattening the ancestry when we make
-     * the second descendant which reverts the state.
-     */
     dev->default_layer_n = _cg_pipeline_layer_copy(layer);
     new = _cg_pipeline_set_layer_unit(NULL, dev->default_layer_n, 1);
     c_assert(new == dev->default_layer_n);
@@ -805,75 +656,4 @@ _cg_pipeline_layer_pre_paint(cg_pipeline_layer_t *layer)
 
         _cg_texture_pre_paint(texture_authority->texture, flags);
     }
-}
-
-/* Determines if we need to handle the RGB and A texture combining
- * separately or is the same function used for both channel masks and
- * with the same arguments...
- */
-bool
-_cg_pipeline_layer_needs_combine_separate(
-    cg_pipeline_layer_t *combine_authority)
-{
-    cg_pipeline_layer_big_state_t *big_state = combine_authority->big_state;
-    int n_args;
-    int i;
-
-    if (big_state->texture_combine_rgb_func !=
-        big_state->texture_combine_alpha_func)
-        return true;
-
-    n_args =
-        _cg_get_n_args_for_combine_func(big_state->texture_combine_rgb_func);
-
-    for (i = 0; i < n_args; i++) {
-        if (big_state->texture_combine_rgb_src[i] !=
-            big_state->texture_combine_alpha_src[i])
-            return true;
-
-        /*
-         * We can allow some variation of the source operands without
-         * needing a separation...
-         *
-         * "A = REPLACE (CONSTANT[A])" + either of the following...
-         * "RGB = REPLACE (CONSTANT[RGB])"
-         * "RGB = REPLACE (CONSTANT[A])"
-         *
-         * can be combined as:
-         * "RGBA = REPLACE (CONSTANT)" or
-         * "RGBA = REPLACE (CONSTANT[A])" or
-         *
-         * And "A = REPLACE (1-CONSTANT[A])" + either of the following...
-         * "RGB = REPLACE (1-CONSTANT)" or
-         * "RGB = REPLACE (1-CONSTANT[A])"
-         *
-         * can be combined as:
-         * "RGBA = REPLACE (1-CONSTANT)" or
-         * "RGBA = REPLACE (1-CONSTANT[A])"
-         */
-        switch (big_state->texture_combine_alpha_op[i]) {
-        case GL_SRC_ALPHA:
-            switch (big_state->texture_combine_rgb_op[i]) {
-            case GL_SRC_COLOR:
-            case GL_SRC_ALPHA:
-                break;
-            default:
-                return false;
-            }
-            break;
-        case GL_ONE_MINUS_SRC_ALPHA:
-            switch (big_state->texture_combine_rgb_op[i]) {
-            case GL_ONE_MINUS_SRC_COLOR:
-            case GL_ONE_MINUS_SRC_ALPHA:
-                break;
-            default:
-                return false;
-            }
-            break;
-        default:
-            return false; /* impossible */
-        }
-    }
-
-    return false;
 }

@@ -82,20 +82,6 @@ static cg_blend_string_color_source_info_t blending_color_sources[] = {
     DEFINE_COLOR_SOURCE(CONSTANT, 8)
 };
 
-static cg_blend_string_color_source_info_t tex_combine_color_sources[] = {
-    DEFINE_COLOR_SOURCE(TEXTURE, 7),
-    /* DEFINE_COLOR_SOURCE (TEXTURE_N, *) - handled manually */
-    DEFINE_COLOR_SOURCE(PRIMARY, 7), DEFINE_COLOR_SOURCE(CONSTANT, 8),
-    DEFINE_COLOR_SOURCE(PREVIOUS, 8)
-};
-
-static cg_blend_string_color_source_info_t tex_combine_texture_n_color_source =
-{
-    /*.type = */ CG_BLEND_STRING_COLOR_SOURCE_TEXTURE_N,
-    /*.name = */ "TEXTURE_N",
-    /*.name_len = */ 0
-};
-
 #undef DEFINE_COLOR_SOURCE
 
 #define DEFINE_FUNCTION(NAME, NAME_LEN, ARGC)                                  \
@@ -105,15 +91,6 @@ static cg_blend_string_color_source_info_t tex_combine_texture_n_color_source =
         /*.name_len = */ NAME_LEN,                                         \
         /*.argc = */ ARGC                                                  \
     }
-
-/* NB: These must be sorted so any name that's a subset of another
- * comes later than the longer name. */
-static cg_blend_string_function_info_t tex_combine_functions[] = {
-    DEFINE_FUNCTION(REPLACE, 7, 1),      DEFINE_FUNCTION(MODULATE, 8, 2),
-    DEFINE_FUNCTION(ADD_SIGNED, 10, 2),  DEFINE_FUNCTION(ADD, 3, 2),
-    DEFINE_FUNCTION(INTERPOLATE, 11, 3), DEFINE_FUNCTION(SUBTRACT, 8, 2),
-    DEFINE_FUNCTION(DOT3_RGBA, 9, 2),    DEFINE_FUNCTION(DOT3_RGB, 8, 2)
-};
 
 static cg_blend_string_function_info_t blend_functions[] = { DEFINE_FUNCTION(
                                                                  ADD, 3, 2) };
@@ -155,46 +132,6 @@ _cg_blend_string_split_rgba_statement(cg_blend_string_statement_t *statement,
             a_arg->factor.source.mask = CG_BLEND_STRING_CHANNEL_MASK_ALPHA;
         }
     }
-}
-
-static bool
-validate_tex_combine_statements(cg_blend_string_statement_t *statements,
-                                int n_statements,
-                                cg_error_t **error)
-{
-    int i, j;
-    const char *error_string;
-    cg_blend_string_error_t detail = CG_BLEND_STRING_ERROR_INVALID_ERROR;
-
-    for (i = 0; i < n_statements; i++) {
-        for (j = 0; j < statements[i].function->argc; j++) {
-            cg_blend_string_argument_t *arg = &statements[i].args[j];
-            if (arg->source.is_zero) {
-                error_string = "You can't use the constant '0' as a texture "
-                               "combine argument";
-                goto error;
-            }
-            if (!arg->factor.is_one) {
-                error_string = "Argument factors are only relevant to blending "
-                               "not texture combining";
-                goto error;
-            }
-        }
-    }
-
-    return true;
-
-error:
-    _cg_set_error(error,
-                  CG_BLEND_STRING_ERROR,
-                  detail,
-                  "Invalid texture combine string: %s",
-                  error_string);
-
-    if (CG_DEBUG_ENABLED(CG_DEBUG_BLEND_STRINGS)) {
-        c_debug("Invalid texture combine string: %s", error_string);
-    }
-    return false;
 }
 
 static bool
@@ -254,11 +191,10 @@ error:
 }
 
 static bool
-validate_statements_for_context(cg_device_t *dev,
-                                cg_blend_string_statement_t *statements,
-                                int n_statements,
-                                cg_blend_string_context_t context,
-                                cg_error_t **error)
+validate_statements(cg_device_t *dev,
+                    cg_blend_string_statement_t *statements,
+                    int n_statements,
+                    cg_error_t **error)
 {
     const char *error_string;
 
@@ -275,28 +211,18 @@ validate_statements_for_context(cg_device_t *dev,
         }
     }
 
-    if (context == CG_BLEND_STRING_CONTEXT_BLENDING)
-        return validate_blend_statements(dev, statements, n_statements,
-                                         error);
-    else
-        return validate_tex_combine_statements(statements, n_statements, error);
+    return validate_blend_statements(dev, statements, n_statements,
+                                     error);
 
 error:
     _cg_set_error(error,
                   CG_BLEND_STRING_ERROR,
                   CG_BLEND_STRING_ERROR_INVALID_ERROR,
-                  "Invalid %s string: %s",
-                  context == CG_BLEND_STRING_CONTEXT_BLENDING
-                  ? "blend"
-                  : "texture combine",
+                  "Invalid blend string: %s",
                   error_string);
 
-    if (CG_DEBUG_ENABLED(CG_DEBUG_BLEND_STRINGS)) {
-        c_debug("Invalid %s string: %s",
-                context == CG_BLEND_STRING_CONTEXT_BLENDING ? "blend"
-                : "texture combine",
-                error_string);
-    }
+    if (CG_DEBUG_ENABLED(CG_DEBUG_BLEND_STRINGS))
+        c_debug("Invalid blend string: %s", error_string);
 
     return false;
 }
@@ -347,21 +273,15 @@ print_statement(int num, cg_blend_string_statement_t *statement)
 }
 
 static const cg_blend_string_function_info_t *
-get_function_info(
-    const char *mark, const char *p, cg_blend_string_context_t context)
+get_function_info(const char *mark, const char *p)
 {
     size_t len = p - mark;
     cg_blend_string_function_info_t *functions;
     size_t array_len;
     int i;
 
-    if (context == CG_BLEND_STRING_CONTEXT_BLENDING) {
-        functions = blend_functions;
-        array_len = C_N_ELEMENTS(blend_functions);
-    } else {
-        functions = tex_combine_functions;
-        array_len = C_N_ELEMENTS(tex_combine_functions);
-    }
+    functions = blend_functions;
+    array_len = C_N_ELEMENTS(blend_functions);
 
     for (i = 0; i < array_len; i++) {
         if (len >= functions[i].name_len &&
@@ -372,26 +292,15 @@ get_function_info(
 }
 
 static const cg_blend_string_color_source_info_t *
-get_color_src_info(
-    const char *mark, const char *p, cg_blend_string_context_t context)
+get_color_src_info(const char *mark, const char *p)
 {
     size_t len = p - mark;
     cg_blend_string_color_source_info_t *sources;
     size_t array_len;
     int i;
 
-    if (context == CG_BLEND_STRING_CONTEXT_BLENDING) {
-        sources = blending_color_sources;
-        array_len = C_N_ELEMENTS(blending_color_sources);
-    } else {
-        sources = tex_combine_color_sources;
-        array_len = C_N_ELEMENTS(tex_combine_color_sources);
-    }
-
-    if (len >= 8 && strncmp(mark, "TEXTURE_", 8) == 0 &&
-        c_ascii_isdigit(mark[8])) {
-        return &tex_combine_texture_n_color_source;
-    }
+    sources = blending_color_sources;
+    array_len = C_N_ELEMENTS(blending_color_sources);
 
     for (i = 0; i < array_len; i++) {
         if (len >= sources[i].name_len &&
@@ -420,7 +329,6 @@ parse_argument(const char *string,             /* original user string */
                const cg_blend_string_statement_t *statement,
                int current_arg,
                cg_blend_string_argument_t *arg,             /* OUT */
-               cg_blend_string_context_t context,
                cg_error_t **error)
 {
     const char *p = *ret_p;
@@ -492,22 +400,10 @@ parse_argument(const char *string,             /* original user string */
             if (!is_symbol_char(*p)) {
                 cg_blend_string_color_source_t *source =
                     parsing_factor ? &arg->factor.source : &arg->source;
-                source->info = get_color_src_info(mark, p, context);
+                source->info = get_color_src_info(mark, p);
                 if (!source->info) {
                     error_string = "Unknown color source name";
                     goto error;
-                }
-                if (source->info->type ==
-                    CG_BLEND_STRING_COLOR_SOURCE_TEXTURE_N) {
-                    char *endp;
-                    source->texture =
-                        strtoul(&mark[strlen("TEXTURE_")], &endp, 10);
-                    if (mark == endp) {
-                        error_string = "invalid texture number given with "
-                                       "TEXTURE_N color source";
-                        goto error;
-                    }
-                    p = endp;
                 }
                 state = PARSER_ARG_STATE_MAYBE_COLOR_MASK;
             } else
@@ -673,7 +569,6 @@ error: {
 bool
 _cg_blend_string_compile(cg_device_t *dev,
                          const char *string,
-                         cg_blend_string_context_t context,
                          cg_blend_string_statement_t *statements,
                          cg_error_t **error)
 {
@@ -692,9 +587,7 @@ _cg_blend_string_compile(cg_device_t *dev,
 
     if (CG_DEBUG_ENABLED(CG_DEBUG_BLEND_STRINGS)) {
         CG_NOTE(BLEND_STRINGS,
-                "Compiling %s string:\n%s\n",
-                context == CG_BLEND_STRING_CONTEXT_BLENDING ? "blend"
-                : "texture combine",
+                "Compiling blend string:\n%s\n",
                 string);
     }
 
@@ -765,7 +658,7 @@ _cg_blend_string_compile(cg_device_t *dev,
                 }
                 continue;
             }
-            statement->function = get_function_info(mark, p, context);
+            statement->function = get_function_info(mark, p);
             if (!statement->function) {
                 error_string = "Unknown function name";
                 goto error;
@@ -786,7 +679,6 @@ _cg_blend_string_compile(cg_device_t *dev,
                                     statement,
                                     current_arg,
                                     &statement->args[current_arg],
-                                    context,
                                     error))
                     return 0;
                 current_arg++;
@@ -817,7 +709,7 @@ finished:
             print_statement(1, &statements[1]);
     }
 
-    if (!validate_statements_for_context(dev, statements, current_statement, context, error))
+    if (!validate_statements(dev, statements, current_statement, error))
         return 0;
 
     return current_statement;
@@ -843,47 +735,20 @@ TEST(blend_string_parsing)
 {
     struct {
         const char *string;
-        cg_blend_string_context_t context;
         bool should_pass;
     } tests[] =
-    { { "  A = MODULATE ( TEXTURE[RGB], PREVIOUS[A], PREVIOUS[A] )  ",
-        CG_BLEND_STRING_CONTEXT_TEXTURE_COMBINE,
-        false,       /* to many arguments */
-      },
-      { "  A = MODULATE ( TEXTURE[RGB], PREVIOUS[A] )  ",
-              CG_BLEND_STRING_CONTEXT_TEXTURE_COMBINE,
-              false, /* Must specify an RGB blend string too */
-      },
-      { "  RGB = MODULATE ( TEXTURE[RGB], PREVIOUS[A] )  ",
-              CG_BLEND_STRING_CONTEXT_TEXTURE_COMBINE,
-              false, /* Must specify an alpha component blend string too */
-      },
-      { "  A = MODULATE ( TEXTURE[RGB], PREVIOUS[A] )"
-              "RGB = MODULATE ( TEXTURE[RGB], PREVIOUS[A] )  ",
-              CG_BLEND_STRING_CONTEXT_TEXTURE_COMBINE, true, },
-      { "  A = MODULATE ( TEXTURE[RGB], PREVIOUS[A] ) "
-              "RGB = MODULATE ( TEXTURE[RGB], PREVIOUS[A] )  ",
-              CG_BLEND_STRING_CONTEXT_TEXTURE_COMBINE, true, },
-      { "A = MODULATE ( TEXTURE[RGB], PREVIOUS[A] )\n "
-              "RGB = MODULATE ( TEXTURE[RGB], PREVIOUS[A] )  ",
-              CG_BLEND_STRING_CONTEXT_TEXTURE_COMBINE, true, },
-      { "A=ADD(TEXTURE[A],PREVIOUS[RGB])\n"
-              "RGB=MODULATE(TEXTURE[RGB], PREVIOUS[A])",
-              CG_BLEND_STRING_CONTEXT_TEXTURE_COMBINE, true, },
+    {
       { "RGBA = ADD(SRC_COLOR*(SRC_COLOR[A]), "
               "DST_COLOR*(1-SRC_COLOR[A]))",
-              CG_BLEND_STRING_CONTEXT_BLENDING,
               true, },
       { "RGBA = ADD(SRC_COLOR,\nDST_COLOR*(0))",
-              CG_BLEND_STRING_CONTEXT_BLENDING,
               true, },
-      { "RGBA = ADD(SRC_COLOR, 0)", CG_BLEND_STRING_CONTEXT_BLENDING,
+      { "RGBA = ADD(SRC_COLOR, 0)",
               true, },
-      { "RGBA = ADD()", CG_BLEND_STRING_CONTEXT_BLENDING,
+      { "RGBA = ADD()",
               false, /* missing arguments */
       },
       { "RGBA = ADD(SRC_COLOR, DST_COLOR)",
-              CG_BLEND_STRING_CONTEXT_BLENDING,
               true, },
       { NULL } };
     int i;
@@ -894,7 +759,7 @@ TEST(blend_string_parsing)
     for (i = 0; tests[i].string; i++) {
         cg_blend_string_statement_t statements[2];
         _cg_blend_string_compile(
-            test_dev, tests[i].string, tests[i].context, statements, &error);
+            test_dev, tests[i].string, statements, &error);
         if (tests[i].should_pass) {
             if (error) {
                 c_debug("Unexpected parse error for string \"%s\"",

@@ -52,8 +52,13 @@
 
 const cg_pipeline_vertend_t _cg_pipeline_glsl_vertend;
 
+static const char *const_number_strings[] =
+    { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" };
+
 typedef struct {
     unsigned int ref_count;
+
+    cg_device_t *dev;
 
     GLuint gl_shader;
     c_string_t *header, *source;
@@ -64,11 +69,12 @@ typedef struct {
 static cg_user_data_key_t shader_state_key;
 
 static cg_pipeline_shader_state_t *
-shader_state_new(cg_pipeline_cache_entry_t *cache_entry)
+shader_state_new(cg_device_t *dev, cg_pipeline_cache_entry_t *cache_entry)
 {
     cg_pipeline_shader_state_t *shader_state;
 
     shader_state = c_slice_new0(cg_pipeline_shader_state_t);
+    shader_state->dev = dev;
     shader_state->ref_count = 1;
     shader_state->cache_entry = cache_entry;
 
@@ -86,15 +92,13 @@ destroy_shader_state(void *user_data, void *instance)
 {
     cg_pipeline_shader_state_t *shader_state = user_data;
 
-    _CG_GET_DEVICE(dev, NO_RETVAL);
-
     if (shader_state->cache_entry &&
         shader_state->cache_entry->pipeline != instance)
         shader_state->cache_entry->usage_count--;
 
     if (--shader_state->ref_count == 0) {
         if (shader_state->gl_shader)
-            GE(dev, glDeleteShader(shader_state->gl_shader));
+            GE(shader_state->dev, glDeleteShader(shader_state->gl_shader));
 
         c_slice_free(cg_pipeline_shader_state_t, shader_state);
     }
@@ -206,14 +210,13 @@ add_global_declarations(cg_pipeline_t *pipeline,
 }
 
 static void
-_cg_pipeline_vertend_glsl_start(cg_pipeline_t *pipeline,
+_cg_pipeline_vertend_glsl_start(cg_device_t *dev,
+                                cg_pipeline_t *pipeline,
                                 int n_layers,
                                 unsigned long pipelines_difference)
 {
     cg_pipeline_shader_state_t *shader_state;
     cg_pipeline_cache_entry_t *cache_entry = NULL;
-
-    _CG_GET_DEVICE(dev, NO_RETVAL);
 
     /* Now lookup our glsl backend private state (allocating if
      * necessary) */
@@ -246,7 +249,7 @@ _cg_pipeline_vertend_glsl_start(cg_pipeline_t *pipeline,
             if (shader_state)
                 shader_state->ref_count++;
             else
-                shader_state = shader_state_new(cache_entry);
+                shader_state = shader_state_new(dev, cache_entry);
 
             set_shader_state(authority, shader_state);
 
@@ -304,7 +307,8 @@ _cg_pipeline_vertend_glsl_start(cg_pipeline_t *pipeline,
 }
 
 static bool
-_cg_pipeline_vertend_glsl_add_layer(cg_pipeline_t *pipeline,
+_cg_pipeline_vertend_glsl_add_layer(cg_device_t *dev,
+                                    cg_pipeline_t *pipeline,
                                     cg_pipeline_layer_t *layer,
                                     unsigned long layers_difference,
                                     cg_framebuffer_t *framebuffer)
@@ -312,8 +316,7 @@ _cg_pipeline_vertend_glsl_add_layer(cg_pipeline_t *pipeline,
     cg_pipeline_shader_state_t *shader_state;
     cg_pipeline_snippet_data_t snippet_data;
     int layer_index = layer->index;
-
-    _CG_GET_DEVICE(dev, false);
+    const char *suffix;
 
     shader_state = get_shader_state(pipeline);
 
@@ -326,22 +329,25 @@ _cg_pipeline_vertend_glsl_add_layer(cg_pipeline_t *pipeline,
 
     c_string_append_printf(shader_state->header,
                            "vec4\n"
-                           "cg_real_transform_layer%i (vec4 tex_coord)\n"
+                           "_cg_default_transform_layer%i (vec4 tex_coord)\n"
                            "{\n"
                            "  return tex_coord;\n"
                            "}\n",
                            layer_index);
 
+    if (layer_index < 10)
+        suffix = const_number_strings[layer_index];
+    else
+        suffix = c_strdup_printf("%i", layer_index);
+
     /* Wrap the layer code in any snippets that have been hooked */
     memset(&snippet_data, 0, sizeof(snippet_data));
     snippet_data.snippets = get_layer_vertex_snippets(layer);
     snippet_data.hook = CG_SNIPPET_HOOK_TEXTURE_COORD_TRANSFORM;
-    snippet_data.chain_function =
-        c_strdup_printf("cg_real_transform_layer%i", layer_index);
-    snippet_data.final_name =
-        c_strdup_printf("cg_transform_layer%i", layer_index);
-    snippet_data.function_prefix =
-        c_strdup_printf("cg_transform_layer%i", layer_index);
+    snippet_data.chain_function = "_cg_default_transform_layer";
+    snippet_data.chain_function_suffix = suffix;
+    snippet_data.final_function = "cg_transform_layer";
+    snippet_data.final_function_suffix = suffix;
     snippet_data.return_type = "vec4";
     snippet_data.return_variable = "cg_tex_coord";
     snippet_data.return_variable_is_argument = true;
@@ -351,9 +357,8 @@ _cg_pipeline_vertend_glsl_add_layer(cg_pipeline_t *pipeline,
 
     _cg_pipeline_snippet_generate_code(&snippet_data);
 
-    c_free((char *)snippet_data.chain_function);
-    c_free((char *)snippet_data.final_name);
-    c_free((char *)snippet_data.function_prefix);
+    if (layer_index >= 10)
+        c_free((char *)suffix);
 
     c_string_append_printf(shader_state->source,
                            "  cg_tex_coord%i_out = "
@@ -361,17 +366,15 @@ _cg_pipeline_vertend_glsl_add_layer(cg_pipeline_t *pipeline,
                            layer_index,
                            layer_index,
                            layer_index);
-
     return true;
 }
 
 static bool
-_cg_pipeline_vertend_glsl_end(cg_pipeline_t *pipeline,
+_cg_pipeline_vertend_glsl_end(cg_device_t *dev,
+                              cg_pipeline_t *pipeline,
                               unsigned long pipelines_difference)
 {
     cg_pipeline_shader_state_t *shader_state;
-
-    _CG_GET_DEVICE(dev, false);
 
     shader_state = get_shader_state(pipeline);
 
@@ -394,7 +397,7 @@ _cg_pipeline_vertend_glsl_end(cg_pipeline_t *pipeline,
 
         c_string_append(shader_state->header,
                         "void\n"
-                        "cg_real_vertex_transform ()\n"
+                        "_cg_default_vertex_transform ()\n"
                         "{\n"
                         "  cg_position_out = "
                         "cg_modelview_projection_matrix * "
@@ -424,9 +427,8 @@ _cg_pipeline_vertend_glsl_end(cg_pipeline_t *pipeline,
         memset(&snippet_data, 0, sizeof(snippet_data));
         snippet_data.snippets = vertex_snippets;
         snippet_data.hook = CG_SNIPPET_HOOK_VERTEX_TRANSFORM;
-        snippet_data.chain_function = "cg_real_vertex_transform";
-        snippet_data.final_name = "cg_vertex_transform";
-        snippet_data.function_prefix = "cg_vertex_transform";
+        snippet_data.chain_function = "_cg_default_vertex_transform";
+        snippet_data.final_function = "cg_vertex_transform";
         snippet_data.source_buf = shader_state->header;
         _cg_pipeline_snippet_generate_code(&snippet_data);
 
@@ -436,8 +438,7 @@ _cg_pipeline_vertend_glsl_end(cg_pipeline_t *pipeline,
             snippet_data.snippets = vertex_snippets;
             snippet_data.hook = CG_SNIPPET_HOOK_POINT_SIZE;
             snippet_data.chain_function = "cg_real_point_size_calculation";
-            snippet_data.final_name = "cg_point_size_calculation";
-            snippet_data.function_prefix = "cg_point_size_calculation";
+            snippet_data.final_function = "cg_point_size_calculation";
             snippet_data.source_buf = shader_state->header;
             _cg_pipeline_snippet_generate_code(&snippet_data);
         }
@@ -447,8 +448,7 @@ _cg_pipeline_vertend_glsl_end(cg_pipeline_t *pipeline,
         snippet_data.snippets = vertex_snippets;
         snippet_data.hook = CG_SNIPPET_HOOK_VERTEX;
         snippet_data.chain_function = "cg_generated_source";
-        snippet_data.final_name = "cg_vertex_hook";
-        snippet_data.function_prefix = "cg_vertex_hook";
+        snippet_data.final_function = "cg_vertex_hook";
         snippet_data.source_buf = shader_state->source;
         _cg_pipeline_snippet_generate_code(&snippet_data);
 
@@ -519,12 +519,11 @@ _cg_pipeline_vertend_glsl_end(cg_pipeline_t *pipeline,
 }
 
 static void
-_cg_pipeline_vertend_glsl_pre_change_notify(cg_pipeline_t *pipeline,
+_cg_pipeline_vertend_glsl_pre_change_notify(cg_device_t *dev,
+                                            cg_pipeline_t *pipeline,
                                             cg_pipeline_state_t change,
                                             const cg_color_t *new_color)
 {
-    _CG_GET_DEVICE(dev, NO_RETVAL);
-
     if ((change & _cg_pipeline_get_state_for_vertex_codegen(dev)))
         dirty_shader_state(pipeline);
 }
@@ -538,10 +537,10 @@ _cg_pipeline_vertend_glsl_pre_change_notify(cg_pipeline_t *pipeline,
  * yet!
  */
 static void
-_cg_pipeline_vertend_glsl_layer_pre_change_notify(
-    cg_pipeline_t *owner,
-    cg_pipeline_layer_t *layer,
-    cg_pipeline_layer_state_t change)
+_cg_pipeline_vertend_glsl_layer_pre_change_notify(cg_device_t *dev,
+                                                  cg_pipeline_t *owner,
+                                                  cg_pipeline_layer_t *layer,
+                                                  cg_pipeline_layer_state_t change)
 {
     cg_pipeline_shader_state_t *shader_state;
 

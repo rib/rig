@@ -33,13 +33,15 @@
 #include "cogl-framebuffer-private.h"
 
 static bool
-_cg_pipeline_progend_nop_start(cg_pipeline_t *pipeline)
+_cg_pipeline_progend_nop_start(cg_device_t *dev,
+                               cg_pipeline_t *pipeline)
 {
     return true;
 }
 
 static void
-_cg_pipeline_progend_nop_pre_paint(cg_pipeline_t *pipeline,
+_cg_pipeline_progend_nop_pre_paint(cg_device_t *dev,
+                                   cg_pipeline_t *pipeline,
                                    cg_framebuffer_t *framebuffer)
 {
 }

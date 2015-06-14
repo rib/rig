@@ -115,10 +115,9 @@ typedef enum {
  * @layer_index: the index of the layer
  * @texture: a #cg_texture_t for the layer object
  *
- * In addition to the standard OpenGL lighting model a Cogl pipeline may have
- * one or more layers comprised of textures that can be blended together in
- * order, with a number of different texture combine modes. This function
- * defines a new texture layer.
+ * A Cogl pipeline may have one or more layers comprised of textures
+ * that can be combined together according to
+ * %CG_SNIPPET_HOOK_LAYER_FRAGMENT snippets for each layer.
  *
  * The index values of multiple layers do not have to be consecutive; it is
  * only their relative order that is important.
@@ -184,121 +183,6 @@ cg_texture_t *cg_pipeline_get_layer_texture(cg_pipeline_t *pipeline,
  * Stability: unstable
  */
 void cg_pipeline_remove_layer(cg_pipeline_t *pipeline, int layer_index);
-
-/**
- * cg_pipeline_set_layer_combine:
- * @pipeline: A #cg_pipeline_t object
- * @layer_index: Specifies the layer you want define a combine function for
- * @blend_string: A <link linkend="cogl-Blend-Strings">Cogl blend string</link>
- *    describing the desired texture combine function.
- * @error: A #cg_error_t that may report parse errors or lack of GPU/driver
- *   support. May be %NULL, in which case a warning will be printed out if an
- *   error is encountered.
- *
- * If not already familiar; you can refer
- * <link linkend="cogl-Blend-Strings">here</link> for an overview of what blend
- * strings are and there syntax.
- *
- * These are all the functions available for texture combining:
- * <itemizedlist>
- *   <listitem>REPLACE(arg0) = arg0</listitem>
- *   <listitem>MODULATE(arg0, arg1) = arg0 x arg1</listitem>
- *   <listitem>ADD(arg0, arg1) = arg0 + arg1</listitem>
- *   <listitem>ADD_SIGNED(arg0, arg1) = arg0 + arg1 - 0.5</listitem>
- *   <listitem>INTERPOLATE(arg0, arg1, arg2) = arg0 x arg2 + arg1 x (1 -
- * arg2)</listitem>
- *   <listitem>SUBTRACT(arg0, arg1) = arg0 - arg1</listitem>
- *   <listitem>
- *     <programlisting>
- *  DOT3_RGB(arg0, arg1) = 4 x ((arg0[R] - 0.5)) * (arg1[R] - 0.5) +
- *                              (arg0[G] - 0.5)) * (arg1[G] - 0.5) +
- *                              (arg0[B] - 0.5)) * (arg1[B] - 0.5))
- *     </programlisting>
- *   </listitem>
- *   <listitem>
- *     <programlisting>
- *  DOT3_RGBA(arg0, arg1) = 4 x ((arg0[R] - 0.5)) * (arg1[R] - 0.5) +
- *                               (arg0[G] - 0.5)) * (arg1[G] - 0.5) +
- *                               (arg0[B] - 0.5)) * (arg1[B] - 0.5))
- *     </programlisting>
- *   </listitem>
- * </itemizedlist>
- *
- * Refer to the
- * <link linkend="cogl-Blend-String-syntax">color-source syntax</link> for
- * describing the arguments. The valid source names for texture combining
- * are:
- * <variablelist>
- *   <varlistentry>
- *     <term>TEXTURE</term>
- *     <listitem>Use the color from the current texture layer</listitem>
- *   </varlistentry>
- *   <varlistentry>
- *     <term>TEXTURE_0, TEXTURE_1, etc</term>
- *     <listitem>Use the color from the specified texture layer</listitem>
- *   </varlistentry>
- *   <varlistentry>
- *     <term>CONSTANT</term>
- *     <listitem>Use the color from the constant given with
- *     cg_pipeline_set_layer_combine_constant()</listitem>
- *   </varlistentry>
- *   <varlistentry>
- *     <term>PRIMARY</term>
- *     <listitem>Use the color of the pipeline as set with
- *     cg_pipeline_set_color()</listitem>
- *   </varlistentry>
- *   <varlistentry>
- *     <term>PREVIOUS</term>
- *     <listitem>Either use the texture color from the previous layer, or
- *     if this is layer 0, use the color of the pipeline as set with
- *     cg_pipeline_set_color()</listitem>
- *   </varlistentry>
- * </variablelist>
- *
- * <refsect2 id="cogl-Layer-Combine-Examples">
- *   <title>Layer Combine Examples</title>
- *   <para>This is effectively what the default blending is:</para>
- *   <informalexample><programlisting>
- *   RGBA = MODULATE (PREVIOUS, TEXTURE)
- *   </programlisting></informalexample>
- *   <para>This could be used to cross-fade between two images, using
- *   the alpha component of a constant as the interpolator. The constant
- *   color is given by calling
- *   cg_pipeline_set_layer_combine_constant().</para>
- *   <informalexample><programlisting>
- *   RGBA = INTERPOLATE (PREVIOUS, TEXTURE, CONSTANT[A])
- *   </programlisting></informalexample>
- * </refsect2>
- *
- * <note>You can't give a multiplication factor for arguments as you can
- * with blending.</note>
- *
- * Return value: %true if the blend string was successfully parsed, and the
- *   described texture combining is supported by the underlying driver and
- *   or hardware. On failure, %false is returned and @error is set
- *
- * Stability: unstable
- */
-bool cg_pipeline_set_layer_combine(cg_pipeline_t *pipeline,
-                                   int layer_index,
-                                   const char *blend_string,
-                                   cg_error_t **error);
-
-/**
- * cg_pipeline_set_layer_combine_constant:
- * @pipeline: A #cg_pipeline_t object
- * @layer_index: Specifies the layer you want to specify a constant used
- *               for texture combining
- * @constant: The constant color you want
- *
- * When you are using the 'CONSTANT' color source in a layer combine
- * description then you can use this function to define its value.
- *
- * Stability: unstable
- */
-void cg_pipeline_set_layer_combine_constant(cg_pipeline_t *pipeline,
-                                            int layer_index,
-                                            const cg_color_t *constant);
 
 /**
  * cg_pipeline_get_n_layers:

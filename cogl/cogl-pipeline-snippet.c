@@ -51,6 +51,12 @@ _cg_pipeline_snippet_generate_code(const cg_pipeline_snippet_data_t *data)
     cg_snippet_t *snippet;
     int snippet_num = 0;
     int n_snippets = 0;
+    const char *chain_func = data->chain_function;
+    const char *chain_func_suffix = data->chain_function_suffix ?
+        data->chain_function_suffix : "";
+    const char *final_func = data->final_function;
+    const char *final_func_suffix = data->final_function_suffix ?
+        data->final_function_suffix : "";
 
     first_snippet = data->snippets->entries;
 
@@ -78,27 +84,31 @@ _cg_pipeline_snippet_generate_code(const cg_pipeline_snippet_data_t *data)
                 data->source_buf,
                 "\n"
                 "%s\n"
-                "%s (%s)\n"
+                "%s%s(%s)\n"
                 "{\n"
-                "  return %s (%s);\n"
+                "  return %s%s(%s);\n"
                 "}\n",
                 data->return_type,
-                data->final_name,
+                final_func,
+                final_func_suffix,
                 data->argument_declarations ? data->argument_declarations : "",
-                data->chain_function,
+                chain_func,
+                chain_func_suffix,
                 data->arguments ? data->arguments : "");
         else
             c_string_append_printf(
                 data->source_buf,
                 "\n"
                 "void\n"
-                "%s (%s)\n"
+                "%s%s(%s)\n"
                 "{\n"
-                "  %s (%s);\n"
+                "  %s%s(%s);\n"
                 "}\n",
-                data->final_name,
+                final_func,
+                final_func_suffix,
                 data->argument_declarations ? data->argument_declarations : "",
-                data->chain_function,
+                chain_func,
+                chain_func_suffix,
                 data->arguments ? data->arguments : "");
 
         return;
@@ -121,13 +131,16 @@ _cg_pipeline_snippet_generate_code(const cg_pipeline_snippet_data_t *data)
 
             if (snippet_num + 1 < n_snippets)
                 c_string_append_printf(data->source_buf,
-                                       "%s_%i",
-                                       data->function_prefix,
+                                       "%s%s_hook%i",
+                                       final_func,
+                                       final_func_suffix,
                                        snippet_num);
-            else
-                c_string_append(data->source_buf, data->final_name);
+            else {
+                c_string_append(data->source_buf, final_func);
+                c_string_append(data->source_buf, final_func_suffix);
+            }
 
-            c_string_append(data->source_buf, " (");
+            c_string_append(data->source_buf, "(");
 
             if (data->argument_declarations)
                 c_string_append(data->source_buf, data->argument_declarations);
@@ -159,13 +172,16 @@ _cg_pipeline_snippet_generate_code(const cg_pipeline_snippet_data_t *data)
 
                 if (snippet_num > 0)
                     c_string_append_printf(data->source_buf,
-                                           "%s_%i",
-                                           data->function_prefix,
+                                           "%s%s_hook%i",
+                                           final_func,
+                                           final_func_suffix,
                                            snippet_num - 1);
-                else
-                    c_string_append(data->source_buf, data->chain_function);
+                else {
+                    c_string_append(data->source_buf, chain_func);
+                    c_string_append(data->source_buf, chain_func_suffix);
+                }
 
-                c_string_append(data->source_buf, " (");
+                c_string_append(data->source_buf, "(");
 
                 if (data->arguments)
                     c_string_append(data->source_buf, data->arguments);

@@ -93,12 +93,6 @@ static builtin_uniform_data_t builtin_uniforms[] = {
 
 const cg_pipeline_progend_t _cg_pipeline_glsl_progend;
 
-typedef struct _unit_state_t {
-    unsigned int dirty_combine_constant : 1;
-
-    GLint combine_constant_uniform;
-} unit_state_t;
-
 typedef struct {
     cg_device_t *dev;
 
@@ -137,8 +131,6 @@ typedef struct {
     GLint flip_uniform;
     int flushed_flip_state;
 
-    unit_state_t *unit_state;
-
     cg_pipeline_cache_entry_t *cache_entry;
 } cg_pipeline_program_state_t;
 
@@ -167,13 +159,12 @@ get_program_state(cg_pipeline_t *pipeline)
  * a linked GLSL program */
 
 int
-_cg_pipeline_progend_glsl_get_attrib_location(cg_pipeline_t *pipeline,
+_cg_pipeline_progend_glsl_get_attrib_location(cg_device_t *dev,
+                                              cg_pipeline_t *pipeline,
                                               int name_index)
 {
     cg_pipeline_program_state_t *program_state = get_program_state(pipeline);
     int *locations;
-
-    _CG_GET_DEVICE(dev, -1);
 
     c_return_val_if_fail(program_state != NULL, -1);
     c_return_val_if_fail(program_state->program != 0, -1);
@@ -236,7 +227,6 @@ program_state_new(cg_device_t *dev, int n_layers,
     program_state->dev = dev;
     program_state->ref_count = 1;
     program_state->program = 0;
-    program_state->unit_state = c_new(unit_state_t, n_layers);
     program_state->uniform_locations = NULL;
     program_state->attribute_locations = NULL;
     program_state->cache_entry = cache_entry;
@@ -273,8 +263,6 @@ destroy_program_state(void *user_data, void *instance)
 
         if (program_state->program)
             GE(dev, glDeleteProgram(program_state->program));
-
-        c_free(program_state->unit_state);
 
         if (program_state->uniform_locations)
             c_array_free(program_state->uniform_locations, true);
@@ -350,8 +338,6 @@ get_uniform_cb(cg_pipeline_t *pipeline, int layer_index, void *user_data)
 {
     update_uniforms_state_t *state = user_data;
     cg_device_t *dev = state->dev;
-    cg_pipeline_program_state_t *program_state = state->program_state;
-    unit_state_t *unit_state = &program_state->unit_state[state->unit];
     GLint uniform_location;
 
     /* We can reuse the source buffer to create the uniform name because
@@ -372,39 +358,7 @@ get_uniform_cb(cg_pipeline_t *pipeline, int layer_index, void *user_data)
     if (uniform_location != -1)
         GE(dev, glUniform1i(uniform_location, state->unit));
 
-    c_string_set_size(dev->codegen_source_buffer, 0);
-    c_string_append_printf(dev->codegen_source_buffer,
-                           "_cg_layer_constant_%i", layer_index);
-
-    GE_RET(uniform_location,
-           dev,
-           glGetUniformLocation(state->gl_program,
-                                dev->codegen_source_buffer->str));
-
-    unit_state->combine_constant_uniform = uniform_location;
-
     state->unit++;
-
-    return true;
-}
-
-static bool
-update_constants_cb(cg_pipeline_t *pipeline, int layer_index, void *user_data)
-{
-    update_uniforms_state_t *state = user_data;
-    cg_device_t *dev = state->dev;
-    cg_pipeline_program_state_t *program_state = state->program_state;
-    unit_state_t *unit_state = &program_state->unit_state[state->unit++];
-
-    if (unit_state->combine_constant_uniform != -1 &&
-        (state->update_all || unit_state->dirty_combine_constant)) {
-        float constant[4];
-        _cg_pipeline_get_layer_combine_constant(
-            pipeline, layer_index, constant);
-        GE(dev,
-           glUniform4fv(unit_state->combine_constant_uniform, 1, constant));
-        unit_state->dirty_combine_constant = false;
-    }
 
     return true;
 }
@@ -499,10 +453,10 @@ flush_uniform_cb(int uniform_num, void *user_data)
 
 static void
 _cg_pipeline_progend_glsl_flush_uniforms(cg_device_t *dev,
-    cg_pipeline_t *pipeline,
-    cg_pipeline_program_state_t *program_state,
-    GLuint gl_program,
-    bool program_changed)
+                                         cg_pipeline_t *pipeline,
+                                         cg_pipeline_program_state_t *program_state,
+                                         GLuint gl_program,
+                                         bool program_changed)
 {
     cg_pipeline_uniforms_state_t *uniforms_state;
     flush_uniforms_closure_t data;
@@ -584,10 +538,8 @@ _cg_pipeline_progend_glsl_flush_uniforms(cg_device_t *dev,
 }
 
 static bool
-_cg_pipeline_progend_glsl_start(cg_pipeline_t *pipeline)
+_cg_pipeline_progend_glsl_start(cg_device_t *dev, cg_pipeline_t *pipeline)
 {
-    _CG_GET_DEVICE(dev, false);
-
     if (!cg_has_feature(dev, CG_FEATURE_ID_GLSL))
         return false;
 
@@ -595,7 +547,8 @@ _cg_pipeline_progend_glsl_start(cg_pipeline_t *pipeline)
 }
 
 static void
-_cg_pipeline_progend_glsl_end(cg_pipeline_t *pipeline,
+_cg_pipeline_progend_glsl_end(cg_device_t *dev,
+                              cg_pipeline_t *pipeline,
                               unsigned long pipelines_difference)
 {
     cg_pipeline_program_state_t *program_state;
@@ -603,8 +556,6 @@ _cg_pipeline_progend_glsl_end(cg_pipeline_t *pipeline,
     bool program_changed = false;
     update_uniforms_state_t state;
     cg_pipeline_cache_entry_t *cache_entry = NULL;
-
-    _CG_GET_DEVICE(dev, NO_RETVAL);
 
     program_state = get_program_state(pipeline);
 
@@ -699,8 +650,6 @@ _cg_pipeline_progend_glsl_end(cg_pipeline_t *pipeline,
     state.update_all =
         (program_changed || program_state->last_used_for_pipeline != pipeline);
 
-    cg_pipeline_foreach_layer(pipeline, update_constants_cb, &state);
-
     if (program_changed) {
         int i;
 
@@ -742,12 +691,11 @@ _cg_pipeline_progend_glsl_end(cg_pipeline_t *pipeline,
 }
 
 static void
-_cg_pipeline_progend_glsl_pre_change_notify(cg_pipeline_t *pipeline,
+_cg_pipeline_progend_glsl_pre_change_notify(cg_device_t *dev,
+                                            cg_pipeline_t *pipeline,
                                             cg_pipeline_state_t change,
                                             const cg_color_t *new_color)
 {
-    _CG_GET_DEVICE(dev, NO_RETVAL);
-
     if ((change & (_cg_pipeline_get_state_for_vertex_codegen(dev) |
                    _cg_pipeline_get_state_for_fragment_codegen(dev)))) {
         dirty_program_state(pipeline);
@@ -776,27 +724,20 @@ _cg_pipeline_progend_glsl_pre_change_notify(cg_pipeline_t *pipeline,
  * yet!
  */
 static void
-_cg_pipeline_progend_glsl_layer_pre_change_notify(
-    cg_pipeline_t *owner,
-    cg_pipeline_layer_t *layer,
-    cg_pipeline_layer_state_t change)
+_cg_pipeline_progend_glsl_layer_pre_change_notify(cg_device_t *dev,
+                                                  cg_pipeline_t *owner,
+                                                  cg_pipeline_layer_t *layer,
+                                                  cg_pipeline_layer_state_t change)
 {
-    _CG_GET_DEVICE(dev, NO_RETVAL);
-
     if ((change & (_cg_pipeline_get_layer_state_for_fragment_codegen(dev) |
                    CG_PIPELINE_LAYER_STATE_AFFECTS_VERTEX_CODEGEN))) {
         dirty_program_state(owner);
-    } else if (change & CG_PIPELINE_LAYER_STATE_COMBINE_CONSTANT) {
-        cg_pipeline_program_state_t *program_state = get_program_state(owner);
-        if (program_state) {
-            int unit_index = _cg_pipeline_layer_get_unit_index(layer);
-            program_state->unit_state[unit_index].dirty_combine_constant = true;
-        }
     }
 }
 
 static void
-_cg_pipeline_progend_glsl_pre_paint(cg_pipeline_t *pipeline,
+_cg_pipeline_progend_glsl_pre_paint(cg_device_t *dev,
+                                    cg_pipeline_t *pipeline,
                                     cg_framebuffer_t *framebuffer)
 {
     bool needs_flip;
@@ -808,8 +749,6 @@ _cg_pipeline_progend_glsl_pre_paint(cg_pipeline_t *pipeline,
     bool need_modelview;
     bool need_projection;
     cg_matrix_t modelview, projection;
-
-    _CG_GET_DEVICE(dev, NO_RETVAL);
 
     program_state = get_program_state(pipeline);
 

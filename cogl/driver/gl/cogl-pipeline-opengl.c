@@ -93,10 +93,8 @@ texture_unit_free(cg_texture_unit_t *unit)
 }
 
 cg_texture_unit_t *
-_cg_get_texture_unit(int index_)
+_cg_get_texture_unit(cg_device_t *dev, int index_)
 {
-    _CG_GET_DEVICE(dev, NULL);
-
     if (dev->texture_units->len < (index_ + 1)) {
         int i;
         int prev_len = dev->texture_units->len;
@@ -113,11 +111,9 @@ _cg_get_texture_unit(int index_)
 }
 
 void
-_cg_destroy_texture_units(void)
+_cg_destroy_texture_units(cg_device_t *dev)
 {
     int i;
-
-    _CG_GET_DEVICE(dev, NO_RETVAL);
 
     for (i = 0; i < dev->texture_units->len; i++) {
         cg_texture_unit_t *unit =
@@ -127,11 +123,9 @@ _cg_destroy_texture_units(void)
     c_array_free(dev->texture_units, true);
 }
 
-void
-_cg_set_active_texture_unit(int unit_index)
+static void
+set_active_texture_unit(cg_device_t *dev, int unit_index)
 {
-    _CG_GET_DEVICE(dev, NO_RETVAL);
-
     if (dev->active_texture_unit != unit_index) {
         GE(dev, glActiveTexture(GL_TEXTURE0 + unit_index));
         dev->active_texture_unit = unit_index;
@@ -174,8 +168,8 @@ _cg_bind_gl_texture_transient(GLenum gl_target,
      * in case the driver doesn't have a sparse data structure for
      * texture units.
      */
-    _cg_set_active_texture_unit(1);
-    unit = _cg_get_texture_unit(1);
+    set_active_texture_unit(dev, 1);
+    unit = _cg_get_texture_unit(dev, 1);
 
     /* NB: If we have previously bound a foreign texture to this texture
      * unit we don't know if that texture has since been deleted and we
@@ -412,7 +406,7 @@ flush_layers_common_gl_state_cb(cg_pipeline_layer_t *layer,
     cg_pipeline_flush_layer_state_t *flush_state = user_data;
     cg_device_t *dev = flush_state->dev;
     int unit_index = flush_state->i;
-    cg_texture_unit_t *unit = _cg_get_texture_unit(unit_index);
+    cg_texture_unit_t *unit = _cg_get_texture_unit(dev, unit_index);
     unsigned long layers_difference =
         flush_state->layer_differences[unit_index];
 
@@ -447,7 +441,7 @@ flush_layers_common_gl_state_cb(cg_pipeline_layer_t *layer,
 
         cg_texture_get_gl_texture(texture, &gl_texture, &gl_target);
 
-        _cg_set_active_texture_unit(unit_index);
+        set_active_texture_unit(dev, unit_index);
 
         /* NB: There are several Cogl components and some code in
          * Clutter that will temporarily bind arbitrary GL textures to
@@ -717,11 +711,9 @@ _cg_pipeline_layer_forward_wrap_modes(cg_pipeline_layer_t *layer,
  * state.
  */
 static void
-foreach_texture_unit_update_filter_and_wrap_modes(void)
+foreach_texture_unit_update_filter_and_wrap_modes(cg_device_t *dev)
 {
     int i;
-
-    _CG_GET_DEVICE(dev, NO_RETVAL);
 
     for (i = 0; i < dev->texture_units->len; i++) {
         cg_texture_unit_t *unit =
@@ -744,6 +736,7 @@ foreach_texture_unit_update_filter_and_wrap_modes(void)
 }
 
 typedef struct {
+    cg_device_t *dev;
     int i;
     unsigned long *layer_differences;
 } cg_pipeline_compare_layers_state_t;
@@ -753,7 +746,7 @@ compare_layer_differences_cb(cg_pipeline_layer_t *layer,
                              void *user_data)
 {
     cg_pipeline_compare_layers_state_t *state = user_data;
-    cg_texture_unit_t *unit = _cg_get_texture_unit(state->i);
+    cg_texture_unit_t *unit = _cg_get_texture_unit(state->dev, state->i);
 
     if (unit->layer == layer)
         state->layer_differences[state->i] = unit->layer_changes_since_flush;
@@ -782,6 +775,7 @@ compare_layer_differences_cb(cg_pipeline_layer_t *layer,
 }
 
 typedef struct {
+    cg_device_t *dev;
     cg_framebuffer_t *framebuffer;
     const cg_pipeline_vertend_t *vertend;
     const cg_pipeline_fragend_t *fragend;
@@ -801,7 +795,8 @@ vertend_add_layer_cb(cg_pipeline_layer_t *layer, void *user_data)
 
     /* Either generate per layer code snippets or setup the
      * fixed function glTexEnv for each layer... */
-    if (C_LIKELY(vertend->add_layer(pipeline,
+    if (C_LIKELY(vertend->add_layer(state->dev,
+                                    pipeline,
                                     layer,
                                     state->layer_differences[unit_index],
                                     state->framebuffer)))
@@ -824,8 +819,8 @@ fragend_add_layer_cb(cg_pipeline_layer_t *layer, void *user_data)
 
     /* Either generate per layer code snippets or setup the
      * fixed function glTexEnv for each layer... */
-    if (C_LIKELY(fragend->add_layer(
-                     pipeline, layer, state->layer_differences[unit_index])))
+    if (C_LIKELY(fragend->add_layer(state->dev, pipeline, layer,
+                                    state->layer_differences[unit_index])))
         state->added_layer = true;
     else {
         state->error_adding_layer = true;
@@ -961,12 +956,17 @@ _cg_pipeline_flush_gl_state(cg_device_t *dev,
     n_layers = cg_pipeline_get_n_layers(pipeline);
     if (n_layers) {
         cg_pipeline_compare_layers_state_t state;
+
         layer_differences = c_alloca(sizeof(unsigned long) * n_layers);
         memset(layer_differences, 0, sizeof(unsigned long) * n_layers);
+
+        state.dev = dev;
         state.i = 0;
         state.layer_differences = layer_differences;
-        _cg_pipeline_foreach_layer_internal(
-            pipeline, compare_layer_differences_cb, &state);
+
+        _cg_pipeline_foreach_layer_internal(pipeline,
+                                            compare_layer_differences_cb,
+                                            &state);
     } else
         layer_differences = NULL;
 
@@ -1015,13 +1015,14 @@ _cg_pipeline_flush_gl_state(cg_device_t *dev,
 
         progend = _cg_pipeline_progends[i];
 
-        if (C_UNLIKELY(!progend->start(pipeline)))
+        if (C_UNLIKELY(!progend->start(dev, pipeline)))
             continue;
 
         vertend = _cg_pipeline_vertends[progend->vertend];
 
-        vertend->start(pipeline, n_layers, pipelines_difference);
+        vertend->start(dev, pipeline, n_layers, pipelines_difference);
 
+        state.dev = dev;
         state.framebuffer = framebuffer;
         state.vertend = vertend;
         state.pipeline = pipeline;
@@ -1035,7 +1036,7 @@ _cg_pipeline_flush_gl_state(cg_device_t *dev,
         if (C_UNLIKELY(state.error_adding_layer))
             continue;
 
-        if (C_UNLIKELY(!vertend->end(pipeline, pipelines_difference)))
+        if (C_UNLIKELY(!vertend->end(dev, pipeline, pipelines_difference)))
             continue;
 
         /* Now prepare the fragment processing state (fragend)
@@ -1048,7 +1049,7 @@ _cg_pipeline_flush_gl_state(cg_device_t *dev,
         fragend = _cg_pipeline_fragends[progend->fragend];
         state.fragend = fragend;
 
-        fragend->start(pipeline, n_layers, pipelines_difference);
+        fragend->start(dev, pipeline, n_layers, pipelines_difference);
 
         _cg_pipeline_foreach_layer_internal(
             pipeline, fragend_add_layer_cb, &state);
@@ -1056,17 +1057,11 @@ _cg_pipeline_flush_gl_state(cg_device_t *dev,
         if (C_UNLIKELY(state.error_adding_layer))
             continue;
 
-        if (!state.added_layer) {
-            if (fragend->passthrough &&
-                C_UNLIKELY(!fragend->passthrough(pipeline)))
-                continue;
-        }
-
-        if (C_UNLIKELY(!fragend->end(pipeline, pipelines_difference)))
+        if (C_UNLIKELY(!fragend->end(dev, pipeline, pipelines_difference)))
             continue;
 
         if (progend->end)
-            progend->end(pipeline, pipelines_difference);
+            progend->end(dev, pipeline, pipelines_difference);
         break;
     }
 
@@ -1106,7 +1101,8 @@ done:
         int name_index = CG_ATTRIBUTE_COLOR_NAME_INDEX;
 
         attribute =
-            _cg_pipeline_progend_glsl_get_attrib_location(pipeline, name_index);
+            _cg_pipeline_progend_glsl_get_attrib_location(dev, pipeline,
+                                                          name_index);
         if (attribute != -1)
             GE(dev,
                glVertexAttrib4f(attribute,
@@ -1120,12 +1116,12 @@ done:
      * depend on the material state. This is used on GLES2 to update the
      * matrices */
     if (progend->pre_paint)
-        progend->pre_paint(pipeline, framebuffer);
+        progend->pre_paint(dev, pipeline, framebuffer);
 
     /* Handle the fact that OpenGL associates texture filter and wrap
      * modes with the texture objects not the texture units... */
     if (!_cg_has_private_feature(dev, CG_PRIVATE_FEATURE_SAMPLER_OBJECTS))
-        foreach_texture_unit_update_filter_and_wrap_modes();
+        foreach_texture_unit_update_filter_and_wrap_modes(dev);
 
     /* If this pipeline has more than one layer then we always need
      * to make sure we rebind the texture for unit 1.
@@ -1135,9 +1131,9 @@ done:
      * object parameters. cogl-pipeline.c (See
      * _cg_bind_gl_texture_transient)
      */
-    unit1 = _cg_get_texture_unit(1);
+    unit1 = _cg_get_texture_unit(dev, 1);
     if (cg_pipeline_get_n_layers(pipeline) > 1 && unit1->dirty_gl_texture) {
-        _cg_set_active_texture_unit(1);
+        set_active_texture_unit(dev, 1);
         GE(dev, glBindTexture(unit1->gl_target, unit1->gl_texture));
         unit1->dirty_gl_texture = false;
     }

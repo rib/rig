@@ -55,12 +55,6 @@ bool _cg_pipeline_layer_texture_data_equal(cg_pipeline_layer_t *authority0,
                                            cg_pipeline_layer_t *authority1,
                                            cg_pipeline_eval_flags_t flags);
 
-bool _cg_pipeline_layer_combine_state_equal(cg_pipeline_layer_t *authority0,
-                                            cg_pipeline_layer_t *authority1);
-
-bool _cg_pipeline_layer_combine_constant_equal(cg_pipeline_layer_t *authority0,
-                                               cg_pipeline_layer_t *authority1);
-
 bool _cg_pipeline_layer_sampler_equal(cg_pipeline_layer_t *authority0,
                                       cg_pipeline_layer_t *authority1);
 
@@ -92,15 +86,6 @@ _cg_pipeline_layer_hash_texture_data_state(cg_pipeline_layer_t *authority,
 void _cg_pipeline_layer_hash_sampler_state(cg_pipeline_layer_t *authority,
                                            cg_pipeline_layer_t **authorities,
                                            cg_pipeline_hash_state_t *state);
-
-void _cg_pipeline_layer_hash_combine_state(cg_pipeline_layer_t *authority,
-                                           cg_pipeline_layer_t **authorities,
-                                           cg_pipeline_hash_state_t *state);
-
-void _cg_pipeline_layer_hash_combine_constant_state(
-    cg_pipeline_layer_t *authority,
-    cg_pipeline_layer_t **authorities,
-    cg_pipeline_hash_state_t *state);
 
 void
 _cg_pipeline_layer_hash_point_sprite_state(cg_pipeline_layer_t *authority,

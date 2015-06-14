@@ -563,11 +563,13 @@ typedef struct _cg_snippet_t cg_snippet_t;
  * for a layer or to modify the results.
  * </para>
  * <para>
- * Within the snippet code for this hook there is an extra vec4
- * variable called ‘cg_layer’. This contains the resulting color
- * that will be used for the layer. This can be modified in the ‘post’
- * section or it the default processing can be replaced entirely using
- * the ‘replace’ section.
+ * Within the snippet code for this hook there is a local vec4
+ * variable called ‘frag’ for tracking the hook's fragment value.
+ * Additional local variables can be inserted with the
+ * 'pre' section. 'frag' can be initialized in the 'replace' section
+ * or the default value can be modified in the ‘post’ section.
+ * Within the 'replace' section the 'frag' variable initially
+ * corresponds to the fragment value for the previous layer.
  * </para>
  * <para>
  * The ‘declarations’ string in @snippet will be inserted in the
@@ -575,18 +577,20 @@ typedef struct _cg_snippet_t cg_snippet_t;
  * attributes or functions that the snippet requires.
  * </para>
  * <para>
- * The ‘pre’ string in @snippet will be inserted just before the
+ * The ‘pre’ string in @snippet will be inserted in just before the
  * fragment processing for this layer.
  * </para>
  * <para>
  * If a ‘replace’ string is given then this will be used instead of
- * the default fragment processing for this layer. The snippet must write to
- * the ‘cg_layer’ variable in that case.
+ * the default fragment processing for this layer. The snippet should
+ * write to the ‘frag’ variable in that case. It can sometimes also
+ * be useful to set an empty 'replace' string as a way to skip
+ * modulating a layer with the previous layer.
  * </para>
  * <para>
  * The ‘post’ string in @snippet will be inserted just after the
- * fragment processing for the layer. The results can be modified by changing
- * the value of the ‘cg_layer’ variable.
+ * fragment processing for the layer. The results can be modified by
+ * changing the value of the ‘frag’ variable.
  * </para>
  *   </glossdef>
  *  </glossentry>

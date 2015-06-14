@@ -36,14 +36,16 @@
 const cg_pipeline_fragend_t _cg_pipeline_nop_fragend;
 
 static void
-_cg_pipeline_fragend_nop_start(cg_pipeline_t *pipeline,
+_cg_pipeline_fragend_nop_start(cg_device_t *dev,
+                               cg_pipeline_t *pipeline,
                                int n_layers,
                                unsigned long pipelines_difference)
 {
 }
 
 static bool
-_cg_pipeline_fragend_nop_add_layer(cg_pipeline_t *pipeline,
+_cg_pipeline_fragend_nop_add_layer(cg_device_t *dev,
+                                   cg_pipeline_t *pipeline,
                                    cg_pipeline_layer_t *layer,
                                    unsigned long layers_difference)
 {
@@ -51,7 +53,8 @@ _cg_pipeline_fragend_nop_add_layer(cg_pipeline_t *pipeline,
 }
 
 static bool
-_cg_pipeline_fragend_nop_end(cg_pipeline_t *pipeline,
+_cg_pipeline_fragend_nop_end(cg_device_t *dev,
+                             cg_pipeline_t *pipeline,
                              unsigned long pipelines_difference)
 {
     return true;
@@ -59,8 +62,6 @@ _cg_pipeline_fragend_nop_end(cg_pipeline_t *pipeline,
 
 const cg_pipeline_fragend_t _cg_pipeline_nop_fragend = {
     _cg_pipeline_fragend_nop_start, _cg_pipeline_fragend_nop_add_layer,
-    NULL, /* passthrough */
     _cg_pipeline_fragend_nop_end,   NULL, /* pipeline_change_notify */
-    NULL, /* pipeline_set_parent_notify */
     NULL, /* layer_change_notify */
 };

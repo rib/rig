@@ -376,38 +376,46 @@ struct _cg_pipeline_t {
 };
 
 typedef struct _cg_pipeline_fragend_t {
-    void (*start)(cg_pipeline_t *pipeline,
+    void (*start)(cg_device_t *dev,
+                  cg_pipeline_t *pipeline,
                   int n_layers,
                   unsigned long pipelines_difference);
-    bool (*add_layer)(cg_pipeline_t *pipeline,
+    bool (*add_layer)(cg_device_t *dev,
+                      cg_pipeline_t *pipeline,
                       cg_pipeline_layer_t *layer,
                       unsigned long layers_difference);
-    bool (*passthrough)(cg_pipeline_t *pipeline);
-    bool (*end)(cg_pipeline_t *pipeline, unsigned long pipelines_difference);
+    bool (*end)(cg_device_t *dev,
+                cg_pipeline_t *pipeline, unsigned long pipelines_difference);
 
-    void (*pipeline_pre_change_notify)(cg_pipeline_t *pipeline,
+    void (*pipeline_pre_change_notify)(cg_device_t *dev,
+                                       cg_pipeline_t *pipeline,
                                        cg_pipeline_state_t change,
                                        const cg_color_t *new_color);
-    void (*pipeline_set_parent_notify)(cg_pipeline_t *pipeline);
-    void (*layer_pre_change_notify)(cg_pipeline_t *owner,
+    void (*layer_pre_change_notify)(cg_device_t *dev,
+                                    cg_pipeline_t *owner,
                                     cg_pipeline_layer_t *layer,
                                     cg_pipeline_layer_state_t change);
 } cg_pipeline_fragend_t;
 
 typedef struct _cg_pipeline_vertend_t {
-    void (*start)(cg_pipeline_t *pipeline,
+    void (*start)(cg_device_t *dev,
+                  cg_pipeline_t *pipeline,
                   int n_layers,
                   unsigned long pipelines_difference);
-    bool (*add_layer)(cg_pipeline_t *pipeline,
+    bool (*add_layer)(cg_device_t *dev,
+                      cg_pipeline_t *pipeline,
                       cg_pipeline_layer_t *layer,
                       unsigned long layers_difference,
                       cg_framebuffer_t *framebuffer);
-    bool (*end)(cg_pipeline_t *pipeline, unsigned long pipelines_difference);
+    bool (*end)(cg_device_t *dev,
+                cg_pipeline_t *pipeline, unsigned long pipelines_difference);
 
-    void (*pipeline_pre_change_notify)(cg_pipeline_t *pipeline,
+    void (*pipeline_pre_change_notify)(cg_device_t *dev,
+                                       cg_pipeline_t *pipeline,
                                        cg_pipeline_state_t change,
                                        const cg_color_t *new_color);
-    void (*layer_pre_change_notify)(cg_pipeline_t *owner,
+    void (*layer_pre_change_notify)(cg_device_t *dev,
+                                    cg_pipeline_t *owner,
                                     cg_pipeline_layer_t *layer,
                                     cg_pipeline_layer_state_t change);
 } cg_pipeline_vertend_t;
@@ -415,18 +423,23 @@ typedef struct _cg_pipeline_vertend_t {
 typedef struct {
     int vertend;
     int fragend;
-    bool (*start)(cg_pipeline_t *pipeline);
-    void (*end)(cg_pipeline_t *pipeline, unsigned long pipelines_difference);
-    void (*pipeline_pre_change_notify)(cg_pipeline_t *pipeline,
+    bool (*start)(cg_device_t *dev, cg_pipeline_t *pipeline);
+    void (*end)(cg_device_t *dev, cg_pipeline_t *pipeline,
+                unsigned long pipelines_difference);
+    void (*pipeline_pre_change_notify)(cg_device_t *dev,
+                                       cg_pipeline_t *pipeline,
                                        cg_pipeline_state_t change,
                                        const cg_color_t *new_color);
-    void (*layer_pre_change_notify)(cg_pipeline_t *owner,
+    void (*layer_pre_change_notify)(cg_device_t *dev,
+                                    cg_pipeline_t *owner,
                                     cg_pipeline_layer_t *layer,
                                     cg_pipeline_layer_state_t change);
     /* This is called after all of the other functions whenever the
        pipeline is flushed, even if the pipeline hasn't changed since
        the last flush */
-    void (*pre_paint)(cg_pipeline_t *pipeline, cg_framebuffer_t *framebuffer);
+    void (*pre_paint)(cg_device_t *dev,
+                      cg_pipeline_t *pipeline,
+                      cg_framebuffer_t *framebuffer);
 } cg_pipeline_progend_t;
 
 typedef enum {
@@ -548,8 +561,6 @@ typedef struct _cg_pipeline_flush_options_t {
     uint32_t disable_layers;
     cg_texture_t *layer0_override_texture;
 } cg_pipeline_flush_options_t;
-
-unsigned int _cg_get_n_args_for_combine_func(cg_pipeline_combine_func_t func);
 
 /*
  * _cg_pipeline_weak_copy:
@@ -739,10 +750,6 @@ _cg_pipeline_find_equivalent_parent(cg_pipeline_t *pipeline,
                                     cg_pipeline_state_t pipeline_state,
                                     cg_pipeline_layer_state_t layer_state);
 
-void _cg_pipeline_get_layer_combine_constant(cg_pipeline_t *pipeline,
-                                             int layer_index,
-                                             float *constant);
-
 void _cg_pipeline_prune_to_n_layers(cg_pipeline_t *pipeline, int n);
 
 /*
@@ -759,9 +766,6 @@ void _cg_pipeline_foreach_layer_internal(
 
 bool _cg_pipeline_layer_numbers_equal(cg_pipeline_t *pipeline0,
                                       cg_pipeline_t *pipeline1);
-
-bool _cg_pipeline_need_texture_combine_separate(
-    cg_pipeline_layer_t *combine_authority);
 
 void _cg_pipeline_init_state_hash_functions(void);
 

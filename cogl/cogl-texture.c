@@ -559,8 +559,7 @@ cg_texture_draw_and_read_to_bitmap(cg_texture_t *texture,
 
     cg_framebuffer_get_viewport4fv(framebuffer, save_viewport);
     _cg_framebuffer_push_projection(framebuffer);
-    cg_framebuffer_orthographic(
-        framebuffer, 0, 0, viewport[2], viewport[3], 0, 100);
+    cg_framebuffer_orthographic(framebuffer, 0, 0, viewport[2], viewport[3], 0, 100);
 
     cg_framebuffer_push_matrix(framebuffer);
     cg_framebuffer_identity_matrix(framebuffer);
@@ -568,22 +567,24 @@ cg_texture_draw_and_read_to_bitmap(cg_texture_t *texture,
     /* Direct copy operation */
 
     if (dev->texture_download_pipeline == NULL) {
+        cg_snippet_t *snippet;
+
         dev->texture_download_pipeline = cg_pipeline_new(dev);
         cg_pipeline_set_blend(dev->texture_download_pipeline,
                               "RGBA = ADD (SRC_COLOR, 0)", NULL);
+
+        snippet = cg_snippet_new(CG_SNIPPET_HOOK_LAYER_FRAGMENT, NULL, NULL);
+        cg_snippet_set_replace(snippet, "frag = texture2D(cg_sampler0, cg_tex_coord0_in.st)");
+        cg_pipeline_add_layer_snippet(dev->texture_download_pipeline, 0, snippet);
+        cg_object_unref(snippet);
+
+        cg_pipeline_set_layer_filters(dev->texture_download_pipeline,
+                                      0,
+                                      CG_PIPELINE_FILTER_NEAREST,
+                                      CG_PIPELINE_FILTER_NEAREST);
     }
 
     cg_pipeline_set_layer_texture(dev->texture_download_pipeline, 0, texture);
-
-    cg_pipeline_set_layer_combine(dev->texture_download_pipeline,
-                                  0, /* layer */
-                                  "RGBA = REPLACE (TEXTURE)",
-                                  NULL);
-
-    cg_pipeline_set_layer_filters(dev->texture_download_pipeline,
-                                  0,
-                                  CG_PIPELINE_FILTER_NEAREST,
-                                  CG_PIPELINE_FILTER_NEAREST);
 
     if (!do_texture_draw_and_read(framebuffer,
                                   dev->texture_download_pipeline,

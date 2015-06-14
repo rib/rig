@@ -37,11 +37,6 @@
 #include <stdlib.h>
 #include <clib.h>
 
-typedef enum _cg_blend_string_context_t {
-    CG_BLEND_STRING_CONTEXT_BLENDING,
-    CG_BLEND_STRING_CONTEXT_TEXTURE_COMBINE
-} cg_blend_string_context_t;
-
 /* NB: debug stringify code will get upset if these
  * are re-ordered */
 typedef enum _cg_blend_string_channel_mask_t {
@@ -51,18 +46,9 @@ typedef enum _cg_blend_string_channel_mask_t {
 } cg_blend_string_channel_mask_t;
 
 typedef enum _cg_blend_string_color_source_type_t {
-    /* blending */
     CG_BLEND_STRING_COLOR_SOURCE_SRC_COLOR,
     CG_BLEND_STRING_COLOR_SOURCE_DST_COLOR,
-
-    /* shared */
     CG_BLEND_STRING_COLOR_SOURCE_CONSTANT,
-
-    /* texture combining */
-    CG_BLEND_STRING_COLOR_SOURCE_TEXTURE,
-    CG_BLEND_STRING_COLOR_SOURCE_TEXTURE_N,
-    CG_BLEND_STRING_COLOR_SOURCE_PRIMARY,
-    CG_BLEND_STRING_COLOR_SOURCE_PREVIOUS
 } cg_blend_string_color_source_type_t;
 
 typedef struct _cg_blend_string_color_source_info_t {
@@ -92,17 +78,7 @@ typedef struct _cg_blend_string_argument_t {
 } cg_blend_string_argument_t;
 
 typedef enum _cg_blend_string_function_type_t {
-    /* shared */
     CG_BLEND_STRING_FUNCTION_ADD,
-
-    /* texture combine only */
-    CG_BLEND_STRING_FUNCTION_REPLACE,
-    CG_BLEND_STRING_FUNCTION_MODULATE,
-    CG_BLEND_STRING_FUNCTION_ADD_SIGNED,
-    CG_BLEND_STRING_FUNCTION_INTERPOLATE,
-    CG_BLEND_STRING_FUNCTION_SUBTRACT,
-    CG_BLEND_STRING_FUNCTION_DOT3_RGB,
-    CG_BLEND_STRING_FUNCTION_DOT3_RGBA
 } cg_blend_string_function_type_t;
 
 typedef struct _cg_blend_string_function_info_t {
@@ -120,7 +96,6 @@ typedef struct _cg_blend_string_statement_t {
 
 bool _cg_blend_string_compile(cg_device_t *dev,
                               const char *string,
-                              cg_blend_string_context_t context,
                               cg_blend_string_statement_t *statements,
                               cg_error_t **error);
 

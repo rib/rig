@@ -129,11 +129,9 @@ typedef struct _cg_texture_unit_t {
 
 } cg_texture_unit_t;
 
-cg_texture_unit_t *_cg_get_texture_unit(int index_);
+cg_texture_unit_t *_cg_get_texture_unit(cg_device_t *dev, int index_);
 
-void _cg_destroy_texture_units(void);
-
-void _cg_set_active_texture_unit(int unit_index);
+void _cg_destroy_texture_units(cg_device_t *dev);
 
 void _cg_bind_gl_texture_transient(GLenum gl_target,
                                    GLuint gl_texture,
