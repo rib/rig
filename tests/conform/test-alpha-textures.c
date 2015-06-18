@@ -7,13 +7,14 @@
 #include "test-cg-fixtures.h"
 
 static void
-create_pipeline (cg_texture_t **tex_out,
-                 cg_pipeline_t **pipeline_out)
+create_pipeline(cg_texture_t **tex_out,
+                cg_pipeline_t **pipeline_out)
 {
   cg_texture_2d_t *tex;
   cg_pipeline_t *pipeline;
   static const uint8_t tex_data[] =
     { 0x00, 0x44, 0x88, 0xcc };
+  cg_snippet_t *snippet;
 
   tex = cg_texture_2d_new_from_data (test_dev,
                                        2, 2, /* width/height */
@@ -32,15 +33,15 @@ create_pipeline (cg_texture_t **tex_out,
                                      0, /* layer */
                                      CG_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE);
 
-  /* This is the layer combine used by cogl-pango */
-  cg_pipeline_set_layer_combine (pipeline,
-                                   0, /* layer */
-                                   "RGBA = MODULATE (PREVIOUS, TEXTURE[A])",
-                                   NULL);
+  /* This is the layer snippet used by cogl-pango */
+  snippet = cg_snippet_new(CG_SNIPPET_HOOK_LAYER_FRAGMENT, NULL, NULL);
+  cg_snippet_set_replace(snippet, "frag *= cg_texel0.a;\n");
+  cg_pipeline_add_layer_snippet(pipeline, 0, snippet);
+  cg_object_unref(snippet);
 
   cg_pipeline_set_layer_texture (pipeline,
-                                   0, /* layer */
-                                   tex);
+                                 0, /* layer */
+                                 tex);
 
   *pipeline_out = pipeline;
   *tex_out = tex;
