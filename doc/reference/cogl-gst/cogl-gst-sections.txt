@@ -6,7 +6,7 @@
 CoglGstVideoSink
 CoglGstVideoSinkClass
 cogl_gst_video_sink_new
-cogl_gst_video_sink_set_context
+cogl_gst_video_sink_set_device
 cogl_gst_video_sink_get_pipeline
 cogl_gst_video_sink_attach_frame
 cogl_gst_video_sink_setup_pipeline
