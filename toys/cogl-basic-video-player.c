@@ -302,7 +302,7 @@ make_pipeline_for_uri(cg_device_t *dev,
 
         g_object_ref(sink);
 
-        cg_gst_video_sink_set_context(sink, dev);
+        cg_gst_video_sink_set_device(sink, dev);
     }
 
     *pipeline_out = pipeline;
