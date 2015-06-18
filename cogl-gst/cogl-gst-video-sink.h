@@ -227,7 +227,7 @@ bool cg_gst_video_sink_is_ready(CgGstVideoSink *sink);
 cg_pipeline_t *cg_gst_video_sink_get_pipeline(CgGstVideoSink *vt);
 
 /**
- * cg_gst_video_sink_set_context:
+ * cg_gst_video_sink_set_device:
  * @vt: The #CgGstVideoSink
  * @dev: The #cg_device_t for the sink to use
  *
@@ -237,7 +237,7 @@ cg_pipeline_t *cg_gst_video_sink_get_pipeline(CgGstVideoSink *vt);
  * cg_gst_video_sink_new().
  *
  */
-void cg_gst_video_sink_set_context(CgGstVideoSink *vt, cg_device_t *dev);
+void cg_gst_video_sink_set_device(CgGstVideoSink *vt, cg_device_t *dev);
 
 /**
  * cg_gst_video_sink_get_free_layer:

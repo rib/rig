@@ -151,6 +151,7 @@ struct _CgGstVideoSinkPrivate {
     GstCaps *caps;
     CgGstRenderer *renderer;
     GstFlowReturn flow_return;
+    cg_snippet_t *layer_skip_snippet;
     int custom_start;
     int free_layer;
     bool default_sample;
@@ -292,7 +293,7 @@ add_cache_entry(CgGstVideoSink *sink, SnippetCache *cache, const char *decl)
     entry->fragment_snippet =
         cg_snippet_new(CG_SNIPPET_HOOK_FRAGMENT_GLOBALS, decl, NULL /* post */);
 
-    default_source = g_strdup_printf("  cg_layer *= cg_gst_sample_video%i "
+    default_source = g_strdup_printf("  frag *= cg_gst_sample_video%i "
                                      "(cg_tex_coord%i_in.st);\n",
                                      priv->custom_start,
                                      priv->custom_start);
@@ -328,10 +329,9 @@ setup_pipeline_from_cache_entry(CgGstVideoSink *sink,
          * layer so that it won't redundantly generate code to sample
          * the intermediate textures */
         for (i = 0; i < n_layers; i++)
-            cg_pipeline_set_layer_combine(pipeline,
+            cg_pipeline_add_layer_snippet(pipeline,
                                           priv->custom_start + i,
-                                          "RGBA=REPLACE(PREVIOUS)",
-                                          NULL);
+                                          priv->layer_skip_snippet);
 
         if (priv->default_sample)
             cg_pipeline_add_layer_snippet(pipeline,
@@ -563,17 +563,21 @@ cg_gst_rgb32_setup_pipeline(CgGstVideoSink *sink,
                             cg_pipeline_t *pipeline)
 {
     CgGstVideoSinkPrivate *priv = sink->priv;
-    char *layer_combine;
+    cg_snippet_t *snippet;
+    char *code;
 
     setup_pipeline_from_cache_entry(sink, pipeline, NULL, 1);
 
-    /* Premultiply the texture using the a special layer combine */
-    layer_combine = g_strdup_printf("RGB=MODULATE(PREVIOUS, TEXTURE_%i[A])\n"
-                                    "A=REPLACE(PREVIOUS[A])",
-                                    priv->custom_start);
-    cg_pipeline_set_layer_combine(
-        pipeline, priv->custom_start + 1, layer_combine, NULL);
-    g_free(layer_combine);
+    /* Premultiply the texture using a special layer hook */
+
+    snippet = cg_snippet_new(CG_SNIPPET_HOOK_LAYER_FRAGMENT, NULL, NULL);
+
+    code = g_strdup_printf("frag.rgb *= cg_texel%i.a;\n", priv->custom_start);
+    cg_snippet_set_replace(snippet, code);
+    g_free(code);
+
+    cg_pipeline_add_layer_snippet(pipeline, priv->custom_start + 1, snippet);
+    cg_object_unref(snippet);
 }
 
 static bool
@@ -991,7 +995,7 @@ cg_gst_build_caps(GSList *renderers)
 }
 
 void
-cg_gst_video_sink_set_context(CgGstVideoSink *vt, cg_device_t *dev)
+cg_gst_video_sink_set_device(CgGstVideoSink *vt, cg_device_t *dev)
 {
     CgGstVideoSinkPrivate *priv = vt->priv;
 
@@ -1264,6 +1268,9 @@ cg_gst_video_sink_init(CgGstVideoSink *sink)
                      sink, CG_GST_TYPE_VIDEO_SINK, CgGstVideoSinkPrivate);
     priv->custom_start = 0;
     priv->default_sample = true;
+    priv->layer_skip_snippet =
+        cg_snippet_new(CG_SNIPPET_HOOK_LAYER_FRAGMENT, NULL, NULL);
+    cg_snippet_set_replace(priv->layer_skip_snippet, "");
 }
 
 static GstFlowReturn
@@ -1316,6 +1323,11 @@ cg_gst_video_sink_dispose(GObject *object)
         priv->caps = NULL;
     }
 
+    if (priv->layer_skip_snippet) {
+        cg_object_unref(priv->layer_skip_snippet);
+        priv->layer_skip_snippet = NULL;
+    }
+
     G_OBJECT_CLASS(cg_gst_video_sink_parent_class)->dispose(object);
 }
 
@@ -1324,7 +1336,7 @@ cg_gst_video_sink_finalize(GObject *object)
 {
     CgGstVideoSink *self = CG_GST_VIDEO_SINK(object);
 
-    cg_gst_video_sink_set_context(self, NULL);
+    cg_gst_video_sink_set_device(self, NULL);
 
     G_OBJECT_CLASS(cg_gst_video_sink_parent_class)->finalize(object);
 }
@@ -1468,7 +1480,7 @@ CgGstVideoSink *
 cg_gst_video_sink_new(cg_device_t *dev)
 {
     CgGstVideoSink *sink = g_object_new(CG_GST_TYPE_VIDEO_SINK, NULL);
-    cg_gst_video_sink_set_context(sink, dev);
+    cg_gst_video_sink_set_device(sink, dev);
 
     return sink;
 }
