@@ -89,6 +89,7 @@ struct _rig_renderer_t {
     cg_snippet_t *hair_material_snippet;
     cg_snippet_t *hair_vertex_snippet;
     cg_snippet_t *hair_fin_snippet;
+    cg_snippet_t *layer_skip_snippet;
 
     c_array_t *journal;
 };
@@ -1047,6 +1048,10 @@ rig_renderer_init(rig_renderer_t *renderer)
         "displace.xyz += cg_normal_in * length;\n"
         "cg_position_out = cg_modelview_projection_matrix * displace;\n");
 
+    renderer->layer_skip_snippet =
+        cg_snippet_new(CG_SNIPPET_HOOK_LAYER_FRAGMENT, NULL, NULL);
+    cg_snippet_set_replace(renderer->layer_skip_snippet, "");
+
     init_dof_pipeline_template(renderer);
 
     init_dof_diamond_pipeline(renderer);
@@ -1076,6 +1081,9 @@ rig_renderer_fini(rig_renderer_t *renderer)
         rig_dof_effect_free(renderer->dof);
         renderer->dof = NULL;
     }
+
+    cg_object_unref(renderer->layer_skip_snippet);
+    renderer->layer_skip_snippet = NULL;
 
     cg_object_unref(renderer->alpha_mask_snippet);
     renderer->alpha_mask_snippet = NULL;
@@ -1443,8 +1451,7 @@ get_entity_color_pipeline(rig_renderer_t *renderer,
         } else
             cg_pipeline_add_snippet(pipeline, renderer->hair_simple_snippet);
 
-        cg_pipeline_set_layer_combine(
-            pipeline, 11, "RGBA=REPLACE(PREVIOUS)", NULL);
+        cg_pipeline_add_layer_snippet(pipeline, 11, renderer->layer_skip_snippet);
 
         fin_pipeline = cg_pipeline_copy(pipeline);
         cg_pipeline_add_snippet(fin_pipeline, renderer->hair_fin_snippet);
@@ -1477,11 +1484,7 @@ get_entity_color_pipeline(rig_renderer_t *renderer,
         // cg_pipeline_set_layer_texture (pipeline, 7, renderer->shadow_color);
         // cg_pipeline_set_layer_texture (pipeline, 7, renderer->gradient);
 
-        /* We don't want this layer to be automatically modulated with the
-         * previous layers so we set its combine mode to "REPLACE" so it
-         * will be skipped past and we can sample its texture manually */
-        cg_pipeline_set_layer_combine(
-            pipeline, 10, "RGBA=REPLACE(PREVIOUS)", NULL);
+        cg_pipeline_add_layer_snippet(pipeline, 10, renderer->layer_skip_snippet);
 
         /* Handle shadow mapping */
         cg_pipeline_add_snippet(pipeline,

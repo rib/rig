@@ -211,6 +211,7 @@ rut_drop_down_create_highlighted_bg_pipeline(rut_shell_t *shell)
         cg_pipeline_t *bg_pipeline = rut_drop_down_create_bg_pipeline(shell);
         cg_pipeline_t *pipeline = cg_pipeline_copy(bg_pipeline);
         static cg_user_data_key_t pipeline_destroy_key;
+        cg_snippet_t *snippet;
 
         cg_object_unref(bg_pipeline);
 
@@ -221,11 +222,11 @@ rut_drop_down_create_highlighted_bg_pipeline(rut_shell_t *shell)
          * alpha-alpha×colour. The texture is already premultiplied so
          * the colour values are already alpha×colour and we just need
          * to subtract it from the alpha value. */
-        cg_pipeline_set_layer_combine(pipeline,
-                                      1, /* layer_number */
-                                      "RGB = SUBTRACT(PREVIOUS[A], PREVIOUS)"
-                                      "A = REPLACE(PREVIOUS[A])",
-                                      NULL);
+        snippet = cg_snippet_new(CG_SNIPPET_FIRST_LAYER_FRAGMENT_HOOK, NULL, NULL);
+        cg_snippet_set_replace(snippet, "frag.rgb = vec3(frag.a, frag.a, frag.a) - frag.rgb;\n");
+
+        cg_pipeline_add_snippet(pipeline, 1 /* layer number */, snippet);
+        cg_object_unref(snippet);
 
         /* When the last drop down is destroyed the pipeline will be
          * destroyed and we'll set context->highlighted_bg_pipeline to NULL

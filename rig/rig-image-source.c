@@ -111,12 +111,12 @@ get_image_source_wrappers(rig_engine_t *engine,
      * cg_texture_lookup%i wrapper because the _GLOBALS hook comes
      * before the _lookup functions are emitted by Cogl */
     wrapper = c_strdup_printf("vec4\n"
-                              "rig_image_source_sample%d (vec2 UV)\n"
+                              "rig_image_source_sample%d(vec2 UV)\n"
                               "{\n"
                               "#if __VERSION__ >= 130\n"
-                              "  return texture (cg_sampler%d, UV);\n"
+                              "  return texture(cg_sampler%d, UV);\n"
                               "#else\n"
-                              "  return texture2D (cg_sampler%d, UV);\n"
+                              "  return texture2D(cg_sampler%d, UV);\n"
                               "#endif\n"
                               "}\n",
                               layer_index,
@@ -372,9 +372,13 @@ rig_image_source_setup_pipeline(rig_image_source_t *source,
 
         cg_pipeline_set_layer_texture(pipeline, source->first_layer, texture);
 
-        if (!source->default_sample)
-            cg_pipeline_set_layer_combine(
-                pipeline, source->first_layer, "RGBA=REPLACE(PREVIOUS)", NULL);
+        if (!source->default_sample) {
+            cg_snippet_t *snippet =
+                cg_snippet_new(CG_SNIPPET_HOOK_LAYER_FRAGMENT, NULL, NULL);
+            cg_snippet_set_replace(snippet, "");
+            cg_pipeline_add_layer_snippet(pipeline, source->first_layer, snippet);
+            cg_object_unref(snippet);
+        }
 
         vertex_snippet = wrappers->image_source_vertex_wrapper;
         fragment_snippet = wrappers->image_source_fragment_wrapper;
