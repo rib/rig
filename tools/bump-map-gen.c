@@ -203,9 +203,11 @@ generate_normal_map(cg_device_t *dev, const char *path, const char *output)
     cg_pipeline_set_layer_texture(pipeline, 0, src);
 
     /* We don't want this layer to automatically be sampled so we opt
-     * out of Cogl's automatic layer combining by defining the layer
-     * combine as a NOP...  */
-    cg_pipeline_set_layer_combine(pipeline, 0, "RGBA=REPLACE(PREVIOUS)", NULL);
+     * out of Cogl's automatic layer combining...  */
+    snippet = cg_snippet_new(CG_SNIPPET_HOOK_LAYER_FRAGMENT, NULL, NULL);
+    cg_snippet_set_replace(snippet, "");
+    cg_pipeline_add_layer_snippet(pipeline, 0, snippet);
+    cg_object_unref(snippet);
 
     snippet = cg_snippet_new(
         CG_SNIPPET_HOOK_FRAGMENT,
