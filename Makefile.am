@@ -18,7 +18,7 @@ endif
 
 SUBDIRS += LibOVR
 
-SUBDIRS += rut data rig tests toys po android
+SUBDIRS += rut data rig tests libyuv toys po android
 
 SUBDIRS += tools
 
