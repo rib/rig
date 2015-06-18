@@ -124,6 +124,7 @@ get_base_texture_alpha_pipeline(cg_pango_pipeline_cache_t *cache)
 {
     if (cache->base_texture_alpha_pipeline == NULL) {
         cg_pipeline_t *pipeline;
+        cg_snippet_t *snippet;
 
         pipeline = cg_pipeline_copy(get_base_texture_rgba_pipeline(cache));
         cache->base_texture_alpha_pipeline = pipeline;
@@ -139,13 +140,13 @@ get_base_texture_alpha_pipeline(cg_pango_pipeline_cache_t *cache)
          *
          * What we want is premultiplied rgba values:
          *
-         *  result.rgba = color.rgb * texture.a
+         *  result.rgb = color.rgb * texture.a
          *  result.a = color.a * texture.a
          */
-        cg_pipeline_set_layer_combine(pipeline,
-                                      0, /* layer */
-                                      "RGBA = MODULATE (PREVIOUS, TEXTURE[A])",
-                                      NULL);
+        snippet = cg_snippet_new(CG_SNIPPET_HOOK_LAYER_FRAGMENT, NULL, NULL);
+        cg_snippet_set_replace(snippet, "frag *= cg_texel0.a;\n");
+        cg_pipeline_add_layer_snippet(pipeline, 0, snippet);
+        cg_object_unref(snippet);
     }
 
     return cache->base_texture_alpha_pipeline;
