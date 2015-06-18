@@ -540,10 +540,10 @@ rig_image_source_new(rig_frontend_t *frontend,
     } else if (strncmp(mime, "video/", 6) == 0) {
 #ifdef USE_GSTREAMER
         _rig_image_source_video_play(source,
-                                     engine,
+                                     frontend->engine,
                                      path,
                                      data,
-                                     len):
+                                     len);
         g_signal_connect(source->sink,
                          "pipeline_ready",
                          (GCallback)pipeline_ready_cb,
