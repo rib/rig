@@ -181,6 +181,7 @@ int main(int argc, char **argv)
     h2o_hostconf_t *hostconf;
     h2o_pathconf_t *pathconf;
     char *ui_filename;
+    char *dir;
     int r;
 
     struct option long_opts[] = {
@@ -209,6 +210,10 @@ int main(int argc, char **argv)
     }
 
     ui_filename = argv[optind];
+
+    dir = c_path_get_dirname(ui_filename);
+    if (!dir)
+        usage();
 
 #if defined(RIG_ENABLE_DEBUG) && defined(USE_NCURSES)
     rig_curses_init();
@@ -247,10 +252,12 @@ int main(int argc, char **argv)
         goto error;
     }
 
+
     h2o_config_init(&config);
-    hostconf = h2o_config_register_host(&config, "default");
-    pathconf = h2o_config_register_path(hostconf, "/");
+    hostconf = h2o_config_register_host(&config, h2o_iovec_init(H2O_STRLIT("default")), 7890);
+    pathconf = h2o_config_register_path(hostconf, "/simulator");
     h2o_create_handler(pathconf, sizeof(h2o_handler_t))->on_req = on_req;
+    h2o_file_register(h2o_config_register_path(hostconf, "/"), dir, NULL, NULL, 0);
 
     h2o_context_init(&ctx, loop, &config);
 
