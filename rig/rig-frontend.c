@@ -76,7 +76,6 @@ enum rig_simulator_run_mode rig_simulator_run_mode_option;
 const char *rig_simulator_address_option;
 int rig_simulator_port_option;
 
-
 static void
 frontend__test(Rig__Frontend_Service *service,
                const Rig__Query *query,
@@ -383,10 +382,10 @@ frontend__load(Rig__Frontend_Service *service,
 
     rig_ui_code_modules_load(ui);
 
-    for (l = frontend->camera_views; l; l = l->next) {
-        rig_camera_view_t *camera_view = l->data;
+    for (l = frontend->onscreen_views; l; l = l->next) {
+        rig_onscreen_view_t *onscreen_view = l->data;
 
-        rig_camera_view_set_ui(camera_view, ui);
+        rig_camera_view_set_ui(onscreen_view->camera_view, ui);
     }
 
     rut_object_unref(ui);
@@ -588,11 +587,17 @@ _rig_frontend_free(void *object)
 
     frontend_stop_service(frontend);
 
-    for (l = frontend->camera_views; l; l = l->next)
-        rut_object_unref(l->data);
+    for (l = frontend->onscreen_views; l; l = l->next) {
+        rig_onscreen_view_t *onscreen_view = l->data;
 
-    c_llist_free(frontend->camera_views);
-    frontend->camera_views = NULL;
+        rut_object_unref(onscreen_view->onscreen);
+        rut_object_unref(onscreen_view->camera_view);
+
+        c_slice_free(rig_onscreen_view_t, onscreen_view);
+    }
+
+    c_llist_free(frontend->onscreen_views);
+    frontend->onscreen_views = NULL;
 
     rig_renderer_fini(frontend->renderer);
     rut_object_unref(frontend->renderer);
@@ -1191,6 +1196,7 @@ rig_frontend_post_init_engine(rig_frontend_t *frontend,
     rut_shell_onscreen_t *onscreen;
     rig_camera_view_t *camera_view;
     uint8_t rgba_pre_white[] = { 0xff, 0xff, 0xff, 0xff };
+    rig_onscreen_view_t *onscreen_view;
 
     frontend->default_pipeline = cg_pipeline_new(shell->cg_device);
 
@@ -1228,8 +1234,12 @@ rig_frontend_post_init_engine(rig_frontend_t *frontend,
     camera_view = rig_camera_view_new(frontend);
     rig_camera_view_set_framebuffer(camera_view, onscreen->cg_onscreen);
 
-    frontend->camera_views = c_llist_prepend(frontend->camera_views,
-                                             camera_view);
+    onscreen_view = c_slice_new(rig_onscreen_view_t);
+    onscreen_view->onscreen = onscreen;
+    onscreen_view->camera_view = camera_view;
+
+    frontend->onscreen_views = c_llist_prepend(frontend->onscreen_views,
+                                               onscreen_view);
 
 #ifdef USE_GTK
     {
@@ -1375,8 +1385,9 @@ rig_frontend_paint(rig_frontend_t *frontend)
 {
     c_llist_t *l;
 
-    for (l = frontend->camera_views; l; l = l->next) {
-        rig_camera_view_t *camera_view = l->data;
+    for (l = frontend->onscreen_views; l; l = l->next) {
+        rig_onscreen_view_t *onscreen_view = l->data;
+        rig_camera_view_t *camera_view = onscreen_view->camera_view;
         cg_framebuffer_t *fb = camera_view->fb;
 
         rig_camera_view_paint(camera_view, frontend->renderer);

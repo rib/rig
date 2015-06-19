@@ -365,7 +365,7 @@ rig_ui_prepare(rig_ui_t *ui)
         ui->play_camera_component = rig_camera_new(engine,
                                                    -1, /* ortho/vp width */
                                                    -1, /* ortho/vp height */
-                                                   engine->frontend->onscreen);
+                                                   NULL);
 
         initialise_play_camera_component(ui->play_camera_component);
 

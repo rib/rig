@@ -44,6 +44,13 @@ typedef struct _rig_frontend_t rig_frontend_t;
 
 #include "rig.pb-c.h"
 
+typedef struct
+{
+    rig_camera_view_t *camera_view;
+    rut_shell_onscreen_t *onscreen;
+} rig_onscreen_view_t;
+
+
 /* The "frontend" is the main process that controls the running
  * of a Rig UI, either in device mode, as a slave or as an editor.
  *
@@ -82,9 +89,7 @@ struct _rig_frontend_t {
     rig_rpc_peer_t *frontend_peer;
     bool connected;
 
-    rut_shell_onscreen_t *onscreen;
-
-    c_llist_t *camera_views;
+    c_llist_t *onscreen_views;
 
     cg_pipeline_t *default_pipeline;
     cg_texture_2d_t *default_tex2d;

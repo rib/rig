@@ -150,7 +150,9 @@ rig_device_init(rut_shell_t *shell, void *user_data)
     rig_frontend_post_init_engine(engine->frontend, device->ui_filename);
 
     if (rig_device_fullscreen_option) {
-        rut_shell_onscreen_t *onscreen = device->frontend->onscreen;
+        rig_onscreen_view_t *onscreen_view = device->frontend->onscreen_views->data;
+        rut_shell_onscreen_t *onscreen = onscreen_view->onscreen;
+
         rut_shell_onscreen_set_fullscreen(onscreen, true);
     }
 
@@ -186,6 +188,8 @@ int
 main(int argc, char **argv)
 {
     rig_device_t *device;
+
+    _c_web_console_assert(0, "start");
 
     rig_simulator_run_mode_option = RIG_SIMULATOR_RUN_MODE_WEB_SOCKET;
 
