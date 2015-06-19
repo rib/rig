@@ -101,8 +101,12 @@ _cg_set_error(
 
     if (*error == NULL)
         *error = (cg_error_t *)new;
-    else
+    else {
         c_warning(ERROR_OVERWRITTEN_WARNING, new->message);
+#ifdef C_PLATFORM_WEB
+        _c_web_console_trace();
+#endif
+    }
 }
 
 void
