@@ -465,7 +465,8 @@ init_vr(rig_camera_view_t *view)
 
 
     ovrHmd_SetEnabledCaps(view->hmd,
-                          (ovrHmdCap_DynamicPrediction
+                          (0
+                           //| ovrHmdCap_DynamicPrediction
                            //| ovrHmdCap_LowPersistence
                            ));
 
