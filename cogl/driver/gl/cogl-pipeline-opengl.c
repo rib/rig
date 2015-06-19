@@ -127,6 +127,13 @@ static void
 set_active_texture_unit(cg_device_t *dev, int unit_index)
 {
     if (dev->active_texture_unit != unit_index) {
+#ifdef C_PLATFORM_WEB
+        char *msg;
+        asprintf(&msg, "_cg_set_active_texture_unit(), glActiveTexture(%x + %d)\n", GL_TEXTURE0, unit_index);
+        _c_web_console_warn(msg);
+        _c_web_console_trace();
+        free(msg);
+#endif
         GE(dev, glActiveTexture(GL_TEXTURE0 + unit_index));
         dev->active_texture_unit = unit_index;
     }
