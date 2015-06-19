@@ -393,13 +393,15 @@ on_webgl_image_load_cb(cg_webgl_image_t *image, void *user_data)
     int height = cg_webgl_image_get_height(image);
     int pot_width;
     int pot_height;
-    cg_error_t *error;
+    cg_error_t *error = NULL;
 
     if (!cg_texture_allocate(tex2d, &error)) {
         c_warning("Failed to load image source texture: %s", error->message);
         cg_error_free(error);
         return;
     }
+
+    _c_web_console_warn("fallback to scaling image to nearest power of two...\n");
 
     pot_width = is_pot(width) ? width : next_p2(width);
     pot_height = is_pot(height) ? height : next_p2(height);
@@ -409,14 +411,23 @@ on_webgl_image_load_cb(cg_webgl_image_t *image, void *user_data)
      * fly like this
      */
     if (pot_width != width || pot_height != height) {
-        cg_texture_2d_t *pot_tex = cg_texture_2d_new_with_size(shell->cg_device,
-                                                               pot_width,
-                                                               pot_height);
+        cg_texture_2d_t *pot_tex;
         cg_pipeline_t *pipeline;
+        cg_framebuffer_t *fb;
+        char *str;
 
-        cg_framebuffer_t *fb = cg_offscreen_new_with_texture(pot_tex);
+        asprintf(&str, "pot width=%d height=%d\n", pot_width, pot_height);
+        _c_web_console_warn(str);
+        free(str);
+
+        pot_tex = cg_texture_2d_new_with_size(shell->cg_device,
+                                              pot_width,
+                                              pot_height);
+        fb = cg_offscreen_new_with_texture(pot_tex);
 
         if (!cg_framebuffer_allocate(fb, &error)) {
+            _c_web_console_warn("failed to allocate\n");
+            _c_web_console_warn(error->message);
             c_warning("Failed alloc framebuffer to re-scale image source "
                       "texture to nearest power-of-two size: %s",
                       error->message);
@@ -429,6 +440,8 @@ on_webgl_image_load_cb(cg_webgl_image_t *image, void *user_data)
 
         pipeline = cg_pipeline_copy(source->frontend->default_tex2d_pipeline);
         cg_pipeline_set_layer_texture(pipeline, 0, tex2d);
+
+        _c_web_console_warn("scale...\n");
 
         /* TODO: It could be good to have a fifo of image scaling work
          * to throttle how much image scaling we do per-frame */
