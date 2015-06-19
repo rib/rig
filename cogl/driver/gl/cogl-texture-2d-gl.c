@@ -66,6 +66,16 @@ _cg_texture_2d_gl_can_create(cg_device_t *dev,
     GLenum gl_format;
     GLenum gl_type;
 
+#if defined(C_PLATFORM_WEB)
+    /* XXX: Although webgl has limited supported from NOP textures, this
+     * is a hack to help find places to try and convert over to using
+     * NPOT textures... */
+    if (!(_cg_util_is_pot(width) && _cg_util_is_pot(height))) {
+        c_warning("WARNING: NPOT texture: width=%d height=%d", width, height);
+        _c_web_console_trace();
+    }
+#endif
+
     /* If NPOT textures aren't supported then the size must be a power
        of two */
     if (!cg_has_feature(dev, CG_FEATURE_ID_TEXTURE_NPOT_BASIC) &&
