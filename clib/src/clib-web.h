@@ -24,6 +24,13 @@
 #ifndef _CLIB_WEB_H_
 #define _CLIB_WEB_H_
 
+#include <stdbool.h>
+
+void _c_web_console_log(const char *message);
+void _c_web_console_info(const char *message);
+void _c_web_console_warn(const char *message);
+void _c_web_console_error(const char *message);
+
 void _c_web_console_assert(bool condition, const char *message);
 
 void _c_web_console_trace(void);

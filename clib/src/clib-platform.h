@@ -130,7 +130,7 @@
 #  define C_PLATFORM_WEB 1
 #  undef C_HAVE_PTHREADS
 #  undef C_BREAKPOINT
-#  define C_BREAKPOINT() emscripten_breakpoint()
+#  define C_BREAKPOINT() _c_web_console_assert(0, "breakpoint")
 
 #elif defined(_WIN32)
 

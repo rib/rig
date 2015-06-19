@@ -25,6 +25,10 @@
 #ifndef __CLIB_H
 #define __CLIB_H
 
+#ifdef __EMSCRIPTEN__
+#include <clib-web.h>
+#endif
+
 #include <clib-platform.h>
 
 #include <stdarg.h>
@@ -992,9 +996,6 @@ typedef enum {
 
 void c_print(const char *format, ...);
 void c_printerr(const char *format, ...);
-c_log_level_flags_t c_log_set_always_fatal(c_log_level_flags_t fatal_mask);
-c_log_level_flags_t c_log_set_fatal_mask(const char *log_domain,
-                                         c_log_level_flags_t fatal_mask);
 
 typedef struct _c_log_context c_log_context_t;
 

@@ -39,7 +39,7 @@
 /* The current fatal levels, error is always fatal */
 static c_log_level_flags_t fatal = C_LOG_LEVEL_ERROR;
 
-#if PLATFORM_ANDROID
+#ifdef C_PLATFORM_ANDROID
 #include <android/log.h>
 
 static android_LogPriority
@@ -68,7 +68,9 @@ out_vfprintf(FILE *ignore, const char *format, va_list args)
     /* TODO: provide a proper app name */
     __android_log_vprint(ANDROID_LOG_ERROR, "mono", format, args);
 }
-#elif MONOTOUCH &&defined(__arm__)
+
+#elif defined(C_PLATFORM_DARWIN)
+
 #include <asl.h>
 
 static int
@@ -97,12 +99,55 @@ out_vfprintf(FILE *ignore, const char *format, va_list args)
     asl_vlog(NULL, NULL, ASL_LEVEL_WARNING, format, args);
 }
 
+#elif defined(C_PLATFORM_WEB)
+
+static void
+web_log(const char *log_domain,
+         c_log_level_flags_t log_level,
+         const char *msg)
+{
+    switch(log_level) {
+    case C_LOG_LEVEL_DEBUG:
+    case C_LOG_LEVEL_INFO:
+        _c_web_console_info(msg);
+        break;
+    case C_LOG_LEVEL_MESSAGE:
+        _c_web_console_log(msg);
+        break;
+    case C_LOG_LEVEL_WARNING:
+        _c_web_console_warn(msg);
+        break;
+    case C_LOG_LEVEL_CRITICAL:
+    case C_LOG_LEVEL_ERROR:
+        _c_web_console_error(msg);
+        break;
+    }
+}
+
+static void
+out_vfprintf(FILE *file, const char *format, va_list args)
+{
+    char *msg;
+
+    if (vasprintf(&msg, format, args) < 0)
+        return;
+
+    if (file == stdout)
+        _c_web_console_log(msg);
+    else
+        _c_web_console_warn(msg);
+
+    free(msg);
+}
+
 #else
+
 static void
 out_vfprintf(FILE *file, const char *format, va_list args)
 {
     vfprintf(file, format, args);
 }
+
 #endif
 
 void
@@ -129,33 +174,25 @@ c_printerr(const char *format, ...)
     va_end(args);
 }
 
-c_log_level_flags_t
-c_log_set_always_fatal(c_log_level_flags_t fatal_mask)
-{
-    c_log_level_flags_t old_fatal = fatal;
-
-    fatal |= fatal_mask;
-
-    return old_fatal;
-}
-
-c_log_level_flags_t
-c_log_set_fatal_mask(const char *log_domain,
-                     c_log_level_flags_t fatal_mask)
-{
-    /*
-     * Mono does not use a C_LOG_DOMAIN currently, so we just assume things are
-     * fatal
-     * if we decide to set C_LOG_DOMAIN (we probably should) we should implement
-     * this.
-     */
-    return fatal_mask;
-}
-
 void (*c_log_hook)(c_log_context_t *lctx,
                    const char *log_domain,
                    c_log_level_flags_t log_level,
                    const char *message);
+
+static void
+unix_log(const char *log_domain,
+         c_log_level_flags_t log_level,
+         const char *msg)
+{
+    fprintf(stderr,
+            "%s%s%s\n",
+            log_domain != NULL ? log_domain : "",
+            log_domain != NULL ? ": " : "",
+            msg);
+
+    if (log_level & fatal)
+        fflush(stderr);
+}
 
 void
 c_logv(c_log_context_t *lctx,
@@ -164,12 +201,6 @@ c_logv(c_log_context_t *lctx,
        const char *format,
        va_list args)
 {
-#if PLATFORM_ANDROID
-    __android_log_vprint(
-        to_android_priority(log_level), log_domain, format, args);
-#elif MONOTOUCH &&defined(__arm__)
-    asl_vlog(NULL, NULL, to_asl_priority(log_level), format, args);
-#else
     char *msg;
 
     if (vasprintf(&msg, format, args) < 0)
@@ -180,39 +211,30 @@ c_logv(c_log_context_t *lctx,
         goto logged;
     }
 
-#ifdef WIN32
+#if defined(C_PLATFORM_ANDROID)
+    __android_log_print(
+        to_android_priority(log_level), log_domain, msg);
+#elif defined(C_PLATFORM_DARWIN)
+    asl_log(NULL, NULL, to_asl_priority(log_level), msg);
+#elif defined(C_PLATFORM_WINDOWS)
+
     printf("%s%s%s\n",
            log_domain != NULL ? log_domain : "",
            log_domain != NULL ? ": " : "",
            msg);
-#else
-#if MONOTOUCH
-    FILE *target = stderr;
-#else
-    FILE *target = stdout;
-#endif
 
-    fprintf(target,
-            "%s%s%s\n",
-            log_domain != NULL ? log_domain : "",
-            log_domain != NULL ? ": " : "",
-            msg);
+#elif defined(C_PLATFORM_WEB)
+    web_log(log_domain, log_level, msg);
+#else
+    unix_log(log_domain, log_level, msg);
 #endif
 
 logged:
     free(msg);
+
     if (log_level & fatal) {
-        fflush(stdout);
-        fflush(stderr);
-    }
-#endif
-    if (log_level & fatal) {
-#ifdef __EMSCRIPTEN__
-#ifdef RIG_ENABLE_DEBUG
+#if defined(__EMSCRIPTEN__) && defined(RIG_ENABLE_DEBUG)
         emscripten_debugger();
-#else
-        abort();
-#endif
 #else
         abort();
 #endif
