@@ -579,6 +579,7 @@ init_dof_pipeline(rig_renderer_t *renderer)
     renderer->dof_pipeline = dof_pipeline;
 }
 
+#ifdef RIG_ENABLE_DEBUG
 static void
 create_debug_gradient(rig_renderer_t *renderer)
 {
@@ -592,7 +593,7 @@ create_debug_gradient(rig_renderer_t *renderer)
         cg_primitive_new_p2c4(dev, CG_VERTICES_MODE_TRIANGLE_FAN, 4, quad);
     cg_pipeline_t *pipeline = cg_pipeline_new(dev);
 
-    renderer->gradient = cg_texture_2d_new_with_size(dev, 200, 200);
+    renderer->gradient = cg_texture_2d_new_with_size(dev, 256, 256);
 
     offscreen = cg_offscreen_new_with_texture(renderer->gradient);
 
@@ -604,6 +605,7 @@ create_debug_gradient(rig_renderer_t *renderer)
     cg_object_unref(prim);
     cg_object_unref(offscreen);
 }
+#endif
 
 static void
 ensure_shadow_map(rig_renderer_t *renderer)
@@ -622,8 +624,8 @@ ensure_shadow_map(rig_renderer_t *renderer)
     c_warn_if_fail(renderer->shadow_color == NULL);
 
     color_buffer = cg_texture_2d_new_with_size(engine->shell->cg_device,
-                                               engine->device_width * 2,
-                                               engine->device_height * 2);
+                                               1024, 1024);
+#warning "FIXME: don't create redundant color buffer along with renderer->shadow_fb"
 
     renderer->shadow_color = color_buffer;
 
@@ -644,12 +646,12 @@ ensure_shadow_map(rig_renderer_t *renderer)
 
     renderer->shadow_map = cg_framebuffer_get_depth_texture(renderer->shadow_fb);
 
+#ifdef RIG_ENABLE_DEBUG
     /* Create a color gradient texture that can be used for debugging
      * shadow mapping.
-     *
-     * XXX: This should probably simply be #ifdef DEBUG code.
      */
     create_debug_gradient(renderer);
+#endif
 }
 
 static void
