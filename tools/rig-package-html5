@@ -2,13 +2,9 @@
 
 function usage() {
   echo "Usage:"
-  echo "  `basename $0` file.rig"
+  echo "  `basename $0` file.rig [MAKE_ARGS...]"
   exit 1
 }
-
-if test $# -ne 1; then
-  usage
-fi
 
 #FIXME
 RIG_PREFIX=/home/bob/local/rig-git-dev0
@@ -17,6 +13,8 @@ RIG_FILE=$1
 if ! test -f $RIG_FILE; then
   usage
 fi
+
+shift
 
 PROJECT_DIR=`dirname $RIG_FILE`
 
@@ -70,6 +68,7 @@ EOF
 #define _RIG_DEFINES_H_
 
 #define RIG_VERSION 2.0.0
+#define RIG_ENABLE_DEBUG 1
 
 #endif /* _RIG_DEFINES_H_ */
 EOF
@@ -79,4 +78,4 @@ fi
 
 export PATH=$RIG_PREFIX/bin:$PATH
 export LD_LIBRARY_PATH=$RIG_PREFIX/lib:$LD_LIBRARY_PATH
-make -C $PKG_DIR -j -l 2.5 V=1
+make -C $PKG_DIR -j -l 2.5 "$@"
