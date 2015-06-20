@@ -194,7 +194,7 @@ int main(int argc, char **argv)
 
     int c;
 
-    rut_init_tls_state();
+    rut_init();
 
     while ((c = getopt_long(argc, argv, short_opts, long_opts, NULL)) != -1) {
         switch(c) {

@@ -32,10 +32,6 @@
 #include <getopt.h>
 #include <clib.h>
 
-#ifdef USE_GSTREAMER
-#include <cogl-gst/cogl-gst.h>
-#endif
-
 #include <rut.h>
 
 #include "rig-slave.h"
@@ -101,11 +97,7 @@ main(int argc, char **argv)
 
     int c;
 
-    rut_init_tls_state();
-
-#ifdef USE_GSTREAMER
-    gst_init(&argc, &argv);
-#endif
+    rut_init();
 
     rig_simulator_run_mode_option = RIG_SIMULATOR_RUN_MODE_THREADED;
     rig_slave_connect_mode_option = RIG_SLAVE_CONNECT_MODE_TCP;

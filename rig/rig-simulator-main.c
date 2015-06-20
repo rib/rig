@@ -230,7 +230,7 @@ main(int argc, char **argv)
     char *address;
     int port;
 
-    rut_init_tls_state();
+    rut_init();
 
     mode = RIG_SIMULATOR_RUN_MODE_PROCESS;
 

@@ -899,6 +899,7 @@ _rut_shell_init(rut_shell_t *shell)
         rut_headless_shell_init(shell);
     else {
 #ifdef USE_GSTREAMER
+        gst_init(NULL, NULL);
         gst_element_register(NULL, "memsrc", 0, gst_mem_src_get_type());
 #endif
 
@@ -2034,7 +2035,7 @@ rut_get_thread_current_shell(void)
 }
 
 void
-rut_init_tls_state(void)
+rut_init(void)
 {
 #ifdef RUT_ENABLE_REFCOUNT_DEBUG
     rut_refcount_debug_init();

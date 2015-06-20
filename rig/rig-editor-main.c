@@ -33,9 +33,6 @@
 #include <clib.h>
 
 #include <rut.h>
-#ifdef USE_GSTREAMER
-#include <cogl-gst/cogl-gst.h>
-#endif
 
 #include "rig-editor.h"
 #include "rig-curses-debug.h"
@@ -94,11 +91,7 @@ main(int argc, char **argv)
 
     int c;
 
-    rut_init_tls_state();
-
-#ifdef USE_GSTREAMER
-    gst_init(&argc, &argv);
-#endif
+    rut_init();
 
     rig_simulator_run_mode_option = RIG_SIMULATOR_RUN_MODE_PROCESS;
 
