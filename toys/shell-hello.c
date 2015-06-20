@@ -96,7 +96,7 @@ main(int argc, char **argv)
 {
     struct data data;
 
-    rut_init_tls_state();
+    rut_init();
 
     data.shell = rut_shell_new(shell_redraw_cb, &data);
     rut_shell_set_on_run_callback(data.shell, on_run_cb, &data);
