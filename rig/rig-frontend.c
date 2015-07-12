@@ -571,7 +571,7 @@ _rig_frontend_free(void *object)
     rig_engine_op_map_context_destroy(&frontend->map_to_frontend_objects_op_ctx);
     rig_pb_unserializer_destroy(frontend->prop_change_unserializer);
 
-    rut_closure_list_disconnect_all(&frontend->ui_update_cb_list);
+    rut_closure_list_disconnect_all_FIXME(&frontend->ui_update_cb_list);
 
     frontend_stop_service(frontend);
 
@@ -720,6 +720,9 @@ typedef struct _thread_state_t {
     rig_frontend_t *frontend;
     char *ui_filename;
     int fd;
+
+    rig_local_sim_init_func_t local_sim_init_cb;
+    void *local_sim_init_data;
 } thread_state_t;
 
 static void
@@ -728,11 +731,21 @@ run_simulator_thread(void *user_data)
     thread_state_t *state = user_data;
     rig_simulator_t *simulator = rig_simulator_new(NULL, state->ui_filename);
 
+    /* XXX: normally this is handled by rut-poll.c, but until we enter
+     * the mainloop we want to set the 'current shell' so any log
+     * messages will be properly associated with the simulator */
+    rut_set_thread_current_shell(simulator->shell);
+
     rig_simulator_set_frontend_fd(simulator, state->fd);
 
 #ifdef USE_GLIB
     g_main_context_push_thread_default(g_main_context_new());
 #endif
+
+    if (state->local_sim_init_cb)
+        state->local_sim_init_cb(simulator, state->local_sim_init_data);
+
+    rut_set_thread_current_shell(NULL);
 
     rig_simulator_run(simulator);
 
@@ -780,6 +793,8 @@ create_posix_thread(thread_state_t *state,
 
 static thread_state_t *
 create_simulator_thread(rig_frontend_t *frontend,
+                        rig_local_sim_init_func_t local_sim_init_cb,
+                        void *local_sim_init_data,
                         const char *ui_filename)
 {
     rut_shell_t *shell = frontend->engine->shell;
@@ -795,6 +810,8 @@ create_simulator_thread(rig_frontend_t *frontend,
     state->frontend = frontend;
     state->fd = sp[1];
     state->ui_filename = c_strdup(ui_filename);
+    state->local_sim_init_cb = local_sim_init_cb;
+    state->local_sim_init_data = local_sim_init_data;
 
 #ifdef C_HAVE_PTHREADS
     if (!create_posix_thread(state,
@@ -989,11 +1006,18 @@ bind_to_tcp_socket(rig_frontend_t *frontend,
 
 static void
 run_simulator_in_process(rig_frontend_t *frontend,
+                         rig_local_sim_init_func_t local_sim_init_cb,
+                         void *local_sim_init_data,
                          const char *ui_filename)
 {
     rut_shell_t *shell = frontend->engine->shell;
     rig_simulator_t *simulator = rig_simulator_new(shell, ui_filename);
     rig_pb_stream_t *stream;
+
+    /* XXX: normally this is handled by rut-poll.c, but until we enter
+     * the mainloop we want to set the 'current shell' so any log
+     * messages will be properly associated with the simulator */
+    rut_set_thread_current_shell(simulator->shell);
 
     /* N.B. This won't block running the mainloop since rut-loop
      * will see that simulator->shell isn't the main shell. */
@@ -1010,6 +1034,11 @@ run_simulator_in_process(rig_frontend_t *frontend,
                                                  simulator->stream);
     rig_pb_stream_set_in_thread_direct_transport(simulator->stream,
                                                  stream);
+
+    if (local_sim_init_cb)
+        local_sim_init_cb(simulator, local_sim_init_data);
+
+    rut_set_thread_current_shell(NULL);
 }
 
 #ifdef __EMSCRIPTEN__
@@ -1074,15 +1103,21 @@ rig_frontend_spawn_simulator(rig_frontend_t *frontend,
                              enum rig_simulator_run_mode mode,
                              const char *address,
                              int port,
+                             rig_local_sim_init_func_t local_sim_init_cb,
+                             void *local_sim_init_data,
                              const char *ui_filename)
 {
     switch(mode) {
     case RIG_SIMULATOR_RUN_MODE_MAINLOOP:
-        run_simulator_in_process(frontend, ui_filename);
+        run_simulator_in_process(frontend,
+                                 local_sim_init_cb, local_sim_init_data,
+                                 ui_filename);
         break;
 #ifdef C_SUPPORTS_THREADS
     case RIG_SIMULATOR_RUN_MODE_THREADED:
-        create_simulator_thread(frontend, ui_filename);
+        create_simulator_thread(frontend,
+                                local_sim_init_cb, local_sim_init_data,
+                                ui_filename);
         break;
 #endif
 #ifdef RIG_SUPPORT_SIMULATOR_PROCESS
@@ -1145,7 +1180,7 @@ finish_ui_load_cb(rig_frontend_t *frontend, void *user_data)
     rig_ui_t *ui = user_data;
     rig_engine_t *engine = frontend->engine;
 
-    rut_closure_disconnect(frontend->finish_ui_load_closure);
+    rut_closure_disconnect_FIXME(frontend->finish_ui_load_closure);
     frontend->finish_ui_load_closure = NULL;
 
     finish_ui_load(engine, ui);
@@ -1173,7 +1208,7 @@ rig_frontend_load_file(rig_frontend_t *frontend, const char *filename)
     else {
         /* Throw away any outstanding closure since it is now redundant... */
         if (frontend->finish_ui_load_closure)
-            rut_closure_disconnect(frontend->finish_ui_load_closure);
+            rut_closure_disconnect_FIXME(frontend->finish_ui_load_closure);
 
         frontend->finish_ui_load_closure =
             rig_frontend_add_ui_update_callback(engine->frontend,
@@ -1327,7 +1362,7 @@ rig_frontend_add_ui_update_callback(rig_frontend_t *frontend,
                                     void *user_data,
                                     rut_closure_destroy_callback_t destroy)
 {
-    return rut_closure_list_add(
+    return rut_closure_list_add_FIXME(
         &frontend->ui_update_cb_list, callback, user_data, destroy);
 }
 

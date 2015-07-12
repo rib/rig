@@ -133,10 +133,22 @@ struct _rig_frontend_t {
 
 rig_frontend_t *rig_frontend_new(rut_shell_t *shell);
 
+typedef void (*rig_local_sim_init_func_t)(rig_simulator_t *simulator,
+                                          void *user_data);
+
+/* Note: the local_sim_init_cb and local_sim_init_data arguments
+ * only make sense for a simulator that will run in the same process
+ * as the frontend (either via mainloop or another thread).
+ *
+ * local_sim_init_cb is convenient for minimal test rigs where we want
+ * to easily write native code that runs in the simulator.
+ */
 void rig_frontend_spawn_simulator(rig_frontend_t *frontend,
                                   enum rig_simulator_run_mode mode,
                                   const char *address,
                                   int port,
+                                  rig_local_sim_init_func_t local_sim_init_cb,
+                                  void *local_sim_init_data,
                                   const char *ui_filename);
 
 void rig_frontend_delete_object(rig_frontend_t *frontend, void *object);
