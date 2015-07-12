@@ -118,8 +118,8 @@ _rig_slave_master_free(void *object)
 
     master_stop_service(master);
 
-    rut_closure_list_disconnect_all(&master->on_connect_closures);
-    rut_closure_list_disconnect_all(&master->on_error_closures);
+    rut_closure_list_disconnect_all_FIXME(&master->on_connect_closures);
+    rut_closure_list_disconnect_all_FIXME(&master->on_error_closures);
 
     rut_object_free(rig_slave_master_t, master);
 }
@@ -139,7 +139,7 @@ start_connect_on_idle_cb(void *user_data)
     rig_slave_master_t *master = user_data;
     int fd;
 
-    rut_poll_shell_remove_idle(master->engine->shell, master->connect_idle);
+    rut_poll_shell_remove_idle_FIXME(master->engine->shell, master->connect_idle);
     master->connect_idle = NULL;
 
     c_return_if_fail(master->stream == NULL);
@@ -232,7 +232,7 @@ rig_slave_master_new(rig_engine_t *engine, rig_slave_address_t *slave_address)
      * opportunity to register on_connect and on_error callbacks
      */
     master->connect_idle =
-        rut_poll_shell_add_idle(engine->shell,
+        rut_poll_shell_add_idle_FIXME(engine->shell,
                                 start_connect_on_idle_cb,
                                 master,
                                 NULL); /* destroy */
@@ -246,7 +246,7 @@ rig_slave_master_add_on_connect_callback(rig_slave_master_t *master,
                                          void *user_data,
                                          rut_closure_destroy_callback_t destroy)
 {
-    return rut_closure_list_add(&master->on_connect_closures,
+    return rut_closure_list_add_FIXME(&master->on_connect_closures,
                                 callback,
                                 user_data,
                                 destroy);
@@ -258,7 +258,7 @@ rig_slave_master_add_on_error_callback(rig_slave_master_t *master,
                                        void *user_data,
                                        rut_closure_destroy_callback_t destroy)
 {
-    return rut_closure_list_add(&master->on_error_closures,
+    return rut_closure_list_add_FIXME(&master->on_error_closures,
                                 callback,
                                 user_data,
                                 destroy);

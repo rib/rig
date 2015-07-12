@@ -216,7 +216,7 @@ ui_load_cb(rig_frontend_t *frontend, void *user_data)
 {
     rig_slave_t *slave = user_data;
 
-    rut_closure_disconnect(slave->ui_load_closure);
+    rut_closure_disconnect_FIXME(slave->ui_load_closure);
     slave->ui_load_closure = NULL;
     load_ui(slave);
 }
@@ -286,7 +286,7 @@ ui_updated_cb(rig_frontend_t *frontend, void *user_data)
 {
     rig_slave_t *slave = user_data;
 
-    rut_closure_disconnect(slave->ui_update_closure);
+    rut_closure_disconnect_FIXME(slave->ui_update_closure);
     slave->ui_update_closure = NULL;
 
     /* We don't apply all pending edits now, and instead wait until
@@ -631,7 +631,7 @@ rig_slave_fini(rut_shell_t *shell, void *user_data)
 #endif
 
     if (slave->ui_update_closure) {
-        rut_closure_disconnect(slave->ui_update_closure);
+        rut_closure_disconnect_FIXME(slave->ui_update_closure);
         slave->ui_update_closure = NULL;
     }
 
