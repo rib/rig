@@ -190,7 +190,7 @@ AM_CONDITIONAL(OCULUS_RIFT, test "x$enable_oculus_rift" = "xyes")
 dnl Check for dependency packages.
 dnl ================================================================
 
-RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES icu-uc harfbuzz harfbuzz-icu fontconfig freetype2 libprotobuf-c mozjs-24"
+RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES libpng icu-uc harfbuzz harfbuzz-icu fontconfig freetype2 libprotobuf-c mozjs-24"
 
 dnl libuv...
 AM_CONDITIONAL([USE_UV], [true])
