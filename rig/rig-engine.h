@@ -74,7 +74,6 @@ typedef enum _rut_select_action_t {
 #include "rig-camera-view.h"
 #include "rig-frontend.h"
 #include "rig-simulator.h"
-#include "rig-slave.h"
 #include "rig-code.h"
 #include "rig-image-source.h"
 

@@ -551,31 +551,24 @@ rig_slave_init(rut_shell_t *shell, void *user_data)
 
     slave->ui_update_closure = NULL;
 
-    slave->frontend = rig_frontend_new(
-        shell, RIG_FRONTEND_ID_SLAVE, true /* start in play mode */);
+    slave->frontend = rig_frontend_new(shell);
 
     engine = slave->frontend->engine;
     slave->engine = engine;
 
-    /* TODO: rig_slave_t should be a trait of the engine */
-    engine->slave = slave;
-
     /* Finish the slave specific engine setup...
      */
 
+#error "FIXME: rig_frontend_new() initializes garbage_collect_callback..."
     engine->garbage_collect_callback = object_delete_cb;
     engine->garbage_collect_data = slave;
-
-    engine->main_camera_view = rig_camera_view_new(engine);
-    rut_stack_add(engine->top_stack, engine->main_camera_view);
-
-    /* Initialize the current mode */
-    rig_engine_set_play_mode_enabled(engine, true /* start in play mode */);
 
     rig_frontend_post_init_engine(slave->frontend, NULL /* no ui to load */);
 
     if (rig_slave_fullscreen_option) {
-        rut_shell_onscreen_t *onscreen = slave->frontend->onscreen;
+        rig_onscreen_view_t *onscreen_view = device->frontend->onscreen_views->data;
+        rut_shell_onscreen_t *onscreen = onscreen_view->onscreen;
+
         rut_shell_onscreen_set_fullscreen(onscreen, true);
     }
 
