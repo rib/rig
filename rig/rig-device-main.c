@@ -157,6 +157,8 @@ rig_device_init(rut_shell_t *shell, void *user_data)
                                  device->simulator_mode,
                                  device->simulator_address,
                                  device->simulator_port,
+                                 NULL, /* local sim init */
+                                 NULL, /* local sim init data */
                                  device->ui_filename);
 
     if (rig_device_fullscreen_option) {
