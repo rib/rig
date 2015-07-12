@@ -137,12 +137,6 @@ rig_load(rig_engine_t *engine, const char *file)
         engine->frame_stack /* allocator_data */
     };
 
-    if (c_str_has_suffix(file, ".xml")) {
-        c_warning("Loading xml UI descriptions in Rig is no longer "
-                  "supported, only .rig files can be loaded");
-        return NULL;
-    }
-
     fd = open(file, O_CLOEXEC);
     if (fd > 0 && fstat(fd, &sb) == 0 &&
         (contents = mmap(NULL, sb.st_size, PROT_READ, MAP_PRIVATE, fd, 0))) {
