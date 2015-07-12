@@ -664,7 +664,7 @@ load_cb(void *user_data)
 {
     rig_simulator_t *simulator = user_data;
 
-    rut_poll_shell_remove_idle(simulator->shell, simulator->load_idle);
+    rut_poll_shell_remove_idle_FIXME(simulator->shell, simulator->load_idle);
     simulator->load_idle = NULL;
 
     rig_simulator_load_file(simulator, simulator->ui_filename);
@@ -674,11 +674,11 @@ static void
 _rig_simulator_queue_ui_load(rig_simulator_t *simulator)
 {
     if (simulator->load_idle) {
-        rut_poll_shell_remove_idle(simulator->shell, simulator->load_idle);
+        rut_poll_shell_remove_idle_FIXME(simulator->shell, simulator->load_idle);
         simulator->load_idle = NULL;
     }
 
-    simulator->load_idle = rut_poll_shell_add_idle(simulator->shell,
+    simulator->load_idle = rut_poll_shell_add_idle_FIXME(simulator->shell,
                                                    load_cb,
                                                    simulator,
                                                    NULL); /* destroy notify */
@@ -705,8 +705,15 @@ rig_simulator_load_file(rig_simulator_t *simulator, const char *filename)
 void
 rig_simulator_run(rig_simulator_t *simulator)
 {
+    /* XXX: normally this is handled by rut-poll.c, but until we enter
+     * the mainloop we want to set the 'current shell' so any log
+     * messages will be properly associated with the simulator */
+    rut_set_thread_current_shell(simulator->shell);
+
     if (simulator->ui_filename)
         _rig_simulator_queue_ui_load(simulator);
+
+    rut_set_thread_current_shell(NULL);
 
     rut_shell_main(simulator->shell);
 }
