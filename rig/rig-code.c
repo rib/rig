@@ -303,7 +303,7 @@ rig_code_node_add_link_callback(rig_code_node_t *node,
                                 void *user_data,
                                 rut_closure_destroy_callback_t destroy)
 {
-    return rut_closure_list_add(
+    return rut_closure_list_add_FIXME(
         &node->link_closures, callback, user_data, destroy);
 }
 
