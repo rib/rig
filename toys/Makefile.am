@@ -4,10 +4,14 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir) \
 	-I$(top_srcdir)/rut \
 	-I$(top_builddir)/rut \
+	-I$(top_srcdir)/rig \
+	-I$(top_builddir)/rig/protobuf-c-rpc \
+	-I$(top_builddir)/rig \
 	-I$(top_srcdir)/libuv/include \
 	-I$(top_srcdir)/clib/src \
 	-I$(top_builddir)/clib/src \
-	-I$(top_srcdir)/LibOVR/Src
+	-I$(top_srcdir)/LibOVR/Src \
+	$(RIG_DEP_CFLAGS)
 
 if USE_UV
 AM_CPPFLAGS += -I$(top_srcdir)/h2o/include
@@ -22,12 +26,14 @@ AM_CFLAGS = \
 	$(COGL_DEP_CFLAGS) \
 	$(COGL_EXTRA_CFLAGS) \
 	$(COGL_PANGO_DEP_CFLAGS) \
-	$(COGL_GST_DEP_CFLAGS)
+	$(COGL_GST_DEP_CFLAGS) \
+	$(RIG_EXTRA_CFLAGS)
 
 AM_CFLAGS += -DCG_EXAMPLES_DATA=\""$(abs_top_srcdir)/toys/"\"
 
 common_ldadd = \
 	$(RIG_EXTRA_LDFLAGS) \
+	$(top_builddir)/rig/librig.la \
 	$(top_builddir)/rut/librut.la \
 	$(top_builddir)/cogl/libcg.la \
 	$(top_builddir)/cogl-path/libcogl-path.la \
@@ -36,6 +42,15 @@ common_ldadd = \
 	$(top_builddir)/clib/src/libclib.la \
 	-lstdc++ \
 	$(LIBM)
+
+if USE_NCURSES
+common_ldadd += -lncursesw
+endif
+
+if USE_UV
+common_ldadd += $(top_builddir)/xdgmime/libxdgmime.la
+common_ldadd += $(top_builddir)/h2o/libh2o.la -lssl -lcrypto
+endif
 
 if EDITOR_ENABLED
 common_ldadd += $(top_builddir)/cogl-pango/libcogl-pango2.la
@@ -121,6 +136,11 @@ programs += shell-hello
 emscripten_programs += shell-hello
 shell_hello_SOURCES = shell-hello.c
 shell_hello_LDADD = $(common_ldadd)
+
+programs += rig-hello
+emscripten_programs += rig-hello
+rig_hello_SOURCES = rig-hello.c
+rig_hello_LDADD = $(common_ldadd)
 
 emscripten_programs += cogl-emscripten-hello
 cogl_emscripten_hello_SOURCES = cogl-emscripten-hello.c
