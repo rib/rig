@@ -108,7 +108,7 @@ _rut_icon_button_free(void *object)
 {
     rut_icon_button_t *button = object;
 
-    rut_closure_list_disconnect_all(&button->on_click_cb_list);
+    rut_closure_list_disconnect_all_FIXME(&button->on_click_cb_list);
 
     destroy_icons(button);
 
@@ -396,7 +396,7 @@ rut_icon_button_add_on_click_callback(rut_icon_button_t *button,
 {
     c_return_val_if_fail(callback != NULL, NULL);
 
-    return rut_closure_list_add(
+    return rut_closure_list_add_FIXME(
         &button->on_click_cb_list, callback, user_data, destroy_cb);
 }
 

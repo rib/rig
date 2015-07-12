@@ -101,7 +101,7 @@ _rut_box_layout_free(void *object)
 {
     rut_box_layout_t *box = object;
 
-    rut_closure_list_disconnect_all(&box->preferred_size_cb_list);
+    rut_closure_list_disconnect_all_FIXME(&box->preferred_size_cb_list);
 
     while (!c_list_empty(&box->children)) {
         rut_box_layout_child_t *child =
@@ -450,7 +450,7 @@ rut_box_layout_add_preferred_size_callback(
 {
     rut_box_layout_t *box = object;
 
-    return rut_closure_list_add(
+    return rut_closure_list_add_FIXME(
         &box->preferred_size_cb_list, cb, user_data, destroy);
 }
 
@@ -578,7 +578,7 @@ rut_box_layout_remove(rut_box_layout_t *box, rut_object_t *child_widget)
     c_list_for_each(child, &box->children, link)
     {
         if (child->widget == child_widget) {
-            rut_closure_disconnect(child->preferred_size_closure);
+            rut_closure_disconnect_FIXME(child->preferred_size_closure);
 
             rut_graphable_remove_child(child->widget);
             rut_graphable_remove_child(child->transform);

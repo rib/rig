@@ -56,9 +56,9 @@ _rut_scale_free(void *object)
     rut_scale_t *scale = object;
     int i;
 
-    rut_closure_list_disconnect_all(&scale->select_cb_list);
+    rut_closure_list_disconnect_all_FIXME(&scale->select_cb_list);
 
-    rut_closure_list_disconnect_all(&scale->preferred_size_cb_list);
+    rut_closure_list_disconnect_all_FIXME(&scale->preferred_size_cb_list);
 
     for (i = 0; i < scale->labels->len; i++) {
         label_t *label = &c_array_index(scale->labels, label_t, i);
@@ -338,7 +338,7 @@ _rut_scale_add_preferred_size_callback(void *object,
 {
     rut_scale_t *scale = object;
 
-    return rut_closure_list_add(
+    return rut_closure_list_add_FIXME(
         &scale->preferred_size_cb_list, cb, user_data, destroy);
 }
 
@@ -787,7 +787,7 @@ rut_scale_add_select_callback(rut_scale_t *scale,
 {
     c_return_val_if_fail(callback != NULL, NULL);
 
-    return rut_closure_list_add(
+    return rut_closure_list_add_FIXME(
         &scale->select_cb_list, callback, user_data, destroy_cb);
 }
 

@@ -106,7 +106,7 @@ void rut_simple_sizable_get_preferred_height(void *object,
  * given sizable object changes.
  *
  * Return value: A #rut_closure_t representing the callback. This can be
- *   removed with rut_closure_disconnect().
+ *   removed with rut_closure_disconnect_FIXME().
  */
 rut_closure_t *rut_sizable_add_preferred_size_callback(
     rut_object_t *object,

@@ -103,7 +103,7 @@ _rut_image_free(void *object)
 {
     rut_image_t *image = object;
 
-    rut_closure_list_disconnect_all(&image->preferred_size_cb_list);
+    rut_closure_list_disconnect_all_FIXME(&image->preferred_size_cb_list);
 
     rut_graphable_destroy(image);
 
@@ -302,7 +302,7 @@ rut_image_add_preferred_size_callback(void *object,
 {
     rut_image_t *image = object;
 
-    return rut_closure_list_add(
+    return rut_closure_list_add_FIXME(
         &image->preferred_size_cb_list, cb, user_data, destroy);
 }
 

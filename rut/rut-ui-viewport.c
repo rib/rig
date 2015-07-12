@@ -159,7 +159,7 @@ _rut_ui_viewport_free(void *object)
 
     rut_ui_viewport_set_sync_widget(ui_viewport, NULL);
 
-    rut_closure_list_disconnect_all(&ui_viewport->preferred_size_cb_list);
+    rut_closure_list_disconnect_all_FIXME(&ui_viewport->preferred_size_cb_list);
 
     rut_object_unref(ui_viewport->doc_transform);
 
@@ -240,7 +240,7 @@ rut_ui_viewport_add_preferred_size_callback(
 {
     rut_ui_viewport_t *ui_viewport = object;
 
-    return rut_closure_list_add(
+    return rut_closure_list_add_FIXME(
         &ui_viewport->preferred_size_cb_list, cb, user_data, destroy);
 }
 
@@ -946,7 +946,7 @@ rut_ui_viewport_set_sync_widget(rut_object_t *obj, rut_object_t *widget)
     }
 
     if (ui_viewport->sync_widget) {
-        rut_closure_disconnect(ui_viewport->sync_widget_preferred_size_closure);
+        rut_closure_disconnect_FIXME(ui_viewport->sync_widget_preferred_size_closure);
         rut_object_unref(ui_viewport->sync_widget);
     }
 

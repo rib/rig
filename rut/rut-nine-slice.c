@@ -301,7 +301,7 @@ _rut_nine_slice_free(void *object)
 {
     rut_nine_slice_t *nine_slice = object;
 
-    rut_closure_list_disconnect_all(&nine_slice->updated_cb_list);
+    rut_closure_list_disconnect_all_FIXME(&nine_slice->updated_cb_list);
 
     if (nine_slice->texture)
         cg_object_unref(nine_slice->texture);
@@ -642,7 +642,7 @@ rut_nine_slice_add_update_callback(rut_nine_slice_t *nine_slice,
                                    rut_closure_destroy_callback_t destroy_cb)
 {
     c_return_val_if_fail(callback != NULL, NULL);
-    return rut_closure_list_add(
+    return rut_closure_list_add_FIXME(
         &nine_slice->updated_cb_list, callback, user_data, destroy_cb);
 }
 

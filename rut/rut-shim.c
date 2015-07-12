@@ -59,7 +59,7 @@ _rut_shim_free(void *object)
 {
     rut_shim_t *shim = object;
 
-    rut_closure_list_disconnect_all(&shim->preferred_size_cb_list);
+    rut_closure_list_disconnect_all_FIXME(&shim->preferred_size_cb_list);
 
     rut_graphable_destroy(shim);
 
@@ -134,7 +134,7 @@ rut_shim_add_preferred_size_callback(void *object,
 {
     rut_shim_t *shim = object;
 
-    return rut_closure_list_add(
+    return rut_closure_list_add_FIXME(
         &shim->preferred_size_cb_list, cb, user_data, destroy);
 }
 
@@ -258,7 +258,7 @@ rut_shim_set_child(rut_shim_t *shim, rut_object_t *child)
 
     if (shim->child) {
         rut_graphable_remove_child(shim->child);
-        rut_closure_disconnect(shim->child_preferred_size_closure);
+        rut_closure_disconnect_FIXME(shim->child_preferred_size_closure);
         shim->child_preferred_size_closure = NULL;
         rut_object_unref(shim->child);
     }

@@ -273,8 +273,8 @@ _rut_text_buffer_free(void *object)
 {
     rut_text_buffer_t *buffer = object;
 
-    rut_closure_list_disconnect_all(&buffer->insert_text_cb_list);
-    rut_closure_list_disconnect_all(&buffer->delete_text_cb_list);
+    rut_closure_list_disconnect_all_FIXME(&buffer->insert_text_cb_list);
+    rut_closure_list_disconnect_all_FIXME(&buffer->delete_text_cb_list);
 
     if (buffer->simple_text) {
         trash_area(buffer->simple_text, buffer->simple_text_size);
@@ -457,7 +457,7 @@ rut_text_buffer_add_insert_text_callback(
 {
     c_return_val_if_fail(callback != NULL, NULL);
 
-    return rut_closure_list_add(
+    return rut_closure_list_add_FIXME(
         &buffer->insert_text_cb_list, callback, user_data, destroy_cb);
 }
 
@@ -470,6 +470,6 @@ rut_text_buffer_add_delete_text_callback(
 {
     c_return_val_if_fail(callback != NULL, NULL);
 
-    return rut_closure_list_add(
+    return rut_closure_list_add_FIXME(
         &buffer->delete_text_cb_list, callback, user_data, destroy_cb);
 }

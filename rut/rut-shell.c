@@ -119,7 +119,7 @@ rut_shell_add_input_callback(rut_shell_t *shell,
                              void *user_data,
                              rut_closure_destroy_callback_t destroy_cb)
 {
-    return rut_closure_list_add(
+    return rut_closure_list_add_FIXME(
         &shell->input_cb_list, callback, user_data, destroy_cb);
 }
 
@@ -403,10 +403,10 @@ _rut_shell_free(void *object)
         _rut_shell_remove_grab_link(shell, first_grab);
     }
 
-    rut_closure_list_disconnect_all(&shell->input_cb_list);
+    rut_closure_list_disconnect_all_FIXME(&shell->input_cb_list);
 
-    rut_closure_list_disconnect_all(&shell->start_paint_callbacks);
-    rut_closure_list_disconnect_all(&shell->post_paint_callbacks);
+    rut_closure_list_disconnect_all_FIXME(&shell->start_paint_callbacks);
+    rut_closure_list_disconnect_all_FIXME(&shell->post_paint_callbacks);
 
     _rut_shell_fini(shell);
 
@@ -561,7 +561,7 @@ rut_shell_finish_frame(rut_shell_t *shell)
     rut_closure_list_invoke(
         &info->frame_callbacks, rut_shell_frame_callback_t, shell, info);
 
-    rut_closure_list_disconnect_all(&info->frame_callbacks);
+    rut_closure_list_disconnect_all_FIXME(&info->frame_callbacks);
 
     c_slice_free(rut_frame_info_t, info);
 }
@@ -821,7 +821,7 @@ rut_shell_start_redraw(rut_shell_t *shell)
 #ifdef USE_UV
     c_return_if_fail(shell->paint_idle);
 
-    rut_poll_shell_remove_idle(shell, shell->paint_idle);
+    rut_poll_shell_remove_idle_FIXME(shell, shell->paint_idle);
     shell->paint_idle = NULL;
 #endif
 }
@@ -1265,7 +1265,7 @@ rut_shell_queue_redraw_real(rut_shell_t *shell)
 #ifndef __EMSCRIPTEN__
     if (!shell->paint_idle) {
         shell->paint_idle =
-            rut_poll_shell_add_idle(shell, (void *)rut_shell_paint, shell,
+            rut_poll_shell_add_idle_FIXME(shell, (void *)rut_shell_paint, shell,
                                     NULL); /* destroy notify */
     }
 #else
@@ -1406,7 +1406,7 @@ rut_shell_add_start_paint_callback(rut_shell_t *shell,
                                    void *user_data,
                                    rut_closure_destroy_callback_t destroy)
 {
-    return rut_closure_list_add(
+    return rut_closure_list_add_FIXME(
         &shell->start_paint_callbacks, callback, user_data, destroy);
 }
 
@@ -1416,7 +1416,7 @@ rut_shell_add_post_paint_callback(rut_shell_t *shell,
                                   void *user_data,
                                   rut_closure_destroy_callback_t destroy)
 {
-    return rut_closure_list_add(
+    return rut_closure_list_add_FIXME(
         &shell->post_paint_callbacks, callback, user_data, destroy);
 }
 
@@ -1427,7 +1427,7 @@ rut_shell_add_frame_callback(rut_shell_t *shell,
                              rut_closure_destroy_callback_t destroy)
 {
     rut_frame_info_t *info = rut_shell_get_frame_info(shell);
-    return rut_closure_list_add(
+    return rut_closure_list_add_FIXME(
         &info->frame_callbacks, callback, user_data, destroy);
 }
 
@@ -1666,7 +1666,7 @@ rut_shell_add_signal_callback (rut_shell_t *shell,
                                void *user_data,
                                rut_closure_destroy_callback_t destroy_cb)
 {
-    return rut_closure_list_add (&shell->signal_cb_list,
+    return rut_closure_list_add_FIXME (&shell->signal_cb_list,
                                  callback,
                                  user_data,
                                  destroy_cb);

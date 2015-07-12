@@ -52,7 +52,7 @@ _rut_fixed_free(void *object)
 {
     rut_fixed_t *fixed = object;
 
-    rut_closure_list_disconnect_all(&fixed->preferred_size_cb_list);
+    rut_closure_list_disconnect_all_FIXME(&fixed->preferred_size_cb_list);
 
     rut_graphable_destroy(fixed);
 

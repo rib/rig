@@ -133,7 +133,7 @@ rut_sizable_add_preferred_size_callback(
 
         c_list_init(&dummy_list);
 
-        closure = rut_closure_list_add(&dummy_list, cb, user_data, destroy_cb);
+        closure = rut_closure_list_add_FIXME(&dummy_list, cb, user_data, destroy_cb);
 
         c_list_init(&closure->list_node);
 

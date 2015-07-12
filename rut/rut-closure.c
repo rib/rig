@@ -33,10 +33,12 @@
 
 #include "rut-closure.h"
 
-void rut_closure_list_insert(c_list_t *list, rut_closure_t *closure)
+void rut_closure_list_add(c_list_t *list, rut_closure_t *closure)
 {
-    if (closure->list_node.next) {
+    if (closure->list_node.next != closure->list_node.prev) {
+#ifdef C_DEBUG
         c_warn_if_fail(closure->owner == list);
+#endif
         return;
     }
 
@@ -74,7 +76,7 @@ void rut_closure_list_remove_all(c_list_t *list)
  */
 
 void
-rut_closure_disconnect(rut_closure_t *closure)
+rut_closure_disconnect_FIXME(rut_closure_t *closure)
 {
     c_return_if_fail(closure->allocated);
 
@@ -87,20 +89,20 @@ rut_closure_disconnect(rut_closure_t *closure)
 }
 
 void
-rut_closure_list_disconnect_all(c_list_t *list)
+rut_closure_list_disconnect_all_FIXME(c_list_t *list)
 {
     while (!c_list_empty(list)) {
         rut_closure_t *closure =
             c_container_of(list->next, rut_closure_t, list_node);
-        rut_closure_disconnect(closure);
+        rut_closure_disconnect_FIXME(closure);
     }
 }
 
 rut_closure_t *
-rut_closure_list_add(c_list_t *list,
-                     void *function,
-                     void *user_data,
-                     rut_closure_destroy_callback_t destroy_cb)
+rut_closure_list_add_FIXME(c_list_t *list,
+                           void *function,
+                           void *user_data,
+                           rut_closure_destroy_callback_t destroy_cb)
 {
     rut_closure_t *closure = c_slice_new(rut_closure_t);
 

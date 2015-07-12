@@ -141,7 +141,7 @@ end_text_edit(edit_state_t *state)
     rut_number_slider_t *slider = state->slider;
 
     if (state->activate_closure)
-        rut_closure_disconnect(state->activate_closure);
+        rut_closure_disconnect_FIXME(state->activate_closure);
 
     rut_selectable_cancel(slider->text);
     rut_text_set_editable(slider->text, false);

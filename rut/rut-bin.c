@@ -65,7 +65,7 @@ _rut_bin_free(void *object)
 {
     rut_bin_t *bin = object;
 
-    rut_closure_list_disconnect_all(&bin->preferred_size_cb_list);
+    rut_closure_list_disconnect_all_FIXME(&bin->preferred_size_cb_list);
 
     rut_bin_set_child(bin, NULL);
 
@@ -260,7 +260,7 @@ rut_bin_add_preferred_size_callback(void *object,
 {
     rut_bin_t *bin = object;
 
-    return rut_closure_list_add(
+    return rut_closure_list_add_FIXME(
         &bin->preferred_size_cb_list, cb, user_data, destroy);
 }
 
@@ -355,7 +355,7 @@ rut_bin_set_child(rut_bin_t *bin, rut_object_t *child_widget)
 
     if (bin->child) {
         rut_graphable_remove_child(bin->child);
-        rut_closure_disconnect(bin->child_preferred_size_closure);
+        rut_closure_disconnect_FIXME(bin->child_preferred_size_closure);
         bin->child_preferred_size_closure = NULL;
         rut_object_release(bin->child, bin);
     }

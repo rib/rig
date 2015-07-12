@@ -84,7 +84,7 @@ _rut_icon_toggle_set_free(void *object)
     rut_icon_toggle_set_t *toggle_set = object;
     rut_icon_toggle_set_state_t *toggle_state, *tmp;
 
-    rut_closure_list_disconnect_all(&toggle_set->on_change_cb_list);
+    rut_closure_list_disconnect_all_FIXME(&toggle_set->on_change_cb_list);
 
     rut_graphable_destroy(toggle_set);
 
@@ -203,7 +203,7 @@ rut_icon_toggle_set_add_on_change_callback(
 {
     c_return_val_if_fail(callback != NULL, NULL);
 
-    return rut_closure_list_add(
+    return rut_closure_list_add_FIXME(
         &toggle_set->on_change_cb_list, callback, user_data, destroy_cb);
 }
 

@@ -222,7 +222,7 @@ static void
 rut_flow_layout_remove_child(rut_flow_layout_t *flow,
                              rut_flow_layout_child_t *child)
 {
-    rut_closure_disconnect(child->preferred_size_closure);
+    rut_closure_disconnect_FIXME(child->preferred_size_closure);
 
     rut_graphable_remove_child(child->widget);
     rut_graphable_remove_child(child->transform);
@@ -238,7 +238,7 @@ _rut_flow_layout_free(void *object)
 {
     rut_flow_layout_t *flow = object;
 
-    rut_closure_list_disconnect_all(&flow->preferred_size_cb_list);
+    rut_closure_list_disconnect_all_FIXME(&flow->preferred_size_cb_list);
 
     while (!c_list_empty(&flow->children)) {
         rut_flow_layout_child_t *child =
@@ -632,7 +632,7 @@ rut_flow_layout_add_preferred_size_callback(
 {
     rut_flow_layout_t *flow = object;
 
-    return rut_closure_list_add(
+    return rut_closure_list_add_FIXME(
         &flow->preferred_size_cb_list, cb, user_data, destroy);
 }
 

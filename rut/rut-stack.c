@@ -149,7 +149,7 @@ _rut_stack_child_removed_cb(rut_object_t *parent,
 
     c_list_for_each(child_data, &stack->children, list_node)
     if (child_data->child == child) {
-        rut_closure_disconnect(child_data->preferred_size_closure);
+        rut_closure_disconnect_FIXME(child_data->preferred_size_closure);
         c_list_remove(&child_data->list_node);
         c_slice_free(rut_stack_child_t, child_data);
         rut_object_release(child, parent);
@@ -269,7 +269,7 @@ rut_stack_add_preferred_size_callback(void *object,
 {
     rut_stack_t *stack = object;
 
-    return rut_closure_list_add(
+    return rut_closure_list_add_FIXME(
         &stack->preferred_size_cb_list, cb, user_data, destroy);
 }
 

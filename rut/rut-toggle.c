@@ -134,7 +134,7 @@ _rut_toggle_free(void *object)
 {
     rut_toggle_t *toggle = object;
 
-    rut_closure_list_disconnect_all(&toggle->on_toggle_cb_list);
+    rut_closure_list_disconnect_all_FIXME(&toggle->on_toggle_cb_list);
 
     if (toggle->selected_icon) {
         cg_object_unref(toggle->selected_icon);
@@ -597,7 +597,7 @@ rut_toggle_add_on_toggle_callback(rut_toggle_t *toggle,
 {
     c_return_val_if_fail(callback != NULL, NULL);
 
-    return rut_closure_list_add(
+    return rut_closure_list_add_FIXME(
         &toggle->on_toggle_cb_list, callback, user_data, destroy_cb);
 }
 

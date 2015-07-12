@@ -1336,14 +1336,14 @@ _rut_text_free(void *object)
 {
     rut_text_t *text = object;
 
-    rut_closure_list_disconnect_all(&text->preferred_size_cb_list);
-    rut_closure_list_disconnect_all(&text->delete_text_cb_list);
-    rut_closure_list_disconnect_all(&text->insert_text_cb_list);
-    rut_closure_list_disconnect_all(&text->activate_cb_list);
-    rut_closure_list_disconnect_all(&text->cursor_event_cb_list);
-    rut_closure_list_disconnect_all(&text->text_changed_cb_list);
-    rut_closure_list_disconnect_all(&text->text_deleted_cb_list);
-    rut_closure_list_disconnect_all(&text->text_inserted_cb_list);
+    rut_closure_list_disconnect_all_FIXME(&text->preferred_size_cb_list);
+    rut_closure_list_disconnect_all_FIXME(&text->delete_text_cb_list);
+    rut_closure_list_disconnect_all_FIXME(&text->insert_text_cb_list);
+    rut_closure_list_disconnect_all_FIXME(&text->activate_cb_list);
+    rut_closure_list_disconnect_all_FIXME(&text->cursor_event_cb_list);
+    rut_closure_list_disconnect_all_FIXME(&text->text_changed_cb_list);
+    rut_closure_list_disconnect_all_FIXME(&text->text_deleted_cb_list);
+    rut_closure_list_disconnect_all_FIXME(&text->text_inserted_cb_list);
 
     if (text->has_focus)
         rut_text_ungrab_key_focus(text);
@@ -2780,7 +2780,7 @@ _rut_text_add_preferred_size_callback(void *object,
 {
     rut_text_t *text = object;
 
-    return rut_closure_list_add(
+    return rut_closure_list_add_FIXME(
         &text->preferred_size_cb_list, cb, user_data, destroy);
 }
 
@@ -3186,8 +3186,8 @@ buffer_connect_signals(rut_text_t *text)
 static void
 buffer_disconnect_signals(rut_text_t *text)
 {
-    rut_closure_disconnect(text->buffer_insert_text_closure);
-    rut_closure_disconnect(text->buffer_delete_text_closure);
+    rut_closure_disconnect_FIXME(text->buffer_insert_text_closure);
+    rut_closure_disconnect_FIXME(text->buffer_delete_text_closure);
 
     rut_property_set_binding(
         &text->properties[RUT_TEXT_PROP_TEXT], NULL, NULL, NULL);
@@ -4191,7 +4191,7 @@ rut_text_add_text_inserted_callback(rut_text_t *text,
                                     rut_closure_destroy_callback_t destroy_cb)
 {
     c_return_val_if_fail(callback != NULL, NULL);
-    return rut_closure_list_add(
+    return rut_closure_list_add_FIXME(
         &text->text_inserted_cb_list, callback, user_data, destroy_cb);
 }
 
@@ -4202,7 +4202,7 @@ rut_text_add_text_deleted_callback(rut_text_t *text,
                                    rut_closure_destroy_callback_t destroy_cb)
 {
     c_return_val_if_fail(callback != NULL, NULL);
-    return rut_closure_list_add(
+    return rut_closure_list_add_FIXME(
         &text->text_deleted_cb_list, callback, user_data, destroy_cb);
 }
 
@@ -4213,7 +4213,7 @@ rut_text_add_text_changed_callback(rut_text_t *text,
                                    rut_closure_destroy_callback_t destroy_cb)
 {
     c_return_val_if_fail(callback != NULL, NULL);
-    return rut_closure_list_add(
+    return rut_closure_list_add_FIXME(
         &text->text_changed_cb_list, callback, user_data, destroy_cb);
 }
 
@@ -4224,7 +4224,7 @@ rut_text_add_activate_callback(rut_text_t *text,
                                rut_closure_destroy_callback_t destroy_cb)
 {
     c_return_val_if_fail(callback != NULL, NULL);
-    return rut_closure_list_add(
+    return rut_closure_list_add_FIXME(
         &text->activate_cb_list, callback, user_data, destroy_cb);
 }
 
@@ -4235,7 +4235,7 @@ rut_text_add_cursor_event_callback(rut_text_t *text,
                                    rut_closure_destroy_callback_t destroy_cb)
 {
     c_return_val_if_fail(callback != NULL, NULL);
-    return rut_closure_list_add(
+    return rut_closure_list_add_FIXME(
         &text->cursor_event_cb_list, callback, user_data, destroy_cb);
 }
 

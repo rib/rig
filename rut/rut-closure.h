@@ -37,7 +37,7 @@
  * is that any object that wants to provide a callback point will
  * provide a function to add a callback for that particular point. The
  * function can take a function pointer with the correct signature.
- * Internally the function will just call rut_closure_list_add. The
+ * Internally the function will just call rut_closure_list_add_FIXME. The
  * function should directly return a rut_closure_t pointer. The caller
  * can use this to disconnect the callback later without the object
  * having to provide a separate disconnect function.
@@ -98,8 +98,7 @@ rut_closure_set_finalize(rut_closure_t *closure,
 
 /* Note: it's ok to redundantly re-add a closure to a list without
  * manually checking for the redundancy, and it will be a nop */
-void rut_closure_list_insert(c_list_t *list,
-                             rut_closure_t *closure);
+void rut_closure_list_add(c_list_t *list, rut_closure_t *closure);
 /* Note: it's ok to redundantly remove a closure not part of a
  * list without manually checking for the redundancy, and it will
  * be a nop */
@@ -110,19 +109,19 @@ void rut_closure_list_remove_all(c_list_t *list);
 /* XXX: The aim is to phase out and eventually remove these older
  * closure apis...
  */
-rut_closure_t *rut_closure_list_add(c_list_t *list,
-                                    void *function,
-                                    void *user_data,
-                                    rut_closure_destroy_callback_t destroy_cb); //C_DEPRECATED("Use rut_closure_init + rut_closure_list_insert");
+rut_closure_t *rut_closure_list_add_FIXME(c_list_t *list,
+                                          void *function,
+                                          void *user_data,
+                                          rut_closure_destroy_callback_t destroy_cb); //C_DEPRECATED("Use rut_closure_init + rut_closure_list_insert");
 /**
- * rut_closure_disconnect:
+ * rut_closure_disconnect_FIXME:
  * @closure: A closure connected to a Rut closure list
  *
  * Removes the given closure from the callback list it is connected to
  * and destroys it. If the closure was created with a destroy function
  * then it will be invoked. */
-void rut_closure_disconnect(rut_closure_t *closure); //C_DEPRECATED("Use rut_closure_remove");
-void rut_closure_list_disconnect_all(c_list_t *list); //C_DEPRECATED("Use rut_closure_list_remove_all");
+void rut_closure_disconnect_FIXME(rut_closure_t *closure); //C_DEPRECATED("Use rut_closure_remove");
+void rut_closure_list_disconnect_all_FIXME(c_list_t *list); //C_DEPRECATED("Use rut_closure_list_remove_all");
 
 /**
  * rut_closure_list_invoke:

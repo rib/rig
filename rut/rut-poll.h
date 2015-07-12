@@ -118,12 +118,15 @@ rut_poll_source_t *rut_poll_shell_add_source(
 void rut_poll_shell_remove_source(rut_shell_t *shell,
                                   rut_poll_source_t *source);
 
-rut_closure_t *rut_poll_shell_add_idle(rut_shell_t *shell,
-                                       void (*idle_cb)(void *user_data),
-                                       void *user_data,
-                                       void (*destroy_cb)(void *user_data));
-
+void rut_poll_shell_add_idle(rut_shell_t *shell, rut_closure_t *closure);
 void rut_poll_shell_remove_idle(rut_shell_t *shell, rut_closure_t *idle);
+
+/* XXX: Deprecated, code should migrate to above api... */
+rut_closure_t *rut_poll_shell_add_idle_FIXME(rut_shell_t *shell,
+                                             void (*idle_cb)(void *user_data),
+                                             void *user_data,
+                                             void (*destroy_cb)(void *user_data));
+void rut_poll_shell_remove_idle_FIXME(rut_shell_t *shell, rut_closure_t *idle);
 
 rut_closure_t *rut_poll_shell_add_sigchild(rut_shell_t *shell,
                                            void (*sigchild_cb)(void *user_data),

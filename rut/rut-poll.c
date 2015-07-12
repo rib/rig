@@ -353,6 +353,7 @@ libuv_dispatch_idles_cb(uv_idle_t *idle)
 }
 #endif
 
+#ifdef __EMSCRIPTEN__
 static void
 em_dispatch_idles_cb(void *user_data)
 {
@@ -362,32 +363,55 @@ em_dispatch_idles_cb(void *user_data)
     rut_closure_list_invoke_no_args(&shell->idle_closures);
     rut_set_thread_current_shell(NULL);
 }
+#endif
 
-rut_closure_t *
-rut_poll_shell_add_idle(rut_shell_t *shell,
-                        void (*idle_cb)(void *user_data),
-                        void *user_data,
-                        void (*destroy_cb)(void *user_data))
+void
+rut_poll_shell_add_idle(rut_shell_t *shell, rut_closure_t *idle)
 {
 #ifdef __EMSCRIPTEN__
     emscripten_async_call(em_dispatch_idles_cb, shell, 0);
 #else
     uv_idle_start(&shell->uv_idle, libuv_dispatch_idles_cb);
 #endif
-    return rut_closure_list_add(
-        &shell->idle_closures, idle_cb, user_data, destroy_cb);
+
+    rut_closure_list_add(&shell->idle_closures, idle);
 }
 
 void
 rut_poll_shell_remove_idle(rut_shell_t *shell, rut_closure_t *idle)
 {
-    rut_closure_disconnect(idle);
+    rut_closure_remove(idle);
 
 #ifdef USE_UV
     if (c_list_empty(&shell->idle_closures))
         uv_idle_stop(&shell->uv_idle);
 #endif
 }
+
+rut_closure_t *
+rut_poll_shell_add_idle_FIXME(rut_shell_t *shell,
+                              void (*idle_cb)(void *user_data),
+                              void *user_data,
+                              void (*destroy_cb)(void *user_data))
+{
+    rut_closure_t *closure = c_slice_new(rut_closure_t);
+    rut_closure_init(closure, idle_cb, user_data);
+    if (destroy_cb)
+        rut_closure_set_finalize(closure, destroy_cb);
+
+    rut_poll_shell_add_idle(shell, closure);
+
+    return closure;
+}
+
+void
+rut_poll_shell_remove_idle_FIXME(rut_shell_t *shell, rut_closure_t *idle)
+{
+    rut_poll_shell_remove_idle(shell, idle);
+
+    c_slice_free(rut_closure_t, idle);
+}
+
 
 #ifdef USE_GLIB
 typedef struct _uv_glib_poll_t {
@@ -570,7 +594,7 @@ rut_poll_shell_add_sigchild(rut_shell_t *shell,
                             void (*destroy_cb)(void *user_data))
 {
 #ifdef USE_UV
-    return rut_closure_list_add(
+    return rut_closure_list_add_FIXME(
         &shell->sigchild_closures, sigchild_cb, user_data, destroy_cb);
 #else
     c_return_val_if_reached(NULL);
@@ -581,7 +605,7 @@ void
 rut_poll_shell_remove_sigchild(rut_shell_t *shell, rut_closure_t *sigchild)
 {
 #ifdef USE_UV
-    rut_closure_disconnect(sigchild);
+    rut_closure_disconnect_FIXME(sigchild);
 #else
     c_return_if_reached();
 #endif
