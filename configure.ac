@@ -206,6 +206,17 @@ PKG_CHECK_EXISTS([mozjs-24],
                  ])
 AM_CONDITIONAL([USE_MOZJS], [test "x$have_mozjs" = xyes])
 
+have_opencv=no
+PKG_CHECK_EXISTS([opencv >= 3.0.0],
+                 [
+                   have_opencv=yes
+                   AC_DEFINE([USE_OPENCV], [1], [Use OpenCV])
+                   RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES opencv"
+                   EXTRA_FEATURES="$EXTRA_FEATURES OpenCV"
+                 ])
+AM_CONDITIONAL([USE_OPENCV], [test "x$have_opencv" = xyes])
+PKG_CHECK_MODULES(OPENCV_DEP, [opencv >= 3.0.0])
+
 dnl     Check glib dependencies
 dnl     ============================================================
 AM_PATH_GLIB_2_0([2.26.0],
