@@ -131,17 +131,13 @@ struct _rig_frontend_t {
     void (*delete_object)(rig_frontend_t *frontend, void *object);
 };
 
-extern enum rig_simulator_run_mode rig_simulator_run_mode_option;
+rig_frontend_t *rig_frontend_new(rut_shell_t *shell);
 
-#ifdef __linux__
-extern const char *rig_simulator_abstract_socket_option;
-#endif
-
-const char *rig_simulator_address_option;
-int rig_simulator_port_option;
-
-rig_frontend_t *
-rig_frontend_new(rut_shell_t *shell);
+void rig_frontend_spawn_simulator(rig_frontend_t *frontend,
+                                  enum rig_simulator_run_mode mode,
+                                  const char *address,
+                                  int port,
+                                  const char *ui_filename);
 
 void rig_frontend_delete_object(rig_frontend_t *frontend, void *object);
 

@@ -52,11 +52,15 @@ typedef struct _rig_device_t {
     rig_frontend_t *frontend;
     rig_engine_t *engine;
 
+    enum rig_simulator_run_mode simulator_mode;
+    char *simulator_address;
+    int simulator_port;
+
     char *ui_filename;
 
 } rig_device_t;
 
-bool rig_device_fullscreen_option;
+static bool rig_device_fullscreen_option;
 
 static void
 rig_device_redraw(rut_shell_t *shell, void *user_data)
@@ -123,7 +127,9 @@ _rig_device_free(void *object)
     rut_object_unref(device->engine);
 
     rut_object_unref(device->shell);
-    rut_object_unref(device->shell);
+
+    if (device->simulator_address)
+        free(device->simulator_address);
 
     rut_object_free(rig_device_t, device);
 }
@@ -147,7 +153,11 @@ rig_device_init(rut_shell_t *shell, void *user_data)
     engine = device->frontend->engine;
     device->engine = engine;
 
-    rig_frontend_post_init_engine(engine->frontend, device->ui_filename);
+    rig_frontend_spawn_simulator(device->frontend,
+                                 device->simulator_mode,
+                                 device->simulator_address,
+                                 device->simulator_port,
+                                 device->ui_filename);
 
     if (rig_device_fullscreen_option) {
         rig_onscreen_view_t *onscreen_view = device->frontend->onscreen_views->data;
@@ -161,15 +171,21 @@ rig_device_init(rut_shell_t *shell, void *user_data)
 }
 
 static rig_device_t *
-rig_device_new(const char *filename)
+rig_device_new(enum rig_simulator_run_mode simulator_mode,
+               const char *simulator_address,
+               int simulator_port,
+               const char *ui_filename)
 {
     rig_device_t *device = rut_object_alloc0(
         rig_device_t, &rig_device_type, _rig_device_init_type);
 
-    device->ui_filename = c_strdup(filename);
+    device->simulator_mode = simulator_mode;
+    device->simulator_address = simulator_address ? strdup(simulator_address) : NULL;
+    device->simulator_port = simulator_port;
 
-    device->shell = rut_shell_new(rig_device_redraw,
-                                  device);
+    device->ui_filename = c_strdup(ui_filename);
+
+    device->shell = rut_shell_new(rig_device_redraw, device);
 
 #ifdef USE_NCURSES
     rig_curses_add_to_shell(device->shell);
@@ -178,6 +194,14 @@ rig_device_new(const char *filename)
     rut_shell_set_on_run_callback(device->shell,
                                   rig_device_init,
                                   device);
+
+    if (ui_filename) {
+        char *assets_location = c_path_get_dirname(ui_filename);
+
+        rut_shell_set_assets_location(device->shell, assets_location);
+
+        c_free(assets_location);
+    }
 
     return device;
 }
@@ -191,9 +215,10 @@ main(int argc, char **argv)
 
     _c_web_console_assert(0, "start");
 
-    rig_simulator_run_mode_option = RIG_SIMULATOR_RUN_MODE_WEB_SOCKET;
-
-    device = rig_device_new(NULL);
+    device = rig_device_new(RIG_SIMULATOR_RUN_MODE_WEB_SOCKET,
+                            NULL, /* address (FIXME)*/
+                            -1, /* port */
+                            NULL);
 
     rut_shell_main(device->shell);
 
@@ -254,13 +279,13 @@ main(int argc, char **argv)
 
     const char *ui_filename = NULL;
     enum rig_simulator_run_mode mode;
-    char *address;
-    int port;
+    char *address = NULL;
+    int port = -1;
     int c;
 
     rut_init();
 
-    rig_simulator_run_mode_option = RIG_SIMULATOR_RUN_MODE_THREADED;
+    mode = RIG_SIMULATOR_RUN_MODE_THREADED;
 
     while ((c = getopt_long(argc, argv, short_opts, long_opts, NULL)) != -1) {
         switch(c) {
@@ -275,9 +300,6 @@ main(int argc, char **argv)
                                          &mode,
                                          &address,
                                          &port);
-            rig_simulator_run_mode_option = mode;
-            rig_simulator_address_option = strdup(address);
-            rig_simulator_port_option = port;
             break;
         case 'l':
             rig_simulator_parse_run_mode(optarg,
@@ -286,9 +308,6 @@ main(int argc, char **argv)
                                          &mode,
                                          &address,
                                          &port);
-            rig_simulator_run_mode_option = mode;
-            rig_simulator_address_option = strdup(address);
-            rig_simulator_port_option = port;
             break;
 
         case 'd':
@@ -320,15 +339,10 @@ main(int argc, char **argv)
         rig_curses_init();
 #endif
 
-    device = rig_device_new(ui_filename);
-
-    if (ui_filename) {
-        char *assets_location = c_path_get_dirname(ui_filename);
-
-        rut_shell_set_assets_location(device->shell, assets_location);
-
-        c_free(assets_location);
-    }
+    device = rig_device_new(mode,
+                            address,
+                            port,
+                            ui_filename);
 
     rut_shell_main(device->shell);
 

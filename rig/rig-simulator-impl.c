@@ -1081,7 +1081,6 @@ rig_simulator_parse_run_mode(const char *option,
 
         if (strv[1]) {
             *address_ret = c_strdup(strv[1]);
-            rig_simulator_address_option = strdup(*address_ret);
         } else {
             fprintf(stderr, "Missing abstract socket name in form \"abstract:my_socket_name\"\n");
             goto error;

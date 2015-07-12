@@ -249,9 +249,6 @@ main(int argc, char **argv)
                                          &mode,
                                          &address,
                                          &port);
-            rig_simulator_run_mode_option = mode;
-            rig_simulator_address_option = strdup(address);
-            rig_simulator_port_option = port;
             break;
         case 'l':
             rig_simulator_parse_run_mode(optarg,
@@ -260,9 +257,6 @@ main(int argc, char **argv)
                                          &mode,
                                          &address,
                                          &port);
-            rig_simulator_run_mode_option = mode;
-            rig_simulator_address_option = strdup(address);
-            rig_simulator_port_option = port;
             break;
 
         default:

@@ -14,7 +14,6 @@ AM_CPPFLAGS = \
 	-I$(top_builddir)/rig \
 	-I$(top_builddir)/rig/protobuf-c-rpc \
 	-DG_DISABLE_SINGLE_INCLUDES \
-	-DCOGL_DISABLE_DEPRECATED \
 	$(RIG_DEP_CFLAGS) \
 	$(COGL_DEP_CFLAGS) \
 	-DRIG_BIN_DIR=\"$(bindir)/\" \

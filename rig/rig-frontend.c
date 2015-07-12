@@ -64,18 +64,6 @@
 
 #include "rig.pb-c.h"
 
-static void spawn_simulator(rut_shell_t *shell,
-                            rig_frontend_t *frontend,
-                            const char *ui_filename);
-
-/* Common frontend options, either set via environment variables or
- * command line options...
- */
-
-enum rig_simulator_run_mode rig_simulator_run_mode_option;
-const char *rig_simulator_address_option;
-int rig_simulator_port_option;
-
 static void
 frontend__test(Rig__Frontend_Service *service,
                const Rig__Query *query,
@@ -651,10 +639,10 @@ simulator_sigchild_cb(void *user_data)
 }
 
 static void
-fork_simulator(rut_shell_t *shell,
-               rig_frontend_t *frontend,
+fork_simulator(rig_frontend_t *frontend,
                const char *ui_filename)
 {
+    rut_shell_t *shell = frontend->engine->shell;
     pid_t pid;
     int sp[2];
     rig_pb_stream_t *stream;
@@ -791,10 +779,10 @@ create_posix_thread(thread_state_t *state,
 #endif /* C_HAVE_PTHREADS */
 
 static thread_state_t *
-create_simulator_thread(rut_shell_t *shell,
-                        rig_frontend_t *frontend,
+create_simulator_thread(rig_frontend_t *frontend,
                         const char *ui_filename)
 {
+    rut_shell_t *shell = frontend->engine->shell;
     thread_state_t *state = c_new0(thread_state_t, 1);
     rig_pb_stream_t *stream;
     int sp[2];
@@ -873,11 +861,12 @@ handle_simulator_connect_cb(void *user_data, int listen_fd, int revents)
 }
 
 static bool
-bind_to_abstract_socket(rut_shell_t *shell, rig_frontend_t *frontend)
+bind_to_abstract_socket(rig_frontend_t *frontend,
+                        const char *address)
 {
+    rut_shell_t *shell = frontend->engine->shell;
     rut_exception_t *catch = NULL;
-    int fd = rut_os_listen_on_abstract_socket(rig_simulator_address_option,
-                                              &catch);
+    int fd = rut_os_listen_on_abstract_socket(address, &catch);
 
     if (fd < 0) {
         c_critical("Failed to listen on abstract \"rig-simulator\" socket: %s",
@@ -895,18 +884,20 @@ bind_to_abstract_socket(rut_shell_t *shell, rig_frontend_t *frontend)
                           frontend);
 
     c_message("Waiting for simulator to connect to abstract socket \"%s\"...",
-              rig_simulator_address_option);
+              address);
 
     return true;
 }
 
 static void
-connect_to_abstract_socket(rut_shell_t *shell, rig_frontend_t *frontend)
+connect_to_abstract_socket(rig_frontend_t *frontend,
+                           const char *address)
 {
+    rut_shell_t *shell = frontend->engine->shell;
     rig_pb_stream_t *stream = rig_pb_stream_new(shell);
     int fd;
 
-    while ((fd = rut_os_connect_to_abstract_socket(rig_simulator_address_option)) == -1) {
+    while ((fd = rut_os_connect_to_abstract_socket(address)) == -1) {
         static bool seen = false;
         if (seen)
             c_message("Waiting for simulator...");
@@ -955,8 +946,11 @@ handle_tcp_connect_cb(uv_stream_t *server, int status)
 }
 
 static void
-bind_to_tcp_socket(rut_shell_t *shell, rig_frontend_t *frontend)
+bind_to_tcp_socket(rig_frontend_t *frontend,
+                   const char *address,
+                   int port)
 {
+    rut_shell_t *shell = frontend->engine->shell;
     uv_loop_t *loop = rut_uv_shell_get_loop(shell);
     struct sockaddr_in bind_addr;
     struct sockaddr name;
@@ -966,8 +960,7 @@ bind_to_tcp_socket(rut_shell_t *shell, rig_frontend_t *frontend)
     uv_tcp_init(loop, &frontend->listening_socket);
     frontend->listening_socket.data = frontend;
 
-    uv_ip4_addr(rig_simulator_address_option,
-                rig_simulator_port_option, &bind_addr);
+    uv_ip4_addr(address, port, &bind_addr);
     uv_tcp_bind(&frontend->listening_socket, (struct sockaddr *)&bind_addr, 0);
     err = uv_listen((uv_stream_t*)&frontend->listening_socket,
                     128, handle_tcp_connect_cb);
@@ -995,10 +988,10 @@ bind_to_tcp_socket(rut_shell_t *shell, rig_frontend_t *frontend)
 #endif /* USE_UV */
 
 static void
-run_simulator_in_process(rut_shell_t *shell,
-                         rig_frontend_t *frontend,
+run_simulator_in_process(rig_frontend_t *frontend,
                          const char *ui_filename)
 {
+    rut_shell_t *shell = frontend->engine->shell;
     rig_simulator_t *simulator = rig_simulator_new(shell, ui_filename);
     rig_pb_stream_t *stream;
 
@@ -1021,8 +1014,9 @@ run_simulator_in_process(rut_shell_t *shell,
 
 #ifdef __EMSCRIPTEN__
 static void
-spawn_web_worker(rut_shell_t *shell, rig_frontend_t *frontend)
+spawn_web_worker(rig_frontend_t *frontend)
 {
+    rut_shell_t *shell = frontend->engine->shell;
     rig_pb_stream_t *stream = rig_pb_stream_new(shell);
 
     frontend->sim_worker = rig_emscripten_worker_create("rig-simulator-worker.js");
@@ -1036,8 +1030,9 @@ spawn_web_worker(rut_shell_t *shell, rig_frontend_t *frontend)
 }
 
 static void
-connect_to_websocket(rut_shell_t *shell, rig_frontend_t *frontend)
+connect_to_websocket(rig_frontend_t *frontend)
 {
+    rut_shell_t *shell = frontend->engine->shell;
     rig_pb_stream_t *stream = rig_pb_stream_new(shell);
     struct sockaddr_in addr;
     int ret;
@@ -1074,37 +1069,38 @@ connect_to_websocket(rut_shell_t *shell, rig_frontend_t *frontend)
 }
 #endif
 
-static void
-spawn_simulator(rut_shell_t *shell,
-                rig_frontend_t *frontend,
-                const char *ui_filename)
+void
+rig_frontend_spawn_simulator(rig_frontend_t *frontend,
+                             enum rig_simulator_run_mode mode,
+                             const char *address,
+                             int port,
+                             const char *ui_filename)
 {
-    switch(rig_simulator_run_mode_option)
-    {
+    switch(mode) {
     case RIG_SIMULATOR_RUN_MODE_MAINLOOP:
-        run_simulator_in_process(shell, frontend, ui_filename);
+        run_simulator_in_process(frontend, ui_filename);
         break;
 #ifdef C_SUPPORTS_THREADS
     case RIG_SIMULATOR_RUN_MODE_THREADED:
-        create_simulator_thread(shell, frontend, ui_filename);
+        create_simulator_thread(frontend, ui_filename);
         break;
 #endif
 #ifdef RIG_SUPPORT_SIMULATOR_PROCESS
     case RIG_SIMULATOR_RUN_MODE_PROCESS:
-        fork_simulator(shell, frontend, ui_filename);
+        fork_simulator(frontend, ui_filename);
         break;
 #endif
 #ifdef __linux__
     case RIG_SIMULATOR_RUN_MODE_LISTEN_ABSTRACT_SOCKET:
-        bind_to_abstract_socket(shell, frontend);
+        bind_to_abstract_socket(frontend, address);
         break;
     case RIG_SIMULATOR_RUN_MODE_CONNECT_ABSTRACT_SOCKET:
-        connect_to_abstract_socket(shell, frontend);
+        connect_to_abstract_socket(frontend, address);
         break;
 #endif
 #ifdef USE_UV
     case RIG_SIMULATOR_RUN_MODE_LISTEN_TCP:
-        bind_to_tcp_socket(shell, frontend);
+        bind_to_tcp_socket(frontend, address, port);
         break;
     case RIG_SIMULATOR_RUN_MODE_CONNECT_TCP:
         c_error("TODO: support connecting to a simulator via tcp");
@@ -1112,10 +1108,10 @@ spawn_simulator(rut_shell_t *shell,
 #endif
 #ifdef __EMSCRIPTEN__
     case RIG_SIMULATOR_RUN_MODE_WEB_WORKER:
-        spawn_web_worker(shell, frontend);
+        spawn_web_worker(frontend);
         break;
     case RIG_SIMULATOR_RUN_MODE_WEB_SOCKET:
-        connect_to_websocket(shell, frontend);
+        connect_to_websocket(frontend);
         break;
 #endif
     }
@@ -1187,16 +1183,27 @@ rig_frontend_load_file(rig_frontend_t *frontend, const char *filename)
     }
 }
 
-void
-rig_frontend_post_init_engine(rig_frontend_t *frontend,
-                              const char *ui_filename)
+rig_frontend_t *
+rig_frontend_new(rut_shell_t *shell)
 {
-    rig_engine_t *engine = frontend->engine;
-    rut_shell_t *shell = engine->shell;
+    rig_frontend_t *frontend = rut_object_alloc0(
+        rig_frontend_t, &rig_frontend_type, _rig_frontend_init_type);
+    rig_engine_t *engine;
+    rig_pb_un_serializer_t *unserializer;
     rut_shell_onscreen_t *onscreen;
     rig_camera_view_t *camera_view;
     uint8_t rgba_pre_white[] = { 0xff, 0xff, 0xff, 0xff };
     rig_onscreen_view_t *onscreen_view;
+
+    frontend->object_to_id_map = c_hash_table_new(NULL, /* direct hash */
+                                                  NULL); /* direct key equal */
+    frontend->id_to_object_map =
+        c_hash_table_new_full(c_int64_hash,
+                              c_int64_equal, /* key equal */
+                              free_object_id, /* key destroy */
+                              NULL); /* value destroy */
+
+    c_list_init(&frontend->ui_update_cb_list);
 
     frontend->default_pipeline = cg_pipeline_new(shell->cg_device);
 
@@ -1212,15 +1219,54 @@ rig_frontend_post_init_engine(rig_frontend_t *frontend,
                                   frontend->default_tex2d);
 
     frontend->circle_node_attribute =
-        rut_create_circle_fan_p2(engine->shell, 20,
-                                 &frontend->circle_node_n_verts);
+        rut_create_circle_fan_p2(shell, 20, &frontend->circle_node_n_verts);
 
     _rig_init_image_source_wrappers_cache(frontend);
+
+    frontend->engine = engine = rig_engine_new_for_frontend(shell, frontend);
+
+    _rig_frontend_object_id_magazine = engine->object_id_magazine;
+
+    engine->garbage_collect_callback = rig_frontend_garbage_collect_cb;
+    engine->garbage_collect_data = frontend;
+
+    rig_logs_set_frontend(frontend);
+
+    /*
+     * This unserializer is used to unserialize UIs in frontend__load
+     * for example...
+     */
+    unserializer = rig_pb_unserializer_new(engine);
+    rig_pb_unserializer_set_object_register_callback(
+        unserializer, frontend_register_object_cb, frontend);
+    rig_pb_unserializer_set_id_to_object_callback(
+        unserializer, lookup_object_cb, frontend);
+    frontend->ui_unserializer = unserializer;
+
+    rig_engine_op_apply_context_init(&frontend->apply_op_ctx,
+                                     engine,
+                                     frontend_register_object_cb,
+                                     NULL, /* unregister ID */
+                                     NULL, /* id to object (TODO: remove unused) */
+                                     frontend);
+
+    rig_engine_op_map_context_init(&frontend->map_to_frontend_objects_op_ctx,
+                                   engine,
+                                   frontend_map_simulator_id_to_object_cb,
+                                   frontend);
+
+    unserializer = rig_pb_unserializer_new(engine);
+    /* Just to make sure we don't mistakenly use this unserializer to
+     * register any objects... */
+    rig_pb_unserializer_set_object_register_callback(unserializer, NULL, NULL);
+    rig_pb_unserializer_set_id_to_object_callback(
+        unserializer, lookup_object_cb, frontend);
+    frontend->prop_change_unserializer = unserializer;
 
     frontend->renderer = rig_renderer_new(frontend);
     rig_renderer_init(frontend->renderer);
 
-    onscreen = rut_shell_onscreen_new(engine->shell,
+    onscreen = rut_shell_onscreen_new(shell,
                                       engine->device_width / 2,
                                       engine->device_height / 2);
 
@@ -1271,66 +1317,6 @@ rig_frontend_post_init_engine(rig_frontend_t *frontend,
     rut_shell_onscreen_set_title(onscreen, "Rig " C_STRINGIFY(RIG_VERSION));
 
     rut_shell_onscreen_show(onscreen);
-
-    spawn_simulator(shell, frontend, ui_filename);
-}
-
-rig_frontend_t *
-rig_frontend_new(rut_shell_t *shell)
-{
-    rig_frontend_t *frontend = rut_object_alloc0(
-        rig_frontend_t, &rig_frontend_type, _rig_frontend_init_type);
-    rig_pb_un_serializer_t *unserializer;
-
-    frontend->object_to_id_map = c_hash_table_new(NULL, /* direct hash */
-                                                  NULL); /* direct key equal */
-    frontend->id_to_object_map =
-        c_hash_table_new_full(c_int64_hash,
-                              c_int64_equal, /* key equal */
-                              free_object_id, /* key destroy */
-                              NULL); /* value destroy */
-
-    c_list_init(&frontend->ui_update_cb_list);
-
-    frontend->engine = rig_engine_new_for_frontend(shell, frontend);
-
-    _rig_frontend_object_id_magazine = frontend->engine->object_id_magazine;
-
-    frontend->engine->garbage_collect_callback = rig_frontend_garbage_collect_cb;
-    frontend->engine->garbage_collect_data = frontend;
-
-    rig_logs_set_frontend(frontend);
-
-    /*
-     * This unserializer is used to unserialize UIs in frontend__load
-     * for example...
-     */
-    unserializer = rig_pb_unserializer_new(frontend->engine);
-    rig_pb_unserializer_set_object_register_callback(
-        unserializer, frontend_register_object_cb, frontend);
-    rig_pb_unserializer_set_id_to_object_callback(
-        unserializer, lookup_object_cb, frontend);
-    frontend->ui_unserializer = unserializer;
-
-    rig_engine_op_apply_context_init(&frontend->apply_op_ctx,
-                                     frontend->engine,
-                                     frontend_register_object_cb,
-                                     NULL, /* unregister ID */
-                                     NULL, /* id to object (TODO: remove unused) */
-                                     frontend);
-
-    rig_engine_op_map_context_init(&frontend->map_to_frontend_objects_op_ctx,
-                                   frontend->engine,
-                                   frontend_map_simulator_id_to_object_cb,
-                                   frontend);
-
-    unserializer = rig_pb_unserializer_new(frontend->engine);
-    /* Just to make sure we don't mistakenly use this unserializer to
-     * register any objects... */
-    rig_pb_unserializer_set_object_register_callback(unserializer, NULL, NULL);
-    rig_pb_unserializer_set_id_to_object_callback(
-        unserializer, lookup_object_cb, frontend);
-    frontend->prop_change_unserializer = unserializer;
 
     return frontend;
 }
