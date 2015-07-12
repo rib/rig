@@ -569,7 +569,7 @@ rig_image_source_add_ready_callback(rig_image_source_t *source,
         callback(source, user_data);
         return NULL;
     } else
-        return rut_closure_list_add(
+        return rut_closure_list_add_FIXME(
             &source->ready_cb_list, callback, user_data, destroy_cb);
 }
 
@@ -600,7 +600,7 @@ rig_image_source_add_on_changed_callback(
     void *user_data,
     rut_closure_destroy_callback_t destroy_cb)
 {
-    return rut_closure_list_add(
+    return rut_closure_list_add_FIXME(
         &source->changed_cb_list, callback, user_data, destroy_cb);
 }
 
