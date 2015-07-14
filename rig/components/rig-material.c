@@ -30,6 +30,8 @@
 
 #include <rut.h>
 
+#include "rig-entity.h"
+#include "rig-entity-inlines.h"
 #include "rig-material.h"
 #include "rig-pointalism-grid.h"
 #include "rig-asset.h"
@@ -154,9 +156,8 @@ static rut_object_t *
 _rig_material_copy(rut_object_t *object)
 {
     rig_material_t *material = object;
-    rig_entity_t *entity = material->component.entity;
-    rut_shell_t *shell = entity->shell;
-    rig_material_t *copy = rig_material_new(shell, NULL);
+    rig_engine_t *engine = rig_component_props_get_engine(&material->component);
+    rig_material_t *copy = rig_material_new(engine, NULL);
 
     copy->visible = material->cast_shadow;
     copy->cast_shadow = material->cast_shadow;
@@ -205,12 +206,14 @@ _rig_material_init_type(void)
 }
 
 rig_material_t *
-rig_material_new(rut_shell_t *shell, rig_asset_t *asset)
+rig_material_new(rig_engine_t *engine, rig_asset_t *asset)
 {
     rig_material_t *material = rut_object_alloc0(
         rig_material_t, &rig_material_type, _rig_material_init_type);
 
     material->component.type = RUT_COMPONENT_TYPE_MATERIAL;
+    material->component.parented = false;
+    material->component.engine = engine;
 
     material->visible = true;
     material->receive_shadow = true;
@@ -267,7 +270,7 @@ rig_material_set_color_source_asset(rut_object_t *object,
     if (color_source_asset)
         rut_object_ref(color_source_asset);
 
-    if (material->component.entity)
+    if (material->component.parented)
         rig_entity_notify_changed(material->component.entity);
 }
 
@@ -297,7 +300,7 @@ rig_material_set_normal_map_asset(rut_object_t *object,
     if (normal_map_asset)
         rut_object_ref(normal_map_asset);
 
-    if (material->component.entity)
+    if (material->component.parented)
         rig_entity_notify_changed(material->component.entity);
 }
 
@@ -328,7 +331,7 @@ rig_material_set_alpha_mask_asset(rut_object_t *object,
     if (alpha_mask_asset)
         rut_object_ref(alpha_mask_asset);
 
-    if (material->component.entity)
+    if (material->component.parented)
         rig_entity_notify_changed(material->component.entity);
 }
 
@@ -344,16 +347,13 @@ void
 rig_material_set_ambient(rut_object_t *obj, const cg_color_t *color)
 {
     rig_material_t *material = obj;
-    rig_entity_t *entity;
     rut_property_context_t *prop_ctx;
 
     material->ambient = *color;
     material->uniforms_age++;
 
-    entity = material->component.entity;
-    prop_ctx = rig_entity_get_property_context(entity);
-    rut_property_dirty(prop_ctx,
-                       &material->properties[RIG_MATERIAL_PROP_AMBIENT]);
+    prop_ctx = rig_component_props_get_property_context(&material->component);
+    rut_property_dirty(prop_ctx, &material->properties[RIG_MATERIAL_PROP_AMBIENT]);
 }
 
 const cg_color_t *
@@ -368,16 +368,13 @@ void
 rig_material_set_diffuse(rut_object_t *obj, const cg_color_t *color)
 {
     rig_material_t *material = obj;
-    rig_entity_t *entity;
     rut_property_context_t *prop_ctx;
 
     material->diffuse = *color;
     material->uniforms_age++;
 
-    entity = material->component.entity;
-    prop_ctx = rig_entity_get_property_context(entity);
-    rut_property_dirty(prop_ctx,
-                       &material->properties[RIG_MATERIAL_PROP_DIFFUSE]);
+    prop_ctx = rig_component_props_get_property_context(&material->component);
+    rut_property_dirty(prop_ctx, &material->properties[RIG_MATERIAL_PROP_DIFFUSE]);
 }
 
 const cg_color_t *
@@ -392,16 +389,13 @@ void
 rig_material_set_specular(rut_object_t *obj, const cg_color_t *color)
 {
     rig_material_t *material = obj;
-    rig_entity_t *entity;
     rut_property_context_t *prop_ctx;
 
     material->specular = *color;
     material->uniforms_age++;
 
-    entity = material->component.entity;
-    prop_ctx = rig_entity_get_property_context(entity);
-    rut_property_dirty(prop_ctx,
-                       &material->properties[RIG_MATERIAL_PROP_SPECULAR]);
+    prop_ctx = rig_component_props_get_property_context(&material->component);
+    rut_property_dirty(prop_ctx, &material->properties[RIG_MATERIAL_PROP_SPECULAR]);
 }
 
 const cg_color_t *
@@ -416,16 +410,13 @@ void
 rig_material_set_shininess(rut_object_t *obj, float shininess)
 {
     rig_material_t *material = obj;
-    rig_entity_t *entity;
     rut_property_context_t *prop_ctx;
 
     material->shininess = shininess;
     material->uniforms_age++;
 
-    entity = material->component.entity;
-    prop_ctx = rig_entity_get_property_context(entity);
-    rut_property_dirty(prop_ctx,
-                       &material->properties[RIG_MATERIAL_PROP_SPECULAR]);
+    prop_ctx = rig_component_props_get_property_context(&material->component);
+    rut_property_dirty(prop_ctx, &material->properties[RIG_MATERIAL_PROP_SPECULAR]);
 }
 
 float
@@ -448,7 +439,6 @@ void
 rig_material_set_alpha_mask_threshold(rut_object_t *obj, float threshold)
 {
     rig_material_t *material = obj;
-    rig_entity_t *entity;
     rut_property_context_t *prop_ctx;
 
     if (material->alpha_mask_threshold == threshold)
@@ -456,10 +446,8 @@ rig_material_set_alpha_mask_threshold(rut_object_t *obj, float threshold)
 
     material->alpha_mask_threshold = threshold;
 
-    entity = material->component.entity;
-    prop_ctx = rig_entity_get_property_context(entity);
-    rut_property_dirty(prop_ctx,
-        &material->properties[RIG_MATERIAL_PROP_ALPHA_MASK_THRESHOLD]);
+    prop_ctx = rig_component_props_get_property_context(&material->component);
+    rut_property_dirty(prop_ctx, &material->properties[RIG_MATERIAL_PROP_ALPHA_MASK_THRESHOLD]);
 }
 
 void
@@ -469,6 +457,8 @@ rig_material_flush_uniforms(rig_material_t *material,
     int location;
     rut_object_t *geo;
     rig_entity_t *entity = material->component.entity;
+
+    c_return_if_fail(material->component.parented);
 
     // if (material->uniforms_age == material->uniforms_flush_age)
     //  return;
@@ -535,7 +525,6 @@ void
 rig_material_set_cast_shadow(rut_object_t *obj, bool cast_shadow)
 {
     rig_material_t *material = obj;
-    rig_entity_t *entity;
     rut_property_context_t *prop_ctx;
 
     if (material->cast_shadow == cast_shadow)
@@ -543,8 +532,7 @@ rig_material_set_cast_shadow(rut_object_t *obj, bool cast_shadow)
 
     material->cast_shadow = cast_shadow;
 
-    entity = material->component.entity;
-    prop_ctx = rig_entity_get_property_context(entity);
+    prop_ctx = rig_component_props_get_property_context(&material->component);
     rut_property_dirty(prop_ctx,
                        &material->properties[RIG_MATERIAL_PROP_CAST_SHADOW]);
 }
@@ -561,7 +549,6 @@ void
 rig_material_set_receive_shadow(rut_object_t *obj, bool receive_shadow)
 {
     rig_material_t *material = obj;
-    rig_entity_t *entity;
     rut_property_context_t *prop_ctx;
 
     if (material->receive_shadow == receive_shadow)
@@ -569,12 +556,12 @@ rig_material_set_receive_shadow(rut_object_t *obj, bool receive_shadow)
 
     material->receive_shadow = receive_shadow;
 
-    entity = material->component.entity;
-    prop_ctx = rig_entity_get_property_context(entity);
+    prop_ctx = rig_component_props_get_property_context(&material->component);
     rut_property_dirty(prop_ctx,
                        &material->properties[RIG_MATERIAL_PROP_RECEIVE_SHADOW]);
 
-    rig_entity_notify_changed(entity);
+    if (material->component.parented)
+        rig_entity_notify_changed(material->component.entity);
 }
 
 bool
@@ -589,7 +576,6 @@ void
 rig_material_set_visible(rut_object_t *obj, bool visible)
 {
     rig_material_t *material = obj;
-    rig_entity_t *entity;
     rut_property_context_t *prop_ctx;
 
     if (material->visible == visible)
@@ -597,8 +583,7 @@ rig_material_set_visible(rut_object_t *obj, bool visible)
 
     material->visible = visible;
 
-    entity = material->component.entity;
-    prop_ctx = rig_entity_get_property_context(entity);
+    prop_ctx = rig_component_props_get_property_context(&material->component);
     rut_property_dirty(prop_ctx,
                        &material->properties[RIG_MATERIAL_PROP_VISIBLE]);
 }

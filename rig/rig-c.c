@@ -28,9 +28,20 @@
 
 #include <config.h>
 
-#include "rig-c.h"
-
 #include <rut.h>
+
+#include "rig-c.h"
+#include "rig-engine.h"
+#include "rig-code-module.h"
+#include "rig-entity.h"
+
+#include "components/rig-shape.h"
+#include "components/rig-nine-slice.h"
+#include "components/rig-diamond.h"
+#include "components/rig-pointalism-grid.h"
+#include "components/rig-material.h"
+#include "components/rig-button-input.h"
+#include "components/rig-text.h"
 
 RInputEventType
 r_input_event_get_type(RInputEvent *event)
@@ -166,10 +177,695 @@ r_debug(RModule *module,
     va_end(args);
 }
 
-typedef struct _RObject RObject;
-
 RObject *
 r_find(RModule *module, const char *name)
 {
-    return NULL;
+    rig_code_module_props_t *code_module = (void *)module;
+    rig_ui_t *ui = code_module->engine->ui;
+
+    return (RObject *)rig_ui_find_entity(ui, name);
 }
+
+RObject *
+r_entity_new(RModule *module, RObject *parent)
+{
+    rig_code_module_props_t *code_module = (void *)module;
+    rig_entity_t *entity;
+    rig_engine_t *engine = code_module->engine;
+    rut_property_context_t *prop_ctx = engine->property_ctx;
+
+    prop_ctx->logging_disabled++;
+    entity = rig_entity_new(engine);
+    prop_ctx->logging_disabled--;
+
+    /* Entities and components have to be explicitly deleted
+     * via r_entity_delete() or r_component_delete(). We
+     * give the engine ownership of the only reference. We
+     * don't expose a ref count in the C binding api.
+     */
+    rut_object_claim(entity, engine);
+    rut_object_unref(entity);
+
+    if (!parent)
+        parent = engine->ui->scene;
+
+    rig_engine_op_add_entity(engine, (rig_entity_t *)parent, entity);
+
+    return (RObject *)entity;
+}
+
+void
+r_entity_delete(RModule *module, RObject *entity)
+{
+    rig_code_module_props_t *code_module = (void *)module;
+    rig_engine_t *engine = code_module->engine;
+
+    rig_entity_reap((rig_entity_t *)entity, engine);
+    rut_object_release(entity, engine);
+}
+
+void
+r_entity_translate(RModule *module, RObject *entity, float tx, float ty, float tz)
+{
+    rig_entity_t *e = (rig_entity_t *)entity;
+    const float *cur = rig_entity_get_position(e);
+    float pos[3] = { cur[0] + tx, cur[1] + ty, cur[2] + tz };
+
+    r_set_vec3(module, entity, RUT_ENTITY_PROP_POSITION, pos);
+}
+
+void
+r_entity_rotate_x_axis(RModule *module, RObject *entity, float x_angle)
+{
+    rig_entity_t *e = (rig_entity_t *)entity;
+    c_quaternion_t x_rotation;
+    c_quaternion_t q = *rig_entity_get_rotation(e);
+
+    c_quaternion_init_from_x_rotation(&x_rotation, x_angle);
+    c_quaternion_multiply(&q, &q, &x_rotation);
+
+    r_set_quaternion(module, entity, RUT_ENTITY_PROP_ROTATION, (RQuaternion *)&q);
+}
+
+void
+r_entity_rotate_y_axis(RModule *module, RObject *entity, float y_angle)
+{
+    rig_entity_t *e = (rig_entity_t *)entity;
+    c_quaternion_t y_rotation;
+    c_quaternion_t q = *rig_entity_get_rotation(e);
+
+    c_quaternion_init_from_y_rotation(&y_rotation, y_angle);
+    c_quaternion_multiply(&q, &q, &y_rotation);
+
+    r_set_quaternion(module, entity, RUT_ENTITY_PROP_ROTATION, (RQuaternion *)&q);
+}
+
+void
+r_entity_rotate_z_axis(RModule *module, RObject *entity, float z_angle)
+{
+    rig_entity_t *e = (rig_entity_t *)entity;
+    c_quaternion_t z_rotation;
+    c_quaternion_t q = *rig_entity_get_rotation(e);
+
+    c_quaternion_init_from_z_rotation(&z_rotation, z_angle);
+    c_quaternion_multiply(&q, &q, &z_rotation);
+
+    r_set_quaternion(module, entity, RUT_ENTITY_PROP_ROTATION, (RQuaternion *)&q);
+}
+
+void
+r_component_delete(RModule *module, RObject *component)
+{
+    rig_code_module_props_t *code_module = (void *)module;
+    rig_engine_t *engine = code_module->engine;
+
+    rig_component_reap((rut_object_t *)component, engine);
+    rut_object_release(component, engine);
+}
+
+void
+r_request_animation_frame(RModule *module)
+{
+    rig_code_module_props_t *code_module = (void *)module;
+
+    rut_shell_queue_redraw(code_module->engine->shell);
+}
+
+RObject *
+r_camera_new(RModule *module)
+{
+    rig_code_module_props_t *code_module = (void *)module;
+    rut_object_t *component;
+    rig_engine_t *engine = code_module->engine;
+    rut_property_context_t *prop_ctx = engine->property_ctx;
+
+    prop_ctx->logging_disabled++;
+    component = rig_camera_new(engine,
+                               -1, /* ortho width */
+                               -1, /* ortho height */
+                               NULL); /* fb */
+    prop_ctx->logging_disabled--;
+
+    /* Entities and components have to be explicitly deleted
+     * via r_entity_delete() or r_component_delete(). We
+     * give the engine ownership of the only reference. We
+     * don't expose a ref count in the C binding api.
+     */
+    rut_object_claim(component, engine);
+    rut_object_unref(component);
+
+    rig_engine_op_register_component(engine, component);
+
+    return (RObject *)component;
+}
+
+void
+r_open_view(RModule *module, RObject *camera_entity)
+{
+    rig_code_module_props_t *code_module = (void *)module;
+    rig_entity_t *entity = (rig_entity_t *)camera_entity;
+    rig_engine_t *engine = code_module->engine;
+
+    rig_engine_op_open_view(engine, entity);
+}
+
+RObject *
+r_light_new(RModule *module)
+{
+    rig_code_module_props_t *code_module = (void *)module;
+    rut_object_t *component;
+    rig_engine_t *engine = code_module->engine;
+    rut_property_context_t *prop_ctx = engine->property_ctx;
+
+    prop_ctx->logging_disabled++;
+    component = rig_light_new(engine);
+    prop_ctx->logging_disabled--;
+
+    rut_object_claim(component, engine);
+    rut_object_unref(component);
+
+    rig_engine_op_register_component(engine, component);
+
+    return (RObject *)component;
+}
+
+RObject *
+r_shape_new(RModule *module, float width, float height)
+{
+    rig_code_module_props_t *code_module = (void *)module;
+    rut_object_t *component;
+    rig_engine_t *engine = code_module->engine;
+    rut_property_context_t *prop_ctx = engine->property_ctx;
+
+    prop_ctx->logging_disabled++;
+    component = rig_shape_new(code_module->engine, false, width, height);
+    prop_ctx->logging_disabled--;
+
+    rut_object_claim(component, engine);
+    rut_object_unref(component);
+
+    rig_engine_op_register_component(engine, component);
+
+    return (RObject *)component;
+}
+
+RObject *
+r_nine_slice_new(RModule *module,
+                 float top, float right, float bottom, float left,
+                 float width, float height)
+{
+    rig_code_module_props_t *code_module = (void *)module;
+    rut_object_t *component;
+    rig_engine_t *engine = code_module->engine;
+    rut_property_context_t *prop_ctx = engine->property_ctx;
+
+    prop_ctx->logging_disabled++;
+    component = rig_nine_slice_new(engine,
+                                   NULL, /* texture */
+                                   top, right, bottom, left,
+                                   width, right);
+    prop_ctx->logging_disabled--;
+
+    rut_object_claim(component, engine);
+    rut_object_unref(component);
+
+    rig_engine_op_register_component(engine, component);
+
+    return (RObject *)component;
+}
+
+RObject *
+r_diamond_new(RModule *module, float size)
+{
+    rig_code_module_props_t *code_module = (void *)module;
+    rut_object_t *component;
+    rig_engine_t *engine = code_module->engine;
+    rut_property_context_t *prop_ctx = engine->property_ctx;
+
+    prop_ctx->logging_disabled++;
+    component = rig_diamond_new(engine, size);
+    prop_ctx->logging_disabled--;
+
+    rut_object_claim(component, engine);
+    rut_object_unref(component);
+
+    rig_engine_op_register_component(engine, component);
+
+    return (RObject *)component;
+}
+
+RObject *
+r_pointalism_grid_new(RModule *module, float size)
+{
+    rig_code_module_props_t *code_module = (void *)module;
+    rut_object_t *component;
+    rig_engine_t *engine = code_module->engine;
+    rut_property_context_t *prop_ctx = engine->property_ctx;
+
+    prop_ctx->logging_disabled++;
+    component = rig_pointalism_grid_new(engine, size);
+    prop_ctx->logging_disabled--;
+
+    rut_object_claim(component, engine);
+    rut_object_unref(component);
+
+    rig_engine_op_register_component(engine, component);
+
+    return (RObject *)component;
+}
+
+RObject *
+r_material_new(RModule *module)
+{
+    rig_code_module_props_t *code_module = (void *)module;
+    rut_object_t *component;
+    rig_engine_t *engine = code_module->engine;
+    rut_property_context_t *prop_ctx = engine->property_ctx;
+
+    prop_ctx->logging_disabled++;
+    component = rig_material_new(engine, NULL);
+    prop_ctx->logging_disabled--;
+
+    rut_object_claim(component, engine);
+    rut_object_unref(component);
+
+    rig_engine_op_register_component(engine, component);
+
+    return (RObject *)component;
+}
+
+RObject *
+r_button_input_new(RModule *module)
+{
+    rig_code_module_props_t *code_module = (void *)module;
+    rut_object_t *component;
+    rig_engine_t *engine = code_module->engine;
+    rut_property_context_t *prop_ctx = engine->property_ctx;
+
+    prop_ctx->logging_disabled++;
+    component = rig_button_input_new(engine);
+    prop_ctx->logging_disabled--;
+
+    rut_object_claim(component, engine);
+    rut_object_unref(component);
+
+    rig_engine_op_register_component(engine, component);
+
+    return (RObject *)component;
+}
+
+RObject *
+r_text_new(RModule *module)
+{
+    rig_code_module_props_t *code_module = (void *)module;
+    rut_object_t *component;
+    rig_engine_t *engine = code_module->engine;
+    rut_property_context_t *prop_ctx = engine->property_ctx;
+
+    prop_ctx->logging_disabled++;
+    component = rig_text_new(engine);
+    prop_ctx->logging_disabled--;
+
+    rut_object_claim(component, engine);
+    rut_object_unref(component);
+
+    rig_engine_op_register_component(code_module->engine, component);
+
+    return (RObject *)component;
+}
+
+void
+r_add_component(RModule *module, RObject *entity, RObject *component)
+{
+    rig_code_module_props_t *code_module = (void *)module;
+
+    rig_engine_op_add_component(code_module->engine,
+                                (rig_entity_t *)entity,
+                                (rig_entity_t *)component);
+}
+
+RColor *
+r_color_init_from_string(RModule *module, RColor *color, const char *str)
+{
+    rig_code_module_props_t *code_module = (void *)module;
+    rut_color_init_from_string(code_module->engine->shell, (void *)color, str);
+    return color;
+}
+
+#if 0
+void
+r_set_float_by_name(RModule *module, RObject *object, const char *name, float value)
+{
+    rig_code_module_props_t *code_module = (void *)module;
+    rig_engine_t *engine = code_module->engine;
+    rut_property_t *prop;
+
+    c_return_if_fail(rut_object_is(object, RUT_TRAIT_ID_INTROSPECTABLE));
+
+    prop = rut_introspectable_lookup_property(object, name);
+
+    c_return_if_fail(prop);
+
+#if 1
+    rut_boxed_t boxed;
+    boxed.type = RUT_PROPERTY_TYPE_FLOAT;
+    boxed.d.float_val = value;
+    rig_engine_op_set_property(engine, prop, &boxed);
+#else
+    rut_property_set_float(&engine->shell->property_ctx, prop, value);
+#endif
+}
+#endif
+
+// E.g. boolean bool BOOLEAN
+#define SCALAR_TYPE(SUFFIX, CTYPE, TYPE) \
+void \
+r_set_##SUFFIX(RModule *module, RObject *object, int id, CTYPE value) \
+{ \
+    rig_code_module_props_t *code_module = (void *)module; \
+    rig_engine_t *engine = code_module->engine; \
+    rut_introspectable_props_t *priv = \
+        rut_object_get_properties(object, RUT_TRAIT_ID_INTROSPECTABLE); \
+    rut_property_t *prop = priv->first_property + id; \
+ \
+    c_return_if_fail(id < priv->n_properties); \
+ \
+    rut_property_set_##SUFFIX(engine->property_ctx, prop, value); \
+} \
+ \
+void \
+r_set_##SUFFIX##_by_name(RModule *module, RObject *object, const char *name, CTYPE value) \
+{ \
+    rig_code_module_props_t *code_module = (void *)module; \
+    rig_engine_t *engine = code_module->engine; \
+    rut_property_t *prop; \
+ \
+    c_return_if_fail(rut_object_is(object, RUT_TRAIT_ID_INTROSPECTABLE)); \
+ \
+    prop = rut_introspectable_lookup_property(object, name); \
+ \
+    rut_property_set_##SUFFIX(engine->property_ctx, prop, value); \
+}
+
+#define POINTER_TYPE(SUFFIX, CTYPE, TYPE)
+
+#define ARRAY_TYPE(SUFFIX, CTYPE, TYPE, LEN) \
+void \
+r_set_##SUFFIX(RModule *module, RObject *object, int id, const CTYPE value[LEN]) \
+{ \
+    rig_code_module_props_t *code_module = (void *)module; \
+    rig_engine_t *engine = code_module->engine; \
+    rut_introspectable_props_t *priv = \
+        rut_object_get_properties(object, RUT_TRAIT_ID_INTROSPECTABLE); \
+    rut_property_t *prop = priv->first_property + id; \
+ \
+    c_return_if_fail(id < priv->n_properties); \
+ \
+    rut_property_set_##SUFFIX(engine->property_ctx, prop, value); \
+} \
+ \
+void \
+r_set_##SUFFIX##_by_name(RModule *module, RObject *object, const char *name, const CTYPE value[LEN]) \
+{ \
+    rig_code_module_props_t *code_module = (void *)module; \
+    rig_engine_t *engine = code_module->engine; \
+    rut_property_t *prop; \
+ \
+    c_return_if_fail(rut_object_is(object, RUT_TRAIT_ID_INTROSPECTABLE)); \
+ \
+    prop = rut_introspectable_lookup_property(object, name); \
+ \
+    rut_property_set_##SUFFIX(engine->property_ctx, prop, value); \
+}
+
+#define COMPOSITE_TYPE(SUFFIX, CTYPE, TYPE)
+#define _COMPOSITE_TYPE(SUFFIX, CTYPE, PRIV_CTYPE, TYPE) \
+void \
+r_set_##SUFFIX(RModule *module, RObject *object, int id, const CTYPE *value) \
+{ \
+    rig_code_module_props_t *code_module = (void *)module; \
+    rig_engine_t *engine = code_module->engine; \
+    rut_introspectable_props_t *priv = \
+        rut_object_get_properties(object, RUT_TRAIT_ID_INTROSPECTABLE); \
+    rut_property_t *prop = priv->first_property + id; \
+ \
+    c_return_if_fail(id < priv->n_properties); \
+ \
+    rut_property_set_##SUFFIX(&engine->shell->property_ctx, prop, (PRIV_CTYPE *)value); \
+} \
+ \
+void \
+r_set_##SUFFIX##_by_name(RModule *module, RObject *object, const char *name, const CTYPE *value) \
+{ \
+    rig_code_module_props_t *code_module = (void *)module; \
+    rig_engine_t *engine = code_module->engine; \
+    rut_property_t *prop; \
+ \
+    c_return_if_fail(rut_object_is(object, RUT_TRAIT_ID_INTROSPECTABLE)); \
+ \
+    prop = rut_introspectable_lookup_property(object, name); \
+ \
+    c_return_if_fail(prop); \
+ \
+    rut_property_set_##SUFFIX(&engine->shell->property_ctx, prop, (PRIV_CTYPE *)value); \
+}
+
+#include "rut-property-types.h"
+_COMPOSITE_TYPE(color, RColor, cg_color_t, COLOR)
+_COMPOSITE_TYPE(quaternion, RQuaternion, c_quaternion_t, QUATERNION)
+
+void
+r_set_text_by_name(RModule *module, RObject *object, const char *name, const char *value)
+{
+    rig_code_module_props_t *code_module = (void *)module;
+    rig_engine_t *engine = code_module->engine;
+    rut_property_t *prop;
+
+    c_return_if_fail(rut_object_is(object, RUT_TRAIT_ID_INTROSPECTABLE));
+
+    prop = rut_introspectable_lookup_property(object, name);
+
+    c_return_if_fail(prop);
+
+#if 1
+    rut_boxed_t boxed;
+    boxed.type = RUT_PROPERTY_TYPE_TEXT;
+    boxed.d.text_val = (char *)value;
+    rig_engine_op_set_property(engine, prop, &boxed);
+#else
+    rut_property_set_text(&engine->shell->property_ctx, prop, value);
+#endif
+}
+
+void
+r_set_text(RModule *module, RObject *object, int id, const char *value)
+{
+    rig_code_module_props_t *code_module = (void *)module;
+    rig_engine_t *engine = code_module->engine;
+    rut_introspectable_props_t *priv =
+        rut_object_get_properties(object, RUT_TRAIT_ID_INTROSPECTABLE);
+    rut_property_t *prop = priv->first_property + id;
+
+    c_return_if_fail(id < priv->n_properties);
+
+#if 1
+    rut_boxed_t boxed;
+    boxed.type = RUT_PROPERTY_TYPE_TEXT;
+    boxed.d.text_val = (char *)value;
+    rig_engine_op_set_property(engine, prop, &boxed);
+#else
+    rut_property_set_text(&engine->shell->property_ctx, prop, value);
+#endif
+}
+
+RQuaternion r_quaternion_identity(void)
+{
+    RQuaternion q;
+    c_quaternion_init_identity((c_quaternion_t *)&q);
+    return q;
+}
+
+RQuaternion r_quaternion(float angle, float x, float y, float z)
+{
+    RQuaternion q;
+    c_quaternion_init((c_quaternion_t *)&q, angle, x, y, z);
+    return q;
+}
+
+RQuaternion r_quaternion_from_angle_vector(float angle,
+                                           const float *axis3f)
+{
+    RQuaternion q;
+    c_quaternion_init_from_angle_vector((c_quaternion_t *)&q, angle, axis3f);
+    return q;
+}
+
+RQuaternion r_quaternion_from_array(const float *array)
+{
+    RQuaternion q;
+    c_quaternion_init_from_array((c_quaternion_t *)&q, array);
+    return q;
+}
+
+RQuaternion r_quaternion_from_x_rotation(float angle)
+{
+    RQuaternion q;
+    c_quaternion_init_from_x_rotation((c_quaternion_t *)&q, angle);
+    return q;
+}
+
+RQuaternion r_quaternion_from_y_rotation(float angle)
+{
+    RQuaternion q;
+    c_quaternion_init_from_y_rotation((c_quaternion_t *)&q, angle);
+    return q;
+}
+
+RQuaternion r_quaternion_from_z_rotation(float angle)
+{
+    RQuaternion q;
+    c_quaternion_init_from_z_rotation((c_quaternion_t *)&q, angle);
+    return q;
+}
+
+RQuaternion r_quaternion_from_euler(const REuler *euler)
+{
+    RQuaternion q;
+    c_quaternion_init_from_euler((c_quaternion_t *)&q, (const c_euler_t *)euler);
+    return q;
+}
+
+#if 0
+RQuaternion r_quaternion_from_matrix(const RMatrix *matrix)
+{
+    RQuaternion q;
+    c_quaternion_init_from_angle_vector(&q, angle, axis3f);
+    return (RQuaternion)q;
+}
+#endif
+
+bool r_quaternion_equal(const RQuaternion *a, const RQuaternion *b)
+{
+    if (a == b)
+        return true;
+
+    return (a->w == b->w && a->x == b->x && a->y == b->y && a->z == b->z);
+}
+
+float r_quaternion_get_rotation_angle(const RQuaternion *quaternion)
+{
+    return c_quaternion_get_rotation_angle((c_quaternion_t *)quaternion);
+}
+
+void r_quaternion_get_rotation_axis(const RQuaternion *quaternion,
+                                    float *vector3)
+{
+    c_quaternion_get_rotation_axis((c_quaternion_t *)quaternion,
+                                    vector3);
+}
+
+void r_quaternion_normalize(RQuaternion *quaternion)
+{
+    c_quaternion_normalize((c_quaternion_t *)quaternion);
+}
+
+void r_quaternion_invert(RQuaternion *quaternion)
+{
+    c_quaternion_invert((c_quaternion_t *)quaternion);
+}
+
+RQuaternion r_quaternion_multiply(const RQuaternion *left,
+                                  const RQuaternion *right)
+{
+    RQuaternion q;
+    c_quaternion_multiply((c_quaternion_t *)&q,
+                          (c_quaternion_t *)left,
+                          (c_quaternion_t *)right);
+    return q;
+}
+
+void
+r_quaternion_rotate_x_axis(RQuaternion *quaternion, float x_angle)
+{
+    c_quaternion_t x_rotation;
+
+    c_quaternion_init_from_x_rotation(&x_rotation, x_angle);
+    c_quaternion_multiply((c_quaternion_t *)quaternion,
+                           (c_quaternion_t *)quaternion,
+                           &x_rotation);
+}
+
+void
+r_quaternion_rotate_y_axis(RQuaternion *quaternion, float y_angle)
+{
+    c_quaternion_t y_rotation;
+
+    c_quaternion_init_from_y_rotation(&y_rotation, y_angle);
+    c_quaternion_multiply((c_quaternion_t *)quaternion,
+                           (c_quaternion_t *)quaternion,
+                           &y_rotation);
+}
+
+void
+r_quaternion_rotate_z_axis(RQuaternion *quaternion, float z_angle)
+{
+    c_quaternion_t z_rotation;
+
+    c_quaternion_init_from_z_rotation(&z_rotation, z_angle);
+    c_quaternion_multiply((c_quaternion_t *)quaternion,
+                           (c_quaternion_t *)quaternion,
+                           &z_rotation);
+}
+
+void r_quaternion_pow(RQuaternion *quaternion, float exponent)
+{
+    c_quaternion_pow((c_quaternion_t *)quaternion, exponent);
+}
+
+float r_quaternion_dot_product(const RQuaternion *a,
+                               const RQuaternion *b)
+{
+    return c_quaternion_dot_product((c_quaternion_t *)a,
+                                     (c_quaternion_t *)b);
+}
+
+RQuaternion r_quaternion_slerp(const RQuaternion *a,
+                               const RQuaternion *b,
+                               float t)
+{
+    RQuaternion q;
+    c_quaternion_slerp((c_quaternion_t *)&q,
+                       (c_quaternion_t *)a,
+                       (c_quaternion_t *)b,
+                       t);
+    return q;
+}
+
+RQuaternion r_quaternion_nlerp(const RQuaternion *a,
+                               const RQuaternion *b,
+                               float t)
+{
+    RQuaternion q;
+    c_quaternion_nlerp((c_quaternion_t *)&q,
+                       (c_quaternion_t *)a,
+                       (c_quaternion_t *)b,
+                       t);
+    return q;
+}
+
+RQuaternion r_quaternion_squad(const RQuaternion *prev,
+                               const RQuaternion *a,
+                               const RQuaternion *b,
+                               const RQuaternion *next,
+                               float t)
+{
+    RQuaternion q;
+    c_quaternion_squad((c_quaternion_t *)&q,
+                       (c_quaternion_t *)prev,
+                       (c_quaternion_t *)a,
+                       (c_quaternion_t *)b,
+                       (c_quaternion_t *)next,
+                       t);
+    return q;
+}
+

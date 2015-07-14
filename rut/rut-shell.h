@@ -27,8 +27,7 @@
  *
  */
 
-#ifndef _RUT_SHELL_H_
-#define _RUT_SHELL_H_
+#pragma once
 
 #include <stdbool.h>
 
@@ -88,6 +87,9 @@ typedef struct {
     bool resizable;
 
     cg_onscreen_t *cg_onscreen;
+
+    int64_t presentation_time0;
+    int64_t presentation_time1;
 
     bool is_dirty;
     bool is_ready;
@@ -167,7 +169,7 @@ typedef struct _rut_input_event_t {
     c_list_t list_node;
     rut_input_event_type_t type;
     rut_shell_onscreen_t *onscreen;
-    rut_object_t *camera;
+    rut_object_t *camera_entity;
     const c_matrix_t *input_transform;
 
     void *native;
@@ -189,6 +191,7 @@ typedef enum _rut_stream_event_type_t {
 
 typedef struct _rut_stream_event_t {
     rut_stream_event_type_t type;
+    rut_object_t *camera_entity;
     uint64_t timestamp;
 
     union {
@@ -218,7 +221,7 @@ typedef rut_input_event_status_t (*rut_input_callback_t)(
 typedef struct {
     c_list_t list_node;
     rut_input_callback_t callback;
-    rut_object_t *camera;
+    rut_object_t *camera_entity;
     void *user_data;
 } rut_shell_grab_t;
 
@@ -393,7 +396,7 @@ struct _rut_shell_t {
 #ifdef __EMSCRIPTEN__
     bool paint_loop_running;
 #else
-    rut_closure_t *paint_idle;
+    rut_closure_t paint_idle;
 #endif
 
     rut_input_queue_t *input_queue;
@@ -517,7 +520,8 @@ typedef union _rut_input_transform_t {
     rut_input_transform_graphable_t graphable;
 } rut_input_transform_t;
 
-rut_shell_t *rut_shell_new(rut_shell_paint_callback_t paint,
+rut_shell_t *rut_shell_new(rut_shell_t *main_shell,
+                           rut_shell_paint_callback_t paint,
                            void *user_data);
 
 /* When running a shell for a simulator we don't need any graphics support... */
@@ -530,11 +534,6 @@ void rut_shell_set_on_run_callback(rut_shell_t *shell,
 void rut_shell_set_on_quit_callback(rut_shell_t *shell,
                                     void (*callback)(rut_shell_t *shell, void *data),
                                     void *user_data);
-
-/* When running multiple shells in one thread we define one
- * shell as the "main" shell which owns the mainloop.
- */
-void rut_shell_set_main_shell(rut_shell_t *shell, rut_shell_t *main_shell);
 
 #ifdef USE_UV
 uv_loop_t *rut_uv_shell_get_loop(rut_shell_t *shell);
@@ -564,8 +563,7 @@ void rut_shell_main(rut_shell_t *shell);
 /* Should be the first thing called for each redraw... */
 void rut_shell_start_redraw(rut_shell_t *shell);
 
-/* Progress timelines */
-void rut_shell_update_timelines(rut_shell_t *shell);
+void rut_shell_progress_timelines(rut_shell_t *shell, double delta);
 
 void rut_shell_dispatch_input_events(rut_shell_t *shell);
 
@@ -623,7 +621,7 @@ void rut_shell_finish_frame(rut_shell_t *shell);
  * all input events before passing them to the callback.
  */
 void rut_shell_grab_input(rut_shell_t *shell,
-                          rut_object_t *camera,
+                          rut_object_t *camera_entity,
                           rut_input_event_status_t (*callback)(
                               rut_input_event_t *event, void *user_data),
                           void *user_data);
@@ -672,6 +670,8 @@ void rut_shell_grab_key_focus(rut_shell_t *shell,
 void rut_shell_ungrab_key_focus(rut_shell_t *shell);
 
 void rut_shell_queue_redraw(rut_shell_t *shell);
+
+bool rut_shell_is_redraw_queued(rut_shell_t *shell);
 
 void rut_shell_set_queue_redraw_callback(rut_shell_t *shell,
                                          void (*callback)(rut_shell_t *shell,
@@ -952,5 +952,3 @@ void rut_set_thread_current_shell(rut_shell_t *shell);
 rut_shell_t *rut_get_thread_current_shell(void);
 
 void rut_shell_paint(rut_shell_t *shell);
-
-#endif /* _RUT_SHELL_H_ */

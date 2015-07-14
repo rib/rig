@@ -34,10 +34,12 @@
 
 #include <rut.h>
 
+#include <rig-engine.h>
+
 typedef struct _rig_nine_slice_t rig_nine_slice_t;
 extern rut_type_t rig_nine_slice_type;
 
-rig_nine_slice_t *rig_nine_slice_new(rut_shell_t *shell,
+rig_nine_slice_t *rig_nine_slice_new(rig_engine_t *engine,
                                      cg_texture_t *texture,
                                      float top,
                                      float right,

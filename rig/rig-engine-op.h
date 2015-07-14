@@ -36,8 +36,9 @@
 typedef enum _rig_engine_op_type_t {
     // RIG_ENGINE_OP_TYPE_REGISTER_OBJECT=1,
     RIG_ENGINE_OP_TYPE_SET_PROPERTY = 1,
-    RIG_ENGINE_OP_TYPE_ADD_ENTITY,
     RIG_ENGINE_OP_TYPE_DELETE_ENTITY,
+    RIG_ENGINE_OP_TYPE_ADD_ENTITY,
+    RIG_ENGINE_OP_TYPE_REGISTER_COMPONENT,
     RIG_ENGINE_OP_TYPE_ADD_COMPONENT,
     RIG_ENGINE_OP_TYPE_DELETE_COMPONENT,
     RIG_ENGINE_OP_TYPE_ADD_CONTROLLER,
@@ -49,7 +50,7 @@ typedef enum _rig_engine_op_type_t {
     RIG_ENGINE_OP_TYPE_CONTROLLER_ADD_PROPERTY,
     RIG_ENGINE_OP_TYPE_CONTROLLER_REMOVE_PROPERTY,
     RIG_ENGINE_OP_TYPE_CONTROLLER_PROPERTY_SET_METHOD,
-    // RIG_ENGINE_OP_TYPE_SET_PLAY_MODE,
+    RIG_ENGINE_OP_TYPE_OPEN_VIEW,
 } rig_engine_op_type_t;
 
 #if 0
@@ -62,18 +63,21 @@ void rig_engine_op_set_property(rig_engine_t *engine,
                                 rut_property_t *property,
                                 rut_boxed_t *value);
 
+void rig_engine_op_delete_entity(rig_engine_t *engine, rig_entity_t *entity);
+
 void rig_engine_op_add_entity(rig_engine_t *engine,
                               rig_entity_t *parent,
                               rig_entity_t *entity);
 
-void rig_engine_op_delete_entity(rig_engine_t *engine, rig_entity_t *entity);
+void rig_engine_op_register_component(rig_engine_t *engine,
+                                      rut_object_t *component);
 
 void rig_engine_op_add_component(rig_engine_t *engine,
                                  rig_entity_t *entity,
-                                 rut_component_t *component);
+                                 rut_object_t *component);
 
 void rig_engine_op_delete_component(rig_engine_t *engine,
-                                    rut_component_t *component);
+                                    rut_object_t *component);
 
 void rig_engine_op_add_controller(rig_engine_t *engine,
                                   rig_controller_t *controller);
@@ -117,11 +121,9 @@ rig_engine_op_controller_property_set_method(rig_engine_t *engine,
                                              rut_property_t *property,
                                              rig_controller_method_t method);
 
-#if 0
 void
-rig_engine_op_set_play_mode (rig_engine_t *engine,
-                             bool play_mode_enabled);
-#endif
+rig_engine_op_open_view(rig_engine_t *engine,
+                        rig_entity_t *camera);
 
 Rig__Operation **rig_engine_serialize_ops(rig_engine_t *engine,
                                           rig_pb_serializer_t *serializer);

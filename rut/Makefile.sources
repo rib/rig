@@ -23,14 +23,7 @@ rut_common_sources = \
     rut-graphable.c \
     rut-matrix-stack.h \
     rut-matrix-stack.c \
-    rut-arcball.h \
-    rut-arcball.c \
     rut-transform-private.h \
-    rut-volume.h \
-    rut-volume.c \
-    rut-volume-private.h \
-    rut-planes.h \
-    rut-planes.c \
     rut-shell.h \
     rut-shell.c \
     rut-headless-shell.h \
@@ -58,8 +51,6 @@ rut_common_sources = \
     rut-paintable.c \
     rut-closure.h \
     rut-closure.c \
-    rut-stack.h \
-    rut-stack.c \
     rut-gaussian-blurrer.h \
     rut-gaussian-blurrer.c \
     rut-mesh.h \
@@ -68,6 +59,50 @@ rut_common_sources = \
     rply.h \
     rut-mesh-ply.h \
     rut-mesh-ply.c \
+    rut-graph.h \
+    rut-graph.c \
+    rut-refcount-debug.h \
+    rut-refcount-debug.c \
+    rut-mimable.h \
+    rut-mimable.c \
+    rut-input-region.h \
+    rut-input-region.c \
+    rut-camera.h \
+    rut-camera.c \
+    rut-poll.h \
+    rut-poll.c \
+    rut-inputable.h \
+    rut-meshable.h \
+    rut-gradient.h \
+    rut-gradient.c
+
+rut_sdl_sources = \
+    rut-sdl-shell.h \
+    rut-sdl-shell.c \
+    rut-sdl-keysyms.c \
+    rut-sdl-keysyms.h
+
+rut_editor_sources = \
+    rut-pickable.h \
+    rut-composite-sizable.h \
+    rut-composite-sizable.c \
+    rut-volume.h \
+    rut-volume.c \
+    rut-volume-private.h \
+    rut-planes.h \
+    rut-planes.c \
+    rut-transform.h \
+    rut-transform.c \
+    rut-stack.h \
+    rut-stack.c \
+    rut-shim.h \
+    rut-shim.c \
+    rut-rectangle.h \
+    rut-rectangle.c \
+    rut-fixed.h \
+    rut-fixed.c \
+    rut-arcball.h \
+    rut-arcball.c \
     rut-ui-viewport.h \
     rut-ui-viewport.c \
     rut-scroll-bar.h \
@@ -80,41 +115,6 @@ rut_common_sources = \
     rut-box-layout.c \
     rut-bin.h \
     rut-bin.c \
-    rut-graph.h \
-    rut-graph.c \
-    rut-transform.h \
-    rut-transform.c \
-    rut-rectangle.h \
-    rut-rectangle.c \
-    rut-fixed.h \
-    rut-fixed.c \
-    rut-refcount-debug.h \
-    rut-refcount-debug.c \
-    rut-composite-sizable.h \
-    rut-composite-sizable.c \
-    rut-shim.h \
-    rut-shim.c \
-    rut-mimable.h \
-    rut-mimable.c \
-    rut-input-region.h \
-    rut-input-region.c \
-    rut-camera.h \
-    rut-camera.c \
-    rut-poll.h \
-    rut-poll.c \
-    rut-inputable.h \
-    rut-pickable.h \
-    rut-meshable.h \
-    rut-gradient.h \
-    rut-gradient.c
-
-rut_sdl_sources = \
-    rut-sdl-shell.h \
-    rut-sdl-shell.c \
-    rut-sdl-keysyms.c \
-    rut-sdl-keysyms.h
-
-rut_editor_sources = \
     rut-text-buffer.h \
     rut-text-buffer.c \
     rut-text-blob.h \

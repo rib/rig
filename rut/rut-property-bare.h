@@ -82,7 +82,7 @@ typedef struct _rut_property_change_t {
 } rut_property_change_t;
 
 typedef struct _rut_property_context_t {
-    bool log;
+    int logging_disabled;
     int magic_marker;
     rut_memory_stack_t *change_log_stack;
     int log_len;

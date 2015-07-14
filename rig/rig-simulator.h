@@ -26,8 +26,7 @@
  * SOFTWARE.
  */
 
-#ifndef _RIG_SIMULATOR_H_
-#define _RIG_SIMULATOR_H_
+#pragma once
 
 #include <rut.h>
 typedef struct _rig_simulator_t rig_simulator_t;
@@ -81,17 +80,15 @@ typedef enum _rig_simulator_action_type_t {
 struct _rig_simulator_t {
     rut_object_base_t _base;
 
+    bool in_frame;
     bool redraw_queued;
 
-    /* Is responsible for creating IDs for objects. If false then
-     * the frontend is intead responsible for creating IDs */
-    bool is_master;
+    struct {
+        double progress;
+    } frame_info;
 
     rut_shell_t *shell;
     rig_engine_t *engine;
-
-    char *ui_filename;
-    rut_closure_t *load_idle;
 
 #ifdef __linux__
     int listen_fd;
@@ -143,17 +140,14 @@ struct _rig_simulator_t {
     rut_queue_t *ops;
 
     bool connected;
-    void (*connected_callback)(rig_simulator_t *simulator,
-                               void *user_data);
-    void *connected_data;
+    c_list_t connected_closures;
 
     rig_js_runtime_t *js;
 };
 
 extern rut_type_t rig_simulator_type;
 
-rig_simulator_t *rig_simulator_new(rut_shell_t *main_shell,
-                                   const char *ui_filename);
+rig_simulator_t *rig_simulator_new(rut_shell_t *main_shell);
 
 void rig_simulator_set_frontend_fd(rig_simulator_t *simulator, int fd);
 
@@ -181,10 +175,13 @@ bool rig_simulator_parse_run_mode(const char *option,
                                   char **address,
                                   int *port);
 
-void rig_simulator_set_connected_callback(rig_simulator_t *simulator,
-                                          void (*callback)(rig_simulator_t *simulator,
-                                                           void *user_data),
-                                          void *user_data);
+typedef void (*rig_simulator_connected_func_t)(rig_simulator_t *simulator,
+                                               void *user_data);
+void rig_simulator_add_connected_callback(rig_simulator_t *simulator,
+                                          rut_closure_t *closure);
+
+void rig_simulator_queue_ui_load_on_connect(rig_simulator_t *simulator,
+                                            const char *ui_filename);
 
 void rig_simulator_forward_frontend_ui(rig_simulator_t *simulator,
                                        const Rig__UI *pb_ui);
@@ -192,6 +189,5 @@ void rig_simulator_forward_frontend_ui(rig_simulator_t *simulator,
 void rig_simulator_reload_frontend_ui(rig_simulator_t *simulator,
                                       rig_ui_t *ui);
 
+void rig_simulator_load_empty_ui(rig_simulator_t *simulator);
 void rig_simulator_load_file(rig_simulator_t *simulator, const char *filename);
-
-#endif /* _RIG_SIMULATOR_H_ */

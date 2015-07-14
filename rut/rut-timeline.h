@@ -61,7 +61,6 @@ void rut_timeline_set_loop_enabled(rut_object_t *timeline, bool enabled);
 
 bool rut_timeline_get_loop_enabled(rut_object_t *timeline);
 
-/* PRIVATE */
-void _rut_timeline_update(rut_timeline_t *timeline);
+void _rut_timeline_progress(rut_timeline_t *timeline, double delta);
 
 #endif /* _RUT_TIMELINE_H_ */

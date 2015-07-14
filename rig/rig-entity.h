@@ -38,8 +38,8 @@
 #include "rig-types.h"
 
 typedef struct _rut_component_t rut_component_t;
-
 typedef struct _rig_entity_t rig_entity_t;
+
 extern rut_type_t rig_entity_type;
 
 typedef enum {
@@ -54,20 +54,33 @@ typedef enum {
 } rut_component_type_t;
 
 typedef struct _rut_componentable_props_t {
-    rut_component_type_t type;
-    rig_entity_t *entity; /* back pointer to the entity the
-                             component belongs to */
+    rut_component_type_t type : 8;
+    unsigned parented : 1;
+    union {
+        rig_engine_t *engine; /* until a component is added
+                               * to an entity we still need
+                               * a reference to the engine */
+        rig_entity_t *entity; /* back pointer to the entity the
+                                 component belongs to */
+    };
 } rut_componentable_props_t;
 
 typedef struct _rut_componentable_vtable_t {
     rut_object_t *(*copy)(rut_object_t *component);
 } rut_componentable_vtable_t;
 
-typedef enum {
-    RUT_ENTITY_FLAG_NONE = 0,
-    RUT_ENTITY_FLAG_DIRTY = 1 << 0,
-    RUT_ENTITY_FLAG_CAST_SHADOW = 1 << 1,
-} rig_entity_flag_t;
+/* XXX:
+ *
+ * Including rig-engine.h is a bit tricky since this header has some
+ * inlines that poke inside rig_engine_t and we have to consider the
+ * circular dependency due to the various components that depend on
+ * the above types and that rig-engine.h includes a lot of things that
+ * will indirectly include component headers too.
+ *
+ * We defer the include until after all the types that might be
+ * required by those component headers...
+ */
+#include "rig-engine.h"
 
 enum {
     RUT_ENTITY_PROP_LABEL,
@@ -80,7 +93,7 @@ enum {
 struct _rig_entity_t {
     rut_object_base_t _base;
 
-    rut_shell_t *shell;
+    rig_engine_t *engine;
 
     char *label;
 
@@ -104,11 +117,9 @@ struct _rig_entity_t {
 
 void _rig_entity_init_type(void);
 
-rig_entity_t *rig_entity_new(rut_shell_t *shell);
+rig_entity_t *rig_entity_new(rig_engine_t *engine);
 
 rig_entity_t *rig_entity_copy(rig_entity_t *entity);
-
-rut_property_context_t *rig_entity_get_property_context(rig_entity_t *entity);
 
 const char *rig_entity_get_label(rut_object_t *entity);
 
@@ -159,7 +170,7 @@ void rig_entity_add_component(rig_entity_t *entity, rut_object_t *component);
 
 void rig_entity_remove_component(rig_entity_t *entity, rut_object_t *component);
 
-void rig_entity_translate(rig_entity_t *entity, float tx, float tz, float ty);
+void rig_entity_translate(rig_entity_t *entity, float tx, float ty, float tz);
 
 void
 rig_entity_set_translate(rig_entity_t *entity, float tx, float ty, float tz);

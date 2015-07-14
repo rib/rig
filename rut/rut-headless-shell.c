@@ -183,13 +183,13 @@ void
 rut_headless_shell_handle_stream_event(rut_shell_t *shell,
                                        rut_stream_event_t *stream_event)
 {
-    rut_input_event_t *event = c_slice_alloc(sizeof(rut_input_event_t));
+    rut_input_event_t *event = c_slice_alloc0(sizeof(rut_input_event_t));
     event->native = stream_event;
 
     event->type = 0;
 
+    event->camera_entity = stream_event->camera_entity;
     event->onscreen = shell->headless_onscreen;
-    event->input_transform = NULL;
 
     switch (stream_event->type) {
     case RUT_STREAM_EVENT_POINTER_MOVE:

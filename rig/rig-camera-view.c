@@ -240,23 +240,24 @@ rig_camera_view_paint(rig_camera_view_t *view,
                       rut_object_t *renderer)
 {
     cg_framebuffer_t *fb = view->fb;
+    rig_ui_t *ui = view->ui;
     rig_entity_t *camera;
     rut_object_t *camera_component;
     rig_paint_context_t rig_paint_ctx;
     rut_paint_context_t *rut_paint_ctx = &rig_paint_ctx._parent;
     int i;
 
-    if (view->ui == NULL)
+    if (!ui)
         return;
 
-    if (view->play_camera == NULL)
+    if (!view->camera)
         return;
 
     view->width = cg_framebuffer_get_width(fb);
     view->height = cg_framebuffer_get_height(fb);
 
-    camera = view->play_camera;
-    camera_component = view->play_camera_component;
+    camera = view->camera;
+    camera_component = view->camera_component;
 
     rut_paint_ctx->camera = camera_component;
 
@@ -265,7 +266,6 @@ rig_camera_view_paint(rig_camera_view_t *view,
 
     rig_paint_ctx.pass = RIG_PASS_COLOR_BLENDED;
     rig_paint_ctx.enable_dof = view->enable_dof;
-    rig_paint_ctx.enable_dof = false;
 
     if (!rig_engine_vr_mode) {
 
@@ -303,13 +303,11 @@ rig_camera_view_paint(rig_camera_view_t *view,
         rut_paint_ctx->camera = view->composite_camera;
         rut_camera_flush(view->composite_camera);
 
-#if 1
         for (i = 0; i < 2; i++) {
             int eye_idx = view->hmd->EyeRenderOrder[i];
             struct eye *eye = &view->eyes[eye_idx];
             composite_eye(view, fb, eye);
         }
-#endif
 
         rut_camera_end_frame(view->composite_camera);
     }
@@ -491,24 +489,12 @@ init_vr(rig_camera_view_t *view)
     memset(view->eyes, 0, sizeof(view->eyes));
 
     left_eye->type = RIG_EYE_LEFT;
-#if 0
-    left_eye->x0 = -1;
-    left_eye->y0 = 1;
-    left_eye->x1 = 0;
-    left_eye->y1 = -1;
-#endif
     left_eye->viewport[0] = 0;
     left_eye->viewport[1] = 0;
     left_eye->viewport[2] = view->hmd->Resolution.w / 2;
     left_eye->viewport[3] = view->hmd->Resolution.h;
 
     right_eye->type = RIG_EYE_RIGHT;
-#if 0
-    right_eye->x0 = 0;
-    right_eye->y0 = 1;
-    right_eye->x1 = 1;
-    right_eye->y1 = -1;
-#endif
     right_eye->viewport[0] = (view->hmd->Resolution.w + 1) / 2;
     right_eye->viewport[1] = 0;
     right_eye->viewport[2] = view->hmd->Resolution.w / 2;
@@ -569,7 +555,7 @@ init_vr(rig_camera_view_t *view)
                                                 R_TO_D(atanf(eye->fov.UpTan)));
 #undef R_TO_D
 
-        eye->camera = rig_entity_new(view->engine->shell);
+        eye->camera = rig_entity_new(view->engine);
         rig_entity_add_component(eye->camera, eye->camera_component);
 
         eye->distort_pipeline = cg_pipeline_new(dev);
@@ -709,23 +695,23 @@ rig_camera_view_set_framebuffer(rig_camera_view_t *view,
 }
 
 void
-set_play_camera(rig_camera_view_t *view, rig_entity_t *play_camera)
+set_camera(rig_camera_view_t *view, rig_entity_t *camera)
 {
-    if (view->play_camera == play_camera)
+    if (view->camera == camera)
         return;
 
-    if (view->play_camera) {
-        rut_object_unref(view->play_camera);
-        view->play_camera = NULL;
-        rut_object_unref(view->play_camera_component);
-        view->play_camera_component = NULL;
+    if (view->camera) {
+        rut_object_unref(view->camera);
+        view->camera = NULL;
+        rut_object_unref(view->camera_component);
+        view->camera_component = NULL;
     }
 
-    if (play_camera) {
-        view->play_camera = rut_object_ref(play_camera);
-        view->play_camera_component =
-            rig_entity_get_component(play_camera, RUT_COMPONENT_TYPE_CAMERA);
-        rut_object_ref(view->play_camera_component);
+    if (camera) {
+        view->camera = rut_object_ref(camera);
+        view->camera_component =
+            rig_entity_get_component(camera, RUT_COMPONENT_TYPE_CAMERA);
+        rut_object_ref(view->camera_component);
     }
 }
 
@@ -735,20 +721,22 @@ rig_camera_view_set_ui(rig_camera_view_t *view, rig_ui_t *ui)
     if (view->ui == ui)
         return;
 
-    if (view->ui)
-        set_play_camera(view, NULL);
+    set_camera(view, NULL);
 
     /* XXX: to avoid having a circular reference we don't take a
      * reference on the ui... */
     view->ui = ui;
 
-    if (ui) {
-        set_play_camera(view, ui->play_camera);
+    rut_shell_queue_redraw(view->shell);
+}
 
-        view->origin[0] = 0;
-        view->origin[1] = 0;
-        view->origin[2] = 0;
-    }
+void
+rig_camera_view_set_camera_entity(rig_camera_view_t *view,
+                                  rig_entity_t *camera)
+{
+    c_return_if_fail(view->ui);
+
+    set_camera(view, camera);
 
     rut_shell_queue_redraw(view->shell);
 }

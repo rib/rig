@@ -32,7 +32,6 @@
 #include "rig-entity.h"
 
 typedef struct _rig_pointalism_grid_slice_t rig_pointalism_grid_slice_t;
-#define RIG_POINTALISM_GRID_SLICE(X) ((rig_pointalism_grid_slice_t *)X)
 extern rut_type_t _rig_pointalism_grid_slice_type;
 
 enum {
@@ -51,15 +50,12 @@ struct _rig_pointalism_grid_slice_t {
 void _rig_pointalism_grid_slice_init_type(void);
 
 typedef struct _rig_pointalism_grid_t rig_pointalism_grid_t;
-#define RIG_POINTALISM_GRID(p) ((rig_pointalism_grid_t *)(p))
 extern rut_type_t rig_pointalism_grid_type;
 
 struct _rig_pointalism_grid_t {
     rut_object_base_t _base;
 
     rut_componentable_props_t component;
-
-    rut_shell_t *shell;
 
     c_list_t updated_cb_list;
 
@@ -79,7 +75,7 @@ struct _rig_pointalism_grid_t {
 
 void _rig_pointalism_grid_init_type(void);
 
-rig_pointalism_grid_t *rig_pointalism_grid_new(rut_shell_t *shell, float size);
+rig_pointalism_grid_t *rig_pointalism_grid_new(rig_engine_t *engine, float size);
 
 cg_primitive_t *rig_pointalism_grid_get_primitive(rut_object_t *object);
 

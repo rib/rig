@@ -35,10 +35,11 @@
 
 #include <rut.h>
 
+#include "rig-entity.h"
+#include "rig-entity-inlines.h"
 #include "rig-native-module.h"
 #include "rig-code-module.h"
 #include "rig-engine.h"
-#include "rig-entity.h"
 
 #include "rig-c.h"
 
@@ -49,8 +50,6 @@ enum {
 
 struct _rig_native_module_t {
     rut_object_base_t _base;
-
-    rig_engine_t *engine;;
 
     rut_componentable_props_t component;
 
@@ -97,6 +96,7 @@ rig_native_module_set_name(rut_object_t *object,
                            const char *name)
 {
     rig_native_module_t *module = object;
+    rut_property_context_t *prop_ctx;
 
     close_lib(module);
 
@@ -107,8 +107,8 @@ rig_native_module_set_name(rut_object_t *object,
 
     module->name = c_strdup(name ? name : "");
 
-    rut_property_dirty(&module->engine->shell->property_ctx,
-                       &module->properties[RIG_NATIVE_MODULE_PROP_NAME]);
+    prop_ctx = rig_component_props_get_property_context(&module->component);
+    rut_property_dirty(prop_ctx, &module->properties[RIG_NATIVE_MODULE_PROP_NAME]);
 }
 
 static rut_property_spec_t _rig_native_module_prop_specs[] = {
@@ -148,7 +148,8 @@ static rut_object_t *
 _rig_native_module_copy(rut_object_t *object)
 {
     rig_native_module_t *src_module = object;
-    rig_native_module_t *copy = rig_native_module_new(src_module->engine);
+    rig_engine_t *engine = rig_component_props_get_engine(&src_module->component);
+    rig_native_module_t *copy = rig_native_module_new(engine);
 
     rig_native_module_set_name(copy, src_module->name);
 
@@ -274,9 +275,9 @@ rig_native_module_new(rig_engine_t *engine)
                           &rig_native_module_type,
                           _rig_native_module_init_type);
 
-    module->engine = engine;
-
     module->component.type = RUT_COMPONENT_TYPE_CODE;
+    module->component.parented = false;
+    module->component.engine = engine;
 
     module->code_module.object = module;
     module->code_module.engine = engine;

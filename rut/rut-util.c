@@ -469,7 +469,7 @@ rut_util_matrix_scaled_frustum(c_matrix_t *matrix,
                                float scale)
 
 {
-    float inverse_scale = 1.0 / scale;
+    float inverse_scale = 1.0f / scale;
 
     c_matrix_frustum(matrix,
                       left * inverse_scale, /* left */
@@ -488,7 +488,7 @@ rut_util_matrix_scaled_perspective(c_matrix_t *matrix,
                                    float z_far,
                                    float scale)
 {
-    float ymax = z_near * tanf(fov_y * C_PI / 360.0);
+    float ymax = z_near * tanf((fov_y / 2.0f) * C_PI / 360.0f);
 
     rut_util_matrix_scaled_frustum(matrix,
                                    -ymax * aspect,

@@ -549,8 +549,14 @@ handle_sigchild(uv_signal_t *handle, int signo)
 #endif
 
 void
-rut_poll_init(rut_shell_t *shell)
+rut_poll_init(rut_shell_t *shell, rut_shell_t *main_shell)
 {
+#ifdef USE_UV
+    uv_loop_t *loop;
+#endif
+
+    shell->main_shell = main_shell;
+
     c_list_init(&shell->poll_sources);
     c_list_init(&shell->idle_closures);
 #ifndef __EMSCRIPTEN__
@@ -558,31 +564,40 @@ rut_poll_init(rut_shell_t *shell)
 #endif
 
 #ifdef USE_UV
-    uv_loop_t *loop = rut_uv_shell_get_loop(shell);
+    if (main_shell == NULL) {
+        loop = uv_loop_new();
+
+        uv_signal_init(loop, &shell->sigchild_handle);
+        shell->sigchild_handle.data = shell;
+        uv_signal_start(&shell->sigchild_handle, handle_sigchild, SIGCHLD);
+
+#ifdef USE_GLIB
+        /* XXX: Note: glib work will always be associated with
+         * the main shell... */
+
+        uv_prepare_init(loop, &shell->glib_uv_prepare);
+        shell->glib_uv_prepare.data = shell;
+
+        uv_check_init(loop, &shell->glib_uv_check);
+        shell->glib_uv_check.data = shell;
+
+        uv_timer_init(loop, &shell->glib_uv_timer);
+        uv_check_init(loop, &shell->glib_uv_timer_check);
+        shell->glib_uv_timer_check.data = &shell->glib_uv_timer;
+
+        shell->n_pollfds = 0;
+        shell->pollfds = g_array_sized_new(false, false, sizeof(GPollFD), 5);
+        shell->glib_polls =
+            g_array_sized_new(false, false, sizeof(uv_glib_poll_t), 5);
+#endif /* USE_GLIB */
+
+    } else
+        loop = main_shell->uv_loop;
+
+    shell->uv_loop = loop;
 
     uv_idle_init(loop, &shell->uv_idle);
     shell->uv_idle.data = shell;
-
-    uv_signal_init(loop, &shell->sigchild_handle);
-    shell->sigchild_handle.data = shell;
-    uv_signal_start(&shell->sigchild_handle, handle_sigchild, SIGCHLD);
-
-#ifdef USE_GLIB
-    uv_prepare_init(loop, &shell->glib_uv_prepare);
-    shell->glib_uv_prepare.data = shell;
-
-    uv_check_init(loop, &shell->glib_uv_check);
-    shell->glib_uv_check.data = shell;
-
-    uv_timer_init(loop, &shell->glib_uv_timer);
-    uv_check_init(loop, &shell->glib_uv_timer_check);
-    shell->glib_uv_timer_check.data = &shell->glib_uv_timer;
-
-    shell->n_pollfds = 0;
-    shell->pollfds = g_array_sized_new(false, false, sizeof(GPollFD), 5);
-    shell->glib_polls =
-        g_array_sized_new(false, false, sizeof(uv_glib_poll_t), 5);
-#endif /* USE_GLIB */
 
 #endif /* USE_UV */
 }

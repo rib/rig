@@ -797,9 +797,9 @@ rig_slave_paint(rut_shell_t *shell, void *user_data)
 
     rig_engine_paint(engine);
 
-    rig_engine_garbage_collect(engine);
-
     rut_shell_run_post_paint_callbacks(shell);
+
+    rig_engine_garbage_collect(engine);
 
     rut_memory_stack_rewind(engine->frame_stack);
 

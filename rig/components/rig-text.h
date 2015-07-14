@@ -51,8 +51,6 @@ struct _rig_text_t {
     rut_object_base_t _base;
     rut_componentable_props_t component;
 
-    rig_engine_t *engine;
-
     float width;
     float height;
 

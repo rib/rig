@@ -418,11 +418,17 @@ message Operation
   }
   optional DeleteEntity delete_entity=5;
 
+  message RegisterComponent
+  {
+    required Entity.Component component=1;
+  }
+  optional RegisterComponent register_component=17;
+
   //Add a component to an entity
   message AddComponent
   {
     required sint64 parent_entity_id=1; //XXX ID
-    required Entity.Component component=2;
+    required sint64 component_id=2; //XXX ID
   }
   optional AddComponent add_component=6;
 
@@ -514,13 +520,19 @@ message Operation
   }
   optional ControllerPropertySetMethod controller_property_set_method=16;
 
+  message OpenView
+  {
+    required sint64 camera_id=1; //XXX ID
+  }
+  optional OpenView open_view=18;
+
   //message SetPlayMode
   //{
   //  required bool play_mode_enabled=1;
   //}
   //optional SetPlayMode set_play_mode=17;
 
-  //XXX: next id = 17
+  //XXX: next id = 19
 }
 
 message UIEdit
@@ -536,30 +548,9 @@ message ObjectRegistration
 
 message FrameSetup
 {
-  repeated ObjectRegistration object_registrations=12;
-
-  //Since in the editor the main edit area can be offset within a larger
-  //window we need to inform the simulator of the transforms involved so
-  //it can correctly handle input events without us needing to transform
-  //all of the input coordinates.
-  optional uint32 view_x=1;
-  optional uint32 view_y=2;
-  optional uint32 view_width=3;
-  optional uint32 view_height=4;
-
-  //Input events relevant to this new frame...
   repeated Event events=5;
 
-  optional uint64 frame_id=7;
-
-  //Predicted presentation time...
-  optional uint64 for=8;
-
-  optional bool play_mode=9;
-
-  optional UIEdit ui_edit=10; //operations updating simulator ui from frontend
-
-  optional bytes dso=13;
+  optional double progress=8;
 }
 
 message LoadResult
@@ -629,23 +620,14 @@ message SyncAck
 {
 }
 
-// The simulator service as used from the renderer
+// The simulator service as used from the frontend
 service Simulator {
-
-  //rpc RegisterInternal (PrivateID) returns (RegisterInternalAck);
 
   rpc Load (UI) returns (LoadResult);
 
   //Note: the simulation is only started by this request.
   //When completed the simulator will issue an UpdateUI request
-  //TODO: Add throttling mechanism
   rpc RunFrame (FrameSetup) returns (RunFrameAck);
-
-  //XXX: The ACK will only be sent after all outstanding frames
-  //have been processed. This can be used by the editor to
-  //ensure the simulator is idle before directly modifying the
-  //frontend UI state.
-  rpc Synchronize (Sync) returns (SyncAck);
 
   rpc Test (Query) returns (TestResult);
 }
@@ -696,9 +678,22 @@ message UpdateUIAck
 {
 }
 
+message FrameRequest
+{
+}
+
+message FrameRequestAck
+{
+}
+
 // The frontend service as used from the simulator
 service Frontend {
   rpc Load (UI) returns (LoadResult);
+
+  /* The simulator frames are always driven by the frontend but
+   * the simulator can request the frontend to run a new frame...
+   */
+  rpc RequestFrame (FrameRequest) returns (FrameRequestAck);
 
   rpc UpdateUI (UIDiff) returns (UpdateUIAck);
 

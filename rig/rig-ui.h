@@ -26,8 +26,7 @@
  * SOFTWARE.
  */
 
-#ifndef _RIG_UI_H_
-#define _RIG_UI_H_
+#pragma once
 
 #include <clib.h>
 
@@ -65,10 +64,6 @@ struct _rig_ui_t {
     c_llist_t *lights;
     c_llist_t *controllers;
 
-    /* TODO: remove the limitation of just one pov camera */
-    rig_entity_t *play_camera;
-    rut_object_t *play_camera_component;
-
     /* TODO: remove the limitation of rendering with only one light */
     rig_entity_t *light;
 
@@ -87,8 +82,6 @@ rig_ui_t *rig_ui_new(rig_engine_t *engine);
 
 void rig_ui_set_dso_data(rig_ui_t *ui, uint8_t *data, int len);
 
-void rig_ui_prepare(rig_ui_t *ui);
-
 void rig_ui_suspend(rig_ui_t *ui);
 
 void rig_ui_resume(rig_ui_t *ui);
@@ -105,11 +98,11 @@ void rig_ui_print(rig_ui_t *ui);
 
 void rig_ui_entity_component_added_notify(rig_ui_t *ui,
                                           rig_entity_t *entity,
-                                          rut_component_t *component);
+                                          rut_object_t *component);
 void rig_ui_entity_component_pre_remove_notify(rig_ui_t *ui,
                                                rig_entity_t *entity,
-                                               rut_component_t *component);
-void rig_ui_register_entity(rig_ui_t *ui, rig_entity_t *entity);
+                                               rut_object_t *component);
+void rig_ui_register_all_entity_components(rig_ui_t *ui, rig_entity_t *entity);
 
 void rig_ui_code_modules_load(rig_ui_t *ui);
 void rig_ui_code_modules_update(rig_ui_t *ui);
@@ -117,5 +110,3 @@ void rig_ui_code_modules_handle_input(rig_ui_t *ui, rut_input_event_t *event);
 
 rut_input_event_status_t rig_ui_handle_input_event(rig_ui_t *ui,
                                                    rut_input_event_t *event);
-
-#endif /* _RIG_UI_H_ */

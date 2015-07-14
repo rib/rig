@@ -109,7 +109,13 @@ set_property_apply_real(rig_engine_op_apply_context_t *ctx,
                         rut_property_t *property,
                         rut_boxed_t *value)
 {
-    rut_property_set_boxed(&ctx->engine->shell->property_ctx, property, value);
+    rut_property_context_t *prop_ctx = &ctx->engine->shell->property_ctx;
+
+    /* Don't log the property change in this case otherwise we'd end
+     * up setting the property twice */
+    prop_ctx->logging_disabled++;
+    rut_property_set_boxed(prop_ctx, property, value);
+    prop_ctx->logging_disabled--;
 }
 
 void
@@ -201,6 +207,76 @@ _map_op_set_property(rig_engine_op_map_context_t *ctx,
 }
 
 static void
+delete_entity_apply_real(rig_engine_op_apply_context_t *ctx,
+                         rig_entity_t *entity,
+                         uint64_t entity_id)
+{
+    rig_entity_reap(entity, ctx->engine);
+
+    rut_graphable_remove_child(entity);
+
+    ctx->unregister_id_cb(entity_id, ctx->user_data);
+}
+
+void
+rig_engine_op_delete_entity(rig_engine_t *engine, rig_entity_t *entity)
+{
+    rig_pb_serializer_t *serializer = engine->ops_serializer;
+    Rig__Operation *pb_op =
+        rig_pb_new(serializer, Rig__Operation, rig__operation__init);
+
+    pb_op->type = RIG_ENGINE_OP_TYPE_DELETE_ENTITY;
+
+    pb_op->delete_entity = rig_pb_new(serializer,
+                                      Rig__Operation__DeleteEntity,
+                                      rig__operation__delete_entity__init);
+
+    pb_op->delete_entity->entity_id = op_object_to_id(serializer, entity);
+
+    delete_entity_apply_real(
+        engine->apply_op_ctx, entity, pb_op->delete_entity->entity_id);
+
+    engine->log_op_callback(pb_op, engine->log_op_data);
+}
+
+static bool
+_apply_op_delete_entity(rig_engine_op_apply_context_t *ctx,
+                        Rig__Operation *pb_op)
+{
+    uint64_t entity_id = pb_op->delete_entity->entity_id;
+    rig_entity_t *entity = apply_id_to_object(ctx, entity_id);
+
+    delete_entity_apply_real(ctx, entity, entity_id);
+
+    return true;
+}
+
+static void
+_copy_op_delete_entity(rig_engine_op_copy_context_t *ctx,
+                       Rig__Operation *src_pb_op,
+                       Rig__Operation *pb_op)
+{
+    pb_op->delete_entity = rig_pb_dup(ctx->serializer,
+                                      Rig__Operation__DeleteEntity,
+                                      rig__operation__delete_entity__init,
+                                      src_pb_op->delete_entity);
+}
+
+static bool
+_map_op_delete_entity(rig_engine_op_map_context_t *ctx,
+                      rig_engine_op_apply_context_t *apply_ctx,
+                      Rig__Operation *pb_op)
+{
+    if (!map_id(ctx, &pb_op->delete_entity->entity_id))
+        return false;
+
+    if (apply_ctx && !_apply_op_delete_entity(apply_ctx, pb_op))
+        return false;
+
+    return true;
+}
+
+static void
 add_entity_apply_real(rig_engine_op_apply_context_t *ctx,
                       rig_entity_t *parent,
                       rig_entity_t *entity,
@@ -210,6 +286,22 @@ add_entity_apply_real(rig_engine_op_apply_context_t *ctx,
 
     if (parent)
         rut_graphable_add_child(parent, entity);
+    else {
+        rut_object_claim(entity, ctx->ui);
+        if (ctx->ui->scene) {
+            /* XXX: maybe better semantics would be to allow orphaned
+             * entities and only set ui->scene if it's NULL.
+             *
+             * Maybe the root node should even be checked for a
+             * special label to be sure its intended as the root node?
+             *
+             * XXX: also ensure _map_op_add_entity is updated if
+             * the behaviour is changed.
+             */
+            c_warning("Added entity replaces root node");
+        }
+        ctx->ui->scene = entity;
+    }
 }
 
 void
@@ -296,17 +388,15 @@ _map_op_add_entity(rig_engine_op_map_context_t *ctx,
                    rig_engine_op_apply_context_t *apply_ctx,
                    Rig__Operation *pb_op)
 {
-    if (!map_id(ctx, &pb_op->add_entity->parent_entity_id))
+    int64_t *parent_id_addr = &pb_op->add_entity->parent_entity_id;
+
+    /* XXX: A parent ID of zero is allowed for a root node */
+    if (*parent_id_addr && !map_id(ctx, parent_id_addr))
         return false;
 
     /* XXX: we assume that the new entity isn't currently
      * associated with any components and so the serialized
      * entity doesn't have any object ids that need mapping.
-     *
-     * The id of the entity itself will correspond to an
-     * edit-mode object pointer, which can be used later to
-     * create a mapping from the new edit-mode entity and the
-     * new play-mode entity
      */
 
     if (apply_ctx && !_apply_op_add_entity(apply_ctx, pb_op))
@@ -319,70 +409,80 @@ _map_op_add_entity(rig_engine_op_map_context_t *ctx,
 }
 
 static void
-delete_entity_apply_real(rig_engine_op_apply_context_t *ctx,
-                         rig_entity_t *entity,
-                         uint64_t entity_id)
+register_component_apply_real(rig_engine_op_apply_context_t *ctx,
+                              rut_object_t *component,
+                              uint64_t component_id)
 {
-    rig_entity_reap(entity, ctx->engine);
-
-    rut_graphable_remove_child(entity);
-
-    ctx->unregister_id_cb(entity_id, ctx->user_data);
+    ctx->register_id_cb(component, component_id, ctx->user_data);
 }
 
 void
-rig_engine_op_delete_entity(rig_engine_t *engine, rig_entity_t *entity)
+rig_engine_op_register_component(rig_engine_t *engine,
+                                 rut_object_t *component)
 {
     rig_pb_serializer_t *serializer = engine->ops_serializer;
     Rig__Operation *pb_op =
         rig_pb_new(serializer, Rig__Operation, rig__operation__init);
 
-    pb_op->type = RIG_ENGINE_OP_TYPE_DELETE_ENTITY;
+    c_return_if_fail(rut_object_is(component, RUT_TRAIT_ID_COMPONENTABLE));
 
-    pb_op->delete_entity = rig_pb_new(serializer,
-                                      Rig__Operation__DeleteEntity,
-                                      rig__operation__delete_entity__init);
+    pb_op->type = RIG_ENGINE_OP_TYPE_REGISTER_COMPONENT;
 
-    pb_op->delete_entity->entity_id = op_object_to_id(serializer, entity);
+    pb_op->register_component = rig_pb_new(serializer,
+                                           Rig__Operation__RegisterComponent,
+                                           rig__operation__register_component__init);
+    pb_op->register_component->component =
+        rig_pb_serialize_component(serializer, component);
 
-    delete_entity_apply_real(
-        engine->apply_op_ctx, entity, pb_op->delete_entity->entity_id);
+    register_component_apply_real(engine->apply_op_ctx,
+                                  component,
+                                  pb_op->register_component->component->id);
 
     engine->log_op_callback(pb_op, engine->log_op_data);
 }
 
 static bool
-_apply_op_delete_entity(rig_engine_op_apply_context_t *ctx,
-                        Rig__Operation *pb_op)
+_apply_op_register_component(rig_engine_op_apply_context_t *ctx,
+                             Rig__Operation *pb_op)
 {
-    uint64_t entity_id = pb_op->delete_entity->entity_id;
-    rig_entity_t *entity = apply_id_to_object(ctx, entity_id);
+    rut_object_t *component =
+        rig_pb_unserialize_component(ctx->unserializer,
+                                     pb_op->register_component->component);
+    if (!component)
+        return false;
 
-    delete_entity_apply_real(ctx, entity, entity_id);
-
+    register_component_apply_real(ctx,
+                                  component,
+                                  pb_op->register_component->component->id);
     return true;
 }
 
 static void
-_copy_op_delete_entity(rig_engine_op_copy_context_t *ctx,
-                       Rig__Operation *src_pb_op,
-                       Rig__Operation *pb_op)
+_copy_op_register_component(rig_engine_op_copy_context_t *ctx,
+                            Rig__Operation *src_pb_op,
+                            Rig__Operation *pb_op)
 {
-    pb_op->delete_entity = rig_pb_dup(ctx->serializer,
-                                      Rig__Operation__DeleteEntity,
-                                      rig__operation__delete_entity__init,
-                                      src_pb_op->delete_entity);
+    pb_op->register_component = rig_pb_dup(ctx->serializer,
+                                           Rig__Operation__RegisterComponent,
+                                           rig__operation__register_component__init,
+                                           src_pb_op->register_component);
+
+    pb_op->register_component->component =
+        rig_pb_dup(ctx->serializer,
+                   Rig__Entity__Component,
+                   rig__entity__component__init,
+                   src_pb_op->register_component->component);
 }
 
 static bool
-_map_op_delete_entity(rig_engine_op_map_context_t *ctx,
-                      rig_engine_op_apply_context_t *apply_ctx,
-                      Rig__Operation *pb_op)
+_map_op_register_component(rig_engine_op_map_context_t *ctx,
+                           rig_engine_op_apply_context_t *apply_ctx,
+                           Rig__Operation *pb_op)
 {
-    if (!map_id(ctx, &pb_op->delete_entity->entity_id))
+    if (apply_ctx && !_apply_op_register_component(apply_ctx, pb_op))
         return false;
 
-    if (apply_ctx && !_apply_op_delete_entity(apply_ctx, pb_op))
+    if (!map_id(ctx, &pb_op->register_component->component->id))
         return false;
 
     return true;
@@ -391,34 +491,23 @@ _map_op_delete_entity(rig_engine_op_map_context_t *ctx,
 static void
 add_component_apply_real(rig_engine_op_apply_context_t *ctx,
                          rig_entity_t *entity,
-                         rut_component_t *component,
-                         uint64_t component_id)
+                         rut_object_t *component)
 {
-    ctx->register_id_cb(component, component_id, ctx->user_data);
-
-    /* XXX: unlike most other operations _apply_op_add_component()
-     * doesn't call into here because the act of unserializing the
-     * given component will also add the component to the entity.
-     *
-     * This means we need to be extra careful to keep any extra
-     * code we add here in sync with what _apply_op_add_component()
-     * does!
-     */
-
     rig_entity_add_component(entity, component);
-
-    /* XXX: also called in _apply_op_add_component() */
     rig_ui_entity_component_added_notify(ctx->ui, entity, component);
 }
 
 void
 rig_engine_op_add_component(rig_engine_t *engine,
                             rig_entity_t *entity,
-                            rut_component_t *component)
+                            rut_object_t *component)
 {
     rig_pb_serializer_t *serializer = engine->ops_serializer;
     Rig__Operation *pb_op =
         rig_pb_new(serializer, Rig__Operation, rig__operation__init);
+
+    c_return_if_fail(rut_object_get_type(entity) == &rig_entity_type);
+    c_return_if_fail(rut_object_is(component, RUT_TRAIT_ID_COMPONENTABLE));
 
     pb_op->type = RIG_ENGINE_OP_TYPE_ADD_COMPONENT;
 
@@ -427,13 +516,11 @@ rig_engine_op_add_component(rig_engine_t *engine,
                                       rig__operation__add_component__init);
 
     pb_op->add_component->parent_entity_id = op_object_to_id(serializer, entity);
-    pb_op->add_component->component =
-        rig_pb_serialize_component(serializer, component);
+    pb_op->add_component->component_id = op_object_to_id(serializer, component);
 
     add_component_apply_real(engine->apply_op_ctx,
                              entity,
-                             component,
-                             pb_op->add_component->component->id);
+                             component);
 
     engine->log_op_callback(pb_op, engine->log_op_data);
 }
@@ -444,27 +531,17 @@ _apply_op_add_component(rig_engine_op_apply_context_t *ctx,
 {
     rig_entity_t *entity =
         apply_id_to_object(ctx, pb_op->add_component->parent_entity_id);
-    rut_component_t *component;
+    rut_object_t *component =
+        apply_id_to_object(ctx, pb_op->add_component->component_id);
 
     if (!entity)
         return false;
 
-    /* XXX: Note: this will also add the component to the entity
-     * since some components can't be configured before being
-     * added to an entity; therefore we don't call
-     * add_component_apply_real() here.
-     */
-    component = rig_pb_unserialize_component(
-        ctx->unserializer, entity, pb_op->add_component->component);
-
     if (!component)
         return false;
 
-    /* XXX: also called in add_component_apply_real() */
-    rig_ui_entity_component_added_notify(ctx->ui, entity, component);
-
-    ctx->register_id_cb(
-        component, pb_op->add_component->component->id, ctx->user_data);
+    add_component_apply_real(ctx, entity, component);
+    rut_object_unref(component);
 
     return true;
 }
@@ -478,12 +555,6 @@ _copy_op_add_component(rig_engine_op_copy_context_t *ctx,
                                       Rig__Operation__AddComponent,
                                       rig__operation__add_component__init,
                                       src_pb_op->add_component);
-
-    pb_op->add_component->component =
-        rig_pb_dup(ctx->serializer,
-                   Rig__Entity__Component,
-                   rig__entity__component__init,
-                   src_pb_op->add_component->component);
 }
 
 static bool
@@ -494,10 +565,10 @@ _map_op_add_component(rig_engine_op_map_context_t *ctx,
     if (!map_id(ctx, &pb_op->add_component->parent_entity_id))
         return false;
 
-    if (apply_ctx && !_apply_op_add_component(apply_ctx, pb_op))
+    if (!map_id(ctx, &pb_op->add_component->component_id))
         return false;
 
-    if (!map_id(ctx, &pb_op->add_component->component->id))
+    if (apply_ctx && !_apply_op_add_component(apply_ctx, pb_op))
         return false;
 
     return true;
@@ -506,7 +577,7 @@ _map_op_add_component(rig_engine_op_map_context_t *ctx,
 static void
 delete_component_apply_real(rig_engine_op_apply_context_t *ctx,
                             rig_entity_t *entity,
-                            rut_component_t *component,
+                            rut_object_t *component,
                             uint64_t component_id)
 {
     rig_ui_entity_component_pre_remove_notify(ctx->ui, entity, component);
@@ -520,7 +591,7 @@ delete_component_apply_real(rig_engine_op_apply_context_t *ctx,
 
 void
 rig_engine_op_delete_component(rig_engine_t *engine,
-                               rut_component_t *component)
+                               rut_object_t *component)
 {
     rig_pb_serializer_t *serializer = engine->ops_serializer;
     Rig__Operation *pb_op =
@@ -552,7 +623,7 @@ static bool
 _apply_op_delete_component(rig_engine_op_apply_context_t *ctx,
                            Rig__Operation *pb_op)
 {
-    rut_component_t *component =
+    rut_object_t *component =
         apply_id_to_object(ctx, pb_op->delete_component->component_id);
     rut_componentable_props_t *props;
     rig_entity_t *entity;
@@ -1413,6 +1484,84 @@ _map_op_controller_property_set_method(rig_engine_op_map_context_t *ctx,
     return true;
 }
 
+static void
+open_view_apply_real(rig_engine_op_apply_context_t *ctx,
+                     rig_entity_t *camera_entity)
+{
+    rig_frontend_t *frontend = ctx->engine->frontend;
+    rig_onscreen_view_t *view;
+
+    if (!frontend)
+        return;
+
+    view = rig_onscreen_view_new(frontend);
+
+    rig_camera_view_set_ui(view->camera_view, ctx->ui);
+    rig_camera_view_set_camera_entity(view->camera_view, camera_entity);
+    view->onscreen->input_camera = camera_entity;
+}
+
+void
+rig_engine_op_open_view(rig_engine_t *engine, rig_entity_t *entity)
+{
+    rig_pb_serializer_t *serializer = engine->ops_serializer;
+    Rig__Operation *pb_op =
+        rig_pb_new(serializer, Rig__Operation, rig__operation__init);
+
+    pb_op->type = RIG_ENGINE_OP_TYPE_OPEN_VIEW;
+
+    pb_op->open_view =
+        rig_pb_new(serializer,
+                   Rig__Operation__OpenView,
+                   rig__operation__open_view__init);
+    pb_op->open_view->camera_id =
+        op_object_to_id(serializer, entity);
+
+    open_view_apply_real(engine->apply_op_ctx, entity);
+    engine->log_op_callback(pb_op, engine->log_op_data);
+}
+
+static bool
+_apply_op_open_view(rig_engine_op_apply_context_t *ctx,
+                    Rig__Operation *pb_op)
+{
+    Rig__Operation__OpenView *open_view = pb_op->open_view;
+    rig_entity_t *camera_entity = apply_id_to_object(ctx, open_view->camera_id);
+
+    if (!camera_entity)
+        return false;
+
+    open_view_apply_real(ctx, camera_entity);
+
+    return true;
+}
+
+static void
+_copy_op_open_view(rig_engine_op_copy_context_t *ctx,
+                   Rig__Operation *src_pb_op,
+                   Rig__Operation *pb_op)
+{
+    pb_op->open_view =
+        rig_pb_dup(ctx->serializer,
+                   Rig__Operation__OpenView,
+                   rig__operation__open_view__init,
+                   src_pb_op->open_view);
+}
+
+static bool
+_map_op_open_view(rig_engine_op_map_context_t *ctx,
+                  rig_engine_op_apply_context_t *apply_ctx,
+                  Rig__Operation *pb_op)
+{
+    if (!map_id(ctx, &pb_op->open_view->camera_id))
+        return false;
+
+    if (apply_ctx && !_apply_op_open_view(apply_ctx, pb_op))
+        return false;
+
+    return true;
+}
+
 typedef struct _rig_engine_operation_t {
     bool (*apply_op)(rig_engine_op_apply_context_t *ctx, Rig__Operation *pb_op);
 
@@ -1429,11 +1578,13 @@ typedef struct _rig_engine_operation_t {
 static rig_engine_operation_t _rig_engine_ops[] =
 {
     /* OP type 0 is invalid... */
-    { NULL, NULL, NULL, }, { _apply_op_set_property, _map_op_set_property,
-                             _copy_op_set_property, },
-    { _apply_op_add_entity, _map_op_add_entity, _copy_op_add_entity, },
+    { NULL, NULL, NULL, },
+    { _apply_op_set_property, _map_op_set_property, _copy_op_set_property, },
     { _apply_op_delete_entity, _map_op_delete_entity,
       _copy_op_delete_entity, },
+    { _apply_op_add_entity, _map_op_add_entity, _copy_op_add_entity, },
+    { _apply_op_register_component, _map_op_register_component,
+      _copy_op_register_component, },
     { _apply_op_add_component, _map_op_add_component,
       _copy_op_add_component, },
     { _apply_op_delete_component, _map_op_delete_component,
@@ -1459,6 +1610,9 @@ static rig_engine_operation_t _rig_engine_ops[] =
     { _apply_op_controller_property_set_method,
       _map_op_controller_property_set_method,
       _copy_op_controller_property_set_method, },
+    { _apply_op_open_view,
+      _map_op_open_view,
+      _copy_op_open_view, },
 };
 
 void

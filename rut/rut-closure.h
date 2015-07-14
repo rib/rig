@@ -31,18 +31,6 @@
 
 #include <clib.h>
 
-/*
- * This implements a list of callbacks that can be used like signals
- * in GObject, but that don't have any marshalling overhead. The idea
- * is that any object that wants to provide a callback point will
- * provide a function to add a callback for that particular point. The
- * function can take a function pointer with the correct signature.
- * Internally the function will just call rut_closure_list_add_FIXME. The
- * function should directly return a rut_closure_t pointer. The caller
- * can use this to disconnect the callback later without the object
- * having to provide a separate disconnect function.
- */
-
 typedef void (*rut_closure_destroy_callback_t)(void *user_data);
 
 typedef struct {
@@ -51,6 +39,7 @@ typedef struct {
 #ifdef C_DEBUG
     c_list_t *owner;
     bool allocated;
+    bool used_add_FIXME;
 #endif
 
     void *function;
@@ -63,9 +52,9 @@ typedef struct {
  * _disconnect_all apis with closure structures that are embedded in
  * some other structure.
  *
- * These apis can't be intermixed; so you can't use _disconnect() a
+ * These apis can't be intermixed; so you can't _disconnect() a
  * closure that was passed to _init() or _remove() a closure created
- * via _list_add().
+ * via _list_add(). (Debug builds will try to catch mistakes)
  *
  * XXX: The aim is to phase out and eventually remove all use of the
  * older closure apis.
@@ -75,7 +64,6 @@ rut_closure_init(rut_closure_t *closure,
                  void *function,
                  void *user_data)
 {
-    c_list_init(&closure->list_node);
     closure->function = function;
     closure->user_data = user_data;
     closure->removed_cb = NULL;
@@ -85,8 +73,34 @@ rut_closure_init(rut_closure_t *closure,
      * apis or accidentally try adding a closure to multiple
      * lists */
     closure->allocated = false;
+    closure->used_add_FIXME = false;
     closure->owner = NULL;
+    closure->list_node.prev = closure->list_node.next = NULL;
 #endif
+}
+
+static inline rut_closure_t *
+rut_closure_alloc(void *function,
+                  void *user_data)
+{
+    rut_closure_t *closure = c_slice_new(rut_closure_t);
+
+    rut_closure_init(closure, function, user_data);
+
+#ifdef C_DEBUG
+    closure->allocated = true;
+#endif
+
+    return closure;
+}
+
+static inline void
+rut_closure_free(rut_closure_t *closure)
+{
+    c_warn_if_fail(closure->allocated);
+    c_warn_if_fail(closure->list_node.next == NULL);
+
+    c_slice_free(rut_closure_t, closure);
 }
 
 static inline void
@@ -143,7 +157,7 @@ void rut_closure_list_disconnect_all_FIXME(c_list_t *list); //C_DEPRECATED("Use 
     {                                                                          \
         rut_closure_t *_c, *_tmp;                                              \
                                                                                \
-        c_list_for_each_safe(_c, _tmp, (list), list_node)                    \
+        c_list_for_each_safe(_c, _tmp, (list), list_node)                      \
         {                                                                      \
             cb_type _cb = _c->function;                                        \
             _cb(__VA_ARGS__, _c->user_data);                                   \
@@ -156,7 +170,7 @@ void rut_closure_list_disconnect_all_FIXME(c_list_t *list); //C_DEPRECATED("Use 
     {                                                                          \
         rut_closure_t *_c, *_tmp;                                              \
                                                                                \
-        c_list_for_each_safe(_c, _tmp, (list), list_node)                    \
+        c_list_for_each_safe(_c, _tmp, (list), list_node)                      \
         {                                                                      \
             void (*_cb)(void *) = _c->function;                                \
             _cb(_c->user_data);                                                \

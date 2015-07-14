@@ -156,15 +156,6 @@ static int setup_ssl(const char *cert_file, const char *key_file)
 }
 
 static void
-frontend_connect_cb(rig_simulator_t *simulator,
-                    void *user_data)
-{
-    const char *ui_filename = user_data;
-
-    c_debug("frontend_connect_cb\n");
-}
-
-static void
 usage(void)
 {
     fprintf(stderr, "Usage: rig-simulator-server UI.rig [OPTIONS]...\n");
@@ -221,7 +212,7 @@ int main(int argc, char **argv)
     rig_simulator_logs_init();
 #endif
 
-    simulator = rig_simulator_new(NULL, ui_filename);
+    simulator = rig_simulator_new(NULL);
     shell = simulator->shell;
 
     /* Have browser based frontends fetch and load images as any
@@ -229,9 +220,8 @@ int main(int argc, char **argv)
      * rpc protocol... */
     simulator->frontend_features.image_loader = true;
 
-    rig_simulator_set_connected_callback(simulator,
-                                         frontend_connect_cb,
-                                         ui_filename);
+    rig_simulator_queue_ui_load_on_connect(simulator, ui_filename);
+
 #ifdef USE_NCURSES
     rig_curses_add_to_shell(shell);
 #endif
@@ -242,7 +232,7 @@ int main(int argc, char **argv)
         c_error("uv_tcp_init:%s\n", uv_strerror(r));
         goto error;
     }
-    uv_ip4_addr("127.0.0.1", 7890, &sockaddr);
+    uv_ip4_addr("0.0.0.1", 7890, &sockaddr);
     if ((r = uv_tcp_bind(&listener, (struct sockaddr *)&sockaddr, sizeof(sockaddr))) != 0) {
         c_error("uv_tcp_bind:%s\n", uv_strerror(r));
         goto error;

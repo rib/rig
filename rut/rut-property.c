@@ -43,7 +43,7 @@ static int dummy_object;
 void
 rut_property_context_init(rut_property_context_t *context)
 {
-    context->log = false;
+    context->logging_disabled = 1;
     context->magic_marker = 0;
     context->change_log_stack = rut_memory_stack_new(4096);
 }
@@ -508,7 +508,7 @@ rut_property_dirty(rut_property_context_t *ctx, rut_property_t *property)
     c_sllist_t *l;
     c_sllist_t *next;
 
-    if (ctx->log) {
+    if (!ctx->logging_disabled) {
         rut_object_t *object = property->object;
         if (object != &dummy_object) {
             rut_property_change_t *change;

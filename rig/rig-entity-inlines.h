@@ -3,7 +3,7 @@
  *
  * UI Engine & Editor
  *
- * Copyright (C) 2013  Intel Corporation.
+ * Copyright (C) 2012  Intel Corporation
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -24,19 +24,57 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
  */
 
-#ifndef __RIG_BUTTON_INPUT_H__
-#define __RIG_BUTTON_INPUT_H__
+#pragma once
 
 #include <rut.h>
 
-#include <rig-engine.h>
+#include "rig-engine.h"
 
-typedef struct _rig_button_input_t rig_button_input_t;
-extern rut_type_t rig_button_input_type;
+static inline rut_property_context_t *
+rig_entity_get_property_context(rig_entity_t *entity)
+{
+    return entity->engine->property_ctx;
+}
 
-rig_button_input_t *rig_button_input_new(rig_engine_t *engine);
+static inline rig_engine_t *
+rig_entity_get_engine(rig_entity_t *entity)
+{
+    return entity->engine;
+}
 
-#endif /* __RIG_BUTTON_INPUT_H__ */
+static inline rut_shell_t *
+rig_entity_get_shell(rig_entity_t *entity)
+{
+    return entity->engine->shell;
+}
+
+static inline rut_property_context_t *
+rig_component_props_get_property_context(rut_componentable_props_t *component)
+{
+    if (component->parented)
+        return component->entity->engine->property_ctx;
+    else
+        return component->engine->property_ctx;
+}
+
+static inline rut_shell_t *
+rig_component_props_get_shell(rut_componentable_props_t *component)
+{
+    if (component->parented)
+        return component->entity->engine->shell;
+    else
+        return component->engine->shell;
+}
+
+static inline rig_engine_t *
+rig_component_props_get_engine(rut_componentable_props_t *component)
+{
+    if (component->parented)
+        return component->entity->engine;
+    else
+        return component->engine;
+}
+
+

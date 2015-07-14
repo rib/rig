@@ -35,10 +35,8 @@
 
 void rut_closure_list_add(c_list_t *list, rut_closure_t *closure)
 {
-    if (closure->list_node.next != closure->list_node.prev) {
-#ifdef C_DEBUG
+    if (closure->list_node.next != NULL) {
         c_warn_if_fail(closure->owner == list);
-#endif
         return;
     }
 
@@ -58,7 +56,7 @@ void rut_closure_remove(rut_closure_t *closure)
             closure->removed_cb(closure->user_data);
     }
 
-    c_warn_if_fail(closure->allocated == false);
+    c_warn_if_fail(closure->used_add_FIXME == false);
 }
 
 void rut_closure_list_remove_all(c_list_t *list)
@@ -78,14 +76,14 @@ void rut_closure_list_remove_all(c_list_t *list)
 void
 rut_closure_disconnect_FIXME(rut_closure_t *closure)
 {
-    c_return_if_fail(closure->allocated);
+    c_return_if_fail(closure->used_add_FIXME);
 
     c_list_remove(&closure->list_node);
 
     if (closure->removed_cb)
         closure->removed_cb(closure->user_data);
 
-    c_slice_free(rut_closure_t, closure);
+    rut_closure_free(closure);
 }
 
 void
@@ -104,17 +102,15 @@ rut_closure_list_add_FIXME(c_list_t *list,
                            void *user_data,
                            rut_closure_destroy_callback_t destroy_cb)
 {
-    rut_closure_t *closure = c_slice_new(rut_closure_t);
+    rut_closure_t *closure = rut_closure_alloc(function, user_data);
 
-    closure->function = function;
-    closure->user_data = user_data;
-    closure->removed_cb = destroy_cb;
+    if (destroy_cb)
+        rut_closure_set_finalize(closure, destroy_cb);
 
-    c_list_insert(list->prev, &closure->list_node);
+    rut_closure_list_add(list, closure);
 
 #ifdef C_DEBUG
-    closure->allocated = true;
-    closure->owner = list;
+    closure->used_add_FIXME = true;
 #endif
 
     return closure;

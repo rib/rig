@@ -28,7 +28,8 @@ shell_redraw_cb(rut_shell_t *shell, void *user_data)
 
     rut_shell_start_redraw(shell);
 
-    rut_shell_update_timelines(shell);
+#warning "update redraw loop"
+    rut_shell_progress_timelines(shell, 1.0/60.0);
 
     rut_shell_run_pre_paint_callbacks(shell);
 
@@ -98,7 +99,7 @@ main(int argc, char **argv)
 
     rut_init();
 
-    data.shell = rut_shell_new(shell_redraw_cb, &data);
+    data.shell = rut_shell_new(NULL, shell_redraw_cb, &data);
     rut_shell_set_on_run_callback(data.shell, on_run_cb, &data);
 
     rut_shell_add_input_callback(data.shell,

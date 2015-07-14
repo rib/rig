@@ -33,6 +33,8 @@
 
 #include <rut.h>
 
+#include "rig-entity.h"
+#include "rig-entity-inlines.h"
 #include "rig-pointalism-grid.h"
 
 #define MESA_CONST_ATTRIB_BUG_WORKAROUND
@@ -367,11 +369,15 @@ static rut_object_t *
 _rig_pointalism_grid_copy(rut_object_t *object)
 {
     rig_pointalism_grid_t *grid = object;
+    rig_engine_t *engine = rig_component_props_get_engine(&grid->component);
     rig_pointalism_grid_t *copy =
-        rig_pointalism_grid_new(grid->shell, grid->cell_size);
+        rig_pointalism_grid_new(engine, grid->cell_size);
+    rut_property_context_t *prop_ctx;
+
     rig_pointalism_grid_set_image_size(copy, grid->tex_width, grid->tex_height);
 
-    rut_introspectable_copy_properties(&grid->shell->property_ctx, grid, copy);
+    prop_ctx = rig_component_props_get_property_context(&grid->component);
+    rut_introspectable_copy_properties(prop_ctx, grid, copy);
 
     return copy;
 }
@@ -428,7 +434,7 @@ _rig_pointalism_grid_init_type(void)
 }
 
 rig_pointalism_grid_t *
-rig_pointalism_grid_new(rut_shell_t *shell, float size)
+rig_pointalism_grid_new(rig_engine_t *engine, float size)
 {
     rig_pointalism_grid_t *grid =
         rut_object_alloc0(rig_pointalism_grid_t,
@@ -436,8 +442,8 @@ rig_pointalism_grid_new(rut_shell_t *shell, float size)
                           _rig_pointalism_grid_init_type);
 
     grid->component.type = RUT_COMPONENT_TYPE_GEOMETRY;
-
-    grid->shell = rut_object_ref(shell);
+    grid->component.parented = false;
+    grid->component.engine = engine;
 
     c_list_init(&grid->updated_cb_list);
 
@@ -461,11 +467,12 @@ cg_primitive_t *
 rig_pointalism_grid_get_primitive(rut_object_t *object)
 {
     rig_pointalism_grid_t *grid = object;
+    rut_shell_t *shell = rig_component_props_get_shell(&grid->component);
 
     if (!grid->mesh)
         create_meshes(grid);
 
-    return rut_mesh_create_primitive(grid->shell, grid->mesh);
+    return rut_mesh_create_primitive(shell, grid->mesh);
 }
 
 rut_mesh_t *
@@ -482,7 +489,7 @@ rig_pointalism_grid_get_pick_mesh(rut_object_t *self)
 float
 rig_pointalism_grid_get_scale(rut_object_t *obj)
 {
-    rig_pointalism_grid_t *grid = RIG_POINTALISM_GRID(obj);
+    rig_pointalism_grid_t *grid = obj;
 
     return grid->pointalism_scale;
 }
@@ -490,8 +497,7 @@ rig_pointalism_grid_get_scale(rut_object_t *obj)
 void
 rig_pointalism_grid_set_scale(rut_object_t *obj, float scale)
 {
-    rig_pointalism_grid_t *grid = RIG_POINTALISM_GRID(obj);
-    rig_entity_t *entity;
+    rig_pointalism_grid_t *grid = obj;
     rut_property_context_t *prop_ctx;
 
     if (scale == grid->pointalism_scale)
@@ -499,8 +505,7 @@ rig_pointalism_grid_set_scale(rut_object_t *obj, float scale)
 
     grid->pointalism_scale = scale;
 
-    entity = grid->component.entity;
-    prop_ctx = rig_entity_get_property_context(entity);
+    prop_ctx = rig_component_props_get_property_context(&grid->component);
     rut_property_dirty(prop_ctx,
                        &grid->properties[RIG_POINTALISM_GRID_PROP_SCALE]);
 }
@@ -508,7 +513,7 @@ rig_pointalism_grid_set_scale(rut_object_t *obj, float scale)
 float
 rig_pointalism_grid_get_z(rut_object_t *obj)
 {
-    rig_pointalism_grid_t *grid = RIG_POINTALISM_GRID(obj);
+    rig_pointalism_grid_t *grid = obj;
 
     return grid->pointalism_z;
 }
@@ -516,8 +521,7 @@ rig_pointalism_grid_get_z(rut_object_t *obj)
 void
 rig_pointalism_grid_set_z(rut_object_t *obj, float z)
 {
-    rig_pointalism_grid_t *grid = RIG_POINTALISM_GRID(obj);
-    rig_entity_t *entity;
+    rig_pointalism_grid_t *grid = obj;
     rut_property_context_t *prop_ctx;
 
     if (z == grid->pointalism_z)
@@ -525,8 +529,7 @@ rig_pointalism_grid_set_z(rut_object_t *obj, float z)
 
     grid->pointalism_z = z;
 
-    entity = grid->component.entity;
-    prop_ctx = rig_entity_get_property_context(entity);
+    prop_ctx = rig_component_props_get_property_context(&grid->component);
     rut_property_dirty(prop_ctx,
                        &grid->properties[RIG_POINTALISM_GRID_PROP_Z]);
 }
@@ -534,7 +537,7 @@ rig_pointalism_grid_set_z(rut_object_t *obj, float z)
 bool
 rig_pointalism_grid_get_lighter(rut_object_t *obj)
 {
-    rig_pointalism_grid_t *grid = RIG_POINTALISM_GRID(obj);
+    rig_pointalism_grid_t *grid = obj;
 
     return grid->pointalism_lighter;
 }
@@ -542,8 +545,7 @@ rig_pointalism_grid_get_lighter(rut_object_t *obj)
 void
 rig_pointalism_grid_set_lighter(rut_object_t *obj, bool lighter)
 {
-    rig_pointalism_grid_t *grid = RIG_POINTALISM_GRID(obj);
-    rig_entity_t *entity;
+    rig_pointalism_grid_t *grid = obj;
     rut_property_context_t *prop_ctx;
 
     if (lighter == grid->pointalism_lighter)
@@ -551,8 +553,7 @@ rig_pointalism_grid_set_lighter(rut_object_t *obj, bool lighter)
 
     grid->pointalism_lighter = lighter;
 
-    entity = grid->component.entity;
-    prop_ctx = rig_entity_get_property_context(entity);
+    prop_ctx = rig_component_props_get_property_context(&grid->component);
     rut_property_dirty(prop_ctx,
                        &grid->properties[RIG_POINTALISM_GRID_PROP_LIGHTER]);
 }
@@ -560,7 +561,7 @@ rig_pointalism_grid_set_lighter(rut_object_t *obj, bool lighter)
 float
 rig_pointalism_grid_get_cell_size(rut_object_t *obj)
 {
-    rig_pointalism_grid_t *grid = RIG_POINTALISM_GRID(obj);
+    rig_pointalism_grid_t *grid = obj;
 
     return grid->cell_size;
 }
@@ -568,8 +569,7 @@ rig_pointalism_grid_get_cell_size(rut_object_t *obj)
 void
 rig_pointalism_grid_set_cell_size(rut_object_t *obj, float cell_size)
 {
-    rig_pointalism_grid_t *grid = RIG_POINTALISM_GRID(obj);
-    rig_entity_t *entity;
+    rig_pointalism_grid_t *grid = obj;
     rut_property_context_t *prop_ctx;
 
     if (cell_size == grid->cell_size)
@@ -577,11 +577,9 @@ rig_pointalism_grid_set_cell_size(rut_object_t *obj, float cell_size)
 
     grid->cell_size = cell_size;
 
-    entity = grid->component.entity;
-    prop_ctx = rig_entity_get_property_context(entity);
-
     free_meshes(grid);
 
+    prop_ctx = rig_component_props_get_property_context(&grid->component);
     rut_property_dirty(prop_ctx,
                        &grid->properties[RIG_POINTALISM_GRID_PROP_CELL_SIZE]);
 

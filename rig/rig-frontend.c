@@ -143,6 +143,13 @@ frontend_register_object_cb(void *object, uint64_t id, void *user_data)
     c_hash_table_insert(frontend->id_to_object_map, id_ptr, object);
 }
 
+uint64_t
+rig_frontend_lookup_id(rig_frontend_t *frontend, void *object)
+{
+    uint64_t *id_ptr = c_hash_table_lookup(frontend->object_to_id_map, object);
+    return id_ptr ? *id_ptr : 0;
+}
+
 static void
 frontend_unregister_object_cb(void *object, void *user_data)
 {
@@ -243,6 +250,22 @@ apply_property_change(rig_frontend_t *frontend,
 }
 
 static void
+frontend__request_frame(Rig__Frontend_Service *service,
+                        const Rig__FrameRequest *pb_req,
+                        Rig__FrameRequestAck_Closure closure,
+                        void *closure_data)
+{
+    Rig__FrameRequestAck ack = RIG__FRAME_REQUEST_ACK__INIT;
+    rig_frontend_t *frontend =
+        rig_pb_rpc_closure_get_connection_data(closure_data);
+    rig_engine_t *engine = frontend->engine;
+
+    rut_shell_queue_redraw(engine->shell);
+
+    closure(&ack, closure_data);
+}
+
+static void
 frontend__update_ui(Rig__Frontend_Service *service,
                     const Rig__UIDiff *pb_ui_diff,
                     Rig__UpdateUIAck_Closure closure,
@@ -318,6 +341,13 @@ frontend__update_ui(Rig__Frontend_Service *service,
         apply_property_change(frontend, unserializer, pb_change);
     }
 
+#if 1
+    if (pb_ui_edit || n_property_changes) {
+        c_debug("UI Updated");
+        rig_ui_print(engine->ui);
+    }
+#endif
+
 #if 0
     n_actions = pb_ui_diff->n_actions;
     for (i = 0; i < n_actions; i++) {
@@ -329,6 +359,23 @@ frontend__update_ui(Rig__Frontend_Service *service,
 
     if (pb_ui_diff->has_queue_frame)
         rut_shell_queue_redraw(engine->shell);
+
+    /* XXX: Since we will now go idle if there's nothing to
+     * immediately redraw we scrap the presentation times associated
+     * with the onscreen views so that we can't use them later to
+     * predict the time between frames which will be skewed by going
+     * idle. */
+    if (!rut_shell_is_redraw_queued(engine->shell)){
+        c_llist_t *l;
+
+        for (l = frontend->onscreen_views; l; l = l->next) {
+            rig_onscreen_view_t *onscreen_view = l->data;
+            rut_shell_onscreen_t *onscreen = onscreen_view->onscreen;
+
+            onscreen->presentation_time0 = 0;
+            onscreen->presentation_time1 = 0;
+        }
+    }
 
     closure(&ack, closure_data);
 
@@ -342,6 +389,24 @@ frontend__update_ui(Rig__Frontend_Service *service,
 }
 
 static void
+frontend_set_ui(rig_frontend_t *frontend,
+                rig_ui_t *ui)
+{
+//    c_llist_t *l;
+
+    rig_engine_set_ui(frontend->engine, ui);
+
+    //rig_ui_code_modules_load(ui);
+#if 0
+    for (l = frontend->onscreen_views; l; l = l->next) {
+        rig_onscreen_view_t *onscreen_view = l->data;
+
+        rig_camera_view_set_ui(onscreen_view->camera_view, ui);
+    }
+#endif
+}
+
+static void
 frontend__load(Rig__Frontend_Service *service,
                const Rig__UI *pb_ui,
                Rig__LoadResult_Closure closure,
@@ -352,12 +417,11 @@ frontend__load(Rig__Frontend_Service *service,
         rig_pb_rpc_closure_get_connection_data(closure_data);
     rig_engine_t *engine = frontend->engine;
     rig_ui_t *ui;
-    c_llist_t *l;
 
     c_return_if_fail(pb_ui != NULL);
 
     /* First make sure to cleanup the current ui  */
-    rig_engine_set_ui(engine, NULL);
+    frontend_set_ui(frontend, NULL);
 
     /* Kick garbage collection now so that all the objects being
      * replaced are unregistered before before we load the new UI.
@@ -366,15 +430,7 @@ frontend__load(Rig__Frontend_Service *service,
 
     ui = rig_pb_unserialize_ui(frontend->ui_unserializer, pb_ui);
 
-    rig_engine_set_ui(engine, ui);
-
-    rig_ui_code_modules_load(ui);
-
-    for (l = frontend->onscreen_views; l; l = l->next) {
-        rig_onscreen_view_t *onscreen_view = l->data;
-
-        rig_camera_view_set_ui(onscreen_view->camera_view, ui);
-    }
+    frontend_set_ui(frontend, ui);
 
     rut_object_unref(ui);
 
@@ -427,7 +483,8 @@ frontend_peer_connected(rig_pb_rpc_client_t *pb_client,
                           handle_simulator_test_response, NULL);
 #endif
 
-    // c_debug ("Frontend peer connected\n");
+    c_debug ("Frontend peer connected\n");
+    rut_shell_queue_redraw(frontend->engine->shell);
 }
 
 static void
@@ -491,26 +548,6 @@ rig_frontend_set_simulator_connected_callback(rig_frontend_t *frontend,
     frontend->simulator_connected_data = user_data;
 }
 
-/* TODO: should support a destroy_notify callback */
-void
-rig_frontend_sync(rig_frontend_t *frontend,
-                  void (*synchronized)(const Rig__SyncAck *result,
-                                       void *user_data),
-                  void *user_data)
-{
-    ProtobufCService *simulator_service;
-    Rig__Sync sync = RIG__SYNC__INIT;
-
-    if (!frontend->connected)
-        return;
-
-    simulator_service =
-        rig_pb_rpc_client_get_service(frontend->frontend_peer->pb_rpc_client);
-
-    rig__simulator__synchronize(
-        simulator_service, &sync, synchronized, user_data);
-}
-
 static void
 frame_running_ack(const Rig__RunFrameAck *ack, void *closure_data)
 {
@@ -525,7 +562,6 @@ rig_frontend_run_simulator_frame(rig_frontend_t *frontend,
                                  rig_pb_serializer_t *serializer,
                                  Rig__FrameSetup *setup)
 {
-    rig_engine_t *engine = frontend->engine;
     ProtobufCService *simulator_service;
 
     if (!frontend->connected)
@@ -534,24 +570,10 @@ rig_frontend_run_simulator_frame(rig_frontend_t *frontend,
     simulator_service =
         rig_pb_rpc_client_get_service(frontend->frontend_peer->pb_rpc_client);
 
-    if (frontend->pending_dso_data) {
-        setup->has_dso = true;
-        setup->dso.len = frontend->pending_dso_len;
-        setup->dso.data = rut_memory_stack_memalign(engine->frame_stack,
-                                                    frontend->pending_dso_len,
-                                                    C_ALIGNOF(uint8_t));
-        memcpy(setup->dso.data, frontend->pending_dso_data, setup->dso.len);
-    }
-
     rig__simulator__run_frame(
         simulator_service, setup, frame_running_ack, frontend); /* user data */
 
     frontend->ui_update_pending = true;
-
-    if (frontend->pending_dso_data) {
-        c_free(frontend->pending_dso_data);
-        frontend->pending_dso_data = NULL;
-    }
 }
 
 static void
@@ -559,13 +581,6 @@ _rig_frontend_free(void *object)
 {
     rig_frontend_t *frontend = object;
     c_llist_t *l;
-
-#ifdef __APPLE__
-    rig_osx_deinit(frontend->engine);
-#endif
-
-    if (frontend->pending_dso_data)
-        c_free(frontend->pending_dso_data);
 
     rig_engine_op_apply_context_destroy(&frontend->apply_op_ctx);
     rig_engine_op_map_context_destroy(&frontend->map_to_frontend_objects_op_ctx);
@@ -729,12 +744,14 @@ static void
 run_simulator_thread(void *user_data)
 {
     thread_state_t *state = user_data;
-    rig_simulator_t *simulator = rig_simulator_new(NULL, state->ui_filename);
+    rig_simulator_t *simulator = rig_simulator_new(NULL);
 
     /* XXX: normally this is handled by rut-poll.c, but until we enter
      * the mainloop we want to set the 'current shell' so any log
      * messages will be properly associated with the simulator */
     rut_set_thread_current_shell(simulator->shell);
+
+    rig_simulator_queue_ui_load_on_connect(simulator, state->ui_filename);
 
     rig_simulator_set_frontend_fd(simulator, state->fd);
 
@@ -744,8 +761,6 @@ run_simulator_thread(void *user_data)
 
     if (state->local_sim_init_cb)
         state->local_sim_init_cb(simulator, state->local_sim_init_data);
-
-    rut_set_thread_current_shell(NULL);
 
     rig_simulator_run(simulator);
 
@@ -1011,13 +1026,15 @@ run_simulator_in_process(rig_frontend_t *frontend,
                          const char *ui_filename)
 {
     rut_shell_t *shell = frontend->engine->shell;
-    rig_simulator_t *simulator = rig_simulator_new(shell, ui_filename);
+    rig_simulator_t *simulator = rig_simulator_new(shell);
     rig_pb_stream_t *stream;
 
     /* XXX: normally this is handled by rut-poll.c, but until we enter
      * the mainloop we want to set the 'current shell' so any log
      * messages will be properly associated with the simulator */
     rut_set_thread_current_shell(simulator->shell);
+
+    rig_simulator_queue_ui_load_on_connect(simulator, ui_filename);
 
     /* N.B. This won't block running the mainloop since rut-loop
      * will see that simulator->shell isn't the main shell. */
@@ -1037,8 +1054,6 @@ run_simulator_in_process(rig_frontend_t *frontend,
 
     if (local_sim_init_cb)
         local_sim_init_cb(simulator, local_sim_init_data);
-
-    rut_set_thread_current_shell(NULL);
 }
 
 #ifdef __EMSCRIPTEN__
@@ -1163,59 +1178,100 @@ on_onscreen_resize(cg_onscreen_t *onscreen,
     rut_shell_queue_redraw(frontend->engine->shell);
 }
 
-void
-finish_ui_load(rig_engine_t *engine, rig_ui_t *ui)
+static void
+init_empty_ui(rig_frontend_t *frontend)
 {
-    rig_engine_set_ui(engine, ui);
+    rig_engine_t *engine = frontend->engine;
+    rig_ui_t *ui = rig_ui_new(engine);
 
+    frontend_set_ui(frontend, ui);
     rut_object_unref(ui);
 
-    if (engine->ui_load_callback)
-        engine->ui_load_callback(engine->ui_load_data);
+    rig_engine_op_apply_context_set_ui(&frontend->apply_op_ctx, ui);
 }
 
 static void
-finish_ui_load_cb(rig_frontend_t *frontend, void *user_data)
+_rig_onscreen_view_free(void *object)
 {
-    rig_ui_t *ui = user_data;
-    rig_engine_t *engine = frontend->engine;
+    rig_onscreen_view_t *view = object;
+    rig_frontend_t *frontend = view->frontend;
 
-    rut_closure_disconnect_FIXME(frontend->finish_ui_load_closure);
-    frontend->finish_ui_load_closure = NULL;
+    frontend->onscreen_views = c_llist_remove(frontend->onscreen_views, view);
 
-    finish_ui_load(engine, ui);
+    rut_object_free(rig_onscreen_view_t, object);
 }
 
-void
-rig_frontend_load_file(rig_frontend_t *frontend, const char *filename)
+static rut_type_t rig_onscreen_view_type;
+
+static void
+_rig_onscreen_view_init_type(void)
 {
-    rig_ui_t *ui = NULL;
-    rig_engine_t *engine = frontend->engine;
+    rut_type_init(&rig_onscreen_view_type, "rig_onscreen_view_t", _rig_onscreen_view_free);
+}
 
-    if (filename)
-        ui = rig_load(engine, filename);
+rig_onscreen_view_t *
+rig_onscreen_view_new(rig_frontend_t *frontend)
+{
+    rig_onscreen_view_t *view =
+        rut_object_alloc0(rig_onscreen_view_t, &rig_onscreen_view_type,
+                          _rig_onscreen_view_init_type);
 
-    if (!ui) {
-        ui = rig_ui_new(engine);
-        rig_ui_prepare(ui);
+    view->frontend = frontend;
+
+    view->onscreen = rut_shell_onscreen_new(frontend->engine->shell, 640, 480);
+
+    rut_shell_onscreen_allocate(view->onscreen);
+    rut_shell_onscreen_set_resizable(view->onscreen, true);
+
+    rut_shell_onscreen_set_title(view->onscreen, "Rig " C_STRINGIFY(RIG_VERSION));
+
+    cg_onscreen_add_resize_callback(view->onscreen->cg_onscreen,
+                                    on_onscreen_resize, frontend,
+                                    NULL); /* destroy notify */
+
+    rut_shell_onscreen_show(view->onscreen);
+
+    view->camera_view = rig_camera_view_new(frontend);
+    rig_camera_view_set_framebuffer(view->camera_view,
+                                    view->onscreen->cg_onscreen);
+
+    frontend->onscreen_views = c_llist_prepend(frontend->onscreen_views, view);
+
+    return view;
+}
+
+rig_onscreen_view_t *
+rig_frontend_find_view_for_camera(rig_frontend_t *frontend,
+                                  rig_entity_t *camera_entity)
+{
+    c_llist_t *l;
+
+    for (l = frontend->onscreen_views; l; l = l->next) {
+        rig_onscreen_view_t *onscreen_view = l->data;
+        rig_camera_view_t *camera_view = onscreen_view->camera_view;
+
+        if (camera_view->camera == camera_entity)
+            return onscreen_view;
     }
 
-    /*
-     * Wait until the simulator is idle before swapping in a new UI...
-     */
-    if (!frontend->ui_update_pending)
-        finish_ui_load(engine, ui);
-    else {
-        /* Throw away any outstanding closure since it is now redundant... */
-        if (frontend->finish_ui_load_closure)
-            rut_closure_disconnect_FIXME(frontend->finish_ui_load_closure);
+    return NULL;
+}
 
-        frontend->finish_ui_load_closure =
-            rig_frontend_add_ui_update_callback(engine->frontend,
-                                                finish_ui_load_cb,
-                                                ui,
-                                                rut_object_unref); /* destroy */
+rig_onscreen_view_t *
+rig_frontend_find_view_for_onscreen(rig_frontend_t *frontend,
+                                    rut_shell_onscreen_t *onscreen)
+{
+    c_llist_t *l;
+
+    for (l = frontend->onscreen_views; l; l = l->next) {
+        rig_onscreen_view_t *onscreen_view = l->data;
+        rut_shell_onscreen_t *onscreen = onscreen_view->onscreen;
+
+        if (onscreen_view->onscreen == onscreen)
+            return onscreen_view;
     }
+
+    return NULL;
 }
 
 rig_frontend_t *
@@ -1225,10 +1281,7 @@ rig_frontend_new(rut_shell_t *shell)
         rig_frontend_t, &rig_frontend_type, _rig_frontend_init_type);
     rig_engine_t *engine;
     rig_pb_un_serializer_t *unserializer;
-    rut_shell_onscreen_t *onscreen;
-    rig_camera_view_t *camera_view;
     uint8_t rgba_pre_white[] = { 0xff, 0xff, 0xff, 0xff };
-    rig_onscreen_view_t *onscreen_view;
 
     frontend->object_to_id_map = c_hash_table_new(NULL, /* direct hash */
                                                   NULL); /* direct key equal */
@@ -1301,57 +1354,7 @@ rig_frontend_new(rut_shell_t *shell)
     frontend->renderer = rig_renderer_new(frontend);
     rig_renderer_init(frontend->renderer);
 
-    onscreen = rut_shell_onscreen_new(shell,
-                                      engine->device_width / 2,
-                                      engine->device_height / 2);
-
-    rut_shell_onscreen_allocate(onscreen);
-
-    rut_shell_onscreen_set_resizable(onscreen, true);
-    cg_onscreen_add_resize_callback(onscreen->cg_onscreen,
-                                    on_onscreen_resize, frontend,
-                                    NULL); /* destroy notify */
-
-    camera_view = rig_camera_view_new(frontend);
-    rig_camera_view_set_framebuffer(camera_view, onscreen->cg_onscreen);
-
-    onscreen_view = c_slice_new(rig_onscreen_view_t);
-    onscreen_view->onscreen = onscreen;
-    onscreen_view->camera_view = camera_view;
-
-    frontend->onscreen_views = c_llist_prepend(frontend->onscreen_views,
-                                               onscreen_view);
-
-#ifdef USE_GTK
-    {
-        rig_application_t *application = rig_application_new(engine);
-
-        gtk_init(NULL, NULL);
-
-        /* We need to register the application before showing the onscreen
-         * because we need to set the dbus paths before the window is
-         * mapped. FIXME: Eventually it might be nice to delay creating
-         * the windows until the ‘activate’ or ‘open’ signal is emitted so
-         * that we can support the single process properly. In that case
-         * we could let g_application_run handle the registration
-         * itself */
-        if (!g_application_register(G_APPLICATION(application),
-                                    NULL, /* cancellable */
-                                    NULL /* error */))
-            /* Another instance of the application is already running */
-            rut_shell_quit(shell);
-
-        rig_application_add_onscreen(application, onscreen);
-    }
-#endif
-
-#ifdef __APPLE__
-    rig_osx_init(engine);
-#endif
-
-    rut_shell_onscreen_set_title(onscreen, "Rig " C_STRINGIFY(RIG_VERSION));
-
-    rut_shell_onscreen_show(onscreen);
+    init_empty_ui(frontend);
 
     return frontend;
 }
@@ -1387,18 +1390,6 @@ rig_frontend_queue_simulator_frame(rig_frontend_t *frontend)
                                                 frontend,
                                                 NULL); /* destroy */
     }
-}
-
-void
-rig_frontend_update_simulator_dso(rig_frontend_t *frontend,
-                                  uint8_t *dso,
-                                  int len)
-{
-    if (frontend->pending_dso_data)
-        c_free(frontend->pending_dso_data);
-
-    frontend->pending_dso_data = dso;
-    frontend->pending_dso_len = len;
 }
 
 void

@@ -34,6 +34,8 @@
 
 #include <rut.h>
 
+#include "rig-entity.h"
+#include "rig-entity-inlines.h"
 #include "rig-hair.h"
 #include "rig-asset.h"
 
@@ -260,6 +262,7 @@ calculate_updated_particle(hair_particle_t *updated_particle,
 static cg_texture_t *
 _rig_hair_get_fin_texture(rig_hair_t *hair)
 {
+    rut_shell_t *shell = rig_component_props_get_shell(&hair->component);
     cg_offscreen_t *offscreen;
     cg_pipeline_t *pipeline;
     cg_texture_t *fin_texture;
@@ -270,10 +273,10 @@ _rig_hair_get_fin_texture(rig_hair_t *hair)
     float y_iter = 0.01;
     int i;
 
-    fin_texture = (cg_texture_t *)cg_texture_2d_new_with_size(
-        hair->shell->cg_device, 1000, 1000);
+    fin_texture = (cg_texture_t *)cg_texture_2d_new_with_size(shell->cg_device,
+                                                              1000, 1000);
 
-    pipeline = cg_pipeline_new(hair->shell->cg_device);
+    pipeline = cg_pipeline_new(shell->cg_device);
 
     offscreen = cg_offscreen_new_with_texture(fin_texture);
 
@@ -322,11 +325,12 @@ _rig_hair_draw_shell_texture(rig_hair_t *hair,
                              cg_texture_t *shell_texture,
                              int position)
 {
+    rut_shell_t *shell = rig_component_props_get_shell(&hair->component);
     cg_offscreen_t *offscreen;
     cg_pipeline_t *pipeline;
     int i;
 
-    pipeline = cg_pipeline_new(hair->shell->cg_device);
+    pipeline = cg_pipeline_new(shell->cg_device);
 
     offscreen = cg_offscreen_new_with_texture(shell_texture);
 
@@ -397,12 +401,15 @@ _rig_hair_generate_shell_textures(rig_hair_t *hair)
     c_rand_free(rand);
 
     if (hair->n_shells > num_textures) {
+        rut_shell_t *shell =
+            rig_component_props_get_shell(&hair->component);
+
         c_array_set_size(hair->shell_textures, hair->n_shells);
 
         for (i = num_textures; i < hair->n_shells; i++) {
             cg_texture_t **textures = (void *)hair->shell_textures->data;
-            textures[i] = (cg_texture_t *)cg_texture_2d_new_with_size(
-                hair->shell->cg_device, 256, 256);
+            textures[i] = (cg_texture_t *)cg_texture_2d_new_with_size(shell->cg_device,
+                                                                      256, 256);
         }
     } else if (hair->n_shells < num_textures) {
         for (i = hair->n_shells; i < num_textures; i++) {
@@ -479,7 +486,8 @@ static rut_object_t *
 _rig_hair_copy(rut_object_t *obj)
 {
     rig_hair_t *hair = obj;
-    rig_hair_t *copy = rig_hair_new(hair->shell);
+    rig_engine_t *engine = rig_component_props_get_engine(&hair->component);
+    rig_hair_t *copy = rig_hair_new(engine);
 
     copy->length = hair->length;
     copy->n_shells = hair->n_shells;
@@ -517,14 +525,14 @@ _rig_hair_init_type(void)
 }
 
 rig_hair_t *
-rig_hair_new(rut_shell_t *shell)
+rig_hair_new(rig_engine_t *engine)
 {
     rig_hair_t *hair =
         rut_object_alloc0(rig_hair_t, &rig_hair_type, _rig_hair_init_type);
 
     hair->component.type = RUT_COMPONENT_TYPE_HAIR;
-
-    hair->shell = rut_object_ref(shell);
+    hair->component.parented = false;
+    hair->component.engine = engine;
 
     hair->length = 100;
     hair->n_shells = 50;
@@ -536,9 +544,9 @@ rig_hair_new(rut_shell_t *shell)
     hair->particles = c_array_new(false, false, sizeof(hair_particle_t));
     hair->shell_positions = NULL;
 
-    if (!shell->headless) {
+    if (!engine->shell->headless) {
         hair->circle = (cg_texture_t *)cg_texture_2d_new_from_file(
-            hair->shell->cg_device, rut_find_data_file("circle1.png"), NULL);
+            engine->shell->cg_device, rut_find_data_file("circle1.png"), NULL);
     }
 
     rut_introspectable_init(hair, _rig_hair_prop_specs, hair->properties);
@@ -583,7 +591,6 @@ void
 rig_hair_set_length(rut_object_t *obj, float length)
 {
     rig_hair_t *hair = obj;
-    rig_entity_t *entity;
     rut_property_context_t *prop_ctx;
 
     if (length < 0)
@@ -593,14 +600,10 @@ rig_hair_set_length(rut_object_t *obj, float length)
         return;
 
     hair->length = length;
-
-    entity = hair->component.entity;
-    prop_ctx = rig_entity_get_property_context(entity);
-
     hair->dirty_hair_positions = true;
 
-    rut_property_dirty(prop_ctx,
-                       &hair->properties[RIG_HAIR_PROP_LENGTH]);
+    prop_ctx = rig_component_props_get_property_context(&hair->component);
+    rut_property_dirty(prop_ctx, &hair->properties[RIG_HAIR_PROP_LENGTH]);
 }
 
 int
@@ -615,7 +618,6 @@ void
 rig_hair_set_n_shells(rut_object_t *obj, int n_shells)
 {
     rig_hair_t *hair = obj;
-    rig_entity_t *entity;
     rut_property_context_t *prop_ctx;
 
     if (n_shells < 0)
@@ -626,14 +628,11 @@ rig_hair_set_n_shells(rut_object_t *obj, int n_shells)
 
     hair->n_shells = n_shells;
 
-    entity = hair->component.entity;
-    prop_ctx = rig_entity_get_property_context(entity);
-
     hair->dirty_hair_positions = true;
     hair->dirty_shell_textures = true;
 
-    rut_property_dirty(prop_ctx,
-                       &hair->properties[RIG_HAIR_PROP_DETAIL]);
+    prop_ctx = rig_component_props_get_property_context(&hair->component);
+    rut_property_dirty(prop_ctx, &hair->properties[RIG_HAIR_PROP_DETAIL]);
 }
 
 int
@@ -647,7 +646,6 @@ void
 rig_hair_set_density(rut_object_t *obj, int density)
 {
     rig_hair_t *hair = obj;
-    rig_entity_t *entity;
     rut_property_context_t *prop_ctx;
 
     if (density == hair->density)
@@ -658,10 +656,8 @@ rig_hair_set_density(rut_object_t *obj, int density)
     hair->dirty_shell_textures = true;
     hair->dirty_fin_texture = true;
 
-    entity = hair->component.entity;
-    prop_ctx = rig_entity_get_property_context(entity);
-    rut_property_dirty(prop_ctx,
-                       &hair->properties[RIG_HAIR_PROP_DENSITY]);
+    prop_ctx = rig_component_props_get_property_context(&hair->component);
+    rut_property_dirty(prop_ctx, &hair->properties[RIG_HAIR_PROP_DENSITY]);
 }
 
 float
@@ -676,7 +672,6 @@ void
 rig_hair_set_thickness(rut_object_t *obj, float thickness)
 {
     rig_hair_t *hair = obj;
-    rig_entity_t *entity;
     rut_property_context_t *prop_ctx;
 
     if (thickness < 0)
@@ -690,10 +685,8 @@ rig_hair_set_thickness(rut_object_t *obj, float thickness)
     hair->dirty_shell_textures = true;
     hair->dirty_fin_texture = true;
 
-    entity = hair->component.entity;
-    prop_ctx = rig_entity_get_property_context(entity);
-    rut_property_dirty(prop_ctx,
-                       &hair->properties[RIG_HAIR_PROP_THICKNESS]);
+    prop_ctx = rig_component_props_get_property_context(&hair->component);
+    rut_property_dirty(prop_ctx, &hair->properties[RIG_HAIR_PROP_THICKNESS]);
 }
 
 float

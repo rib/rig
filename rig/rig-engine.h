@@ -94,6 +94,7 @@ struct _rig_engine_t {
     c_matrix_t identity;
 
     rut_shell_t *shell;
+    rut_property_context_t *property_ctx;
 
     rig_pb_serializer_t *ops_serializer;
     rut_memory_stack_t *frame_stack;
@@ -108,25 +109,17 @@ struct _rig_engine_t {
 
     rut_input_queue_t *simulator_input_queue;
 
+    /* TODO: Move to rig_simulator_t */
     rig_code_node_t *code_graph;
     c_module_t *code_dso_module;
 
     rig_text_engine_state_t *text_state;
-
-    float device_width;
-    float device_height;
 
     float grab_x;
     float grab_y;
     float entity_grab_pos[3];
     rut_input_callback_t key_focus_callback;
     float grab_progress;
-
-    rut_transform_t *resize_handle_transform;
-
-#ifdef __APPLE__
-    rig_osx_data_t *osx_data;
-#endif
 
     /* XXX: The object/type composition we use here isn't very
      * clean...
@@ -149,9 +142,7 @@ struct _rig_engine_t {
     void (*log_op_callback)(Rig__Operation *pb_op, void *user_data);
     void *log_op_data;
 
-    void (*ui_load_callback)(void *user_data);
-    void *ui_load_data;
-
+    /* TODO: move into editor */
     c_string_t *codegen_string0;
     c_string_t *codegen_string1;
     int next_code_id;
@@ -185,10 +176,6 @@ void rig_engine_set_log_op_callback(rig_engine_t *engine,
                                     void (*callback)(Rig__Operation *pb_op,
                                                      void *user_data),
                                     void *user_data);
-
-void rig_engine_set_ui_load_callback(rig_engine_t *engine,
-                                     void (*callback)(void *user_data),
-                                     void *user_data);
 
 void rig_engine_queue_delete(rig_engine_t *engine, rut_object_t *object);
 

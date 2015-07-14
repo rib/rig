@@ -58,42 +58,104 @@ typedef struct hello_sim
 static RObject *cam;
 static RObject *test;
 
+static RObject *text;
+static RObject *text_comp;
+
 void
 load_cb(RModule *module)
 {
-    RObject *shape = r_shape_new(module, 100, 100);
+    RObject *shape = r_shape_new(module, 8.5, 8.5);
     RObject *material = r_material_new(module);
+    RColor light_ambient = { .2, .2, .2, 1 };
+    RColor light_diffuse = { .6, .6, .6, 1 };
+    RColor light_specular = { .4, .4, .4, 1 };
 
-    r_set_color(module, material,
-                RIG_MATERIAL_PROP_AMBIENT,
-                c_color_str(module, "#ff0000"));
-    r_set_color(module, material,
-                RIG_MATERIAL_PROP_DIFFUSE,
-                c_color_str(module, "#ff0000"));
-    r_set_color(module, material,
-                RIG_MATERIAL_PROP_SPECULAR,
-                c_color_str(module, "#ff0000"));
+    RObject *e = r_entity_new(module, NULL);
+    r_set_text_by_name(module, e, "label", "light");
+    r_set_vec3_by_name(module, e, "position", (float [3]){0, 0, 500});
+
+    r_entity_rotate_x_axis(module, e, 20);
+    r_entity_rotate_y_axis(module, e, -20);
+
+    RObject *light = r_light_new(module);
+    //r_set_color_by_name(module, light, "ambient", (RColor *)&{ .2, .2, .2, 1});
+    r_set_color_by_name(module, light, "ambient", &light_ambient);
+    r_set_color_by_name(module, light, "diffuse", &light_diffuse);
+    r_set_color_by_name(module, light, "specular", &light_specular);
+    r_add_component(module, e, light);
+
+    RObject *light_frustum = r_camera_new(module);
+    r_set_vec4_by_name(module, light_frustum, "ortho",
+                       (float [4]){-1000, -1000, 1000, 1000});
+    r_set_float_by_name(module, light_frustum, "near", 1.1f);
+    r_set_float_by_name(module, light_frustum, "far", 1500.f);
+    r_add_component(module, e, light_frustum);
+
+    e = r_entity_new(module, NULL);
+    r_set_vec3_by_name(module, e, "position", (float [3]){0, 0, 100});
+    r_set_text_by_name(module, e, "label", "play-camera");
+
+    RObject *play_cam = r_camera_new(module);
+    /* XXX: it looks like there could be some issue with the
+     * sequences associated with operations vs property log entries
+     * the add-component operation has a sequence value of 0
+     * so we don't switch from applying ops to setting properties.
+     */
+#warning "these properties aren't being set in the frontend..."
+    r_set_enum_by_name(module, play_cam, "mode", R_PROJECTION_PERSPECTIVE);
+    r_set_float_by_name(module, play_cam, "fov", 10);
+    r_set_float_by_name(module, play_cam, "near", 10);
+    r_set_float_by_name(module, play_cam, "far", 10000);
+    r_set_boolean_by_name(module, play_cam, "clear", false);
+
+    r_add_component(module, e, play_cam);
+
+    r_open_view(module, e);
+
+    r_set_color_by_name(module, material, "ambient",
+                        r_color_str(module, "#ff0000"));
+    r_set_color_by_name(module, material, "diffuse",
+                        r_color_str(module, "#ff0000"));
+    r_set_color_by_name(module, material, "specular",
+                        r_color_str(module, "#ff0000"));
 
     test = r_entity_new(module, NULL);
     r_add_component(module, test, shape);
     r_add_component(module, test, material);
 
+    r_set_vec3_by_name(module, test, "position", (float [3]){0, 0, 0});
+
     r_set_text_by_name(module, test, "label", "test");
 
+#if 1
+    text = r_entity_new(module, NULL);
+    text_comp = r_text_new(module);
+
+    r_set_text_by_name(module, text_comp, "text", "Hello World");
+    r_add_component(module, text, text_comp);
+#endif
     cam = r_find(module, "play-camera");
 
     c_debug("load cb");
 }
 
 void
-update_cb(RModule *module)
+update_cb(RModule *module, double delta_seconds)
 {
+    static float n = 0;
 
-    c_debug("update_cb");
+    //n -= 0.5;
+    //r_entity_translate(module, cam, 0, 0, 1);
+    //r_set_vec3_by_name(module, test, "position", (float [3]){0, 0, n--});
+
+    r_entity_rotate_z_axis(module, test, 1.f);
+    r_request_animation_frame(module);
+
+    c_debug("update_cb (delta = %f)", delta_seconds);
 }
 
 void
-input_cb(RModule *module)
+input_cb(RModule *module, RInputEvent *event)
 {
     c_debug("input_cb");
 }
@@ -110,22 +172,65 @@ resolve_cb(const char *symbol, void *user_data)
     return NULL;
 }
 
+rig_native_module_t *
+native_module_new(rig_engine_t *engine)
+{
+    rut_property_context_t *prop_ctx = engine->property_ctx;
+    rig_native_module_t *component;
+
+    prop_ctx->logging_disabled++;
+    component = rig_native_module_new(engine);
+    prop_ctx->logging_disabled--;
+
+    rig_engine_op_register_component(engine, component);
+
+    return component;
+}
+
 static void
 setup_ui_cb(hello_sim_t *sim)
 {
     rig_simulator_t *simulator = sim->simulator;
-    rut_shell_t *shell = simulator->shell;
     rig_engine_t *engine = simulator->engine;
-    rig_entity_t *entity;
+    rut_property_context_t *prop_ctx = engine->property_ctx;
+    rig_entity_t *root;
     rig_native_module_t *native_module;
+    rig_ui_t *ui = rig_ui_new(engine);
+    //rig_ui_prepare(ui);
 
-    entity = rig_entity_new(shell);
-    rig_engine_op_add_entity(engine, engine->ui->scene, entity);
+    /* XXX: we need to take care not to log properties
+     * during these initial steps, until we call the
+     * 'load' callback.
+     *
+     * We're assuming the property context is in its
+     * initial state with logging disabled.
+     *
+     * It would be better if this were integrated with
+     * rig-simulator-impl.c which is also responsible
+     * for enabling logging before calling user's
+     * 'update' code.
+     */
+    c_return_if_fail(prop_ctx->logging_disabled == 1);
 
-    native_module = rig_native_module_new(engine);
+    rig_engine_set_ui(engine, ui);
+    rut_object_unref(ui);
+
+    rig_engine_op_apply_context_set_ui(&simulator->apply_op_ctx, ui);
+
+    root = rig_entity_new(engine);
+
+    rig_engine_op_add_entity(engine, NULL, root);
+
+    native_module = native_module_new(engine);
     rig_native_module_set_resolver(native_module, resolve_cb, NULL);
 
-    rig_engine_op_add_component(engine, entity, native_module);
+    rig_engine_op_register_component(engine, native_module);
+    rig_engine_op_add_component(engine, root, native_module);
+
+    /* XXX: would be better is this was handled in common code */
+    prop_ctx->logging_disabled--;
+    rig_ui_code_modules_load(ui);
+    prop_ctx->logging_disabled++;
 
     rut_closure_remove(&sim->setup_idle);
 
@@ -160,12 +265,53 @@ typedef struct _rig_hello_t {
 
 static bool rig_hello_fullscreen_option;
 
+static uint64_t
+lookup_sim_id_cb(void *object, void *user_data)
+{
+    rig_frontend_t *frontend = user_data;
+    return rig_frontend_lookup_id(frontend, object);
+}
+
+/* XXX: would be better if most of this became common code */
 static void
 rig_hello_redraw(rut_shell_t *shell, void *user_data)
 {
     rig_hello_t *hello = user_data;
     rig_engine_t *engine = hello->engine;
     rig_frontend_t *frontend = engine->frontend;
+    rig_onscreen_view_t *primary_view =
+        frontend->onscreen_views ? frontend->onscreen_views->data : NULL;
+    int64_t est_frame_delta_ns = 1000000000 / 60;
+    int64_t frontend_target = 0;
+    double progress = 0;
+
+    if (primary_view) {
+        rut_shell_onscreen_t *onscreen = primary_view->onscreen;
+
+        if (onscreen->presentation_time0 && onscreen->presentation_time1) {
+            est_frame_delta_ns = (onscreen->presentation_time1 -
+                                  onscreen->presentation_time0);
+            frontend_target = onscreen->presentation_time1 + est_frame_delta_ns;
+
+            if (frontend->last_target_time &&
+                frontend_target <= frontend->last_target_time)
+            {
+                c_debug("present time0 = %"PRIi64, onscreen->presentation_time0);
+                c_debug("present time1 = %"PRIi64, onscreen->presentation_time1);
+                c_debug("est frame delta = %"PRIi64, est_frame_delta_ns);
+                c_debug("last frontend target = %"PRIi64, frontend->last_target_time);
+                c_debug("frontend target      = %"PRIi64, frontend_target);
+
+                c_warning("Redrawing faster than predicted (duplicating frame to avoid going back in time)");
+            } else {
+                int64_t delta_ns = frontend_target - frontend->last_target_time;
+                progress = delta_ns / 1000000000.0;
+            }
+
+            frontend->last_target_time = frontend_target;
+        }
+    }
+    c_debug("frontend target = %"PRIi64, frontend_target);
 
     rut_shell_start_redraw(shell);
 
@@ -174,14 +320,34 @@ rig_hello_redraw(rut_shell_t *shell, void *user_data)
     if (!frontend->ui_update_pending) {
         rut_input_queue_t *input_queue = rut_shell_get_input_queue(shell);
         Rig__FrameSetup setup = RIG__FRAME_SETUP__INIT;
+        double sim_progress = 1.0 / 60.0;
         rig_pb_serializer_t *serializer;
+        rut_input_event_t *event;
+
+        if (frontend_target && frontend->last_sim_target_time) {
+            int64_t sim_target = frontend_target + est_frame_delta_ns;
+            int64_t sim_delta_ns = sim_target - frontend->last_sim_target_time;
+            sim_progress = sim_delta_ns / 1000000000.0;
+        }
+
+        /* Associate all the events with a scene camera entity which
+         * also exists in the simulator... */
+        c_list_for_each(event, &input_queue->events, list_node) {
+            rig_onscreen_view_t *view =
+                rig_frontend_find_view_for_onscreen(frontend, event->onscreen);
+            event->camera_entity = view->camera_view->camera;
+        }
 
         serializer = rig_pb_serializer_new(engine);
 
+        rig_pb_serializer_set_object_to_id_callback(serializer,
+                                                    lookup_sim_id_cb,
+                                                    frontend);
+        setup.has_progress = true;
+        setup.progress = sim_progress;
+
         setup.n_events = input_queue->n_events;
         setup.events = rig_pb_serialize_input_events(serializer, input_queue);
-
-        setup.ui_edit = NULL;
 
         rig_frontend_run_simulator_frame(frontend, serializer, &setup);
 
@@ -192,7 +358,7 @@ rig_hello_redraw(rut_shell_t *shell, void *user_data)
         rut_memory_stack_rewind(engine->sim_frame_stack);
     }
 
-    rut_shell_update_timelines(shell);
+    rut_shell_progress_timelines(shell, progress);
 
     rut_shell_run_pre_paint_callbacks(shell);
 
@@ -200,9 +366,9 @@ rig_hello_redraw(rut_shell_t *shell, void *user_data)
 
     rig_frontend_paint(frontend);
 
-    rig_engine_garbage_collect(engine);
-
     rut_shell_run_post_paint_callbacks(shell);
+
+    rig_engine_garbage_collect(engine);
 
     rut_memory_stack_rewind(engine->frame_stack);
 

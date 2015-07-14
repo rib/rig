@@ -75,8 +75,4 @@ void rig_renderer_fini(rig_renderer_t *renderer);
 void rig_renderer_paint_camera(rig_paint_context_t *paint_ctx,
                                rig_entity_t *camera_entity);
 
-/* TODO: remove this; it's just a stop-gap for rig-ui.c to be able
- * to setup the viewport for the light camera... */
-cg_framebuffer_t *rig_renderer_get_shadow_fb(rig_renderer_t *renderer);
-
 #endif /* _RIG_RENDERER_H_ */

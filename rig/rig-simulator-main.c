@@ -50,7 +50,7 @@ main(int argc, char **argv)
 
     rig_simulator_logs_init();
 
-    simulator = rig_simulator_new(NULL, NULL);
+    simulator = rig_simulator_new(NULL);
 
     rig_simulator_run(simulator);
 
@@ -201,17 +201,6 @@ bind_to_abstract_socket(rig_simulator_t *simulator,
 }
 #endif /* linux */
 
-static void
-frontend_connect_cb(rig_simulator_t *simulator,
-                    void *user_data)
-{
-    const char *ui_filename = user_data;
-
-    rig_simulator_load_file(simulator, ui_filename);
-
-    rig_simulator_reload_frontend_ui(simulator, simulator->engine->ui);
-}
-
 int
 main(int argc, char **argv)
 {
@@ -270,7 +259,7 @@ main(int argc, char **argv)
 
     rig_simulator_logs_init();
 
-    simulator = rig_simulator_new(NULL, ui_filename);
+    simulator = rig_simulator_new(NULL);
 
     if (ui_filename) {
         char *assets_location = c_path_get_dirname(ui_filename);
@@ -280,9 +269,7 @@ main(int argc, char **argv)
         c_free(assets_location);
     }
 
-    rig_simulator_set_connected_callback(simulator,
-                                         frontend_connect_cb,
-                                         ui_filename);
+    rig_simulator_queue_ui_load_on_connect(simulator, ui_filename);
 
     switch (mode) {
 #ifdef USE_UV

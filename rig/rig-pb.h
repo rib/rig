@@ -48,8 +48,8 @@ typedef bool (*rig_pb_asset_filter_t)(rig_asset_t *asset, void *user_data);
 typedef uint64_t (*rig_pb_serializer_object_register_callback_t)(
     void *object, void *user_data);
 
-typedef uint64_t (*rig_pb_serializer_objec_to_id_callback_t)(void *object,
-                                                             void *user_data);
+typedef uint64_t (*rig_pb_serializer_object_to_id_callback_t)(void *object,
+                                                              void *user_data);
 
 struct _rig_pb_serializer_t {
     rig_engine_t *engine;
@@ -62,7 +62,7 @@ struct _rig_pb_serializer_t {
     rig_pb_serializer_object_register_callback_t object_register_callback;
     void *object_register_data;
 
-    rig_pb_serializer_objec_to_id_callback_t object_to_id_callback;
+    rig_pb_serializer_object_to_id_callback_t object_to_id_callback;
     void *object_to_id_data;
 
     bool only_asset_ids;
@@ -155,7 +155,7 @@ void rig_pb_serializer_set_object_register_callback(
 
 void rig_pb_serializer_set_object_to_id_callback(
     rig_pb_serializer_t *serializer,
-    rig_pb_serializer_objec_to_id_callback_t callback,
+    rig_pb_serializer_object_to_id_callback_t callback,
     void *user_data);
 
 void rig_pb_serializer_set_skip_image_data(rig_pb_serializer_t *serializer,
@@ -288,7 +288,6 @@ void rig_pb_init_boxed_value(rig_pb_un_serializer_t *unserializer,
  * an entity. */
 rut_object_t *
 rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
-                             rig_entity_t *entity,
                              Rig__Entity__Component *pb_component);
 
 rig_entity_t *rig_pb_unserialize_entity(rig_pb_un_serializer_t *unserializer,

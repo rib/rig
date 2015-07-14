@@ -1340,6 +1340,8 @@ get_entity_color_pipeline(rig_renderer_t *renderer,
     rut_object_t *hair;
     int i;
 
+    //return cg_pipeline_new(engine->shell->cg_device);
+
     /* TODO: come up with a scheme for minimizing how many separate
      * cg_pipeline_ts we create or at least deriving the pipelines
      * from a small set of templates.
@@ -2118,28 +2120,6 @@ paint_camera_entity_pass(rig_paint_context_t *paint_ctx,
 
     rut_camera_flush(camera);
 
-    /* Note: if we are rendering with the real ui->play_camera (i.e.
-     * not a viewing camera then we don't clear the background with
-     * a rectangle like this, we can just clear the framebuffer...
-     */
-    if (paint_ctx->pass == RIG_PASS_COLOR_UNBLENDED &&
-        camera != ui->play_camera)
-    {
-        cg_pipeline_t *pipeline = cg_pipeline_new(dev);
-        const cg_color_t *bg_color =
-            rut_camera_get_background_color(ui->play_camera_component);
-        cg_pipeline_set_color4f(pipeline,
-                                bg_color->red,
-                                bg_color->green,
-                                bg_color->blue,
-                                bg_color->alpha);
-        cg_framebuffer_draw_rectangle(fb, pipeline,
-                                      0, 0,
-                                      engine->device_width,
-                                      engine->device_height);
-        cg_object_unref(pipeline);
-    }
-
     rut_graphable_traverse(engine->ui->scene,
                            RUT_TRAVERSE_DEPTH_FIRST,
                            entitygraph_pre_paint_cb,
@@ -2153,6 +2133,19 @@ paint_camera_entity_pass(rig_paint_context_t *paint_ctx,
     rut_paint_ctx->camera = saved_camera;
 }
 
+static void
+set_light_framebuffer(rig_renderer_t *renderer, rig_entity_t *light)
+{
+    rut_object_t *light_camera =
+        rig_entity_get_component(light, RUT_COMPONENT_TYPE_CAMERA);
+    cg_framebuffer_t *fb = renderer->shadow_fb;
+    int width = cg_framebuffer_get_width(fb);
+    int height = cg_framebuffer_get_height(fb);
+
+    rut_camera_set_framebuffer(light_camera, fb);
+    rut_camera_set_viewport(light_camera, 0, 0, width, height);
+}
+
 void
 rig_renderer_paint_camera(rig_paint_context_t *paint_ctx,
                           rig_entity_t *camera_entity)
@@ -2164,11 +2157,19 @@ rig_renderer_paint_camera(rig_paint_context_t *paint_ctx,
     rig_engine_t *engine = paint_ctx->engine;
     rig_ui_t *ui = engine->ui;
 
+    if (!ui->light) {
+        c_warning("Can't render scene without any light");
+        return;
+    }
+
+    /* TODO: support multiple lights */
     paint_ctx->pass = RIG_PASS_SHADOW;
+    set_light_framebuffer(renderer, ui->light); /* FIXME: should have per-light fb */
     rig_entity_set_camera_view_from_transform(ui->light);
     paint_camera_entity_pass(paint_ctx, ui->light);
 
-    if (paint_ctx->enable_dof) {
+    //if (paint_ctx->enable_dof) {
+    if (0) {
         const float *viewport = rut_camera_get_viewport(camera);
         int width = viewport[2];
         int height = viewport[3];
@@ -2233,15 +2234,8 @@ rig_renderer_paint_camera(rig_paint_context_t *paint_ctx,
         paint_ctx->pass = RIG_PASS_COLOR_UNBLENDED;
         paint_camera_entity_pass(paint_ctx, camera_entity);
 
-        paint_ctx->pass = RIG_PASS_COLOR_BLENDED;
-        paint_camera_entity_pass(paint_ctx, camera_entity);
+#warning "FIXME: re-enable the blended pass in renderer"
+        //paint_ctx->pass = RIG_PASS_COLOR_BLENDED;
+        //paint_camera_entity_pass(paint_ctx, camera_entity);
     }
-}
-
-/* TODO: remove this; it's just a stop-gap for rig-ui.c to be able
- * to setup the viewport for the light camera... */
-cg_framebuffer_t *
-rig_renderer_get_shadow_fb(rig_renderer_t *renderer)
-{
-    return renderer->shadow_fb;
 }

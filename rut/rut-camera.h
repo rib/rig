@@ -57,9 +57,12 @@ typedef struct _rut_camera_props_t {
         float bottom_fov;
         float top_fov;
     } asymmetric_perspective;
-    struct {
-        float x1, y1, x2, y2;
-    } ortho;
+    union {
+        struct {
+            float x1, y1, x2, y2;
+        } ortho;
+        float ortho_vec[4];
+    };
 
     float zoom;
 

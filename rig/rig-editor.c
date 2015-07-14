@@ -455,7 +455,7 @@ apply_asset_input_with_entity(rig_editor_t *editor,
             rig_entity_get_component(entity, RUT_COMPONENT_TYPE_MATERIAL);
 
         if (!material) {
-            material = rig_material_new(engine->shell, asset);
+            material = rig_material_new(engine, asset);
             rig_undo_journal_add_component(
                 engine->undo_journal, entity, material);
             rut_object_unref(material);
@@ -473,7 +473,7 @@ apply_asset_input_with_entity(rig_editor_t *editor,
             int width, height;
             rig_shape_t *shape;
             rig_asset_get_image_size(asset, &width, &height);
-            shape = rig_shape_new(engine->shell, true, width, height);
+            shape = rig_shape_new(engine, true, width, height);
             rig_undo_journal_add_component(engine->undo_journal, entity, shape);
             rut_object_unref(shape);
             geom = shape;
@@ -489,7 +489,7 @@ apply_asset_input_with_entity(rig_editor_t *editor,
             rig_entity_get_component(entity, RUT_COMPONENT_TYPE_MATERIAL);
 
         if (!material) {
-            material = rig_material_new(engine->shell, asset);
+            material = rig_material_new(engine, asset);
             rig_undo_journal_add_component(
                 engine->undo_journal, entity, material);
             rut_object_unref(material);
@@ -506,7 +506,7 @@ apply_asset_input_with_entity(rig_editor_t *editor,
         } else if (geom)
             rig_undo_journal_delete_component(engine->undo_journal, geom);
 
-        model = rig_model_new_from_asset(engine->shell, asset);
+        model = rig_model_new_from_asset(engine, asset);
         rig_undo_journal_add_component(engine->undo_journal, entity, model);
         rut_object_unref(model);
 
@@ -571,7 +571,7 @@ apply_asset_input_with_entity(rig_editor_t *editor,
                         texture_asset, &tex_width, &tex_height);
             }
 
-            shape = rig_shape_new(engine->shell, true, tex_width, tex_height);
+            shape = rig_shape_new(engine, true, tex_width, tex_height);
             rig_undo_journal_add_component(engine->undo_journal, entity, shape);
             rut_object_unref(shape);
         } else if (asset == editor->diamond_builtin_asset) {
@@ -585,7 +585,7 @@ apply_asset_input_with_entity(rig_editor_t *editor,
             else if (geom)
                 rig_undo_journal_delete_component(engine->undo_journal, geom);
 
-            diamond = rig_diamond_new(engine->shell, 200);
+            diamond = rig_diamond_new(engine, 200);
             rig_undo_journal_add_component(
                 engine->undo_journal, entity, diamond);
             rut_object_unref(diamond);
@@ -614,7 +614,7 @@ apply_asset_input_with_entity(rig_editor_t *editor,
             }
 
             nine_slice = rig_nine_slice_new(
-                engine->shell, NULL, 0, 0, 0, 0, tex_width, tex_height);
+                engine, NULL, 0, 0, 0, 0, tex_width, tex_height);
             rig_undo_journal_add_component(
                 engine->undo_journal, entity, nine_slice);
             rut_object_unref(nine_slice);
@@ -630,7 +630,7 @@ apply_asset_input_with_entity(rig_editor_t *editor,
             } else if (geom)
                 rig_undo_journal_delete_component(engine->undo_journal, geom);
 
-            grid = rig_pointalism_grid_new(engine->shell, 20);
+            grid = rig_pointalism_grid_new(engine, 20);
 
             rig_undo_journal_add_component(engine->undo_journal, entity, grid);
             rut_object_unref(grid);
@@ -640,7 +640,7 @@ apply_asset_input_with_entity(rig_editor_t *editor,
             if (hair)
                 break;
 
-            hair = rig_hair_new(engine->shell);
+            hair = rig_hair_new(engine);
             rig_undo_journal_add_component(engine->undo_journal, entity, hair);
             rut_object_unref(hair);
             geom =
@@ -663,7 +663,7 @@ apply_asset_input_with_entity(rig_editor_t *editor,
             if (button_input)
                 break;
 
-            button_input = rig_button_input_new(engine->shell);
+            button_input = rig_button_input_new(engine);
             rig_undo_journal_add_component(
                 engine->undo_journal, entity, button_input);
             rut_object_unref(button_input);
@@ -1363,9 +1363,9 @@ add_light_handle(rig_engine_t *engine, rig_ui_t *ui)
     if (mesh) {
         rig_model_t *model =
             rig_model_new_from_asset_mesh(engine->shell, mesh, false, false);
-        rig_material_t *material = rig_material_new(engine->shell, NULL);
+        rig_material_t *material = rig_material_new(engine, NULL);
 
-        engine->light_handle = rig_entity_new(engine->shell);
+        engine->light_handle = rig_entity_new(engine);
         rig_entity_set_label(engine->light_handle, "rig:light_handle");
         rig_entity_set_scale(engine->light_handle, 100);
         rut_graphable_add_child(ui->light, engine->light_handle);
@@ -1416,7 +1416,7 @@ add_play_camera_handle(rig_engine_t *engine, rig_ui_t *ui)
  * way of editing so it's been disable for now */
 #if 0
         rig_model_t *model = rig_model_new_from_mesh (engine->shell, mesh);
-        rig_material_t *material = rig_material_new (engine->shell, NULL);
+        rig_material_t *material = rig_material_new (engine, NULL);
 
         engine->play_camera_handle = rig_entity_new (engine->shell);
         rig_entity_set_label (engine->play_camera_handle,

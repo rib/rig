@@ -69,20 +69,7 @@
 #include "components/rig-native-module.h"
 #endif
 
-//#define DEVICE_WIDTH 480.0
-//#define DEVICE_HEIGHT 800.0
-#define DEVICE_WIDTH 720.0
-#define DEVICE_HEIGHT 1280.0
-
 static rut_property_spec_t _rig_engine_prop_specs[] = {
-    { .name = "device_width",
-      .flags = RUT_PROPERTY_FLAG_READABLE,
-      .type = RUT_PROPERTY_TYPE_FLOAT,
-      .data_offset = offsetof(rig_engine_t, device_width) },
-    { .name = "device_height",
-      .flags = RUT_PROPERTY_FLAG_READABLE,
-      .type = RUT_PROPERTY_TYPE_FLOAT,
-      .data_offset = offsetof(rig_engine_t, device_height) },
     { 0 }
 };
 
@@ -107,21 +94,9 @@ rig_engine_set_ui(rig_engine_t *engine, rig_ui_t *ui)
         c_debug("New UI set:");
         rig_ui_print(ui);
 #endif
-
-#warning "fixme: shouldn't be loading code dso in frontend"
-        rig_code_update_dso(engine, ui->dso_data, ui->dso_len);
     }
 
     rut_shell_queue_redraw(engine->shell);
-}
-
-void
-rig_engine_set_ui_load_callback(rig_engine_t *engine,
-                                void (*callback)(void *user_data),
-                                void *user_data)
-{
-    engine->ui_load_callback = callback;
-    engine->ui_load_data = user_data;
 }
 
 static void
@@ -169,16 +144,6 @@ _rig_engine_init_type(void)
 #undef TYPE
 }
 
-#if 0
-static rut_magazine_t *object_id_magazine = NULL;
-
-static void
-free_object_id (void *id)
-{
-    rut_magazine_chunk_free (object_id_magazine, id);
-}
-#endif
-
 static rig_engine_t *
 _rig_engine_new_full(rut_shell_t *shell,
                      rig_frontend_t *frontend,
@@ -188,6 +153,7 @@ _rig_engine_new_full(rut_shell_t *shell,
         rig_engine_t, &rig_engine_type, _rig_engine_init_type);
 
     engine->shell = shell;
+    engine->property_ctx = &shell->property_ctx;
 
     engine->headless = engine->shell->headless;
 
@@ -231,9 +197,6 @@ _rig_engine_new_full(rut_shell_t *shell,
 
     engine->queued_deletes = rut_queue_new();
 
-    engine->device_width = DEVICE_WIDTH;
-    engine->device_height = DEVICE_HEIGHT;
-
     engine->text_state = rig_text_engine_state_new(engine);
 
     _rig_code_init(engine);
@@ -254,25 +217,6 @@ rig_engine_new_for_frontend(rut_shell_t *shell,
 {
     return _rig_engine_new_full(shell, frontend, NULL);
 }
-
-#if 0
-static rut_input_event_status_t
-add_light_cb (rut_input_region_t *region,
-              rut_input_event_t *event,
-              void *user_data)
-{
-    if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
-    {
-        if (rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN)
-        {
-            c_debug ("Add light!\n");
-            return RUT_INPUT_EVENT_STATUS_HANDLED;
-        }
-    }
-
-    return RUT_INPUT_EVENT_STATUS_UNHANDLED;
-}
-#endif
 
 void
 rig_engine_set_log_op_callback(rig_engine_t *engine,

@@ -54,12 +54,6 @@ typedef struct _entity_translate_grab_closure_t entity_translate_grab_closure_t;
 typedef struct _entities_translate_grab_closure_t
     entities_translate_grab_closure_t;
 
-typedef struct {
-    rig_entity_t *origin_offset; /* negative offset */
-    rig_entity_t *dev_scale; /* scale to fit device coords */
-    rig_entity_t *screen_pos; /* position screen in edit view */
-} rig_camera_view_device_transforms_t;
-
 typedef enum _rig_camera_view_mode_t {
     RIG_CAMERA_VIEW_MODE_PLAY = 1,
     RIG_CAMERA_VIEW_MODE_EDIT,
@@ -130,27 +124,13 @@ struct _rig_camera_view_t {
 
     cg_framebuffer_t *fb;
 
-    bool play_mode;
-
     rut_graphable_props_t graphable;
     rut_paintable_props_t paintable;
 
     float width, height;
 
-    cg_pipeline_t *bg_pipeline;
-
-    float origin[3];
-
-    float device_scale;
-
-    entities_translate_grab_closure_t *entities_translate_grab_closure;
-
-    rig_entity_t *play_camera;
-    rut_object_t *play_camera_component;
-
-#ifdef RIG_EDITOR_ENABLED
-    rig_entity_t *play_camera_handle;
-#endif
+    rig_entity_t *camera;
+    rut_object_t *camera_component;
 
 #ifdef ENABLE_OCULUS_RIFT
     ovrHmd hmd;
@@ -158,21 +138,14 @@ struct _rig_camera_view_t {
 
     cg_primitive_t *debug_triangle;
     cg_pipeline_t *debug_pipeline;
+
+    rig_camera_t *composite_camera;
 #endif
 
     bool enable_dof;
 
     int fb_x;
     int fb_y;
-
-    rig_camera_t *composite_camera;
-
-#ifdef RIG_EDITOR_ENABLED
-    rut_graph_t *tool_overlay;
-    rig_selection_tool_t *selection_tool;
-    rig_rotation_tool_t *rotation_tool;
-    rig_tool_id_t tool_id;
-#endif
 };
 
 extern rut_type_t rig_view_type;
@@ -183,6 +156,9 @@ void rig_camera_view_set_framebuffer(rig_camera_view_t *view,
                                      cg_framebuffer_t *fb);
 
 void rig_camera_view_set_ui(rig_camera_view_t *view, rig_ui_t *ui);
+
+void rig_camera_view_set_camera_entity(rig_camera_view_t *view,
+                                       rig_entity_t *camera);
 
 void rig_camera_view_paint(rig_camera_view_t *view,
                            rut_object_t *renderer);

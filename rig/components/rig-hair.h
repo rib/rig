@@ -49,14 +49,12 @@ enum {
 };
 
 typedef struct _rig_hair_t rig_hair_t;
-#define RIG_HAIR(p) ((rig_hair_t *)(p))
 extern rut_type_t rig_hair_type;
 
 struct _rig_hair_t {
     rut_object_base_t _base;
 
     rut_componentable_props_t component;
-    rut_shell_t *shell;
     cg_texture_t *circle;
     cg_texture_t *fin_texture;
     float *shell_positions;
@@ -80,7 +78,7 @@ struct _rig_hair_t {
 
 void _rig_hair_init_type(void);
 
-rig_hair_t *rig_hair_new(rut_shell_t *shell);
+rig_hair_t *rig_hair_new(rig_engine_t *engine);
 
 float rig_hair_get_length(rut_object_t *obj);
 

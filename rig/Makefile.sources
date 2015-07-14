@@ -55,8 +55,6 @@ rig_common_sources = \
 	rig-pb.c \
 	rig-load-save.h \
 	rig-load-save.c \
-	rig-split-view.h \
-	rig-split-view.c \
 	rig-view.h \
 	rig-view.c \
 	rig-camera-view.h \
@@ -119,6 +117,8 @@ rig_editor_sources = \
 	rig-prop-inspector.c \
 	rig-inspector.h \
 	rig-inspector.c \
+	rig-split-view.h \
+	rig-split-view.c \
 	rig-controller-view.c \
 	rig-controller-view.h \
 	rig-binding-view.h \

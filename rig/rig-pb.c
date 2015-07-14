@@ -707,12 +707,7 @@ _rig_entitygraph_pre_serialize_cb(
     const char *label;
 
     if (type != &rig_entity_type) {
-
-        /* Note: the root of the scenegraph is a rut_graph_t so don't
-         * warn about that... */
-        if (type != &rut_graph_type && rut_graphable_get_parent(object) != NULL)
-            c_warning("Can't save non-entity graphables\n");
-
+        c_warning("Can't save non-entity graphables\n");
         return RUT_TRAVERSE_VISIT_CONTINUE;
     }
 
@@ -1004,7 +999,7 @@ rig_pb_serializer_set_object_register_callback(
 void
 rig_pb_serializer_set_object_to_id_callback(
     rig_pb_serializer_t *serializer,
-    rig_pb_serializer_objec_to_id_callback_t callback,
+    rig_pb_serializer_object_to_id_callback_t callback,
     void *user_data)
 {
     serializer->object_to_id_callback = callback;
@@ -1409,9 +1404,7 @@ rig_pb_serialize_ui(rig_pb_serializer_t *serializer,
     for (l = ui->assets; l; l = l->next)
         rig_pb_serializer_register_object(serializer, l->data);
 
-    pb_ui->has_scene_root_id = true;
-    pb_ui->scene_root_id =
-        rig_pb_serializer_register_object(serializer, ui->scene);
+    pb_ui->has_scene_root_id = false;
 
     serializer->n_pb_entities = 0;
     rut_graphable_traverse(ui->scene,
@@ -1969,7 +1962,6 @@ set_properties_from_pb_boxed_values(rig_pb_un_serializer_t *unserializer,
 
 rut_object_t *
 rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
-                             rig_entity_t *entity,
                              Rig__Entity__Component *pb_component)
 {
     uint64_t component_id;
@@ -1986,10 +1978,7 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
     case RIG__ENTITY__COMPONENT__TYPE__LIGHT: {
         rig_light_t *light;
 
-        light = rig_light_new(unserializer->engine->shell);
-
-        rig_entity_add_component(entity, light);
-        rut_object_unref(light);
+        light = rig_light_new(unserializer->engine);
 
         set_properties_from_pb_boxed_values(unserializer,
                                             light,
@@ -2001,10 +1990,7 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
     }
     case RIG__ENTITY__COMPONENT__TYPE__MATERIAL: {
         rig_material_t *material =
-            rig_material_new(unserializer->engine->shell, NULL);
-
-        rig_entity_add_component(entity, material);
-        rut_object_unref(material);
+            rig_material_new(unserializer->engine, NULL);
 
         set_properties_from_pb_boxed_values(unserializer,
                                             material,
@@ -2042,12 +2028,10 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
             return NULL;
         }
 
-        model = rig_model_new_from_asset(unserializer->engine->shell, asset);
+        model = rig_model_new_from_asset(unserializer->engine, asset);
         if (model) {
-            rig_entity_add_component(entity, model);
-            rut_object_unref(model);
-            rig_pb_unserializer_register_object(
-                unserializer, model, component_id);
+            rig_pb_unserializer_register_object(unserializer, model,
+                                                component_id);
         } else {
             rig_pb_unserializer_collect_error(unserializer,
                                               "Failed to create model "
@@ -2058,9 +2042,6 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
     }
     case RIG__ENTITY__COMPONENT__TYPE__TEXT: {
         rig_text_t *text = rig_text_new(unserializer->engine);
-
-        rig_entity_add_component(entity, text);
-        rut_object_unref(text);
 
         set_properties_from_pb_boxed_values(unserializer,
                                             text,
@@ -2148,23 +2129,17 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
             rut_camera_set_background_color(camera, &color);
         }
 
-        rig_entity_add_component(entity, camera);
-        rut_object_unref(camera);
-
         rig_pb_unserializer_register_object(unserializer, camera, component_id);
         return camera;
     }
     case RIG__ENTITY__COMPONENT__TYPE__BUTTON_INPUT: {
         rig_button_input_t *button_input =
-            rig_button_input_new(unserializer->engine->shell);
+            rig_button_input_new(unserializer->engine);
 
         set_properties_from_pb_boxed_values(unserializer,
                                             button_input,
                                             pb_component->n_properties,
                                             pb_component->properties);
-
-        rig_entity_add_component(entity, button_input);
-        rut_object_unref(button_input);
 
         rig_pb_unserializer_register_object(
             unserializer, button_input, component_id);
@@ -2180,9 +2155,6 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
                                             pb_component->n_properties,
                                             pb_component->properties);
 
-        rig_entity_add_component(entity, module);
-        rut_object_unref(module);
-
         rig_pb_unserializer_register_object(unserializer, module, component_id);
         return module;
 #else
@@ -2193,7 +2165,7 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
 #endif
     }
     case RIG__ENTITY__COMPONENT__TYPE__SHAPE: {
-        rig_shape_t *shape = rig_shape_new(unserializer->engine->shell,
+        rig_shape_t *shape = rig_shape_new(unserializer->engine,
                                            false, /* shaped */
                                            100, /* width */
                                            100); /* height */
@@ -2203,16 +2175,13 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
                                             pb_component->n_properties,
                                             pb_component->properties);
 
-        rig_entity_add_component(entity, shape);
-        rut_object_unref(shape);
-
         rig_pb_unserializer_register_object(unserializer, shape, component_id);
 
         return shape;
     }
     case RIG__ENTITY__COMPONENT__TYPE__NINE_SLICE: {
         rig_nine_slice_t *nine_slice =
-            rig_nine_slice_new(unserializer->engine->shell,
+            rig_nine_slice_new(unserializer->engine,
                                NULL,
                                0,
                                0,
@@ -2225,20 +2194,14 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
                                             pb_component->n_properties,
                                             pb_component->properties);
 
-        rig_entity_add_component(entity, nine_slice);
-        rut_object_unref(nine_slice);
-
         rig_pb_unserializer_register_object(
             unserializer, nine_slice, component_id);
 
         return nine_slice;
     }
     case RIG__ENTITY__COMPONENT__TYPE__DIAMOND: {
-        rig_diamond_t *diamond = rig_diamond_new(unserializer->engine->shell,
+        rig_diamond_t *diamond = rig_diamond_new(unserializer->engine,
                                                  100);
-
-        rig_entity_add_component(entity, diamond);
-        rut_object_unref(diamond);
 
         set_properties_from_pb_boxed_values(unserializer,
                                             diamond,
@@ -2252,11 +2215,8 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
     }
     case RIG__ENTITY__COMPONENT__TYPE__POINTALISM_GRID: {
         rig_pointalism_grid_t *grid =
-            rig_pointalism_grid_new(unserializer->engine->shell,
+            rig_pointalism_grid_new(unserializer->engine,
                                     20); /* cell size */
-
-        rig_entity_add_component(entity, grid);
-        rut_object_unref(grid);
 
         set_properties_from_pb_boxed_values(unserializer,
                                             grid,
@@ -2268,11 +2228,8 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
         return grid;
     }
     case RIG__ENTITY__COMPONENT__TYPE__HAIR: {
-        rig_hair_t *hair = rig_hair_new(unserializer->engine->shell);
-        rut_object_t *geom;
-
-        rig_entity_add_component(entity, hair);
-        rut_object_unref(hair);
+        rig_hair_t *hair = rig_hair_new(unserializer->engine);
+        //rut_object_t *geom;
 
         set_properties_from_pb_boxed_values(unserializer,
                                             hair,
@@ -2281,7 +2238,8 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
 
         rig_pb_unserializer_register_object(unserializer, hair, component_id);
 
-#warning "FIXME: don't derive complex hair meshes on the fly at runtime!"
+#warning "FIXME: support [un]serializing hair mesh"
+#if 0
         /* XXX: This is a duplication of the special logic we have
          * in rig-engine.c when first adding a hair component to
          * an entity where we derive out special hair geometry
@@ -2301,6 +2259,7 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
             rig_entity_add_component(entity, hair_geom);
             rut_object_unref(hair_geom);
         }
+#endif
 
         return hair;
     }
@@ -2315,85 +2274,20 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
 static void
 unserialize_components(rig_pb_un_serializer_t *unserializer,
                        rig_entity_t *entity,
-                       Rig__Entity *pb_entity,
-                       bool force_material)
+                       Rig__Entity *pb_entity)
 {
     int i;
 
-    /* First we add components which don't depend on any other components... */
     for (i = 0; i < pb_entity->n_components; i++) {
         Rig__Entity__Component *pb_component = pb_entity->components[i];
+        rut_component_t *component = rig_pb_unserialize_component(
+            unserializer, pb_component);
 
-        switch (pb_component->type) {
-        case RIG__ENTITY__COMPONENT__TYPE__LIGHT:
-        case RIG__ENTITY__COMPONENT__TYPE__MATERIAL:
-        case RIG__ENTITY__COMPONENT__TYPE__MODEL:
-        case RIG__ENTITY__COMPONENT__TYPE__TEXT:
-        case RIG__ENTITY__COMPONENT__TYPE__CAMERA:
-        case RIG__ENTITY__COMPONENT__TYPE__BUTTON_INPUT:
-        case RIG__ENTITY__COMPONENT__TYPE__NATIVE_MODULE: {
-            rut_component_t *component = rig_pb_unserialize_component(
-                unserializer, entity, pb_component);
-            if (!component)
-                continue;
+        if (!component)
+            continue;
 
-            /* Note: the component will have been added to the
-             * entity which will own a reference and no other
-             * reference will have been kept on the component
-             */
-
-            break;
-        }
-        case RIG__ENTITY__COMPONENT__TYPE__SHAPE:
-        case RIG__ENTITY__COMPONENT__TYPE__NINE_SLICE:
-        case RIG__ENTITY__COMPONENT__TYPE__DIAMOND:
-        case RIG__ENTITY__COMPONENT__TYPE__POINTALISM_GRID:
-        case RIG__ENTITY__COMPONENT__TYPE__HAIR:
-            break;
-        }
-    }
-
-#warning "todo: remove entity:cast_shadow compatibility"
-    if (force_material &&
-        !rig_entity_get_component(entity, RUT_COMPONENT_TYPE_MATERIAL)) {
-        rig_material_t *material =
-            rig_material_new(unserializer->engine->shell, NULL);
-
-        rig_entity_add_component(entity, material);
-
-        if (pb_entity->has_cast_shadow)
-            rig_material_set_cast_shadow(material, pb_entity->cast_shadow);
-    }
-
-    for (i = 0; i < pb_entity->n_components; i++) {
-        Rig__Entity__Component *pb_component = pb_entity->components[i];
-        switch (pb_component->type) {
-        case RIG__ENTITY__COMPONENT__TYPE__SHAPE:
-        case RIG__ENTITY__COMPONENT__TYPE__NINE_SLICE:
-        case RIG__ENTITY__COMPONENT__TYPE__DIAMOND:
-        case RIG__ENTITY__COMPONENT__TYPE__POINTALISM_GRID:
-        case RIG__ENTITY__COMPONENT__TYPE__HAIR: {
-            rut_component_t *component = rig_pb_unserialize_component(
-                unserializer, entity, pb_component);
-            if (!component)
-                continue;
-
-            /* Note: the component will have been added to the
-             * entity which will own a reference and no other
-             * reference will have been kept on the component
-             */
-
-            break;
-        }
-        case RIG__ENTITY__COMPONENT__TYPE__LIGHT:
-        case RIG__ENTITY__COMPONENT__TYPE__MATERIAL:
-        case RIG__ENTITY__COMPONENT__TYPE__MODEL:
-        case RIG__ENTITY__COMPONENT__TYPE__TEXT:
-        case RIG__ENTITY__COMPONENT__TYPE__CAMERA:
-        case RIG__ENTITY__COMPONENT__TYPE__BUTTON_INPUT:
-        case RIG__ENTITY__COMPONENT__TYPE__NATIVE_MODULE:
-            break;
-        }
+        rig_entity_add_component(entity, component);
+        rut_object_unref(component);
     }
 }
 
@@ -2403,7 +2297,6 @@ rig_pb_unserialize_entity(rig_pb_un_serializer_t *unserializer,
 {
     rig_entity_t *entity;
     uint64_t id;
-    bool force_material = false;
 
     if (!pb_entity->has_id)
         return NULL;
@@ -2415,7 +2308,7 @@ rig_pb_unserialize_entity(rig_pb_un_serializer_t *unserializer,
         return NULL;
     }
 
-    entity = rig_entity_new(unserializer->engine->shell);
+    entity = rig_entity_new(unserializer->engine);
 
     if (pb_entity->has_parent_id) {
         uint64_t parent_id = pb_entity->parent_id;
@@ -2455,11 +2348,7 @@ rig_pb_unserialize_entity(rig_pb_un_serializer_t *unserializer,
     if (pb_entity->has_scale)
         rig_entity_set_scale(entity, pb_entity->scale);
 
-#warning "remove entity::cast_shadow compatibility"
-    if (pb_entity->has_cast_shadow)
-        force_material = true;
-
-    unserialize_components(unserializer, entity, pb_entity, force_material);
+    unserialize_components(unserializer, entity, pb_entity);
 
     return entity;
 }
@@ -2971,29 +2860,47 @@ rig_pb_unserialize_ui(rig_pb_un_serializer_t *unserializer,
 
     unserialize_entities(unserializer, pb_ui->n_entities, pb_ui->entities);
 
-    unserialize_controllers(
-        unserializer, pb_ui->n_controllers, pb_ui->controllers);
+    unserialize_controllers(unserializer, pb_ui->n_controllers,
+                            pb_ui->controllers);
 
-    ui->scene = rut_graph_new(engine->shell);
+    ui->scene = rig_entity_new(engine);
 
+    /* The root of the UI scenegraph used to be a rut_graph_t but
+     * is now an entity.
+     *
+     * XXX: eventually remove this compatibility path...
+     */
     if (pb_ui->has_scene_root_id) {
         rig_pb_unserializer_register_object(
             unserializer, ui->scene, pb_ui->scene_root_id);
-    }
 
-    for (l = unserializer->entities; l; l = l->next) {
-        // c_debug ("unserialized entiy %p\n", l->data);
-        if (rut_graphable_get_parent(l->data) == NULL) {
-            rut_graphable_add_child(ui->scene, l->data);
+        for (l = unserializer->entities; l; l = l->next) {
+            // c_debug ("unserialized entiy %p\n", l->data);
+            if (rut_graphable_get_parent(l->data) == NULL) {
+                rut_graphable_add_child(ui->scene, l->data);
 
-            rig_ui_register_entity(ui, l->data);
+                /* Now that the entity has a parent we can drop our
+                 * reference on it... */
+                rut_object_unref(l->data);
+                // c_debug ("%p added to scene %p\n", l->data, ui->scene);
+            }
 
-            /* Now that the entity has a parent we can drop our
-             * reference on it... */
-            rut_object_unref(l->data);
-            // c_debug ("%p added to scene %p\n", l->data, ui->scene);
+            rig_ui_register_all_entity_components(ui, l->data);
         }
+    } else {
+        int n_roots = 0;
+        for (l = unserializer->entities; l; l = l->next) {
+            if (rut_graphable_get_parent(l->data) == NULL) {
+                ui->scene = l->data;
+                n_roots++;
+            }
+
+            rig_ui_register_all_entity_components(ui, l->data);
+        }
+        if (n_roots > 1)
+            c_warning("Multiple root entities found when loading UI");
     }
+
     unserializer->entities = NULL;
 
     ui->controllers = unserializer->controllers;
@@ -3002,10 +2909,6 @@ rig_pb_unserialize_ui(rig_pb_un_serializer_t *unserializer,
     c_debug("unserialized ui assets list  %p\n", unserializer->assets);
     ui->assets = unserializer->assets;
     unserializer->assets = NULL;
-
-    /* Make sure the ui is complete, in case anything was missing from what we
-     * loaded... */
-    rig_ui_prepare(ui);
 
     if (pb_ui->has_dso)
         rig_ui_set_dso_data(ui, pb_ui->dso.data, pb_ui->dso.len);

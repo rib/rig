@@ -26,8 +26,7 @@
  * SOFTWARE.
  */
 
-#ifndef _RIG_FRONTEND_H_
-#define _RIG_FRONTEND_H_
+#pragma once
 
 #include <rut.h>
 
@@ -46,8 +45,10 @@ typedef struct _rig_frontend_t rig_frontend_t;
 
 typedef struct
 {
+    rig_frontend_t *frontend;
     rig_camera_view_t *camera_view;
     rut_shell_onscreen_t *onscreen;
+    int64_t last_presentation;
 } rig_onscreen_view_t;
 
 
@@ -81,10 +82,6 @@ struct _rig_frontend_t {
     int sim_fd;
 #endif
 
-    /* Is responsible for creating IDs for objects. If false then
-      the simulator is intead responsible for creating IDs */
-    bool is_master;
-
     rig_pb_stream_t *stream;
     rig_rpc_peer_t *frontend_peer;
     bool connected;
@@ -111,6 +108,9 @@ struct _rig_frontend_t {
     rut_closure_t *finish_ui_load_closure;
     bool ui_update_pending;
 
+    int64_t last_target_time;
+    int64_t last_sim_target_time;
+
     c_list_t ui_update_cb_list;
 
     void (*simulator_connected_callback)(void *user_data);
@@ -119,9 +119,6 @@ struct _rig_frontend_t {
     rig_engine_op_map_context_t map_to_frontend_objects_op_ctx;
     rig_engine_op_apply_context_t apply_op_ctx;
     rig_pb_un_serializer_t *prop_change_unserializer;
-
-    uint8_t *pending_dso_data;
-    size_t pending_dso_len;
 
     rig_pb_un_serializer_t *ui_unserializer;
 
@@ -132,6 +129,12 @@ struct _rig_frontend_t {
 };
 
 rig_frontend_t *rig_frontend_new(rut_shell_t *shell);
+
+rig_onscreen_view_t *rig_onscreen_view_new(rig_frontend_t *frontend);
+rig_onscreen_view_t *rig_frontend_find_view_for_camera(rig_frontend_t *frontend,
+                                                       rig_entity_t *camera_entity);
+rig_onscreen_view_t *rig_frontend_find_view_for_onscreen(rig_frontend_t *frontend,
+                                                         rut_shell_onscreen_t *onscreen);
 
 typedef void (*rig_local_sim_init_func_t)(rig_simulator_t *simulator,
                                           void *user_data);
@@ -153,16 +156,10 @@ void rig_frontend_spawn_simulator(rig_frontend_t *frontend,
 
 void rig_frontend_delete_object(rig_frontend_t *frontend, void *object);
 
-void rig_frontend_load_file(rig_frontend_t *frontend, const char *filename);
+uint64_t rig_frontend_lookup_id(rig_frontend_t *frontend, void *object);
 
 void rig_frontend_post_init_engine(rig_frontend_t *frontend,
                                    const char *ui_filename);
-
-/* TODO: should support a destroy_notify callback */
-void rig_frontend_sync(rig_frontend_t *frontend,
-                       void (*synchronized)(const Rig__SyncAck *result,
-                                            void *user_data),
-                       void *user_data);
 
 void rig_frontend_run_simulator_frame(rig_frontend_t *frontend,
                                       rig_pb_serializer_t *serializer,
@@ -195,5 +192,3 @@ void rig_frontend_update_simulator_dso(rig_frontend_t *frontend,
                                        int len);
 
 void rig_frontend_paint(rig_frontend_t *frontend);
-
-#endif /* _RIG_FRONTEND_H_ */

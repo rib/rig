@@ -3,7 +3,7 @@
  *
  * Rig Utilities
  *
- * Copyright (C) 2012,2013  Intel Corporation
+ * Copyright (C) 2012,2013,2014  Intel Corporation
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -126,7 +126,7 @@ rut_shell_add_input_callback(rut_shell_t *shell,
 rut_object_t *
 rut_input_event_get_camera(rut_input_event_t *event)
 {
-    return event->camera;
+    c_return_val_if_reached(NULL);
 }
 
 rut_input_event_type_t
@@ -285,7 +285,7 @@ cancel_current_drop_offer_taker(rut_shell_onscreen_t *onscreen)
     drop_cancel.type = RUT_INPUT_EVENT_TYPE_DROP_CANCEL;
     drop_cancel.onscreen = onscreen;
     drop_cancel.native = NULL;
-    drop_cancel.camera = NULL;
+    drop_cancel.camera_entity = NULL;
     drop_cancel.input_transform = NULL;
 
     status = rut_inputable_handle_event(shell->drop_offer_taker, &drop_cancel);
@@ -336,15 +336,15 @@ rut_shell_dispatch_input_event(rut_shell_t *shell, rut_input_event_t *event)
 
     c_list_for_each_safe(grab, shell->next_grab, &shell->grabs, list_node)
     {
-        rut_object_t *old_camera = event->camera;
+        rut_object_t *old_camera = event->camera_entity;
         rut_input_event_status_t grab_status;
 
-        if (grab->camera)
-            event->camera = grab->camera;
+        if (grab->camera_entity)
+            event->camera_entity = grab->camera_entity;
 
         grab_status = grab->callback(event, grab->user_data);
 
-        event->camera = old_camera;
+        event->camera_entity = old_camera;
 
         if (grab_status == RUT_INPUT_EVENT_STATUS_HANDLED) {
             status = RUT_INPUT_EVENT_STATUS_HANDLED;
@@ -376,8 +376,8 @@ static void
 _rut_shell_remove_grab_link(rut_shell_t *shell,
                             rut_shell_grab_t *grab)
 {
-    if (grab->camera)
-        rut_object_unref(grab->camera);
+    if (grab->camera_entity)
+        rut_object_unref(grab->camera_entity);
 
     /* If we are in the middle of iterating the grab callbacks then this
      * will make it cope with removing arbritrary nodes from the list
@@ -437,7 +437,8 @@ _rut_shell_init_type(void)
 }
 
 rut_shell_t *
-rut_shell_new(rut_shell_paint_callback_t paint,
+rut_shell_new(rut_shell_t *main_shell,
+              rut_shell_paint_callback_t paint,
               void *user_data)
 {
     rut_shell_t *shell =
@@ -468,7 +469,8 @@ rut_shell_new(rut_shell_paint_callback_t paint,
     c_list_init(&frame_info->frame_callbacks);
     c_list_insert(shell->frame_infos.prev, &frame_info->list_node);
 
-    rut_poll_init(shell);
+    rut_poll_init(shell, main_shell);
+    rut_closure_init(&shell->paint_idle, rut_shell_paint, shell);
 
     return shell;
 }
@@ -497,23 +499,11 @@ rut_shell_set_on_quit_callback(rut_shell_t *shell,
     shell->on_quit_data = user_data;
 }
 
-void
-rut_shell_set_main_shell(rut_shell_t *shell, rut_shell_t *main_shell)
-{
-    shell->main_shell = main_shell;
-}
-
 #ifdef USE_UV
 uv_loop_t *
 rut_uv_shell_get_loop(rut_shell_t *shell)
 {
-    if (shell->uv_loop)
-        return shell->uv_loop;
-
-    if (shell->main_shell)
-        shell->uv_loop = shell->main_shell->uv_loop;
-    else
-        shell->uv_loop = uv_loop_new();
+    c_return_val_if_fail(shell->uv_loop, NULL);
 
     return shell->uv_loop;
 }
@@ -819,20 +809,17 @@ void
 rut_shell_start_redraw(rut_shell_t *shell)
 {
 #ifdef USE_UV
-    c_return_if_fail(shell->paint_idle);
-
-    rut_poll_shell_remove_idle_FIXME(shell, shell->paint_idle);
-    shell->paint_idle = NULL;
+    rut_poll_shell_remove_idle(shell, &shell->paint_idle);
 #endif
 }
 
 void
-rut_shell_update_timelines(rut_shell_t *shell)
+rut_shell_progress_timelines(rut_shell_t *shell, double delta)
 {
     c_sllist_t *l;
 
     for (l = shell->timelines; l; l = l->next)
-        _rut_timeline_update(l->data);
+        _rut_timeline_progress(l->data, delta);
 }
 
 static void
@@ -1033,6 +1020,10 @@ onscreen_frame_event_cb(cg_onscreen_t *cg_onscreen,
 
     if (event == CG_FRAME_EVENT_SYNC) {
         onscreen->is_ready = true;
+
+        onscreen->presentation_time0 = onscreen->presentation_time1;
+        onscreen->presentation_time1 = cg_frame_info_get_presentation_time(info);
+
         onscreen_maybe_queue_redraw(onscreen);
     }
 }
@@ -1131,7 +1122,7 @@ rut_shell_main(rut_shell_t *shell)
 
 void
 rut_shell_grab_input(rut_shell_t *shell,
-                     rut_object_t *camera,
+                     rut_object_t *camera_entity,
                      rut_input_callback_t callback,
                      void *user_data)
 {
@@ -1140,10 +1131,10 @@ rut_shell_grab_input(rut_shell_t *shell,
     grab->callback = callback;
     grab->user_data = user_data;
 
-    if (camera)
-        grab->camera = rut_object_ref(camera);
+    if (camera_entity)
+        grab->camera_entity = rut_object_ref(camera_entity);
     else
-        grab->camera = NULL;
+        grab->camera_entity = NULL;
 
     c_list_insert(&shell->grabs, &grab->list_node);
 }
@@ -1263,11 +1254,7 @@ void
 rut_shell_queue_redraw_real(rut_shell_t *shell)
 {
 #ifndef __EMSCRIPTEN__
-    if (!shell->paint_idle) {
-        shell->paint_idle =
-            rut_poll_shell_add_idle_FIXME(shell, (void *)rut_shell_paint, shell,
-                                    NULL); /* destroy notify */
-    }
+    rut_poll_shell_add_idle(shell, &shell->paint_idle);
 #else
     /* If we haven't called emscripten_set_main_loop_arg() yet then
      * emscripten will get upset if we try and resume a mainloop
@@ -1305,6 +1292,25 @@ rut_shell_queue_redraw(rut_shell_t *shell)
 
         rut_shell_queue_redraw_real(shell);
     }
+}
+
+bool
+rut_shell_is_redraw_queued(rut_shell_t *shell)
+{
+    rut_shell_onscreen_t *first_onscreen =
+        c_list_first(&shell->onscreens, rut_shell_onscreen_t, link);
+
+    if (first_onscreen && first_onscreen->is_dirty)
+        return true;
+
+#ifdef __EMSCRIPTEN__
+    return shell->paint_loop_running;
+#else
+    if (shell->paint_idle.list_node.next)
+        return true;
+    else
+        return false;
+#endif
 }
 
 void
@@ -1446,7 +1452,7 @@ _rut_shell_onscreen_paste(rut_shell_onscreen_t *onscreen, rut_object_t *data)
     drop_event.type = RUT_INPUT_EVENT_TYPE_DROP;
     drop_event.onscreen = onscreen;
     drop_event.native = data;
-    drop_event.camera = NULL;
+    drop_event.camera_entity = NULL;
     drop_event.input_transform = NULL;
 
     /* Note: This assumes input handlers are re-entrant and hopefully
@@ -1467,7 +1473,7 @@ rut_shell_onscreen_drop(rut_shell_onscreen_t *onscreen)
     drop_event.type = RUT_INPUT_EVENT_TYPE_DROP;
     drop_event.onscreen = onscreen;
     drop_event.native = shell->drag_payload;
-    drop_event.camera = NULL;
+    drop_event.camera_entity = NULL;
     drop_event.input_transform = NULL;
 
     status = rut_inputable_handle_event(shell->drop_offer_taker, &drop_event);

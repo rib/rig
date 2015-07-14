@@ -35,6 +35,8 @@ typedef struct _RModule RModule;
 
 typedef struct _RInputEvent RInputEvent;
 
+typedef struct _RObject RObject;
+
 typedef enum {
     R_INPUT_EVENT_TYPE_MOTION = 1,
     R_INPUT_EVENT_TYPE_KEY,
@@ -93,5 +95,142 @@ float r_motion_event_get_y(RInputEvent *event);
 void r_debug(RModule *module,
              const char *format,
              ...);
+
+typedef struct _RColor {
+    float red;
+    float green;
+    float blue;
+    float alpha;
+} RColor;
+
+#define r_color_str(module, str) ({ \
+    RColor *color = alloca(sizeof(RColor)); \
+    r_color_init_from_string(module, color, str); \
+    color; \
+})
+
+RColor *r_color_init_from_string(RModule *module, RColor *color, const char *str);
+
+typedef struct {
+    float heading;
+    float pitch;
+    float roll;
+} REuler;
+
+typedef struct {
+    float w;
+
+    float x;
+    float y;
+    float z;
+} RQuaternion;
+
+RQuaternion r_quaternion_identity(void);
+RQuaternion r_quaternion(float angle, float x, float y, float z);
+
+RQuaternion r_quaternion_from_angle_vector(float angle,
+                                           const float *axis3f);
+RQuaternion r_quaternion_from_array(const float *array);
+RQuaternion r_quaternion_from_x_rotation(float angle);
+RQuaternion r_quaternion_from_y_rotation(float angle);
+RQuaternion r_quaternion_from_z_rotation(float angle);
+RQuaternion r_quaternion_from_euler(const REuler *euler);
+//RQuaternion r_quaternion_from_matrix(const RMatrix *matrix);
+
+bool r_quaternion_equal(const RQuaternion *a, const RQuaternion *b);
+
+float r_quaternion_get_rotation_angle(const RQuaternion *quaternion);
+void r_quaternion_get_rotation_axis(const RQuaternion *quaternion,
+                                    float *vector3);
+
+void r_quaternion_normalize(RQuaternion *quaternion);
+void r_quaternion_invert(RQuaternion *quaternion);
+RQuaternion r_quaternion_multiply(const RQuaternion *left,
+                                  const RQuaternion *right);
+
+void r_quaternion_rotate_x_axis(RQuaternion *quaternion, float x_angle);
+void r_quaternion_rotate_y_axis(RQuaternion *quaternion, float y_angle);
+void r_quaternion_rotate_z_axis(RQuaternion *quaternion, float z_angle);
+
+void r_quaternion_pow(RQuaternion *quaternion, float exponent);
+
+float r_quaternion_dot_product(const RQuaternion *a,
+                               const RQuaternion *b);
+
+RQuaternion r_quaternion_slerp(const RQuaternion *a,
+                               const RQuaternion *b,
+                               float t);
+RQuaternion r_quaternion_nlerp(const RQuaternion *a,
+                               const RQuaternion *b,
+                               float t);
+RQuaternion r_quaternion_squad(const RQuaternion *prev,
+                               const RQuaternion *a,
+                               const RQuaternion *b,
+                               const RQuaternion *next,
+                               float t);
+
+RObject *r_find(RModule *module, const char *name);
+
+RObject *r_entity_new(RModule *module, RObject *parent);
+
+void r_entity_translate(RModule *module, RObject *entity, float tx, float tz, float ty);
+
+void r_entity_rotate_x_axis(RModule *module, RObject *entity, float x_angle);
+void r_entity_rotate_y_axis(RModule *module, RObject *entity, float y_angle);
+void r_entity_rotate_z_axis(RModule *module, RObject *entity, float z_angle);
+
+void r_entity_delete(RModule *module, RObject *entity);
+void r_component_delete(RModule *module, RObject *component);
+
+void r_request_animation_frame(RModule *module);
+
+typedef enum {
+    R_PROJECTION_PERSPECTIVE = 0,
+    R_PROJECTION_ORTHOGRAPHIC = 2,
+} RProjection;
+
+RObject *r_camera_new(RModule *module);
+
+void r_open_view(RModule *module, RObject *camera_entity);
+
+RObject *r_light_new(RModule *module);
+
+RObject *r_shape_new(RModule *module, float width, float height);
+RObject *r_nine_slice_new(RModule *module,
+                          float top, float right, float bottom, float left,
+                          float width, float height);
+RObject *r_diamond_new(RModule *module, float size);
+RObject *r_pointalism_grid_new(RModule *module, float size);
+
+RObject *r_material_new(RModule *module);
+
+RObject *r_button_input_new(RModule *module);
+
+RObject *r_text_new(RModule *module);
+
+void r_add_component(RModule *module, RObject *entity, RObject *component);
+
+void r_set_float_by_name(RModule *module, RObject *object, const char *name, float value);
+void r_set_float(RModule *module, RObject *object, int id, float value);
+
+void r_set_boolean_by_name(RModule *module, RObject *object, const char *name, bool value);
+void r_set_boolean(RModule *module, RObject *object, int id, bool value);
+
+void r_set_enum_by_name(RModule *module, RObject *object, const char *name, int value);
+void r_set_enum(RModule *module, RObject *object, int id, int value);
+
+void r_set_vec3(RModule *module, RObject *object, int id, const float value[3]);
+void r_set_vec3_by_name(RModule *module, RObject *object, const char *name, const float value[3]);
+void r_set_vec4(RModule *module, RObject *object, int id, const float value[4]);
+void r_set_vec4_by_name(RModule *module, RObject *object, const char *name, const float value[4]);
+
+void r_set_color(RModule *module, RObject *object, int id, const RColor *value);
+void r_set_color_by_name(RModule *module, RObject *object, const char *name, const RColor *value);
+
+void r_set_quaternion(RModule *module, RObject *object, int id, const RQuaternion *value);
+void r_set_quaternion_by_name(RModule *module, RObject *object, const char *name, const RQuaternion *value);
+
+void r_set_text_by_name(RModule *module, RObject *object, const char *name, const char *value);
+void r_set_text(RModule *module, RObject *object, int id, const char *value);
 
 #endif /* _RIG_C_ */

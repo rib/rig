@@ -78,7 +78,7 @@ struct _rig_material_t {
 
 void _rig_material_init_type(void);
 
-rig_material_t *rig_material_new(rut_shell_t *shell, rig_asset_t *asset);
+rig_material_t *rig_material_new(rig_engine_t *engine, rig_asset_t *asset);
 
 void rig_material_set_color_source_asset(rut_object_t *object,
                                          rig_asset_t *asset);

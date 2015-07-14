@@ -33,12 +33,16 @@
 
 #include <rut.h>
 
+#include "rig-engine.h"
+
 extern int rig_code_module_trait_id;
 
 typedef struct _rig_code_module_props {
     /* To allow code modules to be tracked in list without needing
      * to traverse the scenegraph to iterate through them... */
     c_list_t system_link;
+
+    rig_engine_t *engine;
 
     rut_object_t *object; /* back pointer, to access + use
                              the vtable interface */

@@ -60,17 +60,6 @@ typedef struct _rig_simulator_action_t {
     };
 } rig_simulator_action_t;
 
-#if 0
-static char **_rig_editor_remaining_args = NULL;
-
-static const GOptionEntry rut_editor_entries[] =
-{
-    { G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_STRING_ARRAY,
-      &_rig_editor_remaining_args, "Project" },
-    { 0 }
-};
-#endif
-
 static void
 simulator__test(Rig__Simulator_Service *service,
                 const Rig__Query *query,
@@ -89,17 +78,6 @@ simulator__test(Rig__Simulator_Service *service,
 }
 
 static void
-rig_simulator_action_report_edit_failure(rig_simulator_t *simulator)
-{
-    rig_simulator_action_t *action = c_slice_new(rig_simulator_action_t);
-
-    action->type = RIG_SIMULATOR_ACTION_TYPE_REPORT_EDIT_FAILURE;
-
-    c_list_insert(simulator->actions.prev, &action->list_node);
-    simulator->n_actions++;
-}
-
-static void
 clear_actions(rig_simulator_t *simulator)
 {
     rig_simulator_action_t *action, *tmp;
@@ -107,10 +85,6 @@ clear_actions(rig_simulator_t *simulator)
     c_list_for_each_safe(action, tmp, &simulator->actions, list_node)
     {
         switch (action->type) {
-#if 0
-        case RIG_SIMULATOR_ACTION_TYPE_SET_PLAY_MODE:
-            break;
-#endif
         case RIG_SIMULATOR_ACTION_TYPE_REPORT_EDIT_FAILURE:
             break;
         }
@@ -121,9 +95,6 @@ clear_actions(rig_simulator_t *simulator)
 
     simulator->n_actions = 0;
 }
-
-/* ID functions for a 'Master Simulator', which is a simulator that is
- * responsible for loading a UI and must forward it to a frontend. */
 
 static rut_object_t *
 simulator_lookup_object(rig_simulator_t *simulator, uint64_t id)
@@ -248,8 +219,9 @@ simulator__run_frame(Rig__Simulator_Service *service,
 
     c_return_if_fail(setup != NULL);
 
-    if (setup->has_dso)
-        rig_code_update_dso(engine, setup->dso.data, setup->dso.len);
+    c_return_if_fail(setup->has_progress);
+
+    simulator->frame_info.progress = setup->progress;
 
     // c_debug ("Simulator: Run Frame Request: n_events = %d\n",
     //         setup->n_events);
@@ -263,7 +235,12 @@ simulator__run_frame(Rig__Simulator_Service *service,
             continue;
         }
 
-        event = c_slice_new(rut_stream_event_t);
+        event = c_slice_new0(rut_stream_event_t);
+
+        if (pb_event->has_camera_id) {
+            event->camera_entity = simulator_lookup_object(simulator,
+                                                           pb_event->camera_id);
+        }
 
         switch (pb_event->type) {
         case RIG__EVENT__TYPE__POINTER_MOVE:
@@ -359,16 +336,6 @@ simulator__run_frame(Rig__Simulator_Service *service,
         rut_headless_shell_handle_stream_event(engine->shell, event);
     }
 
-#if 0
-    if (setup->ui_edit) {
-        if (!rig_engine_map_pb_ui_edit(&simulator->map_to_sim_objects_op_ctx,
-                                       &simulator->apply_op_ctx,
-                                       setup->ui_edit)) {
-            rig_simulator_action_report_edit_failure(simulator);
-        }
-    }
-#endif
-
     rut_shell_queue_redraw_real(engine->shell);
 
     closure(&ack, closure_data);
@@ -413,10 +380,9 @@ simulator_peer_connected(rig_pb_rpc_client_t *pb_client,
 
     simulator->connected = true;
 
-    rig_simulator_reload_frontend_ui(simulator, simulator->engine->ui);
-
-    if (simulator->connected_callback)
-        simulator->connected_callback(simulator, simulator->connected_data);
+    rut_closure_list_invoke(&simulator->connected_closures,
+                            rig_simulator_connected_func_t,
+                            simulator);
 
     c_debug("Simulator peer connected\n");
 }
@@ -503,8 +469,7 @@ _rig_simulator_free(void *object)
         rut_memory_stack_free(simulator->log_serializer_stack);
     }
 
-    c_free(simulator->ui_filename);
-    simulator->ui_filename = NULL;
+    rut_closure_list_remove_all(&simulator->connected_closures);
 
     rut_object_free(rig_simulator_t, simulator);
 }
@@ -532,17 +497,11 @@ rig_simulator_input_handler(rut_input_event_t *event,
 }
 
 static void
-rig_simulator_init(rut_shell_t *shell, void *user_data)
+simulator_on_run_cb(rut_shell_t *shell, void *user_data)
 {
     rig_simulator_t *simulator = user_data;
     rig_pb_un_serializer_t *ui_unserializer;
     rig_engine_t *engine;
-
-    simulator->redraw_queued = false;
-
-    simulator->ops = rut_queue_new();
-
-    c_list_init(&simulator->actions);
 
     simulator_start_service(simulator->shell, simulator);
 
@@ -611,33 +570,36 @@ rig_simulator_init(rut_shell_t *shell, void *user_data)
 
     rut_shell_add_input_callback(
         simulator->shell, rig_simulator_input_handler, simulator, NULL);
-
-    rig_simulator_load_file(simulator, simulator->ui_filename);
 }
 
 rig_simulator_t *
-rig_simulator_new(rut_shell_t *main_shell,
-                  const char *ui_filename)
+rig_simulator_new(rut_shell_t *main_shell)
 {
     rig_simulator_t *simulator = rut_object_alloc0(
         rig_simulator_t, &rig_simulator_type, _rig_simulator_init_type);
 
-    simulator->shell = rut_shell_new(rig_simulator_run_frame,
+    simulator->redraw_queued = false;
+
+    c_list_init(&simulator->connected_closures);
+
+    simulator->ops = rut_queue_new();
+
+    c_list_init(&simulator->actions);
+
+    /* On platforms where we must run everything in a single thread
+     * 'main_shell' associates the simulator's shell with the frontend
+     * shell whose mainloop we will share... */
+    simulator->shell = rut_shell_new(main_shell,
+                                     rig_simulator_run_frame,
                                      simulator);
 
     rut_shell_set_is_headless(simulator->shell, true);
-
-    /* On platforms where we must run everything in a single thread
-     * we may need to associate the simulator's shell with the
-     * frontend shell whose mainloop we will share... */
-    if (main_shell)
-        rut_shell_set_main_shell(simulator->shell, main_shell);
 
     rut_shell_set_queue_redraw_callback(
         simulator->shell, rig_simulator_queue_redraw_hook, simulator);
 
     rut_shell_set_on_run_callback(simulator->shell,
-                                  rig_simulator_init,
+                                  simulator_on_run_cb,
                                   simulator);
 
     simulator->stream = rig_pb_stream_new(simulator->shell);
@@ -647,9 +609,6 @@ rig_simulator_new(rut_shell_t *main_shell,
 #endif
 
     rig_logs_set_simulator(simulator);
-
-    if (ui_filename)
-        simulator->ui_filename = c_strdup(ui_filename);
 
 #ifdef USE_MOZJS
     simulator->js = rig_js_runtime_new(simulator);
@@ -668,31 +627,6 @@ rig_simulator_set_frontend_fd(rig_simulator_t *simulator, int fd)
 #endif
 }
 
-static void
-load_cb(void *user_data)
-{
-    rig_simulator_t *simulator = user_data;
-
-    rut_poll_shell_remove_idle_FIXME(simulator->shell, simulator->load_idle);
-    simulator->load_idle = NULL;
-
-    rig_simulator_load_file(simulator, simulator->ui_filename);
-}
-
-static void
-_rig_simulator_queue_ui_load(rig_simulator_t *simulator)
-{
-    if (simulator->load_idle) {
-        rut_poll_shell_remove_idle_FIXME(simulator->shell, simulator->load_idle);
-        simulator->load_idle = NULL;
-    }
-
-    simulator->load_idle = rut_poll_shell_add_idle_FIXME(simulator->shell,
-                                                   load_cb,
-                                                   simulator,
-                                                   NULL); /* destroy notify */
-}
-
 void
 rig_simulator_load_file(rig_simulator_t *simulator, const char *filename)
 {
@@ -702,13 +636,57 @@ rig_simulator_load_file(rig_simulator_t *simulator, const char *filename)
     if (filename)
         ui = rig_load(engine, filename);
 
-    if (!ui) {
+    if (!ui)
         ui = rig_ui_new(engine);
-        rig_ui_prepare(ui);
-    }
 
     rig_engine_set_ui(engine, ui);
     rut_object_unref(ui);
+
+    rig_engine_op_apply_context_set_ui(&simulator->apply_op_ctx, ui);
+}
+
+struct sim_connected_state {
+    rut_closure_t closure;
+    rig_simulator_t *simulator;
+    char *ui_filename;
+};
+
+static void
+free_sim_connect_state(void *user_data)
+{
+    struct sim_connected_state *state = user_data;
+    free(state->ui_filename);
+    free(state);
+}
+
+static void
+frontend_connected_cb(rig_simulator_t *simulator,
+                      void *user_data)
+{
+    struct sim_connected_state *state = user_data;
+
+    if (state->ui_filename) {
+        rig_simulator_load_file(simulator, state->ui_filename);
+        rig_simulator_reload_frontend_ui(simulator, simulator->engine->ui);
+    }
+}
+
+void
+rig_simulator_queue_ui_load_on_connect(rig_simulator_t *simulator,
+                                       const char *ui_filename)
+{
+    struct sim_connected_state *state =
+        c_malloc0(sizeof(struct sim_connected_state));
+
+    state->simulator = simulator;
+    state->ui_filename = ui_filename ? strdup(ui_filename) : NULL;
+
+    rut_closure_init(&state->closure,
+                     frontend_connected_cb,
+                     state);
+    rut_closure_set_finalize(&state->closure, free_sim_connect_state);
+
+    rig_simulator_add_connected_callback(simulator, &state->closure);
 }
 
 void
@@ -718,11 +696,6 @@ rig_simulator_run(rig_simulator_t *simulator)
      * the mainloop we want to set the 'current shell' so any log
      * messages will be properly associated with the simulator */
     rut_set_thread_current_shell(simulator->shell);
-
-    if (simulator->ui_filename)
-        _rig_simulator_queue_ui_load(simulator);
-
-    rut_set_thread_current_shell(NULL);
 
     rut_shell_main(simulator->shell);
 }
@@ -798,20 +771,23 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
     rut_property_context_t *prop_ctx = &engine->shell->property_ctx;
     int n_changes;
     rig_pb_serializer_t *serializer;
+    rut_queue_t *ops;
 
     simulator->redraw_queued = false;
 
     if (!engine->ui)
         return;
 
+    simulator->in_frame = true;
+
     /* Setup the property context to log all property changes so they
      * can be sent back to the frontend process each frame. */
-    simulator->shell->property_ctx.log = true;
+    simulator->shell->property_ctx.logging_disabled--;
 
     // c_debug ("Simulator: Start Frame\n");
     rut_shell_start_redraw(shell);
 
-    rut_shell_update_timelines(shell);
+    rut_shell_progress_timelines(shell, simulator->frame_info.progress);
 
     rut_shell_run_pre_paint_callbacks(shell);
 
@@ -848,6 +824,8 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
 
     c_debug ("Frame = %d\n", counter);
 #endif
+
+    rut_shell_run_post_paint_callbacks(shell);
 
     if (rut_shell_check_timelines(shell))
         rut_shell_queue_redraw(shell);
@@ -893,16 +871,20 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
         }
     }
 
-    ui_diff.edit =
-        rig_pb_new(engine->ops_serializer, Rig__UIEdit, rig__uiedit__init);
-    ui_diff.edit->ops =
-        rig_pb_serialize_ops_queue(engine->ops_serializer, simulator->ops);
-    rut_queue_clear(simulator->ops);
+    ops = simulator->ops;
+    if (ops->len) {
+        ui_diff.edit =
+            rig_pb_new(engine->ops_serializer, Rig__UIEdit, rig__uiedit__init);
+        ui_diff.edit->n_ops = ops->len;
+        ui_diff.edit->ops =
+            rig_pb_serialize_ops_queue(engine->ops_serializer, ops);
+        rut_queue_clear(ops);
 
-    rig_engine_map_pb_ui_edit(
-        &simulator->map_to_frontend_ids_op_ctx,
-        NULL, /* no apply ctx, since ops already applied */
-        ui_diff.edit);
+        rig_engine_map_pb_ui_edit(
+            &simulator->map_to_frontend_ids_op_ctx,
+            NULL, /* no apply ctx, since ops already applied */
+            ui_diff.edit);
+    }
 
     ui_diff.n_actions = simulator->n_actions;
     if (ui_diff.n_actions) {
@@ -945,17 +927,22 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
 
     clear_actions(simulator);
 
+    if (simulator->redraw_queued) {
+        ui_diff.has_queue_frame = true;
+        ui_diff.queue_frame = true;
+    }
+
     rig__frontend__update_ui(
         frontend_service, &ui_diff, handle_update_ui_ack, NULL);
+
+    simulator->in_frame = false;
 
     rig_pb_serializer_destroy(serializer);
 
     rut_property_context_clear_log(prop_ctx);
 
     /* Stop logging property changes until the next frame. */
-    simulator->shell->property_ctx.log = false;
-
-    rut_shell_run_post_paint_callbacks(shell);
+    simulator->shell->property_ctx.logging_disabled++;
 
     /* Garbage collect deleted objects
      *
@@ -971,15 +958,40 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
     rut_shell_end_redraw(shell);
 }
 
+static void
+handle_frame_req_ack(const Rig__FrameRequestAck *ack,
+                     void *closure_data)
+{
+    // c_debug ("Simulator: Frame Request ACK received\n");
+}
+
+
 /* Redrawing in the simulator is driven by the frontend issuing
  * RunFrame requests, so we hook into rut_shell_queue_redraw()
- * just to record that we have work to do, but still wait for
- * a request from the frontend.
+ * and request a new frame from the frontend.
  */
 void
 rig_simulator_queue_redraw_hook(rut_shell_t *shell, void *user_data)
 {
     rig_simulator_t *simulator = user_data;
+    ProtobufCService *frontend_service =
+        rig_pb_rpc_client_get_service(simulator->simulator_peer->pb_rpc_client);
+    Rig__FrameRequest req = RIG__FRAME_REQUEST__INIT;
+
+    if (!simulator->connected)
+        return;
+
+    if (simulator->redraw_queued)
+        return;
+
+    /* If we are in the middle of processing a frame then
+     * we avoid sending mid-frame messages back to the
+     * frontend and instead at the end of the frame the
+     * update we send to the frontend will include a
+     * flag requesting a new frame */
+    if (!simulator->in_frame)
+        rig__frontend__request_frame(frontend_service, &req,
+                                     handle_frame_req_ack, NULL);
 
     simulator->redraw_queued = true;
 }
@@ -1133,13 +1145,10 @@ error:
 }
 
 void
-rig_simulator_set_connected_callback(rig_simulator_t *simulator,
-                                     void (*callback)(rig_simulator_t *simulator,
-                                                      void *user_data),
-                                     void *user_data)
+rig_simulator_add_connected_callback(rig_simulator_t *simulator,
+                                     rut_closure_t *closure)
 {
-    simulator->connected_callback = callback;
-    simulator->connected_data = user_data;
+    rut_closure_list_add(&simulator->connected_closures, closure);
 }
 
 static void

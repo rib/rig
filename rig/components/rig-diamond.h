@@ -32,7 +32,6 @@
 #include "rig-entity.h"
 
 typedef struct _rig_diamond_slice_t rig_diamond_slice_t;
-#define RIG_DIAMOND_SLICE(X) ((rig_diamond_slice_t *)X)
 extern rut_type_t _rig_diamond_slice_type;
 
 struct _rig_diamond_slice_t {
@@ -61,8 +60,6 @@ struct _rig_diamond_t {
 
     rut_componentable_props_t component;
 
-    rut_shell_t *shell;
-
     c_list_t updated_cb_list;
 
     rig_diamond_slice_t *slice;
@@ -77,7 +74,7 @@ struct _rig_diamond_t {
 
 void _rig_diamond_init_type(void);
 
-rig_diamond_t *rig_diamond_new(rut_shell_t *shell, float size);
+rig_diamond_t *rig_diamond_new(rig_engine_t *engine, float size);
 
 float rig_diamond_get_size(rig_diamond_t *diamond);
 

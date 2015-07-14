@@ -84,8 +84,6 @@ rig_device_redraw(rut_shell_t *shell, void *user_data)
         setup.n_events = input_queue->n_events;
         setup.events = rig_pb_serialize_input_events(serializer, input_queue);
 
-        setup.ui_edit = NULL;
-
         rig_frontend_run_simulator_frame(frontend, serializer, &setup);
 
         rig_pb_serializer_destroy(serializer);
@@ -95,7 +93,8 @@ rig_device_redraw(rut_shell_t *shell, void *user_data)
         rut_memory_stack_rewind(engine->sim_frame_stack);
     }
 
-    rut_shell_update_timelines(shell);
+#warning "update redraw loop"
+    rut_shell_progress_timelines(shell, 1.0/60.0);
 
     rut_shell_run_pre_paint_callbacks(shell);
 
@@ -103,9 +102,9 @@ rig_device_redraw(rut_shell_t *shell, void *user_data)
 
     rig_frontend_paint(frontend);
 
-    rig_engine_garbage_collect(engine);
-
     rut_shell_run_post_paint_callbacks(shell);
+
+    rig_engine_garbage_collect(engine);
 
     rut_memory_stack_rewind(engine->frame_stack);
 
@@ -188,7 +187,7 @@ rig_device_new(enum rig_simulator_run_mode simulator_mode,
 
     device->ui_filename = c_strdup(ui_filename);
 
-    device->shell = rut_shell_new(rig_device_redraw, device);
+    device->shell = rut_shell_new(NULL, rig_device_redraw, device);
 
 #ifdef USE_NCURSES
     rig_curses_add_to_shell(device->shell);

@@ -48,11 +48,8 @@ struct _rut_timeline_t {
 
     rut_shell_t *shell;
 
-    float length;
+    double length;
 
-    c_timer_t *gtimer;
-
-    double offset;
     int direction;
     bool loop_enabled;
     bool running;
@@ -104,8 +101,6 @@ _rut_timeline_free(void *object)
         c_sllist_remove(timeline->shell->timelines, timeline);
     rut_object_unref(timeline->shell);
 
-    c_timer_destroy(timeline->gtimer);
-
     rut_introspectable_destroy(timeline);
 
     rut_object_free(rut_timeline_t, timeline);
@@ -136,8 +131,6 @@ rut_timeline_new(rut_shell_t *shell, float length)
         rut_timeline_t, &rut_timeline_type, _rut_timeline_init_type);
 
     timeline->length = length;
-    timeline->gtimer = c_timer_new();
-    timeline->offset = 0;
     timeline->direction = 1;
     timeline->running = true;
 
@@ -176,8 +169,6 @@ rut_timeline_set_running(rut_object_t *object, bool running)
 void
 rut_timeline_start(rut_timeline_t *timeline)
 {
-    c_timer_start(timeline->gtimer);
-
     rut_timeline_set_elapsed(timeline, 0);
 
     rut_timeline_set_running(timeline, true);
@@ -186,7 +177,6 @@ rut_timeline_start(rut_timeline_t *timeline)
 void
 rut_timeline_stop(rut_timeline_t *timeline)
 {
-    c_timer_stop(timeline->gtimer);
     rut_timeline_set_running(timeline, false);
 }
 
@@ -228,8 +218,7 @@ _rut_timeline_normalize(rut_timeline_t *timeline, double elapsed)
  * value to be in-range if the time line is looping.
  *
  * It also returns whether such an elapsed value should result
- * in the timeline being stopped or restarted using the
- * modified elapsed value as an offset.
+ * in the timeline being stopped
  *
  * XXX: this was generalized to not directly manipulate the
  * timeline so it could be reused by rut_timeline_set_elapsed
@@ -240,16 +229,13 @@ _rut_timeline_normalize(rut_timeline_t *timeline, double elapsed)
 static double
 _rut_timeline_validate_elapsed(rut_timeline_t *timeline,
                                double elapsed,
-                               bool *should_stop,
-                               bool *should_restart_with_offset)
+                               bool *should_stop)
 {
     *should_stop = false;
-    *should_restart_with_offset = false;
 
     if (elapsed > timeline->length) {
         if (timeline->loop_enabled) {
             elapsed = _rut_timeline_normalize(timeline, elapsed);
-            *should_restart_with_offset = true;
         } else {
             elapsed = timeline->length;
             *should_stop = true;
@@ -257,7 +243,6 @@ _rut_timeline_validate_elapsed(rut_timeline_t *timeline,
     } else if (elapsed < 0) {
         if (timeline->loop_enabled) {
             elapsed = _rut_timeline_normalize(timeline, elapsed);
-            *should_restart_with_offset = true;
         } else {
             elapsed = 0;
             *should_stop = true;
@@ -273,16 +258,11 @@ rut_timeline_set_elapsed(rut_object_t *obj, double elapsed)
     rut_timeline_t *timeline = obj;
 
     bool should_stop;
-    bool should_restart_with_offset;
 
-    elapsed = _rut_timeline_validate_elapsed(
-        timeline, elapsed, &should_stop, &should_restart_with_offset);
+    elapsed = _rut_timeline_validate_elapsed(timeline, elapsed, &should_stop);
 
-    if (should_stop)
-        c_timer_stop(timeline->gtimer);
-    else {
-        timeline->offset = elapsed;
-        c_timer_start(timeline->gtimer);
+    if (should_stop) {
+        rut_timeline_set_running(timeline, false);
     }
 
     if (elapsed != timeline->elapsed) {
@@ -360,34 +340,16 @@ rut_timeline_get_loop_enabled(rut_object_t *object)
 }
 
 void
-_rut_timeline_update(rut_timeline_t *timeline)
+_rut_timeline_progress(rut_timeline_t *timeline, double delta)
 {
     double elapsed;
-    bool should_stop;
-    bool should_restart_with_offset;
 
     if (!timeline->running)
         return;
 
-    elapsed = timeline->offset +
-              c_timer_elapsed(timeline->gtimer, NULL) * timeline->direction;
+    elapsed = rut_timeline_get_elapsed(timeline);
+    elapsed += (delta * timeline->direction);
 
-    elapsed = _rut_timeline_validate_elapsed(
-        timeline, elapsed, &should_stop, &should_restart_with_offset);
-
-    c_debug("elapsed = %f\n", elapsed);
-    if (should_stop)
-        c_timer_stop(timeline->gtimer);
-    else if (should_restart_with_offset) {
-        timeline->offset = elapsed;
-        c_timer_start(timeline->gtimer);
-    }
-
-    if (elapsed != timeline->elapsed) {
-        timeline->elapsed = elapsed;
-        rut_property_dirty(&timeline->shell->property_ctx,
-                           &timeline->properties[RUT_TIMELINE_PROP_ELAPSED]);
-        rut_property_dirty(&timeline->shell->property_ctx,
-                           &timeline->properties[RUT_TIMELINE_PROP_PROGRESS]);
-    }
+    rut_timeline_set_elapsed(timeline, elapsed);
 }
+

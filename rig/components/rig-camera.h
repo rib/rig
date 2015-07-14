@@ -34,6 +34,9 @@
 #include <rut.h>
 
 #include "rig-types.h"
+
+typedef struct _rig_camera_t rig_camera_t;
+
 #include "rig-entity.h"
 
 /* NB: consider changes to _rig_camera_copy if adding
@@ -45,17 +48,18 @@ enum {
     RIG_CAMERA_PROP_VIEWPORT_Y,
     RIG_CAMERA_PROP_VIEWPORT_WIDTH,
     RIG_CAMERA_PROP_VIEWPORT_HEIGHT,
+    RIG_CAMERA_PROP_ORTHO,
     RIG_CAMERA_PROP_FOV,
     RIG_CAMERA_PROP_NEAR,
     RIG_CAMERA_PROP_FAR,
     RIG_CAMERA_PROP_ZOOM,
     RIG_CAMERA_PROP_BG_COLOR,
+    RIG_CAMERA_PROP_CLEAR,
     RIG_CAMERA_PROP_FOCAL_DISTANCE,
     RIG_CAMERA_PROP_DEPTH_OF_FIELD,
     RIG_CAMERA_N_PROPS
 };
 
-typedef struct _rig_camera_t rig_camera_t;
 extern rut_type_t rig_camera_type;
 
 rig_camera_t *rig_camera_new(rig_engine_t *engine,

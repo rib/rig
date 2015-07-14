@@ -37,6 +37,8 @@
 
 #include "rig-camera.h"
 #include "rig-engine.h"
+#include "rig-entity.h"
+#include "rig-entity-inlines.h"
 
 typedef struct {
     float x, y, z, w;
@@ -81,8 +83,6 @@ struct _rig_camera_t {
 
     rut_componentable_props_t component;
 
-    rig_engine_t *engine;
-
     struct camera_properties props;
 
     rut_introspectable_props_t introspectable;
@@ -108,7 +108,8 @@ static rut_object_t *
 _rig_camera_copy(rut_object_t *obj)
 {
     rig_camera_t *camera = obj;
-    rig_camera_t *copy = rig_camera_new(camera->engine,
+    rig_engine_t *engine = rig_component_props_get_engine(&camera->component);
+    rig_camera_t *copy = rig_camera_new(engine,
                                         -1, /* ortho/vp width */
                                         -1, /* ortho/vp height */
                                         camera->props.base.fb); /* may be NULL */
@@ -127,19 +128,24 @@ rig_camera_set_background_color4f(
     rut_object_t *object, float red, float green, float blue, float alpha)
 {
     rig_camera_t *camera = object;
+    rut_property_context_t *prop_ctx;
+
     cg_color_init_from_4f(&camera->props.base.bg_color, red, green, blue, alpha);
-    rut_property_dirty(&camera->engine->shell->property_ctx,
-                       &camera->properties[RIG_CAMERA_PROP_BG_COLOR]);
+
+    prop_ctx = rig_component_props_get_property_context(&camera->component);
+    rut_property_dirty(prop_ctx, &camera->properties[RIG_CAMERA_PROP_BG_COLOR]);
 }
 
 void
 rig_camera_set_background_color(rut_object_t *obj, const cg_color_t *color)
 {
     rig_camera_t *camera = obj;
+    rut_property_context_t *prop_ctx;
 
     camera->props.base.bg_color = *color;
-    rut_property_dirty(&camera->engine->shell->property_ctx,
-                       &camera->properties[RIG_CAMERA_PROP_BG_COLOR]);
+
+    prop_ctx = rig_component_props_get_property_context(&camera->component);
+    rut_property_dirty(prop_ctx, &camera->properties[RIG_CAMERA_PROP_BG_COLOR]);
 }
 
 const cg_color_t *
@@ -211,71 +217,79 @@ rig_camera_set_viewport(
     rut_object_t *object, float x, float y, float width, float height)
 {
     rig_camera_t *camera = object;
+    rut_property_context_t *prop_ctx;
+
     _rig_camera_set_viewport(camera, x, y, width, height);
-    rut_property_dirty(&camera->engine->shell->property_ctx,
-                       &camera->properties[RIG_CAMERA_PROP_VIEWPORT_X]);
-    rut_property_dirty(&camera->engine->shell->property_ctx,
-                       &camera->properties[RIG_CAMERA_PROP_VIEWPORT_Y]);
-    rut_property_dirty(&camera->engine->shell->property_ctx,
-                       &camera->properties[RIG_CAMERA_PROP_VIEWPORT_WIDTH]);
-    rut_property_dirty(&camera->engine->shell->property_ctx,
-                       &camera->properties[RIG_CAMERA_PROP_VIEWPORT_HEIGHT]);
+
+    prop_ctx = rig_component_props_get_property_context(&camera->component);
+    rut_property_dirty(prop_ctx, &camera->properties[RIG_CAMERA_PROP_VIEWPORT_X]);
+    rut_property_dirty(prop_ctx, &camera->properties[RIG_CAMERA_PROP_VIEWPORT_Y]);
+    rut_property_dirty(prop_ctx, &camera->properties[RIG_CAMERA_PROP_VIEWPORT_WIDTH]);
+    rut_property_dirty(prop_ctx, &camera->properties[RIG_CAMERA_PROP_VIEWPORT_HEIGHT]);
 }
 
 void
 rig_camera_set_viewport_x(rut_object_t *obj, float x)
 {
     rig_camera_t *camera = obj;
+    rut_property_context_t *prop_ctx;
 
     _rig_camera_set_viewport(camera,
                              x,
                              camera->props.base.viewport[1],
                              camera->props.base.viewport[2],
                              camera->props.base.viewport[3]);
-    rut_property_dirty(&camera->engine->shell->property_ctx,
-                       &camera->properties[RIG_CAMERA_PROP_VIEWPORT_X]);
+
+    prop_ctx = rig_component_props_get_property_context(&camera->component);
+    rut_property_dirty(prop_ctx, &camera->properties[RIG_CAMERA_PROP_VIEWPORT_X]);
 }
 
 void
 rig_camera_set_viewport_y(rut_object_t *obj, float y)
 {
     rig_camera_t *camera = obj;
+    rut_property_context_t *prop_ctx;
 
     _rig_camera_set_viewport(camera,
                              camera->props.base.viewport[0],
                              y,
                              camera->props.base.viewport[2],
                              camera->props.base.viewport[3]);
-    rut_property_dirty(&camera->engine->shell->property_ctx,
-                       &camera->properties[RIG_CAMERA_PROP_VIEWPORT_Y]);
+
+    prop_ctx = rig_component_props_get_property_context(&camera->component);
+    rut_property_dirty(prop_ctx, &camera->properties[RIG_CAMERA_PROP_VIEWPORT_Y]);
 }
 
 void
 rig_camera_set_viewport_width(rut_object_t *obj, float width)
 {
     rig_camera_t *camera = obj;
+    rut_property_context_t *prop_ctx;
 
     _rig_camera_set_viewport(camera,
                              camera->props.base.viewport[0],
                              camera->props.base.viewport[1],
                              width,
                              camera->props.base.viewport[3]);
-    rut_property_dirty(&camera->engine->shell->property_ctx,
-                       &camera->properties[RIG_CAMERA_PROP_VIEWPORT_WIDTH]);
+
+    prop_ctx = rig_component_props_get_property_context(&camera->component);
+    rut_property_dirty(prop_ctx, &camera->properties[RIG_CAMERA_PROP_VIEWPORT_WIDTH]);
 }
 
 void
 rig_camera_set_viewport_height(rut_object_t *obj, float height)
 {
     rig_camera_t *camera = obj;
+    rut_property_context_t *prop_ctx;
 
     _rig_camera_set_viewport(camera,
                              camera->props.base.viewport[0],
                              camera->props.base.viewport[1],
                              camera->props.base.viewport[2],
                              height);
-    rut_property_dirty(&camera->engine->shell->property_ctx,
-                       &camera->properties[RIG_CAMERA_PROP_VIEWPORT_HEIGHT]);
+
+    prop_ctx = rig_component_props_get_property_context(&camera->component);
+    rut_property_dirty(prop_ctx, &camera->properties[RIG_CAMERA_PROP_VIEWPORT_HEIGHT]);
 }
 
 const float *
@@ -380,13 +394,16 @@ void
 rig_camera_set_near_plane(rut_object_t *obj, float near)
 {
     rig_camera_t *camera = obj;
+    rut_property_context_t *prop_ctx;
 
     if (camera->props.base.near == near)
         return;
 
     camera->props.base.near = near;
-    rut_property_dirty(&camera->engine->shell->property_ctx,
-                       &camera->properties[RIG_CAMERA_PROP_NEAR]);
+
+    prop_ctx = rig_component_props_get_property_context(&camera->component);
+    rut_property_dirty(prop_ctx, &camera->properties[RIG_CAMERA_PROP_NEAR]);
+
     camera->props.projection_age++;
     camera->props.transform_age++;
 }
@@ -403,13 +420,16 @@ void
 rig_camera_set_far_plane(rut_object_t *obj, float far)
 {
     rig_camera_t *camera = obj;
+    rut_property_context_t *prop_ctx;
 
     if (camera->props.base.far == far)
         return;
 
     camera->props.base.far = far;
-    rut_property_dirty(&camera->engine->shell->property_ctx,
-                       &camera->properties[RIG_CAMERA_PROP_FAR]);
+
+    prop_ctx = rig_component_props_get_property_context(&camera->component);
+    rut_property_dirty(prop_ctx, &camera->properties[RIG_CAMERA_PROP_FAR]);
+
     camera->props.projection_age++;
     camera->props.transform_age++;
 }
@@ -434,13 +454,16 @@ rig_camera_set_projection_mode(rut_object_t *object,
                                rut_projection_t projection)
 {
     rig_camera_t *camera = object;
+    rut_property_context_t *prop_ctx;
 
     if (camera->props.base.mode == projection)
         return;
 
     camera->props.base.mode = projection;
-    rut_property_dirty(&camera->engine->shell->property_ctx,
-                       &camera->properties[RIG_CAMERA_PROP_MODE]);
+
+    prop_ctx = rig_component_props_get_property_context(&camera->component);
+    rut_property_dirty(prop_ctx, &camera->properties[RIG_CAMERA_PROP_MODE]);
+
     camera->props.projection_age++;
     camera->props.transform_age++;
 }
@@ -449,13 +472,16 @@ void
 rig_camera_set_field_of_view(rut_object_t *obj, float fov)
 {
     rig_camera_t *camera = obj;
+    rut_property_context_t *prop_ctx;
 
     if (camera->props.base.perspective.fov == fov)
         return;
 
     camera->props.base.perspective.fov = fov;
-    rut_property_dirty(&camera->engine->shell->property_ctx,
-                       &camera->properties[RIG_CAMERA_PROP_FOV]);
+
+    prop_ctx = rig_component_props_get_property_context(&camera->component);
+    rut_property_dirty(prop_ctx, &camera->properties[RIG_CAMERA_PROP_FOV]);
+
     if (camera->props.base.mode == RUT_PROJECTION_PERSPECTIVE) {
         camera->props.projection_age++;
         camera->props.transform_age++;
@@ -498,22 +524,28 @@ rig_camera_set_asymmetric_field_of_view(rut_object_t *object,
     }
 }
 
+static void
+rig_camera_set_orthographic_coordinates_fv(rut_object_t *object, const float ortho_vec[4])
+{
+    rig_camera_t *camera = object;
+
+    if (camera->props.base.ortho.x1 == ortho_vec[0] &&
+        camera->props.base.ortho.y1 == ortho_vec[1] &&
+        camera->props.base.ortho.x2 == ortho_vec[2] &&
+        camera->props.base.ortho.y2 == ortho_vec[3])
+        return;
+
+    memcpy(camera->props.base.ortho_vec, ortho_vec, sizeof(float) * 4);
+
+    if (camera->props.base.mode == RUT_PROJECTION_ORTHOGRAPHIC)
+        camera->props.projection_age++;
+}
 void
 rig_camera_set_orthographic_coordinates(
     rut_object_t *object, float x1, float y1, float x2, float y2)
 {
-    rig_camera_t *camera = object;
-    if (camera->props.base.ortho.x1 == x1 && camera->props.base.ortho.y1 == y1 &&
-        camera->props.base.ortho.x2 == x2 && camera->props.base.ortho.y2 == y2)
-        return;
-
-    camera->props.base.ortho.x1 = x1;
-    camera->props.base.ortho.y1 = y1;
-    camera->props.base.ortho.x2 = x2;
-    camera->props.base.ortho.y2 = y2;
-
-    if (camera->props.base.mode == RUT_PROJECTION_ORTHOGRAPHIC)
-        camera->props.projection_age++;
+    rig_camera_set_orthographic_coordinates_fv(object,
+                                               (float [4]){x1, y1, x2, y2});
 }
 
 const c_matrix_t *
@@ -753,16 +785,19 @@ void
 rig_camera_set_focal_distance(rut_object_t *obj, float focal_distance)
 {
     rig_camera_t *camera = obj;
+    rut_property_context_t *prop_ctx;
+    rut_shell_t *shell;
 
     if (camera->props.base.focal_distance == focal_distance)
         return;
 
     camera->props.base.focal_distance = focal_distance;
 
-    rut_shell_queue_redraw(camera->engine->shell);
+    shell = rig_component_props_get_shell(&camera->component);
+    rut_shell_queue_redraw(shell);
 
-    rut_property_dirty(&camera->engine->shell->property_ctx,
-                       &camera->properties[RIG_CAMERA_PROP_FOCAL_DISTANCE]);
+    prop_ctx = rig_component_props_get_property_context(&camera->component);
+    rut_property_dirty(prop_ctx, &camera->properties[RIG_CAMERA_PROP_FOCAL_DISTANCE]);
 }
 
 float
@@ -777,16 +812,19 @@ void
 rig_camera_set_depth_of_field(rut_object_t *obj, float depth_of_field)
 {
     rig_camera_t *camera = obj;
+    rut_property_context_t *prop_ctx;
+    rut_shell_t *shell;
 
     if (camera->props.base.depth_of_field == depth_of_field)
         return;
 
     camera->props.base.depth_of_field = depth_of_field;
 
-    rut_shell_queue_redraw(camera->engine->shell);
+    shell = rig_component_props_get_shell(&camera->component);
+    rut_shell_queue_redraw(shell);
 
-    rut_property_dirty(&camera->engine->shell->property_ctx,
-                       &camera->properties[RIG_CAMERA_PROP_FOCAL_DISTANCE]);
+    prop_ctx = rig_component_props_get_property_context(&camera->component);
+    rut_property_dirty(prop_ctx, &camera->properties[RIG_CAMERA_PROP_FOCAL_DISTANCE]);
 }
 
 float
@@ -877,16 +915,19 @@ void
 rig_camera_set_zoom(rut_object_t *object, float zoom)
 {
     rig_camera_t *camera = object;
+    rut_property_context_t *prop_ctx;
+    rut_shell_t *shell;
 
     if (camera->props.base.zoom == zoom)
         return;
 
     camera->props.base.zoom = zoom;
 
-    rut_shell_queue_redraw(camera->engine->shell);
+    shell = rig_component_props_get_shell(&camera->component);
+    rut_shell_queue_redraw(shell);
 
-    rut_property_dirty(&camera->engine->shell->property_ctx,
-                       &camera->properties[RIG_CAMERA_PROP_ZOOM]);
+    prop_ctx = rig_component_props_get_property_context(&camera->component);
+    rut_property_dirty(prop_ctx, &camera->properties[RIG_CAMERA_PROP_ZOOM]);
 
     camera->props.projection_age++;
     camera->props.transform_age++;
@@ -904,14 +945,16 @@ rut_shell_t *
 rig_camera_get_shell(rut_object_t *object)
 {
     rig_camera_t *camera = object;
-    return camera->engine->shell;
+
+    return rig_component_props_get_shell(&camera->component);
 }
 
 cg_primitive_t *
 rig_camera_create_frustum_primitive(rut_object_t *object)
 {
     rig_camera_t *camera = object;
-    cg_device_t *dev = camera->engine->shell->cg_device;
+    rut_shell_t *shell = rig_component_props_get_shell(&camera->component);
+    cg_device_t *dev = shell->cg_device;
     Rutvertex4_t vertices[8] = {
         /* near plane in projection space */
         { -1, -1, -1, 1, },
@@ -1031,6 +1074,12 @@ static rut_property_spec_t _rig_camera_prop_specs[] = {
       .type = RUT_PROPERTY_TYPE_FLOAT,
       .data_offset = offsetof(rig_camera_t, props.base.viewport[3]),
       .setter.float_type = rig_camera_set_viewport_height },
+    { .name = "ortho",
+      .nick = "Orthographic Coordinates",
+      .flags = RUT_PROPERTY_FLAG_READWRITE,
+      .type = RUT_PROPERTY_TYPE_VEC4,
+      .data_offset = offsetof(rig_camera_t, props.base.ortho_vec),
+      .setter.vec4_type = rig_camera_set_orthographic_coordinates_fv },
     { .name = "fov",
       .nick = "Field Of View",
       .type = RUT_PROPERTY_TYPE_FLOAT,
@@ -1066,6 +1115,13 @@ static rut_property_spec_t _rig_camera_prop_specs[] = {
       .setter.color_type = rig_camera_set_background_color,
       .flags = RUT_PROPERTY_FLAG_READWRITE,
       .animatable = true },
+    { .name = "clear",
+      .nick = "Clear",
+      .type = RUT_PROPERTY_TYPE_BOOLEAN,
+      .data_offset = offsetof(rig_camera_t, props.base.clear_fb),
+      .setter.boolean_type = rig_camera_set_clear,
+      .flags = RUT_PROPERTY_FLAG_READWRITE,
+    },
     { .name = "focal_distance",
       .nick = "Focal Distance",
       .type = RUT_PROPERTY_TYPE_FLOAT,
@@ -1163,11 +1219,11 @@ rig_camera_new(rig_engine_t *engine,
     rig_camera_t *camera = rut_object_alloc0(
         rig_camera_t, &rig_camera_type, _rig_camera_init_type);
 
-    camera->engine = engine;
-
     rut_introspectable_init(camera, _rig_camera_prop_specs, camera->properties);
 
     camera->component.type = RUT_COMPONENT_TYPE_CAMERA;
+    camera->component.parented = false;
+    camera->component.engine = engine;
 
     rig_camera_set_background_color4f(camera, 0, 0, 0, 1);
     camera->props.base.clear_fb = true;
