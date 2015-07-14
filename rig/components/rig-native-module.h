@@ -41,6 +41,14 @@ rig_native_module_t *rig_native_module_new(rig_engine_t *engine);
 const char *rig_native_module_get_name(rut_object_t *object);
 void rig_native_module_set_name(rut_object_t *object, const char *name);
 
+/* Instead of dynamically loading a shared object, a resolver can be
+ * used to link with internal symbols. This is a convenience for
+ * writting test applications */
+typedef void *(*rig_native_module_resolver_func_t)(const char *symbol, void *user_data);
+void rig_native_module_set_resolver(rig_native_module_t *module,
+                                    rig_native_module_resolver_func_t resolver,
+                                    void *user_data);
+
 void rig_native_module_load(rig_native_module_t *module);
 void rig_native_module_update(rig_native_module_t *module);
 void rig_native_module_handle_update(rig_native_module_t *module,

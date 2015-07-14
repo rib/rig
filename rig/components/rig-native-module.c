@@ -66,6 +66,9 @@ struct _rig_native_module_t {
         void (*input)(RModule *module, RInputEvent *event);
     } symbols;
 
+    rig_native_module_resolver_func_t resolver;
+    void *resolver_data;
+
     rut_introspectable_props_t introspectable;
     rut_property_t properties[RIG_NATIVE_MODULE_N_PROPS];
 };
@@ -156,18 +159,26 @@ static void
 _rig_native_module_load(rut_object_t *object)
 {
     rig_native_module_t *module = object;
+    struct sym {
+        const char *name;
+        void **addr;
+    } symbols[] = {
+        { "load", (void **)&module->symbols.load },
+        { "update", (void **)&module->symbols.update },
+        { "input", (void **)&module->symbols.input },
+    };
+    int i;
 
-    if (module->lib == NULL && strcmp(module->name, "") != 0) {
+    if (module->symbols.load)
+        return;
+
+    if (module->resolver) {
+        for (i = 0; i < C_N_ELEMENTS(symbols); i++)
+            *(symbols[i].addr) = module->resolver(symbols[i].name,
+                                                  module->resolver_data);
+
+    } else if (module->lib == NULL && strcmp(module->name, "") != 0) {
         int status;
-        struct sym {
-            const char *name;
-            void *addr;
-        } symbols[] = {
-            { "load", &module->symbols.load },
-            { "update", &module->symbols.update },
-            { "input", &module->symbols.input },
-        };
-        int i;
 
         module->lib = c_malloc(sizeof(uv_lib_t));
         status = uv_dlopen(module->name, module->lib);
@@ -179,10 +190,10 @@ _rig_native_module_load(rut_object_t *object)
 
         for (i = 0; i < C_N_ELEMENTS(symbols); i++)
             uv_dlsym(module->lib, symbols[i].name, symbols[i].addr);
-
-        if (module->symbols.load)
-            module->symbols.load((RModule *)module);
     }
+
+    if (module->symbols.load)
+        module->symbols.load((RModule *)&module->code_module);
 }
 
 static bool
@@ -203,7 +214,7 @@ _rig_native_module_update(rut_object_t *object)
         return;
 
     if (module->symbols.update)
-        module->symbols.update((RModule *)module);
+        module->symbols.update((RModule *)&module->code_module);
 }
 
 static void
@@ -215,7 +226,8 @@ _rig_native_module_input(rut_object_t *object, rut_input_event_t *event)
         return;
 
     if (module->symbols.input)
-        module->symbols.input((RModule *)module, (RInputEvent *)event);
+        module->symbols.input((RModule *)&module->code_module,
+                              (RInputEvent *)event);
 }
 
 rut_type_t rig_native_module_type;
@@ -267,6 +279,7 @@ rig_native_module_new(rig_engine_t *engine)
     module->component.type = RUT_COMPONENT_TYPE_CODE;
 
     module->code_module.object = module;
+    module->code_module.engine = engine;
 
     rut_introspectable_init(
         module, _rig_native_module_prop_specs, module->properties);
@@ -274,4 +287,13 @@ rig_native_module_new(rig_engine_t *engine)
     rig_native_module_set_name(module, NULL);
 
     return module;
+}
+
+void
+rig_native_module_set_resolver(rig_native_module_t *module,
+                               rig_native_module_resolver_func_t resolver,
+                               void *user_data)
+{
+    module->resolver = resolver;
+    module->resolver_data = user_data;
 }
