@@ -653,7 +653,7 @@ cg_get_clock_time(cg_device_t *dev)
     if (winsys->device_get_clock_time)
         return winsys->device_get_clock_time(dev);
     else
-        return 0;
+        return c_get_monotonic_time();
 }
 
 cg_atlas_set_t *

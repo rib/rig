@@ -261,8 +261,9 @@ ust_to_nanoseconds(cg_renderer_t *renderer, GLXDrawable drawable, int64_t ust)
          *
          * Potentially we could block for a known duration within
          * ensure_ust_type() to measure the timescale of UST but for now
-         * we just ignore unknown time sources */
-        return 0;
+         * we just ignore unknown time sources and fallback to reading
+         * a monotonic system clock */
+        return c_get_monotonic_time();
     }
 
     return 0;
@@ -280,8 +281,9 @@ _cg_winsys_get_clock_time(cg_device_t *dev)
 
     switch (glx_renderer->ust_type) {
     case CG_GLX_UST_IS_UNKNOWN:
-    case CG_GLX_UST_IS_OTHER:
         return 0;
+    case CG_GLX_UST_IS_OTHER:
+        return c_get_monotonic_time();
     case CG_GLX_UST_IS_GETTIMEOFDAY: {
         struct timeval tv;
 
@@ -1535,15 +1537,12 @@ _cg_winsys_wait_for_vblank(cg_onscreen_t *onscreen)
                 ust_to_nanoseconds(dev->display->renderer, drawable, ust);
         } else {
             uint32_t current_count;
-            struct timespec ts;
 
             glx_renderer->glXGetVideoSync(&current_count);
             glx_renderer->glXWaitVideoSync(
                 2, (current_count + 1) % 2, &current_count);
 
-            clock_gettime(CLOCK_MONOTONIC, &ts);
-            info->presentation_time =
-                ts.tv_sec * C_INT64_CONSTANT(1000000000) + ts.tv_nsec;
+            info->presentation_time = c_get_monotonic_time();
         }
     }
 }
@@ -1622,12 +1621,11 @@ _cg_winsys_onscreen_swap_region(cg_onscreen_t *onscreen,
     int x_min = 0, x_max = 0, y_min = 0, y_max = 0;
 
     /*
-     * We assume that glXCopySubBuffer is synchronized which means it won't
-     * prevent multiple
-     * blits per retrace if they can all be performed in the blanking period. If
-     * that's the
-     * case then we still want to use the vblank sync menchanism but
-     * we only need it to throttle redraws.
+     * We assume that glXCopySubBuffer is synchronized which means it
+     * won't prevent multiple blits per retrace if they can all be
+     * performed in the blanking period. If that's the case then we
+     * still want to use the vblank sync menchanism but we only need
+     * it to throttle redraws.
      */
     bool blit_sub_buffer_is_synchronized =
         _cg_winsys_has_feature(CG_WINSYS_FEATURE_SWAP_REGION_SYNCHRONIZED);
@@ -1637,10 +1635,9 @@ _cg_winsys_onscreen_swap_region(cg_onscreen_t *onscreen,
     int *rectangles = c_alloca(sizeof(int) * n_rectangles * 4);
     int i;
 
-    /* glXCopySubBuffer expects rectangles relative to the bottom left corner
-     * but
-     * we are given rectangles relative to the top left so we need to flip
-     * them... */
+    /* glXCopySubBuffer expects rectangles relative to the bottom left
+     * corner but we are given rectangles relative to the top left so
+     * we need to flip them... */
     memcpy(rectangles, user_rectangles, sizeof(int) * n_rectangles * 4);
     for (i = 0; i < n_rectangles; i++) {
         int *rect = &rectangles[4 * i];

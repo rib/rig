@@ -264,6 +264,9 @@ cg_onscreen_swap_buffers_with_damage(cg_onscreen_t *onscreen,
 
         info = c_queue_pop_tail(&onscreen->pending_frame_infos);
 
+        if (!CG_FLAGS_GET(framebuffer->dev->features, CG_FEATURE_ID_PRESENTATION_TIME))
+            info->presentation_time = c_get_monotonic_time();
+
         _cg_onscreen_queue_event(onscreen, CG_FRAME_EVENT_SYNC, info);
         _cg_onscreen_queue_event(onscreen, CG_FRAME_EVENT_COMPLETE, info);
 
@@ -316,6 +319,9 @@ cg_onscreen_swap_region(cg_onscreen_t *onscreen,
         c_warn_if_fail(onscreen->pending_frame_infos.length == 1);
 
         info = c_queue_pop_tail(&onscreen->pending_frame_infos);
+
+        if (!CG_FLAGS_GET(framebuffer->dev->features, CG_FEATURE_ID_PRESENTATION_TIME))
+            info->presentation_time = c_get_monotonic_time();
 
         _cg_onscreen_queue_event(onscreen, CG_FRAME_EVENT_SYNC, info);
         _cg_onscreen_queue_event(onscreen, CG_FRAME_EVENT_COMPLETE, info);
