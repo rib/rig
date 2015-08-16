@@ -31,7 +31,6 @@
 #ifndef __CG_CLIP_STACK_H
 #define __CG_CLIP_STACK_H
 
-#include "cogl-matrix.h"
 #include "cogl-primitive.h"
 #include "cogl-framebuffer.h"
 #include "cogl-matrix-stack.h"

@@ -122,14 +122,14 @@ rut_object_t *rut_graphable_nth(rut_object_t *parent, int n);
 rut_object_t *rut_graphable_get_root(rut_object_t *child);
 
 void rut_graphable_apply_transform(rut_object_t *graphable,
-                                   cg_matrix_t *transform);
+                                   c_matrix_t *transform);
 
 void rut_graphable_get_transform(rut_object_t *graphable,
-                                 cg_matrix_t *transform);
+                                 c_matrix_t *transform);
 
 void rut_graphable_get_modelview(rut_object_t *graphable,
                                  rut_object_t *camera,
-                                 cg_matrix_t *transform);
+                                 c_matrix_t *transform);
 
 void rut_graphable_fully_transform_point(rut_object_t *graphable,
                                          rut_object_t *camera,

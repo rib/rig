@@ -41,7 +41,6 @@
 #include <cogl/cogl-object.h>
 #include <cogl/cogl-bitmap.h>
 #include <cogl/cogl-color.h>
-#include <cogl/cogl-matrix.h>
 #include <cogl/cogl-matrix-stack.h>
 #include <cogl/cogl-offscreen.h>
 #include <cogl/cogl-texture.h>
@@ -59,9 +58,6 @@
 #include <cogl/cogl-device.h>
 #include <cogl/cogl-buffer.h>
 #include <cogl/cogl-pixel-buffer.h>
-#include <cogl/cogl-vector.h>
-#include <cogl/cogl-euler.h>
-#include <cogl/cogl-quaternion.h>
 #include <cogl/cogl-texture-2d.h>
 #include <cogl/cogl-texture-2d-gl.h>
 #include <cogl/cogl-texture-3d.h>

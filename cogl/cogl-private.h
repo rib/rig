@@ -82,8 +82,8 @@ typedef enum _cg_pipeline_eval_flags_t {
     CG_PIPELINE_EVAL_FLAG_NONE = 0
 } cg_pipeline_eval_flags_t;
 
-void _cg_transform_point(const cg_matrix_t *matrix_mv,
-                         const cg_matrix_t *matrix_p,
+void _cg_transform_point(const c_matrix_t *matrix_mv,
+                         const c_matrix_t *matrix_p,
                          const float *viewport,
                          float *x,
                          float *y);

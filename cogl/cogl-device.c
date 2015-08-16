@@ -283,9 +283,9 @@ cg_device_connect(cg_device_t *dev, cg_error_t **error)
     dev->current_clip_stack_valid = false;
     dev->current_clip_stack = NULL;
 
-    cg_matrix_init_identity(&dev->identity_matrix);
-    cg_matrix_init_identity(&dev->y_flip_matrix);
-    cg_matrix_scale(&dev->y_flip_matrix, 1, -1, 1);
+    c_matrix_init_identity(&dev->identity_matrix);
+    c_matrix_init_identity(&dev->y_flip_matrix);
+    c_matrix_scale(&dev->y_flip_matrix, 1, -1, 1);
 
     dev->texture_units =
         c_array_new(false, false, sizeof(cg_texture_unit_t));

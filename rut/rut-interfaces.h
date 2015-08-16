@@ -41,10 +41,10 @@ C_BEGIN_DECLS
  */
 
 typedef struct rut_transformable_vtable_t {
-    const cg_matrix_t *(*get_matrix)(rut_object_t *object);
+    const c_matrix_t *(*get_matrix)(rut_object_t *object);
 } rut_transformable_vtable_t;
 
-const cg_matrix_t *rut_transformable_get_matrix(rut_object_t *object);
+const c_matrix_t *rut_transformable_get_matrix(rut_object_t *object);
 
 typedef void (*rut_sizeable_preferred_size_callback_t)(rut_object_t *sizable,
                                                     void *user_data);

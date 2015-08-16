@@ -39,7 +39,6 @@
 #error "Only <cogl/cogl.h> can be included directly."
 #endif
 
-#include "cogl-matrix.h"
 #include "cogl-device.h"
 
 /**
@@ -51,11 +50,11 @@
  * transforms of objects, texture transforms, and projective
  * transforms.
  *
- * The #cg_matrix_t api provides a good way to manipulate individual
+ * The #c_matrix_t api provides a good way to manipulate individual
  * matrices representing a single transformation but if you need to
  * track many-many such transformations for many objects that are
  * organized in a scenegraph for example then using a separate
- * #cg_matrix_t for each object may not be the most efficient way.
+ * #c_matrix_t for each object may not be the most efficient way.
  *
  * A #cg_matrix_stack_t enables applications to track lots of
  * transformations that are related to each other in some kind of
@@ -68,7 +67,7 @@
  * transformation. The #cg_matrix_stack_t API is suited to tracking lots
  * of transformations that fit this kind of model.
  *
- * Compared to using the #cg_matrix_t api directly to track many
+ * Compared to using the #c_matrix_t api directly to track many
  * related transforms, these can be some advantages to using a
  * #cg_matrix_stack_t:
  * <itemizedlist>
@@ -81,14 +80,14 @@
  * </itemizedlist>
  *
  * For reference (to give an idea of when a #cg_matrix_stack_t can
- * provide a space saving) a #cg_matrix_t can be expected to take 72
+ * provide a space saving) a #c_matrix_t can be expected to take 72
  * bytes whereas a single #cg_matrix_entry_t in a #cg_matrix_stack_t is
  * currently around 32 bytes on a 32bit CPU or 36 bytes on a 64bit
  * CPU. An entry is needed for each individual operation applied to
  * the stack (such as rotate, scale, translate) so if most of your
  * leaf node transformations only need one or two simple operations
  * relative to their parent then a matrix stack will likely take less
- * space than having a #cg_matrix_t for each node.
+ * space than having a #c_matrix_t for each node.
  *
  * Even without any space saving though the ability to perform fast
  * comparisons and avoid redundant arithmetic (especially sine and
@@ -278,24 +277,24 @@ void cg_matrix_stack_rotate(
 /**
  * cg_matrix_stack_rotate_quaternion:
  * @stack: A #cg_matrix_stack_t
- * @quaternion: A #cg_quaternion_t
+ * @quaternion: A #c_quaternion_t
  *
  * Multiplies the current matrix by one that rotates according to the
  * rotation described by @quaternion.
  */
 void cg_matrix_stack_rotate_quaternion(cg_matrix_stack_t *stack,
-                                       const cg_quaternion_t *quaternion);
+                                       const c_quaternion_t *quaternion);
 
 /**
  * cg_matrix_stack_rotate_euler:
  * @stack: A #cg_matrix_stack_t
- * @euler: A #cg_euler_t
+ * @euler: A #c_euler_t
  *
  * Multiplies the current matrix by one that rotates according to the
  * rotation described by @euler.
  */
 void cg_matrix_stack_rotate_euler(cg_matrix_stack_t *stack,
-                                  const cg_euler_t *euler);
+                                  const c_euler_t *euler);
 
 /**
  * cg_matrix_stack_multiply:
@@ -305,7 +304,7 @@ void cg_matrix_stack_rotate_euler(cg_matrix_stack_t *stack,
  * Multiplies the current matrix by the given matrix.
  */
 void cg_matrix_stack_multiply(cg_matrix_stack_t *stack,
-                              const cg_matrix_t *matrix);
+                              const c_matrix_t *matrix);
 
 /**
  * cg_matrix_stack_frustum:
@@ -386,14 +385,14 @@ void cg_matrix_stack_orthographic(cg_matrix_stack_t *stack,
  * @inverse: (out): The destination for a 4x4 inverse transformation matrix
  *
  * Gets the inverse transform of the current matrix and uses it to
- * initialize a new #cg_matrix_t.
+ * initialize a new #c_matrix_t.
  *
  * Return value: %true if the inverse was successfully calculated or %false
  *   for degenerate transformations that can't be inverted (in this case the
  *   @inverse matrix will simply be initialized with the identity matrix)
  */
 bool cg_matrix_stack_get_inverse(cg_matrix_stack_t *stack,
-                                 cg_matrix_t *inverse);
+                                 c_matrix_t *inverse);
 
 /**
  * cg_matrix_stack_get_entry:
@@ -420,13 +419,13 @@ cg_matrix_entry_t *cg_matrix_stack_get_entry(cg_matrix_stack_t *stack);
  * @stack: A #cg_matrix_stack_t
  * @matrix: (out): The potential destination for the current matrix
  *
- * Resolves the current @stack transform into a #cg_matrix_t by
+ * Resolves the current @stack transform into a #c_matrix_t by
  * combining the operations that have been applied to build up the
  * current transform.
  *
  * There are two possible ways that this function may return its
  * result depending on whether the stack is able to directly point
- * to an internal #cg_matrix_t or whether the result needs to be
+ * to an internal #c_matrix_t or whether the result needs to be
  * composed of multiple operations.
  *
  * If an internal matrix contains the required result then this
@@ -441,7 +440,7 @@ cg_matrix_entry_t *cg_matrix_stack_get_entry(cg_matrix_stack_t *stack);
  *               and in that case @matrix will be initialized with
  *               the value of the current transform.
  */
-cg_matrix_t *cg_matrix_stack_get(cg_matrix_stack_t *stack, cg_matrix_t *matrix);
+c_matrix_t *cg_matrix_stack_get(cg_matrix_stack_t *stack, c_matrix_t *matrix);
 
 /**
  * cg_matrix_entry_get:
@@ -449,13 +448,13 @@ cg_matrix_t *cg_matrix_stack_get(cg_matrix_stack_t *stack, cg_matrix_t *matrix);
  * @matrix: (out): The potential destination for the transform as
  *                 a matrix
  *
- * Resolves the current @entry transform into a #cg_matrix_t by
+ * Resolves the current @entry transform into a #c_matrix_t by
  * combining the sequence of operations that have been applied to
  * build up the current transform.
  *
  * There are two possible ways that this function may return its
  * result depending on whether it's possible to directly point
- * to an internal #cg_matrix_t or whether the result needs to be
+ * to an internal #c_matrix_t or whether the result needs to be
  * composed of multiple operations.
  *
  * If an internal matrix contains the required result then this
@@ -466,23 +465,23 @@ cg_matrix_t *cg_matrix_stack_get(cg_matrix_stack_t *stack, cg_matrix_t *matrix);
  * <note>@matrix will be left untouched if a direct pointer is
  * returned.</note>
  *
- * Return value: A direct pointer to a #cg_matrix_t transform or %NULL
+ * Return value: A direct pointer to a #c_matrix_t transform or %NULL
  *               and in that case @matrix will be initialized with
  *               the effective transform represented by @entry.
  */
-cg_matrix_t *cg_matrix_entry_get(cg_matrix_entry_t *entry, cg_matrix_t *matrix);
+c_matrix_t *cg_matrix_entry_get(cg_matrix_entry_t *entry, c_matrix_t *matrix);
 
 /**
  * cg_matrix_stack_set:
  * @stack: A #cg_matrix_stack_t
- * @matrix: A #cg_matrix_t replace the current matrix value with
+ * @matrix: A #c_matrix_t replace the current matrix value with
  *
  * Replaces the current @stack matrix value with the value of @matrix.
  * This effectively discards any other operations that were applied
  * since the last time cg_matrix_stack_push() was called or since
  * the stack was initialized.
  */
-void cg_matrix_stack_set(cg_matrix_stack_t *stack, const cg_matrix_t *matrix);
+void cg_matrix_stack_set(cg_matrix_stack_t *stack, const c_matrix_t *matrix);
 
 /**
  * cg_is_matrix_stack:

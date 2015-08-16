@@ -50,5 +50,14 @@ clib_common_source = \
 	crbtree.c	\
 	ascii_snprintf.c \
 	crand.c		\
-	ctimer.c
+	ctimer.c 	\
+	cvector.h	\
+	cvector.c	\
+	cmatrix.h	\
+	cmatrix.c	\
+	ceuler.h	\
+	ceuler.c	\
+	cquaternion.h	\
+	cquaternion-private.h \
+	cquaternion.c
 

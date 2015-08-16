@@ -40,7 +40,7 @@ typedef struct _rut_rotation_inspector_t rut_rotation_inspector_t;
 rut_rotation_inspector_t *rut_rotation_inspector_new(rut_shell_t *shell);
 
 void rut_rotation_inspector_set_value(rut_object_t *slider,
-                                      const cg_quaternion_t *value);
+                                      const c_quaternion_t *value);
 
 void rut_rotation_inspector_set_step(rut_rotation_inspector_t *slider,
                                      float step);

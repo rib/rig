@@ -168,7 +168,7 @@ typedef struct _rut_input_event_t {
     rut_input_event_type_t type;
     rut_shell_onscreen_t *onscreen;
     rut_object_t *camera;
-    const cg_matrix_t *input_transform;
+    const c_matrix_t *input_transform;
 
     void *native;
 
@@ -368,7 +368,7 @@ struct _rut_shell_t {
     cg_device_t *cg_device;
 
     rut_matrix_entry_t identity_entry;
-    cg_matrix_t identity_matrix;
+    c_matrix_t identity_matrix;
 
     char *assets_location;
 
@@ -504,7 +504,7 @@ typedef struct _rut_input_transform_any_t {
 
 typedef struct _rut_input_transform_matrix_t {
     rut_input_transform_type_t type;
-    cg_matrix_t *matrix;
+    c_matrix_t *matrix;
 } rut_input_transform_matrix_t;
 
 typedef struct _rut_input_transform_graphable_t {

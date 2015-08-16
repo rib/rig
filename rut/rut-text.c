@@ -2035,8 +2035,8 @@ rut_text_motion_grab(rut_input_event_t *event,
     float x, y;
     int index_, offset;
     const char *text_str;
-    cg_matrix_t transform;
-    cg_matrix_t inverse_transform;
+    c_matrix_t transform;
+    c_matrix_t inverse_transform;
 
     c_return_val_if_fail(text->in_select_drag,
                          RUT_INPUT_EVENT_STATUS_UNHANDLED);
@@ -2046,12 +2046,12 @@ rut_text_motion_grab(rut_input_event_t *event,
 
     c_debug("Grab\n");
     if (rut_motion_event_get_action(event) == RUT_MOTION_EVENT_ACTION_MOVE) {
-        const cg_matrix_t *view = rut_camera_get_view_transform(camera);
+        const c_matrix_t *view = rut_camera_get_view_transform(camera);
 
         transform = *view;
         rut_graphable_apply_transform(text, &transform);
 
-        if (!cg_matrix_get_inverse(&transform, &inverse_transform)) {
+        if (!c_matrix_get_inverse(&transform, &inverse_transform)) {
             c_debug("Failed to get inverse\n");
             return RUT_INPUT_EVENT_STATUS_UNHANDLED;
         }
@@ -2104,8 +2104,8 @@ rut_text_button_press(rut_text_t *text,
     // bool res = false;
     float x, y;
     int index_;
-    cg_matrix_t transform;
-    cg_matrix_t inverse_transform;
+    c_matrix_t transform;
+    c_matrix_t inverse_transform;
     rut_object_t *camera;
 
     c_debug("rut_text_t Button Press!\n");
@@ -2145,7 +2145,7 @@ rut_text_button_press(rut_text_t *text,
     }
 
     rut_graphable_get_modelview(text, camera, &transform);
-    if (cg_matrix_get_inverse(&transform, &inverse_transform)) {
+    if (c_matrix_get_inverse(&transform, &inverse_transform)) {
         int offset;
         const char *text_str;
 

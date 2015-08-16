@@ -112,7 +112,7 @@ typedef enum _source_type_t {
 
 typedef struct _rig_journal_entry_t {
     rig_entity_t *entity;
-    cg_matrix_t matrix;
+    c_matrix_t matrix;
 } rig_journal_entry_t;
 
 typedef enum _get_pipeline_flags_t {
@@ -357,7 +357,7 @@ static void
 rig_journal_log(c_array_t *journal,
                 rig_paint_context_t *paint_ctx,
                 rig_entity_t *entity,
-                const cg_matrix_t *matrix)
+                const c_matrix_t *matrix)
 {
 
     rig_journal_entry_t *entry;
@@ -1277,13 +1277,13 @@ get_entity_mask_pipeline(rig_renderer_t *renderer,
 }
 
 static void
-get_light_modelviewprojection(const cg_matrix_t *model_transform,
+get_light_modelviewprojection(const c_matrix_t *model_transform,
                               rig_entity_t *light,
-                              const cg_matrix_t *light_projection,
-                              cg_matrix_t *light_mvp)
+                              const c_matrix_t *light_projection,
+                              c_matrix_t *light_mvp)
 {
-    const cg_matrix_t *light_transform;
-    cg_matrix_t light_view;
+    const c_matrix_t *light_transform;
+    c_matrix_t light_view;
 
     /* TODO: cache the bias * light_projection * light_view matrix! */
 
@@ -1295,13 +1295,13 @@ get_light_modelviewprojection(const cg_matrix_t *model_transform,
                        .5f,  .5f, .5f, 1.f };
 
     light_transform = rig_entity_get_transform(light);
-    cg_matrix_get_inverse(light_transform, &light_view);
+    c_matrix_get_inverse(light_transform, &light_view);
 
-    cg_matrix_init_from_array(light_mvp, bias);
-    cg_matrix_multiply(light_mvp, light_mvp, light_projection);
-    cg_matrix_multiply(light_mvp, light_mvp, &light_view);
+    c_matrix_init_from_array(light_mvp, bias);
+    c_matrix_multiply(light_mvp, light_mvp, light_projection);
+    c_matrix_multiply(light_mvp, light_mvp, &light_view);
 
-    cg_matrix_multiply(light_mvp, light_mvp, model_transform);
+    c_matrix_multiply(light_mvp, light_mvp, model_transform);
 }
 
 static void
@@ -1530,8 +1530,8 @@ FOUND:
 
     /* update uniforms in pipelines */
     {
-        cg_matrix_t light_shadow_matrix, light_projection;
-        cg_matrix_t model_transform;
+        c_matrix_t light_shadow_matrix, light_projection;
+        c_matrix_t model_transform;
         const float *light_matrix;
         int location;
 
@@ -1546,7 +1546,7 @@ FOUND:
                                       &light_projection,
                                       &light_shadow_matrix);
 
-        light_matrix = cg_matrix_get_array(&light_shadow_matrix);
+        light_matrix = c_matrix_get_array(&light_shadow_matrix);
 
         location =
             cg_pipeline_get_uniform_location(pipeline, "light_shadow_matrix");
@@ -1707,12 +1707,12 @@ get_entity_pipeline(rig_renderer_t *renderer,
     return NULL;
 }
 static void
-get_normal_matrix(const cg_matrix_t *matrix, float *normal_matrix)
+get_normal_matrix(const c_matrix_t *matrix, float *normal_matrix)
 {
-    cg_matrix_t inverse_matrix;
+    c_matrix_t inverse_matrix;
 
     /* Invert the matrix */
-    cg_matrix_get_inverse(matrix, &inverse_matrix);
+    c_matrix_get_inverse(matrix, &inverse_matrix);
 
     /* Transpose it while converting it to 3x3 */
     normal_matrix[0] = inverse_matrix.xx;
@@ -2018,7 +2018,7 @@ entitygraph_pre_paint_cb(rut_object_t *object, int depth, void *user_data)
     cg_framebuffer_t *fb = rut_camera_get_framebuffer(camera);
 
     if (rut_object_is(object, RUT_TRAIT_ID_TRANSFORMABLE)) {
-        const cg_matrix_t *matrix = rut_transformable_get_matrix(object);
+        const c_matrix_t *matrix = rut_transformable_get_matrix(object);
         cg_framebuffer_push_matrix(fb);
         cg_framebuffer_transform(fb, matrix);
     }
@@ -2027,7 +2027,7 @@ entitygraph_pre_paint_cb(rut_object_t *object, int depth, void *user_data)
         rig_entity_t *entity = object;
         rig_material_t *material;
         rut_object_t *geometry;
-        cg_matrix_t matrix;
+        c_matrix_t matrix;
         rig_renderer_priv_t *priv;
 
         material =

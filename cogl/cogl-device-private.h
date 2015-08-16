@@ -134,8 +134,8 @@ struct _cg_device_t {
     CoglBitmask changed_bits_tmp;
 
     /* A few handy matrix constants */
-    cg_matrix_t identity_matrix;
-    cg_matrix_t y_flip_matrix;
+    c_matrix_t identity_matrix;
+    c_matrix_t y_flip_matrix;
 
     /* The matrix stack entries that should be flushed during the next
      * pipeline state flush */

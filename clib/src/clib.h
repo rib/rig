@@ -254,6 +254,37 @@ typedef uint32_t c_codepoint_t;
 #define _C_STATIC_ASSERT(EXPRESSION, MESSAGE)
 #endif
 
+/* To help catch accidental changes to public structs that should
+ * be stack allocated we use this macro to compile time assert that
+ * a struct size is as expected.
+ */
+#define _C_STRUCT_SIZE_ASSERT(TYPE, SIZE)           \
+    typedef struct {                                \
+        char compile_time_assert_##TYPE##_size      \
+        [(sizeof(TYPE) == (SIZE)) ? 1 : -1];        \
+    } _##TYPE##SizeCheck
+
+/* Some structures are meant to be opaque but they have public
+   definitions because we want the size to be public so they can be
+   allocated on the stack. This macro is used to ensure that users
+   don't accidentally access private members */
+#ifdef _C_COMPILATION
+#define _C_PRIVATE(x) x
+#else
+#define _C_PRIVATE(x) private_member_##x
+#endif
+
+/* We forward declare these to avoid circular dependencies
+ * between cmatrix.h, ceuler.h and cquaterion.h */
+typedef struct _c_matrix_t c_matrix_t;
+typedef struct _c_quaternion_t c_quaternion_t;
+typedef struct _c_euler_t c_euler_t;
+
+#include <cvector.h>
+#include <cmatrix.h>
+#include <ceuler.h>
+#include <cquaternion.h>
+
 /*
  * Allocation
  */

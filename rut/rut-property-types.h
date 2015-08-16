@@ -37,7 +37,7 @@ POINTER_TYPE(object, rut_object_t *, OBJECT)
 POINTER_TYPE(asset, rig_asset_t *, ASSET)
 POINTER_TYPE(pointer, void *, POINTER)
 
-COMPOSITE_TYPE(quaternion, cg_quaternion_t, QUATERNION)
+COMPOSITE_TYPE(quaternion, c_quaternion_t, QUATERNION)
 COMPOSITE_TYPE(color, cg_color_t, COLOR)
 
 ARRAY_TYPE(vec3, float, VEC3, 3)

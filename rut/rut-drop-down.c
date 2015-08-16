@@ -589,8 +589,8 @@ static void
 rut_drop_down_handle_click(rut_drop_down_t *drop,
                            rut_input_event_t *event)
 {
-    cg_matrix_t modelview;
-    const cg_matrix_t *projection;
+    c_matrix_t modelview;
+    const c_matrix_t *projection;
     rut_object_t *camera = rut_input_event_get_camera(event);
     float top_point[4];
     int i;
@@ -621,14 +621,14 @@ rut_drop_down_handle_click(rut_drop_down_t *drop,
     projection = rut_camera_get_projection(camera);
     top_point[0] = drop->selector_x;
     top_point[1] = drop->selector_height + drop->height;
-    cg_matrix_transform_points(&modelview,
+    c_matrix_transform_points(&modelview,
                                2, /* n_components */
                                sizeof(float) * 4, /* stride_in */
                                top_point, /* points_in */
                                sizeof(float) * 4, /* stride_out */
                                top_point, /* points_out */
                                1 /* n_points */);
-    cg_matrix_project_points(projection,
+    c_matrix_project_points(projection,
                              3, /* n_components */
                              sizeof(float) * 4, /* stride_in */
                              top_point, /* points_in */

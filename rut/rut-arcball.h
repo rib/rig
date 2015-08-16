@@ -37,7 +37,7 @@ C_BEGIN_DECLS
 typedef struct {
     float center[2], down[2];
     float radius;
-    cg_quaternion_t q_drag;
+    c_quaternion_t q_drag;
 
 } rut_arcball_t;
 

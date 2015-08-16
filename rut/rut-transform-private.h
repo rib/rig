@@ -39,7 +39,7 @@ struct _rut_transform_t {
 
     rut_graphable_props_t graphable;
 
-    cg_matrix_t matrix;
+    c_matrix_t matrix;
 };
 
 #endif /* _RUT_TRANSFORM_PRIVATE_H_ */

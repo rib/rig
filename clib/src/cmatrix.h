@@ -1,8 +1,4 @@
 /*
- * Cogl
- *
- * A Low-Level GPU Graphics and Utilities API
- *
  * Copyright (C) 2008,2009 Intel Corporation.
  *
  * Permission is hereby granted, free of charge, to any person
@@ -25,28 +21,16 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- *
- *
- * Authors:
- *   Robert Bragg <robert@linux.intel.com>
  */
 
-#ifndef __CG_MATRIX_H
-#define __CG_MATRIX_H
+#pragma once
 
-#include <cogl/cogl-defines.h>
+#include <clib.h>
 
-#ifdef CG_HAS_GTYPE_SUPPORT
-#include <glib-object.h>
-#endif /* CG_HAS_GTYPE_SUPPORT */
-
-#include "cogl-types.h"
-#include "cogl-quaternion.h"
-
-CG_BEGIN_DECLS
+C_BEGIN_DECLS
 
 /**
- * SECTION:cogl-matrix
+ * SECTION:cmatrix
  * @short_description: Functions for initializing and manipulating 4x4 matrices
  *
  * Matrices are used in Cogl to describe affine model-view transforms, texture
@@ -55,17 +39,17 @@ CG_BEGIN_DECLS
  */
 
 /**
- * cg_matrix_t:
+ * c_matrix_t:
  *
- * A cg_matrix_t holds a 4x4 transform matrix. This is a single precision,
+ * A c_matrix_t holds a 4x4 transform matrix. This is a single precision,
  * column-major matrix which means it is compatible with what OpenGL expects.
  *
- * A cg_matrix_t can represent transforms such as, rotations, scaling,
+ * A c_matrix_t can represent transforms such as, rotations, scaling,
  * translation, sheering, and linear projections. You can combine these
  * transforms by multiplying multiple matrices in the order you want them
  * applied.
  *
- * The transformation of a vertex (x, y, z, w) by a cg_matrix_t is given by:
+ * The transformation of a vertex (x, y, z, w) by a c_matrix_t is given by:
  *
  * |[
  *   x_new = xx * x + xy * y + xz * z + xw * w
@@ -76,13 +60,13 @@ CG_BEGIN_DECLS
  *
  * Where w is normally 1
  *
- * <note>You must consider the members of the cg_matrix_t structure read only,
- * and all matrix modifications must be done via the cg_matrix API. This
+ * <note>You must consider the members of the c_matrix_t structure read only,
+ * and all matrix modifications must be done via the c_matrix API. This
  * allows Cogl to annotate the matrices internally. Violation of this will give
  * undefined results. If you need to initialize a matrix with a constant other
- * than the identity matrix you can use cg_matrix_init_from_array().</note>
+ * than the identity matrix you can use c_matrix_init_from_array().</note>
  */
-struct _cg_matrix_t {
+struct _c_matrix_t {
     /* column 0 */
     float xx;
     float yx;
@@ -108,13 +92,13 @@ struct _cg_matrix_t {
     float ww;
 
     /*< private >*/
-    unsigned int CG_PRIVATE(type) : 16;
-    unsigned int CG_PRIVATE(flags) : 16;
+    unsigned int _C_PRIVATE(type) : 16;
+    unsigned int _C_PRIVATE(flags) : 16;
 };
-CG_STRUCT_SIZE_ASSERT(cg_matrix_t, sizeof(float) * 16 + 4);
+_C_STRUCT_SIZE_ASSERT(c_matrix_t, sizeof(float) * 16 + 4);
 
 /**
- * cg_matrix_init_identity:
+ * c_matrix_init_identity:
  * @matrix: A 4x4 transformation matrix
  *
  * Resets matrix to the identity matrix:
@@ -126,10 +110,10 @@ CG_STRUCT_SIZE_ASSERT(cg_matrix_t, sizeof(float) * 16 + 4);
  *   .wx=0; .wy=0; .wz=0; .ww=1;
  * ]|
  */
-void cg_matrix_init_identity(cg_matrix_t *matrix);
+void c_matrix_init_identity(c_matrix_t *matrix);
 
 /**
- * cg_matrix_init_translation:
+ * c_matrix_init_translation:
  * @matrix: A 4x4 transformation matrix
  * @tx: x coordinate of the translation vector
  * @ty: y coordinate of the translation vector
@@ -146,10 +130,10 @@ void cg_matrix_init_identity(cg_matrix_t *matrix);
  *
  */
 void
-cg_matrix_init_translation(cg_matrix_t *matrix, float tx, float ty, float tz);
+c_matrix_init_translation(c_matrix_t *matrix, float tx, float ty, float tz);
 
 /**
- * cg_matrix_multiply:
+ * c_matrix_multiply:
  * @result: The address of a 4x4 matrix to store the result in
  * @a: A 4x4 transformation matrix
  * @b: A 4x4 transformation matrix
@@ -160,12 +144,12 @@ cg_matrix_init_translation(cg_matrix_t *matrix, float tx, float ty, float tz);
  * <note>It is possible to multiply the @a matrix in-place, so
  * @result can be equal to @a but can't be equal to @b.</note>
  */
-void cg_matrix_multiply(cg_matrix_t *result,
-                        const cg_matrix_t *a,
-                        const cg_matrix_t *b);
+void c_matrix_multiply(c_matrix_t *result,
+                        const c_matrix_t *a,
+                        const c_matrix_t *b);
 
 /**
- * cg_matrix_rotate:
+ * c_matrix_rotate:
  * @matrix: A 4x4 transformation matrix
  * @angle: The angle you want to rotate in degrees
  * @x: X component of your rotation vector
@@ -176,33 +160,33 @@ void cg_matrix_multiply(cg_matrix_t *result,
  * of @angle degrees around the specified 3D vector.
  */
 void
-cg_matrix_rotate(cg_matrix_t *matrix, float angle, float x, float y, float z);
+c_matrix_rotate(c_matrix_t *matrix, float angle, float x, float y, float z);
 
 /**
- * cg_matrix_rotate_quaternion:
+ * c_matrix_rotate_quaternion:
  * @matrix: A 4x4 transformation matrix
  * @quaternion: A quaternion describing a rotation
  *
  * Multiplies @matrix with a rotation transformation described by the
- * given #cg_quaternion_t.
+ * given #c_quaternion_t.
  *
  */
-void cg_matrix_rotate_quaternion(cg_matrix_t *matrix,
-                                 const cg_quaternion_t *quaternion);
+void c_matrix_rotate_quaternion(c_matrix_t *matrix,
+                                 const c_quaternion_t *quaternion);
 
 /**
- * cg_matrix_rotate_euler:
+ * c_matrix_rotate_euler:
  * @matrix: A 4x4 transformation matrix
  * @euler: A euler describing a rotation
  *
  * Multiplies @matrix with a rotation transformation described by the
- * given #cg_euler_t.
+ * given #c_euler_t.
  *
  */
-void cg_matrix_rotate_euler(cg_matrix_t *matrix, const cg_euler_t *euler);
+void c_matrix_rotate_euler(c_matrix_t *matrix, const c_euler_t *euler);
 
 /**
- * cg_matrix_translate:
+ * c_matrix_translate:
  * @matrix: A 4x4 transformation matrix
  * @x: The X translation you want to apply
  * @y: The Y translation you want to apply
@@ -211,10 +195,10 @@ void cg_matrix_rotate_euler(cg_matrix_t *matrix, const cg_euler_t *euler);
  * Multiplies @matrix with a transform matrix that translates along
  * the X, Y and Z axis.
  */
-void cg_matrix_translate(cg_matrix_t *matrix, float x, float y, float z);
+void c_matrix_translate(c_matrix_t *matrix, float x, float y, float z);
 
 /**
- * cg_matrix_scale:
+ * c_matrix_scale:
  * @matrix: A 4x4 transformation matrix
  * @sx: The X scale factor
  * @sy: The Y scale factor
@@ -223,10 +207,10 @@ void cg_matrix_translate(cg_matrix_t *matrix, float x, float y, float z);
  * Multiplies @matrix with a transform matrix that scales along the X,
  * Y and Z axis.
  */
-void cg_matrix_scale(cg_matrix_t *matrix, float sx, float sy, float sz);
+void c_matrix_scale(c_matrix_t *matrix, float sx, float sy, float sz);
 
 /**
- * cg_matrix_look_at:
+ * c_matrix_look_at:
  * @matrix: A 4x4 transformation matrix
  * @eye_position_x: The X coordinate to look from
  * @eye_position_y: The Y coordinate to look from
@@ -267,7 +251,7 @@ void cg_matrix_scale(cg_matrix_t *matrix, float sx, float sy, float sz);
  *
  * Stability: unstable
  */
-void cg_matrix_look_at(cg_matrix_t *matrix,
+void c_matrix_look_at(c_matrix_t *matrix,
                        float eye_position_x,
                        float eye_position_y,
                        float eye_position_z,
@@ -279,7 +263,7 @@ void cg_matrix_look_at(cg_matrix_t *matrix,
                        float world_up_z);
 
 /**
- * cg_matrix_frustum:
+ * c_matrix_frustum:
  * @matrix: A 4x4 transformation matrix
  * @left: X position of the left clipping plane where it
  *   intersects the near clipping plane
@@ -294,7 +278,7 @@ void cg_matrix_look_at(cg_matrix_t *matrix,
  *
  * Multiplies @matrix by the given frustum perspective matrix.
  */
-void cg_matrix_frustum(cg_matrix_t *matrix,
+void c_matrix_frustum(c_matrix_t *matrix,
                        float left,
                        float right,
                        float bottom,
@@ -303,7 +287,7 @@ void cg_matrix_frustum(cg_matrix_t *matrix,
                        float z_far);
 
 /**
- * cg_matrix_perspective:
+ * c_matrix_perspective:
  * @matrix: A 4x4 transformation matrix
  * @fov_y: Vertical field of view angle in degrees.
  * @aspect: The (width over height) aspect ratio for display
@@ -318,11 +302,11 @@ void cg_matrix_frustum(cg_matrix_t *matrix,
  * since there wont be enough precision to identify the depth of
  * objects near to each other.</note>
  */
-void cg_matrix_perspective(
-    cg_matrix_t *matrix, float fov_y, float aspect, float z_near, float z_far);
+void c_matrix_perspective(
+    c_matrix_t *matrix, float fov_y, float aspect, float z_near, float z_far);
 
 /**
- * cg_matrix_orthographic:
+ * c_matrix_orthographic:
  * @matrix: A 4x4 transformation matrix
  * @x_1: The x coordinate for the first vertical clipping plane
  * @y_1: The y coordinate for the first horizontal clipping plane
@@ -339,7 +323,7 @@ void cg_matrix_perspective(
  *
  * Stability: unstable
  */
-void cg_matrix_orthographic(cg_matrix_t *matrix,
+void c_matrix_orthographic(c_matrix_t *matrix,
                             float x_1,
                             float y_1,
                             float x_2,
@@ -348,7 +332,7 @@ void cg_matrix_orthographic(cg_matrix_t *matrix,
                             float far);
 
 /**
- * cg_matrix_view_2d_in_frustum:
+ * c_matrix_view_2d_in_frustum:
  * @matrix: A 4x4 transformation matrix
  * @left: coord of left vertical clipping plane
  * @right: coord of right vertical clipping plane
@@ -358,7 +342,7 @@ void cg_matrix_orthographic(cg_matrix_t *matrix,
  *   a positive number.
  * @z_2d: The distance to the 2D plane. (Should always be positive and
  *   be between @z_near and the z_far value that was passed to
- *   cg_matrix_frustum())
+ *   c_matrix_frustum())
  * @width_2d: The width of the 2D coordinate system
  * @height_2d: The height of the 2D coordinate system
  *
@@ -368,7 +352,7 @@ void cg_matrix_orthographic(cg_matrix_t *matrix,
  *
  * Note: this doesn't multiply the matrix by any projection matrix,
  * but it assumes you have a perspective projection as defined by
- * passing the corresponding arguments to cg_matrix_frustum().
+ * passing the corresponding arguments to c_matrix_frustum().
 
  * Toolkits such as Clutter that mix 2D and 3D drawing can use this to
  * create a 2D coordinate system within a 3D perspective projected
@@ -376,7 +360,7 @@ void cg_matrix_orthographic(cg_matrix_t *matrix,
  *
  * Stability: unstable
  */
-void cg_matrix_view_2d_in_frustum(cg_matrix_t *matrix,
+void c_matrix_view_2d_in_frustum(c_matrix_t *matrix,
                                   float left,
                                   float right,
                                   float bottom,
@@ -387,7 +371,7 @@ void cg_matrix_view_2d_in_frustum(cg_matrix_t *matrix,
                                   float height_2d);
 
 /**
- * cg_matrix_view_2d_in_perspective:
+ * c_matrix_view_2d_in_perspective:
  * @fov_y: A field of view angle for the Y axis
  * @aspect: The ratio of width to height determining the field of view angle
  *   for the x axis.
@@ -395,7 +379,7 @@ void cg_matrix_view_2d_in_frustum(cg_matrix_t *matrix,
  *   a positive number.
  * @z_2d: The distance to the 2D plane. (Should always be positive and
  *   be between @z_near and the z_far value that was passed to
- *   cg_matrix_frustum())
+ *   c_matrix_frustum())
  * @width_2d: The width of the 2D coordinate system
  * @height_2d: The height of the 2D coordinate system
  *
@@ -405,7 +389,7 @@ void cg_matrix_view_2d_in_frustum(cg_matrix_t *matrix,
  *
  * Note: this doesn't multiply the matrix by any projection matrix,
  * but it assumes you have a perspective projection as defined by
- * passing the corresponding arguments to cg_matrix_perspective().
+ * passing the corresponding arguments to c_matrix_perspective().
  *
  * Toolkits such as Clutter that mix 2D and 3D drawing can use this to
  * create a 2D coordinate system within a 3D perspective projected
@@ -413,7 +397,7 @@ void cg_matrix_view_2d_in_frustum(cg_matrix_t *matrix,
  *
  * Stability: unstable
  */
-void cg_matrix_view_2d_in_perspective(cg_matrix_t *matrix,
+void c_matrix_view_2d_in_perspective(c_matrix_t *matrix,
                                       float fov_y,
                                       float aspect,
                                       float z_near,
@@ -422,45 +406,45 @@ void cg_matrix_view_2d_in_perspective(cg_matrix_t *matrix,
                                       float height_2d);
 
 /**
- * cg_matrix_init_from_array:
+ * c_matrix_init_from_array:
  * @matrix: A 4x4 transformation matrix
  * @array: A linear array of 16 floats (column-major order)
  *
  * Initializes @matrix with the contents of @array
  */
-void cg_matrix_init_from_array(cg_matrix_t *matrix, const float *array);
+void c_matrix_init_from_array(c_matrix_t *matrix, const float *array);
 
 /**
- * cg_matrix_get_array:
+ * c_matrix_get_array:
  * @matrix: A 4x4 transformation matrix
  *
  * Casts @matrix to a float array which can be directly passed to OpenGL.
  *
  * Return value: a pointer to the float array
  */
-const float *cg_matrix_get_array(const cg_matrix_t *matrix);
+const float *c_matrix_get_array(const c_matrix_t *matrix);
 
 /**
- * cg_matrix_init_from_quaternion:
+ * c_matrix_init_from_quaternion:
  * @matrix: A 4x4 transformation matrix
- * @quaternion: A #cg_quaternion_t
+ * @quaternion: A #c_quaternion_t
  *
- * Initializes @matrix from a #cg_quaternion_t rotation.
+ * Initializes @matrix from a #c_quaternion_t rotation.
  */
-void cg_matrix_init_from_quaternion(cg_matrix_t *matrix,
-                                    const cg_quaternion_t *quaternion);
+void c_matrix_init_from_quaternion(c_matrix_t *matrix,
+                                    const c_quaternion_t *quaternion);
 
 /**
- * cg_matrix_init_from_euler:
+ * c_matrix_init_from_euler:
  * @matrix: A 4x4 transformation matrix
- * @euler: A #cg_euler_t
+ * @euler: A #c_euler_t
  *
- * Initializes @matrix from a #cg_euler_t rotation.
+ * Initializes @matrix from a #c_euler_t rotation.
  */
-void cg_matrix_init_from_euler(cg_matrix_t *matrix, const cg_euler_t *euler);
+void c_matrix_init_from_euler(c_matrix_t *matrix, const c_euler_t *euler);
 
 /**
- * cg_matrix_equal:
+ * c_matrix_equal:
  * @v1: A 4x4 transformation matrix
  * @v2: A 4x4 transformation matrix
  *
@@ -470,43 +454,43 @@ void cg_matrix_init_from_euler(cg_matrix_t *matrix, const cg_euler_t *euler);
  * inverse matrix these are not considered in the comparison.
  *
  */
-bool cg_matrix_equal(const void *v1, const void *v2);
+bool c_matrix_equal(const void *v1, const void *v2);
 
 /**
- * cg_matrix_copy:
+ * c_matrix_copy:
  * @matrix: A 4x4 transformation matrix you want to copy
  *
- * Allocates a new #cg_matrix_t on the heap and initializes it with
+ * Allocates a new #c_matrix_t on the heap and initializes it with
  * the same values as @matrix.
  *
- * Return value: (transfer full): A newly allocated #cg_matrix_t which
- * should be freed using cg_matrix_free()
+ * Return value: (transfer full): A newly allocated #c_matrix_t which
+ * should be freed using c_matrix_free()
  *
  */
-cg_matrix_t *cg_matrix_copy(const cg_matrix_t *matrix);
+c_matrix_t *c_matrix_copy(const c_matrix_t *matrix);
 
 /**
- * cg_matrix_free:
+ * c_matrix_free:
  * @matrix: A 4x4 transformation matrix you want to free
  *
- * Frees a #cg_matrix_t that was previously allocated via a call to
- * cg_matrix_copy().
+ * Frees a #c_matrix_t that was previously allocated via a call to
+ * c_matrix_copy().
  *
  */
-void cg_matrix_free(cg_matrix_t *matrix);
+void c_matrix_free(c_matrix_t *matrix);
 
 /**
- * cg_matrix_get_inverse:
+ * c_matrix_get_inverse:
  * @matrix: A 4x4 transformation matrix
  * @inverse: (out): The destination for a 4x4 inverse transformation matrix
  *
  * Gets the inverse transform of a given matrix and uses it to initialize
- * a new #cg_matrix_t.
+ * a new #c_matrix_t.
  *
  * <note>Although the first parameter is annotated as const to indicate
  * that the transform it represents isn't modified this function may
  * technically save a copy of the inverse transform within the given
- * #cg_matrix_t so that subsequent requests for the inverse transform may
+ * #c_matrix_t so that subsequent requests for the inverse transform may
  * avoid costly inversion calculations.</note>
  *
  * Return value: %true if the inverse was successfully calculated or %false
@@ -514,14 +498,14 @@ void cg_matrix_free(cg_matrix_t *matrix);
  *   @inverse matrix will simply be initialized with the identity matrix)
  *
  */
-bool cg_matrix_get_inverse(const cg_matrix_t *matrix, cg_matrix_t *inverse);
+bool c_matrix_get_inverse(const c_matrix_t *matrix, c_matrix_t *inverse);
 
-/* FIXME: to be consistent with cg_matrix_{transform,project}_points
- * this could be renamed to cg_matrix_project_point for Cogl 2.0...
+/* FIXME: to be consistent with c_matrix_{transform,project}_points
+ * this could be renamed to c_matrix_project_point for Cogl 2.0...
  */
 
 /**
- * cg_matrix_transform_point:
+ * c_matrix_transform_point:
  * @matrix: A 4x4 transformation matrix
  * @x: (inout): The X component of your points position
  * @y: (inout): The Y component of your points position
@@ -531,11 +515,11 @@ bool cg_matrix_get_inverse(const cg_matrix_t *matrix, cg_matrix_t *inverse);
  * Transforms a point whos position is given and returned as four float
  * components.
  */
-void cg_matrix_transform_point(
-    const cg_matrix_t *matrix, float *x, float *y, float *z, float *w);
+void c_matrix_transform_point(
+    const c_matrix_t *matrix, float *x, float *y, float *z, float *w);
 
 /**
- * cg_matrix_transform_points:
+ * c_matrix_transform_points:
  * @matrix: A transformation matrix
  * @n_components: The number of position components for each input point.
  *                (either 2 or 3)
@@ -552,7 +536,7 @@ void cg_matrix_transform_point(
  * transform in-place.
  *
  * If you need to transform 4 component points see
- * cg_matrix_project_points().
+ * c_matrix_project_points().
  *
  * Here's an example with differing input/output strides:
  * |[
@@ -567,12 +551,12 @@ void cg_matrix_transform_point(
  * } MyOutVertex;
  * MyInVertex vertices[N_VERTICES];
  * MyOutVertex results[N_VERTICES];
- * cg_matrix_t matrix;
+ * c_matrix_t matrix;
  *
  * my_load_vertices (vertices);
  * my_get_matrix (&matrix);
  *
- * cg_matrix_transform_points (&matrix,
+ * c_matrix_transform_points (&matrix,
  *                               2,
  *                               sizeof (MyInVertex),
  *                               &vertices[0].x,
@@ -583,7 +567,7 @@ void cg_matrix_transform_point(
  *
  * Stability: unstable
  */
-void cg_matrix_transform_points(const cg_matrix_t *matrix,
+void c_matrix_transform_points(const c_matrix_t *matrix,
                                 int n_components,
                                 size_t stride_in,
                                 const void *points_in,
@@ -592,7 +576,7 @@ void cg_matrix_transform_points(const cg_matrix_t *matrix,
                                 int n_points);
 
 /**
- * cg_matrix_project_points:
+ * c_matrix_project_points:
  * @matrix: A projection matrix
  * @n_components: The number of position components for each input point.
  *                (either 2, 3 or 4)
@@ -621,12 +605,12 @@ void cg_matrix_transform_points(const cg_matrix_t *matrix,
  * } MyOutVertex;
  * MyInVertex vertices[N_VERTICES];
  * MyOutVertex results[N_VERTICES];
- * cg_matrix_t matrix;
+ * c_matrix_t matrix;
  *
  * my_load_vertices (vertices);
  * my_get_matrix (&matrix);
  *
- * cg_matrix_project_points (&matrix,
+ * c_matrix_project_points (&matrix,
  *                             2,
  *                             sizeof (MyInVertex),
  *                             &vertices[0].x,
@@ -637,7 +621,7 @@ void cg_matrix_transform_points(const cg_matrix_t *matrix,
  *
  * Stability: unstable
  */
-void cg_matrix_project_points(const cg_matrix_t *matrix,
+void c_matrix_project_points(const c_matrix_t *matrix,
                               int n_components,
                               size_t stride_in,
                               const void *points_in,
@@ -646,49 +630,34 @@ void cg_matrix_project_points(const cg_matrix_t *matrix,
                               int n_points);
 
 /**
- * cg_matrix_is_identity:
- * @matrix: A #cg_matrix_t
+ * c_matrix_is_identity:
+ * @matrix: A #c_matrix_t
  *
  * Determines if the given matrix is an identity matrix.
  *
  * Returns: %true if @matrix is an identity matrix else %false
  */
-bool cg_matrix_is_identity(const cg_matrix_t *matrix);
+bool c_matrix_is_identity(const c_matrix_t *matrix);
 
 /**
- * cg_matrix_transpose:
- * @matrix: A #cg_matrix_t
+ * c_matrix_transpose:
+ * @matrix: A #c_matrix_t
  *
  * Replaces @matrix with its transpose. Ie, every element (i,j) in the
  * new matrix is taken from element (j,i) in the old matrix.
  *
  */
-void cg_matrix_transpose(cg_matrix_t *matrix);
+void c_matrix_transpose(c_matrix_t *matrix);
 
 /**
  * cg_debug_matrix_print:
- * @matrix: A #cg_matrix_t
+ * @matrix: A #c_matrix_t
  *
- * Prints the contents of a #cg_matrix_t to stdout.
+ * Prints the contents of a #c_matrix_t to stdout.
  *
  */
-void cg_debug_matrix_print(const cg_matrix_t *matrix);
+void c_matrix_print(const c_matrix_t *matrix);
 
-#ifdef CG_HAS_GTYPE_SUPPORT
+void c_matrix_prefix_print(const char *prefix, const c_matrix_t *matrix);
 
-#define CG_GTYPE_TYPE_MATRIX (cg_gtype_matrix_get_type())
-
-/**
- * cg_gtype_matrix_get_type:
- *
- * Returns: the GType for the registered "cg_matrix_t" boxed type. This
- * can be used for example to define GObject properties that accept a
- * #cg_matrix_t value.
- */
-GType cg_gtype_matrix_get_type(void);
-
-#endif /* CG_HAS_GTYPE_SUPPORT */
-
-CG_END_DECLS
-
-#endif /* __CG_MATRIX_H */
+C_END_DECLS

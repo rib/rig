@@ -610,20 +610,20 @@ rig_ui_code_modules_handle_input(rig_ui_t *ui, rut_input_event_t *event)
 }
 
 static void
-transform_ray(cg_matrix_t *transform,
+transform_ray(c_matrix_t *transform,
               bool inverse_transform,
               float ray_origin[3],
               float ray_direction[3])
 {
-    cg_matrix_t inverse, normal_matrix, *m;
+    c_matrix_t inverse, normal_matrix, *m;
 
     m = transform;
     if (inverse_transform) {
-        cg_matrix_get_inverse(transform, &inverse);
+        c_matrix_get_inverse(transform, &inverse);
         m = &inverse;
     }
 
-    cg_matrix_transform_points(m,
+    c_matrix_transform_points(m,
                                3, /* num components for input */
                                sizeof(float) * 3, /* input stride */
                                ray_origin,
@@ -631,8 +631,8 @@ transform_ray(cg_matrix_t *transform,
                                ray_origin,
                                1 /* n_points */);
 
-    cg_matrix_get_inverse(m, &normal_matrix);
-    cg_matrix_transpose(&normal_matrix);
+    c_matrix_get_inverse(m, &normal_matrix);
+    c_matrix_transpose(&normal_matrix);
 
     rut_util_transform_normal(&normal_matrix,
                               &ray_direction[0],
@@ -660,7 +660,7 @@ entitygraph_pre_pick_cb(rut_object_t *object, int depth, void *user_data)
     pick_context_t *pick_ctx = user_data;
 
     if (rut_object_is(object, RUT_TRAIT_ID_TRANSFORMABLE)) {
-        const cg_matrix_t *matrix = rut_transformable_get_matrix(object);
+        const c_matrix_t *matrix = rut_transformable_get_matrix(object);
         rut_matrix_stack_push(pick_ctx->matrix_stack);
         rut_matrix_stack_multiply(pick_ctx->matrix_stack, matrix);
     }
@@ -674,7 +674,7 @@ entitygraph_pre_pick_cb(rut_object_t *object, int depth, void *user_data)
         bool hit;
         float transformed_ray_origin[3];
         float transformed_ray_direction[3];
-        cg_matrix_t transform;
+        c_matrix_t transform;
         rut_object_t *input;
 
         input = rig_entity_get_component(entity, RUT_COMPONENT_TYPE_INPUT);
@@ -732,7 +732,7 @@ entitygraph_pre_pick_cb(rut_object_t *object, int depth, void *user_data)
                                       &distance);
 
         if (hit) {
-            const cg_matrix_t *view =
+            const c_matrix_t *view =
                 rut_camera_get_view_transform(pick_ctx->camera);
             float w = 1;
 
@@ -748,12 +748,12 @@ entitygraph_pre_pick_cb(rut_object_t *object, int depth, void *user_data)
             transformed_ray_direction[1] += transformed_ray_origin[1];
             transformed_ray_direction[2] += transformed_ray_origin[2];
 
-            cg_matrix_transform_point(&transform,
+            c_matrix_transform_point(&transform,
                                       &transformed_ray_direction[0],
                                       &transformed_ray_direction[1],
                                       &transformed_ray_direction[2],
                                       &w);
-            cg_matrix_transform_point(view,
+            c_matrix_transform_point(view,
                                       &transformed_ray_direction[0],
                                       &transformed_ray_direction[1],
                                       &transformed_ray_direction[2],
@@ -829,9 +829,9 @@ pick_for_camera(rig_ui_t *ui,
 {
     float ray_position[3], ray_direction[3], screen_pos[2];
     const float *viewport;
-    const cg_matrix_t *inverse_projection;
-    const cg_matrix_t *camera_view;
-    cg_matrix_t camera_transform;
+    const c_matrix_t *inverse_projection;
+    const c_matrix_t *camera_view;
+    c_matrix_t camera_transform;
     rut_object_t *picked_entity;
 
     rig_entity_set_camera_view_from_transform(camera);
@@ -843,7 +843,7 @@ pick_for_camera(rig_ui_t *ui,
     // cg_debug_matrix_print(inverse_projection);
 
     camera_view = rut_camera_get_view_transform(camera_component);
-    cg_matrix_get_inverse(camera_view, &camera_transform);
+    c_matrix_get_inverse(camera_view, &camera_transform);
 
     // c_debug("Camera transform:\n");
     // cg_debug_matrix_print (&camera_transform);

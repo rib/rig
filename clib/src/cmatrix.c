@@ -1,8 +1,4 @@
 /*
- * Cogl
- *
- * A Low-Level GPU Graphics and Utilities API
- *
  * Copyright (C) 2009,2010,2011 Intel Corporation.
  * Copyright (C) 1999-2005  Brian Paul   All Rights Reserved.
  *
@@ -25,9 +21,6 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
- * Authors:
- *   Robert Bragg <robert@linux.intel.com>
  */
 /*
  * Copyright (C) 1999-2005  Brian Paul   All Rights Reserved.
@@ -56,35 +49,32 @@
  * Changes compared to the original code from Mesa:
  *
  * - instead of allocating matrix->m and matrix->inv using malloc, our
- *   public cg_matrix_t typedef is large enough to directly contain the
+ *   public c_matrix_t typedef is large enough to directly contain the
  *   matrix, a type and a set of flags and although we originally also
  *   had a type large enough to hold the inverse we since decided to
  *   leave caching the inverse to applications.
- * - instead of having a _cg_matrix_analyse which updates the type,
- *   flags and inverse, we have _cg_matrix_get_inverse which will
- *   use _cg_matrix_update_type_and_flags() and calculate an
+ * - instead of having a _c_matrix_analyse which updates the type,
+ *   flags and inverse, we have _c_matrix_get_inverse which will
+ *   use _c_matrix_update_type_and_flags() and calculate an
  *   inverse.
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
-#include <cogl-util.h>
-#include <cogl-debug.h>
-#include <cogl-quaternion.h>
-#include <cogl-quaternion-private.h>
-#include <cogl-matrix.h>
-#include <cogl-matrix-private.h>
-#include <cogl-quaternion-private.h>
-
-#include <clib.h>
 #include <math.h>
 #include <string.h>
 
-#ifdef CG_HAS_GTYPE_SUPPORT
-#include <cogl-gtype-private.h>
-CG_GTYPE_DEFINE_BOXED("Matrix", matrix, cg_matrix_copy, cg_matrix_free);
+#include <clib.h>
+
+#include "cquaternion-private.h"
+
+#define _MATRIX_DEBUG_PRINT(MATRIX) do {} while(0)
+#if 0
+#define _MATRIX_DEBUG_PRINT(MATRIX)                         \
+    do {  \
+        c_print("%s:\n", C_STRFUNC);                        \
+        c_matrix_print(MATRIX);                            \
+    } while(0)
 #endif
 
 /*
@@ -103,15 +93,15 @@ CG_GTYPE_DEFINE_BOXED("Matrix", matrix, cg_matrix_copy, cg_matrix_free);
  * These identify different kinds of 4x4 transformation matrices and we use
  * this information to find fast-paths when available.
  */
-enum cg_matrix_type_t {
-    CG_MATRIX_TYPE_GENERAL, /**< general 4x4 matrix */
-    CG_MATRIX_TYPE_IDENTITY, /**< identity matrix */
-    CG_MATRIX_TYPE_3D_NO_ROT, /**< orthogonal projection and others... */
-    CG_MATRIX_TYPE_PERSPECTIVE, /**< perspective projection matrix */
-    CG_MATRIX_TYPE_2D, /**< 2-D transformation */
-    CG_MATRIX_TYPE_2D_NO_ROT, /**< 2-D scale & translate only */
-    CG_MATRIX_TYPE_3D, /**< 3-D transformation */
-    CG_MATRIX_N_TYPES
+enum c_matrix_type_t {
+    C_MATRIX_TYPE_GENERAL, /**< general 4x4 matrix */
+    C_MATRIX_TYPE_IDENTITY, /**< identity matrix */
+    C_MATRIX_TYPE_3D_NO_ROT, /**< orthogonal projection and others... */
+    C_MATRIX_TYPE_PERSPECTIVE, /**< perspective projection matrix */
+    C_MATRIX_TYPE_2D, /**< 2-D transformation */
+    C_MATRIX_TYPE_2D_NO_ROT, /**< 2-D scale & translate only */
+    C_MATRIX_TYPE_3D, /**< 3-D transformation */
+    C_MATRIX_N_TYPES
 };
 
 #define DEG2RAD (C_PI / 180.0)
@@ -141,7 +131,7 @@ enum cg_matrix_type_t {
 /*
  * \defgroup MatFlags MAT_FLAG_XXX-flags
  *
- * Bitmasks to indicate different kinds of 4x4 matrices in cg_matrix_t::flags
+ * Bitmasks to indicate different kinds of 4x4 matrices in c_matrix_t::flags
  */
 #define MAT_FLAG_IDENTITY                                                      \
     0 /*< is an identity matrix flag. \
@@ -184,7 +174,7 @@ enum cg_matrix_type_t {
 /*
  * Test geometry related matrix flags.
  *
- * @mat a pointer to a cg_matrix_t structure.
+ * @mat a pointer to a c_matrix_t structure.
  * @a flags mask.
  *
  * Returns: non-zero if all geometry related matrix flags are contained within
@@ -194,13 +184,13 @@ enum cg_matrix_type_t {
     ((MAT_FLAGS_GEOMETRY &(~(a)) & ((mat)->flags)) == 0)
 
 /*
- * Names of the corresponding cg_matrix_type_t values.
+ * Names of the corresponding c_matrix_type_t values.
  */
 static const char *types[] = {
-    "CG_MATRIX_TYPE_GENERAL",   "CG_MATRIX_TYPE_IDENTITY",
-    "CG_MATRIX_TYPE_3D_NO_ROT", "CG_MATRIX_TYPE_PERSPECTIVE",
-    "CG_MATRIX_TYPE_2D",        "CG_MATRIX_TYPE_2D_NO_ROT",
-    "CG_MATRIX_TYPE_3D"
+    "C_MATRIX_TYPE_GENERAL",   "C_MATRIX_TYPE_IDENTITY",
+    "C_MATRIX_TYPE_3D_NO_ROT", "C_MATRIX_TYPE_PERSPECTIVE",
+    "C_MATRIX_TYPE_2D",        "C_MATRIX_TYPE_2D_NO_ROT",
+    "C_MATRIX_TYPE_3D"
 };
 
 /*
@@ -265,7 +255,7 @@ matrix_multiply3x4(float *result, const float *a, const float *b)
 /*
  * Multiply a matrix by an array of floats with known properties.
  *
- * @mat pointer to a cg_matrix_t structure containing the left multiplication
+ * @mat pointer to a c_matrix_t structure containing the left multiplication
  * matrix, and that will receive the product result.
  * @m right multiplication matrix array.
  * @flags flags of the matrix \p m.
@@ -275,7 +265,7 @@ matrix_multiply3x4(float *result, const float *a, const float *b)
  * otherwise.
  */
 static void
-matrix_multiply_array_with_flags(cg_matrix_t *result,
+matrix_multiply_array_with_flags(c_matrix_t *result,
                                  const float *array,
                                  unsigned int flags)
 {
@@ -292,9 +282,9 @@ matrix_multiply_array_with_flags(cg_matrix_t *result,
  * otherwise.
  */
 static void
-_cg_matrix_multiply(cg_matrix_t *result,
-                    const cg_matrix_t *a,
-                    const cg_matrix_t *b)
+_c_matrix_multiply(c_matrix_t *result,
+                    const c_matrix_t *a,
+                    const c_matrix_t *b)
 {
     result->flags = (a->flags | b->flags | MAT_DIRTY_TYPE);
 
@@ -305,12 +295,12 @@ _cg_matrix_multiply(cg_matrix_t *result,
 }
 
 void
-cg_matrix_multiply(cg_matrix_t *result,
-                   const cg_matrix_t *a,
-                   const cg_matrix_t *b)
+c_matrix_multiply(c_matrix_t *result,
+                   const c_matrix_t *a,
+                   const c_matrix_t *b)
 {
-    _cg_matrix_multiply(result, a, b);
-    _CG_MATRIX_DEBUG_PRINT(result);
+    _c_matrix_multiply(result, a, b);
+    _MATRIX_DEBUG_PRINT(result);
 }
 
 #if 0
@@ -318,7 +308,7 @@ cg_matrix_multiply(cg_matrix_t *result,
  * Calls matrix_multiply4x4() for the multiplication.
  */
 static void
-_cg_matrix_multiply_array (cg_matrix_t *result, const float *array)
+_c_matrix_multiply_array (c_matrix_t *result, const float *array)
 {
     result->flags |= (MAT_FLAG_GENERAL |
                       MAT_DIRTY_TYPE |
@@ -331,7 +321,7 @@ _cg_matrix_multiply_array (cg_matrix_t *result, const float *array)
 /*
  * Print a matrix array.
  *
- * Called by _cg_matrix_print() to print a matrix or its inverse.
+ * Called by _c_matrix_print() to print a matrix or its inverse.
  */
 static void
 print_matrix_floats(const char *prefix, const float m[16])
@@ -343,10 +333,10 @@ print_matrix_floats(const char *prefix, const float m[16])
 }
 
 void
-_cg_matrix_prefix_print(const char *prefix, const cg_matrix_t *matrix)
+c_matrix_prefix_print(const char *prefix, const c_matrix_t *matrix)
 {
     if (!(matrix->flags & MAT_DIRTY_TYPE)) {
-        c_return_if_fail(matrix->type < CG_MATRIX_N_TYPES);
+        c_return_if_fail(matrix->type < C_MATRIX_N_TYPES);
         c_print("%sMatrix type: %s, flags: %x\n",
                 prefix,
                 types[matrix->type],
@@ -359,12 +349,12 @@ _cg_matrix_prefix_print(const char *prefix, const cg_matrix_t *matrix)
 }
 
 /*
- * Dumps the contents of a cg_matrix_t structure.
+ * Dumps the contents of a c_matrix_t structure.
  */
 void
-cg_debug_matrix_print(const cg_matrix_t *matrix)
+c_matrix_print(const c_matrix_t *matrix)
 {
-    _cg_matrix_prefix_print("", matrix);
+    c_matrix_prefix_print("", matrix);
 }
 
 /*
@@ -372,24 +362,24 @@ cg_debug_matrix_print(const cg_matrix_t *matrix)
  *
  * @mat matrix.
  *
- * Copies ::identity into \p cg_matrix_t::m, and into cg_matrix_t::inv if
+ * Copies ::identity into \p c_matrix_t::m, and into c_matrix_t::inv if
  * not NULL. Sets the matrix type to identity, resets the flags. It
  * doesn't initialize the inverse matrix, it just marks it dirty.
  */
 static void
-_cg_matrix_init_identity(cg_matrix_t *matrix)
+_c_matrix_init_identity(c_matrix_t *matrix)
 {
     memcpy(matrix, identity, 16 * sizeof(float));
 
-    matrix->type = CG_MATRIX_TYPE_IDENTITY;
+    matrix->type = C_MATRIX_TYPE_IDENTITY;
     matrix->flags = 0;
 }
 
 void
-cg_matrix_init_identity(cg_matrix_t *matrix)
+c_matrix_init_identity(c_matrix_t *matrix)
 {
-    _cg_matrix_init_identity(matrix);
-    _CG_MATRIX_DEBUG_PRINT(matrix);
+    _c_matrix_init_identity(matrix);
+    _MATRIX_DEBUG_PRINT(matrix);
 }
 
 /*
@@ -420,8 +410,8 @@ cg_matrix_init_identity(cg_matrix_t *matrix)
 /*
  * Compute inverse of 4x4 transformation matrix.
  *
- * @mat pointer to a cg_matrix_t structure. The matrix inverse will be
- * stored in the cg_matrix_t::inv attribute.
+ * @mat pointer to a c_matrix_t structure. The matrix inverse will be
+ * stored in the c_matrix_t::inv attribute.
  *
  * Returns: %true for success, %false for failure (\p singular matrix).
  *
@@ -433,7 +423,7 @@ cg_matrix_init_identity(cg_matrix_t *matrix)
  * unrolled.
  */
 static bool
-invert_matrix_general(cg_matrix_t *matrix, cg_matrix_t *inverse)
+invert_matrix_general(c_matrix_t *matrix, c_matrix_t *inverse)
 {
     const float *m = (float *)matrix;
     float *out = (float *)inverse;
@@ -603,8 +593,8 @@ invert_matrix_general(cg_matrix_t *matrix, cg_matrix_t *inverse)
 /*
  * Compute inverse of a general 3d transformation matrix.
  *
- * @mat pointer to a cg_matrix_t structure. The matrix inverse will be
- * stored in the cg_matrix_t::inv attribute.
+ * @mat pointer to a c_matrix_t structure. The matrix inverse will be
+ * stored in the c_matrix_t::inv attribute.
  *
  * Returns: %true for success, %false for failure (\p singular matrix).
  *
@@ -616,7 +606,7 @@ invert_matrix_general(cg_matrix_t *matrix, cg_matrix_t *inverse)
  * original translation vector using by the calculated submatrix inverse.
  */
 static bool
-invert_matrix_3d_general(cg_matrix_t *matrix, cg_matrix_t *inverse)
+invert_matrix_3d_general(c_matrix_t *matrix, c_matrix_t *inverse)
 {
     const float *in = (float *)matrix;
     float *out = (float *)inverse;
@@ -711,8 +701,8 @@ invert_matrix_3d_general(cg_matrix_t *matrix, cg_matrix_t *inverse)
 /*
  * Compute inverse of a 3d transformation matrix.
  *
- * @mat pointer to a cg_matrix_t structure. The matrix inverse will be
- * stored in the cg_matrix_t::inv attribute.
+ * @mat pointer to a c_matrix_t structure. The matrix inverse will be
+ * stored in the c_matrix_t::inv attribute.
  *
  * Returns: %true for success, %false for failure (\p singular matrix).
  *
@@ -722,7 +712,7 @@ invert_matrix_3d_general(cg_matrix_t *matrix, cg_matrix_t *inverse)
  * translation parts.
  */
 static bool
-invert_matrix_3d(cg_matrix_t *matrix, cg_matrix_t *inverse)
+invert_matrix_3d(c_matrix_t *matrix, c_matrix_t *inverse)
 {
     const float *in = (float *)matrix;
     float *out = (float *)inverse;
@@ -794,33 +784,33 @@ invert_matrix_3d(cg_matrix_t *matrix, cg_matrix_t *inverse)
 /*
  * Compute inverse of an identity transformation matrix.
  *
- * @mat pointer to a cg_matrix_t structure. The matrix inverse will be
- * stored in the cg_matrix_t::inv attribute.
+ * @mat pointer to a c_matrix_t structure. The matrix inverse will be
+ * stored in the c_matrix_t::inv attribute.
  *
  * Returns: always %true.
  *
- * Simply copies identity into cg_matrix_t::inv.
+ * Simply copies identity into c_matrix_t::inv.
  */
 static bool
-invert_matrix_identity(cg_matrix_t *matrix, cg_matrix_t *inverse)
+invert_matrix_identity(c_matrix_t *matrix, c_matrix_t *inverse)
 {
-    _cg_matrix_init_identity(inverse);
+    _c_matrix_init_identity(inverse);
     return true;
 }
 
 /*
  * Compute inverse of a no-rotation 3d transformation matrix.
  *
- * @mat pointer to a cg_matrix_t structure. The matrix inverse will be
- * stored in the cg_matrix_t::inv attribute.
+ * @mat pointer to a c_matrix_t structure. The matrix inverse will be
+ * stored in the c_matrix_t::inv attribute.
  *
  * Returns: %true for success, %false for failure (\p singular matrix).
  *
  * Calculates the
  */
 static bool
-invert_matrix_3d_no_rotation(cg_matrix_t *matrix,
-                             cg_matrix_t *inverse)
+invert_matrix_3d_no_rotation(c_matrix_t *matrix,
+                             c_matrix_t *inverse)
 {
     const float *in = (float *)matrix;
     float *out = (float *)inverse;
@@ -847,8 +837,8 @@ invert_matrix_3d_no_rotation(cg_matrix_t *matrix,
 /*
  * Compute inverse of a no-rotation 2d transformation matrix.
  *
- * @mat pointer to a cg_matrix_t structure. The matrix inverse will be
- * stored in the cg_matrix_t::inv attribute.
+ * @mat pointer to a c_matrix_t structure. The matrix inverse will be
+ * stored in the c_matrix_t::inv attribute.
  *
  * Returns: %true for success, %false for failure (\p singular matrix).
  *
@@ -856,8 +846,8 @@ invert_matrix_3d_no_rotation(cg_matrix_t *matrix,
  * translation to the identity matrix.
  */
 static bool
-invert_matrix_2d_no_rotation(cg_matrix_t *matrix,
-                             cg_matrix_t *inverse)
+invert_matrix_2d_no_rotation(c_matrix_t *matrix,
+                             c_matrix_t *inverse)
 {
     const float *in = (float *)matrix;
     float *out = (float *)inverse;
@@ -882,7 +872,7 @@ invert_matrix_2d_no_rotation(cg_matrix_t *matrix,
 #if 0
 /* broken */
 static bool
-invert_matrix_perspective (cg_matrix_t *matrix)
+invert_matrix_perspective (c_matrix_t *matrix)
 {
     const float *in = matrix;
     float *out = matrix->inv;
@@ -911,7 +901,7 @@ invert_matrix_perspective (cg_matrix_t *matrix)
 /*
  * Matrix inversion function pointer type.
  */
-typedef bool (*inv_mat_func)(cg_matrix_t *matrix, cg_matrix_t *inverse);
+typedef bool (*inv_mat_func)(c_matrix_t *matrix, c_matrix_t *inverse);
 
 /*
  * Table of the matrix inversion functions according to the matrix type.
@@ -968,7 +958,7 @@ static inv_mat_func inv_mat_tab[7] = { invert_matrix_general,
  * This is expensive enough to only want to do it once.
  */
 static void
-analyse_from_scratch(cg_matrix_t *matrix)
+analyse_from_scratch(c_matrix_t *matrix)
 {
     const float *m = (float *)matrix;
     unsigned int mask = 0;
@@ -998,9 +988,9 @@ analyse_from_scratch(cg_matrix_t *matrix)
     /* Do the real work
      */
     if (mask == (unsigned int)MASK_IDENTITY)
-        matrix->type = CG_MATRIX_TYPE_IDENTITY;
+        matrix->type = C_MATRIX_TYPE_IDENTITY;
     else if ((mask & MASK_2D_NO_ROT) == (unsigned int)MASK_2D_NO_ROT) {
-        matrix->type = CG_MATRIX_TYPE_2D_NO_ROT;
+        matrix->type = C_MATRIX_TYPE_2D_NO_ROT;
 
         if ((mask & MASK_NO_2D_SCALE) != MASK_NO_2D_SCALE)
             matrix->flags |= MAT_FLAG_GENERAL_SCALE;
@@ -1009,7 +999,7 @@ analyse_from_scratch(cg_matrix_t *matrix)
         float m4m4 = DOT2(m + 4, m + 4);
         float mm4 = DOT2(m, m + 4);
 
-        matrix->type = CG_MATRIX_TYPE_2D;
+        matrix->type = C_MATRIX_TYPE_2D;
 
         /* Check for scale */
         if (SQ(mm - 1) > SQ(1e-6) || SQ(m4m4 - 1) > SQ(1e-6))
@@ -1022,7 +1012,7 @@ analyse_from_scratch(cg_matrix_t *matrix)
             matrix->flags |= MAT_FLAG_ROTATION;
 
     } else if ((mask & MASK_3D_NO_ROT) == (unsigned int)MASK_3D_NO_ROT) {
-        matrix->type = CG_MATRIX_TYPE_3D_NO_ROT;
+        matrix->type = C_MATRIX_TYPE_3D_NO_ROT;
 
         /* Check for scale */
         if (SQ(m[0] - m[5]) < SQ(1e-6) && SQ(m[0] - m[10]) < SQ(1e-6)) {
@@ -1037,7 +1027,7 @@ analyse_from_scratch(cg_matrix_t *matrix)
         float d1 = DOT3(m, m + 4);
         float cp[3];
 
-        matrix->type = CG_MATRIX_TYPE_3D;
+        matrix->type = C_MATRIX_TYPE_3D;
 
         /* Check for scale */
         if (SQ(c1 - c2) < SQ(1e-6) && SQ(c1 - c3) < SQ(1e-6)) {
@@ -1059,10 +1049,10 @@ analyse_from_scratch(cg_matrix_t *matrix)
             matrix->flags |= MAT_FLAG_GENERAL_3D; /* shear, etc */
     } else if ((mask & MASK_PERSPECTIVE) == MASK_PERSPECTIVE &&
                m[11] == -1.0f) {
-        matrix->type = CG_MATRIX_TYPE_PERSPECTIVE;
+        matrix->type = C_MATRIX_TYPE_PERSPECTIVE;
         matrix->flags |= MAT_FLAG_GENERAL;
     } else {
-        matrix->type = CG_MATRIX_TYPE_GENERAL;
+        matrix->type = C_MATRIX_TYPE_GENERAL;
         matrix->flags |= MAT_FLAG_GENERAL;
     }
 }
@@ -1073,31 +1063,31 @@ analyse_from_scratch(cg_matrix_t *matrix)
  * This is the more common operation, hopefully.
  */
 static void
-analyse_from_flags(cg_matrix_t *matrix)
+analyse_from_flags(c_matrix_t *matrix)
 {
     const float *m = (float *)matrix;
 
     if (TEST_MAT_FLAGS(matrix, 0))
-        matrix->type = CG_MATRIX_TYPE_IDENTITY;
+        matrix->type = C_MATRIX_TYPE_IDENTITY;
     else if (TEST_MAT_FLAGS(matrix,
                             (MAT_FLAG_TRANSLATION | MAT_FLAG_UNIFORM_SCALE |
                              MAT_FLAG_GENERAL_SCALE))) {
         if (m[10] == 1.0f && m[14] == 0.0f)
-            matrix->type = CG_MATRIX_TYPE_2D_NO_ROT;
+            matrix->type = C_MATRIX_TYPE_2D_NO_ROT;
         else
-            matrix->type = CG_MATRIX_TYPE_3D_NO_ROT;
+            matrix->type = C_MATRIX_TYPE_3D_NO_ROT;
     } else if (TEST_MAT_FLAGS(matrix, MAT_FLAGS_3D)) {
         if (m[8] == 0.0f && m[9] == 0.0f && m[2] == 0.0f && m[6] == 0.0f &&
             m[10] == 1.0f && m[14] == 0.0f) {
-            matrix->type = CG_MATRIX_TYPE_2D;
+            matrix->type = C_MATRIX_TYPE_2D;
         } else
-            matrix->type = CG_MATRIX_TYPE_3D;
+            matrix->type = C_MATRIX_TYPE_3D;
     } else if (m[4] == 0.0f && m[12] == 0.0f && m[1] == 0.0f && m[13] == 0.0f &&
                m[2] == 0.0f && m[6] == 0.0f && m[3] == 0.0f && m[7] == 0.0f &&
                m[11] == -1.0f && m[15] == 0.0f) {
-        matrix->type = CG_MATRIX_TYPE_PERSPECTIVE;
+        matrix->type = C_MATRIX_TYPE_PERSPECTIVE;
     } else
-        matrix->type = CG_MATRIX_TYPE_GENERAL;
+        matrix->type = C_MATRIX_TYPE_GENERAL;
 }
 
 /*
@@ -1109,7 +1099,7 @@ analyse_from_flags(cg_matrix_t *matrix)
  * then calls matrix_invert(). Finally clears the dirty flags.
  */
 static void
-_cg_matrix_update_type_and_flags(cg_matrix_t *matrix)
+_c_matrix_update_type_and_flags(c_matrix_t *matrix)
 {
     if (matrix->flags & MAT_DIRTY_TYPE) {
         if (matrix->flags & MAT_DIRTY_FLAGS)
@@ -1124,25 +1114,25 @@ _cg_matrix_update_type_and_flags(cg_matrix_t *matrix)
 /*
  * Compute inverse of a transformation matrix.
  *
- * @mat pointer to a cg_matrix_t structure. The matrix inverse will be
- * stored in the cg_matrix_t::inv attribute.
+ * @mat pointer to a c_matrix_t structure. The matrix inverse will be
+ * stored in the c_matrix_t::inv attribute.
  *
  * Returns: %true for success, %false for failure (\p singular matrix).
  *
  * Calls the matrix inversion function in inv_mat_tab corresponding to the
  * given matrix type.  In case of failure, updates the MAT_FLAG_SINGULAR flag,
- * and copies the identity matrix into cg_matrix_t::inv.
+ * and copies the identity matrix into c_matrix_t::inv.
  */
 static bool
-_cg_matrix_get_inverse(cg_matrix_t *matrix, cg_matrix_t *inverse)
+_c_matrix_get_inverse(c_matrix_t *matrix, c_matrix_t *inverse)
 {
     if (matrix->flags & (MAT_DIRTY_TYPE | MAT_DIRTY_FLAGS))
-        _cg_matrix_update_type_and_flags(matrix);
+        _c_matrix_update_type_and_flags(matrix);
 
     if (inv_mat_tab[matrix->type](matrix, inverse))
         matrix->flags &= ~MAT_FLAG_SINGULAR;
     else {
-        _cg_matrix_init_identity(inverse);
+        _c_matrix_init_identity(inverse);
         matrix->flags |= MAT_FLAG_SINGULAR;
     }
 
@@ -1153,9 +1143,9 @@ _cg_matrix_get_inverse(cg_matrix_t *matrix, cg_matrix_t *inverse)
 }
 
 bool
-cg_matrix_get_inverse(const cg_matrix_t *matrix, cg_matrix_t *inverse)
+c_matrix_get_inverse(const c_matrix_t *matrix, c_matrix_t *inverse)
 {
-    return _cg_matrix_get_inverse((cg_matrix_t *)matrix, inverse);
+    return _c_matrix_get_inverse((c_matrix_t *)matrix, inverse);
 }
 
 /*
@@ -1167,7 +1157,7 @@ cg_matrix_get_inverse(const cg_matrix_t *matrix, cg_matrix_t *inverse)
  * Optimizations contributed by Rudolf Opalla (rudi@khm.de).
  */
 static void
-_cg_matrix_rotate(cg_matrix_t *matrix, float angle, float x, float y, float z)
+_c_matrix_rotate(c_matrix_t *matrix, float angle, float x, float y, float z)
 {
     float xx, yy, zz, xy, yz, zx, xs, ys, zs, one_c, s, c;
     float m[16];
@@ -1330,29 +1320,29 @@ _cg_matrix_rotate(cg_matrix_t *matrix, float angle, float x, float y, float z)
 }
 
 void
-cg_matrix_rotate(cg_matrix_t *matrix, float angle, float x, float y, float z)
+c_matrix_rotate(c_matrix_t *matrix, float angle, float x, float y, float z)
 {
-    _cg_matrix_rotate(matrix, angle, x, y, z);
-    _CG_MATRIX_DEBUG_PRINT(matrix);
+    _c_matrix_rotate(matrix, angle, x, y, z);
+    _MATRIX_DEBUG_PRINT(matrix);
 }
 
 void
-cg_matrix_rotate_quaternion(cg_matrix_t *matrix,
-                            const cg_quaternion_t *quaternion)
+c_matrix_rotate_quaternion(c_matrix_t *matrix,
+                            const c_quaternion_t *quaternion)
 {
-    cg_matrix_t rotation_transform;
+    c_matrix_t rotation_transform;
 
-    cg_matrix_init_from_quaternion(&rotation_transform, quaternion);
-    cg_matrix_multiply(matrix, matrix, &rotation_transform);
+    c_matrix_init_from_quaternion(&rotation_transform, quaternion);
+    c_matrix_multiply(matrix, matrix, &rotation_transform);
 }
 
 void
-cg_matrix_rotate_euler(cg_matrix_t *matrix, const cg_euler_t *euler)
+c_matrix_rotate_euler(c_matrix_t *matrix, const c_euler_t *euler)
 {
-    cg_matrix_t rotation_transform;
+    c_matrix_t rotation_transform;
 
-    cg_matrix_init_from_euler(&rotation_transform, euler);
-    cg_matrix_multiply(matrix, matrix, &rotation_transform);
+    c_matrix_init_from_euler(&rotation_transform, euler);
+    c_matrix_multiply(matrix, matrix, &rotation_transform);
 }
 
 /*
@@ -1362,7 +1352,7 @@ cg_matrix_rotate_euler(cg_matrix_t *matrix, const cg_euler_t *euler)
  * MAT_FLAG_PERSPECTIVE flag.
  */
 static void
-_cg_matrix_frustum(cg_matrix_t *matrix,
+_c_matrix_frustum(c_matrix_t *matrix,
                    float left,
                    float right,
                    float bottom,
@@ -1403,7 +1393,7 @@ _cg_matrix_frustum(cg_matrix_t *matrix,
 }
 
 void
-cg_matrix_frustum(cg_matrix_t *matrix,
+c_matrix_frustum(c_matrix_t *matrix,
                   float left,
                   float right,
                   float bottom,
@@ -1411,24 +1401,24 @@ cg_matrix_frustum(cg_matrix_t *matrix,
                   float z_near,
                   float z_far)
 {
-    _cg_matrix_frustum(matrix, left, right, bottom, top, z_near, z_far);
-    _CG_MATRIX_DEBUG_PRINT(matrix);
+    _c_matrix_frustum(matrix, left, right, bottom, top, z_near, z_far);
+    _MATRIX_DEBUG_PRINT(matrix);
 }
 
 void
-cg_matrix_perspective(
-    cg_matrix_t *matrix, float fov_y, float aspect, float z_near, float z_far)
+c_matrix_perspective(
+    c_matrix_t *matrix, float fov_y, float aspect, float z_near, float z_far)
 {
     float ymax = z_near * tan(fov_y * C_PI / 360.0);
 
-    cg_matrix_frustum(matrix,
+    c_matrix_frustum(matrix,
                       -ymax * aspect, /* left */
                       ymax * aspect, /* right */
                       -ymax, /* bottom */
                       ymax, /* top */
                       z_near,
                       z_far);
-    _CG_MATRIX_DEBUG_PRINT(matrix);
+    _MATRIX_DEBUG_PRINT(matrix);
 }
 
 /*
@@ -1438,7 +1428,7 @@ cg_matrix_perspective(
  * MAT_FLAG_GENERAL_SCALE and MAT_FLAG_TRANSLATION flags.
  */
 static void
-_cg_matrix_orthographic(cg_matrix_t *matrix,
+_c_matrix_orthographic(c_matrix_t *matrix,
                         float x_1,
                         float y_1,
                         float x_2,
@@ -1475,7 +1465,7 @@ _cg_matrix_orthographic(cg_matrix_t *matrix,
 }
 
 void
-cg_matrix_orthographic(cg_matrix_t *matrix,
+c_matrix_orthographic(c_matrix_t *matrix,
                        float x_1,
                        float y_1,
                        float x_2,
@@ -1483,8 +1473,8 @@ cg_matrix_orthographic(cg_matrix_t *matrix,
                        float near,
                        float far)
 {
-    _cg_matrix_orthographic(matrix, x_1, y_1, x_2, y_2, near, far);
-    _CG_MATRIX_DEBUG_PRINT(matrix);
+    _c_matrix_orthographic(matrix, x_1, y_1, x_2, y_2, near, far);
+    _MATRIX_DEBUG_PRINT(matrix);
 }
 
 /*
@@ -1495,7 +1485,7 @@ cg_matrix_orthographic(cg_matrix_t *matrix,
  * flag, or MAT_FLAG_GENERAL_SCALE. Marks the MAT_DIRTY_TYPE flag.
  */
 static void
-_cg_matrix_scale(cg_matrix_t *matrix, float x, float y, float z)
+_c_matrix_scale(c_matrix_t *matrix, float x, float y, float z)
 {
     float *m = (float *)matrix;
     m[0] *= x;
@@ -1520,10 +1510,10 @@ _cg_matrix_scale(cg_matrix_t *matrix, float x, float y, float z)
 }
 
 void
-cg_matrix_scale(cg_matrix_t *matrix, float sx, float sy, float sz)
+c_matrix_scale(c_matrix_t *matrix, float sx, float sy, float sz)
 {
-    _cg_matrix_scale(matrix, sx, sy, sz);
-    _CG_MATRIX_DEBUG_PRINT(matrix);
+    _c_matrix_scale(matrix, sx, sy, sz);
+    _MATRIX_DEBUG_PRINT(matrix);
 }
 
 /*
@@ -1533,7 +1523,7 @@ cg_matrix_scale(cg_matrix_t *matrix, float sx, float sy, float sz)
  * the MAT_FLAG_TRANSLATION flag, and the MAT_DIRTY_TYPE and dirty flag.
  */
 static void
-_cg_matrix_translate(cg_matrix_t *matrix, float x, float y, float z)
+_c_matrix_translate(c_matrix_t *matrix, float x, float y, float z)
 {
     float *m = (float *)matrix;
     m[12] = m[0] * x + m[4] * y + m[8] * z + m[12];
@@ -1545,10 +1535,10 @@ _cg_matrix_translate(cg_matrix_t *matrix, float x, float y, float z)
 }
 
 void
-cg_matrix_translate(cg_matrix_t *matrix, float x, float y, float z)
+c_matrix_translate(c_matrix_t *matrix, float x, float y, float z)
 {
-    _cg_matrix_translate(matrix, x, y, z);
-    _CG_MATRIX_DEBUG_PRINT(matrix);
+    _c_matrix_translate(matrix, x, y, z);
+    _MATRIX_DEBUG_PRINT(matrix);
 }
 
 #if 0
@@ -1557,7 +1547,7 @@ cg_matrix_translate(cg_matrix_t *matrix, float x, float y, float z)
  * Transforms Normalized Device Coords to window/Z values.
  */
 static void
-_cg_matrix_viewport (cg_matrix_t *matrix,
+_c_matrix_viewport (c_matrix_t *matrix,
                      float x, float y,
                      float width, float height,
                      float zNear, float zFar, float depthMax)
@@ -1570,7 +1560,7 @@ _cg_matrix_viewport (cg_matrix_t *matrix,
     m[MAT_SZ] = depthMax * ((zFar - zNear) / 2.0f);
     m[MAT_TZ] = depthMax * ((zFar - zNear) / 2.0f + zNear);
     matrix->flags = MAT_FLAG_GENERAL_SCALE | MAT_FLAG_TRANSLATION;
-    matrix->type = CG_MATRIX_TYPE_3D_NO_ROT;
+    matrix->type = C_MATRIX_TYPE_3D_NO_ROT;
 }
 #endif
 
@@ -1583,7 +1573,7 @@ _cg_matrix_viewport (cg_matrix_t *matrix,
  * @tz z coordinate of the translation vector
  */
 static void
-_cg_matrix_init_translation(cg_matrix_t *matrix, float tx, float ty, float tz)
+_c_matrix_init_translation(c_matrix_t *matrix, float tx, float ty, float tz)
 {
     memcpy(matrix, identity, 16 * sizeof(float));
 
@@ -1591,15 +1581,15 @@ _cg_matrix_init_translation(cg_matrix_t *matrix, float tx, float ty, float tz)
     matrix->yw = ty;
     matrix->zw = tz;
 
-    matrix->type = CG_MATRIX_TYPE_3D;
+    matrix->type = C_MATRIX_TYPE_3D;
     matrix->flags = MAT_FLAG_TRANSLATION;
 }
 
 void
-cg_matrix_init_translation(cg_matrix_t *matrix, float tx, float ty, float tz)
+c_matrix_init_translation(c_matrix_t *matrix, float tx, float ty, float tz)
 {
-    _cg_matrix_init_translation(matrix, tx, ty, tz);
-    _CG_MATRIX_DEBUG_PRINT(matrix);
+    _c_matrix_init_translation(matrix, tx, ty, tz);
+    _MATRIX_DEBUG_PRINT(matrix);
 }
 
 #if 0
@@ -1607,7 +1597,7 @@ cg_matrix_init_translation(cg_matrix_t *matrix, float tx, float ty, float tz)
  * Test if the given matrix preserves vector lengths.
  */
 static bool
-_cg_matrix_is_length_preserving (const cg_matrix_t *m)
+_c_matrix_is_length_preserving (const c_matrix_t *m)
 {
     return TEST_MAT_FLAGS (m, MAT_FLAGS_LENGTH_PRESERVING);
 }
@@ -1617,7 +1607,7 @@ _cg_matrix_is_length_preserving (const cg_matrix_t *m)
  * (or perhaps if the upper-left 3x3 is non-identity)
  */
 static bool
-_cg_matrix_has_rotation (const cg_matrix_t *matrix)
+_c_matrix_has_rotation (const c_matrix_t *matrix)
 {
     if (matrix->flags & (MAT_FLAG_GENERAL |
                          MAT_FLAG_ROTATION |
@@ -1629,47 +1619,47 @@ _cg_matrix_has_rotation (const cg_matrix_t *matrix)
 }
 
 static bool
-_cg_matrix_is_general_scale (const cg_matrix_t *matrix)
+_c_matrix_is_general_scale (const c_matrix_t *matrix)
 {
     return (matrix->flags & MAT_FLAG_GENERAL_SCALE) ? true : false;
 }
 
 static bool
-_cg_matrix_is_dirty (const cg_matrix_t *matrix)
+_c_matrix_is_dirty (const c_matrix_t *matrix)
 {
     return (matrix->flags & MAT_DIRTY_ALL) ? true : false;
 }
 #endif
 
 /*
- * Loads a matrix array into cg_matrix_t.
+ * Loads a matrix array into c_matrix_t.
  *
  * @m matrix array.
  * @mat matrix.
  *
- * Copies \p m into cg_matrix_t::m and marks the MAT_FLAG_GENERAL and
+ * Copies \p m into c_matrix_t::m and marks the MAT_FLAG_GENERAL and
  * MAT_DIRTY_ALL
  * flags.
  */
 static void
-_cg_matrix_init_from_array(cg_matrix_t *matrix, const float *array)
+_c_matrix_init_from_array(c_matrix_t *matrix, const float *array)
 {
     memcpy(matrix, array, 16 * sizeof(float));
     matrix->flags = (MAT_FLAG_GENERAL | MAT_DIRTY_ALL);
 }
 
 void
-cg_matrix_init_from_array(cg_matrix_t *matrix, const float *array)
+c_matrix_init_from_array(c_matrix_t *matrix, const float *array)
 {
-    _cg_matrix_init_from_array(matrix, array);
-    _CG_MATRIX_DEBUG_PRINT(matrix);
+    _c_matrix_init_from_array(matrix, array);
+    _MATRIX_DEBUG_PRINT(matrix);
 }
 
 static void
-_cg_matrix_init_from_quaternion(cg_matrix_t *matrix,
-                                const cg_quaternion_t *quaternion)
+_c_matrix_init_from_quaternion(c_matrix_t *matrix,
+                                const c_quaternion_t *quaternion)
 {
-    float qnorm = _CG_QUATERNION_NORM(quaternion);
+    float qnorm = _C_QUATERNION_NORM(quaternion);
     float s = (qnorm > 0.0f) ? (2.0f / qnorm) : 0.0f;
     float xs = quaternion->x * s;
     float ys = quaternion->y * s;
@@ -1701,14 +1691,14 @@ _cg_matrix_init_from_quaternion(cg_matrix_t *matrix,
 }
 
 void
-cg_matrix_init_from_quaternion(cg_matrix_t *matrix,
-                               const cg_quaternion_t *quaternion)
+c_matrix_init_from_quaternion(c_matrix_t *matrix,
+                               const c_quaternion_t *quaternion)
 {
-    _cg_matrix_init_from_quaternion(matrix, quaternion);
+    _c_matrix_init_from_quaternion(matrix, quaternion);
 }
 
 void
-cg_matrix_init_from_euler(cg_matrix_t *matrix, const cg_euler_t *euler)
+c_matrix_init_from_euler(c_matrix_t *matrix, const c_euler_t *euler)
 {
     /* Convert angles to radians */
     float heading_rad = euler->heading / 180.0f * C_PI;
@@ -1788,7 +1778,7 @@ cg_matrix_init_from_euler(cg_matrix_t *matrix, const cg_euler_t *euler)
  * Transpose a float matrix.
  */
 static void
-_cg_matrix_util_transposef(float to[16], const float from[16])
+_c_matrix_util_transposef(float to[16], const float from[16])
 {
     to[0] = from[0];
     to[1] = from[4];
@@ -1809,7 +1799,7 @@ _cg_matrix_util_transposef(float to[16], const float from[16])
 }
 
 void
-cg_matrix_view_2d_in_frustum(cg_matrix_t *matrix,
+c_matrix_view_2d_in_frustum(c_matrix_t *matrix,
                              float left,
                              float right,
                              float bottom,
@@ -1832,9 +1822,9 @@ cg_matrix_view_2d_in_frustum(cg_matrix_t *matrix,
     float width_scale = width_2d_start / width_2d;
     float height_scale = height_2d_start / height_2d;
 
-    cg_matrix_translate(matrix, left_2d_plane, top_2d_plane, -z_2d);
+    c_matrix_translate(matrix, left_2d_plane, top_2d_plane, -z_2d);
 
-    cg_matrix_scale(matrix, width_scale, -height_scale, width_scale);
+    c_matrix_scale(matrix, width_scale, -height_scale, width_scale);
 }
 
 /* Assuming a symmetric perspective matrix is being used for your
@@ -1844,7 +1834,7 @@ cg_matrix_view_2d_in_frustum(cg_matrix_t *matrix,
  * given width and height.
  */
 void
-cg_matrix_view_2d_in_perspective(cg_matrix_t *matrix,
+c_matrix_view_2d_in_perspective(c_matrix_t *matrix,
                                  float fov_y,
                                  float aspect,
                                  float z_near,
@@ -1853,7 +1843,7 @@ cg_matrix_view_2d_in_perspective(cg_matrix_t *matrix,
                                  float height_2d)
 {
     float top = z_near * tan(fov_y * C_PI / 360.0);
-    cg_matrix_view_2d_in_frustum(matrix,
+    c_matrix_view_2d_in_frustum(matrix,
                                  -top * aspect,
                                  top * aspect,
                                  -top,
@@ -1865,10 +1855,10 @@ cg_matrix_view_2d_in_perspective(cg_matrix_t *matrix,
 }
 
 bool
-cg_matrix_equal(const void *v1, const void *v2)
+c_matrix_equal(const void *v1, const void *v2)
 {
-    const cg_matrix_t *a = v1;
-    const cg_matrix_t *b = v2;
+    const c_matrix_t *a = v1;
+    const c_matrix_t *b = v2;
 
     c_return_val_if_fail(v1 != NULL, false);
     c_return_val_if_fail(v2 != NULL, false);
@@ -1897,30 +1887,30 @@ cg_matrix_equal(const void *v1, const void *v2)
         return false;
 }
 
-cg_matrix_t *
-cg_matrix_copy(const cg_matrix_t *matrix)
+c_matrix_t *
+c_matrix_copy(const c_matrix_t *matrix)
 {
     if (C_LIKELY(matrix))
-        return c_slice_dup(cg_matrix_t, matrix);
+        return c_slice_dup(c_matrix_t, matrix);
 
     return NULL;
 }
 
 void
-cg_matrix_free(cg_matrix_t *matrix)
+c_matrix_free(c_matrix_t *matrix)
 {
-    c_slice_free(cg_matrix_t, matrix);
+    c_slice_free(c_matrix_t, matrix);
 }
 
 const float *
-cg_matrix_get_array(const cg_matrix_t *matrix)
+c_matrix_get_array(const c_matrix_t *matrix)
 {
     return (float *)matrix;
 }
 
 void
-cg_matrix_transform_point(
-    const cg_matrix_t *matrix, float *x, float *y, float *z, float *w)
+c_matrix_transform_point(
+    const c_matrix_t *matrix, float *x, float *y, float *z, float *w)
 {
     float _x = *x, _y = *y, _z = *z, _w = *w;
 
@@ -1949,7 +1939,7 @@ typedef struct _point4f_t {
 } point4f_t;
 
 static void
-_cg_matrix_transform_points_f2(const cg_matrix_t *matrix,
+_c_matrix_transform_points_f2(const c_matrix_t *matrix,
                                size_t stride_in,
                                const void *points_in,
                                size_t stride_out,
@@ -1969,7 +1959,7 @@ _cg_matrix_transform_points_f2(const cg_matrix_t *matrix,
 }
 
 static void
-_cg_matrix_project_points_f2(const cg_matrix_t *matrix,
+_c_matrix_project_points_f2(const c_matrix_t *matrix,
                              size_t stride_in,
                              const void *points_in,
                              size_t stride_out,
@@ -1990,7 +1980,7 @@ _cg_matrix_project_points_f2(const cg_matrix_t *matrix,
 }
 
 static void
-_cg_matrix_transform_points_f3(const cg_matrix_t *matrix,
+_c_matrix_transform_points_f3(const c_matrix_t *matrix,
                                size_t stride_in,
                                const void *points_in,
                                size_t stride_out,
@@ -2013,7 +2003,7 @@ _cg_matrix_transform_points_f3(const cg_matrix_t *matrix,
 }
 
 static void
-_cg_matrix_project_points_f3(const cg_matrix_t *matrix,
+_c_matrix_project_points_f3(const c_matrix_t *matrix,
                              size_t stride_in,
                              const void *points_in,
                              size_t stride_out,
@@ -2038,7 +2028,7 @@ _cg_matrix_project_points_f3(const cg_matrix_t *matrix,
 }
 
 static void
-_cg_matrix_project_points_f4(const cg_matrix_t *matrix,
+_c_matrix_project_points_f4(const c_matrix_t *matrix,
                              size_t stride_in,
                              const void *points_in,
                              size_t stride_out,
@@ -2063,7 +2053,7 @@ _cg_matrix_project_points_f4(const cg_matrix_t *matrix,
 }
 
 void
-cg_matrix_transform_points(const cg_matrix_t *matrix,
+c_matrix_transform_points(const c_matrix_t *matrix,
                            int n_components,
                            size_t stride_in,
                            const void *points_in,
@@ -2075,18 +2065,18 @@ cg_matrix_transform_points(const cg_matrix_t *matrix,
     c_return_if_fail(stride_out >= sizeof(point3f_t));
 
     if (n_components == 2)
-        _cg_matrix_transform_points_f2(
+        _c_matrix_transform_points_f2(
             matrix, stride_in, points_in, stride_out, points_out, n_points);
     else {
         c_return_if_fail(n_components == 3);
 
-        _cg_matrix_transform_points_f3(
+        _c_matrix_transform_points_f3(
             matrix, stride_in, points_in, stride_out, points_out, n_points);
     }
 }
 
 void
-cg_matrix_project_points(const cg_matrix_t *matrix,
+c_matrix_project_points(const c_matrix_t *matrix,
                          int n_components,
                          size_t stride_in,
                          const void *points_in,
@@ -2095,31 +2085,31 @@ cg_matrix_project_points(const cg_matrix_t *matrix,
                          int n_points)
 {
     if (n_components == 2)
-        _cg_matrix_project_points_f2(
+        _c_matrix_project_points_f2(
             matrix, stride_in, points_in, stride_out, points_out, n_points);
     else if (n_components == 3)
-        _cg_matrix_project_points_f3(
+        _c_matrix_project_points_f3(
             matrix, stride_in, points_in, stride_out, points_out, n_points);
     else {
         c_return_if_fail(n_components == 4);
 
-        _cg_matrix_project_points_f4(
+        _c_matrix_project_points_f4(
             matrix, stride_in, points_in, stride_out, points_out, n_points);
     }
 }
 
 bool
-cg_matrix_is_identity(const cg_matrix_t *matrix)
+c_matrix_is_identity(const c_matrix_t *matrix)
 {
     if (!(matrix->flags & MAT_DIRTY_TYPE) &&
-        matrix->type == CG_MATRIX_TYPE_IDENTITY)
+        matrix->type == C_MATRIX_TYPE_IDENTITY)
         return true;
     else
         return memcmp(matrix, identity, sizeof(float) * 16) == 0;
 }
 
 void
-cg_matrix_look_at(cg_matrix_t *matrix,
+c_matrix_look_at(c_matrix_t *matrix,
                   float eye_position_x,
                   float eye_position_y,
                   float eye_position_z,
@@ -2130,28 +2120,28 @@ cg_matrix_look_at(cg_matrix_t *matrix,
                   float world_up_y,
                   float world_up_z)
 {
-    cg_matrix_t tmp;
+    c_matrix_t tmp;
     float forward[3];
     float side[3];
     float up[3];
 
     /* Get a unit viewing direction vector */
-    cg_vector3_init(forward,
+    c_vector3_init(forward,
                     object_x - eye_position_x,
                     object_y - eye_position_y,
                     object_z - eye_position_z);
-    cg_vector3_normalize(forward);
+    c_vector3_normalize(forward);
 
-    cg_vector3_init(up, world_up_x, world_up_y, world_up_z);
+    c_vector3_init(up, world_up_x, world_up_y, world_up_z);
 
     /* Take the sideways direction as being perpendicular to the viewing
      * direction and the word up vector. */
-    cg_vector3_cross_product(side, forward, up);
-    cg_vector3_normalize(side);
+    c_vector3_cross_product(side, forward, up);
+    c_vector3_normalize(side);
 
     /* Now we have unit sideways and forward-direction vectors calculate
      * a new mutually perpendicular up vector. */
-    cg_vector3_cross_product(up, side, forward);
+    c_vector3_cross_product(up, side, forward);
 
     tmp.xx = side[0];
     tmp.yx = side[1];
@@ -2175,23 +2165,23 @@ cg_matrix_look_at(cg_matrix_t *matrix,
 
     tmp.flags = (MAT_FLAG_GENERAL_3D | MAT_DIRTY_TYPE);
 
-    cg_matrix_translate(
+    c_matrix_translate(
         &tmp, -eye_position_x, -eye_position_y, -eye_position_z);
 
-    cg_matrix_multiply(matrix, matrix, &tmp);
+    c_matrix_multiply(matrix, matrix, &tmp);
 }
 
 void
-cg_matrix_transpose(cg_matrix_t *matrix)
+c_matrix_transpose(c_matrix_t *matrix)
 {
     float new_values[16];
 
     /* We don't need to do anything if the matrix is the identity matrix */
     if (!(matrix->flags & MAT_DIRTY_TYPE) &&
-        matrix->type == CG_MATRIX_TYPE_IDENTITY)
+        matrix->type == C_MATRIX_TYPE_IDENTITY)
         return;
 
-    _cg_matrix_util_transposef(new_values, cg_matrix_get_array(matrix));
+    _c_matrix_util_transposef(new_values, c_matrix_get_array(matrix));
 
-    cg_matrix_init_from_array(matrix, new_values);
+    c_matrix_init_from_array(matrix, new_values);
 }

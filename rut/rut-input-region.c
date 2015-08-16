@@ -114,8 +114,8 @@ poly_init_from_rectangle(float *poly,
  */
 static void
 rect_to_screen_polygon(rut_input_shape_rectange_t *rectangle,
-                       const cg_matrix_t *modelview,
-                       const cg_matrix_t *projection,
+                       const c_matrix_t *modelview,
+                       const c_matrix_t *projection,
                        const float *viewport,
                        float *poly)
 {
@@ -127,15 +127,15 @@ rect_to_screen_polygon(rut_input_shape_rectange_t *rectangle,
 static bool
 _rut_input_region_pick(rut_object_t *inputable,
                        rut_object_t *camera,
-                       const cg_matrix_t *graphable_modelview,
+                       const c_matrix_t *graphable_modelview,
                        float x,
                        float y)
 {
     rut_input_region_t *region = inputable;
-    cg_matrix_t matrix;
-    const cg_matrix_t *modelview = NULL;
+    c_matrix_t matrix;
+    const c_matrix_t *modelview = NULL;
     float poly[16];
-    const cg_matrix_t *view = rut_camera_get_view_transform(camera);
+    const c_matrix_t *view = rut_camera_get_view_transform(camera);
 
     if (graphable_modelview)
         modelview = graphable_modelview;
@@ -147,7 +147,7 @@ _rut_input_region_pick(rut_object_t *inputable,
 
     switch (region->shape.any.type) {
     case RUT_INPUT_SHAPE_TYPE_RECTANGLE: {
-        const cg_matrix_t *projection = rut_camera_get_projection(camera);
+        const c_matrix_t *projection = rut_camera_get_projection(camera);
         const float *viewport = rut_camera_get_viewport(camera);
         rect_to_screen_polygon(&region->shape.rectangle,
                                modelview,
@@ -184,7 +184,7 @@ _rut_input_region_pick(rut_object_t *inputable,
          * center point is transformed but the raius of the circle stays
          * constant. */
 
-        cg_matrix_transform_point(modelview, &center_x, &center_y, &z, &w);
+        c_matrix_transform_point(modelview, &center_x, &center_y, &z, &w);
 
         a = x - center_x;
         b = y - center_y;

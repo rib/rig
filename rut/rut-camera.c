@@ -151,7 +151,7 @@ rut_camera_get_viewport(rut_object_t *object)
     return camera->viewport;
 }
 
-const cg_matrix_t *
+const c_matrix_t *
 rut_camera_get_projection(rut_object_t *object)
 {
     rut_camera_vtable_t *vtable =
@@ -289,7 +289,7 @@ rut_camera_get_orthographic_coordinates(
     *y2 = camera->ortho.y2;
 }
 
-const cg_matrix_t *
+const c_matrix_t *
 rut_camera_get_inverse_projection(rut_object_t *object)
 {
     rut_camera_vtable_t *vtable =
@@ -300,7 +300,7 @@ rut_camera_get_inverse_projection(rut_object_t *object)
 
 void
 rut_camera_set_view_transform(rut_object_t *object,
-                              const cg_matrix_t *view)
+                              const c_matrix_t *view)
 {
     rut_camera_vtable_t *vtable =
         rut_object_get_vtable(object, RUT_TRAIT_ID_CAMERA);
@@ -308,7 +308,7 @@ rut_camera_set_view_transform(rut_object_t *object,
     vtable->set_view_transform(object, view);
 }
 
-const cg_matrix_t *
+const c_matrix_t *
 rut_camera_get_view_transform(rut_object_t *object)
 {
     rut_camera_props_t *camera =
@@ -317,7 +317,7 @@ rut_camera_get_view_transform(rut_object_t *object)
     return &camera->view;
 }
 
-const cg_matrix_t *
+const c_matrix_t *
 rut_camera_get_inverse_view_transform(rut_object_t *object)
 {
     rut_camera_vtable_t *vtable =
@@ -326,7 +326,7 @@ rut_camera_get_inverse_view_transform(rut_object_t *object)
     return vtable->get_inverse_view_transform(object);
 }
 
-const cg_matrix_t *
+const c_matrix_t *
 rut_camera_get_input_transform(rut_object_t *object)
 {
     rut_camera_props_t *camera =
@@ -337,7 +337,7 @@ rut_camera_get_input_transform(rut_object_t *object)
 
 void
 rut_camera_set_input_transform(rut_object_t *object,
-                               const cg_matrix_t *input_transform)
+                               const c_matrix_t *input_transform)
 {
     rut_camera_vtable_t *vtable =
         rut_object_get_vtable(object, RUT_TRAIT_ID_CAMERA);
@@ -420,8 +420,8 @@ rut_camera_transform_window_coordinate(rut_object_t *object, float *x, float *y)
 
 void
 rut_camera_unproject_coord(rut_object_t *object,
-                           const cg_matrix_t *modelview,
-                           const cg_matrix_t *inverse_modelview,
+                           const c_matrix_t *modelview,
+                           const c_matrix_t *inverse_modelview,
                            float object_coord_z,
                            float *x,
                            float *y)

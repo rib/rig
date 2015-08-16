@@ -40,7 +40,7 @@ static rut_magazine_t *rut_matrix_stack_matrices_magazine;
 
 /* XXX: Note: this leaves entry->parent uninitialized! */
 static rut_matrix_entry_t *
-_rut_matrix_entry_new(cg_matrix_op_t operation)
+_rut_matrix_entry_new(c_matrix_op_t operation)
 {
     rut_matrix_entry_t *entry =
         rut_magazine_chunk_alloc(rut_matrix_stack_magazine);
@@ -78,7 +78,7 @@ _rut_matrix_stack_push_entry(rut_matrix_stack_t *stack,
 
 static void *
 _rut_matrix_stack_push_operation(rut_matrix_stack_t *stack,
-                                 cg_matrix_op_t operation)
+                                 c_matrix_op_t operation)
 {
     rut_matrix_entry_t *entry = _rut_matrix_entry_new(operation);
 
@@ -89,7 +89,7 @@ _rut_matrix_stack_push_operation(rut_matrix_stack_t *stack,
 
 static void *
 _rut_matrix_stack_push_replacement_entry(rut_matrix_stack_t *stack,
-                                         cg_matrix_op_t operation)
+                                         c_matrix_op_t operation)
 {
     rut_matrix_entry_t *old_top = stack->last_entry;
     rut_matrix_entry_t *new_top;
@@ -160,7 +160,7 @@ rut_matrix_stack_rotate(
 
 void
 rut_matrix_stack_rotate_quaternion(rut_matrix_stack_t *stack,
-                                   const cg_quaternion_t *quaternion)
+                                   const c_quaternion_t *quaternion)
 {
     rut_matrix_entry_rotate_quaternion_t *entry;
 
@@ -175,7 +175,7 @@ rut_matrix_stack_rotate_quaternion(rut_matrix_stack_t *stack,
 
 void
 rut_matrix_stack_rotate_euler(rut_matrix_stack_t *stack,
-                              const cg_euler_t *euler)
+                              const c_euler_t *euler)
 {
     rut_matrix_entry_rotate_euler_t *entry;
 
@@ -200,7 +200,7 @@ rut_matrix_stack_scale(rut_matrix_stack_t *stack, float x, float y, float z)
 
 void
 rut_matrix_stack_multiply(rut_matrix_stack_t *stack,
-                          const cg_matrix_t *matrix)
+                          const c_matrix_t *matrix)
 {
     rut_matrix_entry_multiply_t *entry;
 
@@ -209,11 +209,11 @@ rut_matrix_stack_multiply(rut_matrix_stack_t *stack,
     entry->matrix =
         rut_magazine_chunk_alloc(rut_matrix_stack_matrices_magazine);
 
-    cg_matrix_init_from_array(entry->matrix, (float *)matrix);
+    c_matrix_init_from_array(entry->matrix, (float *)matrix);
 }
 
 void
-rut_matrix_stack_set(rut_matrix_stack_t *stack, const cg_matrix_t *matrix)
+rut_matrix_stack_set(rut_matrix_stack_t *stack, const c_matrix_t *matrix)
 {
     rut_matrix_entry_load_t *entry;
 
@@ -222,7 +222,7 @@ rut_matrix_stack_set(rut_matrix_stack_t *stack, const cg_matrix_t *matrix)
     entry->matrix =
         rut_magazine_chunk_alloc(rut_matrix_stack_matrices_magazine);
 
-    cg_matrix_init_from_array(entry->matrix, (float *)matrix);
+    c_matrix_init_from_array(entry->matrix, (float *)matrix);
 }
 
 void
@@ -241,8 +241,8 @@ rut_matrix_stack_frustum(rut_matrix_stack_t *stack,
     entry->matrix =
         rut_magazine_chunk_alloc(rut_matrix_stack_matrices_magazine);
 
-    cg_matrix_init_identity(entry->matrix);
-    cg_matrix_frustum(entry->matrix, left, right, bottom, top, z_near, z_far);
+    c_matrix_init_identity(entry->matrix);
+    c_matrix_frustum(entry->matrix, left, right, bottom, top, z_near, z_far);
 }
 
 void
@@ -259,8 +259,8 @@ rut_matrix_stack_perspective(rut_matrix_stack_t *stack,
     entry->matrix =
         rut_magazine_chunk_alloc(rut_matrix_stack_matrices_magazine);
 
-    cg_matrix_init_identity(entry->matrix);
-    cg_matrix_perspective(entry->matrix, fov_y, aspect, z_near, z_far);
+    c_matrix_init_identity(entry->matrix);
+    c_matrix_perspective(entry->matrix, fov_y, aspect, z_near, z_far);
 }
 
 void
@@ -279,8 +279,8 @@ rut_matrix_stack_orthographic(rut_matrix_stack_t *stack,
     entry->matrix =
         rut_magazine_chunk_alloc(rut_matrix_stack_matrices_magazine);
 
-    cg_matrix_init_identity(entry->matrix);
-    cg_matrix_orthographic(entry->matrix, x_1, y_1, x_2, y_2, near, far);
+    c_matrix_init_identity(entry->matrix);
+    c_matrix_orthographic(entry->matrix, x_1, y_1, x_2, y_2, near, far);
 }
 
 void
@@ -384,15 +384,15 @@ rut_matrix_stack_pop(rut_matrix_stack_t *stack)
 
 bool
 rut_matrix_stack_get_inverse(rut_matrix_stack_t *stack,
-                             cg_matrix_t *inverse)
+                             c_matrix_t *inverse)
 {
-    cg_matrix_t matrix;
-    cg_matrix_t *internal = rut_matrix_stack_get(stack, &matrix);
+    c_matrix_t matrix;
+    c_matrix_t *internal = rut_matrix_stack_get(stack, &matrix);
 
     if (internal)
-        return cg_matrix_get_inverse(internal, inverse);
+        return c_matrix_get_inverse(internal, inverse);
     else
-        return cg_matrix_get_inverse(&matrix, inverse);
+        return c_matrix_get_inverse(&matrix, inverse);
 }
 
 /* In addition to writing the stack matrix into the give @matrix
@@ -400,9 +400,9 @@ rut_matrix_stack_get_inverse(rut_matrix_stack_t *stack,
  * to a matrix too so if we are querying the inverse matrix we
  * should query from the return matrix so that the result can
  * be cached within the stack. */
-cg_matrix_t *
+c_matrix_t *
 rut_matrix_entry_get(rut_matrix_entry_t *entry,
-                     cg_matrix_t *matrix)
+                     c_matrix_t *matrix)
 {
     int depth;
     rut_matrix_entry_t *current;
@@ -413,7 +413,7 @@ rut_matrix_entry_get(rut_matrix_entry_t *entry,
          current = current->parent, depth++) {
         switch (current->op) {
         case RUT_MATRIX_OP_LOAD_IDENTITY:
-            cg_matrix_init_identity(matrix);
+            c_matrix_init_identity(matrix);
             goto initialized;
         case RUT_MATRIX_OP_LOAD: {
             rut_matrix_entry_load_t *load = (rut_matrix_entry_load_t *)current;
@@ -496,43 +496,43 @@ initialized:
         case RUT_MATRIX_OP_TRANSLATE: {
             rut_matrix_entry_translate_t *translate =
                 (rut_matrix_entry_translate_t *)children[i];
-            cg_matrix_translate(
+            c_matrix_translate(
                 matrix, translate->x, translate->y, translate->z);
             continue;
         }
         case RUT_MATRIX_OP_ROTATE: {
             rut_matrix_entry_rotate_t *rotate =
                 (rut_matrix_entry_rotate_t *)children[i];
-            cg_matrix_rotate(
+            c_matrix_rotate(
                 matrix, rotate->angle, rotate->x, rotate->y, rotate->z);
             continue;
         }
         case RUT_MATRIX_OP_ROTATE_EULER: {
             rut_matrix_entry_rotate_euler_t *rotate =
                 (rut_matrix_entry_rotate_euler_t *)children[i];
-            cg_euler_t euler;
-            cg_euler_init(&euler, rotate->heading, rotate->pitch, rotate->roll);
-            cg_matrix_rotate_euler(matrix, &euler);
+            c_euler_t euler;
+            c_euler_init(&euler, rotate->heading, rotate->pitch, rotate->roll);
+            c_matrix_rotate_euler(matrix, &euler);
             continue;
         }
         case RUT_MATRIX_OP_ROTATE_QUATERNION: {
             rut_matrix_entry_rotate_quaternion_t *rotate =
                 (rut_matrix_entry_rotate_quaternion_t *)children[i];
-            cg_quaternion_t quaternion;
-            cg_quaternion_init_from_array(&quaternion, rotate->values);
-            cg_matrix_rotate_quaternion(matrix, &quaternion);
+            c_quaternion_t quaternion;
+            c_quaternion_init_from_array(&quaternion, rotate->values);
+            c_matrix_rotate_quaternion(matrix, &quaternion);
             continue;
         }
         case RUT_MATRIX_OP_SCALE: {
             rut_matrix_entry_scale_t *scale =
                 (rut_matrix_entry_scale_t *)children[i];
-            cg_matrix_scale(matrix, scale->x, scale->y, scale->z);
+            c_matrix_scale(matrix, scale->x, scale->y, scale->z);
             continue;
         }
         case RUT_MATRIX_OP_MULTIPLY: {
             rut_matrix_entry_multiply_t *multiply =
                 (rut_matrix_entry_multiply_t *)children[i];
-            cg_matrix_multiply(matrix, matrix, multiply->matrix);
+            c_matrix_multiply(matrix, matrix, multiply->matrix);
             continue;
         }
 
@@ -558,9 +558,9 @@ rut_matrix_stack_get_entry(rut_matrix_stack_t *stack)
  * to a matrix too so if we are querying the inverse matrix we
  * should query from the return matrix so that the result can
  * be cached within the stack. */
-cg_matrix_t *
+c_matrix_t *
 rut_matrix_stack_get(rut_matrix_stack_t *stack,
-                     cg_matrix_t *matrix)
+                     c_matrix_t *matrix)
 {
     return rut_matrix_entry_get(stack->last_entry, matrix);
 }
@@ -595,7 +595,7 @@ rut_matrix_stack_new(rut_shell_t *shell)
         rut_matrix_stack_magazine =
             rut_magazine_new(sizeof(rut_matrix_entry_full_t), 20);
         rut_matrix_stack_matrices_magazine =
-            rut_magazine_new(sizeof(cg_matrix_t), 20);
+            rut_magazine_new(sizeof(c_matrix_t), 20);
     }
 
     stack->shell = shell;
@@ -821,7 +821,7 @@ rut_matrix_entry_equal(rut_matrix_entry_t *entry0,
                 (rut_matrix_entry_multiply_t *)entry0;
             rut_matrix_entry_multiply_t *mult1 =
                 (rut_matrix_entry_multiply_t *)entry1;
-            if (!cg_matrix_equal(mult0->matrix, mult1->matrix))
+            if (!c_matrix_equal(mult0->matrix, mult1->matrix))
                 return false;
         } break;
         case RUT_MATRIX_OP_LOAD: {
@@ -830,7 +830,7 @@ rut_matrix_entry_equal(rut_matrix_entry_t *entry0,
             /* There's no need to check any further since an
              * _OP_LOAD makes all the ancestors redundant as far as
              * the final matrix value is concerned. */
-            return cg_matrix_equal(load0->matrix, load1->matrix);
+            return c_matrix_equal(load0->matrix, load1->matrix);
         }
         case RUT_MATRIX_OP_SAVE:
             /* We skip over saves above so we shouldn't see save entries */
@@ -914,15 +914,13 @@ rut_debug_matrix_entry_print(rut_matrix_entry_t *entry)
             rut_matrix_entry_multiply_t *mult =
                 (rut_matrix_entry_multiply_t *)entry;
             c_debug("  MULT:\n");
-            cg_debug_matrix_print(mult->matrix);
-            //_cg_matrix_prefix_print ("    ", mult->matrix);
+            c_matrix_prefix_print ("    ", mult->matrix);
             continue;
         }
         case RUT_MATRIX_OP_LOAD: {
             rut_matrix_entry_load_t *load = (rut_matrix_entry_load_t *)entry;
             c_debug("  LOAD:\n");
-            cg_debug_matrix_print(load->matrix);
-            //_cg_matrix_prefix_print ("    ", load->matrix);
+            c_matrix_prefix_print ("    ", load->matrix);
             continue;
         }
         case RUT_MATRIX_OP_SAVE:

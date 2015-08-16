@@ -135,11 +135,7 @@
     <section id="cogl-utilities">
       <title>Utilities</title>
       <xi:include href="xml/cogl-color.xml"/>
-      <xi:include href="xml/cogl-matrix.xml"/>
       <xi:include href="xml/cogl-matrix-stack.xml"/>
-      <xi:include href="xml/cogl-vector.xml"/>
-      <xi:include href="xml/cogl-euler.xml"/>
-      <xi:include href="xml/cogl-quaternion.xml"/>
       <xi:include href="xml/cogl-fence.xml"/>
       <xi:include href="xml/cogl-version.xml"/>
     </section>

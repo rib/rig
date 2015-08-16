@@ -36,7 +36,7 @@
 #include "rut-camera.h"
 #include "rut-refcount-debug.h"
 
-const cg_matrix_t *
+const c_matrix_t *
 rut_transformable_get_matrix(rut_object_t *object)
 {
     rut_transformable_vtable_t *transformable =

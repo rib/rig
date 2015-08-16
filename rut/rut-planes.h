@@ -39,8 +39,8 @@ typedef struct _rut_plane_t {
 void rut_get_eye_planes_for_screen_poly(float *polygon,
                                         int n_vertices,
                                         float *viewport,
-                                        const cg_matrix_t *projection,
-                                        const cg_matrix_t *inverse_project,
+                                        const c_matrix_t *projection,
+                                        const c_matrix_t *inverse_project,
                                         rut_plane_t *planes);
 
 #endif /* _RUT_PLANES_H_ */

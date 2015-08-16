@@ -173,7 +173,7 @@ diamond_slice_new(float size, int tex_width, int tex_height)
     float width = size;
     float height = size;
 #define DIAMOND_SLICE_CORNER_RADIUS 20
-    cg_matrix_t matrix;
+    c_matrix_t matrix;
     float tex_aspect;
     rut_buffer_t *pick_mesh_buffer;
     cg_vertex_p3_t *pick_vertices;
@@ -235,16 +235,16 @@ diamond_slice_new(float size, int tex_width, int tex_height)
             { width, height, 1, 1, width, height },
         };
 
-        cg_matrix_init_identity(&diamond_slice->rotate_matrix);
-        cg_matrix_rotate(&diamond_slice->rotate_matrix, 45, 0, 0, 1);
-        cg_matrix_translate(
+        c_matrix_init_identity(&diamond_slice->rotate_matrix);
+        c_matrix_rotate(&diamond_slice->rotate_matrix, 45, 0, 0, 1);
+        c_matrix_translate(
             &diamond_slice->rotate_matrix, -width / 2.0, -height / 2.0, 0);
 
         n_vertices = sizeof(vertices) / sizeof(vertex_p2t2t2_t);
         for (i = 0; i < n_vertices; i++) {
             float z = 0, w = 1;
 
-            cg_matrix_transform_point(&diamond_slice->rotate_matrix,
+            c_matrix_transform_point(&diamond_slice->rotate_matrix,
                                       &vertices[i].x,
                                       &vertices[i].y,
                                       &z,
@@ -259,7 +259,7 @@ diamond_slice_new(float size, int tex_width, int tex_height)
             vertices[i].Tz = 0;
         }
 
-        cg_matrix_init_identity(&matrix);
+        c_matrix_init_identity(&matrix);
 
         {
             float s_scale = 1.0, t_scale = 1.0;
@@ -282,19 +282,19 @@ diamond_slice_new(float size, int tex_width, int tex_height)
             s0 = 0.5 - (s_scale / 2.0);
             t0 = 0.5 - (t_scale / 2.0);
 
-            cg_matrix_translate(&matrix, s0, t0, 0);
-            cg_matrix_scale(&matrix, s_scale / width, t_scale / height, 1);
+            c_matrix_translate(&matrix, s0, t0, 0);
+            c_matrix_scale(&matrix, s_scale / width, t_scale / height, 1);
 
-            cg_matrix_translate(&matrix, width / 2.0, height / 2.0, 1);
-            cg_matrix_rotate(&matrix, 45, 0, 0, 1);
-            cg_matrix_translate(&matrix, -width / 2.0, -height / 2.0, 1);
+            c_matrix_translate(&matrix, width / 2.0, height / 2.0, 1);
+            c_matrix_rotate(&matrix, 45, 0, 0, 1);
+            c_matrix_translate(&matrix, -width / 2.0, -height / 2.0, 1);
         }
 
         n_vertices = sizeof(vertices) / sizeof(vertex_p2t2t2_t);
         for (i = 0; i < n_vertices; i++) {
             float z = 0, w = 1;
 
-            cg_matrix_transform_point(
+            c_matrix_transform_point(
                 &matrix, &vertices[i].s1, &vertices[i].t1, &z, &w);
         }
 
@@ -318,7 +318,7 @@ diamond_slice_new(float size, int tex_width, int tex_height)
     pick_vertices[5].x = size;
     pick_vertices[5].y = 0;
 
-    cg_matrix_transform_points(&diamond_slice->rotate_matrix,
+    c_matrix_transform_points(&diamond_slice->rotate_matrix,
                                2,
                                sizeof(cg_vertex_p3_t),
                                pick_vertices,

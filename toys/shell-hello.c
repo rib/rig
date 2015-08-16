@@ -21,8 +21,8 @@ shell_redraw_cb(rut_shell_t *shell, void *user_data)
 {
     //struct data *data = idle->data;
     struct data *data = user_data;
-    cg_matrix_t identity;
-    cg_matrix_init_identity(&identity);
+    c_matrix_t identity;
+    c_matrix_init_identity(&identity);
 
     c_print("Paint\n");
 

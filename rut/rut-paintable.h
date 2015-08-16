@@ -40,7 +40,7 @@ typedef struct _rut_paintable_props_t {
 
 typedef struct _rut_queued_paint_t {
     c_list_t list_node;
-    cg_matrix_t modelview;
+    c_matrix_t modelview;
     rut_object_t *paintable;
 } rut_queued_paint_t;
 

@@ -155,8 +155,8 @@ _rut_icon_toggle_init_type(void)
 typedef struct _Icontoggle_grab_state_t {
     rut_object_t *camera;
     rut_icon_toggle_t *toggle;
-    cg_matrix_t transform;
-    cg_matrix_t inverse_transform;
+    c_matrix_t transform;
+    c_matrix_t inverse_transform;
 } Icontoggle_grab_state_t;
 
 static void
@@ -251,14 +251,14 @@ _rut_icon_toggle_input_cb(
         rut_motion_event_get_action(event) == RUT_MOTION_EVENT_ACTION_DOWN) {
         rut_shell_t *shell = toggle->shell;
         Icontoggle_grab_state_t *state = c_slice_new(Icontoggle_grab_state_t);
-        const cg_matrix_t *view;
+        const c_matrix_t *view;
 
         state->toggle = toggle;
         state->camera = rut_input_event_get_camera(event);
         view = rut_camera_get_view_transform(state->camera);
         state->transform = *view;
         rut_graphable_apply_transform(toggle, &state->transform);
-        if (!cg_matrix_get_inverse(&state->transform,
+        if (!c_matrix_get_inverse(&state->transform,
                                    &state->inverse_transform)) {
             c_warning("Failed to calculate inverse of toggle transform\n");
             c_slice_free(Icontoggle_grab_state_t, state);

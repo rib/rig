@@ -247,12 +247,12 @@ rut_ui_viewport_add_preferred_size_callback(
 static bool
 _rut_ui_viewport_pick(rut_object_t *inputable,
                       rut_object_t *camera,
-                      const cg_matrix_t *modelview,
+                      const c_matrix_t *modelview,
                       float x,
                       float y)
 {
     rut_ui_viewport_t *ui_viewport = inputable;
-    cg_matrix_t matrix;
+    c_matrix_t matrix;
 
     if (!modelview) {
         matrix = *rut_camera_get_view_transform(camera);
@@ -865,7 +865,7 @@ rut_ui_viewport_get_doc_scale_y(rut_ui_viewport_t *ui_viewport)
     return ui_viewport->doc_scale_y;
 }
 
-const cg_matrix_t *
+const c_matrix_t *
 rut_ui_viewport_get_doc_matrix(rut_ui_viewport_t *ui_viewport)
 {
     return rut_transform_get_matrix(ui_viewport->doc_transform);

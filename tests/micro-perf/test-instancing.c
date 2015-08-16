@@ -68,7 +68,7 @@ test_rectangles(Data *data)
     n_rects = 0;
     for (y = 0; y < FRAMEBUFFER_HEIGHT; y += RECT_HEIGHT) {
         for (x = 0; x < FRAMEBUFFER_WIDTH; x += RECT_WIDTH) {
-            cg_matrix_t mv;
+            c_matrix_t mv;
             struct rect_attribs *attrib = &attrib_data[n_rects++];
 
             cg_framebuffer_push_matrix(data->fb);
@@ -111,7 +111,7 @@ test_rectangles(Data *data)
     for (y = 0; y < FRAMEBUFFER_HEIGHT; y += RECT_HEIGHT) {
         for (x = 0; x < FRAMEBUFFER_WIDTH; x += RECT_WIDTH) {
             struct rect_attribs *attrib = &attrib_data[n_rects++];
-            cg_matrix_t mv;
+            c_matrix_t mv;
 
             cg_framebuffer_push_matrix(data->fb);
             cg_framebuffer_translate(data->fb, x, y, 0);

@@ -197,10 +197,10 @@ float rut_volume_get_depth(const rut_volume_t *volume);
  */
 void rut_volume_union(rut_volume_t *volume, const rut_volume_t *another_volume);
 
-void rut_volume_transform(rut_volume_t *pv, const cg_matrix_t *matrix);
+void rut_volume_transform(rut_volume_t *pv, const c_matrix_t *matrix);
 void rut_volume_project(rut_volume_t *pv,
-                        const cg_matrix_t *modelview,
-                        const cg_matrix_t *projection,
+                        const c_matrix_t *modelview,
+                        const c_matrix_t *projection,
                         const float *viewport);
 
 void rut_volume_get_bounding_box(rut_volume_t *pv, rut_box_t *box);

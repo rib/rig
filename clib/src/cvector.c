@@ -1,8 +1,4 @@
 /*
- * Cogl
- *
- * A Low-Level GPU Graphics and Utilities API
- *
  * Copyright (C) 2010 Intel Corporation.
  *
  * Permission is hereby granted, free of charge, to any person
@@ -25,16 +21,11 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * Authors:
- *   Robert Bragg <robert@linux.intel.com>
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
-#include <cogl-util.h>
-#include <cogl-vector.h>
+#include "cvector.h"
 
 #include <clib.h>
 #include <math.h>
@@ -46,7 +37,7 @@
 #define W 3
 
 void
-cg_vector3_init(float *vector, float x, float y, float z)
+c_vector3_init(float *vector, float x, float y, float z)
 {
     vector[X] = x;
     vector[Y] = y;
@@ -54,13 +45,13 @@ cg_vector3_init(float *vector, float x, float y, float z)
 }
 
 void
-cg_vector3_init_zero(float *vector)
+c_vector3_init_zero(float *vector)
 {
     memset(vector, 0, sizeof(float) * 3);
 }
 
 bool
-cg_vector3_equal(const void *v1, const void *v2)
+c_vector3_equal(const void *v1, const void *v2)
 {
     float *vector0 = (float *)v1;
     float *vector1 = (float *)v2;
@@ -76,7 +67,7 @@ cg_vector3_equal(const void *v1, const void *v2)
 }
 
 bool
-cg_vector3_equal_with_epsilon(const float *vector0,
+c_vector3_equal_with_epsilon(const float *vector0,
                               const float *vector1,
                               float epsilon)
 {
@@ -92,7 +83,7 @@ cg_vector3_equal_with_epsilon(const float *vector0,
 }
 
 float *
-cg_vector3_copy(const float *vector)
+c_vector3_copy(const float *vector)
 {
     if (vector)
         return c_slice_copy(sizeof(float) * 3, vector);
@@ -100,13 +91,13 @@ cg_vector3_copy(const float *vector)
 }
 
 void
-cg_vector3_free(float *vector)
+c_vector3_free(float *vector)
 {
     c_slice_free1(sizeof(float) * 3, vector);
 }
 
 void
-cg_vector3_invert(float *vector)
+c_vector3_invert(float *vector)
 {
     vector[X] = -vector[X];
     vector[Y] = -vector[Y];
@@ -114,7 +105,7 @@ cg_vector3_invert(float *vector)
 }
 
 void
-cg_vector3_add(float *result, const float *a, const float *b)
+c_vector3_add(float *result, const float *a, const float *b)
 {
     result[X] = a[X] + b[X];
     result[Y] = a[Y] + b[Y];
@@ -122,7 +113,7 @@ cg_vector3_add(float *result, const float *a, const float *b)
 }
 
 void
-cg_vector3_subtract(float *result, const float *a, const float *b)
+c_vector3_subtract(float *result, const float *a, const float *b)
 {
     result[X] = a[X] - b[X];
     result[Y] = a[Y] - b[Y];
@@ -130,7 +121,7 @@ cg_vector3_subtract(float *result, const float *a, const float *b)
 }
 
 void
-cg_vector3_multiply_scalar(float *vector, float scalar)
+c_vector3_multiply_scalar(float *vector, float scalar)
 {
     vector[X] *= scalar;
     vector[Y] *= scalar;
@@ -138,7 +129,7 @@ cg_vector3_multiply_scalar(float *vector, float scalar)
 }
 
 void
-cg_vector3_divide_scalar(float *vector, float scalar)
+c_vector3_divide_scalar(float *vector, float scalar)
 {
     float one_over_scalar = 1.0f / scalar;
     vector[X] *= one_over_scalar;
@@ -147,7 +138,7 @@ cg_vector3_divide_scalar(float *vector, float scalar)
 }
 
 void
-cg_vector3_normalize(float *vector)
+c_vector3_normalize(float *vector)
 {
     float mag_squared =
         vector[X] * vector[X] + vector[Y] * vector[Y] + vector[Z] * vector[Z];
@@ -161,14 +152,14 @@ cg_vector3_normalize(float *vector)
 }
 
 float
-cg_vector3_magnitude(const float *vector)
+c_vector3_magnitude(const float *vector)
 {
     return sqrtf(vector[X] * vector[X] + vector[Y] * vector[Y] +
                  vector[Z] * vector[Z]);
 }
 
 void
-cg_vector3_cross_product(float *result, const float *a, const float *b)
+c_vector3_cross_product(float *result, const float *a, const float *b)
 {
     float tmp[3];
 
@@ -181,13 +172,13 @@ cg_vector3_cross_product(float *result, const float *a, const float *b)
 }
 
 float
-cg_vector3_dot_product(const float *a, const float *b)
+c_vector3_dot_product(const float *a, const float *b)
 {
     return a[X] * b[X] + a[Y] * b[Y] + a[Z] * b[Z];
 }
 
 float
-cg_vector3_distance(const float *a, const float *b)
+c_vector3_distance(const float *a, const float *b)
 {
     float dx = b[X] - a[X];
     float dy = b[Y] - a[Y];
@@ -198,7 +189,7 @@ cg_vector3_distance(const float *a, const float *b)
 
 #if 0
 void
-cg_vector4_init (float *vector, float x, float y, float z)
+c_vector4_init (float *vector, float x, float y, float z)
 {
     vector[X] = x;
     vector[Y] = y;
@@ -207,13 +198,13 @@ cg_vector4_init (float *vector, float x, float y, float z)
 }
 
 void
-cg_vector4_init_zero (float *vector)
+c_vector4_init_zero (float *vector)
 {
     memset (vector, 0, sizeof (CoglVector4));
 }
 
 bool
-cg_vector4_equal (const void *v0, const void *v1)
+c_vector4_equal (const void *v0, const void *v1)
 {
     c_return_val_if_fail (v1 != NULL, false);
     c_return_val_if_fail (v2 != NULL, false);
@@ -222,7 +213,7 @@ cg_vector4_equal (const void *v0, const void *v1)
 }
 
 float *
-cg_vector4_copy (float *vector)
+c_vector4_copy (float *vector)
 {
     if (vector)
         return c_slice_dup (CoglVector4, vector);
@@ -230,13 +221,13 @@ cg_vector4_copy (float *vector)
 }
 
 void
-cg_vector4_free (float *vector)
+c_vector4_free (float *vector)
 {
     c_slice_free (CoglVector4, vector);
 }
 
 void
-cg_vector4_invert (float *vector)
+c_vector4_invert (float *vector)
 {
     vector.x = -vector.x;
     vector.y = -vector.y;
@@ -245,7 +236,7 @@ cg_vector4_invert (float *vector)
 }
 
 void
-cg_vector4_add (float *result,
+c_vector4_add (float *result,
                 float *a,
                 float *b)
 {
@@ -256,7 +247,7 @@ cg_vector4_add (float *result,
 }
 
 void
-cg_vector4_subtract (float *result,
+c_vector4_subtract (float *result,
                      float *a,
                      float *b)
 {
@@ -267,7 +258,7 @@ cg_vector4_subtract (float *result,
 }
 
 void
-cg_vector4_divide (float *vector,
+c_vector4_divide (float *vector,
                    float scalar)
 {
     float one_over_scalar = 1.0f / scalar;

@@ -39,7 +39,6 @@
 #include "cogl-device-private.h"
 #include "cogl-framebuffer-private.h"
 #include "cogl-util.h"
-#include "cogl-matrix-private.h"
 #include "cogl-private.h"
 #include "cogl-pipeline-opengl-private.h"
 #include "cogl-attribute-private.h"
@@ -71,8 +70,8 @@ get_transformed_corners(float x_1,
                         float y_1,
                         float x_2,
                         float y_2,
-                        cg_matrix_t *modelview,
-                        cg_matrix_t *projection,
+                        c_matrix_t *modelview,
+                        c_matrix_t *projection,
                         const float *viewport,
                         float *transformed_corners)
 {
@@ -151,9 +150,9 @@ _cg_clip_stack_push_rectangle(cg_clip_stack_t *stack,
                               const float *viewport)
 {
     cg_clip_stack_rect_t *entry;
-    cg_matrix_t modelview;
-    cg_matrix_t projection;
-    cg_matrix_t modelview_projection;
+    c_matrix_t modelview;
+    c_matrix_t projection;
+    c_matrix_t modelview_projection;
 
     /* Corners of the given rectangle in an clockwise order:
      *  (0, 1)     (2, 3)
@@ -178,7 +177,7 @@ _cg_clip_stack_push_rectangle(cg_clip_stack_t *stack,
     cg_matrix_entry_get(modelview_entry, &modelview);
     cg_matrix_entry_get(projection_entry, &projection);
 
-    cg_matrix_multiply(&modelview_projection, &projection, &modelview);
+    c_matrix_multiply(&modelview_projection, &projection, &modelview);
 
     /* Technically we could avoid the viewport transform at this point
      * if we want to make this a bit faster. */
@@ -242,8 +241,8 @@ _cg_clip_stack_push_primitive(cg_clip_stack_t *stack,
                               const float *viewport)
 {
     cg_clip_stack_primitive_t *entry;
-    cg_matrix_t modelview;
-    cg_matrix_t projection;
+    c_matrix_t modelview;
+    c_matrix_t projection;
     float transformed_corners[8];
 
     entry = _cg_clip_stack_push_entry(

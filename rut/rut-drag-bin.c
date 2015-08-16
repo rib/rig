@@ -107,12 +107,12 @@ _rut_drag_bin_set_size(rut_object_t *object, float width, float height)
 static bool
 _rut_drag_bin_pick(rut_object_t *inputable,
                    rut_object_t *camera,
-                   const cg_matrix_t *modelview,
+                   const c_matrix_t *modelview,
                    float x,
                    float y)
 {
     rut_drag_bin_t *bin = inputable;
-    cg_matrix_t matrix;
+    c_matrix_t matrix;
 
     if (!modelview) {
         matrix = *rut_camera_get_view_transform(camera);
@@ -245,7 +245,7 @@ _rut_drag_bin_grab_input_cb(rut_input_event_t *event, void *user_data)
             float dist = sqrtf(dx * dx + dy * dy);
 
             if (dist > 20) {
-                cg_matrix_t transform;
+                c_matrix_t transform;
 
                 start_drag(rut_input_event_get_onscreen(event), bin);
 

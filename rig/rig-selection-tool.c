@@ -402,13 +402,13 @@ rig_selection_tool_set_active(rig_selection_tool_t *tool, bool active)
 static void
 get_modelview_matrix(rig_entity_t *camera,
                      rig_entity_t *entity,
-                     cg_matrix_t *modelview)
+                     c_matrix_t *modelview)
 {
     rut_object_t *camera_component =
         rig_entity_get_component(camera, RUT_COMPONENT_TYPE_CAMERA);
     *modelview = *rut_camera_get_view_transform(camera_component);
 
-    cg_matrix_multiply(modelview, modelview, rig_entity_get_transform(entity));
+    c_matrix_multiply(modelview, modelview, rig_entity_get_transform(entity));
 }
 
 bool
@@ -418,12 +418,12 @@ map_window_coords_to_overlay_coord(rut_object_t *camera,      /* 2d ui camera */
                                    float *x,
                                    float *y)
 {
-    cg_matrix_t transform;
-    cg_matrix_t inverse_transform;
+    c_matrix_t transform;
+    c_matrix_t inverse_transform;
 
     rut_graphable_get_modelview(overlay, camera, &transform);
 
-    if (!cg_matrix_get_inverse(&transform, &inverse_transform))
+    if (!c_matrix_get_inverse(&transform, &inverse_transform))
         return false;
 
     rut_camera_unproject_coord(camera,
@@ -455,8 +455,8 @@ update_control_point_positions(rig_selection_tool_t *tool,
 
     for (l = tool->selected_entities; l; l = l->next) {
         entity_state_t *entity_state = l->data;
-        cg_matrix_t transform;
-        const cg_matrix_t *projection;
+        c_matrix_t transform;
+        const c_matrix_t *projection;
         float screen_space[4], x, y;
         const float *viewport;
         c_llist_t *l2;
@@ -474,7 +474,7 @@ update_control_point_positions(rig_selection_tool_t *tool,
             point->position[1] = point->y;
             point->position[2] = point->z;
 
-            cg_matrix_transform_points(&transform,
+            c_matrix_transform_points(&transform,
                                        3, /* num components for input */
                                        sizeof(float) * 3, /* input stride */
                                        point->position,
@@ -488,7 +488,7 @@ update_control_point_positions(rig_selection_tool_t *tool,
             screen_space[0] = point->position[0];
             screen_space[1] = point->position[1];
             screen_space[2] = point->position[2];
-            cg_matrix_project_points(projection,
+            c_matrix_project_points(projection,
                                      3, /* num components for input */
                                      sizeof(float) * 3, /* input stride */
                                      screen_space,

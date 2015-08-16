@@ -39,6 +39,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#include <clib.h>
+
 #include <cogl/cogl-defines.h>
 
 /* Guard C code in headers, while including them from C++ */
@@ -81,16 +83,6 @@ CG_BEGIN_DECLS
 #define CG_PRIVATE(x) private_member_##x
 #endif
 
-/* To help catch accidental changes to public structs that should
- * be stack allocated we use this macro to compile time assert that
- * a struct size is as expected.
- */
-#define CG_STRUCT_SIZE_ASSERT(TYPE, SIZE)                                      \
-    typedef struct {                                                           \
-        char compile_time_assert_##TYPE##_size                                 \
-        [(sizeof(TYPE) == (SIZE)) ? 1 : -1];                               \
-    } _##TYPE##SizeCheck
-
 /**
  * cg_func_ptr_t:
  *
@@ -99,18 +91,6 @@ CG_BEGIN_DECLS
  * actual arguments and return type may be different.
  */
 typedef void (*cg_func_ptr_t)(void);
-
-/* We forward declare this in cogl-types to avoid circular dependencies
- * between cogl-matrix.h, cogl-euler.h and cogl-quaterion.h */
-typedef struct _cg_matrix_t cg_matrix_t;
-
-/* Same as above we forward declared cg_quaternion_t to avoid
- * circular dependencies. */
-typedef struct _cg_quaternion_t cg_quaternion_t;
-
-/* Same as above we forward declared cg_euler_t to avoid
- * circular dependencies. */
-typedef struct _cg_euler_t cg_euler_t;
 
 typedef struct _cg_color_t cg_color_t;
 
@@ -283,7 +263,7 @@ struct _cg_color_t {
     float blue;
     float alpha;
 };
-CG_STRUCT_SIZE_ASSERT(cg_color_t, 16);
+_C_STRUCT_SIZE_ASSERT(cg_color_t, 16);
 
 /**
  * CG_BLEND_STRING_ERROR:

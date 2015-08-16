@@ -47,7 +47,7 @@ void rig_node_vec3_lerp(rig_node_t *a, rig_node_t *b, float t, float value[3]);
 void rig_node_quaternion_lerp(rig_node_t *a,
                               rig_node_t *b,
                               float t,
-                              cg_quaternion_t *value);
+                              c_quaternion_t *value);
 
 void rig_node_double_lerp(rig_node_t *a, rig_node_t *b, float t, double *value);
 
@@ -93,7 +93,7 @@ rig_node_t *rig_node_new_for_integer(float t, int value);
 
 rig_node_t *rig_node_new_for_uint32(float t, uint32_t value);
 
-rig_node_t *rig_node_new_for_quaternion(float t, const cg_quaternion_t *value);
+rig_node_t *rig_node_new_for_quaternion(float t, const c_quaternion_t *value);
 
 rig_node_t *rig_node_new_for_color(float t, const cg_color_t *value);
 

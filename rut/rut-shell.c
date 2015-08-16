@@ -202,7 +202,7 @@ rut_motion_event_get_transformed_xy(rut_input_event_t *event,
                                     float *x,
                                     float *y)
 {
-    const cg_matrix_t *transform = event->input_transform;
+    const c_matrix_t *transform = event->input_transform;
     rut_shell_t *shell = event->onscreen->shell;
 
     shell->platform.motion_event_get_transformed_xy(event, x, y);
@@ -239,13 +239,13 @@ rut_motion_event_unproject(rut_input_event_t *event,
                            float *x,
                            float *y)
 {
-    cg_matrix_t transform;
-    cg_matrix_t inverse_transform;
+    c_matrix_t transform;
+    c_matrix_t inverse_transform;
     rut_object_t *camera = rut_input_event_get_camera(event);
 
     rut_graphable_get_modelview(graphable, camera, &transform);
 
-    if (!cg_matrix_get_inverse(&transform, &inverse_transform))
+    if (!c_matrix_get_inverse(&transform, &inverse_transform))
         return false;
 
     *x = rut_motion_event_get_x(event);
@@ -671,7 +671,7 @@ _rut_shell_init(rut_shell_t *shell)
                                       CIRCLE_TEX_RADIUS /* radius */,
                                       CIRCLE_TEX_PADDING /* padding */);
 
-        cg_matrix_init_identity(&shell->identity_matrix);
+        c_matrix_init_identity(&shell->identity_matrix);
 
 #ifdef USE_PANGO
         shell->pango_font_map =

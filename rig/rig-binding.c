@@ -182,9 +182,9 @@ get_property_codegen_info(rut_property_t *property,
     /* FIXME: we don't want to expose the Cogl api... */
     case RUT_PROPERTY_TYPE_QUATERNION:
         *type_name = "quaternion";
-        *var_decl_pre = "cg_quaternion_t ";
+        *var_decl_pre = "c_quaternion_t ";
         *var_decl_post = "";
-        *get_val_pre = "const cg_quaternion_t *";
+        *get_val_pre = "const c_quaternion_t *";
         break;
     case RUT_PROPERTY_TYPE_VEC3:
         *type_name = "vec3";

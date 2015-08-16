@@ -748,7 +748,7 @@ _cg_pipeline_progend_glsl_pre_paint(cg_device_t *dev,
     bool projection_changed;
     bool need_modelview;
     bool need_projection;
-    cg_matrix_t modelview, projection;
+    c_matrix_t modelview, projection;
 
     program_state = get_program_state(pipeline);
 
@@ -788,9 +788,9 @@ _cg_pipeline_progend_glsl_pre_paint(cg_device_t *dev,
             cg_matrix_entry_get(modelview_entry, &modelview);
         if (need_projection) {
             if (needs_flip && program_state->flip_uniform == -1) {
-                cg_matrix_t tmp_matrix;
+                c_matrix_t tmp_matrix;
                 cg_matrix_entry_get(projection_entry, &tmp_matrix);
-                cg_matrix_multiply(
+                c_matrix_multiply(
                     &projection, &dev->y_flip_matrix, &tmp_matrix);
             } else
                 cg_matrix_entry_get(projection_entry, &projection);
@@ -801,24 +801,24 @@ _cg_pipeline_progend_glsl_pre_paint(cg_device_t *dev,
                glUniformMatrix4fv(program_state->projection_uniform,
                                   1, /* count */
                                   false, /* transpose */
-                                  cg_matrix_get_array(&projection)));
+                                  c_matrix_get_array(&projection)));
 
         if (modelview_changed && program_state->modelview_uniform != -1)
             GE(dev,
                glUniformMatrix4fv(program_state->modelview_uniform,
                                   1, /* count */
                                   false, /* transpose */
-                                  cg_matrix_get_array(&modelview)));
+                                  c_matrix_get_array(&modelview)));
 
         if (program_state->mvp_uniform != -1) {
-            cg_matrix_t combined;
+            c_matrix_t combined;
 
-            cg_matrix_multiply(&combined, &projection, &modelview);
+            c_matrix_multiply(&combined, &projection, &modelview);
             GE(dev,
                glUniformMatrix4fv(program_state->mvp_uniform,
                                   1, /* count */
                                   false, /* transpose */
-                                  cg_matrix_get_array(&combined)));
+                                  c_matrix_get_array(&combined)));
         }
     }
 

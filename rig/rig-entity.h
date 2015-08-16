@@ -88,9 +88,9 @@ struct _rig_entity_t {
 
     /* private fields */
     float position[3];
-    cg_quaternion_t rotation;
+    c_quaternion_t rotation;
     float scale; /* uniform scaling only */
-    cg_matrix_t transform;
+    c_matrix_t transform;
 
     c_ptr_array_t *components;
 
@@ -133,19 +133,19 @@ void rig_entity_set_position(rut_object_t *entity, const float position[3]);
 void rig_entity_get_transformed_position(rig_entity_t *entity,
                                          float position[3]);
 
-const cg_quaternion_t *rig_entity_get_rotation(rut_object_t *entity);
+const c_quaternion_t *rig_entity_get_rotation(rut_object_t *entity);
 
 void rig_entity_set_rotation(rut_object_t *entity,
-                             const cg_quaternion_t *rotation);
+                             const c_quaternion_t *rotation);
 
 void rig_entity_apply_rotations(rut_object_t *entity,
-                                cg_quaternion_t *rotations);
+                                c_quaternion_t *rotations);
 
-void rig_entity_get_rotations(rut_object_t *entity, cg_quaternion_t *rotation);
+void rig_entity_get_rotations(rut_object_t *entity, c_quaternion_t *rotation);
 
 void rig_entity_get_view_rotations(rut_object_t *entity,
                                    rut_object_t *camera_entity,
-                                   cg_quaternion_t *rotation);
+                                   c_quaternion_t *rotation);
 
 float rig_entity_get_scale(rut_object_t *entity);
 
@@ -153,7 +153,7 @@ void rig_entity_set_scale(rut_object_t *entity, float scale);
 
 float rig_entity_get_scales(rut_object_t *entity);
 
-const cg_matrix_t *rig_entity_get_transform(rut_object_t *self);
+const c_matrix_t *rig_entity_get_transform(rut_object_t *self);
 
 void rig_entity_add_component(rig_entity_t *entity, rut_object_t *component);
 

@@ -42,7 +42,6 @@
 #include "cogl-pipeline-opengl-private.h"
 #include "cogl-winsys-private.h"
 #include "cogl-framebuffer-private.h"
-#include "cogl-matrix-private.h"
 #include "cogl-bitmap-private.h"
 #include "cogl-texture-private.h"
 #include "cogl-texture-driver.h"
@@ -125,8 +124,8 @@ _cg_driver_error_domain(void)
 /* Transform a homogeneous vertex position from model space to Cogl
  * window coordinates (with 0,0 being top left) */
 void
-_cg_transform_point(const cg_matrix_t *matrix_mv,
-                    const cg_matrix_t *matrix_p,
+_cg_transform_point(const c_matrix_t *matrix_mv,
+                    const c_matrix_t *matrix_p,
                     const float *viewport,
                     float *x,
                     float *y)
@@ -135,10 +134,10 @@ _cg_transform_point(const cg_matrix_t *matrix_mv,
     float w = 1;
 
     /* Apply the modelview matrix transform */
-    cg_matrix_transform_point(matrix_mv, x, y, &z, &w);
+    c_matrix_transform_point(matrix_mv, x, y, &z, &w);
 
     /* Apply the projection matrix transform */
-    cg_matrix_transform_point(matrix_p, x, y, &z, &w);
+    c_matrix_transform_point(matrix_p, x, y, &z, &w);
 
     /* Perform perspective division */
     *x /= w;

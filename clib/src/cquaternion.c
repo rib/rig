@@ -1,8 +1,4 @@
 /*
- * Cogl
- *
- * A Low-Level GPU Graphics and Utilities API
- *
  * Copyright (C) 2010 Intel Corporation.
  *
  * Permission is hereby granted, free of charge, to any person
@@ -25,9 +21,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * Authors:
- *   Robert Bragg <robert@linux.intel.com>
- *
  * Various references relating to quaternions:
  *
  * http://www.cs.caltech.edu/courses/cs171/quatut.pdf
@@ -39,33 +32,30 @@
  * 3D Maths Primer for Graphics and Game Development ISBN-10: 1556229119
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
-#include <cogl-util.h>
-#include <cogl-quaternion.h>
-#include <cogl-quaternion-private.h>
-#include <cogl-matrix.h>
-#include <cogl-vector.h>
-#include <cogl-euler.h>
+#include "cquaternion.h"
+#include "cquaternion-private.h"
+#include "cmatrix.h"
+#include "cvector.h"
+#include "ceuler.h"
 
 #include <string.h>
 #include <math.h>
 
 #define FLOAT_EPSILON 1e-03
 
-static cg_quaternion_t zero_quaternion = { 0.0, 0.0, 0.0, 0.0, };
+static c_quaternion_t zero_quaternion = { 0.0, 0.0, 0.0, 0.0, };
 
-static cg_quaternion_t identity_quaternion = { 1.0, 0.0, 0.0, 0.0, };
+static c_quaternion_t identity_quaternion = { 1.0, 0.0, 0.0, 0.0, };
 
 /* This function is just here to be called from GDB so we don't really
    want to put a declaration in a header and we just add it here to
    avoid a warning */
-void _cg_quaternion_print(cg_quaternion_t *quarternion);
+void _c_quaternion_print(c_quaternion_t *quarternion);
 
 void
-_cg_quaternion_print(cg_quaternion_t *quaternion)
+_c_quaternion_print(c_quaternion_t *quaternion)
 {
     c_print("[ %6.4f (%6.4f, %6.4f, %6.4f)]\n",
             quaternion->w,
@@ -75,15 +65,15 @@ _cg_quaternion_print(cg_quaternion_t *quaternion)
 }
 
 void
-cg_quaternion_init(
-    cg_quaternion_t *quaternion, float angle, float x, float y, float z)
+c_quaternion_init(
+    c_quaternion_t *quaternion, float angle, float x, float y, float z)
 {
     float axis[3] = { x, y, z };
-    cg_quaternion_init_from_angle_vector(quaternion, angle, axis);
+    c_quaternion_init_from_angle_vector(quaternion, angle, axis);
 }
 
 void
-cg_quaternion_init_from_angle_vector(cg_quaternion_t *quaternion,
+c_quaternion_init_from_angle_vector(c_quaternion_t *quaternion,
                                      float angle,
                                      const float *axis3f_in)
 {
@@ -95,14 +85,14 @@ cg_quaternion_init_from_angle_vector(cg_quaternion_t *quaternion,
     float half_angle;
     float sin_half_angle;
 
-    /* XXX: Should we make cg_vector3_normalize have separate in and
+    /* XXX: Should we make c_vector3_normalize have separate in and
      * out args? */
     axis[0] = axis3f_in[0];
     axis[1] = axis3f_in[1];
     axis[2] = axis3f_in[2];
-    cg_vector3_normalize(axis);
+    c_vector3_normalize(axis);
 
-    half_angle = angle * _CG_QUATERNION_DEGREES_TO_RADIANS * 0.5f;
+    half_angle = angle * _C_QUATERNION_DEGREES_TO_RADIANS * 0.5f;
     sin_half_angle = sinf(half_angle);
 
     quaternion->w = cosf(half_angle);
@@ -111,11 +101,11 @@ cg_quaternion_init_from_angle_vector(cg_quaternion_t *quaternion,
     quaternion->y = axis[1] * sin_half_angle;
     quaternion->z = axis[2] * sin_half_angle;
 
-    cg_quaternion_normalize(quaternion);
+    c_quaternion_normalize(quaternion);
 }
 
 void
-cg_quaternion_init_identity(cg_quaternion_t *quaternion)
+c_quaternion_init_identity(c_quaternion_t *quaternion)
 {
     quaternion->w = 1.0;
 
@@ -125,7 +115,7 @@ cg_quaternion_init_identity(cg_quaternion_t *quaternion)
 }
 
 void
-cg_quaternion_init_from_array(cg_quaternion_t *quaternion,
+c_quaternion_init_from_array(c_quaternion_t *quaternion,
                               const float *array)
 {
     quaternion->w = array[0];
@@ -135,14 +125,14 @@ cg_quaternion_init_from_array(cg_quaternion_t *quaternion,
 }
 
 void
-cg_quaternion_init_from_x_rotation(cg_quaternion_t *quaternion,
+c_quaternion_init_from_x_rotation(c_quaternion_t *quaternion,
                                    float angle)
 {
     /* NB: We are using quaternions to represent an axis (a), angle (𝜃) pair
      * in this form:
      * [w=cos(𝜃/2) ( x=sin(𝜃/2)*a.x, y=sin(𝜃/2)*a.y, z=sin(𝜃/2)*a.x )]
      */
-    float half_angle = angle * _CG_QUATERNION_DEGREES_TO_RADIANS * 0.5f;
+    float half_angle = angle * _C_QUATERNION_DEGREES_TO_RADIANS * 0.5f;
 
     quaternion->w = cosf(half_angle);
 
@@ -152,14 +142,14 @@ cg_quaternion_init_from_x_rotation(cg_quaternion_t *quaternion,
 }
 
 void
-cg_quaternion_init_from_y_rotation(cg_quaternion_t *quaternion,
+c_quaternion_init_from_y_rotation(c_quaternion_t *quaternion,
                                    float angle)
 {
     /* NB: We are using quaternions to represent an axis (a), angle (𝜃) pair
      * in this form:
      * [w=cos(𝜃/2) ( x=sin(𝜃/2)*a.x, y=sin(𝜃/2)*a.y, z=sin(𝜃/2)*a.x )]
      */
-    float half_angle = angle * _CG_QUATERNION_DEGREES_TO_RADIANS * 0.5f;
+    float half_angle = angle * _C_QUATERNION_DEGREES_TO_RADIANS * 0.5f;
 
     quaternion->w = cosf(half_angle);
 
@@ -169,14 +159,14 @@ cg_quaternion_init_from_y_rotation(cg_quaternion_t *quaternion,
 }
 
 void
-cg_quaternion_init_from_z_rotation(cg_quaternion_t *quaternion,
+c_quaternion_init_from_z_rotation(c_quaternion_t *quaternion,
                                    float angle)
 {
     /* NB: We are using quaternions to represent an axis (a), angle (𝜃) pair
      * in this form:
      * [w=cos(𝜃/2) ( x=sin(𝜃/2)*a.x, y=sin(𝜃/2)*a.y, z=sin(𝜃/2)*a.x )]
      */
-    float half_angle = angle * _CG_QUATERNION_DEGREES_TO_RADIANS * 0.5f;
+    float half_angle = angle * _C_QUATERNION_DEGREES_TO_RADIANS * 0.5f;
 
     quaternion->w = cosf(half_angle);
 
@@ -186,25 +176,25 @@ cg_quaternion_init_from_z_rotation(cg_quaternion_t *quaternion,
 }
 
 void
-cg_quaternion_init_from_euler(cg_quaternion_t *quaternion,
-                              const cg_euler_t *euler)
+c_quaternion_init_from_euler(c_quaternion_t *quaternion,
+                              const c_euler_t *euler)
 {
     /* NB: We are using quaternions to represent an axis (a), angle (𝜃) pair
      * in this form:
      * [w=cos(𝜃/2) ( x=sin(𝜃/2)*a.x, y=sin(𝜃/2)*a.y, z=sin(𝜃/2)*a.x )]
      */
     float sin_heading =
-        sinf(euler->heading * _CG_QUATERNION_DEGREES_TO_RADIANS * 0.5f);
+        sinf(euler->heading * _C_QUATERNION_DEGREES_TO_RADIANS * 0.5f);
     float sin_pitch =
-        sinf(euler->pitch * _CG_QUATERNION_DEGREES_TO_RADIANS * 0.5f);
+        sinf(euler->pitch * _C_QUATERNION_DEGREES_TO_RADIANS * 0.5f);
     float sin_roll =
-        sinf(euler->roll * _CG_QUATERNION_DEGREES_TO_RADIANS * 0.5f);
+        sinf(euler->roll * _C_QUATERNION_DEGREES_TO_RADIANS * 0.5f);
     float cos_heading =
-        cosf(euler->heading * _CG_QUATERNION_DEGREES_TO_RADIANS * 0.5f);
+        cosf(euler->heading * _C_QUATERNION_DEGREES_TO_RADIANS * 0.5f);
     float cos_pitch =
-        cosf(euler->pitch * _CG_QUATERNION_DEGREES_TO_RADIANS * 0.5f);
+        cosf(euler->pitch * _C_QUATERNION_DEGREES_TO_RADIANS * 0.5f);
     float cos_roll =
-        cosf(euler->roll * _CG_QUATERNION_DEGREES_TO_RADIANS * 0.5f);
+        cosf(euler->roll * _C_QUATERNION_DEGREES_TO_RADIANS * 0.5f);
 
     quaternion->w =
         cos_heading * cos_pitch * cos_roll + sin_heading * sin_pitch * sin_roll;
@@ -219,7 +209,7 @@ cg_quaternion_init_from_euler(cg_quaternion_t *quaternion,
 
 /* XXX: it could be nice to make something like this public... */
 /*
- * CG_MATRIX_READ:
+ * C_MATRIX_READ:
  * @MATRIX: A 4x4 transformation matrix
  * @ROW: The row of the value you want to read
  * @COLUMN: The column of the value you want to read
@@ -227,12 +217,12 @@ cg_quaternion_init_from_euler(cg_quaternion_t *quaternion,
  * Reads a value from the given matrix using integers to index
  * into the matrix.
  */
-#define CG_MATRIX_READ(MATRIX, ROW, COLUMN)                                    \
+#define C_MATRIX_READ(MATRIX, ROW, COLUMN)                                    \
     (((const float *)matrix)[COLUMN * 4 + ROW])
 
 void
-cg_quaternion_init_from_matrix(cg_quaternion_t *quaternion,
-                               const cg_matrix_t *matrix)
+c_quaternion_init_from_matrix(c_quaternion_t *quaternion,
+                               const c_matrix_t *matrix)
 {
     /* Algorithm devised by Ken Shoemake, Ref:
      * http://campar.in.tum.de/twiki/pub/Chair/DwarfTutorial/quatut.pdf
@@ -258,25 +248,25 @@ cg_quaternion_init_from_matrix(cg_quaternion_t *quaternion,
         int h = X;
         if (matrix->yy > matrix->xx)
             h = Y;
-        if (matrix->zz > CG_MATRIX_READ(matrix, h, h))
+        if (matrix->zz > C_MATRIX_READ(matrix, h, h))
             h = Z;
         switch (h) {
 #define CASE_MACRO(i, j, k, I, J, K)                                           \
 case I:                                                                    \
     root = sqrtf(                                                          \
-        (CG_MATRIX_READ(matrix, I, I) -                                    \
-         (CG_MATRIX_READ(matrix, J, J) + CG_MATRIX_READ(matrix, K, K))) +  \
-        CG_MATRIX_READ(matrix, W, W));                                     \
+        (C_MATRIX_READ(matrix, I, I) -                                    \
+         (C_MATRIX_READ(matrix, J, J) + C_MATRIX_READ(matrix, K, K))) +  \
+        C_MATRIX_READ(matrix, W, W));                                     \
     quaternion->i = root * 0.5f;                                           \
     root = 0.5f / root;                                                    \
     quaternion->j =                                                        \
-        (CG_MATRIX_READ(matrix, I, J) + CG_MATRIX_READ(matrix, J, I)) *    \
+        (C_MATRIX_READ(matrix, I, J) + C_MATRIX_READ(matrix, J, I)) *    \
         root;                                                              \
     quaternion->k =                                                        \
-        (CG_MATRIX_READ(matrix, K, I) + CG_MATRIX_READ(matrix, I, K)) *    \
+        (C_MATRIX_READ(matrix, K, I) + C_MATRIX_READ(matrix, I, K)) *    \
         root;                                                              \
     quaternion->w =                                                        \
-        (CG_MATRIX_READ(matrix, K, J) - CG_MATRIX_READ(matrix, J, K)) *    \
+        (C_MATRIX_READ(matrix, K, J) - C_MATRIX_READ(matrix, J, K)) *    \
         root;                                                              \
     break
             CASE_MACRO(x, y, z, X, Y, Z);
@@ -299,10 +289,10 @@ case I:                                                                    \
 }
 
 bool
-cg_quaternion_equal(const void *v1, const void *v2)
+c_quaternion_equal(const void *v1, const void *v2)
 {
-    const cg_quaternion_t *a = v1;
-    const cg_quaternion_t *b = v2;
+    const c_quaternion_t *a = v1;
+    const c_quaternion_t *b = v2;
 
     c_return_val_if_fail(v1 != NULL, false);
     c_return_val_if_fail(v2 != NULL, false);
@@ -313,11 +303,11 @@ cg_quaternion_equal(const void *v1, const void *v2)
     return (a->w == b->w && a->x == b->x && a->y == b->y && a->z == b->z);
 }
 
-cg_quaternion_t *
-cg_quaternion_copy(const cg_quaternion_t *src)
+c_quaternion_t *
+c_quaternion_copy(const c_quaternion_t *src)
 {
     if (C_LIKELY(src)) {
-        cg_quaternion_t *new = c_slice_new(cg_quaternion_t);
+        c_quaternion_t *new = c_slice_new(c_quaternion_t);
         memcpy(new, src, sizeof(float) * 4);
         return new;
     } else
@@ -325,13 +315,13 @@ cg_quaternion_copy(const cg_quaternion_t *src)
 }
 
 void
-cg_quaternion_free(cg_quaternion_t *quaternion)
+c_quaternion_free(c_quaternion_t *quaternion)
 {
-    c_slice_free(cg_quaternion_t, quaternion);
+    c_slice_free(c_quaternion_t, quaternion);
 }
 
 float
-cg_quaternion_get_rotation_angle(const cg_quaternion_t *quaternion)
+c_quaternion_get_rotation_angle(const c_quaternion_t *quaternion)
 {
     /* NB: We are using quaternions to represent an axis (a), angle (𝜃) pair
      * in this form:
@@ -339,11 +329,11 @@ cg_quaternion_get_rotation_angle(const cg_quaternion_t *quaternion)
      */
 
     /* FIXME: clamp [-1, 1] */
-    return 2.0f * acosf(quaternion->w) * _CG_QUATERNION_RADIANS_TO_DEGREES;
+    return 2.0f * acosf(quaternion->w) * _C_QUATERNION_RADIANS_TO_DEGREES;
 }
 
 void
-cg_quaternion_get_rotation_axis(const cg_quaternion_t *quaternion,
+c_quaternion_get_rotation_axis(const c_quaternion_t *quaternion,
                                 float *vector3)
 {
     float sin_half_angle_sqr;
@@ -376,9 +366,9 @@ cg_quaternion_get_rotation_axis(const cg_quaternion_t *quaternion,
 }
 
 void
-cg_quaternion_normalize(cg_quaternion_t *quaternion)
+c_quaternion_normalize(c_quaternion_t *quaternion)
 {
-    float slen = _CG_QUATERNION_NORM(quaternion);
+    float slen = _C_QUATERNION_NORM(quaternion);
     float factor = 1.0f / sqrtf(slen);
 
     quaternion->x *= factor;
@@ -391,14 +381,14 @@ cg_quaternion_normalize(cg_quaternion_t *quaternion)
 }
 
 float
-cg_quaternion_dot_product(const cg_quaternion_t *a,
-                          const cg_quaternion_t *b)
+c_quaternion_dot_product(const c_quaternion_t *a,
+                          const c_quaternion_t *b)
 {
     return a->w * b->w + a->x * b->x + a->y * b->y + a->z * b->z;
 }
 
 void
-cg_quaternion_invert(cg_quaternion_t *quaternion)
+c_quaternion_invert(c_quaternion_t *quaternion)
 {
     quaternion->x = -quaternion->x;
     quaternion->y = -quaternion->y;
@@ -406,9 +396,9 @@ cg_quaternion_invert(cg_quaternion_t *quaternion)
 }
 
 void
-cg_quaternion_multiply(cg_quaternion_t *result,
-                       const cg_quaternion_t *a,
-                       const cg_quaternion_t *b)
+c_quaternion_multiply(c_quaternion_t *result,
+                       const c_quaternion_t *a,
+                       const c_quaternion_t *b)
 {
     float w = a->w;
     float x = a->x;
@@ -425,7 +415,7 @@ cg_quaternion_multiply(cg_quaternion_t *result,
 }
 
 void
-cg_quaternion_pow(cg_quaternion_t *quaternion, float exponent)
+c_quaternion_pow(c_quaternion_t *quaternion, float exponent)
 {
     float half_angle;
     float new_half_angle;
@@ -459,9 +449,9 @@ cg_quaternion_pow(cg_quaternion_t *quaternion, float exponent)
 }
 
 void
-cg_quaternion_slerp(cg_quaternion_t *result,
-                    const cg_quaternion_t *a,
-                    const cg_quaternion_t *b,
+c_quaternion_slerp(c_quaternion_t *result,
+                    const c_quaternion_t *a,
+                    const c_quaternion_t *b,
                     float t)
 {
     float cos_difference;
@@ -483,7 +473,7 @@ cg_quaternion_slerp(cg_quaternion_t *result,
     }
 
     /* compute the cosine of the angle between the two given quaternions */
-    cos_difference = cg_quaternion_dot_product(a, b);
+    cos_difference = c_quaternion_dot_product(a, b);
 
     /* If negative, use -b. Two quaternions q and -q represent the same angle
      * but
@@ -538,9 +528,9 @@ cg_quaternion_slerp(cg_quaternion_t *result,
 }
 
 void
-cg_quaternion_nlerp(cg_quaternion_t *result,
-                    const cg_quaternion_t *a,
-                    const cg_quaternion_t *b,
+c_quaternion_nlerp(c_quaternion_t *result,
+                    const c_quaternion_t *a,
+                    const c_quaternion_t *b,
                     float t)
 {
     float cos_difference;
@@ -562,7 +552,7 @@ cg_quaternion_nlerp(cg_quaternion_t *result,
     }
 
     /* compute the cosine of the angle between the two given quaternions */
-    cos_difference = cg_quaternion_dot_product(a, b);
+    cos_difference = c_quaternion_dot_product(a, b);
 
     /* If negative, use -b. Two quaternions q and -q represent the same angle
      * but
@@ -594,32 +584,32 @@ cg_quaternion_nlerp(cg_quaternion_t *result,
     result->z = fa * a->z + fb * qb_z;
     result->w = fa * a->w + fb * qb_w;
 
-    cg_quaternion_normalize(result);
+    c_quaternion_normalize(result);
 }
 
 void
-cg_quaternion_squad(cg_quaternion_t *result,
-                    const cg_quaternion_t *prev,
-                    const cg_quaternion_t *a,
-                    const cg_quaternion_t *b,
-                    const cg_quaternion_t *next,
+c_quaternion_squad(c_quaternion_t *result,
+                    const c_quaternion_t *prev,
+                    const c_quaternion_t *a,
+                    const c_quaternion_t *b,
+                    const c_quaternion_t *next,
                     float t)
 {
-    cg_quaternion_t slerp0;
-    cg_quaternion_t slerp1;
+    c_quaternion_t slerp0;
+    c_quaternion_t slerp1;
 
-    cg_quaternion_slerp(&slerp0, a, b, t);
-    cg_quaternion_slerp(&slerp1, prev, next, t);
-    cg_quaternion_slerp(result, &slerp0, &slerp1, 2.0f * t * (1.0f - t));
+    c_quaternion_slerp(&slerp0, a, b, t);
+    c_quaternion_slerp(&slerp1, prev, next, t);
+    c_quaternion_slerp(result, &slerp0, &slerp1, 2.0f * t * (1.0f - t));
 }
 
-const cg_quaternion_t *
+const c_quaternion_t *
 cg_get_static_identity_quaternion(void)
 {
     return &identity_quaternion;
 }
 
-const cg_quaternion_t *
+const c_quaternion_t *
 cg_get_static_zero_quaternion(void)
 {
     return &zero_quaternion;

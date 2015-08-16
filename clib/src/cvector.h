@@ -1,8 +1,4 @@
 /*
- * Cogl
- *
- * A Low-Level GPU Graphics and Utilities API
- *
  * Copyright (C) 2008,2009,2010 Intel Corporation.
  *
  * Permission is hereby granted, free of charge, to any person
@@ -25,21 +21,16 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * Authors:
- *   Robert Bragg <robert@linux.intel.com>
  */
 
-#if !defined(__CG_H_INSIDE__) && !defined(CG_COMPILATION)
-#error "Only <cogl/cogl.h> can be included directly."
-#endif
+#pragma once
 
-#ifndef __CG_VECTOR_H
-#define __CG_VECTOR_H
+#include <clib.h>
 
-CG_BEGIN_DECLS
+C_BEGIN_DECLS
 
 /**
- * SECTION:cogl-vector
+ * SECTION:cvector
  * @short_description: Functions for handling single precision float
  *                     vectors.
  *
@@ -48,22 +39,22 @@ CG_BEGIN_DECLS
  */
 
 /**
- * cg_vector3_init:
+ * c_vector3_init:
  * @vector: The 3 component vector you want to initialize
  * @x: The x component
  * @y: The y component
  * @z: The z component
  *
  * Initializes a 3 component, single precision float vector which can
- * then be manipulated with the cg_vector convenience APIs. Vectors
+ * then be manipulated with the c_vector convenience APIs. Vectors
  * can also be used in places where a "point" is often desired.
  *
  * Stability: Unstable
  */
-void cg_vector3_init(float *vector, float x, float y, float z);
+void c_vector3_init(float *vector, float x, float y, float z);
 
 /**
- * cg_vector3_init_zero:
+ * c_vector3_init_zero:
  * @vector: The 3 component vector you want to initialize
  *
  * Initializes a 3 component, single precision float vector with zero
@@ -71,10 +62,10 @@ void cg_vector3_init(float *vector, float x, float y, float z);
  *
  * Stability: Unstable
  */
-void cg_vector3_init_zero(float *vector);
+void c_vector3_init_zero(float *vector);
 
 /**
- * cg_vector3_equal:
+ * c_vector3_equal:
  * @v1: The first 3 component vector you want to compare
  * @v2: The second 3 component vector you want to compare
  *
@@ -91,10 +82,10 @@ void cg_vector3_init_zero(float *vector);
  *
  * Stability: Unstable
  */
-bool cg_vector3_equal(const void *v1, const void *v2);
+bool c_vector3_equal(const void *v1, const void *v2);
 
 /**
- * cg_vector3_equal_with_epsilon:
+ * c_vector3_equal_with_epsilon:
  * @vector0: The first 3 component vector you want to compare
  * @vector1: The second 3 component vector you want to compare
  * @epsilon: The allowable difference between components to still be
@@ -113,48 +104,48 @@ bool cg_vector3_equal(const void *v1, const void *v2);
  *
  * Stability: Unstable
  */
-bool cg_vector3_equal_with_epsilon(const float *vector0,
+bool c_vector3_equal_with_epsilon(const float *vector0,
                                    const float *vector1,
                                    float epsilon);
 
 /**
- * cg_vector3_copy:
+ * c_vector3_copy:
  * @vector: The 3 component vector you want to copy
  *
  * Allocates a new 3 component float vector on the heap initializing
  * the components from the given @vector and returns a pointer to the
  * newly allocated vector. You should free the memory using
- * cg_vector3_free()
+ * c_vector3_free()
  *
  * Returns: A newly allocated 3 component float vector
  *
  * Stability: Unstable
  */
-float *cg_vector3_copy(const float *vector);
+float *c_vector3_copy(const float *vector);
 
 /**
- * cg_vector3_free:
+ * c_vector3_free:
  * @vector: The 3 component you want to free
  *
  * Frees a 3 component vector that was previously allocated with
- * cg_vector3_copy()
+ * c_vector3_copy()
  *
  * Stability: Unstable
  */
-void cg_vector3_free(float *vector);
+void c_vector3_free(float *vector);
 
 /**
- * cg_vector3_invert:
+ * c_vector3_invert:
  * @vector: The 3 component vector you want to manipulate
  *
  * Inverts/negates all the components of the given @vector.
  *
  * Stability: Unstable
  */
-void cg_vector3_invert(float *vector);
+void c_vector3_invert(float *vector);
 
 /**
- * cg_vector3_add:
+ * c_vector3_add:
  * @result: Where you want the result written
  * @a: The first vector operand
  * @b: The second vector operand
@@ -164,10 +155,10 @@ void cg_vector3_invert(float *vector);
  *
  * Stability: Unstable
  */
-void cg_vector3_add(float *result, const float *a, const float *b);
+void c_vector3_add(float *result, const float *a, const float *b);
 
 /**
- * cg_vector3_subtract:
+ * c_vector3_subtract:
  * @result: Where you want the result written
  * @a: The first vector operand
  * @b: The second vector operand
@@ -177,10 +168,10 @@ void cg_vector3_add(float *result, const float *a, const float *b);
  *
  * Stability: Unstable
  */
-void cg_vector3_subtract(float *result, const float *a, const float *b);
+void c_vector3_subtract(float *result, const float *a, const float *b);
 
 /**
- * cg_vector3_multiply_scalar:
+ * c_vector3_multiply_scalar:
  * @vector: The 3 component vector you want to manipulate
  * @scalar: The scalar you want to multiply the vector components by
  *
@@ -188,10 +179,10 @@ void cg_vector3_subtract(float *result, const float *a, const float *b);
  *
  * Stability: Unstable
  */
-void cg_vector3_multiply_scalar(float *vector, float scalar);
+void c_vector3_multiply_scalar(float *vector, float scalar);
 
 /**
- * cg_vector3_divide_scalar:
+ * c_vector3_divide_scalar:
  * @vector: The 3 component vector you want to manipulate
  * @scalar: The scalar you want to divide the vector components by
  *
@@ -199,10 +190,10 @@ void cg_vector3_multiply_scalar(float *vector, float scalar);
  *
  * Stability: Unstable
  */
-void cg_vector3_divide_scalar(float *vector, float scalar);
+void c_vector3_divide_scalar(float *vector, float scalar);
 
 /**
- * cg_vector3_normalize:
+ * c_vector3_normalize:
  * @vector: The 3 component vector you want to manipulate
  *
  * Updates the vector so it is a "unit vector" such that the
@@ -214,10 +205,10 @@ void cg_vector3_divide_scalar(float *vector, float scalar);
  *
  * Stability: Unstable
  */
-void cg_vector3_normalize(float *vector);
+void c_vector3_normalize(float *vector);
 
 /**
- * cg_vector3_magnitude:
+ * c_vector3_magnitude:
  * @vector: The 3 component vector you want the magnitude for
  *
  * Calculates the scalar magnitude or length of @vector.
@@ -226,10 +217,10 @@ void cg_vector3_normalize(float *vector);
  *
  * Stability: Unstable
  */
-float cg_vector3_magnitude(const float *vector);
+float c_vector3_magnitude(const float *vector);
 
 /**
- * cg_vector3_cross_product:
+ * c_vector3_cross_product:
  * @result: Where you want the result written
  * @u: Your first 3 component vector
  * @v: Your second 3 component vector
@@ -254,10 +245,10 @@ float cg_vector3_magnitude(const float *vector);
  *
  * Stability: Unstable
  */
-void cg_vector3_cross_product(float *result, const float *u, const float *v);
+void c_vector3_cross_product(float *result, const float *u, const float *v);
 
 /**
- * cg_vector3_dot_product:
+ * c_vector3_dot_product:
  * @a: Your first 3 component vector
  * @b: Your second 3 component vector
  *
@@ -293,10 +284,10 @@ void cg_vector3_cross_product(float *result, const float *u, const float *v);
  *
  * Stability: Unstable
  */
-float cg_vector3_dot_product(const float *a, const float *b);
+float c_vector3_dot_product(const float *a, const float *b);
 
 /**
- * cg_vector3_distance:
+ * c_vector3_distance:
  * @a: The first point
  * @b: The second point
  *
@@ -308,8 +299,6 @@ float cg_vector3_dot_product(const float *a, const float *b);
  *
  * Stability: Unstable
  */
-float cg_vector3_distance(const float *a, const float *b);
+float c_vector3_distance(const float *a, const float *b);
 
-CG_END_DECLS
-
-#endif /* __CG_VECTOR_H */
+C_END_DECLS

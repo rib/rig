@@ -182,7 +182,7 @@ shape_model_new(rut_shell_t *shell, bool shaped, float width, float height)
     rut_mesh_t *pick_mesh =
         rut_mesh_new_from_buffer_p3(CG_VERTICES_MODE_TRIANGLES, 6, buffer);
     cg_vertex_p3_t *pick_vertices = (cg_vertex_p3_t *)buffer->data;
-    cg_matrix_t matrix;
+    c_matrix_t matrix;
     float tex_aspect;
     float size_x;
     float size_y;
@@ -228,7 +228,7 @@ shape_model_new(rut_shell_t *shell, bool shaped, float width, float height)
             { half_geom_size_x, -half_geom_size_y, 1, 0, 1, 0 },
         };
 
-        cg_matrix_init_identity(&matrix);
+        c_matrix_init_identity(&matrix);
         tex_aspect = (float)width / (float)height;
 
         if (shaped) {
@@ -253,15 +253,15 @@ shape_model_new(rut_shell_t *shell, bool shaped, float width, float height)
             s0 = 0.5 - (s_scale / 2.0);
             t0 = 0.5 - (t_scale / 2.0);
 
-            cg_matrix_translate(&matrix, s0, t0, 0);
-            cg_matrix_scale(&matrix, s_scale, t_scale, 1);
+            c_matrix_translate(&matrix, s0, t0, 0);
+            c_matrix_scale(&matrix, s_scale, t_scale, 1);
         }
 
         n_vertices = sizeof(vertices) / sizeof(vertex_p2t2t2_t);
         for (i = 0; i < n_vertices; i++) {
             float z = 0, w = 1;
 
-            cg_matrix_transform_point(
+            c_matrix_transform_point(
                 &matrix, &vertices[i].s1, &vertices[i].t1, &z, &w);
             vertices[i].Nx = 0;
             vertices[i].Ny = 0;

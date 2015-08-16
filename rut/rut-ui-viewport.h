@@ -75,7 +75,7 @@ float rut_ui_viewport_get_doc_scale_x(rut_ui_viewport_t *ui_viewport);
 
 float rut_ui_viewport_get_doc_scale_y(rut_ui_viewport_t *ui_viewport);
 
-const cg_matrix_t *
+const c_matrix_t *
 rut_ui_viewport_get_doc_matrix(rut_ui_viewport_t *ui_viewport);
 
 void rut_ui_viewport_set_x_pannable(rut_object_t *ui_viewport, bool pannable);

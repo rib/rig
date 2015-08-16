@@ -85,7 +85,7 @@ void rig_path_insert_float(rig_path_t *path, float t, float value);
 
 void rig_path_insert_quaternion(rig_path_t *path,
                                 float t,
-                                const cg_quaternion_t *value);
+                                const c_quaternion_t *value);
 
 void rig_path_insert_double(rig_path_t *path, float t, double value);
 

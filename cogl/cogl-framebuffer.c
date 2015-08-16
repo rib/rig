@@ -44,13 +44,18 @@
 #include "cogl-clip-stack.h"
 #include "cogl-winsys-private.h"
 #include "cogl-pipeline-state-private.h"
-#include "cogl-matrix-private.h"
 #include "cogl-primitive-private.h"
 #include "cogl-offscreen.h"
 #include "cogl-private.h"
 #include "cogl-error-private.h"
 #include "cogl-texture-gl-private.h"
 #include "cogl-primitive-texture.h"
+
+#define _MATRIX_DEBUG_PRINT(MATRIX)                         \
+    if (C_UNLIKELY(CG_DEBUG_ENABLED(CG_DEBUG_MATRICES))) {  \
+        c_print("%s:\n", C_STRFUNC);                        \
+        c_matrix_print(MATRIX);                            \
+    }
 
 extern cg_object_class_t _cg_onscreen_class;
 
@@ -1116,7 +1121,7 @@ cg_framebuffer_rotate(
 
 void
 cg_framebuffer_rotate_quaternion(cg_framebuffer_t *framebuffer,
-                                 const cg_quaternion_t *quaternion)
+                                 const c_quaternion_t *quaternion)
 {
     cg_matrix_stack_t *modelview_stack =
         _cg_framebuffer_get_modelview_stack(framebuffer);
@@ -1129,7 +1134,7 @@ cg_framebuffer_rotate_quaternion(cg_framebuffer_t *framebuffer,
 
 void
 cg_framebuffer_rotate_euler(cg_framebuffer_t *framebuffer,
-                            const cg_euler_t *euler)
+                            const c_euler_t *euler)
 {
     cg_matrix_stack_t *modelview_stack =
         _cg_framebuffer_get_modelview_stack(framebuffer);
@@ -1142,7 +1147,7 @@ cg_framebuffer_rotate_euler(cg_framebuffer_t *framebuffer,
 
 void
 cg_framebuffer_transform(cg_framebuffer_t *framebuffer,
-                         const cg_matrix_t *matrix)
+                         const c_matrix_t *matrix)
 {
     cg_matrix_stack_t *modelview_stack =
         _cg_framebuffer_get_modelview_stack(framebuffer);
@@ -1206,12 +1211,12 @@ cg_framebuffer_orthographic(cg_framebuffer_t *framebuffer,
                             float near,
                             float far)
 {
-    cg_matrix_t ortho;
+    c_matrix_t ortho;
     cg_matrix_stack_t *projection_stack =
         _cg_framebuffer_get_projection_stack(framebuffer);
 
-    cg_matrix_init_identity(&ortho);
-    cg_matrix_orthographic(&ortho, x_1, y_1, x_2, y_2, near, far);
+    c_matrix_init_identity(&ortho);
+    c_matrix_orthographic(&ortho, x_1, y_1, x_2, y_2, near, far);
     cg_matrix_stack_set(projection_stack, &ortho);
 
     if (framebuffer->dev->current_draw_buffer == framebuffer)
@@ -1245,17 +1250,17 @@ _cg_framebuffer_pop_projection(cg_framebuffer_t *framebuffer)
 
 void
 cg_framebuffer_get_modelview_matrix(cg_framebuffer_t *framebuffer,
-                                    cg_matrix_t *matrix)
+                                    c_matrix_t *matrix)
 {
     cg_matrix_entry_t *modelview_entry =
         _cg_framebuffer_get_modelview_entry(framebuffer);
     cg_matrix_entry_get(modelview_entry, matrix);
-    _CG_MATRIX_DEBUG_PRINT(matrix);
+    _MATRIX_DEBUG_PRINT(matrix);
 }
 
 void
 cg_framebuffer_set_modelview_matrix(cg_framebuffer_t *framebuffer,
-                                    const cg_matrix_t *matrix)
+                                    const c_matrix_t *matrix)
 {
     cg_matrix_stack_t *modelview_stack =
         _cg_framebuffer_get_modelview_stack(framebuffer);
@@ -1265,22 +1270,22 @@ cg_framebuffer_set_modelview_matrix(cg_framebuffer_t *framebuffer,
         framebuffer->dev->current_draw_buffer_changes |=
             CG_FRAMEBUFFER_STATE_MODELVIEW;
 
-    _CG_MATRIX_DEBUG_PRINT(matrix);
+    _MATRIX_DEBUG_PRINT(matrix);
 }
 
 void
 cg_framebuffer_get_projection_matrix(cg_framebuffer_t *framebuffer,
-                                     cg_matrix_t *matrix)
+                                     c_matrix_t *matrix)
 {
     cg_matrix_entry_t *projection_entry =
         _cg_framebuffer_get_projection_entry(framebuffer);
     cg_matrix_entry_get(projection_entry, matrix);
-    _CG_MATRIX_DEBUG_PRINT(matrix);
+    _MATRIX_DEBUG_PRINT(matrix);
 }
 
 void
 cg_framebuffer_set_projection_matrix(cg_framebuffer_t *framebuffer,
-                                     const cg_matrix_t *matrix)
+                                     const c_matrix_t *matrix)
 {
     cg_matrix_stack_t *projection_stack =
         _cg_framebuffer_get_projection_stack(framebuffer);
@@ -1291,7 +1296,7 @@ cg_framebuffer_set_projection_matrix(cg_framebuffer_t *framebuffer,
         framebuffer->dev->current_draw_buffer_changes |=
             CG_FRAMEBUFFER_STATE_PROJECTION;
 
-    _CG_MATRIX_DEBUG_PRINT(matrix);
+    _MATRIX_DEBUG_PRINT(matrix);
 }
 
 void

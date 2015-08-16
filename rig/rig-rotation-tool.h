@@ -57,8 +57,8 @@ typedef struct _rig_rotation_tool_t {
 
     rut_input_region_t *rotation_circle;
     rut_arcball_t arcball;
-    cg_quaternion_t start_rotation;
-    cg_quaternion_t start_view_rotations;
+    c_quaternion_t start_rotation;
+    c_quaternion_t start_view_rotations;
     bool button_down;
     float position[3]; /* transformed position of the selected entity */
     float screen_pos[2];
@@ -76,8 +76,8 @@ typedef enum {
 typedef void (*rig_rotation_tool_event_callback_t)(
     rig_rotation_tool_t *tool,
     rig_rotation_tool_event_type_t type,
-    const cg_quaternion_t *start_rotation,
-    const cg_quaternion_t *new_rotation,
+    const c_quaternion_t *start_rotation,
+    const c_quaternion_t *new_rotation,
     void *user_data);
 
 rig_rotation_tool_t *rig_rotation_tool_new(rig_camera_view_t *view);

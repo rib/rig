@@ -482,8 +482,8 @@ typedef struct _marker_grab_state_t {
     float max_drag_offset;
 
     rut_object_t *camera;
-    cg_matrix_t transform;
-    cg_matrix_t inverse_transform;
+    c_matrix_t transform;
+    c_matrix_t inverse_transform;
 } marker_grab_state_t;
 
 typedef void (*rig_node_selection_callback_t)(rig_node_t *node,
@@ -835,7 +835,7 @@ marker_input_cb(rut_input_region_t *region,
         state->camera = rut_input_event_get_camera(event);
         state->transform = *rut_camera_get_view_transform(state->camera);
         rut_graphable_apply_transform(marker->path_view, &state->transform);
-        if (!cg_matrix_get_inverse(&state->transform,
+        if (!c_matrix_get_inverse(&state->transform,
                                    &state->inverse_transform)) {
             c_warning("Failed to calculate inverse of path_view transform\n");
             c_slice_free(marker_grab_state_t, state);
@@ -1454,8 +1454,8 @@ typedef struct _path_view_grab_state_t {
     rig_path_view_t *path_view;
 
     rut_object_t *camera;
-    cg_matrix_t transform;
-    cg_matrix_t inverse_transform;
+    c_matrix_t transform;
+    c_matrix_t inverse_transform;
 } path_view_grab_state_t;
 
 static rut_input_event_status_t
@@ -1509,7 +1509,7 @@ path_view_input_region_cb(
         state->camera = rut_input_event_get_camera(event);
         state->transform = *rut_camera_get_view_transform(state->camera);
         rut_graphable_apply_transform(path_view, &state->transform);
-        if (!cg_matrix_get_inverse(&state->transform,
+        if (!c_matrix_get_inverse(&state->transform,
                                    &state->inverse_transform)) {
             c_warning("Failed to calculate inverse of path_view transform\n");
             c_slice_free(path_view_grab_state_t, state);

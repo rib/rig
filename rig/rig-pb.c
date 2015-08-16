@@ -81,14 +81,14 @@ pb_color_new(rig_pb_serializer_t *serializer,
 
 static Rig__Rotation *
 pb_rotation_new(rig_pb_serializer_t *serializer,
-                const cg_quaternion_t *quaternion)
+                const c_quaternion_t *quaternion)
 {
     Rig__Rotation *pb_rotation =
         rig_pb_new(serializer, Rig__Rotation, rig__rotation__init);
-    float angle = cg_quaternion_get_rotation_angle(quaternion);
+    float angle = c_quaternion_get_rotation_angle(quaternion);
     float axis[3];
 
-    cg_quaternion_get_rotation_axis(quaternion, axis);
+    c_quaternion_get_rotation_axis(quaternion, axis);
 
     pb_rotation->angle = angle;
     pb_rotation->x = axis[0];
@@ -645,7 +645,7 @@ rig_pb_serialize_entity(rig_pb_serializer_t *serializer,
 {
     Rig__Entity *pb_entity =
         rig_pb_new(serializer, Rig__Entity, rig__entity__init);
-    const cg_quaternion_t *q;
+    const c_quaternion_t *q;
     const char *label;
     Rig__Vec3 *position;
     float scale;
@@ -1661,17 +1661,17 @@ pb_init_color(rut_shell_t *shell, cg_color_t *color, Rig__Color *pb_color)
 }
 
 static void
-pb_init_quaternion(cg_quaternion_t *quaternion,
+pb_init_quaternion(c_quaternion_t *quaternion,
                    Rig__Rotation *pb_rotation)
 {
     if (pb_rotation) {
-        cg_quaternion_init(quaternion,
+        c_quaternion_init(quaternion,
                            pb_rotation->angle,
                            pb_rotation->x,
                            pb_rotation->y,
                            pb_rotation->z);
     } else
-        cg_quaternion_init(quaternion, 0, 1, 0, 0);
+        c_quaternion_init(quaternion, 0, 1, 0, 0);
 }
 
 static void
@@ -2458,7 +2458,7 @@ rig_pb_unserialize_entity(rig_pb_un_serializer_t *unserializer,
         rig_entity_set_position(entity, position);
     }
     if (pb_entity->rotation) {
-        cg_quaternion_t q;
+        c_quaternion_t q;
 
         pb_init_quaternion(&q, pb_entity->rotation);
 
@@ -2601,7 +2601,7 @@ unserialize_path_nodes(rig_pb_un_serializer_t *unserializer,
             break;
         }
         case RUT_PROPERTY_TYPE_QUATERNION: {
-            cg_quaternion_t quaternion;
+            c_quaternion_t quaternion;
             pb_init_quaternion(&quaternion, pb_value->quaternion_value);
             rig_path_insert_quaternion(path, t, &quaternion);
             break;

@@ -68,10 +68,10 @@ rotation_tool_grab_cb(rut_input_event_t *event,
     switch (action) {
     case RUT_MOTION_EVENT_ACTION_MOVE:
     case RUT_MOTION_EVENT_ACTION_UP: {
-        cg_quaternion_t camera_rotation;
-        cg_quaternion_t new_rotation;
+        c_quaternion_t camera_rotation;
+        c_quaternion_t new_rotation;
         rig_entity_t *parent;
-        cg_quaternion_t parent_inverse;
+        c_quaternion_t parent_inverse;
         rig_entity_t *entity = tool->selected_entity;
         float x = rut_motion_event_get_x(event);
         float y = rut_motion_event_get_y(event);
@@ -79,7 +79,7 @@ rotation_tool_grab_cb(rut_input_event_t *event,
 
         rut_arcball_mouse_motion(&tool->arcball, x, y);
 
-        cg_quaternion_multiply(&camera_rotation,
+        c_quaternion_multiply(&camera_rotation,
                                &tool->arcball.q_drag,
                                &tool->start_view_rotations);
 
@@ -93,9 +93,9 @@ rotation_tool_grab_cb(rut_input_event_t *event,
         parent = rut_graphable_get_parent(entity);
 
         rig_entity_get_view_rotations(parent, tool->camera, &parent_inverse);
-        cg_quaternion_invert(&parent_inverse);
+        c_quaternion_invert(&parent_inverse);
 
-        cg_quaternion_multiply(
+        c_quaternion_multiply(
             &new_rotation, &parent_inverse, &camera_rotation);
 
         if (action == RUT_MOTION_EVENT_ACTION_UP) {
@@ -156,7 +156,7 @@ on_rotation_tool_clicked(
 
         tool->start_rotation = *rig_entity_get_rotation(entity);
 
-        cg_quaternion_init_identity(&tool->arcball.q_drag);
+        c_quaternion_init_identity(&tool->arcball.q_drag);
 
         rut_arcball_mouse_down(&tool->arcball, x, y);
 
@@ -207,8 +207,8 @@ objects_selection_event_cb(rig_objects_selection_t *selection,
 static void
 tool_event_cb(rig_rotation_tool_t *tool,
               rig_rotation_tool_event_type_t type,
-              const cg_quaternion_t *start_rotation,
-              const cg_quaternion_t *new_rotation,
+              const c_quaternion_t *start_rotation,
+              const c_quaternion_t *new_rotation,
               void *user_data)
 {
     rig_engine_t *engine = tool->view->engine;
@@ -323,13 +323,13 @@ rig_rotation_tool_set_active(rig_rotation_tool_t *tool, bool active)
 static void
 get_modelview_matrix(rig_entity_t *camera,
                      rig_entity_t *entity,
-                     cg_matrix_t *modelview)
+                     c_matrix_t *modelview)
 {
     rut_object_t *camera_component =
         rig_entity_get_component(camera, RUT_COMPONENT_TYPE_CAMERA);
     *modelview = *rut_camera_get_view_transform(camera_component);
 
-    cg_matrix_multiply(modelview, modelview, rig_entity_get_transform(entity));
+    c_matrix_multiply(modelview, modelview, rig_entity_get_transform(entity));
 }
 
 /* Scale from OpenGL normalized device coordinates (ranging from -1 to 1)
@@ -346,8 +346,8 @@ void
 update_position(rig_rotation_tool_t *tool)
 {
     rut_object_t *camera = tool->camera_component;
-    cg_matrix_t transform;
-    const cg_matrix_t *projection;
+    c_matrix_t transform;
+    const c_matrix_t *projection;
     float scale_thingy[4], screen_space[4], x, y;
     const float *viewport;
 
@@ -356,7 +356,7 @@ update_position(rig_rotation_tool_t *tool)
 
     tool->position[0] = tool->position[1] = tool->position[2] = 0.f;
 
-    cg_matrix_transform_points(&transform,
+    c_matrix_transform_points(&transform,
                                3, /* num components for input */
                                sizeof(float) * 3, /* input stride */
                                tool->position,
@@ -370,7 +370,7 @@ update_position(rig_rotation_tool_t *tool)
     scale_thingy[1] = 0.f;
     scale_thingy[2] = tool->position[2];
 
-    cg_matrix_project_points(projection,
+    c_matrix_project_points(projection,
                              3, /* num components for input */
                              sizeof(float) * 3, /* input stride */
                              scale_thingy,
@@ -386,7 +386,7 @@ update_position(rig_rotation_tool_t *tool)
     screen_space[0] = tool->position[0];
     screen_space[1] = tool->position[1];
     screen_space[2] = tool->position[2];
-    cg_matrix_project_points(projection,
+    c_matrix_project_points(projection,
                              3, /* num components for input */
                              sizeof(float) * 3, /* input stride */
                              screen_space,
@@ -416,21 +416,21 @@ get_scale_for_length(rig_rotation_tool_t *tool, float length)
 }
 
 static void
-get_rotation(rig_entity_t *camera, rig_entity_t *entity, cg_matrix_t *rotation)
+get_rotation(rig_entity_t *camera, rig_entity_t *entity, c_matrix_t *rotation)
 {
-    cg_quaternion_t q;
+    c_quaternion_t q;
 
     rig_entity_get_view_rotations(entity, camera, &q);
-    cg_matrix_init_from_quaternion(rotation, &q);
+    c_matrix_init_from_quaternion(rotation, &q);
 }
 
 void
 rig_rotation_tool_draw(rig_rotation_tool_t *tool, cg_framebuffer_t *fb)
 {
-    cg_matrix_t rotation;
+    c_matrix_t rotation;
     float scale, aspect_ratio;
-    cg_matrix_t saved_projection;
-    cg_matrix_t projection;
+    c_matrix_t saved_projection;
+    c_matrix_t projection;
     float fov;
     float near;
     float zoom;
@@ -453,7 +453,7 @@ rig_rotation_tool_draw(rig_rotation_tool_t *tool, cg_framebuffer_t *fb)
 
     cg_framebuffer_get_projection_matrix(fb, &saved_projection);
 
-    cg_matrix_init_identity(&projection);
+    c_matrix_init_identity(&projection);
     fov = rut_camera_get_field_of_view(tool->camera_component);
     near = rut_camera_get_near_plane(tool->camera_component);
     zoom = rut_camera_get_zoom(tool->camera_component);

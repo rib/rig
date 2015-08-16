@@ -62,7 +62,7 @@ struct _rut_rotation_inspector_t {
     float user_values[4];
     float user_axis_magnitude;
 
-    cg_quaternion_t value;
+    c_quaternion_t value;
 
     rut_introspectable_props_t introspectable;
     rut_property_t properties[RUT_ROTATION_INSPECTOR_N_PROPS];
@@ -159,10 +159,10 @@ disable_value_binding(rut_rotation_inspector_t *inspector)
 
 void
 set_value(rut_rotation_inspector_t *inspector,
-          const cg_quaternion_t *value,
+          const c_quaternion_t *value,
           bool user_edit)
 {
-    if (memcmp(&inspector->value, value, sizeof(cg_quaternion_t)) == 0)
+    if (memcmp(&inspector->value, value, sizeof(c_quaternion_t)) == 0)
         return;
 
     inspector->value = *value;
@@ -171,8 +171,8 @@ set_value(rut_rotation_inspector_t *inspector,
         float axis[3];
         float angle;
 
-        cg_quaternion_get_rotation_axis(value, axis);
-        angle = cg_quaternion_get_rotation_angle(value);
+        c_quaternion_get_rotation_axis(value, axis);
+        angle = c_quaternion_get_rotation_angle(value);
 
         /* With an angle of 0 or 360, the axis is arbitrary so it's
          * better for editing continuity to use the users last specified
@@ -217,7 +217,7 @@ rut_rotation_inspector_property_changed_cb(rut_property_t *target_property,
                                            void *user_data)
 {
     rut_rotation_inspector_t *inspector = user_data;
-    cg_quaternion_t value;
+    c_quaternion_t value;
     float axis[3];
     float angle;
     int i;
@@ -226,13 +226,13 @@ rut_rotation_inspector_property_changed_cb(rut_property_t *target_property,
         axis[i] = rut_number_slider_get_value(inspector->components[i].slider);
     angle = rut_number_slider_get_value(inspector->components[3].slider);
 
-    cg_quaternion_init(&value, angle, axis[0], axis[1], axis[2]);
+    c_quaternion_init(&value, angle, axis[0], axis[1], axis[2]);
 
     inspector->user_values[0] = axis[0];
     inspector->user_values[1] = axis[1];
     inspector->user_values[2] = axis[2];
     inspector->user_values[3] = angle;
-    inspector->user_axis_magnitude = cg_vector3_magnitude(axis);
+    inspector->user_axis_magnitude = c_vector3_magnitude(axis);
 
     rut_rotation_inspector_set_value(inspector, &value);
 
@@ -343,7 +343,7 @@ rut_rotation_inspector_new(rut_shell_t *shell)
 
 void
 rut_rotation_inspector_set_value(rut_object_t *obj,
-                                 const cg_quaternion_t *value)
+                                 const c_quaternion_t *value)
 {
     rut_rotation_inspector_t *inspector = obj;
 

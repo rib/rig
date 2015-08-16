@@ -39,27 +39,27 @@
 void
 test_euler_quaternion (void)
 {
-  cg_euler_t euler;
-  cg_quaternion_t quaternion;
-  cg_matrix_t matrix_a, matrix_b;
+  c_euler_t euler;
+  c_quaternion_t quaternion;
+  c_matrix_t matrix_a, matrix_b;
 
   /* Try doing the rotation with three separate rotations */
-  cg_matrix_init_identity (&matrix_a);
-  cg_matrix_rotate (&matrix_a, -30.0f, 0.0f, 1.0f, 0.0f);
-  cg_matrix_rotate (&matrix_a, 40.0f, 1.0f, 0.0f, 0.0f);
-  cg_matrix_rotate (&matrix_a, 50.0f, 0.0f, 0.0f, 1.0f);
+  c_matrix_init_identity (&matrix_a);
+  c_matrix_rotate (&matrix_a, -30.0f, 0.0f, 1.0f, 0.0f);
+  c_matrix_rotate (&matrix_a, 40.0f, 1.0f, 0.0f, 0.0f);
+  c_matrix_rotate (&matrix_a, 50.0f, 0.0f, 0.0f, 1.0f);
 
   /* And try the same rotation with a euler */
-  cg_euler_init (&euler, -30, 40, 50);
-  cg_matrix_init_from_euler (&matrix_b, &euler);
+  c_euler_init (&euler, -30, 40, 50);
+  c_matrix_init_from_euler (&matrix_b, &euler);
 
   /* Verify that the matrices are approximately the same */
   COMPARE_MATRICES (&matrix_a, &matrix_b);
 
   /* Try converting the euler to a matrix via a quaternion */
-  cg_quaternion_init_from_euler (&quaternion, &euler);
+  c_quaternion_init_from_euler (&quaternion, &euler);
   memset (&matrix_b, 0, sizeof (matrix_b));
-  cg_matrix_init_from_quaternion (&matrix_b, &quaternion);
+  c_matrix_init_from_quaternion (&matrix_b, &quaternion);
   COMPARE_MATRICES (&matrix_a, &matrix_b);
 
   /* Try applying the rotation from a euler to a framebuffer */

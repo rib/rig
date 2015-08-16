@@ -38,7 +38,7 @@ extern rut_type_t _rig_diamond_slice_type;
 struct _rig_diamond_slice_t {
     rut_object_base_t _base;
 
-    cg_matrix_t rotate_matrix;
+    c_matrix_t rotate_matrix;
 
     float size;
 

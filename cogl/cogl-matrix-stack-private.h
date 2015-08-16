@@ -85,7 +85,7 @@ typedef struct _cg_matrix_entry_rotate_t {
 typedef struct _cg_matrix_entry_rotate_euler_t {
     cg_matrix_entry_t _parent_data;
 
-    /* This doesn't store an actual cg_euler_t in order to avoid the
+    /* This doesn't store an actual c_euler_t in order to avoid the
      * padding */
     float heading;
     float pitch;
@@ -95,7 +95,7 @@ typedef struct _cg_matrix_entry_rotate_euler_t {
 typedef struct _cg_matrix_entry_rotate_quaternion_t {
     cg_matrix_entry_t _parent_data;
 
-    /* This doesn't store an actual cg_quaternion_t in order to avoid the
+    /* This doesn't store an actual c_quaternion_t in order to avoid the
      * padding */
     float values[4];
 } cg_matrix_entry_rotate_quaternion_t;
@@ -112,21 +112,21 @@ typedef struct _cg_matrix_entry_scale_t {
 typedef struct _cg_matrix_entry_multiply_t {
     cg_matrix_entry_t _parent_data;
 
-    cg_matrix_t *matrix;
+    c_matrix_t *matrix;
 
 } cg_matrix_entry_multiply_t;
 
 typedef struct _cg_matrix_entry_load_t {
     cg_matrix_entry_t _parent_data;
 
-    cg_matrix_t *matrix;
+    c_matrix_t *matrix;
 
 } cg_matrix_entry_load_t;
 
 typedef struct _cg_matrix_entry_save_t {
     cg_matrix_entry_t _parent_data;
 
-    cg_matrix_t *cache;
+    c_matrix_t *cache;
     bool cache_valid;
 
 } cg_matrix_entry_save_t;

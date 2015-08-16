@@ -19,7 +19,7 @@
 struct demo {
     cg_device_t *dev;
     cg_framebuffer_t *fb;
-    cg_matrix_t view;
+    c_matrix_t view;
     int width, height;
 
     struct particle_emitter *emitter;
@@ -126,8 +126,8 @@ int main(int argc, char **argv)
     z_far = 2000;
 
     cg_framebuffer_perspective(demo.fb, fovy, aspect, z_near, z_far);
-    cg_matrix_init_identity(&demo.view);
-    cg_matrix_view_2d_in_perspective(&demo.view, fovy, aspect, z_near, z_2d,
+    c_matrix_init_identity(&demo.view);
+    c_matrix_view_2d_in_perspective(&demo.view, fovy, aspect, z_near, z_2d,
                                      demo.width, demo.height);
     cg_framebuffer_set_modelview_matrix(demo.fb, &demo.view);
 

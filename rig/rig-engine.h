@@ -91,7 +91,7 @@ struct _rig_engine_t {
 
     bool headless;
 
-    cg_matrix_t identity;
+    c_matrix_t identity;
 
     rut_shell_t *shell;
 

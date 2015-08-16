@@ -159,14 +159,14 @@ void
 rig_node_quaternion_lerp(rig_node_t *a,
                          rig_node_t *b,
                          float t,
-                         cg_quaternion_t *value)
+                         c_quaternion_t *value)
 {
     float range = b->t - a->t;
     if (range) {
         float offset = t - a->t;
         float factor = offset / range;
 
-        cg_quaternion_nlerp(value,
+        c_quaternion_nlerp(value,
                             &a->boxed.d.quaternion_val,
                             &b->boxed.d.quaternion_val,
                             factor);
@@ -369,7 +369,7 @@ rig_node_new_for_vec4(float t, const float value[4])
 }
 
 rig_node_t *
-rig_node_new_for_quaternion(float t, const cg_quaternion_t *value)
+rig_node_new_for_quaternion(float t, const c_quaternion_t *value)
 {
     rig_node_t *node = c_slice_new(rig_node_t);
     node->t = t;

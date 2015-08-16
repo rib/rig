@@ -29,19 +29,16 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
-#include <cogl-util.h>
-#include <cogl-euler.h>
-#include <cogl-matrix.h>
+#include "ceuler.h"
+#include "cmatrix.h"
 
 #include <math.h>
 #include <string.h>
 
 void
-cg_euler_init(cg_euler_t *euler, float heading, float pitch, float roll)
+c_euler_init(c_euler_t *euler, float heading, float pitch, float roll)
 {
     euler->heading = heading;
     euler->pitch = pitch;
@@ -49,7 +46,7 @@ cg_euler_init(cg_euler_t *euler, float heading, float pitch, float roll)
 }
 
 void
-cg_euler_init_from_matrix(cg_euler_t *euler, const cg_matrix_t *matrix)
+c_euler_init_from_matrix(c_euler_t *euler, const c_matrix_t *matrix)
 {
     /*
      * Extracting a canonical Euler angle from a matrix:
@@ -120,7 +117,7 @@ cg_euler_init_from_matrix(cg_euler_t *euler, const cg_matrix_t *matrix)
     float P; /* pitch */
     float R; /* roll */
 
-    /* NB: cg_matrix_t provides struct members named according to the
+    /* NB: c_matrix_t provides struct members named according to the
      * [row][column] indexed. So matrix->zx is row 3 column 1. */
     sinP = -matrix->zy;
 
@@ -149,10 +146,10 @@ cg_euler_init_from_matrix(cg_euler_t *euler, const cg_matrix_t *matrix)
 }
 
 bool
-cg_euler_equal(const void *v1, const void *v2)
+c_euler_equal(const void *v1, const void *v2)
 {
-    const cg_euler_t *a = v1;
-    const cg_euler_t *b = v2;
+    const c_euler_t *a = v1;
+    const c_euler_t *b = v2;
 
     c_return_val_if_fail(v1 != NULL, false);
     c_return_val_if_fail(v2 != NULL, false);
@@ -164,11 +161,11 @@ cg_euler_equal(const void *v1, const void *v2)
             a->roll == b->roll);
 }
 
-cg_euler_t *
-cg_euler_copy(const cg_euler_t *src)
+c_euler_t *
+c_euler_copy(const c_euler_t *src)
 {
     if (C_LIKELY(src)) {
-        cg_euler_t *new = c_slice_new(cg_euler_t);
+        c_euler_t *new = c_slice_new(c_euler_t);
         memcpy(new, src, sizeof(float) * 3);
         return new;
     } else
@@ -176,7 +173,7 @@ cg_euler_copy(const cg_euler_t *src)
 }
 
 void
-cg_euler_free(cg_euler_t *euler)
+c_euler_free(c_euler_t *euler)
 {
-    c_slice_free(cg_euler_t, euler);
+    c_slice_free(c_euler_t, euler);
 }

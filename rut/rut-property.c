@@ -796,11 +796,11 @@ rut_boxed_to_string(const rut_boxed_t *boxed,
     case RUT_PROPERTY_TYPE_TEXT:
         return c_strdup_printf("%s", boxed->d.text_val);
     case RUT_PROPERTY_TYPE_QUATERNION: {
-        const cg_quaternion_t *quaternion = &boxed->d.quaternion_val;
+        const c_quaternion_t *quaternion = &boxed->d.quaternion_val;
         float axis[3], angle;
 
-        cg_quaternion_get_rotation_axis(quaternion, axis);
-        angle = cg_quaternion_get_rotation_angle(quaternion);
+        c_quaternion_get_rotation_axis(quaternion, axis);
+        angle = c_quaternion_get_rotation_angle(quaternion);
 
         return c_strdup_printf("axis: (%.2f,%.2f,%.2f) angle: %.2f\n",
                                axis[0],

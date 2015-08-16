@@ -61,8 +61,8 @@ typedef struct _cg_color_t {
     float r, g, b, a;
 } cg_color_t;
 
-typedef struct _cg_quaternion_t {
+typedef struct _c_quaternion_t {
     float w, x, y, z;
-} cg_quaternion_t;
+} c_quaternion_t;
 
 #endif /* __RIG_CODEGEN_H__ */

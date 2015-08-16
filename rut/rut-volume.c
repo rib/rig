@@ -537,8 +537,8 @@ _rut_volume_get_bounding_box(rut_volume_t *volume, rut_box_t *box)
 
 void
 _rut_volume_project(rut_volume_t *volume,
-                    const cg_matrix_t *modelview,
-                    const cg_matrix_t *projection,
+                    const c_matrix_t *modelview,
+                    const c_matrix_t *projection,
                     const float *viewport)
 {
     int transform_count;
@@ -576,14 +576,14 @@ _rut_volume_project(rut_volume_t *volume,
 }
 
 void
-_rut_volume_transform(rut_volume_t *volume, const cg_matrix_t *matrix)
+_rut_volume_transform(rut_volume_t *volume, const c_matrix_t *matrix)
 {
     int transform_count;
 
     if (volume->is_empty) {
         float w = 1;
         /* Just transform the origin */
-        cg_matrix_transform_point(matrix,
+        c_matrix_transform_point(matrix,
                                   &volume->vertices[0].x,
                                   &volume->vertices[0].y,
                                   &volume->vertices[0].z,
@@ -602,7 +602,7 @@ _rut_volume_transform(rut_volume_t *volume, const cg_matrix_t *matrix)
     else
         transform_count = 8;
 
-    cg_matrix_transform_points(matrix,
+    c_matrix_transform_points(matrix,
                                3,
                                sizeof(rut_vector3_t),
                                volume->vertices,
@@ -749,8 +749,8 @@ rut_volume_cull(rut_volume_t *volume,
 void
 _rut_volume_get_stable_bounding_int_rectangle(rut_volume_t *volume,
                                               float *viewport,
-                                              const cg_matrix_t *projection,
-                                              const cg_matrix_t *modelview,
+                                              const c_matrix_t *projection,
+                                              const c_matrix_t *modelview,
                                               rut_box_t *box)
 {
     rut_volume_t projected_volume;

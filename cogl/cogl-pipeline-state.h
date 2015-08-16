@@ -642,8 +642,8 @@ void cg_pipeline_set_uniform_int(cg_pipeline_t *pipeline,
  *
  * If @transpose is %false then the matrix is expected to be in
  * column-major order or if it is %true then the matrix is in
- * row-major order. You can pass a #cg_matrix_t by calling by passing
- * the result of cg_matrix_get_array() in @value and setting
+ * row-major order. You can pass a #c_matrix_t by calling by passing
+ * the result of c_matrix_get_array() in @value and setting
  * @transpose to %false.
  *
  * Stability: Unstable

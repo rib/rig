@@ -60,16 +60,16 @@ struct camera_properties
 {
     rut_camera_props_t base;
 
-    cg_matrix_t projection;
+    c_matrix_t projection;
     unsigned int projection_age;
     unsigned int projection_cache_age;
 
-    cg_matrix_t inverse_projection;
+    c_matrix_t inverse_projection;
     unsigned int inverse_projection_age;
 
     unsigned int view_age;
 
-    cg_matrix_t inverse_view;
+    c_matrix_t inverse_view;
     unsigned int inverse_view_age;
 
     unsigned int transform_age;
@@ -285,13 +285,13 @@ rig_camera_get_viewport(rut_object_t *object)
     return camera->props.base.viewport;
 }
 
-const cg_matrix_t *
+const c_matrix_t *
 rig_camera_get_projection(rut_object_t *object)
 {
     rig_camera_t *camera = object;
     if (C_UNLIKELY(camera->props.projection_cache_age !=
                    camera->props.projection_age)) {
-        cg_matrix_init_identity(&camera->props.projection);
+        c_matrix_init_identity(&camera->props.projection);
 
         switch (camera->props.base.mode)
         {
@@ -312,7 +312,7 @@ rig_camera_get_projection(rut_object_t *object)
                     camera->props.base.ortho.y2 = center_y + dy;
                 }
 
-                cg_matrix_orthographic(&camera->props.projection,
+                c_matrix_orthographic(&camera->props.projection,
                                        camera->props.base.ortho.x1,
                                        camera->props.base.ortho.y1,
                                        camera->props.base.ortho.x2,
@@ -365,7 +365,7 @@ rig_camera_get_projection(rut_object_t *object)
             }
         case RUT_PROJECTION_NDC:
             {
-                cg_matrix_init_identity(&camera->props.projection);
+                c_matrix_init_identity(&camera->props.projection);
                 break;
             }
         }
@@ -516,18 +516,18 @@ rig_camera_set_orthographic_coordinates(
         camera->props.projection_age++;
 }
 
-const cg_matrix_t *
+const c_matrix_t *
 rig_camera_get_inverse_projection(rut_object_t *object)
 {
     rig_camera_t *camera = object;
-    const cg_matrix_t *projection;
+    const c_matrix_t *projection;
 
     if (camera->props.inverse_projection_age == camera->props.projection_age)
         return &camera->props.inverse_projection;
 
     projection = rig_camera_get_projection(camera);
 
-    if (!cg_matrix_get_inverse(projection, &camera->props.inverse_projection))
+    if (!c_matrix_get_inverse(projection, &camera->props.inverse_projection))
         return NULL;
 
     camera->props.inverse_projection_age = camera->props.projection_age;
@@ -536,7 +536,7 @@ rig_camera_get_inverse_projection(rut_object_t *object)
 
 void
 rig_camera_set_view_transform(rut_object_t *object,
-                              const cg_matrix_t *view)
+                              const c_matrix_t *view)
 {
     rig_camera_t *camera = object;
     camera->props.base.view = *view;
@@ -551,14 +551,14 @@ rig_camera_set_view_transform(rut_object_t *object,
     //                                       &camera->props.base.view);
 }
 
-const cg_matrix_t *
+const c_matrix_t *
 rig_camera_get_view_transform(rut_object_t *object)
 {
     rig_camera_t *camera = object;
     return &camera->props.base.view;
 }
 
-const cg_matrix_t *
+const c_matrix_t *
 rig_camera_get_inverse_view_transform(rut_object_t *object)
 {
     rig_camera_t *camera = object;
@@ -566,7 +566,7 @@ rig_camera_get_inverse_view_transform(rut_object_t *object)
     if (camera->props.inverse_view_age == camera->props.view_age)
         return &camera->props.inverse_view;
 
-    if (!cg_matrix_get_inverse(&camera->props.base.view,
+    if (!c_matrix_get_inverse(&camera->props.base.view,
                                &camera->props.inverse_view))
         return NULL;
 
@@ -576,7 +576,7 @@ rig_camera_get_inverse_view_transform(rut_object_t *object)
 
 void
 rig_camera_set_input_transform(rut_object_t *object,
-                               const cg_matrix_t *input_transform)
+                               const c_matrix_t *input_transform)
 {
     rig_camera_t *camera = object;
     camera->props.base.input_transform = *input_transform;
@@ -624,15 +624,15 @@ rig_camera_transform_window_coordinate(rut_object_t *object, float *x, float *y)
 
 void
 rig_camera_unproject_coord(rut_object_t *object,
-                           const cg_matrix_t *modelview,
-                           const cg_matrix_t *inverse_modelview,
+                           const c_matrix_t *modelview,
+                           const c_matrix_t *inverse_modelview,
                            float object_coord_z,
                            float *x,
                            float *y)
 {
     rig_camera_t *camera = object;
-    const cg_matrix_t *projection = rig_camera_get_projection(camera);
-    const cg_matrix_t *inverse_projection =
+    const c_matrix_t *projection = rig_camera_get_projection(camera);
+    const c_matrix_t *inverse_projection =
         rig_camera_get_inverse_projection(camera);
     // float z;
     float ndc_x, ndc_y, ndc_z, ndc_w;
@@ -644,7 +644,7 @@ rig_camera_unproject_coord(rut_object_t *object,
         // float x = 0, y = 0, z = 0, w = 1;
         float z = 0, w = 1;
         float tmp_x, tmp_y, tmp_z;
-        const cg_matrix_t *m = modelview;
+        const c_matrix_t *m = modelview;
 
         tmp_x = m->xw;
         tmp_y = m->yw;
@@ -663,7 +663,7 @@ rig_camera_unproject_coord(rut_object_t *object,
 
     /* Undo the Projection, putting us in Eye Coords. */
     ndc_w = 1;
-    cg_matrix_transform_point(
+    c_matrix_transform_point(
         inverse_projection, &ndc_x, &ndc_y, &ndc_z, &ndc_w);
     eye_x = ndc_x / ndc_w;
     eye_y = ndc_y / ndc_w;
@@ -671,7 +671,7 @@ rig_camera_unproject_coord(rut_object_t *object,
     eye_w = 1;
 
     /* Undo the Modelview transform, putting us in Object Coords */
-    cg_matrix_transform_point(
+    c_matrix_transform_point(
         inverse_modelview, &eye_x, &eye_y, &eye_z, &eye_w);
 
     *x = eye_x;
@@ -682,7 +682,7 @@ rig_camera_unproject_coord(rut_object_t *object,
 static void
 _rig_camera_flush_transforms(rig_camera_t *camera)
 {
-    const cg_matrix_t *projection;
+    const c_matrix_t *projection;
     cg_framebuffer_t *fb = camera->props.base.fb;
     camera_flush_state_t *state;
 
@@ -924,7 +924,7 @@ rig_camera_create_frustum_primitive(rut_object_t *object)
         { 1, 1, 1, 1, },
         { -1, 1, 1, 1, }
     };
-    const cg_matrix_t *projection_inv;
+    const c_matrix_t *projection_inv;
     cg_attribute_buffer_t *attribute_buffer;
     cg_attribute_t *attributes[1];
     cg_primitive_t *primitive;
@@ -936,7 +936,7 @@ rig_camera_create_frustum_primitive(rut_object_t *object)
     projection_inv = rig_camera_get_inverse_projection(camera);
 
     for (i = 0; i < 8; i++) {
-        cg_matrix_transform_point(projection_inv,
+        c_matrix_transform_point(projection_inv,
                                   &vertices[i].x,
                                   &vertices[i].y,
                                   &vertices[i].z,
@@ -1194,12 +1194,12 @@ rig_camera_new(rig_engine_t *engine,
     camera->props.projection_cache_age = -1;
     camera->props.inverse_projection_age = -1;
 
-    cg_matrix_init_identity(&camera->props.base.view);
+    c_matrix_init_identity(&camera->props.base.view);
     camera->props.inverse_view_age = -1;
 
     camera->props.transform_age = 0;
 
-    cg_matrix_init_identity(&camera->props.base.input_transform);
+    c_matrix_init_identity(&camera->props.base.input_transform);
 
     if (framebuffer) {
         int width = cg_framebuffer_get_width(framebuffer);

@@ -55,7 +55,7 @@ rut_input_region_new_circle(float x,
                             void *user_data);
 
 void rut_input_region_set_transform(rut_input_region_t *region,
-                                    cg_matrix_t *matrix);
+                                    c_matrix_t *matrix);
 
 void rut_input_region_set_rectangle(
     rut_input_region_t *region, float x0, float y0, float x1, float y1);

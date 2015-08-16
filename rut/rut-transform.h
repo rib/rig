@@ -46,15 +46,15 @@ void rut_transform_rotate(
     rut_transform_t *transform, float angle, float x, float y, float z);
 
 void rut_transform_quaternion_rotate(rut_transform_t *transform,
-                                     const cg_quaternion_t *quaternion);
+                                     const c_quaternion_t *quaternion);
 
 void rut_transform_scale(rut_transform_t *transform, float x, float y, float z);
 
 void rut_transform_transform(rut_transform_t *transform,
-                             const cg_matrix_t *matrix);
+                             const c_matrix_t *matrix);
 
 void rut_transform_init_identity(rut_transform_t *transform);
 
-const cg_matrix_t *rut_transform_get_matrix(rut_object_t *self);
+const c_matrix_t *rut_transform_get_matrix(rut_object_t *self);
 
 #endif /* __RUT_TRANSFORM_H__ */

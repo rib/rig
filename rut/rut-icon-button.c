@@ -160,8 +160,8 @@ _rut_icon_button_init_type(void)
 typedef struct _icon_button_grab_state_t {
     rut_object_t *camera;
     rut_icon_button_t *button;
-    cg_matrix_t transform;
-    cg_matrix_t inverse_transform;
+    c_matrix_t transform;
+    c_matrix_t inverse_transform;
 } icon_button_grab_state_t;
 
 static void
@@ -269,14 +269,14 @@ _rut_icon_button_input_cb(
         rut_motion_event_get_action(event) == RUT_MOTION_EVENT_ACTION_DOWN) {
         rut_shell_t *shell = button->shell;
         icon_button_grab_state_t *state = c_slice_new(icon_button_grab_state_t);
-        const cg_matrix_t *view;
+        const c_matrix_t *view;
 
         state->button = button;
         state->camera = rut_input_event_get_camera(event);
         view = rut_camera_get_view_transform(state->camera);
         state->transform = *view;
         rut_graphable_apply_transform(button, &state->transform);
-        if (!cg_matrix_get_inverse(&state->transform,
+        if (!c_matrix_get_inverse(&state->transform,
                                    &state->inverse_transform)) {
             c_warning("Failed to calculate inverse of button transform\n");
             c_slice_free(icon_button_grab_state_t, state);

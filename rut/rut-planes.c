@@ -44,8 +44,8 @@ void
 rut_get_eye_planes_for_screen_poly(float *polygon,
                                    int n_vertices,
                                    float *viewport,
-                                   const cg_matrix_t *projection,
-                                   const cg_matrix_t *inverse_project,
+                                   const c_matrix_t *projection,
+                                   const c_matrix_t *inverse_project,
                                    rut_plane_t *planes)
 {
 #if 0
@@ -104,7 +104,7 @@ rut_get_eye_planes_for_screen_poly(float *polygon,
 #undef CLIP_X
 #undef CLIP_Y
 
-    cg_matrix_project_points (inverse_project,
+    c_matrix_project_points (inverse_project,
                               4,
                               sizeof (vector4_t),
                               tmp_poly,
@@ -114,7 +114,7 @@ rut_get_eye_planes_for_screen_poly(float *polygon,
 
     /* XXX: It's quite ugly that we end up with these casts between
      * vector4_t types and CoglVector3s, it might be better if the
-     * cg_vector APIs just took pointers to floats.
+     * c_vector APIs just took pointers to floats.
      */
 
     count = n_vertices - 1;
@@ -124,20 +124,20 @@ rut_get_eye_planes_for_screen_poly(float *polygon,
         plane->v0 = *(CoglVector3 *)&tmp_poly[i];
         b = *(CoglVector3 *)&tmp_poly[n_vertices + i];
         c = *(CoglVector3 *)&tmp_poly[n_vertices + i + 1];
-        cg_vector3_subtract (&b, &b, &plane->v0);
-        cg_vector3_subtract (&c, &c, &plane->v0);
-        cg_vector3_cross_product (&plane->n, &b, &c);
-        cg_vector3_normalize (&plane->n);
+        c_vector3_subtract (&b, &b, &plane->v0);
+        c_vector3_subtract (&c, &c, &plane->v0);
+        c_vector3_cross_product (&plane->n, &b, &c);
+        c_vector3_normalize (&plane->n);
     }
 
     plane = &planes[n_vertices - 1];
     plane->v0 = *(CoglVector3 *)&tmp_poly[0];
     b = *(CoglVector3 *)&tmp_poly[2 * n_vertices - 1];
     c = *(CoglVector3 *)&tmp_poly[n_vertices];
-    cg_vector3_subtract (&b, &b, &plane->v0);
-    cg_vector3_subtract (&c, &c, &plane->v0);
-    cg_vector3_cross_product (&plane->n, &b, &c);
-    cg_vector3_normalize (&plane->n);
+    c_vector3_subtract (&b, &b, &plane->v0);
+    c_vector3_subtract (&c, &c, &plane->v0);
+    c_vector3_cross_product (&plane->n, &b, &c);
+    c_vector3_normalize (&plane->n);
 #endif
     float Wc;
     vector4_t *tmp_poly;
@@ -192,7 +192,7 @@ rut_get_eye_planes_for_screen_poly(float *polygon,
 #undef CLIP_X
 #undef CLIP_Y
 
-    cg_matrix_project_points(inverse_project,
+    c_matrix_project_points(inverse_project,
                              4,
                              sizeof(vector4_t),
                              tmp_poly,
@@ -202,7 +202,7 @@ rut_get_eye_planes_for_screen_poly(float *polygon,
 
     /* XXX: It's quite ugly that we end up with these casts between
      * vector4_t types and CoglVector3s, it might be better if the
-     * cg_vector APIs just took pointers to floats.
+     * c_vector APIs just took pointers to floats.
      */
 
     count = n_vertices - 1;
@@ -211,18 +211,18 @@ rut_get_eye_planes_for_screen_poly(float *polygon,
         memcpy(plane->v0, tmp_poly + i, sizeof(float) * 3);
         memcpy(b, tmp_poly + n_vertices + i, sizeof(float) * 3);
         memcpy(c, tmp_poly + n_vertices + i + 1, sizeof(float) * 3);
-        cg_vector3_subtract(b, b, plane->v0);
-        cg_vector3_subtract(c, c, plane->v0);
-        cg_vector3_cross_product(plane->n, b, c);
-        cg_vector3_normalize(plane->n);
+        c_vector3_subtract(b, b, plane->v0);
+        c_vector3_subtract(c, c, plane->v0);
+        c_vector3_cross_product(plane->n, b, c);
+        c_vector3_normalize(plane->n);
     }
 
     plane = &planes[n_vertices - 1];
     memcpy(plane->v0, tmp_poly + 0, sizeof(float) * 3);
     memcpy(b, tmp_poly + (2 * n_vertices - 1), sizeof(float) * 3);
     memcpy(c, tmp_poly + n_vertices, sizeof(float) * 3);
-    cg_vector3_subtract(b, b, plane->v0);
-    cg_vector3_subtract(c, c, plane->v0);
-    cg_vector3_cross_product(plane->n, b, c);
-    cg_vector3_normalize(plane->n);
+    c_vector3_subtract(b, b, plane->v0);
+    c_vector3_subtract(c, c, plane->v0);
+    c_vector3_cross_product(plane->n, b, c);
+    c_vector3_normalize(plane->n);
 }

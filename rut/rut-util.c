@@ -55,14 +55,14 @@ typedef struct _vertex4_t {
 } vertex4_t;
 
 void
-rut_util_fully_transform_vertices(const cg_matrix_t *modelview,
-                                  const cg_matrix_t *projection,
+rut_util_fully_transform_vertices(const c_matrix_t *modelview,
+                                  const c_matrix_t *projection,
                                   const float *viewport,
                                   const float *vertices3_in,
                                   float *vertices3_out,
                                   int n_vertices)
 {
-    cg_matrix_t modelview_projection;
+    c_matrix_t modelview_projection;
     vertex4_t *vertices_tmp;
     int i;
 
@@ -70,8 +70,8 @@ rut_util_fully_transform_vertices(const cg_matrix_t *modelview,
 
     if (n_vertices >= 4) {
         /* XXX: we should find a way to cache this per actor */
-        cg_matrix_multiply(&modelview_projection, projection, modelview);
-        cg_matrix_project_points(&modelview_projection,
+        c_matrix_multiply(&modelview_projection, projection, modelview);
+        c_matrix_project_points(&modelview_projection,
                                  3,
                                  sizeof(float) * 3,
                                  vertices3_in,
@@ -79,7 +79,7 @@ rut_util_fully_transform_vertices(const cg_matrix_t *modelview,
                                  vertices_tmp,
                                  n_vertices);
     } else {
-        cg_matrix_transform_points(modelview,
+        c_matrix_transform_points(modelview,
                                    3,
                                    sizeof(float) * 3,
                                    vertices3_in,
@@ -87,7 +87,7 @@ rut_util_fully_transform_vertices(const cg_matrix_t *modelview,
                                    vertices_tmp,
                                    n_vertices);
 
-        cg_matrix_project_points(projection,
+        c_matrix_project_points(projection,
                                  3,
                                  sizeof(vertex4_t),
                                  vertices_tmp,
@@ -109,12 +109,12 @@ rut_util_fully_transform_vertices(const cg_matrix_t *modelview,
 
 void
 rut_util_print_quaternion(const char *prefix,
-                          const cg_quaternion_t *quaternion)
+                          const c_quaternion_t *quaternion)
 {
     float axis[3], angle;
 
-    cg_quaternion_get_rotation_axis(quaternion, axis);
-    angle = cg_quaternion_get_rotation_angle(quaternion);
+    c_quaternion_get_rotation_axis(quaternion, axis);
+    angle = c_quaternion_get_rotation_angle(quaternion);
 
     c_debug("%saxis: (%.2f,%.2f,%.2f) angle: %.2f\n",
             prefix,
@@ -126,13 +126,13 @@ rut_util_print_quaternion(const char *prefix,
 
 void
 rut_util_create_pick_ray(const float viewport[4],
-                         const cg_matrix_t *inverse_projection,
-                         const cg_matrix_t *camera_transform,
+                         const c_matrix_t *inverse_projection,
+                         const c_matrix_t *camera_transform,
                          float viewport_pos[2],
                          float ray_position[3],      /* out */
                          float ray_direction[3])      /* out */
 {
-    cg_matrix_t inverse_transform;
+    c_matrix_t inverse_transform;
     float ndc_x, ndc_y;
     float projected_points[6], unprojected_points[8];
 
@@ -151,7 +151,7 @@ rut_util_create_pick_ray(const float viewport[4],
     /* The main drawing code is doing P x C¯¹ (P is the Projection matrix
      * and C is the Camera transform. To inverse that transformation we need
      * to apply C x P¯¹ to the points */
-    cg_matrix_multiply(
+    c_matrix_multiply(
         &inverse_transform, camera_transform, inverse_projection);
 
     /* unproject the point at both the near plane and the far plane */
@@ -161,7 +161,7 @@ rut_util_create_pick_ray(const float viewport[4],
     projected_points[3] = ndc_x;
     projected_points[4] = ndc_y;
     projected_points[5] = 1.0f;
-    cg_matrix_project_points(&inverse_transform,
+    c_matrix_project_points(&inverse_transform,
                              3, /* num components for input */
                              sizeof(float) * 3, /* input stride */
                              projected_points,
@@ -183,11 +183,11 @@ rut_util_create_pick_ray(const float viewport[4],
     ray_direction[1] = unprojected_points[5] - unprojected_points[1];
     ray_direction[2] = unprojected_points[6] - unprojected_points[2];
 
-    cg_vector3_normalize(ray_direction);
+    c_vector3_normalize(ray_direction);
 }
 
 void
-rut_util_transform_normal(const cg_matrix_t *matrix,
+rut_util_transform_normal(const c_matrix_t *matrix,
                           float *x,
                           float *y,
                           float *z)
@@ -386,7 +386,7 @@ rut_util_draw_jittered_primitive3f(cg_framebuffer_t *fb,
     cg_device_t *dev = cg_framebuffer_get_context(fb);
     cg_pipeline_t *pipeline = cg_pipeline_new(dev);
     float viewport[4];
-    cg_matrix_t projection;
+    c_matrix_t projection;
     float pixel_dx, pixel_dy;
     int i;
 
@@ -400,16 +400,16 @@ rut_util_draw_jittered_primitive3f(cg_framebuffer_t *fb,
     pixel_dy = 2.0 / viewport[3];
 
     for (i = 0; i < 16; i++) {
-        cg_matrix_t tmp = projection;
-        cg_matrix_t jitter;
-        cg_matrix_t jittered_projection;
+        c_matrix_t tmp = projection;
+        c_matrix_t jitter;
+        c_matrix_t jittered_projection;
 
         const float *offset = jitter_offsets + 2 * i;
 
-        cg_matrix_init_identity(&jitter);
-        cg_matrix_translate(
+        c_matrix_init_identity(&jitter);
+        c_matrix_translate(
             &jitter, offset[0] * pixel_dx, offset[1] * pixel_dy, 0);
-        cg_matrix_multiply(&jittered_projection, &jitter, &tmp);
+        c_matrix_multiply(&jittered_projection, &jitter, &tmp);
         cg_framebuffer_set_projection_matrix(fb, &jittered_projection);
         cg_primitive_draw(prim, fb, pipeline);
     }
@@ -459,7 +459,7 @@ rut_util_is_boolean_env_set(const char *variable)
 }
 
 void
-rut_util_matrix_scaled_frustum(cg_matrix_t *matrix,
+rut_util_matrix_scaled_frustum(c_matrix_t *matrix,
                                float left,
                                float right,
                                float bottom,
@@ -471,7 +471,7 @@ rut_util_matrix_scaled_frustum(cg_matrix_t *matrix,
 {
     float inverse_scale = 1.0 / scale;
 
-    cg_matrix_frustum(matrix,
+    c_matrix_frustum(matrix,
                       left * inverse_scale, /* left */
                       right * inverse_scale, /* right */
                       top * inverse_scale, /* bottom */
@@ -481,7 +481,7 @@ rut_util_matrix_scaled_frustum(cg_matrix_t *matrix,
 }
 
 void
-rut_util_matrix_scaled_perspective(cg_matrix_t *matrix,
+rut_util_matrix_scaled_perspective(c_matrix_t *matrix,
                                    float fov_y,
                                    float aspect,
                                    float z_near,
@@ -502,15 +502,15 @@ rut_util_matrix_scaled_perspective(cg_matrix_t *matrix,
 
 /* XXX: The vertices must be 4 components: [x, y, z, w] */
 void
-rut_util_fully_transform_points(const cg_matrix_t *modelview,
-                                const cg_matrix_t *projection,
+rut_util_fully_transform_points(const c_matrix_t *modelview,
+                                const c_matrix_t *projection,
                                 const float *viewport,
                                 float *verts,
                                 int n_verts)
 {
     int i;
 
-    cg_matrix_transform_points(modelview,
+    c_matrix_transform_points(modelview,
                                2, /* n_components */
                                sizeof(float) * 4, /* stride_in */
                                verts, /* points_in */
@@ -519,7 +519,7 @@ rut_util_fully_transform_points(const cg_matrix_t *modelview,
                                verts, /* points_out */
                                4 /* n_points */);
 
-    cg_matrix_project_points(projection,
+    c_matrix_project_points(projection,
                              3, /* n_components */
                              sizeof(float) * 4, /* stride_in */
                              verts, /* points_in */

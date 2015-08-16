@@ -9,7 +9,7 @@ typedef cg_vertex_p2c4_t Vertex;
 static void
 setup_orthographic_modelview (void)
 {
-  cg_matrix_t matrix;
+  c_matrix_t matrix;
   int fb_width = cg_framebuffer_get_width (test_fb);
   int fb_height = cg_framebuffer_get_height (test_fb);
 
@@ -19,8 +19,8 @@ setup_orthographic_modelview (void)
    * matrix we asked for. The matrix sets up an orthographic transform
    * in the modelview matrix */
 
-  cg_matrix_init_identity (&matrix);
-  cg_matrix_orthographic (&matrix,
+  c_matrix_init_identity (&matrix);
+  c_matrix_orthographic (&matrix,
                             0.0f, 0.0f, /* x_1 y_1 */
                             fb_width,
                             fb_height,

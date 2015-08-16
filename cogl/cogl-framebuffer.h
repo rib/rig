@@ -38,6 +38,8 @@
 #include <windows.h>
 #endif /* CG_HAS_WIN32_SUPPORT */
 
+#include <clib.h>
+
 /* We forward declare the cg_framebuffer_t type here to avoid some circular
  * dependency issues with the following headers.
  */
@@ -55,8 +57,6 @@ typedef struct _cg_framebuffer_t cg_framebuffer_t;
 #include <cogl/cogl-indices.h>
 #include <cogl/cogl-bitmap.h>
 #include <cogl/cogl-texture.h>
-#include <cogl/cogl-quaternion.h>
-#include <cogl/cogl-euler.h>
 
 CG_BEGIN_DECLS
 
@@ -323,7 +323,7 @@ void cg_framebuffer_rotate(
 /**
  * cg_framebuffer_rotate_quaternion:
  * @framebuffer: A #cg_framebuffer_t pointer
- * @quaternion: A #cg_quaternion_t
+ * @quaternion: A #c_quaternion_t
  *
  * Multiplies the current model-view matrix by one that rotates
  * according to the rotation described by @quaternion.
@@ -331,12 +331,12 @@ void cg_framebuffer_rotate(
  * Stability: unstable
  */
 void cg_framebuffer_rotate_quaternion(cg_framebuffer_t *framebuffer,
-                                      const cg_quaternion_t *quaternion);
+                                      const c_quaternion_t *quaternion);
 
 /**
  * cg_framebuffer_rotate_euler:
  * @framebuffer: A #cg_framebuffer_t pointer
- * @euler: A #cg_euler_t
+ * @euler: A #c_euler_t
  *
  * Multiplies the current model-view matrix by one that rotates
  * according to the rotation described by @euler.
@@ -344,7 +344,7 @@ void cg_framebuffer_rotate_quaternion(cg_framebuffer_t *framebuffer,
  * Stability: unstable
  */
 void cg_framebuffer_rotate_euler(cg_framebuffer_t *framebuffer,
-                                 const cg_euler_t *euler);
+                                 const c_euler_t *euler);
 
 /**
  * cg_framebuffer_transform:
@@ -356,7 +356,7 @@ void cg_framebuffer_rotate_euler(cg_framebuffer_t *framebuffer,
  * Stability: unstable
  */
 void cg_framebuffer_transform(cg_framebuffer_t *framebuffer,
-                              const cg_matrix_t *matrix);
+                              const c_matrix_t *matrix);
 
 /**
  * cg_framebuffer_get_modelview_matrix:
@@ -368,7 +368,7 @@ void cg_framebuffer_transform(cg_framebuffer_t *framebuffer,
  * Stability: unstable
  */
 void cg_framebuffer_get_modelview_matrix(cg_framebuffer_t *framebuffer,
-                                         cg_matrix_t *matrix);
+                                         c_matrix_t *matrix);
 
 /**
  * cg_framebuffer_set_modelview_matrix:
@@ -380,7 +380,7 @@ void cg_framebuffer_get_modelview_matrix(cg_framebuffer_t *framebuffer,
  * Stability: unstable
  */
 void cg_framebuffer_set_modelview_matrix(cg_framebuffer_t *framebuffer,
-                                         const cg_matrix_t *matrix);
+                                         const c_matrix_t *matrix);
 
 /**
  * cg_framebuffer_perspective:
@@ -472,7 +472,7 @@ void cg_framebuffer_orthographic(cg_framebuffer_t *framebuffer,
  * Stability: unstable
  */
 void cg_framebuffer_get_projection_matrix(cg_framebuffer_t *framebuffer,
-                                          cg_matrix_t *matrix);
+                                          c_matrix_t *matrix);
 
 /**
  * cg_framebuffer_set_projection_matrix:
@@ -484,7 +484,7 @@ void cg_framebuffer_get_projection_matrix(cg_framebuffer_t *framebuffer,
  * Stability: unstable
  */
 void cg_framebuffer_set_projection_matrix(cg_framebuffer_t *framebuffer,
-                                          const cg_matrix_t *matrix);
+                                          const c_matrix_t *matrix);
 
 /**
  * cg_framebuffer_push_scissor_clip:

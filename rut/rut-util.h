@@ -71,24 +71,24 @@
     } while (0)
 #endif /* RUT_HAS_GLIB_SUPPORT */
 
-void rut_util_fully_transform_vertices(const cg_matrix_t *modelview,
-                                       const cg_matrix_t *projection,
+void rut_util_fully_transform_vertices(const c_matrix_t *modelview,
+                                       const c_matrix_t *projection,
                                        const float *viewport,
                                        const float *vertices3_in,
                                        float *vertices3_out,
                                        int n_vertices);
 
 void rut_util_create_pick_ray(const float viewport[4],
-                              const cg_matrix_t *inverse_projection,
-                              const cg_matrix_t *camera_transform,
+                              const c_matrix_t *inverse_projection,
+                              const c_matrix_t *camera_transform,
                               float screen_pos[2],
                               float ray_position[3], /* out */
                               float ray_direction[3]); /* out */
 
 void rut_util_print_quaternion(const char *prefix,
-                               const cg_quaternion_t *quaternion);
+                               const c_quaternion_t *quaternion);
 
-void rut_util_transform_normal(const cg_matrix_t *matrix,
+void rut_util_transform_normal(const c_matrix_t *matrix,
                                float *x,
                                float *y,
                                float *z);
@@ -148,7 +148,7 @@ bool rut_util_intersect_mesh(rut_mesh_t *mesh,
 
 bool rut_util_is_boolean_env_set(const char *variable);
 
-void rut_util_matrix_scaled_frustum(cg_matrix_t *matrix,
+void rut_util_matrix_scaled_frustum(c_matrix_t *matrix,
                                     float left,
                                     float right,
                                     float bottom,
@@ -157,7 +157,7 @@ void rut_util_matrix_scaled_frustum(cg_matrix_t *matrix,
                                     float z_far,
                                     float scale);
 
-void rut_util_matrix_scaled_perspective(cg_matrix_t *matrix,
+void rut_util_matrix_scaled_perspective(c_matrix_t *matrix,
                                         float fov_y,
                                         float aspect,
                                         float z_near,
@@ -217,8 +217,8 @@ rut_util_point_in_screen_poly(
     return c;
 }
 
-void rut_util_fully_transform_points(const cg_matrix_t *modelview,
-                                     const cg_matrix_t *projection,
+void rut_util_fully_transform_points(const c_matrix_t *modelview,
+                                     const c_matrix_t *projection,
                                      const float *viewport,
                                      float *verts,
                                      int n_verts);

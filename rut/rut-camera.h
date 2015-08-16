@@ -66,11 +66,11 @@ typedef struct _rut_camera_props_t {
     float focal_distance;
     float depth_of_field;
 
-    cg_matrix_t view;
+    c_matrix_t view;
 
     cg_framebuffer_t *fb;
 
-    cg_matrix_t input_transform;
+    c_matrix_t input_transform;
     c_llist_t *input_regions;
 
 } rut_camera_props_t;
@@ -99,7 +99,7 @@ typedef struct _rut_camera_vtable_t {
 
     void (*set_viewport_height)(rut_object_t *camera, float height);
 
-    const cg_matrix_t *(*get_projection)(rut_object_t *camera);
+    const c_matrix_t *(*get_projection)(rut_object_t *camera);
 
     void (*set_near_plane)(rut_object_t *camera, float near);
 
@@ -121,14 +121,14 @@ typedef struct _rut_camera_vtable_t {
     void (*set_orthographic_coordinates)(
         rut_object_t *camera, float x1, float y1, float x2, float y2);
 
-    const cg_matrix_t *(*get_inverse_projection)(rut_object_t *camera);
+    const c_matrix_t *(*get_inverse_projection)(rut_object_t *camera);
 
-    void (*set_view_transform)(rut_object_t *camera, const cg_matrix_t *view);
+    void (*set_view_transform)(rut_object_t *camera, const c_matrix_t *view);
 
-    const cg_matrix_t *(*get_inverse_view_transform)(rut_object_t *camera);
+    const c_matrix_t *(*get_inverse_view_transform)(rut_object_t *camera);
 
     void (*set_input_transform)(rut_object_t *camera,
-                                const cg_matrix_t *input_transform);
+                                const c_matrix_t *input_transform);
 
     void (*flush)(rut_object_t *camera);
 
@@ -150,8 +150,8 @@ typedef struct _rut_camera_vtable_t {
                                         float *y);
 
     void (*unproject_coord)(rut_object_t *camera,
-                            const cg_matrix_t *modelview,
-                            const cg_matrix_t *inverse_modelview,
+                            const c_matrix_t *modelview,
+                            const c_matrix_t *inverse_modelview,
                             float object_coord_z,
                             float *x,
                             float *y);
@@ -196,7 +196,7 @@ void rut_camera_set_viewport_height(rut_object_t *camera, float height);
 
 const float *rut_camera_get_viewport(rut_object_t *camera);
 
-const cg_matrix_t *rut_camera_get_projection(rut_object_t *camera);
+const c_matrix_t *rut_camera_get_projection(rut_object_t *camera);
 
 void rut_camera_set_near_plane(rut_object_t *camera, float near);
 
@@ -232,19 +232,19 @@ void rut_camera_set_orthographic_coordinates(
 
 void rut_camera_get_orthographic_coordinates(
     rut_object_t *camera, float *x1, float *y1, float *x2, float *y2);
-const cg_matrix_t *rut_camera_get_inverse_projection(rut_object_t *camera);
+const c_matrix_t *rut_camera_get_inverse_projection(rut_object_t *camera);
 
 void rut_camera_set_view_transform(rut_object_t *camera,
-                                   const cg_matrix_t *view);
+                                   const c_matrix_t *view);
 
-const cg_matrix_t *rut_camera_get_view_transform(rut_object_t *camera);
+const c_matrix_t *rut_camera_get_view_transform(rut_object_t *camera);
 
-const cg_matrix_t *rut_camera_get_inverse_view_transform(rut_object_t *camera);
+const c_matrix_t *rut_camera_get_inverse_view_transform(rut_object_t *camera);
 
-const cg_matrix_t *rut_camera_get_input_transform(rut_object_t *object);
+const c_matrix_t *rut_camera_get_input_transform(rut_object_t *object);
 
 void rut_camera_set_input_transform(rut_object_t *camera,
-                                    const cg_matrix_t *input_transform);
+                                    const c_matrix_t *input_transform);
 
 void rut_camera_flush(rut_object_t *camera);
 
@@ -267,8 +267,8 @@ bool rut_camera_transform_window_coordinate(rut_object_t *camera,
                                             float *y);
 
 void rut_camera_unproject_coord(rut_object_t *camera,
-                                const cg_matrix_t *modelview,
-                                const cg_matrix_t *inverse_modelview,
+                                const c_matrix_t *modelview,
+                                const c_matrix_t *inverse_modelview,
                                 float object_coord_z,
                                 float *x,
                                 float *y);

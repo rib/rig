@@ -65,7 +65,7 @@ typedef struct _rut_boxed_t {
         uint32_t uint32_val;
         bool boolean_val;
         char *text_val;
-        cg_quaternion_t quaternion_val;
+        c_quaternion_t quaternion_val;
         float vec3_val[3];
         float vec4_val[4];
         cg_color_t color_val;
@@ -170,7 +170,7 @@ typedef struct _rut_property_spec_t {
         uint32_t (*uint32_type)(void *object);
         bool (*boolean_type)(void *object);
         const char *(*text_type)(void *object);
-        const cg_quaternion_t *(*quaternion_type)(void *object);
+        const c_quaternion_t *(*quaternion_type)(void *object);
         const cg_color_t *(*color_type)(void *object);
         const float *(*vec3_type)(void *object);
         const float *(*vec4_type)(void *object);
@@ -190,7 +190,7 @@ typedef struct _rut_property_spec_t {
         void (*boolean_type)(void *object, bool value);
         void (*text_type)(void *object, const char *value);
         void (*quaternion_type)(void *object,
-                                const cg_quaternion_t *quaternion);
+                                const c_quaternion_t *quaternion);
         void (*color_type)(void *object, const cg_color_t *color);
         void (*vec3_type)(void *object, const float value[3]);
         void (*vec4_type)(void *object, const float value[4]);

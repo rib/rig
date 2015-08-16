@@ -69,8 +69,8 @@ typedef enum {
 typedef void (*rig_selection_tool_event_callback_t)(
     rig_selection_tool_t *tool,
     rig_selection_tool_event_type_t type,
-    const cg_quaternion_t *start_selection,
-    const cg_quaternion_t *new_selection,
+    const c_quaternion_t *start_selection,
+    const c_quaternion_t *new_selection,
     void *user_data);
 
 rig_selection_tool_t *rig_selection_tool_new(rig_camera_view_t *view,

@@ -190,7 +190,7 @@ _rig_engine_new_full(rut_shell_t *shell,
     engine->frontend = frontend;
     engine->simulator = simulator;
 
-    cg_matrix_init_identity(&engine->identity);
+    c_matrix_init_identity(&engine->identity);
 
     rut_introspectable_init(engine, _rig_engine_prop_specs, engine->properties);
 

@@ -611,7 +611,7 @@ generate_mesh_thumbnail(rig_asset_t *asset)
     cg_primitive_t *primitive;
     cg_snippet_t *snippet;
     cg_depth_state_t depth_state;
-    cg_matrix_t view;
+    c_matrix_t view;
     int tex_width = 800;
     int tex_height = 800;
     float fovy = 60;
@@ -649,8 +649,8 @@ generate_mesh_thumbnail(rig_asset_t *asset)
     frame_buffer = offscreen;
 
     cg_framebuffer_perspective(frame_buffer, fovy, aspect, z_near, z_far);
-    cg_matrix_init_identity(&view);
-    cg_matrix_view_2d_in_perspective(
+    c_matrix_init_identity(&view);
+    c_matrix_view_2d_in_perspective(
         &view, fovy, aspect, z_near, z_2d, tex_width, tex_height);
     cg_framebuffer_set_modelview_matrix(frame_buffer, &view);
 

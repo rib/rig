@@ -242,8 +242,8 @@ rig_entity_new(rut_shell_t *shell)
 
     entity->scale = 1.0f;
 
-    cg_quaternion_init_identity(&entity->rotation);
-    cg_matrix_init_identity(&entity->transform);
+    c_quaternion_init_identity(&entity->rotation);
+    c_matrix_init_identity(&entity->transform);
     entity->components = c_ptr_array_new();
 
     rut_graphable_init(entity);
@@ -356,16 +356,16 @@ void
 rig_entity_get_transformed_position(rig_entity_t *entity,
                                     float position[3])
 {
-    cg_matrix_t transform;
+    c_matrix_t transform;
     float w = 1;
 
     rut_graphable_get_transform(entity, &transform);
 
-    cg_matrix_transform_point(
+    c_matrix_transform_point(
         &transform, &position[0], &position[1], &position[2], &w);
 }
 
-const cg_quaternion_t *
+const c_quaternion_t *
 rig_entity_get_rotation(rut_object_t *obj)
 {
     rig_entity_t *entity = obj;
@@ -374,7 +374,7 @@ rig_entity_get_rotation(rut_object_t *obj)
 }
 
 void
-rig_entity_set_rotation(rut_object_t *obj, const cg_quaternion_t *rotation)
+rig_entity_set_rotation(rut_object_t *obj, const c_quaternion_t *rotation)
 {
     rig_entity_t *entity = obj;
 
@@ -390,7 +390,7 @@ rig_entity_set_rotation(rut_object_t *obj, const cg_quaternion_t *rotation)
 
 void
 rig_entity_apply_rotations(rut_object_t *entity,
-                           cg_quaternion_t *rotations)
+                           c_quaternion_t *rotations)
 {
     int depth = 0;
     rut_object_t **entity_nodes;
@@ -423,26 +423,26 @@ rig_entity_apply_rotations(rut_object_t *entity,
     } while (node);
 
     for (i--; i >= 0; i--) {
-        const cg_quaternion_t *rotation =
+        const c_quaternion_t *rotation =
             rig_entity_get_rotation(entity_nodes[i]);
-        cg_quaternion_multiply(rotations, rotations, rotation);
+        c_quaternion_multiply(rotations, rotations, rotation);
     }
 }
 
 void
-rig_entity_get_rotations(rut_object_t *entity, cg_quaternion_t *rotation)
+rig_entity_get_rotations(rut_object_t *entity, c_quaternion_t *rotation)
 {
-    cg_quaternion_init_identity(rotation);
+    c_quaternion_init_identity(rotation);
     rig_entity_apply_rotations(entity, rotation);
 }
 
 void
 rig_entity_get_view_rotations(rut_object_t *entity,
                               rut_object_t *camera_entity,
-                              cg_quaternion_t *rotation)
+                              c_quaternion_t *rotation)
 {
     rig_entity_get_rotations(camera_entity, rotation);
-    cg_quaternion_invert(rotation);
+    c_quaternion_invert(rotation);
 
     rig_entity_apply_rotations(entity, rotation);
 }
@@ -490,22 +490,22 @@ rig_entity_get_scales(rut_object_t *entity)
     return scales;
 }
 
-const cg_matrix_t *
+const c_matrix_t *
 rig_entity_get_transform(rut_object_t *self)
 {
     rig_entity_t *entity = self;
-    cg_matrix_t rotation;
+    c_matrix_t rotation;
 
     if (!entity->dirty)
         return &entity->transform;
 
-    cg_matrix_init_translation(&entity->transform,
+    c_matrix_init_translation(&entity->transform,
                                entity->position[0],
                                entity->position[1],
                                entity->position[2]);
-    cg_matrix_init_from_quaternion(&rotation, &entity->rotation);
-    cg_matrix_multiply(&entity->transform, &entity->transform, &rotation);
-    cg_matrix_scale(&entity->transform, entity->scale, entity->scale, entity->scale);
+    c_matrix_init_from_quaternion(&rotation, &entity->rotation);
+    c_matrix_multiply(&entity->transform, &entity->transform, &rotation);
+    c_matrix_scale(&entity->transform, entity->scale, entity->scale, entity->scale);
 
     entity->dirty = false;
 
@@ -523,10 +523,10 @@ rig_entity_set_translate(rig_entity_t *entity, float tx, float ty, float tz)
 void
 rig_entity_rotate_x_axis(rig_entity_t *entity, float x_angle)
 {
-    cg_quaternion_t x_rotation;
+    c_quaternion_t x_rotation;
 
-    cg_quaternion_init_from_x_rotation(&x_rotation, x_angle);
-    cg_quaternion_multiply(&entity->rotation, &entity->rotation, &x_rotation);
+    c_quaternion_init_from_x_rotation(&x_rotation, x_angle);
+    c_quaternion_multiply(&entity->rotation, &entity->rotation, &x_rotation);
 
     entity->dirty = true;
 
@@ -537,10 +537,10 @@ rig_entity_rotate_x_axis(rig_entity_t *entity, float x_angle)
 void
 rig_entity_rotate_y_axis(rig_entity_t *entity, float y_angle)
 {
-    cg_quaternion_t y_rotation;
+    c_quaternion_t y_rotation;
 
-    cg_quaternion_init_from_y_rotation(&y_rotation, y_angle);
-    cg_quaternion_multiply(&entity->rotation, &entity->rotation, &y_rotation);
+    c_quaternion_init_from_y_rotation(&y_rotation, y_angle);
+    c_quaternion_multiply(&entity->rotation, &entity->rotation, &y_rotation);
 
     entity->dirty = true;
 
@@ -551,10 +551,10 @@ rig_entity_rotate_y_axis(rig_entity_t *entity, float y_angle)
 void
 rig_entity_rotate_z_axis(rig_entity_t *entity, float z_angle)
 {
-    cg_quaternion_t z_rotation;
+    c_quaternion_t z_rotation;
 
-    cg_quaternion_init_from_z_rotation(&z_rotation, z_angle);
-    cg_quaternion_multiply(&entity->rotation, &entity->rotation, &z_rotation);
+    c_quaternion_init_from_z_rotation(&z_rotation, z_angle);
+    c_quaternion_multiply(&entity->rotation, &entity->rotation, &z_rotation);
 
     entity->dirty = true;
 
@@ -671,11 +671,11 @@ rig_entity_set_camera_view_from_transform(rig_entity_t *camera)
 {
     rut_object_t *camera_component =
         rig_entity_get_component(camera, RUT_COMPONENT_TYPE_CAMERA);
-    cg_matrix_t transform;
-    cg_matrix_t view;
+    c_matrix_t transform;
+    c_matrix_t view;
 
     rut_graphable_get_transform(camera, &transform);
-    cg_matrix_get_inverse(&transform, &view);
+    c_matrix_get_inverse(&transform, &view);
 
     rut_camera_set_view_transform(camera_component, &view);
 }

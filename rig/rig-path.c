@@ -245,7 +245,7 @@ rig_path_print(rig_path_t *path)
         }
 
         case RUT_PROPERTY_TYPE_QUATERNION: {
-            const cg_quaternion_t *q = &node->boxed.d.quaternion_val;
+            const c_quaternion_t *q = &node->boxed.d.quaternion_val;
             c_debug(
                 " t = %f [%f (%f, %f, %f)]\n", node->t, q->w, q->x, q->y, q->z);
             break;
@@ -385,7 +385,7 @@ rig_path_insert_vec4(rig_path_t *path, float t, const float value[4])
 void
 rig_path_insert_quaternion(rig_path_t *path,
                            float t,
-                           const cg_quaternion_t *value)
+                           const c_quaternion_t *value)
 {
     rig_node_t *node = rig_path_find_node(path, t);
 
@@ -599,7 +599,7 @@ rig_path_lerp_property(rig_path_t *path, rut_property_t *property, float t)
         break;
     }
     case RUT_PROPERTY_TYPE_QUATERNION: {
-        cg_quaternion_t value;
+        c_quaternion_t value;
         rig_node_quaternion_lerp(n0, n1, t, &value);
         rut_property_set_quaternion(&path->shell->property_ctx, property, &value);
         break;

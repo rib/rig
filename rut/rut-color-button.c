@@ -414,7 +414,7 @@ show_picker(rut_color_button_t *button, rut_object_t *camera)
     rut_object_t *root, *parent;
     rut_property_t *picker_color_prop;
     float picker_width, picker_height;
-    cg_matrix_t model_transform;
+    c_matrix_t model_transform;
     float button_points[3 * 2];
     float x1, y1, x2, y2;
     float picker_x, picker_y;
@@ -464,7 +464,7 @@ show_picker(rut_color_button_t *button, rut_object_t *camera)
     button_points[3] = button->width;
     button_points[4] = button->height;
     button_points[5] = 0.0f;
-    cg_matrix_transform_points(&model_transform,
+    c_matrix_transform_points(&model_transform,
                                2, /* n_components */
                                sizeof(float) * 3, /* stride_in */
                                button_points, /* points_in */

@@ -35,7 +35,7 @@
 
 typedef bool (*rut_pickable_pick_t)(rut_object_t *pickable,
                                     rut_object_t *camera,
-                                    const cg_matrix_t *graphable_modelview,
+                                    const c_matrix_t *graphable_modelview,
                                     float x,
                                     float y);
 
@@ -46,7 +46,7 @@ typedef struct _rut_pickable_vtable_t {
 static inline bool
 rut_pickable_pick(rut_object_t *pickable,
                   rut_object_t *camera,
-                  const cg_matrix_t *graphable_modelview,
+                  const c_matrix_t *graphable_modelview,
                   float x,
                   float y)
 {

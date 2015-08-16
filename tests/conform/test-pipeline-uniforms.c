@@ -210,32 +210,32 @@ paint_color_pipelines (TestState *state)
 static void
 paint_matrix_pipeline (cg_pipeline_t *pipeline)
 {
-  cg_matrix_t matrices[4];
+  c_matrix_t matrices[4];
   float matrix_floats[16 * 4];
   int uniform_location;
   int i;
 
   for (i = 0; i < 4; i++)
-    cg_matrix_init_identity (matrices + i);
+    c_matrix_init_identity (matrices + i);
 
   /* Use the first matrix to make the color red */
-  cg_matrix_translate (matrices + 0, 1.0f, 0.0f, 0.0f);
+  c_matrix_translate (matrices + 0, 1.0f, 0.0f, 0.0f);
 
   /* Rotate the vertex so that it ends up green */
-  cg_matrix_rotate (matrices + 1, 90.0f, 0.0f, 0.0f, 1.0f);
+  c_matrix_rotate (matrices + 1, 90.0f, 0.0f, 0.0f, 1.0f);
 
   /* Scale the vertex so it ends up halved */
-  cg_matrix_scale (matrices + 2, 0.5f, 0.5f, 0.5f);
+  c_matrix_scale (matrices + 2, 0.5f, 0.5f, 0.5f);
 
   /* Add a blue component in the final matrix. The final matrix is
      uploaded as transposed so we need to transpose first to cancel
      that out */
-  cg_matrix_translate (matrices + 3, 0.0f, 0.0f, 1.0f);
-  cg_matrix_transpose (matrices + 3);
+  c_matrix_translate (matrices + 3, 0.0f, 0.0f, 1.0f);
+  c_matrix_transpose (matrices + 3);
 
   for (i = 0; i < 4; i++)
     memcpy (matrix_floats + i * 16,
-            cg_matrix_get_array (matrices + i),
+            c_matrix_get_array (matrices + i),
             sizeof (float) * 16);
 
   /* Set the first three matrices as transposed */

@@ -39,7 +39,6 @@
 #include "cogl-node-private.h"
 #include "cogl-pipeline-layer-private.h"
 #include "cogl-pipeline.h"
-#include "cogl-matrix.h"
 #include "cogl-object-private.h"
 #include "cogl-profile.h"
 #include "cogl-boxed-value.h"

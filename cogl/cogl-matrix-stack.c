@@ -31,9 +31,7 @@
  *   Neil Roberts <neil@linux.intel.com>
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "cogl-device-private.h"
 #include "cogl-util-gl-private.h"
@@ -41,7 +39,6 @@
 #include "cogl-framebuffer-private.h"
 #include "cogl-object-private.h"
 #include "cogl-offscreen.h"
-#include "cogl-matrix-private.h"
 #include "cogl-magazine-private.h"
 
 static void _cg_matrix_stack_free(cg_matrix_stack_t *stack);
@@ -171,7 +168,7 @@ cg_matrix_stack_rotate(
 
 void
 cg_matrix_stack_rotate_quaternion(cg_matrix_stack_t *stack,
-                                  const cg_quaternion_t *quaternion)
+                                  const c_quaternion_t *quaternion)
 {
     cg_matrix_entry_rotate_quaternion_t *entry;
 
@@ -186,7 +183,7 @@ cg_matrix_stack_rotate_quaternion(cg_matrix_stack_t *stack,
 
 void
 cg_matrix_stack_rotate_euler(cg_matrix_stack_t *stack,
-                             const cg_euler_t *euler)
+                             const c_euler_t *euler)
 {
     cg_matrix_entry_rotate_euler_t *entry;
 
@@ -211,7 +208,7 @@ cg_matrix_stack_scale(cg_matrix_stack_t *stack, float x, float y, float z)
 
 void
 cg_matrix_stack_multiply(cg_matrix_stack_t *stack,
-                         const cg_matrix_t *matrix)
+                         const c_matrix_t *matrix)
 {
     cg_matrix_entry_multiply_t *entry;
 
@@ -219,11 +216,11 @@ cg_matrix_stack_multiply(cg_matrix_stack_t *stack,
 
     entry->matrix = _cg_magazine_chunk_alloc(cg_matrix_stack_matrices_magazine);
 
-    cg_matrix_init_from_array(entry->matrix, (float *)matrix);
+    c_matrix_init_from_array(entry->matrix, (float *)matrix);
 }
 
 void
-cg_matrix_stack_set(cg_matrix_stack_t *stack, const cg_matrix_t *matrix)
+cg_matrix_stack_set(cg_matrix_stack_t *stack, const c_matrix_t *matrix)
 {
     cg_matrix_entry_load_t *entry;
 
@@ -231,7 +228,7 @@ cg_matrix_stack_set(cg_matrix_stack_t *stack, const cg_matrix_t *matrix)
 
     entry->matrix = _cg_magazine_chunk_alloc(cg_matrix_stack_matrices_magazine);
 
-    cg_matrix_init_from_array(entry->matrix, (float *)matrix);
+    c_matrix_init_from_array(entry->matrix, (float *)matrix);
 }
 
 void
@@ -249,8 +246,8 @@ cg_matrix_stack_frustum(cg_matrix_stack_t *stack,
 
     entry->matrix = _cg_magazine_chunk_alloc(cg_matrix_stack_matrices_magazine);
 
-    cg_matrix_init_identity(entry->matrix);
-    cg_matrix_frustum(entry->matrix, left, right, bottom, top, z_near, z_far);
+    c_matrix_init_identity(entry->matrix);
+    c_matrix_frustum(entry->matrix, left, right, bottom, top, z_near, z_far);
 }
 
 void
@@ -266,8 +263,8 @@ cg_matrix_stack_perspective(cg_matrix_stack_t *stack,
 
     entry->matrix = _cg_magazine_chunk_alloc(cg_matrix_stack_matrices_magazine);
 
-    cg_matrix_init_identity(entry->matrix);
-    cg_matrix_perspective(entry->matrix, fov_y, aspect, z_near, z_far);
+    c_matrix_init_identity(entry->matrix);
+    c_matrix_perspective(entry->matrix, fov_y, aspect, z_near, z_far);
 }
 
 void
@@ -285,8 +282,8 @@ cg_matrix_stack_orthographic(cg_matrix_stack_t *stack,
 
     entry->matrix = _cg_magazine_chunk_alloc(cg_matrix_stack_matrices_magazine);
 
-    cg_matrix_init_identity(entry->matrix);
-    cg_matrix_orthographic(entry->matrix, x_1, y_1, x_2, y_2, near, far);
+    c_matrix_init_identity(entry->matrix);
+    c_matrix_orthographic(entry->matrix, x_1, y_1, x_2, y_2, near, far);
 }
 
 void
@@ -389,15 +386,15 @@ cg_matrix_stack_pop(cg_matrix_stack_t *stack)
 }
 
 bool
-cg_matrix_stack_get_inverse(cg_matrix_stack_t *stack, cg_matrix_t *inverse)
+cg_matrix_stack_get_inverse(cg_matrix_stack_t *stack, c_matrix_t *inverse)
 {
-    cg_matrix_t matrix;
-    cg_matrix_t *internal = cg_matrix_stack_get(stack, &matrix);
+    c_matrix_t matrix;
+    c_matrix_t *internal = cg_matrix_stack_get(stack, &matrix);
 
     if (internal)
-        return cg_matrix_get_inverse(internal, inverse);
+        return c_matrix_get_inverse(internal, inverse);
     else
-        return cg_matrix_get_inverse(&matrix, inverse);
+        return c_matrix_get_inverse(&matrix, inverse);
 }
 
 /* In addition to writing the stack matrix into the give @matrix
@@ -405,8 +402,8 @@ cg_matrix_stack_get_inverse(cg_matrix_stack_t *stack, cg_matrix_t *inverse)
  * to a matrix too so if we are querying the inverse matrix we
  * should query from the return matrix so that the result can
  * be cached within the stack. */
-cg_matrix_t *
-cg_matrix_entry_get(cg_matrix_entry_t *entry, cg_matrix_t *matrix)
+c_matrix_t *
+cg_matrix_entry_get(cg_matrix_entry_t *entry, c_matrix_t *matrix)
 {
     int depth;
     cg_matrix_entry_t *current;
@@ -417,7 +414,7 @@ cg_matrix_entry_get(cg_matrix_entry_t *entry, cg_matrix_t *matrix)
          current = current->parent, depth++) {
         switch (current->op) {
         case CG_MATRIX_OP_LOAD_IDENTITY:
-            cg_matrix_init_identity(matrix);
+            c_matrix_init_identity(matrix);
             goto initialized;
         case CG_MATRIX_OP_LOAD: {
             cg_matrix_entry_load_t *load = (cg_matrix_entry_load_t *)current;
@@ -499,43 +496,43 @@ initialized:
         case CG_MATRIX_OP_TRANSLATE: {
             cg_matrix_entry_translate_t *translate =
                 (cg_matrix_entry_translate_t *)children[i];
-            cg_matrix_translate(
+            c_matrix_translate(
                 matrix, translate->x, translate->y, translate->z);
             continue;
         }
         case CG_MATRIX_OP_ROTATE: {
             cg_matrix_entry_rotate_t *rotate =
                 (cg_matrix_entry_rotate_t *)children[i];
-            cg_matrix_rotate(
+            c_matrix_rotate(
                 matrix, rotate->angle, rotate->x, rotate->y, rotate->z);
             continue;
         }
         case CG_MATRIX_OP_ROTATE_EULER: {
             cg_matrix_entry_rotate_euler_t *rotate =
                 (cg_matrix_entry_rotate_euler_t *)children[i];
-            cg_euler_t euler;
-            cg_euler_init(&euler, rotate->heading, rotate->pitch, rotate->roll);
-            cg_matrix_rotate_euler(matrix, &euler);
+            c_euler_t euler;
+            c_euler_init(&euler, rotate->heading, rotate->pitch, rotate->roll);
+            c_matrix_rotate_euler(matrix, &euler);
             continue;
         }
         case CG_MATRIX_OP_ROTATE_QUATERNION: {
             cg_matrix_entry_rotate_quaternion_t *rotate =
                 (cg_matrix_entry_rotate_quaternion_t *)children[i];
-            cg_quaternion_t quaternion;
-            cg_quaternion_init_from_array(&quaternion, rotate->values);
-            cg_matrix_rotate_quaternion(matrix, &quaternion);
+            c_quaternion_t quaternion;
+            c_quaternion_init_from_array(&quaternion, rotate->values);
+            c_matrix_rotate_quaternion(matrix, &quaternion);
             continue;
         }
         case CG_MATRIX_OP_SCALE: {
             cg_matrix_entry_scale_t *scale =
                 (cg_matrix_entry_scale_t *)children[i];
-            cg_matrix_scale(matrix, scale->x, scale->y, scale->z);
+            c_matrix_scale(matrix, scale->x, scale->y, scale->z);
             continue;
         }
         case CG_MATRIX_OP_MULTIPLY: {
             cg_matrix_entry_multiply_t *multiply =
                 (cg_matrix_entry_multiply_t *)children[i];
-            cg_matrix_multiply(matrix, matrix, multiply->matrix);
+            c_matrix_multiply(matrix, matrix, multiply->matrix);
             continue;
         }
 
@@ -561,8 +558,8 @@ cg_matrix_stack_get_entry(cg_matrix_stack_t *stack)
  * to a matrix too so if we are querying the inverse matrix we
  * should query from the return matrix so that the result can
  * be cached within the stack. */
-cg_matrix_t *
-cg_matrix_stack_get(cg_matrix_stack_t *stack, cg_matrix_t *matrix)
+c_matrix_t *
+cg_matrix_stack_get(cg_matrix_stack_t *stack, c_matrix_t *matrix)
 {
     return cg_matrix_entry_get(stack->last_entry, matrix);
 }
@@ -583,7 +580,7 @@ cg_matrix_stack_new(cg_device_t *dev)
         cg_matrix_stack_magazine =
             _cg_magazine_new(sizeof(cg_matrix_entry_full_t), 20);
         cg_matrix_stack_matrices_magazine =
-            _cg_magazine_new(sizeof(cg_matrix_t), 20);
+            _cg_magazine_new(sizeof(c_matrix_t), 20);
     }
 
     stack->dev = dev;
@@ -806,7 +803,7 @@ cg_matrix_entry_equal(cg_matrix_entry_t *entry0, cg_matrix_entry_t *entry1)
                 (cg_matrix_entry_multiply_t *)entry0;
             cg_matrix_entry_multiply_t *mult1 =
                 (cg_matrix_entry_multiply_t *)entry1;
-            if (!cg_matrix_equal(mult0->matrix, mult1->matrix))
+            if (!c_matrix_equal(mult0->matrix, mult1->matrix))
                 return false;
         } break;
         case CG_MATRIX_OP_LOAD: {
@@ -815,7 +812,7 @@ cg_matrix_entry_equal(cg_matrix_entry_t *entry0, cg_matrix_entry_t *entry1)
             /* There's no need to check any further since an
              * _OP_LOAD makes all the ancestors redundant as far as
              * the final matrix value is concerned. */
-            return cg_matrix_equal(load0->matrix, load1->matrix);
+            return c_matrix_equal(load0->matrix, load1->matrix);
         }
         case CG_MATRIX_OP_SAVE:
             /* We skip over saves above so we shouldn't see save entries */
@@ -899,13 +896,13 @@ cg_debug_matrix_entry_print(cg_matrix_entry_t *entry)
             cg_matrix_entry_multiply_t *mult =
                 (cg_matrix_entry_multiply_t *)entry;
             c_print("  MULT:\n");
-            _cg_matrix_prefix_print("    ", mult->matrix);
+            c_matrix_prefix_print("    ", mult->matrix);
             continue;
         }
         case CG_MATRIX_OP_LOAD: {
             cg_matrix_entry_load_t *load = (cg_matrix_entry_load_t *)entry;
             c_print("  LOAD:\n");
-            _cg_matrix_prefix_print("    ", load->matrix);
+            c_matrix_prefix_print("    ", load->matrix);
             continue;
         }
         case CG_MATRIX_OP_SAVE:

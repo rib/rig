@@ -1,8 +1,4 @@
 /*
- * Cogl
- *
- * A Low-Level GPU Graphics and Utilities API
- *
  * Copyright (C) 2010 Intel Corporation.
  *
  * Permission is hereby granted, free of charge, to any person
@@ -24,24 +20,16 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
- * Authors:
- *   Robert Bragg <robert@linux.intel.com>
  */
 
-#if !defined(__CG_H_INSIDE__) && !defined(CG_COMPILATION)
-#error "Only <cogl/cogl.h> can be included directly."
-#endif
+#pragma once
 
-#ifndef __CG_EULER_H
-#define __CG_EULER_H
+#include <clib.h>
 
-#include <cogl/cogl-types.h>
-
-CG_BEGIN_DECLS
+C_BEGIN_DECLS
 
 /**
- * SECTION:cogl-euler
+ * SECTION:ceuler
  * @short_description: Functions for initializing and manipulating
  * euler angles.
  *
@@ -69,8 +57,8 @@ CG_BEGIN_DECLS
  * <listitem>
  * Efficient storage, needing only 3 components any rotation can be
  * represented.
- * <note>Actually the #cg_euler_t type isn't optimized for size because
- * we may cache the equivalent #cg_quaternion_t along with a euler
+ * <note>Actually the #c_euler_t type isn't optimized for size because
+ * we may cache the equivalent #c_quaternion_t along with a euler
  * rotation, but it would be trivial for an application to track the
  * components of euler rotations in a packed float array if optimizing
  * for size was important. The values could be passed to Cogl only when
@@ -120,11 +108,11 @@ CG_BEGIN_DECLS
  *
  * A common practice is to accept angles in the intuitive Euler form
  * and convert them to quaternions internally to avoid Gimbal Lock and
- * handle interpolations. See cg_quaternion_init_from_euler().
+ * handle interpolations. See c_quaternion_init_from_euler().
  */
 
 /**
- * cg_euler_t:
+ * c_euler_t:
  * @heading: Angle to rotate around an object's y axis
  * @pitch: Angle to rotate around an object's x axis
  * @roll: Angle to rotate around an object's z axis
@@ -137,24 +125,23 @@ CG_BEGIN_DECLS
  * with the object being rotated, so the axis also rotate in sequence
  * with the rotations being applied.</note>
  *
- * The members of a #cg_euler_t can be initialized, for example, with
- * cg_euler_init() and cg_euler_init_from_quaternion ().
+ * The members of a #c_euler_t can be initialized, for example, with
+ * c_euler_init() and c_euler_init_from_quaternion ().
  *
- * You may also want to look at cg_quaternion_init_from_euler() if
+ * You may also want to look at c_quaternion_init_from_euler() if
  * you want to do interpolation between 3d rotations.
  *
  */
-struct _cg_euler_t {
-    /*< public > */
+struct _c_euler_t {
     float heading;
     float pitch;
     float roll;
 };
-CG_STRUCT_SIZE_ASSERT(cg_euler_t, 12);
+_C_STRUCT_SIZE_ASSERT(c_euler_t, 12);
 
 /**
- * cg_euler_init:
- * @euler: The #cg_euler_t angle to initialize
+ * c_euler_init:
+ * @euler: The #c_euler_t angle to initialize
  * @heading: Angle to rotate around an object's y axis
  * @pitch: Angle to rotate around an object's x axis
  * @roll: Angle to rotate around an object's z axis
@@ -164,32 +151,32 @@ CG_STRUCT_SIZE_ASSERT(cg_euler_t, 12);
  * @z_angle degrees around the z axis.
  *
  */
-void cg_euler_init(cg_euler_t *euler, float heading, float pitch, float roll);
+void c_euler_init(c_euler_t *euler, float heading, float pitch, float roll);
 
 /**
- * cg_euler_init_from_matrix:
- * @euler: The #cg_euler_t angle to initialize
- * @matrix: A #cg_matrix_t containing a rotation, but no scaling,
+ * c_euler_init_from_matrix:
+ * @euler: The #c_euler_t angle to initialize
+ * @matrix: A #c_matrix_t containing a rotation, but no scaling,
  *          mirroring or skewing.
  *
  * Extracts a euler rotation from the given @matrix and
  * initializses @euler with the component x, y and z rotation angles.
  */
-void cg_euler_init_from_matrix(cg_euler_t *euler, const cg_matrix_t *matrix);
+void c_euler_init_from_matrix(c_euler_t *euler, const c_matrix_t *matrix);
 
 /**
- * cg_euler_init_from_quaternion:
- * @euler: The #cg_euler_t angle to initialize
- * @quaternion: A #cg_euler_t with the rotation to initialize with
+ * c_euler_init_from_quaternion:
+ * @euler: The #c_euler_t angle to initialize
+ * @quaternion: A #c_euler_t with the rotation to initialize with
  *
  * Initializes a @euler rotation with the equivalent rotation
  * represented by the given @quaternion.
  */
-void cg_euler_init_from_quaternion(cg_euler_t *euler,
-                                   const cg_quaternion_t *quaternion);
+void c_euler_init_from_quaternion(c_euler_t *euler,
+                                   const c_quaternion_t *quaternion);
 
 /**
- * cg_euler_equal:
+ * c_euler_equal:
  * @v1: The first euler angle to compare
  * @v2: The second euler angle to compare
  *
@@ -202,30 +189,28 @@ void cg_euler_init_from_quaternion(cg_euler_t *euler,
  *
  * Returns: %true if @v1 and @v2 are equal else %false.
  */
-bool cg_euler_equal(const void *v1, const void *v2);
+bool c_euler_equal(const void *v1, const void *v2);
 
 /**
- * cg_euler_copy:
- * @src: A #cg_euler_t to copy
+ * c_euler_copy:
+ * @src: A #c_euler_t to copy
  *
- * Allocates a new #cg_euler_t and initilizes it with the component
+ * Allocates a new #c_euler_t and initilizes it with the component
  * angles of @src. The newly allocated euler should be freed using
- * cg_euler_free().
+ * c_euler_free().
  *
- * Returns: A newly allocated #cg_euler_t
+ * Returns: A newly allocated #c_euler_t
  */
-cg_euler_t *cg_euler_copy(const cg_euler_t *src);
+c_euler_t *c_euler_copy(const c_euler_t *src);
 
 /**
- * cg_euler_free:
- * @euler: A #cg_euler_t allocated via cg_euler_copy()
+ * c_euler_free:
+ * @euler: A #c_euler_t allocated via c_euler_copy()
  *
- * Frees a #cg_euler_t that was previously allocated using
- * cg_euler_copy().
+ * Frees a #c_euler_t that was previously allocated using
+ * c_euler_copy().
  *
  */
-void cg_euler_free(cg_euler_t *euler);
+void c_euler_free(c_euler_t *euler);
 
-CG_END_DECLS
-
-#endif /* __CG_EULER_H */
+C_END_DECLS

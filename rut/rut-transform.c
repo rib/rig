@@ -82,7 +82,7 @@ rut_transform_new(rut_shell_t *shell)
 
     rut_graphable_init(transform);
 
-    cg_matrix_init_identity(&transform->matrix);
+    c_matrix_init_identity(&transform->matrix);
 
     return transform;
 }
@@ -90,44 +90,44 @@ rut_transform_new(rut_shell_t *shell)
 void
 rut_transform_translate(rut_transform_t *transform, float x, float y, float z)
 {
-    cg_matrix_translate(&transform->matrix, x, y, z);
+    c_matrix_translate(&transform->matrix, x, y, z);
 }
 
 void
 rut_transform_quaternion_rotate(rut_transform_t *transform,
-                                const cg_quaternion_t *quaternion)
+                                const c_quaternion_t *quaternion)
 {
-    cg_matrix_t rotation;
-    cg_matrix_init_from_quaternion(&rotation, quaternion);
-    cg_matrix_multiply(&transform->matrix, &transform->matrix, &rotation);
+    c_matrix_t rotation;
+    c_matrix_init_from_quaternion(&rotation, quaternion);
+    c_matrix_multiply(&transform->matrix, &transform->matrix, &rotation);
 }
 
 void
 rut_transform_rotate(
     rut_transform_t *transform, float angle, float x, float y, float z)
 {
-    cg_matrix_rotate(&transform->matrix, angle, x, y, z);
+    c_matrix_rotate(&transform->matrix, angle, x, y, z);
 }
 void
 rut_transform_scale(rut_transform_t *transform, float x, float y, float z)
 {
-    cg_matrix_scale(&transform->matrix, x, y, z);
+    c_matrix_scale(&transform->matrix, x, y, z);
 }
 
 void
 rut_transform_transform(rut_transform_t *transform,
-                        const cg_matrix_t *matrix)
+                        const c_matrix_t *matrix)
 {
-    cg_matrix_multiply(&transform->matrix, &transform->matrix, matrix);
+    c_matrix_multiply(&transform->matrix, &transform->matrix, matrix);
 }
 
 void
 rut_transform_init_identity(rut_transform_t *transform)
 {
-    cg_matrix_init_identity(&transform->matrix);
+    c_matrix_init_identity(&transform->matrix);
 }
 
-const cg_matrix_t *
+const c_matrix_t *
 rut_transform_get_matrix(rut_object_t *self)
 {
     rut_transform_t *transform = self;

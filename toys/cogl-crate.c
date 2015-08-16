@@ -10,7 +10,7 @@ typedef struct _Data {
     int framebuffer_width;
     int framebuffer_height;
 
-    cg_matrix_t view;
+    c_matrix_t view;
 
     cg_indices_t *indices;
     cg_primitive_t *prim;
@@ -32,7 +32,7 @@ typedef struct _Data {
 } Data;
 
 /* A static identity matrix initialized for convenience. */
-static cg_matrix_t identity;
+static c_matrix_t identity;
 /* static colors initialized for convenience. */
 static cg_color_t white;
 
@@ -190,8 +190,8 @@ main(int argc, char **argv)
      * This is roughly what Clutter does for a ClutterStage, but this
      * demonstrates how it is done manually using Cogl.
      */
-    cg_matrix_init_identity(&data.view);
-    cg_matrix_view_2d_in_perspective(&data.view,
+    c_matrix_init_identity(&data.view);
+    c_matrix_view_2d_in_perspective(&data.view,
                                      fovy,
                                      aspect,
                                      z_near,
@@ -201,7 +201,7 @@ main(int argc, char **argv)
     cg_framebuffer_set_modelview_matrix(fb, &data.view);
 
     /* Initialize some convenient constants */
-    cg_matrix_init_identity(&identity);
+    c_matrix_init_identity(&identity);
     cg_color_init_from_4ub(&white, 0xff, 0xff, 0xff, 0xff);
 
     /* rectangle indices allow the GPU to interpret a list of quads (the

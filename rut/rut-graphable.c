@@ -341,7 +341,7 @@ rut_graphable_find_camera (rut_object_t *object)
 
 void
 rut_graphable_apply_transform(rut_object_t *graphable,
-                              cg_matrix_t *transform_matrix)
+                              c_matrix_t *transform_matrix)
 {
     int depth = 0;
     rut_object_t **transform_nodes;
@@ -373,26 +373,26 @@ rut_graphable_apply_transform(rut_object_t *graphable,
     } while (node);
 
     for (i--; i >= 0; i--) {
-        const cg_matrix_t *matrix =
+        const c_matrix_t *matrix =
             rut_transformable_get_matrix(transform_nodes[i]);
-        cg_matrix_multiply(transform_matrix, transform_matrix, matrix);
+        c_matrix_multiply(transform_matrix, transform_matrix, matrix);
     }
 }
 
 void
 rut_graphable_get_transform(rut_object_t *graphable,
-                            cg_matrix_t *transform)
+                            c_matrix_t *transform)
 {
-    cg_matrix_init_identity(transform);
+    c_matrix_init_identity(transform);
     rut_graphable_apply_transform(graphable, transform);
 }
 
 void
 rut_graphable_get_modelview(rut_object_t *graphable,
                             rut_object_t *camera,
-                            cg_matrix_t *transform)
+                            c_matrix_t *transform)
 {
-    const cg_matrix_t *view = rut_camera_get_view_transform(camera);
+    const c_matrix_t *view = rut_camera_get_view_transform(camera);
     *transform = *view;
     rut_graphable_apply_transform(graphable, transform);
 }
@@ -401,8 +401,8 @@ void
 rut_graphable_fully_transform_point(
     rut_object_t *graphable, rut_object_t *camera, float *x, float *y, float *z)
 {
-    cg_matrix_t modelview;
-    const cg_matrix_t *projection;
+    c_matrix_t modelview;
+    const c_matrix_t *projection;
     const float *viewport;
     float point[3] = { *x, *y, *z };
 

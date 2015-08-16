@@ -485,13 +485,13 @@ test_vertex_transform_hook(TestState *state)
 {
     cg_pipeline_t *pipeline;
     cg_snippet_t *snippet;
-    cg_matrix_t identity_matrix;
-    cg_matrix_t matrix;
+    c_matrix_t identity_matrix;
+    c_matrix_t matrix;
     int location;
 
     /* Test the vertex transform hook */
 
-    cg_matrix_init_identity(&identity_matrix);
+    c_matrix_init_identity(&identity_matrix);
 
     pipeline = cg_pipeline_new(test_dev);
 
@@ -513,7 +513,7 @@ test_vertex_transform_hook(TestState *state)
                                    4, /* dimensions */
                                    1, /* count */
                                    false, /* don't transpose */
-                                   cg_matrix_get_array(&matrix));
+                                   c_matrix_get_array(&matrix));
 
     /* Replace the real projection matrix with the identity. This should
        mess up the drawing unless the snippet replacement is working */

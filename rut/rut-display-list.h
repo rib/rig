@@ -51,7 +51,7 @@ typedef struct _rut_cmd_t {
 
 typedef struct _rut_transform_cmd_t {
     rut_cmd_t _parent;
-    cg_matrix_t matrix;
+    c_matrix_t matrix;
 } rut_transform_cmd_t;
 #define RUT_TRANSFORM_CMD(X) ((rut_transform_cmd_t *)X)
 

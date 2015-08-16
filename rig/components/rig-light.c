@@ -81,8 +81,8 @@ rig_light_set_uniforms(rig_light_t *light, cg_pipeline_t *pipeline)
 
     rig_entity_get_transformed_position(entity, origin);
     rig_entity_get_transformed_position(entity, norm_direction);
-    cg_vector3_subtract(norm_direction, norm_direction, origin);
-    cg_vector3_normalize(norm_direction);
+    c_vector3_subtract(norm_direction, norm_direction, origin);
+    c_vector3_normalize(norm_direction);
 
     location =
         cg_pipeline_get_uniform_location(pipeline, "light0_direction_norm");

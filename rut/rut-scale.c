@@ -538,8 +538,8 @@ static rut_property_spec_t _rut_scale_prop_specs[] = {
 typedef struct _grab_state_t {
     rut_object_t *camera;
     rut_scale_t *scale;
-    cg_matrix_t transform;
-    cg_matrix_t inverse_transform;
+    c_matrix_t transform;
+    c_matrix_t inverse_transform;
     bool is_pan;
     bool is_select;
     float grab_offset;
@@ -658,7 +658,7 @@ _rut_scale_input_cb(rut_input_region_t *region,
     if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_MOTION &&
         rut_motion_event_get_action(event) == RUT_MOTION_EVENT_ACTION_DOWN) {
         grab_state_t *state = c_slice_new0(grab_state_t);
-        const cg_matrix_t *view;
+        const c_matrix_t *view;
         float x = rut_motion_event_get_x(event);
         float y = rut_motion_event_get_y(event);
 
@@ -667,7 +667,7 @@ _rut_scale_input_cb(rut_input_region_t *region,
         view = rut_camera_get_view_transform(state->camera);
         state->transform = *view;
         rut_graphable_apply_transform(scale, &state->transform);
-        if (!cg_matrix_get_inverse(&state->transform,
+        if (!c_matrix_get_inverse(&state->transform,
                                    &state->inverse_transform)) {
             c_warning("Failed to calculate inverse of widget transform\n");
             c_slice_free(grab_state_t, state);
