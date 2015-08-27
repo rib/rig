@@ -1705,7 +1705,7 @@ rig_add_tool_changed_callback(rig_editor_t *editor,
                               void *user_data,
                               rut_closure_destroy_callback_t destroy_notify)
 {
-    rut_closure_list_add(
+    rut_closure_list_add_FIXME(
         &editor->tool_changed_cb_list, callback, user_data, destroy_notify);
 }
 
@@ -2362,7 +2362,7 @@ _rig_editor_free(rut_object_t *object)
 
     rut_object_unref(editor->transparency_grid);
 
-    rut_closure_list_disconnect_all(&editor->tool_changed_cb_list);
+    rut_closure_list_disconnect_all_FIXME(&editor->tool_changed_cb_list);
 
     rut_object_unref(editor->objects_selection);
 
@@ -3167,7 +3167,7 @@ _rig_objects_selection_free(void *object)
 
     _rig_objects_selection_cancel(selection);
 
-    rut_closure_list_disconnect_all(&selection->selection_events_cb_list);
+    rut_closure_list_disconnect_all_FIXME(&selection->selection_events_cb_list);
 
     rut_object_free(rig_objects_selection_t, selection);
 }
@@ -3225,7 +3225,7 @@ rig_objects_selection_add_event_callback(
     void *user_data,
     rut_closure_destroy_callback_t destroy_cb)
 {
-    return rut_closure_list_add(
+    return rut_closure_list_add_FIXME(
         &selection->selection_events_cb_list, callback, user_data, destroy_cb);
 }
 

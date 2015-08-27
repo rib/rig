@@ -1074,7 +1074,7 @@ _rig_pb_rpc_peer_free(void *object)
     rig_pb_rpc_peer_t *peer = object;
 
     if (peer->connect_idle) {
-        rut_poll_shell_remove_idle(peer->stream->shell, peer->connect_idle);
+        rut_poll_shell_remove_idle_FIXME(peer->stream->shell, peer->connect_idle);
         peer->connect_idle = NULL;
     }
 
@@ -1108,7 +1108,7 @@ peer_connected_idle_cb(void *user_data)
     rig_pb_rpc_server_t *server = peer->server;
     rig_pb_rpc_client_t *client = peer->client;
 
-    rut_poll_shell_remove_idle(peer->stream->shell, peer->connect_idle);
+    rut_poll_shell_remove_idle_FIXME(peer->stream->shell, peer->connect_idle);
     peer->connect_idle = NULL;
 
     rig_pb_stream_set_read_callback(stream,
@@ -1137,7 +1137,7 @@ handle_stream_connect_cb(rig_pb_stream_t *stream,
      * for the peer.
      */
     peer->connect_idle =
-        rut_poll_shell_add_idle(stream->shell,
+        rut_poll_shell_add_idle_FIXME(stream->shell,
                                 peer_connected_idle_cb,
                                 peer,
                                 NULL); /* destroy */

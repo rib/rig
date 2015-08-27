@@ -316,7 +316,7 @@ _rig_shape_free(void *object)
 
     rut_introspectable_destroy(shape);
 
-    rut_closure_list_disconnect_all(&shape->reshaped_cb_list);
+    rut_closure_list_disconnect_all_FIXME(&shape->reshaped_cb_list);
 
     rut_object_free(rig_shape_t, shape);
 }
@@ -491,7 +491,7 @@ rig_shape_add_reshaped_callback(rig_shape_t *shape,
                                 rut_closure_destroy_callback_t destroy_cb)
 {
     c_return_val_if_fail(callback != NULL, NULL);
-    return rut_closure_list_add(
+    return rut_closure_list_add_FIXME(
         &shape->reshaped_cb_list, callback, user_data, destroy_cb);
 }
 

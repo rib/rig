@@ -394,7 +394,7 @@ rig_selection_tool_set_active(rig_selection_tool_t *tool, bool active)
                 selection, RIG_OBJECTS_SELECTION_REMOVE_EVENT, l->data, tool);
         }
 
-        rut_closure_disconnect(tool->objects_selection_closure);
+        rut_closure_disconnect_FIXME(tool->objects_selection_closure);
         tool->objects_selection_closure = NULL;
     }
 }
@@ -536,7 +536,7 @@ rig_selection_tool_add_event_callback(
     void *user_data,
     rut_closure_destroy_callback_t destroy_cb)
 {
-    return rut_closure_list_add(
+    return rut_closure_list_add_FIXME(
         &tool->selection_event_cb_list, callback, user_data, destroy_cb);
 }
 
@@ -545,7 +545,7 @@ rig_selection_tool_destroy(rig_selection_tool_t *tool)
 {
     c_llist_t *l;
 
-    rut_closure_list_disconnect_all(&tool->selection_event_cb_list);
+    rut_closure_list_disconnect_all_FIXME(&tool->selection_event_cb_list);
 
     cg_object_unref(tool->default_pipeline);
 

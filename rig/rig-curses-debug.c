@@ -319,7 +319,7 @@ redraw_cb(void *user_data)
     struct rig_log *log1;
     int log_win_height;
 
-    rut_poll_shell_remove_idle(shell, state->redraw_closure);
+    rut_poll_shell_remove_idle_FIXME(shell, state->redraw_closure);
     state->redraw_closure = NULL;
 
     destroy_windows();
@@ -415,7 +415,7 @@ queue_redraw(rut_shell_t *shell)
         return;
 
     curses_state.redraw_closure =
-        rut_poll_shell_add_idle(shell,
+        rut_poll_shell_add_idle_FIXME(shell,
                                 redraw_cb,
                                 shell,
                                 NULL /* destroy */);

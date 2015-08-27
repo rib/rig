@@ -354,7 +354,7 @@ _rig_pointalism_grid_free(void *object)
     }
 #endif
 
-    rut_closure_list_disconnect_all(&grid->updated_cb_list);
+    rut_closure_list_disconnect_all_FIXME(&grid->updated_cb_list);
 
     free_meshes(grid);
 
@@ -597,7 +597,7 @@ rig_pointalism_grid_add_update_callback(
     rut_closure_destroy_callback_t destroy_cb)
 {
     c_return_val_if_fail(callback != NULL, NULL);
-    return rut_closure_list_add(
+    return rut_closure_list_add_FIXME(
         &grid->updated_cb_list, callback, user_data, destroy_cb);
 }
 

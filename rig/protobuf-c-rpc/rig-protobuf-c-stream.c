@@ -108,7 +108,7 @@ rig_pb_stream_disconnect(rig_pb_stream_t *stream)
         }
 
         if (stream->buffer.read_idle) {
-            rut_poll_shell_remove_idle(stream->shell, stream->buffer.read_idle);
+            rut_poll_shell_remove_idle_FIXME(stream->shell, stream->buffer.read_idle);
             stream->buffer.read_idle = NULL;
         }
         break;
@@ -166,12 +166,12 @@ _stream_free(void *object)
     rig_pb_stream_disconnect(stream);
 
     if (stream->type == STREAM_TYPE_BUFFER && stream->buffer.connect_idle) {
-        rut_poll_shell_remove_idle(stream->shell, stream->buffer.connect_idle);
+        rut_poll_shell_remove_idle_FIXME(stream->shell, stream->buffer.connect_idle);
         stream->buffer.connect_idle = NULL;
     }
 
-    rut_closure_list_disconnect_all(&stream->on_connect_closures);
-    rut_closure_list_disconnect_all(&stream->on_error_closures);
+    rut_closure_list_disconnect_all_FIXME(&stream->on_connect_closures);
+    rut_closure_list_disconnect_all_FIXME(&stream->on_error_closures);
 
 #ifdef USE_UV
     c_free(stream->hostname);
@@ -218,7 +218,7 @@ rig_pb_stream_add_on_connect_callback(rig_pb_stream_t *stream,
                                       void *user_data,
                                       rut_closure_destroy_callback_t destroy)
 {
-    return rut_closure_list_add(&stream->on_connect_closures,
+    return rut_closure_list_add_FIXME(&stream->on_connect_closures,
                                 callback,
                                 user_data,
                                 destroy);
@@ -230,7 +230,7 @@ rig_pb_stream_add_on_error_callback(rig_pb_stream_t *stream,
                                     void *user_data,
                                     rut_closure_destroy_callback_t destroy)
 {
-    return rut_closure_list_add(&stream->on_error_closures,
+    return rut_closure_list_add_FIXME(&stream->on_error_closures,
                                 callback,
                                 user_data,
                                 destroy);
@@ -428,7 +428,7 @@ data_buffer_stream_read_idle(void *user_data)
     rig_pb_stream_t *stream = user_data;
     int i;
 
-    rut_poll_shell_remove_idle(stream->shell, stream->buffer.read_idle);
+    rut_poll_shell_remove_idle_FIXME(stream->shell, stream->buffer.read_idle);
     stream->buffer.read_idle = NULL;
 
     c_return_if_fail(stream->type == STREAM_TYPE_BUFFER);
@@ -466,7 +466,7 @@ queue_data_buffer_stream_read(rig_pb_stream_t *stream)
 
     if (stream->buffer.read_idle == NULL) {
         stream->buffer.read_idle =
-            rut_poll_shell_add_idle(stream->shell,
+            rut_poll_shell_add_idle_FIXME(stream->shell,
                                     data_buffer_stream_read_idle,
                                     stream,
                                     NULL); /* destroy */
@@ -478,7 +478,7 @@ stream_set_connected_idle(void *user_data)
 {
     rig_pb_stream_t *stream = user_data;
 
-    rut_poll_shell_remove_idle(stream->shell, stream->buffer.connect_idle);
+    rut_poll_shell_remove_idle_FIXME(stream->shell, stream->buffer.connect_idle);
     stream->buffer.connect_idle = NULL;
 
     set_connected(stream);
@@ -490,7 +490,7 @@ queue_set_connected(rig_pb_stream_t *stream)
     c_return_if_fail(stream->buffer.connect_idle == NULL);
 
     stream->buffer.connect_idle =
-        rut_poll_shell_add_idle(stream->shell,
+        rut_poll_shell_add_idle_FIXME(stream->shell,
                                 stream_set_connected_idle,
                                 stream,
                                 NULL); /* destroy */

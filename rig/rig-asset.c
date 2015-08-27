@@ -1116,7 +1116,7 @@ rig_asset_thumbnail(rig_asset_t *asset,
 
     c_return_val_if_fail(rig_asset_needs_thumbnail(asset), NULL);
 
-    closure = rut_closure_list_add(
+    closure = rut_closure_list_add_FIXME(
         &asset->thumbnail_cb_list, ready_callback, user_data, destroy_cb);
     generate_video_thumbnail(asset);
 

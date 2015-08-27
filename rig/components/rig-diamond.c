@@ -342,7 +342,7 @@ _rig_diamond_free(void *object)
     }
 #endif
 
-    rut_closure_list_disconnect_all(&diamond->updated_cb_list);
+    rut_closure_list_disconnect_all_FIXME(&diamond->updated_cb_list);
 
     if (diamond->slice)
         rut_object_unref(diamond->slice);
@@ -524,7 +524,7 @@ rig_diamond_add_update_callback(rig_diamond_t *diamond,
                                 rut_closure_destroy_callback_t destroy_cb)
 {
     c_return_val_if_fail(callback != NULL, NULL);
-    return rut_closure_list_add(
+    return rut_closure_list_add_FIXME(
         &diamond->updated_cb_list, callback, user_data, destroy_cb);
 }
 

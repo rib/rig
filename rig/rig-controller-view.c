@@ -1102,9 +1102,9 @@ _rig_path_view_free(void *object)
     rut_property_closure_destroy(path_view->scale_prop_closure);
     rut_property_closure_destroy(path_view->scale_len_prop_closure);
 
-    rut_closure_list_disconnect_all(&path_view->preferred_size_cb_list);
+    rut_closure_list_disconnect_all_FIXME(&path_view->preferred_size_cb_list);
 
-    rut_closure_disconnect(path_view->path_operation_closure);
+    rut_closure_disconnect_FIXME(path_view->path_operation_closure);
     rut_object_unref(path_view->path);
 
     rut_graphable_destroy(path_view);
@@ -1195,7 +1195,7 @@ _rig_path_view_add_preferred_size_callback(
 {
     rig_path_view_t *path_view = sizable;
 
-    return rut_closure_list_add(
+    return rut_closure_list_add_FIXME(
         &path_view->preferred_size_cb_list, cb, user_data, destroy_cb);
 }
 
@@ -1617,11 +1617,11 @@ _rig_controller_property_view_free(void *object)
     rig_controller_property_view_t *prop_view = object;
     int i;
 
-    rut_closure_list_disconnect_all(&prop_view->preferred_size_cb_list);
+    rut_closure_list_disconnect_all_FIXME(&prop_view->preferred_size_cb_list);
 
     for (i = 0; i < RIG_CONTROLLER_VIEW_N_PROPERTY_COLUMNS; i++) {
         rig_controller_view_column_t *column = &prop_view->columns[i];
-        rut_closure_disconnect(column->control_preferred_size_closure);
+        rut_closure_disconnect_FIXME(column->control_preferred_size_closure);
     }
 
     rut_graphable_destroy(prop_view);
@@ -1819,7 +1819,7 @@ rig_controller_property_view_add_preferred_size_callback(
 {
     rig_controller_property_view_t *prop_view = sizable;
 
-    return rut_closure_list_add(
+    return rut_closure_list_add_FIXME(
         &prop_view->preferred_size_cb_list, cb, user_data, destroy_cb);
 }
 
@@ -3740,7 +3740,7 @@ rig_controller_view_add_controller_changed_callback(
     void *user_data,
     rut_closure_destroy_callback_t destroy_cb)
 {
-    return rut_closure_list_add(
+    return rut_closure_list_add_FIXME(
         &view->controller_changed_cb_list, callback, user_data, destroy_cb);
 }
 
@@ -3829,7 +3829,7 @@ rig_controller_view_set_controller(rig_controller_view_t *view,
 
         rig_controller_view_clear_object_views(view);
 
-        rut_closure_disconnect(view->controller_op_closure);
+        rut_closure_disconnect_FIXME(view->controller_op_closure);
         rut_property_remove_binding(scale_len_prop);
         rut_property_remove_binding(controller_elapsed_prop);
 #warning "FIXME: clean up more state when switching controllers"

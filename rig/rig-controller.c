@@ -118,7 +118,7 @@ _rig_controller_free(rut_object_t *object)
 {
     rig_controller_t *controller = object;
 
-    rut_closure_list_disconnect_all(&controller->operation_cb_list);
+    rut_closure_list_disconnect_all_FIXME(&controller->operation_cb_list);
 
     rut_introspectable_destroy(controller);
 
@@ -680,7 +680,7 @@ rig_controller_add_operation_callback(
     void *user_data,
     rut_closure_destroy_callback_t destroy_cb)
 {
-    return rut_closure_list_add(
+    return rut_closure_list_add_FIXME(
         &controller->operation_cb_list, callback, user_data, destroy_cb);
 }
 
@@ -796,7 +796,7 @@ rig_controller_set_property_path(rig_controller_t *controller,
     c_return_if_fail(prop_data != NULL);
 
     if (prop_data->path) {
-        // rut_closure_disconnect (prop_data->path_change_closure);
+        // rut_closure_disconnect_FIXME (prop_data->path_change_closure);
         rut_object_unref(prop_data->path);
     }
 

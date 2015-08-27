@@ -39,7 +39,7 @@ _rig_path_free(void *object)
     rig_path_t *path = object;
     rig_node_t *node, *t;
 
-    rut_closure_list_disconnect_all(&path->operation_cb_list);
+    rut_closure_list_disconnect_all_FIXME(&path->operation_cb_list);
 
     c_list_for_each_safe(node, t, &path->nodes, list_node)
     rig_node_free(node);
@@ -756,7 +756,7 @@ rig_path_add_operation_callback(rig_path_t *path,
                                 void *user_data,
                                 rut_closure_destroy_callback_t destroy_cb)
 {
-    return rut_closure_list_add(
+    return rut_closure_list_add_FIXME(
         &path->operation_cb_list, callback, user_data, destroy_cb);
 }
 

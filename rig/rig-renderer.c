@@ -299,19 +299,19 @@ _rig_renderer_free_priv(rig_entity_t *entity)
     }
 
     if (priv->pointalism_grid_update_closure)
-        rut_closure_disconnect(priv->pointalism_grid_update_closure);
+        rut_closure_disconnect_FIXME(priv->pointalism_grid_update_closure);
 
     if (priv->preferred_size_closure)
-        rut_closure_disconnect(priv->preferred_size_closure);
+        rut_closure_disconnect_FIXME(priv->preferred_size_closure);
 
     if (priv->nine_slice_closure)
-        rut_closure_disconnect(priv->nine_slice_closure);
+        rut_closure_disconnect_FIXME(priv->nine_slice_closure);
 
     if (priv->diamond_closure)
-        rut_closure_disconnect(priv->diamond_closure);
+        rut_closure_disconnect_FIXME(priv->diamond_closure);
 
     if (priv->reshaped_closure)
-        rut_closure_disconnect(priv->reshaped_closure);
+        rut_closure_disconnect_FIXME(priv->reshaped_closure);
 
     c_slice_free(rig_renderer_priv_t, priv);
     entity->renderer_priv = NULL;

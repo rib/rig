@@ -55,7 +55,7 @@ _rig_view_free(void *object)
 {
     rig_view_t *view = object;
 
-    rut_closure_list_disconnect_all(&view->preferred_size_cb_list);
+    rut_closure_list_disconnect_all_FIXME(&view->preferred_size_cb_list);
 
     // rig_view_set_child (view, NULL);
 
@@ -130,7 +130,7 @@ rig_view_add_preferred_size_callback(void *object,
 {
     rig_view_t *view = object;
 
-    return rut_closure_list_add(
+    return rut_closure_list_add_FIXME(
         &view->preferred_size_cb_list, cb, user_data, destroy);
 }
 
@@ -227,7 +227,7 @@ rig_view_set_child (rig_view_t *view,
     if (view->child)
     {
         rut_graphable_remove_child (view->child);
-        rut_closure_disconnect (view->vbox_preferred_size_closure);
+        rut_closure_disconnect_FIXME (view->vbox_preferred_size_closure);
         view->vbox_preferred_size_closure = NULL;
         rut_object_unref (view->child);
     }

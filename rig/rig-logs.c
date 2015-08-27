@@ -335,7 +335,7 @@ forward_simulator_logs_idle_cb(void *user_data)
 {
     struct log_state *state = &log_state;
 
-    rut_poll_shell_remove_idle(state->simulator->shell,
+    rut_poll_shell_remove_idle_FIXME(state->simulator->shell,
                                state->simulator_log_idle);
     state->simulator_log_idle = NULL;
 
@@ -351,7 +351,7 @@ simulator_log_notify_cb(struct rig_log *log)
         state->simulator_log_idle == NULL)
     {
         state->simulator_log_idle =
-            rut_poll_shell_add_idle(state->simulator->shell,
+            rut_poll_shell_add_idle_FIXME(state->simulator->shell,
                                     forward_simulator_logs_idle_cb,
                                     NULL, /* user_data */
                                     NULL /* destroy */);
