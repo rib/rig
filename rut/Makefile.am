@@ -40,7 +40,6 @@ librut_la_LDFLAGS = \
     -export-dynamic
 
 librut_la_LDFLAGS += \
-    -version-info @RIG_LT_CURRENT@:@RIG_LT_REVISION@:@RIG_LT_AGE@ \
     -export-symbols-regex "(^rut.*)|(^_rut.*)"
 
 librut_la_CFLAGS = \
