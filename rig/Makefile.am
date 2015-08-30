@@ -6,8 +6,8 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir) \
 	-I$(top_builddir) \
 	-I$(top_srcdir)/libuv/include \
-	-I$(top_srcdir)/clib/src \
-	-I$(top_builddir)/clib/src \
+	-I$(top_srcdir)/clib/clib \
+	-I$(top_builddir)/clib/clib \
 	-I$(top_srcdir)/xdgmime \
 	-I$(top_srcdir)/rut \
 	-I$(top_builddir)/rut \
@@ -86,7 +86,7 @@ runtime_headers_DATA = $(runtime_headers)
 if USE_LLVM
 librig_clang_la_SOURCES = rig-llvm.cpp rig-llvm.h
 librig_clang_la_LIBADD = $(RIG_CLANG_LIBS) -lstdc++
-librig_clang_la_LIBADD += $(top_builddir)/clib/src/libclib.la
+librig_clang_la_LIBADD += $(top_builddir)/clib/clib/libclib.la
 librig_clang_la_LIBADD += $(top_builddir)/rut/librut.la
 librig_clang_la_LDFLAGS = -export-dynamic -version-info 0:0:0
 if !HAVE_OSX

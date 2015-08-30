@@ -4,15 +4,15 @@ AM_CFLAGS = \
 	$(COGL_DEP_CFLAGS) \
 	-I$(top_srcdir) \
 	-I$(top_srcdir)/libuv/include \
-	-I$(top_srcdir)/clib/src \
-	-I$(top_builddir)/clib/src \
+	-I$(top_srcdir)/clib/clib \
+	-I$(top_builddir)/clib/clib \
 	-I$(top_srcdir)/research/particle-engine/pe
 
 LDADD = \
 	$(COGL_DEP_LIBS) \
 	$(top_builddir)/cogl/libcg.la \
 	$(top_builddir)/research/particle-engine/pe/libpe.la \
-	$(top_builddir)/clib/src/libclib.la \
+	$(top_builddir)/clib/clib/libclib.la \
 	-lm
 
 EXTRA_DIST = run-demos.sh

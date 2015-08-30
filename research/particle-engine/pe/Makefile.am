@@ -2,13 +2,13 @@ AM_CFLAGS = \
 	$(COGL_DEP_CFLAGS) \
 	-I$(top_srcdir) \
 	-I$(top_srcdir)/libuv/include \
-	-I$(top_srcdir)/clib/src \
-	-I$(top_builddir)/clib/src
+	-I$(top_srcdir)/clib/clib \
+	-I$(top_builddir)/clib/clib
 
 LDADD = \
 	$(COGL_DEP_LIBS) \
 	$(top_builddir)/cogl/libcg.la \
-	$(top_builddir)/clib/src/libclib.la \
+	$(top_builddir)/clib/clib/libclib.la \
 	-lm
 
 particle_engine_sources = fuzzy.c particle-engine.c

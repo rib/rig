@@ -50,8 +50,8 @@ librut_la_CPPFLAGS = \
     -I$(top_srcdir) \
     -I$(top_builddir) \
     -I$(top_srcdir)/libuv/include \
-    -I$(top_srcdir)/clib/src \
-    -I$(top_builddir)/clib/src \
+    -I$(top_srcdir)/clib/clib \
+    -I$(top_builddir)/clib/clib \
     -I$(top_srcdir)/rut
 
 # rut_headersdir =  $(includedir)/rut

@@ -20,8 +20,8 @@ wrappers: stamp-test-unit
 stamp-test-unit: Makefile test-unit$(EXEEXT)
 	@mkdir -p wrappers
 	echo "" > unit-tests; \
-	source $(top_builddir)/clib/src/libclib.la ; \
-	  $(NM) $(top_builddir)/clib/src/.libs/"$$dlname"| \
+	source $(top_builddir)/clib/clib/libclib.la ; \
+	  $(NM) $(top_builddir)/clib/clib/.libs/"$$dlname"| \
 	  grep '[DR] _\?test_state_'|sed 's/.\+ [DR] _\?//' >> unit-tests; \
 	source $(top_builddir)/cogl/libcg.la ; \
 	  $(NM) $(top_builddir)/cogl/.libs/"$$dlname"| \
@@ -63,8 +63,8 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir) \
 	-I$(top_builddir) \
 	-I$(top_srcdir)/test-fixtures \
-	-I$(top_srcdir)/clib/src \
-	-I$(top_builddir)/clib/src \
+	-I$(top_srcdir)/clib/clib \
+	-I$(top_builddir)/clib/clib \
 	-I$(top_builddir)/cogl
 
 AM_CPPFLAGS += \
@@ -77,7 +77,7 @@ test_unit_LDADD = \
 	$(COGL_DEP_LIBS) \
 	$(top_builddir)/cogl/libcg.la \
 	$(LIBM)
-test_unit_LDADD += $(top_builddir)/clib/src/libclib.la
+test_unit_LDADD += $(top_builddir)/clib/clib/libclib.la
 test_unit_LDFLAGS = -export-dynamic
 
 test: wrappers

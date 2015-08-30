@@ -8,8 +8,8 @@ AM_CPPFLAGS = \
 	-I$(top_builddir)/rig/protobuf-c-rpc \
 	-I$(top_builddir)/rig \
 	-I$(top_srcdir)/libuv/include \
-	-I$(top_srcdir)/clib/src \
-	-I$(top_builddir)/clib/src \
+	-I$(top_srcdir)/clib/clib \
+	-I$(top_builddir)/clib/clib \
 	-I$(top_srcdir)/LibOVR/Src \
 	$(RIG_DEP_CFLAGS)
 
@@ -39,7 +39,7 @@ common_ldadd = \
 	$(top_builddir)/cogl-path/libcogl-path.la \
 	$(RIG_DEP_LIBS) \
 	$(COGL_DEP_LIBS) \
-	$(top_builddir)/clib/src/libclib.la \
+	$(top_builddir)/clib/clib/libclib.la \
 	-lstdc++ \
 	$(LIBM)
 
