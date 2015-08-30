@@ -1,0 +1,31 @@
+language: c
+
+os:
+    - linux
+    - osx
+
+compiler:
+    - clang
+    - gcc
+
+before_install:
+    - git clone --branch master --depth 1 https://github.com/libuv/libuv
+    - (cd libuv && ./autogen.sh && ./configure --prefix=/usr && make && sudo make install)
+
+install:
+    - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
+
+addons:
+    apt:
+        sources:
+            - ubuntu-toolchain-r-test
+        packages:
+            - gcc-4.8
+            - g++-4.8
+            - clang
+
+before_script:
+    - NOCONFIGURE=1 ./autogen.sh
+
+script:
+    - ./configure CC="gcc-4.8" CXX="g++-4.8" && make

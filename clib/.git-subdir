@@ -1,0 +1,5 @@
+[subdir "upstream"]
+	url = git@github.com:rig-project/clib.git
+	branch = rig
+[subdir "integration"]
+	ref = 31e3c21832c4d4932f412334ab0e5c2a7a6a5733

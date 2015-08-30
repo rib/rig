@@ -1,3 +1,3 @@
-SUBDIRS = src
+SUBDIRS = clib
 
-EXTRA_DIST = README winconfig.h
+ACLOCAL_AMFLAGS = -I build/autotools ${ACLOCAL_FLAGS}
