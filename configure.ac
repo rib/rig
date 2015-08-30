@@ -304,6 +304,7 @@ CheckForGtk()
 
 dnl Check requirements for our C utility api
 dnl ================================================================
+AM_CONDITIONAL([USE_SYSTEM_UV], [false])
 AM_CLIB
 
 RIG_EXTRA_CFLAGS="$RIG_EXTRA_CFLAGS $CLIB_EXTRA_CFLAGS"
@@ -432,7 +433,7 @@ Makefile
 test-fixtures/Makefile
 libuv/Makefile
 clib/Makefile
-clib/src/Makefile
+clib/clib/Makefile
 xdgmime/Makefile
 rut/Makefile
 data/Makefile
