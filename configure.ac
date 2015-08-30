@@ -7,51 +7,6 @@ dnl Package version (i.e. the pretty number that users see)
 dnl ================================================================
 m4_define([rig_version], 2)
 
-dnl ================================================================
-dnl Interface version details for libtool
-dnl ================================================================
-# NB: I didn't copy the widely used glib/gtk style of dealing with libtool
-# versioning since I found the different (compared to libtool's documentation)
-# ideas for what the interface age should represent; and the addition of a
-# binary age confusing. I couldn't find any documentation/mailing list archives
-# etc explaing the ideas nor any code that makes use of those values. They also
-# seem to go against the advice of not basing the libtool versioning on package
-# versioning.
-#
-# For reference on how the various numbers should be updated at release time
-# these rules are adapted from the libtool info pages:
-#
-#  1. Update the version information only immediately before a public
-#     release of your software.
-#
-#  2. If the library source code has changed at all since the last
-#     update, then increment REVISION (`C:R:A' becomes `C:r+1:A').
-#
-#  3. If any interfaces have been added, removed, or changed since the
-#     last update, increment CURRENT, and set REVISION to 0.
-#
-#  4. If any interfaces have been added since the last public release,
-#     then increment AGE.
-#
-#  5. If any interfaces have been removed since the last public release,
-#     then set AGE to 0.
-m4_define([rig_lt_current], 0)
-m4_define([rig_lt_revision], 0)
-m4_define([rig_lt_age], 0)
-# We do also tell libtool the pretty version also:
-m4_define([rig_lt_release], [rig_version])
-
-
-dnl ================================================================
-dnl Source code release status
-dnl ================================================================
-# Finally we explicitly track when we are building development source
-# from Git vs building source corresponding to a release. As with the
-# libtool version info we don't automatically derive this from the
-# pretty version number because we want to test the results of
-# updating the version number in advance of a release.
-m4_define([release_status], [git])
-
 AC_INIT(rig, [rig_version])
 AC_CONFIG_SRCDIR(rut/rut-shell.c)
 AC_CONFIG_AUX_DIR([build])
@@ -71,34 +26,11 @@ AM_SILENT_RULES([yes])
 
 AH_BOTTOM([#include "config-custom.h"])
 
-dnl ================================================================
-dnl More version number stuff
-dnl ================================================================
 RIG_VERSION=rig_version
 
 AC_SUBST(RIG_VERSION)
 
 
-dnl ================================================================
-dnl libtool versioning
-dnl ================================================================
-RIG_LT_CURRENT=rig_lt_current
-RIG_LT_REVISION=rig_lt_revision
-RIG_LT_AGE=rig_lt_age
-RIG_LT_RELEASE=rig_lt_release
-AC_SUBST(RIG_LT_CURRENT)
-AC_SUBST(RIG_LT_REVISION)
-AC_SUBST(RIG_LT_AGE)
-AC_SUBST(RIG_LT_RELEASE)
-
-
-dnl ================================================================
-dnl Export the source code release status
-dnl ================================================================
-AC_SUBST([RIG_RELEASE_STATUS], [release_status])
-
-
-dnl ================================================================
 dnl Compiler stuff.
 dnl ================================================================
 AC_USE_SYSTEM_EXTENSIONS
@@ -106,18 +38,9 @@ AC_PROG_CC
 AC_PROG_OBJC
 AC_PROG_CXX
 
-dnl ================================================================
-dnl Libtool stuff.
-dnl ================================================================
-LT_PREREQ([2.2.6])
-LT_INIT([disable-static])
-dnl when using libtool 2.x create libtool early, because it's used in the
-dnl internal glib configure (as-glibconfig.m4)
-m4_ifdef([LT_OUTPUT], [LT_OUTPUT])
+LT_INIT
 
-
-dnl ================================================================
-dnl I18n stuff.
+dnl Gettext
 dnl ================================================================
 AM_GNU_GETTEXT_VERSION([0.17])
 AM_GNU_GETTEXT([external])
@@ -129,19 +52,15 @@ AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE,
                    [The prefix for our gettext translation domains.])
 AS_ALL_LINGUAS
 
-
-
-dnl ================================================================
-dnl Handle extra configure options
+dnl Configure options
 dnl ================================================================
 
-m4_define([default], [m4_if(release_status, [git], [yes], [no])])
 AC_ARG_ENABLE(
   [debug],
   [AC_HELP_STRING([--enable-debug=@<:@no/yes@:>@],
-                  [Control debugging level @<:@default=]default[@:>@])],
+                  [Control debugging level @<:@default=yes@:>@])],
   [enable_debug="$enableval"],
-  [enable_debug=default]
+  [enable_debug=yes]
 )
 AS_CASE(
   [$enable_debug],
@@ -189,14 +108,12 @@ AS_CASE(
   [AC_MSG_ERROR([Unknown argument for --enable-refcount-debug])]
 )
 
-# use strict compiler flags only when building from git; the rules for
-# distcheck will take care of turning this on when making a release
-m4_define([default], [m4_if(release_status, [git], [yes], [no])])
 AC_ARG_ENABLE(
   [maintainer-flags],
-  [AC_HELP_STRING([--enable-maintainer-flags=@<:@no/yes/error@:>@], [Use strict compiler flags @<:@default=]default[@:>@])],
+  [AC_HELP_STRING([--enable-maintainer-flags=@<:@no/yes/error@:>@],
+                  [Use strict compiler flags @<:@default=yes@:>@])],
   [],
-  enable_maintainer_flags=default
+  enable_maintainer_flags=yes
 )
 
 MAINTAINER_COMPILER_FLAGS="-Wall -Wcast-align -Wuninitialized
@@ -207,12 +124,9 @@ MAINTAINER_COMPILER_FLAGS="-Wall -Wcast-align -Wuninitialized
 AS_CASE(
   [$enable_maintainer_flags],
   [yes],
-  [
-    AS_COMPILER_FLAGS([MAINTAINER_CFLAGS], [$MAINTAINER_COMPILER_FLAGS])
-  ],
+  [ AS_COMPILER_FLAGS([MAINTAINER_CFLAGS], [$MAINTAINER_COMPILER_FLAGS]) ],
   [no],
-  [
-  ],
+  [ ],
   [error],
   [
     MAINTAINER_COMPILER_FLAGS="$MAINTAINER_COMPILER_FLAGS -Werror"
@@ -224,27 +138,6 @@ AS_CASE(
 
 # strip leading spaces
 RIG_EXTRA_CFLAGS="$RIG_EXTRA_CFLAGS ${MAINTAINER_CFLAGS/#  }"
-
-
-AC_ARG_ENABLE(profile,
-              [AC_HELP_STRING([--enable-profile=@<:@no/yes@:>@],
-                              [Turn on uprof profiling support. yes; All UProf profiling probe points are compiled in and may be runtime enabled. no; No profiling support will built into cogl.  @<:@default=no@:>@])],
-              [],
-              [enable_profile=no])
-AS_IF([test "x$enable_profile" = "xyes"],
-      [
-        AS_IF([test "x$GCC" = "xyes"],
-              [
-                RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES uprof-0.3"
-                RIG_EXTRA_CFLAGS="$RIG_EXTRA_CFLAGS -DENABLE_PROFILE"
-                AS_IF([test "x$enable_debug" = "xyes"], [RIG_EXTRA_CFLAGS="$RIG_EXTRA_CFLAGS -DUPROF_DEBUG"])
-              ],
-              [
-                AC_MSG_ERROR([--enable-profile is currently only supported if using GCC])
-              ])
-      ])
-AM_CONDITIONAL(PROFILE, test "x$enable_profile" != "xno")
-
 
 AC_ARG_ENABLE(
   [unit-tests],
@@ -267,15 +160,6 @@ AC_ARG_ENABLE(installed_tests,
 AM_CONDITIONAL(ENABLE_INSTALLED_TESTS, test x$enable_installed_tests = xyes)
 
 
-AC_ARG_ENABLE(uninstalled-build,
-              AC_HELP_STRING([--enable-uninstalled-build],
-			     [Search for files in build directory as well]),
-	      enable_uninstalled=yes,)
-if test "x$enable_uninstalled" = xyes; then
-	AC_DEFINE_UNQUOTED(
-        SHARE_UNINSTALLED_DIR,"`pwd`/rig/data",[path to source data dir])
-fi
-
 AC_ARG_ENABLE(editor,
               AC_HELP_STRING([--disable-editor],
 			     [Disable building the interactive editor]),
@@ -288,23 +172,6 @@ AS_IF([test "x$enable_editor" = xyes],
       ])
 AM_CONDITIONAL(EDITOR_ENABLED, test "x$enable_editor" = "xyes")
 
-AC_MSG_CHECKING([for alignof])
-AC_COMPILE_IFELSE([AC_LANG_PROGRAM([const int thing = alignof (int);],
-                                   [(void) 0])],
-                  [AC_DEFINE([HAVE_ALIGNOF], [1],
-                             [Whether alignof can be used or not])
-                   AC_MSG_RESULT([yes])],
-                  [AC_MSG_RESULT([no])])
-AC_MSG_CHECKING([for __alignof__])
-AC_COMPILE_IFELSE([AC_LANG_PROGRAM([const int thing = __alignof__ (int);],
-                                   [(void) 0])],
-                  [AC_DEFINE([HAVE_ALIGNOF_UNDERSCORE], [1],
-                             [Whether __alignof__ can be used or not])
-                   AC_MSG_RESULT([yes])],
-                  [AC_MSG_RESULT([no])])
-
-
-dnl ================================================================
 dnl Check for dependency packages.
 dnl ================================================================
 
@@ -324,7 +191,6 @@ PKG_CHECK_EXISTS([mozjs-24],
                  ])
 AM_CONDITIONAL([USE_MOZJS], [test "x$have_mozjs" = xyes])
 
-dnl     ============================================================
 dnl     Check glib dependencies
 dnl     ============================================================
 AM_PATH_GLIB_2_0([2.26.0],
@@ -369,13 +235,6 @@ PKG_CHECK_EXISTS([x11],
                    AC_DEFINE([USE_XLIB], [1], [Enable x11 integration])
                  ])
 
-AC_CHECK_FUNC(fmemopen,
-              [
-                have_fmemopen=yes
-                AC_DEFINE([HAVE_FMEMOPEN], [1], [Have fmemopen(3) implementation])
-              ], [have_fmemopen=no])
-AM_CONDITIONAL([NEED_FMEMOPEN], [test "x$have_fmemopen" = "xno"])
-
 dnl Add the build flags for android_native_app_glue
 AS_IF([test "x$have_android" = "xyes"],
       [ANDROID_CHECK_MODULE([ANDROID_NATIVE_APP_GLUE],
@@ -417,7 +276,6 @@ CheckForGtk()
           [AC_MSG_ERROR([Invalid value for --enable-gtk])])
 }
 
-dnl ================================================================
 dnl Check requirements for our C utility api
 dnl ================================================================
 AM_CLIB
@@ -427,7 +285,6 @@ RIG_EXTRA_LDFLAGS="$RIG_EXTRA_CFLAGS $CLIB_EXTRA_LDFLAGS"
 
 
 
-dnl ================================================================
 dnl Check requirements for our GPU utility api
 dnl ================================================================
 
@@ -488,7 +345,6 @@ AC_SUBST(RIG_PKG_REQUIRES)
 PKG_CHECK_MODULES(RIG_DEP, [$RIG_PKG_REQUIRES])
 
 
-dnl ============================================================
 dnl Optional LLVM Enable
 dnl ============================================================
 dnl
@@ -531,18 +387,6 @@ AC_SUBST(RIG_LLVM_PREFIX)
 AC_SUBST(RIG_LLVM_VERSION)
 
 
-dnl ================================================================
-dnl Misc program dependencies.
-dnl ================================================================
-AC_PROG_INSTALL
-
-dnl ================================================================
-dnl GObject-Introspection check
-dnl ================================================================
-GOBJECT_INTROSPECTION_CHECK([gi_req_version])
-
-
-dnl ================================================================
 dnl What needs to be substituted in other files
 dnl ================================================================
 AC_SUBST(RIG_EXTRA_CFLAGS)
@@ -553,8 +397,7 @@ AC_SUBST(RIG_CLANG_CFLAGS)
 AC_SUBST(RIG_CLANG_LIBS)
 
 
-dnl ================================================================
-dnl Dah Da!
+dnl Done!
 dnl ================================================================
 AC_OUTPUT(
 Makefile
