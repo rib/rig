@@ -192,3 +192,5 @@ void rig_frontend_update_simulator_dso(rig_frontend_t *frontend,
                                        int len);
 
 void rig_frontend_paint(rig_frontend_t *frontend);
+
+void rig_frontend_run_frame(rig_frontend_t *frontend);
