@@ -82,8 +82,8 @@ struct _rig_glyph_cache_t {
 
     c_list_t atlas_closures;
 
-    /* List of callbacks to invoke when an atlas is reorganized */
-    c_hook_list_t reorganize_callbacks;
+    /* callbacks to invoke when an atlas is reorganized */
+    c_list_t reorganize_callbacks;
 
     /* True if some of the glyphs are dirty. This is used as an
        optimization in __glyph_cache_set_dirty_glyphs to avoid
@@ -176,7 +176,7 @@ atlas_reorganize_cb(cg_atlas_t *atlas, void *user_data)
 {
     rig_glyph_cache_t *cache = user_data;
 
-    c_hook_list_invoke(&cache->reorganize_callbacks, false);
+    rut_closure_list_invoke_no_args(&cache->reorganize_callbacks);
 }
 
 static void
@@ -268,7 +268,7 @@ rig_glyph_cache_new(cg_device_t *dev, bool use_mipmapping)
     cg_atlas_set_add_atlas_callback(
         cache->atlas_set, atlas_callback, cache, NULL); /* destroy */
 
-    c_hook_list_init(&cache->reorganize_callbacks, sizeof(c_hook_t));
+    c_list_init(&cache->reorganize_callbacks);
 
     cache->has_dirty_glyphs = false;
 
@@ -304,7 +304,7 @@ rig_glyph_cache_free(rig_glyph_cache_t *cache)
 
     c_hash_table_destroy(cache->hash_table);
 
-    c_hook_list_clear(&cache->reorganize_callbacks);
+    rut_closure_list_remove_all(&cache->reorganize_callbacks);
 
     c_free(cache);
 }
@@ -508,28 +508,10 @@ _glyph_cache_set_dirty_glyphs(rig_glyph_cache_t *cache,
 }
 
 void
-_glyph_cache_add_reorganize_callback(rig_glyph_cache_t *cache,
-                                     c_hook_func_t func,
-                                     void *user_data)
+_glyph_cache_add_reorganize_closure(rig_glyph_cache_t *cache,
+                                    rut_closure_t *closure)
 {
-    c_hook_t *hook = c_hook_alloc(&cache->reorganize_callbacks);
-
-    hook->func = func;
-    hook->data = user_data;
-
-    c_hook_prepend(&cache->reorganize_callbacks, hook);
-}
-
-void
-_glyph_cache_remove_reorganize_callback(rig_glyph_cache_t *cache,
-                                        c_hook_func_t func,
-                                        void *user_data)
-{
-    c_hook_t *hook = c_hook_find_func_data(
-        &cache->reorganize_callbacks, false, func, user_data);
-
-    if (hook)
-        c_hook_destroy_link(&cache->reorganize_callbacks, hook);
+    rut_closure_list_add(&cache->reorganize_callbacks, closure);
 }
 
 static void
