@@ -341,7 +341,7 @@ frontend__update_ui(Rig__Frontend_Service *service,
         apply_property_change(frontend, unserializer, pb_change);
     }
 
-#if 1
+#if 0
     if (pb_ui_edit || n_property_changes) {
         c_debug("UI Updated");
         rig_ui_print(engine->ui);

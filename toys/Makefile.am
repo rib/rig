@@ -141,6 +141,7 @@ programs += rig-hello
 emscripten_programs += rig-hello
 rig_hello_SOURCES = rig-hello.c
 rig_hello_LDADD = $(common_ldadd)
+rig_hello_LDFLAGS = -export-dynamic
 
 emscripten_programs += cogl-emscripten-hello
 cogl_emscripten_hello_SOURCES = cogl-emscripten-hello.c
