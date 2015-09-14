@@ -233,4 +233,19 @@ void r_set_quaternion_by_name(RModule *module, RObject *object, const char *name
 void r_set_text_by_name(RModule *module, RObject *object, const char *name, const char *value);
 void r_set_text(RModule *module, RObject *object, int id, const char *value);
 
+typedef struct _r_engine r_engine_t;
+
+r_engine_t *r_engine_new(void);
+
+#define R_ABI_1         1
+#define R_ABI_LATEST    R_ABI_1
+
+bool r_engine_add_self_as_native_component(r_engine_t *stub_engine,
+                                           int abi_version,
+                                           const char *symbol_prefix);
+
+void r_engine_run(r_engine_t *stub_engine);
+
+void r_engine_ref(r_engine_t *stub_engine);
+void r_engine_unref(r_engine_t *stub_engine);
 #endif /* _RIG_C_ */

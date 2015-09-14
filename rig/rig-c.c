@@ -33,6 +33,7 @@
 #include "rig-c.h"
 #include "rig-engine.h"
 #include "rig-code-module.h"
+#include "rig-curses-debug.h"
 #include "rig-entity.h"
 
 #include "components/rig-shape.h"
@@ -42,6 +43,7 @@
 #include "components/rig-material.h"
 #include "components/rig-button-input.h"
 #include "components/rig-text.h"
+#include "components/rig-native-module.h"
 
 RInputEventType
 r_input_event_get_type(RInputEvent *event)
@@ -869,3 +871,285 @@ RQuaternion r_quaternion_squad(const RQuaternion *prev,
     return q;
 }
 
+typedef struct
+{
+    rig_simulator_t *simulator;
+    rut_closure_t init_idle;
+
+    bool add_self_as_native_module;
+    const char *native_symbol_prefix;
+    int native_abi_version;
+
+    uv_lib_t self;
+} r_sim_t;
+
+static void *
+resolve_cb(const char *symbol, void *user_data)
+{
+#ifdef USE_UV
+    r_sim_t *stub_sim = user_data;
+    const char *prefix = stub_sim->native_symbol_prefix;
+    char full_name[512];
+    void *ptr = NULL;
+
+    if (snprintf(full_name, sizeof(full_name), "%s%s", prefix, symbol) >= sizeof(full_name))
+        return NULL;
+
+    if (uv_dlsym(&stub_sim->self, full_name, &ptr) < 0) {
+        c_warning("Error resolving symbol %s: %s",
+                  full_name, uv_dlerror(&stub_sim->self));
+        ptr = NULL;
+    }
+
+    return ptr;
+#else
+    return NULL;
+#endif
+}
+
+static rig_native_module_t *
+native_module_new(rig_engine_t *engine)
+{
+    rut_property_context_t *prop_ctx = engine->property_ctx;
+    rig_native_module_t *component;
+
+    prop_ctx->logging_disabled++;
+    component = rig_native_module_new(engine);
+    prop_ctx->logging_disabled--;
+
+    rig_engine_op_register_component(engine, component);
+
+    return component;
+}
+
+static void
+simulator_init_cb(r_sim_t *stub_sim)
+{
+    rig_simulator_t *simulator = stub_sim->simulator;
+    rig_engine_t *engine = simulator->engine;
+    rut_property_context_t *prop_ctx = engine->property_ctx;
+    rig_ui_t *ui = rig_ui_new(engine);
+    rig_entity_t *root;
+
+    /* XXX: we need to take care not to log properties
+     * during these initial steps, until we call the
+     * 'load' callback.
+     *
+     * We're assuming the property context is in its
+     * initial state with logging disabled.
+     *
+     * It would be better if this were integrated with
+     * rig-simulator-impl.c which is also responsible
+     * for enabling logging before calling user's
+     * 'update' code.
+     */
+    c_return_if_fail(prop_ctx->logging_disabled == 1);
+
+    rig_engine_set_ui(engine, ui);
+    rut_object_unref(ui);
+
+    rig_engine_op_apply_context_set_ui(&simulator->apply_op_ctx, ui);
+
+    root = rig_entity_new(engine);
+
+    rig_engine_op_add_entity(engine, NULL, root);
+
+    if (stub_sim->add_self_as_native_module) {
+        if (uv_dlopen(NULL, &stub_sim->self) == 0) {
+            rig_native_module_t *native_module = native_module_new(engine);
+
+            if (!stub_sim->native_symbol_prefix)
+                stub_sim->native_symbol_prefix = "";
+
+            rig_native_module_set_resolver(native_module, resolve_cb, stub_sim);
+
+            rig_engine_op_register_component(engine, native_module);
+            rig_engine_op_add_component(engine, root, native_module);
+
+            prop_ctx->logging_disabled--;
+            rig_ui_code_modules_load(ui);
+            prop_ctx->logging_disabled++;
+
+        } else {
+            c_error("Failed to add self as native module: %s",
+                    uv_dlerror(&stub_sim->self));
+        }
+    }
+
+    rut_closure_remove(&stub_sim->init_idle);
+
+    c_debug("Stub Simulator Initialized");
+}
+
+struct _r_engine {
+    rut_object_base_t _base;
+
+    rut_shell_t *shell;
+    rig_frontend_t *frontend;
+    rig_engine_t *engine;
+
+    char *native_symbol_prefix;
+    int native_abi_version;
+    bool add_self_as_native_module;
+
+    enum rig_simulator_run_mode simulator_mode;
+    char *simulator_address;
+    int simulator_port;
+};
+
+static void
+simulator_run(rig_simulator_t *simulator, void *user_data)
+{
+    r_sim_t *stub_sim = c_new0(r_sim_t, 1);
+
+    stub_sim->simulator = simulator;
+
+    /* user_data only passed through if sim run in same thread
+     * or mainloop as frontend...*/
+    if (user_data) {
+        r_engine_t *stub_engine = user_data;
+
+        stub_sim->add_self_as_native_module = stub_engine->add_self_as_native_module;
+        stub_sim->native_symbol_prefix = stub_engine->native_symbol_prefix;
+        stub_sim->native_abi_version = stub_engine->native_abi_version;
+    }
+
+    rut_closure_init(&stub_sim->init_idle, simulator_init_cb, stub_sim);
+    rut_poll_shell_add_idle(simulator->shell, &stub_sim->init_idle);
+
+    c_debug("Stub Simulator Started\n");
+}
+
+static void
+stub_engine_shell_redraw_cb(rut_shell_t *shell, void *user_data)
+{
+    r_engine_t *stub_engine = user_data;
+    rig_engine_t *engine = stub_engine->engine;
+    rig_frontend_t *frontend = engine->frontend;
+
+    rig_frontend_run_frame(frontend);
+}
+
+static void
+_r_engine_free(void *object)
+{
+    r_engine_t *stub_engine = object;
+
+    rut_object_unref(stub_engine->engine);
+
+    rut_object_unref(stub_engine->shell);
+
+    if (stub_engine->simulator_address)
+        free(stub_engine->simulator_address);
+
+    if (stub_engine->native_symbol_prefix)
+        free(stub_engine->native_symbol_prefix);
+
+    rut_object_free(r_engine_t, stub_engine);
+}
+
+static rut_type_t r_engine_type;
+
+static void
+_r_engine_init_type(void)
+{
+    rut_type_init(&r_engine_type, "r_engine_t", _r_engine_free);
+}
+
+static void
+stub_engine_init_cb(rut_shell_t *shell, void *user_data)
+{
+    r_engine_t *stub_engine = user_data;
+    rig_engine_t *engine;
+
+    stub_engine->frontend = rig_frontend_new(stub_engine->shell);
+
+    engine = stub_engine->frontend->engine;
+    stub_engine->engine = engine;
+
+    rig_frontend_spawn_simulator(stub_engine->frontend,
+                                 stub_engine->simulator_mode,
+                                 stub_engine->simulator_address,
+                                 stub_engine->simulator_port,
+                                 simulator_run,
+                                 stub_engine, /* local sim init data */
+                                 NULL); /* no ui to load */
+
+#if 0
+    if (stub_engine->fullscreen) {
+        rig_onscreen_view_t *onscreen_view = engine->frontend->onscreen_views->data;
+        rut_shell_onscreen_t *onscreen = onscreen_view->onscreen;
+
+        rut_shell_onscreen_set_fullscreen(onscreen, true);
+    }
+#endif
+
+    //rig_frontend_set_simulator_connected_callback(
+    //    engine->frontend, simulator_connected_cb, stub_engine);
+}
+
+r_engine_t *
+r_engine_new(void)
+{
+    r_engine_t *stub_engine = rut_object_alloc0(
+        r_engine_t, &r_engine_type, _r_engine_init_type);
+
+#ifdef __EMSCRIPTEN__
+    enum rig_simulator_run_mode simulator_mode =
+        RIG_SIMULATOR_RUN_MODE_WEB_SOCKET;
+#else
+    enum rig_simulator_run_mode simulator_mode =
+        RIG_SIMULATOR_RUN_MODE_MAINLOOP;
+#endif
+
+    stub_engine->simulator_mode = simulator_mode;
+    //stub_engine->simulator_address = simulator_address ? strdup(simulator_address) : NULL;
+    //stub_engine->simulator_port = simulator_port;
+
+    stub_engine->shell = rut_shell_new(NULL, stub_engine_shell_redraw_cb, stub_engine);
+
+#ifdef USE_NCURSES
+    rig_curses_add_to_shell(stub_engine->shell);
+#endif
+
+    rut_shell_set_on_run_callback(stub_engine->shell,
+                                  stub_engine_init_cb,
+                                  stub_engine);
+
+    return stub_engine;
+}
+
+bool
+r_engine_add_self_as_native_component(r_engine_t *stub_engine,
+                                      int abi_version,
+                                      const char *symbol_prefix)
+{
+    if (abi_version != 1)
+        return false;
+
+    stub_engine->add_self_as_native_module = true;
+    stub_engine->native_symbol_prefix = c_strdup(symbol_prefix);
+    stub_engine->native_abi_version = abi_version;
+
+    return true;
+}
+
+void
+r_engine_run(r_engine_t *stub_engine)
+{
+    rut_shell_main(stub_engine->shell);
+
+    rut_object_unref(stub_engine);
+}
+
+void
+r_engine_ref(r_engine_t *stub_engine)
+{
+    rut_object_ref(stub_engine);
+}
+
+void
+r_engine_unref(r_engine_t *stub_engine)
+{
+    rut_object_unref(stub_engine);
+}
