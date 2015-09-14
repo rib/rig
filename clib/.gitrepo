@@ -1,0 +1,11 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/git-commands/git-subrepo#readme
+;
+[subrepo]
+	remote = git@github.com:rig-project/clib.git
+	branch = master
+	commit = 31e3c21832c4d4932f412334ab0e5c2a7a6a5733
+	parent = 4dad39264a830f7ccb0ee1909176e7f5d7fdb74e
+	cmdver = 0.2.3
