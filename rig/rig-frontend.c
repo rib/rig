@@ -1427,37 +1427,61 @@ rig_frontend_run_frame(rig_frontend_t *frontend)
     rut_shell_t *shell = engine->shell;
     rig_onscreen_view_t *primary_view =
         frontend->onscreen_views ? frontend->onscreen_views->data : NULL;
-    int64_t est_frame_delta_ns = 1000000000 / 60;
+    int64_t default_est_frame_delta_ns = 1000000000 / 60;
+    int64_t est_frame_delta_ns = default_est_frame_delta_ns;
     int64_t frontend_target = 0;
-    double progress = 0;
+    double frontend_progress = 0;
 
     if (primary_view) {
         rut_shell_onscreen_t *onscreen = primary_view->onscreen;
 
+        /* If we have a history of presentation times then use those
+         * to predict the next presentation time...
+         */
         if (onscreen->presentation_time0 && onscreen->presentation_time1) {
+            int64_t delta_ns;
+
             est_frame_delta_ns = (onscreen->presentation_time1 -
                                   onscreen->presentation_time0);
-            frontend_target = onscreen->presentation_time1 + est_frame_delta_ns;
 
-            if (frontend->last_target_time &&
-                frontend_target <= frontend->last_target_time)
-            {
-                c_debug("present time0 = %"PRIi64, onscreen->presentation_time0);
-                c_debug("present time1 = %"PRIi64, onscreen->presentation_time1);
-                c_debug("est frame delta = %"PRIi64, est_frame_delta_ns);
-                c_debug("last frontend target = %"PRIi64, frontend->last_target_time);
-                c_debug("frontend target      = %"PRIi64, frontend_target);
-
-                c_warning("Redrawing faster than predicted (duplicating frame to avoid going back in time)");
-            } else {
-                int64_t delta_ns = frontend_target - frontend->last_target_time;
-                progress = delta_ns / 1000000000.0;
+            if (est_frame_delta_ns == 0) {
+                c_warning("Spurious repeat presentation time (maybe dropped by compositor)");
+                est_frame_delta_ns = default_est_frame_delta_ns;
             }
 
+            frontend_target = onscreen->presentation_time1 + est_frame_delta_ns;
+
+            c_warn_if_fail(frontend->last_target_time != 0);
+
+            if (frontend->last_target_time > frontend_target)
+            {
+                c_debug("Redrawing faster than predicted (duplicating frame to avoid going back in time)");
+                c_debug("> present time0 = %"PRIi64, onscreen->presentation_time0);
+                c_debug("> present time1 = %"PRIi64, onscreen->presentation_time1);
+                c_debug("> est frame delta = %"PRIi64, est_frame_delta_ns);
+                c_debug("> last frontend target = %"PRIi64, frontend->last_target_time);
+                c_debug("> frontend target      = %"PRIi64, frontend_target);
+
+                frontend_target = frontend->last_target_time;
+            }
+
+            delta_ns = frontend_target - frontend->last_target_time;
+            frontend_progress = delta_ns / 1000000000.0;
+
             frontend->last_target_time = frontend_target;
+        } else if (onscreen->presentation_time1) {
+            frontend->last_target_time = onscreen->presentation_time1;
+            frontend->last_sim_target_time = onscreen->presentation_time1;
+            frontend_target = onscreen->presentation_time1 + default_est_frame_delta_ns;
+
+            frontend_progress = default_est_frame_delta_ns / 1000000000.0;
+        } else {
+            frontend->last_target_time = 0;
+            frontend->last_sim_target_time = 0;
+            frontend_target = 0;
         }
     }
-    c_debug("frontend target = %"PRIi64, frontend_target);
+    //c_debug("frontend target = %"PRIi64, frontend_target);
 
     rut_shell_start_redraw(shell);
 
@@ -1473,7 +1497,9 @@ rig_frontend_run_frame(rig_frontend_t *frontend)
         if (frontend_target && frontend->last_sim_target_time) {
             int64_t sim_target = frontend_target + est_frame_delta_ns;
             int64_t sim_delta_ns = sim_target - frontend->last_sim_target_time;
+
             sim_progress = sim_delta_ns / 1000000000.0;
+            frontend->last_sim_target_time = sim_target;
         }
 
         /* Associate all the events with a scene camera entity which
@@ -1504,7 +1530,7 @@ rig_frontend_run_frame(rig_frontend_t *frontend)
         rut_memory_stack_rewind(engine->sim_frame_stack);
     }
 
-    rut_shell_progress_timelines(shell, progress);
+    rut_shell_progress_timelines(shell, frontend_progress);
 
     rut_shell_run_pre_paint_callbacks(shell);
 

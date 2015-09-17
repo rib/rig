@@ -1023,6 +1023,7 @@ onscreen_frame_event_cb(cg_onscreen_t *cg_onscreen,
 
         onscreen->presentation_time0 = onscreen->presentation_time1;
         onscreen->presentation_time1 = cg_frame_info_get_presentation_time(info);
+        c_warn_if_fail(onscreen->presentation_time0 != onscreen->presentation_time1);
 
         onscreen_maybe_queue_redraw(onscreen);
     }
