@@ -39,6 +39,8 @@ typedef struct _rig_ui_t rig_ui_t;
 #include "rig-entity.h"
 #include "rig-controller.h"
 
+typedef struct _rig_ui_grab rig_ui_grab_t;
+
 /* This structure encapsulates all the dynamic state for a UI
  *
  * When running the editor we distinguish the edit mode UI from
@@ -68,6 +70,14 @@ struct _rig_ui_t {
     rig_entity_t *light;
 
     rut_matrix_stack_t *pick_matrix_stack;
+
+    /* List of grabs that are currently in place. This are in order from
+     * highest to lowest priority. */
+    c_list_t grabs;
+    /* A pointer to the next grab to process. This is only used while
+     * invoking the grab callbacks so that we can cope with multiple
+     * grabs being removed from the list while one is being processed */
+    rig_ui_grab_t *next_grab;
 
     uint8_t *dso_data;
     int dso_len;
@@ -110,3 +120,16 @@ void rig_ui_code_modules_handle_input(rig_ui_t *ui, rut_input_event_t *event);
 
 rut_input_event_status_t rig_ui_handle_input_event(rig_ui_t *ui,
                                                    rut_input_event_t *event);
+
+
+typedef rut_input_event_status_t (*rig_input_grab_callback_t)(rut_input_event_t *event,
+                                                              rut_object_t *pick_entity,
+                                                              void *user_data);
+void rig_ui_grab_input(rig_ui_t *ui,
+                       rut_object_t *camera_entity,
+                       rig_input_grab_callback_t callback,
+                       void *user_data);
+
+void rig_ui_ungrab_input(rig_ui_t *ui,
+                         rig_input_grab_callback_t callback,
+                         void *user_data);

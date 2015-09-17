@@ -42,11 +42,42 @@
 
 #include "components/rig-material.h"
 
+struct _rig_ui_grab {
+    c_list_t list_node;
+    rig_input_grab_callback_t callback;
+    rut_object_t *camera_entity;
+    void *user_data;
+};
+
+static void
+_rig_ui_remove_grab_link(rig_ui_t *ui, rig_ui_grab_t *grab)
+{
+    if (grab->camera_entity)
+        rut_object_unref(grab->camera_entity);
+
+    /* If we are in the middle of iterating the grab callbacks then this
+     * will make it cope with removing arbritrary nodes from the list
+     * while iterating it */
+    if (ui->next_grab == grab)
+        ui->next_grab = rut_container_of(grab->list_node.next, grab, list_node);
+
+    c_list_remove(&grab->list_node);
+
+    c_slice_free(rig_ui_grab_t, grab);
+}
+
 static void
 _rig_ui_free(void *object)
 {
     rig_ui_t *ui = object;
     c_llist_t *l;
+
+    while (!c_list_empty(&ui->grabs)) {
+        rig_ui_grab_t *first_grab =
+            c_container_of(ui->grabs.next, rig_ui_grab_t, list_node);
+
+        _rig_ui_remove_grab_link(ui, first_grab);
+    }
 
     for (l = ui->suspended_controllers; l; l = l->next)
         rut_object_unref(l->data);
@@ -141,6 +172,7 @@ rig_ui_new(rig_engine_t *engine)
         ui->renderer = engine->frontend->renderer;
 
     ui->pick_matrix_stack = rut_matrix_stack_new(engine->shell);
+    c_list_init(&ui->grabs);
 
     c_list_init(&ui->code_modules);
 
@@ -563,7 +595,9 @@ entitygraph_pre_pick_cb(rut_object_t *object, int depth, void *user_data)
 
         if (!(geometry && rut_object_is(geometry, RUT_TRAIT_ID_MESHABLE) &&
               (mesh = rut_meshable_get_mesh(geometry))))
+        {
             return RUT_TRAVERSE_VISIT_CONTINUE;
+        }
 
         /* transform the ray into the model space */
         memcpy(transformed_ray_origin, pick_ctx->ray_origin, 3 * sizeof(float));
@@ -572,6 +606,8 @@ entitygraph_pre_pick_cb(rut_object_t *object, int depth, void *user_data)
                3 * sizeof(float));
 
         rut_matrix_stack_get(pick_ctx->matrix_stack, &transform);
+        //c_debug("Inputtable transform:");
+        //c_matrix_print(&transform);
 
         transform_ray(&transform,
                       true, /* inverse of the transform */
@@ -599,6 +635,8 @@ entitygraph_pre_pick_cb(rut_object_t *object, int depth, void *user_data)
             const c_matrix_t *view =
                 rut_camera_get_view_transform(pick_ctx->camera);
             float w = 1;
+
+            //c_debug("Hit something");
 
             /* to compare intersection distances we find the actual point of ray
              * intersection in model coordinates and transform that into eye
@@ -675,8 +713,7 @@ pick(rig_ui_t *ui,
                            &pick_ctx);
 
 #if 0
-    if (pick_ctx.selected_entity)
-    {
+    if (pick_ctx.selected_entity) {
         c_message("Hit entity, triangle #%d, distance %.2f",
                   pick_ctx.selected_index, pick_ctx.selected_distance);
     }
@@ -703,25 +740,31 @@ pick_for_camera(rig_ui_t *ui,
     /* XXX: we could forward normalized input coordinates from the
      * frontend so that the simulator doesn't need to be notified of
      * windows resizes. */
-    c_warning("camera viewport not intialized for picking!");
     viewport = rut_camera_get_viewport(camera_component);
+#if 0
+    c_warning("camera viewport not intialized for picking: x=%f, y=%f, width=%f, height=%f",
+              viewport[0],
+              viewport[1],
+              viewport[2],
+              viewport[3]);
+#endif
     inverse_projection = rut_camera_get_inverse_projection(camera_component);
 
-    // c_debug("Camera inverse projection: %p\n", engine->simulator);
-    // cg_debug_matrix_print(inverse_projection);
+    //c_debug("UI: Camera inverse projection:");
+    //c_matrix_print(inverse_projection);
 
     camera_view = rut_camera_get_view_transform(camera_component);
     c_matrix_get_inverse(camera_view, &camera_transform);
 
-    // c_debug("Camera transform:\n");
-    // cg_debug_matrix_print (&camera_transform);
+    //c_debug("UI: Camera transform:");
+    //c_matrix_print(&camera_transform);
 
     rut_camera_transform_window_coordinate(camera_component, &x, &y);
 
     screen_pos[0] = x;
     screen_pos[1] = y;
 
-    // c_debug("screen pos x=%f, y=%f\n", x, y);
+    //c_debug("screen pos x=%f, y=%f\n", x, y);
 
     rut_util_create_pick_ray(viewport,
                              inverse_projection,
@@ -792,6 +835,22 @@ rig_ui_handle_input_event(rig_ui_t *ui, rut_input_event_t *event)
     rut_input_event_status_t status = RUT_INPUT_EVENT_STATUS_UNHANDLED;
     rig_entity_t *entity = pick_for_event(ui, event);
     rut_object_t *inputable;
+    rig_ui_grab_t *grab;
+
+    c_list_for_each_safe(grab, ui->next_grab, &ui->grabs, list_node) {
+        rut_object_t *old_camera = event->camera_entity;
+        rut_input_event_status_t grab_status;
+
+        if (grab->camera_entity)
+            event->camera_entity = grab->camera_entity;
+
+        grab_status = grab->callback(event, entity, grab->user_data);
+
+        event->camera_entity = old_camera;
+
+        if (grab_status == RUT_INPUT_EVENT_STATUS_HANDLED)
+            return RUT_INPUT_EVENT_STATUS_HANDLED;
+    }
 
     if (!entity)
         return status;
@@ -817,4 +876,38 @@ rig_ui_handle_input_event(rig_ui_t *ui, rut_input_event_t *event)
     }
 
     return status;
+}
+
+void
+rig_ui_grab_input(rig_ui_t *ui,
+                  rut_object_t *camera_entity,
+                  rig_input_grab_callback_t callback,
+                  void *user_data)
+{
+    rig_ui_grab_t *grab = c_slice_new(rig_ui_grab_t);
+
+    grab->callback = callback;
+    grab->user_data = user_data;
+
+    if (camera_entity)
+        grab->camera_entity = rut_object_ref(camera_entity);
+    else
+        grab->camera_entity = NULL;
+
+    c_list_insert(&ui->grabs, &grab->list_node);
+}
+
+void
+rig_ui_ungrab_input(rig_ui_t *ui,
+                    rig_input_grab_callback_t callback,
+                    void *user_data)
+{
+    rig_ui_grab_t *grab;
+
+    c_list_for_each(grab, &ui->grabs, list_node) {
+        if (grab->callback == callback && grab->user_data == user_data) {
+            _rig_ui_remove_grab_link(ui, grab);
+            break;
+        }
+    }
 }

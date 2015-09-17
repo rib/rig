@@ -145,8 +145,7 @@ rut_util_create_pick_ray(const float viewport[4],
      * width and height of the viewport.
      */
     ndc_x = viewport_pos[0] * 2.0f / viewport[2] - 1.0f;
-    ndc_y =
-        ((viewport[3] - 1.0f - viewport_pos[1]) * 2.0f / viewport[3] - 1.0f);
+    ndc_y = (viewport_pos[1] * 2.0f / viewport[3] - 1.0f) * -1;
 
     /* The main drawing code is doing P x C¯¹ (P is the Projection matrix
      * and C is the Camera transform. To inverse that transformation we need
