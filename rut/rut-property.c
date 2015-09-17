@@ -513,6 +513,7 @@ rut_property_dirty(rut_property_context_t *ctx, rut_property_t *property)
         if (object != &dummy_object) {
             rut_property_change_t *change;
 
+#if 0
             c_debug(
                 "Log %d: base=%p, offset=%d: obj = %p(%s), prop id=%d(%s)\n",
                 ctx->log_len,
@@ -522,6 +523,7 @@ rut_property_dirty(rut_property_context_t *ctx, rut_property_t *property)
                 rut_object_get_type_name(object),
                 property->id,
                 property->spec->name);
+#endif
 
             change = rut_memory_stack_alloc(ctx->change_log_stack,
                                             sizeof(rut_property_change_t));

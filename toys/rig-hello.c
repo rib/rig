@@ -94,6 +94,9 @@ hello_load(RModule *module)
     r_add_component(module, test, shape);
     r_add_component(module, test, material);
 
+    RObject *button = r_button_input_new(module);
+    r_add_component(module, test, button);
+
     r_set_vec3_by_name(module, test, "position", (float [3]){0, 0, 0});
 
     r_set_text_by_name(module, test, "label", "test");
@@ -119,8 +122,8 @@ hello_update(RModule *module, double delta_seconds)
     //r_entity_translate(module, cam, 0, 0, 1);
     //r_set_vec3_by_name(module, test, "position", (float [3]){0, 0, n--});
 
-    r_entity_rotate_z_axis(module, test, 1.f);
-    r_request_animation_frame(module);
+    //r_entity_rotate_z_axis(module, test, delta_seconds * 5.f);
+    //r_request_animation_frame(module);
 
     c_debug("hello_update callback (delta = %f)", delta_seconds);
 }

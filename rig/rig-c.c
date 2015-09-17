@@ -303,9 +303,10 @@ r_camera_new(RModule *module)
 
     prop_ctx->logging_disabled++;
     component = rig_camera_new(engine,
-                               -1, /* ortho width */
-                               -1, /* ortho height */
+                               1, /* ortho width */
+                               1, /* ortho height */
                                NULL); /* fb */
+#warning "FIXME: sync aspect ratio of camera from frontend to simulator"
     prop_ctx->logging_disabled--;
 
     /* Entities and components have to be explicitly deleted

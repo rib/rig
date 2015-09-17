@@ -92,11 +92,29 @@ static void
 set_state(rig_button_input_t *button_input, button_state_t state)
 {
     button_state_t prev_state = button_input->state;
+    rut_shell_t *shell;
     rut_property_context_t *prop_ctx;
     int prev_prop;
 
     if (prev_state == state)
         return;
+
+#if 0
+    {
+        const char *state_name[] = {
+            "BUTTON_STATE_NORMAL",
+            "BUTTON_STATE_HOVER",
+            "BUTTON_STATE_ACTIVE",
+            "BUTTON_STATE_ACTIVE_CANCEL",
+            "BUTTON_STATE_DISABLED"
+        };
+        c_debug("BUTTON INPUT %p: STATE: %s", button_input,
+                state_name[state]);
+    }
+#endif
+
+    shell = rig_component_props_get_shell(&button_input->component);
+    rut_shell_queue_redraw(shell);
 
     button_input->state = state;
 
@@ -270,21 +288,24 @@ _rig_button_input_copy(rut_object_t *object)
 typedef struct _button_grab_state_t {
     rut_object_t *camera;
     rig_button_input_t *button_input;
-    c_matrix_t transform;
-    c_matrix_t inverse_transform;
 } button_grab_state_t;
 
 static rut_input_event_status_t
-_rig_button_input_grab_input_cb(rut_input_event_t *event, void *user_data)
+_rig_button_input_grab_input_cb(rut_input_event_t *event,
+                                rut_object_t *pick_entity,
+                                void *user_data)
 {
     button_grab_state_t *state = user_data;
     rig_button_input_t *button_input = state->button_input;
 
     if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_MOTION) {
-        rut_shell_t *shell = rig_component_props_get_shell(&button_input->component);
+        rut_shell_t *shell =
+            rig_component_props_get_shell(&button_input->component);
+        rig_engine_t *engine =
+            rig_component_props_get_engine(&button_input->component);
+
         if (rut_motion_event_get_action(event) == RUT_MOTION_EVENT_ACTION_UP) {
-            rut_shell_ungrab_input(
-                shell, _rig_button_input_grab_input_cb, user_data);
+            rig_ui_ungrab_input(engine->ui, _rig_button_input_grab_input_cb, user_data);
             c_slice_free(button_grab_state_t, state);
 
             button_input->press_counter++;
@@ -293,34 +314,16 @@ _rig_button_input_grab_input_cb(rut_input_event_t *event, void *user_data)
                 &button_input->properties[RIG_BUTTON_INPUT_PROP_PRESS_COUNT]);
 
             set_state(button_input, BUTTON_STATE_NORMAL);
-            rut_shell_queue_redraw(shell);
 
             return RUT_INPUT_EVENT_STATUS_HANDLED;
         } else if (rut_motion_event_get_action(event) ==
-                   RUT_MOTION_EVENT_ACTION_MOVE) {
-#warning "fixme: pick during button input grab to handle ACTIVE_CANCEL state"
-            c_debug("TODO: rig_button_input_t - pick during motion to handle "
-                    "ACTIVE_CANCEL state\n");
-#if 0
-            float x = rut_motion_event_get_x (event);
-            float y = rut_motion_event_get_y (event);
-            rut_object_t *camera = state->camera;
-
-            rut_camera_unproject_coord (camera,
-                                        &state->transform,
-                                        &state->inverse_transform,
-                                        0,
-                                        &x,
-                                        &y);
-
-            if (x < 0 || x > button_input->width ||
-                y < 0 || y > button_input->height)
-                button_input->state = BUTTON_STATE_ACTIVE_CANCEL;
+                   RUT_MOTION_EVENT_ACTION_MOVE)
+        {
+            if (pick_entity == button_input->component.entity)
+                set_state(button_input, BUTTON_STATE_ACTIVE);
             else
-                button_input->state = BUTTON_STATE_ACTIVE;
+                set_state(button_input, BUTTON_STATE_ACTIVE_CANCEL);
 
-            rut_shell_queue_redraw (shell);
-#endif
             return RUT_INPUT_EVENT_STATUS_HANDLED;
         }
     }
@@ -336,34 +339,17 @@ _rig_button_input_handle_event(rut_object_t *inputable,
 
     if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_MOTION &&
         rut_motion_event_get_action(event) == RUT_MOTION_EVENT_ACTION_DOWN) {
-        rut_shell_t *shell = rig_component_props_get_shell(&button_input->component);
+        rig_engine_t *engine = rig_component_props_get_engine(&button_input->component);
         button_grab_state_t *state = c_slice_new(button_grab_state_t);
-        const c_matrix_t *view;
 
         state->button_input = button_input;
-        state->camera = rut_input_event_get_camera(event);
-        view = rut_camera_get_view_transform(state->camera);
-        state->transform = *view;
+        state->camera = rig_entity_get_component(event->camera_entity,
+                                                 RUT_COMPONENT_TYPE_CAMERA);
 
-#if 0
-        rut_graphable_apply_transform (button, &state->transform);
-        if (!c_matrix_get_inverse (&state->transform,
-                                    &state->inverse_transform))
-        {
-            c_warning ("Failed to calculate inverse of button transform\n");
-            c_slice_free (button_grab_state_t, state);
-            return RUT_INPUT_EVENT_STATUS_UNHANDLED;
-        }
-#endif
-
-        rut_shell_grab_input(
-            shell, state->camera, _rig_button_input_grab_input_cb, state);
-        // button_input->grab_x = rut_motion_event_get_x (event);
-        // button_input->grab_y = rut_motion_event_get_y (event);
+        rig_ui_grab_input(engine->ui, state->camera,
+                          _rig_button_input_grab_input_cb, state);
 
         set_state(button_input, BUTTON_STATE_ACTIVE);
-
-        rut_shell_queue_redraw(shell);
 
         return RUT_INPUT_EVENT_STATUS_HANDLED;
     }
