@@ -744,7 +744,7 @@ stack_region_cb(uint8_t *data, size_t bytes, void *user_data)
         pb_change->property_id = change->prop_id;
         rig_pb_property_value_init(state->serializer, pb_value, &change->boxed);
 
-#if 1
+#if 0
         c_debug(
             "> %d: base = %p, offset = %d, obj id=%llu:%p:%s, prop id = %d\n",
             i,
