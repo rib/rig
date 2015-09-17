@@ -575,12 +575,6 @@ rig_camera_set_view_transform(rut_object_t *object,
 
     camera->props.view_age++;
     camera->props.transform_age++;
-
-    /* XXX: we have no way to assert that we are at the bottom of the
-     * matrix stack at this point, so this might do bad things...
-     */
-    // cg_framebuffer_set_modelview_matrix (camera->props.base.fb,
-    //                                       &camera->props.base.view);
 }
 
 const c_matrix_t *
