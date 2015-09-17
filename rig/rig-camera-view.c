@@ -275,6 +275,20 @@ rig_camera_view_paint(rig_camera_view_t *view,
                                 view->width, view->height);
         rig_entity_set_camera_view_from_transform(camera);
 
+#if 0
+        {
+            const c_matrix_t *inverse_projection = rut_camera_get_inverse_projection(camera_component);
+            c_debug("Camera view paint: inverse proj:");
+            c_matrix_print(inverse_projection);
+        }
+
+        {
+            const c_matrix_t *view = rut_camera_get_view_transform(camera_component);
+            c_debug("Camera view paint: view transform:");
+            c_matrix_print(view);
+        }
+#endif
+
         cg_framebuffer_clear4f(fb,
                                CG_BUFFER_BIT_COLOR | CG_BUFFER_BIT_DEPTH |
                                CG_BUFFER_BIT_STENCIL,
