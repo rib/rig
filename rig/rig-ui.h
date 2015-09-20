@@ -33,20 +33,45 @@
 #include <rut.h>
 
 typedef struct _rig_ui_t rig_ui_t;
+typedef struct _rig_view rig_view_t;
 
 #include "rut-object.h"
 #include "rig-engine.h"
 #include "rig-entity.h"
 #include "rig-controller.h"
+#include "rig-camera-view.h"
 
 typedef struct _rig_ui_grab rig_ui_grab_t;
 
-/* This structure encapsulates all the dynamic state for a UI
- *
- * When running the editor we distinguish the edit mode UI from
- * the play mode UI so that all UI logic involved in play mode
- * does not affect the state of the UI that gets saved.
- */
+enum {
+    RIG_VIEW_PROP_WIDTH,
+    RIG_VIEW_PROP_HEIGHT,
+    RIG_VIEW_PROP_CAMERA_ENTITY,
+    RIG_VIEW_N_PROPS,
+};
+
+struct _rig_view
+{
+    rut_object_base_t _base;
+
+    rig_engine_t *engine;
+
+    int width;
+    int height;
+
+    rut_object_t *camera_entity;
+
+    /* Frontend only...
+     */
+    rig_camera_view_t *camera_view;
+    rut_shell_onscreen_t *onscreen;
+
+
+    rut_introspectable_props_t introspectable;
+    rut_property_t properties[RIG_VIEW_N_PROPS];
+
+};
+
 struct _rig_ui_t {
     rut_object_base_t _base;
 
@@ -65,6 +90,9 @@ struct _rig_ui_t {
     c_llist_t *cameras;
     c_llist_t *lights;
     c_llist_t *controllers;
+    c_llist_t *views;
+
+    bool dirty_view_geometry;
 
     /* TODO: remove the limitation of rendering with only one light */
     rig_entity_t *light;
@@ -133,3 +161,16 @@ void rig_ui_grab_input(rig_ui_t *ui,
 void rig_ui_ungrab_input(rig_ui_t *ui,
                          rig_input_grab_callback_t callback,
                          void *user_data);
+
+rig_view_t *rig_view_new(rig_engine_t *engine);
+
+void rig_view_set_width(rut_object_t *view, int width);
+void rig_view_set_height(rut_object_t *view, int height);
+void rig_view_set_camera(rut_object_t *obj, rut_object_t *camera_entity);
+
+void rig_view_reap(rig_view_t *view);
+
+void rig_ui_add_view(rig_ui_t *ui, rig_view_t *view);
+void rig_ui_remove_view(rig_ui_t *ui, rig_view_t *view);
+
+rig_view_t *rig_ui_find_view_for_onscreen(rig_ui_t *ui, rut_shell_onscreen_t *onscreen);

@@ -208,55 +208,9 @@ message Entity
           TEXT=6; CAMERA=7; POINTALISM_GRID=8; NINE_SLICE=9; HAIR=10;
           BUTTON_INPUT=11; NATIVE_MODULE=12; }
 
-      message Diamond
-        {
-          optional float size=1;
-        }
-
       message Model
         {
           optional sint64 asset_id=1; //XXX ID
-        }
-
-      message Camera
-        {
-          enum ProjectionMode {
-              ORTHOGRAPHIC=1;
-              PERSPECTIVE=2;
-              ASYMMETRIC_PERSPECTIVE=3;
-              NDC=4;
-          }
-
-          optional ProjectionMode projection_mode=1;
-
-          //Perspective
-          optional float field_of_view=2;
-
-          //Asymmetric perspective
-          optional AsymmetricPerspective asymmetric_perspective=11;
-
-          //Orthographic
-          optional OrthoCoords ortho=3;
-
-          optional Viewport viewport=4;
-
-          optional float zoom=5;
-
-          optional float focal_distance=6;
-          optional float depth_of_field=7;
-
-          optional float near_plane=8;
-          optional float far_plane=9;
-
-          optional Color background=10;
-        }
-
-      message PointalismGrid
-        {
-          optional float cell_size=1;
-          optional float scale=2;
-          optional float z=3;
-          optional bool lighter=4;
         }
 
       optional sint64 id=1; //XXX ID
@@ -264,7 +218,6 @@ message Entity
       optional Type type=2;
 
       optional Model model=7;
-      optional Camera camera=9;
 
       //introspectable properties...
       repeated Boxed properties=11;
@@ -282,6 +235,13 @@ message Entity
   optional bool cast_shadow=7;
 
   repeated Component components=8;
+}
+
+message SimpleObject
+{
+  optional sint64 id=1;
+  //introspectable properties...
+  repeated Boxed properties=2;
 }
 
 message Constant
@@ -351,6 +311,8 @@ message UI
 
   optional sint64 scene_root_id=7;
   repeated Entity entities=3;
+
+  repeated SimpleObject views=8;
 
   repeated Controller controllers=4;
 
@@ -520,19 +482,19 @@ message Operation
   }
   optional ControllerPropertySetMethod controller_property_set_method=16;
 
-  message OpenView
+  message AddView
   {
-    required sint64 camera_id=1; //XXX ID
+    required SimpleObject view=1;
   }
-  optional OpenView open_view=18;
+  optional AddView add_view=18;
 
-  //message SetPlayMode
-  //{
-  //  required bool play_mode_enabled=1;
-  //}
-  //optional SetPlayMode set_play_mode=17;
+  message DeleteView
+  {
+    required sint64 view_id=1; //XXX ID
+  }
+  optional DeleteView delete_view=19;
 
-  //XXX: next id = 19
+  //XXX: next id = 20
 }
 
 message UIEdit
@@ -546,11 +508,20 @@ message ObjectRegistration
   required sint64 real_id=2;
 }
 
+message ViewUpdate
+{
+  required sint64 id=1;
+  required uint32 width=2;
+  required uint32 height=3;
+}
+
 message FrameSetup
 {
-  repeated Event events=5;
+  repeated Event events=1;
 
-  optional double progress=8;
+  optional double progress=2;
+
+  repeated ViewUpdate view_updates=3;
 }
 
 message LoadResult

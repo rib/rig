@@ -79,12 +79,16 @@ _rig_ui_free(void *object)
         _rig_ui_remove_grab_link(ui, first_grab);
     }
 
+    for (l = ui->views; l; l = l->next)
+        rut_object_release(l->data, ui);
+    c_llist_free(ui->views);
+
     for (l = ui->suspended_controllers; l; l = l->next)
         rut_object_unref(l->data);
     c_llist_free(ui->suspended_controllers);
 
     for (l = ui->controllers; l; l = l->next)
-        rut_object_unref(l->data);
+        rut_object_release(l->data, ui);
     c_llist_free(ui->controllers);
 
     for (l = ui->assets; l; l = l->next)
@@ -129,10 +133,6 @@ rig_ui_reap(rig_ui_t *ui)
         rig_controller_reap(controller, engine);
         rut_object_release(controller, ui);
     }
-
-    /* We could potentially leave these to be freed in _free() but it
-     * seems a bit ugly to keep the list containing pointers to
-     * controllers no longer owned by the ui. */
     c_llist_free(ui->controllers);
     ui->controllers = NULL;
 
@@ -141,12 +141,15 @@ rig_ui_reap(rig_ui_t *ui)
         rig_asset_reap(asset, engine);
         rut_object_release(asset, ui);
     }
-
-    /* We could potentially leave these to be freed in _free() but it
-     * seems a bit ugly to keep the list containing pointers to
-     * assets no longer owned by the ui. */
     c_llist_free(ui->assets);
     ui->assets = NULL;
+
+    for (l = ui->views; l; l = l->next) {
+        rig_view_reap(l->data);
+        rut_object_release(l->data, ui);
+    }
+    c_llist_free(ui->views);
+    ui->views = NULL;
 
     /* XXX: The ui itself is just a normal ref-counted object that
      * doesn't need to be unregistered so we don't call
@@ -333,10 +336,9 @@ void
 rig_ui_add_controller(rig_ui_t *ui, rig_controller_t *controller)
 {
     ui->controllers = c_llist_prepend(ui->controllers, controller);
-    rut_object_ref(controller);
+    rut_object_claim(controller, ui);
 
-    if (!ui->suspended)
-        rig_controller_set_suspended(controller, false);
+    rig_controller_set_suspended(controller, ui->suspended);
 }
 
 void
@@ -345,7 +347,7 @@ rig_ui_remove_controller(rig_ui_t *ui, rig_controller_t *controller)
     rig_controller_set_suspended(controller, true);
 
     ui->controllers = c_llist_remove(ui->controllers, controller);
-    rut_object_unref(controller);
+    rut_object_release(controller, ui);
 }
 
 /* These notifications lets us associate entities with particular
@@ -414,21 +416,6 @@ rig_ui_entity_component_pre_remove_notify(rig_ui_t *ui,
 
     if (rut_object_is(component, RUT_TRAIT_ID_CAMERA)) {
         ui->cameras = c_llist_remove(ui->cameras, entity);
-
-#if 0
-        if (ui->renderer &&
-            strcmp("play-camera", rig_entity_get_label(entity)) == 0)
-        {
-            rig_frontend_t *frontend = ui->engine->frontend;
-            rig_onscreen_view_t *view =
-                rig_frontend_find_view_for_camera(frontend, entity);
-
-            if (view) {
-                rig_camera_view_set_camera_entity(view->camera_view, NULL);
-                rut_object_unref(view);
-            }
-        }
-#endif
     } else if (rut_object_is(component, rig_code_module_trait_id)) {
         rig_code_module_props_t *module_props =
             rut_object_get_properties(component, rig_code_module_trait_id);
@@ -910,4 +897,210 @@ rig_ui_ungrab_input(rig_ui_t *ui,
             break;
         }
     }
+}
+
+static void
+_rig_view_free(void *object)
+{
+    rig_view_t *view = object;
+
+    if (view->camera_entity) {
+        rut_object_unref(view->camera_entity);
+        view->camera_entity = NULL;
+    }
+
+    if (view->onscreen)
+        rut_object_unref(view->onscreen);
+    if (view->camera_view)
+        rut_object_unref(view->camera_view);
+
+    rut_object_free(rig_view_t, object);
+}
+
+static rut_type_t rig_view_type;
+
+static void
+_rig_view_init_type(void)
+{
+    rut_type_init(&rig_view_type, "rig_view_t", _rig_view_free);
+}
+
+static void
+on_onscreen_resize(cg_onscreen_t *onscreen,
+                   int width,
+                   int height,
+                   void *user_data)
+{
+    rig_view_t *view = user_data;
+
+    rig_view_set_width(view, width);
+    rig_view_set_height(view, height);
+
+    view->engine->frontend->dirty_view_geometry = true;
+
+    rut_shell_queue_redraw(view->engine->shell);
+}
+
+static rut_property_spec_t _rig_view_prop_specs[] = {
+    { .name = "width",
+      .nick = "Width",
+      .type = RUT_PROPERTY_TYPE_INTEGER,
+      .data_offset = C_STRUCT_OFFSET(rig_view_t, width),
+      .setter.integer_type = rig_view_set_width,
+      .flags = RUT_PROPERTY_FLAG_READABLE, //XXX: Should only be writable in frontend
+    },
+    { .name = "height",
+      .nick = "Height",
+      .type = RUT_PROPERTY_TYPE_INTEGER,
+      .data_offset = C_STRUCT_OFFSET(rig_view_t, height),
+      .setter.integer_type = rig_view_set_height,
+      .flags = RUT_PROPERTY_FLAG_READABLE, //XXX: Should only be writable in frontend
+    },
+    { .name = "camera_entity",
+      .nick = "Camera Entity",
+      .type = RUT_PROPERTY_TYPE_OBJECT,
+      .data_offset = C_STRUCT_OFFSET(rig_view_t, camera_entity),
+      .validation = { .object.type = &rig_entity_type },
+      .setter.object_type = rig_view_set_camera,
+      .flags = RUT_PROPERTY_FLAG_READWRITE,
+      .animatable = false },
+    { NULL }
+};
+
+rig_view_t *
+rig_view_new(rig_engine_t *engine)
+{
+    rig_view_t *view =
+        rut_object_alloc0(rig_view_t, &rig_view_type,
+                          _rig_view_init_type);
+
+    view->engine = engine;
+
+    view->width = 800;
+    view->height = 600;
+
+    rut_introspectable_init(view, _rig_view_prop_specs, view->properties);
+
+    return view;
+}
+
+void
+rig_ui_add_view(rig_ui_t *ui, rig_view_t *view)
+{
+    rig_frontend_t *frontend = ui->engine->frontend;
+
+    ui->views = c_llist_prepend(ui->views, view);
+    rut_object_claim(view, ui);
+
+    if (frontend) {
+        view->onscreen = rut_shell_onscreen_new(view->engine->shell,
+                                                view->width,
+                                                view->height);
+
+        rut_shell_onscreen_allocate(view->onscreen);
+        rut_shell_onscreen_set_resizable(view->onscreen, true);
+
+        rut_shell_onscreen_set_title(view->onscreen, "Rig " C_STRINGIFY(RIG_VERSION));
+
+        cg_onscreen_add_resize_callback(view->onscreen->cg_onscreen,
+                                        on_onscreen_resize, view,
+                                        NULL); /* destroy notify */
+
+        rut_shell_onscreen_show(view->onscreen);
+
+        view->camera_view = rig_camera_view_new(frontend);
+        rig_camera_view_set_framebuffer(view->camera_view,
+                                        view->onscreen->cg_onscreen);
+        rig_camera_view_set_ui(view->camera_view, ui);
+
+        rut_shell_queue_redraw(ui->engine->shell);
+    }
+}
+
+void
+rig_ui_remove_view(rig_ui_t *ui, rig_view_t *view)
+{
+    ui->views = c_llist_remove(ui->views, view);
+    rut_object_release(view, ui);
+}
+
+void
+rig_view_reap(rig_view_t *view)
+{
+    /* Currently views don't own any objects that need to be
+     * explicitly reaped
+     */
+
+    rig_engine_queue_delete(view->engine, view);
+}
+
+void
+rig_view_set_width(rut_object_t *obj, int width)
+{
+    rig_view_t *view = obj;
+    rut_property_context_t *prop_ctx;
+
+    if (view->width == width)
+        return;
+
+    view->width = width;
+
+    prop_ctx = &view->engine->shell->property_ctx;
+    rut_property_dirty(prop_ctx, &view->properties[RIG_VIEW_PROP_WIDTH]);
+}
+
+void
+rig_view_set_height(rut_object_t *obj, int height)
+{
+    rig_view_t *view = obj;
+    rut_property_context_t *prop_ctx;
+
+    if (view->height == height)
+        return;
+
+    view->height = height;
+
+    prop_ctx = &view->engine->shell->property_ctx;
+    rut_property_dirty(prop_ctx, &view->properties[RIG_VIEW_PROP_HEIGHT]);
+}
+
+rig_view_t *
+rig_ui_find_view_for_onscreen(rig_ui_t *ui, rut_shell_onscreen_t *onscreen)
+{
+    c_llist_t *l;
+
+    for (l = ui->views; l; l = l->next) {
+        rig_view_t *view = l->data;
+
+        if (view->onscreen == onscreen)
+            return view;
+    }
+
+    return NULL;
+}
+
+void
+rig_view_set_camera(rut_object_t *obj, rut_object_t *camera_entity)
+{
+    rig_view_t *view = obj;
+    rut_property_context_t *prop_ctx;
+
+    if (view->camera_entity == camera_entity)
+        return;
+
+    if (view->camera_entity) {
+        rut_object_unref(view->camera_entity);
+        view->camera_entity = NULL;
+    }
+
+    if (camera_entity)
+        view->camera_entity = rut_object_ref(camera_entity);
+
+    if (view->camera_view) {
+        rig_camera_view_set_camera_entity(view->camera_view, camera_entity);
+        rut_shell_onscreen_set_input_camera(view->onscreen, camera_entity);
+    }
+
+    prop_ctx = &view->engine->shell->property_ctx;
+    rut_property_dirty(prop_ctx, &view->properties[RIG_VIEW_PROP_CAMERA_ENTITY]);
 }

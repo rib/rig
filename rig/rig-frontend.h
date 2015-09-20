@@ -43,15 +43,6 @@ typedef struct _rig_frontend_t rig_frontend_t;
 
 #include "rig.pb-c.h"
 
-typedef struct
-{
-    rig_frontend_t *frontend;
-    rig_camera_view_t *camera_view;
-    rut_shell_onscreen_t *onscreen;
-    int64_t last_presentation;
-} rig_onscreen_view_t;
-
-
 /* The "frontend" is the main process that controls the running
  * of a Rig UI, either in device mode, as a slave or as an editor.
  *
@@ -86,8 +77,6 @@ struct _rig_frontend_t {
     rig_rpc_peer_t *frontend_peer;
     bool connected;
 
-    c_llist_t *onscreen_views;
-
     cg_pipeline_t *default_pipeline;
     cg_texture_2d_t *default_tex2d;
     cg_pipeline_t *default_tex2d_pipeline;
@@ -113,6 +102,8 @@ struct _rig_frontend_t {
 
     c_list_t ui_update_cb_list;
 
+    bool dirty_view_geometry;
+
     void (*simulator_connected_callback)(void *user_data);
     void *simulator_connected_data;
 
@@ -129,12 +120,6 @@ struct _rig_frontend_t {
 };
 
 rig_frontend_t *rig_frontend_new(rut_shell_t *shell);
-
-rig_onscreen_view_t *rig_onscreen_view_new(rig_frontend_t *frontend);
-rig_onscreen_view_t *rig_frontend_find_view_for_camera(rig_frontend_t *frontend,
-                                                       rig_entity_t *camera_entity);
-rig_onscreen_view_t *rig_frontend_find_view_for_onscreen(rig_frontend_t *frontend,
-                                                         rut_shell_onscreen_t *onscreen);
 
 typedef void (*rig_local_sim_init_func_t)(rig_simulator_t *simulator,
                                           void *user_data);

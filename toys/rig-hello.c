@@ -46,6 +46,8 @@ hello_load(RModule *module)
     RColor light_ambient = { .2, .2, .2, 1 };
     RColor light_diffuse = { .6, .6, .6, 1 };
     RColor light_specular = { .4, .4, .4, 1 };
+    RObject *view;
+    RObject *controller;
 
     RObject *e = r_entity_new(module, NULL);
     r_set_text_by_name(module, e, "label", "light");
@@ -81,7 +83,12 @@ hello_load(RModule *module)
 
     r_add_component(module, e, play_cam);
 
-    r_open_view(module, e);
+    view = r_view_new(module);
+    r_set_object_by_name(module, view, "camera_entity", e);
+
+    controller = r_controller_new(module);
+    r_controller_bind(module, controller, play_cam, "viewport_width", view, "width");
+    r_controller_bind(module, controller, play_cam, "viewport_height", view, "height");
 
     r_set_color_by_name(module, material, "ambient",
                         r_color_str(module, "#ff0000"));

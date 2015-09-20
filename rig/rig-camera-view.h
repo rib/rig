@@ -148,8 +148,6 @@ struct _rig_camera_view_t {
     int fb_y;
 };
 
-extern rut_type_t rig_view_type;
-
 rig_camera_view_t *rig_camera_view_new(rig_frontend_t *frontend);
 
 void rig_camera_view_set_framebuffer(rig_camera_view_t *view,

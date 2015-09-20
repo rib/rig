@@ -38,7 +38,6 @@
 #include <rut.h>
 
 #include "rig-engine.h"
-#include "rig-view.h"
 #include "rig-renderer.h"
 #include "rig-dof-effect.h"
 
@@ -328,7 +327,7 @@ rig_camera_view_paint(rig_camera_view_t *view,
 #endif
 }
 
-rut_type_t rig_camera_view_type;
+static rut_type_t rig_camera_view_type;
 
 static void
 _rig_camera_view_init_type(void)

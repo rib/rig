@@ -507,82 +507,11 @@ rig_pb_serialize_component(rig_pb_serializer_t *serializer,
                                              (void **)&pb_component->properties,
                                              serializer);
     } else if (type == &rig_camera_type) {
-        rig_camera_t *camera = (rig_camera_t *)component;
-        Rig__Entity__Component__Camera *pb_camera;
-        const float *viewport;
-        float zoom;
-
         pb_component->type = RIG__ENTITY__COMPONENT__TYPE__CAMERA;
-        pb_camera = rig_pb_new(serializer,
-                               Rig__Entity__Component__Camera,
-                               rig__entity__component__camera__init);
-        pb_component->camera = pb_camera;
-
-        pb_camera->has_projection_mode = true;
-        switch (rut_camera_get_projection_mode(camera)) {
-        case RUT_PROJECTION_ORTHOGRAPHIC:
-            pb_camera->projection_mode =
-                RIG__ENTITY__COMPONENT__CAMERA__PROJECTION_MODE__ORTHOGRAPHIC;
-
-            pb_camera->ortho = rig_pb_new(
-                serializer, Rig__OrthoCoords, rig__ortho_coords__init);
-            rut_camera_get_orthographic_coordinates(camera,
-                                                    &pb_camera->ortho->x0,
-                                                    &pb_camera->ortho->y0,
-                                                    &pb_camera->ortho->x1,
-                                                    &pb_camera->ortho->y1);
-            break;
-        case RUT_PROJECTION_PERSPECTIVE:
-            pb_camera->projection_mode =
-                RIG__ENTITY__COMPONENT__CAMERA__PROJECTION_MODE__PERSPECTIVE;
-            pb_camera->has_field_of_view = true;
-            pb_camera->field_of_view = rut_camera_get_field_of_view(camera);
-            break;
-        case RUT_PROJECTION_ASYMMETRIC_PERSPECTIVE:
-            pb_camera->projection_mode =
-                RIG__ENTITY__COMPONENT__CAMERA__PROJECTION_MODE__ASYMMETRIC_PERSPECTIVE;
-            pb_camera->asymmetric_perspective = rig_pb_new(
-                serializer, Rig__AsymmetricPerspective, rig__asymmetric_perspective__init);
-            rut_camera_get_asymmetric_field_of_view(camera,
-                                                    &pb_camera->asymmetric_perspective->left_field_of_view,
-                                                    &pb_camera->asymmetric_perspective->right_field_of_view,
-                                                    &pb_camera->asymmetric_perspective->bottom_field_of_view,
-                                                    &pb_camera->asymmetric_perspective->top_field_of_view);
-            break;
-        case RUT_PROJECTION_NDC:
-            pb_camera->projection_mode =
-                RIG__ENTITY__COMPONENT__CAMERA__PROJECTION_MODE__NDC;
-            break;
-        }
-
-        pb_camera->viewport =
-            rig_pb_new(serializer, Rig__Viewport, rig__viewport__init);
-
-        viewport = rut_camera_get_viewport(camera);
-        pb_camera->viewport->x = viewport[0];
-        pb_camera->viewport->y = viewport[1];
-        pb_camera->viewport->width = viewport[2];
-        pb_camera->viewport->height = viewport[3];
-
-        zoom = rut_camera_get_zoom(camera);
-        if (zoom != 1) {
-            pb_camera->has_zoom = true;
-            pb_camera->zoom = zoom;
-        }
-
-        pb_camera->has_focal_distance = true;
-        pb_camera->focal_distance = rut_camera_get_focal_distance(camera);
-
-        pb_camera->has_depth_of_field = true;
-        pb_camera->depth_of_field = rut_camera_get_depth_of_field(camera);
-
-        pb_camera->has_near_plane = true;
-        pb_camera->near_plane = rut_camera_get_near_plane(camera);
-        pb_camera->has_far_plane = true;
-        pb_camera->far_plane = rut_camera_get_far_plane(camera);
-
-        pb_camera->background =
-            pb_color_new(serializer, rut_camera_get_background_color(camera));
+        serialize_instrospectable_properties(component,
+                                             &pb_component->n_properties,
+                                             (void **)&pb_component->properties,
+                                             serializer);
     } else if (type == &rig_nine_slice_type) {
         pb_component->type = RIG__ENTITY__COMPONENT__TYPE__NINE_SLICE;
         serialize_instrospectable_properties(component,
@@ -727,6 +656,25 @@ _rig_entitygraph_pre_serialize_cb(
         c_llist_prepend(serializer->pb_entities, pb_entity);
 
     return RUT_TRAVERSE_VISIT_CONTINUE;
+}
+
+Rig__SimpleObject *
+rig_pb_serialize_simple_object(rig_pb_serializer_t *serializer,
+                               rut_object_t *object)
+{
+    Rig__SimpleObject *pb_object =
+        rig_pb_new(serializer, Rig__SimpleObject, rig__simple_object__init);
+
+    pb_object->has_id = true;
+    pb_object->id = rig_pb_serializer_register_object(serializer, object);
+
+    serialize_instrospectable_properties(
+        object,
+        &pb_object->n_properties,
+        (void **)&pb_object->properties,
+        serializer);
+
+    return pb_object;
 }
 
 typedef struct _deps_state_t {
@@ -2052,82 +2000,15 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
         return text;
     }
     case RIG__ENTITY__COMPONENT__TYPE__CAMERA: {
-        Rig__Entity__Component__Camera *pb_camera = pb_component->camera;
         rig_camera_t *camera = rig_camera_new(unserializer->engine,
                                               -1, /* ortho/vp width */
                                               -1, /* ortho/vp height */
                                               NULL);
 
-        if (pb_camera->viewport) {
-            Rig__Viewport *pb_viewport = pb_camera->viewport;
-
-            rut_camera_set_viewport(camera,
-                                    pb_viewport->x,
-                                    pb_viewport->y,
-                                    pb_viewport->width,
-                                    pb_viewport->height);
-        }
-
-        if (pb_camera->has_projection_mode) {
-            switch (pb_camera->projection_mode) {
-            case RIG__ENTITY__COMPONENT__CAMERA__PROJECTION_MODE__ORTHOGRAPHIC:
-                rut_camera_set_projection_mode(camera,
-                                               RUT_PROJECTION_ORTHOGRAPHIC);
-                break;
-            case RIG__ENTITY__COMPONENT__CAMERA__PROJECTION_MODE__PERSPECTIVE:
-                rut_camera_set_projection_mode(camera,
-                                               RUT_PROJECTION_PERSPECTIVE);
-                break;
-            case RIG__ENTITY__COMPONENT__CAMERA__PROJECTION_MODE__ASYMMETRIC_PERSPECTIVE:
-                rut_camera_set_projection_mode(camera,
-                                               RUT_PROJECTION_ASYMMETRIC_PERSPECTIVE);
-                break;
-            case RIG__ENTITY__COMPONENT__CAMERA__PROJECTION_MODE__NDC:
-                rut_camera_set_projection_mode(camera, RUT_PROJECTION_NDC);
-                break;
-            }
-        }
-
-        if (pb_camera->ortho) {
-            rut_camera_set_orthographic_coordinates(camera,
-                                                    pb_camera->ortho->x0,
-                                                    pb_camera->ortho->y0,
-                                                    pb_camera->ortho->x1,
-                                                    pb_camera->ortho->y1);
-        }
-
-        if (pb_camera->asymmetric_perspective) {
-            rut_camera_set_asymmetric_field_of_view(camera,
-                                                    pb_camera->asymmetric_perspective->left_field_of_view,
-                                                    pb_camera->asymmetric_perspective->right_field_of_view,
-                                                    pb_camera->asymmetric_perspective->bottom_field_of_view,
-                                                    pb_camera->asymmetric_perspective->top_field_of_view);
-        }
-
-        if (pb_camera->has_field_of_view)
-            rut_camera_set_field_of_view(camera, pb_camera->field_of_view);
-
-        if (pb_camera->zoom)
-            rut_camera_set_zoom(camera, pb_camera->zoom);
-
-        if (pb_camera->focal_distance)
-            rut_camera_set_focal_distance(camera, pb_camera->focal_distance);
-
-        if (pb_camera->depth_of_field)
-            rut_camera_set_depth_of_field(camera, pb_camera->depth_of_field);
-
-        if (pb_camera->near_plane)
-            rut_camera_set_near_plane(camera, pb_camera->near_plane);
-
-        if (pb_camera->far_plane)
-            rut_camera_set_far_plane(camera, pb_camera->far_plane);
-
-        if (pb_camera->background) {
-            cg_color_t color;
-            pb_init_color(
-                unserializer->engine->shell, &color, pb_camera->background);
-            rut_camera_set_background_color(camera, &color);
-        }
+        set_properties_from_pb_boxed_values(unserializer,
+                                            camera,
+                                            pb_component->n_properties,
+                                            pb_component->properties);
 
         rig_pb_unserializer_register_object(unserializer, camera, component_id);
         return camera;
@@ -2422,6 +2303,42 @@ unserialize_assets(rig_pb_un_serializer_t *unserializer,
     }
 }
 
+rig_view_t *
+rig_pb_unserialize_view(rig_pb_un_serializer_t *unserializer,
+                        Rig__SimpleObject *pb_view)
+{
+    rig_view_t *view = NULL;
+
+    if (!pb_view->has_id)
+        return NULL;
+
+    view = rig_view_new(unserializer->engine);
+
+    set_properties_from_pb_boxed_values(unserializer,
+                                        view,
+                                        pb_view->n_properties,
+                                        pb_view->properties);
+
+    rig_pb_unserializer_register_object(unserializer, view, pb_view->id);
+
+    return view;
+}
+
+static void
+unserialize_views(rig_pb_un_serializer_t *unserializer,
+                  int n_views,
+                  Rig__SimpleObject **views)
+{
+    int i;
+
+    for (i = 0; i < n_views; i++) {
+        rig_view_t *view  = rig_pb_unserialize_view(unserializer, views[i]);
+
+        if (view)
+            unserializer->views = c_llist_prepend(unserializer->views, view);
+    }
+}
+
 static void
 unserialize_path_nodes(rig_pb_un_serializer_t *unserializer,
                        rig_path_t *path,
@@ -2552,16 +2469,6 @@ rig_pb_unserialize_controller_properties(rig_pb_un_serializer_t *unserializer,
 
         property =
             rut_introspectable_lookup_property(object, pb_property->name);
-
-#warning "todo: remove entity::cast_shadow compatibility"
-        if (!property && rut_object_get_type(object) == &rig_entity_type &&
-            strcmp(pb_property->name, "cast_shadow") == 0) {
-            object =
-                rig_entity_get_component(object, RUT_COMPONENT_TYPE_MATERIAL);
-            if (object)
-                property = rut_introspectable_lookup_property(
-                    object, pb_property->name);
-        }
 
         if (!property) {
             rig_pb_unserializer_collect_error(unserializer,
@@ -2860,6 +2767,8 @@ rig_pb_unserialize_ui(rig_pb_un_serializer_t *unserializer,
 
     unserialize_entities(unserializer, pb_ui->n_entities, pb_ui->entities);
 
+    unserialize_views(unserializer, pb_ui->n_views, pb_ui->views);
+
     unserialize_controllers(unserializer, pb_ui->n_controllers,
                             pb_ui->controllers);
 
@@ -2901,9 +2810,21 @@ rig_pb_unserialize_ui(rig_pb_un_serializer_t *unserializer,
             c_warning("Multiple root entities found when loading UI");
     }
 
+    c_llist_free(unserializer->entities);
     unserializer->entities = NULL;
 
-    ui->controllers = unserializer->controllers;
+    for (l = unserializer->views; l; l = l->next) {
+        rig_ui_add_view(ui, l->data);
+        rut_object_unref(l->data);
+    }
+    c_llist_free(unserializer->views);
+    unserializer->views = NULL;
+
+    for (l = unserializer->controllers; l; l = l->next) {
+        rig_ui_add_controller(ui, l->data);
+        rut_object_unref(l->data);
+    }
+    c_llist_free(unserializer->controllers);
     unserializer->controllers = NULL;
 
     c_debug("unserialized ui assets list  %p\n", unserializer->assets);

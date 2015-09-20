@@ -222,7 +222,8 @@ r_entity_delete(RModule *module, RObject *entity)
     rig_code_module_props_t *code_module = (void *)module;
     rig_engine_t *engine = code_module->engine;
 
-    rig_entity_reap((rig_entity_t *)entity, engine);
+    rig_engine_op_delete_entity(engine, (rut_object_t *)entity);
+
     rut_object_release(entity, engine);
 }
 
@@ -281,7 +282,7 @@ r_component_delete(RModule *module, RObject *component)
     rig_code_module_props_t *code_module = (void *)module;
     rig_engine_t *engine = code_module->engine;
 
-    rig_component_reap((rut_object_t *)component, engine);
+    rig_engine_op_delete_component(engine, (rut_object_t *)component);
     rut_object_release(component, engine);
 }
 
@@ -322,14 +323,39 @@ r_camera_new(RModule *module)
     return (RObject *)component;
 }
 
-void
-r_open_view(RModule *module, RObject *camera_entity)
+RObject *
+r_view_new(RModule *module)
 {
     rig_code_module_props_t *code_module = (void *)module;
-    rig_entity_t *entity = (rig_entity_t *)camera_entity;
+    rig_engine_t *engine = code_module->engine;
+    rut_property_context_t *prop_ctx = engine->property_ctx;
+    rig_view_t *view;
+
+    prop_ctx->logging_disabled++;
+    view = rig_view_new(engine);
+    prop_ctx->logging_disabled--;
+
+    /* Views have to be explicitly deleted via r_view_delete(). We
+     * give the engine ownership of the only reference. We don't
+     * expose a ref count in the C binding api.
+     */
+    rut_object_claim(view, engine);
+    rut_object_unref(view);
+
+    rig_engine_op_add_view(engine, view);
+
+    return (RObject *)view;
+}
+
+void
+r_view_delete(RModule *module, RObject *view)
+{
+    rig_code_module_props_t *code_module = (void *)module;
     rig_engine_t *engine = code_module->engine;
 
-    rig_engine_op_open_view(engine, entity);
+    rig_engine_op_delete_view(engine, (rig_view_t *)view);
+
+    rut_object_release(view, engine);
 }
 
 RObject *
