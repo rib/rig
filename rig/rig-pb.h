@@ -180,6 +180,10 @@ Rig__Entity__Component *
 rig_pb_serialize_component(rig_pb_serializer_t *serializer,
                            rut_component_t *component);
 
+Rig__SimpleObject *
+rig_pb_serialize_simple_object(rig_pb_serializer_t *serializer,
+                               rut_object_t *object);
+
 Rig__Controller *rig_pb_serialize_controller(rig_pb_serializer_t *serializer,
                                              rig_controller_t *controller);
 
@@ -232,6 +236,7 @@ struct _rig_pb_un_serializer_t {
 
     c_llist_t *assets;
     c_llist_t *entities;
+    c_llist_t *views;
     c_llist_t *controllers;
 
     c_hash_table_t *id_to_object_map;
@@ -292,6 +297,10 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
 
 rig_entity_t *rig_pb_unserialize_entity(rig_pb_un_serializer_t *unserializer,
                                         Rig__Entity *pb_entity);
+
+rig_view_t *
+rig_pb_unserialize_view(rig_pb_un_serializer_t *unserializer,
+                        Rig__SimpleObject *pb_view);
 
 rig_controller_t *
 rig_pb_unserialize_controller_bare(rig_pb_un_serializer_t *unserializer,

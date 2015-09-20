@@ -182,6 +182,9 @@ void r_entity_rotate_z_axis(RModule *module, RObject *entity, float z_angle);
 void r_entity_delete(RModule *module, RObject *entity);
 void r_component_delete(RModule *module, RObject *component);
 
+RObject *r_view_new(RModule *module);
+void r_view_delete(RModule *module, RObject *view);
+
 void r_request_animation_frame(RModule *module);
 
 typedef enum {

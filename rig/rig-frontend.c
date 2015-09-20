@@ -275,6 +275,7 @@ frontend__update_ui(Rig__Frontend_Service *service,
     rig_frontend_t *frontend =
         rig_pb_rpc_closure_get_connection_data(closure_data);
     rig_engine_t *engine = frontend->engine;
+    rig_ui_t *ui = engine->ui;
     int i, j;
     int n_property_changes;
     rig_pb_un_serializer_t *unserializer;
@@ -368,9 +369,9 @@ frontend__update_ui(Rig__Frontend_Service *service,
     if (!rut_shell_is_redraw_queued(engine->shell)){
         c_llist_t *l;
 
-        for (l = frontend->onscreen_views; l; l = l->next) {
-            rig_onscreen_view_t *onscreen_view = l->data;
-            rut_shell_onscreen_t *onscreen = onscreen_view->onscreen;
+        for (l = ui->views; l; l = l->next) {
+            rig_view_t *view = l->data;
+            rut_shell_onscreen_t *onscreen = view->onscreen;
 
             onscreen->presentation_time0 = 0;
             onscreen->presentation_time1 = 0;
@@ -397,13 +398,6 @@ frontend_set_ui(rig_frontend_t *frontend,
     rig_engine_set_ui(frontend->engine, ui);
 
     //rig_ui_code_modules_load(ui);
-#if 0
-    for (l = frontend->onscreen_views; l; l = l->next) {
-        rig_onscreen_view_t *onscreen_view = l->data;
-
-        rig_camera_view_set_ui(onscreen_view->camera_view, ui);
-    }
-#endif
 }
 
 static void
@@ -580,7 +574,6 @@ static void
 _rig_frontend_free(void *object)
 {
     rig_frontend_t *frontend = object;
-    c_llist_t *l;
 
     rig_engine_op_apply_context_destroy(&frontend->apply_op_ctx);
     rig_engine_op_map_context_destroy(&frontend->map_to_frontend_objects_op_ctx);
@@ -589,18 +582,6 @@ _rig_frontend_free(void *object)
     rut_closure_list_disconnect_all_FIXME(&frontend->ui_update_cb_list);
 
     frontend_stop_service(frontend);
-
-    for (l = frontend->onscreen_views; l; l = l->next) {
-        rig_onscreen_view_t *onscreen_view = l->data;
-
-        rut_object_unref(onscreen_view->onscreen);
-        rut_object_unref(onscreen_view->camera_view);
-
-        c_slice_free(rig_onscreen_view_t, onscreen_view);
-    }
-
-    c_llist_free(frontend->onscreen_views);
-    frontend->onscreen_views = NULL;
 
     rig_renderer_fini(frontend->renderer);
     rut_object_unref(frontend->renderer);
@@ -1168,17 +1149,6 @@ rig_frontend_spawn_simulator(rig_frontend_t *frontend,
 }
 
 static void
-on_onscreen_resize(cg_onscreen_t *onscreen,
-                   int width,
-                   int height,
-                   void *user_data)
-{
-    rig_frontend_t *frontend = user_data;
-
-    rut_shell_queue_redraw(frontend->engine->shell);
-}
-
-static void
 init_empty_ui(rig_frontend_t *frontend)
 {
     rig_engine_t *engine = frontend->engine;
@@ -1188,90 +1158,6 @@ init_empty_ui(rig_frontend_t *frontend)
     rut_object_unref(ui);
 
     rig_engine_op_apply_context_set_ui(&frontend->apply_op_ctx, ui);
-}
-
-static void
-_rig_onscreen_view_free(void *object)
-{
-    rig_onscreen_view_t *view = object;
-    rig_frontend_t *frontend = view->frontend;
-
-    frontend->onscreen_views = c_llist_remove(frontend->onscreen_views, view);
-
-    rut_object_free(rig_onscreen_view_t, object);
-}
-
-static rut_type_t rig_onscreen_view_type;
-
-static void
-_rig_onscreen_view_init_type(void)
-{
-    rut_type_init(&rig_onscreen_view_type, "rig_onscreen_view_t", _rig_onscreen_view_free);
-}
-
-rig_onscreen_view_t *
-rig_onscreen_view_new(rig_frontend_t *frontend)
-{
-    rig_onscreen_view_t *view =
-        rut_object_alloc0(rig_onscreen_view_t, &rig_onscreen_view_type,
-                          _rig_onscreen_view_init_type);
-
-    view->frontend = frontend;
-
-    view->onscreen = rut_shell_onscreen_new(frontend->engine->shell, 640, 480);
-
-    rut_shell_onscreen_allocate(view->onscreen);
-    rut_shell_onscreen_set_resizable(view->onscreen, true);
-
-    rut_shell_onscreen_set_title(view->onscreen, "Rig " C_STRINGIFY(RIG_VERSION));
-
-    cg_onscreen_add_resize_callback(view->onscreen->cg_onscreen,
-                                    on_onscreen_resize, frontend,
-                                    NULL); /* destroy notify */
-
-    rut_shell_onscreen_show(view->onscreen);
-
-    view->camera_view = rig_camera_view_new(frontend);
-    rig_camera_view_set_framebuffer(view->camera_view,
-                                    view->onscreen->cg_onscreen);
-
-    frontend->onscreen_views = c_llist_prepend(frontend->onscreen_views, view);
-
-    return view;
-}
-
-rig_onscreen_view_t *
-rig_frontend_find_view_for_camera(rig_frontend_t *frontend,
-                                  rig_entity_t *camera_entity)
-{
-    c_llist_t *l;
-
-    for (l = frontend->onscreen_views; l; l = l->next) {
-        rig_onscreen_view_t *onscreen_view = l->data;
-        rig_camera_view_t *camera_view = onscreen_view->camera_view;
-
-        if (camera_view->camera == camera_entity)
-            return onscreen_view;
-    }
-
-    return NULL;
-}
-
-rig_onscreen_view_t *
-rig_frontend_find_view_for_onscreen(rig_frontend_t *frontend,
-                                    rut_shell_onscreen_t *onscreen)
-{
-    c_llist_t *l;
-
-    for (l = frontend->onscreen_views; l; l = l->next) {
-        rig_onscreen_view_t *onscreen_view = l->data;
-        rut_shell_onscreen_t *onscreen = onscreen_view->onscreen;
-
-        if (onscreen_view->onscreen == onscreen)
-            return onscreen_view;
-    }
-
-    return NULL;
 }
 
 rig_frontend_t *
@@ -1395,11 +1281,12 @@ rig_frontend_queue_simulator_frame(rig_frontend_t *frontend)
 void
 rig_frontend_paint(rig_frontend_t *frontend)
 {
+    rig_ui_t *ui = frontend->engine->ui;
     c_llist_t *l;
 
-    for (l = frontend->onscreen_views; l; l = l->next) {
-        rig_onscreen_view_t *onscreen_view = l->data;
-        rig_camera_view_t *camera_view = onscreen_view->camera_view;
+    for (l = ui->views; l; l = l->next) {
+        rig_view_t *view = l->data;
+        rig_camera_view_t *camera_view = view->camera_view;
         cg_framebuffer_t *fb = camera_view->fb;
 
         rig_camera_view_paint(camera_view, frontend->renderer);
@@ -1420,13 +1307,20 @@ lookup_sim_id_cb(void *object, void *user_data)
     return rig_frontend_lookup_id(frontend, object);
 }
 
+static rig_view_t *
+find_view_for_onscreen(rig_frontend_t *frontend,
+                       rut_shell_onscreen_t *onscreen)
+{
+    return rig_ui_find_view_for_onscreen(frontend->engine->ui, onscreen);
+}
+
 void
 rig_frontend_run_frame(rig_frontend_t *frontend)
 {
     rig_engine_t *engine = frontend->engine;
     rut_shell_t *shell = engine->shell;
-    rig_onscreen_view_t *primary_view =
-        frontend->onscreen_views ? frontend->onscreen_views->data : NULL;
+    rig_ui_t *ui = engine->ui;
+    rig_view_t *primary_view = ui->views ? ui->views->data : NULL;
     int64_t default_est_frame_delta_ns = 1000000000 / 60;
     int64_t est_frame_delta_ns = default_est_frame_delta_ns;
     int64_t frontend_target = 0;
@@ -1505,8 +1399,7 @@ rig_frontend_run_frame(rig_frontend_t *frontend)
         /* Associate all the events with a scene camera entity which
          * also exists in the simulator... */
         c_list_for_each(event, &input_queue->events, list_node) {
-            rig_onscreen_view_t *view =
-                rig_frontend_find_view_for_onscreen(frontend, event->onscreen);
+            rig_view_t *view = find_view_for_onscreen(frontend, event->onscreen);
             event->camera_entity = view->camera_view->camera;
         }
 

@@ -55,8 +55,6 @@ rig_common_sources = \
 	rig-pb.c \
 	rig-load-save.h \
 	rig-load-save.c \
-	rig-view.h \
-	rig-view.c \
 	rig-camera-view.h \
 	rig-camera-view.c \
 	rig-types.h \

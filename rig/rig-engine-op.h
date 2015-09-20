@@ -50,7 +50,8 @@ typedef enum _rig_engine_op_type_t {
     RIG_ENGINE_OP_TYPE_CONTROLLER_ADD_PROPERTY,
     RIG_ENGINE_OP_TYPE_CONTROLLER_REMOVE_PROPERTY,
     RIG_ENGINE_OP_TYPE_CONTROLLER_PROPERTY_SET_METHOD,
-    RIG_ENGINE_OP_TYPE_OPEN_VIEW,
+    RIG_ENGINE_OP_TYPE_ADD_VIEW,
+    RIG_ENGINE_OP_TYPE_DELETE_VIEW,
 } rig_engine_op_type_t;
 
 #if 0
@@ -122,8 +123,11 @@ rig_engine_op_controller_property_set_method(rig_engine_t *engine,
                                              rig_controller_method_t method);
 
 void
-rig_engine_op_open_view(rig_engine_t *engine,
-                        rig_entity_t *camera);
+rig_engine_op_add_view(rig_engine_t *engine,
+                       rig_view_t *view);
+void
+rig_engine_op_delete_view(rig_engine_t *engine,
+                          rig_view_t *view);
 
 Rig__Operation **rig_engine_serialize_ops(rig_engine_t *engine,
                                           rig_pb_serializer_t *serializer);

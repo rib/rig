@@ -1485,78 +1485,149 @@ _map_op_controller_property_set_method(rig_engine_op_map_context_t *ctx,
 }
 
 static void
-open_view_apply_real(rig_engine_op_apply_context_t *ctx,
-                     rig_entity_t *camera_entity)
+add_view_apply_real(rig_engine_op_apply_context_t *ctx,
+                    rig_view_t *view,
+                    uint64_t view_id)
 {
-    rig_frontend_t *frontend = ctx->engine->frontend;
-    rig_onscreen_view_t *view;
+    ctx->register_id_cb(view, view_id, ctx->user_data);
 
-    if (!frontend)
-        return;
-
-    view = rig_onscreen_view_new(frontend);
-
-    rig_camera_view_set_ui(view->camera_view, ctx->ui);
-    rig_camera_view_set_camera_entity(view->camera_view, camera_entity);
-    view->onscreen->input_camera = camera_entity;
+    rig_ui_add_view(ctx->engine->ui, view);
 }
 
 void
-rig_engine_op_open_view(rig_engine_t *engine, rig_entity_t *entity)
+rig_engine_op_add_view(rig_engine_t *engine, rig_view_t *view)
 {
     rig_pb_serializer_t *serializer = engine->ops_serializer;
     Rig__Operation *pb_op =
         rig_pb_new(serializer, Rig__Operation, rig__operation__init);
+    uint64_t view_id;
 
-    pb_op->type = RIG_ENGINE_OP_TYPE_OPEN_VIEW;
+    pb_op->type = RIG_ENGINE_OP_TYPE_ADD_VIEW;
 
-    pb_op->open_view =
+    pb_op->add_view =
         rig_pb_new(serializer,
-                   Rig__Operation__OpenView,
-                   rig__operation__open_view__init);
-    pb_op->open_view->camera_id =
-        op_object_to_id(serializer, entity);
+                   Rig__Operation__AddView,
+                   rig__operation__add_view__init);
 
-    open_view_apply_real(engine->apply_op_ctx, entity);
+    pb_op->add_view->view =
+        rig_pb_serialize_simple_object(serializer, view);
+
+    view_id = pb_op->add_view->view->id;
+    add_view_apply_real(engine->apply_op_ctx, view, view_id);
+
     engine->log_op_callback(pb_op, engine->log_op_data);
 }
 
 static bool
-_apply_op_open_view(rig_engine_op_apply_context_t *ctx,
-                    Rig__Operation *pb_op)
+_apply_op_add_view(rig_engine_op_apply_context_t *ctx,
+                   Rig__Operation *pb_op)
 {
-    Rig__Operation__OpenView *open_view = pb_op->open_view;
-    rig_entity_t *camera_entity = apply_id_to_object(ctx, open_view->camera_id);
-
-    if (!camera_entity)
+    Rig__Operation__AddView *add_view = pb_op->add_view;
+    rig_view_t *view = rig_pb_unserialize_view(ctx->unserializer,
+                                               add_view->view);
+    if (!view)
         return false;
 
-    open_view_apply_real(ctx, camera_entity);
+    add_view_apply_real(ctx, view, add_view->view->id);
+    rut_object_unref(view);
 
     return true;
 }
 
 static void
-_copy_op_open_view(rig_engine_op_copy_context_t *ctx,
-                   Rig__Operation *src_pb_op,
-                   Rig__Operation *pb_op)
+_copy_op_add_view(rig_engine_op_copy_context_t *ctx,
+                  Rig__Operation *src_pb_op,
+                  Rig__Operation *pb_op)
 {
-    pb_op->open_view =
-        rig_pb_dup(ctx->serializer,
-                   Rig__Operation__OpenView,
-                   rig__operation__open_view__init,
-                   src_pb_op->open_view);
+    pb_op->add_view = rig_pb_dup(ctx->serializer,
+                                 Rig__Operation__AddView,
+                                 rig__operation__add_view__init,
+                                 src_pb_op->add_view);
+    pb_op->add_view->view = rig_pb_dup(ctx->serializer,
+                                       Rig__SimpleObject,
+                                       rig__simple_object__init,
+                                       src_pb_op->add_view->view);
 }
 
 static bool
-_map_op_open_view(rig_engine_op_map_context_t *ctx,
-                  rig_engine_op_apply_context_t *apply_ctx,
-                  Rig__Operation *pb_op)
+_map_op_add_view(rig_engine_op_map_context_t *ctx,
+                 rig_engine_op_apply_context_t *apply_ctx,
+                 Rig__Operation *pb_op)
 {
-    if (!map_id(ctx, &pb_op->open_view->camera_id))
+    if (apply_ctx && !_apply_op_add_view(apply_ctx, pb_op))
         return false;
 
-    if (apply_ctx && !_apply_op_open_view(apply_ctx, pb_op))
+    if (!map_id(ctx, &pb_op->add_view->view->id))
+        return false;
+
+    return true;
+}
+
+static void
+delete_view_apply_real(rig_engine_op_apply_context_t *ctx,
+                         rig_view_t *view,
+                         uint64_t view_id)
+{
+    rig_view_reap(view);
+
+    rig_ui_remove_view(ctx->ui, view);
+
+    ctx->unregister_id_cb(view_id, ctx->user_data);
+}
+
+void
+rig_engine_op_delete_view(rig_engine_t *engine, rig_view_t *view)
+{
+    rig_pb_serializer_t *serializer = engine->ops_serializer;
+    Rig__Operation *pb_op =
+        rig_pb_new(serializer, Rig__Operation, rig__operation__init);
+
+    pb_op->type = RIG_ENGINE_OP_TYPE_DELETE_VIEW;
+
+    pb_op->delete_view = rig_pb_new(serializer,
+                                    Rig__Operation__DeleteView,
+                                    rig__operation__delete_view__init);
+
+    pb_op->delete_view->view_id = op_object_to_id(serializer, view);
+
+    delete_view_apply_real(engine->apply_op_ctx, view,
+                           pb_op->delete_view->view_id);
+
+    engine->log_op_callback(pb_op, engine->log_op_data);
+}
+
+static bool
+_apply_op_delete_view(rig_engine_op_apply_context_t *ctx,
+                      Rig__Operation *pb_op)
+{
+    uint64_t view_id = pb_op->delete_view->view_id;
+    rig_view_t *view = apply_id_to_object(ctx, view_id);
+
+    delete_view_apply_real(ctx, view, view_id);
+
+    return true;
+}
+
+static void
+_copy_op_delete_view(rig_engine_op_copy_context_t *ctx,
+                     Rig__Operation *src_pb_op,
+                     Rig__Operation *pb_op)
+{
+    pb_op->delete_view = rig_pb_dup(ctx->serializer,
+                                    Rig__Operation__DeleteView,
+                                    rig__operation__delete_view__init,
+                                    src_pb_op->delete_view);
+}
+
+static bool
+_map_op_delete_view(rig_engine_op_map_context_t *ctx,
+                      rig_engine_op_apply_context_t *apply_ctx,
+                      Rig__Operation *pb_op)
+{
+    if (!map_id(ctx, &pb_op->delete_view->view_id))
+        return false;
+
+    if (apply_ctx && !_apply_op_delete_view(apply_ctx, pb_op))
         return false;
 
     return true;
@@ -1610,9 +1681,12 @@ static rig_engine_operation_t _rig_engine_ops[] =
     { _apply_op_controller_property_set_method,
       _map_op_controller_property_set_method,
       _copy_op_controller_property_set_method, },
-    { _apply_op_open_view,
-      _map_op_open_view,
-      _copy_op_open_view, },
+    { _apply_op_add_view,
+      _map_op_add_view,
+      _copy_op_add_view, },
+    { _apply_op_delete_view,
+      _map_op_delete_view,
+      _copy_op_delete_view, },
 };
 
 void
