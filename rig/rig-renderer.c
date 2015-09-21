@@ -2110,11 +2110,8 @@ paint_camera_entity_pass(rig_paint_context_t *paint_ctx,
     rut_object_t *saved_camera = rut_paint_ctx->camera;
     rut_object_t *camera =
         rig_entity_get_component(camera_entity, RUT_COMPONENT_TYPE_CAMERA);
-    cg_framebuffer_t *fb = rut_camera_get_framebuffer(camera);
     rig_renderer_t *renderer = paint_ctx->renderer;
     rig_engine_t *engine = paint_ctx->engine;
-    cg_device_t *dev = engine->shell->cg_device;
-    rig_ui_t *ui = engine->ui;
 
     rut_paint_ctx->camera = camera;
 
