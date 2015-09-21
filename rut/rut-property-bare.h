@@ -260,106 +260,106 @@ struct _rut_property_t {
 
 void rut_property_dirty(rut_property_context_t *ctx, rut_property_t *property);
 
-#define SCALAR_TYPE(SUFFIX, CTYPE, TYPE)                                       \
-    static inline void rut_property_set_##SUFFIX(                              \
-        rut_property_context_t *ctx, rut_property_t *property, CTYPE value)    \
-    {                                                                          \
-                                                                               \
-        if (property->spec->setter.any_type) {                                 \
-            property->spec->setter.SUFFIX##_type(property->object, value);     \
-        } else {                                                               \
-            CTYPE *data = (CTYPE *)((uint8_t *)property->object +              \
-                                    property->spec->data_offset);              \
-                                                                               \
-            c_return_if_fail(property->spec->data_offset != 0);                \
-            c_return_if_fail(property->spec->type ==                           \
-                             RUT_PROPERTY_TYPE_##TYPE);                        \
-                                                                               \
-            if (property->spec->getter.any_type == NULL && *data == value)     \
-                return;                                                        \
-                                                                               \
-            *data = value;                                                     \
-            rut_property_dirty(ctx, property);                                 \
-        }                                                                      \
-    }                                                                          \
-    static inline CTYPE rut_property_get_##SUFFIX(rut_property_t *property)    \
-    {                                                                          \
-        c_return_val_if_fail(property->spec->type == RUT_PROPERTY_TYPE_##TYPE, \
-                             0);                                               \
-                                                                               \
-        if (property->spec->getter.any_type) {                                 \
-            return property->spec->getter.SUFFIX##_type(property->object);     \
-        } else {                                                               \
-            CTYPE *data = (CTYPE *)((uint8_t *)property->object +              \
-                                    property->spec->data_offset);              \
-            return *data;                                                      \
-        }                                                                      \
-    }
+#define SCALAR_TYPE(SUFFIX, CTYPE, TYPE)                                   \
+static inline void rut_property_set_##SUFFIX(                              \
+    rut_property_context_t *ctx, rut_property_t *property, CTYPE value)    \
+{                                                                          \
+                                                                           \
+    if (property->spec->setter.any_type) {                                 \
+        property->spec->setter.SUFFIX##_type(property->object, value);     \
+    } else {                                                               \
+        CTYPE *data = (CTYPE *)((uint8_t *)property->object +              \
+                                property->spec->data_offset);              \
+                                                                           \
+        c_return_if_fail(property->spec->data_offset != 0);                \
+        c_return_if_fail(property->spec->type ==                           \
+                         RUT_PROPERTY_TYPE_##TYPE);                        \
+                                                                           \
+        if (property->spec->getter.any_type == NULL && *data == value)     \
+            return;                                                        \
+                                                                           \
+        *data = value;                                                     \
+        rut_property_dirty(ctx, property);                                 \
+    }                                                                      \
+}                                                                          \
+static inline CTYPE rut_property_get_##SUFFIX(rut_property_t *property)    \
+{                                                                          \
+    c_return_val_if_fail(property->spec->type == RUT_PROPERTY_TYPE_##TYPE, \
+                         0);                                               \
+                                                                           \
+    if (property->spec->getter.any_type) {                                 \
+        return property->spec->getter.SUFFIX##_type(property->object);     \
+    } else {                                                               \
+        CTYPE *data = (CTYPE *)((uint8_t *)property->object +              \
+                                property->spec->data_offset);              \
+        return *data;                                                      \
+    }                                                                      \
+}
 
 #define POINTER_TYPE(SUFFIX, CTYPE, TYPE) SCALAR_TYPE(SUFFIX, CTYPE, TYPE)
 
 #define COMPOSITE_TYPE(SUFFIX, CTYPE, TYPE)                                    \
-    static inline void rut_property_set_##SUFFIX(rut_property_context_t *ctx,  \
-                                                 rut_property_t *property,     \
-                                                 const CTYPE *value)           \
-    {                                                                          \
-        c_return_if_fail(property->spec->type == RUT_PROPERTY_TYPE_##TYPE);    \
-                                                                               \
-        if (property->spec->setter.any_type) {                                 \
-            property->spec->setter.SUFFIX##_type(property->object, value);     \
-        } else {                                                               \
-            CTYPE *data = (CTYPE *)((uint8_t *)property->object +              \
-                                    property->spec->data_offset);              \
-            *data = *value;                                                    \
-            rut_property_dirty(ctx, property);                                 \
-        }                                                                      \
-    }                                                                          \
-    static inline const CTYPE *rut_property_get_##SUFFIX(                      \
-        rut_property_t *property)                                              \
-    {                                                                          \
-        c_return_val_if_fail(property->spec->type == RUT_PROPERTY_TYPE_##TYPE, \
-                             0);                                               \
-                                                                               \
-        if (property->spec->getter.any_type) {                                 \
-            return property->spec->getter.SUFFIX##_type(property->object);     \
-        } else {                                                               \
-            CTYPE *data = (CTYPE *)((uint8_t *)property->object +              \
-                                    property->spec->data_offset);              \
-            return data;                                                       \
-        }                                                                      \
-    }
+static inline void rut_property_set_##SUFFIX(rut_property_context_t *ctx,  \
+                                             rut_property_t *property,     \
+                                             const CTYPE *value)           \
+{                                                                          \
+    c_return_if_fail(property->spec->type == RUT_PROPERTY_TYPE_##TYPE);    \
+                                                                           \
+    if (property->spec->setter.any_type) {                                 \
+        property->spec->setter.SUFFIX##_type(property->object, value);     \
+    } else {                                                               \
+        CTYPE *data = (CTYPE *)((uint8_t *)property->object +              \
+                                property->spec->data_offset);              \
+        *data = *value;                                                    \
+        rut_property_dirty(ctx, property);                                 \
+    }                                                                      \
+}                                                                          \
+static inline const CTYPE *rut_property_get_##SUFFIX(                      \
+    rut_property_t *property)                                              \
+{                                                                          \
+    c_return_val_if_fail(property->spec->type == RUT_PROPERTY_TYPE_##TYPE, \
+                         0);                                               \
+                                                                           \
+    if (property->spec->getter.any_type) {                                 \
+        return property->spec->getter.SUFFIX##_type(property->object);     \
+    } else {                                                               \
+        CTYPE *data = (CTYPE *)((uint8_t *)property->object +              \
+                                property->spec->data_offset);              \
+        return data;                                                       \
+    }                                                                      \
+}
 
 #define ARRAY_TYPE(SUFFIX, CTYPE, TYPE, LEN)                                   \
-    static inline void rut_property_set_##SUFFIX(rut_property_context_t *ctx,  \
-                                                 rut_property_t *property,     \
-                                                 const CTYPE value[LEN])       \
-    {                                                                          \
-                                                                               \
-        c_return_if_fail(property->spec->type == RUT_PROPERTY_TYPE_##TYPE);    \
-                                                                               \
-        if (property->spec->setter.any_type) {                                 \
-            property->spec->setter.SUFFIX##_type(property->object, value);     \
-        } else {                                                               \
-            CTYPE *data = (CTYPE *)((uint8_t *)property->object +              \
-                                    property->spec->data_offset);              \
-            memcpy(data, value, sizeof(CTYPE) * LEN);                          \
-            rut_property_dirty(ctx, property);                                 \
-        }                                                                      \
-    }                                                                          \
-    static inline const CTYPE *rut_property_get_##SUFFIX(                      \
-        rut_property_t *property)                                              \
-    {                                                                          \
-        c_return_val_if_fail(property->spec->type == RUT_PROPERTY_TYPE_##TYPE, \
-                             0);                                               \
-                                                                               \
-        if (property->spec->getter.any_type) {                                 \
-            return property->spec->getter.SUFFIX##_type(property->object);     \
-        } else {                                                               \
-            const CTYPE *data = (const CTYPE *)((uint8_t *)property->object +  \
-                                                property->spec->data_offset);  \
-            return data;                                                       \
-        }                                                                      \
-    }
+static inline void rut_property_set_##SUFFIX(rut_property_context_t *ctx,  \
+                                             rut_property_t *property,     \
+                                             const CTYPE value[LEN])       \
+{                                                                          \
+                                                                           \
+    c_return_if_fail(property->spec->type == RUT_PROPERTY_TYPE_##TYPE);    \
+                                                                           \
+    if (property->spec->setter.any_type) {                                 \
+        property->spec->setter.SUFFIX##_type(property->object, value);     \
+    } else {                                                               \
+        CTYPE *data = (CTYPE *)((uint8_t *)property->object +              \
+                                property->spec->data_offset);              \
+        memcpy(data, value, sizeof(CTYPE) * LEN);                          \
+        rut_property_dirty(ctx, property);                                 \
+    }                                                                      \
+}                                                                          \
+static inline const CTYPE *rut_property_get_##SUFFIX(                      \
+    rut_property_t *property)                                              \
+{                                                                          \
+    c_return_val_if_fail(property->spec->type == RUT_PROPERTY_TYPE_##TYPE, \
+                         0);                                               \
+                                                                           \
+    if (property->spec->getter.any_type) {                                 \
+        return property->spec->getter.SUFFIX##_type(property->object);     \
+    } else {                                                               \
+        const CTYPE *data = (const CTYPE *)((uint8_t *)property->object +  \
+                                            property->spec->data_offset);  \
+        return data;                                                       \
+    }                                                                      \
+}
 
 #include "rut-property-types.h"
 
