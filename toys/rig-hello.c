@@ -86,7 +86,7 @@ hello_load(RModule *module)
     view = r_view_new(module);
     r_set_object_by_name(module, view, "camera_entity", e);
 
-    controller = r_controller_new(module);
+    controller = r_controller_new(module, "Controller 0");
     r_controller_bind(module, controller, play_cam, "viewport_width", view, "width");
     r_controller_bind(module, controller, play_cam, "viewport_height", view, "height");
 

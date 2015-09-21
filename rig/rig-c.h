@@ -185,6 +185,9 @@ void r_component_delete(RModule *module, RObject *component);
 RObject *r_view_new(RModule *module);
 void r_view_delete(RModule *module, RObject *view);
 
+RObject *r_controller_new(RModule *module, const char *name);
+void r_controller_delete(RModule *module, RObject *controller);
+
 void r_request_animation_frame(RModule *module);
 
 typedef enum {

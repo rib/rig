@@ -2447,12 +2447,6 @@ rig_pb_unserialize_controller_properties(rig_pb_un_serializer_t *unserializer,
                 c_warn_if_reached();
                 method = RIG_CONTROLLER_METHOD_CONSTANT;
             }
-        } else if (pb_property->has_animated) /* deprecated */
-        {
-            if (pb_property->animated)
-                method = RIG_CONTROLLER_METHOD_PATH;
-            else
-                method = RIG_CONTROLLER_METHOD_CONSTANT;
         } else
             method = RIG_CONTROLLER_METHOD_CONSTANT;
 

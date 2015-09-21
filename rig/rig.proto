@@ -270,7 +270,6 @@ message Controller
       optional string name=3;
 
       optional Method method=7;
-      optional bool animated=2; //Deprecated my 'method'
 
       //Animated properties have key values tracked in a path
       optional PropertyType type=4;
