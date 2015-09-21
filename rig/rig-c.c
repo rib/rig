@@ -359,6 +359,41 @@ r_view_delete(RModule *module, RObject *view)
 }
 
 RObject *
+r_controller_new(RModule *module, const char *name)
+{
+    rig_code_module_props_t *code_module = (void *)module;
+    rig_engine_t *engine = code_module->engine;
+    rut_property_context_t *prop_ctx = engine->property_ctx;
+    rig_controller_t *controller;
+
+    prop_ctx->logging_disabled++;
+    controller = rig_controller_new(engine, label);
+    prop_ctx->logging_disabled--;
+
+    /* Controllers have to be explicitly deleted via
+     * r_controller_delete(). We give the engine ownership of the only
+     * reference. We don't expose a ref count in the C binding api.
+     */
+    rut_object_claim(controller, engine);
+    rut_object_unref(controller);
+
+    rig_engine_op_add_controller(engine, controller);
+
+    return (RObject *)controller;
+}
+
+void
+r_controller_delete(RModule *module, RObject *controller)
+{
+    rig_code_module_props_t *code_module = (void *)module;
+    rig_engine_t *engine = code_module->engine;
+
+    rig_engine_op_delete_controller(engine, (rig_controller_t *)controller);
+
+    rut_object_release(controller, engine);
+}
+
+RObject *
 r_light_new(RModule *module)
 {
     rig_code_module_props_t *code_module = (void *)module;
