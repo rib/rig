@@ -393,6 +393,31 @@ r_controller_delete(RModule *module, RObject *controller)
     rut_object_release(controller, engine);
 }
 
+void
+r_controller_bind(RModule *module, RObject *controller,
+                  RObject *dst_obj, const char *dst_prop_name,
+                  RObject *src_obj, const char *src_prop_name)
+{
+    rig_code_module_props_t *code_module = (void *)module;
+    rig_engine_t *engine = code_module->engine;
+    rut_property_t *dst_prop;
+    rut_property_t *src_prop;
+    rig_binding_t *binding;
+
+    c_return_if_fail(rut_object_is(dst_obj, RUT_TRAIT_ID_INTROSPECTABLE));
+    c_return_if_fail(rut_object_is(src_obj, RUT_TRAIT_ID_INTROSPECTABLE));
+
+    dst_prop = rut_introspectable_lookup_property(dst_obj, dst_prop_name);
+    src_prop = rut_introspectable_lookup_property(src_obj, src_prop_name);
+
+    binding = rig_binding_new(engine, dst_prop, -1);
+    rig_binding_add_dependency(binding, src_prop);
+
+    rig_controller_set_property_binding((rig_controller_t *)controller,
+                                        dst_prop,
+                                        binding);
+}
+
 RObject *
 r_light_new(RModule *module)
 {
