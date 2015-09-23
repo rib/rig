@@ -29,6 +29,8 @@
 
 #include <config.h>
 
+#include <clib.h>
+
 #include <rut.h>
 
 #include "rig-code.h"
@@ -43,6 +45,8 @@ typedef struct _dependency_t {
 
     char *variable_name;
 
+    c_list_t link;
+
 } dependency_t;
 
 struct _rig_binding_t {
@@ -54,6 +58,7 @@ struct _rig_binding_t {
 
     int binding_id;
 
+    bool simple_copy;
     char *expression;
 
     char *function_name;
@@ -61,15 +66,32 @@ struct _rig_binding_t {
     rig_code_node_t *function_node;
     rig_code_node_t *expression_node;
 
-    c_llist_t *dependencies;
+    c_list_t dependencies;
 
     unsigned int active : 1;
 };
 
 static void
-_rig_bindinc_free(void *object)
+remove_and_free_dependency(dependency_t *dependency)
+{
+    c_list_remove(&dependency->link);
+
+    if (dependency->variable_name)
+        c_free(dependency->variable_name);
+
+    c_slice_free(dependency_t, dependency);
+}
+
+
+static void
+_rig_binding_free(void *object)
 {
     rig_binding_t *binding = object;
+    dependency_t *dependency, *tmp;
+
+    c_list_for_each_safe(dependency, tmp, &binding->dependencies, link) {
+        remove_and_free_dependency(dependency);
+    }
 
     if (binding->expression)
         c_free(binding->expression);
@@ -88,17 +110,16 @@ rut_type_t rig_binding_type;
 static void
 _rig_binding_init_type(void)
 {
-    rut_type_init(&rig_binding_type, "rig_binding_t", _rig_bindinc_free);
+    rut_type_init(&rig_binding_type, "rig_binding_t", _rig_binding_free);
 }
 
 static dependency_t *
 find_dependency(rig_binding_t *binding,
                 rut_property_t *property)
 {
-    c_llist_t *l;
+    dependency_t *dependency;
 
-    for (l = binding->dependencies; l; l = l->next) {
-        dependency_t *dependency = l->data;
+    c_list_for_each(dependency, &binding->dependencies, link) {
         if (dependency->property == property)
             return dependency;
     }
@@ -217,7 +238,7 @@ codegen_function_node(rig_binding_t *binding)
     const char *out_var_decl_pre;
     const char *out_var_decl_post;
     const char *out_var_get_pre;
-    c_llist_t *l;
+    dependency_t *dependency;
     int i;
 
     get_property_codegen_info(binding->property,
@@ -242,8 +263,7 @@ codegen_function_node(rig_binding_t *binding)
                            out_var_decl_pre,
                            out_var_decl_post);
 
-    for (l = binding->dependencies, i = 0; l; l = l->next, i++) {
-        dependency_t *dependency = l->data;
+    c_list_for_each(dependency, &binding->dependencies, link) {
         const char *dep_type_name;
         const char *dep_var_decl_pre;
         const char *dep_var_decl_post;
@@ -288,7 +308,7 @@ rig_binding_activate(rig_binding_t *binding)
     rut_property_t **dependencies;
     rut_binding_callback_t callback;
     int n_dependencies;
-    c_llist_t *l;
+    dependency_t *dependency;
     int i;
 
     c_return_if_fail(!binding->active);
@@ -306,11 +326,10 @@ rig_binding_activate(rig_binding_t *binding)
                   binding->function_name);
         return;
     }
-    n_dependencies = c_llist_length(binding->dependencies);
+    n_dependencies = c_list_length(&binding->dependencies);
     dependencies = c_alloca(sizeof(rut_property_t *) * n_dependencies);
 
-    for (l = binding->dependencies, i = 0; l; l = l->next, i++) {
-        dependency_t *dependency = l->data;
+    c_list_for_each(dependency, &binding->dependencies, link) {
         dependencies[i] = dependency->property;
     }
 
@@ -334,11 +353,16 @@ rig_binding_activate(rig_binding_t *binding)
 
     c_return_if_fail(!binding->active);
 
-    if (binding->dependencies) {
-        rut_property_set_copy_binding(&engine->shell->property_ctx,
-                                      binding->property,
-                                      binding->dependencies->data);
-    }
+    if (binding->simple_copy) {
+        dependency_t *dependency = c_list_first(&binding->dependencies, dependency_t, link);
+        if (dependency) {
+            rut_property_set_copy_binding(&engine->shell->property_ctx,
+                                          binding->property,
+                                          dependency->property);
+        } else
+            c_warning("Unable activate simple copy binding with no dependency set");
+    } else
+        c_warning("Unable to active expression based binding without LLVM support");
 }
 
 #endif /* USE_LLVM */
@@ -394,8 +418,7 @@ rig_binding_remove_dependency(rig_binding_t *binding,
 
     c_return_if_fail(dependency);
 
-    c_free(dependency->variable_name);
-    c_slice_free(dependency_t, dependency);
+    remove_and_free_dependency(dependency);
 
 #if defined (RIG_EDITOR_ENABLED) && defined (USE_LLVM)
     if (!binding->engine->simulator)
@@ -416,9 +439,10 @@ rig_binding_add_dependency(rig_binding_t *binding,
 
     dependency->property = property;
 
-    dependency->variable_name = c_strdup(name);
+    if (name)
+        dependency->variable_name = c_strdup(name);
 
-    binding->dependencies = c_llist_prepend(binding->dependencies, dependency);
+    c_list_insert(binding->dependencies.prev, &dependency->link);
 
 #if defined (RIG_EDITOR_ENABLED) && defined (USE_LLVM)
     if (!binding->engine->simulator)
@@ -488,6 +512,8 @@ rig_binding_new(rig_engine_t *engine, rut_property_t *property, int binding_id)
     binding->function_name = c_strdup_printf("_binding%d", binding_id);
     binding->binding_id = binding_id;
 
+    c_list_init(&binding->dependencies);
+
 #ifdef USE_LLVM
     generate_function_node(binding);
 #endif
@@ -501,10 +527,32 @@ rig_binding_get_id(rig_binding_t *binding)
     return binding->binding_id;
 }
 
+rig_binding_t *
+rig_binding_new_simple_copy(rig_engine_t *engine,
+                            rut_property_t *dst_prop,
+                            rut_property_t *src_prop)
+{
+    rig_binding_t *binding = rut_object_alloc0(
+        rig_binding_t, &rig_binding_type, _rig_binding_init_type);
+
+    binding->engine = engine;
+    binding->property = dst_prop;
+    binding->binding_id = -1;
+
+    c_list_init(&binding->dependencies);
+
+    rig_binding_add_dependency(binding, src_prop,
+                               NULL /* no variable name for dep */);
+
+    binding->simple_copy = true;
+
+    return binding;
+}
+
 int
 rig_binding_get_n_dependencies(rig_binding_t *binding)
 {
-    return c_llist_length(binding->dependencies);
+    return c_list_length(&binding->dependencies);
 }
 
 void
@@ -514,8 +562,9 @@ rig_binding_foreach_dependency(rig_binding_t *binding,
                                                 void *user_data),
                                void *user_data)
 {
-    c_llist_t *l;
+    dependency_t *dependency;
 
-    for (l = binding->dependencies; l; l = l->next)
-        callback(binding, l->data, user_data);
+    c_list_for_each(dependency, &binding->dependencies, link) {
+        callback(binding, dependency->property, user_data);
+    }
 }

@@ -39,6 +39,11 @@ typedef struct _rig_binding_t rig_binding_t;
 rig_binding_t *
 rig_binding_new(rig_engine_t *engine, rut_property_t *property, int binding_id);
 
+rig_binding_t *
+rig_binding_new_simple_copy(rig_engine_t *engine,
+                            rut_property_t *dst_prop,
+                            rut_property_t *src_prop);
+
 int rig_binding_get_id(rig_binding_t *binding);
 
 void rig_binding_add_dependency(rig_binding_t *binding,
