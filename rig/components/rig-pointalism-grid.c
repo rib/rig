@@ -45,7 +45,9 @@ static rut_property_spec_t _rig_pointalism_grid_prop_specs[] = {
       .type = RUT_PROPERTY_TYPE_FLOAT,
       .getter.float_type = rig_pointalism_grid_get_scale,
       .setter.float_type = rig_pointalism_grid_set_scale,
-      .flags = RUT_PROPERTY_FLAG_READWRITE | RUT_PROPERTY_FLAG_VALIDATE,
+      .flags = RUT_PROPERTY_FLAG_READWRITE |
+          RUT_PROPERTY_FLAG_VALIDATE |
+          RUT_PROPERTY_FLAG_EXPORT_FRONTEND,
       .validation = { .float_range = { 0, 100 } },
       .animatable = true },
     { .name = "pointalism-z",
@@ -53,7 +55,9 @@ static rut_property_spec_t _rig_pointalism_grid_prop_specs[] = {
       .type = RUT_PROPERTY_TYPE_FLOAT,
       .getter.float_type = rig_pointalism_grid_get_z,
       .setter.float_type = rig_pointalism_grid_set_z,
-      .flags = RUT_PROPERTY_FLAG_READWRITE | RUT_PROPERTY_FLAG_VALIDATE,
+      .flags = RUT_PROPERTY_FLAG_READWRITE |
+          RUT_PROPERTY_FLAG_VALIDATE |
+          RUT_PROPERTY_FLAG_EXPORT_FRONTEND,
       .validation = { .float_range = { 0, 100 } },
       .animatable = true },
     { .name = "pointalism-lighter",
@@ -61,14 +65,17 @@ static rut_property_spec_t _rig_pointalism_grid_prop_specs[] = {
       .type = RUT_PROPERTY_TYPE_BOOLEAN,
       .getter.boolean_type = rig_pointalism_grid_get_lighter,
       .setter.boolean_type = rig_pointalism_grid_set_lighter,
-      .flags = RUT_PROPERTY_FLAG_READWRITE,
+      .flags = RUT_PROPERTY_FLAG_READWRITE |
+          RUT_PROPERTY_FLAG_EXPORT_FRONTEND,
       .animatable = true },
     { .name = "pointalism-cell-size",
       .nick = "Cell Size",
       .type = RUT_PROPERTY_TYPE_FLOAT,
       .getter.float_type = rig_pointalism_grid_get_cell_size,
       .setter.float_type = rig_pointalism_grid_set_cell_size,
-      .flags = RUT_PROPERTY_FLAG_READWRITE | RUT_PROPERTY_FLAG_VALIDATE,
+      .flags = RUT_PROPERTY_FLAG_READWRITE |
+          RUT_PROPERTY_FLAG_VALIDATE |
+          RUT_PROPERTY_FLAG_EXPORT_FRONTEND,
       .validation = { .float_range = { 1, 100 } },
       .animatable = true },
     { NULL }

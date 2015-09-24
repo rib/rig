@@ -47,7 +47,9 @@ static rut_property_spec_t _rig_diamond_prop_specs[] = {
       .type = RUT_PROPERTY_TYPE_FLOAT,
       .data_offset = C_STRUCT_OFFSET(rig_diamond_t, size),
       .setter.float_type = rig_diamond_set_size,
-      .flags = RUT_PROPERTY_FLAG_READWRITE, },
+      .flags = RUT_PROPERTY_FLAG_READWRITE |
+          RUT_PROPERTY_FLAG_EXPORT_FRONTEND,
+    },
     { NULL }
 };
 

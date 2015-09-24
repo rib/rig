@@ -117,7 +117,9 @@ static rut_property_spec_t _rig_native_module_prop_specs[] = {
       .type = RUT_PROPERTY_TYPE_TEXT,
       .getter.text_type = rig_native_module_get_name,
       .setter.text_type = rig_native_module_set_name,
-      .flags = RUT_PROPERTY_FLAG_READWRITE, },
+      .flags = RUT_PROPERTY_FLAG_READWRITE |
+          RUT_PROPERTY_FLAG_EXPORT_FRONTEND,
+    },
     { NULL }
 };
 

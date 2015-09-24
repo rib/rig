@@ -39,21 +39,24 @@ static rut_property_spec_t _rig_light_prop_specs[] = {
       .type = RUT_PROPERTY_TYPE_COLOR,
       .data_offset = offsetof(rig_light_t, ambient),
       .setter.color_type = rig_light_set_ambient,
-      .flags = RUT_PROPERTY_FLAG_READWRITE,
+      .flags = RUT_PROPERTY_FLAG_READWRITE |
+          RUT_PROPERTY_FLAG_EXPORT_FRONTEND,
       .animatable = true },
     { .name = "diffuse",
       .nick = "Diffuse",
       .type = RUT_PROPERTY_TYPE_COLOR,
       .data_offset = offsetof(rig_light_t, diffuse),
       .setter.color_type = rig_light_set_diffuse,
-      .flags = RUT_PROPERTY_FLAG_READWRITE,
+      .flags = RUT_PROPERTY_FLAG_READWRITE |
+          RUT_PROPERTY_FLAG_EXPORT_FRONTEND,
       .animatable = true },
     { .name = "specular",
       .nick = "Specular",
       .type = RUT_PROPERTY_TYPE_COLOR,
       .data_offset = offsetof(rig_light_t, specular),
       .setter.color_type = rig_light_set_specular,
-      .flags = RUT_PROPERTY_FLAG_READWRITE,
+      .flags = RUT_PROPERTY_FLAG_READWRITE |
+          RUT_PROPERTY_FLAG_EXPORT_FRONTEND,
       .animatable = true },
     { 0 }
 };

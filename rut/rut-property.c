@@ -508,7 +508,9 @@ rut_property_dirty(rut_property_context_t *ctx, rut_property_t *property)
     c_sllist_t *l;
     c_sllist_t *next;
 
-    if (!ctx->logging_disabled) {
+    if (!ctx->logging_disabled &&
+        property->spec->flags & RUT_PROPERTY_FLAG_EXPORT_FRONTEND)
+    {
         rut_object_t *object = property->object;
         if (object != &dummy_object) {
             rut_property_change_t *change;
