@@ -187,6 +187,9 @@ void r_view_delete(RModule *module, RObject *view);
 
 RObject *r_controller_new(RModule *module, const char *name);
 void r_controller_delete(RModule *module, RObject *controller);
+void r_controller_bind(RModule *module, RObject *controller,
+                       RObject *dst_obj, const char *dst_prop_name,
+                       RObject *src_obj, const char *src_prop_name);
 
 void r_request_animation_frame(RModule *module);
 
