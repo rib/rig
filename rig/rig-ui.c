@@ -922,7 +922,14 @@ static rut_type_t rig_view_type;
 static void
 _rig_view_init_type(void)
 {
-    rut_type_init(&rig_view_type, "rig_view_t", _rig_view_free);
+    rut_type_t *type = &rig_view_type;
+#define TYPE rig_view_t
+
+    rut_type_init(type, C_STRINGIFY(TYPE), _rig_view_free);
+    rut_type_add_trait(type,
+                       RUT_TRAIT_ID_INTROSPECTABLE,
+                       offsetof(TYPE, introspectable),
+                       NULL); /* no implied vtable */
 }
 
 static void
