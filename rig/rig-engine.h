@@ -55,23 +55,10 @@ typedef enum _rut_select_action_t {
 
 #include "rig-types.h"
 
-#ifdef HAVE_OSX
-#include "rig-osx.h"
-#endif
-
-#ifdef RIG_EDITOR_ENABLED
-#include "rig-editor.h"
-#include "rig-controller-view.h"
-#include "rig-undo-journal.h"
-#endif
-
 #include "rig-image-source.h"
 #include "rig-protobuf-c-rpc.h"
 #include "rig-rpc-network.h"
 #include "rig-controller.h"
-#include "rut-box-layout.h"
-#include "rig-split-view.h"
-#include "rig-camera-view.h"
 #include "rig-frontend.h"
 #include "rig-simulator.h"
 #include "rig-code.h"

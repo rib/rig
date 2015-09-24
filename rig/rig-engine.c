@@ -37,25 +37,15 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
-#include <cogl/cogl.h>
-#ifdef USE_SDL
-#include <cogl/cogl-sdl.h>
-#endif
-
 #include <clib.h>
 
 #include <rut.h>
-#include <rut-bin.h>
 
 #include "rig-engine.h"
 #include "rig-controller.h"
 #include "rig-load-save.h"
 #include "rig-renderer.h"
 #include "rig-defines.h"
-#ifdef HAVE_OSX
-#include "rig-osx.h"
-#endif
-#include "rig-split-view.h"
 #include "rig-rpc-network.h"
 #include "rig.pb-c.h"
 #include "rig-frontend.h"

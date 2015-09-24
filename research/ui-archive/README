@@ -1,0 +1,5 @@
+The first iteration of Rig included an editor that depended on these 2D widgets.
+
+The aim now is to avoid having a 2D widget architecture that doesn't build on top of Rig's entity, component model or build on the same rendering engine used by Rig based applications.
+
+Instead of removing these completely they are preserved here until they can be adapted into components.
