@@ -89,6 +89,7 @@ hello_load(RModule *module)
     controller = r_controller_new(module, "Controller 0");
     r_controller_bind(module, controller, play_cam, "viewport_width", view, "width");
     r_controller_bind(module, controller, play_cam, "viewport_height", view, "height");
+    r_set_boolean_by_name(module, controller, "active", true);
 
     r_set_color_by_name(module, material, "ambient",
                         r_color_str(module, "#ff0000"));
