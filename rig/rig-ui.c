@@ -962,7 +962,8 @@ static rut_property_spec_t _rig_view_prop_specs[] = {
       .data_offset = C_STRUCT_OFFSET(rig_view_t, camera_entity),
       .validation = { .object.type = &rig_entity_type },
       .setter.object_type = rig_view_set_camera,
-      .flags = RUT_PROPERTY_FLAG_READWRITE,
+      .flags = RUT_PROPERTY_FLAG_READWRITE |
+          RUT_PROPERTY_FLAG_EXPORT_FRONTEND,
       .animatable = false },
     { NULL }
 };

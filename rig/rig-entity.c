@@ -48,7 +48,8 @@ static rut_property_spec_t _rig_entity_prop_specs[] = {
       .setter.vec3_type = rig_entity_set_position,
       .nick = "Position",
       .blurb = "The entity's position",
-      .flags = RUT_PROPERTY_FLAG_READWRITE,
+      .flags = RUT_PROPERTY_FLAG_READWRITE |
+          RUT_PROPERTY_FLAG_EXPORT_FRONTEND,
       .animatable = true },
     { .name = "rotation",
       .type = RUT_PROPERTY_TYPE_QUATERNION,
@@ -56,7 +57,8 @@ static rut_property_spec_t _rig_entity_prop_specs[] = {
       .setter.quaternion_type = rig_entity_set_rotation,
       .nick = "Rotation",
       .blurb = "The entity's rotation",
-      .flags = RUT_PROPERTY_FLAG_READWRITE,
+      .flags = RUT_PROPERTY_FLAG_READWRITE |
+          RUT_PROPERTY_FLAG_EXPORT_FRONTEND,
       .animatable = true },
     { .name = "scale",
       .type = RUT_PROPERTY_TYPE_FLOAT,
@@ -64,7 +66,8 @@ static rut_property_spec_t _rig_entity_prop_specs[] = {
       .setter.float_type = rig_entity_set_scale,
       .nick = "Scale",
       .blurb = "The entity's uniform scale factor",
-      .flags = RUT_PROPERTY_FLAG_READWRITE,
+      .flags = RUT_PROPERTY_FLAG_READWRITE |
+          RUT_PROPERTY_FLAG_EXPORT_FRONTEND,
       .animatable = true },
     { 0 }
 };

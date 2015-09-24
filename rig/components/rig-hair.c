@@ -45,7 +45,9 @@ static rut_property_spec_t _rig_hair_prop_specs[] = {
       .type = RUT_PROPERTY_TYPE_FLOAT,
       .getter.float_type = rig_hair_get_length,
       .setter.float_type = rig_hair_set_length,
-      .flags = RUT_PROPERTY_FLAG_READWRITE | RUT_PROPERTY_FLAG_VALIDATE,
+      .flags = RUT_PROPERTY_FLAG_READWRITE |
+          RUT_PROPERTY_FLAG_VALIDATE |
+          RUT_PROPERTY_FLAG_EXPORT_FRONTEND,
       .validation = { .float_range = { 0, 1000 } },
       .animatable = true },
     { .name = "hair-detail",
@@ -53,21 +55,27 @@ static rut_property_spec_t _rig_hair_prop_specs[] = {
       .type = RUT_PROPERTY_TYPE_INTEGER,
       .getter.integer_type = rig_hair_get_n_shells,
       .setter.integer_type = rig_hair_set_n_shells,
-      .flags = RUT_PROPERTY_FLAG_READWRITE | RUT_PROPERTY_FLAG_VALIDATE,
+      .flags = RUT_PROPERTY_FLAG_READWRITE |
+          RUT_PROPERTY_FLAG_VALIDATE |
+          RUT_PROPERTY_FLAG_EXPORT_FRONTEND,
       .validation = { .int_range = { -1, INT_MAX } }, },
     { .name = "hair-density",
       .nick = "Density",
       .type = RUT_PROPERTY_TYPE_INTEGER,
       .getter.integer_type = rig_hair_get_density,
       .setter.integer_type = rig_hair_set_density,
-      .flags = RUT_PROPERTY_FLAG_READWRITE | RUT_PROPERTY_FLAG_VALIDATE,
+      .flags = RUT_PROPERTY_FLAG_READWRITE |
+          RUT_PROPERTY_FLAG_VALIDATE |
+          RUT_PROPERTY_FLAG_EXPORT_FRONTEND,
       .validation = { .int_range = { 500, INT_MAX } }, },
     { .name = "hair-thickness",
       .nick = "Thickness",
       .type = RUT_PROPERTY_TYPE_FLOAT,
       .getter.float_type = rig_hair_get_thickness,
       .setter.float_type = rig_hair_set_thickness,
-      .flags = RUT_PROPERTY_FLAG_READWRITE | RUT_PROPERTY_FLAG_VALIDATE,
+      .flags = RUT_PROPERTY_FLAG_READWRITE |
+          RUT_PROPERTY_FLAG_VALIDATE |
+          RUT_PROPERTY_FLAG_EXPORT_FRONTEND,
       .validation = { .float_range = { 0.02, 100 } } },
     { NULL }
 };

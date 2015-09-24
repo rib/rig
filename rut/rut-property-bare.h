@@ -142,7 +142,10 @@ typedef enum _rut_property_flags_t {
     RUT_PROPERTY_FLAG_WRITABLE = 1 << 1,
     RUT_PROPERTY_FLAG_VALIDATE = 1 << 2,
     RUT_PROPERTY_FLAG_READWRITE =
-        (RUT_PROPERTY_FLAG_READABLE | RUT_PROPERTY_FLAG_WRITABLE)
+        (RUT_PROPERTY_FLAG_READABLE | RUT_PROPERTY_FLAG_WRITABLE),
+    RUT_PROPERTY_FLAG_EXPORT_FRONTEND = 1 << 3, /* Changes affect rendering and
+                                                   should be fowarded to
+                                                   frontend */
 } rut_property_flags_t;
 
 typedef struct _rut_property_spec_t {

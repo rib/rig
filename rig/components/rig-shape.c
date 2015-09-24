@@ -43,26 +43,33 @@ static rut_property_spec_t _rig_shape_prop_specs[] = {
       .type = RUT_PROPERTY_TYPE_BOOLEAN,
       .data_offset = C_STRUCT_OFFSET(rig_shape_t, shaped),
       .setter.boolean_type = rig_shape_set_shaped,
-      .flags = RUT_PROPERTY_FLAG_READWRITE, },
+      .flags = RUT_PROPERTY_FLAG_READWRITE |
+          RUT_PROPERTY_FLAG_EXPORT_FRONTEND,
+    },
     { .name = "width",
       .nick = "Width",
       .type = RUT_PROPERTY_TYPE_FLOAT,
       .data_offset = C_STRUCT_OFFSET(rig_shape_t, width),
       .setter.float_type = rig_shape_set_width,
-      .flags = RUT_PROPERTY_FLAG_READWRITE, },
+      .flags = RUT_PROPERTY_FLAG_READWRITE |
+          RUT_PROPERTY_FLAG_EXPORT_FRONTEND,
+    },
     { .name = "height",
       .nick = "Height",
       .type = RUT_PROPERTY_TYPE_FLOAT,
       .data_offset = C_STRUCT_OFFSET(rig_shape_t, height),
       .setter.float_type = rig_shape_set_height,
-      .flags = RUT_PROPERTY_FLAG_READWRITE, },
+      .flags = RUT_PROPERTY_FLAG_READWRITE |
+          RUT_PROPERTY_FLAG_EXPORT_FRONTEND,
+    },
     { .name = "shape_mask",
       .nick = "Shape Mask",
       .type = RUT_PROPERTY_TYPE_ASSET,
       .validation = { .asset.type = RIG_ASSET_TYPE_ALPHA_MASK },
       .getter.asset_type = rig_shape_get_shape_mask,
       .setter.asset_type = rig_shape_set_shape_mask,
-      .flags = RUT_PROPERTY_FLAG_READWRITE,
+      .flags = RUT_PROPERTY_FLAG_READWRITE |
+          RUT_PROPERTY_FLAG_EXPORT_FRONTEND,
       .animatable = false },
     { NULL }
 };
