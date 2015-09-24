@@ -356,9 +356,17 @@ rig_binding_activate(rig_binding_t *binding)
     if (binding->simple_copy) {
         dependency_t *dependency = c_list_first(&binding->dependencies, dependency_t, link);
         if (dependency) {
-            rut_property_set_copy_binding(&engine->shell->property_ctx,
-                                          binding->property,
-                                          dependency->property);
+            if (dependency->property->spec->type ==
+                binding->property->spec->type)
+            {
+                rut_property_set_copy_binding(&engine->shell->property_ctx,
+                                              binding->property,
+                                              dependency->property);
+            } else {
+                rut_property_set_cast_scalar_binding(&engine->shell->property_ctx,
+                                                     binding->property,
+                                                     dependency->property);
+            }
         } else
             c_warning("Unable activate simple copy binding with no dependency set");
     } else
