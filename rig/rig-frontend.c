@@ -1414,6 +1414,32 @@ rig_frontend_run_frame(rig_frontend_t *frontend)
         setup.n_events = input_queue->n_events;
         setup.events = rig_pb_serialize_input_events(serializer, input_queue);
 
+        if (frontend->dirty_view_geometry) {
+            c_llist_t *l;
+            int i;
+
+            setup.n_view_updates = c_llist_length(ui->views);
+            setup.view_updates =
+                rut_memory_stack_memalign(serializer->stack,
+                                          sizeof(void *) * setup.n_view_updates,
+                                          C_ALIGNOF(void *));
+
+            for (l = ui->views, i = 0; l; l = l->next, i++) {
+                rig_view_t *view = l->data;
+                Rig__ViewUpdate *pb_update = rig_pb_new(serializer,
+                                                        Rig__ViewUpdate,
+                                                        rig__view_update__init);
+                pb_update->id = rig_pb_serializer_lookup_object_id(serializer,
+                                                                   view);
+                pb_update->width = view->width;
+                pb_update->height = view->height;
+
+                setup.view_updates[i] = pb_update;
+            }
+
+            frontend->dirty_view_geometry = false;
+        }
+
         rig_frontend_run_simulator_frame(frontend, serializer, &setup);
 
         rig_pb_serializer_destroy(serializer);
