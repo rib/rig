@@ -223,6 +223,19 @@ simulator__run_frame(Rig__Simulator_Service *service,
 
     simulator->frame_info.progress = setup->progress;
 
+    for (i = 0; i < setup->n_view_updates; i++) {
+        Rig__ViewUpdate *pb_update = setup->view_updates[i];
+        rig_view_t *view = simulator_lookup_object(simulator, pb_update->id);
+
+        if (!view) {
+            c_warning("Spurious update for unknown view");
+            continue;
+        }
+
+        rig_view_set_width(view, pb_update->width);
+        rig_view_set_height(view, pb_update->height);
+    }
+
     // c_debug ("Simulator: Run Frame Request: n_events = %d\n",
     //         setup->n_events);
 
