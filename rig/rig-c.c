@@ -367,7 +367,7 @@ r_controller_new(RModule *module, const char *name)
     rig_controller_t *controller;
 
     prop_ctx->logging_disabled++;
-    controller = rig_controller_new(engine, label);
+    controller = rig_controller_new(engine, name);
     prop_ctx->logging_disabled--;
 
     /* Controllers have to be explicitly deleted via
@@ -410,9 +410,13 @@ r_controller_bind(RModule *module, RObject *controller,
     dst_prop = rut_introspectable_lookup_property(dst_obj, dst_prop_name);
     src_prop = rut_introspectable_lookup_property(src_obj, src_prop_name);
 
-    binding = rig_binding_new(engine, dst_prop, -1);
-    rig_binding_add_dependency(binding, src_prop);
+    binding = rig_binding_new_simple_copy(engine, dst_prop, src_prop);
 
+    rig_controller_add_property((rig_controller_t *)controller,
+                                dst_prop);
+    rig_controller_set_property_method((rig_controller_t *)controller,
+                                       dst_prop,
+                                       RIG_CONTROLLER_METHOD_BINDING);
     rig_controller_set_property_binding((rig_controller_t *)controller,
                                         dst_prop,
                                         binding);
