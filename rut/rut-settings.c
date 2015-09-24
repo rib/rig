@@ -42,7 +42,6 @@
 //#include "rut-text.h"
 #include "rut-timeline.h"
 #include "rut-geometry.h"
-#include "rut-scroll-bar.h"
 
 uint8_t _rut_nine_slice_indices_data[] = {
     0, 4,  5,  0, 5,  1, 1, 5,  6,  1, 6,  2,  2,  6,  7,  2,  7,  3,

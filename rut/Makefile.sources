@@ -84,8 +84,6 @@ rut_sdl_sources = \
 
 rut_editor_sources = \
     rut-pickable.h \
-    rut-composite-sizable.h \
-    rut-composite-sizable.c \
     rut-volume.h \
     rut-volume.c \
     rut-volume-private.h \
@@ -93,70 +91,12 @@ rut_editor_sources = \
     rut-planes.c \
     rut-transform.h \
     rut-transform.c \
-    rut-stack.h \
-    rut-stack.c \
-    rut-shim.h \
-    rut-shim.c \
     rut-rectangle.h \
     rut-rectangle.c \
-    rut-fixed.h \
-    rut-fixed.c \
     rut-arcball.h \
     rut-arcball.c \
-    rut-ui-viewport.h \
-    rut-ui-viewport.c \
-    rut-scroll-bar.h \
-    rut-scroll-bar.c \
     rut-image.h \
     rut-image.c \
-    rut-nine-slice.h \
-    rut-nine-slice.c \
-    rut-box-layout.h \
-    rut-box-layout.c \
-    rut-bin.h \
-    rut-bin.c \
-    rut-text-buffer.h \
-    rut-text-buffer.c \
-    rut-text-blob.h \
-    rut-text-blob.c \
-    rut-text.h \
-    rut-text.c \
-    rut-number-slider.h \
-    rut-number-slider.c \
-    rut-vec3-slider.h \
-    rut-vec3-slider.c \
-    rut-drop-down.h \
-    rut-drop-down.c \
-    rut-entry.h \
-    rut-entry.c \
-    rut-toggle.h \
-    rut-toggle.c \
-    rut-color-picker.h \
-    rut-color-picker.c \
-    rut-color-button.h \
-    rut-color-button.c \
-    rut-icon.h \
-    rut-icon.c \
-    rut-flow-layout.h \
-    rut-flow-layout.c \
-    rut-fold.h \
-    rut-fold.c \
-    rut-button.h \
-    rut-button.c \
-    rut-slider.h \
-    rut-slider.c \
-    rut-scale.h \
-    rut-scale.c \
-    rut-icon-button.h \
-    rut-icon-button.c \
-    rut-drag-bin.h \
-    rut-drag-bin.c \
-    rut-icon-toggle.h \
-    rut-icon-toggle.c \
-    rut-icon-toggle-set.h \
-    rut-icon-toggle-set.c \
-    rut-rotation-inspector.h \
-    rut-rotation-inspector.c \
     rut-adb.h \
     rut-adb.c
 
