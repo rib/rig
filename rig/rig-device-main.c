@@ -61,7 +61,6 @@ typedef struct _rig_device_t {
 } rig_device_t;
 
 static bool rig_device_fullscreen_option;
-static bool rig_device_oculus_option;
 
 static void
 rig_device_redraw(rut_shell_t *shell, void *user_data)
@@ -239,7 +238,6 @@ usage(void)
     fprintf(stderr, "\n");
     fprintf(stderr, "  -f,--fullscreen                          Run fullscreen\n");
     fprintf(stderr, "\n");
-    fprintf(stderr, "  -o,--oculus                              Run in Oculus Rift mode\n");
     fprintf(stderr, "\n");
 
 #ifdef RIG_ENABLE_DEBUG
@@ -266,7 +264,6 @@ main(int argc, char **argv)
     struct option long_opts[] = {
 
         { "fullscreen",         no_argument,       NULL, 'f' },
-        { "oculus",             no_argument,       NULL, 'o' },
 
 #ifdef RIG_ENABLE_DEBUG
         { "simulator",          required_argument, NULL, 's' },
@@ -279,10 +276,10 @@ main(int argc, char **argv)
     };
 
 #ifdef RIG_ENABLE_DEBUG
-    const char *short_opts = "fos:l:dh";
+    const char *short_opts = "fs:l:dh";
     bool enable_curses_debug = true;
 #else
-    const char *short_opts = "foh";
+    const char *short_opts = "fh";
 #endif
 
     const char *ui_filename = NULL;
@@ -298,10 +295,6 @@ main(int argc, char **argv)
     while ((c = getopt_long(argc, argv, short_opts, long_opts, NULL)) != -1) {
         switch(c) {
         case 'f':
-            rig_device_fullscreen_option = true;
-            break;
-        case 'o':
-            rig_engine_vr_mode = true;
             rig_device_fullscreen_option = true;
             break;
 #ifdef RIG_ENABLE_DEBUG

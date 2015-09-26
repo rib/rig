@@ -52,8 +52,6 @@ usage(void)
     fprintf(stderr, "  -S,--scale=SCALE                         Device pixel scale factor\n");
     fprintf(stderr, "  -f,--fullscreen                          Run fullscreen\n");
     fprintf(stderr, "\n");
-    fprintf(stderr, "  -o,--oculus                              Run in Oculus Rift mode\n");
-    fprintf(stderr, "\n");
     fprintf(stderr, "  -l,--listen={tcp:<address>[:port],       Specify how to listen for an editor connection\n");
     fprintf(stderr, "               abstract:<name>}            (listens on free tcp/ipv4 port by default)\n");
     fprintf(stderr, "\n");
@@ -81,7 +79,6 @@ main(int argc, char **argv)
         { "height",     required_argument, NULL, 'H' },
         { "scale",      required_argument, NULL, 'S' },
         { "fullscreen", no_argument,       NULL, 'f' },
-        { "oculus",     no_argument,       NULL, 'o' },
 
         { "listen",     required_argument, NULL, 'l' },
 #ifdef RIG_ENABLE_DEBUG
@@ -118,9 +115,6 @@ main(int argc, char **argv)
             break;
         case 'f':
             rig_slave_fullscreen_option = true;
-            break;
-        case 'o':
-            rig_engine_vr_mode = true;
             break;
 
         case 'l': {

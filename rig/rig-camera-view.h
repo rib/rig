@@ -123,6 +123,8 @@ struct _rig_camera_view_t {
     rut_object_t *camera_component;
 
 #ifdef ENABLE_OCULUS_RIFT
+    bool hmd_mode;
+
     ovrHmd hmd;
     struct eye eyes[2];
 

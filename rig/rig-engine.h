@@ -142,11 +142,6 @@ struct _rig_engine_t {
     rut_property_t properties[RIG_ENGINE_N_PROPS];
 };
 
-/* XXX HACK */
-extern bool rig_engine_vr_mode;
-
-/* FIXME: find a better place to put these prototypes */
-
 rig_engine_t *rig_engine_new_for_frontend(rut_shell_t *shell,
                                           rig_frontend_t *frontend);
 
@@ -155,8 +150,8 @@ rig_engine_t *rig_engine_new_for_simulator(rut_shell_t *shell,
 
 void rig_engine_set_ui(rig_engine_t *engine, rig_ui_t *ui);
 
+/* FIXME: find a better place to put these prototypes */
 void rig_register_asset(rig_engine_t *engine, rig_asset_t *asset);
-
 rig_asset_t *rig_lookup_asset(rig_engine_t *engine, const char *path);
 
 void rig_engine_set_log_op_callback(rig_engine_t *engine,
