@@ -1469,7 +1469,7 @@ rig_pb_serialize_input_events(rig_pb_serializer_t *serializer,
 
             switch (action) {
             case RUT_MOTION_EVENT_ACTION_MOVE:
-                c_debug("Serialize move\n");
+                //c_debug("Serialize move\n");
                 pb_event->type = RIG__EVENT__TYPE__POINTER_MOVE;
                 pb_event->pointer_move =
                     rig_pb_new(serializer,
@@ -1487,11 +1487,11 @@ rig_pb_serialize_input_events(rig_pb_serializer_t *serializer,
                     rut_motion_event_get_modifier_state(event);
                 break;
             case RUT_MOTION_EVENT_ACTION_DOWN:
-                c_debug("Serialize pointer down\n");
+                //c_debug("Serialize pointer down\n");
                 pb_event->type = RIG__EVENT__TYPE__POINTER_DOWN;
                 break;
             case RUT_MOTION_EVENT_ACTION_UP:
-                c_debug("Serialize pointer up\n");
+                //c_debug("Serialize pointer up\n");
                 pb_event->type = RIG__EVENT__TYPE__POINTER_UP;
                 break;
             }
@@ -1519,11 +1519,11 @@ rig_pb_serialize_input_events(rig_pb_serializer_t *serializer,
 
             switch (action) {
             case RUT_KEY_EVENT_ACTION_DOWN:
-                c_debug("Serialize key down\n");
+                //c_debug("Serialize key down\n");
                 pb_event->type = RIG__EVENT__TYPE__KEY_DOWN;
                 break;
             case RUT_KEY_EVENT_ACTION_UP:
-                c_debug("Serialize key up\n");
+                //c_debug("Serialize key up\n");
                 pb_event->type = RIG__EVENT__TYPE__KEY_UP;
                 break;
             }
