@@ -757,6 +757,13 @@ stack_region_cb(uint8_t *data, size_t bytes, void *user_data)
         pb_change->property_id = change->prop_id;
         rig_pb_property_value_init(state->serializer, pb_value, &change->boxed);
 
+        if (change->boxed.type == RUT_PROPERTY_TYPE_OBJECT) {
+            pb_value->object_value =
+                simulator_lookup_object_id(simulator, change->boxed.d.object_val);
+        }
+
+        rut_boxed_destroy(&change->boxed);
+
 #if 0
         c_debug(
             "> %d: base = %p, offset = %d, obj id=%llu:%p:%s, prop id = %d\n",
