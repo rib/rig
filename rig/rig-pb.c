@@ -1478,10 +1478,10 @@ rig_pb_serialize_input_events(rig_pb_serializer_t *serializer,
 
                 pb_event->pointer_move->has_x = true;
                 pb_event->pointer_move->x =
-                    rut_motion_event_get_x(event) / width;
+                    rut_motion_event_get_x(event);
                 pb_event->pointer_move->has_y = true;
                 pb_event->pointer_move->y =
-                    rut_motion_event_get_y(event) / height;
+                    rut_motion_event_get_y(event);
 
                 pb_event->pointer_move->mod_state =
                     rut_motion_event_get_modifier_state(event);
