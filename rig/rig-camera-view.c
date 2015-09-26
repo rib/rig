@@ -316,6 +316,11 @@ rig_camera_view_paint(rig_camera_view_t *view,
         rut_paint_ctx->camera = view->composite_camera;
         rut_camera_flush(view->composite_camera);
 
+        cg_framebuffer_clear4f(fb,
+                               CG_BUFFER_BIT_COLOR | CG_BUFFER_BIT_DEPTH |
+                               CG_BUFFER_BIT_STENCIL,
+                               0, 0, 0, 1);
+
         for (i = 0; i < 2; i++) {
             int eye_idx = view->hmd->EyeRenderOrder[i];
             struct eye *eye = &view->eyes[eye_idx];
