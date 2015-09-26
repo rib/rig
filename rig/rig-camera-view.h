@@ -49,11 +49,6 @@ typedef struct _entity_translate_grab_closure_t entity_translate_grab_closure_t;
 typedef struct _entities_translate_grab_closure_t
     entities_translate_grab_closure_t;
 
-typedef enum _rig_camera_view_mode_t {
-    RIG_CAMERA_VIEW_MODE_PLAY = 1,
-    RIG_CAMERA_VIEW_MODE_EDIT,
-} rig_camera_view_mode_t;
-
 #ifdef ENABLE_OCULUS_RIFT
 enum eye_type {
     RIG_EYE_LEFT = 0,
