@@ -244,7 +244,6 @@ apply_property_change(rig_frontend_t *frontend,
     rig_pb_init_boxed_value(
         unserializer, &boxed, property->spec->type, pb_change->value);
 
-    //#warning "XXX: frontend updates are disabled"
     rut_property_set_boxed(
         &frontend->engine->shell->property_ctx, property, &boxed);
 }
