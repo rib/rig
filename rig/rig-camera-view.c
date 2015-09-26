@@ -266,7 +266,7 @@ rig_camera_view_paint(rig_camera_view_t *view,
     rig_paint_ctx.pass = RIG_PASS_COLOR_BLENDED;
     rig_paint_ctx.enable_dof = view->enable_dof;
 
-    if (!rig_engine_vr_mode) {
+    if (!view->hmd_mode) {
 
         rut_camera_set_framebuffer(camera_component, fb);
         rut_camera_set_viewport(camera_component,
@@ -664,7 +664,7 @@ init_vr(rig_camera_view_t *view)
     return;
 
 cleanup:
-    if (rig_engine_vr_mode)
+    if (view->hmd_mode)
         deinit_vr(view);
 }
 #endif /* ENABLE_OCULUS_RIFT */
@@ -684,7 +684,9 @@ rig_camera_view_new(rig_frontend_t *frontend)
     //rut_graphable_add_child(view, view->input_region);
 
 #ifdef ENABLE_OCULUS_RIFT
-    if (rig_engine_vr_mode)
+    view->hmd_mode = !!getenv("RIG_USE_HMD");
+
+    if (view->hmd_mode)
         init_vr(view);
 #endif
 
