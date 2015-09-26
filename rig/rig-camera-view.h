@@ -39,11 +39,6 @@
  * between rig-camera-view.h and rig-engine.h */
 typedef struct _rig_camera_view_t rig_camera_view_t;
 
-#ifdef RIG_EDITOR_ENABLED
-#include "rig-selection-tool.h"
-#include "rig-rotation-tool.h"
-#endif
-
 #include "rig-engine.h"
 #include "rig-ui.h"
 #include "rig-dof-effect.h"
