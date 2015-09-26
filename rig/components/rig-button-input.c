@@ -99,7 +99,7 @@ set_state(rig_button_input_t *button_input, button_state_t state)
     if (prev_state == state)
         return;
 
-#if 0
+#if 1
     {
         const char *state_name[] = {
             "BUTTON_STATE_NORMAL",
