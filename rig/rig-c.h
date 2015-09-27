@@ -236,6 +236,9 @@ void r_set_quaternion_by_name(RModule *module, RObject *object, const char *name
 void r_set_text_by_name(RModule *module, RObject *object, const char *name, const char *value);
 void r_set_text(RModule *module, RObject *object, int id, const char *value);
 
+void r_set_object_by_name(RModule *module, RObject *object, const char *name, RObject *value);
+void r_set_object(RModule *module, RObject *object, int id, RObject *value);
+
 typedef struct _r_engine r_engine_t;
 
 r_engine_t *r_engine_new(void);
