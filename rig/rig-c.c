@@ -597,6 +597,7 @@ r_set_##SUFFIX##_by_name(RModule *module, RObject *object, const char *name, CTY
 }
 
 #define POINTER_TYPE(SUFFIX, CTYPE, TYPE)
+#define _POINTER_TYPE(SUFFIX, CTYPE, TYPE) SCALAR_TYPE(SUFFIX, CTYPE, TYPE)
 
 #define ARRAY_TYPE(SUFFIX, CTYPE, TYPE, LEN) \
 void \
@@ -662,6 +663,8 @@ r_set_##SUFFIX##_by_name(RModule *module, RObject *object, const char *name, con
 #include "rut-property-types.h"
 _COMPOSITE_TYPE(color, RColor, cg_color_t, COLOR)
 _COMPOSITE_TYPE(quaternion, RQuaternion, c_quaternion_t, QUATERNION)
+
+_POINTER_TYPE(object, RObject *, OBJECT)
 
 void
 r_set_text_by_name(RModule *module, RObject *object, const char *name, const char *value)
