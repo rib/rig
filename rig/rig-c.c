@@ -382,9 +382,9 @@ RObject *
 r_shape_new(RModule *module, float width, float height)
 {
     rig_code_module_props_t *code_module = (void *)module;
-    rut_object_t *component;
     rig_engine_t *engine = code_module->engine;
     rut_property_context_t *prop_ctx = engine->property_ctx;
+    rut_object_t *component;
 
     prop_ctx->logging_disabled++;
     component = rig_shape_new(code_module->engine, false, width, height);
@@ -404,9 +404,9 @@ r_nine_slice_new(RModule *module,
                  float width, float height)
 {
     rig_code_module_props_t *code_module = (void *)module;
-    rut_object_t *component;
     rig_engine_t *engine = code_module->engine;
     rut_property_context_t *prop_ctx = engine->property_ctx;
+    rut_object_t *component;
 
     prop_ctx->logging_disabled++;
     component = rig_nine_slice_new(engine,
@@ -427,9 +427,9 @@ RObject *
 r_diamond_new(RModule *module, float size)
 {
     rig_code_module_props_t *code_module = (void *)module;
-    rut_object_t *component;
     rig_engine_t *engine = code_module->engine;
     rut_property_context_t *prop_ctx = engine->property_ctx;
+    rut_object_t *component;
 
     prop_ctx->logging_disabled++;
     component = rig_diamond_new(engine, size);
@@ -447,9 +447,9 @@ RObject *
 r_pointalism_grid_new(RModule *module, float size)
 {
     rig_code_module_props_t *code_module = (void *)module;
-    rut_object_t *component;
     rig_engine_t *engine = code_module->engine;
     rut_property_context_t *prop_ctx = engine->property_ctx;
+    rut_object_t *component;
 
     prop_ctx->logging_disabled++;
     component = rig_pointalism_grid_new(engine, size);
@@ -467,9 +467,9 @@ RObject *
 r_material_new(RModule *module)
 {
     rig_code_module_props_t *code_module = (void *)module;
-    rut_object_t *component;
     rig_engine_t *engine = code_module->engine;
     rut_property_context_t *prop_ctx = engine->property_ctx;
+    rut_object_t *component;
 
     prop_ctx->logging_disabled++;
     component = rig_material_new(engine, NULL);
@@ -487,9 +487,9 @@ RObject *
 r_button_input_new(RModule *module)
 {
     rig_code_module_props_t *code_module = (void *)module;
-    rut_object_t *component;
     rig_engine_t *engine = code_module->engine;
     rut_property_context_t *prop_ctx = engine->property_ctx;
+    rut_object_t *component;
 
     prop_ctx->logging_disabled++;
     component = rig_button_input_new(engine);
@@ -507,9 +507,9 @@ RObject *
 r_text_new(RModule *module)
 {
     rig_code_module_props_t *code_module = (void *)module;
-    rut_object_t *component;
     rig_engine_t *engine = code_module->engine;
     rut_property_context_t *prop_ctx = engine->property_ctx;
+    rut_object_t *component;
 
     prop_ctx->logging_disabled++;
     component = rig_text_new(engine);
