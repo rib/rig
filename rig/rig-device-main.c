@@ -161,12 +161,15 @@ rig_device_init(rut_shell_t *shell, void *user_data)
                                  NULL, /* local sim init data */
                                  device->ui_filename);
 
+#warning "FIXME: support starting rig-device fullscreen"
+#if 0
     if (rig_device_fullscreen_option) {
-        rig_onscreen_view_t *onscreen_view = device->frontend->onscreen_views->data;
-        rut_shell_onscreen_t *onscreen = onscreen_view->onscreen;
+        rig_view_t *view = ui->views->data;
+        rut_shell_onscreen_t *onscreen = view->onscreen;
 
         rut_shell_onscreen_set_fullscreen(onscreen, true);
     }
+#endif
 
     //rig_frontend_set_simulator_connected_callback(
     //    device->frontend, simulator_connected_cb, device);
