@@ -969,6 +969,9 @@ _rut_shell_onscreen_free(void *object)
 {
     rut_shell_onscreen_t *onscreen = object;
 
+    if (onscreen->input_camera)
+        rut_object_unref(onscreen->input_camera);
+
     c_list_remove(&onscreen->link);
 
     rut_object_free(rut_shell_onscreen_t, object);
