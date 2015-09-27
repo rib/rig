@@ -586,12 +586,15 @@ rig_slave_init(rut_shell_t *shell, void *user_data)
 
     rig_frontend_post_init_engine(slave->frontend, NULL /* no ui to load */);
 
+#error "FIXME: support starting slave fullscreen"
+#if 0
     if (rig_slave_fullscreen_option) {
-        rig_onscreen_view_t *onscreen_view = device->frontend->onscreen_views->data;
-        rut_shell_onscreen_t *onscreen = onscreen_view->onscreen;
+        rig_view_t *view = ui->views->data;
+        rut_shell_onscreen_t *onscreen = view->onscreen;
 
         rut_shell_onscreen_set_fullscreen(onscreen, true);
     }
+#endif
 
     _rig_slave_object_id_magazine = engine->object_id_magazine;
 
