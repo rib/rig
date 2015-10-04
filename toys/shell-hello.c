@@ -29,8 +29,6 @@ shell_redraw_cb(rut_shell_t *shell, void *user_data)
     rut_shell_start_redraw(shell);
 
 #warning "update redraw loop"
-    rut_shell_progress_timelines(shell, 1.0/60.0);
-
     rut_shell_run_pre_paint_callbacks(shell);
 
     rut_shell_run_start_paint_callbacks(shell);
@@ -53,9 +51,6 @@ shell_redraw_cb(rut_shell_t *shell, void *user_data)
      * when rendering has finished for determining when a frame is
      * finished. */
     rut_shell_finish_frame(shell);
-
-    if (rut_shell_check_timelines(shell))
-        rut_shell_queue_redraw(shell);
 }
 
 static void
