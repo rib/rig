@@ -855,6 +855,10 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
     n_changes = prop_ctx->log_len;
     serializer = rig_pb_serializer_new(engine);
 
+    rig_pb_serializer_set_object_to_id_callback(serializer,
+                                                direct_object_id_cb,
+                                                simulator);
+
     rig__uidiff__init(&ui_diff);
 
     ui_diff.n_property_changes = n_changes;
