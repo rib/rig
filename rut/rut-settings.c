@@ -40,7 +40,6 @@
 #include "rut-shell.h"
 #include "rut-transform-private.h"
 //#include "rut-text.h"
-#include "rut-timeline.h"
 #include "rut-geometry.h"
 
 uint8_t _rut_nine_slice_indices_data[] = {

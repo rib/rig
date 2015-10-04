@@ -93,7 +93,7 @@ rig_device_redraw(rut_shell_t *shell, void *user_data)
     }
 
 #warning "update redraw loop"
-    rut_shell_progress_timelines(shell, 1.0/60.0);
+    rig_engine_progress_timelines(engine, 1.0/60.0);
 
     rut_shell_run_pre_paint_callbacks(shell);
 
@@ -114,7 +114,7 @@ rig_device_redraw(rut_shell_t *shell, void *user_data)
      * finished. */
     rut_shell_finish_frame(shell);
 
-    if (rut_shell_check_timelines(shell))
+    if (rig_engine_check_timelines(engine))
         rut_shell_queue_redraw(shell);
 }
 

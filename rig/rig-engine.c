@@ -52,6 +52,7 @@
 #include "rig-simulator.h"
 #include "rig-image-source.h"
 #include "rig-code-module.h"
+#include "rig-timeline.h"
 
 #include "components/rig-camera.h"
 
@@ -274,3 +275,26 @@ rig_engine_set_apply_op_context(rig_engine_t *engine,
 {
     engine->apply_op_ctx = ctx;
 }
+
+void
+rig_engine_progress_timelines(rig_engine_t *engine, double delta)
+{
+    c_sllist_t *l;
+
+    for (l = engine->timelines; l; l = l->next)
+        _rig_timeline_progress(l->data, delta);
+}
+
+bool
+rig_engine_check_timelines(rig_engine_t *engine)
+{
+    c_sllist_t *l;
+
+    for (l = engine->timelines; l; l = l->next)
+        if (rig_timeline_is_running(l->data))
+            return true;
+
+    return false;
+}
+
+

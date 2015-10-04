@@ -53,7 +53,6 @@
 #include "rut-memory-stack.h"
 #include "rut-magazine.h"
 #include "rut-graph.h"
-#include "rut-timeline.h"
 #include "rut-arcball.h"
 #include "rut-util.h"
 #include "rut-geometry.h"

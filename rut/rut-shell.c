@@ -66,7 +66,6 @@
 #include "rut-shell.h"
 #include "rut-util.h"
 #include "rut-inputable.h"
-#include "rut-timeline.h"
 #include "rut-paintable.h"
 #include "rut-transform.h"
 #include "rut-input-region.h"
@@ -810,15 +809,6 @@ rut_shell_start_redraw(rut_shell_t *shell)
 #endif
 }
 
-void
-rut_shell_progress_timelines(rut_shell_t *shell, double delta)
-{
-    c_sllist_t *l;
-
-    for (l = shell->timelines; l; l = l->next)
-        _rut_timeline_progress(l->data, delta);
-}
-
 static void
 free_input_event(rut_shell_t *shell, rut_input_event_t *event)
 {
@@ -936,18 +926,6 @@ rut_shell_run_post_paint_callbacks(rut_shell_t *shell)
 {
     rut_closure_list_invoke(
         &shell->post_paint_callbacks, rut_shell_paint_callback_t, shell);
-}
-
-bool
-rut_shell_check_timelines(rut_shell_t *shell)
-{
-    c_sllist_t *l;
-
-    for (l = shell->timelines; l; l = l->next)
-        if (rut_timeline_is_running(l->data))
-            return true;
-
-    return false;
 }
 
 void

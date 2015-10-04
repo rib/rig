@@ -34,6 +34,7 @@
 #include "rig-path.h"
 #include "rig-types.h"
 #include "rig-binding.h"
+#include "rig-timeline.h"
 
 extern rut_type_t rig_controller_type;
 
@@ -100,7 +101,7 @@ struct _rig_controller_t {
 
     bool suspended;
 
-    rut_timeline_t *timeline;
+    rig_timeline_t *timeline;
     double elapsed;
 
     c_hash_table_t *properties;

@@ -807,7 +807,7 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
     // c_debug ("Simulator: Start Frame\n");
     rut_shell_start_redraw(shell);
 
-    rut_shell_progress_timelines(shell, simulator->frame_info.progress);
+    rig_engine_progress_timelines(engine, simulator->frame_info.progress);
 
     rut_shell_run_pre_paint_callbacks(shell);
 
@@ -847,7 +847,7 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
 
     rut_shell_run_post_paint_callbacks(shell);
 
-    if (rut_shell_check_timelines(shell))
+    if (rig_engine_check_timelines(engine))
         rut_shell_queue_redraw(shell);
 
     // c_debug ("Simulator: Sending UI Update\n");

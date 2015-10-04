@@ -43,8 +43,6 @@ rut_common_sources = \
     rut-queue.c \
     rut-util.h \
     rut-util.c \
-    rut-timeline.h \
-    rut-timeline.c \
     rut-geometry.h \
     rut-geometry.c \
     rut-paintable.h \
