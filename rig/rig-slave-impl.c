@@ -792,7 +792,7 @@ rig_slave_paint(rut_shell_t *shell, void *user_data)
         rut_memory_stack_rewind(engine->sim_frame_stack);
     }
 
-    rut_shell_update_timelines(shell);
+    rig_engine_update_timelines(engine);
 
     rut_shell_run_pre_paint_callbacks(shell);
 
@@ -813,7 +813,7 @@ rig_slave_paint(rut_shell_t *shell, void *user_data)
      * wouldn't need to use this trick of continuously queuing redraws
      * to flush the edits through to the simulator.
      */
-    if (rut_shell_check_timelines(shell) || slave->pending_edits->len) {
+    if (rig_engine_check_timelines(engine) || slave->pending_edits->len) {
         rut_shell_queue_redraw(shell);
     }
 }

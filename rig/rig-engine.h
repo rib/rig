@@ -138,6 +138,8 @@ struct _rig_engine_t {
     char *code_dso_filename;
     bool need_recompile;
 
+    c_sllist_t *timelines;
+
     rut_introspectable_props_t introspectable;
     rut_property_t properties[RIG_ENGINE_N_PROPS];
 };
@@ -167,5 +169,9 @@ char *rig_engine_get_object_debug_name(rut_object_t *object);
 
 void rig_engine_set_apply_op_context(rig_engine_t *engine,
                                      rig_engine_op_apply_context_t *ctx);
+
+void rig_engine_progress_timelines(rig_engine_t *engine, double delta);
+/* Determines whether any timelines are running */
+bool rig_engine_check_timelines(rig_engine_t *engine);
 
 #endif /* _RIG_ENGINE_H_ */

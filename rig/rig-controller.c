@@ -30,6 +30,7 @@
 
 #include "rig-controller.h"
 #include "rig-engine.h"
+#include "rig-timeline.h"
 
 static rut_property_spec_t _rig_controller_prop_specs[] = {
     { .name = "label",
@@ -182,14 +183,14 @@ rig_controller_new(rig_engine_t *engine, const char *label)
 {
     rig_controller_t *controller = rut_object_alloc0(
         rig_controller_t, &rig_controller_type, _rig_controller_type_init);
-    rut_timeline_t *timeline;
+    rig_timeline_t *timeline;
 
     controller->label = c_strdup(label);
 
     controller->engine = engine;
     controller->shell = engine->shell;
-    timeline = rut_timeline_new(engine->shell, 0);
-    rut_timeline_stop(timeline);
+    timeline = rig_timeline_new(engine, 0);
+    rig_timeline_stop(timeline);
     controller->timeline = timeline;
 
     c_list_init(&controller->operation_cb_list);
@@ -438,10 +439,10 @@ rig_controller_set_loop(rut_object_t *object, bool loop)
 {
     rig_controller_t *controller = object;
 
-    if (rut_timeline_get_loop_enabled(controller->timeline) == loop)
+    if (rig_timeline_get_loop_enabled(controller->timeline) == loop)
         return;
 
-    rut_timeline_set_loop_enabled(controller->timeline, loop);
+    rig_timeline_set_loop_enabled(controller->timeline, loop);
 
     rut_property_dirty(&controller->shell->property_ctx,
                        &controller->props[RIG_CONTROLLER_PROP_LOOP]);
@@ -452,7 +453,7 @@ rig_controller_get_loop(rut_object_t *object)
 {
     rig_controller_t *controller = object;
 
-    return rut_timeline_get_loop_enabled(controller->timeline);
+    return rig_timeline_get_loop_enabled(controller->timeline);
 }
 
 void
@@ -460,10 +461,10 @@ rig_controller_set_running(rut_object_t *object, bool running)
 {
     rig_controller_t *controller = object;
 
-    if (rut_timeline_is_running(controller->timeline) == running)
+    if (rig_timeline_is_running(controller->timeline) == running)
         return;
 
-    rut_timeline_set_running(controller->timeline, running);
+    rig_timeline_set_running(controller->timeline, running);
 
     rut_property_dirty(&controller->shell->property_ctx,
                        &controller->props[RIG_CONTROLLER_PROP_RUNNING]);
@@ -474,7 +475,7 @@ rig_controller_get_running(rut_object_t *object)
 {
     rig_controller_t *controller = object;
 
-    return rut_timeline_is_running(controller->timeline);
+    return rig_timeline_is_running(controller->timeline);
 }
 
 void
@@ -482,10 +483,10 @@ rig_controller_set_length(rut_object_t *object, float length)
 {
     rig_controller_t *controller = object;
 
-    if (rut_timeline_get_length(controller->timeline) == length)
+    if (rig_timeline_get_length(controller->timeline) == length)
         return;
 
-    rut_timeline_set_length(controller->timeline, length);
+    rig_timeline_set_length(controller->timeline, length);
 
     rut_property_dirty(&controller->shell->property_ctx,
                        &controller->props[RIG_CONTROLLER_PROP_LENGTH]);
@@ -496,7 +497,7 @@ rig_controller_get_length(rut_object_t *object)
 {
     rig_controller_t *controller = object;
 
-    return rut_timeline_get_length(controller->timeline);
+    return rig_timeline_get_length(controller->timeline);
 }
 
 void
@@ -510,12 +511,12 @@ rig_controller_set_elapsed(rut_object_t *object, double elapsed)
 
     prev_elapsed = controller->elapsed;
 
-    rut_timeline_set_elapsed(controller->timeline, elapsed);
+    rig_timeline_set_elapsed(controller->timeline, elapsed);
 
     /* NB: the timeline will validate the elapsed value to make sure it
      * isn't out of bounds, considering the length of the timeline.
      */
-    controller->elapsed = rut_timeline_get_elapsed(controller->timeline);
+    controller->elapsed = rig_timeline_get_elapsed(controller->timeline);
 
     if (controller->elapsed == prev_elapsed)
         return;
@@ -531,7 +532,7 @@ rig_controller_get_elapsed(rut_object_t *object)
 {
     rig_controller_t *controller = object;
 
-    return rut_timeline_get_elapsed(controller->timeline);
+    return rig_timeline_get_elapsed(controller->timeline);
 }
 
 void
@@ -548,7 +549,7 @@ rig_controller_get_progress(rut_object_t *object)
 {
     rig_controller_t *controller = object;
 
-    return rut_timeline_get_progress(controller->timeline);
+    return rig_timeline_get_progress(controller->timeline);
 }
 
 rig_controller_prop_data_t *

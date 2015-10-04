@@ -391,8 +391,6 @@ struct _rut_shell_t {
 
     rut_property_context_t property_ctx;
 
-    c_sllist_t *timelines;
-
 #ifdef __EMSCRIPTEN__
     bool paint_loop_running;
 #else
@@ -548,22 +546,8 @@ bool rut_shell_get_headless(rut_shell_t *shell);
 
 void rut_shell_main(rut_shell_t *shell);
 
-/*
- * Whatever paint function is given when creating a rut_shell_t
- * is responsible for handling each redraw cycle but should
- * pass control back to the shell for progressing timlines,
- * running pre-paint callbacks and finally checking whether
- * to queue another redraw if there are any timelines
- * running...
- *
- * The folling apis can be used to implement a
- * rut_shell_paint_callback_t...
- */
-
 /* Should be the first thing called for each redraw... */
 void rut_shell_start_redraw(rut_shell_t *shell);
-
-void rut_shell_progress_timelines(rut_shell_t *shell, double delta);
 
 void rut_shell_dispatch_input_events(rut_shell_t *shell);
 
@@ -582,9 +566,6 @@ void rut_input_queue_clear(rut_input_queue_t *queue);
 rut_input_queue_t *rut_shell_get_input_queue(rut_shell_t *shell);
 
 void rut_shell_run_pre_paint_callbacks(rut_shell_t *shell);
-
-/* Determines whether any timelines are running */
-bool rut_shell_check_timelines(rut_shell_t *shell);
 
 void rut_shell_run_start_paint_callbacks(rut_shell_t *shell);
 

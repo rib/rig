@@ -1448,7 +1448,7 @@ rig_frontend_run_frame(rig_frontend_t *frontend)
         rut_memory_stack_rewind(engine->sim_frame_stack);
     }
 
-    rut_shell_progress_timelines(shell, frontend_progress);
+    rig_engine_progress_timelines(engine, frontend_progress);
 
     rut_shell_run_pre_paint_callbacks(shell);
 
@@ -1469,6 +1469,6 @@ rig_frontend_run_frame(rig_frontend_t *frontend)
      * finished. */
     rut_shell_finish_frame(shell);
 
-    if (rut_shell_check_timelines(shell))
+    if (rig_engine_check_timelines(engine))
         rut_shell_queue_redraw(shell);
 }

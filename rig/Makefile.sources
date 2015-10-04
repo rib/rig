@@ -43,6 +43,8 @@ rig_common_sources = \
 	rig-engine.c \
 	rig-engine-op.h \
 	rig-engine-op.c \
+	rig-timeline.h \
+	rig-timeline.c \
 	rig-node.c \
 	rig-node.h \
 	rig-path.c \

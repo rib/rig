@@ -26,41 +26,38 @@
  * SOFTWARE.
  */
 
-#ifndef _RUT_TIMELINE_H_
-#define _RUT_TIMELINE_H_
+#pragma once
 
-extern rut_type_t rut_timeline_type;
+extern rut_type_t rig_timeline_type;
 
-typedef struct _rut_timeline_t rut_timeline_t;
+typedef struct _rig_timeline_t rig_timeline_t;
 
-rut_timeline_t *rut_timeline_new(rut_shell_t *shell, float length);
+rig_timeline_t *rig_timeline_new(rig_engine_t *engine, float length);
 
-void rut_timeline_start(rut_timeline_t *timeline);
+void rig_timeline_start(rig_timeline_t *timeline);
 
-void rut_timeline_stop(rut_timeline_t *timeline);
+void rig_timeline_stop(rig_timeline_t *timeline);
 
-bool rut_timeline_get_running(rut_object_t *timeline);
+bool rig_timeline_get_running(rut_object_t *timeline);
 
-void rut_timeline_set_running(rut_object_t *timeline, bool running);
+void rig_timeline_set_running(rut_object_t *timeline, bool running);
 
-bool rut_timeline_is_running(rut_timeline_t *timeline);
+bool rig_timeline_is_running(rig_timeline_t *timeline);
 
-double rut_timeline_get_elapsed(rut_object_t *timeline);
+double rig_timeline_get_elapsed(rut_object_t *timeline);
 
-void rut_timeline_set_elapsed(rut_object_t *timeline, double elapsed);
+void rig_timeline_set_elapsed(rut_object_t *timeline, double elapsed);
 
-double rut_timeline_get_progress(rut_object_t *timeline);
+double rig_timeline_get_progress(rut_object_t *timeline);
 
-void rut_timeline_set_progress(rut_object_t *timeline, double elapsed);
+void rig_timeline_set_progress(rut_object_t *timeline, double elapsed);
 
-void rut_timeline_set_length(rut_object_t *timeline, float length);
+void rig_timeline_set_length(rut_object_t *timeline, float length);
 
-float rut_timeline_get_length(rut_object_t *timeline);
+float rig_timeline_get_length(rut_object_t *timeline);
 
-void rut_timeline_set_loop_enabled(rut_object_t *timeline, bool enabled);
+void rig_timeline_set_loop_enabled(rut_object_t *timeline, bool enabled);
 
-bool rut_timeline_get_loop_enabled(rut_object_t *timeline);
+bool rig_timeline_get_loop_enabled(rut_object_t *timeline);
 
-void _rut_timeline_progress(rut_timeline_t *timeline, double delta);
-
-#endif /* _RUT_TIMELINE_H_ */
+void _rig_timeline_progress(rig_timeline_t *timeline, double delta);
