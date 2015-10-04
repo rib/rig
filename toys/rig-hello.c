@@ -132,7 +132,7 @@ hello_update(RModule *module, double delta_seconds)
     //r_entity_translate(module, cam, 0, 0, 1);
     //r_set_vec3_by_name(module, test, "position", (float [3]){0, 0, n--});
 
-    //r_entity_rotate_z_axis(module, test, delta_seconds * 1.f);
+    r_entity_rotate_z_axis(module, test, delta_seconds * 10.f);
     r_request_animation_frame(module);
 
     //c_debug("hello_update callback (delta = %f)", delta_seconds);
