@@ -33,7 +33,9 @@ libclib_la_SOURCES += $(unix_files) $(threads_files)
 endif
 
 if OS_LINUX
-libclib_la_SOURCES += cxdg-unix.c
+libclib_la_SOURCES += cxdg-unix.c cbacktrace-linux.c
+else
+libclib_la_SOURCES += cbacktrace.c
 endif
 
 if OS_DARWIN

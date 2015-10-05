@@ -458,12 +458,118 @@ const char *c_intern_static_string(const char *string);
 const char *c_intern_string(const char *string);
 
 /*
+ * Messages
+ */
+#ifndef C_LOG_DOMAIN
+#define C_LOG_DOMAIN ((char *)0)
+#endif
+
+typedef enum {
+    C_LOG_FLAG_RECURSION = 1 << 0,
+    C_LOG_FLAG_FATAL = 1 << 1,
+    C_LOG_LEVEL_ERROR = 1 << 2,
+    C_LOG_LEVEL_CRITICAL = 1 << 3,
+    C_LOG_LEVEL_WARNING = 1 << 4,
+    C_LOG_LEVEL_MESSAGE = 1 << 5,
+    C_LOG_LEVEL_INFO = 1 << 6,
+    C_LOG_LEVEL_DEBUG = 1 << 7,
+    C_LOG_LEVEL_MASK = ~(C_LOG_FLAG_RECURSION | C_LOG_FLAG_FATAL)
+} c_log_level_flags_t;
+
+void c_print(const char *format, ...);
+void c_printerr(const char *format, ...);
+
+typedef struct _c_log_context c_log_context_t;
+
+extern void (*c_log_hook)(c_log_context_t *lctx,
+                          const char *log_domain,
+                          c_log_level_flags_t log_level,
+                          const char *message);
+void c_logv(c_log_context_t *lctx,
+            const char *log_domain,
+            c_log_level_flags_t log_level,
+            const char *format,
+            va_list args);
+void c_log(c_log_context_t *lctx,
+           const char *log_domain,
+           c_log_level_flags_t log_level,
+           const char *format,
+           ...);
+void c_assertion_message(const char *format, ...) C_GNUC_NORETURN;
+
+#ifdef HAVE_C99_SUPPORT
+/* The for (;;) tells gc thats c_error () doesn't return, avoiding warnings */
+#define c_error(format, ...)                                                   \
+    do {                                                                       \
+        c_log(NULL, C_LOG_DOMAIN, C_LOG_LEVEL_ERROR, format, __VA_ARGS__);      \
+        for (;; )                                                               \
+            ;                                                                  \
+    } while (0)
+#define c_critical(format, ...)                                                \
+    c_log(NULL, C_LOG_DOMAIN, C_LOG_LEVEL_CRITICAL, format, __VA_ARGS__)
+#define c_warning(format, ...)                                                 \
+    c_log(NULL, C_LOG_DOMAIN, C_LOG_LEVEL_WARNING, format, __VA_ARGS__)
+#define c_message(format, ...)                                                 \
+    c_log(NULL, C_LOG_DOMAIN, C_LOG_LEVEL_MESSAGE, format, __VA_ARGS__)
+#define c_debug(format, ...)                                                   \
+    c_log(NULL, C_LOG_DOMAIN, C_LOG_LEVEL_DEBUG, format, __VA_ARGS__)
+#else /* HAVE_C99_SUPPORT */
+#define c_error(...)                                                           \
+    do {                                                                       \
+        c_log(NULL, C_LOG_DOMAIN, C_LOG_LEVEL_ERROR, __VA_ARGS__);             \
+        for (;; )                                                               \
+            ;                                                                  \
+    } while (0)
+#define c_critical(...) c_log(NULL, C_LOG_DOMAIN, C_LOG_LEVEL_CRITICAL, __VA_ARGS__)
+#define c_warning(...) c_log(NULL, C_LOG_DOMAIN, C_LOG_LEVEL_WARNING, __VA_ARGS__)
+#define c_message(...) c_log(NULL, C_LOG_DOMAIN, C_LOG_LEVEL_MESSAGE, __VA_ARGS__)
+#define c_debug(...) c_log(NULL, C_LOG_DOMAIN, C_LOG_LEVEL_DEBUG, __VA_ARGS__)
+#endif /* ndef HAVE_C99_SUPPORT */
+#define c_log_set_handler(a, b, c, d)
+
+
+/*
+ * Backtraces
+ */
+
+/* Returns array of frame pointers
+ * (Points to internal buffer which caller shouldn't free) */
+void **c_backtrace(int *n_frames);
+
+/* Tries to resolve human readable descriptions for each frame
+ * (No need to free returned strings)
+ */
+void c_backtrace_symbols(void **addresses,
+                         char **frames,
+                         int n_frames);
+
+typedef struct _c_backtrace c_backtrace_t;
+
+c_backtrace_t *c_backtrace_new(void);
+int c_backtrace_get_n_frames(c_backtrace_t *backtrace);
+/* Tries to resolve human readable description for each frame
+ * (No need to free returned strings)
+ */
+void c_backtrace_get_frame_symbols(c_backtrace_t *backtrace,
+                                   char **frames,
+                                   int n_frames);
+void c_backtrace_log(c_backtrace_t *backtrace,
+                     c_log_context_t *lctx,
+                     const char *log_domain,
+                     c_log_level_flags_t log_level);
+void c_backtrace_log_error(c_backtrace_t *backtrace);
+c_backtrace_t *c_backtrace_copy(c_backtrace_t *backtrace);
+void c_backtrace_free(c_backtrace_t *backtrace);
+
+
+/*
  * Errors
  */
 typedef struct {
     c_quark_t domain;
     int code;
     char *message;
+    c_backtrace_t *backtrace;
 } c_error_t;
 
 void c_clear_error(c_error_t **error);
@@ -964,77 +1070,6 @@ void c_queue_foreach(c_queue_t *queue, c_iter_func_t func, void *user_data);
 c_llist_t *c_queue_find(c_queue_t *queue, const void *data);
 void c_queue_clear(c_queue_t *queue);
 
-/*
- * Messages
- */
-#ifndef C_LOG_DOMAIN
-#define C_LOG_DOMAIN ((char *)0)
-#endif
-
-typedef enum {
-    C_LOG_FLAG_RECURSION = 1 << 0,
-    C_LOG_FLAG_FATAL = 1 << 1,
-    C_LOG_LEVEL_ERROR = 1 << 2,
-    C_LOG_LEVEL_CRITICAL = 1 << 3,
-    C_LOG_LEVEL_WARNING = 1 << 4,
-    C_LOG_LEVEL_MESSAGE = 1 << 5,
-    C_LOG_LEVEL_INFO = 1 << 6,
-    C_LOG_LEVEL_DEBUG = 1 << 7,
-    C_LOG_LEVEL_MASK = ~(C_LOG_FLAG_RECURSION | C_LOG_FLAG_FATAL)
-} c_log_level_flags_t;
-
-void c_print(const char *format, ...);
-void c_printerr(const char *format, ...);
-
-typedef struct _c_log_context c_log_context_t;
-
-extern void (*c_log_hook)(c_log_context_t *lctx,
-                          const char *log_domain,
-                          c_log_level_flags_t log_level,
-                          const char *message);
-void c_logv(c_log_context_t *lctx,
-            const char *log_domain,
-            c_log_level_flags_t log_level,
-            const char *format,
-            va_list args);
-void c_log(c_log_context_t *lctx,
-           const char *log_domain,
-           c_log_level_flags_t log_level,
-           const char *format,
-           ...);
-void c_assertion_message(const char *format, ...) C_GNUC_NORETURN;
-
-#ifdef HAVE_C99_SUPPORT
-/* The for (;;) tells gc thats c_error () doesn't return, avoiding warnings */
-#define c_error(format, ...)                                                   \
-    do {                                                                       \
-        c_log(NULL, C_LOG_DOMAIN, C_LOG_LEVEL_ERROR, format, __VA_ARGS__);      \
-        for (;; )                                                               \
-            ;                                                                  \
-    } while (0)
-#define c_critical(format, ...)                                                \
-    c_log(NULL, C_LOG_DOMAIN, C_LOG_LEVEL_CRITICAL, format, __VA_ARGS__)
-#define c_warning(format, ...)                                                 \
-    c_log(NULL, C_LOG_DOMAIN, C_LOG_LEVEL_WARNING, format, __VA_ARGS__)
-#define c_message(format, ...)                                                 \
-    c_log(NULL, C_LOG_DOMAIN, C_LOG_LEVEL_MESSAGE, format, __VA_ARGS__)
-#define c_debug(format, ...)                                                   \
-    c_log(NULL, C_LOG_DOMAIN, C_LOG_LEVEL_DEBUG, format, __VA_ARGS__)
-#else /* HAVE_C99_SUPPORT */
-#define c_error(...)                                                           \
-    do {                                                                       \
-        c_log(NULL, C_LOG_DOMAIN, C_LOG_LEVEL_ERROR, __VA_ARGS__);             \
-        for (;; )                                                               \
-            ;                                                                  \
-    } while (0)
-#define c_critical(...) c_log(NULL, C_LOG_DOMAIN, C_LOG_LEVEL_CRITICAL, __VA_ARGS__)
-#define c_warning(...) c_log(NULL, C_LOG_DOMAIN, C_LOG_LEVEL_WARNING, __VA_ARGS__)
-#define c_message(...) c_log(NULL, C_LOG_DOMAIN, C_LOG_LEVEL_MESSAGE, __VA_ARGS__)
-#define c_debug(...) c_log(NULL, C_LOG_DOMAIN, C_LOG_LEVEL_DEBUG, __VA_ARGS__)
-#endif /* ndef HAVE_C99_SUPPORT */
-#define c_log_set_handler(a, b, c, d)
-
-#define C_GNUC_INTERNAL
 
 /*
  * Conversions

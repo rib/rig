@@ -47,6 +47,8 @@ c_error_new(c_quark_t domain, int code, const char *format, ...)
             c_strdup_printf("internal: invalid format string %s", format);
     va_end(args);
 
+    err->backtrace = c_backtrace_new();
+
     return err;
 }
 
@@ -59,6 +61,8 @@ c_error_new_valist(c_quark_t domain, int code, const char *format, va_list ap)
     err->code = code;
 
     err->message = c_strdup_vprintf(format, ap);
+
+    err->backtrace = c_backtrace_new();
 
     return err;
 }
@@ -77,6 +81,7 @@ c_error_free(c_error_t *error)
 {
     c_return_if_fail(error != NULL);
 
+    c_backtrace_free(error->backtrace);
     c_free(error->message);
     c_free(error);
 }
@@ -112,6 +117,7 @@ c_error_copy(const c_error_t *error)
     copy->domain = error->domain;
     copy->code = error->code;
     copy->message = c_strdup(error->message);
+    copy->backtrace = c_backtrace_copy(error->backtrace);
     return copy;
 }
 
