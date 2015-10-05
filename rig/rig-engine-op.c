@@ -160,8 +160,11 @@ _apply_op_set_property(rig_engine_op_apply_context_t *ctx,
     /* XXX: ideally we shouldn't need to init a rut_boxed_t and set
      * that on a property, and instead we could just directly
      * apply the value to the property we have. */
-    rig_pb_init_boxed_value(
-        ctx->unserializer, &boxed, property->spec->type, set_property->value);
+    if (!rig_pb_init_boxed_value(ctx->unserializer, &boxed,
+                                 property->spec->type, set_property->value))
+    {
+        return false;
+    }
 
     /* Note: at this point the logging of property changes
      * should be disabled in the simulator, so this shouldn't
@@ -284,9 +287,9 @@ add_entity_apply_real(rig_engine_op_apply_context_t *ctx,
 {
     ctx->register_id_cb(entity, entity_id, ctx->user_data);
 
-    if (parent)
+    if (parent) {
         rut_graphable_add_child(parent, entity);
-    else {
+    } else {
         rut_object_claim(entity, ctx->ui);
         if (ctx->ui->scene) {
             /* XXX: maybe better semantics would be to allow orphaned
@@ -883,8 +886,11 @@ _apply_op_controller_set_const(rig_engine_op_apply_context_t *ctx,
 
     property = rut_introspectable_get_property(object, set_const->property_id);
 
-    rig_pb_init_boxed_value(
-        ctx->unserializer, &boxed, property->spec->type, set_const->value);
+    if (!rig_pb_init_boxed_value(ctx->unserializer, &boxed,
+                                 property->spec->type, set_const->value))
+    {
+        return false;
+    }
 
     controller_set_const_apply_real(ctx, controller, property, &boxed);
     return true;
@@ -982,8 +988,11 @@ _apply_op_controller_path_add_node(rig_engine_op_apply_context_t *ctx,
 
     property = rut_introspectable_get_property(object, add_node->property_id);
 
-    rig_pb_init_boxed_value(
-        ctx->unserializer, &boxed, property->spec->type, add_node->value);
+    if (!rig_pb_init_boxed_value(ctx->unserializer, &boxed,
+                                 property->spec->type, add_node->value))
+    {
+        return false;
+    }
 
     controller_path_add_node_apply_real(
         ctx, controller, property, add_node->t, &boxed);
@@ -1175,8 +1184,11 @@ _apply_op_controller_path_set_node(rig_engine_op_apply_context_t *ctx,
 
     property = rut_introspectable_get_property(object, set_node->property_id);
 
-    rig_pb_init_boxed_value(
-        ctx->unserializer, &boxed, property->spec->type, set_node->value);
+    if (!rig_pb_init_boxed_value(ctx->unserializer, &boxed,
+                                 property->spec->type, set_node->value))
+    {
+        return false;
+    }
 
     controller_path_set_node_apply_real(
         ctx, controller, property, set_node->t, &boxed);
@@ -1811,13 +1823,22 @@ rig_engine_map_pb_ui_edit(rig_engine_op_map_context_t *map_ctx,
     bool status = true;
     int i;
 
+    if (apply_ctx)
+        rig_pb_unserializer_clear_errors(apply_ctx->unserializer);
+
     for (i = 0; i < pb_ui_edit->n_ops; i++) {
         Rig__Operation *pb_op = pb_ui_edit->ops[i];
 
         if (!_rig_engine_ops[pb_op->type].map_op(map_ctx, apply_ctx, pb_op)) {
             status = false;
 
-            c_warning("Failed to map and apply operation");
+            c_warning("Failed to map and apply operation:");
+            if (pb_op->backtrace_frames) {
+                int j;
+                c_warning("> Simulator backtrace for OP:");
+                for (j = 0; j < pb_op->n_backtrace_frames; j++)
+                    c_warning("  %d) %s", j, pb_op->backtrace_frames[j]);
+            }
 
             /* Note: all of the operations are allocated on the
              * frame-stack so we don't need to explicitly free anything.
@@ -1825,6 +1846,9 @@ rig_engine_map_pb_ui_edit(rig_engine_op_map_context_t *map_ctx,
             continue;
         }
     }
+
+    if (apply_ctx && apply_ctx->unserializer->errors)
+        rig_pb_unserializer_log_errors(apply_ctx->unserializer);
 
     return status;
 }
@@ -1906,6 +1930,8 @@ rig_engine_apply_pb_ui_edit(rig_engine_op_apply_context_t *ctx,
     int i;
     bool status = true;
 
+    rig_pb_unserializer_clear_errors(ctx->unserializer);
+
     for (i = 0; i < pb_ui_edit->n_ops; i++) {
         Rig__Operation *pb_op = pb_ui_edit->ops[i];
 
@@ -1914,6 +1940,9 @@ rig_engine_apply_pb_ui_edit(rig_engine_op_apply_context_t *ctx,
             continue;
         }
     }
+
+    if (ctx->unserializer->errors)
+        rig_pb_unserializer_log_errors(ctx->unserializer);
 
     return status;
 }
