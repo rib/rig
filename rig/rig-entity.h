@@ -121,6 +121,8 @@ rig_entity_t *rig_entity_new(rig_engine_t *engine);
 
 rig_entity_t *rig_entity_copy(rig_entity_t *entity);
 
+rig_entity_t *rig_entity_copy_shallow(rig_entity_t *entity);
+
 const char *rig_entity_get_label(rut_object_t *entity);
 
 void rig_entity_set_label(rut_object_t *entity, const char *label);

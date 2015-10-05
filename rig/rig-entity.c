@@ -646,15 +646,9 @@ rig_entity_foreach_component(rig_entity_t *entity,
 }
 
 rig_entity_t *
-rig_entity_copy(rig_entity_t *entity)
+rig_entity_copy_shallow(rig_entity_t *entity)
 {
     rig_entity_t *copy = rig_entity_new(entity->engine);
-    c_ptr_array_t *entity_components = entity->components;
-    c_ptr_array_t *copy_components;
-    rut_graphable_props_t *graph_props =
-        rut_object_get_properties(entity, RUT_TRAIT_ID_GRAPHABLE);
-    int i;
-    rut_queue_item_t *item;
 
     copy->label = NULL;
 
@@ -662,7 +656,21 @@ rig_entity_copy(rig_entity_t *entity)
     copy->rotation = entity->rotation;
     copy->scale = entity->scale;
     copy->transform = entity->transform;
-    copy->dirty = false;
+    copy->dirty = entity->dirty;
+
+    return copy;
+}
+
+rig_entity_t *
+rig_entity_copy(rig_entity_t *entity)
+{
+    rig_entity_t *copy = rig_entity_copy_shallow(entity);
+    c_ptr_array_t *entity_components = entity->components;
+    c_ptr_array_t *copy_components;
+    rut_graphable_props_t *graph_props =
+        rut_object_get_properties(entity, RUT_TRAIT_ID_GRAPHABLE);
+    rut_queue_item_t *item;
+    int i;
 
     copy_components = c_ptr_array_sized_new(entity_components->len);
     copy->components = copy_components;
