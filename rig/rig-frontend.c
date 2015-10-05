@@ -310,6 +310,8 @@ frontend__update_ui(Rig__Frontend_Service *service,
 
     pb_ui_edit = pb_ui_diff->edit;
 
+    rig_pb_unserializer_clear_errors(apply_op_ctx->unserializer);
+
     /* For compactness, property changes are serialized separately from
      * more general UI edit operations and so we need to take care that
      * we apply property changes and edit operations in the correct
@@ -330,7 +332,18 @@ frontend__update_ui(Rig__Frontend_Service *service,
 
             if (!rig_engine_pb_op_map(map_to_frontend_objects_op_ctx,
                                       apply_op_ctx, pb_op)) {
+
+                rig_pb_unserializer_log_errors(apply_op_ctx->unserializer);
+                rig_pb_unserializer_clear_errors(apply_op_ctx->unserializer);
+
                 c_warning("Frontend: Failed to ID map simulator operation");
+                if (pb_op->backtrace_frames) {
+                    int j;
+                    c_warning("> Simulator backtrace for OP:");
+                    for (j = 0; j < pb_op->n_backtrace_frames; j++)
+                        c_warning("  %d) %s", j, pb_op->backtrace_frames[j]);
+                }
+
                 continue;
             }
         }
@@ -340,6 +353,8 @@ frontend__update_ui(Rig__Frontend_Service *service,
         Rig__PropertyChange *pb_change = pb_ui_diff->property_changes[j];
         apply_property_change(frontend, unserializer, pb_change);
     }
+
+    rig_pb_unserializer_log_errors(apply_op_ctx->unserializer);
 
 #if 0
     if (pb_ui_edit || n_property_changes) {
