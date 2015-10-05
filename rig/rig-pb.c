@@ -53,6 +53,12 @@
 #include "components/rig-native-module.h"
 #endif
 
+struct unserializer_error {
+    char *msg;
+    c_backtrace_t *backtrace;
+};
+
+
 const char *
 rig_pb_strdup(rig_pb_serializer_t *serializer, const char *string)
 {
@@ -1352,8 +1358,6 @@ rig_pb_serialize_ui(rig_pb_serializer_t *serializer,
     for (l = ui->assets; l; l = l->next)
         rig_pb_serializer_register_object(serializer, l->data);
 
-    pb_ui->has_scene_root_id = false;
-
     serializer->n_pb_entities = 0;
     rut_graphable_traverse(ui->scene,
                            RUT_TRAVERSE_DEPTH_FIRST,
@@ -1455,9 +1459,6 @@ rig_pb_serialize_input_events(rig_pb_serializer_t *serializer,
         Rig__Event *pb_event =
             rig_pb_new(serializer, Rig__Event, rig__event__init);
         rut_shell_onscreen_t *onscreen = event->onscreen;
-        cg_framebuffer_t *fb = onscreen->cg_onscreen;
-        int width = cg_framebuffer_get_width(fb);
-        int height = cg_framebuffer_get_height(fb);
         rut_object_t *camera = onscreen->input_camera;
 
         pb_event->has_type = true;
@@ -1639,7 +1640,7 @@ pb_init_boxed_vec4(rut_boxed_t *boxed, Rig__Vec4 *pb_vec4)
 }
 
 static rut_object_t *
-unserializer_find_object(rig_pb_un_serializer_t *unserializer, uint64_t id)
+unserializer_try_find_object(rig_pb_un_serializer_t *unserializer, uint64_t id)
 {
     rut_object_t *ret;
 
@@ -1651,14 +1652,29 @@ unserializer_find_object(rig_pb_un_serializer_t *unserializer, uint64_t id)
     else
         ret = NULL;
 
-    if (id && !ret)
-        rig_pb_unserializer_collect_error(
-            unserializer, "Invalid object id=%llu", id);
-
     return ret;
 }
 
-void
+static rut_object_t *
+unserializer_find_object(rig_pb_un_serializer_t *unserializer,
+                         uint64_t id)
+{
+    if (id == 0) {
+        rig_pb_unserializer_collect_error(unserializer,
+                                          "Unexpected Object ID == 0");
+        return NULL;
+    } else {
+        rut_object_t *ret = unserializer_try_find_object(unserializer, id);
+
+        if (!ret)
+            rig_pb_unserializer_collect_error(
+                unserializer, "Invalid object id=%llu", id);
+
+        return ret;
+    }
+}
+
+bool
 rig_pb_init_boxed_value(rig_pb_un_serializer_t *unserializer,
                         rut_boxed_t *boxed,
                         rut_property_type_t type,
@@ -1669,67 +1685,83 @@ rig_pb_init_boxed_value(rig_pb_un_serializer_t *unserializer,
     switch (type) {
     case RUT_PROPERTY_TYPE_FLOAT:
         boxed->d.float_val = pb_value->float_value;
-        break;
+        return true;
 
     case RUT_PROPERTY_TYPE_DOUBLE:
         boxed->d.double_val = pb_value->double_value;
-        break;
+        return true;
 
     case RUT_PROPERTY_TYPE_INTEGER:
         boxed->d.integer_val = pb_value->integer_value;
-        break;
+        return true;
 
     case RUT_PROPERTY_TYPE_UINT32:
         boxed->d.uint32_val = pb_value->uint32_value;
-        break;
+        return true;
 
     case RUT_PROPERTY_TYPE_BOOLEAN:
         boxed->d.boolean_val = pb_value->boolean_value;
-        break;
+        return true;
 
     case RUT_PROPERTY_TYPE_TEXT:
         boxed->d.text_val = c_strdup(pb_value->text_value);
-        break;
+        return true;
 
     case RUT_PROPERTY_TYPE_QUATERNION:
         pb_init_quaternion(&boxed->d.quaternion_val,
                            pb_value->quaternion_value);
-        break;
+        return true;
 
     case RUT_PROPERTY_TYPE_VEC3:
         pb_init_boxed_vec3(boxed, pb_value->vec3_value);
-        break;
+        return true;
 
     case RUT_PROPERTY_TYPE_VEC4:
         pb_init_boxed_vec4(boxed, pb_value->vec4_value);
-        break;
+        return true;
 
     case RUT_PROPERTY_TYPE_COLOR:
         pb_init_color(unserializer->engine->shell,
                       &boxed->d.color_val,
                       pb_value->color_value);
-        break;
+        return true;
 
     case RUT_PROPERTY_TYPE_ENUM:
         /* XXX: this should possibly work in terms of string names rather than
          * the integer value? */
         boxed->d.enum_val = pb_value->enum_value;
-        break;
+        return true;
 
     case RUT_PROPERTY_TYPE_ASSET:
-        boxed->d.asset_val =
-            unserializer_find_object(unserializer, pb_value->asset_value);
-        break;
+        if (pb_value->asset_value == 0) {
+            boxed->d.asset_val = NULL;
+            return true;
+        } else {
+            boxed->d.asset_val =
+                unserializer_find_object(unserializer, pb_value->asset_value);
+            return !!boxed->d.asset_val;
+        }
 
     case RUT_PROPERTY_TYPE_OBJECT:
-        boxed->d.object_val =
-            unserializer_find_object(unserializer, pb_value->object_value);
-        break;
+
+        if (pb_value->object_value == 0) {
+            boxed->d.object_val = NULL;
+            return true;
+        } else {
+            boxed->d.object_val =
+                unserializer_find_object(unserializer, pb_value->object_value);
+            return !!boxed->d.object_val;
+        }
 
     case RUT_PROPERTY_TYPE_POINTER:
-        c_warn_if_reached();
-        break;
+        rig_pb_unserializer_collect_error(unserializer,
+                                          "Spurious _TYPE_POINTER boxed property value");
+        return false;
     }
+
+    rig_pb_unserializer_collect_error(unserializer,
+                                      "Unknown boxed property type %d", type);
+    return false;
 }
 
 void
@@ -1737,19 +1769,16 @@ rig_pb_unserializer_collect_error(rig_pb_un_serializer_t *unserializer,
                                   const char *format,
                                   ...)
 {
+    struct unserializer_error *error = c_malloc0(sizeof(*error));
     va_list ap;
 
     va_start(ap, format);
-
-    /* XXX: The intention is that we shouldn't just immediately abort loading
-     * like this but rather we should collect the errors and try our best to
-     * continue loading. At the end we can report the errors to the user so they
-     * realize that their document may be corrupt.
-     */
-
-    c_logv(NULL, C_LOG_DOMAIN, C_LOG_LEVEL_WARNING, format, ap);
-
+    error->msg = c_strdup_vprintf(format, ap);
     va_end(ap);
+
+    error->backtrace = c_backtrace_new();
+
+    unserializer->errors = c_llist_prepend(unserializer->errors, error);
 }
 
 static void
@@ -1791,44 +1820,59 @@ default_unserializer_register_object_cb(void *object,
 
     c_return_if_fail(id != 0);
 
-    if (c_hash_table_lookup(unserializer->id_to_object_map, key)) {
-        rig_pb_unserializer_collect_error(unserializer,
-                                          "Duplicate unserializer "
-                                          "object id %ld",
-                                          id);
-        return;
-    }
-
     c_hash_table_insert(unserializer->id_to_object_map, key, object);
 }
 
-void
+bool
 rig_pb_unserializer_register_object(rig_pb_un_serializer_t *unserializer,
                                     void *object,
                                     uint64_t id)
 {
+#ifdef RIG_ENABLE_DEBUG
+    if (C_UNLIKELY(id == 0)) {
+        rig_pb_unserializer_collect_error(unserializer,
+                                          "Can't register object %p with ID == 0",
+                                          object);
+        return false;
+    }
+
+    {
+        void *existing = unserializer_try_find_object(unserializer, id);
+        if (existing) {
+            rig_pb_unserializer_collect_error(unserializer,
+                                              "Unserializer ID %ld already mapped to %p, not registering %p",
+                                              id,
+                                              existing,
+                                              object);
+            return false;
+        }
+    }
+#endif
+
     unserializer->object_register_callback(
         object, id, unserializer->object_register_data);
+
+    return true;
 }
 
-static void
+static bool
 set_property_from_pb_boxed(rig_pb_un_serializer_t *unserializer,
                            rut_property_t *property,
                            Rig__Boxed *pb_boxed)
 {
-    rut_property_type_t type;
+    rut_property_type_t type = 0;
     rut_boxed_t boxed;
 
     if (!pb_boxed->value) {
         rig_pb_unserializer_collect_error(unserializer,
                                           "Boxed property has no value");
-        return;
+        return false;
     }
 
     if (!pb_boxed->has_type) {
         rig_pb_unserializer_collect_error(unserializer,
                                           "Boxed property has no type");
-        return;
+        return false;
     }
 
     switch (pb_boxed->type) {
@@ -1876,10 +1920,18 @@ set_property_from_pb_boxed(rig_pb_un_serializer_t *unserializer,
         break;
     }
 
-    rig_pb_init_boxed_value(unserializer, &boxed, type, pb_boxed->value);
+    if (!type) {
+        rig_pb_unserializer_collect_error(unserializer,
+                                          "Unknown boxed property type");
+        return false;
+    }
 
-    rut_property_set_boxed(
-        &unserializer->engine->shell->property_ctx, property, &boxed);
+    if (rig_pb_init_boxed_value(unserializer, &boxed, type, pb_boxed->value)) {
+        rut_property_set_boxed(
+            &unserializer->engine->shell->property_ctx, property, &boxed);
+        return true;
+    } else
+        return false;
 }
 
 static void
@@ -1897,14 +1949,18 @@ set_properties_from_pb_boxed_values(rig_pb_un_serializer_t *unserializer,
 
         if (!property) {
             rig_pb_unserializer_collect_error(unserializer,
-                                              "Unknown property %s for object "
-                                              "of type %s",
+                                              "Unknown property \"%s\" for object of type %s",
                                               pb_boxed->name,
                                               rut_object_get_type_name(object));
             continue;
         }
 
-        set_property_from_pb_boxed(unserializer, property, pb_boxed);
+        if (!set_property_from_pb_boxed(unserializer, property, pb_boxed)) {
+            rig_pb_unserializer_collect_error(unserializer,
+                                              "Failed to load boxed property \"%s\" for object of type %s",
+                                              pb_boxed->name,
+                                              rut_object_get_type_name(object));
+        }
     }
 }
 
@@ -1933,7 +1989,10 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
                                             pb_component->n_properties,
                                             pb_component->properties);
 
-        rig_pb_unserializer_register_object(unserializer, light, component_id);
+        if (!rig_pb_unserializer_register_object(unserializer, light, component_id)) {
+            rut_object_unref(light);
+            light = NULL;
+        }
         return light;
     }
     case RIG__ENTITY__COMPONENT__TYPE__MATERIAL: {
@@ -1945,8 +2004,10 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
                                             pb_component->n_properties,
                                             pb_component->properties);
 
-        rig_pb_unserializer_register_object(
-            unserializer, material, component_id);
+        if (!rig_pb_unserializer_register_object(unserializer, material, component_id)) {
+            rut_object_unref(material);
+            material = NULL;
+        }
         return material;
     }
     case RIG__ENTITY__COMPONENT__TYPE__MODEL: {
@@ -1978,8 +2039,11 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
 
         model = rig_model_new_from_asset(unserializer->engine, asset);
         if (model) {
-            rig_pb_unserializer_register_object(unserializer, model,
-                                                component_id);
+            if (!rig_pb_unserializer_register_object(unserializer, model,
+                                                     component_id)) {
+                rut_object_unref(model);
+                model = NULL;
+            }
         } else {
             rig_pb_unserializer_collect_error(unserializer,
                                               "Failed to create model "
@@ -1996,7 +2060,10 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
                                             pb_component->n_properties,
                                             pb_component->properties);
 
-        rig_pb_unserializer_register_object(unserializer, text, component_id);
+        if (!rig_pb_unserializer_register_object(unserializer, text, component_id)) {
+            rut_object_unref(text);
+            text = NULL;
+        }
         return text;
     }
     case RIG__ENTITY__COMPONENT__TYPE__CAMERA: {
@@ -2010,7 +2077,10 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
                                             pb_component->n_properties,
                                             pb_component->properties);
 
-        rig_pb_unserializer_register_object(unserializer, camera, component_id);
+        if (!rig_pb_unserializer_register_object(unserializer, camera, component_id)) {
+            rut_object_unref(camera);
+            camera = NULL;
+        }
         return camera;
     }
     case RIG__ENTITY__COMPONENT__TYPE__BUTTON_INPUT: {
@@ -2022,8 +2092,11 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
                                             pb_component->n_properties,
                                             pb_component->properties);
 
-        rig_pb_unserializer_register_object(
-            unserializer, button_input, component_id);
+        if (!rig_pb_unserializer_register_object(
+            unserializer, button_input, component_id)) {
+            rut_object_unref(button_input);
+            button_input = NULL;
+        }
         return button_input;
     }
     case RIG__ENTITY__COMPONENT__TYPE__NATIVE_MODULE: {
@@ -2036,7 +2109,10 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
                                             pb_component->n_properties,
                                             pb_component->properties);
 
-        rig_pb_unserializer_register_object(unserializer, module, component_id);
+        if (!rig_pb_unserializer_register_object(unserializer, module, component_id)) {
+            rut_object_unref(module);
+            module = NULL;
+        }
         return module;
 #else
         rig_pb_unserializer_collect_error(unserializer,
@@ -2056,7 +2132,10 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
                                             pb_component->n_properties,
                                             pb_component->properties);
 
-        rig_pb_unserializer_register_object(unserializer, shape, component_id);
+        if (!rig_pb_unserializer_register_object(unserializer, shape, component_id)) {
+            rut_object_unref(shape);
+            shape = NULL;
+        }
 
         return shape;
     }
@@ -2075,8 +2154,12 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
                                             pb_component->n_properties,
                                             pb_component->properties);
 
-        rig_pb_unserializer_register_object(
-            unserializer, nine_slice, component_id);
+        if (!rig_pb_unserializer_register_object(unserializer, nine_slice,
+                                                 component_id))
+        {
+            rut_object_unref(nine_slice);
+            nine_slice = NULL;
+        }
 
         return nine_slice;
     }
@@ -2089,8 +2172,12 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
                                             pb_component->n_properties,
                                             pb_component->properties);
 
-        rig_pb_unserializer_register_object(
-            unserializer, diamond, component_id);
+        if (!rig_pb_unserializer_register_object(unserializer, diamond,
+                                                 component_id))
+        {
+            rut_object_unref(diamond);
+            diamond = NULL;
+        }
 
         return diamond;
     }
@@ -2104,7 +2191,12 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
                                             pb_component->n_properties,
                                             pb_component->properties);
 
-        rig_pb_unserializer_register_object(unserializer, grid, component_id);
+        if (!rig_pb_unserializer_register_object(unserializer, grid,
+                                                 component_id))
+        {
+            rut_object_unref(grid);
+            grid = NULL;
+        }
 
         return grid;
     }
@@ -2117,7 +2209,12 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
                                             pb_component->n_properties,
                                             pb_component->properties);
 
-        rig_pb_unserializer_register_object(unserializer, hair, component_id);
+        if (rig_pb_unserializer_register_object(unserializer, hair,
+                                                component_id))
+        {
+            rut_object_unref(hair);
+            hair = NULL;
+        }
 
 #warning "FIXME: support [un]serializing hair mesh"
 #if 0
@@ -2183,7 +2280,7 @@ rig_pb_unserialize_entity(rig_pb_un_serializer_t *unserializer,
         return NULL;
 
     id = pb_entity->id;
-    if (unserializer_find_object(unserializer, id)) {
+    if (unserializer_try_find_object(unserializer, id)) {
         rig_pb_unserializer_collect_error(
             unserializer, "Duplicate entity id %d", (int)id);
         return NULL;
@@ -2248,8 +2345,12 @@ unserialize_entities(rig_pb_un_serializer_t *unserializer,
         if (!entity)
             continue;
 
-        rig_pb_unserializer_register_object(
-            unserializer, entity, entities[i]->id);
+        if (rig_pb_unserializer_register_object(unserializer, entity,
+                                                entities[i]->id))
+        {
+            rut_object_unref(entity);
+            entity = NULL;
+        }
 
         unserializer->entities = c_llist_prepend(unserializer->entities, entity);
     }
@@ -2276,7 +2377,7 @@ unserialize_assets(rig_pb_un_serializer_t *unserializer,
             void *user_data = unserializer->unserialize_asset_data;
             asset = unserializer->unserialize_asset_callback(
                 unserializer, pb_asset, user_data);
-        } else if (unserializer_find_object(unserializer, id)) {
+        } else if (unserializer_try_find_object(unserializer, id)) {
             rig_pb_unserializer_collect_error(
                 unserializer, "Duplicate asset id %d", (int)id);
             continue;
@@ -2294,11 +2395,16 @@ unserialize_assets(rig_pb_un_serializer_t *unserializer,
         }
 
         if (asset) {
-            unserializer->assets = c_llist_prepend(unserializer->assets, asset);
-            rig_pb_unserializer_register_object(unserializer, asset, id);
+            if (rig_pb_unserializer_register_object(unserializer, asset, id))
+                unserializer->assets = c_llist_prepend(unserializer->assets, asset);
+            else {
+                rut_object_unref(asset);
+                asset = NULL;
+            }
         } else {
-            c_warning("Failed to load \"%s\" asset",
-                      pb_asset->path ? pb_asset->path : "");
+            rig_pb_unserializer_collect_error(unserializer,
+                                              "Failed to load \"%s\" asset",
+                                              pb_asset->path ? pb_asset->path : "");
         }
     }
 }
@@ -2319,7 +2425,10 @@ rig_pb_unserialize_view(rig_pb_un_serializer_t *unserializer,
                                         pb_view->n_properties,
                                         pb_view->properties);
 
-    rig_pb_unserializer_register_object(unserializer, view, pb_view->id);
+    if (!rig_pb_unserializer_register_object(unserializer, view, pb_view->id)) {
+        rut_object_unref(view);
+        view = NULL;
+    }
 
     return view;
 }
@@ -2427,7 +2536,6 @@ rig_pb_unserialize_controller_properties(rig_pb_un_serializer_t *unserializer,
         rut_object_t *object;
         rig_controller_method_t method;
         rut_property_t *property;
-        rut_boxed_t boxed_value;
 
         if (!pb_property->has_object_id || pb_property->name == NULL)
             continue;
@@ -2483,15 +2591,22 @@ rig_pb_unserialize_controller_properties(rig_pb_un_serializer_t *unserializer,
 
         rig_controller_set_property_method(controller, property, method);
 
-        rig_pb_init_boxed_value(unserializer,
-                                &boxed_value,
-                                property->spec->type,
-                                pb_property->constant);
+        if (pb_property->constant) {
+            rut_boxed_t boxed_value;
+            if (rig_pb_init_boxed_value(unserializer,
+                                        &boxed_value,
+                                        property->spec->type,
+                                        pb_property->constant))
+            {
+                rig_controller_set_property_constant(
+                    controller, property, &boxed_value);
 
-        rig_controller_set_property_constant(
-            controller, property, &boxed_value);
-
-        rut_boxed_destroy(&boxed_value);
+                rut_boxed_destroy(&boxed_value);
+            } else {
+                rig_pb_unserializer_collect_error(unserializer,
+                                                  "Failed to load controller constant");
+            }
+        }
 
         if (pb_property->path) {
             Rig__Path *pb_path = pb_property->path;
@@ -2649,11 +2764,12 @@ unserialize_controllers(rig_pb_un_serializer_t *unserializer,
         controller =
             rig_pb_unserialize_controller_bare(unserializer, pb_controller);
 
-        unserializer->controllers =
-            c_llist_prepend(unserializer->controllers, controller);
-
-        if (id)
-            rig_pb_unserializer_register_object(unserializer, controller, id);
+        if (rig_pb_unserializer_register_object(unserializer, controller, id)) {
+            unserializer->controllers =
+                c_llist_prepend(unserializer->controllers, controller);
+        } else {
+            rut_object_unref(controller);
+        }
     }
 
     for (i = 0; i < n_controllers; i++) {
@@ -2743,10 +2859,58 @@ rig_pb_unserializer_set_asset_unserialize_callback(
 }
 
 void
+rig_pb_unserializer_log_errors(rig_pb_un_serializer_t *unserializer)
+{
+    c_llist_t *l;
+
+    /* XXX: The intention is that we shouldn't just immediately abort loading
+     * like this but rather we should collect the errors and try our best to
+     * continue loading. At the end we can report the errors to the user so they
+     * realize that their document may be corrupt.
+     */
+
+    if (!unserializer->errors)
+        return;
+
+    c_warning("Unserializer errors:");
+    for (l = unserializer->errors; l; l = l->next) {
+        struct unserializer_error *error = l->data;
+        int n_frames = c_backtrace_get_n_frames(error->backtrace);
+        char *backtrace_symbols[n_frames];
+        int i;
+
+        c_backtrace_get_frame_symbols(error->backtrace, backtrace_symbols, n_frames);
+
+        c_warning("  > %s\n", error->msg);
+
+        c_warning("  backtrace:");
+        for (i = 0; i < n_frames; i++)
+            c_warning("    %d) %s", i, backtrace_symbols[i]);
+    }
+}
+
+void
+rig_pb_unserializer_clear_errors(rig_pb_un_serializer_t *unserializer)
+{
+    c_llist_t *l;
+
+    for (l = unserializer->errors; l; l = l->next) {
+        struct unserializer_error *error = l->data;
+        c_backtrace_free(error->backtrace);
+        c_free(error);
+    }
+    c_llist_free(unserializer->errors);
+    unserializer->errors = NULL;
+}
+
+void
 rig_pb_unserializer_destroy(rig_pb_un_serializer_t *unserializer)
 {
     if (unserializer->id_to_object_map)
         c_hash_table_destroy(unserializer->id_to_object_map);
+
+    rig_pb_unserializer_log_errors(unserializer);
+    rig_pb_unserializer_clear_errors(unserializer);
 }
 
 rig_ui_t *
@@ -2768,41 +2932,17 @@ rig_pb_unserialize_ui(rig_pb_un_serializer_t *unserializer,
 
     ui->scene = rig_entity_new(engine);
 
-    /* The root of the UI scenegraph used to be a rut_graph_t but
-     * is now an entity.
-     *
-     * XXX: eventually remove this compatibility path...
-     */
-    if (pb_ui->has_scene_root_id) {
-        rig_pb_unserializer_register_object(
-            unserializer, ui->scene, pb_ui->scene_root_id);
-
-        for (l = unserializer->entities; l; l = l->next) {
-            // c_debug ("unserialized entiy %p\n", l->data);
-            if (rut_graphable_get_parent(l->data) == NULL) {
-                rut_graphable_add_child(ui->scene, l->data);
-
-                /* Now that the entity has a parent we can drop our
-                 * reference on it... */
-                rut_object_unref(l->data);
-                // c_debug ("%p added to scene %p\n", l->data, ui->scene);
-            }
-
-            rig_ui_register_all_entity_components(ui, l->data);
+    int n_roots = 0;
+    for (l = unserializer->entities; l; l = l->next) {
+        if (rut_graphable_get_parent(l->data) == NULL) {
+            ui->scene = l->data;
+            n_roots++;
         }
-    } else {
-        int n_roots = 0;
-        for (l = unserializer->entities; l; l = l->next) {
-            if (rut_graphable_get_parent(l->data) == NULL) {
-                ui->scene = l->data;
-                n_roots++;
-            }
 
-            rig_ui_register_all_entity_components(ui, l->data);
-        }
-        if (n_roots > 1)
-            c_warning("Multiple root entities found when loading UI");
+        rig_ui_register_all_entity_components(ui, l->data);
     }
+    if (n_roots > 1)
+        c_warning("Multiple root entities found when loading UI");
 
     c_llist_free(unserializer->entities);
     unserializer->entities = NULL;

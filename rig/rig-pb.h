@@ -239,6 +239,8 @@ struct _rig_pb_un_serializer_t {
     c_llist_t *views;
     c_llist_t *controllers;
 
+    c_llist_t *errors;
+
     c_hash_table_t *id_to_object_map;
 };
 
@@ -268,7 +270,7 @@ void rig_pb_unserializer_collect_error(rig_pb_un_serializer_t *unserializer,
                                        const char *format,
                                        ...);
 
-void rig_pb_unserializer_register_object(rig_pb_un_serializer_t *unserializer,
+bool rig_pb_unserializer_register_object(rig_pb_un_serializer_t *unserializer,
                                          void *object,
                                          uint64_t id);
 
@@ -283,7 +285,7 @@ rig_ui_t *rig_pb_unserialize_ui(rig_pb_un_serializer_t *unserializer,
 rut_mesh_t *rig_pb_unserialize_mesh(rig_pb_un_serializer_t *unserializer,
                                     Rig__Mesh *pb_mesh);
 
-void rig_pb_init_boxed_value(rig_pb_un_serializer_t *unserializer,
+bool rig_pb_init_boxed_value(rig_pb_un_serializer_t *unserializer,
                              rut_boxed_t *boxed,
                              rut_property_type_t type,
                              Rig__PropertyValue *pb_value);
@@ -311,5 +313,8 @@ void rig_pb_unserialize_controller_properties(
     rig_controller_t *controller,
     int n_properties,
     Rig__Controller__Property **properties);
+
+void rig_pb_unserializer_log_errors(rig_pb_un_serializer_t *unserializer);
+void rig_pb_unserializer_clear_errors(rig_pb_un_serializer_t *unserializer);
 
 #endif /* __RIG_PB_H__ */
