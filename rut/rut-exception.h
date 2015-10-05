@@ -45,7 +45,7 @@ typedef struct _rut_exception_t {
     c_quark_t domain;
     int code;
     char *message;
-    // TODO: char *backtrace;
+    c_backtrace_t *backtrace;
 } rut_exception_t;
 
 void
