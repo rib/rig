@@ -216,6 +216,80 @@ r_entity_new(RModule *module, RObject *parent)
     return (RObject *)entity;
 }
 
+static RObject *
+entity_clone_under(RModule *module, rig_entity_t *entity, rig_entity_t *parent)
+{
+    rig_code_module_props_t *code_module = (void *)module;
+    rig_engine_t *engine = code_module->engine;
+    rut_property_context_t *prop_ctx = engine->property_ctx;
+    rig_entity_t *clone;
+    c_ptr_array_t *entity_components = entity->components;
+    rut_graphable_props_t *graph_props =
+        rut_object_get_properties(entity, RUT_TRAIT_ID_GRAPHABLE);
+    rut_queue_item_t *item;
+    int i;
+
+    prop_ctx->logging_disabled++;
+    clone = rig_entity_copy_shallow(entity);
+    prop_ctx->logging_disabled--;
+
+    /* Entities and components have to be explicitly deleted
+     * via r_entity_delete() or r_component_delete(). We
+     * give the engine ownership of the only reference. We
+     * don't expose a ref count in the C binding api.
+     */
+    rut_object_claim(clone, engine);
+    rut_object_unref(clone);
+
+    rig_engine_op_add_entity(engine, parent, clone);
+
+    for (i = 0; i < entity_components->len; i++) {
+        rut_object_t *component = c_ptr_array_index(entity_components, i);
+        rut_componentable_vtable_t *componentable =
+            rut_object_get_vtable(component, RUT_TRAIT_ID_COMPONENTABLE);
+        rut_object_t *component_clone;
+
+        prop_ctx->logging_disabled++;
+        component_clone = componentable->copy(component);
+        prop_ctx->logging_disabled--;
+
+        rut_object_claim(component_clone, engine);
+        rut_object_unref(component_clone);
+
+        rig_engine_op_register_component(engine, component_clone);
+
+        rig_engine_op_add_component(code_module->engine,
+                                    clone,
+                                    component_clone);
+    }
+
+    c_list_for_each(item, &graph_props->children.items, list_node) {
+        rut_object_t *child = item->data;
+
+#ifdef RIG_ENABLE_DEBUG
+        if (rut_object_get_type(child) != &rig_entity_type) {
+            c_warn_if_reached();
+            continue;
+        }
+#endif
+
+        prop_ctx->logging_disabled++;
+        entity_clone_under(module, child, clone);
+        prop_ctx->logging_disabled--;
+    }
+
+    return (RObject *)clone;
+}
+
+RObject *
+r_entity_clone(RModule *module, RObject *entity)
+{
+    rig_code_module_props_t *code_module = (void *)module;
+    rig_engine_t *engine = code_module->engine;
+
+    return entity_clone_under(module, (rig_entity_t *)entity, engine->ui->scene);
+}
+
 void
 r_entity_delete(RModule *module, RObject *entity)
 {
