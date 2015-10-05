@@ -147,7 +147,7 @@ _rig_material_free(void *object)
     {
         rut_componentable_props_t *component =
             rut_object_get_properties(object, RUT_TRAIT_ID_COMPONENTABLE);
-        c_return_if_fail(component->entity == NULL);
+        c_return_if_fail(!component->parented);
     }
 #endif
 
@@ -172,7 +172,7 @@ _rig_material_copy(rut_object_t *object)
     rig_engine_t *engine = rig_component_props_get_engine(&material->component);
     rig_material_t *copy = rig_material_new(engine, NULL);
 
-    copy->visible = material->cast_shadow;
+    copy->visible = material->visible;
     copy->cast_shadow = material->cast_shadow;
     copy->receive_shadow = material->receive_shadow;
 
