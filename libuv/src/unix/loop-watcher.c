@@ -48,7 +48,8 @@
   void uv__run_##name(uv_loop_t* loop) {                                      \
     uv_##name##_t* h;                                                         \
     QUEUE* q;                                                                 \
-    QUEUE_FOREACH(q, &loop->name##_handles) {                                 \
+    QUEUE* tmp;                                                               \
+    QUEUE_FOREACH_SAFE(q, tmp, &loop->name##_handles) {                       \
       h = QUEUE_DATA(q, uv_##name##_t, queue);                                \
       h->name##_cb(h);                                                        \
     }                                                                         \
