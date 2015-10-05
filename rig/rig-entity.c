@@ -42,6 +42,16 @@ static rut_property_spec_t _rig_entity_prop_specs[] = {
       .nick = "label_t",
       .blurb = "A label for the entity",
       .flags = RUT_PROPERTY_FLAG_READWRITE },
+    { .name = "parent",
+      .type = RUT_PROPERTY_TYPE_OBJECT,
+      .getter.object_type = rig_entity_get_parent,
+      .setter.object_type = rig_entity_set_parent,
+      .validation.object.type = &rig_entity_type,
+      .nick = "Parent",
+      .blurb = "The entity's parent",
+      .flags = RUT_PROPERTY_FLAG_READWRITE |
+          RUT_PROPERTY_FLAG_EXPORT_FRONTEND,
+    },
     { .name = "position",
       .type = RUT_PROPERTY_TYPE_VEC3,
       .getter.vec3_type = rig_entity_get_position,
@@ -285,6 +295,28 @@ rig_entity_get_position(rut_object_t *obj)
     rig_entity_t *entity = obj;
 
     return entity->position;
+}
+
+rut_object_t *
+rig_entity_get_parent(rut_object_t *self)
+{
+    rig_entity_t *entity = self;
+
+    return entity->graphable.parent;
+}
+
+void
+rig_entity_set_parent(rut_object_t *self, rut_object_t *parent)
+{
+    rig_entity_t *entity = self;
+
+    if (entity->graphable.parent == parent)
+        return;
+
+    rut_graphable_set_parent(entity, parent);
+
+    rut_property_dirty(entity->engine->property_ctx,
+                       &entity->properties[RUT_ENTITY_PROP_PARENT]);
 }
 
 void
