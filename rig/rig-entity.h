@@ -53,8 +53,6 @@ typedef enum {
 } rut_component_type_t;
 
 typedef struct _rut_componentable_props_t {
-    rut_component_type_t type : 8;
-    unsigned parented : 1;
     union {
         rig_engine_t *engine; /* until a component is added
                                * to an entity we still need
@@ -62,6 +60,8 @@ typedef struct _rut_componentable_props_t {
         rig_entity_t *entity; /* back pointer to the entity the
                                  component belongs to */
     };
+    rut_component_type_t type : 8;
+    unsigned parented : 1;
 } rut_componentable_props_t;
 
 typedef struct _rut_componentable_vtable_t {

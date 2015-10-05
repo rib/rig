@@ -118,13 +118,16 @@ rig_entity_reap(rig_entity_t *entity, rig_engine_t *engine)
         /* XXX: any changes made here should be consistent with how
          * rig_entity_remove_component() works too. */
 
-        /* disassociate the component from the entity */
+        /* Disassociate the component from the entity:
+         * NB: if ->entity is NULL then ->engine must be set */
         componentable->entity = NULL;
+        componentable->parented = false;
+        componentable->engine = entity->engine;
+        rut_object_release(component, entity);
 
         /* We want to defer garbage collection until the end of a frame
          * so we pass our reference to the engine */
         rut_object_claim(component, engine);
-        rut_object_release(component, entity);
 
         rig_engine_queue_delete(engine, component);
     }
@@ -190,8 +193,14 @@ rig_entity_remove_component(rig_entity_t *entity, rut_object_t *object)
         rut_object_get_properties(object, RUT_TRAIT_ID_COMPONENTABLE);
     bool status;
 
-    component->entity = NULL;
-    rut_object_release(object, entity);
+    if (component->parented) {
+        /* Disassociate the component from the entity:
+         * NB: if ->entity is NULL then ->engine must be set */
+        component->entity = NULL;
+        rut_object_release(object, entity);
+        component->parented = false;
+        component->engine = entity->engine;
+    }
 
     status = c_ptr_array_remove_fast(entity->components, object);
 
