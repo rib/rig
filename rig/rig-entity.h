@@ -26,8 +26,7 @@
  * SOFTWARE.
  */
 
-#ifndef __RUT_ENTITY_H__
-#define __RUT_ENTITY_H__
+#pragma once
 
 #include <stdint.h>
 
@@ -84,6 +83,7 @@ typedef struct _rut_componentable_vtable_t {
 
 enum {
     RUT_ENTITY_PROP_LABEL,
+    RUT_ENTITY_PROP_PARENT,
     RUT_ENTITY_PROP_POSITION,
     RUT_ENTITY_PROP_ROTATION,
     RUT_ENTITY_PROP_SCALE,
@@ -124,6 +124,10 @@ rig_entity_t *rig_entity_copy(rig_entity_t *entity);
 const char *rig_entity_get_label(rut_object_t *entity);
 
 void rig_entity_set_label(rut_object_t *entity, const char *label);
+
+rut_object_t *rig_entity_get_parent(rut_object_t *entity);
+
+void rig_entity_set_parent(rut_object_t *entity, rut_object_t *parent);
 
 float rig_entity_get_x(rut_object_t *entity);
 
@@ -202,5 +206,3 @@ void rig_component_reap(rut_object_t *component, rig_engine_t *engine);
  * updates the camera component's view transform according to the
  * current transformation of the entity. */
 void rig_entity_set_camera_view_from_transform(rig_entity_t *camera);
-
-#endif /* __RUT_ENTITY_H__ */
