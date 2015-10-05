@@ -38,6 +38,8 @@ static RObject *test;
 static RObject *text;
 static RObject *text_comp;
 
+static RObject *rects[100];
+
 void
 hello_load(RModule *module)
 {
@@ -48,6 +50,7 @@ hello_load(RModule *module)
     RColor light_specular = { .4, .4, .4, 1 };
     RObject *view;
     RObject *controller;
+    int x, y;
 
     RObject *e = r_entity_new(module, NULL);
     r_set_text_by_name(module, e, "label", "light");
@@ -111,6 +114,18 @@ hello_load(RModule *module)
 
     r_set_text_by_name(module, test, "label", "test");
 
+    for (y = 0; y < 10; y++)
+        for (x = 0; x < 10; x++) {
+            RObject *rect = r_entity_clone(module, test);
+            r_set_float_by_name(module, rect, "scale", 0.1);
+            r_set_vec3_by_name(module, rect, "position", (float [3]){-5 + x, -5 + y, 0});
+
+            rects[10 * y + x] = rect;
+        }
+
+    //XXX: maybe add an 'enabled' property on entities
+    r_set_boolean_by_name(module, material, "visible", false);
+
 #if 1
     text = r_entity_new(module, NULL);
     text_comp = r_text_new(module);
@@ -132,7 +147,9 @@ hello_update(RModule *module, double delta_seconds)
     //r_entity_translate(module, cam, 0, 0, 1);
     //r_set_vec3_by_name(module, test, "position", (float [3]){0, 0, n--});
 
-    r_entity_rotate_z_axis(module, test, delta_seconds * 10.f);
+    for (int i = 0; i < 100; i++)
+        r_entity_rotate_z_axis(module, rects[i], delta_seconds * 90.f);
+
     r_request_animation_frame(module);
 
     //c_debug("hello_update callback (delta = %f)", delta_seconds);
