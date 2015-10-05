@@ -308,7 +308,6 @@ message UI
 
   repeated Asset assets=2;
 
-  optional sint64 scene_root_id=7;
   repeated Entity entities=3;
 
   repeated SimpleObject views=8;
@@ -354,6 +353,7 @@ message Operation
   //See RigEngineOpType
   required uint32 type=1;
   optional uint32 sequence=2;
+  repeated string backtrace_frames=20;
 
   //Change an object property, not associated with a controller
   message SetProperty
@@ -493,7 +493,7 @@ message Operation
   }
   optional DeleteView delete_view=19;
 
-  //XXX: next id = 20
+  //XXX: next id = 21
 }
 
 message UIEdit
