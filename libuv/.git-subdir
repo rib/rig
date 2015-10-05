@@ -1,0 +1,5 @@
+[subdir "upstream"]
+	url = git@github.com:rig-project/libuv.git
+	branch = master
+[subdir "integration"]
+	ref = 372e4cd7b005ea9e8988af7a8fe42110a40fab44
