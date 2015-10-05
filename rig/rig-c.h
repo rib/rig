@@ -172,6 +172,7 @@ RQuaternion r_quaternion_squad(const RQuaternion *prev,
 RObject *r_find(RModule *module, const char *name);
 
 RObject *r_entity_new(RModule *module, RObject *parent);
+RObject *r_entity_clone(RModule *module, RObject *entity);
 
 void r_entity_translate(RModule *module, RObject *entity, float tx, float tz, float ty);
 
