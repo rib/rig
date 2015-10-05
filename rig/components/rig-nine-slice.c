@@ -315,7 +315,7 @@ _rig_nine_slice_free(void *object)
     {
         rut_componentable_props_t *component =
             rut_object_get_properties(object, RUT_TRAIT_ID_COMPONENTABLE);
-        c_return_if_fail(component->entity == NULL);
+        c_return_if_fail(!component->parented);
     }
 #endif
 
