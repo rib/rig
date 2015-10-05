@@ -26,8 +26,7 @@
  * SOFTWARE.
  */
 
-#ifndef _RUT_GRAPHABLE_H_
-#define _RUT_GRAPHABLE_H_
+#pragma once
 
 #include "rut-type.h"
 #include "rut-object.h"
@@ -114,6 +113,7 @@ void rut_graphable_remove_child(rut_object_t *child);
 void rut_graphable_remove_all_children(rut_object_t *parent);
 
 rut_object_t *rut_graphable_get_parent(rut_object_t *child);
+void rut_graphable_set_parent(rut_object_t *self, rut_object_t *parent);
 
 rut_object_t *rut_graphable_first(rut_object_t *parent);
 
@@ -136,5 +136,3 @@ void rut_graphable_fully_transform_point(rut_object_t *graphable,
                                          float *x,
                                          float *y,
                                          float *z);
-
-#endif /* _RUT_GRAPHABLE_H_ */

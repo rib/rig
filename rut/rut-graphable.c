@@ -141,6 +141,15 @@ rut_graphable_get_parent(rut_object_t *child)
     return _rut_graphable_get_parent(child);
 }
 
+void
+rut_graphable_set_parent(rut_object_t *self, rut_object_t *parent)
+{
+    if (parent)
+        rut_graphable_add_child(parent, self);
+    else
+        rut_graphable_remove_child(self);
+}
+
 rut_object_t *
 rut_graphable_first(rut_object_t *parent)
 {
