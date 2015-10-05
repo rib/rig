@@ -54,7 +54,6 @@ typedef struct {
     bool enabled;
     c_hash_table_t *hash;
     c_llist_t *owners;
-    int backtrace_level;
 } rut_refcount_debug_state_t;
 
 typedef struct {
@@ -82,11 +81,7 @@ typedef struct {
     /* for _CLAIM/_RELEASE actions... */
     rut_refcount_debug_object_t *owner;
 
-    int n_backtrace_addresses;
-
-    /* This array is over-allocated to incorporate enough space for
-     * state->backtrace_level */
-    void *backtrace_addresses[1];
+    c_backtrace_t *backtrace;
 } rut_refcount_debug_action_t;
 
 static void destroy_tls_state_cb(void *tls_data);
@@ -95,19 +90,18 @@ static void object_data_unref(rut_refcount_debug_object_t *object_data);
 
 static rut_refcount_debug_state_t *get_state(void);
 
-static size_t
-get_sizeof_action(rut_refcount_debug_state_t *state)
-{
-    return (offsetof(rut_refcount_debug_action_t, backtrace_addresses) +
-            sizeof(void *) * state->backtrace_level);
-}
-
 static void
 free_action(rut_refcount_debug_action_t *action)
 {
     if (action->owner)
         object_data_unref(action->owner);
-    c_slice_free1(get_sizeof_action(get_state()), action);
+
+#ifdef RUT_ENABLE_BACKTRACE
+    if (action->backtrace)
+        c_backtrace_free(action->backtrace);
+#endif
+
+    c_free(action);
 }
 
 static void
@@ -142,8 +136,7 @@ log_action(rut_refcount_debug_object_t *object_data,
            rut_refcount_debug_object_t *owner)
 {
     rut_refcount_debug_state_t *state = get_state();
-    rut_refcount_debug_action_t *action =
-        c_slice_alloc(get_sizeof_action(state));
+    rut_refcount_debug_action_t *action = c_malloc(sizeof(*action));
 
     action->type = action_type;
 
@@ -151,18 +144,8 @@ log_action(rut_refcount_debug_object_t *object_data,
         action->owner = object_data_ref(owner);
 
 #ifdef RUT_ENABLE_BACKTRACE
-    {
-        if (state->backtrace_level == 0)
-            action->n_backtrace_addresses = 0;
-        else
-            action->n_backtrace_addresses =
-                backtrace(action->backtrace_addresses, state->backtrace_level);
-    }
-#else /* RUT_ENABLE_BACKTRACE */
-    {
-        action->n_backtrace_addresses = 0;
-    }
-#endif /* RUT_ENABLE_BACKTRACE */
+    action->backtrace = c_backtrace_new();
+#endif
 
     c_list_insert(object_data->actions.prev, &action->link);
 }
@@ -197,195 +180,15 @@ get_state(void)
         state->enabled =
             !rut_util_is_boolean_env_set("RUT_DISABLE_REFCOUNT_DEBUG");
 
-#ifdef RUT_ENABLE_BACKTRACE
-        {
-            const char *backtrace_level = c_getenv("RUT_BACKTRACE_LEVEL");
-
-            if (backtrace_level) {
-                state->backtrace_level = atoi(backtrace_level);
-                state->backtrace_level = CLAMP(state->backtrace_level, 0, 1024);
-            } else
-                state->backtrace_level = 0;
-        }
-#else /* RUT_ENABLE_BACKTRACE */
-        {
-            state->backtrace_level = 0;
-        }
-#endif /* RUT_ENABLE_BACKTRACE */
-
         c_tls_set(&tls, state);
     }
 
     return state;
 }
 
-#ifdef RUT_ENABLE_BACKTRACE
-
-static char *
-readlink_alloc(const char *linkname)
-{
-    int buf_size = 32;
-
-    while (true) {
-        char *buf = c_malloc(buf_size);
-        int got = readlink(linkname, buf, buf_size - 1);
-
-        if (got < 0) {
-            c_free(buf);
-            return NULL;
-        } else if (got < buf_size - 1) {
-            buf[got] = '\0';
-            return buf;
-        } else {
-            c_free(buf);
-            buf_size *= 2;
-        }
-    }
-}
-
-static bool
-resolve_addresses_addr2line(c_hash_table_t *hash_table,
-                            int n_addresses,
-                            void *const *addresses)
-{
-    const char *base_args[] = { "addr2line", "-f", "-e" };
-    char *addr_out;
-    char **argv;
-    int exit_status;
-    int extra_args = C_N_ELEMENTS(base_args);
-    int address_args = extra_args + 1;
-    bool status;
-    int i;
-
-    argv = c_alloca(sizeof(char *) * (n_addresses + address_args + 1));
-    memcpy(argv, base_args, sizeof(base_args));
-
-    argv[extra_args] = readlink_alloc("/proc/self/exe");
-    if (argv[extra_args] == NULL)
-        return false;
-
-    for (i = 0; i < n_addresses; i++)
-        argv[i + address_args] = c_strdup_printf("%p", addresses[i]);
-    argv[address_args + n_addresses] = NULL;
-
-    status = c_spawn_sync(NULL, /* working_directory */
-                          argv,
-                          NULL, /* envp */
-                          C_SPAWN_STDERR_TO_DEV_NULL | C_SPAWN_SEARCH_PATH,
-                          NULL, /* child_setup */
-                          NULL, /* user_data for child_setup */
-                          &addr_out,
-                          NULL, /* standard_error */
-                          &exit_status,
-                          NULL /* error */);
-
-    if (status && exit_status == 0) {
-        int addr_num;
-        char **lines = c_strsplit(addr_out, "\n", 0);
-        char **line;
-
-        for (line = lines, addr_num = 0; line[0] && line[1];
-             line += 2, addr_num++) {
-            char *result = c_strdup_printf("%s (%s)", line[1], line[0]);
-            c_hash_table_insert(hash_table, addresses[addr_num], result);
-        }
-
-        c_strfreev(lines);
-    }
-
-    for (i = 0; i < n_addresses; i++)
-        c_free(argv[i + address_args]);
-    c_free(argv[extra_args]);
-
-    return status;
-}
-
-static bool
-resolve_addresses_backtrace(c_hash_table_t *hash_table,
-                            int n_addresses,
-                            void *const *addresses)
-{
-    char **symbols;
-    int i;
-
-    symbols = backtrace_symbols(addresses, n_addresses);
-
-    for (i = 0; i < n_addresses; i++)
-        c_hash_table_insert(hash_table, addresses[i], c_strdup(symbols[i]));
-
-    free(symbols);
-
-    return true;
-}
-
-static void
-add_addresses_cb(void *key, void *value, void *user_data)
-{
-    c_hash_table_t *hash_table = user_data;
-    rut_refcount_debug_object_t *object_data = value;
-    rut_refcount_debug_action_t *action;
-
-    c_list_for_each(action, &object_data->actions, link)
-    {
-        int i;
-
-        for (i = 0; i < action->n_backtrace_addresses; i++)
-            c_hash_table_insert(
-                hash_table, action->backtrace_addresses[i], NULL);
-    }
-}
-
-static void
-get_addresses_cb(void *key, void *value, void *user_data)
-{
-    void ***addr_p = user_data;
-
-    *((*addr_p)++) = key;
-}
-
-static c_hash_table_t *
-resolve_addresses(rut_refcount_debug_state_t *state)
-{
-    c_hash_table_t *hash_table;
-    int n_addresses;
-
-    hash_table = c_hash_table_new_full(c_direct_hash,
-                                       c_direct_equal,
-                                       NULL, /* key destroy */
-                                       c_free /* value destroy */);
-
-    c_hash_table_foreach(state->hash, add_addresses_cb, hash_table);
-
-    n_addresses = c_hash_table_size(hash_table);
-
-    if (n_addresses >= 1) {
-        void **addresses = c_malloc(sizeof(void *) * n_addresses);
-        void **addr_p = addresses;
-        bool resolve_ret;
-
-        c_hash_table_foreach(hash_table, get_addresses_cb, &addr_p);
-
-        resolve_ret =
-            (resolve_addresses_addr2line(hash_table, n_addresses, addresses) ||
-             resolve_addresses_backtrace(hash_table, n_addresses, addresses));
-
-        c_free(addresses);
-
-        if (!resolve_ret) {
-            c_hash_table_destroy(hash_table);
-            return NULL;
-        }
-    }
-
-    return hash_table;
-}
-
-#endif /* RUT_ENABLE_BACKTRACE */
-
 typedef struct {
     rut_refcount_debug_state_t *state;
     FILE *out_file;
-    c_hash_table_t *address_table;
 } dump_object_callback_data_t;
 
 static void
@@ -405,12 +208,14 @@ dump_object_cb(rut_refcount_debug_object_t *object_data,
     fputc('\n', data->out_file);
 
 #ifdef RUT_ENABLE_BACKTRACE
-    if (data->address_table) {
+    {
         rut_refcount_debug_action_t *action;
         int ref_count = 0;
 
         c_list_for_each(action, &object_data->actions, link)
         {
+            int n_frames = c_backtrace_get_n_frames(action->backtrace);
+            char *symbols[n_frames];
             int i;
 
             fputc(' ', data->out_file);
@@ -448,11 +253,11 @@ dump_object_cb(rut_refcount_debug_object_t *object_data,
             }
             fputc('\n', data->out_file);
 
-            for (i = 0; i < action->n_backtrace_addresses; i++) {
-                char *addr = c_hash_table_lookup(
-                    data->address_table, action->backtrace_addresses[i]);
-                fprintf(data->out_file, "  %s\n", addr);
-            }
+            c_backtrace_get_frame_symbols(action->backtrace,
+                                          symbols,
+                                          n_frames);
+            for (i = 0; i < n_frames; i++)
+                fprintf(data->out_file, "  %s\n", symbols[i]);
         }
     }
 #endif /* RUT_ENABLE_BACKTRACE */
@@ -496,27 +301,13 @@ destroy_tls_state_cb(void *tls_data)
         if (data.out_file == NULL) {
             c_warning("Error saving refcount log: %s", strerror(errno));
         } else {
-#ifdef RUT_ENABLE_BACKTRACE
-            if (state->backtrace_level > 0)
-                data.address_table = resolve_addresses(state);
-            else
-#endif
-            data.address_table = NULL;
-
             c_hash_table_foreach(state->hash, dump_hash_object_cb, &data);
             c_llist_foreach(state->owners, (c_iter_func_t)dump_object_cb, &data);
-
-            if (data.address_table)
-                c_hash_table_destroy(data.address_table);
 
             if (ferror(data.out_file))
                 c_warning("Error saving refcount log: %s", strerror(errno));
             else {
                 c_warning("Refcount log saved to %s", out_name);
-
-                if (state->backtrace_level <= 0)
-                    c_warning("Set RUT_BACKTRACE_LEVEL to a non-zero value "
-                              "to include bactraces in the log");
             }
 
             fclose(data.out_file);
@@ -684,11 +475,6 @@ rut_object_dump_refs(void *object)
         c_debug("No reference information tracked for object %p\n", object);
         return;
     }
-
-#ifdef RUT_ENABLE_BACKTRACE
-    if (state->backtrace_level > 0)
-        dump_data.address_table = resolve_addresses(state);
-#endif
 
     dump_object_cb(object_data, &dump_data);
 }
