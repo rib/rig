@@ -447,6 +447,26 @@ log_op_cb(Rig__Operation *pb_op, void *user_data)
     pb_op->has_sequence = true;
     pb_op->sequence = prop_ctx->log_len;
 
+#ifdef RIG_ENABLE_DEBUG
+    {
+        int n_frames = 0;
+        void **addresses = c_backtrace(&n_frames);
+        char *symbols[n_frames];
+        rig_engine_t *engine = simulator->engine;
+        int i;
+
+        c_backtrace_symbols(addresses, symbols, n_frames);
+
+        pb_op->n_backtrace_frames = n_frames;
+        pb_op->backtrace_frames =
+            rut_memory_stack_memalign(engine->ops_serializer->stack,
+                                      sizeof(void *) * n_frames,
+                                      C_ALIGNOF(void *));
+        for (i = 0; i < n_frames; i++)
+            pb_op->backtrace_frames[i] = symbols[i];
+    }
+#endif
+
     rut_queue_push_tail(simulator->ops, pb_op);
 }
 
