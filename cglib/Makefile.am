@@ -1,3 +1,3 @@
-SUBDIRS = clib test-fixtures cglib
+SUBDIRS = cglib
 
 ACLOCAL_AMFLAGS = -I build/autotools ${ACLOCAL_FLAGS}
