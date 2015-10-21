@@ -225,14 +225,9 @@ AM_PATH_GLIB_2_0([2.26.0],
 
 AC_DEFINE([USE_GDK_PIXBUF], [1], [Use GDK Pixbuf])
 AC_DEFINE([USE_GLIB], [1], [Use Glib])
+AM_CONDITIONAL([USE_GLIB], [true])
 
 RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES glib-2.0 gio-2.0 gdk-pixbuf-2.0"
-
-AS_IF([test "x$enable_editor" = xyes],
-    RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES pangocairo"
-    AC_DEFINE([USE_PANGO], [1], [Use Pango])
-)
-AM_CONDITIONAL([USE_GLIB], ["x$enable_editor" = xyes])
 
 have_gstreamer=no
 PKG_CHECK_EXISTS([gstreamer-1.0], [have_gstreamer=yes])
@@ -248,28 +243,22 @@ AC_ARG_ENABLE(
 ])
 AS_IF([test "x$enable_gstreamer" = "xyes"],
       [
-       enable_cogl_gst=yes
+       enable_cglib_gst=yes
        RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES gstreamer-1.0"
        AC_DEFINE([USE_GSTREAMER], [1], [Enable gstreamer integration])
        EXTRA_FEATURES="$EXTRA_FEATURES gstreamer"
       ])
 AM_CONDITIONAL([USE_GSTREAMER], [test "x$enable_gstreamer" = "xyes"])
+AM_CONDITIONAL([USE_CGLIB_GST], [test "x$enable_gstreamer" = "xyes"])
+
+AM_CONDITIONAL([USE_CGLIB_PANGO], [false])
+AM_CONDITIONAL([USE_CGLIB_PATH], [false])
 
 PKG_CHECK_EXISTS([x11],
                  [
                    RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES x11"
                    AC_DEFINE([USE_XLIB], [1], [Enable x11 integration])
                  ])
-
-dnl Add the build flags for android_native_app_glue
-AS_IF([test "x$have_android" = "xyes"],
-      [ANDROID_CHECK_MODULE([ANDROID_NATIVE_APP_GLUE],
-                            [android/native_app_glue],
-                            [android_native_app_glue])
-      ANDROID_CHECK_MODULE([GLIB_ANDROID],
-                           [glib-android],
-                           [glib-android])
-      CFLAGS="$CFLAGS $ANDROID_NATIVE_APP_GLUE_CFLAGS $GLIB_ANDROID_CFLAGS"])
 
 PKG_CHECK_MODULES([LIBCRYPTO],
                   [libcrypto],
@@ -318,8 +307,6 @@ dnl ================================================================
 case "$host" in
   *-linux*)
     enable_glib=yes # TODO: need to remove dependency on gdk-pixbuf
-    enable_cogl_path=yes
-    enable_cogl_pango=$enable_editor
     enable_uv=yes
     enable_gl=yes
     enable_glx=yes
@@ -343,8 +330,6 @@ case "$host" in
     ;;
 
   *)
-    enable_cogl_path=yes
-    enable_cogl_pango=$enable_editor
     enable_sdl2=yes
     enable_uv=yes
     enable_gles2=yes
@@ -360,7 +345,7 @@ AM_CONDITIONAL([HAVE_OSX], [test "x$platform" = "xosx"])
 AM_CONDITIONAL([HAVE_GTK], [test "x$enable_gtk" = "xyes"])
 AM_CONDITIONAL([HAVE_AVAHI], [test "x$avahi_enabled" = "xyes"])
 
-AM_COGL
+AM_CGLIB
 
 AC_SUBST(CLIB_PKG_REQUIRES)
 AS_IF([test -n "$CLIB_PKG_REQUIRES"],
@@ -434,6 +419,9 @@ test-fixtures/Makefile
 libuv/Makefile
 clib/Makefile
 clib/clib/Makefile
+cglib/Makefile
+cglib/cglib/Makefile
+cglib/cglib/cg-defines.h
 xdgmime/Makefile
 rut/Makefile
 data/Makefile

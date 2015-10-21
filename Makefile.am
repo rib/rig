@@ -1,16 +1,4 @@
-SUBDIRS = libuv clib test-fixtures cogl research/particle-engine h2o
-
-if BUILD_COGL_PANGO
-SUBDIRS += cogl-pango
-endif
-
-if BUILD_COGL_GST
-SUBDIRS += cogl-gst
-endif
-
-if BUILD_COGL_PATH
-SUBDIRS += cogl-path
-endif
+SUBDIRS = libuv clib test-fixtures cglib research/particle-engine h2o
 
 if EDITOR_ENABLED
 SUBDIRS += xdgmime

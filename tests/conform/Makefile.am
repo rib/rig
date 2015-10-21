@@ -67,13 +67,13 @@ test_sources = \
 	test-texture-rg.c \
 	$(NULL)
 
-if COGL_USE_GLIB
+if USE_GLIB
 # test-fence depends on the glib mainloop so it won't compile if using
 # emscripten which builds in standalone mode.
 test_sources += test-fence.c
 endif
 
-if BUILD_COGL_PATH
+if USE_CGLIB_PATH
 test_sources += \
 	test-path.c \
 	test-path-clip.c
@@ -134,17 +134,16 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir)/test-fixtures
 
 AM_CPPFLAGS += \
-	-DCOGL_DISABLE_DEPRECATED \
 	-DTESTS_DATADIR=\""$(top_srcdir)/tests/data"\"
 
-test_conformance_CFLAGS = -g3 -O0 $(RIG_DEP_CFLAGS) $(COGL_DEP_CFLAGS) $(RIG_EXTRA_CFLAGS)
+test_conformance_CFLAGS = -g3 -O0 $(RIG_DEP_CFLAGS) $(CG_DEP_CFLAGS) $(RIG_EXTRA_CFLAGS)
 test_conformance_LDADD = \
 	$(RIG_EXTRA_LDFLAGS) \
 	$(RIG_DEP_LIBS) \
-	$(COGL_DEP_LIBS) \
+	$(CG_DEP_LIBS) \
 	$(top_builddir)/cogl/libcg.la \
 	$(LIBM)
-if BUILD_COGL_PATH
+if USE_CGLIB_PATH
 test_conformance_LDADD += $(top_builddir)/cogl-path/libcogl-path.la
 endif
 test_conformance_LDADD += $(top_builddir)/clib/clib/libclib.la

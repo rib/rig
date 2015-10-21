@@ -14,7 +14,7 @@ librut_la_SOURCES += \
 	$(rut_sdl_sources)
 endif
 
-if COGL_SUPPORT_GLX
+if CG_SUPPORT_GLX
 librut_la_SOURCES += \
 	rut-x11-shell.h \
 	rut-x11-shell.c

@@ -9,23 +9,21 @@ AM_CPPFLAGS = \
 	-I$(top_builddir)/clib/clib
 
 test_conformance_CPPFLAGS = \
-	-DCOGL_ENABLE_EXPERIMENTAL_API \
-	-DCOGL_DISABLE_DEPRECATED \
 	-DTESTS_DATADIR=\""$(top_srcdir)/tests/data"\"
 
 
 noinst_PROGRAMS =
 
-if COGL_USE_GLIB
+if USE_GLIB
 noinst_PROGRAMS += test-journal
 endif
 
 noinst_PROGRAMS += test-instancing
 
-AM_CFLAGS = $(COGL_DEP_CFLAGS) $(COGL_EXTRA_CFLAGS)
+AM_CFLAGS = $(CG_DEP_CFLAGS) $(RIG_EXTRA_CFLAGS)
 
 common_ldadd = \
-	$(COGL_DEP_LIBS) \
+	$(CG_DEP_LIBS) \
 	$(top_builddir)/clib/clib/libclib.la \
 	$(top_builddir)/cogl/libcg.la \
 	$(LIBM)
