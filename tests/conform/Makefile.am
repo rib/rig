@@ -129,8 +129,10 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir) \
 	-I$(top_builddir) \
 	-I$(top_srcdir)/clib/clib \
-	-I$(top_builddir)/clib/clib	\
-	-I$(top_builddir)/cogl \
+	-I$(top_builddir)/clib/clib \
+	-I$(top_srcdir)/cglib \
+	-I$(top_builddir)/cglib \
+	-I$(top_builddir)/cglib \
 	-I$(top_srcdir)/test-fixtures
 
 AM_CPPFLAGS += \
@@ -141,10 +143,10 @@ test_conformance_LDADD = \
 	$(RIG_EXTRA_LDFLAGS) \
 	$(RIG_DEP_LIBS) \
 	$(CG_DEP_LIBS) \
-	$(top_builddir)/cogl/libcg.la \
+	$(top_builddir)/cglib/cglib/libcglib.la \
 	$(LIBM)
 if USE_CGLIB_PATH
-test_conformance_LDADD += $(top_builddir)/cogl-path/libcogl-path.la
+test_conformance_LDADD += $(top_builddir)/cglib-path/libcglib-path.la
 endif
 test_conformance_LDADD += $(top_builddir)/clib/clib/libclib.la
 test_conformance_LDFLAGS = -export-dynamic

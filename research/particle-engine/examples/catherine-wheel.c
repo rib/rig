@@ -6,7 +6,7 @@
 
 #include "particle-emitter.h"
 
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 #include <math.h>
 
 #define WIDTH 1024

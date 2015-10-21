@@ -42,8 +42,8 @@
 #include <xkbcommon/xkbcommon-x11.h>
 #include <xkbcommon/xkbcommon-compose.h>
 
-#include <cogl/cogl.h>
-#include <cogl/cogl-xlib.h>
+#include <cglib/cglib.h>
+#include <cglib/cg-xlib.h>
 
 #include "rut-shell.h"
 #include "rut-x11-shell.h"

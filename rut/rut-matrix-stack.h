@@ -29,7 +29,7 @@
 #ifndef _RUT_MATRIX_STACK_H_
 #define _RUT_MATRIX_STACK_H_
 
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 
 #include "rut-shell.h"
 

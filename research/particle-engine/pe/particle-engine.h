@@ -23,7 +23,7 @@
 #ifndef _PARTICLE_ENGINE_H_
 #define _PARTICLE_ENGINE_H_
 
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 
 /*
  * The particle engine is an opaque data structure

@@ -30,7 +30,7 @@
 #define __RUT_ARCBALL_H__
 
 #include <clib.h>
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 
 C_BEGIN_DECLS
 

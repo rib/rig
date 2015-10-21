@@ -29,7 +29,7 @@
 
 #include <config.h>
 
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 #include <cogl-path/cogl-path.h>
 #include <string.h>
 #include <math.h>

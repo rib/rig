@@ -5,7 +5,7 @@
 
 #include <uv.h>
 
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 #include <clib.h>
 
 #include "OVR_CAPI.h"

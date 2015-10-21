@@ -33,7 +33,7 @@
 #include <stdlib.h>
 
 #include <clib.h>
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 
 #include "rut-mesh.h"
 #include "rut-util.h"

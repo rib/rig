@@ -65,7 +65,7 @@
 #ifndef _FUZZY_H
 #define _FUZZY_H
 
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 #include <clib.h>
 
 struct fuzzy_float {

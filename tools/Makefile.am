@@ -3,11 +3,15 @@ include $(top_srcdir)/build/autotools/Makefile.am.silent
 AM_CPPFLAGS = \
 	-I$(top_srcdir) \
 	-I$(top_srcdir)/rut \
-	-I$(top_builddir)/rut
-	-DG_DISABLE_SINGLE_INCLUDES \
-	-DCG_DISABLE_DEPRECATED
+	-I$(top_builddir)/rut \
+	-I$(top_srcdir)/clib/clib \
+	-I$(top_builddir)/clib/clib \
+	-I$(top_srcdir)/cglib \
+	-I$(top_builddir)/cglib
 
 AM_CFLAGS = \
+	$(CG_DEP_CFLAGS) \
+	$(CG_EXTRA_CFLAGS) \
 	$(RIG_DEP_CFLAGS) \
 	$(RIG_EXTRA_CFLAGS) \
 	-DRIG_EXAMPLES_DATA=\""$(abs_top_srcdir)/examples/"\" \
@@ -15,9 +19,9 @@ AM_CFLAGS = \
 
 common_ldadd = \
 	$(RIG_DEP_LIBS) \
-	$(COGL_DEP_LIBS) \
-	$(top_builddir)/cogl/libcg.la \
-	$(top_builddir)/clib/src/libclib.la
+	$(CG_DEP_LIBS) \
+	$(top_builddir)/cglib/cglib/libcglib.la \
+	$(top_builddir)/clib/clib/libclib.la
 
 bin_SCRIPTS=rig-package-html5
 

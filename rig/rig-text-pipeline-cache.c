@@ -37,7 +37,7 @@
 
 #include <clib.h>
 
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 
 #include "rig-text-pipeline-cache.h"
 

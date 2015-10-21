@@ -1,7 +1,7 @@
 #include <config.h>
 
 #include <clib.h>
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 #include <cogl-pango/cogl-pango.h>
 
 /* The state for this example... */

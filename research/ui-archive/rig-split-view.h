@@ -29,7 +29,7 @@
 #ifndef _RIG_SPLIT_VIEW_H_
 #define _RIG_SPLIT_VIEW_H_
 
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 
 #include "rut.h"
 

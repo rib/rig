@@ -29,7 +29,7 @@
 #ifndef _RUT_DROP_DOWN_H_
 #define _RUT_DROP_DOWN_H_
 
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 
 #include "rut-types.h"
 #include "rut-object.h"

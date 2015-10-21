@@ -1,7 +1,7 @@
 #include <config.h>
 
-#include <cogl/cogl.h>
-#include <cogl/cogl-xlib.h>
+#include <cglib/cglib.h>
+#include <cglib/cg-xlib.h>
 #include <glib.h>
 #include <stdio.h>
 

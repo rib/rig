@@ -29,7 +29,7 @@
 #ifndef _RUT_OSX_H_
 #define _RUT_OSX_H_
 
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 #include "rig-types.h"
 
 typedef struct _rig_osx_engine_t rig_osx_engine_t;

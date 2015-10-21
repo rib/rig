@@ -54,9 +54,9 @@
 
 #include <clib.h>
 
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 #ifdef USE_SDL
-#include <cogl/cogl-sdl.h>
+#include <cglib/cg-sdl.h>
 #endif
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>

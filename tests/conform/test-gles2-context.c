@@ -1,8 +1,8 @@
 #include <config.h>
 
 
-#include <cogl/cogl.h>
-#include <cogl/cogl-gles2.h>
+#include <cglib/cglib.h>
+#include <cglib/cg-gles2.h>
 #include <string.h>
 
 #include "test-cg-fixtures.h"

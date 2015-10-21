@@ -31,7 +31,7 @@
 
 #include <clib.h>
 
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 
 typedef struct _rut_buffer_t rut_buffer_t;
 typedef struct _rut_attribute_t rut_attribute_t;

@@ -30,7 +30,7 @@
 #ifndef __RIG_NINE_SLICE_H__
 #define __RIG_NINE_SLICE_H__
 
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 
 #include <rut.h>
 

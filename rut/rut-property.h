@@ -34,7 +34,7 @@
 #include <stdbool.h>
 #include <string.h>
 
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 
 #include "rut-memory-stack.h"
 #include "rut-object.h"

@@ -49,7 +49,7 @@
 #include <uv.h>
 #endif
 
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 #ifdef USE_PANGO
 #include <cogl-pango/cogl-pango.h>
 #endif

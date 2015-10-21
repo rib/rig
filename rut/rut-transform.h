@@ -30,7 +30,7 @@
 #ifndef __RUT_TRANSFORM_H__
 #define __RUT_TRANSFORM_H__
 
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 
 #include <rut-shell.h>
 

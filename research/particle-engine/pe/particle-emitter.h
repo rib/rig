@@ -25,7 +25,7 @@
 
 #include "fuzzy.h"
 
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 
 /* <priv> */
 struct particle_emitter_priv;

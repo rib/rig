@@ -29,7 +29,7 @@
 #ifndef _RUT_ROTATION_INSPECTOR_H_
 #define _RUT_ROTATION_INSPECTOR_H_
 
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 
 #include "rut-object.h"
 #include "rut-shell.h"

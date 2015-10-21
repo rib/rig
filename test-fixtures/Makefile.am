@@ -5,7 +5,7 @@ libtest_fixtures_la_CPPFLAGS = \
 	-I$(top_srcdir) \
 	-I$(top_builddir) \
 	-I$(top_srcdir)/libuv/include \
-	-I$(top_builddir)/cogl \
+	-I$(top_builddir)/cglib \
 	-I$(top_srcdir)/clib/clib \
 	-I$(top_builddir)/clib/clib \
 	-Wall \

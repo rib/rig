@@ -10,6 +10,8 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir)/libuv/include \
 	-I$(top_srcdir)/clib/clib \
 	-I$(top_builddir)/clib/clib \
+	-I$(top_srcdir)/cglib \
+	-I$(top_builddir)/cglib \
 	-I$(top_srcdir)/LibOVR/Src \
 	$(RIG_DEP_CFLAGS)
 
@@ -35,8 +37,7 @@ common_ldadd = \
 	$(RIG_EXTRA_LDFLAGS) \
 	$(top_builddir)/rig/librig.la \
 	$(top_builddir)/rut/librut.la \
-	$(top_builddir)/cogl/libcg.la \
-	$(top_builddir)/cogl-path/libcogl-path.la \
+	$(top_builddir)/cglib/cglib/libcglib.la \
 	$(RIG_DEP_LIBS) \
 	$(CG_DEP_LIBS) \
 	$(top_builddir)/clib/clib/libclib.la \

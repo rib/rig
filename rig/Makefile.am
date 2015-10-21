@@ -8,6 +8,8 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir)/libuv/include \
 	-I$(top_srcdir)/clib/clib \
 	-I$(top_builddir)/clib/clib \
+	-I$(top_srcdir)/cglib \
+	-I$(top_builddir)/cglib \
 	-I$(top_srcdir)/xdgmime \
 	-I$(top_srcdir)/rut \
 	-I$(top_builddir)/rut \
@@ -15,7 +17,7 @@ AM_CPPFLAGS = \
 	-I$(top_builddir)/rig/protobuf-c-rpc \
 	-DG_DISABLE_SINGLE_INCLUDES \
 	$(RIG_DEP_CFLAGS) \
-	$(COGL_DEP_CFLAGS) \
+	$(CG_DEP_CFLAGS) \
 	-DRIG_BIN_DIR=\"$(bindir)/\" \
 	$(RIG_CLANG_CFLAGS) \
 	-DRIG_LLVM_PREFIX=\"@RIG_LLVM_PREFIX@\" \
@@ -127,10 +129,9 @@ common_ldadd = \
 	$(RIG_EXTRA_LDFLAGS) \
 	librig.la \
 	$(top_builddir)/rut/librut.la \
-	$(top_builddir)/cogl/libcg.la \
-	$(top_builddir)/cogl-path/libcogl-path.la \
+	$(top_builddir)/cglib/cglib/libcglib.la \
 	$(RIG_DEP_LIBS) \
-	$(COGL_DEP_LIBS)
+	$(CG_DEP_LIBS)
 
 if USE_UV
 common_ldadd += $(top_builddir)/xdgmime/libxdgmime.la

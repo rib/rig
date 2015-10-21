@@ -1,12 +1,12 @@
 #include <config.h>
 
 #include <glib.h>
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 #include <math.h>
 
 #include <clib.h>
 
-#include "cogl/cogl-profile.h"
+#include <cglib/cg-profile.h>
 
 #define FRAMEBUFFER_WIDTH 800
 #define FRAMEBUFFER_HEIGHT 500

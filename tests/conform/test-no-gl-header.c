@@ -1,7 +1,7 @@
 #include <config.h>
 
 #undef CG_COMPILATION
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 
 /* If you just include cogl/cogl.h, you shouldn't end up including any
    GL headers */

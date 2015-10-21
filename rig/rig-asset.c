@@ -32,7 +32,7 @@
 
 #include <clib.h>
 
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 
 #ifdef USE_GSTREAMER
 #include <cogl-gst/cogl-gst.h>

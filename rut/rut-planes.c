@@ -30,7 +30,7 @@
 #include "config.h"
 #endif
 
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 #include <clib.h>
 #include <string.h>
 

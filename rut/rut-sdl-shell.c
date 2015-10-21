@@ -28,8 +28,8 @@
 
 #include "config.h"
 
-#include <cogl/cogl.h>
-#include <cogl/cogl-sdl.h>
+#include <cglib/cglib.h>
+#include <cglib/cg-sdl.h>
 
 #include <SDL.h>
 #include <SDL_syswm.h>

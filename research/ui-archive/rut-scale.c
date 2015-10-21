@@ -32,7 +32,7 @@
 #include <math.h>
 #include <clib.h>
 
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 
 #include "rut-interfaces.h"
 #include "rut-paintable.h"
