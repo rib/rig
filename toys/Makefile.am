@@ -23,10 +23,10 @@ AM_CPPFLAGS += -I$(top_srcdir)/LibOVR/Src
 endif
 
 AM_CFLAGS = \
-	$(COGL_DEP_CFLAGS) \
-	$(COGL_EXTRA_CFLAGS) \
-	$(COGL_PANGO_DEP_CFLAGS) \
-	$(COGL_GST_DEP_CFLAGS) \
+	$(CG_DEP_CFLAGS) \
+	$(CG_EXTRA_CFLAGS) \
+	$(CG_PANGO_DEP_CFLAGS) \
+	$(CG_GST_DEP_CFLAGS) \
 	$(RIG_EXTRA_CFLAGS)
 
 AM_CFLAGS += -DCG_EXAMPLES_DATA=\""$(abs_top_srcdir)/toys/"\"
@@ -38,7 +38,7 @@ common_ldadd = \
 	$(top_builddir)/cogl/libcg.la \
 	$(top_builddir)/cogl-path/libcogl-path.la \
 	$(RIG_DEP_LIBS) \
-	$(COGL_DEP_LIBS) \
+	$(CG_DEP_LIBS) \
 	$(top_builddir)/clib/clib/libclib.la \
 	-lstdc++ \
 	$(LIBM)
@@ -65,7 +65,6 @@ common_ldadd += $(top_builddir)/LibOVR/libOVR.la
 endif
 
 programs = cogl-info
-emscripten_programs = cogl-info
 
 cogl_info_SOURCES = cogl-info.c
 cogl_info_LDADD = $(common_ldadd)
@@ -88,14 +87,14 @@ endif
 cogl_point_sprites_SOURCES = cogl-point-sprites.c
 cogl_point_sprites_LDADD = $(common_ldadd)
 
-if BUILD_COGL_PANGO
+if USE_CGLIB_PANGO
 programs += cogl-crate
 cogl_crate_SOURCES = cogl-crate.c
 cogl_crate_LDADD = $(common_ldadd)
 examples_data_DATA += crate.jpg
 endif
 
-if BUILD_COGL_GST
+if USE_CGLIB_GST
 programs += cogl-basic-video-player
 cogl_basic_video_player_SOURCES = cogl-basic-video-player.c
 cogl_basic_video_player_LDADD = $(common_ldadd)
@@ -111,7 +110,7 @@ cogl_x11_tfp_LDADD = $(common_ldadd)
 endif
 endif
 
-if COGL_SUPPORT_WAYLAND_EGL_SERVER
+if CG_SUPPORT_WAYLAND_EGL_SERVER
 programs += cogland
 cogland_SOURCES = cogland.c
 cogland_LDADD = $(common_ldadd)
@@ -120,7 +119,7 @@ endif
 cogl_gles2_context_SOURCES = cogl-gles2-context.c
 cogl_gles2_context_LDADD = $(common_ldadd)
 
-if COGL_SUPPORT_SDL2
+if CG_SUPPORT_SDL2
 programs += cogl-sdl2-hello
 cogl_sdl2_hello_SOURCES = cogl-sdl2-hello.c
 cogl_sdl2_hello_LDADD = $(common_ldadd)
@@ -129,23 +128,17 @@ endif
 if OCULUS_RIFT
 programs += libovr-test
 libovr_test_SOURCES = libovr-test.c
-livovr_test_LDADD = $(common_ldadd)
+libovr_test_LDADD = $(common_ldadd)
 endif
 
 programs += shell-hello
-emscripten_programs += shell-hello
 shell_hello_SOURCES = shell-hello.c
 shell_hello_LDADD = $(common_ldadd)
 
 programs += rig-hello
-emscripten_programs += rig-hello
 rig_hello_SOURCES = rig-hello.c
 rig_hello_LDADD = $(common_ldadd)
 rig_hello_LDFLAGS = -export-dynamic
-
-emscripten_programs += cogl-emscripten-hello
-cogl_emscripten_hello_SOURCES = cogl-emscripten-hello.c
-cogl_emscripten_hello_LDADD = $(common_ldadd)
 
 if USE_UV
 programs += websocket
