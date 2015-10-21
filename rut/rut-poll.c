@@ -42,9 +42,9 @@
 #include <glib.h>
 #endif
 
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 #ifdef USE_SDL
-#include <cogl/cogl-sdl.h>
+#include <cglib/cg-sdl.h>
 #include "rut-sdl-shell.h"
 #endif
 

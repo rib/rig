@@ -29,7 +29,7 @@
 #ifndef _RUT_NODE_H_
 #define _RUT_NODE_H_
 
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 #include <rut.h>
 
 typedef struct {

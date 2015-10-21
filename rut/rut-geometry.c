@@ -32,7 +32,7 @@
 #include <clib.h>
 #include <math.h>
 
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 
 #include "rut-shell.h"
 #include "rut-geometry.h"

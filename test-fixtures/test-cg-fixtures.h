@@ -8,16 +8,16 @@
  * for testing private apis...
  */
 #ifdef CG_COMPILATION
-#include <cogl/cogl-device.h>
-#include <cogl/cogl-onscreen.h>
-#include <cogl/cogl-offscreen.h>
-#include <cogl/cogl-texture-2d.h>
-#include <cogl/cogl-primitive-texture.h>
-#include <cogl/cogl-texture-2d-sliced.h>
-#include <cogl/cogl-meta-texture.h>
-#include <cogl/cogl-atlas-texture.h>
+#include <cglib/cg-device.h>
+#include <cglib/cg-onscreen.h>
+#include <cglib/cg-offscreen.h>
+#include <cglib/cg-texture-2d.h>
+#include <cglib/cg-primitive-texture.h>
+#include <cglib/cg-texture-2d-sliced.h>
+#include <cglib/cg-meta-texture.h>
+#include <cglib/cg-atlas-texture.h>
 #else
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 #endif
 
 #include <clib.h>

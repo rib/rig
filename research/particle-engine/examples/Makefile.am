@@ -1,16 +1,18 @@
 noinst_PROGRAMS =
 
 AM_CFLAGS = \
-	$(COGL_DEP_CFLAGS) \
+	$(CG_DEP_CFLAGS) \
 	-I$(top_srcdir) \
 	-I$(top_srcdir)/libuv/include \
 	-I$(top_srcdir)/clib/clib \
 	-I$(top_builddir)/clib/clib \
+	-I$(top_srcdir)/cglib \
+	-I$(top_builddir)/cglib \
 	-I$(top_srcdir)/research/particle-engine/pe
 
 LDADD = \
-	$(COGL_DEP_LIBS) \
-	$(top_builddir)/cogl/libcg.la \
+	$(CG_DEP_LIBS) \
+	$(top_builddir)/cglib/cglib/libcglib.la \
 	$(top_builddir)/research/particle-engine/pe/libpe.la \
 	$(top_builddir)/clib/clib/libclib.la \
 	-lm

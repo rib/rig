@@ -28,8 +28,8 @@
 
 #include <config.h>
 
-#include <cogl/cogl.h>
-#include <cogl/cogl-webgl.h>
+#include <cglib/cglib.h>
+#include <cglib/cg-webgl.h>
 
 #include "rig-image-source.h"
 

@@ -1,17 +1,10 @@
 #include "config.h"
 
-#include <cogl/cogl.h>
+#include <clib.h>
+
+#include <cglib/cglib.h>
 
 #include "test-cg-fixtures.h"
-
-/* So we can use _C_STATIC_ASSERT we include the internal
- * cogl-util.h header. Since internal headers explicitly guard against
- * applications including them directly instead of including
- * <cogl/cogl.h> we define __CG_H_INSIDE__ here to subvert those
- * guards in this case... */
-#define __CG_H_INSIDE__
-#include <cogl/cogl-util.h>
-#undef __CG_H_INSIDE__
 
 _C_STATIC_ASSERT (CG_VERSION_ENCODE (CG_VERSION_MAJOR,
                                           CG_VERSION_MINOR,

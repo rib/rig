@@ -32,7 +32,7 @@
 #include "rut-planes.h"
 #include "rut-types.h"
 
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 #include <clib.h>
 
 C_BEGIN_DECLS

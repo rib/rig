@@ -29,7 +29,7 @@
 #ifndef __RIG_CAMERA_H__
 #define __RIG_CAMERA_H__
 
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 
 #include <rut.h>
 

@@ -31,7 +31,7 @@
 #include <string.h>
 
 #include <math.h>
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 
 #include "rut-volume-private.h"
 #include "rut-util.h"

@@ -30,7 +30,7 @@
 #ifndef __RUT_FIXED_H__
 #define __RUT_FIXED_H__
 
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 
 #include <rut-shell.h>
 

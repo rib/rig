@@ -56,7 +56,7 @@ C_BEGIN_DECLS
  * of a long (although there is a compile time assert to verify this).
  *
  * If the maximum possible bit number in the set is known at compile
- * time, it may make more sense to use the macros in cogl-flags.h
+ * time, it may make more sense to use the macros in rut-flags.h
  * instead of this type.
  */
 
@@ -82,7 +82,7 @@ typedef struct _rut_bitmask_imaginary_type_t *RutBitmask;
  * _rut_bitmask_init:
  * @bitmask: A pointer to a bitmask
  *
- * Initialises the cogl bitmask. This must be called before any other
+ * Initialises the bitmask. This must be called before any other
  * bitmask functions are called. Initially all of the values are
  * zero
  */
@@ -256,7 +256,7 @@ _rut_bitmask_clear_all(RutBitmask *bitmask)
  * @flags: An array of flags
  *
  * Bitwise or's the bits from @bitmask into the flags array (see
- * cogl-flags) pointed to by @flags.
+ * rut-flags) pointed to by @flags.
  */
 static inline void
 _rut_bitmask_set_flags(const RutBitmask *bitmask,

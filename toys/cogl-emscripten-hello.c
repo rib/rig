@@ -5,7 +5,7 @@
 #include <emscripten.h>
 
 #include <clib.h>
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 
 #include "emscripten-example-js.h"
 

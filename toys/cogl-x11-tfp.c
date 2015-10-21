@@ -1,8 +1,8 @@
 #include <config.h>
 
-#include <cogl/cogl.h>
-#include <cogl/cogl-xlib.h>
-#include <cogl/winsys/cogl-texture-pixmap-x11.h>
+#include <cglib/cglib.h>
+#include <cglib/cg-xlib.h>
+#include <cglib/winsys/cg-texture-pixmap-x11.h>
 #include <clib.h>
 #include <stdio.h>
 

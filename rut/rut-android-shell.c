@@ -30,7 +30,7 @@
 
 #include <android_native_app_glue.h>
 
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 
 #include "rut-shell.h"
 

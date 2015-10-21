@@ -7,7 +7,7 @@ LOCAL_CFLAGS := -DRIG_ENABLE_DEBUG
 LOCAL_SRC_FILES := $(wildcard $(LOCAL_PATH)/*.c)
 LOCAL_EXPORT_CFLAGS := -I$(LOCAL_PATH)
 
-LOCAL_STATIC_LIBRARIES := clib cogl android_native_app_glue
+LOCAL_STATIC_LIBRARIES := clib cglib android_native_app_glue
 LOCAL_SHARED_LIBRARIES := libuv
 
 include $(BUILD_STATIC_LIBRARY)

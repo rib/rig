@@ -26,7 +26,7 @@
 
 #include <glib.h>
 #include <glib-android/glib-android.h>
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 
 typedef struct {
     struct android_app *app;

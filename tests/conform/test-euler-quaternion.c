@@ -1,6 +1,6 @@
 #include <config.h>
 
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 #include <math.h>
 #include <string.h>
 

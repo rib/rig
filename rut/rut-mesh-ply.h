@@ -29,7 +29,7 @@
 #ifndef _RUT_MESH_PLY_
 #define _RUT_MESH_PLY_
 
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 
 #include <clib.h>
 

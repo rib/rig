@@ -29,7 +29,7 @@
 #ifndef __RUT_GAUSSIAN_BLURRER_H__
 #define __RUT_GAUSSIAN_BLURRER_H__
 
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 
 #include "rut-shell.h"
 

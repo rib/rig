@@ -31,7 +31,7 @@
 #include <emscripten.h>
 #include <html5.h>
 
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 #include <cogl/cogl-webgl.h>
 
 #include "rut-shell.h"

@@ -7,8 +7,8 @@
 #include <string.h>
 #include <getopt.h>
 
-#include <cogl/cogl.h>
-#include <cogl/cogl-wayland-server.h>
+#include <cglib/cglib.h>
+#include <cglib/cg-wayland-server.h>
 
 #include <clib.h>
 

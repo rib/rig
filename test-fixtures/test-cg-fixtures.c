@@ -2,10 +2,10 @@
 
 #include <stdlib.h>
 
-#include <cogl/cogl-defines.h>
+#include <cglib/cg-defines.h>
 
 #ifdef CG_HAS_SDL_SUPPORT
-#include <cogl/cogl-sdl.h>
+#include <cglib/cg-sdl.h>
 #include <SDL.h>
 #endif
 

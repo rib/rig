@@ -29,7 +29,7 @@
 #ifndef __RIG_DOF_EFFECT_H__
 #define __RIG_DOF_EFFECT_H__
 
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 
 #include <rut.h>
 

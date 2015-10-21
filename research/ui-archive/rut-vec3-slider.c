@@ -29,7 +29,7 @@
 
 #include <config.h>
 
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 
 #include "rut-number-slider.h"
 #include "rut-vec3-slider.h"

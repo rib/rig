@@ -36,7 +36,7 @@
 #include "rut-box-layout.h"
 
 #ifdef USE_SDL
-#include <cogl/cogl-sdl.h>
+#include <cglib/cg-sdl.h>
 #include <SDL.h>
 #include <SDL_syswm.h>
 #endif

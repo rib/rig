@@ -29,7 +29,7 @@
 #include <config.h>
 
 #include <string.h>
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 
 #include "rply.h"
 

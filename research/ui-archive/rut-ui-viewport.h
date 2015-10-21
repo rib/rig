@@ -30,7 +30,7 @@
 #ifndef _RUT_UI_VIEWPORT_H_
 #define _RUT_UI_VIEWPORT_H_
 
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 
 #include "rut-type.h"
 

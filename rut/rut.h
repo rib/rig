@@ -30,7 +30,7 @@
 #define _RUT_H_
 
 #ifndef RIG_SIMULATOR_ONLY
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 #endif
 
 #include <clib.h>

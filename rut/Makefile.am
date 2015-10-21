@@ -33,7 +33,7 @@ endif
 
 librut_la_LIBADD = \
     $(RIG_DEP_LIBS) \
-    $(COGL_DEP_LIBS) \
+    $(CG_DEP_LIBS) \
     $(RIG_EXTRA_LDFLAGS)
 librut_la_LDFLAGS = \
     -no-undefined \
@@ -44,7 +44,7 @@ librut_la_LDFLAGS += \
 
 librut_la_CFLAGS = \
     $(RIG_DEP_CFLAGS) \
-    $(COGL_DEP_CFLAGS) \
+    $(CG_DEP_CFLAGS) \
     $(RIG_EXTRA_CFLAGS)
 librut_la_CPPFLAGS = \
     -I$(top_srcdir) \
@@ -52,6 +52,8 @@ librut_la_CPPFLAGS = \
     -I$(top_srcdir)/libuv/include \
     -I$(top_srcdir)/clib/clib \
     -I$(top_builddir)/clib/clib \
+    -I$(top_srcdir)/cglib \
+    -I$(top_builddir)/cglib \
     -I$(top_srcdir)/rut
 
 # rut_headersdir =  $(includedir)/rut

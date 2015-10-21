@@ -26,7 +26,7 @@
 #include <string.h>
 
 #include <clib.h>
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 
 #include "particle-emitter.h"
 #include "particle-engine.h"

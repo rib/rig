@@ -4,7 +4,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 #include <cogl-gst/cogl-gst.h>
 
 typedef struct _Data {

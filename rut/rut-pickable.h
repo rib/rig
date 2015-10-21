@@ -29,7 +29,7 @@
 #ifndef __RUT_PICKABLE_H__
 #define __RUT_PICKABLE_H__
 
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 
 #include "rut-object.h"
 

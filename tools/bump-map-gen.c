@@ -55,11 +55,14 @@
  *
  */
 
+#include <config.h>
+
 #include <stdlib.h>
 #include <string.h>
+#include <clib.h>
 #include <glib.h>
 
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
 
 static gboolean bump_map_mode = FALSE;
@@ -300,17 +303,17 @@ main(int argc, char **argv)
     g_option_context_add_main_entries(context, options, NULL);
 
     if (!g_option_context_parse(context, &argc, &argv, &error)) {
-        g_printerr("option parsing failed: %s\n", error->message);
+        c_printerr("option parsing failed: %s\n", error->message);
         exit(EXIT_FAILURE);
     }
 
     if (remaining_args == NULL || remaining_args[1] != NULL) {
-        g_printerr("A single input file must be specified\n");
+        c_printerr("A single input file must be specified\n");
         exit(EXIT_FAILURE);
     }
 
     if (!output) {
-        g_printerr("An output file must be specified\n");
+        c_printerr("An output file must be specified\n");
         exit(EXIT_FAILURE);
     }
 

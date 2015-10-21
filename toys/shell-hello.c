@@ -2,7 +2,7 @@
 
 #include <clib.h>
 #include <rut.h>
-#include <cogl/cogl.h>
+#include <cglib/cglib.h>
 
 struct data {
     rut_shell_t *shell;
