@@ -1,0 +1,64 @@
+all::
+
+E=$(if $(V),,@)
+
+export CC=emcc
+top_srcdir=../../src
+srcdir=$(top_srcdir)/clib
+top_builddir=../
+builddir=.
+
+VPATH=$(srcdir):$(builddir)
+
+include $(srcdir)/Makefile.sources
+
+#can be overriden by user...
+CFLAGS=-g -O0
+OBJ_CFLAGS=$(CFLAGS)
+BC_CFLAGS=$(CFLAGS)
+
+_OBJ_CFLAGS=$(OBJ_CFLAGS) -I$(top_srcdir) -I$(srcdir) -I$(srcdir)/sfmt -DSFMT_MEXP=19937
+_BC_CFLAGS=$(BC_CFLAGS) -I$(top_srcdir) -I$(srcdir)
+
+clib_SOURCE=$(filter %.c,$(clib_common_source) $(sfmt_source) cmisc-emscripten.c)
+clib_OBJECTS=$(patsubst %.c, %.o, $(clib_SOURCE))
+
+precomp_headers=clib-config.pch
+builddirs=sfmt
+
+all:: Makefile clib.bc
+
+clib-config.h:
+	$(E)echo "#include \"config.h\"" > clib-config.h; \
+	echo "#include \"clib.h\"" >> clib-config.h
+clib-config.pch: $(top_srcdir)/config.h clib-config.h
+
+clib.bc: $(clib_OBJECTS)
+
+
+%.pch: | dirs
+	$(E)echo "(PCH)    $(@)"
+	$(E)$(CC) -x c-header $(*).h -std=c11 -o $@ -MMD -MF .deps/$(@).rules $(_OBJ_CFLAGS)
+
+%.o: $(precomp_headers) %.c | dirs
+	$(E)echo "(CC)     $(@)"
+	$(E)$(CC) $(srcdir)/$(*).c -o $@ -MMD -MF .deps/$(@).rules -include clib-config.h $(_OBJ_CFLAGS)
+
+%.bc: clib-config.pch | dirs
+	$(E)echo "(BC)     $(@)"
+	$(E)$(CC) $(_BC_CFLAGS) $(filter %.o %.c,$(^)) -o $@
+
+-include .deps/*.rules
+-include .deps/*/*.rules
+-include .deps/*/*/*.rules
+
+Makefile:
+	$(E)ln -sf $(srcdir)/Makefile.emscripten Makefile
+
+dirs:
+	$(E)mkdir -p $(builddirs) .deps $(addprefix .deps/,$(builddirs))
+
+clean:
+	-rm -f *.o *.bc $(precomp_header)
+
+.PHONY: all clean Makefile dirs

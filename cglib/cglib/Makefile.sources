@@ -1,0 +1,363 @@
+# public api headers
+cg_base_public_h = \
+	cg-attribute-buffer.h 	\
+	cg-attribute.h 		\
+	cg-bitmap.h 		\
+	cg-buffer.h 		\
+	cg-color.h 			\
+	cg-device.h 		\
+	cg-depth-state.h 		\
+	cg-display.h 		\
+	cg-error.h			\
+	cg-framebuffer.h		\
+	cg-gles2-types.h		\
+	cg-gles2.h			\
+	cg-index-buffer.h 		\
+	cg-indices.h 		\
+	cg-meta-texture.h		\
+	cg-object.h 		\
+	cg-offscreen.h 		\
+	cg-onscreen-template.h 	\
+	cg-frame-info.h		\
+	cg-onscreen.h		\
+	cg-pipeline-layer-state.h 	\
+	cg-pipeline-state.h 	\
+	cg-pipeline.h 		\
+	cg-pixel-buffer.h		\
+	cg-loop.h			\
+	cg-primitive-texture.h	\
+	cg-primitive.h 		\
+	cg-output.h			\
+	cg-matrix-stack.h		\
+	cg-renderer.h 		\
+	cg-snippet.h		\
+	cg-sub-texture.h            \
+	cg-atlas-set.h          	\
+	cg-atlas.h          		\
+	cg-atlas-texture.h          	\
+	cg-texture-2d-gl.h 		\
+	cg-texture-2d-sliced.h      \
+	cg-texture-2d.h             \
+	cg-texture-3d.h             \
+	cg-texture.h 		\
+	cg-types.h 			\
+	cg-fence.h       		\
+	cg-version.h		\
+	cglib.h
+
+# nop driver
+cg_driver_sources = \
+	driver/nop/cg-driver-nop.c \
+	driver/nop/cg-framebuffer-nop-private.h \
+	driver/nop/cg-framebuffer-nop.c \
+	driver/nop/cg-attribute-nop-private.h \
+	driver/nop/cg-attribute-nop.c \
+	driver/nop/cg-clip-stack-nop-private.h \
+	driver/nop/cg-clip-stack-nop.c \
+	driver/nop/cg-texture-2d-nop-private.h \
+	driver/nop/cg-texture-2d-nop.c \
+	driver/nop/cg-pipeline-fragend-nop.c \
+	driver/nop/cg-pipeline-fragend-nop-private.h \
+	driver/nop/cg-pipeline-vertend-nop.c \
+	driver/nop/cg-pipeline-vertend-nop-private.h \
+	driver/nop/cg-pipeline-progend-nop.c \
+	driver/nop/cg-pipeline-progend-nop-private.h
+
+
+# gl driver sources
+cg_gl_prototypes_h = \
+	gl-prototypes/cg-gles2-functions.h		\
+	gl-prototypes/cg-core-functions.h		\
+	gl-prototypes/cg-in-gles2-core-functions.h	\
+	gl-prototypes/cg-glsl-functions.h
+
+cg_driver_sources += \
+	driver/gl/cg-util-gl-private.h \
+	driver/gl/cg-util-gl.c \
+	driver/gl/cg-framebuffer-gl-private.h \
+	driver/gl/cg-framebuffer-gl.c \
+	driver/gl/cg-texture-gl-private.h \
+	driver/gl/cg-texture-gl.c \
+	driver/gl/cg-texture-2d-gl-private.h \
+	driver/gl/cg-texture-2d-gl.c \
+	driver/gl/cg-attribute-gl-private.h \
+	driver/gl/cg-attribute-gl.c \
+	driver/gl/cg-clip-stack-gl-private.h \
+	driver/gl/cg-clip-stack-gl.c \
+	driver/gl/cg-buffer-gl-private.h \
+	driver/gl/cg-buffer-gl.c \
+	driver/gl/cg-pipeline-opengl.c \
+	driver/gl/cg-pipeline-opengl-private.h \
+	driver/gl/cg-pipeline-fragend-glsl.c \
+	driver/gl/cg-pipeline-fragend-glsl-private.h \
+	driver/gl/cg-pipeline-vertend-glsl.c \
+	driver/gl/cg-pipeline-vertend-glsl-private.h \
+	driver/gl/cg-pipeline-progend-glsl.c \
+	driver/gl/cg-pipeline-progend-glsl-private.h
+
+cg_driver_gl_sources = \
+	driver/gl/gl/cg-driver-gl.c \
+	driver/gl/gl/cg-texture-driver-gl.c
+
+cg_driver_gles_sources = \
+	driver/gl/gles/cg-driver-gles.c \
+	driver/gl/gles/cg-texture-driver-gles.c
+
+# winsys sources, common to all backends
+cg_winsys_common_sources = \
+	winsys/cg-winsys-private.h \
+	winsys/cg-winsys.c
+
+# sources
+cg_base_sources_c = \
+	$(cg_driver_sources)				\
+	$(cg_winsys_common_sources)			\
+	cg-private.h			\
+	cg-i18n-private.h 			\
+	cg-debug.h 				\
+	cg-debug-options.h			\
+	cg-gpu-info.c			\
+	cg-gpu-info-private.h		\
+	cg-device-private.h		\
+	cg-device.c			\
+	cg-renderer-private.h		\
+	cg-renderer.h			\
+	cg-renderer.c			\
+	cg-onscreen-template-private.h 	\
+	cg-onscreen-template.h 		\
+	cg-onscreen-template.c 		\
+	cg-display-private.h		\
+	cg-display.h			\
+	cg-display.c			\
+	cg-driver.h				\
+	cglib.c				\
+	cg-pixel-format-private.h		\
+	cg-pixel-format.c			\
+	cg-object-private.h			\
+	cg-object.h				\
+	cg-object.c				\
+	cg-util.h 				\
+	cg-util.c 				\
+	cg-bitmap-private.h 		\
+	cg-bitmap.c 			\
+	cg-bitmap-conversion.c 		\
+	cg-bitmap-unpack-unsigned-normalized.h \
+	cg-bitmap-unpack-fallback.h		\
+	cg-bitmap-pack.h			\
+	cg-bitmap-pixbuf.c 			\
+	cg-clip-stack.h 			\
+	cg-clip-stack.c			\
+	cg-feature-private.h                \
+	cg-feature-private.c                \
+	cg-color-private.h    		\
+	cg-color.c				\
+	cg-buffer-private.h 		\
+	cg-buffer.c				\
+	cg-pixel-buffer-private.h		\
+	cg-pixel-buffer.c			\
+	cg-index-buffer-private.h		\
+	cg-index-buffer.c			\
+	cg-attribute-buffer-private.h	\
+	cg-attribute-buffer.c		\
+	cg-indices-private.h		\
+	cg-indices.c			\
+	cg-attribute-private.h		\
+	cg-attribute.c			\
+	cg-primitive-private.h		\
+	cg-primitive.c			\
+	cg-matrix-stack.c			\
+	cg-matrix-stack-private.h		\
+	cg-depth-state.c			\
+	cg-depth-state-private.h		\
+	cg-node.c				\
+	cg-node-private.h			\
+	cg-pipeline.c			\
+	cg-pipeline-private.h		\
+	cg-pipeline-layer.c			\
+	cg-pipeline-layer-private.h		\
+	cg-pipeline-state.c			\
+	cg-pipeline-layer-state-private.h	\
+	cg-pipeline-layer-state.c		\
+	cg-pipeline-state-private.h		\
+	cg-pipeline-debug.c			\
+	cg-glsl-shader.c			\
+	cg-glsl-shader-private.h		\
+	cg-glsl-shader-boilerplate.h	\
+	cg-pipeline-snippet-private.h	\
+	cg-pipeline-snippet.c		\
+	cg-pipeline-cache.h			\
+	cg-pipeline-cache.c			\
+	cg-pipeline-hash-table.h		\
+	cg-pipeline-hash-table.c		\
+	cg-sampler-cache.c			\
+	cg-sampler-cache-private.h		\
+	cg-blend-string.c			\
+	cg-blend-string.h			\
+	cg-debug.c				\
+	cg-sub-texture-private.h            \
+	cg-texture-private.h		\
+	cg-texture-2d-private.h             \
+	cg-texture-2d-sliced-private.h 	\
+	cg-texture-3d-private.h             \
+	cg-texture-driver.h			\
+	cg-sub-texture.c                    \
+	cg-texture.c			\
+	cg-texture-2d.c                     \
+	cg-texture-2d-sliced.c		\
+	cg-texture-3d.c                     \
+	cg-rectangle-map.h                  \
+	cg-rectangle-map.c                  \
+	cg-atlas-set-private.h              	\
+	cg-atlas-set.c			\
+	cg-atlas-private.h                   	\
+	cg-atlas.c                          	\
+	cg-atlas-texture-private.h          \
+	cg-atlas-texture.c                  \
+	cg-meta-texture.c			\
+	cg-primitive-texture.c		\
+	cg-blit.h				\
+	cg-blit.c				\
+	cg-spans.h				\
+	cg-spans.c				\
+	cg-frame-info-private.h		\
+	cg-frame-info.c			\
+	cg-framebuffer-private.h		\
+	cg-framebuffer.c 			\
+	cg-onscreen-private.h		\
+	cg-onscreen.c 			\
+	cg-output-private.h			\
+	cg-output.c				\
+	cg-profile.h 			\
+	cg-profile.c 			\
+	cg-flags.h				\
+	cg-bitmask.h                        \
+	cg-bitmask.c                        \
+	cg-gtype-private.h                  \
+	cg-point-in-poly-private.h       	\
+	cg-point-in-poly.c       		\
+	winsys/cg-winsys-stub-private.h	\
+	winsys/cg-winsys-stub.c		\
+	cg-config-private.h			\
+	cg-config.c				\
+	cg-boxed-value.h			\
+	cg-boxed-value.c			\
+	cg-snippet-private.h		\
+	cg-snippet.c			\
+	cg-loop-private.h			\
+	cg-loop.c				\
+	gl-prototypes/cg-all-functions.h	\
+	gl-prototypes/cg-gles2-functions.h	\
+	gl-prototypes/cg-core-functions.h	\
+	gl-prototypes/cg-in-gles2-core-functions.h	\
+	gl-prototypes/cg-fixed-functions.h	\
+	gl-prototypes/cg-glsl-functions.h	\
+	cg-memory-stack-private.h		\
+	cg-memory-stack.c			\
+	cg-magazine-private.h		\
+	cg-magazine.c			\
+	cg-gles2-context-private.h		\
+	cg-gles2-context.c			\
+	cg-error-private.h			\
+	cg-error.c				\
+	cg-closure-list-private.h		\
+	cg-closure-list.c			\
+	cg-fence.c				\
+	cg-fence-private.h
+
+cg_glib_sources_h = cg-glib-source.h
+cg_glib_sources_c = cg-glib-source.c
+
+cg_uv_sources_h = cg-uv.h
+cg_uv_sources_c = cg-uv.c cg-uv-private.h
+
+cg_webgl_sources_h = cg-webgl.h cg-webgl-renderer.h
+cg_webgl_sources_c = \
+	cg-webgl-private.h \
+	cg-webgl.c \
+	cg-webgl-renderer.c \
+	winsys/cg-winsys-webgl-private.h \
+	winsys/cg-winsys-webgl.c
+
+cg_xlib_sources_h = \
+	cg-xlib-renderer.h \
+	winsys/cg-texture-pixmap-x11.h \
+	cg-xlib.h
+cg_xlib_sources_c = \
+	cg-x11-renderer-private.h \
+	cg-xlib-renderer-private.h \
+	cg-xlib-renderer.c \
+	winsys/cg-texture-pixmap-x11.c \
+	winsys/cg-texture-pixmap-x11-private.h
+
+cg_glx_sources_c = \
+	cg-glx-renderer-private.h \
+	cg-glx-display-private.h \
+	winsys/cg-winsys-glx-feature-functions.h \
+	winsys/cg-winsys-glx-private.h \
+	winsys/cg-winsys-glx.c
+
+cg_wgl_sources_h = cg-win32-renderer.h
+cg_wgl_sources_c = \
+	cg-win32-renderer.c \
+	winsys/cg-winsys-wgl-private.h \
+	winsys/cg-winsys-wgl.c \
+	winsys/cg-winsys-wgl-feature-functions.h
+
+cg_egl_wayland_server_sources_h = \
+	cg-wayland-server.h
+cg_egl_wayland_sources_h = \
+	cg-wayland-renderer.h \
+	cg-wayland-client.h
+cg_egl_wayland_sources_c = \
+	winsys/cg-winsys-egl-wayland.c \
+	winsys/cg-winsys-egl-wayland-private.h
+
+cg_egl_kms_sources_h = \
+	cg-kms-renderer.h \
+	cg-kms-display.h
+cg_egl_kms_sources_c = \
+	winsys/cg-winsys-egl-kms.c \
+	winsys/cg-winsys-egl-kms-private.h
+
+cg_egl_xlib_sources_c = \
+	winsys/cg-winsys-egl-x11.c \
+	winsys/cg-winsys-egl-x11-private.h
+
+cg_egl_powervr_null_sources_c = \
+	winsys/cg-winsys-egl-null.c \
+	winsys/cg-winsys-egl-null-private.h
+
+cg_egl_android_sources_c = \
+	winsys/cg-winsys-egl-android.c \
+	winsys/cg-winsys-egl-android-private.h
+
+cg_egl_sources_h = \
+       cg-egl.h
+cg_egl_sources_c = \
+       winsys/cg-winsys-egl.c \
+       winsys/cg-winsys-egl-feature-functions.h \
+       winsys/cg-winsys-egl-private.h
+
+cg_sdl2_sources_h = cg-sdl.h
+cg_sdl2_sources_c = \
+       winsys/cg-winsys-sdl-private.h \
+       winsys/cg-winsys-sdl2.c \
+       cg-sdl.c
+
+cg_android_sources = \
+	$(cg_base_public_h) \
+	$(cg_base_sources_c) \
+	$(cg_uv_sources_h) \
+	$(cg_uv_sources_c) \
+	$(cg_driver_gles_sources) \
+	$(cg_egl_sources_h) \
+	$(cg_egl_sources_c) \
+	$(cg_egl_android_sources_c) \
+	stb_image.c
+
+cg_emscripten_sources = \
+	$(cg_base_public_h) \
+	$(cg_base_sources_c) \
+	$(cg_driver_gles_sources) \
+	$(cg_webgl_sources_h) \
+	$(cg_webgl_sources_c)
