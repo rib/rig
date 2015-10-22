@@ -1,0 +1,57 @@
+language: c
+
+sudo: false
+
+os:
+    - linux
+    - osx
+
+compiler:
+    - clang
+    - gcc
+
+addons:
+    apt:
+        sources:
+            - ubuntu-toolchain-r-test
+        packages:
+            - gcc-4.9
+            - g++-4.9
+            - clang
+            - ninja-build
+
+cache:
+    directories:
+        - libuv
+        - ninja
+
+env:
+    - USE_GYP=true
+    - USE_GYP=false
+
+before_install:
+    - if test "$CC" = "gcc"; then export CC=gcc-4.9; export CXX=g++-4.9; fi
+    - (if ! test -d libuv/lib; then
+        git clone --branch master --single-branch --depth 1 https://github.com/libuv/libuv libuv-src &&
+        cd libuv-src && ./autogen.sh && ./configure --prefix=$TRAVIS_BUILD_DIR/libuv && make && make install;
+       fi)
+    - export PKG_CONFIG_PATH="$TRAVIS_BUILD_DIR/libuv/lib/pkgconfig"
+    - (if test "$USE_GYP" = true; then
+        git clone --branch master --single-branch --depth 1 https://chromium.googlesource.com/external/gyp.git &&
+        cd ./gyp &&
+        python ./setup.py install --user;
+       fi)
+    - (if ! test -f ninja/ninja; then
+        git clone --branch master --single-branch --depth 1 git://github.com/martine/ninja.git &&
+        cd ./ninja &&
+        ./configure.py --bootstrap;
+       fi)
+    - export PATH="$TRAVIS_BUILD_DIR/ninja:$PATH"
+
+before_script:
+    - if test "$USE_GYP" = true; then ./gyp_configure.py; fi
+    - if test "$USE_GYP" = false; then NOCONFIGURE=1 ./autogen.sh; fi
+
+script:
+    - if test "$USE_GYP" = true; then ninja -C out/Debug; fi
+    - if test "$USE_GYP" = false; then ./configure && make; fi

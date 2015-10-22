@@ -1,0 +1,5 @@
+[subdir "upstream"]
+	url = git@github.com:rig-project/cglib.git
+	branch = master
+[subdir "integration"]
+	ref = da932e6595a32d96892c756a708a7ad29c2dc344

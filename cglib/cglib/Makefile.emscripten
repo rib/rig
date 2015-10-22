@@ -1,0 +1,74 @@
+all::
+
+E=$(if $(V),,@)
+
+export CC=emcc
+top_srcdir=../../src
+srcdir=$(top_srcdir)/cglib
+top_builddir=../
+builddir=.
+
+VPATH=$(srcdir):$(builddir)
+
+include $(srcdir)/Makefile.sources
+
+#can be overriden by user...
+CFLAGS=-g -O0
+OBJ_CFLAGS=$(CFLAGS)
+BC_CFLAGS=$(CFLAGS)
+
+_OBJ_CFLAGS=$(OBJ_CFLAGS) \
+	    -I$(top_srcdir) \
+	    -I$(top_srcdir)/clib \
+	    -I$(srcdir) \
+	    -I$(srcdir)/driver/nop \
+	    -I$(srcdir)/driver/gl \
+	    -I$(srcdir)/winsys \
+	    -DCG_GLES2_LIBNAME=\"\"
+_BC_CFLAGS=$(BC_CFLAGS) -I$(top_srcdir) -I$(srcdir)
+
+SOURCE=$(filter %.c,$(cg_emscripten_sources))
+OBJECTS=$(patsubst %.c, %.o, $(SOURCE))
+
+precomp_header=cg-config.pch
+builddirs=driver/nop driver/gl driver/gl/gles winsys
+
+
+all:: Makefile cglib.bc
+
+cg-config.h:
+	$(E)echo "#define CG_COMPILATION 1" > cg-config.h;
+	$(E)echo "#include \"clib-config.h\"" >> cg-config.h;
+	$(E)echo "#include \"cglib.h\"" >> cg-config.h
+cg-config.pch: $(top_srcdir)/config.h cg-config.h
+
+cglib.bc: $(OBJECTS)
+
+
+%.pch: | dirs
+	$(E)echo "(PCH)    $(@)"
+	$(E)$(CC) -x c-header $(*).h -std=c11 -o $@ -MMD -MF .deps/$(@).rules $(_OBJ_CFLAGS)
+
+%.o: $(precomp_header) %.c | dirs
+	$(E)echo "(CC)     $(@)"
+	$(E)$(CC) $(srcdir)/$(*).c -o $@ -MMD -MF .deps/$(@).rules -include cg-config.h $(_OBJ_CFLAGS)
+
+%.bc: cg-config.pch | dirs
+	$(E)echo "(BC)     $(@)"
+	$(E)$(CC) $(_BC_CFLAGS) $(filter %.o %.c,$(^)) -o $@
+
+-include .deps/*.rules
+-include .deps/*/*.rules
+-include .deps/*/*/*.rules
+-include .deps/*/*/*/*.rules
+
+Makefile:
+	$(E)ln -sf $(srcdir)/Makefile.emscripten Makefile
+
+dirs:
+	$(E)mkdir -p $(builddirs) .deps $(addprefix .deps/,$(builddirs))
+
+clean:
+	-rm -f *.o *.bc $(precomp_header)
+
+.PHONY: all clean Makefile dirs
