@@ -43,7 +43,7 @@ typedef char ovrBool;
     #ifdef OVR_OS_WIN32
         #define OVR_EXPORT __declspec(dllexport)
     #else
-        #define OVR_EXPORT
+        #define OVR_EXPORT __attribute__((visibility("default")))
     #endif
 #endif
 
