@@ -28,18 +28,25 @@ enum {
     H2O_CONFIGURATOR_FLAG_GLOBAL = 0x1,
     H2O_CONFIGURATOR_FLAG_HOST = 0x2,
     H2O_CONFIGURATOR_FLAG_PATH = 0x4,
+    H2O_CONFIGURATOR_FLAG_EXTENSION = 0x8,
+    H2O_CONFIGURATOR_FLAG_ALL_LEVELS =
+        H2O_CONFIGURATOR_FLAG_GLOBAL | H2O_CONFIGURATOR_FLAG_HOST | H2O_CONFIGURATOR_FLAG_PATH | H2O_CONFIGURATOR_FLAG_EXTENSION,
     H2O_CONFIGURATOR_FLAG_EXPECT_SCALAR = 0x100,
     H2O_CONFIGURATOR_FLAG_EXPECT_SEQUENCE = 0x200,
     H2O_CONFIGURATOR_FLAG_EXPECT_MAPPING = 0x400,
-    H2O_CONFIGURATOR_FLAG_DEFERRED = 0x1000
+    H2O_CONFIGURATOR_FLAG_DEFERRED = 0x1000,
+    H2O_CONFIGURATOR_FLAG_SEMI_DEFERRED = 0x2000 /* used by file.custom-handler (invoked before hosts,paths,file-dir, etc.) */
 };
 
-#define H2O_CONFIGURATOR_NUM_LEVELS 3
+#define H2O_CONFIGURATOR_NUM_LEVELS 4
 
-typedef struct h2o_configurator_context_t {
+typedef struct st_h2o_configurator_context_t {
     h2o_globalconf_t *globalconf;
     h2o_hostconf_t *hostconf;
     h2o_pathconf_t *pathconf;
+    h2o_mimemap_t **mimemap;
+    int dry_run;
+    struct st_h2o_configurator_context_t *parent;
 } h2o_configurator_context_t;
 
 typedef int (*h2o_configurator_dispose_cb)(h2o_configurator_t *configurator);
@@ -106,7 +113,11 @@ h2o_configurator_command_t *h2o_configurator_get_command(h2o_globalconf_t *conf,
  * applies the configuration to the context
  * @return 0 if successful, -1 if not
  */
-int h2o_configurator_apply(h2o_globalconf_t *config, yoml_t *node);
+int h2o_configurator_apply(h2o_globalconf_t *config, yoml_t *node, int dry_run);
+/**
+ *
+ */
+int h2o_configurator_apply_commands(h2o_configurator_context_t *ctx, yoml_t *node, int flags_mask, const char **ignore_commands);
 /**
  * emits configuration error
  */
@@ -130,6 +141,10 @@ int h2o_configurator_scanf(h2o_configurator_command_t *cmd, yoml_t *node, const 
  * @return index of the matched string within the given list, or -1 if none of them matched
  */
 ssize_t h2o_configurator_get_one_of(h2o_configurator_command_t *cmd, yoml_t *node, const char *candidates);
+/**
+ * returns the absolute paths of supplementary commands
+ */
+char *h2o_configurator_get_cmd_path(const char *cmd);
 
 void h2o_configurator__init_core(h2o_globalconf_t *conf);
 void h2o_configurator__dispose_configurators(h2o_globalconf_t *conf);

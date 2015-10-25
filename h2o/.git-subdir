@@ -1,0 +1,5 @@
+[subdir "upstream"]
+	url = https://github.com/h2o/h2o
+	branch = master
+[subdir "integration"]
+	ref = 6f0aa19befd95831ac397fc70ebc227908bee02d

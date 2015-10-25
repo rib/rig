@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 DeNA Co., Ltd.
+ * Copyright (c) 2014,2015 DeNA Co., Ltd., Kazuho Oku, Justin Zhu
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -22,6 +22,9 @@
 #ifndef h2o__memory_h
 #define h2o__memory_h
 
+#ifdef __sun__
+#include <alloca.h>
+#endif
 #include <assert.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -33,6 +36,14 @@ extern "C" {
 #endif
 
 #define H2O_STRUCT_FROM_MEMBER(s, m, p) ((s *)((char *)(p)-offsetof(s, m)))
+
+#if __GNUC__ >= 3
+#define H2O_LIKELY(x) __builtin_expect(!!(x), 1)
+#define H2O_UNLIKELY(x) __builtin_expect(!!(x), 0)
+#else
+#define H2O_LIKELY(x) (x)
+#define H2O_UNLIKELY(x) (x)
+#endif
 
 #ifdef __GNUC__
 #define H2O_GNUC_VERSION ((__GNUC__ << 16) | (__GNUC_MINOR__ << 8) | __GNUC_PATCHLEVEL__)
@@ -134,6 +145,8 @@ struct st_h2o_buffer_prototype_t {
     }
 
 typedef H2O_VECTOR(void) h2o_vector_t;
+
+extern void *(*h2o_mem__set_secure)(void *, int, size_t);
 
 /**
  * prints an error message and aborts
@@ -247,6 +260,16 @@ void h2o_vector__expand(h2o_mem_pool_t *pool, h2o_vector_t *vector, size_t eleme
 static int h2o_memis(const void *target, size_t target_len, const void *test, size_t test_len);
 
 /**
+ * secure memset
+ */
+static void *h2o_mem_set_secure(void *b, int c, size_t len);
+
+/**
+ * swaps contents of memory
+ */
+void h2o_mem_swap(void *x, void *y, size_t len);
+
+/**
  * emits hexdump of given buffer to fp
  */
 void h2o_dump_memory(FILE *fp, const char *buf, size_t len);
@@ -348,6 +371,11 @@ inline int h2o_memis(const void *_target, size_t target_len, const void *_test, 
     if (target[0] != test[0])
         return 0;
     return memcmp(target + 1, test + 1, test_len - 1) == 0;
+}
+
+inline void *h2o_mem_set_secure(void *b, int c, size_t len)
+{
+    return h2o_mem__set_secure(b, c, len);
 }
 
 #ifdef __cplusplus

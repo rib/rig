@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 DeNA Co., Ltd., Kazuho Oku
+ * Copyright (c) 2015 DeNA Co., Ltd., Kazuho Oku, Tatsuhiko Kubo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -75,5 +75,9 @@ void h2o_multithread_send_message(h2o_multithread_receiver_t *receiver, h2o_mult
  * sends a request
  */
 void h2o_multithread_send_request(h2o_multithread_receiver_t *receiver, h2o_multithread_request_t *req);
+/**
+ * create a thread
+ */
+void h2o_multithread_create_thread(pthread_t *tid, const pthread_attr_t *attr, void *(*func)(void *), void *arg);
 
 #endif
