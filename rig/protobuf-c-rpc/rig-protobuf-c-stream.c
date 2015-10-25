@@ -30,7 +30,7 @@
 
 #ifdef USE_UV
 #include <uv.h>
-#include <wslay/wslay_event.h>
+#include <wslay_event.h>
 #endif
 
 #ifdef __EMSCRIPTEN__
