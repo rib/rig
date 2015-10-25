@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+<!-- oktavia -->
+<link rel="stylesheet" href="assets/searchstyle.css" type="text/css" />
+<script src="search/jquery-1.9.1.min.js"></script>
+<script src="search/oktavia-jquery-ui.js"></script>
+<script src="search/oktavia-english-search.js"></script>
+<!-- /oktavia -->
+
+<link rel="stylesheet" href="assets/style.css" type="text/css" />
+
+<title>Install - H2O</title>
+</head>
+<body>
+<div id="body">
+<div id="top">
+
+<h1><a href="index.html">H2O</a></h1>
+the optimized HTTP/1.x, HTTP/2 server
+
+<!-- oktavia -->
+<form id="searchform">
+<input class="search" type="search" name="search" id="search" results="5" value="" placeholder="Search" />
+<div id="searchresult_box">
+<div id="close_search_box">&times;</div>
+<div id="searchresult_summary"></div>
+<div id="searchresult"></div>
+<div id="searchresult_nav"></div>
+<span class="pr">Powered by <a href="https://github.com/shibukawa/oktavia">Oktavia</a></span>
+</div>
+</form>
+<!-- /oktavia -->
+
+</div>
+
+<table id="menu">
+<tr>
+<td><a href="index.html">Top</a></td>
+<td class="selected">Install</td>
+<td><a href="configure.html">Configure</a></td>
+<td><a href="faq.html">FAQ</a></td>
+<td><a href="http://blog.kazuhooku.com/search/label/H2O" target="_blank">Blog</a></td>
+<td><a href="http://github.com/h2o/h2o/" target="_blank">Source</a></td>
+</tr>
+</table>
+
+<div id="main">
+
+<h2>
+Install
+</h2>
+
+
+<h3>Installing the Binary Distribution</h3>
+
+<div>
+Thanks to others, H2O is provided as a binary package on some of the operating systems (e.g. yum, apt-get, brew).
+
+Therefore you may try to at first install the software using your favorite packaging system, and then resort to installing from source as described below.
+</div>
+
+<h3>Installing from Source</h3>
+
+<p>
+Download a release version from <a href="https://github.com/h2o/h2o/releases">the releases page</a> or clone the master branch from <a href="https://github.com/h2o/h2o/">the source repository</a>, and build it using <a href="http://www.cmake.org/">CMake</a><sup><a href="#note_1" id="#cite_1" title="CMake is a popular build tool that can be found as a binary package on most operating systems.">1</sup></a></sup>.
+</p>
+
+<pre><code>% cmake -DWITH_BUNDLED_SSL=on .
+% make
+% sudo make install
+</code></pre>
+
+<p>
+When complete, H2O will be installed under <code>/usr/local</code>.
+</p>
+
+<p>
+Start the installed server using the example configuration to confirm that it actually works (note: without the use of <code>-m</code> option the server runs as a foreground process; press <code>Ctrl-C</code> to stop).
+</p>
+
+<pre><code>% /usr/local/bin/h2o -c examples/h2o/h2o.conf
+</code></pre>
+
+<p>
+The example configuration starts a server that listens to port 8080 (HTTP) and port 8081 (HTTPS).  Try to access the ports using the protocols respectively (note: when accessing via HTTPS it is likely that you would see hostname mismatch errors reported by the web browsers).
+</p>
+
+<p>
+When complete, proceed to <a href="configure.html">Configure</a> section for how to setup the server.
+</p>
+
+<h4>CMake Options</h4>
+
+<p>
+Following list shows the interesting arguments recognized by CMake.
+
+<dl>
+<dt><code>-DWITH_BUNDLED_SSL=<i>on</i>|<i>off</i></code></dt>
+<dd>
+This option instructs whether or not to use <a href="http://www.libressl.org/">LibreSSL</a> being bundled (default: <code>off</code> if <a href="https://www.openssl.org/">OpenSSL</a> version >= 1.0.2 is found, <code>on</code> if otherwise).  Read the section below for comparison between OpenSSL and LibreSSL.
+</dd>
+<dt><code>-DCMAKE_INSTALL_PREFIX=<i>directory</i></code></dt>
+<dd>
+This option specifies the directory to which H2O will be installed (default: <code>/usr/local</code>).
+</dd>
+</dl>
+</p>
+
+<h3>Installing from Source, using OpenSSL</h3>
+
+<p>
+Generally speaking, we believe that using LibreSSL is a better choice for running H2O, since LibreSSL not only is considered to be more secure than OpenSSL but also provides support for new ciphersuites such as <code>chacha20-poly1305</code> which is the preferred method of Google Chrome<sup><a href="#note_2" id="#cite_2" title="ref: Do the ChaCha: better mobile performance with cryptography">2</sup></a></sup>.  However, it is also true that LibreSSL is slower than OpenSSL on some benchmarks.  So if you are interested in benchmark numbers, using OpenSSL is a reasonable choice.
+</p>
+
+<p>
+The difficulty in using OpenSSL is that the HTTP/2 specification requires the use of an extension to the TLS protocol named ALPN, which has only been supported since OpenSSL 1.0.2<sup><a href="#note_3" id="#cite_3" title="It is possible to build H2O using prior versions of OpenSSL, but some (if not all) web browsers are known for not using HTTP/2 when connecting to servers configured as such.">3</sup></a></sup>.  Therefore it is highly likely that you would need to manually install or upgrade OpenSSL on your system.
+</p>
+
+<p>
+Once you have installed OpenSSL 1.0.2, it is possible to build H2O that links against the library.  As an safeguard it is advised to use <code>-DWITH_BUNDLED_SSL</code> set to <code>off</code>, so that the server would not accidentally link against the bundled LibreSSL.
+CMake will search for OpenSSL by looking at the default search paths.
+</p>
+
+<pre><code>% cmake -DWITH_BUNDLED_SSL=off
+% make
+% sudo make install
+</code></pre>
+
+<p>
+Two ways exist to specify the directory in which CMake should search for OpenSSL.
+The preferred approach is to use the <code>PKG_CONFIG_PATH</code> environment variable.
+</p>
+
+<pre><code>% PKG_CONFIG_PATH=/usr/local/openssl-1.0.2/lib/pkgconfig cmake -DWITH_BUNDLED_SSL=off
+% make
+% sudo make install
+</code></pre>
+
+<p>
+In case your OpenSSL installation does not have the <code>lib/pkgconfig</code> directory, you may use <code>OPENSSL_ROOT_DIR</code> environment variable to specify the root directory of the OpenSSL being installed.  However, it is likely that CMake version 3.1.2 or above is be required when using this approach<sup><a href="#note_4" id="#cite_4" title="ref: h2o issue #277, CMake issue 0015386">4</sup></a></sup>.
+</p>
+
+<pre><code>% OPENSSL_ROOT_DIR=/usr/local/openssl-1.0.2 cmake -DWITH_BUNDLED_SSL=off
+% make
+% sudo make install
+</code></pre>
+
+
+
+<div class="notes">
+<h3>Notes:</h3>
+<ol>
+<li id="note_1">CMake is a popular build tool that can be found as a binary package on most operating systems.</li>
+<li id="note_2">ref: <a href="https://blog.cloudflare.com/do-the-chacha-better-mobile-performance-with-cryptography/">Do the ChaCha: better mobile performance with cryptography</a></li>
+<li id="note_3">It is possible to build H2O using prior versions of OpenSSL, but some (if not all) web browsers are known for not using HTTP/2 when connecting to servers configured as such.</li>
+<li id="note_4">ref: <a href="https://github.com/h2o/h2o/issues/277">h2o issue #277</a>, <a href="http://public.kitware.com/Bug/view.php?id=15386">CMake issue 0015386</a></li>
+</ol>
+</div>
+
+</div>
+<div id="footer">
+<p>
+Copyright &copy; 2015 <a href="http://dena.com/intl/">DeNA Co., Ltd.</a> et al.
+</p>
+</div>
+</body>
+</html>

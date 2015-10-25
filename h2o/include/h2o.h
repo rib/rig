@@ -37,6 +37,7 @@ extern "C" {
 #include <unistd.h>
 #include <openssl/ssl.h>
 #include "h2o/hostinfo.h"
+#include "h2o/memcached.h"
 #include "h2o/linklist.h"
 #include "h2o/http1client.h"
 #include "h2o/memory.h"
@@ -56,17 +57,19 @@ extern "C" {
 #endif
 
 #ifndef H2O_MAX_TOKENS
-#define H2O_MAX_TOKENS 10240
+#define H2O_MAX_TOKENS 100
 #endif
 
 #define H2O_DEFAULT_MAX_REQUEST_ENTITY_SIZE (1024 * 1024 * 1024)
 #define H2O_DEFAULT_MAX_DELEGATIONS 5
+#define H2O_DEFAULT_HANDSHAKE_TIMEOUT_IN_SECS 10
+#define H2O_DEFAULT_HANDSHAKE_TIMEOUT (H2O_DEFAULT_HANDSHAKE_TIMEOUT_IN_SECS * 1000)
 #define H2O_DEFAULT_HTTP1_REQ_TIMEOUT_IN_SECS 10
 #define H2O_DEFAULT_HTTP1_REQ_TIMEOUT (H2O_DEFAULT_HTTP1_REQ_TIMEOUT_IN_SECS * 1000)
 #define H2O_DEFAULT_HTTP1_UPGRADE_TO_HTTP2 1
 #define H2O_DEFAULT_HTTP2_IDLE_TIMEOUT_IN_SECS 10
 #define H2O_DEFAULT_HTTP2_IDLE_TIMEOUT (H2O_DEFAULT_HTTP2_IDLE_TIMEOUT_IN_SECS * 1000)
-#define H2O_DEFAULT_PROXY_IO_TIMEOUT_IN_SECS 5
+#define H2O_DEFAULT_PROXY_IO_TIMEOUT_IN_SECS 30
 #define H2O_DEFAULT_PROXY_IO_TIMEOUT (H2O_DEFAULT_PROXY_IO_TIMEOUT_IN_SECS * 1000)
 
 typedef struct st_h2o_conn_t h2o_conn_t;
@@ -99,7 +102,7 @@ typedef struct st_h2o_token_t {
  */
 typedef struct st_h2o_handler_t {
     size_t _config_slot;
-    void *(*on_context_init)(struct st_h2o_handler_t *self, h2o_context_t *ctx);
+    void (*on_context_init)(struct st_h2o_handler_t *self, h2o_context_t *ctx);
     void (*on_context_dispose)(struct st_h2o_handler_t *self, h2o_context_t *ctx);
     void (*dispose)(struct st_h2o_handler_t *self);
     int (*on_req)(struct st_h2o_handler_t *self, h2o_req_t *req);
@@ -111,7 +114,7 @@ typedef struct st_h2o_handler_t {
  */
 typedef struct st_h2o_filter_t {
     size_t _config_slot;
-    void *(*on_context_init)(struct st_h2o_filter_t *self, h2o_context_t *ctx);
+    void (*on_context_init)(struct st_h2o_filter_t *self, h2o_context_t *ctx);
     void (*on_context_dispose)(struct st_h2o_filter_t *self, h2o_context_t *ctx);
     void (*dispose)(struct st_h2o_filter_t *self);
     void (*on_setup_ostream)(struct st_h2o_filter_t *self, h2o_req_t *req, h2o_ostream_t **slot);
@@ -123,7 +126,7 @@ typedef struct st_h2o_filter_t {
  */
 typedef struct st_h2o_logger_t {
     size_t _config_slot;
-    void *(*on_context_init)(struct st_h2o_logger_t *self, h2o_context_t *ctx);
+    void (*on_context_init)(struct st_h2o_logger_t *self, h2o_context_t *ctx);
     void (*on_context_dispose)(struct st_h2o_logger_t *self, h2o_context_t *ctx);
     void (*dispose)(struct st_h2o_logger_t *self);
     void (*log_access)(struct st_h2o_logger_t *self, h2o_req_t *req);
@@ -146,18 +149,26 @@ typedef struct st_h2o_timestamp_t {
     h2o_timestamp_string_t *str;
 } h2o_timestamp_t;
 
+typedef struct st_h2o_casper_conf_t {
+    /**
+     * capacity bits (0 to disable casper)
+     */
+    unsigned capacity_bits;
+    /**
+     * whether if all type of files should be tracked (or only the blocking assets)
+     */
+    int track_all_types;
+} h2o_casper_conf_t;
+
 typedef struct st_h2o_pathconf_t {
     /**
-     * reverse reference to the host configuration
+     * globalconf to which the pathconf belongs
      */
-    h2o_hostconf_t *host;
+    h2o_globalconf_t *global;
     /**
-     * pathname in lower case (has "/" appended at last (unless it is the fallback path), base is NUL terminated)
+     * pathname in lower case with "/" appended at last and NULL terminated (or is {NULL,0} if is fallback or extension-level)
      */
     h2o_iovec_t path;
-    /**
-     * list of handlers
-     */
     /**
      * list of handlers
      */
@@ -170,6 +181,10 @@ typedef struct st_h2o_pathconf_t {
      * list of loggers (h2o_logger_t)
      */
     H2O_VECTOR(h2o_logger_t *) loggers;
+    /**
+     * mimemap
+     */
+    h2o_mimemap_t *mimemap;
 } h2o_pathconf_t;
 
 struct st_h2o_hostconf_t {
@@ -202,6 +217,24 @@ struct st_h2o_hostconf_t {
      * catch-all path configuration
      */
     h2o_pathconf_t fallback_path;
+    /**
+     * mimemap
+     */
+    h2o_mimemap_t *mimemap;
+    /**
+     * http2
+     */
+    struct {
+        /**
+         * whether if blocking assets being pulled should be given highest priority in case of clients that do not implement
+         * dependency-based prioritization
+         */
+        int reprioritize_blocking_assets;
+        /**
+         * casper settings
+         */
+        h2o_casper_conf_t casper;
+    } http2;
 };
 
 typedef struct st_h2o_protocol_callbacks_t {
@@ -229,6 +262,15 @@ struct st_h2o_globalconf_t {
      * maximum count for delegations
      */
     unsigned max_delegations;
+    /**
+     * setuid user (or NULL)
+     */
+    char *user;
+
+    /**
+     * SSL handshake timeout
+     */
+    uint64_t handshake_timeout;
 
     struct {
         /**
@@ -273,8 +315,45 @@ struct st_h2o_globalconf_t {
         uint64_t io_timeout;
     } proxy;
 
+    /**
+     * mimemap
+     */
+    h2o_mimemap_t *mimemap;
+
     size_t _num_config_slots;
 };
+
+/**
+ * holds various attributes related to the mime-type
+ */
+typedef struct st_h2o_mime_attributes_t {
+    /**
+     * whether if the content can be compressed by using gzip
+     */
+    char is_compressible;
+    /**
+     * how the resource should be prioritized
+     */
+    enum { H2O_MIME_ATTRIBUTE_PRIORITY_NORMAL = 0, H2O_MIME_ATTRIBUTE_PRIORITY_HIGHEST } priority;
+} h2o_mime_attributes_t;
+
+extern h2o_mime_attributes_t h2o_mime_attributes_as_is;
+
+/**
+ * represents either a mime-type (and associated info), or contains pathinfo in case of a dynamic type (e.g. .php files)
+ */
+typedef struct st_h2o_mimemap_type_t {
+    enum { H2O_MIMEMAP_TYPE_MIMETYPE = 0, H2O_MIMEMAP_TYPE_DYNAMIC = 1 } type;
+    union {
+        struct {
+            h2o_iovec_t mimetype;
+            h2o_mime_attributes_t attr;
+        };
+        struct {
+            h2o_pathconf_t pathconf;
+        } dynamic;
+    } data;
+} h2o_mimemap_type_t;
 
 /**
  * context of the http server.
@@ -310,6 +389,11 @@ struct st_h2o_context_t {
      * flag indicating if shutdown has been requested
      */
     int shutdown_requested;
+
+    /**
+     * SSL handshake timeout
+     */
+    h2o_timeout_t handshake_timeout;
 
     struct {
         /**
@@ -354,6 +438,8 @@ struct st_h2o_context_t {
         struct timeval tv_at;
         h2o_timestamp_string_t *value;
     } _timestamp_cache;
+
+    H2O_VECTOR(h2o_pathconf_t *) _pathconfs_inited;
 };
 
 /**
@@ -439,6 +525,10 @@ typedef struct st_h2o_res_t {
      * list of response headers
      */
     h2o_headers_t headers;
+    /**
+     * mime-related attributes (may be NULL)
+     */
+    h2o_mime_attributes_t *mime_attr;
 } h2o_res_t;
 
 /**
@@ -454,12 +544,13 @@ struct st_h2o_conn_t {
      */
     h2o_hostconf_t **hosts;
     /**
-     * peername (peername.addr == NULL if not available)
+     * getsockname (return size of the obtained address, or 0 if failed)
      */
-    struct {
-        struct sockaddr *addr;
-        socklen_t len;
-    } peername;
+    socklen_t (*get_sockname)(h2o_conn_t *conn, struct sockaddr *sa);
+    /**
+     * getpeername (return size of the obtained address, or 0 if failed)
+     */
+    socklen_t (*get_peername)(h2o_conn_t *conn, struct sockaddr *sa);
 };
 
 typedef struct st_h2o_req_overrides_t {
@@ -492,6 +583,14 @@ typedef struct st_h2o_req_overrides_t {
         h2o_iovec_t path_prefix;
     } location_rewrite;
 } h2o_req_overrides_t;
+
+/**
+ * additional information for extension-based dynamic content
+ */
+typedef struct st_h2o_filereq_t {
+    size_t url_path_len;
+    h2o_iovec_t local_path;
+} h2o_filereq_t;
 
 /**
  * a HTTP request
@@ -527,6 +626,10 @@ struct st_h2o_req_t {
         size_t query_at;
     } input;
     /**
+     * the host context
+     */
+    h2o_hostconf_t *hostconf;
+    /**
      * the path context
      */
     h2o_pathconf_t *pathconf;
@@ -554,6 +657,10 @@ struct st_h2o_req_t {
      * normalized path of the processing request (i.e. no "." or "..", no query)
      */
     h2o_iovec_t path_normalized;
+    /**
+     * additional information (becomes available for extension-based dynamic content)
+     */
+    h2o_filereq_t *filereq;
     /**
      * overrides (maybe NULL)
      */
@@ -583,6 +690,10 @@ struct st_h2o_req_t {
      */
     size_t bytes_sent;
     /**
+     * counts the number of times the request has been reprocessed (excluding delegation)
+     */
+    unsigned num_reprocessed;
+    /**
      * counts the number of times the request has been delegated
      */
     unsigned num_delegated;
@@ -609,6 +720,11 @@ struct st_h2o_req_t {
      */
     h2o_iovec_t upgrade;
 
+    /**
+     * preferred chunk size by the ostream
+     */
+    size_t preferred_chunk_size;
+
     /* internal structure */
     h2o_generator_t *_generator;
     h2o_ostream_t *_ostr_top;
@@ -617,6 +733,24 @@ struct st_h2o_req_t {
     /* per-request memory pool (placed at the last since the structure is large) */
     h2o_mem_pool_t pool;
 };
+
+typedef struct st_h2o_accept_ctx_t {
+    h2o_context_t *ctx;
+    h2o_hostconf_t **hosts;
+    SSL_CTX *ssl_ctx;
+    int expect_proxy_line;
+    h2o_multithread_receiver_t *libmemcached_receiver;
+} h2o_accept_ctx_t;
+
+typedef struct st_h2o_doublebuffer_t {
+    h2o_buffer_t *buf;
+    size_t bytes_inflight;
+} h2o_doublebuffer_t;
+
+static void h2o_doublebuffer_init(h2o_doublebuffer_t *db, h2o_buffer_prototype_t *prototype);
+static void h2o_doublebuffer_dispose(h2o_doublebuffer_t *db);
+static h2o_iovec_t h2o_doublebuffer_prepare(h2o_doublebuffer_t *db, h2o_buffer_t **receiving, size_t max_bytes);
+static void h2o_doublebuffer_consume(h2o_doublebuffer_t *db);
 
 /* token */
 
@@ -683,9 +817,23 @@ ssize_t h2o_delete_header(h2o_headers_t *headers, ssize_t cursor);
 /* util */
 
 /**
- * accepts a SSL connection
+ * accepts a connection
  */
-void h2o_accept_ssl(h2o_context_t *ctx, h2o_hostconf_t **hosts, h2o_socket_t *sock, SSL_CTX *ssl_ctx);
+void h2o_accept(h2o_accept_ctx_t *ctx, h2o_socket_t *sock);
+/**
+ * setups accept context for async SSL resumption
+ */
+void h2o_accept_setup_async_ssl_resumption(h2o_memcached_context_t *ctx, unsigned expiration);
+/**
+ * returns the protocol version (e.g. "HTTP/1.1", "HTTP/2")
+ */
+size_t h2o_stringify_protocol_version(char *dst, int version);
+/**
+ * extracts path to be pushed from `Link: rel=prelead` header, duplicating the chunk (or returns {NULL,0} if none)
+ */
+h2o_iovec_t h2o_extract_push_path_from_link_header(h2o_mem_pool_t *pool, const char *value, size_t value_len,
+                                                   const h2o_url_scheme_t *base_scheme, h2o_iovec_t *base_authority,
+                                                   h2o_iovec_t *base_path);
 
 /* request */
 
@@ -761,9 +909,23 @@ void h2o_ostream_send_next(h2o_ostream_t *ostr, h2o_req_t *req, h2o_iovec_t *buf
  * called by the connection layer to request additional data to the generator
  */
 static void h2o_proceed_response(h2o_req_t *req);
+/**
+ * if NULL, supplements h2o_req_t::mime_attr
+ */
+void h2o_req_fill_mime_attributes(h2o_req_t *req);
 
 /* config */
 
+/**
+ * initializes pathconf
+ * @param path path to serve, or NULL if fallback or extension-level
+ * @param mimemap mimemap to use, or NULL if fallback or extension-level
+ */
+void h2o_config_init_pathconf(h2o_pathconf_t *pathconf, h2o_globalconf_t *globalconf, const char *path, h2o_mimemap_t *mimemap);
+/**
+ *
+ */
+void h2o_config_dispose_pathconf(h2o_pathconf_t *pathconf);
 /**
  * initializes the global configuration
  */
@@ -808,6 +970,14 @@ void h2o_context_dispose(h2o_context_t *context);
  */
 void h2o_context_request_shutdown(h2o_context_t *context);
 /**
+ *
+ */
+void h2o_context_init_pathconf_context(h2o_context_t *ctx, h2o_pathconf_t *pathconf);
+/**
+ *
+ */
+void h2o_context_dispose_pathconf_context(h2o_context_t *ctx, h2o_pathconf_t *pathconf);
+/**
  * returns current timestamp
  * @param ctx the context
  * @param pool memory pool
@@ -815,13 +985,21 @@ void h2o_context_request_shutdown(h2o_context_t *context);
  */
 void h2o_get_timestamp(h2o_context_t *ctx, h2o_mem_pool_t *pool, h2o_timestamp_t *ts);
 /**
- * returns per-module context set by the on_context_init callback
+ * returns per-module context set
  */
 static void *h2o_context_get_handler_context(h2o_context_t *ctx, h2o_handler_t *handler);
+/**
+ * sets per-module context
+ */
+static void h2o_context_set_handler_context(h2o_context_t *ctx, h2o_handler_t *handler, void *handler_ctx);
 /**
  * returns per-module context set by the on_context_init callback
  */
 static void *h2o_context_get_filter_context(h2o_context_t *ctx, h2o_filter_t *filter);
+/**
+ * sets per-module filter context
+ */
+static void h2o_context_set_filter_context(h2o_context_t *ctx, h2o_filter_t *filter, void *filter_ctx);
 /**
  * returns per-module context set by the on_context_init callback
  */
@@ -857,6 +1035,10 @@ void h2o_send_redirect(h2o_req_t *req, int status, const char *reason, const cha
  */
 void h2o_send_redirect_internal(h2o_req_t *req, int status, const char *url_str, size_t url_len);
 /**
+ * registers push path (if necessary) by parsing a Link header
+ */
+int h2o_register_push_path_in_link_header(h2o_req_t *req, const char *value, size_t value_len);
+/**
  * logs an error
  */
 void h2o_req_log_error(h2o_req_t *req, const char *module, const char *fmt, ...) __attribute__((format(printf, 3, 4)));
@@ -879,13 +1061,29 @@ h2o_mimemap_t *h2o_mimemap_create(void);
  */
 h2o_mimemap_t *h2o_mimemap_clone(h2o_mimemap_t *src);
 /**
+ *
+ */
+void h2o_mimemap_on_context_init(h2o_mimemap_t *mimemap, h2o_context_t *ctx);
+/**
+ *
+ */
+void h2o_mimemap_on_context_dispose(h2o_mimemap_t *mimemap, h2o_context_t *ctx);
+/**
+ * returns if the map contains a dynamic type
+ */
+int h2o_mimemap_has_dynamic_type(h2o_mimemap_t *mimemap);
+/**
  * sets the default mime-type
  */
-void h2o_mimemap_set_default_type(h2o_mimemap_t *mimemap, const char *type);
+void h2o_mimemap_set_default_type(h2o_mimemap_t *mimemap, const char *mime, h2o_mime_attributes_t *attr);
 /**
  * adds a mime-type mapping
  */
-void h2o_mimemap_set_type(h2o_mimemap_t *mimemap, const char *ext, const char *type);
+void h2o_mimemap_define_mimetype(h2o_mimemap_t *mimemap, const char *ext, const char *mime, h2o_mime_attributes_t *attr);
+/**
+ * adds a mime-type mapping
+ */
+h2o_mimemap_type_t *h2o_mimemap_define_dynamic(h2o_mimemap_t *mimemap, const char **exts, h2o_globalconf_t *globalconf);
 /**
  * removes a mime-type mapping
  */
@@ -893,11 +1091,19 @@ void h2o_mimemap_remove_type(h2o_mimemap_t *mimemap, const char *ext);
 /**
  * sets the default mime-type
  */
-h2o_iovec_t h2o_mimemap_get_default_type(h2o_mimemap_t *mimemap);
+h2o_mimemap_type_t *h2o_mimemap_get_default_type(h2o_mimemap_t *mimemap);
 /**
  * returns the mime-type corresponding to given extension
  */
-h2o_iovec_t h2o_mimemap_get_type(h2o_mimemap_t *mimemap, const char *ext);
+h2o_mimemap_type_t *h2o_mimemap_get_type_by_extension(h2o_mimemap_t *mimemap, h2o_iovec_t ext);
+/**
+ * returns the mime-type corresponding to given mimetype
+ */
+h2o_mimemap_type_t *h2o_mimemap_get_type_by_mimetype(h2o_mimemap_t *mimemap, h2o_iovec_t mime);
+/**
+ * returns the default mime attributes given a mime type
+ */
+void h2o_mimemap_get_default_attributes(const char *mime, h2o_mime_attributes_t *attr);
 
 /* various handlers */
 
@@ -916,6 +1122,15 @@ void h2o_access_log_register_configurator(h2o_globalconf_t *conf);
  * registers the chunked encoding output filter (added by default)
  */
 void h2o_chunked_register(h2o_pathconf_t *pathconf);
+
+/**
+ * registers the gzip encoding output filter (added by default, for now)
+ */
+void h2o_gzip_register(h2o_pathconf_t *pathconf);
+/**
+ *
+ */
+void h2o_gzip_register_configurator(h2o_globalconf_t *conf);
 
 /* lib/expires.c */
 
@@ -937,6 +1152,42 @@ void h2o_expires_register(h2o_pathconf_t *pathconf, h2o_expires_args_t *args);
  *
  */
 void h2o_expires_register_configurator(h2o_globalconf_t *conf);
+
+/* lib/fastcgi.c */
+
+typedef struct st_h2o_fastcgi_handler_t h2o_fastcgi_handler_t;
+
+#define H2O_DEFAULT_FASTCGI_IO_TIMEOUT 30000
+
+typedef struct st_h2o_fastcgi_config_vars_t {
+    uint64_t io_timeout;
+    uint64_t keepalive_timeout; /* 0 to disable */
+    h2o_iovec_t document_root;  /* .base=NULL if not set */
+    int send_delegated_uri;     /* whether to send the rewritten HTTP_HOST & REQUEST_URI by delegation, or the original */
+    struct {
+        void (*dispose)(h2o_fastcgi_handler_t *handler, void *data);
+        void *data;
+    } callbacks;
+} h2o_fastcgi_config_vars_t;
+
+/**
+ * registers the fastcgi handler to the context
+ */
+h2o_fastcgi_handler_t *h2o_fastcgi_register_by_hostport(h2o_pathconf_t *pathconf, const char *host, uint16_t port,
+                                                        h2o_fastcgi_config_vars_t *vars);
+/**
+ * registers the fastcgi handler to the context
+ */
+h2o_fastcgi_handler_t *h2o_fastcgi_register_by_address(h2o_pathconf_t *pathconf, struct sockaddr *sa, socklen_t salen,
+                                                       h2o_fastcgi_config_vars_t *vars);
+/**
+ * registers the fastcgi handler to the context
+ */
+h2o_fastcgi_handler_t *h2o_fastcgi_register_by_spawnproc(h2o_pathconf_t *pathconf, char **argv, h2o_fastcgi_config_vars_t *vars);
+/**
+ * registers the configurator
+ */
+void h2o_fastcgi_register_configurator(h2o_globalconf_t *conf);
 
 /* lib/file.c */
 
@@ -1024,10 +1275,11 @@ typedef struct st_h2o_redirect_handler_t h2o_redirect_handler_t;
 /**
  * registers the redirect handler to the context
  * @param pathconf
+ * @param internal whether if the redirect is internal or external
  * @param status status code to be sent (e.g. 301, 303, 308, ...)
  * @param prefix prefix of the destitation URL
  */
-h2o_redirect_handler_t *h2o_redirect_register(h2o_pathconf_t *pathconf, int status, const char *prefix);
+h2o_redirect_handler_t *h2o_redirect_register(h2o_pathconf_t *pathconf, int internal, int status, const char *prefix);
 /**
  * registers the configurator
  */
@@ -1084,14 +1336,59 @@ inline void *h2o_context_get_handler_context(h2o_context_t *ctx, h2o_handler_t *
     return ctx->_module_configs[handler->_config_slot];
 }
 
+inline void h2o_context_set_handler_context(h2o_context_t *ctx, h2o_handler_t *handler, void *handler_ctx)
+{
+    ctx->_module_configs[handler->_config_slot] = handler_ctx;
+}
+
 inline void *h2o_context_get_filter_context(h2o_context_t *ctx, h2o_filter_t *filter)
 {
     return ctx->_module_configs[filter->_config_slot];
 }
 
+inline void h2o_context_set_filter_context(h2o_context_t *ctx, h2o_filter_t *filter, void *filter_ctx)
+{
+    ctx->_module_configs[filter->_config_slot] = filter_ctx;
+}
+
 inline void *h2o_context_get_logger_context(h2o_context_t *ctx, h2o_logger_t *logger)
 {
     return ctx->_module_configs[logger->_config_slot];
+}
+
+static inline void h2o_doublebuffer_init(h2o_doublebuffer_t *db, h2o_buffer_prototype_t *prototype)
+{
+    h2o_buffer_init(&db->buf, prototype);
+    db->bytes_inflight = 0;
+}
+
+static inline void h2o_doublebuffer_dispose(h2o_doublebuffer_t *db)
+{
+    h2o_buffer_dispose(&db->buf);
+}
+
+static inline h2o_iovec_t h2o_doublebuffer_prepare(h2o_doublebuffer_t *db, h2o_buffer_t **receiving, size_t max_bytes)
+{
+    assert(db->bytes_inflight == 0);
+
+    if (db->buf->size == 0) {
+        if ((*receiving)->size == 0)
+            return h2o_iovec_init(NULL, 0);
+        /* swap buffers */
+        h2o_buffer_t *t = db->buf;
+        db->buf = *receiving;
+        *receiving = t;
+    }
+    if ((db->bytes_inflight = db->buf->size) > max_bytes)
+        db->bytes_inflight = max_bytes;
+    return h2o_iovec_init(db->buf->bytes, db->bytes_inflight);
+}
+
+static inline void h2o_doublebuffer_consume(h2o_doublebuffer_t *db)
+{
+    assert(db->bytes_inflight != 0);
+    h2o_buffer_consume(&db->buf, db->bytes_inflight);
+    db->bytes_inflight = 0;
 }
 
 #ifdef __cplusplus
