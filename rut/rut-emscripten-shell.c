@@ -26,7 +26,7 @@
  * SOFTWARE.
  */
 
-#include "config.h"
+#include <rut-config.h>
 
 #include <emscripten.h>
 #include <html5.h>

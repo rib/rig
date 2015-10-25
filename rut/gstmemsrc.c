@@ -25,7 +25,7 @@
  *
  */
 
-#include "config.h"
+#include <rut-config.h>
 
 #include <gst/gst.h>
 #include "gstmemsrc.h"

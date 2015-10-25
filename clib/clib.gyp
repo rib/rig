@@ -2,6 +2,7 @@
   "includes": [
     "common.gypi"
   ],
+
   'target_defaults': {
     'cflags': [
       '-std=c11',
@@ -25,7 +26,10 @@
   'targets': [
     {
       'target_name': 'libclib',
-      'type': '<(clib_library)',
+      'type': 'static_library',
+      'dependencies': [
+          '../libuv/uv.gyp:libuv',
+       ],
       'include_dirs': [
         '.',
         'clib',
@@ -47,6 +51,9 @@
             'defines': [ '_POSIX_C_SOURCE=200112' ],
           }],
         ],
+      },
+      'all_dependent_settings': {
+        'include_dirs': [ 'clib' ],
       },
       'sources': [
 	'clib-config.h',
@@ -110,7 +117,6 @@
       'defines': [
         'SFMT_MEXP=19937',
         '_C_COMPILATION',
-        'ENABLE_UNIT_TESTS'
       ],
       'conditions': [
         [ 'OS=="win"', {
@@ -160,14 +166,17 @@
             ],
           },
           'conditions': [
-            ['clib_library=="shared_library"', {
+            ['_type=="shared_library"', {
               'cflags': [ '-fPIC' ],
+	      'defines': [
+		'ENABLE_UNIT_TESTS'
+	      ],
             }],
-            ['clib_library=="shared_library" and OS!="mac"', {
-              'link_settings': {
-                'libraries': [ '-Wl,-soname,libclib.so.1.0' ],
-              },
-            }],
+#            ['_type=="shared_library" and OS!="mac"', {
+#              'link_settings': {
+#                'libraries': [ '-Wl,-soname,libclib.so.1.0' ],
+#              },
+#            }],
           ],
         }],
         [ 'OS=="emscripten"', {
@@ -194,6 +203,9 @@
           'link_settings': {
             'libraries': [ '-ldl', '-lrt' ],
           },
+          'sources': [
+            'clib/cbacktrace-linux.c'
+          ]
         }],
         [ 'OS=="android"', {
           'link_settings': {
@@ -203,7 +215,7 @@
             'clib/vasprintf.c',
           ]
         }],
-        ['clib_library=="shared_library"', {
+        ['_type=="shared_library"', {
           'defines': [ 'BUILDING_CLIB_SHARED=1' ]
         }],
       ]

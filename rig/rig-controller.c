@@ -26,7 +26,7 @@
  * SOFTWARE.
  */
 
-#include <config.h>
+#include <rig-config.h>
 
 #include "rig-controller.h"
 #include "rig-engine.h"

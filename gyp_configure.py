@@ -16,10 +16,10 @@ except ImportError:
 
 CC = os.environ.get('CC', 'cc')
 script_dir = os.path.dirname(__file__)
-cglib_root = os.path.normpath(script_dir)
-output_dir = os.path.join(os.path.abspath(cglib_root), 'out')
+rig_root = os.path.normpath(script_dir)
+output_dir = os.path.join(os.path.abspath(rig_root), 'out')
 
-sys.path.insert(0, os.path.join(cglib_root, 'build', 'gyp', 'pylib'))
+sys.path.insert(0, os.path.join(rig_root, 'build', 'gyp', 'pylib'))
 try:
     import gyp
 except ImportError:
@@ -44,6 +44,9 @@ def pkg_config_exists(pkg_name):
 def pkg_config_get(pkg_name, arg):
     return subprocess.check_output(["pkg-config", arg, pkg_name])
 
+def pkg_config_variable(pkg_name, variable):
+    return subprocess.check_output(["pkg-config", "--variable=" + variable, pkg_name]).strip()
+
 def run_gyp(args):
     rc = gyp.main(args)
     if rc != 0:
@@ -67,7 +70,8 @@ def add_option(parser, name, opt):
 parser = argparse.ArgumentParser()
 
 parser.add_argument("--prefix",
-                    help="install architecture-independent files in PREFIX")
+                    help="install architecture-independent files in PREFIX",
+                    default="/usr/local")
 parser.add_argument("--host",
                     help="cross-compile to build programs to run on HOST")
 parser.add_argument("--enable-shared", action='store_true',
@@ -78,22 +82,46 @@ subst = {
 }
 enabled = {}
 options = {
+        "_": {
+            "enabled": True,
+            "pkg-config": "libpng icu-uc harfbuzz harfbuzz-icu fontconfig freetype2 libprotobuf-c mozjs-24",
+        },
+        "debug": {
+            "help": "debug support",
+            "enabled": True,
+            "defines": { "RIG_ENABLE_DEBUG", "C_DEBUG", "CG_GL_DEBUG", "CG_OBJECT_DEBUG", "CG_ENABLE_DEBUG" }
+        },
+        "opencv": {
+            "help": "OpenCV support",
+            "enabled": True,
+            "pkg-config": "opencv >= 3.0.0",
+            "defines": { "USE_OPENCV" }
+        },
+        "oculus_rift": {
+            "help": "OculusRift support",
+            "enabled": True,
+            "defines": { "ENABLE_OCULUS_RIFT" },
+        },
         "uv": {
             "help": "libuv support",
             "enabled": True,
             "pkg-config": "libuv",
-            "public_defines": { "CG_HAS_UV_SUPPORT" }
+            "public_defines": { "CG_HAS_UV_SUPPORT" },
+            "defines": { "USE_UV" }
         },
         "glib": {
             "help": "GLib support",
             "enabled": False,
             "pkg-config": "glib-2.0",
-            "public_defines": { "CG_HAS_GLIB_SUPPORT" }
+            "public_defines": { "CG_HAS_GLIB_SUPPORT" },
+            "defines": { "USE_GLIB" }
         },
         "x11": {
             "enabled": True,
-            "pkg-config": "x11 xdamage xcomposite xfixes xext xrandr",
-            "public_defines": { "CG_HAS_XLIB_SUPPORT", "CG_HAS_X11_SUPPORT" }
+            "pkg-config": "x11 xdamage xcomposite xfixes xext xrandr xkbcommon-x11 x11-xcb",
+            "public_defines": { "CG_HAS_XLIB_SUPPORT", "CG_HAS_X11_SUPPORT" },
+            "ldflags": [ "-lXi" ],
+            "defines": { "USE_X11" }
         },
         "glx": {
             "requires": { "x11" }, #TODO check
@@ -140,21 +168,36 @@ options = {
             "pkg-config": "glesv2",
             "public_defines": { "CG_HAS_GLES2_SUPPORT" },
         },
+        "ncurses": {
+            "help": "ncurses debug console",
+            "enabled": True,
+            "pkg-config": "ncursesw",
+            "defines": { "USE_NCURSES" },
+        },
+
 }
 
 output = {
-        "cglib/cg-defines.h",
+        "cglib/cglib/cg-defines.h",
 }
 
 for name, opt in options.items():
     if "help" in opt:
         add_option(parser, name, opt)
+    if "defines" not in opt:
+        opt["defines"] = []
+    if "includes" not in opt:
+        opt["includes"] = []
+    if "ldflags" not in opt:
+        opt["ldflags"] = []
 
 opt_args = parser.parse_args()
 opt_args_dict = vars(opt_args)
 
 gyp_args = []
 
+options['_']["defines"].append("ICU_DATA_DIR=\"" + pkg_config_variable("icu-uc", "prefix") + "/share\"")
+options['_']["defines"].append("RIG_BIN_DIR=\"" + opt_args.prefix + "/bin\"")
 
 for name, opt in options.items():
     if "enable_" + name in opt_args_dict:
@@ -169,20 +212,20 @@ for name, opt in options.items():
             enabled[name] = opt
 
 for name, opt in enabled.items():
+    if "pkg-config" in opt:
         cflags = pkg_config_get(opt["pkg-config"], "--cflags")
         tokens = cflags.split()
         if len(tokens):
-            includes = []
-            defines = []
             for tok in tokens:
                 if tok[:2] == "-I":
-                    includes.append(tok[2:])
+                    opt["includes"].append(tok[2:])
                 elif tok[:2] == "-D":
-                    defines.append(tok[2:])
-            if len(includes):
-                opt["includes"] = includes
-            if len(defines):
-                opt["defines"] = defines
+                    opt["defines"].append(tok[2:])
+        ldflags = pkg_config_get(opt["pkg-config"], "--libs")
+        tokens = ldflags.split()
+        if len(tokens):
+            for tok in tokens:
+                opt["ldflags"].append(tok)
 
 
 gyp_config = open("config.gypi", "w")
@@ -217,8 +260,18 @@ for name, opt in enabled.items():
             gyp_config.write("      '" + define + "',\n")
 
 gyp_config.write("""
-    ]
-  }
+    ],
+    'ldflags': [
+""")
+
+for name, opt in enabled.items():
+    if "ldflags" in opt:
+        gyp_config.write("      # " + name + " ldflags...\n")
+        for flag in opt["ldflags"]:
+            gyp_config.write("      '" + flag + "',\n")
+
+gyp_config.write("""
+  ]}
 """)
 gyp_config.write("}\n")
 
@@ -228,18 +281,23 @@ for name, opt in enabled.items():
         for define in defines:
             subst["CG_DEFINES"] = subst["CG_DEFINES"] + "#define " + define + "\n"
 
-gyp_args.append(os.path.join(cglib_root, 'cglib.gyp'))
+gyp_args.append(os.path.join(rig_root, 'rig.gyp'))
+
+
+gyp_args.append('-Dlibrary=shared_library')
+gyp_args.append('--debug=all')
+gyp_args.append('--check')
 
 gyp_args.extend(['-I', "config.gypi"])
 
-options_fn = os.path.join(cglib_root, 'options.gypi')
+options_fn = os.path.join(rig_root, 'options.gypi')
 if os.path.exists(options_fn):
     gyp_args.extend(['-I', options_fn])
 
-gyp_args.append('--depth=' + cglib_root)
+gyp_args.append('--depth=' + rig_root)
 
 if opt_args.enable_shared:
-    gyp_args.append('-Dcglib_library=shared_library')
+    gyp_args.append('-Drig_library=shared_library')
 
 # There's a bug with windows which doesn't allow this feature.
 if sys.platform != 'win32':

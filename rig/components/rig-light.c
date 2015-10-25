@@ -26,7 +26,7 @@
  * SOFTWARE.
  */
 
-#include <config.h>
+#include <rig-config.h>
 
 #include "rig-entity.h"
 #include "rig-entity-inlines.h"

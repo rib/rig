@@ -27,7 +27,7 @@
  *
  */
 
-#include <config.h>
+#include <rut-config.h>
 
 #include "rut-paintable.h"
 #include "rut-camera.h"

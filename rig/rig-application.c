@@ -26,7 +26,7 @@
  * SOFTWARE.
  */
 
-#include <config.h>
+#include <rig-config.h>
 
 #include <gtk/gtk.h>
 #include <gdk/gdkx.h>

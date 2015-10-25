@@ -50,7 +50,7 @@
  *   own locking if a stack needs to be shared between threads.
  */
 
-#include <config.h>
+#include <rut-config.h>
 
 #include <stdint.h>
 

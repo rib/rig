@@ -27,7 +27,7 @@
  *
  */
 
-#include <config.h>
+#include <rut-config.h>
 
 #ifdef USE_UV
 #include <uv.h>

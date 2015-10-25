@@ -46,7 +46,7 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#include <config.h>
+#include <rut-config.h>
 
 #include <clib.h>
 

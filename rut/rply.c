@@ -7,7 +7,7 @@
  * at the end of this file.
  * ---------------------------------------------------------------------- */
 
-#include <config.h>
+#include <rut-config.h>
 
 #include <clib.h>
 #include <stdio.h>

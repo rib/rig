@@ -39,7 +39,7 @@
  * depend on each other.
  */
 
-#include <config.h>
+#include <rig-config.h>
 
 #include "rig-undo-journal.h"
 #include "rig-engine.h"

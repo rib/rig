@@ -27,7 +27,7 @@
  *
  */
 
-#include <config.h>
+#include <rut-config.h>
 
 #include <cglib/cglib.h>
 

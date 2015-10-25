@@ -26,7 +26,7 @@
  * SOFTWARE.
  */
 
-#include "config.h"
+#include <rut-config.h>
 
 #include <cglib/cglib.h>
 #include <cglib/cg-sdl.h>

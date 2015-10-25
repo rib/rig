@@ -27,7 +27,7 @@
  *
  */
 
-#include <config.h>
+#include <rut-config.h>
 
 #include <sys/socket.h>
 #include <netinet/in.h>
