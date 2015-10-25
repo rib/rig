@@ -26,7 +26,7 @@
  * SOFTWARE.
  */
 
-#include <config.h>
+#include <rig-config.h>
 
 
 #ifdef __ANDROID__

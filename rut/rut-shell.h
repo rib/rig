@@ -49,6 +49,10 @@
 #include <uv.h>
 #endif
 
+#ifdef USE_GLIB
+#include <glib.h>
+#endif
+
 #include <cglib/cglib.h>
 #ifdef USE_PANGO
 #include <cogl-pango/cogl-pango.h>
@@ -334,10 +338,6 @@ struct _rut_shell_t {
      * as the "main" shell which owns the mainloop.
      */
     rut_shell_t *main_shell;
-
-#ifdef USE_GLIB
-    GMainLoop *main_loop;
-#endif
 
 #ifdef USE_UV
     uv_loop_t *uv_loop;

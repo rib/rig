@@ -31,7 +31,7 @@
  *   Neil Roberts <neil@linux.intel.com>
  */
 
-#include <config.h>
+#include <rig-config.h>
 
 #include <stdbool.h>
 

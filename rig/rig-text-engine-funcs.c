@@ -25,7 +25,7 @@
  * Red Hat Author(s): Behdad Esfahbod
  */
 
-#include <config.h>
+#include <rig-config.h>
 
 #include <stdbool.h>
 

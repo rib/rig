@@ -1,4 +1,8 @@
 {
+  "includes": [
+    "common.gypi"
+  ],
+
   'target_defaults': {
     'conditions': [
       ['OS != "win"', {
@@ -16,36 +20,12 @@
         ],
       }],
     ],
-    'xcode_settings': {
-        'conditions': [
-          [ 'clang==1', {
-            'WARNING_CFLAGS': [
-              '-Wall',
-              '-Wextra',
-              '-Wno-unused-parameter',
-              '-Wno-dollar-in-identifier-extension'
-            ]}, {
-           'WARNING_CFLAGS': [
-             '-Wall',
-             '-Wextra',
-             '-Wno-unused-parameter'
-          ]}
-        ]
-      ],
-      'OTHER_LDFLAGS': [
-      ],
-      'OTHER_CFLAGS': [
-        '-g',
-        '--std=gnu89',
-        '-pedantic'
-      ],
-    }
   },
 
   'targets': [
     {
       'target_name': 'libuv',
-      'type': '<(uv_library)',
+      'type': 'static_library',
       'include_dirs': [
         'include',
         'src/',
@@ -66,6 +46,9 @@
             'defines': [ '_POSIX_C_SOURCE=200112' ],
           }],
         ],
+      },
+      'all_dependent_settings': {
+        'include_dirs': [ 'include' ],
       },
       'sources': [
         'common.gypi',
@@ -183,16 +166,16 @@
             ],
           },
           'conditions': [
-            ['uv_library=="shared_library"', {
+            ['_type=="shared_library"', {
               'cflags': [ '-fPIC' ],
             }],
-            ['uv_library=="shared_library" and OS!="mac"', {
-              'link_settings': {
-                # Must correspond with UV_VERSION_MAJOR and UV_VERSION_MINOR
-                # in include/uv-version.h
-                'libraries': [ '-Wl,-soname,libuv.so.1.0' ],
-              },
-            }],
+#           ['_type=="shared_library" and OS!="mac"', {
+#              'link_settings': {
+#                # Must correspond with UV_VERSION_MAJOR and UV_VERSION_MINOR
+#                # in include/uv-version.h
+#                'libraries': [ '-Wl,-soname,libuv.so.1.0' ],
+#              },
+#            }],
           ],
         }],
         [ 'OS in "linux mac android"', {
@@ -283,7 +266,7 @@
         [ 'OS in "mac freebsd dragonflybsd openbsd netbsd".split()', {
           'sources': [ 'src/unix/kqueue.c' ],
         }],
-        ['uv_library=="shared_library"', {
+        ['_type=="shared_library"', {
           'defines': [ 'BUILDING_UV_SHARED=1' ]
         }],
       ]

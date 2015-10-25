@@ -27,7 +27,7 @@
  *
  */
 
-#include <config.h>
+#include <rig-config.h>
 
 #include <math.h>
 

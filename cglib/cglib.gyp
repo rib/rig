@@ -3,10 +3,6 @@
     "common.gypi"
   ],
 
-  'variables': {
-    'cglib_library%': 'static_library', # allow override to 'shared_library' for DLL/.so builds
-  },
-
   'target_defaults': {
     'cflags': [
       '-std=c11',
@@ -30,9 +26,10 @@
   'targets': [
     {
       'target_name': 'libcglib',
-      'type': '<(cglib_library)',
+      'type': 'static_library',
       'dependencies': [
-         'clib/clib.gyp:libclib'
+         '../libuv/uv.gyp:libuv',
+         '../clib/clib.gyp:libclib'
        ],
       'include_dirs': [
         '.',
@@ -44,8 +41,8 @@
 	'cglib/driver/gl/gl',
 	'cglib/driver/gl/gles'
       ],
-      'direct_dependent_settings': {
-        'include_dirs': [ 'cglib' ],
+      'all_dependent_settings': {
+        'include_dirs': [ '.' ],
       },
       'sources': [
         'cglib-config.h',
@@ -309,7 +306,6 @@
       ],
       'defines': [
         'CG_COMPILATION',
-        'ENABLE_UNIT_TESTS'
       ],
       'conditions': [
         [ 'OS=="win"', {
@@ -337,14 +333,17 @@
             ],
           },
           'conditions': [
-            ['cglib_library=="shared_library"', {
+            ['_type=="shared_library"', {
               'cflags': [ '-fPIC' ],
+	      'defines': [
+		'ENABLE_UNIT_TESTS'
+	      ],
             }],
-            ['cglib_library=="shared_library" and OS!="mac"', {
-              'link_settings': {
-                'libraries': [ '-Wl,-soname,libcglib.so.1.0' ],
-              },
-            }],
+#            ['_type=="shared_library" and OS!="mac"', {
+#              'link_settings': {
+#                'libraries': [ '-Wl,-soname,libcglib.so.1.0' ],
+#              },
+#            }],
           ],
         }],
         [ 'OS=="emscripten"', {

@@ -26,7 +26,7 @@
  * SOFTWARE.
  */
 
-#include <config.h>
+#include <rut-config.h>
 
 #include "rut-mesh.h"
 #include "rut-interfaces.h"

@@ -27,7 +27,7 @@
  *
  */
 
-#include <config.h>
+#include <rut-config.h>
 
 #ifdef RUT_ENABLE_REFCOUNT_DEBUG
 

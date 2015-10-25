@@ -31,7 +31,7 @@
  *   Neil Roberts <neil@linux.intel.com>
  */
 
-#include <config.h>
+#include <rut-config.h>
 
 #include <clib.h>
 #include <string.h>

@@ -46,7 +46,7 @@
    3. This notice may not be removed or altered from any source distribution.
  */
 
-#include <config.h>
+#include <rut-config.h>
 
 #if 0
 #include <signal.h>

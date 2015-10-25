@@ -29,7 +29,7 @@
 /* http://research.cs.wisc.edu/graphics/Courses/559-f2001/Examples/Gl3D/arcball-gems.pdf
  */
 
-#include <config.h>
+#include <rut-config.h>
 
 #include <math.h>
 

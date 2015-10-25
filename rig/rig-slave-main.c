@@ -26,7 +26,7 @@
  * SOFTWARE.
  */
 
-#include <config.h>
+#include <rig-config.h>
 
 #include <stdlib.h>
 #include <getopt.h>
