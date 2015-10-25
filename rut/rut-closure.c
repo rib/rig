@@ -76,7 +76,9 @@ void rut_closure_list_remove_all(c_list_t *list)
 void
 rut_closure_disconnect_FIXME(rut_closure_t *closure)
 {
+#ifdef C_DEBUG
     c_return_if_fail(closure->used_add_FIXME);
+#endif
 
     c_list_remove(&closure->list_node);
 
