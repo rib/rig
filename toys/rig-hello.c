@@ -22,8 +22,6 @@
  * SOFTWARE.
  */
 
-#include <config.h>
-
 #include <stdlib.h>
 #include <getopt.h>
 
