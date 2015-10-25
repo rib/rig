@@ -36,6 +36,7 @@
 #include <fcntl.h>
 
 #include <clib.h>
+#include <uv.h>
 
 #include <rut.h>
 
@@ -337,7 +338,7 @@ redraw_cb(void *user_data)
     werase(state->titlebar_window);
     mvwprintw(state->titlebar_window, 0, 0,
               "     Rig version %s       ← Page %d/%d →",
-              PACKAGE_VERSION,
+              RIG_VERSION_STR,
               state->current_page, PAGE_COUNT);
 
 #if 0
@@ -349,7 +350,7 @@ redraw_cb(void *user_data)
     werase(state->titlebar_window);
     mvwprintw(state->titlebar_window, 0, 0,
               "     Rig version %d       ← Page %d/%d →",
-              PACKAGE_VERSION,
+              RIG_VERSION_STR,
               state->current_page, PAGE_COUNT);
 #endif
 
@@ -444,8 +445,8 @@ log_cb(struct rig_log *log)
         queue_redraw(state->shell);
 }
 
-void
-rig_curses_init(void)
+static void
+init_once(void)
 {
     struct curses_state *state = &curses_state;
     int nullfd;
@@ -497,6 +498,14 @@ rig_curses_init(void)
 #endif
 
     atexit(deinit_curses);
+}
+
+void
+rig_curses_init(void)
+{
+    static uv_once_t once = UV_ONCE_INIT;
+
+    uv_once(&once, init_once);
 }
 
 static void
@@ -587,6 +596,8 @@ void
 rig_curses_add_to_shell(rut_shell_t *shell)
 {
     curses_state.shell = shell;
+
+    rig_curses_init();
 
     rut_poll_shell_add_fd(shell, real_stdin,
                           RUT_POLL_FD_EVENT_IN,
