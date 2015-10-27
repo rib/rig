@@ -1,0 +1,5 @@
+[subdir "upstream"]
+	url = git@github.com:rig-project/wslay.git
+	branch = rig-subdir
+[subdir "integration"]
+	ref = 0a0d37f618149b4daa0e64a9d99381e27d58ea0e
