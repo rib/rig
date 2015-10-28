@@ -56,7 +56,7 @@
         'include_dirs': [ 'clib' ],
       },
       'sources': [
-	'clib-config.h',
+        'clib-config.h',
         'clib/ascii_snprintf.c',
         'clib/carray.c',
         'clib/cbytearray.c',
@@ -150,13 +150,6 @@
             '-Wextra',
             '-Wno-unused-parameter',
           ],
-          'sources': [
-            'clib/cdate-unix.c',
-            'clib/cdir-unix.c',
-            'clib/cmisc-unix.c',
-            'clib/cxdg-unix.c',
-	    'clib/ctls.c',
-          ],
           'link_settings': {
             'libraries': [ '-lm' ],
             'conditions': [
@@ -182,8 +175,7 @@
         [ 'OS=="emscripten"', {
           'sources': [
             'clib/clib-web.h',
-            'clib/cmisc-emscripten.c'
-            'clib/cfile-emscripten.c',
+            'clib/cmisc-emscripten.c',
           ],
         }],
         [ 'OS=="mac"', {
@@ -191,8 +183,12 @@
             '_DARWIN_USE_64_BIT_INODE=1'
           ],
           'sources': [
+            'clib/cdir-unix.c',
+            'clib/cdate-unix.c',
+            'clib/cmisc-unix.c',
+            'clib/ctls.c',
             'clib/fmemopen.c',
-	  ]
+          ]
         }],
         [ 'OS!="mac"', {
           # Enable on all platforms except OS X. The antique gcc/clang that
@@ -204,14 +200,28 @@
             'libraries': [ '-ldl', '-lrt' ],
           },
           'sources': [
-            'clib/cbacktrace-linux.c'
+            'clib/cdir-unix.c',
+            'clib/cdate-unix.c',
+            'clib/cmisc-unix.c',
+            'clib/cxdg-unix.c',
+            'clib/ctls.c',
+	    'clib/cbacktrace-linux.c',
           ]
         }],
+        [ 'OS!="linux"', {
+          'sources': [
+	    'clib/cbacktrace.c',
+	  ]
+	}],
         [ 'OS=="android"', {
           'link_settings': {
             'libraries': [ '-ldl' ],
           },
           'sources': [
+            'clib/cdir-unix.c',
+            'clib/cdate-unix.c',
+            'clib/cxdg-unix.c',
+            'clib/ctls.c',
             'clib/vasprintf.c',
           ]
         }],

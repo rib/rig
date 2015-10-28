@@ -91,5 +91,5 @@ c_backtrace_log_error(c_backtrace_t *bt)
 c_backtrace_t *
 c_backtrace_copy(c_backtrace_t *bt)
 {
-    return c_memdup(sizeof (*bt));
+    return c_memdup(bt, sizeof (*bt));
 }

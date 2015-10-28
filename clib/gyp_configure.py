@@ -45,24 +45,9 @@ def run_gyp(args):
 if __name__ == '__main__':
   args = sys.argv[1:]
 
-  # GYP bug.
-  # On msvs it will crash if it gets an absolute path.
-  # On Mac/make it will crash if it doesn't get an absolute path.
-  if sys.platform == 'win32':
-    args.append(os.path.join(clib_root, 'clib.gyp'))
-    common_fn  = os.path.join(clib_root, 'common.gypi')
-    options_fn = os.path.join(clib_root, 'options.gypi')
-    # we force vs 2010 over 2008 which would otherwise be the default for gyp
-    if not os.environ.get('GYP_MSVS_VERSION'):
-      os.environ['GYP_MSVS_VERSION'] = '2010'
-  else:
-    args.append(os.path.join(os.path.abspath(clib_root), 'clib.gyp'))
-    common_fn  = os.path.join(os.path.abspath(clib_root), 'common.gypi')
-    options_fn = os.path.join(os.path.abspath(clib_root), 'options.gypi')
+  args.append(os.path.join(clib_root, 'clib.gyp'))
 
-  if os.path.exists(common_fn):
-    args.extend(['-I', common_fn])
-
+  options_fn = os.path.join(clib_root, 'options.gypi')
   if os.path.exists(options_fn):
     args.extend(['-I', options_fn])
 
@@ -82,11 +67,10 @@ if __name__ == '__main__':
   if not any(a.startswith('-Dtarget_arch=') for a in args):
     args.append('-Dtarget_arch=%s' % host_arch())
 
-  if not any(a.startswith('-Dclib_library=') for a in args):
-    args.append('-Dclib_library=static_library')
-
-  if not any(a.startswith('-Dcomponent=') for a in args):
-    args.append('-Dcomponent=static_library')
+  if sys.platform == 'win32':
+    # we force vs 2010 over 2008 which would otherwise be the default for gyp
+    if not os.environ.get('GYP_MSVS_VERSION'):
+      os.environ['GYP_MSVS_VERSION'] = '2010'
 
   gyp_args = list(args)
   print "Running gyp:"

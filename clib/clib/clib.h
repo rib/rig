@@ -590,13 +590,13 @@ char *c_strdup_printf(const char *format, ...);
 char *c_strdup_vprintf(const char *format, va_list args);
 char *c_strndup(const char *str, size_t n);
 const char *c_strerror(int errnum);
-char *c_strndup(const char *str, size_t n);
 void c_strfreev(char **str_array);
 char *c_strconcat(const char *first, ...);
 char **c_strsplit(const char *string, const char *delimiter, int max_tokens);
 char **
 c_strsplit_set(const char *string, const char *delimiter, int max_tokens);
 char *c_strreverse(char *str);
+char *c_strrstr(const char *str1, const char *str2);
 bool c_str_has_prefix(const char *str, const char *prefix);
 bool c_str_has_suffix(const char *str, const char *suffix);
 unsigned int c_strv_length(char **str_array);
@@ -681,7 +681,6 @@ void
 c_string_append_vprintf(c_string_t *string, const char *format, va_list args);
 c_string_t *c_string_append_unichar(c_string_t *string, c_codepoint_t c);
 c_string_t *c_string_append_c(c_string_t *string, char c);
-c_string_t *c_string_append(c_string_t *string, const char *val);
 c_string_t *
 c_string_append_len(c_string_t *string, const char *val, c_ssize_t len);
 c_string_t *c_string_truncate(c_string_t *string, size_t len);
@@ -901,7 +900,9 @@ void c_hash_table_insert_replace(c_hash_table_t *hash,
                                  bool replace);
 unsigned int c_hash_table_size(c_hash_table_t *hash);
 c_llist_t *c_hash_table_get_keys(c_hash_table_t *hash);
+void **c_hash_table_get_keys_array(c_hash_table_t *hash);
 c_llist_t *c_hash_table_get_values(c_hash_table_t *hash);
+void **c_hash_table_get_values_array(c_hash_table_t *hash);
 void *c_hash_table_lookup(c_hash_table_t *hash, const void *key);
 bool c_hash_table_lookup_extended(c_hash_table_t *hash,
                                   const void *key,
@@ -1351,7 +1352,6 @@ char *c_shell_quote(const char *unquoted_string);
 /*
  * Spawn
  */
-c_quark_t c_shell_error_get_quark(void);
 
 #define C_SPAWN_ERROR c_shell_error_get_quark()
 
