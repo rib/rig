@@ -21,7 +21,7 @@
  * SOFTWARE.
  */
 
-#include "config.h"
+#include "xdgmime-config.h"
 
 #include <stdio.h>
 #include <string.h>
