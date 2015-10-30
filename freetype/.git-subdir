@@ -1,0 +1,5 @@
+[subdir "upstream"]
+	url = git@github.com:rig-project/freetype.git
+	branch = emscripten
+[subdir "integration"]
+	ref = 0b861adb3b81ad35783b4ba088cac18ba55da80b
