@@ -1,0 +1,5 @@
+[subdir "upstream"]
+	url = https://github.com/rig-project/fontconfig
+	branch = emscripten
+[subdir "integration"]
+	ref = 29b0a325c85eae33f939f23a8c1674ae58bff4d6
