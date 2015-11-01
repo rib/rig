@@ -84,7 +84,7 @@ enabled = {}
 options = {
         "_": {
             "enabled": True,
-            "pkg-config": "libpng icu-uc harfbuzz harfbuzz-icu fontconfig freetype2 libprotobuf-c mozjs-24",
+            "pkg-config": "libpng libprotobuf-c mozjs-24",
         },
         "debug": {
             "help": "debug support",
