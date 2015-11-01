@@ -91,12 +91,12 @@ options = {
             "enabled": True,
             "defines": { "RIG_ENABLE_DEBUG", "C_DEBUG", "CG_GL_DEBUG", "CG_OBJECT_DEBUG", "CG_ENABLE_DEBUG" }
         },
-        "opencv": {
-            "help": "OpenCV support",
-            "enabled": True,
-            "pkg-config": "opencv >= 3.0.0",
-            "defines": { "USE_OPENCV" }
-        },
+#        "opencv": {
+#            "help": "OpenCV support",
+#            "enabled": True,
+#            "pkg-config": "opencv >= 3.0.0",
+#            "defines": { "USE_OPENCV" }
+#        },
         "oculus_rift": {
             "help": "OculusRift support",
             "enabled": True,
@@ -174,7 +174,6 @@ options = {
             "pkg-config": "ncursesw",
             "defines": { "USE_NCURSES" },
         },
-
 }
 
 output = {
