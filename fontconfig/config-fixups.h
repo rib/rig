@@ -22,14 +22,24 @@
  */
 
 /* This header file is supposed to be included in config.h */
+#pragma once
+
+#ifdef SIZEOF_VOID_P
+#undef SIZEOF_VOID_P
+#endif
+#ifdef ALIGNOF_VOID_P
+#undef ALIGNOF_VOID_P
+#endif
+#ifdef ALIGNOF_DOUBLE
+#undef ALIGNOF_DOUBLE
+#endif
+
 
 /* just a hack to build the fat binaries:
  * https://bugs.freedesktop.org/show_bug.cgi?id=20208
  */
 #ifdef __APPLE__
 # include <machine/endian.h>
-# undef SIZEOF_VOID_P
-# undef ALIGNOF_DOUBLE
 # ifdef __LP64__
 #  define SIZEOF_VOID_P 8
 #  define ALIGNOF_DOUBLE 8
@@ -37,11 +47,44 @@
 #  define SIZEOF_VOID_P 4
 #  define ALIGNOF_DOUBLE 4
 # endif
+#elif defined(__unix__)
+# if __SIZEOF_POINTER__ == 8
+#  define ALIGNOF_DOUBLE 8
+#  define SIZEOF_VOID_P 8
+#  define ALIGNOF_VOID_P 8
+# else
+#  define ALIGNOF_DOUBLE 4
+#  define SIZEOF_VOID_P 4
+#  define ALIGNOF_VOID_P 4
+# endif
+#elif defined(_WIN32)
+#  define ALIGNOF_DOUBLE 8
+# ifdef _M_X64
+#  define SIZEOF_VOID_P 8
+#  define ALIGNOF_VOID_P 8
+# else
+#  define SIZEOF_VOID_P 4
+#  define ALIGNOF_VOID_P 4
+# endif
 #endif
 
-#ifdef __EMSCRIPTEN__
-#define ALIGNOF_VOID_P 4
-#define ALIGNOF_DOUBLE 4
-#define SIZEOF_VOID_P 4
-#define SIZEOF_DOUBLE 8
+#ifndef SIZEOF_VOID_P
+#error "undetermined pointer/double size + alignment"
 #endif
+
+struct _alignof_double_check {
+    char a;
+    double b;
+};
+
+_Static_assert(sizeof(struct _alignof_double_check) == (ALIGNOF_DOUBLE + 8),
+               "ALIGNOF_DOUBLE not correct");
+
+struct _alignof_pointer_check {
+    char a;
+    void *b;
+};
+
+_Static_assert(sizeof(struct _alignof_pointer_check) == (ALIGNOF_VOID_P + SIZEOF_VOID_P),
+               "ALIGNOF_VOID_P + SIZEOF_VOID_P not correct");
+
