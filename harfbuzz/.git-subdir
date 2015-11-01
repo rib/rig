@@ -1,0 +1,5 @@
+[subdir "upstream"]
+	url = git@github.com:rig-project/harfbuzz.git
+	branch = master
+[subdir "integration"]
+	ref = 672ca3b4e65a75fb3a418ec5d117ad242a98acbb
