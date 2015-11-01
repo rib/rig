@@ -1,0 +1,20 @@
+# Copyright (C) 2010-2013, International Business Machines Corporation. All Rights Reserved.
+
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+#bindir = @bindir@
+libdir = @libdir@
+includedir = @includedir@
+baselibs = @LIBS@
+UNICODE_VERSION=@UNICODE_VERSION@
+ICUPREFIX=icu
+LIBICU=lib${ICUPREFIX}
+ICUDATA_NAME = icudt@LIB_VERSION_MAJOR@@ICUDATA_CHAR@
+ICUDESC=International Components for Unicode
+
+Version: @VERSION@
+Cflags: -I${includedir} @UCONFIG_CPPFLAGS@
+Description: International Components for Unicode: Common and Data libraries
+Name: icu-uc
+Libs: -L${libdir} -licuuc -licudata
+Libs.private: ${baselibs}

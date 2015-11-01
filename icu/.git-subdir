@@ -1,0 +1,5 @@
+[subdir "upstream"]
+	url = https://github.com/rig-project/icu
+	branch = rig
+[subdir "integration"]
+	ref = 03b4b9b72bba5c41f84e31c94880815c389dfbcd

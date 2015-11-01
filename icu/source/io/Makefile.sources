@@ -1,0 +1,19 @@
+icu_io_sources = \
+  locbund.h \
+  locbund.cpp \
+  sprintf.c \
+  sscanf.c \
+  ucln_io.c \
+  ucln_io.h \
+  ufile.c \
+  ufile.h \
+  ufmt_cmn.c \
+  ufmt_cmn.h \
+  uprintf.c \
+  uprintf.h \
+  uprntf_p.c \
+  uscanf.c \
+  uscanf.h \
+  uscanf_p.c \
+  ustdio.c \
+  ustream.cpp
