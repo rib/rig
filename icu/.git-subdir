@@ -1,0 +1,5 @@
+[subdir "upstream"]
+	url = /home/bob/src/icu/icu-git-svn
+	branch = rig-subrepo
+[subdir "integration"]
+	ref = 03b4b9b72bba5c41f84e31c94880815c389dfbcd
