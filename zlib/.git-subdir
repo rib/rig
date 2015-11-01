@@ -1,0 +1,5 @@
+[subdir "upstream"]
+	url = https://github.com/madler/zlib
+	branch = master
+[subdir "integration"]
+	ref = 50893291621658f355bc5b4d450a8d06a563053d
