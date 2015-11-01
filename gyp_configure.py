@@ -312,6 +312,9 @@ if not any(a.startswith('-Dhost_arch=') for a in gyp_args):
 if not any(a.startswith('-Dtarget_arch=') for a in gyp_args):
     gyp_args.append('-Dtarget_arch=%s' % host_arch())
 
+if os.name == "posix":
+    gyp_args.append('-Dos_posix=1')
+
 if sys.platform == 'win32':
     # Override the Gyp default and require a half-modern C compiler...
     if not os.environ.get('GYP_MSVS_VERSION'):
