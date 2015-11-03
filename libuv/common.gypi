@@ -129,6 +129,13 @@
           }]
         ]
       }],
+      ['OS=="linux"', {
+        'target_conditions': [
+          ['_type in "static_library shared_library"', {
+            'cflags': [ '-fPIC' ]
+          }]
+         ]
+      }],
       ['OS in "freebsd linux openbsd solaris android"', {
         'cflags': [ '-Wall' ],
         'cflags_cc': [ '-fno-rtti', '-fno-exceptions' ],
