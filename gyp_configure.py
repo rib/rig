@@ -88,7 +88,7 @@ options = {
         },
         "debug": {
             "help": "debug support",
-            "enabled": True,
+            "enabled": False,
             "defines": { "RIG_ENABLE_DEBUG", "C_DEBUG", "CG_GL_DEBUG", "CG_OBJECT_DEBUG", "CG_ENABLE_DEBUG" }
         },
 #        "opencv": {
