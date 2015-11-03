@@ -1,0 +1,5 @@
+[subdir "upstream"]
+	url = git@github.com:rig-project/protobuf-c.git
+	branch = rig
+[subdir "integration"]
+	ref = 005d1fb3b44043c89661662eb9bac66a4a856a01

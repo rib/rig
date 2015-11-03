@@ -1,0 +1,12 @@
+language: cpp
+
+before_install:
+    - sudo apt-get update -qq
+
+install:
+    - sudo apt-get -q install protobuf-compiler libprotobuf-dev libprotoc-dev
+
+script:
+    - ./autogen.sh
+    - ./configure && make distcheck && make clean
+    - ./configure --enable-rpc && make distcheck DISTCHECK_CONFIGURE_FLAGS="--enable-rpc" && make clean
