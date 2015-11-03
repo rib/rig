@@ -429,7 +429,6 @@ data/Info.plist
 rig/Makefile
 rig/rig-defines.h
 toys/Makefile
-libyuv/Makefile
 tools/Makefile
 research/particle-engine/Makefile
 research/particle-engine/pe/Makefile

@@ -1,14 +1,10 @@
-SUBDIRS = libuv clib test-fixtures cglib research/particle-engine h2o
-
-if EDITOR_ENABLED
-SUBDIRS += xdgmime
-endif
+SUBDIRS = libuv clib test-fixtures cglib research/particle-engine
 
 if OCULUS_RIFT
 SUBDIRS += LibOVR
 endif
 
-SUBDIRS += rut data rig tests libyuv toys po android
+SUBDIRS += rut data rig tests toys po android
 
 SUBDIRS += tools
 
