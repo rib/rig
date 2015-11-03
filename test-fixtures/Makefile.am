@@ -5,6 +5,7 @@ libtest_fixtures_la_CPPFLAGS = \
 	-I$(top_srcdir) \
 	-I$(top_builddir) \
 	-I$(top_srcdir)/libuv/include \
+	-I$(top_srcdir)/cglib \
 	-I$(top_builddir)/cglib \
 	-I$(top_srcdir)/clib/clib \
 	-I$(top_builddir)/clib/clib \
@@ -16,7 +17,7 @@ libtest_fixtures_la_CPPFLAGS += \
 	-DTESTS_DATADIR=\""$(top_srcdir)/tests/data"\" \
 	-DCG_COMPILATION
 
-libtest_fixtures_la_CFLAGS = -g3 -O0 $(COGL_DEP_CFLAGS) $(COGL_EXTRA_CFLAGS)
+libtest_fixtures_la_CFLAGS = -g3 -O0 $(CG_DEP_CFLAGS) $(CG_EXTRA_CFLAGS)
 
 libtest_fixtures_la_SOURCES = \
 	test.h \

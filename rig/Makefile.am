@@ -27,6 +27,8 @@ AM_CPPFLAGS = \
 if USE_UV
 AM_CPPFLAGS += -I$(top_srcdir)/h2o/include
 AM_CPPFLAGS += -I$(top_srcdir)/h2o
+AM_CPPFLAGS += -I$(top_srcdir)/wslay/lib
+AM_CPPFLAGS += -I$(top_srcdir)/wslay/lib/includes
 endif
 
 if OCULUS_RIFT
@@ -48,8 +50,10 @@ lib_LTLIBRARIES += librig_clang.la
 endif
 
 noinst_LTLIBRARIES += librig.la
-noinst_LTLIBRARIES += librig-device-archive.la librig-simulator-archive.la librig-simulator-server-archive.la
-bin_PROGRAMS += rig-device rig-simulator rig-simulator-server
+#noinst_LTLIBRARIES += librig-device-archive.la librig-simulator-archive.la librig-simulator-server-archive.la
+noinst_LTLIBRARIES += librig-simulator-archive.la
+#bin_PROGRAMS += rig-device rig-simulator rig-simulator-server
+bin_PROGRAMS += rig-simulator
 
 if EDITOR_ENABLED
 noinst_LTLIBRARIES += librig-slave-archive.la
@@ -134,8 +138,8 @@ common_ldadd = \
 	$(CG_DEP_LIBS)
 
 if USE_UV
-common_ldadd += $(top_builddir)/xdgmime/libxdgmime.la
-common_ldadd += $(top_builddir)/h2o/libh2o.la -lssl -lcrypto
+#common_ldadd += $(top_builddir)/xdgmime/libxdgmime.la
+#common_ldadd += $(top_builddir)/h2o/libh2o.la -lssl -lcrypto
 endif
 
 if OCULUS_RIFT
@@ -171,29 +175,29 @@ rigeditor2_la_SOURCES += \
 	rig-avahi.c
 endif
 
-if HAVE_OSX
-rigeditor2_la_SOURCES += \
-	rig-osx.h \
-	rig-osx.m
+#if HAVE_OSX
+#rigeditor2_la_SOURCES += \
+#	rig-osx.h \
+#	rig-osx.m
+#endif
+
+#if HAVE_GTK
+#rigeditor2_la_SOURCES += \
+#	rig-application.h \
+#	rig-application.c
+#endif
+
+#librig_slave_archive_la_SOURCES = \
+#	$(rig_slave_sources) \
+#	rig-slave-main.c
+#librig_slave_archive_la_LIBADD = $(common_ldadd)
 endif
 
-if HAVE_GTK
-rigeditor2_la_SOURCES += \
-	rig-application.h \
-	rig-application.c
-endif
-
-librig_slave_archive_la_SOURCES = \
-	$(rig_slave_sources) \
-	rig-slave-main.c
-librig_slave_archive_la_LIBADD = $(common_ldadd)
-endif
-
-htmlfiles += rig-device.html
-librig_device_archive_la_SOURCES = \
-	$(rig_device_sources) \
-	rig-device-main.c
-librig_device_archive_la_LIBADD = $(common_ldadd)
+#htmlfiles += rig-device.html
+#librig_device_archive_la_SOURCES = \
+#	$(rig_device_sources) \
+#	rig-device-main.c
+#librig_device_archive_la_LIBADD = $(common_ldadd)
 
 worker_js_files += rig-simulator-worker.js
 librig_simulator_archive_la_SOURCES = \
@@ -201,26 +205,26 @@ librig_simulator_archive_la_SOURCES = \
 	rig-simulator-main.c
 librig_simulator_archive_la_LIBADD = $(common_ldadd)
 
-librig_simulator_server_archive_la_SOURCES = \
-	$(rig_simulator_sources) \
-	rig-simulator-server.c
-librig_simulator_server_archive_la_LIBADD = $(common_ldadd)
+#librig_simulator_server_archive_la_SOURCES = \
+#	$(rig_simulator_sources) \
+#	rig-simulator-server.c
+#librig_simulator_server_archive_la_LIBADD = $(common_ldadd)
 
-if EDITOR_ENABLED
-rig_slave_SOURCES =
-rig_slave_LDADD = $(common_ldadd) librig-slave-archive.la
-endif
+#if EDITOR_ENABLED
+#rig_slave_SOURCES =
+#rig_slave_LDADD = $(common_ldadd) librig-slave-archive.la
+#endif
 
-rig_device_SOURCES =
-rig_device_LDADD = $(common_ldadd) librig-device-archive.la
+#rig_device_SOURCES =
+#rig_device_LDADD = $(common_ldadd) librig-device-archive.la
 
 rig_simulator_SOURCES =
 rig_simulator_LDADD = $(common_ldadd) librig-simulator-archive.la
 rig_simulator_LDFLAGS = -export-dynamic
 
-rig_simulator_server_SOURCES =
-rig_simulator_server_LDADD = $(common_ldadd) librig-simulator-server-archive.la
-rig_simulator_server_LDFLAGS = -export-dynamic
+#rig_simulator_server_SOURCES =
+#rig_simulator_server_LDADD = $(common_ldadd) librig-simulator-server-archive.la
+#rig_simulator_server_LDFLAGS = -export-dynamic
 
 rig_android_moduledir = $(datadir)/android_modules/rig/
 nobase_rig_android_module_DATA = $(rig_common_sources) $(rig_slave_sources) Android.mk
