@@ -158,7 +158,7 @@ options = {
         },
         "sdl": {
             "help": "SDL 2.0 support",
-            "enabled": True,
+            "enabled": False,
             "pkg-config": "sdl2",
             "public_defines": { "CG_HAS_SDL_SUPPORT" },
         },
