@@ -146,7 +146,7 @@ options = {
         },
         "egl_kms": {
             "help": "Kernel Mode Setting EGL support",
-            "enabled": True,
+            "enabled": False,
             "pkg-config": "egl gbm libdrm",
             "public_defines": { "CG_HAS_EGL_PLATFORM_KMS_SUPPORT" },
         },
