@@ -25,11 +25,10 @@
 
   'targets': [
     {
-      'target_name': 'libcglib',
+      'target_name': 'cglib',
       'type': 'static_library',
       'dependencies': [
-         '../libuv/uv.gyp:libuv',
-         '../clib/clib.gyp:libclib'
+         '<(DEPTH)/clib/clib.gyp:clib'
        ],
       'include_dirs': [
         '.',
@@ -372,6 +371,12 @@
           'cflags': [ '-Wstrict-aliasing' ],
         }],
         [ 'enable_uv==1', {
+          'dependencies': [
+            '<(DEPTH)/libuv/uv.gyp:libuv'
+          ],
+          'defines': [
+            'USE_UV=1'
+          ],
           'sources': [
             'cglib/cg-uv-private.h',
             'cglib/cg-uv.h',
