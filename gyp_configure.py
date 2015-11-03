@@ -102,13 +102,13 @@ options = {
             "enabled": True,
             "defines": { "ENABLE_OCULUS_RIFT" },
         },
-        "uv": {
-            "help": "libuv support",
-            "enabled": True,
-            "pkg-config": "libuv",
-            "public_defines": { "CG_HAS_UV_SUPPORT" },
-            "defines": { "USE_UV" }
-        },
+#        "uv": {
+#            "help": "libuv support",
+#            "enabled": True,
+#            "pkg-config": "libuv",
+#            "public_defines": { "CG_HAS_UV_SUPPORT" },
+#            "defines": { "USE_UV" }
+#        },
         "glib": {
             "help": "GLib support",
             "enabled": False,
@@ -320,9 +320,11 @@ if sys.platform == 'win32':
     if not os.environ.get('GYP_MSVS_VERSION'):
         os.environ['GYP_MSVS_VERSION'] = '2015'
 
-if opt_args.host and platform.system() == "Linux":
-    if "emscripten" in opt_args.host:
-        gyp_args.append('-DOS=emscripten')
+if opt_args.host != None and "emscripten" in opt_args.host:
+    gyp_args.append('-DOS=emscripten')
+else:
+    gyp_args.append('-Denable_uv')
+    subst["CG_DEFINES"] = subst["CG_DEFINES"] + "#define CG_HAS_UV_SUPPORT\n"
 
 for name in enabled:
     gyp_args.append("-Denable_" + name)
