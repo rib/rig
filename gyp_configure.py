@@ -84,7 +84,7 @@ enabled = {}
 options = {
         "_": {
             "enabled": True,
-            "pkg-config": "libpng libprotobuf-c mozjs-24 gdk-pixbuf-2.0",
+            "pkg-config": "libpng protobuf mozjs-24 gdk-pixbuf-2.0",
         },
         "debug": {
             "help": "debug support",
