@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 import glob
 import platform
@@ -50,7 +50,7 @@ def pkg_config_variable(pkg_name, variable):
 def run_gyp(args):
     rc = gyp.main(args)
     if rc != 0:
-        print 'Error running GYP'
+        print('Error running GYP')
         sys.exit(rc)
 
 def add_option(parser, name, opt):
@@ -89,32 +89,32 @@ options = {
         "debug": {
             "help": "debug support",
             "enabled": False,
-            "defines": { "RIG_ENABLE_DEBUG", "C_DEBUG", "CG_GL_DEBUG", "CG_OBJECT_DEBUG", "CG_ENABLE_DEBUG" }
+            "defines": [ "RIG_ENABLE_DEBUG", "C_DEBUG", "CG_GL_DEBUG", "CG_OBJECT_DEBUG", "CG_ENABLE_DEBUG" ]
         },
 #        "opencv": {
 #            "help": "OpenCV support",
 #            "enabled": True,
 #            "pkg-config": "opencv >= 3.0.0",
-#            "defines": { "USE_OPENCV" }
+#            "defines": [ "USE_OPENCV" ]
 #        },
         "oculus_rift": {
             "help": "OculusRift support",
             "enabled": True,
-            "defines": { "ENABLE_OCULUS_RIFT" },
+            "defines": [ "ENABLE_OCULUS_RIFT" ],
         },
 #        "uv": {
 #            "help": "libuv support",
 #            "enabled": True,
 #            "pkg-config": "libuv",
 #            "public_defines": { "CG_HAS_UV_SUPPORT" },
-#            "defines": { "USE_UV" }
+#            "defines": [ "USE_UV" ]
 #        },
         "glib": {
             "help": "GLib support",
             "enabled": False,
             "pkg-config": "glib-2.0",
             "public_defines": { "CG_HAS_GLIB_SUPPORT" },
-            "defines": { "USE_GLIB" }
+            "defines": [ "USE_GLIB" ]
         },
         "x11": {
             "enabled": True,
@@ -172,7 +172,7 @@ options = {
             "help": "ncurses debug console",
             "enabled": True,
             "pkg-config": "ncursesw",
-            "defines": { "USE_NCURSES" },
+            "defines": [ "USE_NCURSES" ],
         },
 }
 
@@ -358,10 +358,10 @@ for file in output:
 print("")
 
 gyp_args = list(gyp_args)
-print "Running gyp:"
-print "$ gyp " + " ".join(gyp_args)
+print("Running gyp:")
+print("$ gyp " + " ".join(gyp_args))
 run_gyp(gyp_args)
 
 if "ninja" in gyp_args:
-    print "\n\nReady to build:"
-    print "$ ninja -C ./out/Debug"
+    print("\n\nReady to build:")
+    print("$ ninja -C ./out/Debug")
