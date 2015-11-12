@@ -55,12 +55,6 @@ noinst_LTLIBRARIES += librig-simulator-archive.la
 #bin_PROGRAMS += rig-device rig-simulator rig-simulator-server
 bin_PROGRAMS += rig-simulator
 
-if EDITOR_ENABLED
-noinst_LTLIBRARIES += librig-slave-archive.la
-bin_PROGRAMS += rig rig-slave
-lib_LTLIBRARIES += rigeditor2.la
-endif
-
 rig_includedir=$(includedir)/rig
 rig_include_SOURCE=rig-c.h
 
@@ -164,35 +158,6 @@ endif
 
 librig_la_LIBS = $(common_ldadd)
 
-if EDITOR_ENABLED
-rigeditor2_la_SOURCES=rig-editor2.c
-rigeditor2_la_LDFLAGS=-module -shared -export-dynamic -avoid-version
-#rigeditor2_la_LIBADD
-
-if HAVE_AVAHI
-rigeditor2_la_SOURCES += \
-	rig-avahi.h \
-	rig-avahi.c
-endif
-
-#if HAVE_OSX
-#rigeditor2_la_SOURCES += \
-#	rig-osx.h \
-#	rig-osx.m
-#endif
-
-#if HAVE_GTK
-#rigeditor2_la_SOURCES += \
-#	rig-application.h \
-#	rig-application.c
-#endif
-
-#librig_slave_archive_la_SOURCES = \
-#	$(rig_slave_sources) \
-#	rig-slave-main.c
-#librig_slave_archive_la_LIBADD = $(common_ldadd)
-endif
-
 #htmlfiles += rig-device.html
 #librig_device_archive_la_SOURCES = \
 #	$(rig_device_sources) \
@@ -209,11 +174,6 @@ librig_simulator_archive_la_LIBADD = $(common_ldadd)
 #	$(rig_simulator_sources) \
 #	rig-simulator-server.c
 #librig_simulator_server_archive_la_LIBADD = $(common_ldadd)
-
-#if EDITOR_ENABLED
-#rig_slave_SOURCES =
-#rig_slave_LDADD = $(common_ldadd) librig-slave-archive.la
-#endif
 
 #rig_device_SOURCES =
 #rig_device_LDADD = $(common_ldadd) librig-device-archive.la
