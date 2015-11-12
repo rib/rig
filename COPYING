@@ -58,8 +58,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 
-Some code in rut/shell.c is based on code from SDL which is licensed
-under the permissive zlib license:
+Some code in rut/rut-sdl-shell.c is based on code from SDL which is
+licensed under the permissive zlib license:
 
 Copyright (C) 1997-2013 Sam Lantinga <slouken@libsdl.org>
 
