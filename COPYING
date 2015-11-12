@@ -124,20 +124,5 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS WITH
 THE SOFTWARE.
 
 
-
-These files are currently licensed under the LGPL v2.1+:
-
-rut/rut-text.c
-rut/rut-text.h
-rut/rut-text-buffer.c
-rut/rut-text-buffer.h
-rut/gstmemsrc.c
-
-For reference; we are working to replace this code with code licensed
-under the MIT license and will update this notice when we have.
-
-Please see COPYING.LGPL for a copy of the LGPL license
-
-
 Please see individual files, and reference the Git version control
 history for the details of each file.
