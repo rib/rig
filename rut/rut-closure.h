@@ -75,8 +75,8 @@ rut_closure_init(rut_closure_t *closure,
     closure->allocated = false;
     closure->used_add_FIXME = false;
     closure->owner = NULL;
-    closure->list_node.prev = closure->list_node.next = NULL;
 #endif
+    closure->list_node.prev = closure->list_node.next = NULL;
 }
 
 static inline rut_closure_t *
