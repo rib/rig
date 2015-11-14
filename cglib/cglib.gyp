@@ -28,7 +28,7 @@
       'target_name': 'cglib',
       'type': 'static_library',
       'dependencies': [
-         '<(DEPTH)/clib/clib.gyp:clib'
+         '../clib/clib.gyp:clib'
        ],
       'include_dirs': [
         '.',
@@ -372,7 +372,7 @@
         }],
         [ 'enable_uv==1', {
           'dependencies': [
-            '<(DEPTH)/libuv/uv.gyp:libuv'
+            '../libuv/uv.gyp:libuv'
           ],
           'defines': [
             'USE_UV=1'
