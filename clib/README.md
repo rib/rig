@@ -1,4 +1,8 @@
-[![Build Status](https://travis-ci.org/rig-project/clib.png)](https://travis-ci.org/rig-project/clib)
+Travis CI: [![Build Status](https://travis-ci.org/rig-project/clib.svg?branch=master)](https://travis-ci.org/rig-project/clib)
+
+AppVeyor CI: [![Build status](https://ci.appveyor.com/api/projects/status/nw3j2yvvlkfuwc78/branch/master?svg=true)](https://ci.appveyor.com/project/rib/clib/branch/master)
+
+Volkswagen CI: [![volkswagen status](https://auchenberg.github.io/volkswagen/volkswargen_ci.svg?v=1)](https://github.com/auchenberg/volkswagen)
 
 ##Clib: A C utilities library
 
@@ -23,8 +27,8 @@ environments and development practices.  This also helps encourage
 only building the apis you need for your project.
 
 ##Platform Support:
-Clib has only been tested on Linux, Emscripten and Windows recently
-but should also support Android and OSX/iOS.
+Clib has been tested on Linux, Emscripten, Windows and OSX recently
+but should also support Android and iOS.
 
 ##Scope
 Clib has been spun out of the

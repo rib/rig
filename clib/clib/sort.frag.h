@@ -51,7 +51,7 @@ typedef list_node *digit;
 #define MAX_RANKS ((sizeof(size_t) * 8) - FLOOR_LOG2(sizeof(list_node)) - 1)
 
 struct sort_info {
-    int min_rank, n_ranks;
+    unsigned int min_rank, n_ranks;
     c_compare_func_t func;
 
     /* Invariant: ranks[i] == NULL || length(ranks[i]) >= 2**(i+1) */

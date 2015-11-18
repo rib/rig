@@ -148,7 +148,7 @@ c_ptr_array_remove_index(c_ptr_array_t *array, unsigned int index)
     void *removed_node;
 
     c_return_val_if_fail(array != NULL, NULL);
-    c_return_val_if_fail(index >= 0 || index < array->len, NULL);
+    c_return_val_if_fail(index < array->len, NULL);
 
     removed_node = array->pdata[index];
 
@@ -170,7 +170,7 @@ c_ptr_array_remove_index_fast(c_ptr_array_t *array, unsigned int index)
     void *removed_node;
 
     c_return_val_if_fail(array != NULL, NULL);
-    c_return_val_if_fail(index >= 0 || index < array->len, NULL);
+    c_return_val_if_fail(index < array->len, NULL);
 
     removed_node = array->pdata[index];
 

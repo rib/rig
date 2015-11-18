@@ -1,5 +1,7 @@
 language: c
 
+sudo: false
+
 os:
     - linux
     - osx
@@ -8,24 +10,87 @@ compiler:
     - clang
     - gcc
 
-before_install:
-    - git clone --branch master --depth 1 https://github.com/libuv/libuv
-    - (cd libuv && ./autogen.sh && ./configure --prefix=/usr && make && sudo make install)
-
-install:
-    - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
-
 addons:
     apt:
         sources:
             - ubuntu-toolchain-r-test
+            - llvm-toolchain-precise-3.6
         packages:
-            - gcc-4.8
-            - g++-4.8
-            - clang
+            - gcc-4.9
+            - g++-4.9
+            - clang-3.6
+            - ninja-build
+            - autopoint
+            - python-lxml
+
+cache:
+    directories:
+        - libuv
+        - ninja
+        - cmake-2.8.12.2
+        - llvm-fastcomp
+
+env:
+    - USE_GYP=true
+    - USE_GYP=true OS="emscripten"
+    - USE_GYP=false
+
+matrix:
+    exclude:
+        - os: osx
+          env: USE_GYP=true OS="emscripten"
+        - compiler: gcc
+          env: USE_GYP=true OS="emscripten"
+
+before_install:
+    - if test "$CC" = "gcc"; then export CC=gcc-4.9; export CXX=g++-4.9; fi
+    - if test "$CC" = "clang" -a "$TRAVIS_OS_NAME" != "osx"; then export CC=clang-3.6; export CXX=clang++-3.6; fi
+    - (if ! test -d libuv/lib; then
+        git clone --branch master --single-branch --depth 1 https://github.com/libuv/libuv libuv-src &&
+        cd libuv-src && ./autogen.sh && ./configure --prefix=$TRAVIS_BUILD_DIR/libuv && make && make install;
+       fi)
+    - export PKG_CONFIG_PATH="$TRAVIS_BUILD_DIR/libuv/lib/pkgconfig"
+    - (if test "$USE_GYP" = true; then
+        git clone --branch master --single-branch --depth 1 https://chromium.googlesource.com/external/gyp.git &&
+        cd ./gyp &&
+        python ./setup.py install --user;
+       fi)
+    - (if ! test -f ninja/ninja; then
+        git clone --branch master --single-branch --depth 1 git://github.com/martine/ninja.git &&
+        cd ./ninja &&
+        ./configure.py --bootstrap;
+       fi)
+    - export PATH="$TRAVIS_BUILD_DIR/ninja:$PATH"
+    # Kind of annoying how awkward it is to get a recent version of cmake on Travis a.t.m :-/
+    - (if test "$OS" != "emscripten" -o -f cmake-2.8.12.2/bin/cmake; then echo OK; else
+           git clone --branch v2.8.12.2 --single-branch --depth 1 git://cmake.org/cmake.git cmake-2.8.12.2-src &&
+           cd cmake-2.8.12.2-src &&
+           ./configure --prefix=$TRAVIS_BUILD_DIR/cmake-2.8.12.2 &&
+           make &&
+           make install;
+       fi)
+    # Building llvm-fastcomp manually helps us minimize the size of the directory we cache between builds...
+    - (if test "$OS" != "emscripten" -o -d llvm-fastcomp/bin; then echo OK; else
+           git clone https://github.com/kripken/emscripten-fastcomp &&
+           git clone https://github.com/kripken/emscripten-fastcomp-clang emscripten-fastcomp/tools/clang &&
+           mkdir emscripten-fastcomp/build &&
+           cd emscripten-fastcomp/build &&
+           PATH="$TRAVIS_BUILD_DIR/cmake-2.8.12.2/bin:$PATH" LDFLAGS="-s" CFLAGS="-Os" CXXFLAGS="-Os" cmake .. -DCMAKE_INSTALL_PREFIX=$TRAVIS_BUILD_DIR/llvm-fastcomp -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;JSBackend" -DLLVM_INCLUDE_EXAMPLES=OFF -DLLVM_INCLUDE_TESTS=OFF -DCLANG_INCLUDE_TESTS=OFF &&
+           make -j4 &&
+           make install;
+       fi)
+    - export LLVM="$TRAVIS_BUILD_DIR/llvm-fastcomp/bin"
+    - (if test "$OS" = "emscripten"; then
+           git clone --single-branch --branch master --depth 1 https://github.com/kripken/emscripten;
+       fi)
+    - export PATH="$TRAVIS_BUILD_DIR/emscripten:$PATH"
+    - if test "$OS" = "emscripten"; then emcc -v; fi
 
 before_script:
-    - NOCONFIGURE=1 ./autogen.sh
+    - if test "$OS" = "emscripten"; then export GYP_ARGS="-DOS=emscripten" && unset CC && unset CXX; fi
+    - if test "$USE_GYP" = true; then ./gyp_configure.py $GYP_ARGS; fi
+    - if test "$USE_GYP" = false; then NOCONFIGURE=1 ./autogen.sh; fi
 
 script:
-    - ./configure CC="gcc-4.8" CXX="g++-4.8" && make
+    - if test "$USE_GYP" = true; then ninja -C out/Debug; fi
+    - if test "$USE_GYP" = false; then ./configure && make; fi

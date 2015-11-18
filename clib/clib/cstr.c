@@ -386,6 +386,29 @@ c_strreverse(char *str)
 }
 
 char *
+c_strrstr(const char *haystack, const char *needle)
+{
+    const char *buffer = haystack;
+    const char *last_occurence = NULL;
+    size_t needle_size;
+
+    c_return_val_if_fail(haystack, NULL);
+    c_return_val_if_fail(needle, NULL);
+
+    needle_size = strlen(needle);
+
+    while (buffer != NULL) {
+        buffer = strstr(buffer, needle);
+        if (buffer != NULL) {
+            last_occurence = buffer;
+            buffer += needle_size;
+        }
+    }
+
+    return (char *)last_occurence;
+}
+
+char *
 c_strjoin(const char *separator, ...)
 {
     va_list args;

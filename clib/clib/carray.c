@@ -213,7 +213,6 @@ c_array_set_size(c_array_t *array, unsigned int length)
     c_array_priv_t *priv = (c_array_priv_t *)array;
 
     c_return_val_if_fail(array != NULL, NULL);
-    c_return_val_if_fail(length >= 0, NULL);
 
     if (length > priv->capacity) {
         // grow the array

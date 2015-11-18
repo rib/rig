@@ -60,12 +60,8 @@
 
 /* XXX: defines that should be removed if we can assume they
  * are always available... */
-#define HAVE_FFS 1
 #define HAVE_INTTYPES_H 1
 #define HAVE_LANGINFO_H 1
-#define HAVE_LIMITS_H 1
-
-#define HAVE_STRDUP 1
 
 
 #include "clib-platform.h"

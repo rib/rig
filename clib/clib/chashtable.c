@@ -298,6 +298,24 @@ c_hash_table_get_keys(c_hash_table_t *hash)
     return c_llist_reverse(rv);
 }
 
+void **
+c_hash_table_get_keys_array(c_hash_table_t *hash)
+{
+    c_hash_table_iter_t iter;
+    void **keys = c_new(void *, hash->in_use);
+    void *key;
+    int i = 0;
+
+    c_hash_table_iter_init(&iter, hash);
+
+    while (c_hash_table_iter_next(&iter, &key, NULL)) {
+        keys[i] = key;
+        i++;
+    }
+
+    return keys;
+}
+
 c_llist_t *
 c_hash_table_get_values(c_hash_table_t *hash)
 {
@@ -311,6 +329,24 @@ c_hash_table_get_values(c_hash_table_t *hash)
         rv = c_llist_prepend(rv, value);
 
     return c_llist_reverse(rv);
+}
+
+void **
+c_hash_table_get_values_array(c_hash_table_t *hash)
+{
+    c_hash_table_iter_t iter;
+    void **values = c_new(void *, hash->in_use);
+    void *value;
+    int i = 0;
+
+    c_hash_table_iter_init(&iter, hash);
+
+    while (c_hash_table_iter_next(&iter, NULL, &value)) {
+        values[i] = value;
+        i++;
+    }
+
+    return values;
 }
 
 unsigned int

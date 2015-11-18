@@ -253,9 +253,9 @@ c_file_get_contents(const char *filename,
              (nread == -1 && errno == EINTR));
 
     close(fd);
-    str[st.st_size] = '\0';
+    str[offset] = '\0';
     if (length) {
-        *length = st.st_size;
+        *length = offset;
     }
     *contents = str;
     return true;
@@ -353,7 +353,7 @@ c_get_current_dir(void)
 #endif
 }
 
-#ifdef C_PLATFORM_UNIX
+#if defined(C_PLATFORM_UNIX) && !defined(C_PLATFORM_WEB)
 bool
 c_file_test(const char *filename, c_file_test_t test)
 {
