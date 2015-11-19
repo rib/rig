@@ -412,7 +412,7 @@
             'rig/rig.pb-c.h',
             'rig/rig.pb-c.c'
           ],
-          'action': [ 'protoc-c', '--c_out=rig', '-Irig', '<@(_inputs)' ]
+          'action': [ '<(PRODUCT_DIR)/protoc-c', '--c_out=rig', '-Irig', '<@(_inputs)' ]
         }
       ],
       'sources': [

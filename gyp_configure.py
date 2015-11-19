@@ -288,6 +288,7 @@ gyp_args.append('--debug=all')
 gyp_args.append('--check')
 
 gyp_args.extend(['-I', "config.gypi"])
+gyp_args.extend(['-I', "common.gypi"])
 
 options_fn = os.path.join(rig_root, 'options.gypi')
 if os.path.exists(options_fn):

@@ -1,8 +1,4 @@
 {
-  "includes": [
-    "common.gypi"
-  ],
-
   'variables': {
     'enable_uv%': 0,
   },
@@ -10,21 +6,7 @@
   'target_defaults': {
     'cflags': [
       '-std=c11',
-      '-Wno-sign-compare',
     ],
-    'xcode_settings': {
-      'WARNING_CFLAGS': [
-        '-Wall',
-        '-Wextra',
-        '-Wno-unused-parameter'
-      ],
-      'OTHER_LDFLAGS': [
-      ],
-      'OTHER_CFLAGS': [
-        '-g',
-        '-std=c11',
-      ],
-    }
   },
 
   'targets': [
@@ -176,11 +158,6 @@
 		'ENABLE_UNIT_TESTS'
 	      ],
             }],
-#            ['_type=="shared_library" and OS!="mac"', {
-#              'link_settings': {
-#                'libraries': [ '-Wl,-soname,libclib.so.1.0' ],
-#              },
-#            }],
           ],
         }],
         [ 'OS=="emscripten"', {
@@ -190,9 +167,6 @@
           ],
         }],
         [ 'OS=="mac"', {
-          'defines': [
-            '_DARWIN_USE_64_BIT_INODE=1'
-          ],
           'sources': [
             'clib/cdir-unix.c',
             'clib/cdate-unix.c',
@@ -200,11 +174,6 @@
             'clib/ctls.c',
             'clib/fmemopen.c',
           ]
-        }],
-        [ 'OS!="mac"', {
-          # Enable on all platforms except OS X. The antique gcc/clang that
-          # ships with Xcode emits waaaay too many false positives.
-          'cflags': [ '-Wstrict-aliasing' ],
         }],
         [ 'OS=="linux"', {
           'link_settings': {

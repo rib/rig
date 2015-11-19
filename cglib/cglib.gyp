@@ -1,26 +1,8 @@
 {
-  "includes": [
-    "common.gypi"
-  ],
-
   'target_defaults': {
     'cflags': [
       '-std=c11',
-      '-Wno-sign-compare',
     ],
-    'xcode_settings': {
-      'WARNING_CFLAGS': [
-        '-Wall',
-        '-Wextra',
-        '-Wno-unused-parameter'
-      ],
-      'OTHER_LDFLAGS': [
-      ],
-      'OTHER_CFLAGS': [
-        '-g',
-        '-std=c11',
-      ],
-    }
   },
 
   'targets': [
@@ -338,11 +320,6 @@
 		'ENABLE_UNIT_TESTS'
 	      ],
             }],
-#            ['_type=="shared_library" and OS!="mac"', {
-#              'link_settings': {
-#                'libraries': [ '-Wl,-soname,libcglib.so.1.0' ],
-#              },
-#            }],
           ],
         }],
         [ 'OS=="emscripten"', {

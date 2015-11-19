@@ -1,9 +1,8 @@
 {
-  "includes": [
-    "common.gypi"
-  ],
-
   'target_defaults': {
+    'cflags_cc!': [
+      '-fno-rtti',
+    ],
     'cflags_cc': [
       # Enable RTTI.
       '-frtti',
@@ -39,31 +38,6 @@
       'PACKAGE_URL="http://icu-project.org"',
       'PACKAGE_VERSION="53.1.0"',
       'STDC_HEADERS=1',
-    ],
-    'conditions': [
-      ['OS=="ios"', {
-	'xcode_settings': {
-	  'WARNING_CFLAGS': [
-	    # ICU uses its own deprecated functions.
-	    '-Wno-deprecated-declarations',
-	    # ICU prefers `a && b || c` over `(a && b) || c`.
-	    '-Wno-logical-op-parentheses',
-	    # ICU has some `unsigned < 0` checks.
-	    '-Wno-tautological-compare',
-	    # uresdata.c has switch(RES_GET_TYPE(x)) code. The
-	    # RES_GET_TYPE macro returns an UResType enum, but some switch
-	    # statement contains case values that aren't part of that
-	    # enum (e.g. URES_TABLE32 which is in UResInternalType). This
-	    # is on purpose.
-	    '-Wno-switch',
-	  ],
-	},
-      }],
-      ['OS=="android"', {
-        'cflags': [
-          '-D__ANDROID__',
-        ],
-      }],
     ],
     'include_dirs': [
       'common',
