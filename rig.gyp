@@ -613,11 +613,6 @@
 		'ENABLE_UNIT_TESTS'
 	      ],
             }],
-#            ['_type=="shared_library" and OS!="mac"', {
-#              'link_settings': {
-#                'libraries': [ '-Wl,-soname,librig.so.1.0' ],
-#              },
-#            }],
           ],
         }],
         [ 'OS=="emscripten"', {
