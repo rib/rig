@@ -107,23 +107,25 @@ if a != ncode:
 # exception; BRAILLE PATTERN BLANK
 insert(l, 0x2800, 0x2800)
 
+out = open(sys.argv[2], 'w')
+tmpl = open(sys.argv[1], 'r')
 while True:
-    s = sys.stdin.readline().rstrip()
+    s = tmpl.readline().rstrip()
     if s == "@@@":
         break
-    print s
+    print >>out, s
 
-print "static FcChar32 _fcBlanks[%s] = {" % (ncode + 1)
+print >>out, "static FcChar32 _fcBlanks[%s] = {" % (ncode + 1)
 k = 0
 for i in sorted(l, key=lambda(a): a[0]):
     for j in range(i[0], i[1] + 1):
         if k != 0:
-            print ","
-        print "    0x%04x" % j,
+            print >>out, ","
+        print >>out, "    0x%04x" % j,
         k += 1
 
-print "};"
-print '''
+print >>out, "};"
+print >>out, '''
 static FcBlanks fcBlanks = {
     %s,
     -1,

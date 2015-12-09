@@ -342,6 +342,14 @@
         'fontconfig/src/ftglue.h',
         'fontconfig/src/ftglue.c',
       ],
+      'actions': [
+        {
+          'action_name': 'fcblanks.h',
+          'inputs': [ 'fontconfig/fc-blanks/fcblanks.tmpl.h' ],
+          'outputs': [ 'fontconfig/fc-blanks/fcblanks.h' ],
+          'action': [ 'python', 'fc-blanks/fc-blanks.py', '<@(_inputs)', '<@(_outputs)' ]
+        }
+      ],
     },
     {
       'target_name': 'xdgmime',
