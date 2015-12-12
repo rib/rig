@@ -79,6 +79,7 @@ static int	    max_name_len;
 static FcGlyphName *name_to_ucs[MAX_GLYPHNAME*2];
 static FcGlyphName *ucs_to_name[MAX_GLYPHNAME*2];
 static unsigned int hash, rehash;
+static FILE        *out = NULL;
 
 static int
 rawindex (const FcGlyphName *gn)
@@ -219,15 +220,15 @@ dump (FcGlyphName * const *table, const char *name)
 {
     unsigned int	    i;
 
-    printf ("static const FcGlyphId %s[%d] = {\n", name, hash);
+    fprintf (out, "static const FcGlyphId %s[%d] = {\n", name, hash);
 
     for (i = 0; i < hash; i++)
 	if (table[i])
-	    printf ("    %d,\n", rawindex(table[i]));
+	    fprintf (out, "    %d,\n", rawindex(table[i]));
 	else
-	    printf ("    -1,\n");
+	    fprintf (out, "    -1,\n");
 
-    printf ("};\n");
+    fprintf (out, "};\n");
 }
 
 int
@@ -238,9 +239,32 @@ main (int argc FC_UNUSED, char **argv)
     FILE	*f;
     int		i;
     const char	*type;
+    FILE        *template = NULL;
+
+    if (argc < 3)
+    {
+        fprintf(stderr, "usage: %s template output [glyphfiles...]\n", argv[0]);
+        exit(1);
+    }
+
+    template = fopen(argv[1], "r");
+    if (!template)
+    {
+        fprintf(stderr, "Failed to open template: %s: %s",
+                argv[1], strerror(errno));
+        exit(1);
+    }
+
+    out = fopen(argv[2], "w");
+    if (!out)
+    {
+        fprintf(stderr, "Failed to open output: %s: %s",
+                argv[2], strerror(errno));
+        exit(1);
+    }
 
     i = 0;
-    while (argv[i+1])
+    while (argv[i+3])
     {
 	if (i == MAX_GLYPHFILE)
 	    fatal (*argv, 0, "Too many glyphname files");
@@ -271,19 +295,19 @@ main (int argc FC_UNUSED, char **argv)
      * Scan the input until the marker is found
      */
 
-    while (fgets (line, sizeof (line), stdin))
+    while (fgets (line, sizeof (line), template))
     {
 	if (!strncmp (line, "@@@", 3))
 	    break;
-	fputs (line, stdout);
+	fputs (line, out);
     }
 
-    printf ("/* %d glyphnames in %d entries, %d%% occupancy */\n\n",
-	    nraw, hash, nraw * 100 / hash);
+    fprintf (out, "/* %d glyphnames in %d entries, %d%% occupancy */\n\n",
+             nraw, hash, nraw * 100 / hash);
 
-    printf ("#define FC_GLYPHNAME_HASH %u\n", hash);
-    printf ("#define FC_GLYPHNAME_REHASH %u\n", rehash);
-    printf ("#define FC_GLYPHNAME_MAXLEN %d\n\n", max_name_len);
+    fprintf (out, "#define FC_GLYPHNAME_HASH %u\n", hash);
+    fprintf (out, "#define FC_GLYPHNAME_REHASH %u\n", rehash);
+    fprintf (out, "#define FC_GLYPHNAME_MAXLEN %d\n\n", max_name_len);
     if (nraw < 128)
 	type = "int8_t";
     else if (nraw < 32768)
@@ -291,20 +315,20 @@ main (int argc FC_UNUSED, char **argv)
     else
 	type = "int32_t";
 
-    printf ("typedef %s FcGlyphId;\n\n", type);
+    fprintf (out, "typedef %s FcGlyphId;\n\n", type);
 
     /*
      * Dump out entries
      */
 
-    printf ("static const struct { const FcChar32 ucs; const FcChar8 name[%d]; } _fc_glyph_names[%d] = {\n",
-	    max_name_len + 1, nraw);
+    fprintf (out, "static const struct { const FcChar32 ucs; const FcChar8 name[%d]; } _fc_glyph_names[%d] = {\n",
+             max_name_len + 1, nraw);
 
     for (i = 0; i < nraw; i++)
-	printf ("    { 0x%lx, \"%s\" },\n",
+	fprintf (out, "    { 0x%lx, \"%s\" },\n",
 		(unsigned long) raw[i]->ucs, raw[i]->name);
 
-    printf ("};\n");
+    fprintf (out, "};\n");
 
     /*
      * Dump out name_to_ucs table
@@ -317,9 +341,8 @@ main (int argc FC_UNUSED, char **argv)
      */
     dump (ucs_to_name, "_fc_ucs_to_name");
 
-    while (fgets (line, sizeof (line), stdin))
-	fputs (line, stdout);
+    while (fgets (line, sizeof (line), template))
+	fputs (line, out);
 
-    fflush (stdout);
-    exit (ferror (stdout));
+    fclose (out);
 }

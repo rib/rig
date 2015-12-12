@@ -48,7 +48,7 @@ $(TOOL): $(TSRC) $(ALIAS_FILES)
 $(TARG): $(TMPL) $(TSRC) $(DEPS)
 	$(AM_V_GEN) $(MAKE) $(TOOL) && \
 	$(RM) $(TARG) && \
-	$(TOOL) $(ARGS) < $< > $(TARG).tmp && \
+	$(TOOL) $< $(TARG).tmp $(ARGS) && \
 	mv $(TARG).tmp $(TARG) || ( $(RM) $(TARG).tmp && false )
 noinst_HEADERS=$(TARG)
 

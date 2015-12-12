@@ -37,6 +37,8 @@
  * functions are also needed in slightly modified form
  */
 
+static FILE *out = NULL;
+
 FcPrivate void
 FcCacheObjectReference (void *object FC_UNUSED)
 {
@@ -276,11 +278,34 @@ main (int argc FC_UNUSED, char **argv)
     int		setRangeEnd[26];
     FcChar8	setRangeChar;
     FcCharSetFreezer	*freezer;
-    
+    FILE        *template = NULL;
+
+    if (argc < 3)
+    {
+        fprintf(stderr, "usage: fc-lang template output [options..] [orthfiles...]\n");
+        exit(1);
+    }
+
+    template = fopen(argv[1], "r");
+    if (!template)
+    {
+        fprintf(stderr, "Failed to open template: %s: %s",
+                argv[1], strerror(errno));
+        exit(1);
+    }
+
+    out = fopen(argv[2], "w");
+    if (!out)
+    {
+        fprintf(stderr, "Failed to open output: %s: %s",
+                argv[2], strerror(errno));
+        exit(1);
+    }
+
     freezer = FcCharSetFreezerCreate ();
     if (!freezer)
 	fatal (argv[0], 0, "out of memory");
-    argi = 1;
+    argi = 3;
     while (argv[argi])
     {
 	if (!strcmp (argv[argi], "-d"))
@@ -336,15 +361,15 @@ main (int argc FC_UNUSED, char **argv)
      * Scan the input until the marker is found
      */
     
-    while (fgets (line, sizeof (line), stdin))
+    while (fgets (line, sizeof (line), template))
     {
 	if (!strncmp (line, "@@@", 3))
 	    break;
-	fputs (line, stdout);
+	fputs (line, out);
     }
     
-    printf ("/* total size: %d unique leaves: %d */\n\n",
-	    total_leaves, tl);
+    fprintf (out, "/* total size: %d unique leaves: %d */\n\n",
+             total_leaves, tl);
 
     /*
      * Find duplicate charsets
@@ -371,34 +396,34 @@ main (int argc FC_UNUSED, char **argv)
 	tn += sets[i]->num;
     }
 
-    printf ("#define LEAF0       (%d * sizeof (FcLangCharSet))\n", nsets);
-    printf ("#define OFF0        (LEAF0 + %d * sizeof (FcCharLeaf))\n", tl);
-    printf ("#define NUM0        (OFF0 + %d * sizeof (uintptr_t))\n", tn);
-    printf ("#define SET(n)      (n * sizeof (FcLangCharSet) + offsetof (FcLangCharSet, charset))\n");
-    printf ("#define OFF(s,o)    (OFF0 + o * sizeof (uintptr_t) - SET(s))\n");
-    printf ("#define NUM(s,n)    (NUM0 + n * sizeof (FcChar16) - SET(s))\n");
-    printf ("#define LEAF(o,l)   (LEAF0 + l * sizeof (FcCharLeaf) - (OFF0 + o * sizeof (intptr_t)))\n");
-    printf ("#define fcLangCharSets (fcLangData.langCharSets)\n");
-    printf ("#define fcLangCharSetIndices (fcLangData.langIndices)\n");
-    printf ("#define fcLangCharSetIndicesInv (fcLangData.langIndicesInv)\n");
-    printf ("\n");
+    fprintf (out, "#define LEAF0       (%d * sizeof (FcLangCharSet))\n", nsets);
+    fprintf (out, "#define OFF0        (LEAF0 + %d * sizeof (FcCharLeaf))\n", tl);
+    fprintf (out, "#define NUM0        (OFF0 + %d * sizeof (uintptr_t))\n", tn);
+    fprintf (out, "#define SET(n)      (n * sizeof (FcLangCharSet) + offsetof (FcLangCharSet, charset))\n");
+    fprintf (out, "#define OFF(s,o)    (OFF0 + o * sizeof (uintptr_t) - SET(s))\n");
+    fprintf (out, "#define NUM(s,n)    (NUM0 + n * sizeof (FcChar16) - SET(s))\n");
+    fprintf (out, "#define LEAF(o,l)   (LEAF0 + l * sizeof (FcCharLeaf) - (OFF0 + o * sizeof (intptr_t)))\n");
+    fprintf (out, "#define fcLangCharSets (fcLangData.langCharSets)\n");
+    fprintf (out, "#define fcLangCharSetIndices (fcLangData.langIndices)\n");
+    fprintf (out, "#define fcLangCharSetIndicesInv (fcLangData.langIndicesInv)\n");
+    fprintf (out, "\n");
     
-    printf ("static const struct {\n"
-	    "    FcLangCharSet  langCharSets[%d];\n"
-	    "    FcCharLeaf     leaves[%d];\n"
-	    "    uintptr_t      leaf_offsets[%d];\n"
-	    "    FcChar16       numbers[%d];\n"
-	    "    FcChar%s       langIndices[%d];\n"
-	    "    FcChar%s       langIndicesInv[%d];\n"
-	    "} fcLangData = {\n",
-	    nsets, tl, tn, tn,
-	    nsets < 256 ? "8 " : "16", nsets, nsets < 256 ? "8 " : "16", nsets);
+    fprintf (out, "static const struct {\n"
+             "    FcLangCharSet  langCharSets[%d];\n"
+             "    FcCharLeaf     leaves[%d];\n"
+             "    uintptr_t      leaf_offsets[%d];\n"
+             "    FcChar16       numbers[%d];\n"
+             "    FcChar%s       langIndices[%d];\n"
+             "    FcChar%s       langIndicesInv[%d];\n"
+             "} fcLangData = {\n",
+             nsets, tl, tn, tn,
+             nsets < 256 ? "8 " : "16", nsets, nsets < 256 ? "8 " : "16", nsets);
 	
     /*
      * Dump sets
      */
 
-    printf ("{\n");
+    fprintf (out, "{\n");
     for (i = 0; sets[i]; i++)
     {
 	int	j = duplicate[i];
@@ -406,105 +431,105 @@ main (int argc FC_UNUSED, char **argv)
 	if (j < 0)
 	    j = i;
 
-	printf ("    { \"%s\", "
-		" { FC_REF_CONSTANT, %d, OFF(%d,%d), NUM(%d,%d) } }, /* %d */\n",
-		langs[i],
-		sets[j]->num, i, off[j], i, off[j], i);
+	fprintf (out, "    { \"%s\", "
+                 " { FC_REF_CONSTANT, %d, OFF(%d,%d), NUM(%d,%d) } }, /* %d */\n",
+                 langs[i],
+                 sets[j]->num, i, off[j], i, off[j], i);
     }
-    printf ("},\n");
+    fprintf (out, "},\n");
     
     /*
      * Dump leaves
      */
-    printf ("{\n");
+    fprintf (out, "{\n");
     for (l = 0; l < tl; l++)
     {
-	printf ("    { { /* %d */", l);
+	fprintf (out, "    { { /* %d */", l);
 	for (i = 0; i < 256/32; i++)
 	{
 	    if (i % 4 == 0)
-		printf ("\n   ");
-	    printf (" 0x%08x,", leaves[l]->map[i]);
+		fprintf (out, "\n   ");
+	    fprintf (out, " 0x%08x,", leaves[l]->map[i]);
 	}
-	printf ("\n    } },\n");
+	fprintf (out, "\n    } },\n");
     }
-    printf ("},\n");
+    fprintf (out, "},\n");
 
     /*
      * Dump leaves
      */
-    printf ("{\n");
+    fprintf (out, "{\n");
     for (i = 0; sets[i]; i++)
     {
 	int n;
 	
 	if (duplicate[i] >= 0)
 	    continue;
-	printf ("    /* %s */\n", names[i]);
+	fprintf (out, "    /* %s */\n", names[i]);
 	for (n = 0; n < sets[i]->num; n++)
 	{
 	    if (n % 4 == 0)
-		printf ("   ");
+		fprintf (out, "   ");
 	    for (l = 0; l < tl; l++)
 		if (leaves[l] == FcCharSetLeaf(sets[i], n))
 		    break;
 	    if (l == tl)
 		fatal (names[i], 0, "can't find leaf");
-	    printf (" LEAF(%3d,%3d),", off[i], l);
+	    fprintf (out, " LEAF(%3d,%3d),", off[i], l);
 	    if (n % 4 == 3)
-		printf ("\n");
+		fprintf (out, "\n");
 	}
 	if (n % 4 != 0)
-	    printf ("\n");
+	    fprintf (out, "\n");
     }
-    printf ("},\n");
+    fprintf (out, "},\n");
 	
 
-    printf ("{\n");
+    fprintf (out, "{\n");
     for (i = 0; sets[i]; i++)
     {
 	int n;
 	
 	if (duplicate[i] >= 0)
 	    continue;
-	printf ("    /* %s */\n", names[i]);
+	fprintf (out, "    /* %s */\n", names[i]);
 	for (n = 0; n < sets[i]->num; n++)
 	{
 	    if (n % 8 == 0)
-		printf ("   ");
-	    printf (" 0x%04x,", FcCharSetNumbers (sets[i])[n]);
+		fprintf (out, "   ");
+	    fprintf (out, " 0x%04x,", FcCharSetNumbers (sets[i])[n]);
 	    if (n % 8 == 7)
-		printf ("\n");
+		fprintf (out, "\n");
 	}
 	if (n % 8 != 0)
-	    printf ("\n");
+	    fprintf (out, "\n");
     }
-    printf ("},\n");
+    fprintf (out, "},\n");
 
     /* langIndices */
-    printf ("{\n");
+    fprintf (out, "{\n");
     for (i = 0; sets[i]; i++)
     {
-	printf ("    %d, /* %s */\n", entries[i].id, names[i]);
+	fprintf (out, "    %d, /* %s */\n", entries[i].id, names[i]);
     }
-    printf ("},\n");
+    fprintf (out, "},\n");
 
     /* langIndicesInv */
-    printf ("{\n");
+    fprintf (out, "{\n");
     {
 	static int		entries_inv[MAX_LANG];
 	for (i = 0; sets[i]; i++)
 	  entries_inv[entries[i].id] = i;
 	for (i = 0; sets[i]; i++)
-	    printf ("    %d, /* %s */\n", entries_inv[i], names[entries_inv[i]]);
+	    fprintf (out, "    %d, /* %s */\n", entries_inv[i], names[entries_inv[i]]);
     }
-    printf ("}\n");
+    fprintf (out, "}\n");
 
-    printf ("};\n\n");
+    fprintf (out, "};\n\n");
 
-    printf ("#define NUM_LANG_CHAR_SET	%d\n", i);
+    fprintf (out, "#define NUM_LANG_CHAR_SET	%d\n", i);
     num_lang_set_map = (i + 31) / 32;
-    printf ("#define NUM_LANG_SET_MAP	%d\n", num_lang_set_map);
+    fprintf (out, "#define NUM_LANG_SET_MAP	%d\n", num_lang_set_map);
     /*
      * Dump indices with country codes
      */
@@ -512,8 +537,8 @@ main (int argc FC_UNUSED, char **argv)
     {
 	int	c;
 	int	ncountry_ent = 0;
-	printf ("\n");
-	printf ("static const FcChar32 fcLangCountrySets[][NUM_LANG_SET_MAP] = {\n");
+	fprintf (out, "\n");
+	fprintf (out, "static const FcChar32 fcLangCountrySets[][NUM_LANG_SET_MAP] = {\n");
 	for (c = 0; c < ncountry; c++)
 	{
 	    i = country[c];
@@ -535,16 +560,16 @@ main (int argc FC_UNUSED, char **argv)
 			country[d] = -1;
 		    }
 		}
-		printf ("    {");
+		fprintf (out, "    {");
 		for (k = 0; k < num_lang_set_map; k++)
-		    printf (" 0x%08x,", map[k]);
-		printf (" }, /* %*.*s */\n",
-			lang, lang, langs[i]);
+		    fprintf (out, " 0x%08x,", map[k]);
+		fprintf (out, " }, /* %*.*s */\n",
+                         lang, lang, langs[i]);
 		++ncountry_ent;
 	    }
 	}
-	printf ("};\n\n");
-	printf ("#define NUM_COUNTRY_SET %d\n", ncountry_ent);
+	fprintf (out, "};\n\n");
+	fprintf (out, "#define NUM_COUNTRY_SET %d\n", ncountry_ent);
     }
     
 
@@ -568,20 +593,19 @@ main (int argc FC_UNUSED, char **argv)
     /*
      * Dump sets start/finish for the fastpath
      */
-    printf ("\n");
-    printf ("static const FcLangCharSetRange  fcLangCharSetRanges[] = {\n");
-	printf ("\n");
+    fprintf (out, "\n");
+    fprintf (out, "static const FcLangCharSetRange  fcLangCharSetRanges[] = {\n");
+    fprintf (out, "\n");
     for (setRangeChar = 'a'; setRangeChar <= 'z' ; setRangeChar++)
     {
-	printf ("    { %d, %d }, /* %c */\n",
-		setRangeStart[setRangeChar - 'a'],
-		setRangeEnd[setRangeChar - 'a'], setRangeChar);
+	fprintf (out, "    { %d, %d }, /* %c */\n",
+                 setRangeStart[setRangeChar - 'a'],
+                 setRangeEnd[setRangeChar - 'a'], setRangeChar);
     }
-    printf ("};\n\n");
+    fprintf (out, "};\n\n");
  
-    while (fgets (line, sizeof (line), stdin))
-	fputs (line, stdout);
-    
-    fflush (stdout);
-    exit (ferror (stdout));
+    while (fgets (line, sizeof (line), template))
+	fputs (line, out);
+   
+    fclose (out);
 }

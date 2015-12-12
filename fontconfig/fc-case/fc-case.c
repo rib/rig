@@ -106,6 +106,7 @@ static int	nfoldChars;
 static int	maxFoldChars;
 static FcChar32	minFoldChar;
 static FcChar32	maxFoldChar;
+static FILE     *out = NULL;
 
 static void
 addChar (FcChar32 c)
@@ -164,43 +165,43 @@ dump (void)
 {
     int	    i;
     
-    printf (   "#define FC_NUM_CASE_FOLD	%d\n", nfolds);
-    printf (   "#define FC_NUM_CASE_FOLD_CHARS	%d\n", nfoldChars);
-    printf (   "#define FC_MAX_CASE_FOLD_CHARS	%d\n", maxFoldChars);
-    printf (   "#define FC_MAX_CASE_FOLD_EXPAND	%d\n", maxExpand);
-    printf (   "#define FC_MIN_FOLD_CHAR	0x%08x\n", minFoldChar);
-    printf (   "#define FC_MAX_FOLD_CHAR	0x%08x\n", maxFoldChar);
-    printf (   "\n");
+    fprintf (out,   "#define FC_NUM_CASE_FOLD	%d\n", nfolds);
+    fprintf (out,   "#define FC_NUM_CASE_FOLD_CHARS	%d\n", nfoldChars);
+    fprintf (out,   "#define FC_MAX_CASE_FOLD_CHARS	%d\n", maxFoldChars);
+    fprintf (out,   "#define FC_MAX_CASE_FOLD_EXPAND	%d\n", maxExpand);
+    fprintf (out,   "#define FC_MIN_FOLD_CHAR	0x%08x\n", minFoldChar);
+    fprintf (out,   "#define FC_MAX_FOLD_CHAR	0x%08x\n", maxFoldChar);
+    fprintf (out,   "\n");
     
     /*
      * Dump out ranges
      */
-    printf ("static const FcCaseFold    fcCaseFold[FC_NUM_CASE_FOLD] = {\n");
+    fprintf (out, "static const FcCaseFold    fcCaseFold[FC_NUM_CASE_FOLD] = {\n");
     for (i = 0; i < nfolds; i++)
     {
-	printf ("    { 0x%08x, %-22s 0x%04x, %6d },\n",
+	fprintf (out, "    { 0x%08x, %-22s 0x%04x, %6d },\n",
 		folds[i].upper, case_fold_method_name (folds[i].method),
 		folds[i].count, folds[i].offset);
     }
-    printf ("};\n\n");
+    fprintf (out, "};\n\n");
 
     /*
      * Dump out "other" values
      */
 
-    printf ("static const FcChar8	fcCaseFoldChars[FC_NUM_CASE_FOLD_CHARS] = {\n");
+    fprintf (out, "static const FcChar8	fcCaseFoldChars[FC_NUM_CASE_FOLD_CHARS] = {\n");
     for (i = 0; i < nfoldChars; i++)
     {
-	printf ("0x%02x", foldChars[i]);
+	fprintf (out, "0x%02x", foldChars[i]);
 	if (i != nfoldChars - 1)
 	{
 	    if ((i & 0xf) == 0xf) 
-		printf (",\n");
+		fprintf (out, ",\n");
 	    else
-		printf (",");
+		fprintf (out, ",");
 	}
     }
-    printf ("\n};\n");
+    fprintf (out, "\n};\n");
 }
 
 /*
@@ -281,9 +282,19 @@ main (int argc, char **argv)
     FILE		*caseFile;
     char		line[MAX_LINE];
     int			expand;
+    FILE                *template = NULL;
 
-    if (argc != 2)
-	panic ("usage: fc-case CaseFolding.txt");
+    if (argc != 4)
+        panic ("usage: fc-case template output CaseFolding.txt\n");
+
+    template = fopen(argv[1], "r");
+    if (!template)
+        panic ("can't open template file");
+
+    out = fopen(argv[2], "w");
+    if (!out)
+        panic ("can't open output file");
+
     caseFile = fopen (argv[1], "r");
     if (!caseFile)
 	panic ("can't open case folding file");
@@ -339,11 +350,11 @@ main (int argc, char **argv)
      * Scan the input until the marker is found
      */
     
-    while (fgets (line, sizeof (line), stdin))
+    while (fgets (line, sizeof (line), template))
     {
 	if (!strncmp (line, "@@@", 3))
 	    break;
-	fputs (line, stdout);
+	fputs (line, out);
     }
     
     /*
@@ -355,9 +366,8 @@ main (int argc, char **argv)
      * And flush out the rest of the input file
      */
 
-    while (fgets (line, sizeof (line), stdin))
-	fputs (line, stdout);
+    while (fgets (line, sizeof (line), template))
+	fputs (line, out);
     
-    fflush (stdout);
-    exit (ferror (stdout));
+    fclose (out);
 }
