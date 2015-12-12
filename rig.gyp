@@ -140,7 +140,9 @@
       'sources': [
         'harfbuzz/src/hb-atomic-private.hh',
         'harfbuzz/src/hb-blob.cc',
+        'harfbuzz/src/hb-buffer-deserialize-json.rl',
         'harfbuzz/src/hb-buffer-deserialize-json.hh',
+        'harfbuzz/src/hb-buffer-deserialize-text.rl',
         'harfbuzz/src/hb-buffer-deserialize-text.hh',
         'harfbuzz/src/hb-buffer-private.hh',
         'harfbuzz/src/hb-buffer-serialize.cc',
@@ -199,14 +201,17 @@
         'harfbuzz/src/hb-ot-shape-complex-hangul.cc',
         'harfbuzz/src/hb-ot-shape-complex-hebrew.cc',
         'harfbuzz/src/hb-ot-shape-complex-indic.cc',
+        'harfbuzz/src/hb-ot-shape-complex-indic-machine.rl',
         'harfbuzz/src/hb-ot-shape-complex-indic-machine.hh',
         'harfbuzz/src/hb-ot-shape-complex-indic-private.hh',
         'harfbuzz/src/hb-ot-shape-complex-indic-table.cc',
         'harfbuzz/src/hb-ot-shape-complex-myanmar.cc',
+        'harfbuzz/src/hb-ot-shape-complex-myanmar-machine.rl',
         'harfbuzz/src/hb-ot-shape-complex-myanmar-machine.hh',
         'harfbuzz/src/hb-ot-shape-complex-thai.cc',
         'harfbuzz/src/hb-ot-shape-complex-tibetan.cc',
         'harfbuzz/src/hb-ot-shape-complex-use.cc',
+        'harfbuzz/src/hb-ot-shape-complex-use-machine.rl',
         'harfbuzz/src/hb-ot-shape-complex-use-machine.hh',
         'harfbuzz/src/hb-ot-shape-complex-use-private.hh',
         'harfbuzz/src/hb-ot-shape-complex-use-table.cc',
@@ -230,6 +235,14 @@
         'harfbuzz/src/hb-ucdn/ucdn.c',
         'harfbuzz/src/hb-ucdn/unicodedata_db.h',
 
+      ],
+      'rules': [
+        {
+          'rule_name': 'ragel',
+	  'extension': 'rl',
+	  'outputs': [ '<(RULE_INPUT_DIRNAME)/<(RULE_INPUT_ROOT).hh' ],
+          'action': [ 'ragel', '-e', '-F1', '-o', '<@(_outputs)', '<@(RULE_INPUT_PATH)' ]
+        }
       ],
     },
     {
