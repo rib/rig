@@ -70,6 +70,7 @@ _rig_camera_view_free(void *object)
     rut_object_free(rig_camera_view_t, view);
 }
 
+#if 0
 static void
 init_camera_from_camera(rig_entity_t *dst_camera, rig_entity_t *src_camera)
 {
@@ -105,6 +106,7 @@ init_camera_from_camera(rig_entity_t *dst_camera, rig_entity_t *src_camera)
     rig_entity_set_scale(dst_camera, rig_entity_get_scale(src_camera));
     rig_entity_set_rotation(dst_camera, rig_entity_get_rotation(src_camera));
 }
+#endif
 
 #ifdef ENABLE_OCULUS_RIFT
 static void
@@ -130,7 +132,8 @@ paint_eye(rig_camera_view_t *view,
     rig_entity_set_scale(eye->camera, rig_entity_get_scale(camera));
     //rig_entity_set_rotation(eye->camera, rig_entity_get_rotation(camera));
 
-    eye->head_pose = ovrHmd_GetHmdPosePerEye(view->hmd, eye->type);
+    eye->head_pose = ovrHmd_GetHmdPosePerEye(view->hmd.ovr_hmd,
+                                             (ovrEyeType)eye->type);
 
     /* TODO: double check that OVR quaternions are defined in exactly
      * the same way... */
@@ -170,8 +173,10 @@ composite_eye(rig_camera_view_t *view,
 {
     ovrMatrix4f timewarp_matrices[2];
 
-    ovrHmd_GetEyeTimewarpMatrices(view->hmd, eye->type,
-                                  eye->head_pose, timewarp_matrices);
+    ovrHmd_GetEyeTimewarpMatrices(view->hmd.ovr_hmd,
+                                  (ovrEyeType)eye->type,
+                                  eye->head_pose,
+                                  timewarp_matrices);
 
     float identity[] = {
         1, 0, 0, 0,
@@ -224,11 +229,11 @@ vr_swap_buffers_hook(cg_framebuffer_t *fb,
      */
     cg_framebuffer_finish(fb);
 
-    ovrHmd_EndFrameTiming(view->hmd);
+    ovrHmd_EndFrameTiming(view->hmd.ovr_hmd);
 
     /* XXX: ovrHmd_EndFrame() was a useful starting poiny when determining
      * how to use the latency testing apis... */
-    ovrHmd_GetMeasuredLatencyTest2(view->hmd);
+    ovrHmd_GetMeasuredLatencyTest2(view->hmd.ovr_hmd);
 
     rut_shell_queue_redraw(view->engine->shell);
 }
@@ -301,23 +306,23 @@ rig_camera_view_paint(rig_camera_view_t *view,
     }
 #ifdef ENABLE_OCULUS_RIFT
     else {
-        ovrFrameTiming frame_timing = ovrHmd_BeginFrameTiming(view->hmd, 0);
+        ovrFrameTiming frame_timing = ovrHmd_BeginFrameTiming(view->hmd.ovr_hmd, 0);
 
         for (i = 0; i < 2; i++) {
-            int eye_idx = view->hmd->EyeRenderOrder[i];
-            struct eye *eye = &view->eyes[eye_idx];
+            int eye_idx = view->hmd.ovr_hmd->EyeRenderOrder[i];
+            struct eye *eye = &view->hmd.eyes[eye_idx];
             paint_eye(view, &rig_paint_ctx, camera, camera_component, eye);
         }
 
         ovr_WaitTillTime(frame_timing.TimewarpPointSeconds);
 
-        rut_camera_set_framebuffer(view->composite_camera, fb);
-        rut_camera_set_viewport(view->composite_camera,
+        rut_camera_set_framebuffer(view->hmd.composite_camera, fb);
+        rut_camera_set_viewport(view->hmd.composite_camera,
                                 view->fb_x, view->fb_y,
                                 view->width, view->height);
 
-        rut_paint_ctx->camera = view->composite_camera;
-        rut_camera_flush(view->composite_camera);
+        rut_paint_ctx->camera = view->hmd.composite_camera;
+        rut_camera_flush(view->hmd.composite_camera);
 
         cg_framebuffer_clear4f(fb,
                                CG_BUFFER_BIT_COLOR | CG_BUFFER_BIT_DEPTH |
@@ -325,12 +330,12 @@ rig_camera_view_paint(rig_camera_view_t *view,
                                0, 0, 0, 1);
 
         for (i = 0; i < 2; i++) {
-            int eye_idx = view->hmd->EyeRenderOrder[i];
-            struct eye *eye = &view->eyes[eye_idx];
+            int eye_idx = view->hmd.ovr_hmd->EyeRenderOrder[i];
+            struct eye *eye = &view->hmd.eyes[eye_idx];
             composite_eye(view, fb, eye);
         }
 
-        rut_camera_end_frame(view->composite_camera);
+        rut_camera_end_frame(view->hmd.composite_camera);
     }
 #endif
 }
@@ -359,24 +364,24 @@ _rig_camera_view_init_type(void)
 
 #ifdef ENABLE_OCULUS_RIFT
 static void
-deinit_vr(rig_camera_view_t *view)
+deinit_ovr_vr(rig_camera_view_t *view)
 {
-    rut_object_unref(view->composite_camera);
+    rut_object_unref(view->hmd.composite_camera);
 
-    if (view->hmd)
-        ovrHmd_Destroy(view->hmd);
+    if (view->hmd.ovr_hmd)
+        ovrHmd_Destroy(view->hmd.ovr_hmd);
     ovr_Shutdown();
 }
 
 static void
-create_eye_distortion_mesh(rig_camera_view_t *view, struct eye *eye)
+create_ovr_eye_distortion_mesh(rig_camera_view_t *view, struct eye *eye)
 {
     cg_device_t *dev = view->engine->shell->cg_device;
 
     ovrDistortionMesh mesh_data;
 
-    ovrHmd_CreateDistortionMesh(view->hmd,
-                                eye->type,
+    ovrHmd_CreateDistortionMesh(view->hmd.ovr_hmd,
+                                (ovrEyeType)eye->type,
                                 eye->fov,
                                 (ovrDistortionCap_Chromatic |
                                  ovrDistortionCap_TimeWarp),
@@ -450,10 +455,10 @@ create_eye_distortion_mesh(rig_camera_view_t *view, struct eye *eye)
 }
 
 static void
-init_vr(rig_camera_view_t *view)
+init_ovr_vr(rig_camera_view_t *view)
 {
-    struct eye *left_eye = &view->eyes[RIG_EYE_LEFT];
-    struct eye *right_eye = &view->eyes[RIG_EYE_RIGHT];
+    struct eye *left_eye = &view->hmd.eyes[RIG_EYE_LEFT];
+    struct eye *right_eye = &view->hmd.eyes[RIG_EYE_RIGHT];
     cg_device_t *dev = view->engine->shell->cg_device;
     cg_vertex_p3c4_t triangle_vertices[] = {
         {  0,    500, -500, 0xff, 0x00, 0x00, 0xff },
@@ -467,71 +472,73 @@ init_vr(rig_camera_view_t *view)
 
     ovr_Initialize();
 
-    view->hmd = ovrHmd_Create(0);
+    view->hmd.ovr_hmd = ovrHmd_Create(0);
 
-    if (!view->hmd) {
+    if (!view->hmd.ovr_hmd) {
         c_warning("Failed to initialize a head mounted display\n"
                   "Creating dummy DK2 device...");
 
-        view->hmd = ovrHmd_CreateDebug(ovrHmd_DK2);
-        if (!view->hmd) {
+        view->hmd.ovr_hmd = ovrHmd_CreateDebug(ovrHmd_DK2);
+        if (!view->hmd.ovr_hmd) {
             c_error("Failed to create dummy DK2 device\n");
             goto cleanup;
         }
     }
 
-    c_message("Headset type = %s\n", view->hmd->ProductName);
+    c_message("Headset type = %s\n", view->hmd.ovr_hmd->ProductName);
 
 
-    ovrHmd_SetEnabledCaps(view->hmd,
+    ovrHmd_SetEnabledCaps(view->hmd.ovr_hmd,
                           (0
                            //| ovrHmdCap_DynamicPrediction
                            //| ovrHmdCap_LowPersistence
                            ));
 
-    ovrHmd_ConfigureTracking(view->hmd,
+    ovrHmd_ConfigureTracking(view->hmd.ovr_hmd,
                              ovrTrackingCap_Orientation |
                              ovrTrackingCap_MagYawCorrection |
                              ovrTrackingCap_Position, /* supported */
                              0); /* required */
 
-    view->composite_camera = rig_camera_new(view->engine,
-                                            -1, -1, /* viewport w/h */
-                                            NULL);  /* fb */
-    rut_camera_set_projection_mode(view->composite_camera,
+    view->hmd. composite_camera = rig_camera_new(view->engine,
+                                                 -1, -1, /* viewport w/h */
+                                                 NULL);  /* fb */
+    rut_camera_set_projection_mode(view->hmd.composite_camera,
                                    RUT_PROJECTION_NDC);
-    rut_camera_set_clear(view->composite_camera, false);
+    rut_camera_set_clear(view->hmd.composite_camera, false);
 
     view->debug_triangle = cg_primitive_new_p3c4(
         dev, CG_VERTICES_MODE_TRIANGLES, 3, triangle_vertices);
     view->debug_pipeline = cg_pipeline_new(dev);
     cg_pipeline_set_blend(view->debug_pipeline, "RGBA = ADD(SRC_COLOR, 0)", NULL);
 
-    memset(view->eyes, 0, sizeof(view->eyes));
+    memset(view->hmd.eyes, 0, sizeof(view->hmd.eyes));
 
     left_eye->type = RIG_EYE_LEFT;
     left_eye->viewport[0] = 0;
     left_eye->viewport[1] = 0;
-    left_eye->viewport[2] = view->hmd->Resolution.w / 2;
-    left_eye->viewport[3] = view->hmd->Resolution.h;
+    left_eye->viewport[2] = view->hmd.ovr_hmd->Resolution.w / 2;
+    left_eye->viewport[3] = view->hmd.ovr_hmd->Resolution.h;
 
     right_eye->type = RIG_EYE_RIGHT;
-    right_eye->viewport[0] = (view->hmd->Resolution.w + 1) / 2;
+    right_eye->viewport[0] = (view->hmd.ovr_hmd->Resolution.w + 1) / 2;
     right_eye->viewport[1] = 0;
-    right_eye->viewport[2] = view->hmd->Resolution.w / 2;
-    right_eye->viewport[3] = view->hmd->Resolution.h;
+    right_eye->viewport[2] = view->hmd.ovr_hmd->Resolution.w / 2;
+    right_eye->viewport[3] = view->hmd.ovr_hmd->Resolution.h;
 
     for (i = 0; i < 2; i++) {
-        struct eye *eye = &view->eyes[i];
+        struct eye *eye = &view->hmd.eyes[i];
         ovrSizei recommended_size;
         ovrRecti tex_viewport;
         ovrVector2f uv_scale_offset[2];
         cg_snippet_t *snippet;
 
-        eye->fov = view->hmd->DefaultEyeFov[i];
+        eye->fov = view->hmd.ovr_hmd->DefaultEyeFov[i];
 
         recommended_size =
-            ovrHmd_GetFovTextureSize(view->hmd, eye->type, eye->fov,
+            ovrHmd_GetFovTextureSize(view->hmd.ovr_hmd,
+                                     (ovrEyeType)eye->type,
+                                     eye->fov,
                                      1.0 /* pixels per display pixel */);
 
         eye->tex = cg_texture_2d_new_with_size(dev,
@@ -540,7 +547,9 @@ init_vr(rig_camera_view_t *view)
         eye->fb = cg_offscreen_new_with_texture(eye->tex);
         cg_framebuffer_allocate(eye->fb, NULL);
 
-        eye->render_desc = ovrHmd_GetRenderDesc(view->hmd, eye->type, eye->fov);
+        eye->render_desc = ovrHmd_GetRenderDesc(view->hmd.ovr_hmd,
+                                                (ovrEyeType)eye->type,
+                                                eye->fov);
 
         tex_viewport.Size = recommended_size;
         tex_viewport.Pos.x = 0;
@@ -666,14 +675,14 @@ init_vr(rig_camera_view_t *view)
                                       1, /* count */
                                       eye->eye_to_source_uv_offset);
 
-        create_eye_distortion_mesh(view, eye);
+        create_ovr_eye_distortion_mesh(view, eye);
     }
 
     return;
 
 cleanup:
     if (view->hmd_mode)
-        deinit_vr(view);
+        deinit_ovr_vr(view);
 }
 #endif /* ENABLE_OCULUS_RIFT */
 
@@ -695,7 +704,7 @@ rig_camera_view_new(rig_frontend_t *frontend)
     view->hmd_mode = !!getenv("RIG_USE_HMD");
 
     if (view->hmd_mode)
-        init_vr(view);
+        init_ovr_vr(view);
 #endif
 
     return view;

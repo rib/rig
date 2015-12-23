@@ -49,7 +49,6 @@ typedef struct _entity_translate_grab_closure_t entity_translate_grab_closure_t;
 typedef struct _entities_translate_grab_closure_t
     entities_translate_grab_closure_t;
 
-#ifdef ENABLE_OCULUS_RIFT
 enum eye_type {
     RIG_EYE_LEFT = 0,
     RIG_EYE_RIGHT = 1,
@@ -65,12 +64,8 @@ struct eye_frustum {
 struct eye {
     enum eye_type type;
 
-
     cg_texture_2d_t *tex;
     cg_offscreen_t *fb;
-
-    //struct eye_frustum eye_frustum;
-    ovrFovPort fov;
 
     rig_entity_t *camera;
     rut_object_t *camera_component;
@@ -81,9 +76,14 @@ struct eye {
     int eye_rotation_start_loc;
     int eye_rotation_end_loc;
 
+#ifdef ENABLE_OCULUS_RIFT
+    //struct eye_frustum eye_frustum;
+    ovrFovPort fov;
+
     ovrEyeRenderDesc render_desc;
 
     ovrPosef head_pose;
+#endif /* ENABLE_OCULUS_RIFT */
 
     float eye_to_source_uv_scale[2];
     float eye_to_source_uv_offset[2];
@@ -98,9 +98,17 @@ struct eye {
     //float x0, y0, x1, y1;
 
     float viewport[4];
-
 };
+
+struct rig_hmd {
+    struct eye eyes[2];
+
+#ifdef ENABLE_OCULUS_RIFT
+    ovrHmd ovr_hmd;
 #endif /* ENABLE_OCULUS_RIFT */
+
+    rig_camera_t *composite_camera;
+};
 
 struct _rig_camera_view_t {
     rut_object_base_t _base;
@@ -122,17 +130,11 @@ struct _rig_camera_view_t {
     rig_entity_t *camera;
     rut_object_t *camera_component;
 
-#ifdef ENABLE_OCULUS_RIFT
     bool hmd_mode;
-
-    ovrHmd hmd;
-    struct eye eyes[2];
+    struct rig_hmd hmd;
 
     cg_primitive_t *debug_triangle;
     cg_pipeline_t *debug_pipeline;
-
-    rig_camera_t *composite_camera;
-#endif
 
     bool enable_dof;
 
