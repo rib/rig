@@ -847,6 +847,8 @@
         'rut/rut-meshable.h',
         'rut/rut-gradient.h',
         'rut/rut-gradient.c',
+        'rut/edid-parse.h',
+        'rut/edid-parse.c',
 
         'rig/protobuf-c-rpc/rig-protobuf-c-stream.h',
         'rig/protobuf-c-rpc/rig-protobuf-c-stream.c',
