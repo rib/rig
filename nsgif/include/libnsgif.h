@@ -51,14 +51,16 @@ typedef struct gif_frame {
 	unsigned int redraw_height;		/**< height of redraw rectangle */
 } gif_frame;
 
+typedef struct gif_animation gif_animation;
+
 /*	API for Bitmap callbacks
 */
-typedef void* (*gif_bitmap_cb_create)(int width, int height);
-typedef void (*gif_bitmap_cb_destroy)(void *bitmap);
-typedef unsigned char* (*gif_bitmap_cb_get_buffer)(void *bitmap);
-typedef void (*gif_bitmap_cb_set_opaque)(void *bitmap, bool opaque);
-typedef bool (*gif_bitmap_cb_test_opaque)(void *bitmap);
-typedef void (*gif_bitmap_cb_modified)(void *bitmap);
+typedef void* (*gif_bitmap_cb_create)(gif_animation *gif, int width, int height);
+typedef void (*gif_bitmap_cb_destroy)(gif_animation *gif, void *bitmap);
+typedef unsigned char* (*gif_bitmap_cb_get_buffer)(gif_animation *gif, void *bitmap);
+typedef void (*gif_bitmap_cb_set_opaque)(gif_animation *gif, void *bitmap, bool opaque);
+typedef bool (*gif_bitmap_cb_test_opaque)(gif_animation *gif, void *bitmap);
+typedef void (*gif_bitmap_cb_modified)(gif_animation *gif, void *bitmap);
 
 /*	The Bitmap callbacks function table
 */
@@ -75,7 +77,7 @@ typedef struct gif_bitmap_callback_vt {
 
 /*	The GIF animation data
 */
-typedef struct gif_animation {
+struct gif_animation {
 	gif_bitmap_callback_vt bitmap_callbacks;	/**< callbacks for bitmap functions */
 	unsigned char *gif_data;			/**< pointer to GIF data */
 	unsigned int width;				/**< width of GIF (may increase during decoding) */
@@ -98,7 +100,9 @@ typedef struct gif_animation {
 	bool global_colours;				/**< whether the GIF has a global colour table */
 	unsigned int *global_colour_table;		/**< global colour table */
 	unsigned int *local_colour_table;		/**< local colour table */
-} gif_animation;
+
+        void *priv;
+};
 
 void gif_create(gif_animation *gif, gif_bitmap_callback_vt *bitmap_callbacks);
 gif_result gif_initialise(gif_animation *gif, size_t size, const unsigned char *data);

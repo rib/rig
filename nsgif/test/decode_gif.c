@@ -19,12 +19,12 @@
 
 unsigned char *load_file(const char *path, size_t *data_size);
 void warning(const char *context, int code);
-void *bitmap_create(int width, int height);
-void bitmap_set_opaque(void *bitmap, bool opaque);
-bool bitmap_test_opaque(void *bitmap);
-unsigned char *bitmap_get_buffer(void *bitmap);
-void bitmap_destroy(void *bitmap);
-void bitmap_modified(void *bitmap);
+void *bitmap_create(gif_animation *gif, int width, int height);
+void bitmap_set_opaque(gif_animation *gif, void *bitmap, bool opaque);
+bool bitmap_test_opaque(gif_animation *gif, void *bitmap);
+unsigned char *bitmap_get_buffer(gif_animation *gif, void *bitmap);
+void bitmap_destroy(gif_animation *gif, void *bitmap);
+void bitmap_modified(gif_animation *gif, void *bitmap);
 
 
 int main(int argc, char *argv[])
@@ -170,13 +170,13 @@ void warning(const char *context, gif_result code)
 }
 
 
-void *bitmap_create(int width, int height)
+void *bitmap_create(gif_animation *gif, int width, int height)
 {
 	return calloc(width * height, 4);
 }
 
 
-void bitmap_set_opaque(void *bitmap, bool opaque)
+void bitmap_set_opaque(gif_animation *gif, void *bitmap, bool opaque)
 {
 	(void) opaque;  /* unused */
 	(void) bitmap;  /* unused */
@@ -184,7 +184,7 @@ void bitmap_set_opaque(void *bitmap, bool opaque)
 }
 
 
-bool bitmap_test_opaque(void *bitmap)
+bool bitmap_test_opaque(gif_animation *gif, void *bitmap)
 {
 	(void) bitmap;  /* unused */
 	assert(bitmap);
@@ -192,21 +192,21 @@ bool bitmap_test_opaque(void *bitmap)
 }
 
 
-unsigned char *bitmap_get_buffer(void *bitmap)
+unsigned char *bitmap_get_buffer(gif_animation *gif, void *bitmap)
 {
 	assert(bitmap);
 	return bitmap;
 }
 
 
-void bitmap_destroy(void *bitmap)
+void bitmap_destroy(gif_animation *gif, void *bitmap)
 {
 	assert(bitmap);
 	free(bitmap);
 }
 
 
-void bitmap_modified(void *bitmap)
+void bitmap_modified(gif_animation *gif, void *bitmap)
 {
 	(void) bitmap;  /* unused */
 	assert(bitmap);
