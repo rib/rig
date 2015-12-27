@@ -306,6 +306,8 @@ struct _rut_shell_t {
     //rut_modifier_state_t xkb_mod_state_cached;
     struct rut_mod_index_mapping xkb_mod_index_map[RUT_N_MODIFIERS];
 
+    int hmd_output_id;
+
 #if 0
     int x11_min_keycode;
     int x11_max_keycode;
@@ -462,6 +464,9 @@ struct _rut_shell_t {
             RUT_SHELL_WEB_PLATFORM,
             RUT_SHELL_SDL_PLATFORM,
         } type;
+
+
+        bool (*check_for_hmd)(rut_shell_t *shell);
 
         cg_onscreen_t *(*allocate_onscreen)(rut_shell_onscreen_t *onscreen);
         void (*onscreen_resize)(rut_shell_onscreen_t *onscreen,

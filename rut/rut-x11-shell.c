@@ -38,6 +38,7 @@
 #include <X11/cursorfont.h>
 
 #include <X11/extensions/XInput2.h>
+#include <X11/extensions/Xrandr.h>
 
 #include <xkbcommon/xkbcommon-x11.h>
 #include <xkbcommon/xkbcommon-compose.h>
@@ -47,6 +48,8 @@
 
 #include "rut-shell.h"
 #include "rut-x11-shell.h"
+
+#include "edid-parse.h"
 
 static int32_t
 rut_x11_key_event_get_keysym(rut_input_event_t *event)
@@ -648,6 +651,58 @@ xlib_dispatch_cb (void *user_data, int fd, int revents)
     }
 }
 
+static bool
+rut_x11_check_for_hmd(rut_shell_t *shell)
+{
+    Atom edid_atom = XInternAtom(shell->xdpy, "EDID", False);
+    XRRScreenResources *resources;
+    unsigned char *prop;
+    int actual_format;
+    Atom actual_type;
+    unsigned long nitems;
+    unsigned long bytes_after;
+    int i;
+
+    shell->hmd_output_id = -1;
+
+    resources = XRRGetScreenResourcesCurrent(shell->xdpy,
+                                             DefaultRootWindow(shell->xdpy));
+    if (!resources)
+        return false;
+
+    for (i = 0; i < resources->noutput; i++) {
+        XRROutputInfo *output = XRRGetOutputInfo(shell->xdpy,
+                                                 resources,
+                                                 resources->outputs[i]);
+
+        if (output->connection != RR_Disconnected) {
+            int output_id = resources->outputs[i];
+
+            XRRGetOutputProperty(shell->xdpy, output_id, edid_atom,
+                                 0, 100, False, False,
+                                 AnyPropertyType,
+                                 &actual_type, &actual_format,
+                                 &nitems, &bytes_after, &prop);
+
+            if (actual_type == XA_INTEGER && actual_format == 8) {
+                MonitorInfo *info = decode_edid(prop);
+
+                if (strcmp(info->manufacturer_code, "OVR") == 0)
+                    shell->hmd_output_id = output_id;
+
+                free(info);
+            }
+        }
+
+      XRRFreeOutputInfo(output);
+
+      if (shell->hmd_output_id >= 0)
+          break;
+    }
+
+    return shell->hmd_output_id != -1;
+}
+
 static cg_onscreen_t *
 rut_x11_allocate_onscreen(rut_shell_onscreen_t *onscreen)
 {
@@ -977,6 +1032,14 @@ rut_x11_shell_init(rut_shell_t *shell)
                           shell);
 
     shell->platform.type = RUT_SHELL_X11_PLATFORM;
+
+    if (getenv("RIG_USE_HMD")) {
+        if (!rut_x11_check_for_hmd(shell)) {
+            c_warning("Failed to find a head mounted display");
+        }
+    }
+
+    shell->platform.check_for_hmd = rut_x11_check_for_hmd;
 
     shell->platform.allocate_onscreen = rut_x11_allocate_onscreen;
     shell->platform.onscreen_resize = rut_x11_onscreen_resize;
