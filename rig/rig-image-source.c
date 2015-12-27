@@ -28,6 +28,8 @@
 
 #include <rig-config.h>
 
+#include <libnsgif.h>
+
 #include <cglib/cglib.h>
 #include <cglib/cg-webgl.h>
 
@@ -37,7 +39,6 @@
 #include <gio/gio.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #endif
-
 
 struct _rig_image_source_t {
     rut_object_base_t _base;
@@ -462,6 +463,61 @@ on_webgl_image_load_cb(cg_webgl_image_t *image, void *user_data)
 
 #endif /* CG_HAS_WEBGL_SUPPORT */
 
+struct gif_bitmap
+{
+    int width;
+    int height;
+    uint8_t *buf;
+};
+
+void *bitmap_create(gif_animation *gif, int width, int height)
+{
+    struct gif_bitmap *bmp = c_new0(struct gif_bitmap, 1);
+
+    bmp->width = width;
+    bmp->height = height;
+    bmp->buf = c_malloc(width * height * 4);
+
+    return bmp;
+}
+
+void bitmap_set_opaque(gif_animation *gif, void *bitmap, bool opaque)
+{
+    c_return_if_fail(bitmap);
+}
+
+bool bitmap_test_opaque(gif_animation *gif, void *bitmap)
+{
+    c_return_val_if_fail(bitmap, false);
+
+    return false;
+}
+
+unsigned char *bitmap_get_buffer(gif_animation *gif, void *bitmap)
+{
+    c_return_val_if_fail(bitmap, NULL);
+
+    return ((struct gif_bitmap *)bitmap)->buf;
+}
+
+void bitmap_destroy(gif_animation *gif, void *bitmap)
+{
+    struct gif_bitmap *bmp = bitmap;
+
+    c_return_if_fail(bitmap);
+
+    c_free(bmp->buf);
+    c_free(bmp);
+}
+
+
+void bitmap_modified(gif_animation *gif, void *bitmap)
+{
+	(void) bitmap;  /* unused */
+	assert(bitmap);
+	return;
+}
+
 rig_image_source_t *
 rig_image_source_new(rig_frontend_t *frontend,
                      const char *mime,
@@ -482,7 +538,40 @@ rig_image_source_new(rig_frontend_t *frontend,
     c_list_init(&source->changed_cb_list);
     c_list_init(&source->ready_cb_list);
 
-    if (strcmp(mime, "image/jpeg") || strcmp(mime, "image/png")) {
+    if (strcmp(mime, "image/gif") == 0) {
+	gif_bitmap_callback_vt bitmap_callbacks = {
+		bitmap_create,
+		bitmap_destroy,
+		bitmap_get_buffer,
+		bitmap_set_opaque,
+		bitmap_test_opaque,
+		bitmap_modified
+	};
+	gif_animation gif;
+	unsigned int i;
+        gif_result code;
+
+	gif_create(&gif, &bitmap_callbacks);
+
+        gif.priv = shell;
+
+	do {
+            code = gif_initialise(&gif, len, data);
+            if (code != GIF_OK && code != GIF_WORKING) {
+                source->texture = cg_object_ref(frontend->default_tex2d);
+                c_warning("failed to load GIF");
+                return source;
+            }
+        } while (code != GIF_OK);
+
+        for (i = 0; i != gif.frame_count; i++) {
+            code = gif_decode_frame(&gif, i);
+            if (code != GIF_OK) {
+                source->texture = cg_object_ref(frontend->default_tex2d);
+                c_warning("failed to load GIF frame %d", i);
+            }
+        }
+    } else if (strcmp(mime, "image/jpeg") == 0 || strcmp(mime, "image/png") == 0) {
 
 #ifdef CG_HAS_WEBGL_SUPPORT
         char *url = c_strdup_printf("assets/%s", path);
