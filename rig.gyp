@@ -745,6 +745,7 @@
          'LibOVR/libovr.gyp:libovr',
          'wslay/wslay.gyp:libwslay',
          'h2o/h2o.gyp:libh2o',
+         'nsgif/nsgif.gyp:nsgif',
        ],
       'include_dirs': [
         '.',
