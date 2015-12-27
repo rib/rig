@@ -41,8 +41,6 @@ typedef struct _rig_image_source_t rig_image_source_t;
 
 extern rut_type_t rig_image_source_type;
 
-void _rig_image_source_init_type(void);
-
 rig_image_source_t *rig_image_source_new(rig_frontend_t *frontend,
                                          const char *mime,
                                          const char *path,

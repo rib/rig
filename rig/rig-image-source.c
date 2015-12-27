@@ -162,7 +162,7 @@ get_image_source_wrappers(rig_frontend_t *frontend,
 
 #ifdef USE_GSTREAMER
 static gboolean
-_rig_image_source_video_loop(GstBus *bus, GstMessage *msg, void *data)
+gst_source_loop_cb(GstBus *bus, GstMessage *msg, void *data)
 {
     rig_image_source_t *source = (rig_image_source_t *)data;
     switch (GST_MESSAGE_TYPE(msg)) {
@@ -183,7 +183,7 @@ _rig_image_source_video_loop(GstBus *bus, GstMessage *msg, void *data)
 }
 
 static void
-_rig_image_source_video_stop(rig_image_source_t *source)
+gst_source_stop(rig_image_source_t *source)
 {
     if (source->sink) {
         gst_element_set_state(source->pipeline, GST_STATE_NULL);
@@ -192,17 +192,17 @@ _rig_image_source_video_stop(rig_image_source_t *source)
 }
 
 static void
-_rig_image_source_video_play(rig_image_source_t *source,
-                             rig_engine_t *engine,
-                             const char *path,
-                             const uint8_t *data,
-                             size_t len)
+gst_source_start(rig_image_source_t *source,
+                 rig_engine_t *engine,
+                 const char *path,
+                 const uint8_t *data,
+                 size_t len)
 {
     GstBus *bus;
     char *uri;
     char *filename = NULL;
 
-    _rig_image_source_video_stop(source);
+    gst_source_stop(source);
 
     source->sink = cg_gst_video_sink_new(engine->shell->cg_device);
     source->pipeline = gst_pipeline_new("renderer");
@@ -223,7 +223,7 @@ _rig_image_source_video_play(rig_image_source_t *source,
     bus = gst_pipeline_get_bus(GST_PIPELINE(source->pipeline));
 
     gst_element_set_state(source->pipeline, GST_STATE_PLAYING);
-    gst_bus_add_watch(bus, _rig_image_source_video_loop, source);
+    gst_bus_add_watch(bus, gst_source_loop_cb, source);
 
     c_free(uri);
     if (filename)
@@ -238,7 +238,7 @@ _rig_image_source_free(void *object)
     rig_image_source_t *source = object;
 
 #ifdef USE_GSTREAMER
-    _rig_image_source_video_stop(source);
+    gst_source_stop(source);
 #endif
 
     if (source->texture) {
@@ -249,7 +249,7 @@ _rig_image_source_free(void *object)
 
 rut_type_t rig_image_source_type;
 
-void
+static void
 _rig_image_source_init_type(void)
 {
     rut_type_init(&rig_image_source_type, "rig_image_source_t", _rig_image_source_free);
@@ -539,11 +539,11 @@ rig_image_source_new(rig_frontend_t *frontend,
 
     } else if (strncmp(mime, "video/", 6) == 0) {
 #ifdef USE_GSTREAMER
-        _rig_image_source_video_play(source,
-                                     frontend->engine,
-                                     path,
-                                     data,
-                                     len);
+        gst_source_start(source,
+                         frontend->engine,
+                         path,
+                         data,
+                         len);
         g_signal_connect(source->sink,
                          "pipeline_ready",
                          (GCallback)pipeline_ready_cb,
