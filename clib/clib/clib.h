@@ -1747,6 +1747,43 @@ typedef void (*c_xdg_dir_callback_t)(const char *dir, void *data);
 void c_foreach_xdg_data_dir(c_xdg_dir_callback_t callback, void *user_data);
 #endif
 
+
+enum c_url_fields
+{
+    C_URL_SCHEMA           = 0,
+    C_URL_HOST             = 1,
+    C_URL_PORT             = 2,
+    C_URL_PATH             = 3,
+    C_URL_QUERY            = 4,
+    C_URL_FRAGMENT         = 5,
+    C_URL_USERINFO         = 6,
+    C_URL_MAX              = 7,
+};
+
+
+/* Result structure for c_parse_url().
+ *
+ * Callers should index into field_data[] with C_RL_* values iff field_set
+ * has the relevant (1 << C_URL_*) bit set. As a courtesy to clients (and
+ * because we probably have padding left over), we convert any port to
+ * a uint16_t.
+ */
+struct c_url {
+    uint16_t field_set;           /* Bitmask of (1 << UF_*) values */
+    uint16_t port;                /* Converted C_URL_PORT string */
+
+    struct {
+        uint16_t off;               /* Offset into buffer in which field starts */
+        uint16_t len;               /* Length of run in buffer */
+    } field_data[C_URL_MAX];
+};
+
+int
+c_parse_url(const char *buf,
+            size_t buflen,
+            int is_connect,
+            struct c_url *u);
+
 C_END_DECLS
 
 #include <crbtree.h>

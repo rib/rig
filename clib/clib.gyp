@@ -74,6 +74,7 @@
         'clib/cspawn.c',
         'clib/cstr.c',
         'clib/cstring.c',
+        'clib/cparse-url.c',
         'clib/ctimer.c',
         'clib/cunicode.c',
         'clib/cutf8.c',
