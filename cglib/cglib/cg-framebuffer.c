@@ -2076,11 +2076,10 @@ cg_framebuffer_draw_rectangles(cg_framebuffer_t *framebuffer,
                                unsigned int n_rectangles)
 {
     cg_vertex_p2_t *verts = c_alloca(n_rectangles * sizeof(cg_vertex_p2_t) * 4);
-    int i;
 
     c_warn_if_fail(cg_pipeline_get_n_layers(pipeline) == 0);
 
-    for (i = 0; i < n_rectangles; i++) {
+    for (unsigned int i = 0; i < n_rectangles; i++) {
         const float *pos = &coordinates[i * 4];
         cg_vertex_p2_t *rect = verts + 4 * i;
 
@@ -2117,11 +2116,10 @@ cg_framebuffer_draw_textured_rectangles(cg_framebuffer_t *framebuffer,
                                         unsigned int n_rectangles)
 {
     cg_vertex_p2t2_t *verts = c_alloca(n_rectangles * sizeof(cg_vertex_p2t2_t) * 4);
-    int i;
 
     c_warn_if_fail(cg_pipeline_get_n_layers(pipeline) == 1);
 
-    for (i = 0; i < n_rectangles; i++) {
+    for (unsigned int i = 0; i < n_rectangles; i++) {
         const float *pos = &coordinates[i * 8];
         const float *tex_coords = &coordinates[i * 8 + 4];
         cg_vertex_p2t2_t *rect = verts + 4 * i;

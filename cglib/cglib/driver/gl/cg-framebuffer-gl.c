@@ -988,9 +988,8 @@ _cg_framebuffer_init_bits(cg_framebuffer_t *framebuffer)
             { GL_STENCIL_ATTACHMENT, GL_FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE,
               offsetof(cg_framebuffer_bits_t, stencil) },
         };
-        int i;
 
-        for (i = 0; i < C_N_ELEMENTS(params); i++) {
+        for (unsigned i = 0; i < C_N_ELEMENTS(params); i++) {
             int *value =
                 (int *)((uint8_t *)&framebuffer->bits + params[i].offset);
             GE(dev,

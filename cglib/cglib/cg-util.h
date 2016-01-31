@@ -97,9 +97,8 @@ static inline unsigned int
 _cg_util_one_at_a_time_hash(unsigned int hash, const void *key, size_t bytes)
 {
     const unsigned char *p = key;
-    int i;
 
-    for (i = 0; i < bytes; i++) {
+    for (unsigned int i = 0; i < bytes; i++) {
         hash += p[i];
         hash += (hash << 10);
         hash ^= (hash >> 6);

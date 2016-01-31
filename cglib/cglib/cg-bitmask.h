@@ -285,7 +285,7 @@ _cg_bitmask_popcount_upto(const CGlibBitmask *bitmask,
 {
     if (_cg_bitmask_has_array(bitmask))
         return _cg_bitmask_popcount_upto_in_array(bitmask, upto);
-    else if (upto >= CG_BITMASK_MAX_DIRECT_BITS)
+    else if ((unsigned)upto >= CG_BITMASK_MAX_DIRECT_BITS)
         return _cg_util_popcountl(_cg_bitmask_to_bits(bitmask));
     else
         return _cg_util_popcountl(_cg_bitmask_to_bits(bitmask) &
