@@ -179,10 +179,13 @@ struct _cg_offscreen_t {
 
     cg_gl_framebuffer_t gl_framebuffer;
 
+    /* TODO: generalise the handling of framebuffer attachments... */
+
     cg_texture_t *texture;
     int texture_level;
 
     cg_texture_t *depth_texture;
+    int depth_texture_level;
 
     cg_offscreen_allocate_flags_t allocation_flags;
 
@@ -394,11 +397,12 @@ void _cg_rectangle_immediate(cg_framebuffer_t *framebuffer,
                              float y_2);
 
 bool _cg_framebuffer_try_creating_gl_fbo(cg_device_t *dev,
+                                         int width,
+                                         int height,
                                          cg_texture_t *texture,
                                          int texture_level,
-                                         int texture_level_width,
-                                         int texture_level_height,
                                          cg_texture_t *depth_texture,
+                                         int depth_texture_level,
                                          cg_framebuffer_config_t *config,
                                          cg_offscreen_allocate_flags_t flags,
                                          cg_gl_framebuffer_t *gl_framebuffer);

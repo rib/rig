@@ -406,39 +406,107 @@ _cg_framebuffer_flush(cg_framebuffer_t *framebuffer)
 }
 
 cg_offscreen_t *
-_cg_offscreen_new_with_texture_full(
-    cg_texture_t *texture, cg_offscreen_flags_t create_flags, int level)
+_cg_offscreen_new(cg_device_t *dev,
+                  int width, /* -1 derived from attached texture */
+                  int height, /* -1 derived from attached texture */
+                  cg_offscreen_flags_t create_flags)
 {
-    cg_device_t *dev = texture->dev;
     cg_offscreen_t *offscreen;
     cg_framebuffer_t *fb;
     cg_offscreen_t *ret;
 
-    c_return_val_if_fail(cg_is_texture(texture), NULL);
-
     offscreen = c_new0(cg_offscreen_t, 1);
-    offscreen->texture = cg_object_ref(texture);
-    offscreen->texture_level = level;
     offscreen->create_flags = create_flags;
 
     fb = CG_FRAMEBUFFER(offscreen);
+ 
+    _cg_framebuffer_init(fb,
+                         dev,
+                         CG_FRAMEBUFFER_TYPE_OFFSCREEN,
+                         width,
+                         height);
+
+    ret = _cg_offscreen_object_new(offscreen);
+
+    return ret;
+}
+
+cg_offscreen_t *
+cg_offscreen_new(cg_device_t *dev,
+                 int width, /* -1 derived from attached texture */
+                 int height) /* -1 derived from attached texture */
+{
+    return _cg_offscreen_new(dev, width, height,
+                             CG_OFFSCREEN_DISABLE_AUTO_DEPTH_AND_STENCIL);
+}
+
+void
+cg_offscreen_attach_color_texture(cg_offscreen_t *offscreen,
+                                  cg_texture_t *texture,
+                                  int level)
+{
+    cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(offscreen);
+
+    c_return_if_fail(framebuffer->allocated == false);
+    c_return_if_fail(cg_is_texture(texture));
+
+    if (offscreen->texture) {
+        cg_object_unref(offscreen->texture);
+        offscreen->texture = NULL;
+    }
+
+    /* It's possible to create an offscreen framebuffer with no
+     * associated color  */
+    if (texture) {
+        offscreen->texture = cg_object_ref(texture);
+        offscreen->texture_level = level;
+    }
+}
+
+void
+cg_offscreen_attach_depth_texture(cg_offscreen_t *offscreen,
+                                  cg_texture_t *texture,
+                                  int level)
+{
+    cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(offscreen);
+
+    c_return_if_fail(framebuffer->allocated == false);
+    c_return_if_fail(cg_is_texture(texture));
+
+    if (offscreen->depth_texture) {
+        cg_object_unref(offscreen->depth_texture);
+        offscreen->depth_texture = NULL;
+        offscreen->depth_texture_level = 0;
+    }
+
+    if (texture) {
+        offscreen->depth_texture = cg_object_ref(texture);
+        offscreen->depth_texture_level = level;
+    }
+}
+
+cg_offscreen_t *
+_cg_offscreen_new_with_texture_full(cg_texture_t *color_texture,
+                                    cg_offscreen_flags_t create_flags,
+                                    int level)
+{
+    cg_device_t *dev = color_texture->dev;
 
     /* NB: we can't assume we can query the texture's width yet, since
      * it might not have been allocated yet and for example if the
      * texture is being loaded from a file then the file might not
      * have been read yet. */
 
-    _cg_framebuffer_init(fb,
-                         dev,
-                         CG_FRAMEBUFFER_TYPE_OFFSCREEN,
-                         -1, /* unknown width, until allocation */
-                         -1); /* unknown height until allocation */
+    cg_offscreen_t *offscreen = _cg_offscreen_new(dev,
+                                                  -1, /* width from attached texture */
+                                                  -1, /* height from attached texture */
+                                                  create_flags);
 
-    ret = _cg_offscreen_object_new(offscreen);
+    cg_offscreen_attach_color_texture(offscreen,
+                                      color_texture,
+                                      level);
 
-    _cg_texture_associate_framebuffer(texture, fb);
-
-    return ret;
+    return offscreen;
 }
 
 cg_offscreen_t *
@@ -467,17 +535,166 @@ _cg_offscreen_free(cg_offscreen_t *offscreen)
     c_free(offscreen);
 }
 
+static bool
+_offscreen_allocate(cg_framebuffer_t *framebuffer, cg_error_t **error)
+{
+    cg_device_t *dev = framebuffer->dev;
+    cg_offscreen_t *offscreen = CG_OFFSCREEN(framebuffer);
+    bool allocated_depth_tex = false;
+
+    /* TODO: generalise the handling of framebuffer attachments...
+    */
+
+    if (offscreen->texture) {
+        int level_width;
+        int level_height;
+
+        if (!cg_texture_allocate(offscreen->texture, error))
+            return false;
+
+        /* NB: it's only after allocating the texture that we will
+         * determine whether a texture needs slicing... */
+        if (cg_texture_is_sliced(offscreen->texture)) {
+            _cg_set_error(error,
+                          CG_SYSTEM_ERROR,
+                          CG_SYSTEM_ERROR_UNSUPPORTED,
+                          "Can't create offscreen framebuffer from "
+                          "sliced texture");
+            return false;
+        }
+
+        /* Now that the texture has been allocated we can determine a
+         * size for the framebuffer... */
+
+        c_return_val_if_fail(offscreen->texture_level <
+                             _cg_texture_get_n_levels(offscreen->texture),
+                             false);
+
+        _cg_texture_get_level_size(offscreen->texture,
+                                   offscreen->texture_level,
+                                   &level_width,
+                                   &level_height,
+                                   NULL);
+
+        if (framebuffer->width < 0)
+            framebuffer->width = level_width;
+        else if (framebuffer->width != level_width) {
+            _cg_set_error(error,
+                          CG_SYSTEM_ERROR,
+                          CG_SYSTEM_ERROR_UNSUPPORTED,
+                          "Conflicting given size and calculated texture "
+                          "level size");
+            return false;
+        }
+        if (framebuffer->height < 0)
+            framebuffer->height = level_height;
+        else if (framebuffer->width != level_width) {
+            _cg_set_error(error,
+                          CG_SYSTEM_ERROR,
+                          CG_SYSTEM_ERROR_UNSUPPORTED,
+                          "Conflicting given size and calculated texture "
+                          "level size");
+            return false;
+        }
+
+        /* Forward the texture format as the internal format of the
+         * framebuffer */
+        framebuffer->internal_format =
+            _cg_texture_get_format(offscreen->texture);
+    }
+
+    if (framebuffer->config.depth_texture_enabled) {
+        int level_width;
+        int level_height;
+
+        if (offscreen->depth_texture == NULL) {
+            int width = framebuffer->width;
+            int height = framebuffer->height;
+
+            c_return_val_if_fail(width > 0, false);
+            c_return_val_if_fail(height > 0, false);
+            c_return_val_if_fail(offscreen->depth_texture_level == 0, false);
+
+            offscreen->depth_texture = (cg_texture_t *)
+                cg_texture_2d_new_with_size(dev, width, height);
+
+            cg_texture_set_components(offscreen->depth_texture,
+                                      CG_TEXTURE_COMPONENTS_DEPTH_STENCIL);
+
+            allocated_depth_tex = true;
+        }
+
+        if (!cg_texture_allocate(offscreen->depth_texture, error))
+            goto error;
+
+        c_return_val_if_fail(offscreen->depth_texture_level <
+                             _cg_texture_get_n_levels(offscreen->depth_texture),
+                             false);
+
+        _cg_texture_get_level_size(offscreen->depth_texture,
+                                   offscreen->depth_texture_level,
+                                   &level_width,
+                                   &level_height,
+                                   NULL);
+
+        if (framebuffer->width < 0)
+            framebuffer->width = level_width;
+        else if (framebuffer->width != level_width) {
+            _cg_set_error(error,
+                          CG_SYSTEM_ERROR,
+                          CG_SYSTEM_ERROR_UNSUPPORTED,
+                          "Conflicting pre-determined size and calculated "
+                          "depth texture level size");
+            goto error;
+        }
+        if (framebuffer->height < 0)
+            framebuffer->height = level_height;
+        else if (framebuffer->width != level_width) {
+            _cg_set_error(error,
+                          CG_SYSTEM_ERROR,
+                          CG_SYSTEM_ERROR_UNSUPPORTED,
+                          "Conflicting pre-determined size and calculated "
+                          "depth texture level size");
+            goto error;
+        }
+    }
+
+    c_warn_if_fail(framebuffer->width > 0);
+    c_warn_if_fail(framebuffer->height > 0);
+
+    framebuffer->viewport_width = framebuffer->width;
+    framebuffer->viewport_height = framebuffer->height;
+
+    if (!dev->driver_vtable->offscreen_allocate(offscreen, error))
+        goto error;
+
+    if (offscreen->texture)
+        _cg_texture_associate_framebuffer(offscreen->texture, framebuffer);
+    if (offscreen->depth_texture)
+        _cg_texture_associate_framebuffer(offscreen->depth_texture, framebuffer);
+
+    return true;
+
+error:
+    if (allocated_depth_tex) {
+        cg_object_unref(offscreen->depth_texture);
+        offscreen->depth_texture = NULL;
+    }
+    return false;
+}
+
 bool
 cg_framebuffer_allocate(cg_framebuffer_t *framebuffer, cg_error_t **error)
 {
-    cg_onscreen_t *onscreen = CG_ONSCREEN(framebuffer);
-    const cg_winsys_vtable_t *winsys = _cg_framebuffer_get_winsys(framebuffer);
-    cg_device_t *dev = framebuffer->dev;
-
     if (framebuffer->allocated)
         return true;
 
     if (framebuffer->type == CG_FRAMEBUFFER_TYPE_ONSCREEN) {
+        cg_onscreen_t *onscreen = CG_ONSCREEN(framebuffer);
+        const cg_winsys_vtable_t *winsys =
+            _cg_framebuffer_get_winsys(framebuffer);
+        cg_device_t *dev = framebuffer->dev;
+
         if (framebuffer->config.depth_texture_enabled) {
             _cg_set_error(error,
                           CG_FRAMEBUFFER_ERROR,
@@ -497,36 +714,7 @@ cg_framebuffer_allocate(cg_framebuffer_t *framebuffer, cg_error_t **error)
         if (!_cg_has_private_feature(dev, CG_PRIVATE_FEATURE_DIRTY_EVENTS))
             _cg_onscreen_queue_full_dirty(onscreen);
     } else {
-        cg_offscreen_t *offscreen = CG_OFFSCREEN(framebuffer);
-
-        if (!cg_texture_allocate(offscreen->texture, error))
-            return false;
-
-        /* NB: it's only after allocating the texture that we will
-         * determine whether a texture needs slicing... */
-        if (cg_texture_is_sliced(offscreen->texture)) {
-            _cg_set_error(error,
-                          CG_SYSTEM_ERROR,
-                          CG_SYSTEM_ERROR_UNSUPPORTED,
-                          "Can't create offscreen framebuffer from "
-                          "sliced texture");
-            return false;
-        }
-
-        /* Now that the texture has been allocated we can determine a
-         * size for the framebuffer... */
-        framebuffer->width = cg_texture_get_width(offscreen->texture);
-        framebuffer->height = cg_texture_get_height(offscreen->texture);
-        framebuffer->viewport_width = framebuffer->width;
-        framebuffer->viewport_height = framebuffer->height;
-
-        /* Forward the texture format as the internal format of the
-         * framebuffer */
-        framebuffer->internal_format =
-            _cg_texture_get_format(offscreen->texture);
-
-        if (!dev->driver_vtable->offscreen_allocate(offscreen, error))
-            return false;
+        return _offscreen_allocate(framebuffer, error);
     }
 
     framebuffer->allocated = true;

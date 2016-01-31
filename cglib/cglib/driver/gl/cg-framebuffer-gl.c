@@ -406,20 +406,9 @@ _cg_framebuffer_gl_flush_state(cg_framebuffer_t *draw_buffer,
 }
 
 static cg_texture_t *
-create_depth_texture(cg_device_t *dev, int width, int height)
-{
-    cg_texture_2d_t *depth_texture =
-        cg_texture_2d_new_with_size(dev, width, height);
-
-    cg_texture_set_components(CG_TEXTURE(depth_texture),
-                              CG_TEXTURE_COMPONENTS_DEPTH_STENCIL);
-
-    return CG_TEXTURE(depth_texture);
-}
-
-static cg_texture_t *
 attach_depth_texture(cg_device_t *dev,
                      cg_texture_t *depth_texture,
+                     int depth_texture_level,
                      cg_offscreen_allocate_flags_t flags)
 {
     GLuint tex_gl_handle;
@@ -431,8 +420,7 @@ attach_depth_texture(cg_device_t *dev,
         c_assert(_cg_texture_get_format(depth_texture) ==
                  CG_PIXEL_FORMAT_DEPTH_24_STENCIL_8);
 
-        cg_texture_get_gl_texture(
-            depth_texture, &tex_gl_handle, &tex_gl_target);
+        cg_texture_get_gl_texture(depth_texture, &tex_gl_handle, &tex_gl_target);
 
 #ifdef HAVE_CG_WEBGL
         GE(dev,
@@ -440,20 +428,20 @@ attach_depth_texture(cg_device_t *dev,
                                   GL_DEPTH_STENCIL_ATTACHMENT,
                                   tex_gl_target,
                                   tex_gl_handle,
-                                  0));
+                                  depth_texture_level));
 #else
         GE(dev,
            glFramebufferTexture2D(GL_FRAMEBUFFER,
                                   GL_DEPTH_ATTACHMENT,
                                   tex_gl_target,
                                   tex_gl_handle,
-                                  0));
+                                  depth_texture_level));
         GE(dev,
            glFramebufferTexture2D(GL_FRAMEBUFFER,
                                   GL_STENCIL_ATTACHMENT,
                                   tex_gl_target,
                                   tex_gl_handle,
-                                  0));
+                                  depth_texture_level));
 #endif
     } else if (flags & CG_OFFSCREEN_ALLOCATE_FLAG_DEPTH) {
         /* attach a newly created GL_DEPTH_COMPONENT16 texture to the
@@ -461,15 +449,14 @@ attach_depth_texture(cg_device_t *dev,
         c_assert(_cg_texture_get_format(depth_texture) ==
                  CG_PIXEL_FORMAT_DEPTH_16);
 
-        cg_texture_get_gl_texture(
-            CG_TEXTURE(depth_texture), &tex_gl_handle, &tex_gl_target);
+        cg_texture_get_gl_texture(depth_texture, &tex_gl_handle, &tex_gl_target);
 
         GE(dev,
            glFramebufferTexture2D(GL_FRAMEBUFFER,
                                   GL_DEPTH_ATTACHMENT,
                                   tex_gl_target,
                                   tex_gl_handle,
-                                  0));
+                                  depth_texture_level));
     }
 
     return CG_TEXTURE(depth_texture);
@@ -620,11 +607,12 @@ delete_renderbuffers(cg_device_t *dev, c_llist_t *renderbuffers)
  */
 static bool
 try_creating_fbo(cg_device_t *dev,
+                 int width,
+                 int height,
                  cg_texture_t *texture,
                  int texture_level,
-                 int texture_level_width,
-                 int texture_level_height,
                  cg_texture_t *depth_texture,
+                 int depth_texture_level,
                  cg_framebuffer_config_t *config,
                  cg_offscreen_allocate_flags_t flags,
                  cg_gl_framebuffer_t *gl_framebuffer)
@@ -632,20 +620,7 @@ try_creating_fbo(cg_device_t *dev,
     GLuint tex_gl_handle;
     GLenum tex_gl_target;
     GLenum status;
-    int n_samples;
-
-    if (!cg_texture_get_gl_texture(texture, &tex_gl_handle, &tex_gl_target))
-        return false;
-
-    if (tex_gl_target != GL_TEXTURE_2D)
-        return false;
-
-    if (config->samples_per_pixel) {
-        if (!dev->glFramebufferTexture2DMultisampleIMG)
-            return false;
-        n_samples = config->samples_per_pixel;
-    } else
-        n_samples = 0;
+    int n_samples = 0;
 
     /* We are about to generate and bind a new fbo, so we pretend to
      * change framebuffer state so that the old framebuffer will be
@@ -656,28 +631,48 @@ try_creating_fbo(cg_device_t *dev,
     dev->glGenFramebuffers(1, &gl_framebuffer->fbo_handle);
     GE(dev, glBindFramebuffer(GL_FRAMEBUFFER, gl_framebuffer->fbo_handle));
 
-    if (n_samples) {
-        GE(dev,
-           glFramebufferTexture2DMultisampleIMG(GL_FRAMEBUFFER,
-                                                GL_COLOR_ATTACHMENT0,
-                                                tex_gl_target,
-                                                tex_gl_handle,
-                                                n_samples,
-                                                texture_level));
-    } else
-        GE(dev,
-           glFramebufferTexture2D(GL_FRAMEBUFFER,
-                                  GL_COLOR_ATTACHMENT0,
-                                  tex_gl_target,
-                                  tex_gl_handle,
-                                  texture_level));
+    gl_framebuffer->renderbuffers = NULL;
+
+    if (texture) {
+        if (!cg_texture_get_gl_texture(texture, &tex_gl_handle, &tex_gl_target))
+            goto error;
+
+        if (tex_gl_target != GL_TEXTURE_2D)
+            goto error;
+
+        if (config->samples_per_pixel) {
+            if (!dev->glFramebufferTexture2DMultisampleIMG)
+                goto error;
+            n_samples = config->samples_per_pixel;
+        }
+
+        if (n_samples) {
+            GE(dev,
+               glFramebufferTexture2DMultisampleIMG(GL_FRAMEBUFFER,
+                                                    GL_COLOR_ATTACHMENT0,
+                                                    tex_gl_target,
+                                                    tex_gl_handle,
+                                                    n_samples,
+                                                    texture_level));
+        } else {
+            GE(dev,
+               glFramebufferTexture2D(GL_FRAMEBUFFER,
+                                      GL_COLOR_ATTACHMENT0,
+                                      tex_gl_target,
+                                      tex_gl_handle,
+                                      texture_level));
+        }
+    }
 
     /* attach either a depth/stencil texture, a depth texture or render buffers
      * depending on what we've been asked to provide */
 
     if (depth_texture && flags & (CG_OFFSCREEN_ALLOCATE_FLAG_DEPTH_STENCIL |
                                   CG_OFFSCREEN_ALLOCATE_FLAG_DEPTH)) {
-        attach_depth_texture(dev, depth_texture, flags);
+        attach_depth_texture(dev,
+                             depth_texture,
+                             depth_texture_level,
+                             flags);
 
         /* Let's clear the flags that are now fulfilled as we might need to
          * create renderbuffers (for the ALLOCATE_FLAG_DEPTH |
@@ -688,8 +683,8 @@ try_creating_fbo(cg_device_t *dev,
 
     if (flags) {
         gl_framebuffer->renderbuffers = try_creating_renderbuffers(dev,
-                                                                   texture_level_width,
-                                                                   texture_level_height,
+                                                                   width,
+                                                                   height,
                                                                    flags,
                                                                    n_samples);
     }
@@ -697,14 +692,8 @@ try_creating_fbo(cg_device_t *dev,
     /* Make sure it's complete */
     status = dev->glCheckFramebufferStatus(GL_FRAMEBUFFER);
 
-    if (status != GL_FRAMEBUFFER_COMPLETE) {
-        GE(dev, glDeleteFramebuffers(1, &gl_framebuffer->fbo_handle));
-
-        delete_renderbuffers(dev, gl_framebuffer->renderbuffers);
-        gl_framebuffer->renderbuffers = NULL;
-
-        return false;
-    }
+    if (status != GL_FRAMEBUFFER_COMPLETE)
+        goto error;
 
     /* Update the real number of samples_per_pixel now that we have a
      * complete framebuffer */
@@ -720,25 +709,37 @@ try_creating_fbo(cg_device_t *dev,
     }
 
     return true;
+
+error:
+    if (gl_framebuffer->renderbuffers) {
+        delete_renderbuffers(dev, gl_framebuffer->renderbuffers);
+        gl_framebuffer->renderbuffers = NULL;
+    }
+
+    GE(dev, glDeleteFramebuffers(1, &gl_framebuffer->fbo_handle));
+
+    return false;
 }
 
 bool
 _cg_framebuffer_try_creating_gl_fbo(cg_device_t *dev,
+                                    int width,
+                                    int height,
                                     cg_texture_t *texture,
                                     int texture_level,
-                                    int texture_level_width,
-                                    int texture_level_height,
                                     cg_texture_t *depth_texture,
+                                    int depth_texture_level,
                                     cg_framebuffer_config_t *config,
                                     cg_offscreen_allocate_flags_t flags,
                                     cg_gl_framebuffer_t *gl_framebuffer)
 {
     return try_creating_fbo(dev,
+                            width,
+                            height,
                             texture,
                             texture_level,
-                            texture_level_width,
-                            texture_level_height,
                             depth_texture,
+                            depth_texture_level,
                             config,
                             flags,
                             gl_framebuffer);
@@ -751,31 +752,11 @@ _cg_offscreen_gl_allocate(cg_offscreen_t *offscreen, cg_error_t **error)
     cg_device_t *dev = fb->dev;
     cg_offscreen_allocate_flags_t flags;
     cg_gl_framebuffer_t *gl_framebuffer = &offscreen->gl_framebuffer;
-    int level_width;
-    int level_height;
+    int width = fb->width;
+    int height = fb->height;
 
-    c_return_val_if_fail(offscreen->texture_level <
-                           _cg_texture_get_n_levels(offscreen->texture),
-                           false);
-
-    _cg_texture_get_level_size(offscreen->texture,
-                               offscreen->texture_level,
-                               &level_width,
-                               &level_height,
-                               NULL);
-
-    if (fb->config.depth_texture_enabled && offscreen->depth_texture == NULL) {
-        offscreen->depth_texture =
-            create_depth_texture(dev, level_width, level_height);
-
-        if (!cg_texture_allocate(offscreen->depth_texture, error)) {
-            cg_object_unref(offscreen->depth_texture);
-            offscreen->depth_texture = NULL;
-            return false;
-        }
-
-        _cg_texture_associate_framebuffer(offscreen->depth_texture, fb);
-    }
+    c_return_val_if_fail(width > 0, false);
+    c_return_val_if_fail(height > 0, false);
 
     /* XXX: The framebuffer_object spec isn't clear in defining
      * whether attaching a texture as a renderbuffer with mipmap
@@ -789,26 +770,33 @@ _cg_offscreen_gl_allocate(cg_offscreen_t *offscreen, cg_error_t **error)
      * according to the filters set on the corresponding
      * cg_pipeline_t.
      */
-    _cg_texture_gl_flush_legacy_texobj_filters(
-        offscreen->texture, GL_NEAREST, GL_NEAREST);
+    if (offscreen->texture)
+        _cg_texture_gl_flush_legacy_texobj_filters(
+            offscreen->texture, GL_NEAREST, GL_NEAREST);
+
+    if (offscreen->depth_texture)
+        _cg_texture_gl_flush_legacy_texobj_filters(
+            offscreen->depth_texture, GL_NEAREST, GL_NEAREST);
 
     if (((offscreen->create_flags & CG_OFFSCREEN_DISABLE_AUTO_DEPTH_AND_STENCIL) &&
          try_creating_fbo(dev,
+                          width,
+                          height,
                           offscreen->texture,
                           offscreen->texture_level,
-                          level_width,
-                          level_height,
                           offscreen->depth_texture,
+                          offscreen->depth_texture_level,
                           &fb->config,
                           flags = 0,
                           gl_framebuffer)) ||
         (dev->have_last_offscreen_allocate_flags &&
          try_creating_fbo(dev,
+                          width,
+                          height,
                           offscreen->texture,
                           offscreen->texture_level,
-                          level_width,
-                          level_height,
                           offscreen->depth_texture,
+                          offscreen->depth_texture_level,
                           &fb->config,
                           flags = dev->last_offscreen_allocate_flags,
                           gl_framebuffer)) ||
@@ -820,48 +808,53 @@ _cg_offscreen_gl_allocate(cg_offscreen_t *offscreen, cg_error_t **error)
              _cg_has_private_feature(dev, CG_PRIVATE_FEATURE_OES_PACKED_DEPTH_STENCIL)) &&
 #endif
             try_creating_fbo(dev,
+                             width,
+                             height,
                              offscreen->texture,
                              offscreen->texture_level,
-                             level_width,
-                             level_height,
                              offscreen->depth_texture,
+                             offscreen->depth_texture_level,
                              &fb->config,
                              flags = CG_OFFSCREEN_ALLOCATE_FLAG_DEPTH_STENCIL,
                              gl_framebuffer)) ||
         try_creating_fbo(dev,
+                         width,
+                         height,
                          offscreen->texture,
                          offscreen->texture_level,
-                         level_width,
-                         level_height,
                          offscreen->depth_texture,
+                         offscreen->depth_texture_level,
                          &fb->config,
                          flags = CG_OFFSCREEN_ALLOCATE_FLAG_DEPTH |
                                  CG_OFFSCREEN_ALLOCATE_FLAG_STENCIL,
                          gl_framebuffer) ||
         try_creating_fbo(dev,
+                         width,
+                         height,
                          offscreen->texture,
                          offscreen->texture_level,
-                         level_width,
-                         level_height,
                          offscreen->depth_texture,
+                         offscreen->depth_texture_level,
                          &fb->config,
                          flags = CG_OFFSCREEN_ALLOCATE_FLAG_STENCIL,
                          gl_framebuffer) ||
         try_creating_fbo(dev,
+                         width,
+                         height,
                          offscreen->texture,
                          offscreen->texture_level,
-                         level_width,
-                         level_height,
                          offscreen->depth_texture,
+                         offscreen->depth_texture_level,
                          &fb->config,
                          flags = CG_OFFSCREEN_ALLOCATE_FLAG_DEPTH,
                          gl_framebuffer) ||
         try_creating_fbo(dev,
+                         width,
+                         height,
                          offscreen->texture,
                          offscreen->texture_level,
-                         level_width,
-                         level_height,
                          offscreen->depth_texture,
+                         offscreen->depth_texture_level,
                          &fb->config,
                          flags = 0,
                          gl_framebuffer)) {

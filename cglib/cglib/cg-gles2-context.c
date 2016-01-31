@@ -1601,11 +1601,12 @@ _cg_gles2_offscreen_allocate(cg_offscreen_t *offscreen,
 
     if (!_cg_framebuffer_try_creating_gl_fbo(
             gles2_context->dev,
-            offscreen->texture,
-            offscreen->texture_level,
             level_width,
             level_height,
+            offscreen->texture,
+            offscreen->texture_level,
             offscreen->depth_texture,
+            offscreen->depth_texture_level,
             &CG_FRAMEBUFFER(offscreen)->config,
             offscreen->allocation_flags,
             &gles2_offscreen->gl_framebuffer)) {

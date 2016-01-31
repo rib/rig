@@ -88,6 +88,21 @@ typedef struct _cg_offscreen_t cg_offscreen_t;
  */
 cg_offscreen_t *cg_offscreen_new_with_texture(cg_texture_t *texture);
 
+cg_offscreen_t *
+cg_offscreen_new(cg_device_t *dev,
+                 int width, /* -1 derived from attached texture */
+                 int height); /* -1 derived from attached texture */
+
+void
+cg_offscreen_attach_color_texture(cg_offscreen_t *offscreen,
+                                  cg_texture_t *texture,
+                                  int level);
+
+void
+cg_offscreen_attach_depth_texture(cg_offscreen_t *offscreen,
+                                  cg_texture_t *texture,
+                                  int level);
+
 /**
  * cg_is_offscreen:
  * @object: A pointer to a #cg_object_t
