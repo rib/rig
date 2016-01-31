@@ -146,10 +146,14 @@ work_cb(uv_work_t *work_req)
 static void
 done_cb(uv_work_t *work_req, int status)
 {
-    if (status == 0) {
-        xdgmime_request_t *req = work_req->data;
+    xdgmime_request_t *req = work_req->data;
+
+    if (status == 0)
         req->callback(req, req->mime_type);
-    }
+
+    c_free(req->filename);
+    req->filename = NULL;
+    req->callback = NULL;
 }
 
 void
@@ -164,9 +168,12 @@ xdgmime_request_start(xdgmime_request_t *req,
 }
 
 void
-xdgmime_request_cleanup(xdgmime_request_t *req)
+xdgmime_request_cancel(xdgmime_request_t *req)
 {
-    c_free(req->filename);
+    if (req->callback) {
+        done_cb(&req->work_req, -1);
+        uv_cancel((uv_req_t *)&req->work_req);
+    }
 }
 
 void

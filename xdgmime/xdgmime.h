@@ -48,7 +48,7 @@ void xdgmime_request_init(uv_loop_t *loop, xdgmime_request_t *req);
 void xdgmime_request_start(xdgmime_request_t *req,
                            const char *filename,
                            xdgmime_result_cb callback);
-void xdgmime_request_cleanup(xdgmime_request_t *req);
+void xdgmime_request_cancel(xdgmime_request_t *req);
 
 void xdgmime_cleanup(void);
 
