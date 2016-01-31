@@ -68,11 +68,9 @@ rut_mesh_t *rig_nine_slice_get_pick_mesh(rut_object_t *object);
 typedef void (*rig_nine_slice_update_callback_t)(rig_nine_slice_t *nine_slice,
                                                  void *user_data);
 
-rut_closure_t *
+void
 rig_nine_slice_add_update_callback(rig_nine_slice_t *nine_slice,
-                                   rig_nine_slice_update_callback_t callback,
-                                   void *user_data,
-                                   rut_closure_destroy_callback_t destroy_cb);
+                                   rut_closure_t *closure);
 
 void rig_nine_slice_set_width(rut_object_t *nine_slice, float width);
 

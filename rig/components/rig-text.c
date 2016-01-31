@@ -108,7 +108,7 @@ _rig_text_free(void *object)
     if (text->font_family)
         c_free(text->font_family);
 
-    rut_closure_list_disconnect_all_FIXME(&text->preferred_size_cb_list);
+    rut_closure_list_remove_all(&text->preferred_size_cb_list);
 
     rut_object_free(rig_text_t, text);
 }
@@ -246,16 +246,13 @@ _rig_text_get_preferred_height(rut_object_t *object,
         *natural_height_p = text->height;
 }
 
-static rut_closure_t *
+static void
 _rig_text_add_preferred_size_callback(void *object,
-                                      rut_sizeable_preferred_size_callback_t cb,
-                                      void *user_data,
-                                      rut_closure_destroy_callback_t destroy)
+                                      rut_closure_t *closure)
 {
     rig_text_t *text = object;
 
-    return rut_closure_list_add_FIXME(
-        &text->preferred_size_cb_list, cb, user_data, destroy);
+    return rut_closure_list_add(&text->preferred_size_cb_list, closure);
 }
 
 

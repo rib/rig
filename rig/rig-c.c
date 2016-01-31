@@ -610,7 +610,33 @@ r_material_new(RModule *module)
     rut_object_t *component;
 
     prop_ctx->logging_disabled++;
-    component = rig_material_new(engine, NULL);
+    component = rig_material_new(engine);
+    prop_ctx->logging_disabled--;
+
+    rut_object_claim(component, engine);
+    rut_object_unref(component);
+
+    rig_engine_op_register_component(engine, component);
+
+    return (RObject *)component;
+}
+
+RObject *
+r_source_new(RModule *module, const char *url)
+{
+    rig_code_module_props_t *code_module = (void *)module;
+    rig_engine_t *engine = code_module->engine;
+    rut_property_context_t *prop_ctx = engine->property_ctx;
+    rut_object_t *component;
+
+    prop_ctx->logging_disabled++;
+    component = rig_source_new(engine,
+                               NULL, /* mime */
+                               url, /* url */
+                               NULL, /* data */
+                               0, /* data_len */
+                               0, /* natural width */
+                               0); /* natural height */
     prop_ctx->logging_disabled--;
 
     rut_object_claim(component, engine);

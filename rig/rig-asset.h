@@ -87,8 +87,6 @@ const char *rig_asset_get_mime_type(rig_asset_t *asset);
 
 rut_shell_t *rig_asset_get_shell(rig_asset_t *asset);
 
-rig_image_source_t *rig_asset_get_image_source(rig_asset_t *asset);
-
 rut_mesh_t *rig_asset_get_mesh(rig_asset_t *asset);
 
 void *rig_asset_get_data(rig_asset_t *asset);

@@ -50,11 +50,11 @@
 #include "rig.pb-c.h"
 #include "rig-frontend.h"
 #include "rig-simulator.h"
-#include "rig-image-source.h"
 #include "rig-code-module.h"
 #include "rig-timeline.h"
 
 #include "components/rig-camera.h"
+#include "components/rig-source.h"
 
 #ifdef USE_UV
 #include "components/rig-native-module.h"

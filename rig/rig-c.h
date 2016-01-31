@@ -213,6 +213,7 @@ RObject *r_diamond_new(RModule *module, float size);
 RObject *r_pointalism_grid_new(RModule *module, float size);
 
 RObject *r_material_new(RModule *module);
+RObject *r_source_new(RModule *module, const char *url);
 
 RObject *r_button_input_new(RModule *module);
 

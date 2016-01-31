@@ -30,7 +30,6 @@
 #define __RIG_MATERIAL_H__
 
 #include "rig-entity.h"
-#include "rig-asset.h"
 
 typedef struct _rig_material_t rig_material_t;
 extern rut_type_t rig_material_type;
@@ -40,6 +39,7 @@ enum {
     RIG_MATERIAL_PROP_CAST_SHADOW,
     RIG_MATERIAL_PROP_RECEIVE_SHADOW,
     RIG_MATERIAL_PROP_COLOR_SOURCE,
+    RIG_MATERIAL_PROP_AMBIENT_OCCLUSION_SOURCE,
     RIG_MATERIAL_PROP_NORMAL_MAP,
     RIG_MATERIAL_PROP_ALPHA_MASK,
     RIG_MATERIAL_PROP_AMBIENT,
@@ -54,10 +54,14 @@ struct _rig_material_t {
     rut_object_base_t _base;
 
     rut_componentable_props_t component;
-    rig_asset_t *color_source_asset;
-    rig_asset_t *normal_map_asset;
-    rig_asset_t *alpha_mask_asset;
 
+    rig_source_t *color_source; /* should we have an 'ambient',
+                                   'diffuse' + 'specular' source? */
+    rig_source_t *ambient_occlusion_source;
+    rig_source_t *normal_map_source;
+    rig_source_t *alpha_mask_source;
+
+    /* Should these be removed, in favour of corresponding sources? */
     cg_color_t ambient;
     cg_color_t diffuse;
     cg_color_t specular;
@@ -76,24 +80,27 @@ struct _rig_material_t {
     unsigned int receive_shadow : 1;
 };
 
-void _rig_material_init_type(void);
+rig_material_t *rig_material_new(rig_engine_t *engine);
 
-rig_material_t *rig_material_new(rig_engine_t *engine, rig_asset_t *asset);
+void rig_material_set_color_source(rut_object_t *object,
+                                   rut_object_t *source);
 
-void rig_material_set_color_source_asset(rut_object_t *object,
-                                         rig_asset_t *asset);
+rut_object_t *rig_material_get_color_source(rut_object_t *object);
 
-rig_asset_t *rig_material_get_color_source_asset(rut_object_t *object);
+void rig_material_set_ambient_occlusion_source(rut_object_t *object,
+                                               rut_object_t *source);
 
-void rig_material_set_normal_map_asset(rut_object_t *material,
-                                       rig_asset_t *normal_map_asset);
+rut_object_t *rig_material_get_ambient_occlusion_source(rut_object_t *object);
 
-rig_asset_t *rig_material_get_normal_map_asset(rut_object_t *material);
+void rig_material_set_normal_map_source(rut_object_t *object,
+                                        rut_object_t *source);
 
-void rig_material_set_alpha_mask_asset(rut_object_t *material,
-                                       rig_asset_t *alpha_mask_asset);
+rut_object_t *rig_material_get_normal_map_source(rut_object_t *object);
 
-rig_asset_t *rig_material_get_alpha_mask_asset(rut_object_t *material);
+void rig_material_set_alpha_mask_source(rut_object_t *object,
+                                        rut_object_t *source);
+
+rut_object_t *rig_material_get_alpha_mask_source(rut_object_t *object);
 
 void rig_material_set_ambient(rut_object_t *material, const cg_color_t *color);
 

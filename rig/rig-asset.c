@@ -45,7 +45,6 @@
 #include "components/rig-model.h"
 #include "rig-asset.h"
 #include "rig-engine.h"
-#include "rig-image-source.h"
 
 #if 0
 enum {
@@ -78,8 +77,6 @@ struct _rig_asset_t {
 
     int natural_width;
     int natural_height;
-
-    rig_image_source_t *image_source;
 
     rut_mesh_t *mesh;
     bool has_tex_coords;
@@ -212,14 +209,6 @@ asset_new_from_image_data(rig_engine_t *engine,
         asset->data_len = len;
         return asset;
     }
-
-    asset->image_source = rig_image_source_new(engine->frontend,
-                                               mime_type,
-                                               path,
-                                               data,
-                                               len,
-                                               natural_width,
-                                               natural_height);
 
     return asset;
 }
@@ -394,12 +383,6 @@ rut_shell_t *
 rig_asset_get_shell(rig_asset_t *asset)
 {
     return asset->shell;
-}
-
-rig_image_source_t *
-rig_asset_get_image_source(rig_asset_t *asset)
-{
-    return asset->image_source;
 }
 
 rut_mesh_t *

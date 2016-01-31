@@ -346,7 +346,7 @@ _rig_diamond_free(void *object)
     }
 #endif
 
-    rut_closure_list_disconnect_all_FIXME(&diamond->updated_cb_list);
+    rut_closure_list_remove_all(&diamond->updated_cb_list);
 
     if (diamond->slice)
         rut_object_unref(diamond->slice);
@@ -527,15 +527,11 @@ rig_diamond_get_pick_mesh(rut_object_t *self)
     return diamond->slice->pick_mesh;
 }
 
-rut_closure_t *
+void
 rig_diamond_add_update_callback(rig_diamond_t *diamond,
-                                rig_diamond_update_callback_t callback,
-                                void *user_data,
-                                rut_closure_destroy_callback_t destroy_cb)
+                                rut_closure_t *closure)
 {
-    c_return_val_if_fail(callback != NULL, NULL);
-    return rut_closure_list_add_FIXME(
-        &diamond->updated_cb_list, callback, user_data, destroy_cb);
+    return rut_closure_list_add(&diamond->updated_cb_list, closure);
 }
 
 void

@@ -319,7 +319,7 @@ _rig_nine_slice_free(void *object)
     }
 #endif
 
-    rut_closure_list_disconnect_all_FIXME(&nine_slice->updated_cb_list);
+    rut_closure_list_remove_all(&nine_slice->updated_cb_list);
 
     if (nine_slice->texture)
         cg_object_unref(nine_slice->texture);
@@ -686,15 +686,13 @@ rig_nine_slice_get_pick_mesh(rut_object_t *object)
     return nine_slice->mesh;
 }
 
-rut_closure_t *
+void
 rig_nine_slice_add_update_callback(rig_nine_slice_t *nine_slice,
-                                   rig_nine_slice_update_callback_t callback,
-                                   void *user_data,
-                                   rut_closure_destroy_callback_t destroy_cb)
+                                   rut_closure_t *closure)
 {
-    c_return_val_if_fail(callback != NULL, NULL);
-    return rut_closure_list_add_FIXME(
-        &nine_slice->updated_cb_list, callback, user_data, destroy_cb);
+    c_return_if_fail(closure != NULL);
+
+    return rut_closure_list_add(&nine_slice->updated_cb_list, closure);
 }
 
 #define SLICE_PROPERTY(PROP_LC, PROP_UC)                                       \

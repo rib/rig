@@ -363,7 +363,7 @@ _rig_pointalism_grid_free(void *object)
     }
 #endif
 
-    rut_closure_list_disconnect_all_FIXME(&grid->updated_cb_list);
+    rut_closure_list_remove_all(&grid->updated_cb_list);
 
     free_meshes(grid);
 
@@ -594,16 +594,11 @@ rig_pointalism_grid_set_cell_size(rut_object_t *obj, float cell_size)
         &grid->updated_cb_list, rig_pointalism_grid_update_callback_t, grid);
 }
 
-rut_closure_t *
-rig_pointalism_grid_add_update_callback(
-    rig_pointalism_grid_t *grid,
-    rig_pointalism_grid_update_callback_t callback,
-    void *user_data,
-    rut_closure_destroy_callback_t destroy_cb)
+void
+rig_pointalism_grid_add_update_callback(rig_pointalism_grid_t *grid,
+                                        rut_closure_t *closure)
 {
-    c_return_val_if_fail(callback != NULL, NULL);
-    return rut_closure_list_add_FIXME(
-        &grid->updated_cb_list, callback, user_data, destroy_cb);
+    return rut_closure_list_add(&grid->updated_cb_list, closure);
 }
 
 void

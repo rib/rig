@@ -47,10 +47,10 @@ typedef struct {
     rut_closure_destroy_callback_t removed_cb;
 } rut_closure_t;
 
-/* XXX: In general these _init, _add_too, _remove and _remove_all apis
- * should be used over the previous _list_add, _disconnect and
- * _disconnect_all apis with closure structures that are embedded in
- * some other structure.
+/* XXX: In general these _init, _list_add, _remove and _list_remove_all apis
+ * should be used over the previous apis, now ending in a '_FIXME'
+ * suffix. The newer apis are designed to allow embedding the closure
+ * structures within some other structure.
  *
  * These apis can't be intermixed; so you can't _disconnect() a
  * closure that was passed to _init() or _remove() a closure created
@@ -175,6 +175,14 @@ void rut_closure_list_disconnect_all_FIXME(c_list_t *list); //C_DEPRECATED("Use 
             void (*_cb)(void *) = _c->function;                                \
             _cb(_c->user_data);                                                \
         }                                                                      \
+    }                                                                          \
+    C_STMT_END
+
+#define rut_closure_invoke(closure, cb_type, ...)                              \
+    C_STMT_START                                                               \
+    {                                                                          \
+        cb_type _cb = closure->function;                                       \
+        _cb(__VA_ARGS__, closure->user_data);                                  \
     }                                                                          \
     C_STMT_END
 

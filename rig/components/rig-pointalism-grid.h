@@ -99,11 +99,10 @@ void rig_pointalism_grid_set_cell_size(rut_object_t *obj, float rows);
 
 typedef void (*rig_pointalism_grid_update_callback_t)(
     rig_pointalism_grid_t *grid, void *user_data);
-rut_closure_t *rig_pointalism_grid_add_update_callback(
-    rig_pointalism_grid_t *grid,
-    rig_pointalism_grid_update_callback_t callback,
-    void *user_data,
-    rut_closure_destroy_callback_t destroy_cb);
+
+void
+rig_pointalism_grid_add_update_callback(rig_pointalism_grid_t *grid,
+                                        rut_closure_t *closure);
 
 void
 rig_pointalism_grid_set_image_size(rut_object_t *self, int width, int height);

@@ -89,11 +89,9 @@ rut_mesh_t *rig_diamond_get_pick_mesh(rut_object_t *self);
 typedef void (*rig_diamond_update_callback_t)(rig_diamond_t *diamond,
                                               void *user_data);
 
-rut_closure_t *
+void
 rig_diamond_add_update_callback(rig_diamond_t *diamond,
-                                rig_diamond_update_callback_t callback,
-                                void *user_data,
-                                rut_closure_destroy_callback_t destroy_cb);
+                                rut_closure_t *closure);
 
 void rig_diamond_set_image_size(rut_object_t *self, int width, int height);
 

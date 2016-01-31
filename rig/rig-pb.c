@@ -471,6 +471,12 @@ rig_pb_serialize_component(rig_pb_serializer_t *serializer,
                                              &pb_component->n_properties,
                                              (void **)&pb_component->properties,
                                              serializer);
+    } else if (type == &rig_source_type) {
+        pb_component->type = RIG__ENTITY__COMPONENT__TYPE__SOURCE;
+        serialize_instrospectable_properties(component,
+                                             &pb_component->n_properties,
+                                             (void **)&pb_component->properties,
+                                             serializer);
     } else if (type == &rig_shape_type) {
         pb_component->type = RIG__ENTITY__COMPONENT__TYPE__SHAPE;
         serialize_instrospectable_properties(component,
@@ -1997,7 +2003,7 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
     }
     case RIG__ENTITY__COMPONENT__TYPE__MATERIAL: {
         rig_material_t *material =
-            rig_material_new(unserializer->engine, NULL);
+            rig_material_new(unserializer->engine);
 
         set_properties_from_pb_boxed_values(unserializer,
                                             material,
@@ -2009,6 +2015,27 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
             material = NULL;
         }
         return material;
+    }
+    case RIG__ENTITY__COMPONENT__TYPE__SOURCE: {
+        rig_source_t *source =
+            rig_source_new(unserializer->engine,
+                           NULL, /* mime */
+                           NULL, /* url */
+                           NULL, /* data */
+                           0, /* data len */
+                           0, /* natural width */
+                           0); /* natural height */
+
+        set_properties_from_pb_boxed_values(unserializer,
+                                            source,
+                                            pb_component->n_properties,
+                                            pb_component->properties);
+
+        if (!rig_pb_unserializer_register_object(unserializer, source, component_id)) {
+            rut_object_unref(source);
+            source = NULL;
+        }
+        return source;
     }
     case RIG__ENTITY__COMPONENT__TYPE__MODEL: {
         Rig__Entity__Component__Model *pb_model = pb_component->model;

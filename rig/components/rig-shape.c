@@ -103,10 +103,6 @@ _rig_shape_model_init_type(void)
 
 typedef struct _vertex_p2t2t2_t {
     float x, y, s0, t0, s1, t1;
-#ifdef MESA_CONST_ATTRIB_BUG_WORKAROUND
-    float Nx, Ny, Nz;
-    float Tx, Ty, Tz;
-#endif
 } vertex_p2t2t2_t;
 
 static rut_mesh_t *
@@ -117,6 +113,8 @@ mesh_new_p2t2t2(cg_vertices_mode_t mode,
     rut_mesh_t *mesh;
     rut_attribute_t *attributes[8];
     rut_buffer_t *vertex_buffer;
+    float normal[3] = { 0, 0, 1 };
+    float tangent[3] = { 1, 0, 0 };
 
     vertex_buffer = rut_buffer_new(sizeof(vertex_p2t2t2_t) * n_vertices);
     memcpy(vertex_buffer->data, data, sizeof(vertex_p2t2t2_t) * n_vertices);
@@ -163,19 +161,17 @@ mesh_new_p2t2t2(cg_vertices_mode_t mode,
                                       2,
                                       RUT_ATTRIBUTE_TYPE_FLOAT);
 
-    attributes[6] = rut_attribute_new(vertex_buffer,
-                                      "cg_normal_in",
-                                      sizeof(vertex_p2t2t2_t),
-                                      offsetof(vertex_p2t2t2_t, Nx),
-                                      3,
-                                      RUT_ATTRIBUTE_TYPE_FLOAT);
+    attributes[6] = rut_attribute_new_const("cg_normal_in",
+                                            3, /* n components */
+                                            1, /* n columns */
+                                            false, /* no transpose */
+                                            normal);
 
-    attributes[7] = rut_attribute_new(vertex_buffer,
-                                      "tangent_in",
-                                      sizeof(vertex_p2t2t2_t),
-                                      offsetof(vertex_p2t2t2_t, Tx),
-                                      3,
-                                      RUT_ATTRIBUTE_TYPE_FLOAT);
+    attributes[7] = rut_attribute_new_const("tangent_in",
+                                            3, /* n components */
+                                            1, /* n columns */
+                                            false, /* no transpose */
+                                            tangent);
 
     mesh = rut_mesh_new(mode, n_vertices, attributes, 8);
 
@@ -272,13 +268,6 @@ shape_model_new(rut_shell_t *shell, bool shaped, float width, float height)
 
             c_matrix_transform_point(
                 &matrix, &vertices[i].s1, &vertices[i].t1, &z, &w);
-            vertices[i].Nx = 0;
-            vertices[i].Ny = 0;
-            vertices[i].Nz = 1;
-
-            vertices[i].Tx = 1;
-            vertices[i].Ty = 0;
-            vertices[i].Tz = 0;
         }
 
         shape_model->shape_mesh =
@@ -325,7 +314,7 @@ _rig_shape_free(void *object)
 
     rut_introspectable_destroy(shape);
 
-    rut_closure_list_disconnect_all_FIXME(&shape->reshaped_cb_list);
+    rut_closure_list_remove_all(&shape->reshaped_cb_list);
 
     rut_object_free(rig_shape_t, shape);
 }
@@ -497,15 +486,13 @@ rig_shape_get_shaped(rut_object_t *obj)
     return shape->shaped;
 }
 
-rut_closure_t *
+void
 rig_shape_add_reshaped_callback(rig_shape_t *shape,
-                                rig_shape_re_shaped_callback_t callback,
-                                void *user_data,
-                                rut_closure_destroy_callback_t destroy_cb)
+                                rut_closure_t *closure)
 {
-    c_return_val_if_fail(callback != NULL, NULL);
-    return rut_closure_list_add_FIXME(
-        &shape->reshaped_cb_list, callback, user_data, destroy_cb);
+    c_return_if_fail(closure != NULL);
+
+    return rut_closure_list_add(&shape->reshaped_cb_list, closure);
 }
 
 void

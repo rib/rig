@@ -62,14 +62,9 @@ typedef struct _rut_sizable_vtable_t {
                                  float *natural_height_p);
     /* Registers a callback that gets invoked whenever the preferred
      * size of the sizable object changes. The implementation is
-     * optional. If it is not implemented then a dummy closure object
-     * will be returned and it is assumed that the object's preferred
-     * size never changes */
-    rut_closure_t *(*add_preferred_size_callback)(
-        rut_object_t *object,
-        rut_sizeable_preferred_size_callback_t callback,
-        void *user_data,
-        rut_closure_destroy_callback_t destroy_cb);
+     * optional. */
+    rut_closure_t *(*add_preferred_size_callback)(rut_object_t *object,
+                                                  rut_closure_t *closure);
 } rut_sizable_vtable_t;
 
 void rut_sizable_set_size(rut_object_t *object, float width, float height);
@@ -98,21 +93,13 @@ void rut_simple_sizable_get_preferred_height(void *object,
 /**
  * rut_sizable_add_preferred_size_callback:
  * @object: An object implementing the sizable interface
- * @cb: The callback to invoke
- * @user_data: A data pointer that will be passed to the callback
- * @destroy_cb: A callback that will be invoked when the callback is removed.
+ * @closure: A closure with associated callback
  *
  * Adds a callback to be invoked whenever the preferred size of the
  * given sizable object changes.
- *
- * Return value: A #rut_closure_t representing the callback. This can be
- *   removed with rut_closure_disconnect_FIXME().
  */
-rut_closure_t *rut_sizable_add_preferred_size_callback(
-    rut_object_t *object,
-    rut_sizeable_preferred_size_callback_t cb,
-    void *user_data,
-    rut_closure_destroy_callback_t destroy_cb);
+void rut_sizable_add_preferred_size_callback(rut_object_t *object,
+                                             rut_closure_t *closure);
 
 /*
  *

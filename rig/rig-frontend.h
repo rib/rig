@@ -86,7 +86,7 @@ struct _rig_frontend_t {
     cg_attribute_t *circle_node_attribute;
     int circle_node_n_verts;
 
-    c_hash_table_t *image_source_wrappers;
+    c_hash_table_t *source_wrappers;
 
     /* FIXME: HACK */
     void (*swap_buffers_hook)(cg_framebuffer_t *fb, void *data);
@@ -97,8 +97,17 @@ struct _rig_frontend_t {
     rut_closure_t *finish_ui_load_closure;
     bool ui_update_pending;
 
-    int64_t last_target_time;
-    int64_t last_sim_target_time;
+    int64_t est_frame_delta_ns;
+
+    int64_t prev_target_time; /* the predicted presentation time used for the
+                                 previous frame; updated after painting */
+    int64_t target_time; /* predicted time for current frame based on
+                            presentation times from GL */
+
+    int64_t prev_sim_target_time; /* the predicted presentation time for the
+                                     previous simulated frame. */
+    int64_t sim_target_time; /* predicted presentation time for frame
+                                currently being simulated */
 
     c_list_t ui_update_cb_list;
 

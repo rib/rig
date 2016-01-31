@@ -33,8 +33,8 @@
 #include "rig-entity.h"
 #include "rig-entity-inlines.h"
 #include "rig-material.h"
+#include "rig-source.h"
 #include "rig-pointalism-grid.h"
-#include "rig-asset.h"
 
 static rut_property_spec_t _rig_material_prop_specs[] = {
     { .name = "visible",
@@ -66,28 +66,37 @@ static rut_property_spec_t _rig_material_prop_specs[] = {
       .animatable = true },
     { .name = "color_source",
       .nick = "Color Source",
-      .type = RUT_PROPERTY_TYPE_ASSET,
-      .validation = { .asset.type = RIG_ASSET_TYPE_TEXTURE },
-      .getter.asset_type = rig_material_get_color_source_asset,
-      .setter.asset_type = rig_material_set_color_source_asset,
+      .type = RUT_PROPERTY_TYPE_OBJECT,
+      .validation = { .object.type = &rig_source_type },
+      .getter.object_type = rig_material_get_color_source,
+      .setter.object_type = rig_material_set_color_source,
+      .flags = RUT_PROPERTY_FLAG_READWRITE |
+          RUT_PROPERTY_FLAG_EXPORT_FRONTEND,
+      .animatable = false },
+    { .name = "ambient_occlusion_source",
+      .nick = "Ambient Occlusion Source",
+      .type = RUT_PROPERTY_TYPE_OBJECT,
+      .validation = { .object.type = &rig_source_type },
+      .getter.object_type = rig_material_get_ambient_occlusion_source,
+      .setter.object_type = rig_material_set_ambient_occlusion_source,
       .flags = RUT_PROPERTY_FLAG_READWRITE |
           RUT_PROPERTY_FLAG_EXPORT_FRONTEND,
       .animatable = false },
     { .name = "normal_map",
       .nick = "Normal Map",
       .type = RUT_PROPERTY_TYPE_ASSET,
-      .validation = { .asset.type = RIG_ASSET_TYPE_NORMAL_MAP },
-      .getter.asset_type = rig_material_get_normal_map_asset,
-      .setter.asset_type = rig_material_set_normal_map_asset,
+      .validation = { .object.type = &rig_source_type },
+      .getter.object_type = rig_material_get_normal_map_source,
+      .setter.object_type = rig_material_set_normal_map_source,
       .flags = RUT_PROPERTY_FLAG_READWRITE |
           RUT_PROPERTY_FLAG_EXPORT_FRONTEND,
       .animatable = false },
     { .name = "alpha_mask",
       .nick = "Alpha Mask",
       .type = RUT_PROPERTY_TYPE_ASSET,
-      .validation = { .asset.type = RIG_ASSET_TYPE_ALPHA_MASK },
-      .getter.asset_type = rig_material_get_alpha_mask_asset,
-      .setter.asset_type = rig_material_set_alpha_mask_asset,
+      .validation = { .object.type = &rig_source_type },
+      .getter.object_type = rig_material_get_alpha_mask_source,
+      .setter.object_type = rig_material_set_alpha_mask_source,
       .flags = RUT_PROPERTY_FLAG_READWRITE |
           RUT_PROPERTY_FLAG_EXPORT_FRONTEND,
       .animatable = false },
@@ -151,14 +160,17 @@ _rig_material_free(void *object)
     }
 #endif
 
-    if (material->color_source_asset)
-        rut_object_unref(material->color_source_asset);
+    if (material->color_source)
+        rut_object_unref(material->color_source);
 
-    if (material->normal_map_asset)
-        rut_object_unref(material->normal_map_asset);
+    if (material->ambient_occlusion_source)
+        rut_object_unref(material->ambient_occlusion_source);
 
-    if (material->alpha_mask_asset)
-        rut_object_unref(material->alpha_mask_asset);
+    if (material->normal_map_source)
+        rut_object_unref(material->normal_map_source);
+
+    if (material->alpha_mask_source)
+        rut_object_unref(material->alpha_mask_source);
 
     rut_introspectable_destroy(material);
 
@@ -170,18 +182,20 @@ _rig_material_copy(rut_object_t *object)
 {
     rig_material_t *material = object;
     rig_engine_t *engine = rig_component_props_get_engine(&material->component);
-    rig_material_t *copy = rig_material_new(engine, NULL);
+    rig_material_t *copy = rig_material_new(engine);
 
     copy->visible = material->visible;
     copy->cast_shadow = material->cast_shadow;
     copy->receive_shadow = material->receive_shadow;
 
-    if (material->color_source_asset)
-        copy->color_source_asset = rut_object_ref(material->color_source_asset);
-    if (material->normal_map_asset)
-        copy->normal_map_asset = rut_object_ref(material->normal_map_asset);
-    if (material->alpha_mask_asset)
-        copy->alpha_mask_asset = rut_object_ref(material->alpha_mask_asset);
+    if (material->color_source)
+        copy->color_source = rut_object_ref(material->color_source);
+    if (material->ambient_occlusion_source)
+        copy->ambient_occlusion_source = rut_object_ref(material->color_source);
+    if (material->normal_map_source)
+        copy->normal_map_source = rut_object_ref(material->normal_map_source);
+    if (material->alpha_mask_source)
+        copy->alpha_mask_source = rut_object_ref(material->alpha_mask_source);
 
     copy->ambient = material->ambient;
     copy->diffuse = material->diffuse;
@@ -194,7 +208,7 @@ _rig_material_copy(rut_object_t *object)
 
 rut_type_t rig_material_type;
 
-void
+static void
 _rig_material_init_type(void)
 {
 
@@ -219,7 +233,7 @@ _rig_material_init_type(void)
 }
 
 rig_material_t *
-rig_material_new(rig_engine_t *engine, rig_asset_t *asset)
+rig_material_new(rig_engine_t *engine)
 {
     rig_material_t *material = rut_object_alloc0(
         rig_material_t, &rig_material_type, _rig_material_init_type);
@@ -242,118 +256,128 @@ rig_material_new(rig_engine_t *engine, rig_asset_t *asset)
 
     material->uniforms_flush_age = -1;
 
-    material->color_source_asset = NULL;
-    material->normal_map_asset = NULL;
-    material->alpha_mask_asset = NULL;
-
-    if (asset) {
-        switch (rig_asset_get_type(asset)) {
-        case RIG_ASSET_TYPE_TEXTURE:
-            material->color_source_asset = rut_object_ref(asset);
-            break;
-        case RIG_ASSET_TYPE_NORMAL_MAP:
-            material->normal_map_asset = rut_object_ref(asset);
-            break;
-        case RIG_ASSET_TYPE_ALPHA_MASK:
-            material->alpha_mask_asset = rut_object_ref(asset);
-            break;
-        default:
-            c_warn_if_reached();
-        }
-    }
+    material->color_source = NULL;
+    material->ambient_occlusion_source = NULL;
+    material->normal_map_source = NULL;
+    material->alpha_mask_source = NULL;
 
     return material;
 }
 
 void
-rig_material_set_color_source_asset(rut_object_t *object,
-                                    rig_asset_t *color_source_asset)
+rig_material_set_color_source(rut_object_t *object,
+                              rut_object_t *source)
 {
     rig_material_t *material = object;
 
-    if (material->color_source_asset == color_source_asset)
+    if (material->color_source == source)
         return;
 
-    if (material->color_source_asset) {
-        rut_object_unref(material->color_source_asset);
-        material->color_source_asset = NULL;
+    if (material->color_source) {
+        rut_object_unref(material->color_source);
+        material->color_source = NULL;
     }
 
-    material->color_source_asset = color_source_asset;
-    if (color_source_asset)
-        rut_object_ref(color_source_asset);
+    material->color_source = source;
+    if (source)
+        rut_object_ref(source);
 
     if (material->component.parented)
         rig_entity_notify_changed(material->component.entity);
 }
 
-rig_asset_t *
-rig_material_get_color_source_asset(rut_object_t *object)
+rut_object_t *
+rig_material_get_color_source(rut_object_t *object)
 {
     rig_material_t *material = object;
-    return material->color_source_asset;
+    return material->color_source;
 }
 
 void
-rig_material_set_normal_map_asset(rut_object_t *object,
-                                  rig_asset_t *normal_map_asset)
+rig_material_set_ambient_occlusion_source(rut_object_t *object,
+                                          rut_object_t *source)
 {
     rig_material_t *material = object;
 
-    if (material->normal_map_asset == normal_map_asset)
+    if (material->ambient_occlusion_source == source)
         return;
 
-    if (material->normal_map_asset) {
-        rut_object_unref(material->normal_map_asset);
-        material->normal_map_asset = NULL;
+    if (material->ambient_occlusion_source) {
+        rut_object_unref(material->ambient_occlusion_source);
+        material->ambient_occlusion_source = NULL;
     }
 
-    material->normal_map_asset = normal_map_asset;
-
-    if (normal_map_asset)
-        rut_object_ref(normal_map_asset);
+    material->ambient_occlusion_source = source;
+    if (source)
+        rut_object_ref(source);
 
     if (material->component.parented)
         rig_entity_notify_changed(material->component.entity);
 }
 
-rig_asset_t *
-rig_material_get_normal_map_asset(rut_object_t *object)
+rut_object_t *
+rig_material_get_ambient_occlusion_source(rut_object_t *object)
 {
     rig_material_t *material = object;
-
-    return material->normal_map_asset;
+    return material->ambient_occlusion_source;
 }
 
 void
-rig_material_set_alpha_mask_asset(rut_object_t *object,
-                                  rig_asset_t *alpha_mask_asset)
+rig_material_set_normal_map_source(rut_object_t *object,
+                                   rut_object_t *source)
 {
     rig_material_t *material = object;
 
-    if (material->alpha_mask_asset == alpha_mask_asset)
+    if (material->normal_map_source == source)
         return;
 
-    if (material->alpha_mask_asset) {
-        rut_object_unref(material->alpha_mask_asset);
-        material->alpha_mask_asset = NULL;
+    if (material->normal_map_source) {
+        rut_object_unref(material->normal_map_source);
+        material->normal_map_source = NULL;
     }
 
-    material->alpha_mask_asset = alpha_mask_asset;
-
-    if (alpha_mask_asset)
-        rut_object_ref(alpha_mask_asset);
+    material->normal_map_source = source;
+    if (source)
+        rut_object_ref(source);
 
     if (material->component.parented)
         rig_entity_notify_changed(material->component.entity);
 }
 
-rig_asset_t *
-rig_material_get_alpha_mask_asset(rut_object_t *object)
+rut_object_t *
+rig_material_get_normal_map_source(rut_object_t *object)
+{
+    rig_material_t *material = object;
+    return material->normal_map_source;
+}
+
+void
+rig_material_set_alpha_mask_source(rut_object_t *object,
+                                   rut_object_t *source)
 {
     rig_material_t *material = object;
 
-    return material->alpha_mask_asset;
+    if (material->alpha_mask_source == source)
+        return;
+
+    if (material->alpha_mask_source) {
+        rut_object_unref(material->alpha_mask_source);
+        material->alpha_mask_source = NULL;
+    }
+
+    material->alpha_mask_source = source;
+    if (source)
+        rut_object_ref(source);
+
+    if (material->component.parented)
+        rig_entity_notify_changed(material->component.entity);
+}
+
+rut_object_t *
+rig_material_get_alpha_mask_source(rut_object_t *object)
+{
+    rig_material_t *material = object;
+    return material->alpha_mask_source;
 }
 
 void
@@ -498,8 +522,11 @@ rig_material_flush_uniforms(rig_material_t *material,
 
     geo = rig_entity_get_component(entity, RUT_COMPONENT_TYPE_GEOMETRY);
 
+    /* FIXME: materials shouldn't have any special understanding of
+     * pointalism grids; this should be moved to the renderer */
     if (rut_object_get_type(geo) == &rig_pointalism_grid_type &&
-        material->color_source_asset) {
+        material->color_source)
+    {
         int scale, z;
         scale = rig_pointalism_grid_get_scale(geo);
         z = rig_pointalism_grid_get_z(geo);

@@ -103,11 +103,9 @@ bool rig_shape_get_shaped(rut_object_t *shape);
 typedef void (*rig_shape_re_shaped_callback_t)(rig_shape_t *shape,
                                                void *user_data);
 
-rut_closure_t *
+void
 rig_shape_add_reshaped_callback(rig_shape_t *shape,
-                                rig_shape_re_shaped_callback_t callback,
-                                void *user_data,
-                                rut_closure_destroy_callback_t destroy_cb);
+                                rut_closure_t *closure);
 
 void rig_shape_set_width(rut_object_t *obj, float width);
 
