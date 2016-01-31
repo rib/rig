@@ -296,7 +296,7 @@ _cg_framebuffer_gl_flush_state(cg_framebuffer_t *draw_buffer,
     /* We only need to consider the state we've been asked to flush */
     differences &= state;
 
-#warning "HACK"
+#warning "HACK - force flush all framebuffer state"
     differences = CG_FRAMEBUFFER_STATE_ALL;
     dev->current_draw_buffer = NULL;
 
