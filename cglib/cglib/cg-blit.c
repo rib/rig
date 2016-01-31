@@ -54,7 +54,7 @@ _cg_blit_texture_render_begin(cg_blit_data_t *data)
     cg_error_t *ignore_error = NULL;
 
     offscreen = _cg_offscreen_new_with_texture_full(
-        data->dst_tex, CG_OFFSCREEN_DISABLE_DEPTH_AND_STENCIL, 0 /* level */);
+        data->dst_tex, CG_OFFSCREEN_DISABLE_AUTO_DEPTH_AND_STENCIL, 0 /* level */);
 
     fb = CG_FRAMEBUFFER(offscreen);
     if (!cg_framebuffer_allocate(fb, &ignore_error)) {
@@ -152,7 +152,7 @@ _cg_blit_framebuffer_begin(cg_blit_data_t *data)
         return false;
 
     dst_offscreen = _cg_offscreen_new_with_texture_full(
-        data->dst_tex, CG_OFFSCREEN_DISABLE_DEPTH_AND_STENCIL, 0 /* level */);
+        data->dst_tex, CG_OFFSCREEN_DISABLE_AUTO_DEPTH_AND_STENCIL, 0 /* level */);
 
     dst_fb = CG_FRAMEBUFFER(dst_offscreen);
     if (!cg_framebuffer_allocate(dst_fb, &ignore_error)) {
@@ -161,7 +161,7 @@ _cg_blit_framebuffer_begin(cg_blit_data_t *data)
     }
 
     src_offscreen = _cg_offscreen_new_with_texture_full(
-        data->src_tex, CG_OFFSCREEN_DISABLE_DEPTH_AND_STENCIL, 0 /* level */);
+        data->src_tex, CG_OFFSCREEN_DISABLE_AUTO_DEPTH_AND_STENCIL, 0 /* level */);
 
     src_fb = CG_FRAMEBUFFER(src_offscreen);
     if (!cg_framebuffer_allocate(src_fb, &ignore_error)) {
@@ -216,7 +216,7 @@ _cg_blit_copy_tex_sub_image_begin(cg_blit_data_t *data)
         return false;
 
     offscreen = _cg_offscreen_new_with_texture_full(
-        data->src_tex, CG_OFFSCREEN_DISABLE_DEPTH_AND_STENCIL, 0 /* level */);
+        data->src_tex, CG_OFFSCREEN_DISABLE_AUTO_DEPTH_AND_STENCIL, 0 /* level */);
 
     fb = CG_FRAMEBUFFER(offscreen);
     if (!cg_framebuffer_allocate(fb, &ignore_error)) {

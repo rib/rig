@@ -63,7 +63,7 @@ typedef struct {
 
 /* Flags to pass to _cg_offscreen_new_with_texture_full */
 typedef enum {
-    CG_OFFSCREEN_DISABLE_DEPTH_AND_STENCIL = 1
+    CG_OFFSCREEN_DISABLE_AUTO_DEPTH_AND_STENCIL = 1
 } cg_offscreen_flags_t;
 
 /* XXX: The order of these indices determines the order they are
@@ -276,7 +276,7 @@ void _cg_framebuffer_flush_state(cg_framebuffer_t *draw_buffer,
  * Creates a new offscreen buffer which will target the given
  * texture. By default the buffer will have a depth and stencil
  * buffer. This can be disabled by passing
- * %CG_OFFSCREEN_DISABLE_DEPTH_AND_STENCIL in @create_flags.
+ * %CG_OFFSCREEN_DISABLE_AUTO_DEPTH_AND_STENCIL in @create_flags.
  *
  * Return value: the new cg_offscreen_t object.
  */

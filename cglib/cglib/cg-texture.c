@@ -628,7 +628,7 @@ get_texture_bits_via_offscreen(cg_texture_t *meta_texture,
     cg_pixel_format_t real_format;
 
     offscreen = _cg_offscreen_new_with_texture_full(
-        sub_texture, CG_OFFSCREEN_DISABLE_DEPTH_AND_STENCIL, 0);
+        sub_texture, CG_OFFSCREEN_DISABLE_AUTO_DEPTH_AND_STENCIL, 0);
 
     framebuffer = CG_FRAMEBUFFER(offscreen);
     if (!cg_framebuffer_allocate(framebuffer, &ignore_error)) {

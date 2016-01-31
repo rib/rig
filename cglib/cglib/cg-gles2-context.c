@@ -313,7 +313,7 @@ copy_flipped_texture(cg_gles2_context_t *gles2_ctx,
             CG_OFFSCREEN(gles2_ctx->read_buffer)->texture;
         cg_pipeline_t *pipeline = cg_pipeline_new(dev);
         const cg_offscreen_flags_t flags =
-            CG_OFFSCREEN_DISABLE_DEPTH_AND_STENCIL;
+            CG_OFFSCREEN_DISABLE_AUTO_DEPTH_AND_STENCIL;
         cg_offscreen_t *offscreen = _cg_offscreen_new_with_texture_full(
             CG_TEXTURE(dst_texture), flags, level);
         int src_width = cg_texture_get_width(src_texture);

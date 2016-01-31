@@ -792,7 +792,7 @@ _cg_offscreen_gl_allocate(cg_offscreen_t *offscreen, cg_error_t **error)
     _cg_texture_gl_flush_legacy_texobj_filters(
         offscreen->texture, GL_NEAREST, GL_NEAREST);
 
-    if (((offscreen->create_flags & CG_OFFSCREEN_DISABLE_DEPTH_AND_STENCIL) &&
+    if (((offscreen->create_flags & CG_OFFSCREEN_DISABLE_AUTO_DEPTH_AND_STENCIL) &&
          try_creating_fbo(dev,
                           offscreen->texture,
                           offscreen->texture_level,
@@ -867,7 +867,7 @@ _cg_offscreen_gl_allocate(cg_offscreen_t *offscreen, cg_error_t **error)
                          gl_framebuffer)) {
         fb->samples_per_pixel = gl_framebuffer->samples_per_pixel;
 
-        if (!offscreen->create_flags & CG_OFFSCREEN_DISABLE_DEPTH_AND_STENCIL) {
+        if (!offscreen->create_flags & CG_OFFSCREEN_DISABLE_AUTO_DEPTH_AND_STENCIL) {
             /* Record that the last set of flags succeeded so that we can
                try that set first next time */
             dev->last_offscreen_allocate_flags = flags;
