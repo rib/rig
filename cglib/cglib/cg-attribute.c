@@ -269,6 +269,8 @@ _cg_attribute_new_const(cg_device_t *dev,
 
     attribute->is_buffered = false;
     attribute->normalized = false;
+    attribute->instance_stride = 0;
+    attribute->immutable_ref = 0;
 
     attribute->d.constant.dev = cg_object_ref(dev);
 
