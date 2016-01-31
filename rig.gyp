@@ -734,6 +734,7 @@
       'dependencies': [
          'clib/clib.gyp:clib',
          'cglib/cglib.gyp:cglib',
+         'xdgmime',
          'freetype',
          'fontconfig',
          'icu/source/icu.gyp:icuuc',
