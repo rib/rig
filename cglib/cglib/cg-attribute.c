@@ -252,7 +252,7 @@ _cg_attribute_new_const(cg_device_t *dev,
                         bool transpose,
                         const float *value)
 {
-    cg_attribute_t *attribute = c_slice_new(cg_attribute_t);
+    cg_attribute_t *attribute = c_slice_new0(cg_attribute_t);
 
     attribute->name_state =
         c_hash_table_lookup(dev->attribute_name_states_hash, name);
