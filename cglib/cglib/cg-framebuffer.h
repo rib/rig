@@ -1364,17 +1364,6 @@ bool cg_framebuffer_read_pixels(cg_framebuffer_t *framebuffer,
                                 cg_pixel_format_t format,
                                 uint8_t *pixels);
 
-/**
- * cg_get_draw_framebuffer:
- *
- * Gets the current #cg_framebuffer_t as set using
- * cg_push_framebuffer()
- *
- * Return value: (transfer none): The current #cg_framebuffer_t
- * Stability: unstable
- */
-cg_framebuffer_t *cg_get_draw_framebuffer(void);
-
 uint32_t cg_framebuffer_error_domain(void);
 
 /**
