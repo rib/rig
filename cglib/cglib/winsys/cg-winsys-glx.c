@@ -1955,27 +1955,36 @@ _cg_winsys_onscreen_set_resizable(cg_onscreen_t *onscreen,
     XFree(size_hints);
 }
 
-/* XXX: This is a particularly hacky _cg_winsys interface... */
 static XVisualInfo *
-_cg_winsys_xlib_get_visual_info(void)
+_cg_winsys_xlib_get_visual_info(cg_onscreen_t *onscreen,
+                                cg_error_t **error)
 {
-    cg_glx_display_t *glx_display;
-    cg_xlib_renderer_t *xlib_renderer;
-    cg_glx_renderer_t *glx_renderer;
+    cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
+    cg_device_t *dev = framebuffer->dev;
+    cg_display_t *display = dev->display;
+    cg_glx_display_t *glx_display = display->winsys;
+    cg_xlib_renderer_t *xlib_renderer =
+        _cg_xlib_renderer_get_data(display->renderer);
+    cg_glx_renderer_t *glx_renderer = display->renderer->winsys;
+    GLXFBConfig fbconfig;
+    XVisualInfo *xvisinfo;
 
-    _CG_GET_DEVICE(dev, NULL);
+    c_return_val_if_fail(glx_display->glx_context, false);
 
-    c_return_val_if_fail(dev->display->winsys, false);
-
-    glx_display = dev->display->winsys;
-    xlib_renderer = _cg_xlib_renderer_get_data(dev->display->renderer);
-    glx_renderer = dev->display->renderer->winsys;
-
-    if (!glx_display->found_fbconfig)
+    if (!find_fbconfig(display, &framebuffer->config,
+                       &fbconfig, error))
         return NULL;
 
-    return glx_renderer->glXGetVisualFromFBConfig(xlib_renderer->xdpy,
-                                                  glx_display->fbconfig);
+    xvisinfo = glx_renderer->glXGetVisualFromFBConfig(xlib_renderer->xdpy,
+                                                      fbconfig);
+    if (!xvisinfo) {
+        _cg_set_error(error,
+                      CG_WINSYS_ERROR,
+                      CG_WINSYS_ERROR_CREATE_ONSCREEN,
+                      "Unable to retrieve the X11 visual of fbconfig");
+    }
+
+    return xvisinfo;
 }
 
 static bool

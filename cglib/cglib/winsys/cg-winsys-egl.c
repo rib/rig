@@ -570,6 +570,36 @@ _cg_winsys_destroy_gles2_context(cg_gles2_context_t *gles2_ctx)
     eglDestroyContext(egl_renderer->edpy, egl_context);
 }
 
+bool
+_cg_egl_find_config(cg_onscreen_t *onscreen,
+                    EGLConfig *egl_config,
+                    cg_error_t **error)
+{
+    cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
+    cg_device_t *dev = framebuffer->dev;
+    cg_display_t *display = dev->display;
+    cg_renderer_t *renderer = display->renderer;
+    cg_renderer_egl_t *egl_renderer = renderer->winsys;
+    EGLint attributes[MAX_EGL_CONFIG_ATTRIBS];
+    EGLint config_count;
+    EGLBoolean status;
+
+    egl_attributes_from_framebuffer_config(
+        display, &framebuffer->config, attributes);
+
+    status = eglChooseConfig(
+        egl_renderer->edpy, attributes, egl_config, 1, &config_count);
+    if (status != EGL_TRUE || config_count == 0) {
+        _cg_set_error(error,
+                      CG_WINSYS_ERROR,
+                      CG_WINSYS_ERROR_CREATE_ONSCREEN,
+                      "Failed to find a suitable EGL configuration");
+        return false;
+    }
+
+    return true;
+}
+
 static bool
 _cg_winsys_onscreen_init(cg_onscreen_t *onscreen,
                          cg_error_t **error)
@@ -580,25 +610,13 @@ _cg_winsys_onscreen_init(cg_onscreen_t *onscreen,
     cg_display_egl_t *egl_display = display->winsys;
     cg_renderer_t *renderer = display->renderer;
     cg_renderer_egl_t *egl_renderer = renderer->winsys;
-    EGLint attributes[MAX_EGL_CONFIG_ATTRIBS];
     EGLConfig egl_config;
-    EGLint config_count = 0;
     EGLBoolean status;
 
     c_return_val_if_fail(egl_display->egl_context, false);
 
-    egl_attributes_from_framebuffer_config(
-        display, &framebuffer->config, attributes);
-
-    status = eglChooseConfig(
-        egl_renderer->edpy, attributes, &egl_config, 1, &config_count);
-    if (status != EGL_TRUE || config_count == 0) {
-        _cg_set_error(error,
-                      CG_WINSYS_ERROR,
-                      CG_WINSYS_ERROR_CREATE_ONSCREEN,
-                      "Failed to find a suitable EGL configuration");
+    if (!_cg_egl_find_config(onscreen, &egl_config, error))
         return false;
-    }
 
     /* Update the real number of samples_per_pixel now that we have
      * found an egl_config... */

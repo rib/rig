@@ -180,7 +180,9 @@ event_filter_cb(XEvent *xevent, void *data)
 }
 
 static XVisualInfo *
-get_visual_info(cg_display_t *display, EGLConfig egl_config)
+get_visual_info(cg_display_t *display,
+                EGLConfig egl_config,
+                cg_error_t **error)
 {
     cg_xlib_renderer_t *xlib_renderer =
         _cg_xlib_renderer_get_data(display->renderer);
@@ -219,6 +221,13 @@ get_visual_info(cg_display_t *display, EGLConfig egl_config)
 
     visinfo = XGetVisualInfo(
         xlib_renderer->xdpy, template_mask, &visinfo_template, &visinfos_count);
+
+    if (visinfo == NULL) {
+        _cg_set_error(error,
+                      CG_WINSYS_ERROR,
+                      CG_WINSYS_ERROR_CREATE_ONSCREEN,
+                      "Unable to retrieve the X11 visual of egl config");
+    }
 
     return visinfo;
 }
@@ -381,15 +390,9 @@ _cg_winsys_egl_onscreen_init(cg_onscreen_t *onscreen,
 
         _cg_xlib_renderer_trap_errors(display->renderer, &state);
 
-        xvisinfo = get_visual_info(display, egl_config);
-        if (xvisinfo == NULL) {
-            _cg_set_error(error,
-                          CG_WINSYS_ERROR,
-                          CG_WINSYS_ERROR_CREATE_ONSCREEN,
-                          "Unable to retrieve the X11 visual of context's "
-                          "fbconfig");
+        xvisinfo = get_visual_info(display, egl_config, error);
+        if (!xvisinfo)
             return false;
-        }
 
         /* window attributes */
         xattr.background_pixel =
@@ -550,11 +553,9 @@ _cg_winsys_egl_device_created(cg_display_t *display,
     XSetWindowAttributes attrs;
     const char *error_message;
 
-    xvisinfo = get_visual_info(display, egl_display->egl_config);
-    if (xvisinfo == NULL) {
-        error_message = "Unable to find suitable X visual";
-        goto fail;
-    }
+    xvisinfo = get_visual_info(display, egl_display->egl_config, error);
+    if (xvisinfo == NULL)
+        return false;
 
     attrs.override_redirect = True;
     attrs.colormap = XCreateColormap(xlib_renderer->xdpy,
@@ -636,22 +637,20 @@ _cg_winsys_egl_cleanup_device(cg_display_t *display)
     }
 }
 
-/* XXX: This is a particularly hacky _cg_winsys interface... */
 static XVisualInfo *
-_cg_winsys_xlib_get_visual_info(void)
+_cg_winsys_xlib_get_visual_info(cg_onscreen_t *onscreen,
+                                cg_error_t **error)
 {
-    cg_display_egl_t *egl_display;
-
-    _CG_GET_DEVICE(dev, NULL);
+    cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
+    cg_device_t *dev = framebuffer->dev;
+    EGLConfig egl_config;
 
     c_return_val_if_fail(dev->display->winsys, false);
 
-    egl_display = dev->display->winsys;
-
-    if (!egl_display->found_egl_config)
+    if (!_cg_egl_find_config(onscreen, &egl_config, error))
         return NULL;
 
-    return get_visual_info(dev->display, egl_display->egl_config);
+    return get_visual_info(dev->display, egl_config, error);
 }
 
 #ifdef EGL_KHR_image_pixmap

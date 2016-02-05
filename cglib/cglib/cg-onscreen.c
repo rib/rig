@@ -383,21 +383,24 @@ cg_x11_onscreen_get_window_xid(cg_onscreen_t *onscreen)
 }
 
 uint32_t
-cg_x11_onscreen_get_visual_xid(cg_onscreen_t *onscreen)
+cg_x11_onscreen_get_visual_xid(cg_onscreen_t *onscreen,
+                               cg_error_t **error)
 {
     cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
     const cg_winsys_vtable_t *winsys = _cg_framebuffer_get_winsys(framebuffer);
     XVisualInfo *visinfo;
-    uint32_t id;
 
     /* This should only be called for xlib based onscreens */
     c_return_val_if_fail(winsys->xlib_get_visual_info != NULL, 0);
 
-    visinfo = winsys->xlib_get_visual_info();
-    id = (uint32_t)visinfo->visualid;
+    visinfo = winsys->xlib_get_visual_info(onscreen, error);
+    if (visinfo) {
+        uint32_t id = (uint32_t)visinfo->visualid;
 
-    XFree(visinfo);
-    return id;
+        XFree(visinfo);
+        return id;
+    } else
+        return 0;
 }
 #endif /* CG_HAS_X11_SUPPORT */
 

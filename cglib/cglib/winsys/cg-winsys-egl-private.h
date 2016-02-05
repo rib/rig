@@ -157,6 +157,11 @@ EGLBoolean _cg_winsys_egl_make_current(cg_display_t *display,
                                        EGLSurface read,
                                        EGLContext context);
 
+bool
+_cg_egl_find_config(cg_onscreen_t *onscreen,
+                    EGLConfig *egl_config,
+                    cg_error_t **error);
+
 #ifdef EGL_KHR_image_base
 EGLImageKHR _cg_egl_create_image(cg_device_t *dev,
                                  EGLenum target,

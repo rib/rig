@@ -143,9 +143,27 @@ cg_x11_onscreen_set_foreign_window_xid(cg_onscreen_t *onscreen,
  */
 uint32_t cg_x11_onscreen_get_window_xid(cg_onscreen_t *onscreen);
 
-/* XXX: we should maybe remove this, since nothing currently uses
- * it and the current implementation looks dubious. */
-uint32_t cg_x11_onscreen_get_visual_xid(cg_onscreen_t *onscreen);
+/**
+ * cg_x11_onscreen_get_visual_xid:
+ * @onscreen: A #cg_onscreen_t framebuffer
+ * @error: A #cg_error_t to catch exceptional errors
+ *
+ * Assuming your display is X11 based, then given a an @onscreen
+ * framebuffer (which may not be allocated yet) this returns an X
+ * Visual XID which is compatible with the @onscreen framebuffer's
+ * current configuration. This Visual could then be used to create an
+ * X Window that would be compatible with
+ * cg_x11_onscreen_set_foreign_window_xid().
+ *
+ * It's undefined what this function does if called when not using an
+ * x11 based renderer.
+ *
+ * Return value: A Visual XID corresponding to the current @onscreen
+ *               framebuffer configuration, or %0 on error (and
+ *               @error will be updated)
+ */
+uint32_t cg_x11_onscreen_get_visual_xid(cg_onscreen_t *onscreen,
+                                        cg_error_t **error);
 #endif /* CG_HAS_X11_SUPPORT */
 
 #ifdef CG_HAS_WIN32_SUPPORT

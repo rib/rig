@@ -128,7 +128,8 @@ typedef struct _cg_winsys_vtable_t {
 #endif
 
 #ifdef CG_HAS_XLIB_SUPPORT
-    XVisualInfo *(*xlib_get_visual_info)(void);
+    XVisualInfo *(*xlib_get_visual_info)(cg_onscreen_t *onscreen,
+                                         cg_error_t **error);
 #endif
 
     uint32_t (*onscreen_x11_get_window_xid)(cg_onscreen_t *onscreen);
