@@ -42,9 +42,8 @@ _cg_winsys_error_domain(void)
 
 /* FIXME: we should distinguish renderer and context features */
 bool
-_cg_winsys_has_feature(cg_winsys_feature_t feature)
+_cg_winsys_has_feature(cg_device_t *dev,
+                       cg_winsys_feature_t feature)
 {
-    _CG_GET_DEVICE(dev, false);
-
     return CG_FLAGS_GET(dev->winsys_features, feature);
 }

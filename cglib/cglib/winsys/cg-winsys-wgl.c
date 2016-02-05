@@ -591,12 +591,10 @@ error:
 }
 
 static const char *
-get_wgl_extensions_string(HDC dc)
+get_wgl_extensions_string(cg_device_t *dev, HDC dc)
 {
     const char *(APIENTRY * pf_wglGetExtensionsStringARB)(HDC);
     const char *(APIENTRY * pf_wglGetExtensionsStringEXT)(void);
-
-    _CG_GET_DEVICE(dev, NULL);
 
     /* According to the docs for these two extensions, you are supposed
        to use wglGetProcAddress to detect their availability so
@@ -648,7 +646,7 @@ update_winsys_features(cg_device_t *dev, cg_error_t **error)
     CG_FLAGS_SET(dev->winsys_features, CG_WINSYS_FEATURE_MULTIPLE_ONSCREEN,
                  true);
 
-    wgl_extensions = get_wgl_extensions_string(wgl_display->dummy_dc);
+    wgl_extensions = get_wgl_extensions_string(dev, wgl_display->dummy_dc);
 
     if (wgl_extensions) {
         char **split_extensions =

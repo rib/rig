@@ -169,6 +169,8 @@ typedef struct _cg_winsys_vtable_t {
 
 } cg_winsys_vtable_t;
 
-bool _cg_winsys_has_feature(cg_winsys_feature_t feature);
+bool
+_cg_winsys_has_feature(cg_device_t *dev,
+                       cg_winsys_feature_t feature);
 
 #endif /* __CG_WINSYS_PRIVATE_H */

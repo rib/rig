@@ -574,15 +574,15 @@ update_all_outputs(cg_renderer_t *renderer)
 {
     c_llist_t *l;
 
-    _CG_GET_DEVICE(context, false);
+    _CG_GET_DEVICE(dev, false);
 
-    if (context->display == NULL) /* during connection */
+    if (dev->display == NULL) /* during connection */
         return false;
 
-    if (context->display->renderer != renderer)
+    if (dev->display->renderer != renderer)
         return false;
 
-    for (l = context->framebuffers; l; l = l->next) {
+    for (l = dev->framebuffers; l; l = l->next) {
         cg_framebuffer_t *framebuffer = l->data;
 
         if (framebuffer->type != CG_FRAMEBUFFER_TYPE_ONSCREEN)
@@ -813,13 +813,13 @@ update_winsys_features(cg_device_t *dev, cg_error_t **error)
     /* Note: glXCopySubBuffer and glBlitFramebuffer won't be throttled
      * by the SwapInterval so we have to throttle swap_region requests
      * manually... */
-    if (_cg_winsys_has_feature(CG_WINSYS_FEATURE_SWAP_REGION) &&
-        _cg_winsys_has_feature(CG_WINSYS_FEATURE_VBLANK_WAIT))
+    if (_cg_winsys_has_feature(dev, CG_WINSYS_FEATURE_SWAP_REGION) &&
+        _cg_winsys_has_feature(dev, CG_WINSYS_FEATURE_VBLANK_WAIT))
         CG_FLAGS_SET(dev->winsys_features,
                      CG_WINSYS_FEATURE_SWAP_REGION_THROTTLE,
                      true);
 
-    if (_cg_winsys_has_feature(CG_WINSYS_FEATURE_SYNC_AND_COMPLETE_EVENT)) {
+    if (_cg_winsys_has_feature(dev, CG_WINSYS_FEATURE_SYNC_AND_COMPLETE_EVENT)) {
         CG_FLAGS_SET(dev->features, CG_FEATURE_ID_PRESENTATION_TIME, true);
     }
 
@@ -1341,7 +1341,7 @@ _cg_winsys_onscreen_init(cg_onscreen_t *onscreen,
     }
 
 #ifdef GLX_INTEL_swap_event
-    if (_cg_winsys_has_feature(CG_WINSYS_FEATURE_SYNC_AND_COMPLETE_EVENT)) {
+    if (_cg_winsys_has_feature(dev, CG_WINSYS_FEATURE_SYNC_AND_COMPLETE_EVENT)) {
         GLXDrawable drawable =
             glx_onscreen->glxwin ? glx_onscreen->glxwin : xlib_onscreen->xwin;
 
@@ -1578,7 +1578,7 @@ _cg_winsys_onscreen_get_buffer_age(cg_onscreen_t *onscreen)
         glx_onscreen->glxwin ? glx_onscreen->glxwin : xlib_onscreen->xwin;
     unsigned int age;
 
-    if (!_cg_winsys_has_feature(CG_WINSYS_FEATURE_BUFFER_AGE))
+    if (!_cg_winsys_has_feature(dev, CG_WINSYS_FEATURE_BUFFER_AGE))
         return 0;
 
     glx_renderer->glXQueryDrawable(
@@ -1628,7 +1628,7 @@ _cg_winsys_onscreen_swap_region(cg_onscreen_t *onscreen,
      * it to throttle redraws.
      */
     bool blit_sub_buffer_is_synchronized =
-        _cg_winsys_has_feature(CG_WINSYS_FEATURE_SWAP_REGION_SYNCHRONIZED);
+        _cg_winsys_has_feature(dev, CG_WINSYS_FEATURE_SWAP_REGION_SYNCHRONIZED);
 
     int framebuffer_width = cg_framebuffer_get_width(framebuffer);
     int framebuffer_height = cg_framebuffer_get_height(framebuffer);
@@ -1661,8 +1661,8 @@ _cg_winsys_onscreen_swap_region(cg_onscreen_t *onscreen,
         framebuffer, framebuffer, CG_FRAMEBUFFER_STATE_BIND);
 
     if (framebuffer->config.swap_throttled) {
-        have_counter = _cg_winsys_has_feature(CG_WINSYS_FEATURE_VBLANK_COUNTER);
-        can_wait = _cg_winsys_has_feature(CG_WINSYS_FEATURE_VBLANK_WAIT);
+        have_counter = _cg_winsys_has_feature(dev, CG_WINSYS_FEATURE_VBLANK_COUNTER);
+        can_wait = _cg_winsys_has_feature(dev, CG_WINSYS_FEATURE_VBLANK_WAIT);
     } else {
         have_counter = false;
         can_wait = false;
@@ -1799,7 +1799,7 @@ _cg_winsys_onscreen_swap_region(cg_onscreen_t *onscreen,
      * handling _SYNC and _COMPLETE events in the winsys then we need to
      * send fake events in this case.
      */
-    if (_cg_winsys_has_feature(CG_WINSYS_FEATURE_SYNC_AND_COMPLETE_EVENT)) {
+    if (_cg_winsys_has_feature(dev, CG_WINSYS_FEATURE_SYNC_AND_COMPLETE_EVENT)) {
         set_sync_pending(onscreen);
         set_complete_pending(onscreen);
     }
@@ -1832,7 +1832,7 @@ _cg_winsys_onscreen_swap_buffers_with_damage(
     if (framebuffer->config.swap_throttled) {
         uint32_t end_frame_vsync_counter = 0;
 
-        have_counter = _cg_winsys_has_feature(CG_WINSYS_FEATURE_VBLANK_COUNTER);
+        have_counter = _cg_winsys_has_feature(dev, CG_WINSYS_FEATURE_VBLANK_COUNTER);
 
         /* If the swap_region API is also being used then we need to track
          * the vsync counter for each swap request so we can manually
@@ -1842,7 +1842,7 @@ _cg_winsys_onscreen_swap_buffers_with_damage(
 
         if (!glx_renderer->glXSwapInterval) {
             bool can_wait =
-                _cg_winsys_has_feature(CG_WINSYS_FEATURE_VBLANK_WAIT);
+                _cg_winsys_has_feature(dev, CG_WINSYS_FEATURE_VBLANK_WAIT);
 
             /* If we are going to wait for VBLANK manually, we not only
              * need to flush out pending drawing to the GPU before we
@@ -2202,7 +2202,7 @@ _cg_winsys_texture_pixmap_x11_create(cg_texture_pixmap_x11_t *tex_pixmap)
     cg_texture_pixmap_glx_t *glx_tex_pixmap;
     cg_device_t *dev = CG_TEXTURE(tex_pixmap)->dev;
 
-    if (!_cg_winsys_has_feature(CG_WINSYS_FEATURE_TEXTURE_FROM_PIXMAP)) {
+    if (!_cg_winsys_has_feature(dev, CG_WINSYS_FEATURE_TEXTURE_FROM_PIXMAP)) {
         tex_pixmap->winsys = NULL;
         return false;
     }

@@ -705,11 +705,9 @@ _cg_winsys_texture_pixmap_x11_create(cg_texture_pixmap_x11_t *tex_pixmap)
 static void
 _cg_winsys_texture_pixmap_x11_free(cg_texture_pixmap_x11_t *tex_pixmap)
 {
+    cg_texture_t *tex = CG_TEXTURE(tex_pixmap);
+    cg_device_t *dev = tex->dev;
     cg_texture_pixmap_egl_t *egl_tex_pixmap;
-
-    /* FIXME: It should be possible to get to a cg_device_t from any
-     * cg_texture_t pointer. */
-    _CG_GET_DEVICE(dev, NO_RETVAL);
 
     if (!tex_pixmap->winsys)
         return;

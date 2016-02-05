@@ -43,7 +43,7 @@ typedef struct {
     int usage_count;
 } cg_pipeline_cache_entry_t;
 
-cg_pipeline_cache_t *_cg_pipeline_cache_new(void);
+cg_pipeline_cache_t *_cg_pipeline_cache_new(cg_device_t *dev);
 
 void _cg_pipeline_cache_free(cg_pipeline_cache_t *cache);
 

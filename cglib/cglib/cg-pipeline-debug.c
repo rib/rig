@@ -250,18 +250,18 @@ dump_pipeline_cb(cg_node_t *node, void *user_data)
 /* This function is just here to be called from GDB so we don't really
    want to put a declaration in a header and we just add it here to
    avoid a warning */
-void _cg_debug_dump_pipelines_dot_file(const char *filename);
+void _cg_debug_dump_pipelines_dot_file(cg_device_t *dev,
+                                       const char *filename);
 
 void
-_cg_debug_dump_pipelines_dot_file(const char *filename)
+_cg_debug_dump_pipelines_dot_file(cg_device_t *dev,
+                                  const char *filename)
 {
     c_string_t *graph;
     print_debug_state_t layer_state;
     print_debug_state_t pipeline_state;
     int layer_id = 0;
     int pipeline_id = 0;
-
-    _CG_GET_DEVICE(dev, NO_RETVAL);
 
     if (!dev->default_pipeline)
         return;

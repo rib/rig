@@ -590,14 +590,12 @@ _cg_pipeline_layer_free(cg_pipeline_layer_t *layer)
 }
 
 void
-_cg_pipeline_init_default_layers(void)
+_cg_pipeline_init_default_layers(cg_device_t *dev)
 {
     cg_pipeline_layer_t *layer = c_slice_new0(cg_pipeline_layer_t);
     cg_pipeline_layer_big_state_t *big_state =
         c_slice_new0(cg_pipeline_layer_big_state_t);
     cg_pipeline_layer_t *new;
-
-    _CG_GET_DEVICE(dev, NO_RETVAL);
 
     _cg_pipeline_node_init(CG_NODE(layer));
 

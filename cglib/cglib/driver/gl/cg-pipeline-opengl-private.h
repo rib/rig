@@ -137,7 +137,8 @@ void _cg_bind_gl_texture_transient(GLenum gl_target,
                                    GLuint gl_texture,
                                    bool is_foreign);
 
-void _cg_delete_gl_texture(GLuint gl_texture);
+void _cg_delete_gl_texture(cg_device_t *dev,
+                           GLuint gl_texture);
 
 void _cg_pipeline_flush_gl_state(cg_device_t *dev,
                                  cg_pipeline_t *pipeline,

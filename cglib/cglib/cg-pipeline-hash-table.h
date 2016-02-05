@@ -34,6 +34,8 @@
 #include "cg-pipeline-cache.h"
 
 typedef struct {
+    cg_device_t *dev;
+
     /* Total number of pipelines that were ever added to the hash. This
      * is not decremented when a pipeline is removed. It is only used to
      * generate a warning if an unusually high number of pipelines are
@@ -57,6 +59,7 @@ typedef struct {
 } cg_pipeline_hash_table_t;
 
 void _cg_pipeline_hash_table_init(cg_pipeline_hash_table_t *hash,
+                                  cg_device_t *device,
                                   unsigned int main_state,
                                   unsigned int layer_state,
                                   const char *debug_string);

@@ -52,8 +52,12 @@
 void
 _cg_texture_2d_gl_free(cg_texture_2d_t *tex_2d)
 {
-    if (!tex_2d->is_foreign && tex_2d->gl_texture)
-        _cg_delete_gl_texture(tex_2d->gl_texture);
+    if (!tex_2d->is_foreign && tex_2d->gl_texture) {
+        cg_texture_t *tex = CG_TEXTURE(tex_2d);
+        cg_device_t *dev = tex->dev;
+
+        _cg_delete_gl_texture(dev, tex_2d->gl_texture);
+    }
 }
 
 bool

@@ -275,8 +275,8 @@ cg_device_connect(cg_device_t *dev, cg_error_t **error)
 
     dev->sampler_cache = _cg_sampler_cache_new(dev);
 
-    _cg_pipeline_init_default_pipeline();
-    _cg_pipeline_init_default_layers();
+    _cg_pipeline_init_default_pipeline(dev);
+    _cg_pipeline_init_default_layers(dev);
     _cg_pipeline_init_state_hash_functions();
     _cg_pipeline_init_layer_state_hash_functions();
 
@@ -340,7 +340,7 @@ cg_device_connect(cg_device_t *dev, cg_error_t **error)
     dev->depth_range_near_cache = 0;
     dev->depth_range_far_cache = 1;
 
-    dev->pipeline_cache = _cg_pipeline_cache_new();
+    dev->pipeline_cache = _cg_pipeline_cache_new(dev);
 
     for (i = 0; i < CG_BUFFER_BIND_TARGET_COUNT; i++)
         dev->current_buffer[i] = NULL;

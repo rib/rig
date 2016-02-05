@@ -255,7 +255,8 @@ cg_onscreen_swap_buffers_with_damage(cg_onscreen_t *onscreen,
                                    CG_BUFFER_BIT_COLOR | CG_BUFFER_BIT_DEPTH |
                                    CG_BUFFER_BIT_STENCIL);
 
-    if (!_cg_winsys_has_feature(CG_WINSYS_FEATURE_SYNC_AND_COMPLETE_EVENT)) {
+    if (!_cg_winsys_has_feature(framebuffer->dev,
+                                CG_WINSYS_FEATURE_SYNC_AND_COMPLETE_EVENT)) {
         cg_frame_info_t *info;
 
         c_warn_if_fail(onscreen->pending_frame_infos.length == 1);
@@ -311,7 +312,9 @@ cg_onscreen_swap_region(cg_onscreen_t *onscreen,
                                    CG_BUFFER_BIT_COLOR | CG_BUFFER_BIT_DEPTH |
                                    CG_BUFFER_BIT_STENCIL);
 
-    if (!_cg_winsys_has_feature(CG_WINSYS_FEATURE_SYNC_AND_COMPLETE_EVENT)) {
+    if (!_cg_winsys_has_feature(framebuffer->dev,
+                                CG_WINSYS_FEATURE_SYNC_AND_COMPLETE_EVENT))
+    {
         cg_frame_info_t *info;
 
         c_warn_if_fail(onscreen->pending_frame_infos.length == 1);

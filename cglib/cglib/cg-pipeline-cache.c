@@ -37,13 +37,15 @@
 #include "cg-pipeline-hash-table.h"
 
 struct _cg_pipeline_cache_t {
+    cg_device_t *dev;
+
     cg_pipeline_hash_table_t fragment_hash;
     cg_pipeline_hash_table_t vertex_hash;
     cg_pipeline_hash_table_t combined_hash;
 };
 
 cg_pipeline_cache_t *
-_cg_pipeline_cache_new(void)
+_cg_pipeline_cache_new(cg_device_t *dev)
 {
     cg_pipeline_cache_t *cache = c_new(cg_pipeline_cache_t, 1);
     unsigned long vertex_state;
@@ -51,7 +53,7 @@ _cg_pipeline_cache_new(void)
     unsigned int fragment_state;
     unsigned int layer_fragment_state;
 
-    _CG_GET_DEVICE(dev, 0);
+    cache->dev = dev;
 
     vertex_state = _cg_pipeline_get_state_for_vertex_codegen(dev);
     layer_vertex_state = CG_PIPELINE_LAYER_STATE_AFFECTS_VERTEX_CODEGEN;
@@ -60,14 +62,17 @@ _cg_pipeline_cache_new(void)
         _cg_pipeline_get_layer_state_for_fragment_codegen(dev);
 
     _cg_pipeline_hash_table_init(&cache->vertex_hash,
+                                 dev,
                                  vertex_state,
                                  layer_vertex_state,
                                  "vertex shaders");
     _cg_pipeline_hash_table_init(&cache->fragment_hash,
+                                 dev,
                                  fragment_state,
                                  layer_fragment_state,
                                  "fragment shaders");
     _cg_pipeline_hash_table_init(&cache->combined_hash,
+                                 dev,
                                  vertex_state | fragment_state,
                                  layer_vertex_state | layer_fragment_state,
                                  "programs");

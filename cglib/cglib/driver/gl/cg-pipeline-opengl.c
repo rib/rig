@@ -185,11 +185,9 @@ _cg_bind_gl_texture_transient(GLenum gl_target,
 }
 
 void
-_cg_delete_gl_texture(GLuint gl_texture)
+_cg_delete_gl_texture(cg_device_t *dev, GLuint gl_texture)
 {
     int i;
-
-    _CG_GET_DEVICE(dev, NO_RETVAL);
 
     for (i = 0; i < dev->texture_units->len; i++) {
         cg_texture_unit_t *unit =
@@ -213,9 +211,8 @@ _cg_delete_gl_texture(GLuint gl_texture)
 void
 _cg_pipeline_texture_storage_change_notify(cg_texture_t *texture)
 {
+    cg_device_t *dev = texture->dev;
     int i;
-
-    _CG_GET_DEVICE(dev, NO_RETVAL);
 
     for (i = 0; i < dev->texture_units->len; i++) {
         cg_texture_unit_t *unit =

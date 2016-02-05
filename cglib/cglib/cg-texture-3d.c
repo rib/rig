@@ -93,11 +93,13 @@ _cg_texture_3d_gl_flush_legacy_texobj_wrap_modes(cg_texture_t *tex,
 static void
 _cg_texture_3d_free(cg_texture_3d_t *tex_3d)
 {
-    if (tex_3d->gl_texture)
-        _cg_delete_gl_texture(tex_3d->gl_texture);
+    cg_texture_t *tex = CG_TEXTURE(tex_3d);
+
+    if (tex_3d->gl_texture) 
+        _cg_delete_gl_texture(tex->dev, tex_3d->gl_texture);
 
     /* Chain up */
-    _cg_texture_free(CG_TEXTURE(tex_3d));
+    _cg_texture_free(tex);
 }
 
 static void

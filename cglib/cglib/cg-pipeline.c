@@ -94,7 +94,7 @@ CG_OBJECT_DEFINE(Pipeline, pipeline);
  * The default pipeline is the topmost ancester for all pipelines.
  */
 void
-_cg_pipeline_init_default_pipeline(void)
+_cg_pipeline_init_default_pipeline(cg_device_t *dev)
 {
     /* Create new - blank - pipeline */
     cg_pipeline_t *pipeline = c_slice_new0(cg_pipeline_t);
@@ -108,8 +108,6 @@ _cg_pipeline_init_default_pipeline(void)
     cg_pipeline_cull_face_state_t *cull_face_state =
         &big_state->cull_face_state;
     cg_pipeline_uniforms_state_t *uniforms_state = &big_state->uniforms_state;
-
-    _CG_GET_DEVICE(dev, NO_RETVAL);
 
 /* Take this opportunity to setup the backends... */
 #ifdef CG_PIPELINE_PROGEND_GLSL
@@ -2440,14 +2438,13 @@ deep_copy_layer_cb(cg_pipeline_layer_t *src_layer, void *user_data)
 }
 
 cg_pipeline_t *
-_cg_pipeline_deep_copy(cg_pipeline_t *pipeline,
+_cg_pipeline_deep_copy(cg_device_t *dev,
+                       cg_pipeline_t *pipeline,
                        unsigned long differences,
                        unsigned long layer_differences)
 {
     cg_pipeline_t *new, *authority;
     bool copy_layer_state;
-
-    _CG_GET_DEVICE(dev, NULL);
 
     if ((differences & CG_PIPELINE_STATE_LAYERS)) {
         copy_layer_state = true;

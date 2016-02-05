@@ -187,7 +187,7 @@ struct _cg_pipeline_layer_t {
 typedef bool (*cg_pipeline_layer_state_comparitor_t)(
     cg_pipeline_layer_t *authority0, cg_pipeline_layer_t *authority1);
 
-void _cg_pipeline_init_default_layers(void);
+void _cg_pipeline_init_default_layers(cg_device_t *dev);
 
 static inline cg_pipeline_layer_t *
 _cg_pipeline_layer_get_parent(cg_pipeline_layer_t *layer)

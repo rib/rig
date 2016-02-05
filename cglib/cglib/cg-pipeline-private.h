@@ -452,7 +452,7 @@ extern const cg_pipeline_vertend_t *_cg_pipeline_vertends
 [CG_PIPELINE_N_VERTENDS];
 extern const cg_pipeline_progend_t *_cg_pipeline_progends[];
 
-void _cg_pipeline_init_default_pipeline(void);
+void _cg_pipeline_init_default_pipeline(cg_device_t *dev);
 
 static inline cg_pipeline_t *
 _cg_pipeline_get_parent(cg_pipeline_t *pipeline)
@@ -711,7 +711,8 @@ unsigned int _cg_pipeline_hash(cg_pipeline_t *pipeline,
  * differences specified in @differences and @layer_differences are
  * copied across and all other state is left with the default
  * values. */
-cg_pipeline_t *_cg_pipeline_deep_copy(cg_pipeline_t *pipeline,
+cg_pipeline_t *_cg_pipeline_deep_copy(cg_device_t *dev,
+                                      cg_pipeline_t *pipeline,
                                       unsigned long differences,
                                       unsigned long layer_differences);
 

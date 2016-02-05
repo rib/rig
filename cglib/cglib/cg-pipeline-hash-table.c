@@ -92,10 +92,12 @@ entry_equal(const void *a, const void *b)
 
 void
 _cg_pipeline_hash_table_init(cg_pipeline_hash_table_t *hash,
+                             cg_device_t *dev,
                              unsigned int main_state,
                              unsigned int layer_state,
                              const char *debug_string)
 {
+    hash->dev = dev;
     hash->n_unique_pipelines = 0;
     hash->debug_string = debug_string;
     hash->main_state = main_state;
@@ -207,8 +209,10 @@ _cg_pipeline_hash_table_get(cg_pipeline_hash_table_t *hash,
     /* Create a new pipeline that is a child of the root pipeline
      * instead of a normal copy so that the template pipeline won't hold
      * a reference to the original pipeline */
-    entry->parent.pipeline =
-        _cg_pipeline_deep_copy(key_pipeline, copy_state, hash->layer_state);
+    entry->parent.pipeline = _cg_pipeline_deep_copy(hash->dev,
+                                                    key_pipeline,
+                                                    copy_state,
+                                                    hash->layer_state);
 
     c_hash_table_insert(hash->table, entry, entry);
 
