@@ -227,17 +227,6 @@ typedef struct _cg_pipeline_hash_state_t {
     unsigned int hash;
 } cg_pipeline_hash_state_t;
 
-/*
- * cg_pipeline_destroy_callback_t
- * @pipeline: The #cg_pipeline_t that has been destroyed
- * @user_data: The private data associated with the callback
- *
- * Notifies when a weak pipeline has been destroyed because one
- * of its ancestors has been freed or modified.
- */
-typedef void (*cg_pipeline_destroy_callback_t)(cg_pipeline_t *pipeline,
-                                               void *user_data);
-
 struct _cg_pipeline_t {
     /* XXX: Please think twice about adding members that *have* be
      * initialized during a cg_pipeline_copy. We are aiming to have
@@ -258,14 +247,6 @@ struct _cg_pipeline_t {
      * owned by one if is ancestors in the tree. We have a common data
      * type to track the tree heirachy so we can share code... */
     cg_node_t _parent;
-
-    /* When weak pipelines are destroyed the user is notified via this
-     * callback */
-    cg_pipeline_destroy_callback_t destroy_callback;
-
-    /* When notifying that a weak pipeline has been destroyed this
-     * private data is passed to the above callback */
-    void *destroy_data;
 
     /* A mask of which sparse state groups are different in this
      * pipeline in comparison to its parent. */
@@ -319,12 +300,6 @@ struct _cg_pipeline_t {
      */
 
     /* bitfields */
-
-    /* Weak pipelines don't count as dependants on their parents which
-     * means that the parent pipeline can be modified without
-     * considering how the modifications may affect the weak pipeline.
-     */
-    unsigned int is_weak : 1;
 
     /* Determines if pipeline->big_state is valid */
     unsigned int has_big_state : 1;
@@ -560,128 +535,6 @@ typedef struct _cg_pipeline_flush_options_t {
     uint32_t disable_layers;
     cg_texture_t *layer0_override_texture;
 } cg_pipeline_flush_options_t;
-
-/*
- * _cg_pipeline_weak_copy:
- * @pipeline: A #cg_pipeline_t object
- * @callback: A callback to notify when your weak pipeline is destroyed
- * @user_data: Private data to pass to your given callback.
- *
- * Returns a weak copy of the given source @pipeline. Unlike a normal
- * copy no internal reference is taken on the source @pipeline and you
- * can expect that later modifications of the source pipeline (or in
- * fact any other pipeline) can result in the weak pipeline being
- * destroyed.
- *
- * To understand this better its good to know a bit about the internal
- * design of #cg_pipeline_t...
- *
- * Internally #cg_pipeline_t<!-- -->s are represented as a graph of
- * property diff's, where each node is a diff of properties that gets
- * applied on top of its parent. Copying a pipeline creates an empty
- * diff and a child->parent relationship between the empty diff and
- * the source @pipeline, parent.
- *
- * Because of this internal graph design a single #cg_pipeline_t may
- * indirectly depend on a chain of ancestors to fully define all of
- * its properties. Because a node depends on its ancestors it normally
- * owns a reference to its parent to stop it from being freed. Also if
- * you try to modify a pipeline with children we internally use a
- * copy-on-write mechanism to ensure that you don't indirectly change
- * the properties those children.
- *
- * Weak pipelines avoid the use of copy-on-write to preserve the
- * integrity of weak dependants and instead weak dependants are
- * simply destroyed allowing the parent to be modified directly. Also
- * because weak pipelines don't own a reference to their parent they
- * won't stop the source @pipeline from being freed when the user
- * releases their reference on it.
- *
- * Because weak pipelines don't own a reference on their parent they
- * are the recommended mechanism for creating derived pipelines that you
- * want to cache as a private property of the original pipeline
- * because they won't result in a circular dependency.
- *
- * An example use case:
- *
- * Consider for example you are implementing a custom primitive that is
- * not compatible with certain source pipelines. To handle this you
- * implement a validation stage that given an arbitrary pipeline as
- * input will create a derived pipeline that is suitable for drawing
- * your primitive.
- *
- * Because you don't want to have to repeat this validation every time
- * the same incompatible pipeline is given as input you want to cache
- * the result as a private property of the original pipeline. If the
- * derived pipeline were created using cg_pipeline_copy that would
- * create a circular dependency so the original pipeline can never be
- * freed.
- *
- * If you instead create a weak copy you won't stop the original pipeline
- * from being freed if it's no longer needed, and you will instead simply
- * be notified that your weak pipeline has been destroyed.
- *
- * This is the recommended coding pattern for validating an input
- * pipeline and caching a derived result:
- * |[
- * static cg_user_data_key_t _cg_my_cache_key;
- *
- * typedef struct {
- *   cg_pipeline_t *validated_source;
- * } MyValidatedMaterialCache;
- *
- * static void
- * destroy_cache_cb (cg_object_t *object, void *user_data)
- * {
- *   c_slice_free (MyValidatedMaterialCache, user_data);
- * }
- *
- * static void
- * invalidate_cache_cb (cg_pipeline_t *destroyed, void *user_data)
- * {
- *   MyValidatedMaterialCache *cache = user_data;
- *   cg_object_unref (cache->validated_source);
- *   cache->validated_source = NULL;
- * }
- *
- * static cg_pipeline_t *
- * get_validated_pipeline (cg_pipeline_t *source)
- * {
- *   MyValidatedMaterialCache *cache =
- *     cg_object_get_user_data (CG_OBJECT (source),
- *                                &_cg_my_cache_key);
- *   if (C_UNLIKELY (cache == NULL))
- *     {
- *       cache = c_slice_new (MyValidatedMaterialCache);
- *       cg_object_set_user_data (CG_OBJECT (source),
- *                                  &_cg_my_cache_key,
- *                                  cache, destroy_cache_cb);
- *       cache->validated_source = source;
- *     }
- *
- *   if (C_UNLIKELY (cache->validated_source == NULL))
- *     {
- *       cache->validated_source = source;
- *
- *       /&nbsp;* Start validating source... *&nbsp;/
- *
- *       /&nbsp;* If you find you need to change something... *&nbsp;/
- *       if (cache->validated_source == source)
- *         cache->validated_source =
- *           cg_pipeline_weak_copy (source,
- *                                    invalidate_cache_cb,
- *                                    cache);
- *
- *       /&nbsp;* Modify cache->validated_source *&nbsp;/
- *     }
- *
- *    return cache->validated_source;
- * }
- * ]|
- */
-cg_pipeline_t *_cg_pipeline_weak_copy(cg_pipeline_t *pipeline,
-                                      cg_pipeline_destroy_callback_t callback,
-                                      void *user_data);
 
 void _cg_pipeline_set_progend(cg_pipeline_t *pipeline, int progend);
 

@@ -46,18 +46,11 @@ _cg_pipeline_node_init(cg_node_t *node)
 void
 _cg_pipeline_node_set_parent_real(cg_node_t *node,
                                   cg_node_t *parent,
-                                  cg_node_unparent_vfunc_t unparent,
-                                  bool take_strong_reference)
+                                  cg_node_unparent_vfunc_t unparent)
 {
-    /* NB: the old parent may indirectly be keeping the new parent alive
-     * so we have to ref the new parent before unrefing the old.
-     *
-     * Note: we take a reference here regardless of
-     * take_strong_reference because weak children may need special
-     * handling when the parent disposes itself which relies on a
-     * consistent link to all weak nodes. Once the node is linked to its
-     * parent then we remove the reference at the end if
-     * take_strong_reference == false. */
+    /* NB: the old parent may indirectly be keeping the new parent
+     * alive so we have to ref the new parent before unrefing the old.
+     */
     cg_object_ref(parent);
 
     if (node->parent)
@@ -66,14 +59,6 @@ _cg_pipeline_node_set_parent_real(cg_node_t *node,
     c_list_insert(&parent->children, &node->link);
 
     node->parent = parent;
-    node->has_parent_reference = take_strong_reference;
-
-    /* Now that there is a consistent parent->child link we can remove
-     * the parent reference if no reference was requested. If it turns
-     * out that the new parent was only being kept alive by the old
-     * parent then it will be disposed of here. */
-    if (!take_strong_reference)
-        cg_object_unref(parent);
 }
 
 void
@@ -88,8 +73,7 @@ _cg_pipeline_node_unparent_real(cg_node_t *node)
 
     c_list_remove(&node->link);
 
-    if (node->has_parent_reference)
-        cg_object_unref(parent);
+    cg_object_unref(parent);
 
     node->parent = NULL;
 }

@@ -54,7 +54,6 @@
 
 static void _cg_pipeline_free(cg_pipeline_t *tex);
 static void recursively_free_layer_caches(cg_pipeline_t *pipeline);
-static bool _cg_pipeline_is_weak(cg_pipeline_t *pipeline);
 
 const cg_pipeline_fragend_t *_cg_pipeline_fragends[CG_PIPELINE_N_FRAGENDS];
 const cg_pipeline_vertend_t *_cg_pipeline_vertends[CG_PIPELINE_N_VERTENDS];
@@ -136,7 +135,6 @@ _cg_pipeline_init_default_pipeline(cg_device_t *dev)
 
     _cg_pipeline_node_init(CG_NODE(pipeline));
 
-    pipeline->is_weak = false;
     pipeline->immutable = false;
     pipeline->progend = CG_PIPELINE_PROGEND_UNDEFINED;
     pipeline->differences = CG_PIPELINE_STATE_ALL_SPARSE;
@@ -229,14 +227,12 @@ recursively_free_layer_caches(cg_pipeline_t *pipeline)
 
 static void
 _cg_pipeline_set_parent(cg_pipeline_t *pipeline,
-                        cg_pipeline_t *parent,
-                        bool take_strong_reference)
+                        cg_pipeline_t *parent)
 {
     /* Chain up */
     _cg_pipeline_node_set_parent_real(CG_NODE(pipeline),
                                       CG_NODE(parent),
-                                      _cg_pipeline_unparent,
-                                      take_strong_reference);
+                                      _cg_pipeline_unparent);
 
     /* Since we just changed the ancestry of the pipeline its cache of
      * layers could now be invalid so free it... */
@@ -244,59 +240,14 @@ _cg_pipeline_set_parent(cg_pipeline_t *pipeline,
         recursively_free_layer_caches(pipeline);
 }
 
-static void
-_cg_pipeline_promote_weak_ancestors(cg_pipeline_t *strong)
-{
-    cg_node_t *n;
-
-    c_return_if_fail(!strong->is_weak);
-
-    /* If the parent of strong is weak, then we want to promote it by
-       taking a reference on strong's grandparent. We don't need to take
-       a reference on strong's direct parent */
-
-    if (CG_NODE(strong)->parent == NULL)
-        return;
-
-    for (n = CG_NODE(strong)->parent;
-         /* We can assume that all weak pipelines have a parent */
-         CG_PIPELINE(n)->is_weak;
-         n = n->parent)
-        /* 'n' is weak so we take a reference on its parent */
-        cg_object_ref(n->parent);
-}
-
-static void
-_cg_pipeline_revert_weak_ancestors(cg_pipeline_t *strong)
-{
-    cg_node_t *n;
-
-    c_return_if_fail(!strong->is_weak);
-
-    /* This reverts the effect of calling
-       _cg_pipeline_promote_weak_ancestors */
-
-    if (CG_NODE(strong)->parent == NULL)
-        return;
-
-    for (n = CG_NODE(strong)->parent;
-         /* We can assume that all weak pipelines have a parent */
-         CG_PIPELINE(n)->is_weak;
-         n = n->parent)
-        /* 'n' is weak so we unref its parent */
-        cg_object_unref(n->parent);
-}
-
 /* XXX: Always have an eye out for opportunities to lower the cost of
  * cg_pipeline_copy. */
-static cg_pipeline_t *
-_cg_pipeline_copy(cg_pipeline_t *src, bool is_weak)
+cg_pipeline_t *
+cg_pipeline_copy(cg_pipeline_t *src)
 {
     cg_pipeline_t *pipeline = c_slice_new(cg_pipeline_t);
 
     _cg_pipeline_node_init(CG_NODE(pipeline));
-
-    pipeline->is_weak = is_weak;
 
     pipeline->immutable = false;
     src->immutable = true;
@@ -326,37 +277,9 @@ _cg_pipeline_copy(cg_pipeline_t *src, bool is_weak)
 
     pipeline->age = 0;
 
-    _cg_pipeline_set_parent(pipeline, src, !is_weak);
-
-    /* The semantics for copying a weak pipeline are that we promote all
-     * weak ancestors to temporarily become strong pipelines until the
-     * copy is freed. */
-    if (!is_weak)
-        _cg_pipeline_promote_weak_ancestors(pipeline);
+    _cg_pipeline_set_parent(pipeline, src);
 
     return _cg_pipeline_object_new(pipeline);
-}
-
-cg_pipeline_t *
-cg_pipeline_copy(cg_pipeline_t *src)
-{
-    return _cg_pipeline_copy(src, false);
-}
-
-cg_pipeline_t *
-_cg_pipeline_weak_copy(cg_pipeline_t *pipeline,
-                       cg_pipeline_destroy_callback_t callback,
-                       void *user_data)
-{
-    cg_pipeline_t *copy;
-    cg_pipeline_t *copy_pipeline;
-
-    copy = _cg_pipeline_copy(pipeline, true);
-    copy_pipeline = CG_PIPELINE(copy);
-    copy_pipeline->destroy_callback = callback;
-    copy_pipeline->destroy_data = user_data;
-
-    return copy;
 }
 
 cg_pipeline_t *
@@ -373,33 +296,10 @@ cg_pipeline_new(cg_device_t *dev)
     return new;
 }
 
-static bool
-destroy_weak_children_cb(cg_node_t *node, void *user_data)
-{
-    cg_pipeline_t *pipeline = CG_PIPELINE(node);
-
-    if (_cg_pipeline_is_weak(pipeline)) {
-        _cg_pipeline_node_foreach_child(
-            CG_NODE(pipeline), destroy_weak_children_cb, NULL);
-
-        pipeline->destroy_callback(pipeline, pipeline->destroy_data);
-        _cg_pipeline_unparent(CG_NODE(pipeline));
-    }
-
-    return true;
-}
-
 static void
 _cg_pipeline_free(cg_pipeline_t *pipeline)
 {
-    if (!pipeline->is_weak)
-        _cg_pipeline_revert_weak_ancestors(pipeline);
-
-    /* Weak pipelines don't take a reference on their parent */
-    _cg_pipeline_node_foreach_child(
-        CG_NODE(pipeline), destroy_weak_children_cb, NULL);
-
-    c_assert(c_list_empty(&CG_NODE(pipeline)->children));
+    c_return_if_fail(c_list_empty(&CG_NODE(pipeline)->children));
 
     _cg_pipeline_unparent(CG_NODE(pipeline));
 
@@ -592,8 +492,6 @@ cg_pipeline_foreach_layer(cg_pipeline_t *pipeline,
     cg_pipeline_t *authority =
         _cg_pipeline_get_authority(pipeline, CG_PIPELINE_STATE_LAYERS);
     append_layer_index_state_t state;
-    bool cont;
-    int i;
 
     /* XXX: We don't know what the user is going to want to do to the layers
      * but any modification of layers can result in the layer graph changing
@@ -607,7 +505,7 @@ cg_pipeline_foreach_layer(cg_pipeline_t *pipeline,
     _cg_pipeline_foreach_layer_internal(
         pipeline, append_layer_index_cb, &state);
 
-    for (i = 0, cont = true; i < authority->n_layers && cont; i++)
+    for (unsigned i = 0, cont = true; i < authority->n_layers && cont; i++)
         cont = callback(pipeline, state.indices[i], user_data);
 }
 
@@ -999,44 +897,12 @@ _cg_pipeline_init_multi_property_sparse_state(cg_pipeline_t *pipeline,
 }
 
 static bool
-check_if_strong_cb(cg_node_t *node, void *user_data)
-{
-    cg_pipeline_t *pipeline = CG_PIPELINE(node);
-    bool *has_strong_child = user_data;
-
-    if (!_cg_pipeline_is_weak(pipeline)) {
-        *has_strong_child = true;
-        return false;
-    }
-
-    return true;
-}
-
-static bool
-has_strong_children(cg_pipeline_t *pipeline)
-{
-    bool has_strong_child = false;
-    _cg_pipeline_node_foreach_child(
-        CG_NODE(pipeline), check_if_strong_cb, &has_strong_child);
-    return has_strong_child;
-}
-
-static bool
-_cg_pipeline_is_weak(cg_pipeline_t *pipeline)
-{
-    if (pipeline->is_weak && !has_strong_children(pipeline))
-        return true;
-    else
-        return false;
-}
-
-static bool
 reparent_children_cb(cg_node_t *node, void *user_data)
 {
     cg_pipeline_t *pipeline = CG_PIPELINE(node);
     cg_pipeline_t *parent = user_data;
 
-    _cg_pipeline_set_parent(pipeline, parent, true);
+    _cg_pipeline_set_parent(pipeline, parent);
 
     return true;
 }
@@ -1116,12 +982,6 @@ _cg_pipeline_pre_change_notify(cg_pipeline_t *pipeline,
     if (pipeline->immutable && !c_list_empty(&CG_NODE(pipeline)->children))
         c_warning("immutable pipeline %p being modified", pipeline);
 
-    /* The simplest descendants to handle are weak pipelines; we simply
-     * destroy them if we are modifying a pipeline they depend on. This
-     * means weak pipelines never cause us to do a copy-on-write. */
-    _cg_pipeline_node_foreach_child(
-        CG_NODE(pipeline), destroy_weak_children_cb, NULL);
-
     /* If there are still children remaining though we'll need to
      * perform a copy-on-write and reparent the dependants as children
      * of the copy. */
@@ -1168,9 +1028,8 @@ _cg_pipeline_pre_change_notify(cg_pipeline_t *pipeline,
         cg_object_unref(new_authority);
     }
 
-    /* At this point we know we have a pipeline with no strong
-     * dependants (though we may have some weak children) so we are now
-     * free to modify the pipeline. */
+    /* At this point we know we have a pipeline with no dependants so
+     * we are now free to modify the pipeline. */
 
     pipeline->age++;
 
@@ -2092,10 +1951,8 @@ _cg_pipeline_prune_redundant_ancestry(cg_pipeline_t *pipeline)
            pipeline->differences)
         new_parent = _cg_pipeline_get_parent(new_parent);
 
-    if (new_parent != _cg_pipeline_get_parent(pipeline)) {
-        bool is_weak = _cg_pipeline_is_weak(pipeline);
-        _cg_pipeline_set_parent(pipeline, new_parent, is_weak ? false : true);
-    }
+    if (new_parent != _cg_pipeline_get_parent(pipeline))
+        _cg_pipeline_set_parent(pipeline, new_parent);
 }
 
 void

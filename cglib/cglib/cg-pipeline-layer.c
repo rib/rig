@@ -342,7 +342,7 @@ _cg_pipeline_layer_set_parent(cg_pipeline_layer_t *layer,
 {
     /* Chain up */
     _cg_pipeline_node_set_parent_real(
-        CG_NODE(layer), CG_NODE(parent), _cg_pipeline_layer_unparent, true);
+        CG_NODE(layer), CG_NODE(parent), _cg_pipeline_layer_unparent);
 }
 
 cg_pipeline_layer_t *

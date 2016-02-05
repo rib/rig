@@ -57,10 +57,6 @@ struct _cg_node_t {
 
     /* List of children */
     c_list_t children;
-
-    /* true if the node took a strong reference on its parent. Weak
-     * pipelines for instance don't take a reference on their parent. */
-    bool has_parent_reference;
 };
 
 #define CG_NODE(X) ((cg_node_t *)(X))
@@ -71,8 +67,7 @@ typedef void (*cg_node_unparent_vfunc_t)(cg_node_t *node);
 
 void _cg_pipeline_node_set_parent_real(cg_node_t *node,
                                        cg_node_t *parent,
-                                       cg_node_unparent_vfunc_t unparent,
-                                       bool take_strong_reference);
+                                       cg_node_unparent_vfunc_t unparent);
 
 void _cg_pipeline_node_unparent_real(cg_node_t *node);
 
