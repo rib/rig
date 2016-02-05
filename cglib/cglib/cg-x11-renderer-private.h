@@ -28,12 +28,18 @@
  *
  */
 
-#ifndef __CG_RENDERER_X11_PRIVATE_H
-#define __CG_RENDERER_X11_PRIVATE_H
+#pragma once
+
+#include <stdbool.h>
 
 typedef struct _cg_x11_renderer_t {
+    int xsync_event;
+    int xsync_error;
+    int xsync_major;
+    int xsync_minor;
+
     int damage_base;
     int randr_base;
-} cg_x11_renderer_t;
 
-#endif /* __CG_RENDERER_X11_PRIVATE_H */
+    bool net_wm_frame_drawn_supported;
+} cg_x11_renderer_t;

@@ -44,8 +44,10 @@
 #include "cg-loop-private.h"
 
 #include <X11/Xlib.h>
+#include <X11/Xatom.h>
 #include <X11/extensions/Xdamage.h>
 #include <X11/extensions/Xrandr.h>
+#include <X11/extensions/sync.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -475,6 +477,60 @@ dispatch_xlib_events(void *user_data, int revents)
         }
 }
 
+/* What features does the window manager support? */
+static void
+query_net_supported(cg_renderer_t *renderer)
+{
+    cg_xlib_renderer_t *xlib_renderer = _cg_xlib_renderer_get_data(renderer);
+    cg_x11_renderer_t *x11_renderer = (cg_x11_renderer_t *)xlib_renderer;
+    Atom actual_type;
+    int actual_format;
+    unsigned long n_atoms;
+    unsigned long remaining;
+    unsigned char *data;
+    Atom *atoms;
+    int status = XGetWindowProperty(xlib_renderer->xdpy,
+                                    DefaultRootWindow(xlib_renderer->xdpy),
+                                    XInternAtom(xlib_renderer->xdpy,
+                                                "_NET_SUPPORTED", False),
+                                    0, /* start */
+                                    LONG_MAX, /* length to retrieve (all) */
+                                    False, /* don't delete */
+                                    XA_ATOM, /* expect an array of atoms */
+                                    &actual_type, /* actual type */
+                                    &actual_format, /* actual format */
+                                    &n_atoms,
+                                    &remaining,
+                                    &data);
+    if (status == Success) {
+        Atom net_wm_frame_drawn =
+            XInternAtom(xlib_renderer->xdpy, "_NET_WM_FRAME_DRAWN", False);
+
+        if (remaining != 0) {
+            c_warning("Failed to read _NET_SUPPORTED property");
+            return;
+        }
+
+        if (actual_type != XA_ATOM) {
+            c_warning("Spurious type for _NET_SUPPORTED property");
+            return;
+        }
+
+        if (actual_format != 32) {
+            c_warning("Spurious format for _NET_SUPPORTED property");
+            return;
+        }
+
+        atoms = (Atom *)data;
+        for (unsigned long i = 0; i < n_atoms; i++) {
+            if (atoms[i] == net_wm_frame_drawn)
+                x11_renderer->net_wm_frame_drawn_supported = true;
+        }
+
+        XFree(data);
+    }
+}
+
 bool
 _cg_xlib_renderer_connect(cg_renderer_t *renderer, cg_error_t **error)
 {
@@ -488,6 +544,22 @@ _cg_xlib_renderer_connect(cg_renderer_t *renderer, cg_error_t **error)
 
     if (getenv("CG_X11_SYNC"))
         XSynchronize(xlib_renderer->xdpy, true);
+
+    query_net_supported(renderer);
+
+    if (!XSyncQueryExtension(xlib_renderer->xdpy,
+                             &x11_renderer->xsync_event,
+                             &x11_renderer->xsync_error))
+    {
+        c_warning("X11 missing required XSync extension");
+    }
+
+    if (!XSyncInitialize(xlib_renderer->xdpy,
+                         &x11_renderer->xsync_major,
+                         &x11_renderer->xsync_minor))
+    {
+        c_warning("Missing required XSync support");
+    }
 
     /* Check whether damage events are supported on this display */
     if (!XDamageQueryExtension(
@@ -503,11 +575,11 @@ _cg_xlib_renderer_connect(cg_renderer_t *renderer, cg_error_t **error)
 
     if (renderer->xlib_enable_event_retrieval) {
         _cg_loop_add_fd(renderer,
-                                 ConnectionNumber(xlib_renderer->xdpy),
-                                 CG_POLL_FD_EVENT_IN,
-                                 prepare_xlib_events_timeout,
-                                 dispatch_xlib_events,
-                                 renderer);
+                        ConnectionNumber(xlib_renderer->xdpy),
+                        CG_POLL_FD_EVENT_IN,
+                        prepare_xlib_events_timeout,
+                        dispatch_xlib_events,
+                        renderer);
     }
 
     XRRSelectInput(xlib_renderer->xdpy,
