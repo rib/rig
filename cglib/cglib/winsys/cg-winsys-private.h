@@ -113,8 +113,6 @@ typedef struct _cg_winsys_vtable_t {
 
     /* Optional functions */
 
-    int64_t (*device_get_clock_time)(cg_device_t *dev);
-
     void (*onscreen_swap_region)(cg_onscreen_t *onscreen,
                                  const int *rectangles,
                                  int n_rectangles);

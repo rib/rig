@@ -311,9 +311,6 @@ cg_device_connect(cg_device_t *dev, cg_error_t **error)
     dev->current_draw_buffer_state_flushed = 0;
     dev->current_draw_buffer_changes = CG_FRAMEBUFFER_STATE_ALL;
 
-    c_list_init(&dev->onscreen_events_queue);
-    c_list_init(&dev->onscreen_dirty_queue);
-
     c_queue_init(&dev->gles2_context_stack);
 
     dev->current_pipeline = NULL;
@@ -648,12 +645,14 @@ _cg_device_get_gl_version(cg_device_t *dev)
 int64_t
 cg_get_clock_time(cg_device_t *dev)
 {
-    const cg_winsys_vtable_t *winsys = _cg_device_get_winsys(dev);
-
-    if (winsys->device_get_clock_time)
-        return winsys->device_get_clock_time(dev);
-    else
-        return c_get_monotonic_time();
+    /* XXX: we used to call into the winsys to let it define a clock
+     * source, but to avoid corner cases where we we don't know what
+     * clock to use we now always use c_get_monotonic_time() - which
+     * at least tends to work out well for drivers on Linux - and
+     * otherwise the winsys may have to employ some extra logic to map
+     * presentation timestamps onto this clock
+     */
+    return c_get_monotonic_time();
 }
 
 cg_atlas_set_t *

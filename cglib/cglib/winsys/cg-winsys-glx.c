@@ -32,6 +32,20 @@
 
 #include <cglib-config.h>
 
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <fcntl.h>
+#include <time.h>
+#include <unistd.h>
+
+#include <GL/glx.h>
+
+#include <X11/Xlib.h>
+#include <X11/Xatom.h>
+#include <X11/extensions/sync.h>
+
 #include "cg-i18n-private.h"
 #include "cg-util.h"
 #include "cg-winsys-private.h"
@@ -55,16 +69,6 @@
 #include "cg-loop-private.h"
 #include "cg-version.h"
 
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/time.h>
-#include <fcntl.h>
-#include <time.h>
-
-#include <GL/glx.h>
-#include <X11/Xlib.h>
-
 #define CG_ONSCREEN_X11_EVENT_MASK (StructureNotifyMask | ExposureMask)
 #define MAX_GLX_CONFIG_ATTRIBS 30
 
@@ -77,15 +81,19 @@ typedef struct _cg_onscreen_xlib_t {
     int x, y;
     bool is_foreign_xwin;
     cg_output_t *output;
+
+    XID frame_sync_xcounters[2];
+    int64_t frame_sync_counters[2];
+
+    /* If != 0 then we've received a _NET_WM_FRAME_SYNC message
+     * setting a new frame sync counter value (extended sync mode) */
+    int64_t last_sync_request_value;
 } cg_onscreen_xlib_t;
 
 typedef struct _cg_onscreen_glx_t {
     cg_onscreen_xlib_t _parent;
     GLXDrawable glxwin;
     uint32_t last_swap_vsync_counter;
-    bool pending_sync_notify;
-    bool pending_complete_notify;
-    bool pending_resize_notify;
 } cg_onscreen_glx_t;
 
 typedef struct _cg_texture_pixmap_glx_t {
@@ -179,221 +187,48 @@ find_onscreen_for_xid(cg_device_t *dev, uint32_t xid)
 }
 
 static void
-ensure_ust_type(cg_renderer_t *renderer, GLXDrawable drawable)
+check_ust_is_monotonic(cg_device_t *dev, GLXDrawable drawable)
 {
+    cg_renderer_t *renderer = dev->renderer;
     cg_glx_renderer_t *glx_renderer = renderer->winsys;
     cg_xlib_renderer_t *xlib_renderer = _cg_xlib_renderer_get_data(renderer);
     int64_t ust;
     int64_t msc;
     int64_t sbc;
-    struct timeval tv;
-    struct timespec ts;
-    int64_t current_system_time;
-    int64_t current_monotonic_time;
+    int64_t now_nanoseconds;
+    int64_t now_microseconds;
 
-    if (glx_renderer->ust_type != CG_GLX_UST_IS_UNKNOWN)
-        return;
-
-    glx_renderer->ust_type = CG_GLX_UST_IS_OTHER;
+    dev->presentation_time_seen = true;
 
     if (glx_renderer->glXGetSyncValues == NULL)
-        goto out;
+        return;
 
-    if (!glx_renderer->glXGetSyncValues(
-            xlib_renderer->xdpy, drawable, &ust, &msc, &sbc))
-        goto out;
+    if (!glx_renderer->glXGetSyncValues(xlib_renderer->xdpy,
+                                        drawable, &ust, &msc, &sbc))
+        return;
 
-    /* This is the time source that existing (buggy) linux drm drivers
-     * use */
-    gettimeofday(&tv, NULL);
-    current_system_time = (tv.tv_sec * C_INT64_CONSTANT(1000000)) + tv.tv_usec;
+    now_nanoseconds = c_get_monotonic_time();
+    now_microseconds = now_nanoseconds / 1000;
 
-    if (current_system_time > ust - 1000000 &&
-        current_system_time < ust + 1000000) {
-        glx_renderer->ust_type = CG_GLX_UST_IS_GETTIMEOFDAY;
-        goto out;
+    if (ust < now_nanoseconds && ust > (now_nanoseconds - 1000000000)) {
+        glx_renderer->ust_scale = 1;
+        dev->presentation_time_seen = true;
+        dev->presentation_clock_is_monotonic = true;
+    } else if (ust < now_microseconds && ust > (now_microseconds - 1000000)) {
+        glx_renderer->ust_scale = 1000;
+        dev->presentation_clock_is_monotonic = true;
     }
-
-    /* This is the time source that the newer (fixed) linux drm
-     * drivers use (Linux >= 3.8) */
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    current_monotonic_time = (ts.tv_sec * C_INT64_CONSTANT(1000000)) +
-                             (ts.tv_nsec / C_INT64_CONSTANT(1000));
-
-    if (current_monotonic_time > ust - 1000000 &&
-        current_monotonic_time < ust + 1000000) {
-        glx_renderer->ust_type = CG_GLX_UST_IS_MONOTONIC_TIME;
-        goto out;
-    }
-
-out:
-    CG_NOTE(WINSYS,
-            "Classified OML system time as: %s",
-            glx_renderer->ust_type == CG_GLX_UST_IS_GETTIMEOFDAY
-            ? "gettimeofday"
-            : (glx_renderer->ust_type == CG_GLX_UST_IS_MONOTONIC_TIME
-               ? "monotonic"
-               : "other"));
-    return;
 }
 
 static int64_t
-ust_to_nanoseconds(cg_renderer_t *renderer, GLXDrawable drawable, int64_t ust)
+ust_to_nanoseconds(cg_device_t *dev, int64_t ust)
 {
+    cg_renderer_t *renderer = dev->renderer;
     cg_glx_renderer_t *glx_renderer = renderer->winsys;
 
-    ensure_ust_type(renderer, drawable);
+    c_warn_if_fail(dev->presentation_clock_is_monotonic);
 
-    switch (glx_renderer->ust_type) {
-    case CG_GLX_UST_IS_UNKNOWN:
-        c_assert_not_reached();
-        break;
-    case CG_GLX_UST_IS_GETTIMEOFDAY:
-    case CG_GLX_UST_IS_MONOTONIC_TIME:
-        return 1000 * ust;
-    case CG_GLX_UST_IS_OTHER:
-        /* In this case the scale of UST is undefined so we can't easily
-         * scale to nanoseconds.
-         *
-         * For example the driver may be reporting the rdtsc CPU counter
-         * as UST values and so the scale would need to be determined
-         * empirically.
-         *
-         * Potentially we could block for a known duration within
-         * ensure_ust_type() to measure the timescale of UST but for now
-         * we just ignore unknown time sources and fallback to reading
-         * a monotonic system clock */
-        return c_get_monotonic_time();
-    }
-
-    return 0;
-}
-
-static int64_t
-_cg_winsys_get_clock_time(cg_device_t *dev)
-{
-    cg_glx_renderer_t *glx_renderer = dev->display->renderer->winsys;
-
-    /* We don't call ensure_ust_type() because we don't have a drawable
-     * to work with. cg_get_clock_time() is documented to only work
-     * once a valid, non-zero, timestamp has been retrieved from CGlib.
-     */
-
-    switch (glx_renderer->ust_type) {
-    case CG_GLX_UST_IS_UNKNOWN:
-        return 0;
-    case CG_GLX_UST_IS_OTHER:
-        return c_get_monotonic_time();
-    case CG_GLX_UST_IS_GETTIMEOFDAY: {
-        struct timeval tv;
-
-        gettimeofday(&tv, NULL);
-        return tv.tv_sec * C_INT64_CONSTANT(1000000000) +
-               tv.tv_usec * C_INT64_CONSTANT(1000);
-    }
-    case CG_GLX_UST_IS_MONOTONIC_TIME: {
-        struct timespec ts;
-
-        clock_gettime(CLOCK_MONOTONIC, &ts);
-        return ts.tv_sec * C_INT64_CONSTANT(1000000000) + ts.tv_nsec;
-    }
-    }
-
-    c_assert_not_reached();
-    return 0;
-}
-
-static void
-flush_pending_notifications_cb(void *data, void *user_data)
-{
-    cg_framebuffer_t *framebuffer = data;
-
-    if (framebuffer->type == CG_FRAMEBUFFER_TYPE_ONSCREEN) {
-        cg_onscreen_t *onscreen = CG_ONSCREEN(framebuffer);
-        cg_onscreen_glx_t *glx_onscreen = onscreen->winsys;
-        bool pending_sync_notify = glx_onscreen->pending_sync_notify;
-        bool pending_complete_notify = glx_onscreen->pending_complete_notify;
-
-        /* If swap_region is called then notifying the sync event could
-         * potentially immediately queue a subsequent pending notify so
-         * we need to clear the flag before invoking the callback */
-        glx_onscreen->pending_sync_notify = false;
-        glx_onscreen->pending_complete_notify = false;
-
-        if (pending_sync_notify) {
-            cg_frame_info_t *info =
-                c_queue_peek_head(&onscreen->pending_frame_infos);
-
-            _cg_onscreen_notify_frame_sync(onscreen, info);
-        }
-
-        if (pending_complete_notify) {
-            cg_frame_info_t *info =
-                c_queue_pop_head(&onscreen->pending_frame_infos);
-
-            _cg_onscreen_notify_complete(onscreen, info);
-
-            cg_object_unref(info);
-        }
-
-        if (glx_onscreen->pending_resize_notify) {
-            _cg_onscreen_notify_resize(onscreen);
-            glx_onscreen->pending_resize_notify = false;
-        }
-    }
-}
-
-static void
-flush_pending_notifications_idle(void *user_data)
-{
-    cg_device_t *dev = user_data;
-    cg_renderer_t *renderer = dev->display->renderer;
-    cg_glx_renderer_t *glx_renderer = renderer->winsys;
-
-    /* This needs to be disconnected before invoking the callbacks in
-     * case the callbacks cause it to be queued again */
-    _cg_closure_disconnect(glx_renderer->flush_notifications_idle);
-    glx_renderer->flush_notifications_idle = NULL;
-
-    c_llist_foreach(dev->framebuffers, flush_pending_notifications_cb, NULL);
-}
-
-static void
-set_sync_pending(cg_onscreen_t *onscreen)
-{
-    cg_onscreen_glx_t *glx_onscreen = onscreen->winsys;
-    cg_device_t *dev = CG_FRAMEBUFFER(onscreen)->dev;
-    cg_renderer_t *renderer = dev->display->renderer;
-    cg_glx_renderer_t *glx_renderer = renderer->winsys;
-
-    /* We only want to dispatch sync events when the application calls
-     * cg_device_dispatch so instead of immediately notifying we
-     * queue an idle callback */
-    if (!glx_renderer->flush_notifications_idle) {
-        glx_renderer->flush_notifications_idle = _cg_loop_add_idle(
-            renderer, flush_pending_notifications_idle, dev, NULL);
-    }
-
-    glx_onscreen->pending_sync_notify = true;
-}
-
-static void
-set_complete_pending(cg_onscreen_t *onscreen)
-{
-    cg_onscreen_glx_t *glx_onscreen = onscreen->winsys;
-    cg_device_t *dev = CG_FRAMEBUFFER(onscreen)->dev;
-    cg_renderer_t *renderer = dev->display->renderer;
-    cg_glx_renderer_t *glx_renderer = renderer->winsys;
-
-    /* We only want to notify swap completion when the application calls
-     * cg_device_dispatch so instead of immediately notifying we
-     * queue an idle callback */
-    if (!glx_renderer->flush_notifications_idle) {
-        glx_renderer->flush_notifications_idle = _cg_loop_add_idle(
-            renderer, flush_pending_notifications_idle, dev, NULL);
-    }
-
-    glx_onscreen->pending_complete_notify = true;
+    return ust * glx_renderer->ust_scale;
 }
 
 static void
@@ -403,26 +238,28 @@ notify_swap_buffers(cg_device_t *dev,
     cg_onscreen_t *onscreen =
         find_onscreen_for_xid(dev, (uint32_t)swap_event->drawable);
     cg_onscreen_glx_t *glx_onscreen;
+    cg_frame_info_t *info;
 
     if (!onscreen)
         return;
+
     glx_onscreen = onscreen->winsys;
 
-    /* We only want to notify that the swap is complete when the
-       application calls cg_device_dispatch so instead of immediately
-       notifying we'll set a flag to remember to notify later */
-    set_sync_pending(onscreen);
+    info = c_queue_pop_head(&onscreen->pending_frame_infos);
+    c_warning("CG: pop tail frame info = %p (notify_swap_buffers)", info);
 
     if (swap_event->ust != 0) {
-        cg_frame_info_t *info =
-            c_queue_peek_head(&onscreen->pending_frame_infos);
+        if (!dev->presentation_time_seen)
+            check_ust_is_monotonic(dev, glx_onscreen->glxwin);
 
-        info->presentation_time = ust_to_nanoseconds(dev->display->renderer,
-                                                     glx_onscreen->glxwin,
-                                                     swap_event->ust);
+        if (dev->presentation_clock_is_monotonic)
+            info->presentation_time = ust_to_nanoseconds(dev, swap_event->ust);
     }
 
-    set_complete_pending(onscreen);
+    _cg_onscreen_queue_event(onscreen, CG_FRAME_EVENT_SYNC, info);
+    _cg_onscreen_queue_event(onscreen, CG_FRAME_EVENT_COMPLETE, info);
+
+    cg_object_unref(info);
 }
 
 static void
@@ -451,35 +288,15 @@ update_output(cg_onscreen_t *onscreen)
 }
 
 static void
-notify_resize(cg_device_t *dev,
-              XConfigureEvent *configure_event)
+handle_configure_notify(cg_onscreen_t *onscreen,
+                        XConfigureEvent *configure_event)
 {
-    cg_onscreen_t *onscreen =
-        find_onscreen_for_xid(dev, configure_event->window);
     cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
-    cg_renderer_t *renderer = dev->display->renderer;
-    cg_glx_renderer_t *glx_renderer = renderer->winsys;
-    cg_onscreen_glx_t *glx_onscreen;
-    cg_onscreen_xlib_t *xlib_onscreen;
+    cg_onscreen_xlib_t *xlib_onscreen = onscreen->winsys;
 
-    if (!onscreen)
-        return;
-
-    glx_onscreen = onscreen->winsys;
-    xlib_onscreen = onscreen->winsys;
-
-    _cg_framebuffer_winsys_update_size(
-        framebuffer, configure_event->width, configure_event->height);
-
-    /* We only want to notify that a resize happened when the
-     * application calls cg_device_dispatch so instead of immediately
-     * notifying we queue an idle callback */
-    if (!glx_renderer->flush_notifications_idle) {
-        glx_renderer->flush_notifications_idle = _cg_loop_add_idle(
-            renderer, flush_pending_notifications_idle, dev, NULL);
-    }
-
-    glx_onscreen->pending_resize_notify = true;
+    _cg_framebuffer_winsys_update_size(framebuffer,
+                                       configure_event->width,
+                                       configure_event->height);
 
     if (!xlib_onscreen->is_foreign_xwin) {
         int x, y;
@@ -504,28 +321,196 @@ notify_resize(cg_device_t *dev,
 
         update_output(onscreen);
     }
+    
+    _cg_onscreen_queue_resize_notify(onscreen);
 }
 
 static cg_filter_return_t
 glx_event_filter_cb(XEvent *xevent, void *data)
 {
     cg_device_t *dev = data;
-#ifdef GLX_INTEL_swap_event
-    cg_glx_renderer_t *glx_renderer;
-#endif
+    cg_renderer_t *renderer = dev->display->renderer;
+    cg_glx_renderer_t *glx_renderer = renderer->winsys;
+    cg_xlib_renderer_t *xlib_renderer = _cg_xlib_renderer_get_data(renderer);
+    cg_x11_renderer_t *x11_renderer = (cg_x11_renderer_t *)xlib_renderer;
 
     if (xevent->type == ConfigureNotify) {
-        notify_resize(dev, &xevent->xconfigure);
+        XConfigureEvent *xconfig = &xevent->xconfigure;
+        cg_onscreen_t *onscreen = find_onscreen_for_xid(dev, xconfig->window);
 
-        /* we let ConfigureNotify pass through */
+        if (!onscreen) {
+            c_warning("Ignoring spurious ConfigureNotify that couldn't be mapped to an CGLib onscreen window");
+            return CG_FILTER_CONTINUE;
+        }
+
+        handle_configure_notify(onscreen, xconfig);
+
+        return CG_FILTER_CONTINUE;
+    }
+
+    if (xevent->type == ClientMessage) {
+        XClientMessageEvent *msg = &xevent->xclient;
+        cg_onscreen_t *onscreen =
+            find_onscreen_for_xid(dev, msg->window);
+        cg_onscreen_xlib_t *xlib_onscreen = onscreen->winsys;
+        //cg_onscreen_glx_t *glx_onscreen = onscreen->winsys;
+
+        if (!onscreen) {
+            c_warning("Ignoring spurious client message that couldn't be mapped to an CGLib onscreen window");
+            return CG_FILTER_CONTINUE;
+        }
+
+        if (msg->message_type == XInternAtom(xlib_renderer->xdpy, "WM_PROTOCOLS", False)) {
+            Atom protocol = msg->data.l[0];
+
+            if (protocol == XInternAtom(xlib_renderer->xdpy, "WM_DELETE_WINDOW", False)) {
+
+                /* FIXME: we should eventually support multiple windows and
+                 * we should be able close windows individually. */
+                c_warning("TODO: add cg_onscreen_add_close_callback() api");
+            } else if (protocol == XInternAtom(xlib_renderer->xdpy, "WM_TAKE_FOCUS", False)) {
+                XSetInputFocus(xlib_renderer->xdpy,
+                               msg->window,
+                               RevertToParent,
+                               CurrentTime);
+            } else if (protocol == XInternAtom(xlib_renderer->xdpy, "_NET_WM_PING", False)) {
+                msg->window = DefaultRootWindow(xlib_renderer->xdpy);
+                XSendEvent(xlib_renderer->xdpy, DefaultRootWindow(xlib_renderer->xdpy), False,
+                           SubstructureRedirectMask | SubstructureNotifyMask, xevent);
+            } else {
+                char *name = XGetAtomName(xlib_renderer->xdpy, protocol);
+                c_warning("Unknown X client WM_PROTOCOLS message recieved (%s)\n",
+                          name);
+                XFree(name);
+            }
+
+            return CG_FILTER_REMOVE;
+        }
+
+        if (!x11_renderer->net_wm_frame_drawn_supported)
+            return CG_FILTER_CONTINUE;
+
+        if (msg->message_type == XInternAtom(xlib_renderer->xdpy,
+                                             "_NET_WM_FRAME_DRAWN", False)) {
+            int64_t sync_counter = msg->data.l[0] | ((int64_t)msg->data.l[1] << 32);
+
+            if (sync_counter) { /* Ignore message for initial window Map */
+                cg_frame_info_t *info =
+                    c_queue_peek_head(&onscreen->pending_frame_infos);
+
+                c_warning("CG: _NET_WM_FRAME_DRAWN frame sync = %"PRIi64, sync_counter);
+
+                if (info->x11_frame_sync_counter != sync_counter)
+                    c_warning("_NET_WM_FRAME_DRAWN: INFO=%p frame_sync_counter %"PRIu64" != expected %"PRIu64,
+                              info, sync_counter, info->x11_frame_sync_counter);
+
+                c_warn_if_fail(info->composite_end_time == 0);
+
+                info->composite_end_time =
+                    msg->data.l[2] | ((int64_t)msg->data.l[3] << 32);
+                info->composite_end_time *= 1000; /* micro to nanoseconds */
+                c_warning("%u: _NET_WM_FRAME_DRAWN: composite end time = %"PRIu64,
+                          (unsigned)info->frame_counter, info->composite_end_time);
+
+                _cg_onscreen_queue_event(onscreen, CG_FRAME_EVENT_SYNC, info);
+            }
+
+            return CG_FILTER_REMOVE;
+        } else if (msg->message_type == XInternAtom(xlib_renderer->xdpy,
+                                                    "_NET_WM_FRAME_TIMINGS", False)) {
+            int64_t sync_counter = msg->data.l[0] | ((int64_t)msg->data.l[1] << 32);
+            int64_t presentation_time;
+
+            if (sync_counter) { /* Ignore message for initial window Map */
+                cg_frame_info_t *info =
+                    c_queue_pop_head(&onscreen->pending_frame_infos);
+                int32_t refresh_interval = 0;
+
+                c_warning("CG: pop head frame info = %p (_NET_WM_FRAME_TIMINGS)", info);
+
+                c_warning("CG: _NET_WM_FRAME_TIMINGS frame sync = %"PRIi64, sync_counter);
+
+                if (info->x11_frame_sync_counter != sync_counter)
+                    c_warning("_NET_WM_FRAME_TIMINGS: INFO=%p frame_sync_counter %"PRIu64" != expected %"PRIu64,
+                              info, sync_counter, info->x11_frame_sync_counter);
+                //c_warn_if_fail(info->x11_frame_sync_counter != sync_counter);
+                c_warn_if_fail(info->composite_end_time != 0);
+
+                presentation_time =
+                    info->composite_end_time + (msg->data.l[2] * 1000);
+                c_warning("%u: _NET_WM_FRAME_TIMINGS: presentation time = %"PRIu64,
+                          (unsigned)info->frame_counter, presentation_time);
+
+                /* If this is the first time we've seen a presentation
+                 * timestamp then determine if it comes from the same
+                 * clock as c_get_monotonic_time() */
+                if (!dev->presentation_time_seen) {
+                    int64_t now = c_get_monotonic_time();
+
+                    /* If it's less than a second old with respect to
+                     * c_get_monotonic_time() that's close enough to
+                     * assume it's from the same clock.
+                     */
+                    if (info->presentation_time < now &&
+                        info->presentation_time >= (now - 1000000000))
+                    {
+                        dev->presentation_clock_is_monotonic = true;
+                    }
+                    dev->presentation_time_seen = true;
+                }
+
+                if (dev->presentation_clock_is_monotonic)
+                    info->presentation_time = presentation_time;
+
+                refresh_interval = msg->data.l[3];
+                /* NB: interval is in microseconds... */
+                info->refresh_rate = 1000000.0f/(float)refresh_interval;
+                c_warning("_NET_WM_FRAME_TIMINGS: refresh = %f", info->refresh_rate);
+
+                if (!(msg->data.l[4] & 0x80000000))
+                    info->next_refresh_deadline =
+                        info->composite_end_time + (msg->data.l[4] * 1000);
+
+                c_warning("_NET_WM_FRAME_TIMINGS: next deadline = %"PRIu64,
+                          info->next_refresh_deadline);
+
+                _cg_onscreen_queue_event(onscreen, CG_FRAME_EVENT_COMPLETE, info);
+
+                cg_object_unref(info);
+            }
+
+            return CG_FILTER_REMOVE;
+        } else if (msg->message_type  == XInternAtom(xlib_renderer->xdpy,
+                                                     "_NET_WM_SYNC_REQUEST", False)) {
+
+            /* only care about extended sync support */
+            if (x11_renderer->net_wm_frame_drawn_supported &&
+                msg->data.l[4] == 0)
+            {
+                int64_t value = msg->data.l[2] | ((int64_t)msg->data.l[3] << 32);
+
+                if (value % 2 != 0) {
+                    /* An even number would be odd here :-D .. badum *tish*! */
+                    c_warning("CG: Spurious odd _NET_WM_SYNC_REQUEST value");
+                    value++;
+                }
+
+                xlib_onscreen->last_sync_request_value = value;
+            }
+
+            return CG_FILTER_REMOVE;
+        }
+
         return CG_FILTER_CONTINUE;
     }
 
 #ifdef GLX_INTEL_swap_event
-    glx_renderer = dev->display->renderer->winsys;
-
-    if (xevent->type ==
-        (glx_renderer->glx_event_base + GLX_BufferSwapComplete)) {
+    /* NB: If _NET_WM_FRAME_DRAWN is available then we are running
+     * under a compositor and throttling is handled via X client
+     * messages instead */
+    if (!x11_renderer->net_wm_frame_drawn_supported &&
+        xevent->type == (glx_renderer->glx_event_base + GLX_BufferSwapComplete))
+    {
         GLXBufferSwapComplete *swap_event = (GLXBufferSwapComplete *)xevent;
 
         notify_swap_buffers(dev, swap_event);
@@ -644,7 +629,6 @@ update_base_winsys_features(cg_renderer_t *renderer)
     const char *glx_extensions;
     int default_screen;
     char **split_extensions;
-    int i;
 
     default_screen = DefaultScreen(xlib_renderer->xdpy);
     glx_extensions = glx_renderer->glXQueryExtensionsString(xlib_renderer->xdpy,
@@ -654,7 +638,7 @@ update_base_winsys_features(cg_renderer_t *renderer)
 
     split_extensions = c_strsplit(glx_extensions, " ", 0 /* max_tokens */);
 
-    for (i = 0; i < C_N_ELEMENTS(winsys_feature_data); i++)
+    for (unsigned i = 0; i < C_N_ELEMENTS(winsys_feature_data); i++)
         if (_cg_feature_check(renderer,
                               "GLX",
                               winsys_feature_data + i,
@@ -755,8 +739,6 @@ _cg_winsys_renderer_connect(cg_renderer_t *renderer,
 
     update_base_winsys_features(renderer);
 
-    glx_renderer->dri_fd = -1;
-
     return true;
 
 error:
@@ -768,7 +750,10 @@ static bool
 update_winsys_features(cg_device_t *dev, cg_error_t **error)
 {
     cg_glx_display_t *glx_display = dev->display->winsys;
-    cg_glx_renderer_t *glx_renderer = dev->display->renderer->winsys;
+    cg_renderer_t *renderer = dev->renderer;
+    cg_xlib_renderer_t *xlib_renderer = _cg_xlib_renderer_get_data(renderer);
+    cg_x11_renderer_t *x11_renderer = (cg_x11_renderer_t *)xlib_renderer;
+    cg_glx_renderer_t *glx_renderer = renderer->winsys;
 
     c_return_val_if_fail(glx_display, false);
     c_return_val_if_fail(glx_display->glx_context, false);
@@ -819,7 +804,14 @@ update_winsys_features(cg_device_t *dev, cg_error_t **error)
                      CG_WINSYS_FEATURE_SWAP_REGION_THROTTLE,
                      true);
 
+    if (x11_renderer->net_wm_frame_drawn_supported) {
+        CG_FLAGS_SET(dev->winsys_features,
+                     CG_WINSYS_FEATURE_SYNC_AND_COMPLETE_EVENT,
+                     true);
+    }
+
     if (_cg_winsys_has_feature(dev, CG_WINSYS_FEATURE_SYNC_AND_COMPLETE_EVENT)) {
+        /* Either via GLX_INTEL_swap_event or _NET_WM_FRAME_DRAWN */
         CG_FLAGS_SET(dev->features, CG_FEATURE_ID_PRESENTATION_TIME, true);
     }
 
@@ -1332,6 +1324,61 @@ _cg_winsys_onscreen_init(cg_onscreen_t *onscreen,
     xlib_onscreen->xwin = xwin;
     xlib_onscreen->is_foreign_xwin = onscreen->foreign_xid ? true : false;
 
+    {
+        Atom window_type_atom = XInternAtom(xlib_renderer->xdpy, "_NET_WM_WINDOW_TYPE", False);
+        Atom normal_atom = XInternAtom(xlib_renderer->xdpy, "_NET_WM_WINDOW_TYPE_NORMAL", False);
+        Atom net_wm_pid_atom = XInternAtom(xlib_renderer->xdpy, "_NET_WM_PID", False);
+        Atom net_wm_sync_req_counter_atom = XInternAtom(xlib_renderer->xdpy, "_NET_WM_SYNC_REQUEST_COUNTER", False);
+        Atom wm_protocols[] = {
+            XInternAtom(xlib_renderer->xdpy, "WM_DELETE_WINDOW", False),
+            XInternAtom(xlib_renderer->xdpy, "WM_TAKE_FOCUS", False),
+            XInternAtom(xlib_renderer->xdpy, "_NET_WM_PING", False),
+            XInternAtom(xlib_renderer->xdpy, "_NET_WM_SYNC_REQUEST", False),
+        };
+        uint32_t pid;
+        XSyncValue xzero;
+
+        XSetWMProtocols(xlib_renderer->xdpy, xwin, wm_protocols,
+                        sizeof(wm_protocols) / sizeof(Atom));
+
+        pid = getpid();
+        XChangeProperty(xlib_renderer->xdpy,
+                        xwin,
+                        net_wm_pid_atom,
+                        XA_CARDINAL,
+                        32, /* format */
+                        PropModeReplace,
+                        (unsigned char *)&pid,
+                        1); /* n elements */
+
+        XChangeProperty(xlib_renderer->xdpy,
+                        xwin,
+                        window_type_atom,
+                        XA_ATOM,
+                        32, /* format */
+                        PropModeReplace,
+                        (unsigned char *)&normal_atom,
+                        1); /* n elements */
+
+
+        XSyncIntToValue(&xzero, 0);
+        xlib_onscreen->frame_sync_xcounters[0] = XSyncCreateCounter(xlib_renderer->xdpy,
+                                                                   xzero);
+        xlib_onscreen->frame_sync_counters[0] = 0;
+        xlib_onscreen->frame_sync_xcounters[1] = XSyncCreateCounter(xlib_renderer->xdpy,
+                                                                   xzero);
+        xlib_onscreen->frame_sync_counters[1] = 0;
+
+        XChangeProperty(xlib_renderer->xdpy,
+                        xwin,
+                        net_wm_sync_req_counter_atom,
+                        XA_CARDINAL,
+                        32, /* format */
+                        PropModeReplace,
+                        (unsigned char *)xlib_onscreen->frame_sync_xcounters,
+                        2); /* n elements */
+    }
+
     /* Try and create a GLXWindow to use with extensions dependent on
      * GLX versions >= 1.3 that don't accept regular X Windows as GLX
      * drawables. */
@@ -1478,9 +1525,16 @@ _cg_winsys_onscreen_bind(cg_onscreen_t *onscreen)
      */
     if (glx_renderer->glXSwapInterval) {
         cg_framebuffer_t *fb = CG_FRAMEBUFFER(onscreen);
-        if (fb->config.swap_throttled)
+        cg_x11_renderer_t *x11_renderer = (cg_x11_renderer_t *)xlib_renderer;
+
+        /* NB: If _NET_WM_FRAME_DRAWN is available then we are running
+         * under a compositor and throttling is handled via X client
+         * messages instead */
+        if (fb->config.swap_throttled &&
+            !x11_renderer->net_wm_frame_drawn_supported)
+        {
             glx_renderer->glXSwapInterval(1);
-        else
+        } else
             glx_renderer->glXSwapInterval(0);
     }
 
@@ -1533,8 +1587,12 @@ _cg_winsys_wait_for_vblank(cg_onscreen_t *onscreen)
                                         drawable,
                                         0, 1, 0,
                                         &ust, &msc, &sbc);
-            info->presentation_time =
-                ust_to_nanoseconds(dev->display->renderer, drawable, ust);
+
+            if (!dev->presentation_time_seen)
+                check_ust_is_monotonic(dev, drawable);
+
+            if (dev->presentation_clock_is_monotonic)
+                info->presentation_time = ust_to_nanoseconds(dev, ust);
         } else {
             uint32_t current_count;
 
@@ -1602,6 +1660,79 @@ set_frame_info_output(cg_onscreen_t *onscreen, cg_output_t *output)
 }
 
 static void
+xsync_int64_to_value_counter(XSyncValue *xvalue,
+                             int64_t value)
+{
+    unsigned int low = value & 0xffffffff;
+    int high = value >> 32;
+
+    XSyncIntsToValue(xvalue, low, high);
+}
+
+static void
+_x11_frame_sync_start_frame(cg_onscreen_t *onscreen)
+{
+    cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
+    cg_device_t *dev = framebuffer->dev;
+    cg_xlib_renderer_t *xlib_renderer =
+        _cg_xlib_renderer_get_data(dev->display->renderer);
+    cg_x11_renderer_t *x11_renderer = (cg_x11_renderer_t *)xlib_renderer;
+
+    if (x11_renderer->net_wm_frame_drawn_supported) {
+        cg_onscreen_xlib_t *xlib_onscreen = onscreen->winsys;
+        XSyncValue xvalue;
+        int64_t frame_sync_counter;
+
+        /* Check incase the WM explicitly gave us a new
+         * frame sync counter value via a _NET_WM_SYNC_REQUEST
+         * message... */
+        if (xlib_onscreen->last_sync_request_value) {
+            xlib_onscreen->frame_sync_counters[1] = xlib_onscreen->last_sync_request_value;
+            xlib_onscreen->last_sync_request_value = 0;
+        }
+
+        c_warn_if_fail(xlib_onscreen->frame_sync_counters[1] % 2 == 0);
+
+
+        frame_sync_counter = ++xlib_onscreen->frame_sync_counters[1];
+        c_debug("CG: update frame sync counter to %"PRIi64" (START FRAME)",
+                frame_sync_counter);
+
+        xsync_int64_to_value_counter(&xvalue, frame_sync_counter);
+        XSyncSetCounter(xlib_renderer->xdpy,
+                        xlib_onscreen->frame_sync_xcounters[1],
+                        xvalue);
+    }
+}
+
+static void
+_x11_frame_sync_end_frame(cg_onscreen_t *onscreen)
+{
+    cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
+    cg_device_t *dev = framebuffer->dev;
+    cg_xlib_renderer_t *xlib_renderer =
+        _cg_xlib_renderer_get_data(dev->display->renderer);
+    cg_x11_renderer_t *x11_renderer = (cg_x11_renderer_t *)xlib_renderer;
+
+    if (x11_renderer->net_wm_frame_drawn_supported) {
+        cg_onscreen_xlib_t *xlib_onscreen = onscreen->winsys;
+        cg_frame_info_t *info = c_queue_peek_tail(&onscreen->pending_frame_infos);
+        XSyncValue xvalue;
+
+        c_warn_if_fail(xlib_onscreen->frame_sync_counters[1] % 2 == 1);
+
+        info->x11_frame_sync_counter = ++xlib_onscreen->frame_sync_counters[1];
+        c_debug("CG: INFO=%p update frame sync counter to %"PRIi64" (END FRAME)",
+                info, info->x11_frame_sync_counter);
+
+        xsync_int64_to_value_counter(&xvalue, info->x11_frame_sync_counter);
+        XSyncSetCounter(xlib_renderer->xdpy,
+                        xlib_onscreen->frame_sync_xcounters[1],
+                        xvalue);
+    }
+}
+
+static void
 _cg_winsys_onscreen_swap_region(cg_onscreen_t *onscreen,
                                 const int *user_rectangles,
                                 int n_rectangles)
@@ -1610,14 +1741,15 @@ _cg_winsys_onscreen_swap_region(cg_onscreen_t *onscreen,
     cg_device_t *dev = framebuffer->dev;
     cg_xlib_renderer_t *xlib_renderer =
         _cg_xlib_renderer_get_data(dev->display->renderer);
+    cg_x11_renderer_t *x11_renderer = (cg_x11_renderer_t *)xlib_renderer;
     cg_glx_renderer_t *glx_renderer = dev->display->renderer->winsys;
     cg_onscreen_xlib_t *xlib_onscreen = onscreen->winsys;
     cg_onscreen_glx_t *glx_onscreen = onscreen->winsys;
     GLXDrawable drawable =
         glx_onscreen->glxwin ? glx_onscreen->glxwin : xlib_onscreen->xwin;
     uint32_t end_frame_vsync_counter = 0;
-    bool have_counter;
-    bool can_wait;
+    bool have_counter = false;
+    bool can_wait = false;
     int x_min = 0, x_max = 0, y_min = 0, y_max = 0;
 
     /*
@@ -1634,6 +1766,8 @@ _cg_winsys_onscreen_swap_region(cg_onscreen_t *onscreen,
     int framebuffer_height = cg_framebuffer_get_height(framebuffer);
     int *rectangles = c_alloca(sizeof(int) * n_rectangles * 4);
     int i;
+
+    _x11_frame_sync_start_frame(onscreen);
 
     /* glXCopySubBuffer expects rectangles relative to the bottom left
      * corner but we are given rectangles relative to the top left so
@@ -1659,14 +1793,6 @@ _cg_winsys_onscreen_swap_region(cg_onscreen_t *onscreen,
 
     _cg_framebuffer_flush_state(
         framebuffer, framebuffer, CG_FRAMEBUFFER_STATE_BIND);
-
-    if (framebuffer->config.swap_throttled) {
-        have_counter = _cg_winsys_has_feature(dev, CG_WINSYS_FEATURE_VBLANK_COUNTER);
-        can_wait = _cg_winsys_has_feature(dev, CG_WINSYS_FEATURE_VBLANK_WAIT);
-    } else {
-        have_counter = false;
-        can_wait = false;
-    }
 
     /* We need to ensure that all the rendering is done, otherwise
      * redraw operations that are slower than the framerate can
@@ -1705,17 +1831,32 @@ _cg_winsys_onscreen_swap_region(cg_onscreen_t *onscreen,
      */
     _cg_winsys_wait_for_gpu(onscreen);
 
-    if (blit_sub_buffer_is_synchronized && have_counter && can_wait) {
-        end_frame_vsync_counter = _cg_winsys_get_vsync_counter(dev);
+    /* Throttle the frame rate...
+     *
+     * If _NET_WM_FRAME_DRAWN is available then we are composited and
+     * sync and complete events are driven by _NET_WM_FRAME_DRAWN and
+     * _FRAME_TIMINGS messages as a result of updating the
+     * _FRAME_SYNC_COUNTERS, independent of the GLX presentation
+     * details.
+     */
+    if (framebuffer->config.swap_throttled &&
+        !x11_renderer->net_wm_frame_drawn_supported)
+    {
+        have_counter = _cg_winsys_has_feature(dev, CG_WINSYS_FEATURE_VBLANK_COUNTER);
+        can_wait = _cg_winsys_has_feature(dev, CG_WINSYS_FEATURE_VBLANK_WAIT);
 
-        /* If we have the GLX_SGI_video_sync extension then we can
-         * be a bit smarter about how we throttle blits by avoiding
-         * any waits if we can see that the video sync count has
-         * already progressed. */
-        if (glx_onscreen->last_swap_vsync_counter == end_frame_vsync_counter)
+        if (blit_sub_buffer_is_synchronized && have_counter && can_wait) {
+            end_frame_vsync_counter = _cg_winsys_get_vsync_counter(dev);
+
+            /* If we have the GLX_SGI_video_sync extension then we can
+             * be a bit smarter about how we throttle blits by avoiding
+             * any waits if we can see that the video sync count has
+             * already progressed. */
+            if (glx_onscreen->last_swap_vsync_counter == end_frame_vsync_counter)
+                _cg_winsys_wait_for_vblank(onscreen);
+        } else if (can_wait)
             _cg_winsys_wait_for_vblank(onscreen);
-    } else if (can_wait)
-        _cg_winsys_wait_for_vblank(onscreen);
+    }
 
     if (glx_renderer->glXCopySubBuffer) {
         Display *xdpy = xlib_renderer->xdpy;
@@ -1798,11 +1939,30 @@ _cg_winsys_onscreen_swap_region(cg_onscreen_t *onscreen,
      * the _swap_region() API but if cg-onscreen.c knows we are
      * handling _SYNC and _COMPLETE events in the winsys then we need to
      * send fake events in this case.
+     *
+     * If _NET_WM_FRAME_DRAWN is available then we are composited and
+     * sync and complete events are driven by _NET_WM_FRAME_DRAWN and
+     * _FRAME_TIMINGS messages as a result of updating the
+     * _FRAME_SYNC_COUNTERS, independent of the GLX presentation
+     * details.
      */
-    if (_cg_winsys_has_feature(dev, CG_WINSYS_FEATURE_SYNC_AND_COMPLETE_EVENT)) {
-        set_sync_pending(onscreen);
-        set_complete_pending(onscreen);
+    if (!x11_renderer->net_wm_frame_drawn_supported &&
+        _cg_winsys_has_feature(dev, CG_WINSYS_FEATURE_SYNC_AND_COMPLETE_EVENT))
+    {
+        /* XXX: if the application is mixing _swap_region and
+         * _swap_buffers_with_damage() they might see _SYNC/_COMPLETE
+         * events for different frames arrive out of order as we pop
+         * from the tail here, but otherwise pop from head! */
+        cg_frame_info_t *info = c_queue_pop_tail(&onscreen->pending_frame_infos);
+        c_warning("CG: pop tail frame info = %p (swap_region)", info);
+
+        _cg_onscreen_queue_event(onscreen, CG_FRAME_EVENT_SYNC, info);
+        _cg_onscreen_queue_event(onscreen, CG_FRAME_EVENT_COMPLETE, info);
+
+        cg_object_unref(info);
     }
+
+    _x11_frame_sync_end_frame(onscreen);
 }
 
 static void
@@ -1813,14 +1973,17 @@ _cg_winsys_onscreen_swap_buffers_with_damage(
     cg_device_t *dev = framebuffer->dev;
     cg_xlib_renderer_t *xlib_renderer =
         _cg_xlib_renderer_get_data(dev->display->renderer);
+    cg_x11_renderer_t *x11_renderer = (cg_x11_renderer_t *)xlib_renderer;
     cg_glx_renderer_t *glx_renderer = dev->display->renderer->winsys;
     cg_onscreen_xlib_t *xlib_onscreen = onscreen->winsys;
     cg_onscreen_glx_t *glx_onscreen = onscreen->winsys;
-    bool have_counter;
+    bool have_counter = false;
     GLXDrawable drawable;
 
+    _x11_frame_sync_start_frame(onscreen);
+
     /* XXX: theoretically this shouldn't be necessary but at least with
-     * the Intel drivers we have see that if we don't call
+     * the Intel drivers we have seen that if we don't call
      * glXMakeContextCurrent for the drawable we are swapping then
      * we get a BadDrawable error from the X server. */
     _cg_framebuffer_flush_state(
@@ -1829,7 +1992,24 @@ _cg_winsys_onscreen_swap_buffers_with_damage(
     drawable =
         glx_onscreen->glxwin ? glx_onscreen->glxwin : xlib_onscreen->xwin;
 
-    if (framebuffer->config.swap_throttled) {
+    /* Throttling...
+     *
+     * If _NET_WM_FRAME_DRAWN is available then we are composited and
+     * sync and complete events are driven by _NET_WM_FRAME_DRAWN and
+     * _FRAME_TIMINGS messages as a result of updating the
+     * _FRAME_SYNC_COUNTERS, independent of the GLX presentation
+     * details.
+     *
+     * Although typically throttling is handled for us via
+     * glXSwapInterval we have to consider 1) rarely, we might not have
+     * glXSwapInterval support 2) the application is mixing use of
+     * _swap_buffers_with_damage() and _swap_region() and the
+     * _swap_region() code path bypasses glXSwapInterval and we want
+     * consistent throttling between the two apis.
+     */
+    if (framebuffer->config.swap_throttled &&
+        !x11_renderer->net_wm_frame_drawn_supported)
+    {
         uint32_t end_frame_vsync_counter = 0;
 
         have_counter = _cg_winsys_has_feature(dev, CG_WINSYS_FEATURE_VBLANK_COUNTER);
@@ -1879,6 +2059,8 @@ _cg_winsys_onscreen_swap_buffers_with_damage(
             _cg_winsys_get_vsync_counter(dev);
 
     set_frame_info_output(onscreen, xlib_onscreen->output);
+
+    _x11_frame_sync_end_frame(onscreen);
 }
 
 static uint32_t
@@ -1989,7 +2171,7 @@ _cg_winsys_xlib_get_visual_info(cg_onscreen_t *onscreen,
 
 static bool
 get_fbconfig_for_depth(cg_device_t *dev,
-                       unsigned int depth,
+                       int depth,
                        GLXFBConfig *fbconfig_ret,
                        bool *can_mipmap_ret)
 {
@@ -2130,7 +2312,7 @@ try_create_glx_pixmap(cg_device_t *dev,
     GLenum target;
     cg_xlib_trap_state_t trap_state;
 
-    unsigned int depth = tex_pixmap->depth;
+    int depth = tex_pixmap->depth;
     Visual *visual = tex_pixmap->visual;
 
     renderer = dev->display->renderer;
@@ -2437,7 +2619,6 @@ static cg_winsys_vtable_t _cg_winsys_vtable = {
     .display_destroy = _cg_winsys_display_destroy,
     .device_init = _cg_winsys_device_init,
     .device_deinit = _cg_winsys_device_deinit,
-    .device_get_clock_time = _cg_winsys_get_clock_time,
     .xlib_get_visual_info = _cg_winsys_xlib_get_visual_info,
     .onscreen_init = _cg_winsys_onscreen_init,
     .onscreen_deinit = _cg_winsys_onscreen_deinit,

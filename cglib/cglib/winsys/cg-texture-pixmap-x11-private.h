@@ -60,7 +60,7 @@ struct _cg_texture_pixmap_x11_t {
     Pixmap pixmap;
     cg_texture_t *tex;
 
-    unsigned int depth;
+    int depth;
     Visual *visual;
 
     XImage *image;

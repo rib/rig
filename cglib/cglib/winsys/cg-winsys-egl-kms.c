@@ -48,6 +48,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "cg-winsys-egl-kms-private.h"
 #include "cg-winsys-egl-private.h"
@@ -68,7 +69,6 @@ typedef struct _cg_renderer_kms_t {
     int fd;
     int opened_fd;
     struct gbm_device *gbm;
-    cg_closure_t *swap_notify_idle;
 } cg_renderer_kms_t;
 
 typedef struct _cg_output_kms_t {
@@ -102,7 +102,6 @@ typedef struct _cg_onscreen_kms_t {
     uint32_t next_fb_id;
     struct gbm_bo *current_bo;
     struct gbm_bo *next_bo;
-    bool pending_swap_notify;
 } cg_onscreen_kms_t;
 
 static const char device_name[] = "/dev/dri/card0";
@@ -120,44 +119,6 @@ _cg_winsys_renderer_disconnect(cg_renderer_t *renderer)
 
     c_slice_free(cg_renderer_kms_t, kms_renderer);
     c_slice_free(cg_renderer_egl_t, egl_renderer);
-}
-
-static void
-flush_pending_swap_notify_cb(void *data, void *user_data)
-{
-    cg_framebuffer_t *framebuffer = data;
-
-    if (framebuffer->type == CG_FRAMEBUFFER_TYPE_ONSCREEN) {
-        cg_onscreen_t *onscreen = CG_ONSCREEN(framebuffer);
-        cg_onscreen_egl_t *egl_onscreen = onscreen->winsys;
-        cg_onscreen_kms_t *kms_onscreen = egl_onscreen->platform;
-
-        if (kms_onscreen->pending_swap_notify) {
-            cg_frame_info_t *info =
-                c_queue_pop_head(&onscreen->pending_frame_infos);
-
-            _cg_onscreen_notify_frame_sync(onscreen, info);
-            _cg_onscreen_notify_complete(onscreen, info);
-            kms_onscreen->pending_swap_notify = false;
-
-            cg_object_unref(info);
-        }
-    }
-}
-
-static void
-flush_pending_swap_notify_idle(void *user_data)
-{
-    cg_device_t *dev = user_data;
-    cg_renderer_egl_t *egl_renderer = dev->display->renderer->winsys;
-    cg_renderer_kms_t *kms_renderer = egl_renderer->platform;
-
-    /* This needs to be disconnected before invoking the callbacks in
-     * case the callbacks cause it to be queued again */
-    _cg_closure_disconnect(kms_renderer->swap_notify_idle);
-    kms_renderer->swap_notify_idle = NULL;
-
-    c_llist_foreach(dev->framebuffers, flush_pending_swap_notify_cb, NULL);
 }
 
 static void
@@ -182,8 +143,11 @@ free_current_bo(cg_onscreen_t *onscreen)
 }
 
 static void
-page_flip_handler(
-    int fd, unsigned int frame, unsigned int sec, unsigned int usec, void *data)
+page_flip_handler(int fd,
+                  unsigned int frame,
+                  unsigned int sec,
+                  unsigned int usec,
+                  void *data)
 {
     cg_flip_kms_t *flip = data;
 
@@ -198,16 +162,16 @@ page_flip_handler(
         cg_renderer_t *renderer = dev->display->renderer;
         cg_renderer_egl_t *egl_renderer = renderer->winsys;
         cg_renderer_kms_t *kms_renderer = egl_renderer->platform;
+        cg_frame_info_t *info =
+            c_queue_pop_head(&onscreen->pending_frame_infos);
 
-        /* We only want to notify that the swap is complete when the
-         * application calls cg_device_dispatch so instead of
-         * immediately notifying we queue an idle callback */
-        if (!kms_renderer->swap_notify_idle) {
-            kms_renderer->swap_notify_idle = _cg_loop_add_idle(
-                renderer, flush_pending_swap_notify_idle, dev, NULL);
-        }
+        info->presentation_time =
+            (int64_t)sec * (int64_t)1000000000 + usec * 1000;
 
-        kms_onscreen->pending_swap_notify = true;
+        _cg_onscreen_notify_frame_sync(onscreen, info);
+        _cg_onscreen_notify_complete(onscreen, info);
+
+        cg_object_unref(info);
 
         free_current_bo(onscreen);
 
@@ -869,11 +833,24 @@ _cg_winsys_onscreen_swap_buffers_with_damage(
 
 static bool
 _cg_winsys_egl_device_init(cg_device_t *dev,
-                            cg_error_t **error)
+                           cg_error_t **error)
 {
+    cg_renderer_t *renderer = dev->display->renderer;
+    cg_renderer_egl_t *egl_renderer = renderer->winsys;
+    cg_renderer_kms_t *kms_renderer = egl_renderer->platform;
+    int ret;
+
     CG_FLAGS_SET(dev->winsys_features,
                  CG_WINSYS_FEATURE_SYNC_AND_COMPLETE_EVENT,
                  true);
+
+
+    ret = drmGetCap(kms_renderer->fd, DRM_CAP_TIMESTAMP_MONOTONIC, &cap);
+    if (ret ==0 && cap == 1) {
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_PRESENTATION_TIME, true);
+        dev->presentation_time_seen = true;
+        dev->presentation_clock_is_monotonic = true;
+    }
 
     return true;
 }
@@ -992,7 +969,7 @@ static const cg_winsys_egl_vtable_t _cg_winsys_egl_vtable = {
     .display_destroy = _cg_winsys_egl_display_destroy,
     .device_created = _cg_winsys_egl_device_created,
     .cleanup_device = _cg_winsys_egl_cleanup_device,
-    .device_init = _cg_winsys_egl_device_init
+    .device_init = _cg_winsys_egl_device_init,
 };
 
 const cg_winsys_vtable_t *

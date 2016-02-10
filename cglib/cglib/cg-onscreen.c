@@ -57,6 +57,9 @@ _cg_onscreen_init_from_template(cg_onscreen_t *onscreen,
     c_list_init(&onscreen->resize_closures);
     c_list_init(&onscreen->dirty_closures);
 
+    c_list_init(&onscreen->events_queue);
+    c_list_init(&onscreen->dirty_queue);
+
     framebuffer->config = onscreen_template->config;
 }
 
@@ -101,8 +104,10 @@ _cg_onscreen_free(cg_onscreen_t *onscreen)
     _cg_closure_list_disconnect_all(&onscreen->frame_closures);
     _cg_closure_list_disconnect_all(&onscreen->dirty_closures);
 
-    while ((frame_info = c_queue_pop_tail(&onscreen->pending_frame_infos)))
+    while ((frame_info = c_queue_pop_tail(&onscreen->pending_frame_infos))) {
+        c_debug("CG: pop tail frame info = %p", frame_info);
         cg_object_unref(frame_info);
+    }
     c_queue_clear(&onscreen->pending_frame_infos);
 
     winsys->onscreen_deinit(onscreen);
@@ -119,13 +124,21 @@ notify_event(cg_onscreen_t *onscreen,
              cg_frame_event_t event,
              cg_frame_info_t *info)
 {
+    if (event == CG_FRAME_EVENT_SYNC) {
+        c_debug("CG: Notify _FRAME_EVENT_SYNC");
+    } else if (event == CG_FRAME_EVENT_COMPLETE) {
+        c_debug("CG: Notify _FRAME_EVENT_COMPLETE");
+    }
+
     _cg_closure_list_invoke(
         &onscreen->frame_closures, cg_frame_callback_t, onscreen, event, info);
 }
 
 static void
-_cg_dispatch_onscreen_cb(cg_device_t *dev)
+_cg_dispatch_onscreen_cb(cg_onscreen_t *onscreen)
 {
+    bool pending_resize_notify = onscreen->pending_resize_notify;
+    cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
     cg_onscreen_event_t *event, *tmp;
     c_list_t queue;
 
@@ -134,41 +147,46 @@ _cg_dispatch_onscreen_cb(cg_device_t *dev)
      * To make sure this loop will only dispatch one set of events we'll
      * steal the queue and iterate that separately */
     c_list_init(&queue);
-    c_list_insert_list(&queue, &dev->onscreen_events_queue);
-    c_list_init(&dev->onscreen_events_queue);
+    c_list_insert_list(&queue, &onscreen->events_queue);
+    c_list_init(&onscreen->events_queue);
+    onscreen->pending_resize_notify = false;
 
-    _cg_closure_disconnect(dev->onscreen_dispatch_idle);
-    dev->onscreen_dispatch_idle = NULL;
+    _cg_closure_disconnect(onscreen->dispatch_idle);
+    onscreen->dispatch_idle = NULL;
 
     c_list_for_each_safe(event, tmp, &queue, link)
     {
-        cg_onscreen_t *onscreen = event->onscreen;
         cg_frame_info_t *info = event->info;
 
         notify_event(onscreen, event->type, info);
 
-        cg_object_unref(onscreen);
         cg_object_unref(info);
 
         c_slice_free(cg_onscreen_event_t, event);
     }
 
-    while (!c_list_empty(&dev->onscreen_dirty_queue)) {
+    while (!c_list_empty(&onscreen->dirty_queue)) {
         cg_onscreen_queued_dirty_t *qe =
-            c_container_of(dev->onscreen_dirty_queue.next,
-                             cg_onscreen_queued_dirty_t,
-                             link);
+            c_container_of(onscreen->dirty_queue.next,
+                           cg_onscreen_queued_dirty_t,
+                           link);
 
         c_list_remove(&qe->link);
 
-        _cg_closure_list_invoke(&qe->onscreen->dirty_closures,
+        _cg_closure_list_invoke(&onscreen->dirty_closures,
                                 cg_onscreen_dirty_callback_t,
-                                qe->onscreen,
+                                onscreen,
                                 &qe->info);
 
-        cg_object_unref(qe->onscreen);
-
         c_slice_free(cg_onscreen_queued_dirty_t, qe);
+    }
+
+    if (pending_resize_notify) {
+        _cg_closure_list_invoke(&onscreen->resize_closures,
+                                cg_onscreen_resize_callback_t,
+                                onscreen,
+                                framebuffer->width,
+                                framebuffer->height);
     }
 }
 
@@ -177,11 +195,12 @@ _cg_onscreen_queue_dispatch_idle(cg_onscreen_t *onscreen)
 {
     cg_device_t *dev = CG_FRAMEBUFFER(onscreen)->dev;
 
-    if (!dev->onscreen_dispatch_idle) {
-        dev->onscreen_dispatch_idle = _cg_loop_add_idle(dev->display->renderer,
-            (cg_idle_callback_t)_cg_dispatch_onscreen_cb,
-            dev,
-            NULL);
+    if (!onscreen->dispatch_idle) {
+        onscreen->dispatch_idle =
+            _cg_loop_add_idle(dev->display->renderer,
+                              (cg_idle_callback_t)_cg_dispatch_onscreen_cb,
+                              onscreen,
+                              NULL);
     }
 }
 
@@ -189,12 +208,10 @@ void
 _cg_onscreen_queue_dirty(cg_onscreen_t *onscreen,
                          const cg_onscreen_dirty_info_t *info)
 {
-    cg_device_t *dev = CG_FRAMEBUFFER(onscreen)->dev;
     cg_onscreen_queued_dirty_t *qe = c_slice_new(cg_onscreen_queued_dirty_t);
 
-    qe->onscreen = cg_object_ref(onscreen);
     qe->info = *info;
-    c_list_insert(dev->onscreen_dirty_queue.prev, &qe->link);
+    c_list_insert(onscreen->dirty_queue.prev, &qe->link);
 
     _cg_onscreen_queue_dispatch_idle(onscreen);
 }
@@ -218,16 +235,20 @@ _cg_onscreen_queue_event(cg_onscreen_t *onscreen,
                          cg_frame_event_t type,
                          cg_frame_info_t *info)
 {
-    cg_device_t *dev = CG_FRAMEBUFFER(onscreen)->dev;
-
     cg_onscreen_event_t *event = c_slice_new(cg_onscreen_event_t);
 
-    event->onscreen = cg_object_ref(onscreen);
     event->info = cg_object_ref(info);
     event->type = type;
 
-    c_list_insert(dev->onscreen_events_queue.prev, &event->link);
+    c_list_insert(onscreen->events_queue.prev, &event->link);
 
+    _cg_onscreen_queue_dispatch_idle(onscreen);
+}
+
+void
+_cg_onscreen_queue_resize_notify(cg_onscreen_t *onscreen)
+{
+    onscreen->pending_resize_notify = true;
     _cg_onscreen_queue_dispatch_idle(onscreen);
 }
 
@@ -237,6 +258,7 @@ cg_onscreen_swap_buffers_with_damage(cg_onscreen_t *onscreen,
                                      int n_rectangles)
 {
     cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
+    cg_device_t *dev = framebuffer->dev;
     const cg_winsys_vtable_t *winsys;
     cg_frame_info_t *info;
 
@@ -245,26 +267,36 @@ cg_onscreen_swap_buffers_with_damage(cg_onscreen_t *onscreen,
     info = _cg_frame_info_new();
     info->frame_counter = onscreen->frame_counter;
     c_queue_push_tail(&onscreen->pending_frame_infos, info);
+    c_debug("CG: push tail frame info = %p", info);
 
     _cg_framebuffer_flush(framebuffer);
 
     winsys = _cg_framebuffer_get_winsys(framebuffer);
     winsys->onscreen_swap_buffers_with_damage(
         onscreen, rectangles, n_rectangles);
+
+    /* Even if the winsys claims it can report presentation times,
+     * until we have evidence we go with a naive approximation in case
+     * we find out too late that the system presentation timestamps
+     * aren't from the same clock as c_get_monotonic_time() or too
+     * awkward to map.
+     */
+    if (!CG_FLAGS_GET(dev->features, CG_FEATURE_ID_PRESENTATION_TIME) ||
+        !dev->presentation_clock_is_monotonic)
+    {
+        info->presentation_time = c_get_monotonic_time();
+    }
+
     cg_framebuffer_discard_buffers(framebuffer,
                                    CG_BUFFER_BIT_COLOR | CG_BUFFER_BIT_DEPTH |
                                    CG_BUFFER_BIT_STENCIL);
 
-    if (!_cg_winsys_has_feature(framebuffer->dev,
+    if (!_cg_winsys_has_feature(dev,
                                 CG_WINSYS_FEATURE_SYNC_AND_COMPLETE_EVENT)) {
-        cg_frame_info_t *info;
-
         c_warn_if_fail(onscreen->pending_frame_infos.length == 1);
 
         info = c_queue_pop_tail(&onscreen->pending_frame_infos);
-
-        if (!CG_FLAGS_GET(framebuffer->dev->features, CG_FEATURE_ID_PRESENTATION_TIME))
-            info->presentation_time = c_get_monotonic_time();
+        c_debug("CG: pop tail frame info = %p", info);
 
         _cg_onscreen_queue_event(onscreen, CG_FRAME_EVENT_SYNC, info);
         _cg_onscreen_queue_event(onscreen, CG_FRAME_EVENT_COMPLETE, info);
@@ -288,6 +320,7 @@ cg_onscreen_swap_region(cg_onscreen_t *onscreen,
                         int n_rectangles)
 {
     cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
+    cg_device_t *dev = framebuffer->dev;
     const cg_winsys_vtable_t *winsys;
     cg_frame_info_t *info;
 
@@ -296,6 +329,7 @@ cg_onscreen_swap_region(cg_onscreen_t *onscreen,
     info = _cg_frame_info_new();
     info->frame_counter = onscreen->frame_counter;
     c_queue_push_tail(&onscreen->pending_frame_infos, info);
+    c_debug("CG: push tail frame info = %p", info);
 
     _cg_framebuffer_flush(framebuffer);
 
@@ -308,21 +342,29 @@ cg_onscreen_swap_region(cg_onscreen_t *onscreen,
     winsys->onscreen_swap_region(
         CG_ONSCREEN(framebuffer), rectangles, n_rectangles);
 
+    /* Even if the winsys claims it can report presentation times,
+     * until we have evidence we go with a naive approximation in case
+     * we find out too late that the system presentation timestamps
+     * aren't from the same clock as c_get_monotonic_time() or too
+     * awkward to map.
+     */
+    if (!CG_FLAGS_GET(dev->features, CG_FEATURE_ID_PRESENTATION_TIME) ||
+        !dev->presentation_clock_is_monotonic)
+    {
+        info->presentation_time = c_get_monotonic_time();
+    }
+
     cg_framebuffer_discard_buffers(framebuffer,
                                    CG_BUFFER_BIT_COLOR | CG_BUFFER_BIT_DEPTH |
                                    CG_BUFFER_BIT_STENCIL);
 
-    if (!_cg_winsys_has_feature(framebuffer->dev,
+    if (!_cg_winsys_has_feature(dev,
                                 CG_WINSYS_FEATURE_SYNC_AND_COMPLETE_EVENT))
     {
-        cg_frame_info_t *info;
-
         c_warn_if_fail(onscreen->pending_frame_infos.length == 1);
 
         info = c_queue_pop_tail(&onscreen->pending_frame_infos);
-
-        if (!CG_FLAGS_GET(framebuffer->dev->features, CG_FEATURE_ID_PRESENTATION_TIME))
-            info->presentation_time = c_get_monotonic_time();
+        c_debug("CG: pop tail frame info = %p", info);
 
         _cg_onscreen_queue_event(onscreen, CG_FRAME_EVENT_SYNC, info);
         _cg_onscreen_queue_event(onscreen, CG_FRAME_EVENT_COMPLETE, info);

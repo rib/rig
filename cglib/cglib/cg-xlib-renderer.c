@@ -523,8 +523,9 @@ query_net_supported(cg_renderer_t *renderer)
 
         atoms = (Atom *)data;
         for (unsigned long i = 0; i < n_atoms; i++) {
-            if (atoms[i] == net_wm_frame_drawn)
+            if (atoms[i] == net_wm_frame_drawn) {
                 x11_renderer->net_wm_frame_drawn_supported = true;
+            }
         }
 
         XFree(data);

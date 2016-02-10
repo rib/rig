@@ -191,10 +191,6 @@ struct _cg_device_t {
     bool have_last_offscreen_allocate_flags;
     cg_offscreen_allocate_flags_t last_offscreen_allocate_flags;
 
-    c_list_t onscreen_events_queue;
-    c_list_t onscreen_dirty_queue;
-    cg_closure_t *onscreen_dispatch_idle;
-
     cg_gles2_context_t *current_gles2_context;
     c_queue_t gles2_context_stack;
 
@@ -286,6 +282,16 @@ struct _cg_device_t {
 
     cg_poll_source_t *fences_poll_source;
     c_list_t fences;
+
+    /* True once we've seen some kind of presentation
+     * timestamp which we can then determine if it corresponds to
+     * c_get_monotonic_time() or not */
+    bool presentation_time_seen;
+
+    /* Valid once above presentation_clock_seen == true then
+     * this can be checked to know if presentation timestamps
+     * come from the same clock as c_get_monotonic_time() */
+    bool presentation_clock_is_monotonic;
 
 /* This defines a list of function pointers that CGlib uses from
    either GL or GLES. All functions are accessed indirectly through

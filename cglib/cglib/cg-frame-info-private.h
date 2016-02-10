@@ -38,8 +38,14 @@ struct _cg_frame_info_t {
     cg_object_t _parent;
 
     int64_t frame_counter;
+    int64_t composite_end_time;
     int64_t presentation_time;
     float refresh_rate;
+    int64_t next_refresh_deadline;
+
+#ifdef CG_HAS_X11_SUPPORT
+    uint32_t x11_frame_sync_counter;
+#endif
 
     cg_output_t *output;
 };

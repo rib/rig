@@ -44,7 +44,6 @@
 typedef struct _cg_onscreen_event_t {
     c_list_t link;
 
-    cg_onscreen_t *onscreen;
     cg_frame_info_t *info;
     cg_frame_event_t type;
 } cg_onscreen_event_t;
@@ -52,7 +51,6 @@ typedef struct _cg_onscreen_event_t {
 typedef struct _cg_onscreen_queued_dirty_t {
     c_list_t link;
 
-    cg_onscreen_t *onscreen;
     cg_onscreen_dirty_info_t info;
 } cg_onscreen_queued_dirty_t;
 
@@ -82,6 +80,11 @@ struct _cg_onscreen_t {
 
     c_list_t dirty_closures;
 
+    c_list_t events_queue;
+    c_list_t dirty_queue;
+    cg_closure_t *dispatch_idle;
+    bool pending_resize_notify;
+
     int64_t frame_counter;
     int64_t swap_frame_counter; /* frame counter at last all to
                                 * cg_onscreen_swap_region() or
@@ -99,17 +102,11 @@ void _cg_onscreen_queue_event(cg_onscreen_t *onscreen,
                               cg_frame_event_t type,
                               cg_frame_info_t *info);
 
-void _cg_onscreen_notify_frame_sync(cg_onscreen_t *onscreen,
-                                    cg_frame_info_t *info);
-
-void _cg_onscreen_notify_complete(cg_onscreen_t *onscreen,
-                                  cg_frame_info_t *info);
-
-void _cg_onscreen_notify_resize(cg_onscreen_t *onscreen);
-
 void _cg_onscreen_queue_dirty(cg_onscreen_t *onscreen,
                               const cg_onscreen_dirty_info_t *info);
 
 void _cg_onscreen_queue_full_dirty(cg_onscreen_t *onscreen);
+
+void _cg_onscreen_queue_resize_notify(cg_onscreen_t *onscreen);
 
 #endif /* __CG_ONSCREEN_PRIVATE_H */

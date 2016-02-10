@@ -33,8 +33,6 @@
 
 #include <cglib-config.h>
 
-#include <X11/Xlib.h>
-
 #include "cg-winsys-egl-x11-private.h"
 #include "cg-winsys-egl-private.h"
 #include "cg-xlib-renderer-private.h"
@@ -43,11 +41,16 @@
 #include "cg-onscreen-private.h"
 #include "cg-display-private.h"
 #include "cg-renderer-private.h"
+#include "cg-frame-info-private.h"
 
 #include "cg-texture-pixmap-x11-private.h"
 #include "cg-texture-2d-private.h"
 #include "cg-error-private.h"
 #include "cg-loop-private.h"
+
+#include <X11/Xlib.h>
+#include <X11/Xatom.h>
+#include <X11/extensions/sync.h>
 
 #define CG_ONSCREEN_X11_EVENT_MASK (StructureNotifyMask | ExposureMask)
 
@@ -59,7 +62,17 @@ typedef struct _cg_display_xlib_t {
 
 typedef struct _cg_onscreen_xlib_t {
     Window xwin;
+    int x, y;
     bool is_foreign_xwin;
+    cg_output_t *output;
+
+    XID frame_sync_xcounters[2];
+    int64_t frame_sync_counters[2];
+
+    /* If != 0 then we've received a _NET_WM_FRAME_SYNC message
+     * setting a new frame sync counter value (extended sync mode) */
+    int64_t last_sync_request_value;
+
 } cg_onscreen_xlib_t;
 
 #ifdef EGL_KHR_image_pixmap
@@ -92,75 +105,243 @@ find_onscreen_for_xid(cg_device_t *dev, uint32_t xid)
 }
 
 static void
-flush_pending_resize_notifications_cb(void *data, void *user_data)
+update_output(cg_onscreen_t *onscreen)
 {
-    cg_framebuffer_t *framebuffer = data;
-
-    if (framebuffer->type == CG_FRAMEBUFFER_TYPE_ONSCREEN) {
-        cg_onscreen_t *onscreen = CG_ONSCREEN(framebuffer);
-        cg_onscreen_egl_t *egl_onscreen = onscreen->winsys;
-
-        if (egl_onscreen->pending_resize_notify) {
-            _cg_onscreen_notify_resize(onscreen);
-            egl_onscreen->pending_resize_notify = false;
-        }
-    }
-}
-
-static void
-flush_pending_resize_notifications_idle(void *user_data)
-{
-    cg_device_t *dev = user_data;
-    cg_renderer_t *renderer = dev->display->renderer;
-    cg_renderer_egl_t *egl_renderer = renderer->winsys;
-
-    /* This needs to be disconnected before invoking the callbacks in
-     * case the callbacks cause it to be queued again */
-    _cg_closure_disconnect(egl_renderer->resize_notify_idle);
-    egl_renderer->resize_notify_idle = NULL;
-
-    c_llist_foreach(dev->framebuffers, flush_pending_resize_notifications_cb,
-                   NULL);
-}
-
-static void
-notify_resize(cg_device_t *dev, Window drawable, int width, int height)
-{
-    cg_renderer_t *renderer = dev->display->renderer;
-    cg_renderer_egl_t *egl_renderer = renderer->winsys;
-    cg_onscreen_t *onscreen = find_onscreen_for_xid(dev, drawable);
+    cg_onscreen_egl_t *egl_onscreen = onscreen->winsys;
+    cg_onscreen_xlib_t *xlib_onscreen = egl_onscreen->platform;
     cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
-    cg_onscreen_egl_t *egl_onscreen;
+    cg_device_t *dev = framebuffer->dev;
+    cg_display_t *display = dev->display;
+    cg_output_t *output;
+    int width, height;
 
-    if (!onscreen)
-        return;
+    width = cg_framebuffer_get_width(framebuffer);
+    height = cg_framebuffer_get_height(framebuffer);
+    output = _cg_xlib_renderer_output_for_rectangle(display->renderer,
+                                                    xlib_onscreen->x,
+                                                    xlib_onscreen->y,
+                                                    width,
+                                                    height);
+    if (xlib_onscreen->output != output) {
+        if (xlib_onscreen->output)
+            cg_object_unref(xlib_onscreen->output);
 
-    egl_onscreen = onscreen->winsys;
+        xlib_onscreen->output = output;
 
-    _cg_framebuffer_winsys_update_size(framebuffer, width, height);
-
-    /* We only want to notify that a resize happened when the
-     * application calls cg_device_dispatch so instead of immediately
-     * notifying we queue an idle callback */
-    if (!egl_renderer->resize_notify_idle) {
-        egl_renderer->resize_notify_idle = _cg_loop_add_idle(
-            renderer, flush_pending_resize_notifications_idle, dev, NULL);
+        if (output)
+            cg_object_ref(xlib_onscreen->output);
     }
+}
 
-    egl_onscreen->pending_resize_notify = true;
+static void
+handle_configure_notify(cg_onscreen_t *onscreen,
+                        XConfigureEvent *configure_event)
+{
+    cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
+    cg_onscreen_egl_t *egl_onscreen = onscreen->winsys;
+    cg_onscreen_xlib_t *xlib_onscreen = egl_onscreen->platform;
+
+    _cg_framebuffer_winsys_update_size(framebuffer,
+                                       configure_event->width,
+                                       configure_event->height);
+
+    if (!xlib_onscreen->is_foreign_xwin) {
+        int x, y;
+
+        if (configure_event->send_event) {
+            x = configure_event->x;
+            y = configure_event->y;
+        } else {
+            Window child;
+            XTranslateCoordinates(configure_event->display,
+                                  configure_event->window,
+                                  DefaultRootWindow(configure_event->display),
+                                  0,
+                                  0,
+                                  &x,
+                                  &y,
+                                  &child);
+        }
+
+        xlib_onscreen->x = x;
+        xlib_onscreen->y = y;
+
+        update_output(onscreen);
+    }
+    
+    _cg_onscreen_queue_resize_notify(onscreen);
 }
 
 static cg_filter_return_t
 event_filter_cb(XEvent *xevent, void *data)
 {
     cg_device_t *dev = data;
+    cg_renderer_t *renderer = dev->display->renderer;
 
     if (xevent->type == ConfigureNotify) {
-        notify_resize(dev,
-                      xevent->xconfigure.window,
-                      xevent->xconfigure.width,
-                      xevent->xconfigure.height);
-    } else if (xevent->type == Expose) {
+        XConfigureEvent *xconfig = &xevent->xconfigure;
+        cg_onscreen_t *onscreen = find_onscreen_for_xid(dev, xconfig->window);
+
+        if (!onscreen) {
+            c_warning("Ignoring spurious ConfigureNotify that couldn't be mapped to an CGLib onscreen window");
+            return CG_FILTER_CONTINUE;
+        }
+
+        handle_configure_notify(onscreen, xconfig);
+
+        return CG_FILTER_CONTINUE;
+    }
+    
+    if (xevent->type == ClientMessage) {
+        XClientMessageEvent *msg = &xevent->xclient;
+        cg_onscreen_t *onscreen =
+            find_onscreen_for_xid(dev, msg->window);
+        cg_onscreen_egl_t *egl_onscreen = onscreen->winsys;
+        cg_onscreen_xlib_t *xlib_onscreen = egl_onscreen->platform;
+        cg_xlib_renderer_t *xlib_renderer = _cg_xlib_renderer_get_data(renderer);
+        cg_x11_renderer_t *x11_renderer = (cg_x11_renderer_t *)xlib_renderer;
+
+        if (!onscreen) {
+            c_warning("Ignoring spurious client message that couldn't be mapped to an CGLib onscreen window");
+            return CG_FILTER_CONTINUE;
+        }
+
+        if (msg->message_type == XInternAtom(xlib_renderer->xdpy, "WM_PROTOCOLS", False)) {
+            Atom protocol = msg->data.l[0];
+
+            if (protocol == XInternAtom(xlib_renderer->xdpy, "WM_DELETE_WINDOW", False)) {
+
+                /* FIXME: we should eventually support multiple windows and
+                 * we should be able close windows individually. */
+                c_warning("TODO: add cg_onscreen_add_close_callback() api");
+            } else if (protocol == XInternAtom(xlib_renderer->xdpy, "WM_TAKE_FOCUS", False)) {
+                XSetInputFocus(xlib_renderer->xdpy,
+                               msg->window,
+                               RevertToParent,
+                               CurrentTime);
+            } else if (protocol == XInternAtom(xlib_renderer->xdpy, "_NET_WM_PING", False)) {
+                msg->window = DefaultRootWindow(xlib_renderer->xdpy);
+                XSendEvent(xlib_renderer->xdpy, DefaultRootWindow(xlib_renderer->xdpy), False,
+                           SubstructureRedirectMask | SubstructureNotifyMask, xevent);
+            } else {
+                char *name = XGetAtomName(xlib_renderer->xdpy, protocol);
+                c_warning("Unknown X client WM_PROTOCOLS message recieved (%s)\n",
+                          name);
+                XFree(name);
+            }
+
+            return CG_FILTER_REMOVE;
+        }
+
+        if (!x11_renderer->net_wm_frame_drawn_supported)
+            return CG_FILTER_CONTINUE;
+
+        if (msg->message_type == XInternAtom(xlib_renderer->xdpy,
+                                             "_NET_WM_FRAME_DRAWN", False)) {
+            int64_t sync_counter = msg->data.l[0] | ((int64_t)msg->data.l[1] << 32);
+
+            if (sync_counter) { /* Ignore message for initial window Map */
+                cg_frame_info_t *info =
+                    c_queue_peek_head(&onscreen->pending_frame_infos);
+
+                c_warning("CG: _NET_WM_FRAME_DRAWN");
+
+                if (info->x11_frame_sync_counter != sync_counter)
+                    c_warning("INFO=%p frame_sync_counter %"PRIu64" != expected %"PRIu64,
+                              info, sync_counter, info->x11_frame_sync_counter);
+
+                c_warn_if_fail(info->composite_end_time == 0);
+
+                info->composite_end_time =
+                    msg->data.l[2] | ((int64_t)msg->data.l[3] << 32);
+                info->composite_end_time *= 1000; /* micro to nanoseconds */
+
+                _cg_onscreen_queue_event(onscreen, CG_FRAME_EVENT_SYNC, info);
+            }
+
+            return CG_FILTER_REMOVE;
+        } else if (msg->message_type == XInternAtom(xlib_renderer->xdpy,
+                                                    "_NET_WM_FRAME_TIMINGS", False)) {
+            int64_t sync_counter = msg->data.l[0] | ((int64_t)msg->data.l[1] << 32);
+            int64_t presentation_time;
+
+            if (sync_counter) { /* Ignore message for initial window Map */
+                cg_frame_info_t *info =
+                    c_queue_pop_head(&onscreen->pending_frame_infos);
+                int32_t refresh_interval = 0;
+
+                c_warning("CG: _NET_WM_FRAME_TIMINGS");
+
+                if (info->x11_frame_sync_counter != sync_counter)
+                    c_warning("INFO=%p frame_sync_counter %"PRIu64" != expected %"PRIu64,
+                              info, sync_counter, info->x11_frame_sync_counter);
+                //c_warn_if_fail(info->x11_frame_sync_counter != sync_counter);
+                c_warn_if_fail(info->composite_end_time != 0);
+
+                presentation_time =
+                    info->composite_end_time + (msg->data.l[2] * 1000);
+
+                /* If this is the first time we've seen a presentation
+                 * timestamp then determine if it comes from the same
+                 * clock as c_get_monotonic_time() */
+                if (!dev->presentation_time_seen) {
+                    int64_t now = c_get_monotonic_time();
+
+                    /* If it's less than a second old with respect to
+                     * c_get_monotonic_time() that's close enough to
+                     * assume it's from the same clock.
+                     */
+                    if (info->presentation_time < now &&
+                        info->presentation_time >= (now - 1000000000))
+                    {
+                        dev->presentation_clock_is_monotonic = true;
+                    }
+                    dev->presentation_time_seen = true;
+                }
+
+                if (dev->presentation_clock_is_monotonic)
+                    info->presentation_time = presentation_time;
+
+                refresh_interval = msg->data.l[3];
+                /* NB: interval is in microseconds... */
+                info->refresh_rate = 1000000.0f/(float)refresh_interval;
+
+                if (!(msg->data.l[4] & 0x80000000))
+                    info->next_refresh_deadline =
+                        info->composite_end_time + (msg->data.l[4] * 1000);
+
+                _cg_onscreen_queue_event(onscreen, CG_FRAME_EVENT_COMPLETE, info);
+
+                cg_object_unref(info);
+            }
+
+            return CG_FILTER_REMOVE;
+        } else if (msg->message_type  == XInternAtom(xlib_renderer->xdpy,
+                                                     "_NET_WM_SYNC_REQUEST", False)) {
+
+            /* only care about extended sync support */
+            if (x11_renderer->net_wm_frame_drawn_supported &&
+                msg->data.l[4] == 0)
+            {
+                int64_t value = msg->data.l[2] | ((int64_t)msg->data.l[3] << 32);
+
+                if (value % 2 != 0) {
+                    /* An even number would be odd here :-D .. badum *tish*! */
+                    c_warning("CG: Spurious odd _NET_WM_SYNC_REQUEST value");
+                    value++;
+                }
+
+                xlib_onscreen->last_sync_request_value = value;
+            }
+
+            return CG_FILTER_REMOVE;
+        }
+
+        return CG_FILTER_CONTINUE;
+    }
+
+
+    if (xevent->type == Expose) {
         cg_onscreen_t *onscreen =
             find_onscreen_for_xid(dev, xevent->xexpose.window);
 
@@ -297,6 +478,10 @@ static bool
 _cg_winsys_egl_device_init(cg_device_t *dev,
                             cg_error_t **error)
 {
+    cg_renderer_t *renderer = dev->renderer;
+    cg_xlib_renderer_t *xlib_renderer = _cg_xlib_renderer_get_data(renderer);
+    cg_x11_renderer_t *x11_renderer = (cg_x11_renderer_t *)xlib_renderer;
+
     cg_xlib_renderer_add_filter(dev->display->renderer, event_filter_cb, dev);
 
     CG_FLAGS_SET(dev->features, CG_FEATURE_ID_ONSCREEN_MULTIPLE, true);
@@ -307,6 +492,13 @@ _cg_winsys_egl_device_init(cg_device_t *dev,
      * Expose events from X */
     CG_FLAGS_SET(dev->private_features, CG_PRIVATE_FEATURE_DIRTY_EVENTS,
                  true);
+
+    if (x11_renderer->net_wm_frame_drawn_supported) {
+        CG_FLAGS_SET(dev->winsys_features,
+                     CG_WINSYS_FEATURE_SYNC_AND_COMPLETE_EVENT,
+                     true);
+        CG_FLAGS_SET(dev->features, CG_FEATURE_ID_PRESENTATION_TIME, true);
+    }
 
     return true;
 }
@@ -540,6 +732,102 @@ _cg_winsys_onscreen_x11_get_window_xid(cg_onscreen_t *onscreen)
     return xlib_onscreen->xwin;
 }
 
+static void
+_cg_winsys_egl_swap_interval(cg_onscreen_t *onscreen)
+{
+    cg_framebuffer_t *fb = CG_FRAMEBUFFER(onscreen);
+    cg_device_t *dev = fb->dev;
+    cg_renderer_t *renderer = dev->renderer;
+    cg_renderer_egl_t *egl_renderer = renderer->winsys;
+    cg_xlib_renderer_t *xlib_renderer = _cg_xlib_renderer_get_data(renderer);
+    cg_x11_renderer_t *x11_renderer = (cg_x11_renderer_t *)xlib_renderer;
+
+    /* NB: If _NET_WM_FRAME_DRAWN is available then we are running
+     * under a compositor and throttling is handled via X client
+     * messages instead */
+    if (fb->config.swap_throttled &&
+        !x11_renderer->net_wm_frame_drawn_supported)
+        eglSwapInterval(egl_renderer->edpy, 1);
+    else
+        eglSwapInterval(egl_renderer->edpy, 0);
+}
+
+static void
+xsync_int64_to_value_counter(XSyncValue *xvalue,
+                             int64_t value)
+{
+    unsigned int low = value & 0xffffffff;
+    int high = value >> 32;
+
+    XSyncIntsToValue(xvalue, low, high);
+}
+
+static void
+_cg_winsys_egl_start_swap(cg_onscreen_t *onscreen)
+{
+    cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
+    cg_device_t *dev = framebuffer->dev;
+    cg_xlib_renderer_t *xlib_renderer =
+        _cg_xlib_renderer_get_data(dev->display->renderer);
+    cg_x11_renderer_t *x11_renderer = (cg_x11_renderer_t *)xlib_renderer;
+
+    if (x11_renderer->net_wm_frame_drawn_supported) {
+        cg_onscreen_egl_t *egl_onscreen = onscreen->winsys;
+        cg_onscreen_xlib_t *xlib_onscreen = egl_onscreen->platform;
+        XSyncValue xvalue;
+        int64_t frame_sync_counter;
+
+        /* Check incase the WM explicitly gave us a new
+         * frame sync counter value via a _NET_WM_SYNC_REQUEST
+         * message... */
+        if (xlib_onscreen->last_sync_request_value) {
+            xlib_onscreen->frame_sync_counters[1] = xlib_onscreen->last_sync_request_value;
+            xlib_onscreen->last_sync_request_value = 0;
+        }
+
+        c_warn_if_fail(xlib_onscreen->frame_sync_counters[1] % 2 == 0);
+
+
+        frame_sync_counter = ++xlib_onscreen->frame_sync_counters[1];
+        c_debug("CG: update frame sync counter to %"PRIi64" (START FRAME)",
+                frame_sync_counter);
+
+        xsync_int64_to_value_counter(&xvalue, frame_sync_counter);
+        XSyncSetCounter(xlib_renderer->xdpy,
+                        xlib_onscreen->frame_sync_xcounters[1],
+                        xvalue);
+    }
+}
+
+static void
+_cg_winsys_egl_end_swap(cg_onscreen_t *onscreen)
+{
+    cg_framebuffer_t *framebuffer = CG_FRAMEBUFFER(onscreen);
+    cg_device_t *dev = framebuffer->dev;
+    cg_xlib_renderer_t *xlib_renderer =
+        _cg_xlib_renderer_get_data(dev->display->renderer);
+    cg_x11_renderer_t *x11_renderer = (cg_x11_renderer_t *)xlib_renderer;
+
+    if (x11_renderer->net_wm_frame_drawn_supported) {
+        cg_onscreen_egl_t *egl_onscreen = onscreen->winsys;
+        cg_onscreen_xlib_t *xlib_onscreen = egl_onscreen->platform;
+        cg_frame_info_t *info = c_queue_peek_tail(&onscreen->pending_frame_infos);
+        XSyncValue xvalue;
+
+        c_warn_if_fail(xlib_onscreen->frame_sync_counters[1] % 2 == 1);
+
+        info->x11_frame_sync_counter = ++xlib_onscreen->frame_sync_counters[1];
+        c_debug("CG: INFO=%p update frame sync counter to %"PRIi64" (END FRAME)",
+                info, info->x11_frame_sync_counter);
+
+        xsync_int64_to_value_counter(&xvalue, info->x11_frame_sync_counter);
+        XSyncSetCounter(xlib_renderer->xdpy,
+                        xlib_onscreen->frame_sync_xcounters[1],
+                        xvalue);
+    }
+
+}
+
 static bool
 _cg_winsys_egl_device_created(cg_display_t *display,
                                cg_error_t **error)
@@ -757,7 +1045,10 @@ static const cg_winsys_egl_vtable_t _cg_winsys_egl_vtable = {
     .device_init = _cg_winsys_egl_device_init,
     .device_deinit = _cg_winsys_egl_device_deinit,
     .onscreen_init = _cg_winsys_egl_onscreen_init,
-    .onscreen_deinit = _cg_winsys_egl_onscreen_deinit
+    .onscreen_deinit = _cg_winsys_egl_onscreen_deinit,
+    .swap_interval = _cg_winsys_egl_swap_interval,
+    .start_swap = _cg_winsys_egl_start_swap,
+    .end_swap = _cg_winsys_egl_end_swap,
 };
 
 const cg_winsys_vtable_t *

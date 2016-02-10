@@ -172,7 +172,6 @@ check_egl_extensions(cg_renderer_t *renderer)
     cg_renderer_egl_t *egl_renderer = renderer->winsys;
     const char *egl_extensions;
     char **split_extensions;
-    int i;
 
     egl_extensions = eglQueryString(egl_renderer->edpy, EGL_EXTENSIONS);
     split_extensions = c_strsplit(egl_extensions, " ", 0 /* max_tokens */);
@@ -180,7 +179,7 @@ check_egl_extensions(cg_renderer_t *renderer)
     CG_NOTE(WINSYS, "  EGL Extensions: %s", egl_extensions);
 
     egl_renderer->private_features = 0;
-    for (i = 0; i < C_N_ELEMENTS(winsys_feature_data); i++)
+    for (unsigned i = 0; i < C_N_ELEMENTS(winsys_feature_data); i++)
         if (_cg_feature_check(renderer,
                               "EGL",
                               winsys_feature_data + i,
@@ -695,10 +694,14 @@ bind_onscreen_with_context(cg_onscreen_t *onscreen,
         cg_renderer_t *renderer = dev->display->renderer;
         cg_renderer_egl_t *egl_renderer = renderer->winsys;
 
-        if (fb->config.swap_throttled)
-            eglSwapInterval(egl_renderer->edpy, 1);
-        else
-            eglSwapInterval(egl_renderer->edpy, 0);
+        if (egl_renderer->platform_vtable->swap_interval)
+            egl_renderer->platform_vtable->swap_interval(onscreen);
+        else {
+            if (fb->config.swap_throttled)
+                eglSwapInterval(egl_renderer->edpy, 1);
+            else
+                eglSwapInterval(egl_renderer->edpy, 0);
+        }
     }
 
     return status;
@@ -756,6 +759,9 @@ _cg_winsys_onscreen_swap_region(cg_onscreen_t *onscreen,
     int *rectangles = c_alloca(sizeof(int) * n_rectangles * 4);
     int i;
 
+    if (egl_renderer->platform_vtable->start_swap)
+        egl_renderer->platform_vtable->start_swap(onscreen);
+
     /* eglSwapBuffersRegion expects rectangles relative to the
      * bottom left corner but we are given rectangles relative to
      * the top left so we need to flip them... */
@@ -778,6 +784,10 @@ _cg_winsys_onscreen_swap_region(cg_onscreen_t *onscreen,
                                                n_rectangles,
                                                rectangles))
         c_warning("Error reported by eglSwapBuffersRegion");
+
+
+    if (egl_renderer->platform_vtable->end_swap)
+        egl_renderer->platform_vtable->end_swap(onscreen);
 }
 
 static void
@@ -788,6 +798,9 @@ _cg_winsys_onscreen_swap_buffers_with_damage(
     cg_renderer_t *renderer = dev->display->renderer;
     cg_renderer_egl_t *egl_renderer = renderer->winsys;
     cg_onscreen_egl_t *egl_onscreen = onscreen->winsys;
+
+    if (egl_renderer->platform_vtable->start_swap)
+        egl_renderer->platform_vtable->start_swap(onscreen);
 
     /* The specification for EGL (at least in 1.4) says that the surface
        needs to be bound to the current context for the swap to work
@@ -818,6 +831,9 @@ _cg_winsys_onscreen_swap_buffers_with_damage(
             c_warning("Error reported by eglSwapBuffersWithDamage");
     } else
         eglSwapBuffers(egl_renderer->edpy, egl_onscreen->egl_surface);
+
+    if (egl_renderer->platform_vtable->end_swap)
+        egl_renderer->platform_vtable->end_swap(onscreen);
 }
 
 static void

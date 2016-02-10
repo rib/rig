@@ -44,22 +44,8 @@ typedef struct _cg_glx_renderer_t {
 
     bool is_direct;
 
-    /* Vblank stuff */
-    int dri_fd;
-
-    /* enumeration with relatioship between OML_sync_control
-     * UST (unadjusted-system-time) and the system clock */
-    enum {
-        CG_GLX_UST_IS_UNKNOWN,
-        CG_GLX_UST_IS_GETTIMEOFDAY,
-        CG_GLX_UST_IS_MONOTONIC_TIME,
-        CG_GLX_UST_IS_OTHER
-    } ust_type;
-
     /* c_module_t pointing to libGL which we use to get glX functions out of */
     c_module_t *libgl_module;
-
-    cg_closure_t *flush_notifications_idle;
 
     /* Copy of the winsys features that are based purely on the
      * information we can get without using a GL context. We want to
@@ -68,6 +54,9 @@ typedef struct _cg_glx_renderer_t {
      * to use the glXCreateContextAttribs function. */
     unsigned long base_winsys_features
     [CG_FLAGS_N_LONGS_FOR_SIZE(CG_WINSYS_FEATURE_N_FEATURES)];
+
+    /* To account for UST having nanosecond or microsecond units */
+    int ust_scale;
 
     /* Function pointers for core GLX functionality. We can't just link
        against these directly because we need to conditionally load

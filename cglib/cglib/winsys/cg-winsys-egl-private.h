@@ -78,6 +78,11 @@ typedef struct _cg_winsys_egl_vtable_t {
     int (*add_config_attributes)(cg_display_t *display,
                                  cg_framebuffer_config_t *config,
                                  EGLint *attributes);
+
+    void (*swap_interval)(cg_onscreen_t *onscreen);
+    
+    void (*start_swap)(cg_onscreen_t *onscreen);
+    void (*end_swap)(cg_onscreen_t *onscreen);
 } cg_winsys_egl_vtable_t;
 
 typedef enum _cg_egl_winsys_feature_t {
