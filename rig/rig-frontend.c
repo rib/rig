@@ -285,7 +285,7 @@ frontend__update_ui(Rig__Frontend_Service *service,
     Rig__UIEdit *pb_ui_edit;
 
 #if 0
-    frontend->ui_update_pending = false;
+    frontend->sim_update_pending = false;
 
     closure (&ack, closure_data);
 
@@ -300,7 +300,7 @@ frontend__update_ui(Rig__Frontend_Service *service,
 #endif
     // c_debug ("Frontend: Update UI Request\n");
 
-    frontend->ui_update_pending = false;
+    frontend->sim_update_pending = false;
 
     c_return_if_fail(pb_ui_diff != NULL);
 
@@ -389,8 +389,8 @@ frontend__update_ui(Rig__Frontend_Service *service,
             rig_view_t *view = l->data;
             rut_shell_onscreen_t *onscreen = view->onscreen;
 
-            onscreen->presentation_time0 = 0;
-            onscreen->presentation_time1 = 0;
+            onscreen->presentation_time_earlier = 0;
+            onscreen->presentation_time_latest = 0;
         }
     }
 
@@ -519,7 +519,7 @@ frontend_stop_service(rig_frontend_t *frontend)
     frontend->stream = NULL;
 
     frontend->connected = false;
-    frontend->ui_update_pending = false;
+    frontend->sim_update_pending = false;
 }
 
 static void
@@ -583,7 +583,7 @@ rig_frontend_run_simulator_frame(rig_frontend_t *frontend,
     rig__simulator__run_frame(
         simulator_service, setup, frame_running_ack, frontend); /* user data */
 
-    frontend->ui_update_pending = true;
+    frontend->sim_update_pending = true;
 }
 
 static void
@@ -1176,6 +1176,31 @@ init_empty_ui(rig_frontend_t *frontend)
     rig_engine_op_apply_context_set_ui(&frontend->apply_op_ctx, ui);
 }
 
+static void
+frontend_queue_redraw_hook(rut_shell_t *shell, void *user_data)
+{
+    rig_frontend_t *frontend = user_data;
+    rut_shell_onscreen_t *first_onscreen =
+        c_list_first(&shell->onscreens, rut_shell_onscreen_t, link);
+
+    /* We throttle rendering according to the first onscreen */
+    if (first_onscreen) {
+        first_onscreen->is_dirty = true;
+
+        /* If we're still waiting for a previous redraw to complete
+         * then we can rely on onscreen_frame_event_cb() to
+         * re-attempt queueing this redraw later, now that
+         * first_onscreen has been marked as dirty. */
+        if (!first_onscreen->is_ready)
+            return;
+    }
+
+    if (frontend->mid_frame)
+        return;
+
+    rut_shell_queue_redraw_real(shell);
+}
+
 rig_frontend_t *
 rig_frontend_new(rut_shell_t *shell)
 {
@@ -1194,6 +1219,10 @@ rig_frontend_new(rut_shell_t *shell)
                               NULL); /* value destroy */
 
     c_list_init(&frontend->ui_update_cb_list);
+
+    rut_shell_set_queue_redraw_callback(shell,
+                                        frontend_queue_redraw_hook,
+                                        frontend);
 
     frontend->default_pipeline = cg_pipeline_new(shell->cg_device);
 
@@ -1258,6 +1287,8 @@ rig_frontend_new(rut_shell_t *shell)
     frontend->renderer = rig_renderer_new(frontend);
     rig_renderer_init(frontend->renderer);
 
+    frontend->paint_finish_timer = rut_poll_shell_create_timer(shell);
+
     init_empty_ui(frontend);
 
     return frontend;
@@ -1285,7 +1316,7 @@ queue_simulator_frame_cb(rig_frontend_t *frontend, void *user_data)
 void
 rig_frontend_queue_simulator_frame(rig_frontend_t *frontend)
 {
-    if (!frontend->ui_update_pending)
+    if (!frontend->sim_update_pending)
         rut_shell_queue_redraw(frontend->engine->shell);
     else if (!frontend->simulator_queue_frame_closure) {
         frontend->simulator_queue_frame_closure =
@@ -1302,14 +1333,17 @@ rig_frontend_paint(rig_frontend_t *frontend)
     rig_ui_t *ui = frontend->engine->ui;
     c_llist_t *l;
 
+    c_warning("rig_frontend_paint()");
+
     for (l = ui->views; l; l = l->next) {
         rig_view_t *view = l->data;
         rig_camera_view_t *camera_view = view->camera_view;
         cg_framebuffer_t *fb = camera_view->fb;
+        bool is_onscreen = cg_is_onscreen(fb);
 
         rig_camera_view_paint(camera_view, frontend->renderer);
 
-        if (cg_is_onscreen(fb)) {
+        if (is_onscreen) {
             if (frontend->swap_buffers_hook)
                 frontend->swap_buffers_hook(fb, frontend->swap_buffers_hook_data);
             else
@@ -1332,66 +1366,204 @@ find_view_for_onscreen(rig_frontend_t *frontend,
     return rig_ui_find_view_for_onscreen(frontend->engine->ui, onscreen);
 }
 
+static int
+compare_presentation_deltas_cb(const void *v0, const void *v1)
+{
+    const int64_t *p0 = v0;
+    const int64_t *p1 = v1;
+
+    return *p0 - *p1;
+}
+
+static int
+round_to_nearest_30(int fps)
+{
+    int rem = (fps + 15) % 30;
+
+    return fps + 15 - rem;
+}
+
+static void
+frontend_frame_finish_cb(rut_poll_timer_t *timer, void *user_data)
+{
+    rig_frontend_t *frontend = user_data;
+    rig_engine_t *engine = frontend->engine;
+    rut_shell_t *shell = engine->shell;
+    rig_ui_t *ui = engine->ui;
+    rig_view_t *primary_view = ui->views ? ui->views->data : NULL;
+    
+    if (primary_view)
+        rig_frontend_paint(frontend);
+    else
+        c_warning("primary view deleted mid scene");
+
+    rig_engine_garbage_collect(engine);
+
+    rut_memory_stack_rewind(engine->frame_stack);
+
+    if (rig_engine_check_timelines(engine))
+        rut_shell_queue_redraw(shell);
+
+    frontend->prev_target_time = frontend->target_time;
+    frontend->mid_frame = false;
+}
+
 void
-rig_frontend_run_frame(rig_frontend_t *frontend)
+rig_frontend_start_frame(rig_frontend_t *frontend)
 {
     rig_engine_t *engine = frontend->engine;
     rut_shell_t *shell = engine->shell;
     rig_ui_t *ui = engine->ui;
     rig_view_t *primary_view = ui->views ? ui->views->data : NULL;
+    int current_fps = 0;
     int64_t delta_ns = 0;
     int64_t frontend_target;
-    int64_t sim_target = 0;
-    int64_t prev_presentation_time = 0;
+    int64_t recent_presentation_time = 0;
+    int64_t recent_presentation_age = 0;
     double frontend_progress = 0;
+    int64_t now;
+    int64_t wait;
+    int64_t finish_time;
+    int refresh_rate = 60;
+
+    int64_t debug_current_frame = 0;
+
+    /* FIXME: currently the frontend redraw logic probably doesn't
+     * handle having multiple view / onscreen framebuffers very well
+     */
+
+    c_return_if_fail(frontend->mid_frame == false);
+
+    rut_shell_remove_paint_idle(shell);
+
+    frontend->mid_frame = true;
 
     if (primary_view) {
         rut_shell_onscreen_t *onscreen = primary_view->onscreen;
+        int max_deltas = C_N_ELEMENTS(onscreen->presentation_deltas);
+        int n_deltas = MIN(max_deltas, onscreen->presentation_delta_index);
+
+        /* Set onscreen->is_ready = false, is_mid_scene = true
+         * so we will throttle queuing further redraws until
+         * this frame has finished...
+         */
+        rut_shell_onscreen_begin_frame(onscreen);
 
         /* If we have a history of presentation times then use those
-         * to predict the framerate...
+         * to check our actual frame rate...
          */
-        if (onscreen->presentation_time0 && onscreen->presentation_time1) {
-            int64_t presentation_delta_ns = (onscreen->presentation_time1 -
-                                             onscreen->presentation_time0);
+        if (n_deltas == max_deltas) {
+            int64_t deltas[n_deltas];
+            int mid = n_deltas / 2;
+            int64_t median;
+            int first;
 
-            if (presentation_delta_ns)
-                frontend->est_frame_delta_ns = presentation_delta_ns;
-            else
+            memcpy(deltas, onscreen->presentation_deltas,
+                   sizeof(int64_t) * n_deltas);
+
+            qsort(deltas, n_deltas,
+                  sizeof(int64_t), compare_presentation_deltas_cb);
+            for (first = 0; deltas[first] == 0 && first < n_deltas; first++)
+                ;
+
+            if (first < 5) {
+                mid = ((n_deltas - first) / 2.0f) + 0.5f;
+
+                median = deltas[mid];
+
+                for (int i = 0; i < n_deltas; i++) {
+                    c_debug("delta %d = %"PRIi64, i, deltas[mid]);
+                }
+                current_fps = 1000000000.0 / (double)median;
+
+                refresh_rate = round_to_nearest_30(current_fps);
+
+                c_debug("median frame delta = %"PRIu64" current fps = %d refresh=%d",
+                        median, current_fps, refresh_rate);
+            } else {
+                c_warning("multiple spurious presentation deltas of zero");
+            }
+        }
+
+        if (onscreen->refresh_rate) {
+            if (current_fps && current_fps < onscreen->refresh_rate) {
+                c_warning("Not keeping up with display refresh rate of %d fps: actual fps = %d",
+                          (int)onscreen->refresh_rate, current_fps);
+            }
+            refresh_rate = onscreen->refresh_rate;
+        }
+
+        c_debug("refresh_rate = %d", refresh_rate);
+
+        if (onscreen->presentation_time_earlier && onscreen->presentation_time_latest) {
+            if ((onscreen->presentation_time_latest -
+                 onscreen->presentation_time_earlier) == 0)
                 c_warning("Spurious repeat presentation time (maybe dropped by compositor)");
 
             c_warn_if_fail(frontend->prev_target_time != 0);
         }
 
-        if (onscreen->presentation_time1)
-            prev_presentation_time = onscreen->presentation_time1;
-    }
+        if (onscreen->presentation_time_latest) {
+            int64_t current_frame = debug_current_frame =
+                cg_onscreen_get_frame_counter(onscreen->cg_onscreen);
 
-    if (prev_presentation_time)
-        frontend_target = prev_presentation_time + frontend->est_frame_delta_ns;
-    else {
+            recent_presentation_time = onscreen->presentation_time_latest;
+            recent_presentation_age = (current_frame -
+                                       onscreen->presentation_time_latest_frame);
+            c_debug("recent presentation time = %"PRIi64" (from frame = %"PRIi64")",
+                    recent_presentation_time,
+                    onscreen->presentation_time_latest_frame);
+            c_debug("recent presentation age = %"PRIi64, recent_presentation_age);
+        }
+    }
+    frontend->est_frame_delta_ns = (double)(1000000000.0 /
+                                            (double)refresh_rate);
+    c_debug("estimated frame delta ns = %"PRIi64, frontend->est_frame_delta_ns);
+
+    now = cg_get_clock_time(shell->cg_device);
+
+    if (recent_presentation_time) {
+        int64_t rem = (now - recent_presentation_time) % frontend->est_frame_delta_ns;
+
+        frontend_target = now + frontend->est_frame_delta_ns - rem;
+
+        if (frontend_target - now < (frontend->est_frame_delta_ns / 2)) {
+            c_warning("starting too late to meet next presentation deadline; assuming miss and preparing for next est. deadline");
+            frontend_target += frontend->est_frame_delta_ns;
+        }
+
+        c_debug("predicted target time = %"PRIi64" (for frame = %"PRIi64")",
+                frontend_target,
+                debug_current_frame);
+    } else {
         /* XXX: this isn't going to be a very reliable estimate */
-        frontend_target = (cg_get_clock_time(shell->cg_device) +
-                           frontend->est_frame_delta_ns);
+        frontend_target = (now + frontend->est_frame_delta_ns);
+        c_debug("(crude) predicted target time = %"PRIi64, frontend_target);
     }
 
+    /* If this is the first frame then we want a delta of 0 in the
+     * frontend */
     if (frontend->prev_target_time == 0)
-        frontend->prev_target_time = (frontend_target -
-                                      frontend->est_frame_delta_ns);
+        frontend->prev_target_time = frontend_target;
+
+    c_debug("frontend prev_target_time = %"PRIi64, frontend->prev_target_time);
 
     delta_ns = frontend_target - frontend->prev_target_time;
+    c_debug("frontend delta_ns = %"PRIi64, delta_ns);
+
     frontend_progress = delta_ns / 1000000000.0;
+    c_debug("frontend progress = %f", frontend_progress);
 
     if (frontend->prev_target_time > frontend_target) {
-        c_debug("Redrawing faster than predicted (duplicating frame to avoid going back in time)");
+        c_debug("Frontend redrawing faster than predicted (duplicating frame to avoid going back in time)");
 
         if (primary_view) {
             rut_shell_onscreen_t *onscreen = primary_view->onscreen;
 
-            c_debug("> present time0 = %"PRIi64, onscreen->presentation_time0);
-            c_debug("> present time1 = %"PRIi64, onscreen->presentation_time1);
-            c_debug("> present time delta = %"PRIi64, (onscreen->presentation_time1 -
-                                                       onscreen->presentation_time0));
+            c_debug("> present time earlier = %"PRIi64, onscreen->presentation_time_earlier);
+            c_debug("> present time latest = %"PRIi64, onscreen->presentation_time_latest);
+            c_debug("> present time delta = %"PRIi64, (onscreen->presentation_time_latest -
+                                                       onscreen->presentation_time_earlier));
         }
 
         c_debug("> prev frontend target = %"PRIi64, frontend->prev_target_time);
@@ -1407,29 +1579,50 @@ rig_frontend_run_frame(rig_frontend_t *frontend)
     }
 
     frontend->target_time = frontend_target;
-    //c_debug("frontend target = %"PRIi64, frontend_target);
 
-    rut_shell_start_redraw(shell);
 
     /* XXX: we only kick off a new frame in the simulator if it's not
      * still busy... */
-    if (!frontend->ui_update_pending) {
+    if (!frontend->sim_update_pending) {
         rut_input_queue_t *input_queue = rut_shell_get_input_queue(shell);
         Rig__FrameSetup setup = RIG__FRAME_SETUP__INIT;
+        int64_t sim_target_time;
         int64_t sim_delta_ns;
         double sim_progress;
         rig_pb_serializer_t *serializer;
         rut_input_event_t *event;
 
-        frontend->prev_sim_target_time = frontend->sim_target_time;
-        frontend->sim_target_time = frontend_target + frontend->est_frame_delta_ns;
+        sim_target_time = frontend_target;
+        c_debug("sim target = %"PRIi64, sim_target_time);
 
-        if (frontend->prev_sim_target_time)
-            sim_delta_ns = sim_target - frontend->prev_sim_target_time;
-        else
-            sim_delta_ns = frontend->est_frame_delta_ns;
+        c_debug("prev sim target = %"PRIi64, frontend->prev_sim_target_time);
+        if (!frontend->prev_sim_target_time) {
+            frontend->prev_sim_target_time = sim_target_time;
+            //frontend->prev_sim_target_time =
+            //    sim_target_time - frontend->est_frame_delta_ns;
+        }
+
+        c_debug("prev sim target = %"PRIi64, frontend->prev_sim_target_time);
+        sim_delta_ns = sim_target_time - frontend->prev_sim_target_time;
+        c_debug("sim delta = %"PRIi64" (%"PRIi64" - %"PRIi64")",
+                sim_delta_ns, sim_target_time, frontend->prev_sim_target_time);
 
         sim_progress = sim_delta_ns / 1000000000.0;
+        c_debug("sim progress = %f", sim_progress);
+
+        if (frontend->prev_sim_target_time > sim_target_time) {
+            c_debug("Simulator updating faster than predicted (duplicating frame to avoid going back in time)");
+
+            sim_target_time = frontend->prev_sim_target_time;
+            sim_delta_ns = 0;
+            sim_progress = 0;
+        }
+
+        frontend->prev_sim_target_time = frontend->sim_target_time;
+        frontend->sim_target_time = sim_target_time;
+
+        c_warn_if_fail(frontend->sim_target_time >= frontend->prev_sim_target_time);
+
 
         /* Associate all the events with a scene camera entity which
          * also exists in the simulator... */
@@ -1486,27 +1679,23 @@ rig_frontend_run_frame(rig_frontend_t *frontend)
 
     rig_engine_progress_timelines(engine, frontend_progress);
 
-    rut_shell_run_pre_paint_callbacks(shell);
+    /* Give the simulator some time to complete */
+    now = cg_get_clock_time(shell->cg_device);
 
-    rut_shell_run_start_paint_callbacks(shell);
+    /* FIXME: this is over simplified to assume we always need
+     * ~5 milliseconds to paint and present */
+    finish_time = frontend->target_time - 5000000;
+    wait = (finish_time - now) / 1000000;
+    if (wait < 0) {
+        c_warning("frontend target presentation time already passed before starting");
+        wait = 0;
+    }
 
-    rig_frontend_paint(frontend);
-
-    frontend->prev_target_time = frontend_target;
-
-    rut_shell_run_post_paint_callbacks(shell);
-
-    rig_engine_garbage_collect(engine);
-
-    rut_memory_stack_rewind(engine->frame_stack);
-
-    rut_shell_end_redraw(shell);
-
-    /* FIXME: we should hook into an asynchronous notification of
-     * when rendering has finished for determining when a frame is
-     * finished. */
-    rut_shell_finish_frame(shell);
-
-    if (rig_engine_check_timelines(engine))
-        rut_shell_queue_redraw(shell);
+    rut_poll_shell_add_timeout(shell,
+                               frontend->paint_finish_timer,
+                               frontend_frame_finish_cb,
+                               frontend, /* user data */
+                               wait);
 }
+
+

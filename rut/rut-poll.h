@@ -90,14 +90,8 @@ typedef enum {
 
 typedef struct _uv_source_t uv_source_t;
 
-void rut_poll_shell_remove_fd(rut_shell_t *shell, int fd);
-
 typedef int64_t (*rut_poll_prepare_callback_t)(void *user_data);
 typedef void (*rut_poll_dispatch_callback_t)(void *user_data, int revents);
-
-void rut_poll_renderer_modify_fd(rut_shell_t *shell,
-                                 int fd,
-                                 rut_poll_fd_event_t events);
 
 typedef struct _rut_poll_source_t rut_poll_source_t;
 
@@ -108,15 +102,10 @@ rut_poll_shell_add_fd(rut_shell_t *shell,
                       int64_t (*prepare)(void *user_data),
                       void (*dispatch)(void *user_data, int fd, int revents),
                       void *user_data);
-
-rut_poll_source_t *rut_poll_shell_add_source(
-    rut_shell_t *shell,
-    int64_t (*prepare)(void *user_data),
-    void (*dispatch)(void *user_data, int fd, int revents),
-    void *user_data);
-
-void rut_poll_shell_remove_source(rut_shell_t *shell,
-                                  rut_poll_source_t *source);
+void rut_poll_renderer_modify_fd(rut_shell_t *shell,
+                                 int fd,
+                                 rut_poll_fd_event_t events);
+void rut_poll_shell_remove_fd(rut_shell_t *shell, int fd);
 
 void rut_poll_shell_add_idle(rut_shell_t *shell, rut_closure_t *closure);
 void rut_poll_shell_remove_idle(rut_shell_t *shell, rut_closure_t *idle);
@@ -133,6 +122,18 @@ rut_closure_t *rut_poll_shell_add_sigchild(rut_shell_t *shell,
                                            void *user_data,
                                            void (*destroy_cb)(void *user_data));
 void rut_poll_shell_remove_sigchild(rut_shell_t *shell, rut_closure_t *sigchild);
+
+typedef struct _rut_poll_timer rut_poll_timer_t;
+
+rut_poll_timer_t *rut_poll_shell_create_timer(rut_shell_t *shell);
+void rut_poll_shell_add_timeout(rut_shell_t *shell,
+                                rut_poll_timer_t *timer,
+                                void (*callback)(rut_poll_timer_t *timer,
+                                                 void *user_data),
+                                void *user_data,
+                                int timeout);
+void rut_poll_shell_delete_timer(rut_shell_t *shell,
+                                 rut_poll_timer_t *timer);
 
 void rut_poll_init(rut_shell_t *shell, rut_shell_t *main_shell);
 

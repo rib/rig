@@ -402,48 +402,6 @@ set_xkb_modifier_state_from_xi2_dev_event(rut_shell_t *shell,
 }
 
 static void
-handle_client_message(rut_shell_t *shell, XEvent *xevent)
-{
-    XClientMessageEvent *msg = &xevent->xclient;
-    rut_shell_onscreen_t *onscreen =
-        get_onscreen_for_xwindow(shell, msg->window);
-
-    if (!onscreen) {
-        c_warning("Ignoring spurious client message that couldn't be mapped to an onscreen window");
-        return;
-    }
-
-    if (msg->message_type == XInternAtom(shell->xdpy, "WM_PROTOCOLS", False)) {
-        Atom protocol = msg->data.l[0];
-
-        if (protocol == XInternAtom(shell->xdpy, "WM_DELETE_WINDOW", False)) {
-
-            /* FIXME: we should eventually support multiple windows and
-             * we should be able close windows individually. */
-            rut_shell_quit(shell);
-        } else if (protocol == XInternAtom(shell->xdpy, "WM_TAKE_FOCUS", False)) {
-            XSetInputFocus(shell->xdpy,
-                           msg->window,
-                           RevertToParent,
-                           CurrentTime);
-        } else if (protocol == XInternAtom(shell->xdpy, "_NET_WM_PING", False)) {
-            msg->window = DefaultRootWindow(shell->xdpy);
-            XSendEvent(shell->xdpy, DefaultRootWindow(shell->xdpy), False,
-                       SubstructureRedirectMask | SubstructureNotifyMask, xevent);
-        } else {
-            char *name = XGetAtomName(shell->xdpy, protocol);
-            c_warning("Unknown X client WM_PROTOCOLS message recieved (%s)\n",
-                      name);
-            XFree(name);
-        }
-    } else {
-        char *name = XGetAtomName(shell->xdpy, xevent->xclient.message_type);
-        c_warning("Unknown X client message recieved (%s)\n", name);
-        XFree(name);
-    }
-}
-
-static void
 handle_property_notify(rut_shell_t *shell, XEvent *xevent)
 {
     XPropertyEvent *event = &xevent->xproperty;
@@ -469,7 +427,7 @@ handle_property_notify(rut_shell_t *shell, XEvent *xevent)
                                     event->window,
                                     net_wm_state_atom,
                                     0, /* offset */
-                                    LONG_MAX,
+                                    LONG_MAX, /* length to retrieve (all) */
                                     False, /* delete */
                                     XA_ATOM, /* expected type */
                                     &actual_type,
@@ -507,12 +465,8 @@ rut_x11_shell_handle_x11_event(rut_shell_t *shell, XEvent *xevent)
     rut_input_event_t *event = NULL;
     rut_x11_event_t *rut_x11_event;
 
-    if (xevent->type == ClientMessage) {
-        handle_client_message(shell, xevent);
-        return;
-    }
-
-    if (xevent->type == PropertyNotify) {
+    switch (xevent->type) {
+    case PropertyNotify:
         handle_property_notify(shell, xevent);
         return;
     }
@@ -710,15 +664,6 @@ rut_x11_allocate_onscreen(rut_shell_onscreen_t *onscreen)
     cg_onscreen_t *cg_onscreen;
     cg_error_t *ignore = NULL;
     Window xwin;
-    Atom window_type_atom = XInternAtom(shell->xdpy, "_NET_WM_WINDOW_TYPE", False);
-    Atom normal_atom = XInternAtom(shell->xdpy, "_NET_WM_WINDOW_TYPE_NORMAL", False);
-    Atom net_wm_pid_atom = XInternAtom(shell->xdpy, "_NET_WM_PID", False);
-    Atom wm_protocols[] = {
-        XInternAtom(shell->xdpy, "WM_DELETE_WINDOW", False),
-        XInternAtom(shell->xdpy, "WM_TAKE_FOCUS", False),
-        XInternAtom(shell->xdpy, "_NET_WM_PING", False),
-    };
-    uint32_t pid;
     XIEventMask evmask;
     XSetWindowAttributes attribs;
 
@@ -732,40 +677,6 @@ rut_x11_allocate_onscreen(rut_shell_onscreen_t *onscreen)
     }
 
     xwin = cg_x11_onscreen_get_window_xid(cg_onscreen);
-
-    /* XXX: we are only calling this for the convenience that
-     * it will set the WM_CLIENT_MACHINE property which is
-     * a requirement before we can set _NET_WM_PID */
-    XSetWMProperties(shell->xdpy, xwin,
-                     NULL, /* window name */
-                     NULL, /* icon name */
-                     NULL, /* argv */
-                     0, /* argc */
-                     NULL, /* normal hints */
-                     NULL, /* wm hints */
-                     NULL); /* class hints */
-
-    XSetWMProtocols(shell->xdpy, xwin, wm_protocols,
-                    sizeof(wm_protocols) / sizeof(Atom));
-
-    pid = getpid();
-    XChangeProperty(shell->xdpy,
-                    xwin,
-                    net_wm_pid_atom,
-                    XA_CARDINAL,
-                    32, /* format */
-                    PropModeReplace,
-                    (unsigned char *)&pid,
-                    1); /* n elements */
-
-    XChangeProperty(shell->xdpy,
-                    xwin,
-                    window_type_atom,
-                    XA_ATOM,
-                    32, /* format */
-                    PropModeReplace,
-                    (unsigned char *)&normal_atom,
-                    1); /* n elements */
 
     attribs.bit_gravity = NorthWestGravity;
     attribs.event_mask = (StructureNotifyMask | ExposureMask | /* needed by cogl */
@@ -1024,12 +935,12 @@ rut_x11_shell_init(rut_shell_t *shell)
 
     update_keyboard_state(shell);
 
-    rut_poll_shell_add_fd(shell,
-                          ConnectionNumber(shell->xdpy),
-                          RUT_POLL_FD_EVENT_IN,
-                          xlib_prepare_cb,
-                          xlib_dispatch_cb,
-                          shell);
+    shell->x11_poll_source = rut_poll_shell_add_fd(shell,
+                                                   ConnectionNumber(shell->xdpy),
+                                                   RUT_POLL_FD_EVENT_IN,
+                                                   xlib_prepare_cb,
+                                                   xlib_dispatch_cb,
+                                                   shell);
 
     shell->platform.type = RUT_SHELL_X11_PLATFORM;
 

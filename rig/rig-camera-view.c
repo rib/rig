@@ -62,9 +62,6 @@ _rig_camera_view_free(void *object)
 
     rig_camera_view_set_ui(view, NULL);
 
-    rut_shell_remove_pre_paint_callback_by_graphable(view->shell,
-                                                     view);
-
     rut_graphable_destroy(view);
 
     rut_object_free(rig_camera_view_t, view);

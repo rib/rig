@@ -71,6 +71,7 @@ struct _rut_poll_source_t {
     uv_poll_t uv_poll;
     uv_prepare_t uv_prepare;
     uv_check_t uv_check;
+    int n_uv_handles;
 #endif
 };
 
@@ -86,7 +87,16 @@ dummy_timer_cb(uv_timer_t *timer)
 }
 
 static void
-dummy_timer_check_cb(uv_check_t *check)
+dummy_source_timer_check_cb(uv_check_t *check)
+{
+    rut_poll_source_t *source = check->data;
+
+    uv_timer_stop(&source->uv_timer);
+    uv_check_stop(check);
+}
+
+static void
+dummy_shell_timer_check_cb(uv_check_t *check)
 {
     uv_timer_t *timer = check->data;
     uv_timer_stop(timer);
@@ -143,8 +153,7 @@ update_cg_sources(rut_shell_t *shell)
     if (cg_timeout >= 0) {
         cg_timeout /= 1000;
         uv_timer_start(&shell->cg_timer, dummy_timer_cb, cg_timeout, 0);
-        shell->cg_check.data = &shell->cg_timer;
-        uv_check_start(&shell->cg_check, dummy_timer_check_cb);
+        uv_check_start(&shell->cg_timer_check, dummy_shell_timer_check_cb);
     }
 }
 #endif /* RIG_SIMULATOR_ONLY */
@@ -164,17 +173,37 @@ find_fd_source(rut_shell_t *shell, int fd)
 }
 
 static void
-free_source(rut_poll_source_t *source)
+source_handle_close_cb(uv_handle_t *handle)
 {
-    uv_timer_stop(&source->uv_timer);
-    uv_prepare_stop(&source->uv_prepare);
+    rut_poll_source_t *source = handle->data;
 
-    if (source->fd >= 0)
+    if (--source->n_uv_handles) {
+        c_slice_free(rut_poll_source_t, source);
+    }
+}
+
+static void
+close_source(rut_poll_source_t *source)
+{
+    int n_uv_handles = 0;
+
+    uv_timer_stop(&source->uv_timer);
+    n_uv_handles++;
+
+    if (source->prepare) {
+        uv_prepare_stop(&source->uv_prepare);
+        n_uv_handles++;
+    }
+
+    if (source->fd >= 0) {
         uv_poll_stop(&source->uv_poll);
+        n_uv_handles++;
+    }
 
     uv_check_stop(&source->uv_check);
+    n_uv_handles++;
 
-    c_slice_free(rut_poll_source_t, source);
+    c_warn_if_fail(n_uv_handles == source->n_uv_handles);
 }
 #endif /* USE_UV */
 
@@ -190,7 +219,7 @@ rut_poll_shell_remove_fd(rut_shell_t *shell, int fd)
     shell->poll_sources_age++;
 
     c_list_remove(&source->link);
-    free_source(source);
+    close_source(source);
 #else
     c_return_if_reached();
 #endif
@@ -270,10 +299,8 @@ source_prepare_cb(uv_prepare_t *prepare)
 
     if (timeout >= 0) {
         timeout /= 1000;
-        uv_timer_start(
-            &source->uv_timer, dummy_timer_cb, timeout, 0 /* no repeat */);
-        source->uv_check.data = &source->uv_timer;
-        uv_check_start(&source->uv_check, dummy_timer_check_cb);
+        uv_timer_start(&source->uv_timer, dummy_timer_cb, timeout, 0 /* no repeat */);
+        uv_check_start(&source->uv_check, dummy_source_timer_check_cb);
     }
 
     rut_set_thread_current_shell(NULL);
@@ -303,13 +330,21 @@ rut_poll_shell_add_fd(rut_shell_t *shell,
     source->user_data = user_data;
 
     loop = rut_uv_shell_get_loop(shell);
+
     uv_timer_init(loop, &source->uv_timer);
+    source->uv_timer.data = source;
+    source->n_uv_handles++;
+
     uv_check_init(loop, &source->uv_check);
+    source->uv_check.data = source;
+    source->n_uv_handles++;
 
     if (prepare) {
         uv_prepare_init(loop, &source->uv_prepare);
         source->uv_prepare.data = source;
         uv_prepare_start(&source->uv_prepare, source_prepare_cb);
+        source->uv_prepare.data = source;
+        source->n_uv_handles++;
     }
 
     if (fd >= 0) {
@@ -318,6 +353,8 @@ rut_poll_shell_add_fd(rut_shell_t *shell,
         uv_poll_init(loop, &source->uv_poll, fd);
         source->uv_poll.data = source;
         uv_poll_start(&source->uv_poll, uv_events, source_poll_cb);
+        source->uv_poll.data = source;
+        source->n_uv_handles++;
     }
 
     c_list_insert(shell->poll_sources.prev, &source->link);
@@ -327,17 +364,6 @@ rut_poll_shell_add_fd(rut_shell_t *shell,
     return source;
 #else
     c_return_val_if_reached(NULL);
-#endif
-}
-
-void
-rut_poll_shell_remove_source(rut_shell_t *shell, rut_poll_source_t *source)
-{
-#ifdef USE_UV
-    c_list_remove(&source->link);
-    free_source(source);
-#else
-    c_return_if_reached();
 #endif
 }
 
@@ -385,6 +411,112 @@ rut_poll_shell_remove_idle(rut_shell_t *shell, rut_closure_t *idle)
 #ifdef USE_UV
     if (c_list_empty(&shell->idle_closures))
         uv_idle_stop(&shell->uv_idle);
+#endif
+}
+
+struct _rut_poll_timer
+{
+#ifdef USE_UV
+    uv_timer_t uv_timer;
+#endif
+    void (*callback)(rut_poll_timer_t *timer, void *user_data);
+    void *user_data;
+};
+
+rut_poll_timer_t *
+rut_poll_shell_create_timer(rut_shell_t *shell)
+{
+    rut_poll_timer_t *timer = c_slice_new0(rut_poll_timer_t);
+
+#ifdef USE_UV
+    uv_loop_t *loop = rut_uv_shell_get_loop(shell);
+
+    uv_timer_init(loop, &timer->uv_timer);
+    timer->uv_timer.data = timer;
+#endif
+
+    return timer;
+}
+
+static void
+timer_cb(rut_poll_timer_t *timer)
+{
+    if (timer->callback) { /* could be deleted before timeout fired */
+        timer->callback(timer, timer->user_data);
+        timer->callback = NULL;
+        timer->user_data = NULL;
+    }
+#ifdef __EMSCRIPTEN__
+    else {
+        /* If timer->callback is NULL that implies
+         * rut_shell_delete_timer() was called. Currently Emscripten
+         * doesn't provide a way to cancel the timeout via
+         * clearTimeout() so we have to wait until the timeout
+         * fires to before we can free the timer. */
+        c_slice_free(rut_poll_timer_t, timer);
+    }
+#endif
+}
+
+#ifdef USE_UV
+static void
+uv_timer_fire_cb(uv_timer_t *uv_timer)
+{
+    rut_poll_timer_t *timer = uv_timer->data;
+
+    timer_cb(timer);
+}
+#endif
+
+void
+rut_poll_shell_add_timeout(rut_shell_t *shell,
+                           rut_poll_timer_t *timer,
+                           void (*callback)(rut_poll_timer_t *timer,
+                                            void *user_data),
+                           void *user_data,
+                           int timeout)
+{
+    c_return_if_fail(timer->callback == NULL);
+
+    timer->callback = callback;
+    timer->user_data = user_data;
+
+#ifdef USE_UV
+    uv_timer_start(&timer->uv_timer, uv_timer_fire_cb, timeout, 0 /* no repeat */);
+#elif defined(__EMSCRIPTEN__)
+    emscripten_async_call(timer_cb, shell, timeout);
+#else
+#error "missing rut_shell_add_timeout support"
+#endif
+}
+
+static void
+timer_closed_cb(uv_handle_t *timer)
+{
+    c_slice_free(rut_poll_timer_t, timer);
+}
+
+void
+rut_poll_shell_delete_timer(rut_shell_t *shell,
+                            rut_poll_timer_t *timer)
+{
+#ifdef __EMSCRIPTEN__
+    /* Emscripten doesn't give us a way to cancel the timeout so only
+     * free the timer structure if there's no pending timeout.
+     *
+     * If there's a pending timeout then the cleared callback and
+     * user_data pointers will mark that it has been deleted when
+     * the timeout fires.
+     */
+    if (!timer->callback)
+        c_slice_free(rut_poll_timer_t, timer);
+#endif
+
+    timer->callback = NULL;
+    timer->user_data = NULL;
+
+#ifdef USE_UV
+    uv_close((uv_handle_t *)&timer->uv_timer, timer_closed_cb);
 #endif
 }
 
@@ -485,7 +617,7 @@ glib_uv_prepare_cb(uv_prepare_t *prepare)
 
     if (timeout >= 0) {
         uv_timer_start(&shell->glib_uv_timer, dummy_timer_cb, timeout, 0);
-        uv_check_start(&shell->glib_uv_timer_check, dummy_timer_check_cb);
+        uv_check_start(&shell->glib_uv_timer_check, dummy_shell_timer_check_cb);
     }
 }
 
@@ -530,12 +662,12 @@ rut_poll_shell_integrate_cg_events_via_libuv(rut_shell_t *shell)
     uv_loop_t *loop = rut_uv_shell_get_loop(shell);
 
     uv_timer_init(loop, &shell->cg_timer);
+    uv_check_init(loop, &shell->cg_timer_check);
+    shell->cg_timer_check.data = &shell->cg_timer;
 
     uv_prepare_init(loop, &shell->cg_prepare);
     shell->cg_prepare.data = shell;
     uv_prepare_start(&shell->cg_prepare, libuv_cg_prepare_callback);
-
-    uv_check_init(loop, &shell->cg_check);
 }
 #endif /* USE_UV */
 
