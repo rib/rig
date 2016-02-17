@@ -95,7 +95,18 @@ struct _rig_frontend_t {
     rut_closure_t *simulator_queue_frame_closure;
 
     rut_closure_t *finish_ui_load_closure;
-    bool ui_update_pending;
+
+    /* Painting is split into two parts, where we first calculate a
+     * target presentation time and kick the simulator to prepare
+     * an update for the frame, and then later we 'finish' by
+     * painting the update from the simulator (if it arrive in
+     * time). */
+    rut_poll_timer_t *paint_finish_timer;
+
+    /* true if the simulator is busy preparing a scene update */
+    bool sim_update_pending;
+
+    bool mid_frame;
 
     int64_t est_frame_delta_ns;
 
@@ -187,4 +198,4 @@ void rig_frontend_update_simulator_dso(rig_frontend_t *frontend,
 
 void rig_frontend_paint(rig_frontend_t *frontend);
 
-void rig_frontend_run_frame(rig_frontend_t *frontend);
+void rig_frontend_start_frame(rig_frontend_t *frontend);

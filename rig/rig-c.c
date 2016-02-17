@@ -1241,7 +1241,7 @@ stub_engine_shell_redraw_cb(rut_shell_t *shell, void *user_data)
     rig_engine_t *engine = stub_engine->engine;
     rig_frontend_t *frontend = engine->frontend;
 
-    rig_frontend_run_frame(frontend);
+    rig_frontend_start_frame(frontend);
 }
 
 static void

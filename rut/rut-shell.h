@@ -92,11 +92,40 @@ typedef struct {
 
     cg_onscreen_t *cg_onscreen;
 
-    int64_t presentation_time0;
-    int64_t presentation_time1;
+    cg_onscreen_resize_closure_t *resize_closure;
 
-    bool is_dirty;
-    bool is_ready;
+    int64_t presentation_time_earlier;
+    int64_t presentation_time_latest;
+
+    /* When predicting the target timestamp for the next frame it
+     * important to know how old the historic presentation timestamps
+     * are so we can multiply the predicited delta for one frame by
+     * the number of in-flight frames to determine a target timestamp
+     * for the next frame.
+     */
+    int64_t presentation_time_latest_frame;
+
+    /* A circular history of frame presentation deltas, which we take
+     * the median of to determine whether we're failing to keep up
+     * with the target fps. */
+    int64_t presentation_deltas[11];
+
+    /* monotonically increments (not limited by _deltas[] array len as
+     * the modulus is done when recording a new delta). It can
+     * thus also be used to tell when the array is not yet full */
+    uint32_t presentation_delta_index;
+
+    /* As a fallback for predicting how to progress time if
+     * we don't have presentation times to go on then we
+     * may know the refresh rate of the monitor we're
+     * displaying on... */
+    float refresh_rate;
+
+    bool is_dirty; /* true if we need to redraw something */
+    bool is_ready; /* indicates that the onscreen is not tied
+                    * up in the display pipeline. It's updated
+                    * based on compositor or swap events to
+                    * throttle to the display refresh rate */
 
     rut_cursor_t current_cursor;
     /* This is used to record whether anything set a cursor while
@@ -119,10 +148,15 @@ typedef struct {
 #ifdef USE_X11
         struct {
             Window *xwindow;
+            XID frame_sync_xcounters[2];
+            int64_t frame_sync_counters[2];
+            int64_t last_sync_request_value;
         } x11;
 #endif
         int dummy;
     };
+
+    c_list_t frame_closures;
 } rut_shell_onscreen_t;
 
 typedef enum _rut_input_event_type_t {
@@ -284,6 +318,12 @@ struct _rut_shell_t {
 #ifdef USE_X11
     Display *xdpy;
     xcb_connection_t *xcon;
+    rut_poll_source_t *x11_poll_source;
+
+    int xsync_event;
+    int xsync_error;
+    int xsync_major;
+    int xsync_minor;
 
     int xi2_opcode;
     int xi2_event;
@@ -308,6 +348,7 @@ struct _rut_shell_t {
 
     int hmd_output_id;
 
+    bool net_wm_frame_drawn_supported;
 #if 0
     int x11_min_keycode;
     int x11_max_keycode;
@@ -346,7 +387,7 @@ struct _rut_shell_t {
     uv_idle_t uv_idle;
     uv_prepare_t cg_prepare;
     uv_timer_t cg_timer;
-    uv_check_t cg_check;
+    uv_check_t cg_timer_check;
 
     uv_signal_t sigchild_handle;
     c_list_t sigchild_closures;
@@ -434,22 +475,6 @@ struct _rut_shell_t {
 
     void (*queue_redraw_callback)(rut_shell_t *shell, void *user_data);
     void *queue_redraw_data;
-
-    /* Queue of callbacks to be invoked before painting. If
-     * ‘flushing_pre_paints‘ is true then this will be maintained in
-     * sorted order. Otherwise it is kept in no particular order and it
-     * will be sorted once prepaint flushing starts. That way it doesn't
-     * need to keep track of hierarchy changes that occur after the
-     * pre-paint was queued. This assumes that the depths won't change
-     * will the queue is being flushed */
-    c_list_t pre_paint_callbacks;
-    bool flushing_pre_paints;
-
-    c_list_t start_paint_callbacks;
-    c_list_t post_paint_callbacks;
-
-    int frame;
-    c_list_t frame_infos;
 
     /* A list of onscreen windows that the shell is manipulating */
     c_list_t onscreens;
@@ -551,8 +576,9 @@ bool rut_shell_get_headless(rut_shell_t *shell);
 
 void rut_shell_main(rut_shell_t *shell);
 
-/* Should be the first thing called for each redraw... */
-void rut_shell_start_redraw(rut_shell_t *shell);
+/* Should be the first thing called by the shell paint callback to
+ * ensure the callback is only fired once */
+void rut_shell_remove_paint_idle(rut_shell_t *shell);
 
 void rut_shell_dispatch_input_events(rut_shell_t *shell);
 
@@ -569,23 +595,6 @@ void rut_input_queue_remove(rut_input_queue_t *queue, rut_input_event_t *event);
 void rut_input_queue_clear(rut_input_queue_t *queue);
 
 rut_input_queue_t *rut_shell_get_input_queue(rut_shell_t *shell);
-
-void rut_shell_run_pre_paint_callbacks(rut_shell_t *shell);
-
-void rut_shell_run_start_paint_callbacks(rut_shell_t *shell);
-
-void rut_shell_run_post_paint_callbacks(rut_shell_t *shell);
-
-/* Delimit the end of a frame, at this point the frame counter is
- * incremented.
- */
-void rut_shell_end_redraw(rut_shell_t *shell);
-
-/* Called when a frame has really finished, e.g. when the Rig
- * simulator has finished responding to a run_frame request, sent its
- * update, the new frame has been rendered and presented to the user.
- */
-void rut_shell_finish_frame(rut_shell_t *shell);
 
 /**
  * rut_shell_grab_input:
@@ -736,83 +745,6 @@ rut_shell_add_input_callback(rut_shell_t *shell,
                              void *user_data,
                              rut_closure_destroy_callback_t destroy_cb);
 
-/**
- * rut_shell_add_pre_paint_callback:
- * @shell: The #rut_shell_t
- * @graphable: An object implementing the graphable interface
- * @callback: The callback to invoke
- * @user_data: A user data pointer to pass to the callback
- *
- * Adds a callback that will be invoked just before the next frame of
- * the shell is painted. The callback is associated with a graphable
- * object which is used to ensure the callbacks are invoked in
- * increasing order of depth in the hierarchy that the graphable
- * object belongs to. If this function is called a second time for the
- * same graphable object then no extra callback will be added. For
- * that reason, this function should always be called with the same
- * callback and user_data pointers for a particular graphable object.
- *
- * It is safe to call this function in the middle of a pre paint
- * callback. The shell will keep calling callbacks until all of the
- * pending callbacks are complete and no new callbacks were queued.
- *
- * Typically this callback will be registered when an object needs to
- * layout its children before painting. In that case it is expecting
- * that setting the size on the objects children may cause them to
- * also register a pre-paint callback.
- */
-void rut_shell_add_pre_paint_callback(rut_shell_t *shell,
-                                      rut_object_t *graphable,
-                                      RutPrePaintCallback callback,
-                                      void *user_data);
-
-rut_closure_t *
-rut_shell_add_start_paint_callback(rut_shell_t *shell,
-                                   rut_shell_paint_callback_t callback,
-                                   void *user_data,
-                                   rut_closure_destroy_callback_t destroy);
-
-rut_closure_t *
-rut_shell_add_post_paint_callback(rut_shell_t *shell,
-                                  rut_shell_paint_callback_t callback,
-                                  void *user_data,
-                                  rut_closure_destroy_callback_t destroy);
-
-typedef struct _rut_frame_info_t {
-    c_list_t list_node;
-
-    int frame;
-    c_list_t frame_callbacks;
-} rut_frame_info_t;
-
-rut_frame_info_t *rut_shell_get_frame_info(rut_shell_t *shell);
-
-typedef void (*rut_shell_frame_callback_t)(rut_shell_t *shell,
-                                           rut_frame_info_t *info,
-                                           void *user_data);
-
-rut_closure_t *
-rut_shell_add_frame_callback(rut_shell_t *shell,
-                             rut_shell_frame_callback_t callback,
-                             void *user_data,
-                             rut_closure_destroy_callback_t destroy);
-
-/**
- * rut_shell_remove_pre_paint_callback_by_graphable:
- * @shell: The #rut_shell_t
- * @graphable: A graphable object
- *
- * Removes a pre-paint callback that was previously registered with
- * rut_shell_add_pre_paint_callback(). It is not an error to call this
- * function if no callback has actually been registered.
- */
-void rut_shell_remove_pre_paint_callback_by_graphable(rut_shell_t *shell,
-                                                      rut_object_t *graphable);
-
-void rut_shell_remove_pre_paint_callback(rut_shell_t *shell,
-                                         RutPrePaintCallback callback,
-                                         void *user_data);
-
 rut_shell_onscreen_t *
 rut_shell_onscreen_new(rut_shell_t *shell,
                        int width, int height);
@@ -938,3 +870,5 @@ void rut_set_thread_current_shell(rut_shell_t *shell);
 rut_shell_t *rut_get_thread_current_shell(void);
 
 void rut_shell_paint(rut_shell_t *shell);
+
+void rut_shell_onscreen_begin_frame(rut_shell_onscreen_t *onscreen);

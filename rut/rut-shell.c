@@ -381,9 +381,6 @@ _rut_shell_free(void *object)
 
     rut_closure_list_disconnect_all_FIXME(&shell->input_cb_list);
 
-    rut_closure_list_disconnect_all_FIXME(&shell->start_paint_callbacks);
-    rut_closure_list_disconnect_all_FIXME(&shell->post_paint_callbacks);
-
     _rut_shell_fini(shell);
 
     rut_property_context_destroy(&shell->property_ctx);
@@ -419,7 +416,6 @@ rut_shell_new(rut_shell_t *main_shell,
 {
     rut_shell_t *shell =
         rut_object_alloc0(rut_shell_t, &rut_shell_type, _rut_shell_init_type);
-    rut_frame_info_t *frame_info;
 
     shell->input_queue = rut_input_queue_new(shell);
 
@@ -433,17 +429,6 @@ rut_shell_new(rut_shell_t *main_shell,
 
     shell->paint_cb = paint;
     shell->user_data = user_data;
-
-    c_list_init(&shell->pre_paint_callbacks);
-    c_list_init(&shell->start_paint_callbacks);
-    c_list_init(&shell->post_paint_callbacks);
-    shell->flushing_pre_paints = false;
-
-    c_list_init(&shell->frame_infos);
-
-    frame_info = c_slice_new0(rut_frame_info_t);
-    c_list_init(&frame_info->frame_callbacks);
-    c_list_insert(shell->frame_infos.prev, &frame_info->list_node);
 
     rut_poll_init(shell, main_shell);
     rut_closure_init(&shell->paint_idle, rut_shell_paint, shell);
@@ -493,44 +478,6 @@ rut_android_shell_set_application(rut_shell_t *shell,
     shell->android_application = application;
 }
 #endif
-
-rut_frame_info_t *
-rut_shell_get_frame_info(rut_shell_t *shell)
-{
-    rut_frame_info_t *head =
-        c_list_last(&shell->frame_infos, rut_frame_info_t, list_node);
-    return head;
-}
-
-void
-rut_shell_end_redraw(rut_shell_t *shell)
-{
-    rut_frame_info_t *frame_info = c_slice_new0(rut_frame_info_t);
-
-    shell->frame++;
-
-    frame_info->frame = shell->frame;
-    c_list_init(&frame_info->frame_callbacks);
-    c_list_insert(shell->frame_infos.prev, &frame_info->list_node);
-}
-
-void
-rut_shell_finish_frame(rut_shell_t *shell)
-{
-    rut_frame_info_t *info =
-        c_list_first(&shell->frame_infos, rut_frame_info_t, list_node);
-
-    c_return_if_fail(info);
-
-    c_list_remove(&info->list_node);
-
-    rut_closure_list_invoke(
-        &info->frame_callbacks, rut_shell_frame_callback_t, shell, info);
-
-    rut_closure_list_disconnect_all_FIXME(&info->frame_callbacks);
-
-    c_slice_free(rut_frame_info_t, info);
-}
 
 bool
 rut_shell_get_headless(rut_shell_t *shell)
@@ -700,89 +647,8 @@ rut_shell_onscreen_get_fullscreen(rut_shell_onscreen_t *onscreen)
     return onscreen->fullscreen;
 }
 
-static void
-update_pre_paint_entry_depth(rut_shell_pre_paint_entry_t *entry)
-{
-    rut_object_t *parent;
-
-    entry->depth = 0;
-
-    if (!entry->graphable)
-        return;
-
-    for (parent = rut_graphable_get_parent(entry->graphable); parent;
-         parent = rut_graphable_get_parent(parent))
-        entry->depth++;
-}
-
-static int
-compare_entry_depth_cb(const void *a, const void *b)
-{
-    rut_shell_pre_paint_entry_t *entry_a = *(rut_shell_pre_paint_entry_t **)a;
-    rut_shell_pre_paint_entry_t *entry_b = *(rut_shell_pre_paint_entry_t **)b;
-
-    return entry_a->depth - entry_b->depth;
-}
-
-static void
-sort_pre_paint_callbacks(rut_shell_t *shell)
-{
-    rut_shell_pre_paint_entry_t **entry_ptrs;
-    rut_shell_pre_paint_entry_t *entry;
-    int i = 0, n_entries = 0;
-
-    c_list_for_each(entry, &shell->pre_paint_callbacks, list_node)
-    {
-        update_pre_paint_entry_depth(entry);
-        n_entries++;
-    }
-
-    entry_ptrs = c_alloca(sizeof(rut_shell_pre_paint_entry_t *) * n_entries);
-
-    c_list_for_each(entry, &shell->pre_paint_callbacks, list_node)
-    entry_ptrs[i++] = entry;
-
-    qsort(entry_ptrs,
-          n_entries,
-          sizeof(rut_shell_pre_paint_entry_t *),
-          compare_entry_depth_cb);
-
-    /* Reconstruct the list from the sorted array */
-    c_list_init(&shell->pre_paint_callbacks);
-    for (i = 0; i < n_entries; i++)
-        c_list_insert(shell->pre_paint_callbacks.prev,
-                        &entry_ptrs[i]->list_node);
-}
-
-static void
-flush_pre_paint_callbacks(rut_shell_t *shell)
-{
-    /* This doesn't support recursive flushing */
-    c_return_if_fail(!shell->flushing_pre_paints);
-
-    sort_pre_paint_callbacks(shell);
-
-    /* Mark that we're in the middle of flushing so that subsequent adds
-     * will keep the list sorted by depth */
-    shell->flushing_pre_paints = true;
-
-    while (!c_list_empty(&shell->pre_paint_callbacks)) {
-        rut_shell_pre_paint_entry_t *entry =
-            c_list_first(&shell->pre_paint_callbacks,
-                         rut_shell_pre_paint_entry_t, list_node);
-
-        c_list_remove(&entry->list_node);
-
-        entry->callback(entry->graphable, entry->user_data);
-
-        c_slice_free(rut_shell_pre_paint_entry_t, entry);
-    }
-
-    shell->flushing_pre_paints = false;
-}
-
 void
-rut_shell_start_redraw(rut_shell_t *shell)
+rut_shell_remove_paint_idle(rut_shell_t *shell)
 {
 #ifdef USE_UV
     rut_poll_shell_remove_idle(shell, &shell->paint_idle);
@@ -889,33 +755,8 @@ rut_input_queue_clear(rut_input_queue_t *input_queue)
 }
 
 void
-rut_shell_run_pre_paint_callbacks(rut_shell_t *shell)
-{
-    flush_pre_paint_callbacks(shell);
-}
-
-void
-rut_shell_run_start_paint_callbacks(rut_shell_t *shell)
-{
-    rut_closure_list_invoke(
-        &shell->start_paint_callbacks, rut_shell_paint_callback_t, shell);
-}
-
-void
-rut_shell_run_post_paint_callbacks(rut_shell_t *shell)
-{
-    rut_closure_list_invoke(
-        &shell->post_paint_callbacks, rut_shell_paint_callback_t, shell);
-}
-
-void
 rut_shell_paint(rut_shell_t *shell)
 {
-    rut_shell_onscreen_t *onscreen;
-
-    c_list_for_each(onscreen, &shell->onscreens, link)
-        onscreen->is_dirty = false;
-
     shell->paint_cb(shell, shell->user_data);
 }
 
@@ -923,6 +764,12 @@ static void
 _rut_shell_onscreen_free(void *object)
 {
     rut_shell_onscreen_t *onscreen = object;
+
+    if (onscreen->cg_onscreen) {
+        cg_onscreen_remove_resize_callback(onscreen->cg_onscreen,
+                                           onscreen->resize_closure);
+        onscreen->resize_closure = NULL;
+    }
 
     if (onscreen->input_camera)
         rut_object_unref(onscreen->input_camera);
@@ -955,11 +802,23 @@ rut_shell_onscreen_new(rut_shell_t *shell,
     onscreen->height = height;
     onscreen->is_ready = true;
 
+    onscreen->presentation_time_latest_frame = -1;
+
+    c_list_init(&onscreen->frame_closures);
+
     c_list_insert(shell->onscreens.prev, &onscreen->link);
 
     return onscreen;
 }
 
+void
+rut_shell_onscreen_begin_frame(rut_shell_onscreen_t *onscreen)
+{
+    c_warn_if_fail(onscreen->is_ready);
+
+    onscreen->is_dirty = false;
+    onscreen->is_ready = false;
+}
 
 static void
 onscreen_maybe_queue_redraw(rut_shell_onscreen_t *onscreen)
@@ -977,13 +836,52 @@ onscreen_frame_event_cb(cg_onscreen_t *cg_onscreen,
     rut_shell_onscreen_t *onscreen = user_data;
 
     if (event == CG_FRAME_EVENT_SYNC) {
+        float refresh_rate = cg_frame_info_get_refresh_rate(info);
+
         onscreen->is_ready = true;
 
-        onscreen->presentation_time0 = onscreen->presentation_time1;
-        onscreen->presentation_time1 = cg_frame_info_get_presentation_time(info);
-        c_warn_if_fail(onscreen->presentation_time0 != onscreen->presentation_time1);
+        if (refresh_rate)
+            onscreen->refresh_rate = refresh_rate;
 
         onscreen_maybe_queue_redraw(onscreen);
+
+    } else if (event == CG_FRAME_EVENT_COMPLETE) {
+        int64_t frame = cg_frame_info_get_frame_counter(info);
+        float refresh_rate = cg_frame_info_get_refresh_rate(info);
+
+        if(frame > onscreen->presentation_time_latest_frame) {
+            int64_t presentation_time = cg_frame_info_get_presentation_time(info);
+
+            if (presentation_time)
+            {
+                int64_t delta;
+                int delta_idx = onscreen->presentation_delta_index++ %
+                    C_N_ELEMENTS(onscreen->presentation_deltas);
+
+                onscreen->presentation_time_earlier = onscreen->presentation_time_latest;
+                onscreen->presentation_time_latest = presentation_time;
+
+                onscreen->presentation_time_latest_frame = frame;
+
+                delta = onscreen->presentation_time_latest -
+                    onscreen->presentation_time_earlier;
+
+                onscreen->presentation_deltas[delta_idx] = delta;
+                c_debug("onscreen_frame_event_cb: latest =%"PRIi64" earlier=%"PRIi64" no=%"PRIi64,
+                        onscreen->presentation_time_latest,
+                        onscreen->presentation_time_earlier,
+                        onscreen->presentation_time_latest_frame);
+            }
+        } else {
+            c_debug("Spurious out of order _FRAME_COMPLETE (current frame = %"PRIi64", last frame = %"PRIi64")",
+                    frame,
+                    onscreen->presentation_time_latest_frame);
+        }
+
+        if (refresh_rate) {
+            c_debug("onscreen_frame_event_cb: refresh_rate = %f", refresh_rate);
+            onscreen->refresh_rate = refresh_rate;
+        }
     }
 }
 
@@ -997,6 +895,20 @@ onscreen_dirty_cb(cg_onscreen_t *cg_onscreen,
     onscreen->is_dirty = true;
 
     onscreen_maybe_queue_redraw(onscreen);
+}
+
+static void
+onscreen_resize_callback(cg_onscreen_t *cg_onscreen,
+                         int width,
+                         int height,
+                         void *user_data)
+{
+    rut_shell_onscreen_t *onscreen = user_data;
+
+    onscreen->width = width;
+    onscreen->height = height;
+
+    rut_shell_queue_redraw(onscreen->shell);
 }
 
 bool
@@ -1019,6 +931,12 @@ rut_shell_onscreen_allocate(rut_shell_onscreen_t *onscreen)
                                    onscreen_frame_event_cb,
                                    onscreen, /* user data */
                                    NULL); /* destroy notify */
+
+    onscreen->resize_closure =
+        cg_onscreen_add_resize_callback(onscreen->cg_onscreen,
+                                        onscreen_resize_callback,
+                                        onscreen,
+                                        NULL); /* destroy */
 
     return true;
 }
@@ -1231,26 +1149,7 @@ rut_shell_queue_redraw_real(rut_shell_t *shell)
 void
 rut_shell_queue_redraw(rut_shell_t *shell)
 {
-    if (shell->queue_redraw_callback)
-        shell->queue_redraw_callback(shell, shell->queue_redraw_data);
-    else {
-        rut_shell_onscreen_t *first_onscreen =
-            c_list_first(&shell->onscreens, rut_shell_onscreen_t, link);
-
-        /* We throttle rendering according to the first onscreen */
-        if (first_onscreen) {
-            first_onscreen->is_dirty = true;
-
-            /* If we're still waiting for a previous redraw to complete
-             * then we can rely on onscreen_frame_event_cb() to
-             * re-attempt queueing this redraw later, now that
-             * first_onscreen has been marked as dirty. */
-            if (!first_onscreen->is_ready)
-                return;
-        }
-
-        rut_shell_queue_redraw_real(shell);
-    }
+    shell->queue_redraw_callback(shell, shell->queue_redraw_data);
 }
 
 bool
@@ -1280,120 +1179,6 @@ rut_shell_set_queue_redraw_callback(rut_shell_t *shell,
 {
     shell->queue_redraw_callback = callback;
     shell->queue_redraw_data = user_data;
-}
-
-void
-rut_shell_add_pre_paint_callback(rut_shell_t *shell,
-                                 rut_object_t *graphable,
-                                 RutPrePaintCallback callback,
-                                 void *user_data)
-{
-    rut_shell_pre_paint_entry_t *entry;
-    c_list_t *insert_point;
-
-    if (graphable) {
-        /* Don't do anything if the graphable is already queued */
-        c_list_for_each(entry, &shell->pre_paint_callbacks, list_node)
-        {
-            if (entry->graphable == graphable) {
-                c_warn_if_fail(entry->callback == callback);
-                c_warn_if_fail(entry->user_data == user_data);
-                return;
-            }
-        }
-    }
-
-    entry = c_slice_new(rut_shell_pre_paint_entry_t);
-    entry->graphable = graphable;
-    entry->callback = callback;
-    entry->user_data = user_data;
-
-    insert_point = &shell->pre_paint_callbacks;
-
-    /* If we are in the middle of flushing the queue then we'll keep the
-     * list in order sorted by depth. Otherwise we'll delay sorting it
-     * until the flushing starts so that the hierarchy is free to
-     * change in the meantime. */
-
-    if (shell->flushing_pre_paints) {
-        rut_shell_pre_paint_entry_t *next_entry;
-
-        update_pre_paint_entry_depth(entry);
-
-        c_list_for_each(next_entry, &shell->pre_paint_callbacks, list_node)
-        {
-            if (next_entry->depth >= entry->depth) {
-                insert_point = &next_entry->list_node;
-                break;
-            }
-        }
-    }
-
-    c_list_insert(insert_point->prev, &entry->list_node);
-}
-
-void
-rut_shell_remove_pre_paint_callback_by_graphable(rut_shell_t *shell,
-                                                 rut_object_t *graphable)
-{
-    rut_shell_pre_paint_entry_t *entry;
-
-    c_list_for_each(entry, &shell->pre_paint_callbacks, list_node)
-    {
-        if (entry->graphable == graphable) {
-            c_list_remove(&entry->list_node);
-            c_slice_free(rut_shell_pre_paint_entry_t, entry);
-            break;
-        }
-    }
-}
-
-void
-rut_shell_remove_pre_paint_callback(rut_shell_t *shell,
-                                    RutPrePaintCallback callback,
-                                    void *user_data)
-{
-    rut_shell_pre_paint_entry_t *entry;
-
-    c_list_for_each(entry, &shell->pre_paint_callbacks, list_node)
-    {
-        if (entry->callback == callback && entry->user_data == user_data) {
-            c_list_remove(&entry->list_node);
-            c_slice_free(rut_shell_pre_paint_entry_t, entry);
-            break;
-        }
-    }
-}
-
-rut_closure_t *
-rut_shell_add_start_paint_callback(rut_shell_t *shell,
-                                   rut_shell_paint_callback_t callback,
-                                   void *user_data,
-                                   rut_closure_destroy_callback_t destroy)
-{
-    return rut_closure_list_add_FIXME(
-        &shell->start_paint_callbacks, callback, user_data, destroy);
-}
-
-rut_closure_t *
-rut_shell_add_post_paint_callback(rut_shell_t *shell,
-                                  rut_shell_paint_callback_t callback,
-                                  void *user_data,
-                                  rut_closure_destroy_callback_t destroy)
-{
-    return rut_closure_list_add_FIXME(
-        &shell->post_paint_callbacks, callback, user_data, destroy);
-}
-
-rut_closure_t *
-rut_shell_add_frame_callback(rut_shell_t *shell,
-                             rut_shell_frame_callback_t callback,
-                             void *user_data,
-                             rut_closure_destroy_callback_t destroy)
-{
-    rut_frame_info_t *info = rut_shell_get_frame_info(shell);
-    return rut_closure_list_add_FIXME(
-        &info->frame_callbacks, callback, user_data, destroy);
 }
 
 void

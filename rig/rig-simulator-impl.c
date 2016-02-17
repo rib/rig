@@ -814,6 +814,7 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
     rut_queue_t *ops;
 
     simulator->redraw_queued = false;
+    rut_shell_remove_paint_idle(shell);
 
     if (!engine->ui)
         return;
@@ -824,14 +825,7 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
      * can be sent back to the frontend process each frame. */
     simulator->shell->property_ctx.logging_disabled--;
 
-    // c_debug ("Simulator: Start Frame\n");
-    rut_shell_start_redraw(shell);
-
     rig_engine_progress_timelines(engine, simulator->frame_info.progress);
-
-    rut_shell_run_pre_paint_callbacks(shell);
-
-    rut_shell_run_start_paint_callbacks(shell);
 
     rut_shell_dispatch_input_events(shell);
 
@@ -864,8 +858,6 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
 
     c_debug ("Frame = %d\n", counter);
 #endif
-
-    rut_shell_run_post_paint_callbacks(shell);
 
     if (rig_engine_check_timelines(engine))
         rut_shell_queue_redraw(shell);
@@ -998,8 +990,6 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
     rig_engine_garbage_collect(engine);
 
     rut_memory_stack_rewind(engine->frame_stack);
-
-    rut_shell_end_redraw(shell);
 }
 
 static void
