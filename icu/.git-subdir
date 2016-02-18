@@ -2,4 +2,6 @@
 	url = https://github.com/rig-project/icu
 	branch = rig
 [subdir "integration"]
-	ref = 03b4b9b72bba5c41f84e31c94880815c389dfbcd
+	ref = ee660811460046cab06099406225cdb8343c7cc7
+[subdir]
+	commit-uuid = 40ff55e7-29b4-4fd6-a549-f5b65c997378

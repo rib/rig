@@ -4,6 +4,7 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir) \
 	-I$(top_srcdir)/common \
 	-I$(top_srcdir)/i18n \
+	-I$(top_srcdir)/io \
 	-I$(top_srcdir)/tools/toolutil \
 	-I$(top_builddir) \
 	-I$(top_builddir)/common \

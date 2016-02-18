@@ -4,6 +4,7 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir)/common \
 	-I$(top_builddir) \
 	-I$(top_builddir)/common \
+	-I$(top_srcdir)/i18n \
 	$(U_CPPFLAGS) \
 	-DU_IO_IMPLEMENTATION
 
