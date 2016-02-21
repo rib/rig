@@ -2,6 +2,8 @@
   'target_defaults': {
     'cflags': [
       '-std=c11',
+      '-Wno-unused-but-set-variable',
+      '-Wno-unused-function'
     ],
   },
 

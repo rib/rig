@@ -47,7 +47,6 @@
         'include_dirs': [ 'include' ],
       },
       'sources': [
-        'common.gypi',
         'include/uv.h',
         'include/tree.h',
         'include/uv-errno.h',
@@ -117,8 +116,6 @@
             '-g',
             '--std=gnu89',
             '-pedantic',
-            '-Wall',
-            '-Wextra',
             '-Wno-unused-parameter',
           ],
           'sources': [
