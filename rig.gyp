@@ -1,8 +1,4 @@
 {
-  "includes": [
-    "common.gypi"
-  ],
-
   'target_defaults': {
     'cflags_c': [
       '-std=c11',
@@ -10,8 +6,6 @@
     ],
     'xcode_settings': {
       'WARNING_CFLAGS': [
-        '-Wall',
-        '-Wextra',
         '-Wno-unused-parameter'
       ],
       'OTHER_LDFLAGS': [
@@ -954,8 +948,6 @@
           'cflags': [
             '-g',
             '-std=c99',
-            '-Wall',
-            '-Wextra',
             '-Wno-unused-parameter',
           ],
           'link_settings': {

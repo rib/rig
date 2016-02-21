@@ -140,8 +140,6 @@
           'cflags': [
             '-g',
             '-std=c99',
-            '-Wall',
-            '-Wextra',
             '-Wno-unused-parameter',
           ],
           'link_settings': {
