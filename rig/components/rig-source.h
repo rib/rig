@@ -96,3 +96,7 @@ rig_source_set_url(rut_object_t *obj, const char *url);
 
 const char *
 rig_source_get_url(rut_object_t *obj);
+
+bool rig_source_get_running(rut_object_t *object);
+void rig_source_set_running(rut_object_t *object, bool running);
+

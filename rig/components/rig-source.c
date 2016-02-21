@@ -71,6 +71,7 @@ enum source_type
 
 enum {
     RIG_SOURCE_PROP_URL,
+    RIG_SOURCE_PROP_RUNNING,
 
     RIG_SOURCE_N_PROPS,
 };
@@ -125,11 +126,17 @@ struct _rig_source_t {
 #endif
 
     gif_animation gif;
+
+    int gif_current_frame;
+    double gif_current_elapsed;
+
 #warning "HACK"
     int gif_frame;
 
     int first_layer;
     bool default_sample;
+
+    rig_timeline_t *timeline;
 
     c_list_t changed_cb_list;
     c_list_t ready_cb_list;
@@ -161,6 +168,13 @@ static rut_property_spec_t _rig_source_prop_specs[] = {
       .flags = RUT_PROPERTY_FLAG_READWRITE |
           RUT_PROPERTY_FLAG_EXPORT_FRONTEND,
       .animatable = true },
+    { .name = "running",
+      .nick = "Running",
+      .blurb = "The timeline progressing over time",
+      .type = RUT_PROPERTY_TYPE_BOOLEAN,
+      .getter.boolean_type = rig_source_get_running,
+      .setter.boolean_type = rig_source_set_running,
+      .flags = RUT_PROPERTY_FLAG_READWRITE, },
     { 0 }
 };
 
@@ -844,10 +858,10 @@ _source_load_progress(rig_source_t *source)
             return;
         }
     }
-        
+
     if (!source->data) {
         state->status = LOAD_STATE_READING;
-        
+
         state->filename = get_url_filename(shell, source->url);
 
         if (!state->filename) {
@@ -937,13 +951,13 @@ _source_load_progress(rig_source_t *source)
     } else
 #else
     if (strcmp(source->mime, "image/gif") == 0) {
-	unsigned int i;
         gif_result code;
 
 	gif_create(&source->gif, &bitmap_callbacks);
 
         source->gif.priv = shell;
 
+        /* FIXME: load the GIF asynchronously */
 	do {
             code = gif_initialise(&source->gif, source->data_len, source->data);
             if (code != GIF_OK && code != GIF_WORKING) {
@@ -955,20 +969,10 @@ _source_load_progress(rig_source_t *source)
             }
         } while (code != GIF_OK);
 
-        for (i = 0; i != source->gif.frame_count; i++) {
-            code = gif_decode_frame(&source->gif, i);
-            if (code != GIF_OK) {
-                c_warning("failed to load GIF frame %d", i);
-
-                state->status = LOAD_STATE_ERROR;
-                state->error = c_strdup_printf("failed to load GIF frame %d", i);
-                break;
-            }
-        }
+        source->timeline = rig_timeline_new(engine, FLT_MAX);
 
         source->type = SOURCE_TYPE_GIF;
         state->status = LOAD_STATE_LOADED;
-#warning "TODO: ensure _attach_frame() will attach GIF frames"
     } else
 #endif
 #ifdef USE_GSTREAMER
@@ -989,7 +993,6 @@ _source_load_progress(rig_source_t *source)
                   source->mime);
         source->texture = cg_object_ref(frontend->default_tex2d);
     }
-
 }
 
 cg_texture_t *
@@ -1181,8 +1184,39 @@ rig_source_attach_frame(rig_source_t *source,
         gif_result code;
         cg_error_t *error = NULL;
         uint8_t *buf;
-        
-        code = gif_decode_frame(&source->gif, frame);
+        double elapsed = rig_timeline_get_elapsed(source->timeline);
+        int current_frame = source->gif_current_frame;
+        double current_elapsed = source->gif_current_elapsed;
+        gif_animation *gif = &source->gif;
+        int frame_count = gif->frame_count;
+
+        if (elapsed != current_elapsed) {
+            double e = elapsed;
+
+            if (elapsed > current_elapsed) {
+                for (int i = current_frame + 1;
+                     e <= elapsed && i < (frame_count - 1);
+                     i++)
+                {
+                    gif_frame *f = &gif->frames[i];
+
+                    e += f->frame_delay;
+                    current_frame = i;
+                }
+            } else {
+                for (int i = current_frame - 1; e > elapsed && i > 1; i--) {
+                    gif_frame *f = &gif->frames[i];
+
+                    e -= f->frame_delay;
+                    current_frame = i;
+                }
+            }
+
+            source->gif_current_frame = current_frame;
+            source->gif_current_elapsed = e;
+        }
+
+        code = gif_decode_frame(&source->gif, current_frame);
         if (code != GIF_OK) {
             c_warning("failed to load GIF frame %d", frame);
             break;
@@ -1274,6 +1308,30 @@ rig_source_get_url(rut_object_t *obj)
     rig_source_t *source = obj;
 
     return source->url;
+}
+
+bool
+rig_source_get_running(rut_object_t *object)
+{
+    rig_source_t *source = object;
+    return source->timeline ? rig_timeline_get_running(source->timeline) : false;
+}
+
+void
+rig_source_set_running(rut_object_t *object, bool running)
+{
+    rig_source_t *source = object;
+    rig_engine_t *engine;
+
+    if (rig_source_get_running(source) == running)
+        return;
+
+    if (source->timeline)
+        rig_timeline_set_running(source->timeline, running);
+
+    engine = rig_component_props_get_engine(&source->component);
+    rut_property_dirty(engine->property_ctx,
+                       &source->properties[RIG_SOURCE_PROP_RUNNING]);
 }
 
 

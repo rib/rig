@@ -353,4 +353,3 @@ _rig_timeline_progress(rig_timeline_t *timeline, double delta)
 
     rig_timeline_set_elapsed(timeline, elapsed);
 }
-
