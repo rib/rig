@@ -431,7 +431,7 @@ main (int argc FC_UNUSED, char **argv)
 	if (j < 0)
 	    j = i;
 
-	fprintf (out, "    { \"%s\", "
+	fprintf (out, "    { (const FcChar8 *)\"%s\", "
                  " { FC_REF_CONSTANT, %d, OFF(%d,%d), NUM(%d,%d) } }, /* %d */\n",
                  langs[i],
                  sets[j]->num, i, off[j], i, off[j], i);
