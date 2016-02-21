@@ -46,6 +46,10 @@ struct poll_source {
     uv_poll_t uv_poll;
     uv_prepare_t uv_prepare;
     uv_check_t uv_check;
+
+    /* n handles that need to close before the source
+     * can be safely freed... */
+    int uv_handle_ref;
 };
 
 static enum uv_poll_event
@@ -85,7 +89,16 @@ dummy_timer_cb(uv_timer_t *timer)
 }
 
 static void
-dummy_timer_check_cb(uv_check_t *check)
+dummy_source_timer_check_cb(uv_check_t *check)
+{
+    struct poll_source *source = check->data;
+
+    uv_timer_stop(&source->uv_timer);
+    uv_check_stop(check);
+}
+
+static void
+dummy_dev_timer_check_cb(uv_check_t *check)
 {
     uv_timer_t *timer = check->data;
     uv_timer_stop(timer);
@@ -115,17 +128,40 @@ find_fd_source(cg_device_t *dev, int fd)
 }
 
 static void
-free_source(struct poll_source *source)
+handle_close_cb(uv_handle_t *handle)
 {
-    uv_timer_stop(&source->uv_timer);
-    uv_prepare_stop(&source->uv_prepare);
+    struct poll_source *source = handle->data;
 
-    if (source->fd > 0)
+    if (--source->uv_handle_ref)
+        c_slice_free(struct poll_source, source);
+}
+
+static void
+close_source(struct poll_source *source)
+{
+    int handle_count = 0;
+
+    uv_timer_stop(&source->uv_timer);
+    uv_close((uv_handle_t *)&source->uv_timer, handle_close_cb);
+    handle_count++;
+
+    if (source->prepare) {
+        uv_prepare_stop(&source->uv_prepare);
+        uv_close((uv_handle_t *)&source->uv_prepare, handle_close_cb);
+        handle_count++;
+    }
+
+    if (source->fd > 0) {
         uv_poll_stop(&source->uv_poll);
+        uv_close((uv_handle_t *)&source->uv_poll, handle_close_cb);
+        handle_count++;
+    }
 
     uv_check_stop(&source->uv_check);
+    uv_close((uv_handle_t *)&source->uv_check, handle_close_cb);
+    handle_count++;
 
-    c_slice_free(struct poll_source, source);
+    c_warn_if_fail(handle_count == source->uv_handle_ref);
 }
 
 static void
@@ -139,7 +175,7 @@ remove_fd(cg_device_t *dev, int fd)
     dev->uv_poll_sources_age++;
 
     c_list_remove(&source->link);
-    free_source(source);
+    close_source(source);
 }
 
 static void
@@ -162,10 +198,8 @@ source_prepare_cb(uv_prepare_t *prepare)
 
     if (timeout >= 0) {
         timeout /= 1000;
-        uv_timer_start(
-            &source->uv_timer, dummy_timer_cb, timeout, 0 /* no repeat */);
-        source->uv_check.data = &source->uv_timer;
-        uv_check_start(&source->uv_check, dummy_timer_check_cb);
+        uv_timer_start(&source->uv_timer, dummy_timer_cb, timeout, 0 /* no repeat */);
+        uv_check_start(&source->uv_check, dummy_source_timer_check_cb);
     }
 }
 
@@ -189,12 +223,16 @@ add_fd(cg_device_t *dev,
     source->user_data = user_data;
 
     uv_timer_init(dev->uv_mainloop, &source->uv_timer);
+    source->uv_timer.data = source;
     uv_check_init(dev->uv_mainloop, &source->uv_check);
+    source->uv_check.data = source;
+    source->uv_handle_ref+=2;
 
     if (prepare) {
         uv_prepare_init(dev->uv_mainloop, &source->uv_prepare);
         source->uv_prepare.data = source;
         uv_prepare_start(&source->uv_prepare, source_prepare_cb);
+        source->uv_handle_ref++;
     }
 
     if (fd > 0) {
@@ -203,6 +241,7 @@ add_fd(cg_device_t *dev,
         uv_poll_init(dev->uv_mainloop, &source->uv_poll, fd);
         source->uv_poll.data = source;
         uv_poll_start(&source->uv_poll, uv_events, source_poll_cb);
+        source->uv_handle_ref++;
     }
 
     c_list_insert(dev->uv_poll_sources.prev, &source->link);
@@ -221,8 +260,7 @@ update_poll_fds(cg_device_t *dev)
     int64_t timeout;
     int age;
 
-    age = cg_loop_get_info(renderer, &poll_fds, &n_poll_fds,
-                                    &timeout);
+    age = cg_loop_get_info(renderer, &poll_fds, &n_poll_fds, &timeout);
 
     if (age != dev->uv_poll_sources_age) {
         int i;
@@ -252,7 +290,7 @@ update_poll_fds(cg_device_t *dev)
         timeout /= 1000;
         uv_timer_start(&dev->uv_mainloop_timer, dummy_timer_cb, timeout, 0);
         dev->uv_mainloop_check.data = &dev->uv_mainloop_timer;
-        uv_check_start(&dev->uv_mainloop_check, dummy_timer_check_cb);
+        uv_check_start(&dev->uv_mainloop_check, dummy_dev_timer_check_cb);
     }
 }
 
@@ -290,6 +328,13 @@ cg_uv_set_mainloop(cg_device_t *dev, uv_loop_t *loop)
     update_poll_fds(dev);
 }
 
+static void
+dev_handle_close_cb(uv_handle_t *handle)
+{
+    /* FIXME: currently cg device closure is synchronous and doesn't
+     * wait for the mainloop_xyz handles to close! */
+}
+
 void
 _cg_uv_cleanup(cg_device_t *dev)
 {
@@ -300,5 +345,11 @@ _cg_uv_cleanup(cg_device_t *dev)
             remove_fd(dev, source->fd);
 
         c_array_free(dev->uv_poll_fds, true);
+    }
+
+    if (dev->uv_mainloop) {
+        uv_close((uv_handle_t *)&dev->uv_mainloop_timer, dev_handle_close_cb);
+        uv_close((uv_handle_t *)&dev->uv_mainloop_prepare, dev_handle_close_cb);
+        uv_close((uv_handle_t *)&dev->uv_mainloop_check, dev_handle_close_cb);
     }
 }
