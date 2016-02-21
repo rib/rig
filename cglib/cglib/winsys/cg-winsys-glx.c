@@ -395,24 +395,42 @@ glx_event_filter_cb(XEvent *xevent, void *data)
             int64_t sync_counter = msg->data.l[0] | ((int64_t)msg->data.l[1] << 32);
 
             if (sync_counter) { /* Ignore message for initial window Map */
-                cg_frame_info_t *info =
-                    c_queue_peek_head(&onscreen->pending_frame_infos);
+                cg_frame_info_t *info = NULL;
+                bool found = false;
+                c_llist_t *l;
 
-                c_warning("CG: _NET_WM_FRAME_DRAWN frame sync = %"PRIi64, sync_counter);
+                /* Sometimes we see out of order _NET_WM_FRAME_DRAWN
+                 * messages or we might see multiple _FRAME_DRAWN
+                 * messages before receiving corresponding
+                 * _FRAME_TIMINGS
+                 */
 
-                if (info->x11_frame_sync_counter != sync_counter)
-                    c_warning("_NET_WM_FRAME_DRAWN: INFO=%p frame_sync_counter %"PRIu64" != expected %"PRIu64,
-                              info, sync_counter, info->x11_frame_sync_counter);
+                for (l = onscreen->pending_frame_infos.head; l; l = l->next) {
+                    info = l->data;
+                    if (info->x11_frame_sync_counter == sync_counter) {
+                        found = true;
+                        break;
+                    }
+                }
 
-                c_warn_if_fail(info->composite_end_time == 0);
+                if (found) {
+                    c_warning("CG: _NET_WM_FRAME_DRAWN frame sync = %"PRIi64, sync_counter);
 
-                info->composite_end_time =
-                    msg->data.l[2] | ((int64_t)msg->data.l[3] << 32);
-                info->composite_end_time *= 1000; /* micro to nanoseconds */
-                c_warning("%u: _NET_WM_FRAME_DRAWN: composite end time = %"PRIu64,
-                          (unsigned)info->frame_counter, info->composite_end_time);
+                    if (info->x11_frame_sync_counter != sync_counter)
+                        c_warning("_NET_WM_FRAME_DRAWN: INFO=%p frame_sync_counter %"PRIu64" != expected %"PRIu64,
+                                  info, sync_counter, info->x11_frame_sync_counter);
 
-                _cg_onscreen_queue_event(onscreen, CG_FRAME_EVENT_SYNC, info);
+                    c_warn_if_fail(info->composite_end_time == 0);
+
+                    info->composite_end_time =
+                        msg->data.l[2] | ((int64_t)msg->data.l[3] << 32);
+                    info->composite_end_time *= 1000; /* micro to nanoseconds */
+                    c_warning("%u: _NET_WM_FRAME_DRAWN: composite end time = %"PRIu64" sync=%"PRIu64,
+                              (unsigned)info->frame_counter, info->composite_end_time,
+                              sync_counter);
+
+                    _cg_onscreen_queue_event(onscreen, CG_FRAME_EVENT_SYNC, info);
+                }
             }
 
             return CG_FILTER_REMOVE;
@@ -431,45 +449,51 @@ glx_event_filter_cb(XEvent *xevent, void *data)
                 c_warning("CG: _NET_WM_FRAME_TIMINGS frame sync = %"PRIi64, sync_counter);
 
                 if (info->x11_frame_sync_counter != sync_counter)
-                    c_warning("_NET_WM_FRAME_TIMINGS: INFO=%p frame_sync_counter %"PRIu64" != expected %"PRIu64,
+                    c_warning("Spurious _NET_WM_FRAME_TIMINGS: frame_info=%p x11_frame_sync_counter %"PRIu64" != expected %"PRIu64,
                               info, sync_counter, info->x11_frame_sync_counter);
                 //c_warn_if_fail(info->x11_frame_sync_counter != sync_counter);
-                c_warn_if_fail(info->composite_end_time != 0);
 
-                presentation_time =
-                    info->composite_end_time + (msg->data.l[2] * 1000);
-                c_warning("%u: _NET_WM_FRAME_TIMINGS: presentation time = %"PRIu64,
-                          (unsigned)info->frame_counter, presentation_time);
+                if (info->composite_end_time) {
+                    presentation_time =
+                        info->composite_end_time + (msg->data.l[2] * 1000);
+                    c_warning("%u: _NET_WM_FRAME_TIMINGS: presentation time = %"PRIu64,
+                              (unsigned)info->frame_counter, presentation_time);
 
-                /* If this is the first time we've seen a presentation
-                 * timestamp then determine if it comes from the same
-                 * clock as c_get_monotonic_time() */
-                if (!dev->presentation_time_seen) {
-                    int64_t now = c_get_monotonic_time();
+                    /* If this is the first time we've seen a presentation
+                     * timestamp then determine if it comes from the same
+                     * clock as c_get_monotonic_time() */
+                    if (!dev->presentation_time_seen) {
+                        int64_t now = c_get_monotonic_time();
 
-                    /* If it's less than a second old with respect to
-                     * c_get_monotonic_time() that's close enough to
-                     * assume it's from the same clock.
-                     */
-                    if (info->presentation_time < now &&
-                        info->presentation_time >= (now - 1000000000))
-                    {
-                        dev->presentation_clock_is_monotonic = true;
+                        /* If it's less than a second old with respect to
+                         * c_get_monotonic_time() that's close enough to
+                         * assume it's from the same clock.
+                         */
+                        if (presentation_time < now &&
+                            presentation_time >= (now - 1000000000))
+                        {
+                            dev->presentation_clock_is_monotonic = true;
+                        }
+                        dev->presentation_time_seen = true;
                     }
-                    dev->presentation_time_seen = true;
+
+                    if (!(msg->data.l[4] & 0x80000000))
+                        info->next_refresh_deadline =
+                            info->composite_end_time + (msg->data.l[4] * 1000);
+                } else {
+                    c_warning("Spurious _NET_WM_FRAME_TIMINGS message without prior _NET_WM_FRAME_DRAWN");
                 }
 
                 if (dev->presentation_clock_is_monotonic)
                     info->presentation_time = presentation_time;
 
                 refresh_interval = msg->data.l[3];
-                /* NB: interval is in microseconds... */
-                info->refresh_rate = 1000000.0f/(float)refresh_interval;
-                c_warning("_NET_WM_FRAME_TIMINGS: refresh = %f", info->refresh_rate);
-
-                if (!(msg->data.l[4] & 0x80000000))
-                    info->next_refresh_deadline =
-                        info->composite_end_time + (msg->data.l[4] * 1000);
+                if (refresh_interval) {
+                    /* NB: interval is in microseconds... */
+                    info->refresh_rate = 1000000.0f/(float)refresh_interval;
+                }
+                c_warning("_NET_WM_FRAME_TIMINGS: refresh = %f",
+                          info->refresh_rate);
 
                 c_warning("_NET_WM_FRAME_TIMINGS: next deadline = %"PRIu64,
                           info->next_refresh_deadline);
