@@ -1304,7 +1304,7 @@ r_engine_new(void)
     stub_engine->shell = rut_shell_new(NULL, stub_engine_shell_redraw_cb, stub_engine);
 
 #ifdef USE_NCURSES
-    rig_curses_add_to_shell(stub_engine->shell);
+    //rig_curses_add_to_shell(stub_engine->shell);
 #endif
 
     rut_shell_set_on_run_callback(stub_engine->shell,
