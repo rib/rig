@@ -53,6 +53,11 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#ifdef USE_FFMPEG
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#endif
+
 #include <rut.h>
 
 #include "rig-engine.h"
@@ -1288,6 +1293,10 @@ rig_frontend_new(rut_shell_t *shell)
     rig_renderer_init(frontend->renderer);
 
     frontend->paint_finish_timer = rut_poll_shell_create_timer(shell);
+
+#ifdef USE_FFMPEG
+    av_register_all();
+#endif
 
     init_empty_ui(frontend);
 

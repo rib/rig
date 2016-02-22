@@ -49,6 +49,12 @@
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #endif
 
+#ifdef USE_FFMPEG
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libswscale/swscale.h>
+#endif
+
 enum source_type
 {
     SOURCE_TYPE_UNLOADED,
@@ -57,7 +63,9 @@ enum source_type
 #ifdef USE_GSTREAMER
     SOURCE_TYPE_GSTREAMER,
 #endif
+#ifdef USE_FFMPEG
     SOURCE_TYPE_FFMPEG,
+#endif
     SOURCE_TYPE_GIF,
     SOURCE_TYPE_PNG,
     SOURCE_TYPE_JPG,
@@ -119,6 +127,19 @@ struct _rig_source_t {
     bool changed;
     cg_texture_t *texture;
 
+#ifdef USE_FFMPEG
+    AVFormatContext *ff_fmt_ctx;
+    uint8_t *ff_avio_buf;
+    AVIOContext *ff_avio_ctx;
+    int64_t ff_read_pos;
+    int ff_video_stream;
+    AVCodecContext *ff_video_codec_ctx;
+    struct SwsContext *sws_ctx;
+    uint8_t *ff_dst_frame_buf;
+    size_t ff_dst_frame_buf_size;
+    AVFrame *ff_dst_frame;
+#endif
+
 #ifdef USE_GSTREAMER
     CgGstVideoSink *sink;
     GstElement *pipeline;
@@ -129,9 +150,6 @@ struct _rig_source_t {
 
     int gif_current_frame;
     double gif_current_elapsed;
-
-#warning "HACK"
-    int gif_frame;
 
     int first_layer;
     bool default_sample;
@@ -812,6 +830,73 @@ get_url_filename(rut_shell_t *shell, const char *url)
         return NULL;
 }
 
+#ifdef USE_FFMPEG
+static int
+source_avio_read_packet_cb(void *user_data,
+                           uint8_t *buf,
+                           int buf_size)
+{
+    rig_source_t *source = user_data;
+    size_t rem = source->data_len - source->ff_read_pos;
+    size_t size = MIN(rem, buf_size);
+
+    memcpy(buf, source->data + source->ff_read_pos, size);
+    source->ff_read_pos += size;
+
+    return size;
+}
+
+static int64_t
+source_avio_seek_cb(void *user_data, int64_t offset, int whence)
+{
+    rig_source_t *source = user_data;
+
+    whence &= ~AVSEEK_FORCE;
+
+    switch (whence) {
+    case AVSEEK_SIZE:
+        return source->data_len;
+    case SEEK_END:
+        source->ff_read_pos = source->data_len - 1;
+        break;
+    case SEEK_CUR:
+        source->ff_read_pos += offset;
+        break;
+    case SEEK_SET:
+        source->ff_read_pos = offset;
+        break;
+    default:
+        return -1;
+    }
+
+    if (source->ff_read_pos < 0)
+        source->ff_read_pos = 0;
+    else if (source->ff_read_pos >= source->data_len)
+        source->ff_read_pos = source->data_len - 1;
+
+    return source->ff_read_pos;
+}
+
+static void
+cleanup_ffmpeg_state(rig_source_t *source)
+{
+    if (source->ff_fmt_ctx)
+        avformat_close_input(&source->ff_fmt_ctx);
+
+    if (source->ff_avio_ctx) {
+        av_freep(&source->ff_avio_ctx->buffer);
+        av_freep(&source->ff_avio_ctx);
+    }
+
+    /* apparently it's possible that ff_avio_ctx->buffer might
+     * get replaced so don't asume we've freed the buffer
+     * we allocated yet...*/
+    av_freep(&source->ff_avio_buf);
+
+    source->ff_read_pos = 0;
+}
+#endif
+
 static void
 _source_load_progress(rig_source_t *source)
 {
@@ -975,6 +1060,112 @@ _source_load_progress(rig_source_t *source)
         state->status = LOAD_STATE_LOADED;
     } else
 #endif
+#ifdef USE_FFMPEG
+    if (strncmp(source->mime, "video/", 6) == 0) {
+        int ret;
+        AVCodec *codec = NULL;
+        AVDictionary *opts = NULL;
+
+        //Ref: https://www.ffmpeg.org/doxygen/2.3/avio_reading_8c-example.html
+
+        source->ff_fmt_ctx = avformat_alloc_context();
+        if (!source->ff_fmt_ctx) {
+            state->status = LOAD_STATE_ERROR;
+            state->error = c_strdup("failed to create ffmpeg avformat context");
+            return;
+        }
+
+        source->ff_avio_buf = av_malloc(4096);
+        if (!source->ff_avio_buf) {
+            state->status = LOAD_STATE_ERROR;
+            state->error = c_strdup("failed to allocate avio buffer");
+
+            cleanup_ffmpeg_state(source);
+            return;
+        }
+
+        source->ff_avio_ctx = avio_alloc_context(source->ff_avio_buf,
+                                                 4096,
+                                                 0, /* reading only */
+                                                 source, /* user data */
+                                                 source_avio_read_packet_cb,
+                                                 NULL, /* no write callback */
+                                                 source_avio_seek_cb);
+        if (!source->ff_avio_ctx) {
+            state->status = LOAD_STATE_ERROR;
+            state->error = c_strdup("failed to create ffmpeg avio context");
+
+            cleanup_ffmpeg_state(source);
+            return;
+        }
+
+        source->ff_fmt_ctx->pb = source->ff_avio_ctx;
+
+        ret = avformat_open_input(&source->ff_fmt_ctx,
+                                  NULL, /* filename */
+                                  NULL, /* format (autodetect) */
+                                  NULL); /* fmt_ctx + demuxer options */
+        if (ret < 0) {
+            state->status = LOAD_STATE_ERROR;
+            state->error = c_strdup("failed to create ffmpeg avio context");
+
+            cleanup_ffmpeg_state(source);
+            return;
+        }
+
+        ret = avformat_find_stream_info(source->ff_fmt_ctx,
+                                        NULL); /* options */
+        if (ret < 0) {
+            state->status = LOAD_STATE_ERROR;
+            state->error = c_strdup("failed to find ffmpeg stream info");
+
+            cleanup_ffmpeg_state(source);
+            return;
+        }
+
+        av_dump_format(source->ff_fmt_ctx,
+                       0, /* ndex */
+                       source->url,
+                       0); /* fmt_ctx is an input */
+
+
+        source->ff_video_stream = av_find_best_stream(source->ff_fmt_ctx,
+                                                      AVMEDIA_TYPE_VIDEO,
+                                                      -1, /* auto select stream */
+                                                      -1, /* related stream */
+                                                      &codec, /* decode codec */
+                                                      0); /* flags */
+        if (source->ff_video_stream < 0) {
+            state->status = LOAD_STATE_ERROR;
+            state->error = c_strdup("failed to find video stream or codec");
+
+            cleanup_ffmpeg_state(source);
+            return;
+        }
+
+        source->ff_video_codec_ctx =
+            source->ff_fmt_ctx->streams[source->ff_video_stream]->codec;
+        av_dict_set(&opts, "refcounted_frames", "1", 0);
+
+        ret = avcodec_open2(source->ff_video_codec_ctx, codec, &opts);
+        if (ret < 0) {
+            state->status = LOAD_STATE_ERROR;
+            state->error = c_strdup("failed to find video stream or codec");
+
+            cleanup_ffmpeg_state(source);
+            return;
+        }
+
+        source->ff_dst_frame = av_frame_alloc();
+
+#warning "fixme: missing some ffmpeg cleanup"
+
+        source->timeline = rig_timeline_new(engine, FLT_MAX);
+
+        source->type = SOURCE_TYPE_FFMPEG;
+        state->status = LOAD_STATE_LOADED;
+    } else
+#endif
 #ifdef USE_GSTREAMER
     if (strncmp(source->mime, "video/", 6) == 0) {
         gst_source_start(source);
@@ -1123,7 +1314,9 @@ rig_source_setup_pipeline(rig_source_t *source,
 #endif
 
     case SOURCE_TYPE_UNLOADED:
+#ifdef USE_FFMPEG
     case SOURCE_TYPE_FFMPEG:
+#endif
 #ifdef USE_GDK_PIXBUF
     case SOURCE_TYPE_PIXBUF: 
 #endif
@@ -1180,7 +1373,6 @@ rig_source_attach_frame(rig_source_t *source,
         rig_engine_t *engine = rig_component_props_get_engine(&source->component);
         cg_bitmap_t *bmp;
         cg_texture_2d_t *tex;
-        int frame = source->gif_frame++ % source->gif.frame_count;
         gif_result code;
         cg_error_t *error = NULL;
         uint8_t *buf;
@@ -1218,7 +1410,7 @@ rig_source_attach_frame(rig_source_t *source,
 
         code = gif_decode_frame(&source->gif, current_frame);
         if (code != GIF_OK) {
-            c_warning("failed to load GIF frame %d", frame);
+            c_warning("failed to load GIF frame %d", current_frame);
             break;
         }
 
@@ -1241,6 +1433,106 @@ rig_source_attach_frame(rig_source_t *source,
                                       //0,
                                       source->first_layer,
                                       source->texture);
+        break;
+    }
+    case SOURCE_TYPE_FFMPEG: {
+        rig_engine_t *engine = rig_component_props_get_engine(&source->component);
+        AVPacket packet;
+        int frame_ready = false;
+        int dst_size;
+        cg_bitmap_t *bmp;
+        cg_texture_2d_t *tex;
+        cg_error_t *error = NULL;
+
+        AVFrame *frame = av_frame_alloc();
+        if (!frame) {
+            c_warning("failed to allocate ffmpeg frame");
+            break;
+        }
+
+        while(!frame_ready) {
+            int ret = av_read_frame(source->ff_fmt_ctx, &packet);
+            if (ret < 0) {
+                if (ret == AVERROR_EOF)
+                    c_warning("video EOF");
+                else
+                    c_warning("video ");
+                break;
+            }
+
+            if (packet.stream_index != source->ff_video_stream)
+                continue;
+
+            avcodec_decode_video2(source->ff_video_codec_ctx,
+                                  frame,
+                                  &frame_ready,
+                                  &packet);
+
+            av_packet_unref(&packet);
+        }
+
+        source->sws_ctx = sws_getCachedContext(source->sws_ctx,
+                                               frame->width,
+                                               frame->height,
+                                               frame->format,
+                                               frame->width,
+                                               frame->height,
+                                               AV_PIX_FMT_RGBA,
+                                               SWS_BICUBIC, /* flags */
+                                               NULL, /* src filter */
+                                               NULL, /* dst filter */
+                                               NULL); /* param */
+
+        dst_size = frame->width * frame->height * 4;
+        if (dst_size > source->ff_dst_frame_buf_size) {
+            av_freep(&source->ff_dst_frame_buf);
+            source->ff_dst_frame_buf = av_malloc(dst_size);
+            source->ff_dst_frame_buf_size = dst_size;
+        }
+
+        if (source->ff_dst_frame->width != frame->width ||
+            source->ff_dst_frame->height != frame->height)
+        {
+            if (source->ff_dst_frame->data)
+                av_frame_unref(source->ff_dst_frame);
+
+            avpicture_fill((AVPicture *)source->ff_dst_frame,
+                           source->ff_dst_frame_buf,
+                           AV_PIX_FMT_RGBA,
+                           frame->width,
+                           frame->height);
+        }
+
+        sws_scale(source->sws_ctx,
+                  frame->data, /* src slice */
+                  frame->linesize, /* src stride */
+                  0, /* src slice Y */
+                  frame->height, /* src slice H */
+                  source->ff_dst_frame->data, /* dest */
+                  source->ff_dst_frame->linesize); /* dest stride */
+
+        bmp = cg_bitmap_new_for_data(engine->shell->cg_device,
+                                     frame->width,
+                                     frame->height,
+                                     CG_PIXEL_FORMAT_RGBA_8888,
+                                     0,
+                                     source->ff_dst_frame_buf);
+
+        tex = cg_texture_2d_new_from_bitmap(bmp);
+        cg_object_unref(bmp);
+
+        if (cg_texture_allocate(tex, &error))
+            _source_set_texture(source, tex);
+        else
+            _source_set_texture(source, engine->frontend->default_tex2d);
+
+        cg_pipeline_set_layer_texture(pipeline,
+                                      //0,
+                                      source->first_layer,
+                                      source->texture);
+
+        av_frame_free(&frame);
+
         break;
     }
     default:
