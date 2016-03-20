@@ -1,9 +1,9 @@
 [subdir "integration"]
-	ref = 0a0d37f618149b4daa0e64a9d99381e27d58ea0e
+	ref = 36af86773c533e6826bedddd2b9ca0175e971b8b
 	url = git@github.com:rig-project/wslay.git
 	branch = rig-subdir
 [subdir]
 	version = 1
-	commit-uuid = c96fce43-749f-4c52-9580-f46ff9e3aa3a
+	commit-uuid = 6e2b791d-5705-4e19-9e7b-a5ac7ecd2e66
 [subdir "upstream"]
 	url = https://github.com/tatsuhiro-t/wslay
