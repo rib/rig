@@ -1,0 +1,7 @@
+[subdir "integration"]
+	ref = da932e6595a32d96892c756a708a7ad29c2dc344
+	url = git@github.com:rig-project/cglib.git
+	branch = master
+[subdir]
+	version = 1
+	commit-uuid = fbdb781e-8370-4f10-8cac-e48f6fcb1519
