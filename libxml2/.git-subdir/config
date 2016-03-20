@@ -3,3 +3,8 @@
 	branch = master
 [subdir "integration"]
 	ref = e724879d964d774df9b7969fc846605aa1bac54c
+	url = git@github.com:rig-project/libxml2.git
+	branch = rig
+[subdir]
+	version = 1
+	commit-uuid = b3077002-df3e-41c9-bd6b-679ffbb8b3e7
