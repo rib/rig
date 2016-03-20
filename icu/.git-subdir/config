@@ -1,6 +1,6 @@
 [subdir "integration"]
 	ref = ee660811460046cab06099406225cdb8343c7cc7
-	url = https://github.com/rig-project/icu
+	url = git@github.com:rig-project/icu.git
 	branch = rig
 [subdir]
 	commit-uuid = 40ff55e7-29b4-4fd6-a549-f5b65c997378
