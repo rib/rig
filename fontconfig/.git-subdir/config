@@ -1,0 +1,7 @@
+[subdir "integration"]
+	ref = 29b0a325c85eae33f939f23a8c1674ae58bff4d6
+	url = https://github.com/rig-project/fontconfig
+	branch = emscripten
+[subdir]
+	version = 1
+	commit-uuid = cd988ca6-1340-44d6-a1f5-fa298a2307e5
