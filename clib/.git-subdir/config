@@ -1,7 +1,7 @@
-[subdir "upstream"]
-	url = git@github.com:rig-project/clib.git
-	branch = rig
 [subdir "integration"]
 	ref = 8f98d96e965b0cea735e0b6ae939d302c25b44d0
+	url = git@github.com:rig-project/clib.git
+	branch = rig
 [subdir]
 	commit-uuid = 14af4f2f-c39f-49b4-8b05-c97e2d6bac1d
+	version = 1
