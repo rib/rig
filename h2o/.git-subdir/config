@@ -2,9 +2,9 @@
 	url = https://github.com/h2o/h2o
 	branch = master
 [subdir "integration"]
-	ref = 6f0aa19befd95831ac397fc70ebc227908bee02d
+	ref = b47d45811ff05579b74bd31db4524052691e0af3
 	url = git@github.com:rig-project/h2o.git
 	branch = rig
 [subdir]
 	version = 1
-	commit-uuid = e3efeed8-6e2f-4a05-939b-71fddcd41ae2
+	commit-uuid = c8e59e2a-cd63-4017-9f62-14330ba2a843
