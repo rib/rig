@@ -5,3 +5,5 @@
 [subdir]
 	version = 1
 	commit-uuid = 4183b673-e758-4b6c-9786-4d6167419947
+[subdir "upstream"]
+	url = https://github.com/protobuf-c/protobuf-c
