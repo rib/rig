@@ -2,9 +2,9 @@
 	url = https://git.gnome.org/browse/libxml2
 	branch = master
 [subdir "integration"]
-	ref = e724879d964d774df9b7969fc846605aa1bac54c
+	ref = 0ebeac51397e1a5f2ef3782b1bc88876865bc565
 	url = git@github.com:rig-project/libxml2.git
 	branch = rig
 [subdir]
 	version = 1
-	commit-uuid = b3077002-df3e-41c9-bd6b-679ffbb8b3e7
+	commit-uuid = ab58f89d-b26f-4bb9-b1d6-d7c62930494b
