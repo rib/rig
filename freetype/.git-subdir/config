@@ -6,4 +6,4 @@
 	version = 1
 	commit-uuid = 665dc4b9-0c5f-4367-a33c-c97b72973d0d
 [subdir "upstream"]
-	url = git://git.sv.gnu.org/freetype/freetype2.git
+	url = git://git.sv.nongnu.org/freetype/freetype2.git
