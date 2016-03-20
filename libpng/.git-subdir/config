@@ -5,3 +5,6 @@
 [subdir]
 	version = 1
 	commit-uuid = 1bfd2b84-b111-4606-86b4-718fd1e6b684
+[subdir "upstream"]
+	url = https://github.com/glennrp/libpng
+	branch = libpng16
