@@ -5,3 +5,5 @@
 [subdir]
 	commit-uuid = 509c4d6e-5171-4d17-8bd1-8ab6fcd6e511
 	version = 1
+[subdir "upstream"]
+	url = git@github.com:rig-project/clib.git
