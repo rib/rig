@@ -1,6 +1,6 @@
 [subdir "integration"]
 	ref = 67fe06be883e0ff23d0ce867dc36d505fc84989e
-	url = https://github.com/rig-project/fontconfig
+	url = git@github.com:rig-project/fontconfig.git
 	branch = rig
 [subdir]
 	version = 1
