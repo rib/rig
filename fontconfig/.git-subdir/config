@@ -5,3 +5,5 @@
 [subdir]
 	version = 1
 	commit-uuid = 4afc770e-b8cc-49f9-92d9-c9bad3425dba
+[subdir "upstream"]
+	url = git://anongit.freedesktop.org/fontconfig
