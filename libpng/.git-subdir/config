@@ -1,6 +1,6 @@
 [subdir "integration"]
 	ref = 408dbac80177bb471000a447dadb5c3d76a2bf6c
-	url = https://github.com/rig-project/libpng
+	url = git@github.com:rig-project/libpng.git
 	branch = rig
 [subdir]
 	version = 1
