@@ -1,7 +1,7 @@
 [subdir "integration"]
-	ref = 672ca3b4e65a75fb3a418ec5d117ad242a98acbb
+	ref = 0acf7d46f3298b6cdfba1c35d2396c6fd3a1d051
 	url = git@github.com:rig-project/harfbuzz.git
 	branch = master
 [subdir]
 	version = 1
-	commit-uuid = 0b3116d5-be02-43d5-bd7c-f7076d33419d
+	commit-uuid = f2080373-d860-4335-9f7c-532d4ac7a147
