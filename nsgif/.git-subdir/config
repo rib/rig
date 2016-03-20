@@ -1,0 +1,9 @@
+[subdir "integration"]
+	url = git@github.com:rig-project/libnsgif.git
+	branch = master
+	ref = 088fa0819f1aeaf212a95caf7393a38c1640b5f0
+[subdir]
+	commit-uuid = bb5428a1-2681-4bff-bdf7-04198e22921c
+	version = 1
+[subdir "upstream"]
+	url = http://git.netsurf-browser.org/libnsgif.git

@@ -1,6 +1,0 @@
-[subdir "integration"]
-	url = git://git.netsurf-browser.org/libnsgif.git
-	branch = master
-	ref = subdir-integration/nsgif/master
-[subdir]
-	commit-uuid = bb5428a1-2681-4bff-bdf7-04198e22921c
