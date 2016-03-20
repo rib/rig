@@ -5,3 +5,5 @@
 [subdir]
 	version = 1
 	commit-uuid = 3ad54be8-66f2-4507-aa23-df48c3a33dba
+[subdir "upstream"]
+	url = https://chromium.googlesource.com/external/libyuv
