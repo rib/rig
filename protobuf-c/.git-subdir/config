@@ -1,0 +1,7 @@
+[subdir "integration"]
+	ref = 005d1fb3b44043c89661662eb9bac66a4a856a01
+	url = git@github.com:rig-project/protobuf-c.git
+	branch = rig
+[subdir]
+	version = 1
+	commit-uuid = 7118d882-a736-40fa-8123-2b19729f63fb
