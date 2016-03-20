@@ -1,0 +1,7 @@
+[subdir "integration"]
+	ref = 372e4cd7b005ea9e8988af7a8fe42110a40fab44
+	url = git@github.com:rig-project/libuv.git
+	branch = master
+[subdir]
+	version = 1
+	commit-uuid = 66529778-3da6-4d1d-a6a7-568fe1bcc4b8
