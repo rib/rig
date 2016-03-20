@@ -3,3 +3,8 @@
 	branch = master
 [subdir "integration"]
 	ref = 50893291621658f355bc5b4d450a8d06a563053d
+	url = git@github.com:rig-project/zlib.git
+	branch = rig
+[subdir]
+	version = 1
+	commit-uuid = e83d5243-2dce-496f-a1e4-b15b88e8dd07
