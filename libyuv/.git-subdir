@@ -1,5 +1,0 @@
-[subdir "upstream"]
-	url = git@github.com:rig-project/libyuv.git
-	branch = master
-[subdir "integration"]
-	ref = 6838d7a2aaf701058109ba8246174585de872ba6

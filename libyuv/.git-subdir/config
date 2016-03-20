@@ -1,0 +1,7 @@
+[subdir "integration"]
+	ref = 6838d7a2aaf701058109ba8246174585de872ba6
+	url = git@github.com:rig-project/libyuv.git
+	branch = master
+[subdir]
+	version = 1
+	commit-uuid = 3ad54be8-66f2-4507-aa23-df48c3a33dba
