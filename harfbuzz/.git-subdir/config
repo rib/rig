@@ -5,3 +5,5 @@
 [subdir]
 	version = 1
 	commit-uuid = f2080373-d860-4335-9f7c-532d4ac7a147
+[subdir "upstream"]
+	url = https://github.com/behdad/harfbuzz
