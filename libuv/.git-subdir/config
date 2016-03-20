@@ -7,3 +7,4 @@
 	commit-uuid = 1e1b5c76-e4a0-4db3-8ed3-3bd1bb46da82
 [subdir "upstream"]
 	url = https://github.com/libuv/libuv
+	branch = v1.x
