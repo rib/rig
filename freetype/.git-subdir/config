@@ -1,0 +1,7 @@
+[subdir "integration"]
+	ref = 0b861adb3b81ad35783b4ba088cac18ba55da80b
+	url = git@github.com:rig-project/freetype.git
+	branch = emscripten
+[subdir]
+	version = 1
+	commit-uuid = f60603f5-6640-4e0c-b634-880d7dbab322
