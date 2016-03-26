@@ -40,7 +40,6 @@
 #include "components/rig-button-input.h"
 #include "components/rig-camera.h"
 #include "components/rig-diamond.h"
-#include "components/rig-hair.h"
 #include "components/rig-light.h"
 #include "components/rig-material.h"
 #include "components/rig-model.h"
@@ -441,6 +440,206 @@ serialize_instrospectable_properties(rut_object_t *object,
         object, serialize_instrospectables_cb, serializer);
 }
 
+static Rig__Buffer *
+serialize_buffer(rig_pb_serializer_t *serializer,
+                 rut_buffer_t *buffer)
+{
+    Rig__Buffer *pb_buffer =
+        rig_pb_new(serializer, Rig__Buffer, rig__buffer__init);
+
+    pb_buffer->has_id = true;
+    pb_buffer->id = rig_pb_serializer_register_object(serializer, buffer);
+
+    /* NB: The serialized asset points directly to the rut_mesh_t
+     * data to avoid copying it... */
+    pb_buffer->has_data = true;
+    pb_buffer->data.data = buffer->data;
+    pb_buffer->data.len = buffer->size;
+
+    return pb_buffer;
+}
+
+static Rig__Mesh *
+rig_pb_serialize_mesh(rig_pb_serializer_t *serializer,
+                      rut_mesh_t *mesh)
+{
+    rut_buffer_t **buffers;
+    int n_buffers = 0;
+    Rig__Buffer **pb_buffers;
+    Rig__Buffer **attribute_buffers_map;
+    Rig__Attribute **attributes;
+    Rig__Mesh *pb_mesh;
+    int i;
+
+    /* The maximum number of pb_buffers we may need = n_attributes plus 1 in
+     * case
+     * there is an index buffer... */
+    pb_buffers =
+        rut_memory_stack_memalign(serializer->stack,
+                                  sizeof(void *) * (mesh->n_attributes + 1),
+                                  C_ALIGNOF(void *));
+
+    buffers = c_alloca(sizeof(void *) * mesh->n_attributes);
+    attribute_buffers_map = c_alloca(sizeof(void *) * mesh->n_attributes);
+
+    /* NB:
+     * attributes may refer to shared buffers so we need to first
+     * figure out how many unique buffers the mesh refers too...
+     */
+
+    for (i = 0; i < mesh->n_attributes; i++) {
+        int j;
+
+        if (!mesh->attributes[i]->is_buffered)
+            continue;
+
+        for (j = 0; i < n_buffers; j++)
+            if (buffers[j] == mesh->attributes[i]->buffered.buffer)
+                break;
+
+        if (j < n_buffers)
+            attribute_buffers_map[i] = pb_buffers[j];
+        else {
+            Rig__Buffer *pb_buffer =
+                serialize_buffer(serializer, mesh->attributes[i]->buffered.buffer);
+
+            pb_buffers[n_buffers] = pb_buffer;
+
+            attribute_buffers_map[i] = pb_buffer;
+            buffers[n_buffers++] = mesh->attributes[i]->buffered.buffer;
+        }
+    }
+
+    if (mesh->indices_buffer) {
+        Rig__Buffer *pb_buffer =
+            serialize_buffer(serializer, mesh->indices_buffer);
+        pb_buffers[n_buffers++] = pb_buffer;
+    }
+
+    attributes = rut_memory_stack_memalign(serializer->stack,
+                                           sizeof(void *) * mesh->n_attributes,
+                                           C_ALIGNOF(void *));
+    for (i = 0; i < mesh->n_attributes; i++) {
+        Rig__Attribute *pb_attribute =
+            rig_pb_new(serializer, Rig__Attribute, rig__attribute__init);
+        Rig__Attribute__Type type;
+
+        pb_attribute->name = (char *)mesh->attributes[i]->name;
+        pb_attribute->has_normalized = true;
+        pb_attribute->normalized = mesh->attributes[i]->normalized;
+
+        if (mesh->attributes[i]->instance_stride) {
+            pb_attribute->has_instance_stride = true;
+            pb_attribute->instance_stride = mesh->attributes[i]->instance_stride;
+        }
+
+        if (mesh->attributes[i]->is_buffered) {
+            pb_attribute->has_buffer_id = true;
+            pb_attribute->buffer_id = attribute_buffers_map[i]->id;
+
+            pb_attribute->has_stride = true;
+            pb_attribute->stride = mesh->attributes[i]->buffered.stride;
+            pb_attribute->has_offset = true;
+            pb_attribute->offset = mesh->attributes[i]->buffered.offset;
+            pb_attribute->has_n_components = true;
+            pb_attribute->n_components = mesh->attributes[i]->buffered.n_components;
+
+            switch (mesh->attributes[i]->buffered.type) {
+                case RUT_ATTRIBUTE_TYPE_BYTE:
+                    type = RIG__ATTRIBUTE__TYPE__BYTE;
+                    break;
+                case RUT_ATTRIBUTE_TYPE_UNSIGNED_BYTE:
+                    type = RIG__ATTRIBUTE__TYPE__UNSIGNED_BYTE;
+                    break;
+                case RUT_ATTRIBUTE_TYPE_SHORT:
+                    type = RIG__ATTRIBUTE__TYPE__SHORT;
+                    break;
+                case RUT_ATTRIBUTE_TYPE_UNSIGNED_SHORT:
+                    type = RIG__ATTRIBUTE__TYPE__UNSIGNED_SHORT;
+                    break;
+                case RUT_ATTRIBUTE_TYPE_FLOAT:
+                    type = RIG__ATTRIBUTE__TYPE__FLOAT;
+                    break;
+            }
+            pb_attribute->has_type = true;
+            pb_attribute->type = type;
+        } else {
+            pb_attribute->has_n_components = true;
+            pb_attribute->n_components = mesh->attributes[i]->constant.n_components;
+            pb_attribute->has_n_columns = true;
+            pb_attribute->n_columns = mesh->attributes[i]->constant.n_columns;
+            pb_attribute->has_transpose = true;
+            pb_attribute->transpose = mesh->attributes[i]->constant.transpose;
+
+            pb_attribute->n_floats = pb_attribute->n_components * pb_attribute->n_columns;
+            /* XXX: we assume the mesh will stay valid/constant and
+             * avoid copying the data... */
+            pb_attribute->floats = mesh->attributes[i]->constant.value;
+        }
+
+        attributes[i] = pb_attribute;
+    }
+
+    pb_mesh = rig_pb_new(serializer, Rig__Mesh, rig__mesh__init);
+
+    pb_mesh->has_mode = true;
+    switch (mesh->mode) {
+    case CG_VERTICES_MODE_POINTS:
+        pb_mesh->mode = RIG__MESH__MODE__POINTS;
+        break;
+    case CG_VERTICES_MODE_LINES:
+        pb_mesh->mode = RIG__MESH__MODE__LINES;
+        break;
+    case CG_VERTICES_MODE_LINE_LOOP:
+        pb_mesh->mode = RIG__MESH__MODE__LINE_LOOP;
+        break;
+    case CG_VERTICES_MODE_LINE_STRIP:
+        pb_mesh->mode = RIG__MESH__MODE__LINE_STRIP;
+        break;
+    case CG_VERTICES_MODE_TRIANGLES:
+        pb_mesh->mode = RIG__MESH__MODE__TRIANGLES;
+        break;
+    case CG_VERTICES_MODE_TRIANGLE_STRIP:
+        pb_mesh->mode = RIG__MESH__MODE__TRIANGLE_STRIP;
+        break;
+    case CG_VERTICES_MODE_TRIANGLE_FAN:
+        pb_mesh->mode = RIG__MESH__MODE__TRIANGLE_FAN;
+        break;
+    }
+
+    pb_mesh->n_buffers = n_buffers;
+    pb_mesh->buffers = pb_buffers;
+
+    pb_mesh->attributes = attributes;
+    pb_mesh->n_attributes = mesh->n_attributes;
+
+    pb_mesh->has_n_vertices = true;
+    pb_mesh->n_vertices = mesh->n_vertices;
+
+    if (mesh->indices_buffer) {
+        pb_mesh->has_indices_type = true;
+        switch (mesh->indices_type) {
+        case CG_INDICES_TYPE_UNSIGNED_BYTE:
+            pb_mesh->indices_type = RIG__MESH__INDICES_TYPE__UNSIGNED_BYTE;
+            break;
+        case CG_INDICES_TYPE_UNSIGNED_SHORT:
+            pb_mesh->indices_type = RIG__MESH__INDICES_TYPE__UNSIGNED_SHORT;
+            break;
+        case CG_INDICES_TYPE_UNSIGNED_INT:
+            pb_mesh->indices_type = RIG__MESH__INDICES_TYPE__UNSIGNED_INT;
+            break;
+        }
+
+        pb_mesh->has_n_indices = true;
+        pb_mesh->n_indices = mesh->n_indices;
+
+        pb_mesh->has_indices_buffer_id = true;
+        pb_mesh->indices_buffer_id = pb_buffers[n_buffers - 1]->id;
+    }
+
+    return pb_mesh;
+}
+
 Rig__Entity__Component *
 rig_pb_serialize_component(rig_pb_serializer_t *serializer,
                            rut_component_t *component)
@@ -497,21 +696,16 @@ rig_pb_serialize_component(rig_pb_serializer_t *serializer,
                                              serializer);
     } else if (type == &rig_model_type) {
         rig_model_t *model = (rig_model_t *)component;
-        uint64_t asset_id = rig_pb_serializer_lookup_object_id(
-            serializer, rig_model_get_asset(model));
-
-        /* XXX: we don't support serializing a model loaded from a rut_mesh_t */
-        c_warn_if_fail(asset_id != 0);
 
         pb_component->type = RIG__ENTITY__COMPONENT__TYPE__MODEL;
-        pb_component->model = rig_pb_new(serializer,
-                                         Rig__Entity__Component__Model,
-                                         rig__entity__component__model__init);
 
-        if (asset_id) {
-            pb_component->model->has_asset_id = true;
-            pb_component->model->asset_id = asset_id;
-        }
+        pb_component->mesh = rig_pb_serialize_mesh(serializer,
+                                                   model->mesh);
+
+        serialize_instrospectable_properties(component,
+                                             &pb_component->n_properties,
+                                             (void **)&pb_component->properties,
+                                             serializer);
     } else if (type == &rig_text_type) {
         pb_component->type = RIG__ENTITY__COMPONENT__TYPE__TEXT;
         serialize_instrospectable_properties(component,
@@ -526,12 +720,6 @@ rig_pb_serialize_component(rig_pb_serializer_t *serializer,
                                              serializer);
     } else if (type == &rig_nine_slice_type) {
         pb_component->type = RIG__ENTITY__COMPONENT__TYPE__NINE_SLICE;
-        serialize_instrospectable_properties(component,
-                                             &pb_component->n_properties,
-                                             (void **)&pb_component->properties,
-                                             serializer);
-    } else if (type == &rig_hair_type) {
-        pb_component->type = RIG__ENTITY__COMPONENT__TYPE__HAIR;
         serialize_instrospectable_properties(component,
                                              &pb_component->n_properties,
                                              (void **)&pb_component->properties,
@@ -985,38 +1173,17 @@ rig_pb_serializer_destroy(rig_pb_serializer_t *serializer)
     c_slice_free(rig_pb_serializer_t, serializer);
 }
 
-static Rig__Buffer *
-serialize_buffer(rig_pb_serializer_t *serializer,
-                 rut_buffer_t *buffer)
-{
-    Rig__Buffer *pb_buffer =
-        rig_pb_new(serializer, Rig__Buffer, rig__buffer__init);
-
-    pb_buffer->has_id = true;
-    pb_buffer->id = rig_pb_serializer_register_object(serializer, buffer);
-
-    /* NB: The serialized asset points directly to the rut_mesh_t
-     * data to avoid copying it... */
-    pb_buffer->has_data = true;
-    pb_buffer->data.data = buffer->data;
-    pb_buffer->data.len = buffer->size;
-
-    return pb_buffer;
-}
-
 static Rig__Asset *
 serialize_mesh_asset(rig_pb_serializer_t *serializer,
                      rig_asset_t *asset)
 {
     rut_mesh_t *mesh = rig_asset_get_mesh(asset);
     Rig__Asset *pb_asset;
-    rut_buffer_t **buffers;
-    int n_buffers = 0;
-    Rig__Buffer **pb_buffers;
-    Rig__Buffer **attribute_buffers_map;
-    Rig__Attribute **attributes;
-    Rig__Mesh *pb_mesh;
-    int i;
+
+    if (!mesh) {
+        c_warning("Missing asset mesh");
+        return NULL;
+    }
 
     pb_asset = rig_pb_new(serializer, Rig__Asset, rig__asset__init);
 
@@ -1028,172 +1195,7 @@ serialize_mesh_asset(rig_pb_serializer_t *serializer,
     pb_asset->has_type = true;
     pb_asset->type = RIG_ASSET_TYPE_MESH;
 
-    /* The maximum number of pb_buffers we may need = n_attributes plus 1 in
-     * case
-     * there is an index buffer... */
-    pb_buffers =
-        rut_memory_stack_memalign(serializer->stack,
-                                  sizeof(void *) * (mesh->n_attributes + 1),
-                                  C_ALIGNOF(void *));
-
-    buffers = c_alloca(sizeof(void *) * mesh->n_attributes);
-    attribute_buffers_map = c_alloca(sizeof(void *) * mesh->n_attributes);
-
-    /* NB:
-     * attributes may refer to shared buffers so we need to first
-     * figure out how many unique buffers the mesh refers too...
-     */
-
-    for (i = 0; i < mesh->n_attributes; i++) {
-        int j;
-
-        if (!mesh->attributes[i]->is_buffered)
-            continue;
-
-        for (j = 0; i < n_buffers; j++)
-            if (buffers[j] == mesh->attributes[i]->buffered.buffer)
-                break;
-
-        if (j < n_buffers)
-            attribute_buffers_map[i] = pb_buffers[j];
-        else {
-            Rig__Buffer *pb_buffer =
-                serialize_buffer(serializer, mesh->attributes[i]->buffered.buffer);
-
-            pb_buffers[n_buffers] = pb_buffer;
-
-            attribute_buffers_map[i] = pb_buffer;
-            buffers[n_buffers++] = mesh->attributes[i]->buffered.buffer;
-        }
-    }
-
-    if (mesh->indices_buffer) {
-        Rig__Buffer *pb_buffer =
-            serialize_buffer(serializer, mesh->indices_buffer);
-        pb_buffers[n_buffers++] = pb_buffer;
-    }
-
-    attributes = rut_memory_stack_memalign(serializer->stack,
-                                           sizeof(void *) * mesh->n_attributes,
-                                           C_ALIGNOF(void *));
-    for (i = 0; i < mesh->n_attributes; i++) {
-        Rig__Attribute *pb_attribute =
-            rig_pb_new(serializer, Rig__Attribute, rig__attribute__init);
-        Rig__Attribute__Type type;
-
-        pb_attribute->name = (char *)mesh->attributes[i]->name;
-        pb_attribute->has_normalized = true;
-        pb_attribute->normalized = mesh->attributes[i]->normalized;
-
-        if (mesh->attributes[i]->instance_stride) {
-            pb_attribute->has_instance_stride = true;
-            pb_attribute->instance_stride = mesh->attributes[i]->instance_stride;
-        }
-
-        if (mesh->attributes[i]->is_buffered) {
-            pb_attribute->has_buffer_id = true;
-            pb_attribute->buffer_id = attribute_buffers_map[i]->id;
-
-            pb_attribute->has_stride = true;
-            pb_attribute->stride = mesh->attributes[i]->buffered.stride;
-            pb_attribute->has_offset = true;
-            pb_attribute->offset = mesh->attributes[i]->buffered.offset;
-            pb_attribute->has_n_components = true;
-            pb_attribute->n_components = mesh->attributes[i]->buffered.n_components;
-
-            switch (mesh->attributes[i]->buffered.type) {
-                case RUT_ATTRIBUTE_TYPE_BYTE:
-                    type = RIG__ATTRIBUTE__TYPE__BYTE;
-                    break;
-                case RUT_ATTRIBUTE_TYPE_UNSIGNED_BYTE:
-                    type = RIG__ATTRIBUTE__TYPE__UNSIGNED_BYTE;
-                    break;
-                case RUT_ATTRIBUTE_TYPE_SHORT:
-                    type = RIG__ATTRIBUTE__TYPE__SHORT;
-                    break;
-                case RUT_ATTRIBUTE_TYPE_UNSIGNED_SHORT:
-                    type = RIG__ATTRIBUTE__TYPE__UNSIGNED_SHORT;
-                    break;
-                case RUT_ATTRIBUTE_TYPE_FLOAT:
-                    type = RIG__ATTRIBUTE__TYPE__FLOAT;
-                    break;
-            }
-            pb_attribute->has_type = true;
-            pb_attribute->type = type;
-        } else {
-            pb_attribute->has_n_components = true;
-            pb_attribute->n_components = mesh->attributes[i]->constant.n_components;
-            pb_attribute->has_n_columns = true;
-            pb_attribute->n_columns = mesh->attributes[i]->constant.n_columns;
-            pb_attribute->has_transpose = true;
-            pb_attribute->transpose = mesh->attributes[i]->constant.transpose;
-
-            pb_attribute->n_floats = pb_attribute->n_components * pb_attribute->n_columns;
-            /* XXX: we assume the mesh will stay valid/constant and
-             * avoid copying the data... */
-            pb_attribute->floats = mesh->attributes[i]->constant.value;
-        }
-
-        attributes[i] = pb_attribute;
-    }
-
-    pb_asset->mesh = rig_pb_new(serializer, Rig__Mesh, rig__mesh__init);
-    pb_mesh = pb_asset->mesh;
-
-    pb_mesh->has_mode = true;
-    switch (mesh->mode) {
-    case CG_VERTICES_MODE_POINTS:
-        pb_mesh->mode = RIG__MESH__MODE__POINTS;
-        break;
-    case CG_VERTICES_MODE_LINES:
-        pb_mesh->mode = RIG__MESH__MODE__LINES;
-        break;
-    case CG_VERTICES_MODE_LINE_LOOP:
-        pb_mesh->mode = RIG__MESH__MODE__LINE_LOOP;
-        break;
-    case CG_VERTICES_MODE_LINE_STRIP:
-        pb_mesh->mode = RIG__MESH__MODE__LINE_STRIP;
-        break;
-    case CG_VERTICES_MODE_TRIANGLES:
-        pb_mesh->mode = RIG__MESH__MODE__TRIANGLES;
-        break;
-    case CG_VERTICES_MODE_TRIANGLE_STRIP:
-        pb_mesh->mode = RIG__MESH__MODE__TRIANGLE_STRIP;
-        break;
-    case CG_VERTICES_MODE_TRIANGLE_FAN:
-        pb_mesh->mode = RIG__MESH__MODE__TRIANGLE_FAN;
-        break;
-    }
-
-    pb_mesh->n_buffers = n_buffers;
-    pb_mesh->buffers = pb_buffers;
-
-    pb_mesh->attributes = attributes;
-    pb_mesh->n_attributes = mesh->n_attributes;
-
-    pb_mesh->has_n_vertices = true;
-    pb_mesh->n_vertices = mesh->n_vertices;
-
-    if (mesh->indices_buffer) {
-        pb_mesh->has_indices_type = true;
-        switch (mesh->indices_type) {
-        case CG_INDICES_TYPE_UNSIGNED_BYTE:
-            pb_mesh->indices_type = RIG__MESH__INDICES_TYPE__UNSIGNED_BYTE;
-            break;
-        case CG_INDICES_TYPE_UNSIGNED_SHORT:
-            pb_mesh->indices_type = RIG__MESH__INDICES_TYPE__UNSIGNED_SHORT;
-            break;
-        case CG_INDICES_TYPE_UNSIGNED_INT:
-            pb_mesh->indices_type = RIG__MESH__INDICES_TYPE__UNSIGNED_INT;
-            break;
-        }
-
-        pb_mesh->has_n_indices = true;
-        pb_mesh->n_indices = mesh->n_indices;
-
-        pb_mesh->has_indices_buffer_id = true;
-        pb_mesh->indices_buffer_id = pb_buffers[n_buffers - 1]->id;
-    }
+    pb_asset->mesh = rig_pb_serialize_mesh(serializer, mesh);
 
     return pb_asset;
 }
@@ -2038,45 +2040,23 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
         return source;
     }
     case RIG__ENTITY__COMPONENT__TYPE__MODEL: {
-        Rig__Entity__Component__Model *pb_model = pb_component->model;
-        rig_asset_t *asset;
         rut_mesh_t *mesh;
         rig_model_t *model;
 
-        if (!pb_model->has_asset_id) {
-            rig_pb_unserializer_collect_error(unserializer,
-                                              "Missing asset ID for model");
+        mesh = rig_pb_unserialize_mesh(unserializer, pb_component->mesh);
+        if (!mesh)
             return NULL;
-        }
 
-        asset = unserializer_find_object(unserializer, pb_model->asset_id);
-        if (!asset) {
-            rig_pb_unserializer_collect_error(unserializer,
-                                              "Invalid model asset ID");
-            return NULL;
-        }
+        model = rig_model_new(unserializer->engine, mesh);
+        set_properties_from_pb_boxed_values(unserializer,
+                                            model,
+                                            pb_component->n_properties,
+                                            pb_component->properties);
 
-        mesh = rig_asset_get_mesh(asset);
-        if (!mesh) {
-            rig_pb_unserializer_collect_error(unserializer,
-                                              "Model component asset "
-                                              "isn't a mesh");
-            return NULL;
+        if (!rig_pb_unserializer_register_object(unserializer, model, component_id)) {
+            rut_object_unref(model);
+            model = NULL;
         }
-
-        model = rig_model_new_from_asset(unserializer->engine, asset);
-        if (model) {
-            if (!rig_pb_unserializer_register_object(unserializer, model,
-                                                     component_id)) {
-                rut_object_unref(model);
-                model = NULL;
-            }
-        } else {
-            rig_pb_unserializer_collect_error(unserializer,
-                                              "Failed to create model "
-                                              "from mesh asset");
-        }
-
         return model;
     }
     case RIG__ENTITY__COMPONENT__TYPE__TEXT: {
@@ -2226,47 +2206,6 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
         }
 
         return grid;
-    }
-    case RIG__ENTITY__COMPONENT__TYPE__HAIR: {
-        rig_hair_t *hair = rig_hair_new(unserializer->engine);
-        //rut_object_t *geom;
-
-        set_properties_from_pb_boxed_values(unserializer,
-                                            hair,
-                                            pb_component->n_properties,
-                                            pb_component->properties);
-
-        if (rig_pb_unserializer_register_object(unserializer, hair,
-                                                component_id))
-        {
-            rut_object_unref(hair);
-            hair = NULL;
-        }
-
-#warning "FIXME: support [un]serializing hair mesh"
-#if 0
-        /* XXX: This is a duplication of the special logic we have
-         * in rig-engine.c when first adding a hair component to
-         * an entity where we derive out special hair geometry
-         * from the current geometry.
-         *
-         * FIXME: This should not be done on the fly when loading
-         * a UI since this can be hugely expensive. We should be
-         * saving an loading a hair mesh that is derived offline.
-         */
-
-        geom = rig_entity_get_component(entity, RUT_COMPONENT_TYPE_GEOMETRY);
-
-        if (geom && rut_object_get_type(geom) == &rig_model_type) {
-            rig_model_t *hair_geom = rig_model_new_for_hair(geom);
-
-            rig_entity_remove_component(entity, geom);
-            rig_entity_add_component(entity, hair_geom);
-            rut_object_unref(hair_geom);
-        }
-#endif
-
-        return hair;
     }
     }
 
@@ -3185,7 +3124,7 @@ rig_pb_unserialize_mesh(rig_pb_un_serializer_t *unserializer,
 
 ERROR:
 
-    c_warn_if_reached();
+    rig_pb_unserializer_collect_error(unserializer, "Invalid mesh");
 
     if (mesh)
         rut_object_unref(mesh);

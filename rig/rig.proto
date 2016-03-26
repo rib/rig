@@ -208,19 +208,13 @@ message Entity
           TEXT=6; CAMERA=7; POINTALISM_GRID=8; NINE_SLICE=9; HAIR=10;
           BUTTON_INPUT=11; NATIVE_MODULE=12; SOURCE=13; }
 
-      message Model
-        {
-          optional sint64 asset_id=1; //XXX ID
-        }
-
       optional sint64 id=1; //XXX ID
 
       optional Type type=2;
 
-      optional Model model=7;
+      optional Mesh mesh=3;
 
-      //introspectable properties...
-      repeated Boxed properties=11;
+      repeated Boxed properties=4;
     }
 
   optional sint64 id=1; //XXX ID
@@ -230,9 +224,6 @@ message Entity
   optional Vec3 position=4;
   optional float scale=5;
   optional Rotation rotation=6;
-
-  //Deprecated (moved to material component)
-  optional bool cast_shadow=7;
 
   repeated Component components=8;
 }

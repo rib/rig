@@ -851,8 +851,6 @@
         'rig/protobuf-c-rpc/rig-protobuf-c-rpc.h',
         'rig/protobuf-c-rpc/rig-protobuf-c-rpc.c',
 
-        'rig/components/rig-hair.h',
-        'rig/components/rig-hair.c',
         'rig/components/rig-camera.h',
         'rig/components/rig-camera.c',
         'rig/components/rig-light.h',

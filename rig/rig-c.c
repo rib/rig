@@ -602,6 +602,26 @@ r_pointalism_grid_new(RModule *module, float size)
 }
 
 RObject *
+r_model_new(RModule *module, r_mesh_t *mesh)
+{
+    rig_code_module_props_t *code_module = (void *)module;
+    rig_engine_t *engine = code_module->engine;
+    rut_property_context_t *prop_ctx = engine->property_ctx;
+    rut_object_t *component;
+
+    prop_ctx->logging_disabled++;
+    component = rig_model_new();
+        rig_shape_new(code_module->engine, false, width, height);
+    prop_ctx->logging_disabled--;
+
+    rut_object_claim(component, engine);
+    rut_object_unref(component);
+
+    rig_engine_op_register_component(engine, component);
+
+    return (RObject *)component;
+}
+RObject *
 r_material_new(RModule *module)
 {
     rig_code_module_props_t *code_module = (void *)module;
