@@ -42,17 +42,10 @@ typedef struct _rig_model_t rig_model_t;
 typedef struct _rig_model_private_t rig_model_private_t;
 extern rut_type_t rig_model_type;
 
-typedef enum _rig_model_type_t {
-    RIG_MODEL_TYPE_TEMPLATE,
-    RIG_MODEL_TYPE_FILE,
-} rig_model_type_t;
-
 struct _rig_model_t {
     rut_object_base_t _base;
 
     rut_componentable_props_t component;
-
-    rig_model_type_t type;
 
     rig_asset_t *asset;
 
@@ -66,47 +59,14 @@ struct _rig_model_t {
     float max_z;
 
     cg_primitive_t *primitive;
-
-    bool builtin_normals;
-    bool builtin_tex_coords;
-
-    /* TODO: I think maybe we should make rig_hair_t and rig_model_t mutually
-     * exclusive and move all of this stuff to rig_hair_t instead. */
-    bool is_hair_model;
-    rig_model_private_t *priv;
-    rut_mesh_t *patched_mesh;
-    rut_mesh_t *fin_mesh;
-    cg_primitive_t *fin_primitive;
-    float default_hair_length;
 };
 
 void _rig_model_init_type(void);
 
-/* NB: the mesh given here is copied before deriving missing
- * attributes and not used directly.
- *
- * In the case where we are loading a model from a serialized
- * UI then the serialized data should be used directly and
- * there should be no need to derive missing attributes at
- * runtime.
- */
-rig_model_t *rig_model_new_from_asset_mesh(rig_engine_t *engine,
-                                           rut_mesh_t *mesh,
-                                           bool needs_normals,
-                                           bool needs_tex_coords);
-
-rig_model_t *rig_model_new_from_asset(rig_engine_t *engine, rig_asset_t *asset);
-
-rig_model_t *rig_model_new_for_hair(rig_model_t *base);
+rig_model_t *rig_model_new(rig_engine_t *engine, rut_mesh_t *mesh);
 
 rut_mesh_t *rig_model_get_mesh(rut_object_t *self);
 
-rig_asset_t *rig_model_get_asset(rig_model_t *model);
-
 cg_primitive_t *rig_model_get_primitive(rut_object_t *object);
-
-cg_primitive_t *rig_model_get_fin_primitive(rut_object_t *object);
-
-float rig_model_get_default_hair_length(rut_object_t *object);
 
 #endif /* _RIG_MODEL_H_ */

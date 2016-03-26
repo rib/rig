@@ -41,7 +41,6 @@
 
 #include "components/rig-camera.h"
 #include "components/rig-diamond.h"
-#include "components/rig-hair.h"
 #include "components/rig-light.h"
 #include "components/rig-material.h"
 #include "components/rig-source.h"
@@ -92,10 +91,6 @@ struct _rig_renderer_t {
     cg_snippet_t *pointalism_halo_snippet;
     cg_snippet_t *pointalism_opaque_snippet;
     cg_snippet_t *cache_position_snippet;
-    cg_snippet_t *hair_simple_snippet;
-    cg_snippet_t *hair_material_snippet;
-    cg_snippet_t *hair_vertex_snippet;
-    cg_snippet_t *hair_fin_snippet;
     cg_snippet_t *layer_skip_snippet;
 
     c_array_t *journal;
@@ -107,8 +102,6 @@ typedef enum _cache_slot_t {
     CACHE_SLOT_SHADOW,
     CACHE_SLOT_COLOR_BLENDED,
     CACHE_SLOT_COLOR_UNBLENDED,
-    CACHE_SLOT_HAIR_FINS_BLENDED,
-    CACHE_SLOT_HAIR_FINS_UNBLENDED,
 } cache_slot_t;
 
 struct source_state 
@@ -965,108 +958,6 @@ rig_renderer_init(rig_renderer_t *renderer)
         "  if (cg_color_out.a < 0.90)\n"
         "    discard;\n");
 
-    renderer->hair_simple_snippet = cg_snippet_new(
-        CG_SNIPPET_HOOK_FRAGMENT,
-        /* declarations */
-        "/* hair simple declarations */\n"
-        "in vec3 normal, eye_direction;\n"
-        "uniform vec4 light0_ambient, light0_diffuse, light0_specular;\n"
-        "uniform vec3 light0_direction_norm;\n",
-        /* post */
-        "#if __VERSION__ >= 130\n"
-        "  vec4 texel =\n"
-        "    texture (cg_sampler11, cg_tex_coord11_in.st);\n"
-        "#else\n"
-        "  vec4 texel =\n"
-        "    texture2D (cg_sampler11, cg_tex_coord11_in.st);\n"
-        "#endif\n"
-        "  cg_color_out *= texel;\n"
-        "  if (cg_color_out.a < 0.9)\n"
-        "    discard;\n"
-        "\n"
-        "  vec3 E = normalize (eye_direction);\n"
-        "  vec3 L = normalize (light0_direction_norm);\n"
-        "  vec3 H = normalize (L + E);\n"
-        "  vec3 N = normalize (normal);\n"
-        "  vec3 Ka = light0_ambient.rgb;\n"
-        "  vec3 Kd = vec3 (0.0, 0.0, 0.0);\n"
-        "  vec3 Ks = vec3 (0.0, 0.0, 0.0);\n"
-        "  float Pd = max (0.0, dot (N, L));\n"
-        "  float Ps = max (0.0, dot (N, H));\n"
-        "  float u = max (0.0, dot (N, L));\n"
-        "  float v = max (0.0, dot (N, H));\n"
-        "\n"
-        "  if (Pd > 0.0)\n"
-        "    Kd = light0_diffuse.rgb * pow (1.0 - (u * u), Pd / 2.0);\n"
-        "  if (Ps > 0.0)\n"
-        "    Ks = light0_specular.rgb * pow (1.0 - (v * v), Ps / 2.0);\n"
-        "\n"
-        "  vec3 color = Ka + Kd + Ks;\n"
-        "  cg_color_out.rgb *= color;\n");
-
-    renderer->hair_material_snippet = cg_snippet_new(
-        CG_SNIPPET_HOOK_FRAGMENT,
-        /* declarations */
-        "/* hair material declarations */\n"
-        "in vec3 normal, eye_direction;\n"
-        "uniform vec4 light0_ambient, light0_diffuse, light0_specular;\n"
-        "uniform vec3 light0_direction_norm;\n"
-        "uniform vec4 material_ambient, material_diffuse, material_specular;\n"
-        "uniform float material_shininess;\n",
-        /* post */
-        "#if __VERSION__ >= 130\n"
-        "  vec4 texel =\n"
-        "    texture (cg_sampler11, cg_tex_coord11_in.st);\n"
-        "#else\n"
-        "  vec4 texel =\n"
-        "    texture2D (cg_sampler11, cg_tex_coord11_in.st);\n"
-        "#endif\n"
-        "\n"
-        "  cg_color_out *= texel;\n"
-        "  if (cg_color_out.a < 0.9)\n"
-        "    discard;\n"
-        "\n"
-        "  vec3 E = normalize(eye_direction);\n"
-        "  vec3 L = normalize (light0_direction_norm);\n"
-        "  vec3 H = normalize (L + E);\n"
-        "  vec3 N = normalize (normal);\n"
-        "  vec3 Ka = light0_ambient.rgb * material_ambient.rgb;\n"
-        "  vec3 Kd = vec3 (0.0, 0.0, 0.0);\n"
-        "  vec3 Ks = vec3 (0.0, 0.0, 0.0);\n"
-        "  float Pd = max (0.0, dot (N, L));\n"
-        "  float Ps = max (0.0, dot (N, H));\n"
-        "  float u = max (0.0, dot (N, L));\n"
-        "  float v = max (0.0, dot (N, H));\n"
-        "\n"
-        "  if (Pd > 0.0) {\n"
-        "    Kd = (light0_diffuse.rgb * material_diffuse.rgb) *\n"
-        "         pow (1.0 - (u * u), Pd / 2.0);\n"
-        "  }\n"
-        "  if (Ps > 0.0) {\n"
-        "    Ks = (light0_specular.rgb * material_specular.rgb) *\n"
-        "         pow (1.0 - (v * v), Ps / 2.0);\n"
-        "  }\n"
-        "\n"
-        "  vec3 color = Ka + Kd + Ks;\n"
-        "  cg_color_out.rgb *= color;\n");
-
-    renderer->hair_vertex_snippet = cg_snippet_new(
-        CG_SNIPPET_HOOK_VERTEX,
-        /* declarations */
-        "uniform float hair_pos;\n",
-        /* post */
-        "vec4 displace = pos;\n"
-        "displace.xyz = cg_normal_in * hair_pos + displace.xyz;\n"
-        "cg_position_out = cg_modelview_projection_matrix * displace;\n");
-
-    renderer->hair_fin_snippet = cg_snippet_new(
-        CG_SNIPPET_HOOK_VERTEX,
-        "uniform float length;\n",
-        "vec4 displace = pos;\n"
-        "if (cg_tex_coord11_in.t < 1.0)\n"
-        "displace.xyz += cg_normal_in * length;\n"
-        "cg_position_out = cg_modelview_projection_matrix * displace;\n");
-
     renderer->layer_skip_snippet =
         cg_snippet_new(CG_SNIPPET_HOOK_LAYER_FRAGMENT, NULL, NULL);
     cg_snippet_set_replace(renderer->layer_skip_snippet, "");
@@ -1321,11 +1212,9 @@ get_entity_color_pipeline(rig_renderer_t *renderer,
     rig_engine_t *engine = renderer->engine;
     cg_depth_state_t depth_state;
     cg_pipeline_t *pipeline;
-    cg_pipeline_t *fin_pipeline;
     cg_framebuffer_t *shadow_fb;
     cg_snippet_t *blend = renderer->blended_discard_snippet;
     cg_snippet_t *unblend = renderer->unblended_discard_snippet;
-    rut_object_t *hair;
     int i;
 
     //return cg_pipeline_new(engine->shell->cg_device);
@@ -1335,19 +1224,11 @@ get_entity_color_pipeline(rig_renderer_t *renderer,
      * from a small set of templates.
      */
 
-    hair = rig_entity_get_component(entity, RUT_COMPONENT_TYPE_HAIR);
-
     if (blended) {
         pipeline = get_entity_pipeline_cache(entity, CACHE_SLOT_COLOR_BLENDED);
-        if (hair)
-            fin_pipeline =
-                get_entity_pipeline_cache(entity, CACHE_SLOT_HAIR_FINS_BLENDED);
     } else {
         pipeline =
             get_entity_pipeline_cache(entity, CACHE_SLOT_COLOR_UNBLENDED);
-        if (hair)
-            fin_pipeline = get_entity_pipeline_cache(
-                entity, CACHE_SLOT_HAIR_FINS_UNBLENDED);
     }
 
     if (pipeline) {
@@ -1408,15 +1289,6 @@ get_entity_color_pipeline(rig_renderer_t *renderer,
         unblend = renderer->pointalism_opaque_snippet;
     }
 
-    /*if (hair)
-       {
-        cg_pipeline_add_snippet (pipeline, renderer->hair_fin_snippet);
-        rig_hair_set_uniform_location (hair, pipeline,
-                                       blended ? RIG_HAIR_SHELL_POSITION_BLENDED
-       :
-                                       RIG_HAIR_SHELL_POSITION_UNBLENDED);
-       }*/
-
     /* and fragment shader */
 
     /* XXX: ideally we wouldn't have to rely on conditionals + discards
@@ -1428,26 +1300,10 @@ get_entity_color_pipeline(rig_renderer_t *renderer,
 
     cg_pipeline_add_snippet(pipeline, renderer->unpremultiply_snippet);
 
-    if (hair) {
-        if (sources[SOURCE_TYPE_COLOR] || sources[SOURCE_TYPE_ALPHA_MASK] ||
-            sources[SOURCE_TYPE_NORMAL_MAP]) {
-            cg_pipeline_add_snippet(pipeline, renderer->hair_material_snippet);
-        } else
-            cg_pipeline_add_snippet(pipeline, renderer->hair_simple_snippet);
-
-        cg_pipeline_add_layer_snippet(pipeline, 11, renderer->layer_skip_snippet);
-
-        fin_pipeline = cg_pipeline_copy(pipeline);
-        cg_pipeline_add_snippet(fin_pipeline, renderer->hair_fin_snippet);
-        cg_pipeline_add_snippet(pipeline, renderer->hair_vertex_snippet);
-        rig_hair_set_uniform_location(hair,
-                                      pipeline,
-                                      blended
-                                      ? RIG_HAIR_SHELL_POSITION_BLENDED
-                                      : RIG_HAIR_SHELL_POSITION_UNBLENDED);
-        rig_hair_set_uniform_location(hair, fin_pipeline, RIG_HAIR_LENGTH);
-    } else if (sources[SOURCE_TYPE_COLOR] || sources[SOURCE_TYPE_ALPHA_MASK] ||
-               sources[SOURCE_TYPE_NORMAL_MAP]) {
+    if (sources[SOURCE_TYPE_COLOR] ||
+        sources[SOURCE_TYPE_ALPHA_MASK] ||
+        sources[SOURCE_TYPE_NORMAL_MAP])
+    {
         if (sources[SOURCE_TYPE_ALPHA_MASK])
             cg_pipeline_add_snippet(pipeline, renderer->alpha_mask_snippet);
 
@@ -1476,24 +1332,11 @@ get_entity_color_pipeline(rig_renderer_t *renderer,
 
     cg_pipeline_add_snippet(pipeline, renderer->premultiply_snippet);
 
-    if (hair)
-        cg_pipeline_add_snippet(fin_pipeline, renderer->premultiply_snippet);
-
     if (!blended) {
         cg_pipeline_set_blend(pipeline, "RGBA = ADD (SRC_COLOR, 0)", NULL);
         set_entity_pipeline_cache(entity, CACHE_SLOT_COLOR_UNBLENDED, pipeline);
-        if (hair) {
-            cg_pipeline_set_blend(
-                fin_pipeline, "RGBA = ADD (SRC_COLOR, 0)", NULL);
-            set_entity_pipeline_cache(
-                entity, CACHE_SLOT_HAIR_FINS_UNBLENDED, fin_pipeline);
-        }
-    } else {
+    } else
         set_entity_pipeline_cache(entity, CACHE_SLOT_COLOR_BLENDED, pipeline);
-        if (hair)
-            set_entity_pipeline_cache(
-                entity, CACHE_SLOT_HAIR_FINS_BLENDED, fin_pipeline);
-    }
 
 FOUND:
 
@@ -1524,9 +1367,6 @@ FOUND:
             cg_pipeline_get_uniform_location(pipeline, "light_shadow_matrix");
         cg_pipeline_set_uniform_matrix(
             pipeline, location, 4, 1, false, light_matrix);
-        if (hair)
-            cg_pipeline_set_uniform_matrix(
-                fin_pipeline, location, 4, 1, false, light_matrix);
 
         for (i = 0; i < 3; i++)
             if (sources[i])
@@ -1754,8 +1594,6 @@ rig_renderer_flush_journal(rig_renderer_t *renderer,
         cg_primitive_t *primitive;
         float normal_matrix[9];
         rig_material_t *material;
-        cg_pipeline_t *fin_pipeline = NULL;
-        rig_hair_t *hair;
 
         if (rut_object_get_type(geometry) == &rig_text_type &&
             paint_ctx->pass == RIG_PASS_COLOR_BLENDED) {
@@ -1776,21 +1614,6 @@ rig_renderer_flush_journal(rig_renderer_t *renderer,
 
         material =
             rig_entity_get_component(entity, RUT_COMPONENT_TYPE_MATERIAL);
-
-        hair = rig_entity_get_component(entity, RUT_COMPONENT_TYPE_HAIR);
-        if (hair) {
-            rig_hair_update_state(hair);
-
-            if (rut_object_get_type(geometry) == &rig_model_type) {
-                if (paint_ctx->pass == RIG_PASS_COLOR_BLENDED) {
-                    fin_pipeline = get_entity_pipeline_cache(
-                        entity, CACHE_SLOT_HAIR_FINS_BLENDED);
-                } else {
-                    fin_pipeline = get_entity_pipeline_cache(
-                        entity, CACHE_SLOT_HAIR_FINS_UNBLENDED);
-                }
-            }
-        }
 
         /*
          * Update Uniforms...
@@ -1830,27 +1653,6 @@ rig_renderer_flush_journal(rig_renderer_t *renderer,
                                            1, /* count */
                                            false, /* don't transpose again */
                                            normal_matrix);
-
-            if (fin_pipeline) {
-                rig_light_set_uniforms(light, fin_pipeline);
-
-                if (material)
-                    rig_material_flush_uniforms(material, fin_pipeline);
-
-                cg_pipeline_set_uniform_matrix(
-                    fin_pipeline,
-                    location,
-                    3, /* dimensions */
-                    1, /* count */
-                    false, /* don't transpose again */
-                    normal_matrix);
-
-                cg_pipeline_set_layer_texture(
-                    fin_pipeline, 11, hair->fin_texture);
-
-                rig_hair_set_uniform_float_value(
-                    hair, fin_pipeline, RIG_HAIR_LENGTH, hair->length);
-            }
         }
 
         /*
@@ -1860,62 +1662,7 @@ rig_renderer_flush_journal(rig_renderer_t *renderer,
 
         cg_framebuffer_set_modelview_matrix(fb, &entry->matrix);
 
-        if (hair) {
-            cg_texture_t *texture;
-            int i, uniform;
-
-            if (fin_pipeline) {
-                rig_model_t *model = geometry;
-                cg_primitive_draw(model->fin_primitive, fb, fin_pipeline);
-            }
-
-            if (paint_ctx->pass == RIG_PASS_COLOR_BLENDED)
-                uniform = RIG_HAIR_SHELL_POSITION_BLENDED;
-            else if (paint_ctx->pass == RIG_PASS_COLOR_UNBLENDED)
-                uniform = RIG_HAIR_SHELL_POSITION_UNBLENDED;
-            else if (paint_ctx->pass == RIG_PASS_DOF_DEPTH ||
-                     paint_ctx->pass == RIG_PASS_SHADOW)
-                uniform = RIG_HAIR_SHELL_POSITION_SHADOW;
-            else {
-                c_warn_if_reached();
-                uniform = RIG_HAIR_SHELL_POSITION_BLENDED;
-            }
-
-            /* FIXME: only update the hair uniforms when they change! */
-            /* FIXME: avoid needing to query the uniform locations by
-             * name for each primitive! */
-
-            texture = c_array_index(hair->shell_textures, cg_texture_t *, 0);
-
-            cg_pipeline_set_layer_texture(pipeline, 11, texture);
-
-            rig_hair_set_uniform_float_value(hair, pipeline, uniform, 0);
-
-            /* TODO: we should be drawing the original base model as
-             * the interior, with depth write and test enabled to
-             * make sure we reduce the work involved in blending all
-             * the shells on top. */
-            cg_primitive_draw(primitive, fb, pipeline);
-
-            cg_pipeline_set_alpha_test_function(
-                pipeline, CG_PIPELINE_ALPHA_FUNC_GREATER, 0.49);
-
-            /* TODO: we should support having more shells than
-             * real textures... */
-            for (i = 1; i < hair->n_shells; i++) {
-                float hair_pos = hair->shell_positions[i];
-
-                texture =
-                    c_array_index(hair->shell_textures, cg_texture_t *, i);
-                cg_pipeline_set_layer_texture(pipeline, 11, texture);
-
-                rig_hair_set_uniform_float_value(
-                    hair, pipeline, uniform, hair_pos);
-
-                cg_primitive_draw(primitive, fb, pipeline);
-            }
-        } else
-            cg_primitive_draw(primitive, fb, pipeline);
+        cg_primitive_draw(primitive, fb, pipeline);
 
         cg_object_unref(pipeline);
 

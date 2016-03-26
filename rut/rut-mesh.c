@@ -297,7 +297,7 @@ rut_mesh_set_attributes(rut_mesh_t *mesh,
 
 static void
 foreach_vertex(rut_mesh_t *mesh,
-               rut_mesh_tvertex_callback_t callback,
+               rut_mesh_vertex_callback_t callback,
                void *user_data,
                bool ignore_indices,
                uint8_t **bases,
@@ -410,7 +410,7 @@ collect_attribute_state(rut_mesh_t *mesh,
 
 void
 rut_mesh_foreach_vertex(rut_mesh_t *mesh,
-                        rut_mesh_tvertex_callback_t callback,
+                        rut_mesh_vertex_callback_t callback,
                         void *user_data,
                         const char *first_attribute,
                         ...)
@@ -442,7 +442,7 @@ rut_mesh_foreach_vertex(rut_mesh_t *mesh,
 
 void
 rut_mesh_foreach_index(rut_mesh_t *mesh,
-                       rut_mesh_tvertex_callback_t callback,
+                       rut_mesh_vertex_callback_t callback,
                        void *user_data,
                        const char *first_attribute,
                        ...)

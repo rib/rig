@@ -167,19 +167,19 @@ cg_primitive_t *rut_mesh_create_primitive(rut_shell_t *shell,
 rut_attribute_t *rut_mesh_find_attribute(rut_mesh_t *mesh,
                                          const char *attribute_name);
 
-typedef bool (*rut_mesh_tvertex_callback_t)(void **attribute_data,
+typedef bool (*rut_mesh_vertex_callback_t)(void **attribute_data,
                                            int vertex_index,
                                            void *user_data);
 
 void rut_mesh_foreach_vertex(rut_mesh_t *mesh,
-                             rut_mesh_tvertex_callback_t callback,
+                             rut_mesh_vertex_callback_t callback,
                              void *user_data,
                              const char *first_attribute_name,
                              ...);
 C_GNUC_NULL_TERMINATED
 
 void rut_mesh_foreach_index(rut_mesh_t *mesh,
-                            rut_mesh_tvertex_callback_t callback,
+                            rut_mesh_vertex_callback_t callback,
                             void *user_data,
                             const char *first_attribute_name,
                             ...) C_GNUC_NULL_TERMINATED;
