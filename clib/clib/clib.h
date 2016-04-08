@@ -425,7 +425,7 @@ char *c_win32_getlocale(void);
 
 #else
 
-#define c_warn_if_fail(x) do { } while(0)
+#define c_warn_if_fail(x) do { if (0 && !(x)) /* pass */; } while(0)
 #define c_warn_if_reached() do { } while(0)
 #define c_return_if_fail(x) do { if (0 && !(x)) return; } while(0)
 #define c_return_val_if_fail(x, e) do { if (0 && !(x)) return (e); } while(0)
