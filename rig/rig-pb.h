@@ -315,7 +315,7 @@ rut_mesh_t *rig_pb_unserialize_rut_mesh(rig_pb_un_serializer_t *unserializer,
 
 bool rig_pb_init_boxed_value(rig_pb_un_serializer_t *unserializer,
                              rut_boxed_t *boxed,
-                             rut_property_type_t type,
+                             rig_property_type_t type,
                              Rig__PropertyValue *pb_value);
 
 /* Note: this will also add the component to the given entity, since

@@ -77,7 +77,7 @@ void rig_node_object_lerp(rig_node_t *a,
                           rut_object_t **value);
 
 bool
-rig_node_box(rut_property_type_t type, rig_node_t *node, rut_boxed_t *value);
+rig_node_box(rig_property_type_t type, rig_node_t *node, rut_boxed_t *value);
 
 void rig_node_free(rig_node_t *node);
 

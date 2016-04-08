@@ -81,7 +81,7 @@ struct _rig_engine_t {
     c_matrix_t identity;
 
     rut_shell_t *shell;
-    rut_property_context_t *property_ctx;
+    rig_property_context_t *property_ctx;
 
     rig_pb_serializer_t *ops_serializer;
     rut_memory_stack_t *frame_stack;
@@ -141,7 +141,7 @@ struct _rig_engine_t {
     c_sllist_t *timelines;
 
     rut_introspectable_props_t introspectable;
-    rut_property_t properties[RIG_ENGINE_N_PROPS];
+    rig_property_t properties[RIG_ENGINE_N_PROPS];
 };
 
 rig_engine_t *rig_engine_new_for_frontend(rut_shell_t *shell,

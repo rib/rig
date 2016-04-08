@@ -121,7 +121,7 @@ struct _rig_editor_t {
     c_list_t tool_changed_cb_list;
 
     rig_controller_t *selected_controller;
-    rut_property_closure_t *controller_progress_closure;
+    rig_property_closure_t *controller_progress_closure;
 
     /* The transparency grid widget that is displayed behind the assets list */
     rut_image_t *transparency_grid;
@@ -2005,7 +2005,7 @@ reload_animated_inspector_properties(rig_editor_t *editor)
 }
 
 static void
-controller_progress_changed_cb(rut_property_t *progress_prop,
+controller_progress_changed_cb(rig_property_t *progress_prop,
                                void *user_data)
 {
     reload_animated_inspector_properties(user_data);
@@ -2019,7 +2019,7 @@ set_selected_controller(rig_editor_t *editor,
         return;
 
     if (editor->selected_controller) {
-        rut_property_closure_destroy(editor->controller_progress_closure);
+        rig_property_closure_destroy(editor->controller_progress_closure);
         rut_object_unref(editor->selected_controller);
     }
 
@@ -2028,7 +2028,7 @@ set_selected_controller(rig_editor_t *editor,
     if (controller) {
         rut_object_ref(controller);
 
-        editor->controller_progress_closure = rut_property_connect_callback(
+        editor->controller_progress_closure = rig_property_connect_callback(
             &controller->props[RIG_CONTROLLER_PROP_PROGRESS],
             controller_progress_changed_cb,
             editor);
@@ -2798,15 +2798,15 @@ object_deleted_cb (uint63_t id, void *user_data)
 #endif
 
 static void
-inspector_property_changed_cb(rut_property_t *inspected_property,
-                              rut_property_t *inspector_property,
+inspector_property_changed_cb(rig_property_t *inspected_property,
+                              rig_property_t *inspector_property,
                               bool mergeable,
                               void *user_data)
 {
     rig_editor_t *editor = user_data;
     rut_boxed_t new_value;
 
-    rut_property_box(inspector_property, &new_value);
+    rig_property_box(inspector_property, &new_value);
 
     rig_controller_view_edit_property(editor->controller_view,
                                       mergeable,
@@ -2817,7 +2817,7 @@ inspector_property_changed_cb(rut_property_t *inspected_property,
 }
 
 static void
-inspector_controlled_changed_cb(rut_property_t *property,
+inspector_controlled_changed_cb(rig_property_t *property,
                                 bool value,
                                 void *user_data)
 {
@@ -2834,7 +2834,7 @@ typedef struct {
 } init_controlled_state_data_t;
 
 static void
-init_property_controlled_state_cb(rut_property_t *property,
+init_property_controlled_state_cb(rig_property_t *property,
                                   void *user_data)
 {
     init_controlled_state_data_t *data = user_data;
@@ -3068,7 +3068,7 @@ rig_editor_update_inspector(rig_editor_t *editor)
 
 void
 rig_reload_inspector_property(rig_editor_t *editor,
-                              rut_property_t *property)
+                              rig_property_t *property)
 {
     if (editor->inspector) {
         c_llist_t *l;
@@ -3082,7 +3082,7 @@ void
 rig_reload_position_inspector(rig_editor_t *editor, rig_entity_t *entity)
 {
     if (editor->inspector) {
-        rut_property_t *property =
+        rig_property_t *property =
             rut_introspectable_lookup_property(entity, "position");
 
         rig_inspector_reload_property(editor->inspector, property);

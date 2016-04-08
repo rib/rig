@@ -41,7 +41,7 @@ typedef struct _dependency_t {
     rig_binding_t *binding;
 
     rut_object_t *object;
-    rut_property_t *property;
+    rig_property_t *property;
 
     char *variable_name;
 
@@ -54,7 +54,7 @@ struct _rig_binding_t {
 
     rig_engine_t *engine;
 
-    rut_property_t *property;
+    rig_property_t *property;
 
     int binding_id;
 
@@ -115,7 +115,7 @@ _rig_binding_init_type(void)
 
 static dependency_t *
 find_dependency(rig_binding_t *binding,
-                rut_property_t *property)
+                rig_property_t *property)
 {
     dependency_t *dependency;
 
@@ -129,7 +129,7 @@ find_dependency(rig_binding_t *binding,
 
 #if defined (RIG_EDITOR_ENABLED) && defined (USE_LLVM)
 static void
-get_property_codegen_info(rut_property_t *property,
+get_property_codegen_info(rig_property_t *property,
                           const char **type_name,
                           const char **var_decl_pre,
                           const char **var_decl_post,
@@ -251,10 +251,10 @@ codegen_function_node(rig_binding_t *binding)
     c_string_set_size(engine->codegen_string1, 0);
 
     pre = "\nvoid\n"
-          "%s (rut_property_t *_property, void *_user_data)\n"
+          "%s (rig_property_t *_property, void *_user_data)\n"
           "{\n"
-          "  rut_property_context_t *_property_ctx = _user_data;\n"
-          "  rut_property_t **deps = _property->binding->dependencies;\n"
+          "  rig_property_context_t *_property_ctx = _user_data;\n"
+          "  rig_property_t **deps = _property->binding->dependencies;\n"
           "  %sout%s;\n";
 
     c_string_append_printf(engine->codegen_string0,
@@ -276,7 +276,7 @@ codegen_function_node(rig_binding_t *binding)
                                   &dep_get_var_pre);
 
         c_string_append_printf(engine->codegen_string0,
-                               "  %s %s = rut_property_get_%s (deps[%d]);\n",
+                               "  %s %s = rig_property_get_%s (deps[%d]);\n",
                                dep_get_var_pre,
                                dependency->variable_name,
                                dep_type_name,
@@ -289,7 +289,7 @@ codegen_function_node(rig_binding_t *binding)
 
     post = "\n"
            "  }\n"
-           "  rut_property_set_%s (_property_ctx, _property, out);\n"
+           "  rig_property_set_%s (_property_ctx, _property, out);\n"
            "}\n";
 
     c_string_append_printf(engine->codegen_string1, post, out_type_name);
@@ -305,7 +305,7 @@ void
 rig_binding_activate(rig_binding_t *binding)
 {
     rig_engine_t *engine = binding->engine;
-    rut_property_t **dependencies;
+    rig_property_t **dependencies;
     rut_binding_callback_t callback;
     int n_dependencies;
     dependency_t *dependency;
@@ -318,7 +318,7 @@ rig_binding_activate(rig_binding_t *binding)
      * then it would indicate a bug if there were some other binding but we'd
      * hide that by removing it here...
      */
-    rut_property_remove_binding(binding->property);
+    rig_property_remove_binding(binding->property);
 
     callback = rig_code_resolve_symbol(engine, binding->function_name);
     if (!callback) {
@@ -327,13 +327,13 @@ rig_binding_activate(rig_binding_t *binding)
         return;
     }
     n_dependencies = c_list_length(&binding->dependencies);
-    dependencies = c_alloca(sizeof(rut_property_t *) * n_dependencies);
+    dependencies = c_alloca(sizeof(rig_property_t *) * n_dependencies);
 
     c_list_for_each(dependency, &binding->dependencies, link) {
         dependencies[i] = dependency->property;
     }
 
-    _rut_property_set_binding_full_array(
+    _rig_property_set_binding_full_array(
         binding->property,
         callback,
         &engine->shell->property_ctx, /* user data */
@@ -359,11 +359,11 @@ rig_binding_activate(rig_binding_t *binding)
             if (dependency->property->spec->type ==
                 binding->property->spec->type)
             {
-                rut_property_set_copy_binding(&engine->shell->property_ctx,
+                rig_property_set_copy_binding(&engine->shell->property_ctx,
                                               binding->property,
                                               dependency->property);
             } else {
-                rut_property_set_cast_scalar_binding(&engine->shell->property_ctx,
+                rig_property_set_cast_scalar_binding(&engine->shell->property_ctx,
                                                      binding->property,
                                                      dependency->property);
             }
@@ -379,7 +379,7 @@ rig_binding_deactivate(rig_binding_t *binding)
 {
     c_return_if_fail(binding->active);
 
-    rut_property_remove_binding(binding->property);
+    rig_property_remove_binding(binding->property);
 
     binding->active = false;
 }
@@ -420,7 +420,7 @@ generate_function_node(rig_binding_t *binding)
 
 void
 rig_binding_remove_dependency(rig_binding_t *binding,
-                              rut_property_t *property)
+                              rig_property_t *property)
 {
     dependency_t *dependency = find_dependency(binding, property);
 
@@ -436,7 +436,7 @@ rig_binding_remove_dependency(rig_binding_t *binding,
 
 void
 rig_binding_add_dependency(rig_binding_t *binding,
-                           rut_property_t *property,
+                           rig_property_t *property,
                            const char *name)
 {
     dependency_t *dependency = c_slice_new0(dependency_t);
@@ -492,7 +492,7 @@ rig_binding_set_expression(rig_binding_t *binding, const char *expression)
 
 void
 rig_binding_set_dependency_name(rig_binding_t *binding,
-                                rut_property_t *property,
+                                rig_property_t *property,
                                 const char *name)
 {
     dependency_t *dependency = find_dependency(binding, property);
@@ -510,7 +510,7 @@ rig_binding_set_dependency_name(rig_binding_t *binding,
 }
 
 rig_binding_t *
-rig_binding_new(rig_engine_t *engine, rut_property_t *property, int binding_id)
+rig_binding_new(rig_engine_t *engine, rig_property_t *property, int binding_id)
 {
     rig_binding_t *binding = rut_object_alloc0(
         rig_binding_t, &rig_binding_type, _rig_binding_init_type);
@@ -537,8 +537,8 @@ rig_binding_get_id(rig_binding_t *binding)
 
 rig_binding_t *
 rig_binding_new_simple_copy(rig_engine_t *engine,
-                            rut_property_t *dst_prop,
-                            rut_property_t *src_prop)
+                            rig_property_t *dst_prop,
+                            rig_property_t *src_prop)
 {
     rig_binding_t *binding = rut_object_alloc0(
         rig_binding_t, &rig_binding_type, _rig_binding_init_type);
@@ -566,7 +566,7 @@ rig_binding_get_n_dependencies(rig_binding_t *binding)
 void
 rig_binding_foreach_dependency(rig_binding_t *binding,
                                void (*callback)(rig_binding_t *binding,
-                                                rut_property_t *dependency,
+                                                rig_property_t *dependency,
                                                 void *user_data),
                                void *user_data)
 {

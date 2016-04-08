@@ -41,7 +41,7 @@ typedef struct _dependency_t {
     rig_binding_view_t *binding_view;
 
     rut_object_t *object;
-    rut_property_t *property;
+    rig_property_t *property;
 
     bool preview;
 
@@ -73,7 +73,7 @@ struct _rig_binding_view_t {
 
     rut_text_t *code_view;
 
-    rut_property_t *preview_dependency_prop;
+    rig_property_t *preview_dependency_prop;
     c_llist_t *dependencies;
 };
 
@@ -127,7 +127,7 @@ _rig_binding_view_init_type(void)
 
 static void
 remove_dependency(rig_binding_view_t *binding_view,
-                  rut_property_t *property)
+                  rig_property_t *property)
 {
     c_llist_t *l;
 
@@ -170,11 +170,11 @@ dependency_name_changed_cb(rut_text_t *text, void *user_data)
 
 static dependency_t *
 add_dependency(rig_binding_view_t *binding_view,
-               rut_property_t *property,
+               rig_property_t *property,
                bool drag_preview)
 {
     dependency_t *dependency = c_slice_new0(dependency_t);
-    rut_property_t *label_prop;
+    rig_property_t *label_prop;
     char *dependency_label;
     rut_object_t *object = property->object;
     rut_bin_t *bin;
@@ -228,7 +228,7 @@ add_dependency(rig_binding_view_t *binding_view,
         label_prop = rut_introspectable_lookup_property(object, "label");
 
     if (label_prop)
-        label_str = rut_property_get_text(label_prop);
+        label_str = rig_property_get_text(label_prop);
     else
         label_str = "<Object>";
 
@@ -288,7 +288,7 @@ drop_region_input_cb(rut_input_region_t *region,
         rut_object_t *payload = rut_drop_offer_event_get_payload(event);
 
         if (rut_object_get_type(payload) == &rig_prop_inspector_type) {
-            rut_property_t *property = rig_prop_inspector_get_property(payload);
+            rig_property_t *property = rig_prop_inspector_get_property(payload);
 
             c_debug("Drop Offer\n");
 
@@ -310,7 +310,7 @@ drop_region_input_cb(rut_input_region_t *region,
         binding_view->preview_dependency_prop = NULL;
 
         if (rut_object_get_type(payload) == &rig_prop_inspector_type) {
-            rut_property_t *property = rig_prop_inspector_get_property(payload);
+            rig_property_t *property = rig_prop_inspector_get_property(payload);
 
             add_dependency(binding_view, property, false);
 
@@ -341,7 +341,7 @@ text_changed_cb(rut_text_t *text, void *user_data)
 
 rig_binding_view_t *
 rig_binding_view_new(rig_engine_t *engine,
-                     rut_property_t *property,
+                     rig_property_t *property,
                      rig_binding_t *binding)
 {
     rut_shell_t *shell = engine->shell;

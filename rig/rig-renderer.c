@@ -1702,10 +1702,10 @@ text_preferred_size_changed_cb(rut_object_t *sizable,
 {
     rig_text_t *text = sizable;
     float width, height;
-    rut_property_t *width_prop = &text->properties[RIG_TEXT_PROP_WIDTH];
+    rig_property_t *width_prop = &text->properties[RIG_TEXT_PROP_WIDTH];
 
     if (width_prop->binding)
-        width = rut_property_get_float(width_prop);
+        width = rig_property_get_float(width_prop);
     else {
         rut_sizable_get_preferred_width(text, -1, NULL, &width);
     }

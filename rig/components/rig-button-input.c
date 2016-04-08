@@ -66,7 +66,7 @@ struct _rig_button_input_t {
     button_state_t state;
 
     rut_introspectable_props_t introspectable;
-    rut_property_t properties[RIG_BUTTON_INPUT_N_PROPS];
+    rig_property_t properties[RIG_BUTTON_INPUT_N_PROPS];
 };
 
 static int
@@ -93,7 +93,7 @@ set_state(rig_button_input_t *button_input, button_state_t state)
 {
     button_state_t prev_state = button_input->state;
     rut_shell_t *shell;
-    rut_property_context_t *prop_ctx;
+    rig_property_context_t *prop_ctx;
     int prev_prop;
 
     if (prev_state == state)
@@ -120,9 +120,9 @@ set_state(rig_button_input_t *button_input, button_state_t state)
 
     prop_ctx = rig_component_props_get_property_context(&button_input->component);
     prev_prop = get_prop_for_state(prev_state);
-    rut_property_dirty(prop_ctx,
+    rig_property_dirty(prop_ctx,
                        &button_input->properties[prev_prop]);
-    rut_property_dirty(prop_ctx,
+    rig_property_dirty(prop_ctx,
                        &button_input->properties[get_prop_for_state(state)]);
 }
 
@@ -218,7 +218,7 @@ _rig_button_input_set_disabled_state(rut_object_t *object,
      * but we can't pick an arbitrary state to change to. */
 }
 
-static rut_property_spec_t _rig_button_input_prop_specs[] = {
+static rig_property_spec_t _rig_button_input_prop_specs[] = {
     { .name = "press_counter",
       .nick = "Press Counter",
       .type = RUT_PROPERTY_TYPE_INTEGER,
@@ -309,7 +309,7 @@ _rig_button_input_grab_input_cb(rut_input_event_t *event,
             c_slice_free(button_grab_state_t, state);
 
             button_input->press_counter++;
-            rut_property_dirty(
+            rig_property_dirty(
                 &shell->property_ctx,
                 &button_input->properties[RIG_BUTTON_INPUT_PROP_PRESS_COUNT]);
 

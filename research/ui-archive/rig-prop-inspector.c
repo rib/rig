@@ -58,8 +58,8 @@ struct _rig_prop_inspector_t {
 
     rut_stack_t *widget_stack;
     rut_box_layout_t *widget_hbox;
-    rut_property_t *widget_prop; /* the inspector's widget property */
-    rut_property_t *target_prop; /* property being inspected */
+    rig_property_t *widget_prop; /* the inspector's widget property */
+    rig_property_t *target_prop; /* property being inspected */
 
     rut_icon_toggle_t *controlled_toggle;
 
@@ -67,12 +67,12 @@ struct _rig_prop_inspector_t {
     rut_rectangle_t *disabled_overlay;
     rut_input_region_t *input_region;
 
-    rut_property_closure_t *inspector_prop_closure;
+    rig_property_closure_t *inspector_prop_closure;
     rig_prop_inspector_callback_t inspector_property_changed_cb;
     rig_prop_inspector_controlled_callback_t controlled_changed_cb;
     void *user_data;
 
-    rut_property_closure_t *target_prop_closure;
+    rig_property_closure_t *target_prop_closure;
 
     /* This is set while the property is being reloaded. This will make
      * it avoid forwarding on property changes that were just caused by
@@ -88,9 +88,9 @@ _rig_prop_inspector_free(void *object)
     rig_prop_inspector_t *inspector = object;
 
     if (inspector->inspector_prop_closure)
-        rut_property_closure_destroy(inspector->inspector_prop_closure);
+        rig_property_closure_destroy(inspector->inspector_prop_closure);
     if (inspector->target_prop_closure)
-        rut_property_closure_destroy(inspector->target_prop_closure);
+        rig_property_closure_destroy(inspector->target_prop_closure);
 
     rut_graphable_destroy(inspector);
 
@@ -161,11 +161,11 @@ set_disabled(rig_prop_inspector_t *inspector,
 
 static rut_object_t *
 create_widget_for_property(rut_shell_t *shell,
-                           rut_property_t *prop,
-                           rut_property_t **control_prop,
+                           rig_property_t *prop,
+                           rig_property_t **control_prop,
                            const char **label_text)
 {
-    const rut_property_spec_t *spec = prop->spec;
+    const rig_property_spec_t *spec = prop->spec;
     const char *name;
     rut_text_t *label;
 
@@ -176,7 +176,7 @@ create_widget_for_property(rut_shell_t *shell,
     else
         name = spec->name;
 
-    switch ((rut_property_type_t)spec->type) {
+    switch ((rig_property_type_t)spec->type) {
     case RUT_PROPERTY_TYPE_BOOLEAN: {
         char *unselected_icon = rut_find_data_file("toggle-unselected.png");
         char *selected_icon = rut_find_data_file("toggle-selected.png");
@@ -192,7 +192,7 @@ create_widget_for_property(rut_shell_t *shell,
         float min = -G_MAXFLOAT, max = G_MAXFLOAT;
 
         if ((spec->flags & RUT_PROPERTY_FLAG_VALIDATE)) {
-            const rut_property_validation_vec3_t *validation =
+            const rig_property_validation_vec3_t *validation =
                 &spec->validation.vec3_range;
 
             min = validation->min;
@@ -233,7 +233,7 @@ create_widget_for_property(rut_shell_t *shell,
             rut_number_slider_set_step(slider, 1.0);
 
             if ((spec->flags & RUT_PROPERTY_FLAG_VALIDATE)) {
-                const rut_property_validation_integer_t *validation =
+                const rig_property_validation_integer_t *validation =
                     &spec->validation.int_range;
 
                 min = validation->min;
@@ -244,7 +244,7 @@ create_widget_for_property(rut_shell_t *shell,
             rut_number_slider_set_step(slider, 0.1);
 
             if ((spec->flags & RUT_PROPERTY_FLAG_VALIDATE)) {
-                const rut_property_validation_float_t *validation =
+                const rig_property_validation_float_t *validation =
                     &spec->validation.float_range;
 
                 min = validation->min;
@@ -335,7 +335,7 @@ create_widget_for_property(rut_shell_t *shell,
 }
 
 static void
-inspector_property_changed_cb(rut_property_t *inspector_prop,
+inspector_property_changed_cb(rig_property_t *inspector_prop,
                               void *user_data)
 {
     rig_prop_inspector_t *inspector = user_data;
@@ -366,7 +366,7 @@ controlled_toggle_cb(rut_icon_toggle_t *toggle, bool value, void *user_data)
 
 static void
 add_controlled_toggle(rig_prop_inspector_t *inspector,
-                      rut_property_t *prop)
+                      rig_property_t *prop)
 {
     rut_bin_t *bin;
     rut_icon_toggle_t *toggle;
@@ -392,10 +392,10 @@ add_controlled_toggle(rig_prop_inspector_t *inspector,
 
 static void
 add_control(rig_prop_inspector_t *inspector,
-            rut_property_t *prop,
+            rig_property_t *prop,
             bool with_label)
 {
-    rut_property_t *widget_prop;
+    rig_property_t *widget_prop;
     rut_object_t *widget;
     const char *label_text;
 
@@ -421,14 +421,14 @@ add_control(rig_prop_inspector_t *inspector,
     rut_object_unref(widget);
 
     if (widget_prop) {
-        inspector->inspector_prop_closure = rut_property_connect_callback(
+        inspector->inspector_prop_closure = rig_property_connect_callback(
             widget_prop, inspector_property_changed_cb, inspector);
         inspector->widget_prop = widget_prop;
     }
 }
 
 static void
-target_property_changed_cb(rut_property_t *target_prop,
+target_property_changed_cb(rig_property_t *target_prop,
                            void *user_data)
 {
     rig_prop_inspector_t *inspector = user_data;
@@ -438,12 +438,12 @@ target_property_changed_cb(rut_property_t *target_prop,
      * while re-loading the property...
      */
 
-    rut_property_closure_destroy(inspector->target_prop_closure);
+    rig_property_closure_destroy(inspector->target_prop_closure);
     inspector->target_prop_closure = NULL;
 
     rig_prop_inspector_reload_property(inspector);
 
-    inspector->target_prop_closure = rut_property_connect_callback(
+    inspector->target_prop_closure = rig_property_connect_callback(
         inspector->target_prop, target_property_changed_cb, inspector);
 }
 
@@ -458,7 +458,7 @@ block_input_cb(rut_input_region_t *region,
 rig_prop_inspector_t *
 rig_prop_inspector_new(
     rut_shell_t *shell,
-    rut_property_t *property,
+    rig_property_t *property,
     rig_prop_inspector_callback_t inspector_property_changed_cb,
     rig_prop_inspector_controlled_callback_t inspector_controlled_cb,
     bool with_label,
@@ -519,7 +519,7 @@ rig_prop_inspector_new(
 
     rut_sizable_set_size(inspector, 10, 10);
 
-    inspector->target_prop_closure = rut_property_connect_callback(
+    inspector->target_prop_closure = rig_property_connect_callback(
         property, target_property_changed_cb, inspector);
 
     return inspector;
@@ -536,12 +536,12 @@ rig_prop_inspector_reload_property(rig_prop_inspector_t *inspector)
         if (inspector->widget_prop) {
             if (inspector->target_prop->spec->type !=
                 inspector->widget_prop->spec->type) {
-                rut_property_cast_scalar_value(
+                rig_property_cast_scalar_value(
                     &inspector->shell->property_ctx,
                     inspector->widget_prop,
                     inspector->target_prop);
             } else
-                rut_property_copy_value(&inspector->shell->property_ctx,
+                rig_property_copy_value(&inspector->shell->property_ctx,
                                         inspector->widget_prop,
                                         inspector->target_prop);
         }
@@ -565,7 +565,7 @@ rig_prop_inspector_set_controlled(rig_prop_inspector_t *inspector,
     }
 }
 
-rut_property_t *
+rig_property_t *
 rig_prop_inspector_get_property(rig_prop_inspector_t *inspector)
 {
     return inspector->target_prop;

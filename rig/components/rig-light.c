@@ -33,7 +33,7 @@
 #include "rig-light.h"
 #include "rut-color.h"
 
-static rut_property_spec_t _rig_light_prop_specs[] = {
+static rig_property_spec_t _rig_light_prop_specs[] = {
     { .name = "ambient",
       .nick = "Ambient",
       .type = RUT_PROPERTY_TYPE_COLOR,
@@ -192,12 +192,12 @@ void
 rig_light_set_ambient(rut_object_t *obj, const cg_color_t *ambient)
 {
     rig_light_t *light = obj;
-    rut_property_context_t *prop_ctx;
+    rig_property_context_t *prop_ctx;
 
     light->ambient = *ambient;
 
     prop_ctx = rig_component_props_get_property_context(&light->component);
-    rut_property_dirty(prop_ctx, &light->properties[RIG_LIGHT_PROP_AMBIENT]);
+    rig_property_dirty(prop_ctx, &light->properties[RIG_LIGHT_PROP_AMBIENT]);
 }
 
 const cg_color_t *
@@ -212,12 +212,12 @@ void
 rig_light_set_diffuse(rut_object_t *obj, const cg_color_t *diffuse)
 {
     rig_light_t *light = obj;
-    rut_property_context_t *prop_ctx;
+    rig_property_context_t *prop_ctx;
 
     light->diffuse = *diffuse;
 
     prop_ctx = rig_component_props_get_property_context(&light->component);
-    rut_property_dirty(prop_ctx, &light->properties[RIG_LIGHT_PROP_DIFFUSE]);
+    rig_property_dirty(prop_ctx, &light->properties[RIG_LIGHT_PROP_DIFFUSE]);
 }
 
 const cg_color_t *
@@ -230,12 +230,12 @@ void
 rig_light_set_specular(rut_object_t *obj, const cg_color_t *specular)
 {
     rig_light_t *light = obj;
-    rut_property_context_t *prop_ctx;
+    rig_property_context_t *prop_ctx;
 
     light->specular = *specular;
 
     prop_ctx = rig_component_props_get_property_context(&light->component);
-    rut_property_dirty(prop_ctx, &light->properties[RIG_LIGHT_PROP_SPECULAR]);
+    rig_property_dirty(prop_ctx, &light->properties[RIG_LIGHT_PROP_SPECULAR]);
 }
 
 const cg_color_t *

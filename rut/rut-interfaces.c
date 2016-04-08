@@ -31,7 +31,7 @@
 #include "rut-object.h"
 #include "rut-interfaces.h"
 #include "rut-transform-private.h"
-#include "rut-property.h"
+#include "rig-property.h"
 #include "rut-util.h"
 #include "rut-camera.h"
 #include "rut-refcount-debug.h"

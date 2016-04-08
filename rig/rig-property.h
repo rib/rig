@@ -52,16 +52,16 @@ typedef struct _rig_asset_t rig_asset_t;
 #define RIG_ASSET_TYPEDEF
 #endif
 
-/* Note that rut-property-bare.h does not include all necessary
+/* Note that rig-property-bare.h does not include all necessary
  * headers to define all prerequisite types because it also in support
  * of Rig's ui logic where some of the types are defined separately to
  * keep includes for runtime compilation down to a minimum. */
-#include "rut-property-bare.h"
+#include "rig-property-bare.h"
 
 #if 0
 typedef struct _rut_ui_property_t
 {
-    rut_property_t _parent;
+    rig_property_t _parent;
 
     const char *nick;
     const char *description;
@@ -85,11 +85,11 @@ typedef struct _flibble_t
     float x;
 
     rut_introspectable_props_t introspectable;
-    rut_property_t properties[RUT_FLIBBLE_N_PROPS];
+    rig_property_t properties[RUT_FLIBBLE_N_PROPS];
 
 } flibble_t;
 
-static rut_property_spec_t flibble_prop_specs[] = {
+static rig_property_spec_t flibble_prop_specs[] = {
     {
         .name = "x";
         .flags = RUT_PROPERTY_FLAG_READWRITE,
@@ -139,7 +139,7 @@ flibble_set_x (flibble_t *flibble, float x)
 
     flibble->x = x;
 
-    rut_property_dirty (flibble->shell, &flibble->properties[FLIBBLE_PROP_X]);
+    rig_property_dirty (flibble->shell, &flibble->properties[FLIBBLE_PROP_X]);
 }
 
 float
@@ -149,40 +149,40 @@ flibble_get_x (flibble_t *flibble)
 }
 #endif
 
-void rut_property_context_init(rut_property_context_t *context);
+void rig_property_context_init(rig_property_context_t *context);
 
-void rut_property_context_clear_log(rut_property_context_t *context);
+void rig_property_context_clear_log(rig_property_context_t *context);
 
-void rut_property_context_destroy(rut_property_context_t *context);
+void rig_property_context_destroy(rig_property_context_t *context);
 
-void rut_property_destroy(rut_property_t *property);
+void rig_property_destroy(rig_property_t *property);
 
-void rut_property_set_binding(rut_property_t *property,
+void rig_property_set_binding(rig_property_t *property,
                               rut_binding_callback_t callback,
                               void *user_data,
                               ...) C_GNUC_NULL_TERMINATED;
 
-void _rut_property_set_binding_full_array(
-    rut_property_t *property,
+void _rig_property_set_binding_full_array(
+    rig_property_t *property,
     rut_binding_callback_t callback,
     void *user_data,
     rut_binding_destroy_notify_t destroy_notify,
-    rut_property_t **dependencies,
+    rig_property_t **dependencies,
     int n_dependencies);
 
-void rut_property_set_binding_full(rut_property_t *property,
+void rig_property_set_binding_full(rig_property_t *property,
                                    rut_binding_callback_t callback,
                                    void *user_data,
                                    rut_binding_destroy_notify_t destroy_notify,
                                    ...) C_GNUC_NULL_TERMINATED;
 
-void rut_property_set_binding_by_name(rut_object_t *object,
+void rig_property_set_binding_by_name(rut_object_t *object,
                                       const char *name,
                                       rut_binding_callback_t callback,
                                       void *user_data,
                                       ...) C_GNUC_NULL_TERMINATED;
 
-void rut_property_set_binding_full_by_name(
+void rig_property_set_binding_full_by_name(
     rut_object_t *object,
     const char *name,
     rut_binding_callback_t callback,
@@ -191,7 +191,7 @@ void rut_property_set_binding_full_by_name(
     ...) C_GNUC_NULL_TERMINATED;
 
 /**
- * rut_property_set_copy_binding:
+ * rig_property_set_copy_binding:
  * @context: The property context that will be used to set the property.
  * @target_property: The property to set the binding on.
  * @source_property: The depedent property that the value will be taken from.
@@ -204,12 +204,12 @@ void rut_property_set_binding_full_by_name(
  *
  * An initial copy is triggered when setting the binding
  */
-void rut_property_set_copy_binding(rut_property_context_t *context,
-                                   rut_property_t *target_property,
-                                   rut_property_t *source_property);
+void rig_property_set_copy_binding(rig_property_context_t *context,
+                                   rig_property_t *target_property,
+                                   rig_property_t *source_property);
 
 /**
- * rut_property_set_cast_scalar_binding:
+ * rig_property_set_cast_scalar_binding:
  * @context: The property context that will be used to set the property.
  * @target_property: The property to set the binding on.
  * @source_property: The depedent property that the value will be taken from.
@@ -222,32 +222,32 @@ void rut_property_set_copy_binding(rut_property_context_t *context,
  *
  * An initial cast is triggered when setting the binding
  */
-void rut_property_set_cast_scalar_binding(rut_property_context_t *context,
-                                          rut_property_t *target_property,
-                                          rut_property_t *source_property);
+void rig_property_set_cast_scalar_binding(rig_property_context_t *context,
+                                          rig_property_t *target_property,
+                                          rig_property_t *source_property);
 
-void rut_property_set_mirror_bindings(rut_property_context_t *context,
-                                      rut_property_t *prop0,
-                                      rut_property_t *prop1);
+void rig_property_set_mirror_bindings(rig_property_context_t *context,
+                                      rig_property_t *prop0,
+                                      rig_property_t *prop1);
 
 /**
- * rut_property_remove_binding:
+ * rig_property_remove_binding:
  * @property: The property to remove any binding from
  *
  * This removes any binding callback currently associated with the
  * given @property.
  */
-void rut_property_remove_binding(rut_property_t *property);
+void rig_property_remove_binding(rig_property_t *property);
 
-typedef struct _rut_property_closure_t rut_property_closure_t;
+typedef struct _rig_property_closure_t rig_property_closure_t;
 
 /*
- * rut_property_connect_callback_full:
+ * rig_property_connect_callback_full:
  * @property: a property you want to be notified of changes to
  * @callback: callback to be called whenever @property changes
  * @user_data: private data to be passed to @callback
  * @destroy_notify: a callback to clean up private data if @property
- *                  is destroyed or rut_property_closure_destroy()
+ *                  is destroyed or rig_property_closure_destroy()
  *                  is called
  *
  * Lets you be notified via a @callback whenever a given @property
@@ -256,24 +256,24 @@ typedef struct _rut_property_closure_t rut_property_closure_t;
  * <note>It is not recommended that this api should be used to
  * generally to bind properties together by using the @callback to
  * then set other properties; instead you should use
- * rut_property_set_binding() so that dependencies can be fully
+ * rig_property_set_binding() so that dependencies can be fully
  * tracked. This mechanism is only intended as a way to trigger logic
  * in response to a property change.</note>
  *
- * Returns: a #rut_property_closure_t that can be explicitly destroyed by
- *          calling rut_property_closure_destroy() or indirectly by
+ * Returns: a #rig_property_closure_t that can be explicitly destroyed by
+ *          calling rig_property_closure_destroy() or indirectly by
  *          destroying @property.
  */
-rut_property_closure_t *
-rut_property_connect_callback_full(rut_property_t *property,
+rig_property_closure_t *
+rig_property_connect_callback_full(rig_property_t *property,
                                    rut_binding_callback_t callback,
                                    void *user_data,
                                    c_destroy_func_t destroy_notify);
 
-rut_property_closure_t *rut_property_connect_callback(
-    rut_property_t *property, rut_binding_callback_t callback, void *user_data);
+rig_property_closure_t *rig_property_connect_callback(
+    rig_property_t *property, rut_binding_callback_t callback, void *user_data);
 
-void rut_property_closure_destroy(rut_property_closure_t *closure);
+void rig_property_closure_destroy(rig_property_closure_t *closure);
 
 /*
  * XXX: Issues
@@ -319,7 +319,7 @@ void rut_property_closure_destroy(rut_property_closure_t *closure);
  *
  *  - We could say that the update function is optional and add
  *  a dirty flag which gets set by
- *  rut_property_dirty. Also such properties
+ *  rig_property_dirty. Also such properties
  *  could at least just set a dirty flag in their update function
  *  and so long as the property has a getter function they
  *  will get control when someone needs to value so it can be derived
@@ -349,42 +349,42 @@ void rut_property_closure_destroy(rut_property_closure_t *closure);
  * What api do we want for actually declaring a dependency
  * relationship between properties?
  *
- * rut_property_bind (update_cb, dest, srcA, srcB, srcC, NULL);
+ * rig_property_bind (update_cb, dest, srcA, srcB, srcC, NULL);
  *
- * rut_property_add_dependant (srcA, my_flibble_property);
+ * rig_property_add_dependant (srcA, my_flibble_property);
  *
- * rut_property_set_binding (property, binding_cb, user_data);
- * rut_property_add_binding_dependant (property, srcA);
- * rut_property_add_binding_dependant (property, srcB);
- * rut_property_remove_binding_dependant (property, srcB);
+ * rig_property_set_binding (property, binding_cb, user_data);
+ * rig_property_add_binding_dependant (property, srcA);
+ * rig_property_add_binding_dependant (property, srcB);
+ * rig_property_remove_binding_dependant (property, srcB);
  *
  *
  */
 
-void rut_property_init(rut_property_t *property,
-                       const rut_property_spec_t *spec,
+void rig_property_init(rig_property_t *property,
+                       const rig_property_spec_t *spec,
                        void *object,
                        uint8_t id);
 
-void rut_property_copy_value(rut_property_context_t *ctx,
-                             rut_property_t *target_property,
-                             rut_property_t *source_property);
+void rig_property_copy_value(rig_property_context_t *ctx,
+                             rig_property_t *target_property,
+                             rig_property_t *source_property);
 
-void rut_property_cast_scalar_value(rut_property_context_t *ctx,
-                                    rut_property_t *dest,
-                                    rut_property_t *src);
+void rig_property_cast_scalar_value(rig_property_context_t *ctx,
+                                    rig_property_t *dest,
+                                    rig_property_t *src);
 
-void rut_property_box(rut_property_t *property, rut_boxed_t *boxed);
+void rig_property_box(rig_property_t *property, rut_boxed_t *boxed);
 
-void rut_property_set_boxed(rut_property_context_t *ctx,
-                            rut_property_t *property,
+void rig_property_set_boxed(rig_property_context_t *ctx,
+                            rig_property_t *property,
                             const rut_boxed_t *boxed);
 
 char *rut_boxed_to_string(const rut_boxed_t *boxed,
-                          const rut_property_spec_t *spec);
+                          const rig_property_spec_t *spec);
 
-static inline rut_property_t *
-rut_property_get_first_source(rut_property_t *property)
+static inline rig_property_t *
+rig_property_get_first_source(rig_property_t *property)
 {
     return property->binding->dependencies[0];
 }
@@ -395,7 +395,7 @@ void rut_boxed_copy(rut_boxed_t *dst, const rut_boxed_t *src);
 
 #if 0
 
-struct _rut_property_t
+struct _rig_property_t
 {
     /* PRIVATE */
 
@@ -407,7 +407,7 @@ struct _rut_property_t
      * so that it will be automatically prompted for an update if any of
      * those dependencies change.
      */
-    rut_property_update_callback_t update_cb;
+    rig_property_update_callback_t update_cb;
 
     /* This is the list of properties that depend on this property and
      * should be prompted for an update whenever this property changes.
@@ -475,26 +475,26 @@ struct _rut_property_t
 };
 
 void
-rut_property_init (rut_property_t *property,
+rig_property_init (rig_property_t *property,
                    const char *name,
-                   rut_property_type_t type,
+                   rig_property_type_t type,
                    void *value_addr,
-                   rut_property_update_callback_t update_cb,
+                   rig_property_update_callback_t update_cb,
                    void *user_data);
 
 void
-rut_property_set_float (rut_property_t *property,
+rig_property_set_float (rig_property_t *property,
                         float value);
 
 float
-rut_property_get_float (rut_property_t *property);
+rig_property_get_float (rig_property_t *property);
 
 void
-rut_property_set_double (rut_property_t *property,
+rig_property_set_double (rig_property_t *property,
                          double value);
 
 double
-rut_property_get_double (rut_property_t *property);
+rig_property_get_double (rig_property_t *property);
 
 #endif
 

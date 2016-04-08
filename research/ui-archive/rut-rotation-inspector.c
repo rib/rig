@@ -45,7 +45,7 @@ enum {
 
 typedef struct {
     rut_number_slider_t *slider;
-    rut_property_t *property;
+    rig_property_t *property;
 } rut_rotation_inspector_component_t;
 
 struct _rut_rotation_inspector_t {
@@ -65,16 +65,16 @@ struct _rut_rotation_inspector_t {
     c_quaternion_t value;
 
     rut_introspectable_props_t introspectable;
-    rut_property_t properties[RUT_ROTATION_INSPECTOR_N_PROPS];
+    rig_property_t properties[RUT_ROTATION_INSPECTOR_N_PROPS];
 };
 
 rut_type_t rut_rotation_inspector_type;
 
 static void
-rut_rotation_inspector_property_changed_cb(rut_property_t *target_property,
+rut_rotation_inspector_property_changed_cb(rig_property_t *target_property,
                                            void *user_data);
 
-static rut_property_spec_t _rut_rotation_inspector_prop_specs[] = {
+static rig_property_spec_t _rut_rotation_inspector_prop_specs[] = {
     { .name = "value",
       .flags = RUT_PROPERTY_FLAG_READWRITE,
       .type = RUT_PROPERTY_TYPE_QUATERNION,
@@ -136,10 +136,10 @@ _rut_rotation_inspector_init_type(void)
 static void
 enable_value_binding(rut_rotation_inspector_t *inspector)
 {
-    rut_property_t *rotation_prop =
+    rig_property_t *rotation_prop =
         &inspector->properties[RUT_ROTATION_INSPECTOR_PROP_VALUE];
 
-    rut_property_set_binding(rotation_prop,
+    rig_property_set_binding(rotation_prop,
                              rut_rotation_inspector_property_changed_cb,
                              inspector,
                              inspector->components[0].property,
@@ -152,9 +152,9 @@ enable_value_binding(rut_rotation_inspector_t *inspector)
 static void
 disable_value_binding(rut_rotation_inspector_t *inspector)
 {
-    rut_property_t *value_prop =
+    rig_property_t *value_prop =
         &inspector->properties[RUT_ROTATION_INSPECTOR_PROP_VALUE];
-    rut_property_remove_binding(value_prop);
+    rig_property_remove_binding(value_prop);
 }
 
 void
@@ -207,13 +207,13 @@ set_value(rut_rotation_inspector_t *inspector,
         enable_value_binding(inspector);
     }
 
-    rut_property_dirty(
+    rig_property_dirty(
         &inspector->shell->property_ctx,
         &inspector->properties[RUT_ROTATION_INSPECTOR_PROP_VALUE]);
 }
 
 static void
-rut_rotation_inspector_property_changed_cb(rut_property_t *target_property,
+rut_rotation_inspector_property_changed_cb(rig_property_t *target_property,
                                            void *user_data)
 {
     rut_rotation_inspector_t *inspector = user_data;

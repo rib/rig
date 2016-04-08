@@ -39,7 +39,7 @@ typedef struct _rut_shell_t rut_shell_t;
 
 typedef struct _rut_ui_enum_t rut_ui_enum_t;
 
-typedef struct _rut_property_context_t rut_property_context_t;
+typedef struct _rig_property_context_t rig_property_context_t;
 
 typedef void rig_asset_t;
 typedef int rig_asset_type_t;
@@ -48,7 +48,7 @@ typedef struct _rut_memory_stack_t rut_memory_stack_t;
 
 /* We want to minimize the number of headers we include during the
  * runtime compilation of UI logic and so we just duplicate the
- * GLib and Cogl typedefs that are required in rut-property-bare.h...
+ * GLib and Cogl typedefs that are required in rig-property-bare.h...
  */
 
 typedef struct _c_sllist_t c_sllist_t;

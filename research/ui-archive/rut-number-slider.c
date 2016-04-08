@@ -67,7 +67,7 @@ struct _rut_number_slider_t {
     rut_input_region_t *input_region;
 
     rut_introspectable_props_t introspectable;
-    rut_property_t properties[RUT_NUMBER_SLIDER_N_PROPS];
+    rig_property_t properties[RUT_NUMBER_SLIDER_N_PROPS];
 };
 
 static rut_input_event_status_t
@@ -75,7 +75,7 @@ rut_number_slider_text_grab_cb(rut_input_event_t *event, void *user_data);
 
 rut_type_t rut_number_slider_type;
 
-static rut_property_spec_t _rut_number_slider_prop_specs[] = {
+static rig_property_spec_t _rut_number_slider_prop_specs[] = {
     { .name = "value",
       .flags = RUT_PROPERTY_FLAG_READWRITE,
       .type = RUT_PROPERTY_TYPE_FLOAT,
@@ -452,7 +452,7 @@ rut_number_slider_set_value(rut_object_t *obj, float value)
 
     update_text(slider);
 
-    rut_property_dirty(&slider->shell->property_ctx,
+    rig_property_dirty(&slider->shell->property_ctx,
                        &slider->properties[RUT_NUMBER_SLIDER_PROP_VALUE]);
 
     rut_shell_queue_redraw(slider->shell);

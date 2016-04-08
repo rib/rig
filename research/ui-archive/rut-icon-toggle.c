@@ -100,7 +100,7 @@ _rut_icon_toggle_free(void *object)
 }
 
 #if 0
-static rut_property_spec_t
+static rig_property_spec_t
     _rut_icon_toggle_prop_specs[] =
 {
     {

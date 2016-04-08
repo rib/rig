@@ -73,10 +73,10 @@ struct _rut_slider_t {
     float progress;
 
     rut_introspectable_props_t introspectable;
-    rut_property_t properties[RUT_SLIDER_N_PROPS];
+    rig_property_t properties[RUT_SLIDER_N_PROPS];
 };
 
-static rut_property_spec_t _rut_slider_prop_specs[] = {
+static rig_property_spec_t _rut_slider_prop_specs[] = {
     { .name = "progress",
       .flags = RUT_PROPERTY_FLAG_READWRITE,
       .type = RUT_PROPERTY_TYPE_FLOAT,
@@ -315,7 +315,7 @@ rut_slider_set_progress(rut_object_t *obj, float progress)
         return;
 
     slider->progress = progress;
-    rut_property_dirty(&slider->shell->property_ctx,
+    rig_property_dirty(&slider->shell->property_ctx,
                        &slider->properties[RUT_SLIDER_PROP_PROGRESS]);
 
     translation = (slider->length - 20) * slider->progress;

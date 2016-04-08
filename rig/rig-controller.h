@@ -63,7 +63,7 @@ typedef enum _rig_controller_method_t {
 typedef struct {
     rig_controller_t *controller;
 
-    rut_property_t *property;
+    rig_property_t *property;
 
     /* The controller support 3 "methods" of control for any property. One is a
      * constant value, another is a path whereby the property value depends on
@@ -108,7 +108,7 @@ struct _rig_controller_t {
 
     c_list_t operation_cb_list;
 
-    rut_property_t props[RIG_CONTROLLER_N_PROPS];
+    rig_property_t props[RIG_CONTROLLER_N_PROPS];
     rut_introspectable_props_t introspectable;
 };
 
@@ -126,14 +126,14 @@ typedef void (*rig_controller_operation_callback_t)(
 
 rig_controller_prop_data_t *
 rig_controller_find_prop_data_for_property(rig_controller_t *controller,
-                                           rut_property_t *property);
+                                           rig_property_t *property);
 
 rig_path_t *
 rig_controller_get_path_for_prop_data(rig_controller_t *controller,
                                       rig_controller_prop_data_t *prop_data);
 
 rig_path_t *rig_controller_get_path_for_property(rig_controller_t *controller,
-                                                 rut_property_t *property);
+                                                 rig_property_t *property);
 
 rig_path_t *rig_controller_get_path(rig_controller_t *controller,
                                     rut_object_t *object,
@@ -188,17 +188,17 @@ void rig_controller_set_progress(rut_object_t *controller, double progress);
 double rig_controller_get_progress(rut_object_t *controller);
 
 void rig_controller_add_property(rig_controller_t *controller,
-                                 rut_property_t *property);
+                                 rig_property_t *property);
 
 void rig_controller_remove_property(rig_controller_t *controller,
-                                    rut_property_t *property);
+                                    rig_property_t *property);
 
 void rig_controller_set_property_constant(rig_controller_t *controller,
-                                          rut_property_t *property,
+                                          rig_property_t *property,
                                           rut_boxed_t *boxed_value);
 
 void rig_controller_set_property_path(rig_controller_t *controller,
-                                      rut_property_t *property,
+                                      rig_property_t *property,
                                       rig_path_t *path);
 
 typedef void (*rig_controller_property_iter_func_t)(
@@ -215,10 +215,10 @@ rut_closure_t *rig_controller_add_operation_callback(
     rut_closure_destroy_callback_t destroy_cb);
 
 void rig_controller_set_property_method(rig_controller_t *controller,
-                                        rut_property_t *property,
+                                        rig_property_t *property,
                                         rig_controller_method_t method);
 void rig_controller_set_property_binding(rig_controller_t *controller,
-                                         rut_property_t *property,
+                                         rig_property_t *property,
                                          rig_binding_t *binding);
 
 typedef void (*rig_controller_node_callback_t)(rig_node_t *node,
@@ -229,17 +229,17 @@ void rig_controller_foreach_node(rig_controller_t *controller,
                                  void *user_data);
 
 void rig_controller_insert_path_value(rig_controller_t *controller,
-                                      rut_property_t *property,
+                                      rig_property_t *property,
                                       float t,
                                       const rut_boxed_t *value);
 
 void rig_controller_box_path_value(rig_controller_t *controller,
-                                   rut_property_t *property,
+                                   rig_property_t *property,
                                    float t,
                                    rut_boxed_t *out);
 
 void rig_controller_remove_path_value(rig_controller_t *controller,
-                                      rut_property_t *property,
+                                      rig_property_t *property,
                                       float t);
 
 void rig_controller_reap(rig_controller_t *controller, rig_engine_t *engine);

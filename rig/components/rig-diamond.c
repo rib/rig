@@ -41,7 +41,7 @@ static rig_diamond_t *_rig_diamond_new_with_slice(rig_engine_t *engine,
                                                   int tex_height,
                                                   rig_diamond_slice_t *slice);
 
-static rut_property_spec_t _rig_diamond_prop_specs[] = {
+static rig_property_spec_t _rig_diamond_prop_specs[] = {
     { .name = "size",
       .nick = "Size",
       .type = RUT_PROPERTY_TYPE_FLOAT,
@@ -470,7 +470,7 @@ void
 rig_diamond_set_size(rut_object_t *object, float size)
 {
     rig_diamond_t *diamond = object;
-    rut_property_context_t *prop_ctx;
+    rig_property_context_t *prop_ctx;
 
     if (diamond->size == size)
         return;
@@ -483,7 +483,7 @@ rig_diamond_set_size(rut_object_t *object, float size)
     diamond->size = size;
 
     prop_ctx = rig_component_props_get_property_context(&diamond->component);
-    rut_property_dirty(prop_ctx, &diamond->properties[RIG_DIAMOND_PROP_SIZE]);
+    rig_property_dirty(prop_ctx, &diamond->properties[RIG_DIAMOND_PROP_SIZE]);
 
     rut_closure_list_invoke(
         &diamond->updated_cb_list, rig_diamond_update_callback_t, diamond);

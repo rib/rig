@@ -68,7 +68,7 @@ struct _rig_view
 
 
     rut_introspectable_props_t introspectable;
-    rut_property_t properties[RIG_VIEW_N_PROPS];
+    rig_property_t properties[RIG_VIEW_N_PROPS];
 
 };
 

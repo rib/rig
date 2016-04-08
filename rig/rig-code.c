@@ -333,7 +333,7 @@ _rig_code_init(rig_engine_t *engine)
 #endif
 
     engine->code_graph = rig_code_node_new(
-        engine, "typedef struct _rut_property_t rut_property_t;\n", "");
+        engine, "typedef struct _rig_property_t rig_property_t;\n", "");
 }
 
 void

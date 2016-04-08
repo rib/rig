@@ -108,21 +108,21 @@ maybe_map_property_value(rig_engine_op_map_context_t *ctx,
 
 static void
 set_property_apply_real(rig_engine_op_apply_context_t *ctx,
-                        rut_property_t *property,
+                        rig_property_t *property,
                         rut_boxed_t *value)
 {
-    rut_property_context_t *prop_ctx = &ctx->engine->shell->property_ctx;
+    rig_property_context_t *prop_ctx = &ctx->engine->shell->property_ctx;
 
     /* Don't log the property change in this case otherwise we'd end
      * up setting the property twice */
     prop_ctx->logging_disabled++;
-    rut_property_set_boxed(prop_ctx, property, value);
+    rig_property_set_boxed(prop_ctx, property, value);
     prop_ctx->logging_disabled--;
 }
 
 void
 rig_engine_op_set_property(rig_engine_t *engine,
-                           rut_property_t *property,
+                           rig_property_t *property,
                            rut_boxed_t *value)
 {
     rig_pb_serializer_t *serializer = engine->ops_serializer;
@@ -150,7 +150,7 @@ _apply_op_set_property(rig_engine_op_apply_context_t *ctx,
 {
     Rig__Operation__SetProperty *set_property = pb_op->set_property;
     rut_object_t *object = apply_id_to_object(ctx, set_property->object_id);
-    rut_property_t *property;
+    rig_property_t *property;
     rut_boxed_t boxed;
 
     if (!object)
@@ -806,7 +806,7 @@ _map_op_delete_controller(rig_engine_op_map_context_t *ctx,
 static void
 controller_set_const_apply_real(rig_engine_op_apply_context_t *ctx,
                                 rig_controller_t *controller,
-                                rut_property_t *property,
+                                rig_property_t *property,
                                 rut_boxed_t *value)
 {
     rig_controller_set_property_constant(controller, property, value);
@@ -815,7 +815,7 @@ controller_set_const_apply_real(rig_engine_op_apply_context_t *ctx,
 void
 rig_engine_op_controller_set_const(rig_engine_t *engine,
                                    rig_controller_t *controller,
-                                   rut_property_t *property,
+                                   rig_property_t *property,
                                    rut_boxed_t *value)
 {
     rig_pb_serializer_t *serializer = engine->ops_serializer;
@@ -849,7 +849,7 @@ _apply_op_controller_set_const(rig_engine_op_apply_context_t *ctx,
     Rig__Operation__ControllerSetConst *set_const = pb_op->controller_set_const;
     rig_controller_t *controller = apply_id_to_object(ctx, set_const->controller_id);
     rut_object_t *object = apply_id_to_object(ctx, set_const->object_id);
-    rut_property_t *property;
+    rig_property_t *property;
     rut_boxed_t boxed;
 
     if (!controller || !object)
@@ -905,7 +905,7 @@ _map_op_controller_set_const(rig_engine_op_map_context_t *ctx,
 static void
 controller_path_add_node_apply_real(rig_engine_op_apply_context_t *ctx,
                                     rig_controller_t *controller,
-                                    rut_property_t *property,
+                                    rig_property_t *property,
                                     float t,
                                     rut_boxed_t *value)
 {
@@ -915,7 +915,7 @@ controller_path_add_node_apply_real(rig_engine_op_apply_context_t *ctx,
 void
 rig_engine_op_controller_path_add_node(rig_engine_t *engine,
                                        rig_controller_t *controller,
-                                       rut_property_t *property,
+                                       rig_property_t *property,
                                        float t,
                                        rut_boxed_t *value)
 {
@@ -951,7 +951,7 @@ _apply_op_controller_path_add_node(rig_engine_op_apply_context_t *ctx,
         pb_op->controller_path_add_node;
     rig_controller_t *controller = apply_id_to_object(ctx, add_node->controller_id);
     rut_object_t *object = apply_id_to_object(ctx, add_node->object_id);
-    rut_property_t *property;
+    rig_property_t *property;
     rut_boxed_t boxed;
 
     if (!controller || !object)
@@ -1010,7 +1010,7 @@ _map_op_controller_path_add_node(rig_engine_op_map_context_t *ctx,
 static void
 controller_path_delete_node_apply_real(rig_engine_op_apply_context_t *ctx,
                                        rig_controller_t *controller,
-                                       rut_property_t *property,
+                                       rig_property_t *property,
                                        float t)
 {
     rig_controller_remove_path_value(controller, property, t);
@@ -1019,7 +1019,7 @@ controller_path_delete_node_apply_real(rig_engine_op_apply_context_t *ctx,
 void
 rig_engine_op_controller_path_delete_node(rig_engine_t *engine,
                                           rig_controller_t *controller,
-                                          rut_property_t *property,
+                                          rig_property_t *property,
                                           float t)
 {
     rig_pb_serializer_t *serializer = engine->ops_serializer;
@@ -1053,7 +1053,7 @@ _apply_op_controller_path_delete_node(rig_engine_op_apply_context_t *ctx,
     rig_controller_t *controller =
         apply_id_to_object(ctx, delete_node->controller_id);
     rut_object_t *object = apply_id_to_object(ctx, delete_node->object_id);
-    rut_property_t *property;
+    rig_property_t *property;
 
     if (!controller || !object)
         return false;
@@ -1099,7 +1099,7 @@ _map_op_controller_path_delete_node(rig_engine_op_map_context_t *ctx,
 static void
 controller_path_set_node_apply_real(rig_engine_op_apply_context_t *ctx,
                                     rig_controller_t *controller,
-                                    rut_property_t *property,
+                                    rig_property_t *property,
                                     float t,
                                     rut_boxed_t *value)
 {
@@ -1109,7 +1109,7 @@ controller_path_set_node_apply_real(rig_engine_op_apply_context_t *ctx,
 void
 rig_engine_op_controller_path_set_node(rig_engine_t *engine,
                                        rig_controller_t *controller,
-                                       rut_property_t *property,
+                                       rig_property_t *property,
                                        float t,
                                        rut_boxed_t *value)
 {
@@ -1147,7 +1147,7 @@ _apply_op_controller_path_set_node(rig_engine_op_apply_context_t *ctx,
     rig_controller_t *controller =
         apply_id_to_object(ctx, set_node->controller_id);
     rut_object_t *object = apply_id_to_object(ctx, set_node->object_id);
-    rut_property_t *property;
+    rig_property_t *property;
     rut_boxed_t boxed;
 
     if (!controller || !object)
@@ -1207,7 +1207,7 @@ _map_op_controller_path_set_node(rig_engine_op_map_context_t *ctx,
 static void
 controller_add_property_apply_real(rig_engine_op_apply_context_t *ctx,
                                    rig_controller_t *controller,
-                                   rut_property_t *property)
+                                   rig_property_t *property)
 {
     rig_controller_add_property(controller, property);
 }
@@ -1215,7 +1215,7 @@ controller_add_property_apply_real(rig_engine_op_apply_context_t *ctx,
 void
 rig_engine_op_controller_add_property(rig_engine_t *engine,
                                       rig_controller_t *controller,
-                                      rut_property_t *property)
+                                      rig_property_t *property)
 {
     rig_pb_serializer_t *serializer = engine->ops_serializer;
     Rig__Operation *pb_op =
@@ -1247,7 +1247,7 @@ _apply_op_controller_add_property(rig_engine_op_apply_context_t *ctx,
     rig_controller_t *controller =
         apply_id_to_object(ctx, add_property->controller_id);
     rut_object_t *object = apply_id_to_object(ctx, add_property->object_id);
-    rut_property_t *property;
+    rig_property_t *property;
 
     if (!controller || !object)
         return false;
@@ -1293,7 +1293,7 @@ _map_op_controller_add_property(rig_engine_op_map_context_t *ctx,
 static void
 controller_remove_property_apply_real(rig_engine_op_apply_context_t *ctx,
                                       rig_controller_t *controller,
-                                      rut_property_t *property)
+                                      rig_property_t *property)
 {
     rig_controller_remove_property(controller, property);
 }
@@ -1301,7 +1301,7 @@ controller_remove_property_apply_real(rig_engine_op_apply_context_t *ctx,
 void
 rig_engine_op_controller_remove_property(rig_engine_t *engine,
                                          rig_controller_t *controller,
-                                         rut_property_t *property)
+                                         rig_property_t *property)
 {
     rig_pb_serializer_t *serializer = engine->ops_serializer;
     Rig__Operation *pb_op =
@@ -1333,7 +1333,7 @@ _apply_op_controller_remove_property(rig_engine_op_apply_context_t *ctx,
     rig_controller_t *controller =
         apply_id_to_object(ctx, remove_property->controller_id);
     rut_object_t *object = apply_id_to_object(ctx, remove_property->object_id);
-    rut_property_t *property;
+    rig_property_t *property;
 
     if (!controller || !object)
         return false;
@@ -1379,7 +1379,7 @@ _map_op_controller_remove_property(rig_engine_op_map_context_t *ctx,
 static void
 controller_property_set_method_apply_real(rig_engine_op_apply_context_t *ctx,
                                           rig_controller_t *controller,
-                                          rut_property_t *property,
+                                          rig_property_t *property,
                                           rig_controller_method_t method)
 {
     rig_controller_set_property_method(controller, property, method);
@@ -1388,7 +1388,7 @@ controller_property_set_method_apply_real(rig_engine_op_apply_context_t *ctx,
 void
 rig_engine_op_controller_property_set_method(rig_engine_t *engine,
                                              rig_controller_t *controller,
-                                             rut_property_t *property,
+                                             rig_property_t *property,
                                              rig_controller_method_t method)
 {
     rig_pb_serializer_t *serializer = engine->ops_serializer;
@@ -1422,7 +1422,7 @@ _apply_op_controller_property_set_method(rig_engine_op_apply_context_t *ctx,
     rig_controller_t *controller =
         apply_id_to_object(ctx, set_method->controller_id);
     rut_object_t *object = apply_id_to_object(ctx, set_method->object_id);
-    rut_property_t *property;
+    rig_property_t *property;
 
     if (!controller || !object)
         return false;

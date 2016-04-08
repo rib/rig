@@ -66,7 +66,7 @@
 extern rut_type_t rig_asset_type;
 
 #ifndef RIG_ASSET_TYPEDEF
-/* Note: rut-property.h currently avoids including rut-asset.h
+/* Note: rig-property.h currently avoids including rut-asset.h
  * to avoid a circular header dependency and directly declares
  * a rig_asset_t typedef */
 typedef struct _rig_asset_t rig_asset_t;

@@ -67,7 +67,7 @@ struct _rut_icon_toggle_set_t {
     rut_graphable_props_t graphable;
 
     rut_introspectable_props_t introspectable;
-    rut_property_t properties[RUT_ICON_TOGGLE_SET_N_PROPS];
+    rig_property_t properties[RUT_ICON_TOGGLE_SET_N_PROPS];
 };
 
 static void
@@ -99,7 +99,7 @@ _rut_icon_toggle_set_free(void *object)
     rut_object_free(rut_icon_toggle_set_t, object);
 }
 
-static rut_property_spec_t _rut_icon_toggle_set_prop_specs[] = {
+static rig_property_spec_t _rut_icon_toggle_set_prop_specs[] = {
     { .name = "selection",
       .flags = RUT_PROPERTY_FLAG_READWRITE,
       .type = RUT_PROPERTY_TYPE_INTEGER,
@@ -329,7 +329,7 @@ rut_icon_toggle_set_set_selection(rut_object_t *object,
     toggle_set->current_toggle_state = toggle_state;
     rut_icon_toggle_set_state(toggle_set->current_toggle_state->toggle, true);
 
-    rut_property_dirty(
+    rig_property_dirty(
         &toggle_set->shell->property_ctx,
         &toggle_set->properties[RUT_ICON_TOGGLE_SET_PROP_SELECTION]);
 

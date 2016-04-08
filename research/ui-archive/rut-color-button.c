@@ -57,7 +57,7 @@ struct _rut_color_button_t {
     rut_paintable_props_t paintable;
 
     rut_introspectable_props_t introspectable;
-    rut_property_t properties[RUT_COLOR_BUTTON_N_PROPS];
+    rig_property_t properties[RUT_COLOR_BUTTON_N_PROPS];
 
     int width, height;
 
@@ -87,7 +87,7 @@ rut_type_t rut_color_button_type;
 #define RUT_COLOR_BUTTON_PADDING 2
 #define RUT_COLOR_BUTTON_EDGE_SIZE 1
 
-static rut_property_spec_t _rut_color_button_prop_specs[] = {
+static rig_property_spec_t _rut_color_button_prop_specs[] = {
     { .name = "color",
       .flags = RUT_PROPERTY_FLAG_READWRITE,
       .type = RUT_PROPERTY_TYPE_COLOR,
@@ -375,10 +375,10 @@ static void
 remove_picker(rut_color_button_t *button)
 {
     if (button->picker) {
-        rut_property_t *button_color_prop =
+        rig_property_t *button_color_prop =
             &button->properties[RUT_COLOR_BUTTON_PROP_COLOR];
 
-        rut_property_remove_binding(button_color_prop);
+        rig_property_remove_binding(button_color_prop);
 
         rut_shell_ungrab_input(
             button->shell, picker_grab_input_cb, button);
@@ -412,7 +412,7 @@ static void
 show_picker(rut_color_button_t *button, rut_object_t *camera)
 {
     rut_object_t *root, *parent;
-    rut_property_t *picker_color_prop;
+    rig_property_t *picker_color_prop;
     float picker_width, picker_height;
     c_matrix_t model_transform;
     float button_points[3 * 2];
@@ -434,10 +434,10 @@ show_picker(rut_color_button_t *button, rut_object_t *camera)
         rut_introspectable_lookup_property(button->picker, "color");
 
     if (picker_color_prop) {
-        rut_property_t *button_color_prop =
+        rig_property_t *button_color_prop =
             &button->properties[RUT_COLOR_BUTTON_PROP_COLOR];
 
-        rut_property_set_copy_binding(&button->shell->property_ctx,
+        rig_property_set_copy_binding(&button->shell->property_ctx,
                                       button_color_prop,
                                       picker_color_prop);
     }
@@ -625,7 +625,7 @@ rut_color_button_set_color(rut_object_t *obj, const cg_color_t *color)
 
         button->color_pipeline_dirty = true;
 
-        rut_property_dirty(&button->shell->property_ctx,
+        rig_property_dirty(&button->shell->property_ctx,
                            &button->properties[RUT_COLOR_BUTTON_PROP_COLOR]);
 
         rut_shell_queue_redraw(button->shell);

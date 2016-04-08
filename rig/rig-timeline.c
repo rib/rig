@@ -57,10 +57,10 @@ struct _rig_timeline_t {
     double elapsed;
 
     rut_introspectable_props_t introspectable;
-    rut_property_t properties[RUT_TIMELINE_N_PROPS];
+    rig_property_t properties[RUT_TIMELINE_N_PROPS];
 };
 
-static rut_property_spec_t _rig_timeline_prop_specs[] = {
+static rig_property_spec_t _rig_timeline_prop_specs[] = {
     { .name = "length",
       .flags = RUT_PROPERTY_FLAG_READWRITE,
       .type = RUT_PROPERTY_TYPE_FLOAT,
@@ -163,7 +163,7 @@ rig_timeline_set_running(rut_object_t *object, bool running)
 
     timeline->running = running;
 
-    rut_property_dirty(timeline->engine->property_ctx,
+    rig_property_dirty(timeline->engine->property_ctx,
                        &timeline->properties[RUT_TIMELINE_PROP_RUNNING]);
 }
 
@@ -268,9 +268,9 @@ rig_timeline_set_elapsed(rut_object_t *obj, double elapsed)
 
     if (elapsed != timeline->elapsed) {
         timeline->elapsed = elapsed;
-        rut_property_dirty(timeline->engine->property_ctx,
+        rig_property_dirty(timeline->engine->property_ctx,
                            &timeline->properties[RUT_TIMELINE_PROP_ELAPSED]);
-        rut_property_dirty(timeline->engine->property_ctx,
+        rig_property_dirty(timeline->engine->property_ctx,
                            &timeline->properties[RUT_TIMELINE_PROP_PROGRESS]);
     }
 }
@@ -305,7 +305,7 @@ rig_timeline_set_length(rut_object_t *obj, float length)
 
     timeline->length = length;
 
-    rut_property_dirty(timeline->engine->property_ctx,
+    rig_property_dirty(timeline->engine->property_ctx,
                        &timeline->properties[RUT_TIMELINE_PROP_LENGTH]);
 
     rig_timeline_set_elapsed(timeline, timeline->elapsed);
@@ -329,7 +329,7 @@ rig_timeline_set_loop_enabled(rut_object_t *object, bool enabled)
 
     timeline->loop_enabled = enabled;
 
-    rut_property_dirty(timeline->engine->property_ctx,
+    rig_property_dirty(timeline->engine->property_ctx,
                        &timeline->properties[RUT_TIMELINE_PROP_LOOP]);
 }
 

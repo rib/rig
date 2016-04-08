@@ -61,12 +61,12 @@ struct _rig_asset_inspector_t {
     rut_graphable_props_t graphable;
 
     rut_introspectable_props_t introspectable;
-    rut_property_t properties[RIG_ASSET_INSPECTOR_N_PROPS];
+    rig_property_t properties[RIG_ASSET_INSPECTOR_N_PROPS];
 
     unsigned int selected : 1;
 };
 
-static rut_property_spec_t _rig_asset_inspector_prop_specs[] = {
+static rig_property_spec_t _rig_asset_inspector_prop_specs[] = {
     { .name = "asset",
       .nick = "Asset",
       .type = RUT_PROPERTY_TYPE_ASSET,
@@ -363,7 +363,7 @@ rig_asset_inspector_set_asset(rut_object_t *object,
 
     _rig_asset_inspector_set_selected(asset_inspector, save_selected);
 
-    rut_property_dirty(
+    rig_property_dirty(
         &asset_inspector->shell->property_ctx,
         &asset_inspector->properties[RIG_ASSET_INSPECTOR_PROP_ASSET]);
 }

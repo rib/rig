@@ -57,7 +57,7 @@ r_buffer_new(RModule *module, size_t bytes)
 {
     rig_code_module_props_t *code_module = (void *)module;
     rig_engine_t *engine = code_module->engine;
-    rut_property_context_t *prop_ctx = engine->property_ctx;
+    rig_property_context_t *prop_ctx = engine->property_ctx;
     rut_buffer_t *buf;
 
     prop_ctx->logging_disabled++;
@@ -98,7 +98,7 @@ r_attribute_new(RModule *module,
 {
     rig_code_module_props_t *code_module = (void *)module;
     rig_engine_t *engine = code_module->engine;
-    rut_property_context_t *prop_ctx = engine->property_ctx;
+    rig_property_context_t *prop_ctx = engine->property_ctx;
     rut_attribute_t *attribute;
 
     prop_ctx->logging_disabled++;
@@ -369,7 +369,7 @@ r_mesh_new(RModule *module)
 {
     rig_code_module_props_t *code_module = (void *)module;
     rig_engine_t *engine = code_module->engine;
-    rut_property_context_t *prop_ctx = engine->property_ctx;
+    rig_property_context_t *prop_ctx = engine->property_ctx;
     rut_object_t *component;
 
     prop_ctx->logging_disabled++;

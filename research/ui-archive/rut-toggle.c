@@ -102,10 +102,10 @@ struct _rut_toggle_t {
     rut_paintable_props_t paintable;
 
     rut_introspectable_props_t introspectable;
-    rut_property_t properties[RUT_TOGGLE_N_PROPS];
+    rig_property_t properties[RUT_TOGGLE_N_PROPS];
 };
 
-static rut_property_spec_t _rut_toggle_prop_specs[] = {
+static rig_property_spec_t _rut_toggle_prop_specs[] = {
     { .name = "state",
       .flags = RUT_PROPERTY_FLAG_READWRITE,
       .type = RUT_PROPERTY_TYPE_BOOLEAN,
@@ -610,7 +610,7 @@ rut_toggle_set_enabled(rut_object_t *obj, bool enabled)
         return;
 
     toggle->enabled = enabled;
-    rut_property_dirty(&toggle->shell->property_ctx,
+    rig_property_dirty(&toggle->shell->property_ctx,
                        &toggle->properties[RUT_TOGGLE_PROP_ENABLED]);
     rut_shell_queue_redraw(toggle->shell);
 }
@@ -624,12 +624,12 @@ rut_toggle_set_state(rut_object_t *obj, bool state)
         return;
 
     toggle->state = state;
-    rut_property_dirty(&toggle->shell->property_ctx,
+    rig_property_dirty(&toggle->shell->property_ctx,
                        &toggle->properties[RUT_TOGGLE_PROP_STATE]);
     rut_shell_queue_redraw(toggle->shell);
 }
 
-rut_property_t *
+rig_property_t *
 rut_toggle_get_enabled_property(rut_toggle_t *toggle)
 {
     return &toggle->properties[RUT_TOGGLE_PROP_STATE];

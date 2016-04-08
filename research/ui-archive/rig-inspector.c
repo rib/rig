@@ -45,8 +45,8 @@ typedef struct {
     rut_stack_t *stack;
     rut_object_t *control;
     rut_drag_bin_t *drag_bin;
-    rut_property_t *source_prop;
-    rut_property_t *target_prop;
+    rig_property_t *source_prop;
+    rig_property_t *target_prop;
 
     /* A pointer is stored back to the inspector so that we can use a
      * pointer to this data directly as the callback data for the
@@ -126,8 +126,8 @@ _rig_inspector_init_type(void)
 }
 
 static void
-property_changed_cb(rut_property_t *primary_target_prop,
-                    rut_property_t *source_prop,
+property_changed_cb(rig_property_t *primary_target_prop,
+                    rig_property_t *source_prop,
                     void *user_data)
 {
     rig_inspector_property_data_t *prop_data = user_data;
@@ -154,7 +154,7 @@ property_changed_cb(rut_property_t *primary_target_prop,
     /* Forward the property change to the corresponding property
      * of all objects being inspected... */
     for (l = inspector->objects; l; l = l->next) {
-        rut_property_t *target_prop = rut_introspectable_lookup_property(
+        rig_property_t *target_prop = rut_introspectable_lookup_property(
             l->data, primary_target_prop->spec->name);
         inspector->property_changed_cb(target_prop, /* target */
                                        source_prop,
@@ -164,7 +164,7 @@ property_changed_cb(rut_property_t *primary_target_prop,
 }
 
 static void
-controlled_changed_cb(rut_property_t *primary_property,
+controlled_changed_cb(rig_property_t *primary_property,
                       bool value,
                       void *user_data)
 {
@@ -177,7 +177,7 @@ controlled_changed_cb(rut_property_t *primary_property,
     /* Forward the controlled state change to the corresponding property
      * of all objects being inspected... */
     for (l = inspector->objects; l; l = l->next) {
-        rut_property_t *property = rut_introspectable_lookup_property(
+        rig_property_t *property = rut_introspectable_lookup_property(
             l->data, primary_property->spec->name);
 
         inspector->controlled_changed_cb(property, value, inspector->user_data);
@@ -185,7 +185,7 @@ controlled_changed_cb(rut_property_t *primary_property,
 }
 
 static void
-get_all_properties_cb(rut_property_t *prop, void *user_data)
+get_all_properties_cb(rig_property_t *prop, void *user_data)
 {
     c_array_t *array = user_data;
     rig_inspector_property_data_t *prop_data;
@@ -289,7 +289,7 @@ rig_inspector_new(rut_shell_t *shell,
 
 void
 rig_inspector_reload_property(rig_inspector_t *inspector,
-                              rut_property_t *property)
+                              rig_property_t *property)
 {
     int i;
 
@@ -303,7 +303,7 @@ rig_inspector_reload_property(rig_inspector_t *inspector,
 
 void
 rig_inspector_set_property_controlled(rig_inspector_t *inspector,
-                                      rut_property_t *property,
+                                      rig_property_t *property,
                                       bool controlled)
 {
     int i;

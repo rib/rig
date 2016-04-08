@@ -171,7 +171,7 @@ dump_journal(rig_undo_journal_t *journal, int indent)
 static undo_redo_t *
 revert_recent_controller_constant_change(rig_undo_journal_t *journal,
                                          rig_controller_t *controller,
-                                         rut_property_t *property)
+                                         rig_property_t *property)
 {
     if (!c_list_empty(&journal->undo_ops)) {
         undo_redo_t *last_op =
@@ -193,7 +193,7 @@ rig_undo_journal_set_controller_constant(rig_undo_journal_t *journal,
                                          bool mergable,
                                          rig_controller_t *controller,
                                          const rut_boxed_t *value,
-                                         rut_property_t *property)
+                                         rig_property_t *property)
 {
     undo_redo_t *undo_redo;
     undo_redo_set_controller_const_t *prop_change;
@@ -231,7 +231,7 @@ static undo_redo_t *
 revert_recent_controller_path_change(rig_undo_journal_t *journal,
                                      rig_controller_t *controller,
                                      float t,
-                                     rut_property_t *property)
+                                     rig_property_t *property)
 {
     if (!c_list_empty(&journal->undo_ops)) {
         undo_redo_t *last_op =
@@ -261,7 +261,7 @@ rig_undo_journal_set_controller_path_node_value(rig_undo_journal_t *journal,
                                                 rig_controller_t *controller,
                                                 float t,
                                                 const rut_boxed_t *value,
-                                                rut_property_t *property)
+                                                rig_property_t *property)
 {
     undo_redo_t *undo_redo;
     rig_path_t *path =
@@ -320,7 +320,7 @@ rig_undo_journal_set_controller_path_node_value(rig_undo_journal_t *journal,
 void
 rig_undo_journal_remove_controller_path_node(rig_undo_journal_t *journal,
                                              rig_controller_t *controller,
-                                             rut_property_t *property,
+                                             rig_property_t *property,
                                              float t)
 {
     undo_redo_path_add_remove_t *add_remove;
@@ -342,7 +342,7 @@ rig_undo_journal_remove_controller_path_node(rig_undo_journal_t *journal,
 void
 rig_undo_journal_set_controlled(rig_undo_journal_t *journal,
                                 rig_controller_t *controller,
-                                rut_property_t *property,
+                                rig_property_t *property,
                                 bool value)
 {
     undo_redo_t *undo_redo;
@@ -365,7 +365,7 @@ rig_undo_journal_set_controlled(rig_undo_journal_t *journal,
 void
 rig_undo_journal_set_control_method(rig_undo_journal_t *journal,
                                     rig_controller_t *controller,
-                                    rut_property_t *property,
+                                    rig_property_t *property,
                                     rig_controller_method_t method)
 {
     undo_redo_t *undo_redo;
@@ -392,7 +392,7 @@ rig_undo_journal_set_control_method(rig_undo_journal_t *journal,
 
 static undo_redo_t *
 revert_recent_property_change(rig_undo_journal_t *journal,
-                              rut_property_t *property)
+                              rig_property_t *property)
 {
     if (!c_list_empty(&journal->undo_ops)) {
         undo_redo_t *last_op =
@@ -411,7 +411,7 @@ void
 rig_undo_journal_set_property(rig_undo_journal_t *journal,
                               bool mergable,
                               const rut_boxed_t *value,
-                              rut_property_t *property)
+                              rig_property_t *property)
 {
     undo_redo_t *undo_redo;
     undo_redo_set_property_t *set_property;
@@ -430,7 +430,7 @@ rig_undo_journal_set_property(rig_undo_journal_t *journal,
 
         set_property = &undo_redo->d.set_property;
 
-        rut_property_box(property, &set_property->value0);
+        rig_property_box(property, &set_property->value0);
         rut_boxed_copy(&set_property->value1, value);
 
         set_property->object = rut_object_ref(property->object);
@@ -1134,7 +1134,7 @@ undo_redo_delete_entity_invert(undo_redo_t *undo_redo_src)
 typedef struct _add_nodes_state_t {
     rig_engine_t *engine;
     rig_controller_t *controller;
-    rut_property_t *property;
+    rig_property_t *property;
 } add_nodes_state_t;
 
 static void

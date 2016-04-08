@@ -467,7 +467,7 @@ static void
 log_op_cb(Rig__Operation *pb_op, void *user_data)
 {
     rig_simulator_t *simulator = user_data;
-    rut_property_context_t *prop_ctx = &simulator->engine->shell->property_ctx;
+    rig_property_context_t *prop_ctx = &simulator->engine->shell->property_ctx;
 
     /* We sequence all operations relative to the property updates that
      * are being logged, so that the frontend will be able to replay
@@ -770,7 +770,7 @@ stack_region_cb(uint8_t *data, size_t bytes, void *user_data)
 {
     serialize_changes_state_t *state = user_data;
     rig_simulator_t *simulator = state->simulator;
-    size_t step = sizeof(rut_property_change_t);
+    size_t step = sizeof(rig_property_change_t);
     size_t offset;
     int i;
 
@@ -779,8 +779,8 @@ stack_region_cb(uint8_t *data, size_t bytes, void *user_data)
     for (i = state->i, offset = 0;
          i < state->n_changes && (offset + step) <= bytes;
          i++, offset += step) {
-        rut_property_change_t *change =
-            (rut_property_change_t *)(data + offset);
+        rig_property_change_t *change =
+            (rig_property_change_t *)(data + offset);
         Rig__PropertyChange *pb_change = &state->pb_changes[i];
         Rig__PropertyValue *pb_value = &state->pb_values[i];
 
@@ -824,7 +824,7 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
     ProtobufCService *frontend_service =
         rig_pb_rpc_client_get_service(simulator->simulator_peer->pb_rpc_client);
     Rig__UIDiff ui_diff;
-    rut_property_context_t *prop_ctx = &engine->shell->property_ctx;
+    rig_property_context_t *prop_ctx = &engine->shell->property_ctx;
     int n_changes;
     rig_pb_serializer_t *serializer;
     rut_queue_t *ops;
@@ -854,7 +854,7 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
     {
         rut_object_t *entity = rig_ui_find_entity (engine->ui,
                                                    "pinwheel");
-        rut_property_t *scale_prop;
+        rig_property_t *scale_prop;
         rut_boxed_t boxed;
 
         scale_prop = rut_introspectable_get_property (entity,
@@ -866,7 +866,7 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
                                     scale_prop,
                                     &boxed);
 #else
-        rut_property_set_float (&engine->shell->property_ctx,
+        rig_property_set_float (&engine->shell->property_ctx,
                                 scale_prop,
                                 counter);
 #endif
@@ -991,7 +991,7 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
 
     rig_pb_serializer_destroy(serializer);
 
-    rut_property_context_clear_log(prop_ctx);
+    rig_property_context_clear_log(prop_ctx);
 
     /* Stop logging property changes until the next frame. */
     simulator->shell->property_ctx.logging_disabled++;

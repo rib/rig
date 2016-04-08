@@ -44,7 +44,7 @@ enum {
 
 typedef struct {
     rut_number_slider_t *slider;
-    rut_property_t *property;
+    rig_property_t *property;
 } rut_vec3_slider_component_t;
 
 struct _rut_vec3_slider_t {
@@ -62,12 +62,12 @@ struct _rut_vec3_slider_t {
     float value[3];
 
     rut_introspectable_props_t introspectable;
-    rut_property_t properties[RUT_VEC3_SLIDER_N_PROPS];
+    rig_property_t properties[RUT_VEC3_SLIDER_N_PROPS];
 };
 
 rut_type_t rut_vec3_slider_type;
 
-static rut_property_spec_t _rut_vec3_slider_prop_specs[] = {
+static rig_property_spec_t _rut_vec3_slider_prop_specs[] = {
     { .name = "value",
       .flags = RUT_PROPERTY_FLAG_READWRITE,
       .type = RUT_PROPERTY_TYPE_VEC3,
@@ -127,7 +127,7 @@ _rut_vec3_slider_init_type(void)
 }
 
 static void
-rut_vec3_slider_property_changed_cb(rut_property_t *target_property,
+rut_vec3_slider_property_changed_cb(rig_property_t *target_property,
                                     void *user_data)
 {
     rut_vec3_slider_t *slider = user_data;
@@ -186,7 +186,7 @@ rut_vec3_slider_new(rut_shell_t *shell)
     rut_number_slider_set_markup_label(slider->components[2].slider,
                                        "<span foreground=\"blue\">z:</span>");
 
-    rut_property_set_binding(&slider->properties[RUT_VEC3_SLIDER_PROP_VALUE],
+    rig_property_set_binding(&slider->properties[RUT_VEC3_SLIDER_PROP_VALUE],
                              rut_vec3_slider_property_changed_cb,
                              slider,
                              slider->components[0].property,
@@ -245,7 +245,7 @@ rut_vec3_slider_set_value(rut_object_t *obj, const float *value)
 
     slider->in_set_value = false;
 
-    rut_property_dirty(&slider->shell->property_ctx,
+    rig_property_dirty(&slider->shell->property_ctx,
                        &slider->properties[RUT_VEC3_SLIDER_PROP_VALUE]);
 }
 

@@ -30,7 +30,7 @@
 #define _RUT_INTERFACES_H_
 
 #include "rut-types.h"
-#include "rut-property.h"
+#include "rig-property.h"
 #include "rut-mesh.h"
 #include "rut-graphable.h"
 

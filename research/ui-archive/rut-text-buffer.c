@@ -24,7 +24,7 @@
 #include <config.h>
 
 #include "rut-shell.h"
-#include "rut-property.h"
+#include "rig-property.h"
 #include "rut-introspectable.h"
 #include "rut-text-buffer.h"
 
@@ -57,10 +57,10 @@ struct _rut_text_buffer_t {
     c_list_t delete_text_cb_list;
 
     rut_introspectable_props_t introspectable;
-    rut_property_t properties[N_PROPS];
+    rig_property_t properties[N_PROPS];
 };
 
-static rut_property_spec_t _rut_text_buffer_prop_specs[] = {
+static rig_property_spec_t _rut_text_buffer_prop_specs[] = {
     { .name = "text",
       .flags = RUT_PROPERTY_FLAG_READWRITE,
       .type = RUT_PROPERTY_TYPE_TEXT,
@@ -96,9 +96,9 @@ _rut_text_buffer_notify_inserted_text(rut_text_buffer_t *buffer,
                             chars,
                             n_chars);
 
-    rut_property_dirty(&buffer->shell->property_ctx,
+    rig_property_dirty(&buffer->shell->property_ctx,
                        &buffer->properties[PROP_TEXT]);
-    rut_property_dirty(&buffer->shell->property_ctx,
+    rig_property_dirty(&buffer->shell->property_ctx,
                        &buffer->properties[PROP_LENGTH]);
 }
 
@@ -113,9 +113,9 @@ _rut_text_buffer_notify_deleted_text(rut_text_buffer_t *buffer,
                             position,
                             n_chars);
 
-    rut_property_dirty(&buffer->shell->property_ctx,
+    rig_property_dirty(&buffer->shell->property_ctx,
                        &buffer->properties[PROP_TEXT]);
-    rut_property_dirty(&buffer->shell->property_ctx,
+    rig_property_dirty(&buffer->shell->property_ctx,
                        &buffer->properties[PROP_LENGTH]);
 }
 
@@ -393,7 +393,7 @@ rut_text_buffer_set_max_length(rut_object_t *obj, int max_length)
         rut_text_buffer_delete_text(buffer, max_length, -1);
 
     buffer->max_length = max_length;
-    rut_property_dirty(&buffer->shell->property_ctx,
+    rig_property_dirty(&buffer->shell->property_ctx,
                        &buffer->properties[PROP_MAX_LENGTH]);
 }
 

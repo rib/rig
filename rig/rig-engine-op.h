@@ -66,7 +66,7 @@ rig_engine_op_register_object (rig_engine_t *engine,
 #endif
 
 void rig_engine_op_set_property(rig_engine_t *engine,
-                                rut_property_t *property,
+                                rig_property_t *property,
                                 rut_boxed_t *value);
 
 void rig_engine_op_delete_entity(rig_engine_t *engine, rig_entity_t *entity);
@@ -93,38 +93,38 @@ void rig_engine_op_delete_controller(rig_engine_t *engine,
 
 void rig_engine_op_controller_set_const(rig_engine_t *engine,
                                         rig_controller_t *controller,
-                                        rut_property_t *property,
+                                        rig_property_t *property,
                                         rut_boxed_t *value);
 
 void rig_engine_op_controller_path_add_node(rig_engine_t *engine,
                                             rig_controller_t *controller,
-                                            rut_property_t *property,
+                                            rig_property_t *property,
                                             float t,
                                             rut_boxed_t *value);
 
 void rig_engine_op_controller_path_delete_node(rig_engine_t *engine,
                                                rig_controller_t *controller,
-                                               rut_property_t *property,
+                                               rig_property_t *property,
                                                float t);
 
 void rig_engine_op_controller_path_set_node(rig_engine_t *engine,
                                             rig_controller_t *controller,
-                                            rut_property_t *property,
+                                            rig_property_t *property,
                                             float t,
                                             rut_boxed_t *value);
 
 void rig_engine_op_controller_add_property(rig_engine_t *engine,
                                            rig_controller_t *controller,
-                                           rut_property_t *property);
+                                           rig_property_t *property);
 
 void rig_engine_op_controller_remove_property(rig_engine_t *engine,
                                               rig_controller_t *controller,
-                                              rut_property_t *property);
+                                              rig_property_t *property);
 
 void
 rig_engine_op_controller_property_set_method(rig_engine_t *engine,
                                              rig_controller_t *controller,
-                                             rut_property_t *property,
+                                             rig_property_t *property,
                                              rig_controller_method_t method);
 
 void

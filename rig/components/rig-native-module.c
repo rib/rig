@@ -69,7 +69,7 @@ struct _rig_native_module_t {
     void *resolver_data;
 
     rut_introspectable_props_t introspectable;
-    rut_property_t properties[RIG_NATIVE_MODULE_N_PROPS];
+    rig_property_t properties[RIG_NATIVE_MODULE_N_PROPS];
 };
 
 const char *
@@ -96,7 +96,7 @@ rig_native_module_set_name(rut_object_t *object,
                            const char *name)
 {
     rig_native_module_t *module = object;
-    rut_property_context_t *prop_ctx;
+    rig_property_context_t *prop_ctx;
 
     close_lib(module);
 
@@ -108,10 +108,10 @@ rig_native_module_set_name(rut_object_t *object,
     module->name = c_strdup(name ? name : "");
 
     prop_ctx = rig_component_props_get_property_context(&module->component);
-    rut_property_dirty(prop_ctx, &module->properties[RIG_NATIVE_MODULE_PROP_NAME]);
+    rig_property_dirty(prop_ctx, &module->properties[RIG_NATIVE_MODULE_PROP_NAME]);
 }
 
-static rut_property_spec_t _rig_native_module_prop_specs[] = {
+static rig_property_spec_t _rig_native_module_prop_specs[] = {
     { .name = "name",
       .nick = "Name of module to load",
       .type = RUT_PROPERTY_TYPE_TEXT,

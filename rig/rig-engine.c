@@ -60,7 +60,7 @@
 #include "components/rig-native-module.h"
 #endif
 
-static rut_property_spec_t _rig_engine_prop_specs[] = {
+static rig_property_spec_t _rig_engine_prop_specs[] = {
     { 0 }
 };
 

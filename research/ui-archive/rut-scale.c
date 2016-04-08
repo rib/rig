@@ -159,7 +159,7 @@ update_labels(rut_scale_t *scale)
         float length = MAX(scale->natural_length, scale->length);
         scale->default_scale = scale->width / length;
         scale->pixel_scale = scale->default_scale * scale->user_scale;
-        rut_property_dirty(&scale->shell->property_ctx,
+        rig_property_dirty(&scale->shell->property_ctx,
                            &scale->properties[RUT_SCALE_PROP_PIXEL_SCALE]);
     }
 
@@ -404,7 +404,7 @@ rut_scale_set_length(rut_object_t *object, float length)
     scale->length = length;
     scale->changed = true;
 
-    rut_property_dirty(&scale->shell->property_ctx,
+    rig_property_dirty(&scale->shell->property_ctx,
                        &scale->properties[RUT_SCALE_PROP_LENGTH]);
 
     preferred_size_changed(scale);
@@ -430,9 +430,9 @@ _rut_scale_set_user_scale(rut_object_t *object, float factor)
 
     scale->changed = true;
 
-    rut_property_dirty(&scale->shell->property_ctx,
+    rig_property_dirty(&scale->shell->property_ctx,
                        &scale->properties[RUT_SCALE_PROP_USER_SCALE]);
-    rut_property_dirty(&scale->shell->property_ctx,
+    rig_property_dirty(&scale->shell->property_ctx,
                        &scale->properties[RUT_SCALE_PROP_PIXEL_SCALE]);
 
     preferred_size_changed(scale);
@@ -453,7 +453,7 @@ rut_scale_set_offset(rut_object_t *object, float offset)
     scale->start_offset = offset;
     scale->changed = true;
 
-    rut_property_dirty(&scale->shell->property_ctx,
+    rig_property_dirty(&scale->shell->property_ctx,
                        &scale->properties[RUT_SCALE_PROP_OFFSET]);
 
     preferred_size_changed(scale);
@@ -479,7 +479,7 @@ rut_scale_set_focus(rut_object_t *object, float offset)
 
     scale->focus_offset = offset;
 
-    rut_property_dirty(&scale->shell->property_ctx,
+    rig_property_dirty(&scale->shell->property_ctx,
                        &scale->properties[RUT_SCALE_PROP_FOCUS]);
 
     rut_shell_queue_redraw(scale->shell);
@@ -497,7 +497,7 @@ rut_scale_get_pixel_scale(rut_scale_t *scale)
     return scale->pixel_scale;
 }
 
-static rut_property_spec_t _rut_scale_prop_specs[] = {
+static rig_property_spec_t _rut_scale_prop_specs[] = {
     { .name = "length",
       .nick = "Length",
       .type = RUT_PROPERTY_TYPE_FLOAT,

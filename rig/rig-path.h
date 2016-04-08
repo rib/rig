@@ -38,7 +38,7 @@ struct _rig_path_t {
     rut_object_base_t _base;
 
     rut_shell_t *shell;
-    rut_property_type_t type;
+    rig_property_type_t type;
     c_list_t nodes;
     int length;
     rig_node_t *pos;
@@ -58,9 +58,9 @@ typedef void (*rig_path_operation_callback_t)(rig_path_t *path,
 
 extern rut_type_t rig_path_type;
 
-rut_property_t *rig_path_get_property(rig_path_t *path);
+rig_property_t *rig_path_get_property(rig_path_t *path);
 
-rig_path_t *rig_path_new(rut_shell_t *shell, rut_property_type_t type);
+rig_path_t *rig_path_new(rut_shell_t *shell, rig_property_type_t type);
 
 rig_path_t *rig_path_copy(rig_path_t *path);
 
@@ -96,7 +96,7 @@ void rig_path_insert_uint32(rig_path_t *path, float t, uint32_t value);
 void rig_path_insert_color(rig_path_t *path, float t, const cg_color_t *value);
 
 bool
-rig_path_lerp_property(rig_path_t *path, rut_property_t *property, float t);
+rig_path_lerp_property(rig_path_t *path, rig_property_t *property, float t);
 
 bool rig_path_get_boxed(rig_path_t *path, float t, rut_boxed_t *value);
 

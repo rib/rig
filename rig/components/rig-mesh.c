@@ -56,7 +56,7 @@ static rut_ui_enum_t indices_type_enum = {
         { .value = CG_INDICES_TYPE_UNSIGNED_INT, .nick = "UINT32" },
     }};
 
-static rut_property_spec_t _rig_mesh_prop_specs[] = {
+static rig_property_spec_t _rig_mesh_prop_specs[] = {
     { .name = "n_vertices",
       .nick = "Number of vertices",
       .type = RUT_PROPERTY_TYPE_INTEGER,
@@ -320,7 +320,7 @@ rig_mesh_update_bounds(rig_mesh_t *mesh)
     rut_attribute_t *attribute =
         rut_mesh_find_attribute(mesh->rut_mesh, "cg_position_in");
     rut_mesh_vertex_callback_t measure_callback;
-    rut_property_context_t *prop_ctx;
+    rig_property_context_t *prop_ctx;
 
     c_return_if_fail(attribute->is_buffered);
 
@@ -357,12 +357,12 @@ rig_mesh_update_bounds(rig_mesh_t *mesh)
                             NULL);
 
     prop_ctx = rig_component_props_get_property_context(&mesh->component);
-    rut_property_dirty(prop_ctx, &mesh->properties[RIG_MESH_PROP_X_MIN]);
-    rut_property_dirty(prop_ctx, &mesh->properties[RIG_MESH_PROP_X_MAX]);
-    rut_property_dirty(prop_ctx, &mesh->properties[RIG_MESH_PROP_Y_MIN]);
-    rut_property_dirty(prop_ctx, &mesh->properties[RIG_MESH_PROP_Y_MAX]);
-    rut_property_dirty(prop_ctx, &mesh->properties[RIG_MESH_PROP_Z_MIN]);
-    rut_property_dirty(prop_ctx, &mesh->properties[RIG_MESH_PROP_Z_MAX]);
+    rig_property_dirty(prop_ctx, &mesh->properties[RIG_MESH_PROP_X_MIN]);
+    rig_property_dirty(prop_ctx, &mesh->properties[RIG_MESH_PROP_X_MAX]);
+    rig_property_dirty(prop_ctx, &mesh->properties[RIG_MESH_PROP_Y_MIN]);
+    rig_property_dirty(prop_ctx, &mesh->properties[RIG_MESH_PROP_Y_MAX]);
+    rig_property_dirty(prop_ctx, &mesh->properties[RIG_MESH_PROP_Z_MIN]);
+    rig_property_dirty(prop_ctx, &mesh->properties[RIG_MESH_PROP_Z_MAX]);
 }
 
 void
@@ -524,7 +524,7 @@ void
 rig_mesh_set_n_vertices(rut_object_t *obj, int n_vertices)
 {
     rig_mesh_t *mesh = obj;
-    rut_property_context_t *prop_ctx;
+    rig_property_context_t *prop_ctx;
 
     if (mesh->rut_mesh->n_vertices == n_vertices)
         return;
@@ -532,7 +532,7 @@ rig_mesh_set_n_vertices(rut_object_t *obj, int n_vertices)
     mesh->rut_mesh->n_vertices = n_vertices;
 
     prop_ctx = rig_component_props_get_property_context(&mesh->component);
-    rut_property_dirty(prop_ctx, &mesh->properties[RIG_MESH_PROP_N_VERTICES]);
+    rig_property_dirty(prop_ctx, &mesh->properties[RIG_MESH_PROP_N_VERTICES]);
 }
 
 int
@@ -546,7 +546,7 @@ void
 rig_mesh_set_vertices_mode(rut_object_t *obj, int mode)
 {
     rig_mesh_t *mesh = obj;
-    rut_property_context_t *prop_ctx;
+    rig_property_context_t *prop_ctx;
 
     if (mesh->rut_mesh->mode == mode)
         return;
@@ -554,7 +554,7 @@ rig_mesh_set_vertices_mode(rut_object_t *obj, int mode)
     mesh->rut_mesh->mode = mode;
 
     prop_ctx = rig_component_props_get_property_context(&mesh->component);
-    rut_property_dirty(prop_ctx, &mesh->properties[RIG_MESH_PROP_VERTICES_MODE]);
+    rig_property_dirty(prop_ctx, &mesh->properties[RIG_MESH_PROP_VERTICES_MODE]);
 }
 
 rut_object_t *
@@ -568,7 +568,7 @@ void
 rig_mesh_set_indices(rut_object_t *obj, rut_object_t *buffer)
 {
     rig_mesh_t *mesh = obj;
-    rut_property_context_t *prop_ctx;
+    rig_property_context_t *prop_ctx;
 
     if (mesh->rut_mesh->indices_buffer == buffer)
         return;
@@ -576,7 +576,7 @@ rig_mesh_set_indices(rut_object_t *obj, rut_object_t *buffer)
     mesh->rut_mesh->indices_buffer = buffer;
 
     prop_ctx = rig_component_props_get_property_context(&mesh->component);
-    rut_property_dirty(prop_ctx, &mesh->properties[RIG_MESH_PROP_INDICES]);
+    rig_property_dirty(prop_ctx, &mesh->properties[RIG_MESH_PROP_INDICES]);
 }
 
 int
@@ -590,7 +590,7 @@ void
 rig_mesh_set_indices_type(rut_object_t *obj, int indices_type)
 {
     rig_mesh_t *mesh = obj;
-    rut_property_context_t *prop_ctx;
+    rig_property_context_t *prop_ctx;
 
     if (mesh->rut_mesh->indices_type == indices_type)
         return;
@@ -598,7 +598,7 @@ rig_mesh_set_indices_type(rut_object_t *obj, int indices_type)
     mesh->rut_mesh->indices_type = indices_type;
 
     prop_ctx = rig_component_props_get_property_context(&mesh->component);
-    rut_property_dirty(prop_ctx, &mesh->properties[RIG_MESH_PROP_INDICES_TYPE]);
+    rig_property_dirty(prop_ctx, &mesh->properties[RIG_MESH_PROP_INDICES_TYPE]);
 }
 
 int
@@ -612,7 +612,7 @@ void
 rig_mesh_set_n_indices(rut_object_t *obj, int n_indices)
 {
     rig_mesh_t *mesh = obj;
-    rut_property_context_t *prop_ctx;
+    rig_property_context_t *prop_ctx;
 
     if (mesh->rut_mesh->n_indices == n_indices)
         return;
@@ -620,7 +620,7 @@ rig_mesh_set_n_indices(rut_object_t *obj, int n_indices)
     mesh->rut_mesh->n_indices = n_indices;
 
     prop_ctx = rig_component_props_get_property_context(&mesh->component);
-    rut_property_dirty(prop_ctx, &mesh->properties[RIG_MESH_PROP_N_INDICES]);
+    rig_property_dirty(prop_ctx, &mesh->properties[RIG_MESH_PROP_N_INDICES]);
 }
 
 rut_mesh_t *

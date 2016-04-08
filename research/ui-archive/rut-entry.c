@@ -64,10 +64,10 @@ struct _rut_entry_t {
     float height;
 
     rut_introspectable_props_t introspectable;
-    rut_property_t properties[RUT_ENTRY_N_PROPS];
+    rig_property_t properties[RUT_ENTRY_N_PROPS];
 };
 
-static rut_property_spec_t _rut_entry_prop_specs[] = {
+static rig_property_spec_t _rut_entry_prop_specs[] = {
     { .name = "width",
       .flags = RUT_PROPERTY_FLAG_READWRITE,
       .type = RUT_PROPERTY_TYPE_FLOAT,
@@ -181,9 +181,9 @@ rut_entry_set_size(rut_object_t *object, float width, float height)
 
     allocate(entry);
 
-    rut_property_dirty(&entry->shell->property_ctx,
+    rig_property_dirty(&entry->shell->property_ctx,
                        &entry->properties[RUT_ENTRY_PROP_WIDTH]);
-    rut_property_dirty(&entry->shell->property_ctx,
+    rig_property_dirty(&entry->shell->property_ctx,
                        &entry->properties[RUT_ENTRY_PROP_HEIGHT]);
 }
 

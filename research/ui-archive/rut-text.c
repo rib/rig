@@ -99,7 +99,7 @@ static const uint32_t default_selection_color = 0x000000ff;
 static const uint32_t default_text_color = 0x000000ff;
 static const uint32_t default_selected_text_color = 0xffffffff;
 
-static rut_property_spec_t _rut_text_prop_specs[] = {
+static rig_property_spec_t _rut_text_prop_specs[] = {
     /**
      * rut_text_t:buffer:
      *
@@ -627,7 +627,7 @@ rut_text_clear_selection(rut_text_t *text)
 {
     if (text->selection_bound != text->position) {
         text->selection_bound = text->position;
-        rut_property_dirty(&text->shell->property_ctx,
+        rig_property_dirty(&text->shell->property_ctx,
                            &text->properties[RUT_TEXT_PROP_SELECTION_BOUND]);
         rut_shell_queue_redraw(text->shell);
     }
@@ -879,7 +879,7 @@ rut_text_set_font_description_internal(rut_text_t *text,
     if (rut_text_buffer_get_length(get_buffer(text)) != 0)
         rut_text_notify_preferred_size_changed(text);
 
-    rut_property_dirty(&text->shell->property_ctx,
+    rig_property_dirty(&text->shell->property_ctx,
                        &text->properties[RUT_TEXT_PROP_FONT_DESCRIPTION]);
 }
 
@@ -1265,11 +1265,11 @@ rut_text_delete_selection(rut_text_t *text)
 
     /* Not required to be guarded by g_object_freeze/thaw_notify */
     if (text->position != old_position)
-        rut_property_dirty(&text->shell->property_ctx,
+        rig_property_dirty(&text->shell->property_ctx,
                            &text->properties[RUT_TEXT_PROP_POSITION]);
 
     if (text->selection_bound != old_selection)
-        rut_property_dirty(&text->shell->property_ctx,
+        rig_property_dirty(&text->shell->property_ctx,
                            &text->properties[RUT_TEXT_PROP_SELECTION_BOUND]);
 
     return true;
@@ -2750,9 +2750,9 @@ _rut_text_set_size(rut_object_t *object, float width, float height)
     pick_vertices[5].x = width;
     pick_vertices[5].y = 0;
 
-    rut_property_dirty(&text->shell->property_ctx,
+    rig_property_dirty(&text->shell->property_ctx,
                        &text->properties[RUT_TEXT_PROP_WIDTH]);
-    rut_property_dirty(&text->shell->property_ctx,
+    rig_property_dirty(&text->shell->property_ctx,
                        &text->properties[RUT_TEXT_PROP_HEIGHT]);
 }
 
@@ -3129,7 +3129,7 @@ buffer_deleted_text(rut_text_buffer_t *buffer,
 }
 
 static void
-text_property_binding_cb(rut_property_t *target_property,
+text_property_binding_cb(rig_property_t *target_property,
                          void *user_data)
 {
     rut_text_t *text = user_data;
@@ -3141,26 +3141,26 @@ text_property_binding_cb(rut_property_t *target_property,
     rut_closure_list_invoke(
         &text->text_changed_cb_list, rut_text_changed_callback_t, text);
 
-    rut_property_dirty(&text->shell->property_ctx,
+    rig_property_dirty(&text->shell->property_ctx,
                        &text->properties[RUT_TEXT_PROP_TEXT]);
 
     rut_shell_queue_redraw(text->shell);
 }
 
 static void
-max_length_property_binding_cb(rut_property_t *target_property,
+max_length_property_binding_cb(rig_property_t *target_property,
                                void *user_data)
 {
     rut_text_t *text = user_data;
-    rut_property_dirty(&text->shell->property_ctx,
+    rig_property_dirty(&text->shell->property_ctx,
                        &text->properties[RUT_TEXT_PROP_MAX_LENGTH]);
 }
 
 static void
 buffer_connect_signals(rut_text_t *text)
 {
-    rut_property_t *buffer_text_prop;
-    rut_property_t *buffer_max_len_prop;
+    rig_property_t *buffer_text_prop;
+    rig_property_t *buffer_max_len_prop;
 
     text->buffer_insert_text_closure = rut_text_buffer_add_insert_text_callback(
         text->buffer, buffer_inserted_text, text, NULL);
@@ -3169,14 +3169,14 @@ buffer_connect_signals(rut_text_t *text)
         text->buffer, buffer_deleted_text, text, NULL);
 
     buffer_text_prop = rut_introspectable_lookup_property(text->buffer, "text");
-    rut_property_set_binding(&text->properties[RUT_TEXT_PROP_TEXT],
+    rig_property_set_binding(&text->properties[RUT_TEXT_PROP_TEXT],
                              text_property_binding_cb,
                              text,
                              buffer_text_prop,
                              NULL);
     buffer_max_len_prop =
         rut_introspectable_lookup_property(text->buffer, "max-length");
-    rut_property_set_binding(&text->properties[RUT_TEXT_PROP_MAX_LENGTH],
+    rig_property_set_binding(&text->properties[RUT_TEXT_PROP_MAX_LENGTH],
                              max_length_property_binding_cb,
                              text,
                              buffer_max_len_prop,
@@ -3189,9 +3189,9 @@ buffer_disconnect_signals(rut_text_t *text)
     rut_closure_disconnect_FIXME(text->buffer_insert_text_closure);
     rut_closure_disconnect_FIXME(text->buffer_delete_text_closure);
 
-    rut_property_set_binding(
+    rig_property_set_binding(
         &text->properties[RUT_TEXT_PROP_TEXT], NULL, NULL, NULL);
-    rut_property_set_binding(
+    rig_property_set_binding(
         &text->properties[RUT_TEXT_PROP_MAX_LENGTH], NULL, NULL, NULL);
 }
 
@@ -3228,11 +3228,11 @@ rut_text_set_buffer(rut_object_t *obj, rut_object_t *buffer)
     if (text->buffer)
         buffer_connect_signals(text);
 
-    rut_property_dirty(&text->shell->property_ctx,
+    rig_property_dirty(&text->shell->property_ctx,
                        &text->properties[RUT_TEXT_PROP_BUFFER]);
-    rut_property_dirty(&text->shell->property_ctx,
+    rig_property_dirty(&text->shell->property_ctx,
                        &text->properties[RUT_TEXT_PROP_TEXT]);
-    rut_property_dirty(&text->shell->property_ctx,
+    rig_property_dirty(&text->shell->property_ctx,
                        &text->properties[RUT_TEXT_PROP_MAX_LENGTH]);
 }
 
@@ -3257,7 +3257,7 @@ rut_text_set_editable(rut_object_t *obj, bool editable)
 
         rut_shell_queue_redraw(text->shell);
 
-        rut_property_dirty(&text->shell->property_ctx,
+        rig_property_dirty(&text->shell->property_ctx,
                            &text->properties[RUT_TEXT_PROP_EDITABLE]);
     }
 }
@@ -3282,7 +3282,7 @@ rut_text_set_selectable(rut_object_t *obj, bool selectable)
 
         rut_shell_queue_redraw(text->shell);
 
-        rut_property_dirty(&text->shell->property_ctx,
+        rig_property_dirty(&text->shell->property_ctx,
                            &text->properties[RUT_TEXT_PROP_SELECTABLE]);
     }
 }
@@ -3305,7 +3305,7 @@ rut_text_set_activatable(rut_object_t *obj, bool activatable)
 
         rut_shell_queue_redraw(text->shell);
 
-        rut_property_dirty(&text->shell->property_ctx,
+        rig_property_dirty(&text->shell->property_ctx,
                            &text->properties[RUT_TEXT_PROP_ACTIVATABLE]);
     }
 }
@@ -3342,7 +3342,7 @@ rut_text_set_cursor_visible(rut_object_t *obj, bool cursor_visible)
 
         rut_shell_queue_redraw(text->shell);
 
-        rut_property_dirty(&text->shell->property_ctx,
+        rig_property_dirty(&text->shell->property_ctx,
                            &text->properties[RUT_TEXT_PROP_CURSOR_VISIBLE]);
     }
 }
@@ -3368,9 +3368,9 @@ rut_text_set_cursor_color(rut_object_t *obj, const cg_color_t *color)
 
     rut_shell_queue_redraw(text->shell);
 
-    rut_property_dirty(&text->shell->property_ctx,
+    rig_property_dirty(&text->shell->property_ctx,
                        &text->properties[RUT_TEXT_PROP_CURSOR_COLOR]);
-    rut_property_dirty(&text->shell->property_ctx,
+    rig_property_dirty(&text->shell->property_ctx,
                        &text->properties[RUT_TEXT_PROP_CURSOR_COLOR_SET]);
 }
 
@@ -3462,7 +3462,7 @@ rut_text_set_selection_bound(rut_object_t *obj, int selection_bound)
 
         rut_shell_queue_redraw(text->shell);
 
-        rut_property_dirty(&text->shell->property_ctx,
+        rig_property_dirty(&text->shell->property_ctx,
                            &text->properties[RUT_TEXT_PROP_SELECTION_BOUND]);
     }
 }
@@ -3488,9 +3488,9 @@ rut_text_set_selection_color(rut_object_t *obj, const cg_color_t *color)
 
     rut_shell_queue_redraw(text->shell);
 
-    rut_property_dirty(&text->shell->property_ctx,
+    rig_property_dirty(&text->shell->property_ctx,
                        &text->properties[RUT_TEXT_PROP_SELECTION_COLOR]);
-    rut_property_dirty(&text->shell->property_ctx,
+    rig_property_dirty(&text->shell->property_ctx,
                        &text->properties[RUT_TEXT_PROP_SELECTION_COLOR_SET]);
 }
 
@@ -3533,9 +3533,9 @@ rut_text_set_selected_text_color(rut_object_t *obj,
 
     rut_shell_queue_redraw(text->shell);
 
-    rut_property_dirty(&text->shell->property_ctx,
+    rig_property_dirty(&text->shell->property_ctx,
                        &text->properties[RUT_TEXT_PROP_SELECTED_TEXT_COLOR]);
-    rut_property_dirty(
+    rig_property_dirty(
         &text->shell->property_ctx,
         &text->properties[RUT_TEXT_PROP_SELECTED_TEXT_COLOR_SET]);
 }
@@ -3628,7 +3628,7 @@ rut_text_set_font_name(rut_object_t *obj, const char *font_name)
     rut_text_set_font_description_internal(text, desc);
     text->is_default_font = is_default_font;
 
-    rut_property_dirty(&text->shell->property_ctx,
+    rig_property_dirty(&text->shell->property_ctx,
                        &text->properties[RUT_TEXT_PROP_FONT_NAME]);
 
 out:
@@ -3664,7 +3664,7 @@ rut_text_set_use_markup_internal(rut_text_t *text,
             text->markup_attrs = NULL;
         }
 
-        rut_property_dirty(&text->shell->property_ctx,
+        rig_property_dirty(&text->shell->property_ctx,
                            &text->properties[RUT_TEXT_PROP_USE_MARKUP]);
     }
 }
@@ -3710,7 +3710,7 @@ rut_text_set_hint_text(rut_object_t *obj, const char *hint_str)
         (text->buffer == NULL || rut_text_buffer_get_length(text->buffer) == 0))
         rut_shell_queue_redraw(text->shell);
 
-    rut_property_dirty(&text->shell->property_ctx,
+    rig_property_dirty(&text->shell->property_ctx,
                        &text->properties[RUT_TEXT_PROP_HINT_TEXT]);
 }
 
@@ -3748,7 +3748,7 @@ rut_text_set_color(rut_object_t *obj, const cg_color_t *color)
 
     rut_shell_queue_redraw(text->shell);
 
-    rut_property_dirty(&text->shell->property_ctx,
+    rig_property_dirty(&text->shell->property_ctx,
                        &text->properties[RUT_TEXT_PROP_COLOR]);
 }
 
@@ -3782,7 +3782,7 @@ rut_text_set_ellipsize(rut_text_t *text, PangoEllipsizeMode mode)
 
         rut_text_notify_preferred_size_changed(text);
 
-        rut_property_dirty(&text->shell->property_ctx,
+        rig_property_dirty(&text->shell->property_ctx,
                            &text->properties[RUT_TEXT_PROP_ELLIPSIZE]);
     }
 }
@@ -3813,7 +3813,7 @@ rut_text_set_line_wrap(rut_object_t *obj, bool line_wrap)
 
         rut_text_notify_preferred_size_changed(text);
 
-        rut_property_dirty(&text->shell->property_ctx,
+        rig_property_dirty(&text->shell->property_ctx,
                            &text->properties[RUT_TEXT_PROP_LINE_WRAP]);
     }
 }
@@ -3828,7 +3828,7 @@ rut_text_set_line_wrap_mode(rut_text_t *text, PangoWrapMode wrap_mode)
 
         rut_text_notify_preferred_size_changed(text);
 
-        rut_property_dirty(&text->shell->property_ctx,
+        rig_property_dirty(&text->shell->property_ctx,
                            &text->properties[RUT_TEXT_PROP_LINE_WRAP_MODE]);
     }
 }
@@ -3859,7 +3859,7 @@ rut_text_set_attributes(rut_text_t *text, PangoAttrList *attrs)
 
     rut_text_dirty_cache(text);
 
-    rut_property_dirty(&text->shell->property_ctx,
+    rig_property_dirty(&text->shell->property_ctx,
                        &text->properties[RUT_TEXT_PROP_ATTRIBUTES]);
 
     rut_text_notify_preferred_size_changed(text);
@@ -3881,7 +3881,7 @@ rut_text_set_line_alignment(rut_text_t *text, PangoAlignment alignment)
 
         rut_text_notify_preferred_size_changed(text);
 
-        rut_property_dirty(&text->shell->property_ctx,
+        rig_property_dirty(&text->shell->property_ctx,
                            &text->properties[RUT_TEXT_PROP_LINE_ALIGNMENT]);
     }
 }
@@ -3930,7 +3930,7 @@ rut_text_set_justify(rut_object_t *obj, bool justify)
 
         rut_text_notify_preferred_size_changed(text);
 
-        rut_property_dirty(&text->shell->property_ctx,
+        rig_property_dirty(&text->shell->property_ctx,
                            &text->properties[RUT_TEXT_PROP_JUSTIFY]);
     }
 }
@@ -3973,7 +3973,7 @@ rut_text_set_cursor_position(rut_object_t *obj, int position)
 
     rut_shell_queue_redraw(text->shell);
 
-    rut_property_dirty(&text->shell->property_ctx,
+    rig_property_dirty(&text->shell->property_ctx,
                        &text->properties[RUT_TEXT_PROP_POSITION]);
 }
 
@@ -3990,7 +3990,7 @@ rut_text_set_cursor_size(rut_object_t *obj, int size)
 
         rut_shell_queue_redraw(text->shell);
 
-        rut_property_dirty(&text->shell->property_ctx,
+        rig_property_dirty(&text->shell->property_ctx,
                            &text->properties[RUT_TEXT_PROP_CURSOR_SIZE]);
     }
 }
@@ -4015,7 +4015,7 @@ rut_text_set_password_char(rut_object_t *obj, uint32_t wc)
 
         rut_text_notify_preferred_size_changed(text);
 
-        rut_property_dirty(&text->shell->property_ctx,
+        rig_property_dirty(&text->shell->property_ctx,
                            &text->properties[RUT_TEXT_PROP_PASSWORD_CHAR]);
     }
 }
@@ -4115,14 +4115,14 @@ rut_text_set_single_line_mode(rut_object_t *obj, bool single_line)
         if (text->single_line_mode) {
             text->activatable = true;
 
-            rut_property_dirty(&text->shell->property_ctx,
+            rig_property_dirty(&text->shell->property_ctx,
                                &text->properties[RUT_TEXT_PROP_ACTIVATABLE]);
         }
 
         rut_text_dirty_cache(text);
         rut_text_notify_preferred_size_changed(text);
 
-        rut_property_dirty(&text->shell->property_ctx,
+        rig_property_dirty(&text->shell->property_ctx,
                            &text->properties[RUT_TEXT_PROP_SINGLE_LINE_MODE]);
     }
 }

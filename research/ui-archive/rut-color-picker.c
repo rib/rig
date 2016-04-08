@@ -35,7 +35,7 @@
 #include "rut-shell.h"
 #include "rut-interfaces.h"
 #include "rut-paintable.h"
-#include "rut-property.h"
+#include "rig-property.h"
 #include "rut-input-region.h"
 #include "rut-color-picker.h"
 #include "rut-introspectable.h"
@@ -62,7 +62,7 @@ struct _rut_color_picker_t {
     rut_paintable_props_t paintable;
 
     rut_introspectable_props_t introspectable;
-    rut_property_t properties[RUT_COLOR_PICKER_N_PROPS];
+    rig_property_t properties[RUT_COLOR_PICKER_N_PROPS];
 
     bool hs_pipeline_dirty;
     cg_pipeline_t *hs_pipeline;
@@ -115,7 +115,7 @@ rut_type_t rut_color_picker_type;
  * nicely anti-aliased */
 #define RUT_COLOR_PICKER_HS_BLEND_EDGE 0.98f
 
-static rut_property_spec_t _rut_color_picker_prop_specs[] = {
+static rig_property_spec_t _rut_color_picker_prop_specs[] = {
     { .name = "color",
       .flags = RUT_PROPERTY_FLAG_READWRITE,
       .type = RUT_PROPERTY_TYPE_COLOR,
@@ -627,7 +627,7 @@ set_color_hsv(rut_color_picker_t *picker, const float hsv[3])
 {
     hsv_to_rgb(hsv, &picker->color.red);
 
-    rut_property_dirty(&picker->shell->property_ctx,
+    rig_property_dirty(&picker->shell->property_ctx,
                        &picker->properties[RUT_COLOR_PICKER_PROP_COLOR]);
 
     rut_shell_queue_redraw(picker->shell);
@@ -830,7 +830,7 @@ rut_color_picker_set_color(rut_object_t *obj, const cg_color_t *color)
         set_hue_saturation(picker, hsv[0], hsv[1]);
         set_value(picker, hsv[2]);
 
-        rut_property_dirty(&picker->shell->property_ctx,
+        rig_property_dirty(&picker->shell->property_ctx,
                            &picker->properties[RUT_COLOR_PICKER_PROP_COLOR]);
 
         rut_shell_queue_redraw(picker->shell);

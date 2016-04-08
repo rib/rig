@@ -36,7 +36,7 @@
 #include "rig-source.h"
 #include "rig-pointalism-grid.h"
 
-static rut_property_spec_t _rig_material_prop_specs[] = {
+static rig_property_spec_t _rig_material_prop_specs[] = {
     { .name = "visible",
       .type = RUT_PROPERTY_TYPE_BOOLEAN,
       .getter.boolean_type = rig_material_get_visible,
@@ -384,13 +384,13 @@ void
 rig_material_set_ambient(rut_object_t *obj, const cg_color_t *color)
 {
     rig_material_t *material = obj;
-    rut_property_context_t *prop_ctx;
+    rig_property_context_t *prop_ctx;
 
     material->ambient = *color;
     material->uniforms_age++;
 
     prop_ctx = rig_component_props_get_property_context(&material->component);
-    rut_property_dirty(prop_ctx, &material->properties[RIG_MATERIAL_PROP_AMBIENT]);
+    rig_property_dirty(prop_ctx, &material->properties[RIG_MATERIAL_PROP_AMBIENT]);
 }
 
 const cg_color_t *
@@ -405,13 +405,13 @@ void
 rig_material_set_diffuse(rut_object_t *obj, const cg_color_t *color)
 {
     rig_material_t *material = obj;
-    rut_property_context_t *prop_ctx;
+    rig_property_context_t *prop_ctx;
 
     material->diffuse = *color;
     material->uniforms_age++;
 
     prop_ctx = rig_component_props_get_property_context(&material->component);
-    rut_property_dirty(prop_ctx, &material->properties[RIG_MATERIAL_PROP_DIFFUSE]);
+    rig_property_dirty(prop_ctx, &material->properties[RIG_MATERIAL_PROP_DIFFUSE]);
 }
 
 const cg_color_t *
@@ -426,13 +426,13 @@ void
 rig_material_set_specular(rut_object_t *obj, const cg_color_t *color)
 {
     rig_material_t *material = obj;
-    rut_property_context_t *prop_ctx;
+    rig_property_context_t *prop_ctx;
 
     material->specular = *color;
     material->uniforms_age++;
 
     prop_ctx = rig_component_props_get_property_context(&material->component);
-    rut_property_dirty(prop_ctx, &material->properties[RIG_MATERIAL_PROP_SPECULAR]);
+    rig_property_dirty(prop_ctx, &material->properties[RIG_MATERIAL_PROP_SPECULAR]);
 }
 
 const cg_color_t *
@@ -447,13 +447,13 @@ void
 rig_material_set_shininess(rut_object_t *obj, float shininess)
 {
     rig_material_t *material = obj;
-    rut_property_context_t *prop_ctx;
+    rig_property_context_t *prop_ctx;
 
     material->shininess = shininess;
     material->uniforms_age++;
 
     prop_ctx = rig_component_props_get_property_context(&material->component);
-    rut_property_dirty(prop_ctx, &material->properties[RIG_MATERIAL_PROP_SPECULAR]);
+    rig_property_dirty(prop_ctx, &material->properties[RIG_MATERIAL_PROP_SPECULAR]);
 }
 
 float
@@ -476,7 +476,7 @@ void
 rig_material_set_alpha_mask_threshold(rut_object_t *obj, float threshold)
 {
     rig_material_t *material = obj;
-    rut_property_context_t *prop_ctx;
+    rig_property_context_t *prop_ctx;
 
     if (material->alpha_mask_threshold == threshold)
         return;
@@ -484,7 +484,7 @@ rig_material_set_alpha_mask_threshold(rut_object_t *obj, float threshold)
     material->alpha_mask_threshold = threshold;
 
     prop_ctx = rig_component_props_get_property_context(&material->component);
-    rut_property_dirty(prop_ctx, &material->properties[RIG_MATERIAL_PROP_ALPHA_MASK_THRESHOLD]);
+    rig_property_dirty(prop_ctx, &material->properties[RIG_MATERIAL_PROP_ALPHA_MASK_THRESHOLD]);
 }
 
 void
@@ -565,7 +565,7 @@ void
 rig_material_set_cast_shadow(rut_object_t *obj, bool cast_shadow)
 {
     rig_material_t *material = obj;
-    rut_property_context_t *prop_ctx;
+    rig_property_context_t *prop_ctx;
 
     if (material->cast_shadow == cast_shadow)
         return;
@@ -573,7 +573,7 @@ rig_material_set_cast_shadow(rut_object_t *obj, bool cast_shadow)
     material->cast_shadow = cast_shadow;
 
     prop_ctx = rig_component_props_get_property_context(&material->component);
-    rut_property_dirty(prop_ctx,
+    rig_property_dirty(prop_ctx,
                        &material->properties[RIG_MATERIAL_PROP_CAST_SHADOW]);
 }
 
@@ -589,7 +589,7 @@ void
 rig_material_set_receive_shadow(rut_object_t *obj, bool receive_shadow)
 {
     rig_material_t *material = obj;
-    rut_property_context_t *prop_ctx;
+    rig_property_context_t *prop_ctx;
 
     if (material->receive_shadow == receive_shadow)
         return;
@@ -597,7 +597,7 @@ rig_material_set_receive_shadow(rut_object_t *obj, bool receive_shadow)
     material->receive_shadow = receive_shadow;
 
     prop_ctx = rig_component_props_get_property_context(&material->component);
-    rut_property_dirty(prop_ctx,
+    rig_property_dirty(prop_ctx,
                        &material->properties[RIG_MATERIAL_PROP_RECEIVE_SHADOW]);
 
     if (material->component.parented)
@@ -616,7 +616,7 @@ void
 rig_material_set_visible(rut_object_t *obj, bool visible)
 {
     rig_material_t *material = obj;
-    rut_property_context_t *prop_ctx;
+    rig_property_context_t *prop_ctx;
 
     if (material->visible == visible)
         return;
@@ -624,6 +624,6 @@ rig_material_set_visible(rut_object_t *obj, bool visible)
     material->visible = visible;
 
     prop_ctx = rig_component_props_get_property_context(&material->component);
-    rut_property_dirty(prop_ctx,
+    rig_property_dirty(prop_ctx,
                        &material->properties[RIG_MATERIAL_PROP_VISIBLE]);
 }

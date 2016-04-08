@@ -117,7 +117,7 @@ struct _rig_controller_object_view_t {
 
     rut_object_t *object;
 
-    rut_property_t *label_property;
+    rig_property_t *label_property;
 
     c_llist_t *properties;
 
@@ -149,9 +149,9 @@ typedef struct _rig_path_view_t {
     rig_path_t *path;
     rut_closure_t *path_operation_closure;
 
-    rut_property_closure_t *scale_offset_prop_closure;
-    rut_property_closure_t *scale_prop_closure;
-    rut_property_closure_t *scale_len_prop_closure;
+    rig_property_closure_t *scale_offset_prop_closure;
+    rig_property_closure_t *scale_prop_closure;
+    rig_property_closure_t *scale_len_prop_closure;
 
     rut_transform_t *markers;
 
@@ -178,7 +178,7 @@ typedef struct _rig_nodes_selection_t rig_nodes_selection_t;
 
 typedef struct _node_group_t {
     rig_nodes_selection_t *selection;
-    const rut_property_spec_t *prop_spec;
+    const rig_property_spec_t *prop_spec;
     rig_path_t *path;
     c_llist_t *nodes;
 } node_group_t;
@@ -978,7 +978,7 @@ _rig_nodes_selection_delete(rut_object_t *object)
                 rig_node_t *node = l2->data;
                 node_mapping_t *mapping =
                     c_hash_table_lookup(selection->node_map, node);
-                rut_property_t *property =
+                rig_property_t *property =
                     mapping->marker->path_view->prop_view->prop_data->property;
 
                 next2 = l2->next;
@@ -1084,7 +1084,7 @@ _rig_nodes_selection_new(rig_controller_view_t *view)
 typedef cg_vertex_p2c4_t rig_controller_view_dot_vertex_t;
 
 static void rig_controller_view_property_removed(rig_controller_view_t *view,
-                                                 rut_property_t *property);
+                                                 rig_property_t *property);
 
 #if 0
 static rut_input_event_status_t
@@ -1098,9 +1098,9 @@ _rig_path_view_free(void *object)
     rig_path_view_t *path_view = object;
     rig_controller_view_t *view = path_view->prop_view->object->view;
 
-    rut_property_closure_destroy(path_view->scale_offset_prop_closure);
-    rut_property_closure_destroy(path_view->scale_prop_closure);
-    rut_property_closure_destroy(path_view->scale_len_prop_closure);
+    rig_property_closure_destroy(path_view->scale_offset_prop_closure);
+    rig_property_closure_destroy(path_view->scale_prop_closure);
+    rig_property_closure_destroy(path_view->scale_len_prop_closure);
 
     rut_closure_list_disconnect_all_FIXME(&path_view->preferred_size_cb_list);
 
@@ -1444,7 +1444,7 @@ path_operation_cb(rig_path_t *path,
 
 /* Called if the ::offset or ::scale change for view->scale... */
 static void
-scale_changed_cb(rut_property_t *property, void *user_data)
+scale_changed_cb(rig_property_t *property, void *user_data)
 {
     _rig_path_view_preferred_size_changed(user_data);
 }
@@ -1560,9 +1560,9 @@ rig_path_view_new(rig_controller_property_view_t *prop_view, rig_path_t *path)
     rig_path_view_t *path_view = rut_object_alloc0(
         rig_path_view_t, &rig_path_view_type, _rig_path_view_init_type);
     rig_controller_view_t *view = prop_view->object->view;
-    rut_property_t *offset_prop;
-    rut_property_t *scale_prop;
-    rut_property_t *len_prop;
+    rig_property_t *offset_prop;
+    rig_property_t *scale_prop;
+    rig_property_t *len_prop;
 
     rut_graphable_init(path_view);
     rut_paintable_init(path_view);
@@ -1598,15 +1598,15 @@ rig_path_view_new(rig_controller_property_view_t *prop_view, rig_path_t *path)
 
     offset_prop = rut_introspectable_lookup_property(view->scale, "offset");
     path_view->scale_offset_prop_closure =
-        rut_property_connect_callback(offset_prop, scale_changed_cb, path_view);
+        rig_property_connect_callback(offset_prop, scale_changed_cb, path_view);
 
     scale_prop = rut_introspectable_lookup_property(view->scale, "user_scale");
     path_view->scale_prop_closure =
-        rut_property_connect_callback(scale_prop, scale_changed_cb, path_view);
+        rig_property_connect_callback(scale_prop, scale_changed_cb, path_view);
 
     len_prop = rut_introspectable_lookup_property(view->scale, "length");
     path_view->scale_len_prop_closure =
-        rut_property_connect_callback(len_prop, scale_changed_cb, path_view);
+        rig_property_connect_callback(len_prop, scale_changed_cb, path_view);
 
     return path_view;
 }
@@ -1911,8 +1911,8 @@ setup_label_column(rig_controller_property_view_t *prop_view,
 }
 
 static void
-const_property_changed_cb(rut_property_t *primary_target_prop,
-                          rut_property_t *source_prop,
+const_property_changed_cb(rig_property_t *primary_target_prop,
+                          rig_property_t *source_prop,
                           void *user_data)
 {
 }
@@ -1973,13 +1973,13 @@ update_method_control(rig_controller_property_view_t *prop_view)
 }
 
 static void
-method_drop_down_change_cb(rut_property_t *value, void *user_data)
+method_drop_down_change_cb(rig_property_t *value, void *user_data)
 {
     rig_controller_property_view_t *prop_view = user_data;
     rig_controller_object_view_t *object_view = prop_view->object;
     rig_controller_view_t *view = object_view->view;
-    rut_property_t *property = prop_view->prop_data->property;
-    rig_controller_method_t method = rut_property_get_integer(value);
+    rig_property_t *property = prop_view->prop_data->property;
+    rig_controller_method_t method = rig_property_get_integer(value);
     rig_engine_t *engine = view->engine;
     rig_editor_t *editor = rig_engine_get_editor(engine);
     rig_undo_journal_t *subjournal;
@@ -2016,7 +2016,7 @@ method_drop_down_change_cb(rut_property_t *value, void *user_data)
         path->length == 0) {
         rut_boxed_t property_value;
 
-        rut_property_box(property, &property_value);
+        rig_property_box(property, &property_value);
 
         rig_controller_view_edit_property(view,
                                           false, /* mergable */
@@ -2044,7 +2044,7 @@ setup_method_drop_down(rig_controller_property_view_t *prop_view)
     };
     rut_bin_t *bin = rut_bin_new(shell);
     rut_drop_down_t *drop_down = rut_drop_down_new(shell);
-    rut_property_t *drop_property;
+    rig_property_t *drop_property;
 
     prop_view->method_drop_down = drop_down;
 
@@ -2070,7 +2070,7 @@ setup_method_drop_down(rig_controller_property_view_t *prop_view)
     rut_drop_down_set_value(drop_down, prop_view->prop_data->method);
 
     drop_property = rut_introspectable_lookup_property(drop_down, "value");
-    rut_property_connect_callback(
+    rig_property_connect_callback(
         drop_property, method_drop_down_change_cb, prop_view);
 }
 
@@ -2120,8 +2120,8 @@ rig_controller_property_view_new(rig_controller_view_t *view,
         rut_object_alloc0(rig_controller_property_view_t,
                           &rig_controller_property_view_type,
                           _rig_controller_property_view_init_type);
-    rut_property_t *property = prop_data->property;
-    const rut_property_spec_t *spec = property->spec;
+    rig_property_t *property = prop_data->property;
+    const rig_property_spec_t *spec = property->spec;
 
     rut_graphable_init(prop_view);
 
@@ -2157,8 +2157,8 @@ static int
 compare_properties_cb(rig_controller_property_view_t *prop_view_a,
                       rig_controller_property_view_t *prop_view_b)
 {
-    rut_property_t *prop_a = prop_view_a->prop_data->property;
-    rut_property_t *prop_b = prop_view_b->prop_data->property;
+    rig_property_t *prop_a = prop_view_a->prop_data->property;
+    rig_property_t *prop_b = prop_view_b->prop_data->property;
     rut_object_t *object_a = prop_a->object;
     rut_object_t *object_b = prop_b->object;
     const rut_type_t *object_type_a = rut_object_get_type(object_a);
@@ -2273,10 +2273,10 @@ compare_objects_cb(rig_controller_object_view_t *object_a,
                    rig_controller_object_view_t *object_b)
 {
     const char *label_a = object_a->label_property
-                          ? rut_property_get_text(object_a->label_property)
+                          ? rig_property_get_text(object_a->label_property)
                           : NULL;
     const char *label_b = object_b->label_property
-                          ? rut_property_get_text(object_b->label_property)
+                          ? rig_property_get_text(object_b->label_property)
                           : NULL;
 
     c_return_val_if_fail(
@@ -2313,7 +2313,7 @@ _rig_controller_view_sort_objects(rig_controller_view_t *view)
 }
 
 static void
-update_object_label_cb(rut_property_t *target_property,
+update_object_label_cb(rig_property_t *target_property,
                        void *user_data)
 {
     rig_controller_object_view_t *object_view = user_data;
@@ -2321,12 +2321,12 @@ update_object_label_cb(rut_property_t *target_property,
     const char *label = NULL;
 
     if (object_view->label_property)
-        label = rut_property_get_text(object_view->label_property);
+        label = rig_property_get_text(object_view->label_property);
 
     if (label == NULL || *label == 0)
         label = "Object";
 
-    rut_property_set_text(&view->shell->property_ctx, target_property, label);
+    rig_property_set_text(&view->shell->property_ctx, target_property, label);
 
     _rig_controller_view_sort_objects(view);
 }
@@ -2339,8 +2339,8 @@ rig_controller_object_view_new(rig_controller_view_t *view,
         rut_object_alloc0(rig_controller_object_view_t,
                           &rig_controller_object_view_type,
                           _rig_controller_object_view_init_type);
-    rut_property_t *fold_label_property;
-    rut_property_t *label_property;
+    rig_property_t *fold_label_property;
+    rig_property_t *label_property;
     // rut_box_layout_t *hbox;
     // rut_icon_toggle_t *eye_toggle;
 
@@ -2378,7 +2378,7 @@ rig_controller_object_view_new(rig_controller_view_t *view,
     if (label_property) {
         update_object_label_cb(fold_label_property, object_view);
 
-        rut_property_set_binding(fold_label_property,
+        rig_property_set_binding(fold_label_property,
                                  update_object_label_cb,
                                  object_view,
                                  label_property,
@@ -3035,7 +3035,7 @@ static void
 rig_controller_view_property_added(rig_controller_view_t *view,
                                    rig_controller_prop_data_t *prop_data)
 {
-    rut_property_t *property = prop_data->property;
+    rig_property_t *property = prop_data->property;
     rig_controller_object_view_t *object_view;
     rig_controller_property_view_t *prop_view;
     rut_object_t *object;
@@ -3076,7 +3076,7 @@ have_object:
 
 static rig_controller_property_view_t *
 rig_controller_view_find_property(rig_controller_view_t *view,
-                                  rut_property_t *property)
+                                  rig_property_t *property)
 {
     rut_object_t *object = property->object;
     c_llist_t *l, *l2;
@@ -3108,7 +3108,7 @@ rig_controller_view_find_property(rig_controller_view_t *view,
 
 static void
 rig_controller_view_property_removed(rig_controller_view_t *view,
-                                     rut_property_t *property)
+                                     rig_property_t *property)
 {
     rig_controller_property_view_t *prop_view =
         rig_controller_view_find_property(view, property);
@@ -3790,14 +3790,14 @@ controller_operation_cb(rig_controller_t *controller,
 }
 
 static void
-on_scale_focus_change_cb(rut_property_t *target_property,
+on_scale_focus_change_cb(rig_property_t *target_property,
                          void *user_data)
 {
     rig_controller_view_t *view = user_data;
 
     if (!rig_controller_get_running(view->controller)) {
         rig_controller_set_elapsed(view->controller,
-                                   rut_property_get_float(target_property));
+                                   rig_property_get_float(target_property));
     }
 }
 
@@ -3811,7 +3811,7 @@ void
 rig_controller_view_set_controller(rig_controller_view_t *view,
                                    rig_controller_t *controller)
 {
-    rut_property_t *scale_len_prop;
+    rig_property_t *scale_len_prop;
 
     if (view->controller == controller)
         return;
@@ -3824,14 +3824,14 @@ rig_controller_view_set_controller(rig_controller_view_t *view,
     scale_len_prop = rut_introspectable_lookup_property(view->scale, "length");
 
     if (view->controller) {
-        rut_property_t *controller_elapsed_prop =
+        rig_property_t *controller_elapsed_prop =
             rut_introspectable_lookup_property(view->controller, "elapsed");
 
         rig_controller_view_clear_object_views(view);
 
         rut_closure_disconnect_FIXME(view->controller_op_closure);
-        rut_property_remove_binding(scale_len_prop);
-        rut_property_remove_binding(controller_elapsed_prop);
+        rig_property_remove_binding(scale_len_prop);
+        rig_property_remove_binding(controller_elapsed_prop);
 #warning "FIXME: clean up more state when switching controllers"
 
         _rig_nodes_selection_cancel(view->nodes_selection);
@@ -3841,8 +3841,8 @@ rig_controller_view_set_controller(rig_controller_view_t *view,
 
     view->controller = controller;
     if (controller) {
-        rut_property_t *controller_len_prop;
-        rut_property_t *scale_focus_prop;
+        rig_property_t *controller_len_prop;
+        rig_property_t *scale_focus_prop;
 
         rut_object_ref(controller);
 
@@ -3858,13 +3858,13 @@ rig_controller_view_set_controller(rig_controller_view_t *view,
 
         controller_len_prop =
             rut_introspectable_lookup_property(controller, "length");
-        rut_property_set_copy_binding(&view->engine->shell->property_ctx,
+        rig_property_set_copy_binding(&view->engine->shell->property_ctx,
                                       scale_len_prop,
                                       controller_len_prop);
 
         scale_focus_prop =
             rut_introspectable_lookup_property(view->scale, "focus");
-        rut_property_connect_callback(
+        rig_property_connect_callback(
             scale_focus_prop, on_scale_focus_change_cb, view);
     }
 
@@ -3872,12 +3872,12 @@ rig_controller_view_set_controller(rig_controller_view_t *view,
 }
 
 static void
-controller_select_cb(rut_property_t *value_property,
+controller_select_cb(rig_property_t *value_property,
                      void *user_data)
 {
     rig_controller_view_t *view = user_data;
     rig_engine_t *engine = view->engine;
-    int value = rut_property_get_integer(value_property);
+    int value = rig_property_get_integer(value_property);
     rig_controller_t *controller =
         c_llist_nth_data(engine->edit_mode_ui->controllers, value);
     rig_controller_view_set_controller(view, controller);
@@ -3988,7 +3988,7 @@ rig_controller_view_new(rig_editor_t *editor,
     rut_icon_button_t *add_button;
     rut_icon_button_t *delete_button;
     rut_drop_down_t *controller_selector;
-    rut_property_t *value_prop;
+    rig_property_t *value_prop;
     rut_rectangle_t *bg;
     rut_text_t *label;
 
@@ -4024,7 +4024,7 @@ rig_controller_view_new(rig_editor_t *editor,
     view->controller_selector = controller_selector;
     value_prop =
         rut_introspectable_lookup_property(controller_selector, "value");
-    rut_property_connect_callback(value_prop, controller_select_cb, view);
+    rig_property_connect_callback(value_prop, controller_select_cb, view);
     rut_box_layout_add(selector_hbox, false, controller_selector);
     rut_object_unref(controller_selector);
 
@@ -4162,7 +4162,7 @@ rig_controller_view_get_focus(rig_controller_view_t *view)
 void
 rig_controller_view_edit_property(rig_controller_view_t *view,
                                   bool mergable,
-                                  rut_property_t *property,
+                                  rig_property_t *property,
                                   rut_boxed_t *boxed_value)
 {
     rig_engine_t *engine = view->engine;

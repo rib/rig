@@ -87,7 +87,7 @@ struct _rut_drop_down_t {
     rut_input_region_t *input_region;
 
     rut_introspectable_props_t introspectable;
-    rut_property_t properties[RUT_DROP_DOWN_N_PROPS];
+    rig_property_t properties[RUT_DROP_DOWN_N_PROPS];
 
     /* This is set to true whenever the primary mouse button is clicked
      * on the widget and we have the grab */
@@ -118,7 +118,7 @@ rut_type_t rut_drop_down_type;
 
 static void rut_drop_down_hide_selector(rut_drop_down_t *drop);
 
-static rut_property_spec_t _rut_drop_down_prop_specs[] = {
+static rig_property_spec_t _rut_drop_down_prop_specs[] = {
     { .name = "value",
       .flags = RUT_PROPERTY_FLAG_READWRITE,
       .type = RUT_PROPERTY_TYPE_INTEGER,
@@ -916,7 +916,7 @@ rut_drop_down_set_value(rut_object_t *obj, int value)
         if (drop->values[i].value == value) {
             drop->value_index = i;
 
-            rut_property_dirty(&drop->shell->property_ctx,
+            rig_property_dirty(&drop->shell->property_ctx,
                                &drop->properties[RUT_DROP_DOWN_PROP_VALUE]);
 
             rut_shell_queue_redraw(drop->shell);

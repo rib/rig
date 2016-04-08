@@ -79,10 +79,10 @@ struct _rut_box_layout_t {
     rut_graphable_props_t graphable;
 
     rut_introspectable_props_t introspectable;
-    rut_property_t properties[RUT_BOX_LAYOUT_N_PROPS];
+    rig_property_t properties[RUT_BOX_LAYOUT_N_PROPS];
 };
 
-static rut_property_spec_t _rut_box_layout_prop_specs[] = {
+static rig_property_spec_t _rut_box_layout_prop_specs[] = {
     { .name = "packing",
       .type = RUT_PROPERTY_TYPE_INTEGER,
       .getter.integer_type = (void *)rut_box_layout_get_packing,
@@ -614,7 +614,7 @@ rut_box_layout_set_packing(rut_object_t *obj,
 
     box->packing = packing;
 
-    rut_property_dirty(&box->shell->property_ctx,
+    rig_property_dirty(&box->shell->property_ctx,
                        &box->properties[RUT_BOX_LAYOUT_PROP_PACKING]);
 
     queue_allocation(box);
