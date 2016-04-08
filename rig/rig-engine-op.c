@@ -36,6 +36,8 @@
 
 #include "rig.pb-c.h"
 
+#include "components/rig-mesh.h"
+
 #define apply_id_to_object(ctx, id) ((void *)(uintptr_t)(id))
 #define op_object_to_id(serializer, obj) ((intptr_t)obj)
 
@@ -217,8 +219,6 @@ delete_entity_apply_real(rig_engine_op_apply_context_t *ctx,
     rig_entity_reap(entity, ctx->engine);
 
     rut_graphable_remove_child(entity);
-
-    ctx->unregister_id_cb(entity_id, ctx->user_data);
 }
 
 void
@@ -282,11 +282,8 @@ _map_op_delete_entity(rig_engine_op_map_context_t *ctx,
 static void
 add_entity_apply_real(rig_engine_op_apply_context_t *ctx,
                       rig_entity_t *parent,
-                      rig_entity_t *entity,
-                      uint64_t entity_id)
+                      rig_entity_t *entity)
 {
-    ctx->register_id_cb(entity, entity_id, ctx->user_data);
-
     if (parent) {
         rut_graphable_add_child(parent, entity);
     } else {
@@ -314,7 +311,6 @@ rig_engine_op_add_entity(rig_engine_t *engine,
 {
     rig_pb_serializer_t *serializer = engine->ops_serializer;
     Rig__Operation *pb_op;
-    uint64_t entity_id;
 
     c_return_if_fail(rut_graphable_get_parent(entity) == NULL);
 
@@ -330,8 +326,7 @@ rig_engine_op_add_entity(rig_engine_t *engine,
     pb_op->add_entity->entity =
         rig_pb_serialize_entity(serializer, NULL, entity);
 
-    entity_id = pb_op->add_entity->entity->id;
-    add_entity_apply_real(engine->apply_op_ctx, parent, entity, entity_id);
+    add_entity_apply_real(engine->apply_op_ctx, parent, entity);
 
     engine->log_op_callback(pb_op, engine->log_op_data);
 }
@@ -357,7 +352,7 @@ _apply_op_add_entity(rig_engine_op_apply_context_t *ctx,
     if (!entity)
         return false;
 
-    add_entity_apply_real(ctx, parent, entity, add_entity->entity->id);
+    add_entity_apply_real(ctx, parent, entity);
     rut_object_unref(entity);
 
     return true;
@@ -411,14 +406,6 @@ _map_op_add_entity(rig_engine_op_map_context_t *ctx,
     return true;
 }
 
-static void
-register_component_apply_real(rig_engine_op_apply_context_t *ctx,
-                              rut_object_t *component,
-                              uint64_t component_id)
-{
-    ctx->register_id_cb(component, component_id, ctx->user_data);
-}
-
 void
 rig_engine_op_register_component(rig_engine_t *engine,
                                  rut_object_t *component)
@@ -437,10 +424,6 @@ rig_engine_op_register_component(rig_engine_t *engine,
     pb_op->register_component->component =
         rig_pb_serialize_component(serializer, component);
 
-    register_component_apply_real(engine->apply_op_ctx,
-                                  component,
-                                  pb_op->register_component->component->id);
-
     engine->log_op_callback(pb_op, engine->log_op_data);
 }
 
@@ -454,9 +437,6 @@ _apply_op_register_component(rig_engine_op_apply_context_t *ctx,
     if (!component)
         return false;
 
-    register_component_apply_real(ctx,
-                                  component,
-                                  pb_op->register_component->component->id);
     return true;
 }
 
@@ -588,8 +568,6 @@ delete_component_apply_real(rig_engine_op_apply_context_t *ctx,
     rig_component_reap(component, ctx->engine);
 
     rig_entity_remove_component(entity, component);
-
-    ctx->unregister_id_cb(component_id, ctx->user_data);
 }
 
 void
@@ -673,11 +651,8 @@ _map_op_delete_component(rig_engine_op_map_context_t *ctx,
 
 static void
 add_controller_apply_real(rig_engine_op_apply_context_t *ctx,
-                          rig_controller_t *controller,
-                          uint64_t controller_id)
+                          rig_controller_t *controller)
 {
-    ctx->register_id_cb(controller, controller_id, ctx->user_data);
-
     rig_ui_add_controller(ctx->ui, controller);
 }
 
@@ -697,9 +672,7 @@ rig_engine_op_add_controller(rig_engine_t *engine,
     pb_op->add_controller->controller =
         rig_pb_serialize_controller(serializer, controller);
 
-    add_controller_apply_real(engine->apply_op_ctx,
-                              controller,
-                              pb_op->add_controller->controller->id);
+    add_controller_apply_real(engine->apply_op_ctx, controller);
 
     engine->log_op_callback(pb_op, engine->log_op_data);
 }
@@ -717,7 +690,7 @@ _apply_op_add_controller(rig_engine_op_apply_context_t *ctx,
                                              pb_controller->n_properties,
                                              pb_controller->properties);
 
-    add_controller_apply_real(ctx, controller, pb_controller->id);
+    add_controller_apply_real(ctx, controller);
     rut_object_unref(controller);
 
     return true;
@@ -764,8 +737,6 @@ delete_controller_apply_real(rig_engine_op_apply_context_t *ctx,
     rig_controller_reap(controller, ctx->engine);
 
     rig_ui_remove_controller(ctx->ui, controller);
-
-    ctx->unregister_id_cb(controller_id, ctx->user_data);
 }
 
 void
@@ -1498,11 +1469,8 @@ _map_op_controller_property_set_method(rig_engine_op_map_context_t *ctx,
 
 static void
 add_view_apply_real(rig_engine_op_apply_context_t *ctx,
-                    rig_view_t *view,
-                    uint64_t view_id)
+                    rig_view_t *view)
 {
-    ctx->register_id_cb(view, view_id, ctx->user_data);
-
     rig_ui_add_view(ctx->engine->ui, view);
 }
 
@@ -1512,7 +1480,6 @@ rig_engine_op_add_view(rig_engine_t *engine, rig_view_t *view)
     rig_pb_serializer_t *serializer = engine->ops_serializer;
     Rig__Operation *pb_op =
         rig_pb_new(serializer, Rig__Operation, rig__operation__init);
-    uint64_t view_id;
 
     pb_op->type = RIG_ENGINE_OP_TYPE_ADD_VIEW;
 
@@ -1524,8 +1491,7 @@ rig_engine_op_add_view(rig_engine_t *engine, rig_view_t *view)
     pb_op->add_view->view =
         rig_pb_serialize_simple_object(serializer, view);
 
-    view_id = pb_op->add_view->view->id;
-    add_view_apply_real(engine->apply_op_ctx, view, view_id);
+    add_view_apply_real(engine->apply_op_ctx, view);
 
     engine->log_op_callback(pb_op, engine->log_op_data);
 }
@@ -1540,7 +1506,7 @@ _apply_op_add_view(rig_engine_op_apply_context_t *ctx,
     if (!view)
         return false;
 
-    add_view_apply_real(ctx, view, add_view->view->id);
+    add_view_apply_real(ctx, view);
     rut_object_unref(view);
 
     return true;
@@ -1577,14 +1543,12 @@ _map_op_add_view(rig_engine_op_map_context_t *ctx,
 
 static void
 delete_view_apply_real(rig_engine_op_apply_context_t *ctx,
-                         rig_view_t *view,
-                         uint64_t view_id)
+                       rig_view_t *view,
+                       uint64_t view_id)
 {
     rig_view_reap(view);
 
     rig_ui_remove_view(ctx->ui, view);
-
-    ctx->unregister_id_cb(view_id, ctx->user_data);
 }
 
 void
@@ -1645,6 +1609,333 @@ _map_op_delete_view(rig_engine_op_map_context_t *ctx,
     return true;
 }
 
+static void
+add_buffer_apply_real(rig_engine_op_apply_context_t *ctx,
+                      rut_buffer_t *buffer)
+{
+    rig_ui_add_buffer(ctx->engine->ui, buffer);
+}
+
+void
+rig_engine_op_add_buffer(rig_engine_t *engine, rut_buffer_t *buffer)
+{
+    rig_pb_serializer_t *serializer = engine->ops_serializer;
+    Rig__Operation *pb_op =
+        rig_pb_new(serializer, Rig__Operation, rig__operation__init);
+
+    pb_op->type = RIG_ENGINE_OP_TYPE_ADD_BUFFER;
+
+    pb_op->add_buffer =
+        rig_pb_new(serializer,
+                   Rig__Operation__AddBuffer,
+                   rig__operation__add_buffer__init);
+
+    pb_op->add_buffer->buffer =
+        rig_pb_serialize_buffer(serializer, buffer,
+                                false); /* don't serialize data */
+
+    add_buffer_apply_real(engine->apply_op_ctx, buffer);
+
+    engine->log_op_callback(pb_op, engine->log_op_data);
+}
+
+static bool
+_apply_op_add_buffer(rig_engine_op_apply_context_t *ctx,
+                     Rig__Operation *pb_op)
+{
+    Rig__Operation__AddBuffer *add_buffer = pb_op->add_buffer;
+    rut_buffer_t *buffer = rig_pb_unserialize_buffer(ctx->unserializer,
+                                                     add_buffer->buffer);
+    if (!buffer)
+        return false;
+
+    add_buffer_apply_real(ctx, buffer);
+    rut_object_unref(buffer);
+
+    return true;
+}
+
+static void
+_copy_op_add_buffer(rig_engine_op_copy_context_t *ctx,
+                    Rig__Operation *src_pb_op,
+                    Rig__Operation *pb_op)
+{
+    pb_op->add_buffer = rig_pb_dup(ctx->serializer,
+                                   Rig__Operation__AddBuffer,
+                                   rig__operation__add_buffer__init,
+                                   src_pb_op->add_buffer);
+    pb_op->add_buffer->buffer = rig_pb_dup(ctx->serializer,
+                                           Rig__SimpleObject,
+                                           rig__simple_object__init,
+                                           src_pb_op->add_buffer->buffer);
+}
+
+static bool
+_map_op_add_buffer(rig_engine_op_map_context_t *ctx,
+                   rig_engine_op_apply_context_t *apply_ctx,
+                   Rig__Operation *pb_op)
+{
+    if (apply_ctx && !_apply_op_add_buffer(apply_ctx, pb_op))
+        return false;
+
+    if (!map_id(ctx, &pb_op->add_buffer->buffer->id))
+        return false;
+
+    return true;
+}
+
+static void
+delete_buffer_apply_real(rig_engine_op_apply_context_t *ctx,
+                         rut_buffer_t *buffer,
+                         uint64_t buffer_id)
+{
+    rig_ui_reap_buffer(ctx->ui, buffer);
+
+    rig_ui_remove_buffer(ctx->ui, buffer);
+}
+
+void
+rig_engine_op_delete_buffer(rig_engine_t *engine, rut_buffer_t *buffer)
+{
+    rig_pb_serializer_t *serializer = engine->ops_serializer;
+    Rig__Operation *pb_op =
+        rig_pb_new(serializer, Rig__Operation, rig__operation__init);
+
+    pb_op->type = RIG_ENGINE_OP_TYPE_DELETE_BUFFER;
+
+    pb_op->delete_buffer = rig_pb_new(serializer,
+                                      Rig__Operation__DeleteBuffer,
+                                      rig__operation__delete_buffer__init);
+
+    pb_op->delete_buffer->buffer_id = op_object_to_id(serializer, buffer);
+
+    delete_buffer_apply_real(engine->apply_op_ctx, buffer,
+                           pb_op->delete_buffer->buffer_id);
+
+    engine->log_op_callback(pb_op, engine->log_op_data);
+}
+
+static bool
+_apply_op_delete_buffer(rig_engine_op_apply_context_t *ctx,
+                      Rig__Operation *pb_op)
+{
+    uint64_t buffer_id = pb_op->delete_buffer->buffer_id;
+    rut_buffer_t *buffer = apply_id_to_object(ctx, buffer_id);
+
+    delete_buffer_apply_real(ctx, buffer, buffer_id);
+
+    return true;
+}
+
+static void
+_copy_op_delete_buffer(rig_engine_op_copy_context_t *ctx,
+                       Rig__Operation *src_pb_op,
+                       Rig__Operation *pb_op)
+{
+    pb_op->delete_buffer = rig_pb_dup(ctx->serializer,
+                                      Rig__Operation__DeleteBuffer,
+                                      rig__operation__delete_buffer__init,
+                                      src_pb_op->delete_buffer);
+}
+
+static bool
+_map_op_delete_buffer(rig_engine_op_map_context_t *ctx,
+                      rig_engine_op_apply_context_t *apply_ctx,
+                      Rig__Operation *pb_op)
+{
+    if (!map_id(ctx, &pb_op->delete_buffer->buffer_id))
+        return false;
+
+    if (apply_ctx && !_apply_op_delete_buffer(apply_ctx, pb_op))
+        return false;
+
+    return true;
+}
+
+static void
+buffer_set_data_apply_real(rig_engine_op_apply_context_t *ctx,
+                           rut_buffer_t *buffer,
+                           int offset,
+                           uint8_t *data,
+                           int data_len)
+{
+    if (buffer->data && (offset + data_len) <= buffer->size)
+        memcpy(buffer->data + offset, data, data_len);
+}
+
+void
+rig_engine_op_buffer_set_data(rig_engine_t *engine,
+                              rut_buffer_t *buffer,
+                              int offset,
+                              uint8_t *data,
+                              int data_len)
+{
+    rig_pb_serializer_t *serializer = engine->ops_serializer;
+    Rig__Operation *pb_op =
+        rig_pb_new(serializer, Rig__Operation, rig__operation__init);
+
+    pb_op->type = RIG_ENGINE_OP_TYPE_BUFFER_SET_DATA;
+
+    pb_op->buffer_set_data = rig_pb_new(serializer,
+                                        Rig__Operation__BufferSetData,
+                                        rig__operation__buffer_set_data__init);
+
+    pb_op->buffer_set_data->buffer_id = op_object_to_id(serializer, buffer);
+    pb_op->buffer_set_data->offset = offset;
+    pb_op->buffer_set_data->data.data =
+        rut_memory_stack_memalign(serializer->stack,
+                                  data_len,
+                                  1); /* alignment */
+    pb_op->buffer_set_data->data.len = data_len;
+
+    buffer_set_data_apply_real(engine->apply_op_ctx, buffer,
+                               offset, data, data_len);
+
+    engine->log_op_callback(pb_op, engine->log_op_data);
+}
+
+static bool
+_apply_op_buffer_set_data(rig_engine_op_apply_context_t *ctx,
+                          Rig__Operation *pb_op)
+{
+    Rig__Operation__BufferSetData *pb_buffer_set_data = pb_op->buffer_set_data;
+    uint64_t buffer_id = pb_buffer_set_data->buffer_id;
+    rut_buffer_t *buffer = apply_id_to_object(ctx, buffer_id);
+
+    buffer_set_data_apply_real(ctx, buffer,
+                               pb_buffer_set_data->offset,
+                               pb_buffer_set_data->data.data,
+                               pb_buffer_set_data->data.len);
+    return true;
+}
+
+static void
+_copy_op_buffer_set_data(rig_engine_op_copy_context_t *ctx,
+                         Rig__Operation *src_pb_op,
+                         Rig__Operation *pb_op)
+{
+    pb_op->buffer_set_data = rig_pb_dup(ctx->serializer,
+                                        Rig__Operation__BufferSetData,
+                                        rig__operation__buffer_set_data__init,
+                                        src_pb_op->buffer_set_data);
+}
+
+static bool
+_map_op_buffer_set_data(rig_engine_op_map_context_t *ctx,
+                        rig_engine_op_apply_context_t *apply_ctx,
+                        Rig__Operation *pb_op)
+{
+    if (!map_id(ctx, &pb_op->buffer_set_data->buffer_id))
+        return false;
+
+    if (apply_ctx && !_apply_op_buffer_set_data(apply_ctx, pb_op))
+        return false;
+
+    return true;
+}
+
+static void
+mesh_set_attributes_apply_real(rig_engine_op_apply_context_t *ctx,
+                               rig_mesh_t *mesh,
+                               rut_attribute_t **attributes,
+                               int n_attributes)
+{
+    rig_mesh_set_attributes(mesh, attributes, n_attributes);
+}
+
+void
+rig_engine_op_mesh_set_attributes(rig_engine_t *engine,
+                                  rig_mesh_t *mesh,
+                                  rut_attribute_t **attributes,
+                                  int n_attributes)
+{
+    rig_pb_serializer_t *serializer = engine->ops_serializer;
+    Rig__Operation__MeshSetAttributes *pb_set_attributes = NULL;
+    Rig__Operation *pb_op =
+        rig_pb_new(serializer, Rig__Operation, rig__operation__init);
+    Rig__Buffer **dummy_new_buffers;
+    int dummy_n_new_buffers = 0;
+
+    pb_op->type = RIG_ENGINE_OP_TYPE_MESH_SET_ATTRIBUTES;
+
+    pb_set_attributes = rig_pb_new(serializer,
+                                   Rig__Operation__MeshSetAttributes,
+                                   rig__operation__mesh_set_attributes__init);
+    pb_op->mesh_set_attributes = pb_set_attributes;
+
+    /* We don't expect any unregistered buffers at this point, but
+     * just in case to avoid a segv in _serialize_attributes() */
+    dummy_new_buffers = alloca(sizeof(void *) * n_attributes);
+
+    pb_set_attributes->mesh_id = op_object_to_id(serializer, mesh);
+    pb_set_attributes->n_attributes = n_attributes;
+    pb_set_attributes->attributes =
+        rig_pb_serialize_attributes(serializer,
+                                    attributes,
+                                    n_attributes,
+                                    dummy_new_buffers,
+                                    &dummy_n_new_buffers);
+
+    /* Any required buffers referenced by the attributes should have
+     * been explicitly registered via op_add_buffer already... */
+    c_warn_if_fail(dummy_n_new_buffers == 0);
+
+    mesh_set_attributes_apply_real(engine->apply_op_ctx,
+                                   mesh,
+                                   attributes,
+                                   n_attributes);
+
+    engine->log_op_callback(pb_op, engine->log_op_data);
+}
+
+static bool
+_apply_op_mesh_set_attributes(rig_engine_op_apply_context_t *ctx,
+                              Rig__Operation *pb_op)
+{
+    Rig__Operation__MeshSetAttributes *pb_mesh_set_attributes =
+        pb_op->mesh_set_attributes;
+    int n_attributes = pb_mesh_set_attributes->n_attributes;
+    rut_attribute_t *attributes[n_attributes];
+    uint64_t mesh_id = pb_mesh_set_attributes->mesh_id;
+    rig_mesh_t *mesh = apply_id_to_object(ctx, mesh_id);
+
+    if (!rig_pb_unserialize_attributes(ctx->unserializer,
+                                       pb_mesh_set_attributes->attributes,
+                                       attributes,
+                                       n_attributes))
+        return false;
+
+    mesh_set_attributes_apply_real(ctx, mesh, attributes, n_attributes);
+
+    return true;
+}
+
+static void
+_copy_op_mesh_set_attributes(rig_engine_op_copy_context_t *ctx,
+                             Rig__Operation *src_pb_op,
+                             Rig__Operation *pb_op)
+{
+    pb_op->mesh_set_attributes = rig_pb_dup(ctx->serializer,
+                                            Rig__Operation__MeshSetAttributes,
+                                            rig__operation__mesh_set_attributes__init,
+                                            src_pb_op->mesh_set_attributes);
+}
+
+static bool
+_map_op_mesh_set_attributes(rig_engine_op_map_context_t *ctx,
+                            rig_engine_op_apply_context_t *apply_ctx,
+                            Rig__Operation *pb_op)
+{
+    if (!map_id(ctx, &pb_op->mesh_set_attributes->mesh_id))
+        return false;
+
+    if (apply_ctx && !_apply_op_mesh_set_attributes(apply_ctx, pb_op))
+        return false;
+
+    return true;
+}
+
+
 typedef struct _rig_engine_operation_t {
     bool (*apply_op)(rig_engine_op_apply_context_t *ctx, Rig__Operation *pb_op);
 
@@ -1699,6 +1990,18 @@ static rig_engine_operation_t _rig_engine_ops[] =
     { _apply_op_delete_view,
       _map_op_delete_view,
       _copy_op_delete_view, },
+    { _apply_op_add_buffer,
+      _map_op_add_buffer,
+      _copy_op_add_buffer, },
+    { _apply_op_delete_buffer,
+      _map_op_delete_buffer,
+      _copy_op_delete_buffer, },
+    { _apply_op_buffer_set_data,
+      _map_op_buffer_set_data,
+      _copy_op_buffer_set_data, },
+    { _apply_op_mesh_set_attributes,
+      _map_op_mesh_set_attributes,
+      _copy_op_mesh_set_attributes, },
 };
 
 void
@@ -1853,44 +2156,25 @@ rig_engine_map_pb_ui_edit(rig_engine_op_map_context_t *map_ctx,
     return status;
 }
 
-static void
-nop_unregister_id_cb(uint64_t id, void *user_data)
-{
-}
-
-#if 0
-static void *
-cast_id_to_object_cb(uint64_t id, void *user_data)
-{
-    return (void *)(uintptr_t)id;
-}
-#endif
-
 void
 rig_engine_op_apply_context_init(
     rig_engine_op_apply_context_t *ctx,
     rig_engine_t *engine,
     void (*register_id_cb)(void *object, uint64_t id, void *user_data),
-    void (*unregister_id_cb)(uint64_t id, void *user_data),
-    void *(*id_to_object_cb)(uint64_t id, void *user_data),
+    void *(*object_lookup_cb)(uint64_t id, void *user_data),
     void *user_data)
 {
     ctx->engine = engine;
 
     ctx->unserializer = rig_pb_unserializer_new(engine);
 
-    ctx->register_id_cb = register_id_cb;
-    ctx->unregister_id_cb =
-        unregister_id_cb ? unregister_id_cb : nop_unregister_id_cb;
+    rig_pb_unserializer_set_object_register_callback(ctx->unserializer,
+                                                     register_id_cb,
+                                                     user_data);
+    rig_pb_unserializer_set_id_to_object_callback(ctx->unserializer,
+                                                  object_lookup_cb,
+                                                  user_data);
 
-    /* XXX: instead of allowing any complex id -> object mapping with
-     * an apply ctx, we currently assume a map context can be used if
-     * necessary instead. */
-    c_assert(id_to_object_cb == NULL);
-#if 0
-    ctx->id_to_object_cb =
-        id_to_object_cb ? id_to_object_cb : cast_id_to_object_cb;
-#endif
     ctx->user_data = user_data;
 }
 

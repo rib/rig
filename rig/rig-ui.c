@@ -151,6 +151,13 @@ rig_ui_reap(rig_ui_t *ui)
     c_llist_free(ui->views);
     ui->views = NULL;
 
+    for (l = ui->buffers; l; l = l->next) {
+        rig_ui_reap_buffer(ui, l->data);
+        rut_object_release(l->data, ui);
+    }
+    c_llist_free(ui->buffers);
+    ui->buffers = NULL;
+
     /* XXX: The ui itself is just a normal ref-counted object that
      * doesn't need to be unregistered so we don't call
      * rig_engine_queue_delete() for it */
@@ -1111,4 +1118,28 @@ rig_view_set_camera(rut_object_t *obj, rut_object_t *camera_entity)
 
     prop_ctx = &view->engine->shell->property_ctx;
     rut_property_dirty(prop_ctx, &view->properties[RIG_VIEW_PROP_CAMERA_ENTITY]);
+}
+
+void
+rig_ui_add_buffer(rig_ui_t *ui, rut_buffer_t *buffer)
+{
+    ui->buffers = c_llist_prepend(ui->buffers, buffer);
+    rut_object_claim(buffer, ui);
+}
+
+void
+rig_ui_remove_buffer(rig_ui_t *ui, rut_buffer_t *buffer)
+{
+    ui->buffers = c_llist_remove(ui->buffers, buffer);
+    rut_object_release(buffer, ui);
+}
+
+void
+rig_ui_reap_buffer(rig_ui_t *ui, rut_buffer_t *buffer)
+{
+    /* Buffers don't own any objects that need to be
+     * explicitly reaped
+     */
+
+    rig_engine_queue_delete(ui->engine, buffer);
 }

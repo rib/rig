@@ -176,6 +176,18 @@ Rig__Entity *rig_pb_serialize_entity(rig_pb_serializer_t *serializer,
                                      rig_entity_t *parent,
                                      rig_entity_t *entity);
 
+Rig__Buffer *
+rig_pb_serialize_buffer(rig_pb_serializer_t *serializer,
+                        rut_buffer_t *buffer,
+                        bool include_data);
+
+Rig__Attribute **
+rig_pb_serialize_attributes(rig_pb_serializer_t *serializer,
+                            rut_attribute_t **attributes,
+                            int n_attributes,
+                            Rig__Buffer **new_buffers_out,
+                            int *n_new_buffers_out);
+
 Rig__Entity__Component *
 rig_pb_serialize_component(rig_pb_serializer_t *serializer,
                            rut_component_t *component);
@@ -238,6 +250,7 @@ struct _rig_pb_un_serializer_t {
     c_llist_t *entities;
     c_llist_t *views;
     c_llist_t *controllers;
+    c_llist_t *buffers;
 
     c_llist_t *errors;
 
@@ -282,8 +295,23 @@ void rig_pb_unserializer_destroy(rig_pb_un_serializer_t *unserializer);
 rig_ui_t *rig_pb_unserialize_ui(rig_pb_un_serializer_t *unserializer,
                                 const Rig__UI *pb_ui);
 
-rut_mesh_t *rig_pb_unserialize_mesh(rig_pb_un_serializer_t *unserializer,
-                                    Rig__Mesh *pb_mesh);
+rut_buffer_t *
+rig_pb_unserialize_buffer(rig_pb_un_serializer_t *unserializer,
+                          Rig__Buffer *pb_buffer);
+
+int
+rig_pb_unserialize_buffers(rig_pb_un_serializer_t *unserializer,
+                           Rig__Buffer **pb_buffers,
+                           rut_buffer_t **buffers,
+                           int n_buffers);
+int
+rig_pb_unserialize_attributes(rig_pb_un_serializer_t *unserializer,
+                              Rig__Attribute **pb_attributes,
+                              rut_attribute_t **attributes,
+                              int n_attributes);
+
+rut_mesh_t *rig_pb_unserialize_rut_mesh(rig_pb_un_serializer_t *unserializer,
+                                        Rig__Mesh *pb_mesh);
 
 bool rig_pb_init_boxed_value(rig_pb_un_serializer_t *unserializer,
                              rut_boxed_t *boxed,

@@ -112,7 +112,17 @@ simulator_lookup_object_cb(uint64_t id, void *user_data)
 static uint64_t
 simulator_lookup_object_id(rig_simulator_t *simulator, void *object)
 {
-    return (intptr_t)object;
+    if (c_hash_table_lookup(simulator->object_registry, object))
+        return (intptr_t)object;
+    else
+        return 0;
+}
+
+static uint64_t
+lookup_frontend_id_cb(void *object, void *user_data)
+{
+    rig_simulator_t *simulator = user_data;
+    return simulator_lookup_object_id(simulator, object);
 }
 
 static uint64_t
@@ -132,7 +142,7 @@ simulator_map_object_to_frontend_id_cb(uint64_t id, void *user_data)
 }
 
 static void
-simulator_register_object_cb(void *object, uint64_t id, void *user_data)
+simulator_register_object_with_id_cb(void *object, uint64_t id, void *user_data)
 {
     c_return_if_fail(id != 0);
 
@@ -140,13 +150,33 @@ simulator_register_object_cb(void *object, uint64_t id, void *user_data)
      * temporarily_register_object_cb() instead */
     c_return_if_fail((id & 0x1) == 0);
 
-    /* NOP */
+    /* XXX: currently we don't have any use case where we'd expect a
+     * simulator to be told to register an object with an arbitrary ID
+     */
+    c_return_if_reached();
+}
+
+static uint64_t
+simulator_register_object_cb(void *object, void *user_data)
+{
+    rig_simulator_t *simulator = user_data;
+
+#ifdef RIG_ENABLE_DEBUG
+    if (c_hash_table_lookup(simulator->object_registry, object))
+        c_warning("Simulator: duplicate object registration!");
+#endif
+
+    c_hash_table_insert(simulator->object_registry, object, object);
+
+    return (intptr_t)object;
 }
 
 static void
 simulator_unregister_object_cb(void *object, void *user_data)
 {
-    /* NOP */
+    rig_simulator_t *simulator = user_data;
+
+    c_hash_table_remove(simulator->object_registry, object);
 }
 
 #if 0
@@ -166,7 +196,6 @@ direct_object_id_cb(void *object, void *user_data)
 {
     return (uint64_t)(uintptr_t)object;
 }
-
 
 static void
 simulator__load(Rig__Simulator_Service *service,
@@ -483,9 +512,7 @@ _rig_simulator_free(void *object)
 
     rig_pb_unserializer_destroy(simulator->ui_unserializer);
 
-    c_hash_table_destroy(simulator->object_to_id_map);
-
-    c_hash_table_destroy(simulator->id_to_object_map);
+    c_hash_table_destroy(simulator->object_registry);
 
     rig_engine_op_apply_context_destroy(&simulator->apply_op_ctx);
 
@@ -542,11 +569,8 @@ simulator_on_run_cb(rut_shell_t *shell, void *user_data)
         rig_engine_new_for_simulator(simulator->shell, simulator);
     engine = simulator->engine;
 
-    simulator->object_to_id_map = c_hash_table_new(NULL, /* direct hash */
-                                                   NULL); /* direct key equal */
-
-    simulator->id_to_object_map = c_hash_table_new(NULL, /* direct hash */
-                                                   NULL); /* direct key equal */
+    simulator->object_registry = c_hash_table_new(NULL, /* direct hash */
+                                                  NULL); /* direct key equal */
 
     rig_engine_op_map_context_init(&simulator->map_to_sim_objects_op_ctx,
                                    engine,
@@ -569,25 +593,17 @@ simulator_on_run_cb(rut_shell_t *shell, void *user_data)
      */
     ui_unserializer = rig_pb_unserializer_new(engine);
     rig_pb_unserializer_set_object_register_callback(ui_unserializer,
-                                                     simulator_register_object_cb,
+                                                     simulator_register_object_with_id_cb,
                                                      simulator);
     rig_pb_unserializer_set_id_to_object_callback(ui_unserializer,
                                                   simulator_lookup_object_cb,
                                                   simulator);
     simulator->ui_unserializer = ui_unserializer;
 
-    /* Note: We rely on the simulator's garbage_collect_callback to
-     * unregister objects instead of passing an unregister id callback
-     * here.
-     *
-     * TODO: remove the unregister ID callback which is no longer used
-     * by anything
-     */
     rig_engine_op_apply_context_init(&simulator->apply_op_ctx,
                                      engine,
-                                     simulator_register_object_cb,
-                                     NULL, /* unregister id callback */
-                                     NULL, /* simply cast ids to object ptr */
+                                     simulator_register_object_with_id_cb,
+                                     simulator_lookup_object_cb,
                                      simulator); /* user data */
     rig_engine_set_apply_op_context(engine, &simulator->apply_op_ctx);
 
@@ -597,9 +613,9 @@ simulator_on_run_cb(rut_shell_t *shell, void *user_data)
      * UI logic in the simulator that will be forwarded to the frontend.
      */
     rig_pb_serializer_set_object_register_callback(
-        engine->ops_serializer, direct_object_id_cb, simulator);
+        engine->ops_serializer, simulator_register_object_cb, simulator);
     rig_pb_serializer_set_object_to_id_callback(
-        engine->ops_serializer, direct_object_id_cb, simulator);
+        engine->ops_serializer, lookup_frontend_id_cb, simulator);
 
     rut_shell_add_input_callback(
         simulator->shell, rig_simulator_input_handler, simulator, NULL);

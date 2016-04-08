@@ -49,12 +49,14 @@ rut_graphable_init(rut_object_t *object)
 void
 rut_graphable_destroy(rut_object_t *object)
 {
+#ifdef RIG_ENABLE_DEBUG
     rut_graphable_props_t *props =
         rut_object_get_properties(object, RUT_TRAIT_ID_GRAPHABLE);
 
     /* The node shouldn't have a parent, because if it did then it would
      * still have a reference and it shouldn't be being destroyed */
     c_warn_if_fail(props->parent == NULL);
+#endif
 
     rut_graphable_remove_all_children(object);
 }

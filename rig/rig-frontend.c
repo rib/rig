@@ -125,6 +125,13 @@ frontend_lookup_object(rig_frontend_t *frontend, uint64_t id)
     return c_hash_table_lookup(frontend->id_to_object_map, id_ptr);
 }
 
+static void *
+frontend_lookup_object_cb(uint64_t id, void *user_data)
+{
+    rig_frontend_t *frontend = user_data;
+    return frontend_lookup_object(frontend, id);
+}
+
 static uint64_t
 frontend_map_simulator_id_to_object_cb(uint64_t id, void *user_data)
 {
@@ -206,13 +213,6 @@ void
 rig_frontend_garbage_collect_cb(void *object, void *user_data)
 {
     frontend_unregister_object_cb(object, user_data);
-}
-
-static void *
-lookup_object_cb(uint64_t id, void *user_data)
-{
-    rig_frontend_t *frontend = user_data;
-    return frontend_lookup_object(frontend, id);
 }
 
 static void
@@ -1266,14 +1266,13 @@ rig_frontend_new(rut_shell_t *shell)
     rig_pb_unserializer_set_object_register_callback(
         unserializer, frontend_register_object_cb, frontend);
     rig_pb_unserializer_set_id_to_object_callback(
-        unserializer, lookup_object_cb, frontend);
+        unserializer, frontend_lookup_object_cb, frontend);
     frontend->ui_unserializer = unserializer;
 
     rig_engine_op_apply_context_init(&frontend->apply_op_ctx,
                                      engine,
                                      frontend_register_object_cb,
-                                     NULL, /* unregister ID */
-                                     NULL, /* id to object (TODO: remove unused) */
+                                     frontend_lookup_object_cb,
                                      frontend);
 
     rig_engine_op_map_context_init(&frontend->map_to_frontend_objects_op_ctx,
@@ -1286,7 +1285,7 @@ rig_frontend_new(rut_shell_t *shell)
      * register any objects... */
     rig_pb_unserializer_set_object_register_callback(unserializer, NULL, NULL);
     rig_pb_unserializer_set_id_to_object_callback(
-        unserializer, lookup_object_cb, frontend);
+        unserializer, frontend_lookup_object_cb, frontend);
     frontend->prop_change_unserializer = unserializer;
 
     frontend->renderer = rig_renderer_new(frontend);
@@ -1441,6 +1440,7 @@ rig_frontend_start_frame(rig_frontend_t *frontend)
      * handle having multiple view / onscreen framebuffers very well
      */
 
+    c_return_if_fail(frontend->connected);
     c_return_if_fail(frontend->mid_frame == false);
 
     rut_shell_remove_paint_idle(shell);

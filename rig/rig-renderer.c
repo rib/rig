@@ -44,7 +44,7 @@
 #include "components/rig-light.h"
 #include "components/rig-material.h"
 #include "components/rig-source.h"
-#include "components/rig-model.h"
+#include "components/rig-mesh.h"
 #include "components/rig-nine-slice.h"
 #include "components/rig-pointalism-grid.h"
 #include "components/rig-shape.h"
@@ -137,15 +137,15 @@ typedef enum _get_pipeline_flags_t {
  * though all of the vertices in the triangle are 1.0. This means some
  * of the pixels of the geometry would be painted with the blended
  * pipeline. The blended pipeline doesn't write to the depth value so
- * depending on the order of the triangles within the model it might
- * paint the back or the front of the model which causes weird sparkly
+ * depending on the order of the triangles within the mesh it might
+ * paint the back or the front of the mesh which causes weird sparkly
  * artifacts.
  *
- * I think it doesn't really make sense to paint models that have any
+ * I think it doesn't really make sense to paint meshes that have any
  * depth using the blended pipeline. In that case you would also need
- * to sort individual triangles of the model according to depth.
+ * to sort individual triangles of the mesh according to depth.
  * Perhaps the real solution to this problem is to avoid using the
- * blended pipeline at all for 3D models.
+ * blended pipeline at all for 3D meshes.
  *
  * However even for flat quad shapes it is probably good to have this
  * threshold because if a pixel is close enough to opaque that the

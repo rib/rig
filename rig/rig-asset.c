@@ -42,9 +42,10 @@
 
 #include <rut.h>
 
-#include "components/rig-model.h"
 #include "rig-asset.h"
 #include "rig-engine.h"
+
+#include "components/rig-mesh.h"
 
 #if 0
 enum {
@@ -59,7 +60,7 @@ enum {
 struct _rig_asset_t {
     rut_object_base_t _base;
 
-    rut_shell_t *shell;
+    rig_engine_t *engine;
 
 #if 0
     rut_introspectable_props_t introspectable;
@@ -193,7 +194,7 @@ asset_new_from_image_data(rig_engine_t *engine,
         rut_object_alloc0(rig_asset_t, &rig_asset_type, _rig_asset_init_type);
     rut_shell_t *shell = engine->shell;
 
-    asset->shell = shell;
+    asset->engine = engine;
 
     asset->type = type;
 
@@ -215,13 +216,13 @@ asset_new_from_image_data(rig_engine_t *engine,
 
 
 rig_asset_t *
-asset_new_from_mesh(rut_shell_t *shell, rut_mesh_t *mesh)
+asset_new_from_mesh(rig_engine_t *engine, rut_mesh_t *mesh)
 {
     rig_asset_t *asset =
         rut_object_alloc0(rig_asset_t, &rig_asset_type, _rig_asset_init_type);
     int i;
 
-    asset->shell = shell;
+    asset->engine = engine;
 
     asset->type = RIG_ASSET_TYPE_MESH;
 
@@ -247,7 +248,7 @@ asset_new_from_mesh(rut_shell_t *shell, rut_mesh_t *mesh)
 }
 
 rig_asset_t *
-asset_new_from_font_data(rut_shell_t *shell,
+asset_new_from_font_data(rig_engine_t *engine,
                          const uint8_t *data,
                          size_t len,
                          rut_exception_t **e)
@@ -255,7 +256,7 @@ asset_new_from_font_data(rut_shell_t *shell,
     rig_asset_t *asset =
         rut_object_alloc0(rig_asset_t, &rig_asset_type, _rig_asset_init_type);
 
-    asset->shell = shell;
+    asset->engine = engine;
 
     asset->type = RIG_ASSET_TYPE_FONT;
 
@@ -271,7 +272,6 @@ rig_asset_new_from_pb_asset(rig_pb_un_serializer_t *unserializer,
                             rut_exception_t **e)
 {
     rig_engine_t *engine = unserializer->engine;
-    rut_shell_t *shell = engine->shell;
     rig_asset_t *asset = NULL;
 
     switch (pb_asset->type) {
@@ -323,14 +323,16 @@ rig_asset_new_from_pb_asset(rig_pb_un_serializer_t *unserializer,
         return asset;
     }
     case RIG_ASSET_TYPE_FONT: {
-        asset = asset_new_from_font_data(
-            shell, pb_asset->data.data, pb_asset->data.len, e);
+        asset = asset_new_from_font_data(engine,
+                                         pb_asset->data.data,
+                                         pb_asset->data.len,
+                                         e);
         return asset;
     }
     case RIG_ASSET_TYPE_MESH:
         if (pb_asset->mesh) {
             rut_mesh_t *mesh =
-                rig_pb_unserialize_mesh(unserializer, pb_asset->mesh);
+                rig_pb_unserialize_rut_mesh(unserializer, pb_asset->mesh);
             if (!mesh) {
                 rut_throw(e,
                           RUT_IO_EXCEPTION,
@@ -338,7 +340,7 @@ rig_asset_new_from_pb_asset(rig_pb_un_serializer_t *unserializer,
                           "Error unserializing mesh");
                 return NULL;
             }
-            asset = asset_new_from_mesh(engine->shell, mesh);
+            asset = asset_new_from_mesh(engine, mesh);
             rut_object_unref(mesh);
             return asset;
         } else {
@@ -382,7 +384,7 @@ rig_asset_get_mime_type(rig_asset_t *asset)
 rut_shell_t *
 rig_asset_get_shell(rig_asset_t *asset)
 {
-    return asset->shell;
+    return asset->engine->shell;
 }
 
 rut_mesh_t *
@@ -543,7 +545,7 @@ static void
 generate_video_thumbnail(rig_asset_t *asset)
 {
     rig_thumbnail_generator_t *generator = c_new(rig_thumbnail_generator_t, 1);
-    rut_shell_t *shell = asset->shell;
+    rut_shell_t *shell = asset->engine->shell;
     char *filename;
     char *uri;
     GstBus *bus;
@@ -584,9 +586,10 @@ generate_video_thumbnail(rig_asset_t *asset)
 static cg_texture_t *
 generate_mesh_thumbnail(rig_asset_t *asset)
 {
-    rut_shell_t *shell = asset->shell;
-    rig_model_t *model = rig_model_new_from_asset(shell, asset);
-    rut_mesh_t *mesh;
+
+    rig_mesh_t *mesh = rig_mesh_new_with_rut_mesh(asset->engine,
+                                                  asset->mesh);
+    rut_shell_t *shell = asset->engine->shell;
     cg_texture_t *thumbnail;
     cg_offscreen_t *offscreen;
     cg_framebuffer_t *frame_buffer;
@@ -619,11 +622,6 @@ generate_mesh_thumbnail(rig_asset_t *asset)
     float mat_diff[4] = { 0.39, 0.64, 0.62, 1.0 };
     float mat_spec[4] = { 0.5, 0.5, 0.5, 1.0 };
     int location;
-
-    /* XXX: currently we don't just directly refer to asset->mesh
-     * since this may be missing normals and texture coordinates
-     */
-    mesh = rig_model_get_mesh(model);
 
     thumbnail =
         cg_texture_2d_new_with_size(shell->cg_device, tex_width, tex_height);
@@ -719,7 +717,7 @@ generate_mesh_thumbnail(rig_asset_t *asset)
     cg_depth_state_set_test_enabled(&depth_state, true);
     cg_pipeline_set_depth_state(pipeline, &depth_state, NULL);
 
-    primitive = rut_mesh_create_primitive(shell, mesh);
+    primitive = rig_mesh_get_primitive(shell, mesh);
 
     if (width > height)
         model_scale = width;
@@ -796,8 +794,7 @@ rig_file_is_asset(const char *filename, const char *mime_type)
 /* XXX: path should be relative to assets_location and should
  * have been normalized. */
 static c_llist_t *
-infer_asset_tags(rut_shell_t *shell,
-                 const char *path,
+infer_asset_tags(const char *path,
                  const char *mime_type)
 {
     char *dir = c_path_get_dirname(path);
@@ -876,7 +873,7 @@ infer_asset_tags(rut_shell_t *shell,
 }
 
 rig_asset_t *
-asset_new_from_file(rut_shell_t *shell,
+asset_new_from_file(rig_engine_t *engine,
                     rig_asset_type_t type,
                     const char *path,
                     const c_llist_t *inferred_tags,
@@ -901,7 +898,7 @@ asset_new_from_file(rut_shell_t *shell,
     real_path = path;
 #endif
 
-    asset->shell = shell;
+    asset->engine = engine;
 
     asset->type = type;
 
@@ -918,7 +915,7 @@ asset_new_from_file(rut_shell_t *shell,
         c_error_t *error = NULL;
 
         if (is_video)
-            asset->thumbnail = rut_load_texture(shell, real_path, &error);
+            asset->thumbnail = rut_load_texture(engine->shell, real_path, &error);
 
         if (!asset->thumbnail) {
             rut_object_free(rig_asset_t, asset);
@@ -934,7 +931,7 @@ asset_new_from_file(rut_shell_t *shell,
         rut_ply_attribute_status_t padding_status[C_N_ELEMENTS(ply_attributes)];
         c_error_t *error = NULL;
 
-        asset->mesh = rut_mesh_new_from_ply(shell,
+        asset->mesh = rut_mesh_new_from_ply(engine->shell,
                                             real_path,
                                             ply_attributes,
                                             C_N_ELEMENTS(ply_attributes),
@@ -966,7 +963,7 @@ asset_new_from_file(rut_shell_t *shell,
     case RIG_ASSET_TYPE_FONT: {
         c_error_t *error = NULL;
         asset->thumbnail =
-            rut_load_texture(shell, rut_find_data_file("fonts.png"), &error);
+            rut_load_texture(engine->shell, rut_find_data_file("fonts.png"), &error);
         if (!asset->thumbnail) {
             rut_object_free(rig_asset_t, asset);
             asset = NULL;
@@ -992,9 +989,9 @@ DONE:
 }
 
 rig_asset_t *
-rig_asset_new_builtin(rut_shell_t *shell, const char *icon_path)
+rig_asset_new_builtin(rig_engine_t *engine, const char *icon_path)
 {
-    return asset_new_from_file(shell, RIG_ASSET_TYPE_BUILTIN, path, NULL);
+    return asset_new_from_file(engine, RIG_ASSET_TYPE_BUILTIN, path, NULL);
 }
 
 rig_asset_t *
@@ -1006,20 +1003,20 @@ rig_asset_new_from_file(rig_engine_t *engine,
     c_llist_t *inferred_tags = NULL;
     rig_asset_t *asset = NULL;
 
-    inferred_tags = infer_asset_tags(engine->shell, path, mime_type);
+    inferred_tags = infer_asset_tags(path, mime_type);
 
     if (rut_util_find_tag(inferred_tags, "image") ||
         rut_util_find_tag(inferred_tags, "video")) {
         if (rut_util_find_tag(inferred_tags, "normal-maps"))
-            asset = asset_new_from_file(engine->shell, RIG_ASSET_TYPE_NORMAL_MAP, path, inferred_tags);
+            asset = asset_new_from_file(engine, RIG_ASSET_TYPE_NORMAL_MAP, path, inferred_tags);
         else if (rut_util_find_tag(inferred_tags, "alpha-masks"))
-            asset = asset_new_from_file(engine->shell, RIG_ASSET_TYPE_ALPHA_MASK, path, inferred_tags);
+            asset = asset_new_from_file(engine, RIG_ASSET_TYPE_ALPHA_MASK, path, inferred_tags);
         else
-            asset = asset_new_from_file(engine->shell, RIG_ASSET_TYPE_TEXTURE, path, inferred_tags);
+            asset = asset_new_from_file(engine, RIG_ASSET_TYPE_TEXTURE, path, inferred_tags);
     } else if (rut_util_find_tag(inferred_tags, "ply"))
-        asset = asset_new_from_file(engine->shell, RIG_ASSET_TYPE_MESH, path, inferred_tags);
+        asset = asset_new_from_file(engine, RIG_ASSET_TYPE_MESH, path, inferred_tags);
     else if (rut_util_find_tag(inferred_tags, "font"))
-        asset = asset_new_from_file(engine->shell, RIG_ASSET_TYPE_FONT, path, inferred_tags);
+        asset = asset_new_from_file(engine, RIG_ASSET_TYPE_FONT, path, inferred_tags);
 
     c_llist_free(inferred_tags);
 
