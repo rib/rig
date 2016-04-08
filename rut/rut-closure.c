@@ -36,13 +36,15 @@
 void rut_closure_list_add(c_list_t *list, rut_closure_t *closure)
 {
     if (closure->list_node.next != NULL) {
+#ifdef RIG_ENABLE_DEBUG
         c_warn_if_fail(closure->owner == list);
+#endif
         return;
     }
 
     c_list_insert(list->prev, &closure->list_node);
 
-#ifdef C_DEBUG
+#ifdef RIG_ENABLE_DEBUG
     closure->owner = list;
 #endif
 }
@@ -56,7 +58,9 @@ void rut_closure_remove(rut_closure_t *closure)
             closure->removed_cb(closure->user_data);
     }
 
+#ifdef RIG_ENABLE_DEBUG
     c_warn_if_fail(closure->used_add_FIXME == false);
+#endif
 }
 
 void rut_closure_list_remove_all(c_list_t *list)
@@ -76,7 +80,7 @@ void rut_closure_list_remove_all(c_list_t *list)
 void
 rut_closure_disconnect_FIXME(rut_closure_t *closure)
 {
-#ifdef C_DEBUG
+#ifdef RIG_ENABLE_DEBUG
     c_return_if_fail(closure->used_add_FIXME);
 #endif
 
@@ -111,7 +115,7 @@ rut_closure_list_add_FIXME(c_list_t *list,
 
     rut_closure_list_add(list, closure);
 
-#ifdef C_DEBUG
+#ifdef RIG_ENABLE_DEBUG
     closure->used_add_FIXME = true;
 #endif
 
