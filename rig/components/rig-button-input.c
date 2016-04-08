@@ -85,7 +85,7 @@ get_prop_for_state(button_state_t state)
         return RIG_BUTTON_INPUT_PROP_DISABLED;
     }
 
-    c_return_val_if_fail(0, 0);
+    c_return_val_if_reached(0);
 }
 
 static void
