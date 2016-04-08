@@ -36,7 +36,7 @@ typedef void (*rut_closure_destroy_callback_t)(void *user_data);
 typedef struct {
     c_list_t list_node;
 
-#ifdef C_DEBUG
+#ifdef RIG_ENABLE_DEBUG
     c_list_t *owner;
     bool allocated;
     bool used_add_FIXME;
@@ -68,7 +68,7 @@ rut_closure_init(rut_closure_t *closure,
     closure->user_data = user_data;
     closure->removed_cb = NULL;
 
-#ifdef C_DEBUG
+#ifdef RIG_ENABLE_DEBUG
     /* Help ensure we don't intermix the new and old closure
      * apis or accidentally try adding a closure to multiple
      * lists */
@@ -87,7 +87,7 @@ rut_closure_alloc(void *function,
 
     rut_closure_init(closure, function, user_data);
 
-#ifdef C_DEBUG
+#ifdef RIG_ENABLE_DEBUG
     closure->allocated = true;
 #endif
 
@@ -97,8 +97,10 @@ rut_closure_alloc(void *function,
 static inline void
 rut_closure_free(rut_closure_t *closure)
 {
+#ifdef RIG_ENABLE_DEBUG
     c_warn_if_fail(closure->allocated);
     c_warn_if_fail(closure->list_node.next == NULL);
+#endif
 
     c_slice_free(rut_closure_t, closure);
 }
