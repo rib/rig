@@ -467,7 +467,7 @@ static void
 log_op_cb(Rig__Operation *pb_op, void *user_data)
 {
     rig_simulator_t *simulator = user_data;
-    rig_property_context_t *prop_ctx = &simulator->engine->shell->property_ctx;
+    rig_property_context_t *prop_ctx = &simulator->engine->_property_ctx;
 
     /* We sequence all operations relative to the property updates that
      * are being logged, so that the frontend will be able to replay
@@ -824,7 +824,7 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
     ProtobufCService *frontend_service =
         rig_pb_rpc_client_get_service(simulator->simulator_peer->pb_rpc_client);
     Rig__UIDiff ui_diff;
-    rig_property_context_t *prop_ctx = &engine->shell->property_ctx;
+    rig_property_context_t *prop_ctx = &engine->_property_ctx;
     int n_changes;
     rig_pb_serializer_t *serializer;
     rut_queue_t *ops;
@@ -839,7 +839,7 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
 
     /* Setup the property context to log all property changes so they
      * can be sent back to the frontend process each frame. */
-    simulator->shell->property_ctx.logging_disabled--;
+    engine->_property_ctx.logging_disabled--;
 
     rig_engine_progress_timelines(engine, simulator->frame_info.progress);
 
@@ -866,7 +866,7 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
                                     scale_prop,
                                     &boxed);
 #else
-        rig_property_set_float (&engine->shell->property_ctx,
+        rig_property_set_float (&engine->_property_ctx,
                                 scale_prop,
                                 counter);
 #endif
@@ -994,7 +994,7 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
     rig_property_context_clear_log(prop_ctx);
 
     /* Stop logging property changes until the next frame. */
-    simulator->shell->property_ctx.logging_disabled++;
+    engine->_property_ctx.logging_disabled++;
 
     /* Garbage collect deleted objects
      *

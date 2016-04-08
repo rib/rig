@@ -725,7 +725,7 @@ r_set_float_by_name(RModule *module, RObject *object, const char *name, float va
     boxed.d.float_val = value;
     rig_engine_op_set_property(engine, prop, &boxed);
 #else
-    rig_property_set_float(&engine->shell->property_ctx, prop, value);
+    rig_property_set_float(&engine->_property_ctx, prop, value);
 #endif
 }
 #endif
@@ -805,7 +805,7 @@ r_set_##SUFFIX(RModule *module, RObject *object, int id, const CTYPE *value) \
  \
     c_return_if_fail(id < priv->n_properties); \
  \
-    rig_property_set_##SUFFIX(&engine->shell->property_ctx, prop, (PRIV_CTYPE *)value); \
+    rig_property_set_##SUFFIX(&engine->_property_ctx, prop, (PRIV_CTYPE *)value); \
 } \
  \
 void \
@@ -821,7 +821,7 @@ r_set_##SUFFIX##_by_name(RModule *module, RObject *object, const char *name, con
  \
     c_return_if_fail(prop); \
  \
-    rig_property_set_##SUFFIX(&engine->shell->property_ctx, prop, (PRIV_CTYPE *)value); \
+    rig_property_set_##SUFFIX(&engine->_property_ctx, prop, (PRIV_CTYPE *)value); \
 }
 
 #include "rig-property-types.h"
@@ -849,7 +849,7 @@ r_set_text_by_name(RModule *module, RObject *object, const char *name, const cha
     boxed.d.text_val = (char *)value;
     rig_engine_op_set_property(engine, prop, &boxed);
 #else
-    rig_property_set_text(&engine->shell->property_ctx, prop, value);
+    rig_property_set_text(&engine->_property_ctx, prop, value);
 #endif
 }
 
@@ -870,7 +870,7 @@ r_set_text(RModule *module, RObject *object, int id, const char *value)
     boxed.d.text_val = (char *)value;
     rig_engine_op_set_property(engine, prop, &boxed);
 #else
-    rig_property_set_text(&engine->shell->property_ctx, prop, value);
+    rig_property_set_text(&engine->_property_ctx, prop, value);
 #endif
 }
 

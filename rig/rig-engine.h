@@ -81,6 +81,10 @@ struct _rig_engine_t {
     c_matrix_t identity;
 
     rut_shell_t *shell;
+
+    /* XXX: odd naming was for compatibility when moving the ctx
+     * here from rut_shell_t. At some point we should tidy up. */
+    rig_property_context_t _property_ctx;
     rig_property_context_t *property_ctx;
 
     rig_pb_serializer_t *ops_serializer;

@@ -336,7 +336,7 @@ rig_binding_activate(rig_binding_t *binding)
     _rig_property_set_binding_full_array(
         binding->property,
         callback,
-        &engine->shell->property_ctx, /* user data */
+        &engine->_property_ctx, /* user data */
         NULL, /* destroy */
         dependencies,
         n_dependencies);
@@ -359,11 +359,11 @@ rig_binding_activate(rig_binding_t *binding)
             if (dependency->property->spec->type ==
                 binding->property->spec->type)
             {
-                rig_property_set_copy_binding(&engine->shell->property_ctx,
+                rig_property_set_copy_binding(&engine->_property_ctx,
                                               binding->property,
                                               dependency->property);
             } else {
-                rig_property_set_cast_scalar_binding(&engine->shell->property_ctx,
+                rig_property_set_cast_scalar_binding(&engine->_property_ctx,
                                                      binding->property,
                                                      dependency->property);
             }

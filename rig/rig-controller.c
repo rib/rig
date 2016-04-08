@@ -125,8 +125,6 @@ _rig_controller_free(rut_object_t *object)
 
     c_hash_table_destroy(controller->properties);
 
-    rut_object_unref(controller->shell);
-
     c_free(controller->label);
 
     rut_object_unref(controller->timeline);
@@ -188,7 +186,6 @@ rig_controller_new(rig_engine_t *engine, const char *label)
     controller->label = c_strdup(label);
 
     controller->engine = engine;
-    controller->shell = engine->shell;
     timeline = rig_timeline_new(engine, 0);
     rig_timeline_stop(timeline);
     controller->timeline = timeline;
@@ -204,12 +201,12 @@ rig_controller_new(rig_engine_t *engine, const char *label)
                                                    free_prop_data_cb);
 
     rig_property_set_copy_binding(
-        &engine->shell->property_ctx,
+        &engine->_property_ctx,
         &controller->props[RIG_CONTROLLER_PROP_PROGRESS],
         rig_introspectable_lookup_property(timeline, "progress"));
 
     rig_property_set_copy_binding(
-        &engine->shell->property_ctx,
+        &engine->_property_ctx,
         &controller->props[RIG_CONTROLLER_PROP_ELAPSED],
         rig_introspectable_lookup_property(timeline, "elapsed"));
 
@@ -226,7 +223,7 @@ rig_controller_set_label(rut_object_t *object, const char *label)
 
     c_free(controller->label);
     controller->label = c_strdup(label);
-    rig_property_dirty(&controller->shell->property_ctx,
+    rig_property_dirty(&controller->engine->_property_ctx,
                        &controller->props[RIG_CONTROLLER_PROP_LABEL]);
 }
 
@@ -299,7 +296,7 @@ activate_property_binding(rig_controller_prop_data_t *prop_data,
                                  active_prop,
                                  NULL); /* sentinal */
 
-        rig_property_set_boxed(&controller->shell->property_ctx,
+        rig_property_set_boxed(&controller->engine->_property_ctx,
                                property,
                                &prop_data->constant_value);
         break;
@@ -375,7 +372,7 @@ rig_controller_set_active(rut_object_t *object, bool active)
 
     update_effective_active_state(controller);
 
-    rig_property_dirty(&controller->shell->property_ctx,
+    rig_property_dirty(&controller->engine->_property_ctx,
                        &controller->props[RIG_CONTROLLER_PROP_ACTIVE]);
 }
 
@@ -399,7 +396,7 @@ rig_controller_set_suspended(rut_object_t *object, bool suspended)
 
     update_effective_active_state(controller);
 
-    rig_property_dirty(&controller->shell->property_ctx,
+    rig_property_dirty(&controller->engine->_property_ctx,
                        &controller->props[RIG_CONTROLLER_PROP_SUSPENDED]);
 }
 
@@ -422,7 +419,7 @@ rig_controller_set_auto_deactivate(rut_object_t *object,
 
     controller->auto_deactivate = auto_deactivate;
 
-    rig_property_dirty(&controller->shell->property_ctx,
+    rig_property_dirty(&controller->engine->_property_ctx,
                        &controller->props[RIG_CONTROLLER_PROP_AUTO_DEACTIVATE]);
 }
 
@@ -444,7 +441,7 @@ rig_controller_set_loop(rut_object_t *object, bool loop)
 
     rig_timeline_set_loop_enabled(controller->timeline, loop);
 
-    rig_property_dirty(&controller->shell->property_ctx,
+    rig_property_dirty(&controller->engine->_property_ctx,
                        &controller->props[RIG_CONTROLLER_PROP_LOOP]);
 }
 
@@ -466,7 +463,7 @@ rig_controller_set_running(rut_object_t *object, bool running)
 
     rig_timeline_set_running(controller->timeline, running);
 
-    rig_property_dirty(&controller->shell->property_ctx,
+    rig_property_dirty(&controller->engine->_property_ctx,
                        &controller->props[RIG_CONTROLLER_PROP_RUNNING]);
 }
 
@@ -488,7 +485,7 @@ rig_controller_set_length(rut_object_t *object, float length)
 
     rig_timeline_set_length(controller->timeline, length);
 
-    rig_property_dirty(&controller->shell->property_ctx,
+    rig_property_dirty(&controller->engine->_property_ctx,
                        &controller->props[RIG_CONTROLLER_PROP_LENGTH]);
 }
 
@@ -521,9 +518,9 @@ rig_controller_set_elapsed(rut_object_t *object, double elapsed)
     if (controller->elapsed == prev_elapsed)
         return;
 
-    rig_property_dirty(&controller->shell->property_ctx,
+    rig_property_dirty(&controller->engine->_property_ctx,
                        &controller->props[RIG_CONTROLLER_PROP_ELAPSED]);
-    rig_property_dirty(&controller->shell->property_ctx,
+    rig_property_dirty(&controller->engine->_property_ctx,
                        &controller->props[RIG_CONTROLLER_PROP_PROGRESS]);
 }
 
@@ -577,7 +574,7 @@ rig_controller_get_path_for_prop_data(rig_controller_t *controller,
 {
     if (prop_data->path == NULL) {
         rig_path_t *path =
-            rig_path_new(controller->shell, prop_data->property->spec->type);
+            rig_path_new(controller->engine, prop_data->property->spec->type);
         rig_controller_set_property_path(controller, prop_data->property, path);
     }
 
@@ -778,7 +775,7 @@ rig_controller_set_property_constant(rig_controller_t *controller,
 
     if (effective_active(controller) &&
         prop_data->method == RIG_CONTROLLER_METHOD_CONSTANT) {
-        rig_property_set_boxed(&controller->shell->property_ctx,
+        rig_property_set_boxed(&controller->engine->_property_ctx,
                                prop_data->property,
                                boxed_value);
     }

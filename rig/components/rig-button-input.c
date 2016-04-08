@@ -310,7 +310,7 @@ _rig_button_input_grab_input_cb(rut_input_event_t *event,
 
             button_input->press_counter++;
             rig_property_dirty(
-                &shell->property_ctx,
+                engine->property_ctx,
                 &button_input->properties[RIG_BUTTON_INPUT_PROP_PRESS_COUNT]);
 
             set_state(button_input, BUTTON_STATE_NORMAL);

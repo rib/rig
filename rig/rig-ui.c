@@ -1060,7 +1060,7 @@ rig_view_set_width(rut_object_t *obj, int width)
 
     view->width = width;
 
-    prop_ctx = &view->engine->shell->property_ctx;
+    prop_ctx = &view->engine->_property_ctx;
     rig_property_dirty(prop_ctx, &view->properties[RIG_VIEW_PROP_WIDTH]);
 }
 
@@ -1075,7 +1075,7 @@ rig_view_set_height(rut_object_t *obj, int height)
 
     view->height = height;
 
-    prop_ctx = &view->engine->shell->property_ctx;
+    prop_ctx = &view->engine->_property_ctx;
     rig_property_dirty(prop_ctx, &view->properties[RIG_VIEW_PROP_HEIGHT]);
 }
 
@@ -1116,7 +1116,7 @@ rig_view_set_camera(rut_object_t *obj, rut_object_t *camera_entity)
         rut_shell_onscreen_set_input_camera(view->onscreen, camera_entity);
     }
 
-    prop_ctx = &view->engine->shell->property_ctx;
+    prop_ctx = &view->engine->_property_ctx;
     rig_property_dirty(prop_ctx, &view->properties[RIG_VIEW_PROP_CAMERA_ENTITY]);
 }
 

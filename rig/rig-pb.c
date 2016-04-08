@@ -1993,8 +1993,8 @@ set_property_from_pb_boxed(rig_pb_un_serializer_t *unserializer,
     }
 
     if (rig_pb_init_boxed_value(unserializer, &boxed, type, pb_boxed->value)) {
-        rig_property_set_boxed(
-            &unserializer->engine->shell->property_ctx, property, &boxed);
+        rig_property_set_boxed(&unserializer->engine->_property_ctx,
+                               property, &boxed);
         return true;
     } else
         return false;
