@@ -149,13 +149,18 @@ _rut_mesh_init_type(void)
 }
 
 rut_mesh_t *
+rut_mesh_new_empty(void)
+{
+    return rut_object_alloc0(rut_mesh_t, &rut_mesh_type, _rut_mesh_init_type);
+}
+
+rut_mesh_t *
 rut_mesh_new(cg_vertices_mode_t mode,
              int n_vertices,
              rut_attribute_t **attributes,
              int n_attributes)
 {
-    rut_mesh_t *mesh =
-        rut_object_alloc0(rut_mesh_t, &rut_mesh_type, _rut_mesh_init_type);
+    rut_mesh_t *mesh = rut_mesh_new_empty();
 
     mesh->mode = mode;
     mesh->n_vertices = n_vertices;
@@ -273,8 +278,8 @@ rut_mesh_set_attributes(rut_mesh_t *mesh,
                         rut_attribute_t **attributes,
                         int n_attributes)
 {
-    rut_attribute_t **attributes_real =
-        c_slice_copy(sizeof(void *) * n_attributes, attributes);
+    rut_attribute_t **attributes_real = attributes ?
+        c_slice_copy(sizeof(void *) * n_attributes, attributes) : NULL;
     int i;
 
     /* NB: some of the given attributes may be the same as
