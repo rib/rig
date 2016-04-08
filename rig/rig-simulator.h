@@ -119,7 +119,6 @@ struct _rig_simulator_t {
 
     rut_button_state_t button_state;
 
-    rig_pb_un_serializer_t *ui_unserializer;
     rig_pb_un_serializer_t *ops_unserializer;
     rig_engine_op_apply_context_t apply_op_ctx;
     rig_engine_op_map_context_t map_to_sim_objects_op_ctx;

@@ -198,43 +198,6 @@ direct_object_id_cb(void *object, void *user_data)
 }
 
 static void
-simulator__load(Rig__Simulator_Service *service,
-                const Rig__UI *pb_ui,
-                Rig__LoadResult_Closure closure,
-                void *closure_data)
-{
-    Rig__LoadResult result = RIG__LOAD_RESULT__INIT;
-    rig_simulator_t *simulator =
-        rig_pb_rpc_closure_get_connection_data(closure_data);
-    rig_engine_t *engine = simulator->engine;
-    rig_ui_t *ui;
-
-    c_return_if_fail(pb_ui != NULL);
-
-    // c_debug ("Simulator: UI Load Request\n");
-
-    /* First make sure to cleanup the current ui  */
-    rig_engine_set_ui(engine, NULL);
-
-    /* Kick garbage collection now so that all the objects being
-     * replaced are unregistered before before we load the new UI.
-     */
-    rig_engine_garbage_collect(engine);
-
-    ui = rig_pb_unserialize_ui(simulator->ui_unserializer, pb_ui);
-
-    rig_engine_set_ui(engine, ui);
-
-    rig_ui_code_modules_load(ui);
-
-    rut_object_unref(ui);
-
-    rig_engine_op_apply_context_set_ui(&simulator->apply_op_ctx, ui);
-
-    closure(&result, closure_data);
-}
-
-static void
 simulator__run_frame(Rig__Simulator_Service *service,
                      const Rig__FrameSetup *setup,
                      Rig__RunFrameAck_Closure closure,
@@ -510,8 +473,6 @@ _rig_simulator_free(void *object)
 
     clear_actions(simulator);
 
-    rig_pb_unserializer_destroy(simulator->ui_unserializer);
-
     c_hash_table_destroy(simulator->object_registry);
 
     rig_engine_op_apply_context_destroy(&simulator->apply_op_ctx);
@@ -560,7 +521,6 @@ static void
 simulator_on_run_cb(rut_shell_t *shell, void *user_data)
 {
     rig_simulator_t *simulator = user_data;
-    rig_pb_un_serializer_t *ui_unserializer;
     rig_engine_t *engine;
 
     simulator_start_service(simulator->shell, simulator);
@@ -586,19 +546,6 @@ simulator_on_run_cb(rut_shell_t *shell, void *user_data)
      */
     engine->garbage_collect_callback = simulator_unregister_object_cb;
     engine->garbage_collect_data = simulator;
-
-    /*
-     * This unserializer is used to unserialize UIs in simulator__load
-     * for example...
-     */
-    ui_unserializer = rig_pb_unserializer_new(engine);
-    rig_pb_unserializer_set_object_register_callback(ui_unserializer,
-                                                     simulator_register_object_with_id_cb,
-                                                     simulator);
-    rig_pb_unserializer_set_id_to_object_callback(ui_unserializer,
-                                                  simulator_lookup_object_cb,
-                                                  simulator);
-    simulator->ui_unserializer = ui_unserializer;
 
     rig_engine_op_apply_context_init(&simulator->apply_op_ctx,
                                      engine,
