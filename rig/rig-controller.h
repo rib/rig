@@ -31,6 +31,14 @@
 
 #include <rut.h>
 
+typedef struct _rig_controller_t rig_controller_t;
+
+typedef enum _rig_controller_method_t {
+    RIG_CONTROLLER_METHOD_CONSTANT,
+    RIG_CONTROLLER_METHOD_PATH,
+    RIG_CONTROLLER_METHOD_BINDING,
+} rig_controller_method_t;
+
 #include "rig-path.h"
 #include "rig-types.h"
 #include "rig-introspectable.h"
@@ -38,8 +46,6 @@
 #include "rig-timeline.h"
 
 extern rut_type_t rig_controller_type;
-
-typedef struct _rig_controller_t rig_controller_t;
 
 enum {
     RIG_CONTROLLER_PROP_LABEL,
@@ -53,12 +59,6 @@ enum {
     RIG_CONTROLLER_PROP_PROGRESS,
     RIG_CONTROLLER_N_PROPS
 };
-
-typedef enum _rig_controller_method_t {
-    RIG_CONTROLLER_METHOD_CONSTANT,
-    RIG_CONTROLLER_METHOD_PATH,
-    RIG_CONTROLLER_METHOD_BINDING,
-} rig_controller_method_t;
 
 /* State for an individual property that the controller is tracking */
 typedef struct {
@@ -93,7 +93,6 @@ struct _rig_controller_t {
     rut_object_base_t _base;
 
     rig_engine_t *engine;
-    rut_shell_t *shell;
 
     char *label;
 

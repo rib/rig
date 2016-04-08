@@ -111,7 +111,7 @@ set_property_apply_real(rig_engine_op_apply_context_t *ctx,
                         rig_property_t *property,
                         rut_boxed_t *value)
 {
-    rig_property_context_t *prop_ctx = &ctx->engine->shell->property_ctx;
+    rig_property_context_t *prop_ctx = &ctx->engine->_property_ctx;
 
     /* Don't log the property change in this case otherwise we'd end
      * up setting the property twice */

@@ -382,8 +382,6 @@ _rut_shell_free(void *object)
 
     _rut_shell_fini(shell);
 
-    rig_property_context_destroy(&shell->property_ctx);
-
 #ifdef USE_PANGO
     g_object_unref(shell->pango_context);
     g_object_unref(shell->pango_font_map);
@@ -421,8 +419,6 @@ rut_shell_new(rut_shell_t *main_shell,
     c_list_init(&shell->grabs);
     c_list_init(&shell->input_cb_list);
     c_list_init(&shell->onscreens);
-
-    rig_property_context_init(&shell->property_ctx);
 
     _rut_matrix_entry_identity_init(&shell->identity_entry);
 

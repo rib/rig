@@ -252,7 +252,7 @@ apply_property_change(rig_frontend_t *frontend,
         unserializer, &boxed, property->spec->type, pb_change->value);
 
     rig_property_set_boxed(
-        &frontend->engine->shell->property_ctx, property, &boxed);
+        &frontend->engine->_property_ctx, property, &boxed);
 }
 
 static void

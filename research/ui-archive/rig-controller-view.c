@@ -3858,7 +3858,7 @@ rig_controller_view_set_controller(rig_controller_view_t *view,
 
         controller_len_prop =
             rig_introspectable_lookup_property(controller, "length");
-        rig_property_set_copy_binding(&view->engine->shell->property_ctx,
+        rig_property_set_copy_binding(&view->engine->_property_ctx,
                                       scale_len_prop,
                                       controller_len_prop);
 

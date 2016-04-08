@@ -432,8 +432,6 @@ struct _rut_shell_t {
     PangoFontDescription *pango_font_desc;
 #endif
 
-    rig_property_context_t property_ctx;
-
 #ifdef __EMSCRIPTEN__
     bool paint_loop_running;
 #else

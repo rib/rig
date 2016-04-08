@@ -26,10 +26,11 @@
  * SOFTWARE.
  */
 
-#ifndef _RUT_PATH_H_
-#define _RUT_PATH_H_
+#pragma once
 
 #include <rut.h>
+
+#include "rig-engine.h"
 #include "rig-node.h"
 
 typedef struct _rig_path_t rig_path_t;
@@ -37,7 +38,7 @@ typedef struct _rig_path_t rig_path_t;
 struct _rig_path_t {
     rut_object_base_t _base;
 
-    rut_shell_t *shell;
+    rig_engine_t *engine;
     rig_property_type_t type;
     c_list_t nodes;
     int length;
@@ -60,7 +61,7 @@ extern rut_type_t rig_path_type;
 
 rig_property_t *rig_path_get_property(rig_path_t *path);
 
-rig_path_t *rig_path_new(rut_shell_t *shell, rig_property_type_t type);
+rig_path_t *rig_path_new(rig_engine_t *engine, rig_property_type_t type);
 
 rig_path_t *rig_path_copy(rig_path_t *path);
 
@@ -131,5 +132,3 @@ typedef void (*rig_path_node_callback_t)(rig_node_t *node, void *user_data);
 void rut_path_foreach_node(rig_path_t *path,
                            rig_path_node_callback_t callback,
                            void *user_data);
-
-#endif /* _RUT_PATH_H_ */

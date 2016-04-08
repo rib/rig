@@ -113,6 +113,8 @@ _rig_engine_free(void *object)
 
     rig_introspectable_destroy(engine);
 
+    rig_property_context_destroy(&engine->_property_ctx);
+
     rut_object_free(rig_engine_t, engine);
 }
 
@@ -142,7 +144,9 @@ _rig_engine_new_full(rut_shell_t *shell,
         rig_engine_t, &rig_engine_type, _rig_engine_init_type);
 
     engine->shell = shell;
-    engine->property_ctx = &shell->property_ctx;
+
+    rig_property_context_init(&engine->_property_ctx);
+    engine->property_ctx = &engine->_property_ctx;
 
     engine->headless = engine->shell->headless;
 
