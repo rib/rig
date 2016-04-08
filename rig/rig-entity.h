@@ -35,6 +35,7 @@
 #include <rut.h>
 
 #include "rig-types.h"
+#include "rig-introspectable.h"
 
 typedef struct _rut_component_t rut_component_t;
 typedef struct _rig_entity_t rig_entity_t;
@@ -110,7 +111,7 @@ struct _rig_entity_t {
 
     void *renderer_priv;
 
-    rut_introspectable_props_t introspectable;
+    rig_introspectable_props_t introspectable;
     rig_property_t properties[RUT_ENTITY_N_PROPS];
 
     unsigned int dirty : 1;

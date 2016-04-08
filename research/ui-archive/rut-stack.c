@@ -36,7 +36,7 @@
 #include "rut-shell.h"
 #include "rut-closure.h"
 #include "rut-interfaces.h"
-#include "rut-introspectable.h"
+#include "rig-introspectable.h"
 #include "rut-stack.h"
 
 enum {
@@ -69,7 +69,7 @@ struct _rut_stack_t {
 
     c_list_t preferred_size_cb_list;
 
-    rut_introspectable_props_t introspectable;
+    rig_introspectable_props_t introspectable;
     rig_property_t properties[RUT_STACK_N_PROPS];
 };
 
@@ -92,7 +92,7 @@ _rut_stack_free(void *object)
 {
     rut_stack_t *stack = object;
 
-    rut_introspectable_destroy(stack);
+    rig_introspectable_destroy(stack);
     rut_graphable_destroy(stack);
 
     rut_shell_remove_pre_paint_callback_by_graphable(stack->shell, stack);
@@ -364,7 +364,7 @@ rut_stack_new(rut_shell_t *shell, float width, float height)
     c_list_init(&stack->children);
     c_list_init(&stack->preferred_size_cb_list);
 
-    rut_introspectable_init(stack, _rut_stack_prop_specs, stack->properties);
+    rig_introspectable_init(stack, _rut_stack_prop_specs, stack->properties);
 
     rut_graphable_init(stack);
 

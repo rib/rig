@@ -72,7 +72,7 @@ struct _rig_material_t {
     int uniforms_age;
     int uniforms_flush_age;
 
-    rut_introspectable_props_t introspectable;
+    rig_introspectable_props_t introspectable;
     rig_property_t properties[RIG_MATERIAL_N_PROPS];
 
     unsigned int visible : 1;

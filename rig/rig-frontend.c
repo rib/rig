@@ -239,7 +239,7 @@ apply_property_change(rig_frontend_t *frontend,
              pb_change->property_id);
 #endif
 
-    property = rut_introspectable_get_property(object, pb_change->property_id);
+    property = rig_introspectable_get_property(object, pb_change->property_id);
     if (!property) {
         c_warning("Frontend: Failed to find object property by id");
         return;

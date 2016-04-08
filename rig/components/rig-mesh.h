@@ -71,7 +71,7 @@ struct _rig_mesh_t {
 
     cg_primitive_t *primitive;
 
-    rut_introspectable_props_t introspectable;
+    rig_introspectable_props_t introspectable;
     rig_property_t properties[RIG_MESH_N_PROPS];
 };
 

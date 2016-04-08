@@ -66,7 +66,7 @@ struct _rig_pointalism_grid_t {
     float pointalism_z;
     bool pointalism_lighter;
 
-    rut_introspectable_props_t introspectable;
+    rig_introspectable_props_t introspectable;
     rig_property_t properties[RIG_POINTALISM_GRID_N_PROPS];
     float cell_size;
     int tex_width;

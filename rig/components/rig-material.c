@@ -30,6 +30,7 @@
 
 #include <rut.h>
 
+
 #include "rig-entity.h"
 #include "rig-entity-inlines.h"
 #include "rig-material.h"
@@ -172,7 +173,7 @@ _rig_material_free(void *object)
     if (material->alpha_mask_source)
         rut_object_unref(material->alpha_mask_source);
 
-    rut_introspectable_destroy(material);
+    rig_introspectable_destroy(material);
 
     rut_object_free(rig_material_t, material);
 }
@@ -251,7 +252,7 @@ rig_material_new(rig_engine_t *engine)
 
     material->shininess = 100;
 
-    rut_introspectable_init(
+    rig_introspectable_init(
         material, _rig_material_prop_specs, material->properties);
 
     material->uniforms_flush_age = -1;

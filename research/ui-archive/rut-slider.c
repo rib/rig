@@ -31,7 +31,7 @@
 
 #include "rut-slider.h"
 #include "rut-object.h"
-#include "rut-introspectable.h"
+#include "rig-introspectable.h"
 #include "rut-input-region.h"
 #include "rut-transform.h"
 #include "rut-nine-slice.h"
@@ -72,7 +72,7 @@ struct _rut_slider_t {
     float length;
     float progress;
 
-    rut_introspectable_props_t introspectable;
+    rig_introspectable_props_t introspectable;
     rig_property_t properties[RUT_SLIDER_N_PROPS];
 };
 
@@ -98,7 +98,7 @@ _rut_slider_free(void *object)
     rut_object_unref(slider->handle);
     rut_object_unref(slider->background);
 
-    rut_introspectable_destroy(slider);
+    rig_introspectable_destroy(slider);
 
     rut_graphable_destroy(slider);
 
@@ -287,7 +287,7 @@ rut_slider_new(rut_shell_t *shell, rut_axis_t axis, float min, float max,
     // rut_input_region_set_graphable (slider->input_region, slider->handle);
     rut_graphable_add_child(slider, slider->input_region);
 
-    rut_introspectable_init(slider, _rut_slider_prop_specs, slider->properties);
+    rig_introspectable_init(slider, _rut_slider_prop_specs, slider->properties);
 
     return slider;
 }

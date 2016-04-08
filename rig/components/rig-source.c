@@ -160,7 +160,7 @@ struct _rig_source_t {
     c_list_t ready_cb_list;
     c_list_t error_cb_list;
 
-    rut_introspectable_props_t introspectable;
+    rig_introspectable_props_t introspectable;
     rig_property_t properties[RIG_SOURCE_N_PROPS];
 };
 
@@ -383,7 +383,7 @@ _rig_source_free(void *object)
     if (source->mime)
         c_free(source->mime);
 
-    rut_introspectable_destroy(source);
+    rig_introspectable_destroy(source);
 
     rut_object_free(rig_source_t, source);
 }
@@ -742,7 +742,7 @@ rig_source_new(rig_engine_t *engine,
     source->component.parented = false;
     source->component.engine = engine;
 
-    rut_introspectable_init(source, _rig_source_prop_specs, source->properties);
+    rig_introspectable_init(source, _rig_source_prop_specs, source->properties);
 
     source->default_sample = true;
 

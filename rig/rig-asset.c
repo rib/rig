@@ -63,7 +63,7 @@ struct _rig_asset_t {
     rig_engine_t *engine;
 
 #if 0
-    rut_introspectable_props_t introspectable;
+    rig_introspectable_props_t introspectable;
     rig_property_t props[ASSET_N_PROPS];
 #endif
 
@@ -112,7 +112,7 @@ _rig_asset_free(void *object)
     if (asset->path)
         c_free(asset->path);
 
-    // rut_introspectable_destroy (asset);
+    // rig_introspectable_destroy (asset);
 
     rut_object_free(rig_asset_t, asset);
 }
@@ -977,7 +977,7 @@ asset_new_from_file(rig_engine_t *engine,
     }
     asset->path = c_strdup(path);
 
-// rut_introspectable_init (asset);
+// rig_introspectable_init (asset);
 
 DONE:
 

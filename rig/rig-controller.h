@@ -33,6 +33,7 @@
 
 #include "rig-path.h"
 #include "rig-types.h"
+#include "rig-introspectable.h"
 #include "rig-binding.h"
 #include "rig-timeline.h"
 
@@ -109,7 +110,7 @@ struct _rig_controller_t {
     c_list_t operation_cb_list;
 
     rig_property_t props[RIG_CONTROLLER_N_PROPS];
-    rut_introspectable_props_t introspectable;
+    rig_introspectable_props_t introspectable;
 };
 
 typedef enum {

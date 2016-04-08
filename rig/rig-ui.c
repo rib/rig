@@ -784,7 +784,7 @@ pick_for_camera(rig_ui_t *ui,
     if (picked_entity)
     {
         rig_property_t *label =
-            rut_introspectable_lookup_property (picked_entity, "label");
+            rig_introspectable_lookup_property (picked_entity, "label");
 
         c_debug ("Entity picked: %s\n", rig_property_get_text (label));
     }
@@ -994,7 +994,7 @@ rig_view_new(rig_engine_t *engine)
     view->width = 800;
     view->height = 600;
 
-    rut_introspectable_init(view, _rig_view_prop_specs, view->properties);
+    rig_introspectable_init(view, _rig_view_prop_specs, view->properties);
 
     return view;
 }

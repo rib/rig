@@ -31,7 +31,7 @@
 #include "rut-text-buffer.h"
 #include "rut-closure.h"
 #include "rut-paintable.h"
-#include "rut-introspectable.h"
+#include "rig-introspectable.h"
 
 #include <pango/pango.h>
 
@@ -134,7 +134,7 @@ struct _rut_text_t {
 
     c_list_t preferred_size_cb_list;
 
-    rut_introspectable_props_t introspectable;
+    rig_introspectable_props_t introspectable;
     rig_property_t properties[RUT_TEXT_N_PROPS];
 
     PangoFontDescription *font_desc;

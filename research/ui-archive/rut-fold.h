@@ -64,7 +64,7 @@ typedef struct _rut_fold_t {
 
     rut_graphable_props_t graphable;
 
-    rut_introspectable_props_t introspectable;
+    rig_introspectable_props_t introspectable;
     rig_property_t properties[RUT_FOLD_N_PROPS];
 
 } rut_fold_t;

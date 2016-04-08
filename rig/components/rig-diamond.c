@@ -351,7 +351,7 @@ _rig_diamond_free(void *object)
     if (diamond->slice)
         rut_object_unref(diamond->slice);
 
-    rut_introspectable_destroy(diamond);
+    rig_introspectable_destroy(diamond);
 
     rut_object_free(rig_diamond_t, diamond);
 }
@@ -442,7 +442,7 @@ _rig_diamond_new_with_slice(rig_engine_t *engine,
     if (slice)
         diamond->slice = rut_object_ref(slice);
 
-    rut_introspectable_init(
+    rig_introspectable_init(
         diamond, _rig_diamond_prop_specs, diamond->properties);
 
     return diamond;

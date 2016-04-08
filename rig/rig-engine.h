@@ -140,7 +140,7 @@ struct _rig_engine_t {
 
     c_sllist_t *timelines;
 
-    rut_introspectable_props_t introspectable;
+    rig_introspectable_props_t introspectable;
     rig_property_t properties[RIG_ENGINE_N_PROPS];
 };
 

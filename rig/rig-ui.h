@@ -67,7 +67,7 @@ struct _rig_view
     rut_shell_onscreen_t *onscreen;
 
 
-    rut_introspectable_props_t introspectable;
+    rig_introspectable_props_t introspectable;
     rig_property_t properties[RIG_VIEW_N_PROPS];
 
 };

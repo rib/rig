@@ -65,7 +65,7 @@ struct _rig_button_input_t {
     int press_counter;
     button_state_t state;
 
-    rut_introspectable_props_t introspectable;
+    rig_introspectable_props_t introspectable;
     rig_property_t properties[RIG_BUTTON_INPUT_N_PROPS];
 };
 
@@ -271,7 +271,7 @@ _rig_button_input_free(void *object)
     }
 #endif
 
-    rut_introspectable_destroy(button_input);
+    rig_introspectable_destroy(button_input);
 
     rut_object_free(rig_button_input_t, object);
 }
@@ -404,7 +404,7 @@ rig_button_input_new(rig_engine_t *engine)
 
     button_input->state = BUTTON_STATE_NORMAL;
 
-    rut_introspectable_init(
+    rig_introspectable_init(
         button_input, _rig_button_input_prop_specs, button_input->properties);
 
     return button_input;

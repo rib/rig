@@ -66,7 +66,7 @@ struct _rut_number_slider_t {
 
     rut_input_region_t *input_region;
 
-    rut_introspectable_props_t introspectable;
+    rig_introspectable_props_t introspectable;
     rig_property_t properties[RUT_NUMBER_SLIDER_N_PROPS];
 };
 
@@ -92,7 +92,7 @@ _rut_number_slider_free(void *object)
     rut_graphable_remove_child(slider->input_region);
     rut_object_unref(slider->input_region);
 
-    rut_introspectable_destroy(slider);
+    rig_introspectable_destroy(slider);
     rut_graphable_destroy(slider);
 
     if (slider->markup_label)
@@ -388,7 +388,7 @@ rut_number_slider_new(rut_shell_t *shell)
 
     rut_graphable_init(slider);
 
-    rut_introspectable_init(
+    rig_introspectable_init(
         slider, _rut_number_slider_prop_specs, slider->properties);
 
     slider->text = rut_text_new(shell);

@@ -183,7 +183,7 @@ create_widget_for_property(rut_shell_t *shell,
         rut_toggle_t *toggle = rut_toggle_new_with_icons(
             shell, unselected_icon, selected_icon, name);
 
-        *control_prop = rut_introspectable_lookup_property(toggle, "state");
+        *control_prop = rig_introspectable_lookup_property(toggle, "state");
         return toggle;
     }
 
@@ -204,7 +204,7 @@ create_widget_for_property(rut_shell_t *shell,
 
         rut_vec3_slider_set_decimal_places(slider, 2);
 
-        *control_prop = rut_introspectable_lookup_property(slider, "value");
+        *control_prop = rig_introspectable_lookup_property(slider, "value");
 
         return slider;
     }
@@ -213,7 +213,7 @@ create_widget_for_property(rut_shell_t *shell,
         rut_rotation_inspector_t *inspector =
             rut_rotation_inspector_new(shell);
 
-        *control_prop = rut_introspectable_lookup_property(inspector, "value");
+        *control_prop = rig_introspectable_lookup_property(inspector, "value");
 
         return inspector;
     }
@@ -255,7 +255,7 @@ create_widget_for_property(rut_shell_t *shell,
         rut_number_slider_set_min_value(slider, min);
         rut_number_slider_set_max_value(slider, max);
 
-        *control_prop = rut_introspectable_lookup_property(slider, "value");
+        *control_prop = rig_introspectable_lookup_property(slider, "value");
 
         return slider;
     }
@@ -283,7 +283,7 @@ create_widget_for_property(rut_shell_t *shell,
 
             rut_drop_down_set_values_array(drop, values, n_values);
 
-            *control_prop = rut_introspectable_lookup_property(drop, "value");
+            *control_prop = rig_introspectable_lookup_property(drop, "value");
             *label_text = name;
 
             return drop;
@@ -295,7 +295,7 @@ create_widget_for_property(rut_shell_t *shell,
         rut_text_t *text = rut_entry_get_text(entry);
 
         rut_text_set_single_line_mode(text, true);
-        *control_prop = rut_introspectable_lookup_property(text, "text");
+        *control_prop = rig_introspectable_lookup_property(text, "text");
         *label_text = name;
 
         return entry;
@@ -304,7 +304,7 @@ create_widget_for_property(rut_shell_t *shell,
     case RUT_PROPERTY_TYPE_COLOR: {
         rut_color_button_t *button = rut_color_button_new(shell);
 
-        *control_prop = rut_introspectable_lookup_property(button, "color");
+        *control_prop = rig_introspectable_lookup_property(button, "color");
         *label_text = name;
 
         return button;
@@ -315,7 +315,7 @@ create_widget_for_property(rut_shell_t *shell,
             rig_asset_inspector_new(shell, spec->validation.asset.type);
 
         *control_prop =
-            rut_introspectable_lookup_property(asset_inspector, "asset");
+            rig_introspectable_lookup_property(asset_inspector, "asset");
         *label_text = name;
 
         return asset_inspector;

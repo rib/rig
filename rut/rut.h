@@ -40,7 +40,6 @@
 #include "rut-object.h"
 #include "rig-property.h"
 #include "rut-interfaces.h"
-#include "rut-introspectable.h"
 #include "rut-graphable.h"
 #include "rut-camera.h"
 #include "rut-matrix-stack.h"

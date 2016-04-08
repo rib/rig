@@ -35,38 +35,38 @@
 
 C_BEGIN_DECLS
 
-typedef struct _rut_introspectable_props_t {
+typedef struct _rig_introspectable_props_t {
     rig_property_t *first_property;
     int n_properties;
-} rut_introspectable_props_t;
+} rig_introspectable_props_t;
 
-typedef void (*rut_introspectable_property_callback_t)(rig_property_t *property,
+typedef void (*rig_introspectable_property_callback_t)(rig_property_t *property,
                                                        void *user_data);
 
-void rut_introspectable_init(rut_object_t *object,
+void rig_introspectable_init(rut_object_t *object,
                              rig_property_spec_t *specs,
                              rig_property_t *properties);
 
-void rut_introspectable_destroy(rut_object_t *object);
+void rig_introspectable_destroy(rut_object_t *object);
 
-rig_property_t *rut_introspectable_lookup_property(rut_object_t *object,
+rig_property_t *rig_introspectable_lookup_property(rut_object_t *object,
                                                    const char *name);
 
-void rut_introspectable_foreach_property(
+void rig_introspectable_foreach_property(
     rut_object_t *object,
-    rut_introspectable_property_callback_t callback,
+    rig_introspectable_property_callback_t callback,
     void *user_data);
 
-void rut_introspectable_copy_properties(rig_property_context_t *property_ctx,
+void rig_introspectable_copy_properties(rig_property_context_t *property_ctx,
                                         rut_object_t *src,
                                         rut_object_t *dst);
 
 #if 0
 static inline int
-rut_introspectable_get_property_id (rut_object_t *object,
+rig_introspectable_get_property_id (rut_object_t *object,
                                     rig_property_t *property)
 {
-    rut_introspectable_props_t *introspectable =
+    rig_introspectable_props_t *introspectable =
         rut_object_get_properties (object, RUT_TRAIT_ID_INTROSPECTABLE);
 
     return property - introspectable->first_property;
@@ -74,9 +74,9 @@ rut_introspectable_get_property_id (rut_object_t *object,
 #endif
 
 static inline rig_property_t *
-rut_introspectable_get_property(rut_object_t *object, int id)
+rig_introspectable_get_property(rut_object_t *object, int id)
 {
-    rut_introspectable_props_t *introspectable = (rut_introspectable_props_t *)
+    rig_introspectable_props_t *introspectable = (rig_introspectable_props_t *)
         rut_object_get_properties(object, RUT_TRAIT_ID_INTROSPECTABLE);
 
     c_return_val_if_fail(id < introspectable->n_properties, NULL);

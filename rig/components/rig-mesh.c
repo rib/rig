@@ -263,7 +263,7 @@ _rig_mesh_new(rig_engine_t *engine)
     mesh->component.parented = false;
     mesh->component.engine = engine;
 
-    rut_introspectable_init(mesh, _rig_mesh_prop_specs, mesh->properties);
+    rig_introspectable_init(mesh, _rig_mesh_prop_specs, mesh->properties);
 
     return mesh;
 }

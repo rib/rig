@@ -122,7 +122,7 @@ _rig_text_copy(rut_object_t *object)
     rig_property_context_t *prop_ctx =
         rig_component_props_get_property_context(&text->component);
 
-    rut_introspectable_copy_properties(prop_ctx, text, copy);
+    rig_introspectable_copy_properties(prop_ctx, text, copy);
 
     return copy;
 }
@@ -324,7 +324,7 @@ rig_text_new(rig_engine_t *engine)
 
     c_list_init(&text->preferred_size_cb_list);
 
-    rut_introspectable_init(text, _rig_text_prop_specs, text->properties);
+    rig_introspectable_init(text, _rig_text_prop_specs, text->properties);
 
     text->text_engine = rig_text_engine_new(engine->text_state);
     rig_text_engine_add_on_wrap_callback(text->text_engine,
@@ -345,7 +345,7 @@ rig_text_new(rig_engine_t *engine)
 void
 rig_text_free(rig_text_t *text)
 {
-    rut_introspectable_destroy(text);
+    rig_introspectable_destroy(text);
 
     if (text->pick_mesh)
         rut_object_unref(text->pick_mesh);

@@ -37,7 +37,7 @@
 #include "rut-paintable.h"
 #include "rut-image.h"
 #include "rut-camera.h"
-#include "rut-introspectable.h"
+#include "rig-introspectable.h"
 
 enum {
     RUT_IMAGE_PROP_DRAW_MODE,
@@ -62,7 +62,7 @@ struct _rut_image_t {
 
     c_list_t preferred_size_cb_list;
 
-    rut_introspectable_props_t introspectable;
+    rig_introspectable_props_t introspectable;
     rig_property_t properties[RUT_IMAGE_N_PROPS];
 
     cg_pipeline_t *pipeline;
@@ -374,7 +374,7 @@ rut_image_new(rut_shell_t *shell, cg_texture_t *texture)
     rut_paintable_init(image);
     rut_graphable_init(image);
 
-    rut_introspectable_init(image, _rut_image_prop_specs, image->properties);
+    rig_introspectable_init(image, _rut_image_prop_specs, image->properties);
 
     rut_image_set_draw_mode(image, RUT_IMAGE_DRAW_MODE_SCALE_WITH_ASPECT_RATIO);
 

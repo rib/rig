@@ -221,11 +221,11 @@ add_dependency(rig_binding_view_t *binding_view,
         rut_componentable_props_t *component =
             rut_object_get_properties(object, RUT_TRAIT_ID_COMPONENTABLE);
         rig_entity_t *entity = component->entity;
-        label_prop = rut_introspectable_lookup_property(entity, "label");
+        label_prop = rig_introspectable_lookup_property(entity, "label");
         /* XXX: Hack to drop the "Rut" prefix from the name... */
         component_str = rut_object_get_type_name(object) + 3;
     } else
-        label_prop = rut_introspectable_lookup_property(object, "label");
+        label_prop = rig_introspectable_lookup_property(object, "label");
 
     if (label_prop)
         label_str = rig_property_get_text(label_prop);

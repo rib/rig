@@ -68,7 +68,7 @@ struct _rig_diamond_t {
     int tex_height;
     float size;
 
-    rut_introspectable_props_t introspectable;
+    rig_introspectable_props_t introspectable;
     rig_property_t properties[RIG_DIAMOND_N_PROPS];
 };
 

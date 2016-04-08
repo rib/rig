@@ -88,7 +88,7 @@ typedef struct _rut_scale_t {
 
     c_list_t select_cb_list;
 
-    rut_introspectable_props_t introspectable;
+    rig_introspectable_props_t introspectable;
     rig_property_t properties[RUT_SCALE_N_PROPS];
 
 } rut_scale_t;

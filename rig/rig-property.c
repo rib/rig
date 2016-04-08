@@ -34,7 +34,7 @@
 #include <stdlib.h>
 
 #include "rig-property.h"
-#include "rut-introspectable.h"
+#include "rig-introspectable.h"
 #include "rut-color.h"
 #include "rut-util.h"
 
@@ -325,7 +325,7 @@ rig_property_set_binding_by_name(rut_object_t *object,
                                  void *user_data,
                                  ...)
 {
-    rig_property_t *property = rut_introspectable_lookup_property(object, name);
+    rig_property_t *property = rig_introspectable_lookup_property(object, name);
     va_list ap;
 
     c_return_if_fail(property);
@@ -345,7 +345,7 @@ rig_property_set_binding_full_by_name(
     rut_binding_destroy_notify_t destroy_notify,
     ...)
 {
-    rig_property_t *property = rut_introspectable_lookup_property(object, name);
+    rig_property_t *property = rig_introspectable_lookup_property(object, name);
     va_list ap;
 
     c_return_if_fail(property);

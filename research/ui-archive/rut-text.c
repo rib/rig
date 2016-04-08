@@ -1382,7 +1382,7 @@ _rut_text_free(void *object)
     rut_object_unref(text->pick_mesh);
     rut_object_unref(text->input_region);
 
-    rut_introspectable_destroy(text);
+    rig_introspectable_destroy(text);
     rut_graphable_destroy(text);
 
     rut_object_free(rut_text_t, text);
@@ -2947,7 +2947,7 @@ rut_text_new_full(rut_shell_t *shell,
     rut_graphable_init(text);
     rut_paintable_init(text);
 
-    rut_introspectable_init(text, _rut_text_prop_specs, text->properties);
+    rig_introspectable_init(text, _rut_text_prop_specs, text->properties);
 
     text->shell = shell;
 
@@ -3168,14 +3168,14 @@ buffer_connect_signals(rut_text_t *text)
     text->buffer_delete_text_closure = rut_text_buffer_add_delete_text_callback(
         text->buffer, buffer_deleted_text, text, NULL);
 
-    buffer_text_prop = rut_introspectable_lookup_property(text->buffer, "text");
+    buffer_text_prop = rig_introspectable_lookup_property(text->buffer, "text");
     rig_property_set_binding(&text->properties[RUT_TEXT_PROP_TEXT],
                              text_property_binding_cb,
                              text,
                              buffer_text_prop,
                              NULL);
     buffer_max_len_prop =
-        rut_introspectable_lookup_property(text->buffer, "max-length");
+        rig_introspectable_lookup_property(text->buffer, "max-length");
     rig_property_set_binding(&text->properties[RUT_TEXT_PROP_MAX_LENGTH],
                              max_length_property_binding_cb,
                              text,

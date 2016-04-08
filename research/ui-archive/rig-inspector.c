@@ -154,7 +154,7 @@ property_changed_cb(rig_property_t *primary_target_prop,
     /* Forward the property change to the corresponding property
      * of all objects being inspected... */
     for (l = inspector->objects; l; l = l->next) {
-        rig_property_t *target_prop = rut_introspectable_lookup_property(
+        rig_property_t *target_prop = rig_introspectable_lookup_property(
             l->data, primary_target_prop->spec->name);
         inspector->property_changed_cb(target_prop, /* target */
                                        source_prop,
@@ -177,7 +177,7 @@ controlled_changed_cb(rig_property_t *primary_property,
     /* Forward the controlled state change to the corresponding property
      * of all objects being inspected... */
     for (l = inspector->objects; l; l = l->next) {
-        rig_property_t *property = rut_introspectable_lookup_property(
+        rig_property_t *property = rig_introspectable_lookup_property(
             l->data, primary_property->spec->name);
 
         inspector->controlled_changed_cb(property, value, inspector->user_data);
@@ -208,7 +208,7 @@ create_property_controls(rig_inspector_t *inspector)
                         sizeof(rig_inspector_property_data_t));
 
     if (rut_object_is(reference_object, RUT_TRAIT_ID_INTROSPECTABLE))
-        rut_introspectable_foreach_property(
+        rig_introspectable_foreach_property(
             reference_object, get_all_properties_cb, props);
 
     inspector->n_props = props->len;

@@ -481,8 +481,8 @@ r_controller_bind(RModule *module, RObject *controller,
     c_return_if_fail(rut_object_is(dst_obj, RUT_TRAIT_ID_INTROSPECTABLE));
     c_return_if_fail(rut_object_is(src_obj, RUT_TRAIT_ID_INTROSPECTABLE));
 
-    dst_prop = rut_introspectable_lookup_property(dst_obj, dst_prop_name);
-    src_prop = rut_introspectable_lookup_property(src_obj, src_prop_name);
+    dst_prop = rig_introspectable_lookup_property(dst_obj, dst_prop_name);
+    src_prop = rig_introspectable_lookup_property(src_obj, src_prop_name);
 
     binding = rig_binding_new_simple_copy(engine, dst_prop, src_prop);
 
@@ -715,7 +715,7 @@ r_set_float_by_name(RModule *module, RObject *object, const char *name, float va
 
     c_return_if_fail(rut_object_is(object, RUT_TRAIT_ID_INTROSPECTABLE));
 
-    prop = rut_introspectable_lookup_property(object, name);
+    prop = rig_introspectable_lookup_property(object, name);
 
     c_return_if_fail(prop);
 
@@ -737,7 +737,7 @@ r_set_##SUFFIX(RModule *module, RObject *object, int id, CTYPE value) \
 { \
     rig_code_module_props_t *code_module = (void *)module; \
     rig_engine_t *engine = code_module->engine; \
-    rut_introspectable_props_t *priv = \
+    rig_introspectable_props_t *priv = \
         rut_object_get_properties(object, RUT_TRAIT_ID_INTROSPECTABLE); \
     rig_property_t *prop = priv->first_property + id; \
  \
@@ -755,7 +755,7 @@ r_set_##SUFFIX##_by_name(RModule *module, RObject *object, const char *name, CTY
  \
     c_return_if_fail(rut_object_is(object, RUT_TRAIT_ID_INTROSPECTABLE)); \
  \
-    prop = rut_introspectable_lookup_property(object, name); \
+    prop = rig_introspectable_lookup_property(object, name); \
  \
     rig_property_set_##SUFFIX(engine->property_ctx, prop, value); \
 }
@@ -769,7 +769,7 @@ r_set_##SUFFIX(RModule *module, RObject *object, int id, const CTYPE value[LEN])
 { \
     rig_code_module_props_t *code_module = (void *)module; \
     rig_engine_t *engine = code_module->engine; \
-    rut_introspectable_props_t *priv = \
+    rig_introspectable_props_t *priv = \
         rut_object_get_properties(object, RUT_TRAIT_ID_INTROSPECTABLE); \
     rig_property_t *prop = priv->first_property + id; \
  \
@@ -787,7 +787,7 @@ r_set_##SUFFIX##_by_name(RModule *module, RObject *object, const char *name, con
  \
     c_return_if_fail(rut_object_is(object, RUT_TRAIT_ID_INTROSPECTABLE)); \
  \
-    prop = rut_introspectable_lookup_property(object, name); \
+    prop = rig_introspectable_lookup_property(object, name); \
  \
     rig_property_set_##SUFFIX(engine->property_ctx, prop, value); \
 }
@@ -799,7 +799,7 @@ r_set_##SUFFIX(RModule *module, RObject *object, int id, const CTYPE *value) \
 { \
     rig_code_module_props_t *code_module = (void *)module; \
     rig_engine_t *engine = code_module->engine; \
-    rut_introspectable_props_t *priv = \
+    rig_introspectable_props_t *priv = \
         rut_object_get_properties(object, RUT_TRAIT_ID_INTROSPECTABLE); \
     rig_property_t *prop = priv->first_property + id; \
  \
@@ -817,7 +817,7 @@ r_set_##SUFFIX##_by_name(RModule *module, RObject *object, const char *name, con
  \
     c_return_if_fail(rut_object_is(object, RUT_TRAIT_ID_INTROSPECTABLE)); \
  \
-    prop = rut_introspectable_lookup_property(object, name); \
+    prop = rig_introspectable_lookup_property(object, name); \
  \
     c_return_if_fail(prop); \
  \
@@ -839,7 +839,7 @@ r_set_text_by_name(RModule *module, RObject *object, const char *name, const cha
 
     c_return_if_fail(rut_object_is(object, RUT_TRAIT_ID_INTROSPECTABLE));
 
-    prop = rut_introspectable_lookup_property(object, name);
+    prop = rig_introspectable_lookup_property(object, name);
 
     c_return_if_fail(prop);
 
@@ -858,7 +858,7 @@ r_set_text(RModule *module, RObject *object, int id, const char *value)
 {
     rig_code_module_props_t *code_module = (void *)module;
     rig_engine_t *engine = code_module->engine;
-    rut_introspectable_props_t *priv =
+    rig_introspectable_props_t *priv =
         rut_object_get_properties(object, RUT_TRAIT_ID_INTROSPECTABLE);
     rig_property_t *prop = priv->first_property + id;
 

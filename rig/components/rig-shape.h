@@ -76,7 +76,7 @@ struct _rig_shape_t {
 
     c_list_t reshaped_cb_list;
 
-    rut_introspectable_props_t introspectable;
+    rig_introspectable_props_t introspectable;
     rig_property_t properties[RIG_SHAPE_N_PROPS];
 };
 

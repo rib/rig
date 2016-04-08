@@ -36,7 +36,7 @@
 #include "rut-interfaces.h"
 #include "rut-flow-layout.h"
 #include "rut-transform.h"
-#include "rut-introspectable.h"
+#include "rig-introspectable.h"
 
 #include <math.h>
 
@@ -111,7 +111,7 @@ struct _rut_flow_layout_t {
 
     int last_flow_line_length;
 
-    rut_introspectable_props_t introspectable;
+    rig_introspectable_props_t introspectable;
     rig_property_t properties[RUT_FLOW_LAYOUT_N_PROPS];
 
     unsigned int needs_reflow : 1;
@@ -249,7 +249,7 @@ _rut_flow_layout_free(void *object)
 
     rut_shell_remove_pre_paint_callback_by_graphable(flow->shell, flow);
 
-    rut_introspectable_destroy(flow);
+    rig_introspectable_destroy(flow);
 
     rut_graphable_destroy(flow);
 
@@ -684,7 +684,7 @@ rut_flow_layout_new(rut_shell_t *shell,
 
     rut_graphable_init(flow);
 
-    rut_introspectable_init(
+    rig_introspectable_init(
         flow, _rut_flow_layout_prop_specs, flow->properties);
 
     flow->shell = shell;

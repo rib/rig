@@ -39,7 +39,7 @@
 #include "rut-inputable.h"
 #include "rut-pickable.h"
 #include "rut-input-region.h"
-#include "rut-introspectable.h"
+#include "rig-introspectable.h"
 #include "rut-camera.h"
 
 enum {
@@ -91,7 +91,7 @@ struct _rut_ui_viewport_t {
     float grab_doc_x;
     float grab_doc_y;
 
-    rut_introspectable_props_t introspectable;
+    rig_introspectable_props_t introspectable;
     rig_property_t properties[RUT_UI_VIEWPORT_N_PROPS];
 
     rut_input_region_t *input_region;
@@ -165,7 +165,7 @@ _rut_ui_viewport_free(void *object)
 
     rut_object_unref(ui_viewport->input_region);
 
-    rut_introspectable_destroy(ui_viewport);
+    rig_introspectable_destroy(ui_viewport);
     rut_graphable_destroy(ui_viewport);
 
     rut_shell_remove_pre_paint_callback_by_graphable(ui_viewport->shell,
@@ -637,7 +637,7 @@ rut_ui_viewport_new(rut_shell_t *shell, float width, float height)
 
     ui_viewport->shell = shell;
 
-    rut_introspectable_init(
+    rig_introspectable_init(
         ui_viewport, _rut_ui_viewport_prop_specs, ui_viewport->properties);
 
     rut_graphable_init(ui_viewport);
@@ -676,14 +676,14 @@ rut_ui_viewport_new(rut_shell_t *shell, float width, float height)
         &ui_viewport->properties[RUT_UI_VIEWPORT_PROP_DOC_X],
         update_doc_xy_cb,
         ui_viewport,
-        rut_introspectable_lookup_property(ui_viewport->scroll_bar_x,
+        rig_introspectable_lookup_property(ui_viewport->scroll_bar_x,
                                            "virtual_offset"),
         NULL);
     rig_property_set_binding(
         &ui_viewport->properties[RUT_UI_VIEWPORT_PROP_DOC_Y],
         update_doc_xy_cb,
         ui_viewport,
-        rut_introspectable_lookup_property(ui_viewport->scroll_bar_y,
+        rig_introspectable_lookup_property(ui_viewport->scroll_bar_y,
                                            "virtual_offset"),
         NULL);
 

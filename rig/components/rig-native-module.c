@@ -68,7 +68,7 @@ struct _rig_native_module_t {
     rig_native_module_resolver_func_t resolver;
     void *resolver_data;
 
-    rut_introspectable_props_t introspectable;
+    rig_introspectable_props_t introspectable;
     rig_property_t properties[RIG_NATIVE_MODULE_N_PROPS];
 };
 
@@ -136,7 +136,7 @@ _rig_native_module_free(void *object)
     }
 #endif
 
-    rut_introspectable_destroy(module);
+    rig_introspectable_destroy(module);
 
     close_lib(module);
 
@@ -284,7 +284,7 @@ rig_native_module_new(rig_engine_t *engine)
     module->code_module.object = module;
     module->code_module.engine = engine;
 
-    rut_introspectable_init(
+    rig_introspectable_init(
         module, _rig_native_module_prop_specs, module->properties);
 
     rig_native_module_set_name(module, NULL);

@@ -233,7 +233,7 @@ tool_event_cb(rig_rotation_tool_t *tool,
 
     case RIG_ROTATION_TOOL_RELEASE: {
         rig_property_t *rotation_prop =
-            rut_introspectable_lookup_property(entity, "rotation");
+            rig_introspectable_lookup_property(entity, "rotation");
         rut_boxed_t value;
         rig_controller_view_t *controller_view =
             rig_editor_get_controller_view(editor);

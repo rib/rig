@@ -74,7 +74,7 @@ _rut_scale_free(void *object)
 
     rut_graphable_destroy(scale);
 
-    rut_introspectable_destroy(scale);
+    rig_introspectable_destroy(scale);
 
     cg_object_unref(scale->pipeline);
 
@@ -737,7 +737,7 @@ rut_scale_new(rut_shell_t *shell, float length, float natural_length)
     c_list_init(&scale->preferred_size_cb_list);
     c_list_init(&scale->select_cb_list);
 
-    rut_introspectable_init(scale, _rut_scale_prop_specs, scale->properties);
+    rig_introspectable_init(scale, _rut_scale_prop_specs, scale->properties);
 
     scale->width = 1;
     scale->height = 1;

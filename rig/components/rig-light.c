@@ -171,7 +171,7 @@ rig_light_new(rig_engine_t *engine)
     light->component.parented = false;
     light->component.engine = engine;
 
-    rut_introspectable_init(light, _rig_light_prop_specs, light->properties);
+    rig_introspectable_init(light, _rig_light_prop_specs, light->properties);
 
     cg_color_init_from_4f(&light->ambient, 1.0, 1.0, 1.0, 1.0);
     cg_color_init_from_4f(&light->diffuse, 1.0, 1.0, 1.0, 1.0);
@@ -183,7 +183,7 @@ rig_light_new(rig_engine_t *engine)
 void
 rig_light_free(rig_light_t *light)
 {
-    rut_introspectable_destroy(light);
+    rig_introspectable_destroy(light);
 
     rut_object_free(rig_light_t, light);
 }

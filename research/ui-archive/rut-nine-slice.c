@@ -39,7 +39,7 @@
 #include "rut-nine-slice.h"
 #include "rut-closure.h"
 #include "rut-meshable.h"
-#include "rut-introspectable.h"
+#include "rig-introspectable.h"
 
 enum {
     RUT_NINE_SLICE_PROP_WIDTH,
@@ -83,7 +83,7 @@ struct _rut_nine_slice_t {
 
     c_list_t updated_cb_list;
 
-    rut_introspectable_props_t introspectable;
+    rig_introspectable_props_t introspectable;
     rig_property_t properties[RUT_NINE_SLICE_N_PROPS];
 };
 
@@ -313,7 +313,7 @@ _rut_nine_slice_free(void *object)
 
     rut_graphable_destroy(nine_slice);
 
-    rut_introspectable_destroy(nine_slice);
+    rig_introspectable_destroy(nine_slice);
 
     rut_object_free(rut_nine_slice_t, object);
 }
@@ -516,7 +516,7 @@ rut_nine_slice_new(rut_shell_t *shell,
         nine_slice->tex_height = height;
     }
 
-    rut_introspectable_init(
+    rig_introspectable_init(
         nine_slice, _rut_nine_slice_prop_specs, nine_slice->properties);
 
     return nine_slice;
