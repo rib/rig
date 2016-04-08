@@ -612,8 +612,6 @@ message SyncAck
 // The simulator service as used from the frontend
 service Simulator {
 
-  rpc Load (UI) returns (LoadResult);
-
   //Note: the simulation is only started by this request.
   //When completed the simulator will issue an UpdateUI request
   rpc RunFrame (FrameSetup) returns (RunFrameAck);
