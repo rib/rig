@@ -135,6 +135,8 @@ rut_mesh_t *rut_mesh_new(cg_vertices_mode_t mode,
                          rut_attribute_t **attributes,
                          int n_attributes);
 
+rut_mesh_t *rut_mesh_new_empty(void);
+
 rut_mesh_t *rut_mesh_new_from_buffer_p3(cg_vertices_mode_t mode,
                                         int n_vertices,
                                         rut_buffer_t *buffer);
